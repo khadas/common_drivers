@@ -276,7 +276,7 @@
 
 	smmu: aml_smmu {
 		compatible = "amlogic,smmu";
-		status = "disable";
+		status = "okay";
 		#iommu-cells = <1>;
 		memory-region = <&pcie_dma_ops_mm>;
 	};

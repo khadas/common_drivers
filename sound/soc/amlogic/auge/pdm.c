@@ -790,6 +790,9 @@ static int aml_pdm_dai_prepare(struct snd_pcm_substream *substream,
 	info.bypass     = p_pdm->bypass;
 	info.sample_count = pdm_get_sample_count(p_pdm->islowpower, dclk_idx);
 
+	//set default gain 0 ~ 24dB, gain = 0 ~ 48
+	p_pdm->pdm_gain_index = 30;
+
 	aml_pdm_ctrl(&info, pdm_id);
 	aml_pdm_filter_ctrl(p_pdm->pdm_gain_index, osr, lpf_filter_mode, hpf_filter_mode, pdm_id);
 
@@ -1285,6 +1288,8 @@ static int aml_pdm_platform_probe(struct platform_device *pdev)
 		p_pdm->lane_mask_in = 0xf;
 	}
 
+	/* lane-mask-in: 0xf=all line, 0x8=4 line, 0x1=1 line */
+	p_pdm->lane_mask_in = 0x8;
 	ret = of_property_read_u32(node, "filter_mode", &p_pdm->lpf_filter_mode);
 	if (ret < 0) {
 		/* default set 4 */

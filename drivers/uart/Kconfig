@@ -1,0 +1,26 @@
+#
+# Amlogic driver configuration
+#
+
+config AMLOGIC_UART
+	tristate "Serial support"
+	depends on SERIAL_CORE
+	select AMLOGIC_SERIAL_MESON_CONSOLE
+	default n
+    help
+	Add support for the Amlogic serial port.
+	this config only ctrl in makefile
+	this config do not in meson_uart.c
+	this config add
+
+config AMLOGIC_SERIAL_MESON_CONSOLE
+	bool "Console on Amlogic Serial port"
+	depends on AMLOGIC_UART
+	depends on SERIAL_CORE_CONSOLE
+	depends on SERIAL_EARLYCON
+	default n
+	help
+		Support for running a console on the Amlogic serial
+		this config is only
+		used in meson_uart.c
+		so so

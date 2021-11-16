@@ -1,0 +1,4 @@
+CONFIG_AMLOGIC_DRIVER=y
+
+# meson_uart.ko
+CONFIG_AMLOGIC_UART=y

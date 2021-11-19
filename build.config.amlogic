@@ -1,13 +1,13 @@
 . ${ROOT_DIR}/${KERNEL_DIR}/build.config.common
 . ${ROOT_DIR}/${KERNEL_DIR}/build.config.aarch64
+. ${ROOT_DIR}/common_drivers/amlogic_utils.sh
 
 BUILD_INITRAMFS=1
 DEFCONFIG=amlogic_gki_defconfig
 FRAGMENT_CONFIG=common_drivers/arch/arm64/configs/amlogic_gki.fragment
 
-PRE_DEFCONFIG_CMDS="KCONFIG_CONFIG=${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${ROOT_DIR}/${FRAGMENT_CONFIG}"
-
-POST_DEFCONFIG_CMDS="rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}"
+PRE_DEFCONFIG_CMDS="pre_defconfig_cmds"
+POST_DEFCONFIG_CMDS="post_defconfig_cmds"
 
 MAKE_GOALS="${MAKE_GOALS}
 amlogic/s4d_s905y4_ap222_drm.dtb
@@ -18,3 +18,6 @@ FILES="${FILES}
 arch/arm64/boot/Image.gz
 ../common_drivers/arch/arm64/boot/dts/amlogic/s4d_s905y4_ap222_drm.dtb
 "
+
+EXT_MODULES="common_drivers/drivers"
+POST_KERNEL_BUILD_CMDS="prepare_module_build"

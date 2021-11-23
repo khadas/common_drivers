@@ -13,7 +13,7 @@ function pre_defconfig_cmds() {
 export -f pre_defconfig_cmds
 
 function post_defconfig_cmds() {
-	check_defconfig
+	# check_defconfig
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
 	pushd ${ROOT_DIR}/common_drivers
 		git checkout ${ROOT_DIR}/${FRAGMENT_CONFIG}
@@ -57,3 +57,78 @@ function prepare_module_build() {
 }
 
 export -f prepare_module_build
+
+function mod_probe() {
+        local ko=$1
+        local loop
+        for loop in `grep "$ko:" modules.dep | sed 's/.*://'`;
+        do
+                mod_probe $loop
+                echo insmod $loop >> __install.sh
+        done
+}
+
+function modules_install() {
+	rm modules -rf
+	mkdir modules
+	cp *.ko modules
+
+	local stagin_module=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
+	echo stagin_module=${stagin_module}
+	cp ${stagin_module}/modules.dep modules
+
+	cd modules
+	sed -i 's#[^ ]*/##g' modules.dep
+
+	for loop in `cat modules.dep | sed 's/:.*//'`; do
+	        mod_probe $loop
+	        echo insmod $loop >> __install.sh
+	done
+
+	cat __install.sh  | awk ' {
+		if (!cnt[$2]) {
+			print $0;
+			cnt[$2]++;
+		}
+	}' > __install.sh.tmp
+
+	cp __install.sh.tmp __install.sh
+
+	sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' __install.sh
+	echo "echo Install modules success!" >> __install.sh
+	chmod 777 __install.sh
+
+	echo "#!/bin/sh" > install.sh
+	# echo "./__install.sh || reboot" >> install.sh
+	echo "./__install.sh" >> install.sh
+	chmod 777 install.sh
+
+	echo "/modules/: all `wc -l modules.dep | awk '{print $1}'` modules."
+
+	cd ../
+}
+
+function rebuild_rootfs() {
+	pushd ${DIST_DIR}
+
+	modules_install
+
+	rm rootfs -rf
+	mkdir rootfs
+	cp ${ROOT_DIR}/common_drivers/rootfs_base.cpio.gz.uboot	rootfs
+	cd rootfs
+	dd if=rootfs_base.cpio.gz.uboot of=rootfs_base.cpio.gz bs=64 skip=1
+	gunzip rootfs_base.cpio.gz
+	mkdir rootfs
+	cd rootfs
+	cpio -i -F ../rootfs_base.cpio
+	cp -rf ../../modules .
+	find . | cpio -o -H newc | gzip > ../rootfs_new.cpio.gz
+	cd ../
+	mkimage -A arm64 -O linux -T  ramdisk -C none -d rootfs_new.cpio.gz rootfs_new.cpio.gz.uboot
+	mv rootfs_new.cpio.gz.uboot ../
+	cd ../
+
+	popd
+}
+export -f rebuild_rootfs

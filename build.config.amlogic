@@ -21,3 +21,18 @@ arch/arm64/boot/Image.gz
 
 EXT_MODULES="common_drivers/drivers"
 POST_KERNEL_BUILD_CMDS="prepare_module_build"
+
+TIDY_ABI=1
+KMI_SYMBOL_LIST=android/abi_gki_aarch64
+ADDITIONAL_KMI_SYMBOL_LISTS="
+android/abi_gki_aarch64_virtual_device
+"
+TRIM_NONLISTED_KMI=${TRIM_NONLISTED_KMI:-1}
+KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE:-1}
+
+if [[ ${LTO} -eq "thin" ]];
+then
+	ABI_DEFINITION=../common_drivers/abi-ASB-2021-11-06_mainline-91-g45956b36bb5e_thin.xml
+else
+	ABI_DEFINITION=../common_drivers/abi-ASB-2021-11-06_mainline-91-g45956b36bb5e.xml
+fi

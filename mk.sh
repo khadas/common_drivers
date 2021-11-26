@@ -1,23 +1,21 @@
 #!/bin/bash
 
-export KERNEL_DIR=common
-export ROOT_DIR=$(readlink -f $(dirname $0)/..)
-source ${ROOT_DIR}/common_drivers/build.config.amlogic
-
 function show_help {
 	echo "USAGE: $0 [--nongki] [--abi]"
 	echo
-	echo "  --nongki                for AMLOGIC_NONGKI, build in modules, not build out modules, 1|0[default]"
-	echo "  --abi                   for ABI, call build_abi.sh not build.sh, 1|0[default]"
-	echo "  --build_config          for BUILD_CONFIG, common_drivers/build.config.amlogic[default]|common/build.config.gki.aarch64"
-	echo "  --menuconfig            for only menuconfig"
-	echo "  --image                 for only build kernel"
-	echo "  --modules               for only build modules"
-	echo "  --dtbs                  for only build dtbs"
+	echo "  --nongki                for AMLOGIC_NONGKI, build in modules, not build out modules, 1[default]|0, require parameter value"
+	echo "  --abi                   for ABI, call build_abi.sh not build.sh, 1|0[default], not require parameter value"
+	echo "  --build_config          for BUILD_CONFIG, common_drivers/build.config.amlogic[default]|common/build.config.gki.aarch64, require parameter value"
+	echo "  --userdebug             for AMLOGIC_USERDEBUG, 1[default]|0, require parameter value"
+	echo "  --symbol_strict         for KMI_SYMBOL_LIST_STRICT_MODE, 1[default]|0, require parameter value"
+	echo "  --menuconfig            for only menuconfig, not require parameter value"
+	echo "  --image                 for only build kernel, not require parameter value"
+	echo "  --modules               for only build modules, not require parameter value"
+	echo "  --dtbs                  for only build dtbs, not require parameter value"
 }
 				# amlogic parameters default value
 if [[ -z "${AMLOGIC_NONGKI}" ]]; then
-	AMLOGIC_NONGKI=0
+	AMLOGIC_NONGKI=1
 fi
 if [[ -z "${ABI}" ]]; then
 	ABI=0
@@ -25,13 +23,18 @@ fi
 if [[ -z "${BUILD_CONFIG}" ]]; then
 	BUILD_CONFIG=common_drivers/build.config.amlogic
 fi
+if [[ -z "${AMLOGIC_USERDEBUG}" ]]; then
+	AMLOGIC_USERDEBUG=1
+fi
 
+VA=
 ARGS=()
 for i in "$@"
 do
 	case $i in
 	--nongki)
-		AMLOGIC_NONGKI=1
+		AMLOGIC_NONGKI=$2
+		VA=1
 		shift
 		;;
 	--abi)
@@ -40,8 +43,18 @@ do
 		;;
 	--build_config)
 		BUILD_CONFIG=$2
+		VA=1
 		shift
-		shift
+		;;
+	--userdebug)
+		AMLOGIC_USERDEBUG=$2
+		VA=1
+                shift
+		;;
+	--symbol_strict)
+		KMI_SYMBOL_LIST_STRICT_MODE=$2
+		VA=1
+                shift
 		;;
 	--menuconfig)
 		MENUCONFIG=1
@@ -67,15 +80,24 @@ do
 	*)
 		if [[ -n $1 ]];
 		then
-			ARGS+=("$1")
+			if [[ -z ${VA} ]];
+			then
+				ARGS+=("$1")
+			fi
 		fi
+		VA=
 		shift
 		;;
 	esac
 done
 
 set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
-export AMLOGIC_NONGKI ABI BUILD_CONFIG
+export AMLOGIC_NONGKI ABI BUILD_CONFIG AMLOGIC_USERDEBUG KMI_SYMBOL_LIST_STRICT_MODE
+echo AMLOGIC_NONGKI=${AMLOGIC_NONGKI} ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} AMLOGIC_USERDEBUG=${AMLOGIC_USERDEBUG} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE}
+
+export KERNEL_DIR=common
+export ROOT_DIR=$(readlink -f $(dirname $0)/..)
+source ${ROOT_DIR}/common_drivers/build.config.amlogic
 
 if [ "${ABI}" -eq "1" ]; then
 	export OUT_DIR_SUFFIX="_abi"

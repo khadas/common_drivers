@@ -1,12 +1,20 @@
 #!/bin/bash
 
 function pre_defconfig_cmds() {
-	if [[ -n ${AMLOGIC_NONGKI} ]]; then
+	if [[ ${AMLOGIC_USERDEBUG} -eq "1" ]]; then
+		echo "CONFIG_AMLOGIC_USERDEBUG=y" >> ${ROOT_DIR}/${FRAGMENT_CONFIG}
+	else
+		echo "CONFIG_AMLOGIC_USERDEBUG=n" >> ${ROOT_DIR}/${FRAGMENT_CONFIG}
+	fi
+
+	if [[ ${AMLOGIC_NONGKI} -eq "1" ]]; then
 		echo "CONFIG_AMLOGIC_NONGKI=y" >> ${ROOT_DIR}/${FRAGMENT_CONFIG}
 		SKIP_EXT_MODULES=1
 		export SKIP_EXT_MODULES
 		EXT_MODULES=
 		export EXT_MODULES
+	else
+		echo "CONFIG_AMLOGIC_NONGKI=n" >> ${ROOT_DIR}/${FRAGMENT_CONFIG}
 	fi
 	KCONFIG_CONFIG=${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${ROOT_DIR}/${FRAGMENT_CONFIG}
 }
@@ -16,7 +24,8 @@ function post_defconfig_cmds() {
 	# check_defconfig
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
 	pushd ${ROOT_DIR}/common_drivers
-		git checkout ${ROOT_DIR}/${FRAGMENT_CONFIG}
+		sed -i '5,${/CONFIG_AMLOGIC_USERDEBUG/d}' ${ROOT_DIR}/${FRAGMENT_CONFIG}
+		sed -i '5,${/CONFIG_AMLOGIC_NONGKI/d}' ${ROOT_DIR}/${FRAGMENT_CONFIG}
 	popd
 }
 export -f post_defconfig_cmds
@@ -80,6 +89,7 @@ function modules_install() {
 	cd modules
 	sed -i 's#[^ ]*/##g' modules.dep
 
+	touch __install.sh
 	for loop in `cat modules.dep | sed 's/:.*//'`; do
 	        mod_probe $loop
 	        echo insmod $loop >> __install.sh

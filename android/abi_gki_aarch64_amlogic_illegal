@@ -1,2 +1,4 @@
 [abi_symbol_list]
 
+# clk driver: amlogic-clk-common.ko: meson-clk-debug.c
+  __clk_lookup

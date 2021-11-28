@@ -1,5 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
 
-obj-$(CONFIG_AMLOGIC_UART)		+= uart/
+obj-y		+= uart/
+obj-y		+= clk/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

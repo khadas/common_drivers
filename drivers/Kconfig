@@ -1,4 +1,6 @@
 
 menu "Amlogic Device Drivers"
+
 source "../common_drivers/drivers/uart/Kconfig"
+source "../common_drivers/drivers/clk/Kconfig"
 endmenu

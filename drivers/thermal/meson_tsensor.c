@@ -150,6 +150,8 @@ struct meson_tsensor_data {
 	void (*tsensor_update_irqs)(struct meson_tsensor_data *data);
 };
 
+static struct meson_tsensor_data *g_tsensor_data_ptr;
+
 static void meson_report_trigger(struct meson_tsensor_data *p)
 {
 	char data[10], *envp[] = { data, NULL };
@@ -537,6 +539,22 @@ static int meson_get_temp(void *p, int *temp)
 	return 0;
 }
 
+static struct meson_tsensor_data *g_tsensor_data_ptr;
+
+int meson_get_temperature(void)
+{
+	int temp;
+	int ret;
+
+	ret = meson_get_temp(g_tsensor_data_ptr, &temp);
+	if (ret) {
+		pr_debug("meson_get_temp failed!\n");
+		return ret;
+	}
+	return temp / 1000;
+}
+EXPORT_SYMBOL(meson_get_temperature);
+
 static void meson_tsensor_work(struct work_struct *work)
 {
 	struct meson_tsensor_data *data = container_of(work,
@@ -845,6 +863,9 @@ static int show_tsensor_drvinfo(struct seq_file *s, void *what)
 		data->pdata->cal_coeff[0], data->pdata->cal_coeff[1], data->pdata->cal_coeff[2],
 		data->pdata->cal_coeff[3]);
 
+	if (data->id == 0)
+		g_tsensor_data_ptr = data;
+
 	return 0;
 }
 
@@ -993,6 +1014,9 @@ static int meson_tsensor_probe(struct platform_device *pdev)
 		debugfs_dir, data, &tsensor_drvinfo_fops);
 	temp_write_file = debugfs_create_file("tempwrite", S_IFREG | 0440,
 		debugfs_dir, tz, &temp_write_fops);
+
+	if (data->id == 0)
+		g_tsensor_data_ptr = data;
 
 out:
 	return 0;

@@ -128,7 +128,6 @@ AMLOGIC_COMMON_MODULES = [
     "drivers/mmc/host/cqhci.ko",
     "drivers/net/mdio/mdio-mux.ko",
     "drivers/net/pcs/pcs_xpcs.ko",
-    "drivers/net/phy/realtek.ko",
     "drivers/regulator/gpio-regulator.ko",
     "drivers/regulator/pwm-regulator.ko",
     "fs/ntfs3/ntfs3.ko",

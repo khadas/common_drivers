@@ -189,3 +189,5 @@ else
 	echo "========================================================"
 	echo "There's no file ${ROOT_DIR}/common_drivers/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
 fi
+
+check_undefined_symbol

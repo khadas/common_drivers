@@ -142,3 +142,52 @@ function rebuild_rootfs() {
 	popd
 }
 export -f rebuild_rootfs
+
+function check_undefined_symbol() {
+	pushd ${DIST_DIR}/rootfs/rootfs/modules
+	echo
+	echo "========================================================"
+	echo "Functions or variables not defined in this module refer to which module."
+	nm ../../../vmlinux | grep -E " T | D | B | R | W "> vmlinux_T.txt
+	cat __install.sh | grep "insmod" | cut -d ' ' -f 2 > module_list.txt
+	while read LINE
+	do
+		echo ${LINE}
+		for U in `nm ${LINE} | grep " U " | sed -e 's/^\s*//' -e 's/\s*$//' | cut -d ' ' -f 2`
+		do
+			#echo ${U}
+			U_v=`grep -w ${U} vmlinux_T.txt`
+			in_vmlinux=0
+			if [ -n "${U_v}" ];
+			then
+				#printf "\t%-50s ==> vmlinux\n" ${U}
+				in_vmlinux=1
+				continue
+			fi
+			in_module=0
+			MODULE=
+			while read LINE1
+			do
+				U_m=`nm ${LINE1} | grep -E " T | D | B | R " | grep "${U}"`
+				if [ -n "${U_m}" ];
+				then
+					in_module=1
+					MODULE=${LINE1}
+				fi
+			done < module_list.txt
+			if [ ${in_module} -eq "1" ];
+			then
+				printf "\t%-50s <== %s\n" ${U} ${MODULE}
+				continue
+			else
+				printf "\t%-50s <== none\n" ${U}
+			fi
+		done
+		echo
+		echo
+	done  < module_list.txt
+	rm vmlinux_T.txt
+	rm module_list.txt
+	popd
+}
+export -f check_undefined_symbol

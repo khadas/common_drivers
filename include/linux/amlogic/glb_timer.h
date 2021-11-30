@@ -100,13 +100,13 @@ u64 ns_to_global_timer_count(u64 time_in_ns);
 u64 global_timer_count_to_ns(u64 time_in_global_timer_ticks);
 
 int meson_global_timer_isp_event_snapshot_configure(u8 isp_event_src,
-				enum meson_glb_srcsel_flag trigger_type);
+						    enum meson_glb_srcsel_flag trigger_type);
 u64 meson_global_timer_isp_snapshot(u8 isp_event_src);
 
 u64 meson_global_timer_input_gpio_get_snapshot(int id);
 int meson_global_timer_input_gpio_get_source_index(int virq);
 int meson_global_timer_input_gpio_configure(u8 id,
-				enum meson_glb_srcsel_flag trigger_type);
+					    enum meson_glb_srcsel_flag trigger_type);
 unsigned int gpio_irq_get_channel_idx(int irq);
 
 struct global_timer_output_gpio*
@@ -149,7 +149,7 @@ u64 global_timer_count_to_ns(u64 time_in_global_timer_ticks)
 }
 
 int meson_global_timer_isp_event_snapshot_configure(u8 isp_event_src,
-				enum meson_glb_srcsel_flag trigger_type)
+						    enum meson_glb_srcsel_flag trigger_type)
 {
 	return 0;
 }
@@ -170,7 +170,7 @@ u64 meson_global_timer_input_gpio_get_snapshot(int id)
 }
 
 int meson_global_timer_input_gpio_configure(u8 id,
-				enum meson_glb_srcsel_flag trigger_type)
+					    enum meson_glb_srcsel_flag trigger_type)
 {
 	return 0;
 }

@@ -70,7 +70,7 @@ meson_sc2_gpio_irq_sel_type(struct meson_gpio_irq_controller *ctl,
 			    unsigned int idx, u32 val);
 static unsigned int
 meson_p1_gpio_irq_sel_type(struct meson_gpio_irq_controller *ctl,
-			    unsigned int idx, u32 val);
+			   unsigned int idx, u32 val);
 #endif
 
 static void meson_a1_gpio_irq_init(struct meson_gpio_irq_controller *ctl);
@@ -287,7 +287,7 @@ struct meson_gpio_irq_controller {
 	unsigned long *channel_map;
 	u8 channel_num;
 #endif
-	spinlock_t lock;
+	spinlock_t lock;		//
 };
 
 static void meson_gpio_irq_update_bits(struct meson_gpio_irq_controller *ctl,
@@ -381,7 +381,7 @@ meson_sc2_gpio_irq_sel_type(struct meson_gpio_irq_controller *ctl,
 
 static unsigned int
 meson_p1_gpio_irq_sel_type(struct meson_gpio_irq_controller *ctl,
-			    unsigned int idx, unsigned int type)
+			   unsigned int idx, unsigned int type)
 {
 	unsigned int val = 0;
 	unsigned long flags;
@@ -464,7 +464,7 @@ meson_gpio_irq_request_channel(struct meson_gpio_irq_controller *ctl,
 	 * method is that we can also retrieve the channel index with
 	 * it, using the table base.
 	 */
-	*channel_hwirq = &(ctl->channel_irqs[idx]);
+	*channel_hwirq = &ctl->channel_irqs[idx];
 
 #ifndef CONFIG_AMLOGIC_MODIFY
 	spin_unlock(&ctl->lock);
@@ -832,6 +832,7 @@ static int meson_gpio_irq_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
 	struct device_node *parent = of_irq_find_parent(np);
+
 	return meson_gpio_irq_of_init(np, parent);
 }
 

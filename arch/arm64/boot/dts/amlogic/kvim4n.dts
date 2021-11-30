@@ -1612,28 +1612,13 @@
 	pinctrl-names = "default";//, "sleep"
 	pinctrl-0 = <&i2c3_pins1>;
 	clock-frequency = <100000>; /* default 100k */
-	amlsens_2: sensor2@1a {
-		compatible = "amlogic, sensor";
-		index = <2>;
-		reg = <0x1a>;
-		reg-addr-type = <2>;
-		reg-data-type = <1>;
 
-		clocks = <&clkc CLKID_MCLK_1>,
-				<&clkc CLKID_MCLK_1_SEL>,
-				<&clkc CLKID_MCLK_1_PRE>,
-				<&clkc CLKID_MCLK_PLL>,
-				<&xtal>;
-		clock-names = "mclk","mclk_sel","mclk_pre","mclk_p","mclk_x";
-		pwdn-gpios = <&gpio GPIOM_4 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio GPIOM_10 GPIO_ACTIVE_HIGH>;
-		port {
-			amlsens_2_ep: endpoint {
-				data-lanes = <0 1 2 3>;
-				link-frequencies = /bits/ 64 <222750000>;
-				remote-endpoint = <&csiphy2_ep>;
-			};
-		};
+	ft5336@38 {
+	         compatible = "edt,edt-ft5336", "ft5x06";
+	         reg = <0x38>;
+	         interrupt_pin = <&gpio GPIOM_8 GPIO_ACTIVE_HIGH>;
+	         reset_pin = <&gpio GPIOM_9 GPIO_ACTIVE_HIGH>;
+	         status = "okay";
 	};
 };
 

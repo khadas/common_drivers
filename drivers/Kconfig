@@ -3,4 +3,5 @@ menu "Amlogic Device Drivers"
 
 source "../common_drivers/drivers/uart/Kconfig"
 source "../common_drivers/drivers/clk/Kconfig"
+source "../common_drivers/drivers/pinctrl/Kconfig"
 endmenu

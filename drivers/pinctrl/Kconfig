@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+menuconfig AMLOGIC_COMMON_PINCTRL
+	tristate "Amlogic SoC pinctrl drivers"
+	depends on OF
+	depends on PINMUX
+	depends on PINCONF
+	depends on GENERIC_PINCONF
+	depends on GPIOLIB
+	depends on OF_GPIO
+	depends on REGMAP_MMIO
+
+if AMLOGIC_COMMON_PINCTRL
+config AMLOGIC_PINCTRL_S4
+	tristate "Meson s4 Soc pinctrl driver"
+	default n
+
+endif

@@ -25,3 +25,9 @@ CONFIG_AMLOGIC_COMMON_CLK_DEBUG=y
 
 # amlogic-clk-s4.ko
 CONFIG_AMLOGIC_CLK_S4=m
+
+# amlogic-pinctrl-common.ko
+CONFIG_AMLOGIC_COMMON_PINCTRL=m
+
+# amlogic-pinctrl-s4.ko
+CONFIG_AMLOGIC_PINCTRL_S4=m

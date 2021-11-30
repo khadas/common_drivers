@@ -8,3 +8,6 @@
   clk_mux_val_to_index
   of_get_parent
 
+# pinctrl: amlogic-pinctrl-common.ko amlogic-pinctrl-s4.ko
+  gpiochip_generic_config
+  irq_create_fwspec_mapping

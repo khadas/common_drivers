@@ -2,6 +2,7 @@
 
 obj-y		+= uart/
 obj-y		+= clk/
+obj-y		+= pinctrl/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

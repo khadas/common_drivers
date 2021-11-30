@@ -1,7 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0
 
 menu "Amlogic Device Drivers"
 
 source "../common_drivers/drivers/uart/Kconfig"
 source "../common_drivers/drivers/clk/Kconfig"
 source "../common_drivers/drivers/pinctrl/Kconfig"
+source "../common_drivers/drivers/irqchip/Kconfig"
 endmenu

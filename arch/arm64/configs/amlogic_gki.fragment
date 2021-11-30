@@ -31,3 +31,6 @@ CONFIG_AMLOGIC_COMMON_PINCTRL=m
 
 # amlogic-pinctrl-s4.ko
 CONFIG_AMLOGIC_PINCTRL_S4=m
+
+# amlogic-irqchip-common.ko
+CONFIG_AMLOGIC_COMMON_IRQCHIP=m

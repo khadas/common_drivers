@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0
+
+config AMLOGIC_COMMON_IRQCHIP
+	tristate "Amlogic GPIO Interrupt Multiplexer"
+	depends on IRQ_DOMAIN_HIERARCHY
+	help
+	  Support Meson SoC Family GPIO Interrupt Multiplexer

@@ -1,7 +1,7 @@
 [abi_symbol_list]
 # commonly used symbols
 
-# clk driver: amlogic-clk-common.ko amlogic-clk-soc.ko
+# clk: amlogic-clk-common.ko amlogic-clk-soc.ko
   clk_hw_set_parent
   clk_mux_determine_rate_flags
   clk_mux_index_to_val
@@ -11,3 +11,10 @@
 # pinctrl: amlogic-pinctrl-common.ko amlogic-pinctrl-s4.ko
   gpiochip_generic_config
   irq_create_fwspec_mapping
+
+# irqchip: amlogic-irqchip-common.ko
+  bitmap_free
+  bitmap_zalloc
+  irq_domain_free_irqs_parent
+  irq_domain_get_irq_data
+  irq_to_desc

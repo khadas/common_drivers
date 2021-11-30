@@ -159,7 +159,7 @@ struct meson_pinctrl {
 			[REG_IN]	= { ir, ib },			\
 			[REG_DS]	= { dsr, dsb },			\
 		},							\
-	 }
+	}
 
 #define BANK(n, f, l, fi, li, per, peb, pr, pb, dr, db, or, ob, ir, ib) \
 	BANK_DS(n, f, l, fi, li, per, peb, pr, pb, dr, db, or, ob, ir, ib, 0, 0)
@@ -169,9 +169,9 @@ struct meson_pinctrl {
 /* Common pmx functions */
 int meson_pmx_get_funcs_count(struct pinctrl_dev *pcdev);
 const char *meson_pmx_get_func_name(struct pinctrl_dev *pcdev,
-				    unsigned selector);
+				    unsigned int selector);
 int meson_pmx_get_groups(struct pinctrl_dev *pcdev,
-			 unsigned selector,
+			 unsigned int selector,
 			 const char * const **groups,
 			 unsigned * const num_groups);
 

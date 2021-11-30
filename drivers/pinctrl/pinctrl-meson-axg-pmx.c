@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: (GPL-2.0+ or MIT)
 /*
  * Second generation of pinmux driver for Amlogic Meson-AXG SoC.
  *
@@ -6,8 +7,6 @@
  *
  * Copyright (c) 2017 Amlogic, Inc. All rights reserved.
  * Author: Xingyu Chen <xingyu.chen@amlogic.com>
- *
- * SPDX-License-Identifier: (GPL-2.0+ or MIT)
  */
 
 /*
@@ -27,15 +26,15 @@
 #include "pinctrl-meson-axg-pmx.h"
 
 static int meson_axg_pmx_get_bank(struct meson_pinctrl *pc,
-			unsigned int pin,
-			struct meson_pmx_bank **bank)
+				  unsigned int pin,
+				  struct meson_pmx_bank **bank)
 {
 	int i;
 	struct meson_axg_pmx_data *pmx = pc->data->pmx_data;
 
 	for (i = 0; i < pmx->num_pmx_banks; i++)
 		if (pin >= pmx->pmx_banks[i].first &&
-				pin <= pmx->pmx_banks[i].last) {
+		    pin <= pmx->pmx_banks[i].last) {
 			*bank = &pmx->pmx_banks[i];
 			return 0;
 		}
@@ -44,8 +43,8 @@ static int meson_axg_pmx_get_bank(struct meson_pinctrl *pc,
 }
 
 static int meson_pmx_calc_reg_and_offset(struct meson_pmx_bank *bank,
-			unsigned int pin, unsigned int *reg,
-			unsigned int *offset)
+					 unsigned int pin, unsigned int *reg,
+					 unsigned int *offset)
 {
 	int shift;
 
@@ -58,7 +57,8 @@ static int meson_pmx_calc_reg_and_offset(struct meson_pmx_bank *bank,
 }
 
 static int meson_axg_pmx_update_function(struct meson_pinctrl *pc,
-			unsigned int pin, unsigned int func)
+					 unsigned int pin,
+					 unsigned int func)
 {
 	int ret;
 	int reg;
@@ -72,13 +72,14 @@ static int meson_axg_pmx_update_function(struct meson_pinctrl *pc,
 	meson_pmx_calc_reg_and_offset(bank, pin, &reg, &offset);
 
 	ret = regmap_update_bits(pc->reg_mux, reg << 2,
-		0xf << offset, (func & 0xf) << offset);
+				 0xf << offset, (func & 0xf) << offset);
 
 	return ret;
 }
 
 static int meson_axg_pmx_set_mux(struct pinctrl_dev *pcdev,
-			unsigned int func_num, unsigned int group_num)
+				 unsigned int func_num,
+				 unsigned int group_num)
 {
 	int i;
 	int ret;
@@ -93,7 +94,7 @@ static int meson_axg_pmx_set_mux(struct pinctrl_dev *pcdev,
 
 	for (i = 0; i < group->num_pins; i++) {
 		ret = meson_axg_pmx_update_function(pc, group->pins[i],
-			pmx_data->func);
+						    pmx_data->func);
 		if (ret)
 			return ret;
 	}
@@ -102,7 +103,8 @@ static int meson_axg_pmx_set_mux(struct pinctrl_dev *pcdev,
 }
 
 static int meson_axg_pmx_request_gpio(struct pinctrl_dev *pcdev,
-			struct pinctrl_gpio_range *range, unsigned int offset)
+				      struct pinctrl_gpio_range *range,
+				      unsigned int offset)
 {
 	struct meson_pinctrl *pc = pinctrl_dev_get_drvdata(pcdev);
 

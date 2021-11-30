@@ -133,15 +133,15 @@ static int meson_get_groups_count(struct pinctrl_dev *pcdev)
 }
 
 static const char *meson_get_group_name(struct pinctrl_dev *pcdev,
-					unsigned selector)
+					unsigned int selector)
 {
 	struct meson_pinctrl *pc = pinctrl_dev_get_drvdata(pcdev);
 
 	return pc->data->groups[selector].name;
 }
 
-static int meson_get_group_pins(struct pinctrl_dev *pcdev, unsigned selector,
-				const unsigned **pins, unsigned *num_pins)
+static int meson_get_group_pins(struct pinctrl_dev *pcdev, unsigned int selector,
+				const unsigned int **pins, unsigned int *num_pins)
 {
 	struct meson_pinctrl *pc = pinctrl_dev_get_drvdata(pcdev);
 
@@ -152,7 +152,7 @@ static int meson_get_group_pins(struct pinctrl_dev *pcdev, unsigned selector,
 }
 
 static void meson_pin_dbg_show(struct pinctrl_dev *pcdev, struct seq_file *s,
-			       unsigned offset)
+			       unsigned int offset)
 {
 	seq_printf(s, " %s", dev_name(pcdev->dev));
 }
@@ -175,7 +175,7 @@ int meson_pmx_get_funcs_count(struct pinctrl_dev *pcdev)
 EXPORT_SYMBOL(meson_pmx_get_funcs_count);
 
 const char *meson_pmx_get_func_name(struct pinctrl_dev *pcdev,
-				    unsigned selector)
+				    unsigned int selector)
 {
 	struct meson_pinctrl *pc = pinctrl_dev_get_drvdata(pcdev);
 
@@ -183,7 +183,7 @@ const char *meson_pmx_get_func_name(struct pinctrl_dev *pcdev,
 }
 EXPORT_SYMBOL(meson_pmx_get_func_name);
 
-int meson_pmx_get_groups(struct pinctrl_dev *pcdev, unsigned selector,
+int meson_pmx_get_groups(struct pinctrl_dev *pcdev, unsigned int selector,
 			 const char * const **groups,
 			 unsigned * const num_groups)
 {
@@ -374,7 +374,7 @@ static int meson_pinconf_set_drive_strength(struct meson_pinctrl *pc,
 }
 
 static int meson_pinconf_set(struct pinctrl_dev *pcdev, unsigned int pin,
-			     unsigned long *configs, unsigned num_configs)
+			     unsigned long *configs, unsigned int num_configs)
 {
 	struct meson_pinctrl *pc = pinctrl_dev_get_drvdata(pcdev);
 	enum pin_config_param param;
@@ -561,7 +561,7 @@ static int meson_pinconf_get(struct pinctrl_dev *pcdev, unsigned int pin,
 
 static int meson_pinconf_group_set(struct pinctrl_dev *pcdev,
 				   unsigned int num_group,
-				   unsigned long *configs, unsigned num_configs)
+				   unsigned long *configs, unsigned int num_configs)
 {
 	struct meson_pinctrl *pc = pinctrl_dev_get_drvdata(pcdev);
 	struct meson_pmx_group *group = &pc->data->groups[num_group];
@@ -591,24 +591,24 @@ static const struct pinconf_ops meson_pinconf_ops = {
 	.is_generic		= true,
 };
 
-static int meson_gpio_direction_input(struct gpio_chip *chip, unsigned gpio)
+static int meson_gpio_direction_input(struct gpio_chip *chip, unsigned int gpio)
 {
 	return meson_pinconf_set_output(gpiochip_get_data(chip), gpio, false);
 }
 
-static int meson_gpio_direction_output(struct gpio_chip *chip, unsigned gpio,
+static int meson_gpio_direction_output(struct gpio_chip *chip, unsigned int gpio,
 				       int value)
 {
 	return meson_pinconf_set_output_drive(gpiochip_get_data(chip),
 					      gpio, value);
 }
 
-static void meson_gpio_set(struct gpio_chip *chip, unsigned gpio, int value)
+static void meson_gpio_set(struct gpio_chip *chip, unsigned int gpio, int value)
 {
 	meson_pinconf_set_drive(gpiochip_get_data(chip), gpio, value);
 }
 
-static int meson_gpio_get(struct gpio_chip *chip, unsigned gpio)
+static int meson_gpio_get(struct gpio_chip *chip, unsigned int gpio)
 {
 	struct meson_pinctrl *pc = gpiochip_get_data(chip);
 	unsigned int reg, bit, val;
@@ -854,7 +854,7 @@ int meson_pinctrl_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	pc->dev = dev;
-	pc->data = (struct meson_pinctrl_data *) of_device_get_match_data(dev);
+	pc->data = (struct meson_pinctrl_data *)of_device_get_match_data(dev);
 
 	ret = meson_pinctrl_parse_dt(pc, dev->of_node);
 	if (ret)

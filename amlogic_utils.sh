@@ -160,7 +160,7 @@ function check_undefined_symbol() {
 			in_vmlinux=0
 			if [ -n "${U_v}" ];
 			then
-				#printf "\t%-50s ==> vmlinux\n" ${U}
+				#printf "\t%-50s <== vmlinux\n" ${U}
 				in_vmlinux=1
 				continue
 			fi
@@ -168,7 +168,7 @@ function check_undefined_symbol() {
 			MODULE=
 			while read LINE1
 			do
-				U_m=`nm ${LINE1} | grep -E " T | D | B | R " | grep "${U}"`
+				U_m=`nm ${LINE1} | grep -E " T | D | B | R " | grep -v "\.cfi_jt" | grep "${U}"`
 				if [ -n "${U_m}" ];
 				then
 					in_module=1

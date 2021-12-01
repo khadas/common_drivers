@@ -8,6 +8,7 @@ function show_help {
 	echo "  --build_config          for BUILD_CONFIG, common_drivers/build.config.amlogic[default]|common/build.config.gki.aarch64, require parameter value"
 	echo "  --userdebug             for AMLOGIC_USERDEBUG, 1[default]|0, require parameter value"
 	echo "  --symbol_strict         for KMI_SYMBOL_LIST_STRICT_MODE, 1[default]|0, require parameter value"
+	echo "  --lto                   for LTO, full|thin[default]|none, require parameter value"
 	echo "  --menuconfig            for only menuconfig, not require parameter value"
 	echo "  --image                 for only build kernel, not require parameter value"
 	echo "  --modules               for only build modules, not require parameter value"
@@ -25,6 +26,9 @@ if [[ -z "${BUILD_CONFIG}" ]]; then
 fi
 if [[ -z "${AMLOGIC_USERDEBUG}" ]]; then
 	AMLOGIC_USERDEBUG=1
+fi
+if [[ -z "${LTO}" ]]; then
+	LTO=thin
 fi
 
 VA=
@@ -48,6 +52,11 @@ do
 		;;
 	--userdebug)
 		AMLOGIC_USERDEBUG=$2
+		VA=1
+                shift
+		;;
+	--lto)
+		LTO=$2
 		VA=1
                 shift
 		;;
@@ -92,8 +101,8 @@ do
 done
 
 set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
-export AMLOGIC_NONGKI ABI BUILD_CONFIG AMLOGIC_USERDEBUG KMI_SYMBOL_LIST_STRICT_MODE
-echo AMLOGIC_NONGKI=${AMLOGIC_NONGKI} ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} AMLOGIC_USERDEBUG=${AMLOGIC_USERDEBUG} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE}
+export AMLOGIC_NONGKI ABI BUILD_CONFIG AMLOGIC_USERDEBUG LTO KMI_SYMBOL_LIST_STRICT_MODE
+echo AMLOGIC_NONGKI=${AMLOGIC_NONGKI} ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} AMLOGIC_USERDEBUG=${AMLOGIC_USERDEBUG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE}
 
 export KERNEL_DIR=common
 export ROOT_DIR=$(readlink -f $(dirname $0)/..)
@@ -151,10 +160,9 @@ if [[ -n ${MENUCONFIG} ]] || [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n $
 						INSTALL_MOD_PATH=${MODULES_STAGING_DIR}                \
 						INSTALL_HDR_PATH="${KERNEL_UAPI_HEADERS_DIR}/usr"      \
 						"${MAKE_ARGS[@]}" modules_install
-				set +x
+					set +x
 				done
 			fi
-			
 			set +x
 		fi
 	fi
@@ -168,8 +176,20 @@ fi
 
 if [ "${ABI}" -eq "1" ]; then
 	source build/build_abi.sh "$@" 2>&1 | tee abi_amlogic_out-log.txt
+	build_result=`cat abi_amlogic_out-log.txt | grep "make" | grep "Error" `
+	if [ -n "${build_result}" ];
+	then
+		echo "build_abi error, exit!"
+		exit
+	fi
 else
 	source build/build.sh "$@" 2>&1 | tee amlogic_out-log.txt
+	build_result=`cat amlogic_out-log.txt | grep "make" | grep "Error" `
+	if [ -n "${build_result}" ];
+	then
+		echo "build error, exit!"
+		exit
+	fi
 fi
 
 echo "========================================================"

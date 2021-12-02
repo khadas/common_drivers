@@ -105,7 +105,7 @@ export AMLOGIC_NONGKI ABI BUILD_CONFIG AMLOGIC_USERDEBUG LTO KMI_SYMBOL_LIST_STR
 echo AMLOGIC_NONGKI=${AMLOGIC_NONGKI} ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} AMLOGIC_USERDEBUG=${AMLOGIC_USERDEBUG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE}
 
 export KERNEL_DIR=common
-export ROOT_DIR=$(readlink -f $(dirname $0)/..)
+export ROOT_DIR=$(readlink -f $(dirname $0))
 source ${ROOT_DIR}/common_drivers/build.config.amlogic
 
 if [ "${ABI}" -eq "1" ]; then
@@ -175,7 +175,7 @@ if [[ -n ${MENUCONFIG} ]] || [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n $
 fi
 
 if [ "${ABI}" -eq "1" ]; then
-	source build/build_abi.sh "$@" 2>&1 | tee abi_amlogic_out-log.txt
+	${ROOT_DIR}/build/build_abi.sh "$@" 2>&1 | tee abi_amlogic_out-log.txt
 	build_result=`cat abi_amlogic_out-log.txt | grep "make" | grep "Error" `
 	if [ -n "${build_result}" ];
 	then
@@ -183,7 +183,7 @@ if [ "${ABI}" -eq "1" ]; then
 		exit
 	fi
 else
-	source build/build.sh "$@" 2>&1 | tee amlogic_out-log.txt
+	${ROOT_DIR}/build/build.sh "$@" 2>&1 | tee amlogic_out-log.txt
 	build_result=`cat amlogic_out-log.txt | grep "make" | grep "Error" `
 	if [ -n "${build_result}" ];
 	then

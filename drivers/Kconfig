@@ -7,4 +7,5 @@ source "../common_drivers/drivers/clk/Kconfig"
 source "../common_drivers/drivers/pinctrl/Kconfig"
 source "../common_drivers/drivers/irqchip/Kconfig"
 source "../common_drivers/drivers/secmon/Kconfig"
+source "../common_drivers/drivers/power/Kconfig"
 endmenu

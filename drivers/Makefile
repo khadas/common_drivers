@@ -5,6 +5,7 @@ obj-y		+= clk/
 obj-y		+= pinctrl/
 obj-y		+= irqchip/
 obj-y		+= secmon/
+obj-y		+= power/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

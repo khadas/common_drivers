@@ -78,6 +78,7 @@ function mod_probe() {
 }
 
 function modules_install() {
+	pushd ${DIST_DIR}
 	rm modules -rf
 	mkdir modules
 	cp *.ko modules
@@ -116,12 +117,12 @@ function modules_install() {
 	echo "/modules/: all `wc -l modules.dep | awk '{print $1}'` modules."
 
 	cd ../
+	popd
 }
+export -f modules_install
 
 function rebuild_rootfs() {
 	pushd ${DIST_DIR}
-
-	modules_install
 
 	rm rootfs -rf
 	mkdir rootfs
@@ -144,11 +145,11 @@ function rebuild_rootfs() {
 export -f rebuild_rootfs
 
 function check_undefined_symbol() {
-	pushd ${DIST_DIR}/rootfs/rootfs/modules
+	pushd ${DIST_DIR}/modules
 	echo
 	echo "========================================================"
 	echo "Functions or variables not defined in this module refer to which module."
-	nm ../../../vmlinux | grep -E " T | D | B | R | W "> vmlinux_T.txt
+	nm ../vmlinux | grep -E " T | D | B | R | W "> vmlinux_T.txt
 	cat __install.sh | grep "insmod" | cut -d ' ' -f 2 > module_list.txt
 	while read LINE
 	do

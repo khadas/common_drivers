@@ -101,6 +101,7 @@ do
 done
 
 set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
+set -e
 export AMLOGIC_NONGKI ABI BUILD_CONFIG AMLOGIC_USERDEBUG LTO KMI_SYMBOL_LIST_STRICT_MODE
 echo AMLOGIC_NONGKI=${AMLOGIC_NONGKI} ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} AMLOGIC_USERDEBUG=${AMLOGIC_USERDEBUG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE}
 
@@ -175,21 +176,9 @@ if [[ -n ${MENUCONFIG} ]] || [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n $
 fi
 
 if [ "${ABI}" -eq "1" ]; then
-	${ROOT_DIR}/build/build_abi.sh "$@" 2>&1 | tee abi_amlogic_out-log.txt
-	build_result=`cat abi_amlogic_out-log.txt | grep "make" | grep "Error" `
-	if [ -n "${build_result}" ];
-	then
-		echo "build_abi error, exit!"
-		exit
-	fi
+	${ROOT_DIR}/build/build_abi.sh "$@"
 else
-	${ROOT_DIR}/build/build.sh "$@" 2>&1 | tee amlogic_out-log.txt
-	build_result=`cat amlogic_out-log.txt | grep "make" | grep "Error" `
-	if [ -n "${build_result}" ];
-	then
-		echo "build error, exit!"
-		exit
-	fi
+	${ROOT_DIR}/build/build.sh "$@"
 fi
 
 echo "========================================================"
@@ -201,13 +190,14 @@ export MODULES_STAGING_DIR=$(readlink -m ${COMMON_OUT_DIR}/staging)
 echo COMMON_OUT_DIR=$COMMON_OUT_DIR OUT_DIR=$OUT_DIR DIST_DIR=$DIST_DIR MODULES_STAGING_DIR=$MODULES_STAGING_DIR KERNEL_DIR=$KERNEL_DIR
 # source ${ROOT_DIR}/common_drivers/amlogic_utils.sh
 
+echo "========================================================"
+echo "prepare modules"
+modules_install
 if [ -f ${ROOT_DIR}/common_drivers/rootfs_base.cpio.gz.uboot ]; then
-	echo "========================================================"
 	echo "Rebuild rootfs in order to install modules!"
 	rebuild_rootfs
 else
-	echo "========================================================"
 	echo "There's no file ${ROOT_DIR}/common_drivers/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
 fi
-
+set +e
 check_undefined_symbol

@@ -2,7 +2,8 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-
+//#define USE_CMA
+//#define TEST_ACESS
 #include <linux/errno.h>
 #include <linux/err.h>
 #include <linux/of.h>
@@ -12,9 +13,11 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
-//#include <linux/dma-map-ops.h>
-#include <linux/dma-mapping.h>
-//#include <linux/cma.h>
+#include <linux/uaccess.h>
+#ifdef USE_CMA
+#include <linux/dma-map-ops.h>
+#include <linux/cma.h>
+#endif
 #include <linux/arm-smccc.h>
 #undef pr_fmt
 #define pr_fmt(fmt) "secmon: " fmt
@@ -75,14 +78,80 @@ int within_secmon_region(unsigned long addr)
 
 	return 0;
 }
+EXPORT_SYMBOL(within_secmon_region);
+
+static int get_reserver_base_size(struct platform_device *pdev)
+{
+	struct device_node *mem_region;
+	struct reserved_mem *rmem;
+
+	mem_region = of_parse_phandle(pdev->dev.of_node, "memory-region", 0);
+	if (!mem_region) {
+		dev_warn(&pdev->dev, "no such memory-region\n");
+		return -ENODEV;
+	}
+
+	rmem = of_reserved_mem_lookup(mem_region);
+	if (!rmem) {
+		dev_warn(&pdev->dev, "no such reserved mem of node name %s\n",
+				pdev->dev.of_node->name);
+		return -ENODEV;
+	}
+
+	/* Need to wait for reserved memory to be mapped */
+	//if (!rmem->priv)
+	//	return -EPROBE_DEFER;
+
+	if (!rmem->base || !rmem->size) {
+		dev_warn(&pdev->dev, "unexpected reserved memory\n");
+		return -EINVAL;
+	}
+
+	secmon_start_virt = __phys_to_virt(rmem->base);
+
+	//pr_info("secmon_start_virt=0x%016lx, base=0x%010lx, size=0x%010x\n",
+	//	secmon_start_virt, rmem->base, rmem->size);
+
+	return 0;
+}
+
+#ifdef TEST_ACESS
+static void test_access_secmon(void)
+{
+	int	i, j;
+	int	nlines;
+	u32	*p;
+
+	nlines = 16;
+	p = (u32 *)(secmon_start_virt + 0x200000);
+	for (i = 0; i < nlines; i++) {
+		/*
+		 * just display low 16 bits of address to keep
+		 * each line of the dump < 80 characters
+		 */
+		pr_info("%04lx ", (unsigned long)p & 0xffff);
+		for (j = 0; j < 8; j++) {
+			u32	data;
+
+			if (get_kernel_nofault(data, p))
+				pr_cont(" ********");
+			else
+				pr_cont(" %08x", data);
+			++p;
+		}
+		pr_cont("\n");
+	}
+}
+#endif
 
 static int secmon_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
 	unsigned int id;
-	int ret;
-	// struct page *page;
-	dma_addr_t addr;
+	int ret = 0;
+#ifdef USE_CMA
+	struct page *page;
+#endif
 
 	if (!of_property_read_u32(np, "in_base_func", &id))
 		phy_in_base = get_sharemem_info(id);
@@ -99,21 +168,27 @@ static int secmon_probe(struct platform_device *pdev)
 	} else {
 		pr_info("reserve_mem_size:0x%x\n", secmon_size);
 	}
-	
+
+	get_reserver_base_size(pdev);
+#ifdef USE_CMA
 	ret = of_reserved_mem_device_init(&pdev->dev);
 	if (ret) {
 		pr_info("reserve memory init fail:%d\n", ret);
 		return ret;
 	}
 
-	/* page = dma_alloc_from_contiguous(&pdev->dev, secmon_size >> PAGE_SHIFT, 0, 0);
+	page = dma_alloc_from_contiguous(&pdev->dev, secmon_size >> PAGE_SHIFT, 0, 0);
 	if (!page) {
 		pr_err("alloc page failed, ret:%p\n", page);
 		return -ENOMEM;
 	}
 	pr_info("get page:%p, %lx\n", page, page_to_pfn(page));
-	secmon_start_virt = (unsigned long)page_to_virt(page); */
-	secmon_start_virt=(unsigned long)dma_alloc_coherent(&pdev->dev, secmon_size, &addr, GFP_KERNEL);
+	secmon_start_virt = (unsigned long)page_to_virt(page);
+#endif
+
+#ifdef TEST_ACESS
+	test_access_secmon();
+#endif
 
 	if (pfn_valid(__phys_to_pfn(phy_in_base)))
 		sharemem_in_base = (void __iomem *)__phys_to_virt(phy_in_base);
@@ -126,11 +201,9 @@ static int secmon_probe(struct platform_device *pdev)
 	}
 
 	if (pfn_valid(__phys_to_pfn(phy_out_base)))
-		sharemem_out_base = (void __iomem *)
-				__phys_to_virt(phy_out_base);
+		sharemem_out_base = (void __iomem *)__phys_to_virt(phy_out_base);
 	else
-		sharemem_out_base = ioremap_cache(phy_out_base,
-				sharemem_out_size);
+		sharemem_out_base = ioremap_cache(phy_out_base, sharemem_out_size);
 
 	if (!sharemem_out_base) {
 		pr_info("secmon share mem out buffer remap fail!\n");
@@ -145,7 +218,8 @@ static int secmon_probe(struct platform_device *pdev)
 	return ret;
 }
 
-/* void __init secmon_clear_cma_mmu(void)
+#ifdef USE_CMA
+void __init secmon_clear_cma_mmu(void)
 {
 	struct device_node *np;
 	unsigned int clear[2] = {};
@@ -163,9 +237,10 @@ static int secmon_probe(struct platform_device *pdev)
 		struct page *page = phys_to_page(clear[0]);
 		int cnt = clear[1] / PAGE_SIZE;
 
-		cma_mmu_op(page, cnt, 0);
+		cma_mmu_op(page, cnt, 0);	//cma_mmu_op() implemented in kernel
 	}
-} */
+}
+#endif
 
 static const struct of_device_id secmon_dt_match[] = {
 	{ .compatible = "amlogic, secmon" },
@@ -187,7 +262,7 @@ int __init meson_secmon_init(void)
 
 	ret = platform_driver_register(&secmon_platform_driver);
 	WARN((secmon_dev_registered != DEV_REGISTERED),
-			"ERROR: secmon device must be enable!!!\n");
+	     "ERROR: secmon device must be enable!!!\n");
 	return ret;
 }
 

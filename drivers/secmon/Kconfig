@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_COMMON_SECMON
+	tristate "Amlogic secure monitor driver support"
+	default n
+	help
+		This is the Amlogic secure monitor driver
+		this config only ctrl in makefile
+		prepare share memory
+		etc

@@ -18,3 +18,8 @@
   irq_domain_free_irqs_parent
   irq_domain_get_irq_data
   irq_to_desc
+
+# amlogic-secmon-common.ko
+  ioremap_cache
+  of_reserved_mem_device_init_by_idx
+  pfn_valid

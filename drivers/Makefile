@@ -1,9 +1,10 @@
-# SPDX-License-Identifier: GPL-2.0
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
 obj-y		+= uart/
 obj-y		+= clk/
 obj-y		+= pinctrl/
 obj-y		+= irqchip/
+obj-y		+= secmon/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

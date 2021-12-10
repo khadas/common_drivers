@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
+
 #include <linux/io.h>
 #include <linux/of_device.h>
 #include <linux/pm_domain.h>

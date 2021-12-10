@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
+
 #include <linux/io.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
@@ -573,3 +574,4 @@ arch_initcall_sync(sec_pd_init);
 
 MODULE_DESCRIPTION("Amlogic power domain driver");
 MODULE_LICENSE("GPL v2");
+

@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
+
 #include <linux/pm_domain.h>
 
 #define PWR_ON    1

@@ -23,6 +23,5 @@
   ioremap_cache
   of_reserved_mem_device_init_by_idx
   pfn_valid
-  dma_alloc_from_contiguous
   of_find_node_by_name
   copy_from_kernel_nofault

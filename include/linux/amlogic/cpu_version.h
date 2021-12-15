@@ -2,4 +2,5 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
+
 #include <linux/amlogic/media/registers/cpu_version.h>

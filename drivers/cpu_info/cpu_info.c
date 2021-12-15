@@ -45,7 +45,7 @@ static int cpuinfo_probe(struct platform_device *pdev)
 {
 	void __iomem *shm_out;
 	struct device_node *np = pdev->dev.of_node;
-	int cmd, ret;
+	int cmd, ret, i;
 
 	if (of_property_read_u32(np, "cpuinfo_cmd", &cmd))
 		return -EINVAL;
@@ -67,11 +67,19 @@ static int cpuinfo_probe(struct platform_device *pdev)
 			       CHIPID_LEN);
 		} else {
 			pr_err("failed to get version\n");
+			ret = -EINVAL;
 		}
 	} else {
 		ret = -EPROTO;
 	}
 	meson_sm_mutex_unlock();
+
+	if (ret == 0) {
+		pr_info("serial = ");
+		for (i = 0; i < CHIPID_LEN; i++)
+			pr_cont("%02x", cpuinfo_chip_id[i]);
+		pr_cont("\n");
+	}
 
 	return ret;
 }
@@ -80,6 +88,7 @@ void cpuinfo_get_chipid(unsigned char *cid, unsigned int size)
 {
 	memcpy(&cid[0], cpuinfo_chip_id, size);
 }
+EXPORT_SYMBOL(cpuinfo_get_chipid);
 
 static const struct of_device_id cpuinfo_dt_match[] = {
 	{ .compatible = "amlogic, cpuinfo" },

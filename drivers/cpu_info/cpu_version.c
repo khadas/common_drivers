@@ -41,7 +41,7 @@ EXPORT_SYMBOL(set_cpu_type_from_media);
 unsigned char get_meson_cpu_version(int level)
 {
 	if (!init_done) {
-		pr_err("too early call get_meson_cpu_version()\n");
+		pr_err("too early call %s\n", __func__);
 		dump_stack();
 		return -1;
 	}

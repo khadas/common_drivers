@@ -72,3 +72,29 @@
   pwm_set_chip_data
   pwmchip_add
   pwmchip_remove
+
+# pwm-regulator.ko
+  devm_pwm_get
+  pwm_adjust_config
+  pwm_apply_state
+
+# amlogic-cpufreq.ko
+  PDE_DATA
+  cpu_topology
+  cpufreq_boost_enabled
+  cpufreq_generic_suspend
+  cpufreq_get_policy
+  dev_pm_opp_free_cpufreq_table
+  dev_pm_opp_get_opp_table
+  dev_pm_opp_init_cpufreq_table
+  dev_pm_opp_of_add_table_indexed
+  devm_regulator_put
+  proc_create_data
+  proc_mkdir
+  regulator_count_voltages
+  regulator_get_optional
+  regulator_get_voltage
+  regulator_list_voltage
+  regulator_map_voltage_iterate
+  regulator_put
+  remove_proc_entry

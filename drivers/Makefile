@@ -15,6 +15,7 @@ obj-y		+= spi/
 obj-y		+= tee/
 obj-y		+= gki_tool/
 obj-y		+= pwm/
+obj-y		+= cpufreq/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config	AMLOGIC_COMMON_CPUINFO
+	tristate "Amlogic chipid"
+	depends on AMLOGIC_COMMON_SECMON
+	depends on MFD_SYSCON
+	default n
+	help
+	  say y to enable Amlogic chipid driver
+          include to driver
+	  cpu info, access with smccc
+	  cpu version, access with reg

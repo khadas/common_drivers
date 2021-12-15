@@ -25,3 +25,6 @@
   pfn_valid
   of_find_node_by_name
   copy_from_kernel_nofault
+
+# amlogic-secmon-cpuinfo.ko
+  dump_stack

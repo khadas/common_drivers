@@ -6,6 +6,7 @@ obj-y		+= pinctrl/
 obj-y		+= irqchip/
 obj-y		+= secmon/
 obj-y		+= power/
+obj-y		+= cpu_info/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+menuconfig AMLOGIC_PINCTRL_MESON
+	tristate "Amlogic SoC pinctrl drivers"
+	depends on OF
+	depends on PINMUX
+	depends on PINCONF
+	depends on GENERIC_PINCONF
+	depends on GPIOLIB
+	depends on OF_GPIO
+	depends on REGMAP_MMIO
+
+if AMLOGIC_PINCTRL_MESON
+config AMLOGIC_PINCTRL_MESON_S4
+	tristate "Meson s4 Soc pinctrl driver"
+	default n
+	help
+	  the chip of s4 will be built
+	  when enable this config.
+	  s4 pinctrl can work.
+	  otherwise s4 pinctrl can't work
+
+endif

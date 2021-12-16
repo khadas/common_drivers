@@ -8,7 +8,7 @@
 
 #ifdef MODULE
 
-#ifdef CONFIG_AMLOGIC_COMMON_CLK_MEASURE
+#ifdef CONFIG_AMLOGIC_MESON_CLK_MEASURE
 int clk_measure_init(void);
 #else
 static inline int clk_measure_init(void)
@@ -17,7 +17,7 @@ static inline int clk_measure_init(void)
 }
 #endif
 
-#ifdef CONFIG_AMLOGIC_COMMON_CLK_DEBUG
+#ifdef CONFIG_AMLOGIC_CLK_DEBUG
 int __init clk_debug_init(void);
 #else
 static inline int clk_debug_init(void)

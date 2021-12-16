@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
-obj-y		+= uart/
+obj-y		+= tty/
 obj-y		+= clk/
 obj-y		+= pinctrl/
 obj-y		+= irqchip/

@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
-config	AMLOGIC_COMMON_CPUINFO
+config	AMLOGIC_CPU_INFO
 	tristate "Amlogic chipid"
-	depends on AMLOGIC_COMMON_SECMON
+	depends on AMLOGIC_SECMON
 	depends on MFD_SYSCON
 	default n
 	help

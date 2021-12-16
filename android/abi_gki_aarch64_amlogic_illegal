@@ -2,8 +2,8 @@
 
 [abi_symbol_list]
 
-# clk driver: amlogic-clk-common.ko: meson-clk-debug.c
+# clk driver: amlogic-clk.ko: meson-clk-debug.c
   __clk_lookup
 
-# power driver: amlogic-power-common.ko: sec_power_domain.c
+# power driver: amlogic-power.ko: sec_power_domain.c
   pm_domain_always_on_gov

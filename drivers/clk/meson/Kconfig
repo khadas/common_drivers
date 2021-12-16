@@ -1,0 +1,81 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+menu "Clock support for Amlogic platforms"
+
+config AMLOGIC_COMMON_CLK
+	tristate "Meson clock common API"
+	default y
+	help
+	  provide meson clock common
+	  API and debuger tool
+
+config AMLOGIC_COMMON_CLK_MESON_REGMAP
+	tristate "meson regmap"
+	depends on REGMAP
+
+config AMLOGIC_COMMON_CLK_MESON_DUALDIV
+	tristate "meson dualdiv"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+
+config AMLOGIC_COMMON_CLK_MESON_MPLL
+	tristate "meson mpll"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+
+config AMLOGIC_COMMON_CLK_MESON_PHASE
+	tristate "meson phase"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+
+config AMLOGIC_COMMON_CLK_MESON_PLL
+	tristate "meson pll"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+
+config AMLOGIC_COMMON_CLK_MESON_SCLK_DIV
+	tristate "meson sclk div"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+
+config AMLOGIC_COMMON_CLK_MESON_VID_PLL_DIV
+	tristate "meson vid pll div"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+
+config AMLOGIC_COMMON_CLK_MESON_AO_CLKC
+	tristate "meson ao clkc"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+	depends on RESET_CONTROLLER
+
+config AMLOGIC_COMMON_CLK_MESON_EE_CLKC
+	tristate "meson ee clkc"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+
+config AMLOGIC_COMMON_CLK_MESON_CPU_DYNDIV
+	tristate "meson cpu dyndiv"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+
+config AMLOGIC_MESON_CLK_MEASURE
+	tristate "Amlogic Meson SoC Clock Measure driver"
+	depends on REGMAP_MMIO
+	default n
+	help
+	  Say yes to support of Measuring a set of internal SoC clocks
+	  from the debugfs interface.
+
+config AMLOGIC_CLK_DEBUG
+	tristate "Amlogic Meson SoC Clock Debug Driver"
+	depends on AMLOGIC_USERDEBUG
+	help
+	  Say yes to support of debugging online a set of SoC clocks
+	  from the debugfs interface.
+
+config AMLOGIC_COMMON_CLK_S4
+	tristate "Meson S4 clock controller"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+	depends on AMLOGIC_COMMON_CLK_MESON_DUALDIV
+	depends on AMLOGIC_COMMON_CLK_MESON_MPLL
+	depends on AMLOGIC_COMMON_CLK_MESON_PLL
+	depends on AMLOGIC_COMMON_CLK_MESON_CPU_DYNDIV
+	depends on AMLOGIC_COMMON_CLK_MESON_VID_PLL_DIV
+	depends on MFD_SYSCON
+	help
+	  Support for the clock controller on Amlogic AH219 and AH212
+	  devices, aka s4. Say Y if you want peripherals to work.
+
+endmenu

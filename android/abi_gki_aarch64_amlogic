@@ -28,3 +28,8 @@
 
 # amlogic-cpuinfo.ko
   dump_stack
+
+# amlogic-pm.ko
+  register_pm_notifier
+  register_syscore_ops
+  unregister_pm_notifier

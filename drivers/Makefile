@@ -8,6 +8,7 @@ obj-y		+= secmon/
 obj-y		+= power/
 obj-y		+= cpu_info/
 obj-y		+= pm/
+obj-y		+= gpio/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

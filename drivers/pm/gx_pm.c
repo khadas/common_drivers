@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+//#define DEBUG
 #include <linux/pm.h>
 #include <linux/suspend.h>
 #include <linux/module.h>
@@ -90,14 +91,14 @@ static inline void early_suspend(void)
 	else
 		goto end_early_suspend;
 
-	pr_info("%s: call handlers\n", __func__);
+	pr_debug("%s: call handlers\n", __func__);
 	list_for_each_entry(pos, &early_suspend_handlers, link)
 		if (pos->suspend) {
-			pr_info("%s: %ps\n", __func__, pos->suspend);
+			pr_debug("%s: %ps\n", __func__, pos->suspend);
 			pos->suspend(pos);
 		}
 
-	pr_info("%s: done\n", __func__);
+	pr_debug("%s: done\n", __func__);
 
 end_early_suspend:
 	mutex_unlock(&early_suspend_lock);
@@ -114,13 +115,13 @@ static inline void late_resume(void)
 	else
 		goto end_late_resume;
 
-	pr_info("%s: call handlers\n", __func__);
+	pr_debug("%s: call handlers\n", __func__);
 	list_for_each_entry_reverse(pos, &early_suspend_handlers, link)
 		if (pos->resume) {
-			pr_info("%s: %ps\n", __func__, pos->resume);
+			pr_debug("%s: %ps\n", __func__, pos->resume);
 			pos->resume(pos);
 		}
-	pr_info("%s: done\n", __func__);
+	pr_debug("%s: done\n", __func__);
 
 end_late_resume:
 	mutex_unlock(&early_suspend_lock);
@@ -393,8 +394,6 @@ static int meson_pm_probe(struct platform_device *pdev)
 	unsigned int irq_pwrctrl;
 	int err;
 
-	pr_info("enter %s!\n", __func__);
-
 	if (!of_property_read_u32(pdev->dev.of_node,
 				  "irq_pwrctrl", &irq_pwrctrl)) {
 		pwr_ctrl_irq_set(irq_pwrctrl, 1, 0);
@@ -423,12 +422,10 @@ static int meson_pm_probe(struct platform_device *pdev)
 	else
 		is_clr_exit_reg = false;
 
-
 	err = register_pm_notifier(&clr_suspend_notifier);
 	if (unlikely(err))
 		return err;
 
-	pr_info("%s done\n", __func__);
 	return 0;
 }
 

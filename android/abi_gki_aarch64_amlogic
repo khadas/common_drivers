@@ -33,3 +33,6 @@
   register_pm_notifier
   register_syscore_ops
   unregister_pm_notifier
+
+# amlogic-i2c.ko
+  sysfs_create_file_ns

@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+menu "I2C Hardware Bus support"
+	depends on HAS_IOMEM
+
+config AMLOGIC_I2C_MESON
+	tristate "Amlogic Meson I2C controller"
+	help
+	  If you say yes to this option, support will be included for the
+	  I2C interface on the Amlogic Meson family of SoCs.
+
+endmenu

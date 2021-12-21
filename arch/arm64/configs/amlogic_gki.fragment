@@ -54,3 +54,6 @@ CONFIG_AMLOGIC_GPIOLIB=m
 
 # amlogic-input-gpiokey.ko
 CONFIG_AMLOGIC_GPIO_KEY=m
+
+# amlogic-i2c.ko
+CONFIG_AMLOGIC_I2C_MESON=m

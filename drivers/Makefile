@@ -9,6 +9,7 @@ obj-y		+= power/
 obj-y		+= cpu_info/
 obj-y		+= pm/
 obj-y		+= gpio/
+obj-y		+= input/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

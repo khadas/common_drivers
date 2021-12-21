@@ -11,5 +11,6 @@ source "../common_drivers/drivers/power/Kconfig"
 source "../common_drivers/drivers/cpu_info/Kconfig"
 source "../common_drivers/drivers/pm/Kconfig"
 source "../common_drivers/drivers/gpio/Kconfig"
+source "../common_drivers/drivers/input/Kconfig"
 
 endmenu

@@ -1,0 +1,5 @@
+menu "Amlogic input device support"
+
+source "../common_drivers/drivers/input/keyboard/Kconfig"
+
+endmenu

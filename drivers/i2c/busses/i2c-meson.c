@@ -102,7 +102,7 @@ struct meson_i2c {
 	int			pos;
 	int			error;
 
-	spinlock_t		lock;
+	spinlock_t		lock;		//protection for i2c contrloller critical section
 	struct completion	done;
 	u32			tokens[2];
 	int			num_tokens;
@@ -600,7 +600,7 @@ static int meson_i2c_probe(struct platform_device *pdev)
 	}
 #endif
 
-	strlcpy(i2c->adap.name, "Meson I2C adapter",
+	strscpy(i2c->adap.name, "Meson I2C adapter",
 		sizeof(i2c->adap.name));
 	i2c->adap.owner = THIS_MODULE;
 	i2c->adap.algo = &meson_i2c_algorithm;

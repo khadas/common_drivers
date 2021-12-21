@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+//#define DEBUG
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/input.h>
@@ -64,13 +65,13 @@ static void report_key_code(struct gpio_keypad *keypad, int gpio_val)
 			input_event(keypad->input_dev, key->key_type,
 				    key->code, 0);
 
-			dev_info(&keypad->input_dev->dev,
+			dev_dbg(&keypad->input_dev->dev,
 				 "key %d up.\n", key->code);
 		} else {
 			input_event(keypad->input_dev, key->key_type,
 				    key->code, 1);
 
-			dev_info(&keypad->input_dev->dev,
+			dev_dbg(&keypad->input_dev->dev,
 				 "key %d down.\n", key->code);
 		}
 		input_sync(keypad->input_dev);
@@ -241,7 +242,7 @@ static int meson_gpio_kp_probe(struct platform_device *pdev)
 		input_set_capability(input_dev, keypad->key[i].key_type,
 				     keypad->key[i].code);
 
-		dev_info(&pdev->dev, "%s key(%d) type(0x%x) registered.\n",
+		dev_dbg(&pdev->dev, "%s key(%d) type(0x%x) registered.\n",
 			 keypad->key[i].name, keypad->key[i].code,
 			 keypad->key[i].key_type);
 	}
@@ -298,10 +299,10 @@ static int meson_gpio_kp_probe(struct platform_device *pdev)
 	}
 	if (wakeup_source) {
 		if (register_flag)
-			dev_info(&pdev->dev,
+			dev_dbg(&pdev->dev,
 				 "succeed to register wakeup source!\n");
 		else
-			dev_info(&pdev->dev,
+			dev_err(&pdev->dev,
 				 "failed to register wakeup source!\n");
 	}
 
@@ -348,7 +349,7 @@ static int meson_gpio_kp_resume(struct platform_device *dev)
 	if (get_resume_method() == POWER_KEY_WAKEUP) {
 		for (i = 0; i < pdata->key_size; i++) {
 			if (pdata->key[i].code == KEY_POWER) {
-				pr_info("gpio keypad wakeup\n");
+				dev_dbg(&dev->dev, "powerkey wakeup\n");
 				input_report_key(pdata->input_dev,
 						 KEY_POWER,  1);
 				input_sync(pdata->input_dev);

@@ -44,3 +44,6 @@
   gpio_free
   gpio_request
   spi_alloc_device
+
+# amlogic-tee.ko
+  class_create_file_ns

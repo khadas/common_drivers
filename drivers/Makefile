@@ -11,6 +11,7 @@ obj-y		+= pm/
 obj-y		+= gpio/
 obj-y		+= input/
 obj-y		+= i2c/
+obj-y		+= spi/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

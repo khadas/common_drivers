@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+menuconfig AMLOGIC_SPI
+	tristate "Amlogic SoC SPI Hardware Bus support"
+	depends on SPI
+
+config AMLOGIC_SPI_MESON_SPICC
+	tristate "Amlogic Meson SPICC controller"
+	help
+	  This enables master mode support for the SPICC (SPI communication
+	  controller) available in Amlogic Meson SoCs.
+
+config AMLOGIC_SPI_MESON_SPIFC
+	tristate "Amlogic Meson SPIFC controller"
+	depends on REGMAP_MMIO
+	help
+	  This enables master mode support for the SPIFC (SPI flash
+	  controller) available in Amlogic Meson SoCs.
+
+config AMLOGIC_SPI_MESON_SPICC_SLAVE
+	tristate "Amlogic Meson SPICC Slave controller"
+	help
+	  This enables slave mode support for the SPICC (SPI communication
+	  controller) available in Amlogic Meson SoCs. SPICC can work both
+	  in master mode and slave mode.
+	  say Y or M here.If you are not sure, say N.

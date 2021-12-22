@@ -36,3 +36,11 @@
 
 # amlogic-i2c.ko
   sysfs_create_file_ns
+
+# amlogic-spi.ko
+  __device_reset
+  clk_divider_ops
+  clk_mux_ops
+  gpio_free
+  gpio_request
+  spi_alloc_device

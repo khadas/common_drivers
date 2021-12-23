@@ -39,7 +39,7 @@ static ssize_t parent_write(struct file *file, const char __user *buffer,
 		return -EINVAL;
 	}
 
-	clk = __clk_lookup(clk_name);
+	clk = clk_get_sys(NULL, clk_name);
 	if (!clk)
 		pr_err("Can't find the clock, have a look in /sys/kernel/debug/clk\n");
 
@@ -213,7 +213,7 @@ static ssize_t clk_write(struct file *file, const char __user *buffer,
 		return -EINVAL;
 	}
 
-	clk = __clk_lookup(clk_name);
+	clk = clk_get_sys(NULL, clk_name);
 	if (clk)
 		pr_info("success get %s clock, its rate = %lu, its parent is %s\n",
 			clk_name, clk_get_rate(clk),

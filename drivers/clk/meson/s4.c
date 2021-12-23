@@ -12,6 +12,7 @@
 #include <linux/clk.h>
 #include <linux/module.h>
 #include <linux/of_address.h>
+#include <linux/clkdev.h>
 
 #include "clk-mpll.h"
 #include "clk-pll.h"
@@ -5871,13 +5872,23 @@ static int __ref meson_s4_probe(struct platform_device *pdev)
 			continue;
 		/*
 		 *dev_err(dev, "register %d  %s\n",i,
-		 *    hw_onecell_data->hws[i]->init->name);
+		 *        clk_hw_get_name(hw_onecell_data->hws[i]));
 		 */
 		ret = devm_clk_hw_register(dev, hw_onecell_data->hws[i]);
 		if (ret) {
 			dev_err(dev, "Clock registration failed\n");
 			return ret;
 		}
+
+#ifdef CONFIG_AMLOGIC_CLK_DEBUG
+		ret = devm_clk_hw_register_clkdev(dev, hw_onecell_data->hws[i],
+						  clk_hw_get_name(hw_onecell_data->hws[i]),
+						  NULL);
+		if (ret < 0) {
+			dev_err(dev, "Failed to clkdev register: %d\n", ret);
+			return ret;
+		}
+#endif
 	}
 
 	meson_s4_dvfs_setup(pdev);

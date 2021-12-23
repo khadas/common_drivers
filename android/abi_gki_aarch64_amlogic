@@ -7,6 +7,8 @@
   clk_mux_index_to_val
   clk_mux_val_to_index
   of_get_parent
+  devm_clk_hw_register_clkdev
+  clk_get_sys
 
 # pinctrl: amlogic-pinctrl.ko amlogic-pinctrl-soc-s4.ko
   gpiochip_generic_config

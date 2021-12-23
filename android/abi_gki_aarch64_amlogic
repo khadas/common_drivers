@@ -47,3 +47,8 @@
 
 # amlogic-tee.ko
   class_create_file_ns
+
+# amlogic-gkitool.ko
+  kernel_read_file_from_path
+  proc_create
+  single_open_size

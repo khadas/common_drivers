@@ -15,5 +15,6 @@ source "../common_drivers/drivers/input/Kconfig"
 source "../common_drivers/drivers/i2c/Kconfig"
 source "../common_drivers/drivers/spi/Kconfig"
 source "../common_drivers/drivers/tee/Kconfig"
+source "../common_drivers/drivers/gki_tool/Kconfig"
 
 endmenu

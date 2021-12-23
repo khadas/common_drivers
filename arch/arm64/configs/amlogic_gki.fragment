@@ -66,3 +66,6 @@ CONFIG_AMLOGIC_SPI_MESON_SPICC_SLAVE=y
 
 # amlogic-tee.ko
 CONFIG_AMLOGIC_TEE=m
+
+# amlogic-gkitool.ko
+CONFIG_AMLOGIC_GKI_TOOL=m

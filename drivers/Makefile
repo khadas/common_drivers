@@ -13,6 +13,7 @@ obj-y		+= input/
 obj-y		+= i2c/
 obj-y		+= spi/
 obj-y		+= tee/
+obj-y		+= gki_tool/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

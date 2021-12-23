@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_GKI_TOOL
+	tristate "Meson gki tool"
+	default n
+	help
+		provide common tools for GKI ko,
+		including __setup...

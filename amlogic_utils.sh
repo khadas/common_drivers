@@ -110,6 +110,7 @@ function modules_install() {
 	chmod 777 __install.sh
 
 	echo "#!/bin/sh" > install.sh
+	echo "cp /proc/cmdline /tmp/" >> install.sh
 	# echo "./__install.sh || reboot" >> install.sh
 	echo "./__install.sh" >> install.sh
 	chmod 777 install.sh

@@ -77,6 +77,39 @@ function mod_probe() {
         done
 }
 
+function adjust_sequence_modules_loading() {
+	cp modules.dep modules.dep.temp
+	if [ -f modules.dep.temp1 ]; then
+		rm modules.dep.temp1
+	fi
+	touch modules.dep.temp1
+	for module in ${MODULES_LOAD_FIRSTLIST[@]};
+	do
+		echo FIRSTLIST MODULES: $module
+		sed -n "/${module}:/p" modules.dep.temp
+		sed -n "/${module}:/p" modules.dep.temp >> modules.dep.temp1
+		sed -i "/${module}:/d" modules.dep.temp
+		sed -n "/${module}.*\.ko:/p" modules.dep.temp
+		sed -n "/${module}.*\.ko:/p" modules.dep.temp >> modules.dep.temp1
+		sed -i "/${module}.*\.ko:/d" modules.dep.temp
+	done
+
+	cat modules.dep.temp >> modules.dep.temp1
+
+	for module in ${MODULES_LOAD_BLACKLIST[@]};
+	do
+		echo BLACKLIST MODULES: $module
+		sed -n "/${module}:/p" modules.dep.temp1
+		sed -i "/${module}:/d" modules.dep.temp1
+		sed -n "/${module}.*\.ko:/p" modules.dep.temp1
+		sed -i "/${module}.*\.ko:/d" modules.dep.temp1
+	done
+
+	cp modules.dep.temp1 modules.dep
+	rm modules.dep.temp
+	rm modules.dep.temp1
+}
+
 function modules_install() {
 	pushd ${DIST_DIR}
 	rm modules -rf
@@ -89,6 +122,8 @@ function modules_install() {
 
 	cd modules
 	sed -i 's#[^ ]*/##g' modules.dep
+
+	adjust_sequence_modules_loading
 
 	touch __install.sh
 	for loop in `cat modules.dep | sed 's/:.*//'`; do

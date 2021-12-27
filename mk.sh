@@ -3,10 +3,9 @@
 function show_help {
 	echo "USAGE: $0 [--nongki] [--abi]"
 	echo
-	echo "  --nongki                for AMLOGIC_NONGKI, build in modules, not build out modules, 1[default]|0, require parameter value"
 	echo "  --abi                   for ABI, call build_abi.sh not build.sh, 1|0[default], not require parameter value"
 	echo "  --build_config          for BUILD_CONFIG, common_drivers/build.config.amlogic[default]|common/build.config.gki.aarch64, require parameter value"
-	echo "  --userdebug             for AMLOGIC_USERDEBUG, 1[default]|0, require parameter value"
+	echo "  --break_gki             for AMLOGIC_BREAK_GKI, 1[default]|0, require parameter value"
 	echo "  --symbol_strict         for KMI_SYMBOL_LIST_STRICT_MODE, 1[default]|0, require parameter value"
 	echo "  --lto                   for LTO, full|thin[default]|none, require parameter value"
 	echo "  --menuconfig            for only menuconfig, not require parameter value"
@@ -15,17 +14,14 @@ function show_help {
 	echo "  --dtbs                  for only build dtbs, not require parameter value"
 }
 				# amlogic parameters default value
-if [[ -z "${AMLOGIC_NONGKI}" ]]; then
-	AMLOGIC_NONGKI=1
-fi
 if [[ -z "${ABI}" ]]; then
 	ABI=0
 fi
 if [[ -z "${BUILD_CONFIG}" ]]; then
 	BUILD_CONFIG=common_drivers/build.config.amlogic
 fi
-if [[ -z "${AMLOGIC_USERDEBUG}" ]]; then
-	AMLOGIC_USERDEBUG=1
+if [[ -z "${AMLOGIC_BREAK_GKI}" ]]; then
+	AMLOGIC_BREAK_GKI=1
 fi
 if [[ -z "${LTO}" ]]; then
 	LTO=thin
@@ -36,11 +32,6 @@ ARGS=()
 for i in "$@"
 do
 	case $i in
-	--nongki)
-		AMLOGIC_NONGKI=$2
-		VA=1
-		shift
-		;;
 	--abi)
 		ABI=1
 		shift
@@ -50,8 +41,8 @@ do
 		VA=1
 		shift
 		;;
-	--userdebug)
-		AMLOGIC_USERDEBUG=$2
+	--break_gki)
+		AMLOGIC_BREAK_GKI=$2
 		VA=1
                 shift
 		;;
@@ -102,8 +93,8 @@ done
 
 set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
 set -e
-export AMLOGIC_NONGKI ABI BUILD_CONFIG AMLOGIC_USERDEBUG LTO KMI_SYMBOL_LIST_STRICT_MODE
-echo AMLOGIC_NONGKI=${AMLOGIC_NONGKI} ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} AMLOGIC_USERDEBUG=${AMLOGIC_USERDEBUG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE}
+export ABI BUILD_CONFIG AMLOGIC_BREAK_GKI LTO KMI_SYMBOL_LIST_STRICT_MODE
+echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} AMLOGIC_BREAK_GKI=${AMLOGIC_BREAK_GKI} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE}
 
 export KERNEL_DIR=common
 export ROOT_DIR=$(readlink -f $(dirname $0))
@@ -135,7 +126,7 @@ if [[ -n ${MENUCONFIG} ]] || [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n $
 		set +x
 	fi
 	if [[ -n ${MODULES} ]]; then
-		if [[ ${AMLOGIC_NONGKI} -eq "1" ]];
+		if [[ ${IN_KERNEL_MODULES} -eq "1" ]];
 		then
 			set -x
 			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) modules)

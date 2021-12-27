@@ -3,6 +3,7 @@
 . ${ROOT_DIR}/common_drivers/amlogic_utils.sh
 
 BUILD_INITRAMFS=1
+IN_KERNEL_MODULES=1
 DEFCONFIG=amlogic_gki_defconfig
 FRAGMENT_CONFIG=common_drivers/arch/arm64/configs/amlogic_gki.fragment
 
@@ -30,7 +31,7 @@ android/abi_gki_aarch64_db845c
 ../common_drivers/android/abi_gki_aarch64_amlogic
 "
 
-if [ ${AMLOGIC_USERDEBUG} -eq "1" ]; then
+if [ ${AMLOGIC_BREAK_GKI} -eq "1" ]; then
   ADDITIONAL_KMI_SYMBOL_LISTS="${ADDITIONAL_KMI_SYMBOL_LISTS}
     ../common_drivers/android/abi_gki_aarch64_amlogic_illegal
 "

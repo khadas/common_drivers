@@ -27,16 +27,17 @@ static void parse_option(char *cmdline, const char *option,
 			 int (*fn)(char *str))
 {
 	char *str = cmdline;
-	static char buf[1024];
+	char buf[256];
 
 	memset(buf, 0, sizeof(buf));
 
 	while (*str) {
 		if (!strncmp(str, option, strlen(option))) {
 			char *p = buf;
+			int i;
 
 			str += strlen(option);
-			while (*str != ' ' || !*str)
+			for (i = 0; i < (sizeof(buf) - 1) && !(*str == ' ' || !*str); i++)
 				*p++ = *str++;
 
 			if (gki_tool_debug)
@@ -46,7 +47,7 @@ static void parse_option(char *cmdline, const char *option,
 			return;
 		}
 
-		while (*str != ' ' && *str)
+		while (!(*str == ' ' || !*str))
 			str++;
 
 		if (*str == 0)

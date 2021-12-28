@@ -55,7 +55,8 @@ void __module_init_hook(struct module *m);
 	{       \
 		__module_init_hook(THIS_MODULE); \
 		return initfn();     \
-	}
+	}	\
+	__CFI_ADDRESSABLE(init_module, __initdata);
 
 #undef early_initcall
 #undef core_initcall

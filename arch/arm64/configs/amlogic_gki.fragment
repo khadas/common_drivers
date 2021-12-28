@@ -68,3 +68,6 @@ CONFIG_AMLOGIC_TEE=m
 
 # amlogic-gkitool.ko
 CONFIG_AMLOGIC_GKI_TOOL=m
+
+# amlogic-ir.ko
+CONFIG_AMLOGIC_MESON_IR=m

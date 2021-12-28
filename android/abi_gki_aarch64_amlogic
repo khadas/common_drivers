@@ -54,3 +54,14 @@
   kernel_read_file_from_path
   proc_create
   single_open_size
+
+# amlogic-ir.ko
+  __kfifo_in_r
+  __kfifo_out_r
+  cpu_bit_bitmap
+  dev_pm_clear_wake_irq
+  dev_pm_set_wake_irq
+  led_trigger_blink_oneshot
+  led_trigger_register_simple
+  led_trigger_unregister_simple
+  of_find_node_by_phandle

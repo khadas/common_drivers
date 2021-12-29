@@ -71,3 +71,6 @@ CONFIG_AMLOGIC_GKI_TOOL=m
 
 # amlogic-ir.ko
 CONFIG_AMLOGIC_MESON_IR=m
+
+# amlogic-pwm.ko
+CONFIG_AMLOGIC_PWM_MESON=m

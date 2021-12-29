@@ -14,6 +14,7 @@ obj-y		+= i2c/
 obj-y		+= spi/
 obj-y		+= tee/
 obj-y		+= gki_tool/
+obj-y		+= pwm/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

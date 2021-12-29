@@ -43,6 +43,7 @@ KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE:-1}
 ABI_DEFINITION=../common_drivers/android/abi_gki_aarch64_amlogic.xml
 
 MODULES_LOAD_FIRSTLIST=(
+	amlogic-clk
 )
 
 MODULES_LOAD_BLACKLIST=(

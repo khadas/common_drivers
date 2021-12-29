@@ -65,3 +65,10 @@
   led_trigger_register_simple
   led_trigger_unregister_simple
   of_find_node_by_phandle
+
+# amlogic-pwm.ko
+  of_pwm_xlate_with_flags
+  pwm_get_chip_data
+  pwm_set_chip_data
+  pwmchip_add
+  pwmchip_remove

@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+if PWM
+
+config AMLOGIC_PWM_MESON
+	tristate "Amlogic Meson PWM driver"
+	depends on COMMON_CLK && HAS_IOMEM
+	help
+	  The platform driver for Amlogic Meson PWM controller.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called pwm-meson.
+
+endif

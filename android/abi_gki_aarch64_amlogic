@@ -104,3 +104,8 @@
   crypto_shash_digest
   set_cpus_allowed_ptr
   pfn_is_map_memory
+
+# amlogic-mailbox.ko
+  mbox_chan_received_data
+  mbox_controller_register
+  mbox_controller_unregister

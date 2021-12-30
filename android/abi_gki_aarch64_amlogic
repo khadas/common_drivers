@@ -98,3 +98,9 @@
   regulator_map_voltage_iterate
   regulator_put
   remove_proc_entry
+
+# amlogic-efuse-unifykey.ko
+  __platform_driver_probe
+  crypto_shash_digest
+  set_cpus_allowed_ptr
+  pfn_is_map_memory

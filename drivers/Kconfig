@@ -18,5 +18,6 @@ source "../common_drivers/drivers/tee/Kconfig"
 source "../common_drivers/drivers/gki_tool/Kconfig"
 source "../common_drivers/drivers/pwm/Kconfig"
 source "../common_drivers/drivers/cpufreq/Kconfig"
+source "../common_drivers/drivers/efuse_unifykey/Kconfig"
 
 endmenu

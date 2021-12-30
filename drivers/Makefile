@@ -16,6 +16,7 @@ obj-y		+= tee/
 obj-y		+= gki_tool/
 obj-y		+= pwm/
 obj-y		+= cpufreq/
+obj-y		+= efuse_unifykey/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

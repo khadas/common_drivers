@@ -792,7 +792,7 @@ static int mhu_pl_remove(struct platform_device *pdev)
 
 static const struct of_device_id mhu_of_match[] = {
 	{ .compatible = "amlogic, meson_mhu_pl" },
-	{},
+	{}
 };
 
 static struct platform_driver mhu_pl_driver = {

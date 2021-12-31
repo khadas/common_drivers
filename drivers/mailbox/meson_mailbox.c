@@ -34,7 +34,6 @@ struct mhu_chan *mhu_get_channel(struct mbox_client *cl, int index)
 	if (of_parse_phandle_with_args(dev->of_node, "mboxes",
 				       "#mbox-cells", index, &spec)) {
 		dev_dbg(dev, "%s: can't parse \"mboxes\" property\n", __func__);
-		mutex_unlock(&mhu_con_mutex);
 		return ERR_PTR(-ENODEV);
 	}
 	mhu_chan = ERR_PTR(-EPROBE_DEFER);

@@ -467,31 +467,33 @@ EXPORT_SYMBOL_GPL(send_scpi_cmd);
 #define SCPI_SETUP_DBUF(scpi_buf, mhu_buf, _client_id,\
 			_cmd, _tx_buf, _rx_buf) \
 do {						\
-	struct mhu_data_buf *pdata = &mhu_buf;	\
+	struct mhu_data_buf *pdata = &(mhu_buf);	\
+	struct scpi_data_buf *psdata = &(scpi_buf); \
 	pdata->cmd = _cmd;			\
-	pdata->tx_buf = &_tx_buf;		\
+	pdata->tx_buf = &(_tx_buf);		\
 	pdata->tx_size = sizeof(_tx_buf);	\
-	pdata->rx_buf = &_rx_buf;		\
+	pdata->rx_buf = &(_rx_buf);		\
 	pdata->rx_size = sizeof(_rx_buf);	\
-	scpi_buf.client_id = _client_id;	\
-	scpi_buf.data = pdata;			\
-	scpi_buf.async = SYNC_CMD_TAG;		\
-	scpi_buf.channel = SCPI_MAXNUM;		\
+	psdata->client_id = _client_id;	\
+	psdata->data = pdata;			\
+	psdata->async = SYNC_CMD_TAG;		\
+	psdata->channel = SCPI_MAXNUM;		\
 } while (0)
 
 #define SCPI_SETUP_DBUF_SIZE(scpi_buf, mhu_buf, _client_id,\
 			_cmd, _tx_buf, _tx_size, _rx_buf, _rx_size) \
 do {						\
-	struct mhu_data_buf *pdata = &mhu_buf;	\
+	struct mhu_data_buf *pdata = &(mhu_buf);	\
+	struct scpi_data_buf *psdata = &(scpi_buf); \
 	pdata->cmd = _cmd;			\
 	pdata->tx_buf = _tx_buf;		\
 	pdata->tx_size = _tx_size;	\
 	pdata->rx_buf = _rx_buf;		\
 	pdata->rx_size = _rx_size;	\
-	scpi_buf.client_id = _client_id;	\
-	scpi_buf.data = pdata;			\
-	scpi_buf.async = SYNC_CMD_TAG;		\
-	scpi_buf.channel = SCPI_MAXNUM;		\
+	psdata->client_id = _client_id;	\
+	psdata->data = pdata;			\
+	psdata->async = SYNC_CMD_TAG;		\
+	psdata->channel = SCPI_MAXNUM;		\
 } while (0)
 
 #define SCPI_SETUP_DBUF_AUTO(scpi_buf, mhu_buf, _client_id,\

@@ -109,3 +109,9 @@
   mbox_chan_received_data
   mbox_controller_register
   mbox_controller_unregister
+
+# amlogic-jtag.ko
+  cpu_all_bits
+  devm_pinctrl_put
+  param_get_charp
+  param_set_charp

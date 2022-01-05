@@ -20,6 +20,7 @@ obj-y		+= efuse_unifykey/
 obj-y		+= mailbox/
 obj-y		+= jtag/
 obj-y		+= watchdog/
+obj-y		+= reg_access/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

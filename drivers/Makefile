@@ -19,6 +19,7 @@ obj-y		+= cpufreq/
 obj-y		+= efuse_unifykey/
 obj-y		+= mailbox/
 obj-y		+= jtag/
+obj-y		+= watchdog/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

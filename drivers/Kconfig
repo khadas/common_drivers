@@ -21,5 +21,6 @@ source "../common_drivers/drivers/cpufreq/Kconfig"
 source "../common_drivers/drivers/efuse_unifykey/Kconfig"
 source "../common_drivers/drivers/mailbox/Kconfig"
 source "../common_drivers/drivers/jtag/Kconfig"
+source "../common_drivers/drivers/watchdog/Kconfig"
 
 endmenu

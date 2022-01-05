@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+if WATCHDOG
+
+comment "Watchdog Device Drivers"
+
+config AMLOGIC_MESON_GXBB_WATCHDOG
+	tristate "Amlogic Meson GXBB SoCs watchdog support"
+	depends on WATCHDOG_CORE
+	help
+	  Say Y here to include support for the watchdog timer
+	  in Amlogic Meson GXBB SoCs.
+	  To compile this driver as a module, choose M here: the
+	  module will be called meson_gxbb_wdt.
+
+endif # WATCHDOG

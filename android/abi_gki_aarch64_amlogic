@@ -115,3 +115,15 @@
   devm_pinctrl_put
   param_get_charp
   param_set_charp
+
+# amlogic-adc.ko
+  __iio_device_register
+  __kfifo_in
+  __kfifo_to_user
+  clk_gate_ops
+  iio_buffer_init
+  iio_buffer_put
+  iio_device_attach_buffer
+  iio_device_unregister
+  iio_get_time_ns
+  iio_push_to_buffers

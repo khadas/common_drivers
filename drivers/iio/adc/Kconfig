@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+menu "Analog to digital converters"
+
+config AMLOGIC_MESON_SARADC
+	tristate "Amlogic Meson SAR ADC driver"
+	depends on OF && COMMON_CLK
+	depends on REGMAP_MMIO
+	depends on AMLOGIC_IIO_KFIFO_BUF
+	help
+	  Say yes here to build support for the SAR ADC found in Amlogic Meson
+	  SoCs.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called meson_saradc.
+
+config AMLOGIC_IIO_KFIFO_BUF
+	tristate "Industrial I/O buffering based on kfifo"
+	help
+	  A simple fifo based on kfifo.  Note that this currently provides
+	  no buffer events so it is up to userspace to work out how
+	  often to read from the buffer.
+
+endmenu

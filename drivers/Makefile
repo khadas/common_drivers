@@ -21,6 +21,7 @@ obj-y		+= mailbox/
 obj-y		+= jtag/
 obj-y		+= watchdog/
 obj-y		+= reg_access/
+obj-y		+= iio/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

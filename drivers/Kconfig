@@ -23,5 +23,6 @@ source "../common_drivers/drivers/mailbox/Kconfig"
 source "../common_drivers/drivers/jtag/Kconfig"
 source "../common_drivers/drivers/watchdog/Kconfig"
 source "../common_drivers/drivers/reg_access/Kconfig"
+source "../common_drivers/drivers/iio/Kconfig"
 
 endmenu

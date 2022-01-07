@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+MODULE_NAME = amlogic-socinfo
+obj-$(CONFIG_AMLOGIC_SOC_INFO) = $(MODULE_NAME).o
+$(MODULE_NAME)-y += socdata.o
+$(MODULE_NAME)-y += nocsdata.o
+$(MODULE_NAME)-y += authregion.o

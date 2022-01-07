@@ -24,5 +24,6 @@ source "../common_drivers/drivers/jtag/Kconfig"
 source "../common_drivers/drivers/watchdog/Kconfig"
 source "../common_drivers/drivers/reg_access/Kconfig"
 source "../common_drivers/drivers/iio/Kconfig"
+source "../common_drivers/drivers/char/Kconfig"
 
 endmenu

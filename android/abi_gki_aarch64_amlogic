@@ -127,3 +127,6 @@
   iio_device_unregister
   iio_get_time_ns
   iio_push_to_buffers
+
+# amlogic-rng.ko
+  devm_hwrng_register

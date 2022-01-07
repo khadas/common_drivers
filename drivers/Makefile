@@ -22,6 +22,7 @@ obj-y		+= jtag/
 obj-y		+= watchdog/
 obj-y		+= reg_access/
 obj-y		+= iio/
+obj-y		+= char/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_HW_RANDOM_MESON
+	tristate "Amlogic Meson Random Number Generator support"
+	default n
+	help
+	  This driver provides kernel-side support for the Random Number
+	  Generator hardware found on Amlogic Meson SoCs.
+
+	  To compile this driver as a module, choose M here. the
+	  module will be called meson-rng.
+
+	  If unsure, say Y.

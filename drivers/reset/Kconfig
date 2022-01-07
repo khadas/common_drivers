@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+if RESET_CONTROLLER
+
+config AMLOGIC_RESET_MESON
+	tristate "Meson Reset Driver"
+	help
+	  This enables the reset driver for Amlogic Meson SoCs.
+
+endif

@@ -25,6 +25,11 @@ struct gki_module_setup_struct {
 	int early;
 };
 
+struct cmd_param_val {
+	char *param;
+	char *val;
+};
+
 #define __setup_gki_module(str, fn, early)			\
 	struct gki_module_setup_struct __gki_setup_##fn =        \
 		   {GKI_MODULE_SETUP_MAGIC1, GKI_MODULE_SETUP_MAGIC2,    \

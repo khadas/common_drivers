@@ -19,9 +19,6 @@
 
 #include "gki_tool.h"
 
-int gki_tool_debug;
-module_param_named(debug, gki_tool_debug, int, 0644);
-
 static int __init gki_tool_init(void)
 {
 	gki_module_init();

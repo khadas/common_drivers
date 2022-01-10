@@ -11,8 +11,6 @@
 void gki_module_init(void);
 void gki_config_init(void);
 
-extern int gki_tool_debug;
-
 extern char gki_config_data[];
 extern char gki_config_data_end[];
 

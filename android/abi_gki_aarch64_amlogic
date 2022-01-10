@@ -54,6 +54,14 @@
   kernel_read_file_from_path
   proc_create
   single_open_size
+  strcat
+  next_arg
+  skip_spaces
+  add_taint
+  kernel_param_lock
+  kernel_param_unlock
+  security_locked_down
+  param_ops_string
 
 # amlogic-ir.ko
   __kfifo_in_r

@@ -118,8 +118,8 @@ static void check_violation(struct dmc_monitor *mon, void *data)
 		if (port == 7 && (subport == 11 || subport == 4))
 			continue;
 
-		pr_emerg(DMC_TAG", addr:%08lx, s:%08lx, ID:%s, sub:%s, c:%ld, d:%p\n",
-			 addr, status, to_ports(port),
+		pr_emerg("%s, addr:%08lx, s:%08lx, ID:%s, sub:%s, c:%ld, d:%p\n",
+			 DMC_TAG, addr, status, to_ports(port),
 			 to_sub_ports(port, subport, id_str),
 			 mon->same_page, data);
 		show_violation_mem(addr);

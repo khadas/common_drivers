@@ -32,6 +32,7 @@
 #include "ddr_port.h"
 #include <linux/amlogic/gki_module.h>
 
+//#define DEBUG	1
 struct dmc_monitor *dmc_mon;
 
 static unsigned long init_dev_mask;
@@ -608,13 +609,13 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 	struct vpu_sub_desc *vpu_desc = NULL;
 	struct resource *res;
 
-	pr_info("%s\n", __func__);
+	pr_debug("%s, %d\n", __func__, __LINE__);
 	dmc_mon = devm_kzalloc(&pdev->dev, sizeof(*dmc_mon), GFP_KERNEL);
 	if (!dmc_mon)
 		return -ENOMEM;
 
 	tmp = (unsigned long)of_device_get_match_data(&pdev->dev);
-	pr_info("%s, chip type:%d\n", __func__, tmp);
+	pr_debug("%s, chip type:%d\n", __func__, tmp);
 	ports = ddr_find_port_desc(tmp, &desc);
 	if (ports < 0) {
 		pr_err("can't get port desc\n");
@@ -718,7 +719,6 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 			return -EINVAL;
 		}
 	}
-
 
 	r = class_register(&dmc_monitor_class);
 	if (r) {

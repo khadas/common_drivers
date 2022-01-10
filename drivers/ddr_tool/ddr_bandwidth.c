@@ -22,6 +22,7 @@
 #include "ddr_bandwidth.h"
 #include "dmc.h"
 
+//#define DEBUG	1
 #define T_BUF_SIZE	(1024 * 1024 * 50)
 
 static struct hrtimer ddr_hrtimer_timer;
@@ -504,7 +505,7 @@ static ssize_t usage_stat_show(struct class *cla,
 		do_div(tmp.avg_port[i], total_count);
 
 	rem     = do_div(tmp.avg_usage, 100);
-	percent = tmp.avg_usage,
+	percent = tmp.avg_usage;
 	s      += sprintf(buf + s, AVG_PREFIX ", samples:%ld\n",
 			  tmp.avg_bandwidth,
 			  percent, rem, total_count);
@@ -963,13 +964,13 @@ static int __init ddr_bandwidth_probe(struct platform_device *pdev)
 	struct ddr_port_desc *desc = NULL;
 	int pcnt;
 
-	pr_info("%s, %d\n", __func__, __LINE__);
+	pr_debug("%s, %d\n", __func__, __LINE__);
 	aml_db = devm_kzalloc(&pdev->dev, sizeof(*aml_db), GFP_KERNEL);
 	if (!aml_db)
 		return -ENOMEM;
 
 	aml_db->cpu_type = (unsigned long)of_device_get_match_data(&pdev->dev);
-	pr_info("chip type:0x%x\n", aml_db->cpu_type);
+	pr_debug("chip type:0x%x\n", aml_db->cpu_type);
 	if (aml_db->cpu_type < DMC_TYPE_M8B) {
 		pr_info("unsupport chip type:%d\n", aml_db->cpu_type);
 		aml_db = NULL;
@@ -1215,6 +1216,7 @@ int __init ddr_bandwidth_init(void)
 {
 #ifdef CONFIG_OF
 	const struct of_device_id *match_id;
+
 	match_id = aml_ddr_bandwidth_dt_match;
 	ddr_bandwidth_driver.driver.of_match_table = match_id;
 #endif

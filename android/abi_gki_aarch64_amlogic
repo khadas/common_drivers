@@ -130,3 +130,6 @@
 
 # amlogic-rng.ko
   devm_hwrng_register
+
+# amlogic-irblaster.ko
+  class_find_device

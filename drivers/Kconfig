@@ -29,5 +29,6 @@ source "../common_drivers/drivers/soc_info/Kconfig"
 source "../common_drivers/drivers/reset/Kconfig"
 source "../common_drivers/drivers/ddr_tool/Kconfig"
 source "../common_drivers/drivers/rtc/Kconfig"
+source "../common_drivers/drivers/irblaster/Kconfig"
 
 endmenu

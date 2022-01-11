@@ -26,6 +26,7 @@ obj-y		+= char/
 obj-y		+= soc_info/
 obj-y		+= reset/
 obj-y		+= ddr_tool/
+obj-y		+= rtc/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

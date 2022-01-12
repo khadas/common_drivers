@@ -1143,6 +1143,8 @@
 				 <&clkc CLKID_GP1_PLL>;
 			clock-names = "core", "mux0", "mux1",
 					"clkin0", "clkin1", "clkin2";
+			no-sdio;
+			no-sd;
 			card_type = <1>;
 			ignore_desc_busy;
 			mmc_debug_flag;
@@ -1168,6 +1170,8 @@
 					"clkin0", "clkin1";
 			card_type = <5>;
 			mmc_debug_flag;
+			no-mmc;
+			no-sdio;
 			//resets = <&reset RESET_SD_EMMC_B>;
 		};
 
@@ -1190,6 +1194,8 @@
 			cap-sdio-irq;
 			keep-power-in-suspend;
 			use_intf3_tuning;
+			no-mmc;
+			no-sd;
 			//resets = <&reset RESET_SD_EMMC_A>;
 		};
 

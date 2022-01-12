@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_MMC_MESON_GX
+         tristate "Amlogic S905/GX*/AXG SD/MMC Host Controller support"
+         depends on MMC
+         help
+           This selects support for the Amlogic SD/MMC Host Controller
+           found on the S905/GX*/AXG family of SoCs.  This controller is
+           MMC 5.1 compliant and supports SD, eMMC and SDIO interfaces.
+           If you have a controller with this interface, say Y here.

@@ -168,6 +168,9 @@ function rebuild_rootfs() {
 	mkdir rootfs
 	cd rootfs
 	cpio -i -F ../rootfs_base.cpio
+	if [ -d ${ROOT_DIR}/common_drivers/customer ]; then
+		cp ${ROOT_DIR}/common_drivers/customer . -rf
+	fi
 	cp -rf ../../modules .
 	find . | cpio -o -H newc | gzip > ../rootfs_new.cpio.gz
 	cd ../

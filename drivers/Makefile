@@ -28,6 +28,7 @@ obj-$(CONFIG_RESET_CONTROLLER)		+= reset/
 obj-$(CONFIG_AMLOGIC_DDR_TOOL)		+= ddr_tool/
 obj-$(CONFIG_RTC_LIB)			+= rtc/
 obj-$(CONFIG_AMLOGIC_IRBLASTER)		+= irblaster/
+obj-$(CONFIG_THERMAL)			+= thermal/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

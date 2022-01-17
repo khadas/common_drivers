@@ -214,8 +214,8 @@ static void __ref hotplug_work(struct work_struct *work)
 	mutex_unlock(&hpg.mutex);
 }
 
-static ssize_t show_hotplug_max_cpus(struct kobject *kobj,
-				     struct kobj_attribute *attr, char *buf)
+static ssize_t hotplug_max_cpus_show(struct device *dev,
+				     struct device_attribute *attr, char *buf)
 {
 	unsigned int max = 0;
 	unsigned int c = 0;
@@ -225,8 +225,7 @@ static ssize_t show_hotplug_max_cpus(struct kobject *kobj,
 	return sprintf(buf, "0x%04x\n", max);
 }
 
-static ssize_t store_hotplug_max_cpus(struct kobject *kobj,
-				      struct kobj_attribute *attr,
+static ssize_t hotplug_max_cpus_store(struct device *dev, struct device_attribute *attr,
 				      const char *buf, size_t count)
 {
 	unsigned int input;
@@ -250,7 +249,7 @@ static ssize_t store_hotplug_max_cpus(struct kobject *kobj,
 	return count;
 }
 
-define_one_global_rw(hotplug_max_cpus);
+static DEVICE_ATTR_RW(hotplug_max_cpus);
 
 int cpu_hotplug_init(void)
 {
@@ -261,7 +260,7 @@ int cpu_hotplug_init(void)
 	INIT_WORK(&hpg.work, hotplug_work);
 
 	err = sysfs_create_file(&cpu_subsys.dev_root->kobj,
-				&hotplug_max_cpus.attr);
+				&dev_attr_hotplug_max_cpus.attr);
 	if (err) {
 		dev_err(NULL, " %s <%d>\n", __func__, err);
 		return err;

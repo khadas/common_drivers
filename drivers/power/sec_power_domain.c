@@ -479,11 +479,7 @@ static int sec_pd_probe(struct platform_device *pdev)
 			init_status = private_pd->pd_status;
 
 		/* Initialize based on pd_status */
-		if (pd[i].base.flags & GENPD_FLAG_ALWAYS_ON)
-			pm_genpd_init(&pd[i].base, &pm_domain_always_on_gov, init_status);
-		else
-			pm_genpd_init(&pd[i].base, NULL, init_status);
-
+		pm_genpd_init(&pd[i].base, NULL, init_status);
 		sec_pd_onecell_data->domains[i] = &pd[i].base;
 	}
 

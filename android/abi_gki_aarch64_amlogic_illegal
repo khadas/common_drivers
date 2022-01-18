@@ -6,4 +6,4 @@
 #  __clk_lookup
 
 # power driver: amlogic-power.ko: sec_power_domain.c
-  pm_domain_always_on_gov
+# pm_domain_always_on_gov

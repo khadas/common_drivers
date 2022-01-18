@@ -22,7 +22,7 @@
 #include "ddr_bandwidth.h"
 #include "dmc.h"
 
-//#define DEBUG	1
+// #define DEBUG
 #define T_BUF_SIZE	(1024 * 1024 * 50)
 
 static struct hrtimer ddr_hrtimer_timer;
@@ -1070,7 +1070,7 @@ static int __init ddr_bandwidth_probe(struct platform_device *pdev)
 	r = of_property_read_u32(node, "sec_base", &sec_base);
 	if (r < 0) {
 		aml_db->bytes_per_cycle = 16;
-		pr_info("can't find sec_base, set bytes_per_cycle to 16\n");
+		pr_debug("can't find sec_base, set bytes_per_cycle to 16\n");
 	} else {
 		get_ddr_external_bus_width(aml_db, sec_base);
 	}

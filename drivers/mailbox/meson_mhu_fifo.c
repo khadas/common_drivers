@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+// #define DEBUG
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/completion.h>
@@ -767,7 +768,7 @@ static int mhu_fifo_probe(struct platform_device *pdev)
 	err = of_property_read_u32(dev->of_node,
 				   "mbox-wr-rd", &wrrd);
 	if (err)
-		dev_err(dev, "no get mbox wrrd %d\n", err);
+		dev_dbg(dev, "no get mbox wrrd %d\n", err);
 
 	pr_debug("mbox-wr-rd %d\n", wrrd);
 
@@ -825,12 +826,12 @@ static int mhu_fifo_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, memid++);
 	if (!res) {
-		dev_err(dev, "no payload, only use fifo\n");
+		dev_dbg(dev, "no payload, only use fifo\n");
 	} else {
 		mhu_ctlr->mbox_payload_base = devm_ioremap_resource(dev, res);
 		if (IS_ERR(mhu_ctlr->mbox_payload_base))
 			return PTR_ERR(mhu_ctlr->mbox_payload_base);
-		dev_err(dev, "payload or fifo canbe use\n");
+		dev_dbg(dev, "payload or fifo canbe use\n");
 	}
 
 	mhu_ctlr->mhu_irq = platform_get_irq(pdev, 0);

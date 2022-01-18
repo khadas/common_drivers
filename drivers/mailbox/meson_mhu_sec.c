@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+// #define DEBUG
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/completion.h>
@@ -313,7 +314,7 @@ static int mhu_sec_probe(struct platform_device *pdev)
 
 	/*set mhu type*/
 	mhu_f |= MASK_MHU_SEC;
-	pr_info("mbox sec init done\n");
+	pr_debug("mbox sec init done\n");
 	return 0;
 }
 

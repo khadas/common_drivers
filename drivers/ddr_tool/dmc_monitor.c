@@ -32,7 +32,7 @@
 #include "ddr_port.h"
 #include <linux/amlogic/gki_module.h>
 
-//#define DEBUG	1
+// #define DEBUG
 struct dmc_monitor *dmc_mon;
 
 static unsigned long init_dev_mask;

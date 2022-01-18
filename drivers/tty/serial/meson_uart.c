@@ -2,6 +2,8 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
+
+// #define DEBUG
 #define SKIP_IO_TRACE
 
 #if defined(CONFIG_AMLOGIC_SERIAL_MESON_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
@@ -500,7 +502,7 @@ static int meson_uart_request_port(struct uart_port *port)
 			return -ENOMEM;
 	}
 
-	dev_info(&pdev->dev, "==uart%d reg addr = %p\n",
+	dev_dbg(&pdev->dev, "==uart%d reg addr = %p\n",
 						port->line, port->membase);
 	val = (AML_UART_RECV_IRQ(1) | AML_UART_XMIT_IRQ(port->fifosize / 2));
 	writel_relaxed(val, port->membase + AML_UART_MISC);

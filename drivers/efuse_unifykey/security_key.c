@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+// #define DEBUG
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/spinlock.h>

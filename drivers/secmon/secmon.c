@@ -2,8 +2,9 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-//#define USE_CMA
-//#define TEST_ACESS
+// #define USE_CMA
+// #define TEST_ACESS
+// #define DEBUG
 #include <linux/errno.h>
 #include <linux/err.h>
 #include <linux/of.h>
@@ -19,8 +20,6 @@
 #include <linux/cma.h>
 #endif
 #include <linux/arm-smccc.h>
-#undef pr_fmt
-#define pr_fmt(fmt) "secmon: " fmt
 
 static void __iomem *sharemem_in_base;
 static void __iomem *sharemem_out_base;
@@ -173,7 +172,7 @@ static int secmon_probe(struct platform_device *pdev)
 #ifdef USE_CMA
 	ret = of_reserved_mem_device_init(&pdev->dev);
 	if (ret) {
-		pr_info("reserve memory init fail:%d\n", ret);
+		pr_err("reserve memory init fail:%d\n", ret);
 		return ret;
 	}
 
@@ -182,7 +181,7 @@ static int secmon_probe(struct platform_device *pdev)
 		pr_err("alloc page failed, ret:%p\n", page);
 		return -ENOMEM;
 	}
-	pr_info("get page:%p, %lx\n", page, page_to_pfn(page));
+	pr_debug("get page:%p, %lx\n", page, page_to_pfn(page));
 	secmon_start_virt = (unsigned long)page_to_virt(page);
 #endif
 
@@ -192,12 +191,12 @@ static int secmon_probe(struct platform_device *pdev)
 
 	sharemem_in_base = ioremap_cache(phy_in_base, sharemem_in_size);
 	if (!sharemem_in_base) {
-		pr_info("secmon share mem in buffer remap fail!\n");
+		pr_err("secmon share mem in buffer remap fail!\n");
 		return -ENOMEM;
 	}
 	sharemem_out_base = ioremap_cache(phy_out_base, sharemem_out_size);
 	if (!sharemem_out_base) {
-		pr_info("secmon share mem out buffer remap fail!\n");
+		pr_err("secmon share mem out buffer remap fail!\n");
 		return -ENOMEM;
 	}
 	secmon_dev_registered = DEV_REGISTERED;

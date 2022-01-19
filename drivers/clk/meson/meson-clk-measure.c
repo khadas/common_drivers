@@ -1709,6 +1709,82 @@ static struct meson_msr_id clk_msr_p1[] __initdata = {
 	CLK_MSR_ID(212, "am_ring_osc_clk_out[32]"),
 };
 
+static struct meson_msr_id clk_msr_c2[] __initdata = {
+	CLK_MSR_ID(0, "tdmout_b_sclk"),
+	CLK_MSR_ID(1, "tdmout_a_sclk"),
+	CLK_MSR_ID(2, "tdmin_lb_sclk"),
+	CLK_MSR_ID(3, "tdmin_b_sclk"),
+	CLK_MSR_ID(4, "tdmin_a_sclk"),
+	CLK_MSR_ID(5, "vad_clk"),
+	CLK_MSR_ID(6, "resampleA_clk"),
+	CLK_MSR_ID(7, "pdm_sysclk"),
+	CLK_MSR_ID(8, "pdm_dclk"),
+	CLK_MSR_ID(9, "locker_out_clk"),
+	CLK_MSR_ID(10, "locker_in_clk"),
+	CLK_MSR_ID(12, "mst_sclk_vad"),
+	CLK_MSR_ID(13, "au_adc_clk"),
+	CLK_MSR_ID(14, "au_dac_clk"),
+	CLK_MSR_ID(15, "resampleb_clk"),
+	CLK_MSR_ID(16, "spicc_a_clk"),
+	CLK_MSR_ID(17, "spifc_clk"),
+	CLK_MSR_ID(18, "sd_emmc_a_clk"),
+	CLK_MSR_ID(19, "spicc_b_clk"),
+	CLK_MSR_ID(20, "axi_clk_frcpu"),
+	CLK_MSR_ID(21, "deskew_pll_clk"),
+	CLK_MSR_ID(24, "ts_clk"),
+	CLK_MSR_ID(25, "pwm_f_clk"),
+	CLK_MSR_ID(26, "pwm_e_clk"),
+	CLK_MSR_ID(27, "pwm_d_clk"),
+	CLK_MSR_ID(28, "pwm_c_clk"),
+	CLK_MSR_ID(29, "pwm_b_clk"),
+	CLK_MSR_ID(30, "pwm_a_clk"),
+	CLK_MSR_ID(31, "cts_saradc_clk"),
+
+	CLK_MSR_ID(32, "usb_bus"),
+	CLK_MSR_ID(34, "dsp_a_clk"),
+	CLK_MSR_ID(35, "axi_clk_nic"),
+	CLK_MSR_ID(36, "sys_clk_nic"),
+	CLK_MSR_ID(37, "gp_pll_ckout2"),
+	CLK_MSR_ID(38, "gp_pll_ckout1"),
+	CLK_MSR_ID(39, "gpio_msr"),
+	CLK_MSR_ID(40, "rng_ring_osc0"),
+	CLK_MSR_ID(41, "rng_ring_osc1"),
+	CLK_MSR_ID(42, "rng_ring_osc2"),
+	CLK_MSR_ID(43, "rng_ring_osc3"),
+	CLK_MSR_ID(45, "sys_cpu_clk_div16"),
+
+	CLK_MSR_ID(64, "usb_pll_out"),
+	CLK_MSR_ID(65, "sar_adc_clk"),
+	CLK_MSR_ID(66, "mod_crt_clk25"),
+	CLK_MSR_ID(67, "mod_crt_clk12_24"),
+	CLK_MSR_ID(68, "cts_mipi_isp_clk"),
+	CLK_MSR_ID(69, "cts_mipi_csi_phy_clk"),
+	CLK_MSR_ID(70, "cts_nna_axi_clk"),
+	CLK_MSR_ID(71, "cts_nna_core_clk"),
+	CLK_MSR_ID(73, "cts_secpu_clk"),
+	CLK_MSR_ID(74, "cts_jpeg_enc_clk "),
+	CLK_MSR_ID(75, "cts_rtc_clk"),
+	CLK_MSR_ID(76, "cts_ge2d_clk"),
+	CLK_MSR_ID(77, "cts_gdc_axi_clk"),
+	CLK_MSR_ID(78, "cts_gdc_core_clk"),
+	CLK_MSR_ID(79, "cts_pwm_j_clk"),
+	CLK_MSR_ID(80, "cts_pwm_i_clk"),
+	CLK_MSR_ID(81, "cts_pwm_h_clk"),
+	CLK_MSR_ID(82, "cts_pwm_g_clk"),
+	CLK_MSR_ID(83, "cts_wave_cclk"),
+	CLK_MSR_ID(84, "cts_wave_bclk"),
+	CLK_MSR_ID(85, "cts_wave_aclk"),
+	CLK_MSR_ID(86, "cts_sd_emmc_C_clk"),
+	CLK_MSR_ID(87, "cts_sd_emmc_B_clk"),
+	CLK_MSR_ID(89, "mipi_csi_phy0_clk"),
+	CLK_MSR_ID(90, "mipi_csi_phy1_clk"),
+	CLK_MSR_ID(91, "mod_eth_phy_ref_clk"),
+	CLK_MSR_ID(92, "ddr_dpll_pt_clk"),
+	CLK_MSR_ID(93, "osc_ring_cpu0"),
+	CLK_MSR_ID(94, "osc_ring_cpu0"),
+	CLK_MSR_ID(95, "osc_ring_cpu0"),
+};
+
 static int meson_measure_id(struct meson_msr_id *clk_msr_id,
 			    unsigned int duration)
 {
@@ -2048,6 +2124,15 @@ static struct meson_msr_data meson_p1_data __initdata = {
 	.reg2_offset = 0x8,
 };
 
+static struct meson_msr_data meson_c2_data __initdata = {
+	.msr_table = (struct meson_msr_id *)&clk_msr_c2,
+	.table_size = ARRAY_SIZE(clk_msr_c2),
+	.duty_offset = (0x4 * 6),
+	.reg0_offset = 0x0,
+	.reg1_offset = 0x4,
+	.reg2_offset = 0x8,
+};
+
 static const struct of_device_id meson_msr_match_table[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -2109,6 +2194,11 @@ static const struct of_device_id meson_msr_match_table[] = {
 	{
 		.compatible = "amlogic,meson-p1-clk-measure",
 		.data = &meson_p1_data,
+	},
+
+	{
+		.compatible = "amlogic,c2-clk-measure",
+		.data = &meson_c2_data,
 	},
 
 	{ /* sentinel */ }

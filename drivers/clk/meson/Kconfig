@@ -78,4 +78,11 @@ config AMLOGIC_COMMON_CLK_S4
 	  Support for the clock controller on Amlogic AH219 and AH212
 	  devices, aka s4. Say Y if you want peripherals to work.
 
+config AMLOGIC_COMMON_CLK_C2
+	bool "Meson C2 clock controller"
+	default n
+	help
+	 Support for the clock controller on Amlogic AF400
+	 devices. Say Y if you want peripherals to work.
+
 endmenu

@@ -20,3 +20,7 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_CLK_DEBUG) += meson-clk-debug.o
 S4_MODULE_NAME = amlogic-clk-soc-s4
 obj-$(CONFIG_AMLOGIC_COMMON_CLK_S4) += $(S4_MODULE_NAME).o
 $(S4_MODULE_NAME)-y = s4.o
+
+C2_MODULE_NAME = amlogic-clk-soc-c2
+obj-$(CONFIG_AMLOGIC_COMMON_CLK_C2) += $(C2_MODULE_NAME).o
+$(C2_MODULE_NAME)-y += c2/c2.o c2/clk-pll-c2.o

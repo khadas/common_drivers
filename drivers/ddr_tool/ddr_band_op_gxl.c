@@ -18,9 +18,6 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 
-#undef pr_fmt
-#define pr_fmt(fmt) "ddr_tool: " fmt
-
 static void gxl_dmc_port_config(struct ddr_bandwidth *db, int channel, int port)
 {
 	unsigned int val;

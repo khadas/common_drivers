@@ -31,9 +31,6 @@
 #include <linux/amlogic/power_domain.h>
 #include <linux/syscore_ops.h>
 
-#undef pr_fmt
-#define pr_fmt(fmt) "gxbb_pm: " fmt
-
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 
 static DEFINE_MUTEX(early_suspend_lock);

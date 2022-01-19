@@ -5,8 +5,6 @@
 
 #define DEBUG
 
-#define pr_fmt(fmt) "hifi4dsp: " fmt
-
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/kernel.h>

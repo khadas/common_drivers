@@ -13,9 +13,6 @@
 #include <linux/kallsyms.h>
 #include "security_key.h"
 
-#undef pr_fmt
-#define pr_fmt(fmt) "unifykey: " fmt
-
 static DEFINE_SPINLOCK(storage_lock);
 static int storage_init_status;
 static struct bl31_storage_share_mem *share_mem;

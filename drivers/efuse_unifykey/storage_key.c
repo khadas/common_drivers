@@ -24,9 +24,6 @@
 #define SECUESTORAGE_HEAD_SIZE		(256)
 #define SECUESTORAGE_WHOLE_SIZE		(0x40000)
 
-#undef pr_fmt
-#define pr_fmt(fmt) "unifykey: " fmt
-
 #define SECUREKEY_SIZE		SECUESTORAGE_WHOLE_SIZE
 
 static DEFINE_MUTEX(securekey_lock);

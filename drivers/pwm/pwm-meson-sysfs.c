@@ -3,9 +3,6 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#undef pr_fmt
-#define pr_fmt(fmt) "pwm: " fmt
-
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/device.h>

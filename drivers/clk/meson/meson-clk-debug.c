@@ -13,8 +13,6 @@
 #include <linux/kallsyms.h>
 #include <linux/arm-smccc.h>
 
-#undef pr_fmt
-#define pr_fmt(fmt) "clk-debug: " fmt
 static struct clk *debug_clk;
 
 static ssize_t parent_write(struct file *file, const char __user *buffer,

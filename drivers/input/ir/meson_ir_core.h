@@ -6,9 +6,6 @@
 #ifndef __IR_CORE_MESON_H__
 #define __IR_CORE_MESON_H__
 
-#undef pr_fmt
-#define pr_fmt(fmt) "meson-ir:" fmt
-
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/kfifo.h>

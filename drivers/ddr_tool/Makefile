@@ -3,7 +3,6 @@
 KASAN_SANITIZE_dmc_monitor.o := n
 
 MODULE_NAME = amlogic-ddr-tool
-
 obj-$(CONFIG_AMLOGIC_DDR_TOOL) += $(MODULE_NAME).o
 
 $(MODULE_NAME)-y = ddr_tool.o ddr_port_desc.o
@@ -25,3 +24,7 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_C1)		+= dmc_c1.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_T7)		+= dmc_t7.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_S4)         += dmc_s4.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_C2)		+= dmc_c2.o
+
+PR_FMT = $(subst amlogic-,,$(MODULE_NAME))
+PR_FMT_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT)]: \" fmt"
+ccflags-y += $(PR_FMT_DEFINE)

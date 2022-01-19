@@ -7,3 +7,7 @@ $(MODULE_NAME)-y += gki_tool.o gki_module.o gki_config.o
 $(obj)/gki_config.o: $(obj)/.gki_config
 $(obj)/.gki_config: FORCE
 	cp $(srctree)/../common_drivers/arch/arm64/configs/amlogic_gki.fragment ../common_drivers/drivers/gki_tool/.gki_config
+
+PR_FMT = $(subst amlogic-,,$(MODULE_NAME))
+PR_FMT_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT)]: \" fmt"
+ccflags-y += $(PR_FMT_DEFINE)

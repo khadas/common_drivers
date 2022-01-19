@@ -11,9 +11,6 @@
 #include <linux/of.h>
 #include "unifykey.h"
 
-#undef pr_fmt
-#define pr_fmt(fmt) "unifykey: " fmt
-
 static int uk_item_parse_dt(struct aml_uk_dev *ukdev, struct device_node *node,
 			    int id)
 {

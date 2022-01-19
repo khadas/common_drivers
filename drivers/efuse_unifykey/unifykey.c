@@ -21,9 +21,6 @@
 #include "unifykey.h"
 #include "amlkey_if.h"
 
-#undef pr_fmt
-#define pr_fmt(fmt) "unifykey: " fmt
-
 #define UNIFYKEYS_DEVICE_NAME    "unifykeys"
 #define UNIFYKEYS_CLASS_NAME     "unifykeys"
 

@@ -6,8 +6,6 @@
  * Author: Jerome Brunet <jbrunet@baylibre.com>
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #include <linux/io.h>
 #include <linux/module.h>
 #include <linux/irq.h>

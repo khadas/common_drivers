@@ -19,9 +19,6 @@
 #include <linux/amlogic/power_domain.h>
 #include <linux/amlogic/gpiolib.h>
 
-#undef pr_fmt
-#define pr_fmt(fmt) "gpio-keypad: " fmt
-
 #define DEFAULT_SCAN_PERION	20
 #define	DEFAULT_POLL_MODE	0
 #define KEY_JITTER_COUNT	1

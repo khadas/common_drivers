@@ -3,8 +3,6 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#define pr_fmt(fmt) "cpuinfo: " fmt
-
 #include <linux/export.h>
 #include <linux/cdev.h>
 #include <linux/types.h>

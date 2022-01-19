@@ -14,8 +14,6 @@
 #include <crypto/sha256_base.h>
 #include "normal_key.h"
 
-#undef pr_fmt
-#define pr_fmt(fmt) "unifykey: " fmt
 #define DBG 0
 
 /* Storage BLOCK RAW HEAD: fixed 512B*/

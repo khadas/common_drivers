@@ -20,4 +20,12 @@ config AMLOGIC_PINCTRL_MESON_S4
 	  s4 pinctrl can work.
 	  otherwise s4 pinctrl can't work
 
+config AMLOGIC_PINCTRL_MESON_C2
+	tristate "Meson c2 Soc pinctrl driver"
+	default n
+	help
+	  the chip of c2 will be built
+	  when enable this config.
+	  c2 pinctrl can work.
+	  otherwise c2 pinctrl can't work
 endif

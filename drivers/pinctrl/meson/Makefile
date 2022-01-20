@@ -6,3 +6,7 @@ $(MODULE_NAME)-y += pinctrl-module-init.o pinctrl-meson.o pinctrl-meson-axg-pmx.
 S4_MODULE_NAME = amlogic-pinctrl-soc-s4
 obj-$(CONFIG_AMLOGIC_PINCTRL_MESON_S4) += $(S4_MODULE_NAME).o
 $(S4_MODULE_NAME)-y += pinctrl-meson-s4.o
+
+C2_MODULE_NAME = amlogic-pinctrl-soc-c2
+obj-$(CONFIG_AMLOGIC_PINCTRL_MESON_C2) += $(C2_MODULE_NAME).o
+$(C2_MODULE_NAME)-y += pinctrl-meson-c2.o

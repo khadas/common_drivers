@@ -68,6 +68,9 @@ enum meson_reg_type {
 	REG_OUT,
 	REG_IN,
 	REG_DS,
+#ifdef CONFIG_AMLOGIC_MODIFY
+	REG_VTHX,
+#endif
 	NUM_REG,
 };
 
@@ -130,10 +133,11 @@ struct meson_pinctrl {
 	struct regmap *reg_gpio;
 	struct regmap *reg_ds;
 	struct gpio_chip chip;
+	struct device_node *of_node;
 #ifdef CONFIG_AMLOGIC_MODIFY
+	struct regmap *reg_vthx;
 	struct device_node *of_irq;
 #endif
-	struct device_node *of_node;
 };
 
 #define FUNCTION(fn)							\
@@ -143,6 +147,7 @@ struct meson_pinctrl {
 		.num_groups = ARRAY_SIZE(fn ## _groups),		\
 	}
 
+#ifndef CONFIG_AMLOGIC_MODIFY
 #define BANK_DS(n, f, l, fi, li, per, peb, pr, pb, dr, db, or, ob, ir, ib,     \
 		dsr, dsb)                                                      \
 	{								\
@@ -163,6 +168,32 @@ struct meson_pinctrl {
 
 #define BANK(n, f, l, fi, li, per, peb, pr, pb, dr, db, or, ob, ir, ib) \
 	BANK_DS(n, f, l, fi, li, per, peb, pr, pb, dr, db, or, ob, ir, ib, 0, 0)
+#else
+#define BANK_REF(n, f, l, fi, li, per, peb, pr, pb, dr, db, or, ob, ir,	\
+	ib, dsr, dsb, rvr, rvb)							\
+	{								\
+		.name		= n,					\
+		.first		= f,					\
+		.last		= l,					\
+		.irq_first	= fi,					\
+		.irq_last	= li,					\
+		.regs = {						\
+			[REG_PULLEN]	= { per, peb },			\
+			[REG_PULL]	= { pr, pb },			\
+			[REG_DIR]	= { dr, db },			\
+			[REG_OUT]	= { or, ob },			\
+			[REG_IN]	= { ir, ib },			\
+			[REG_DS]	= { dsr, dsb },			\
+			[REG_VTHX]	= { rvr, rvb },			\
+		},							\
+	}
+
+#define BANK_DS(n, f, l, fi, li, per, peb, pr, pb, dr, db, or, ob, ir, ib, dsr, dsb) \
+	BANK_REF(n, f, l, fi, li, per, peb, pr, pb, dr, db, or, ob, ir, ib, dsr, dsb, 0, 0)
+
+#define BANK(n, f, l, fi, li, per, peb, pr, pb, dr, db, or, ob, ir, ib) \
+	BANK_DS(n, f, l, fi, li, per, peb, pr, pb, dr, db, or, ob, ir, ib, 0, 0)
+#endif
 
 #define MESON_PIN(x) PINCTRL_PIN(x, #x)
 

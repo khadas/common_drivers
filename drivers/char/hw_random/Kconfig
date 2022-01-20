@@ -2,6 +2,7 @@
 
 config AMLOGIC_HW_RANDOM_MESON
 	tristate "Amlogic Meson Random Number Generator support"
+	depends on HW_RANDOM
 	default n
 	help
 	  This driver provides kernel-side support for the Random Number

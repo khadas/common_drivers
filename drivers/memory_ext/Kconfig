@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+menuconfig AMLOGIC_MEMORY_EXTEND
+	bool "AMLOGIC memory extend support"
+	depends on AMLOGIC_DRIVER
+	depends on AMLOGIC_BREAK_GKI
+	default n
+	help
+		Amlogic memory extend is drivers which extend for memory management
+		functions, can be used for memory debug or other features.
+
+config AMLOGIC_PAGE_TRACE
+	bool "Amlogic trace for page allocate"
+	depends on AMLOGIC_MEMORY_EXTEND
+	depends on KALLSYMS
+	depends on !NUMA_BALANCING
+	default n
+	help
+		Amlogic page trace will record function address of caller for page
+		allocate/free, according with allocate flags and order. trace
+		information is stored in a pre-allocated memory block. And can be shown
+		with allocate page count information of each caller functions from
+		/proc/pagetrace
+
+config AMLOGIC_PAGE_TRACE_INLINE
+	bool "page trace ininle into page flags"
+	depends on AMLOGIC_PAGE_TRACE
+	depends on 64BIT
+	depends on !KASAN_HW_TAGS && !KASAN_SW_TAGS
+	default y
+	help
+		This feature enable to inline page trace into high 32bits of
+		page->flags on 64 bit kernel. Because other total page flags
+		are less than 32bit, so It can help to save memory when
+		use page trace. But it conflict with KASAN tags, so when kasan
+		tags enabled, this feature will be auto disabled

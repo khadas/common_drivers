@@ -18,6 +18,7 @@ obj-y					+= pwm/
 obj-$(CONFIG_CPU_FREQ)			+= cpufreq/
 obj-$(CONFIG_AMLOGIC_EFUSE_UNIFYKEY)	+= efuse_unifykey/
 obj-$(CONFIG_MAILBOX)			+= mailbox/
+obj-$(CONFIG_AMLOGIC_MEMORY_EXTEND)	+= memory_ext/
 obj-$(CONFIG_AMLOGIC_JTAG_MESON)	+= jtag/
 obj-$(CONFIG_WATCHDOG)			+= watchdog/
 obj-$(CONFIG_AMLOGIC_REG_ACCESS)	+= reg_access/

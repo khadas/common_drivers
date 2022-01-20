@@ -55,72 +55,6 @@ struct page_trace {
 	};
 };
 
-#ifdef CONFIG_AMLOGIC_SLAB_TRACE
-/*
- * @entry:         rb tree for quick search/insert/delete
- * @s_addr:        start address for this slab object
- * @e_addr:        end address for this slab object
- * @object_count:  how many objects in this slab obj
- * @object_ip: a   array stores ip for each slab object
- */
-struct slab_trace {
-	struct rb_node entry;
-	unsigned long s_addr;
-	unsigned long e_addr;
-	unsigned int object_count;
-	unsigned int *object_ip;
-};
-
-/*
- * @trace_count:    how many slab_trace object we have used
- * @total_obj_size: total object size according obj size
- * @lock:           protection for rb tree update
- * @list:           link to root list
- * @root:           root for rb tree
- */
-struct slab_trace_group {
-	unsigned long trace_count;
-	unsigned long total_obj_size;
-	unsigned int  object_size;
-	spinlock_t   lock;		/* protection for rb tree update */
-	struct list_head list;
-	struct kmem_cache *ip_cache;
-	struct rb_root root;
-};
-
-#define SLAB_STACK_DEP		7
-/*
- * @hash: hash value for stack
- * @entry: rb tree for quick search
- * @stack: stack for object
- */
-struct slab_stack {
-	unsigned int hash;
-	unsigned int use_cnt;
-	struct rb_node entry;
-	unsigned long stack[SLAB_STACK_DEP];
-};
-
-struct slab_stack_master {
-	int stack_cnt;
-	spinlock_t stack_lock;		/* protection for rb tree update */
-	struct kmem_cache *slab_stack_cache;
-	struct rb_root stack_root;
-};
-#endif
-
-#define MAX_FCT		2048
-struct file_cache_trace {
-	unsigned int count;
-	unsigned int active_count;
-	unsigned int inactive_count;
-	unsigned int lock_count;
-	unsigned int mapcnt;
-	unsigned long off;		/* for find out vma */
-	struct address_space *mapping;
-	struct rb_node entry;
-};
-
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE
 u64 get_iow_time(u64 *cpu);
 extern unsigned int cma_alloc_trace;
@@ -128,6 +62,7 @@ unsigned long unpack_ip(struct page_trace *trace);
 unsigned int pack_ip(unsigned long ip, int order, gfp_t flag);
 void set_page_trace(struct page *page, int order,
 		    gfp_t gfp_flags, void *func);
+void replace_page_trace(struct page *new, struct page *old);
 void reset_page_trace(struct page *page, int order);
 void page_trace_mem_init(void);
 struct page_trace *find_page_base(struct page *page);
@@ -135,16 +70,6 @@ unsigned long find_back_trace(void);
 unsigned long get_page_trace(struct page *page);
 void show_data(unsigned long addr, int nbytes, const char *name);
 int save_obj_stack(unsigned long *stack, int depth);
-#ifdef CONFIG_AMLOGIC_SLAB_TRACE
-int slab_trace_init(void);
-int slab_trace_add_page(struct page *page, int order,
-			struct kmem_cache *s, gfp_t flags);
-int slab_trace_remove_page(struct page *page, int order, struct kmem_cache *s);
-int slab_trace_mark_object(void *object, unsigned long ip,
-			   struct kmem_cache *s);
-int slab_trace_remove_object(void *object, struct kmem_cache *s);
-int get_cache_max_order(struct kmem_cache *s);
-#endif
 #else
 static inline u64 get_iow_time(u64 *cpu)
 {
@@ -220,16 +145,6 @@ static inline int save_obj_stack(unsigned long *stack, int depth)
 	return 0;
 }
 #endif
-
-#ifdef CONFIG_AMLOGIC_SLUB_DEBUG
-int aml_slub_check_object(struct kmem_cache *s, void *p, void *q);
-void aml_get_slub_trace(struct kmem_cache *s, struct page *page,
-			gfp_t flags, int order);
-void aml_put_slub_trace(struct page *page, struct kmem_cache *s);
-int aml_check_kmemcache(struct kmem_cache_cpu *c, struct kmem_cache *s,
-			void *object);
-void aml_slub_set_trace(struct kmem_cache *s, void *object);
-#endif /* CONFIG_AMLOGIC_SLUB_DEBUG */
 
 #ifdef CONFIG_KALLSYMS
 extern const unsigned long kallsyms_addresses[] __weak;

@@ -7,3 +7,11 @@
 
 # power driver: amlogic-power.ko: sec_power_domain.c
 # pm_domain_always_on_gov
+
+# page trace illegal symbol:
+  unpack_ip
+  pack_ip
+  find_page_base
+  get_page_trace
+  set_page_trace
+  reset_page_trace

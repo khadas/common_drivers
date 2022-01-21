@@ -1709,6 +1709,10 @@
 			    "ap_to_dspa",
 			    "se_dev",
 			    "ap_to_se";
+		mboxes = <&mbox_pl 0>,
+			 <&mbox_pl 1>,
+			 <&mbox_pl 2>,
+			 <&mbox_pl 3>;
 		#mbox-cells = <1>;
 		mbox-nums = <4>;
 	};
@@ -1717,7 +1721,7 @@
 		status = "okay";
 		compatible = "amlogic, meson-mbox-user";
 		mbox-nums = <2>;
-		mbox-names = "dsp_dev",
+		mbox-names = "dspa_dev",
 			     "se_dev";
 		mboxes = <&mbox_pl 1>,
 			 <&mbox_pl 3>;

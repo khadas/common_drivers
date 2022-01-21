@@ -15,7 +15,7 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/meson_ir.h>
 #include "meson-ir-map.dtsi"
-#include <dt-bindings/power/c2-pd.h>
+#include <dt-bindings/power/cx-pd.h>
 #include <dt-bindings/mailbox/amlogic,mbox.h>
 
 / {
@@ -257,7 +257,7 @@
 			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&clkc CLKID_TS>;
 			clock-names = "ts_comp";
-			power-domains = <&pwrdm PDID_I2C>;
+			power-domains = <&pwrdm PDID_CX_I2C>;
 			#thermal-sensor-cells = <1>;
 		};
 
@@ -269,7 +269,7 @@
 			      <0x0 0xfe000424 0x0 0x4>;
 				status = "disabled";
 			interrupts = <GIC_SPI 61 IRQ_TYPE_EDGE_RISING>;
-			power-domains = <&pwrdm PDID_SDEMMC_A>;
+			power-domains = <&pwrdm PDID_CX_SDEMMC_A>;
 			clocks = <&clkc CLKID_SYS_SD_EMMC_A>,
 				<&clkc CLKID_SD_EMMC_A_SEL>,
 				<&clkc CLKID_SD_EMMC_A_GATE>,
@@ -291,7 +291,7 @@
 			      <0x0 0xfe0008e0 0x0 0x4>,
 			      <0x0 0xfe000414 0x0 0x4>;
 			interrupts = <GIC_SPI 62 IRQ_TYPE_EDGE_RISING>;
-			power-domains = <&pwrdm PDID_SDEMMC_B>;
+			power-domains = <&pwrdm PDID_CX_SDEMMC_B>;
 			status = "disabled";
 			clocks = <&clkc CLKID_SYS_SD_EMMC_B>,
 			<&clkc CLKID_SD_EMMC_B_SEL>,
@@ -315,7 +315,7 @@
 			      <0x0 0xfe000920 0x0 0x4>,
 			      <0x0 0xfe00040c 0x0 0x4>;
 			interrupts = <GIC_SPI 63 IRQ_TYPE_EDGE_RISING>;
-			power-domains = <&pwrdm PDID_SDEMMC_C>;
+			power-domains = <&pwrdm PDID_CX_SDEMMC_C>;
 				status = "disabled";
 				clocks = <&clkc CLKID_SYS_SD_EMMC_C>,
 				<&clkc CLKID_SD_EMMC_C_SEL>,
@@ -342,7 +342,7 @@
 					 <&clkc CLKID_FCLK_DIV2>;
 			clock-names = "gate", "fdiv2pll";
 			nand_clk_ctrl = <0xfe012000>;
-			power-domains = <&pwrdm PDID_SDEMMC_C>;
+			power-domains = <&pwrdm PDID_CX_SDEMMC_C>;
 		};
 
 		spifc: spi@fe00ac00 {
@@ -353,7 +353,7 @@
 			clocks = <&clkc CLKID_SPIFC_GATE>;
 			#address-cells = <1>;
 			#size-cells = <0>;
-			power-domains = <&pwrdm PDID_SPIFC>;
+			power-domains = <&pwrdm PDID_CX_SPIFC>;
 		};
 
 		aobus: bus@fe000000 {
@@ -386,7 +386,7 @@
 				interrupts = <GIC_SPI 8 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_I2C>;
+				//power-domains = <&pwrdm PDID_CX_I2C>;
 				clocks = <&clkc CLKID_I2C_M_A>;
 				status = "disabled";
 			};
@@ -397,7 +397,7 @@
 				interrupts = <GIC_SPI 44 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_I2C>;
+				//power-domains = <&pwrdm PDID_CX_I2C>;
 				clocks = <&clkc CLKID_I2C_M_B>;
 				status = "disabled";
 			};
@@ -408,7 +408,7 @@
 				interrupts = <GIC_SPI 52 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_I2C>;
+				//power-domains = <&pwrdm PDID_CX_I2C>;
 				clocks = <&clkc CLKID_I2C_M_C>;
 				status = "disabled";
 			};
@@ -419,7 +419,7 @@
 				interrupts = <GIC_SPI 54 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_I2C>;
+				//power-domains = <&pwrdm PDID_CX_I2C>;
 				clocks = <&clkc CLKID_I2C_M_D>;
 				status = "disabled";
 			};
@@ -430,7 +430,7 @@
 				interrupts = <GIC_SPI 121 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_I2C>;
+				//power-domains = <&pwrdm PDID_CX_I2C>;
 				clocks = <&clkc CLKID_SYS_I2C_M_E>;
 				status = "disabled";
 			};
@@ -571,7 +571,7 @@
 				assigned-clock-rates = <500000000>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				power-domains = <&pwrdm PDID_SPICC>;
+				power-domains = <&pwrdm PDID_CX_SPICC>;
 				status = "disabled";
 			};
 
@@ -586,7 +586,7 @@
 				assigned-clock-rates = <500000000>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				power-domains = <&pwrdm PDID_SPICC_B>;
+				power-domains = <&pwrdm PDID_CX_SPICC_B>;
 				status = "disabled";
 			};
 
@@ -646,7 +646,7 @@
 				reg = <0x0 0x110c 0x0 0x10>;
 				#irblaster-cells = <2>;
 				interrupts = <GIC_SPI 51 IRQ_TYPE_EDGE_RISING>;
-				//power-domains = <&pwrdm PDID_IR>;
+				//power-domains = <&pwrdm PDID_CX_IR>;
 			};
 
 			ir: ir@1000 {
@@ -665,7 +665,7 @@
 					"amlogic,meson-saradc";
 				reg = <0x0 0x2c00 0x0 0xf0>;
 				#io-channel-cells = <1>;
-				//power-domains = <&pwrdm PDID_I2C>;
+				//power-domains = <&pwrdm PDID_CX_I2C>;
 				interrupts = <GIC_SPI 11 IRQ_TYPE_EDGE_RISING>;
 				clocks = <&xtal>,
 					<&clkc CLKID_SARADC>,
@@ -709,7 +709,7 @@
 			bootlocation = <1>;   /*1: boot from DDR, 2: from sram, 3...*/
 			boot_sram_addr = <0xfff00000>;
 			boot_sram_size = <0x80000>;
-			power-domains = <&pwrdm PDID_DSP_A>;
+			power-domains = <&pwrdm PDID_CX_DSP_A>;
 			mboxes = <&mbox_pl 1>;
 			status = "okay";
 		};
@@ -817,7 +817,7 @@
 			tx-fifo-depth = <2048>;
 			status = "disabled";
 			AVDD-supply = <&vcc3v3_reg>;
-			power-domains = <&pwrdm PDID_ETH>;
+			power-domains = <&pwrdm PDID_CX_ETH>;
 
 			ext_mdio: mdio {
 				#address-cells = <1>;
@@ -850,7 +850,7 @@
 				<0x0 0xFE054800 0x0 0x400>;
 			reg-names = "audio_bus", "audio_vad_top";
 
-			power-domains = <&pwrdm PDID_AUDIO>;
+			power-domains = <&pwrdm PDID_CX_AUDIO>;
 
 			ddr_manager {
 				compatible = "amlogic, c2-audio-ddr-manager";
@@ -1204,7 +1204,7 @@
 			<&clkc CLKID_MIPI_CSI_PHY_GATE>;
 		clock-names = "cts_mipi_isp_clk",
 			"cts_mipi_csi_phy_clk0";
-		//power-domains = <&pwrdm PDID_MIPI_ISP>;
+		//power-domains = <&pwrdm PDID_CX_MIPI_ISP>;
 		link-device = <&isp_sc>;
 		att-device = <&isp_md>;
 	};
@@ -1386,7 +1386,7 @@
 			"cts_vipnanoq_core_clk_composite";
 		interrupts = <0 60 4>;
 		interrupt-names = "galcore";
-		power-domains = <&pwrdm PDID_NNA>;
+		power-domains = <&pwrdm PDID_CX_NNA>;
 		reg = <0x0 0xff040000 0x0 0x20000
 			0x0 0xfffc0000 0x0 0x3e000
 			0x0 0xfe01303c 0x0 0x4
@@ -1425,7 +1425,7 @@
 		pll-setting-8 = <0xe000c>;
 		version = <3>;
 		pwr-ctl = <0>;
-		/*power-domains = <&pwrdm PDID_USB>;*/
+		/*power-domains = <&pwrdm PDID_CX_USB>;*/
 		phy20-reset-level-bit = <4>;
 		usb-reset-bit = <3>;
 		usb-busclk_ctl_div = <0x509>;
@@ -1446,7 +1446,7 @@
 		phy-reg-size = <0x2000>;
 		interrupts = <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>;
 		pwr-ctl = <0>;
-		/*power-domains = <&pwrdm PDID_USB>;*/
+		/*power-domains = <&pwrdm PDID_CX_USB>;*/
 		usb5v-supply = <&vcc5v_reg>;
 		usb3v3-supply = <&vddao3v3_reg>;
 		usb1v8-supply = <&vddao1v8_reg>;
@@ -1463,7 +1463,7 @@
 			usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;
 			clocks = <&clkc CLKID_USB_CTRL>;
 			clock-names = "usb_general";
-			/*power-domains = <&pwrdm PDID_USB>;*/
+			/*power-domains = <&pwrdm PDID_CX_USB>;*/
 			usb5v-supply = <&vcc5v_reg>;
 			usb3v3-supply = <&vddao3v3_reg>;
 			usb1v8-supply = <&vddao1v8_reg>;
@@ -1493,7 +1493,7 @@
 		clocks = <&clkc CLKID_USB_CTRL>, <&clkc CLKID_USB_PHY>;
 		clock-names = "usb_general",
 				"usb1";
-		/*power-domains = <&pwrdm PDID_USB>;*/
+		/*power-domains = <&pwrdm PDID_CX_USB>;*/
 		usb5v-supply = <&vcc5v_reg>;
 		usb3v3-supply = <&vddao3v3_reg>;
 		usb1v8-supply = <&vddao1v8_reg>;
@@ -1539,7 +1539,7 @@
 		memory-region = <&jpegenc_cma_reserved>;
 		dev_name = "jpegenc";
 		status = "okay";
-		power-domains = <&pwrdm PDID_HCODEC>;
+		power-domains = <&pwrdm PDID_CX_HCODEC>;
 		clocks = <&clkc CLKID_SYS_DOS
 			&clkc CLKID_DOS_APB
 			&clkc CLKID_JPEG_GATE>;
@@ -1581,7 +1581,7 @@
 		clocks = <&clkc CLKID_GE2D_GATE>;
 		clock-names = "clk_ge2d_gate";
 		reg = <0x0 0xFE008C00 0x0 0x100>;
-		power-domains = <&pwrdm PDID_GE2D>;
+		power-domains = <&pwrdm PDID_CX_GE2D>;
 	};
 
 	mesonstream {
@@ -1656,7 +1656,7 @@
 			&clkc CLKID_GDC_AXI_GATE>;
 		clock-names = "core","axi";
 		clk-rate = <666666666>;
-		power-domains = <&pwrdm PDID_GDC>;
+		power-domains = <&pwrdm PDID_CX_GDC>;
 	};
 
 	freertos: freertos {
@@ -1674,19 +1674,19 @@
 				dev_name = "aml_aes_dma";
 				status = "okay";
 				iv_swap = /bits/ 8 <0x0>;
-				/*power-domains = <&pwrdm PDID_DMA>;*/
+				/*power-domains = <&pwrdm PDID_CX_DMA>;*/
 		};
 		aml_sha {
 				compatible = "amlogic,sha_dma";
 				 dev_name = "aml_sha_dma";
 				status = "okay";
-				/*power-domains = <&pwrdm PDID_DMA>;*/
+				/*power-domains = <&pwrdm PDID_CX_DMA>;*/
 		};
 		aml_tdes {
 				compatible = "amlogic,tdes_dma";
 				dev_name = "aml_tdes_dma";
 				status = "okay";
-				/*power-domains = <&pwrdm PDID_DMA>;*/
+				/*power-domains = <&pwrdm PDID_CX_DMA>;*/
 		};
 	};
 

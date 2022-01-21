@@ -205,7 +205,7 @@
 		dev_name = "amvenc_multi";
 		status = "okay";
 		config_mm_sz_mb = <256>;
-		power-domains = <&pwrdm PDID_WAVE>;
+		power-domains = <&pwrdm PDID_CX_WAVE>;
 		clocks = <&clkc CLKID_SYS_DOS
 			&clkc CLKID_DOS_APB
 			&clkc CLKID_WAVE_A_GATE
@@ -243,7 +243,7 @@
 		tdmin_index = <1>;
 		dat0_ch_sel = <0>;
 		dacr_output_inv = <0>;
-		power-domains = <&pwrdm PDID_ACODEC>;
+		power-domains = <&pwrdm PDID_CX_ACODEC>;
 	};
 
 	auge_sound {
@@ -384,7 +384,7 @@
 		interrupt-names = "irq";
 		frequency = <49000000>; /* pll */
 		dividor = <49>; /* locker's parent */
-		power-domains = <&pwrdm PDID_AUDIO>;
+		power-domains = <&pwrdm PDID_CX_AUDIO>;
 		status = "okay";
 	};
 	/* Audio Related end */
@@ -611,7 +611,7 @@
 		clock-names = "mclk", "clk_srcpll";
 		pinctrl-names = "tdm_pins";
 		pinctrl-0 = </*&tdmout_a*/ &tdmin_a>;
-		power-domains = <&pwrdm PDID_AUDIO>;
+		power-domains = <&pwrdm PDID_CX_AUDIO>;
 
 		status = "okay";
 	};
@@ -642,7 +642,7 @@
 		 */
 		//samesource_sel = <3>;
 		start_clk_enable = <1>;
-		power-domains = <&pwrdm PDID_AUDIO>;
+		power-domains = <&pwrdm PDID_CX_AUDIO>;
 
 		src-clk-freq = <1155072000>;
 
@@ -701,7 +701,7 @@
 		 */
 
 		lb-src-sel = <1>;
-		power-domains = <&pwrdm PDID_AUDIO>;
+		power-domains = <&pwrdm PDID_CX_AUDIO>;
 
 		status = "okay";
 	};
@@ -729,7 +729,7 @@
 		lane-mask-in = <1 1 0 0>;
 
 		sys-src-clk-freq = <1155072000>;
-		power-domains = <&pwrdm PDID_PDM>;
+		power-domains = <&pwrdm PDID_CX_PDM>;
 
 		status = "okay";
 	};
@@ -838,7 +838,7 @@
 		datalb_chmask = <0x1>;
 		/* config which data pin as loopback */
 		datalb-lane-mask-in = <1 0 0 0>;
-		power-domains = <&pwrdm PDID_AUDIO>;
+		power-domains = <&pwrdm PDID_CX_AUDIO>;
 
 		status = "okay";
 	};
@@ -862,7 +862,7 @@
 		lane_mask = <0x1>;
 		/* max 0xff, each bit for one channel */
 		channel_mask = <0x3>;
-		power-domains = <&pwrdm PDID_AUDIO>;
+		power-domains = <&pwrdm PDID_CX_AUDIO>;
 		status = "okay";
 	};
 }; /* end of audiobus */

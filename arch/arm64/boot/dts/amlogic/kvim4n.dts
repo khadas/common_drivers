@@ -1833,12 +1833,6 @@
 	};
 };
 
-&ir {
-	status = "disabled";
-	pinctrl-0 = <&remote_pins>;
-	pinctrl-names = "default";
-};
-
 &spifc {
 	status = "disabled";
 	spi-nor@0 {

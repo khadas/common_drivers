@@ -34,3 +34,15 @@ config AMLOGIC_PAGE_TRACE_INLINE
 		are less than 32bit, so It can help to save memory when
 		use page trace. But it conflict with KASAN tags, so when kasan
 		tags enabled, this feature will be auto disabled
+
+config AMLOGIC_SLAB_TRACE
+	bool "Amlogic trace for slab usage"
+	depends on SLUB
+	depends on AMLOGIC_MEMORY_EXTEND
+	default n
+	help
+		Amlogic slab trace will record function address of caller for
+		slab allocate/free(kmalloc-xxxx only). trace information is
+		stored in rb tree. And can be shown with allocate size
+		information of each caller functions from /proc/slabtrace
+

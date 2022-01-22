@@ -7,6 +7,7 @@ CONFIG_DEVTMPFS=y
 # build in for amlogic memory change
 CONFIG_AMLOGIC_MEMORY_EXTEND=y
 CONFIG_AMLOGIC_PAGE_TRACE=y
+CONFIG_AMLOGIC_SLAB_TRACE=y
 
 # meson_uart built into kernel
 CONFIG_AMLOGIC_SERIAL_MESON=y

@@ -172,3 +172,10 @@
   mmc_wait_for_req
   sg_copy_from_buffer
   sg_copy_to_buffer
+
+# amlogic-reboot.ko
+  atomic_notifier_chain_register
+  cpu_hotplug_disable
+  cpu_hotplug_enable
+  panic_notifier_list
+  register_die_notifier

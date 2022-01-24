@@ -32,5 +32,6 @@ source "../common_drivers/drivers/rtc/Kconfig"
 source "../common_drivers/drivers/irblaster/Kconfig"
 source "../common_drivers/drivers/thermal/Kconfig"
 source "../common_drivers/drivers/mmc/Kconfig"
+source "../common_drivers/drivers/reboot/Kconfig"
 
 endmenu

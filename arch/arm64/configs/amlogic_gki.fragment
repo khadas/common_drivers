@@ -139,3 +139,6 @@ CONFIG_AMLOGIC_DDR_THERMAL=y
 
 # amlogic-mmc.ko
 CONFIG_AMLOGIC_MMC_MESON_GX=m
+
+# amlogic-reboot.ko
+CONFIG_AMLOGIC_GX_REBOOT=m

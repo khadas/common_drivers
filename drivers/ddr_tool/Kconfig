@@ -144,6 +144,17 @@ config AMLOGIC_DMC_MONITOR_C1
 		hardware. If hardware violated R/W permission, then interrupt
 		will generated and can help to debug memory pollution.
 
+config AMLOGIC_DMC_MONITOR_C2
+	bool "Amlogic dmc monitor for C2"
+	depends on AMLOGIC_DMC_MONITOR
+	default n
+	help
+		This config enables dmc monitor for c2 chip
+		DMC monitor for hardware connected to DMC master. Using it can
+		set up an address range and assign R/W permission for each
+		hardware. If hardware violated R/W permission, then interrupt
+		will generated and can help to debug memory pollution.
+
 config AMLOGIC_DMC_MONITOR_T7
 	bool "Amlogic dmc monitor for T7"
 	depends on AMLOGIC_DMC_MONITOR

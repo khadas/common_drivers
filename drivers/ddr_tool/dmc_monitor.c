@@ -535,6 +535,12 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 		mon->mon_number = 1;
 		break;
 #endif
+#ifdef CONFIG_AMLOGIC_DMC_MONITOR_C2
+	case DMC_TYPE_C2:
+		mon->ops = &c2_dmc_mon_ops;
+		mon->mon_number = 1;
+		break;
+#endif
 #ifdef CONFIG_AMLOGIC_DMC_MONITOR_GX
 	case DMC_TYPE_GXBB:
 	case DMC_TYPE_GXTVBB:
@@ -788,6 +794,10 @@ static const struct of_device_id dmc_monitor_match[] = {
 		.data = (void *)DMC_TYPE_C1,
 	},
 #endif
+	{
+		.compatible = "amlogic,dmc_monitor-c2",
+		.data = (void *)DMC_TYPE_C2,
+	},
 	{
 		.compatible = "amlogic,dmc_monitor-g12a",
 		.data = (void *)DMC_TYPE_G12A,

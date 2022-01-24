@@ -59,6 +59,14 @@ static unsigned long g12_get_dmc_freq_quick(struct ddr_bandwidth *db)
 	unsigned int od_div = 0xfff;
 	unsigned long freq = 0;
 
+	if (db->cpu_type == DMC_TYPE_C2) {
+		if (db->freq_reg) {
+			freq = readl(db->freq_reg);
+			freq = freq * 1000000;
+		}
+		return freq / 2;
+	}
+
 	val = readl(db->pll_reg);
 	val = val & 0xfffff;
 	switch ((val >> 16) & 7) {

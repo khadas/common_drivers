@@ -103,6 +103,9 @@ extern struct dmc_mon_ops g12_dmc_mon_ops;
 #ifdef CONFIG_AMLOGIC_DMC_MONITOR_C1
 extern struct dmc_mon_ops c1_dmc_mon_ops;
 #endif
+#ifdef CONFIG_AMLOGIC_DMC_MONITOR_C2
+extern struct dmc_mon_ops c2_dmc_mon_ops;
+#endif
 #ifdef CONFIG_AMLOGIC_DMC_MONITOR_TM2
 extern struct dmc_mon_ops tm2_dmc_mon_ops;
 #endif

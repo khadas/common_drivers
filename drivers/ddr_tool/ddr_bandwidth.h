@@ -175,6 +175,7 @@ struct ddr_bandwidth {
 	void __iomem *ddr_reg3;		/* dmc 3 */
 	void __iomem *ddr_reg4;		/* dmc 4 */
 	void __iomem *pll_reg;
+	void __iomem *freq_reg;
 	struct class *class;
 	struct ddr_port_desc *port_desc;
 	struct ddr_bandwidth_ops *ops;

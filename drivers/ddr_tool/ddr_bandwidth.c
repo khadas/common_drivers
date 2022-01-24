@@ -870,10 +870,11 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 	case DMC_TYPE_TL1:
 	case DMC_TYPE_TM2:
 	case DMC_TYPE_C1:
+	case DMC_TYPE_C2:
 	case DMC_TYPE_SC2:
 		band->ops = &g12_ddr_bw_ops;
 		band->channels = 4;
-		if (cpu == DMC_TYPE_C1) {
+		if (cpu == DMC_TYPE_C1 || cpu == DMC_TYPE_C2) {
 			band->mali_port[0] = -1; /* no mali */
 			band->mali_port[1] = -1;
 		} else {
@@ -958,7 +959,7 @@ static int __init ddr_bandwidth_probe(struct platform_device *pdev)
 	/*struct pinctrl *p;*/
 	struct resource *res;
 	resource_size_t *base;
-	unsigned int sec_base;
+	unsigned int sec_base, freq_reg;
 	int io_idx = 0;
 #endif
 	struct ddr_port_desc *desc = NULL;
@@ -1073,6 +1074,12 @@ static int __init ddr_bandwidth_probe(struct platform_device *pdev)
 	} else {
 		get_ddr_external_bus_width(aml_db, sec_base);
 	}
+
+	r = of_property_read_u32(node, "freq_reg", &freq_reg);
+	if (r < 0)
+		aml_db->freq_reg = (void *)0;
+	else
+		aml_db->freq_reg = (void *)ioremap(freq_reg, 4);
 #endif
 	spin_lock_init(&aml_db->lock);
 	aml_db->clock_count = DEFAULT_CLK_CNT;
@@ -1156,6 +1163,10 @@ static const struct of_device_id aml_ddr_bandwidth_dt_match[] = {
 		.data = (void *)DMC_TYPE_C1,
 	},
 #endif
+	{
+		.compatible = "amlogic,ddr-bandwidth-c2",
+		.data = (void *)DMC_TYPE_C2,
+	},
 	{
 		.compatible = "amlogic,ddr-bandwidth-g12a",
 		.data = (void *)DMC_TYPE_G12A,

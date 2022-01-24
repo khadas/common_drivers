@@ -403,6 +403,34 @@ static struct ddr_port_desc ddr_port_desc_c1[] __initdata = {
 };
 #endif
 
+static struct ddr_port_desc ddr_port_desc_c2[] __initdata = {
+	{ .port_id =  0, .port_name = "TEE"           },
+	{ .port_id =  1, .port_name = "REE"           },
+	{ .port_id =  2, .port_name = "JTAG/PROD"     },
+	{ .port_id =  3, .port_name = "RICV"          },
+	{ .port_id =  4, .port_name = "DSPA"          },
+	{ .port_id =  5, .port_name = "JPEG"          },
+	{ .port_id =  6, .port_name = "WAVE"          },
+	{ .port_id =  7, .port_name = "GDC"           },
+	{ .port_id =  8, .port_name = "GE2D SRC0/DEST"},
+	{ .port_id =  9, .port_name = "GE2D SRC1"     },
+	{ .port_id = 10, .port_name = "USB Devi"      },
+	{ .port_id = 11, .port_name = "USB Host"      },
+	{ .port_id = 12, .port_name = "ISP"           },
+	{ .port_id = 13, .port_name = "NNA"           },
+	{ .port_id = 14, .port_name = "VAD"           },
+	{ .port_id = 15, .port_name = "DMC TEST"      },
+	{ .port_id = 16, .port_name = "ETH"           },
+	{ .port_id = 17, .port_name = "SPICC_A"       },
+	{ .port_id = 18, .port_name = "SPICC_B"       },
+	{ .port_id = 19, .port_name = "SDEMMC_A"      },
+	{ .port_id = 20, .port_name = "SDEMMC_B"      },
+	{ .port_id = 21, .port_name = "AUDIO"         },
+	{ .port_id = 22, .port_name = "DMA"           },
+	{ .port_id = 23, .port_name = "SDEMMC_C"      },
+	{ .port_id = 24, .port_name = "undefine"      }
+};
+
 static struct ddr_port_desc ddr_port_desc_g12a[] __initdata = {
 	{ .port_id =  0, .port_name = "ARM"           },
 	{ .port_id =  1, .port_name = "MALI"          },
@@ -926,6 +954,11 @@ int __init ddr_find_port_desc(int cpu_type, struct ddr_port_desc **desc)
 		desc_size = ARRAY_SIZE(ddr_port_desc_c1);
 		break;
 #endif
+
+	case DMC_TYPE_C2:
+		*desc = ddr_port_desc_c2;
+		desc_size = ARRAY_SIZE(ddr_port_desc_c2);
+		break;
 
 	case DMC_TYPE_G12A:
 		*desc = ddr_port_desc_g12a;

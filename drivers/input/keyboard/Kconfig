@@ -12,7 +12,7 @@ config AMLOGIC_GPIO_KEY
 
 config AMLOGIC_ADC_KEYPADS
 	tristate "Meson ADC keypad support"
-	depends on MESON_SARADC
+	depends on AMLOGIC_MESON_SARADC
 	default n
 	help
 	  Say Y here if

@@ -12,7 +12,9 @@
 #include <linux/gpio/consumer.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>
+#ifdef CONFIG_AMLOGIC_GX_SUSPEND
 #include <linux/amlogic/pm.h>
+#endif
 #include <linux/irq.h>
 #include <linux/amlogic/power_domain.h>
 #include <linux/amlogic/gpiolib.h>
@@ -326,6 +328,7 @@ static const struct of_device_id key_dt_match[] = {
 	{},
 };
 
+#ifdef CONFIG_AMLOGIC_GX_SUSPEND
 static int meson_gpio_kp_suspend(struct platform_device *dev,
 				 pm_message_t state)
 {
@@ -362,12 +365,15 @@ static int meson_gpio_kp_resume(struct platform_device *dev)
 	}
 	return 0;
 }
+#endif
 
 static struct platform_driver meson_gpio_kp_driver = {
 	.probe = meson_gpio_kp_probe,
 	.remove = meson_gpio_kp_remove,
+#ifdef CONFIG_AMLOGIC_GX_SUSPEND
 	.suspend = meson_gpio_kp_suspend,
 	.resume = meson_gpio_kp_resume,
+#endif
 	.driver = {
 		.name = "gpio-keypad",
 		.of_match_table = key_dt_match,

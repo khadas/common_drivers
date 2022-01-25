@@ -17,7 +17,9 @@
 #include <linux/of.h>
 #include <linux/iio/consumer.h>
 #include <linux/amlogic/scpi_protocol.h>
+#ifdef CONFIG_AMLOGIC_GX_SUSPEND
 #include <linux/amlogic/pm.h>
+#endif
 #include <linux/pm_wakeup.h>
 #include "adc_keypad.h"
 
@@ -31,11 +33,13 @@ static char kernelkey_en_name[MAX_NAME_LEN] = "abcdef";
 static bool keypad_enable_flag = true;
 static bool has_adc_power_key;
 
+#ifdef CONFIG_AMLOGIC_GX_SUSPEND
 bool meson_adc_is_alive_freeze(void)
 {
 	return has_adc_power_key && is_pm_s2idle_mode();
 }
 EXPORT_SYMBOL(meson_adc_is_alive_freeze);
+#endif
 
 static int meson_adc_kp_search_key(struct meson_adc_kp *kp)
 {
@@ -600,6 +604,7 @@ static int meson_adc_kp_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_AMLOGIC_GX_SUSPEND
 static int meson_adc_kp_suspend(struct platform_device *pdev,
 				pm_message_t state)
 {
@@ -641,6 +646,7 @@ static int meson_adc_kp_resume(struct platform_device *pdev)
 
 	return 0;
 }
+#endif
 
 static void meson_adc_kp_shutdown(struct platform_device *pdev)
 {
@@ -657,8 +663,10 @@ static const struct of_device_id key_dt_match[] = {
 static struct platform_driver kp_driver = {
 	.probe      = meson_adc_kp_probe,
 	.remove     = meson_adc_kp_remove,
+#ifdef CONFIG_AMLOGIC_GX_SUSPEND
 	.suspend    = meson_adc_kp_suspend,
 	.resume     = meson_adc_kp_resume,
+#endif
 	.shutdown   = meson_adc_kp_shutdown,
 	.driver     = {
 		.name   = DRIVE_NAME,

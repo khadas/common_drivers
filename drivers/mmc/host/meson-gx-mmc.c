@@ -462,10 +462,10 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 	struct mmc_host *mmc = host->mmc;
 	u32 cfg = readl(host->regs + SD_EMMC_CFG);
 
-	dev_notice(host->dev, "[%s]set rate:%u\n", __func__, rate);
+	dev_dbg(host->dev, "[%s]set rate:%u\n", __func__, rate);
 	switch (ios->timing) {
 	case MMC_TIMING_MMC_HS400:
-		dev_notice(host->dev, "HS400 set src rate to:%u\n",
+		dev_dbg(host->dev, "HS400 set src rate to:%u\n",
 				host->src_clk_rate);
 		ret = clk_set_rate(host->clk[2], host->src_clk_rate);
 		if (ret) {
@@ -484,7 +484,7 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 	case MMC_TIMING_UHS_SDR25:
 	case MMC_TIMING_UHS_SDR50:
 	case MMC_TIMING_UHS_SDR104:
-		dev_notice(host->dev, "[%s]Other mode set src rate to:%u\n",
+		dev_dbg(host->dev, "[%s]Other mode set src rate to:%u\n",
 				__func__, host->src_clk_rate);
 		ret = clk_set_rate(host->clk[1], host->src_clk_rate);
 		if (ret) {
@@ -495,7 +495,7 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 		cfg |= CFG_AUTO_CLK;
 		break;
 	case MMC_TIMING_LEGACY:
-		dev_notice(host->dev, "[%s]Legacy set rate to:%u\n",
+		dev_dbg(host->dev, "[%s]Legacy set rate to:%u\n",
 				__func__, rate);
 		src_clk = host->clk[0];
 	/* enable always on clock for 400KHZ */
@@ -510,7 +510,7 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 		}
 		break;
 	default:
-		dev_notice(host->dev, "Check mmc/sd/sdio timing mode\n");
+		dev_dbg(host->dev, "Check mmc/sd/sdio timing mode\n");
 		WARN_ON(1);
 		break;
 	}
@@ -531,6 +531,8 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 	}
 	host->req_rate = rate;
 	mmc->actual_clock = clk_get_rate(host->mmc_clk);
+
+	dev_dbg(host->dev, "clk rate: %u Hz\n", mmc->actual_clock);
 
 	return ret;
 }
@@ -566,7 +568,7 @@ static int meson_mmc_clk_init(struct meson_host *host)
 		snprintf(name, sizeof(name), "clkin%d", i);
 		host->clk[i] = devm_clk_get(host->dev, name);
 		if (IS_ERR(host->clk[i])) {
-			dev_err(host->dev, "Missing clock %s\n", name);
+			dev_dbg(host->dev, "Missing clock %s\n", name);
 			host->clk[i] = NULL;
 		}
 	}
@@ -623,7 +625,7 @@ static int meson_mmc_pxp_clk_init(struct meson_host *host)
 	writel(reg_val, host->regs + SD_EMMC_CLOCK);
 
 	val = readl(host->clk_tree_base);
-	pr_info("clk tree base:0x%x\n", val);
+	pr_debug("clk tree base:0x%x\n", val);
 	if (aml_card_type_non_sdio(host))
 		writel(0x800000, host->clk_tree_base);
 
@@ -685,7 +687,7 @@ static unsigned int aml_sd_emmc_clktest(struct mmc_host *mmc)
 		else
 			delay_cell = (cycle / count);
 	}
-	pr_info("%s [%d] clktest : %u, delay_cell: %d, count: %u\n",
+	pr_debug("%s [%d] clktest : %u, delay_cell: %d, count: %u\n",
 		__func__, __LINE__, clktest, delay_cell, count);
 	intf3 = readl(host->regs + SD_EMMC_INTF3);
 	intf3 &= ~CLKTEST_ON_M;
@@ -983,7 +985,7 @@ static u32 _find_fixed_adj_valid_win(struct mmc_host *mmc,
 		}
 	}
 
-	pr_info("[%s][%d] no fixed adj\n", __func__, __LINE__);
+	pr_debug("[%s][%d] no fixed adj\n", __func__, __LINE__);
 	return ret;
 }
 
@@ -1113,7 +1115,7 @@ static int meson_mmc_clk_set(struct meson_host *host,
 
 	/* Same request - bail-out */
 	if (host->ddr == ddr && host->req_rate == rate) {
-		dev_notice(host->dev, "[%s]bail-out,clk rate: %u Hz\n",
+		dev_dbg(host->dev, "[%s]bail-out,clk rate: %u Hz\n",
 				__func__, rate);
 		return 0;
 	}
@@ -1187,7 +1189,7 @@ static void meson_mmc_check_resampling(struct meson_host *host,
 	unsigned int val;
 
 	if (host->timing == ios->timing) {
-		dev_notice(host->dev, "[%s]bail-out, timing\n",
+		dev_dbg(host->dev, "[%s]bail-out, timing\n",
 				__func__);
 		return;
 	}
@@ -1237,7 +1239,7 @@ static void meson_mmc_check_resampling(struct meson_host *host,
 				  mmc_phase_set->tx_delay);
 
 	host->timing = ios->timing;
-	dev_notice(host->dev, "[%s]set mmc timing:%u\n",
+	dev_dbg(host->dev, "[%s]set mmc timing:%u\n",
 			__func__, ios->timing);
 }
 
@@ -3267,7 +3269,7 @@ int meson_mmc_cd_detect(struct mmc_host *mmc)
 	struct mmc_gpio *ctx = mmc->slot.handler_priv;
 
 	gpio_val = aml_is_card_insert(ctx);
-	dev_notice(host->dev, "card %s\n", gpio_val ? "OUT" : "IN");
+	dev_dbg(host->dev, "card %s\n", gpio_val ? "OUT" : "IN");
 	mmc->trigger_card_event = true;
 	if (!gpio_val) {//card insert
 		if (host->card_insert)
@@ -3835,7 +3837,8 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		ret = -ENOMEM;
 		goto err_bounce_buf;
 	}
-	dev_notice(host->dev, "host probe success!\n");
+
+	dev_dbg(host->dev, "host probe success!\n");
 	return 0;
 
 err_bounce_buf:

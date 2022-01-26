@@ -57,7 +57,6 @@ struct page_trace {
 
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE
 u64 get_iow_time(u64 *cpu);
-extern unsigned int cma_alloc_trace;
 unsigned long unpack_ip(struct page_trace *trace);
 unsigned int pack_ip(unsigned long ip, int order, gfp_t flag);
 void set_page_trace(struct page *page, int order,

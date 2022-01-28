@@ -35,5 +35,6 @@ source "$(COMMON_DRIVERS_DIR)/drivers/thermal/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/mmc/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/reboot/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/hifi4dsp/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/debug/Kconfig"
 
 endmenu

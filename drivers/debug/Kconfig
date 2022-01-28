@@ -1,0 +1,25 @@
+config AMLOGIC_DEBUG
+	bool "AMLOGIC kernel debug"
+	depends on AMLOGIC_BREAK_GKI
+	default n
+	help
+	  This option is set up for Amlogic kernel debug,
+	  Modifying the source code, we will use the AMLOGIC_
+	  prefix.If you want to add debug code to the kernel,please
+	  use this option switch it.
+
+config AMLOGIC_DEBUG_LOCKUP
+	bool "Amlogic Kernel ATrace"
+	depends on AMLOGIC_DEBUG
+	default n
+	help
+	  Amlogic lockup code compatible with GKI mode,
+	  includes isr, sirq, smc, idle check
+
+config AMLOGIC_DEBUG_ATRACE
+	bool "Amlogic Kernel ATrace"
+	depends on AMLOGIC_DEBUG
+	default n
+	help
+	  Add android atrace compatible function.
+	  Support Tags

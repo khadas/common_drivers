@@ -113,7 +113,7 @@
 		method = "smc";
 	};
 
-	aml_reboot: reboot@0xfe005b84 {
+	aml_reboot: reboot@0xfe005b08 {
 		compatible = "aml, reboot";
 		sys_reset = <0x84000009>;
 		sys_poweroff = <0x84000008>;

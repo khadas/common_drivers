@@ -108,7 +108,7 @@ static struct sec_pm_domain_data a1_pm_domain_data __initdata = {
 	.domains_count = ARRAY_SIZE(a1_pm_domains),
 };
 
-static struct sec_pm_private_domain cx_pm_domains[] __initdata = {
+static struct sec_pm_private_domain c1_pm_domains[] __initdata = {
 	[PDID_CX_CPU_PWR0] = POWER_DOMAIN(cpu_pwr0, PDID_CX_CPU_PWR0, DOMAIN_INIT_ON,
 					GENPD_FLAG_ALWAYS_ON),
 	[PDID_CX_CPU_CORE0] = POWER_DOMAIN(cpu_core0, PDID_CX_CPU_CORE0, DOMAIN_INIT_ON,
@@ -153,11 +153,62 @@ static struct sec_pm_private_domain cx_pm_domains[] __initdata = {
 	[PDID_CX_SPICC_B] = POWER_DOMAIN(spicc_b, PDID_CX_SPICC_B, DOMAIN_INIT_OFF, 0),
 };
 
-static struct sec_pm_domain_data cx_pm_domain_data __initdata = {
-	.domains = cx_pm_domains,
-	.domains_count = ARRAY_SIZE(cx_pm_domains),
+static struct sec_pm_domain_data c1_pm_domain_data __initdata = {
+	.domains = c1_pm_domains,
+	.domains_count = ARRAY_SIZE(c1_pm_domains),
 };
 #endif
+
+/* If there is GENPD_FLAG_ALWAYS_ON, the domian must be initialized to on */
+static struct sec_pm_private_domain c2_pm_domains[] __initdata = {
+	[PDID_CX_CPU_PWR0] = POWER_DOMAIN(cpu_pwr0, PDID_CX_CPU_PWR0, DOMAIN_INIT_ON,
+					GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_CPU_CORE0] = POWER_DOMAIN(cpu_core0, PDID_CX_CPU_CORE0, DOMAIN_INIT_ON,
+					GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_CPU_CORE1] = POWER_DOMAIN(cpu_core1, PDID_CX_CPU_CORE1, DOMAIN_INIT_ON,
+					GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_SPTOP] = POWER_DOMAIN(sptop, PDID_CX_SPTOP, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_DSP_A] = POWER_DOMAIN(dsp_a, PDID_CX_DSP_A, DOMAIN_INIT_ON, GENPD_FLAG_ACTIVE_WAKEUP),
+	[PDID_CX_DSP_B] = POWER_DOMAIN(dsp_b, PDID_CX_DSP_B, DOMAIN_INIT_ON, GENPD_FLAG_ACTIVE_WAKEUP),
+	[PDID_CX_UART] = POWER_DOMAIN(uart, PDID_CX_UART, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_DMC] = POWER_DOMAIN(dmc, PDID_CX_DMC, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_I2C] = POWER_DOMAIN(i2c, PDID_CX_I2C, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_SDEMMC_B] = POWER_DOMAIN(sdemmc_b, PDID_CX_SDEMMC_B, DOMAIN_INIT_ON, 0),
+	[PDID_CX_ACODEC] = POWER_DOMAIN(acodec, PDID_CX_ACODEC, DOMAIN_INIT_ON, 0),
+	[PDID_CX_AUDIO] = POWER_DOMAIN(audio, PDID_CX_AUDIO, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_MKL_OTP] = POWER_DOMAIN(mkl_otp, PDID_CX_MKL_OTP, DOMAIN_INIT_ON,
+					GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_DMA] = POWER_DOMAIN(dma, PDID_CX_DMA, DOMAIN_INIT_ON,
+					GENPD_FLAG_ALWAYS_ON | GENPD_FLAG_IRQ_SAFE),
+	[PDID_CX_SDEMMC_A] = POWER_DOMAIN(sdemmc_a, PDID_CX_SDEMMC_A, DOMAIN_INIT_ON, 0),
+	[PDID_CX_SRAM_A] = POWER_DOMAIN(sram_a, PDID_CX_SRAM_A, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_SRAM_B] = POWER_DOMAIN(sram_b, PDID_CX_SRAM_B, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_IR] = POWER_DOMAIN(ir, PDID_CX_IR, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_SPICC] = POWER_DOMAIN(spicc, PDID_CX_SPICC, DOMAIN_INIT_OFF, 0),
+	[PDID_CX_SPIFC] = POWER_DOMAIN(spifc, PDID_CX_SPIFC, DOMAIN_INIT_ON, 0),
+	[PDID_CX_USB] = POWER_DOMAIN(usb, PDID_CX_USB, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_NIC] = POWER_DOMAIN(nic, PDID_CX_NIC, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_PDM] = POWER_DOMAIN(pdm, PDID_CX_PDM, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_RSA] = POWER_DOMAIN(rsa, PDID_CX_RSA, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_MIPI_ISP] = POWER_DOMAIN(mipi_isp, PDID_CX_MIPI_ISP, DOMAIN_INIT_ON,
+		GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_HCODEC] = POWER_DOMAIN(hcodec, PDID_CX_HCODEC, DOMAIN_INIT_ON, 0),
+	[PDID_CX_WAVE] = POWER_DOMAIN(wave, PDID_CX_WAVE, DOMAIN_INIT_OFF, 0),
+	[PDID_CX_SDEMMC_C] = POWER_DOMAIN(sdemmc_c, PDID_CX_SDEMMC_C, DOMAIN_INIT_ON, 0),
+	[PDID_CX_SRAM_C] = POWER_DOMAIN(sram_c, PDID_CX_SRAM_C, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_GDC] = POWER_DOMAIN(gdc, PDID_CX_GDC, DOMAIN_INIT_OFF, 0),
+	[PDID_CX_GE2D] = POWER_DOMAIN(ge2d, PDID_CX_GE2D, DOMAIN_INIT_OFF, 0),
+	[PDID_CX_NNA] = POWER_DOMAIN(nna, PDID_CX_NNA, DOMAIN_INIT_OFF, 0),
+	[PDID_CX_ETH] = POWER_DOMAIN(eth, PDID_CX_ETH, DOMAIN_INIT_ON, 0),
+	[PDID_CX_GIC] = POWER_DOMAIN(gic, PDID_CX_GIC, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_DDR] = POWER_DOMAIN(ddr, PDID_CX_DDR, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_CX_SPICC_B] = POWER_DOMAIN(spicc_b, PDID_CX_SPICC_B, DOMAIN_INIT_OFF, 0),
+};
+
+static struct sec_pm_domain_data c2_pm_domain_data __initdata = {
+	.domains = c2_pm_domains,
+	.domains_count = ARRAY_SIZE(c2_pm_domains),
+};
 
 static struct sec_pm_private_domain sc2_pm_domains[] __initdata = {
 	[PDID_SC2_DSP] = POWER_DOMAIN(dsp, PDID_SC2_DSP, DOMAIN_INIT_OFF, 0),
@@ -517,12 +568,12 @@ static const struct of_device_id pd_match_table[] = {
 	},
 	{
 		.compatible = "amlogic,c1-power-domain",
-		.data = &cx_pm_domain_data,
+		.data = &c1_pm_domain_data,
 	},
 #endif
 	{
 		.compatible = "amlogic,c2-power-domain",
-		.data = &cx_pm_domain_data,
+		.data = &c2_pm_domain_data,
 	},
 	{
 		.compatible = "amlogic,sc2-power-domain",

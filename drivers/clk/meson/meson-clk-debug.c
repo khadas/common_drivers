@@ -19,12 +19,14 @@ static ssize_t parent_write(struct file *file, const char __user *buffer,
 			    size_t count, loff_t *ppos)
 {
 	int ret;
-	char clk_name[24];
-	char input[24];
+	char clk_name[20];
+	char input[20];
 	struct clk *clk;
 
-	if (count >= sizeof(input))
+	if (count >= sizeof(input)) {
+		pr_err("wrong notice: clk_name too long  > 20, pls shorten clk_name\n");
 		return -EINVAL;
+	}
 
 	if (copy_from_user(input, buffer, count))
 		return -EFAULT;
@@ -37,7 +39,7 @@ static ssize_t parent_write(struct file *file, const char __user *buffer,
 		return -EINVAL;
 	}
 
-	clk = clk_get_sys(NULL, clk_name);
+	clk = clk_get_sys(clk_name, NULL);
 	if (!clk)
 		pr_err("Can't find the clock, have a look in /sys/kernel/debug/clk\n");
 
@@ -193,12 +195,14 @@ static ssize_t clk_write(struct file *file, const char __user *buffer,
 			 size_t count, loff_t *ppos)
 {
 	int ret;
-	char clk_name[24];
-	char input[24];
+	char clk_name[20];
+	char input[20];
 	struct clk *clk;
 
-	if (count >= sizeof(input))
+	if (count >= sizeof(input)) {
+		pr_err("wrong notice: clk_name too long  > 20, pls shorten clk_name\n");
 		return -EINVAL;
+	}
 
 	if (copy_from_user(input, buffer, count))
 		return -EFAULT;
@@ -211,7 +215,7 @@ static ssize_t clk_write(struct file *file, const char __user *buffer,
 		return -EINVAL;
 	}
 
-	clk = clk_get_sys(NULL, clk_name);
+	clk = clk_get_sys(clk_name, NULL);
 	if (clk)
 		pr_info("success get %s clock, its rate = %lu, its parent is %s\n",
 			clk_name, clk_get_rate(clk),

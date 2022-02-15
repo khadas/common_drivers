@@ -4642,14 +4642,14 @@ static struct clk_regmap s4_demod_core_clk_gate = {
 	},
 };
 
-static struct clk_regmap s4_demod_core_t2_clk_mux = {
+static struct clk_regmap s4_demod_core_t2_mux = {
 	.data = &(struct clk_regmap_mux_data) {
 		.offset = CLKCTRL_DEMOD_CLK_CTRL1,
 		.mask = 0x3,
 		.shift = 9,
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "demod_core_t2_clk_mux",
+		.name = "demod_core_t2_mux",
 		.ops = &clk_regmap_mux_ops,
 		.parent_data = (const struct clk_parent_data []) {
 			{ .fw_name = "xtal", },
@@ -4662,17 +4662,17 @@ static struct clk_regmap s4_demod_core_t2_clk_mux = {
 	},
 };
 
-static struct clk_regmap s4_demod_core_t2_clk_div = {
+static struct clk_regmap s4_demod_core_t2_div = {
 	.data = &(struct clk_regmap_div_data) {
 		.offset = CLKCTRL_DEMOD_CLK_CTRL1,
 		.shift = 0,
 		.width = 7,
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "demod_core_t2_clk_div",
+		.name = "demod_core_t2_div",
 		.ops = &clk_regmap_divider_ops,
 		.parent_hws = (const struct clk_hw *[]) {
-			&s4_demod_core_t2_clk_mux.hw
+			&s4_demod_core_t2_mux.hw
 		},
 		.num_parents = 1,
 		.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
@@ -4688,7 +4688,7 @@ static struct clk_regmap s4_demod_core_t2_clk_gate = {
 		.name = "demod_core_t2_clk",
 		.ops = &clk_regmap_gate_ops,
 		.parent_hws = (const struct clk_hw *[]) {
-			&s4_demod_core_t2_clk_div.hw
+			&s4_demod_core_t2_div.hw
 		},
 		.num_parents = 1,
 		.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
@@ -5465,8 +5465,8 @@ static struct clk_hw_onecell_data s4d_hw_onecell_data = {
 		[CLKID_ADC_EXTCLK_IN_MUX]	= &s4_adc_extclk_in_mux.hw,
 		[CLKID_ADC_EXTCLK_IN_DIV]	= &s4_adc_extclk_in_div.hw,
 		[CLKID_ADC_EXTCLK_IN_GATE]	= &s4_adc_extclk_in_gate.hw,
-		[CLKID_DEMOD_CORE_T2_CLK_MUX]	= &s4_demod_core_t2_clk_mux.hw,
-		[CLKID_DEMOD_CORE_T2_CLK_DIV]	= &s4_demod_core_t2_clk_div.hw,
+		[CLKID_DEMOD_CORE_T2_CLK_MUX]	= &s4_demod_core_t2_mux.hw,
+		[CLKID_DEMOD_CORE_T2_CLK_DIV]	= &s4_demod_core_t2_div.hw,
 		[CLKID_DEMOD_CORE_T2_CLK_GATE]	= &s4_demod_core_t2_clk_gate.hw,
 		[CLKID_DEMOD_32K_CLKIN]		= &s4d_demod_32k_clkin.hw,
 		[CLKID_DEMOD_32K_DIV]		= &s4d_demod_32k_div.hw,
@@ -5730,8 +5730,8 @@ static struct clk_regmap *const s4_clk_regmaps[] __initconst  = {
 	&s4_adc_extclk_in_mux,
 	&s4_adc_extclk_in_div,
 	&s4_adc_extclk_in_gate,
-	&s4_demod_core_t2_clk_mux,
-	&s4_demod_core_t2_clk_div,
+	&s4_demod_core_t2_mux,
+	&s4_demod_core_t2_div,
 	&s4_demod_core_t2_clk_gate,
 	&s4d_demod_32k_clkin,
 	&s4d_demod_32k_div,
@@ -5882,8 +5882,8 @@ static int __ref meson_s4_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_AMLOGIC_CLK_DEBUG
 		ret = devm_clk_hw_register_clkdev(dev, hw_onecell_data->hws[i],
-						  clk_hw_get_name(hw_onecell_data->hws[i]),
-						  NULL);
+						  NULL,
+						  clk_hw_get_name(hw_onecell_data->hws[i]));
 		if (ret < 0) {
 			dev_err(dev, "Failed to clkdev register: %d\n", ret);
 			return ret;

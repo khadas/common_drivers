@@ -1556,6 +1556,7 @@
 			<0x0 0x0>,
 			<0x0 0x0>,
 			<0x0 0x0>,
+			<0x0 0x0>,
 			<0x0 0x0>;
 		reg-names = "cbus",
 			    "dosbus",
@@ -1563,7 +1564,8 @@
 			    "aobus",
 			    "vcbus",
 			    "dmcbus",
-			    "efusebus";
+			    "efusebus",
+			    "nocbus";
 	};
 
 	ge2d {

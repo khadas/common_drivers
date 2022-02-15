@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# Amlogic multimedia configuration
+#
+
+menu "Amlogic multimedia configuration"
+
+config AMLOGIC_MEDIA_MODULE
+	tristate "Amlgoic Multimedia compile support"
+	default y
+	help
+		media module compile support
+		select y for built-in
+		select m for ko
+		select n for disable
+
+config AMLOGIC_MEDIA_ENABLE
+	bool "Amlgoic Multimedia Support"
+	default n
+	help
+		Amlogic multimedia framework composed of two parts,
+		the first part is common which consists of modules
+		such as arch, codec_mm, vfm, the second is driver
+		part of the media, both of which depends on this
+		configuration options.
+
+config AMLOGIC_MEDIA_COMMON
+	bool "Amlogic the common of the media"
+	depends on AMLOGIC_MEDIA_ENABLE
+	default n
+	help
+		This option is used to configure Amlogic common
+		for media, it as the basis for drivers of the
+		multimedia, mainly on the operation of the
+		registers, memory allocation and the chain of
+		responsibility management of the frame processing.
+
+if AMLOGIC_MEDIA_COMMON
+source "$(COMMON_DRIVERS_DIR)/drivers/media/common/Kconfig"
+endif
+
+endmenu
+
+

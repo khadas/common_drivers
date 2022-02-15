@@ -22,6 +22,7 @@ obj-$(CONFIG_AMLOGIC_MEMORY_EXTEND)	+= memory_ext/
 obj-$(CONFIG_AMLOGIC_JTAG_MESON)	+= jtag/
 obj-$(CONFIG_WATCHDOG)			+= watchdog/
 obj-$(CONFIG_AMLOGIC_REG_ACCESS)	+= reg_access/
+obj-$(CONFIG_AMLOGIC_MEDIA_ENABLE)	+= media/
 obj-$(CONFIG_IIO)			+= iio/
 obj-y					+= char/
 obj-$(CONFIG_AMLOGIC_SOC_INFO)		+= soc_info/

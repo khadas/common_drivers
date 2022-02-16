@@ -55,3 +55,11 @@ config AMLOGIC_CMA
 		Amlogic CMA optimization for cma alloc/free problems
 		Including policy change of CMA usage
 
+config AMLOGIC_MEM_DEBUG
+	bool "Amlogic debug mem"
+	depends on AMLOGIC_MEMORY_EXTEND
+	default n
+	help
+		Memory debug which hacking to kernel mm source.
+		Enable if doubt.
+

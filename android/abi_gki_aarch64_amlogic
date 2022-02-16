@@ -30,6 +30,8 @@
 
 # amlogic-cpuinfo.ko
   dump_stack
+  __tracepoint_android_vh_show_cpu_chipid
+  tracepoint_probe_register
 
 # amlogic-pm.ko
   register_pm_notifier

@@ -436,9 +436,8 @@ static const struct reg_sequence c2_gp_init_regs[] = {
 	{ .reg = ANACTRL_GPPLL_CTRL2,	.def = 0x11002320 },
 	{ .reg = ANACTRL_GPPLL_CTRL3,	.def = 0xd0010000 },
 	{ .reg = ANACTRL_GPPLL_CTRL4,   .def = 0x45004000 },
-	{ .reg = ANACTRL_GPPLL_CTRL5, .def = 0x001a001a, .mask = 0xffe0ffe0 },
-	{ .reg = ANACTRL_GPPLL_CTRL6, .def = 0x50b, .mask = 0xfffce0e0,
-		.delay_us = 5 },
+	{ .reg = ANACTRL_GPPLL_CTRL5,   .def = 0x001a001a, },
+	{ .reg = ANACTRL_GPPLL_CTRL6,   .def = 0x50b,      .delay_us = 5 },
 	{ .reg = ANACTRL_GPPLL_CTRL0,	.def = 0x30040863, .delay_us = 10 },
 	{ .reg = ANACTRL_GPPLL_CTRL0,	.def = 0x10040863, .delay_us = 10 },
 	{ .reg = ANACTRL_GPPLL_CTRL4,	.def = 0x45004001, .delay_us = 400 },
@@ -494,7 +493,7 @@ static struct clk_regmap c2_gp_pll_vco = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "gp_pll_vco",
-		.ops = &meson_c2_clk_pll_ops,
+		.ops = &meson_c2_clk_gp_pll_ops,
 		.parent_names = (const char *[]){ "xtal_gppll" },
 		.num_parents = 1,
 	},
@@ -3841,6 +3840,7 @@ static int c2_clkc_probe(struct platform_device *pdev)
 	struct regmap *basic_map;
 	struct regmap *pll_map;
 	struct regmap *cpu_clk_map;
+	struct clk *clk;
 	int ret, i;
 
 	/* Get the hhi system controller node */
@@ -3853,7 +3853,21 @@ static int c2_clkc_probe(struct platform_device *pdev)
 	 *}
 	 */
 
-	/* Get regmap for different clock area */
+	clk = devm_clk_get(dev, "xtal");
+	if (IS_ERR(clk)) {
+		pr_err("%s: clock source xtal not found\n", dev_name(&pdev->dev));
+		return PTR_ERR(clk);
+	}
+
+#ifdef CONFIG_AMLOGIC_CLK_DEBUG
+		ret = devm_clk_hw_register_clkdev(dev, __clk_get_hw(clk),
+						  NULL,
+						  __clk_get_name(clk));
+		if (ret < 0) {
+			dev_err(dev, "Failed to clkdev register: %d\n", ret);
+			return ret;
+		}
+#endif
 	basic_map = c2_regmap_resource(dev, "basic");
 	if (IS_ERR(basic_map)) {
 		dev_err(dev, "basic clk registers not found\n");
@@ -3898,8 +3912,8 @@ static int c2_clkc_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_AMLOGIC_CLK_DEBUG
 		ret = devm_clk_hw_register_clkdev(dev, c2_hw_onecell_data.hws[i],
-						  clk_hw_get_name(c2_hw_onecell_data.hws[i]),
-						  NULL);
+						  NULL,
+						  clk_hw_get_name(c2_hw_onecell_data.hws[i]));
 		if (ret < 0) {
 			dev_err(dev, "Failed to clkdev register: %d\n", ret);
 			return ret;

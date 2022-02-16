@@ -34,6 +34,9 @@
 
 #include "../clkc.h"
 
+#define GPPLL_CRTL5_MASK	0xffe0ffe0
+#define GPPLL_CRTL6_MASK	0xfffce0e0
+
 static int meson_clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 				  unsigned long parent_rate);
 
@@ -339,9 +342,92 @@ retry:
 			val &= CLRPMASK(frac->width, frac->shift);
 			val |= frac_value << frac->shift;
 			regmap_write(clk->map, frac->reg_off, val);
-		} else if (init_regs[i].mask) {
+		} else {
+			val = init_regs[i].def;
+			regmap_write(clk->map, init_regs[i].reg, val);
+		}
+		if (init_regs[i].delay_us)
+			udelay(init_regs[i].delay_us);
+	}
+
+	if (meson_clk_pll_wait_lock(hw)) {
+		pr_info("%s:%s pll did not lock, trying to lock rate:%lu\n",
+			__func__, clk_hw_get_name(hw), rate);
+		if (cnt--)
+			goto retry;
+	}
+
+	return 0;
+}
+
+static int meson_clk_gp_pll_set_rate(struct clk_hw *hw, unsigned long rate,
+				     unsigned long parent_rate)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
+	const struct pll_params_table *pllt;
+	unsigned int enabled;
+	unsigned long old_rate;
+	u32 frac_value = 0;
+	struct parm *m = &pll->m;
+	struct parm *n = &pll->n;
+#ifdef CONFIG_ARM
+	struct parm *od = &pll->od;
+#endif
+	struct parm *frac = &pll->frac;
+	unsigned int val = 0;
+	const struct reg_sequence *init_regs = pll->init_regs;
+	int i, cnt = 10;
+
+	if (parent_rate == 0 || rate == 0)
+		return -EINVAL;
+
+retry:
+	old_rate = rate;
+
+	/* calculate M and N */
+	pllt = meson_clk_get_pll_settings(rate, parent_rate, pll);
+	if (!pllt)
+		return -EINVAL;
+
+	/* calute frac */
+	if (MESON_PARM_APPLICABLE(&pll->frac))
+		frac_value = __pll_params_with_frac(rate,
+						    parent_rate,
+						    pllt, pll);
+
+	enabled = meson_parm_read(clk->map, &pll->en);
+	if (enabled)
+		meson_clk_pll_disable(hw);
+
+	for (i = 0; i < pll->init_count; i++) {
+		if (n->reg_off == init_regs[i].reg) {
+			/* Clear M N bits and Update M N value */
+			val = init_regs[i].def;
+			val &= CLRPMASK(n->width, n->shift);
+			val &= CLRPMASK(m->width, m->shift);
+			val |= (pllt->n) << n->shift;
+			val |= (pllt->m) << m->shift;
+#ifdef CONFIG_ARM
+			val &= CLRPMASK(od->width, od->shift);
+			val |= (pllt->od) << od->shift;
+#endif
+			regmap_write(clk->map, n->reg_off, val);
+		} else if (frac->reg_off == init_regs[i].reg &&
+			(MESON_PARM_APPLICABLE(&pll->frac))) {
+			/* Clear Frac bits and Update Frac value */
+			val = init_regs[i].def;
+			val &= CLRPMASK(frac->width, frac->shift);
+			val |= frac_value << frac->shift;
+			regmap_write(clk->map, frac->reg_off, val);
+		} else if (i == 5) {
 			regmap_read(clk->map, init_regs[i].reg, &val);
-			val &= init_regs[i].mask;
+			val &= GPPLL_CRTL5_MASK;
+			val |= init_regs[i].def;
+			regmap_write(clk->map, init_regs[i].reg, val);
+		} else if (i == 6) {
+			regmap_read(clk->map, init_regs[i].reg, &val);
+			val &= GPPLL_CRTL6_MASK;
 			val |= init_regs[i].def;
 			regmap_write(clk->map, init_regs[i].reg, val);
 		} else {
@@ -440,6 +526,15 @@ const struct clk_ops meson_c2_clk_hifi_pll_ops = {
 	.set_rate	= meson_clk_hifi_pll_set_rate,
 	.is_enabled	= meson_clk_pll_is_enabled,
 	.enable		= meson_clk_hifi_pll_enable,
+	.disable	= meson_clk_pll_disable,
+};
+
+const struct clk_ops meson_c2_clk_gp_pll_ops = {
+	.recalc_rate	= meson_clk_pll_recalc_rate,
+	.round_rate	= meson_clk_pll_round_rate,
+	.set_rate	= meson_clk_gp_pll_set_rate,
+	.is_enabled	= meson_clk_pll_is_enabled,
+	.enable		= meson_clk_pll_enable,
 	.disable	= meson_clk_pll_disable,
 };
 

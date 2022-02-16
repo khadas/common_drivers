@@ -5831,13 +5831,29 @@ static int __ref meson_s4_probe(struct platform_device *pdev)
 	struct regmap *pll_map;
 	struct regmap *cpu_clk_map;
 	const struct clk_hw_onecell_data *hw_onecell_data;
+	struct clk *clk;
 	int ret, i;
 
 	hw_onecell_data = of_device_get_match_data(&pdev->dev);
 	if (!hw_onecell_data)
 		return -EINVAL;
 
-	/* Get regmap for different clock area */
+	clk = devm_clk_get(dev, "xtal");
+	if (IS_ERR(clk)) {
+		pr_err("%s: clock source xtal not found\n", dev_name(&pdev->dev));
+		return PTR_ERR(clk);
+	}
+
+#ifdef CONFIG_AMLOGIC_CLK_DEBUG
+		ret = devm_clk_hw_register_clkdev(dev, __clk_get_hw(clk),
+						  NULL,
+						  __clk_get_name(clk));
+		if (ret < 0) {
+			dev_err(dev, "Failed to clkdev register: %d\n", ret);
+			return ret;
+		}
+#endif
+
 	basic_map = s4_regmap_resource(dev, "basic");
 	if (IS_ERR(basic_map)) {
 		dev_err(dev, "basic clk registers not found\n");

@@ -1294,7 +1294,7 @@
 		reg-names = "basic", "pll",
 			    "cpu_clk";
 		clocks = <&xtal>;
-		clock-names = "core";
+		clock-names = "xtal";
 		status = "okay";
 	};
 

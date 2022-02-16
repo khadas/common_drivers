@@ -9,6 +9,8 @@
   of_get_parent
   devm_clk_hw_register_clkdev
   clk_get_sys
+  __clk_get_hw
+  __clk_get_name
 
 # pinctrl: amlogic-pinctrl.ko amlogic-pinctrl-soc-s4.ko
   gpiochip_generic_config

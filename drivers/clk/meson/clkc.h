@@ -173,6 +173,7 @@ extern const struct clk_ops meson_a1_clk_pll_ops;
 extern const struct clk_ops meson_c1_clk_pll_ro_ops;
 extern const struct clk_ops meson_c2_clk_pll_ops;
 extern const struct clk_ops meson_c2_clk_hifi_pll_ops;
+extern const struct clk_ops meson_c2_clk_gp_pll_ops;
 extern const struct clk_ops meson_a1_clk_hifi_pll_ops;
 
 struct clk_hw *meson_clk_hw_register_input(struct device *dev,

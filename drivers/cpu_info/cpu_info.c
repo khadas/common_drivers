@@ -21,8 +21,28 @@
 #include <linux/amlogic/cpu_info.h>
 #include <linux/arm-smccc.h>
 #include <linux/amlogic/cpu_version.h>
+#include <linux/seq_file.h>
+#include <trace/hooks/cpuinfo.h>
 
 static unsigned char cpuinfo_chip_id[CHIPID_LEN];
+
+void cpuinfo_get_chipid(unsigned char *cid, unsigned int size)
+{
+	memcpy(&cid[0], cpuinfo_chip_id, size);
+}
+
+void show_cpu_chipid(void *data, struct seq_file *m)
+{
+	unsigned char chipid[CHIPID_LEN];
+	int i;
+
+	cpuinfo_get_chipid(chipid, CHIPID_LEN);
+	seq_puts(m, "Serial\t\t: ");
+	for (i = 0; i < 16; i++)
+		seq_printf(m, "%02x", chipid[i]);
+	seq_puts(m, "\n");
+	seq_printf(m, "Hardware\t: %s\n\n", "Amlogic");
+}
 
 static noinline int fn_smc(u64 function_id,
 			   u64 arg0,
@@ -79,14 +99,12 @@ static int cpuinfo_probe(struct platform_device *pdev)
 		pr_cont("\n");
 	}
 
+	ret = register_trace_android_vh_show_cpu_chipid(show_cpu_chipid, NULL);
+	if (ret)
+		pr_err("register_trace_android_vh_show_cpu_chipid fail ret=%d\n", ret);
+
 	return ret;
 }
-
-void cpuinfo_get_chipid(unsigned char *cid, unsigned int size)
-{
-	memcpy(&cid[0], cpuinfo_chip_id, size);
-}
-EXPORT_SYMBOL(cpuinfo_get_chipid);
 
 static const struct of_device_id cpuinfo_dt_match[] = {
 	{ .compatible = "amlogic, cpuinfo" },

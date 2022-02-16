@@ -61,6 +61,13 @@ config AMLOGIC_MEM_DEBUG
 	default n
 	help
 		Memory debug which hacking to kernel mm source.
+
+config AMLOGIC_FILE_CACHE
+	bool "Amlogic file cache"
+	depends on AMLOGIC_MEMORY_EXTEND
+	default n
+	help
+		Memory debug which statisticint filecache information.
 		Enable if doubt.
 
 config AMLOGIC_STACKPROTECTOR

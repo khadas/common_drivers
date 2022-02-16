@@ -10,3 +10,4 @@ obj-$(CONFIG_AMLOGIC_SLAB_TRACE)        += slab_trace.o
 obj-$(CONFIG_AMLOGIC_CMA)               += aml_cma.o
 obj-$(CONFIG_AMLOGIC_VMAP)              += vmap_stack.o
 obj-$(CONFIG_AMLOGIC_MEM_DEBUG)         += mem_debug.o
+obj-$(CONFIG_AMLOGIC_FILE_CACHE)	+= file_cache.o

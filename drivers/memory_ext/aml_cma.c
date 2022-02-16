@@ -1090,7 +1090,7 @@ static int cma_debug_show(struct seq_file *m, void *arg)
 {
 	seq_printf(m, "level=%d, alloc trace:%d, allow task:%d\n",
 		   cma_debug_level, cma_alloc_trace, allow_cma_tasks);
-	seq_printf(m, "driver used:%lu isolated:%lu total:%lu\n",
+	seq_printf(m, "driver used:%lu isolated:%d total:%lu\n",
 		   get_cma_allocated(), 0, totalcma_pages);
 	return 0;
 }

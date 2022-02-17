@@ -205,3 +205,6 @@
   unregister_kprobe
   __arm_smccc_smc_glue
   meson_atrace
+
+# amlogic-media.ko
+  __devm_release_region

@@ -1,4 +1,4 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 #Ascending by module name's ASCII
-
+source "$(COMMON_DRIVERS_DIR)/drivers/media/common/canvas/Kconfig"
 

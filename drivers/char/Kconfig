@@ -2,6 +2,6 @@
 
 menu "Character devices"
 
-source "../common_drivers/drivers/char/hw_random/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/char/hw_random/Kconfig"
 
 endmenu

@@ -1,11 +1,11 @@
 . ${ROOT_DIR}/${KERNEL_DIR}/build.config.common
 . ${ROOT_DIR}/${KERNEL_DIR}/build.config.aarch64
-. ${ROOT_DIR}/common_drivers/amlogic_utils.sh
+. ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
 
 BUILD_INITRAMFS=1
 IN_KERNEL_MODULES=1
 DEFCONFIG=amlogic_gki_defconfig
-FRAGMENT_CONFIG=common_drivers/arch/arm64/configs/amlogic_gki.fragment
+FRAGMENT_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.fragment
 
 PRE_DEFCONFIG_CMDS="pre_defconfig_cmds"
 POST_DEFCONFIG_CMDS="post_defconfig_cmds"
@@ -17,10 +17,10 @@ Image.gz
 
 FILES="${FILES}
 arch/arm64/boot/Image.gz
-../common_drivers/arch/arm64/boot/dts/amlogic/s4d_s905y4_ap222_drm.dtb
+${COMMON_DRIVERS_DIR}/arch/arm64/boot/dts/amlogic/s4d_s905y4_ap222_drm.dtb
 "
 
-EXT_MODULES="common_drivers/drivers"
+EXT_MODULES="${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/drivers"
 POST_KERNEL_BUILD_CMDS="prepare_module_build"
 
 TIDY_ABI=1
@@ -28,19 +28,19 @@ KMI_SYMBOL_LIST=android/abi_gki_aarch64
 ADDITIONAL_KMI_SYMBOL_LISTS="
 android/abi_gki_aarch64_virtual_device
 android/abi_gki_aarch64_db845c
-../common_drivers/android/abi_gki_aarch64_amlogic
+${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic
 "
 
 if [ ${AMLOGIC_BREAK_GKI} -eq "1" ]; then
   ADDITIONAL_KMI_SYMBOL_LISTS="${ADDITIONAL_KMI_SYMBOL_LISTS}
-    ../common_drivers/android/abi_gki_aarch64_amlogic_illegal
+    ${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic_illegal
 "
 fi
 
 TRIM_NONLISTED_KMI=${TRIM_NONLISTED_KMI:-1}
 KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE:-1}
 
-ABI_DEFINITION=../common_drivers/android/abi_gki_aarch64_amlogic.xml
+ABI_DEFINITION=${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.xml
 
 MODULES_LOAD_FIRSTLIST=(
 	amlogic-clk

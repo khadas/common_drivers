@@ -1,7 +1,7 @@
 USERINCLUDE 	+= \
-		 -I$(srctree)/../common_drivers/include \
-		 -I$(srctree)/../common_drivers/include/uapi
+		 -I$(srctree)/$(COMMON_DRIVERS_DIR)/include \
+		 -I$(srctree)/$(COMMON_DRIVERS_DIR)/include/uapi
 
 LINUXINCLUDE	+= \
-		 -I$(srctree)/../common_drivers/include \
-		 -I$(srctree)/../common_drivers/include/uapi
+		 -I$(srctree)/$(COMMON_DRIVERS_DIR)/include \
+		 -I$(srctree)/$(COMMON_DRIVERS_DIR)/include/uapi

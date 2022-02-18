@@ -23,7 +23,7 @@ export -f pre_defconfig_cmds
 function post_defconfig_cmds() {
 	# check_defconfig
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
-	pushd ${ROOT_DIR}/common_drivers
+	pushd ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}
 		sed -i '5,${/CONFIG_AMLOGIC_BREAK_GKI/d}' ${ROOT_DIR}/${FRAGMENT_CONFIG}
 		sed -i '5,${/CONFIG_AMLOGIC_IN_KERNEL_MODULES/d}' ${ROOT_DIR}/${FRAGMENT_CONFIG}
 	popd
@@ -161,15 +161,15 @@ function rebuild_rootfs() {
 
 	rm rootfs -rf
 	mkdir rootfs
-	cp ${ROOT_DIR}/common_drivers/rootfs_base.cpio.gz.uboot	rootfs
+	cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot	rootfs
 	cd rootfs
 	dd if=rootfs_base.cpio.gz.uboot of=rootfs_base.cpio.gz bs=64 skip=1
 	gunzip rootfs_base.cpio.gz
 	mkdir rootfs
 	cd rootfs
 	cpio -i -F ../rootfs_base.cpio
-	if [ -d ${ROOT_DIR}/common_drivers/customer ]; then
-		cp ${ROOT_DIR}/common_drivers/customer . -rf
+	if [ -d ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/customer ]; then
+		cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/customer . -rf
 	fi
 	cp -rf ../../modules .
 	find . | cpio -o -H newc | gzip > ../rootfs_new.cpio.gz

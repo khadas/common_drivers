@@ -30,7 +30,7 @@ asm (
 "       .pushsection .rodata, \"a\"             \n"
 "       .global gki_config_data                 \n"
 "gki_config_data:                               \n"
-"       .incbin \"../common_drivers/drivers/gki_tool/.gki_config\" \n"
+"       .incbin \""GKI_CONFIG"\"                \n"
 "	.word 0x00000000                        \n"
 "       .global gki_config_data_end             \n"
 "gki_config_data_end:                           \n"

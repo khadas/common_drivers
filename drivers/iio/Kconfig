@@ -2,6 +2,6 @@
 
 if IIO
 
-source "../common_drivers/drivers/iio/adc/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/iio/adc/Kconfig"
 
 endif # IIO

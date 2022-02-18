@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
+
+ccflags-y += -I$(srctree)/drivers
+
 MODULE_NAME = amlogic-pinctrl
 obj-$(CONFIG_AMLOGIC_PINCTRL_MESON) = $(MODULE_NAME).o
 $(MODULE_NAME)-y += pinctrl-module-init.o pinctrl-meson.o pinctrl-meson-axg-pmx.o

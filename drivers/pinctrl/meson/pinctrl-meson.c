@@ -52,11 +52,23 @@
 #include <linux/regmap.h>
 #include <linux/seq_file.h>
 
-#include "../../../common/drivers/pinctrl/core.h"
-#include "../../../common/drivers/pinctrl/pinctrl-utils.h"
+#include <pinctrl/core.h>
+#include <pinctrl/pinctrl-utils.h>
 #include "pinctrl-meson.h"
 
 #ifdef CONFIG_AMLOGIC_MODIFY
+#define PIN_CONFIG_VIN_THRESHOLD	(PIN_CONFIG_END + 1)
+
+static const struct pinconf_generic_params meson_extr_pinconf[] = {
+	{"vin-threshold",	PIN_CONFIG_VIN_THRESHOLD,	0},
+};
+
+#ifdef CONFIG_DEBUG_FS
+static const struct pin_config_item meson_extr_conf_items[] = {
+	PCONFDUMP(PIN_CONFIG_VIN_THRESHOLD, "vin threshold", NULL, true),
+};
+#endif
+
 static int meson_memory_duplicate(struct platform_device *pdev, void **addr,
 				  size_t n, size_t size)
 {
@@ -77,7 +89,11 @@ static int meson_memory_duplicate(struct platform_device *pdev, void **addr,
 #endif
 
 static const unsigned int meson_bit_strides[] = {
+#ifndef CONFIG_AMLOGIC_MODIFY
 	1, 1, 1, 1, 1, 2, 1
+#else
+	1, 1, 1, 1, 1, 2, 1, 1
+#endif
 };
 
 /**
@@ -373,11 +389,60 @@ static int meson_pinconf_set_drive_strength(struct meson_pinctrl *pc,
 	return 0;
 }
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+static int  meson_pinconf_set_vthx(struct meson_pinctrl *pc, unsigned int pin,
+				   u32 ref_arg)
+{
+	struct meson_bank *bank;
+	unsigned int reg, bit;
+	int ret;
+
+	if (!pc->reg_vthx) {
+		dev_err(pc->dev, "vin-threshold not supported\n");
+		return -EOPNOTSUPP;
+	}
+
+	ret = meson_get_bank(pc, pin, &bank);
+	if (ret)
+		return ret;
+	meson_calc_reg_and_bit(bank, pin, REG_VTHX, &reg,
+			       &bit);
+	return regmap_update_bits(pc->reg_vthx, reg, BIT(bit),
+				  !!ref_arg ? BIT(bit) : 0);
+}
+
+static int meson_pinconf_get_vthx(struct meson_pinctrl *pc, unsigned int pin,
+				  u16 *arg)
+{
+	struct meson_bank *bank;
+	unsigned int reg, bit, val;
+	int ret;
+
+	if (!pc->reg_vthx)
+		return -EOPNOTSUPP;
+
+	ret = meson_get_bank(pc, pin, &bank);
+	if (ret)
+		return ret;
+
+	meson_calc_reg_and_bit(bank, pin, REG_VTHX, &reg, &bit);
+
+	ret = regmap_read(pc->reg_pullen, reg, &val);
+	if (ret)
+		return ret;
+
+	*arg = !!(val & BIT(bit));
+
+	return 0;
+}
+
+#endif
+
 static int meson_pinconf_set(struct pinctrl_dev *pcdev, unsigned int pin,
 			     unsigned long *configs, unsigned int num_configs)
 {
 	struct meson_pinctrl *pc = pinctrl_dev_get_drvdata(pcdev);
-	enum pin_config_param param;
+	unsigned int param;
 	unsigned int arg = 0;
 	int i, ret;
 
@@ -388,6 +453,7 @@ static int meson_pinconf_set(struct pinctrl_dev *pcdev, unsigned int pin,
 		case PIN_CONFIG_DRIVE_STRENGTH_UA:
 #ifdef CONFIG_AMLOGIC_MODIFY
 		case PIN_CONFIG_INPUT_ENABLE:
+		case PIN_CONFIG_VIN_THRESHOLD:
 #endif
 		case PIN_CONFIG_OUTPUT_ENABLE:
 		case PIN_CONFIG_OUTPUT:
@@ -420,6 +486,9 @@ static int meson_pinconf_set(struct pinctrl_dev *pcdev, unsigned int pin,
 #ifdef CONFIG_AMLOGIC_MODIFY
 		case PIN_CONFIG_INPUT_ENABLE:
 			ret = meson_pinconf_set_output(pc, pin, !arg);
+			break;
+		case PIN_CONFIG_VIN_THRESHOLD:
+			ret =  meson_pinconf_set_vthx(pc, pin, arg);
 			break;
 #endif
 		default:
@@ -513,7 +582,8 @@ static int meson_pinconf_get(struct pinctrl_dev *pcdev, unsigned int pin,
 			     unsigned long *config)
 {
 	struct meson_pinctrl *pc = pinctrl_dev_get_drvdata(pcdev);
-	enum pin_config_param param = pinconf_to_config_param(*config);
+	unsigned int param = pinconf_to_config_param(*config);
+
 	u16 arg;
 	int ret;
 
@@ -548,7 +618,12 @@ static int meson_pinconf_get(struct pinctrl_dev *pcdev, unsigned int pin,
 
 		arg = ret;
 		break;
-
+#ifdef CONFIG_AMLOGIC_MODIFY
+	case PIN_CONFIG_VIN_THRESHOLD:
+		if (meson_pinconf_get_vthx(pc, pin, &arg) < 0)
+			return -EINVAL;
+		break;
+#endif
 	default:
 		return -ENOTSUPP;
 	}
@@ -678,6 +753,8 @@ static int meson_gpiolib_register(struct meson_pinctrl *pc)
 	pc->chip.to_irq = meson_gpio_to_irq;
 	pc->chip.set_config = gpiochip_generic_config;
 	names = kcalloc(pc->desc.npins, sizeof(char *), GFP_KERNEL);
+	if (!names)
+		return -ENOMEM;
 	pins = pc->desc.pins;
 	for (i = 0; i < pc->desc.npins; i++)
 		names[pins[i].number] = pins[i].name;
@@ -799,6 +876,11 @@ static int meson_pinctrl_parse_dt(struct meson_pinctrl *pc,
 		pc->reg_ds = NULL;
 	}
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (of_property_read_bool(node, "amlogic,vin-threshold-support"))
+		pc->reg_vthx = pc->reg_gpio;
+#endif
+
 	if (pc->data->parse_dt)
 		return pc->data->parse_dt(pc);
 
@@ -869,6 +951,11 @@ int meson_pinctrl_probe(struct platform_device *pdev)
 				     sizeof(struct meson_pmx_func));
 	if (ret)
 		return ret;
+	pc->desc.num_custom_params = ARRAY_SIZE(meson_extr_pinconf);
+	pc->desc.custom_params = meson_extr_pinconf;
+#ifdef CONFIG_DEBUG_FS
+	pc->desc.custom_conf_items = meson_extr_conf_items;
+#endif
 #endif
 	pc->desc.name		= "pinctrl-meson";
 	pc->desc.owner		= THIS_MODULE;

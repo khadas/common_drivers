@@ -208,3 +208,8 @@
 
 # amlogic-media.ko
   __devm_release_region
+  cma_alloc
+  cma_release
+  dma_buf_begin_cpu_access
+  dma_buf_end_cpu_access
+  dma_contiguous_default_area

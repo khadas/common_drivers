@@ -213,3 +213,8 @@
   dma_buf_begin_cpu_access
   dma_buf_end_cpu_access
   dma_contiguous_default_area
+  dev_pm_domain_attach_by_id
+  dma_buf_vmap
+  dma_buf_vunmap
+  down_interruptible
+  up

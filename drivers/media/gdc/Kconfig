@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# gdc driver configuration
+#
+config AMLOGIC_MEDIA_GDC
+	tristate "Amlogic gdc driver"
+	default n
+	help
+		Select to enable gdc driver.

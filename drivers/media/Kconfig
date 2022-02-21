@@ -35,10 +35,22 @@ config AMLOGIC_MEDIA_COMMON
 		registers, memory allocation and the chain of
 		responsibility management of the frame processing.
 
+config AMLOGIC_MEDIA_DRIVERS
+	bool "Amlogic drivers of the media"
+	depends on AMLOGIC_MEDIA_COMMON
+	default n
+	help
+		This option is used to configure Amlogic drivers
+		of the multimedia, which consists of video decoder
+		module, video decoder management module and post
+		processing of the frame.
 if AMLOGIC_MEDIA_COMMON
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/Kconfig"
 endif
 
+if AMLOGIC_MEDIA_DRIVERS
+source "$(COMMON_DRIVERS_DIR)/drivers/media/gdc/Kconfig"
+endif
 endmenu
 
 

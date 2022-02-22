@@ -8,6 +8,7 @@ function show_help {
 	echo "USAGE: $0 [--nongki] [--abi]"
 	echo "  --kernel_dir            for KERNEL_DIR, common[default]|other dir, require parameter value"
 	echo "  --common_drivers_dir    for COMMON_DRIVERS_DIR, common[default]|other dir, require parameter value"
+	echo "  --savedefconfig         for SAVEDEFCONFIG, [default]|1, not require parameter value"
 }
 
 VA=
@@ -24,6 +25,10 @@ do
 		COMMON_DRIVERS_DIR=$2
 		VA=1
                 shift
+		;;
+	--savedefconfig)
+		SAVEDEFCONFIG=1
+		shift
 		;;
 	-h|--help)
 		show_help
@@ -69,7 +74,7 @@ export CROSS_COMPILE=/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin
 
 ROOTDIR=`pwd`
 
-OUTDIR=${ROOTDIR}/out/kernel-5.15/
+OUTDIR=${ROOTDIR}/out/kernel-5.15
 mkdir -p ${OUTDIR}/common
 if [ "${SKIP_RM_OUTDIR}" != "1" ] ; then
 	rm -rf ${OUTDIR}
@@ -77,6 +82,15 @@ fi
 
 DEFCONFIG=meson64_a64_smarthome_defconfig
 cp ${ROOTDIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${DEFCONFIG} ${ROOTDIR}/${KERNEL_DIR}/arch/arm64/configs/
+if [[ -n ${SAVEDEFCONFIG} ]]; then
+	set -x
+	make ARCH=arm64 -C ${ROOTDIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
+	make ARCH=arm64 -C ${ROOTDIR}/${KERNEL_DIR} O=${OUTDIR}/common savedefconfig
+	rm ${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
+	cp -f ${OUTDIR}/common/defconfig  ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${DEFCONFIG}
+	set +x
+	exit
+fi
 set -x
 make ARCH=arm64 -C ${ROOTDIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
 make ARCH=arm64 -C ${ROOTDIR}/${KERNEL_DIR} O=${OUTDIR}/common headers_install

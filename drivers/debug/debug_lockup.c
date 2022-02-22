@@ -249,7 +249,7 @@ static void idle_in_hook(void *data, int *state, struct cpuidle_device *dev)
 static void idle_out_hook(void *data, int state, struct cpuidle_device *dev)
 {
 	int cpu;
-	unsigned long long delta;
+	unsigned long delta;
 	struct lockup_info *info;
 
 	if (!idle_check_en)
@@ -263,8 +263,8 @@ static void idle_out_hook(void *data, int state, struct cpuidle_device *dev)
 
 	delta = sched_clock() - info->idle_enter_time;
 	if (delta > idle_thr)
-		pr_err("IDLELong___ERR. state:%d idle_time:%llu ms\n",
-		       state, div_u64(delta, ns2ms));
+		pr_err("IDLELong___ERR. state:%d idle_time:%lu ms\n",
+		       state, delta / ns2ms);
 
 	info->idle_enter_time = 0;
 }
@@ -303,7 +303,8 @@ static void smc_out_hook(unsigned long a0, unsigned long a1,
 		 struct arm_smccc_res *res, struct arm_smccc_quirk *quirk)
 {
 	int cpu;
-	unsigned long delta, ts, rem_nsec;
+	unsigned long delta, rem_nsec;
+	unsigned long long ts;
 	struct lockup_info *info;
 
 	if (!initialized || !smc_check_en)
@@ -320,7 +321,7 @@ static void smc_out_hook(unsigned long a0, unsigned long a1,
 		ts = info->smc_enter_time;
 		rem_nsec = do_div(ts, 1000000000);
 
-		pr_err("SMCLong___ERR. smc_time:%llu ms(%lx %lx %lx %lx %lx %lx %lx %lx), entered at: %lu.%06lu\n",
+		pr_err("SMCLong___ERR. smc_time:%lu ms(%lx %lx %lx %lx %lx %lx %lx %lx), entered at: %llu.%06lu\n",
 		       delta / ns2ms,
 		       info->curr_smc_a0,
 		       info->curr_smc_a1,
@@ -406,7 +407,7 @@ static void irq_trace_stop(unsigned long flags)
 	    !(softirq_count() && info->sirq_enter_time)) {
 		ts = info->irq_disable_time;
 		rem_nsec = do_div(ts, 1000000000);
-		pr_err("\n\nDisIRQ___ERR:%llums, disabled at: %lu.%06lu\n",
+		pr_err("\n\nDisIRQ___ERR:%lums, disabled at: %llu.%06lu\n",
 		       delta / ns2ms, ts, rem_nsec / 1000);
 
 		stack_trace_print(info->irq_disable_trace_entries, info->irq_disable_trace_entries_nr, 0);
@@ -486,7 +487,7 @@ void pr_lockup_info(void)
 			unsigned long long ts = info->irq_disable_time;
 			unsigned long rem_nsec = do_div(ts, 1000000000);
 
-			pr_err("in irq disabled:%llums, disabled at: %lu.%06lu\n",
+			pr_err("in irq disabled:%lums, disabled at: %llu.%06lu\n",
 			       delta / ns2ms, ts, rem_nsec / 1000);
 
 			stack_trace_print(info->irq_disable_trace_entries, info->irq_disable_trace_entries_nr, 0);

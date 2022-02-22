@@ -124,5 +124,10 @@ static inline unsigned long arch_local_irq_save(void)
 
 	return flags;
 }
+
+static inline int arch_irqs_disabled(void)
+{
+	return arch_irqs_disabled_flags(arch_local_save_flags());
+}
 #endif
 #endif

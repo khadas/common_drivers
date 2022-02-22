@@ -63,3 +63,22 @@ config AMLOGIC_MEM_DEBUG
 		Memory debug which hacking to kernel mm source.
 		Enable if doubt.
 
+config AMLOGIC_STACKPROTECTOR
+	bool "Amlogic stack protector"
+	depends on AMLOGIC_MEMORY_EXTEND
+	default n
+	help
+		This config is used to disable CONFIG_STACKPROTECTOR
+		if enabled AMLOGIC_VMAP. CONFIG_STACKPROTECTOR have
+		bad effect to save stack usage.
+
+config AMLOGIC_VMAP
+	bool "Amlogic kernel stack"
+	depends on AMLOGIC_MEMORY_EXTEND
+	select AMLOGIC_STACKPROTECTOR
+	default n
+	help
+		This config is used to enable amlogic kernel stack
+		usage optimization with vmalloc. It depends on
+		AMLOGIC_MEMORY_EXTEND. This config only opened
+		on 64 bit platform.

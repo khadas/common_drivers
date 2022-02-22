@@ -24,6 +24,12 @@
 #include <asm/fixmap.h>
 #include <linux/kasan.h>
 #include <linux/seq_file.h>
+#ifdef CONFIG_AMLOGIC_CMA
+#include <linux/amlogic/aml_cma.h>
+#endif
+#ifdef CONFIG_AMLOGIC_VMAP
+#include <linux/amlogic/vmap_stack.h>
+#endif
 
 void dump_mem_layout(char *buf)
 {
@@ -132,4 +138,18 @@ static int __init memory_debug_init(void)
 	return 0;
 }
 rootfs_initcall(memory_debug_init);
+
+/*
+ * These information will auto inject to /proc/meminfo sysfs
+ */
+void arch_report_meminfo(struct seq_file *m)
+{
+#ifdef CONFIG_AMLOGIC_CMA
+	seq_printf(m, "DriverCma:      %8ld kB\n",
+		   get_cma_allocated() * (1 << (PAGE_SHIFT - 10)));
+#endif
+#ifdef CONFIG_AMLOGIC_VMAP
+	vmap_report_meminfo(m);
+#endif
+}
 

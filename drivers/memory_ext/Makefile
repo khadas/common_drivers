@@ -8,4 +8,5 @@ ccflags-y += -I$(srctree)/mm
 obj-$(CONFIG_AMLOGIC_PAGE_TRACE)        += page_trace.o
 obj-$(CONFIG_AMLOGIC_SLAB_TRACE)        += slab_trace.o
 obj-$(CONFIG_AMLOGIC_CMA)               += aml_cma.o
+obj-$(CONFIG_AMLOGIC_VMAP)              += vmap_stack.o
 obj-$(CONFIG_AMLOGIC_MEM_DEBUG)         += mem_debug.o

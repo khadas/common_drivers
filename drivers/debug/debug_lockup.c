@@ -22,6 +22,9 @@
 #include <trace/events/irq.h>
 #include <trace/hooks/cpuidle.h>
 #include <trace/hooks/dtask.h>
+#include <trace/hooks/sched.h>
+#include <linux/time.h>
+#include "../../../kernel/sched/sched.h"
 
 #include <linux/amlogic/debug_irqflags.h>
 
@@ -500,6 +503,23 @@ void pr_lockup_info(void)
 }
 EXPORT_SYMBOL_GPL(pr_lockup_info);
 
+static void rt_throttle_func(void *data, int cpu, u64 clock, ktime_t rt_period, u64 rt_runtime,
+		s64 rt_period_timer_expires)
+{
+	u64 exec_runtime;
+	u64 rt_time;
+	struct rq *rq = cpu_rq(cpu);
+	struct rt_rq *rt_rq = &rq->rt;
+
+	exec_runtime = rq->curr->se.sum_exec_runtime;
+	rt_time = rt_rq->rt_time;
+	do_div(exec_runtime, 1000000);
+	do_div(rt_time, 1000000);
+	pr_warn("RT throttling on cpu:%d rt_time:%llums, curr:%s/%d prio:%d sum_runtime:%llums\n",
+		cpu, rt_time, rq->curr->comm, rq->curr->pid,
+		rq->curr->prio, exec_runtime);
+}
+
 int debug_lockup_init(void)
 {
 	int cpu;
@@ -528,6 +548,8 @@ int debug_lockup_init(void)
 	register_trace_android_vh_cpu_idle_exit(idle_out_hook, NULL);
 
 	register_trace_android_vh_sched_show_task(sched_show_task_hook, NULL);
+
+	register_trace_android_vh_dump_throttled_rt_tasks(rt_throttle_func, NULL);
 
 	irq_trace_start_hook = irq_trace_start;
 	irq_trace_stop_hook = irq_trace_stop;

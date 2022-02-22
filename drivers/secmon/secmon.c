@@ -20,6 +20,10 @@
 #include <linux/cma.h>
 #endif
 #include <linux/arm-smccc.h>
+#include <linux/memblock.h>
+#include <linux/vmalloc.h>
+#include <linux/slab.h>
+#include <asm/page.h>
 
 static void __iomem *sharemem_in_base;
 static void __iomem *sharemem_out_base;
@@ -143,6 +147,32 @@ static void test_access_secmon(void)
 }
 #endif
 
+static void *ram_vmap(phys_addr_t start, size_t size)
+{
+	struct page **pages;
+	phys_addr_t page_start;
+	unsigned int page_count;
+	unsigned int i;
+	void *vaddr;
+
+	page_start = start - offset_in_page(start);
+	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
+
+	pages = kmalloc_array(page_count, sizeof(struct page *), GFP_KERNEL);
+	if (!pages)
+		return NULL;
+
+	for (i = 0; i < page_count; i++) {
+		phys_addr_t addr = page_start + i * PAGE_SIZE;
+
+		pages[i] = pfn_to_page(addr >> PAGE_SHIFT);
+	}
+	vaddr = vmap(pages, page_count, VM_MAP, PAGE_KERNEL);
+	kfree(pages);
+
+	return vaddr + offset_in_page(start);
+}
+
 static int secmon_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
@@ -188,13 +218,12 @@ static int secmon_probe(struct platform_device *pdev)
 #ifdef TEST_ACESS
 	test_access_secmon();
 #endif
-
-	sharemem_in_base = ioremap_cache(phy_in_base, sharemem_in_size);
+	sharemem_in_base = ram_vmap(phy_in_base, sharemem_in_size);
 	if (!sharemem_in_base) {
 		pr_err("secmon share mem in buffer remap fail!\n");
 		return -ENOMEM;
 	}
-	sharemem_out_base = ioremap_cache(phy_out_base, sharemem_out_size);
+	sharemem_out_base = ram_vmap(phy_out_base, sharemem_out_size);
 	if (!sharemem_out_base) {
 		pr_err("secmon share mem out buffer remap fail!\n");
 		return -ENOMEM;

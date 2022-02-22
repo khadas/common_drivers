@@ -12,6 +12,9 @@
 #include <linux/mm.h>
 #include <linux/kallsyms.h>
 #include "security_key.h"
+#ifdef CONFIG_ARM
+#include <linux/memblock.h>
+#endif
 
 static DEFINE_SPINLOCK(storage_lock);
 static int storage_init_status;
@@ -231,7 +234,10 @@ int __init security_key_init(struct platform_device *pdev)
 	unsigned long phy_in;
 	unsigned long phy_out;
 	unsigned long phy_block;
-
+#ifdef CONFIG_ARM
+	unsigned long pfn;
+	phys_addr_t addr;
+#endif
 	storage_init_status = -1;
 
 	share_mem = devm_kzalloc(&pdev->dev, sizeof(*share_mem), GFP_KERNEL);
@@ -259,7 +265,14 @@ int __init security_key_init(struct platform_device *pdev)
 	 * mem locates at lowmem region, so its
 	 * okay to call phys_to_virt directly
 	 */
+#ifdef CONFIG_ARM
+	pfn = __phys_to_pfn(phy_in);
+	addr = PFN_PHYS(pfn);
+
+	if (PHYS_PFN(addr) == pfn && memblock_is_map_memory(addr)) {
+#else
 	if (pfn_is_map_memory(__phys_to_pfn(phy_in))) {
+#endif
 		share_mem->in = (void __iomem *)phys_to_virt(phy_in);
 		share_mem->out = (void __iomem *)phys_to_virt(phy_out);
 		share_mem->block = (void __iomem *)phys_to_virt(phy_block);

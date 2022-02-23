@@ -38,7 +38,6 @@ struct dmc_monitor *dmc_mon;
 static unsigned long init_dev_mask;
 static unsigned long init_start_addr;
 static unsigned long init_end_addr;
-static unsigned long init_configs;
 
 static int early_dmc_param(char *buf)
 {
@@ -56,12 +55,6 @@ static int early_dmc_param(char *buf)
 	init_start_addr = s_addr;
 	init_end_addr   = e_addr;
 	init_dev_mask   = mask;
-	init_configs	= (mask >> 32) & 0xffffffff;
-
-	if (init_configs == 0xffffffffffff)
-		init_dev_mask   &= 0xffffffff;
-	else
-		init_dev_mask   = mask;
 
 	pr_info("%s, buf:%s, %lx-%lx, %lx\n",
 		__func__, buf, s_addr, e_addr, mask);
@@ -736,8 +729,6 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 	schedule_delayed_work(&dmc_mon->work, HZ);
 
 	if (init_dev_mask) {
-		if (init_configs == 0xffffffff)
-			dmc_mon->configs &= ~POLICY_INCLUDE;
 		dmc_set_monitor(init_start_addr,
 				init_end_addr, init_dev_mask, 1);
 	}

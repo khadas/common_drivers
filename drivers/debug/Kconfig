@@ -23,3 +23,11 @@ config AMLOGIC_DEBUG_ATRACE
 	help
 	  Add android atrace compatible function.
 	  Support Tags
+
+config AMLOGIC_BOOT_TIME
+	bool "AMLOGIC boot time optimi zation"
+	depends on AMLOGIC_BREAK_GKI
+	default n
+	help
+	  This option is set up for Amlogic boot time optimization,
+	  if you want to optimize boot time, please set this config to y.

@@ -1,2 +1,2 @@
 # SPDX-License-Identifier: GPL-2.0
-dtb-y += meson-c2-c305x-af400.dtb
+dtb-y += c2_c305x_af400.dtb

@@ -889,7 +889,7 @@ void __init thread_stack_cache_init(void)
 					    0, VMAP_ADDR_START, VMAP_ADDR_END,
 					    NUMA_NO_NODE, GFP_KERNEL,
 					    __builtin_return_address(0));
-	WARN(!avmap->root_vm, "alloc vmap area %lx failed\n", VM_STACK_AREA_SIZE);
+	WARN(!avmap->root_vm, "alloc vmap area %x failed\n", VM_STACK_AREA_SIZE);
 	if (!avmap->root_vm) {
 		__free_pages(page, VMAP_CACHE_PAGE_ORDER);
 		kfree(avmap->bitmap);

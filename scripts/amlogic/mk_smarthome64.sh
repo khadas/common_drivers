@@ -69,7 +69,7 @@ export CROSS_COMPILE=/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin
 
 ROOTDIR=`pwd`
 
-OUTDIR=${ROOTDIR}/out/kernel-5.15/
+OUTDIR=${ROOTDIR}/out/kernel-5.15
 mkdir -p ${OUTDIR}/common
 if [ "${SKIP_RM_OUTDIR}" != "1" ] ; then
 	rm -rf ${OUTDIR}

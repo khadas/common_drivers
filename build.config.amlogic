@@ -11,7 +11,7 @@ PRE_DEFCONFIG_CMDS="pre_defconfig_cmds"
 POST_DEFCONFIG_CMDS="post_defconfig_cmds"
 
 MAKE_GOALS="${MAKE_GOALS}
-amlogic/s4d_s905y4_ap222_drm.dtb
+s4d_s905y4_ap222_drm.dtb
 Image.gz
 "
 

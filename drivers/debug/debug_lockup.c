@@ -349,9 +349,17 @@ void __arm_smccc_smc_glue(unsigned long a0, unsigned long a1,
 			unsigned long a5, unsigned long a6, unsigned long a7,
 			struct arm_smccc_res *res, struct arm_smccc_quirk *quirk)
 {
+	int not_in_idle = current->pid != 0;
+
+	if (not_in_idle)
+		preempt_disable_notrace();
+
 	smc_in_hook(a0, a1, a2, a3, a4, a5, a6, a7, res, quirk);
 	__arm_smccc_smc(a0, a1, a2, a3, a4, a5, a6, a7, res, quirk);
 	smc_out_hook(a0, a1, a2, a3, a4, a5, a6, a7, res, quirk);
+
+	if (not_in_idle)
+		preempt_enable_notrace();
 }
 EXPORT_SYMBOL_GPL(__arm_smccc_smc_glue);
 

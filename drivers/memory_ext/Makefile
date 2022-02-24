@@ -11,3 +11,4 @@ obj-$(CONFIG_AMLOGIC_CMA)               += aml_cma.o
 obj-$(CONFIG_AMLOGIC_VMAP)              += vmap_stack.o
 obj-$(CONFIG_AMLOGIC_MEM_DEBUG)         += mem_debug.o
 obj-$(CONFIG_AMLOGIC_FILE_CACHE)	+= file_cache.o
+obj-$(CONFIG_AMLOGIC_MEMORY_EXTEND)	+= memory.o

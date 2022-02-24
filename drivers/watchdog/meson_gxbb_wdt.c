@@ -15,6 +15,7 @@
 #include <linux/watchdog.h>
 #ifdef CONFIG_AMLOGIC_MODIFY
 #include <linux/of_device.h>
+#include <watchdog_core.h>
 #endif
 
 #ifdef CONFIG_AMLOGIC_MODIFY
@@ -42,6 +43,9 @@ struct meson_gxbb_wdt {
 	void __iomem *reg_base;
 	struct watchdog_device wdt_dev;
 	struct clk *clk;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	unsigned int feed_watchdog_mode;
+#endif
 };
 
 static int meson_gxbb_wdt_start(struct watchdog_device *wdt_dev)
@@ -119,9 +123,15 @@ static int __maybe_unused meson_gxbb_wdt_resume(struct device *dev)
 {
 	struct meson_gxbb_wdt *data = dev_get_drvdata(dev);
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (watchdog_active(&data->wdt_dev) ||
+	    watchdog_hw_running(&data->wdt_dev))
+		meson_gxbb_wdt_start(&data->wdt_dev);
+#else
 	if (watchdog_active(&data->wdt_dev))
 		meson_gxbb_wdt_start(&data->wdt_dev);
 
+#endif
 	return 0;
 }
 
@@ -129,9 +139,15 @@ static int __maybe_unused meson_gxbb_wdt_suspend(struct device *dev)
 {
 	struct meson_gxbb_wdt *data = dev_get_drvdata(dev);
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (watchdog_active(&data->wdt_dev) ||
+	    watchdog_hw_running(&data->wdt_dev))
+		meson_gxbb_wdt_stop(&data->wdt_dev);
+#else
 	if (watchdog_active(&data->wdt_dev))
 		meson_gxbb_wdt_stop(&data->wdt_dev);
 
+#endif
 	return 0;
 }
 
@@ -188,6 +204,7 @@ static int meson_gxbb_wdt_probe(struct platform_device *pdev)
 #ifdef CONFIG_AMLOGIC_MODIFY
 	struct wdt_params *wdt_params;
 	int reset_by_soc;
+	struct watchdog_device *wdt_dev;
 #endif
 
 	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
@@ -242,8 +259,39 @@ static int meson_gxbb_wdt_probe(struct platform_device *pdev)
 #endif
 	meson_gxbb_wdt_set_timeout(&data->wdt_dev, data->wdt_dev.timeout);
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	wdt_dev = &data->wdt_dev;
+
+	ret = of_property_read_u32(pdev->dev.of_node,
+				   "amlogic,feed_watchdog_mode",
+				   &data->feed_watchdog_mode);
+	if (ret)
+		data->feed_watchdog_mode = 1;
+	if (data->feed_watchdog_mode == 1) {
+		set_bit(WDOG_HW_RUNNING, &wdt_dev->status);
+		meson_gxbb_wdt_start(&data->wdt_dev);
+	}
+
+	dev_info(&pdev->dev, "feeding watchdog mode: [%s]\n",
+		 data->feed_watchdog_mode ? "kernel" : "userspace");
+
+	watchdog_stop_on_reboot(wdt_dev);
+	ret = devm_watchdog_register_device(dev, wdt_dev);
+	if (ret)
+		return ret;
+	/* 1. must set after watchdog  cdev register to prevent kernel
+	 * & userspace use wdt at the same time
+	 * 2. watchdog_cdev_register will check WDOG_HW_RUNNING to start hrtimer
+	 * so, WDOG_HW_RUNNING should be set first on above
+	 */
+	if (data->feed_watchdog_mode == 1)
+		set_bit(_WDOG_DEV_OPEN, &wdt_dev->wd_data->status);
+
+	return ret;
+#else
 	watchdog_stop_on_reboot(&data->wdt_dev);
 	return devm_watchdog_register_device(dev, &data->wdt_dev);
+#endif
 }
 
 static struct platform_driver meson_gxbb_wdt_driver = {

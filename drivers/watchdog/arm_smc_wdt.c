@@ -16,6 +16,9 @@
 #include <linux/types.h>
 #include <linux/watchdog.h>
 #include <uapi/linux/psci.h>
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <watchdog_core.h>
+#endif
 
 #define DRV_NAME		"arm_smc_wdt"
 #define DRV_VERSION		"1.0"
@@ -163,12 +166,25 @@ static int smcwd_probe(struct platform_device *pdev)
 	}
 	dev_info(&pdev->dev, "feeding watchdog mode: [%s]\n",
 		 feed_watchdog_mode ? "kernel" : "userspace");
-#endif
 
 	err = devm_watchdog_register_device(&pdev->dev, wdd);
 	if (err)
 		return err;
 
+	/* 1. must set after watchdog  cdev register to prevent kernel
+	 * & userspace use wdt at the same time
+	 * 2. watchdog_cdev_register will check WDOG_HW_RUNNING to start hrtimer
+	 * so, WDOG_HW_RUNNING should be set first on above
+	 */
+	if (feed_watchdog_mode == 1)
+		set_bit(_WDOG_DEV_OPEN, &wdd->wd_data->status);
+
+#else
+
+	err = devm_watchdog_register_device(&pdev->dev, wdd);
+	if (err)
+		return err;
+#endif
 	dev_info(&pdev->dev,
 		 "Watchdog registered (timeout=%d sec, nowayout=%d)\n",
 		 wdd->timeout, nowayout);

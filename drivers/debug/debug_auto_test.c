@@ -23,13 +23,13 @@
 #include <linux/delay.h>
 
 static struct hrtimer isr_check_hrtimer;
-static unsigned long isr_check_hrtimer_delayus;
+static unsigned long isr_check_hrtimer_delayms;
 static unsigned long isr_check_hrtimer_sleepus;
 
 static enum hrtimer_restart isr_check_hrtimer_handler(struct hrtimer *timer)
 {
-	if (isr_check_hrtimer_delayus)
-		udelay(isr_check_hrtimer_delayus);
+	if (isr_check_hrtimer_delayms)
+		mdelay(isr_check_hrtimer_delayms);
 
 	if (isr_check_hrtimer_sleepus) {
 		hrtimer_forward(timer, ktime_get(), ktime_set(0, isr_check_hrtimer_sleepus*1000));
@@ -45,43 +45,43 @@ void isr_check_test(void)
 	isr_check_hrtimer.function = isr_check_hrtimer_handler;
 
 	pr_info("---- isr_check_test() hrtimer delay 600ms start\n");
-	isr_check_hrtimer_delayus = 600000;
+	isr_check_hrtimer_delayms = 600;
 	isr_check_hrtimer_sleepus = 0;
 	hrtimer_start(&isr_check_hrtimer, ktime_set(1, 0), HRTIMER_MODE_REL);
 	msleep(5000);
 	hrtimer_cancel(&isr_check_hrtimer);
 
 	pr_info("---- isr_check_test() hrtimer 5us sleep loop start\n");
-	isr_check_hrtimer_delayus = 0;
+	isr_check_hrtimer_delayms = 0;
 	isr_check_hrtimer_sleepus = 5;
 	hrtimer_start(&isr_check_hrtimer, ktime_set(1, 0), HRTIMER_MODE_REL);
 	msleep(5000);
 	hrtimer_cancel(&isr_check_hrtimer);
 }
 
-static int sirq_timer_delayus;
+static int sirq_timer_delayms;
 static struct timer_list sirq_timer;
 
 static void sirq_timer_handler(struct timer_list *timer)
 {
-	udelay(sirq_timer_delayus);
+	mdelay(sirq_timer_delayms);
 }
 
 void sirq_check_test(void)
 {
 	pr_info("---- sirq_check_test() delay 600ms start\n");
-	sirq_timer_delayus = 600000;
+	sirq_timer_delayms = 600;
 	timer_setup(&sirq_timer, sirq_timer_handler, 0);
 	mod_timer(&sirq_timer, jiffies + HZ);
 	msleep(5000);
 }
 
-static int idle_test_delayus = 6000000;
+static int idle_test_delayms = 6000;
 static int idle_test_handler(struct kprobe *p, struct pt_regs *regs)
 {
-	if (smp_processor_id() == 0 && idle_test_delayus) {
-		udelay(idle_test_delayus);
-		idle_test_delayus = 0;
+	if (smp_processor_id() == 0 && idle_test_delayms) {
+		mdelay(idle_test_delayms);
+		idle_test_delayms = 0;
 	}
 
 	return 0;

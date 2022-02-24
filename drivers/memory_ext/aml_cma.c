@@ -16,6 +16,7 @@
  *
  */
 
+#include <internal.h>
 #include <linux/stddef.h>
 #include <linux/compiler.h>
 #include <linux/mm.h>

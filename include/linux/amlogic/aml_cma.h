@@ -8,7 +8,6 @@
 
 #include <linux/migrate_mode.h>
 #include <linux/pagemap.h>
-#include <internal.h>
 
 #define GFP_NO_CMA    (__GFP_NO_CMA | __GFP_WRITE)
 static inline bool cma_forbidden_mask(gfp_t gfp_flags)
@@ -41,6 +40,7 @@ void cma_keep_high_active(struct page *page, struct list_head *high,
 void update_gfp_flags(gfp_t *gfp);
 void check_water_mark(long free_pages, unsigned long mark);
 int cma_mmu_op(struct page *page, int count, bool set);
+struct compact_control;
 void check_page_to_cma(struct compact_control *cc, struct page *page);
 struct page *get_compact_page(struct page *migratepage,
 			      struct compact_control *cc);

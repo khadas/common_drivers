@@ -127,8 +127,8 @@ struct meson_host {
 	struct clk *core_clk;
 	struct clk *tx_clk;
 	struct clk *mmc_clk;
-	struct clk *mux[2];
-	struct clk *mux1_in;
+	struct clk *mux[3];
+	struct clk *mux_div;
 	struct clk *clk[3];
 	unsigned long req_rate;
 	unsigned char timing;

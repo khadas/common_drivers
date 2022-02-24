@@ -979,14 +979,15 @@
 			 "sleep";
 	bus-width = <4>;
 	cap-sd-highspeed;
-	sd-uhs-sdr104;
+	//sd-uhs-sdr104;
 	disable-wp;
 	max-frequency = <200000000>;
 	cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
 	dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
 	dat3-gpios = <&gpio GPIOC_3 GPIO_ACTIVE_HIGH>;
-	vmmc-supply = <&sdcard_power>;
-	vqmmc-supply = <&vddio_card>;
+	cd-inverted;
+	//vmmc-supply = <&sdcard_power>;
+	//vqmmc-supply = <&vddio_card>;
 };
 
 &sd_emmc_c {
@@ -997,9 +998,9 @@
 	pinctrl-names = "default", "clk-gate", "sleep";
 	cap-mmc-highspeed;
 	non-removable;
-	mmc-ddr-1_8v;
-	mmc-hs200-1_8v;
-	mmc-hs400-1_8v;
+	//mmc-ddr-1_8v;
+	//mmc-hs200-1_8v;
+	//mmc-hs400-1_8v;
 	max-frequency = <200000000>;
 	disable-wp;
 	bus-width = <8>;

@@ -274,11 +274,11 @@
 				<&clkc CLKID_SD_EMMC_A_SEL>,
 				<&clkc CLKID_SD_EMMC_A_GATE>,
 				<&clkc CLKID_SD_EMMC_A>,
+				<&clkc CLKID_SD_EMMC_A_DIV>,
 				<&xtal>,
-				<&clkc CLKID_FCLK_DIV2P5>,
-				<&clkc CLKID_SD_EMMC_A_DIV>;
-				clock-names = "core", "mux0", "mux1", "mux2",
-						"clkin0", "clkin1", "clkin2";
+				<&clkc CLKID_FCLK_DIV2P5>;
+				clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
+						"clkin0", "clkin1";
 			mmc_debug_flag;
 			use_intf3_tuning;
 			resets = <&reset RESET_SD_EMMC_A>;
@@ -296,15 +296,18 @@
 			clocks = <&clkc CLKID_SYS_SD_EMMC_B>,
 			<&clkc CLKID_SD_EMMC_B_SEL>,
 			<&clkc CLKID_SD_EMMC_B_GATE>,
-			 <&clkc CLKID_SD_EMMC_B>,
-			  <&xtal>,
-			  <&clkc CLKID_FCLK_DIV2P5>,
-			  <&clkc CLKID_SD_EMMC_B_DIV>;
-			  clock-names = "core", "mux0", "mux1", "mux2",
-			  "clkin0", "clkin1", "clkin2";
-			  mmc_debug_flag;
-			  use_intf3_tuning;
-			  resets = <&reset RESET_SD_EMMC_B>;
+			<&clkc CLKID_SD_EMMC_B>,
+			<&clkc CLKID_SD_EMMC_B_DIV>,
+			<&xtal>,
+			<&clkc CLKID_FCLK_DIV2P5>;
+			clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
+					"clkin0", "clkin1";
+			mmc_debug_flag;
+			use_intf3_tuning;
+			resets = <&reset RESET_SD_EMMC_B>;
+			no-mmc;
+			no-sdio;
+			cd-inverted;
 
 		};
 
@@ -316,19 +319,31 @@
 			      <0x0 0xfe00040c 0x0 0x4>;
 			interrupts = <GIC_SPI 63 IRQ_TYPE_EDGE_RISING>;
 			power-domains = <&pwrdm PDID_CX_SDEMMC_C>;
-				status = "disabled";
-				clocks = <&clkc CLKID_SYS_SD_EMMC_C>,
-				<&clkc CLKID_SD_EMMC_C_SEL>,
+			status = "disabled";
+
+	/*
+	 *	on C2 platform ,the relation of mmc clock is as follow:
+	 *	CLKID_HIFI_PLL or other PLL/FCLK (lookup in c2.c) is CLKID_SD_EMMC_C_SEL parent;
+	 *	CLKID_SD_EMMC_C_SEL is CLKID_SD_EMMC_C_DIV only parent;
+	 *	CLKID_SD_EMMC_C_DIV or xtal is CLKID_SD_EMMC_C parent;
+	 *	CLKID_SD_EMMC_C is CLKID_SD_EMMC_C_GATE only parent;
+	 *	CLKID_SD_EMMC_C_GATE is parent of mmc internal parent
+	 */
+
+			clocks = <&clkc CLKID_SYS_SD_EMMC_C>,
+				 <&clkc CLKID_SD_EMMC_C_SEL>,
 				 <&clkc CLKID_SD_EMMC_C_GATE>,
 				 <&clkc CLKID_SD_EMMC_C>,
+				 <&clkc CLKID_SD_EMMC_C_DIV>,
 				 <&xtal>,
-				 <&clkc CLKID_HIFI_PLL>,
-				 <&clkc CLKID_SD_EMMC_C_DIV>;
-				 clock-names = "core", "mux0", "mux1", "mux2",
-				 "clkin0", "clkin1", "clkin2";
-				 mmc_debug_flag;
-				 tx_delay = <16>;
-				 resets = <&reset RESET_SD_EMMC_C>;
+				 <&clkc CLKID_HIFI_PLL>;
+			clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
+						"clkin0", "clkin1";
+			mmc_debug_flag;
+			tx_delay = <16>;
+			resets = <&reset RESET_SD_EMMC_C>;
+			no-sd;
+			no-sdio;
 
 		};
 

@@ -436,8 +436,8 @@ static const struct reg_sequence c2_gp_init_regs[] = {
 	{ .reg = ANACTRL_GPPLL_CTRL2,	.def = 0x11002320 },
 	{ .reg = ANACTRL_GPPLL_CTRL3,	.def = 0xd0010000 },
 	{ .reg = ANACTRL_GPPLL_CTRL4,   .def = 0x45004000 },
-	{ .reg = ANACTRL_GPPLL_CTRL5,   .def = 0x001a001a, },
-	{ .reg = ANACTRL_GPPLL_CTRL6,   .def = 0x50b,      .delay_us = 5 },
+	{ .reg = ANACTRL_GPPLL_CTRL5,   .def = 0x001a001a },
+	{ .reg = ANACTRL_GPPLL_CTRL6,   .def = 0x50b, .delay_us = 5 },
 	{ .reg = ANACTRL_GPPLL_CTRL0,	.def = 0x30040863, .delay_us = 10 },
 	{ .reg = ANACTRL_GPPLL_CTRL0,	.def = 0x10040863, .delay_us = 10 },
 	{ .reg = ANACTRL_GPPLL_CTRL4,	.def = 0x45004001, .delay_us = 400 },
@@ -1848,13 +1848,13 @@ static struct clk_regmap c2_usb_bus = {
 };
 
 /* sd emmc clk */
-static u32 mux_table_sd_emmc[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+static u32 mux_table_sd_emmc[] = { 0, 1, 2, 3, 5, 6, 7 };
 /* delete the forth parent : hifi_pll
  * hifi pll only work for Audio
  */
 static const char * const sd_emmc_parent_names[] = {
 	"fclk_div2", "fclk_div3", "fclk_div2p5", "hifi_pll",
-	"gp_pll", "fclk_div4", "fclk_div5", "fclk_div7"
+	 "fclk_div4", "fclk_div5", "fclk_div7"
 };
 
 static struct clk_regmap sd_emmc_a_sel = {
@@ -1991,7 +1991,7 @@ static struct clk_regmap sd_emmc_c_sel = {
 		.ops = &clk_regmap_mux_ops,
 		.parent_names = sd_emmc_parent_names,
 		.num_parents = ARRAY_SIZE(sd_emmc_parent_names),
-		.flags = CLK_SET_RATE_PARENT,
+		//.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -2006,7 +2006,7 @@ static struct clk_regmap sd_emmc_c_div = {
 		.ops = &clk_regmap_divider_ops,
 		.parent_names = (const char *[]){ "sd_emmc_c_sel" },
 		.num_parents = 1,
-		.flags = CLK_SET_RATE_PARENT,
+		//.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -2020,9 +2020,10 @@ static struct clk_regmap sd_emmc_c = {
 		.name = "sd_emmc_c",
 		.ops = &clk_regmap_mux_ops,
 		.parent_names = (const char *[]){ "sd_emmc_c_div",
-						  "xtal" },
+						  "xtal"
+						},
 		.num_parents = 2,
-		.flags = CLK_SET_RATE_PARENT,
+		//.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -2036,6 +2037,7 @@ static struct clk_regmap sd_emmc_c_gate = {
 		.ops = &clk_regmap_gate_ops,
 		.parent_names = (const char *[]){ "sd_emmc_c" },
 		.num_parents = 1,
+		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -3852,7 +3854,6 @@ static int c2_clkc_probe(struct platform_device *pdev)
 	 *	return PTR_ERR(map);
 	 *}
 	 */
-
 	clk = devm_clk_get(dev, "xtal");
 	if (IS_ERR(clk)) {
 		pr_err("%s: clock source xtal not found\n", dev_name(&pdev->dev));
@@ -3868,6 +3869,7 @@ static int c2_clkc_probe(struct platform_device *pdev)
 			return ret;
 		}
 #endif
+	/* Get regmap for different clock area */
 	basic_map = c2_regmap_resource(dev, "basic");
 	if (IS_ERR(basic_map)) {
 		dev_err(dev, "basic clk registers not found\n");

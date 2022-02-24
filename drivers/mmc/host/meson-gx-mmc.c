@@ -462,7 +462,7 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 	struct mmc_host *mmc = host->mmc;
 	u32 cfg = readl(host->regs + SD_EMMC_CFG);
 
-	dev_dbg(host->dev, "[%s]set rate:%u\n", __func__, rate);
+	dev_dbg(host->dev, "[%s]set rate:%lu\n", __func__, rate);
 	switch (ios->timing) {
 	case MMC_TIMING_MMC_HS400:
 		dev_dbg(host->dev, "HS400 set src rate to:%u\n",
@@ -495,7 +495,7 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 		cfg |= CFG_AUTO_CLK;
 		break;
 	case MMC_TIMING_LEGACY:
-		dev_dbg(host->dev, "[%s]Legacy set rate to:%u\n",
+		dev_dbg(host->dev, "[%s]Legacy set rate to:%lu\n",
 				__func__, rate);
 		src_clk = host->clk[0];
 	/* enable always on clock for 400KHZ */
@@ -517,7 +517,10 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 
 	writel(cfg, host->regs + SD_EMMC_CFG);
 	clk_prepare_enable(src_clk);
-	ret = clk_set_parent(host->mux[0], src_clk);
+	if (host->mux_div && (!strcmp(__clk_get_name(src_clk), "xtal")))
+		ret = clk_set_parent(host->mux[2], src_clk);
+	else
+		ret = clk_set_parent(host->mux[0], src_clk);
 	if (ret) {
 		dev_err(host->dev, "set parent error\n");
 		return ret;
@@ -550,6 +553,7 @@ static int meson_mmc_clk_init(struct meson_host *host)
 	int i, ret = 0;
 	const char *clk_parent[1];
 	u32 clk_reg;
+	unsigned long rate;
 
 	/* init SD_EMMC_CLOCK to sane defaults w/min clock rate */
 	clk_reg = CLK_ALWAYS_ON(host);
@@ -562,9 +566,25 @@ static int meson_mmc_clk_init(struct meson_host *host)
 	for (i = 0; i < 2; i++) {
 		snprintf(name, sizeof(name), "mux%d", i);
 		host->mux[i] = devm_clk_get(host->dev, name);
+		if (IS_ERR(host->mux[i])) {
+			if (host->mux[i] != ERR_PTR(-EPROBE_DEFER))
+				dev_err(host->dev, "Missing clock %s\n", name);
+			return PTR_ERR(host->mux[i]);
+		}
+	}
+	host->mux_div = devm_clk_get(host->dev, "mux_div");
+	if (IS_ERR(host->mux_div)) {
+		host->mux_div = NULL;
+		rate = 1000000000;
+		dev_err(host->dev, "Missing clock %s(S4d platform, ignore this)\n", "mux_div");
+	} else {
+		snprintf(name, sizeof(name), "mux%d", 2);
+		host->mux[2] = devm_clk_get(host->dev, name);
+		if (IS_ERR(host->mux[2]))
+			dev_err(host->dev, "Missing clock %s\n", "mux2");
 	}
 
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 2; i++) {
 		snprintf(name, sizeof(name), "clkin%d", i);
 		host->clk[i] = devm_clk_get(host->dev, name);
 		if (IS_ERR(host->clk[i])) {
@@ -573,6 +593,16 @@ static int meson_mmc_clk_init(struct meson_host *host)
 		}
 	}
 
+	if (host->mux_div) {
+		rate = clk_get_rate(host->mux[0]);
+		ret = clk_set_parent(host->mux[2], host->mux_div);
+		if (ret) {
+			dev_err(host->dev, "Set div parent error\n");
+			return ret;
+		}
+	}
+
+	clk_set_rate(host->mux[1], rate);
 	/* create the divider */
 	div = devm_kzalloc(host->dev, sizeof(*div), GFP_KERNEL);
 	if (!div)
@@ -584,6 +614,7 @@ static int meson_mmc_clk_init(struct meson_host *host)
 	clk_parent[0] = __clk_get_name(host->mux[1]);
 	init.parent_names = clk_parent;
 	init.num_parents = 1;
+	init.flags = CLK_SET_RATE_PARENT;
 
 	div->reg = host->regs + SD_EMMC_CLOCK;
 	div->shift = __ffs(CLK_DIV_MASK);
@@ -594,8 +625,12 @@ static int meson_mmc_clk_init(struct meson_host *host)
 	host->mmc_clk = devm_clk_register(host->dev, &div->hw);
 	if (WARN_ON(IS_ERR(host->mmc_clk)))
 		return PTR_ERR(host->mmc_clk);
-
-	ret = clk_set_parent(host->mux[0], host->clk[0]);
+	/* create the mmc core clock */
+	if (host->mux_div) {
+		ret = clk_set_parent(host->mux[2], host->clk[0]);
+	} else {
+		ret = clk_set_parent(host->mux[0], host->clk[0]);
+	}
 	if (ret) {
 		dev_err(host->dev, "Set 24m parent error\n");
 		return ret;
@@ -1115,7 +1150,7 @@ static int meson_mmc_clk_set(struct meson_host *host,
 
 	/* Same request - bail-out */
 	if (host->ddr == ddr && host->req_rate == rate) {
-		dev_dbg(host->dev, "[%s]bail-out,clk rate: %u Hz\n",
+		dev_dbg(host->dev, "[%s]bail-out,clk rate: %lu Hz\n",
 				__func__, rate);
 		return 0;
 	}

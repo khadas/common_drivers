@@ -575,14 +575,12 @@
 			};
 
 			spicc0: spi@3800 {
-				compatible = "amlogic,meson-g12a-spicc";
+				compatible = "amlogic,meson-g12-spicc";
 				reg = <0x3800 0x44>;
 				interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
-				clock-names = "core", "pclk";
+				clock-names = "core", "async";
 				clocks = <&clkc CLKID_SPICC_A>,
 					 <&clkc CLKID_SPICC_A_GATE>;
-				assigned-clocks = <&clkc CLKID_SPICC_A_GATE>;
-				assigned-clock-rates = <500000000>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				power-domains = <&pwrdm PDID_CX_SPICC>;
@@ -590,14 +588,12 @@
 			};
 
 			spicc1: spi@3c00 {
-				compatible = "amlogic,meson-g12a-spicc";
+				compatible = "amlogic,meson-g12-spicc";
 				reg = <0x3c00 0x44>;
 				interrupts = <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>;
-				clock-names = "core", "pclk";
+				clock-names = "core", "async";
 				clocks = <&clkc CLKID_SPICC_B>,
 					 <&clkc CLKID_SPICC_B_GATE>;
-				assigned-clocks = <&clkc CLKID_SPICC_B_GATE>;
-				assigned-clock-rates = <500000000>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				power-domains = <&pwrdm PDID_CX_SPICC_B>;

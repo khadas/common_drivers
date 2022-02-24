@@ -83,7 +83,7 @@
 #define AML_UART_PORT_MAX		12
 #define AML_UART_PORT_OFFSET		6
 
-#define AML_UART_DEV_NAME		"ttyAML"
+#define AML_UART_DEV_NAME		"ttyS"
 
 static struct uart_driver meson_uart_driver;
 static int support_sysrq;

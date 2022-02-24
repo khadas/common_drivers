@@ -122,6 +122,11 @@
 		sensor-name = "imx335"; /*imx290;os08a10;imx227*/
 	};
 
+	lens: lens {
+		compatible = "soc, lens";
+		status = "okay";
+	};
+
 	sdcard_power: regulator-sdcard {
 		compatible = "regulator-fixed";
 		regulator-name = "SDCARD_POWER";

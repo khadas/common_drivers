@@ -166,6 +166,11 @@
 		sensor-name = "imx335"; /*imx290;os08a10;imx227*/
 	};
 
+	lens: lens {
+		compatible = "soc, lens";
+		status = "okay";
+	};
+
 	ircut: ircut {
 		compatible = "amlogic, aml-ircut";
 		status = "okay";

@@ -24,6 +24,7 @@
 #include <trace/hooks/dtask.h>
 #include <trace/hooks/sched.h>
 #include <linux/time.h>
+#include <linux/delay.h>
 #include "../../../kernel/sched/sched.h"
 
 #include <linux/amlogic/debug_irqflags.h>
@@ -361,7 +362,7 @@ void __arm_smccc_smc_glue(unsigned long a0, unsigned long a1,
 	if (not_in_idle)
 		preempt_enable_notrace();
 }
-EXPORT_SYMBOL_GPL(__arm_smccc_smc_glue);
+EXPORT_SYMBOL(__arm_smccc_smc_glue);
 
 static void irq_trace_start(unsigned long flags)
 {
@@ -428,10 +429,10 @@ static void irq_trace_stop(unsigned long flags)
 }
 
 irq_trace_fn_t irq_trace_start_hook;
-EXPORT_SYMBOL_GPL(irq_trace_start_hook);
+EXPORT_SYMBOL(irq_trace_start_hook);
 
 irq_trace_fn_t irq_trace_stop_hook;
-EXPORT_SYMBOL_GPL(irq_trace_stop_hook);
+EXPORT_SYMBOL(irq_trace_stop_hook);
 
 static void sched_show_task_hook(void *data, struct task_struct *p)
 {
@@ -452,40 +453,64 @@ static void sched_show_task_hook(void *data, struct task_struct *p)
 		p->se.avg.util_avg);
 }
 
-void pr_lockup_info(void)
+void pr_lockup_info(int lock_cpu)
 {
 	int cpu;
 	unsigned long flags;
 	struct lockup_info *info;
-
-	irq_check_en = 0;
+	unsigned long long delta, ts;
+	unsigned long rem_nsec;
 
 	local_irq_save(flags);
+	irq_check_en = 0;
+	isr_check_en = 0;
+	sirq_check_en = 0;
+	idle_check_en = 0;
+	smc_check_en = 0;
 
 	console_loglevel = 7;
-	pr_err("\n\n\npr_lockup_info: ___START\n");
+
+	pr_err("\n");
+	pr_err("\n");
+	pr_err("pr_lockup_info: lock_cpu=[%d]  START -------------------------\n", lock_cpu);
 	for_each_online_cpu(cpu) {
+		pr_err("\n");
+		pr_err("### cpu[%d]:\n", cpu);
 		info = per_cpu_ptr(infos, cpu);
 
-		if (info->curr_irq != INVALID_IRQ)
-			pr_err("curr_irq:%d action=%s/%ps exec_start_time=%llums\n",
+		if (info->curr_irq != INVALID_IRQ) {
+			ts = info->isr_infos[info->curr_irq].exec_start_time;
+			rem_nsec = do_div(ts, 1000000000);
+
+			pr_err("curr_irq:%d action=%s/%ps exec_start_time=%llu.%06lu\n",
 			       info->curr_irq,
 			       info->curr_irq_action->name,
 			       info->curr_irq_action->handler,
-			       div_u64(info->isr_infos[info->curr_irq].exec_start_time, ns2ms));
+			       ts, rem_nsec / 1000);
+		}
 
-		if (info->curr_sirq != INVALID_SIRQ)
-			pr_err("curr_sirq:%d sirq_enter_time=%llu\n",
+		if (info->curr_sirq != INVALID_SIRQ) {
+			ts = info->sirq_enter_time;
+			rem_nsec = do_div(ts, 1000000000);
+
+			pr_err("curr_sirq:%d sirq_enter_time=%llu.%06lu\n",
 				info->curr_sirq,
-				div_u64(info->sirq_enter_time, ns2ms));
+				ts, rem_nsec / 1000);
+		}
 
-		if (info->idle_enter_time)
-			pr_err("in idle, idle_enter_time=%llu\n",
-			       div_u64(info->idle_enter_time, ns2ms));
+		if (info->idle_enter_time) {
+			ts = info->idle_enter_time;
+			rem_nsec = do_div(ts, 1000000000);
 
-		if (info->smc_enter_time) {
-			pr_err("in smc, smc_enter_time=%llu (%lx %lx %lx %lx %lx %lx %lx %lx)\n",
-			       div_u64(info->smc_enter_time, ns2ms),
+			pr_err("in idle, idle_enter_time=%llu.%06lu\n", ts, rem_nsec / 1000);
+		}
+
+		if (info->smc_enter_time && !info->idle_enter_time) {
+			ts = info->smc_enter_time;
+			rem_nsec = do_div(ts, 1000000000);
+
+			pr_err("in smc, smc_enter_time=%llu.%06lu (%lx %lx %lx %lx %lx %lx %lx %lx)\n",
+			       ts, rem_nsec / 1000,
 			       info->curr_smc_a0,
 			       info->curr_smc_a1,
 			       info->curr_smc_a2,
@@ -499,9 +524,9 @@ void pr_lockup_info(void)
 		}
 
 		if (info->irq_disable_time) {
-			unsigned long long delta = sched_clock() - info->irq_disable_time;
-			unsigned long long ts = info->irq_disable_time;
-			unsigned long rem_nsec = do_div(ts, 1000000000);
+			delta = sched_clock() - info->irq_disable_time;
+			ts = info->irq_disable_time;
+			rem_nsec = do_div(ts, 1000000000);
 
 			pr_err("in irq, disabled at: %llu.%06lu for %llums\n",
 			       ts, rem_nsec / 1000, div_u64(delta, ns2ms));
@@ -512,9 +537,11 @@ void pr_lockup_info(void)
 		dump_cpu_task(cpu);
 	}
 
-	pr_err("\npr_lockup_info: ___END\n");
+	pr_err("pr_lockup_info: lock_cpu=[%d] END ------------------------\n", lock_cpu);
+
+	local_irq_restore(flags);
 }
-EXPORT_SYMBOL_GPL(pr_lockup_info);
+EXPORT_SYMBOL(pr_lockup_info);
 
 static void rt_throttle_func(void *data, int cpu, u64 clock, ktime_t rt_period, u64 rt_runtime,
 		s64 rt_period_timer_expires)

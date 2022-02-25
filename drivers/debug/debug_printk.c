@@ -128,7 +128,7 @@ void debug_printk_modify_len(u16 *reserve_size, unsigned long irqflags, unsigned
 		*reserve_size = max_line;
 	printk_info.format_len = info_len;
 }
-EXPORT_SYMBOL_GPL(debug_printk_modify_len);
+EXPORT_SYMBOL(debug_printk_modify_len);
 
 void debug_printk_insert_info(char *text_buf, u16 *text_len)
 {
@@ -136,4 +136,4 @@ void debug_printk_insert_info(char *text_buf, u16 *text_len)
 	memcpy(text_buf, printk_info.format_buf, printk_info.format_len);
 	*text_len += printk_info.format_len;
 }
-EXPORT_SYMBOL_GPL(debug_printk_insert_info);
+EXPORT_SYMBOL(debug_printk_insert_info);

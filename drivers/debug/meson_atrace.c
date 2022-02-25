@@ -119,5 +119,5 @@ void meson_atrace(int tag, const char *name, unsigned int flags,
 	if (get_atrace_tag_enabled(tag))
 		trace_tracing_mark_write(name, flags, value);
 }
-EXPORT_SYMBOL_GPL(meson_atrace);
+EXPORT_SYMBOL(meson_atrace);
 

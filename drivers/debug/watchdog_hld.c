@@ -29,7 +29,7 @@ core_param(hardlockup_panic, hardlockup_panic, int, 0644);
 
 DECLARE_PER_CPU(unsigned long, hrtimer_interrupts);
 DECLARE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
-extern void pr_lockup_info(void);
+extern void pr_lockup_info(int lock_cpu);
 
 static unsigned int watchdog_next_cpu(unsigned int cpu)
 {
@@ -85,7 +85,7 @@ void watchdog_check_hardlockup_other_cpu(void)
 		/* only warn once */
 		if (per_cpu(hard_watchdog_warn, next_cpu) == true)
 			return;
-		pr_lockup_info();
+		pr_lockup_info(next_cpu);
 		if (hardlockup_panic)
 			panic("Watchdog detected hard LOCKUP on cpu %u",
 			      next_cpu);

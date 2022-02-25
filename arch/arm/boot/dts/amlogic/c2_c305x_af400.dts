@@ -923,7 +923,7 @@
 };
 
 &sd_emmc_a {
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&sdio_m_pins>;
 	pinctrl-1 = <&sdio_m_clk_gate_pins>;
 	pinctrl-names = "default", "clk-gate";

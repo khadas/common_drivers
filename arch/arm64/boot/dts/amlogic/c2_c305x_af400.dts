@@ -1033,7 +1033,7 @@
 };
 
 &sd_emmc_b {
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&sdcard_pins>;
 	pinctrl-1 = <&sdcard_clk_gate_pins>;
 	pinctrl-2 = <&sd_1bit_pins>;

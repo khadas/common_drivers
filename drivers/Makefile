@@ -35,6 +35,7 @@ obj-y					+= mmc/
 obj-$(CONFIG_AMLOGIC_GX_REBOOT)		+= reboot/
 obj-$(CONFIG_AMLOGIC_HIFI4DSP)		+= hifi4dsp/
 obj-y					+= debug/
+obj-$(CONFIG_AMLOGIC_FREERTOS)		+= freertos/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

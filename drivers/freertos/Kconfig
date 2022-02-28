@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# Amlogic freertos configuration
+#
+
+config AMLOGIC_FREERTOS
+	bool "Amlogic Freertos Support"
+	default n
+	help
+	  Say Y here to enable freertos support.
+
+config AMLOGIC_AUTO_CAPTURE
+	bool "Amlogic camera auto capture"
+	default n
+	help
+	  This option is used to configure Amlogic camera auto capture.
+	  User space would use a block of reserved memory to save captured camera,
+	  then free this reserved memory after using it.

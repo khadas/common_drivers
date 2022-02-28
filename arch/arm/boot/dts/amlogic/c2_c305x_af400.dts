@@ -105,6 +105,12 @@
 		};
 	};
 
+	free_reserved {
+		compatible = "amlogic, free_reserved";
+		memory-region = <&autocap_reserved>;
+		status = "okay";
+	};
+
 	sensor: sensor {
 		compatible = "soc, sensor";
 		status = "okay";

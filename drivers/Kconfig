@@ -38,5 +38,6 @@ source "$(COMMON_DRIVERS_DIR)/drivers/reboot/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/hifi4dsp/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/debug/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/camera/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/freertos/Kconfig"
 
 endmenu

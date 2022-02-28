@@ -1004,7 +1004,6 @@
 	cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
 	dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
 	dat3-gpios = <&gpio GPIOC_3 GPIO_ACTIVE_HIGH>;
-	cd-inverted;
 	//vmmc-supply = <&sdcard_power>;
 	//vqmmc-supply = <&vddio_card>;
 };

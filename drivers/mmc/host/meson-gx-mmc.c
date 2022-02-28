@@ -35,6 +35,7 @@
 #include <linux/gpio/consumer.h>
 #include <linux/sched/clock.h>
 #include <linux/debugfs.h>
+#include "mmc_key.h"
 
 struct mmc_gpio {
 	struct gpio_desc *ro_gpio;
@@ -3597,10 +3598,17 @@ static int meson_mmc_probe(struct platform_device *pdev)
 	struct mmc_host *mmc;
 	int ret;
 	u32 val;
+	static int registered;
 
 	mmc = mmc_alloc_host(sizeof(struct meson_host), &pdev->dev);
 	if (!mmc)
 		return -ENOMEM;
+
+	if (registered == 0) {
+		/*register amlmmc_dtb_key_init vendor-hook function*/
+		register_key_dtb();
+		registered = 1;
+	}
 
 	host = mmc_priv(mmc);
 	host->mmc = mmc;

@@ -205,6 +205,7 @@
   unregister_kprobe
   __arm_smccc_smc_glue
   meson_atrace
+  pstore_io_save
 
 # amlogic-media.ko
   __devm_release_region

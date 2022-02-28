@@ -214,13 +214,16 @@ unsigned long notrace pmd_check(unsigned long addr, unsigned long far)
 	pgd   = cpu_get_pgd() + index;
 	pgd_k = init_mm.pgd + index;
 
-	if (pgd_none(*pgd_k))
-		goto bad_area;
-	if (!pgd_present(*pgd))
-		set_pgd(pgd, *pgd_k);
+	p4d = p4d_offset(pgd, addr);
+	p4d_k = p4d_offset(pgd_k, addr);
 
-	pud   = pud_offset(pgd, far);
-	pud_k = pud_offset(pgd_k, far);
+	if (p4d_none(*p4d_k))
+		goto bad_area;
+	if (!p4d_present(*p4d))
+		set_p4d(p4d, *p4d_k);
+
+	pud   = pud_offset(p4d, far);
+	pud_k = pud_offset(p4d_k, far);
 
 	if (pud_none(*pud_k))
 		goto bad_area;
@@ -253,7 +256,55 @@ unsigned long notrace pmd_check(unsigned long addr, unsigned long far)
 bad_area:
 	return addr;
 }
-#endif
+
+void __init fixup_init_thread_union(void)
+{
+	void *p;
+
+	p = (void *)((unsigned long)&init_thread_union + THREAD_INFO_OFFSET);
+	memcpy(p, &init_thread_union, THREAD_INFO_SIZE);
+	memset(&init_thread_union, 0, THREAD_INFO_SIZE);
+}
+
+static void copy_pgd(void)
+{
+	unsigned long index;
+	pgd_t *pgd_c = NULL, *pgd_k, *pgd_i;
+	unsigned long size;
+
+	/*
+	 * sync pgd of current task and idmap_pgd from init mm
+	 */
+	index = pgd_index(TASK_SIZE);
+	pgd_c = cpu_get_pgd() + index;
+	pgd_i = idmap_pgd     + index;
+	pgd_k = init_mm.pgd   + index;
+	size  = (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t);
+	pr_debug("pgd:%p, pgd_k:%p, pdg_i:%p\n",
+		 pgd_c, pgd_k, pgd_i);
+	memcpy(pgd_c, pgd_k, size);
+	memcpy(pgd_i, pgd_k, size);
+}
+
+unsigned long save_suspend_context(unsigned int *ptr)
+{
+	unsigned long ret;
+
+	if (likely(is_vmap_addr((unsigned long)ptr))) {
+		struct page *page = vmalloc_to_page(ptr);
+		unsigned long offset;
+
+		offset = (unsigned long)ptr & (PAGE_SIZE - 1);
+		ret = (page_to_phys(page) + offset);
+		pr_debug("%s, ptr:%p, page:%lx, save_ptr:%lx\n",
+			 __func__, ptr, page_to_pfn(page), ret);
+		copy_pgd();
+	} else {
+		ret = virt_to_phys(ptr);
+	}
+	return ret;
+}
+#endif /* CONFIG_ARM */
 
 int is_vmap_addr(unsigned long addr)
 {
@@ -618,10 +669,16 @@ struct pt_regs *handle_vmap_fault(unsigned long addr, unsigned int esr,
 
 	ret = __handle_vmap_fault(addr, esr, regs);
 	if (!ret) {
+	#ifdef CONFIG_ARM64
 		__vmap_exit(regs);
+	#endif
 		return NULL;
 	}
+#ifdef CONFIG_ARM64
 	return switch_vmap_context(regs);
+#else
+	return (struct pt_regs *)-1UL;
+#endif
 }
 EXPORT_SYMBOL(handle_vmap_fault);
 
@@ -805,6 +862,33 @@ void aml_stack_free(struct task_struct *tsk)
 	spin_unlock_irqrestore(&avmap->vmap_lock, flags);
 }
 
+#if DEBUG
+static void check_stack_depth(void *p, int cnt)
+{
+	unsigned char stack_buf[32];
+	unsigned long stack_end, cur_stack;
+
+	stack_end = (unsigned long)p & ~(THREAD_SIZE - 1);
+	cur_stack = (unsigned long)stack_buf & (THREAD_SIZE - 1);
+	if (cur_stack < 1024) {
+		pr_info("%s, %3d, p:%px, stack_buf:%px, cur_stack:%lx, end:%lx, quit!!!\n",
+			__func__, cnt, p, stack_buf, cur_stack, stack_end);
+		return;
+	}
+	pr_info("%s, %3d, p:%px, stack_buf:%px, cur_stack:%lx, end:%lx\n",
+		__func__, cnt, p, stack_buf, cur_stack, stack_end);
+	memcpy(stack_buf, p, sizeof(stack_buf));
+	check_stack_depth(stack_buf, cnt + 1);
+}
+
+static void stack_test(void)
+{
+	unsigned char buf[32] = {};
+
+	check_stack_depth(buf, 0);
+}
+#endif
+
 /*
  * page cache maintain task for vmap
  */
@@ -816,6 +900,9 @@ static int vmap_task(void *data)
 	unsigned long flags;
 	struct aml_vmap *v = (struct aml_vmap *)data;
 
+#if DEBUG
+	stack_test();
+#endif
 	set_user_nice(current, -19);
 	while (1) {
 		if (kthread_should_stop())

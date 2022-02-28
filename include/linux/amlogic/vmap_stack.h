@@ -80,6 +80,9 @@ void  aml_account_task_stack(struct task_struct *tsk, int account);
 void vmap_report_meminfo(struct seq_file *m);
 #ifdef CONFIG_ARM
 int   on_vmap_irq_stack(unsigned long sp, int cpu);
+void fixup_init_thread_union(void);
+unsigned long save_suspend_context(unsigned int *ptr);
+extern pgd_t *idmap_pgd;
 #endif
 struct page *check_pte_exist(unsigned long addr);
 #ifdef CONFIG_KASAN

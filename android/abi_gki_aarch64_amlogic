@@ -85,6 +85,21 @@
   pwmchip_add
   pwmchip_remove
 
+# amlogic-wifi.ko
+  devm_of_pwm_get
+  pci_find_next_bus
+  pci_lock_rescan_remove
+  pci_rescan_bus
+  pci_stop_and_remove_bus_device_locked
+  pci_unlock_rescan_remove
+
+# amlogic-bluetooth.ko
+  rfkill_alloc
+  rfkill_destroy
+  rfkill_init_sw_state
+  rfkill_register
+  rfkill_unregister
+
 # pwm-regulator.ko
   devm_pwm_get
   pwm_adjust_config

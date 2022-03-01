@@ -1523,15 +1523,12 @@
 	aml_bt: aml_bt {
 		compatible = "amlogic, aml-bt";
 		status = "disabled";
-		reset-gpios = <&gpio       GPIOX_17       GPIO_ACTIVE_HIGH>;
 	};
 
 	aml_wifi: aml_wifi {
 		compatible = "amlogic, aml-wifi";
 		status = "disabled";
-		irq_trigger_type = "GPIO_IRQ_LOW";
-		power_on-gpios = <&gpio       GPIOM_6       GPIO_ACTIVE_HIGH>;
-		interrupt-gpios = <&gpio       GPIOM_7       GPIO_ACTIVE_HIGH>;
+		irq_trigger_type = "IRQF_TRIGGER_LOW";
 		dhd_static_buf; //if use bcm wifi, config dhd_static_buf
 		pwm_config = <&wifi_pwm_conf>;
 	};

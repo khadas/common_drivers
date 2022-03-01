@@ -85,6 +85,12 @@ CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND=y
 # amlogic-gpiolib.ko
 CONFIG_AMLOGIC_GPIOLIB=m
 
+# amlogic-wifi.ko
+CONFIG_AMLOGIC_WIFI=m
+
+# amlogic-bluetooth.ko
+CONFIG_AMLOGIC_BLUETOOTH=m
+
 # amlogic-input-gpiokey.ko
 CONFIG_AMLOGIC_GPIO_KEY=m
 

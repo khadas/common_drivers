@@ -40,7 +40,8 @@ obj-$(CONFIG_AMLOGIC_USB)               += usb/
 obj-$(CONFIG_AMLOGIC_CRYPTO_DMA)	+= crypto/
 obj-$(CONFIG_AMLOGIC_DOLBY_FW) 		+= dolby_fw/
 obj-y					+= ../sound/
-
+obj-$(CONFIG_AMLOGIC_WIFI)		+= wifi/
+obj-$(CONFIG_AMLOGIC_BLUETOOTH)		+= bluetooth/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
 

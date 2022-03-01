@@ -1080,9 +1080,16 @@
 
 &aml_wifi {
 	status = "okay";
+	power_on-gpios = <&gpio GPIOM_6 GPIO_ACTIVE_HIGH>;
+	interrupt-gpios = <&gpio GPIOM_7 GPIO_ACTIVE_HIGH>;
 };
 
 &aml_bt {
+	status = "okay";
+	reset-gpios = <&gpio GPIOX_17 GPIO_ACTIVE_HIGH>;
+};
+
+&uart_A {
 	status = "okay";
 };
 

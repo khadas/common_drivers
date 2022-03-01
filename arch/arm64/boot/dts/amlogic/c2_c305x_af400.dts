@@ -966,6 +966,14 @@
 	gpios = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
 };
 
+&aml_bc {
+	status = "disable";
+};
+
+&aml_cc {
+	status = "disable";
+};
+
 &uart_B {
 	status = "okay";
 };

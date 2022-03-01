@@ -1417,7 +1417,7 @@
 	};
 
 	usb2_phy_v2: usb2phy@fe004420 {
-		compatible = "amlogic,amlogic-new-usb2-v2";
+		compatible = "amlogic,amlogic-new-usb2-v2-c2";
 		status = "disable";
 		#phy-cells = <0>;
 		reg = <0xfe004420 0x60
@@ -1436,8 +1436,7 @@
 		pll-setting-7 = <0xe0004>;
 		pll-setting-8 = <0xe000c>;
 		version = <3>;
-		pwr-ctl = <0>;
-		/*power-domains = <&pwrdm PDID_CX_USB>;*/
+		power-domains = <&pwrdm PDID_CX_USB>;
 		phy20-reset-level-bit = <4>;
 		usb-reset-bit = <3>;
 		usb-busclk_ctl_div = <0x509>;
@@ -1445,7 +1444,7 @@
 	};
 
 	usb3_phy_v2: usb3phy@fe004480 {
-		compatible = "amlogic,amlogic-new-usb3-v2";
+		compatible = "amlogic,amlogic-new-c2-usb3-v2";
 		status = "disable";
 		/*clocks = <&clkc CLKID_PCIE_PLL>;*/
 		/*clock-names = "pcie_refpll";*/
@@ -1458,10 +1457,7 @@
 		phy-reg-size = <0x2000>;
 		interrupts = <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>;
 		pwr-ctl = <0>;
-		/*power-domains = <&pwrdm PDID_CX_USB>;*/
-		usb5v-supply = <&vcc5v_reg>;
-		usb3v3-supply = <&vddao3v3_reg>;
-		usb1v8-supply = <&vddao1v8_reg>;
+		power-domains = <&pwrdm PDID_CX_USB>;
 	};
 
 	dwc3: dwc3@ff400000 {
@@ -1475,10 +1471,7 @@
 			usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;
 			clocks = <&clkc CLKID_USB_CTRL>;
 			clock-names = "usb_general";
-			/*power-domains = <&pwrdm PDID_CX_USB>;*/
-			usb5v-supply = <&vcc5v_reg>;
-			usb3v3-supply = <&vddao3v3_reg>;
-			usb1v8-supply = <&vddao1v8_reg>;
+			power-domains = <&pwrdm PDID_CX_USB>;
 	};
 
 	dwc2_a: dwc2_a@ff500000 {
@@ -1505,10 +1498,24 @@
 		clocks = <&clkc CLKID_USB_CTRL>, <&clkc CLKID_USB_PHY>;
 		clock-names = "usb_general",
 				"usb1";
-		/*power-domains = <&pwrdm PDID_CX_USB>;*/
-		usb5v-supply = <&vcc5v_reg>;
-		usb3v3-supply = <&vddao3v3_reg>;
-		usb1v8-supply = <&vddao1v8_reg>;
+		power-domains = <&pwrdm PDID_CX_USB>;
+	};
+
+	aml_bc: bc@fe0044a0 {
+		compatible = "amlogic, bc";
+		status = "disable";
+		reg = <0xfe0044a0 0x20
+			0xfe004420 0x80>;
+		interrupts = <GIC_SPI 151 IRQ_TYPE_LEVEL_HIGH
+				GIC_SPI 139 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	aml_cc: cc@fe0044c0 {
+		compatible = "amlogic, cc";
+		status = "disable";
+		reg = <0xfe0044c0 0x20
+			0xfe004420 0x80>;
+		interrupts = <GIC_SPI 150 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	aml_bt: aml_bt {

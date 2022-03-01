@@ -274,6 +274,7 @@
   gen_pool_create
   gen_pool_destroy
   gen_pool_size
+  class_remove_file_ns
 
 # aml-crypto-dma.ko
   crypto_alloc_skcipher

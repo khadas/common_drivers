@@ -130,7 +130,7 @@ void dmc_monitor_exit(void)
 }
 #endif
 
-#ifdef CONFIG_AMLOGIC_USER_FAULT
+#if defined(CONFIG_AMLOGIC_USER_FAULT) && defined(CONFIG_AMLOGIC_BRACK_GKI)
 void set_dump_dmc_func(void *f);
 #else
 void __weak set_dump_dmc_func(void *f) {}

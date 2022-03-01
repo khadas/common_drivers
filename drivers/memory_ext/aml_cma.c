@@ -53,6 +53,10 @@
 #include <linux/amlogic/page_trace.h>
 #endif /* CONFIG_AMLOGIC_PAGE_TRACE */
 
+#ifdef CONFIG_AMLOGIC_USER_FAULT
+#include <linux/amlogic/user_fault.h>
+#endif
+
 #define MAX_DEBUG_LEVEL		5
 
 struct work_cma {

@@ -22,3 +22,4 @@
   __arm_smccc_smc_glue
   meson_atrace
   pstore_io_save
+  set_dump_dmc_func

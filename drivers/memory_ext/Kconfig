@@ -89,3 +89,14 @@ config AMLOGIC_VMAP
 		usage optimization with vmalloc. It depends on
 		AMLOGIC_MEMORY_EXTEND. This config only opened
 		on 64 bit platform.
+
+config AMLOGIC_USER_FAULT
+	bool "Amlogic user fault helper"
+	depends on AMLOGIC_MEMORY_EXTEND
+	default n
+	help
+		show more information when catch user fault. Including:
+		memory around all registers
+		maps with pc/lr
+		pfn for all virtual address of regirsters
+

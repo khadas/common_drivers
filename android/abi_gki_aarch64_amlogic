@@ -214,3 +214,20 @@
   dma_buf_vunmap
   down_interruptible
   up
+
+# aml-crypto-dma.ko
+  crypto_alloc_skcipher
+  crypto_dequeue_request
+  crypto_enqueue_request
+  crypto_init_queue
+  crypto_register_ahash
+  crypto_register_skcipher
+  crypto_skcipher_decrypt
+  crypto_skcipher_encrypt
+  crypto_skcipher_setkey
+  crypto_unregister_ahash
+  crypto_unregister_skcipher
+  des_expand_key
+  kfree_sensitive
+  scatterwalk_map_and_copy
+  sg_nents

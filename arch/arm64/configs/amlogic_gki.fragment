@@ -172,3 +172,7 @@ CONFIG_AMLOGIC_MMC_MESON_GX=m
 
 # amlogic-reboot.ko
 CONFIG_AMLOGIC_GX_REBOOT=m
+
+# amlogic-crypto-dma.ko
+CONFIG_AMLOGIC_CRYPTO_DMA=m
+CONFIG_CRYPTO_DES=y

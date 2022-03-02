@@ -199,13 +199,8 @@
   stack_trace_print
   stack_trace_save
   trace_print_flags_seq
-  irq_trace_start_hook
-  irq_trace_stop_hook
   oops_in_progress
   unregister_kprobe
-  __arm_smccc_smc_glue
-  meson_atrace
-  pstore_io_save
 
 # amlogic-media.ko
   __devm_release_region

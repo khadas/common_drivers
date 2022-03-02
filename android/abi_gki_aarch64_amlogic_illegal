@@ -15,3 +15,10 @@
   get_page_trace
   set_page_trace
   reset_page_trace
+
+# amlogic debug illegal symbol:
+  irq_trace_start_hook
+  irq_trace_stop_hook
+  __arm_smccc_smc_glue
+  meson_atrace
+  pstore_io_save

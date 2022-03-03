@@ -100,8 +100,8 @@ mkdir -p ${DIST_DIR} ${MODULES_STAGING_DIR}
 cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/arch/${ARCH}/configs/
 if [[ -n ${SAVEDEFCONFIG} ]]; then
 	set -x
-	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
-	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common savedefconfig
+	$MAKE ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
+	$MAKE ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common savedefconfig
 	rm ${KERNEL_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
 	cp -f ${OUTDIR}/common/defconfig  ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
 	set +x
@@ -109,27 +109,27 @@ if [[ -n ${SAVEDEFCONFIG} ]]; then
 fi
 if [[ -n ${MENUCONFIG} ]]; then
 	set -x
-	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
-	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common menuconfig
+	$MAKE ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
+	$MAKE ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common menuconfig
 	set +x
 	exit
 fi
 set -x
 if [[ $ARCH == arm64 ]]; then
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common headers_install
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common Image -j12
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common modules -j12
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common dtbs -j12
+	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
+	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common headers_install
+	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common Image -j12
+	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common modules -j12
+	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12
+	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common dtbs -j12
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
 else
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common headers_install
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common uImage -j12 LOADADDR=0x208000
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common modules -j12 LOADADDR=0x208000
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common dtbs -j12 LOADADDR=0x208000
+	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
+	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common headers_install
+	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common uImage -j12 LOADADDR=0x208000
+	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common modules -j12 LOADADDR=0x208000
+	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12
+	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common dtbs -j12 LOADADDR=0x208000
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm/configs/${DEFCONFIG}
 fi
 set +x

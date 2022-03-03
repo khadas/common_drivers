@@ -41,5 +41,6 @@ source "$(COMMON_DRIVERS_DIR)/drivers/camera/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/freertos/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/usb/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/crypto/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/sound/Kconfig"
 
 endmenu

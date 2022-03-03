@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+#
+# Amlogic SoC audio configuration
+#
+
+config AMLOGIC_SND_SOC
+	tristate "Amlogic ASoC"
+	default n
+	help
+	  Say Y or M if you want to add support for codecs attached to
+	  the Amlogic Asoc interface. You will also need
+	  to select the audio interfaces to support below.
+	  Amlogic ALSA SOC Driver
+
+config AMLOGIC_SND_SOC_AUGE
+	bool "Amlogic Auge Asoc"
+	depends on AMLOGIC_SND_SOC
+	default n
+	help
+	  Say Y or M if you want to add support for audio arch Auge
+	  to the Amlogic Asoc Interface. it is a new audio arch to
+	  distinguish Meson audio arch. it is base on kernel 4.9
+	  Amlogic New SOC for New Audio ARCH
+
+config AMLOGIC_SND_SOC_COMMON
+        bool "Amlogic Common for ASoC"
+        default n
+        help
+	  Say Y or M if you want to add support for common interface attached to
+	  the Amlogic Asoc interface. You will also need
+	  to select the audio interfaces to support below.

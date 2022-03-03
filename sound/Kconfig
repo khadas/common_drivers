@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+if SOUND
+if !UML
+if SND
+source "$(COMMON_DRIVERS_DIR)/sound/soc/Kconfig"
+endif # SND
+endif # !UML
+endif # SOUND

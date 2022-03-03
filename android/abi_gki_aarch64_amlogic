@@ -231,3 +231,25 @@
   kfree_sensitive
   scatterwalk_map_and_copy
   sg_nents
+
+# audio related
+  clk_register
+  clk_register_composite
+  devm_gpio_request_one
+  devm_kvasprintf
+  gpiod_get_raw_value
+  of_clk_add_provider
+  of_clk_src_onecell_get
+  snd_pcm_lib_default_mmap
+  snd_pcm_lib_free_pages
+  snd_pcm_lib_malloc_pages
+  snd_pcm_lib_preallocate_pages_for_all
+  snd_pcm_rate_to_rate_bit
+  snd_soc_add_card_controls
+  snd_soc_add_dai_controls
+  snd_soc_bytes_info_ext
+  snd_soc_of_get_slot_mask
+  snd_soc_of_parse_audio_simple_widgets
+  snd_soc_of_parse_tdm_slot
+  snd_soc_pm_ops
+  snd_soc_unregister_component

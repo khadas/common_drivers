@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+if SND_SOC
+source "$(COMMON_DRIVERS_DIR)/sound/soc/amlogic/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/sound/soc/codecs/Kconfig"
+endif   # SND_SOC

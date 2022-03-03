@@ -6,7 +6,7 @@ PR_FMT = $(subst amlogic-,,$(MODULE_NAME))
 PR_FMT_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT)]: \" fmt"
 CFLAGS_freertos.o += $(PR_FMT_DEFINE)
 
-obj-$(CONFIG_AMLOGIC_SECMON) = $(MODULE_NAME).o
+obj-$(CONFIG_AMLOGIC_FREERTOS) = $(MODULE_NAME).o
 $(MODULE_NAME)-y += freertos.o
 
 

@@ -11,6 +11,7 @@
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
 #include <linux/slab.h>
+#include <linux/module.h>
 #include <linux/of_address.h>
 #include <linux/clkdev.h>
 
@@ -4002,4 +4003,6 @@ static int c2_clkc_init(void)
 {
 	return platform_driver_register(&c2_driver);
 }
-arch_initcall_sync(c2_clkc_init);
+subsys_initcall(c2_clkc_init);
+
+MODULE_LICENSE("GPL v2");

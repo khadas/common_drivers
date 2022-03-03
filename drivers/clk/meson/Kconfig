@@ -79,7 +79,14 @@ config AMLOGIC_COMMON_CLK_S4
 	  devices, aka s4. Say Y if you want peripherals to work.
 
 config AMLOGIC_COMMON_CLK_C2
-	bool "Meson C2 clock controller"
+	tristate "Meson C2 clock controller"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+	depends on AMLOGIC_COMMON_CLK_MESON_DUALDIV
+	depends on AMLOGIC_COMMON_CLK_MESON_MPLL
+	depends on AMLOGIC_COMMON_CLK_MESON_PLL
+	depends on AMLOGIC_COMMON_CLK_MESON_CPU_DYNDIV
+	depends on AMLOGIC_COMMON_CLK_MESON_VID_PLL_DIV
+	depends on MFD_SYSCON
 	default n
 	help
 	 Support for the clock controller on Amlogic AF400

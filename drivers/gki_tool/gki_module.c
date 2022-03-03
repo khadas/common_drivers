@@ -216,7 +216,7 @@ void gki_module_init(void)
 			strcpy(cmdline, bootargs);
 	}
 
-	pr_debug("cmdline: %lx, %s\n", cmdline, cmdline);
+	pr_debug("cmdline: %lx, %s\n", (unsigned long)cmdline, cmdline);
 	cmdline_parse_args(cmdline);
 }
 

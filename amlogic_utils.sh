@@ -159,6 +159,11 @@ export -f modules_install
 function rebuild_rootfs() {
 	pushd ${DIST_DIR}
 
+	local ARCH=arm64
+	if [[ -n $1 ]]; then
+		ARCH=$1
+	fi
+
 	rm rootfs -rf
 	mkdir rootfs
 	cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot	rootfs
@@ -174,7 +179,7 @@ function rebuild_rootfs() {
 	cp -rf ../../modules .
 	find . | cpio -o -H newc | gzip > ../rootfs_new.cpio.gz
 	cd ../
-	mkimage -A arm64 -O linux -T  ramdisk -C none -d rootfs_new.cpio.gz rootfs_new.cpio.gz.uboot
+	mkimage -A ${ARCH} -O linux -T ramdisk -C none -d rootfs_new.cpio.gz rootfs_new.cpio.gz.uboot
 	mv rootfs_new.cpio.gz.uboot ../
 	cd ../
 

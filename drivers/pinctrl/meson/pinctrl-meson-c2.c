@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#include <linux/module.h>
 #include <dt-bindings/gpio/meson-c2-gpio.h>
 #include "pinctrl-meson.h"
 #include "pinctrl-meson-axg-pmx.h"
@@ -1160,3 +1161,5 @@ static int __init meson_c2_pinctrl_init(void)
 	return platform_driver_register(&meson_c2_pinctrl_driver);
 }
 arch_initcall(meson_c2_pinctrl_init);
+
+MODULE_LICENSE("GPL v2");

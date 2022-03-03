@@ -22,7 +22,9 @@
 static int __init gki_tool_init(void)
 {
 	gki_module_init();
+#ifdef CONFIG_AMLOGIC_GKI_CONFIG
 	gki_config_init();
+#endif
 	return 0;
 }
 

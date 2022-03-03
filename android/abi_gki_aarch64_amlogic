@@ -204,6 +204,30 @@
   trace_print_flags_seq
   oops_in_progress
   unregister_kprobe
+  __arm_smccc_smc_glue
+  meson_atrace
+  __asan_handle_no_return
+  __asan_load1_noabort
+  __asan_load2_noabort
+  __asan_load4_noabort
+  __asan_load8_noabort
+  __asan_loadN_noabort
+  __asan_register_globals
+  __asan_store1_noabort
+  __asan_store2_noabort
+  __asan_store4_noabort
+  __asan_store8_noabort
+  __asan_storeN_noabort
+  __asan_unregister_globals
+  __kasan_check_read
+  __kasan_check_write
+  kasan_disable_current
+  kasan_enable_current
+  kasan_restore_multi_shot
+  kasan_save_enable_multi_shot
+  strncpy_from_user
+  vm_mmap
+  vm_munmap
 
 # amlogic-media.ko
   __devm_release_region

@@ -29,6 +29,7 @@
 #endif
 #include <asm/tlbflush.h>
 #include <asm/stacktrace.h>
+#include <../../../mm/internal.h>
 
 #define DEBUG							0
 #define MODULE_NAME						"amlogic-vmap"
@@ -701,7 +702,7 @@ static void check_and_map_stack_shadow(unsigned long addr)
 		return;
 	}
 	pages[0] = page;
-	ret = map_kernel_range_noflush(shadow, PAGE_SIZE, PAGE_KERNEL, pages);
+	ret = vmap_pages_range_noflush(shadow, shadow + PAGE_SIZE, PAGE_KERNEL, pages, PAGE_SHIFT);
 	if (ret < 0) {
 		pr_err("%s, map shadow:%lx failed:%d\n", __func__, shadow, ret);
 		__free_page(page);

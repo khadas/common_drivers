@@ -103,7 +103,7 @@
 		status = "disabled";
 		sensor-name = "imx335"; /*imx290;os08a10;imx227*/
 		pinctrl-names= "default";
-		clocks = <&clkc CLKID_GP_PLL_MCLK1_GATE>;
+		//clocks = <&clkc CLKID_GP_PLL_MCLK1_GATE>;
 		clock-names = "mclk_0";
 		reset = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
 		pwdn = <&gpio GPIOM_10 GPIO_ACTIVE_HIGH>;

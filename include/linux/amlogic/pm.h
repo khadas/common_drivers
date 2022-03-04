@@ -23,9 +23,22 @@
 #define	ETH_PHY_GPIO	12
 #define	VAD_WAKEUP	13
 #define HDMI_RX_WAKEUP	14
+
+#if IS_ENABLED(CONFIG_AMLOGIC_GX_SUSPEND)
 unsigned int get_resume_method(void);
 unsigned int get_resume_reason(void);
 unsigned int is_pm_s2idle_mode(void);
+#else
+static inline unsigned int get_resume_method(void)
+{
+	return 0;
+}
+
+static inline unsigned int get_resume_reason(void)
+{
+	return 0;
+}
+#endif
 
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 enum {

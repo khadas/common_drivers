@@ -3,3 +3,6 @@
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/canvas/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/ge2d/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/ion_dev/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/common/codec_mm/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/common/vfm/Kconfig"
+

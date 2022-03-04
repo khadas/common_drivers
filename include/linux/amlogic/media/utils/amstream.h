@@ -851,6 +851,7 @@ struct vdec_frames_s {
 	struct vframe_comm_s comm;
 	struct vframe_counter_s fifo_buf[NUM_FRAME_VDEC];
 };
+
 enum FRAME_FORMAT {
 	FRAME_FORMAT_UNKNOWN,
 	FRAME_FORMAT_PROGRESS,

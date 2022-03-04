@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# VFM configuration
+#
+
+config AMLOGIC_MEDIA_VFM
+	tristate "Amlogic VFM Support"
+	default n
+	help
+		Select to enable VFM support

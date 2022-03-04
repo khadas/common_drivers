@@ -267,6 +267,13 @@
   mod_node_page_state
   sched_set_normal
   split_page
+  cma_mmu_op
+  gen_pool_add_owner
+  gen_pool_alloc_algo_owner
+  gen_pool_avail
+  gen_pool_create
+  gen_pool_destroy
+  gen_pool_size
 
 # aml-crypto-dma.ko
   crypto_alloc_skcipher

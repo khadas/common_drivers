@@ -51,6 +51,13 @@
 			alloc-ranges = <0x05000000 0x400000>;
 		};
 
+		ion_cma_reserved:linux,ion-dev {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x6400000>;
+			alignment = <0x400000>;
+		};
+
 		rtos_reserved:linux,rtos_reserved {
 			compatible = "amlogic, aml_rtos_memory";
 			status = "okay";

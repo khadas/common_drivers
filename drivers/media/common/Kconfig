@@ -2,4 +2,4 @@
 #Ascending by module name's ASCII
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/canvas/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/ge2d/Kconfig"
-
+source "$(COMMON_DRIVERS_DIR)/drivers/media/common/ion_dev/Kconfig"

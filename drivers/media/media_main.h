@@ -176,6 +176,9 @@ static inline int aml_vdac_init(void)
 }
 #endif
 
+int ion_device_create_init(void);
+int ion_system_heap_create_init(void);
+int ion_system_contig_heap_create_init(void);
 #ifdef CONFIG_AMLOGIC_ION
 int ion_init(void);
 #else

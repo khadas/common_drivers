@@ -1,0 +1,13 @@
+menu "ION support"
+
+config AMLOGIC_ION_DEV
+        tristate "ION memory management support"
+        depends on AMLOGIC_ION
+        default n
+        help
+                Select to enable "Amlogic ion device support.
+
+source "$(COMMON_DRIVERS_DIR)/drivers/media/common/ion_dev/ion/Kconfig"
+
+endmenu
+

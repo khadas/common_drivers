@@ -1370,6 +1370,11 @@
 		reg = <0x0 0xfe036048 0x0 0x2000>;
 	};
 
+	ion_dev {
+		compatible = "amlogic, ion_dev";
+		memory-region = <&ion_cma_reserved>;
+	};
+
 	ddr_bandwidth {
 		compatible = "amlogic,ddr-bandwidth-c2";
 		status = "okay";

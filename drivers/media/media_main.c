@@ -50,6 +50,9 @@ static int __init media_main_init(void)
 	call_sub_init(dummy_venc_init);
 	call_sub_init(vout_sys_serve_init);
 	call_sub_init(vout_init_module);
+	call_sub_init(ion_device_create_init);
+	call_sub_init(ion_system_heap_create_init);
+	call_sub_init(ion_system_contig_heap_create_init);
 	call_sub_init(ion_init);
 	call_sub_init(mua_init);
 	call_sub_init(vfm_class_init);

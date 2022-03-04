@@ -241,6 +241,14 @@
   dma_buf_vunmap
   down_interruptible
   up
+  _totalram_pages
+  cma_for_each_area
+  cma_get_name
+  compat_ptr_ioctl
+  ion_cma_allocated
+  mod_node_page_state
+  sched_set_normal
+  split_page
 
 # aml-crypto-dma.ko
   crypto_alloc_skcipher

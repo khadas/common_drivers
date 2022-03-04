@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-2.0
+config AMLOGIC_ION
+	bool "Ion Memory Manager"
+	help
+	  Choose this option to enable the ION Memory Manager,
+	  used by Android to efficiently allocate buffers
+	  from userspace that can be shared between drivers.
+	  If you're not using Android its probably safe to
+	  say N here.
+
+config AMLOGIC_ION_SYSTEM_HEAP
+	bool "Ion system heap"
+	depends on AMLOGIC_ION
+	help
+	  Choose this option to enable the Ion system heap. The system heap
+	  is backed by pages from the buddy allocator. If in doubt, say Y.

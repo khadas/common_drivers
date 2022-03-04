@@ -68,6 +68,7 @@ void resume_xhci_port_a(void)
 	if (g_phy_com_v2->resume_xhci_p_a)
 		g_phy_com_v2->resume_xhci_p_a();
 }
+EXPORT_SYMBOL(resume_xhci_port_a);
 
 void force_disable_xhci_port_a(void)
 {
@@ -76,6 +77,7 @@ void force_disable_xhci_port_a(void)
 	if (g_phy_com_v2->disable_port_a)
 		g_phy_com_v2->disable_port_a();
 }
+EXPORT_SYMBOL(force_disable_xhci_port_a);
 
 void aml_new_usb_v2_init(void)
 {

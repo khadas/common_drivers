@@ -369,7 +369,7 @@ static bool device_is_available(const struct device_node *device)
 	return false;
 }
 
-static int phy_aml_id_pin_config(struct platform_device *pdev,
+static int phy_aml_C2_id_pin_config(struct platform_device *pdev,
 				 struct amlogic_usb_v2 *phy)
 {
 	int ret;
@@ -402,7 +402,7 @@ static int phy_aml_id_pin_config(struct platform_device *pdev,
 	return 0;
 }
 
-static int amlogic_new_usb3_v2_probe(struct platform_device *pdev)
+static int amlogic_new_C2_usb3_v2_probe(struct platform_device *pdev)
 {
 	struct amlogic_usb_v2			*phy;
 	struct device *dev = &pdev->dev;
@@ -495,7 +495,7 @@ static int amlogic_new_usb3_v2_probe(struct platform_device *pdev)
 
 	if (otg) {
 		if (otg == 2) {
-			phy_aml_id_pin_config(pdev, phy);
+			phy_aml_C2_id_pin_config(pdev, phy);
 		} else {
 			irq = platform_get_irq(pdev, 0);
 			if (irq < 0)
@@ -578,19 +578,19 @@ static int amlogic_new_usb3_v2_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int amlogic_new_usb3_remove(struct platform_device *pdev)
+static int amlogic_new_C2_usb3_remove(struct platform_device *pdev)
 {
 	return 0;
 }
 
 #ifdef CONFIG_PM_RUNTIME
 
-static int amlogic_new_usb3_runtime_suspend(struct device *dev)
+static int amlogic_new_C2_usb3_runtime_suspend(struct device *dev)
 {
 	return 0;
 }
 
-static int amlogic_new_usb3_runtime_resume(struct device *dev)
+static int amlogic_new_C2_usb3_runtime_resume(struct device *dev)
 {
 	u32 ret = 0;
 
@@ -598,39 +598,39 @@ static int amlogic_new_usb3_runtime_resume(struct device *dev)
 }
 
 static const struct dev_pm_ops amlogic_new_c2_usb3_pm_ops = {
-	SET_RUNTIME_PM_OPS(amlogic_new_usb3_runtime_suspend,
-		amlogic_new_usb3_runtime_resume,
+	SET_RUNTIME_PM_OPS(amlogic_new_C2_usb3_runtime_suspend,
+		amlogic_new_C2_usb3_runtime_resume,
 		NULL)
 };
 
-#define DEV_PM_OPS     (&amlogic_new_c2_usb3_pm_ops)
+#define DEV_C2_PM_OPS     (&amlogic_new_c2_usb3_pm_ops)
 #else
-#define DEV_PM_OPS     NULL
+#define DEV_C2_PM_OPS     NULL
 #endif
 
 #ifdef CONFIG_OF
-static const struct of_device_id amlogic_new_usb3_v2_id_table[] = {
+static const struct of_device_id amlogic_new_c2_usb3_v2_id_table[] = {
 	{ .compatible = "amlogic, amlogic-new-c2-usb3-v2" },
 	{ .compatible = "amlogic,amlogic-new-c2-usb3-v2" },
 	{}
 };
-MODULE_DEVICE_TABLE(of, amlogic_new_usb3_v2_id_table);
+MODULE_DEVICE_TABLE(of, amlogic_new_c2_usb3_v2_id_table);
 #endif
 
-static struct platform_driver amlogic_new_usb3_v2_driver = {
-	.probe		= amlogic_new_usb3_v2_probe,
-	.remove		= amlogic_new_usb3_remove,
+static struct platform_driver amlogic_new_c2_usb3_v2_driver = {
+	.probe		= amlogic_new_C2_usb3_v2_probe,
+	.remove		= amlogic_new_C2_usb3_remove,
 	.driver		= {
 		.name	= "amlogic-new-c2-usb3-v2",
 		.owner	= THIS_MODULE,
-		.pm	= DEV_PM_OPS,
-		.of_match_table = of_match_ptr(amlogic_new_usb3_v2_id_table),
+		.pm	= DEV_C2_PM_OPS,
+		.of_match_table = of_match_ptr(amlogic_new_c2_usb3_v2_id_table),
 	},
 };
 
-module_platform_driver(amlogic_new_usb3_v2_driver);
+module_platform_driver(amlogic_new_c2_usb3_v2_driver);
 
-MODULE_ALIAS("platform: amlogic_usb3_v2");
+MODULE_ALIAS("platform: amlogic_c2_usb3_v2");
 MODULE_AUTHOR("Amlogic Inc.");
-MODULE_DESCRIPTION("amlogic USB3 v2 phy driver");
+MODULE_DESCRIPTION("amlogic c2 USB3 v2 phy driver");
 MODULE_LICENSE("GPL v2");

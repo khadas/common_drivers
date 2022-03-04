@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 
 MODULE_NAME = amlogic_usb_crg
-obj-$(CONFIG_AMLOGIC_CRG)      += $(MODULE_NAME).o
+obj-$(CONFIG_AMLOGIC_USB_SUPPORT)      += $(MODULE_NAME).o
 $(MODULE_NAME)-y += crg.o
 
 PR_FMT = $(subst amlogic-,,$(MODULE_NAME))

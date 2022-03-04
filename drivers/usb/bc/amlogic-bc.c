@@ -283,7 +283,7 @@ static const struct of_device_id amlogic_bc_id_table[] = {
 	{ .compatible = "amlogic,bc" },
 	{}
 };
-MODULE_DEVICE_TABLE(of, amlogicbc_id_table);
+MODULE_DEVICE_TABLE(of, amlogic_bc_id_table);
 #endif
 
 static struct platform_driver amlogic_bc_driver = {

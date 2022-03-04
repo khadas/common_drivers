@@ -3,7 +3,7 @@
 menu "USB Support"
 
 config AMLOGIC_USB
-	tristate "Amlogic USB controller support"
+	bool "Amlogic USB controller support"
 	default n
 	select USB_PHY
 	depends on USB
@@ -12,6 +12,15 @@ config AMLOGIC_USB
 	  USB
 	  host
 	  controller.
+
+config AMLOGIC_USB_SUPPORT
+	tristate "USB Host controller and phy support"
+	depends on AMLOGIC_USB
+	help
+	  USB Host
+	  controller
+	  dwc_otg
+	  support
 
 config AMLOGIC_USB_DWC_OTG_HCD
 	tristate "USB Host controller dwc_otg support"
@@ -23,7 +32,7 @@ config AMLOGIC_USB_DWC_OTG_HCD
 	  support
 
 config AMLOGIC_CRG
-        tristate "USB Host controller corigine support"
+        bool "USB Host controller corigine support"
         depends on AMLOGIC_USB
         help
           USB Host
@@ -40,7 +49,7 @@ config AMLOGIC_USB_HOST_ELECT_TEST
 	  othervise say no
 
 config AMLOGIC_USBPHY
-	tristate "Amlogic USB PHY Driver"
+	bool "Amlogic USB PHY Driver"
 	depends on AMLOGIC_USB
 	help
 	  Enable this to support Amlogic USB phy helper driver for Amlogic SoCs.
@@ -53,7 +62,7 @@ config AMLOGIC_USBPHY
           module will be called phy-aml-usb.
 
 config AMLOGIC_USB2PHY
-	tristate "Amlogic USB 2.0 PHY controller Driver"
+	bool "Amlogic USB 2.0 PHY controller Driver"
 	depends on AMLOGIC_USBPHY
 	help
 	  Enable this to support Amlogic USB 2.0 (High Speed) PHY controller
@@ -65,7 +74,7 @@ config AMLOGIC_USB2PHY
           module will be called phy-aml-usb.
 
 config AMLOGIC_USB3PHY
-	tristate "Amlogic USB 3.0 PHY controller Driver"
+	bool "Amlogic USB 3.0 PHY controller Driver"
 	depends on AMLOGIC_USBPHY
 	help
 	  Enable this to support Amlogic USB 3.0 (Super Speed) phy controller
@@ -77,7 +86,7 @@ config AMLOGIC_USB3PHY
           module will be called phy-aml-usb.
 
 config AMLOGIC_USBPHYC2
-	tristate "Amlogic C2 USB PHY controller Driver"
+	bool "Amlogic C2 USB PHY controller Driver"
 	depends on AMLOGIC_USBPHY
 	help
 	  Enable this to support Amlogic USB phy controller
@@ -89,7 +98,7 @@ config AMLOGIC_USBPHYC2
 	  module will be called phy-aml-usb.
 
 config AMLOGIC_BC
-        tristate "Amlogic BC detect Driver"
+        bool "Amlogic BC detect Driver"
         depends on AMLOGIC_USB
         help
           Enable this to support Amlogic BC detect for Amlogic SoCs.
@@ -100,7 +109,7 @@ config AMLOGIC_BC
           module will be called amlogic-bc.
 
 config AMLOGIC_CC
-        tristate "Amlogic CC detect Driver"
+        bool "Amlogic CC detect Driver"
         depends on AMLOGIC_USB
         help
           Enable this to support Amlogic CC detect for Amlogic SoCs.

@@ -212,3 +212,12 @@ CONFIG_AMLOGIC_CRG=y
 
 # dwc_otg.ko
 CONFIG_AMLOGIC_USB_DWC_OTG_HCD=m
+
+# audio_data.ko
+CONFIG_AMLOGIC_AUDIO_INFO=m
+
+# audiodsp_module.ko
+CONFIG_AMLOGIC_AUDIO_DSP=m
+
+# amaudio.ko
+CONFIG_AMLOGIC_AMAUDIO=m

@@ -30,3 +30,7 @@ config AMLOGIC_SND_SOC_COMMON
 	  Say Y or M if you want to add support for common interface attached to
 	  the Amlogic Asoc interface. You will also need
 	  to select the audio interfaces to support below.
+
+source "$(COMMON_DRIVERS_DIR)/sound/soc/amlogic/common/amaudio/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/sound/soc/amlogic/common/audiodsp/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/sound/soc/amlogic/common/audioinfo/Kconfig"

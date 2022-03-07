@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
+obj-y    += common/audiodsp/
+obj-y    += common/amaudio/
+obj-y    += common/audioinfo/
+
 KBUILD_CFLAGS += -Wlarger-than=32768
 # KBUILD_CFLAGS += -Wstack-usage=1856
 
@@ -9,7 +13,7 @@ PR_FMT = $(subst amlogic-,,$(MODULE_NAME))
 PR_FMT_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT)]: \" fmt"
 ccflags-y += $(PR_FMT_DEFINE)
 
-obj-$(CONFIG_AMLOGIC_SND_SOC) = $(MODULE_NAME).o
+obj-$(CONFIG_AMLOGIC_SND_SOC) += $(MODULE_NAME).o
 $(MODULE_NAME)-y += sound_init.o
 
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/audio_controller.o

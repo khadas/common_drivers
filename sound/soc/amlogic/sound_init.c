@@ -54,7 +54,7 @@ static int __init sound_soc_init(void)
 	//call_sub_init(pwrdet_init);
 	//call_sub_init(extn_init);
 	//call_sub_init(earc_init);
-	//call_sub_init(aml_card_init);
+	call_sub_init(aml_card_init);
 
 	return 0;
 }
@@ -79,7 +79,7 @@ static __exit void sound_soc_exit(void)
 	//call_sub_exit(pwrdet_exit);
 	//call_sub_exit(extn_exit);
 	//call_sub_exit(earc_exit);
-	//call_sub_exit(aml_card_exit);
+	call_sub_exit(aml_card_exit);
 }
 
 module_init(sound_soc_init);

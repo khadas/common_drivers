@@ -24,13 +24,11 @@ int aml_card_parse_daifmt(struct device *dev,
 	int prefix_len = prefix ? strlen(prefix) : 0;
 	unsigned int daifmt;
 
-#ifdef MODIFY_FOR_TO_DO
-	daifmt = snd_soc_of_parse_daifmt(node, prefix,
-					 &bitclkmaster, &framemaster);
-#endif
-	daifmt = 0xff; //MODIFY_FOR_TO_DO
+	daifmt = snd_soc_daifmt_parse_format(node, prefix);
 	daifmt &= ~SND_SOC_DAIFMT_MASTER_MASK;
 
+	snd_soc_daifmt_parse_clock_provider_as_phandle(node, prefix,
+				&bitclkmaster, &framemaster);
 	if (prefix_len && !bitclkmaster && !framemaster) {
 		/*
 		 * No dai-link level and master setting was not found from
@@ -39,10 +37,8 @@ int aml_card_parse_daifmt(struct device *dev,
 		 */
 		dev_dbg(dev, "Revert to legacy daifmt parsing\n");
 
-#ifdef MODIFY_FOR_TO_DO
-		daifmt = snd_soc_of_parse_daifmt(codec, NULL, NULL, NULL) |
+		daifmt = snd_soc_daifmt_parse_clock_provider_as_flag(codec, NULL) |
 			(daifmt & ~SND_SOC_DAIFMT_CLOCK_MASK);
-#endif
 	} else {
 		if (codec == bitclkmaster)
 			daifmt |= (codec == framemaster) ?
@@ -274,14 +270,14 @@ int aml_card_init_dai(struct snd_soc_dai *dai,
 int aml_card_canonicalize_dailink(struct snd_soc_dai_link *dai_link)
 {
 	if (!dai_link->cpus ||
-	    !dai_link->cpus[0].dai_name ||
+	    !dai_link->cpus->dai_name ||
 	    !dai_link->codecs ||
-	    !dai_link->codecs[0].dai_name)
+	    !dai_link->codecs->dai_name)
 		return -EINVAL;
 
 	/* Assumes platform == cpu */
-	if (!dai_link->platforms[0].of_node)
-		dai_link->platforms[0].of_node = dai_link->cpus[0].of_node;
+	if (!dai_link->platforms->of_node)
+		dai_link->platforms->of_node = dai_link->cpus->of_node;
 
 	return 0;
 }
@@ -299,7 +295,7 @@ void aml_card_canonicalize_cpu(struct snd_soc_dai_link *dai_link,
 	 *	fmt_multiple_name()
 	 */
 	if (is_single_links)
-		dai_link->cpus[0].dai_name = NULL;
+		dai_link->cpus->dai_name = NULL;
 }
 
 int aml_card_clean_reference(struct snd_soc_card *card)
@@ -308,17 +304,23 @@ int aml_card_clean_reference(struct snd_soc_card *card)
 	struct snd_soc_codec_conf *codec_conf;
 	int num_links, num_confs;
 
+	if (!card || !card->dai_link || !card->codec_conf)
+		return -EINVAL;
+
 	for (num_links = 0, dai_link = card->dai_link;
 	     num_links < card->num_links;
 	     num_links++, dai_link++) {
-		of_node_put(dai_link->cpus[0].of_node);
-		of_node_put(dai_link->codecs[0].of_node);
+		if (dai_link->cpus && dai_link->cpus->of_node)
+			of_node_put(dai_link->cpus->of_node);
+		if (dai_link->codecs && dai_link->codecs->of_node)
+			of_node_put(dai_link->codecs->of_node);
 	}
 
 	for (num_confs = 0, codec_conf = card->codec_conf;
 	     num_confs < card->num_configs;
 	     num_confs++, codec_conf++) {
-		of_node_put(codec_conf->dlc.of_node);
+		if (codec_conf->dlc.of_node)
+			of_node_put(codec_conf->dlc.of_node);
 	}
 
 	return 0;

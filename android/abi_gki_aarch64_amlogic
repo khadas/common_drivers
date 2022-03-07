@@ -280,6 +280,9 @@
   snd_soc_of_parse_tdm_slot
   snd_soc_pm_ops
   snd_soc_unregister_component
+  snd_soc_daifmt_clock_provider_from_bitmap
+  snd_soc_daifmt_parse_clock_provider_raw
+  snd_soc_daifmt_parse_format
 
 # usb related
   device_create_managed_software_node

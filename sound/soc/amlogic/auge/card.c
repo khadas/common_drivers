@@ -561,6 +561,12 @@ static int aml_card_dai_link_of(struct device_node *node,
 		goto dai_link_of_err;
 	}
 
+	dai_link->cpus->of_node = of_parse_phandle(cpu, DAI, 0);
+	if (!dai_link->cpus->of_node) {
+		dev_err(dev, "error getting cpu phandle\n");
+		return -EINVAL;
+	}
+
 	ret = aml_card_parse_daifmt(dev, node, codec,
 				    prefix, &dai_link->dai_fmt);
 	if (ret < 0) {
@@ -573,21 +579,16 @@ static int aml_card_dai_link_of(struct device_node *node,
 	ret = aml_card_parse_cpu(cpu, dai_link,
 				 DAI, CELL, &single_cpu);
 	if (ret < 0) {
-		dev_err(dev, "%s, dai-link idx:%d, error getting cpu dai name:%s\n",
-			__func__, idx, dai_link->cpus[0].dai_name);
+		dev_err(dev, "%s, dai-link idx:%d, error getting cpu dai, ret %d\n",
+				__func__, idx, ret);
 		goto dai_link_of_err;
-	} else {
-		dev_info(dev, "%s, dai-link idx:%d cpu dai name:%s succ\n",
-			 __func__, idx, dai_link->cpus[0].dai_name);
 	}
 
 	ret = snd_soc_of_get_dai_link_codecs(dev, codec, dai_link);
 
 	if (ret < 0) {
-		dev_err(dev, "%s, dai-link idx:%d, error getting codec dai name:%s\n",
-			__func__,
-			idx,
-			dai_link->codecs[0].dai_name);
+		dev_err(dev, "%s, error dai-link idx:%d, error getting codec dai, ret %d\n",
+				__func__, idx, ret);
 		goto dai_link_of_err;
 	}
 

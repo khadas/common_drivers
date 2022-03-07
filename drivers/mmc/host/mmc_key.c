@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#include <linux/sched.h>
 #include <linux/err.h>
 #include <linux/slab.h>
 
@@ -39,6 +40,7 @@
 #include <linux/amlogic/aml_sd.h>
 #include <trace/hooks/mmc_part.h>
 #include "mmc_common.h"
+struct task_struct      *thread_dtb_key_task;
 unsigned int    key_stamp;
 #define		EMMC_BLOCK_SIZE		(0x100)
 #define		MAX_EMMC_BLOCK_SIZE	(128 * 1024)
@@ -431,7 +433,7 @@ static int aml_emmc_key_check(void)
 	return 0;
 }
 
-static void emmc_key_init(void *data, struct mmc_card *card, int *retp)
+void emmc_key_init(struct mmc_card *card, int *retp)
 {
 	u64  addr = 0;
 	u32  size = 0;
@@ -444,6 +446,7 @@ static void emmc_key_init(void *data, struct mmc_card *card, int *retp)
 		*retp = 0;
 		goto exit_dir;
 	}
+
 	mmc_claim_host(card->host);
 	pr_info("card key: card_blk_probe.\n");
 	emmckey_info = kmalloc(sizeof(*emmckey_info), GFP_KERNEL);
@@ -555,15 +558,11 @@ int32_t emmc_key_read(u8 *buffer,
 }
 EXPORT_SYMBOL(emmc_key_read);
 
-void amlmmc_dtb_key_init(void *at, struct mmc_card *card, int *retp)
+void amlmmc_dtb_key_init(void *at, int *retp)
 {
-	emmc_key_init(at, card, retp);
-	if (*retp)
-		pr_info("%s:%d,emmc_key_init fail\n", __func__, __LINE__);
-
-	amlmmc_dtb_init(at, card, retp);
-	if (*retp)
-		pr_info("%s:%d,amlmmc_dtb_init fail\n", __func__, __LINE__);
+	if (thread_dtb_key_task)
+		wake_up_process(thread_dtb_key_task);
+	*retp = 0;
 }
 
 void register_key_dtb(void)

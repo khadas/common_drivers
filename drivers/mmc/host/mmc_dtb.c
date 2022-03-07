@@ -391,7 +391,7 @@ static int _dtb_init(struct mmc_card *mmc)
 	return ret;
 }
 
-void amlmmc_dtb_init(void *at, struct mmc_card *card, int *retp)
+void amlmmc_dtb_init(struct mmc_card *card, int *retp)
 {
 	*retp = 0;
 	if (!mmc_card_mmc(card)) {

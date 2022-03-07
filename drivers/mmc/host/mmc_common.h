@@ -25,7 +25,6 @@ void mmc_prepare_mrq(struct mmc_card *card,
 
 int get_reserve_partition_off_from_tbl(void);
 
-void amlmmc_dtb_init(void *at, struct mmc_card *card, int *retp);
 
 #endif
 

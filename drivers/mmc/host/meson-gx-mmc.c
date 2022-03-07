@@ -36,6 +36,7 @@
 #include <linux/sched/clock.h>
 #include <linux/debugfs.h>
 #include "mmc_key.h"
+#include "mmc_dtb.h"
 
 struct mmc_gpio {
 	struct gpio_desc *ro_gpio;
@@ -51,7 +52,6 @@ struct mmc_gpio {
 	irqreturn_t (*cd_gpio_irq)(int irq, void *dev_id);
 #endif
 };
-
 static struct mmc_host *sdio_host;
 static char *caps2_quirks = "none";
 
@@ -3592,6 +3592,23 @@ static int erase_count_show(struct seq_file *s, void *data)
 }
 DEFINE_SHOW_ATTRIBUTE(erase_count);
 
+struct mmc_host *mmc_dtbkey;
+
+int add_dtbkey_thread(void *data)
+{
+	int ret;
+
+	emmc_key_init(mmc_dtbkey->card, &ret);
+	if (ret)
+		pr_err("%s:%d,emmc_key_init fail\n", __func__, __LINE__);
+
+	amlmmc_dtb_init(mmc_dtbkey->card, &ret);
+	if (ret)
+		pr_err("%s:%d,amlmmc_dtb_init fail\n", __func__, __LINE__);
+
+	return ret;
+}
+
 static int meson_mmc_probe(struct platform_device *pdev)
 {
 	struct meson_host *host;
@@ -3604,7 +3621,13 @@ static int meson_mmc_probe(struct platform_device *pdev)
 	if (!mmc)
 		return -ENOMEM;
 
+	mmc_dtbkey = mmc;
 	if (registered == 0) {
+		thread_dtb_key_task = kthread_create(add_dtbkey_thread, NULL, "dtbkey_task");
+		if (IS_ERR(thread_dtb_key_task)) {
+			pr_err("%s:%d,thread_dtb_key_task create fail\n", __func__, __LINE__);
+			thread_dtb_key_task = NULL;
+		}
 		/*register amlmmc_dtb_key_init vendor-hook function*/
 		register_key_dtb();
 		registered = 1;

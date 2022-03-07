@@ -65,5 +65,9 @@ int32_t emmc_key_write(u8 *buffer,
 
 void register_key_dtb(void);
 
+void emmc_key_init(struct mmc_card *card, int *retp);
+
+extern struct task_struct      *thread_dtb_key_task;
+
 #endif
 

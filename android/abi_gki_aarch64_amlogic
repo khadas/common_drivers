@@ -275,6 +275,14 @@
   gen_pool_destroy
   gen_pool_size
   class_remove_file_ns
+  __kthread_init_worker
+  console_lock
+  console_unlock
+  fb_get_options
+  fget
+  kernel_sigaction
+  kthread_worker_fn
+  sched_setscheduler
 
 # aml-crypto-dma.ko
   crypto_alloc_skcipher

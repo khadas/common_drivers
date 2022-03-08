@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
-ccflags-y += -I$(srctree)/drivers/amlogic/media/osd/
+ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/media/osd/
 ccflags-y += -I$(srctree)/drivers/staging/android
-ccflags-y += -I$(srctree)/drivers/amlogic/media/common/ion_dev/
+ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/media/common/ion_dev/
 
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_GE2D) += common/ge2d/bitblt.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_GE2D) += common/ge2d/fillrect.o

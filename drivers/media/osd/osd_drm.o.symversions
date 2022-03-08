@@ -1,0 +1,7 @@
+__crc_osd_drm_debugfs_add = 0xbbc96186;
+__crc_osd_drm_debugfs_init = 0x9ccaa7cf;
+__crc_osd_drm_debugfs_exit = 0xa2dd4fe5;
+__crc_osd_drm_vsync_isr_handler = 0x0f6df097;
+__crc_osd_drm_plane_page_flip = 0x4c1e2d59;
+__crc_osd_drm_plane_enable_hw = 0x8a68d4fd;
+__crc_osd_drm_init = 0x9f1a89a0;

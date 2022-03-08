@@ -1456,7 +1456,6 @@
 		phy-reg = <0xfe004000>;
 		phy-reg-size = <0x2000>;
 		interrupts = <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>;
-		pwr-ctl = <0>;
 		power-domains = <&pwrdm PDID_CX_USB>;
 	};
 

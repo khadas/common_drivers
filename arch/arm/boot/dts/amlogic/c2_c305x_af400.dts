@@ -44,7 +44,8 @@
 		ranges;
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
-			reusable;
+			/*reusable;*/
+			no-map;
 			size = <0x400000>;
 			alignment = <0x400000>;
 			alloc-ranges = <0x05000000 0x400000>;

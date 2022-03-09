@@ -1003,33 +1003,20 @@
 	pinctrl-names = "default";
 };
 
-&sd_emmc_a {
+&sd_emmc_c {
 	status = "okay";
-	pinctrl-0 = <&sdio_m_pins>;
-	pinctrl-1 = <&sdio_m_clk_gate_pins>;
-	pinctrl-names = "default", "clk-gate";
-	bus-width = <4>;
-	cap-sd-highspeed;
-	sd-uhs-sdr104;
+	pinctrl-0 = <&emmc_pins>;
+	pinctrl-1 = <&emmc_clk_gate_pins>;
+	pinctrl-2 = <&emmc_pins_sleep>;
+	pinctrl-names = "default", "clk-gate", "sleep";
+	cap-mmc-highspeed;
 	non-removable;
+	//mmc-ddr-1_8v;
+	//mmc-hs200-1_8v;
+	//mmc-hs400-1_8v;
 	max-frequency = <200000000>;
 	disable-wp;
-	cap-sdio-irq;
-	keep-power-in-suspend;
-};
-
-&pwm_ef {
-	status = "okay";
-	pinctrl-names = "default";
-	pinctrl-0 = <&pwm_e_pins1>;
-};
-
-&aml_wifi {
-	status = "okay";
-};
-
-&aml_bt {
-	status = "okay";
+	bus-width = <8>;
 };
 
 &sd_emmc_b {
@@ -1070,20 +1057,33 @@
 	//vqmmc-supply = <&vddio_card>;
 };
 
-&sd_emmc_c {
+&sd_emmc_a {
 	status = "okay";
-	pinctrl-0 = <&emmc_pins>;
-	pinctrl-1 = <&emmc_clk_gate_pins>;
-	pinctrl-2 = <&emmc_pins_sleep>;
-	pinctrl-names = "default", "clk-gate", "sleep";
-	cap-mmc-highspeed;
+	pinctrl-0 = <&sdio_m_pins>;
+	pinctrl-1 = <&sdio_m_clk_gate_pins>;
+	pinctrl-names = "default", "clk-gate";
+	bus-width = <4>;
+	cap-sd-highspeed;
+	sd-uhs-sdr104;
 	non-removable;
-	//mmc-ddr-1_8v;
-	//mmc-hs200-1_8v;
-	//mmc-hs400-1_8v;
 	max-frequency = <200000000>;
 	disable-wp;
-	bus-width = <8>;
+	cap-sdio-irq;
+	keep-power-in-suspend;
+};
+
+&pwm_ef {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm_e_pins1>;
+};
+
+&aml_wifi {
+	status = "okay";
+};
+
+&aml_bt {
+	status = "okay";
 };
 
 &mtd_nand {

@@ -40,6 +40,8 @@
 #include <linux/amlogic/aml_sd.h>
 #include <trace/hooks/mmc_part.h>
 #include "mmc_common.h"
+
+struct mmc_host *mmc_dtbkey;
 struct task_struct      *thread_dtb_key_task;
 unsigned int    key_stamp;
 #define		EMMC_BLOCK_SIZE		(0x100)
@@ -275,8 +277,7 @@ int32_t emmc_key_write(u8 *buffer,
 }
 EXPORT_SYMBOL(emmc_key_write);
 #else
-int32_t emmc_key_write(u8 *buffer,
-		u32 length, u32 *actual_length)
+int32_t emmc_key_write(u8 *buffer, u32 length, u32 *actual_length)
 {
 	int ret;
 	u64  addr = 0;
@@ -295,8 +296,7 @@ int32_t emmc_key_write(u8 *buffer,
 	do {
 		ret = mmc_write_internal(card, blk, EMMC_BLOCK_SIZE, src);
 		if (ret) {
-			pr_err("%s [%d] mmc_write_internal error\n",
-					__func__, __LINE__);
+			pr_err("%s [%d] mmc_write_internal error\n", __func__, __LINE__);
 			return ret;
 		}
 		blk += EMMC_BLOCK_SIZE;
@@ -438,16 +438,12 @@ void emmc_key_init(struct mmc_card *card, int *retp)
 	u64  addr = 0;
 	u32  size = 0;
 	u64  lba_start = 0, lba_end = 0;
-	int bit = card->csd.read_blkbits;
+	int bit = 0;
 	struct unifykey_type *uk_type = NULL;
 	struct unifykey_storage_ops ops;
 
-	if (!mmc_card_mmc(card)) {
-		*retp = 0;
-		goto exit_dir;
-	}
-
 	mmc_claim_host(card->host);
+	bit = card->csd.read_blkbits;
 	pr_info("card key: card_blk_probe.\n");
 	emmckey_info = kmalloc(sizeof(*emmckey_info), GFP_KERNEL);
 	if (!emmckey_info) {
@@ -516,8 +512,6 @@ exit_err:
 		kfree(emmckey_info);
 exit:
 		mmc_release_host(card->host);
-exit_dir:
-	;
 }
 
 int32_t emmc_key_read(u8 *buffer,
@@ -560,8 +554,18 @@ EXPORT_SYMBOL(emmc_key_read);
 
 void amlmmc_dtb_key_init(void *at, int *retp)
 {
-	if (thread_dtb_key_task)
+	static int waked;
+
+	if (!mmc_dtbkey || !mmc_dtbkey->card) {
+		pr_info("no emmc host or emmc card!\n");
+	} else if (waked == 1) {
+		pr_info("emmc key and dtb already inited\n");
+	} else {
+		pr_info("wakeup dtbkey_task\n");
 		wake_up_process(thread_dtb_key_task);
+		waked = 1;
+	}
+
 	*retp = 0;
 }
 

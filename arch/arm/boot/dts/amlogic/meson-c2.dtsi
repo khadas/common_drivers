@@ -307,7 +307,6 @@
 			resets = <&reset RESET_SD_EMMC_B>;
 			no-mmc;
 			no-sdio;
-			cd-inverted;
 
 		};
 	/*

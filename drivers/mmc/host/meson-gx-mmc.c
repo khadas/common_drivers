@@ -52,6 +52,7 @@ struct mmc_gpio {
 	irqreturn_t (*cd_gpio_irq)(int irq, void *dev_id);
 #endif
 };
+
 static struct mmc_host *sdio_host;
 static char *caps2_quirks = "none";
 
@@ -3592,21 +3593,28 @@ static int erase_count_show(struct seq_file *s, void *data)
 }
 DEFINE_SHOW_ATTRIBUTE(erase_count);
 
-struct mmc_host *mmc_dtbkey;
-
 int add_dtbkey_thread(void *data)
 {
 	int ret;
+	static int inited;
+	struct meson_host *host = mmc_priv(mmc_dtbkey);
 
-	emmc_key_init(mmc_dtbkey->card, &ret);
-	if (ret)
-		pr_err("%s:%d,emmc_key_init fail\n", __func__, __LINE__);
+	if (!aml_card_type_mmc(host)) {
+		pr_err("%s:%d,no emmc card, no dtb and key device init\n", __func__, __LINE__);
+		return 0;
+	}
+	WARN_ON(inited == 1);
+	if (!inited) {
+		emmc_key_init(mmc_dtbkey->card, &ret);
+		if (ret)
+			pr_err("%s:%d,emmc_key_init fail\n", __func__, __LINE__);
 
-	amlmmc_dtb_init(mmc_dtbkey->card, &ret);
-	if (ret)
-		pr_err("%s:%d,amlmmc_dtb_init fail\n", __func__, __LINE__);
-
-	return ret;
+		amlmmc_dtb_init(mmc_dtbkey->card, &ret);
+		if (ret)
+			pr_err("%s:%d,amlmmc_dtb_init fail\n", __func__, __LINE__);
+		inited = 1;
+	}
+	return 0;
 }
 
 static int meson_mmc_probe(struct platform_device *pdev)
@@ -3621,13 +3629,8 @@ static int meson_mmc_probe(struct platform_device *pdev)
 	if (!mmc)
 		return -ENOMEM;
 
-	mmc_dtbkey = mmc;
+
 	if (registered == 0) {
-		thread_dtb_key_task = kthread_create(add_dtbkey_thread, NULL, "dtbkey_task");
-		if (IS_ERR(thread_dtb_key_task)) {
-			pr_err("%s:%d,thread_dtb_key_task create fail\n", __func__, __LINE__);
-			thread_dtb_key_task = NULL;
-		}
 		/*register amlmmc_dtb_key_init vendor-hook function*/
 		register_key_dtb();
 		registered = 1;
@@ -3657,6 +3660,15 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		goto free_host;
 	}
 	amlogic_of_parse(mmc);
+
+	if (aml_card_type_mmc(host)) {
+		mmc_dtbkey = mmc;
+		thread_dtb_key_task = kthread_create(add_dtbkey_thread, NULL, "dtbkey_task");
+		if (IS_ERR(thread_dtb_key_task)) {
+			pr_err("%s:%d,thread_dtb_key_task create fail\n", __func__, __LINE__);
+			thread_dtb_key_task = NULL;
+		}
+	}
 
 	/* caps2 qurik for eMMC */
 	if (aml_card_type_mmc(host) && caps2_quirks &&

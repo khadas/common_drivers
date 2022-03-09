@@ -20,7 +20,6 @@
 /* we store partition table in the previous 16KB space */
 #define EMMCKEY_RESERVE_OFFSET          0x4000
 #define EMMCKEY_AREA_PHY_SIZE           (EMMC_KEYAREA_COUNT * EMMC_KEYAREA_SIZE)
-
 struct emmckey_valid_node_t {
 	u64 phy_addr;
 	u64 phy_size;
@@ -68,6 +67,6 @@ void register_key_dtb(void);
 void emmc_key_init(struct mmc_card *card, int *retp);
 
 extern struct task_struct      *thread_dtb_key_task;
-
+extern struct mmc_host *mmc_dtbkey;
 #endif
 

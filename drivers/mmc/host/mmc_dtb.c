@@ -394,10 +394,6 @@ static int _dtb_init(struct mmc_card *mmc)
 void amlmmc_dtb_init(struct mmc_card *card, int *retp)
 {
 	*retp = 0;
-	if (!mmc_card_mmc(card)) {
-		*retp = 0;
-		goto exit_dir;
-	}
 	mmc_claim_host(card->host);
 
 	card_dtb = card;
@@ -454,7 +450,5 @@ exit_err1:
 	unregister_chrdev_region(amlmmc_dtb_no, 1);
 exit:
 	mmc_release_host(card->host);
-exit_dir:
-	;
 }
 

@@ -189,3 +189,23 @@ CONFIG_AMLOGIC_SND_SOC_CODECS=y
 
 # amlogic-snd-codec-dummy.ko
 CONFIG_AMLOGIC_SND_CODEC_DUMMY_CODEC=m
+
+# usb xxx ko
+CONFIG_AMLOGIC_USB=y
+CONFIG_AMLOGIC_USB_HOST_ELECT_TEST=y
+CONFIG_AMLOGIC_USB_SUPPORT=m
+
+# amlogic_usb2_phy.ko
+CONFIG_AMLOGIC_USB2PHY=y
+
+# amlogic_usb3_v2_phy.ko
+CONFIG_AMLOGIC_USBPHY=y
+
+# amlogic_usb_otg.ko
+CONFIG_AMLOGIC_USB3PHY=y
+
+# amlogic_usb_crg.ko
+CONFIG_AMLOGIC_CRG=y
+
+# dwc_otg.ko
+CONFIG_AMLOGIC_USB_DWC_OTG_HCD=m

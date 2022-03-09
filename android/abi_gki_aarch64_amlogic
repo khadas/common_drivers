@@ -280,3 +280,17 @@
   snd_soc_of_parse_tdm_slot
   snd_soc_pm_ops
   snd_soc_unregister_component
+
+# usb related
+  device_create_managed_software_node
+  devm_usb_get_phy
+  devm_usb_get_phy_by_phandle
+  gpiod_get_index
+  memcmp
+  of_find_node_by_type
+  platform_device_add_resources
+  simple_strtol
+  simple_strtoul
+  usb_add_phy_dev
+  vprintk
+  vsprintf

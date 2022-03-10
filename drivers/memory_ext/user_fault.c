@@ -35,16 +35,12 @@
 #include <trace/hooks/fpsimd.h>
 #include <trace/hooks/mpam.h>
 
-#include <asm/alternative.h>
 #include <asm/compat.h>
 #include <asm/cpufeature.h>
 #include <asm/cacheflush.h>
 #include <asm/exec.h>
-#include <asm/fpsimd.h>
 #include <asm/mmu_context.h>
-#include <asm/mte.h>
 #include <asm/processor.h>
-#include <asm/pointer_auth.h>
 #include <asm/stacktrace.h>
 #include <asm/switch_to.h>
 #include <asm/system_misc.h>
@@ -54,6 +50,27 @@
 #ifdef CONFIG_AMLOGIC_SECMON
 #include <linux/amlogic/secmon.h>
 #endif
+
+#ifndef CONFIG_ARM64
+#include <asm/ptrace.h>
+#include <asm/vdso/cp15.h>
+#include <linux/ratelimit.h>
+
+#define USR_FAULT_DBG_RATELIMIT_INTERVAL	(5 * HZ)
+#define USR_FAULT_DBG_RATELIMIT_BURST		3
+
+#define user_fault_debug_ratelimited()					\
+({									\
+	static DEFINE_RATELIMIT_STATE(usr_fault_dgb_rs,			\
+				      USR_FAULT_DBG_RATELIMIT_INTERVAL,	\
+				      USR_FAULT_DBG_RATELIMIT_BURST);	\
+	bool __show_ratelimited = false;				\
+	if (__ratelimit(&usr_fault_dgb_rs))				\
+		__show_ratelimited = true;				\
+	__show_ratelimited;						\
+})
+#endif
+
 static void show_data(unsigned long addr, int nbytes, const char *name)
 {
 	int	i, j;
@@ -117,9 +134,11 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 		pr_cont("\n");
 	}
 }
+
 /*
  * dump a block of user memory from around the given address
  */
+#ifdef CONFIG_ARM64
 static void show_user_data(unsigned long addr, int nbytes, const char *name)
 {
 	int	i, j;
@@ -209,6 +228,87 @@ static void show_regs_pfn(struct pt_regs *regs)
 	}
 }
 
+#else
+static void show_user_data(unsigned long addr, int nbytes, const char *name)
+{
+	int	i, j;
+	int	nlines;
+	u32	*p;
+
+	if (!access_ok((void *)addr, nbytes))
+		return;
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	/*
+	 * Treating data in general purpose register as an address
+	 * and dereferencing it is quite a dangerous behaviour,
+	 * especially when it is an address belonging to secure
+	 * region or ioremap region, which can lead to external
+	 * abort on non-linefetch and can not be protected by
+	 * probe_kernel_address.
+	 * We need more strict filtering rules
+	 */
+
+#ifdef CONFIG_AMLOGIC_SEC
+	/*
+	 * filter out secure monitor region
+	 */
+	if (addr <= (unsigned long)high_memory)
+		if (within_secmon_region(addr)) {
+			pr_info("\n%s: %#lx S\n", name, addr);
+			return;
+		}
+#endif
+
+	/*
+	 * filter out ioremap region
+	 */
+	if (addr >= VMALLOC_START && addr <= VMALLOC_END)
+		if (!pfn_valid(vmalloc_to_pfn((void *)addr))) {
+			pr_info("\n%s: %#lx V\n", name, addr);
+			return;
+		}
+#endif
+
+	pr_info("\n%s: %#lx:\n", name, addr);
+
+	/*
+	 * round address down to a 32 bit boundary
+	 * and always dump a multiple of 32 bytes
+	 */
+	p = (u32 *)(addr & ~(sizeof(u32) - 1));
+	nbytes += (addr & (sizeof(u32) - 1));
+	nlines = (nbytes + 31) / 32;
+
+	for (i = 0; i < nlines; i++) {
+		/*
+		 * just display low 16 bits of address to keep
+		 * each line of the dump < 80 characters
+		 */
+		pr_info("%04lx ", (unsigned long)p & 0xffff);
+		for (j = 0; j < 8; j++) {
+			u32 data;
+			int bad;
+
+			bad = __get_user(data, p);
+			if (bad) {
+				if (j != 7)
+					pr_cont(" ********");
+				else
+					pr_cont(" ********\n");
+			} else {
+				if (j != 7)
+					pr_cont(" %08x", data);
+				else
+					pr_cont(" %08x\n", data);
+			}
+			++p;
+		}
+	}
+}
+#endif /* CONFIG_ARM64 */
+
+#ifdef CONFIG_ARM64
 static void show_extra_register_data(struct pt_regs *regs, int nbytes)
 {
 	unsigned int i;
@@ -251,6 +351,63 @@ static void show_user_extra_register_data(struct pt_regs *regs, int nbytes)
 		show_user_data(regs->regs[i] - nbytes, nbytes * 2, name);
 	}
 }
+#else
+static void show_extra_register_data(struct pt_regs *regs, int nbytes)
+{
+	show_data(regs->ARM_pc - nbytes, nbytes * 2, "PC");
+	show_data(regs->ARM_lr - nbytes, nbytes * 2, "LR");
+	show_data(regs->ARM_sp - nbytes, nbytes * 2, "SP");
+	show_data(regs->ARM_ip - nbytes, nbytes * 2, "IP");
+	show_data(regs->ARM_fp - nbytes, nbytes * 2, "FP");
+	show_data(regs->ARM_r0 - nbytes, nbytes * 2, "R0");
+	show_data(regs->ARM_r1 - nbytes, nbytes * 2, "R1");
+	show_data(regs->ARM_r2 - nbytes, nbytes * 2, "R2");
+	show_data(regs->ARM_r3 - nbytes, nbytes * 2, "R3");
+	show_data(regs->ARM_r4 - nbytes, nbytes * 2, "R4");
+	show_data(regs->ARM_r5 - nbytes, nbytes * 2, "R5");
+	show_data(regs->ARM_r6 - nbytes, nbytes * 2, "R6");
+	show_data(regs->ARM_r7 - nbytes, nbytes * 2, "R7");
+	show_data(regs->ARM_r8 - nbytes, nbytes * 2, "R8");
+	show_data(regs->ARM_r9 - nbytes, nbytes * 2, "R9");
+	show_data(regs->ARM_r10 - nbytes, nbytes * 2, "R10");
+}
+
+static void show_user_extra_register_data(struct pt_regs *regs, int nbytes)
+{
+	show_user_data(regs->ARM_pc - nbytes, nbytes * 2, "PC");
+	show_user_data(regs->ARM_lr - nbytes, nbytes * 2, "LR");
+	show_user_data(regs->ARM_sp - nbytes, nbytes * 2, "SP");
+	show_user_data(regs->ARM_ip - nbytes, nbytes * 2, "IP");
+	show_user_data(regs->ARM_fp - nbytes, nbytes * 2, "FP");
+	show_user_data(regs->ARM_r0 - nbytes, nbytes * 2, "R0");
+	show_user_data(regs->ARM_r1 - nbytes, nbytes * 2, "R1");
+	show_user_data(regs->ARM_r2 - nbytes, nbytes * 2, "R2");
+	show_user_data(regs->ARM_r3 - nbytes, nbytes * 2, "R3");
+	show_user_data(regs->ARM_r4 - nbytes, nbytes * 2, "R4");
+	show_user_data(regs->ARM_r5 - nbytes, nbytes * 2, "R5");
+	show_user_data(regs->ARM_r6 - nbytes, nbytes * 2, "R6");
+	show_user_data(regs->ARM_r7 - nbytes, nbytes * 2, "R7");
+	show_user_data(regs->ARM_r8 - nbytes, nbytes * 2, "R8");
+	show_user_data(regs->ARM_r9 - nbytes, nbytes * 2, "R9");
+	show_user_data(regs->ARM_r10 - nbytes, nbytes * 2, "R10");
+}
+
+void show_vmalloc_pfn(struct pt_regs *regs)
+{
+	int i;
+	struct page *page;
+
+	for (i = 0; i < 16; i++) {
+		if (is_vmalloc_or_module_addr((void *)regs->uregs[i])) {
+			page = vmalloc_to_page((void *)regs->uregs[i]);
+			if (!page)
+				continue;
+			pr_info("R%-2d : %08lx, PFN:%5lx\n",
+				i, regs->uregs[i], page_to_pfn(page));
+		}
+	}
+}
+#endif
 
 void show_vma(struct mm_struct *mm, unsigned long addr)
 {
@@ -392,6 +549,7 @@ static long get_user_pfn(struct mm_struct *mm, unsigned long addr)
 	return pfn;
 }
 
+#ifdef CONFIG_ARM64
 void show_all_pfn(struct task_struct *task, struct pt_regs *regs)
 {
 	int i;
@@ -438,6 +596,50 @@ void show_all_pfn(struct task_struct *task, struct pt_regs *regs)
 		sprintf(s1, "--------");
 	pr_info("unused :  %016lx  %s\n", far, s1);
 }
+#else
+static unsigned char *regidx_to_name[] = {
+	"r0 ", "r1 ", "r2 ", "r3 ",
+	"r4 ", "r5 ", "r6 ", "r7 ",
+	"r8 ", "r9 ", "r10",
+	"fp ", "ip ", "sp ", "lr ",
+	"pc "
+};
+
+void show_all_pfn(struct task_struct *task, struct pt_regs *regs)
+{
+	int i;
+	long pfn1;
+	char s1[10];
+	int top;
+
+	top = 16;
+	pr_info("reg     value       pfn   ");
+	pr_cont("reg     value       pfn\n");
+	for (i = 0; i < top; i++) {
+		pfn1 = get_user_pfn(task->mm, regs->uregs[i]);
+		if (pfn1 >= 0)
+			sprintf(s1, "%8lx", pfn1);
+		else
+			sprintf(s1, "--------");
+		if (i % 2 == 0)
+			pr_info("%s:  %08lx  %s  ", regidx_to_name[i],
+				regs->uregs[i], s1);
+		else
+			pr_cont("%s:  %08lx  %s\n", regidx_to_name[i],
+				regs->uregs[i], s1);
+	}
+}
+
+void show_debug_ratelimited(struct pt_regs *regs, unsigned int reg_en)
+{
+	if (user_fault_debug_ratelimited()) {
+		show_all_pfn(current, regs);
+
+		if (reg_en)
+			show_regs(regs);
+	}
+}
+#endif
 
 static int (*dmc_cb)(char *);
 void set_dump_dmc_func(void *f)
@@ -458,6 +660,7 @@ void _dump_dmc_reg(void)
 
 void show_user_fault_info(struct pt_regs *regs, u64 lr, u64 sp)
 {
+#ifdef CONFIG_ARM64
 	if (user_mode(regs)) {
 		show_vma(current->mm, instruction_pointer(regs));
 		show_vma(current->mm, lr);
@@ -467,6 +670,12 @@ void show_user_fault_info(struct pt_regs *regs, u64 lr, u64 sp)
 	show_pfn(sp, "SP");
 	show_pfn(read_sysreg(far_el1), "FAR");
 	show_regs_pfn(regs);
+#else
+	if (user_mode(regs)) {
+		show_vma(current->mm, instruction_pointer(regs));
+		show_vma(current->mm, regs->ARM_lr);
+	}
+#endif
 }
 
 void show_extra_reg_data(struct pt_regs *regs)

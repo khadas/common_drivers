@@ -117,25 +117,24 @@ fi
 set -x
 if [[ $ARCH == arm64 ]]; then
 	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
-	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common headers_install
-	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common Image -j12
-	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common modules -j12
-	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12
+	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common headers_install &&
+	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common Image -j12 &&
+	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common modules -j12 &&
+	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
 	$MAKE ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common dtbs -j12
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
 else
 	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
-	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common headers_install
-	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common uImage -j12 LOADADDR=0x208000
-	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common modules -j12 LOADADDR=0x208000
-	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12
+	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common headers_install &&
+	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common uImage -j12 LOADADDR=0x208000 &&
+	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common modules -j12 LOADADDR=0x208000 &&
+	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
 	$MAKE ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common dtbs -j12 LOADADDR=0x208000
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm/configs/${DEFCONFIG}
 fi
 set +x
 
 IN_KERNEL_MODULES=1
-BUILD_INITRAMFS=1
 MODULES_LOAD_FIRSTLIST=(
 	amlogic-clk
 )
@@ -156,28 +155,17 @@ if [ -n "${MODULES}" ]; then
       tar --transform="s,.*/,," -czf ${DIST_DIR}/${MODULES_ARCHIVE} ${MODULES[@]}
     fi
   fi
-  if [ "${BUILD_INITRAMFS}" = "1" ]; then
-    echo "========================================================"
-    echo " Creating initramfs"
-    create_modules_staging "${MODULES_LIST}" ${MODULES_STAGING_DIR} \
-      ${INITRAMFS_STAGING_DIR} "${MODULES_BLOCKLIST}" "-e"
 
-    MODULES_ROOT_DIR=$(echo ${INITRAMFS_STAGING_DIR}/lib/modules/*)
-    cp ${MODULES_ROOT_DIR}/modules.load ${DIST_DIR}/modules.load
-    cp ${MODULES_ROOT_DIR}/modules.load ${DIST_DIR}/vendor_boot.modules.load
-    echo "${MODULES_OPTIONS}" > ${MODULES_ROOT_DIR}/modules.options
+  echo "========================================================"
+  echo "prepare modules"
+
+  modules_install
+
+  if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
+    echo "Rebuild rootfs in order to install modules!"
+    rebuild_rootfs ${ARCH}
+    echo "Build success!"
+  else
+    echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
   fi
 fi
-
-echo "========================================================"
-echo "prepare modules"
-
-modules_install
-if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
-	echo "Rebuild rootfs in order to install modules!"
-	rebuild_rootfs ${ARCH}
-else
-	echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
-fi
-
-echo "Build success!"

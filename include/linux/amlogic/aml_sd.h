@@ -192,7 +192,6 @@ struct meson_host {
 	struct dentry *debugfs_root;
 };
 
-int sdio_reset_comm(struct mmc_card *card);
 void sdio_reinit(void);
 const char *get_wifi_inf(void);
 int sdio_get_vendor(void);

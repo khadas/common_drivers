@@ -179,6 +179,9 @@
   __tracepoint_android_vh_amlmmc_dtb_key_init
   class_remove_file_ns
   show_class_attr_string
+  mmc_sw_reset
+  sdio_claim_host
+  sdio_release_host
 
 # amlogic-reboot.ko
   atomic_notifier_chain_register

@@ -18,6 +18,8 @@
 #include <linux/mmc/sd.h>
 #include <linux/mmc/sdio.h>
 #include <linux/mmc/slot-gpio.h>
+#include <linux/mmc/card.h>
+#include <linux/mmc/sdio_func.h>
 #include <linux/io.h>
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
@@ -3091,38 +3093,52 @@ static int meson_mmc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	return err;
 }
 
-/*
- *static void sdio_rescan(struct mmc_host *mmc)
- *{
- *	int ret;
- *
- *	mmc->rescan_entered = 0;
- *  //mmc->host_rescan_disable = false;
- *	mmc_detect_change(mmc, 0);
- *	// start the delayed_work
- *	ret = flush_work(&mmc->detect.work);
- *	// wait for the delayed_work to finish
- *	if (!ret)
- *		pr_info("Error: delayed_work mmc_rescan() already idle!\n");
- *}
- */
 
-/*
- *void sdio_reinit(void)
- *{
- *	if (sdio_host) {
- *		if (sdio_host->card)
- *			sdio_reset_comm(sdio_host->card);
- *		else
- *			sdio_rescan(sdio_host);
- *	} else {
- *		pr_info("Error: sdio_host is NULL\n");
- *	}
- *
- *	pr_info("[%s] finish\n", __func__);
- *}
- *EXPORT_SYMBOL(sdio_reinit);
- */
+static void sdio_rescan(struct mmc_host *mmc)
+{
+	int ret;
+
+	mmc->rescan_entered = 0;
+	//mmc->host_rescan_disable = false;
+	mmc_detect_change(mmc, 0);
+	// start the delayed_work
+	ret = flush_work(&mmc->detect.work);
+	// wait for the delayed_work to finish
+	if (!ret)
+		pr_info("Error: delayed_work mmc_rescan() already idle!\n");
+}
+
+static void sdio_reset_comm(struct mmc_card *card)
+{
+	struct mmc_host *host = card->host;
+	int i = 0, err = 0;
+
+	while (!card->sdio_func[i] && i < SDIO_MAX_FUNCS)
+		i++;
+	if (WARN_ON(i == SDIO_MAX_FUNCS))
+		return;
+	sdio_claim_host(card->sdio_func[i]);
+	err = mmc_sw_reset(host);
+	sdio_release_host(card->sdio_func[i]);
+	if (err)
+		pr_info("%s Failed, error = %d\n", __func__, err);
+	return;
+}
+
+void sdio_reinit(void)
+{
+	if (sdio_host) {
+		if (sdio_host->card)
+			sdio_reset_comm(sdio_host->card);
+		else
+			sdio_rescan(sdio_host);
+	} else {
+		pr_info("Error: sdio_host is NULL\n");
+	}
+
+	pr_info("[%s] finish\n", __func__);
+}
+EXPORT_SYMBOL(sdio_reinit);
 
 void sdio_clk_always_on(bool clk_aws_on)
 {

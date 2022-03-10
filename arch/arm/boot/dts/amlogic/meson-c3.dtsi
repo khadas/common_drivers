@@ -2613,4 +2613,10 @@
 			drive-strength-microamp = <3000>;
 		};
 	};
+
+	pwrdm: power-domains {
+		compatible = "amlogic,c3-power-domain";
+		#power-domain-cells = <1>;
+		status = "okay";
+	};
 };

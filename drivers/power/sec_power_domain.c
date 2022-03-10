@@ -16,6 +16,7 @@
 #include <dt-bindings/power/s4-pd.h>
 #include <dt-bindings/power/t3-pd.h>
 #include <dt-bindings/power/p1-pd.h>
+#include <dt-bindings/power/c3-pd.h>
 #include <linux/kallsyms.h>
 
 struct sec_pm_private_domain {
@@ -471,6 +472,40 @@ static struct sec_pm_domain_data t5w_pm_domain_data __initdata = {
 	.domains_count = ARRAY_SIZE(t5w_pm_domains),
 };
 
+static struct sec_pm_private_domain c3_pm_domains[] __initdata = {
+	[PDID_C3_NNA] = POWER_DOMAIN(nna, PDID_C3_NNA, DOMAIN_INIT_ON,
+				     GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_AUDIO] = POWER_DOMAIN(audio, PDID_C3_AUDIO, DOMAIN_INIT_ON,
+				       GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_SDIOA] = POWER_DOMAIN(sdioa, PDID_C3_SDIOA, DOMAIN_INIT_ON,
+					  GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_EMMC] = POWER_DOMAIN(emmc, PDID_C3_EMMC, DOMAIN_INIT_ON,
+					  GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_USB_COMB] = POWER_DOMAIN(usb_comb, PDID_C3_USB_COMB, DOMAIN_INIT_ON,
+					  GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_SDCARD] = POWER_DOMAIN(sdcard, PDID_C3_SDCARD, DOMAIN_INIT_ON,
+					GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_ETH] = POWER_DOMAIN(eth, PDID_C3_ETH, DOMAIN_INIT_ON,
+				     GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_GE2D] = POWER_DOMAIN(ge2d, PDID_C3_GE2D, DOMAIN_INIT_ON,
+				      GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_CVE] = POWER_DOMAIN(cve, PDID_C3_CVE, DOMAIN_INIT_ON,
+				     GENPD_FLAG_ALWAYS_ON | GENPD_FLAG_IRQ_SAFE),
+	[PDID_C3_CDG_WRAP] = POWER_DOMAIN(cdg_wrap, PDID_C3_CDG_WRAP, DOMAIN_INIT_ON,
+					  GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_ISP_TOP] = POWER_DOMAIN(isp_top, PDID_C3_ISP_TOP, DOMAIN_INIT_ON,
+					 GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_MIPI_ISP_WRAP] = POWER_DOMAIN(isp_warp, PDID_C3_MIPI_ISP_WRAP, DOMAIN_INIT_ON,
+					       GENPD_FLAG_ALWAYS_ON),
+	[PDID_C3_VCODEC] = POWER_DOMAIN(vcodec, PDID_C3_VCODEC, DOMAIN_INIT_ON,
+					GENPD_FLAG_ALWAYS_ON),
+};
+
+static struct sec_pm_domain_data c3_pm_domain_data __initdata = {
+	.domains = c3_pm_domains,
+	.domains_count = ARRAY_SIZE(c3_pm_domains),
+};
+
 static int sec_pd_probe(struct platform_device *pdev)
 {
 	int ret, i;
@@ -602,6 +637,10 @@ static const struct of_device_id pd_match_table[] = {
 	{
 		.compatible = "amlogic,t5w-power-domain",
 		.data = &t5w_pm_domain_data,
+	},
+	{
+		.compatible = "amlogic,c3-power-domain",
+		.data = &c3_pm_domain_data,
 	},
 	{}
 };

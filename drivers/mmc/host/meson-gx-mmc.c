@@ -41,16 +41,10 @@
 struct mmc_gpio {
 	struct gpio_desc *ro_gpio;
 	struct gpio_desc *cd_gpio;
-	bool override_cd_active_level;
 	irqreturn_t (*cd_gpio_isr)(int irq, void *dev_id);
 	char *ro_label;
 	char *cd_label;
 	u32 cd_debounce_delay_ms;
-#ifdef CONFIG_AMLOGIC_MODIFY
-	bool cd_data1;
-	struct gpio_desc *data1_gpio;
-	irqreturn_t (*cd_gpio_irq)(int irq, void *dev_id);
-#endif
 };
 
 static struct mmc_host *sdio_host;
@@ -2814,20 +2808,10 @@ static irqreturn_t meson_mmc_irq_thread(int irq, void *dev_id)
  */
 static int meson_mmc_get_cd(struct mmc_host *mmc)
 {
-	struct meson_host *host = mmc_priv(mmc);
-	struct mmc_gpio *ctx = mmc->slot.handler_priv;
-	int cansleep;
 	int status = mmc_gpio_get_cd(mmc);
 
 	if (status == -EINVAL)
 		return 1; /* assume present */
-
-	if (host->is_uart) {
-		cansleep = gpiod_cansleep(ctx->data1_gpio);
-		status = cansleep ?
-			gpiod_get_value_cansleep(ctx->data1_gpio) :
-			gpiod_get_value(ctx->data1_gpio);
-	}
 
 	return !status;
 }
@@ -3247,16 +3231,16 @@ static int aml_is_sduart(struct meson_host *host)
 
 	if (host->is_uart)
 		return 0;
-	if (!host->sd_uart_init) {
-		aml_uart_switch(host, 0);
-	} else {
-		in = (readl(host->pin_mux_base) & DATA3_PINMUX_MASK) >>
-			__ffs(DATA3_PINMUX_MASK);
-		if (in == 2)
-			return 1;
-		else
-			return 0;
-	}
+	//if (!host->sd_uart_init) {
+	//	aml_uart_switch(host, 0);
+	//} else {
+	//	in = (readl(host->pin_mux_base) & DATA3_PINMUX_MASK) >>
+	//		__ffs(DATA3_PINMUX_MASK);
+	//	if (in == 2)
+	//		return 1;
+	//	else
+	//		return 0;
+	//}
 	for (i = 0; ; i++) {
 		mdelay(1);
 		vstat = readl(host->regs + SD_EMMC_STATUS) & 0xffffffff;
@@ -3324,50 +3308,25 @@ int meson_mmc_cd_detect(struct mmc_host *mmc)
 				ret = PTR_ERR(host->pins_default);
 				return ret;
 			}
-			ctx->cd_data1 = 1;
-			ctx->data1_gpio = devm_gpiod_get_index(mmc->parent,
-							       "dat1", 0,
-							       GPIOD_IN);
-			if (IS_ERR(ctx->data1_gpio))
-				return PTR_ERR(ctx->data1_gpio);
-			ret = devm_request_threaded_irq(mmc->parent,
-							host->cd_irq,
-							NULL, ctx->cd_gpio_isr,
-							IRQF_TRIGGER_RISING |
-							IRQF_TRIGGER_FALLING |
-							IRQF_ONESHOT,
-							"sdcard_data1", mmc);
-			if (ret < 0)
-				dev_err(host->dev, "data1 request irq error\n");
 		} else {//sdcard insert
 			aml_uart_switch(host, 0);
 			mmc->caps |= MMC_CAP_4_BIT_DATA;
 			host->pins_default = pinctrl_lookup_state(host->pinctrl,
 								  "sd_default");
 		}
-	} else {//card out
+	} else { //card out
 		if (!host->card_insert)
 			return 0;
 		if (host->is_uart) {
 			host->is_uart = 0;
 			devm_free_irq(mmc->parent, host->cd_irq, mmc);
-			devm_gpiod_put(mmc->parent, ctx->data1_gpio);
 		}
-		ctx->cd_data1 = 0;
 		host->card_insert = 0;
 		aml_uart_switch(host, 0);
 	}
 	if (!host->is_uart)
 		mmc_detect_change(mmc, msecs_to_jiffies(200));
 	return 0;
-}
-
-static irqreturn_t meson_mmc_cd_detect_irq(int irq, void *dev_id)
-{
-	struct mmc_host *mmc = dev_id;
-
-	meson_mmc_cd_detect(mmc);
-	return IRQ_HANDLED;
 }
 
 static void scan_emmc_tx_win(struct mmc_host *mmc)
@@ -3856,32 +3815,11 @@ static int meson_mmc_probe(struct platform_device *pdev)
 	} else {
 		mmc->rescan_entered = 0;
 	}
-
-	if (aml_card_type_non_sdio(host)) {
-		struct mmc_gpio *ctx = mmc->slot.handler_priv;
-
-		ctx->data1_gpio = devm_gpiod_get_index(mmc->parent, "dat1", 0,
-						       GPIOD_IN);
-		if (IS_ERR(ctx->data1_gpio)) {
-			host->pins_default = pinctrl_lookup_state(host->pinctrl,
-								  "sd_default");
-		} else {
-			host->cd_irq = gpiod_to_irq(ctx->data1_gpio);
-			host->sd_uart_init = 1;
-			ctx->cd_gpio_irq = meson_mmc_cd_detect_irq;
-		}
-	}
+	if (aml_card_type_non_sdio(host))
+		host->pins_default = pinctrl_lookup_state(host->pinctrl, "sd_default");
 
 	mmc->ops = &meson_mmc_ops;
 	mmc_add_host(mmc);
-
-	if (aml_card_type_non_sdio(host) && host->sd_uart_init) {
-		struct mmc_gpio *ctx = mmc->slot.handler_priv;
-
-		devm_gpiod_put(mmc->parent, ctx->data1_gpio);
-		meson_mmc_cd_detect(mmc);
-		host->sd_uart_init = 0;
-	}
 
 	if (aml_card_type_sdio(host)) {/* if sdio_wifi */
 		sdio_host = mmc;

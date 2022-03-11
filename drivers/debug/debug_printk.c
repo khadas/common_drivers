@@ -95,7 +95,7 @@ static size_t print_format_info(struct printk_info_t *info, char *buf)
 	len = sprintf(buf, "[@%d %.*s]", info->cpu_id, task_name_len, info->task_name);
 	len += print_irq(info->preempt_count, info->irqflags, buf + len);
 	if (print_cnt_bool)
-		len += sprintf(buf + len, "[%02x]", info->print_cnt);
+		len += sprintf(buf + len, "[%02d]", info->print_cnt);
 	buf[len++] = ' ';
 	buf[len] = '\0';
 	return len;
@@ -104,7 +104,7 @@ static size_t print_format_info(struct printk_info_t *info, char *buf)
 static void printk_get_info(unsigned long irq_flags)
 {
 	printk_info.print_cnt++;
-	printk_info.print_cnt %= 0xff;
+	printk_info.print_cnt %= 100;
 	printk_info.cpu_id = smp_processor_id();
 	get_task_comm(printk_info.task_name, current);
 	printk_info.preempt_count = (preempt_count() & 0xff);
@@ -117,13 +117,15 @@ static void printk_get_info(unsigned long irq_flags)
 		(test_preempt_need_resched() ? TRACE_FLAG_PREEMPT_RESCHED : 0);
 }
 
-void debug_printk_modify_len(u16 *reserve_size, unsigned long irqflags)
+void debug_printk_modify_len(u16 *reserve_size, unsigned long irqflags, unsigned int max_line)
 {
 	size_t info_len = 0;
 
 	printk_get_info(irqflags);
 	info_len = print_format_info(&printk_info, printk_info.format_buf);
 	*reserve_size += info_len;
+	if (*reserve_size > max_line)
+		*reserve_size = max_line;
 	printk_info.format_len = info_len;
 }
 EXPORT_SYMBOL_GPL(debug_printk_modify_len);

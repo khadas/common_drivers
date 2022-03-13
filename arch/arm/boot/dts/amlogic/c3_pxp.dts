@@ -27,7 +27,8 @@
 	reserved-memory {
 		#address-cells = <1>;
 		#size-cells = <1>;
-		ranges;
+		/*ranges;*/
+		no-map;
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
 			no-map;

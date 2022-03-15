@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+/* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
 
 #ifndef __AML_AUDIO_LOOPBACK_H__
 #define __AML_AUDIO_LOOPBACK_H__
@@ -19,6 +22,9 @@ enum datain_src {
 	DATAIN_SPDIF,
 	DATAIN_PDM,
 	DATAIN_LOOPBACK,
+	DATAIN_TDMD,
+	DATAIN_PDMB,
+	DATAIN_MAX
 };
 
 /* datalb src
@@ -37,11 +43,22 @@ enum datalb_src {
 	TDMINLB_TDMOUTA = 0,
 	TDMINLB_TDMOUTB,
 	TDMINLB_TDMOUTC,
+	TDMINLB_TDMOUTD,
 	TDMINLB_PAD_TDMINA,
 	TDMINLB_PAD_TDMINB,
 	TDMINLB_PAD_TDMINC,
+	TDMINLB_PAD_TDMIND,
+	TDMINLB_PAD_TDMINA_D,
+	TDMINLB_PAD_TDMINB_D,
+	TDMINLB_PAD_TDMINC_D,
+	TDMINLB_HDMIRX,
+	TDMINLB_ACODEC,
 
 	SPDIFINLB_SPDIFOUTA,
 	SPDIFINLB_SPDIFOUTB,
+	TDMINLB_SRC_MAX
 };
+
+unsigned int loopback_get_lb_channel(int id);
+
 #endif

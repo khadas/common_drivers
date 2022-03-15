@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * EQ/DRC V2 register controls
- *
- * Copyright (C) 2019 Amlogic,inc
+ * Copyright (C) 2019 Amlogic, Inc. All rights reserved.
  *
  */
 
@@ -257,32 +255,28 @@ void aed_set_multiband_drc_param(void)
 
 void aed_set_fullband_drc_param(int tap)
 {
-	eqdrc_update_bits(AED_DRC_CNTL,
-			  0x7 << 3, tap << 3);
+	eqdrc_update_bits(AED_DRC_CNTL, (0x7 << 3), (tap << 3));
 }
 
 void aed_set_multiband_drc_enable(bool enable)
 {
-	eqdrc_update_bits(AED_MDRC_CNTL,
-			  (0x1 << 8), (enable << 8));
+	eqdrc_update_bits(AED_MDRC_CNTL, (0x1 << 8), (enable << 8));
 }
 
 void aed_set_fullband_drc_enable(bool enable)
 {
-	eqdrc_update_bits(AED_DRC_CNTL,
-			  (0x1 << 0), (enable << 0));
+	eqdrc_update_bits(AED_DRC_CNTL, (0x1 << 0), (enable << 0));
 }
 
 void aed_set_volume(unsigned int master_vol,
-		    unsigned int lch_vol,
-		    unsigned int rch_vol)
+		    unsigned int lch_vol, unsigned int rch_vol)
 {
 	eqdrc_write(AED_EQ_VOLUME,
 		    (0 << 30) |          /* volume step: 0.125dB */
 		    (master_vol << 16) | /* master volume: 0dB */
-		    (rch_vol << 8) |     /* channel 2 volume: 0dB */
-		    (lch_vol << 0)       /* channel 1 volume: 0dB */
-		   );
+		    (lch_vol << 8) |     /* channel 2 volume: 0dB */
+		    (rch_vol << 0)       /* channel 1 volume: 0dB */
+	);
 	eqdrc_write(AED_EQ_VOLUME_SLEW_CNT, 0x2); /*40ms from -120dB~0dB*/
 	eqdrc_write(AED_MUTE, 0);
 }
@@ -327,16 +321,12 @@ void aed_set_lane_and_channels_v3(int lane_mask, int ch_mask)
 			  (lane_num * 2 + 1) << 20 | (lane_num * 2) << 16 |
 			  0x1 << 5 | 0x1 << 4 | (ch_num - 1));
 
-	eqdrc_update_bits(AED_TOP_CTL2,
-			  0xff << 12, (ch_num - 1) << 12);
-
-	/*pr_info("ch_num = %d, lane_num = %d", ch_num, lane_num);*/
+	eqdrc_update_bits(AED_TOP_CTL2, 0xff << 12, (ch_num - 1) << 12);
 }
 
 void aed_set_ctrl(bool enable, int sel, enum frddr_dest module, int offset)
 {
 	int mask = 0, val = 0;
-
 	switch (sel) {
 	case 0: /* REQ_SEL0 */
 		mask = 0xf << 0;
@@ -355,7 +345,6 @@ void aed_set_ctrl(bool enable, int sel, enum frddr_dest module, int offset)
 		       sel, module);
 		return;
 	}
-
 	/*AED_TOP_REQ_CTL or AED_TOP_CTL2*/
 	eqdrc_update_bits((AED_TOP_REQ_CTL + offset), mask, val);
 
@@ -363,6 +352,8 @@ void aed_set_ctrl(bool enable, int sel, enum frddr_dest module, int offset)
 	if (module <= TDMOUT_C && module >= TDMOUT_A) {
 		/* TDMOUT A/B/C */
 		aml_tdmout_select_aed(enable, module);
+	} else if (module == TDMOUT_D) {
+		aml_tdmout_select_aed(enable, 3);
 	} else {
 		/* SPDIFOUT A/B */
 		aml_spdifout_select_aed(enable, module - SPDIFOUT_A);
@@ -373,8 +364,15 @@ void aed_set_format(int msb, enum ddr_types frddr_type,
 		    enum ddr_num source, int offset)
 {
 	eqdrc_update_bits(AED_TOP_CTL,
-			  0x7 << 11 | 0x1f << 6 | 0x3 << 4,
-			  frddr_type << 11 | msb << 6 | source << (4 - offset));
+			  0x7 << 11 | 0x1f << 6 | 0x3 << (4 - offset),
+			  frddr_type << 11 | msb << 6 |
+			  source << (4 - offset));
+}
+
+void aed_reload_config(void)
+{
+	eqdrc_update_bits(AED_TOP_CTL, 0x1 << 29, 0x1 << 29);
+	eqdrc_update_bits(AED_TOP_CTL, 0x1 << 29, 0x0 << 29);
 }
 
 void aed_enable(bool enable)

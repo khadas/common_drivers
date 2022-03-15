@@ -25,20 +25,64 @@
 #include "card.h"
 
 #include "effects.h"
+#include "iomap.h"
+#include "regs.h"
+#include "../common/audio_uevent.h"
+#include "audio_controller.h"
+
+/*the same as audio hal type define!*/
+static const char * const audio_format[] = {
+	"PCM",
+	"DTS_EXPRESS",
+	"DOLBY_DIGITAL",
+	"DTS",
+	"DOLBY_DIGITAL_PLUS",
+	"DTS_HD",
+	"MULTI_CHANNEL PCM",
+	"DOLBY_TRUEHD",
+	"DTS_HD_MA",
+	"HIFI PCM",
+	"DOLBY_AC4",
+	"DOLBY_MAT",
+	"DOLBY_DDP_ATMOS",
+	"DOLBY_THD_ATMOS",
+	"DOLBY_MAT_ATMOS",
+	"DOLBY_AC4_ATMOS",
+	"DTS_HP",
+	"DOLBY_DDP_ATMOS_PROMPT_ON_ATMOS",
+	"DOLBY_THD_ATMOS_PROMPT_ON_ATMOS",
+	"DOLBY_MAT_ATMOS_PROMPT_ON_ATMOS",
+	"DOLBY_AC4_ATMOS_PROMPT_ON_ATMOS",
+};
+
+enum audio_hal_format {
+	TYPE_PCM = 0,
+	TYPE_DTS_EXPRESS = 1,
+	TYPE_AC3 = 2,
+	TYPE_DTS = 3,
+	TYPE_EAC3 = 4,
+	TYPE_DTS_HD = 5,
+	TYPE_MULTI_PCM = 6,
+	TYPE_TRUE_HD = 7,
+	TYPE_DTS_HD_MA = 8,
+	TYPE_PCM_HIGH_SR = 9,
+	TYPE_AC4 = 10,
+	TYPE_MAT = 11,
+	TYPE_DDP_ATMOS = 12,
+	TYPE_TRUE_HD_ATMOS = 13,
+	TYPE_MAT_ATMOS = 14,
+	TYPE_AC4_ATMOS = 15,
+	TYPE_DTS_HP = 16,
+	TYPE_DDP_ATMOS_PROMPT_ON_ATMOS = 17,
+	TYPE_TRUE_HD_ATMOS_PROMPT_ON_ATMOS = 18,
+	TYPE_MAT_ATMOS_PROMPT_ON_ATMOS = 19,
+	TYPE_AC4_ATMOS_PROMPT_ON_ATMOS = 20,
+};
 
 struct aml_jack {
 	struct snd_soc_jack jack;
 	struct snd_soc_jack_pin pin;
 	struct snd_soc_jack_gpio gpio;
-};
-
-struct aml_chipset_info {
-	/* INT address separated from start address for ddr */
-	bool ddr_addr_separated;
-	/* two spdif out ? */
-	bool spdif_b;
-	/* eq/drc function */
-	bool eqdrc_fn;
 };
 
 struct aml_card_data {
@@ -79,7 +123,8 @@ struct aml_card_data {
 	int mic_detect_flag;
 	bool mic_det_enable;
 	bool av_mute_enable;
-	struct aml_chipset_info *chipinfo;
+	int irq_exception64;
+	enum audio_hal_format hal_fmt;
 };
 
 #define aml_priv_to_dev(priv) ((priv)->snd_card.dev)
@@ -110,6 +155,46 @@ static const unsigned int microphone_cable[] = {
 struct extcon_dev *audio_extcon_headphone;
 struct extcon_dev *audio_extcon_microphone;
 
+static const struct soc_enum audio_hal_format_enum =
+	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(audio_format),
+			audio_format);
+
+static int aml_audio_hal_format_get_enum(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+	struct aml_card_data *p_aml_audio;
+
+	p_aml_audio = snd_soc_card_get_drvdata(card);
+	ucontrol->value.integer.value[0] = p_aml_audio->hal_fmt;
+
+	return 0;
+}
+
+static int aml_audio_hal_format_set_enum(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+	struct aml_card_data *p_aml_audio;
+	int hal_format = ucontrol->value.integer.value[0];
+
+	p_aml_audio = snd_soc_card_get_drvdata(card);
+
+	audio_send_uevent(card->dev, AUDIO_SPDIF_FMT_EVENT, hal_format);
+	pr_info("update audio atmos flag! audio_type = %d\n", hal_format);
+
+	if (p_aml_audio->hal_fmt != hal_format)
+		p_aml_audio->hal_fmt = hal_format;
+
+	return 0;
+}
+
+static const struct snd_kcontrol_new snd_user_controls[] = {
+	SOC_ENUM_EXT("Audio HAL Format",
+			audio_hal_format_enum,
+			aml_audio_hal_format_get_enum,
+			aml_audio_hal_format_set_enum)
+};
 #ifdef __KERNEL_419_AUDIO__
 static void jack_audio_start_timer(struct aml_card_data *card_data,
 				   unsigned long delay)
@@ -386,46 +471,6 @@ static void aml_card_remove_jack(struct aml_jack *sjack)
 }
 #endif
 
-static int aml_card_startup(struct snd_pcm_substream *substream)
-{
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct aml_card_data *priv = snd_soc_card_get_drvdata(rtd->card);
-	struct aml_dai_props *dai_props =
-		aml_priv_to_props(priv, rtd->num);
-	int ret;
-
-	if (!IS_ERR(priv->avout_mute_desc) &&
-	    !priv->av_mute_enable &&
-	    !gpiod_get_value(priv->avout_mute_desc)) {
-		gpiod_direction_output(priv->avout_mute_desc,
-				       GPIOF_OUT_INIT_HIGH);
-		pr_info("%s av out status: %s\n", __func__,
-			gpiod_get_value(priv->avout_mute_desc) ?
-			"high" : "low");
-	}
-
-	ret = clk_prepare_enable(dai_props->cpu_dai.clk);
-	if (ret)
-		return ret;
-
-	ret = clk_prepare_enable(dai_props->codec_dai.clk);
-	if (ret)
-		clk_disable_unprepare(dai_props->cpu_dai.clk);
-
-	return ret;
-}
-
-static void aml_card_shutdown(struct snd_pcm_substream *substream)
-{
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct aml_card_data *priv = snd_soc_card_get_drvdata(rtd->card);
-	struct aml_dai_props *dai_props = aml_priv_to_props(priv, rtd->num);
-
-	clk_disable_unprepare(dai_props->cpu_dai.clk);
-
-	clk_disable_unprepare(dai_props->codec_dai.clk);
-}
-
 static int aml_card_hw_params(struct snd_pcm_substream *substream,
 			      struct snd_pcm_hw_params *params)
 {
@@ -471,22 +516,8 @@ err:
 	return ret;
 }
 
-int aml_card_prepare(struct snd_pcm_substream *substream)
-{
-	return 0;
-}
-
-int aml_card_trigger(struct snd_pcm_substream *substream, int cmd)
-{
-	return 0;
-}
-
 static struct snd_soc_ops aml_card_ops = {
-	.startup    = aml_card_startup,
-	.shutdown   = aml_card_shutdown,
 	.hw_params  = aml_card_hw_params,
-	.prepare    = aml_card_prepare,
-	.trigger    = aml_card_trigger,
 };
 
 static int aml_card_dai_init(struct snd_soc_pcm_runtime *rtd)
@@ -865,35 +896,11 @@ card_parse_end:
 	return ret;
 }
 
-static struct aml_chipset_info g12a_chipset_info = {
-	.spdif_b        = true,
-	.eqdrc_fn       = true,
-};
-
-static struct aml_chipset_info tl1_chipset_info = {
-	.spdif_b        = true,
-};
-
 static const struct of_device_id auge_of_match[] = {
 	{
-		.compatible = "amlogic, axg-sound-card",
+		.compatible = "amlogic, auge-sound-card",
 	},
-	{
-		.compatible = "amlogic, g12a-sound-card",
-		.data       = &g12a_chipset_info,
-	},
-	{
-		.compatible = "amlogic, tl1-sound-card",
-		.data       = &tl1_chipset_info,
-	},
-	{
-		.compatible = "amlogic, tm2-sound-card",
-		.data       = &tl1_chipset_info,
-	},
-	{
-		.compatible = "amlogic, a1-sound-card",
-	},
-	{},
+	{}
 };
 MODULE_DEVICE_TABLE(of, auge_of_match);
 
@@ -919,6 +926,50 @@ static int card_resume_post(struct snd_soc_card *card)
 	return 0;
 }
 
+static irqreturn_t aml_audio_exception64_isr(int irq, void *dev_id)
+{
+	unsigned int intrpt_status0, intrpt_status1;
+
+	intrpt_status0 = audiobus_read(EE_AUDIO_EXCEPTION_IRQ_STS0);
+	intrpt_status1 = audiobus_read(EE_AUDIO_EXCEPTION_IRQ_STS1);
+
+	/* clear irq bits immediametely */
+	audiobus_write(EE_AUDIO_EXCEPTION_IRQ_CLR0, intrpt_status0);
+	audiobus_write(EE_AUDIO_EXCEPTION_IRQ_CLR1, intrpt_status1);
+
+	pr_debug("0 - 31 exception status is 0x%x\n", intrpt_status0);
+	pr_debug("32 - 63 exception status is 0x%x\n", intrpt_status1);
+
+	/* TODO handle exception */
+
+	return IRQ_HANDLED;
+}
+
+static int register_audio_exception64_isr(int irq_exception64)
+{
+	int ret = 0;
+
+	/* open irq mask, default is close
+	 * audiobus_write(EE_AUDIO_EXCEPTION_IRQ_MASK0, 0xfffdff3f);
+	 * audiobus_write(EE_AUDIO_EXCEPTION_IRQ_MASK1, 0xffc3777f);
+
+	 * set threshold value
+	 * audiobus_write(EE_AUDIO_ARB_CTRL1, 0xffff);
+	 * audiobus_write(EE_AUDIO_SPDIFIN_CTRL7, 0xffff);
+	 */
+
+	ret = request_irq(irq_exception64,
+			  aml_audio_exception64_isr,
+			  0,
+			  "audio_exception64",
+			  NULL);
+
+	if (ret)
+		pr_err("failed claim irq_exception64 %u, ret: %d\n", irq_exception64, ret);
+
+	return ret;
+}
+
 static int aml_card_probe(struct platform_device *pdev)
 {
 	struct aml_card_data *priv;
@@ -938,13 +989,6 @@ static int aml_card_probe(struct platform_device *pdev)
 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv)
 		return -ENOMEM;
-
-	/* chipset related */
-	priv->chipinfo = (struct aml_chipset_info *)
-		of_device_get_match_data(&pdev->dev);
-
-	if (!priv->chipinfo)
-		pr_warn_once("check whether to update sound card init data\n");
 
 	dai_props = devm_kzalloc(dev, sizeof(*dai_props) * num, GFP_KERNEL);
 	dai_link  = devm_kzalloc(dev, sizeof(*dai_link)  * num, GFP_KERNEL);
@@ -1014,6 +1058,12 @@ static int aml_card_probe(struct platform_device *pdev)
 		       sizeof(priv->dai_props->codec_dai));
 	}
 
+	priv->irq_exception64 =
+		platform_get_irq_byname(pdev, "audio_exception64");
+	if (priv->irq_exception64 > 0)
+		register_audio_exception64_isr(priv->irq_exception64);
+
+	platform_set_drvdata(pdev, priv);
 	snd_soc_card_set_drvdata(&priv->snd_card, priv);
 
 	ret = devm_snd_soc_register_card(&pdev->dev, &priv->snd_card);
@@ -1044,6 +1094,10 @@ static int aml_card_probe(struct platform_device *pdev)
 		audio_extcon_register(priv, dev);
 #endif
 	}
+
+	snd_soc_add_card_controls(&priv->snd_card, snd_user_controls,
+				  ARRAY_SIZE(snd_user_controls));
+
 	priv->av_mute_enable = 0;
 	INIT_WORK(&priv->init_work, aml_init_work);
 	schedule_work(&priv->init_work);
@@ -1060,13 +1114,17 @@ err:
 static int aml_card_remove(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
-#ifdef __KERNEL_419_AUDIO__
 	struct aml_card_data *priv = snd_soc_card_get_drvdata(card);
 
+#ifdef __KERNEL_419_AUDIO__
 	aml_card_remove_jack(&priv->hp_jack);
 	aml_card_remove_jack(&priv->mic_jack);
 	jack_audio_stop_timer(priv);
 #endif
+
+	if (priv->irq_exception64 > 0)
+		free_irq(priv->irq_exception64, NULL);
+
 	return aml_card_clean_reference(card);
 }
 
@@ -1076,8 +1134,7 @@ static void aml_card_platform_shutdown(struct platform_device *pdev)
 	struct aml_card_data *priv = snd_soc_card_get_drvdata(card);
 
 	priv->av_mute_enable = 1;
-	INIT_WORK(&priv->init_work, aml_init_work);
-	schedule_work(&priv->init_work);
+	aml_card_parse_gpios(pdev->dev.of_node, priv);
 }
 
 static struct platform_driver aml_card = {
@@ -1091,7 +1148,6 @@ static struct platform_driver aml_card = {
 	.shutdown = aml_card_platform_shutdown,
 };
 
-#ifdef MODULE
 int __init aml_card_init(void)
 {
 	return platform_driver_register(&aml_card);
@@ -1101,9 +1157,10 @@ void __exit aml_card_exit(void)
 {
 	platform_driver_unregister(&aml_card);
 }
-#else
-module_platform_driver(aml_card);
 
+#ifndef MODULE
+module_init(aml_card_init);
+module_exit(aml_card_exit);
 MODULE_ALIAS("platform:asoc-aml-card");
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("ASoC aml Sound Card");

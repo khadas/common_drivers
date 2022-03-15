@@ -29,7 +29,7 @@
 #include "frhdmirx_hw.h"
 #include "resample.h"
 
-#include <linux/amlogic/media/sound/misc.h>
+#include "../common/misc.h"
 
 #define DRV_NAME "EXTN"
 
@@ -658,7 +658,7 @@ static int frhdmirx_set_mode(struct snd_kcontrol *kcontrol,
 
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN_HDMI
 /* spdif in audio format detect: LPCM or NONE-LPCM */
-struct sppdif_audio_info {
+struct spdif_audio_info {
 	unsigned char aud_type;
 	/*IEC61937 package presamble Pc value*/
 	short pc;
@@ -675,7 +675,7 @@ static const char *const spdif_audio_type_texts[] = {
 	"PAUSE"
 };
 
-static const struct sppdif_audio_info type_texts[] = {
+static const struct spdif_audio_info type_texts[] = {
 	{0, 0, "LPCM"},
 	{1, 0x1, "AC3"},
 	{2, 0x15, "EAC3"},
@@ -696,7 +696,7 @@ SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(spdif_audio_type_texts),
 
 static int hdmiin_check_audio_type(struct extn *p_extn)
 {
-	int total_num = sizeof(type_texts) / sizeof(struct sppdif_audio_info);
+	int total_num = sizeof(type_texts) / sizeof(struct spdif_audio_info);
 	int pc = frhdmirx_get_chan_status_pc();
 	int audio_type = 0;
 	int i;

@@ -6,8 +6,6 @@
  *
  */
 
-#include <linux/amlogic/media/sound/misc.h>
-
 #ifdef CONFIG_AMLOGIC_ATV_DEMOD
 #include <linux/amlogic/aml_atvdemod.h>
 #endif
@@ -15,6 +13,8 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN_HDMI
 #include <linux/amlogic/media/frame_provider/tvin/tvin.h>
 #endif
+
+#include "misc.h"
 
 static const char *const audio_is_stable[] = {
 	"false",

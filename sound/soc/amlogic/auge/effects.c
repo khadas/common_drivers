@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * EQ/DRC ASoc drirver
- *
  * Copyright (C) 2019 Amlogic, Inc. All rights reserved.
  *
  */
@@ -79,7 +77,8 @@ static int mixer_eqdrc_read(struct snd_kcontrol *kcontrol,
 	unsigned int shift = mc->shift;
 	unsigned int max = mc->max;
 	unsigned int invert = mc->invert;
-	unsigned int value = (((unsigned int)eqdrc_read(reg)) >> shift) & max;
+	unsigned int value =
+			(((unsigned int)eqdrc_read(reg)) >> shift) & max;
 
 	if (invert)
 		value = (~value) & max;
@@ -231,28 +230,17 @@ int card_add_effects_init(struct snd_soc_card *card)
 	int eq_enable = -1, drc_enable = -1, eqdrc_module = -1;
 	int lane_mask = -1, channel_mask = -1;
 
-	audio_effect_np = of_parse_phandle(card->dev->of_node,
-					   "aml-audio-card,effect", 0);
+	audio_effect_np = of_parse_phandle(card->dev->of_node, "aml-audio-card, effect", 0);
 	if (!audio_effect_np) {
 		pr_warn("no node %s for eq/drc info!\n", "audio_effect");
 		return -EINVAL;
 	}
 
-	of_property_read_u32(audio_effect_np,
-			     "eq_enable",
-			     &eq_enable);
-	of_property_read_u32(audio_effect_np,
-			     "drc_enable",
-			     &drc_enable);
-	of_property_read_u32(audio_effect_np,
-			     "eqdrc_module",
-			     &eqdrc_module);
-	of_property_read_u32(audio_effect_np,
-			     "lane_mask",
-			     &lane_mask);
-	of_property_read_u32(audio_effect_np,
-			     "channel_mask",
-			     &channel_mask);
+	of_property_read_u32(audio_effect_np, "eq_enable", &eq_enable);
+	of_property_read_u32(audio_effect_np, "drc_enable", &drc_enable);
+	of_property_read_u32(audio_effect_np, "eqdrc_module", &eqdrc_module);
+	of_property_read_u32(audio_effect_np, "lane_mask", &lane_mask);
+	of_property_read_u32(audio_effect_np, "channel_mask", &channel_mask);
 
 	init_EQ_DRC_module();
 
@@ -277,5 +265,5 @@ int card_add_effects_init(struct snd_soc_card *card)
 
 	/* eq/drc mixer controls */
 	return snd_soc_add_card_controls(card,
-					 snd_eqdrc_controls, ARRAY_SIZE(snd_eqdrc_controls));
+		snd_eqdrc_controls, ARRAY_SIZE(snd_eqdrc_controls));
 }

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * EQ/DRC register controls
- *
- * Copyright (C) 2019 Amlogic,inc
+ * Copyright (C) 2019 Amlogic, Inc. All rights reserved.
  *
  */
 
@@ -41,10 +39,10 @@ int set_internal_EQ_volume(unsigned int master_volume,
 			   unsigned int channel_2_volume)
 {
 	eqdrc_write(AED_EQ_VOLUME_G12X, (0 << 30) /* volume step: 0.125dB*/
-		    | (master_volume << 16) /* master volume: 0dB*/
-		    | (channel_1_volume << 8) /* channel 1 volume: 0dB*/
-		    | (channel_2_volume << 0) /* channel 2 volume: 0dB*/
-		   );
+			| (master_volume << 16) /* master volume: 0dB*/
+			| (channel_1_volume << 8) /* channel 1 volume: 0dB*/
+			| (channel_2_volume << 0) /* channel 2 volume: 0dB*/
+			);
 	eqdrc_write(AED_EQ_VOLUME_SLEW_CNT_G12X, 0x40);
 	eqdrc_write(AED_MUTE_G12X, 0);
 

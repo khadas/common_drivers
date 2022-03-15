@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * EQ/DRC V2 ASoc drirver
- *
  * Copyright (C) 2019 Amlogic, Inc. All rights reserved.
  *
  */
@@ -14,6 +12,7 @@
 #include <linux/clk.h>
 #include <sound/soc.h>
 #include <sound/tlv.h>
+#include <linux/clk-provider.h>
 
 #include "effects_v2.h"
 #include "effects_hw_v2.h"
@@ -64,6 +63,7 @@ struct audioeffect {
 
 	/*which module should be effected */
 	int effect_module;
+	unsigned int syssrc_clk_rate;
 };
 
 struct audioeffect *s_effect;
@@ -98,28 +98,46 @@ int check_aed_version(void)
 	return p_effect->chipinfo->version;
 }
 
+bool is_aed_reserve_frddr(void)
+{
+	struct audioeffect *p_effect = get_audioeffects();
+
+	if (!p_effect || !p_effect->chipinfo)
+		return false;
+
+	return p_effect->chipinfo->reserved_frddr;
+}
+
 static int eqdrc_clk_set(struct audioeffect *p_effect)
 {
 	int ret = 0;
+	char *clk_name = NULL;
 
 	ret = clk_prepare_enable(p_effect->clk);
 	if (ret) {
 		pr_err("Can't enable eqdrc clock: %d\n",
-		       ret);
+			ret);
 		return -EINVAL;
 	}
 
+	clk_name = (char *)__clk_get_name(p_effect->srcpll);
+	if (!strcmp(clk_name, "hifipll") || !strcmp(clk_name, "t5_hifi_pll")) {
+		if (p_effect->syssrc_clk_rate)
+			clk_set_rate(p_effect->srcpll, p_effect->syssrc_clk_rate);
+		else
+			clk_set_rate(p_effect->srcpll, 1806336 * 1000);
+	}
 	ret = clk_prepare_enable(p_effect->srcpll);
 	if (ret) {
 		pr_err("Can't enable eqdrc src pll clock: %d\n",
-		       ret);
+			ret);
 		return -EINVAL;
 	}
 
 	/* defaule clk */
 	clk_set_rate(p_effect->clk, 200000000);
 
-	pr_debug("%s, src pll:%lu, clk:%lu\n",
+	pr_info("%s, src pll:%lu, clk:%lu\n",
 		__func__,
 		clk_get_rate(p_effect->srcpll),
 		clk_get_rate(p_effect->clk));
@@ -128,7 +146,7 @@ static int eqdrc_clk_set(struct audioeffect *p_effect)
 }
 
 static int mixer_aed_read(struct snd_kcontrol *kcontrol,
-			  struct snd_ctl_elem_value *ucontrol)
+	struct snd_ctl_elem_value *ucontrol)
 {
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
@@ -137,7 +155,7 @@ static int mixer_aed_read(struct snd_kcontrol *kcontrol,
 	unsigned int max = mc->max;
 	unsigned int invert = mc->invert;
 	unsigned int value =
-		(((unsigned int)eqdrc_read(reg)) >> shift) & max;
+			(((unsigned int)eqdrc_read(reg)) >> shift) & max;
 
 	if (invert)
 		value = (~value) & max;
@@ -147,7 +165,7 @@ static int mixer_aed_read(struct snd_kcontrol *kcontrol,
 }
 
 static int mixer_aed_write(struct snd_kcontrol *kcontrol,
-			   struct snd_ctl_elem_value *ucontrol)
+	struct snd_ctl_elem_value *ucontrol)
 {
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
@@ -170,7 +188,7 @@ static int mixer_aed_write(struct snd_kcontrol *kcontrol,
 }
 
 static int mixer_get_EQ_params(struct snd_kcontrol *kcontrol,
-			       struct snd_ctl_elem_value *ucontrol)
+	struct snd_ctl_elem_value *ucontrol)
 {
 	unsigned int *value = (unsigned int *)ucontrol->value.bytes.data;
 	unsigned int *p = &EQ_COEFF[0];
@@ -208,7 +226,7 @@ static int str2int(char *str, unsigned int *data, int size)
 }
 
 static int mixer_set_EQ_params(struct snd_kcontrol *kcontrol,
-			       struct snd_ctl_elem_value *ucontrol)
+	struct snd_ctl_elem_value *ucontrol)
 {
 	unsigned int tmp_data[FILTER_PARAM_SIZE + 1];
 	unsigned int *p_data = &tmp_data[0];
@@ -240,19 +258,19 @@ static int mixer_set_EQ_params(struct snd_kcontrol *kcontrol,
 	version = check_aed_version();
 	p = &EQ_COEFF[band_id * FILTER_PARAM_SIZE];
 	aed_set_ram_coeff(version, (EQ_FILTER_RAM_ADD +
-				    band_id * FILTER_PARAM_SIZE),
-			  FILTER_PARAM_SIZE, p);
+		band_id * FILTER_PARAM_SIZE),
+		FILTER_PARAM_SIZE, p);
 
 	p = &EQ_COEFF[band_id * FILTER_PARAM_SIZE + EQ_FILTER_SIZE_CH];
 	aed_set_ram_coeff(version, (EQ_FILTER_RAM_ADD +
-				    EQ_FILTER_SIZE_CH + band_id * FILTER_PARAM_SIZE),
-			  FILTER_PARAM_SIZE, p);
+		EQ_FILTER_SIZE_CH + band_id * FILTER_PARAM_SIZE),
+		FILTER_PARAM_SIZE, p);
 
 	return 0;
 }
 
 static int mixer_get_crossover_params(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+	struct snd_ctl_elem_value *ucontrol)
 {
 	unsigned int *value = (unsigned int *)ucontrol->value.bytes.data;
 	unsigned int *p = &CROSSOVER_COEFF[0];
@@ -267,7 +285,7 @@ static int mixer_get_crossover_params(struct snd_kcontrol *kcontrol,
 }
 
 static int mixer_set_crossover_params(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+	struct snd_ctl_elem_value *ucontrol)
 {
 	unsigned int tmp_data[FILTER_PARAM_SIZE + 1];
 	unsigned int *p_data = &tmp_data[0];
@@ -284,7 +302,7 @@ static int mixer_set_crossover_params(struct snd_kcontrol *kcontrol,
 	num = str2int(p_string, p_data, FILTER_PARAM_BYTE);
 	band_id = tmp_data[0];
 	if (num != (FILTER_PARAM_SIZE + 1) ||
-	    band_id >= CROSSOVER_FILTER_BAND) {
+			band_id >= CROSSOVER_FILTER_BAND) {
 		pr_info("Error: parma_num = %d, band_id = %d\n",
 			num, tmp_data[0]);
 		return 0;
@@ -297,21 +315,23 @@ static int mixer_set_crossover_params(struct snd_kcontrol *kcontrol,
 
 	p = &CROSSOVER_COEFF[band_id * FILTER_PARAM_SIZE];
 	aed_set_ram_coeff(check_aed_version(), (CROSSOVER_FILTER_RAM_ADD +
-						band_id * FILTER_PARAM_SIZE),
-			  FILTER_PARAM_SIZE, p);
+		band_id * FILTER_PARAM_SIZE),
+		FILTER_PARAM_SIZE, p);
 
 	return 0;
 }
 
 static int mixer_get_multiband_DRC_params(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+	struct snd_ctl_elem_value *ucontrol)
 {
 	unsigned int *value = (unsigned int *)ucontrol->value.bytes.data;
 	unsigned int *p = &multiband_drc_coeff[0];
 	int i;
 
-	for (i = 0; i < 3; i++)
-		aed_get_multiband_drc_coeff(i, p + i * AED_SINGLE_BAND_DRC_SIZE);
+	for (i = 0; i < 3; i++) {
+		aed_get_multiband_drc_coeff(i,
+			p + i * AED_SINGLE_BAND_DRC_SIZE);
+	}
 
 	for (i = 0; i < AED_MULTIBAND_DRC_SIZE; i++)
 		*value++ = cpu_to_be32(*p++);
@@ -320,7 +340,7 @@ static int mixer_get_multiband_DRC_params(struct snd_kcontrol *kcontrol,
 }
 
 static int mixer_set_multiband_DRC_params(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+	struct snd_ctl_elem_value *ucontrol)
 {
 	unsigned int tmp_data[AED_SINGLE_BAND_DRC_SIZE + 1];
 	unsigned int *p_data = &tmp_data[0];
@@ -337,7 +357,7 @@ static int mixer_set_multiband_DRC_params(struct snd_kcontrol *kcontrol,
 	num = str2int(p_string, p_data, MULTIBAND_DRC_PARAM_BYTE);
 	band_id = tmp_data[0];
 	if (num != (AED_SINGLE_BAND_DRC_SIZE + 1) ||
-	    band_id >= AED_MULTIBAND_DRC_BANDS) {
+			band_id >= AED_MULTIBAND_DRC_BANDS) {
 		pr_info("Error: parma_num = %d, band_id = %d\n",
 			num, tmp_data[0]);
 		return 0;
@@ -356,7 +376,7 @@ static int mixer_set_multiband_DRC_params(struct snd_kcontrol *kcontrol,
 }
 
 static int mixer_get_fullband_DRC_params(struct snd_kcontrol *kcontrol,
-					 struct snd_ctl_elem_value *ucontrol)
+	struct snd_ctl_elem_value *ucontrol)
 {
 	unsigned int *value = (unsigned int *)ucontrol->value.bytes.data;
 	unsigned int *p = &fullband_drc_coeff[0];
@@ -371,7 +391,7 @@ static int mixer_get_fullband_DRC_params(struct snd_kcontrol *kcontrol,
 }
 
 static int mixer_set_fullband_DRC_params(struct snd_kcontrol *kcontrol,
-					 struct snd_ctl_elem_value *ucontrol)
+	struct snd_ctl_elem_value *ucontrol)
 {
 	unsigned int tmp_data[AED_FULLBAND_DRC_OFFSET + 1];
 	unsigned int *p_data = &tmp_data[0];
@@ -388,8 +408,8 @@ static int mixer_set_fullband_DRC_params(struct snd_kcontrol *kcontrol,
 	num = str2int(p_string, p_data, AED_FULLBAND_DRC_BYTES);
 	band_id = tmp_data[0];
 	if (num != (AED_FULLBAND_DRC_OFFSET + 1) ||
-	    band_id >= AED_FULLBAND_DRC_GROUP_SIZE) {
-		pr_info("Error: parma_num = %d, band_id = %d\n",
+			band_id >= AED_FULLBAND_DRC_GROUP_SIZE) {
+		pr_err("Error: parma_num = %d, band_id = %d\n",
 			num, tmp_data[0]);
 		return 0;
 	}
@@ -418,6 +438,7 @@ static void aed_set_filter_data(int version)
 	p = &CROSSOVER_COEFF[0];
 	aed_init_ram_coeff(version,
 			   CROSSOVER_FILTER_RAM_ADD, CROSSOVER_FILTER_SIZE, p);
+
 }
 
 static void aed_set_drc_data(void)
@@ -433,7 +454,7 @@ static void aed_set_drc_data(void)
 	p = &fullband_drc_coeff[0];
 	for (i = 0; i < AED_FULLBAND_DRC_GROUP_SIZE; i++) {
 		aed_set_fullband_drc_coeff(i,
-					   p + i * AED_FULLBAND_DRC_OFFSET);
+			p + i * AED_FULLBAND_DRC_OFFSET);
 	}
 }
 
@@ -495,6 +516,26 @@ static const struct snd_kcontrol_new snd_effect_controls[] = {
 			   AED_EQ_VOLUME, 16, 0x3FF, 1,
 			   mixer_aed_read, mixer_aed_write,
 			   master_vol_tlv),
+
+	SOC_SINGLE_EXT("AED Clip THD",
+		       AED_CLIP_THD, 0, 0x7FFFFF, 0,
+		       mixer_aed_read, mixer_aed_write),
+
+	SOC_SINGLE_EXT("AED Mixer Gain LL",
+		       AED_MIX0_LL, 0, 0x3ffffff, 0,
+		       mixer_aed_read, mixer_aed_write),
+
+	SOC_SINGLE_EXT("AED Mixer Gain RL",
+		       AED_MIX0_RL, 0, 0x3ffffff, 0,
+		       mixer_aed_read, mixer_aed_write),
+
+	SOC_SINGLE_EXT("AED Mixer Gain LR",
+		       AED_MIX0_LR, 0, 0x3ffffff, 0,
+		       mixer_aed_read, mixer_aed_write),
+
+	SOC_SINGLE_EXT("AED Mixer Gain RR",
+		       AED_MIX0_RR, 0, 0x3ffffff, 0,
+		       mixer_aed_read, mixer_aed_write),
 };
 
 int card_add_effect_v2_kcontrols(struct snd_soc_card *card)
@@ -509,8 +550,8 @@ int card_add_effect_v2_kcontrols(struct snd_soc_card *card)
 
 	for (idx = 0; idx < ARRAY_SIZE(snd_effect_controls); idx++) {
 		err = snd_ctl_add(card->snd_card,
-				  snd_ctl_new1(&snd_effect_controls[idx],
-					       s_effect));
+				snd_ctl_new1(&snd_effect_controls[idx],
+					s_effect));
 		if (err < 0)
 			return err;
 	}
@@ -528,9 +569,10 @@ static struct effect_chipinfo sm1_effect_chipinfo = {
 	.reserved_frddr = true,
 };
 
-static struct effect_chipinfo c2_effect_chipinfo = {
+/* tm2_revb afterward */
+static struct effect_chipinfo tm2_revb_effect_chipinfo = {
 	.version = VERSION4,
-	.reserved_frddr = true,
+	.reserved_frddr = false,
 };
 
 static const struct of_device_id effect_device_id[] = {
@@ -547,11 +589,45 @@ static const struct of_device_id effect_device_id[] = {
 	},
 	{
 		.compatible = "amlogic, snd-effect-v4",
-		.data       = &c2_effect_chipinfo,
+		.data       = &tm2_revb_effect_chipinfo,
 	},
 	{}
 };
 MODULE_DEVICE_TABLE(of, effect_device_id);
+
+static void effect_init(struct platform_device *pdev)
+{
+	struct audioeffect *p_effect = dev_get_drvdata(&pdev->dev);
+	int version;
+	/*set eq/drc module lane & channels*/
+	version = check_aed_version();
+	if (version > VERSION2)
+		aed_set_lane_and_channels_v3(p_effect->lane_mask, p_effect->ch_mask);
+	else
+		aed_set_lane_and_channels(p_effect->lane_mask, p_effect->ch_mask);
+
+	/*set master & channel volume gain to 0dB*/
+	aed_set_volume(0xc0, 0x30, 0x30);
+	/*set default mixer gain*/
+	aed_set_mixer_params();
+	/*all 20 bands for EQ1*/
+	aed_eq_taps(EQ_BAND);
+	/*set default filter param*/
+	aed_set_filter_data(version);
+	/*set multi-band drc param*/
+	aed_set_multiband_drc_param();
+	/*set multi/full-band drc data*/
+	aed_set_drc_data();
+	/*set full-band drc param, enable 2 band*/
+	aed_set_fullband_drc_param(2);
+	/*set EQ/DRC module enable*/
+	aml_set_aed(1, p_effect->effect_module);
+
+	if (p_effect->chipinfo &&
+		p_effect->chipinfo->reserved_frddr) {
+		aml_aed_set_frddr_reserved();
+	}
+}
 
 static int effect_platform_probe(struct platform_device *pdev)
 {
@@ -559,13 +635,13 @@ static int effect_platform_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct effect_chipinfo *p_chipinfo;
 	int lane_mask = -1, channel_mask = -1, eqdrc_module = -1;
-	int ret, version;
+	int ret;
 
-	pr_debug("%s, line:%d\n", __func__, __LINE__);
+	pr_info("%s, line:%d\n", __func__, __LINE__);
 
 	p_effect = devm_kzalloc(&pdev->dev,
-				sizeof(struct audioeffect),
-				GFP_KERNEL);
+			sizeof(struct audioeffect),
+			GFP_KERNEL);
 	if (!p_effect) {
 		dev_err(&pdev->dev, "Can't allocate pcm_p\n");
 		return -ENOMEM;
@@ -577,6 +653,14 @@ static int effect_platform_probe(struct platform_device *pdev)
 	if (!p_chipinfo)
 		dev_warn_once(dev, "check whether to update effect chipinfo\n");
 	p_effect->chipinfo = p_chipinfo;
+
+	ret = of_property_read_u32(dev->of_node, "src-clk-freq",
+				   &p_effect->syssrc_clk_rate);
+	if (ret < 0)
+		p_effect->syssrc_clk_rate = 0;
+	else
+		pr_info("%s sys-src clk rate from dts:%d\n",
+			__func__, p_effect->syssrc_clk_rate);
 
 	p_effect->gate = devm_clk_get(&pdev->dev, "gate");
 	if (IS_ERR(p_effect->gate)) {
@@ -616,35 +700,35 @@ static int effect_platform_probe(struct platform_device *pdev)
 	}
 
 	ret = of_property_read_u32(pdev->dev.of_node,
-				   "eqdrc_module",
-				   &eqdrc_module);
+			"eqdrc_module",
+			&eqdrc_module);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Can't retrieve eqdrc_module\n");
 		return -EINVAL;
 	}
 
 	ret = of_property_read_u32(pdev->dev.of_node,
-				   "lane_mask",
-				   &lane_mask);
+			"lane_mask",
+			&lane_mask);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Can't retrieve lane_mask\n");
 		return -EINVAL;
 	}
 
 	ret = of_property_read_u32(pdev->dev.of_node,
-				   "channel_mask",
-				   &channel_mask);
+			"channel_mask",
+			&channel_mask);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Can't retrieve channel_mask\n");
 		return -EINVAL;
 	}
 
-	pr_debug("%s \t module:%d, lane_mask:%d, ch_mask:%d\n",
+	pr_info("%s \t module:%d, lane_mask:%d, ch_mask:%d\n",
 		__func__,
 		eqdrc_module,
 		lane_mask,
 		channel_mask
-	       );
+		);
 
 	/* config from dts */
 	p_effect->lane_mask        = lane_mask;
@@ -655,35 +739,50 @@ static int effect_platform_probe(struct platform_device *pdev)
 	s_effect = p_effect;
 	dev_set_drvdata(&pdev->dev, p_effect);
 
-	/*set eq/drc module lane & channels*/
-	version = check_aed_version();
-	if (version > VERSION2)
-		aed_set_lane_and_channels_v3(lane_mask, channel_mask);
-	else
-		aed_set_lane_and_channels(lane_mask, channel_mask);
+	effect_init(pdev);
 
-	/*set master & channel volume gain to 0dB*/
-	aed_set_volume(0xc0, 0x30, 0x30);
-	/*set default mixer gain*/
-	aed_set_mixer_params();
-	/*all 20 bands for EQ1*/
-	aed_eq_taps(EQ_BAND);
-	/*set default filter param*/
-	aed_set_filter_data(version);
-	/*set multi-band drc param*/
-	aed_set_multiband_drc_param();
-	/*set multi/full-band drc data*/
-	aed_set_drc_data();
-	/*set full-band drc param, enable 2 band*/
-	aed_set_fullband_drc_param(2);
-	/*set EQ/DRC module enable*/
-	aml_set_aed(1, p_effect->effect_module);
+	return 0;
+}
 
-	if (p_effect->chipinfo &&
-	    p_effect->chipinfo->reserved_frddr) {
-		aml_aed_set_frddr_reserved();
+static int effect_platform_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	struct audioeffect *p_effect = dev_get_drvdata(&pdev->dev);
+
+	aml_set_aed(0, p_effect->effect_module);
+
+	if (!IS_ERR(p_effect->clk)) {
+		while (__clk_is_enabled(p_effect->clk))
+			clk_disable_unprepare(p_effect->clk);
 	}
+	pr_debug("%s...\n", __func__);
+	return 0;
+}
 
+static int effect_platform_resume(struct platform_device *pdev)
+{
+	struct audioeffect *p_effect = dev_get_drvdata(&pdev->dev);
+	int ret;
+
+	audiobus_write(EE_AUDIO_CLK_GATE_EN0, 0xffffffff);
+	audiobus_update_bits(EE_AUDIO_CLK_GATE_EN1, 0x7, 0x7);
+
+	if (!IS_ERR(p_effect->clk)) {
+		clk_set_parent(p_effect->clk, NULL);
+		ret = clk_set_parent(p_effect->clk, p_effect->srcpll);
+		if (ret) {
+			dev_warn(&pdev->dev, "Can't set eqdrc clock parent clock\n");
+			return ret;
+		}
+
+		ret = eqdrc_clk_set(p_effect);
+		if (ret < 0) {
+			dev_err(&pdev->dev, "set eq drc module clk fail!\n");
+			return -EINVAL;
+		}
+	}
+	effect_init(pdev);
+
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
@@ -694,21 +793,23 @@ static struct platform_driver effect_platform_driver = {
 		.of_match_table = of_match_ptr(effect_device_id),
 	},
 	.probe  = effect_platform_probe,
+	.suspend = effect_platform_suspend,
+	.resume = effect_platform_resume,
 };
 
-#ifdef MODULE
-int __init effect_init(void)
+int __init effect_platform_init(void)
 {
-	return platform_driver_register(&effect_platform_driver);
+	return platform_driver_register(&(effect_platform_driver));
 }
 
-void __exit effect_exit(void)
+void __exit effect_platform_exit(void)
 {
 	platform_driver_unregister(&effect_platform_driver);
 }
-#else
-module_platform_driver(effect_platform_driver);
 
+#ifndef MODULE
+module_init(effect_platform_init);
+module_exit(effect_platform_exit);
 MODULE_AUTHOR("AMLogic, Inc.");
 MODULE_DESCRIPTION("Amlogic Audio Effects driver");
 MODULE_LICENSE("GPL");

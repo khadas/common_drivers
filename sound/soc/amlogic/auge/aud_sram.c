@@ -1,9 +1,6 @@
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * only test for VAD_toddr to SRAM
- *
- * Copyright (C) 2019 Amlogic,inc
- *
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
 #include <linux/of.h>
@@ -15,6 +12,8 @@
 #include <linux/module.h>
 #include <sound/memalloc.h>
 
+#include "aud_sram.h"
+
 #define DRV_NAME "aud_sram"
 
 void __iomem *aud_sram_iomap;
@@ -22,7 +21,7 @@ struct resource *aud_sram_res;
 
 void aud_buffer_force2sram(struct snd_dma_buffer *buf)
 {
-	buf->area = (unsigned char *)aud_sram_res->start;
+	buf->area = aud_sram_iomap;
 	buf->bytes = resource_size(aud_sram_res);
 	buf->addr = aud_sram_res->start;
 }
@@ -46,7 +45,8 @@ static int aud_sram_iomap_probe(struct platform_device *pdev)
 		return PTR_ERR(regs);
 
 	aud_sram_res = res;
-	aud_sram_iomap = ioremap(res->start, resource_size(res));
+	aud_sram_iomap =
+		ioremap(res->start, resource_size(res));
 	pr_info("%s reg:%x, size:%x\n",
 		__func__, (u32)res->start, (u32)resource_size(res));
 
@@ -68,33 +68,34 @@ static int aud_sram_iomap_probe(struct platform_device *pdev)
 
 static const struct of_device_id aud_sram_iomap_dt_match[] = {
 	{ .compatible = "amlogic, audio-sram" },
-	{},
+	{}
 };
 
-static  struct platform_driver aud_sram_iomap_platform_driver = {
-	.driver		= {
-		.owner		    = THIS_MODULE,
-		.name		    = DRV_NAME,
-		.of_match_table	= aud_sram_iomap_dt_match,
+struct platform_driver aud_sram_iomap_platform_driver = {
+	.driver = {
+		.owner    = THIS_MODULE,
+		.name     = DRV_NAME,
+		.of_match_table = aud_sram_iomap_dt_match,
 	},
-	.probe		= aud_sram_iomap_probe,
+	.probe	 = aud_sram_iomap_probe,
 };
 
-#ifdef MODULE
-int __init aud_sram_iomap_init(void)
+int __init aud_sram_init(void)
 {
 	return platform_driver_register(&aud_sram_iomap_platform_driver);
 }
 
-void __exit aud_sram_iomap_exit(void)
+void __exit aud_sram_exit(void)
 {
 	platform_driver_unregister(&aud_sram_iomap_platform_driver);
 }
-#else
-module_platform_driver(aud_sram_iomap_platform_driver);
 
-MODULE_AUTHOR("AMLogic, Inc.");
-MODULE_DESCRIPTION("Amlogic Ram driver");
+#ifndef MODULE
+module_init(aud_sram_init);
+module_exit(aud_sram_exit);
+MODULE_AUTHOR("Amlogic, Inc.");
+MODULE_DESCRIPTION("Amlogic TDM ASoc driver");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:" DRV_NAME);
 #endif
+

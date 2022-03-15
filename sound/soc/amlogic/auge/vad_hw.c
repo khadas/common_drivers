@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * VAD register controls
- *
- * Copyright (C) 2019 Amlogic,inc
+ * Copyright (C) 2019 Amlogic, Inc. All rights reserved.
  *
  */
-
-#include <linux/printk.h>
 
 #include "vad_hw.h"
 
@@ -57,24 +53,13 @@ void vad_set_cep(void)
 void vad_set_src(int src, bool vad_top)
 {
 	if (vad_top) {
-		/* only support tdmin_vad, pdm */
-		int new_src;
-
-		if (src == 4) {
-			new_src = 1; /* pdm */
-		} else if (src == 2) {
-			new_src = 0; /* tdmin_vad */
-		} else {
-			pr_err("invalid src:%d for vad top\n", src);
-			return;
-		}
 		vad_top_update_bits(EE_AUDIO2_TOVAD_CTRL0,
-				    0x7 << 12,
-				    new_src << 12);
+			    0x1f << 12,
+			    src << 12);
 	} else {
 		audiobus_update_bits(EE_AUDIO_TOVAD_CTRL0,
-				     0x7 << 12,
-				     src << 12);
+			0x1f << 12,
+			src << 12);
 	}
 }
 
@@ -89,19 +74,14 @@ void vad_set_in(void)
 
 void vad_set_enable(bool enable, bool vad_top)
 {
-	if (vad_top) {
+	if (vad_top)
 		vad_top_update_bits(EE_AUDIO2_TOVAD_CTRL0,
-				    0x1 << 31 | 0x1 << 30,
-				    enable << 31 | 0x1 << 30);
-
-		vad_top_update_bits(VAD_TOP_CTRL2,
-				    0x3 << 30,
-				    0x3 << 30);
-	} else {
+			0x1 << 31 | 0x1 << 30,
+			enable << 31 | 0x1 << 30);
+	else
 		audiobus_update_bits(EE_AUDIO_TOVAD_CTRL0,
-				     0x1 << 31 | 0x1 << 30,
-				     enable << 31 | 0x1 << 30);
-	}
+			0x1 << 31 | 0x1 << 30,
+			enable << 31 | 0x1 << 30);
 
 	if (enable) {
 		vad_write(VAD_TOP_CTRL0, 0x7ff);
@@ -111,16 +91,16 @@ void vad_set_enable(bool enable, bool vad_top)
 		vad_write(VAD_TOP_CTRL1, 0x0);
 
 		vad_update_bits(VAD_TOP_CTRL0,
-				0xfff << 20,
-				1 << 31 | /* vad_en */
-				1 << 30 | /* dec_fir_en */
-				1 << 29 | /* pre_emp_en */
-				1 << 28 | /* pre_ram_en */
-				1 << 27 | /* frame_his_en */
-				1 << 23 | /* ceps_ceps_en */
-				1 << 22 | /* ceps_spec_en */
-				0 << 20   /* two_channel_en */
-			       );
+			0xfff << 20,
+			1 << 31 | /* vad_en */
+			1 << 30 | /* dec_fir_en */
+			1 << 29 | /* pre_emp_en */
+			1 << 28 | /* pre_ram_en */
+			1 << 27 | /* frame_his_en */
+			1 << 23 | /* ceps_ceps_en */
+			1 << 22 | /* ceps_spec_en */
+			0 << 20   /* two_channel_en */
+		);
 	} else {
 		vad_write(VAD_TOP_CTRL0, 0x0);
 
@@ -131,31 +111,15 @@ void vad_set_enable(bool enable, bool vad_top)
 void vad_force_clk_to_oscin(bool force, bool vad_top)
 {
 	if (vad_top)
-		vad_top_update_bits(EE_AUDIO2_TOVAD_CTRL0,
-				    0x1 << 30, force << 30);
+		vad_top_update_bits(EE_AUDIO2_CLK_VAD_CTRL,
+				0x1 << 30, force << 30);
 	else
 		audiobus_update_bits(EE_AUDIO_CLK_VAD_CTRL,
-				     0x1 << 30, force << 30);
+				0x1 << 30, force << 30);
 }
 
-void vad_irq_clr(enum vad_int_mode mode)
+void vad_set_two_channel_en(bool en)
 {
-	int offset = 0;
-
-	if (mode == INT_MODE_FS) {
-		offset = 28;
-	} else if (mode == INT_MODE_FLAG) {
-		offset = 29;
-	} else {
-		pr_err("%s invalid int mode:%#x\n", __func__, mode);
-		return;
-	}
-
-	vad_update_bits(VAD_TOP_CTRL2,
-			0x1 << offset,
-			0x1 << offset);
-
-	vad_update_bits(VAD_TOP_CTRL2,
-			0x1 << offset,
-			0x0 << offset);
+	/* two_channel_en */
+	vad_update_bits(VAD_TOP_CTRL0, 0x1 << 20, en << 20);
 }

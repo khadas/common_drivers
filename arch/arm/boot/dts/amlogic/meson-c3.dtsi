@@ -7,7 +7,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/clock/c2-clkc.h>
 #include <dt-bindings/gpio/gpio.h>
-#include <dt-bindings/gpio/meson-c2-gpio.h>
+#include <dt-bindings/gpio/meson-c3-gpio.h>
 #include <dt-bindings/clock/a1-audio-clk.h>
 #include <dt-bindings/pwm/pwm.h>
 #include <dt-bindings/pwm/meson.h>
@@ -86,6 +86,39 @@
 				compatible = "amlogic,c2-clk-measure";
 				reg = <0x3400 0x10>;
 			};
+
+			periphs_pinctrl: pinctrl@4000 {
+				compatible = "amlogic,meson-c3-periphs-pinctrl";
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges;
+
+				gpio: bank@4000 {
+					reg = <0x4000 0x0048>,
+					      <0x4100 0x01de>;
+					reg-names = "mux", "gpio";
+					gpio-controller;
+					#gpio-cells = <2>;
+					gpio-ranges = <&periphs_pinctrl 0 0 55>;
+				};
+			};
+
+			analog_pinctrl: pinctrl@43a0 {
+				compatible = "amlogic,meson-c3-analog-pinctrl";
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges;
+
+				gpio_analog: bank@043a0 {
+					reg = <0x404c 0x008>,
+					      <0x438c 0x030>;
+					reg-names = "mux", "gpio";
+					gpio-controller;
+					#gpio-cells = <2>;
+					gpio-ranges = <&analog_pinctrl 0 0 14>;
+				};
+			};
+
 			uart_B: serial@7a000 {
 				compatible = "amlogic,meson-uart";
 				reg = <0x7a000 0x18>;

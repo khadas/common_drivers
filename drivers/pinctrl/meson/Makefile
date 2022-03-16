@@ -24,3 +24,10 @@ $(C2_MODULE_NAME)-y += pinctrl-meson-c2.o
 PR_FMT_C2 = $(subst amlogic-,,$(C2_MODULE_NAME))
 PR_FMT_DEFINE_C2="-Dpr_fmt(fmt)= \"[$(PR_FMT_C2)]: \" fmt"
 CFLAGS_pinctrl-meson-c2.o += $(PR_FMT_DEFINE_C2)
+
+C3_MODULE_NAME = amlogic-pinctrl-soc-c3
+obj-$(CONFIG_AMLOGIC_PINCTRL_MESON_C3) += $(C3_MODULE_NAME).o
+$(C3_MODULE_NAME)-y += pinctrl-meson-c3.o
+PR_FMT_C3 = $(subst amlogic-,,$(C3_MODULE_NAME))
+PR_FMT_DEFINE_C3="-Dpr_fmt(fmt)= \"[$(PR_FMT_C3)]: \" fmt"
+CFLAGS_pinctrl-meson-c3.o += $(PR_FMT_DEFINE_C3)

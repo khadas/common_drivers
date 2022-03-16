@@ -735,7 +735,8 @@ static int meson_gpio_to_irq(struct gpio_chip *chip, unsigned int gpio)
 static int meson_gpiolib_register(struct meson_pinctrl *pc)
 {
 	int ret;
-#ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef FIX_IT_LATER
+	/* KASAN BUG Fix It Later */
 	const char **names;
 	const struct pinctrl_pin_desc *pins;
 	int i;
@@ -752,6 +753,8 @@ static int meson_gpiolib_register(struct meson_pinctrl *pc)
 #ifdef CONFIG_AMLOGIC_MODIFY
 	pc->chip.to_irq = meson_gpio_to_irq;
 	pc->chip.set_config = gpiochip_generic_config;
+/* KASAN BUG Fix It Later */
+#ifdef FIX_IT_LATER
 	names = kcalloc(pc->desc.npins, sizeof(char *), GFP_KERNEL);
 	if (!names)
 		return -ENOMEM;
@@ -760,6 +763,7 @@ static int meson_gpiolib_register(struct meson_pinctrl *pc)
 		names[pins[i].number] = pins[i].name;
 	pc->chip.names = (const char * const *)names;
 #endif
+#endif
 	pc->chip.base = -1;
 	pc->chip.ngpio = pc->data->num_pins;
 	pc->chip.can_sleep = false;
@@ -767,7 +771,8 @@ static int meson_gpiolib_register(struct meson_pinctrl *pc)
 	pc->chip.of_gpio_n_cells = 2;
 
 	ret = gpiochip_add_data(&pc->chip, pc);
-#ifdef CONFIG_AMLOGIC_MODIFY
+/* KASAN BUG Fix It Later */
+#ifdef FIX_IT_LATER
 	/* pin->chip.names will be assigned to each gpio discriptor' name
 	 * member after gpiochip_add_data. To keep node name consistency when
 	 * use sysfs to export gpio, pc->chip.name need to be cleared also see

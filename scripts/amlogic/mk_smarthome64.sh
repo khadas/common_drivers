@@ -8,7 +8,7 @@ ROOT_DIR=`pwd`
 
 ARCH=arm64
 DEFCONFIG=meson64_a64_smarthome_defconfig
-CROSS_COMPILE_TOOL=/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+CROSS_COMPILE_TOOL=${ROOT_DIR}/prebuilts/gcc/linux-x86/host/x86_64-aarch64-10.3-2021.07/bin/aarch64-none-linux-gnu-
 MAKE='make'
 
 source ${ROOT_DIR}/common/common_drivers/scripts/amlogic/mk_smarthome_common.sh $@

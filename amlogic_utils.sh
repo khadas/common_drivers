@@ -114,7 +114,8 @@ function modules_install() {
 	pushd ${DIST_DIR}
 	rm modules -rf
 	mkdir modules
-	cp *.ko modules
+	local modules_list=$(find ${MODULES_STAGING_DIR}/lib/modules -type f -name "*.ko")
+	cp ${modules_list} modules
 
 	local stagin_module=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
 	echo stagin_module=${stagin_module}
@@ -177,6 +178,21 @@ function rebuild_rootfs() {
 		cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/customer . -rf
 	fi
 	cp -rf ../../modules .
+
+	if [[ -n ${LLVM} ]]; then
+		for module in `ls modules/*.ko`;
+		do
+			 ${ROOT_DIR}/${CLANG_PREBUILT_BIN}/llvm-objcopy --strip-debug ${module}
+		done
+	elif [[ -n ${CROSS_COMPILE} ]]; then
+		for module in `ls modules/*.ko`;
+		do
+			 ${CROSS_COMPILE}objcopy --strip-debug ${module}
+		done
+	else
+		echo "can't strip debug module"
+	fi
+
 	find . | cpio -o -H newc | gzip > ../rootfs_new.cpio.gz
 	cd ../
 	mkimage -A ${ARCH} -O linux -T ramdisk -C none -d rootfs_new.cpio.gz rootfs_new.cpio.gz.uboot

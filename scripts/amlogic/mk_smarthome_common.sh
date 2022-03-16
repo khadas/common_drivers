@@ -136,7 +136,62 @@ set +x
 
 IN_KERNEL_MODULES=1
 MODULES_LOAD_FIRSTLIST=(
-	amlogic-clk
+	amlogic-clk.ko
+	amlogic-clk-soc-c2.ko
+	pwm-regulator.ko
+	realtek.ko
+	amlogic-pinctrl.ko
+	amlogic-pinctrl-soc-c2.ko
+	amlogic-irqchip.ko
+	amlogic-power.ko
+	amlogic-gpiolib.ko
+	amlogic-input-gpiokey.ko
+	amlogic-mailbox.ko
+	amlogic-input-adckey.ko
+	amlogic-gkitool.ko
+	amlogic-input-ir.ko
+	amlogic-i2c.ko
+	amlogic-spi.ko
+	amlogic-pwm.ko
+	amlogic-cpufreq.ko
+	amlogic-secmon.ko
+	amlogic-cpuinfo.ko
+	amlogic-media.ko
+	amlogic-adc.ko
+	amlogic-rng.ko
+	amlogic-reset.ko
+	amlogic-rtc-virtual.ko
+	amlogic-thermal.ko
+	amlogic-efuse-unifykey.ko
+	amlogic-mmc.ko
+	amlogic_usb2_phy.ko
+	amlogic_usb3_v2_phy.ko
+	amlogic_usb2_c2_phy.ko
+	amlogic_usb_cc.ko
+	amlogic_usb3_c2_phy.ko
+	amlogic_usb_otg.ko
+	amlogic_usb_bc.ko
+	amlogic_usb_crg.ko
+	xhci-plat-hcd.ko
+	dwc3.ko
+	dwc3-of-simple.ko
+	dwc_otg.ko
+	amlogic-jtag.ko
+	amlogic-reg.ko
+	amlogic-ddr-tool.ko
+	amlogic-irblaster.ko
+	amlogic-reboot.ko
+	amlogic-hifidsp.ko
+	amlogic-crypto-dma.ko
+	amlogic-snd-soc.ko
+	amlogic-snd-codec-t9015.ko
+	amlogic-snd-codec-a1.ko
+	amlogic-snd-codec-tlv320adc3101.ko
+	amlogic-snd-codec-ad82584f.ko
+	amlogic_audiodsp.ko
+	amlogic_audioattrs.ko
+	amlogic_audiodata.ko
+	amlogic-snd-codec-dummy.ko
 )
 
 INITRAMFS_STAGING_DIR=${MODULES_STAGING_DIR}/initramfs_staging

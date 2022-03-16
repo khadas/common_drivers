@@ -3,7 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#define DEBUG
+//#define DEBUG
 
 #include <linux/version.h>
 #include <linux/module.h>

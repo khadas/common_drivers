@@ -1504,7 +1504,7 @@ static int aml_aes_probe(struct platform_device *pdev)
 	if (err)
 		goto err_algs;
 
-	dev_info(dev, "Aml AES_dma\n");
+	dev_dbg(dev, "Aml AES_dma\n");
 
 	pm_runtime_put_sync_autosuspend(dev);
 

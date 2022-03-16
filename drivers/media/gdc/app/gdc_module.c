@@ -42,6 +42,8 @@
 #include "gdc_dmabuf.h"
 #include "gdc_wq.h"
 
+//#define DEBUG
+
 int gdc_log_level;
 struct gdc_manager_s gdc_manager;
 static int kthread_created;
@@ -1836,7 +1838,7 @@ static ssize_t dump_reg_store(struct device *dev,
 
 	ret = kstrtoint(buf, 0, &res);
 
-	pr_info("dump mode: %d->%d\n", gdc_dev->reg_store_mode_enable, res);
+	pr_debug("dump mode: %d->%d\n", gdc_dev->reg_store_mode_enable, res);
 	gdc_dev->reg_store_mode_enable = res;
 
 	return len;
@@ -1860,7 +1862,7 @@ static ssize_t loglevel_store(struct device *dev,
 	int ret = 0;
 
 	ret = kstrtoint(buf, 0, &res);
-	pr_info("log_level: %d->%d\n", gdc_log_level, res);
+	pr_debug("log_level: %d->%d\n", gdc_log_level, res);
 	gdc_log_level = res;
 
 	return len;
@@ -1889,7 +1891,7 @@ static ssize_t trace_mode_store(struct device *dev,
 				(struct meson_gdc_dev_t *)dev_get_drvdata(dev);
 
 	ret = kstrtoint(buf, 0, &res);
-	pr_info("trace_mode: %d->%d\n", gdc_dev->trace_mode_enable, res);
+	pr_debug("trace_mode: %d->%d\n", gdc_dev->trace_mode_enable, res);
 	gdc_dev->trace_mode_enable = res;
 
 	return len;
@@ -1920,11 +1922,11 @@ static ssize_t config_out_path_store(struct device *dev,
 			(struct meson_gdc_dev_t *)dev_get_drvdata(dev);
 
 	if (strlen(buf) >= CONFIG_PATH_LENG) {
-		pr_info("err: path too long\n");
+		pr_err("err: path too long\n");
 	} else {
 		strncpy(gdc_dev->config_out_file, buf, CONFIG_PATH_LENG - 1);
 		gdc_dev->config_out_path_defined = 1;
-		pr_info("set config out path: %s\n", gdc_dev->config_out_file);
+		pr_debug("set config out path: %s\n", gdc_dev->config_out_file);
 	}
 
 	return len;

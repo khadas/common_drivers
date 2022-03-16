@@ -220,14 +220,12 @@ static int aml_free_probe(struct platform_device *pdev)
 	int ret;
 	int r;
 
-	pr_info("jww %s-%d\n", __func__, __LINE__);
 	/* kzalloc device */
 	jdev = devm_kzalloc(&pdev->dev,
 			    sizeof(struct aml_free_dev), GFP_KERNEL);
 	if (!jdev)
 		return -ENOMEM;
 
-	pr_info("jww %s-%d\n", __func__, __LINE__);
 	/* set driver data */
 	jdev->pdev = pdev;
 	platform_set_drvdata(pdev, jdev);
@@ -242,17 +240,14 @@ static int aml_free_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	pr_info("jww %s-%d\n", __func__, __LINE__);
 	r = register_chrdev(0, FREEMEM_DEV_NAME,
 			    &free_mem_fops);
 	if (r < 0)
 		ret = -EPERM;
-	pr_info("jww %s-%d\n", __func__, __LINE__);
 	dev_no = r;
 	device_create(&jdev->cls, &pdev->dev,
 		      MKDEV(dev_no, 0),
 		      NULL, FREEMEM_DEV_NAME);
-	pr_info("jww %s-%d\n", __func__, __LINE__);
 	return ret;
 }
 
@@ -286,12 +281,10 @@ static struct platform_driver aml_free_driver = {
 
 static int __init aml_free_reserved_init(void)
 {
-	pr_info("jww %s-%d\n", __func__, __LINE__);
 	if (platform_driver_register(&aml_free_driver)) {
 		pr_err("failed to register driver\n");
 		return -ENODEV;
 	}
-	pr_info("jww %s-%d\n", __func__, __LINE__);
 
 	return 0;
 }

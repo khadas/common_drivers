@@ -2045,7 +2045,7 @@ static int aml_crypto_dev_probe(struct platform_device *pdev)
 		goto error;
 	}
 
-	dev_info(dev, "Aml crypto device\n");
+	dev_dbg(dev, "Aml crypto device\n");
 
 	return err;
 

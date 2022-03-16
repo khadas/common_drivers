@@ -299,7 +299,7 @@ static int amlogic_new_otg_probe(struct platform_device *pdev)
 		}
 	}
 
-	dev_info(&pdev->dev, "phy_mem:0x%lx, iomap phy_base:0x%lx\n",
+	dev_dbg(&pdev->dev, "phy_mem:0x%lx, iomap phy_base:0x%lx\n",
 		 (unsigned long)usb2_phy_mem,
 		 (unsigned long)usb2_phy_base);
 

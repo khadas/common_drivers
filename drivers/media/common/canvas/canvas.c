@@ -24,6 +24,7 @@
 #include "canvas_reg.h"
 #include "canvas_priv.h"
 
+//#define DEBUG
 #define DRIVER_NAME "amlogic-canvas"
 #define MODULE_NAME "amlogic-canvas"
 #define DEVICE_NAME "amcanvas"
@@ -210,7 +211,7 @@ void canvas_config_ex(u32 index, ulong addr, u32 width,
 		return;
 
 	if (!canvas_pool_canvas_alloced(index)) {
-		pr_info("Try config not allocked canvas[%d]\n", index);
+		pr_err("Try config not allocked canvas[%d]\n", index);
 		dump_stack();
 		return;
 	}
@@ -264,7 +265,7 @@ void canvas_copy(u32 src, u32 dst)
 
 	if (!canvas_pool_canvas_alloced(src) ||
 	    !canvas_pool_canvas_alloced(dst)) {
-		pr_info("!%s without alloc,src=%d,dst=%d\n",
+		pr_err("!%s without alloc,src=%d,dst=%d\n",
 			__func__, src, dst);
 		dump_stack();
 		return;
@@ -294,7 +295,7 @@ void canvas_update_addr(u32 index, ulong addr)
 		return;
 	canvas = &info->canvasPool[index];
 	if (!canvas_pool_canvas_alloced(index)) {
-		pr_info("canvas_update_addrwithout alloc,index=%d\n",
+		pr_err("canvas_update_addrwithout alloc,index=%d\n",
 			index);
 		dump_stack();
 		return;
@@ -368,7 +369,7 @@ static int __init canvas_probe(struct platform_device *pdev)
 	info->canvas_dev = pdev;
 	canvas_info = info;
 
-	pr_info("%s ok, reg=%lx, size=%x base =%px\n", __func__,
+	pr_debug("%s ok, reg=%lx, size=%x base =%px\n", __func__,
 		(unsigned long)res->start, size, info->reg_base);
 	return 0;
 err1:

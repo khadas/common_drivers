@@ -18,6 +18,7 @@
 /* media module used media/registers/cpu_version.h since kernel 5.4 */
 #include <linux/amlogic/media/registers/cpu_version.h>
 
+//#define DEBUG
 static struct canvas_pool *global_pool;
 int hw_canvas_support;
 
@@ -279,10 +280,10 @@ void canvas_pool_dump_canvas_info(void)
 			const char *o1 = info.owner ? info.owner : "none";
 			const char *o2 = info.oldowner ? info.oldowner : "none";
 
-			pr_info("canvas[%x] used=%d owner =%s",
+			pr_debug("canvas[%x] used=%d owner =%s",
 				(unsigned int)i,
 				test_bit(i, pool->canvas_map), o1);
-			pr_info("owner=%s,oldowner =%s,time=%ld,fixed=%d\n",
+			pr_debug("owner=%s,oldowner =%s,time=%ld,fixed=%d\n",
 				o1, o2, info.alloc_time, info.fixed_onwer);
 		}
 	}
@@ -492,7 +493,7 @@ int canvas_pool_get_static_canvas_by_name(const char *owner, u8 *tab, int size)
 	if (j > 0)
 		return j;
 
-	pr_info("not found register static canvas for %s\n", owner);
+	pr_debug("not found register static canvas for %s\n", owner);
 	return 0;
 }
 EXPORT_SYMBOL(canvas_pool_get_static_canvas_by_name);

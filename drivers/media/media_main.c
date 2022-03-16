@@ -19,16 +19,17 @@
 #include <linux/mm.h>
 #include "media_main.h"
 
+//#define DEBUG
 #define call_sub_init(func) \
 { \
 	int ret = 0; \
 	ret = func(); \
-	pr_info("call %s() ret=%d\n", #func, ret); \
+	pr_debug("call %s() ret=%d\n", #func, ret); \
 }
 
 static int __init media_main_init(void)
 {
-	pr_info("### %s() start\n", __func__);
+	pr_debug("### %s() start\n", __func__);
 	call_sub_init(media_configs_system_init);
 	call_sub_init(secmem_init);
 	call_sub_init(codec_mm_module_init);
@@ -102,13 +103,12 @@ static int __init media_main_init(void)
 	call_sub_init(aml_dtvdemod_init);
 	call_sub_init(msync_init);
 	call_sub_init(frc_init);
-	pr_info("### %s() end\n", __func__);
+	pr_debug("### %s() end\n", __func__);
 	return 0;
 }
 
 static void __exit media_main_exit(void)
 {
-	pr_info("%s()\n", __func__);
 	meson_videotunnel_exit();
 	vdetect_exit();
 	msync_exit();

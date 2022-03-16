@@ -26,7 +26,7 @@
 #include <crypto/internal/hash.h>
 #include "aml-crypto-dma.h"
 
-#define DEBUG				(0)
+#define AML_CRYPTO_DMA_DBG (0)
 
 u32 swap_ulong32(u32 val)
 {
@@ -183,7 +183,7 @@ int aml_dma_crypto_enqueue_req(struct aml_dma_dev *dd,
 }
 EXPORT_SYMBOL_GPL(aml_dma_crypto_enqueue_req);
 
-#if DEBUG
+#if AML_CRYPTO_DMA_DBG
 void dump_buf(const s8 *name, u8 *buf, const s32 length)
 {
 	s32 i = 0;

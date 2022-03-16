@@ -634,7 +634,7 @@ static int mhu_pl_probe(struct platform_device *pdev)
 	int idx, num_chans, memid, i;
 	int err = 0;
 
-	pr_info("pl mailbox init start\n");
+	pr_debug("pl mailbox init start\n");
 	mhu_ctlr = devm_kzalloc(dev, sizeof(*mhu_ctlr), GFP_KERNEL);
 	if (!mhu_ctlr)
 		return -ENOMEM;
@@ -773,7 +773,7 @@ static int mhu_pl_probe(struct platform_device *pdev)
 
 	mhu_pl_device = dev;
 	mhu_f |= MASK_MHU_PL;
-	pr_info("pl mailbox init done %pK, 0x%x\n", mhu_pl_device, mhu_f);
+	pr_debug("pl mailbox init done %pK, 0x%x\n", mhu_pl_device, mhu_f);
 	return 0;
 }
 

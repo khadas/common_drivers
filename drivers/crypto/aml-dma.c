@@ -214,7 +214,7 @@ static int aml_dma_probe(struct platform_device *pdev)
 	if (err)
 		goto dma_err;
 
-	dev_info(dev, "Aml dma\n");
+	dev_dbg(dev, "Aml dma\n");
 
 	err = of_platform_populate(np, NULL, NULL, dev);
 	if (err != 0)

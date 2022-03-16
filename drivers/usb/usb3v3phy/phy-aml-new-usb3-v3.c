@@ -601,7 +601,7 @@ static int amlogic_new_usb3_v3_probe(struct platform_device *pdev)
 	if (!phy)
 		return -ENOMEM;
 
-	dev_info(&pdev->dev, "USB3 phy probe:phy_mem:0x%lx, iomap phy_base:0x%lx\n",
+	dev_dbg(&pdev->dev, "USB3 phy probe:phy_mem:0x%lx, iomap phy_base:0x%lx\n",
 		 (unsigned long)phy_mem->start, (unsigned long)phy_base);
 
 	phy->dev		= dev;

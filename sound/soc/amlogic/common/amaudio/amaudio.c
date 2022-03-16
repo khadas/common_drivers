@@ -268,7 +268,7 @@ static int __init amaudio_init(void)
 	int i = 0;
 	struct amaudio_port_t *ap;
 
-	pr_info("amaudio: driver %s init!\n", AMAUDIO_DRIVER_NAME);
+	pr_debug("amaudio: driver %s init!\n", AMAUDIO_DRIVER_NAME);
 
 	ret =
 	    register_chrdev(AMAUDIO_MAJOR, AMAUDIO_DRIVER_NAME, &amaudio_fops);
@@ -310,7 +310,7 @@ static int __init amaudio_init(void)
 		goto err4;
 	}
 
-	pr_info("%s - amaudio: driver %s succuess!\n",
+	pr_debug("%s - amaudio: driver %s succuess!\n",
 		__func__, AMAUDIO_DRIVER_NAME);
 
 	return platform_driver_register(&amlogic_amaudio_driver);

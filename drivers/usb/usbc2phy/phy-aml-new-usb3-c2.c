@@ -397,7 +397,7 @@ static int phy_aml_C2_id_pin_config(struct platform_device *pdev,
 		return -ENODEV;
 	}
 
-	pr_info("<%s> ok\n", __func__);
+	pr_debug("<%s> ok\n", __func__);
 
 	return 0;
 }
@@ -513,7 +513,7 @@ static int amlogic_new_C2_usb3_v2_probe(struct platform_device *pdev)
 		}
 	}
 
-	dev_info(&pdev->dev, "USB3 phy probe:phy_mem:0x%lx, iomap phy_base:0x%lx\n",
+	dev_dbg(&pdev->dev, "USB3 phy probe:phy_mem:0x%lx, iomap phy_base:0x%lx\n",
 			(unsigned long)phy_mem->start, (unsigned long)phy_base);
 
 	phy->dev		= dev;

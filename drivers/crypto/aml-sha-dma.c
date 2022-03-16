@@ -1628,7 +1628,7 @@ static int aml_sha_probe(struct platform_device *pdev)
 	if (err)
 		goto err_algs;
 
-	dev_info(dev, "Aml SHA1/SHA224/SHA256 dma\n");
+	dev_dbg(dev, "Aml SHA1/SHA224/SHA256 dma\n");
 
 	pm_runtime_put_sync_autosuspend(dev);
 	return 0;

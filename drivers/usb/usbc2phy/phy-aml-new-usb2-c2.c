@@ -370,7 +370,7 @@ static int amlogic_new_c2_usb2_probe(struct platform_device *pdev)
 	prop = of_get_property(dev->of_node, "usb-busclk_ctl_div", NULL);
 	if (prop) {
 		usbclk_div = of_read_ulong(prop, 1);
-		dev_info(&pdev->dev, "usb_clk_ctl_div=%u\n", usbclk_div);
+		dev_dbg(&pdev->dev, "usb_clk_ctl_div=%u\n", usbclk_div);
 	}
 
 	prop = of_get_property(dev->of_node, "version", NULL);
@@ -498,7 +498,7 @@ static int amlogic_new_c2_usb2_probe(struct platform_device *pdev)
 	if (retval < 0)
 		return -EINVAL;
 
-	dev_info(&pdev->dev, "USB2 phy probe:phy_mem:0x%lx, iomap phy_base:0x%lx\n",
+	dev_dbg(&pdev->dev, "USB2 phy probe:phy_mem:0x%lx, iomap phy_base:0x%lx\n",
 			(unsigned long)phy_mem->start, (unsigned long)phy_base);
 
 	phy->dev		= dev;

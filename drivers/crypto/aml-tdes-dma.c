@@ -1474,7 +1474,7 @@ static int aml_tdes_probe(struct platform_device *pdev)
 	if (err)
 		goto err_algs;
 
-	dev_info(dev, "Aml TDES_dma\n");
+	dev_dbg(dev, "Aml TDES_dma\n");
 
 	pm_runtime_put_sync_autosuspend(dev);
 

@@ -21,6 +21,7 @@
 /* media module used media/registers/cpu_version.h since kernel 5.4 */
 #include <linux/amlogic/media/registers/cpu_version.h>
 
+//#define DEBUG
 void set_cpu_type_from_media(int cpu_id);
 
 static u32 regs_cmd_debug;
@@ -871,7 +872,7 @@ static int __init codec_io_probe(struct platform_device *pdev)
 	}
 
 	set_cpu_type_from_media(codecio_meson_dev.cpu_id);
-	pr_info("%s success, cpu_type=0x%x\n", __func__, get_cpu_type());
+	pr_debug("%s success, cpu_type=0x%x\n", __func__, get_cpu_type());
 
 	return 0;
 }

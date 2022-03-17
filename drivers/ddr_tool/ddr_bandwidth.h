@@ -18,6 +18,10 @@
 #define DMC_QOS_IRQ			BIT(30)
 #define MAX_CHANNEL			8
 
+/* for soc_feature */
+#define DMC_DEVICE_8BIT		BIT(2)
+#define PLL_IS_SEC		BIT(1)
+
 #include "ddr_port.h"
 /*
  * register offset for chips before g12
@@ -203,6 +207,9 @@ extern struct ddr_bandwidth_ops t7_ddr_bw_ops;
 #endif
 #ifdef CONFIG_AMLOGIC_DDR_BANDWIDTH_S4
 extern struct ddr_bandwidth_ops s4_ddr_bw_ops;
+#endif
+#ifdef CONFIG_AMLOGIC_DDR_BANDWIDTH_C3
+extern struct ddr_bandwidth_ops c3_ddr_bw_ops;
 #endif
 
 unsigned int aml_get_ddr_usage(void);

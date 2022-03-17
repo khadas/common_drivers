@@ -1383,23 +1383,23 @@
 	};
 
 	ddr_bandwidth {
-		compatible = "amlogic,ddr-bandwidth-c2";
-		status = "disabled";
-		reg = <0xfe024000 0x100
-		       0xfe024c00 0x100>;
-		sec_base = <0xfe025000>;
-		freq_reg = <0xfd000128>;
-		interrupts = <GIC_SPI 153 IRQ_TYPE_EDGE_RISING>;
+		compatible = "amlogic,ddr-bandwidth-c3";
+		status = "okay";
+		reg = <0xfe036000 0x400
+		       0xfe040000 0x100>;
+		sec_base = <0xfe037000>;
+		interrupts = <0 78 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "ddr_bandwidth";
 	};
 
 	dmc_monitor {
-		compatible = "amlogic,dmc_monitor-c2";
-		status = "disabled";
-		reg_base = <0xfe024180>;
-		reg = <0xFE024180 0x100>;
-		interrupts = <GIC_SPI 153 IRQ_TYPE_EDGE_RISING>;
+		compatible = "amlogic,dmc_monitor-c3";
+		status = "okay";
+		reg_base = <0xfe037000>;
+		reg = <0xfe036000 0x400>;
+		interrupts = <0 62 IRQ_TYPE_EDGE_RISING>;
 	};
+
 	galcore {
 		compatible = "amlogic, galcore";
 		dev_name = "galcore";

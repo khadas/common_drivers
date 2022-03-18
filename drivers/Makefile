@@ -38,6 +38,7 @@ obj-y					+= debug/
 obj-$(CONFIG_AMLOGIC_FREERTOS)		+= freertos/
 obj-$(CONFIG_AMLOGIC_USB)               += usb/
 obj-$(CONFIG_AMLOGIC_CRYPTO_DMA)	+= crypto/
+obj-$(CONFIG_AMLOGIC_DOLBY_FW) 		+= dolby_fw/
 obj-y					+= ../sound/
 
 

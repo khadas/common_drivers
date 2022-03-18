@@ -102,7 +102,7 @@ static int _verify_key_checksum(struct mmc_card *mmc, void *addr, int cpy)
 
 	memcpy(&key_infos[cpy], checksum_info, sizeof(struct aml_key_info));
 	checksum = _calc_key_checksum(addr, EMMC_KEYAREA_SIZE);
-	pr_info("calc %llx, store %llx\n", checksum, key_infos[cpy].checksum);
+	pr_debug("calc %llx, store %llx\n", checksum, key_infos[cpy].checksum);
 
 	kfree(checksum_info);
 	return !(checksum == key_infos[cpy].checksum);
@@ -342,7 +342,7 @@ int update_old_key(struct mmc_card *mmc, void *addr)
 		memcpy(&key_infos[0], &key_infos[1], sizeof(struct aml_key_info));
 		valid_flag = 1;
 	} else {
-		pr_info("do nothing\n");
+		pr_debug("do nothing\n");
 		return ret;
 	}
 
@@ -444,7 +444,7 @@ void emmc_key_init(struct mmc_card *card, int *retp)
 
 	mmc_claim_host(card->host);
 	bit = card->csd.read_blkbits;
-	pr_info("card key: card_blk_probe.\n");
+	pr_debug("card key: card_blk_probe.\n");
 	emmckey_info = kmalloc(sizeof(*emmckey_info), GFP_KERNEL);
 	if (!emmckey_info) {
 		pr_info("%s:%d,kmalloc memory fail\n", __func__, __LINE__);
@@ -472,7 +472,7 @@ void emmc_key_init(struct mmc_card *card, int *retp)
 	lba_end = (addr + size) >> bit;
 	emmckey_info->key_init = 1;
 
-	pr_info("%s:%d emmc key lba_start:0x%llx,lba_end:0x%llx\n",
+	pr_debug("%s:%d emmc key lba_start:0x%llx,lba_end:0x%llx\n",
 			__func__, __LINE__, lba_start, lba_end);
 
 	if (!emmckey_info->key_init) {
@@ -559,9 +559,9 @@ void amlmmc_dtb_key_init(void *at, int *retp)
 	if (!mmc_dtbkey || !mmc_dtbkey->card) {
 		pr_info("no emmc host or emmc card!\n");
 	} else if (waked == 1) {
-		pr_info("emmc key and dtb already inited\n");
+		pr_debug("emmc key and dtb already inited\n");
 	} else {
-		pr_info("wakeup dtbkey_task\n");
+		pr_debug("wakeup dtbkey_task\n");
 		wake_up_process(thread_dtb_key_task);
 		waked = 1;
 	}

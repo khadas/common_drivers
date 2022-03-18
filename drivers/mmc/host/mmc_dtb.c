@@ -139,7 +139,7 @@ static int _verify_dtb_checksum(struct aml_dtb_rsv *dtb)
 	unsigned int checksum;
 
 	checksum = _calc_dtb_checksum(dtb);
-	pr_info("calc %x, store %x\n", checksum, dtb->checksum);
+	pr_debug("calc %x, store %x\n", checksum, dtb->checksum);
 
 	return !(checksum == dtb->checksum);
 }
@@ -380,13 +380,13 @@ static int _dtb_init(struct mmc_card *mmc)
 				info->stamp[cpy] = dtb->timestamp;
 				info->valid[cpy] = 1;
 			} else {
-				pr_err("cpy %d is not valid\n", cpy);
+				pr_info("cpy %d is not valid\n", cpy);
 			}
 		}
 		valid += info->valid[cpy];
 		cpy--;
 	}
-	pr_info("total valid %d\n", valid);
+	pr_debug("total valid %d\n", valid);
 
 	return ret;
 }
@@ -397,7 +397,7 @@ void amlmmc_dtb_init(struct mmc_card *card, int *retp)
 	mmc_claim_host(card->host);
 
 	card_dtb = card;
-	pr_info("%s: register dtb chardev", __func__);
+	pr_debug("%s: register dtb chardev", __func__);
 
 	_dtb_init(card);
 

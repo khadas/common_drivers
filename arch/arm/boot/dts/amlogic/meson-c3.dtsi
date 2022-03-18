@@ -15,7 +15,7 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/meson_ir.h>
 #include "meson-ir-map.dtsi"
-#include <dt-bindings/power/cx-pd.h>
+#include <dt-bindings/power/c3-pd.h>
 #include <dt-bindings/mailbox/amlogic,mbox.h>
 
 / {
@@ -257,7 +257,7 @@
 			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&clkc CLKID_TS>;
 			clock-names = "ts_comp";
-			power-domains = <&pwrdm PDID_CX_I2C>;
+			//power-domains = <&pwrdm PDID_CX_I2C>;
 			#thermal-sensor-cells = <1>;
 		};
 
@@ -269,7 +269,7 @@
 			      <0xfe000424 0x4>;
 				status = "disabled";
 			interrupts = <GIC_SPI 61 IRQ_TYPE_EDGE_RISING>;
-			power-domains = <&pwrdm PDID_CX_SDEMMC_A>;
+			//power-domains = <&pwrdm PDID_CX_SDEMMC_A>;
 			clocks = <&clkc CLKID_SYS_SD_EMMC_A>,
 				<&clkc CLKID_SD_EMMC_A_SEL>,
 				<&clkc CLKID_SD_EMMC_A_GATE>,
@@ -291,7 +291,7 @@
 			      <0xfe0008e0 0x4>,
 			      <0xfe000414 0x4>;
 			interrupts = <GIC_SPI 62 IRQ_TYPE_EDGE_RISING>;
-			power-domains = <&pwrdm PDID_CX_SDEMMC_B>;
+			//power-domains = <&pwrdm PDID_CX_SDEMMC_B>;
 			status = "disabled";
 			clocks = <&clkc CLKID_SYS_SD_EMMC_B>,
 				 <&clkc CLKID_SD_EMMC_B_SEL>,
@@ -325,7 +325,7 @@
 			      <0xfe000920 0x4>,
 			      <0xfe00040c 0x4>;
 			interrupts = <GIC_SPI 63 IRQ_TYPE_EDGE_RISING>;
-			power-domains = <&pwrdm PDID_CX_SDEMMC_C>;
+			//power-domains = <&pwrdm PDID_CX_SDEMMC_C>;
 			status = "disabled";
 			clocks = <&clkc CLKID_SYS_SD_EMMC_C>,
 				 <&clkc CLKID_SD_EMMC_C_SEL>,
@@ -353,7 +353,7 @@
 					 <&clkc CLKID_FCLK_DIV2>;
 			clock-names = "gate", "fdiv2pll";
 			nand_clk_ctrl = <0xfe012000>;
-			power-domains = <&pwrdm PDID_CX_SDEMMC_C>;
+			//power-domains = <&pwrdm PDID_CX_SDEMMC_C>;
 		};
 
 		spifc: spi@fe00ac00 {
@@ -364,7 +364,7 @@
 			clocks = <&clkc CLKID_SPIFC_GATE>;
 			#address-cells = <1>;
 			#size-cells = <0>;
-			power-domains = <&pwrdm PDID_CX_SPIFC>;
+			//power-domains = <&pwrdm PDID_CX_SPIFC>;
 		};
 
 		apb4: apb4@fe000000 {
@@ -611,7 +611,7 @@
 					 <&clkc CLKID_SPICC_A_GATE>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				power-domains = <&pwrdm PDID_CX_SPICC>;
+				//power-domains = <&pwrdm PDID_CX_SPICC>;
 				status = "disabled";
 			};
 
@@ -624,7 +624,7 @@
 					 <&clkc CLKID_SPICC_B_GATE>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				power-domains = <&pwrdm PDID_CX_SPICC_B>;
+				//power-domains = <&pwrdm PDID_CX_SPICC_B>;
 				status = "disabled";
 			};
 
@@ -727,7 +727,7 @@
 			bootlocation = <1>;   /*1: boot from DDR, 2: from sram, 3...*/
 			boot_sram_addr = <0xfff00000>;
 			boot_sram_size = <0x80000>;
-			power-domains = <&pwrdm PDID_CX_DSP_A>;
+			//power-domains = <&pwrdm PDID_CX_DSP_A>;
 			mboxes = <&mbox_pl 1>;
 			status = "disabled";
 		};
@@ -835,7 +835,7 @@
 			tx-fifo-depth = <2048>;
 			status = "disabled";
 			AVDD-supply = <&vcc3v3_reg>;
-			power-domains = <&pwrdm PDID_CX_ETH>;
+			//power-domains = <&pwrdm PDID_CX_ETH>;
 
 			ext_mdio: mdio {
 				#address-cells = <1>;
@@ -868,7 +868,7 @@
 				<0xFE054800 0x400>;
 			reg-names = "audio_bus", "audio_vad_top";
 
-			power-domains = <&pwrdm PDID_CX_AUDIO>;
+			//power-domains = <&pwrdm PDID_CX_AUDIO>;
 
 			ddr_manager {
 				compatible = "amlogic, c2-audio-ddr-manager";
@@ -1411,7 +1411,7 @@
 			"cts_vipnanoq_core_clk_composite";
 		interrupts = <0 60 4>;
 		interrupt-names = "galcore";
-		power-domains = <&pwrdm PDID_CX_NNA>;
+		//power-domains = <&pwrdm PDID_CX_NNA>;
 		reg = <0xff040000 0x20000
 			0xfffc0000 0x3e000
 			0xfe01303c 0x4
@@ -1423,10 +1423,11 @@
 			"NN_MEM1","NN_RESET","NN_CLK";
 		nn_power_version = <4>;
 	};
+
 	pwrdm: power-domains {
-		compatible = "amlogic,c2-power-domain";
+		compatible = "amlogic,c3-power-domain";
 		#power-domain-cells = <1>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	usb2_phy_v2: usb2phy@fe004420 {
@@ -1449,7 +1450,7 @@
 		pll-setting-7 = <0xe0004>;
 		pll-setting-8 = <0xe000c>;
 		version = <3>;
-		power-domains = <&pwrdm PDID_CX_USB>;
+		//power-domains = <&pwrdm PDID_CX_USB>;
 		phy20-reset-level-bit = <4>;
 		usb-reset-bit = <3>;
 		usb-busclk_ctl_div = <0x509>;
@@ -1469,7 +1470,7 @@
 		phy-reg = <0xfe004000>;
 		phy-reg-size = <0x2000>;
 		interrupts = <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>;
-		power-domains = <&pwrdm PDID_CX_USB>;
+		//power-domains = <&pwrdm PDID_CX_USB>;
 	};
 
 	dwc3: dwc3@ff400000 {
@@ -1483,7 +1484,7 @@
 			usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;
 			clocks = <&clkc CLKID_USB_CTRL>;
 			clock-names = "usb_general";
-			power-domains = <&pwrdm PDID_CX_USB>;
+			//power-domains = <&pwrdm PDID_CX_USB>;
 	};
 
 	dwc2_a: dwc2_a@ff500000 {
@@ -1510,7 +1511,7 @@
 		clocks = <&clkc CLKID_USB_CTRL>, <&clkc CLKID_USB_PHY>;
 		clock-names = "usb_general",
 				"usb1";
-		power-domains = <&pwrdm PDID_CX_USB>;
+		//power-domains = <&pwrdm PDID_CX_USB>;
 	};
 
 	aml_bc: bc@fe0044a0 {
@@ -1598,7 +1599,7 @@
 		clocks = <&clkc CLKID_GE2D_GATE>;
 		clock-names = "clk_ge2d_gate";
 		reg = <0xFE008C00 0x100>;
-		power-domains = <&pwrdm PDID_CX_GE2D>;
+		//power-domains = <&pwrdm PDID_CX_GE2D>;
 	};
 
 	/* Audio Related start */
@@ -1661,7 +1662,7 @@
 			&clkc CLKID_GDC_AXI_GATE>;
 		clock-names = "core","axi";
 		clk-rate = <666666666>;
-		power-domains = <&pwrdm PDID_CX_GDC>;
+		//power-domains = <&pwrdm PDID_CX_GDC>;
 	};
 
 	freertos: freertos {
@@ -2613,11 +2614,5 @@
 			function = "spi_b";
 			drive-strength-microamp = <3000>;
 		};
-	};
-
-	pwrdm: power-domains {
-		compatible = "amlogic,c3-power-domain";
-		#power-domain-cells = <1>;
-		status = "okay";
 	};
 };

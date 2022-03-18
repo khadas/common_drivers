@@ -160,7 +160,7 @@
 		tdmin_index = <1>;
 		dat0_ch_sel = <0>;
 		dacr_output_inv = <0>;
-		power-domains = <&pwrdm PDID_CX_ACODEC>;
+		//power-domains = <&pwrdm PDID_CX_ACODEC>;
 	};
 
 	auge_sound {
@@ -270,7 +270,7 @@
 		interrupt-names = "irq";
 		frequency = <49000000>; /* pll */
 		dividor = <49>; /* locker's parent */
-		power-domains = <&pwrdm PDID_CX_AUDIO>;
+		//power-domains = <&pwrdm PDID_CX_AUDIO>;
 		status = "disabled";
 	};
 	/* Audio Related end */
@@ -478,7 +478,7 @@
 		clock-names = "mclk", "clk_srcpll";
 		pinctrl-names = "tdm_pins";
 		pinctrl-0 = </*&tdmout_a*/ &tdmin_a>;
-		power-domains = <&pwrdm PDID_CX_AUDIO>;
+		//power-domains = <&pwrdm PDID_CX_AUDIO>;
 
 		status = "disabled";
 	};
@@ -509,7 +509,7 @@
 		 */
 		//samesource_sel = <3>;
 		start_clk_enable = <1>;
-		power-domains = <&pwrdm PDID_CX_AUDIO>;
+		//power-domains = <&pwrdm PDID_CX_AUDIO>;
 
 		src-clk-freq = <1155072000>;
 
@@ -568,7 +568,7 @@
 		 */
 
 		lb-src-sel = <1>;
-		power-domains = <&pwrdm PDID_CX_AUDIO>;
+		//power-domains = <&pwrdm PDID_CX_AUDIO>;
 
 		status = "disabled";
 	};
@@ -596,7 +596,7 @@
 		lane-mask-in = <1 1 0 0>;
 
 		sys-src-clk-freq = <1155072000>;
-		power-domains = <&pwrdm PDID_CX_PDM>;
+		//power-domains = <&pwrdm PDID_CX_PDM>;
 
 		status = "disabled";
 	};
@@ -705,7 +705,7 @@
 		datalb_chmask = <0x1>;
 		/* config which data pin as loopback */
 		datalb-lane-mask-in = <1 0 0 0>;
-		power-domains = <&pwrdm PDID_CX_AUDIO>;
+		//power-domains = <&pwrdm PDID_CX_AUDIO>;
 
 		status = "disabled";
 	};
@@ -729,7 +729,7 @@
 		lane_mask = <0x1>;
 		/* max 0xff, each bit for one channel */
 		channel_mask = <0x3>;
-		power-domains = <&pwrdm PDID_CX_AUDIO>;
+		//power-domains = <&pwrdm PDID_CX_AUDIO>;
 		status = "disabled";
 	};
 }; /* end of audiobus */

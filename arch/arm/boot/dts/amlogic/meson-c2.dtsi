@@ -1552,6 +1552,22 @@
 		status = "okay";
 	};
 
+	jpegenc {
+		compatible = "amlogic, jpegenc";
+		memory-region = <&jpegenc_cma_reserved>;
+		dev_name = "jpegenc";
+		status = "okay";
+		power-domains = <&pwrdm PDID_CX_HCODEC>;
+		clocks = <&clkc CLKID_SYS_DOS
+			&clkc CLKID_DOS_APB
+			&clkc CLKID_JPEG_GATE>;
+		clock-names = "clk_dos",
+			"clk_apb_dos",
+			"clk_jpeg_enc";
+		interrupts = <GIC_SPI 64 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "mailbox_0";
+	};
+
 	codec_io {
 		compatible = "amlogic, meson-c2, codec-io";
 		status = "okay";

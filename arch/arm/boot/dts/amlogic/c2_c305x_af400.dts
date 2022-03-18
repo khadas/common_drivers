@@ -111,11 +111,47 @@
 			status = "okay";
 			size = <0xC00000>;
 		};
+		codec_mm_cma:linux,codec_mm_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* ion_codec_mm max can alloc size 80M*/
+			size = <0xb000000>;
+			alignment = <0x400000>;
+			linux,contiguous-region;
+		};
+		/* codec shared reserved */
+		codec_mm_reserved:linux,codec_mm_reserved {
+			compatible = "amlogic, codec-mm-reserved";
+			size = <0x0>;
+			alignment = <0x100000>;
+			//no-map;
+		};
+		gdc_cma_reserved:linux,gdc_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			status = "disabled";
+			size = <0x04000000>;
+			alignment = <0x400000>;
+		};
+
+		jpegenc_cma_reserved:linux,jpegenc_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x2400000>;
+			alignment = <0x400000>;
+		};
 	};
 
 	free_reserved {
 		compatible = "amlogic, free_reserved";
 		memory-region = <&autocap_reserved>;
+		status = "okay";
+	};
+
+	codec_mm {
+		compatible = "amlogic, codec, mm";
+		memory-region = <&codec_mm_cma &codec_mm_reserved>;
+		dev_name = "codec_mm";
 		status = "okay";
 	};
 
@@ -165,6 +201,33 @@
 			  3300000 0>;
 	};
 
+	aml_enc {
+		compatible = "cnm, MultiEnc";
+		dev_name = "amvenc_multi";
+		status = "okay";
+		config_mm_sz_mb = <256>;
+		power-domains = <&pwrdm PDID_CX_WAVE>;
+		clocks = <&clkc CLKID_SYS_DOS
+			&clkc CLKID_DOS_APB
+			&clkc CLKID_WAVE_A_GATE
+			&clkc CLKID_WAVE_B_GATE
+			&clkc CLKID_WAVE_C_GATE>;
+		clock-names = "clk_dos",
+			"clk_apb_dos",
+			"clk_MultiEnc_A",
+			"clk_MultiEnc_B",
+			"clk_MultiEnc_C";
+		interrupts = <0 58 1
+			0 59 1>;
+		interrupt-names = "multienc_irq",
+			"multienc_idle_irq";
+		#address-cells=<1>;
+		#size-cells=<1>;
+		ranges;
+		io_reg_base {
+			reg = <0xfe070000 0x10000>;
+		};
+	};
 	/* Audio Related start */
 	dummy_codec:dummy_codec{
 		#sound-dai-cells = <0>;

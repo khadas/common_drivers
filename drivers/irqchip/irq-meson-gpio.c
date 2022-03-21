@@ -141,6 +141,7 @@ struct meson_gpio_irq_params {
 	.edge_both_offset = 16,					\
 	.edge_single_offset = 8,				\
 	.pol_low_offset = 0,					\
+	.pin_sel_reg_base = 0x04,				\
 	.pin_sel_mask = 0x7f,					\
 
 #ifdef CONFIG_AMLOGIC_MODIFY

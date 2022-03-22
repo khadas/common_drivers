@@ -1258,7 +1258,9 @@ err:
 static int aml_pdm_platform_remove(struct platform_device *pdev)
 {
 	struct aml_pdm *p_pdm = dev_get_drvdata(&pdev->dev);
+#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	int pdm_id = p_pdm->pdm_id;
+#endif
 	clk_disable_unprepare(p_pdm->sysclk_srcpll);
 	clk_disable_unprepare(p_pdm->clk_pdm_dclk);
 
@@ -1281,7 +1283,7 @@ static int pdm_platform_suspend(struct platform_device *pdev, pm_message_t state
 	struct aml_pdm *p_pdm = dev_get_drvdata(&pdev->dev);
 	int id = p_pdm->chipinfo->id;
 	/* whether in freeze */
-	if (is_pm_s2idle_mode() && vad_pdm_is_running()) {
+	if (/*is_pm_s2idle_mode() && */vad_pdm_is_running()) {
 		if (!p_pdm->islowpower) {
 			p_pdm->force_lowpower = true;
 			pdm_set_lowpower_mode(p_pdm, p_pdm->force_lowpower, id);
@@ -1305,7 +1307,7 @@ static int pdm_platform_resume(struct platform_device *pdev)
 	int id = p_pdm->chipinfo->id;
 	int ret = 0;
 	/* whether in freeze mode */
-	if (is_pm_s2idle_mode() && vad_pdm_is_running()) {
+	if (/*is_pm_s2idle_mode() && */vad_pdm_is_running()) {
 		pr_debug("%s, PDM resume by force_lowpower:%d\n",
 			__func__,
 			p_pdm->force_lowpower);

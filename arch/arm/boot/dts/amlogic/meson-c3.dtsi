@@ -113,12 +113,12 @@
 		method = "smc";
 	};
 
-	aml_reboot: reboot@0xfe005b08 {
+	aml_reboot: reboot@0xfe01037c {
 		compatible = "aml, reboot";
 		sys_reset = <0x84000009>;
 		sys_poweroff = <0x84000008>;
-		reg = <0xfe005b08 0x4>;
-		status = "disabled";
+		reg = <0xfe01037c 0x4>;
+		status = "okay";
 	};
 
 	arm_pmu {

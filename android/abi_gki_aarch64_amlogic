@@ -283,6 +283,11 @@
   kernel_sigaction
   kthread_worker_fn
   sched_setscheduler
+  jiffies_64
+  raw_notifier_call_chain
+  raw_notifier_chain_register
+  raw_notifier_chain_unregister
+  send_sig
 
 # aml-crypto-dma.ko
   crypto_alloc_skcipher

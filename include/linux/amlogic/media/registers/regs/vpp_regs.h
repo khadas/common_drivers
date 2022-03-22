@@ -59,6 +59,7 @@
 #define VPP_SCO_FIFO_CTRL                 0x1d33
 #define VPP_HSC_PHASE_CTRL1               0x1d34
 #define VPP_HSC_INI_PAT_CTRL              0x1d35
+#define VPP_SC_GCLK_CTRL_T7               0x1d36
 #define VPP_PREHSC_COEF                   0x1d37
 #define VPP_PREHSC_CTRL                   0x1d38
 #define VPP_PRE_SCALE_CTRL                0x1d38
@@ -104,6 +105,7 @@
 #define VPP_GCLK_CTRL1                    0x1d73
 #define VPP_SC_GCLK_CTRL                  0x1d74
 #define VPP_MISC1                         0x1d76
+#define VPP_SRSCL_GCLK_CTRL               0x1d77
 #define VPP_BLACKEXT_CTRL                 0x1d80
 #define VPP_DNLP_CTRL_00                  0x1d81
 #define VPP_DNLP_CTRL_01                  0x1d82
@@ -571,6 +573,9 @@
 #define AISR_POST_CTRL                             0x2e5a
 #define AISR_POST_SIZE                             0x2e5b
 
+#define DEMO_MODE_WINDO_CTRL0                      0x5380
+#define DEMO_MODE_WINDO_CTRL1                      0x5381
+
 #define VPP_SR0_IN_SIZE                            0x1d97
 #define VPP_SR1_IN_SIZE                            0x1d98
 
@@ -581,6 +586,12 @@
 #define VIU_OSD2_PATH_CTRL                         0x1a77
 #define VIU_OSD3_PATH_CTRL                         0x1a78
 #define VIU_OSD4_PATH_CTRL                         0x1a79
+
+#define OSD1_HDR2_CLK_GATE                         0x38a1
+#define OSD2_HDR2_CLK_GATE                         0x5b51
+#define VD1_HDR2_CLK_GATE                          0x3801
+#define VD2_HDR2_CLK_GATE                          0x3851
+#define VD3_HDR2_CLK_GATE                          0x5931
 
 #define VPU_AXI_CACHE                              0x2733
 

@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# Amlogic video processor configuration
+#
+
+menu "Amlogic Video Processor Support"
+
+config AMLOGIC_MEDIA_VIDEO_PROCESSOR
+	bool "Amlogic Video Processor Driver"
+	default n
+	help
+		Amlogic Video Processor module support,
+		such as ION_VIDEO, PPMGR, AML_V4L_VIDEO and etc,
+		both of which depends on this
+		configuration options.
+
+if AMLOGIC_MEDIA_VIDEO_PROCESSOR
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/pic_dev/Kconfig"
+endif
+
+endmenu

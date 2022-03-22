@@ -6,4 +6,6 @@ $(MEDIA_MODULE_NAME)-y = media_main.o
 include $(COMMON_DRIVERS_DIR)/drivers/media/common/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/gdc/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/osd/Makefile
+include $(COMMON_DRIVERS_DIR)/drivers/media/video_sink/Makefile
+include $(COMMON_DRIVERS_DIR)/drivers/media/video_processor/Makefile
 

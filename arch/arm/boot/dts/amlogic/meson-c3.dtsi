@@ -7,7 +7,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/clock/c3-clkc.h>
 #include <dt-bindings/gpio/gpio.h>
-#include <dt-bindings/gpio/meson-c2-gpio.h>
+#include <dt-bindings/gpio/meson-c3-gpio.h>
 #include <dt-bindings/clock/a1-audio-clk.h>
 #include <dt-bindings/pwm/pwm.h>
 #include <dt-bindings/pwm/meson.h>
@@ -859,8 +859,8 @@
 
 						reset-assert-us = <20000>;
 						reset-deassert-us = <50000>;
-						reset-gpios = <&gpio GPIOX_20 (GPIO_ACTIVE_LOW |
-									GPIO_OPEN_DRAIN)>;
+						//reset-gpios = <&gpio GPIOX_20 (GPIO_ACTIVE_LOW |
+									//GPIO_OPEN_DRAIN)>;
 				};
 			};
 		};
@@ -1533,15 +1533,15 @@
 	aml_bt: aml_bt {
 		compatible = "amlogic, aml-bt";
 		status = "disabled";
-		reset-gpios = <&gpio       GPIOX_17       GPIO_ACTIVE_HIGH>;
+		//reset-gpios = <&gpio       GPIOX_17       GPIO_ACTIVE_HIGH>;
 	};
 
 	aml_wifi: aml_wifi {
 		compatible = "amlogic, aml-wifi";
 		status = "disabled";
 		irq_trigger_type = "GPIO_IRQ_LOW";
-		power_on-gpios = <&gpio       GPIOM_6       GPIO_ACTIVE_HIGH>;
-		interrupt-gpios = <&gpio       GPIOM_7       GPIO_ACTIVE_HIGH>;
+		//power_on-gpios = <&gpio       GPIOM_6       GPIO_ACTIVE_HIGH>;
+		//interrupt-gpios = <&gpio       GPIOM_7       GPIO_ACTIVE_HIGH>;
 		dhd_static_buf; //if use bcm wifi, config dhd_static_buf
 		pwm_config = <&wifi_pwm_conf>;
 	};

@@ -142,6 +142,7 @@ MODULES_LOAD_FIRSTLIST=(
 	realtek.ko
 	amlogic-pinctrl.ko
 	amlogic-pinctrl-soc-c2.ko
+	amlogic-pinctrl-soc-c3.ko
 	amlogic-irqchip.ko
 	amlogic-power.ko
 	amlogic-gpiolib.ko

@@ -105,8 +105,8 @@
 		pinctrl-names= "default";
 		//clocks = <&clkc CLKID_GP_PLL_MCLK1_GATE>;
 		clock-names = "mclk_0";
-		reset = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
-		pwdn = <&gpio GPIOM_10 GPIO_ACTIVE_HIGH>;
+		//reset = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
+		//pwdn = <&gpio GPIOM_10 GPIO_ACTIVE_HIGH>;
 	};
 
 	iq: iq {
@@ -126,7 +126,7 @@
 		vin-supply = <&vddao3v3_reg>;
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio GPIOD_13 GPIO_ACTIVE_HIGH>;
+		//gpio = <&gpio GPIOD_13 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-boot-on;
 	};
@@ -168,7 +168,7 @@
 		aml-audio-card,name = "AML-AUGESOUND";
 
 		/*avout mute gpio*/
-		avout_mute-gpios = <&gpio GPIOD_11 GPIO_ACTIVE_HIGH>;
+		//avout_mute-gpios = <&gpio GPIOD_11 GPIO_ACTIVE_HIGH>;
 
 		aml-audio-card,dai-link@0 {
 			format = "dsp_a";
@@ -808,8 +808,8 @@
 	status = "disabled";
 	portnum = <0>;
 	otg = <1>;
-	gpio-vbus-power = "GPIOD_9";
-	gpios = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
+	//gpio-vbus-power = "GPIOD_9";
+	//gpios = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
 };
 
 &aml_bc {
@@ -1079,7 +1079,7 @@
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc1_pins1>;
-	cs-gpios = <&gpio GPIOA_14 0>;
+	//cs-gpios = <&gpio GPIOA_14 0>;
 };
 
 &freertos {

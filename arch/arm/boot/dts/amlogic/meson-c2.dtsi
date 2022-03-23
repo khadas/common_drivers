@@ -261,54 +261,6 @@
 			#thermal-sensor-cells = <1>;
 		};
 
-		sd_emmc_a: sdio@fe010000 {
-			compatible = "amlogic,meson-axg-mmc";
-			card_type = <3>;
-			reg = <0xfe010000 0x800>,
-			      <0xfe0008e0 0x4>,
-			      <0xfe000424 0x4>;
-				status = "disabled";
-			interrupts = <GIC_SPI 61 IRQ_TYPE_EDGE_RISING>;
-			power-domains = <&pwrdm PDID_CX_SDEMMC_A>;
-			clocks = <&clkc CLKID_SYS_SD_EMMC_A>,
-				<&clkc CLKID_SD_EMMC_A_SEL>,
-				<&clkc CLKID_SD_EMMC_A_GATE>,
-				<&clkc CLKID_SD_EMMC_A>,
-				<&clkc CLKID_SD_EMMC_A_DIV>,
-				<&xtal>,
-				<&clkc CLKID_FCLK_DIV2P5>;
-				clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
-						"clkin0", "clkin1";
-			mmc_debug_flag;
-			use_intf3_tuning;
-			resets = <&reset RESET_SD_EMMC_A>;
-		};
-
-		sd_emmc_b: sd@fe011000 {
-			compatible = "amlogic,meson-axg-mmc";
-			card_type = <5>;
-			reg = <0xfe011000 0x800>,
-			      <0xfe0008e0 0x4>,
-			      <0xfe000414 0x4>;
-			interrupts = <GIC_SPI 62 IRQ_TYPE_EDGE_RISING>;
-			power-domains = <&pwrdm PDID_CX_SDEMMC_B>;
-			status = "disabled";
-			clocks = <&clkc CLKID_SYS_SD_EMMC_B>,
-				 <&clkc CLKID_SD_EMMC_B_SEL>,
-				 <&clkc CLKID_SD_EMMC_B_GATE>,
-				 <&clkc CLKID_SD_EMMC_B>,
-				 <&clkc CLKID_SD_EMMC_B_DIV>,
-				 <&xtal>,
-				 <&clkc CLKID_FCLK_DIV2P5>;
-			clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
-					"clkin0", "clkin1";
-			mmc_debug_flag;
-			use_intf3_tuning;
-			resets = <&reset RESET_SD_EMMC_B>;
-			no-mmc;
-			no-sdio;
-
-		};
 	/*
 	 *      on C2 platform ,the relation of mmc clock is as follow:
 	 *      CLKID_HIFI_PLL or other PLL/FCLK (lookup in c2.c) is CLKID_SD_EMMC_C_SEL parent;
@@ -341,8 +293,55 @@
 			resets = <&reset RESET_SD_EMMC_C>;
 			no-sd;
 			no-sdio;
+		};
 
+		sd_emmc_b: sd@fe011000 {
+			compatible = "amlogic,meson-axg-mmc";
+			card_type = <5>;
+			reg = <0xfe011000 0x800>,
+			      <0xfe0008e0 0x4>,
+			      <0xfe000414 0x4>;
+			interrupts = <GIC_SPI 62 IRQ_TYPE_EDGE_RISING>;
+			power-domains = <&pwrdm PDID_CX_SDEMMC_B>;
+			status = "disabled";
+			clocks = <&clkc CLKID_SYS_SD_EMMC_B>,
+				 <&clkc CLKID_SD_EMMC_B_SEL>,
+				 <&clkc CLKID_SD_EMMC_B_GATE>,
+				 <&clkc CLKID_SD_EMMC_B>,
+				 <&clkc CLKID_SD_EMMC_B_DIV>,
+				 <&xtal>,
+				 <&clkc CLKID_FCLK_DIV2P5>;
+			clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
+					"clkin0", "clkin1";
+			mmc_debug_flag;
+			use_intf3_tuning;
+			resets = <&reset RESET_SD_EMMC_B>;
+			no-mmc;
+			no-sdio;
 
+		};
+
+		sd_emmc_a: sdio@fe010000 {
+			compatible = "amlogic,meson-axg-mmc";
+			card_type = <3>;
+			reg = <0xfe010000 0x800>,
+			      <0xfe0008e0 0x4>,
+			      <0xfe000424 0x4>;
+				status = "disabled";
+			interrupts = <GIC_SPI 61 IRQ_TYPE_EDGE_RISING>;
+			power-domains = <&pwrdm PDID_CX_SDEMMC_A>;
+			clocks = <&clkc CLKID_SYS_SD_EMMC_A>,
+				<&clkc CLKID_SD_EMMC_A_SEL>,
+				<&clkc CLKID_SD_EMMC_A_GATE>,
+				<&clkc CLKID_SD_EMMC_A>,
+				<&clkc CLKID_SD_EMMC_A_DIV>,
+				<&xtal>,
+				<&clkc CLKID_FCLK_DIV2P5>;
+				clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
+						"clkin0", "clkin1";
+			mmc_debug_flag;
+			use_intf3_tuning;
+			resets = <&reset RESET_SD_EMMC_A>;
 		};
 
 		mtd_nand: nfc@ffe07800 {

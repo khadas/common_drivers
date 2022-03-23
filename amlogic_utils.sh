@@ -1,6 +1,7 @@
 #!/bin/bash
 
 function pre_defconfig_cmds() {
+	echo "" >> ${ROOT_DIR}/${FRAGMENT_CONFIG}
 	if [[ ${AMLOGIC_BREAK_GKI} -eq "1" ]]; then
 		echo "CONFIG_AMLOGIC_BREAK_GKI=y" >> ${ROOT_DIR}/${FRAGMENT_CONFIG}
 	else
@@ -21,11 +22,12 @@ function pre_defconfig_cmds() {
 export -f pre_defconfig_cmds
 
 function post_defconfig_cmds() {
-	# check_defconfig
+	# checkout config
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
 	pushd ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}
-		sed -i '5,${/CONFIG_AMLOGIC_BREAK_GKI/d}' ${ROOT_DIR}/${FRAGMENT_CONFIG}
-		sed -i '5,${/CONFIG_AMLOGIC_IN_KERNEL_MODULES/d}' ${ROOT_DIR}/${FRAGMENT_CONFIG}
+		# sed -i '5,${/CONFIG_AMLOGIC_BREAK_GKI/d}' ${ROOT_DIR}/${FRAGMENT_CONFIG}
+		# sed -i '5,${/CONFIG_AMLOGIC_IN_KERNEL_MODULES/d}' ${ROOT_DIR}/${FRAGMENT_CONFIG}
+		git checkout ${ROOT_DIR}/${FRAGMENT_CONFIG}
 	popd
 }
 export -f post_defconfig_cmds

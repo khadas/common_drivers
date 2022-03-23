@@ -97,9 +97,9 @@
 #define RESET_I2C_M_C				147
 #define RESET_I2C_M_D				148
 /*						149-151 */
-#define RESET_SDEMMC_A				152
-#define RESET_SDEMMC_B				153
-#define RESET_SDEMMC_C				154
+#define RESET_SD_EMMC_A				152
+#define RESET_SD_EMMC_B				153
+#define RESET_SD_EMMC_C				154
 
 /* RESET5 */
 /*						160-172 */

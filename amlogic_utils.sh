@@ -45,13 +45,11 @@ function read_ext_module_config() {
 function read_ext_module_predefine() {
 	PRE_DEFINE=""
 
-	for y_config in `cat $1 | grep "^CONFIG_.*=y" | sed 's/=y//'`;
-	do
+	for y_config in `cat $1 | grep "^CONFIG_.*=y" | sed 's/=y//'`; do
 		PRE_DEFINE="$PRE_DEFINE"" -D"${y_config}
 	done
 
-	for m_config in `cat $1 | grep "^CONFIG_.*=m" | sed 's/=m//'`;
-	do
+	for m_config in `cat $1 | grep "^CONFIG_.*=m" | sed 's/=m//'`; do
 		PRE_DEFINE="$PRE_DEFINE"" -D"${m_config}_MODULE
 	done
 
@@ -68,24 +66,79 @@ function prepare_module_build() {
 export -f prepare_module_build
 
 function mod_probe() {
-        local ko=$1
-        local loop
-        for loop in `grep "$ko:" modules.dep | sed 's/.*://'`;
-        do
-                mod_probe $loop
-                echo insmod $loop >> __install.sh
-        done
+	local ko=$1
+	local loop
+	for loop in `grep "$ko:" modules.dep | sed 's/.*://'`; do
+		mod_probe $loop
+		echo insmod $loop >> __install.sh
+	done
 }
 
 function adjust_sequence_modules_loading() {
-	cp modules.dep modules.dep.temp
-	if [ -f modules.dep.temp1 ]; then
-		rm modules.dep.temp1
+	if [[ -n $1 ]]; then
+		chips=$1
 	fi
+
+	source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list
+	cp modules.dep modules.dep.temp
+
+	soc_module=()
+	for chip in ${chips[@]}; do
+		chip_module=`ls amlogic-*-soc-${chip}.ko`
+		soc_module=(${soc_module[@]} ${chip_module[@]})
+	done
+	echo soc_module=${soc_module[*]}
+
+	delete_soc_module=()
+	if [[ ${#soc_module[@]} == 0 ]]; then
+		echo "Use all soc module"
+	else
+		for module in `ls amlogic-*-soc-*`; do
+			if [[ ! "${soc_module[@]}" =~ "${module}" ]] ; then
+				echo Delete soc module: ${module}
+				sed -n "/${module}:/p" modules.dep.temp
+				sed -i "/${module}:/d" modules.dep.temp
+				delete_soc_module=(${delete_soc_module[@]} ${module})
+			fi
+		done
+		echo delete_soc_module=${delete_soc_module[*]}
+	fi
+
+	delete_module=()
+	for module in ${MODULES_LOAD_BLACKLIST[@]}; do
+		modules=`ls ${module}*`
+		delete_module=(${delete_module[@]} ${modules[@]})
+	done
+	if [[ ${#delete_module[@]} == 0 ]]; then
+		echo "No delete module, MODULES_LOAD_BLACKLIST=${MODULES_LOAD_BLACKLIST[*]}"
+	else
+		echo delete_module=${delete_module[*]}
+		for module in ${delete_module[@]}; do
+			echo Delete module: ${module}
+			sed -n "/${module}:/p" modules.dep.temp
+			sed -i "/${module}:/d" modules.dep.temp
+		done
+	fi
+
+	cat modules.dep.temp | cut -d ':' -f 2 > modules.dep.temp1
+	delete_modules=(${delete_soc_module[@]} ${delete_module[@]})
+	for module in ${delete_modules[@]}; do
+		match=`sed -n "/${module}/=" modules.dep.temp1`
+		for match in ${match[@]}; do
+			match_count=(${match_count[@]} $match)
+		done
+		if [[ ${#match_count[@]} != 0 ]]; then
+			echo "Error ${#match_count[@]} modules depend on ${module}, please modify:"
+			echo ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list:MODULES_LOAD_BLACKLIST
+			exit
+		fi
+		rm -f ${module}
+	done
+	rm -f modules.dep.temp1
 	touch modules.dep.temp1
-	for module in ${MODULES_LOAD_FIRSTLIST[@]};
-	do
-		echo FIRSTLIST MODULES: $module
+
+	for module in ${RAMDISK_MODULES_LOAD_LIST[@]}; do
+		echo RAMDISK_MODULES_LOAD_LIST: $module
 		sed -n "/${module}:/p" modules.dep.temp
 		sed -n "/${module}:/p" modules.dep.temp >> modules.dep.temp1
 		sed -i "/${module}:/d" modules.dep.temp
@@ -94,23 +147,65 @@ function adjust_sequence_modules_loading() {
 		sed -i "/${module}.*\.ko:/d" modules.dep.temp
 	done
 
-	cat modules.dep.temp >> modules.dep.temp1
-
-	for module in ${MODULES_LOAD_BLACKLIST[@]};
-	do
-		echo BLACKLIST MODULES: $module
-		sed -n "/${module}:/p" modules.dep.temp1
-		sed -i "/${module}:/d" modules.dep.temp1
-		sed -n "/${module}.*\.ko:/p" modules.dep.temp1
-		sed -i "/${module}.*\.ko:/d" modules.dep.temp1
+	for module in ${VENDOR_MODULES_LOAD_FIRST_LIST[@]}; do
+		echo VENDOR_MODULES_LOAD_FIRST_LIST: $module
+		sed -n "/${module}:/p" modules.dep.temp
+		sed -n "/${module}:/p" modules.dep.temp >> modules.dep.temp1
+		sed -i "/${module}:/d" modules.dep.temp
+		sed -n "/${module}.*\.ko:/p" modules.dep.temp
+		sed -n "/${module}.*\.ko:/p" modules.dep.temp >> modules.dep.temp1
+		sed -i "/${module}.*\.ko:/d" modules.dep.temp
 	done
+
+	if [ -f modules.dep.temp2 ]; then
+		rm modules.dep.temp2
+	fi
+	touch modules.dep.temp2
+	for module in ${VENDOR_MODULES_LOAD_LAST_LIST[@]}; do
+		echo VENDOR_MODULES_LOAD_FIRST_LIST: $module
+		sed -n "/${module}:/p" modules.dep.temp
+		sed -n "/${module}:/p" modules.dep.temp >> modules.dep.temp2
+		sed -i "/${module}:/d" modules.dep.temp
+		sed -n "/${module}.*\.ko:/p" modules.dep.temp
+		sed -n "/${module}.*\.ko:/p" modules.dep.temp >> modules.dep.temp2
+		sed -i "/${module}.*\.ko:/d" modules.dep.temp
+	done
+
+	cat modules.dep.temp >> modules.dep.temp1
+	cat modules.dep.temp2 >> modules.dep.temp1
 
 	cp modules.dep.temp1 modules.dep
 	rm modules.dep.temp
 	rm modules.dep.temp1
+	rm modules.dep.temp2
+}
+
+creat_ramdis_vendor_install_sh() {
+	install_temp=$1
+	source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list
+	last_ramdisk_module=${RAMDISK_MODULES_LOAD_LIST[${#RAMDISK_MODULES_LOAD_LIST[@]}-1]}
+	last_ramdisk_module_line=`sed -n "/${last_ramdisk_module}/=" ${install_temp}`
+	for line in ${last_ramdisk_module_line}; do
+		ramdisk_last_line=${line}
+	done
+	head -n ${ramdisk_last_line} ${install_temp} > ramdisk_install.sh
+
+	sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' ramdisk_install.sh
+	echo "echo Install ramdisk modules success!" >> ramdisk_install.sh
+	chmod 755 ramdisk_install.sh
+
+	file_last_line=`sed -n "$=" ${install_temp}`
+	let line=${file_last_line}-${ramdisk_last_line}
+	tail -n ${line} ${install_temp} > vendor_install.sh
+
+	sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' vendor_install.sh
+	echo "echo Install vendor modules success!" >> vendor_install.sh
+	chmod 755 vendor_install.sh
 }
 
 function modules_install() {
+	arg1=$1
+
 	pushd ${DIST_DIR}
 	rm modules -rf
 	mkdir modules
@@ -124,7 +219,7 @@ function modules_install() {
 	cd modules
 	sed -i 's#[^ ]*/##g' modules.dep
 
-	adjust_sequence_modules_loading
+	adjust_sequence_modules_loading "${arg1[*]}"
 
 	touch __install.sh
 	for loop in `cat modules.dep | sed 's/:.*//'`; do
@@ -139,16 +234,20 @@ function modules_install() {
 		}
 	}' > __install.sh.tmp
 
+	creat_ramdis_vendor_install_sh __install.sh.tmp
+
 	cp __install.sh.tmp __install.sh
 
 	sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' __install.sh
 	echo "echo Install modules success!" >> __install.sh
-	chmod 777 __install.sh
+	chmod 755 __install.sh
 
 	echo "#!/bin/sh" > install.sh
 	# echo "./__install.sh || reboot" >> install.sh
-	echo "./__install.sh" >> install.sh
-	chmod 777 install.sh
+	# echo "./__install.sh" >> install.sh
+	echo "./ramdisk_install.sh" >> install.sh
+	echo "./vendor_install.sh" >> install.sh
+	chmod 755 install.sh
 
 	echo "/modules/: all `wc -l modules.dep | awk '{print $1}'` modules."
 

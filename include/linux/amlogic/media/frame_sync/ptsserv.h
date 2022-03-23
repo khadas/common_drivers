@@ -19,6 +19,8 @@ enum {
 #ifndef CALC_CACHED_TIME
 #define CALC_CACHED_TIME
 #endif
+
+#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
 int pts_checkin(u8 type, u32 val);
 
 int pts_checkin_wrptr(u8 type, u32 ptr, u32 val);
@@ -64,4 +66,122 @@ int calculation_stream_delayed_ms(u8 type, u32 *latestbirate,
 int calculation_vcached_delayed(void);
 
 int calculation_acached_delayed(void);
+
+int calculation_stream_ext_delayed_ms(u8 type);
+#else
+int __weak pts_checkin(u8 type, u32 val)
+{
+	return -1;
+}
+
+int __weak pts_checkin_wrptr(u8 type, u32 ptr, u32 val)
+{
+	return -1;
+}
+
+int __weak pts_checkin_wrptr_pts33(u8 type, u32 ptr, u64 val)
+{
+	return -1;
+}
+
+int __weak pts_checkin_offset(u8 type, u32 offset, u32 val)
+{
+	return -1;
+}
+
+int __weak pts_checkin_offset_us64(u8 type, u32 offset, u64 us)
+{
+	return -1;
+}
+
+int __weak get_last_checkin_pts(u8 type)
+{
+	return -1;
+}
+
+int __weak get_last_checkout_pts(u8 type)
+{
+	return -1;
+}
+
+int __weak pts_lookup(u8 type, u32 *val, u32 *frame_size, u32 pts_margin)
+{
+	return -1;
+}
+
+int __weak pts_lookup_offset(u8 type, u32 offset, u32 *val,
+		      u32 *frame_size, u32 pts_margin)
+{
+	return -1;
+}
+
+int __weak pts_lookup_offset_us64(u8 type, u32 offset, u32 *val,
+			   u32 *frame_size, u32 pts_margin, u64 *us64)
+{
+	return -1;
+}
+
+int __weak pts_pickout_offset_us64(u8 type, u32 offset,
+			    u32 *val, u32 pts_margin,
+			    u64 *us64)
+{
+	return -1;
+}
+
+int __weak pts_set_resolution(u8 type, u32 level)
+{
+	return -1;
+}
+
+int __weak pts_set_rec_size(u8 type, u32 val)
+{
+	return -1;
+}
+
+int __weak pts_get_rec_num(u8 type, u32 val)
+{
+	return -1;
+}
+
+int __weak pts_start(u8 type)
+{
+	return -1;
+}
+
+int __weak pts_stop(u8 type)
+{
+	return -1;
+}
+
+int __weak first_lookup_pts_failed(u8 type)
+{
+	return -1;
+}
+
+int __weak first_pts_checkin_complete(u8 type)
+{
+	return -1;
+}
+
+int __weak calculation_stream_delayed_ms(u8 type, u32 *latestbirate,
+				  u32 *avg_bitare)
+{
+	return -1;
+}
+
+int __weak calculation_vcached_delayed(void)
+{
+	return -1;
+}
+
+int __weak calculation_acached_delayed(void)
+{
+	return -1;
+}
+
+int __weak calculation_stream_ext_delayed_ms(u8 type)
+{
+	return -1;
+}
+#endif
 #endif /* PTSSERV_H */

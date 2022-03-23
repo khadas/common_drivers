@@ -704,12 +704,25 @@ int get_curren_frame_para(int *top, int *left, int *bottom, int *right);
 u8 is_vpp_postblend(void);
 
 void pause_video(unsigned char pause_flag);
+
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
 s32 update_vframe_src_fmt(struct vframe_s *vf,
 			  void *sei,
 			  u32 size,
 			  bool dual_layer,
 			  char *prov_name,
 			  char *recv_name);
+#else
+s32 __weak update_vframe_src_fmt(struct vframe_s *vf,
+			  void *sei,
+			  u32 size,
+			  bool dual_layer,
+			  char *prov_name,
+			  char *recv_name)
+{
+	return -1;
+}
+#endif
 void *get_sei_from_src_fmt(struct vframe_s *vf, u32 *sei_size);
 enum vframe_signal_fmt_e get_vframe_src_fmt(struct vframe_s *vf);
 s32 clear_vframe_src_fmt(struct vframe_s *vf);

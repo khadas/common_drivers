@@ -101,8 +101,6 @@ typedef u32 (*pfun_stbuf_space)(struct stream_buf_s *buf);
 typedef u32 (*pfun_stbuf_size)(struct stream_buf_s *buf);
 //pfun_stbuf_size stbuf_size_cb;
 
-int register_tsync_callbackfunc(enum tysnc_func_type_e ntype, void *pfunc);
-
 #ifdef MODIFY_TIMESTAMP_INC_WITH_PLL
 void set_timestamp_inc_factor(u32 factor);
 #endif
@@ -111,13 +109,19 @@ void set_timestamp_inc_factor(u32 factor);
 int pts_cached_time(u8 type);
 #endif
 
-u32 get_first_pic_coming(void);
-
 #ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
 int get_vsync_pts_inc_mode(void);
+void set_pts_realign(void);
 #else
-static inline int get_vsync_pts_inc_mode(void);
+static inline int get_vsync_pts_inc_mode(void) { return 0; }
+static inline void set_pts_realign(void) { return; }
 #endif
+
+
+#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
+int register_tsync_callbackfunc(enum tysnc_func_type_e ntype, void *pfunc);
+
+u32 get_first_pic_coming(void);
 
 void tsync_avevent_locked(enum avevent_e event, u32 param);
 
@@ -174,12 +178,6 @@ int tsync_get_av_threshold_max(void);
 int tsync_set_av_threshold_min(int min);
 
 int tsync_set_av_threshold_max(int max);
-
-#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
-void set_pts_realign(void);
-#else
-static inline void set_pts_realign(void);
-#endif
 
 int tsync_set_tunnel_mode(int mode);
 
@@ -248,14 +246,311 @@ static inline u32 tsync_vpts_discontinuity_margin(void)
 	return tsync_get_av_threshold_min();
 }
 
-#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
-int get_vsync_pts_inc_mode(void);
-void set_pts_realign(void);
-#else
-static inline int get_vsync_pts_inc_mode(void) { return 0; }
-static inline void set_pts_realign(void) { return; }
-#endif
-
 u32 timestamp_get_pcrlatency(void);
+
 bool tsync_check_vpts_discontinuity(unsigned int vpts);
+
+#else
+int __weak register_tsync_callbackfunc(enum tysnc_func_type_e ntype, void *pfunc)
+{
+	return -1;
+}
+
+u32 __weak get_first_pic_coming(void)
+{
+	return -1;
+}
+
+void __weak tsync_avevent_locked(enum avevent_e event, u32 param)
+{
+}
+
+void __weak tsync_mode_reinit(void)
+{
+}
+
+void __weak tsync_avevent(enum avevent_e event, u32 param)
+{
+}
+
+void __weak tsync_audio_break(int audio_break)
+{
+}
+
+void __weak tsync_trick_mode(int trick_mode)
+{
+}
+
+void __weak tsync_set_avthresh(unsigned int av_thresh)
+{
+}
+
+void __weak tsync_set_syncthresh(unsigned int sync_thresh)
+{
+}
+
+void __weak tsync_set_dec_reset(void)
+{
+}
+
+void __weak tsync_set_enable(int enable)
+{
+}
+
+int __weak tsync_get_mode(void)
+{
+	return -1;
+}
+
+int __weak tsync_get_sync_adiscont(void)
+{
+	return -1;
+}
+
+int __weak tsync_get_sync_vdiscont(void)
+{
+	return -1;
+}
+
+void __weak tsync_set_sync_adiscont(int syncdiscont)
+{
+}
+
+void __weak tsync_set_sync_vdiscont(int syncdiscont)
+{
+}
+
+u32 __weak tsync_get_sync_adiscont_diff(void)
+{
+	return -1;
+}
+
+u32 __weak tsync_get_sync_vdiscont_diff(void)
+{
+	return -1;
+}
+
+void __weak tsync_set_sync_adiscont_diff(u32 discontinue_diff)
+{
+}
+
+void __weak tsync_set_sync_vdiscont_diff(u32 discontinue_diff)
+{
+}
+int __weak tsync_set_apts(unsigned int pts)
+{
+	return -1;
+}
+
+void __weak tsync_init(void)
+{
+}
+
+void __weak tsync_set_automute_on(int automute_on)
+{
+}
+
+int __weak tsync_get_debug_pts_checkin(void)
+{
+	return -1;
+}
+
+int __weak tsync_get_debug_pts_checkout(void)
+{
+	return -1;
+}
+
+int __weak tsync_get_debug_vpts(void)
+{
+	return -1;
+}
+
+int __weak tsync_get_debug_apts(void)
+{
+	return -1;
+}
+int __weak tsync_get_av_threshold_min(void)
+{
+	return -1;
+}
+
+int __weak tsync_get_av_threshold_max(void)
+{
+	return -1;
+}
+
+int __weak tsync_set_av_threshold_min(int min)
+{
+	return -1;
+}
+
+int __weak tsync_set_av_threshold_max(int max)
+{
+	return -1;
+}
+
+int __weak tsync_set_tunnel_mode(int mode)
+{
+	return -1;
+}
+
+int __weak tsync_get_tunnel_mode(void)
+{
+	return -1;
+}
+
+void __weak timestamp_set_pcrlatency(u32 latency)
+{
+}
+
+u32 __weak timestamp_get_pcrlatency(void)
+{
+	return -1;
+}
+
+bool tsync_check_vpts_discontinuity(unsigned int vpts);
+
+int __weak tsync_get_vpts_error_num(void)
+{
+	return -1;
+}
+int __weak tsync_get_apts_error_num(void)
+{
+	return -1;
+}
+void __weak timestamp_clac_pts_latency(u8 type, u32 pts)
+{
+}
+
+u32 __weak get_toggle_frame_count(void)
+{
+	return -1;
+}
+u32 __weak timestamp_get_pts_latency(u8 type)
+{
+	return -1;
+}
+void __weak timestamp_clean_pts_latency(u8 type)
+{
+}
+int __weak tsync_get_vpts_adjust(void)
+{
+	return -1;
+}
+void __weak set_video_peek(void)
+{
+}
+u32 __weak get_first_frame_toggled(void)
+{
+	return -1;
+}
+void __weak tsync_set_av_state(u8 type, int state)
+{
+}
+
+u8 __weak tsync_get_demux_pcrscr_valid_for_newarch(void)
+{
+	return -1;
+}
+
+u8 __weak tsync_get_demux_pcrscr_valid(void)
+{
+	return -1;
+}
+
+void __weak tsync_get_demux_pcr_for_newarch(void)
+{
+}
+
+u8 __weak tsync_get_demux_pcr(u32 *pcr)
+{
+	return -1;
+}
+
+void __weak tsync_get_first_demux_pcr_for_newarch(void)
+{
+}
+
+u8 __weak tsync_get_first_demux_pcr(u32 *first_pcr)
+{
+	return -1;
+}
+
+u8 __weak tsync_get_audio_pid_valid_for_newarch(void)
+{
+	return -1;
+}
+
+u8 __weak tsync_get_audio_pid_valid(void)
+{
+	return -1;
+}
+
+u8 __weak tsync_get_video_pid_valid_for_newarch(void)
+{
+	return -1;
+}
+
+u8 __weak tsync_get_video_pid_valid(void)
+{
+	return -1;
+}
+
+void __weak tsync_get_buf_by_type_for_newarch(u8 type, struct stream_buf_s *pbuf)
+{
+}
+
+u8 __weak tsync_get_buf_by_type(u8 type, struct stream_buf_s *pbuf)
+{
+	return -1;
+}
+
+void __weak tsync_get_stbuf_level_for_newarch(struct stream_buf_s *pbuf,
+				       u32 *buf_level)
+{
+}
+
+u8 __weak tsync_get_stbuf_level(struct stream_buf_s *pbuf, u32 *buf_level)
+{
+	return -1;
+}
+
+void __weak tsync_get_stbuf_space_for_newarch(struct stream_buf_s *pbuf,
+				       u32 *buf_space)
+{
+}
+
+u8 __weak tsync_get_stbuf_space(struct stream_buf_s *pbuf, u32 *buf_space)
+{
+	return -1;
+}
+
+void __weak tsync_get_stbuf_size_for_newarch(struct stream_buf_s *pbuf, u32 *buf_size)
+{
+}
+
+u8 __weak tsync_get_stbuf_size(struct stream_buf_s *pbuf, u32 *buf_size)
+{
+	return -1;
+}
+
+bool tsync_get_new_arch(void);
+
+u32 __weak tsync_get_checkin_apts(void)
+{
+	return -1;
+}
+
+void __weak tsync_reset(void)
+{
+}
+
+static inline u32 tsync_vpts_discontinuity_margin(void)
+{
+	return tsync_get_av_threshold_min();
+}
+
+bool tsync_check_vpts_discontinuity(unsigned int vpts);
+#endif /* CONFIG_AMLOGIC_MEDIA_FRAME_SYNC */
+
 #endif /* TSYNC_H */

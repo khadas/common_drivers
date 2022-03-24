@@ -878,25 +878,30 @@ static struct ddr_port_desc ddr_port_desc_t5w[] __initdata = {
 };
 
 static struct ddr_port_desc ddr_port_desc_c3[] __initdata = {
-	{ .port_id =  1, .port_name = "TEST0"      },
-	{ .port_id =  2, .port_name = "TEST1"      },
-	{ .port_id =  3, .port_name = "NNA"          },
-	{ .port_id =  4, .port_name = "DSP"          },
-	{ .port_id =  5, .port_name = "TEST"         },
-	{ .port_id =  6, .port_name = "DEVICE1"      },
-	{ .port_id =  7, .port_name = "DEVICE0"      },
-
-	/* start of each device0 */
-	{ .port_id = 32, .port_name = "SPICC1"       },
-	{ .port_id = 33, .port_name = "ETH"	     },
-	{ .port_id = 34, .port_name = "SPICC0"       },
-
-	/* start of each device1 */
-	{ .port_id = 40, .port_name = "SDIO_A"       },
-	{ .port_id = 41, .port_name = "SEC_TOP"      },
-	{ .port_id = 42, .port_name = "EMMC"         },
-	{ .port_id = 42, .port_name = "USB"          },
-	{ .port_id = 42, .port_name = "AUDIO"        }
+	{ .port_id = 2, .port_name = "A35"            },
+	{ .port_id = 8, .port_name = "NNA_DDR"        },
+	{ .port_id = 9, .port_name = "NNA_SRAM"       },
+	{ .port_id = 10, .port_name = "HCODEC"        },
+	{ .port_id = 11, .port_name = "VP9000E"       },
+	{ .port_id = 16, .port_name = "ISP_A"         },
+	{ .port_id = 17, .port_name = "ISP_B"         },
+	{ .port_id = 18, .port_name = "ISP_C"         },
+	{ .port_id = 19, .port_name = "VOUT"          },
+	{ .port_id = 40, .port_name = "CEV_A"         },
+	{ .port_id = 41, .port_name = "CEV_B"         },
+	{ .port_id = 42, .port_name = "CEV_C"         },
+	{ .port_id = 43, .port_name = "GE2D"	      },
+	{ .port_id = 44, .port_name = "DEWARP_A"      },
+	{ .port_id = 48, .port_name = "USB2DRD"       },
+	{ .port_id = 71, .port_name = "JTAG"          },
+	{ .port_id = 72, .port_name = "SPICC1"        },
+	{ .port_id = 73, .port_name = "ETH"           },
+	{ .port_id = 74, .port_name = "SPICC0"        },
+	{ .port_id = 80, .port_name = "EMMC"          },
+	{ .port_id = 81, .port_name = "SDIO_A"        },
+	{ .port_id = 82, .port_name = "SDIO_B"        },
+	{ .port_id = 83, .port_name = "SECU_TOP"      },
+	{ .port_id = 85, .port_name = "AUDIO"         }
 };
 
 static struct ddr_port_desc *chip_ddr_port;

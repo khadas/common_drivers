@@ -107,12 +107,12 @@ function adjust_sequence_modules_loading() {
 	fi
 
 	delete_module=()
-	for module in ${MODULES_LOAD_BLACKLIST[@]}; do
+	for module in ${MODULES_LOAD_BLACK_LIST[@]}; do
 		modules=`ls ${module}*`
 		delete_module=(${delete_module[@]} ${modules[@]})
 	done
 	if [[ ${#delete_module[@]} == 0 ]]; then
-		echo "No delete module, MODULES_LOAD_BLACKLIST=${MODULES_LOAD_BLACKLIST[*]}"
+		echo "No delete module, MODULES_LOAD_BLACK_LIST=${MODULES_LOAD_BLACK_LIST[*]}"
 	else
 		echo delete_module=${delete_module[*]}
 		for module in ${delete_module[@]}; do
@@ -131,7 +131,7 @@ function adjust_sequence_modules_loading() {
 		done
 		if [[ ${#match_count[@]} != 0 ]]; then
 			echo "Error ${#match_count[@]} modules depend on ${module}, please modify:"
-			echo ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list:MODULES_LOAD_BLACKLIST
+			echo ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list:MODULES_LOAD_BLACK_LIST
 			exit
 		fi
 		rm -f ${module}
@@ -182,7 +182,7 @@ function adjust_sequence_modules_loading() {
 	rm modules.dep.temp2
 }
 
-creat_ramdis_vendor_install_sh() {
+create_ramdis_vendor() {
 	install_temp=$1
 	source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list
 	last_ramdisk_module=${RAMDISK_MODULES_LOAD_LIST[${#RAMDISK_MODULES_LOAD_LIST[@]}-1]}
@@ -191,18 +191,24 @@ creat_ramdis_vendor_install_sh() {
 		ramdisk_last_line=${line}
 	done
 	head -n ${ramdisk_last_line} ${install_temp} > ramdisk_install.sh
+	mkdir ramdisk
+	cat ramdisk_install.sh | cut -d ' ' -f 2 | xargs mv -t ramdisk/
 
 	sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' ramdisk_install.sh
 	echo "echo Install ramdisk modules success!" >> ramdisk_install.sh
 	chmod 755 ramdisk_install.sh
+	mv ramdisk_install.sh ramdisk/
 
 	file_last_line=`sed -n "$=" ${install_temp}`
 	let line=${file_last_line}-${ramdisk_last_line}
 	tail -n ${line} ${install_temp} > vendor_install.sh
+	mkdir vendor
+	cat vendor_install.sh | cut -d ' ' -f 2 | xargs mv -t vendor/
 
 	sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' vendor_install.sh
 	echo "echo Install vendor modules success!" >> vendor_install.sh
 	chmod 755 vendor_install.sh
+	mv vendor_install.sh vendor/
 }
 
 function modules_install() {
@@ -236,22 +242,26 @@ function modules_install() {
 		}
 	}' > __install.sh.tmp
 
-	creat_ramdis_vendor_install_sh __install.sh.tmp
+	create_ramdis_vendor __install.sh.tmp
 
 	cp __install.sh.tmp __install.sh
 
-	sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' __install.sh
-	echo "echo Install modules success!" >> __install.sh
-	chmod 755 __install.sh
+	#sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' __install.sh
+	#echo "echo Install modules success!" >> __install.sh
+	#chmod 755 __install.sh
 
 	echo "#!/bin/sh" > install.sh
 	# echo "./__install.sh || reboot" >> install.sh
 	# echo "./__install.sh" >> install.sh
+	echo "cd ramdisk" >> install.sh
 	echo "./ramdisk_install.sh" >> install.sh
+	echo "cd ../vendor" >> install.sh
 	echo "./vendor_install.sh" >> install.sh
+	echo "cd ../" >> install.sh
 	chmod 755 install.sh
 
 	echo "/modules/: all `wc -l modules.dep | awk '{print $1}'` modules."
+	rm __install.sh __install.sh.tmp modules.dep
 
 	cd ../
 	popd

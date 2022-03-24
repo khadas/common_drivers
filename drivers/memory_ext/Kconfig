@@ -100,3 +100,13 @@ config AMLOGIC_USER_FAULT
 		maps with pc/lr
 		pfn for all virtual address of regirsters
 
+config AMLOGIC_WATCHPOINT
+	tristate "Amlogic point driver"
+	depends on AMLOGIC_MEMORY_EXTEND
+	depends on HAVE_HW_BREAKPOINT
+	default n
+	help
+		This driver export a debug sysfs in order
+		to using watch point function on ARMv8.
+		say y to enable Amlogic watch point driver
+

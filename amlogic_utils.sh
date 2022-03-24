@@ -290,18 +290,20 @@ function rebuild_rootfs() {
 	fi
 	cp -rf ../../modules .
 
+	#modules_modules=`ls modules/*.ko`
+	ramdisk_modules=`ls modules/ramdisk/*.ko`
+	vendor_modules=`ls modules/vendor/*.ko`
+	strip_modules=(${modules_modules[@]} ${ramdisk_modules[@]} ${vendor_modules[@]})
 	if [[ -n ${LLVM} ]]; then
-		for module in `ls modules/*.ko`;
-		do
+		for module in ${strip_modules[@]}; do
 			 ${ROOT_DIR}/${CLANG_PREBUILT_BIN}/llvm-objcopy --strip-debug ${module}
 		done
 	elif [[ -n ${CROSS_COMPILE} ]]; then
-		for module in `ls modules/*.ko`;
-		do
+		for module in ${strip_modules[@]}; do
 			 ${CROSS_COMPILE}objcopy --strip-debug ${module}
 		done
 	else
-		echo "can't strip debug module"
+		echo "can't find compile tool"
 	fi
 
 	find . | cpio -o -H newc | gzip > ../rootfs_new.cpio.gz
@@ -319,12 +321,23 @@ function check_undefined_symbol() {
 	echo
 	echo "========================================================"
 	echo "Functions or variables not defined in this module refer to which module."
-	nm ../vmlinux | grep -E " T | D | B | R | W "> vmlinux_T.txt
-	cat __install.sh | grep "insmod" | cut -d ' ' -f 2 > module_list.txt
+	if [[ -n ${LLVM} ]]; then
+		compile_tool=${ROOT_DIR}/${CLANG_PREBUILT_BIN}/llvm-
+	elif [[ -n ${CROSS_COMPILE} ]]; then
+		compile_tool=${CROSS_COMPILE}
+	else
+		echo "can't find compile tool"
+	fi
+	${compile_tool}nm ../vmlinux | grep -E " T | D | B | R | W "> vmlinux_T.txt
+	# cat __install.sh | grep "insmod" | cut -d ' ' -f 2 > module_list.txt
+	cat ramdisk/ramdisk_install.sh | grep "insmod" | cut -d ' ' -f 2 > module_list.txt
+	cat vendor/vendor_install.sh | grep "insmod" | cut -d ' ' -f 2 >> module_list.txt
+	cp ramdisk/*.ko .
+	cp vendor/*.ko .
 	while read LINE
 	do
 		echo ${LINE}
-		for U in `nm ${LINE} | grep " U " | sed -e 's/^\s*//' -e 's/\s*$//' | cut -d ' ' -f 2`
+		for U in `${compile_tool}nm ${LINE} | grep " U " | sed -e 's/^\s*//' -e 's/\s*$//' | cut -d ' ' -f 2`
 		do
 			#echo ${U}
 			U_v=`grep -w ${U} vmlinux_T.txt`
@@ -339,7 +352,7 @@ function check_undefined_symbol() {
 			MODULE=
 			while read LINE1
 			do
-				U_m=`nm ${LINE1} | grep -E " T | D | B | R " | grep -v "\.cfi_jt" | grep "${U}"`
+				U_m=`${compile_tool}nm ${LINE1} | grep -E " T | D | B | R " | grep -v "\.cfi_jt" | grep "${U}"`
 				if [ -n "${U_m}" ];
 				then
 					in_module=1
@@ -359,6 +372,7 @@ function check_undefined_symbol() {
 	done  < module_list.txt
 	rm vmlinux_T.txt
 	rm module_list.txt
+	rm *.ko
 	popd
 }
 export -f check_undefined_symbol

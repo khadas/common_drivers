@@ -14,7 +14,7 @@
 #define PDID_C3_RESV0		8
 #define PDID_C3_GE2D		9
 #define PDID_C3_CVE		10
-#define PDID_C3_CDG_WRAP	11
+#define PDID_C3_GDC_WRAP	11
 #define PDID_C3_ISP_TOP		12
 #define PDID_C3_MIPI_ISP_WRAP	13
 #define PDID_C3_VCODEC		14

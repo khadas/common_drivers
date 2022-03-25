@@ -1931,7 +1931,7 @@ static struct clk_regmap sd_emmc_b_sel = {
 		.ops = &clk_regmap_mux_ops,
 		.parent_names = sd_emmc_parent_names,
 		.num_parents = ARRAY_SIZE(sd_emmc_parent_names),
-		.flags = CLK_SET_RATE_PARENT,
+	//	.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -1946,7 +1946,7 @@ static struct clk_regmap sd_emmc_b_div = {
 		.ops = &clk_regmap_divider_ops,
 		.parent_names = (const char *[]){ "sd_emmc_b_sel" },
 		.num_parents = 1,
-		.flags = CLK_SET_RATE_PARENT,
+	//	.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -1962,7 +1962,7 @@ static struct clk_regmap sd_emmc_b = {
 		.parent_names = (const char *[]){ "sd_emmc_b_div",
 						  "xtal" },
 		.num_parents = 2,
-		.flags = CLK_SET_RATE_PARENT,
+	//	.flags = CLK_SET_RATE_PARENT,
 	},
 };
 

@@ -1,21 +1,12 @@
 #!/bin/bash
 
 function pre_defconfig_cmds() {
-	if [[ ${AMLOGIC_BREAK_GKI} -eq "1" ]]; then
-		sed -i "1i CONFIG_AMLOGIC_BREAK_GKI=y" ${ROOT_DIR}/${FRAGMENT_CONFIG}
-	else
-		sed -i "1i CONFIG_AMLOGIC_BREAK_GKI=n" ${ROOT_DIR}/${FRAGMENT_CONFIG}
+	if [[ `grep "CONFIG_AMLOGIC_IN_KERNEL_MODULES=n" ${ROOT_DIR}/${FRAGMENT_CONFIG}` ]]; then
+		EXT_MODULES="${EXT_MODULES}
+			     ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/drivers"
+		export EXT_MODULES
 	fi
 
-	if [[ ${IN_KERNEL_MODULES} -eq "1" ]]; then
-		sed -i "1i CONFIG_AMLOGIC_IN_KERNEL_MODULES=y" ${ROOT_DIR}/${FRAGMENT_CONFIG}
-		SKIP_EXT_MODULES=1
-		export SKIP_EXT_MODULES
-		EXT_MODULES=
-		export EXT_MODULES
-	else
-		sed -i "1i CONFIG_AMLOGIC_IN_KERNEL_MODULES=n" ${ROOT_DIR}/${FRAGMENT_CONFIG}
-	fi
 	KCONFIG_CONFIG=${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${ROOT_DIR}/${FRAGMENT_CONFIG}
 }
 export -f pre_defconfig_cmds
@@ -23,12 +14,6 @@ export -f pre_defconfig_cmds
 function post_defconfig_cmds() {
 	# checkout config
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
-	pushd ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}
-		# sed -i '5,${/CONFIG_AMLOGIC_BREAK_GKI/d}' ${ROOT_DIR}/${FRAGMENT_CONFIG}
-		# sed -i '5,${/CONFIG_AMLOGIC_IN_KERNEL_MODULES/d}' ${ROOT_DIR}/${FRAGMENT_CONFIG}
-		sed -i '/# SPDX-License-Identifier/,$!d' ${ROOT_DIR}/${FRAGMENT_CONFIG}
-		# git checkout ${ROOT_DIR}/${FRAGMENT_CONFIG}
-	popd
 }
 export -f post_defconfig_cmds
 

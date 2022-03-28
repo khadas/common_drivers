@@ -20,7 +20,7 @@ arch/arm64/boot/Image.gz
 ${COMMON_DRIVERS_DIR}/arch/arm64/boot/dts/amlogic/s4d_s905y4_ap222_drm.dtb
 "
 
-EXT_MODULES="${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/drivers"
+EXT_MODULES="${EXT_MODULES}"
 POST_KERNEL_BUILD_CMDS="prepare_module_build"
 
 TIDY_ABI=1

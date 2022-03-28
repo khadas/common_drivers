@@ -5,7 +5,6 @@ function show_help {
 	echo
 	echo "  --abi                   for ABI, call build_abi.sh not build.sh, 1|0[default], not require parameter value"
 	echo "  --build_config          for BUILD_CONFIG, common_drivers/build.config.amlogic[default]|common/build.config.gki.aarch64, require parameter value"
-	echo "  --break_gki             for AMLOGIC_BREAK_GKI, 1[default]|0, require parameter value"
 	echo "  --symbol_strict         for KMI_SYMBOL_LIST_STRICT_MODE, 1[default]|0, require parameter value"
 	echo "  --lto                   for LTO, full|thin[default]|none, require parameter value"
 	echo "  --menuconfig            for only menuconfig, not require parameter value"
@@ -30,11 +29,6 @@ do
 		BUILD_CONFIG=$2
 		VA=1
 		shift
-		;;
-	--break_gki)
-		AMLOGIC_BREAK_GKI=$2
-		VA=1
-                shift
 		;;
 	--lto)
 		LTO=$2
@@ -102,9 +96,6 @@ export ROOT_DIR=$(readlink -f $(dirname $0))
 if [[ -z "${ABI}" ]]; then
 	ABI=0
 fi
-if [[ -z "${AMLOGIC_BREAK_GKI}" ]]; then
-	AMLOGIC_BREAK_GKI=1
-fi
 if [[ -z "${LTO}" ]]; then
 	LTO=thin
 fi
@@ -137,8 +128,8 @@ if [[ ! -f ${BUILD_DIR}/build_abi.sh ]]; then
 fi
 
 set -e
-export ABI BUILD_CONFIG AMLOGIC_BREAK_GKI LTO KMI_SYMBOL_LIST_STRICT_MODE
-echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} AMLOGIC_BREAK_GKI=${AMLOGIC_BREAK_GKI} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE}
+export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE
+echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE}
 export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR
 echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR}
 

@@ -1,12 +1,6 @@
 #!/bin/bash
 
 function pre_defconfig_cmds() {
-	if [[ `grep "CONFIG_AMLOGIC_IN_KERNEL_MODULES=n" ${ROOT_DIR}/${FRAGMENT_CONFIG}` ]]; then
-		EXT_MODULES="${EXT_MODULES}
-			     ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/drivers"
-		export EXT_MODULES
-	fi
-
 	KCONFIG_CONFIG=${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${ROOT_DIR}/${FRAGMENT_CONFIG}
 }
 export -f pre_defconfig_cmds

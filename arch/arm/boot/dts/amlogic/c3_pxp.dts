@@ -48,7 +48,15 @@
 			alignment = <0x400000>;
 			alloc-ranges = <0x05000000 0x400000>;
 		};
-
+		nna_cma_reserved: linux,nna_cma {
+			compatible = "shared-dma-pool";
+			//alloc-ranges = <0x70000000 0x18000000>;
+			size = <0x2000000>;
+			alignment = <0x400000>;
+			reusable;
+			//no-map;
+			status = "okay";
+		};
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -864,6 +872,11 @@
 	temper-frame-num = <1>;
 	temper-frame-size = <0x2000000>;
 	memory-region = <&isp_cma_reserved>;
+};
+
+&adla {
+	status = "okay";
+	memory-region = <&nna_cma_reserved>;
 };
 
 &adapter {

@@ -1422,7 +1422,21 @@
 			"NN_MEM1","NN_RESET","NN_CLK";
 		nn_power_version = <4>;
 	};
-
+	adla: adla@0xfe04a000 {
+		compatible = "amlogic,adla";
+		dev_name = "adla";
+		status = "okay";
+		reg = <0xfe04a000 0x200
+			0xf7000000 0x100000
+			>;
+		reg-names = "adla_reg\0adla_sram";
+		interrupt-names = "adla";
+		interrupts = <0 128 4>;
+		clocks = <&clkc CLKID_NNA_CORE_CLK>;
+		clock-names = "adla_core_clk";
+		power-domains=<&pwrdm PDID_C3_NNA>;
+		//memory-region = <&nna_cma_reserved>;
+	};
 	pwrdm: power-domains {
 		compatible = "amlogic,c3-power-domain";
 		#power-domain-cells = <1>;

@@ -1331,7 +1331,7 @@
 		efuse_pattern_size = <0x400>;
 		key = <&efusekey>;
 		clock-names = "efuse_clk";
-		status = "disabled";
+		status = "okay";
 	};
 
 	efusekey:efusekey{

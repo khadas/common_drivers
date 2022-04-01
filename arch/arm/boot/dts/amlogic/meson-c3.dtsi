@@ -1580,18 +1580,18 @@
 	};
 
 	codec_io {
-		compatible = "amlogic, meson-c2, codec-io";
-		status = "disabled";
+		compatible = "amlogic, meson-c3, codec-io";
+		status = "okay";
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges;
 		/* use cbus space for reset_ctrl*/
 		reg =	<0x0 0x2000>,
-			<0xfe060000 0x10000>,
+			<0xfe320000 0x10000>,
 			<0x0 0x0>,
 			<0x0 0x0>,
-			<0x0 0x0>,
-			<0x0 0x0>,
+			<0xfe350000 0x10000>,
+			<0xfe036000 0x02000>,
 			<0x0 0x0>,
 			<0x0 0x0>;
 		reg-names = "cbus",

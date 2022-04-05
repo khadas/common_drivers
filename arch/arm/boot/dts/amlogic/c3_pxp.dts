@@ -892,13 +892,14 @@
 };
 
 &sd_emmc_c {
-	status = "disabled";
+	status = "okay";
 	pinctrl-0 = <&emmc_pins>;
 	pinctrl-1 = <&emmc_clk_gate_pins>;
 	pinctrl-2 = <&emmc_pins_sleep>;
 	pinctrl-names = "default", "clk-gate", "sleep";
 	cap-mmc-highspeed;
 	non-removable;
+	mmc-run-pxp;
 	//mmc-ddr-1_8v;
 	//mmc-hs200-1_8v;
 	//mmc-hs400-1_8v;
@@ -940,7 +941,7 @@
 	max-frequency = <200000000>;
 	cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
 	dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
-	dat3-gpios = <&gpio GPIOC_3 GPIO_ACTIVE_HIGH>;
+	//dat3-gpios = <&gpio GPIOC_3 GPIO_ACTIVE_HIGH>;
 	//vmmc-supply = <&sdcard_power>;
 	//vqmmc-supply = <&vddio_card>;
 };

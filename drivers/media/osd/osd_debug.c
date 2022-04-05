@@ -138,15 +138,17 @@ static void osd_debug_dump_register_all(void)
 	u32 count = osd_hw.osd_meson_dev.osd_count;
 	struct hw_osd_reg_s *osd_reg = NULL;
 
-	reg = VPU_VIU_VENC_MUX_CTRL;
-	osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
-	reg = VPP_MISC;
-	osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
-	reg = VPP_OFIFO_SIZE;
-	osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
-	reg = VPP_HOLD_LINES;
-	osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
-	if (osd_dev_hw.t7_display) {
+	if (osd_dev_hw.display_type != C3_DISPLAY) {
+		reg = VPU_VIU_VENC_MUX_CTRL;
+		osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
+		reg = VPP_MISC;
+		osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
+		reg = VPP_OFIFO_SIZE;
+		osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
+		reg = VPP_HOLD_LINES;
+		osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
+	}
+	if (osd_dev_hw.display_type == T7_DISPLAY) {
 		reg = PATH_START_SEL;
 		osd_log_info("reg[0x%x]: 0x%08x(osd vsync sel)\n", reg, osd_reg_read(reg));
 		reg = OSD_PATH_MISC_CTRL;
@@ -254,7 +256,7 @@ static void osd_debug_dump_register_all(void)
 		osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
 		reg = VD2_BLEND_SRC_CTRL;
 		osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
-		if (osd_dev_hw.t7_display) {
+		if (osd_dev_hw.display_type == T7_DISPLAY) {
 			reg = VD3_BLEND_SRC_CTRL;
 			osd_log_info("reg[0x%x]: 0x%08x\n", reg, osd_reg_read(reg));
 		}
@@ -308,7 +310,8 @@ static void osd_debug_dump_register_all(void)
 		reg = osd_reg->osd_blk0_cfg_w4;
 		osd_log_info("reg[0x%x]: 0x%08x\n\n", reg, osd_reg_read(reg));
 
-		if (osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE) {
+		if (osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE ||
+			osd_dev_hw.display_type == C3_DISPLAY) {
 			reg = osd_reg->osd_blk1_cfg_w4;
 			osd_log_info("reg[0x%x]: 0x%08x\n",
 				     reg, osd_reg_read(reg));
@@ -464,7 +467,7 @@ static void osd_debug_dump_register_all(void)
 			     reg, osd_reg_read(reg));
 	}
 
-	if (osd_dev_hw.t7_display) {
+	if (osd_dev_hw.display_type == T7_DISPLAY) {
 		for (reg = VPP1_BLD_CTRL; reg <= VPP1_BLD_DIN2_VSCOPE; reg++)
 			osd_log_info("reg[0x%x]: 0x%08x\n",
 				     reg, osd_reg_read(reg));
@@ -484,6 +487,31 @@ static void osd_debug_dump_register_all(void)
 		reg = VPP2_BLEND_DUMMY_ALPHA;
 			osd_log_info("reg[0x%x]: 0x%08x\n",
 				     reg, osd_reg_read(reg));
+	} else if (osd_dev_hw.display_type == C3_DISPLAY) {
+		reg = VPU_VOUT_IRQ_CTRL;
+		osd_log_info("reg[0x%x]: 0x%08x\n",
+				     reg, osd_reg_read(reg));
+		reg = VPU_VOUT_BLEND_CTRL;
+		osd_log_info("reg[0x%x]: 0x%08x\n",
+				     reg, osd_reg_read(reg));
+		reg = VPU_VOUT_BLEND_DUMDATA;
+		osd_log_info("reg[0x%x]: 0x%08x\n",
+					 reg, osd_reg_read(reg));
+		reg = VPU_VOUT_BLEND_SIZE;
+		osd_log_info("reg[0x%x]: 0x%08x\n",
+					 reg, osd_reg_read(reg));
+		reg = VPU_VOUT_BLD_SRC0_HPOS;
+		osd_log_info("reg[0x%x]: 0x%08x\n",
+					 reg, osd_reg_read(reg));
+		reg = VPU_VOUT_BLD_SRC0_VPOS;
+		osd_log_info("reg[0x%x]: 0x%08x\n",
+					 reg, osd_reg_read(reg));
+		reg = VPU_VOUT_BLD_SRC1_HPOS;
+		osd_log_info("reg[0x%x]: 0x%08x\n",
+					 reg, osd_reg_read(reg));
+		reg = VPU_VOUT_BLD_SRC1_VPOS;
+		osd_log_info("reg[0x%x]: 0x%08x\n",
+					 reg, osd_reg_read(reg));
 	}
 }
 

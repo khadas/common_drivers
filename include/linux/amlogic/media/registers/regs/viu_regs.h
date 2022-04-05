@@ -463,5 +463,67 @@
 #define VD1_AFBCDM_VDTOP_CTRL0 0x4838
 #define VD2_AFBCDM_VDTOP_CTRL0 0x48b8
 #define VD3_AFBCDM_VDTOP_CTRL0 0x4938
+
+/* c3 regs */
+//VD1_RDMIF
+#define VOUT_VD1_GEN_REG                           0x0200
+#define VOUT_VD1_GEN_REG2                          0x0201
+#define VOUT_VD1_CANVAS0                           0x0202
+#define VOUT_VD1_LUMA_X0                           0x0203
+#define VOUT_VD1_LUMA_Y0                           0x0204
+#define VOUT_VD1_CHROMA_X0                         0x0205
+#define VOUT_VD1_CHROMA_Y0                         0x0206
+#define VOUT_VD1_RPT_LOOP                          0x0207
+#define VOUT_VD1_LUMA0_RPT_PAT                     0x0208
+#define VOUT_VD1_CHROMA0_RPT_PAT                   0x0209
+#define VOUT_VD1_DUMMY_PIXEL                       0x020a
+#define VOUT_VD1_LUMA_FIFO_SIZE                    0x020b
+#define VOUT_VD1_RANGE_MAP_Y                       0x020c
+#define VOUT_VD1_RANGE_MAP_CB                      0x020d
+#define VOUT_VD1_RANGE_MAP_CR                      0x020e
+#define VOUT_VD1_URGENT_CTRL                       0x020f
+#define VOUT_VD1_GEN_REG3                          0x0210
+#define VOUT_VD1_AXI_CMD_CNT                       0x0211
+#define VOUT_VD1_AXI_RDAT_CNT                      0x0212
+#define VOUT_VD1_CFMT_CTRL                         0x0213
+#define VOUT_VD1_CFMT_W                            0x0214
+#define VOUT_VD1_BADDR_Y                           0x0215
+#define VOUT_VD1_BADDR_CB                          0x0216
+#define VOUT_VD1_BADDR_CR                          0x0217
+#define VOUT_VD1_STRIDE_0                          0x0218
+#define VOUT_VD1_STRIDE_1                          0x0219
+#define VOUT_VD1_BADDR_Y_F1                        0x021a
+#define VOUT_VD1_BADDR_CB_F1                       0x021b
+#define VOUT_VD1_BADDR_CR_F1                       0x021c
+#define VOUT_VD1_STRIDE_0_F1                       0x021d
+#define VOUT_VD1_STRIDE_1_F1                       0x021e
+#define VOUT_VD1_EMPTY_REG                         VOUT_VD1_CANVAS0
+
+//VD1_RDMIF_CSC
+#define VOUT_VD1_CSC_COEF00_01                     0x0270
+#define VOUT_VD1_CSC_COEF02_10                     0x0271
+#define VOUT_VD1_CSC_COEF11_12                     0x0272
+#define VOUT_VD1_CSC_COEF20_21                     0x0273
+#define VOUT_VD1_CSC_COEF22                        0x0274
+#define VOUT_VD1_CSC_COEF13_14                     0x0275
+#define VOUT_VD1_CSC_COEF23_24                     0x0276
+#define VOUT_VD1_CSC_COEF15_25                     0x0277
+#define VOUT_VD1_CSC_CLIP                          0x0278
+#define VOUT_VD1_CSC_OFFSET0_1                     0x0279
+#define VOUT_VD1_CSC_OFFSET2                       0x027a
+#define VOUT_VD1_CSC_PRE_OFFSET0_1                 0x027b
+#define VOUT_VD1_CSC_PRE_OFFSET2                   0x027c
+#define VOUT_VD1_CSC_EN_CTRL                       0x027d
+
+#define VPU_VOUT_BLEND_CTRL                        0x0010
+#define VPU_VOUT_BLEND_DUMDATA                     0x0011
+#define VPU_VOUT_BLEND_SIZE                        0x0012
+//vd1 module
+#define VPU_VOUT_BLD_SRC0_HPOS                     0x0020
+#define VPU_VOUT_BLD_SRC0_VPOS                     0x0021
+//osd1 module
+#define VPU_VOUT_BLD_SRC1_HPOS                     0x0030
+#define VPU_VOUT_BLD_SRC1_VPOS                     0x0031
+
 #endif
 

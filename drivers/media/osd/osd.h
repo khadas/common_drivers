@@ -292,6 +292,7 @@ enum cpuid_type_e {
 	__MESON_CPU_MAJOR_ID_T7,
 	__MESON_CPU_MAJOR_ID_T3,
 	__MESON_CPU_MAJOR_ID_T5W,
+	__MESON_CPU_MAJOR_ID_C3,
 	__MESON_CPU_MAJOR_ID_UNKNOWN,
 };
 
@@ -409,6 +410,18 @@ enum render_cmd_type {
 	LAYER_SYNC,
 	BLANK_CMD,
 	PAGE_FLIP,
+};
+
+enum display_type_e {
+	NORMAL_DISPLAY = 0,
+	T7_DISPLAY,
+	C3_DISPLAY
+};
+
+enum matrix_type_e {
+	MATRIX_BYPASS = 0,
+	YUV2RGB,
+	RGB2YUV
 };
 
 struct pandata_s {
@@ -563,7 +576,7 @@ struct osd_device_data_s {
 };
 
 struct osd_device_hw_s {
-	u32 t7_display;
+	u32 display_type;
 	u32 has_8G_addr;
 	u32 multi_afbc_core;
 	u32 has_multi_vpp;
@@ -571,6 +584,7 @@ struct osd_device_hw_s {
 	u32 path_ctrl_independ;
 	u32 remove_afbc;
 	u32 remove_pps;
+	u32 prevsync_support;
 };
 
 struct hw_osd_reg_s {

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# ADC Device Driver Configuration
+#
+config AMLOGIC_MEDIA_ADC
+        tristate "Amlogic ADC device driver"
+        default n
+        help
+            ADC device driver.

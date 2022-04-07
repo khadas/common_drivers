@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+#
+# Video output configuration
+#
+
+config AMLOGIC_VDAC
+	bool "VDAC Module"
+	default n
+	help
+		VDAC config.
+

@@ -14,17 +14,13 @@
 #include <linux/types.h>
 #include <linux/clk.h>
 #include <linux/uaccess.h>
-#ifdef CONFIG_AMLOGIC_ION
 #include <dev_ion.h>
-#endif
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
 #include <linux/dma-map-ops.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/dma-buf.h>
 #include <linux/pm_runtime.h>
-#include <linux/cma.h>
-#include <linux/kasan.h>
 
 #include <linux/of_address.h>
 #include <api/gdc_api.h>
@@ -41,8 +37,6 @@
 #include "gdc_config.h"
 #include "gdc_dmabuf.h"
 #include "gdc_wq.h"
-
-//#define DEBUG
 
 int gdc_log_level;
 struct gdc_manager_s gdc_manager;
@@ -79,14 +73,6 @@ static struct gdc_device_data_s aml_gdc_v2 = {
 	.core_cnt = 3
 };
 
-static struct gdc_device_data_s aml_gdc_v3 = {
-	.dev_type = AML_GDC,
-	.clk_type = GATE,
-	.bit_width_ext = 1,
-	.gamma_support = 0,
-	.core_cnt = 1
-};
-
 static const struct of_device_id gdc_dt_match[] = {
 	{.compatible = "amlogic, g12b-gdc", .data = &arm_gdc_clk2},
 	{.compatible = "amlogic, arm-gdc",  .data = &arm_gdc},
@@ -97,7 +83,6 @@ MODULE_DEVICE_TABLE(of, gdc_dt_match);
 static const struct of_device_id amlgdc_dt_match[] = {
 	{.compatible = "amlogic, aml-gdc",  .data = &aml_gdc},
 	{.compatible = "amlogic, aml-gdc-v2",  .data = &aml_gdc_v2},
-	{.compatible = "amlogic, aml-gdc-v3",  .data = &aml_gdc_v3},
 	{} };
 
 MODULE_DEVICE_TABLE(of, amlgdc_dt_match);
@@ -155,7 +140,6 @@ static int meson_gdc_release(struct inode *inode, struct file *file)
 	bool rc = false;
 	int ret = 0;
 	struct device *dev = NULL;
-	struct cma *cma_area;
 
 	context = (struct gdc_context_s *)file->private_data;
 	if (!context) {
@@ -167,12 +151,8 @@ static int meson_gdc_release(struct inode *inode, struct file *file)
 
 	if (context->i_kaddr != 0 && context->i_len != 0) {
 		cma_pages = virt_to_page(context->i_kaddr);
-		/* change in kernel5.15 */
-		if (dev && dev->cma_area)
-			cma_area = dev->cma_area;
-		else
-			cma_area = dma_contiguous_default_area;
-		rc = cma_release(cma_area, cma_pages,
+		rc = dma_release_from_contiguous(dev,
+						 cma_pages,
 						 context->i_len >> PAGE_SHIFT);
 		if (!rc) {
 			ret = ret - 1;
@@ -187,11 +167,8 @@ static int meson_gdc_release(struct inode *inode, struct file *file)
 
 	if (context->o_kaddr != 0 && context->o_len != 0) {
 		cma_pages = virt_to_page(context->o_kaddr);
-		if (dev && dev->cma_area)
-			cma_area = dev->cma_area;
-		else
-			cma_area = dma_contiguous_default_area;
-		rc = cma_release(cma_area, cma_pages,
+		rc = dma_release_from_contiguous(dev,
+						 cma_pages,
 						 context->o_len >> PAGE_SHIFT);
 		if (!rc) {
 			ret = ret - 1;
@@ -206,11 +183,8 @@ static int meson_gdc_release(struct inode *inode, struct file *file)
 
 	if (context->c_kaddr != 0 && context->c_len != 0) {
 		cma_pages = virt_to_page(context->c_kaddr);
-		if (dev && dev->cma_area)
-			cma_area = dev->cma_area;
-		else
-			cma_area = dma_contiguous_default_area;
-		rc = cma_release(cma_area, cma_pages,
+		rc = dma_release_from_contiguous(dev,
+						 cma_pages,
 						 context->c_len >> PAGE_SHIFT);
 		if (!rc) {
 			ret = ret - 1;
@@ -363,9 +337,10 @@ static int meson_gdc_dma_map(struct gdc_dma_cfg *cfg)
 	int ret = -1;
 	int fd = -1;
 	struct dma_buf *dbuf = NULL;
-	struct dma_buf_map map;
 	struct dma_buf_attachment *d_att = NULL;
 	struct sg_table *sg = NULL;
+	void *vaddr = NULL;
+	struct dma_buf_map map;
 	struct device *dev = NULL;
 	enum dma_data_direction dir;
 
@@ -402,15 +377,16 @@ static int meson_gdc_dma_map(struct gdc_dma_cfg *cfg)
 		goto access_err;
 	}
 
-	ret = dma_buf_vmap(dbuf, &map);     //change in kernel5.15 yuhua.lin
-	if (ret) {
+	ret = dma_buf_vmap(dbuf, &map);
+	vaddr = ret ? NULL : map.vaddr;
+	if (!vaddr) {
 		gdc_log(LOG_ERR, "Failed to vmap dma buf");
 		goto vmap_err;
 	}
 
 	cfg->dbuf = dbuf;
 	cfg->attach = d_att;
-	cfg->vaddr = map.vaddr;
+	cfg->vaddr = vaddr;
 	cfg->sg = sg;
 
 	return ret;
@@ -1466,7 +1442,7 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 			    unsigned long arg)
 {
 	int ret = -1;
-	size_t len = 0;
+	size_t len;
 	struct gdc_context_s *context = NULL;
 	struct gdc_settings gs;
 	struct gdc_cmd_s *gdc_cmd = NULL;
@@ -1477,12 +1453,11 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 	struct gdc_settings_with_fw gs_with_fw;
 	struct gdc_dmabuf_req_s gdc_req_buf;
 	struct gdc_dmabuf_exp_s gdc_exp_buf;
-	phys_addr_t addr = 0;
+	phys_addr_t addr;
 	int index, dma_fd;
 	void __user *argp = (void __user *)arg;
 	struct gdc_queue_item_s *pitem = NULL;
 	struct device *dev = NULL;
-	struct cma *cma_area;
 
 	context = (struct gdc_context_s *)file->private_data;
 	gdc_cmd = &context->cmd;
@@ -1502,13 +1477,9 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 			sizeof(gs), gs.magic);
 
 		//configure gdc config, buffer address and resolution
-	#ifdef CONFIG_AMLOGIC_ION
 		ret = meson_ion_share_fd_to_phys(gs.out_fd,
 						 &addr,
 						 &len);
-	#else
-		ret = -1;
-	#endif
 		if (ret < 0) {
 			gdc_log(LOG_ERR,
 				"import out fd %d failed\n", gs.out_fd);
@@ -1523,13 +1494,9 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 		gdc_cmd->base_gdc = 0;
 		gdc_cmd->current_addr = gdc_cmd->buffer_addr;
 
-	#ifdef CONFIG_AMLOGIC_ION
 		ret = meson_ion_share_fd_to_phys(gc->config_addr,
 						 &addr,
 						 &len);
-	#else
-		ret = -1;
-	#endif
 		if (ret < 0) {
 			gdc_log(LOG_ERR, "import config fd failed\n");
 			mutex_unlock(&context->d_mutext);
@@ -1538,13 +1505,9 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 
 		gc->config_addr = addr;
 
-	#ifdef CONFIG_AMLOGIC_ION
 		ret = meson_ion_share_fd_to_phys(gs.in_fd,
 						 &addr,
 						 &len);
-	#else
-		ret = -1;
-	#endif
 		if (ret < 0) {
 			gdc_log(LOG_ERR, "import in fd %d failed\n", gs.in_fd);
 			mutex_unlock(&context->d_mutext);
@@ -1656,18 +1619,18 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 		}
 
 		buf_cfg.len = PAGE_ALIGN(buf_cfg.len);
-		/* change in kernel5.15 */
-		if (dev && dev->cma_area)
-			cma_area = dev->cma_area;
-		else
-			cma_area = dma_contiguous_default_area;
-		cma_pages = cma_alloc(cma_area, buf_cfg.len >> PAGE_SHIFT, 0, 0);
-		if (cma_pages) {
+		cma_pages = dma_alloc_from_contiguous
+						(dev,
+						buf_cfg.len >> PAGE_SHIFT,
+						0, 0);
+		if (!cma_pages) {
 			context->mmap_type = buf_cfg.type;
 			ret = meson_gdc_set_buff(context,
 						 cma_pages, buf_cfg.len);
 			if (ret != 0) {
-				cma_release(cma_area, cma_pages,
+				dma_release_from_contiguous
+					(dev,
+					 cma_pages,
 					 buf_cfg.len >> PAGE_SHIFT);
 				gdc_log(LOG_ERR, "Failed to set buff\n");
 				return ret;
@@ -1847,7 +1810,7 @@ static ssize_t dump_reg_store(struct device *dev,
 
 	ret = kstrtoint(buf, 0, &res);
 
-	pr_debug("dump mode: %d->%d\n", gdc_dev->reg_store_mode_enable, res);
+	pr_info("dump mode: %d->%d\n", gdc_dev->reg_store_mode_enable, res);
 	gdc_dev->reg_store_mode_enable = res;
 
 	return len;
@@ -1871,7 +1834,7 @@ static ssize_t loglevel_store(struct device *dev,
 	int ret = 0;
 
 	ret = kstrtoint(buf, 0, &res);
-	pr_debug("log_level: %d->%d\n", gdc_log_level, res);
+	pr_info("log_level: %d->%d\n", gdc_log_level, res);
 	gdc_log_level = res;
 
 	return len;
@@ -1900,7 +1863,7 @@ static ssize_t trace_mode_store(struct device *dev,
 				(struct meson_gdc_dev_t *)dev_get_drvdata(dev);
 
 	ret = kstrtoint(buf, 0, &res);
-	pr_debug("trace_mode: %d->%d\n", gdc_dev->trace_mode_enable, res);
+	pr_info("trace_mode: %d->%d\n", gdc_dev->trace_mode_enable, res);
 	gdc_dev->trace_mode_enable = res;
 
 	return len;
@@ -1931,11 +1894,11 @@ static ssize_t config_out_path_store(struct device *dev,
 			(struct meson_gdc_dev_t *)dev_get_drvdata(dev);
 
 	if (strlen(buf) >= CONFIG_PATH_LENG) {
-		pr_err("err: path too long\n");
+		pr_info("err: path too long\n");
 	} else {
 		strncpy(gdc_dev->config_out_file, buf, CONFIG_PATH_LENG - 1);
 		gdc_dev->config_out_path_defined = 1;
-		pr_debug("set config out path: %s\n", gdc_dev->config_out_file);
+		pr_info("set config out path: %s\n", gdc_dev->config_out_file);
 	}
 
 	return len;

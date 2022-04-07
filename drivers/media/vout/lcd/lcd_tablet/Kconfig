@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+
+config AMLOGIC_LCD_GAMMA_DEBUG
+	bool "LCD Gamma debug support"
+	default n
+	help
+		Amlogic LCD gamma debug

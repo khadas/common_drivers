@@ -16,6 +16,19 @@ config AMLOGIC_MEDIA_VIDEO_PROCESSOR
 
 if AMLOGIC_MEDIA_VIDEO_PROCESSOR
 source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/pic_dev/Kconfig"
+
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/ppmgr/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/utils/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/videosync/Kconfig"
+# source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/pic_dev/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/video_dev/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/ionvideo/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/v4lvideo/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/video_composer/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/videotunnel/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/vdetect/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/videoqueue/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/video_processor/common/Kconfig"
 endif
 
 endmenu

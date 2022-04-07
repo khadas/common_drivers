@@ -19,8 +19,6 @@
 #include <linux/dma-mapping.h>
 #include <api/gdc_api.h>
 #include <linux/dma-map-ops.h>
-#include <linux/cma.h>
-#include <linux/kasan.h>
 
 #include "system_log.h"
 #include "gdc_dmabuf.h"
@@ -100,7 +98,6 @@ static void aml_dma_put(void *buf_priv)
 {
 	struct aml_dma_buf *buf = buf_priv;
 	struct page *cma_pages = NULL;
-	struct cma *cma_area;
 	void *vaddr = (void *)(PAGE_MASK & (ulong)buf->vaddr);
 
 	if (!atomic_dec_and_test(&buf->refcount)) {
@@ -111,12 +108,8 @@ static void aml_dma_put(void *buf_priv)
 	cma_pages = phys_to_page(buf->dma_addr);
 	if (_is_vmalloc_or_module_addr(vaddr))
 		vunmap(vaddr);
-	/* change in kernel5.15 */
-	if (buf->dev && buf->dev->cma_area)
-		cma_area = buf->dev->cma_area;
-	else
-		cma_area = dma_contiguous_default_area;
-	if (!cma_release(cma_area, cma_pages, buf->size >> PAGE_SHIFT)) {
+	if (!dma_release_from_contiguous(buf->dev, cma_pages,
+					 buf->size >> PAGE_SHIFT)) {
 		pr_err("failed to release cma buffer\n");
 	}
 	buf->vaddr = NULL;
@@ -137,7 +130,6 @@ static void *aml_dma_alloc(struct device *dev, unsigned long attrs,
 	struct aml_dma_buf *buf;
 	struct page *cma_pages = NULL;
 	dma_addr_t paddr = 0;
-	struct cma *cma_area;
 
 	if (WARN_ON(!dev))
 		return (void *)(-EINVAL);
@@ -148,13 +140,8 @@ static void *aml_dma_alloc(struct device *dev, unsigned long attrs,
 
 	if (attrs)
 		buf->attrs = attrs;
-
-	/* change in kernel5.15 */
-	if (dev && dev->cma_area)
-		cma_area = dev->cma_area;
-	else
-		cma_area = dma_contiguous_default_area;
-	cma_pages = cma_alloc(cma_area, size >> PAGE_SHIFT, 0, 0);
+	cma_pages = dma_alloc_from_contiguous(dev,
+					      size >> PAGE_SHIFT, 0, 0);
 	if (cma_pages) {
 		paddr = page_to_phys(cma_pages);
 	} else {
@@ -325,7 +312,7 @@ static int aml_dmabuf_ops_vmap(struct dma_buf *dbuf, struct dma_buf_map *map)
 {
 	struct aml_dma_buf *buf = dbuf->priv;
 
-	dma_buf_map_set_vaddr(map, buf->vaddr);  //change in kernel5.15 yuhua.lin
+	dma_buf_map_set_vaddr(map, buf->vaddr);
 	return 0;
 }
 
@@ -340,6 +327,7 @@ static struct dma_buf_ops gdc_dmabuf_ops = {
 	.detach = aml_dmabuf_ops_detach,
 	.map_dma_buf = aml_dmabuf_ops_map,
 	.unmap_dma_buf = aml_dmabuf_ops_unmap,
+	//.kmap_atomic = aml_dmabuf_ops_kmap, // TODO: jian.cao
 	.vmap = aml_dmabuf_ops_vmap,
 	.mmap = aml_dmabuf_ops_mmap,
 	.release = aml_dmabuf_ops_release,

@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# VDIN Device Driver Configuration
+#
+
+config AMLOGIC_MEDIA_VDIN
+        tristate "Amlogic Vdin device driver"
+        default n
+        help
+            Vdin device driver.

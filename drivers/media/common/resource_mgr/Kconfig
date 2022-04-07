@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# resmanage driver configuration
+#
+
+menu "ResManage driver"
+
+config AMLOGIC_MEDIA_RESMANAGE
+	tristate "RESMANAGE driver"
+	default n
+	help
+		Select to enable AMLOGIC RESMANAGE driver to
+		manage decord resource
+endmenu

@@ -14,6 +14,7 @@
 #include <linux/types.h>
 #include <linux/clk.h>
 #include <linux/uaccess.h>
+#include <dev_ion.h>
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
 #include <linux/dma-map-ops.h>
@@ -78,8 +79,35 @@ void gdc_unmap_virt_from_phys(u8 __iomem *vaddr)
 
 static int write_buf_to_file(char *path, char *buf, int size)
 {
-	gdc_log(LOG_ERR, "%s has not been supported\n", __func__);
-	return size;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+	int ret = 0;
+	struct file *fp = NULL;
+	loff_t pos = 0;
+	int w_size = 0;
+
+	if (!path) {
+		gdc_log(LOG_ERR, "please define path first\n");
+		return -1;
+	}
+
+	/* open file to write */
+	fp = filp_open(path, O_WRONLY | O_CREAT, 0640);
+	if (IS_ERR(fp)) {
+		gdc_log(LOG_ERR, "open file error\n");
+		ret = -1;
+	}
+
+	/* Write buf to file */
+	w_size = vfs_write(fp, buf, size, &pos);
+	gdc_log(LOG_DEBUG, "write w_size = %u, size = %u\n", w_size, size);
+
+	vfs_fsync(fp, 0);
+	filp_close(fp, NULL);
+
+	return w_size;
+#else
+	return 0;
+#endif
 }
 
 void dump_config_file(struct gdc_config_s *gc, u32 dev_type)

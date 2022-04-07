@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# HDMI Rx Device Driver Configuration
+#
+
+
+config AMLOGIC_MEDIA_TVIN_HDMI
+    tristate "Amlogic HDMI RX device driver"
+    default n
+    help
+      HDMI RX device driver.
+      HDMI RX device driver.
+      HDMI RX device driver.
+      HDMI RX device driver.

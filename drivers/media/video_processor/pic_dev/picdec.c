@@ -976,7 +976,6 @@ int picdec_fill_buffer(struct vframe_s *vf, struct ge2d_context_s *context,
 	loff_t pos = 0;
 	int ret = 0;
 	void __iomem *p;
-	mm_segment_t old_fs = get_fs();
 #endif
 
 	fill_color(vf, context, ge2d_config);
@@ -1108,7 +1107,7 @@ int picdec_fill_buffer(struct vframe_s *vf, struct ge2d_context_s *context,
 #ifdef CONFIG_AMLOGIC_DUMP_GE2D
 	if ((dump_file_flag) && picdec_device.origin_width > 100) {
 		if (picdec_device.output_format_mode) {
-			set_fs(KERNEL_DS);
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 			filp = filp_open("/data/temp/yuv444.yuv",
 					 O_RDWR | O_CREAT, 0666);
 			if (IS_ERR(filp)) {
@@ -1131,10 +1130,10 @@ int picdec_fill_buffer(struct vframe_s *vf, struct ge2d_context_s *context,
 				}
 				vfs_fsync(filp, 0);
 				filp_close(filp, NULL);
-				set_fs(old_fs);
 			}
+#endif
 		} else {
-			set_fs(KERNEL_DS);
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 			filp = filp_open("/data/temp/NV21.yuv",
 					 O_RDWR | O_CREAT, 0666);
 			if (IS_ERR(filp)) {
@@ -1173,8 +1172,8 @@ int picdec_fill_buffer(struct vframe_s *vf, struct ge2d_context_s *context,
 				}
 				vfs_fsync(filp, 0);
 				filp_close(filp, NULL);
-				set_fs(old_fs);
 			}
+#endif
 		}
 	}
 #endif

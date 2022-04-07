@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# AMLOGIC_ESM
+#
+
+menu "ESM Support"
+
+config AMLOGIC_ESM
+	bool "Embedded Security Module Enable"
+	depends on AMLOGIC_HDMITX || TVIN_HDMI
+	help
+		Embedded Security Module(ESM) for HDCP22
+
+endmenu

@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# DTV driver configuration
+#
+
+menu "Amlogic DTV driver"
+
+config AMLOGIC_DTV_DEMOD
+	tristate "Amlogic DTVDEMOD device driver"
+	default n
+	help
+		DTVDEMOD device driver.
+		Y: enable
+		N: disable
+		M: build as module
+
+endmenu
+

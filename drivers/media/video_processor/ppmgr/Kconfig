@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+#
+# Post Process Manager device configuration
+#
+
+menu "Post Process Manager driver"
+
+config AMLOGIC_POST_PROCESS_MANAGER
+    tristate "Amlogic Post Process Manager driver"
+    default n
+	help
+	  Select to
+	  enable Amlogic Post Process Manager driver
+	  in system
+	  Disabled by default
+
+endmenu

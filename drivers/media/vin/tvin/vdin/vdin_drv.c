@@ -3980,7 +3980,9 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			} else {
 				pr_info("VDIN err canvas idx:%d\n", idx);
 			}
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 			__close_fd(current->files, vdinsetcanvas[i].fd);
+#endif
 		}
 		break;
 

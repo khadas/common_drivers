@@ -30,10 +30,12 @@
 #include <linux/delay.h>
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static int dump_src_count;
 static int dump_before_dst_count;
 static int dump_dst_count;
 static int dump_black_count;
+#endif
 
 static unsigned int ge2d_com_debug;
 MODULE_PARM_DESC(ge2d_com_debug, "\n ge2d_com_debug\n");
@@ -321,6 +323,7 @@ int uninit_ge2d_composer(struct ge2d_composer_para *ge2d_comp_para)
 	return 0;
 }
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static int copy_phybuf_to_file(struct canvas_config_s *config,
 			       struct file *fp, loff_t pos)
 {
@@ -356,6 +359,7 @@ static int copy_phybuf_to_file(struct canvas_config_s *config,
 	}
 	return 0;
 }
+#endif
 
 static bool dump_data(struct dump_param *para, enum buffer_data type)
 {

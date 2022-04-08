@@ -78,8 +78,8 @@ int vpu_ioremap(struct platform_device *pdev, int *reg_map_table)
 		vpu_reg_map[table[i]].base_addr = res->start;
 		vpu_reg_map[table[i]].size = resource_size(res);
 		vpu_reg_map[table[i]].p =
-			devm_ioremap_nocache(&pdev->dev, res->start,
-					     vpu_reg_map[table[i]].size);
+			devm_ioremap(&pdev->dev, res->start,
+				     vpu_reg_map[table[i]].size);
 		if (!vpu_reg_map[table[i]].p) {
 			vpu_reg_map[table[i]].flag = 0;
 			VPUERR("%s: reg map failed: 0x%x\n",

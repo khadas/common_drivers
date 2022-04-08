@@ -253,13 +253,13 @@ static int secure_heap_mmap(struct dma_buf *dmabuf,
 						vma->vm_page_prot);
 }
 
-static void *secure_heap_vmap(struct dma_buf *dmabuf)
+static int secure_heap_vmap(struct dma_buf *dmabuf, struct dma_buf_map *map)
 {
 	pr_enter();
-	return NULL;
+	return 0;
 }
 
-static void secure_heap_vunmap(struct dma_buf *dmabuf, void *vaddr)
+static void secure_heap_vunmap(struct dma_buf *dmabuf, struct dma_buf_map *map)
 {
 	pr_enter();
 }

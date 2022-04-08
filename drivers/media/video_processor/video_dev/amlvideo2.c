@@ -6412,7 +6412,7 @@ static int amlvideo2_create_node(struct platform_device *pdev, int node_id)
 	vfd->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING
 			| V4L2_CAP_READWRITE;
 
-	ret = video_register_device(vfd, VFL_TYPE_GRABBER, video_nr);
+	ret = video_register_device(vfd, VFL_TYPE_VIDEO, video_nr);
 	if (ret < 0) {
 		ret = -ENODEV;
 		video_device_release(vfd);

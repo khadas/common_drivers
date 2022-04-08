@@ -40,6 +40,7 @@
 #include <linux/amlogic/major.h>
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/utils/amstream.h>
+#include <linux/compat.h>
 
 #define V4L_DI_DEVICE_NAME   "di_v4l"
 

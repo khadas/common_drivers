@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * drivers/amlogic/media/deinterlace/deinterlace_trace.h
+ * drivers/media/deinterlace/deinterlace_trace.h
  *
  * Copyright (C) 2017 Amlogic, Inc. All rights reserved.
  *
@@ -53,6 +53,6 @@ DEFINE_DI_EVENT(di_post);
 
 #undef TRACE_INCLUDE_PATH
 #undef TRACE_INCLUDE_FILE
-#define TRACE_INCLUDE_PATH  ../../drivers/amlogic/media/deinterlace
+#define TRACE_INCLUDE_PATH  ../../drivers/media/deinterlace
 #define TRACE_INCLUDE_FILE deinterlace_trace
 #include <trace/define_trace.h>

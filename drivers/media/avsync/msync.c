@@ -28,6 +28,7 @@
 #include <uapi/linux/amlogic/msync.h>
 #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_MSYNC
 #include <trace/events/meson_atrace.h>
+#include <linux/compat.h>
 
 #define AVS_DEV_NAME_MAX 20
 #define UNIT90K    (90000)

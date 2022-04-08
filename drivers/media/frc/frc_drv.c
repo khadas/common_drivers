@@ -46,6 +46,7 @@
 #include <linux/sched/clock.h>
 #include <linux/pm_runtime.h>
 #include <linux/pm_domain.h>
+#include <linux/compat.h>
 
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/media/codec_mm/codec_mm.h>

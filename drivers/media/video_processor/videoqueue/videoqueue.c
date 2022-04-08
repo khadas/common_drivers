@@ -14,6 +14,7 @@
 #include <linux/of_platform.h>
 #include <linux/sync_file.h>
 #include <linux/anon_inodes.h>
+#include <linux/compat.h>
 #include <linux/amlogic/major.h>
 #include <linux/platform_device.h>
 #include <linux/time.h>

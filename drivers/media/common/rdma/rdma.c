@@ -48,6 +48,8 @@ static int vsync_cfg_count[RDMA_NUM];
 static u32 force_rdma_config[RDMA_NUM];
 static bool first_config[RDMA_NUM];
 static bool rdma_done[RDMA_NUM];
+static u32 cur_vsync_handle_id;
+static int ex_vsync_rdma_enable;
 
 static void vsync_rdma_irq(void *arg);
 static void vsync_rdma_vpp1_irq(void *arg);
@@ -791,6 +793,20 @@ void enable_rdma(int enable_flag)
 	}
 }
 EXPORT_SYMBOL(enable_rdma);
+
+int set_vsync_rdma_id(u8 id)
+{
+	if (!ex_vsync_rdma_enable) {
+		cur_vsync_handle_id = VSYNC_RDMA;
+		return (id != cur_vsync_handle_id) ? -1 : 0;
+	}
+
+	if (id != VSYNC_RDMA && id != EX_VSYNC_RDMA)
+		return -1;
+	cur_vsync_handle_id = id;
+	return 0;
+}
+EXPORT_SYMBOL(set_vsync_rdma_id);
 
 struct rdma_op_s *get_rdma_ops(int rdma_type)
 {

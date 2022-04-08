@@ -243,7 +243,7 @@ static inline void hdmitx_notify_hpd(int hpd, void *p)
 		hdmitx21_event_notify(HDMITX_UNPLUG, NULL);
 }
 
-#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+#if IS_ENABLED(CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND)
 #include <linux/amlogic/pm.h>
 static void hdmitx_early_suspend(struct early_suspend *h)
 {
@@ -500,7 +500,7 @@ static void edidinfo_detach_to_vinfo(struct hdmitx_dev *hdev)
 
 static void hdmitx21_enable_hdcp(struct hdmitx_dev *hdev)
 {
-	if (get_hdcp2_lstore() & is_rx_hdcp2ver()) {
+	if (get_hdcp2_lstore() & (unsigned int)is_rx_hdcp2ver()) {
 		hdev->hdcp_mode = 2;
 		hdcp_mode_set(2);
 	} else {
@@ -3915,6 +3915,7 @@ static struct vout_server_s hdmitx_vout2_server = {
 #include <sound/initval.h>
 #include <sound/control.h>
 
+#ifdef TEMP_REMOVE_CODE
 static struct rate_map_fs map_fs[] = {
 	{0,	  FS_REFER_TO_STREAM},
 	{32000,  FS_32K},
@@ -3976,7 +3977,9 @@ static enum hdmi_audio_sampsize aud_size_map(u32 bits)
 	pr_info("get SS_MAX\n");
 	return SS_MAX;
 }
+#endif
 
+#ifdef TEMP_REMOVE_CODE
 static int hdmitx_notify_callback_a(struct notifier_block *block,
 				    unsigned long cmd, void *para);
 static struct notifier_block hdmitx_notifier_nb_a = {
@@ -4057,6 +4060,7 @@ static int hdmitx_notify_callback_a(struct notifier_block *block,
 
 	return 0;
 }
+#endif
 
 #endif
 u32 hdmitx21_check_edid_all_zeros(u8 *buf)
@@ -4767,9 +4771,7 @@ static void amhdmitx_infoframe_init(struct hdmitx_dev *hdev)
 	ret = hdmi_vendor_infoframe_init(&hdev->infoframes.vend.vendor.hdmi);
 	if (!ret)
 		pr_info("%s[%d] init vendor infoframe failed %d\n", __func__, __LINE__, ret);
-	ret = hdmi_avi_infoframe_init(&hdev->infoframes.avi.avi);
-	if (ret)
-		pr_info("init avi infoframe failed\n");
+	hdmi_avi_infoframe_init(&hdev->infoframes.avi.avi);
 	// TODO, panic
 	// hdmi_spd_infoframe_init(&hdev->infoframes.spd.spd,
 	//	hdev->config_data.vend_data->vendor_name,
@@ -4905,9 +4907,9 @@ static int amhdmitx_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	register_early_suspend(&hdmitx_early_suspend_handler);
-#endif
 	hdev->nb.notifier_call = hdmitx_reboot_notifier;
 	register_reboot_notifier(&hdev->nb);
+#endif
 	hdmitx21_meson_init(hdev);
 	hdev->hpd_state = !!(hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0));
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
@@ -4925,7 +4927,9 @@ static int amhdmitx_probe(struct platform_device *pdev)
 		audpara->sample_size = SS_16BITS;
 		audpara->channel_num = 2 - 1;
 	}
+#ifdef TEMP_REMOVE_CODE
 	aout_register_client(&hdmitx_notifier_nb_a);
+#endif
 #endif
 pr_info("%s[%d]\n", __func__, __LINE__);
 	/* update fmt_attr */
@@ -5018,7 +5022,9 @@ static int amhdmitx_remove(struct platform_device *pdev)
 #endif
 
 #if IS_ENABLED(CONFIG_AMLOGIC_SND_SOC)
+#ifdef TEMP_REMOVE_CODE
 	aout_unregister_client(&hdmitx_notifier_nb_a);
+#endif
 #endif
 
 	/* Remove the cdev */

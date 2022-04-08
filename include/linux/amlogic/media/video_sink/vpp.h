@@ -19,9 +19,8 @@
 #ifndef VPP_H
 #define VPP_H
 
-#ifdef CONFIG_AMLOGIC_VOUT
 #include <linux/amlogic/media/vout/vinfo.h>
-#endif
+#include <linux/amlogic/media/video_sink/vpp_afd.h>
 
 #define TV_3D_FUNCTION_OPEN
 #define TV_REVERSE
@@ -66,23 +65,6 @@ extern struct sr_info_s sr_info;
 #define VMODE_INVALID 4
 #define VIU_MUX_MAX 3
 #define COLOR_FMT_RGB444 0
-
-struct vinfo_s    {
-	char *name;
-	u32 mode;
-	u32 width;
-	u32 height;
-	u32 field_height;
-	u32 aspect_ratio_num;
-	u32 aspect_ratio_den;
-	u32 sync_duration_num;
-	u32 sync_duration_den;
-	u32 video_clk;
-	u32 htotal;
-	u32 vtotal;
-	u32 viu_color_fmt;
-	unsigned int viu_mux;
-};
 
 #endif
 

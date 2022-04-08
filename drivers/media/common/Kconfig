@@ -1,19 +1,13 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 #Ascending by module name's ASCII
+
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/canvas/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/ge2d/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/ion_dev/Kconfig"
-source "$(COMMON_DRIVERS_DIR)/drivers/media/common/codec_mm/Kconfig"
-source "$(COMMON_DRIVERS_DIR)/drivers/media/common/vfm/Kconfig"
-source "$(COMMON_DRIVERS_DIR)/drivers/media/common/rdma/Kconfig"
-
-#source "$(COMMON_DRIVERS_DIR)/drivers/media/common/canvas/Kconfig"
-#source "$(COMMON_DRIVERS_DIR)/drivers/media/common/ge2d/Kconfig"
-#source "$(COMMON_DRIVERS_DIR)/drivers/media/common/ion_dev/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/vpu/Kconfig"
-#source "$(COMMON_DRIVERS_DIR)/drivers/media/common/rdma/Kconfig"
-#source "$(COMMON_DRIVERS_DIR)/drivers/media/common/vfm/Kconfig"
-#source "$(COMMON_DRIVERS_DIR)/drivers/media/common/codec_mm/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/common/rdma/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/common/vfm/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/common/codec_mm/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/v4l_util/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/uvm/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/lut_dma/Kconfig"

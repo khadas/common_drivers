@@ -1177,20 +1177,26 @@ static void vdin_write_afbce_mem(struct vdin_dev_s *devp, char *type,
 				 char *path)
 {
 	char md_path_head[100], md_path_body[100];
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	unsigned int i, j;
+#else
+	unsigned int i;
+#endif
 	int highmem_flag = 0;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	unsigned int size = 0;
 	unsigned int span = 0;
-	unsigned int remain = 0;
 	unsigned int count = 0;
 	unsigned long highaddr;
 	unsigned long phys;
-	long val;
 	struct file *filp = NULL;
 	loff_t pos = 0;
-	void *head_dts = NULL;
 	void *body_dts = NULL;
 	void *vbuf = NULL;
+	unsigned int remain = 0;
+#endif
+	long val;
+	void *head_dts = NULL;
 
 	if (kstrtol(type, 10, &val) < 0)
 		return;
@@ -1300,6 +1306,7 @@ static void vdin_write_afbce_mem(struct vdin_dev_s *devp, char *type,
 static void vdin_write_mem(struct vdin_dev_s *devp, char *type,
 			   char *path, char *md_path)
 {
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	unsigned int size = 0, vtype = 0;
 	struct file *filp = NULL,  *md_flip = NULL;
 	loff_t pos = 0;
@@ -1310,6 +1317,10 @@ static void vdin_write_mem(struct vdin_dev_s *devp, char *type,
 	unsigned long addr;
 	unsigned long highaddr;
 	struct vf_pool *p = devp->vfp;
+#else
+	long val;
+	unsigned int vtype = 0;
+#endif
 	/* vtype = simple_strtol(type, NULL, 10); */
 
 	if (kstrtol(type, 10, &val) < 0)

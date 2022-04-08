@@ -38,6 +38,11 @@ static inline unsigned int get_resume_reason(void)
 {
 	return 0;
 }
+
+static inline unsigned int is_pm_s2idle_mode(void)
+{
+	return 0;
+}
 #endif
 
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND

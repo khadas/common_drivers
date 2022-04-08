@@ -45,6 +45,7 @@
 #include <linux/amlogic/pm.h>
 #include <linux/amlogic/cpu_version.h>
 #include <linux/amlogic/iomap.h>
+#include <linux/compat.h>
 
 #include "adc.h"
 
@@ -1366,7 +1367,7 @@ static int adc_probe(struct platform_device *pdev)
 		size = resource_size(res);
 		devp->phy_addr[i].size = size;
 		devp->phy_addr[i].phy_addr = res->start;
-		devp->vir_addr[i] = devm_ioremap_nocache(&pdev->dev, res->start, size);
+		devp->vir_addr[i] = devm_ioremap(&pdev->dev, res->start, size);
 	}
 
 	mutex_init(&devp->ioctl_mutex);

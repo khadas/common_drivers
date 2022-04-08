@@ -677,7 +677,7 @@ static int aml_atvdemod_probe(struct platform_device *pdev)
 	}
 
 	size_io_reg = resource_size(res);
-	dev->demod_reg_base = devm_ioremap_nocache(&pdev->dev,
+	dev->demod_reg_base = devm_ioremap(&pdev->dev,
 			res->start, size_io_reg);
 	if (!dev->demod_reg_base) {
 		ret = -ENXIO;
@@ -695,7 +695,7 @@ static int aml_atvdemod_probe(struct platform_device *pdev)
 		dev->hiu_reg_base = NULL;
 	} else {
 		size_io_reg = resource_size(res);
-		dev->hiu_reg_base = devm_ioremap_nocache(
+		dev->hiu_reg_base = devm_ioremap(
 				&pdev->dev, res->start, size_io_reg);
 		if (!dev->hiu_reg_base) {
 			ret = -ENXIO;
@@ -714,7 +714,7 @@ static int aml_atvdemod_probe(struct platform_device *pdev)
 		dev->periphs_reg_base = NULL;
 	} else {
 		size_io_reg = resource_size(res);
-		dev->periphs_reg_base = devm_ioremap_nocache(
+		dev->periphs_reg_base = devm_ioremap(
 				&pdev->dev, res->start, size_io_reg);
 		if (!dev->periphs_reg_base) {
 			/* ret = -ENXIO; */
@@ -733,7 +733,7 @@ static int aml_atvdemod_probe(struct platform_device *pdev)
 		dev->audiodemod_reg_base = NULL;
 	} else {
 		size_io_reg = resource_size(res);
-		dev->audiodemod_reg_base = devm_ioremap_nocache(
+		dev->audiodemod_reg_base = devm_ioremap(
 				&pdev->dev, res->start, size_io_reg);
 		if (!dev->audiodemod_reg_base) {
 			ret = -ENXIO;

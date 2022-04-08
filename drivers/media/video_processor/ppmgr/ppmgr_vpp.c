@@ -2016,6 +2016,7 @@ static int process_vf_tb_detect(struct vframe_s *vf,
 #endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_CODEC_MM
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static int copy_phybuf_to_file(ulong phys, u32 size,
 			       struct file *fp, loff_t pos)
 {
@@ -2046,6 +2047,7 @@ static int copy_phybuf_to_file(ulong phys, u32 size,
 	}
 	return 0;
 }
+#endif
 
 /*
  * 1: yuv
@@ -2085,12 +2087,16 @@ static void process_vf_rotate(struct vframe_s *vf,
 	int ret = 0;
 	unsigned int cur_angle = 0;
 	int interlace_mode;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *filp_scr = NULL;
 	struct file *filp_dst = NULL;
+#endif
 	char source_path[64];
 	char dst_path[64];
 	int count;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	int result = 0;
+#endif
 
 	if (ppmgr_device.debug_ppmgr_flag)
 		pr_info("ppmgr:rotate\n");

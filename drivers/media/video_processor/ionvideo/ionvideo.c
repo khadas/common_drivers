@@ -922,7 +922,7 @@ static int ionvideo_create_instance(int inst,
 	 * all fops and v4l2 ioctls.
 	 */
 
-	ret = video_register_device(vfd, VFL_TYPE_GRABBER,
+	ret = video_register_device(vfd, VFL_TYPE_VIDEO,
 				    inst + video_nr_base);
 	if (ret < 0)
 		goto unreg_dev;

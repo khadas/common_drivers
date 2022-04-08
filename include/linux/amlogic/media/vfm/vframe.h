@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
+ * include/linux/amlogic/media/vfm/vframe.h
  *
  * Copyright (C) 2017 Amlogic, Inc. All rights reserved.
  *
@@ -25,6 +26,8 @@
 #include <linux/amlogic/media/canvas/canvas.h>
 #include <linux/atomic.h>
 #include <linux/amlogic/iomap.h>
+#include <linux/amlogic/media/utils/amstream.h>
+#include <linux/amlogic/media/utils/am_com.h>
 
 #define VIDTYPE_PROGRESSIVE             0x0
 #define VIDTYPE_INTERLACE_TOP           0x1
@@ -489,7 +492,7 @@ struct vf_nn_sr_t {
 	u32 nn_status;
 	u32 nn_index;
 	u32 nn_mode;
-	struct timespec64 start_time;
+	struct timeval start_time;
 };
 
 struct vf_aipq_t {
@@ -508,6 +511,18 @@ struct video_composer_private {
 	struct vframe_s *src_vf;
 	u32 last_disp_count; /*last frame disp vsync count*/
 	u32 vsync_index;
+	/*used to control mbp buffer*/
+	void (*lock_buffer_cb)(void *arg);
+	void (*unlock_buffer_cb)(void *arg);
+};
+
+#define VF_UD_MAX_SIZE 5120 /* 5K size */
+#define UD_MAGIC_CODE 0x55445020 /* UDP */
+#define is_ud_param_valid(ud) ((ud.magic_code) == UD_MAGIC_CODE)
+
+struct vf_ud_param_s {
+	u32 magic_code;
+	struct userdata_param_t ud_param;
 };
 
 struct vframe_s {
@@ -697,6 +712,9 @@ struct vframe_s {
 
 	u32 meta_data_size;
 	char *meta_data_buf;
+
+	/* data address of userdata_param_t structure */
+	struct vf_ud_param_s vf_ud_param;
 } /*vframe_t */;
 
 int get_curren_frame_para(int *top, int *left, int *bottom, int *right);
@@ -704,25 +722,12 @@ int get_curren_frame_para(int *top, int *left, int *bottom, int *right);
 u8 is_vpp_postblend(void);
 
 void pause_video(unsigned char pause_flag);
-
-#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
 s32 update_vframe_src_fmt(struct vframe_s *vf,
 			  void *sei,
 			  u32 size,
 			  bool dual_layer,
 			  char *prov_name,
 			  char *recv_name);
-#else
-s32 __weak update_vframe_src_fmt(struct vframe_s *vf,
-			  void *sei,
-			  u32 size,
-			  bool dual_layer,
-			  char *prov_name,
-			  char *recv_name)
-{
-	return -1;
-}
-#endif
 void *get_sei_from_src_fmt(struct vframe_s *vf, u32 *sei_size);
 enum vframe_signal_fmt_e get_vframe_src_fmt(struct vframe_s *vf);
 s32 clear_vframe_src_fmt(struct vframe_s *vf);

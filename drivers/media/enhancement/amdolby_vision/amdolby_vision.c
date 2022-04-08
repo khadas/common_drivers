@@ -11555,6 +11555,7 @@ static void restore_dv_pq_setting(enum pq_reset_e pq_reset)
 		pr_info("reset pq %d\n", pq_reset);
 }
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static void set_dv_pq_center(void)
 {
 	int mode = 0;
@@ -11578,7 +11579,9 @@ static void set_dv_pq_center(void)
 	}
 #endif
 }
+#endif
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static void set_dv_pq_range(void)
 {
 	pq_range[PQ_BRIGHTNESS].left = LEFT_RANGE_BRIGHTNESS;
@@ -11590,7 +11593,9 @@ static void set_dv_pq_range(void)
 	pq_range[PQ_SATURATION].left = LEFT_RANGE_SATURATION;
 	pq_range[PQ_SATURATION].right = RIGHT_RANGE_SATURATION;
 }
+#endif
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static void remove_comments(char *p_buf)
 {
 	if (!p_buf)
@@ -11600,7 +11605,9 @@ static void remove_comments(char *p_buf)
 
 	*p_buf = 0;
 }
+#endif
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 #define MAX_READ_SIZE 256
 static char cur_line[MAX_READ_SIZE];
 
@@ -11646,7 +11653,9 @@ static bool get_one_line(char **cfg_buf, char *line_buf, bool ignore_comments)
 		pr_info("get line %s\n", line_buf);
 	return eof_flag;
 }
+#endif
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static void get_picture_mode_info(char *cfg_buf)
 {
 	char *ptr_line;
@@ -11744,6 +11753,7 @@ static void get_picture_mode_info(char *cfg_buf)
 		}
 	}
 }
+#endif
 
 static bool load_dv_pq_config_data(char *bin_path, char *txt_path)
 {

@@ -13,8 +13,12 @@ struct timeval {
 	__kernel_suseconds_t	tv_usec;	/* microseconds */
 };
 
-static inline void do_gettimeofday(struct timespec64 *tv)
+static inline void do_gettimeofday(struct timeval *tv)
 {
-	ktime_get_real_ts64(tv);
+	struct timespec64 now;
+
+	ktime_get_real_ts64(&now);
+	tv->tv_sec = now.tv_sec;
+	tv->tv_usec = now.tv_nsec / 1000;
 }
 #endif /* AM_COM_H */

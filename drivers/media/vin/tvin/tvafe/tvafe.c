@@ -1829,7 +1829,7 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 		return -EBUSY;
 	}
 	tvafe_reg_base =
-		devm_ioremap_nocache(&pdev->dev, res->start, size_io_reg);
+		devm_ioremap(&pdev->dev, res->start, size_io_reg);
 	if (!tvafe_reg_base) {
 		dev_err(&pdev->dev, "tvafe ioremap failed\n");
 		return -ENOMEM;
@@ -1843,7 +1843,7 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 		tvafe_pr_info("%s: hiu reg base=0x%p,size=0x%x\n",
 			__func__, (void *)res->start, size_io_reg);
 		hiu_reg_base =
-			devm_ioremap_nocache(&pdev->dev, res->start, size_io_reg);
+			devm_ioremap(&pdev->dev, res->start, size_io_reg);
 		if (!hiu_reg_base) {
 			dev_err(&pdev->dev, "hiu ioremap failed\n");
 			return -ENOMEM;
@@ -1863,7 +1863,7 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 		sys_clk_reg_base = HHI_ANA_CLK_BASE;
 	else if (tvafe_cpu_type() == TVAFE_CPU_TYPE_T3)
 		sys_clk_reg_base = ATV_DMD_SYS_CLK_CNTL;
-	ana_addr = ioremap_nocache(sys_clk_reg_base, 0x5);
+	ana_addr = ioremap(sys_clk_reg_base, 0x5);
 	if (!ana_addr) {
 		tvafe_pr_err("ana ioremap failure\n");
 		return -ENOMEM;

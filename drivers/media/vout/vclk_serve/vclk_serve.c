@@ -79,7 +79,7 @@ static int vclk_ioremap(struct platform_device *pdev)
 		}
 		vclk_reg_map[table[i]].base_addr = res->start;
 		vclk_reg_map[table[i]].size = resource_size(res);
-		vclk_reg_map[table[i]].p = devm_ioremap_nocache(&pdev->dev,
+		vclk_reg_map[table[i]].p = devm_ioremap(&pdev->dev,
 			res->start, vclk_reg_map[table[i]].size);
 		if (!vclk_reg_map[table[i]].p) {
 			vclk_reg_map[table[i]].flag = 0;

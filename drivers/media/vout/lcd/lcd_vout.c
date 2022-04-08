@@ -42,6 +42,7 @@
 #ifdef CONFIG_AMLOGIC_VPU
 #include <linux/amlogic/media/vpu/vpu.h>
 #endif
+#include <linux/compat.h>
 
 #include <linux/amlogic/gki_module.h>
 

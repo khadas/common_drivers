@@ -71,7 +71,7 @@
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
 #endif
 #include "dnlp_cal.h"
-#include "vlock.h"
+#include <linux/amlogic/media/enhancement/amvecm/vlock.h>
 #include "hdr/am_hdr10_plus.h"
 #include "local_contrast.h"
 #include "arch/vpp_hdr_regs.h"
@@ -7901,8 +7901,10 @@ static ssize_t amvecm_debug_store(struct class *cla,
 			unsigned int encode_table_size;
 			char data[4];
 			char *buffer = NULL;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 			struct file *fp;
 			loff_t pos;
+#endif
 
 			encode_table_size =
 				257 * sizeof(unsigned long);
@@ -8011,8 +8013,10 @@ static ssize_t amvecm_debug_store(struct class *cla,
 			unsigned int *section_out;
 			unsigned int encode_table_size;
 			char *tmp, tmp1[10] = {0};
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 			struct file *fp;
 			loff_t pos;
+#endif
 
 			encode_table_size =
 				257 * sizeof(unsigned long);

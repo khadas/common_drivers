@@ -26,6 +26,7 @@
 #include <linux/amlogic/media/vrr/vrr.h>
 #include "vrr_drv.h"
 #include "vrr_reg.h"
+#include <linux/compat.h>
 
 #include <linux/amlogic/gki_module.h>
 

@@ -22,6 +22,7 @@
 #include <linux/amlogic/media/video_sink/video.h>
 #endif
 #include "videodisplay.h"
+#include <frc_interface.h>
 
 static struct timeval vsync_time;
 static DEFINE_MUTEX(video_display_mutex);

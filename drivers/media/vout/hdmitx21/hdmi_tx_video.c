@@ -29,11 +29,8 @@ static void construct_avi_packet(struct hdmitx_dev *hdev)
 {
 	struct hdmi_avi_infoframe *info = &hdev->infoframes.avi.avi;
 	struct hdmi_format_para *para = hdev->para;
-	int ret;
 
-	ret = hdmi_avi_infoframe_init(info);
-	if (ret)
-		pr_info("init avi infoframe failed\n");
+	hdmi_avi_infoframe_init(info);
 	info->colorspace = para->cs;
 	info->scan_mode = HDMI_SCAN_MODE_NONE;
 	info->colorimetry = HDMI_COLORIMETRY_ITU_709;

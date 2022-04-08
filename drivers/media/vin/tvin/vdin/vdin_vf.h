@@ -22,6 +22,7 @@
 /* Standard Linux Headers */
 #include <linux/kernel.h>
 #include <linux/spinlock.h>
+#include <uapi/linux/time.h>
 
 /* Amlogic Linux Headers */
 #include <linux/amlogic/media/vfm/vframe_provider.h>
@@ -96,14 +97,14 @@ struct vf_log_s {
 	/* [2:0]	operation ID */
 	unsigned char  log_buf[VF_LOG_LEN][11];
 	unsigned int   log_cur;
-	struct timespec/*timeval*/ log_time[VF_LOG_LEN];
+	struct timespec64/*timeval*/ log_time[VF_LOG_LEN];
 };
 #endif
 
 #ifdef ISR_LOG_EN
 #define ISR_LOG_LEN 2000
 struct isr_log_s {
-	struct timespec /*timeval*/ isr_time[ISR_LOG_LEN];
+	struct timespec64 /*timeval*/ isr_time[ISR_LOG_LEN];
 	unsigned int log_cur;
 	unsigned char isr_log_en;
 };

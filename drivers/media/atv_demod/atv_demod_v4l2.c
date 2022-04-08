@@ -1040,7 +1040,7 @@ static struct video_device aml_atvdemod_vdev = {
 	.ioctl_ops   = &v4l2_fe_ioctl_ops,
 	.name        = DEVICE_NAME,
 	.release     = v4l2_frontend_vdev_release,
-	.vfl_type    = VFL_TYPE_GRABBER,
+	.vfl_type    = VFL_TYPE_VIDEO,
 	.vfl_dir     = VFL_DIR_TX,
 };
 

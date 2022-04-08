@@ -42,3 +42,4 @@ ccflags-y += -I$(COMMON_DRIVERS_DIR)/drivers/media/common/rdma/
 ccflags-y += -I$(src)/di_multi/
 ccflags-y += -I$(src)/di_multi/sc2
 ccflags-y += -I$(COMMON_DRIVERS_DIR)/drivers/media/di_local/
+ccflags-y += -DCOMMON_DRIVERS_DIR=$(COMMON_DRIVERS_DIR)

@@ -45,6 +45,7 @@
 #include "vfq.h"
 #include <linux/amlogic/media/ge2d/ge2d.h>
 #include "vframe_ge2d_composer.h"
+#include <linux/amlogic/media/utils/am_com.h>
 
 #define MXA_LAYER_COUNT 9
 #define COMPOSER_READY_POOL_SIZE 32

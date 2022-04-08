@@ -2813,7 +2813,7 @@ void rx_5v_monitor(void)
  */
 void rx_monitor_error_cnt_start(void)
 {
-	rx.phy.timestap = get_seconds();
+	rx.phy.timestap = ktime_get_real_seconds();
 }
 
 /*
@@ -2828,7 +2828,7 @@ void rx_monitor_error_counter(void)
 	if (rx.chip_id < CHIP_ID_TL1)
 		return;
 
-	timestap = get_seconds();
+	timestap = ktime_get_real_seconds();
 
 	if ((timestap - rx.phy.timestap) > 1) {
 		rx.phy.timestap = timestap;

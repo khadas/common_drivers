@@ -316,6 +316,7 @@ static void atv_demod_set_params(struct dvb_frontend *fe,
 
 	/* afc tune enable */
 	/* analog_search_flag == 0 or afc_range != 0 means searching */
+#ifdef TEMP_REMOVE_CODE
 	if ((fe->ops.info.type == FE_ANALOG)
 			&& (priv->scanning == false)
 			&& (p->param.mode == 0)) {
@@ -330,6 +331,7 @@ static void atv_demod_set_params(struct dvb_frontend *fe,
 
 		pr_dbg("%s: frequency %d.\n", __func__, p->param.frequency);
 	}
+#endif
 }
 
 static int atv_demod_has_signal(struct dvb_frontend *fe, u16 *signal)
@@ -786,7 +788,9 @@ static void atvdemod_fe_try_signal(struct v4l2_frontend *v4l2_fe,
 	bool try_secaml = false;
 	bool try_secamlc = false;
 	unsigned int tuner_id = priv->atvdemod_param.tuner_id;
+#ifdef TEMP_REMOVE_CODE
 	s16 strength = 0;
+#endif
 
 	if (fe->ops.analog_ops.set_params) {
 		params.frequency = p->frequency;
@@ -819,6 +823,7 @@ static void atvdemod_fe_try_signal(struct v4l2_frontend *v4l2_fe,
 			usleep_range(10 * 1000, 10 * 1000 + 100);
 		}
 
+#ifdef TEMP_REMOVE_CODE
 		/* Add tuner rssi strength check */
 		if (tuner_id == AM_TUNER_ATBM2040 &&
 			fe->ops.tuner_ops.get_strength && check_rssi) {
@@ -830,6 +835,7 @@ static void atvdemod_fe_try_signal(struct v4l2_frontend *v4l2_fe,
 				break;
 			}
 		}
+#endif
 
 		fe->ops.analog_ops.has_signal(fe, (u16 *)&ade_state);
 		try_cnt--;
@@ -910,8 +916,8 @@ static int atvdemod_fe_afc_closer(struct v4l2_frontend *v4l2_fe, int minafcfreq,
 	int lock_cnt = 0;
 	static int freq_success;
 	static int temp_freq, temp_afc;
-	struct timespec time_now;
-	static struct timespec success_time;
+	struct timespec64 time_now;
+	static struct timespec64 success_time;
 	unsigned int tuner_id = priv->atvdemod_param.tuner_id;
 
 	pr_dbg("[%s] freq_success: %d, freq: %d, minfreq: %d, maxfreq: %d\n",
@@ -920,9 +926,9 @@ static int atvdemod_fe_afc_closer(struct v4l2_frontend *v4l2_fe, int minafcfreq,
 	/* avoid more search the same program, except < 45.00Mhz */
 	if (abs(p->frequency - freq_success) < 3000000
 			&& p->frequency > 45000000) {
-		ktime_get_ts(&time_now);
+		ktime_get_ts64(&time_now);
 		pr_err("[%s] tv_sec now:%ld,tv_sec success:%ld\n",
-				__func__, time_now.tv_sec, success_time.tv_sec);
+				__func__, (long)time_now.tv_sec, (long)success_time.tv_sec);
 		/* beyond 10s search same frequency is ok */
 		if ((time_now.tv_sec - success_time.tv_sec) < 10)
 			return -1;
@@ -1050,7 +1056,7 @@ static int atvdemod_fe_afc_closer(struct v4l2_frontend *v4l2_fe, int minafcfreq,
 		}
 
 		freq_success = p->frequency;
-		ktime_get_ts(&success_time);
+		ktime_get_ts64(&success_time);
 		pr_dbg("[%s] get afc %d khz done, freq %u.\n",
 				__func__, afc, p->frequency);
 	}
@@ -1478,7 +1484,9 @@ struct dvb_frontend *aml_atvdemod_attach(struct dvb_frontend *fe,
 
 	mutex_unlock(&atv_demod_list_mutex);
 
+#ifdef TEMP_REMOVE_CODE
 	fe->ops.info.type = FE_ANALOG;
+#endif
 
 	memcpy(&fe->ops.analog_ops, &atvdemod_ops,
 			sizeof(struct analog_demod_ops));

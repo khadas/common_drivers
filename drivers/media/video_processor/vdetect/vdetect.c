@@ -2371,7 +2371,7 @@ static int vdetect_create_instance(int inst)
 	 * Provide a mutex to v4l2 core. It will be used to protect
 	 * all fops and v4l2 ioctls.
 	 */
-	ret = video_register_device(vfd, VFL_TYPE_GRABBER,
+	ret = video_register_device(vfd, VFL_TYPE_VIDEO,
 				    dev->inst + vdetect_base);
 	if (ret < 0)
 		goto unreg_dev;

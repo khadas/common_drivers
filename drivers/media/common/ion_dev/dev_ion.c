@@ -27,7 +27,18 @@ static struct heap_type_desc {
 	unsigned long flags;
 } meson_heap_descs[] = {
 	{
+		.name = "codec_mm_cma",
+		.heap_type = ION_HEAP_TYPE_CUSTOM,
+		.ops = &codec_mm_heap_ops,
+		.flags = ION_HEAP_FLAG_DEFER_FREE,
+	},
+	{
 		.name = "ion-dev",
+		.heap_type = ION_HEAP_TYPE_DMA,
+		.ops = &ion_cma_ops,
+	},
+	{
+		.name = "ion-fb",
 		.heap_type = ION_HEAP_TYPE_DMA,
 		.ops = &ion_cma_ops,
 	},
@@ -89,11 +100,23 @@ static unsigned int meson_ion_heap_id_get(char *heap_name)
 	return 0;
 }
 
+unsigned int meson_ion_codecmm_heap_id_get(void)
+{
+	return meson_ion_heap_id_get("codec_mm_cma");
+}
+EXPORT_SYMBOL(meson_ion_codecmm_heap_id_get);
+
 unsigned int meson_ion_cma_heap_id_get(void)
 {
 	return meson_ion_heap_id_get("ion-dev");
 }
 EXPORT_SYMBOL(meson_ion_cma_heap_id_get);
+
+unsigned int meson_ion_fb_heap_id_get(void)
+{
+	return meson_ion_heap_id_get("ion-fb");
+}
+EXPORT_SYMBOL(meson_ion_fb_heap_id_get);
 
 void __meson_ion_add_heap(struct ion_heap *heap,
 			  struct heap_type_desc *desc)

@@ -4794,7 +4794,7 @@ void dimh_load_regs(struct di_pq_parm_s *di_pq_ptr)
 		pr_info("[DI]%s hw load 0x%x pq table len %u.\n",
 			__func__, di_pq_ptr->pq_parm.table_name,
 			di_pq_ptr->pq_parm.table_len);
-	if (PTR_RET(di_pq_ptr->regs)) {
+	if (PTR_ERR_OR_ZERO(di_pq_ptr->regs)) {
 		PR_ERR("[DI] table ptr error.\n");
 		return;
 	}

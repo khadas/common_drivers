@@ -234,7 +234,9 @@ static void atv_demod_afc_timer_handler(struct timer_list *timer)
 {
 	struct atv_demod_afc *afc = container_of(timer,
 			struct atv_demod_afc, timer);
+#ifdef TEMP_REMOVE_CODE
 	struct dvb_frontend *fe = afc->fe;
+#endif
 	unsigned int delay_ms = 0;
 
 	if (afc->state == AFC_DISABLE)
@@ -255,8 +257,11 @@ static void atv_demod_afc_timer_handler(struct timer_list *timer)
 		afc->timer_delay_cnt--;
 		return;
 	}
-
-	if ((afc_timer_en == false) || (fe->ops.info.type != FE_ANALOG))
+#ifdef TEMP_REMOVE_CODE
+	if (!afc_timer_en || (fe->ops.info.type != FE_ANALOG))
+#else
+	if (!afc_timer_en)
+#endif
 		return;
 
 	if (afc->state == AFC_PAUSE)

@@ -1623,6 +1623,7 @@ int lcd_tcon_data_load(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf, int 
 int lcd_tcon_bin_load(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned char *table = tcon_mm_table.core_reg_table;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *filp = NULL;
 	loff_t pos = 0;
 	struct lcd_tcon_data_block_header_s block_header;
@@ -1630,6 +1631,11 @@ int lcd_tcon_bin_load(struct aml_lcd_drv_s *pdrv)
 	char *str;
 	int i, data_cnt = 0;
 	unsigned int n = 0, size;
+#else
+	char *str;
+	int i;
+	unsigned int n = 0;
+#endif
 	int ret;
 
 	if (tcon_mm_table.version == 0) {

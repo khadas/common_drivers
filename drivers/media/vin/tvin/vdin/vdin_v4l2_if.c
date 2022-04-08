@@ -1190,7 +1190,7 @@ int vdin_v4l2_probe(struct platform_device *pldev,
 	video_dev->v4l2_dev = &pvdindev->v4l2_dev;/*v4l2_device_register*/
 	video_dev->device_caps = V4L2_CAP_VIDEO_CAPTURE_MPLANE;//V4L2_CAP_VIDEO_CAPTURE;
 
-	video_dev->vfl_type = VFL_TYPE_GRABBER;
+	video_dev->vfl_type = VFL_TYPE_VIDEO;
 	video_dev->vfl_dir   = VFL_DIR_RX;
 	video_dev->dev_debug = (V4L2_DEV_DEBUG_IOCTL | V4L2_DEV_DEBUG_IOCTL_ARG);
 
@@ -1202,7 +1202,7 @@ int vdin_v4l2_probe(struct platform_device *pldev,
 	/*video_dev->dev.init_name = VDIN_V4L_DV_NAME;*/
 	video_set_drvdata(video_dev, pvdindev);
 
-	ret = video_register_device(video_dev, VFL_TYPE_GRABBER,/* -1*/
+	ret = video_register_device(video_dev, VFL_TYPE_VIDEO,/* -1*/
 				    (VDIN_VD_NUMBER + (pvdindev->index)));
 	if (ret) {
 		dprintk(0, "register dev fail.\n");

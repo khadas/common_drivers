@@ -25,6 +25,7 @@
 #include <linux/sched.h>
 #include <linux/jiffies.h>
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
+#include <linux/compat.h>
 
 #include "resourcemanage.h"
 #define RESMAM_ENABLE_JSON  (1)

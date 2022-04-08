@@ -6,7 +6,7 @@
 #ifndef _TVAFE_DEBUG_H_
 #define _TVAFE_DEBUG_H_
 
-#include <stdarg.h>
+//#include <stdarg.h>
 #include <linux/printk.h>
 
 #undef pr_fmt

@@ -34,7 +34,7 @@
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #endif
 #include <linux/dma-buf.h>
-#include <linux/ion.h>
+#include <ion/ion.h>
 #include "video_composer.h"
 #include <linux/amlogic/media/utils/am_com.h>
 #include <linux/amlogic/meson_uvm_core.h>

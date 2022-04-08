@@ -82,7 +82,7 @@ void vftrace_info_in(void *vhandle, struct vframe_s *vf)
 
 	if (!vftrace || !vf)
 		return;
-	do_gettimeofday(&tv);
+	ktime_get_real_ts64(&tv);
 	TRACE_LOCK(vftrace);
 	info = &vftrace->trace_buf[vftrace->w_index];
 	info->index = vf->index;

@@ -54,7 +54,7 @@ static int vs_ioremap(struct platform_device *pdev)
 	vs_reg_map->base_addr = res->start;
 	vs_reg_map->size = resource_size(res);
 	vs_reg_map->p =
-		devm_ioremap_nocache(&pdev->dev, res->start, vs_reg_map->size);
+		devm_ioremap(&pdev->dev, res->start, vs_reg_map->size);
 	if (!vs_reg_map->p) {
 		vs_reg_map->flag = 0;
 		VSERR("%s: reg map failed: 0x%x\n",

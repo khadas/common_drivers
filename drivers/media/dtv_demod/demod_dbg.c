@@ -520,6 +520,7 @@ int write_usb_mass(struct dtvdemod_capture_s *cap, unsigned int read_start)
 	return 0;
 }
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static u8 *demod_vmap(ulong addr, u32 size)
 {
 	u8 *vaddr = NULL;
@@ -559,7 +560,9 @@ static u8 *demod_vmap(ulong addr, u32 size)
 
 	return vaddr + offset;
 }
+#endif
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static void demod_unmap_phyaddr(u8 *vaddr)
 {
 	void *addr = (void *)(PAGE_MASK & (ulong)vaddr);
@@ -569,7 +572,9 @@ static void demod_unmap_phyaddr(u8 *vaddr)
 		PR_INFO("%s:%p\n", __func__, vaddr);
 	}
 }
+#endif
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static void demod_dma_flush(void *vaddr, int size, enum dma_data_direction dir)
 {
 	ulong phy_addr;
@@ -590,6 +595,7 @@ static void demod_dma_flush(void *vaddr, int size, enum dma_data_direction dir)
 		return;
 	}
 }
+#endif
 
 static int read_memory_to_file(char *path, unsigned int start_addr,
 				unsigned int size)
@@ -1217,8 +1223,10 @@ static ssize_t attr_store(struct class *cls,
 
 		if (fe->ops.init)
 			fe->ops.init(fe);
+#ifdef TEMP_REMOVE_CODE
 		if (fe->ops.set_property)
 			fe->ops.set_property(fe, &tvp);
+#endif
 		if (fe->ops.tune)
 			fe->ops.tune(fe, true, 0, &delay, &sts);
 	} else if (!strcmp(parm[0], "tune")) {

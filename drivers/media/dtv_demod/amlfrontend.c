@@ -55,6 +55,7 @@
 #include <linux/amlogic/media/frame_provider/tvin/tvin.h>
 #include <linux/amlogic/media/vout/vdac_dev.h>
 #include <linux/amlogic/aml_dtvdemod.h>
+#include <linux/amlogic/media/porting_weak.h>
 
 MODULE_PARM_DESC(auto_search_std, "\n\t\t atsc-c std&hrc search");
 static unsigned int auto_search_std;
@@ -120,7 +121,11 @@ const char *name_fe_delivery_system[] = {
 
 const char *dtvdemod_get_cur_delsys(enum fe_delivery_system delsys)
 {
+#ifdef TEMP_REMOVE_CODE
 	if ((delsys >= SYS_UNDEFINED) && (delsys <= SYS_ANALOG))
+#else
+	if ((delsys >= SYS_UNDEFINED) && (delsys <= SYS_DVBC_ANNEX_C))
+#endif
 		return name_fe_delivery_system[delsys];
 	else
 		return "invalid delsys";
@@ -1560,6 +1565,7 @@ int dvbt_isdbt_Init(struct aml_dtvdemod *demod)
 	return 0;
 }
 
+#ifdef TEMP_REMOVE_CODE
 static unsigned int dvbt_init(struct aml_dtvdemod *demod)
 {
 	struct aml_demod_sys sys;
@@ -1591,7 +1597,9 @@ static unsigned int dvbt_init(struct aml_dtvdemod *demod)
 
 	return 0;
 }
+#endif
 
+#ifdef TEMP_REMOVE_CODE
 static unsigned int dtvdemod_dvbt2_init(struct aml_dtvdemod *demod)
 {
 	struct aml_demod_sys sys;
@@ -1618,6 +1626,7 @@ static unsigned int dtvdemod_dvbt2_init(struct aml_dtvdemod *demod)
 
 	return 0;
 }
+#endif
 
 static void gxtv_demod_atsc_release(struct dvb_frontend *fe)
 {
@@ -2597,6 +2606,7 @@ static int dvbt2_tune(struct dvb_frontend *fe, bool re_tune,
 	return 0;
 }
 
+#ifdef TEMP_REMOVE_CODE
 static int dtvdemod_atsc_init(struct aml_dtvdemod *demod)
 {
 	struct aml_demod_sys sys;
@@ -2633,6 +2643,7 @@ static int dtvdemod_atsc_init(struct aml_dtvdemod *demod)
 
 	return 0;
 }
+#endif
 
 static void gxtv_demod_dtmb_release(struct dvb_frontend *fe)
 {
@@ -3954,6 +3965,7 @@ static int dtvdemod_dvbs_tune(struct dvb_frontend *fe, bool re_tune,
 	return ret;
 }
 
+#ifdef TEMP_REMOVE_CODE
 static int dtvdemod_dvbs2_init(struct aml_dtvdemod *demod)
 {
 	struct aml_demod_sys sys;
@@ -3988,6 +4000,7 @@ static int dtvdemod_dvbs2_init(struct aml_dtvdemod *demod)
 	/*enable diseqc irq*/
 	return 0;
 }
+#endif
 
 static int gxtv_demod_dtmb_tune(struct dvb_frontend *fe, bool re_tune,
 	unsigned int mode_flags, unsigned int *delay, enum fe_status *status)
@@ -4242,12 +4255,17 @@ static void demod_32k_ctrl(unsigned int onoff)
 	}
 }
 
+#ifdef TEMP_REMOVE_CODE
 static bool enter_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsys)
 {
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	int ret = 0;
 
+#ifdef TEMP_REMOVE_CODE
 	if (delsys < SYS_ANALOG)
+#else
+	if (delsys < SYS_DVBC_ANNEX_C)
+#endif
 		PR_INFO("%s [id %d]:%s\n", __func__, demod->id,
 				name_fe_delivery_system[delsys]);
 	else
@@ -4354,6 +4372,7 @@ static bool enter_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsy
 
 	return ret;
 }
+#endif
 
 static int leave_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsys)
 {
@@ -4361,7 +4380,11 @@ static int leave_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsys
 	struct aml_dtvdemod *tmp = NULL;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 
+#ifdef TEMP_REMOVE_CODE
 	if (delsys < SYS_ANALOG)
+#else
+	if (delsys < SYS_DVBC_ANNEX_C)
+#endif
 		PR_INFO("%s [id %d]:%s\n", __func__, demod->id,
 				name_fe_delivery_system[delsys]);
 	else
@@ -4723,20 +4746,20 @@ static int dds_init_reg_map(struct platform_device *pdev)
 		size = resource_size(res);
 		preg[i].size = size;
 		preg[i].phy_addr = res->start;
-		pv[i].v = devm_ioremap_nocache(&pdev->dev, res->start, size);
+		pv[i].v = devm_ioremap(&pdev->dev, res->start, size);
 	}
 
 	switch (devp->data->hw_ver) {
 	case DTVDEMOD_HW_T5D:
 		devp->dmc_phy_addr = 0xff638000;
-		devp->dmc_v_addr = devm_ioremap_nocache(&pdev->dev, 0xff638000, 0x2000);
+		devp->dmc_v_addr = devm_ioremap(&pdev->dev, 0xff638000, 0x2000);
 		devp->ddr_phy_addr = 0xff63c000;
-		devp->ddr_v_addr = devm_ioremap_nocache(&pdev->dev, 0xff63c000, 0x2000);
+		devp->ddr_v_addr = devm_ioremap(&pdev->dev, 0xff63c000, 0x2000);
 		break;
 
 	case DTVDEMOD_HW_T5D_B:
 		devp->ddr_phy_addr = 0xff63c000;
-		devp->ddr_v_addr = devm_ioremap_nocache(&pdev->dev, 0xff63c000, 0x2000);
+		devp->ddr_v_addr = devm_ioremap(&pdev->dev, 0xff63c000, 0x2000);
 		break;
 
 	case DTVDEMOD_HW_T3:
@@ -5207,7 +5230,9 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 	freq_one_percent = (freq_max - freq_min) / 50;
 	PR_INFO("freq_one_percent : %d\n", freq_one_percent);
 	timer_set_max(demod, D_TIMER_DETECT, 600);
+#ifdef TEMP_REMOVE_CODE
 	fe->ops.info.type = FE_QPSK;
+#endif
 
 	if (fe->ops.tuner_ops.set_config)
 		fe->ops.tuner_ops.set_config(fe, NULL);
@@ -5262,7 +5287,11 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 			demod->blind_result_frequency =
 				fe->dtv_property_cache.frequency;
 
+#ifdef TEMP_REMOVE_CODE
 			status = BLINDSCAN_UPDATEPROCESS | FE_HAS_LOCK;
+#else
+			status = FE_HAS_LOCK;
+#endif
 			PR_DVBS("fft search:blind process %d%%\n",
 				fe->dtv_property_cache.frequency);
 			dvb_frontend_add_event(fe, status);
@@ -5310,7 +5339,11 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 					demod->blind_result_frequency =
 						fe->dtv_property_cache.frequency;
 
+#ifdef TEMP_REMOVE_CODE
 					status = BLINDSCAN_UPDATEPROCESS | FE_HAS_LOCK;
+#else
+					status = FE_HAS_LOCK;
+#endif
 					PR_DVBS("try to lock search:blind process %d%%\n",
 						fe->dtv_property_cache.frequency);
 					if (fe->dtv_property_cache.frequency < 100)
@@ -5330,7 +5363,11 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 						__func__, cur_locked_freq, polarity);
 
 					if (abs(last_locked_freq - cur_locked_freq) < 5000) {
+#ifdef TEMP_REMOVE_CODE
 						status = BLINDSCAN_UPDATEPROCESS | FE_HAS_LOCK;
+#else
+						status = FE_HAS_LOCK;
+#endif
 						PR_DVBS("same cur frc,do nt report\n");
 					} else {
 						symbol_rate_hw = dvbs_rd_byte(0x9fc) << 16;
@@ -5354,8 +5391,12 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 						demod->blind_result_symbol_rate =
 								fe->dtv_property_cache.symbol_rate;
 
+#ifdef TEMP_REMOVE_CODE
 						status = BLINDSCAN_UPDATERESULTFREQ |
 							FE_HAS_LOCK;
+#else
+						status = FE_HAS_LOCK;
+#endif
 
 						PR_DVBS("lock:freq %d,sr_hw %d curfreq:%d\n",
 							total_result.total_result_frc[k] * 1000,
@@ -5369,7 +5410,11 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 				k++;
 			}
 
+#ifdef TEMP_REMOVE_CODE
 			if (status == (BLINDSCAN_UPDATEPROCESS | FE_HAS_LOCK)) {
+#else
+			if (status == (FE_HAS_LOCK)) {
+#endif
 				//usleep_range(500000, 600000);
 				fe->dtv_property_cache.frequency = 100;
 				demod->blind_result_frequency = 100;
@@ -5379,12 +5424,20 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 		}
 	}
 
+#ifdef TEMP_REMOVE_CODE
 	if (status == (BLINDSCAN_UPDATERESULTFREQ | FE_HAS_LOCK)) {
+#else
+	if (status == (FE_HAS_LOCK)) {
+#endif
 		/* force process to 100% in case the lock freq is the last one */
 		//usleep_range(500000, 600000);
 		fe->dtv_property_cache.frequency = 100;
 		demod->blind_result_frequency = 100;
+#ifdef TEMP_REMOVE_CODE
 		status = BLINDSCAN_UPDATEPROCESS | FE_HAS_LOCK;
+#else
+		status = FE_HAS_LOCK;
+#endif
 		PR_DVBS("%s:force 100%% to upper layer\n", __func__);
 		dvb_frontend_add_event(fe, status);
 	}
@@ -5709,10 +5762,15 @@ void __exit aml_dtvdemod_exit(void)
 	PR_INFO("[amldtvdemod..]%s: driver removed ok.\n", __func__);
 }
 
+#ifdef TEMP_REMOVE_CODE
 static int delsys_set(struct dvb_frontend *fe, unsigned int delsys)
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
+#ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
+#endif
+#endif
 	enum fe_delivery_system ldelsys = demod->last_delsys;
 	enum fe_delivery_system cdelsys = delsys;
 	int ncaps, support;
@@ -5754,35 +5812,47 @@ static int delsys_set(struct dvb_frontend *fe, unsigned int delsys)
 	case SYS_DVBC_ANNEX_A:
 	case SYS_DVBC_ANNEX_C:
 		/* dvbc */
+#ifdef TEMP_REMOVE_CODE
 		fe->ops.info.type = FE_QAM;
+#endif
 		break;
 
 	case SYS_ATSC:
 	case SYS_ATSCMH:
 	case SYS_DVBC_ANNEX_B:
 		/* atsc */
+#ifdef TEMP_REMOVE_CODE
 		fe->ops.info.type = FE_ATSC;
+#endif
 		break;
 
 	case SYS_DVBT:
 	case SYS_DVBT2:
 		/* dvbt, OFDM */
+#ifdef TEMP_REMOVE_CODE
 		fe->ops.info.type = FE_OFDM;
+#endif
 		break;
 
 	case SYS_ISDBT:
+#ifdef TEMP_REMOVE_CODE
 		fe->ops.info.type = FE_ISDBT;
+#endif
 		break;
 
 	case SYS_DTMB:
 		/* dtmb */
+#ifdef TEMP_REMOVE_CODE
 		fe->ops.info.type = FE_DTMB;
+#endif
 		break;
 
 	case SYS_DVBS:
 	case SYS_DVBS2:
 		/* QPSK */
+#ifdef TEMP_REMOVE_CODE
 		fe->ops.info.type = FE_QPSK;
+#endif
 		break;
 
 	case SYS_DSS:
@@ -5796,6 +5866,7 @@ static int delsys_set(struct dvb_frontend *fe, unsigned int delsys)
 		return 0;
 
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 	case SYS_ANALOG:
 		if (get_dtvpll_init_flag()) {
 			PR_INFO("delsys not support : %d\n", cdelsys);
@@ -5879,6 +5950,7 @@ static int delsys_set(struct dvb_frontend *fe, unsigned int delsys)
 
 		return 0;
 #endif
+#endif
 	}
 
 	if (cdelsys != SYS_UNDEFINED) {
@@ -5912,13 +5984,18 @@ static int delsys_set(struct dvb_frontend *fe, unsigned int delsys)
 	}
 
 	demod->last_delsys = cdelsys;
+#ifdef TEMP_REMOVE_CODE
 	PR_INFO("[id %d] info fe type:%d.\n", demod->id, fe->ops.info.type);
+#else
+	PR_INFO("[id %d] info fe type:.\n", demod->id);
+#endif
 
 	if (fe->ops.tuner_ops.set_config && !is_T_T2_switch)
 		fe->ops.tuner_ops.set_config(fe, NULL);
 
 	return 0;
 }
+#endif
 
 static int is_not_active(struct dvb_frontend *fe)
 {
@@ -6605,6 +6682,7 @@ static int aml_dtvdm_tune(struct dvb_frontend *fe, bool re_tune,
 	return ret;
 }
 
+#ifdef TEMP_REMOVE_CODE
 static int aml_dtvdm_set_property(struct dvb_frontend *fe,
 			struct dtv_property *tvp)
 {
@@ -6695,7 +6773,9 @@ static int aml_dtvdm_set_property(struct dvb_frontend *fe,
 
 	return r;
 }
+#endif
 
+#ifdef TEMP_REMOVE_CODE
 static int aml_dtvdm_get_property(struct dvb_frontend *fe,
 			struct dtv_property *tvp)
 {
@@ -6825,6 +6905,7 @@ static int aml_dtvdm_get_property(struct dvb_frontend *fe,
 
 	return 0;
 }
+#endif
 
 static struct dvb_frontend_ops aml_dtvdm_ops = {
 	.delsys = {SYS_UNDEFINED},
@@ -6849,8 +6930,10 @@ static struct dvb_frontend_ops aml_dtvdm_ops = {
 	.read_snr = aml_dtvdm_read_snr,
 	.read_ucblocks = aml_dtvdm_read_ucblocks,
 	.release = aml_dtvdm_release,
+#ifdef TEMP_REMOVE_CODE
 	.set_property = aml_dtvdm_set_property,
 	.get_property = aml_dtvdm_get_property,
+#endif
 	.tune = aml_dtvdm_tune,
 	.get_frontend_algo = gxtv_demod_get_frontend_algo,
 };
@@ -6922,7 +7005,9 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 		aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
 		aml_dtvdm_ops.delsys[1] = SYS_DTMB;
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 		aml_dtvdm_ops.delsys[2] = SYS_ANALOG;
+#endif
 #endif
 		if (ic_version == MESON_CPU_MAJOR_ID_GXTVBB)
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DTMB dtv demod gxtvbb");
@@ -6937,7 +7022,9 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 		aml_dtvdm_ops.delsys[3] = SYS_DVBT;
 		aml_dtvdm_ops.delsys[4] = SYS_ISDBT;
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 		aml_dtvdm_ops.delsys[5] = SYS_ANALOG;
+#endif
 #endif
 		strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/T/ISDBT/ATSC dtv demod txlx");
 		break;
@@ -6960,7 +7047,9 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 		aml_dtvdm_ops.delsys[2] = SYS_ATSC;
 		aml_dtvdm_ops.delsys[3] = SYS_DTMB;
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 		aml_dtvdm_ops.delsys[4] = SYS_ANALOG;
+#endif
 #endif
 		if (ic_version == MESON_CPU_MAJOR_ID_TL1) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -6976,7 +7065,9 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 		aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
 		aml_dtvdm_ops.delsys[1] = SYS_DTMB;
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 		aml_dtvdm_ops.delsys[2] = SYS_ANALOG;
+#endif
 #endif
 		strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DTMB dtv demod t5");
 		break;
@@ -6995,7 +7086,9 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[6] = SYS_DVBT;
 			aml_dtvdm_ops.delsys[7] = SYS_DVBC_ANNEX_B;
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 			aml_dtvdm_ops.delsys[8] = SYS_ANALOG;
+#endif
 #endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"amlogic DVB-C/T/T2/S/S2/ATSC/ISDBT dtv demod t5d");
@@ -7005,7 +7098,9 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
 			aml_dtvdm_ops.delsys[1] = SYS_DVBC_ANNEX_B;
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 			aml_dtvdm_ops.delsys[2] = SYS_ANALOG;
+#endif
 #endif
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C dtv demod s4");
 			break;
@@ -7022,7 +7117,9 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[7] = SYS_DVBC_ANNEX_B;
 			aml_dtvdm_ops.delsys[8] = SYS_DTMB;
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 			aml_dtvdm_ops.delsys[9] = SYS_ANALOG;
+#endif
 #endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT/DTMB ddemod t3");
@@ -7033,7 +7130,9 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[2] = SYS_DVBS;
 			aml_dtvdm_ops.delsys[3] = SYS_DVBS2;
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 			aml_dtvdm_ops.delsys[4] = SYS_ANALOG;
+#endif
 #endif
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DVB-S dtv demod s4d");
 			break;
@@ -7049,7 +7148,9 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[6] = SYS_DVBT;
 			aml_dtvdm_ops.delsys[7] = SYS_DVBC_ANNEX_B;
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#ifdef TEMP_REMOVE_CODE
 			aml_dtvdm_ops.delsys[8] = SYS_ANALOG;
+#endif
 #endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT ddemod t5w");

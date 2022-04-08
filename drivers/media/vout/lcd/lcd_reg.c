@@ -91,7 +91,7 @@ int lcd_ioremap(struct aml_lcd_drv_s *pdrv, struct platform_device *pdev)
 		}
 		reg_map[table[i]].base_addr = res->start;
 		reg_map[table[i]].size = resource_size(res);
-		reg_map[table[i]].p = devm_ioremap_nocache(&pdev->dev,
+		reg_map[table[i]].p = devm_ioremap(&pdev->dev,
 			res->start, reg_map[table[i]].size);
 		if (!reg_map[table[i]].p) {
 			reg_map[table[i]].flag = 0;

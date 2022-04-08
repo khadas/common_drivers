@@ -182,7 +182,7 @@ static void meson_uvm_detach(struct dma_buf *dmabuf,
 	/* TODO */
 }
 
-static void *meson_uvm_vmap(struct dma_buf *dmabuf)
+static int meson_uvm_vmap(struct dma_buf *dmabuf, struct dma_buf_map *map)
 {
 	struct uvm_handle *handle;
 	struct sg_table *sgt;
@@ -200,7 +200,7 @@ static void *meson_uvm_vmap(struct dma_buf *dmabuf)
 
 	pages = vmalloc(sizeof(struct page *) * npages);
 	if (!pages)
-		return NULL;
+		return -ENOMEM;
 
 	tmp = pages;
 	for_each_sg(sgt->sgl, sg, sgt->nents, i) {
@@ -215,14 +215,17 @@ static void *meson_uvm_vmap(struct dma_buf *dmabuf)
 	vfree(pages);
 
 	if (!vaddr)
-		return ERR_PTR(-ENOMEM);
+		return -ENOMEM;
 
 	handle->ua->vaddr = vaddr;
 	UVM_PRINTK(1, "%s called.\n", __func__);
-	return vaddr;
+
+	dma_buf_map_set_vaddr(map, vaddr);
+
+	return 0;
 }
 
-static void meson_uvm_vunmap(struct dma_buf *dmabuf, void *vaddr)
+static void meson_uvm_vunmap(struct dma_buf *dmabuf, struct dma_buf_map *map)
 {
 	struct uvm_handle *handle = dmabuf->priv;
 

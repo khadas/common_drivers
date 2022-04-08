@@ -16,7 +16,7 @@
 #include <linux/delay.h>
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
-#ifdef CONFIG_AMLOGIC_POWER
+#if IS_ENABLED(CONFIG_AMLOGIC_POWER)
 #include <linux/amlogic/power_domain.h>
 #endif
 #include <linux/amlogic/media/vpu/vpu.h>

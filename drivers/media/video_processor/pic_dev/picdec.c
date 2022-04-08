@@ -333,7 +333,7 @@ static int render_frame(struct ge2d_context_s *context,
 	struct picdec_device_s *dev =  &picdec_device;
 	struct source_input_s *input = &picdec_input;
 
-	do_gettimeofday(&start);
+	ktime_get_real_ts64(&start);
 	index = get_unused_picdec_index();
 	if (index < 0) {
 		pr_info("no buffer available, need post ASAP\n");
@@ -427,7 +427,7 @@ static int render_frame(struct ge2d_context_s *context,
 	new_vf->ratio_control = 0;
 	vfbuf_use[index]++;
 	picdec_fill_buffer(new_vf, context, ge2d_config);
-	do_gettimeofday(&end);
+	ktime_get_real_ts64(&end);
 	time_use = (end.tv_sec - start.tv_sec) * 1000 +
 			   (end.tv_nsec - start.tv_nsec) / 1000000;
 	pr_info("render frame time use: %ldms\n", time_use);
@@ -449,7 +449,7 @@ static int render_frame_block(void)
 	struct picdec_device_s *dev = &picdec_device;
 	struct source_input_s	*input = &picdec_input;
 
-	do_gettimeofday(&start);
+	ktime_get_real_ts64(&start);
 	memset(&ge2d_config, 0, sizeof(struct config_para_ex_s));
 	index = get_unused_picdec_index();
 	if (index < 0) {
@@ -561,7 +561,7 @@ static int render_frame_block(void)
 	aml_pr_info(1, "picdec_fill_buffer start\n");
 	picdec_fill_buffer(new_vf, context, &ge2d_config);
 	aml_pr_info(1, "picdec_fill_buffer finish\n");
-	do_gettimeofday(&end);
+	ktime_get_real_ts64(&end);
 	time_use = (end.tv_sec - start.tv_sec) * 1000 +
 			   (end.tv_nsec - start.tv_nsec) / 1000000;
 	aml_pr_info(1, "Total render frame time use: %ldms\n", time_use);
@@ -702,7 +702,7 @@ int picdec_pre_process(void)
 	struct timespec64 end;
 	unsigned long time_use = 0;
 
-	do_gettimeofday(&start);
+	ktime_get_real_ts64(&start);
 	get_picdec_buf_info(NULL, NULL, &mapping_wc);
 	if (picdec_device.use_reserved) {
 		if (!mapping_wc)
@@ -801,7 +801,7 @@ int picdec_pre_process(void)
 			  bp * frame_height);
 		unmap_virt_from_phys(buffer_start);
 	}
-	do_gettimeofday(&end);
+	ktime_get_real_ts64(&end);
 	time_use = (end.tv_sec - start.tv_sec) * 1000 +
 		    (end.tv_nsec - start.tv_nsec) / 1000000;
 	aml_pr_info(2, "%s time use: %ldms\n", __func__, time_use);
@@ -893,7 +893,7 @@ int fill_color(struct vframe_s *vf, struct ge2d_context_s *context,
 	void __iomem *p;
 	int ret = 0;
 
-	do_gettimeofday(&start);
+	ktime_get_real_ts64(&start);
 	get_picdec_buf_info(NULL, NULL, &mapping_wc);
 	if (picdec_device.use_reserved) {
 		if (!mapping_wc)
@@ -938,7 +938,7 @@ int fill_color(struct vframe_s *vf, struct ge2d_context_s *context,
 			}
 		}
 	}
-	do_gettimeofday(&end);
+	ktime_get_real_ts64(&end);
 	time_use = (end.tv_sec - start.tv_sec) * 1000 +
 			   (end.tv_nsec - start.tv_nsec) / 1000000;
 	if (debug_flag)

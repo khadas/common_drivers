@@ -1163,7 +1163,7 @@ static int tvafe_avin_detect_probe(struct platform_device *pdev)
 		tvafe_pr_info("%s: hiu reg base=0x%p,size=0x%x\n",
 			__func__, (void *)res->start, size_io_reg);
 		meson_data->irq_reg_base =
-			devm_ioremap_nocache(&pdev->dev, res->start, size_io_reg);
+			devm_ioremap(&pdev->dev, res->start, size_io_reg);
 		if (!meson_data->irq_reg_base) {
 			dev_err(&pdev->dev, "hiu ioremap failed\n");
 			return -ENOMEM;

@@ -42,6 +42,7 @@
 #include <linux/pm_wakeirq.h>
 #include <linux/pm.h>
 #include <linux/poll.h>
+#include <linux/compat.h>
 #include <linux/amlogic/pm.h>
 #include <linux/amlogic/cpu_version.h>
 #include <linux/amlogic/scpi_protocol.h>

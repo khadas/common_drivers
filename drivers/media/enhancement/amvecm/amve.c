@@ -1905,8 +1905,10 @@ int vpp_set_lut3d(int bfromkey,
 	int d0, d1, d2, counter, size, index0, index1, idn;
 	u32 dwtemp, ctltemp, wrgb[3];
 	unsigned int combine3 = 0;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *fp;
 	loff_t pos;
+#endif
 
 	if (!lut3d_en)
 		return 1;

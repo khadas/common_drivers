@@ -34,7 +34,7 @@
 #include <linux/amlogic/media/vout/lcd/lcd_notify.h>
 #endif
 #include "arch/vpp_regs.h"
-#include "vlock.h"
+#include <linux/amlogic/media/enhancement/amvecm/vlock.h>
 #include "amvecm_vlock_regmap.h"
 #include "amcm.h"
 #include "reg_helper.h"

@@ -21,6 +21,7 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/dma-mapping.h>
 #include <linux/of_irq.h>
+#include <linux/compat.h>
 
 /* #include <linux/mutex.h> */
 #include <linux/mm.h>

@@ -45,9 +45,9 @@
 /*#include <linux/amlogic/amports/vframe.h>*/
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include <linux/of_gpio.h>
-#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+//#ifdef IS_ENABLED(CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND)
 #include <linux/amlogic/pm.h>
-#endif
+//#endif
 
 /* Local include */
 #include "hdmi_rx_repeater.h"
@@ -316,7 +316,7 @@ int rx_init_reg_map(struct platform_device *pdev)
 		}
 		size = resource_size(res);
 		rx_reg_maps[i].phy_addr = res->start;
-		rx_reg_maps[i].p = devm_ioremap_nocache(&pdev->dev,
+		rx_reg_maps[i].p = devm_ioremap(&pdev->dev,
 						     res->start, size);
 		rx_reg_maps[i].size = size;
 		rx_pr("phy_addr = 0x%x, size = 0x%x, maped:%p\n",

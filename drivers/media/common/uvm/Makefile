@@ -4,6 +4,7 @@
 #
 
 ccflags-y += -Idrivers/staging/android/ -I$(COMMON_DRIVERS_DIR)/drivers/
+ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/media/common/ion_dev/
 
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_UVM_ALLOCATOR)		+= common/uvm/meson_uvm_allocator.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_UVM_CORE)			+= common/uvm/meson_uvm_core.o

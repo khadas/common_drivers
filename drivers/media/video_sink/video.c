@@ -205,7 +205,7 @@ u32 get_color_th(void)
 }
 #endif
 
-static struct ai_scenes_pq vpp_scenes[AI_SCENES_MAX];
+struct ai_scenes_pq vpp_scenes[AI_SCENES_MAX];
 static u32 cur_omx_index;
 
 struct video_frame_detect_s {
@@ -1768,10 +1768,10 @@ static s32 recycle_cnt[MAX_VD_LAYERS];
 
 static u32 post_canvas;
 
-static u32 blackout;
+u32 blackout;
 u32 force_blackout;
-static u32 blackout_pip;
-static u32 blackout_pip2;
+u32 blackout_pip;
+u32 blackout_pip2;
 /* disable video */
 
 static u32 pip_frame_count;
@@ -1830,7 +1830,7 @@ struct vinfo_s *get_current_vinfo(void)
 
 /* config */
 struct vframe_s *cur_dispbuf;
-static struct vframe_s *cur_dispbuf2;
+struct vframe_s *cur_dispbuf2;
 //static struct vframe_s *cur_dispbuf3;
 bool need_disable_vd2;
 bool need_disable_vd3;
@@ -1861,7 +1861,7 @@ static s32 vsync_pts_align;
 /* frame rate calculate */
 static u32 last_frame_count;
 static u32 frame_count;
-static u32 new_frame_count;
+u32 new_frame_count;
 static u32 first_frame_toggled;
 static u32 toggle_count;
 static u32 last_frame_time;
@@ -1871,7 +1871,7 @@ static u32 vsync_count;
 static u64 last_frame_duration;
 #endif
 
-static struct vpp_frame_par_s *cur_frame_par;
+struct vpp_frame_par_s *cur_frame_par;
 
 /* is fffb or seeking*/
 static u32 video_seek_flag;
@@ -1895,6 +1895,8 @@ atomic_t vt_unreg_flag = ATOMIC_INIT(0);
 atomic_t vt_disable_video_done = ATOMIC_INIT(0);
 atomic_t video_inirq_flag = ATOMIC_INIT(0);
 atomic_t video_pause_flag = ATOMIC_INIT(0);
+atomic_t video_proc_lock = ATOMIC_INIT(0);
+atomic_t video_recv_cnt = ATOMIC_INIT(0);
 int trickmode_duration;
 int trickmode_duration_count;
 u32 trickmode_vpts;
@@ -1922,7 +1924,7 @@ static int hdmin_delay_max_ms = 128;
 static int hdmin_dv_flag;
 static int hdmin_delay_done = true;
 static int hdmin_need_drop_count;
-static int vframe_walk_delay;
+int vframe_walk_delay;
 static int last_required_total_delay;
 static int hdmi_vframe_count;
 static bool hdmi_delay_first_check;
@@ -1989,7 +1991,7 @@ EXPORT_SYMBOL(get_first_frame_toggled);
 static wait_queue_head_t amvideo_trick_wait;
 
 /* wait queue for poll */
-static wait_queue_head_t amvideo_prop_change_wait;
+wait_queue_head_t amvideo_prop_change_wait;
 
 static u32 vpts_ref;
 static u32 video_frame_repeat_count;
@@ -1997,8 +1999,8 @@ static u32 smooth_sync_enable;
 static u32 hdmi_in_onvideo;
 
 /* vpp_crc */
-static u32 vpp_crc_en;
-static int vpp_crc_result;
+u32 vpp_crc_en;
+int vpp_crc_result;
 
 /* viu2 vpp_crc */
 static u32 vpp_crc_viu2_en;
@@ -3916,8 +3918,8 @@ void vsync_rdma_process(void)
 }
 #endif
 
-static char old_vmode[32];
-static char new_vmode[32];
+char old_vmode[32];
+char new_vmode[32];
 bool tvin_vf_disp_mode_check(struct vframe_s *vf)
 {
 	struct provider_disp_mode_req_s req;
@@ -4091,7 +4093,7 @@ static inline bool video_vf_dirty_put(struct vframe_s *vf)
 }
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-static bool dvel_status;
+bool dvel_status;
 static bool dvel_changed;
 static u32 dvel_size;
 static int dolby_vision_need_wait(void)
@@ -4133,7 +4135,7 @@ static int dolby_vision_need_wait_pip2(void)
 	return 0;
 }
 
-static int dvel_swap_frame(struct vframe_s *vf)
+int dvel_swap_frame(struct vframe_s *vf)
 {
 	int ret = 0;
 	struct video_layer_s *layer = NULL;
@@ -4611,7 +4613,7 @@ static void hdmi_in_delay_maxmin_old(struct vframe_s *vf)
 			__func__, hdmin_delay_min_ms, hdmin_delay_max_ms);
 }
 
-static void hdmi_in_delay_maxmin_new(struct vframe_s *vf)
+void hdmi_in_delay_maxmin_new(struct vframe_s *vf)
 {
 	u64 vdin_vsync = 0;
 	u64 vpp_vsync = 0;
@@ -4916,7 +4918,7 @@ u32 get_tvin_dv_flag(void)
 }
 EXPORT_SYMBOL(get_tvin_dv_flag);
 
-static bool tvin_vf_is_keeped(struct vframe_s *vf)
+bool tvin_vf_is_keeped(struct vframe_s *vf)
 {
 	struct vframe_s *src_vf;
 
@@ -5723,7 +5725,7 @@ s32 pip_render_frame(struct video_layer_s *layer, const struct vinfo_s *vinfo)
 	return 1;
 }
 
-static void primary_swap_frame(struct video_layer_s *layer, struct vframe_s *vf1, int line)
+void primary_swap_frame(struct video_layer_s *layer, struct vframe_s *vf1, int line)
 {
 	bool vf_with_el = false;
 	bool force_toggle = false;
@@ -5907,7 +5909,7 @@ static void primary_swap_frame(struct video_layer_s *layer, struct vframe_s *vf1
 	ATRACE_COUNTER(__func__,  0);
 }
 
-static s32 primary_render_frame(struct video_layer_s *layer)
+s32 primary_render_frame(struct video_layer_s *layer)
 {
 	struct vpp_frame_par_s *frame_par;
 	bool force_setting = false;
@@ -6460,10 +6462,10 @@ void amvecm_process(struct path_id_s *path_id,
 }
 #endif
 
-static int ai_pq_disable;
-static int ai_pq_debug;
-static int ai_pq_value = -1;
-static int ai_pq_policy = 1;
+int ai_pq_disable;
+int ai_pq_debug;
+int ai_pq_value = -1;
+int ai_pq_policy = 1;
 
 #ifdef FIQ_VSYNC
 void vsync_fisr_in(void)

@@ -1316,7 +1316,7 @@ static int amvdec_656in_probe(struct platform_device *pdev)
 
 		size = resource_size(res);
 		bt656_reg_base[devp->index - 1] =
-			devm_ioremap_nocache(&pdev->dev, res->start, size);
+			devm_ioremap(&pdev->dev, res->start, size);
 		if (!bt656_reg_base[devp->index - 1]) {
 			BT656ERR("bt656[%d] ioremap failed\n", devp->index);
 			ret = -ENOMEM;

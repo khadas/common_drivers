@@ -359,7 +359,7 @@ static int __init canvas_probe(struct platform_device *pdev)
 		info->reg_base = devm_ioremap_resource(&pdev->dev, res);
 		if (!info->reg_base) {
 			dev_err(&pdev->dev,
-				"devm_ioremap_nocache canvas failed!\n");
+				"devm_ioremap canvas failed!\n");
 			goto err1;
 		}
 	}

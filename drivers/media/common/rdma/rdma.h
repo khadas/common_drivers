@@ -10,6 +10,7 @@ enum {
 	VSYNC_RDMA_VPP1 = 1,
 	VSYNC_RDMA_VPP2 = 2,
 	PRE_VSYNC_RDMA = 3,
+	EX_VSYNC_RDMA = 4,
 	LINE_N_INT_RDMA = 1,
 	VSYNC_RDMA_READ = 2, /* for read */
 };
@@ -38,6 +39,7 @@ int rdma_init2(void);
 struct rdma_op_s *get_rdma_ops(int rdma_type);
 void set_rdma_handle(int rdma_type, int handle);
 int get_rdma_handle(int rdma_type);
+int set_vsync_rdma_id(u8 id);
 
 int rdma_init(void);
 void rdma_exit(void);

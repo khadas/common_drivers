@@ -93,7 +93,7 @@ static void vf_log(struct vf_pool *p, enum vf_operation_e operation,
 	if (log->log_cur >= VF_LOG_LEN)
 		return;
 
-	ktime_get_ts(&log->log_time[log->log_cur]);
+	ktime_get_ts64(&log->log_time[log->log_cur]);
 	for (i = 0; i < 11; i++)
 		log->log_buf[log->log_cur][i] = 0x00;
 	for (i = 0; i < p->size; i++) {
@@ -266,7 +266,7 @@ void isr_log(struct vf_pool *p)
 		return;
 	if (log->log_cur >= ISR_LOG_LEN)
 		return;
-	ktime_get_ts(&log->isr_time[log->log_cur]);
+	ktime_get_ts64(&log->isr_time[log->log_cur]);
 	log->log_cur++;
 }
 

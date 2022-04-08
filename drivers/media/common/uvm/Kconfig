@@ -3,7 +3,6 @@
 # uvm core configuration
 #
 
-
 menuconfig AMLOGIC_UVM_CORE
 	bool "Amlogic unified video memory management"
 	default n

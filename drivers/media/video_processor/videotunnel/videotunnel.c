@@ -346,12 +346,14 @@ static int vt_close_fd(struct vt_session *session, unsigned int fd)
 	if (!session->task)
 		return -ESRCH;
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	ret = __close_fd(session->task->files, fd);
 	/* can't restart close syscall because file table entry was cleared */
 	if (unlikely(ret == -ERESTARTSYS ||
 		     ret == -ERESTARTNOINTR ||
 		     ret == -ERESTARTNOHAND ||
 		     ret == -ERESTART_RESTARTBLOCK))
+#endif
 		ret = -EINTR;
 
 	return ret;

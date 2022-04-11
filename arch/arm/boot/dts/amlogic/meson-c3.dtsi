@@ -125,8 +125,8 @@
 		compatible = "arm,armv8-pmuv3";
 		/* clusterb-enabled; */
 		private-interrupts;
-		interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_HIGH>,
-			     <GIC_SPI 177 IRQ_TYPE_LEVEL_HIGH>;
+		interrupts = <GIC_SPI 233 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 234 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	vbat: fixedregulator0 {

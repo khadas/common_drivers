@@ -8,7 +8,7 @@
 
 static void _bitblt(struct ge2d_context_s *wq,
 		    int src_x, int src_y, int w, int h,
-		    int dst_x, int dst_y, int block)
+		    int dst_x, int dst_y, int block, int enqueue)
 {
 	struct ge2d_cmd_s *ge2d_cmd_cfg = ge2d_wq_get_cmd(wq);
 
@@ -36,12 +36,12 @@ static void _bitblt(struct ge2d_context_s *wq,
 	ge2d_cmd_cfg->wait_done_flag   = block;
 	ge2d_cmd_cfg->cmd_op           = IS_BLIT;
 
-	ge2d_wq_add_work(wq);
+	ge2d_wq_add_work(wq, enqueue);
 }
 
 static void _bitblt_noalpha(struct ge2d_context_s *wq,
 			    int src_x, int src_y, int w, int h,
-			    int dst_x, int dst_y, int block)
+			    int dst_x, int dst_y, int block, int enqueue)
 {
 	struct ge2d_cmd_s *ge2d_cmd_cfg = ge2d_wq_get_cmd(wq);
 	struct ge2d_dp_gen_s *dp_gen_cfg = ge2d_wq_get_dp_gen(wq);
@@ -74,14 +74,14 @@ static void _bitblt_noalpha(struct ge2d_context_s *wq,
 	ge2d_cmd_cfg->wait_done_flag   = block;
 	ge2d_cmd_cfg->cmd_op           = IS_BLIT;
 
-	ge2d_wq_add_work(wq);
+	ge2d_wq_add_work(wq, enqueue);
 }
 
 void bitblt(struct ge2d_context_s *wq,
 	    int src_x, int src_y, int w, int h,
 	    int dst_x, int dst_y)
 {
-	_bitblt(wq, src_x, src_y, w, h, dst_x, dst_y, 1);
+	_bitblt(wq, src_x, src_y, w, h, dst_x, dst_y, 1, 0);
 }
 EXPORT_SYMBOL(bitblt);
 
@@ -89,7 +89,7 @@ void bitblt_noblk(struct ge2d_context_s *wq,
 		  int src_x, int src_y, int w, int h,
 		  int dst_x, int dst_y)
 {
-	_bitblt(wq, src_x, src_y, w, h, dst_x, dst_y, 0);
+	_bitblt(wq, src_x, src_y, w, h, dst_x, dst_y, 0, 0);
 }
 EXPORT_SYMBOL(bitblt_noblk);
 
@@ -97,7 +97,7 @@ void bitblt_noalpha(struct ge2d_context_s *wq,
 		    int src_x, int src_y, int w, int h,
 		    int dst_x, int dst_y)
 {
-	_bitblt_noalpha(wq, src_x, src_y, w, h, dst_x, dst_y, 1);
+	_bitblt_noalpha(wq, src_x, src_y, w, h, dst_x, dst_y, 1, 0);
 }
 EXPORT_SYMBOL(bitblt_noalpha);
 
@@ -105,6 +105,23 @@ void bitblt_noalpha_noblk(struct ge2d_context_s *wq,
 			  int src_x, int src_y, int w, int h,
 			  int dst_x, int dst_y)
 {
-	_bitblt_noalpha(wq, src_x, src_y, w, h, dst_x, dst_y, 0);
+	_bitblt_noalpha(wq, src_x, src_y, w, h, dst_x, dst_y, 0, 0);
 }
 EXPORT_SYMBOL(bitblt_noalpha_noblk);
+
+void bitblt_enqueue(struct ge2d_context_s *wq,
+		    int src_x, int src_y, int w, int h,
+		    int dst_x, int dst_y)
+{
+	_bitblt(wq, src_x, src_y, w, h, dst_x, dst_y, 0, 1);
+}
+EXPORT_SYMBOL(bitblt_enqueue);
+
+void bitblt_noalpha_enqueue(struct ge2d_context_s *wq,
+			    int src_x, int src_y, int w, int h,
+			    int dst_x, int dst_y)
+{
+	_bitblt_noalpha(wq, src_x, src_y, w, h, dst_x, dst_y, 0, 1);
+}
+EXPORT_SYMBOL(bitblt_noalpha_enqueue);
+

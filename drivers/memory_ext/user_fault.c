@@ -595,6 +595,7 @@ void show_all_pfn(struct task_struct *task, struct pt_regs *regs)
 	else
 		sprintf(s1, "--------");
 	pr_info("unused :  %016lx  %s\n", far, s1);
+	pr_info("offset :  %016lx\n", kaslr_offset());
 }
 #else
 static unsigned char *regidx_to_name[] = {

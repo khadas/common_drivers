@@ -1759,6 +1759,10 @@
 		reg=<0x0 0xfe005118 0x0 0x4>;
 		quality=/bits/ 16 <1000>;
 	};
+
+	chosen {
+		kaslr-seed = <0x0 0x0>;
+	};
 };
 
 /* add pin mux here */

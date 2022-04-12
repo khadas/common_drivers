@@ -257,6 +257,34 @@ struct hw_vd_reg_s vd_mif_reg_t7_array[MAX_VD_LAYER_T7] = {
 
 };
 
+struct hw_vd_reg_s vd_mif_reg_c3_array[MAX_VD_LAYER_C3] = {
+	{
+		VOUT_VD1_GEN_REG,
+		VOUT_VD1_CANVAS0,
+		VOUT_VD1_EMPTY_REG,
+		VOUT_VD1_LUMA_X0,
+		VOUT_VD1_LUMA_Y0,
+		VOUT_VD1_CHROMA_X0,
+		VOUT_VD1_CHROMA_Y0,
+		VOUT_VD1_EMPTY_REG,
+		VOUT_VD1_EMPTY_REG,
+		VOUT_VD1_EMPTY_REG,
+		VOUT_VD1_EMPTY_REG,
+		VOUT_VD1_RPT_LOOP,
+		VOUT_VD1_LUMA0_RPT_PAT,
+		VOUT_VD1_CHROMA0_RPT_PAT,
+		VOUT_VD1_EMPTY_REG,
+		VOUT_VD1_EMPTY_REG,
+		VOUT_VD1_EMPTY_REG,
+		VOUT_VD1_EMPTY_REG,
+		VOUT_VD1_LUMA_FIFO_SIZE,
+		VOUT_VD1_GEN_REG2,
+		VOUT_VD1_GEN_REG3,
+		VOUT_VD1_CFMT_CTRL,
+		VOUT_VD1_CFMT_W,
+	}
+};
+
 struct hw_vd_linear_reg_s vd_mif_linear_reg_t7_array[MAX_VD_LAYER_T7] = {
 	{
 		VD1_IF0_BADDR_Y,
@@ -293,6 +321,21 @@ struct hw_vd_linear_reg_s vd_mif_linear_reg_t7_array[MAX_VD_LAYER_T7] = {
 		VD3_IF0_BADDR_CR_F1,
 		VD3_IF0_STRIDE_0_F1,
 		VD3_IF0_STRIDE_1_F1,
+	}
+};
+
+struct hw_vd_linear_reg_s vd_mif_linear_reg_c3_array[MAX_VD_LAYER_C3] = {
+	{
+		VOUT_VD1_BADDR_Y,
+		VOUT_VD1_BADDR_CB,
+		VOUT_VD1_BADDR_CR,
+		VOUT_VD1_STRIDE_0,
+		VOUT_VD1_STRIDE_1,
+		VOUT_VD1_BADDR_Y_F1,
+		VOUT_VD1_BADDR_CB_F1,
+		VOUT_VD1_BADDR_CR_F1,
+		VOUT_VD1_STRIDE_0_F1,
+		VOUT_VD1_STRIDE_1_F1,
 	}
 };
 

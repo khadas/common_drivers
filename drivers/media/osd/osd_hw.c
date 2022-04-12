@@ -4346,7 +4346,8 @@ void osd_setup_hw(u32 index,
 		osd_log_info("osd[%d] out_addr_id =0x%x\n",
 			     index, osd_hw.osd_afbcd[index].out_addr_id);
 
-		if (osd_hw.osd_meson_dev.osd_ver == OSD_SIMPLE)
+		if (osd_hw.osd_meson_dev.osd_ver == OSD_SIMPLE &&
+		osd_dev_hw.display_type != C3_DISPLAY)
 			osd_update_phy_addr(0);
 		else if (osd_hw.osd_meson_dev.mif_linear)
 			osd_update_mif_linear_addr(index);
@@ -7447,32 +7448,38 @@ static void osd_update_enable(u32 index)
 		else
 			osd_vpp_misc &= ~temp_val;
 	}
-	if (osd_dev_hw.display_type == C3_DISPLAY)
-		osd_hw.osd_rdma_func[output_index].osd_rdma_wr_bits
-			(VPU_VOUT_BLEND_CTRL,
-			0, 0, 1);
 	if (osd_hw.enable[index] == ENABLE) {
 		osd_hw.osd_rdma_func[output_index].osd_rdma_set_mask
 			(osd_reg->osd_ctrl_stat,
 			1 << 0);
-		if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL &&
-			osd_dev_hw.display_type != C3_DISPLAY) {
-			osd_hw.osd_rdma_func[output_index].osd_rdma_set_mask
-				(VPP_MISC,
-				temp_val |
-				VPP_POSTBLEND_EN);
-			notify_to_amvideo();
+		if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL) {
+			if (osd_dev_hw.display_type == C3_DISPLAY) {
+				osd_hw.osd_rdma_func[output_index].osd_rdma_wr_bits
+					(VPU_VOUT_BLEND_CTRL,
+					1, 1, 1);
+			} else {
+				osd_hw.osd_rdma_func[output_index].osd_rdma_set_mask
+					(VPP_MISC,
+					temp_val |
+					VPP_POSTBLEND_EN);
+				notify_to_amvideo();
+			}
 		} else {
 			/* notify osd_vpp1_bld_ctrl and osd_vpp2_bld_ctrl */
 			if (get_output_device_id(index) != VPP0)
 				notify_to_amvideo();
 		}
 	} else {
-		if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL &&
-			osd_dev_hw.display_type != C3_DISPLAY) {
-			notify_to_amvideo();
-			osd_hw.osd_rdma_func[output_index].osd_rdma_clr_mask
-				(VPP_MISC, temp_val);
+		if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL) {
+			if (osd_dev_hw.display_type == C3_DISPLAY) {
+				osd_hw.osd_rdma_func[output_index].osd_rdma_wr_bits
+					(VPU_VOUT_BLEND_CTRL,
+					0, 1, 1);
+			} else {
+				notify_to_amvideo();
+				osd_hw.osd_rdma_func[output_index].osd_rdma_clr_mask
+					(VPP_MISC, temp_val);
+			}
 		} else {
 			if (get_output_device_id(index) != VPP0)
 				notify_to_amvideo();

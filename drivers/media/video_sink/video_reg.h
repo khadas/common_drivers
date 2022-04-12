@@ -14,6 +14,8 @@
 
 #define MAX_VD_LAYER_T7 3
 #define MAX_VPP_NUM     3
+
+#define MAX_VD_LAYER_C3 1
 struct hw_vd_reg_s {
 	u32 vd_if0_gen_reg; /* VD1_IF0_GEN_REG */
 	u32 vd_if0_canvas0;/* VD1_IF0_CANVAS0 */
@@ -229,6 +231,9 @@ extern struct hw_vpp_blend_reg_s vpp_blend_reg_t7_array[MAX_VD_LAYER_T7];
 extern struct hw_vpp_path_size_s vpp_path_size_reg;
 extern struct hw_viu_misc_reg_s viu_misc_reg;
 extern struct hw_vppx_blend_reg_s vppx_blend_reg_array[MAX_VPP_NUM - 1];
+
+extern struct hw_vd_reg_s vd_mif_reg_c3_array[MAX_VD_LAYER_C3];
+extern struct hw_vd_linear_reg_s vd_mif_linear_reg_c3_array[MAX_VD_LAYER_C3];
 
 extern struct hw_aisr_reshape_reg_s aisr_reshape_reg;
 #endif

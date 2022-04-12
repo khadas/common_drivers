@@ -55,6 +55,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/of_fdt.h>
 #include <linux/dma-map-ops.h>
+#include <linux/cma.h>
 
 #ifdef CONFIG_AMLOGIC_VOUT
 static int debug_flag;
@@ -1238,6 +1239,8 @@ picdec_exit:
 int picdec_cma_buf_init(void)
 {
 	int flags;
+	struct cma *cma_area;
+	struct device *dev = &picdec_device.pdev->dev;
 
 	if (!picdec_device.use_reserved) {
 		switch (picdec_buffer_status) {
@@ -1257,13 +1260,17 @@ int picdec_cma_buf_init(void)
 		 * 2: output_format_mode == 0 (output is nv12),
 		 *    16M + 16M + 24M = 56M
 		 */
+		/* change in kernel5.15 */
+		if (dev && dev->cma_area)
+			cma_area = dev->cma_area;
+		else
+			cma_area = dma_contiguous_default_area;
 		if (picdec_device.output_format_mode) {
 			if (picdec_device.cma_mode == 0) {
 				picdec_device.cma_pages =
-					dma_alloc_from_contiguous
-						(&picdec_device.pdev->dev,
-						 (72 * SZ_1M) >> PAGE_SHIFT,
-						 0, 0);
+					cma_alloc(cma_area,
+						(72 * SZ_1M) >> PAGE_SHIFT,
+						0, 0);
 				picdec_device.buffer_start = page_to_phys
 					(picdec_device.cma_pages);
 				picdec_device.buffer_size = (72 * SZ_1M);
@@ -1280,10 +1287,9 @@ int picdec_cma_buf_init(void)
 		} else {
 			if (picdec_device.cma_mode == 0) {
 				picdec_device.cma_pages =
-					dma_alloc_from_contiguous
-						(&picdec_device.pdev->dev,
-						 (56 * SZ_1M) >> PAGE_SHIFT,
-						 0, 0);
+					cma_alloc(cma_area,
+						(56 * SZ_1M) >> PAGE_SHIFT,
+						0, 0);
 				picdec_device.buffer_start = page_to_phys
 					(picdec_device.cma_pages);
 				picdec_device.buffer_size = (56 * SZ_1M);
@@ -1316,13 +1322,21 @@ int picdec_cma_buf_init(void)
 
 int picdec_cma_buf_uninit(void)
 {
+	struct page *cma_pages = NULL;
+	struct cma *cma_area;
+	struct device *dev = &picdec_device.pdev->dev;
+
+	/* change in kernel5.15 */
+	if (dev && dev->cma_area)
+		cma_area = dev->cma_area;
+	else
+		cma_area = dma_contiguous_default_area;
+
 	if (!picdec_device.use_reserved) {
 		if (picdec_device.output_format_mode) {
 			if (picdec_device.cma_mode == 0) {
 				if (picdec_device.cma_pages) {
-					dma_release_from_contiguous
-						(&picdec_device.pdev->dev,
-						 picdec_device.cma_pages,
+					cma_release(cma_area, cma_pages,
 						(72 * SZ_1M) >> PAGE_SHIFT);
 					picdec_device.cma_pages = NULL;
 				}
@@ -1339,10 +1353,8 @@ int picdec_cma_buf_uninit(void)
 		} else {
 			if (picdec_device.cma_mode == 0) {
 				if (picdec_device.cma_pages) {
-					dma_release_from_contiguous
-						(&picdec_device.pdev->dev,
-						 picdec_device.cma_pages,
-						 (56 * SZ_1M) >> PAGE_SHIFT);
+					cma_release(cma_area, cma_pages,
+						(56 * SZ_1M) >> PAGE_SHIFT);
 					picdec_device.cma_pages = NULL;
 				}
 			} else {

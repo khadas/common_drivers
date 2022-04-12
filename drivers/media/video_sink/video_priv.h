@@ -168,6 +168,18 @@ enum VPU_MODULE_e {
 	VPU2_R,
 };
 
+enum display_type_e {
+	NORMAL_DISPLAY = 0,
+	T7_DISPLAY,
+	C3_DISPLAY
+};
+
+enum matrix_type_e {
+	MATRIX_BYPASS = 0,
+	YUV2RGB,
+	RGB2YUV
+};
+
 typedef u32 (*rdma_rd_op)(u32 reg);
 typedef int (*rdma_wr_op)(u32 reg, u32 val);
 typedef int (*rdma_wr_bits_op)(u32 reg, u32 val, u32 start, u32 len);
@@ -182,7 +194,7 @@ struct video_dev_s {
 	int vpp_off;
 	int viu_off;
 	int mif_linear;
-	int t7_display;
+	int display_type;
 	int max_vd_layers;
 	int vd2_independ_blend_ctrl;
 	int aisr_support;
@@ -431,6 +443,7 @@ struct video_layer_s {
 	bool vd1_vd2_mux;
 	u32 video_en_bg_color;
 	u32 video_dis_bg_color;
+	u32 dummy_alpha;
 	u32 compWidth;
 	u32 compHeight;
 	u32 src_width;
@@ -454,6 +467,7 @@ enum cpu_type_e {
 	MESON_CPU_MAJOR_ID_T5D_REVB_,
 	MESON_CPU_MAJOR_ID_T3_,
 	MESON_CPU_MAJOR_ID_T5W_,
+	MESON_CPU_MAJOR_ID_C3_,
 	MESON_CPU_MAJOR_ID_UNKNOWN_,
 };
 
@@ -489,7 +503,7 @@ struct amvideo_device_data_s {
 	u32 ofifo_size;
 	u32 afbc_conv_lbuf_len[MAX_VD_LAYER];
 	u8 mif_linear;
-	u8 t7_display;
+	u8 display_type;
 	u8 max_vd_layers;
 	u8 has_vpp1;
 	u8 has_vpp2;
@@ -611,6 +625,7 @@ void proc_vd_vsc_phase_per_vsync(struct video_layer_s *layer,
 				 struct vframe_s *vf);
 void vpp_blend_update(const struct vinfo_s *vinfo);
 void vpp_blend_update_t7(const struct vinfo_s *vinfo);
+void vpp_blend_update_c3(const struct vinfo_s *vinfo);
 void vppx_vd_blend_setting(struct video_layer_s *layer, struct blend_setting_s *setting);
 void vppx_blend_update(const struct vinfo_s *vinfo, u32 vpp_index);
 int get_layer_display_canvas(u8 layer_id);
@@ -719,6 +734,7 @@ bool video_is_meson_t7_cpu(void);
 bool video_is_meson_s4_cpu(void);
 bool video_is_meson_t5d_revb_cpu(void);
 bool video_is_meson_t3_cpu(void);
+bool video_is_meson_c3_cpu(void);
 void set_alpha(struct video_layer_s *layer,
 	       u32 win_en,
 	       struct pip_alpha_scpxn_s *alpha_win);

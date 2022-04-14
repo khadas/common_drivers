@@ -17,6 +17,7 @@
 #include <dt-bindings/power/t3-pd.h>
 #include <dt-bindings/power/p1-pd.h>
 #include <dt-bindings/power/c3-pd.h>
+#include <dt-bindings/power/a1-pd.h>
 #include <linux/kallsyms.h>
 
 struct sec_pm_private_domain {
@@ -75,6 +76,7 @@ static int sec_pm_domain_power_on(struct generic_pm_domain *genpd)
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static struct sec_pm_private_domain a1_pm_domains[] __initdata = {
+#if 0
 	[PDID_A1_CPU_PWR0] = POWER_DOMAIN(cpu_pwr0, PDID_A1_CPU_PWR0, DOMAIN_INIT_ON,
 		    GENPD_FLAG_ALWAYS_ON),
 	[PDID_A1_CPU_CORE0] = POWER_DOMAIN(cpu_core0, PDID_A1_CPU_CORE0, DOMAIN_INIT_ON,
@@ -102,6 +104,7 @@ static struct sec_pm_private_domain a1_pm_domains[] __initdata = {
 	[PDID_A1_NIC] = POWER_DOMAIN(nic, PDID_A1_NIC, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
 	[PDID_A1_PDM] = POWER_DOMAIN(pdm, PDID_A1_PDM, DOMAIN_INIT_ON, 0),
 	[PDID_A1_RSA] = POWER_DOMAIN(rsa, PDID_A1_RSA, DOMAIN_INIT_OFF, 0),
+#endif
 };
 
 static struct sec_pm_domain_data a1_pm_domain_data __initdata = {

@@ -46,9 +46,8 @@
 			compatible = "shared-dma-pool";
 			/*reusable;*/
 			no-map;
-			size = <0x400000>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x05000000 0x400000>;
+			reg = <0x05000000 0x400000>;
 		};
 
 		ion_cma_reserved:linux,ion-dev {
@@ -61,17 +60,15 @@
 		rtos_reserved:linux,rtos_reserved {
 			compatible = "amlogic, aml_rtos_memory";
 			status = "okay";
-			size = <0x200000>;
-			alloc-ranges = <0x4800000 0x200000>;
+			reg = <0x4800000 0x200000>;
 			no-map;
 		};
 
 		dsp_fw_reserved:linux,dsp_fw {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x800000>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x3400000 0x800000>;
+			reg = <0x3400000 0x800000>;
 		};
 
 		/*dsp_shm_reserved:linux,dsp_shm {      */
@@ -83,8 +80,7 @@
 		autocap_reserved:linux,autocap_reserved {
 			compatible = "amlogic, aml_autocap_memory";
 			status = "okay";
-			size = <0x4000000>;
-			alloc-ranges = <0x40000000 0x4000000>;
+			reg = <0x40000000 0x4000000>;
 		};
 
 		ramoops@0x07400000 {

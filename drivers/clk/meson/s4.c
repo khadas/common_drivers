@@ -21,9 +21,7 @@
 #include "vid-pll-div.h"
 #include "clk-dualdiv.h"
 #include "s4.h"
-//#include "clkcs_init.h"
 #include <dt-bindings/clock/amlogic,s4-clkc.h>
-#include "clk-secure.h"
 
 static DEFINE_SPINLOCK(meson_clk_lock);
 

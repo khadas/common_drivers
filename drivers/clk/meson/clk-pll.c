@@ -33,12 +33,9 @@
 #include <linux/math64.h>
 #include <linux/module.h>
 #include <linux/rational.h>
-
 #include "clk-regmap.h"
 #include "clk-pll.h"
-
 #ifdef CONFIG_AMLOGIC_MODIFY
-#include "clk-secure.h"
 #include <linux/arm-smccc.h>
 #endif
 
@@ -442,12 +439,12 @@ static int meson_clk_pll_is_enabled(struct clk_hw *hw)
 	struct clk_regmap *clk = to_clk_regmap(hw);
 	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
 
-	if (meson_parm_read(clk->map, &pll->rst) ||
-	    !meson_parm_read(clk->map, &pll->en) ||
-	    !meson_parm_read(clk->map, &pll->l))
-		return 0;
+	/* Enable and lock bit equal 1, it locks */
+	if (meson_parm_read(clk->map, &pll->en) &&
+	    meson_parm_read(clk->map, &pll->l))
+		return 1;
 
-	return 1;
+	return 0;
 }
 
 static int meson_clk_pcie_pll_enable(struct clk_hw *hw)
@@ -597,104 +594,6 @@ static int meson_clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	return ret;
 }
 
-#ifdef CONFIG_AMLOGIC_MODIFY
-static int meson_secure_clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
-					 unsigned long parent_rate)
-{
-	int i = 0, ret = 0;
-	struct arm_smccc_res res;
-
-	if (!strcmp(clk_hw_get_name(hw), "sys_pll_dco")) {
-		arm_smccc_smc(CLK_SECURE_RW, SYS_PLL_STEP0,
-			      rate, 0, 0, 0, 0, 0, &res);
-	} else if (!strcmp(clk_hw_get_name(hw), "gp1_pll_dco")) {
-		arm_smccc_smc(CLK_SECURE_RW, GP1_PLL_STEP0,
-			      rate, 0, 0, 0, 0, 0, &res);
-	} else {
-		pr_err("%s: %s pll not found!!!\n",
-		       __func__, clk_hw_get_name(hw));
-		return -EINVAL;
-	}
-
-	/* waiting for 10us to rewrite */
-	udelay(10);
-
-	if (!strcmp(clk_hw_get_name(hw), "sys_pll_dco"))
-		arm_smccc_smc(CLK_SECURE_RW, SYS_PLL_STEP1,
-			      0, 0, 0, 0, 0, 0, &res);
-	else
-		arm_smccc_smc(CLK_SECURE_RW, GP1_PLL_STEP1,
-			      0, 0, 0, 0, 0, 0, &res);
-
-	ret = meson_clk_pll_wait_lock(hw);
-
-	if (ret) {
-		pr_info("%s: %s did not lock, trying to lock rate %lu again\n",
-			__func__, clk_hw_get_name(hw), rate);
-		if (i++ < 10)
-			meson_secure_clk_pll_set_rate(hw, rate, parent_rate);
-	}
-	return ret;
-}
-
-static long meson_secure_clk_pll_round_rate(struct clk_hw *hw,
-					    unsigned long rate,
-					    unsigned long *parent_rate)
-{
-	return rate;
-}
-
-static int meson_secure_clk_pll_enable(struct clk_hw *hw)
-{
-	struct clk_regmap *clk = to_clk_regmap(hw);
-	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
-	unsigned int first_set = 1, val;
-	struct clk_hw *parent = clk_hw_get_parent(hw);
-	u64 rate;
-
-	if (meson_parm_read(clk->map, &pll->en))
-		return 0;
-
-	if (!strcmp(clk_hw_get_name(hw), "sys_pll_dco") ||
-	    !strcmp(clk_hw_get_name(hw), "gp1_pll_dco")) {
-		regmap_read(clk->map, (&pll->en)->reg_off + (6 * 4), &val);
-		if (val == 0x56540000)
-			first_set = 0;
-	}
-
-	/*First init, just set minimal rate.*/
-	if (first_set) {
-#ifdef CONFIG_ARM
-		rate = __pll_params_to_rate(clk_hw_get_rate(parent),
-					    pll->table[0].m,
-					    pll->table[0].n, 0, pll,
-					    pll->table[0].od);
-#else
-		rate = __pll_params_to_rate(clk_hw_get_rate(parent),
-					    pll->table[0].m,
-					    pll->table[0].n, 0, pll);
-#endif
-	} else {
-		rate = meson_clk_pll_recalc_rate(hw, clk_hw_get_rate(parent));
-		rate = meson_secure_clk_pll_round_rate(hw, rate, NULL);
-	}
-
-	return meson_secure_clk_pll_set_rate(hw, rate, clk_hw_get_rate(parent));
-}
-
-static void meson_secure_clk_pll_disable(struct clk_hw *hw)
-{
-	struct arm_smccc_res res;
-
-	if (!strcmp(clk_hw_get_name(hw), "sys_pll_dco"))
-		arm_smccc_smc(CLK_SECURE_RW, SYS_PLL_DISABLE,
-			      0, 0, 0, 0, 0, 0, &res);
-	else
-		arm_smccc_smc(CLK_SECURE_RW, GP1_PLL_DISABLE,
-			      0, 0, 0, 0, 0, 0, &res);
-}
-#endif
-
 /*
  * The Meson G12A PCIE PLL is fined tuned to deliver a very precise
  * 100MHz reference clock for the PCIe Analog PHY, and thus requires
@@ -723,15 +622,6 @@ const struct clk_ops meson_clk_pll_ops = {
 EXPORT_SYMBOL_GPL(meson_clk_pll_ops);
 
 #ifdef CONFIG_AMLOGIC_MODIFY
-const struct clk_ops meson_secure_clk_pll_ops = {
-	.recalc_rate	= meson_clk_pll_recalc_rate,
-	.round_rate	= meson_secure_clk_pll_round_rate,
-	.set_rate	= meson_secure_clk_pll_set_rate,
-	.enable		= meson_secure_clk_pll_enable,
-	.disable	= meson_secure_clk_pll_disable
-};
-EXPORT_SYMBOL_GPL(meson_secure_clk_pll_ops);
-
 static void meson_secure_pll_v2_disable(struct clk_hw *hw)
 {
 	struct clk_regmap *clk = to_clk_regmap(hw);
@@ -818,6 +708,95 @@ const struct clk_ops meson_secure_pll_v2_ops = {
 	.disable	= meson_secure_pll_v2_disable
 };
 EXPORT_SYMBOL_GPL(meson_secure_pll_v2_ops);
+
+static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
+				  unsigned long parent_rate)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
+	struct parm *pm = &pll->m;
+	struct parm *pn = &pll->n;
+	struct parm *pfrac = &pll->frac;
+	unsigned int enabled, m, n, frac;
+	unsigned long old_rate;
+	unsigned int val;
+	const struct reg_sequence *init_regs = pll->init_regs;
+	int i, ret = 0, j = 10;
+#if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+	unsigned int od;
+	struct parm *pod = &pll->od;
+#endif
+
+	if (parent_rate == 0 || rate == 0)
+		return -EINVAL;
+
+	old_rate = rate;
+
+	/* calculate M, N, OD*/
+#if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+	ret = meson_clk_get_pll_settings(rate, parent_rate, &m, &n, pll, &od);
+#else
+	ret = meson_clk_get_pll_settings(rate, parent_rate, &m, &n, pll);
+#endif
+	if (ret)
+		return ret;
+
+	/* calute frac */
+	if (MESON_PARM_APPLICABLE(&pll->frac))
+		frac = __pll_params_with_frac(rate, parent_rate, m, n, pll);
+
+	enabled = meson_parm_read(clk->map, &pll->en);
+	if (enabled)
+		meson_clk_pll_disable(hw);
+
+	do {
+		for (i = 0; i < pll->init_count; i++) {
+			if (pn->reg_off == init_regs[i].reg) {
+				/* Clear M N bits and Update M N value */
+				val = init_regs[i].def;
+				val &= CLRPMASK(pn->width, pn->shift);
+				val &= CLRPMASK(pm->width, pm->shift);
+				val |= n << pn->shift;
+				val |= m << pm->shift;
+#if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+				val |= od << pod->shift;
+#endif
+				regmap_write(clk->map, pn->reg_off, val);
+			} else if (pfrac->reg_off == init_regs[i].reg &&
+				(MESON_PARM_APPLICABLE(&pll->frac))) {
+				/* Clear Frac bits and Update Frac value */
+				val = init_regs[i].def;
+				val &= CLRPMASK(pfrac->width, pfrac->shift);
+				val |= frac << pfrac->shift;
+				regmap_write(clk->map, pfrac->reg_off, val);
+			} else {
+				val = init_regs[i].def;
+				regmap_write(clk->map, init_regs[i].reg, val);
+			}
+			if (init_regs[i].delay_us)
+				udelay(init_regs[i].delay_us);
+		}
+
+		if (!meson_clk_pll_wait_lock(hw))
+			break;
+		j--;
+	} while (j > 0);
+
+	if (j == 0)
+		pr_err("%s pll locked failed\n", clk_hw_get_name(hw));
+
+	return 0;
+}
+
+const struct clk_ops meson_clk_pll_v3_ops = {
+	.recalc_rate	= meson_clk_pll_recalc_rate,
+	.round_rate	= meson_clk_pll_round_rate,
+	.set_rate	= meson_clk_pll_v3_set_rate,
+	.is_enabled	= meson_clk_pll_is_enabled,
+	.enable		= meson_clk_pll_enable,
+	.disable	= meson_clk_pll_disable
+};
+EXPORT_SYMBOL_GPL(meson_clk_pll_v3_ops);
 #endif
 
 const struct clk_ops meson_clk_pll_ro_ops = {

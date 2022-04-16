@@ -199,9 +199,7 @@
 			      <0xfd000000 0x88>;
 			reg-names = "basic", "pll",
 				    "cpu_clk";
-			clocks = <&xtal>;
-			clock-names = "core";
-			status = "disabled";
+			status = "okay";
 		};
 
 		pwrdm: power-domains {

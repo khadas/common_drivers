@@ -192,8 +192,6 @@
 			      <0x0 0xfd000000 0x0 0x88>;
 			reg-names = "basic", "pll",
 				    "cpu_clk";
-			clocks = <&xtal>;
-			clock-names = "core";
 			status = "okay";
 		};
 

@@ -21,6 +21,8 @@ struct pll_params_table {
 	u16		m;
 	u16		n;
 	u16		od;
+	const struct	reg_sequence *regs;
+	unsigned int	regs_count;
 };
 
 #define PLL_PARAMS(_m, _n, _od)						\
@@ -33,6 +35,8 @@ struct pll_params_table {
 struct pll_params_table {
 	unsigned int	m;
 	unsigned int	n;
+	const struct	reg_sequence *regs;
+	unsigned int	regs_count;
 };
 
 #define PLL_PARAMS(_m, _n)						\
@@ -70,5 +74,6 @@ extern const struct clk_ops meson_clk_pll_ro_ops;
 extern const struct clk_ops meson_clk_pll_ops;
 extern const struct clk_ops meson_clk_pcie_pll_ops;
 extern const struct clk_ops meson_secure_pll_v2_ops;
+extern const struct clk_ops meson_clk_pll_v3_ops;
 
 #endif /* __MESON_CLK_PLL_H */

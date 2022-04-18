@@ -197,7 +197,10 @@ function modules_install() {
 	rm modules -rf
 	mkdir modules
 	local modules_list=$(find ${MODULES_STAGING_DIR}/lib/modules -type f -name "*.ko")
-	cp ${modules_list} modules
+	#cp ${modules_list} modules
+	for module in ${modules_list}; do
+		cp ${module} modules/
+	done
 
 	local stagin_module=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
 	echo stagin_module=${stagin_module}

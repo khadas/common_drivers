@@ -200,7 +200,7 @@
 		pwrdm: power-domains {
 			compatible = "amlogic,a1-power-domain";
 			#power-domain-cells = <1>;
-			status = "disabled";
+			status = "okay";
 		};
 
 		aobus: bus@fe000000 {

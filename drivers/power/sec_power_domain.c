@@ -74,37 +74,29 @@ static int sec_pm_domain_power_on(struct generic_pm_domain *genpd)
 #define POWER_DOMAIN(_name, index, status, flag)	\
 	TOP_DOMAIN(_name, index, status, flag, 0)
 
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static struct sec_pm_private_domain a1_pm_domains[] __initdata = {
-#if 0
-	[PDID_A1_CPU_PWR0] = POWER_DOMAIN(cpu_pwr0, PDID_A1_CPU_PWR0, DOMAIN_INIT_ON,
-		    GENPD_FLAG_ALWAYS_ON),
-	[PDID_A1_CPU_CORE0] = POWER_DOMAIN(cpu_core0, PDID_A1_CPU_CORE0, DOMAIN_INIT_ON,
-		    GENPD_FLAG_ALWAYS_ON),
-	[PDID_A1_CPU_CORE1]		= POWER_DOMAIN(cpu_core1, PDID_A1_CPU_CORE1, DOMAIN_INIT_ON,
-		    GENPD_FLAG_ALWAYS_ON),
-	[PDID_A1_DSP_A] = POWER_DOMAIN(dsp_a, PDID_A1_DSP_A, DOMAIN_INIT_OFF, 0),
-	[PDID_A1_DSP_B] = POWER_DOMAIN(dsp_b, PDID_A1_DSP_B, DOMAIN_INIT_OFF, 0),
-	[PDID_A1_UART] = POWER_DOMAIN(uart, PDID_A1_UART, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
-	[PDID_A1_MMC] = POWER_DOMAIN(mmc, PDID_A1_MMC, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
-	[PDID_A1_I2C] = POWER_DOMAIN(i2c, PDID_A1_I2C, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
-	[PDID_A1_PSRAM] = POWER_DOMAIN(psram, PDID_A1_PSRAM, DOMAIN_INIT_OFF, 0),
-	[PDID_A1_ACODEC] = POWER_DOMAIN(acodec, PDID_A1_ACODEC, DOMAIN_INIT_ON, 0),
-	[PDID_A1_AUDIO] = POWER_DOMAIN(audio, PDID_A1_AUDIO, DOMAIN_INIT_ON, 0),
-	[PDID_A1_MKL_OTP] = POWER_DOMAIN(mkl_otp, PDID_A1_MKL_OTP, DOMAIN_INIT_ON,
-		    GENPD_FLAG_ALWAYS_ON),
-	[PDID_A1_DMA] = POWER_DOMAIN(dma, PDID_A1_DMA, DOMAIN_INIT_ON, GENPD_FLAG_IRQ_SAFE),
-	[PDID_A1_SDEMMC] = POWER_DOMAIN(sdemmc, PDID_A1_SDEMMC, DOMAIN_INIT_OFF, 0),
-	[PDID_A1_SRAM_A] = POWER_DOMAIN(sram_a, PDID_A1_SRAM_A, DOMAIN_INIT_OFF, 0),
-	[PDID_A1_SRAM_B] = POWER_DOMAIN(sram_b, PDID_A1_SRAM_B, DOMAIN_INIT_OFF, 0),
-	[PDID_A1_IR] = POWER_DOMAIN(ir, PDID_A1_IR, DOMAIN_INIT_ON, 0),
-	[PDID_A1_SPICC] = POWER_DOMAIN(spicc, PDID_A1_SPICC, DOMAIN_INIT_OFF, 0),
-	[PDID_A1_SPIFC] = POWER_DOMAIN(spifc, PDID_A1_SPIFC, DOMAIN_INIT_ON, 0),
-	[PDID_A1_USB] = POWER_DOMAIN(usb, PDID_A1_USB, DOMAIN_INIT_ON, 0),
-	[PDID_A1_NIC] = POWER_DOMAIN(nic, PDID_A1_NIC, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
-	[PDID_A1_PDM] = POWER_DOMAIN(pdm, PDID_A1_PDM, DOMAIN_INIT_ON, 0),
-	[PDID_A1_RSA] = POWER_DOMAIN(rsa, PDID_A1_RSA, DOMAIN_INIT_OFF, 0),
-#endif
+	[PDID_DSP_A] =  POWER_DOMAIN(dsp_a, PDID_DSP_A, DOMAIN_INIT_ON, GENPD_FLAG_ACTIVE_WAKEUP),
+	[PDID_DSP_B] =  POWER_DOMAIN(dsp_b, PDID_DSP_B, DOMAIN_INIT_ON, GENPD_FLAG_ACTIVE_WAKEUP),
+	[PDID_UART] =   POWER_DOMAIN(uart, PDID_UART, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_MMC] =    POWER_DOMAIN(mmc, PDID_MMC, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_I2C] =    POWER_DOMAIN(i2c, PDID_I2C, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_PSRAM] =  POWER_DOMAIN(psram, PDID_PSRAM, DOMAIN_INIT_OFF, 0),
+	[PDID_ACODEC] = POWER_DOMAIN(acodec, PDID_ACODEC, DOMAIN_INIT_ON, 0),
+	[PDID_AUDIO] =  POWER_DOMAIN(audio, PDID_AUDIO, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_MKL_OTP] = POWER_DOMAIN(mkl_otp, PDID_MKL_OTP, DOMAIN_INIT_ON,
+				      GENPD_FLAG_ALWAYS_ON),
+	[PDID_DMA] =    POWER_DOMAIN(dma, PDID_DMA, DOMAIN_INIT_ON,
+				     GENPD_FLAG_ALWAYS_ON | GENPD_FLAG_IRQ_SAFE),
+	[PDID_SDEMMC] = POWER_DOMAIN(sdemmc, PDID_SDEMMC, DOMAIN_INIT_OFF, 0),
+	[PDID_SRAM_A] = POWER_DOMAIN(sram_a, PDID_SRAM_A, DOMAIN_INIT_OFF, 0),
+	[PDID_SRAM_B] = POWER_DOMAIN(sram_b, PDID_SRAM_B, DOMAIN_INIT_OFF, 0),
+	[PDID_IR] =     POWER_DOMAIN(ir, PDID_IR, DOMAIN_INIT_ON, 0),
+	[PDID_SPICC] =  POWER_DOMAIN(spicc, PDID_SPICC, DOMAIN_INIT_OFF, 0),
+	[PDID_SPIFC] =  POWER_DOMAIN(spifc, PDID_SPIFC, DOMAIN_INIT_ON, 0),
+	[PDID_USB] =    POWER_DOMAIN(usb, PDID_USB, DOMAIN_INIT_ON, 0),
+	[PDID_NIC] =    POWER_DOMAIN(nic, PDID_NIC, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_PDM] =    POWER_DOMAIN(pdm, PDID_PDM, DOMAIN_INIT_OFF, 0),
+	[PDID_RSA] =    POWER_DOMAIN(rsa, PDID_RSA, DOMAIN_INIT_OFF, 0),
 };
 
 static struct sec_pm_domain_data a1_pm_domain_data __initdata = {
@@ -112,6 +104,7 @@ static struct sec_pm_domain_data a1_pm_domain_data __initdata = {
 	.domains_count = ARRAY_SIZE(a1_pm_domains),
 };
 
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static struct sec_pm_private_domain c1_pm_domains[] __initdata = {
 	[PDID_CX_CPU_PWR0] = POWER_DOMAIN(cpu_pwr0, PDID_CX_CPU_PWR0, DOMAIN_INIT_ON,
 					GENPD_FLAG_ALWAYS_ON),
@@ -601,10 +594,6 @@ out:
 static const struct of_device_id pd_match_table[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
-		.compatible = "amlogic,a1-power-domain",
-		.data = &a1_pm_domain_data,
-	},
-	{
 		.compatible = "amlogic,c1-power-domain",
 		.data = &c1_pm_domain_data,
 	},
@@ -644,6 +633,10 @@ static const struct of_device_id pd_match_table[] = {
 	{
 		.compatible = "amlogic,c3-power-domain",
 		.data = &c3_pm_domain_data,
+	},
+	{
+		.compatible = "amlogic,a1-power-domain",
+		.data = &a1_pm_domain_data,
 	},
 	{}
 };

@@ -1022,7 +1022,7 @@ void get_dsp_statusreg(struct platform_device *pdev, int dsp_cnt,
 	int i;
 
 	for (i = 0; i < dsp_cnt; i++) {
-		res = platform_get_resource(pdev, IORESOURCE_MEM, 2 + i);
+		res = platform_get_resource(pdev, IORESOURCE_MEM, 3 + i);
 		if (!res) {
 			dev_err(&pdev->dev, "failed to get dsp%d status register.\n", i);
 			return;

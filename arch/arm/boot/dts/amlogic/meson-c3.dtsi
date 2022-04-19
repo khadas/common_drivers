@@ -1373,8 +1373,8 @@
 	canvas: canvas {
 		compatible = "amlogic, meson, canvas";
 		dev_name = "amlogic-canvas";
-		status = "disabled";
-		reg = <0x0 0xfe036048 0x0 0x2000>;
+		status = "okay";
+		reg = <0xfe030048 0x2000>;
 	};
 
 	ion_dev {
@@ -1577,6 +1577,22 @@
 		compatible = "amlogic,meson-vrtc";
 		reg = <0xfe005a88 0x4>; //SYSCTRL_STATUS_REG2
 		status = "disabled";
+	};
+
+	jpegenc {
+		compatible = "amlogic, jpegenc";
+		memory-region = <&jpegenc_cma_reserved>;
+		dev_name = "jpegenc";
+		status = "okay";
+		//power-domains = <&pwrdm PDID_CX_HCODEC>;
+		clocks = <&clkc CLKID_SYS_DOS
+			/*&clkc CLKID_DOS_APB*/
+			&clkc CLKID_HCODEC_CLK>;
+		clock-names = "clk_dos",
+			//"clk_apb_dos",
+			"clk_jpeg_enc";
+		interrupts = <GIC_SPI 96 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "mailbox_0";
 	};
 
 	codec_io {

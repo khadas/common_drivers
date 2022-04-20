@@ -45,6 +45,7 @@ obj-$(CONFIG_AMLOGIC_BLUETOOTH)		+= bluetooth/
 obj-$(CONFIG_AMLOGIC_INPHY)		+= net/
 obj-$(CONFIG_AMLOGIC_MTD_RESV)		+= mtd/reserve/
 obj-$(CONFIG_AMLOGIC_MTD_SPI_NAND)	+= mtd/spinand/
+obj-$(CONFIG_AMLOGIC_MTD_NAND)		+= mtd/nand/
 
 obj-$(CONFIG_AMLOGIC_SMARTCARD)		+= smartcard_sc2/
 

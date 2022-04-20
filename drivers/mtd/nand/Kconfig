@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_MTD_NAND
+        tristate "Support for NAND controller on Amlogic's Meson SoCs"
+        help
+          Enables support for NAND controller on Amlogic's Meson SoCs.
+          This controller is found on Meson SoCs.

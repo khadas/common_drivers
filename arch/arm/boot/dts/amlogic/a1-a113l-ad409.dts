@@ -412,7 +412,7 @@
 };
 
 &pwm_ab {
-	status = "disabled";
+	status = "okay";
 };
 
 /* Audio Related start */
@@ -929,5 +929,5 @@
 };
 
 &vddcpu0 {
-	status = "disabled"; /*disabled for SWPL-17882*/
+	status = "okay";
 };

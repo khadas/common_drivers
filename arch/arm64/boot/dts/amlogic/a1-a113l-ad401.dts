@@ -1031,5 +1031,9 @@
 };
 
 &pwm_ab {
-	status = "disabled";
+	status = "okay";
+};
+
+&vddcpu0 {
+	status = "okay";
 };

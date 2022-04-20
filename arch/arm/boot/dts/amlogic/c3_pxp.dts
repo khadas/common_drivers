@@ -21,7 +21,6 @@
 		i2c1 = &i2c1;
 		i2c2 = &i2c2;
 		i2c3 = &i2c3;
-		i2c4 = &i2c4;
 		spi0 = &spifc;
 		spi1 = &spicc0;
 		spi2 = &spicc1;
@@ -876,8 +875,8 @@
 &i2c2 {
 	status = "disabled";
 	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&i2c2_master_pins2>;
-	pinctrl-1 = <&i2c2_master_sleep_pins2>;
+	pinctrl-0 = <&i2c2_master_pins1>;
+	pinctrl-1 = <&i2c2_master_sleep_pins1>;
 	clock-frequency = <100000>; /* default 100k */
 	sensor-i2c@6c {
 		compatible = "arm, i2c-sensor";

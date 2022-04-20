@@ -736,7 +736,7 @@
 		};
 	};//End unifykey
 	mailbox_pl: mhu@ff680150 {
-		status = "disabled";
+		status = "okay";
 		compatible = "amlogic, meson_mhu_pl";
 		reg = <0xfe0301d0 0x4>,   /*from dspa sts registers */
 		      <0xfe030154 0x4>,   /*to dspa set registers */
@@ -760,14 +760,6 @@
 			 <&mailbox_pl 2>,
 			 <&mailbox_pl 3>;
 		mbox-nums = <4>;
-	};
-
-	mailbox_test: mhu {
-		status = "disable";
-		compatible = "amlogic, meson_mhu_test";
-		mboxes = <&mailbox_pl 1>,
-			 <&mailbox_pl 3>;
-		#mbox-cells = <1>;
 	};
 
 	usb2_phy_v2: usb2phy@fe004420 {

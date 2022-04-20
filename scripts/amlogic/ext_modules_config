@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+# CONFIG_M1_TEST1=m
+
+# CONFIG_M1_TEST2=m
+# CONFIG_M1_TEST2_PRINT_TASK=y
+
+# CONFIG_M2_TEST1=m

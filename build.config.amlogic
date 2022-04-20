@@ -22,7 +22,18 @@ FILES="
 	${COMMON_DRIVERS_DIR}/arch/arm64/boot/dts/amlogic/s4d_s905y4_ap222_drm.dtb
 "
 
-EXT_MODULES="${EXT_MODULES}"
+EXT_MODULES="
+	${EXT_MODULES}
+"
+
+EXT_MODULES_CONFIG="
+	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/ext_modules_config
+"
+
+EXT_MODULES_PATH="
+	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/ext_modules_path
+"
+
 if [[ `grep "CONFIG_AMLOGIC_IN_KERNEL_MODULES=n" ${ROOT_DIR}/${FRAGMENT_CONFIG}` ]]; then
 	EXT_MODULES="
 		${EXT_MODULES}
@@ -31,6 +42,7 @@ if [[ `grep "CONFIG_AMLOGIC_IN_KERNEL_MODULES=n" ${ROOT_DIR}/${FRAGMENT_CONFIG}`
 fi
 
 POST_KERNEL_BUILD_CMDS="prepare_module_build"
+EXTRA_CMDS="extra_cmds"
 
 TIDY_ABI=1
 KMI_SYMBOL_LIST=android/abi_gki_aarch64

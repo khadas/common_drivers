@@ -89,7 +89,6 @@ if [[ $CC_CLANG -eq "1" ]]; then
 	#if [ -n "${DTC}" ]; then
 	#	tool_args+=("DTC=${DTC}")
 	#fi
-	export TOOL_ARGS="${tool_args[@]}"
 	for prebuilt_bin in "${prebuilts_paths[@]}"; do
 		prebuilt_bin=\${${prebuilt_bin}}
 		eval prebuilt_bin="${prebuilt_bin}"
@@ -107,14 +106,15 @@ if [[ $ARCH == arm64 ]]; then
 	OUTDIR=${ROOT_DIR}/out/kernel-5.15-64
 else
 	OUTDIR=${ROOT_DIR}/out/kernel-5.15-32
+	tool_args+=("LOADADDR=0x208000")
 fi
+TOOL_ARGS="${tool_args[@]}"
 
-mkdir -p ${OUTDIR}/common
+OUT_DIR=${OUTDIR}/common
+mkdir -p ${OUT_DIR}
 if [ "${SKIP_RM_OUTDIR}" != "1" ] ; then
 	rm -rf ${OUTDIR}
 fi
-
-source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
 
 echo "========================================================"
 echo ""
@@ -122,51 +122,89 @@ export DIST_DIR=$(readlink -m ${OUTDIR}/dist)
 export MODULES_STAGING_DIR=$(readlink -m ${OUTDIR}/staging)
 echo OUTDIR=$OUTDIR DIST_DIR=$DIST_DIR MODULES_STAGING_DIR=$MODULES_STAGING_DIR KERNEL_DIR=$KERNEL_DIR
 
+source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
+source ${ROOT_DIR}/build/kernel/build_utils.sh
+
+EXT_MODULES="
+	${EXT_MODULES}
+"
+
+EXT_MODULES_CONFIG="
+	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/ext_modules_config
+"
+
+EXT_MODULES_PATH="
+	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/ext_modules_path
+"
+
+POST_KERNEL_BUILD_CMDS="prepare_module_build"
+EXTRA_CMDS="extra_cmds"
+
+IN_KERNEL_MODULES=1
+
 mkdir -p ${DIST_DIR} ${MODULES_STAGING_DIR}
 
 cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/arch/${ARCH}/configs/
 if [[ -n ${SAVEDEFCONFIG} ]]; then
 	set -x
-	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
-	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common savedefconfig
+	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${DEFCONFIG}
+	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} savedefconfig
 	rm ${KERNEL_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
-	cp -f ${OUTDIR}/common/defconfig  ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
+	cp -f ${OUT_DIR}/defconfig  ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
 	set +x
 	exit
 fi
 if [[ -n ${MENUCONFIG} ]]; then
 	set -x
-	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${DEFCONFIG}
-	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common menuconfig
+	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${DEFCONFIG}
+	make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} menuconfig
 	set +x
 	exit
 fi
 set -x
 if [[ $ARCH == arm64 ]]; then
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} ${DEFCONFIG}
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} headers_install &&
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} Image -j12 &&
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} modules -j12 &&
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} dtbs -j12 || exit
+	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
+	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
+	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} Image -j12 &&
+	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
+	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
+	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
 else
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} ${DEFCONFIG}
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} headers_install &&
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} uImage -j12 LOADADDR=0x208000 &&
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} modules -j12 LOADADDR=0x208000 &&
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUTDIR}/common ${TOOL_ARGS} dtbs -j12 LOADADDR=0x208000 || exit
+	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
+	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
+	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} uImage -j12 &&
+	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
+	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
+	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm/configs/${DEFCONFIG}
 fi
 set +x
+
+function build_ext_modules() {
+	for EXT_MOD in ${EXT_MODULES}; do
+		EXT_MOD_REL=$(rel_path ${ROOT_DIR}/${EXT_MOD} ${KERNEL_DIR})
+		mkdir -p ${OUT_DIR}/${EXT_MOD_REL}
+
+		set -x
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
+				O=${OUT_DIR} ${TOOL_ARGS} -j12 || exit
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
+				O=${OUT_DIR} ${TOOL_ARGS} ${MODULE_STRIP_FLAG}         \
+				INSTALL_MOD_PATH=${MODULES_STAGING_DIR}                \
+				modules_install -j12 || exit
+		set +x
+	done
+}
+
+eval ${POST_KERNEL_BUILD_CMDS}
+build_ext_modules
+eval ${EXTRA_CMDS}
 
 IN_KERNEL_MODULES=1
 
 INITRAMFS_STAGING_DIR=${MODULES_STAGING_DIR}/initramfs_staging
 rm -rf ${INITRAMFS_STAGING_DIR}
-
-source ${ROOT_DIR}/build/kernel/build_utils.sh
 
 MODULES=$(find ${MODULES_STAGING_DIR} -type f -name "*.ko")
 if [ -n "${MODULES}" ]; then

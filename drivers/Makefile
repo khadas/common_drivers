@@ -43,10 +43,10 @@ obj-y					+= ../sound/
 obj-$(CONFIG_AMLOGIC_WIFI)		+= wifi/
 obj-$(CONFIG_AMLOGIC_BLUETOOTH)		+= bluetooth/
 
-KBUILD_CFLAGS_MODULE += $(GKI_EXT_MODULE_PREDEFINE)
+KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
 
 all:
-	$(MAKE) -C $(KERNEL_SRC) M=$(M) modules $(GKI_EXT_MODULE_CONFIG)
+	$(MAKE) -C $(KERNEL_SRC) M=$(M) modules $(GKI_EXT_KERNEL_MODULE_CONFIG)
 
 modules_install:
 	$(MAKE) M=$(M) -C $(KERNEL_SRC) modules_install

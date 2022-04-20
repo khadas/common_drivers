@@ -19,8 +19,8 @@ function read_ext_module_config() {
 			ALL_LINE="$ALL_LINE"" ""$LINE"
 		fi
 	done < $1
-	export GKI_EXT_MODULE_CONFIG=$ALL_LINE
-	echo "GKI_EXT_MODULE_CONFIG=${GKI_EXT_MODULE_CONFIG}"
+
+	echo "${ALL_LINE}"
 }
 
 function read_ext_module_predefine() {
@@ -34,17 +34,79 @@ function read_ext_module_predefine() {
 		PRE_DEFINE="$PRE_DEFINE"" -D"${m_config}_MODULE
 	done
 
-	export GKI_EXT_MODULE_PREDEFINE=$PRE_DEFINE
-	echo "GKI_EXT_MODULE_PREDEFINE=${GKI_EXT_MODULE_PREDEFINE}"
+	echo "${PRE_DEFINE}"
 }
 
 function prepare_module_build() {
+	local temp_file=`mktemp /tmp/kernel.XXXXXXXXXXXX`
 	if [[ -z ${IN_KERNEL_MODULES} ]]; then
-		read_ext_module_config $FRAGMENT_CONFIG && read_ext_module_predefine $FRAGMENT_CONFIG
+		sed 's:#.*$::g' ${ROOT_DIR}/${FRAGMENT_CONFIG} | sed '/^$/d' | sed 's/^[ ]*//' | sed 's/[ ]*$//' > ${temp_file}
+		GKI_EXT_KERNEL_MODULE_CONFIG=$(read_ext_module_config ${temp_file})
+		GKI_EXT_KERNEL_MODULE_PREDEFINE=$(read_ext_module_predefine ${temp_file})
+		export GKI_EXT_KERNEL_MODULE_CONFIG GKI_EXT_KERNEL_MODULE_PREDEFINE
 	fi
+
+	for ext_module_config in ${EXT_MODULES_CONFIG}; do
+		sed 's:#.*$::g' ${ROOT_DIR}/${ext_module_config} | sed '/^$/d' | sed 's/^[ ]*//' | sed 's/[ ]*$//' > ${temp_file}
+		GKI_EXT_MODULE_CONFIG=$(read_ext_module_config ${temp_file})
+		GKI_EXT_MODULE_PREDEFINE=$(read_ext_module_predefine ${temp_file})
+	done
+	export GKI_EXT_MODULE_CONFIG GKI_EXT_MODULE_PREDEFINE
+	echo GKI_EXT_MODULE_CONFIG=${GKI_EXT_MODULE_CONFIG}
+	echo GKI_EXT_MODULE_PREDEFINE=${GKI_EXT_MODULE_PREDEFINE}
+
+	local flag=0
+	for ext_module_path in ${EXT_MODULES_PATH}; do
+		sed 's:#.*$::g' ${ROOT_DIR}/${ext_module_path} | sed '/^$/d' | sed 's/^[ ]*//' | sed 's/[ ]*$//' > ${temp_file}
+		local ext_drivers=`cat ${temp_file}`
+		EXT_MODULES="
+			${EXT_MODULES}
+			${ext_drivers}
+		"
+
+		extra_symbols="KBUILD_EXTRA_SYMBOLS +="
+		while read LINE
+		do
+			ext_mod_rel=$(rel_path ${ROOT_DIR}/${LINE} ${KERNEL_DIR})
+			if [[ ${flag} -eq "1" ]]; then
+				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/, /# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ROOT_DIR}/${LINE}/Makefile
+				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS end" ${ROOT_DIR}/${LINE}/Makefile
+				sed -i "2 i ${extra_symbols}" ${ROOT_DIR}/${LINE}/Makefile
+				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS start" ${ROOT_DIR}/${LINE}/Makefile
+				echo "${ROOT_DIR}/${LINE}/Makefile add: ${extra_symbols}"
+			fi
+			flag=1
+			extra_symbols="${extra_symbols} ${ext_mod_rel}/Module.symvers"
+		done < ${temp_file}
+
+	done
+	export EXT_MODULES
+	echo EXT_MODULES=${EXT_MODULES}
+
+	rm ${temp_file}
 }
 
 export -f prepare_module_build
+
+function extra_cmds() {
+	local temp_file=`mktemp /tmp/kernel.XXXXXXXXXXXX`
+	local flag=0
+
+	for ext_module_path in ${EXT_MODULES_PATH}; do
+		sed 's:#.*$::g' ${ROOT_DIR}/${ext_module_path} | sed '/^$/d' | sed 's/^[ ]*//' | sed 's/[ ]*$//' > ${temp_file}
+		while read LINE
+		do
+			if [[ ${flag} -eq "1" ]]; then
+				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/, /# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ROOT_DIR}/${LINE}/Makefile
+			fi
+			flag=1
+		done < ${temp_file}
+	done
+
+	rm ${temp_file}
+}
+
+export -f extra_cmds
 
 function mod_probe() {
 	local ko=$1

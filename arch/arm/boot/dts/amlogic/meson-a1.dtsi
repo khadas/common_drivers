@@ -101,6 +101,12 @@
 		method = "smc";
 	};
 
+	cpu_info {
+		compatible = "amlogic, cpuinfo";
+		status = "okay";
+		cpuinfo_cmd = <0x82000044>;
+	};
+
 	arm_pmu {
 		compatible = "arm,cortex-a15-pmu";
 		/* clusterb-enabled; */
@@ -219,6 +225,12 @@
 				compatible = "amlogic,meson-a1-reset";
 				reg = <0x0 0x8c>;
 				#reset-cells = <1>;
+			};
+
+			cpu_version {
+				compatible = "amlogic,meson-gx-ao-secure", "syscon";
+				reg=<0x5a20 0x140>;
+				amlogic,has-chip-id;
 			};
 
 			meson_clk_msr@3400 {
@@ -628,9 +640,12 @@
 		clock-output-names = "xtal";
 		#clock-cells = <0>;
 	};
+
 	secmon {
-		compatible = "amlogic,meson-gxbb-sm";
+		compatible = "amlogic, secmon";
 		no-memory;
+		in_base_func = <0x82000020>;
+		out_base_func = <0x82000021>;
 	};
 
 	amlogic_unifykey: unifykey{
@@ -855,7 +870,7 @@
 
 	rng{
 		compatible="amlogic,meson-rng";
-		status = "disabled";
+		status = "okay";
 		#address-cells=<1>;
 		#size-cells=<1>;
 		reg=<0xfe005118 0x4>;

@@ -2,9 +2,9 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
+// #define DEBUG
 // #define USE_CMA
 // #define TEST_ACESS
-// #define DEBUG
 #include <linux/errno.h>
 #include <linux/err.h>
 #include <linux/of.h>
@@ -191,33 +191,36 @@ static int secmon_probe(struct platform_device *pdev)
 	if (!of_property_read_u32(np, "inout_size_func", &id))
 		get_sharemem_size(id);
 
-	if (of_property_read_u32(np, "reserve_mem_size", &secmon_size)) {
-		pr_err("can't get reserve_mem_size, use default value\n");
-		secmon_size = RESERVE_MEM_SIZE;
-	} else {
-		pr_info("reserve_mem_size:0x%x\n", secmon_size);
-	}
+	if (!of_property_read_bool (pdev->dev.of_node, "no-memory")) {
+		if (of_property_read_u32(np, "reserve_mem_size", &secmon_size)) {
+			pr_err("can't get reserve_mem_size, use default value\n");
+			secmon_size = RESERVE_MEM_SIZE;
+		} else {
+			pr_info("reserve_mem_size:0x%x\n", secmon_size);
+		}
 
-	get_reserver_base_size(pdev);
+		get_reserver_base_size(pdev);
 #ifdef USE_CMA
-	ret = of_reserved_mem_device_init(&pdev->dev);
-	if (ret) {
-		pr_err("reserve memory init fail:%d\n", ret);
-		return ret;
-	}
+		ret = of_reserved_mem_device_init(&pdev->dev);
+		if (ret) {
+			pr_err("reserve memory init fail:%d\n", ret);
+			return ret;
+		}
 
-	page = dma_alloc_from_contiguous(&pdev->dev, secmon_size >> PAGE_SHIFT, 0, 0);
-	if (!page) {
-		pr_err("alloc page failed, ret:%p\n", page);
-		return -ENOMEM;
-	}
-	pr_debug("get page:%p, %lx\n", page, page_to_pfn(page));
-	secmon_start_virt = (unsigned long)page_to_virt(page);
+		page = dma_alloc_from_contiguous(&pdev->dev, secmon_size >> PAGE_SHIFT, 0, 0);
+		if (!page) {
+			pr_err("alloc page failed, ret:%p\n", page);
+			return -ENOMEM;
+		}
+		pr_debug("get page:%p, %lx\n", page, page_to_pfn(page));
+		secmon_start_virt = (unsigned long)page_to_virt(page);
 #endif
 
 #ifdef TEST_ACESS
-	test_access_secmon();
+		test_access_secmon();
 #endif
+	}
+
 	sharemem_in_base = ram_vmap(phy_in_base, sharemem_in_size);
 	if (!sharemem_in_base) {
 		pr_err("secmon share mem in buffer remap fail!\n");

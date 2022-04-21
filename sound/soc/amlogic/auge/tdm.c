@@ -46,6 +46,7 @@
 #include "pcpd_monitor.h"
 #include "../common/iec_info.h"
 #include "iomap.h"
+#include "audio_utils.h"
 
 #define DRV_NAME "snd_tdm"
 
@@ -997,7 +998,6 @@ static void tdm_sharebuffer_free(struct aml_tdm *p_tdm,
 
 static void tdm_sharebuffer_reset(struct aml_tdm *p_tdm, int channels)
 {
-	int offset = p_tdm->chipinfo->reset_reg_offset;
 	bool valid = aml_check_sharebuffer_valid(p_tdm->fddr,
 			p_tdm->samesource_sel);
 	struct samesrc_ops *ops = NULL;
@@ -1007,8 +1007,7 @@ static void tdm_sharebuffer_reset(struct aml_tdm *p_tdm, int channels)
 
 	ops = get_samesrc_ops(p_tdm->samesource_sel);
 	if (ops && channels > 2)
-		ops->reset(p_tdm->samesource_sel - 3,
-				offset);
+		ops->reset(p_tdm->samesource_sel - 3);
 }
 
 static int aml_tdm_open(struct snd_soc_component *component, struct snd_pcm_substream *substream)
@@ -1102,11 +1101,12 @@ static int aml_tdm_prepare(struct snd_soc_component *component, struct snd_pcm_s
 		struct frddr *fr = p_tdm->fddr;
 
 		if (p_tdm->chipinfo->async_fifo) {
-			int offset = p_tdm->chipinfo->reset_reg_offset;
-
 			pr_debug("%s(), reset fddr\n", __func__);
-			aml_frddr_reset(p_tdm->fddr, offset);
-			aml_tdm_out_reset(p_tdm->id, offset);
+			aml_frddr_reset(p_tdm->fddr);
+			/* reset tdm out */
+			aml_audio_reset(p_tdm->chipinfo->out_reset_reg_offset,
+				p_tdm->chipinfo->out_reset_reg_shift,
+				p_tdm->chipinfo->use_vadtop);
 			if (p_tdm->samesource_sel != SHAREBUFFER_NONE)
 				tdm_sharebuffer_reset(p_tdm, runtime->channels);
 		}

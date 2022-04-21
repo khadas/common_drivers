@@ -141,7 +141,6 @@ void aml_tdm_mute_capture(struct aml_audio_controller *actrl,
 		bool mute,
 		int lane_cnt,
 		bool use_vadtop);
-void aml_tdm_out_reset(unsigned int tdm_id, int offset);
 void aml_tdm_set_oe_v1(struct aml_audio_controller *actrl,
 	int index,
 	int force_oe,

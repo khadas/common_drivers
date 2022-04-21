@@ -832,7 +832,7 @@
 	};
 
 	aed:effect {
-		compatible = "amlogic, snd-effect-v4";
+		compatible = "amlogic, snd-effect-v3";
 		#sound-dai-cells = <0>;
 		clocks = <&clkaudio CLKID_AUDIO_GATE_EQDRC
 			&clkc CLKID_FCLK_DIV3

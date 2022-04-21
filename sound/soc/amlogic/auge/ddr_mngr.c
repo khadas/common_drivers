@@ -31,6 +31,7 @@
 #include "frhdmirx_hw.h"
 //#include "earc.h"
 #include "../common/debug.h"
+#include "audio_utils.h"
 
 #define DRV_NAME "audio-ddr-manager"
 
@@ -1859,39 +1860,11 @@ void aml_frddr_check(struct frddr *fr)
 	return;
 }
 
-void aml_frddr_reset(struct frddr *fr, int offset)
+void aml_frddr_reset(struct frddr *fr)
 {
-	unsigned int reg = 0, val = 0;
-
-	if (!fr) {
-		pr_err("%s(), frddr NULL pointer\n", __func__);
-		return;
-	}
-
-	if (offset && offset != 1) {
-		pr_err("%s(), invalid offset = %d\n", __func__, offset);
-		return;
-	}
-
-	if (fr->fifo_id == 0) {
-		reg = EE_AUDIO_SW_RESET0(offset);
-		val = REG_BIT_RESET_FRDDRA;
-	} else if (fr->fifo_id == 1) {
-		reg = EE_AUDIO_SW_RESET0(offset);
-		val = REG_BIT_RESET_FRDDRB;
-	} else if (fr->fifo_id == 2) {
-		reg = EE_AUDIO_SW_RESET0(offset);
-		val = REG_BIT_RESET_FRDDRC;
-	} else if (fr->fifo_id == 3) {
-		reg = EE_AUDIO_SW_RESET1(offset);
-		val = REG_BIT_RESET_FRDDRD;
-	} else {
-		pr_err("invalid frddr id %d\n", fr->fifo_id);
-		return;
-	}
-
-	audiobus_update_bits(reg, val, val);
-	audiobus_update_bits(reg, val, 0);
+	aml_audio_reset(fr->chipinfo->fr_reset_reg_offset[fr->fifo_id],
+			fr->chipinfo->fr_reset_reg_shift[fr->fifo_id],
+			false);
 }
 
 void frddr_init_without_mngr(unsigned int frddr_index, unsigned int src0_sel)
@@ -2144,6 +2117,30 @@ struct toddr_src_conf toddr_srcs_v4[] = {
 	{ /* sentinel */ }
 };
 
+struct toddr_src_conf toddr_srcs_v5[] = {
+	TODDR_SRC_CONFIG("tdmin_a", 0, EE_AUDIO_TODDR_A_CTRL1, 28, 0xf),
+	TODDR_SRC_CONFIG("tdmin_b", 1, EE_AUDIO_TODDR_A_CTRL1, 28, 0xf),
+	TODDR_SRC_CONFIG("tdmin_vad", 2, EE_AUDIO_TODDR_A_CTRL1, 28, 0xf),
+	TODDR_SRC_CONFIG("spdifin", 3, EE_AUDIO_TODDR_A_CTRL1, 28, 0xf),
+	TODDR_SRC_CONFIG("pdmin", 4, EE_AUDIO_TODDR_A_CTRL1, 28, 0xf),
+	TODDR_SRC_CONFIG("tdmin_lb", 6, EE_AUDIO_TODDR_A_CTRL1, 28, 0xf),
+	TODDR_SRC_CONFIG("loopback_a", 7, EE_AUDIO_TODDR_A_CTRL1, 28, 0xf),
+	TODDR_SRC_CONFIG("loopback_b", 9, EE_AUDIO_TODDR_A_CTRL1, 28, 0xf),
+	{ /* sentinel */ }
+};
+
+/* frddr A, B, C */
+int fr_reset_reg_offset_array_v1[] = {0x9, 0x9, 0x9};
+int fr_reset_reg_shift_array_v1[]  = {9, 10, 11};
+
+/* frddr A, B, C, D, E */
+int fr_reset_reg_offset_array_v2[] = {0xa, 0xa, 0xa, 0xb, 0xb};
+int fr_reset_reg_shift_array_v2[]  = {9, 10, 11, 0, 4};
+
+/* frddr A, B */
+int fr_reset_reg_offset_array_v3[] = {0xa, 0xa};
+int fr_reset_reg_shift_array_v3[]  = {7, 8};
+
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static struct ddr_chipinfo axg_ddr_chipinfo = {
 	.int_start_same_addr   = true,
@@ -2167,6 +2164,8 @@ static struct ddr_chipinfo tl1_ddr_chipinfo = {
 	.fifo_depth            = FIFO_DEPTH_1K,
 	.to_srcs               = &toddr_srcs_v2[0],
 	.use_arb               = true,
+	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v2[0],
+	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v2[0],
 };
 #endif
 
@@ -2178,8 +2177,10 @@ static struct ddr_chipinfo a1_ddr_chipinfo = {
 	.toddr_num             = 2,
 	.frddr_num             = 2,
 	.fifo_depth            = FIFO_DEPTH_512,
-	.to_srcs               = &toddr_srcs_v2[0],
+	.to_srcs               = &toddr_srcs_v5[0],
 	.use_arb               = true,
+	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v3[0],
+	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v3[0],
 };
 
 static struct ddr_chipinfo g12a_ddr_chipinfo = {
@@ -2191,6 +2192,8 @@ static struct ddr_chipinfo g12a_ddr_chipinfo = {
 	.fifo_depth            = FIFO_DEPTH_1K,
 	.to_srcs               = &toddr_srcs_v1[0],
 	.use_arb               = true,
+	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v1[0],
+	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v1[0],
 };
 
 static struct ddr_chipinfo sm1_ddr_chipinfo = {
@@ -2204,6 +2207,8 @@ static struct ddr_chipinfo sm1_ddr_chipinfo = {
 	.fifo_depth            = FIFO_DEPTH_1K,
 	.to_srcs               = &toddr_srcs_v2[0],
 	.use_arb               = true,
+	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v2[0],
+	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v2[0],
 };
 
 static struct ddr_chipinfo tm2_revb_ddr_chipinfo = {
@@ -2219,6 +2224,25 @@ static struct ddr_chipinfo tm2_revb_ddr_chipinfo = {
 	.burst_finished_flag   = true,
 	.to_srcs               = &toddr_srcs_v2[0],
 	.use_arb               = true,
+	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v2[0],
+	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v2[0],
+};
+
+static struct ddr_chipinfo c2_ddr_chipinfo = {
+	.same_src_fn           = true,
+	.ugt                   = true,
+	.src_sel_ctrl          = true,
+	.asrc_src_sel_ctrl     = true,
+	.wakeup                = 2,
+	.toddr_num             = 2,
+	.frddr_num             = 2,
+	.fifo_depth            = FIFO_DEPTH_512,
+	.chnum_sync            = true,
+	.burst_finished_flag   = true,
+	.to_srcs               = &toddr_srcs_v5[0],
+	.use_arb               = true,
+	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v3[0],
+	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v3[0],
 };
 
 static struct ddr_chipinfo t5_ddr_chipinfo = {
@@ -2234,6 +2258,8 @@ static struct ddr_chipinfo t5_ddr_chipinfo = {
 	.burst_finished_flag   = true,
 	.to_srcs               = &toddr_srcs_v3[0],
 	.use_arb               = true,
+	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v2[0],
+	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v2[0],
 };
 
 static struct ddr_chipinfo p1_ddr_chipinfo = {
@@ -2249,6 +2275,8 @@ static struct ddr_chipinfo p1_ddr_chipinfo = {
 	.burst_finished_flag   = true,
 	.to_srcs               = &toddr_srcs_v3[0],
 	.use_arb               = true,
+	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v2[0],
+	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v2[0],
 };
 
 static struct ddr_chipinfo a5_ddr_chipinfo = {
@@ -2261,6 +2289,8 @@ static struct ddr_chipinfo a5_ddr_chipinfo = {
 	.fifo_depth            = FIFO_DEPTH_512,
 	.to_srcs               = &toddr_srcs_v4[0],
 	.use_arb               = false,
+	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v2[0],
+	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v2[0],
 };
 
 static const struct of_device_id aml_ddr_mngr_device_id[] = {
@@ -2289,6 +2319,10 @@ static const struct of_device_id aml_ddr_mngr_device_id[] = {
 	{
 		.compatible = "amlogic, tm2-revb-audio-ddr-manager",
 		.data       = &tm2_revb_ddr_chipinfo,
+	},
+	{
+		.compatible = "amlogic, c2-audio-ddr-manager",
+		.data       = &c2_ddr_chipinfo,
 	},
 	{
 		.compatible = "amlogic, t5-audio-ddr-manager",

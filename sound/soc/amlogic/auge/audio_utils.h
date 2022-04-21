@@ -15,4 +15,5 @@ void fratv_enable(bool enable);
 void fratv_src_select(int src);
 
 void cec_arc_enable(int src, bool enable);
+void aml_audio_reset(int reg, int shift, bool use_vadtop);
 #endif

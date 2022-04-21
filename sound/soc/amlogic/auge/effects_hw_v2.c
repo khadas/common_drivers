@@ -392,11 +392,3 @@ void aed_enable(bool enable)
 		eqdrc_update_bits(AED_TOP_CTL, 0x3 << 1, 0x0 << 1);
 	}
 }
-
-void aed_module_reset(int offset)
-{
-	audiobus_update_bits(EE_AUDIO_SW_RESET0(offset),
-			     REG_BIT_RESET_EQDRC, REG_BIT_RESET_EQDRC);
-	audiobus_update_bits(EE_AUDIO_SW_RESET0(offset),
-			     REG_BIT_RESET_EQDRC, 0);
-}

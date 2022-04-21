@@ -39,6 +39,10 @@ struct spdif_chipinfo {
 	unsigned int spdifout_lane_mask;
 	bool use_arb;
 	bool regulator;
+	/* offset by the spec */
+	int out_reset_reg_offset;
+	/* offset by the spec */
+	int out_reset_reg_shift;
 };
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -60,6 +64,8 @@ struct spdif_chipinfo g12a_spdif_a_chipinfo = {
 	.pcpd_separated = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V1,
 	.use_arb        = true,
+	.out_reset_reg_offset = 9,
+	.out_reset_reg_shift = 15,
 };
 
 struct spdif_chipinfo g12a_spdif_b_chipinfo = {
@@ -70,6 +76,8 @@ struct spdif_chipinfo g12a_spdif_b_chipinfo = {
 	.pcpd_separated = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V1,
 	.use_arb        = true,
+	.out_reset_reg_offset = 9,
+	.out_reset_reg_shift = 16,
 };
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -81,6 +89,8 @@ struct spdif_chipinfo tl1_spdif_a_chipinfo = {
 	.async_fifo   = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V1,
 	.use_arb      = true,
+	.out_reset_reg_offset = 0xa,
+	.out_reset_reg_shift = 15,
 };
 
 struct spdif_chipinfo tl1_spdif_b_chipinfo = {
@@ -91,6 +101,8 @@ struct spdif_chipinfo tl1_spdif_b_chipinfo = {
 	.async_fifo   = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V1,
 	.use_arb      = true,
+	.out_reset_reg_offset = 0xa,
+	.out_reset_reg_shift = 16,
 };
 #endif
 
@@ -102,6 +114,8 @@ struct spdif_chipinfo sm1_spdif_a_chipinfo = {
 	.async_fifo   = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V1,
 	.use_arb      = true,
+	.out_reset_reg_offset = 0xa,
+	.out_reset_reg_shift = 15,
 };
 
 struct spdif_chipinfo sm1_spdif_b_chipinfo = {
@@ -112,6 +126,8 @@ struct spdif_chipinfo sm1_spdif_b_chipinfo = {
 	.async_fifo   = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V1,
 	.use_arb      = true,
+	.out_reset_reg_offset = 0xa,
+	.out_reset_reg_shift = 16,
 };
 
 struct spdif_chipinfo tm2_spdif_a_chipinfo = {
@@ -122,6 +138,8 @@ struct spdif_chipinfo tm2_spdif_a_chipinfo = {
 	.async_fifo   = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V1,
 	.use_arb      = true,
+	.out_reset_reg_offset = 0xa,
+	.out_reset_reg_shift = 15,
 };
 
 struct spdif_chipinfo tm2_spdif_b_chipinfo = {
@@ -132,6 +150,8 @@ struct spdif_chipinfo tm2_spdif_b_chipinfo = {
 	.async_fifo   = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V1,
 	.use_arb      = true,
+	.out_reset_reg_offset = 0xa,
+	.out_reset_reg_shift = 16,
 };
 
 struct spdif_chipinfo tm2_revb_spdif_a_chipinfo = {
@@ -144,6 +164,8 @@ struct spdif_chipinfo tm2_revb_spdif_a_chipinfo = {
 	.sample_mode_filter_en = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V2,
 	.use_arb      = true,
+	.out_reset_reg_offset = 0xa,
+	.out_reset_reg_shift = 15,
 };
 
 struct spdif_chipinfo tm2_revb_spdif_b_chipinfo = {
@@ -155,6 +177,8 @@ struct spdif_chipinfo tm2_revb_spdif_b_chipinfo = {
 	.separate_tohdmitx_en = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V2,
 	.use_arb      = true,
+	.out_reset_reg_offset = 0xa,
+	.out_reset_reg_shift = 16,
 };
 
 struct spdif_chipinfo a5_spdif_a_chipinfo = {
@@ -166,6 +190,8 @@ struct spdif_chipinfo a5_spdif_a_chipinfo = {
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V2,
 	.use_arb      = false,
 	.regulator    = true,
+	.out_reset_reg_offset = 0xa,
+	.out_reset_reg_shift = 15,
 };
 
 struct spdif_chipinfo a1_spdif_in_chipinfo = {

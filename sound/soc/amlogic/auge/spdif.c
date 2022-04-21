@@ -37,6 +37,7 @@
 #include "spdif_match_table.h"
 #include "sharebuffer.h"
 #include "../common/iec_info.h"
+#include "audio_utils.h"
 
 #define DRV_NAME "snd_spdif"
 
@@ -147,6 +148,13 @@ static const char *const spdifin_samplerate[] = {
 	"176400",
 	"192000"
 };
+
+static void aml_spdif_out_reset(unsigned int spdif_id)
+{
+	aml_audio_reset(spdif_priv[spdif_id]->chipinfo->out_reset_reg_offset,
+		spdif_priv[spdif_id]->chipinfo->out_reset_reg_shift,
+		false);
+}
 
 static void spdif_sharebuffer_prepare(struct snd_pcm_substream *substream,
 	struct aml_spdif *p_spdif)

@@ -967,3 +967,19 @@ void cec_arc_enable(int src, bool enable)
 			       src << 2 | enable << 1 | 0x0 << 0);
 #endif
 }
+
+void aml_audio_reset(int reg, int shift, bool use_vadtop)
+{
+	pr_info("%s, reg 0x%x, shift %d, use_vadtop %d\n", __func__, reg, shift, use_vadtop);
+
+	if (reg <= 0)
+		return;
+
+	if (use_vadtop) {
+		vad_top_update_bits(reg, 0x1 << shift, 0x1 << shift);
+		vad_top_update_bits(reg, 0x1 << shift, 0);
+	} else {
+		audiobus_update_bits(reg, 0x1 << shift, 0x1 << shift);
+		audiobus_update_bits(reg, 0x1 << shift, 0);
+	}
+}

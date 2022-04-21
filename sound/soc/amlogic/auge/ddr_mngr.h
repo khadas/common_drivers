@@ -187,6 +187,8 @@ struct ddr_chipinfo {
 	struct toddr_src_conf *to_srcs;
 	struct toddr_src_conf *fr_srcs;
 	bool use_arb;
+	int *fr_reset_reg_offset;
+	int *fr_reset_reg_shift;
 };
 
 struct toddr {
@@ -348,7 +350,7 @@ void aml_frddr_set_format(struct frddr *fr,
 	unsigned int msb,
 	unsigned int frddr_type);
 
-void aml_frddr_reset(struct frddr *fr, int offset);
+void aml_frddr_reset(struct frddr *fr);
 
 /* audio eq drc */
 void aml_set_aed(bool enable, int aed_module);

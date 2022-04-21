@@ -48,7 +48,7 @@ struct samesrc_ops {
 	int (*set_clks)(int id,
 		struct clk *clk_src, int rate, int same);
 	void (*mute)(int id, bool mute);
-	void (*reset)(unsigned int id, int offset);
+	void (*reset)(unsigned int id);
 };
 
 struct samesrc_ops *get_samesrc_ops(enum sharebuffer_srcs src);

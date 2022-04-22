@@ -766,7 +766,7 @@
 	};
 
 	usb2_phy_v2: usb2phy@fe004420 {
-		compatible = "amlogic,amlogic-new-usb2-v2";
+		compatible = "amlogic,amlogic-new-usb2-v2-c2";
 		status = "disable";
 		#phy-cells = <0>;
 		reg = <0x0 0xfe004420 0x0 0x60
@@ -792,7 +792,7 @@
 	};
 
 	usb3_phy_v2: usb3phy@fe004480 {
-		compatible = "amlogic,amlogic-new-usb3-v2";
+		compatible = "amlogic,amlogic-new-c2-usb3-v2";
 		status = "disable";
 		/*clocks = <&clkc CLKID_PCIE_PLL>;*/
 		/*clock-names = "pcie_refpll";*/
@@ -808,31 +808,21 @@
 		power-domains = <&pwrdm PDID_USB>;
 	};
 
-	usb0: usb@ff400000 {
-		compatible = "amlogic,meson-g12a-dwc3";
-		status = "disable";
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
 
+	dwc3: dwc3@ff400000 {
+		compatible = "snps,dwc3";
+		reg = <0x0 0xff400000 0x0 0x100000>;
+		interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
+		dr_mode = "host";
+		maximum-speed = "high-speed";
+		snps,dis_u2_susphy_quirk;
+		usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;
 		clocks = <&clkc CLKID_USB_CTRL>;
 		clock-names = "usb_general";
-
-		dwc3: dwc3@ff400000 {
-			compatible = "snps,dwc3";
-			reg = <0x0 0xff400000 0x0 0x100000>;
-			interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
-			dr_mode = "host";
-			maximum-speed = "high-speed";
-			snps,dis_u2_susphy_quirk;
-			usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;
-			clocks = <&clkc CLKID_USB_CTRL>;
-			clock-names = "usb_general";
-			power-domains = <&pwrdm PDID_USB>;
-			/*usb5v-supply = <&vcc_5v>;*/
-			/*usb3v3-supply = <&vddao_3v3>;*/
-			/*usb1v8-supply = <&vddio_ao18>;*/
-		};
+		power-domains = <&pwrdm PDID_USB>;
+		/*usb5v-supply = <&vcc_5v>;*/
+		/*usb3v3-supply = <&vddao_3v3>;*/
+		/*usb1v8-supply = <&vddio_ao18>;*/
 	};
 
 	dwc2_a: dwc2_a@ff500000 {

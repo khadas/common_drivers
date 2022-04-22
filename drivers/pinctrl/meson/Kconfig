@@ -37,4 +37,13 @@ config AMLOGIC_PINCTRL_MESON_C3
 	  when enable this config.
 	  C3 pinctrl can work.
 	  otherwise C3 pinctrl can't work
+
+config AMLOGIC_PINCTRL_MESON_A1
+	tristate "Meson A1 Soc pinctrl driver"
+	default n
+	help
+	  the chip of A1 will be built
+	  when enable this config.
+	  A1 pinctrl can work.
+	  otherwise A1 pinctrl can't work
 endif

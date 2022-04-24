@@ -508,7 +508,7 @@ static irqreturn_t aml_pdm_isr_handler(int irq, void *data)
 	struct snd_pcm_substream *substream =
 		(struct snd_pcm_substream *)data;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct device *dev = rtd->dev;
+	struct device *dev = asoc_rtd_to_cpu(rtd, 0)->dev;
 	struct aml_pdm *p_pdm = (struct aml_pdm *)
 		snd_soc_dai_get_drvdata(asoc_rtd_to_cpu(rtd, 0));
 	unsigned int status;
@@ -544,7 +544,7 @@ static int aml_pdm_open(struct snd_soc_component *component, struct snd_pcm_subs
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct device *dev = rtd->dev;
+	struct device *dev = asoc_rtd_to_cpu(rtd, 0)->dev;
 	struct aml_pdm *p_pdm = (struct aml_pdm *)snd_soc_dai_get_drvdata(asoc_rtd_to_cpu(rtd, 0));
 	int ret;
 
@@ -838,6 +838,7 @@ static int aml_pdm_dai_set_sysclk(struct snd_soc_dai *cpu_dai,
 	unsigned int sysclk_srcpll_freq, dclk_srcpll_freq;
 	unsigned int dclk_idx = p_pdm->dclk_idx;
 	char *clk_name = NULL;
+	int ret = 0;
 	/* lowpower, force dclk to 768k */
 	if (p_pdm->islowpower)
 		dclk_idx = 2;
@@ -860,6 +861,14 @@ static int aml_pdm_dai_set_sysclk(struct snd_soc_dai *cpu_dai,
 		clk_set_rate(p_pdm->clk_pdm_dclk,
 			pdm_dclkidx2rate(dclk_idx));
 	}
+
+	ret = clk_prepare_enable(p_pdm->clk_pdm_dclk);
+	if (ret) {
+		pr_err("Can't enable pcm clk_pdm_dclk clock: %d\n", ret);
+		return -EINVAL;
+	}
+
+	p_pdm->clk_on = true;
 
 	pr_info("\n%s, pdm_sysclk:%lu pdm_dclk:%lu, dclk_srcpll:%lu\n",
 		__func__,
@@ -897,14 +906,6 @@ int aml_pdm_dai_startup(struct snd_pcm_substream *substream,
 		pr_err("Can't enable pcm clk_pdm_sysclk clock: %d\n", ret);
 		goto err;
 	}
-
-	ret = clk_prepare_enable(p_pdm->clk_pdm_dclk);
-	if (ret) {
-		pr_err("Can't enable pcm clk_pdm_dclk clock: %d\n", ret);
-		goto err;
-	}
-
-	p_pdm->clk_on = true;
 
 	return 0;
 err:

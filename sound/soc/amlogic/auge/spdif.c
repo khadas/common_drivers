@@ -1004,13 +1004,14 @@ static int aml_spdif_open(struct snd_soc_component *component,
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct device *dev = asoc_rtd_to_cpu(rtd, 0)->dev;
 	struct aml_spdif *p_spdif = (struct aml_spdif *)
 		snd_soc_dai_get_drvdata(asoc_rtd_to_cpu(rtd, 0));
 	int ret = 0;
 
 	snd_soc_set_runtime_hwparams(substream, &aml_spdif_hardware);
 	snd_pcm_lib_preallocate_pages(substream, SNDRV_DMA_TYPE_DEV,
-		rtd->dev, SPDIF_BUFFER_BYTES / 2, SPDIF_BUFFER_BYTES);
+		dev, SPDIF_BUFFER_BYTES / 2, SPDIF_BUFFER_BYTES);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		p_spdif->on = true;
@@ -1018,21 +1019,21 @@ static int aml_spdif_open(struct snd_soc_component *component,
 		if (p_spdif->same_src_on)
 			release_spdif_same_src(p_spdif, substream);
 
-		p_spdif->fddr = aml_audio_register_frddr(rtd->dev,
+		p_spdif->fddr = aml_audio_register_frddr(dev,
 			p_spdif->actrl,
 			aml_spdif_ddr_isr, substream, false);
 		if (!p_spdif->fddr) {
 			ret = -ENXIO;
-			dev_err(rtd->dev, "failed to claim from ddr\n");
+			dev_err(dev, "failed to claim from ddr\n");
 			goto err_ddr;
 		}
 	} else {
-		p_spdif->tddr = aml_audio_register_toddr(rtd->dev,
+		p_spdif->tddr = aml_audio_register_toddr(dev,
 			p_spdif->actrl,
 			aml_spdif_ddr_isr, substream);
 		if (!p_spdif->tddr) {
 			ret = -ENXIO;
-			dev_err(rtd->dev, "failed to claim to ddr\n");
+			dev_err(dev, "failed to claim to ddr\n");
 			goto err_ddr;
 		}
 
@@ -1040,7 +1041,7 @@ static int aml_spdif_open(struct snd_soc_component *component,
 				aml_spdifin_status_isr, 0, "irq_spdifin",
 				p_spdif);
 		if (ret) {
-			dev_err(rtd->dev, "failed to claim irq_spdifin %u, ret: %d\n",
+			dev_err(dev, "failed to claim irq_spdifin %u, ret: %d\n",
 						p_spdif->irq_spdifin, ret);
 			goto err_irq;
 		}
@@ -1185,10 +1186,9 @@ static int aml_spdif_ioctl(struct snd_soc_component *component,
 
 static int aml_spdif_new(struct snd_soc_component *component, struct snd_soc_pcm_runtime *rtd)
 {
-	struct device *dev = rtd->dev;
 	struct aml_spdif *p_spdif;
 
-	p_spdif = (struct aml_spdif *)dev_get_drvdata(dev);
+	p_spdif = (struct aml_spdif *)dev_get_drvdata(asoc_rtd_to_cpu(rtd, 0)->dev);
 
 	pr_debug("%s spdif_%s, clk continuous:%d\n",
 		__func__,

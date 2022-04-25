@@ -118,6 +118,15 @@
 		regulator-always-on;
 	};
 
+	vcc_5v: regulator-vcc_5v {
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		vin-supply = <&main_12v>;
+		regulator-always-on;
+	};
+
 	vcc_3v3: regulator-vcc_3v3 {
 		compatible = "regulator-fixed";
 		regulator-name = "VCC_3V3";
@@ -136,29 +145,20 @@
 		regulator-always-on;
 	};
 
-	vcc_1v8: regulator-vcc_1v8 {
+	vddq: regulator-vddq {
 		compatible = "regulator-fixed";
-		regulator-name = "VCC_1V8";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		vin-supply = <&vcc_3v3>;
-		regulator-always-on;
-	};
-
-	vcc_5v: regulator-vcc_5v {
-		compatible = "regulator-fixed";
-		regulator-name = "VCC_5V";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
+		regulator-name = "VDDQ";
+		regulator-min-microvolt = <1350000>;
+		regulator-max-microvolt = <1350000>;
 		vin-supply = <&main_12v>;
 		regulator-always-on;
 	};
 
-	avddao_1v8: regulator-avddao_1v8 {
+	ddr4_2v5: regulator-ddr4_2v5 {
 		compatible = "regulator-fixed";
-		regulator-name = "AVDDAO_1V8";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
+		regulator-name = "DDR4_2V5";
+		regulator-min-microvolt = <2500000>;
+		regulator-max-microvolt = <2500000>;
 		vin-supply = <&vcc_5v>;
 		regulator-always-on;
 	};
@@ -168,6 +168,33 @@
 		regulator-name = "VDDIO_AO_3V3";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
+		vin-supply = <&vcc_5v>;
+		regulator-always-on;
+	};
+
+	vcc_1v8: regulator-vcc_1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vcc_3v3>;
+		regulator-always-on;
+	};
+
+	vdd_ddr: regulator-vdd_ddr {
+		compatible = "regulator-fixed";
+		regulator-name = "VDD_DDR";
+		regulator-min-microvolt = <800000>;
+		regulator-max-microvolt = <800000>;
+		vin-supply = <&vcc_3v3>;
+		regulator-always-on;
+	};
+
+	avddao_1v8: regulator-avddao_1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "AVDDAO_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
 		vin-supply = <&vcc_5v>;
 		regulator-always-on;
 	};

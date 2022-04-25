@@ -915,15 +915,13 @@
 	aml_bt: aml_bt {
 		compatible = "amlogic, aml-bt";
 		status = "disabled";
-		reset-gpios = <&gpio       GPIOX_16       GPIO_ACTIVE_HIGH>;
 	};
 
 	aml_wifi: aml_wifi {
 		compatible = "amlogic, aml-wifi";
 		status = "disabled";
-		irq_trigger_type = "GPIO_IRQ_LOW";
-		power_on-gpios = <&gpio       GPIOX_6       GPIO_ACTIVE_HIGH>;
-		dhd_static_buf;	//if use bcm wifi, config dhd_static_buf
+		irq_trigger_type = "IRQF_TRIGGER_LOW";
+		wifi_static_buf = <1>;	//static buf level
 		pinctrl-names = "default";
 		pinctrl-0 = <&pwm_d_pins1>;
 		pwm_config = <&wifi_pwm_conf>;

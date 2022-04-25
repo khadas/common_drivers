@@ -743,6 +743,7 @@ static int wifi_dev_probe(struct platform_device *pdev)
 #ifdef CONFIG_OF
 	struct wifi_plat_info *plat;
 	const char *value;
+	int buf_level = 0;
 	//struct gpio_desc *desc;
 #else
 	struct wifi_plat_info *plat =
@@ -855,15 +856,14 @@ static int wifi_dev_probe(struct platform_device *pdev)
 			}
 		}
 #endif
-		if (of_get_property(pdev->dev.of_node,
-				    "dhd_static_buf", NULL)) {
-			WIFI_DEBUG("dhd_static_buf all setup\n");
-			bcmdhd_init_wlan_mem(1);
-		} else {
-			WIFI_INFO("dhd_static_buf little setup\n");
-			bcmdhd_init_wlan_mem(0);
+		if (!of_property_read_u32(pdev->dev.of_node,
+			"wifi_static_buf", &buf_level)) {
+			WIFI_INFO("buf_level is :%d\n", buf_level);
+			//buf_level 0: aml wifi
+			//buf_level 1: dhd wifi for linux no VTS
+			//buf_level 2: dhd wifi for android
+			bcmdhd_init_wlan_mem(buf_level);
 		}
-
 		plat->plat_info_valid = 1;
 
 		WIFI_DEBUG("interrupt_pin=%d\n", plat->interrupt_pin);

@@ -774,21 +774,22 @@
 };
 
 &aml_bt {
-	status = "disabled";
+	status = "okay";
 	//hostwake-gpios = <&gpio       GPIOX_10       GPIO_ACTIVE_HIGH>;
 };
 
 &aml_wifi {
-	status = "disabled";
-	/* interrupt-gpios = <&gpio       GPIOX_9       GPIO_ACTIVE_HIGH>;*/
+	status = "okay";
+	power_on-gpios = <&gpio       GPIOX_6       GPIO_ACTIVE_HIGH>;
+	interrupt-gpios = <&gpio       GPIOX_9       GPIO_ACTIVE_HIGH>;
 };
 
 &pwm_cd {
-	status = "disabled";
+	status = "okay";
 };
 
 &uart_A {
-	status = "disabled";
+	status = "okay";
 };
 
 &saradc {

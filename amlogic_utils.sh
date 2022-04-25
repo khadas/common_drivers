@@ -56,20 +56,23 @@ function prepare_module_build() {
 	echo GKI_EXT_MODULE_PREDEFINE=${GKI_EXT_MODULE_PREDEFINE}
 
 	local flag=0
+	ext_modules=
+	for ext_module in ${EXT_MODULES}; do
+		ext_modules="${ext_modules} ${ext_module}"
+	done
 	for ext_module_path in ${EXT_MODULES_PATH}; do
 		sed 's:#.*$::g' ${ROOT_DIR}/${ext_module_path} | sed '/^$/d' | sed 's/^[ ]*//' | sed 's/[ ]*$//' > ${temp_file}
-		local ext_drivers=`cat ${temp_file}`
-		EXT_MODULES="
-			${EXT_MODULES}
-			${ext_drivers}
-		"
+		while read LINE
+		do
+			ext_modules="${ext_modules} ${LINE}"
+		done < ${temp_file}
 
 		extra_symbols="KBUILD_EXTRA_SYMBOLS +="
 		while read LINE
 		do
 			ext_mod_rel=$(rel_path ${ROOT_DIR}/${LINE} ${KERNEL_DIR})
 			if [[ ${flag} -eq "1" ]]; then
-				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/, /# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ROOT_DIR}/${LINE}/Makefile
+				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ROOT_DIR}/${LINE}/Makefile
 				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS end" ${ROOT_DIR}/${LINE}/Makefile
 				sed -i "2 i ${extra_symbols}" ${ROOT_DIR}/${LINE}/Makefile
 				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS start" ${ROOT_DIR}/${LINE}/Makefile
@@ -78,8 +81,8 @@ function prepare_module_build() {
 			flag=1
 			extra_symbols="${extra_symbols} ${ext_mod_rel}/Module.symvers"
 		done < ${temp_file}
-
 	done
+	EXT_MODULES=${ext_modules}
 	export EXT_MODULES
 	echo EXT_MODULES=${EXT_MODULES}
 
@@ -97,7 +100,7 @@ function extra_cmds() {
 		while read LINE
 		do
 			if [[ ${flag} -eq "1" ]]; then
-				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/, /# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ROOT_DIR}/${LINE}/Makefile
+				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ROOT_DIR}/${LINE}/Makefile
 			fi
 			flag=1
 		done < ${temp_file}

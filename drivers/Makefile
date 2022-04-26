@@ -42,6 +42,7 @@ obj-$(CONFIG_AMLOGIC_DOLBY_FW) 		+= dolby_fw/
 obj-y					+= ../sound/
 obj-$(CONFIG_AMLOGIC_WIFI)		+= wifi/
 obj-$(CONFIG_AMLOGIC_BLUETOOTH)		+= bluetooth/
+obj-$(CONFIG_AMLOGIC_INPHY)		+= net/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
 

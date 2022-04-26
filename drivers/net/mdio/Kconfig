@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_MDIO_G12A
+        tristate "Amlogic mdio mux g12a"
+	depends on OF_MDIO && HAS_IOMEM && COMMON_CLK
+	default n
+        help
+          Say Y here if you want to use the
+	  amlogic internal phy.
+

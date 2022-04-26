@@ -34,6 +34,15 @@ config AMLOGIC_LCD_TABLET
 		tablet mode mainly includes panel interface display
 		Through the environment variable is only choose panel
 
+config AMLOGIC_LCD_SMART_TEMP
+	bool "Smart Dispaly Panel Output Module"
+	default n
+	help
+		Smart display panel output module
+		Configure the LCD output model for smart display
+		Smart display interface mainly includes mipi-dsi, edp, and spi, bt656...
+		Through the environment variable is to choose panel_type lcd_index
+
 if AMLOGIC_LCD
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/backlight/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/lcd_extern/Kconfig"

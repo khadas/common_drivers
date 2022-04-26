@@ -13,6 +13,8 @@
 #include <linux/amlogic/media/osd/osd_logo.h>
 #ifdef CONFIG_AMLOGIC_VOUT
 #include <linux/amlogic/media/vout/vout_notify.h>
+#endif
+#ifdef CONFIG_AMLOGIC_HDMITX
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
 #endif
 

@@ -1648,6 +1648,11 @@
 		power-domains = <&pwrdm PDID_C3_GE2D>;
 	};
 
+	vout: vout {
+		compatible = "amlogic, vout";
+		status = "okay";
+	};
+
 	/* Audio Related start */
 	/* audio data security */
 	audio_data: audio_data {

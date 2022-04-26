@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+/ {
+	lcd {
+		compatible = "amlogic, lcd-c3";
+		status = "okay";
+		pxp = <1>;
+		reg = <0xfe008000 0x400     /* ana */
+			0xfe000000 0x600    /* clk */
+			0xfe350000 0xb00    /* vout */
+			0xfe01e000 0x400    /* mipi-dsi host */
+			0xfe01c000 0x60     /* mipi-dsi phy */
+			0xfe004000 0x400>;  /* pad ctrl */
+
+		lcd_0{
+			model_name = "B080XAN01";
+			interface = "ttl";
+			basic_setting = <1920 1080 /*h_active, v_active*/
+				2200 1125 /*h_period, v_period*/
+				8 /*lcd_bits*/
+				16 9>; /*screen_widht, screen_height*/
+			lcd_timing = <44 148 0 /*hs_width, hs_bp, hs_pol*/
+				5 30 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <0 /*fr_adj_type(0=clk, 1=htotal, 2=vtotal)*/
+				0 /*clk_ss_level */
+				1 /*clk_auto_generate*/
+				148500000>; /*pixel_clk(unit in Hz)*/
+		};
+	};
+}; /* end of / */
+

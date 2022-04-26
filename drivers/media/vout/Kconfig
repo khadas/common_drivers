@@ -18,8 +18,8 @@ config AMLOGIC_VOUT
 
 if AMLOGIC_VOUT
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/vclk_serve/Kconfig"
-source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/vout_serve/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx21/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/cvbs/Kconfig"

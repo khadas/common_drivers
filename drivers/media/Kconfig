@@ -60,9 +60,9 @@ source "$(COMMON_DRIVERS_DIR)/drivers/media/common/Kconfig"
 endif
 
 if AMLOGIC_MEDIA_DRIVERS
+source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/camera/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/video_sink/Kconfig"
-source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vrr/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/osd/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/deinterlace/Kconfig"

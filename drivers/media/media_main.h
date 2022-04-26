@@ -167,6 +167,15 @@ static inline int lcd_init(void)
 }
 #endif
 
+#ifdef CONFIG_AMLOGIC_LCD_SMART_TEMP
+int lcd_init_temp(void);
+#else
+static inline int lcd_init_temp(void)
+{
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_AMLOGIC_VDAC
 int aml_vdac_init(void);
 #else

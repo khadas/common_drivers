@@ -6,6 +6,7 @@
 /dts-v1/;
 
 #include "meson-c3.dtsi"
+#include "meson-c3_pxp-panel.dtsi"
 
 / {
 	compatible = "amlogic,c2";

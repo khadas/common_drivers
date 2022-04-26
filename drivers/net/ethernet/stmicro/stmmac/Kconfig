@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_ETH_PRIVE
+	tristate "Amlogic PHY debug"
+	help
+	  Currently has a driver for the Amlogic PHY debug

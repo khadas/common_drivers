@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+source "$(COMMON_DRIVERS_DIR)/drivers/net/mdio/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/net/phy/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/net/ethernet/Kconfig"

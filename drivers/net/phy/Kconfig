@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_INPHY
+	tristate "Amlogic Meson GXL Internal PHY"
+	help
+	  Currently has a driver for the Amlogic Meson GXL Internal PHY

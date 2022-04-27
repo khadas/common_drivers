@@ -312,6 +312,7 @@ void __iomem *get_meson_sm_input_base(void)
 	return sharemem_in_base;
 }
 EXPORT_SYMBOL(get_meson_sm_input_base);
+
 void __iomem *get_meson_sm_output_base(void)
 {
 	return sharemem_out_base;
@@ -328,12 +329,14 @@ long get_secmon_phy_output_base(void)
 {
 	return phy_out_base;
 }
+EXPORT_SYMBOL(get_secmon_phy_output_base);
 
 unsigned int get_secmon_sharemem_in_size(void)
 {
 	return sharemem_in_size;
 }
 EXPORT_SYMBOL(get_secmon_sharemem_in_size);
+
 unsigned int get_secmon_sharemem_out_size(void)
 {
 	return sharemem_out_size;

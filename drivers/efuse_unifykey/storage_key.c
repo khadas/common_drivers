@@ -281,6 +281,7 @@ static ssize_t _amlkey_write(const u8 *name, u8 *buffer,
 	if (!uk_type->ops->write) {
 		pr_err("the write fun for current unifykey type is NULL\n");
 		retval = 0;
+		mutex_unlock(&securekey_lock);
 		goto _out;
 	}
 	if (uk_type->ops->write(buf, storagekey_info.size, &actual_length)) {
@@ -288,9 +289,9 @@ static ssize_t _amlkey_write(const u8 *name, u8 *buffer,
 		retval = 0;
 	}
 
-_out:
 	mutex_unlock(&securekey_lock);
 
+_out:
 	return retval;
 }
 

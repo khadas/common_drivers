@@ -231,6 +231,7 @@ int __init security_key_init(struct platform_device *pdev)
 	unsigned long phy_in;
 	unsigned long phy_out;
 	unsigned long phy_block;
+
 	storage_init_status = -1;
 
 	share_mem = devm_kzalloc(&pdev->dev, sizeof(*share_mem), GFP_KERNEL);
@@ -258,10 +259,10 @@ int __init security_key_init(struct platform_device *pdev)
 	 * mem locates at lowmem region, so its
 	 * okay to call phys_to_virt directly
 	 */
-#ifdef CONFIG_ARM
-	if (pfn_valid(__phys_to_pfn(phy_in))) {
-#else
+#ifdef CONFIG_ARM64
 	if (pfn_is_map_memory(__phys_to_pfn(phy_in))) {
+#else
+	if (pfn_valid(__phys_to_pfn(phy_in))) {
 #endif
 		share_mem->in = (void __iomem *)phys_to_virt(phy_in);
 		share_mem->out = (void __iomem *)phys_to_virt(phy_out);

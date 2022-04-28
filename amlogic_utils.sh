@@ -37,6 +37,7 @@ function read_ext_module_predefine() {
 	echo "${PRE_DEFINE}"
 }
 
+top_ext_drivers=top_ext_drivers
 function prepare_module_build() {
 	local temp_file=`mktemp /tmp/kernel.XXXXXXXXXXXX`
 	if [[ -z ${IN_KERNEL_MODULES} ]]; then
@@ -60,23 +61,30 @@ function prepare_module_build() {
 	for ext_module in ${EXT_MODULES}; do
 		ext_modules="${ext_modules} ${ext_module}"
 	done
+	if [[ -d ${top_ext_drivers} ]]; then
+		rm -rf ${top_ext_drivers}
+	fi
+	mkdir -p ${top_ext_drivers}
 	for ext_module_path in ${EXT_MODULES_PATH}; do
 		sed 's:#.*$::g' ${ROOT_DIR}/${ext_module_path} | sed '/^$/d' | sed 's/^[ ]*//' | sed 's/[ ]*$//' > ${temp_file}
-		while read LINE
-		do
-			ext_modules="${ext_modules} ${LINE}"
-		done < ${temp_file}
-
 		extra_symbols="KBUILD_EXTRA_SYMBOLS +="
 		while read LINE
 		do
-			ext_mod_rel=$(rel_path ${ROOT_DIR}/${LINE} ${KERNEL_DIR})
+			module_abs_path=`readlink -e ${LINE}`
+			module_rel_path=$(rel_path ${module_abs_path} ${ROOT_DIR})
+			if [[ `echo ${module_rel_path} | grep "\.\."` ]]; then
+				cp -rf ${module_abs_path} ${top_ext_drivers}
+				module_rel_path=${top_ext_drivers}/${module_abs_path##*/}
+			fi
+			ext_modules="${ext_modules} ${module_rel_path}"
+
+			ext_mod_rel=$(rel_path ${module_rel_path} ${KERNEL_DIR})
 			if [[ ${flag} -eq "1" ]]; then
-				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ROOT_DIR}/${LINE}/Makefile
-				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS end" ${ROOT_DIR}/${LINE}/Makefile
-				sed -i "2 i ${extra_symbols}" ${ROOT_DIR}/${LINE}/Makefile
-				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS start" ${ROOT_DIR}/${LINE}/Makefile
-				echo "${ROOT_DIR}/${LINE}/Makefile add: ${extra_symbols}"
+				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${module_rel_path}/Makefile
+				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS end" ${module_rel_path}/Makefile
+				sed -i "2 i ${extra_symbols}" ${module_rel_path}/Makefile
+				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS start" ${module_rel_path}/Makefile
+				echo "${module_rel_path}/Makefile add: ${extra_symbols}"
 			fi
 			flag=1
 			extra_symbols="${extra_symbols} ${ext_mod_rel}/Module.symvers"
@@ -99,14 +107,18 @@ function extra_cmds() {
 		sed 's:#.*$::g' ${ROOT_DIR}/${ext_module_path} | sed '/^$/d' | sed 's/^[ ]*//' | sed 's/[ ]*$//' > ${temp_file}
 		while read LINE
 		do
+			module_abs_path=`readlink -e ${LINE}`
 			if [[ ${flag} -eq "1" ]]; then
-				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ROOT_DIR}/${LINE}/Makefile
+				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${module_abs_path}/Makefile
 			fi
 			flag=1
 		done < ${temp_file}
 	done
 
 	rm ${temp_file}
+	if [[ -d ${top_ext_drivers} ]]; then
+		rm -rf ${top_ext_drivers}
+	fi
 }
 
 export -f extra_cmds

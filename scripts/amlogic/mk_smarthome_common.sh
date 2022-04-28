@@ -190,8 +190,9 @@ function build_ext_modules() {
 		make ARCH=${ARCH} -C ${ROOT_DIR}/${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
 				O=${OUT_DIR} ${TOOL_ARGS} -j12 || exit
 		make ARCH=${ARCH} -C ${ROOT_DIR}/${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
-				O=${OUT_DIR} ${TOOL_ARGS} ${MODULE_STRIP_FLAG}         \
-				INSTALL_MOD_PATH=${MODULES_STAGING_DIR}                \
+				O=${OUT_DIR} ${TOOL_ARGS} ${MODULE_STRIP_FLAG}		\
+				INSTALL_MOD_PATH=${MODULES_STAGING_DIR}			\
+				INSTALL_MOD_DIR="extra/${EXT_MOD}"			\
 				modules_install -j12 || exit
 		set +x
 	done

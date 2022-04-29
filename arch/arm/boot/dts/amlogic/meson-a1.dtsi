@@ -135,7 +135,7 @@
 		ranges;
 		tsensor: tsensor@fe004c00 {
 			compatible = "amlogic, r1p1-tsensor";
-			status = "disabled";
+			status = "okay";
 			reg = <0xfe004c00 0x50>,
 				<0xfe005b34 0x4>;
 			cal_type = <0x1>;
@@ -146,6 +146,59 @@
 			clock-names = "ts_comp";
 			power-domains = <&pwrdm PDID_I2C>;
 			#thermal-sensor-cells = <1>;
+		};
+
+		meson_cooldev: meson-cooldev@0 {
+			status = "okay";
+			compatible = "amlogic, meson-cooldev";
+			cooling_devices {
+				cpucore_cool_cluster0 {
+					cluster_id = <0>;
+					device_type = "cpucore";
+					node_name = "cpucore0";
+				};
+			};
+			cpucore0:cpucore0 {
+				#cooling-cells = <2>;
+			};
+		};
+		/*meson cooling devices end*/
+		thermal-zones {
+			soc_thermal:soc_thermal {
+				polling-delay = <1000>;
+				polling-delay-passive = <100>;
+				sustainable-power = <130>;
+				thermal-sensors = <&tsensor 0>;
+				trips {
+					pswitch_on: trip-point@0 {
+						temperature = <60000>;
+						hysteresis = <2000>;
+						type = "passive";
+					};
+					pcontrol: trip-point@1 {
+						temperature = <75000>;
+						hysteresis = <2000>;
+						type = "passive";
+					};
+					phot: trip-point@2 {
+						temperature = <85000>;
+						hysteresis = <5000>;
+						type = "hot";
+					};
+					pcritical: trip-point@3 {
+						temperature = <110000>;
+						hysteresis = <1000>;
+						type = "critical";
+					};
+				};
+				cooling-maps {
+					cpufreq_cooling_map {
+						trip = <&pcontrol>;
+						cooling-device = <&cpu0 0 3>;
+						contribution = <1024>;
+					};
+				};
+			};
 		};
 
 		sd_emmc_a: sdio@fe010000 {
@@ -205,6 +258,8 @@
 			      <0xfd000000 0x88>;
 			reg-names = "basic", "pll",
 				    "cpu_clk";
+			clocks = <&xtal>;
+			clock-names = "xtal";
 			status = "okay";
 		};
 

@@ -52,52 +52,6 @@
 		};
 	};
 
-	meson_cooldev: meson-cooldev@0 {
-		status = "disabled";
-		compatible = "amlogic, meson-cooldev";
-		cooling_devices {
-			cpucore_cool_cluster0 {
-				cluster_id = <0>;
-				device_type = "cpucore";
-				node_name = "cpucore0";
-			};
-		};
-		cpucore0:cpucore0 {
-			#cooling-cells = <2>;
-		};
-	};
-	/*meson cooling devices end*/
-	thermal-zones {
-		soc_thermal:soc_thermal {
-			polling-delay = <1000>;
-			polling-delay-passive = <100>;
-			sustainable-power = <130>;
-			thermal-sensors = <&tsensor 0>;
-			trips {
-				pswitch_on: trip-point@0 {
-					temperature = <60000>;
-					hysteresis = <2000>;
-					type = "passive";
-				};
-				pcontrol: trip-point@1 {
-					temperature = <75000>;
-					hysteresis = <2000>;
-					type = "passive";
-				};
-				phot: trip-point@2 {
-					temperature = <85000>;
-					hysteresis = <5000>;
-					type = "hot";
-				};
-				pcritical: trip-point@3 {
-					temperature = <110000>;
-					hysteresis = <1000>;
-					type = "critical";
-				};
-			};
-		};
-	};
-
 	bat: battery {
 		compatible = "simple-battery";
 		charge-full-design-microamp-hours = <1900000>;

@@ -13,6 +13,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/of_address.h>
+#include <linux/clkdev.h>
 
 #include "clk-regmap.h"
 #include "clk-pll.h"
@@ -67,61 +68,61 @@ static MESON_A1_XTAL_GATE(xtal_dds,		SYS_OSCIN_CTRL,	6);
 
 /* Everything Else (EE) domain gates */
 /* CLKTREE_SYS_CLK_EN0 */
-static MESON_A1_GATE(clk_tree,		SYS_CLK_EN0,	0);
-static MESON_A1_GATE(reset_ctrl,	SYS_CLK_EN0,	1);
-static MESON_A1_GATE(analog_ctrl,	SYS_CLK_EN0,	2);
-static MESON_A1_GATE(pwr_ctrl,		SYS_CLK_EN0,	3);
-static MESON_A1_GATE(pad_ctrl,		SYS_CLK_EN0,	4);
-static MESON_A1_GATE(sys_ctrl,		SYS_CLK_EN0,	5);
-static MESON_A1_GATE(temp_sensor,	SYS_CLK_EN0,	6);
-static MESON_A1_GATE(am2axi_dev,	SYS_CLK_EN0,	7);
-static MESON_A1_GATE(spicc_b,		SYS_CLK_EN0,	8);
-static MESON_A1_GATE(spicc_a,		SYS_CLK_EN0,	9);
-static MESON_A1_GATE(clk_msr,		SYS_CLK_EN0,	10);
-static MESON_A1_GATE(audio,		SYS_CLK_EN0,	11);
-static MESON_A1_GATE(jtag_ctrl,		SYS_CLK_EN0,	12);
-static MESON_A1_GATE(saradc,		SYS_CLK_EN0,	13);
-static MESON_A1_GATE(pwm_ef,		SYS_CLK_EN0,	14);
-static MESON_A1_GATE(pwm_cd,		SYS_CLK_EN0,	15);
-static MESON_A1_GATE(pwm_ab,		SYS_CLK_EN0,	16);
-static MESON_A1_GATE(cec,		SYS_CLK_EN0,	17);
-static MESON_A1_GATE(i2c_s,		SYS_CLK_EN0,	18);
-static MESON_A1_GATE(ir_ctrl,		SYS_CLK_EN0,	19);
-static MESON_A1_GATE(i2c_m_d,		SYS_CLK_EN0,	20);
-static MESON_A1_GATE(i2c_m_c,		SYS_CLK_EN0,	21);
-static MESON_A1_GATE(i2c_m_b,		SYS_CLK_EN0,	22);
-static MESON_A1_GATE(i2c_m_a,		SYS_CLK_EN0,	23);
-static MESON_A1_GATE(acodec,		SYS_CLK_EN0,	24);
-static MESON_A1_GATE(otp,		SYS_CLK_EN0,	25);
-static MESON_A1_GATE(sd_emmc_a,		SYS_CLK_EN0,	26);
-static MESON_A1_GATE(usb_phy,		SYS_CLK_EN0,	27);
-static MESON_A1_GATE(usb_ctrl,		SYS_CLK_EN0,	28);
-static MESON_A1_GATE(sys_dspb,		SYS_CLK_EN0,	29);
-static MESON_A1_GATE(sys_dspa,		SYS_CLK_EN0,	30);
-static MESON_A1_GATE(dma,		SYS_CLK_EN0,	31);
+static MESON_A1_GATE(sys_clk_clk_tree,		SYS_CLK_EN0,	0);
+static MESON_A1_GATE(sys_clk_reset_ctrl,	SYS_CLK_EN0,	1);
+static MESON_A1_GATE(sys_clk_analog_ctrl,	SYS_CLK_EN0,	2);
+static MESON_A1_GATE(sys_clk_pwr_ctrl,		SYS_CLK_EN0,	3);
+static MESON_A1_GATE(sys_clk_pad_ctrl,		SYS_CLK_EN0,	4);
+static MESON_A1_GATE(sys_clk_sys_ctrl,		SYS_CLK_EN0,	5);
+static MESON_A1_GATE(sys_clk_temp_sensor,	SYS_CLK_EN0,	6);
+static MESON_A1_GATE(sys_clk_am2axi_dev,	SYS_CLK_EN0,	7);
+static MESON_A1_GATE(sys_clk_spicc_b,		SYS_CLK_EN0,	8);
+static MESON_A1_GATE(sys_clk_spicc_a,		SYS_CLK_EN0,	9);
+static MESON_A1_GATE(sys_clk_clk_msr,		SYS_CLK_EN0,	10);
+static MESON_A1_GATE(sys_clk_audio,		SYS_CLK_EN0,	11);
+static MESON_A1_GATE(sys_clk_jtag_ctrl,		SYS_CLK_EN0,	12);
+static MESON_A1_GATE(sys_clk_saradc,		SYS_CLK_EN0,	13);
+static MESON_A1_GATE(sys_clk_pwm_ef,		SYS_CLK_EN0,	14);
+static MESON_A1_GATE(sys_clk_pwm_cd,		SYS_CLK_EN0,	15);
+static MESON_A1_GATE(sys_clk_pwm_ab,		SYS_CLK_EN0,	16);
+static MESON_A1_GATE(sys_clk_cec,		SYS_CLK_EN0,	17);
+static MESON_A1_GATE(sys_clk_i2c_s,		SYS_CLK_EN0,	18);
+static MESON_A1_GATE(sys_clk_ir_ctrl,		SYS_CLK_EN0,	19);
+static MESON_A1_GATE(sys_clk_i2c_m_d,		SYS_CLK_EN0,	20);
+static MESON_A1_GATE(sys_clk_i2c_m_c,		SYS_CLK_EN0,	21);
+static MESON_A1_GATE(sys_clk_i2c_m_b,		SYS_CLK_EN0,	22);
+static MESON_A1_GATE(sys_clk_i2c_m_a,		SYS_CLK_EN0,	23);
+static MESON_A1_GATE(sys_clk_acodec,		SYS_CLK_EN0,	24);
+static MESON_A1_GATE(sys_clk_otp,		SYS_CLK_EN0,	25);
+static MESON_A1_GATE(sys_clk_sd_emmc_a,		SYS_CLK_EN0,	26);
+static MESON_A1_GATE(sys_clk_usb_phy,		SYS_CLK_EN0,	27);
+static MESON_A1_GATE(sys_clk_usb_ctrl,		SYS_CLK_EN0,	28);
+static MESON_A1_GATE(sys_clk_sys_dspb,		SYS_CLK_EN0,	29);
+static MESON_A1_GATE(sys_clk_sys_dspa,		SYS_CLK_EN0,	30);
+static MESON_A1_GATE(sys_clk_dma,		SYS_CLK_EN0,	31);
 /* CLKTREE_SYS_CLK_EN1 */
-static MESON_A1_GATE(irq_ctrl,		SYS_CLK_EN1,	0);
-static MESON_A1_GATE(nic,		SYS_CLK_EN1,	1);
-static MESON_A1_GATE(gic,		SYS_CLK_EN1,	2);
-static MESON_A1_GATE(uart_c,		SYS_CLK_EN1,	3);
-static MESON_A1_GATE(uart_b,		SYS_CLK_EN1,	4);
-static MESON_A1_GATE(uart_a,		SYS_CLK_EN1,	5);
-static MESON_A1_GATE(sys_psram,		SYS_CLK_EN1,	6);
-static MESON_A1_GATE(rsa,		SYS_CLK_EN1,	8);
-static MESON_A1_GATE(coresight,		SYS_CLK_EN1,	9);
+static MESON_A1_GATE(sys_clk_irq_ctrl,		SYS_CLK_EN1,	0);
+static MESON_A1_GATE(sys_clk_nic,		SYS_CLK_EN1,	1);
+static MESON_A1_GATE(sys_clk_gic,		SYS_CLK_EN1,	2);
+static MESON_A1_GATE(sys_clk_uart_c,		SYS_CLK_EN1,	3);
+static MESON_A1_GATE(sys_clk_uart_b,		SYS_CLK_EN1,	4);
+static MESON_A1_GATE(sys_clk_uart_a,		SYS_CLK_EN1,	5);
+static MESON_A1_GATE(sys_clk_sys_psram,		SYS_CLK_EN1,	6);
+static MESON_A1_GATE(sys_clk_rsa,		SYS_CLK_EN1,	8);
+static MESON_A1_GATE(sys_clk_coresight,		SYS_CLK_EN1,	9);
 /* CLKTREE_AXI_CLK_EN */
-static MESON_A1_GATE(am2axi_vad,	AXI_CLK_EN,	0);
-static MESON_A1_GATE(audio_vad,		AXI_CLK_EN,	1);
-static MESON_A1_GATE(axi_dmc,		AXI_CLK_EN,	3);
-static MESON_A1_GATE(axi_psram,		AXI_CLK_EN,	4);
-static MESON_A1_GATE(ramb,		AXI_CLK_EN,	5);
-static MESON_A1_GATE(rama,		AXI_CLK_EN,	6);
-static MESON_A1_GATE(axi_spifc,		AXI_CLK_EN,	7);
-static MESON_A1_GATE(axi_nic,		AXI_CLK_EN,	8);
-static MESON_A1_GATE(axi_dma,		AXI_CLK_EN,	9);
-static MESON_A1_GATE(cpu_ctrl,		AXI_CLK_EN,	10);
-static MESON_A1_GATE(rom,		AXI_CLK_EN,	11);
-static MESON_A1_GATE(prod_i2c,		AXI_CLK_EN,	12);
+static MESON_A1_GATE(sys_clk_am2axi_vad,	AXI_CLK_EN,	0);
+static MESON_A1_GATE(sys_clk_audio_vad,		AXI_CLK_EN,	1);
+static MESON_A1_GATE(sys_clk_axi_dmc,		AXI_CLK_EN,	3);
+static MESON_A1_GATE(sys_clk_axi_psram,		AXI_CLK_EN,	4);
+static MESON_A1_GATE(sys_clk_ramb,		AXI_CLK_EN,	5);
+static MESON_A1_GATE(sys_clk_rama,		AXI_CLK_EN,	6);
+static MESON_A1_GATE(sys_clk_axi_spifc,		AXI_CLK_EN,	7);
+static MESON_A1_GATE(sys_clk_axi_nic,		AXI_CLK_EN,	8);
+static MESON_A1_GATE(sys_clk_axi_dma,		AXI_CLK_EN,	9);
+static MESON_A1_GATE(sys_clk_cpu_ctrl,		AXI_CLK_EN,	10);
+static MESON_A1_GATE(sys_clk_rom,		AXI_CLK_EN,	11);
+static MESON_A1_GATE(sys_clk_prod_i2c,		AXI_CLK_EN,	12);
 
 /* fixed pll = 1536M
  *
@@ -2330,8 +2331,8 @@ static u32 cpu_fixed_source_sel_table[]	= { 0, 1, 2 };
 
 static const struct clk_parent_data a1_fixed_source_sel_parent_data[] = {
 	{ .fw_name = "xtal", },
-	{ .hw = &a1_fclk_div3.hw },
-	{ .hw = &a1_fclk_div5.hw }
+	{ .hw = &a1_fclk_div2.hw },
+	{ .hw = &a1_fclk_div3.hw }
 };
 
 /* cpu_fixed_sel0 */
@@ -2523,59 +2524,59 @@ static struct clk_hw_onecell_data a1_hw_onecell_data = {
 		[CLKID_XTAL_USB_CTRL]	= &xtal_usb_ctrl.hw,
 		[CLKID_XTAL_HIFIPLL]	= &xtal_hifipll.hw,
 		[CLKID_XTAL_DDS]	= &xtal_dds.hw,
-		[CLKID_CLKTREE]		= &clk_tree.hw,
-		[CLKID_RESET_CTRL]	= &reset_ctrl.hw,
-		[CLKID_ANALOG_CTRL]	= &analog_ctrl.hw,
-		[CLKID_PWR_CTRL]	= &pwr_ctrl.hw,
-		[CLKID_PAD_CTRL]	= &pad_ctrl.hw,
-		[CLKID_SYS_CTRL]	= &sys_ctrl.hw,
-		[CLKID_TEMP_SENSOR]	= &temp_sensor.hw,
-		[CLKID_AM2AXI_DIV]	= &am2axi_dev.hw,
-		[CLKID_SPICC_B]		= &spicc_b.hw,
-		[CLKID_SPICC_A]		= &spicc_a.hw,
-		[CLKID_CLK_MSR]		= &clk_msr.hw,
-		[CLKID_AUDIO]		= &audio.hw,
-		[CLKID_JTAG_CTRL]	= &jtag_ctrl.hw,
-		[CLKID_SARADC]		= &saradc.hw,
-		[CLKID_PWM_EF]		= &pwm_ef.hw,
-		[CLKID_PWM_CD]		= &pwm_cd.hw,
-		[CLKID_PWM_AB]		= &pwm_ab.hw,
-		[CLKID_CEC]		= &cec.hw,
-		[CLKID_I2C_S]		= &i2c_s.hw,
-		[CLKID_IR_CTRL]		= &ir_ctrl.hw,
-		[CLKID_I2C_M_D]		= &i2c_m_d.hw,
-		[CLKID_I2C_M_C]		= &i2c_m_c.hw,
-		[CLKID_I2C_M_B]		= &i2c_m_b.hw,
-		[CLKID_I2C_M_A]		= &i2c_m_a.hw,
-		[CLKID_ACODEC]		= &acodec.hw,
-		[CLKID_OTP]		= &otp.hw,
-		[CLKID_SD_EMMC_A]	= &sd_emmc_a.hw,
-		[CLKID_USB_PHY]		= &usb_phy.hw,
-		[CLKID_USB_CTRL]	= &usb_ctrl.hw,
-		[CLKID_SYS_DSPB]	= &sys_dspb.hw,
-		[CLKID_SYS_DSPA]	= &sys_dspa.hw,
-		[CLKID_DMA]		= &dma.hw,
-		[CLKID_IRQ_CTRL]	= &irq_ctrl.hw,
-		[CLKID_NIC]		= &nic.hw,
-		[CLKID_GIC]		= &gic.hw,
-		[CLKID_UART_C]		= &uart_c.hw,
-		[CLKID_UART_B]		= &uart_b.hw,
-		[CLKID_UART_A]		= &uart_a.hw,
-		[CLKID_SYS_PSRAM]	= &sys_psram.hw,
-		[CLKID_RSA]		= &rsa.hw,
-		[CLKID_CORESIGHT]	= &coresight.hw,
-		[CLKID_AM2AXI_VAD]	= &am2axi_vad.hw,
-		[CLKID_AUDIO_VAD]	= &audio_vad.hw,
-		[CLKID_AXI_DMC]		= &axi_dmc.hw,
-		[CLKID_AXI_PSRAM]	= &axi_psram.hw,
-		[CLKID_RAMB]		= &ramb.hw,
-		[CLKID_RAMA]		= &rama.hw,
-		[CLKID_AXI_SPIFC]	= &axi_spifc.hw,
-		[CLKID_AXI_NIC]		= &axi_nic.hw,
-		[CLKID_AXI_DMA]		= &axi_dma.hw,
-		[CLKID_CPU_CTRL]	= &cpu_ctrl.hw,
-		[CLKID_ROM]		= &rom.hw,
-		[CLKID_PROC_I2C]	= &prod_i2c.hw,
+		[CLKID_CLKTREE]		= &sys_clk_clk_tree.hw,
+		[CLKID_RESET_CTRL]	= &sys_clk_reset_ctrl.hw,
+		[CLKID_ANALOG_CTRL]	= &sys_clk_analog_ctrl.hw,
+		[CLKID_PWR_CTRL]	= &sys_clk_pwr_ctrl.hw,
+		[CLKID_PAD_CTRL]	= &sys_clk_pad_ctrl.hw,
+		[CLKID_SYS_CTRL]	= &sys_clk_sys_ctrl.hw,
+		[CLKID_TEMP_SENSOR]	= &sys_clk_temp_sensor.hw,
+		[CLKID_AM2AXI_DIV]	= &sys_clk_am2axi_dev.hw,
+		[CLKID_SPICC_B]		= &sys_clk_spicc_b.hw,
+		[CLKID_SPICC_A]		= &sys_clk_spicc_a.hw,
+		[CLKID_CLK_MSR]		= &sys_clk_clk_msr.hw,
+		[CLKID_AUDIO]		= &sys_clk_audio.hw,
+		[CLKID_JTAG_CTRL]	= &sys_clk_jtag_ctrl.hw,
+		[CLKID_SARADC]		= &sys_clk_saradc.hw,
+		[CLKID_PWM_EF]		= &sys_clk_pwm_ef.hw,
+		[CLKID_PWM_CD]		= &sys_clk_pwm_cd.hw,
+		[CLKID_PWM_AB]		= &sys_clk_pwm_ab.hw,
+		[CLKID_CEC]		= &sys_clk_cec.hw,
+		[CLKID_I2C_S]		= &sys_clk_i2c_s.hw,
+		[CLKID_IR_CTRL]		= &sys_clk_ir_ctrl.hw,
+		[CLKID_I2C_M_D]		= &sys_clk_i2c_m_d.hw,
+		[CLKID_I2C_M_C]		= &sys_clk_i2c_m_c.hw,
+		[CLKID_I2C_M_B]		= &sys_clk_i2c_m_b.hw,
+		[CLKID_I2C_M_A]		= &sys_clk_i2c_m_a.hw,
+		[CLKID_ACODEC]		= &sys_clk_acodec.hw,
+		[CLKID_OTP]		= &sys_clk_otp.hw,
+		[CLKID_SD_EMMC_A]	= &sys_clk_sd_emmc_a.hw,
+		[CLKID_USB_PHY]		= &sys_clk_usb_phy.hw,
+		[CLKID_USB_CTRL]	= &sys_clk_usb_ctrl.hw,
+		[CLKID_SYS_DSPB]	= &sys_clk_sys_dspb.hw,
+		[CLKID_SYS_DSPA]	= &sys_clk_sys_dspa.hw,
+		[CLKID_DMA]		= &sys_clk_dma.hw,
+		[CLKID_IRQ_CTRL]	= &sys_clk_irq_ctrl.hw,
+		[CLKID_NIC]		= &sys_clk_nic.hw,
+		[CLKID_GIC]		= &sys_clk_gic.hw,
+		[CLKID_UART_C]		= &sys_clk_uart_c.hw,
+		[CLKID_UART_B]		= &sys_clk_uart_b.hw,
+		[CLKID_UART_A]		= &sys_clk_uart_a.hw,
+		[CLKID_SYS_PSRAM]	= &sys_clk_sys_psram.hw,
+		[CLKID_RSA]		= &sys_clk_rsa.hw,
+		[CLKID_CORESIGHT]	= &sys_clk_coresight.hw,
+		[CLKID_AM2AXI_VAD]	= &sys_clk_am2axi_vad.hw,
+		[CLKID_AUDIO_VAD]	= &sys_clk_audio_vad.hw,
+		[CLKID_AXI_DMC]		= &sys_clk_axi_dmc.hw,
+		[CLKID_AXI_PSRAM]	= &sys_clk_axi_psram.hw,
+		[CLKID_RAMB]		= &sys_clk_ramb.hw,
+		[CLKID_RAMA]		= &sys_clk_rama.hw,
+		[CLKID_AXI_SPIFC]	= &sys_clk_axi_spifc.hw,
+		[CLKID_AXI_NIC]		= &sys_clk_axi_nic.hw,
+		[CLKID_AXI_DMA]		= &sys_clk_axi_dma.hw,
+		[CLKID_CPU_CTRL]	= &sys_clk_cpu_ctrl.hw,
+		[CLKID_ROM]		= &sys_clk_rom.hw,
+		[CLKID_PROC_I2C]	= &sys_clk_prod_i2c.hw,
 		[CLKID_DSPA_A_SEL]	= &a1_dspa_a_sel.hw,
 		[CLKID_DSPA_A_DIV]	= &a1_dspa_a_div.hw,
 		[CLKID_DSPA_A]		= &a1_dspa_a.hw,
@@ -2676,59 +2677,59 @@ static struct clk_regmap *const a1_clk_regmaps[] = {
 	&xtal_usb_ctrl,
 	&xtal_hifipll,
 	&xtal_dds,
-	&clk_tree,
-	&reset_ctrl,
-	&analog_ctrl,
-	&pwr_ctrl,
-	&pad_ctrl,
-	&sys_ctrl,
-	&temp_sensor,
-	&am2axi_dev,
-	&spicc_b,
-	&spicc_a,
-	&clk_msr,
-	&audio,
-	&jtag_ctrl,
-	&saradc,
-	&pwm_ef,
-	&pwm_cd,
-	&pwm_ab,
-	&cec,
-	&i2c_s,
-	&ir_ctrl,
-	&i2c_m_d,
-	&i2c_m_c,
-	&i2c_m_b,
-	&i2c_m_a,
-	&acodec,
-	&otp,
-	&sd_emmc_a,
-	&usb_phy,
-	&usb_ctrl,
-	&sys_dspb,
-	&sys_dspa,
-	&dma,
-	&irq_ctrl,
-	&nic,
-	&gic,
-	&uart_c,
-	&uart_b,
-	&uart_a,
-	&sys_psram,
-	&rsa,
-	&coresight,
-	&am2axi_vad,
-	&audio_vad,
-	&axi_dmc,
-	&axi_psram,
-	&ramb,
-	&rama,
-	&axi_spifc,
-	&axi_nic,
-	&axi_dma,
-	&cpu_ctrl,
-	&rom,
-	&prod_i2c,
+	&sys_clk_clk_tree,
+	&sys_clk_reset_ctrl,
+	&sys_clk_analog_ctrl,
+	&sys_clk_pwr_ctrl,
+	&sys_clk_pad_ctrl,
+	&sys_clk_sys_ctrl,
+	&sys_clk_temp_sensor,
+	&sys_clk_am2axi_dev,
+	&sys_clk_spicc_b,
+	&sys_clk_spicc_a,
+	&sys_clk_clk_msr,
+	&sys_clk_audio,
+	&sys_clk_jtag_ctrl,
+	&sys_clk_saradc,
+	&sys_clk_pwm_ef,
+	&sys_clk_pwm_cd,
+	&sys_clk_pwm_ab,
+	&sys_clk_cec,
+	&sys_clk_i2c_s,
+	&sys_clk_ir_ctrl,
+	&sys_clk_i2c_m_d,
+	&sys_clk_i2c_m_c,
+	&sys_clk_i2c_m_b,
+	&sys_clk_i2c_m_a,
+	&sys_clk_acodec,
+	&sys_clk_otp,
+	&sys_clk_sd_emmc_a,
+	&sys_clk_usb_phy,
+	&sys_clk_usb_ctrl,
+	&sys_clk_sys_dspb,
+	&sys_clk_sys_dspa,
+	&sys_clk_dma,
+	&sys_clk_irq_ctrl,
+	&sys_clk_nic,
+	&sys_clk_gic,
+	&sys_clk_uart_c,
+	&sys_clk_uart_b,
+	&sys_clk_uart_a,
+	&sys_clk_sys_psram,
+	&sys_clk_rsa,
+	&sys_clk_coresight,
+	&sys_clk_am2axi_vad,
+	&sys_clk_audio_vad,
+	&sys_clk_axi_dmc,
+	&sys_clk_axi_psram,
+	&sys_clk_ramb,
+	&sys_clk_rama,
+	&sys_clk_axi_spifc,
+	&sys_clk_axi_nic,
+	&sys_clk_axi_dma,
+	&sys_clk_cpu_ctrl,
+	&sys_clk_rom,
+	&sys_clk_prod_i2c,
 	&a1_dspa_a_sel,
 	&a1_dspa_a_div,
 	&a1_dspa_a,
@@ -2965,12 +2966,18 @@ static int a1_clkc_probe(struct platform_device *pdev)
 		if (!a1_hw_onecell_data.hws[i])
 			continue;
 
-		//dev_err(dev, "registering %d  %s\n",i,
+		//pr_info( "registering %d  %s\n",i,
 		//	     a1_hw_onecell_data.hws[i]->init->name);
 
 		ret = devm_clk_hw_register(dev, a1_hw_onecell_data.hws[i]);
 		if (ret) {
 			dev_err(dev, "Clock registration failed\n");
+			return ret;
+		}
+		ret = devm_clk_hw_register_clkdev(dev, a1_hw_onecell_data.hws[i], NULL,
+					clk_hw_get_name(a1_hw_onecell_data.hws[i]));
+		if (ret < 0) {
+			dev_err(dev, "Failed to clkdev register: %d\n", ret);
 			return ret;
 		}
 	}
@@ -2982,45 +2989,17 @@ static int a1_clkc_probe(struct platform_device *pdev)
 		       __func__);
 		return ret;
 	}
-/*
- *
- *	 keep cpu_fixed_clk's parent as cpu_fixed_sel0 clock
- *	/
- *	ret = clk_set_parent(a1_cpu_fixed_clk.hw.clk, a1_cpu_fixed_sel0.hw.clk);
- *	if (ret) {
- *		pr_err("%s: failed to set cpu_fixed_sel1 as cpu fixed clk's parent\n",
- *		       __func__);
- *		return ret;
- *	}
- *	/
- *	 fclk_div2, fclk_div3, fclk_div5, fclk_div7 should enable
- *	  default it may be disabled when operate the child clock.
- *	 /
- *	ret = clk_prepare_enable(a1_fclk_div2.hw.clk);
- *	if (ret) {
- *		pr_err("%s: enable %s failed\n",
- *		       __func__, a1_fclk_div2.hw.init->name);
- *		return ret;
- *	}
- *	ret = clk_prepare_enable(a1_fclk_div3.hw.clk);
- *	if (ret) {
- *		pr_err("%s: enable %s failed\n",
- *		       __func__, a1_fclk_div3.hw.init->name);
- *		return ret;
- *	}
- *	ret = clk_prepare_enable(a1_fclk_div5.hw.clk);
- *	if (ret) {
- *		pr_err("%s: enable %s failed\n",
- *		       __func__, a1_fclk_div5.hw.init->name);
- *		return ret;
- *	}
- *	ret = clk_prepare_enable(a1_fclk_div7.hw.clk);
- *	if (ret) {
- *		pr_err("%s: enable %s failed\n",
- *		       __func__, a1_fclk_div7.hw.init->name);
- *		return ret;
- *	}
- */
+
+	/*
+	 *  keep cpu_fixed_clk's parent as cpu_fixed_sel0 clock
+	 */
+	ret = clk_set_parent(a1_cpu_fixed_clk.hw.clk, a1_cpu_fixed_sel0.hw.clk);
+	if (ret) {
+		pr_err("%s: failed to set cpu_fixed_sel1 as cpu fixed clk's parent\n",
+	       __func__);
+		return ret;
+	}
+
 	return devm_of_clk_add_hw_provider(dev, of_clk_hw_onecell_get,
 					   &a1_hw_onecell_data);
 }
@@ -3039,6 +3018,5 @@ static int a1_clkc_init(void)
 }
 
 subsys_initcall(a1_clkc_init);
-//arch_initcall_sync(a1_clkc_init);
 
 MODULE_LICENSE("GPL v2");

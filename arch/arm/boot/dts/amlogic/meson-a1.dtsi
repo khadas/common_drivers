@@ -704,7 +704,7 @@
 
 	amlogic_unifykey: unifykey{
 		compatible = "amlogic,unifykey";
-		status = "disabled";
+		status = "okay";
 
 		key_0{
 			key-name = "usid";
@@ -1070,7 +1070,7 @@
 		key = <&efusekey>;
 		clocks = <&clkc CLKID_OTP>;
 		clock-names = "efuse_clk";
-		status = "disabled";
+		status = "okay";
 	};
 
 	efusekey: efusekey {

@@ -973,7 +973,7 @@
 };
 
 &saradc {
-	status = "disabled";
+	status = "okay";
 	vref-supply = <&AVDD_1_8V>;
 };
 

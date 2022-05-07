@@ -792,7 +792,7 @@
 };
 
 &saradc {
-	status = "disabled";
+	status = "okay";
 	vref-supply = <&avddao_1v8>;
 };
 

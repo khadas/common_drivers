@@ -195,23 +195,22 @@
 		};
 
 		sd_emmc_a: sdio@fe010000 {
-			compatible = "amlogic,meson-v3-mmc";
-			reg = <0x0 0xfe010000 0x0 0x800>;
+			compatible = "amlogic,meson-axg-mmc";
+			reg = <0x0 0xfe010000 0x0 0x800>,
+				  <0x0 0xfe0008e0 0x0 0x4>,
+				  <0x0 0xfe00040c 0x0 0x4>;
 			interrupts = <GIC_SPI 58 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 			clocks = <&clkc CLKID_SD_EMMC_A>,
 				<&clkc CLKID_SD_EMMC_SEL>,
 				<&clkc CLKID_SD_EMMC_GATE>,
-				<&clkc CLKID_SD_EMMC>,
-				<&clkc CLKID_EE_CORE>,
-				<&clkc CLKID_FCLK_DIV2>,
-				<&clkc CLKID_SD_EMMC_DIV>;
-				clock-names = "core", "mux0", "mux1", "mux2",
-						"clkin0", "clkin1", "mux1_in";
-				clk_tree_base= <0xfe0008e0>;
-				pin_mux_reg = <0xfe00040c>;
+				<&clkc CLKID_SD_EMMC>,//oscin_clk 1/0
+				<&clkc CLKID_SD_EMMC_DIV>,
+				<&xtal>,
+				<&clkc CLKID_FCLK_DIV2>;
+				clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
+						"clkin0", "clkin1";
 				mmc_debug_flag;
-				fixadj_have_hole;
 				//resets = <&reset RESET_SD_EMMC_A>;
 		};
 

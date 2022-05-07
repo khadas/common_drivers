@@ -551,7 +551,6 @@ static int meson_mmc_clk_init(struct meson_host *host)
 	int i, ret = 0;
 	const char *clk_parent[1];
 	u32 clk_reg;
-	unsigned long rate;
 
 	/* init SD_EMMC_CLOCK to sane defaults w/min clock rate */
 	clk_reg = CLK_ALWAYS_ON(host);
@@ -573,7 +572,6 @@ static int meson_mmc_clk_init(struct meson_host *host)
 	host->mux_div = devm_clk_get(host->dev, "mux_div");
 	if (IS_ERR(host->mux_div)) {
 		host->mux_div = NULL;
-		rate = 1000000000;
 		dev_err(host->dev, "Missing clock %s(S4d platform, ignore this)\n", "mux_div");
 	} else {
 		snprintf(name, sizeof(name), "mux%d", 2);
@@ -592,7 +590,6 @@ static int meson_mmc_clk_init(struct meson_host *host)
 	}
 
 	if (host->mux_div) {
-		rate = clk_get_rate(host->mux[0]);
 		ret = clk_set_parent(host->mux[2], host->mux_div);
 		if (ret) {
 			dev_err(host->dev, "Set div parent error\n");
@@ -600,7 +597,6 @@ static int meson_mmc_clk_init(struct meson_host *host)
 		}
 	}
 
-	clk_set_rate(host->mux[1], rate);
 	/* create the divider */
 	div = devm_kzalloc(host->dev, sizeof(*div), GFP_KERNEL);
 	if (!div)

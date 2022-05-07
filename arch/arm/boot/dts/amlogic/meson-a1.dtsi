@@ -533,7 +533,7 @@
 
 			jtag {
 				compatible = "amlogic, jtag";
-				status = "disabled";
+				status = "okay";
 				/* disable/ap,jtag_a/ap,swd_a */
 				select = "disable";
 				interrupts = <GIC_SPI 36 IRQ_TYPE_EDGE_RISING>;

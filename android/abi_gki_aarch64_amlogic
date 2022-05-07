@@ -54,6 +54,14 @@
 # amlogic-tee.ko
   class_create_file_ns
 
+# amlogic-optee.ko
+  gen_pool_virt_to_phys
+  gen_pool_set_algo
+  gen_pool_best_fit
+
+# amlogic-optee_armtz.ko
+  platform_device_register
+
 # amlogic-gkitool.ko
   kernel_read_file_from_path
   proc_create

@@ -5668,7 +5668,6 @@ static struct vout_server_s hdmitx_vout2_server = {
 #include <sound/initval.h>
 #include <sound/control.h>
 
-#ifdef TEMP_REMOVE_CODE
 static struct rate_map_fs map_fs[] = {
 	{0,	  FS_REFER_TO_STREAM},
 	{32000,  FS_32K},
@@ -5730,9 +5729,7 @@ static enum hdmi_audio_sampsize aud_size_map(unsigned int bits)
 	pr_info(AUD "get SS_MAX\n");
 	return SS_MAX;
 }
-#endif
 
-#ifdef TEMP_REMOVE_CODE
 static int hdmitx_notify_callback_a(struct notifier_block *block,
 				    unsigned long cmd, void *para);
 static struct notifier_block hdmitx_notifier_nb_a = {
@@ -5823,7 +5820,6 @@ static int hdmitx_notify_callback_a(struct notifier_block *block,
 
 	return 0;
 }
-#endif
 
 #endif
 
@@ -6894,9 +6890,10 @@ static int amhdmitx_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	register_early_suspend(&hdmitx_early_suspend_handler);
+#endif
 	hdev->nb.notifier_call = hdmitx_reboot_notifier;
 	register_reboot_notifier(&hdev->nb);
-#endif
+
 	hdmitx_meson_init(hdev);
 	hdmitx_hdr_state_init(&hdmitx_device);
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
@@ -6914,9 +6911,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 		audpara->sample_size = SS_16BITS;
 		audpara->channel_num = 2 - 1;
 	}
-#ifdef TEMP_REMOVE_CODE
 	aout_register_client(&hdmitx_notifier_nb_a);
-#endif
 #endif
 	spin_lock_init(&hdev->edid_spinlock);
 	/* update fmt_attr */
@@ -7009,9 +7004,7 @@ static int amhdmitx_remove(struct platform_device *pdev)
 #endif
 
 #if IS_ENABLED(CONFIG_AMLOGIC_SND_SOC)
-#ifdef TEMP_REMOVE_CODE
 	aout_unregister_client(&hdmitx_notifier_nb_a);
-#endif
 #endif
 
 	/* Remove the cdev */

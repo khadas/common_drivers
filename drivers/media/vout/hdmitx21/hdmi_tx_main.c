@@ -3915,7 +3915,6 @@ static struct vout_server_s hdmitx_vout2_server = {
 #include <sound/initval.h>
 #include <sound/control.h>
 
-#ifdef TEMP_REMOVE_CODE
 static struct rate_map_fs map_fs[] = {
 	{0,	  FS_REFER_TO_STREAM},
 	{32000,  FS_32K},
@@ -3977,9 +3976,7 @@ static enum hdmi_audio_sampsize aud_size_map(u32 bits)
 	pr_info("get SS_MAX\n");
 	return SS_MAX;
 }
-#endif
 
-#ifdef TEMP_REMOVE_CODE
 static int hdmitx_notify_callback_a(struct notifier_block *block,
 				    unsigned long cmd, void *para);
 static struct notifier_block hdmitx_notifier_nb_a = {
@@ -4060,7 +4057,6 @@ static int hdmitx_notify_callback_a(struct notifier_block *block,
 
 	return 0;
 }
-#endif
 
 #endif
 u32 hdmitx21_check_edid_all_zeros(u8 *buf)
@@ -4907,9 +4903,9 @@ static int amhdmitx_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	register_early_suspend(&hdmitx_early_suspend_handler);
+#endif
 	hdev->nb.notifier_call = hdmitx_reboot_notifier;
 	register_reboot_notifier(&hdev->nb);
-#endif
 	hdmitx21_meson_init(hdev);
 	hdev->hpd_state = !!(hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0));
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
@@ -4927,24 +4923,18 @@ static int amhdmitx_probe(struct platform_device *pdev)
 		audpara->sample_size = SS_16BITS;
 		audpara->channel_num = 2 - 1;
 	}
-#ifdef TEMP_REMOVE_CODE
 	aout_register_client(&hdmitx_notifier_nb_a);
 #endif
-#endif
-pr_info("%s[%d]\n", __func__, __LINE__);
 	/* update fmt_attr */
 	hdmitx_init_fmt_attr(hdev);
-pr_info("%s[%d]\n", __func__, __LINE__);
 
 	hdev->hpd_state = !!hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0);
 	hdmitx21_set_uevent(HDMITX_HDCPPWR_EVENT, HDMI_WAKEUP);
 	INIT_WORK(&hdev->work_hdr, hdr_work_func);
-pr_info("%s[%d]\n", __func__, __LINE__);
 
 /* When init hdmi, clear the hdmitx module edid ram and edid buffer. */
 	hdmitx21_edid_clear(hdev);
 	hdmitx21_edid_ram_buffer_clear(hdev);
-pr_info("%s[%d]\n", __func__, __LINE__);
 	hdev->hdmi_wq = alloc_workqueue(DEVICE_NAME,
 					WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
 	INIT_DELAYED_WORK(&hdev->work_hpd_plugin, hdmitx_hpd_plugin_handler);
@@ -4952,7 +4942,6 @@ pr_info("%s[%d]\n", __func__, __LINE__);
 	INIT_DELAYED_WORK(&hdev->work_aud_hpd_plug,
 			  hdmitx_aud_hpd_plug_handler);
 	INIT_DELAYED_WORK(&hdev->work_internal_intr, hdmitx_top_intr_handler);
-pr_info("%s[%d]\n", __func__, __LINE__);
 
 	/* for rx sense feature */
 	hdev->rxsense_wq = alloc_workqueue("hdmitx_rxsense",
@@ -4962,7 +4951,6 @@ pr_info("%s[%d]\n", __func__, __LINE__);
 	hdev->cedst_wq = alloc_workqueue("hdmitx_cedst",
 					 WQ_SYSFS | WQ_FREEZABLE, 0);
 	INIT_DELAYED_WORK(&hdev->work_cedst, hdmitx_cedst_process);
-pr_info("%s[%d]\n", __func__, __LINE__);
 
 	hdev->tx_aud_cfg = 1; /* default audio configure is on */
 	/* When bootup mbox and TV simutanously, TV may not handle SCDC/DIV40 */
@@ -4972,7 +4960,6 @@ pr_info("%s[%d]\n", __func__, __LINE__);
 	hdmitx21_hdcp_init();
 
 	hdmitx_setupirqs(hdev);
-pr_info("%s[%d]\n", __func__, __LINE__);
 
 	if (hdev->hpd_state) {
 		/* need to get edid before vout probe */
@@ -4982,11 +4969,9 @@ pr_info("%s[%d]\n", __func__, __LINE__);
 	hdmitx_notify_hpd(hdev->hpd_state,
 			  hdev->edid_parsing ?
 			  hdev->edid_ptr : NULL);
-pr_info("%s[%d]\n", __func__, __LINE__);
 	/* Trigger HDMITX IRQ*/
 	if (hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0))
 		hdev->hwop.cntlmisc(hdev, MISC_TRIGGER_HPD, 0);
-pr_info("%s[%d]\n", __func__, __LINE__);
 
 	hdev->hdmi_init = 1;
 
@@ -5022,9 +5007,7 @@ static int amhdmitx_remove(struct platform_device *pdev)
 #endif
 
 #if IS_ENABLED(CONFIG_AMLOGIC_SND_SOC)
-#ifdef TEMP_REMOVE_CODE
 	aout_unregister_client(&hdmitx_notifier_nb_a);
-#endif
 #endif
 
 	/* Remove the cdev */

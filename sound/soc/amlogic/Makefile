@@ -68,7 +68,6 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/pwrdet_hw.o
 # $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/dsp/aml_flatbuf_api.o
 # $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/dsp/hifi4rpc_awe.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/card.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += common/notify.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += common/iec_info.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += common/misc.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += common/audio_uevent.o

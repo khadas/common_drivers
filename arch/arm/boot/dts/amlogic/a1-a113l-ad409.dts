@@ -360,7 +360,7 @@
 
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
-		status = "disabled";
+		status = "okay";
 		key_name = "play", "vol-", "vol+";
 		key_num = <3>;
 		io-channels = <&saradc 0>;

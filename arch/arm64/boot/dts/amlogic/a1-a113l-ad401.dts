@@ -260,7 +260,7 @@
 
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
-		status = "disabled";
+		status = "okay";
 		key_name = "recovery", "vol+", "vol-", "play";
 		key_num = <4>;
 		io-channels = <&saradc 0>;
@@ -273,7 +273,7 @@
 
 	gpio_keypad {
 		compatible = "amlogic, gpio_keypad";
-		status = "disabled";
+		status = "okay";
 		scan_period = <20>;
 		key_num = <2>;
 		key_name = "power", "mute";

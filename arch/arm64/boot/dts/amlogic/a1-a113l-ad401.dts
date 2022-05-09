@@ -223,41 +223,6 @@
 	};
 	/* Audio Related end */
 
-	cpu_opp_table0: cpu_opp_table0 {
-		compatible = "operating-points-v2";
-		opp-shared;
-
-		opp00 {
-			opp-hz = /bits/ 64 <128000000>;
-			opp-microvolt = <800000>;
-		};
-		opp01 {
-			opp-hz = /bits/ 64 <256000000>;
-			opp-microvolt = <800000>;
-		};
-		opp02 {
-			opp-hz = /bits/ 64 <512000000>;
-			opp-microvolt = <800000>;
-		};
-		opp03 {
-			opp-hz = /bits/ 64 <768000000>;
-			opp-microvolt = <800000>;
-		};
-		opp04 {
-			opp-hz = /bits/ 64 <1008000000>;
-			opp-microvolt = <800000>;
-		};
-		opp05 {
-			opp-hz = /bits/ 64 <1200000000>;
-			opp-microvolt = <800000>;
-		};
-	};
-
-	cpufreq-meson {
-		compatible = "amlogic, cpufreq-meson";
-		status = "disabled";
-	};
-
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
 		status = "okay";
@@ -709,12 +674,10 @@
 
 &cpu0 {
 	cpu-supply = <&VDD_CORE>;
-	cpufreq_voltage_set_skip;
 };
 
 &cpu1 {
 	cpu-supply = <&VDD_CORE>;
-	cpufreq_voltage_set_skip;
 };
 
 &dwc2_a {
@@ -893,12 +856,4 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc0_pins_a>;
 	cs-gpios = <&gpio GPIOA_8 0>;
-};
-
-&pwm_ab {
-	status = "okay";
-};
-
-&vddcpu0 {
-	status = "okay";
 };

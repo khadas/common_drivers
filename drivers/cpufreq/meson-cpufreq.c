@@ -1103,7 +1103,7 @@ static int meson_cpufreq_probe(struct platform_device *pdev)
 
 	cpu_reg = devm_regulator_get(cpu_dev, CORE_SUPPLY);
 	ret = PTR_ERR_OR_ZERO(cpu_reg);
-	if (ret) {
+	if (ret && !of_property_read_bool(np, "cpufreq_voltage_set_skip")) {
 		if (ret == -EPROBE_DEFER)
 			pr_err("cpu regulator not ready, retry!\n");
 		else

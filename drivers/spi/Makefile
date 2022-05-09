@@ -5,6 +5,7 @@ obj-$(CONFIG_AMLOGIC_SPI) = $(MODULE_NAME).o
 $(MODULE_NAME)-y += module-init.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SPI_MESON_SPICC) += spi-meson-spicc.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SPI_MESON_SPIFC) += spi-meson-spifc.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_SPI_MESON_SPIFC_V2) += spi-meson-spifc-v2.o spi-meson-mem.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SPI_MESON_SPICC_SLAVE) += spi-meson-spicc-slave.o vmem.o
 
 PR_FMT = $(subst amlogic-,,$(MODULE_NAME))

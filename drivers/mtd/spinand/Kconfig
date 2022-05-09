@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_MTD_SPI_NAND
+        tristate "AMLOGIC SPI NAND support"
+        default n
+        help
+          This is based on MTD_SPI_NAND, adding partition and rsv management.
+          Say Y, Will register partitions according to dts and add rsv
+          management.
+          Say N, Only register one mtd device.

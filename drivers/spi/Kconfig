@@ -17,6 +17,15 @@ config AMLOGIC_SPI_MESON_SPIFC
 	  This enables master mode support for the SPIFC (SPI flash
 	  controller) available in Amlogic Meson SoCs.
 
+config AMLOGIC_SPI_MESON_SPIFC_V2
+	tristate "Amlogic Meson SPIFC v2 controller"
+	depends on REGMAP_MMIO
+	help
+	  This enables master mode support for the SPIFC_V2 (SPI flash
+	  V2 controller) available in A1, C1, C2, Amlogic Meson SoCs.
+	  If you need to use meson spinand or spinor, you must enable
+	  it.
+
 config AMLOGIC_SPI_MESON_SPICC_SLAVE
 	tristate "Amlogic Meson SPICC Slave controller"
 	help

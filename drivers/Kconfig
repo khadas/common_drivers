@@ -47,5 +47,7 @@ source "$(COMMON_DRIVERS_DIR)/drivers/wifi/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/bluetooth/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/net/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/smartcard_sc2/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/mtd/spinand/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/mtd/reserve/Kconfig"
 
 endmenu

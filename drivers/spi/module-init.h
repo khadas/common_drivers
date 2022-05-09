@@ -16,6 +16,10 @@ extern struct platform_driver meson_spicc_driver;
 extern struct platform_driver meson_spifc_driver;
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_SPI_MESON_SPIFC_V2)
+extern struct platform_driver meson_spifc_v2_driver;
+#endif
+
 #ifdef CONFIG_AMLOGIC_SPI_MESON_SPICC_SLAVE
 extern struct platform_driver sspicc_driver;
 int __init vmem_init(void);

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_MTD_RESV
+	tristate "AMLOGIC MTD reserve area management"
+	help
+		Implements a reserve area which is used
+		to manage the bbt/key/dtd/env and so on.
+		we pre-allocate fixed blocks and list these
+		blocks base on different usage, such as bbt,
+		key. it is efficiently for power lost and
+		backups and others.

@@ -73,7 +73,8 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			alignment = <0x400000>;
-			reg = <0x3400000 0x800000>;
+			reg = <0x3400000 0x0>;
+			status = "disabled";
 		};
 
 		ramoops@0x07400000 {
@@ -89,16 +90,16 @@
 		isp_cma_reserved:linux,isp_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			status = "okay";
-			size = <0x6000000>;
+			status = "disabled";
+			size = <0x0>;
 			alignment = <0x400000>;
 		};
 
 		adapt_cma_reserved:linux,adapt_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			status = "okay";
-			size = <0xC00000>;
+			status = "disabled";
+			size = <0x0>;
 		};
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
@@ -118,8 +119,9 @@
 		jpegenc_cma_reserved:linux,jpegenc_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x2400000>;
+			size = <0x0>;
 			alignment = <0x400000>;
+			status = "disabled";
 		};
 	};
 

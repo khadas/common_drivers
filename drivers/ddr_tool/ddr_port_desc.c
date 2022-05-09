@@ -363,21 +363,6 @@ static struct ddr_port_desc ddr_port_desc_tl1[] __initdata = {
 	{ .port_id = 47, .port_name = "DEMOD"         }
 };
 
-static struct ddr_port_desc ddr_port_desc_a1[] __initdata = {
-	{ .port_id =  0, .port_name = "ARM"           },
-	{ .port_id =  1, .port_name = "DSPA"          },
-	{ .port_id =  2, .port_name = "DSPB"          },
-	{ .port_id =  4, .port_name = "DEVICE"        },
-	{ .port_id =  5, .port_name = "USB_AHB"       },
-	{ .port_id =  6, .port_name = "PROD_I2C"      },
-	{ .port_id =  7, .port_name = "USB HOST"      },
-	/* start of each device */
-	{ .port_id = 33, .port_name = "SPICC"         },
-	{ .port_id = 35, .port_name = "SD_EMMC_A"     },
-	{ .port_id = 37, .port_name = "AUDIO"         },
-	{ .port_id = 38, .port_name = "DMA"           }
-};
-
 static struct ddr_port_desc ddr_port_desc_c1[] __initdata = {
 	{ .port_id =  0, .port_name = "ARM"           },
 	{ .port_id =  1, .port_name = "DSPA"          },
@@ -402,6 +387,21 @@ static struct ddr_port_desc ddr_port_desc_c1[] __initdata = {
 	{ .port_id = 20, .port_name = "DMC_TEST"      }
 };
 #endif
+
+static struct ddr_port_desc ddr_port_desc_a1[] __initdata = {
+	{ .port_id =  0, .port_name = "ARM"           },
+	{ .port_id =  1, .port_name = "DSPA"          },
+	{ .port_id =  2, .port_name = "DSPB"          },
+	{ .port_id =  4, .port_name = "DEVICE"        },
+	{ .port_id =  5, .port_name = "USB_AHB"       },
+	{ .port_id =  6, .port_name = "PROD_I2C"      },
+	{ .port_id =  7, .port_name = "USB HOST"      },
+	/* start of each device */
+	{ .port_id = 33, .port_name = "SPICC"         },
+	{ .port_id = 35, .port_name = "SD_EMMC_A"     },
+	{ .port_id = 37, .port_name = "AUDIO"         },
+	{ .port_id = 38, .port_name = "DMA"           }
+};
 
 static struct ddr_port_desc ddr_port_desc_c2[] __initdata = {
 	{ .port_id =  0, .port_name = "TEE"           },
@@ -968,16 +968,16 @@ int __init ddr_find_port_desc(int cpu_type, struct ddr_port_desc **desc)
 		desc_size = ARRAY_SIZE(ddr_port_desc_tl1);
 		break;
 
-	case DMC_TYPE_A1:
-		*desc = ddr_port_desc_a1;
-		desc_size = ARRAY_SIZE(ddr_port_desc_a1);
-		break;
-
 	case DMC_TYPE_C1:
 		*desc = ddr_port_desc_c1;
 		desc_size = ARRAY_SIZE(ddr_port_desc_c1);
 		break;
 #endif
+
+	case DMC_TYPE_A1:
+		*desc = ddr_port_desc_a1;
+		desc_size = ARRAY_SIZE(ddr_port_desc_a1);
+		break;
 
 	case DMC_TYPE_C2:
 		*desc = ddr_port_desc_c2;

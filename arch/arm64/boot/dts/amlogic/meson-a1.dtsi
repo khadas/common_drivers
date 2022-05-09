@@ -995,7 +995,7 @@
 	ddr_bandwidth {
 		/* for a1, no dmc mon function */
 		compatible = "amlogic,ddr-bandwidth-a1";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfd020000 0x0 0x100
 		       0x0 0xFE000800 0x0 0x100>;
 		sec_base = <0xfd021000>;

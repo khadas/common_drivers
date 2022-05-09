@@ -549,7 +549,7 @@
 		};
 
 		spifc: spi@fd000400 {
-			compatible = "amlogic,meson-a1-spifc";
+			compatible = "amlogic,meson-spifc-v2";
 			reg = <0x0 0xfd000400 0x0 0x290>;
 			clock-names = "spifc_gate";
 			clocks = <&clkc CLKID_SPIFC_GATE>;

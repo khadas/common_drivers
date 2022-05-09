@@ -678,7 +678,7 @@
 };
 
 &spifc {
-	status = "disabled";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spifc_pins>;
 	spi-nor@1 {
@@ -687,9 +687,11 @@
 	};
 	spi-nand@0 {
 		compatible = "spi-nand";
-		status = "disabled";
+		status = "okay";
 		reg = <0>;
 		spi-max-frequency = <96000000>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
 		bl_mode = <1>;
 		fip_copies = <4>;
 		fip_size = <0x200000>;

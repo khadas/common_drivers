@@ -10,7 +10,7 @@
 #include <linux/types.h>
 
 #include "aml_demod.h"
-#include "dvb_frontend.h" /**/
+#include "amlogic/dvb_frontend.h" /**/
 #include "amlfrontend.h"
 #include "addr_dtmb_top.h"
 #include "addr_atsc_demod.h"

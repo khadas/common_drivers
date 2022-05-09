@@ -49,6 +49,7 @@ obj-$(CONFIG_AMLOGIC_MTD_SPI_NAND)	+= mtd/spinand/
 obj-$(CONFIG_AMLOGIC_SMARTCARD)		+= smartcard_sc2/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
+obj-y        += dvb/
 
 all:
 	$(MAKE) -C $(KERNEL_SRC) M=$(M) modules $(GKI_EXT_KERNEL_MODULE_CONFIG)

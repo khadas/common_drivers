@@ -8,7 +8,7 @@
 #include <uapi/linux/dvb/frontend.h>
 #include <media/dvb_frontend.h>
 
-#define CONFIG_AMLOGIC_DVB_COMPAT
+//#define CONFIG_AMLOGIC_DVB_COMPAT
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
 
 #define DTV_DVBT2_PLP_ID    DTV_DVBT2_PLP_ID_LEGACY

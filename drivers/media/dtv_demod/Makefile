@@ -20,4 +20,5 @@ ccflags-y += -I.
 ccflags-y += -I$(srctree)/drivers/media/dvb-core
 ccflags-y += -I$(srctree)/include/media
 ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/media/dtv_demod/include
+ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/include/linux
 ccflags-y += -DDVB_CORE_ORI=1

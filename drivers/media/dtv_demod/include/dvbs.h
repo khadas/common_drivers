@@ -5,7 +5,7 @@
 
 #ifndef __DVBS_FUNC_H__
 #define __DVBS_FUNC_H__
-#include "dvb_frontend.h"
+#include "amlogic/dvb_frontend.h"
 
 #define CNR_HIGH	0xcae
 #define CNR_LOW		0xcad

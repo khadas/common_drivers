@@ -69,7 +69,11 @@ void show_violation_mem(unsigned long addr)
 	struct page *page;
 	unsigned long *p, *q;
 
+#ifdef CONFIG_ARM64
+	if (!pfn_is_map_memory(__phys_to_pfn(addr)))
+#else
 	if (!pfn_valid(__phys_to_pfn(addr)))
+#endif
 		return;
 
 	page = phys_to_page(addr);

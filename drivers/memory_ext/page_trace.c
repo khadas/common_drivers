@@ -942,7 +942,11 @@ static int update_page_trace(struct seq_file *m, struct zone *zone,
 	for (pfn = start_pfn; pfn < end_pfn; pfn++) {
 		struct page *page;
 
+#ifdef CONFIG_ARM64
+		if (!pfn_is_map_memory(pfn))
+#else
 		if (!pfn_valid(pfn))
+#endif
 			continue;
 
 		page = pfn_to_page(pfn);

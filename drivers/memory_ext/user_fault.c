@@ -264,7 +264,11 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 	 * filter out ioremap region
 	 */
 	if (addr >= VMALLOC_START && addr <= VMALLOC_END)
+#ifdef CONFIG_ARM64
+		if (!pfn_is_map_memory(vmalloc_to_pfn((void *)addr))) {
+#else
 		if (!pfn_valid(vmalloc_to_pfn((void *)addr))) {
+#endif
 			pr_info("\n%s: %#lx V\n", name, addr);
 			return;
 		}
@@ -500,7 +504,7 @@ void show_vma(struct mm_struct *mm, unsigned long addr)
 			goto done;
 		}
 
-		if (vma_anon_name(vma))
+		if (anon_vma_name(vma))
 			pr_info("[anon]");
 	}
 

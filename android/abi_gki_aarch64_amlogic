@@ -26,7 +26,6 @@
 # amlogic-secmon.ko
   ioremap_cache
   of_reserved_mem_device_init_by_idx
-  pfn_valid
   of_find_node_by_name
   copy_from_kernel_nofault
 
@@ -548,3 +547,6 @@
   phy_drivers_unregister
   phy_error
   phy_trigger_machine
+
+# 5.15.35 merge
+  mem_section

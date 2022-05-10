@@ -99,8 +99,11 @@ static ssize_t paddr_write_file(struct file *file, const char __user *userbuf,
 	buf[count] = 0;
 
 	ret = sscanf(buf, "%x %x", &reg, &val);
-
+#ifdef CONFIG_ARM64
+	if (pfn_is_map_memory(reg >> PAGE_SHIFT))
+#else
 	if (pfn_valid(reg >> PAGE_SHIFT))
+#endif
 		indio_dev->debugfs_reg_access = aml_mem_access;
 	else
 		indio_dev->debugfs_reg_access = aml_reg_access;
@@ -147,7 +150,11 @@ static ssize_t dump_write_file(struct file *file, const char __user *userbuf,
 	buf[count] = 0;
 
 	ret = sscanf(buf, "%x %i", &reg, &val);
+#ifdef CONFIG_ARM64
+	if (pfn_is_map_memory(reg >> PAGE_SHIFT))
+#else
 	if (pfn_valid(reg >> PAGE_SHIFT))
+#endif
 		indio_dev->debugfs_reg_access = aml_mem_access;
 	else
 		indio_dev->debugfs_reg_access = aml_reg_access;

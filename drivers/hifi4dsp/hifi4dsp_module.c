@@ -651,7 +651,11 @@ static int hifi4dsp_driver_dsp_start(struct hifi4dsp_dsp *dsp)
 	scpi_send_data(requestinfo, sizeof(requestinfo), dsp->id ? SCPI_DSPB : SCPI_DSPA,
 		SCPI_CMD_HIFI5_SYSLOG_START, rb, sizeof(*rb));
 	if (rb->magic == DSP_LOGBUFF_MAGIC) {
+#ifdef CONFIG_ARM64
+		if (pfn_is_map_memory(__phys_to_pfn(rb->basepaddr)))
+#else
 		if (pfn_valid(__phys_to_pfn(rb->basepaddr)))
+#endif
 			dsp->logbuff =
 			(struct dsp_ring_buffer *)__phys_to_virt(rb->basepaddr);
 		else

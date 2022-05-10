@@ -5105,7 +5105,11 @@ exit:
 static int __init
 rmem_fb_device_init(struct reserved_mem *rmem, struct device *dev)
 {
+#ifdef CONFIG_ARM64
+	if (pfn_is_map_memory(__phys_to_pfn(rmem->base)))  {
+#else
 	if (pfn_valid(__phys_to_pfn(rmem->base)))  {
+#endif
 		fb_map_flag = true;
 		osd_log_info("memory mapped[can free]\n");
 	} else {

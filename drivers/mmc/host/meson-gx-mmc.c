@@ -1288,6 +1288,7 @@ static void meson_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 			mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
 
 		if (!IS_ERR(mmc->supply.vqmmc) && host->vqmmc_enabled) {
+			regulator_set_voltage_triplet(mmc->supply.vqmmc, 1700000, 1800000, 1950000);
 			regulator_disable(mmc->supply.vqmmc);
 			host->vqmmc_enabled = false;
 		}
@@ -3641,6 +3642,10 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		}
 	}
 
+	if (aml_card_type_non_sdio(host)) {
+		if (!IS_ERR(mmc->supply.vqmmc))
+			regulator_set_voltage_triplet(mmc->supply.vqmmc, 1700000, 1800000, 1950000);
+	}
 	/* caps2 qurik for eMMC */
 	if (aml_card_type_mmc(host) && caps2_quirks &&
 		!strncmp(caps2_quirks,

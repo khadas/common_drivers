@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+#Smart card driver configuration
+#
+
+config AMLOGIC_SMARTCARD
+	tristate "Amlogic Smartcard driver"
+	default n

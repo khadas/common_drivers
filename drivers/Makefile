@@ -44,6 +44,8 @@ obj-$(CONFIG_AMLOGIC_WIFI)		+= wifi/
 obj-$(CONFIG_AMLOGIC_BLUETOOTH)		+= bluetooth/
 obj-$(CONFIG_AMLOGIC_INPHY)		+= net/
 
+obj-$(CONFIG_AMLOGIC_SMARTCARD)		+= smartcard_sc2/
+
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
 
 all:

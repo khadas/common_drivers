@@ -1122,9 +1122,9 @@
 
 	i2c0_master_pins1:i2c0_pins1 {
 		mux {
-			groups = "i2c_a_scl_f11",
-				"i2c_a_sda_f12";
-			function = "i2c_a";
+			groups = "i2c0_sck_f11",
+				"i2c0_sda_f12";
+			function = "i2c0";
 			bias-pull-up;
 			drive-strength = <3>;
 		};
@@ -1140,9 +1140,9 @@
 
 	i2c0_master_pins2:i2c0_pins2 {
 		mux {
-			groups = "i2c_a_scl_f9",
-				"i2c_a_sda_f10";
-			function = "i2c_a";
+			groups = "i2c0_sck_f9",
+				"i2c0_sda_f10";
+			function = "i2c0";
 			bias-pull-up;
 			drive-strength = <3>;
 		};
@@ -1158,9 +1158,9 @@
 
 	i2c1_master_pins1:i2c1_pins1 {
 		mux {
-			groups = "i2c_b_sda_x",
-				"i2c_b_scl_x";
-			function = "i2c_b";
+			groups = "i2c1_sda_x",
+				"i2c1_sck_x";
+			function = "i2c1";
 			bias-pull-up;
 			drive-strength = <3>;
 		};
@@ -1176,9 +1176,9 @@
 
 	i2c1_master_pins2:i2c1_pins2 {
 		mux {
-			groups = "i2c_b_sda_a",
-				"i2c_b_scl_a";
-			function = "i2c_b";
+			groups = "i2c1_sda_a",
+				"i2c1_sck_a";
+			function = "i2c1";
 			bias-pull-up;
 			drive-strength = <3>;
 		};
@@ -1194,9 +1194,9 @@
 
 	i2c2_master_pins1:i2c2_pins1 {
 		mux {
-			groups = "i2c_c_scl_x0",
-				"i2c_c_sda_x1";
-			function = "i2c_c";
+			groups = "i2c2_sck_x0",
+				"i2c2_sda_x1";
+			function = "i2c2";
 			bias-pull-up;
 			drive-strength = <3>;
 		};
@@ -1212,9 +1212,9 @@
 
 	i2c2_master_pins2:i2c2_pins2 {
 		mux {
-			groups = "i2c_c_scl_x15",
-				"i2c_c_sda_x16";
-			function = "i2c_c";
+			groups = "i2c2_sck_x15",
+				"i2c2_sda_x16";
+			function = "i2c2";
 			bias-pull-up;
 			drive-strength = <3>;
 		};
@@ -1230,9 +1230,9 @@
 
 	i2c2_master_pins3:i2c2_pins3 {
 		mux {
-			groups = "i2c_c_scl_a4",
-				"i2c_c_sda_a5";
-			function = "i2c_c";
+			groups = "i2c2_sck_a4",
+				"i2c2_sda_a5";
+			function = "i2c2";
 			bias-pull-up;
 			drive-strength = <3>;
 		};
@@ -1248,9 +1248,9 @@
 
 	i2c2_master_pins4:i2c2_pins4 {
 		mux {
-			groups = "i2c_c_scl_a8",
-				"i2c_c_sda_a9";
-			function = "i2c_c";
+			groups = "i2c2_sck_a8",
+				"i2c2_sda_a9";
+			function = "i2c2";
 			bias-pull-up;
 			drive-strength = <3>;
 		};
@@ -1266,9 +1266,9 @@
 
 	i2c3_master_pins1:i2c3_pins1 {
 		mux {
-			groups = "i2c_d_scl_x",
-				"i2c_d_sda_x";
-			function = "i2c_d";
+			groups = "i2c3_sck_x",
+				"i2c3_sda_x";
+			function = "i2c3";
 			bias-pull-up;
 			drive-strength = <3>;
 		};
@@ -1284,9 +1284,9 @@
 
 	i2c3_master_pins2:i2c3_pins2 {
 		mux {
-			groups = "i2c_d_scl_f",
-				"i2c_d_sda_f";
-			function = "i2c_d";
+			groups = "i2c3_sck_f",
+				"i2c3_sda_f";
+			function = "i2c3";
 			bias-pull-up;
 			drive-strength = <3>;
 		};

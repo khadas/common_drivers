@@ -51,7 +51,6 @@
  */
 
 #define MESON_SPICC_HW_IF
-#define MESON_SPICC_TEST_SYNC
 
 #ifndef CONFIG_AMLOGIC_MODIFY
 #define SPICC_MAX_FREQ	30000000
@@ -1083,18 +1082,8 @@ static ssize_t test_store(struct device *dev, struct device_attribute *attr,
 	t.rx_buf = (void *)rx_buf;
 	t.len = num;
 	spi_message_add_tail(&t, &m);
-#ifdef MESON_SPICC_HW_IF
-#ifdef MESON_SPICC_TEST_SYNC
-	dev_info(dev, "dirspi sync ...\n");
-	ret = dirspi_sync(m.spi, tx_buf, rx_buf, num);
-#else
-	dirspi_start(m.spi);
-	ret = dirspi_xfer(m.spi, tx_buf, rx_buf, num);
-	dirspi_stop(m.spi);
-#endif
-#else
 	ret = spi_sync(m.spi, &m);
-#endif
+
 	if (!ret && (mode & (SPI_LOOP | (1 << 16)))) {
 		ret = 0;
 		for (i = 0; i < num; i++) {
@@ -1109,6 +1098,7 @@ static ssize_t test_store(struct device *dev, struct device_attribute *attr,
 	dev_info(dev, "test end @%d\n", (u32)clk_get_rate(spicc->clk));
 
 test_end:
+	meson_spicc_cleanup(m.spi);
 	spi_dev_put(m.spi);
 	kfree(kstr);
 	kfree(tx_buf);
@@ -1400,7 +1390,7 @@ static int meson_spicc_probe(struct platform_device *pdev)
 				     SPI_BPW_MASK(8);
 	master->flags = (SPI_MASTER_MUST_RX | SPI_MASTER_MUST_TX);
 #endif
-	master->min_speed_hz = rate >> 9;
+	master->min_speed_hz = 325000;
 	master->setup = meson_spicc_setup;
 	master->cleanup = meson_spicc_cleanup;
 	master->prepare_message = meson_spicc_prepare_message;

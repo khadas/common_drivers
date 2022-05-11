@@ -25,7 +25,7 @@
 #include <linux/pid.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/major.h>
-#include <uapi/linux/amlogic/msync.h>
+#include <uapi/amlogic/msync.h>
 #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_MSYNC
 #include <trace/events/meson_atrace.h>
 #include <linux/compat.h>

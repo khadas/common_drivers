@@ -58,7 +58,7 @@ MODULE_AMLOG(LOG_LEVEL_ERROR, 0, LOG_DEFAULT_LEVEL_DESC, LOG_MASK_DESC);
 #include "linux/amlogic/media/frame_provider/tvin/tvin_v4l2.h"
 #endif
 #ifdef CONFIG_AMLOGIC_MEDIA_MSYNC
-#include <uapi/linux/amlogic/msync.h>
+#include <uapi/amlogic/msync.h>
 #endif
 #include <linux/amlogic/gki_module.h>
 

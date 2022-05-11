@@ -131,7 +131,7 @@ MODULE_AMLOG(LOG_LEVEL_ERROR, 0, LOG_DEFAULT_LEVEL_DESC, LOG_MASK_DESC);
 #define TRACE_INCLUDE_FILE video_trace
 #include <trace/define_trace.h>
 #ifdef CONFIG_AMLOGIC_MEDIA_MSYNC
-#include <uapi/linux/amlogic/msync.h>
+#include <uapi/amlogic/msync.h>
 #endif
 #include "vpp_pq.h"
 

@@ -1623,6 +1623,20 @@
 			    "nocbus";
 	};
 
+	meson-amvideom {
+		compatible = "amlogic, amvideom-c3";
+		dev_name = "amvideom";
+		status = "okay";
+		interrupts = <GIC_SPI 132 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "vsync";
+	};
+
+	video_composer {
+		compatible = "amlogic, video_composer";
+		dev_name = "video_composer";
+		status = "okay";
+	};
+
 	ge2d {
 		compatible = "amlogic, ge2d-c3";
 		status = "okay";

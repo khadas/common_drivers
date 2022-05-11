@@ -301,6 +301,12 @@
 			};
 		};
 	};
+
+	picdec {
+		compatible = "amlogic, picdec";
+		status = "okay";
+	};
+
 	audiolocker: locker {
 		compatible = "amlogic, audiolocker";
 		clocks = <&clkaudio CLKID_AUDIO_LOCKER_OUT
@@ -1020,7 +1026,7 @@
 	mem_size = <0x00800000 0x1000000>;
 	logo_addr = "0xe800000";
 	/* display_device_cnt = <2>; */ /* for dual screen upport */
-	mem_alloc = <0>;
+	mem_alloc = <1>;
 	pxp_mode = <1>; /** 0:normal mode 1:pxp mode */
 };
 

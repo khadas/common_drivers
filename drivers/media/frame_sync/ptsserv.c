@@ -150,10 +150,10 @@ static inline void get_rdpage_offset(u8 type, u32 *page, u32 *page_offset)
 			do {
 				local_irq_save(flags);
 
-				page1 = READ_VREG(VLD_MEM_VIFIFO_WRAP_COUNT) &
+				page1 = READ_DOSREG(VLD_MEM_VIFIFO_WRAP_COUNT) &
 						  0xffff;
-				offset = READ_VREG(VLD_MEM_VIFIFO_RP);
-				page2 = READ_VREG(VLD_MEM_VIFIFO_WRAP_COUNT) &
+				offset = READ_DOSREG(VLD_MEM_VIFIFO_RP);
+				page2 = READ_DOSREG(VLD_MEM_VIFIFO_WRAP_COUNT) &
 						  0xffff;
 
 				local_irq_restore(flags);
@@ -1484,8 +1484,8 @@ int pts_start(u8 type)
 			}
 #else
 			if (!tsync_get_new_arch()) {
-				ptable->buf_start = READ_VREG(HEVC_STREAM_START_ADDR);
-				ptable->buf_size = READ_VREG(HEVC_STREAM_END_ADDR)
+				ptable->buf_start = READ_DOSREG(HEVC_STREAM_START_ADDR);
+				ptable->buf_size = READ_DOSREG(HEVC_STREAM_END_ADDR)
 									- ptable->buf_start;
 			}
 #endif

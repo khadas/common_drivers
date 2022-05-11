@@ -1298,16 +1298,6 @@
 		compatible = "amlogic, codec, streambuf";
 		dev_name = "mesonstream";
 		status = "okay";
-		clocks = <&clkc CLKID_DOS
-			&clkc CLKID_VDEC_MUX
-			&clkc CLKID_HCODEC_MUX
-			&clkc CLKID_HEVCF_MUX
-			&clkc CLKID_HEVCB_MUX>;
-		clock-names = "vdec",
-			"clk_vdec_mux",
-			"clk_hcodec_mux",
-			"clk_hevcf_mux",
-			"clk_hevcb_mux";
 	};
 
 	vdec {
@@ -1333,13 +1323,29 @@
 		power-domain-names = "pwrc-vdec",
 			"pwrc-hevc";
 	};
-	vdec_cpu_ver: cpu_ver_name {
-		compatible = "amlogic, cpu-major-id-s4d";
-	};
 	vcodec_dec {
 		compatible = "amlogic, vcodec-dec";
 		dev_name = "aml-vcodec-dec";
 		status = "okay";
+	};
+	vcodec_dos_dev: vcodec_dos_dev {
+		compatible = "amlogic, cpu-major-id-s4d";
+		dev_name = "vcodec_dos_dev";
+		status = "okay";
+		reg = <0x0 0xfe320000 0x0 0x10000>,
+			<0x0 0xfe036000 0x0 0x2000>;
+		reg-names = "dosbus",
+			"dmcbus";
+		clocks = <&clkc CLKID_DOS
+			&clkc CLKID_VDEC_MUX
+			&clkc CLKID_HCODEC_MUX
+			&clkc CLKID_HEVCF_MUX
+			&clkc CLKID_HEVCB_MUX>;
+		clock-names = "vdec",
+			"clk_vdec_mux",
+			"clk_hcodec_mux",
+			"clk_hevcf_mux",
+			"clk_hevcb_mux";
 	};
 
 	ddr_bandwidth {
@@ -1615,7 +1621,7 @@
 
 	dummy_venc: dummy_venc {
 		compatible = "amlogic, dummy_venc_s4";
-		status = "disabled";
+		status = "okay";
 	};
 
 	adc: adc {
@@ -1718,12 +1724,12 @@
 
 	meson_uvm {
 		compatible = "amlogic, meson_uvm";
-		status = "disabled";
+		status = "okay";
 	};
 
 	meson_videotunnel{
 		compatible = "amlogic, meson_videotunnel";
-		status = "disabled";
+		status = "okay";
 	};
 
 	fb: fb {
@@ -1753,7 +1759,7 @@
 	vdin0: vdin0 {
 		compatible = "amlogic, vdin-s4d";
 		dev_name = "vdin0";
-		status = "disabled";
+		status = "okay";
 		reserve-iomap = "true";
 		flag_cma = <0>;/*1:share with codec_mm;2:cma alone*/
 		/*MByte, if 10bit disable: 64M(YUV422),
@@ -1773,7 +1779,7 @@
 	vdin1: vdin1 {
 		compatible = "amlogic, vdin-s4d";
 		dev_name = "vdin1";
-		status = "disabled";
+		status = "okay";
 		reserve-iomap = "true";
 		flag_cma = <0>;/*1:share with codec_mm;0:cma alone*/
 		interrupts = <0 212 1>;
@@ -1792,7 +1798,7 @@
 	video_composer {
 		compatible = "amlogic, video_composer";
 		dev_name = "video_composer";
-		status = "disabled";
+		status = "okay";
 	};
 
 	vpu_security {
@@ -1932,10 +1938,6 @@
 			offset = <18>;
 			size = <16>;
 		};
-	};
-
-	chosen {
-		kaslr-seed = <0x0 0x0>;
 	};
 };
 

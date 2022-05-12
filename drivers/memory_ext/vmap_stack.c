@@ -29,7 +29,7 @@
 #endif
 #include <asm/tlbflush.h>
 #include <asm/stacktrace.h>
-#include <../../../mm/internal.h>
+#include <internal.h>
 
 #define DEBUG							0
 #define MODULE_NAME						"amlogic-vmap"

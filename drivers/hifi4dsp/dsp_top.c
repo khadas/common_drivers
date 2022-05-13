@@ -151,8 +151,6 @@ static void soc_dsp_powerdomain_switch(int dsp_id, bool pwr_cntl)
 	struct device *dev = hifi4dsp_p[dsp_id]->dsp->pd_dsp;
 
 	if (!dev)
-		dev = hifi4dsp_p[dsp_id]->dev_pd;
-	if (!dev)
 		return;
 	if (pwr_cntl)
 		pm_runtime_get_sync(dev);

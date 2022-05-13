@@ -1582,6 +1582,8 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 		ret = hifi4dsp_attach_pd(&pdev->dev, dsp_cnt);
 		if (ret < 0)
 			goto err3;
+	} else {
+		dsp->pd_dsp = &pdev->dev;
 	}
 
 	/*get dsp_clk_freqs */
@@ -1697,12 +1699,12 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 
 		hifi4dsp_p[i] = priv;
 
-		if (dsp_cnt > 1) {
+		if (dsp_cnt > 1)
 			pm_runtime_put_sync_suspend(dsp->pd_dsp);
-		} else {
-			pm_runtime_enable(&pdev->dev);
-			priv->dev_pd = &pdev->dev;
-		}
+		else
+			pm_runtime_enable(dsp->pd_dsp);
+
+		device_init_wakeup(dsp->pd_dsp, 1);
 		create_hifi_debugfs_files(dsp);
 		pr_info("register dsp-%d done\n", id);
 	}

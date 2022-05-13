@@ -6,7 +6,9 @@ function pre_defconfig_cmds() {
 export -f pre_defconfig_cmds
 
 function post_defconfig_cmds() {
-	# checkout config
+	if [[ ${CHECK_DEFCONFIG} -eq "1" ]]; then
+		check_defconfig
+	fi
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
 }
 export -f post_defconfig_cmds

@@ -14,6 +14,8 @@ function show_help {
 	echo "  --kernel_dir            for KERNEL_DIR, common[default]|other dir, require parameter value"
 	echo "  --common_drivers_dir    for COMMON_DRIVERS_DIR, common[default]|other dir, require parameter value"
 	echo "  --build_dir             for BUILD_DIR, build[default]|other dir, require parameter value"
+	echo "  --check_defconfig       for check defconfig"
+	echo "  --modules_depend        for check modules depend"
 }
 
 VA=
@@ -72,6 +74,14 @@ do
 		VA=1
                 shift
 		;;
+	--check_defconfig)
+		CHECK_DEFCONFIG=1
+		shift
+		;;
+	--modules_depend)
+		MODULES_DEPEND=1
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -127,9 +137,12 @@ if [[ ! -f ${BUILD_DIR}/build_abi.sh ]]; then
 	echo "The directory of build does not exist";
 fi
 
+CHECK_DEFCONFIG=${CHECK_DEFCONFIG:-0}
+MODULES_DEPEND=${MODULES_DEPEND:-0}
+
 set -e
-export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE
-echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE}
+export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG
+echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG}
 export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR
 echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR}
 
@@ -225,4 +238,9 @@ else
 	echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
 fi
 set +e
-check_undefined_symbol
+
+if [[ ${MODULES_DEPEND} -eq "1" ]]; then
+	echo "========================================================"
+	echo "print modules depend"
+	check_undefined_symbol
+fi

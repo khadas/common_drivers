@@ -788,12 +788,31 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 	return 0;
 }
 
+static int meson_clk_pll_v3_enable(struct clk_hw *hw)
+{
+	unsigned long rate, parent_rate;
+
+	/* do nothing if the PLL is already enabled */
+	if (clk_hw_is_enabled(hw))
+		return 0;
+
+	/* Deal clk_set_rate return when set the same rate */
+	parent_rate = clk_hw_get_rate(clk_hw_get_parent(hw));
+	rate = meson_clk_pll_recalc_rate(hw, parent_rate);
+	meson_clk_pll_v3_set_rate(hw, rate, parent_rate);
+
+	if (meson_clk_pll_wait_lock(hw))
+		return -EIO;
+
+	return 0;
+}
+
 const struct clk_ops meson_clk_pll_v3_ops = {
 	.recalc_rate	= meson_clk_pll_recalc_rate,
 	.round_rate	= meson_clk_pll_round_rate,
 	.set_rate	= meson_clk_pll_v3_set_rate,
 	.is_enabled	= meson_clk_pll_is_enabled,
-	.enable		= meson_clk_pll_enable,
+	.enable		= meson_clk_pll_v3_enable,
 	.disable	= meson_clk_pll_disable
 };
 EXPORT_SYMBOL_GPL(meson_clk_pll_v3_ops);

@@ -18,8 +18,11 @@ MAKE_GOALS="
 
 FILES="
 	${FILES}
-	${COMMON_DRIVERS_DIR}/arch/arm64/boot/dts/amlogic/s4d_s905y4_ap222_drm.dtb
+	s4d_s905y4_ap222_drm.dtb
 "
+
+DTS_EXT_DIR=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/boot/dts/amlogic
+DTC_INCLUDE=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/include
 
 EXT_MODULES="
 	${EXT_MODULES}

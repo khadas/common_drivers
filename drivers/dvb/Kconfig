@@ -21,7 +21,7 @@ menu "AMLOGIC DVB demux/dsc support"
 
 config AMLOGIC_DVB_DMX
    tristate "AMLOGIC DVB DMX"
-   default m
+   default N
 #   bool "AMLOGIC DVB DMX"
 #   default (DVB_CORE && DVB_PLATFORM_DRIVER && AMLOGIC_DVB && AMLOGIC_DVB_COMPAT)
    default Y

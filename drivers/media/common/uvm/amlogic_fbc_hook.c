@@ -25,12 +25,12 @@ static AMLOGIC_FBC_vframe_decoder_fun_t g_decoder_fun;
 static AMLOGIC_FBC_vframe_encoder_fun_t g_encoder_fun;
 
 int AMLOGIC_FBC_vframe_decoder_v1(void *dstyuv[4],
-				  struct vframe_s *vf,
+				  struct fbc_decoder_param *param,
 				  int out_format, int flags)
 {
 	if (g_decoder_fun) {
 		return g_decoder_fun(dstyuv,
-			vf,
+			param,
 			out_format,
 			flags);
 	}

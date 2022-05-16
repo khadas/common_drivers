@@ -18,14 +18,20 @@
 
 #ifndef AMLGIC_FBC_V1_HEADER___
 #define AMLGIC_FBC_V1_HEADER___
-#include <linux/amlogic/media/vfm/vframe.h>
 
-int AMLOGIC_FBC_vframe_decoder_v1(void *dstyuv[4], struct vframe_s *vf,
+struct fbc_decoder_param {
+	unsigned long compHeadAddr;
+	u32 compWidth;
+	u32 compHeight;
+	u32 bitdepth;
+};
+
+int AMLOGIC_FBC_vframe_decoder_v1(void *dstyuv[4], struct fbc_decoder_param *param,
 				  int out_format, int flags);
 int AMLOGIC_FBC_vframe_encoder_v1(void *srcyuv[4], void *dst_header,
 				  void *dst_body, int in_format, int flags);
 
-typedef int (*AMLOGIC_FBC_vframe_decoder_fun_t)(void **, struct vframe_s *,
+typedef int (*AMLOGIC_FBC_vframe_decoder_fun_t)(void **, struct fbc_decoder_param *,
 						int, int);
 typedef int (*AMLOGIC_FBC_vframe_encoder_fun_t)(void **, void *, void *,
 						int, int);

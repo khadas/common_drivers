@@ -877,6 +877,7 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 	u8 *y_dst, *vu_dst;
 	int bit_10;
 	struct timeval start, end;
+	struct fbc_decoder_param param;
 	unsigned long time_use = 0;
 
 	if ((vf->bitdepth & BITDEPTH_YMASK)  == BITDEPTH_Y10)
@@ -900,7 +901,11 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 	free_cnt = 4;
 
 	do_gettimeofday(&start);
-	ret = AMLOGIC_FBC_vframe_decoder_v1((void **)planes, vf, 0, 0);
+	param.compHeadAddr = vf->compHeadAddr;
+	param.compWidth = vf->compWidth;
+	param.compHeight = vf->compHeight;
+	param.bitdepth = vf->bitdepth;
+	ret = AMLOGIC_FBC_vframe_decoder_v1((void **)planes, &param, 0, 0);
 	if (ret < 0) {
 		pr_err("amlogic_fbc_lib.ko error %d", ret);
 		goto free;

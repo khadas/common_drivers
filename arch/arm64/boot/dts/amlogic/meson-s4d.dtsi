@@ -1620,7 +1620,7 @@
 
 	adc: adc {
 		compatible = "amlogic, adc-s4d";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xff654000 0x0 0x2000/* afe reg base */
 			0x0 0xfe008000 0x0 0x2000/* hiu base */
 			>;

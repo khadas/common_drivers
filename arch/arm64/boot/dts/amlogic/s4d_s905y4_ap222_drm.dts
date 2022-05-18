@@ -174,7 +174,7 @@
 	};
 	cvbsout {
 		compatible = "amlogic, cvbsout-s4";
-		status = "disabled";
+		status = "okay";
 
 		/* clk path */
 		/* 0:vid_pll vid2_clk */

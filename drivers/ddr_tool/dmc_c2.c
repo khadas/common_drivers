@@ -92,8 +92,9 @@ static int get_c2_port(unsigned int awuser)
 
 static void check_violation(struct dmc_monitor *mon, void *data)
 {
-	int i, port, subport;
-	unsigned long addr, status;
+	int port, subport;
+	unsigned long addr, status, irqreg;
+	char title[10] = "";
 	char id_str[4];
 	struct page *page;
 	struct page_trace *trace;
@@ -111,44 +112,59 @@ static void check_violation(struct dmc_monitor *mon, void *data)
 		break;
 	}
 
-	for (i = 1; i < 4; i += 2) {
-		status = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_0 + (i << 2), 0, DMC_READ);
-		if (!(status & (1 << vio_bit)))
-			continue;
-		addr = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_0 + ((i - 1) << 2), 0,
-				   DMC_READ);
-		if (addr > mon->addr_end)
-			continue;
-		/* ignore violation on same page/same port */
-		if ((addr & PAGE_MASK) == mon->last_addr &&
-		    status == mon->last_status) {
-			mon->same_page++;
-			continue;
-		}
-		/* ignore cma driver pages */
-		page = phys_to_page(addr);
-		trace = find_page_base(page);
-		if (trace && trace->migrate_type == MIGRATE_CMA)
-			continue;
-		if (mon->chip == DMC_TYPE_C2) {
-			awuser = (status >> 16) & 0x3ff;
-			port = get_c2_port(awuser);
-		} else {
-			port = (status >> 11) & 0x1f;
-		}
-		subport = (status >> 6) & 0xf;
-		pr_emerg(DMC_TAG ", addr:%08lx, s:%08lx, ID:%s, sub:%s, c:%ld, d:%p, u:%x\n",
-			 addr, status, to_ports(port),
-			 to_sub_ports(port, subport, id_str),
-			 mon->same_page, data, awuser);
-		show_violation_mem(addr);
-		if (!port) /* dump stack for CPU write */
-			dump_stack();
+	if (mon->chip == DMC_TYPE_C2)
+		irqreg = dmc_prot_rw(dmc_mon->io_mem1, 0 - DMC_IRQ_STS_C2, 0, DMC_READ);
+	else
+		irqreg = dmc_prot_rw(dmc_mon->io_mem1, DMC_IRQ_STS, 0, DMC_READ);
 
-		mon->same_page   = 0;
-		mon->last_addr   = addr & PAGE_MASK;
-		mon->last_status = status;
+	if (irqreg & DMC_WRITE_VIOLATION) {
+		status = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_1, 0, DMC_READ);
+		addr = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_0, 0, DMC_READ);
 	}
+
+	if (irqreg & DMC_READ_VIOLATION) {
+		status = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_3, 0, DMC_READ);
+		addr = dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_VIO_2, 0, DMC_READ);
+	}
+
+	if (!(status & (1 << vio_bit)))
+		return;
+
+	if (addr > mon->addr_end)
+		return;
+	/* ignore violation on same page/same port */
+	if ((addr & PAGE_MASK) == mon->last_addr &&
+		status == mon->last_status) {
+		mon->same_page++;
+		return;
+	}
+	/* ignore cma driver pages */
+	page = phys_to_page(addr);
+	trace = find_page_base(page);
+	if (trace && trace->migrate_type == MIGRATE_CMA) {
+		if (mon->debug & DMC_DEBUG_CMA)
+			sprintf(title, "%s", "_CMA");
+		else
+			return;
+	}
+	if (mon->chip == DMC_TYPE_C2) {
+		awuser = (status >> 16) & 0x3ff;
+		port = get_c2_port(awuser);
+	} else {
+		port = (status >> 11) & 0x1f;
+	}
+	subport = (status >> 6) & 0xf;
+	pr_emerg(DMC_TAG "%s, addr:%08lx, s:%08lx, ID:%s, sub:%s, c:%ld, d:%p, u:%x\n",
+			title, addr, status, to_ports(port),
+			to_sub_ports(port, subport, id_str),
+			mon->same_page, data, awuser);
+	show_violation_mem(addr);
+	if (!port) /* dump stack for CPU write */
+		dump_stack();
+
+	mon->same_page   = 0;
+	mon->last_addr   = addr & PAGE_MASK;
+	mon->last_status = status;
 }
 
 static void c2_dmc_mon_irq(struct dmc_monitor *mon, void *data)

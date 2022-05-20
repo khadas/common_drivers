@@ -71,17 +71,26 @@ static size_t gx_dmc_dump_reg(char *buf)
 static void check_violation(struct dmc_monitor *mon, void *data)
 {
 	int i, port, subport;
-	unsigned long addr, status;
+	unsigned long addr, status, irqreg;
 	char id_str[MAX_NAME];
+	char title[10] = "";
 	struct page *page;
 	struct page_trace *trace;
 
-	for (i = 1; i < 8; i += 2) {
-		status = dmc_prot_rw(NULL, DMC_VIO_ADDR0 + (i << 2), 0, DMC_READ);
+	for (i = 1; i < 4; i += 2) {
+		irqreg = dmc_prot_rw(NULL, DMC_SEC_STATUS, 0, DMC_READ);
+		if (irqreg & DMC_WRITE_VIOLATION) {
+			status = dmc_prot_rw(NULL, DMC_VIO_ADDR0 + (i << 2), 0, DMC_READ);
+			addr = dmc_prot_rw(NULL, DMC_VIO_ADDR0 + ((i - 1) << 2), 0, DMC_READ);
+		}
+		if (irqreg & DMC_READ_VIOLATION) {
+			status = dmc_prot_rw(NULL, DMC_VIO_ADDR4 + (i << 2), 0, DMC_READ);
+			addr = dmc_prot_rw(NULL, DMC_VIO_ADDR4 + ((i - 1) << 2), 0, DMC_READ);
+		}
+
 		if (!(status & DMC_VIO_PROT_RANGE0))
 			continue;
-		addr = dmc_prot_rw(NULL, DMC_VIO_ADDR0 + ((i - 1) << 2), 0,
-				   DMC_READ);
+
 		if (addr > mon->addr_end)
 			continue;
 
@@ -89,23 +98,26 @@ static void check_violation(struct dmc_monitor *mon, void *data)
 		if ((addr & PAGE_MASK) == mon->last_addr &&
 		    status == mon->last_status) {
 			mon->same_page++;
-			continue;
+			if (mon->debug & DMC_DEBUG_CMA)
+				sprintf(title, "%s", "_SAME");
+			else
+				continue;
 		}
 		/* ignore cma driver pages */
 		page = phys_to_page(addr);
 		trace = find_page_base(page);
-		if (trace && trace->migrate_type == MIGRATE_CMA)
-			continue;
+		if (trace && trace->migrate_type == MIGRATE_CMA) {
+			if (mon->debug & DMC_DEBUG_CMA)
+				sprintf(title, "%s", "_CMA");
+			else
+				continue;
+		}
 
 		port = (status >> 10) & 0xf;
 		subport = (status >> 6) & 0xf;
 
-		/* ignore sd_emmc in device */
-		if (port == 7 && (subport == 11 || subport == 4))
-			continue;
-
-		pr_emerg("%s, addr:%08lx, s:%08lx, ID:%s, sub:%s, c:%ld, d:%p\n",
-			 DMC_TAG, addr, status, to_ports(port),
+		pr_emerg(DMC_TAG "%s, addr:%08lx, s:%08lx, ID:%s, sub:%s, c:%ld, d:%p\n",
+			 title, addr, status, to_ports(port),
 			 to_sub_ports(port, subport, id_str),
 			 mon->same_page, data);
 		show_violation_mem(addr);

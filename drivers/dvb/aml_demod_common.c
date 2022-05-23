@@ -102,9 +102,9 @@ const char *v4l2_std_to_str(v4l2_std_id std)
 }
 EXPORT_SYMBOL(v4l2_std_to_str);
 
-void aml_ktime_get_ts(struct timespec *ts)
+void aml_ktime_get_ts(struct timespec64 *ts)
 {
-	ktime_get_ts(ts);
+	ktime_get_ts64(ts);
 }
 EXPORT_SYMBOL(aml_ktime_get_ts);
 

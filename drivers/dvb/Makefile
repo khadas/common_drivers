@@ -17,4 +17,4 @@ aml_dvb_extern-objs = \
 ccflags-y += -I.
 ccflags-y += -I$(srctree)/drivers/media/dvb-core
 ccflags-y += -I$(srctree)/include/media
-
+ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/include

@@ -12,7 +12,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/of_gpio.h>
-#include <linux/dvb/frontend.h>
+#include <uapi/amlogic/dvb/frontend.h>
 
 enum tuner_type {
 	AM_TUNER_NONE = 0,
@@ -252,7 +252,7 @@ static inline struct dvb_frontend *name##_attach(struct dvb_frontend *fe,\
 		defined CONFIG_AMLOGIC_DVB_EXTERN_MODULE)
 const char *v4l2_std_to_str(v4l2_std_id std);
 
-void aml_ktime_get_ts(struct timespec *ts);
+void aml_ktime_get_ts(struct timespec64 *ts);
 
 int aml_gpio_direction_output(int gpio, int value);
 int aml_gpio_direction_input(int gpio);

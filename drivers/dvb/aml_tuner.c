@@ -24,18 +24,24 @@ AML_TUNER_ATTACH_FUNCTION(atbm253);
 AML_TUNER_ATTACH_FUNCTION(si2124);
 AML_TUNER_ATTACH_FUNCTION(av2011);
 AML_TUNER_ATTACH_FUNCTION(av2012);
-AML_TUNER_ATTACH_FUNCTION(av2018);
 AML_TUNER_ATTACH_FUNCTION(mxl603);
-AML_TUNER_ATTACH_FUNCTION(r836);
+//AML_TUNER_ATTACH_FUNCTION(r836);
+//AML_TUNER_ATTACH_FUNCTION(av2018);
 AML_TUNER_ATTACH_FUNCTION(r848);
 AML_TUNER_ATTACH_FUNCTION(rt710);
 AML_TUNER_ATTACH_FUNCTION(r850);
+//AML_TUNER_CB_REGISTER_FUNCTION(r836);
+//AML_TUNER_CB_REGISTER_FUNCTION(av2018);
 
 static struct dvb_frontend *aml_tuner_attach(const struct tuner_module *module,
 		struct dvb_frontend *fe, const struct tuner_config *cfg);
 static int aml_tuner_detach(const struct tuner_module *module);
 static int aml_tuner_match(const struct tuner_module *module, int std);
 static int aml_tuner_detect(const struct tuner_config *cfg);
+static struct dvb_frontend *r836_attach(struct dvb_frontend *fe,
+	const struct tuner_config *cfg);
+static struct dvb_frontend *av2018_attach(struct dvb_frontend *fe,
+	const struct tuner_config *cfg);
 
 static const struct tuner_module tuner_modules[] = {
 	{
@@ -403,6 +409,43 @@ static const struct tuner_module tuner_modules[] = {
 	}
 };
 
+tattach_p r836_attachp;
+bool r836_regist;
+
+static struct dvb_frontend *r836_attach(struct dvb_frontend *fe,
+	const struct tuner_config *cfg)
+{
+	if (r836_regist) {
+		if (r836_attachp)
+			return r836_attachp(fe, cfg);
+	}
+	pr_err("%s fail!\n", __func__);
+	return NULL;
+}
+
+tattach_p av2018_attachp;
+bool av2018_regist;
+int av2018_attach_register_cb(tattach_p funcb)
+{
+	if (!funcb)
+		return -1;
+	av2018_attachp = funcb;
+	av2018_regist = true;
+	return 0;
+}
+EXPORT_SYMBOL(av2018_attach_register_cb);
+
+static struct dvb_frontend *av2018_attach(struct dvb_frontend *fe,
+	const struct tuner_config *cfg)
+{
+	if (av2018_regist) {
+		if (av2018_attachp)
+			return av2018_attachp(fe, cfg);
+	}
+	pr_err("%s fail!\n", __func__);
+	return NULL;
+}
+
 static struct dvb_frontend *aml_attach_detach_tuner(
 		const enum tuner_type type,
 		struct dvb_frontend *fe,
@@ -485,16 +528,16 @@ static struct dvb_frontend *aml_attach_detach_tuner(
 				aml_dvb_detach(av2012_attach);
 		break;
 	case AM_TUNER_AV2018:
-		attach ? (p = aml_dvb_attach(av2018_attach, fe, cfg)) :
-				aml_dvb_detach(av2018_attach);
+		if (attach)
+			p = av2018_attach(fe, cfg);
 		break;
 	case AM_TUNER_MXL603:
 		attach ? (p = aml_dvb_attach(mxl603_attach, fe, cfg)) :
 				aml_dvb_detach(mxl603_attach);
 		break;
 	case AM_TUNER_R836:
-		attach ? (p = aml_dvb_attach(r836_attach, fe, cfg)) :
-				aml_dvb_detach(r836_attach);
+		if (attach)
+			p = r836_attach(fe, cfg);
 		break;
 	case AM_TUNER_R848:
 		attach ? (p = aml_dvb_attach(r848_attach, fe, cfg)) :
@@ -1150,3 +1193,16 @@ const struct tuner_module *aml_get_tuner_module(enum tuner_type type)
 	return NULL;
 }
 EXPORT_SYMBOL(aml_get_tuner_module);
+
+int r836_attach_register_cb(tattach_p funcb)
+{
+	if (!funcb) {
+		pr_err("%s fail.\n", __func__);
+		return -1;
+	}
+	r836_attachp = funcb;
+	r836_regist = true;
+
+	return 0;
+}
+EXPORT_SYMBOL(r836_attach_register_cb);

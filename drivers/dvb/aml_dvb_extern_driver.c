@@ -1005,12 +1005,11 @@ static int tuner_debug_seq_open(struct inode *inode, struct file *file)
 	return single_open(file, tuner_debug_seq_show, PDE_DATA(inode));
 }
 
-static const struct file_operations tuner_debug_fops = {
-	.owner = THIS_MODULE,
-	.open = tuner_debug_seq_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release
+static const struct proc_ops tuner_debug_fops = {
+	.proc_open = tuner_debug_seq_open,
+	.proc_read = seq_read,
+	.proc_lseek = seq_lseek,
+	.proc_release = single_release
 };
 
 static int demod_debug_seq_show(struct seq_file *m, void *v)
@@ -1055,12 +1054,11 @@ static int demod_debug_seq_open(struct inode *inode, struct file *file)
 	return single_open(file, demod_debug_seq_show, PDE_DATA(inode));
 }
 
-static const struct file_operations demod_debug_fops = {
-	.owner = THIS_MODULE,
-	.open = demod_debug_seq_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release
+static const struct proc_ops demod_debug_fops = {
+	.proc_open = demod_debug_seq_open,
+	.proc_read = seq_read,
+	.proc_lseek = seq_lseek,
+	.proc_release = single_release
 };
 
 static int cfgdev_open(struct inode *inode, struct file *filp)

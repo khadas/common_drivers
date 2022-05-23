@@ -43,7 +43,7 @@
 #include <linux/slab.h>
 #include <linux/bitops.h>
 
-#include <linux/dvb/frontend.h>
+#include <uapi/amlogic/dvb/frontend.h>
 
 #include <media/dvbdev.h>
 
@@ -843,6 +843,6 @@ void dvb_frontend_sleep_until(ktime_t *waketime, u32 add_usec);
 /**
  * dvb_frontend_add_event() - add event for the dvb frontend
  */
-void dvb_frontend_add_event(struct dvb_frontend *fe, enum fe_status status);
+void amlogic_dvb_frontend_add_event(struct dvb_frontend *fe, enum fe_status status);
 #endif
 #endif

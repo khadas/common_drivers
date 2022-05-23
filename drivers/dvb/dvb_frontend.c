@@ -31,9 +31,10 @@
 #include <linux/compat.h>
 #include <asm/processor.h>
 
-#include <dvb-core/dvb_frontend.h>
+#include <linux/amlogic/dvb_frontend.h>
 #include <media/dvbdev.h>
 #include <linux/dvb/version.h>
+#include <uapi/amlogic/dvb/frontend.h>
 
 static int dvb_frontend_debug;
 static int dvb_shutdown_timeout;
@@ -2111,15 +2112,75 @@ static int dvb_frontend_do_ioctl(struct file *file, unsigned int cmd,
 	return err;
 }
 
+static int aml_dvb_usercopy(struct file *file,
+			unsigned int cmd, unsigned long arg,
+			int (*func)(struct file *file,
+			unsigned int cmd, void *arg))
+{
+	char sbuf[128];
+	void *mbuf = NULL;
+	void *parg = NULL;
+	int err = -EINVAL;
+
+	/*  Copy arguments into temp kernel buffer  */
+	switch (_IOC_DIR(cmd)) {
+	case _IOC_NONE:
+		/*
+		 * For this command, the pointer is actually an integer
+		 * argument.
+		 */
+		parg = (void *)arg;
+		break;
+	case _IOC_READ: /* some v4l ioctls are marked wrong ... */
+	case _IOC_WRITE:
+	case (_IOC_WRITE | _IOC_READ):
+		if (_IOC_SIZE(cmd) <= sizeof(sbuf)) {
+			parg = sbuf;
+		} else {
+			/* too big to allocate from stack */
+			mbuf = kmalloc(_IOC_SIZE(cmd), GFP_KERNEL);
+			if (!mbuf)
+				return -ENOMEM;
+			parg = mbuf;
+		}
+
+		err = -EFAULT;
+		if (copy_from_user(parg, (void __user *)arg, _IOC_SIZE(cmd)))
+			goto out;
+		break;
+	}
+
+	/* call driver */
+	err = func(file, cmd, parg);
+	if (err == -ENOIOCTLCMD)
+		err = -ENOTTY;
+
+	if (err < 0)
+		goto out;
+
+	/*  Copy results into user buffer  */
+	switch (_IOC_DIR(cmd)) {
+	case _IOC_READ:
+	case (_IOC_WRITE | _IOC_READ):
+		if (copy_to_user((void __user *)arg, parg, _IOC_SIZE(cmd)))
+			err = -EFAULT;
+		break;
+	}
+
+out:
+	kfree(mbuf);
+	return err;
+}
+
 static long dvb_frontend_ioctl(struct file *file, unsigned int cmd,
-			       unsigned long arg)
+			unsigned long arg)
 {
 	struct dvb_device *dvbdev = file->private_data;
 
 	if (!dvbdev)
 		return -ENODEV;
 
-	return dvb_usercopy(file, cmd, arg, dvb_frontend_do_ioctl);
+	return aml_dvb_usercopy(file, cmd, arg, dvb_frontend_do_ioctl);
 }
 
 #ifdef CONFIG_COMPAT

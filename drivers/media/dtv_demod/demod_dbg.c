@@ -478,7 +478,7 @@ unsigned int capture_adc_data_mass(void)
 
 int write_usb_mass(struct dtvdemod_capture_s *cap, unsigned int read_start)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef DEMOD_KERNEL_WR
 	int count;
 	unsigned int i, memsize, y, block_size;
 	int times;
@@ -486,10 +486,12 @@ int write_usb_mass(struct dtvdemod_capture_s *cap, unsigned int read_start)
 	loff_t pos = 0;
 	void *buf = NULL;
 	char *parm;
+	mm_segment_t old_fs = get_fs();
 
 	parm = cap->cap_dev_name;
 
 	memsize = CAP_SIZE << 20;
+	set_fs(KERNEL_DS);
 	filp = filp_open(parm, O_RDWR | O_CREAT, 0666);
 	if (IS_ERR(filp))
 		return -1;
@@ -513,6 +515,7 @@ int write_usb_mass(struct dtvdemod_capture_s *cap, unsigned int read_start)
 
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
+	set_fs(old_fs);
 
 	/* stop tb */
 	front_write_bits(0x3a, 1, 12, 1);
@@ -520,7 +523,7 @@ int write_usb_mass(struct dtvdemod_capture_s *cap, unsigned int read_start)
 	return 0;
 }
 
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef DEMOD_KERNEL_WR
 static u8 *demod_vmap(ulong addr, u32 size)
 {
 	u8 *vaddr = NULL;
@@ -562,7 +565,7 @@ static u8 *demod_vmap(ulong addr, u32 size)
 }
 #endif
 
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef DEMOD_KERNEL_WR
 static void demod_unmap_phyaddr(u8 *vaddr)
 {
 	void *addr = (void *)(PAGE_MASK & (ulong)vaddr);
@@ -574,7 +577,7 @@ static void demod_unmap_phyaddr(u8 *vaddr)
 }
 #endif
 
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef DEMOD_KERNEL_WR
 static void demod_dma_flush(void *vaddr, int size, enum dma_data_direction dir)
 {
 	ulong phy_addr;
@@ -600,10 +603,11 @@ static void demod_dma_flush(void *vaddr, int size, enum dma_data_direction dir)
 static int read_memory_to_file(char *path, unsigned int start_addr,
 				unsigned int size)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef DEMOD_KERNEL_WR
 	struct file *filp = NULL;
 	loff_t pos = 0;
 	void *buf = NULL;
+	mm_segment_t old_fs = get_fs();
 
 	if (!start_addr) {
 		PR_ERR("%s: start addr is NULL\n", __func__);
@@ -618,6 +622,7 @@ static int read_memory_to_file(char *path, unsigned int start_addr,
 	PR_INFO("capture data path:%s,start addr:0x%x, size:%dM\n ",
 		path, start_addr, size / SZ_1M);
 
+	set_fs(KERNEL_DS);
 	filp = filp_open(path, O_RDWR | O_CREAT, 0666);
 
 	buf = demod_vmap(start_addr, size);
@@ -631,6 +636,7 @@ static int read_memory_to_file(char *path, unsigned int start_addr,
 	demod_unmap_phyaddr(buf);
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
+	set_fs(old_fs);
 #endif
 	return 0;
 }
@@ -772,7 +778,7 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode)
 		break;
 	}
 
-	size = devp->cma_mem_size - offset;
+	size = devp->mem_size - offset;
 	PR_INFO("%s:addr offset:%dM, cap_size:%dM\n", __func__,
 		offset / SZ_1M, size / SZ_1M);
 	start_addr += offset;
@@ -810,32 +816,17 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode)
 	return 0;
 }
 
-unsigned int clear_ddr_bus_data(void)
+unsigned int clear_ddr_bus_data(struct aml_dtvdemod *demod)
 {
 	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
 	int testbus_addr, width, vld;
 	unsigned int tb_start, tb_depth;
 	unsigned int start_addr = 0;
 	unsigned int top_saved, polling_en;
-	//struct dvb_frontend *fe;
-	struct aml_dtvdemod *demod = NULL, *tmp = NULL;
 	unsigned int offset, size;
 
 	if (unlikely(!devp)) {
 		PR_ERR("%s:devp is NULL\n", __func__);
-		return -1;
-	}
-
-	list_for_each_entry(tmp, &devp->demod_list, list) {
-		if (tmp->id == 0) {
-			demod = tmp;
-			PR_ERR("%s:tmp->id == 0\n", __func__);
-			break;
-		}
-	}
-
-	if (unlikely(!demod)) {
-		PR_ERR("%s: demod is NULL\n", __func__);
 		return -1;
 	}
 
@@ -884,7 +875,6 @@ unsigned int clear_ddr_bus_data(void)
 	/* go tb */
 	front_write_bits(0x3a, 0, 12, 1);
 	wait_capture(0x3f, tb_depth, start_addr);
-	PR_INFO("clear done\n");
 	/* stop tb */
 	front_write_bits(0x3a, 1, 12, 1);
 	tb_start = front_read_reg(0x3f);
@@ -893,6 +883,8 @@ unsigned int clear_ddr_bus_data(void)
 		demod_top_write_reg(DEMOD_TOP_CFG_REG_4, top_saved);
 		devp->demod_thread = polling_en;
 	}
+
+	PR_INFO("%s: clear done.\n", __func__);
 
 	return 0;
 }
@@ -1122,7 +1114,6 @@ static ssize_t attr_store(struct class *cls,
 
 	if (!buf)
 		return count;
-
 	buf_orig = kstrdup(buf, GFP_KERNEL);
 	dtv_dmd_parse_param(buf_orig, (char **)&parm);
 
@@ -1148,6 +1139,8 @@ static ssize_t attr_store(struct class *cls,
 			}
 		}
 	}
+
+	fe->demodulator_priv = demod;
 
 	if (!demod || !parm[0])
 		goto fail_exec_cmd;
@@ -1220,13 +1213,10 @@ static ssize_t attr_store(struct class *cls,
 		if (fe->dtv_property_cache.delivery_system == SYS_DVBS ||
 			fe->dtv_property_cache.delivery_system == SYS_DVBS2)
 			fe->dtv_property_cache.frequency = fe->dtv_property_cache.frequency / 1000;
-
 		if (fe->ops.init)
 			fe->ops.init(fe);
-#ifdef TEMP_REMOVE_CODE
 		if (fe->ops.set_property)
 			fe->ops.set_property(fe, &tvp);
-#endif
 		if (fe->ops.tune)
 			fe->ops.tune(fe, true, 0, &delay, &sts);
 	} else if (!strcmp(parm[0], "tune")) {

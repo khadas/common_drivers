@@ -372,6 +372,33 @@ static const struct demod_module demod_modules[] = {
 	}
 };
 
+static dattach_p dm_attach;
+static bool dtvdm_regist;
+int aml_dtvdm_register_cb(dattach_p funcb)
+{
+	if (!funcb) {
+		pr_err("Demod: %s fail !\n", __func__);
+		dtvdm_regist = false;
+		return -1;
+	}
+	dm_attach = funcb;
+	dtvdm_regist = true;
+	pr_err("Demod: %s ok!\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(aml_dtvdm_register_cb);
+
+static struct dvb_frontend *dtvdm_attach(const struct demod_config *cfg)
+{
+	if (dtvdm_regist) {
+		if (dm_attach)
+			return dm_attach(cfg);
+	}
+	pr_err("%s fail!\n", __func__);
+
+	return NULL;
+}
+
 static struct dvb_frontend *aml_attach_detach_dtvdemod(
 		enum dtv_demod_type type,
 		const struct demod_config *cfg,
@@ -381,8 +408,8 @@ static struct dvb_frontend *aml_attach_detach_dtvdemod(
 
 	switch (type) {
 	case AM_DTV_DEMOD_AMLDTV:
-		attch ? (p = aml_dvb_attach(aml_dtvdm_attach, cfg)) :
-				aml_dvb_detach(aml_dtvdm_attach);
+		if (attch)
+			p = dtvdm_attach(cfg);
 		break;
 	case AM_DTV_DEMOD_M1:
 		attch ? (p = aml_dvb_attach(m1_attach, cfg)) :

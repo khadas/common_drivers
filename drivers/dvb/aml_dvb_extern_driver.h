@@ -7,7 +7,7 @@
 #define __AML_DVB_EXTERN_DRIVER_H__
 
 #include <linux/device.h>
-#include <dvb_frontend.h>
+#include <linux/amlogic/dvb_frontend.h>
 
 #define DVB_CFGDEV_BASEMINOR            1
 #define DVB_CFGDEV_COUNT                1

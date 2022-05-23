@@ -540,8 +540,11 @@
   dvb_unregister_device
   dvb_register_adapter
   dvb_unregister_adapter
-
-# aml_drm.ko
+  dvb_free_device
+  dvb_remove_device
+  dvb_frontend_sleep_until
+  dvb_register_frontend
+  dvb_unregister_frontend
   drm_connector_attach_content_type_property
   drm_connector_attach_vrr_capable_property
   drm_connector_set_vrr_capable_property

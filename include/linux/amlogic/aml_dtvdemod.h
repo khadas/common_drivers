@@ -7,7 +7,7 @@
 #define __AML_DTVDEMOD_H__
 
 #include <linux/amlogic/aml_demod_common.h>
-#include <dvb_frontend.h>
+#include "dvb_frontend.h"
 
 struct demod_module {
 	char *name;
@@ -40,6 +40,7 @@ static inline __maybe_unused struct dvb_frontend *aml_dtvdm_attach(
 #endif
 #endif
 
+typedef struct dvb_frontend *(*dattach_p)(const struct demod_config *config);
 #if (defined CONFIG_AMLOGIC_DVB_EXTERN ||\
 		defined CONFIG_AMLOGIC_DVB_EXTERN_MODULE)
 enum dtv_demod_type aml_get_dtvdemod_type(const char *name);
@@ -47,6 +48,7 @@ int aml_get_dts_demod_config(struct device_node *node,
 		struct demod_config *cfg, int index);
 void aml_show_demod_config(const char *title, const struct demod_config *cfg);
 const struct demod_module *aml_get_demod_module(enum dtv_demod_type type);
+int aml_dtvdm_register_cb(dattach_p funcb);
 #else
 static inline __maybe_unused enum dtv_demod_type aml_get_dtvdemod_type(
 		const char *name)
@@ -71,6 +73,10 @@ static inline __maybe_unused const struct demod_module *aml_get_demod_module(
 	return NULL;
 }
 
+static inline __maybe_unused int aml_dtvdm_register_cb(dattach_p funcb)
+{
+	return -ENODEV;
+}
 #endif
 
 /* For attach demod driver end*/

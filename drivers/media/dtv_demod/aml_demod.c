@@ -185,16 +185,10 @@ static long aml_demod_ioctl(struct file *file,
 			sizeof(struct aml_tuner_sys))) {
 			PR_ERR("copy error AML_DEMOD_SET_TUNER\n");
 		} else {
-#ifdef TEMP_REMOVE_CODE
 			if (tuner_para.mode <= FE_ISDBT) {
-#else
-			if (tuner_para.mode <= FE_ATSC) {
-#endif
 				PR_INFO("set tuner md = %d\n",
 					tuner_para.mode);
-#ifdef TEMP_REMOVE_CODE
 				demod->frontend.ops.info.type = tuner_para.mode;
-#endif
 			} else {
 				PR_ERR("wrong md: %d\n", tuner_para.mode);
 			}

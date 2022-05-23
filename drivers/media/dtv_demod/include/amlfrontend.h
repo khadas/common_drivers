@@ -35,6 +35,12 @@
 /*  V1.1.42  optimization of DVBS blind scan  */
 /*  V1.1.43  rebuild dvbc to fix autosr and recovery is slowly */
 /*  V1.1.44  t3 revb change list check abus audio problem */
+/*  V1.1.45  optimize dvb-c auto symbol rate(all) and auto qam(t5w) */
+/*  V1.1.46  use the codec_mm cma for DTMB(8M)/DVB-T2(40M)/ISDB-T(8M) */
+/*  V1.1.47  support IRC and HRC in j83b auto qam mode */
+/*  V1.1.48  fixed 16qam/32qam cost long time to lock up or error */
+/*  V1.1.49  fix HRC freq of 79M lock failed */
+/*  V1.1.50  fixed data type of memory address and read/write */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -51,8 +57,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.44"
-#define DTVDEMOD_VER	"2022/03/29: t3 revb change list check abus audio problem"
+#define AMLDTVDEMOD_VER "V1.1.50"
+#define DTVDEMOD_VER	"2022/05/06: fixed data type of memory address and read/write"
 #define AMLDTVDEMOD_T2_FW_VER "V1417.0909"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
@@ -239,8 +245,11 @@ struct aml_dtvdemod {
 
 	unsigned int symbol_rate_manu;
 	unsigned int sr_val_hw;
+	unsigned int sr_val_hw_stable;
+	unsigned int sr_val_hw_count;
 	unsigned int symb_rate_en;
 	unsigned int auto_sr;
+	unsigned int auto_sr_done;
 	unsigned int freq;
 	unsigned int freq_dvbc;
 	enum fe_modulation atsc_mode;
@@ -260,7 +269,10 @@ struct aml_dtvdemod {
 	unsigned int no_sig_cnt;
 
 	enum qam_md_e auto_qam_mode;
+	enum qam_md_e last_qam_mode;
 	unsigned int auto_times;
+	unsigned int auto_done_times;
+	unsigned int auto_qam_done;
 	unsigned int auto_no_sig_cnt;
 	unsigned int fast_search_finish;
 
@@ -329,10 +341,10 @@ struct amldtvdemod_device_s {
 
 #if 1 /*move to aml_dtv_demod*/
 	/*for mem reserved*/
-	int			mem_start;
-	int			mem_end;
-	int			mem_size;
-	int			cma_flag;
+	unsigned int		mem_start;
+	unsigned int		mem_end;
+	unsigned int		mem_size;
+	unsigned int		cma_flag;
 	bool		flg_cma_allc;
 
 #ifdef CONFIG_CMA

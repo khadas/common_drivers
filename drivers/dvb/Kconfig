@@ -3,7 +3,6 @@ menu "AMLOGIC DVB EXTERN support"
 
 config AMLOGIC_DVB_EXTERN
 	tristate "Amlogic dvb extern drivers"
-	default N
 	help
 		select it to support amlogic dvb extern driver.
 		Y: enable
@@ -12,7 +11,7 @@ config AMLOGIC_DVB_EXTERN
 endmenu
 
 menu "DVB AUCPU support"
-source "common_drivers/drivers/dvb/aucpu/Kconfig"
+	source "$(COMMON_DRIVERS_DIR)/drivers/dvb/aucpu/Kconfig"
 endmenu
 #
 #dvb driver for demux
@@ -20,24 +19,23 @@ endmenu
 menu "AMLOGIC DVB demux/dsc support"
 
 config AMLOGIC_DVB_DMX
-   tristate "AMLOGIC DVB DMX"
-   default N
-#   bool "AMLOGIC DVB DMX"
-#   default (DVB_CORE && DVB_PLATFORM_DRIVER && AMLOGIC_DVB && AMLOGIC_DVB_COMPAT)
-   default Y
-   help
-     support dmx/dsc driver.
+	tristate "AMLOGIC DVB DMX"
+	help
+		support dmx/dsc driver.
 
 config AMLOGIC_DVB_DSM
 	tristate "AMLOGIC DVB DSM"
-	default N
 	help
 		Amlogic DVB Descrambler Session Manager
 		Y: enable
 		N: disable
 		M: build as module
 
-config AMLOGIC_DVB_COMPAT
-  tristate "AMLOGIC DVB COMPAT"
-  default Y
 endmenu
+
+config AMLOGIC_DVB_COMPAT
+	tristate "AMLOGIC DVB COMPAT"
+	help
+		if define Amlogic define demod or dmx
+		it should define AMLOGIC_DVB_COMPAT
+

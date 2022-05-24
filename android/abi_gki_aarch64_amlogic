@@ -541,33 +541,3 @@
   dvb_unregister_device
   dvb_register_adapter
   dvb_unregister_adapter
- __regmap_init_i2c
- dvb_ca_en50221_init
- dvb_ca_en50221_release
- dvb_dmx_init
- dvb_dmx_release
- dvb_dmx_swfilter
- dvb_dmxdev_init
- dvb_dmxdev_release
- dvb_frontend_detach
- dvb_frontend_sleep_until
- dvb_register_frontend
- dvb_unregister_frontend
- i2c_clients_command
- i2c_new_client_device
- i2c_new_dummy_device
- int_sqrt
- intlog10
- intlog2
- media_device_register_entity
- media_entity_pads_init
- regmap_raw_read
- request_firmware_nowait
- v4l2_ctrl_auto_cluster
- v4l2_ctrl_handler_free
- v4l2_ctrl_handler_init_class
- v4l2_ctrl_new_std
- v4l2_ctrl_subdev_log_status
- v4l2_device_unregister_subdev
- v4l2_i2c_subdev_init
- v4l2_spi_subdev_init

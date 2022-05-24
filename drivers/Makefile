@@ -39,24 +39,21 @@ obj-$(CONFIG_AMLOGIC_FREERTOS)		+= freertos/
 obj-$(CONFIG_AMLOGIC_USB)               += usb/
 obj-$(CONFIG_AMLOGIC_CRYPTO_DMA)	+= crypto/
 obj-$(CONFIG_AMLOGIC_DOLBY_FW) 		+= dolby_fw/
-obj-y					+= ../sound/
 obj-$(CONFIG_AMLOGIC_WIFI)		+= wifi/
 obj-$(CONFIG_AMLOGIC_BLUETOOTH)		+= bluetooth/
 obj-$(CONFIG_AMLOGIC_INPHY)		+= net/
 obj-$(CONFIG_AMLOGIC_MTD_RESV)		+= mtd/reserve/
 obj-$(CONFIG_AMLOGIC_MTD_SPI_NAND)	+= mtd/spinand/
 obj-$(CONFIG_AMLOGIC_MTD_NAND)		+= mtd/nand/
-
 obj-$(CONFIG_AMLOGIC_SMARTCARD)		+= smartcard_sc2/
+obj-y        				+= dvb/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
-obj-y        += dvb/
-
 all:
 	$(MAKE) -C $(KERNEL_SRC) M=$(M) modules $(GKI_EXT_KERNEL_MODULE_CONFIG)
 
 modules_install:
-	$(MAKE) M=$(M) -C $(KERNEL_SRC) modules_install
+	$(MAKE) -C $(KERNEL_SRC) M=$(M) modules_install
 
 clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(M) clean

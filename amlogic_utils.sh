@@ -121,6 +121,30 @@ function extra_cmds() {
 	if [[ -d ${top_ext_drivers} ]]; then
 		rm -rf ${top_ext_drivers}
 	fi
+
+	for FILE in ${FILES}; do
+		if [[ "${FILE}" =~ \.dtbo ]]  && \
+			[ -n "${DTS_EXT_DIR}" ] && [ -f "${OUT_DIR}/${DTS_EXT_DIR}/${FILE}" ] ; then
+			MKDTIMG_DTBOS="${MKDTIMG_DTBOS} ${DIST_DIR}/${FILE}"
+		fi
+	done
+	export MKDTIMG_DTBOS
+
+	modules_install
+
+	local src_dir=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
+	pushd ${src_dir}
+	: > modules.order
+	while read LINE
+	do
+		find -name ${LINE} >> modules.order
+	done < ${DIST_DIR}/modules/modules.order
+	sed -i 's/..//' modules.order
+	for EXT_MOD in ${EXT_MODULES}; do
+		ext_modules_order_file=$(ls extra/${EXT_MOD}/modules.order.*)
+		: > ${ext_modules_order_file}
+	done
+	popd
 }
 
 export -f extra_cmds
@@ -291,8 +315,10 @@ function modules_install() {
 	adjust_sequence_modules_loading "${arg1[*]}"
 
 	touch __install.sh
+	touch modules.order
 	for loop in `cat modules.dep | sed 's/:.*//'`; do
 	        mod_probe $loop
+		echo $loop >> modules.order
 	        echo insmod $loop >> __install.sh
 	done
 

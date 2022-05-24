@@ -16,6 +16,7 @@ function show_help {
 	echo "  --build_dir             for BUILD_DIR, build[default]|other dir, require parameter value"
 	echo "  --check_defconfig       for check defconfig"
 	echo "  --modules_depend        for check modules depend"
+	echo "  --android_project       for android project build"
 }
 
 VA=
@@ -82,6 +83,11 @@ do
 		MODULES_DEPEND=1
 		shift
 		;;
+	--android_project)
+		ANDROID_PROJECT=$2
+		VA=1
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -143,7 +149,7 @@ MODULES_DEPEND=${MODULES_DEPEND:-0}
 set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG
 echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG}
-export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR
+export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT
 echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR}
 
 source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic
@@ -229,8 +235,8 @@ export MODULES_STAGING_DIR=$(readlink -m ${COMMON_OUT_DIR}/staging)
 echo COMMON_OUT_DIR=$COMMON_OUT_DIR OUT_DIR=$OUT_DIR DIST_DIR=$DIST_DIR MODULES_STAGING_DIR=$MODULES_STAGING_DIR KERNEL_DIR=$KERNEL_DIR
 
 echo "========================================================"
-echo "prepare modules"
-modules_install
+# echo "prepare modules"
+# modules_install
 if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
 	echo "Rebuild rootfs in order to install modules!"
 	rebuild_rootfs

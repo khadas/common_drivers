@@ -1,9 +1,27 @@
 . ${ROOT_DIR}/${KERNEL_DIR}/build.config.gki.aarch64
+if [[ -n ${ANDROID_PROJECT} ]]; then
+	. ${ROOT_DIR}/device/amlogic/${ANDROID_PROJECT}/build.config.meson.arm64.trunk
+fi
 . ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
 
 BUILD_INITRAMFS=${BUILD_INITRAMFS:-1}
 LZ4_RAMDISK=${BUILD_INITRAMFS:-1}
 MODULES_ORDER=
+# COMPRESS_MODULES=1		# Package the unstripped modules for debugging
+
+MODULES_LIST=
+MODULES_BLOCKLIST=
+VENDOR_DLKM_MODULES_LIST=
+VENDOR_DLKM_MODULES_BLOCKLIST=
+
+TRIM_UNUSED_MODULES=1
+# BUILD_BOOT_IMG=1		# Need to add dtb files to FILES, otherwise an error occurs when building boot.img, such as s4d_s905y4_ap222_drm.dtb
+# BUILD_VENDOR_BOOT_IMG=1	# boot.img and dtb.img will be built only when BUILD_BOOT_IMG and BUILD_VENDOR_BOOT_IMG are set to 1
+# KERNEL_BINARY=Image.lz4	# Need to set the value of AA, otherwise an error occurs when building boot.img,
+				# whether the value is Image.lz4 or vmlinux is uncertain due to different descriptions
+if [[ -n ${ANDROID_PROJECT} ]]; then
+	BUILD_DTBO_IMG=1	# Android requires dtbo
+fi
 
 DEFCONFIG=amlogic_gki_defconfig
 FRAGMENT_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.fragment
@@ -13,13 +31,35 @@ POST_DEFCONFIG_CMDS="post_defconfig_cmds"
 
 MAKE_GOALS="
 	${MAKE_GOALS}
-	s4d_s905y4_ap222_drm.dtb
 "
 
 FILES="
 	${FILES}
-	s4d_s905y4_ap222_drm.dtb
 "
+
+if [[ -n ${ANDROID_PROJECT} ]]; then
+MAKE_GOALS="
+	${MAKE_GOALS}
+	Image.gz
+	android_overlay_dt.dtbo
+"
+
+FILES="
+	${FILES}
+	arch/arm64/boot/Image.gz
+	android_overlay_dt.dtbo
+"
+else
+MAKE_GOALS="
+	${MAKE_GOALS}
+	dtbs
+"
+
+FILES="
+	${FILES}
+"
+#	s4d_s905y4_ap222_drm.dtb
+fi
 
 DTS_EXT_DIR=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/boot/dts/amlogic
 DTC_INCLUDE=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/include

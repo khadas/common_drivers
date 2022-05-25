@@ -926,7 +926,7 @@
 	aml_wifi: aml_wifi {
 		compatible = "amlogic, aml-wifi";
 		status = "disabled";
-		irq_trigger_type = "GPIO_IRQ_LOW";
+		irq_trigger_type = "IRQF_TRIGGER_LOW";
 		power_on-gpios = <&gpio       GPIOX_6       GPIO_ACTIVE_HIGH>;
 		wifi_static_buf = <1>;	//static buf level
 		pinctrl-names = "default";

@@ -15,7 +15,7 @@
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/codec_mm/secmem.h>
 
-#include "ion/ion.h"
+#include <linux/amlogic/ion.h>
 #include "dev_ion.h"
 
 #define ION_CODEC_MM_ALLOCATE_FAIL -1

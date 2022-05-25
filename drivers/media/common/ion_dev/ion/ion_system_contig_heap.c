@@ -11,7 +11,7 @@
 #include <linux/scatterlist.h>
 #include <linux/slab.h>
 
-#include "ion.h"
+#include <linux/amlogic/ion.h>
 
 static gfp_t low_order_gfp_flags  = GFP_HIGHUSER | __GFP_ZERO;
 

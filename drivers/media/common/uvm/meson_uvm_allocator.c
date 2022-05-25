@@ -19,9 +19,8 @@
 #include <linux/module.h>
 #include <linux/dma-buf.h>
 #include <linux/pagemap.h>
-#include <ion/ion.h>
+#include <linux/amlogic/ion.h>
 #include <dev_ion.h>
-#include <linux/amlogic/media/porting_weak.h>
 
 #include "meson_uvm_allocator.h"
 #include "meson_uvm_nn_processor.h"

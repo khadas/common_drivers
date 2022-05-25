@@ -27,7 +27,7 @@
 #include <linux/of_fdt.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/uaccess.h>
-#include <ion/ion.h>
+#include <linux/amlogic/ion.h>
 #include <dev_ion.h>
 #include <linux/fs.h>
 #include <linux/cma.h>

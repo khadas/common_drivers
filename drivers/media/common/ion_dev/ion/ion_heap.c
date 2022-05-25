@@ -13,7 +13,7 @@
 #include <linux/scatterlist.h>
 #include <linux/vmalloc.h>
 
-#include "ion.h"
+#include <linux/amlogic/ion.h>
 
 void *ion_heap_map_kernel(struct ion_heap *heap,
 			  struct ion_buffer *buffer)

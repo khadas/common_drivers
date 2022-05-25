@@ -7,7 +7,7 @@
 #define __LINUX_AMLOGIC_ION_H__
 
 #include <linux/types.h>
-#include "ion/ion.h"
+#include <linux/amlogic/ion.h>
 
 /**
  * CUSTOM IOCTL - CMD

@@ -6,7 +6,7 @@
 #ifndef _GE2D_WQ_H_
 #define _GE2D_WQ_H_
 #ifdef CONFIG_AMLOGIC_ION
-#include "../ion_dev/ion/ion.h"
+#include <linux/amlogic/ion.h>
 
 extern struct ion_client *ge2d_ion_client;
 #endif

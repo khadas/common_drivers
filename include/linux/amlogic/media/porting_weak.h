@@ -34,12 +34,6 @@
 #endif /*CONFIG_AMLOGIC_DVB_COMPAT*/
 
 
-struct dma_buf * __weak ion_alloc(size_t len, unsigned int heap_id_mask,
-			  unsigned int flags)
-{
-	return NULL;
-}
-
 void __weak dvb_frontend_add_event(struct dvb_frontend *fe,
 			    enum fe_status status)
 {

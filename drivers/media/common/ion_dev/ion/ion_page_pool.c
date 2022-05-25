@@ -8,7 +8,7 @@
 #include <linux/swap.h>
 #include <linux/sched/signal.h>
 
-#include "ion.h"
+#include <linux/amlogic/ion.h>
 
 static inline struct page *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
 {

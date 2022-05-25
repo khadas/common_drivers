@@ -14,7 +14,7 @@
 #include <linux/amlogic/aml_cma.h>
 #endif
 
-#include "ion/ion.h"
+#include <linux/amlogic/ion.h>
 #include "dev_ion.h"
 
 #define to_cma_heap(x) container_of(x, struct ion_cma_heap, heap)

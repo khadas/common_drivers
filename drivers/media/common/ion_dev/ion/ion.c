@@ -22,7 +22,7 @@
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 
-#include "ion.h"
+#include <linux/amlogic/ion.h>
 
 static struct ion_device *internal_dev;
 static int heap_id;
@@ -404,17 +404,16 @@ static const struct dma_buf_ops dma_buf_ops = {
 	.end_cpu_access = ion_dma_buf_end_cpu_access,
 };
 
-static int ion_alloc(size_t len, unsigned int heap_id_mask, unsigned int flags)
+struct dma_buf *ion_alloc(size_t len, unsigned int heap_id_mask, unsigned int flags)
 {
 	struct ion_device *dev = internal_dev;
 	struct ion_buffer *buffer = NULL;
 	struct ion_heap *heap;
 	DEFINE_DMA_BUF_EXPORT_INFO(exp_info);
-	int fd;
 	struct dma_buf *dmabuf;
 
 	pr_debug("%s: len %zu heap_id_mask %u flags %x\n", __func__,
-		 len, heap_id_mask, flags);
+			len, heap_id_mask, flags);
 	/*
 	 * traverse the list of heaps available in this system in priority
 	 * order.  If the heap type is supported by the client, and matches the
@@ -424,7 +423,7 @@ static int ion_alloc(size_t len, unsigned int heap_id_mask, unsigned int flags)
 	len = PAGE_ALIGN(len);
 
 	if (!len)
-		return -EINVAL;
+		return ERR_PTR(-EINVAL);
 
 	down_read(&dev->lock);
 	plist_for_each_entry(heap, &dev->heaps, node) {
@@ -438,10 +437,10 @@ static int ion_alloc(size_t len, unsigned int heap_id_mask, unsigned int flags)
 	up_read(&dev->lock);
 
 	if (!buffer)
-		return -ENODEV;
+		return ERR_PTR(-ENODEV);
 
 	if (IS_ERR(buffer))
-		return PTR_ERR(buffer);
+		return ERR_CAST(buffer);
 
 	exp_info.ops = &dma_buf_ops;
 	exp_info.size = buffer->size;
@@ -451,8 +450,21 @@ static int ion_alloc(size_t len, unsigned int heap_id_mask, unsigned int flags)
 	dmabuf = dma_buf_export(&exp_info);
 	if (IS_ERR(dmabuf)) {
 		_ion_buffer_destroy(buffer);
-		return PTR_ERR(dmabuf);
+		return ERR_CAST(dmabuf);
 	}
+
+	return dmabuf;
+}
+EXPORT_SYMBOL(ion_alloc);
+
+static int ion_alloc_fd(size_t len, unsigned int heap_id_mask, unsigned int flags)
+{
+	int fd;
+	struct dma_buf *dmabuf;
+
+	dmabuf = ion_alloc(len, heap_id_mask, flags);
+	if (IS_ERR(dmabuf))
+		return PTR_ERR(dmabuf);
 
 	fd = dma_buf_fd(dmabuf, O_CLOEXEC);
 	if (fd < 0)
@@ -557,7 +569,7 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	{
 		int fd;
 
-		fd = ion_alloc(data.allocation.len,
+		fd = ion_alloc_fd(data.allocation.len,
 			       data.allocation.heap_id_mask,
 			       data.allocation.flags);
 		if (fd < 0)

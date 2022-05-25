@@ -19,7 +19,7 @@
 #include <linux/types.h>
 #include <linux/miscdevice.h>
 
-#include "../ion.h"
+#include <uapi/amlogic/ion.h>
 
 /**
  * struct ion_buffer - metadata for a particular buffer
@@ -180,6 +180,20 @@ int ion_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
 		      struct vm_area_struct *vma);
 int ion_heap_buffer_zero(struct ion_buffer *buffer);
 struct device *meson_ion_get_dev(void);
+
+/**
+ * ion_alloc - Allocates an ion buffer of given size from given heap
+ *
+ * @len:		size of the buffer to be allocated.
+ * @heap_id_mask:	a bitwise maks of heap ids to allocate from
+ * @flags:		ION_BUFFER_XXXX flags for the new buffer.
+ *
+ * The function exports a dma_buf object for the new ion buffer internally
+ * and returns that to the caller. So, the buffer is ready to be used by other
+ * drivers immediately. Returns ERR_PTR in case of failure.
+ */
+struct dma_buf *ion_alloc(size_t len, unsigned int heap_id_mask,
+			  unsigned int flags);
 
 /**
  * ion_heap_init_shrinker

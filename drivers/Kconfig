@@ -50,5 +50,6 @@ source "$(COMMON_DRIVERS_DIR)/drivers/mtd/spinand/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/mtd/nand/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/mtd/reserve/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/dvb/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/cpuidle/Kconfig"
 
 endmenu

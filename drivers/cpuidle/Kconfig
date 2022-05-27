@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_CPUIDLE
+	tristate  "Amlogic cpuidle support"
+	depends on AMLOGIC_BREAK_GKI
+	default n
+	help
+	 select y if want to support Amlogic cpuidle.

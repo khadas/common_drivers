@@ -49,6 +49,7 @@ FILES="
 	arch/arm64/boot/Image.gz
 	android_overlay_dt.dtbo
 "
+#	s4d_s905y4_ap222_drm.dtb	# configure in file build.config.meson.arm64.trunk
 else
 MAKE_GOALS="
 	${MAKE_GOALS}
@@ -58,7 +59,6 @@ MAKE_GOALS="
 FILES="
 	${FILES}
 "
-#	s4d_s905y4_ap222_drm.dtb
 fi
 
 DTS_EXT_DIR=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/boot/dts/amlogic

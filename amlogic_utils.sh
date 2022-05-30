@@ -145,6 +145,10 @@ function extra_cmds() {
 		: > ${ext_modules_order_file}
 	done
 	popd
+
+	if [[ -z ${ANDROID_PROJECT} ]]; then
+		FILES="$FILES `ls ${OUT_DIR}/${DTS_EXT_DIR}`"
+	fi
 }
 
 export -f extra_cmds

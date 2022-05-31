@@ -588,6 +588,7 @@
 			#size-cells = <1>;
 
 			power-domains = <&pwrdm PDID_AUDIO>;
+			chip_id = <0x2c>;
 
 			ddr_manager {
 				compatible = "amlogic, a1-audio-ddr-manager";

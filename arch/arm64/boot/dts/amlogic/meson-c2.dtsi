@@ -861,6 +861,7 @@
 			reg-names = "audio_bus", "audio_vad_top";
 
 			power-domains = <&pwrdm PDID_CX_AUDIO>;
+			chip_id = <0x33>;
 
 			ddr_manager {
 				compatible = "amlogic, c2-audio-ddr-manager";

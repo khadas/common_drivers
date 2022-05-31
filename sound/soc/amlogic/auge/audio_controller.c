@@ -28,6 +28,8 @@
 
 #define DRV_NAME "aml-audio-controller"
 
+unsigned int chip_id;
+
 static unsigned int aml_audio_mmio_read(struct aml_audio_controller *actrlr,
 					unsigned int reg)
 {
@@ -65,6 +67,11 @@ static int aml_audio_mmio_update_bits(struct aml_audio_controller *actrlr,
 		mask, value);
 #endif
 	return regmap_update_bits(regmap, (reg << 2), mask, value);
+}
+
+int aml_return_chip_id(void)
+{
+	return chip_id;
 }
 
 struct aml_audio_ctrl_ops aml_actrl_mmio_ops = {
@@ -158,10 +165,17 @@ static int register_audio_controller(struct platform_device *pdev,
 static int aml_audio_controller_probe(struct platform_device *pdev)
 {
 	struct aml_audio_controller *actrl;
+	struct device_node *node = pdev->dev.of_node;
+	int ret;
 
 	actrl = devm_kzalloc(&pdev->dev, sizeof(*actrl), GFP_KERNEL);
 	if (!actrl)
 		return -ENOMEM;
+
+	ret = of_property_read_u32(node, "chip_id", &chip_id);
+	if (ret < 0)
+		/* defulat set 0 */
+		chip_id = 0;
 
 	return register_audio_controller(pdev, actrl);
 }

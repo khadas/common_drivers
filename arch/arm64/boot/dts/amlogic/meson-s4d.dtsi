@@ -1621,7 +1621,7 @@
 
 	dummy_venc: dummy_venc {
 		compatible = "amlogic, dummy_venc_s4";
-		status = "okay";
+		status = "disabled";
 	};
 
 	adc: adc {
@@ -1724,12 +1724,12 @@
 
 	meson_uvm {
 		compatible = "amlogic, meson_uvm";
-		status = "okay";
+		status = "disabled";
 	};
 
 	meson_videotunnel{
 		compatible = "amlogic, meson_videotunnel";
-		status = "okay";
+		status = "disabled";
 	};
 
 	fb: fb {
@@ -1759,7 +1759,7 @@
 	vdin0: vdin0 {
 		compatible = "amlogic, vdin-s4d";
 		dev_name = "vdin0";
-		status = "okay";
+		status = "disabled";
 		reserve-iomap = "true";
 		flag_cma = <0>;/*1:share with codec_mm;2:cma alone*/
 		/*MByte, if 10bit disable: 64M(YUV422),
@@ -1779,7 +1779,7 @@
 	vdin1: vdin1 {
 		compatible = "amlogic, vdin-s4d";
 		dev_name = "vdin1";
-		status = "okay";
+		status = "disabled";
 		reserve-iomap = "true";
 		flag_cma = <0>;/*1:share with codec_mm;0:cma alone*/
 		interrupts = <0 212 1>;
@@ -1798,7 +1798,7 @@
 	video_composer {
 		compatible = "amlogic, video_composer";
 		dev_name = "video_composer";
-		status = "okay";
+		status = "disabled";
 	};
 
 	vpu_security {
@@ -1938,6 +1938,10 @@
 			offset = <18>;
 			size = <16>;
 		};
+	};
+
+	chosen {
+		kaslr-seed = <0x0 0x0>;
 	};
 };
 

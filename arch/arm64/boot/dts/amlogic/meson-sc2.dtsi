@@ -436,7 +436,7 @@
 		bootlocation = <1>;   /*1: boot from DDR, 2: from sram, 3...*/
 		boot_sram_addr = <0xfff00000>;
 		boot_sram_size = <0x80000>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	soc {

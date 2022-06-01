@@ -289,7 +289,7 @@
 	pwrdm: power-domains {
 		compatible = "amlogic,sc2-power-domain";
 		#power-domain-cells = <1>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	jtag {

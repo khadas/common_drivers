@@ -207,7 +207,7 @@
 
 	cpu_info {
 		compatible = "amlogic, cpuinfo";
-		status = "disabled";
+		status = "okay";
 		cpuinfo_cmd = <0x82000044>;
 	};
 
@@ -1322,7 +1322,7 @@
 
 	rng {
 		compatible = "amlogic,meson-rng";
-		status = "disabled";
+		status = "okay";
 		#address-cells = <2>;
 		#size-cells = <2>;
 		reg = <0x0 0xfe440788 0x0 0x0c>;
@@ -1782,7 +1782,7 @@
 	efuseburn: efuse_burn {
 		compatible = "amlogic, efuseburn";
 		efuse_pattern_size = <0x1200>;
-		status = "disabled";
+		status = "okay";
 	};
 	efusecheck: efusecheck{
 		maincmd = <0x8200003E>;
@@ -1818,7 +1818,7 @@
 		key = <&efusekey>;
 		check = <&efusecheck>;
 		clock-names = "efuse_clk";
-		status = "disabled";
+		status = "okay";
 	};
 
 	efusekey:efusekey{

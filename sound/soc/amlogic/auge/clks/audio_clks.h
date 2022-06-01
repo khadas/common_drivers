@@ -90,17 +90,9 @@ struct audio_clk_init {
 	int (*clks2)(struct clk **clks, void __iomem *iobase);
 };
 
-#ifdef __KERNEL_419_AUDIO__
-extern struct audio_clk_init axg_audio_clks_init;
-extern struct audio_clk_init g12a_audio_clks_init;
-extern struct audio_clk_init tl1_audio_clks_init;
-extern struct audio_clk_init sm1_audio_clks_init;
-extern struct audio_clk_init tm2_audio_clks_init;
-#else
-extern struct audio_clk_init g12a_audio_clks_init;
 extern struct audio_clk_init sm1_audio_clks_init;
 extern struct audio_clk_init a1_audio_clks_init;
-#endif
+extern spinlock_t aclk_lock;
 
 struct clk_chipinfo {
 	/* force clock source as oscin(24M) */

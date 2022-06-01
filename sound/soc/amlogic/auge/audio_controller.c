@@ -91,48 +91,14 @@ static const struct of_device_id amlogic_audio_controller_of_match[] = {
 	{},
 };
 
-static struct regmap *regmap_resource(struct device *dev, char *name)
-{
-	struct resource res;
-	void __iomem *base;
-	int i;
-	struct device_node *node = dev->of_node;
-
-	i = of_property_match_string(node, "reg-names", name);
-	if (of_address_to_resource(node, i, &res))
-		return ERR_PTR(-ENOENT);
-
-	base = devm_ioremap_resource(dev, &res);
-	if (IS_ERR(base))
-		return ERR_CAST(base);
-
-	aml_audio_regmap_config.max_register = resource_size(&res) - 4;
-	aml_audio_regmap_config.name =
-		devm_kasprintf(dev, GFP_KERNEL, "%s-%s", node->name, name);
-	if (!aml_audio_regmap_config.name)
-		return ERR_PTR(-ENOMEM);
-
-	return devm_regmap_init_mmio(dev, base, &aml_audio_regmap_config);
-}
-
 static int register_audio_controller(struct platform_device *pdev,
 				     struct aml_audio_controller *actrl)
 {
 	struct resource *res_mem;
 	void __iomem *regs;
 	struct regmap *regmap;
-	struct regmap *audio_top_vad_regmap;
 
-	audio_top_vad_regmap = regmap_resource(&pdev->dev, "audio_vad_top");
-	if (!IS_ERR(audio_top_vad_regmap))
-		/* need gate on vad_top then the audio top could work */
-		regmap_write
-			(audio_top_vad_regmap,
-			(EE_AUDIO2_CLK_GATE_EN0 << 2),
-			0xff);
-	else
-		dev_info(&pdev->dev, "no audio top vad clk\n");
-
+	/* get platform res from dtb */
 	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res_mem)
 		return -ENOENT;

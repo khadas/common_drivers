@@ -12,9 +12,7 @@
 #include <dt-bindings/clock/sm1-audio-clk.h>
 
 #include "audio_clks.h"
-#include "regs.h"
-
-static spinlock_t aclk_lock;
+#include "../regs.h"
 
 static const char *const mclk_parent_names[] = {
 	"mpll0", "mpll1", "mpll2", "mpll3", "hifi_pll",

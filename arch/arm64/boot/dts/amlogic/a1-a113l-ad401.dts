@@ -316,12 +316,11 @@
 		/* dai-tdm-lane-oe-slot-mask-in = <0 1>; */
 		dai-tdm-clk-sel = <1>;
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_B
+				&clkaudio CLKID_AUDIO_MCLK_PAD0
 				&clkc CLKID_FCLK_DIV3>;
-		clock-names = "mclk", "clk_srcpll";
+		clock-names = "mclk", "mclk_pad", "clk_srcpll";
 		pinctrl-names = "tdm_pins";
-		pinctrl-0 = <&tdmb_mclk &tdmout_b>;
-
-		mclk_pad = <0>;  /* 0: mclk_0; 1: mclk_1 */
+		pinctrl-0 = <&tdmb_mclk &tdmout_b &tdm_clk_pins>;
 
 		/* tdmin data comes from ACODEC adc */
 		acodec_adc = <1>;
@@ -615,6 +614,15 @@
 	/* Audio Related end */
 
 }; /* end of pinctrl_periphs */
+
+&pinctrl_audio {
+	tdm_clk_pins: tdm_clk_pin {
+		mux {
+			groups = "tdm_sclk1", "tdm_lrclk1";
+			function = "tdm_clk_outb";
+		};
+	};
+};
 
 &uart_B {
 	status = "okay";

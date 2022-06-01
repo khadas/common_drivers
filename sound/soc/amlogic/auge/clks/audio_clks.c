@@ -12,36 +12,14 @@
 #include <linux/of_device.h>
 
 #include "audio_clks.h"
+#include "../regs.h"
+#include "../../common/iomapres.h"
 
 #define DRV_NAME "audio-clocks"
 
+DEFINE_SPINLOCK(aclk_lock);
+
 static const struct of_device_id audio_clocks_of_match[] = {
-#ifdef __KERNEL_419_AUDIO__
-	{
-		.compatible = "amlogic, axg-audio-clocks",
-		.data       = &axg_audio_clks_init,
-	},
-	{
-		.compatible = "amlogic, g12a-audio-clocks",
-		.data       = &g12a_audio_clks_init,
-	},
-	{
-		.compatible = "amlogic, tl1-audio-clocks",
-		.data       = &tl1_audio_clks_init,
-	},
-	{
-		.compatible = "amlogic, sm1-audio-clocks",
-		.data		= &sm1_audio_clks_init,
-	},
-	{
-		.compatible = "amlogic, tm2-audio-clocks",
-		.data		= &tm2_audio_clks_init,
-	},
-#else
-	{
-		.compatible = "amlogic, g12a-audio-clocks",
-		.data		= &g12a_audio_clks_init,
-	},
 	{
 		.compatible = "amlogic, sm1-audio-clocks",
 		.data		= &sm1_audio_clks_init,
@@ -50,7 +28,6 @@ static const struct of_device_id audio_clocks_of_match[] = {
 		.compatible = "amlogic, a1-audio-clocks",
 		.data		= &a1_audio_clks_init,
 	},
-#endif
 	{},
 };
 MODULE_DEVICE_TABLE(of, audio_clocks_of_match);
@@ -64,6 +41,15 @@ static int audio_clocks_probe(struct platform_device *pdev)
 	void __iomem *clk_base = NULL, *clk_base2 = NULL;
 	struct audio_clk_init *p_audioclk_init = NULL;
 	int ret;
+	struct regmap *audio_top_vad_regmap;
+
+	audio_top_vad_regmap = regmap_resource(dev, "audio_vad_top");
+	if (!IS_ERR(audio_top_vad_regmap))
+		/* need gate on vad_top then the audio top could work */
+		regmap_write
+			(audio_top_vad_regmap,
+			(EE_AUDIO2_CLK_GATE_EN0 << 2),
+			0xff);
 
 	p_audioclk_init = (struct audio_clk_init *)
 		of_device_get_match_data(dev);
@@ -131,7 +117,6 @@ static struct platform_driver audio_clocks_driver = {
 	.probe  = audio_clocks_probe,
 };
 
-#ifdef MODULE
 int __init audio_clocks_init(void)
 {
 	return platform_driver_register(&audio_clocks_driver);
@@ -141,9 +126,10 @@ void __exit audio_clocks_exit(void)
 {
 	platform_driver_unregister(&audio_clocks_driver);
 }
-#else
-module_platform_driver(audio_clocks_driver);
 
+#ifndef MODULE
+core_initcall(audio_clocks_init);
+module_exit(audio_clocks_exit);
 MODULE_AUTHOR("Amlogic, Inc.");
 MODULE_DESCRIPTION("Amlogic audio clocks ASoc driver");
 MODULE_LICENSE("GPL");

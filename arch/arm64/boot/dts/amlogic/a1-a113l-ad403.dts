@@ -360,12 +360,11 @@
 		/* dai-tdm-lane-oe-slot-mask-in = <0 1>; */
 		dai-tdm-clk-sel = <1>;
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_B
+				&clkaudio CLKID_AUDIO_MCLK_PAD0
 				&clkc CLKID_FCLK_DIV3>;
-		clock-names = "mclk", "clk_srcpll";
+		clock-names = "mclk", "mclk_pad", "clk_srcpll";
 		pinctrl-names = "tdm_pins";
 		pinctrl-0 = <&tdmb_mclk>;
-
-		mclk_pad = <0>;  /* 0: mclk_0; 1: mclk_1 */
 
 		/* tdmin data comes from ACODEC adc */
 		acodec_adc = <1>;

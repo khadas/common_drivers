@@ -1737,9 +1737,9 @@ static int aml_set_default_tdm_clk(struct aml_tdm *p_tdm)
 			pll = 1806336 * 1000;
 	}
 
-	clk_prepare_enable(p_tdm->mclk);
 	clk_set_rate(p_tdm->clk, pll);
 	clk_set_rate(p_tdm->mclk, mclk);
+	clk_prepare_enable(p_tdm->mclk);
 
 	p_tdm->last_mclk_freq = mclk;
 	p_tdm->last_mpll_freq = pll;
@@ -1998,7 +1998,7 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 		p_tdm->pcpd_monitor_src = platform_get_drvdata(dev_src);
 		pr_info("%s(), pcpd src found\n", __func__);
 	}
-	ret = of_property_read_u32(dev->of_node, "scrc-clk-freq",
+	ret = of_property_read_u32(dev->of_node, "src-clk-freq",
 				   &p_tdm->syssrc_clk_rate);
 	if (ret < 0)
 		p_tdm->syssrc_clk_rate = 0;
@@ -2102,6 +2102,8 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "Can't set tdm mclk_pad parent\n");
 			return -EINVAL;
 		}
+		if (p_tdm->syssrc_clk_rate > 0)
+			clk_set_rate(p_tdm->clk, p_tdm->syssrc_clk_rate);
 		clk_prepare_enable(p_tdm->mclk2pad);
 	}
 	p_tdm->clk_gate = devm_clk_get(&pdev->dev, "gate_in");

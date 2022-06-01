@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * SM1 audio clocks driver
- *
  * Copyright (C) 2019 Amlogic, Inc. All rights reserved.
  *
  */
@@ -12,9 +10,7 @@
 #include <dt-bindings/clock/a1-audio-clk.h>
 
 #include "audio_clks.h"
-#include "regs.h"
-
-static spinlock_t aclk_lock;
+#include "../regs.h"
 
 static const char *const mclk_parent_names[] = {
 	"aud_dds", "fclk_div2", "fclk_div3", "hifi_pll", "xtal"};

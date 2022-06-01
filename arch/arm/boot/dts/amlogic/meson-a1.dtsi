@@ -602,6 +602,10 @@
 					"toddr_a", "toddr_b",
 					"frddr_a", "frddr_b";
 			};
+
+			pinctrl_audio: pinctrl {
+				compatible = "amlogic, sm1-audio-pinctrl";
+			};
 		};/* end of audiobus*/
 
 		/* snd-vad-top buffer */

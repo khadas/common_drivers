@@ -21,6 +21,7 @@
 #include <linux/topology.h>
 #include <linux/regulator/consumer.h>
 #include <linux/delay.h>
+#include <linux/string.h>
 #include <linux/regulator/driver.h>
 #include "internal.h"
 #include "opp.h"
@@ -825,6 +826,14 @@ static int meson_cpufreq_init(struct cpufreq_policy *policy)
 		dsu_pre_parent2 = NULL;
 		pr_debug("%s: ignor dsu pre parent2 clk!\n", __func__);
 	}
+
+	/*
+	 * Make pair with clk_disable_unprepare(high_freq_clk_p)
+	 * when cpu cpufreq first scaling from high rate to low rate
+	 */
+	if (!strcmp(__clk_get_name(clk_get_parent(clk[cur_cluster])),
+		__clk_get_name(high_freq_clk_p)) && __clk_is_enabled(high_freq_clk_p))
+		clk_prepare_enable(high_freq_clk_p);
 
 	cpufreq_voltage_set_skip = of_property_read_bool(np,
 							 "cpufreq_voltage_set_skip");

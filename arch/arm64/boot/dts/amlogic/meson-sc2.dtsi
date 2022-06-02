@@ -462,7 +462,7 @@
 					    "cpu_clk";
 				clocks = <&xtal>;
 				clock-names = "xtal";
-				status = "disable";
+				status = "okay";
 			};
 
 			meson_clk_msr@48000 {

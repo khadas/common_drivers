@@ -4,24 +4,12 @@
  */
 
 #include <dt-bindings/display/meson-drm-ids.h>
+#include "meson-s4d.dtsi"
 
 / {
 	drm_amhdmitx: drm-amhdmitx {
 		status = "disabled";
 		hdcp = "disabled";
-		compatible = "amlogic, drm-amhdmitx";
-		dev_name = "meson-amhdmitx";
-		interrupts = <GIC_SPI 204 IRQ_TYPE_EDGE_RISING>;
-		ports {
-			port {
-				#address-cells = <1>;
-				#size-cells = <0>;
-				hdmi_in_vpu: endpoint@0 {
-					reg = <0>;
-					remote-endpoint = <&vpu_out_hdmi>;
-				};
-			};
-		};
 	};
 
 	drm_amcvbsout: drm-amcvbsout {
@@ -32,9 +20,9 @@
 			port {
 				#address-cells = <1>;
 				#size-cells = <0>;
-				cvbs_in_vpu: endpoint@0 {
+				cvbs_to_drm: endpoint@0 {
 					reg = <0>;
-					remote-endpoint = <&vpu_out_cvbs>;
+					remote-endpoint = <&drm_to_cvbs>;
 				};
 			};
 		};
@@ -59,7 +47,6 @@
 	drm_vpu: drm-vpu@0xff900000  {
 		status = "disabled";
 		compatible = "amlogic, meson-s4-vpu";
-		memory-region = <&logo_reserved>;
 		osd_ver = /bits/ 8 <OSD_V4>;
 		reg = <0x0 0xff900000 0x0 0x40000>,
 			  <0x0 0xff63c000 0x0 0x2000>,
@@ -70,21 +57,25 @@
 		clocks = <&clkc CLKID_VPU_CLKC_MUX>;
 		clock-names = "vpu_clkc";
 		dma-coherent;
-		vpu_out: port {
+		vpu_out: port@1 {
 			#address-cells = <1>;
 			#size-cells = <0>;
-
-			vpu_out_hdmi: endpoint@0 {
-				reg = <0>;
-				remote-endpoint = <&hdmi_in_vpu>;
-			};
-			vpu_out_cvbs: endpoint@1 {
-				reg = <1>;
-				remote-endpoint = <&cvbs_in_vpu>;
-			};
 			vpu_out_lcd: endpoint@2 {
 				reg = <2>;
 				remote-endpoint = <&lcd_in_vpu>;
+			};
+		};
+		/*EXTERNAL port for driver outside of drm.*/
+		connectors_dev: port@2 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			drm_to_hdmitx: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&hdmitx_to_drm>;
+			};
+			drm_to_cvbs: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&cvbs_to_drm>;
 			};
 		};
 	};
@@ -92,9 +83,13 @@
 	drm_subsystem: drm-subsystem {
 		status = "okay";
 		compatible = "amlogic, drm-subsystem";
-		ports = <&vpu_out>;
+		ports = <&vpu_out>,<&connectors_dev>;
 		fbdev_sizes = <1920 1080 1920 2160 32>;
 		vfm_mode = <1>; /** 0:drm mode 1:composer mode */
+		memory-region = <&logo_reserved>;
+		panel2logo = <0 2 3>;
+		primary_plane_index = <0>; /* primary plane index for crtcs */
+		crtc_masks = <1 1 1>; /*for encoder: 0:hdmi 1:lcd 2:cvbs*/
 
 		vpu_topology: vpu_topology {
 			vpu_blocks {
@@ -212,6 +207,19 @@
 			has_rdma = /bits/ 8 <0x1>;
 			osd_fifo_len = /bits/ 8 <64>;
 			vpp_fifo_len = /bits/ 32 <0xfff>;
+		};
+	};
+};
+
+&amhdmitx {
+	ports {
+		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			hdmitx_to_drm: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&drm_to_hdmitx>;
+			};
 		};
 	};
 };

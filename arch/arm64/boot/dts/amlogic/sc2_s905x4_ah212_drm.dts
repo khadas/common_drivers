@@ -1572,12 +1572,12 @@
 };
 
 &drm_vpu {
-	status = "disabled";
+	status = "okay";
 	logo_addr = "0x7f800000";
 };
 
 &drm_amhdmitx {
-	status = "disabled";
+	status = "okay";
 	hdcp = "okay";
 };
 

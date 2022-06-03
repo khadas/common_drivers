@@ -44,7 +44,7 @@
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include "meson_hdmi.h"
 
-#define DRIVER_NAME "meson_drm"
+#define DRIVER_NAME "meson"
 #define DRIVER_DESC "Amlogic Meson DRM driver"
 #define MESON_VERSION_MAJOR 2
 #define MESON_VERSION_MINOR 0
@@ -90,23 +90,7 @@ static const struct drm_ioctl_desc meson_ioctls[] = {
 };
 #endif
 
-static const struct file_operations fops = {
-	.owner		= THIS_MODULE,
-	.open		= drm_open,
-	.release	= drm_release,
-	.unlocked_ioctl	= drm_ioctl,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl	= drm_compat_ioctl,
-#endif
-	.poll		= drm_poll,
-	.read		= drm_read,
-	.llseek		= no_llseek,
-#ifdef CONFIG_DRM_MESON_USE_ION
-	.mmap		= am_meson_gem_mmap,
-#else
-	.mmap		= drm_gem_cma_mmap,
-#endif
-};
+DEFINE_DRM_GEM_FOPS(meson_drm_fops);
 
 static struct drm_driver meson_driver = {
 	/*driver_features setting move to probe functions*/
@@ -125,6 +109,7 @@ static struct drm_driver meson_driver = {
 	 * by meson driver can be imported ok.
 	 */
 	.gem_prime_import_sg_table = am_meson_gem_prime_import_sg_table,
+	.gem_prime_mmap = drm_gem_prime_mmap,
 
 	/* GEM Ops */
 	.dumb_create			= am_meson_gem_dumb_create,
@@ -138,6 +123,7 @@ static struct drm_driver meson_driver = {
 	.prime_fd_to_handle	= drm_gem_prime_fd_to_handle,
 	.gem_prime_import	= drm_gem_prime_import,
 	.gem_prime_import_sg_table = drm_gem_cma_prime_import_sg_table,
+	.gem_prime_mmap = drm_gem_prime_mmap,
 
 	/* GEM Ops */
 	.dumb_create		= drm_gem_cma_dumb_create,
@@ -148,7 +134,7 @@ static struct drm_driver meson_driver = {
 #endif
 
 	/* Misc */
-	.fops			= &fops,
+	.fops			= &meson_drm_fops,
 	.name			= DRIVER_NAME,
 	.desc			= DRIVER_DESC,
 	.date			= "20220603",
@@ -188,7 +174,8 @@ static int am_meson_drm_bind(struct device *dev)
 	struct meson_drm *priv;
 	struct drm_device *drm;
 	struct platform_device *pdev = to_platform_device(dev);
-	int ret = 0;
+	u32 crtc_masks[ENCODER_MAX];
+	int i, ret = 0;
 
 	meson_driver.driver_features = DRIVER_HAVE_IRQ | DRIVER_GEM |
 		DRIVER_MODESET | DRIVER_ATOMIC | DRIVER_RENDER;
@@ -210,6 +197,18 @@ static int am_meson_drm_bind(struct device *dev)
 	priv->bound_data.connector_component_bind = meson_connector_dev_bind;
 	priv->bound_data.connector_component_unbind = meson_connector_dev_unbind;
 	priv->osd_occupied_index = -1;
+	/*initialize encoders possible_crtcs, it will replaced by dts*/
+	for (i = 0; i < ENCODER_MAX; i++)
+		priv->crtc_masks[i] = 1;
+
+	ret = of_property_read_u32_array(dev->of_node, "crtc_masks",
+		crtc_masks, ENCODER_MAX);
+	if (ret) {
+		DRM_ERROR("crtc_maskss get fail from dts!\n");
+	} else {
+		for (i = 0; i < ENCODER_MAX; i++)
+			priv->crtc_masks[i] = crtc_masks[i];
+	}
 
 	dev_set_drvdata(dev, priv);
 

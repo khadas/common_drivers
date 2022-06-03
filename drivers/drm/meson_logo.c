@@ -116,8 +116,7 @@ static int am_meson_logo_init_fb(struct drm_device *dev,
 {
 	struct am_meson_fb *meson_fb;
 	struct am_meson_logo *slogo;
-	u32 sizes[3] = {0, 2, 3};
-	int ret = 0;
+	struct meson_drm *priv = dev->dev_private;
 
 	slogo = kzalloc(sizeof(*slogo), GFP_KERNEL);
 	if (!slogo)
@@ -145,13 +144,8 @@ static int am_meson_logo_init_fb(struct drm_device *dev,
 		return -EINVAL;
 	}
 
-	ret = of_property_read_u32_array(dev->dev->of_node,
-				   "panel2logo", sizes, 3);
-	if (ret)
-		DRM_ERROR("get panel2logo fail!\n");
-
 	slogo->logo_page = logo.logo_page;
-	slogo->panel_index = sizes[idx];
+	slogo->panel_index = priv->primary_plane_index[idx];
 	slogo->vpp_index = idx;
 
 	DRM_INFO("logo%d width=%d,height=%d,start_addr=0x%pa,size=%d\n",
@@ -163,7 +157,7 @@ static int am_meson_logo_init_fb(struct drm_device *dev,
 	meson_fb = to_am_meson_fb(fb);
 	meson_fb->logo = slogo;
 
-	return ret;
+	return 0;
 }
 
 /*copy from update_output_state,

@@ -361,11 +361,6 @@ static int meson_gem_prime_mmap(struct drm_gem_object *obj,
 			    struct vm_area_struct *vma)
 {
 	struct am_meson_gem_object *meson_gem_obj;
-	int ret;
-
-	ret = drm_gem_mmap_obj(obj, obj->size, vma);
-	if (ret < 0)
-		return ret;
 
 	meson_gem_obj = to_am_meson_gem_obj(obj);
 	DRM_DEBUG("%s %p.\n", __func__, meson_gem_obj);
@@ -429,25 +424,6 @@ struct am_meson_gem_object *am_meson_gem_object_create(struct drm_device *dev,
 error:
 	kfree(meson_gem_obj);
 	return ERR_PTR(ret);
-}
-
-int am_meson_gem_mmap(struct file *filp, struct vm_area_struct *vma)
-{
-	struct drm_gem_object *obj;
-	struct am_meson_gem_object *meson_gem_obj;
-	int ret;
-
-	ret = drm_gem_mmap(filp, vma);
-	if (ret)
-		return ret;
-
-	obj = vma->vm_private_data;
-	meson_gem_obj = to_am_meson_gem_obj(obj);
-	DRM_DEBUG("%s %p.\n", __func__, meson_gem_obj);
-
-	ret = am_meson_gem_object_mmap(meson_gem_obj, vma);
-
-	return ret;
 }
 
 phys_addr_t am_meson_gem_object_get_phyaddr(struct meson_drm *drm,

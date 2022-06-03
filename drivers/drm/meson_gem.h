@@ -36,8 +36,6 @@ int am_meson_gem_create(struct meson_drm  *drmdrv);
 
 void am_meson_gem_cleanup(struct meson_drm  *drmdrv);
 
-int am_meson_gem_mmap(struct file *filp, struct vm_area_struct *vma);
-
 /* GEM DUMB OPERATIONS */
 int am_meson_gem_dumb_create(struct drm_file *file_priv, struct drm_device *dev,
 			     struct drm_mode_create_dumb *args);

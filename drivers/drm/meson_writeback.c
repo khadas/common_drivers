@@ -358,7 +358,7 @@ static int meson_writeback_port_property(struct drm_device *drm_dev,
 	struct am_drm_writeback *drm_writeback)
 {
 	struct drm_property *prop;
-	struct drm_mode_object mode_obj;
+	struct drm_mode_object *mode_obj;
 	int capture_port = TVIN_PORT_VIU1_WB0_VPP;
 
 	prop = drm_property_create_enum(drm_dev, 0, "CAPTURE_PORT",
@@ -366,8 +366,8 @@ static int meson_writeback_port_property(struct drm_device *drm_dev,
 				ARRAY_SIZE(writeback_capture_port_enum_list));
 	if (prop) {
 		drm_writeback->capture_port_prop = prop;
-		mode_obj = drm_writeback->wb_connector.base.base;
-		drm_object_attach_property(&mode_obj, prop, capture_port);
+		mode_obj = &drm_writeback->wb_connector.base.base;
+		drm_object_attach_property(mode_obj, prop, capture_port);
 	} else {
 		DRM_ERROR("Failed to UPDATE property\n");
 		return -ENOMEM;

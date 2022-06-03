@@ -1673,6 +1673,15 @@
 		status = "okay";
 	};
 
+	cve:mbd_cve {
+		compatible = "amlogic, cve";
+		reg = <0xFE046000 0x800>;
+		reg-names = "cve";
+		interrupts = <GIC_SPI 133 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "cve";
+		status = "okay";
+	};
+
 	ge2d {
 		compatible = "amlogic, ge2d-c3";
 		status = "okay";

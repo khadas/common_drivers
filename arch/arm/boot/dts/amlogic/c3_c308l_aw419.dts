@@ -107,6 +107,20 @@
 			alignment = <0x400000>;
 		};
 
+		pmz_cma_a1_reserved:anonymous {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x5000000>;
+			alignment = <0x400000>;
+		};
+
+		pmz_cma_a2_reserved:user_pmz {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x1000000>;
+			alignment = <0x400000>;
+		};
+
 		adapt_cma_reserved:linux,adapt_cma {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -188,6 +202,16 @@
 		/* Based on P200 schematics, signal CARD_1.8V/3.3V_CTR */
 		states = <1800000 1
 			  3300000 0>;
+	};
+
+	pmz_a1_dev {
+		compatible = "amlogic, pmz_dev";
+		memory-region = <&pmz_cma_a1_reserved>;
+	};
+
+	pmz_a2_dev {
+		compatible = "amlogic, pmz_dev";
+		memory-region = <&pmz_cma_a2_reserved>;
 	};
 
 	/* Audio Related start */

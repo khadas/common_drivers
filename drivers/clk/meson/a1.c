@@ -335,8 +335,72 @@ static struct clk_regmap a1_fclk_div7 = {
 	},
 };
 
+/* 614.4M */
+static const struct reg_sequence a1_hifi_init_regs[] = {
+	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x01800000 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00001100 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL3,	.def = 0x10022200 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL4,	.def = 0x00301000 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL0, .def = 0x01f19480 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL0, .def = 0x11f19480, .delay_us = 10 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL0,	.def = 0x15f11480, .delay_us = 40 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00001140 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00001100 },
+};
+
+#ifdef CONFIG_ARM
+static const struct pll_params_table a1_hifi_pll_params_table[] = {
+	PLL_PARAMS(128, 5, 0), /* DCO = 614.4M */
+};
+#else
+static const struct pll_params_table a1_hifi_pll_params_table[] = {
+	PLL_PARAMS(128, 5), /* DCO = 614.4M */
+};
+#endif
+
+static struct clk_regmap a1_hifi_pll = {
+	.data = &(struct meson_clk_pll_data){
+		.en = {
+			.reg_off = ANACTRL_HIFIPLL_CTRL0,
+			.shift   = 28,
+			.width   = 1,
+		},
+		.m = {
+			.reg_off = ANACTRL_HIFIPLL_CTRL0,
+			.shift   = 0,
+			.width   = 8,
+		},
+		.n = {
+			.reg_off = ANACTRL_HIFIPLL_CTRL0,
+			.shift   = 10,
+			.width   = 5,
+		},
+		.frac = {
+			.reg_off = ANACTRL_HIFIPLL_CTRL1,
+			.shift   = 0,
+			.width   = 19,
+		},
+		.l = {
+			.reg_off = ANACTRL_HIFIPLL_STS,
+			.shift   = 31,
+			.width   = 1,
+		},
+		.table = a1_hifi_pll_params_table,
+		.init_regs = a1_hifi_init_regs,
+		.init_count = ARRAY_SIZE(a1_hifi_init_regs),
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "hifi_pll",
+		.ops = &meson_clk_pll_v3_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&xtal_hifipll.hw
+		},
+		.num_parents = 1,
+	},
+};
+
 /*
- * HIFI PLL and SYS PLL rang from 768M to 1536M
+ * SYS PLL rang from 768M to 1536M
  * the PLL parameter table is for hifi/sys pll.
  * Adtional, there is no OD in A1 PLL.
  */
@@ -417,105 +481,6 @@ static const struct pll_params_table a1_pll_params_table[] = {
 	{ /* sentinel */ },
 };
 #endif
-
-/*
- * Internal hifi pll emulation configuration parameters
- * the table update by vlsi, keep the old table here.
- */
-/*
- *static const struct reg_sequence a1_hifi_init_regs[] = {
- *       { .reg = ANACTRL_HIFIPLL_CTRL1, .def = 0x01800000 },
- *       { .reg = ANACTRL_HIFIPLL_CTRL2, .def = 0x00001100 },
- *       { .reg = ANACTRL_HIFIPLL_CTRL3, .def = 0x10022300 },
- *       { .reg = ANACTRL_HIFIPLL_CTRL4, .def = 0x00300000 },
- *       { .reg = ANACTRL_HIFIPLL_CTRL0, .def = 0x01f18440 },
- *       { .reg = ANACTRL_HIFIPLL_CTRL0, .def = 0x11f18440, .delay_us = 10 },
- *       { .reg = ANACTRL_HIFIPLL_CTRL0, .def = 0x15f18440, .delay_us = 40 },
- *       { .reg = ANACTRL_HIFIPLL_CTRL2, .def = 0x00001140 },
- *       { .reg = ANACTRL_HIFIPLL_CTRL2, .def = 0x00001100 },
- *};
- */
-
-/* 614.4M */
-static const struct reg_sequence a1_hifi_init_regs[] = {
-	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x01800000 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00001100 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL3,	.def = 0x10022200 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL4,	.def = 0x00301000 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL0, .def = 0x01f19480 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL0, .def = 0x11f19480, .delay_us = 10 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL0,	.def = 0x15f11480, .delay_us = 40 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00001140 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00001100 },
-};
-
-/* 1467.648M */
-static const struct reg_sequence a1_hifi_init_regs1[] = {
-	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x0f904dd3 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00001120 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL3,	.def = 0x100a1100 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL4,	.def = 0x00301000 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL0, .def = 0x01f1843d },
-	{ .reg = ANACTRL_HIFIPLL_CTRL0, .def = 0x11f1843d, .delay_us = 10 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL0,	.def = 0x15f1843d, .delay_us = 40 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00001160 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00001120 },
-};
-
-#ifdef CONFIG_ARM
-static const struct pll_params_table a1_hifi_pll_params_table[] = {
-	{ .m = 128, .n = 5, .od = 0, .regs = a1_hifi_init_regs,
-	  .regs_count = ARRAY_SIZE(a1_hifi_init_regs)},  /*DCO = 614.4M */
-	{ .m = 61, .n = 1, .od = 0, .regs = a1_hifi_init_regs1,
-	  .regs_count = ARRAY_SIZE(a1_hifi_init_regs1)},  /*DCO = 1467.648M */
-};
-#else
-static const struct pll_params_table a1_hifi_pll_params_table[] = {
-	{ .m = 128, .n = 5, .regs = a1_hifi_init_regs,
-	  .regs_count = ARRAY_SIZE(a1_hifi_init_regs)},  /*DCO = 614.4M */
-	{ .m = 61, .n = 1,  .regs = a1_hifi_init_regs1,
-	  .regs_count = ARRAY_SIZE(a1_hifi_init_regs1)},  /*DCO = 1467.648M */
-};
-#endif
-
-static struct clk_regmap a1_hifi_pll = {
-	.data = &(struct meson_clk_pll_data){
-		.en = {
-			.reg_off = ANACTRL_HIFIPLL_CTRL0,
-			.shift   = 28,
-			.width   = 1,
-		},
-		.m = {
-			.reg_off = ANACTRL_HIFIPLL_CTRL0,
-			.shift   = 0,
-			.width   = 8,
-		},
-		.n = {
-			.reg_off = ANACTRL_HIFIPLL_CTRL0,
-			.shift   = 10,
-			.width   = 5,
-		},
-		.frac = {
-			.reg_off = ANACTRL_HIFIPLL_CTRL1,
-			.shift   = 0,
-			.width   = 19,
-		},
-		.l = {
-			.reg_off = ANACTRL_HIFIPLL_STS,
-			.shift   = 31,
-			.width   = 1,
-		},
-		.table = a1_hifi_pll_params_table,
-	},
-	.hw.init = &(struct clk_init_data){
-		.name = "hifi_pll",
-		.ops = &meson_clk_pll_v3_ops,
-		.parent_hws = (const struct clk_hw *[]) {
-			&xtal_hifipll.hw
-		},
-		.num_parents = 1,
-	},
-};
 
 /*
  * Internal sys pll emulation configuration parameters

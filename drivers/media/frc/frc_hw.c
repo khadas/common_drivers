@@ -35,7 +35,7 @@
 #include <linux/amlogic/media/frc/frc_reg.h>
 #include <linux/amlogic/media/amvecm/amvecm.h>
 // #include <linux/amlogic/media/frc/frc_common.h>
-
+#include "vlock.h"
 #include "frc_drv.h"
 #include "frc_hw.h"
 #include "frc_regs_table.h"

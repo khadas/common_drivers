@@ -30,7 +30,6 @@
 #include <linux/amlogic/media/registers/cpu_version.h>
 #include <linux/amlogic/media/video_sink/vpp.h>
 #include <drm/drmP.h>
-#include <linux/amlogic/media/enhancement/amvecm/vlock.h>
 
 #ifndef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 bool is_dolby_vision_enable(void);
@@ -108,7 +107,9 @@ void dolby_vision_set_toggle_flag(int flag);
  *#define VPP_VADJ1_BLMINUS_EN        (1 << 1)
  *#define VPP_VADJ1_EN                (1 << 0)
  */
-
+#define GAMMA_READ_B                BIT(10)
+#define GAMMA_READ_G                BIT(9)
+#define GAMMA_READ_R                BIT(8)
 #define VPP_EYE_PROTECT_UPDATE      BIT(7)
 #define VPP_PRE_GAMMA_UPDATE        BIT(6)
 #define VPP_MARTIX_GET              BIT(5)
@@ -119,6 +120,7 @@ void dolby_vision_set_toggle_flag(int flag);
 #define VPP_DEMO_CM_EN              BIT(0)
 
 /*PQ USER LATCH*/
+#define PQ_USER_PQ_MODULE_CTL      BIT(26)
 #define PQ_USER_OVERSCAN_RESET     BIT(25)
 #define PQ_USER_CMS_SAT_HUE        BIT(24)
 #define PQ_USER_CMS_CURVE_HUE_HS   BIT(23)
@@ -178,9 +180,15 @@ enum cm_hist_e {
 };
 
 enum dv_pq_ctl_e {
-	DV_PQ_BYPASS = 0,
+	DV_PQ_TV_BYPASS = 0,
+	DV_PQ_STB_BYPASS,
 	DV_PQ_CERT,
 	DV_PQ_REC,
+};
+
+enum wr_md_e {
+	WR_VCB = 0,
+	WR_DMA,
 };
 
 enum pq_table_name_e {
@@ -457,6 +465,7 @@ enum hdr_type_e {
 	HDRTYPE_HDR10PLUS = HDR10PLUS_SOURCE,
 	HDRTYPE_DOVI = DOVI_SOURCE,
 	HDRTYPE_MVC = MVC_SOURCE,
+	HDRTYPE_PRIMESL = PRIMESL_SOURCE,
 };
 
 enum pd_comb_fix_lvl_e {

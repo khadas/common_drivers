@@ -14,7 +14,7 @@
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include "reg_helper.h"
 #include "frame_lock_policy.h"
-
+#include "vlock.h"
 #define FrameLockPR(fmt, args...)      pr_info("FrameLock: " fmt "", ## args)
 #define FrameLockERR(fmt, args...)     pr_err("FrameLock ERR: " fmt "", ## args)
 

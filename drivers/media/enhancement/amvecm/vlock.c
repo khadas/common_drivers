@@ -34,11 +34,12 @@
 #include <linux/amlogic/media/vout/lcd/lcd_notify.h>
 #endif
 #include "arch/vpp_regs.h"
-#include <linux/amlogic/media/enhancement/amvecm/vlock.h>
+#include "vlock.h"
 #include "amvecm_vlock_regmap.h"
 #include "amcm.h"
 #include "reg_helper.h"
 #include <linux/amlogic/gki_module.h>
+#include "frame_lock_policy.h"
 
 /* video lock */
 /* 0:off;
@@ -72,7 +73,7 @@ static unsigned int vlock_intput_type;
  */
 static signed int vlock_line_limit = 2;
 
-static signed int vlock_enc_maxtune_line_num = 8;
+static signed int vlock_enc_maxtune_line_num = 12;
 module_param(vlock_enc_maxtune_line_num, uint, 0664);
 MODULE_PARM_DESC(vlock_enc_maxtune_line_num, "\n vlock_enc_maxtune_line_num\n");
 
@@ -189,6 +190,9 @@ u32 loop_err_gain = 128;
 u32 loop0_en = 2;	/*0:off, 1:on 2:auto*/
 u32 loop1_en = 1;	/*0:off, 1:on 2:auto*/
 u32 speed_up_en = 1;
+
+static int vlock_protect_min;
+static int vlock_manual;
 
 struct reg_map vlock_reg_maps[REG_MAP_END] = {0};
 
@@ -474,7 +478,7 @@ int __attribute__((weak))frc_is_on(void)
 	return 0;
 }
 
-static void vlock_tune_sync_frc(u32 frc_vporch_cal)
+static void vlock_tune_sync_frc(u32 frc_vporch_cal, unsigned char frc_s2l_en)
 {
 	u32 max_lncnt;
 	u32 max_pxcnt;
@@ -487,11 +491,15 @@ static void vlock_tune_sync_frc(u32 frc_vporch_cal)
 			frc_vporch_cal : (max_lncnt - 1950);
 
 	if ((vlock_debug & VLOCK_DEBUG_FLASH))
-		pr_info("vlock: %s max_lncnt =%d max_pxcnt =%d frc_v_porch =%d\n",
+		pr_info("vlock: %s max_lncnt =%d max_pxcnt =%d frc_v_porch =%d frc_s2l_en=%d\n",
 		__func__,
-		max_lncnt, max_pxcnt, frc_v_porch);
+		max_lncnt, max_pxcnt, frc_v_porch, frc_s2l_en);
 
-	WRITE_VPP_REG(ENCL_SYNC_TO_LINE_EN, (1 << 13) | (max_lncnt - frc_v_porch));
+	if (frc_s2l_en)
+		WRITE_VPP_REG(ENCL_SYNC_TO_LINE_EN, (1 << 13) | (max_lncnt - frc_v_porch));
+	else
+		WRITE_VPP_REG_BITS(ENCL_SYNC_TO_LINE_EN, 0, 13, 1);
+
 	WRITE_VPP_REG(ENCL_SYNC_PIXEL_EN, (1 << 15) | (max_pxcnt - 1));
 	WRITE_VPP_REG(ENCL_SYNC_LINE_LENGTH, max_lncnt - frc_v_porch - 1);
 }
@@ -530,6 +538,7 @@ int vlock_sync_frc_vporch(struct stvlock_frc_param frc_param)
 	if (!pvlock)
 		return ret;
 
+	vlock_manual = frc_param.frc_mcfixlines;
 	if (pvlock->dtdata->vlk_ctl_for_frc) {
 		if (pvlock->fsm_sts == VLOCK_STATE_ENABLE_STEP1_DONE ||
 			pvlock->fsm_sts == VLOCK_STATE_ENABLE_STEP2_DONE) {
@@ -540,12 +549,12 @@ int vlock_sync_frc_vporch(struct stvlock_frc_param frc_param)
 			ret = 0;
 		} else {
 			pr_info("vlock: vlock is NULL or Disable, frc set max lncnt and ma px cnt!");
-			vlock_tune_sync_frc(frc_param.frc_v_porch);
+			vlock_tune_sync_frc(frc_param.frc_v_porch, frc_param.s2l_en);
 			ret = 0;
 		}
 	} else {
 		pr_info("vlock: vlk_ctl_for_frc = 0 no need vlock avoid flash patch!!!");
-		vlock_tune_sync_frc(frc_param.frc_v_porch);
+		vlock_tune_sync_frc(frc_param.frc_v_porch, frc_param.s2l_en);
 		ret = 0;
 	}
 
@@ -1231,6 +1240,18 @@ void vlock_vmode_check(struct stvlock_sig_sts *pvlock)
 	}
 }
 
+static void vlock_lock_status_check(struct stvlock_sig_sts *pvlock)
+{
+	if (vlock_get_phlock_flag() && vlock_get_vlock_flag()) {
+		if (vlock_debug & VLOCK_DEBUG_PROTECT)
+			pr_info("vlock locked success !!!\n");
+	} else {
+		if (vlock_debug & VLOCK_DEBUG_PROTECT)
+			pr_info("vlock locking fsm_sts=%d\n",
+					pvlock->fsm_sts);
+	}
+}
+
 static void vlock_disable_step1(struct stvlock_sig_sts *pvlock)
 {
 	unsigned int m_reg_value, tmp_value;
@@ -1555,7 +1576,11 @@ static void vlock_enable_step3_enc(struct stvlock_sig_sts *pvlock)
 		}
 		if (enc_max_pixel > 0x1fff)
 			enc_max_line += 1;
-		WRITE_VPP_REG(pvlock->enc_max_line_addr + offset_enc, enc_max_line);
+		if (enc_max_line >= vlock_protect_min)
+			WRITE_VPP_REG(pvlock->enc_max_line_addr + offset_enc, enc_max_line);
+		else if ((vlock_debug & VLOCK_DEBUG_FLASH))
+			pr_info("vlock:WARNING... enc_max_line:%d is limited by prt_min:%d cannot adj contiue\n",
+				enc_max_line, vlock_protect_min);
 		if ((vlock_debug & VLOCK_DEBUG_FLASH)) {
 			pr_info("polity_line_num=%d line_num=%d, org_line=%d\n",
 				polity_line_num, line_num, pvlock->org_enc_line_num);
@@ -2010,8 +2035,8 @@ void vlock_enable_step3_auto_enc(struct stvlock_sig_sts *pvlock)
 	stbdec_win0 = READ_VPP_REG(VPU_VLOCK_STBDET_WIN0_WIN1 + offset_vlck) & 0xff;
 	stbdec_win1 = (READ_VPP_REG(VPU_VLOCK_STBDET_WIN0_WIN1 + offset_vlck) >> 8) & 0xff;
 
-	th0 = (oa * stbdec_win0 * 7) / vinfo->vtotal;
-	th1 = (oa * stbdec_win1 * 8) / vinfo->vtotal;
+	th0 = (oa * stbdec_win0 * 10) / vinfo->vtotal;
+	th1 = (oa * stbdec_win1 * 10) / vinfo->vtotal;
 
 	WRITE_VPP_REG(VPU_VLOCK_WIN0_TH + offset_vlck, th0);
 	WRITE_VPP_REG(VPU_VLOCK_WIN1_TH + offset_vlck, th1);
@@ -2484,6 +2509,7 @@ u32 vlock_fsm_input_check(struct stvlock_sig_sts *pvlock, struct vframe_s *vf)
 		vframe_sts = true;
 
 	vlock_vmode_check(pvlock);
+	vlock_lock_status_check(pvlock);
 
 	if (vf) {
 		vinfo = get_current_vinfo();
@@ -2494,6 +2520,12 @@ u32 vlock_fsm_input_check(struct stvlock_sig_sts *pvlock, struct vframe_s *vf)
 		pvlock->duration = vf->duration;
 		//if (vlock_debug & VLOCK_DEBUG_INFO)
 		//	pr_info("input_hz:%d duration:%d\n", pvlock->input_hz, pvlock->duration);
+		vlock_protect_min =
+			vinfo->vbp + vinfo->vsw + vinfo->height + vlock_manual;
+		if (vlock_debug & VLOCK_DEBUG_PROTECT)
+			pr_info("prt_min:%d org_enc_line_num:%d vbp:%d vsw:%d height:%d vlock_manual:%d\n",
+				vlock_protect_min, pvlock->org_enc_line_num,
+				vinfo->vbp, vinfo->vsw, vinfo->height, vlock_manual);
 	}
 
 	/*check vf exist status*/
@@ -3195,6 +3227,7 @@ void vlock_status(struct stvlock_sig_sts *pvlock)
 	pr_info("lcnt_sts :0x%0x\n", pvlock->vdinsts.lcnt_sts);
 	pr_info("com_sts0 :0x%0x\n", pvlock->vdinsts.com_sts0);
 	pr_info("com_sts1 :0x%0x\n", pvlock->vdinsts.com_sts1);
+	pr_info("vlock_protect_min:%d\n", vlock_protect_min);
 }
 
 void vlock_reg_dump(struct stvlock_sig_sts *pvlock)
@@ -3492,6 +3525,8 @@ ssize_t vlock_debug_show(struct class *cla,
 		"echo log_stop > /sys/class/amvecm/vlock\n");
 	len += sprintf(buf + len,
 		"echo log_print > /sys/class/amvecm/vlock\n");
+	len += sprintf(buf + len,
+		"echo vlock_protect > /sys/class/amvecm/vlock\n");
 	return len;
 }
 
@@ -3677,6 +3712,11 @@ ssize_t vlock_debug_store(struct class *cla,
 			return -EINVAL;
 		loop1_en = val;
 		pr_info("loop1_en:%d\n", loop1_en);
+	} else if (!strncmp(parm[0], "vlock_manual", 12)) {
+		if (kstrtol(parm[1], 10, &val) < 0)
+			return -EINVAL;
+		vlock_manual = val;
+		pr_info("vlock_manual:%d\n", vlock_manual);
 	} else {
 		pr_info("----cmd list -----\n");
 		pr_info("vlock_mode val\n");

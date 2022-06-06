@@ -20,4 +20,4 @@ $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_FRC) += frc/frc_hw.o
 # $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_FRC) += frc/frc_mc.o
 # $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_FRC) += frc/frc_phase_table.o
 
-
+ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/media/enhancement/amvecm

@@ -367,7 +367,7 @@ void vpp_enable_lcd_gamma_table(int viu_sel, int rdma_write)
 		return;
 	}
 
-	if (viu_sel == 1) /* viu1 vsync rdma */
+	if (rdma_write == 1) /* viu1 vsync rdma */
 		VSYNC_WRITE_VPP_REG_BITS(L_GAMMA_CNTL_PORT, 1, GAMMA_EN, 1);
 	else
 		WRITE_VPP_REG_BITS(L_GAMMA_CNTL_PORT, 1, GAMMA_EN, 1);
@@ -393,7 +393,7 @@ void vpp_disable_lcd_gamma_table(int viu_sel, int rdma_write)
 		return;
 	}
 
-	if (viu_sel == 1) /* viu1 vsync rdma */
+	if (rdma_write == 1) /* viu1 vsync rdma */
 		VSYNC_WRITE_VPP_REG_BITS(L_GAMMA_CNTL_PORT, 0, GAMMA_EN, 1);
 	else
 		WRITE_VPP_REG_BITS(L_GAMMA_CNTL_PORT, 0, GAMMA_EN, 1);
@@ -1905,10 +1905,11 @@ int vpp_set_lut3d(int bfromkey,
 	int d0, d1, d2, counter, size, index0, index1, idn;
 	u32 dwtemp, ctltemp, wrgb[3];
 	unsigned int combine3 = 0;
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+	#ifdef CONFIG_SET_FS
 	struct file *fp;
+	mm_segment_t fs;
 	loff_t pos;
-#endif
+	#endif
 
 	if (!lut3d_en)
 		return 1;
@@ -1946,13 +1947,15 @@ int vpp_set_lut3d(int bfromkey,
 			}
 #endif
 		} else if (bfromkey == 2) {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+			#ifdef CONFIG_SET_FS
 			fp = filp_open(LUT3DBIN_PATH, O_RDONLY, 0);
 			if (IS_ERR(fp)) {
 				kfree(pkeylutall);
 				kfree(pkeylut);
 				return 1;
 			}
+			//fs = get_fs();
+			//set_fs(KERNEL_DS);
 			pos = 0;
 			key_len = vfs_read(fp, pkeylutall, key_len, &pos);
 
@@ -1962,7 +1965,8 @@ int vpp_set_lut3d(int bfromkey,
 				return 1;
 			}
 			filp_close(fp, NULL);
-#endif
+			//set_fs(fs);
+			#endif
 		}
 
 		size = (4914 * 9) / 2;
@@ -2471,84 +2475,168 @@ void amve_fmetersize_config(u32 sr0_w, u32 sr0_h, u32 sr1_w, u32 sr1_h)
 	}
 }
 
-int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg)
+int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 {
 	unsigned int i;
-	VSYNC_WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
-				 pq_cfg.sharpness0_en, 1, 1);
 
-	VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
-				 pq_cfg.sharpness1_en, 1, 1);
+	switch (md) {
+	case WR_VCB:
+		WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
+					 pq_cfg.sharpness0_en, 1, 1);
 
-	if (pq_cfg.dnlp_en) {
-		ve_enable_dnlp();
-		dnlp_en = 1;
-	} else {
-		ve_disable_dnlp();
-		dnlp_en = 0;
-	}
+		WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
+					 pq_cfg.sharpness1_en, 1, 1);
 
-	if (pq_cfg.cm_en) {
-		amcm_enable();
-		cm_en = 1;
-	} else {
-		amcm_disable();
-		cm_en = 0;
-	}
-
-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
-		VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ1_MISC,
-					 pq_cfg.vadj1_en, 0, 1);
-	else
-		VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ_CTRL,
-					 pq_cfg.vadj1_en, 0, 1);
-
-	VSYNC_WRITE_VPP_REG_BITS(VPP_VD1_RGB_CTRST,
-				 pq_cfg.vd1_ctrst_en, 1, 1);
-
-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
-		VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ2_MISC,
-					 pq_cfg.vadj2_en, 0, 1);
-	else
-		VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ_CTRL,
-					 pq_cfg.vadj2_en, 2, 1);
-
-	VSYNC_WRITE_VPP_REG_BITS(VPP_POST_RGB_CTRST,
-				 pq_cfg.post_ctrst_en, 1, 1);
-
-	amvecm_wb_enable(pq_cfg.wb_en);
-
-	gamma_en = pq_cfg.gamma_en;
-	if (gamma_en) {
-		if (is_meson_t7_cpu()) {
-			for (i = 0; i < 3; i++)
-				vpp_enable_lcd_gamma_table(i, 1);
+		if (pq_cfg.dnlp_en) {
+			ve_enable_dnlp();
+			dnlp_en = 1;
 		} else {
-			vpp_enable_lcd_gamma_table(0, 1);
+			ve_disable_dnlp();
+			dnlp_en = 0;
 		}
-	} else {
-		if (is_meson_t7_cpu()) {
-			for (i = 0; i < 3; i++)
-				vpp_disable_lcd_gamma_table(i, 1);
+
+		if (pq_cfg.cm_en) {
+			amcm_enable(WR_VCB);
+			cm_en = 1;
 		} else {
-			vpp_disable_lcd_gamma_table(0, 1);
+			amcm_disable(WR_VCB);
+			cm_en = 0;
 		}
+
+		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
+			WRITE_VPP_REG_BITS(VPP_VADJ1_MISC,
+				pq_cfg.vadj1_en, 0, 1);
+		else
+			WRITE_VPP_REG_BITS(VPP_VADJ_CTRL,
+				pq_cfg.vadj1_en, 0, 1);
+
+		WRITE_VPP_REG_BITS(VPP_VD1_RGB_CTRST,
+			pq_cfg.vd1_ctrst_en, 1, 1);
+
+		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
+			WRITE_VPP_REG_BITS(VPP_VADJ2_MISC,
+				pq_cfg.vadj2_en, 0, 1);
+		else
+			WRITE_VPP_REG_BITS(VPP_VADJ_CTRL,
+				pq_cfg.vadj2_en, 2, 1);
+
+		WRITE_VPP_REG_BITS(VPP_POST_RGB_CTRST,
+			pq_cfg.post_ctrst_en, 1, 1);
+
+		amvecm_wb_enable(pq_cfg.wb_en);
+
+		gamma_en = pq_cfg.gamma_en;
+		if (gamma_en) {
+			if (is_meson_t7_cpu()) {
+				for (i = 0; i < 3; i++)
+					vpp_enable_lcd_gamma_table(i, 0);
+			} else {
+				vpp_enable_lcd_gamma_table(0, 0);
+			}
+		} else {
+			if (is_meson_t7_cpu()) {
+				for (i = 0; i < 3; i++)
+					vpp_disable_lcd_gamma_table(i, 0);
+			} else {
+				vpp_disable_lcd_gamma_table(0, 0);
+			}
+		}
+
+		if (pq_cfg.lc_en) {
+			lc_en = 1;
+		} else {
+			lc_en = 0;
+			if (is_meson_tl1_cpu() ||
+				is_meson_tm2_cpu())
+				lc_disable();
+		}
+
+		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
+			pq_cfg.black_ext_en, 3, 1);
+
+		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
+			pq_cfg.chroma_cor_en, 4, 1);
+		break;
+	case WR_DMA:
+		VSYNC_WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
+			pq_cfg.sharpness0_en, 1, 1);
+
+		VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
+			pq_cfg.sharpness1_en, 1, 1);
+
+		if (pq_cfg.dnlp_en) {
+			ve_enable_dnlp();
+			dnlp_en = 1;
+		} else {
+			ve_disable_dnlp();
+			dnlp_en = 0;
+		}
+
+		if (pq_cfg.cm_en) {
+			amcm_enable(WR_DMA);
+			cm_en = 1;
+		} else {
+			amcm_disable(WR_DMA);
+			cm_en = 0;
+		}
+
+		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
+			VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ1_MISC,
+				pq_cfg.vadj1_en, 0, 1);
+		else
+			VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ_CTRL,
+				pq_cfg.vadj1_en, 0, 1);
+
+		VSYNC_WRITE_VPP_REG_BITS(VPP_VD1_RGB_CTRST,
+			pq_cfg.vd1_ctrst_en, 1, 1);
+
+		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
+			VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ2_MISC,
+				pq_cfg.vadj2_en, 0, 1);
+		else
+			VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ_CTRL,
+				pq_cfg.vadj2_en, 2, 1);
+
+		VSYNC_WRITE_VPP_REG_BITS(VPP_POST_RGB_CTRST,
+			pq_cfg.post_ctrst_en, 1, 1);
+
+		amvecm_wb_enable(pq_cfg.wb_en);
+
+		gamma_en = pq_cfg.gamma_en;
+		if (gamma_en) {
+			if (is_meson_t7_cpu()) {
+				for (i = 0; i < 3; i++)
+					vpp_enable_lcd_gamma_table(i, 1);
+			} else {
+				vpp_enable_lcd_gamma_table(0, 1);
+			}
+		} else {
+			if (is_meson_t7_cpu()) {
+				for (i = 0; i < 3; i++)
+					vpp_disable_lcd_gamma_table(i, 1);
+			} else {
+				vpp_disable_lcd_gamma_table(0, 1);
+			}
+		}
+
+		if (pq_cfg.lc_en) {
+			lc_en = 1;
+		} else {
+			lc_en = 0;
+			if (is_meson_tl1_cpu() ||
+			    is_meson_tm2_cpu())
+				lc_disable();
+		}
+
+		VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
+			pq_cfg.black_ext_en, 3, 1);
+
+		VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
+			pq_cfg.chroma_cor_en, 4, 1);
+		break;
+	default:
+		break;
 	}
-
-	if (pq_cfg.lc_en) {
-		lc_en = 1;
-	} else {
-		lc_en = 0;
-		if (is_meson_tl1_cpu() ||
-		    is_meson_tm2_cpu())
-			lc_disable();
-	}
-
-	VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
-				 pq_cfg.black_ext_en, 3, 1);
-
-	VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
-				 pq_cfg.chroma_cor_en, 4, 1);
 
 	return 0;
 }
@@ -2558,9 +2646,13 @@ unsigned int skip_pq_ctrl_load(struct am_reg_s *p)
 	unsigned int ret = 0;
 	struct pq_ctrl_s cfg;
 
-	if (dv_pq_bypass == 2) {
+	if (dv_pq_bypass == 3) {
 		memcpy(&cfg, &dv_cfg_bypass, sizeof(struct pq_ctrl_s));
 		cfg.vadj1_en = pq_cfg.vadj1_en;
+	} else if (dv_pq_bypass == 2) {
+		memcpy(&cfg, &dv_cfg_bypass, sizeof(struct pq_ctrl_s));
+		cfg.sharpness0_en = pq_cfg.sharpness0_en;
+		cfg.sharpness1_en = pq_cfg.sharpness1_en;
 	} else if (dv_pq_bypass == 1) {
 		memcpy(&cfg, &dv_cfg_bypass, sizeof(struct pq_ctrl_s));
 	} else {
@@ -2649,22 +2741,31 @@ int dv_pq_ctl(enum dv_pq_ctl_e ctl)
 	struct pq_ctrl_s cfg;
 
 	switch (ctl) {
-	case DV_PQ_BYPASS:
+	case DV_PQ_TV_BYPASS:
 		memcpy(&cfg, &dv_cfg_bypass, sizeof(struct pq_ctrl_s));
 		cfg.vadj1_en = pq_cfg.vadj1_en;
-		vpp_pq_ctrl_config(cfg);
-		dv_pq_bypass = 2;
-		pr_amve_dbg("dv enable, pq disable, dv_pq_bypass = %d\n",
+		vpp_pq_ctrl_config(cfg, WR_DMA);
+		dv_pq_bypass = 3;
+		pr_amve_dbg("dv enable, for TV pq disable, dv_pq_bypass = %d\n",
 			    dv_pq_bypass);
 		break;
+	case DV_PQ_STB_BYPASS:
+		memcpy(&cfg, &dv_cfg_bypass, sizeof(struct pq_ctrl_s));
+		cfg.sharpness0_en = pq_cfg.sharpness0_en;
+		cfg.sharpness1_en = pq_cfg.sharpness1_en;
+		vpp_pq_ctrl_config(cfg, WR_DMA);
+		dv_pq_bypass = 2;
+		pr_amve_dbg("dv enable, for STB pq disable, dv_pq_bypass = %d\n",
+				dv_pq_bypass);
+		break;
 	case DV_PQ_CERT:
-		vpp_pq_ctrl_config(dv_cfg_bypass);
+		vpp_pq_ctrl_config(dv_cfg_bypass, WR_DMA);
 		dv_pq_bypass = 1;
 		pr_amve_dbg("dv certification mode, pq disable, dv_pq_bypass = %d\n",
 			    dv_pq_bypass);
 		break;
 	case DV_PQ_REC:
-		vpp_pq_ctrl_config(pq_cfg);
+		vpp_pq_ctrl_config(pq_cfg, WR_DMA);
 		dv_pq_bypass = 0;
 		pr_amve_dbg("dv disable, pq recovery, dv_pq_bypass = %d\n",
 			    dv_pq_bypass);

@@ -3973,7 +3973,7 @@ static void video_effect_bypass(int bypass)
 		    bypass_all_vpp_pq || is_meson_tvmode())
 			dv_pq_ctl(DV_PQ_CERT);
 		else
-			dv_pq_ctl(DV_PQ_BYPASS);
+			dv_pq_ctl(DV_PQ_TV_BYPASS);
 		return;
 	} else if (debug_bypass_vpp_pq == 2) {
 		dv_pq_ctl(DV_PQ_REC);
@@ -4018,7 +4018,7 @@ static void video_effect_bypass(int bypass)
 			    bypass_all_vpp_pq || is_meson_tvmode())
 				dv_pq_ctl(DV_PQ_CERT);
 			else
-				dv_pq_ctl(DV_PQ_BYPASS);
+				dv_pq_ctl(DV_PQ_TV_BYPASS);
 		}
 	} else if (is_video_effect_bypass) {
 		if (is_meson_txlx()) {

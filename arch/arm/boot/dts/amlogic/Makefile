@@ -4,3 +4,4 @@ dtb-y += c3_pxp.dtb
 dtb-y += a1-a113l-ad401.dtb
 dtb-y += a1-a113l-ad409.dtb
 dtb-y += a1-a113l-ad403.dtb
+dtb-y += c3_c30xx_aw419.dtb

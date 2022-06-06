@@ -62,6 +62,9 @@ CONFIG_AMLOGIC_PINCTRL_MESON=m
 # amlogic-pinctrl-soc-s4.ko
 CONFIG_AMLOGIC_PINCTRL_MESON_S4=m
 
+# amlogic-pinctrl-soc-sc2.ko
+CONFIG_AMLOGIC_PINCTRL_MESON_SC2=m
+
 # amlogic-irqchip.ko
 CONFIG_AMLOGIC_MESON_IRQ_GPIO=m
 

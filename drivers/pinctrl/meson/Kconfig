@@ -46,4 +46,13 @@ config AMLOGIC_PINCTRL_MESON_A1
 	  when enable this config.
 	  A1 pinctrl can work.
 	  otherwise A1 pinctrl can't work
+
+config AMLOGIC_PINCTRL_MESON_SC2
+	tristate "Meson SC2 Soc pinctrl driver"
+	default n
+	help
+	  the chip of A1 will be built
+	  when enable this config.
+	  SC2 pinctrl can work.
+	  otherwise A1 pinctrl can't work
 endif

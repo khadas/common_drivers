@@ -23,17 +23,29 @@
  *				 total heap types are supported
  */
 enum ion_heap_type {
-	ION_HEAP_TYPE_SYSTEM,
-	ION_HEAP_TYPE_SYSTEM_CONTIG,
-	ION_HEAP_TYPE_CARVEOUT,
-	ION_HEAP_TYPE_CHUNK,
-	ION_HEAP_TYPE_DMA,
-	ION_HEAP_TYPE_CUSTOM, /*
-			       * must be last so device specific heaps always
-			       * are at the end of this enum
-			       */
+	ION_HEAP_TYPE_SYSTEM = 0,
+	ION_HEAP_TYPE_SYSTEM_CONTIG = 1,
+	ION_HEAP_TYPE_CARVEOUT = 2,
+	ION_HEAP_TYPE_CHUNK = 3,
+	ION_HEAP_TYPE_DMA = 4,
+	/* reserved range for future standard heap types */
+	ION_HEAP_TYPE_CUSTOM = 16,
+	ION_HEAP_TYPE_MAX = 31,
 };
 
+enum ion_heap_id {
+	ION_HEAP_SYSTEM = (1 << ION_HEAP_TYPE_SYSTEM),
+	ION_HEAP_SYSTEM_CONTIG = (ION_HEAP_SYSTEM << 1),
+	ION_HEAP_CARVEOUT_START = (ION_HEAP_SYSTEM_CONTIG << 1),
+	ION_HEAP_CARVEOUT_END = (ION_HEAP_CARVEOUT_START << 4),
+	ION_HEAP_CHUNK = (ION_HEAP_CARVEOUT_END << 1),
+	ION_HEAP_DMA_START = (ION_HEAP_CHUNK << 1),
+	ION_HEAP_DMA_END = (ION_HEAP_DMA_START << 7),
+	ION_HEAP_CUSTOM_START = (ION_HEAP_DMA_END << 1),
+	ION_HEAP_CUSTOM_END = (ION_HEAP_CUSTOM_START << 15),
+};
+
+#define ION_NUM_MAX_HEAPS	(32)
 #define ION_NUM_HEAP_IDS		(sizeof(unsigned int) * 8)
 
 /**
@@ -123,4 +135,6 @@ struct ion_heap_query {
 #define ION_IOC_HEAP_QUERY     _IOWR(ION_IOC_MAGIC, 8, \
 					struct ion_heap_query)
 
+#define ION_IOC_ABI_VERSION    _IOR(ION_IOC_MAGIC, 9, \
+							__u32)
 #endif /* _UAPI_LINUX_ION_H */

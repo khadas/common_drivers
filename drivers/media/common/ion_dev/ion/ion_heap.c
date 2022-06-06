@@ -77,6 +77,7 @@ int ion_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(ion_heap_map_user);
 
 static int ion_heap_clear_pages(struct page **pages, int num, pgprot_t pgprot)
 {

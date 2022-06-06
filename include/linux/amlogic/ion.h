@@ -316,5 +316,16 @@ void ion_page_pool_free(struct ion_page_pool *pool, struct page *page);
  */
 int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
 			 int nr_to_scan);
+/**
+ * ion_heap_map_kernel - map the ion_buffer in kernel virtual address space.
+ *
+ * @heap:               the heap
+ * @buffer:             buffer to be mapped
+ *
+ * Maps the buffer using vmap(). The function respects cache flags for the
+ * buffer and creates the page table entries accordingly. Returns virtual
+ * address at the beginning of the buffer or ERR_PTR.
+ */
+void *ion_heap_map_kernel(struct ion_heap *heap, struct ion_buffer *buffer);
 
 #endif /* _ION_H */

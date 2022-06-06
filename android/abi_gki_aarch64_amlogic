@@ -541,3 +541,12 @@
   dvb_unregister_device
   dvb_register_adapter
   dvb_unregister_adapter
+
+# aml_drm.ko
+  drm_connector_attach_content_type_property
+  drm_connector_attach_vrr_capable_property
+  drm_connector_set_vrr_capable_property
+  drm_crtc_from_index
+  drm_gem_handle_delete
+  drm_mode_get_hv_timing
+  drm_property_add_enum

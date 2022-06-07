@@ -112,7 +112,11 @@
 		compatible = "arm,psci-0.2";
 		method = "smc";
 	};
-
+	dolby_fw: dolby_fw {
+		compatible = "amlogic, dolby_fw";
+		mem_size = <0x100000>;
+		status = "okay";
+	};
 	aml_reboot: reboot@0xfe01037c {
 		compatible = "aml, reboot";
 		sys_reset = <0x84000009>;

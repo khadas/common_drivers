@@ -268,7 +268,7 @@ function adjust_sequence_modules_loading() {
 	rm modules.dep.temp2
 }
 
-create_ramdis_vendor() {
+create_ramdisk_vendor() {
 	install_temp=$1
 	source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list
 	last_ramdisk_module=${RAMDISK_MODULES_LOAD_LIST[${#RAMDISK_MODULES_LOAD_LIST[@]}-1]}
@@ -280,7 +280,7 @@ create_ramdis_vendor() {
 	mkdir ramdisk
 	cat ramdisk_install.sh | cut -d ' ' -f 2 | xargs mv -t ramdisk/
 
-	sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' ramdisk_install.sh
+	sed -i '1s/^/#!\/bin\/sh\n\nset -x\n/' ramdisk_install.sh
 	echo "echo Install ramdisk modules success!" >> ramdisk_install.sh
 	chmod 755 ramdisk_install.sh
 	mv ramdisk_install.sh ramdisk/
@@ -291,7 +291,7 @@ create_ramdis_vendor() {
 	mkdir vendor
 	cat vendor_install.sh | cut -d ' ' -f 2 | xargs mv -t vendor/
 
-	sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' vendor_install.sh
+	sed -i '1s/^/#!\/bin\/sh\n\nset -x\n/' vendor_install.sh
 	echo "echo Install vendor modules success!" >> vendor_install.sh
 	chmod 755 vendor_install.sh
 	mv vendor_install.sh vendor/
@@ -333,7 +333,7 @@ function modules_install() {
 		}
 	}' > __install.sh.tmp
 
-	create_ramdis_vendor __install.sh.tmp
+	create_ramdisk_vendor __install.sh.tmp
 
 	cp __install.sh.tmp __install.sh
 

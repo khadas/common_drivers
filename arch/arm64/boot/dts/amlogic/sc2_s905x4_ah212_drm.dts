@@ -167,6 +167,45 @@
 			alloc-ranges = <0x0 0x30000000 0x0 0x00800000>;
 		};
 	};
+
+	main_12v: fixregulator@1 {
+		compatible = "regulator-fixed";
+		regulator-name = "12V";
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+		regulator-always-on;
+	};
+
+	vcc_5v_reg: fixedregulator@2 {
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		vin-supply = <&main_12v>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddao3v3_reg: fixedregulator@3{
+		vin-supply = <&main_12v>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDAO_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddao1v8_reg: fixedregulator@4{
+		vin-supply = <&vddao3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDAO_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
 	codec_mm {
 		compatible = "amlogic, codec, mm";
 		memory-region = <&codec_mm_cma &codec_mm_reserved>;

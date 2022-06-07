@@ -398,7 +398,7 @@
 				ranges;
 
 				gpio: bank@4000 {
-					reg = <0x4000 0x0048>,
+					reg = <0x4000 0x004c>,
 					      <0x4100 0x01de>;
 					reg-names = "mux", "gpio";
 					gpio-controller;
@@ -619,13 +619,12 @@
 
 			gpio_intc: interrupt-controller@0440 {
 				compatible = "amlogic,meson-gpio-intc",
-					      "amlogic,meson-c2-gpio-intc";
-				reg = <0x0440 0x14>;
+					      "amlogic,meson-c3-gpio-intc";
+				reg = <0x4080 0x20>;
 				interrupt-controller;
 				#interrupt-cells = <2>;
 				amlogic,channel-interrupts =
-							<23 24 25 26 27 28 29 30>;
-				status = "disabled";
+							<10 11 12 13 14 15 16 17 18 19 20 21>;
 			};
 
 			jtag {

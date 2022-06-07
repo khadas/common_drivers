@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-
+/*#define DEBUG*/
 #include <linux/clk-provider.h>
 #include <linux/init.h>
 #include <linux/of_device.h>
@@ -5822,7 +5822,7 @@ static int __ref meson_sc2_probe(struct platform_device *pdev)
 		if (!sc2_hw_onecell_data.hws[i])
 			continue;
 
-		dev_err(dev, "register %d  %s\n", i, sc2_hw_onecell_data.hws[i]->init->name);
+		dev_dbg(dev, "register %d  %s\n", i, sc2_hw_onecell_data.hws[i]->init->name);
 
 		ret = devm_clk_hw_register(dev, sc2_hw_onecell_data.hws[i]);
 		if (ret) {

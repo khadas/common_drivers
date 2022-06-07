@@ -25,16 +25,14 @@
 #include "vpu_ctrl.h"
 #include "vpu_module.h"
 
-/* v20190305: initial version */
-/* v20190605: add sm1, tm2 support */
-/* v20201026: add tm2b, sc2, t5, t5d support */
-/* v20201118: add t7 support */
-/* v20211102: add t5w support */
-#define VPU_VERION        "v20211102"
+/* v20200530: initial version */
+/* v20220607: add c3 support */
+#define VPU_VERION        "v20220607"
 
 int vpu_debug_print_flag;
 static spinlock_t vpu_mem_lock;
 static spinlock_t vpu_clk_gate_lock;
+
 static DEFINE_MUTEX(vpu_clk_mutex);
 static DEFINE_MUTEX(vpu_dev_mutex);
 
@@ -66,240 +64,6 @@ int vpu_chip_valid_check(void)
 	return ret;
 }
 
-static unsigned int get_vpu_clk_level_max_vmod(void)
-{
-	unsigned int max_level = 0;
-	int i;
-
-	if (!vpu_conf.clk_vmod)
-		return max_level;
-
-	max_level = 0;
-	for (i = 0; i < VPU_MOD_MAX; i++) {
-		if (vpu_conf.clk_vmod[i] > max_level)
-			max_level = vpu_conf.clk_vmod[i];
-	}
-
-	return max_level;
-}
-
-static unsigned int get_vpu_clk_level(unsigned int video_clk)
-{
-	unsigned int clk_level;
-	int i;
-
-	for (i = 0; i < vpu_conf.data->clk_level_max; i++) {
-		if (video_clk <= vpu_clk_table[i].freq)
-			break;
-	}
-	clk_level = i;
-
-	return clk_level;
-}
-
-static unsigned int get_fclk_div_freq(unsigned int mux_id)
-{
-	struct fclk_div_s *fclk_div;
-	unsigned int fclk, div, clk_source = 0;
-	unsigned int i;
-
-	fclk = CLK_FPLL_FREQ * 1000000;
-
-	for (i = 0; i < FCLK_DIV_MAX; i++) {
-		fclk_div = vpu_conf.data->fclk_div_table + i;
-		if (fclk_div->fclk_id == mux_id) {
-			div = fclk_div->fclk_div;
-			clk_source = fclk / div;
-			break;
-		}
-		if (fclk_div->fclk_id == FCLK_DIV_MAX)
-			break;
-	}
-
-	return clk_source;
-}
-
-static unsigned int get_vpu_clk_mux_id(void)
-{
-	struct fclk_div_s *fclk_div;
-	unsigned int i, mux, mux_id;
-
-	mux = vpu_clk_getb(vpu_conf.data->vpu_clk_reg, 9, 3);
-	mux_id = mux;
-	for (i = 0; i < FCLK_DIV_MAX; i++) {
-		fclk_div = vpu_conf.data->fclk_div_table + i;
-		if (fclk_div->fclk_mux == mux) {
-			mux_id = fclk_div->fclk_id;
-			break;
-		}
-		if (fclk_div->fclk_id == FCLK_DIV_MAX)
-			break;
-	}
-
-	return mux_id;
-}
-
-unsigned int vpu_clk_get(void)
-{
-	unsigned int clk_freq;
-	unsigned int clk_source, div;
-	unsigned int mux_id;
-	struct clk_hw *hw;
-	int ret;
-
-	ret = vpu_chip_valid_check();
-	if (ret)
-		return 0;
-
-	if (IS_ERR_OR_NULL(vpu_conf.vpu_clk)) {
-		VPUERR("%s: vpu_clk\n", __func__);
-		mux_id = get_vpu_clk_mux_id();
-		switch (mux_id) {
-		case FCLK_DIV4:
-		case FCLK_DIV3:
-		case FCLK_DIV5:
-		case FCLK_DIV7:
-			clk_source = get_fclk_div_freq(mux_id);
-			break;
-		case GPLL_CLK:
-			clk_source = vpu_clk_table[8].freq;
-			break;
-		default:
-			clk_source = 0;
-			break;
-		}
-
-		div = vpu_clk_getb(vpu_conf.data->vpu_clk_reg, 0, 7) + 1;
-		clk_freq = clk_source / div;
-
-		return clk_freq;
-	}
-
-	hw = __clk_get_hw(vpu_conf.vpu_clk);
-	clk_freq = clk_hw_get_rate(hw);
-	return clk_freq;
-}
-EXPORT_SYMBOL(vpu_clk_get);
-
-static int switch_gp_pll(int flag)
-{
-	unsigned int clk;
-	int ret = 0;
-
-	if (IS_ERR_OR_NULL(vpu_conf.gp_pll)) {
-		VPUERR("%s: gp_pll\n", __func__);
-		return -1;
-	}
-
-	if (flag) { /* enable */
-		clk = vpu_clk_table[8].freq;
-		ret = clk_set_rate(vpu_conf.gp_pll, clk);
-		if (ret)
-			return ret;
-		clk_prepare_enable(vpu_conf.gp_pll);
-	} else { /* disable */
-		clk_disable_unprepare(vpu_conf.gp_pll);
-	}
-
-	return 0;
-}
-
-static int adjust_vpu_clk(unsigned int clk_level)
-{
-	unsigned int clk;
-	int ret = 0;
-
-	ret = vpu_chip_valid_check();
-	if (ret)
-		return -1;
-
-	if (vpu_clk_table[vpu_conf.clk_level].mux == GPLL_CLK) {
-		if (vpu_conf.data->gp_pll_valid == 0) {
-			VPUERR("gp_pll is invalid\n");
-			return -1;
-		}
-
-		ret = switch_gp_pll(1);
-		if (ret) {
-			VPUERR("%s: exit\n", __func__);
-			return ret;
-		}
-	}
-
-	if ((IS_ERR_OR_NULL(vpu_conf.vpu_clk0)) ||
-	    (IS_ERR_OR_NULL(vpu_conf.vpu_clk1)) ||
-	    (IS_ERR_OR_NULL(vpu_conf.vpu_clk))) {
-		VPUERR("%s: vpu_clk\n", __func__);
-		return -1;
-	}
-
-	vpu_conf.clk_level = clk_level;
-
-	/* step 1:  switch to 2nd vpu clk patch */
-	clk = vpu_clk_table[vpu_conf.data->clk_level_dft].freq;
-	ret = clk_set_rate(vpu_conf.vpu_clk1, clk);
-	if (ret)
-		return ret;
-	clk_set_parent(vpu_conf.vpu_clk, vpu_conf.vpu_clk1);
-	usleep_range(10, 15);
-	/* step 2:  adjust 1st vpu clk frequency */
-	clk = vpu_clk_table[vpu_conf.clk_level].freq;
-	ret = clk_set_rate(vpu_conf.vpu_clk0, clk);
-	if (ret)
-		return ret;
-	usleep_range(20, 25);
-	/* step 3:  switch back to 1st vpu clk patch */
-	clk_set_parent(vpu_conf.vpu_clk, vpu_conf.vpu_clk0);
-
-	clk = clk_get_rate(vpu_conf.vpu_clk);
-	VPUPR("set vpu clk: %uHz(%d), readback: %uHz(0x%x)\n",
-	      vpu_clk_table[vpu_conf.clk_level].freq, vpu_conf.clk_level,
-	      clk, (vpu_clk_read(vpu_conf.data->vpu_clk_reg)));
-
-	return ret;
-}
-
-static int set_vpu_clk(unsigned int vclk)
-{
-	int ret = 0;
-	unsigned int clk_level, clk;
-
-	mutex_lock(&vpu_clk_mutex);
-
-	if (vclk >= 100) { /* regard as vpu_clk */
-		clk_level = get_vpu_clk_level(vclk);
-	} else { /* regard as clk_level */
-		clk_level = vclk;
-	}
-
-	if (clk_level >= vpu_conf.data->clk_level_max) {
-		ret = 1;
-		VPUERR("set vpu clk out of supported range\n");
-		goto set_vpu_clk_limit;
-	}
-#ifdef LIMIT_VPU_CLK_LOW
-	if (clk_level < vpu_conf.data->clk_level_dft) {
-		ret = 3;
-		VPUERR("set vpu clk less than system default\n");
-		goto set_vpu_clk_limit;
-	}
-#endif
-	if (clk_level >= sizeof(vpu_clk_table) / sizeof(struct vpu_clk_s)) {
-		ret = 7;
-		VPUERR("clk_level %d is invalid\n", clk_level);
-		goto set_vpu_clk_limit;
-	}
-
-	clk = vpu_clk_get();
-	if ((clk > (vpu_clk_table[clk_level].freq + VPU_CLK_TOLERANCE)) ||
-	    (clk < (vpu_clk_table[clk_level].freq - VPU_CLK_TOLERANCE)))
-		ret = adjust_vpu_clk(clk_level);
-
-set_vpu_clk_limit:
-	mutex_unlock(&vpu_clk_mutex);
-	return ret;
-}
-
 static unsigned int vpu_vmod_clk_get(unsigned int vmod)
 {
 	unsigned int vpu_clk;
@@ -315,7 +79,7 @@ static unsigned int vpu_vmod_clk_get(unsigned int vmod)
 
 	if (vmod < VPU_MOD_MAX) {
 		vpu_clk = vpu_conf.clk_vmod[vmod];
-		vpu_clk = vpu_clk_table[vpu_clk].freq;
+		vpu_clk = vpu_conf.data->clk_table[vpu_clk].freq;
 	} else {
 		vpu_clk = 0;
 		VPUERR("%s: invalid vmod\n", __func__);
@@ -361,13 +125,16 @@ static int vpu_vmod_clk_request(unsigned int vclk, unsigned int vmod)
 		VPUPR("%s: %s %uHz\n",
 		      __func__,
 		      vpu_mod_table[vmod],
-		      vpu_clk_table[clk_level].freq);
+		      vpu_conf.data->clk_table[clk_level].freq);
 		dump_stack();
 	}
 
 	clk_level = get_vpu_clk_level_max_vmod();
-	if (clk_level != vpu_conf.clk_level)
-		adjust_vpu_clk(clk_level);
+	if (clk_level != vpu_conf.clk_level) {
+		mutex_lock(&vpu_clk_mutex);
+		set_vpu_clk(clk_level);
+		mutex_unlock(&vpu_clk_mutex);
+	}
 
 	mutex_unlock(&vpu_clk_mutex);
 #endif
@@ -402,53 +169,15 @@ static int vpu_vmod_clk_release(unsigned int vmod)
 	}
 
 	clk_level = get_vpu_clk_level_max_vmod();
-	if (clk_level != vpu_conf.clk_level)
-		adjust_vpu_clk(clk_level);
+	if (clk_level != vpu_conf.clk_level) {
+		mutex_lock(&vpu_clk_mutex);
+		set_vpu_clk(clk_level);
+		mutex_unlock(&vpu_clk_mutex);
+	}
 
 	mutex_unlock(&vpu_clk_mutex);
 #endif
 	return ret;
-}
-
-static int vpu_vmod_mem_pd_switch(unsigned int vmod, int flag)
-{
-	unsigned int _val, _reg, _bit, _len;
-	struct vpu_ctrl_s *table;
-	int i = 0, ret = 0, done = 0;
-
-	ret = vpu_chip_valid_check();
-	if (ret)
-		return -1;
-	if (vmod >= VPU_MOD_MAX)
-		return -1;
-
-	table = vpu_conf.data->mem_pd_table;
-	if (!table)
-		return -1;
-	while (i < VPU_MEM_PD_CNT_MAX) {
-		if (table[i].vmod == VPU_MOD_MAX)
-			break;
-		if (table[i].vmod == vmod) {
-			_reg = table[i].reg;
-			_bit = table[i].bit;
-			_len = table[i].len;
-			if (flag == VPU_MEM_POWER_ON) {
-				_val = 0x0;
-			} else {
-				if (_len == 32)
-					_val = 0xffffffff;
-				else
-					_val = (1 << _len) - 1;
-			}
-			vpu_clk_setb(_reg, _val, _bit, _len);
-			done++;
-		}
-		i++;
-	}
-
-	if (done == 0)
-		return -1;
-	return 0;
 }
 
 static int vpu_vmod_mem_pd_switch_new(unsigned int vmod, int flag)
@@ -910,7 +639,8 @@ void vpu_dev_mem_power_on(struct vpu_dev_s *vpu_dev)
 		return;
 	}
 	if (!vpu_conf.data->mempd_switch) {
-		VPUERR("switch_vpu_mem_pd: no mempd_switch\n");
+		if (vpu_debug_print_flag)
+			VPUPR("switch_vpu_mem_pd: no mempd_switch\n");
 		return;
 	}
 
@@ -959,7 +689,8 @@ void vpu_dev_mem_power_down(struct vpu_dev_s *vpu_dev)
 		return;
 	}
 	if (!vpu_conf.data->mempd_switch) {
-		VPUERR("switch_vpu_mem_pd: no mempd_switch\n");
+		if (vpu_debug_print_flag)
+			VPUPR("switch_vpu_mem_pd: no mempd_switch\n");
 		return;
 	}
 
@@ -1006,7 +737,8 @@ int vpu_dev_mem_pd_get(struct vpu_dev_s *vpu_dev)
 	if (ret)
 		return -1;
 	if (!vpu_conf.data->mempd_get) {
-		VPUERR("%s: no mempd_get\n", __func__);
+		if (vpu_debug_print_flag)
+			VPUPR("%s: no mempd_get\n", __func__);
 		return -1;
 	}
 
@@ -1177,7 +909,9 @@ static ssize_t vpu_clk_debug(struct class *class, struct class_attribute *attr,
 				VPUPR("set clk frequency: %uHz\n", tmp[0]);
 			else
 				VPUPR("set clk level: %u\n", tmp[0]);
+			mutex_lock(&vpu_clk_mutex);
 			set_vpu_clk(tmp[0]);
+			mutex_unlock(&vpu_clk_mutex);
 		} else {
 			VPUERR("invalid parameters\n");
 		}
@@ -1211,12 +945,12 @@ static ssize_t vpu_clk_debug(struct class *class, struct class_attribute *attr,
 			tmp[0] = (tmp[0] >= VPU_MOD_MAX) ? VPU_MOD_MAX : tmp[0];
 			VPUPR("clk holdings:\n");
 			pr_info("%s:  %uHz(%u)\n", vpu_mod_table[tmp[0]],
-				vpu_clk_table[vpu_conf.clk_vmod[tmp[0]]].freq,
+				vpu_conf.data->clk_table[vpu_conf.clk_vmod[tmp[0]]].freq,
 				vpu_conf.clk_vmod[tmp[0]]);
 		} else {
 			n = get_vpu_clk_level_max_vmod();
 			VPUPR("clk max holdings: %uHz(%u)\n",
-			      vpu_clk_table[n].freq, n);
+			      vpu_conf.data->clk_table[n].freq, n);
 		}
 		break;
 	default:
@@ -1264,7 +998,7 @@ static ssize_t vpu_mem_debug(struct class *class, struct class_attribute *attr,
 			      vpu_mod_table[tmp[0]],
 			      (tmp[1] ? "DOWN" : "ON"));
 			if (!vpu_conf.data->mempd_switch) {
-				VPUERR("switch_vpu_mem_pd: no mempd_switch\n");
+				VPUPR("switch_vpu_mem_pd: no mempd_switch\n");
 				return count;
 			}
 			if (tmp[0] >= VPU_MOD_MAX) {
@@ -1283,7 +1017,7 @@ static ssize_t vpu_mem_debug(struct class *class, struct class_attribute *attr,
 	case 'i':
 		VPUPR("vpu modules:\n");
 		if (!vpu_conf.data->mempd_get) {
-			VPUERR("%s: no mempd_get\n", __func__);
+			VPUPR("%s: no mempd_get\n", __func__);
 			return count;
 		}
 		for (i = 0; i < VPU_MOD_MAX; i++) {
@@ -1393,40 +1127,39 @@ static ssize_t vpu_dev_debug(struct class *class, struct class_attribute *attr,
 	return count;
 }
 
-static unsigned int vcbus_reg[] = {
-	0x1b7f, /* VENC_VDAC_TST_VAL */
-	0x1c30, /* ENCP_DVI_HSO_BEGIN */
-	0x1d00, /* VPP_DUMMY_DATA */
-	0x2730, /* VPU_VPU_PWM_V0 */
-};
-
 static void vcbus_test(void)
 {
-	unsigned int val;
-	unsigned int temp;
+	unsigned int *test_table;
+	unsigned int val, temp;
 	int i, j;
 
+	if (!vpu_conf.data->test_reg_table) {
+		VPUERR("%s: no test_reg_table\n", __func__);
+		return;
+	}
+	test_table = vpu_conf.data->test_reg_table;
+
 	VPUPR("vcbus test:\n");
-	for (i = 0; i < ARRAY_SIZE(vcbus_reg); i++) {
+	for (i = 0; i < VCBUS_REG_CNT_MAX; i++) {
 		for (j = 0; j < 24; j++) {
-			val = vpu_vcbus_read(vcbus_reg[i]);
+			val = vpu_vcbus_read(test_table[i]);
 			pr_info("%02d read 0x%04x=0x%08x\n",
-				j, vcbus_reg[i], val);
+				j, test_table[i], val);
 		}
 		pr_info("\n");
 	}
 	temp = 0x5a5a5a5a;
-	for (i = 0; i < ARRAY_SIZE(vcbus_reg); i++) {
-		vpu_vcbus_write(vcbus_reg[i], temp);
-		val = vpu_vcbus_read(vcbus_reg[i]);
+	for (i = 0; i < VCBUS_REG_CNT_MAX; i++) {
+		vpu_vcbus_write(test_table[i], temp);
+		val = vpu_vcbus_read(test_table[i]);
 		pr_info("write 0x%04x=0x%08x, readback: 0x%08x\n",
-			vcbus_reg[i], temp, val);
+			test_table[i], temp, val);
 	}
-	for (i = 0; i < ARRAY_SIZE(vcbus_reg); i++) {
+	for (i = 0; i < VCBUS_REG_CNT_MAX; i++) {
 		for (j = 0; j < 24; j++) {
-			val = vpu_vcbus_read(vcbus_reg[i]);
+			val = vpu_vcbus_read(test_table[i]);
 			pr_info("%02d read 0x%04x=0x%08x\n",
-				j, vcbus_reg[i], val);
+				j, test_table[i], val);
 		}
 		pr_info("\n");
 	}
@@ -1487,10 +1220,10 @@ static ssize_t vpu_debug_info(struct class *class,
 		       "clk_level max:  %d(%dHz)\n\n",
 		       clk,
 		       vpu_conf.clk_level,
-		       vpu_clk_table[vpu_conf.clk_level].freq,
+		       vpu_conf.data->clk_table[vpu_conf.clk_level].freq,
 		       vpu_conf.data->clk_level_dft,
-		       vpu_clk_table[vpu_conf.data->clk_level_dft].freq,
-		       level_max, vpu_clk_table[level_max].freq);
+		       vpu_conf.data->clk_table[vpu_conf.data->clk_level_dft].freq,
+		       level_max, vpu_conf.data->clk_table[level_max].freq);
 
 	for (i = 0; i < VPU_MEM_PD_REG_CNT; i++)
 		_reg[i] = vpu_conf.data->mem_pd_reg[i];
@@ -1655,7 +1388,7 @@ static int get_vpu_config(struct platform_device *pdev)
 		vpu_conf.clk_level = val;
 	}
 	VPUPR("load vpu_clk: %uHz(%u)\n",
-	      vpu_clk_table[val].freq, vpu_conf.clk_level);
+	      vpu_conf.data->clk_table[val].freq, vpu_conf.clk_level);
 
 	ret = of_property_read_u32(vpu_np, "debug_print", &val);
 	if (ret) {
@@ -1671,59 +1404,20 @@ static int get_vpu_config(struct platform_device *pdev)
 
 static void vpu_clktree_init(struct device *dev)
 {
-	struct clk *clk_vapb, *clk_vpu_intr;
+	if (!vpu_conf.data->clktree_init)
+		return;
 
-	/* init & enable vapb_clk */
-	clk_vapb = devm_clk_get(dev, "vapb_clk");
-	if (IS_ERR_OR_NULL(clk_vapb))
-		VPUERR("%s: vapb_clk\n", __func__);
-	else
-		clk_prepare_enable(clk_vapb);
-
-	clk_vpu_intr = devm_clk_get(dev, "vpu_intr_gate");
-	if (IS_ERR_OR_NULL(clk_vpu_intr))
-		VPUERR("%s: vpu_intr_gate\n", __func__);
-	else
-		clk_prepare_enable(clk_vpu_intr);
-
-	if (vpu_conf.data->gp_pll_valid) {
-		vpu_conf.gp_pll = devm_clk_get(dev, "gp_pll");
-		if (IS_ERR_OR_NULL(vpu_conf.gp_pll))
-			VPUERR("%s: gp_pll\n", __func__);
-	}
-
-	/* init & enable vpu_clk */
-	vpu_conf.vpu_clk0 = devm_clk_get(dev, "vpu_clk0");
-	vpu_conf.vpu_clk1 = devm_clk_get(dev, "vpu_clk1");
-	vpu_conf.vpu_clk = devm_clk_get(dev, "vpu_clk");
-	if ((IS_ERR_OR_NULL(vpu_conf.vpu_clk0)) ||
-	    (IS_ERR_OR_NULL(vpu_conf.vpu_clk1)) ||
-	    (IS_ERR_OR_NULL(vpu_conf.vpu_clk))) {
-		VPUERR("%s: vpu_clk\n", __func__);
-	} else {
-		clk_set_parent(vpu_conf.vpu_clk, vpu_conf.vpu_clk0);
-		clk_prepare_enable(vpu_conf.vpu_clk);
-	}
-
+	vpu_conf.data->clktree_init(dev);
 	if (vpu_debug_print_flag)
 		VPUPR("clktree_init\n");
 }
 
 static int vpu_power_init_check(void)
 {
-	unsigned int val;
 	int ret = 0;
 
-	val = vpu_clk_getb(vpu_conf.data->vpu_clk_reg, 31, 1);
-	if (val)
-		val = vpu_clk_getb(vpu_conf.data->vpu_clk_reg, 24, 1);
-	else
-		val = vpu_clk_getb(vpu_conf.data->vpu_clk_reg, 8, 1);
-	ret = (val == 0) ? 1 : 0;
-	if (vpu_debug_print_flag) {
-		VPUPR("%s: vpu_clk_ctrl: 0x%08x, ret=%d\n",
-		      __func__, vpu_clk_read(vpu_conf.data->vpu_clk_reg), ret);
-	}
+	if (vpu_conf.data->power_init_check)
+		ret = vpu_conf.data->power_init_check();
 
 	return ret;
 }
@@ -1738,222 +1432,11 @@ static void vpu_power_init(void)
 
 	if (vpu_conf.data->power_on)
 		vpu_conf.data->power_on();
-	vpu_mem_pd_init_off();
-	vpu_module_init_config();
+	if (vpu_conf.data->mem_pd_init_off)
+		vpu_conf.data->mem_pd_init_off();
+	if (vpu_conf.data->module_init_config)
+		vpu_conf.data->module_init_config();
 }
-
-static struct vpu_data_s vpu_data_g12a = {
-	.chip_type = VPU_CHIP_G12A,
-	.chip_name = "g12a",
-	.clk_level_dft = CLK_LEVEL_DFT_G12A,
-	.clk_level_max = CLK_LEVEL_MAX_G12A,
-	.fclk_div_table = fclk_div_table_g12a,
-	.reg_map_table = vpu_reg_table,
-
-	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
-	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
-
-	.gp_pll_valid = 0,
-	.mem_pd_reg[0] = HHI_VPU_MEM_PD_REG0,
-	.mem_pd_reg[1] = HHI_VPU_MEM_PD_REG1,
-	.mem_pd_reg[2] = HHI_VPU_MEM_PD_REG2,
-	.mem_pd_reg[3] = VPU_REG_END,
-	.mem_pd_reg[4] = VPU_REG_END,
-	.mem_pd_reg_flag = 0,
-
-	.pwrctrl_id_table = NULL,
-
-	.power_table = vpu_power_g12a,
-	.iso_table = vpu_iso_g12a,
-	.reset_table = vpu_reset_g12a,
-	.module_init_table = NULL,
-
-	.mem_pd_table = vpu_mem_pd_g12a,
-	.clk_gate_table = vpu_clk_gate_g12a,
-
-	.power_on = vpu_power_on,
-	.power_off = vpu_power_off,
-	.mempd_switch = vpu_vmod_mem_pd_switch,
-	.mempd_get = vpu_vmod_mem_pd_get,
-};
-
-static struct vpu_data_s vpu_data_g12b = {
-	.chip_type = VPU_CHIP_G12B,
-	.chip_name = "g12b",
-	.clk_level_dft = CLK_LEVEL_DFT_G12A,
-	.clk_level_max = CLK_LEVEL_MAX_G12A,
-	.fclk_div_table = fclk_div_table_g12a,
-	.reg_map_table = vpu_reg_table,
-
-	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
-	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
-
-	.gp_pll_valid = 0,
-	.mem_pd_reg[0] = HHI_VPU_MEM_PD_REG0,
-	.mem_pd_reg[1] = HHI_VPU_MEM_PD_REG1,
-	.mem_pd_reg[2] = HHI_VPU_MEM_PD_REG2,
-	.mem_pd_reg[3] = VPU_REG_END,
-	.mem_pd_reg[4] = VPU_REG_END,
-	.mem_pd_reg_flag = 0,
-
-	.pwrctrl_id_table = NULL,
-
-	.power_table = vpu_power_g12a,
-	.iso_table = vpu_iso_g12a,
-	.reset_table = vpu_reset_g12a,
-	.module_init_table = NULL,
-
-	.mem_pd_table = vpu_mem_pd_g12b,
-	.clk_gate_table = vpu_clk_gate_g12a,
-
-	.power_on = vpu_power_on,
-	.power_off = vpu_power_off,
-	.mempd_switch = vpu_vmod_mem_pd_switch,
-	.mempd_get = vpu_vmod_mem_pd_get,
-};
-
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
-static struct vpu_data_s vpu_data_tl1 = {
-	.chip_type = VPU_CHIP_TL1,
-	.chip_name = "tl1",
-	.clk_level_dft = CLK_LEVEL_DFT_G12A,
-	.clk_level_max = CLK_LEVEL_MAX_G12A,
-	.fclk_div_table = fclk_div_table_g12a,
-	.reg_map_table = vpu_reg_table,
-
-	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
-	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
-
-	.gp_pll_valid = 0,
-	.mem_pd_reg[0] = HHI_VPU_MEM_PD_REG0,
-	.mem_pd_reg[1] = HHI_VPU_MEM_PD_REG1,
-	.mem_pd_reg[2] = HHI_VPU_MEM_PD_REG2,
-	.mem_pd_reg[3] = HHI_VPU_MEM_PD_REG3,
-	.mem_pd_reg[4] = HHI_VPU_MEM_PD_REG4,
-	.mem_pd_reg_flag = 0,
-
-	.pwrctrl_id_table = NULL,
-
-	.power_table = vpu_power_g12a,
-	.iso_table = vpu_iso_g12a,
-	.reset_table = vpu_reset_tl1,
-	.module_init_table = NULL,
-
-	.mem_pd_table = vpu_mem_pd_tl1,
-	.clk_gate_table = vpu_clk_gate_g12a,
-
-	.power_on = vpu_power_on,
-	.power_off = vpu_power_off,
-	.mempd_switch = vpu_vmod_mem_pd_switch,
-	.mempd_get = vpu_vmod_mem_pd_get,
-};
-#endif
-
-static struct vpu_data_s vpu_data_sm1 = {
-	.chip_type = VPU_CHIP_SM1,
-	.chip_name = "sm1",
-	.clk_level_dft = CLK_LEVEL_DFT_G12A,
-	.clk_level_max = CLK_LEVEL_MAX_G12A,
-	.fclk_div_table = fclk_div_table_g12a,
-	.reg_map_table = vpu_reg_table,
-
-	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
-	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
-
-	.gp_pll_valid = 0,
-	.mem_pd_reg[0] = HHI_VPU_MEM_PD_REG0,
-	.mem_pd_reg[1] = HHI_VPU_MEM_PD_REG1,
-	.mem_pd_reg[2] = HHI_VPU_MEM_PD_REG2,
-	.mem_pd_reg[3] = HHI_VPU_MEM_PD_REG3_SM1,
-	.mem_pd_reg[4] = HHI_VPU_MEM_PD_REG4_SM1,
-	.mem_pd_reg_flag = 0,
-
-	.pwrctrl_id_table = NULL,
-
-	.power_table = vpu_power_g12a,
-	.iso_table = vpu_iso_sm1,
-	.reset_table = vpu_reset_g12a,
-	.module_init_table = NULL,
-
-	.mem_pd_table = vpu_mem_pd_sm1,
-	.clk_gate_table = vpu_clk_gate_g12a,
-
-	.power_on = vpu_power_on,
-	.power_off = vpu_power_off,
-	.mempd_switch = vpu_vmod_mem_pd_switch,
-	.mempd_get = vpu_vmod_mem_pd_get,
-};
-
-static struct vpu_data_s vpu_data_tm2 = {
-	.chip_type = VPU_CHIP_TM2,
-	.chip_name = "tm2",
-	.clk_level_dft = CLK_LEVEL_DFT_G12A,
-	.clk_level_max = CLK_LEVEL_MAX_G12A,
-	.fclk_div_table = fclk_div_table_g12a,
-	.reg_map_table = vpu_reg_table,
-
-	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
-	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
-
-	.gp_pll_valid = 0,
-	.mem_pd_reg[0] = HHI_VPU_MEM_PD_REG0,
-	.mem_pd_reg[1] = HHI_VPU_MEM_PD_REG1,
-	.mem_pd_reg[2] = HHI_VPU_MEM_PD_REG2,
-	.mem_pd_reg[3] = HHI_VPU_MEM_PD_REG3,
-	.mem_pd_reg[4] = HHI_VPU_MEM_PD_REG4,
-	.mem_pd_reg_flag = 0,
-
-	.pwrctrl_id_table = NULL,
-
-	.power_table = vpu_power_g12a,
-	.iso_table = vpu_iso_sm1,
-	.reset_table = vpu_reset_tl1,
-	.module_init_table = NULL,
-
-	.mem_pd_table = vpu_mem_pd_tm2,
-	.clk_gate_table = vpu_clk_gate_g12a,
-
-	.power_on = vpu_power_on,
-	.power_off = vpu_power_off,
-	.mempd_switch = vpu_vmod_mem_pd_switch,
-	.mempd_get = vpu_vmod_mem_pd_get,
-};
-
-static struct vpu_data_s vpu_data_tm2b = {
-	.chip_type = VPU_CHIP_TM2B,
-	.chip_name = "tm2b",
-
-	.clk_level_dft = CLK_LEVEL_DFT_G12A,
-	.clk_level_max = CLK_LEVEL_MAX_G12A,
-	.fclk_div_table = fclk_div_table_g12a,
-	.reg_map_table = vpu_reg_table,
-
-	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
-	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
-
-	.gp_pll_valid = 0,
-	.mem_pd_reg[0] = HHI_VPU_MEM_PD_REG0,
-	.mem_pd_reg[1] = HHI_VPU_MEM_PD_REG1,
-	.mem_pd_reg[2] = HHI_VPU_MEM_PD_REG2,
-	.mem_pd_reg[3] = HHI_VPU_MEM_PD_REG3,
-	.mem_pd_reg[4] = HHI_VPU_MEM_PD_REG4,
-	.mem_pd_reg_flag = 0,
-
-	.pwrctrl_id_table = NULL,
-
-	.power_table = vpu_power_g12a,
-	.iso_table = vpu_iso_sm1,
-	.reset_table = vpu_reset_tl1,
-	.module_init_table = NULL,
-
-	.mem_pd_table = vpu_mem_pd_tm2b,
-	.clk_gate_table = vpu_clk_gate_g12a,
-
-	.power_on = vpu_power_on,
-	.power_off = vpu_power_off,
-	.mempd_switch = vpu_vmod_mem_pd_switch,
-	.mempd_get = vpu_vmod_mem_pd_get,
-};
 
 static struct vpu_data_s vpu_data_sc2 = {
 	.chip_type = VPU_CHIP_SC2,
@@ -1962,17 +1445,19 @@ static struct vpu_data_s vpu_data_sc2 = {
 	.clk_level_dft = CLK_LEVEL_DFT_G12A,
 	.clk_level_max = CLK_LEVEL_MAX_G12A,
 	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
 	.reg_map_table = vpu_reg_table_new,
+	.test_reg_table = vcbus_test_reg,
 
-	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
-	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
+	.vpu_clk_reg = CLKCTRL_VOUTENC_CLK_CTRL,
+	.vapb_clk_reg = VPU_REG_END,
 
 	.gp_pll_valid = 0,
-	.mem_pd_reg[0] = PWRCTRL_MEM_PD5_SC2,
-	.mem_pd_reg[1] = PWRCTRL_MEM_PD6_SC2,
-	.mem_pd_reg[2] = PWRCTRL_MEM_PD7_SC2,
-	.mem_pd_reg[3] = PWRCTRL_MEM_PD8_SC2,
-	.mem_pd_reg[4] = PWRCTRL_MEM_PD9_SC2,
+	.mem_pd_reg[0] = VPU_REG_END,
+	.mem_pd_reg[1] = VPU_REG_END,
+	.mem_pd_reg[2] = VPU_REG_END,
+	.mem_pd_reg[3] = VPU_REG_END,
+	.mem_pd_reg[4] = VPU_REG_END,
 	.mem_pd_reg_flag = 1,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
@@ -1987,8 +1472,13 @@ static struct vpu_data_s vpu_data_sc2 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
 	.mempd_switch = vpu_vmod_mem_pd_switch_new,
 	.mempd_get = vpu_vmod_mem_pd_get_new,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
 };
 
 static struct vpu_data_s vpu_data_t5 = {
@@ -1998,7 +1488,9 @@ static struct vpu_data_s vpu_data_t5 = {
 	.clk_level_dft = CLK_LEVEL_DFT_G12A,
 	.clk_level_max = CLK_LEVEL_MAX_G12A,
 	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
 	.reg_map_table = vpu_reg_table_new,
+	.test_reg_table = vcbus_test_reg,
 
 	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
 	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
@@ -2023,8 +1515,13 @@ static struct vpu_data_s vpu_data_t5 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
 	.mempd_switch = vpu_vmod_mem_pd_switch_new,
 	.mempd_get = vpu_vmod_mem_pd_get_new,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
 };
 
 static struct vpu_data_s vpu_data_t5d = {
@@ -2034,7 +1531,9 @@ static struct vpu_data_s vpu_data_t5d = {
 	.clk_level_dft = CLK_LEVEL_DFT_T5D,
 	.clk_level_max = CLK_LEVEL_MAX_T5D,
 	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
 	.reg_map_table = vpu_reg_table_new,
+	.test_reg_table = vcbus_test_reg,
 
 	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
 	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
@@ -2059,8 +1558,13 @@ static struct vpu_data_s vpu_data_t5d = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
 	.mempd_switch = vpu_vmod_mem_pd_switch_new,
 	.mempd_get = vpu_vmod_mem_pd_get_new,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
 };
 
 static struct vpu_data_s vpu_data_t5w = {
@@ -2070,7 +1574,9 @@ static struct vpu_data_s vpu_data_t5w = {
 	.clk_level_dft = CLK_LEVEL_DFT_G12A,
 	.clk_level_max = CLK_LEVEL_MAX_G12A,
 	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
 	.reg_map_table = vpu_reg_table_new,
+	.test_reg_table = vcbus_test_reg,
 
 	.vpu_clk_reg = HHI_VPU_CLK_CTRL,
 	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
@@ -2095,10 +1601,13 @@ static struct vpu_data_s vpu_data_t5w = {
 
 	.power_on = NULL,
 	.power_off = NULL,
-//	.power_on = vpu_power_on_new,
-//	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
 	.mempd_switch = vpu_vmod_mem_pd_switch_new,
 	.mempd_get = vpu_vmod_mem_pd_get_new,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
 };
 
 static struct vpu_data_s vpu_data_t7 = {
@@ -2108,7 +1617,9 @@ static struct vpu_data_s vpu_data_t7 = {
 	.clk_level_dft = CLK_LEVEL_DFT_G12A,
 	.clk_level_max = CLK_LEVEL_MAX_G12A,
 	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
 	.reg_map_table = vpu_reg_table_new,
+	.test_reg_table = vcbus_test_reg,
 
 	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
@@ -2133,8 +1644,13 @@ static struct vpu_data_s vpu_data_t7 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
 	.mempd_switch = vpu_vmod_mem_pd_switch_new,
 	.mempd_get = vpu_vmod_mem_pd_get_new,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
 };
 
 static struct vpu_data_s vpu_data_s4 = {
@@ -2144,7 +1660,9 @@ static struct vpu_data_s vpu_data_s4 = {
 	.clk_level_dft = CLK_LEVEL_DFT_G12A,
 	.clk_level_max = CLK_LEVEL_MAX_G12A,
 	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
 	.reg_map_table = vpu_reg_table_new,
+	.test_reg_table = vcbus_test_reg,
 
 	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
@@ -2169,8 +1687,13 @@ static struct vpu_data_s vpu_data_s4 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
 	.mempd_switch = vpu_vmod_mem_pd_switch_new,
 	.mempd_get = vpu_vmod_mem_pd_get_new,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
 };
 
 static struct vpu_data_s vpu_data_t3 = {
@@ -2180,7 +1703,9 @@ static struct vpu_data_s vpu_data_t3 = {
 	.clk_level_dft = CLK_LEVEL_DFT_G12A,
 	.clk_level_max = CLK_LEVEL_MAX_G12A,
 	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
 	.reg_map_table = vpu_reg_table_new,
+	.test_reg_table = vcbus_test_reg,
 
 	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
@@ -2205,8 +1730,13 @@ static struct vpu_data_s vpu_data_t3 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
 	.mempd_switch = vpu_vmod_mem_pd_switch_new,
 	.mempd_get = vpu_vmod_mem_pd_get_new,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
 };
 
 static struct vpu_data_s vpu_data_s4d = {
@@ -2216,7 +1746,9 @@ static struct vpu_data_s vpu_data_s4d = {
 	.clk_level_dft = CLK_LEVEL_DFT_G12A,
 	.clk_level_max = CLK_LEVEL_MAX_G12A,
 	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
 	.reg_map_table = vpu_reg_table_new,
+	.test_reg_table = vcbus_test_reg,
 
 	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
@@ -2241,37 +1773,59 @@ static struct vpu_data_s vpu_data_s4d = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
 	.mempd_switch = vpu_vmod_mem_pd_switch_new,
 	.mempd_get = vpu_vmod_mem_pd_get_new,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
+};
+
+static struct vpu_data_s vpu_data_c3 = {
+	.chip_type = VPU_CHIP_C3,
+	.chip_name = "c3",
+
+	.clk_level_dft = CLK_LEVEL_DFT_C3,
+	.clk_level_max = CLK_LEVEL_MAX_C3,
+	.fclk_div_table = fclk_div_table_c3,
+	.clk_table = vpu_clk_table,
+	.reg_map_table = vpu_reg_table_c3,
+	.test_reg_table = vcbus_test_reg_c3,
+
+	.vpu_clk_reg = CLKCTRL_VOUTENC_CLK_CTRL,
+	.vapb_clk_reg = VPU_REG_END,
+
+	.gp_pll_valid = 0,
+	.mem_pd_reg[0] = VPU_REG_END,
+	.mem_pd_reg[1] = VPU_REG_END,
+	.mem_pd_reg[2] = VPU_REG_END,
+	.mem_pd_reg[3] = VPU_REG_END,
+	.mem_pd_reg[4] = VPU_REG_END,
+	.mem_pd_reg_flag = 1,
+
+	.pwrctrl_id_table = NULL,
+
+	.power_table = NULL,
+	.iso_table = NULL,
+	.reset_table = NULL,
+	.module_init_table = NULL,
+
+	.mem_pd_table = NULL,
+	.clk_gate_table = NULL,
+
+	.power_on = NULL,
+	.power_off = NULL,
+	.mem_pd_init_off = NULL,
+	.module_init_config = NULL,
+	.power_init_check = vpu_power_init_check_c3,
+	.mempd_switch = NULL,
+	.mempd_get = NULL,
+	.clk_apply = vpu_clk_apply_c3,
+	.clktree_init = vpu_clktree_init_c3,
 };
 
 static const struct of_device_id vpu_of_table[] = {
-	{
-		.compatible = "amlogic, vpu-g12a",
-		.data = &vpu_data_g12a,
-	},
-	{
-		.compatible = "amlogic, vpu-g12b",
-		.data = &vpu_data_g12b,
-	},
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
-	{
-		.compatible = "amlogic, vpu-tl1",
-		.data = &vpu_data_tl1,
-	},
-#endif
-	{
-		.compatible = "amlogic, vpu-sm1",
-		.data = &vpu_data_sm1,
-	},
-	{
-		.compatible = "amlogic, vpu-tm2",
-		.data = &vpu_data_tm2,
-	},
-	{
-		.compatible = "amlogic, vpu-tm2b",
-		.data = &vpu_data_tm2b,
-	},
 	{
 		.compatible = "amlogic, vpu-sc2",
 		.data = &vpu_data_sc2,
@@ -2304,6 +1858,10 @@ static const struct of_device_id vpu_of_table[] = {
 		.compatible = "amlogic, vpu-t5w",
 		.data = &vpu_data_t5w,
 	},
+	{
+		.compatible = "amlogic, vpu-c3",
+		.data = &vpu_data_c3,
+	},
 	{}
 };
 
@@ -2331,8 +1889,7 @@ static int vpu_probe(struct platform_device *pdev)
 	      vpu_conf.data->chip_name);
 
 	vpu_conf.clk_vmod = devm_kcalloc(&pdev->dev, VPU_MOD_MAX,
-					 sizeof(unsigned int),
-			GFP_KERNEL);
+					 sizeof(unsigned int), GFP_KERNEL);
 	if (!vpu_conf.clk_vmod)
 		VPUERR("%s: Not enough memory\n", __func__);
 
@@ -2347,7 +1904,9 @@ static int vpu_probe(struct platform_device *pdev)
 
 	ret = vpu_power_init_check();
 	vpu_clktree_init(&pdev->dev);
+	mutex_lock(&vpu_clk_mutex);
 	set_vpu_clk(vpu_conf.clk_level);
+	mutex_unlock(&vpu_clk_mutex);
 	if (ret)
 		vpu_power_init();
 	creat_vpu_debug_class();
@@ -2381,7 +1940,9 @@ static int vpu_resume(struct platform_device *pdev)
 	if (!vpu_conf.data)
 		return 0;
 
+	mutex_lock(&vpu_clk_mutex);
 	set_vpu_clk(vpu_conf.clk_level);
+	mutex_unlock(&vpu_clk_mutex);
 	VPUPR("resume clk: %uHz(0x%x)\n",
 	      vpu_clk_get(), (vpu_clk_read(vpu_conf.data->vpu_clk_reg)));
 	return 0;

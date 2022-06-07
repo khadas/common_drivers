@@ -12,13 +12,7 @@
 #define VPUERR(fmt, args ...)    pr_err("vpu: error: " fmt, ## args)
 
 enum vpu_chip_e {
-	VPU_CHIP_G12A = 0,
-	VPU_CHIP_G12B,
-	VPU_CHIP_TL1,
-	VPU_CHIP_SM1,
-	VPU_CHIP_TM2,
-	VPU_CHIP_TM2B,
-	VPU_CHIP_SC2,
+	VPU_CHIP_SC2 = 0,
 	VPU_CHIP_T5,
 	VPU_CHIP_T5D,
 	VPU_CHIP_T7,
@@ -26,11 +20,13 @@ enum vpu_chip_e {
 	VPU_CHIP_S4D,
 	VPU_CHIP_T3,
 	VPU_CHIP_T5W,
+	VPU_CHIP_C3,
 	VPU_CHIP_MAX,
 };
 
-#define VPU_HDMI_ISO_CNT_MAX    5
-#define VPU_RESET_CNT_MAX       10
+#define CLK_FPLL_FREQ           2000 /* MHz */
+#define VPU_CLK_TOLERANCE       1000000 /* Hz */
+
 #define VPU_MOD_INIT_CNT_MAX    20
 #define VPU_MEM_PD_CNT_MAX      150
 #define VPU_CLK_GATE_CNT_MAX    150
@@ -47,6 +43,18 @@ enum vpu_chip_e {
 #define PM_VI_CLK1_T3           10
 #define PM_VI_CLK2_T3           11
 #define PM_NOC_VPU_T3           21
+
+enum vpu_mux_e {
+	FCLK_DIV4 = 0,
+	FCLK_DIV3,
+	FCLK_DIV5,
+	FCLK_DIV7,
+	MPLL_CLK1,
+	VID_PLL_CLK,
+	VID2_PLL_CLK,
+	GPLL_CLK,
+	FCLK_DIV_MAX,
+};
 
 struct fclk_div_s {
 	unsigned int fclk_id;
@@ -80,7 +88,9 @@ struct vpu_data_s {
 	unsigned char clk_level_dft;
 	unsigned char clk_level_max;
 	struct fclk_div_s *fclk_div_table;
+	struct vpu_clk_s *clk_table;
 	unsigned int *reg_map_table;
+	unsigned int *test_reg_table;
 
 	unsigned int vpu_clk_reg;
 	unsigned int vapb_clk_reg;
@@ -100,8 +110,13 @@ struct vpu_data_s {
 
 	void (*power_on)(void);
 	void (*power_off)(void);
+	void (*mem_pd_init_off)(void);
+	void (*module_init_config)(void);
+	int (*power_init_check)(void);
 	int (*mempd_switch)(unsigned int vmod, int flag);
 	int (*mempd_get)(unsigned int vmod);
+	int (*clk_apply)(unsigned int vclk);
+	void (*clktree_init)(struct device *dev);
 };
 
 struct vpu_conf_s {
@@ -130,12 +145,21 @@ extern struct vpu_conf_s vpu_conf;
 extern int vpu_debug_print_flag;
 extern int vpu_reg_table[];
 extern int vpu_reg_table_new[];
+extern int vpu_reg_table_c3[];
 
 int vpu_chip_valid_check(void);
-void vpu_ctrl_probe(void);
+
+unsigned int get_vpu_clk_level_max_vmod(void);
+int vpu_clk_apply_dft(unsigned int clk_level);
+int vpu_clk_apply_c3(unsigned int clk_level);
+int set_vpu_clk(unsigned int vclk);
+void vpu_clktree_init_dft(struct device *dev);
+void vpu_clktree_init_c3(struct device *dev);
 
 void vpu_mem_pd_init_off(void);
 void vpu_module_init_config(void);
+int vpu_power_init_check_dft(void);
+int vpu_power_init_check_c3(void);
 void vpu_power_on(void);
 void vpu_power_off(void);
 void vpu_power_on_new(void);

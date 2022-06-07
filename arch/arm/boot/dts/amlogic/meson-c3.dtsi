@@ -1693,6 +1693,25 @@
 		power-domains = <&pwrdm PDID_C3_GE2D>;
 	};
 
+	vpu: vpu {
+		compatible = "amlogic, vpu-c3";
+		status = "okay";
+		reg = <0xfe000000 0x120    /* clk */
+		       0xfe350000 0xb00>; /* vcbus */
+		clocks = <&clkc CLKID_VOUT_MCLK>;
+		clock-names = "vpu_clk";
+		clk_level = <4>;
+		/* 0: 100.0M    1: 166.7M    2: 200.0M    3: 250.0M */
+		/* 4: 333.3M */
+	};
+
+	vclk_serve: vclk_serve {
+		compatible = "amlogic, vclk_serve";
+		status = "okay";
+		reg = <0xfe008000 0x400     /* ana */
+			0xfe000000 0x600>;    /* clk */
+	};
+
 	vout: vout {
 		compatible = "amlogic, vout";
 		status = "okay";

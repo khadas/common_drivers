@@ -27,6 +27,7 @@
 
 struct vout_mux_data_s {
 	int vdin_meas_id;
+	unsigned int (*fr_measure)(void);
 	void (*update_viu_mux)(int index, unsigned int mux_sel);
 	void (*clear_viu_mux)(int index, unsigned int mux_sel);
 };
@@ -43,16 +44,16 @@ static inline unsigned int vout_do_div(unsigned long long num, unsigned int den)
 	return (unsigned int)val;
 }
 
-void vout_vdo_meas_ctrl_init(void)
+static void vout_vdo_meas_ctrl_init(void)
 {
 	vout_vcbus_write(VPP_VDO_MEAS_CTRL, 0);
 	vout_vdo_meas_init = 1;
 }
 
-unsigned int vout_frame_rate_measure(void)
+static unsigned int vout_frame_rate_measure_dft(void)
 {
-	int clk_mux = 38;
-	unsigned int val[2], fr;
+	int clk_mux = -1;
+	unsigned int val[2], fr = 0;
 	unsigned long long msr_clk;
 
 	if (vout_mux_data)
@@ -72,8 +73,19 @@ unsigned int vout_frame_rate_measure(void)
 	msr_clk *= 1000;
 	if (val[0] & 0xffff)
 		return 0;
-	fr = vout_do_div(msr_clk, val[1]);
+	if (val[1])
+		fr = vout_do_div(msr_clk, val[1]);
 
+	return fr;
+}
+
+unsigned int vout_frame_rate_measure(void)
+{
+	unsigned int fr;
+
+	if (!vout_mux_data || !vout_mux_data->fr_measure)
+		return 0;
+	fr = vout_mux_data->fr_measure();
 	return fr;
 }
 
@@ -241,24 +253,18 @@ static void vout_viu_mux_clear_t7(int index, unsigned int mux_sel)
 
 void vout_viu_mux_update(int index, unsigned int mux_sel)
 {
-	/* for default case */
-	if (!vout_mux_data) {
-		vout_viu_mux_update_default(index, mux_sel);
+	if (!vout_mux_data)
 		return;
-	}
 
-	/* for new case */
 	if (vout_mux_data->update_viu_mux)
 		vout_mux_data->update_viu_mux(index, mux_sel);
 }
 
 void vout_viu_mux_clear(int index, unsigned int mux_sel)
 {
-	/* for default case */
 	if (!vout_mux_data)
 		return;
 
-	/* for new case */
 	if (vout_mux_data->clear_viu_mux)
 		vout_mux_data->clear_viu_mux(index, mux_sel);
 }
@@ -266,24 +272,28 @@ void vout_viu_mux_clear(int index, unsigned int mux_sel)
 /* ********************************************************* */
 static struct vout_mux_data_s vout_mux_match_data = {
 	.vdin_meas_id = 38,
+	.fr_measure = vout_frame_rate_measure_dft,
 	.update_viu_mux = vout_viu_mux_update_default,
 	.clear_viu_mux = NULL,
 };
 
 static struct vout_mux_data_s vout_mux_match_data_t7 = {
 	.vdin_meas_id = 60,
+	.fr_measure = vout_frame_rate_measure_dft,
 	.update_viu_mux = vout_viu_mux_update_t7,
 	.clear_viu_mux = vout_viu_mux_clear_t7,
 };
 
 static struct vout_mux_data_s vout_mux_match_data_t3 = {
 	.vdin_meas_id = 60,
+	.fr_measure = vout_frame_rate_measure_dft,
 	.update_viu_mux = vout_viu_mux_update_t3,
 	.clear_viu_mux = vout_viu_mux_clear_t7,
 };
 
 static struct vout_mux_data_s vout_mux_match_data_t5w = {
 	.vdin_meas_id = 38,
+	.fr_measure = vout_frame_rate_measure_dft,
 	.update_viu_mux = vout_viu_mux_update_t3,
 	.clear_viu_mux = vout_viu_mux_clear_t7,
 };
@@ -318,6 +328,8 @@ static int vout_mux_probe(struct platform_device *pdev)
 		return -1;
 	}
 	vout_mux_data = (struct vout_mux_data_s *)match->data;
+
+	vout_vdo_meas_ctrl_init();
 
 	VOUTPR("%s OK\n", __func__);
 

@@ -7,11 +7,6 @@
 #define __VPU_REG_H__
 #include <linux/platform_device.h>
 
-#define VPU_HIU_BASE                 0xff63c000
-#define VPU_VCBUS_BASE               0xff900000
-#define VPU_CBUS_BASE                0xffd00000
-#define VPU_AOBUS_BASE               0xff800000
-
 #define VPU_REG_END                  0xffff
 
 /* ********************************
@@ -61,6 +56,8 @@
 #define CLKCTRL_VPU_CLK_CTRL         0x003a
 #define CLKCTRL_VAPBCLK_CTRL         0x003f
 
+#define CLKCTRL_VOUTENC_CLK_CTRL     0x0046
+
 /* cbus */
 #define RESET0_LEVEL                 0x0420
 #define RESET1_LEVEL                 0x0421
@@ -80,6 +77,14 @@
 #define VPU_RDARB_MODE_L2C1          0x279d
 #define VPU_WRARB_MODE_L2C1          0x27a2
 
+#define VENC_VDAC_TST_VAL            0x1b7f
+#define VPP_DUMMY_DATA               0x1d00
+#define VPU_VPU_PWM_V0               0x1ce0
+
+#define VPU_VOUT_BLEND_DUMDATA       0x0011
+#define VPP_VD1_MATRIX_OFFSET0_1     0x0289
+#define VPU_VOUT_DTH_DATA            0x0103
+
 int vpu_ioremap(struct platform_device *pdev, int *reg_map_table);
 
 unsigned int vpu_clk_read(unsigned int _reg);
@@ -94,13 +99,6 @@ void vpu_clk_clr_mask(unsigned int _reg, unsigned int _mask);
 unsigned int vpu_pwrctrl_read(unsigned int _reg);
 unsigned int vpu_pwrctrl_getb(unsigned int _reg,
 			      unsigned int _start, unsigned int _len);
-
-unsigned int vpu_cbus_read(unsigned int _reg);
-void vpu_cbus_write(unsigned int _reg, unsigned int _value);
-void vpu_cbus_setb(unsigned int _reg, unsigned int _value,
-		   unsigned int _start, unsigned int _len);
-void vpu_cbus_set_mask(unsigned int _reg, unsigned int _mask);
-void vpu_cbus_clr_mask(unsigned int _reg, unsigned int _mask);
 
 unsigned int vpu_ao_read(unsigned int _reg);
 void vpu_ao_write(unsigned int _reg, unsigned int _value);

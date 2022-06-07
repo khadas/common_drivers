@@ -1182,7 +1182,7 @@
 
 	ddr_bandwidth {
 		compatible = "amlogic,ddr-bandwidth-sc2";
-		status = "disabled";
+		status = "okay";
 		reg = <0 0xfe0360C0 0 0x100
 		       0 0xfe036c00 0 0x100>;
 		interrupts = <0 62 IRQ_TYPE_EDGE_RISING>;
@@ -1190,7 +1190,7 @@
 	};
 	dmc_monitor {
 		compatible = "amlogic,dmc_monitor-sc2";
-		status = "disabled";
+		status = "okay";
 		reg = <0 0xfe036000 0 0x100>;
 		reg_base = <0xfe036000>;
 		interrupts = <0 62 IRQ_TYPE_EDGE_RISING>;

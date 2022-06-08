@@ -847,8 +847,11 @@
 		clkaudio: audio_clocks {
 			compatible = "amlogic, a1-audio-clocks";
 			#clock-cells = <1>;
-			reg = <0xFE050000 0xb0>,
-				<0xFE054800 0x20>;
+			reg = <0xFE050000 0xb0>, <0xFE054800 0x20>;
+			reg-names = "audio_bus", "audio_vad_top";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			status = "okay";
 		};
 		audiobus: audiobus@0xFE050000 {
 			compatible = "amlogic, audio-controller", "simple-bus";

@@ -3,6 +3,9 @@
 
 MODULE_NAME = amlogic-clk
 obj-$(CONFIG_AMLOGIC_COMMON_CLK) = $(MODULE_NAME).o
+
+ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/clk/meson
+
 $(MODULE_NAME)-y = clk-common-init.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_COMMON_CLK_MESON_AO_CLKC) += meson-aoclk.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_COMMON_CLK_MESON_CPU_DYNDIV) += clk-cpu-dyndiv.o

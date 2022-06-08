@@ -654,15 +654,14 @@
 
 			jtag {
 				compatible = "amlogic, jtag";
-				status = "disabled";
-				/* disable/ap,jtag_a/ap,swd_a */
+				status = "okay";
+				/* disable/ap,jtag_a/ap,jtag_b */
 				select = "disable";
 				interrupts = <GIC_SPI 12 IRQ_TYPE_EDGE_RISING>;
 				pinctrl-names="jtag_a_pins",
 					"jtag_b_pins", "swd_a_pins";
 				pinctrl-0=<&jtag_a_pins>;
 				pinctrl-1=<&jtag_b_pins>;
-				pinctrl-2=<&swd_a_pins>;
 			};
 
 			watchdog {
@@ -2124,14 +2123,6 @@
 			"jtag_b_tdi",
 			"jtag_b_tdo";
 			function = "jtag_b";
-		};
-	};
-
-	swd_a_pins:swd_a_pin {
-		mux {
-			groups = "swclk",
-			"swdio";
-			function = "sw";
 		};
 	};
 

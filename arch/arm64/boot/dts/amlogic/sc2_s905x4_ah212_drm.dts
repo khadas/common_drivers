@@ -72,10 +72,10 @@
 
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x0 0x3400000>;
+			/*reusable;*/
+			no-map;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x05000000 0x0 0x3400000>;
+			reg = <0x0 0x05000000 0x0 0x3400000>;
 		};
 
 		logo_reserved:linux,meson-fb {

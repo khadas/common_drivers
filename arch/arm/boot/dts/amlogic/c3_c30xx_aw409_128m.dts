@@ -1156,7 +1156,7 @@
 };
 
 &saradc {
-	status = "disabled";
+	status = "okay";
 };
 
 &spicc1 {

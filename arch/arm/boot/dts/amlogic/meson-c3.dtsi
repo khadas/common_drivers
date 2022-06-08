@@ -682,13 +682,13 @@
 				//power-domains = <&pwrdm PDID_CX_IR>;
 			};
 
-			ir: ir@1000 {
+			ir: ir@84000 {
 				compatible = "amlogic, meson-ir";
-				reg = <0x1040 0xA4>,
-				      <0x1000 0x20>;
+				reg = <0x84040 0xA4>,
+				      <0x84000 0x20>;
 				status = "disabled";
 				protocol = <REMOTE_TYPE_NEC>;
-				interrupts = <0 50 IRQ_TYPE_EDGE_RISING>;
+				interrupts = <0 22 IRQ_TYPE_EDGE_RISING>;
 				map = <&custom_maps>;
 				max_frame_time = <200>;
 			};
@@ -2128,7 +2128,7 @@
 
 	remote_pins:remote_pin {
 		mux {
-			groups = "ir_in_d5";
+			groups = "ir_in_d0";
 			function = "ir_in";
 		};
 	};

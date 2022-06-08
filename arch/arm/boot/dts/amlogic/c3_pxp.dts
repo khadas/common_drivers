@@ -850,20 +850,6 @@
 	/* Audio Related end */
 };
 
-&usb2_phy_v2 {
-	status = "disabled";
-	portnum = <1>;
-	otg-phy-index = <0>;
-};
-
-&usb3_phy_v2 {
-	status = "disabled";
-	portnum = <0>;
-	otg = <1>;
-	//gpio-vbus-power = "GPIOD_9";
-	//gpios = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
-};
-
 &aml_bc {
 	status = "disable";
 };
@@ -876,14 +862,30 @@
 	status = "okay";
 };
 
-&dwc2_a {
+&crg_udc_2 {
 	status = "disabled";
-	/** 0: normal, 1: otg+dwc3 host only, 2: otg+dwc3 device only*/
-	controller-type = <3>;
 };
 
-&dwc3 {
+&crg20_otg {
 	status = "disabled";
+	controller-type = <1>;
+};
+
+&crg2_drd {
+	compatible = "amlogic, crg-drd";
+	status = "disabled";
+};
+
+&crg_phy_20 {
+	status = "disabled";
+	portnum = <1>;
+	gpio-vbus-power = "GPIOA_2";
+	gpios = <&gpio GPIOA_2 GPIO_ACTIVE_HIGH>;
+};
+
+&crg3_phy_20 {
+	status = "disabled";
+	portnum = <0>;
 };
 
 &i2c1 {

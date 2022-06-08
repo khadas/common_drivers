@@ -434,6 +434,7 @@
   usb_add_phy_dev
   vprintk
   vsprintf
+  crg_otg_write_UDC
 
 # amlogic-ethernet
   clk_mux_ro_ops

@@ -333,7 +333,7 @@ int meson_add_mtd_partitions(struct mtd_info *mtd)
 	struct meson_partition_platform_data *pdata;
 	struct mtd_partition *part;
 	loff_t offset;
-	int i;
+	int i = 0;
 
 	pdata = meson_partition_parse_platform_data(mtd_get_of_node(mtd));
 	if (!pdata) {
@@ -379,6 +379,9 @@ int meson_add_mtd_partitions(struct mtd_info *mtd)
 		offset += part->size;
 
 		i = pdata->part_num - 3;
+	} else {
+		pr_err("Invalid mode!\n");
+		goto meson_add_mtd_partitions_err;
 	}
 
 	while (i--) {

@@ -38,7 +38,7 @@ static int adjust_part_offset(struct mtd_info *master, u8 nr_parts,
 	bl_mode = nfc->param_from_dts.bl_mode;
 	if (bl_mode == NAND_FIPMODE_DISCRETE) {
 		if (nfc->data->bl2ex_mode) {
-			aml_nand_param_check_and_layout_init();
+			aml_nand_param_check_and_layout_init(master);
 			fip_part_size =
 				g_ssp.boot_entry[BOOT_AREA_DEVFIP].size *
 				nfc->param_from_dts.fip_copies;

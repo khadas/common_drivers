@@ -938,7 +938,7 @@
 };
 
 &sd_emmc_c {
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&emmc_pins>;
 	pinctrl-1 = <&emmc_clk_gate_pins>;
 	pinctrl-2 = <&emmc_pins_sleep>;
@@ -1086,26 +1086,37 @@
 };
 
 &spifc {
-	status = "disabled";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spifc_pins>;
 	spi-nand@0 {
 		compatible = "spi-nand";
-		status = "disabled";
+		status = "okay";
 		reg = <0>;
-		spi-max-frequency = <38000000>;
-		spi-tx-bus-width = <4>;
-		spi-rx-bus-width = <4>;
-		bl_mode = <1>;
+		spi-max-frequency = <24000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		bl_mode = <2>; /* advance mode */
 		fip_copies = <4>;
-		fip_size = <0x200000>;
 		partition = <&snand_partitions>;
 		snand_partitions: snand_partitions{
 			bootloader{
 				offset=<0x0 0x0>;
 				size=<0x0 0x0>;
 			};
-			tpl{
+			bl2e{
+				offset=<0x0 0x0>;
+				size=<0x0 0x0>;
+			};
+			bl2x{
+				offset=<0x0 0x0>;
+				size=<0x0 0x0>;
+			};
+			ddrfip{
+				offset=<0x0 0x0>;
+				size=<0x0 0x0>;
+			};
+			devfip{
 				offset=<0x0 0x0>;
 				size=<0x0 0x0>;
 			};

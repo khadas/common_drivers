@@ -4,52 +4,50 @@
  */
 
 #include <linux/amlogic/aml_mtd_nand.h>
+#include <linux/moduleparam.h>
 //#include <linux/amlogic/gki_module.h>
 
-extern struct mtd_info *aml_mtd_info[NAND_MAX_DEVICE];
 static char *cmdline;
+struct storage_startup_parameter g_ssp;
+EXPORT_SYMBOL_GPL(g_ssp);
 
 struct boot_area_entry general_boot_part_entry[MAX_BOOT_AREA_ENTRIES] = {
 	{BAE_BB1ST, BOOT_AREA_BB1ST, 0, BOOT_FIRST_BLOB_SIZE},
-	{BAE_BL2E, BOOT_AREA_BL2E, 0, 0x40000},
-	{BAE_BL2X, BOOT_AREA_BL2X, 0, 0x40000},
+	{BAE_BL2E, BOOT_AREA_BL2E, 0, 0x20000},
+	{BAE_BL2X, BOOT_AREA_BL2X, 0, 0x20000},
 	{BAE_DDRFIP, BOOT_AREA_DDRFIP, 0, 0x40000},
-	{BAE_DEVFIP, BOOT_AREA_DEVFIP, 0, 0x380000},
+	{BAE_DEVFIP, BOOT_AREA_DEVFIP, 0, 0x300000},
 };
 
 struct boot_layout general_boot_layout = {
 	.boot_entry = general_boot_part_entry
 };
 
-struct storage_startup_parameter g_ssp;
-
 static void storage_boot_layout_debug_info(struct boot_layout *boot_layout)
 {
 	struct boot_area_entry *boot_entry = boot_layout->boot_entry;
 	int i;
 
-	pr_info("boot area list:\n");
+	pr_debug("boot area list:\n");
 	for (i = 0; i < MAX_BOOT_AREA_ENTRIES && boot_entry[i].size; i++) {
-		pr_info("%10s    ", boot_entry[i].name);
-		pr_info("%10llx    ", boot_entry[i].offset);
-		pr_info("%10llx\n", boot_entry[i].size);
+		pr_debug("%10s    ", boot_entry[i].name);
+		pr_debug("%10llx    ", boot_entry[i].offset);
+		pr_debug("%10llx\n", boot_entry[i].size);
 	}
 }
 
 #define NAND_RSV_BLOCK_NUM 48
 #define NSP_PAGE0_DISABLE 1
-static int storage_get_and_parse_ssp(void)
+static int storage_get_and_parse_ssp(struct mtd_info *mtd)
 {
 	struct storage_startup_parameter *ssp;
 	union storage_independent_parameter *sip;
-	struct mtd_info *mtd;
 
-	mtd = aml_mtd_info[0];
 	ssp = &g_ssp;
 	memset(ssp, 0, sizeof(struct storage_startup_parameter));
 	sip = &ssp->sip;
 
-	ssp->boot_backups = 8;
+	ssp->boot_backups = 4;
 	sip->nsp.page_size =  mtd->writesize;
 	sip->nsp.block_size =  mtd->erasesize;
 	sip->nsp.pages_per_block = mtd->erasesize /
@@ -57,9 +55,12 @@ static int storage_get_and_parse_ssp(void)
 	sip->nsp.layout_reserve_size =
 		NAND_RSV_BLOCK_NUM * sip->nsp.block_size;
 
-	pr_info("boot_device:%d\n", ssp->boot_device);
-	pr_info("boot_seq:%d\n", ssp->boot_seq);
-	pr_info("boot_backups:%d\n", ssp->boot_backups);
+	pr_debug("boot_device:%d\n", ssp->boot_device);
+	pr_debug("boot_seq:%d\n", ssp->boot_seq);
+	pr_debug("boot_backups:%d\n", ssp->boot_backups);
+	pr_debug("page_size:%d\n", sip->nsp.page_size);
+	pr_debug("block_size:%d\n", sip->nsp.block_size);
+	pr_debug("pages_per_block:%d\n", sip->nsp.pages_per_block);
 
 	return 0;
 }
@@ -85,11 +86,11 @@ int storage_boot_layout_general_setting(struct boot_layout *boot_layout)
 	boot_entry[0].size =
 		STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[0].size, align_size);
 	ssp->boot_entry[0].size = boot_entry[0].size;
-	pr_info("ssp->boot_entry[0] offset:0x%x, size:0x%x\n",
+	pr_debug("ssp->boot_entry[0] offset:0x%x, size:0x%x\n",
 		ssp->boot_entry[0].offset, ssp->boot_entry[0].size);
-	pr_info("cal_copy:0x%x\n", cal_copy);
-	pr_info("align_size:0x%llx\n", align_size);
-	pr_info("reserved_size:0x%llx\n", reserved_size);
+	pr_debug("cal_copy:0x%x\n", cal_copy);
+	pr_debug("align_size:0x%llx\n", align_size);
+	pr_debug("reserved_size:0x%llx\n", reserved_size);
 	align_size = ssp->sip.nsp.block_size;
 	for (i = 1; i < MAX_BOOT_AREA_ENTRIES && boot_entry[i - 1].size; i++) {
 		boot_entry[i].size =
@@ -128,11 +129,11 @@ int aml_nand_parse_env(char *cmd)
 	return 0;
 }
 
-int aml_nand_param_check_and_layout_init(void)
+int aml_nand_param_check_and_layout_init(struct mtd_info *mtd)
 {
 	int ret = -1;
 
-	ret = storage_get_and_parse_ssp();
+	ret = storage_get_and_parse_ssp(mtd);
 	if (ret < 0)
 		return -1;
 
@@ -142,6 +143,7 @@ int aml_nand_param_check_and_layout_init(void)
 
 	return ret;
 }
+EXPORT_SYMBOL_GPL(aml_nand_param_check_and_layout_init);
 
 int mtdbootpart_setup(char *s)
 {
@@ -150,4 +152,3 @@ int mtdbootpart_setup(char *s)
 }
 
 __setup("mtdbootparts=", mtdbootpart_setup);
-

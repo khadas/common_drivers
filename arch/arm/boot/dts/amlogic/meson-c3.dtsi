@@ -360,12 +360,12 @@
 			//power-domains = <&pwrdm PDID_CX_SDEMMC_C>;
 		};
 
-		spifc: spi@fe00ac00 {
+		spifc: spi@fe056000 {
 			compatible = "amlogic,meson-spifc-v2";
 			status = "disabled";
-			reg = <0xfe00ac00 0x290>;
-			//clock-names = "spifc_gate";
-			//clocks = <&clkc CLKID_SPIFC_GATE>;
+			reg = <0xfe056000 0x290>;
+			clock-names = "spifc_gate";
+			clocks = <&clkc CLKID_SPIFC>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			//power-domains = <&pwrdm PDID_CX_SPIFC>;
@@ -2665,7 +2665,8 @@
 				 "spif_clk",
 				 "spif_cs",
 				 "spif_hold",
-				 "spif_wp_n";
+				 "spif_wp",
+				 "spif_clk_loop";
 			function = "spif";
 			drive-strength-microamp = <4000>;
 		};

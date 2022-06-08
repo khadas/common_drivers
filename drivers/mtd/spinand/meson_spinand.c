@@ -24,12 +24,15 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/amlogic/aml_rsv.h>
 #include <linux/amlogic/aml_spi_nand.h>
+#include <linux/amlogic/aml_storage.h>
 
 #define NAND_BLOCK_GOOD	0
 #define NAND_BLOCK_BAD	1
 #define NAND_FACTORY_BAD	2
 
-#define NAND_FIPMODE_DISCRETE   (1)
+#define NAND_FIPMODE_COMPACT   (0)
+#define NAND_FIPMODE_DISCRETE  (1)
+#define NAND_FIPMODE_ADVANCE   (2)
 //#define CONFIG_NOT_SKIP_BAD_BLOCK
 
 struct meson_spinand {
@@ -273,13 +276,20 @@ static struct meson_partition_platform_data *
 	pdata->part_num = part_num;
 
 	ret = of_property_read_u32(np, "bl_mode", &pdata->bl_mode);
-	pr_debug("bl_mode %s\n", pdata->bl_mode ? "descrete" : "compact");
+	if (pdata->bl_mode == NAND_FIPMODE_COMPACT)
+		pr_debug("bl_mode compact\n");
+	else if (pdata->bl_mode == NAND_FIPMODE_DISCRETE)
+		pr_debug("bl_mode discrete\n");
+	else if (pdata->bl_mode == NAND_FIPMODE_ADVANCE)
+		pr_debug("bl_mode advance\n");
+
+	if (pdata->bl_mode == NAND_FIPMODE_DISCRETE) {
+		ret = of_property_read_u32(np, "fip_size", &pdata->fip_size);
+		pr_debug("fip_size 0x%x\n", pdata->fip_size);
+	}
 
 	ret = of_property_read_u32(np, "fip_copies", &pdata->fip_copies);
 	pr_debug("fip_copies %d\n", pdata->fip_copies);
-
-	ret = of_property_read_u32(np, "fip_size", &pdata->fip_size);
-	pr_debug("fip_size 0x%x\n", pdata->fip_size);
 
 	part = pdata->part;
 	for_each_child_of_node(part_np, child) {
@@ -338,16 +348,39 @@ int meson_add_mtd_partitions(struct mtd_info *mtd)
 	part->size = SPI_NAND_BOOT_TOTAL_PAGES * mtd->writesize;
 	offset += part->size;
 
-	/* skip rsv */
-	offset += NAND_RSV_BLOCK_NUM * mtd->erasesize;
+	if (pdata->bl_mode == NAND_FIPMODE_ADVANCE) {
+		/* get boot area entry form env */
+		aml_nand_param_check_and_layout_init(mtd);
+		/* bl2e, bl2x, ddrfip, devfip */
+		for (i = 1; i < (BOOT_AREA_DEVFIP + 1); i++) {
+			part[i].offset =
+				g_ssp.boot_entry[i].offset;
+			if (i == BOOT_AREA_DEVFIP) /* devfip */
+				part[i].size = g_ssp.boot_entry[i].size *
+					pdata->fip_copies;
+			else
+				part[i].size = g_ssp.boot_entry[i].size *
+					g_ssp.boot_backups;
+			pr_debug("%s: off %llx, size %llx\n",
+				part[i].name, part[i].offset,
+				part[i].size);
+		}
+		offset = part[BOOT_AREA_DEVFIP].offset + part[BOOT_AREA_DEVFIP].size;
+		i = pdata->part_num - 6;
+		part += 4;
+	} else if (pdata->bl_mode == NAND_FIPMODE_DISCRETE) {
+		/* skip rsv */
+		offset += NAND_RSV_BLOCK_NUM * mtd->erasesize;
 
-	/* tpl, support NAND_FIPMODE_DISCRETE only */
-	part++;
-	part->offset = offset;
-	part->size = pdata->fip_copies * pdata->fip_size;
-	offset += part->size;
+		/* tpl, support NAND_FIPMODE_DISCRETE only */
+		part++;
+		part->offset = offset;
+		part->size = pdata->fip_copies * pdata->fip_size;
+		offset += part->size;
 
-	i = pdata->part_num - 3;
+		i = pdata->part_num - 3;
+	}
+
 	while (i--) {
 		part++;
 		part->offset = offset;

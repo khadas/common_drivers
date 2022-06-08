@@ -1,5 +1,12 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
+config AMLOGIC_MTD_COMMON
+	tristate "AMLOGIC MTD common api"
+	help
+		Meosn slc nand and spi nand have many public
+		APIS. These public APIs are unified in the
+                same Ko.
+
 config AMLOGIC_MTD_RESV
 	tristate "AMLOGIC MTD reserve area management"
 	help

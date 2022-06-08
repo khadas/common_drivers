@@ -877,7 +877,7 @@ static struct ddr_port_desc ddr_port_desc_t5w[] __initdata = {
 	{ .port_id = 46, .port_name = "SPICC0"        }
 };
 
-static struct ddr_port_desc ddr_port_desc_c3[] __initdata = {
+static struct ddr_port_desc ddr_port_desc_c3_prot[] __initdata = {
 	{ .port_id = 2, .port_name = "A35"            },
 	{ .port_id = 8, .port_name = "NNA_DDR"        },
 	{ .port_id = 9, .port_name = "NNA_SRAM"       },
@@ -904,17 +904,34 @@ static struct ddr_port_desc ddr_port_desc_c3[] __initdata = {
 	{ .port_id = 85, .port_name = "AUDIO"         }
 };
 
+static struct ddr_port_desc ddr_port_desc_c3_mon[] __initdata = {
+	{ .port_id = 0, .port_name = "A35"            },
+	{ .port_id = 3, .port_name = "NNA"        },
+	{ .port_id = 4, .port_name = "DSP"       },
+	/* dev0 DMC_MON*_CTRL1 bit:7 */
+	{ .port_id = 32, .port_name = "SPICC1"        },
+	{ .port_id = 33, .port_name = "ETH"           },
+	{ .port_id = 34, .port_name = "SPICC0"        },
+	/* dev1 DMC_MON*_CTRL1 bit:6 */
+	{ .port_id = 40, .port_name = "EMMC"          },
+	{ .port_id = 41, .port_name = "SDIO_A"        },
+	{ .port_id = 42, .port_name = "SDIO_B"        },
+	{ .port_id = 43, .port_name = "SECU_TOP"      },
+	{ .port_id = 45, .port_name = "AUDIO"         }
+};
+
 static struct ddr_port_desc *chip_ddr_port;
 static unsigned int chip_ddr_port_num __initdata;
 
 int __init ddr_find_port_desc(int cpu_type, struct ddr_port_desc **desc)
 {
-	int desc_size = -EINVAL;
+	return ddr_find_port_desc_type(cpu_type, desc, 0);
+}
 
-	if (chip_ddr_port) {
-		*desc = chip_ddr_port;
-		return chip_ddr_port_num;
-	}
+/* type 0:dmc_monitor 1:ddr_bandwidth */
+int __init ddr_find_port_desc_type(int cpu_type, struct ddr_port_desc **desc, int type)
+{
+	int desc_size = -EINVAL;
 
 	switch (cpu_type) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -1041,8 +1058,13 @@ int __init ddr_find_port_desc(int cpu_type, struct ddr_port_desc **desc)
 		break;
 
 	case DMC_TYPE_C3:
-		*desc = ddr_port_desc_c3;
-		desc_size = ARRAY_SIZE(ddr_port_desc_c3);
+		if (type) {
+			*desc = ddr_port_desc_c3_mon;
+			desc_size = ARRAY_SIZE(ddr_port_desc_c3_mon);
+		} else {
+			*desc = ddr_port_desc_c3_prot;
+			desc_size = ARRAY_SIZE(ddr_port_desc_c3_prot);
+		}
 		break;
 
 	default:

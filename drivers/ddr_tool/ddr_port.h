@@ -6,6 +6,7 @@
 #ifndef __DDR_PORT_DESC_H__
 #define __DDR_PORT_DESC_H__
 
+/* see cpu_version.h define */
 #define MAX_PORTS			127
 #define MAX_NAME			15
 #define PORT_MAJOR			32
@@ -37,7 +38,7 @@
 #define DMC_TYPE_T3			0x38
 #define DMC_TYPE_P1			0x39
 #define DMC_TYPE_T5W			0x3B
-#define DMC_TYPE_C3			0x3D
+#define DMC_TYPE_C3			0x3C
 
 #define DMC_READ			0
 #define DMC_WRITE			1
@@ -60,6 +61,7 @@ char *vpu_to_sub_port(char *name, char rw, int sid, char *id_str);
 /*
  * This function used only during boot
  */
+int ddr_find_port_desc_type(int cpu_type, struct ddr_port_desc **desc, int type);
 int ddr_find_port_desc(int cpu_type, struct ddr_port_desc **desc);
 unsigned long dmc_rw(unsigned long addr, unsigned long value, int rw);
 #endif /* __DDR_PORT_DESC_H__ */

@@ -988,7 +988,7 @@ static int __init ddr_bandwidth_probe(struct platform_device *pdev)
 	}
 
 	/* find and configure port description */
-	pcnt = ddr_find_port_desc(aml_db->cpu_type, &desc);
+	pcnt = ddr_find_port_desc_type(aml_db->cpu_type, &desc, 1);
 	if (pcnt < 0) {
 		pr_err("can't find port descriptor,cpu:%d\n", aml_db->cpu_type);
 	} else {

@@ -36,20 +36,18 @@
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0>;
 			next-level-cache = <&l2>;
-			//clocks = <&clkc CLKID_CPU_CLK>,
-			//	<&clkc CLKID_CPU_FCLK>,
-			//	<&clkc CLKID_SYS_PLL>;
-			//clock-names = "core_clk",
-			//	"low_freq_clk_parent",
-			//	"high_freq_clk_parent";
+			clocks = <&clkc CLKID_CPU_CLK>,
+				<&clkc CLKID_CPU_DYN_CLK>,
+				<&clkc CLKID_SYS_PLL>;
+			clock-names = "core_clk",
+				"low_freq_clk_parent",
+				"high_freq_clk_parent";
 			voltage-tolerance = <0>;
 			clock-latency = <50000>;
 			capacity-dmips-mhz = <600>;
 			dynamic-power-coefficient = <70>;
 			#cooling-cells = <2>;
 			cpu-supply = <&vddcpu0>;
-			/*set ema according to vcck*/
-			set_ema_available;
 			multi_tables_available;
 			operating-points-v2 = <&cpu_opp_table0>,
 					<&cpu_opp_table1>,
@@ -64,20 +62,18 @@
 			enable-method = "psci";
 			next-level-cache = <&l2>;
 			cpu-idle-states = <&CPU_SLEEP_0>;
-			//clocks = <&clkc CLKID_CPU_CLK>,
-			//	<&clkc CLKID_CPU_FCLK>,
-			//	<&clkc CLKID_SYS_PLL>;
-			//clock-names = "core_clk",
-			//	"low_freq_clk_parent",
-			//	"high_freq_clk_parent";
+			clocks = <&clkc CLKID_CPU_CLK>,
+				<&clkc CLKID_CPU_DYN_CLK>,
+				<&clkc CLKID_SYS_PLL>;
+			clock-names = "core_clk",
+				"low_freq_clk_parent",
+				"high_freq_clk_parent";
 			voltage-tolerance = <0>;
 			clock-latency = <50000>;
 			capacity-dmips-mhz = <600>;
 			dynamic-power-coefficient = <70>;
 			#cooling-cells = <2>;
 			cpu-supply = <&vddcpu0>;
-			/*set ema according to vcck*/
-			set_ema_available;
 			multi_tables_available;
 			operating-points-v2 = <&cpu_opp_table0>,
 					<&cpu_opp_table1>,
@@ -478,7 +474,7 @@
 					 <&clkc CLKID_PWM_B>;
 				clock-names = "clkin0",
 					      "clkin1";
-				status = "disabled";
+				status = "okay";
 			};
 
 			pwm_cd: pwm@5a000 {
@@ -803,7 +799,7 @@
 					<709000 95>,
 					<699000 98>,
 					<689000 100>;
-			status = "disabled";
+			status = "okay";
 		};
 
 		vddee: pwm_a-regulator {
@@ -1215,7 +1211,7 @@
 
 	cpufreq-meson {
 		compatible = "amlogic, cpufreq-meson";
-		status = "disabled";
+		status = "okay";
 	};
 
 	isp_sc: isp-sc@fe023400 {

@@ -287,6 +287,22 @@
 #define ANACTRL_LVDS_TX_PHY_CNTL3                  0x00f7
 #define ANACTRL_VID_PLL_CLK_DIV                    0x00f8
 
+/*C3*/
+#define ANACTRL_GP0PLL_CTRL0                       0x0020
+#define ANACTRL_GP0PLL_CTRL1                       0x0021
+#define ANACTRL_GP0PLL_CTRL2                       0x0022
+#define ANACTRL_GP0PLL_CTRL3                       0x0023
+#define ANACTRL_GP0PLL_CTRL4                       0x0024
+#define ANACTRL_GP0PLL_CTRL5                       0x0025
+#define ANACTRL_GP0PLL_CTRL6                       0x0026
+#define ANACTRL_GP0PLL_STS                         0x0027
+#define ANACTRL_MIPIDSI_CTRL0                      0x00a0
+#define ANACTRL_MIPIDSI_CTRL1                      0x00a1
+#define ANACTRL_MIPIDSI_CTRL2                      0x00a2
+#define ANACTRL_MIPIDSI_STS                        0x00a3
+
+#define CLKCTRL_VOUTENC_CLK_CTRL                   0x0046
+
 #define COMBO_DPHY_CNTL0                           0x0000
 #define COMBO_DPHY_CNTL1                           0x0001
 #define COMBO_DPHY_VID_PLL0_DIV                    0x0002
@@ -1191,6 +1207,44 @@
 #define P2P_CH_SWAP1                               0x4201
 
 /* ********************************
+ * C3 vout
+ * ********************************
+ */
+#define VPU_VOUT_CORE_CTRL                         0x0100
+#define VPU_VOUT_INT_CTRL                          0x0101
+#define VPU_VOUT_DETH_CTRL                         0x0102
+#define VPU_VOUT_DTH_DATA                          0x0103
+#define VPU_VOUT_DTH_ADDR                          0x0104
+#define VPU_VOUT_HS_POS                            0x0112
+#define VPU_VOUT_VSLN_E_POS                        0x0113
+#define VPU_VOUT_VSPX_E_POS                        0x0114
+#define VPU_VOUT_VSLN_O_POS                        0x0115
+#define VPU_VOUT_VSPX_O_POS                        0x0116
+#define VPU_VOUT_DE_PX_EN                          0x0117
+#define VPU_VOUT_DELN_E_POS                        0x0118
+#define VPU_VOUT_DELN_O_POS                        0x0119
+#define VPU_VOUT_MAX_SIZE                          0x011a
+#define VPU_VOUT_FLD_BGN_LINE                      0x011b
+#define VPU_VOUTO_HS_POS                           0x0120
+#define VPU_VOUTO_VSLN_E_POS                       0x0121
+#define VPU_VOUTO_VSPX_E_POS                       0x0122
+#define VPU_VOUTO_VSLN_O_POS                       0x0123
+#define VPU_VOUTO_VSPX_O_POS                       0x0124
+#define VPU_VOUTO_DE_PX_EN                         0x0125
+#define VPU_VOUTO_DELN_E_POS                       0x0126
+#define VPU_VOUTO_DELN_O_POS                       0x0127
+#define VPU_VOUTO_MAX_SIZE                         0x0128
+#define VPU_VOUTO_FLD_BGN_LINE                     0x0129
+#define VPU_VOUT_BT_CTRL                           0x0130
+#define VPU_VOUT_BT_PLD_LINE                       0x0131
+#define VPU_VOUT_BT_PLDIDT0                        0x0132
+#define VPU_VOUT_BT_PLDIDT1                        0x0133
+#define VPU_VOUT_BT_BLK_DATA                       0x0134
+#define VPU_VOUT_BT_DAT_CLPY                       0x0135
+#define VPU_VOUT_BT_DAT_CLPC                       0x0136
+#define VPU_VOUT_RO_INT                            0x0140
+
+/* ********************************
  * Video post-processing:  VPP_VCBUS_BASE = 0x1d
  * Bit 31  vd1_bgosd_exchange_en for preblend
  * Bit 30  vd1_bgosd_exchange_en for postblend
@@ -1653,11 +1707,11 @@
 /* ***********************************************
  * register access api
  */
-extern int lcd_reg_gxb[];
 extern int lcd_reg_g12a[];
 extern int lcd_reg_tl1[];
 extern int lcd_reg_t5[];
 extern int lcd_reg_t7[];
+extern int lcd_reg_c3[];
 
 int lcd_ioremap(struct aml_lcd_drv_s *pdrv, struct platform_device *pdev);
 unsigned int lcd_vcbus_read(unsigned int reg);

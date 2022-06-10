@@ -2834,3 +2834,16 @@
 		};
 	};
 };
+
+&analog_pinctrl {
+	lcd_dsi_on_pins: lcd_dsi_on_pin {
+		mux {
+			groups = "dsi_clkp", "dsi_clkn",
+				 "dsi_d0p", "dsi_d0n",
+				 "dsi_d1p", "dsi_d1n",
+				 "dsi_d2p", "dsi_d2n",
+				 "dsi_d3p", "dsi_d3n";
+			function = "dsi";
+		};
+	};
+};

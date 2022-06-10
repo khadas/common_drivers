@@ -1412,6 +1412,19 @@ static void lcd_p2p_phy_set_t5w(struct aml_lcd_drv_s *pdrv, int status)
 	}
 }
 
+static void lcd_mipi_phy_set_c3(struct aml_lcd_drv_s *pdrv, int status)
+{
+	if (status) {
+		lcd_ana_write(ANACTRL_MIPIDSI_CTRL0, 0xa4870008);
+		lcd_ana_write(ANACTRL_MIPIDSI_CTRL1, 0x0001002e);
+		lcd_ana_write(ANACTRL_MIPIDSI_CTRL2, 0x2680fc59);
+	} else {
+		lcd_ana_write(ANACTRL_MIPIDSI_CTRL0, 0x04070000);
+		lcd_ana_write(ANACTRL_MIPIDSI_CTRL1, 0x2e);
+		lcd_ana_write(ANACTRL_MIPIDSI_CTRL2, 0x2680045a);
+	}
+}
+
 unsigned int lcd_phy_vswing_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned int level)
 {
 	unsigned int vswing_value = 0;
@@ -1554,6 +1567,17 @@ struct lcd_phy_ctrl_s lcd_phy_ctrl_t5w = {
 	.phy_set_edp = NULL,
 };
 
+struct lcd_phy_ctrl_s lcd_phy_ctrl_c3 = {
+	.ctrl_bit_on = 1,
+	.lane_lock = 0,
+	.phy_set_lvds = NULL,
+	.phy_set_vx1 = NULL,
+	.phy_set_mlvds = NULL,
+	.phy_set_p2p = NULL,
+	.phy_set_mipi = lcd_mipi_phy_set_c3,
+	.phy_set_edp = NULL,
+};
+
 int lcd_phy_probe(struct aml_lcd_drv_s *pdrv)
 {
 	if (pdrv->lcd_pxp) {
@@ -1628,6 +1652,9 @@ int lcd_phy_config_init(struct aml_lcd_drv_s *pdrv)
 		break;
 	case LCD_CHIP_T5W:
 		lcd_phy_ctrl = &lcd_phy_ctrl_t5w;
+		break;
+	case LCD_CHIP_C3:
+		lcd_phy_ctrl = &lcd_phy_ctrl_c3;
 		break;
 	default:
 		break;

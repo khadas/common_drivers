@@ -32,7 +32,7 @@
 
 #define LCD_DEBUG_VSYNC_INTERVAL  60
 
-/* #define LCD_DEBUG_INFO */
+//#define LCD_DEBUG_INFO
 extern unsigned int lcd_debug_print_flag;
 #define LCD_DBG_PR_NORMAL       BIT(0)
 #define LCD_DBG_PR_ADV          BIT(1)
@@ -100,6 +100,7 @@ enum lcd_chip_e {
 	LCD_CHIP_T7,    /* 8 */
 	LCD_CHIP_T3,	/* 9 */
 	LCD_CHIP_T5W,	/* 10 */
+	LCD_CHIP_C3,	/* 11 */
 	LCD_CHIP_MAX,
 };
 
@@ -111,6 +112,8 @@ enum lcd_type_e {
 	LCD_MLVDS,
 	LCD_P2P,
 	LCD_EDP,
+	LCD_BT656,
+	LCD_BT1120,
 	LCD_TYPE_MAX,
 };
 
@@ -280,8 +283,8 @@ struct vbyone_config_s {
 #define SYNC_EVENT               0x1
 #define BURST_MODE               0x2
 
-/* unit: MHz */
-#define MIPI_BIT_RATE_MAX        1000
+/* unit: kHz */
+#define MIPI_BIT_RATE_MAX        1500000
 
 /* command config */
 #define DSI_CMD_SIZE_INDEX       1  /* byte[1] */
@@ -305,7 +308,6 @@ struct dsi_read_s {
 struct dsi_config_s {
 	unsigned char lane_num;
 	unsigned int bit_rate_max; /* MHz */
-	unsigned int bit_rate_min; /* MHz*/
 	unsigned int clk_factor; /* bit_rate/pclk */
 	unsigned int factor_numerator;
 	unsigned int factor_denominator; /* 100 */
@@ -315,6 +317,8 @@ struct dsi_config_s {
 	unsigned char clk_always_hs; /* 0=disable, 1=enable */
 	unsigned char phy_switch; /* 0=auto, 1=standard, 2=slow */
 
+	unsigned int local_bit_rate_max; /* kHz */
+	unsigned int local_bit_rate_min; /* kHz*/
 	unsigned int venc_data_width;
 	unsigned int dpi_data_format;
 	unsigned int data_bits;

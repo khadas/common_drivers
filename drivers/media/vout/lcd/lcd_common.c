@@ -769,6 +769,110 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 	}
 }
 
+int lcd_base_config_load_from_dts(struct aml_lcd_drv_s *pdrv)
+{
+	const struct device_node *np;
+	const char *str = "none";
+	unsigned int val;
+	int ret = 0;
+
+	if (!pdrv->dev->of_node) {
+		LCDERR("dev of_node is null\n");
+		pdrv->mode = LCD_MODE_MAX;
+		return -1;
+	}
+	np = pdrv->dev->of_node;
+
+	/* lcd driver assign */
+	switch (pdrv->debug_ctrl->debug_lcd_mode) {
+	case 1:
+		LCDPR("[%d]: debug_lcd_mode: 1,tv mode\n", pdrv->index);
+		pdrv->mode = LCD_MODE_TV;
+		break;
+	case 2:
+		LCDPR("[%d]: debug_lcd_mode: 2,tablet mode\n", pdrv->index);
+		pdrv->mode = LCD_MODE_TABLET;
+		break;
+	default:
+		ret = of_property_read_string(np, "mode", &str);
+		if (ret) {
+			LCDERR("[%d]: failed to get mode\n", pdrv->index);
+			return -1;
+		}
+		pdrv->mode = lcd_mode_str_to_mode(str);
+		break;
+	}
+
+	ret = of_property_read_u32(np, "pxp", &val);
+	if (ret) {
+		pdrv->lcd_pxp = 0;
+	} else {
+		pdrv->lcd_pxp = (unsigned char)val;
+		LCDPR("[%d]: find lcd_pxp: %d\n", pdrv->index, pdrv->lcd_pxp);
+	}
+
+	ret = of_property_read_u32(np, "fr_auto_policy", &val);
+	if (ret) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("failed to get fr_auto_policy\n");
+		pdrv->fr_auto_policy = 0;
+	} else {
+		pdrv->fr_auto_policy = (unsigned char)val;
+	}
+
+	switch (pdrv->debug_ctrl->debug_para_source) {
+	case 1:
+		LCDPR("[%d]: debug_para_source: 1,dts\n", pdrv->index);
+		pdrv->key_valid = 0;
+		break;
+	case 2:
+		LCDPR("[%d]: debug_para_source: 2,unifykey\n", pdrv->index);
+		pdrv->key_valid = 1;
+		break;
+	default:
+		ret = of_property_read_u32(np, "key_valid", &val);
+		if (ret) {
+			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+				LCDPR("failed to get key_valid\n");
+			pdrv->key_valid = 0;
+		} else {
+			pdrv->key_valid = (unsigned char)val;
+		}
+		break;
+	}
+	LCDPR("[%d]: detect mode: %s, fr_auto_policy: %d, key_valid: %d\n",
+	      pdrv->index, str, pdrv->fr_auto_policy, pdrv->key_valid);
+
+	ret = of_property_read_u32(np, "clk_path", &val);
+	if (ret) {
+		pdrv->clk_path = 0;
+	} else {
+		pdrv->clk_path = (unsigned char)val;
+		LCDPR("[%d]: detect clk_path: %d\n",
+		      pdrv->index, pdrv->clk_path);
+	}
+
+	ret = of_property_read_u32(np, "auto_test", &val);
+	if (ret) {
+		pdrv->auto_test = 0;
+	} else {
+		pdrv->auto_test = (unsigned char)val;
+		LCDPR("[%d]: detect auto_test: %d\n",
+		      pdrv->index, pdrv->auto_test);
+	}
+
+	ret = of_property_read_u32(np, "resume_type", &val);
+	if (ret) {
+		pdrv->resume_type = 1; /* default workqueue */
+	} else {
+		pdrv->resume_type = (unsigned char)val;
+		LCDPR("[%d]: detect resume_type: %d\n",
+		      pdrv->index, pdrv->resume_type);
+	}
+
+	return 0;
+}
+
 static int lcd_power_load_from_dts(struct aml_lcd_drv_s *pdrv, struct device_node *child)
 {
 	struct lcd_power_ctrl_s *power_step = &pdrv->config.power;
@@ -2384,52 +2488,43 @@ void lcd_mipi_dsi_config_set(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned int pclk, bit_rate;
-	unsigned int bit_rate_max, bit_rate_min, pll_out_fmin = 0;
+	unsigned int bit_rate_max;
 	struct dsi_config_s *dconf = &pconf->control.mipi_cfg;
-	struct lcd_clk_config_s *cconf;
-	unsigned int temp, n;
+	unsigned int temp;
 
 	dconf = &pconf->control.mipi_cfg;
 
 	/* unit in kHz for calculation */
-	cconf = get_lcd_clk_config(pdrv);
-	if (cconf && cconf->data)
-		pll_out_fmin = cconf->data->pll_out_fmin;
 	pclk = pconf->timing.lcd_clk / 1000;
+	if (dconf->operation_mode_display == OPERATION_VIDEO_MODE &&
+	    dconf->video_mode_type != BURST_MODE) {
+		temp = pclk * 4 * dconf->data_bits;
+		bit_rate = temp / dconf->lane_num;
+	} else {
+		temp = pclk * 3 * dconf->data_bits;
+		bit_rate = temp / dconf->lane_num;
+	}
+	temp = bit_rate / pclk;
+	if (temp % 2)
+		bit_rate += pclk;
+	dconf->local_bit_rate_min = bit_rate /* khz */;
 
 	/* bit rate max */
 	if (dconf->bit_rate_max == 0) { /* auto calculate */
-		if (dconf->operation_mode_display == OPERATION_VIDEO_MODE &&
-		    dconf->video_mode_type != BURST_MODE) {
-			temp = pclk * 4 * dconf->data_bits;
-			bit_rate = temp / dconf->lane_num;
-		} else {
-			temp = pclk * 3 * dconf->data_bits;
-			bit_rate = temp / dconf->lane_num;
+		bit_rate_max = bit_rate + (pclk / 2);
+		if (bit_rate_max > MIPI_BIT_RATE_MAX) {
+			LCDERR("[%d]: %s: invalid bit_rate_max %d\n",
+				pdrv->index, __func__, bit_rate_max);
+			bit_rate_max = MIPI_BIT_RATE_MAX;
 		}
-		n = 0;
-		bit_rate_min = 0;
-		bit_rate_max = 0;
-		while ((bit_rate_min < pll_out_fmin) && (n < 100)) {
-			bit_rate_max = bit_rate + (pclk / 2) + (n * pclk);
-			bit_rate_min = bit_rate_max - pclk;
-			n++;
-		}
-		dconf->bit_rate_max = bit_rate_max / 1000; /* unit: MHz*/
-		if (dconf->bit_rate_max > MIPI_BIT_RATE_MAX)
-			dconf->bit_rate_max = MIPI_BIT_RATE_MAX;
-
-		LCDPR("[%d]: mipi dsi bit_rate max=%dMHz\n",
-		      pdrv->index, dconf->bit_rate_max);
+		dconf->local_bit_rate_max = bit_rate_max;
+		LCDPR("[%d]: mipi dsi bit_rate max=%dkHz\n",
+		      pdrv->index, dconf->local_bit_rate_max);
 	} else { /* user define */
-		if (dconf->bit_rate_max < pll_out_fmin / 1000) {
-			LCDERR("[%d]: invalid mipi-dsi bit_rate %dMHz (min=%dMHz)\n",
-			       pdrv->index, dconf->bit_rate_max,
-			       (pll_out_fmin / 1000));
-		}
-		if (dconf->bit_rate_max > MIPI_BIT_RATE_MAX) {
-			LCDPR("[%d]: invalid mipi-dsi bit_rate_max %dMHz (max=%dMHz)\n",
-			      pdrv->index, dconf->bit_rate_max,
+		dconf->local_bit_rate_max = dconf->bit_rate_max * 1000;
+		if (dconf->local_bit_rate_max > MIPI_BIT_RATE_MAX) {
+			LCDPR("[%d]: invalid mipi-dsi bit_rate_max %dkHz (max=%dkHz)\n",
+			      pdrv->index, dconf->local_bit_rate_max,
 			      MIPI_BIT_RATE_MAX);
 		}
 	}

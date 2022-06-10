@@ -37,7 +37,6 @@
 #endif
 #include "lcd_reg.h"
 #include "lcd_common.h"
-#include "lcd_clk_config.h"
 #include "lcd_tcon.h"
 #ifdef CONFIG_AMLOGIC_VPU
 #include <linux/amlogic/media/vpu/vpu.h>
@@ -73,7 +72,7 @@ struct lcd_cdev_s {
 };
 
 static struct lcd_cdev_s *lcd_cdev;
-static char lcd_propname[LCD_MAX_DRV][24] = {"null", "null", "null"};
+static char lcd_propname[LCD_MAX_DRV][24] = {"mipi_0", "null", "null"};
 static char lcd_panel_name[LCD_MAX_DRV][24] = {"null", "null", "null"};
 
 #define LCD_VSYNC_NONE_INTERVAL     msecs_to_jiffies(500)
@@ -104,7 +103,7 @@ static struct lcd_boot_ctrl_s lcd_boot_ctrl_config[LCD_MAX_DRV] = {
 };
 
 static struct lcd_debug_ctrl_s lcd_debug_ctrl_config = {
-	.debug_print_flag = 0,
+	.debug_print_flag = 0x7,
 	.debug_test_pattern = 0,
 	.debug_para_source = 0,
 	.debug_lcd_mode = 0,
@@ -647,6 +646,9 @@ static irqreturn_t lcd_vsync3_isr(int irq, void *data)
 static void lcd_vsync_none_timer_handler(struct timer_list *timer)
 {
 	struct aml_lcd_drv_s *pdrv = from_timer(pdrv, timer, vs_none_timer);
+
+	if (pdrv->data->chip_type == LCD_CHIP_C3)
+		return;
 
 	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0)
 		goto lcd_vsync_none_timer_handler_end;
@@ -1308,8 +1310,7 @@ static int lcd_global_init_once(void)
 
 	mutex_init(&lcd_vout_mutex);
 	mutex_init(&lcd_power_mutex);
-	spin_lock_init(&lcd_reg_spinlock);
-	spin_lock_init(&lcd_clk_lock);
+	lcd_clk_config_init();
 
 	lcd_notifier_init();
 #ifdef CONFIG_AMLOGIC_LCD_EXTERN
@@ -1615,20 +1616,11 @@ lcd_config_probe_work_failed:
 
 static void lcd_config_default(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_config_s *pconf;
-	unsigned int offset;
+	unsigned int init_state;
 
-	offset = pdrv->data->offset_venc[pdrv->index];
-
-	pconf = &pdrv->config;
-	pconf->basic.h_active = lcd_vcbus_read(ENCL_VIDEO_HAVON_END + offset)
-		- lcd_vcbus_read(ENCL_VIDEO_HAVON_BEGIN + offset) + 1;
-	pconf->basic.v_active = lcd_vcbus_read(ENCL_VIDEO_VAVON_ELINE + offset)
-		- lcd_vcbus_read(ENCL_VIDEO_VAVON_BLINE + offset) + 1;
-	pconf->basic.h_period = lcd_vcbus_read(ENCL_VIDEO_MAX_PXCNT + offset) + 1;
-	pconf->basic.v_period = lcd_vcbus_read(ENCL_VIDEO_MAX_LNCNT + offset) + 1;
 	pdrv->init_flag = 0;
-	if (lcd_vcbus_read(ENCL_VIDEO_EN + offset)) {
+	init_state = lcd_get_venc_init_config(pdrv);
+	if (init_state) {
 		switch (pdrv->boot_ctrl->init_level) {
 		case LCD_INIT_LEVEL_NORMAL:
 			pdrv->status = LCD_STATUS_ON;
@@ -1654,110 +1646,16 @@ static void lcd_config_default(struct aml_lcd_drv_s *pdrv)
 	}
 	LCDPR("[%d]: status: %d, init_flag: %d\n",
 	      pdrv->index, pdrv->status, pdrv->init_flag);
-
-	lcd_gamma_check_en(pdrv);
 }
 
 static int lcd_config_probe(struct aml_lcd_drv_s *pdrv, struct platform_device *pdev)
 {
-	const struct device_node *np;
-	const char *str = "none";
 	unsigned int val;
 	int ret = 0;
 
-	if (!pdrv->dev->of_node) {
-		LCDERR("dev of_node is null\n");
-		pdrv->mode = LCD_MODE_MAX;
+	ret = lcd_base_config_load_from_dts(pdrv);
+	if (ret)
 		return -1;
-	}
-	np = pdrv->dev->of_node;
-
-	/* lcd driver assign */
-	switch (pdrv->debug_ctrl->debug_lcd_mode) {
-	case 1:
-		LCDPR("[%d]: debug_lcd_mode: 1,tv mode\n", pdrv->index);
-		pdrv->mode = LCD_MODE_TV;
-		break;
-	case 2:
-		LCDPR("[%d]: debug_lcd_mode: 2,tablet mode\n", pdrv->index);
-		pdrv->mode = LCD_MODE_TABLET;
-		break;
-	default:
-		ret = of_property_read_string(np, "mode", &str);
-		if (ret) {
-			LCDERR("[%d]: failed to get mode\n", pdrv->index);
-			return -1;
-		}
-		pdrv->mode = lcd_mode_str_to_mode(str);
-		break;
-	}
-
-	ret = of_property_read_u32(np, "pxp", &val);
-	if (ret) {
-		pdrv->lcd_pxp = 0;
-	} else {
-		pdrv->lcd_pxp = (unsigned char)val;
-		LCDPR("[%d]: find lcd_pxp: %d\n", pdrv->index, pdrv->lcd_pxp);
-	}
-
-	ret = of_property_read_u32(np, "fr_auto_policy", &val);
-	if (ret) {
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-			LCDPR("failed to get fr_auto_policy\n");
-		pdrv->fr_auto_policy = 0;
-	} else {
-		pdrv->fr_auto_policy = (unsigned char)val;
-	}
-
-	switch (pdrv->debug_ctrl->debug_para_source) {
-	case 1:
-		LCDPR("[%d]: debug_para_source: 1,dts\n", pdrv->index);
-		pdrv->key_valid = 0;
-		break;
-	case 2:
-		LCDPR("[%d]: debug_para_source: 2,unifykey\n", pdrv->index);
-		pdrv->key_valid = 1;
-		break;
-	default:
-		ret = of_property_read_u32(np, "key_valid", &val);
-		if (ret) {
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				LCDPR("failed to get key_valid\n");
-			pdrv->key_valid = 0;
-		} else {
-			pdrv->key_valid = (unsigned char)val;
-		}
-		break;
-	}
-	LCDPR("[%d]: detect mode: %s, fr_auto_policy: %d, key_valid: %d\n",
-	      pdrv->index, str, pdrv->fr_auto_policy, pdrv->key_valid);
-
-	ret = of_property_read_u32(np, "clk_path", &val);
-	if (ret) {
-		pdrv->clk_path = 0;
-	} else {
-		pdrv->clk_path = (unsigned char)val;
-		LCDPR("[%d]: detect clk_path: %d\n",
-		      pdrv->index, pdrv->clk_path);
-	}
-
-	ret = of_property_read_u32(np, "auto_test", &val);
-	if (ret) {
-		pdrv->auto_test = 0;
-	} else {
-		pdrv->auto_test = (unsigned char)val;
-		LCDPR("[%d]: detect auto_test: %d\n",
-		      pdrv->index, pdrv->auto_test);
-	}
-
-	ret = of_property_read_u32(np, "resume_type", &val);
-	if (ret) {
-		pdrv->resume_type = 1; /* default workqueue */
-	} else {
-		pdrv->resume_type = (unsigned char)val;
-		LCDPR("[%d]: detect resume_type: %d\n",
-		      pdrv->index, pdrv->resume_type);
-	}
 
 	pdrv->res_vsync_irq[0] = platform_get_resource_byname(pdev, IORESOURCE_IRQ, "vsync");
 	pdrv->res_vsync_irq[1] = platform_get_resource_byname(pdev, IORESOURCE_IRQ, "vsync2");
@@ -1921,6 +1819,16 @@ static struct lcd_data_s lcd_data_t5w = {
 	.offset_venc_data = {0},
 };
 
+static struct lcd_data_s lcd_data_c3 = {
+	.chip_type = LCD_CHIP_C3,
+	.chip_name = "c3",
+	.reg_map_table = &lcd_reg_c3[0],
+	.drv_max = 1,
+	.offset_venc = {0},
+	.offset_venc_if = {0},
+	.offset_venc_data = {0},
+};
+
 static const struct of_device_id lcd_dt_match_table[] = {
 	{
 		.compatible = "amlogic, lcd-g12a",
@@ -1961,6 +1869,10 @@ static const struct of_device_id lcd_dt_match_table[] = {
 	{
 		.compatible = "amlogic, lcd-t5w",
 		.data = &lcd_data_t5w,
+	},
+	{
+		.compatible = "amlogic, lcd-c3",
+		.data = &lcd_data_c3,
 	},
 	{}
 };

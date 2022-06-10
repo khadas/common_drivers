@@ -138,6 +138,7 @@ struct lcd_clk_config_s { /* unit: kHz */
 	unsigned int edp_div1;
 	unsigned int div_sel;
 	unsigned int xd;
+	unsigned int phy_div;
 	unsigned int div_sel_max;
 	unsigned int xd_max;
 	unsigned int err_fmin;
@@ -172,5 +173,6 @@ int lcd_clk_config_print(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
 int lcd_clk_path_change(struct aml_lcd_drv_s *pdrv, int sel);
 void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv);
 void lcd_clk_config_remove(struct aml_lcd_drv_s *pdrv);
+void lcd_clk_config_init(void);
 
 #endif

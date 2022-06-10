@@ -118,6 +118,18 @@
 #define LCD_PLL_LOCK_T7              31
 
 /* **********************************
+ * C3
+ * **********************************
+ */
+#define PLL_CLK_OUT_MIN_C3           (375 * 1000)
+#define PLL_CLK_OUT_MAX_C3           (6000 * 1000)
+#define PLL_OD_SEL_MAX_C3            5
+#define CRT_VID_CLK_IN_MAX_C3        (1600 * 1000)
+#define CRT_VID_DIV_MAX_C3           128
+#define PHY_CLK_DIV_MAX_C3           128
+#define ENCL_CLK_IN_MAX_C3           (200 * 1000)
+
+/* **********************************
  * Spread Spectrum
  * **********************************
  */

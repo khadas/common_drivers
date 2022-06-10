@@ -56,6 +56,13 @@ int lcd_reg_t7[] = {
 	LCD_MAP_MAX,
 };
 
+int lcd_reg_c3[] = {
+	LCD_MAP_DSI_HOST,
+	LCD_MAP_DSI_PHY,
+	LCD_MAP_PERIPHS,
+	LCD_MAP_MAX
+};
+
 /* for lcd reg access */
 spinlock_t lcd_reg_spinlock;
 
@@ -73,11 +80,12 @@ int lcd_ioremap(struct aml_lcd_drv_s *pdrv, struct platform_device *pdev)
 	}
 	table = pdrv->data->reg_map_table;
 
-	reg_map = kcalloc(LCD_MAP_MAX,
-			  sizeof(struct lcd_reg_map_s), GFP_KERNEL);
+	reg_map = kcalloc(LCD_MAP_MAX, sizeof(struct lcd_reg_map_s), GFP_KERNEL);
 	if (!reg_map)
 		return -1;
 	pdrv->reg_map = reg_map;
+
+	spin_lock_init(&lcd_reg_spinlock);
 
 	while (i < LCD_MAP_MAX) {
 		if (table[i] == LCD_MAP_MAX)
@@ -85,8 +93,8 @@ int lcd_ioremap(struct aml_lcd_drv_s *pdrv, struct platform_device *pdev)
 
 		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
 		if (!res) {
-			LCDERR("[%d]: %s: get resource error\n",
-			       pdrv->index, __func__);
+			LCDERR("[%d]: %s: get resource %d error\n",
+			       pdrv->index, __func__, i);
 			goto lcd_ioremap_err;
 		}
 		reg_map[table[i]].base_addr = res->start;
@@ -103,7 +111,7 @@ int lcd_ioremap(struct aml_lcd_drv_s *pdrv, struct platform_device *pdev)
 		}
 		reg_map[table[i]].flag = 1;
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-			LCDPR("[%d]: %s: reg %d: 0x%x -> %p, size: 0x%x\n",
+			LCDPR("[%d]: %s: reg %d: 0x%x -> 0x%px, size: 0x%x\n",
 			      pdrv->index, __func__, i,
 			      reg_map[table[i]].base_addr,
 			      reg_map[table[i]].p,

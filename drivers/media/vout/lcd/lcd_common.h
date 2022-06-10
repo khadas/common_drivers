@@ -12,30 +12,9 @@
 #include <linux/amlogic/media/vout/lcd/lcd_vout.h>
 #include "lcd_clk_config.h"
 
-/* 20200211: initial version*/
-/* 20200827: add tm2 support*/
-/* 20201116: add t5,t5d,t7 support*/
-/* 20210222: add multi driver support*/
-/* 20210409: update lvds & vbyone regs for t7*/
-/* 20210412: add t3 support*/
-/* 20210514: add extern driver support*/
-/* 20210518: update t7 & t3 lvds lane setting*/
-/* 20210616: fix t3 clk ss mistake*/
-/* 20210621: separate resume(PREPARE) and late_resume(ENABLE)*/
-/* 20210625: add tcon multi lut support*/
-/* 20210705: add lcd mute and test state protection*/
-/* 20211009: support 59 & 47 frame rate for tv mode*/
-/* 20211102: add t5w support*/
-/* 20211106: support vrr config*/
-/* 20211210: support load tcon bin by ioctl*/
-/* 20211216: support phy adjust by lane*/
-/* 20211229: update multi lut init and switch flow*/
-/* 20211230: support lcd driver DLG switch flow*/
-/* 20220105: support measure vinfo sync_duration*/
-/* 20220119: support tcon multi list threshold overlap*/
-/* 20220121: update custom_pinmux and fr_auto_dis support*/
-/* 20220216: update vrr config when display mode change*/
-#define LCD_DRV_VERSION    "20220216"
+/* 20220430: initial version*/
+/* 20220610: add c3 support*/
+#define LCD_DRV_VERSION    "20220610"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;
@@ -70,6 +49,7 @@ void lcd_mlvds_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_p2p_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_edp_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 
+int lcd_base_config_load_from_dts(struct aml_lcd_drv_s *pdrv);
 int lcd_get_config(struct aml_lcd_drv_s *pdrv);
 void lcd_optical_vinfo_update(struct aml_lcd_drv_s *pdrv);
 
@@ -148,11 +128,13 @@ int lcd_debug_remove(struct aml_lcd_drv_s *pdrv);
 
 /* lcd venc */
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv);
-void lcd_gamma_check_en(struct aml_lcd_drv_s *pdrv);
 void lcd_gamma_debug_test_en(struct aml_lcd_drv_s *pdrv, int flag);
 void lcd_set_venc_timing(struct aml_lcd_drv_s *pdrv);
 void lcd_set_venc(struct aml_lcd_drv_s *pdrv);
 void lcd_venc_change(struct aml_lcd_drv_s *pdrv);
+void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag);
+int lcd_get_venc_init_config(struct aml_lcd_drv_s *pdrv);
+int lcd_venc_probe(struct aml_lcd_drv_s *pdrv);
 
 /* lcd driver */
 #ifdef CONFIG_AMLOGIC_LCD_TV

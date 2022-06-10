@@ -222,6 +222,7 @@ static void mipi_dsi_host_print_info(struct lcd_config_s *pconf)
 	pr_info("MIPI DSI Config:\n"
 		"  lane num:              %d\n"
 		"  bit rate max:          %dMHz\n"
+		"  bit rate range:        (%d~%d)kHz\n"
 		"  bit rate:              %d.%03dMHz\n"
 		"  pclk lanebyte factor:  %d(/100)\n"
 		"  operation mode:\n"
@@ -233,6 +234,7 @@ static void mipi_dsi_host_print_info(struct lcd_config_s *pconf)
 		"  data format:           %s\n"
 		"  lp escape clock:       %d.%03dMHz\n",
 		dconf->lane_num, dconf->bit_rate_max,
+		dconf->local_bit_rate_max, dconf->local_bit_rate_min,
 		(pconf->timing.bit_rate / 1000000),
 		(pconf->timing.bit_rate % 1000000) / 1000,
 		factor,
@@ -446,11 +448,11 @@ static void check_phy_status(struct aml_lcd_drv_s *pdrv)
 			LCDERR("%s: phy_lock timeout\n", __func__);
 			break;
 		}
-		lcd_delay_us(6);
+		udelay(6);
 	}
 
 	i = 0;
-	lcd_delay_us(10);
+	udelay(10);
 	while (dsi_host_getb(pdrv, MIPI_DSI_DWC_PHY_STATUS_OS,
 			     BIT_PHY_STOPSTATECLKLANE, 1) == 0) {
 		if (i == 0)
@@ -459,7 +461,7 @@ static void check_phy_status(struct aml_lcd_drv_s *pdrv)
 			LCDERR("%s: lane_state timeout\n", __func__);
 			break;
 		}
-		lcd_delay_us(6);
+		udelay(6);
 	}
 }
 
@@ -1791,7 +1793,7 @@ static void mipi_dsi_link_on(struct aml_lcd_drv_s *pdrv)
 				 /* DSI operation mode, video or command */
 				  op_mode_disp);
 		if (op_mode_disp == MIPI_DSI_OPERATION_MODE_VIDEO)
-			lcd_vcbus_write(ENCL_VIDEO_EN + offset, 1);
+			lcd_venc_enable(pdrv, 1);
 	}
 }
 
@@ -1938,7 +1940,7 @@ static void mipi_dsi_host_on(struct aml_lcd_drv_s *pdrv)
 	offset = pdrv->data->offset_venc[pdrv->index];
 
 	/* disable encl */
-	lcd_vcbus_write(ENCL_VIDEO_EN + offset, 0);
+	lcd_venc_enable(pdrv, 0);
 	lcd_delay_us(100);
 
 	startup_mipi_dsi_host(pdrv);
@@ -1961,7 +1963,7 @@ static void mipi_dsi_host_on(struct aml_lcd_drv_s *pdrv)
 	/* Startup transfer */
 	mipi_dsi_lpclk_ctrl(pdrv);
 	if (op_mode_init == MIPI_DSI_OPERATION_MODE_VIDEO)
-		lcd_vcbus_write(ENCL_VIDEO_EN + offset, 1);
+		lcd_venc_enable(pdrv, 1);
 
 	mipi_dsi_link_on(pdrv);
 

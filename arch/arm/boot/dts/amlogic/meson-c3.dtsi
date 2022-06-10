@@ -302,12 +302,10 @@
 			//power-domains = <&pwrdm PDID_CX_SDEMMC_A>;
 			clocks = <&clkc CLKID_SYS_SD_EMMC_A>,
 				<&clkc CLKID_SD_EMMC_A_SEL>,
-				<&clkc CLKID_SD_EMMC_A_GATE>,
 				<&clkc CLKID_SD_EMMC_A>,
-				<&clkc CLKID_SD_EMMC_A_DIV>,
 				<&xtal>,
-				<&clkc CLKID_FCLK_DIV2P5>;
-				clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
+				<&clkc CLKID_FCLK_DIV2>;
+				clock-names = "core", "mux0", "mux1",
 						"clkin0", "clkin1";
 			mmc_debug_flag;
 			use_intf3_tuning;
@@ -325,12 +323,10 @@
 			status = "disabled";
 			clocks = <&clkc CLKID_SYS_SD_EMMC_B>,
 				 <&clkc CLKID_SD_EMMC_B_SEL>,
-				 <&clkc CLKID_SD_EMMC_B_GATE>,
 				 <&clkc CLKID_SD_EMMC_B>,
-				 <&clkc CLKID_SD_EMMC_B_DIV>,
 				 <&xtal>,
-				 <&clkc CLKID_FCLK_DIV2P5>;
-			clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
+				 <&clkc CLKID_FCLK_DIV2>;
+			clock-names = "core", "mux0", "mux1",
 					"clkin0", "clkin1";
 			mmc_debug_flag;
 			use_intf3_tuning;
@@ -359,16 +355,19 @@
 			status = "okay";
 			clocks = <&clkc CLKID_SYS_SD_EMMC_C>,
 				 <&clkc CLKID_SD_EMMC_C_SEL>,
-				 <&clkc CLKID_SD_EMMC_C_GATE>,
 				 <&clkc CLKID_SD_EMMC_C>,
-				 <&clkc CLKID_SD_EMMC_C_DIV>,
 				 <&xtal>,
-				 <&clkc CLKID_HIFI_PLL>;
-			clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
+				 //<&clkc CLKID_FCLK_DIV2>,
+				 //<&clkc CLKID_FCLK_DIV2>;
+				 <&clkc CLKID_GP1_PLL>;
+				// <&clkc CLKID_GP1_PLL>;
+			clock-names = "core", "mux0", "mux1",
 					 "clkin0", "clkin1";
 			mmc_debug_flag;
+			src_clk_rate = <1152000000>;
 			tx_delay = <16>;
 			resets = <&reset RESET_SD_EMMC_C>;
+			nwr_cnt = <0>;
 			no-sd;
 			no-sdio;
 		};
@@ -2325,7 +2324,7 @@
 
 	sdio_m_clk_gate_pins:sdio_m_clk_cmd_pins {
 		mux {
-			 groups = "sdio_clk_m";
+			 groups = "sdio_clk";
 			 function = "sdio";
 			 bias-pull-down;
 			 drive-strength-microamp = <4000>;
@@ -2334,12 +2333,12 @@
 
 	sdio_m_pins:sdio_m_all_pins {
 		mux {
-			groups = "sdio_d0_m",
-				"sdio_d1_m",
-				"sdio_d2_m",
-				"sdio_d3_m",
-				"sdio_clk_m",
-				"sdio_cmd_m";
+			groups = "sdio_d0",
+				"sdio_d1",
+				"sdio_d2",
+				"sdio_d3",
+				"sdio_clk",
+				"sdio_cmd";
 			function = "sdio";
 			input-enable;
 			bias-pull-up;

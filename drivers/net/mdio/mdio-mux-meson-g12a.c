@@ -170,6 +170,24 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 	       PHY_CNTL1_CLKFREQ |
 	       PHY_CNTL1_PHY_ENB,
 	       priv->regs + ETH_PHY_CNTL1);
+
+	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 3) |
+	       FIELD_PREP(PHY_CNTL1_ST_PHYADD, EPHY_DFLT_ADD) |
+	       FIELD_PREP(PHY_CNTL1_MII_MODE, EPHY_MODE_RMII) |
+	       PHY_CNTL1_CLK_EN |
+	       PHY_CNTL1_CLKFREQ,
+	       priv->regs + ETH_PHY_CNTL1);
+
+	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 3) |
+	       FIELD_PREP(PHY_CNTL1_ST_PHYADD, EPHY_DFLT_ADD) |
+	       FIELD_PREP(PHY_CNTL1_MII_MODE, EPHY_MODE_RMII) |
+	       PHY_CNTL1_CLK_EN |
+	       PHY_CNTL1_CLKFREQ |
+	       PHY_CNTL1_PHY_ENB,
+	       priv->regs + ETH_PHY_CNTL1);
+
+	mdelay(10);
+
 	writel(PHY_CNTL2_USE_INTERNAL |
 	       PHY_CNTL2_SMI_SRC_MAC |
 	       PHY_CNTL2_RX_CLK_EPHY,

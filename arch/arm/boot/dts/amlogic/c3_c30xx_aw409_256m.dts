@@ -1147,13 +1147,9 @@
 };
 
 &ethmac {
-	pinctrl-0 = <&eth_pins>;
-	pinctrl-names = "default";
-	status = "disabled";
+	status = "okay";
+	phy-handle = <&internal_ephy>;
 	phy-mode = "rmii";
-	phy-handle = <&external_phy>;
-//	amlogic,tx-delay-ns = <2>;
-	mc_val = <0x1624>;
 };
 
 &saradc {

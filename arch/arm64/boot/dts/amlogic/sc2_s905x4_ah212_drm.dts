@@ -473,7 +473,7 @@
 
 	unifykey{
 		compatible = "amlogic,unifykey";
-		status = "disabled";
+		status = "okay";
 		unifykey-num = <19>;
 		unifykey-index-0 = <&keysn_0>;
 		unifykey-index-1 = <&keysn_1>;
@@ -1428,7 +1428,7 @@
 
 /* SD card */
 &sd_emmc_b {
-	status = "disabled";
+	status = "okay";
 	pinctrl-0 = <&sdcard_pins>;
 	pinctrl-1 = <&sdcard_clk_gate_pins>;
 	pinctrl-2 = <&sd_1bit_pins>;
@@ -1467,7 +1467,7 @@
 };
 
 &sd_emmc_c {
-	status = "disabled";
+	status = "okay";
 	pinctrl-0 = <&emmc_pins>, <&emmc_ds_pins>;
 	pinctrl-1 = <&emmc_clk_gate_pins>;
 	pinctrl-names = "default", "clk-gate";

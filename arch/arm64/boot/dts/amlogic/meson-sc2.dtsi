@@ -1035,7 +1035,7 @@
 				<0x0 0xfe000168 0x0 0x4>,
 				<0x0 0xfe004000 0x0 0x4>;
 			interrupts = <GIC_SPI 178 IRQ_TYPE_EDGE_RISING>;
-			status = "disabled";
+			status = "okay";
 			clocks = <&clkc CLKID_NAND>,
 				<&clkc CLKID_SD_EMMC_C_CLK_MUX>,
 				 <&clkc CLKID_SD_EMMC_C_CLK>,
@@ -1056,7 +1056,7 @@
 				<0x0 0xfe000164 0x0 0x4>,
 				<0x0 0xfe004024 0x0 0x4>;
 			interrupts = <GIC_SPI 177 IRQ_TYPE_EDGE_RISING>;
-			status = "disabled";
+			status = "okay";
 			clocks = <&clkc CLKID_SD_EMMC_B>,
 				<&clkc CLKID_SD_EMMC_B_CLK_MUX>,
 				 <&clkc CLKID_SD_EMMC_B_CLK>,

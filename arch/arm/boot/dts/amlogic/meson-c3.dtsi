@@ -700,7 +700,6 @@
 				/* 0:userspace, 1:kernel */
 				amlogic,feed_watchdog_mode = <1>;
 				timeout-sec = <60>;
-				status = "disabled";
 			};
 
 			irblaster: meson-irblaster@110c {

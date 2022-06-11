@@ -9,8 +9,9 @@
 #include "meson-c3_pxp-panel.dtsi"
 
 / {
-	compatible = "amlogic,c2";
-	model = "Amlogic Meson C2-C305X-AF400";
+	model = "Amlogic";
+	amlogic-dt-id = "c3_c30xx_aw409-256m";
+	compatible = "amlogic, c3";
 
 	aliases {
 		serial0 = &uart_B;

@@ -180,23 +180,25 @@
 		status = "disabled";
 	};
 
-	sdcard_power: regulator-sdcard {
+	sdcard_3v3: sdcard-regulator-consumer_3v3 {
 		compatible = "regulator-fixed";
-		regulator-name = "SDCARD_POWER";
+		regulator-name = "SDCARD_3V3: SD/TF.";
 		vin-supply = <&vddao3v3_reg>;
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		//gpio = <&gpio GPIOD_13 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio GPIOA_4 GPIO_ACTIVE_HIGH>;  /* 0R */
 		enable-active-high;
 		regulator-boot-on;
+		regulator-always-on;
 	};
 
-	vddio_card: gpio-regulator {
+	vddio_c_p: sdcard-regulator-consumer_1v8_3v3 {
 		compatible = "regulator-gpio";
-		regulator-name = "VDDIO_CARD";
+		regulator-name = "VDDIO_C_P: SD/TF.";
+		vin-supply = <&vddio_c_reg>;
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio GPIOE_2 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio GPIOA_5 GPIO_ACTIVE_HIGH>;
 		gpios-states = <1>;
 
 		/* Based on P200 schematics, signal CARD_1.8V/3.3V_CTR */
@@ -1014,8 +1016,8 @@
 	cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
 	dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
 	//dat3-gpios = <&gpio GPIOC_3 GPIO_ACTIVE_HIGH>;
-	//vmmc-supply = <&sdcard_power>;
-	//vqmmc-supply = <&vddio_card>;
+	//vmmc-supply = <&sdcard_3v3>;
+	//vqmmc-supply = <&vddio_c_p>;
 };
 
 &sd_emmc_a {

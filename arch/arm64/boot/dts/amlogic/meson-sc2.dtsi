@@ -1489,7 +1489,7 @@
 
 	vclk_serve: vclk_serve {
 		compatible = "amlogic, vclk_serve";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe008000 0x0 0x300    /* ana reg */
 			0x0 0xfe000000 0x0 0x4a0>; /* clk reg */
 	};
@@ -1513,7 +1513,7 @@
 
 	dummy_venc: dummy_venc {
 		compatible = "amlogic, dummy_venc_sc2";
-		status = "disabled";
+		status = "okay";
 	};
 
 	ir: ir@8000 {

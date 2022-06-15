@@ -46,8 +46,9 @@
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
 			no-map;
+			size = <0xc00000>;
 			alignment = <0x400000>;
-			reg = <0x05000000 0x400000>;
+			alloc-ranges = <0x05000000 0xc00000>;
 		};
 		nna_cma_reserved: linux,nna_cma {
 			compatible = "shared-dma-pool";

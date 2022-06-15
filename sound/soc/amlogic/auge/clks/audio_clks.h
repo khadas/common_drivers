@@ -92,6 +92,7 @@ struct audio_clk_init {
 
 extern struct audio_clk_init sm1_audio_clks_init;
 extern struct audio_clk_init a1_audio_clks_init;
+extern struct audio_clk_init c3_audio_clks_init;
 extern spinlock_t aclk_lock;
 
 struct clk_chipinfo {

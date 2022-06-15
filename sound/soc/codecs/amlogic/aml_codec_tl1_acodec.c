@@ -21,12 +21,18 @@
 #include <sound/initval.h>
 #include <sound/tlv.h>
 #include <linux/regmap.h>
+#include <linux/reset.h>
+#include <linux/clk.h>
 
+#include <linux/amlogic/iomap.h>
 #include <linux/amlogic/media/sound/auge_utils.h>
 
 #include "../../../soc/amlogic/auge/iomap.h"
 #include "../../../soc/amlogic/auge/regs.h"
 #include "aml_codec_tl1_acodec.h"
+
+#define SINGLE_ENDED  0
+#define DIFFERENTIAL  1
 
 struct tl1_acodec_chipinfo {
 	int id;
@@ -36,6 +42,10 @@ struct tl1_acodec_chipinfo {
 	bool is_dac_phase_differ_exist;
 	bool is_adc_phase_differ_exist;
 	int mclk_sel;
+	bool separate_toacodec_en;
+	int data_sel_shift;
+	int dac_count;
+	int signal_mode;
 };
 
 struct tl1_acodec_priv {
@@ -44,6 +54,7 @@ struct tl1_acodec_priv {
 	struct regmap *regmap;
 	struct work_struct work;
 	struct tl1_acodec_chipinfo *chipinfo;
+	struct clk *acodec_clk;
 	int tdmout_index;
 	int dat0_ch_sel;
 	int dat1_ch_sel;
@@ -56,11 +67,34 @@ struct tl1_acodec_priv {
 	//tdmouta,tdmoutb,tdmoutc,none,tdmina,tdminb,tdminc
 	int dac1_input_sel;
 	int dac2_input_sel;
+	struct reset_control *rst;
 };
 
 static const struct reg_default tl1_acodec_init_list[] = {
-	{ACODEC_0, 0x3403BFCF},
+	{ACODEC_0, 0x3430BFCF},
 	{ACODEC_1, 0x50503030},
+	{ACODEC_2, 0xFBFB0000},
+	{ACODEC_3, 0x00002222},
+	{ACODEC_4, 0x00010000},
+	{ACODEC_5, 0xFBFB0033},
+	{ACODEC_6, 0x0},
+	{ACODEC_7, 0x0}
+};
+
+static const struct reg_default tl1_acodec_init_list_v2[] = {
+	{ACODEC_0, 0x3403BFFF},
+	{ACODEC_1, 0x50503030},
+	{ACODEC_2, 0xFBFB0000},
+	{ACODEC_3, 0x00002244},
+	{ACODEC_4, 0x00010000},
+	{ACODEC_5, 0xFBFB0033},
+	{ACODEC_6, 0x0},
+	{ACODEC_7, 0x0}
+};
+
+static const struct reg_default tl1_acodec_init_list_v3[] = {
+	{ACODEC_0, 0x3400BFFF},
+	{ACODEC_1, 0x50506969},
 	{ACODEC_2, 0xFBFB0000},
 	{ACODEC_3, 0x00002222},
 	{ACODEC_4, 0x00010000},
@@ -80,18 +114,102 @@ static struct tl1_acodec_chipinfo tl1_acodec_cinfo = {
 	//if is_adc_phase_differ=true,modified tdmin_in_rev_ws,revert ws(lrclk);
 	//0 :disable; 1: enable;
 	//.mclk_sel = 1,
+	.separate_toacodec_en = false,
+	.data_sel_shift = DATA_SEL_SHIFT_VERSION0,
+};
+
+static struct tl1_acodec_chipinfo tm2_revb_acodec_cinfo = {
+	.id = 0,
+	.is_bclk_cap_inv = true,	//default  true
+	.is_bclk_o_inv = false,		//default  false
+	.is_lrclk_inv = false,
+
+	.is_dac_phase_differ_exist = false,
+	.is_adc_phase_differ_exist = true,
+	//if is_adc_phase_differ=true,modified tdmin_in_rev_ws,revert ws(lrclk);
+	//0 :disable; 1: enable;
+	//.mclk_sel = 1,
+	.separate_toacodec_en = true,
+	.data_sel_shift = DATA_SEL_SHIFT_VERSION0,
+};
+
+static struct tl1_acodec_chipinfo t5w_acodec_cinfo = {
+	.id = 0,
+	.is_bclk_cap_inv = true,	//default  true
+	.is_bclk_o_inv = false,		//default  false
+	.is_lrclk_inv = false,
+
+	.is_dac_phase_differ_exist = false,
+	.is_adc_phase_differ_exist = true,
+	//if is_adc_phase_differ=true,modified tdmin_in_rev_ws,revert ws(lrclk);
+	//0 :disable; 1: enable;
+	//.mclk_sel = 1,
+	.separate_toacodec_en = true,
+	.data_sel_shift = DATA_SEL_SHIFT_VERSION0,
+	.dac_count = 4,
+};
+
+static struct tl1_acodec_chipinfo t3_acodec_cinfo = {
+	.id = 0,
+	.is_bclk_cap_inv = true,	//default  true
+	.is_bclk_o_inv = false,		//default  false
+	.is_lrclk_inv = false,
+
+	.is_dac_phase_differ_exist = false,
+	.is_adc_phase_differ_exist = true,
+	//if is_adc_phase_differ=true,modified tdmin_in_rev_ws,revert ws(lrclk);
+	//0 :disable; 1: enable;
+	//.mclk_sel = 1,
+	.separate_toacodec_en = true,
+	.data_sel_shift = DATA_SEL_SHIFT_VERSION1,
+};
+
+static struct tl1_acodec_chipinfo c3_acodec_cinfo = {
+	.id = 0,
+	.is_bclk_cap_inv = true,	//default  true
+	.is_bclk_o_inv = false,		//default  false
+	.is_lrclk_inv = false,
+
+	.is_dac_phase_differ_exist = false,
+	.is_adc_phase_differ_exist = true,
+	//if is_adc_phase_differ=true,modified tdmin_in_rev_ws,revert ws(lrclk);
+	//0 :disable; 1: enable;
+	//.mclk_sel = 1,
+	.separate_toacodec_en = true,
+	.data_sel_shift = DATA_SEL_SHIFT_VERSION1,
+	.signal_mode = DIFFERENTIAL,
 };
 
 static int tl1_acodec_reg_init(struct snd_soc_component *component)
 {
 	int i;
-
-	for (i = 0; i < ARRAY_SIZE(tl1_acodec_init_list); i++)
-		snd_soc_component_write
-			(component,
-			tl1_acodec_init_list[i].reg,
-			tl1_acodec_init_list[i].def);
-
+	struct tl1_acodec_priv *aml_acodec =
+				snd_soc_component_get_drvdata(component);
+	if (aml_acodec && aml_acodec->chipinfo) {
+		/*t5w have 4 dac*/
+		if (aml_acodec->chipinfo->dac_count == 4) {
+			for (i = 0;
+				i < ARRAY_SIZE(tl1_acodec_init_list_v2); i++)
+				snd_soc_component_write
+				(component,
+				tl1_acodec_init_list_v2[i].reg,
+				tl1_acodec_init_list_v2[i].def);
+		} else if (aml_acodec->chipinfo->signal_mode == DIFFERENTIAL) {
+			for (i = 0;
+				i < ARRAY_SIZE(tl1_acodec_init_list_v3); i++)
+				snd_soc_component_write
+				(component,
+				tl1_acodec_init_list_v3[i].reg,
+				tl1_acodec_init_list_v3[i].def);
+		} else {
+			for (i = 0;
+				i < ARRAY_SIZE(tl1_acodec_init_list); i++)
+				snd_soc_component_write
+				(component,
+				tl1_acodec_init_list[i].reg,
+				tl1_acodec_init_list[i].def);
+			}
+	}
 	return 0;
 }
 
@@ -255,7 +373,7 @@ static const char * const linein_left_txt[] = {
 	"None", "AIL1", "AIL2", "AIL3", "AIL4",
 };
 
-static const SOC_ENUM_SINGLE_DECL(linein_left_enum,
+static SOC_ENUM_SINGLE_DECL(linein_left_enum,
 				  ACODEC_1,
 				  PGAL_IN_SEL, linein_left_txt);
 
@@ -267,7 +385,7 @@ static const char * const linein_right_txt[] = {
 	"None", "AIR1", "AIR2", "AIR3", "AIR4",
 };
 
-static const SOC_ENUM_SINGLE_DECL(linein_right_enum,
+static SOC_ENUM_SINGLE_DECL(linein_right_enum,
 				  ACODEC_1,
 				  PGAR_IN_SEL, linein_right_txt);
 
@@ -279,7 +397,7 @@ static const char * const out_lo1l_txt[] = {
 	"None", "LO1L_SEL_INL", "LO1L_SEL_DACL", "Reserved", "LO1L_SEL_DACR_INV"
 };
 
-static const SOC_ENUM_SINGLE_DECL
+static SOC_ENUM_SINGLE_DECL
 		(out_lo1l_enum, ACODEC_3,
 		LO1L_SEL_INL, out_lo1l_txt);
 
@@ -291,7 +409,7 @@ static const char * const out_lo1r_txt[] = {
 	"None", "LO1R_SEL_INR", "LO1R_SEL_DACR", "Reserved", "LO1R_SEL_DACL_INV"
 };
 
-static const SOC_ENUM_SINGLE_DECL
+static SOC_ENUM_SINGLE_DECL
 		(out_lo1r_enum, ACODEC_3,
 		LO1R_SEL_INR, out_lo1r_txt);
 
@@ -304,7 +422,7 @@ static const char * const out_lo2l_txt[] = {
 	"LO2L_SEL_DAC2R_INV"
 };
 
-static const SOC_ENUM_SINGLE_DECL(out_lo2l_enum, ACODEC_3,
+static SOC_ENUM_SINGLE_DECL(out_lo2l_enum, ACODEC_3,
 				  LO2L_SEL_INL, out_lo2l_txt);
 
 static const struct snd_kcontrol_new lo2l_mux =
@@ -316,7 +434,7 @@ static const char * const out_lo2r_txt[] = {
 	"LO2R_SEL_DAC2L_INV"
 };
 
-static const SOC_ENUM_SINGLE_DECL(out_lo2r_enum, ACODEC_3,
+static SOC_ENUM_SINGLE_DECL(out_lo2r_enum, ACODEC_3,
 				  LO2R_SEL_INR, out_lo2r_txt);
 
 static const struct snd_kcontrol_new lo2r_mux =
@@ -509,8 +627,10 @@ static int tl1_acodec_dai_set_bias_level
 		break;
 
 	case SND_SOC_BIAS_STANDBY:
-		if (component->dapm.bias_level == SND_SOC_BIAS_OFF)
+		if (component->dapm.bias_level == SND_SOC_BIAS_OFF) {
 			snd_soc_component_cache_sync(component);
+			snd_soc_component_write(component, ACODEC_0, tl1_acodec_init_list[0].def);
+		}
 		break;
 
 	case SND_SOC_BIAS_OFF:
@@ -534,11 +654,15 @@ static int tl1_acodec_dai_prepare
 
 static int tl1_acodec_reset(struct snd_soc_component *component)
 {
-	struct tl1_acodec_priv *tl1_acodec =
-			snd_soc_component_get_drvdata(component);
-	if (tl1_acodec)
-		auge_acodec_reset();
-	usleep_range(950, 1000);
+	struct tl1_acodec_priv *tl1_acodec = snd_soc_component_get_drvdata(component);
+
+	if (tl1_acodec && !IS_ERR(tl1_acodec->rst)) {
+		pr_info("call standard reset interface\n");
+		reset_control_reset(tl1_acodec->rst);
+		usleep_range(950, 1000);
+	} else {
+		pr_info("no call standard reset interface\n");
+	}
 	return 0;
 }
 
@@ -557,6 +681,7 @@ static void tl1_acodec_release_fast_mode_work_func(struct work_struct *p_work)
 {
 	struct tl1_acodec_priv *aml_acodec;
 	struct snd_soc_component *component;
+	int i;
 
 	aml_acodec = container_of(p_work, struct tl1_acodec_priv, work);
 	if (!aml_acodec) {
@@ -572,12 +697,19 @@ static void tl1_acodec_release_fast_mode_work_func(struct work_struct *p_work)
 
 	pr_info("%s\n", __func__);
 	tl1_acodec_set_toacodec(aml_acodec);
-	/*reset audio codec register*/
-	tl1_acodec_reset(component);
-	snd_soc_component_write(component, ACODEC_0, 0xF000);
-	msleep(200);
-	snd_soc_component_write(component, ACODEC_0, 0xB000);
-	tl1_acodec_reg_init(component);
+	/*
+	 * reset audio codec register
+	 * after init, need do reset again.
+	 * only reset before init acodec, there is the
+	 * output phase difference of left and right channels.
+	 */
+	for (i = 0; i < 2; i++) {
+		tl1_acodec_reset(component);
+		snd_soc_component_write(component, ACODEC_0, 0xF000);
+		msleep(200);
+		snd_soc_component_write(component, ACODEC_0, 0xB000);
+		tl1_acodec_reg_init(component);
+	}
 
 	aml_acodec->component = component;
 	tl1_acodec_dai_set_bias_level(component, SND_SOC_BIAS_STANDBY);
@@ -643,6 +775,7 @@ static int tl1_acodec_probe(struct snd_soc_component *component)
 		return -EINVAL;
 	}
 	aml_acodec->component = component;
+	aml_acodec->rst = devm_reset_control_get(component->dev, "acodec");
 	INIT_WORK(&aml_acodec->work, tl1_acodec_release_fast_mode_work_func);
 	schedule_work(&aml_acodec->work);
 
@@ -735,7 +868,7 @@ static int tl1_acodec_set_toacodec(struct tl1_acodec_priv *aml_acodec)
 	int dat0_sel, dat1_sel, lrclk_sel, bclk_sel, mclk_sel;
 	unsigned int update_bits_msk = 0x0, update_bits = 0x0;
 
-	update_bits_msk = 0x80FF7777;
+	update_bits_msk = 0xFF7777;
 	if (aml_acodec->chipinfo->is_bclk_cap_inv)
 		update_bits |= (0x1 << 9);
 	if (aml_acodec->chipinfo->is_bclk_o_inv)
@@ -743,10 +876,18 @@ static int tl1_acodec_set_toacodec(struct tl1_acodec_priv *aml_acodec)
 	if (aml_acodec->chipinfo->is_lrclk_inv)
 		update_bits |= (0x1 << 10);
 
-	dat0_sel = (aml_acodec->tdmout_index << 2) + aml_acodec->dat0_ch_sel;
-	dat0_sel = dat0_sel << 16;
-	dat1_sel = (aml_acodec->tdmout_index << 2) + aml_acodec->dat1_ch_sel;
-	dat1_sel = dat1_sel << 20;
+	if (aml_acodec->chipinfo->data_sel_shift == DATA_SEL_SHIFT_VERSION0) {
+		dat0_sel = (aml_acodec->tdmout_index << 2) + aml_acodec->dat0_ch_sel;
+		dat0_sel = dat0_sel << 16;
+		dat1_sel = (aml_acodec->tdmout_index << 2) + aml_acodec->dat1_ch_sel;
+		dat1_sel = dat1_sel << 20;
+	} else {
+		dat0_sel = (aml_acodec->tdmout_index << 3) + aml_acodec->dat0_ch_sel;
+		dat0_sel = dat0_sel << 16;
+		dat1_sel = (aml_acodec->tdmout_index << 3) + aml_acodec->dat1_ch_sel;
+		dat1_sel = dat1_sel << 22;
+	}
+
 	lrclk_sel = (aml_acodec->tdmout_index) << 12;
 	bclk_sel = (aml_acodec->tdmout_index) << 4;
 
@@ -754,11 +895,20 @@ static int tl1_acodec_set_toacodec(struct tl1_acodec_priv *aml_acodec)
 	mclk_sel = aml_acodec->tdmin_index;
 
 	update_bits |= dat0_sel | dat1_sel | lrclk_sel | bclk_sel | mclk_sel;
-	update_bits |= 0x1 << 31;
-	pr_info("%s()\n", __func__);
-	audiobus_update_bits
-			(EE_AUDIO_TOACODEC_CTRL0, update_bits_msk,
-			update_bits);
+
+	audiobus_update_bits(EE_AUDIO_TOACODEC_CTRL0, update_bits_msk, update_bits);
+
+	/* if toacodec_en is separated, need do:
+	 * step1: enable/disable mclk
+	 * step2: enable/disable bclk
+	 * step3: enable/disable dat
+	 */
+	if (aml_acodec->chipinfo->separate_toacodec_en) {
+		audiobus_update_bits(EE_AUDIO_TOACODEC_CTRL0, 0x20000000, 0x1 << 29);
+		audiobus_update_bits(EE_AUDIO_TOACODEC_CTRL0, 0x40000000, 0x1 << 30);
+	}
+	audiobus_update_bits(EE_AUDIO_TOACODEC_CTRL0, 0x80000000, 0x1 << 31);
+
 	pr_info("%s, is_bclk_cap_inv %s\n", __func__,
 		aml_acodec->chipinfo->is_bclk_cap_inv ? "true" : "false");
 	pr_info("%s, is_bclk_o_inv %s\n", __func__,
@@ -811,12 +961,21 @@ static int aml_tl1_acodec_probe(struct platform_device *pdev)
 	if (IS_ERR(aml_acodec->regmap))
 		return PTR_ERR(aml_acodec->regmap);
 
+	aml_acodec->acodec_clk = devm_clk_get(&pdev->dev, "acodec_clk");
+	if (!IS_ERR(aml_acodec->acodec_clk))
+		clk_prepare_enable(aml_acodec->acodec_clk);
+	else
+		dev_info(&pdev->dev, "Can't retrieve acodec clock\n");
+
 	of_property_read_u32
 			(pdev->dev.of_node,
 			"tdmout_index",
 			&aml_acodec->tdmout_index);
 	pr_info("aml_tl1_acodec tdmout_index=%d\n",
 		aml_acodec->tdmout_index);
+
+	of_property_read_u32(pdev->dev.of_node,
+			"dat0_ch_sel", &aml_acodec->dat0_ch_sel);
 
 	of_property_read_u32
 			(pdev->dev.of_node,
@@ -850,6 +1009,13 @@ static int aml_tl1_acodec_probe(struct platform_device *pdev)
 
 static int aml_tl1_acodec_remove(struct platform_device *pdev)
 {
+	struct tl1_acodec_priv *aml_acodec;
+
+	aml_acodec = platform_get_drvdata(pdev);
+
+	if (!IS_ERR(aml_acodec->acodec_clk))
+		clk_disable_unprepare(aml_acodec->acodec_clk);
+
 	snd_soc_unregister_component(&pdev->dev);
 
 	return 0;
@@ -862,8 +1028,12 @@ static void aml_tl1_acodec_shutdown(struct platform_device *pdev)
 
 	aml_acodec = platform_get_drvdata(pdev);
 	component = aml_acodec->component;
+
+	if (!IS_ERR(aml_acodec->acodec_clk))
+		clk_disable_unprepare(aml_acodec->acodec_clk);
+
 	if (component)
-		tl1_acodec_remove(component);
+		tl1_acodec_dai_set_bias_level(component, SND_SOC_BIAS_OFF);
 }
 
 static const struct of_device_id aml_tl1_acodec_dt_match[] = {
@@ -871,6 +1041,23 @@ static const struct of_device_id aml_tl1_acodec_dt_match[] = {
 		.compatible = "amlogic, tl1_acodec",
 		.data = &tl1_acodec_cinfo,
 	},
+	{
+		.compatible = "amlogic, tm2_revb_acodec",
+		.data = &tm2_revb_acodec_cinfo,
+	},
+	{
+		.compatible = "amlogic, t3_acodec",
+		.data = &t3_acodec_cinfo,
+	},
+	{
+		.compatible = "amlogic, t5w_acodec",
+		.data = &t5w_acodec_cinfo,
+	},
+	{
+		.compatible = "amlogic, c3_acodec",
+		.data = &c3_acodec_cinfo,
+	},
+
 	{},
 };
 

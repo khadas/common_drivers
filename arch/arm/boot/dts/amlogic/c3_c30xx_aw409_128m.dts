@@ -637,11 +637,11 @@
 		compatible = "amlogic, a1-snd-pdm";
 		#sound-dai-cells = <0>;
 
-		clocks = <&clkaudio CLKID_AUDIO2_GATE_PDM
+		clocks = <&clkaudio CLKID_AUDIO_GATE_PDM
 			&clkc CLKID_HIFI_PLL
 			&clkc CLKID_HIFI_PLL
-			&clkaudio CLKID_AUDIO2_PDM_DCLK
-			&clkaudio CLKID_AUDIO2_PDM_SYSCLK>;
+			&clkaudio CLKID_AUDIO_PDMIN0
+			&clkaudio CLKID_AUDIO_PDMIN1>;
 		clock-names = "gate",
 			"sysclk_srcpll",
 			"dclk_srcpll",
@@ -665,7 +665,7 @@
 		compatible = "amlogic, c2-resample-b";
 		clocks = <&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_MCLK_D
-			&clkaudio CLKID_AUDIO_RESAMPLEA>;
+			&clkaudio CLKID_AUDIO_RESAMPLE_A>;
 		clock-names = "resample_pll", "resample_src", "resample_clk";
 
 		/*this resample is only used for loopback_A.*/
@@ -678,37 +678,6 @@
 		status = "disabled";
 	};
 
-	vad:vad {
-		compatible = "amlogic, snd-vad-top";
-		#sound-dai-cells = <0>;
-
-		clocks = <&clkaudio CLKID_AUDIO2_GATE_TOVAD
-			/* &clkc CLKID_FCLK_DIV2 */
-			&xtal
-			&clkaudio CLKID_AUDIO2_VAD_CLK>;
-		clock-names = "gate", "pll", "clk";
-
-		interrupts = <GIC_SPI 185 IRQ_TYPE_EDGE_RISING
-				GIC_SPI 186 IRQ_TYPE_EDGE_RISING>;
-		interrupt-names = "irq_wakeup", "irq_frame_sync";
-
-		/*
-		 * Data src sel:
-		 * 2: tdmin_c, actually tdmin_vad
-		 * 4: pdmin
-		 */
-		src = <4>;
-
-		/*
-		 * deal with hot word in user space or kernel space
-		 * 0: in user space
-		 * 1: in kernel space
-		 */
-		level = <1>;
-
-		status = "disabled";
-	};
-
 	loopback: loopback {
 		compatible = "amlogic, a1-loopbacka";
 		#sound-dai-cells = <0>;
@@ -716,11 +685,11 @@
 		original-src = <&tdmb>;
 		//tdmin_lb-src = <&tdmin_lb>;
 
-		clocks = <&clkaudio CLKID_AUDIO2_GATE_PDM
+		clocks = <&clkaudio CLKID_AUDIO_GATE_PDM
 			&clkc CLKID_HIFI_PLL
 			&clkc CLKID_HIFI_PLL
-			&clkaudio CLKID_AUDIO2_PDM_DCLK
-			&clkaudio CLKID_AUDIO2_PDM_SYSCLK
+			&clkaudio CLKID_AUDIO_PDMIN0
+			&clkaudio CLKID_AUDIO_PDMIN1
 			&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_MCLK_C>;
 		clock-names = "pdm_gate",

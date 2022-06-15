@@ -1401,7 +1401,7 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 			 * 4. SPDIFOUT enable
 			 * 5. FRDDR enable
 			 */
-			dev_dbg(substream->pcm->card->dev,
+			dev_info(substream->pcm->card->dev,
 				 "TDM[%d] Playback enable\n",
 				 p_tdm->id);
 			/*don't change this flow*/
@@ -1454,7 +1454,7 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 			 * 3. TDMOUT/SPDIF Disable
 			 * 4. FRDDR Disable
 			 */
-			dev_dbg(substream->pcm->card->dev,
+			dev_info(substream->pcm->card->dev,
 				 "TDM[%d] Playback stop\n",
 				 p_tdm->id);
 			if (!p_tdm->tdm_fade_out_enable)

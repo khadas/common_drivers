@@ -28,6 +28,10 @@ static const struct of_device_id audio_clocks_of_match[] = {
 		.compatible = "amlogic, a1-audio-clocks",
 		.data		= &a1_audio_clks_init,
 	},
+	{
+		.compatible = "amlogic, c3-audio-clocks",
+		.data		= &c3_audio_clks_init,
+	},
 	{},
 };
 MODULE_DEVICE_TABLE(of, audio_clocks_of_match);

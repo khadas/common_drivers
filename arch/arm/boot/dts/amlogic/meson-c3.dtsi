@@ -1494,34 +1494,12 @@
 		interrupts = <0 62 IRQ_TYPE_EDGE_RISING>;
 	};
 
-	galcore {
-		compatible = "amlogic, galcore";
-		dev_name = "galcore";
-		status = "disabled";
-		//clocks = <&clkc CLKID_NNA_AXI_GATE>,
-		//	<&clkc CLKID_NNA_CORE_GATE>;
-		clock-names = "cts_vipnanoq_axi_clk_composite",
-			"cts_vipnanoq_core_clk_composite";
-		interrupts = <0 60 4>;
-		interrupt-names = "galcore";
-		//power-domains = <&pwrdm PDID_CX_NNA>;
-		reg = <0xff040000 0x20000
-			0xfffc0000 0x3e000
-			0xfe01303c 0x4
-			0xfe013040 0x4
-			0xfe013084 0x4
-			0xfe000914 0x4
-			>;
-		reg-names = "NN_REG","NN_SRAM","NN_MEM0",
-			"NN_MEM1","NN_RESET","NN_CLK";
-		nn_power_version = <4>;
-	};
 	adla: adla@0xfe04a000 {
 		compatible = "amlogic,adla";
 		dev_name = "adla";
 		status = "okay";
-		reg = <0xfe04a000 0x200
-			0xf7000000 0x100000
+		reg = <0xfe04a000 0x2000
+			0xf7000000 0x40000
 			>;
 		reg-names = "adla_reg\0adla_sram";
 		interrupt-names = "adla";

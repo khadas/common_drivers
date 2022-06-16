@@ -88,11 +88,6 @@ static unsigned long meson_c3_clk_pll_recalc_rate(struct clk_hw *hw,
 	struct pll_params_table pllt;
 	u32 frac;
 
-	if (!meson_parm_read(clk->map, &pll->l)) {
-		pr_warn("%s:%s pll did not lock\n",	__func__, clk_hw_get_name(hw));
-		return 0;
-	}
-
 	pllt.n = meson_parm_read(clk->map, &pll->n);
 	pllt.m = meson_parm_read(clk->map, &pll->m);
 #ifdef CONFIG_ARM
@@ -261,6 +256,9 @@ static void meson_c3_clk_pll_disable(struct clk_hw *hw)
 {
 	struct clk_regmap *clk = to_clk_regmap(hw);
 	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
+
+	/* Put the pll is in reset */
+	meson_parm_write(clk->map, &pll->rst, 1);
 
 	/* Disable the pll */
 	meson_parm_write(clk->map, &pll->en, 0);

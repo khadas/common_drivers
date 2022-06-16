@@ -122,7 +122,7 @@
 	};
 
 	arm_pmu {
-		compatible = "arm,armv8-pmuv3";
+		compatible = "arm,cortex-a15-pmu";
 		/* clusterb-enabled; */
 		private-interrupts;
 		interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_HIGH>,

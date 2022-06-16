@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+/dts-v1/;
+
+#include "c3_c30xx_aw409_128m.dtsi"
+/ {
+		model = "Amlogic";
+		amlogic-dt-id = "c3_c308l_aw429-128m";
+		compatible = "amlogic, c3";
+};

@@ -9,9 +9,6 @@
 #include "meson-c3_pxp-panel.dtsi"
 
 / {
-	model = "Amlogic";
-	amlogic-dt-id = "c3_c30xx_aw409-128m";
-	compatible = "amlogic, c3";
 
 	aliases {
 		serial0 = &uart_B;
@@ -36,7 +33,7 @@
 
 	memory@0 {
 		device_type = "memory";
-		linux,usable-memory = <0x0 0x8000000>;
+		linux,usable-memory = <0x0 0x10000000>;
 	};
 
 	reserved-memory {
@@ -76,7 +73,6 @@
 			reusable;
 			size = <0x3000000>;
 			alignment = <0x400000>;
-			status = "disabled";
 		};
 
 		rtos_reserved:linux,rtos_reserved {

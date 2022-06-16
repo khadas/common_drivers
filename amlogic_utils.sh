@@ -58,41 +58,63 @@ function prepare_module_build() {
 	echo GKI_EXT_MODULE_CONFIG=${GKI_EXT_MODULE_CONFIG}
 	echo GKI_EXT_MODULE_PREDEFINE=${GKI_EXT_MODULE_PREDEFINE}
 
-	local flag=0
+	if [[ ${TOP_EXT_MODULE_COPY_BUILD} -eq "1" ]]; then
+		if [[ -d ${top_ext_drivers} ]]; then
+			rm -rf ${top_ext_drivers}
+		fi
+		mkdir -p ${top_ext_drivers}
+	fi
+
+	if [[ ${AUTO_ADD_EXT_SYMBOLS} -eq "1" ]]; then
+		extra_symbols="KBUILD_EXTRA_SYMBOLS +="
+	fi
 	ext_modules=
 	for ext_module in ${EXT_MODULES}; do
-		ext_modules="${ext_modules} ${ext_module}"
+		module_abs_path=`readlink -e ${ext_module}`
+		module_rel_path=$(rel_path ${module_abs_path} ${ROOT_DIR})
+		if [[ ${TOP_EXT_MODULE_COPY_BUILD} -eq "1" ]]; then
+			if [[ `echo ${module_rel_path} | grep "\.\.\/"` ]]; then
+				cp -rf ${module_abs_path} ${top_ext_drivers}
+				module_rel_path=${top_ext_drivers}/${module_abs_path##*/}
+			fi
+		fi
+		ext_modules="${ext_modules} ${module_rel_path}"
 	done
-	if [[ -d ${top_ext_drivers} ]]; then
-		rm -rf ${top_ext_drivers}
-	fi
-	mkdir -p ${top_ext_drivers}
+
 	for ext_module_path in ${EXT_MODULES_PATH}; do
 		sed 's:#.*$::g' ${ROOT_DIR}/${ext_module_path} | sed '/^$/d' | sed 's/^[ ]*//' | sed 's/[ ]*$//' > ${temp_file}
-		extra_symbols="KBUILD_EXTRA_SYMBOLS +="
 		while read LINE
 		do
 			module_abs_path=`readlink -e ${LINE}`
 			module_rel_path=$(rel_path ${module_abs_path} ${ROOT_DIR})
-			if [[ `echo ${module_rel_path} | grep "\.\."` ]]; then
-				cp -rf ${module_abs_path} ${top_ext_drivers}
-				module_rel_path=${top_ext_drivers}/${module_abs_path##*/}
+			if [[ ${TOP_EXT_MODULE_COPY_BUILD} -eq "1" ]]; then
+				if [[ `echo ${module_rel_path} | grep "\.\.\/"` ]]; then
+					cp -rf ${module_abs_path} ${top_ext_drivers}
+					module_rel_path=${top_ext_drivers}/${module_abs_path##*/}
+				fi
 			fi
 			ext_modules="${ext_modules} ${module_rel_path}"
 
-			ext_mod_rel=$(rel_path ${module_rel_path} ${KERNEL_DIR})
-			if [[ ${flag} -eq "1" ]]; then
-				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${module_rel_path}/Makefile
-				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS end" ${module_rel_path}/Makefile
-				sed -i "2 i ${extra_symbols}" ${module_rel_path}/Makefile
-				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS start" ${module_rel_path}/Makefile
-				echo "${module_rel_path}/Makefile add: ${extra_symbols}"
-			fi
-			flag=1
-			extra_symbols="${extra_symbols} ${ext_mod_rel}/Module.symvers"
 		done < ${temp_file}
 	done
 	EXT_MODULES=${ext_modules}
+
+	local flag=0
+	if [[ ${AUTO_ADD_EXT_SYMBOLS} -eq "1" ]]; then
+		for ext_module in ${EXT_MODULES}; do
+			ext_mod_rel=$(rel_path ${ext_module} ${KERNEL_DIR})
+			if [[ ${flag} -eq "1" ]]; then
+				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ext_module}/Makefile
+				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS end" ${ext_module}/Makefile
+				sed -i "2 i ${extra_symbols}" ${ext_module}/Makefile
+				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS start" ${ext_module}/Makefile
+				echo "${ext_module}/Makefile add: ${extra_symbols}"
+			fi
+			extra_symbols="${extra_symbols} ${ext_mod_rel}/Module.symvers"
+			flag=1
+		done
+	fi
+
 	export EXT_MODULES
 	echo EXT_MODULES=${EXT_MODULES}
 
@@ -102,24 +124,16 @@ function prepare_module_build() {
 export -f prepare_module_build
 
 function extra_cmds() {
-	local temp_file=`mktemp /tmp/kernel.XXXXXXXXXXXX`
-	local flag=0
+	if [[ ${AUTO_ADD_EXT_SYMBOLS} -eq "1" ]]; then
+		for ext_module in ${EXT_MODULES}; do
+			sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ext_module}/Makefile
+		done
+	fi
 
-	for ext_module_path in ${EXT_MODULES_PATH}; do
-		sed 's:#.*$::g' ${ROOT_DIR}/${ext_module_path} | sed '/^$/d' | sed 's/^[ ]*//' | sed 's/[ ]*$//' > ${temp_file}
-		while read LINE
-		do
-			module_abs_path=`readlink -e ${LINE}`
-			if [[ ${flag} -eq "1" ]]; then
-				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${module_abs_path}/Makefile
-			fi
-			flag=1
-		done < ${temp_file}
-	done
-
-	rm ${temp_file}
-	if [[ -d ${top_ext_drivers} ]]; then
-		rm -rf ${top_ext_drivers}
+	if [[ ${TOP_EXT_MODULE_COPY_BUILD} -eq "1" ]]; then
+		if [[ -d ${top_ext_drivers} ]]; then
+			rm -rf ${top_ext_drivers}
+		fi
 	fi
 
 	for FILE in ${FILES}; do
@@ -130,7 +144,22 @@ function extra_cmds() {
 	done
 	export MKDTIMG_DTBOS
 
+	set +x
 	modules_install
+
+	pushd ${DIST_DIR}
+	if [[ -n ${ANDROID_PROJECT} ]]; then
+		#modules_modules=`ls modules/*.ko`
+		ramdisk_modules=`ls modules/ramdisk/*.ko`
+		vendor_modules=`ls modules/vendor/*.ko`
+		ext_modules=`ls ext_modules/*.ko`
+		strip_modules=(${modules_modules[@]} ${ramdisk_modules[@]} ${vendor_modules[@]} ${ext_modules[@]})
+		for module in ${strip_modules[@]}; do
+			 ${ROOT_DIR}/${CLANG_PREBUILT_BIN}/llvm-objcopy --strip-debug ${module}
+		done
+	fi
+	popd
+	set -x
 
 	local src_dir=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
 	pushd ${src_dir}
@@ -139,15 +168,59 @@ function extra_cmds() {
 	do
 		find -name ${LINE} >> modules.order
 	done < ${DIST_DIR}/modules/modules.order
-	sed -i 's/..//' modules.order
-	for EXT_MOD in ${EXT_MODULES}; do
-		ext_modules_order_file=$(ls extra/${EXT_MOD}/modules.order.*)
-		: > ${ext_modules_order_file}
+	sed -i "s/^\.\///" modules.order
+	ext_modules=
+	for ext_module in ${EXT_MODULES}; do
+		if [[ ${ext_module} =~ "../" ]]; then
+			ext_module_old=${ext_module}
+			ext_module=${ext_module//\.\.\//}
+			ext_dir=$(dirname ${ext_module})
+			[[ -d extra/${ext_module} ]] && rm -rf extra/${ext_dir}
+			mkdir -p extra/${ext_dir}
+			cp -rf extra/${ext_module_old} extra/${ext_dir}
+
+			ext_modules_order_file=$(ls extra/${ext_module}/modules.order.*)
+			ext_dir_top=${ext_module%/*}
+			if [[ -n ${ANDROID_PROJECT} ]]; then
+				sed -i "/^${ext_dir_top}\//d" modules.order
+
+				sed -i "s/\.\.\///g" ${ext_modules_order_file}
+			else
+				sed -i "s/^${ext_dir_top}\//extra\/${ext_dir_top}\//" modules.order
+				: > ${ext_modules_order_file}
+			fi
+		else
+			ext_modules_order_file=$(ls extra/${ext_module}/modules.order.*)
+			ext_dir_top=${ext_module%/*}
+			if [[ -n ${ANDROID_PROJECT} ]]; then
+				sed -i "/^${ext_dir_top}\//d" modules.order
+			else
+				: > ${ext_modules_order_file}
+			fi
+		fi
+		ext_modules="${ext_modules} ${ext_module}"
 	done
+	EXT_MODULES=${ext_modules}
+	echo EXT_MODULES=${EXT_MODULES}
+	export EXT_MODULES
 	popd
 
 	if [[ -z ${ANDROID_PROJECT} ]]; then
 		FILES="$FILES `ls ${OUT_DIR}/${DTS_EXT_DIR}`"
+	fi
+
+	if [[ -f ${KERNEL_BUILD_VAR_FILE} ]]; then
+		: > ${KERNEL_BUILD_VAR_FILE}
+		echo "COMMON_OUT_DIR=${COMMON_OUT_DIR}" >>  ${KERNEL_BUILD_VAR_FILE}
+		echo "OUT_DIR=${OUT_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "DIST_DIR=${DIST_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "MODULES_STAGING_DIR=${MODULES_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "MODULES_PRIVATE_DIR=${MODULES_PRIVATE_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "INITRAMFS_STAGING_DIR=${INITRAMFS_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "SYSTEM_DLKM_STAGING_DIR=${SYSTEM_DLKM_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "VENDOR_DLKM_STAGING_DIR=${VENDOR_DLKM_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "MKBOOTIMG_STAGING_DIR=${MKBOOTIMG_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "KERNEL_DEVICETREE=${KERNEL_DEVICETREE}" >> ${KERNEL_BUILD_VAR_FILE}
 	fi
 }
 
@@ -301,19 +374,34 @@ function modules_install() {
 	arg1=$1
 
 	pushd ${DIST_DIR}
-	rm modules -rf
-	mkdir modules
-	local modules_list=$(find ${MODULES_STAGING_DIR}/lib/modules -type f -name "*.ko")
-	#cp ${modules_list} modules
+	rm -rf modules ext_modules
+	mkdir modules ext_modules
+	popd
+
+	local MODULES_ROOT_DIR=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
+	pushd ${MODULES_ROOT_DIR}
+	local common_drivers=${COMMON_DRIVERS_DIR##*/}
+	local modules_list=$(find -type f -name "*.ko")
 	for module in ${modules_list}; do
-		cp ${module} modules/
+		if [[ -n ${ANDROID_PROJECT} ]]; then			# copy internal build modules
+			if [[ `echo ${module} | grep -E "\.\/kernel\/|\/${common_drivers}\/"` ]]; then
+				cp ${module} ${DIST_DIR}/modules/
+			else
+				cp ${module} ${DIST_DIR}/ext_modules/
+			fi
+		else							# copy all modules, include external modules
+			cp ${module} ${DIST_DIR}/modules/
+		fi
 	done
 
-	local stagin_module=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
-	echo stagin_module=${stagin_module}
-	cp ${stagin_module}/modules.dep modules
+	if [[ -n ${ANDROID_PROJECT} ]]; then				# internal build modules
+		grep -E "^kernel\/|^${common_drivers}\/" modules.dep > ${DIST_DIR}/modules/modules.dep
+	else								# all modules, include external modules
+		cp modules.dep ${DIST_DIR}/modules
+	fi
+	popd
 
-	cd modules
+	pushd ${DIST_DIR}/modules
 	sed -i 's#[^ ]*/##g' modules.dep
 
 	adjust_sequence_modules_loading "${arg1[*]}"
@@ -354,7 +442,6 @@ function modules_install() {
 	echo "/modules/: all `wc -l modules.dep | awk '{print $1}'` modules."
 	rm __install.sh __install.sh.tmp modules.dep
 
-	cd ../
 	popd
 }
 export -f modules_install

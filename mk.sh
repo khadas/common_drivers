@@ -107,7 +107,6 @@ do
 done
 set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
 
-export ROOT_DIR=$(readlink -f $(dirname $0))
 				# amlogic parameters default value
 if [[ -z "${ABI}" ]]; then
 	ABI=0
@@ -143,8 +142,22 @@ if [[ ! -f ${BUILD_DIR}/build_abi.sh ]]; then
 	echo "The directory of build does not exist";
 fi
 
+ROOT_DIR=$(readlink -f $(dirname $0))
+if [[ ! -f ${ROOT_DIR}/${KERNEL_DIR}/init/main.c ]]; then
+	ROOT_DIR=`pwd`
+	if [[ ! -f ${ROOT_DIR}/${KERNEL_DIR}/init/main.c ]]; then
+		echo "the file path of $0 is incorrect"
+		exit
+	fi
+fi
+export ROOT_DIR
+
 CHECK_DEFCONFIG=${CHECK_DEFCONFIG:-0}
 MODULES_DEPEND=${MODULES_DEPEND:-0}
+if [[ ! -f ${KERNEL_BUILD_VAR_FILE} ]]; then
+	export KERNEL_BUILD_VAR_FILE=`mktemp /tmp/kernel.XXXXXXXXXXXX`
+	RM_KERNEL_BUILD_VAR_FILE=1
+fi
 
 set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG
@@ -226,22 +239,19 @@ else
 	${ROOT_DIR}/${BUILD_DIR}/build.sh "$@"
 fi
 
-echo "========================================================"
-echo ""
-export COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
-export OUT_DIR=$(readlink -m ${COMMON_OUT_DIR}/${KERNEL_DIR})
-export DIST_DIR=$(readlink -m ${DIST_DIR:-${COMMON_OUT_DIR}/dist})
-export MODULES_STAGING_DIR=$(readlink -m ${COMMON_OUT_DIR}/staging)
-echo COMMON_OUT_DIR=$COMMON_OUT_DIR OUT_DIR=$OUT_DIR DIST_DIR=$DIST_DIR MODULES_STAGING_DIR=$MODULES_STAGING_DIR KERNEL_DIR=$KERNEL_DIR
+source ${KERNEL_BUILD_VAR_FILE}
+if [[ -n ${RM_KERNEL_BUILD_VAR_FILE} ]]; then
+	rm -f ${KERNEL_BUILD_VAR_FILE}
+fi
 
 echo "========================================================"
-# echo "prepare modules"
-# modules_install
-if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
-	echo "Rebuild rootfs in order to install modules!"
-	rebuild_rootfs
-else
-	echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
+if [[ -z ${ANDROID_PROJECT} ]]; then
+	if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
+		echo "Rebuild rootfs in order to install modules!"
+		rebuild_rootfs
+	else
+		echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
+	fi
 fi
 set +e
 

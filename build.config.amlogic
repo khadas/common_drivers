@@ -1,11 +1,14 @@
 . ${ROOT_DIR}/${KERNEL_DIR}/build.config.gki.aarch64
-if [[ -n ${ANDROID_PROJECT} ]]; then
-	. ${ROOT_DIR}/device/amlogic/${ANDROID_PROJECT}/build.config.meson.arm64.trunk
-fi
 . ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
 
-BUILD_INITRAMFS=${BUILD_INITRAMFS:-1}
-LZ4_RAMDISK=${BUILD_INITRAMFS:-1}
+
+# TOP_EXT_MODULE_COPY_BUILD=1
+# AUTO_ADD_EXT_SYMBOLS=1
+
+# BUILD_INITRAMFS=${BUILD_INITRAMFS:-1}
+# LZ4_RAMDISK=${BUILD_INITRAMFS:-1}
+BUILD_SYSTEM_DLKM=
+
 MODULES_ORDER=
 # COMPRESS_MODULES=1		# Package the unstripped modules for debugging
 
@@ -21,6 +24,7 @@ TRIM_UNUSED_MODULES=1
 				# whether the value is Image.lz4 or vmlinux is uncertain due to different descriptions
 if [[ -n ${ANDROID_PROJECT} ]]; then
 	BUILD_DTBO_IMG=1	# Android requires dtbo
+	BUILD_GKI_BOOT_IMG_GZ_SIZE=67108864
 fi
 
 DEFCONFIG=amlogic_gki_defconfig
@@ -42,13 +46,26 @@ MAKE_GOALS="
 	${MAKE_GOALS}
 	Image.gz
 	android_overlay_dt.dtbo
+	${MAKE_GOALS_ANDROID}
 "
 
 FILES="
 	${FILES}
 	arch/arm64/boot/Image.gz
 	android_overlay_dt.dtbo
+	${FILES_ANDROID}
 "
+for device_tree in ${KERNEL_DEVICETREE}; do
+MAKE_GOALS="
+	${MAKE_GOALS}
+	${device_tree}.dtb
+"
+FILES="
+	${FILES}
+	${device_tree}.dtb
+"
+done
+
 #	s4d_s905y4_ap222_drm.dtb	# configure in file build.config.meson.arm64.trunk
 else
 MAKE_GOALS="
@@ -66,6 +83,7 @@ DTC_INCLUDE=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/include
 
 EXT_MODULES="
 	${EXT_MODULES}
+	${EXT_MODULES_ANDROID}
 "
 
 EXT_MODULES_CONFIG="

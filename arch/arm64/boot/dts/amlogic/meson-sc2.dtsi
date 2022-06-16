@@ -1792,7 +1792,7 @@
 
 	ge2d {
 		compatible = "amlogic, ge2d-sc2";
-		status = "disabled";
+		status = "okay";
 		interrupts = <GIC_SPI 217 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "ge2d";
 		clocks = <&clkc CLKID_VAPB>,

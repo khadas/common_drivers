@@ -555,8 +555,8 @@
 				compatible = "amlogic,meson-v2-pwm";
 				reg = <0x62000 0x24>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_I>,
-					 <&clkc CLKID_PWM_J>;
+				clocks = <&clkc CLKID_PWM_K>,
+					 <&clkc CLKID_PWM_L>;
 				clock-names = "clkin0",
 					      "clkin1";
 				status = "disabled";
@@ -566,8 +566,8 @@
 				compatible = "amlogic,meson-v2-pwm";
 				reg = <0x64000 0x24>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_I>,
-					 <&clkc CLKID_PWM_J>;
+				clocks = <&clkc CLKID_PWM_M>,
+					 <&clkc CLKID_PWM_N>;
 				clock-names = "clkin0",
 					      "clkin1";
 				status = "disabled";

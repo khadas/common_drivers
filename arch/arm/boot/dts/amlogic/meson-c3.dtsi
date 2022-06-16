@@ -1827,27 +1827,27 @@
 		irqs_rsv = <59>;
 	};
 
-	aml_dma: aml_dma@fe006000 {
-		compatible = "amlogic,aml_txlx_dma";
-		reg = <0xfe006000 0x48>;
+	aml_dma: aml_dma@0xfe440400 {
+		compatible = "amlogic,aml_p1_dma";
+		reg = <0xfe440400 0x48>;
 		interrupts = <GIC_SPI 184 IRQ_TYPE_EDGE_RISING>;
 		aml_aes {
 				compatible = "amlogic,aes_g12a_dma";
 				dev_name = "aml_aes_dma";
-				status = "disabled";
+				status = "okay";
 				iv_swap = /bits/ 8 <0x0>;
 				/*power-domains = <&pwrdm PDID_CX_DMA>;*/
 		};
 		aml_sha {
 				compatible = "amlogic,sha_dma";
 				 dev_name = "aml_sha_dma";
-				status = "disabled";
+				status = "okay";
 				/*power-domains = <&pwrdm PDID_CX_DMA>;*/
 		};
 		aml_tdes {
-				compatible = "amlogic,tdes_dma";
+				compatible = "amlogic,des_dma,tdes_dma";
 				dev_name = "aml_tdes_dma";
-				status = "disabled";
+				status = "okay";
 				/*power-domains = <&pwrdm PDID_CX_DMA>;*/
 		};
 	};

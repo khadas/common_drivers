@@ -479,14 +479,17 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 	dev_dbg(host->dev, "[%s]set rate:%lu\n", __func__, rate);
 	switch (ios->timing) {
 	case MMC_TIMING_MMC_HS400:
+		if (host->clk[2])
+			src_clk = host->clk[2];
+		else
+			src_clk = host->clk[1];
 		dev_dbg(host->dev, "HS400 set src rate to:%u\n",
-				host->src_clk_rate);
-		ret = clk_set_rate(host->clk[1], host->src_clk_rate);
+			host->src_clk_rate);
+		ret = clk_set_rate(src_clk, host->src_clk_rate);
 		if (ret) {
 			dev_err(host->dev, "set src err\n");
 				return ret;
 		}
-		src_clk = host->clk[1];
 		cfg |= CFG_AUTO_CLK;
 		break;
 	case MMC_TIMING_MMC_HS:
@@ -588,7 +591,9 @@ static int meson_mmc_clk_init(struct meson_host *host)
 	host->mux_div = devm_clk_get(host->dev, "mux_div");
 	if (IS_ERR(host->mux_div)) {
 		host->mux_div = NULL;
-		dev_err(host->dev, "Missing clock %s(S4d platform, ignore this)\n", "mux_div");
+		dev_err(host->dev,
+			"Missing clock %s(only c1/c2 have mux_div)\n",
+			"mux_div");
 	} else {
 		snprintf(name, sizeof(name), "mux%d", 2);
 		host->mux[2] = devm_clk_get(host->dev, name);
@@ -596,11 +601,12 @@ static int meson_mmc_clk_init(struct meson_host *host)
 			dev_err(host->dev, "Missing clock %s\n", "mux2");
 	}
 
-	for (i = 0; i < 2; i++) {
+	for (i = 0; i < 3; i++) {
 		snprintf(name, sizeof(name), "clkin%d", i);
 		host->clk[i] = devm_clk_get(host->dev, name);
 		if (IS_ERR(host->clk[i])) {
-			dev_dbg(host->dev, "Missing clock %s\n", name);
+			dev_dbg(host->dev,
+				"Missing clock%s, i = %d\n", name, i);
 			host->clk[i] = NULL;
 		}
 	}

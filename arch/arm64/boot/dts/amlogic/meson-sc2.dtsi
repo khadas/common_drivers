@@ -1752,14 +1752,14 @@
 	meson-amvideom {
 		compatible = "amlogic, amvideom-sc2";
 		dev_name = "amvideom";
-		status = "disabled";
+		status = "okay";
 		interrupts = <GIC_SPI 197 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "vsync";
 	};
 
 	lut_dma:lut_dma {
 		compatible = "amlogic, meson-sc2, lut_dma";
-		status = "disabled";
+		status = "okay";
 	};
 
 	video_composer {

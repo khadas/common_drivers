@@ -2464,6 +2464,14 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 			case BL_PWM_D:
 			case BL_PWM_E:
 			case BL_PWM_F:
+			case BL_PWM_G:
+			case BL_PWM_H:
+			case BL_PWM_I:
+			case BL_PWM_J:
+			case BL_PWM_K:
+			case BL_PWM_L:
+			case BL_PWM_M:
+			case BL_PWM_N:
 			case BL_PWM_AO_A:
 			case BL_PWM_AO_B:
 			case BL_PWM_AO_C:
@@ -2550,6 +2558,14 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 			case BL_PWM_D:
 			case BL_PWM_E:
 			case BL_PWM_F:
+			case BL_PWM_G:
+			case BL_PWM_H:
+			case BL_PWM_I:
+			case BL_PWM_J:
+			case BL_PWM_K:
+			case BL_PWM_L:
+			case BL_PWM_M:
+			case BL_PWM_N:
 			case BL_PWM_AO_A:
 			case BL_PWM_AO_B:
 			case BL_PWM_AO_C:
@@ -2631,6 +2647,14 @@ static ssize_t bl_debug_pwm_info_show(struct device *dev,
 			case BL_PWM_D:
 			case BL_PWM_E:
 			case BL_PWM_F:
+			case BL_PWM_G:
+			case BL_PWM_H:
+			case BL_PWM_I:
+			case BL_PWM_J:
+			case BL_PWM_K:
+			case BL_PWM_L:
+			case BL_PWM_M:
+			case BL_PWM_N:
 			case BL_PWM_AO_A:
 			case BL_PWM_AO_B:
 			case BL_PWM_AO_C:
@@ -3603,6 +3627,12 @@ static struct bl_data_s bl_data_t5w = {
 	.pwm_vs_flag = 1,
 };
 
+static struct bl_data_s bl_data_c3 = {
+	.chip_type = LCD_CHIP_C3,
+	.chip_name = "c3",
+	.pwm_vs_flag = 1,
+};
+
 static const struct of_device_id bl_dt_match_table[] = {
 	{
 		.compatible = "amlogic, backlight-g12a",
@@ -3649,6 +3679,10 @@ static const struct of_device_id bl_dt_match_table[] = {
 	{
 		.compatible = "amlogic, backlight-t5w",
 		.data = &bl_data_t5w,
+	},
+	{
+		.compatible = "amlogic, backlight-c3",
+		.data = &bl_data_c3,
 	},
 	{}
 };

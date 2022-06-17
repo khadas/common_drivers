@@ -133,5 +133,53 @@
 			backlight_index = <0xff>;
 		};
 	};
+
+	backlight{
+		compatible = "amlogic, backlight-c3";
+		status = "disabled";
+		index = <0>;
+		key_valid = <0>;
+		pinctrl-names = "pwm_on", "pwm_off";
+		pinctrl-0 = <&pwm_n_pins2>;
+		pinctrl-1 = <&bl_pwm_off_pins>;
+		pinctrl_version = <2>; /* for uboot */
+		interrupts = <GIC_SPI 132 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "vsync";
+		bl_pwm_config = <&bl_pwm_conf>;
+
+		/* pwm port: PWM_A, PWM_B, PWM_C, PWM_D, PWM_E, PWM_F, PWM_VS*/
+		/* power index:(point gpios_index, 0xff=invalid) */
+		/* power value:(0=output low, 1=output high, 2=input) */
+		/* power delay:(unit in ms) */
+		bl-gpios = <&gpio GPIOA_2 GPIO_ACTIVE_HIGH
+			&gpio GPIOA_5 GPIO_ACTIVE_HIGH>;
+		bl_gpio_names = "GPIOA_2","GPIOA_5";
+
+		backlight_0{
+			index = <0>;
+			bl_name = "backlight_pwm";
+			bl_level_default_uboot_kernel = <100 100>;
+			bl_level_attr = <255 10 /*max, min*/
+				128 128>; /*mid, mid_mapping*/
+			bl_ctrl_method = <1>; /*1=pwm,2=pwm_combo,3=ldim*/
+			bl_power_attr = <0 /*en_gpio_index*/
+				1 0 /*on_value, off_value*/
+				200 200>; /*on_delay(ms), off_delay(ms)*/
+			bl_pwm_port = "PWM_N";
+			bl_pwm_attr = <1 /*pwm_method(0=negative, 1=positvie)*/
+				120 /*pwm_freq(pwm:Hz, pwm_vs:multiple of vs)*/
+				100 25>; /*duty_max(%), duty_min(%)*/
+			bl_pwm_power = <1 0 /*pwm_gpio_index, pwm_gpio_off*/
+				10 10>; /*pwm_on_delay(ms), pwm_off_delay(ms)*/
+			en_sequence_reverse = <0>; /* 1 for reverse */
+		};
+	};
+
+	bl_pwm_conf:bl_pwm_conf{
+		pwm_channel_0 {
+			pwm_port = "PWM_N";
+			pwms = <&pwm_mn MESON_PWM_1 30040 0>;
+		};
+	};
 }; /* end of / */
 

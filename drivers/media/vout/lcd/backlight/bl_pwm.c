@@ -49,7 +49,11 @@ static char *bl_pwm_name[] = {
 	"PWM_G",
 	"PWM_H",
 	"PWM_I",
-	"PWM_J"
+	"PWM_J",
+	"PWM_K",
+	"PWM_L",
+	"PWM_M",
+	"PWM_N"
 };
 
 static char *bl_pwm_ao_name[] = {
@@ -329,6 +333,10 @@ void bl_pwm_ctrl(struct bl_pwm_config_s *bl_pwm, int status)
 		case BL_PWM_H:
 		case BL_PWM_I:
 		case BL_PWM_J:
+		case BL_PWM_K:
+		case BL_PWM_L:
+		case BL_PWM_M:
+		case BL_PWM_N:
 		case BL_PWM_AO_A:
 		case BL_PWM_AO_B:
 		case BL_PWM_AO_C:
@@ -360,6 +368,10 @@ void bl_pwm_ctrl(struct bl_pwm_config_s *bl_pwm, int status)
 		case BL_PWM_H:
 		case BL_PWM_I:
 		case BL_PWM_J:
+		case BL_PWM_K:
+		case BL_PWM_L:
+		case BL_PWM_M:
+		case BL_PWM_N:
 		case BL_PWM_AO_A:
 		case BL_PWM_AO_B:
 		case BL_PWM_AO_C:

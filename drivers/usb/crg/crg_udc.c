@@ -34,6 +34,7 @@
 
 #define MAX_PACKET_SIZE 1024
 int g_dnl_board_usb_cable_connected(void);
+u32 g_device_phy_id;
 
 #define	DMA_ADDR_INVALID	(~(dma_addr_t)0)
 
@@ -353,7 +354,7 @@ struct crg_gadget_dev {
 	int setup_tag_mismatch_found;
 	int portsc_on_reconnecting;
 	int controller_type;
-	int phy_id;
+	u32 phy_id;
 };
 
 /*An array should be implemented if we want to support multi
@@ -4503,6 +4504,8 @@ static int crg_udc_probe(struct platform_device *pdev)
 	/*g_vaddr = dma_alloc_coherent(crg_udc->dev,4096, &g_dma, */
 	/*	GFP_KERNEL);*/
 
+	g_device_phy_id = phy_id;
+
 	return 0;
 
 err0:
@@ -4532,7 +4535,7 @@ static int crg_udc_remove(struct platform_device *pdev)
 		free_irq(crg_udc->irq, crg_udc);
 
 	if (crg_udc->controller_type != USB_M31)
-		amlogic_crg_device_usb2_shutdown(crg_udc->phy_id);
+		amlogic_crg_device_usb2_shutdown(g_device_phy_id);
 
 	crg_clk_disable_usb(pdev, (unsigned long)crg_udc->phy_reg_addr);
 	/*
@@ -4559,7 +4562,7 @@ static void crg_udc_shutdown(struct platform_device *pdev)
 		free_irq(crg_udc->irq, crg_udc);
 
 	if (crg_udc->controller_type != USB_M31)
-		amlogic_crg_device_usb2_shutdown(crg_udc->phy_id);
+		amlogic_crg_device_usb2_shutdown(g_device_phy_id);
 
 	crg_clk_disable_usb(pdev, (unsigned long)crg_udc->phy_reg_addr);
 

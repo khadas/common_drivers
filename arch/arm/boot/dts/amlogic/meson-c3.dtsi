@@ -632,7 +632,7 @@
 				compatible = "amlogic,meson-uart";
 				reg = <0x80000 0x18>;
 				interrupts = <GIC_SPI 172 IRQ_TYPE_EDGE_RISING>;
-				status = "disabled";
+				status = "okay";
 				clocks = <&xtal
 					&clkc CLKID_SYS_UART_E>;
 				clock-names = "clk_uart",
@@ -1577,10 +1577,10 @@
 	aml_wifi: aml_wifi {
 		compatible = "amlogic, aml-wifi";
 		status = "disabled";
-		irq_trigger_type = "GPIO_IRQ_LOW";
+		irq_trigger_type = "IRQF_TRIGGER_LOW";
 		//power_on-gpios = <&gpio       GPIOM_6       GPIO_ACTIVE_HIGH>;
 		//interrupt-gpios = <&gpio       GPIOM_7       GPIO_ACTIVE_HIGH>;
-		dhd_static_buf; //if use bcm wifi, config dhd_static_buf
+		wifi_static_buf = <0>; //if use bcm wifi, config dhd_static_buf
 		pwm_config = <&wifi_pwm_conf>;
 	};
 

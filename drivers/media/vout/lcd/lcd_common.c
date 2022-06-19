@@ -104,6 +104,8 @@ static struct lcd_type_match_s lcd_type_match_table[] = {
 	{"minilvds", LCD_MLVDS},
 	{"p2p",      LCD_P2P},
 	{"edp",      LCD_EDP},
+	{"bt656",    LCD_BT656},
+	{"bt1120",   LCD_BT1120},
 	{"invalid",  LCD_TYPE_MAX},
 };
 

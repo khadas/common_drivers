@@ -2034,124 +2034,6 @@ static int lcd_optical_info_print(struct aml_lcd_drv_s *pdrv, char *buf, int off
 	return len;
 }
 
-static void lcd_test_pattern_check(struct work_struct *work)
-{
-	struct aml_lcd_drv_s *pdrv;
-
-	pdrv = container_of(work, struct aml_lcd_drv_s, test_check_work);
-	aml_lcd_notifier_call_chain(LCD_EVENT_TEST_PATTERN, (void *)pdrv);
-}
-
-#define LCD_ENC_TST_NUM_MAX    9
-static char *lcd_enc_tst_str[] = {
-	"0-None",        /* 0 */
-	"1-Color Bar",   /* 1 */
-	"2-Thin Line",   /* 2 */
-	"3-Dot Grid",    /* 3 */
-	"4-Gray",        /* 4 */
-	"5-Red",         /* 5 */
-	"6-Green",       /* 6 */
-	"7-Blue",        /* 7 */
-	"8-Black",       /* 8 */
-};
-
-static unsigned int lcd_enc_tst[][7] = {
-/*tst_mode,    Y,       Cb,     Cr,     tst_en,  vfifo_en  rgbin*/
-	{0,    0x200,   0x200,  0x200,   0,      1,        3},  /* 0 */
-	{1,    0x200,   0x200,  0x200,   1,      0,        1},  /* 1 */
-	{2,    0x200,   0x200,  0x200,   1,      0,        1},  /* 2 */
-	{3,    0x200,   0x200,  0x200,   1,      0,        1},  /* 3 */
-	{0,    0x1ff,   0x1ff,  0x1ff,   1,      0,        3},  /* 4 */
-	{0,    0x3ff,     0x0,    0x0,   1,      0,        3},  /* 5 */
-	{0,      0x0,   0x3ff,    0x0,   1,      0,        3},  /* 6 */
-	{0,      0x0,     0x0,  0x3ff,   1,      0,        3},  /* 7 */
-	{0,      0x0,     0x0,    0x0,   1,      0,        3},  /* 8 */
-};
-
-void lcd_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
-{
-	unsigned int h_active, video_on_pixel, offset;
-
-	num = (num >= LCD_ENC_TST_NUM_MAX) ? 0 : num;
-	offset = pdrv->data->offset_venc[pdrv->index];
-
-	lcd_queue_work(&pdrv->test_check_work);
-
-	h_active = pdrv->config.basic.h_active;
-	video_on_pixel = pdrv->config.timing.hstart;
-	if (num > 0)
-		lcd_gamma_debug_test_en(pdrv, 0);
-	else
-		lcd_gamma_debug_test_en(pdrv, 1);
-
-	lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL + offset, lcd_enc_tst[num][6]);
-	lcd_vcbus_write(ENCL_TST_MDSEL + offset, lcd_enc_tst[num][0]);
-	lcd_vcbus_write(ENCL_TST_Y + offset, lcd_enc_tst[num][1]);
-	lcd_vcbus_write(ENCL_TST_CB + offset, lcd_enc_tst[num][2]);
-	lcd_vcbus_write(ENCL_TST_CR + offset, lcd_enc_tst[num][3]);
-	lcd_vcbus_write(ENCL_TST_CLRBAR_STRT + offset, video_on_pixel);
-	lcd_vcbus_write(ENCL_TST_CLRBAR_WIDTH + offset, (h_active / 9));
-	lcd_vcbus_write(ENCL_TST_EN + offset, lcd_enc_tst[num][4]);
-	lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV + offset, lcd_enc_tst[num][5], 3, 1);
-	if (num > 0)
-		LCDPR("[%d]: show test pattern: %s\n", pdrv->index, lcd_enc_tst_str[num]);
-	else
-		LCDPR("[%d]: disable test pattern\n", pdrv->index);
-}
-
-static void lcd_mute_setting(struct aml_lcd_drv_s *pdrv, unsigned char flag)
-{
-	unsigned int offset;
-
-	offset = pdrv->data->offset_venc[pdrv->index];
-
-	if (flag) {
-		lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL + offset, 3);
-		lcd_vcbus_write(ENCL_TST_MDSEL + offset, 0);
-		lcd_vcbus_write(ENCL_TST_Y + offset, 0);
-		lcd_vcbus_write(ENCL_TST_CB + offset, 0);
-		lcd_vcbus_write(ENCL_TST_CR + offset, 0);
-		lcd_vcbus_write(ENCL_TST_EN + offset, 1);
-		lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV + offset, 0, 3, 1);
-	} else {
-		lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV + offset, 1, 3, 1);
-		lcd_vcbus_write(ENCL_TST_EN + offset, 0);
-	}
-	LCDPR("[%d]: mute: %d\n", pdrv->index, flag);
-}
-
-static void lcd_screen_restore(struct aml_lcd_drv_s *pdrv)
-{
-	unsigned int h_active, video_on_pixel, offset;
-	unsigned int num;
-
-	num = pdrv->test_state;
-	num = (num >= LCD_ENC_TST_NUM_MAX) ? 0 : num;
-	offset = pdrv->data->offset_venc[pdrv->index];
-
-	lcd_queue_work(&pdrv->test_check_work);
-
-	h_active = pdrv->config.basic.h_active;
-	video_on_pixel = pdrv->config.timing.hstart;
-
-	lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL + offset, lcd_enc_tst[num][6]);
-	lcd_vcbus_write(ENCL_TST_MDSEL + offset, lcd_enc_tst[num][0]);
-	lcd_vcbus_write(ENCL_TST_Y + offset, lcd_enc_tst[num][1]);
-	lcd_vcbus_write(ENCL_TST_CB + offset, lcd_enc_tst[num][2]);
-	lcd_vcbus_write(ENCL_TST_CR + offset, lcd_enc_tst[num][3]);
-	lcd_vcbus_write(ENCL_TST_CLRBAR_STRT + offset, video_on_pixel);
-	lcd_vcbus_write(ENCL_TST_CLRBAR_WIDTH + offset, (h_active / 9));
-	lcd_vcbus_write(ENCL_TST_EN + offset, lcd_enc_tst[num][4]);
-	lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV + offset, lcd_enc_tst[num][5], 3, 1);
-	if (num > 0)
-		LCDPR("[%d]: show test pattern: %s\n", pdrv->index, lcd_enc_tst_str[num]);
-}
-
-static void lcd_screen_black(struct aml_lcd_drv_s *pdrv)
-{
-	lcd_mute_setting(pdrv, 1);
-}
-
 #define CLK_CHK_MAX    2000000  /*Hz*/
 static unsigned int lcd_prbs_performed, lcd_prbs_err;
 static unsigned int lcd_prbs_flag;
@@ -3798,7 +3680,6 @@ static ssize_t lcd_debug_test_store(struct device *dev, struct device_attribute 
 		if (ret == 0)
 			goto lcd_debug_test_store_next;
 		spin_lock_irqsave(&pdrv->isr_lock, flags);
-		temp = (temp >= LCD_ENC_TST_NUM_MAX) ? 0 : temp;
 		pdrv->test_flag = (unsigned char)temp;
 		pdrv->test_state = (unsigned char)temp;
 		lcd_debug_test(pdrv, pdrv->test_state);
@@ -3813,7 +3694,6 @@ lcd_debug_test_store_next:
 		return -EINVAL;
 	}
 	spin_lock_irqsave(&pdrv->isr_lock, flags);
-	temp = (temp >= LCD_ENC_TST_NUM_MAX) ? 0 : temp;
 	pdrv->test_flag = (unsigned char)temp;
 	spin_unlock_irqrestore(&pdrv->isr_lock, flags);
 
@@ -6685,11 +6565,6 @@ static int lcd_debug_file_creat(struct aml_lcd_drv_s *pdrv)
 	struct lcd_debug_info_s *lcd_debug_info;
 	struct device_attribute *lcd_attr;
 	int i;
-
-	pdrv->lcd_screen_restore = lcd_screen_restore;
-	pdrv->lcd_screen_black = lcd_screen_black;
-
-	INIT_WORK(&pdrv->test_check_work, lcd_test_pattern_check);
 
 	for (i = 0; i < ARRAY_SIZE(lcd_debug_attrs); i++) {
 		if (device_create_file(pdrv->dev, &lcd_debug_attrs[i])) {

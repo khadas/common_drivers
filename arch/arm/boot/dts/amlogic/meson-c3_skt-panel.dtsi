@@ -4,7 +4,7 @@
  */
 
 / {
-	lcd {
+	lcd: lcd {
 		compatible = "amlogic, lcd-c3";
 		status = "okay";
 		mode = "tablet";
@@ -17,6 +17,8 @@
 		reg = <0xfe01e000 0x400    /* mipi-dsi host */
 			0xfe01c000 0x60     /* mipi-dsi phy */
 			0xfe004000 0x400>;  /* pad ctrl */
+		interrupts = <GIC_SPI 132 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "vsync";
 		pinctrl-names = "dsi_on";
 		pinctrl-0 = <&lcd_dsi_on_pins>;
 		pinctrl_version = <2>; /* for uboot */

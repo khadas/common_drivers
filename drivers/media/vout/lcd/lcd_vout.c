@@ -1673,6 +1673,7 @@ static int lcd_config_probe(struct aml_lcd_drv_s *pdrv, struct platform_device *
 	pdrv->module_reset = lcd_module_reset;
 	lcd_clk_config_probe(pdrv);
 	lcd_phy_config_init(pdrv);
+	lcd_venc_probe(pdrv);
 	lcd_config_default(pdrv);
 	lcd_init_vout(pdrv);
 

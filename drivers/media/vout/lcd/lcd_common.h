@@ -14,7 +14,8 @@
 
 /* 20220430: initial version*/
 /* 20220610: add c3 support*/
-#define LCD_DRV_VERSION    "20220610"
+/* 20220619: c3 mipi-dsi display ok*/
+#define LCD_DRV_VERSION    "20220619"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;
@@ -129,10 +130,12 @@ int lcd_debug_remove(struct aml_lcd_drv_s *pdrv);
 /* lcd venc */
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv);
 void lcd_gamma_debug_test_en(struct aml_lcd_drv_s *pdrv, int flag);
+void lcd_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num);
 void lcd_set_venc_timing(struct aml_lcd_drv_s *pdrv);
 void lcd_set_venc(struct aml_lcd_drv_s *pdrv);
 void lcd_venc_change(struct aml_lcd_drv_s *pdrv);
 void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag);
+void lcd_mute_set(struct aml_lcd_drv_s *pdrv, unsigned char flag);
 int lcd_get_venc_init_config(struct aml_lcd_drv_s *pdrv);
 int lcd_venc_probe(struct aml_lcd_drv_s *pdrv);
 

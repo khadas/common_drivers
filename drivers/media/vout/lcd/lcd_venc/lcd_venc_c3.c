@@ -26,21 +26,15 @@ static unsigned int lcd_dth_lut_c3[16] = {
 	0x7dbedeb7, 0xde7dbed7, 0xeb7dbed7, 0xdbe77edb
 };
 
-static void lcd_set_venc_c3(struct aml_lcd_drv_s *pdrv)
+static void lcd_venc_set(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
-	unsigned int hsize, vsize;
 	unsigned int reoder, timgen_mode, serial_rate, field_mode;
-	unsigned int total_hsize, total_vsize;
-	unsigned int hs_pix_bgn, hs_pix_end, vs_lne_bgn_e, vs_lne_end_e;
-	unsigned int vs_pix_bgn_e, vs_pix_end_e, de_lne_bgn_e, de_lne_end_e;
-	unsigned int de_px_bgn_e, de_px_end_e, bot_bgn_lne, top_bgn_lne;
+	unsigned int bot_bgn_lne, top_bgn_lne;
 	unsigned int vs_lne_bgn_o, vs_lne_end_o, vs_pix_bgn_o, vs_pix_end_o;
 	unsigned int de_lne_bgn_o, de_lne_end_o;
 	int i;
 
-	hsize = pconf->basic.h_active;
-	vsize = pconf->basic.v_active;
 	reoder = 36;
 
 	//timgen_mode:
@@ -76,21 +70,6 @@ static void lcd_set_venc_c3(struct aml_lcd_drv_s *pdrv)
 		break;
 	}
 
-	total_hsize  = pconf->basic.h_period;
-	total_vsize  = pconf->basic.v_period;
-
-	hs_pix_bgn   = pconf->timing.hs_hs_addr;
-	hs_pix_end   = pconf->timing.hs_he_addr;
-	vs_lne_bgn_e = pconf->timing.vs_vs_addr;
-	vs_lne_end_e = pconf->timing.vs_ve_addr;
-	vs_pix_bgn_e = pconf->timing.vs_hs_addr;
-	vs_pix_end_e = pconf->timing.vs_he_addr;
-
-	de_lne_bgn_e = pconf->timing.vstart;
-	de_lne_end_e = pconf->timing.vend;
-	de_px_bgn_e  = pconf->timing.hstart;
-	de_px_end_e  = pconf->timing.hend;
-
 	bot_bgn_lne  =    0;
 	top_bgn_lne  =    0;
 	vs_lne_bgn_o =    0;
@@ -102,12 +81,11 @@ static void lcd_set_venc_c3(struct aml_lcd_drv_s *pdrv)
 
 	lcd_vcbus_setb(VPU_VOUT_CORE_CTRL, 0, 0, 1); //disable venc_en
 	lcd_vcbus_setb(VPU_VOUT_DETH_CTRL, 0, 5, 1); //10bit to 9bit
-	lcd_vcbus_setb(VPU_VOUT_DETH_CTRL, hsize, 6, 13);
-	lcd_vcbus_setb(VPU_VOUT_DETH_CTRL, vsize, 19, 13);
+	lcd_vcbus_setb(VPU_VOUT_DETH_CTRL, pconf->basic.h_active, 6, 13);
+	lcd_vcbus_setb(VPU_VOUT_DETH_CTRL, pconf->basic.v_active, 19, 13);
 	lcd_vcbus_setb(VPU_VOUT_INT_CTRL, 1, 14, 1); //dth_en
 
-	if (reoder != 36)
-		lcd_vcbus_setb(VPU_VOUT_CORE_CTRL, reoder, 4, 6);
+	lcd_vcbus_setb(VPU_VOUT_CORE_CTRL, reoder, 4, 6);
 	lcd_vcbus_setb(VPU_VOUT_CORE_CTRL, timgen_mode, 16, 10);
 	lcd_vcbus_setb(VPU_VOUT_CORE_CTRL, serial_rate, 2, 2);
 
@@ -124,33 +102,33 @@ static void lcd_set_venc_c3(struct aml_lcd_drv_s *pdrv)
 		lcd_vcbus_write(VPU_VOUT_DTH_DATA, lcd_dth_lut_c3[i % 16]);
 
 	lcd_vcbus_setb(VPU_VOUT_CORE_CTRL,    field_mode,  1, 1);
-	lcd_vcbus_setb(VPU_VOUT_MAX_SIZE,     total_hsize, 16, 13);
-	lcd_vcbus_setb(VPU_VOUT_MAX_SIZE,     total_vsize,  0, 13);
+	lcd_vcbus_setb(VPU_VOUT_MAX_SIZE,     pconf->basic.h_period, 16, 13);
+	lcd_vcbus_setb(VPU_VOUT_MAX_SIZE,     pconf->basic.v_period,  0, 13);
 	lcd_vcbus_setb(VPU_VOUT_FLD_BGN_LINE, bot_bgn_lne, 16, 13);
 	lcd_vcbus_setb(VPU_VOUT_FLD_BGN_LINE, top_bgn_lne,  0, 13);
 
-	lcd_vcbus_setb(VPU_VOUT_HS_POS,      hs_pix_bgn, 16, 13);
-	lcd_vcbus_setb(VPU_VOUT_HS_POS,      hs_pix_end,  0, 13);
-	lcd_vcbus_setb(VPU_VOUT_VSLN_E_POS,  vs_lne_bgn_e, 16, 13);
-	lcd_vcbus_setb(VPU_VOUT_VSLN_E_POS,  vs_lne_end_e,  0, 13);
-	lcd_vcbus_setb(VPU_VOUT_VSPX_E_POS,  vs_pix_bgn_e, 16, 13);
-	lcd_vcbus_setb(VPU_VOUT_VSPX_E_POS,  vs_pix_end_e,  0, 13);
+	lcd_vcbus_setb(VPU_VOUT_HS_POS,      pconf->timing.hs_hs_addr, 16, 13);
+	lcd_vcbus_setb(VPU_VOUT_HS_POS,      pconf->timing.hs_he_addr,  0, 13);
+	lcd_vcbus_setb(VPU_VOUT_VSLN_E_POS,  pconf->timing.vs_vs_addr, 16, 13);
+	lcd_vcbus_setb(VPU_VOUT_VSLN_E_POS,  pconf->timing.vs_ve_addr,  0, 13);
+	lcd_vcbus_setb(VPU_VOUT_VSPX_E_POS,  pconf->timing.vs_hs_addr, 16, 13);
+	lcd_vcbus_setb(VPU_VOUT_VSPX_E_POS,  pconf->timing.vs_he_addr,  0, 13);
 	lcd_vcbus_setb(VPU_VOUT_VSLN_O_POS,  vs_lne_bgn_o, 16, 13);
 	lcd_vcbus_setb(VPU_VOUT_VSLN_O_POS,  vs_lne_end_o,  0, 13);
 	lcd_vcbus_setb(VPU_VOUT_VSPX_O_POS,  vs_pix_bgn_o, 16, 13);
 	lcd_vcbus_setb(VPU_VOUT_VSPX_O_POS,  vs_pix_end_o,  0, 13);
 
-	lcd_vcbus_setb(VPU_VOUT_DELN_E_POS,  de_lne_bgn_e, 16, 13);
-	lcd_vcbus_setb(VPU_VOUT_DELN_E_POS,  de_lne_end_e,  0, 13);
+	lcd_vcbus_setb(VPU_VOUT_DELN_E_POS,  pconf->timing.vstart, 16, 13);
+	lcd_vcbus_setb(VPU_VOUT_DELN_E_POS,  pconf->timing.vend,  0, 13);
 	lcd_vcbus_setb(VPU_VOUT_DELN_O_POS,  de_lne_bgn_o, 16, 13);
 	lcd_vcbus_setb(VPU_VOUT_DELN_O_POS,  de_lne_end_o,  0, 13);
-	lcd_vcbus_setb(VPU_VOUT_DE_PX_EN,    de_px_bgn_e, 16, 13);
-	lcd_vcbus_setb(VPU_VOUT_DE_PX_EN,    de_px_end_e,  0, 13);
+	lcd_vcbus_setb(VPU_VOUT_DE_PX_EN,    pconf->timing.hstart, 16, 13);
+	lcd_vcbus_setb(VPU_VOUT_DE_PX_EN,    pconf->timing.hend,  0, 13);
 
 	lcd_vcbus_setb(VPU_VOUT_CORE_CTRL, 1, 0, 1); //venc_en
 }
 
-static void lcd_venc_enable_c3(struct aml_lcd_drv_s *pdrv, int flag)
+static void lcd_venc_enable_ctrl(struct aml_lcd_drv_s *pdrv, int flag)
 {
 	if (flag)
 		lcd_vcbus_setb(VPU_VOUT_CORE_CTRL, 1, 0, 1);
@@ -158,7 +136,12 @@ static void lcd_venc_enable_c3(struct aml_lcd_drv_s *pdrv, int flag)
 		lcd_vcbus_setb(VPU_VOUT_CORE_CTRL, 0, 0, 1);
 }
 
-static int lcd_get_venc_init_config_c3(struct aml_lcd_drv_s *pdrv)
+static void lcd_venc_mute_set(struct aml_lcd_drv_s *pdrv, unsigned char flag)
+{
+	LCDPR("%s: todo\n", __func__);
+}
+
+static int lcd_venc_get_init_config(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned int init_state;
@@ -174,12 +157,20 @@ static int lcd_get_venc_init_config_c3(struct aml_lcd_drv_s *pdrv)
 	return init_state;
 }
 
-struct lcd_venc_op_s lcd_venc_op_c3 = {
-	.wait_vsync = NULL,
-	.gamma_test_en = NULL,
-	.venc_set_timing = NULL,
-	.venc_set = lcd_set_venc_c3,
-	.venc_change = NULL,
-	.venc_enable = lcd_venc_enable_c3,
-	.get_venc_init_config = lcd_get_venc_init_config_c3,
+int lcd_venc_op_init_c3(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_op)
+{
+	if (!venc_op)
+		return -1;
+
+	venc_op->wait_vsync = NULL;
+	venc_op->gamma_test_en = NULL;
+	venc_op->venc_debug_test = NULL;
+	venc_op->venc_set_timing = NULL;
+	venc_op->venc_set = lcd_venc_set;
+	venc_op->venc_change = NULL;
+	venc_op->venc_enable = lcd_venc_enable_ctrl;
+	venc_op->mute_set = lcd_venc_mute_set;
+	venc_op->get_venc_init_config = lcd_venc_get_init_config;
+
+	return 0;
 };

@@ -1285,79 +1285,37 @@
 		status = "okay";
 	};
 
-	isp_sc: isp-sc@fe023400 {
-		compatible = "amlogic, isp-sc";
-		reg = <0xfe023400 0x00001000>;
-		reg-names = "isp_sc";
-		interrupts = <GIC_SPI 96 IRQ_TYPE_EDGE_RISING>;
-		interrupt-names = "isp_sc";
+	csiphy0: csiphy0@ff019000 {
+		compatible = "amlogic, csiphy0";
+		reg = <0xff019000 0x700>;
+		power-domains = <&pwrdm PDID_C3_ISP_TOP>;
+		clocks = <&clkc CLKID_CSI_PHY0_CLK>;
+		clock-names = "mipi_phy_clk";
+		reg-names = "csi_phy0";
 	};
 
-	isp_md: isp-md@fe023e00 {
-		compatible = "amlogic, isp-md";
-		reg = <0xfe023e00 0x00001000>;
-		reg-names = "isp_md";
-		interrupts = <GIC_SPI 107 IRQ_TYPE_EDGE_RISING>;
-		interrupt-names = "isp_md";
-	};
-
-	isp: isp@ff000000 {
-		compatible = "arm, isp";
-		reg = <0xff000000 0x00040000>;
-		reg-names = "ISP";
-		isp-efuse = <0xFE005000 0x4000>;
-		interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_HIGH>;
-		interrupt-names = "ISP";
-		clk-level = <6>;
-		//clocks = <&clkc CLKID_MIPI_ISP_GATE>,
-		//	<&clkc CLKID_MIPI_CSI_PHY_GATE>;
-		clock-names = "cts_mipi_isp_clk",
-			"cts_mipi_csi_phy_clk0";
-		//power-domains = <&pwrdm PDID_CX_MIPI_ISP>;
-		link-device = <&isp_sc>;
-		att-device = <&isp_md>;
-	};
-
-	adapter: isp-adapter@fe020000 {
-		compatible = "amlogic, isp-adapter";
-		reg = <0xfe020000 0x00006000>;
+	adapter0: adapter0@ff01b000 {
+		compatible = "amlogic, adapter";
+		reg = <0xff01b000 0x4000>;
 		reg-names = "adapter";
-		interrupts = <GIC_SPI 98 IRQ_TYPE_LEVEL_HIGH>;
-		interrupt-names = "adapter-irq";
 	};
 
-	phycsi: phy-csi@fe008000 {
-		compatible = "amlogic, phy-csi";
-		reg = <0xfe008000 0x00002000>,
-				<0xfe008400 0x00002000>,
-				<0xfe007c00 0x00000100>,
-				<0xfe022000 0x00000100>,
-				<0xfe022400 0x00000100>;
-		reg-names = "csi2_phy0", "csi2_phy1", "aphy_reg",
-					"csi0_host", "csi1_host";
-		interrupts = <GIC_SPI 106 IRQ_TYPE_LEVEL_HIGH>,
-					<GIC_SPI 105 IRQ_TYPE_LEVEL_HIGH>,
-					<GIC_SPI 104 IRQ_TYPE_LEVEL_HIGH>,
-					<GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>,
-					<GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>,
-					<GIC_SPI 101 IRQ_TYPE_LEVEL_HIGH>;
-		interrupt-names = "phy0-irq",
-					"phy1-irq",
-					"csi-host0-intr2",
-					"csi-host0-intr1",
-					"csi-host1-intr2",
-					"csi-host1-intr1";
-		link-device = <&adapter>;
+	isp0: isp0@ff000000 {
+		compatible = "amlogic, isp";
+		reg = <0xff000000 0x10100>;
+		power-domains = <&pwrdm PDID_C3_MIPI_ISP_WRAP>;
+		clocks = <&clkc CLKID_ISP0_CLK>,
+				<&clkc CLKID_VAPB_CLK>;
+		clock-names = "mipi_isp_clk", "vapb_clk";
+		interrupts = <0 145 1>;
 	};
 
-	autowrite: autowrite@fe023c00 {
-		compatible = "amlogic, autowrite";
-		reg = <0xfe023c00 0x80>,
-				<0xfe023c80 0x80>,
-				<0xfe023d00 0x80>;
-		reg-names = "fr_autowrite",
-					"ds1_autowrite",
-					"ds2_autowrite";
+	camera0 {
+		compatible = "amlogic, camera";
+		index = <0>;
+		csiphy = <&csiphy0>;
+		adapter = <&adapter0>;
+		isp = <&isp0>;
 	};
 
 	timer {

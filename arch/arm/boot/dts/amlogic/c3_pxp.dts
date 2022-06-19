@@ -99,14 +99,6 @@
 			no-map;
 		};
 
-		isp_cma_reserved:linux,isp_cma {
-			compatible = "shared-dma-pool";
-			reusable;
-			status = "disabled";
-			size = <0x0>;
-			alignment = <0x400000>;
-		};
-
 		pmz_cma_a1_reserved:anonymous {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -121,12 +113,6 @@
 			alignment = <0x400000>;
 		};
 
-		adapt_cma_reserved:linux,adapt_cma {
-			compatible = "shared-dma-pool";
-			reusable;
-			status = "disabled";
-			size = <0x0>;
-		};
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -895,35 +881,11 @@
 	pinctrl-0 = <&i2c2_master_pins1>;
 	pinctrl-1 = <&i2c2_master_sleep_pins1>;
 	clock-frequency = <100000>; /* default 100k */
-	sensor-i2c@6c {
-		compatible = "arm, i2c-sensor";
-		reg = <0x6c>;
-		reg-names = "i2c-sensor";
-		slave-addr = <0x6c>;
-		reg-type = <2>;
-		reg-data-type = <1>;
-		link-device = <&phycsi>;
-	};
-};
-
-&isp {
-	status = "disabled";
-	temper-line-offset = <0x1f80>;
-	temper-buf-size = <32>;
-	temper-frame-num = <1>;
-	temper-frame-size = <0x2000000>;
-	memory-region = <&isp_cma_reserved>;
 };
 
 &adla {
 	status = "okay";
 	memory-region = <&nna_cma_reserved>;
-};
-
-&adapter {
-	status = "disabled";
-	mem_alloc = <12>;
-	memory-region = <&adapt_cma_reserved>;
 };
 
 &ir {

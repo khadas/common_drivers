@@ -569,6 +569,8 @@ am_meson_gem_prime_import_sg_table(struct drm_device *dev,
 	if (!meson_gem_obj)
 		return ERR_PTR(-ENOMEM);
 
+	meson_gem_obj->base.funcs = &meson_gem_object_funcs;
+
 	ret = drm_gem_object_init(dev,
 				  &meson_gem_obj->base,
 			attach->dmabuf->size);

@@ -220,7 +220,7 @@
 	};
 	cvbsout {
 		compatible = "amlogic, cvbsout-sc2";
-		status = "disabled";
+		status = "okay";
 
 		/* clk path */
 		/* 0:vid_pll vid2_clk */
@@ -1582,7 +1582,7 @@
 };
 
 &drm_amcvbsout {
-	status = "disabled";
+	status = "okay";
 };
 
 &drm_lcd {

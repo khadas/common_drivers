@@ -561,9 +561,9 @@
 				status = "disabled";
 			};
 
-			pwm_mn: pwm@64000 {
+			pwm_mn: pwm@54000 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x64000 0x24>;
+				reg = <0x54000 0x24>;
 				#pwm-cells = <3>;
 				clocks = <&clkc CLKID_PWM_M>,
 					 <&clkc CLKID_PWM_N>;
@@ -2724,6 +2724,27 @@
 		mux {
 			groups = "pwm_m_b";
 			function = "pwm_m";
+		};
+	};
+
+	pwm_n_pins1: pwm_n_pins1 {
+		mux {
+			groups = "pwm_n_x";
+			function = "pwm_n";
+		};
+	};
+
+	pwm_n_pins2: pwm_n_pins2 {
+		mux {
+			groups = "pwm_n_a";
+			function = "pwm_n";
+		};
+	};
+
+	pwm_n_pins3: pwm_n_pins3 {
+		mux {
+			groups = "pwm_n_b";
+			function = "pwm_n";
 		};
 	};
 

@@ -802,6 +802,13 @@ static bool video_mute_on;
 static int video_mute_status;
 static int debug_flag_3d = 0xf;
 static  int vd1_matrix;
+
+static int video_testpattern_status[MAX_VD_LAYER];
+static int postblend_testpattern_status;
+static bool vdx_test_pattern_on[MAX_VD_LAYER];
+static bool postblend_test_pattern_on;
+static u32 vdx_color[MAX_VD_LAYER];
+static u32 postblend_color;
 /*********************************************************
  * Utils APIs
  *********************************************************/
@@ -6114,7 +6121,8 @@ static inline bool is_tv_panel(void)
 	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
 	    get_cpu_type() == MESON_CPU_MAJOR_ID_T7 ||
 	    get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W))
+	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+	    get_cpu_type() == MESON_CPU_MAJOR_ID_C3))
 		return true;
 	else
 		return false;
@@ -6226,6 +6234,218 @@ static void check_video_mute(void)
 			}
 			video_mute_status = VIDEO_MUTE_OFF;
 		}
+	}
+}
+
+void set_vdx_test_pattern(u32 index, bool on, u32 color)
+{
+	vdx_test_pattern_on[index] = on;
+	vdx_color[index] = color;
+	if (on)
+		video_testpattern_status[index] = VIDEO_TESTPATTERN_OFF;
+	else
+		video_testpattern_status[index] = VIDEO_TESTPATTERN_ON;
+}
+EXPORT_SYMBOL(set_vdx_test_pattern);
+
+void get_vdx_test_pattern(u32 index, bool *on, u32 *color)
+{
+	*on = vdx_test_pattern_on[index];
+	*color = vdx_color[index];
+}
+EXPORT_SYMBOL(get_vdx_test_pattern);
+
+void set_postblend_test_pattern(bool on, u32 color)
+{
+	postblend_test_pattern_on = on;
+	postblend_color = color;
+	if (on)
+		postblend_testpattern_status = VIDEO_TESTPATTERN_OFF;
+	else
+		postblend_testpattern_status = VIDEO_TESTPATTERN_ON;
+}
+EXPORT_SYMBOL(set_postblend_test_pattern);
+
+void get_postblend_test_pattern(bool *on, u32 *color)
+{
+	*on = postblend_test_pattern_on;
+	*color = postblend_color;
+}
+EXPORT_SYMBOL(get_postblend_test_pattern);
+
+static inline void vdx_test_pattern_output(u32 index, u32 on, u32 color)
+{
+	u8 vpp_index = VPP0;
+	u32 vdx_clip_misc0, vdx_clip_misc1;
+
+	switch (index) {
+	case 0:
+		vdx_clip_misc0 = viu_misc_reg.vd1_clip_misc0;
+		vdx_clip_misc1 = viu_misc_reg.vd1_clip_misc1;
+		break;
+	case 1:
+		vdx_clip_misc0 = viu_misc_reg.vd2_clip_misc0;
+		vdx_clip_misc1 = viu_misc_reg.vd2_clip_misc1;
+		break;
+	case 2:
+		vdx_clip_misc0 = viu_misc_reg.vd3_clip_misc0;
+		vdx_clip_misc1 = viu_misc_reg.vd3_clip_misc1;
+		break;
+	default:
+		return;
+	}
+	if (on) {
+		if (!is_tv_panel()) {
+			u32 R, G, B;
+
+			R = (color & 0xff0000) >> 16;
+			G = (color & 0xff00) >> 8;
+			B = color & 0xff;
+			pr_info("R=%x, G=%x, B=%x\n", R, G, B);
+			color = (R << 22) | (G << 12) | (B << 2);
+		} else {
+			u32 Y, U, V;
+			int R, G, B;
+
+			R = ((color & 0xff0000) >> 16);
+			G = ((color & 0xff00) >> 8);
+			B = (color & 0xff);
+			Y = 257 * R / 1000 +
+				504 * G / 1000 +
+				98 * B / 1000 + 16;
+			V = 439 * R / 1000 -
+				368 * G / 1000 -
+				71 * B / 1000 + 128;
+			U = -148 * R / 1000 -
+				291 * G / 1000 +
+				439 * B / 1000 + 128;
+			pr_info("Y=%x, U=%x, V=%x\n", Y, U, V);
+			color = (Y << 22) | (U << 12) | V << 2; /* YUV */
+		}
+
+		cur_dev->rdma_func[vpp_index].rdma_wr
+			(vdx_clip_misc0,
+			color);
+		cur_dev->rdma_func[vpp_index].rdma_wr
+			(vdx_clip_misc1,
+			color);
+		WRITE_VCBUS_REG(vdx_clip_misc0, color);
+		WRITE_VCBUS_REG(vdx_clip_misc1, color);
+	} else {
+		cur_dev->rdma_func[vpp_index].rdma_wr
+			(vdx_clip_misc0,
+			(0x3ff << 20) |
+			(0x3ff << 10) |
+			0x3ff);
+		cur_dev->rdma_func[vpp_index].rdma_wr
+			(vdx_clip_misc1,
+			(0x0 << 20) |
+			(0x0 << 10) | 0x0);
+	}
+}
+
+static void check_video_pattern_output(void)
+{
+	int index;
+
+	for (index = 0; index < MAX_VD_LAYER; index++) {
+		if (vdx_test_pattern_on[index]) {
+			if (video_testpattern_status[index] != VIDEO_TESTPATTERN_ON) {
+				vdx_test_pattern_output(index, 1, vdx_color[index]);
+				pr_info("%s: VD%d TESTPATTERN ON\n", __func__, index);
+			}
+			video_testpattern_status[index] = VIDEO_TESTPATTERN_ON;
+		} else {
+			if (video_testpattern_status[index] != VIDEO_TESTPATTERN_OFF) {
+				vdx_test_pattern_output(index, 0, vdx_color[index]);
+				pr_info("%s: VD%d TESTPATTERN OFF\n", __func__, index);
+			}
+			video_testpattern_status[index] = VIDEO_TESTPATTERN_OFF;
+		}
+	}
+}
+
+static inline void postblend_test_pattern_output(u32 on, u32 color)
+{
+	u8 vpp_index = VPP0;
+	static u32 blend_din_en_save;
+
+	if (on) {
+		if (is_tv_panel()) {
+			u32 R, G, B;
+
+			R = (color & 0xff0000) >> 16;
+			G = (color & 0xff00) >> 8;
+			B = color & 0xff;
+			pr_info("R=%x, G=%x, B=%x\n", R, G, B);
+			color = (R << 22) | (G << 12) | (B << 2);
+		} else {
+			u32 Y, U, V;
+			int R, G, B;
+
+			R = ((color & 0xff0000) >> 16);
+			G = ((color & 0xff00) >> 8);
+			B = (color & 0xff);
+			Y = 257 * R / 1000 +
+				504 * G / 1000 +
+				98 * B / 1000 + 16;
+			V = 439 * R / 1000 -
+				368 * G / 1000 -
+				71 * B / 1000 + 128;
+			U = -148 * R / 1000 -
+				291 * G / 1000 +
+				439 * B / 1000 + 128;
+			pr_info("Y=%x, U=%x, V=%x\n", Y, U, V);
+			color = (Y << 20) | (U << 10) | V << 2; /* YUV */
+		}
+
+		if (cur_dev->display_type != C3_DISPLAY) {
+			cur_dev->rdma_func[vpp_index].rdma_wr
+				(VPP_CLIP_MISC0,
+				color);
+			cur_dev->rdma_func[vpp_index].rdma_wr
+				(VPP_CLIP_MISC1,
+				color);
+			WRITE_VCBUS_REG(VPP_CLIP_MISC0, color);
+			WRITE_VCBUS_REG(VPP_CLIP_MISC1, color);
+		} else {
+			blend_din_en_save = READ_VCBUS_REG(VPU_VOUT_BLEND_CTRL);
+			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, color);
+			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL, 0x7);
+		}
+	} else {
+		if (cur_dev->display_type != C3_DISPLAY) {
+			cur_dev->rdma_func[vpp_index].rdma_wr
+				(VPP_CLIP_MISC0,
+				(0x3ff << 20) |
+				(0x3ff << 10) |
+				0x3ff);
+			cur_dev->rdma_func[vpp_index].rdma_wr
+				(VPP_CLIP_MISC1,
+				(0x0 << 20) |
+				(0x0 << 10) | 0x0);
+		} else {
+			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, 0x0);
+			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL,
+				blend_din_en_save);
+		}
+	}
+}
+
+static void check_postblend_pattern_output(void)
+{
+	if (postblend_test_pattern_on) {
+		if (postblend_testpattern_status != VIDEO_TESTPATTERN_ON) {
+			postblend_test_pattern_output(1, postblend_color);
+			pr_info("%s: VPP TESTPATTERN ON\n", __func__);
+		}
+		postblend_testpattern_status = VIDEO_TESTPATTERN_ON;
+	} else {
+		if (postblend_testpattern_status != VIDEO_TESTPATTERN_OFF) {
+			postblend_test_pattern_output(0, postblend_color);
+			pr_info("%s: VPP TESTPATTERN OFF\n", __func__);
+		}
+		postblend_testpattern_status = VIDEO_TESTPATTERN_OFF;
 	}
 }
 
@@ -6955,15 +7175,19 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 	u8 vpp_index = VPP0;
 	int i;
 
-	if (cur_dev->display_type == T7_DISPLAY) {
-		vpp_blend_update_t7(vinfo);
-		return;
-	}
 	if (cur_dev->display_type == C3_DISPLAY) {
 		vpp_blend_update_c3(vinfo);
 		return;
 	}
+
+	check_video_pattern_output();
+	check_postblend_pattern_output();
 	check_video_mute();
+
+	if (cur_dev->display_type == T7_DISPLAY) {
+		vpp_blend_update_t7(vinfo);
+		return;
+	}
 
 	if (vd_layer[0].enable_3d_mode == mode_3d_mvc_enable)
 		mode |= COMPOSE_MODE_3D;

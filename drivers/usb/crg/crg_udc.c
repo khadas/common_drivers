@@ -3986,7 +3986,11 @@ int crg_handle_port_status(struct crg_gadget_dev *crg_udc)
 				ccs_drop_ignore = 1;
 				CRG_ERROR("ccs glitch detect on HS/FS!\n");
 			}
-
+#if IS_ENABLED(CONFIG_AMLOGIC_USB)
+			/**eye diagram test fail **/
+			if (CRG_U3DC_PORTSC_PLS_GET(tmp) == 0xb)
+				ccs_drop_ignore = 1;
+#endif
 			if (!ccs_drop_ignore)
 				crg_udc->gadget.speed = USB_SPEED_UNKNOWN;
 

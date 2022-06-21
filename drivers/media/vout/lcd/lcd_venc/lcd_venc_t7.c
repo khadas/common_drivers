@@ -27,7 +27,7 @@ static void lcd_venc_wait_vsync(struct aml_lcd_drv_s *pdrv)
 	unsigned int reg, offset;
 	int i = 0;
 
-	if (!pdrv || pdrv->lcd_pxp)
+	if (!pdrv)
 		return;
 
 	offset = pdrv->data->offset_venc[pdrv->index];

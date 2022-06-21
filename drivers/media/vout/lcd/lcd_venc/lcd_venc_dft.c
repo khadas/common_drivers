@@ -24,7 +24,7 @@ static void lcd_venc_wait_vsync(struct aml_lcd_drv_s *pdrv)
 	unsigned int line_cnt, line_cnt_previous;
 	int i = 0;
 
-	if (!pdrv || pdrv->lcd_pxp)
+	if (!pdrv)
 		return;
 
 	line_cnt = 0x1fff;

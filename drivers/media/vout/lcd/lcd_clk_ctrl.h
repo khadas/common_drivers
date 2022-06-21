@@ -260,6 +260,15 @@ struct lcd_clk_ctrl_s pll_ctrl_table_t7[] = {
 	{LCD_CLK_CTRL_END,  LCD_CLK_REG_END,                       0,  0},
 };
 
+struct lcd_clk_ctrl_s pll_ctrl_table_c3[] = {
+	/* flag             reg                 bit              len*/
+	{LCD_CLK_CTRL_EN,   ANACTRL_GP0PLL_CTRL0, 28,   1},
+	{LCD_CLK_CTRL_RST,  ANACTRL_GP0PLL_CTRL0, 29,   1},
+	{LCD_CLK_CTRL_M,    ANACTRL_GP0PLL_CTRL0, 0,    9},
+	{LCD_CLK_CTRL_FRAC, ANACTRL_GP0PLL_CTRL1, 0,    17},
+	{LCD_CLK_CTRL_END,  LCD_CLK_REG_END,      0,    0},
+};
+
 /* **********************************
  * pll & clk parameter
  * **********************************

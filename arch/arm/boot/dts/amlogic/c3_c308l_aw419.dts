@@ -848,6 +848,76 @@
 	};
 	/* Audio Related end */
 
+	lcd_bt656_on_pins:lcd_bt656_on_pin {
+		mux {
+			groups = "lcd_d0","lcd_d1","lcd_d2","lcd_d3",
+				"lcd_d4","lcd_d5","lcd_d6","lcd_d7",
+				"lcd_clk_a";
+			function = "lcd";
+			drive-strength = <3>;
+		};
+	};
+
+	lcd_bt656_off_pins:lcd_bt656_off_pin {
+		mux {
+			groups = "GPIOB_0","GPIOB_1","GPIOB_2","GPIOB_8",
+				"GPIOB_9","GPIOB_10","GPIOB_11","GPIOB_12",
+				"GPIOA_3";
+			function = "gpio_periphs";
+			output-low;
+		};
+	};
+
+	lcd_bt1120_on_pins:lcd_bt1120_on_pin {
+		mux {
+			groups = "lcd_d0","lcd_d1","lcd_d2","lcd_d3",
+				"lcd_d4","lcd_d5","lcd_d6","lcd_d7",
+				"lcd_d8","lcd_d9","lcd_d10","lcd_d11",
+				"lcd_d12","lcd_d13","lcd_d14","lcd_d15",
+				"lcd_clk_a";
+			function = "lcd";
+			drive-strength = <3>;
+		};
+	};
+
+	lcd_bt1120_off_pins:lcd_bt1120_off_pin {
+		mux {
+			groups = "GPIOB_0","GPIOB_1","GPIOB_2","GPIOB_8",
+				"GPIOB_9","GPIOB_10","GPIOB_11","GPIOB_12",
+				"GPIOX_0","GPIOX_1","GPIOX_2","GPIOX_3",
+				"GPIOX_4","GPIOX_5","GPIOX_6","GPIOX_7",
+				"GPIOA_3";
+			function = "gpio_periphs";
+			output-low;
+		};
+	};
+
+	lcd_rgb_on_pins:lcd_rgb_on_pin {
+		mux {
+			groups = "lcd_d0","lcd_d1","lcd_d2","lcd_d3",
+				"lcd_d4","lcd_d5","lcd_d6","lcd_d7",
+				"lcd_d8","lcd_d9","lcd_d10","lcd_d11",
+				"lcd_d12","lcd_d13","lcd_d14","lcd_d15",
+				"lcd_d16", "lcd_d17", "lcd_clk_x",
+				"lcd_den", "lcd_hs", "lcd_vs";
+			function = "lcd";
+			drive-strength = <3>;
+		};
+	};
+
+	lcd_rgb_off_pins:lcd_rgb_off_pin {
+		mux {
+			groups = "GPIOB_0","GPIOB_1","GPIOB_2","GPIOB_8",
+				"GPIOB_9","GPIOB_10","GPIOB_11","GPIOB_12",
+				"GPIOX_0","GPIOX_1","GPIOX_2","GPIOX_3",
+				"GPIOX_4","GPIOX_5","GPIOX_6","GPIOX_7",
+				"GPIOX_8","GPIOX_9","GPIOX_10","GPIOX_11",
+				"GPIOX_12","GPIOX_13";
+			function = "gpio_periphs";
+			output-low;
+		};
+	};
+
 	bl_pwm_off_pins:bl_pwm_off_pin {
 		mux {
 			groups = "GPIOA_5";
@@ -949,9 +1019,9 @@
 };
 
 &i2c3 {
-	status = "disabled";
+	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2c3_master_pins1>;
+	pinctrl-0 = <&i2c3_master_pins3>;
 	clock-frequency = <400000>;
 
 	tas5707_1b: tas5707_1b@1b {
@@ -968,6 +1038,26 @@
 		reg = <0x1d>;
 		status = "disabled";
 		//reset_pin = <&gpio GPIOD_3 GPIO_ACTIVE_HIGH>;
+	};
+
+	/* use pinctrl: i2c3_master_pins3, GPIOD_4, GPIOD_5 */
+	lcd_extern_i2c1: lcd_extern_i2c@48 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_LT8912_48";
+		reg = <0x48>;
+		status = "okay";
+	};
+	lcd_extern_i2c1: lcd_extern_i2c@48 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_LT8912_49";
+		reg = <0x49>;
+		status = "okay";
+	};
+	lcd_extern_i2c0: lcd_extern_i2c@72 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_LT8616";
+		reg = <0x72>;
+		status = "okay";
 	};
 };
 

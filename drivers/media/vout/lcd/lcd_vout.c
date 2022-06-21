@@ -23,8 +23,10 @@
 #include <linux/clk.h>
 #include <linux/of_device.h>
 #include <linux/workqueue.h>
+#include <linux/mm.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
+#include <linux/of_address.h>
 #endif
 #include <linux/amlogic/pm.h>
 #include <linux/amlogic/media/vout/vinfo.h>
@@ -103,7 +105,7 @@ static struct lcd_boot_ctrl_s lcd_boot_ctrl_config[LCD_MAX_DRV] = {
 };
 
 static struct lcd_debug_ctrl_s lcd_debug_ctrl_config = {
-	.debug_print_flag = 0x7,
+	.debug_print_flag = 0,
 	.debug_test_pattern = 0,
 	.debug_para_source = 0,
 	.debug_lcd_mode = 0,
@@ -1296,7 +1298,7 @@ static void lcd_cdev_remove(struct aml_lcd_drv_s *pdrv)
 	cdev_del(&pdrv->cdev);
 }
 
-static int lcd_global_init_once(void)
+static int lcd_global_init_once(struct platform_device *pdev)
 {
 	int ret;
 
@@ -1693,10 +1695,10 @@ static int lcd_config_probe(struct aml_lcd_drv_s *pdrv, struct platform_device *
 	if (pdrv->config.basic.lcd_type == LCD_TYPE_MAX) {
 		val = pdrv->boot_ctrl->advanced_flag;
 		switch (pdrv->boot_ctrl->lcd_type) {
-		case LCD_TTL:
-			pdrv->config.basic.lcd_bits = pdrv->boot_ctrl->lcd_bits;
-			pdrv->config.control.ttl_cfg.sync_valid = val;
-			lcd_ttl_pinmux_set(pdrv, 1);
+		case LCD_RGB:
+			pdrv->config.control.rgb_cfg.de_valid = val & 0x1;
+			pdrv->config.control.rgb_cfg.sync_valid = (val >> 1) & 0x1;
+			lcd_rgb_pinmux_set(pdrv, 1);
 			break;
 		case LCD_VBYONE:
 			lcd_vbyone_pinmux_set(pdrv, 1);
@@ -1887,7 +1889,7 @@ static int lcd_probe(struct platform_device *pdev)
 	unsigned int index = 0;
 	int ret = 0;
 
-	lcd_global_init_once();
+	lcd_global_init_once(pdev);
 
 	if (!pdev->dev.of_node)
 		return -1;

@@ -19,9 +19,16 @@
 			0xfe004000 0x400>;  /* pad ctrl */
 		interrupts = <GIC_SPI 132 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "vsync";
-		pinctrl-names = "dsi_on";
+		pinctrl-names = "dsi_on","bt656_on","bt656_off",
+			"bt1120_on","bt1120_off",
+			"rgb_sync_de_on", "rgb_off";
 		pinctrl-0 = <&lcd_dsi_on_pins>;
-		pinctrl_version = <2>; /* for uboot */
+		pinctrl-1 = <&lcd_bt656_on_pins>;
+		pinctrl-2 = <&lcd_bt656_off_pins>;
+		pinctrl-3 = <&lcd_bt1120_on_pins>;
+		pinctrl-4 = <&lcd_bt1120_off_pins>;
+		pinctrl-5 = <&lcd_rgb_on_pins>;
+		pinctrl-6 = <&lcd_rgb_off_pins>;
 
 		/* power type:(0=cpu_gpio, 2=signal, 3=extern, 0xff=ending) */
 		/* power index:(gpios_index, or extern_index, 0xff=invalid) */
@@ -30,6 +37,8 @@
 		lcd_cpu-gpios = <&gpio GPIOA_4 GPIO_ACTIVE_HIGH
 			&gpio GPIOA_3 GPIO_ACTIVE_HIGH>;
 		lcd_cpu_gpio_names = "GPIOA_4","GPIOA_3";
+
+		lcd_propname_sel = "mipi_0"; /* only for test, need remove */
 
 		mipi_0{
 			model_name = "TL070WSH27";
@@ -124,13 +133,319 @@
 			extern_init = <0xff>;
 				/* power step: type,index,value,delay(ms) */
 			power_on_step = <
-					3 7 0 100
+					3 0 0 100
 					2 0 0 0
 					0xff 0 0 0>;
 			power_off_step = <
 					2 0 0 0
 					0xff 0 0 0>;
 			backlight_index = <0xff>;
+		};
+
+		bt_0{
+			model_name = "BT656_720P";
+			interface = "bt656";
+			basic_setting = <1280 720 /*h_active, v_active*/
+				1650 750 /*h_period, v_period*/
+				8 /*lcd_bits*/
+				16 9>; /*screen_widht, screen_height*/
+			lcd_timing = <40 220 1 /*hs_width,hs_bp,hs_pol*/
+				5 20 1>; /*vs_width,vs_bp,vs_pol*/
+			clk_attr = <
+				4 /*fr_adj_type(0=clock,1=htotal,2=vtotal,4=hdmi_mode)*/
+				0 /*clk_ss_level*/
+				1 /*clk_auto_generate*/
+				74250000>; /*pixel_clk(unit in Hz)*/
+			bt_attr = <
+				0 /*clk_phase*/
+				0 /*field_type(0=progress,1=interlace)*/
+				0 /*mode_422(0=left,1=right,2=average)*/
+				0 /*yc_swap(0=cy,1=yc)*/
+				0 /*cbcr_swap(0=cbcr,1=crcb)*/
+				0 /*reserved*/
+				0 /*reserved*/
+				0>; /*reserved*/
+
+			/* power step: type,index,value,delay(ms) */
+			power_on_step = <
+				0 0 1 100
+				3 1 0 100
+				2 0 0 0
+				0xff 0 0 0>;
+			power_off_step = <
+				2 0 0 50
+				0 0 0 100
+				0xff 0 0 0>;
+			backlight_index = <0xff>;
+		};
+		bt_1{
+			model_name = "BT1120_1080p";
+			interface = "bt1120";
+			basic_setting = <
+				1920 1080 /*h_active, v_active*/
+				2200 1125 /*h_period, v_period*/
+				8      /*lcd_bits*/
+				16 9>; /*screen_widht, screen_height*/
+			lcd_timing = <
+				44 148 1   /*hs_width, hs_bp, hs_pol*/
+				5  36  1>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				4 /*fr_adj_type(0=clk,1=htotal,2=vtotal,4=hdmi_mode)*/
+				0 /*clk_ss_level */
+				1 /*clk_auto_generate*/
+				148500000>; /*pixel_clk(unit in Hz)*/
+			bt_attr = <
+				0 /*clk_phase*/
+				0 /*field_type(0=progress,1=interlace)*/
+				0 /*mode_422(0=left,1=right,2=average)*/
+				0 /*yc_swap(0=cy,1=yc)*/
+				0 /*cbcr_swap(0=cbcr,1=crcb)*/
+				0 /*reserved*/
+				0 /*reserved*/
+				0>; /*reserved*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 50 /*panel power on*/
+				3 2 0 100
+				2 0 0 0   /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 0 /*signal disable*/
+				0 0 0 100 /*panel power off*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
+
+		rgb_0{
+			model_name = "RGB_1080p";
+			interface = "rgb";
+			basic_setting = <
+				1920 1080 /*h_active, v_active*/
+				2200 1125 /*h_period, v_period*/
+				8      /*lcd_bits*/
+				16 9>; /*screen_widht, screen_height*/
+			lcd_timing = <
+				44 148 1   /*hs_width, hs_bp, hs_pol*/
+				5  36  1>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				4 /*fr_adj_type(0=clk,1=htotal,2=vtotal,4=hdmi_mode)*/
+				0 /*clk_ss_level */
+				1 /*clk_auto_generate*/
+				148500000>; /*pixel_clk(unit in Hz)*/
+			rgb_attr = <
+				0 /*rgb type*/
+				0 /*clk_pol*/
+				1 /*de_valid*/
+				1 /*sync_valid*/
+				0 /*rb_swap*/
+				0>; /*bit_swap*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 50 /*panel power on*/
+				3 3 0 100
+				2 0 0 0   /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 0 /*signal disable*/
+				0 0 0 100 /*panel power off*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
+	};
+
+	lcd_extern{
+		compatible = "amlogic, lcd_extern";
+		status = "okay";
+		index = <0>;
+		key_valid = <0>;
+		i2c_bus = "i2c_bus_3";
+
+		extern-gpios = <&gpio GPIOA_2 GPIO_ACTIVE_HIGH
+			&gpio GPIOA_5 GPIO_ACTIVE_HIGH>;
+		extern_gpio_names = "GPIOA_2","GPIOA_5";
+
+		extern_0{
+			index = <0>;
+			extern_name = "ext_default";/*LT8912*/
+			status = "okay";
+			type = <0>; /* 0=i2c, 1=spi, 2=mipi */
+			i2c_address = <0x48>; /*7bit i2c_addr*/
+			i2c_second_address = <0x49>;
+			cmd_size = <0xff>;
+			init_on = <
+				0xc0 2 0x08 0xff
+				0xc0 2 0x09 0xff
+				0xc0 2 0x0a 0xff
+				0xc0 2 0x0b 0x7c
+				0xc0 2 0x0c 0xff
+				0xfd 1 10
+
+				0xc0 2 0x31 0xa1
+				0xc0 2 0x32 0xa1
+				0xc0 2 0x33 0x03
+				0xc0 2 0x37 0x00
+				0xc0 2 0x38 0x22
+				0xc0 2 0x60 0x82
+				0xfd 1 10
+
+				0xc0 2 0x39 0x45
+				0xc0 2 0x3b 0x00
+				0xfd 1 10
+
+				0xc0 2 0x44 0x31
+				0xc0 2 0x55 0x44
+				0xc0 2 0x57 0x01
+				0xc0 2 0x5a 0x02
+				0xfd 1 10
+
+				0xc0 2 0x3e 0xc6
+				0xc0 2 0x41 0x7c
+				0xfd 1 10
+
+				0xc1 2 0x10 0x04
+				0xc1 2 0x11 0x04
+				0xc1 2 0x12 0x04
+				0xc1 2 0x13 0x00
+				0xc1 2 0x14 0x00
+				0xc1 2 0x15 0x00
+				0xc1 2 0x1a 0x03
+				0xc1 2 0x1b 0x03
+				0xfd 1 20
+
+				0xc1 2 0x18 0x28
+				0xc1 2 0x19 0x05
+				0xc1 2 0x1c 0x00
+				0xc1 2 0x1d 0x05
+				0xc1 2 0x2f 0x0c
+				0xc1 2 0x34 0x72
+				0xc1 2 0x35 0x06
+				0xc1 2 0x36 0xee
+				0xc1 2 0x37 0x02
+				0xc1 2 0x38 0x14
+				0xc1 2 0x39 0x00
+				0xc1 2 0x3a 0x05
+				0xc1 2 0x3b 0x00
+				0xc1 2 0x3c 0xdc
+				0xc1 2 0x3d 0x00
+				0xc1 2 0x3e 0x6e
+				0xc1 2 0x3f 0x00
+				0xfd 1 10
+
+				0xc0 2 0x03 0x7f
+				0xfd 1 200
+				0xc0 2 0x03 0xff
+				0xfd 1 200
+
+				0xc1 2 0x4e 0x6A
+				0xc1 2 0x4f 0x4D
+				0xc1 2 0x50 0xF3
+				0xc1 2 0x51 0x80
+				0xc1 2 0x1f 0x90
+				0xc1 2 0x20 0x01
+				0xc1 2 0x21 0x68
+				0xc1 2 0x22 0x01
+				0xc1 2 0x23 0x5E
+				0xc1 2 0x24 0x01
+				0xc1 2 0x25 0x54
+				0xc1 2 0x26 0x01
+				0xc1 2 0x27 0x90
+				0xc1 2 0x28 0x01
+				0xc1 2 0x29 0x68
+				0xc1 2 0x2a 0x01
+				0xc1 2 0x2b 0x5E
+				0xc1 2 0x2c 0x01
+				0xc1 2 0x2d 0x54
+				0xc1 2 0x2e 0x01
+				0xc1 2 0x42 0x64
+				0xc1 2 0x43 0x00
+				0xc1 2 0x44 0x04
+				0xc1 2 0x45 0x00
+				0xc1 2 0x46 0x59
+				0xc1 2 0x47 0x00
+				0xc1 2 0x48 0xf2
+				0xc1 2 0x49 0x06
+				0xc1 2 0x4a 0x00
+				0xc1 2 0x4b 0x72
+				0xc1 2 0x4c 0x45
+				0xc1 2 0x4d 0x00
+				0xc1 2 0x52 0x08
+				0xc1 2 0x53 0x00
+				0xc1 2 0x54 0xb2
+				0xc1 2 0x55 0x00
+				0xc1 2 0x56 0xe4
+				0xc1 2 0x57 0x0d
+				0xc1 2 0x58 0x00
+				0xc1 2 0x59 0xe4
+				0xc1 2 0x5a 0x8a
+				0xc1 2 0x5b 0x00
+				0xc1 2 0x5c 0x34
+				0xc1 2 0x1e 0x4f
+				0xc1 2 0x51 0x00
+				0xff 0>; /*ending*/
+			init_off = <
+				0xff 0>; /*ending*/
+		};
+
+		extern_1{
+			index = <1>;
+			extern_name = "ext_default";/*LT8616: bt656*/
+			status = "okay";
+			type = <0>; /* 0=i2c, 1=spi, 2=mipi */
+			i2c_address = <0x72>; /*7bit i2c_addr*/
+			cmd_size = <0xff>;
+			init_on = <
+				0xf0 2 1 1  //reset high
+				0xfd 1 10   //delay 10ms
+				0xf0 2 1 0  //reset low
+				0xfd 1 10   //delay 10ms
+				0xf0 2 1 1  //reset high
+				0xfd 1 10   //delay 10ms
+				0xff 0>; /*ending*/
+			init_off = <
+				0xf0 2 1 0  //reset low
+				0xff 0>; /*ending*/
+		};
+
+		extern_2{
+			index = <2>;
+			extern_name = "ext_default";/*LT8616: bt1120*/
+			status = "okay";
+			type = <0>; /* 0=i2c, 1=spi, 2=mipi */
+			i2c_address = <0x72>; /*7bit i2c_addr*/
+			cmd_size = <0xff>;
+			init_on = <
+				0xf0 2 1 1  //reset high
+				0xfd 1 10   //delay 10ms
+				0xf0 2 1 0  //reset low
+				0xfd 1 10   //delay 10ms
+				0xf0 2 1 1  //reset high
+				0xfd 1 10   //delay 10ms
+				0xff 0>; /*ending*/
+			init_off = <
+				0xf0 2 1 0  //reset low
+				0xff 0>; /*ending*/
+		};
+
+		extern_3{
+			index = <3>;
+			extern_name = "ext_default";/*LT8616: rgb*/
+			status = "okay";
+			type = <0>; /* 0=i2c, 1=spi, 2=mipi */
+			i2c_address = <0x72>; /*7bit i2c_addr*/
+			cmd_size = <0xff>;
+			init_on = <
+				0xf0 2 1 1  //reset high
+				0xfd 1 10   //delay 10ms
+				0xf0 2 1 0  //reset low
+				0xfd 1 10   //delay 10ms
+				0xf0 2 1 1  //reset high
+				0xfd 1 10   //delay 10ms
+				0xff 0>; /*ending*/
+			init_off = <
+				0xf0 2 1 0  //reset low
+				0xff 0>; /*ending*/
 		};
 	};
 

@@ -59,8 +59,8 @@ struct lcd_debug_info_s {
 	void (*prbs_test)(struct aml_lcd_drv_s *pdrv, unsigned int s,
 			  unsigned int mode_flag);
 
-	struct lcd_debug_info_if_s *debug_if_ttl;
-	struct lcd_debug_info_if_s *debug_if_bt656;
+	struct lcd_debug_info_if_s *debug_if_rgb;
+	struct lcd_debug_info_if_s *debug_if_bt;
 	struct lcd_debug_info_if_s *debug_if_lvds;
 	struct lcd_debug_info_if_s *debug_if_vbyone;
 	struct lcd_debug_info_if_s *debug_if_mlvds;
@@ -408,6 +408,7 @@ static unsigned int lcd_reg_dump_pinmux_c3[] = {
 	PADCTRL_PIN_MUX_REG1,
 	PADCTRL_PIN_MUX_REG3,
 	PADCTRL_PIN_MUX_REG4,
+	PADCTRL_PIN_MUX_REGB,
 	PADCTRL_PIN_MUX_REGJ,
 	PADCTRL_PIN_MUX_REGK,
 	LCD_DEBUG_REG_END

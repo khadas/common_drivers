@@ -33,6 +33,8 @@ static struct lcd_venc_op_s lcd_venc_op = {
 
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv)
 {
+	if (pdrv->lcd_pxp)
+		return;
 	if (!lcd_venc_op.wait_vsync)
 		return;
 
@@ -191,7 +193,7 @@ int lcd_venc_probe(struct aml_lcd_drv_s *pdrv)
 		break;
 	}
 	if (ret) {
-		LCDERR("[%d]: %s: failed\n", pdrv->index, __func__);
+		LCDERR("%s: failed\n", __func__);
 		return -1;
 	}
 

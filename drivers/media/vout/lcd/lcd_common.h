@@ -15,7 +15,8 @@
 /* 20220430: initial version*/
 /* 20220610: add c3 support*/
 /* 20220619: c3 mipi-dsi display ok*/
-#define LCD_DRV_VERSION    "20220619"
+/* 20220622: c3 support bt656/1120*/
+#define LCD_DRV_VERSION    "20220622"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;
@@ -44,7 +45,9 @@ void lcd_unmap_phyaddr(u8 *vaddr);
 void lcd_cpu_gpio_probe(struct aml_lcd_drv_s *pdrv, unsigned int index);
 void lcd_cpu_gpio_set(struct aml_lcd_drv_s *pdrv, unsigned int index, int value);
 unsigned int lcd_cpu_gpio_get(struct aml_lcd_drv_s *pdrv, unsigned int index);
-void lcd_ttl_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
+void lcd_rgb_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
+void lcd_bt656_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
+void lcd_bt1120_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_vbyone_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_mlvds_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_p2p_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);

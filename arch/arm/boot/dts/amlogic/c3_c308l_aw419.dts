@@ -105,7 +105,7 @@
 		pmz_cma_a1_reserved:anonymous {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x5000000>;
+			size = <0x10000000>;
 			alignment = <0x400000>;
 		};
 
@@ -180,6 +180,14 @@
 		compatible = "amlogic, pmz_dev";
 		memory-region = <&pmz_cma_a2_reserved>;
 	};
+
+        hantro {
+            compatible = "hantro";
+            status = "okay";
+            interrupts = <0x00 0x86 0x01 0x00 0x87 0x01 0x00 0x88 0x01>;
+            interrupt-names = "vc9000e_irq0\0vc9000e_irq1\0vc9000e_irq1";
+        };
+
 
 	/* Audio Related start */
 	dummy_codec:dummy_codec{

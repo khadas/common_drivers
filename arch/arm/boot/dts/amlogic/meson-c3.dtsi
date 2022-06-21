@@ -1665,6 +1665,7 @@
 		reg-names = "cve";
 		interrupts = <GIC_SPI 133 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "cve";
+		power-domains = <&pwrdm PDID_C3_CVE>;
 		status = "okay";
 	};
 

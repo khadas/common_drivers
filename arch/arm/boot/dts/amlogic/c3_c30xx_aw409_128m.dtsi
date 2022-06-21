@@ -101,6 +101,19 @@
 			no-map;
 		};
 
+		pmz_cma_a1_reserved:anonymous {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x4000000>;
+			alignment = <0x400000>;
+		};
+
+		pmz_cma_a2_reserved:user_pmz {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x1000000>;
+			alignment = <0x400000>;
+		};
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -156,6 +169,24 @@
 		states = <1800000 1
 			  3300000 0>;
 	};
+
+	pmz_a1_dev {
+		compatible = "amlogic, pmz_dev";
+		memory-region = <&pmz_cma_a1_reserved>;
+	};
+
+	pmz_a2_dev {
+		compatible = "amlogic, pmz_dev";
+		memory-region = <&pmz_cma_a2_reserved>;
+	};
+
+        hantro {
+            compatible = "hantro";
+            status = "okay";
+            interrupts = <0x00 0x86 0x01 0x00 0x87 0x01 0x00 0x88 0x01>;
+            interrupt-names = "vc9000e_irq0\0vc9000e_irq1\0vc9000e_irq1";
+        };
+
 
 	/* Audio Related start */
 	dummy_codec:dummy_codec{

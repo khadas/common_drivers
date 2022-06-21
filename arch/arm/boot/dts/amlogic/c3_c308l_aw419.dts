@@ -67,7 +67,7 @@
 			/* fox example:logo_addr = "0x3f800000"*/
 			size = <0x1800000>;
 			alignment = <0x400000>;
-			reg = <0xe800000 0x1800000>;
+			reg = <0x7e800000 0x1800000>;
 		};
 
 		ion_cma_reserved:linux,ion-dev {
@@ -1030,10 +1030,10 @@
 	status = "okay";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1000000>;
-	logo_addr = "0xe800000";
+	logo_addr = "0x7e800000";
 	/* display_device_cnt = <2>; */ /* for dual screen upport */
 	mem_alloc = <1>;
-	pxp_mode = <1>; /** 0:normal mode 1:pxp mode */
+	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
 &mtd_nand {

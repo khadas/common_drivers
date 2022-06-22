@@ -79,8 +79,9 @@ static int meson_uvm_fill_pattern(struct mua_buffer *buffer, struct dma_buf *dma
 	val_data.phy_addr[0] = buffer->paddr;
 	MUA_PRINTK(1, "%s. width=%d height=%d byte_stride=%d\n",
 			__func__, buffer->width, buffer->height, buffer->byte_stride);
+#ifdef CONFIG_AMLOGIC_V4L_VIDEO3
 	v4lvideo_data_copy(&val_data, dmabuf, buffer->align);
-
+#endif
 	vunmap(vaddr);
 	return 0;
 }

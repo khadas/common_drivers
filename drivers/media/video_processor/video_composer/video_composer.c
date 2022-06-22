@@ -40,6 +40,8 @@
 #include <linux/amlogic/meson_uvm_core.h>
 #include <linux/sched/clock.h>
 #include <linux/sync_file.h>
+#include <linux/ctype.h>
+#include <linux/amlogic/media/registers/cpu_version.h>
 
 #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_VIDEO_COMPOSER
 #ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
@@ -100,6 +102,7 @@ static u32 tv_fence_creat_count;
 static u32 dump_vframe;
 u32 vd_pulldown_level = 2;
 u32 vd_max_hold_count = 300;
+u32 vd_set_frame_delay[MAX_VIDEO_COMPOSER_INSTANCE_NUM];
 
 #define to_dst_buf(vf)	\
 	container_of(vf, struct dst_buf_t, frame)
@@ -365,10 +368,10 @@ static struct file_private_data *vc_get_file_private(struct composer_dev *dev,
 		pr_err("vc: get_file_private_data fail\n");
 		return NULL;
 	}
-
+#ifdef CONFIG_AMLOGIC_V4L_VIDEO3
 	if (is_v4lvideo_buf_file(file_vf))
 		is_v4lvideo_fd = true;
-
+#endif
 	if (is_v4lvideo_fd) {
 		file_private_data =
 			(struct file_private_data *)(file_vf->private_data);
@@ -442,7 +445,7 @@ static void frames_put_file(struct composer_dev *dev,
 	}
 }
 
-static void vc_private_q_init(struct composer_dev *dev)
+void vc_private_q_init(struct composer_dev *dev)
 {
 	int i;
 
@@ -461,7 +464,7 @@ static void vc_private_q_init(struct composer_dev *dev)
 	}
 }
 
-static void vc_private_q_recycle(struct composer_dev *dev,
+void vc_private_q_recycle(struct composer_dev *dev,
 	struct video_composer_private *vc_private)
 {
 	if (!vc_private)
@@ -476,7 +479,7 @@ static void vc_private_q_recycle(struct composer_dev *dev,
 			"vc_private_q is full!\n");
 }
 
-static struct video_composer_private *vc_private_q_pop(struct composer_dev *dev)
+struct video_composer_private *vc_private_q_pop(struct composer_dev *dev)
 {
 	struct video_composer_private *vc_private = NULL;
 
@@ -2687,6 +2690,48 @@ static const struct file_operations video_composer_fops = {
 	.poll = NULL,
 };
 
+static int parse_para(const char *para, int para_num, int *result)
+{
+	char *token = NULL;
+	char *params, *params_base;
+	int *out = result;
+	int len = 0, count = 0;
+	int res = 0;
+	int ret = 0;
+
+	if (!para)
+		return 0;
+
+	params = kstrdup(para, GFP_KERNEL);
+	params_base = params;
+	token = params;
+	if (token) {
+		len = strlen(token);
+		do {
+			token = strsep(&params, " ");
+			if (!token)
+				break;
+			while (token &&
+			       (isspace(*token) ||
+				!isgraph(*token)) && len) {
+				token++;
+				len--;
+			}
+			if (len == 0)
+				break;
+			ret = kstrtoint(token, 0, &res);
+			if (ret < 0)
+				break;
+			len = strlen(token);
+			*out++ = res;
+			count++;
+		} while ((count < para_num) && (len > 0));
+	}
+
+	kfree(params_base);
+	return count;
+}
+
 static ssize_t debug_crop_pip_show(struct class *cla,
 				   struct class_attribute *attr,
 				   char *buf)
@@ -3348,6 +3393,25 @@ static ssize_t vd_max_hold_count_store(struct class *class,
 	return count;
 }
 
+static ssize_t vd_set_frame_delay_show(struct class *cla,
+			      struct class_attribute *attr,
+			      char *buf)
+{
+	return snprintf(buf, 80, "vd_set_frame_delay: %d,%d,%d\n",
+		vd_set_frame_delay[0], vd_set_frame_delay[1],
+		vd_set_frame_delay[2]);
+}
+
+static ssize_t vd_set_frame_delay_store(struct class *cla,
+			       struct class_attribute *attr,
+			       const char *buf, size_t count)
+{
+	if (likely(parse_para(buf, MAX_VIDEO_COMPOSER_INSTANCE_NUM,
+		vd_set_frame_delay) == MAX_VIDEO_COMPOSER_INSTANCE_NUM))
+		return strnlen(buf, count);
+
+	return -EINVAL;
+}
 static CLASS_ATTR_RW(debug_axis_pip);
 static CLASS_ATTR_RW(debug_crop_pip);
 static CLASS_ATTR_RW(force_composer);
@@ -3382,6 +3446,7 @@ static CLASS_ATTR_RO(tv_fence_creat_count);
 static CLASS_ATTR_RW(dump_vframe);
 static CLASS_ATTR_RW(vd_pulldown_level);
 static CLASS_ATTR_RW(vd_max_hold_count);
+static CLASS_ATTR_RW(vd_set_frame_delay);
 
 static struct attribute *video_composer_class_attrs[] = {
 	&class_attr_debug_crop_pip.attr,
@@ -3418,6 +3483,7 @@ static struct attribute *video_composer_class_attrs[] = {
 	&class_attr_dump_vframe.attr,
 	&class_attr_vd_pulldown_level.attr,
 	&class_attr_vd_max_hold_count.attr,
+	&class_attr_vd_set_frame_delay.attr,
 	NULL
 };
 
@@ -3449,6 +3515,10 @@ static int video_composer_probe(struct platform_device *pdev)
 		video_composer_instance_num++;
 	if (layer_cap & LAYER2_SCALER)
 		video_composer_instance_num++;
+
+	if (is_meson_c3_cpu())
+		video_composer_instance_num = 1;
+
 	ret = class_register(&video_composer_class);
 	if (ret < 0)
 		return ret;

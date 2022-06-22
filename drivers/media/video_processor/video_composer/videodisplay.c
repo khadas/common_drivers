@@ -18,17 +18,18 @@
  #include <linux/amlogic/meson_uvm_core.h>
  #include <linux/amlogic/media/utils/am_com.h>
  #include <linux/amlogic/media/codec_mm/codec_mm.h>
+ #include <linux/amlogic/media/vfm/vframe.h>
  #ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
 #include <linux/amlogic/media/video_sink/video.h>
 #endif
 #include "videodisplay.h"
+#include "video_composer.h"
 #include <frc_interface.h>
 
 static struct timeval vsync_time;
 static DEFINE_MUTEX(video_display_mutex);
 static struct composer_dev *mdev[3];
 
-#define MAX_VIDEO_COMPOSER_INSTANCE_NUM 3
 static int get_count[MAX_VIDEO_COMPOSER_INSTANCE_NUM];
 static unsigned int countinue_vsync_count[MAX_VIDEO_COMPOSER_INSTANCE_NUM];
 
@@ -226,8 +227,11 @@ void video_dispaly_push_ready(struct composer_dev *dev, struct vframe_s *vf)
 {
 	u32 vsync_index = vsync_count[dev->index];
 
-	if (vf && vf->vc_private)
+	if (vf && vf->vc_private) {
 		vf->vc_private->vsync_index = vsync_index;
+		vc_print(dev->index, PRINT_OTHER,
+			"set vsync_index =%d\n", vsync_index);
+	}
 }
 
 static void vd_vsync_video_pattern(struct composer_dev *dev, int pattern, struct vframe_s *vf)
@@ -563,7 +567,23 @@ static struct vframe_s *vc_vf_peek(void *op_arg)
 
 	time1 = dev->start_time;
 	time2 = vsync_time;
+
 	if (kfifo_peek(&dev->ready_q, &vf)) {
+		if (vf->vc_private && vd_set_frame_delay[dev->index] > 0) {
+			vsync_index = vf->vc_private->vsync_index;
+			vc_print(dev->index, PRINT_OTHER,
+				"peek: vsync_index =%d, delay_count=%d, vsync_count=%d\n",
+				vsync_index, vd_set_frame_delay[dev->index],
+				vsync_count[dev->index]);
+			if (vsync_index + vd_set_frame_delay[dev->index] - 1
+				>= vsync_count[dev->index] &&
+				vsync_index < vsync_count[dev->index])
+				return NULL;
+		} else {
+			vc_print(dev->index, PRINT_OTHER,
+				"peek: vf->vc_private is NULL\n");
+		}
+
 		/*apk/sf drop 0/3 4; vc receive 1 2 5 in one vsync*/
 		/*apk queue 5 and wait 1, it will fence timeout*/
 		if (get_count[dev->index] == 2) {
@@ -571,7 +591,7 @@ static struct vframe_s *vc_vf_peek(void *op_arg)
 				 "has already get 2, can not get more\n");
 			return NULL;
 		}
-		if (vf && get_count[dev->index] > 0 &&
+		if (get_count[dev->index] > 0 &&
 			!(vf->flag & VFRAME_FLAG_GAME_MODE)) {
 			time_vsync = (u64)1000000
 				* (time2.tv_sec - time1.tv_sec)
@@ -587,8 +607,6 @@ static struct vframe_s *vc_vf_peek(void *op_arg)
 				return NULL;
 			}
 		}
-		if (!vf)
-			return NULL;
 
 		if (dev->enable_pulldown && pulldown_support_vf(vf->duration)) {
 			open_pulldown = true;
@@ -781,6 +799,10 @@ static void vc_vf_put(struct vframe_s *vf, void *op_arg)
 			dev->fput_count++;
 		}
 		vd_prepare_data_q_put(dev, vd_prepare_tmp);
+		if (vf->vc_private) {
+			vc_private_q_recycle(dev, vf->vc_private);
+			vf->vc_private = NULL;
+		}
 		vc_print(dev->index, PRINT_OTHER | PRINT_PATTERN,
 			"%s: omx_index=%d, put_count=%lld.\n",
 			__func__, vf->omx_index, dev->fput_count);
@@ -984,11 +1006,13 @@ int video_display_create_path(struct composer_dev *dev)
 	for (i = 0; i < PATTEN_FACTOR_MAX; i++)
 		dev->patten_factor[i] = 0;
 	dev->patten_factor_index = 0;
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (vd_pulldown_level && frc_get_video_latency() != 0) {
 		dev->enable_pulldown = true;
 		vc_print(dev->index, PRINT_ERROR,
 			"enable pulldown\n");
 	}
+#endif
 	return 0;
 }
 
@@ -1020,7 +1044,7 @@ static struct composer_dev *video_display_getdev(int layer_index)
 
 	if (!mdev[layer_index]) {
 		mutex_lock(&video_display_mutex);
-		dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+		dev = vmalloc(sizeof(*dev));
 		if (!dev) {
 			mutex_unlock(&video_display_mutex);
 			vc_print(layer_index, PRINT_ERROR,
@@ -1030,6 +1054,7 @@ static struct composer_dev *video_display_getdev(int layer_index)
 		}
 
 		port = video_composer_get_port(layer_index);
+		memset(dev, 0, sizeof(struct composer_dev));
 		dev->port = port;
 		dev->index = port->index;
 		mdev[layer_index] = dev;
@@ -1058,6 +1083,7 @@ static int video_display_init(int layer_index)
 	kfifo_reset(&dev->ready_q);
 	kfifo_reset(&dev->display_q);
 	kfifo_reset(&dev->vc_prepare_data_q);
+	vc_private_q_init(dev);
 
 	for (i = 0; i < COMPOSER_READY_POOL_SIZE; i++)
 		vd_prepare_data_q_put(dev, &dev->vd_prepare[i]);
@@ -1112,7 +1138,7 @@ static int video_display_uninit(int layer_index)
 		 __func__, dev->fput_count);
 
 	dev->port->open_count--;
-	kfree(dev);
+	vfree(dev);
 	mdev[layer_index] = NULL;
 	return ret;
 }
@@ -1195,6 +1221,7 @@ int video_display_setframe(int layer_index,
 	int ready_count = 0;
 	bool is_dec_vf = false, is_v4l_vf = false, is_repeat_vf = false;
 	struct vd_prepare_s *vd_prepare = NULL;
+	u64 phy_addr2 = 0;
 
 	if (IS_ERR_OR_NULL(frame_info)) {
 		vc_print(layer_index, PRINT_ERROR,
@@ -1221,8 +1248,7 @@ int video_display_setframe(int layer_index,
 		"%s: total receive_count is %lld.\n",
 		__func__, dev->received_count);
 
-	if ((dev->last_file == (struct file *)frame_info->dmabuf) &&
-	    (is_dec_vf || is_v4l_vf))
+	if ((dev->last_file == (struct file *)frame_info->dmabuf) && (is_dec_vf || is_v4l_vf))
 		is_repeat_vf = true;
 
 	if (is_repeat_vf) {
@@ -1255,53 +1281,48 @@ int video_display_setframe(int layer_index,
 
 	vf = &vd_prepare->dst_frame;
 
+	vf->vc_private = vc_private_q_pop(dev);
 	vf->axis[0] = frame_info->dst_x;
 	vf->axis[1] = frame_info->dst_y;
 	vf->axis[2] = frame_info->dst_w + frame_info->dst_x - 1;
 	vf->axis[3] = frame_info->dst_h + frame_info->dst_y - 1;
 	vf->crop[0] = frame_info->crop_y;
 	vf->crop[1] = frame_info->crop_x;
-	vf->crop[2] = frame_info->buffer_h
-		- frame_info->crop_h
-		- frame_info->crop_y;
-	vf->crop[3] = frame_info->buffer_w
-		- frame_info->crop_w
-		- frame_info->crop_x;
+	vf->crop[2] = frame_info->buffer_h - frame_info->crop_h - frame_info->crop_y;
+	vf->crop[3] = frame_info->buffer_w - frame_info->crop_w - frame_info->crop_x;
 	vf->zorder = frame_info->zorder;
-	vf->flag |= VFRAME_FLAG_VIDEO_COMPOSER
-		| VFRAME_FLAG_VIDEO_COMPOSER_BYPASS;
+	vf->flag |= VFRAME_FLAG_VIDEO_COMPOSER | VFRAME_FLAG_VIDEO_COMPOSER_BYPASS;
 	vf->disp_pts = 0;
 
 	if (!(is_dec_vf || is_v4l_vf)) {
 		vf->flag |= VFRAME_FLAG_VIDEO_LINEAR;
+		vf->plane_num = 1;
 		vf->canvas0Addr = -1;
-		vf->canvas0_config[0].phy_addr =
-			get_dma_phy_addr(frame_info->dmabuf, dev);
-			vf->canvas0_config[0].width =
-					frame_info->buffer_w;
-			vf->canvas0_config[0].height =
-					frame_info->buffer_h;
-			vc_print(dev->index, PRINT_PATTERN,
+		vf->canvas0_config[0].phy_addr = get_dma_phy_addr(frame_info->dmabuf, dev);
+		vf->canvas0_config[0].width = frame_info->buffer_w;
+		vf->canvas0_config[0].height = frame_info->buffer_h;
+		vc_print(dev->index, PRINT_PATTERN,
 				 "buffer: w %d, h %d.\n",
 				 frame_info->buffer_w,
 				 frame_info->buffer_h);
+		vf->canvas0_config[0].endian = 0;
 		vf->canvas1Addr = -1;
-		vf->canvas0_config[1].phy_addr =
-			get_dma_phy_addr(frame_info->dmabuf, dev)
-			+ vf->canvas0_config[0].width
-			* vf->canvas0_config[0].height;
-		vf->canvas0_config[1].width =
-			vf->canvas0_config[0].width;
-		vf->canvas0_config[1].height =
-			vf->canvas0_config[0].height;
+		if ((frame_info->reserved[0] & VIDTYPE_VIU_NV12) ||
+			(frame_info->reserved[0] & VIDTYPE_VIU_NV21)) {
+			phy_addr2 = get_dma_phy_addr(frame_info->dmabuf, dev) +
+				frame_info->buffer_w * frame_info->buffer_h;
+			vf->plane_num = 2;
+			vf->canvas0_config[1].phy_addr = phy_addr2;
+			vf->canvas0_config[1].width = frame_info->buffer_w;
+			vf->canvas0_config[1].height = frame_info->buffer_h / 2;
+			vf->canvas0_config[1].block_mode = CANVAS_BLKMODE_LINEAR;
+			/*big endian default support*/
+			vf->canvas0_config[1].endian = 0;
+		}
 		vf->width = frame_info->buffer_w;
 		vf->height = frame_info->buffer_h;
-		vf->plane_num = 2;
-		vf->type = VIDTYPE_PROGRESSIVE
-				| VIDTYPE_VIU_FIELD
-				| VIDTYPE_VIU_NV21;
-		vf->bitdepth =
-			BITDEPTH_Y8 | BITDEPTH_U8 | BITDEPTH_V8;
+		vf->type = frame_info->reserved[0];
+		vf->bitdepth = BITDEPTH_Y8 | BITDEPTH_U8 | BITDEPTH_V8;
 	}
 
 	if (is_repeat_vf) {
@@ -1315,6 +1336,9 @@ int video_display_setframe(int layer_index,
 	vf->file_vf = (struct file *)(frame_info->dmabuf);
 	vf->repeat_count[dev->index] = 0;
 	dev->vd_prepare_last = vd_prepare;
+
+	video_dispaly_push_ready(dev, vf);
+
 	if (!kfifo_put(&dev->ready_q, (const struct vframe_s *)vf)) {
 		vc_print(layer_index, PRINT_ERROR,
 			"%s: ready_q is full.\n",
@@ -1381,6 +1405,10 @@ int mbd_video_display_setframe(int layer_index,
 	}
 
 	vf = &vd_prepare->dst_frame;
+	vf->vc_private = vc_private_q_pop(dev);
+	if (!vf->vc_private)
+		return -ENOMEM;
+
 	vf->vc_private->lock_buffer_cb = frame_info->lock_buffer_cb;
 	vf->vc_private->unlock_buffer_cb = frame_info->unlock_buffer_cb;
 	vf->vc_private->lock_buffer_cb((void *)frame_info->buffer_info);
@@ -1390,17 +1418,12 @@ int mbd_video_display_setframe(int layer_index,
 	vf->axis[3] = frame_info->dst_h + frame_info->dst_y - 1;
 	vf->crop[0] = frame_info->crop_y;
 	vf->crop[1] = frame_info->crop_x;
-	vf->crop[2] = frame_info->buffer_h
-			- frame_info->crop_h
-			- frame_info->crop_y;
-	vf->crop[3] = frame_info->buffer_w
-			- frame_info->crop_w
-			- frame_info->crop_x;
+	vf->crop[2] = frame_info->buffer_h - frame_info->crop_h - frame_info->crop_y;
+	vf->crop[3] = frame_info->buffer_w - frame_info->crop_w - frame_info->crop_x;
 	vf->zorder = frame_info->zorder;
 	vf->disp_pts = 0;
 	vf->flag |= VFRAME_FLAG_VIDEO_COMPOSER | VFRAME_FLAG_VIDEO_COMPOSER_DMA
-		| VFRAME_FLAG_VIDEO_COMPOSER_BYPASS;
-	vf->flag |= VFRAME_FLAG_VIDEO_LINEAR;
+		| VFRAME_FLAG_VIDEO_COMPOSER_BYPASS | VFRAME_FLAG_VIDEO_LINEAR;
 	vf->canvas0Addr = -1;
 	vf->canvas1Addr = -1;
 	for (i = 0; i < 3; i++) {
@@ -1427,6 +1450,9 @@ int mbd_video_display_setframe(int layer_index,
 	vf->file_vf = (struct file *)(frame_info->buffer_info);
 	vf->repeat_count[dev->index] = 0;
 	dev->vd_prepare_last = vd_prepare;
+
+	video_dispaly_push_ready(dev, vf);
+
 	if (!kfifo_put(&dev->ready_q, (const struct vframe_s *)vf)) {
 		vc_print(layer_index, PRINT_ERROR,
 			"%s: ready_q is full.\n",

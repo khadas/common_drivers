@@ -1365,10 +1365,8 @@ struct file_private_data *v4lvideo_get_file_private_data(struct file *file_vf,
 		pr_err("v4lvideo: get_file_private_data fail\n");
 		return NULL;
 	}
-
 	if (is_v4lvideo_buf_file(file_vf))
 		is_v4lvideo_fd = true;
-
 	if (is_v4lvideo_fd) {
 		file_private_data =
 			(struct file_private_data *)(file_vf->private_data);

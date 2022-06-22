@@ -372,17 +372,17 @@
 			no-sdio;
 		};
 
-		mtd_nand: nfc@ffe07800 {
+		mtd_nand: nfc@fe08d000 {
 			compatible = "amlogic,meson-nfc-single-ecc";
 			status = "disabled";
-			reg = <0xfe012800 0x200>;
+			reg = <0xfe08d000 0x200>;
 			interrupts = <GIC_SPI 87 IRQ_TYPE_EDGE_RISING>;
 
-			//clocks = <&clkc CLKID_SD_EMMC_C>,
-			//		 <&clkc CLKID_FCLK_DIV2>;
-			//clock-names = "gate", "fdiv2pll";
-			nand_clk_ctrl = <0xfe012000>;
-			//power-domains = <&pwrdm PDID_CX_SDEMMC_C>;
+			clocks = <&clkc CLKID_SYS_SD_EMMC_C>,
+					 <&clkc CLKID_FCLK_DIV2>;
+			clock-names = "gate", "fdiv2pll";
+			nand_clk_ctrl = <0xfe08c000>;
+			power-domains = <&pwrdm PDID_C3_EMMC>;
 		};
 
 		spifc: spi@fe056000 {

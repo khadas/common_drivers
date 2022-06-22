@@ -691,26 +691,26 @@
 				};
 			};
 
-			spicc0: spi@3800 {
+			spicc0: spi@50000 {
 				compatible = "amlogic,meson-g12-spicc";
-				reg = <0x3800 0x44>;
-				interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
+				reg = <0x50000 0x44>;
+				interrupts = <GIC_SPI 183 IRQ_TYPE_LEVEL_HIGH>;
 				clock-names = "core", "async";
-				//clocks = <&clkc CLKID_SPICC_A>,
-				//	 <&clkc CLKID_SPICC_A_GATE>;
+				clocks = <&clkc CLKID_SYS_SPICC_0>,
+					 <&clkc CLKID_SPICC_A>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				//power-domains = <&pwrdm PDID_CX_SPICC>;
 				status = "disabled";
 			};
 
-			spicc1: spi@3c00 {
+			spicc1: spi@52000 {
 				compatible = "amlogic,meson-g12-spicc";
-				reg = <0x3c00 0x44>;
-				interrupts = <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>;
+				reg = <0x52000 0x44>;
+				interrupts = <GIC_SPI 184 IRQ_TYPE_LEVEL_HIGH>;
 				clock-names = "core", "async";
-				//clocks = <&clkc CLKID_SPICC_B>,
-				//	 <&clkc CLKID_SPICC_B_GATE>;
+				clocks = <&clkc CLKID_SYS_SPICC_1>,
+					 <&clkc CLKID_SPICC_B>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				//power-domains = <&pwrdm PDID_CX_SPICC_B>;
@@ -1765,7 +1765,7 @@
 	aml_dma: aml_dma@0xfe440400 {
 		compatible = "amlogic,aml_p1_dma";
 		reg = <0xfe440400 0x48>;
-		interrupts = <GIC_SPI 184 IRQ_TYPE_EDGE_RISING>;
+		interrupts = <GIC_SPI 61 IRQ_TYPE_EDGE_RISING>;
 		aml_aes {
 				compatible = "amlogic,aes_g12a_dma";
 				dev_name = "aml_aes_dma";
@@ -2745,9 +2745,9 @@
 
 	spicc0_pins1: spicc0_pins1 {
 		mux {
-			groups = "spi_a_mosi_a",
-				 "spi_a_miso_a",
-				 "spi_a_sclk_a";
+			groups = "spi_a_mosi_b",
+				 "spi_a_miso_b",
+				 "spi_a_clk_b";
 			function = "spi_a";
 			drive-strength-microamp = <3000>;
 		};
@@ -2757,7 +2757,17 @@
 		mux {
 			groups = "spi_a_mosi_c",
 				 "spi_a_miso_c",
-				 "spi_a_sclk_c";
+				 "spi_a_clk_c";
+			function = "spi_a";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	spicc0_pins3: spicc0_pins3 {
+		mux {
+			groups = "spi_a_mosi_x",
+				 "spi_a_miso_x",
+				 "spi_a_clk_x";
 			function = "spi_a";
 			drive-strength-microamp = <3000>;
 		};
@@ -2765,9 +2775,9 @@
 
 	spicc1_pins1: spicc1_pins1 {
 		mux {
-			groups = "spi_b_mosi_a",
-				 "spi_b_miso_a",
-				 "spi_b_sclk_a";
+			groups = "spi_b_mosi_d",
+				 "spi_b_miso_d",
+				 "spi_b_clk_d";
 			function = "spi_b";
 			drive-strength-microamp = <3000>;
 		};
@@ -2777,7 +2787,7 @@
 		mux {
 			groups = "spi_b_mosi_x",
 				 "spi_b_miso_x",
-				 "spi_b_sclk_x";
+				 "spi_b_clk_x";
 			function = "spi_b";
 			drive-strength-microamp = <3000>;
 		};

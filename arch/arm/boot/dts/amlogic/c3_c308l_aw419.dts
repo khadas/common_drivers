@@ -1169,11 +1169,18 @@
 	status = "okay";
 };
 
+&spicc0 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spicc0_pins3>;
+	cs-gpios = <&gpio GPIOX_3 0>;
+};
+
 &spicc1 {
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc1_pins1>;
-	//cs-gpios = <&gpio GPIOA_14 0>;
+	cs-gpios = <&gpio GPIOD_5 0>;
 };
 
 &freertos {

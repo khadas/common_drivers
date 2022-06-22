@@ -747,12 +747,12 @@
 				timeout-sec = <60>;
 			};
 
-			irblaster: meson-irblaster@110c {
+			irblaster: meson-irblaster@8410c {
 				compatible = "amlogic, meson_irblaster";
 				status = "disabled";
-				reg = <0x110c 0x10>;
+				reg = <0x8410c 0x10>;
 				#irblaster-cells = <2>;
-				interrupts = <GIC_SPI 51 IRQ_TYPE_EDGE_RISING>;
+				interrupts = <GIC_SPI 23 IRQ_TYPE_EDGE_RISING>;
 				//power-domains = <&pwrdm PDID_CX_IR>;
 			};
 
@@ -2398,16 +2398,9 @@
 		};
 	};
 
-	irblaster_pins1:irblaster_pin1 {
+	irblaster_pins:irblaster_pin {
 		mux {
-			groups = "ir_out_d4";
-			function = "ir_out";
-		};
-	};
-
-	irblaster_pins2:irblaster_pin2 {
-		mux {
-			groups = "ir_out_d9";
+			groups = "ir_out";
 			function = "ir_out";
 		};
 	};

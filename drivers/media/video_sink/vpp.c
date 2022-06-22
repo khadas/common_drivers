@@ -3959,6 +3959,8 @@ static int vpp_set_filters_no_scaler_internal
 		return vppfilter_fail;
 	if (vpp_flags & VPP_FLAG_MORE_LOG)
 		cur_super_debug = super_debug;
+	if (input->layer_id == 0 && (vpp_flags & VPP_FLAG_FROM_TOGGLE_FRAME))
+		cur_vf_type = vf->type;
 
 	video_layer_global_offset_x = input->global_offset_x;
 	video_layer_global_offset_y = input->global_offset_y;

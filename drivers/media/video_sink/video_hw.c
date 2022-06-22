@@ -11183,7 +11183,7 @@ static void video_hw_init_c3(void)
 	vd1_matrix = YUV2RGB;
 	WRITE_VCBUS_REG
 		(vd_layer[0].vd_mif_reg.vd_if0_luma_fifo_size,
-		0xc0);
+		0x60);
 #ifdef CONFIG_AMLOGIC_VPU
 	vd1_vpu_dev = vpu_dev_register(VPU_VIU_VD1, "VD1");
 #endif

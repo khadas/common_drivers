@@ -346,6 +346,7 @@ int set_vout_mode(char *name)
 
 	return ret;
 }
+EXPORT_SYMBOL(set_vout_mode);
 
 static int set_vout_init_mode(void)
 {

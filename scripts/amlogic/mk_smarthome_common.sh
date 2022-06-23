@@ -184,7 +184,7 @@ if [[ $ARCH == arm64 ]]; then
 	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
 	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} Image -j12 &&
 	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
-	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
+	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} INSTALL_MOD_STRIP=1 modules_install -j12 &&
 	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
 else
@@ -192,7 +192,7 @@ else
 	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
 	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} uImage -j12 &&
 	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
-	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
+	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} INSTALL_MOD_STRIP=1 modules_install -j12 &&
 	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm/configs/${DEFCONFIG}
 fi
@@ -210,6 +210,7 @@ function build_ext_modules() {
 				O=${OUT_DIR} ${TOOL_ARGS} ${MODULE_STRIP_FLAG}		\
 				INSTALL_MOD_PATH=${MODULES_STAGING_DIR}			\
 				INSTALL_MOD_DIR="extra/${EXT_MOD}"			\
+				INSTALL_MOD_STRIP=1					\
 				modules_install -j12 || exit
 		set +x
 	done

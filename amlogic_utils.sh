@@ -146,19 +146,6 @@ function extra_cmds() {
 
 	set +x
 	modules_install
-
-	pushd ${DIST_DIR}
-	if [[ -n ${ANDROID_PROJECT} ]]; then
-		#modules_modules=`ls modules/*.ko`
-		ramdisk_modules=`ls modules/ramdisk/*.ko`
-		vendor_modules=`ls modules/vendor/*.ko`
-		ext_modules=`ls ext_modules/*.ko`
-		strip_modules=(${modules_modules[@]} ${ramdisk_modules[@]} ${vendor_modules[@]} ${ext_modules[@]})
-		for module in ${strip_modules[@]}; do
-			 ${ROOT_DIR}/${CLANG_PREBUILT_BIN}/llvm-objcopy --strip-debug ${module}
-		done
-	fi
-	popd
 	set -x
 
 	local src_dir=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
@@ -467,22 +454,6 @@ function rebuild_rootfs() {
 		cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/customer . -rf
 	fi
 	cp -rf ../../modules .
-
-	#modules_modules=`ls modules/*.ko`
-	ramdisk_modules=`ls modules/ramdisk/*.ko`
-	vendor_modules=`ls modules/vendor/*.ko`
-	strip_modules=(${modules_modules[@]} ${ramdisk_modules[@]} ${vendor_modules[@]})
-	if [[ -n ${LLVM} ]]; then
-		for module in ${strip_modules[@]}; do
-			 ${ROOT_DIR}/${CLANG_PREBUILT_BIN}/llvm-objcopy --strip-debug ${module}
-		done
-	elif [[ -n ${CROSS_COMPILE} ]]; then
-		for module in ${strip_modules[@]}; do
-			 ${CROSS_COMPILE}objcopy --strip-debug ${module}
-		done
-	else
-		echo "can't find compile tool"
-	fi
 
 	find . | cpio -o -H newc | gzip > ../rootfs_new.cpio.gz
 	cd ../

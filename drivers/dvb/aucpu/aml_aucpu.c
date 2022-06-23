@@ -1216,11 +1216,9 @@ static s32 aucpu_mem_device_init(struct reserved_mem *rmem,
 
 static s32 aucpu_probe(struct platform_device *pdev)
 {
-	s32 err = 0, irq, reg_count, idx;
-	struct resource res;
-	struct device_node *np, *child;
+	s32 err = 0, irq, idx;
 	struct aucpu_ctx_t *pctx;
-
+	struct resource *res;
 	aucpu_pr(LOG_DEBUG, "%s\n", __func__);
 
 	s_aucpu_major = 0;
@@ -1240,7 +1238,6 @@ static s32 aucpu_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	memset(&res, 0, sizeof(struct resource));
 	pctx = s_aucpu_ctx;
 
 	idx = of_reserved_mem_device_init(&pdev->dev);
@@ -1260,48 +1257,37 @@ static s32 aucpu_probe(struct platform_device *pdev)
 	s_aucpu_irq = irq;
 	aucpu_pr(LOG_DEBUG, "Aucpu ->irq: %d\n", s_aucpu_irq);
 
-	reg_count = 0;
-	np = pdev->dev.of_node;
-	for_each_child_of_node(np, child) {
-		if (of_address_to_resource(child, 0, &res) ||
-		    reg_count > 1) {
-			aucpu_pr(LOG_ERROR,
-				 "no reg ranges or more reg ranges %d\n",
-				 reg_count);
-			err = -ENXIO;
-			goto ERROR_PROVE_DEVICE;
-		}
-		/* if platform driver is implemented */
-		if (res.start != 0) {
-			pctx->aucpu_reg.phys_addr = res.start;
-			pctx->aucpu_reg.base =
-				(ulong)ioremap(res.start,
-				resource_size(&res));
-			pctx->aucpu_reg.size = res.end - res.start;
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
-			aucpu_pr(LOG_DEBUG,
-				 "aucpu base address get from platfor");
-			aucpu_pr(LOG_DEBUG,
-				 " physical addr=0x%lx, base addr=0x%lx\n",
-				 pctx->aucpu_reg.phys_addr,
-				 pctx->aucpu_reg.base);
-		} else {
-			pctx->aucpu_reg.phys_addr = AUCPU_REG_BASE_ADDR;
-			pctx->aucpu_reg.base =
-				(ulong)ioremap(pctx->aucpu_reg.phys_addr,
-				AUCPU_REG_SIZE);
+	/* if platform driver is implemented */
+	if (res->start != 0) {
+		pctx->aucpu_reg.phys_addr = res->start;
+		pctx->aucpu_reg.base =
+			(ulong)ioremap(res->start,
+			resource_size(res));
+		pctx->aucpu_reg.size = res->end - res->start;
 
-			pctx->aucpu_reg.size = AUCPU_REG_SIZE;
-			aucpu_pr(LOG_DEBUG,
-				 "aucpu base address get from defined value ");
-			aucpu_pr(LOG_DEBUG,
-				 "physical addr=0x%lx, base addr=0x%lx\n",
-				 pctx->aucpu_reg.phys_addr,
-				 pctx->aucpu_reg.base);
-		}
-		s_aucpu_register_base = pctx->aucpu_reg.base;
-		reg_count++;
+		aucpu_pr(LOG_DEBUG,
+			 "aucpu base address get from platfor");
+		aucpu_pr(LOG_DEBUG,
+			 " physical addr=0x%lx, base addr=0x%lx\n",
+			 pctx->aucpu_reg.phys_addr,
+			 pctx->aucpu_reg.base);
+	} else {
+		pctx->aucpu_reg.phys_addr = AUCPU_REG_BASE_ADDR;
+		pctx->aucpu_reg.base =
+			(ulong)ioremap(pctx->aucpu_reg.phys_addr,
+			AUCPU_REG_SIZE);
+
+		pctx->aucpu_reg.size = AUCPU_REG_SIZE;
+		aucpu_pr(LOG_DEBUG,
+			 "aucpu base address get from defined value ");
+		aucpu_pr(LOG_DEBUG,
+			 "physical addr=0x%lx, base addr=0x%lx\n",
+			 pctx->aucpu_reg.phys_addr,
+			 pctx->aucpu_reg.base);
 	}
+
 	/* get the major number of the character device */
 	if (init_Aucpu_device()) {
 		err = -EBUSY;

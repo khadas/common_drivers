@@ -716,7 +716,7 @@ static unsigned int aml_sd_emmc_clktest(struct mmc_host *mmc)
 		else
 			delay_cell = (cycle / count);
 	}
-	pr_debug("%s [%d] clktest : %u, delay_cell: %d, count: %u\n",
+	pr_info("%s [%d] clktest : %u, delay_cell: %d, count: %u\n",
 		__func__, __LINE__, clktest, delay_cell, count);
 	intf3 = readl(host->regs + SD_EMMC_INTF3);
 	intf3 &= ~CLKTEST_ON_M;

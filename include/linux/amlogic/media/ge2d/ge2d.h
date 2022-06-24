@@ -1293,6 +1293,8 @@ void ge2d_set_src1_scale_coef(unsigned int v_filt_type,
 void ge2d_set_gen(struct ge2d_gen_s *cfg);
 void ge2d_soft_rst(void);
 void ge2d_dma_reset(void);
+unsigned int ge2d_queue_cnt(void);
+bool ge2d_queue_empty(void);
 bool ge2d_is_busy(void);
 int ge2d_cmd_fifo_full(void);
 

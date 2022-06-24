@@ -1456,6 +1456,22 @@ void ge2d_wait_done(void)
 		;
 }
 
+unsigned int ge2d_queue_cnt(void)
+{
+	return ge2d_reg_read(GE2D_AXI2DMA_STATUS);
+}
+
+bool ge2d_queue_empty(void)
+{
+	int ret = false;
+
+	/* cmd queue is empty */
+	if (!ge2d_queue_cnt())
+		ret = true;
+
+	return ret;
+}
+
 bool ge2d_is_busy(void)
 {
 	if (ge2d_reg_read(GE2D_STATUS0) & 1)

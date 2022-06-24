@@ -325,6 +325,10 @@ static void ge2d_dump_cmd(struct ge2d_cmd_s *cfg)
 
 	ge2d_log_dbg("GE2D_STATUS0=0x%x\n", ge2d_reg_read(GE2D_STATUS0));
 	ge2d_log_dbg("GE2D_STATUS1=0x%x\n", ge2d_reg_read(GE2D_STATUS1));
+
+	if (ge2d_meson_dev.cmd_queue_mode)
+		ge2d_log_dbg("frame:%d residual in the buffer\n",
+			     ge2d_reg_read(GE2D_AXI2DMA_STATUS));
 }
 
 static void ge2d_set_canvas(struct ge2d_config_s *cfg)
@@ -698,7 +702,7 @@ static int ge2d_process_work_queue(struct ge2d_context_s *wq)
 	struct list_head  *head = &wq->work_queue, *pos;
 	int ret = 0;
 	unsigned int block_mode;
-	int timeout = 0, is_cmd_queue_item;
+	int timeout = 0, cmd_queue_mode, residual_cnt0, residual_cnt1;
 
 	if (!wq) {
 		ge2d_log_err("wq is null\n");
@@ -730,8 +734,8 @@ static int ge2d_process_work_queue(struct ge2d_context_s *wq)
 
 	do {
 		/* process a cmd or a cmd queue */
-		is_cmd_queue_item = is_cmd_queue(pitem);
-		if (is_cmd_queue_item && is_cmd_queue_ready(pitem)) {
+		cmd_queue_mode = is_cmd_queue(pitem);
+		if (cmd_queue_mode && is_cmd_queue_ready(pitem)) {
 			pos = ge2d_process_cmd_queue(wq, pitem);
 			pitem = (struct ge2d_queue_item_s *)pos;
 		} else {
@@ -745,23 +749,47 @@ static int ge2d_process_work_queue(struct ge2d_context_s *wq)
 		/* list_move_tail(&pitem->list,&wq->free_queue); */
 		/* spin_unlock(&wq->lock); */
 
-		while (ge2d_is_busy()) {
-			timeout = wait_event_interruptible_timeout
+		if (!cmd_queue_mode) {
+			while (ge2d_is_busy()) {
+				timeout = wait_event_interruptible_timeout
 					(ge2d_manager.event.cmd_complete,
 					 !ge2d_is_busy(),
 					 msecs_to_jiffies(1000));
-			if (timeout == 0) {
-				ge2d_log_err("ge2d timeout!!!\n");
-				ge2d_dump_cmd(&pitem->cmd);
-				if (ge2d_meson_dev.cmd_queue_mode) {
-					ge2d_dma_reset();
-					backup_init_regs = 1;
+				if (timeout == 0) {
+					ge2d_log_err("ge2d timeout!!!\n");
+					ge2d_dump_cmd(&pitem->cmd);
+					if (ge2d_meson_dev.cmd_queue_mode) {
+						ge2d_dma_reset();
+						backup_init_regs = 1;
+					}
+					ge2d_soft_rst();
+					break;
 				}
-				ge2d_soft_rst();
-				break;
+			}
+		} else {
+			while (!ge2d_queue_empty()) {
+				residual_cnt0 = ge2d_queue_cnt();
+				timeout = wait_event_interruptible_timeout
+					(ge2d_manager.event.cmd_complete,
+					 ge2d_queue_empty(),
+					 msecs_to_jiffies(1000));
+				residual_cnt1 = ge2d_queue_cnt();
+				if (timeout == 0 &&
+				    residual_cnt0 == residual_cnt1 &&
+				    residual_cnt0 != 0) {
+					ge2d_log_err("ge2d timeout!!!\n");
+					ge2d_dump_cmd(&pitem->cmd);
+					if (ge2d_meson_dev.cmd_queue_mode) {
+						ge2d_dma_reset();
+						backup_init_regs = 1;
+					}
+					ge2d_soft_rst();
+					break;
+				}
 			}
 		}
-		if (is_cmd_queue_item)
+
+		if (cmd_queue_mode)
 			stop_cmd_queue_process();
 
 		/* release clut8_data */
@@ -1232,25 +1260,24 @@ static int setup_display_property(struct src_dst_para_s *src_dst, int index)
 
 int ge2d_set_clut_table(struct ge2d_context_s *context, unsigned long args)
 {
-	struct ge2d_clut8_t *clut8_table_t;
+	struct ge2d_clut8_t clut8_table_t;
 	void __user *argp = (void __user *)args;
 	u32 *data;
 	int ret;
 
-	clut8_table_t = kmalloc(sizeof(struct ge2d_clut8_t), GFP_KERNEL);
-	ret = copy_from_user(clut8_table_t, (struct ge2d_clut8_t *)argp,
+	ret = copy_from_user(&clut8_table_t, (struct ge2d_clut8_t *)argp,
 				 sizeof(struct ge2d_clut8_t));
 	if (ret) {
 		ge2d_log_dbg("ge2d error: clut8_data, copy_from_user fail\n");
 		return -1;
 	}
-	if (clut8_table_t->count > 0 && clut8_table_t->count <= 256) {
-		data = kcalloc(clut8_table_t->count, sizeof(u32), GFP_KERNEL);
+	if (clut8_table_t.count > 0 && clut8_table_t.count <= 256) {
+		data = kcalloc(clut8_table_t.count, sizeof(u32), GFP_KERNEL);
 		if (!data)
 			return -1;
-		memcpy(data, &clut8_table_t->data, clut8_table_t->count * sizeof(u32));
+		memcpy(data, &clut8_table_t.data, clut8_table_t.count * sizeof(u32));
 		context->config.clut8_table.data = data;
-		context->config.clut8_table.count = clut8_table_t->count;
+		context->config.clut8_table.count = clut8_table_t.count;
 	} else {
 		ge2d_log_dbg("ge2d error: clut8_count, out of range\n");
 		return -1;

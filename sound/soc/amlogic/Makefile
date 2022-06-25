@@ -18,6 +18,7 @@ $(MODULE_NAME)-y += sound_init.o
 
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/clks/clk-sm1.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/clks/clk-a1.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/clks/clk-sc2.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/clks/clk-c3.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/clks/audio_clks.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += auge/audio_controller.o

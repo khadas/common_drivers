@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
-comment "I2C RTC drivers"
+comment "RTC drivers"
 
 if RTC_CLASS
 
@@ -17,5 +17,13 @@ config AMLOGIC_RTC_DRV_MESON_VRTC
 	  This driver can also be built as a module. If so, the module
 	  will be called rtc-meson-vrtc.
 
+config AMLOGIC_MESON_RTC
+	tristate "Amlogic Meson RTC driver"
+	default n
+	help
+	  This is the Amlogic rtc driver.
+
+	  This driver can also be built as a module. If so, the module
+	  will be called meson-rtc.
 
 endif # RTC_CLASS

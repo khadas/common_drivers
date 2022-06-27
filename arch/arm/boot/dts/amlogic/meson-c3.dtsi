@@ -1588,10 +1588,20 @@
 		};
 	};
 
-	vrtc: rtc@0xfe005a88 {
+	vrtc: rtc@0xfe010288 {
 		compatible = "amlogic,meson-vrtc";
-		reg = <0xfe005a88 0x4>; //SYSCTRL_STATUS_REG2
+		reg = <0xfe010288 0x4>; //SYSCTRL_STATUS_REG2
 		status = "disabled";
+	};
+
+	rtc: rtc@0xfe09a000 {
+		compatible = "amlogic,meson-rtc";
+		reg = <0xfe09a000 0x38>;
+		interrupts = <GIC_SPI 131 IRQ_TYPE_EDGE_RISING>;
+		status = "okay";
+		clocks = <&clkc CLKID_RTC_CLK>;
+		clock-names = "rtc_clk";
+		osc_freq = <32768>;
 	};
 
 	jpegenc {

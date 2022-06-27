@@ -126,8 +126,8 @@ static void check_violation(struct dmc_monitor *mon, void *io)
 	char title[10] = "";
 	char id_str[MAX_NAME];
 	int port, subport;
-	unsigned long addr;
-	unsigned long status, irqreg;
+	unsigned long irqreg;
+	unsigned long addr = 0, status = 0;
 	struct page *page;
 	struct page_trace *trace;
 

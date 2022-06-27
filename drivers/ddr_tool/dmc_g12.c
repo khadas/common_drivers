@@ -67,7 +67,8 @@ static size_t g12_dmc_dump_reg(char *buf)
 static void check_violation(struct dmc_monitor *mon, void *data)
 {
 	int port, subport;
-	unsigned long addr, status, irqreg;
+	unsigned long irqreg;
+	unsigned long addr = 0, status = 0;
 	char id_str[MAX_NAME];
 	char title[10] = "";
 	char off1, off2;
@@ -164,13 +165,15 @@ static void g12_dmc_mon_irq(struct dmc_monitor *mon, void *data)
 static int g12_dmc_mon_set(struct dmc_monitor *mon)
 {
 	unsigned long value, end;
+	unsigned int wb;
 
 	/* aligned to 64KB */
+	wb = mon->addr_start & 0x01;
 	end = ALIGN(mon->addr_end, DMC_ADDR_SIZE);
 	value = (mon->addr_start >> 16) | ((end >> 16) << 16);
 	dmc_prot_rw(NULL, DMC_PROT0_RANGE, value, DMC_WRITE);
 
-	value = (1 << 24) | mon->device;
+	value = (wb << 25) | (1 << 24) | mon->device;
 	dmc_prot_rw(NULL, DMC_PROT0_CTRL, value, DMC_WRITE);
 
 	pr_emerg("range:%08lx - %08lx, device:%llx\n",

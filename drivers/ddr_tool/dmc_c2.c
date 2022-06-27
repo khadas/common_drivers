@@ -93,7 +93,8 @@ static int get_c2_port(unsigned int awuser)
 static void check_violation(struct dmc_monitor *mon, void *data)
 {
 	int port, subport;
-	unsigned long addr, status, irqreg;
+	unsigned long irqreg;
+	unsigned long addr = 0, status = 0;
 	char title[10] = "";
 	char id_str[4];
 	struct page *page;
@@ -191,15 +192,17 @@ static void c2_dmc_mon_irq(struct dmc_monitor *mon, void *data)
 static int c2_dmc_mon_set(struct dmc_monitor *mon)
 {
 	unsigned long value, end;
+	unsigned int wb;
 
 	/* aligned to 64KB */
+	wb = mon->addr_start & 0x01;
 	end = ALIGN(mon->addr_end, DMC_ADDR_SIZE);
 	value = (mon->addr_start >> 16) | ((end >> 16) << 16);
 	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_RANGE, value, DMC_WRITE);
 	// dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT1_RANGE, value, DMC_WRITE);
 
 	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_CTRL, mon->device, DMC_WRITE);
-	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_CTRL1, 1 << 24, DMC_WRITE);
+	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_CTRL1, wb << 25 | 1 << 24, DMC_WRITE);
 	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT_IRQ_CTRL, 0x06, DMC_WRITE);
 
 	// dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT1_CTRL, mon->device, DMC_WRITE);

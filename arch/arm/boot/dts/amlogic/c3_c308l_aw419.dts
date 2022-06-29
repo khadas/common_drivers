@@ -192,7 +192,7 @@
 		#sound-dai-cells = <0>;
 		compatible = "amlogic, c3_acodec";
 		status = "okay";
-		reg = <0xFE01A000 0x1c>;
+		reg = <0xFE01A000 0x20>;
 		tdmout_index = <0>;
 		tdmin_index = <0>;
 		dat0_ch_sel = <0>;
@@ -206,7 +206,7 @@
 		aml-audio-card,name = "AML-AUGESOUND";
 
 		/*avout mute gpio*/
-		avout_mute-gpios = <&gpio GPIOD_1 GPIO_ACTIVE_HIGH>;
+		avout_mute-gpios = <&gpio GPIOD_0 GPIO_ACTIVE_HIGH>;
 
 		aml-audio-card,dai-link@0 {
 			format = "i2s"; //"dsp_a";
@@ -261,7 +261,7 @@
 				system-clock-frequency = <12288000>;
 			};
 			tdmbcodec: codec {
-				sound-dai = <&dummy_codec>; //&tas5707_1b &tas5707_1d>;
+				sound-dai = <&dummy_codec>;
 			};
 		};
 
@@ -535,7 +535,6 @@
 				&tdma_d1_pins>;
 		//power-domains = <&pwrdm PDID_CX_AUDIO>;
 		/* tdmin data comes from ACODEC adc */
-		//acodec_adc = <1>;
 		tdmin-src-name = "acodec_adc";
 
 		status = "okay";
@@ -659,8 +658,8 @@
 		status = "okay";
 	};
 
-	asrcb: resample@1 {
-		compatible = "amlogic, c2-resample-b";
+	asrca: resample@0 {
+		compatible = "amlogic, t5-resample-a";
 		clocks = <&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_MCLK_D
 			&clkaudio CLKID_AUDIO_RESAMPLE_A>;
@@ -673,11 +672,11 @@
 		/* hifi pll rate */
 		src-clk-freq = <1155072000>;
 
-		status = "disabled";
+		status = "okay";
 	};
 
 	loopback: loopback {
-		compatible = "amlogic, a5-loopbacka";
+		compatible = "amlogic, c3-loopbacka";
 		#sound-dai-cells = <0>;
 
 		original-src = <&pdm>;
@@ -689,7 +688,7 @@
 			&clkaudio CLKID_AUDIO_PDMIN0
 			&clkaudio CLKID_AUDIO_PDMIN1
 			&clkc CLKID_HIFI_PLL
-			&clkaudio CLKID_AUDIO_MCLK_C>;
+			&clkaudio CLKID_AUDIO_MCLK_B>;
 		clock-names = "pdm_gate",
 			"pdm_sysclk_srcpll",
 			"pdm_dclk_srcpll",
@@ -751,13 +750,13 @@
 		 * 3:spdifout
 		 * 4:spdifout_b
 		 */
-		eqdrc_module = <1>;
+		eqdrc_module = <0>;
 		/* max 0xf, each bit for one lane, usually one lane */
 		lane_mask = <0x1>;
 		/* max 0xff, each bit for one channel */
 		channel_mask = <0x3>;
 		//power-domains = <&pwrdm PDID_CX_AUDIO>;
-		status = "disabled";
+		status = "okay";
 	};
 }; /* end of audiobus */
 /* Audio Related end */
@@ -939,7 +938,7 @@
 
 &ir {
 	status = "okay";
-	pinctrl-0 = <&remote_pins>;
+	//pinctrl-0 = <&remote_pins>;
 	pinctrl-names = "default";
 };
 

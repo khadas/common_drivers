@@ -47,7 +47,7 @@ struct mux_conf lb_srcs_v3[] = {
 	AUDIO_SRC_CONFIG("tdmin_lb", 6, EE_AUDIO_LB_A_CTRL2, 20, 0x1f),
 	AUDIO_SRC_CONFIG("loopback_a", 7, EE_AUDIO_LB_A_CTRL2, 20, 0x1f),
 	AUDIO_SRC_CONFIG("resample_a", 13, EE_AUDIO_LB_A_CTRL2, 20, 0x1f),
-	AUDIO_SRC_CONFIG("resample_b", 13, EE_AUDIO_LB_A_CTRL2, 20, 0x1f),
+	AUDIO_SRC_CONFIG("resample_b", 14, EE_AUDIO_LB_A_CTRL2, 20, 0x1f),
 	AUDIO_SRC_CONFIG("vad", 29, EE_AUDIO_LB_A_CTRL2, 20, 0x1f),
 	AUDIO_SRC_CONFIG("tdmin_c", 30, EE_AUDIO_LB_A_CTRL2, 20, 0x1f),
 	AUDIO_SRC_CONFIG("pdmin", 31, EE_AUDIO_LB_A_CTRL2, 20, 0x1f),
@@ -74,6 +74,7 @@ struct mux_conf tdmin_lb_srcs_v2[] = {
 	AUDIO_SRC_CONFIG("tdmin_b", 1, EE_AUDIO_TDMIN_LB_CTRL, 20, 0xf),
 	AUDIO_SRC_CONFIG("tdmin_c", 2, EE_AUDIO_TDMIN_LB_CTRL, 20, 0xf),
 	AUDIO_SRC_CONFIG("tdmin_d", 3, EE_AUDIO_TDMIN_LB_CTRL, 20, 0xf),
+	AUDIO_SRC_CONFIG("acodec_adc", 7, EE_AUDIO_TDMIN_LB_CTRL, 20, 0xf),
 	AUDIO_SRC_CONFIG("tdmout_a", 12, EE_AUDIO_TDMIN_LB_CTRL, 20, 0xf),
 	AUDIO_SRC_CONFIG("tdmout_b", 13, EE_AUDIO_TDMIN_LB_CTRL, 20, 0xf),
 	AUDIO_SRC_CONFIG("tdmout_c", 14, EE_AUDIO_TDMIN_LB_CTRL, 20, 0xf),
@@ -230,6 +231,16 @@ static struct loopback_chipinfo a1_loopbacka_chipinfo = {
 	.tdmin_lb_srcs = &tdmin_lb_srcs_v1[0],
 };
 
+static struct loopback_chipinfo c3_loopbacka_chipinfo = {
+	.id = LOOPBACKA,
+	.ch_ctrl = true,
+	.chnum_en = false,
+	.srcs = &lb_srcs_v2[0],
+	.tdmin_lb_srcs = &tdmin_lb_srcs_v2[0],
+	.multi_bits_lbsrcs = true,
+	.use_resamplea = true,
+};
+
 static const struct of_device_id loopback_device_id[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -296,6 +307,10 @@ static const struct of_device_id loopback_device_id[] = {
 	{
 		.compatible = "amlogic, a1-loopbacka",
 		.data		= &a1_loopbacka_chipinfo,
+	},
+	{
+		.compatible = "amlogic, c3-loopbacka",
+		.data		= &c3_loopbacka_chipinfo,
 	},
 	{}
 };

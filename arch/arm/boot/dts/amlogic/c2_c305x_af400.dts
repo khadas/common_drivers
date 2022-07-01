@@ -84,9 +84,9 @@
 			reg = <0x40000000 0x4000000>;
 		};
 
-		ramoops@0x07400000 {
+		ramoops@0x08400000 {
 			compatible = "ramoops";
-			reg = <0x07400000 0x00100000>;
+			reg = <0x08400000 0x00100000>;
 			record-size = <0x20000>;
 			console-size = <0x20000>;
 			ftrace-size = <0x80000>;

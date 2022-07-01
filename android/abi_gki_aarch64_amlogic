@@ -549,3 +549,28 @@
   drm_gem_handle_delete
   drm_mode_get_hv_timing
   drm_property_add_enum
+
+# nand: spinand.ko amlogic_mtd_nfc.ko
+  __register_mtd_parser
+  mtd_device_parse_register
+  mtd_device_unregister
+  mtd_ooblayout_count_freebytes
+  mtd_ooblayout_get_databytes
+  mtd_ooblayout_set_databytes
+  nand_check_erased_ecc_chunk
+  nand_cleanup
+  nand_ecc_choose_conf
+  nand_ecc_finish_io_req
+  nand_ecc_prepare_io_req
+  nand_scan_with_ids
+  nand_write_oob_std
+  nanddev_cleanup
+  nanddev_ecc_engine_cleanup
+  nanddev_ecc_engine_init
+  nanddev_init
+  nanddev_isbad
+  nanddev_isreserved
+  nanddev_markbad
+  nanddev_mtd_erase
+  nanddev_mtd_max_bad_blocks
+

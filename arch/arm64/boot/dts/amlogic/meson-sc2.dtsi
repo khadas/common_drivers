@@ -598,7 +598,7 @@
 				compatible = "amlogic,meson-spifc";
 				reg = <0x0 0x56000 0x0 0x290>;
 				clock-names = "clk81";
-				clocks = <&clkc CLKID_SYS_CLK>;
+				clocks = <&clkc CLKID_SPIFC>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				status = "disabled";

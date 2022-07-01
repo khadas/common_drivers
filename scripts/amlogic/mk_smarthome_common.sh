@@ -35,6 +35,10 @@ do
 		MENUCONFIG=1
 		shift
 		;;
+	--dtb)
+                DTB=1
+                shift
+                ;;
 	-h|--help)
 		show_help
 		exit 0
@@ -158,6 +162,14 @@ if [[ -n ${SAVEDEFCONFIG} ]]; then
 	cp -f ${OUT_DIR}/defconfig  ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
 	set +x
 	exit
+fi
+
+if [[ -n ${DTB} ]]; then
+        set -x
+        make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
+        make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs || exit
+        set +x
+        exit
 fi
 if [[ -n ${MENUCONFIG} ]]; then
 	set -x

@@ -1674,7 +1674,12 @@
 		status = "okay";
 	};
 	ge2d {
-		compatible = "amlogic, ge2d-c3";
+		/* for kernel driver:
+		 * compatible = "amlogic, ge2d-c3"
+		 * for mbp driver:
+		 * compatible = "amlogic, mbp-ge2d-c3";
+		 */
+		compatible = "amlogic, mbp-ge2d-c3";
 		status = "okay";
 		interrupts = <GIC_SPI 217 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "ge2d";
@@ -1772,7 +1777,12 @@
 		#address-cells=<2>;
 		#size-cells=<2>;
 		status = "okay";
-		compatible = "amlogic, aml-gdc-v3";
+		/* for kernel driver:
+		 * compatible = "amlogic, aml-gdc-v3"
+		 * for mbp driver:
+		 * compatible = "amlogic, mbp-dewarp";
+		 */
+		compatible = "amlogic, mbp-dewarp";
 		reg = <0xfe04e000 0x000015c>;
 		interrupts = <GIC_SPI 218 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "amlgdc";

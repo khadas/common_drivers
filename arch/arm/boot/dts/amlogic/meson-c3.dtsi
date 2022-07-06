@@ -17,6 +17,7 @@
 #include "meson-ir-map.dtsi"
 #include <dt-bindings/power/c3-pd.h>
 #include <dt-bindings/mailbox/amlogic,mbox.h>
+#include <dt-bindings/thermal/thermal.h>
 
 / {
 	compatible = "amlogic,c1";
@@ -972,7 +973,7 @@
 	};
 
 	meson_cooldev: meson-cooldev@0 {
-		status = "disabled";
+		status = "okay";
 		compatible = "amlogic, meson-cooldev";
 		cooling_devices {
 			cpucore_cool_cluster0 {
@@ -980,8 +981,19 @@
 				device_type = "cpucore";
 				node_name = "cpucore0";
 			};
+			ddr_cool {
+				ddr_reg = <0xfe0364b4>;
+				ddr_status = <3>;
+				ddr_bits = <8 15>;
+				ddr_data = <0x4c 0x26 0x13>;
+				node_name = "ddr_cool0";
+				device_type = "ddr";
+			};
 		};
 		cpucore0:cpucore0 {
+			#cooling-cells = <2>;
+		};
+		ddr_cool0:ddr_cool0 {
 			#cooling-cells = <2>;
 		};
 	};
@@ -1021,11 +1033,11 @@
 					cooling-device = <&cpu0 0 8>;
 					contribution = <1024>;
 				};
-//				cpucore_cooling_map {
-//					trip = <&phot>;
-//					cooling-device = <&cpucore0 0 1>;
-//					contribution = <1024>;
-//				};
+				ddr_cooling_map {
+					trip = <&phot>;
+					cooling-device = <&ddr_cool0 0 THERMAL_NO_LIMIT>;
+					contribution = <1024>;
+				};
 			};
 		};
 	};

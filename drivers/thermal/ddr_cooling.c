@@ -11,6 +11,7 @@
 #include <linux/amlogic/meson_cooldev.h>
 #include <linux/io.h>
 #include "thermal_core.h"
+#include "meson_cooldev.h"
 
 static DEFINE_IDR(ddr_idr);
 static DEFINE_MUTEX(cooling_ddr_lock);
@@ -63,26 +64,79 @@ static int ddr_get_max_state(struct thermal_cooling_device *cdev,
 static int ddr_get_cur_state(struct thermal_cooling_device *cdev,
 			     unsigned long *state)
 {
-	*state = 0;
+	*state = readl_relaxed(ddr_reg0);
 	return 0;
 }
 
 static int ddr_set_cur_state(struct thermal_cooling_device *cdev,
 			     unsigned long state)
 {
-	struct ddr_cooling_device *ddr_device = cdev->devdata;
 
-	if (WARN_ON(state >= ddr_device->ddr_status))
-		return -EINVAL;
+	if (state)
+		writel_relaxed(state, ddr_reg0);
 
-	state = 0;
-	return state;
+	return 0;
+}
+
+static unsigned long cdev_calc_next_state_by_temp(struct thermal_instance *instance,
+	int temperature)
+{
+	struct thermal_instance *ins = instance;
+	struct thermal_zone_device *tz;
+	struct thermal_cooling_device *cdev;
+	struct ddr_cooling_device *ddr_device;
+	int i, hyst = 0, trip_temp;
+	unsigned int val, reg_val, reg_val_ori;
+
+	if (!ins)
+		return 0;
+
+	tz = ins->tz;
+	cdev = ins->cdev;
+
+	if (!tz || !cdev)
+		return 0;
+
+	ddr_device = cdev->devdata;
+
+	tz->ops->get_trip_hyst(tz, instance->trip, &hyst);
+	tz->ops->get_trip_temp(tz, instance->trip, &trip_temp);
+
+	reg_val = readl_relaxed(ddr_reg0);
+	reg_val_ori = reg_val;
+
+	val = ddr_device->ddr_data[0];
+
+	for (i = 1; i < ddr_device->ddr_status; i++) {
+		if (temperature >= (trip_temp + i * hyst))
+			val = ddr_device->ddr_data[i];
+		else
+			break;
+	}
+	pr_debug("chip temp: %d, set ddr reg bit val: %x\n", temperature, val);
+
+	reg_val &= ddr_device->ddr_bits_keep;
+	reg_val |= (val << ddr_device->ddr_bits[0]);
+	pr_debug("[%s %d][%d 0x%x][0x%x 0x%x]\n", __func__, __LINE__, temperature, reg_val,
+			reg_val_ori, val);
+
+	return reg_val;
 }
 
 static int ddr_get_requested_power(struct thermal_cooling_device *cdev,
 				   u32 *power)
 {
-	*power = 0;
+	struct thermal_instance *instance;
+	struct thermal_zone_device *tz;
+
+	mutex_lock(&cdev->lock);
+	list_for_each_entry(instance, &cdev->thermal_instances, cdev_node) {
+		tz = instance->tz;
+		if (cdev->ops && cdev->ops->set_cur_state && instance->trip == THERMAL_TRIP_HOT)
+			*power = (u32)cdev_calc_next_state_by_temp(instance, tz->temperature);
+	}
+	mutex_unlock(&cdev->lock);
+
 	return 0;
 }
 

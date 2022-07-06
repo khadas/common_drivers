@@ -18,6 +18,7 @@
 #include <linux/pm_domain.h>
 #include <linux/arm-smccc.h>
 #include <linux/amlogic/secmon.h>
+#include <linux/debugfs.h>
 #include "thermal_core.h"
 #include "thermal_hwmon.h"
 #include "cpucore_cooling.h"
@@ -725,15 +726,162 @@ static int meson_map_dt_data(struct platform_device *pdev)
 	return 0;
 }
 
+static void meson_thermal_hot_callback(struct thermal_zone_device *tz)
+{
+	struct thermal_instance *instance;
+	struct thermal_cooling_device *cdev;
+	u32 state_set;
+	static u32 last_state_set;
+	unsigned long state_get;
+
+	if (tz->temperature < 0)
+		return;
+
+	mutex_lock(&tz->lock);
+	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
+		cdev = instance->cdev;
+		if (cdev->ops && cdev->ops->set_cur_state && instance->trip == THERMAL_TRIP_HOT) {
+			cdev->ops->get_requested_power(cdev, &state_set);
+			if (state_set != last_state_set) {
+				cdev->ops->set_cur_state(cdev, (unsigned long)state_set);
+				last_state_set = state_set;
+				cdev->ops->get_cur_state(cdev, &state_get);
+				pr_info("[%s %d]temp:%d, ddrset:0x%x, get:0x%lx\n", __func__,
+						__LINE__, tz->temperature, state_set, state_get);
+			}
+		}
+	}
+	mutex_unlock(&tz->lock);
+}
+
+static void meson_handle_thermal_trip(struct thermal_zone_device *tz, int trip, int temp)
+{
+	struct thermal_instance *instance;
+	struct thermal_cooling_device *cdev;
+	enum thermal_trip_type type;
+	u32 state_set;
+	static u32 last_state_set;
+	unsigned long state_get;
+	int tz_temp;
+
+	if (temp < 0)
+		return;
+
+	tz->ops->get_trip_type(tz, trip, &type);
+	if (type == THERMAL_TRIP_HOT) {
+		mutex_lock(&tz->lock);
+		tz_temp = tz->temperature;
+		list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
+			cdev = instance->cdev;
+			tz->temperature = temp;
+			if (cdev->ops && cdev->ops->set_cur_state &&
+				instance->trip == THERMAL_TRIP_HOT) {
+				cdev->ops->get_requested_power(cdev, &state_set);
+				if (state_set != last_state_set) {
+					cdev->ops->set_cur_state(cdev, (unsigned long)state_set);
+					last_state_set = state_set;
+					cdev->ops->get_cur_state(cdev, &state_get);
+					pr_info("[%s %d]temp:%d, ddrset:0x%x, get:0x%lx\n",
+						__func__, __LINE__, tz->temperature,
+						state_set, state_get);
+				}
+			}
+		}
+		tz->temperature = tz_temp;
+		mutex_unlock(&tz->lock);
+	}
+}
+
+static void meson_thermal_critical_callback(struct thermal_zone_device *tz)
+{
+}
+
 static struct thermal_zone_of_device_ops meson_sensor_ops = {
 	.get_temp = meson_get_temp,
 
 };
 
+static int show_tsensor_drvinfo(struct seq_file *s, void *what)
+{
+	struct meson_tsensor_data *data = s->private;
+
+	seq_printf(s, "tsensor id: %d\nsoc: %d\nntrip: %d\nirq: %d\n", data->id, data->soc,
+		data->ntrip, data->irq);
+	seq_printf(s, "pdata:\n\tcal_type:%d\n\ttsensor_id:%d\n\treboot_temp:%d\n\tcal_coeff:[%u %u %u %u]\n",
+		data->pdata->cal_type, data->pdata->tsensor_id, data->pdata->reboot_temp,
+		data->pdata->cal_coeff[0], data->pdata->cal_coeff[1], data->pdata->cal_coeff[2],
+		data->pdata->cal_coeff[3]);
+
+	return 0;
+}
+
+static int show_tsensor_tempwrite(struct seq_file *s, void *what)
+{
+	return 0;
+}
+
+static int tsensor_drvinfo_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, show_tsensor_drvinfo, inode->i_private);
+}
+
+static int tsensor_tempwrite_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, show_tsensor_tempwrite, inode->i_private);
+}
+
+static ssize_t tsensor_drvinfo_write(struct file *file, const char __user *userbuf,
+			    size_t count, loff_t *ppos)
+{
+	return count;
+}
+
+static ssize_t tsensor_tempwrite_write(struct file *file, const char __user *userbuf,
+			    size_t count, loff_t *ppos)
+{
+	struct seq_file *sf = file->private_data;
+	struct thermal_zone_device *tz = sf->private;
+	char buf[10] = {0};
+	int i, temperature;
+
+	count = min_t(size_t, count, sizeof(buf) - 1);
+
+	if (simple_write_to_buffer(buf, count, ppos, userbuf, count) < 0)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &temperature))
+		return -EINVAL;
+
+	for (i = 0; i < tz->trips; i++)
+		meson_handle_thermal_trip(tz, i, temperature);
+
+	return count;
+}
+
+static const struct file_operations tsensor_drvinfo_fops = {
+	.open = tsensor_drvinfo_open,
+	.read = seq_read,
+	.write = tsensor_drvinfo_write,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static const struct file_operations temp_write_fops = {
+	.open = tsensor_tempwrite_open,
+	.read = seq_read,
+	.write = tsensor_tempwrite_write,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 static int meson_tsensor_probe(struct platform_device *pdev)
 {
 	struct meson_tsensor_data *data;
-	int ret;
+	struct thermal_zone_device *tz;
+	enum thermal_trip_type trip_type;
+	int ret, i;
+	char name[10] = {0};
+	struct dentry *debugfs_dir, *tsensor_drvinfo_file, *temp_write_file;
 
 	pr_debug("meson ts init\n");
 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
@@ -765,6 +913,21 @@ static int meson_tsensor_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	tz = data->tzd;
+	for (i = 0; i < tz->trips; i++) {
+		tz->ops->get_trip_type(tz, i, &trip_type);
+		switch (trip_type) {
+		case THERMAL_TRIP_HOT:
+			tz->ops->hot = meson_thermal_hot_callback;
+			break;
+		case THERMAL_TRIP_CRITICAL:
+			tz->ops->critical = meson_thermal_critical_callback;
+			break;
+		default:
+			break;
+		}
+	}
+
 	if (thermal_add_hwmon_sysfs(data->tzd))
 		dev_warn(&pdev->dev, "Failed to add hwmon sysfs attributes\n");
 
@@ -784,6 +947,16 @@ static int meson_tsensor_probe(struct platform_device *pdev)
 	/*wait tsensor work*/
 	msleep(R1P1_TS_WAIT);
 
+	sprintf(name, "tsensor%d", data->id);
+	debugfs_dir = debugfs_create_dir(name, NULL);
+	if (!debugfs_dir)
+		goto out;
+	tsensor_drvinfo_file = debugfs_create_file("drvinfo", S_IFREG | 0440,
+		debugfs_dir, data, &tsensor_drvinfo_fops);
+	temp_write_file = debugfs_create_file("tempwrite", S_IFREG | 0440,
+		debugfs_dir, tz, &temp_write_fops);
+
+out:
 	return 0;
 
 err_thermal:

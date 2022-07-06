@@ -5580,7 +5580,7 @@ static int aml_dtvdemod_probe(struct platform_device *pdev)
 		//INIT_WORK(&devp->blind_scan_work, dvbs_blind_scan_work);
 		INIT_WORK(&devp->blind_scan_work, dvbs_blind_scan_new_work);
 	}
-	aml_dtvdm_register_cb(aml_dtvdm_attach);
+	demod_attach_register_cb(AM_DTV_DEMOD_AMLDTV, aml_dtvdm_attach);
 
 	PR_INFO("[amldtvdemod.] : version: %s (%s),T2 fw version: %s, probe ok.\n",
 			AMLDTVDEMOD_VER, DTVDEMOD_VER, AMLDTVDEMOD_T2_FW_VER);

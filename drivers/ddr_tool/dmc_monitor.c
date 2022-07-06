@@ -144,7 +144,7 @@ char *to_ports(int id)
  */
 char *to_sub_ports_name(int mid, int sid, char *id_str, char rw)
 {
-	int i, s_port;
+	int i, s_port = 0;
 
 	/* 7 is device port id */
 	/* t5w 7 and 10 is device port id */
@@ -408,7 +408,7 @@ static ssize_t device_store(struct class *cla,
 				pr_info("bad device:%s\n", buf);
 				return -EINVAL;
 			}
-			dmc_regulation_dev(1 << i, 1);
+			dmc_regulation_dev(1UL << i, 1);
 		}
 	}
 	if (dmc_mon->addr_start < dmc_mon->addr_end && dmc_mon->ops &&
@@ -686,15 +686,15 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 		irq = of_irq_get(node, i);
 
 		switch (i) {
-		case 0:
+		case 1:
 			r = request_irq(irq, dmc_monitor_irq_handler,
 			IRQF_SHARED, "dmc_monitor", dmc_mon->io_mem2);
 			break;
-		case 1:
+		case 2:
 			r = request_irq(irq, dmc_monitor_irq_handler,
 			IRQF_SHARED, "dmc_monitor", dmc_mon->io_mem3);
 			break;
-		case 2:
+		case 3:
 			r = request_irq(irq, dmc_monitor_irq_handler,
 			IRQF_SHARED, "dmc_monitor", dmc_mon->io_mem4);
 			break;

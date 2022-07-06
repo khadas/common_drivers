@@ -33,10 +33,10 @@ struct printk_info_t {
 	u8	print_cnt;
 	u8	cpu_id;
 	u8	irqflags;
-	u8	preempt_count;
 	char	task_name[TASK_COMM_LEN];
 	char	format_buf[50];
 	u16	format_len;
+	int	preempt_count;
 };
 
 static struct printk_info_t printk_info;
@@ -107,7 +107,7 @@ static void printk_get_info(unsigned long irq_flags)
 	printk_info.print_cnt %= 100;
 	printk_info.cpu_id = smp_processor_id();
 	get_task_comm(printk_info.task_name, current);
-	printk_info.preempt_count = (preempt_count() & 0xff);
+	printk_info.preempt_count = preempt_count();
 	printk_info.irqflags =
 		(irqs_disabled_flags(irq_flags) ? TRACE_FLAG_IRQS_OFF : 0) |
 		((printk_info.preempt_count & NMI_MASK) ? TRACE_FLAG_NMI     : 0) |

@@ -894,8 +894,8 @@
 &crg_phy_20 {
 	status = "okay";
 	portnum = <1>;
-	gpio-vbus-power = "GPIOA_2";
-	gpios = <&gpio GPIOA_2 GPIO_ACTIVE_HIGH>;
+	/* gpio-vbus-power = "GPIOA_2"; */
+	/* gpios = <&gpio GPIOA_2 GPIO_ACTIVE_HIGH>; */
 };
 
 &crg3_phy_20 {

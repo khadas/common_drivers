@@ -170,6 +170,11 @@ CLOCK_COM_MUX(eqdrc, AUD_ADDR_OFFSET(EE_AUDIO_CLK_EQDRC_CTRL0), 0x7, 24);
 CLOCK_COM_DIV(eqdrc, AUD_ADDR_OFFSET(EE_AUDIO_CLK_EQDRC_CTRL0), 0, 16);
 CLOCK_COM_GATE(eqdrc, AUD_ADDR_OFFSET(EE_AUDIO_CLK_EQDRC_CTRL0), 31);
 
+/* audio vad  */
+CLOCK_COM_MUX(vad, AUD_ADDR_OFFSET(EE_AUDIO_CLK_VAD_CTRL), 0xf, 24);
+CLOCK_COM_DIV(vad, AUD_ADDR_OFFSET(EE_AUDIO_CLK_VAD_CTRL), 0, 16);
+CLOCK_COM_GATE(vad, AUD_ADDR_OFFSET(EE_AUDIO_CLK_VAD_CTRL), 31);
+
 static int c3_clks_init(struct clk **clks, void __iomem *iobase)
 {
 	IOMAP_COM_CLK(mclk_a, iobase);
@@ -220,6 +225,10 @@ static int c3_clks_init(struct clk **clks, void __iomem *iobase)
 	clks[CLKID_AUDIO_EQDRC] = REGISTER_CLK_COM(eqdrc);
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_EQDRC]));
 
+	IOMAP_COM_CLK(vad, iobase);
+	clks[CLKID_AUDIO_VAD] = REGISTER_CLK_COM(vad);
+	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_VAD]));
+
 	IOMAP_COM_CLK(mclk_pad0, iobase);
 	clks[CLKID_AUDIO_MCLK_PAD0] =
 			REGISTER_CLK_COM_PARENTS(mclk_pad0, mclk_pad);
@@ -239,6 +248,7 @@ static int c3_clks_init(struct clk **clks, void __iomem *iobase)
 	clks[CLKID_AUDIO_MCLK_PAD3] =
 			REGISTER_CLK_COM_PARENTS(mclk_pad3, mclk_pad);
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_MCLK_PAD3]));
+
 	return 0;
 }
 

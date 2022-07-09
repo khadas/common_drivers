@@ -44,11 +44,12 @@
 #define CLKID_AUDIO_PDMIN0                      (MCLK_BASE + 9)
 #define CLKID_AUDIO_PDMIN1                      (MCLK_BASE + 10)
 #define CLKID_AUDIO_EQDRC                       (MCLK_BASE + 11)
+#define CLKID_AUDIO_VAD                         (MCLK_BASE + 12)
 
-#define CLKID_AUDIO_MCLK_PAD0                   (MCLK_BASE + 12)
-#define CLKID_AUDIO_MCLK_PAD1                   (MCLK_BASE + 13)
-#define CLKID_AUDIO_MCLK_PAD2                   (MCLK_BASE + 14)
-#define CLKID_AUDIO_MCLK_PAD3                   (MCLK_BASE + 15)
+#define CLKID_AUDIO_MCLK_PAD0                   (MCLK_BASE + 13)
+#define CLKID_AUDIO_MCLK_PAD1                   (MCLK_BASE + 14)
+#define CLKID_AUDIO_MCLK_PAD2                   (MCLK_BASE + 15)
+#define CLKID_AUDIO_MCLK_PAD3                   (MCLK_BASE + 16)
 
-#define NUM_AUDIO_CLKS                          (MCLK_BASE + 16)
+#define NUM_AUDIO_CLKS                          (MCLK_BASE + 17)
 #endif /* __C3_AUDIO_CLK_H__ */

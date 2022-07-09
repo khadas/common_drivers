@@ -575,8 +575,6 @@
 		start_clk_enable = <1>;
 		//power-domains = <&pwrdm PDID_CX_AUDIO>;
 
-		src-clk-freq = <1155072000>;
-
 		status = "okay";
 	};
 
@@ -666,19 +664,16 @@
 		status = "okay";
 	};
 
-	asrca: resample@0 {
-		compatible = "amlogic, t5-resample-a";
+	asrcb: resample@1 {
+		compatible = "amlogic, t5-resample-b";
 		clocks = <&clkc CLKID_HIFI_PLL
-			&clkaudio CLKID_AUDIO_MCLK_D
+			&clkaudio CLKID_AUDIO_MCLK_F
 			&clkaudio CLKID_AUDIO_RESAMPLE_A>;
 		clock-names = "resample_pll", "resample_src", "resample_clk";
 
 		/*this resample is only used for loopback_A.*/
 		/*only support 16000 or 48000Hz for capture*/
 		capture_sample_rate = <16000>;
-
-		/* hifi pll rate */
-		src-clk-freq = <1155072000>;
 
 		status = "okay";
 	};
@@ -717,8 +712,6 @@
 		datain_chmask = <0x3>;
 		/* config which data pin for loopback */
 		datain-lane-mask-in = <1 0 0 0>;
-
-		sys-src-clk-freq = <1155072000>;
 
 		/* calc mclk for datalb */
 		mclk-fs = <256>;
@@ -764,6 +757,45 @@
 		/* max 0xff, each bit for one channel */
 		channel_mask = <0x3>;
 		//power-domains = <&pwrdm PDID_CX_AUDIO>;
+		status = "okay";
+	};
+
+	vad:vad {
+		compatible = "amlogic, snd-vad";
+		#sound-dai-cells = <0>;
+
+		clocks = <&clkaudio CLKID_AUDIO_GATE_TOVAD
+			&clkc CLKID_FCLK_DIV4
+			&clkaudio CLKID_AUDIO_VAD>;
+		clock-names = "gate", "pll", "clk";
+
+		interrupts = <GIC_SPI 39 IRQ_TYPE_EDGE_RISING
+				GIC_SPI 44 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "irq_wakeup", "irq_frame_sync";
+
+		/*
+		 * Data src sel:
+		 * 0: tdmin_a;
+		 * 1: tdmin_b;
+		 * 2: tdmin_c;
+		 * 3: spdifin;
+		 * 4: pdmin;
+		 * 5: loopback_b;
+		 * 6: tdmin_lb;
+		 * 7: loopback_a;
+		 */
+		src = <4>;
+
+		/*
+		 * deal with hot word in user space or kernel space
+		 * 0: in user space
+		 * 1: in kernel space
+		 */
+		level = <1>;
+
+		mic-src = <&pdm>;
+		wakeup_sample_rate = <16000>;
+
 		status = "okay";
 	};
 }; /* end of audiobus */

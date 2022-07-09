@@ -38,8 +38,6 @@
 			&gpio GPIOA_3 GPIO_ACTIVE_HIGH>;
 		lcd_cpu_gpio_names = "GPIOA_4","GPIOA_3";
 
-		lcd_propname_sel = "mipi_0"; /* only for test, need remove */
-
 		mipi_0{
 			model_name = "TL070WSH27";
 			interface = "mipi";

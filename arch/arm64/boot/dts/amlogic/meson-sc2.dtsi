@@ -1496,7 +1496,7 @@
 
 	vdac {
 		compatible = "amlogic, vdac-sc2";
-		status = "disabled";
+		status = "okay";
 	};
 
 	vout: vout {

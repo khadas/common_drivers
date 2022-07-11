@@ -17,6 +17,7 @@
 #include <linux/cma.h>
 #include <linux/extcon-provider.h>
 #include <linux/mm.h>
+#include <linux/amlogic/gki_module.h>
 #include "media_main.h"
 
 //#define DEBUG

@@ -155,6 +155,16 @@ static void check_violation(struct dmc_monitor *mon, void *data)
 		port = (status >> 11) & 0x1f;
 	}
 	subport = (status >> 6) & 0xf;
+
+	if ((mon->debug & DMC_DEBUG_CMA) == 0) {
+		if (strstr(to_ports(port), "EMMC"))
+			return;
+		if (strstr(to_ports(port), "USB"))
+			return;
+		if (strstr(to_ports(port), "ETH"))
+			return;
+	}
+
 	pr_emerg(DMC_TAG "%s, addr:%08lx, s:%08lx, ID:%s, sub:%s, c:%ld, d:%p, u:%x\n",
 			title, addr, status, to_ports(port),
 			to_sub_ports(port, subport, id_str),

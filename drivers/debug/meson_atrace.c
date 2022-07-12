@@ -44,9 +44,9 @@ EXPORT_SYMBOL(get_atrace_tag_enabled);
 void set_atrace_tag_enabled(unsigned short tag, int enable)
 {
 	if (enable)
-		atrace_tag |= 1 << tag;
+		atrace_tag |= (u64)1 << tag;
 	else
-		atrace_tag &= ~(1 << tag);
+		atrace_tag &= ~((u64)1 << tag);
 }
 EXPORT_SYMBOL(set_atrace_tag_enabled);
 

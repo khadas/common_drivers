@@ -552,7 +552,7 @@ unsigned long get_page_trace(struct page *page)
 EXPORT_SYMBOL(get_page_trace);
 
 #ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
-static void __init set_init_page_trace(struct page *page, int order, gfp_t flag)
+static void __init set_init_page_trace(struct page *page, unsigned int order, gfp_t flag)
 {
 	unsigned long text, ip;
 	struct page_trace trace = {}, *base;
@@ -570,7 +570,7 @@ static void __init set_init_page_trace(struct page *page, int order, gfp_t flag)
 }
 #endif
 
-unsigned int pack_ip(unsigned long ip, int order, gfp_t flag)
+unsigned int pack_ip(unsigned long ip, unsigned int order, gfp_t flag)
 {
 	unsigned long text;
 	struct page_trace trace = {};
@@ -603,7 +603,7 @@ unsigned int pack_ip(unsigned long ip, int order, gfp_t flag)
 }
 EXPORT_SYMBOL(pack_ip);
 
-void set_page_trace(struct page *page, int order, gfp_t flag, void *func)
+void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *func)
 {
 	unsigned long ip;
 	struct page_trace *base;
@@ -644,7 +644,7 @@ void set_page_trace(struct page *page, int order, gfp_t flag, void *func)
 EXPORT_SYMBOL(set_page_trace);
 
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
-void reset_page_trace(struct page *page, int order)
+void reset_page_trace(struct page *page, unsigned int order)
 {
 	struct page_trace *base;
 	struct page *p;
@@ -661,7 +661,7 @@ void reset_page_trace(struct page *page, int order)
 	}
 }
 #else
-void reset_page_trace(struct page *page, int order)
+void reset_page_trace(struct page *page, unsigned int order)
 {
 	struct page_trace *base;
 	int i, cnt;
@@ -800,7 +800,6 @@ static unsigned long find_ip_base(unsigned long ip)
 static int find_page_ip(struct page_trace *trace, struct page_summary *sum,
 			int range, int *mt_cnt, struct rb_root *root)
 {
-	int order;
 	unsigned long ip;
 	struct rb_node **link, *parent = NULL;
 	struct page_summary *tmp;
@@ -809,7 +808,6 @@ static int find_page_ip(struct page_trace *trace, struct page_summary *sum,
 	if (!ip || !trace->ip_data)	/* invalid ip */
 		return 0;
 
-	order = trace->order;
 	link  = &root->rb_node;
 	while (*link) {
 		parent = *link;

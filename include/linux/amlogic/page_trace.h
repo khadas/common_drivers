@@ -58,11 +58,11 @@ struct page_trace {
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE
 u64 get_iow_time(u64 *cpu);
 unsigned long unpack_ip(struct page_trace *trace);
-unsigned int pack_ip(unsigned long ip, int order, gfp_t flag);
-void set_page_trace(struct page *page, int order,
+unsigned int pack_ip(unsigned long ip, unsigned int order, gfp_t flag);
+void set_page_trace(struct page *page, unsigned int order,
 		    gfp_t gfp_flags, void *func);
 void replace_page_trace(struct page *new, struct page *old);
-void reset_page_trace(struct page *page, int order);
+void reset_page_trace(struct page *page, unsigned int order);
 void page_trace_mem_init(void);
 struct page_trace *find_page_base(struct page *page);
 unsigned long find_back_trace(void);
@@ -79,11 +79,11 @@ static inline unsigned long unpack_ip(struct page_trace *trace)
 	return 0;
 }
 
-static inline void set_page_trace(struct page *page, int order, gfp_t gfp_flags)
+static inline void set_page_trace(struct page *page, unsigned int order, gfp_t gfp_flags)
 {
 }
 
-static inline void reset_page_trace(struct page *page, int order)
+static inline void reset_page_trace(struct page *page, unsigned int order)
 {
 }
 
@@ -111,13 +111,13 @@ static inline int slab_trace_init(void)
 	return 0;
 }
 
-static inline int slab_trace_add_page(struct page *page, int order,
+static inline int slab_trace_add_page(struct page *page, unsigned int order,
 				      struct kmem_cache *s, gfp_t flags)
 {
 	return 0;
 }
 
-static inline int slab_trace_remove_page(struct page *page, int order,
+static inline int slab_trace_remove_page(struct page *page, unsigned int order,
 					 struct kmem_cache *s)
 {
 	return 0;

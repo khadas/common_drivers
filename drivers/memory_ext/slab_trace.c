@@ -181,7 +181,7 @@ static struct slab_trace *find_slab_trace(struct slab_trace_group *group,
 	return NULL;
 }
 
-int slab_trace_add_page(struct page *page, int order,
+int slab_trace_add_page(struct page *page, unsigned int order,
 			struct kmem_cache *s, gfp_t flag)
 {
 	struct rb_node **link, *parent = NULL;
@@ -238,7 +238,7 @@ nomem:
 	return -ENOMEM;
 }
 
-int slab_trace_remove_page(struct page *page, int order, struct kmem_cache *s)
+int slab_trace_remove_page(struct page *page, unsigned int order, struct kmem_cache *s)
 {
 	struct slab_trace *trace = NULL;
 	struct slab_trace_group *group;

@@ -3,8 +3,8 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#ifndef __PAGE_TRACE_H__
-#define __PAGE_TRACE_H__
+#ifndef __SLAB_TRACE_H__
+#define __SLAB_TRACE_H__
 
 #include <asm/memory.h>
 #include <asm/stacktrace.h>
@@ -63,11 +63,11 @@ struct slab_stack_master {
 };
 
 int slab_trace_init(void);
-int slab_trace_add_page(struct page *page, int order,
+int slab_trace_add_page(struct page *page, unsigned int order,
 			struct kmem_cache *s, gfp_t flags);
-int slab_trace_remove_page(struct page *page, int order, struct kmem_cache *s);
+int slab_trace_remove_page(struct page *page, unsigned int order, struct kmem_cache *s);
 int slab_trace_mark_object(void *object, unsigned long ip,
 			   struct kmem_cache *s);
 int slab_trace_remove_object(void *object, struct kmem_cache *s);
 int get_cache_max_order(struct kmem_cache *s);
-#endif /* __PAGE_TRACE_H__ */
+#endif /* __SLAB_TRACE_H__ */

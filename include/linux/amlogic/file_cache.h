@@ -21,4 +21,4 @@ struct file_cache_trace {
 	struct address_space *mapping;
 	struct rb_node entry;
 };
-#endif /* __PAGE_TRACE_H__ */
+#endif /* __FILE_CACHE_H__ */

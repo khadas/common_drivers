@@ -906,18 +906,12 @@ static struct ddr_port_desc ddr_port_desc_c3_prot[] __initdata = {
 
 static struct ddr_port_desc ddr_port_desc_c3_mon[] __initdata = {
 	{ .port_id = 0, .port_name = "A35"            },
-	{ .port_id = 3, .port_name = "NNA"        },
-	{ .port_id = 4, .port_name = "DSP"       },
-	/* dev0 DMC_MON*_CTRL1 bit:7 */
-	{ .port_id = 32, .port_name = "SPICC1"        },
-	{ .port_id = 33, .port_name = "ETH"           },
-	{ .port_id = 34, .port_name = "SPICC0"        },
-	/* dev1 DMC_MON*_CTRL1 bit:6 */
-	{ .port_id = 40, .port_name = "EMMC"          },
-	{ .port_id = 41, .port_name = "SDIO_A"        },
-	{ .port_id = 42, .port_name = "SDIO_B"        },
-	{ .port_id = 43, .port_name = "SECU_TOP"      },
-	{ .port_id = 45, .port_name = "AUDIO"         }
+	{ .port_id = 1, .port_name = "ISP"            },
+	{ .port_id = 2, .port_name = "CVE"            },
+	{ .port_id = 3, .port_name = "NNA"            },
+	{ .port_id = 4, .port_name = "VC9000E"        },
+	{ .port_id = 6, .port_name = "DEVICE"         },
+	{ .port_id = 7, .port_name = "HCODEC"         },
 };
 
 static struct ddr_port_desc *chip_ddr_port;

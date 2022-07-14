@@ -257,20 +257,6 @@
 		regulator-always-on;
 	};
 
-	vcc3v3_lcd_reg: fixedregulator@3_3_5{
-		vin-supply = <&vcc3v3_reg>;
-		compatible = "regulator-fixed";
-		regulator-name = "VCC3V3_LCD";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		pinctrl-names = "default";
-		gpio = <&gpio GPIOA_4 GPIO_ACTIVE_HIGH>;	/* NC */
-		startup-delay-us = <70000>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
 	soc {
 		compatible = "simple-bus";
 		#address-cells = <1>;

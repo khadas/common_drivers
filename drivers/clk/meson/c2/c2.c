@@ -3762,6 +3762,80 @@ static struct clk_regmap *const c2_pll_clk_regmaps[] = {
 	&c2_sys_pll,
 };
 
+struct c2_sys_pll_nb_data {
+	struct notifier_block nb;
+	struct clk_hw *sys_pll;
+	struct clk_hw *cpu_clk;
+	struct clk_hw *cpu_dyn_clk;
+};
+
+static int c2_sys_pll_notifier_cb(struct notifier_block *nb, unsigned long event, void *data)
+{
+	struct c2_sys_pll_nb_data *nb_data =
+		container_of(nb, struct c2_sys_pll_nb_data, nb);
+
+	switch (event) {
+	case PRE_RATE_CHANGE:
+		/*
+		 * This notifier means sys_pll clock will be changed
+		 * to feed cpu_clk, this the current path :
+		 * cpu_clk
+		 *    \- sys_pll
+		 *          \- sys_pll_dco
+		 */
+
+		/*
+		 * Configure cpu_clk to use cpu_clk_dyn
+		 * Make sure cpu clk is 1G, cpu_clk_dyn may equal 24M
+		 */
+
+		if (clk_set_rate(nb_data->cpu_dyn_clk->clk, 1000000000))
+			pr_err("%s: set CPU dyn clock to 1G failed\n", __func__);
+
+		clk_hw_set_parent(nb_data->cpu_clk,
+				  nb_data->cpu_dyn_clk);
+		/*
+		 * Now, cpu_clk uses the dyn path
+		 * cpu_clk
+		 *    \- cpu_clk_dyn
+		 *          \- cpu_clk_dynX
+		 *                \- cpu_clk_dynX_sel
+		 *                   \- cpu_clk_dynX_div
+		 *                      \- xtal/fclk_div2/fclk_div3
+		 *                   \- xtal/fclk_div2/fclk_div3
+		 */
+
+		return NOTIFY_OK;
+
+	case POST_RATE_CHANGE:
+		/*
+		 * The sys_pll has ben updated, now switch back cpu_clk to
+		 * sys_pll
+		 */
+
+		/* Configure cpu_clk to use sys_pll */
+		clk_hw_set_parent(nb_data->cpu_clk,
+				  nb_data->sys_pll);
+		/* new path :
+		 * cpu_clk
+		 *    \- sys_pll
+		 *          \- sys_pll_dco
+		 */
+
+		return NOTIFY_OK;
+
+	default:
+		return NOTIFY_DONE;
+	}
+}
+
+static struct c2_sys_pll_nb_data c2_sys_pll_nb_data = {
+	.sys_pll = &c2_sys_pll.hw,
+	.cpu_clk = &c2_cpu_clk.hw,
+	.cpu_dyn_clk = &c2_cpu_fixed_clk.hw,
+	.nb.notifier_call = c2_sys_pll_notifier_cb,
+};
+
 struct c2_nb_data {
 	struct notifier_block nb;
 	struct clk_hw_onecell_data *onecell_data;
@@ -3928,14 +4002,11 @@ static int c2_clkc_probe(struct platform_device *pdev)
 	 * tricky programming sequence will be handled by the forthcoming
 	 * coordinated clock rates mechanism once that feature is released.
 	 */
-	/*
-	 *ret = clk_notifier_register(c2_sys_pll.hw.clk, &c2_cpu_nb_data.nb);
-	 *if (ret) {
-	 *	pr_err("%s: failed to register the CPU clock:
-	 *	       sys pll notifier\n", __func__);
-	 *	return ret;
-	 *}
-	 */
+	ret = clk_notifier_register(c2_sys_pll.hw.clk, &c2_sys_pll_nb_data.nb);
+	if (ret) {
+		pr_err("%s: failed to register sys pll notifier\n", __func__);
+		return ret;
+	}
 
 	ret = clk_notifier_register(c2_cpu_fixed_sel0.hw.clk,
 				    &c2_cpu_fixed_nb_data.nb);

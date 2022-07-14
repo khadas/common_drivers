@@ -3,9 +3,11 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#include <linux/module.h>
+#include <linux/init.h>
 #include <linux/amlogic/aml_mtd_nand.h>
 #include <linux/moduleparam.h>
-//#include <linux/amlogic/gki_module.h>
+#include <linux/amlogic/gki_module.h>
 
 static char *cmdline;
 struct storage_startup_parameter g_ssp;
@@ -152,3 +154,20 @@ int mtdbootpart_setup(char *s)
 }
 
 __setup("mtdbootparts=", mtdbootpart_setup);
+
+static int __init meson_mtd_common_driver_init(void)
+{
+	/* get mtdbootparts need module init */
+	return 0;
+}
+module_init(meson_mtd_common_driver_init);
+
+static void __exit meson_mtd_common_driver_exit(void)
+{
+}
+module_exit(meson_mtd_common_driver_exit);
+
+MODULE_AUTHOR("AMLOGIC");
+MODULE_DESCRIPTION("AMLOGIC MTD COMMON DRIVER");
+MODULE_LICENSE("GPL v2");
+

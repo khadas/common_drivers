@@ -52,8 +52,7 @@ static int spinand_get_cfg(struct spinand_device *spinand, u8 *cfg)
 {
 	struct nand_device *nand = spinand_to_nand(spinand);
 
-	if (WARN_ON(spinand->cur_target < 0 ||
-		    spinand->cur_target >= nand->memorg.ntargets))
+	if (WARN_ON(spinand->cur_target >= nand->memorg.ntargets))
 		return -EINVAL;
 
 	*cfg = spinand->cfg_cache[spinand->cur_target];
@@ -65,8 +64,7 @@ static int spinand_set_cfg(struct spinand_device *spinand, u8 cfg)
 	struct nand_device *nand = spinand_to_nand(spinand);
 	int ret;
 
-	if (WARN_ON(spinand->cur_target < 0 ||
-		    spinand->cur_target >= nand->memorg.ntargets))
+	if (WARN_ON(spinand->cur_target >= nand->memorg.ntargets))
 		return -EINVAL;
 
 	if (spinand->cfg_cache[spinand->cur_target] == cfg)
@@ -565,7 +563,7 @@ static int spinand_lock_block(struct spinand_device *spinand, u8 lock)
 	return spinand_write_reg_op(spinand, REG_BLOCK_LOCK, lock);
 }
 
-static int spinand_read_page(struct spinand_device *spinand,
+static int __spinand_read_page(struct spinand_device *spinand,
 			     const struct nand_page_io_req *req)
 {
 	struct nand_device *nand = spinand_to_nand(spinand);
@@ -596,7 +594,21 @@ static int spinand_read_page(struct spinand_device *spinand,
 	return nand_ecc_finish_io_req(nand, (struct nand_page_io_req *)req);
 }
 
-static int spinand_write_page(struct spinand_device *spinand,
+static int spinand_read_page(struct spinand_device *spinand,
+			     const struct nand_page_io_req *req)
+{
+	struct nand_device *nand = spinand_to_nand(spinand);
+	struct nand_page_io_req last_req = *req;
+	int page = nanddev_pos_to_row(nand, &req->pos);
+
+	if ((spinand_get_info_page_mode() == FRONT_INFO_P) &&
+	    page < SPI_NAND_BOOT_TOTAL_PAGES)
+		nanddev_pos_next_page(nand, &last_req.pos);
+
+	return __spinand_read_page(spinand, &last_req);
+}
+
+static int __spinand_write_page(struct spinand_device *spinand,
 			      const struct nand_page_io_req *req)
 {
 	struct nand_device *nand = spinand_to_nand(spinand);
@@ -627,6 +639,50 @@ static int spinand_write_page(struct spinand_device *spinand,
 		return -EIO;
 
 	return nand_ecc_finish_io_req(nand, (struct nand_page_io_req *)req);
+}
+
+static int spinand_append_front_info_page(struct mtd_info *mtd,
+				    struct nand_page_io_req *last_req)
+{
+	struct spinand_device *spinand = mtd_to_spinand(mtd);
+	struct nand_device *nand = mtd_to_nanddev(mtd);
+	struct nand_page_io_req req;
+	int page;
+	u8 *buf;
+	int ret = 0;
+
+	page = nanddev_pos_to_row(nand, &last_req->pos);
+	req = *last_req;
+	req.datalen = mtd->writesize;
+	req.dataoffs = 0;
+	req.ooblen = 0;
+	buf = kzalloc(mtd->writesize, GFP_KERNEL);
+	req.databuf.in = buf;
+	spinand_set_front_info_page(mtd, buf);
+	ret = __spinand_write_page(spinand, &req);
+	kfree(buf);
+	pr_info("%s: %d\n", __func__, page);
+
+	return ret;
+}
+
+static int spinand_write_page(struct spinand_device *spinand,
+			      struct nand_page_io_req *req)
+{
+	struct nand_device *nand = spinand_to_nand(spinand);
+	struct mtd_info *mtd = &nand->mtd;
+	struct nand_page_io_req last_req = *req;
+	int page = nanddev_pos_to_row(nand, &req->pos);
+
+	if ((spinand_get_info_page_mode() == FRONT_INFO_P) &&
+	    spinand_is_front_info_page(nand, page))
+		spinand_append_front_info_page(mtd, &last_req);
+
+	if ((spinand_get_info_page_mode() == FRONT_INFO_P) &&
+	    page < SPI_NAND_BOOT_TOTAL_PAGES)
+		nanddev_pos_next_page(nand, &last_req.pos);
+
+	return __spinand_write_page(spinand, &last_req);
 }
 
 static int spinand_mtd_read(struct mtd_info *mtd, loff_t from,
@@ -729,10 +785,11 @@ static int spinand_mtd_write(struct mtd_info *mtd, loff_t to,
 			break;
 
 		/* spinand add info page support */
-		ret = spinand_append_info_page(mtd, &iter.req);
-		if (ret)
-			break;
-
+		if (spinand_get_info_page_mode() == NORMAL_INFO_P) {
+			ret = spinand_append_info_page(mtd, &iter.req);
+			if (ret)
+				break;
+		}
 		ops->retlen += iter.req.datalen;
 		ops->oobretlen += iter.req.ooblen;
 	}
@@ -1125,10 +1182,9 @@ static int spinand_detect(struct spinand_device *spinand)
 	if (ret) {
 		dev_err(dev, "unknown raw ID %*phN\n", SPINAND_MAX_ID_LEN,
 			spinand->id.data);
-		dev_err(dev, "id: 0x%x 0x%x 0x%x 0x%x 0x%x\n",
+		dev_err(dev, "id: 0x%x 0x%x 0x%x 0x%x\n",
 			spinand->id.data[0], spinand->id.data[1],
-			spinand->id.data[2], spinand->id.data[3],
-			spinand->id.data[4]);
+			spinand->id.data[2], spinand->id.data[3]);
 		return ret;
 	}
 

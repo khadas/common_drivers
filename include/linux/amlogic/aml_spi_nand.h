@@ -20,6 +20,12 @@
 #define SPI_NAND_TPL_COPY_NUM		4
 #define SPI_NAND_NBITS		2
 
+enum info_page_mode {
+	NORMAL_INFO_P = 0,
+	FRONT_INFO_P = 1,
+	NO_INFO_P = 2,
+};
+
 struct spinand_info_page {
 	char magic[8];	/* magic header of info page */
 	/* info page version, +1 when you update this struct */
@@ -50,9 +56,32 @@ struct spinand_info_page {
 
 };
 
+struct spinand_front_info_page {
+#define SPINAND_MAGIC_V2      "BOOTINFO"
+#define SPINAND_MAGIC_V2_LEN  8
+#define SPINAND_INFO_VER_2    2
+	char magic[8];
+	unsigned char version;		/* need to greater than or equal to 2 */
+	unsigned char reserved[2];	/* reserve zero */
+	/* bit0~1: page per bbt */
+	unsigned char common;
+	struct {
+		unsigned int page_size;
+		/* bit0~3: planes_per_lun bit4~7: plane_shift */
+		unsigned char planes_per_lun;
+		/* bit0~3: bus_width bit4~7: cache_plane_shift */
+		unsigned char bus_width;
+	} dev_cfg;
+	unsigned int checksum;
+};
+
 int meson_spinand_init(struct spinand_device *spinand, struct mtd_info *mtd);
 int meson_add_mtd_partitions(struct mtd_info *mtd);
 /* spinand add info page support */
 bool spinand_is_info_page(struct nand_device *nand, int page);
 int spinand_set_info_page(struct mtd_info *mtd, void *buf);
+/* spinand add front info page support */
+bool spinand_is_front_info_page(struct nand_device *nand, int page);
+int spinand_set_front_info_page(struct mtd_info *mtd, void *buf);
+u32 spinand_get_info_page_mode(void);
 #endif

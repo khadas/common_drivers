@@ -138,6 +138,11 @@
 		regulator-always-on;
 	};
 
+	ddr-scrambler@0xfe02e030 {
+		compatible = "amlogic, ddr-scrambler-preserve";
+		reg = <0xfe02e030 0x4>;
+	};
+
 	vcc5v_reg: fixedregulator@1{
 		vin-supply = <&vbat>;
 		compatible = "regulator-fixed";

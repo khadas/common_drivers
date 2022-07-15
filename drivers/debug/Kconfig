@@ -49,3 +49,12 @@ config AMLOGIC_DEBUG_FTRACE_PSTORE
 		Dump function call and register access to ramoops after watchdog
 		reboot.
 		Enable if doubt
+
+config AMLOGIC_DEBUG_SCRAMBLER_RAMOOPS
+	bool "Amlogic ddr scrambler keypreserve mode for pstore debug"
+	depends on AMLOGIC_DEBUG
+	depends on PSTORE
+	default n
+	help
+		Preserve ddr scrambler key to dump kernel console message and panic/oops
+		message.

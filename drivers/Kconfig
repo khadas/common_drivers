@@ -52,5 +52,6 @@ source "$(COMMON_DRIVERS_DIR)/drivers/mtd/nand/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/mtd/common/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/dvb/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/cpuidle/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/pci/Kconfig"
 
 endmenu

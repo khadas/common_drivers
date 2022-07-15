@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+menu "Amlogic PCI Support"
+
+config AMLOGIC_PCI_HOST
+	bool "Amlogic PCI controller support"
+	default n
+	help
+	  Amlogic PCI controller drivers support
+
+config AMLOGIC_PCI_EP
+	bool "Amlogic PCI endpoint support"
+	default n
+	help
+	  Amlogic PCI endpoint drivers support
+
+source "$(COMMON_DRIVERS_DIR)/drivers/pci/controller/Kconfig"
+
+endmenu

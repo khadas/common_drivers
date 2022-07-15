@@ -577,3 +577,6 @@
   nanddev_mtd_erase
   nanddev_mtd_max_bad_blocks
 
+# PCI: amlogic-pcie-v2-host.ko
+  dw_pcie_host_deinit
+

@@ -1195,9 +1195,9 @@ static struct meson_pmx_func meson_c3_periphs_functions[] __initdata = {
 static struct meson_bank meson_c3_analog_banks[] = {
 	/* name  first  last  irq  pullen  pull  dir  out  in*/
 	BANK("DSI", DSI_D0P,    DSI_D3N,  -1, -1,
-		 0x3,  0,  0x4,  0,  0x1,  0,  0x0,  0,  0x5,  0),
+		 0x3,  0,  0x4,  0,  0x2,  0,  0x0,  0,  0x5,  0),
 	BANK("SAR", SAR_CH0,   SAR_CH3,  -1, -1,
-		 0x8,  1,  0x9,  1,  0x7,  1,  0x6,  1,  0xb,  1),
+		 0x9,  0,  0x10,  0,  0x8,  0,  0x6,  0,  0xb,  0),
 };
 
 static struct meson_pmx_bank meson_c3_analog_pmx_banks[] = {

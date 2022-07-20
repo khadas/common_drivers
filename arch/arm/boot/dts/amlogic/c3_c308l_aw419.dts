@@ -520,6 +520,7 @@
 		clocks = <&clkc CLKID_MCLK_0>;
 		clock-names = "mclk";
 		clock-frequency = <37125000>;
+		devices-type = <1>;
 		reset-gpios = <&gpio GPIOE_4 GPIO_ACTIVE_HIGH>;
 	};
 };

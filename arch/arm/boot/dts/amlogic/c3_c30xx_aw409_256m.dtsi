@@ -71,13 +71,14 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x3000000>;
+			size = <0x400000>;
 			alignment = <0x400000>;
+			status = "disabled";
 		};
 
 		rtos_reserved:linux,rtos_reserved {
 			compatible = "amlogic, aml_rtos_memory";
-			status = "okay";
+			status = "disabled";
 			reg = <0x4800000 0x200000>;
 			no-map;
 		};
@@ -103,7 +104,7 @@
 		pmz_cma_a1_reserved:anonymous {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x10000000>;
+			size = <0x8400000>;
 			alignment = <0x400000>;
 		};
 
@@ -1175,5 +1176,5 @@
 };
 
 &freertos {
-	status = "okay";
+	status = "disabled";
 };

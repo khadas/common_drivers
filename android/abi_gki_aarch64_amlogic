@@ -580,3 +580,5 @@
 # PCI: amlogic-pcie-v2-host.ko
   dw_pcie_host_deinit
 
+# CFG80211: cfg80211.ko
+  rfkill_set_sw_state

@@ -123,15 +123,19 @@ void debug_printk_modify_len(u16 *reserve_size, unsigned long irqflags, unsigned
 
 	printk_get_info(irqflags);
 	info_len = print_format_info(&printk_info, printk_info.format_buf);
-	*reserve_size += info_len;
-	if (*reserve_size > max_line)
-		*reserve_size = max_line;
 	printk_info.format_len = info_len;
+
+	if (*reserve_size + info_len > max_line)
+		return;
+	*reserve_size += info_len;
 }
 EXPORT_SYMBOL(debug_printk_modify_len);
 
-void debug_printk_insert_info(char *text_buf, u16 *text_len)
+void debug_printk_insert_info(char *text_buf, u16 *text_len, unsigned int max_line)
 {
+	if (*text_len + printk_info.format_len > max_line)
+		return;
+
 	memmove(text_buf + printk_info.format_len, text_buf, *text_len);
 	memcpy(text_buf, printk_info.format_buf, printk_info.format_len);
 	*text_len += printk_info.format_len;

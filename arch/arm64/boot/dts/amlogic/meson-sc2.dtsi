@@ -1416,7 +1416,7 @@
 	amvenc_avc{
 		compatible = "amlogic, amvenc_avc";
 		dev_name = "amvenc_avc";
-		status = "disabled";
+		status = "okay";
 		clocks = <&clkc CLKID_HCODEC_P0>;
 		clock-names = "cts_hcodec_aclk";
 		interrupts = <0 93 1>;
@@ -1427,9 +1427,9 @@
 	jpegenc{
 		compatible = "amlogic, jpegenc";
 		dev_name = "jpegenc";
-		status = "disabled";
+		status = "okay";
 		clocks = <&clkc CLKID_HCODEC_P0>;
-		clock-names = "cts_jpegenc_aclk";
+		clock-names = "clk_jpeg_enc";
 		interrupts = <0 93 1>;
 		interrupt-names = "mailbox_2";
 		reset-names = "jpegenc_rst";
@@ -1439,7 +1439,7 @@
 		compatible = "cnm, HevcEnc";
 		//memory-region = <&hevc_enc_reserved>;
 		dev_name = "HevcEnc";
-		status = "disabled";
+		status = "okay";
 		interrupts = <0 94 1>;
 		interrupt-names = "wave420l_irq";
 		#address-cells=<2>;

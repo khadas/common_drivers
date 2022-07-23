@@ -150,12 +150,14 @@ function extra_cmds() {
 
 	local src_dir=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
 	pushd ${src_dir}
+	cp modules.order modules_order.back
 	: > modules.order
 	while read LINE
 	do
 		find -name ${LINE} >> modules.order
 	done < ${DIST_DIR}/modules/modules.order
 	sed -i "s/^\.\///" modules.order
+	: > ${DIST_DIR}/ext_modules/ext_modules.order
 	ext_modules=
 	for ext_module in ${EXT_MODULES}; do
 		if [[ ${ext_module} =~ "../" ]]; then
@@ -168,28 +170,29 @@ function extra_cmds() {
 
 			ext_modules_order_file=$(ls extra/${ext_module}/modules.order.*)
 			ext_dir_top=${ext_module%/*}
-			if [[ -n ${ANDROID_PROJECT} ]]; then
-				sed -i "/^${ext_dir_top}\//d" modules.order
-
-				sed -i "s/\.\.\///g" ${ext_modules_order_file}
-			else
-				sed -i "s/^${ext_dir_top}\//extra\/${ext_dir_top}\//" modules.order
-				: > ${ext_modules_order_file}
-			fi
+			sed -i "s/\.\.\///g" ${ext_modules_order_file}
+			cat ${ext_modules_order_file} >> modules.order
+			cat ${ext_modules_order_file} | awk -F/ '{print $NF}' >> ${DIST_DIR}/ext_modules/ext_modules.order
+			: > ${ext_modules_order_file}
 		else
 			ext_modules_order_file=$(ls extra/${ext_module}/modules.order.*)
-			ext_dir_top=${ext_module%/*}
-			if [[ -n ${ANDROID_PROJECT} ]]; then
-				sed -i "/^${ext_dir_top}\//d" modules.order
-			else
-				: > ${ext_modules_order_file}
-			fi
+			cat ${ext_modules_order_file} >> modules.order
+			cat ${ext_modules_order_file} | awk -F/ '{print $NF}' >> ${DIST_DIR}/ext_modules/ext_modules.order
+			: > ${ext_modules_order_file}
 		fi
 		ext_modules="${ext_modules} ${ext_module}"
 	done
 	EXT_MODULES=${ext_modules}
 	echo EXT_MODULES=${EXT_MODULES}
 	export EXT_MODULES
+
+	head -n ${ramdisk_last_line} modules.order > system_dlkm_modules
+	file_last_line=`sed -n "$=" modules.order`
+	let line=${file_last_line}-${ramdisk_last_line}
+	tail -n ${line} modules.order > vendor_dlkm_modules
+	export MODULES_LIST=${src_dir}/system_dlkm_modules
+	export VENDOR_DLKM_MODULES_LIST=${src_dir}/vendor_dlkm_modules
+
 	popd
 
 	if [[ -z ${ANDROID_PROJECT} ]]; then
@@ -336,8 +339,10 @@ create_ramdisk_vendor() {
 	for line in ${last_ramdisk_module_line}; do
 		ramdisk_last_line=${line}
 	done
+	export ramdisk_last_line
 	head -n ${ramdisk_last_line} ${install_temp} > ramdisk_install.sh
 	mkdir ramdisk
+	cat ramdisk_install.sh | cut -d ' ' -f 2 > ramdisk/ramdisk_modules.order
 	cat ramdisk_install.sh | cut -d ' ' -f 2 | xargs mv -t ramdisk/
 
 	sed -i '1s/^/#!\/bin\/sh\n\nset -x\n/' ramdisk_install.sh
@@ -349,6 +354,7 @@ create_ramdisk_vendor() {
 	let line=${file_last_line}-${ramdisk_last_line}
 	tail -n ${line} ${install_temp} > vendor_install.sh
 	mkdir vendor
+	cat vendor_install.sh | cut -d ' ' -f 2 > vendor/vendor_modules.order
 	cat vendor_install.sh | cut -d ' ' -f 2 | xargs mv -t vendor/
 
 	sed -i '1s/^/#!\/bin\/sh\n\nset -x\n/' vendor_install.sh
@@ -410,15 +416,7 @@ function modules_install() {
 
 	create_ramdisk_vendor __install.sh.tmp
 
-	cp __install.sh.tmp __install.sh
-
-	#sed -i '1s/^/#!\/bin\/sh\n\nset -ex\n/' __install.sh
-	#echo "echo Install modules success!" >> __install.sh
-	#chmod 755 __install.sh
-
 	echo "#!/bin/sh" > install.sh
-	# echo "./__install.sh || reboot" >> install.sh
-	# echo "./__install.sh" >> install.sh
 	echo "cd ramdisk" >> install.sh
 	echo "./ramdisk_install.sh" >> install.sh
 	echo "cd ../vendor" >> install.sh

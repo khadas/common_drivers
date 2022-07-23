@@ -245,13 +245,11 @@ if [[ -n ${RM_KERNEL_BUILD_VAR_FILE} ]]; then
 fi
 
 echo "========================================================"
-if [[ -z ${ANDROID_PROJECT} ]]; then
-	if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
-		echo "Rebuild rootfs in order to install modules!"
-		rebuild_rootfs
-	else
-		echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
-	fi
+if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
+	echo "Rebuild rootfs in order to install modules!"
+	rebuild_rootfs
+else
+	echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
 fi
 set +e
 

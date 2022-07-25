@@ -7,7 +7,7 @@ function show_help {
 	echo "  --build_config          for BUILD_CONFIG, common_drivers/build.config.amlogic[default]|common/build.config.gki.aarch64, require parameter value"
 	echo "  --symbol_strict         for KMI_SYMBOL_LIST_STRICT_MODE, 1[default]|0, require parameter value"
 	echo "  --lto                   for LTO, full|thin[default]|none, require parameter value"
-	echo "  --menuconfig            for only menuconfig, not require parameter value"
+	echo "  --savedefconfig         for only savedefconfig, not require parameter value"
 	echo "  --image                 for only build kernel, not require parameter value"
 	echo "  --modules               for only build modules, not require parameter value"
 	echo "  --dtbs                  for only build dtbs, not require parameter value"
@@ -43,8 +43,8 @@ do
 		VA=1
                 shift
 		;;
-	--menuconfig)
-		MENUCONFIG=1
+	--savedefconfig)
+		SAVEDEFCONFIG=1
 		shift
 		;;
 	--image)
@@ -173,17 +173,17 @@ else
 	OUT_DIR_SUFFIX=
 fi
 
-echo MENUCONFIG=${MENUCONFIG} IMAGE=${IMAGE} MODULES=${MODULES} DTB_BUILD=${DTB_BUILD}
-if [[ -n ${MENUCONFIG} ]] || [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n ${DTB_BUILD} ]]; then
+echo SAVEDEFCONFIG=${SAVEDEFCONFIG} IMAGE=${IMAGE} MODULES=${MODULES} DTB_BUILD=${DTB_BUILD}
+if [[ -n ${SAVEDEFCONFIG} ]] || [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n ${DTB_BUILD} ]]; then
 
 	source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
 	source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
 
-	if [[ -n ${MENUCONFIG} ]]; then
+	if [[ -n ${SAVEDEFCONFIG} ]]; then
 		set -x
 		pre_defconfig_cmds
 		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${DEFCONFIG})
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" menuconfig)
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
 		post_defconfig_cmds
 		set +x
 	fi

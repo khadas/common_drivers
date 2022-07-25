@@ -510,6 +510,9 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 		}
 		src_clk = host->clk[1];
 		cfg |= CFG_AUTO_CLK;
+	/* sdio sdr104 set clk always on default */
+		if (aml_card_type_sdio(host))
+			cfg &= ~CFG_AUTO_CLK;
 		break;
 	case MMC_TIMING_LEGACY:
 		dev_dbg(host->dev, "[%s]Legacy set rate to:%lu\n",

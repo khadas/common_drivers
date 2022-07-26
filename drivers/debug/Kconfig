@@ -46,9 +46,24 @@ config AMLOGIC_DEBUG_FTRACE_PSTORE
 	depends on PSTORE_FTRACE
 	default n
 	help
-		Dump function call and register access to ramoops after watchdog
-		reboot.
-		Enable if doubt
+	  Dump function call and register access to ramoops after watchdog
+	  reboot.
+	  Enable if doubt
+
+config AMLOGIC_DEBUG_RELABEL
+	tristate "Amlogic filp relabel support"
+	depends on AMLOGIC_DEBUG
+	default n
+	help
+	  if you want to print information such as cpu irq,
+	  please use this option switch it.
+
+config AMLOGIC_DEBUG_RELABEL_GKI
+	tristate "Amlogic filp relabel gki support"
+	default n
+	help
+	  if build with gki set this config to y,
+	  else set this config to n.
 
 config AMLOGIC_DEBUG_SCRAMBLER_RAMOOPS
 	bool "Amlogic ddr scrambler keypreserve mode for pstore debug"

@@ -23,3 +23,5 @@
   __tracepoint_softirq_entry
   __tracepoint_softirq_exit
   dump_cpu_task
+  debug_filp_open
+  debug_vfs_setxattr

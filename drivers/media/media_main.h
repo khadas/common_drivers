@@ -188,6 +188,15 @@ static inline int ion_init(void)
 }
 #endif
 
+#ifdef CONFIG_AMLOGIC_HEAP_CMA
+int add_meson_cma_heap(void);
+#else
+static inline int add_meson_cma_heap(void)
+{
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_AMLOGIC_UVM_CORE
 int mua_init(void);
 #else

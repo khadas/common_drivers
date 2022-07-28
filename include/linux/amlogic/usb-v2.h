@@ -268,6 +268,8 @@ struct amlogic_usb_v2 {
 	void	(*disable_port_a)(void);
 	void	(*usb2_phy_init)(void);
 	int	(*usb2_get_mode)(void);
+	void (*phy_trim_tuning)(struct usb_phy *x,
+		int port, int default_val);
 };
 
 union phy3_r1 {
@@ -541,6 +543,19 @@ union phy_m31_r15 {
 		unsigned m31phy_debug_out:32;
 	} b;
 };
+
+static inline void
+usb_phy_trim_tuning(struct usb_phy *x, int port, int default_val)
+{
+	struct amlogic_usb_v2	*aml_phy;
+
+	if (x) {
+		aml_phy = container_of(x, struct amlogic_usb_v2, phy);
+
+		if (aml_phy->phy_trim_tuning)
+			aml_phy->phy_trim_tuning(x, port, default_val);
+	}
+}
 
 void aml_new_usb3_get_phy(struct amlogic_usb_v2 *phy);
 void cr_bus_addr(unsigned int addr);

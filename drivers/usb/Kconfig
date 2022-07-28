@@ -13,6 +13,16 @@ config AMLOGIC_USB
 	  host
 	  controller.
 
+config AMLOGIC_COMMON_USB
+	bool "It is used to cover the USB modification for common dir."
+	default n
+	depends on AMLOGIC_USB
+	help
+	  DWC_OTG
+	  USB
+	  host
+	  controller.
+
 config AMLOGIC_USB_SUPPORT
 	tristate "USB Host controller and phy support"
 	depends on AMLOGIC_USB

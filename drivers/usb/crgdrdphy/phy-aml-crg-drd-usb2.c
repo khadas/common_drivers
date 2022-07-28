@@ -641,7 +641,7 @@ static int amlogic_crg_drd_usb2_probe(struct platform_device *pdev)
 	phy->phy.init		= amlogic_crg_drd_usb2_init;
 	phy->phy.set_suspend	= amlogic_crg_drd_usb2_suspend;
 	phy->phy.shutdown	= amlogic_crg_drd_usb2phy_shutdown;
-	phy->phy.phy_trim_tuning	= set_usb_phy_trim_tuning;
+	phy->phy_trim_tuning	= set_usb_phy_trim_tuning;
 	phy->phy.type		= USB_PHY_TYPE_USB2;
 	phy->pll_setting[0] = pll_setting[0];
 	phy->pll_setting[1] = pll_setting[1];

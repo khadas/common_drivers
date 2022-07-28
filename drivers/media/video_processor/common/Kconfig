@@ -8,7 +8,7 @@ menu "Amlogic video_pp_common support"
 
 config AMLOGIC_VIDEO_PP_COMMON
 	tristate "Amlogic video_pp_common device support"
-	select VIDEO_DEV
+	depends on VIDEO_DEV
 	default n
 
 	help

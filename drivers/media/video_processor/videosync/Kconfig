@@ -4,7 +4,7 @@ menu "Amlogic videosync support"
 
 config AMLOGIC_VIDEOSYNC
 	tristate "amlogic videosync device support"
-	select VIDEO_DEV
+	depends on VIDEO_DEV
 	default n
 
 	help

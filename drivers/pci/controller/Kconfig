@@ -2,7 +2,7 @@
 
 config AMLOGIC_PCIE_V2_HOST
 	tristate "Meson PCIE_V2 controller"
-	select AMLOGIC_PCI_HOST
+	depends on AMLOGIC_PCI_HOST
 	depends on PCI && PCI_MSI_IRQ_DOMAIN
 	depends on PCIE_DW_HOST
 	help

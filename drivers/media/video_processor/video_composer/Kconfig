@@ -8,7 +8,7 @@ menu "Amlogic video_composer support"
 
 config AMLOGIC_VIDEO_COMPOSER
 	tristate "Amlogic video_composer device support"
-	select VIDEO_DEV
+	depends on VIDEO_DEV
 	default n
 
 	help

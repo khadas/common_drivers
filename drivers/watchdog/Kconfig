@@ -18,7 +18,7 @@ config AMLOGIC_ARM_SMC_WATCHDOG
 	depends on ARM || ARM64
 	depends on OF
 	depends on HAVE_ARM_SMCCC
-	select WATCHDOG_CORE
+	depends on WATCHDOG_CORE
 	help
 	  Say Y here to include support for a watchdog timer
 	  implemented by the EL3 Secure Monitor on ARM platforms.

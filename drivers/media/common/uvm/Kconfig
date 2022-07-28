@@ -13,7 +13,7 @@ menuconfig AMLOGIC_UVM_CORE
 menuconfig AMLOGIC_UVM_ALLOCATOR
 	bool "Amlogic uvm allocator device driver"
 	default n
-	select AMLOGIC_UVM_CORE
+	depends on AMLOGIC_UVM_CORE
 	help
 	  say y to enable amlogic uvm allocator device driver.
 	  gralloc will call it to allocate dmabuf fd.

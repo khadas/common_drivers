@@ -1416,7 +1416,7 @@ static int is_yuv_format(u32 format)
 static void osd1_matrix_yuv2rgb(int yuv2rgb)
 {
 	int i;
-	int mat_conv_en;
+	int mat_conv_en = 0;
 	int pre_offset[3], post_offset[3];
 	int mat_coef[15];
 	int rgb2yuvpre[3] = {0, 0, 0};
@@ -1432,6 +1432,9 @@ static void osd1_matrix_yuv2rgb(int yuv2rgb)
 	int ycbcr2rgb[15] = {1197, 0, 1726, 1197, -193, -669,
 		1197, 2202, 0, 0, 0, 0, 0, 0, 0};
 
+	memset(pre_offset, 0, sizeof(pre_offset));
+	memset(post_offset, 0, sizeof(post_offset));
+	memset(mat_coef, 0, sizeof(mat_coef));
 	if (matrix_save == yuv2rgb)
 		return;
 	switch (yuv2rgb) {
@@ -7658,10 +7661,10 @@ static void osd_update_disp_osd_rotate(u32 index)
 	if (!vinfo) {
 		osd_log_err("current vinfo NULL\n");
 		return;
+	} else {
+		out_y_crop_start = 0;
+		out_y_crop_end = vinfo->height;
 	}
-
-	out_y_crop_start = 0;
-	out_y_crop_end = vinfo->height;
 #endif
 	src_width = src_data.w;
 	src_height = src_data.h;

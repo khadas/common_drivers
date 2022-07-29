@@ -1467,6 +1467,7 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 {
 	int ret = -1;
 	size_t len = 0;
+	bool rc = false;
 	struct gdc_context_s *context = NULL;
 	struct gdc_settings gs;
 	struct gdc_cmd_s *gdc_cmd = NULL;
@@ -1667,8 +1668,10 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 			ret = meson_gdc_set_buff(context,
 						 cma_pages, buf_cfg.len);
 			if (ret != 0) {
-				cma_release(cma_area, cma_pages,
-					 buf_cfg.len >> PAGE_SHIFT);
+				rc = cma_release(cma_area, cma_pages,
+							buf_cfg.len >> PAGE_SHIFT);
+				if (!rc)
+					gdc_log(LOG_ERR, "Failed to release buff\n");
 				gdc_log(LOG_ERR, "Failed to set buff\n");
 				return ret;
 			}

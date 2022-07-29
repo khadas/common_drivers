@@ -2039,7 +2039,7 @@ int osd_notify_callback_viu2(struct notifier_block *block,
 	vinfo = get_current_vinfo2();
 #endif
 
-	if (!vinfo || !vinfo->name) {
+	if (!vinfo) {
 		osd_log_err("current vinfo or name NULL\n");
 		return -1;
 	}
@@ -2811,12 +2811,8 @@ static ssize_t store_antiflicker(struct device *device,
 		osd_log_err("get current vinfo NULL\n");
 		return 0;
 	}
-	if (osd_antiflicker == 2)
-		osd_set_antiflicker_hw(fb_info->node,
-				       vinfo, fb_info->var.yres);
-	else
-		osd_set_antiflicker_hw(fb_info->node,
-				       vinfo, fb_info->var.yres);
+	osd_set_antiflicker_hw(fb_info->node,
+			       vinfo, fb_info->var.yres);
 #endif
 	return count;
 }

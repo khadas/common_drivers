@@ -7652,7 +7652,7 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 static void vd1_matrix_yuv2rgb(int yuv2rgb)
 {
 	int i;
-	int mat_conv_en;
+	int mat_conv_en = 0;
 	int pre_offset[3], post_offset[3];
 	int mat_coef[15];
 	int rgb2yuvpre[3] = {0, 0, 0};
@@ -7668,6 +7668,9 @@ static void vd1_matrix_yuv2rgb(int yuv2rgb)
 	int ycbcr2rgb[15] = {1197, 0, 1726, 1197, -193, -669,
 		1197, 2202, 0, 0, 0, 0, 0, 0, 0};
 
+	memset(pre_offset, 0, sizeof(pre_offset));
+	memset(post_offset, 0, sizeof(post_offset));
+	memset(mat_coef, 0, sizeof(mat_coef));
 	if (matrix_save == yuv2rgb)
 		return;
 	switch (yuv2rgb) {

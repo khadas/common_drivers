@@ -29,6 +29,8 @@ fi
 
 DEFCONFIG=amlogic_gki_defconfig
 FRAGMENT_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.fragment
+FRAGMENT_CONFIG_OPTIMIZE=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.optimize
+FRAGMENT_CONFIG_DEBUG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.debug
 
 PRE_DEFCONFIG_CMDS="pre_defconfig_cmds"
 POST_DEFCONFIG_CMDS="post_defconfig_cmds"
@@ -104,15 +106,31 @@ fi
 POST_KERNEL_BUILD_CMDS="prepare_module_build"
 EXTRA_CMDS="extra_cmds"
 
-ADDITIONAL_KMI_SYMBOL_LISTS="
-	${ADDITIONAL_KMI_SYMBOL_LISTS}
-	${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic
-"
+
+if [[ ${GKI_CONFIG} == gki ]]; then
+	ADDITIONAL_KMI_SYMBOL_LISTS="
+		${ADDITIONAL_KMI_SYMBOL_LISTS}
+		${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic
+	"
+elif [[ ${GKI_CONFIG} == gki_user ]]; then
+	ADDITIONAL_KMI_SYMBOL_LISTS="
+		${ADDITIONAL_KMI_SYMBOL_LISTS}
+		${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic
+		${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.optimize
+	"
+elif [[ ${GKI_CONFIG} == gki_userdebug ]]; then
+	ADDITIONAL_KMI_SYMBOL_LISTS="
+		${ADDITIONAL_KMI_SYMBOL_LISTS}
+		${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic
+		${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.optimize
+		${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.debug
+	"
+fi
 
 if [[ `grep "CONFIG_AMLOGIC_BREAK_GKI=y" ${ROOT_DIR}/${FRAGMENT_CONFIG}` ]]; then
 	ADDITIONAL_KMI_SYMBOL_LISTS="
 		${ADDITIONAL_KMI_SYMBOL_LISTS}
-		${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic_illegal
+		${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.illegal
 	"
 fi
 

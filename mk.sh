@@ -17,6 +17,9 @@ function show_help {
 	echo "  --check_defconfig       for check defconfig"
 	echo "  --modules_depend        for check modules depend"
 	echo "  --android_project       for android project build"
+	echo "  --gki"					for build gki kernel:           gki_defconfig + amlogic_gki.fragment
+	echo "  --gki_user"				for build gki user kernel:      gki_defconfig + amlogic_gki.fragment + amlogic_gki.optimize
+	echo "  --gki_userdebug"        for build gki userdebug kernel: gki_defconfig + amlogic_gki.fragment + amlogic_gki.optimize + amlogic_gki.debug
 }
 
 VA=
@@ -86,6 +89,18 @@ do
 	--android_project)
 		ANDROID_PROJECT=$2
 		VA=1
+		shift
+		;;
+	--gki)
+		GKI_CONFIG=gki
+		shift
+		;;
+	--gki_user)
+		GKI_CONFIG=gki_user
+		shift
+		;;
+	--gki_userdebug)
+		GKI_CONFIG=gki_userdebug
 		shift
 		;;
 	-h|--help)
@@ -159,11 +174,13 @@ if [[ ! -f ${KERNEL_BUILD_VAR_FILE} ]]; then
 	RM_KERNEL_BUILD_VAR_FILE=1
 fi
 
+GKI_CONFIG=${GKI_CONFIG:-gki_userdebug}
+
 set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG
 echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG}
-export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT
-echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR}
+export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG
+echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} GKI_CONFIG=${GKI_CONFIG}
 
 source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic
 

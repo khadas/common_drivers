@@ -4,6 +4,7 @@
  */
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/init.h>
 #include <linux/platform_device.h>
 #include <linux/of_device.h>
 #include <linux/of_graph.h>
@@ -46,8 +47,11 @@
 #include "meson_hdmi.h"
 #include "meson_plane.h"
 
+#ifdef CONFIG_AMLOGIC_MEDIA_FB
 #include <linux/amlogic/media/osd/osd_logo.h>
+#endif
 #include <linux/amlogic/media/vout/vout_notify.h>
+#include <linux/amlogic/gki_module.h>
 
 #ifdef CONFIG_CMA
 struct cma *cma_logo;
@@ -67,6 +71,194 @@ core_param(fb_width, logo.width, uint, 0644);
 core_param(fb_height, logo.height, uint, 0644);
 core_param(display_bpp, logo.bpp, uint, 0644);
 core_param(outputmode, logo.outputmode_t, charp, 0644);
+#endif
+
+#ifndef CONFIG_AMLOGIC_MEDIA_FB
+static u32 drm_logo_bpp;
+static u32 drm_logo_width;
+static u32 drm_logo_height;
+
+static int __init drm_logo_bpp_setup(char *str)
+{
+	int ret;
+
+	ret = kstrtoint(str, 0, &drm_logo_bpp);
+	return ret;
+}
+__setup("display_bpp=", drm_logo_bpp_setup);
+
+static u32 drm_logo_get_display_bpp(void)
+{
+	return drm_logo_bpp;
+}
+
+static int __init drm_logo_width_setup(char *str)
+{
+	int ret;
+
+	ret = kstrtoint(str, 0, &drm_logo_width);
+	return ret;
+}
+__setup("fb_width=", drm_logo_width_setup);
+
+static u32 drm_logo_get_fb_width(void)
+{
+	return drm_logo_width;
+}
+
+static int __init drm_logo_height_setup(char *str)
+{
+	int ret;
+
+	ret = kstrtoint(str, 0, &drm_logo_height);
+	return ret;
+}
+__setup("fb_height=", drm_logo_height_setup);
+
+static u32 drm_logo_get_fb_height(void)
+{
+	return drm_logo_height;
+}
+
+#define OSD_INVALID_INFO 0xffffffff
+#define OSD_FIRST_GROUP_START 1
+#define OSD_SECOND_GROUP_START 4
+#define OSD_END 7
+
+static inline  int str2lower(char *str)
+{
+	while (*str != '\0') {
+		*str = tolower(*str);
+		str++;
+	}
+	return 0;
+}
+
+static struct osd_info_s osd_info = {
+	.index = 0,
+	.osd_reverse = 0,
+};
+
+static struct para_osd_info_s para_osd_info[OSD_END + 2] = {
+	/* head */
+	{
+		"head", OSD_INVALID_INFO,
+		OSD_END + 1, 1,
+		0, OSD_END + 1
+	},
+	/* dev */
+	{
+		"osd0",	DEV_OSD0,
+		OSD_FIRST_GROUP_START - 1, OSD_FIRST_GROUP_START + 1,
+		OSD_FIRST_GROUP_START, OSD_SECOND_GROUP_START - 1
+	},
+	{
+		"osd1",	DEV_OSD1,
+		OSD_FIRST_GROUP_START, OSD_FIRST_GROUP_START + 2,
+		OSD_FIRST_GROUP_START, OSD_SECOND_GROUP_START - 1
+	},
+	{
+		"all", DEV_ALL,
+		OSD_FIRST_GROUP_START + 1, OSD_FIRST_GROUP_START + 3,
+		OSD_FIRST_GROUP_START, OSD_SECOND_GROUP_START - 1
+	},
+	/* reverse_mode */
+	{
+		"false", REVERSE_FALSE,
+		OSD_SECOND_GROUP_START - 1, OSD_SECOND_GROUP_START + 1,
+		OSD_SECOND_GROUP_START, OSD_END
+	},
+	{
+		"true", REVERSE_TRUE,
+		OSD_SECOND_GROUP_START, OSD_SECOND_GROUP_START + 2,
+		OSD_SECOND_GROUP_START, OSD_END
+	},
+	{
+		"x_rev", REVERSE_X,
+		OSD_SECOND_GROUP_START + 1, OSD_SECOND_GROUP_START + 3,
+		OSD_SECOND_GROUP_START, OSD_END
+	},
+	{
+		"y_rev", REVERSE_Y,
+		OSD_SECOND_GROUP_START + 2, OSD_SECOND_GROUP_START + 4,
+		OSD_SECOND_GROUP_START, OSD_END
+	},
+	{
+		"tail", OSD_INVALID_INFO, OSD_END,
+		0, 0,
+		OSD_END + 1
+	},
+};
+
+static inline int install_osd_reverse_info(struct osd_info_s *init_osd_info,
+					   char *para)
+{
+	u32 i = 0;
+	static u32 tail = OSD_END + 1;
+	u32 first = para_osd_info[0].next_idx;
+
+	for (i = first; i < tail; i = para_osd_info[i].next_idx) {
+		if (strcmp(para_osd_info[i].name, para) == 0) {
+			u32 group_start = para_osd_info[i].cur_group_start;
+			u32 group_end = para_osd_info[i].cur_group_end;
+			u32	prev = para_osd_info[group_start].prev_idx;
+			u32  next = para_osd_info[group_end].next_idx;
+
+			switch (para_osd_info[i].cur_group_start) {
+			case OSD_FIRST_GROUP_START:
+				init_osd_info->index = para_osd_info[i].info;
+				break;
+			case OSD_SECOND_GROUP_START:
+				init_osd_info->osd_reverse =
+					para_osd_info[i].info;
+				break;
+			}
+			para_osd_info[prev].next_idx = next;
+			para_osd_info[next].prev_idx = prev;
+			return 0;
+		}
+	}
+	return 0;
+}
+
+static int __init drm_logo_reverse_setup(char *str)
+{
+	char	*ptr = str;
+	char	sep[2];
+	char	*option;
+	int count = 2;
+	char find = 0;
+	struct osd_info_s *init_osd_info;
+
+	if (!str)
+		return -EINVAL;
+
+	init_osd_info = &osd_info;
+	memset(init_osd_info, 0, sizeof(struct osd_info_s));
+	do {
+		if (!isalpha(*ptr) && !isdigit(*ptr)) {
+			find = 1;
+			break;
+		}
+	} while (*++ptr != '\0');
+	if (!find)
+		return -EINVAL;
+	sep[0] = *ptr;
+	sep[1] = '\0';
+	while ((count--) && (option = strsep(&str, sep))) {
+		str2lower(option);
+		install_osd_reverse_info(init_osd_info, option);
+	}
+	return 0;
+}
+__setup("osd_reverse=", drm_logo_reverse_setup);
+
+void drm_logo_get_osd_reverse(u32 *index, u32 *reverse_type)
+{
+	*index = osd_info.index;
+	*reverse_type = osd_info.osd_reverse;
+}
+
 #endif
 
 struct para_pair_s {
@@ -595,11 +787,19 @@ void am_meson_logo_init(struct drm_device *dev)
 		}
 	}
 
+#ifdef CONFIG_AMLOGIC_MEDIA_FB
 	get_logo_osd_reverse(&osd_index, &reverse_type);
 	logo.osd_reverse = reverse_type;
 	logo.width = get_logo_fb_width();
 	logo.height = get_logo_fb_height();
 	logo.bpp = get_logo_display_bpp();
+#else
+	drm_logo_get_osd_reverse(&osd_index, &reverse_type);
+	logo.osd_reverse = reverse_type;
+	logo.width = drm_logo_get_fb_width();
+	logo.height = drm_logo_get_fb_height();
+	logo.bpp = drm_logo_get_display_bpp();
+#endif
 	if (!logo.bpp)
 		logo.bpp = 16;
 

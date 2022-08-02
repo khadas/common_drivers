@@ -4,8 +4,9 @@
  */
 
 #include <linux/types.h>
+#ifdef CONFIG_AMLOGIC_MEDIA_FB
 #include <linux/amlogic/media/osd/osd_logo.h>
-
+#endif
 #include "meson_plane.h"
 #include "meson_crtc.h"
 #include "meson_vpu.h"
@@ -1397,7 +1398,11 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv, int i)
 	osd_plane->plane_index = i;
 	osd_plane->plane_type = OSD_PLANE;
 
+#ifdef CONFIG_AMLOGIC_MEDIA_FB
 	get_logo_osd_reverse(&osd_index, &logo.osd_reverse);
+#else
+	drm_logo_get_osd_reverse(&osd_index, &logo.osd_reverse);
+#endif
 	switch (logo.osd_reverse) {
 	case 1:
 		osd_plane->osd_reverse = DRM_MODE_REFLECT_MASK;

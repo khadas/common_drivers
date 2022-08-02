@@ -13,7 +13,6 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
-#include <linux/amlogic/media/codec_mm/secmem.h>
 
 #include <linux/amlogic/ion.h>
 #include "dev_ion.h"

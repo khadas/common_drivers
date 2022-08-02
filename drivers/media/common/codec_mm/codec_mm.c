@@ -9,7 +9,6 @@
 #include <linux/errno.h>
 #include <linux/interrupt.h>
 #include <linux/timer.h>
-#include <linux/dma-map-ops.h>
 #include <linux/cma.h>
 #include <linux/slab.h>
 #include <linux/of.h>
@@ -20,6 +19,7 @@
 #include <linux/platform_device.h>
 #include <linux/genalloc.h>
 #include <linux/dma-mapping.h>
+#include <linux/dma-map-ops.h>
 #include <linux/delay.h>
 #include <linux/mm.h>
 
@@ -28,7 +28,7 @@
 #include <linux/amlogic/media/codec_mm/configs.h>
 #include <linux/amlogic/aml_cma.h>
 
-#ifdef CONFIG_AMLOGIC_CPU_INFO
+#if IS_ENABLED(CONFIG_AMLOGIC_CPU_INFO)
 #include <linux/amlogic/media/registers/cpu_version.h>
 #else
 unsigned char get_meson_cpu_version(int level)
@@ -38,7 +38,6 @@ unsigned char get_meson_cpu_version(int level)
 #endif
 
 #include "codec_mm_priv.h"
-#include "codec_mm_scatter_priv.h"
 #include "codec_mm_scatter_priv.h"
 #include "codec_mm_keeper_priv.h"
 #include <linux/highmem.h>
@@ -318,10 +317,12 @@ static struct codec_mm_mgt_s *get_mem_mgt(void)
 		 *which mode
 		 */
 		ret = tee_protect_tvp_mem(0, 0, &handle);
-		if (ret == 0xFFFFFFFF)
+		if (ret == 0xFFFFFFFF) {
 			tvp_mode = 0;
-		else
+			tvp_dynamic_increase_disable = 1;
+		} else {
 			tvp_mode = 1;
+		}
 		mutex_init(&mgt.tvp_protect_lock);
 		inited++;
 	}
@@ -373,12 +374,11 @@ static int codec_mm_valid_mm_locked(struct codec_mm_s *mmhandle)
 static int codec_mm_alloc_tvp_pre_check_in(struct codec_mm_mgt_s *mgt,
 		int need_size, int flags)
 {
-	struct extpool_mgt_s *tvp_pool;
-	int i = 0;
-
 	if (!mgt)
 		return 0;
-	tvp_pool = &mgt->tvp_pool;
+
+	struct extpool_mgt_s *tvp_pool = &mgt->tvp_pool;
+	int i = 0;
 
 	mutex_lock(&tvp_pool->pool_lock);
 	for (i = 0; i < tvp_pool->slot_num; i++) {
@@ -1113,7 +1113,6 @@ void codec_mm_release(struct codec_mm_s *mem, const char *owner)
 	mem->owner[index] = NULL;
 	if (index == 0) {
 		struct codec_mm_cb_s *cur, *tmp;
-
 		list_del(&mem->list);
 		spin_unlock_irqrestore(&mgt->lock, flags);
 		list_for_each_entry_safe(cur,
@@ -1344,7 +1343,7 @@ int codec_mm_request_shared_mem(struct codec_mm_s *mem, const char *owner)
 out:
 	spin_unlock_irqrestore(&mgt->lock, flags);
 
-	return 0;
+	return ret;
 }
 EXPORT_SYMBOL(codec_mm_request_shared_mem);
 
@@ -1451,6 +1450,8 @@ static int codec_mm_tvp_pool_protect(struct extpool_mgt_s *tvp_pool)
 				i, tvp_pool->mm[i]->tvp_handle, ret,
 				(unsigned int)tvp_pool->mm[i]->phy_addr,
 				(unsigned int)tvp_pool->mm[i]->buffer_size);
+			if (ret)
+				break;
 		} else {
 			pr_info("protect tvp %d %d ret %d\n",
 				i, tvp_pool->mm[i]->tvp_handle, ret);
@@ -1470,6 +1471,12 @@ static int codec_mm_extpool_pool_release_inner(int slot_num_start,
 		int slot_mem_size = 0;
 
 		if (gpool) {
+			if (tvp_pool->mm[i] && tvp_pool->mm[i]->tvp_handle > 0) {
+				pr_info("unprotect tvp %d handle is %d\n", i,
+					tvp_pool->mm[i]->tvp_handle);
+				tee_unprotect_tvp_mem(tvp_pool->mm[i]->tvp_handle);
+				tvp_pool->mm[i]->tvp_handle = -1;
+			}
 			slot_mem_size = gen_pool_size(gpool);
 			gen_pool_destroy(tvp_pool->gen_pool[i]);
 			if (tvp_pool->mm[i]) {
@@ -1564,12 +1571,16 @@ static int codec_mm_tvp_pool_alloc_by_slot(struct extpool_mgt_s *tvp_pool,
 	int size = 0;
 	int try_alloced_size = 0;
 	int max_reserved_free_size = 0;
+	int max_cma_reserved_free_size = 0;
 	int max_cma_free_size = 0;
 	int use_cma_pool_first = 0;
 	int retry_cnt = 0;
 
 	mutex_lock(&tvp_pool->pool_lock);
+	max_cma_reserved_free_size = mgt->cma_res_pool.total_size - mgt->cma_res_pool.alloced_size;
 	max_reserved_free_size = mgt->total_reserved_size - mgt->alloced_res_size;
+	if (max_cma_reserved_free_size > max_reserved_free_size)
+		max_reserved_free_size = max_cma_reserved_free_size;
 	max_cma_free_size = mgt->total_cma_size - mgt->alloced_cma_size;
 	use_cma_pool_first = max_cma_free_size > max_reserved_free_size ? 1 : 0;
 
@@ -1688,15 +1699,18 @@ int codec_mm_extpool_pool_alloc(struct extpool_mgt_s *tvp_pool,
 	int ret;
 	int retry_cnt = size / (4 * SZ_1M);
 	int slot_num = tvp_pool->slot_num;
+	int max_cma_reserved_free_size = 0;
 
 	/*alloced from reserved*/
 	mutex_lock(&tvp_pool->pool_lock);
 	if (alloced_size >= size)
 		goto alloced_finished1;
+	max_cma_reserved_free_size = mgt->cma_res_pool.total_size - mgt->cma_res_pool.alloced_size;
 	try_alloced_size = mgt->total_reserved_size - mgt->alloced_res_size;
+	if (max_cma_reserved_free_size > try_alloced_size)
+		try_alloced_size = max_cma_reserved_free_size;
 	if (try_alloced_size > 0 && for_tvp) {
 		int retry = 0;
-
 		try_alloced_size = min_t(int,
 			size - alloced_size, try_alloced_size);
 		try_alloced_size = MM_ALIGN_DOWN_2N(try_alloced_size,
@@ -1740,6 +1754,10 @@ int codec_mm_extpool_pool_alloc(struct extpool_mgt_s *tvp_pool,
 	try_alloced_size = mgt->total_cma_size - mgt->alloced_cma_size;
 	if (try_alloced_size > 0) {
 		int retry = 0;
+		int memflags = CODEC_MM_FLAGS_FOR_LOCAL_MGR | CODEC_MM_FLAGS_CMA;
+
+		if (for_tvp)
+			memflags |= CODEC_MM_FLAGS_RESERVED;
 
 		try_alloced_size = min_t(int,
 			size - alloced_size, try_alloced_size);
@@ -1749,8 +1767,7 @@ int codec_mm_extpool_pool_alloc(struct extpool_mgt_s *tvp_pool,
 			mem = codec_mm_alloc(for_tvp ? TVP_POOL_NAME :
 						CMA_RES_POOL_NAME,
 					try_alloced_size, RESERVE_MM_ALIGNED_2N,
-					CODEC_MM_FLAGS_FOR_LOCAL_MGR |
-					CODEC_MM_FLAGS_CMA);
+					memflags);
 			if (mem) {
 				struct page *mm = mem->mem_handle;
 
@@ -1952,7 +1969,6 @@ static int codec_mm_tvp_get_mem_resource(ulong *res, int victor_size)
 	struct codec_mm_mgt_s *mgt = get_mem_mgt();
 	struct extpool_mgt_s *tvp_pool = &mgt->tvp_pool;
 	int i;
-
 	mutex_lock(&tvp_pool->pool_lock);
 	for (i = 0; i < tvp_pool->slot_num && i < victor_size / 2; i++) {
 		if (tvp_pool->mm[i]) {
@@ -2153,12 +2169,12 @@ static int dump_mem_infos(void *buf, int size)
 	}
 	list_for_each_entry(mem, &mgt->mem_list, list) {
 		s = snprintf(pbuf, size - tsize,
-			     "\t[%d].%d:%s.%d,addr=%p,size=%d,from=%d,cnt=%d,",
+			     "\t[%d].%d:%s.%d,addr=%ld,size=%d,from=%d,cnt=%d,",
 			mem->mem_id,
 			mem->ins_id,
 			mem->owner[0] ? mem->owner[0] : "no",
 			mem->ins_buffer_id,
-			(void *)mem->phy_addr,
+			mem->phy_addr,
 			mem->buffer_size,
 			mem->from_flags,
 			atomic_read(&mem->use_cnt)
@@ -2543,7 +2559,8 @@ EXPORT_SYMBOL(codec_mm_get_total_size);
 int codec_mm_get_free_size(void)
 {
 	struct codec_mm_mgt_s *mgt = get_mem_mgt();
-
+	if (debug_mode & 0x20)
+		dump_mem_infos(NULL, 0);
 	return codec_mm_get_total_size() -
 		mgt->tvp_pool.total_size  + mgt->tvp_pool.alloced_size -
 		mgt->total_alloced_size;
@@ -2553,7 +2570,6 @@ EXPORT_SYMBOL(codec_mm_get_free_size);
 int codec_mm_get_tvp_free_size(void)
 {
 	struct codec_mm_mgt_s *mgt = get_mem_mgt();
-
 	if (debug_mode & 0x20)
 		dump_mem_infos(NULL, 0);
 	return mgt->tvp_pool.total_size -
@@ -2784,8 +2800,8 @@ static ssize_t tvp_enable_show(struct class *class,
 		char *buf)
 {
 	ssize_t size = 0;
-	struct codec_mm_mgt_s *mgt = get_mem_mgt();
 
+	struct codec_mm_mgt_s *mgt = get_mem_mgt();
 	mutex_lock(&mgt->tvp_protect_lock);
 	size += sprintf(buf, "tvp_flag=%d\n",
 			(tvp_mode << 4) + mgt->tvp_enable);
@@ -2816,15 +2832,13 @@ static ssize_t tvp_enable_store(struct class *class,
 	if (ret != 0)
 		return -EINVAL;
 	/*
-	 * always free all scatter cache for
+	 * always free all scatter cache and unused keeper for
 	 * tvp changes when tvp mode is 0.
 	 */
-	if (tvp_mode < 1) {
-		mutex_lock(&mgt->tvp_protect_lock);
-		codec_mm_keeper_free_all_keep(2);
-		codec_mm_scatter_free_all_ignorecache(3);
-		mutex_unlock(&mgt->tvp_protect_lock);
-	}
+	mutex_lock(&mgt->tvp_protect_lock);
+	codec_mm_keeper_free_all_keep(2);
+	codec_mm_scatter_free_all_ignorecache(3);
+	mutex_unlock(&mgt->tvp_protect_lock);
 	switch (val) {
 	case 0:
 		codec_mm_disable_tvp();
@@ -3078,6 +3092,7 @@ static ssize_t debug_store(struct class *class,
 		pr_err("unknown cmd! %d\n", val);
 	}
 	return size;
+
 }
 
 static ssize_t debug_sc_mode_show(struct class *class,

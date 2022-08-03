@@ -23,6 +23,13 @@ enum {
 	HW_TYPE
 };
 
+enum {
+	ARMGDC_FW_V1,
+	AMLGDC_FW_V1,
+	AMLGDC_FW_V2,
+	GDC_MAX_FW
+};
+
 struct aml_dma_cfg {
 	int fd;
 	void *dev;

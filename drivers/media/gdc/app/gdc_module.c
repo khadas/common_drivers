@@ -55,20 +55,23 @@ static struct gdc_irq_handle_wq irq_handle_wq[CORE_NUM];
 static struct gdc_device_data_s arm_gdc_clk2 = {
 	.dev_type = ARM_GDC,
 	.clk_type = CORE_AXI,
-	.core_cnt = 1
+	.core_cnt = 1,
+	.fw_version = ARMGDC_FW_V1
 };
 
 static struct gdc_device_data_s arm_gdc = {
 	.dev_type = ARM_GDC,
 	.clk_type = MUXGATE_MUXSEL_GATE,
 	.ext_msb_8g = 1,
-	.core_cnt = 1
+	.core_cnt = 1,
+	.fw_version = ARMGDC_FW_V1
 };
 
 static struct gdc_device_data_s aml_gdc = {
 	.dev_type = AML_GDC,
 	.clk_type = MUXGATE_MUXSEL_GATE,
-	.core_cnt = 1
+	.core_cnt = 1,
+	.fw_version = AMLGDC_FW_V1
 };
 
 static struct gdc_device_data_s aml_gdc_v2 = {
@@ -76,7 +79,8 @@ static struct gdc_device_data_s aml_gdc_v2 = {
 	.clk_type = GATE,
 	.bit_width_ext = 1,
 	.gamma_support = 1,
-	.core_cnt = 3
+	.core_cnt = 3,
+	.fw_version = AMLGDC_FW_V1
 };
 
 static struct gdc_device_data_s aml_gdc_v3 = {
@@ -84,7 +88,8 @@ static struct gdc_device_data_s aml_gdc_v3 = {
 	.clk_type = GATE,
 	.bit_width_ext = 1,
 	.gamma_support = 0,
-	.core_cnt = 1
+	.core_cnt = 1,
+	.fw_version = AMLGDC_FW_V2
 };
 
 static const struct of_device_id gdc_dt_match[] = {
@@ -1484,12 +1489,14 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 	struct gdc_queue_item_s *pitem = NULL;
 	struct device *dev = NULL;
 	struct cma *cma_area;
+	int fw_version = -1;
 
 	context = (struct gdc_context_s *)file->private_data;
 	gdc_cmd = &context->cmd;
 	gc = &gdc_cmd->gdc_config;
 
 	dev = GDC_DEVICE(context->cmd.dev_type);
+	fw_version = GDC_DEV_T(context->cmd.dev_type)->fw_version;
 
 	switch (cmd) {
 	case GDC_PROCESS:
@@ -1745,6 +1752,17 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 			return -EINVAL;
 		}
 		gdc_buffer_cache_flush(dma_fd, context->cmd.dev_type);
+		break;
+	case GDC_GET_VERSION:
+		if (fw_version < 0)
+			gdc_log(LOG_ERR, "Invalid amlgdc_compatible\n");
+
+		ret = copy_to_user(argp, &fw_version,
+					sizeof(int));
+		if (ret < 0) {
+			pr_err("Error user param\n");
+			return -EINVAL;
+		}
 		break;
 	default:
 		gdc_log(LOG_ERR, "unsupported cmd 0x%x\n", cmd);
@@ -2072,6 +2090,7 @@ static int gdc_platform_probe(struct platform_device *pdev)
 	gdc_dev->pdev = pdev;
 	gdc_dev->ext_msb_8g = gdc_data->ext_msb_8g;
 	gdc_dev->core_cnt = gdc_data->core_cnt;
+	gdc_dev->fw_version = gdc_data->fw_version;
 
 	gdc_dev->misc_dev.minor = MISC_DYNAMIC_MINOR;
 	gdc_dev->misc_dev.name = drv_name;

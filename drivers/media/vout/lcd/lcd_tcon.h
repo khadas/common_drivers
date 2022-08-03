@@ -149,7 +149,7 @@ struct lcd_tcon_local_cfg_s {
 	spinlock_t multi_list_lock; /* for tcon multi lut list change */
 };
 
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 int lcd_tcon_mem_tee_get_status(void);
 int lcd_tcon_mem_tee_unprotect(void);
 #endif

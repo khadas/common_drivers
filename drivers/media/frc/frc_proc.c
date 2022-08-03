@@ -614,7 +614,7 @@ void frc_state_change_finish(struct frc_dev_s *devp)
 
 void frc_test_mm_secure_set_off(struct frc_dev_s *devp)
 {
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 	if (!tee_enabled()) {
 		pr_frc(0, "tee is not enable\n");
 		return;
@@ -630,7 +630,7 @@ void frc_test_mm_secure_set_off(struct frc_dev_s *devp)
 
 void frc_test_mm_secure_set_on(struct frc_dev_s *devp, u32 start, u32 size)
 {
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 	if (!tee_enabled()) {
 		pr_frc(0, "tee is not enable\n");
 		return;
@@ -646,7 +646,7 @@ void frc_test_mm_secure_set_on(struct frc_dev_s *devp, u32 start, u32 size)
 
 void frc_mm_secure_set(struct frc_dev_s *devp)
 {
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 	u32 addr_start;
 	u32 addr_size;
 	enum frc_state_e new_state;

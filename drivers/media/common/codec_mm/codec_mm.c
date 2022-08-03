@@ -45,7 +45,7 @@ unsigned char get_meson_cpu_version(int level)
 #include <linux/page-flags.h>
 #include <linux/vmalloc.h>
 
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 #include <linux/amlogic/tee.h>
 #else
 u32 tee_protect_tvp_mem(u32 start, u32 size,

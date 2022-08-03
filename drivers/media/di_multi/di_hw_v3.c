@@ -5291,7 +5291,7 @@ void dim_secure_pre_en(unsigned char ch)
 		if (DIM_IS_IC_EF(SC2)) {
 			DIM_DI_WR(DI_PRE_SEC_IN, 0x3F);//secure
 		} else {
-		#ifdef CONFIG_AMLOGIC_TEE
+		#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 			tee_config_device_state(16, 1);
 		#endif
 		}
@@ -5301,7 +5301,7 @@ void dim_secure_pre_en(unsigned char ch)
 		if (DIM_IS_IC_EF(SC2)) {
 			DIM_DI_WR(DI_PRE_SEC_IN, 0x0);
 		} else {
-		#ifdef CONFIG_AMLOGIC_TEE
+		#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 			tee_config_device_state(16, 0);
 		#endif
 		}
@@ -5329,7 +5329,7 @@ void dim_secure_pst_en(unsigned char ch)
 		if (DIM_IS_IC_EF(SC2)) {
 			DIM_DI_WR(DI_POST_SEC_IN, 0x1F);//secure
 		} else {
-		#ifdef CONFIG_AMLOGIC_TEE
+		#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 			tee_config_device_state(17, 1);
 		#endif
 		}
@@ -5339,7 +5339,7 @@ void dim_secure_pst_en(unsigned char ch)
 		if (DIM_IS_IC_EF(SC2)) {
 			DIM_DI_WR(DI_POST_SEC_IN, 0x0);
 		} else {
-		#ifdef CONFIG_AMLOGIC_TEE
+		#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 			tee_config_device_state(17, 0);
 		#endif
 		}

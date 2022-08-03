@@ -29,7 +29,7 @@
 #endif
 #include <linux/fs.h>
 #include <linux/uaccess.h>
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 #include <linux/amlogic/tee.h>
 #endif
 #include "lcd_common.h"
@@ -2033,7 +2033,7 @@ static void lcd_tcon_axi_mem_config_t5d(void)
 
 static void lcd_tcon_axi_mem_secure_tl1(void)
 {
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 	int ret;
 
 	tcon_local_cfg.secure_cfg.handle = 0;
@@ -2054,7 +2054,7 @@ static void lcd_tcon_axi_mem_secure_tl1(void)
 static void lcd_tcon_axi_mem_secure_t5(void)
 {
 	/* only protect od mem */
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 	int ret;
 
 	if (!tcon_rmem.axi_rmem)
@@ -2082,13 +2082,13 @@ static void lcd_tcon_axi_mem_secure_t5(void)
 static void lcd_tcon_axi_mem_secure_t3(void)
 {
 	/* only protect od mem */
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 	tcon_local_cfg.secure_cfg.handle = 0;
 	tcon_local_cfg.secure_cfg.protect = 0;
 #endif
 }
 
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 int lcd_tcon_mem_tee_get_status(void)
 {
 	return tcon_local_cfg.secure_cfg.protect;

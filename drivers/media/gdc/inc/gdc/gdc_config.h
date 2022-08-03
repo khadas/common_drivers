@@ -12,7 +12,7 @@
 #include <linux/spinlock.h>
 #include <linux/miscdevice.h>
 #include <linux/highmem.h>
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 #include <linux/amlogic/tee.h>
 #endif
 #include "system_gdc_io.h"
@@ -1247,7 +1247,7 @@ static inline void gdc_start_flag_write(u8 data, u32 dev_type, u32 core_id)
 static inline void gdc_secure_set(u8 data, u32 dev_type, u32 core_id)
 {
 	if (dev_type == ARM_GDC) {
-		#ifdef CONFIG_AMLOGIC_TEE
+		#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 		tee_config_device_state(DMC_DEV_ID_GDC, data);
 		#endif
 	} else {

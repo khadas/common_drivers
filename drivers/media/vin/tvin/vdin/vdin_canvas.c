@@ -27,7 +27,7 @@
 
 /* Amlogic headers */
 #include <linux/amlogic/media/vfm/vframe.h>
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 #include <linux/amlogic/tee.h>
 #endif
 
@@ -423,7 +423,7 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 		CODEC_MM_FLAGS_DMA;
 	unsigned int max_buffer_num = min_buf_num;
 	unsigned int i, j;
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 	unsigned int res = 0;
 #endif
 
@@ -625,7 +625,7 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 	mem_size = PAGE_ALIGN(frame_size) * max_buffer_num;
 	mem_size = roundup(mem_size, PAGE_SIZE);
 
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 	/* must align to 64k for secure protection
 	 * always align for switch secure mode dynamically
 	 */
@@ -757,7 +757,7 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 			devp->mem_start = page_to_phys(devp->venc_pages);
 		}
 
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 		if (devp->secure_en) {
 			devp->secure_handle = 0;
 			res = tee_protect_mem_by_type(TEE_MEM_TYPE_VDIN,
@@ -854,7 +854,7 @@ void vdin_cma_release(struct vdin_dev_s *devp)
 			pr_info("vdin%d cma release ok!\n", devp->index);
 		}
 	} else {
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 		if (devp->secure_en && devp->mem_protected) {
 			tee_unprotect_mem(devp->secure_handle);
 			devp->mem_protected = 0;
@@ -880,7 +880,7 @@ void vdin_cma_release(struct vdin_dev_s *devp)
 
 void vdin_set_mem_protect(struct vdin_dev_s *devp, unsigned int protect)
 {
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 	unsigned int res = 0;
 
 	if (protect) {

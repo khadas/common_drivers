@@ -5177,7 +5177,7 @@ int vdin_event_cb(int type, void *data, void *op_arg)
 		struct provider_state_req_s *req =
 			(struct provider_state_req_s *)data;
 
-		#ifdef CONFIG_AMLOGIC_TEE
+		#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 		if (devp->secure_en && devp->mem_protected)
 			req->req_result[0] = 1;
 		else
@@ -5551,7 +5551,7 @@ u32 vdin_get_curr_field_type(struct vdin_dev_s *devp)
 			type |= VIDTYPE_COMB_MODE;
 	}
 
-#ifdef CONFIG_AMLOGIC_TEE
+#if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 	if (devp->secure_en)
 		type |= VIDTYPE_SEC_MD;
 	else

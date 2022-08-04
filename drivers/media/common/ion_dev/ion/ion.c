@@ -23,6 +23,7 @@
 #include <linux/vmalloc.h>
 
 #include <linux/amlogic/ion.h>
+#include "../dev_ion.h"
 
 static struct ion_device *internal_dev;
 static int heap_id;
@@ -444,14 +445,17 @@ struct dma_buf *ion_alloc(size_t len, unsigned int heap_id_mask, unsigned int fl
 	if (IS_ERR(buffer))
 		return ERR_CAST(buffer);
 
-	if (!internal_dev->dev.parent)
-		internal_dev->dev.parent = meson_ion_get_dev();
-	/* flush alloc memory cache */
-	for_each_sg(buffer->sg_table->sgl, s, buffer->sg_table->nents, i)
-		sg_dma_address(s) = sg_phys(s);
-	dma_sync_sg_for_device(internal_dev->dev.parent, buffer->sg_table->sgl,
-			       buffer->sg_table->nents,
-			       DMA_TO_DEVICE);
+	if (!(flags & ION_FLAG_EXTEND_PROTECTED) &&
+	    !(flags & ION_FLAG_EXTEND_MESON_HEAP_SECURE)) {
+		if (!internal_dev->dev.parent)
+			internal_dev->dev.parent = meson_ion_get_dev();
+		/* flush alloc memory cache */
+		for_each_sg(buffer->sg_table->sgl, s, buffer->sg_table->nents, i)
+			sg_dma_address(s) = sg_phys(s);
+		dma_sync_sg_for_device(internal_dev->dev.parent, buffer->sg_table->sgl,
+				       buffer->sg_table->nents,
+				       DMA_TO_DEVICE);
+	}
 
 	exp_info.ops = &dma_buf_ops;
 	exp_info.size = buffer->size;

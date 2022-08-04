@@ -9,8 +9,8 @@ CONFIG_DEVTMPFS=y
 
 # build in for amlogic memory change
 
-# meson_uart built into kernel
-CONFIG_AMLOGIC_SERIAL_MESON=y
+# amlogic-uart.ko
+CONFIG_AMLOGIC_SERIAL_MESON=m
 CONFIG_AMLOGIC_SERIAL_MESON_CONSOLE=y
 
 # debug builtin

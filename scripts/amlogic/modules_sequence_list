@@ -1,4 +1,5 @@
 RAMDISK_MODULES_LOAD_LIST=(
+	amlogic-uart
 	amlogic-gkitool
 	amlogic-secmon
 	amlogic-clk

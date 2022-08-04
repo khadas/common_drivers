@@ -11,11 +11,21 @@ config AMLOGIC_SERIAL_MESON
 	  This enables the driver for the on-chip UARTs of the Amlogic
 	  MesonX processors.
 
+config AMLOGIC_SERIAL_EARLY_CONSOLE
+	bool "Early console on Amlogic Serial port"
+	depends on AMLOGIC_SERIAL_MESON
+	select SERIAL_EARLYCON
+	default n
+	help
+	  Say Y here if you wish to use a Amlogic MesonX UART as the
+	  system console (the system console is the device which
+	  receives all kernel messages and warnings and which allows
+	  logins in single user mode) as /dev/ttyAMLx.
+
 config AMLOGIC_SERIAL_MESON_CONSOLE
 	bool "Console on Amlogic Serial port"
 	depends on AMLOGIC_SERIAL_MESON
 	select SERIAL_CORE_CONSOLE
-	select SERIAL_EARLYCON
 	default n
 	help
 	  Say Y here if you wish to use a Amlogic MesonX UART as the

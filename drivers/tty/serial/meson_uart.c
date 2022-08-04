@@ -650,34 +650,6 @@ static int __init meson_serial_console_init(void)
 	return 0;
 }
 
-static void meson_serial_early_console_write(struct console *co,
-					     const char *s,
-					     u_int count)
-{
-	struct earlycon_device *dev = co->data;
-
-	meson_serial_port_write(&dev->port, s, count);
-}
-
-static int __init
-meson_serial_early_console_setup(struct earlycon_device *device,
-				 const char *opt)
-{
-	if (!device->port.membase)
-		return -ENODEV;
-
-	meson_uart_enable_tx_engine(&device->port);
-	device->con->write = meson_serial_early_console_write;
-	return 0;
-}
-
-OF_EARLYCON_DECLARE(meson, "amlogic,meson-uart",
-		    meson_serial_early_console_setup);
-OF_EARLYCON_DECLARE(aml_uart, "amlogic,meson-uart",
-		    meson_serial_early_console_setup);
-//OF_EARLYCON_DECLARE_COMP(aml-uart, "amlogic,meson-uart",
-//			 meson_serial_early_console_setup);
-
 #define MESON_SERIAL_CONSOLE	(&meson_serial_console)
 #else
 static int __init meson_serial_console_init(void) {

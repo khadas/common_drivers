@@ -113,6 +113,7 @@
 			reusable;
 			size = <0x1000000>;
 			alignment = <0x400000>;
+			status = "disabled";
 		};
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
@@ -178,6 +179,7 @@
 	pmz_a2_dev {
 		compatible = "amlogic, pmz_dev";
 		memory-region = <&pmz_cma_a2_reserved>;
+		status = "disabled";
 	};
 
         hantro {

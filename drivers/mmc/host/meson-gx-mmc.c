@@ -50,6 +50,12 @@ struct mmc_gpio {
 	u32 cd_debounce_delay_ms;
 };
 
+struct wifi_clk_table wifi_clk[WIFI_CLOCK_TABLE_MAX] = {
+	{"8822BS", 0, 0xb822, 167000000},
+	{"8822CS", 0, 0xc822, 167000000},
+	{"qca6174", 0, 0x50a, 167000000}
+};
+
 static struct mmc_host *sdio_host;
 static char *caps2_quirks = "none";
 
@@ -94,23 +100,23 @@ int amlogic_of_parse(struct mmc_host *host)
 	struct meson_host *mmc = mmc_priv(host);
 
 	if (device_property_read_u32(dev, "init_core_phase",
-			&mmc->sdmmc.init.core_phase) < 0)
-		mmc->sdmmc.init.core_phase = 2;
+			&mmc->sd_mmc.init.core_phase) < 0)
+		mmc->sd_mmc.init.core_phase = 2;
 	if (device_property_read_u32(dev, "init_tx_phase",
-			&mmc->sdmmc.init.tx_phase) < 0)
-		mmc->sdmmc.init.tx_delay = 0;
+			&mmc->sd_mmc.init.tx_phase) < 0)
+		mmc->sd_mmc.init.tx_delay = 0;
 	if (device_property_read_u32(dev, "hs2_core_phase",
-			&mmc->sdmmc.hs2.core_phase) < 0)
-		mmc->sdmmc.hs2.core_phase = 2;
+			&mmc->sd_mmc.hs2.core_phase) < 0)
+		mmc->sd_mmc.hs2.core_phase = 2;
 	if (device_property_read_u32(dev, "hs2_tx_phase",
-			&mmc->sdmmc.hs2.tx_phase) < 0)
-		mmc->sdmmc.hs2.tx_delay = 0;
+			&mmc->sd_mmc.hs2.tx_phase) < 0)
+		mmc->sd_mmc.hs2.tx_delay = 0;
 	if (device_property_read_u32(dev, "hs4_core_phase",
-			&mmc->sdmmc.hs4.core_phase) < 0)
-		mmc->sdmmc.hs4.core_phase = 0;
+			&mmc->sd_mmc.hs4.core_phase) < 0)
+		mmc->sd_mmc.hs4.core_phase = 0;
 	if (device_property_read_u32(dev, "hs4_tx_phase",
-			&mmc->sdmmc.hs4.tx_phase) < 0)
-		mmc->sdmmc.hs4.tx_phase = 0;
+			&mmc->sd_mmc.hs4.tx_phase) < 0)
+		mmc->sd_mmc.hs4.tx_phase = 0;
 	if (device_property_read_u32(dev, "src_clk_rate",
 			&mmc->src_clk_rate) < 0)
 		mmc->src_clk_rate = 1000000000;
@@ -136,8 +142,8 @@ int amlogic_of_parse(struct mmc_host *host)
 		mmc->nwr_cnt = 0;
 
 	if (device_property_read_u32(dev, "tx_delay",
-				&mmc->sdmmc.hs4.tx_delay) < 0)
-		mmc->sdmmc.hs4.tx_delay = 16;
+				&mmc->sd_mmc.hs4.tx_delay) < 0)
+		mmc->sd_mmc.hs4.tx_delay = 16;
 
 	device_property_read_u32(dev, "save_para", &mmc->save_para);
 	device_property_read_u32(dev, "compute_cmd_delay",
@@ -666,7 +672,7 @@ static int meson_mmc_clk_init(struct meson_host *host)
 static int meson_mmc_pxp_clk_init(struct meson_host *host)
 {
 	u32 reg_val, val;
-	struct mmc_phase *mmc_phase_init = &host->sdmmc.init;
+	struct mmc_phase *mmc_phase_init = &host->sd_mmc.init;
 
 	writel(0, host->regs + SD_EMMC_V3_ADJUST);
 	writel(0, host->regs + SD_EMMC_DELAY1);
@@ -981,7 +987,7 @@ static u32 _find_fixed_adj_valid_win(struct mmc_host *mmc,
 	unsigned long prev_map[1] = {0};
 	unsigned long tmp[1] = {0};
 	unsigned long dst[1] = {0};
-//	struct mmc_phase *mmc_phase_init = &host->sdmmc.init;
+//	struct mmc_phase *mmc_phase_init = &host->sd_mmc.init;
 	u32 cop, vclk;
 
 	vclk = readl(host->regs + SD_EMMC_CLOCK);
@@ -1159,6 +1165,28 @@ tuning:
 	return 0;
 }
 
+void sdio_get_card(struct mmc_host *host, struct mmc_card *card)
+{
+	host->card = card;
+}
+
+int sdio_get_device(void)
+{
+	unsigned int i, device = 0;
+
+	if (sdio_host && sdio_host->card)
+		device = sdio_host->card->cis.device;
+
+	for (i = 0; i < ARRAY_SIZE(wifi_clk); i++) {
+		if (wifi_clk[i].m_device_id == device) {
+			wifi_clk[i].m_use_flag = 1;
+			break;
+		}
+	}
+	pr_info("sdio device is 0x%x\n", device);
+	return device;
+}
+
 static int meson_mmc_clk_set(struct meson_host *host,
 			struct mmc_ios *ios, bool ddr)
 {
@@ -1219,7 +1247,8 @@ static int meson_mmc_clk_set(struct meson_host *host,
 static int meson_mmc_prepare_ios_clock(struct meson_host *host,
 				       struct mmc_ios *ios)
 {
-	bool ddr;
+	bool ddr = false;
+	int i;
 
 	switch (ios->timing) {
 	case MMC_TIMING_MMC_DDR52:
@@ -1227,7 +1256,14 @@ static int meson_mmc_prepare_ios_clock(struct meson_host *host,
 	case MMC_TIMING_MMC_HS400:
 		ddr = true;
 		break;
-
+	case MMC_TIMING_UHS_SDR104:
+		for (i = 0; i < ARRAY_SIZE(wifi_clk); i++) {
+			if (wifi_clk[i].m_use_flag) {
+				ios->clock = wifi_clk[i].m_uhs_max_dtr;
+				break;
+			}
+		}
+		break;
 	default:
 		ddr = false;
 		break;
@@ -1266,7 +1302,7 @@ static void meson_mmc_check_resampling(struct meson_host *host,
 		val = readl(host->regs + SD_EMMC_INTF3);
 		val |= SD_INTF3;
 		writel(val, host->regs + SD_EMMC_INTF3);
-		mmc_phase_set = &host->sdmmc.hs4;
+		mmc_phase_set = &host->sd_mmc.hs4;
 		break;
 	case MMC_TIMING_MMC_HS:
 		val = readl(host->regs + host->data->adjust);
@@ -1274,16 +1310,20 @@ static void meson_mmc_check_resampling(struct meson_host *host,
 		val &= ~CLK_ADJUST_DELAY;
 		val |= CALI_HS_50M_ADJUST << __ffs(CLK_ADJUST_DELAY);
 		writel(val, host->regs + host->data->adjust);
-		mmc_phase_set = &host->sdmmc.init;
+		mmc_phase_set = &host->sd_mmc.init;
 		break;
 	case MMC_TIMING_MMC_DDR52:
-		mmc_phase_set = &host->sdmmc.init;
+		mmc_phase_set = &host->sd_mmc.init;
 		break;
 	case MMC_TIMING_SD_HS:
-		mmc_phase_set = &host->sdmmc.init;
+		mmc_phase_set = &host->sd_mmc.init;
+		break;
+	case MMC_TIMING_UHS_SDR104:
+		sdio_get_device();
+		mmc_phase_set = &host->sd_mmc.init;
 		break;
 	default:
-		mmc_phase_set = &host->sdmmc.init;
+		mmc_phase_set = &host->sd_mmc.init;
 	}
 	meson_mmc_set_phase_delay(host, CLK_CORE_PHASE_MASK,
 				  mmc_phase_set->core_phase);
@@ -2913,7 +2953,7 @@ int __maybe_unused aml_emmc_hs200_tl1(struct mmc_host *mmc)
 {
 	struct meson_host *host = mmc_priv(mmc);
 	u32 vclkc = readl(host->regs + SD_EMMC_CLOCK);
-	struct para_e *para = &host->sdmmc;
+	struct para_e *para = &host->sd_mmc;
 	u32 clk_bak = 0;
 	u32 delay2 = 0, count = 0;
 	int i, j, txdelay, err = 0;
@@ -3453,6 +3493,7 @@ static const struct mmc_host_ops meson_mmc_ops = {
 	.hs400_complete = aml_post_hs400_timming,
 	.card_busy	= meson_mmc_card_busy,
 	.start_signal_voltage_switch = meson_mmc_voltage_switch,
+	.init_card      = sdio_get_card,
 };
 
 static int mmc_clktest_show(struct seq_file *s, void *data)

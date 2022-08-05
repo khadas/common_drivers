@@ -149,7 +149,7 @@ struct meson_host {
 	int irq;
 
 	bool vqmmc_enabled;
-	struct para_e sdmmc;
+	struct para_e sd_mmc;
 	char is_tuning;
 	unsigned int delay_cell;
 	bool needs_pre_post_req;
@@ -190,6 +190,20 @@ struct meson_host {
 	bool use_intf3_tuning;
 	bool src_clk_cfg_done;
 	struct dentry *debugfs_root;
+};
+
+struct wifi_clk_table {
+	char m_wifi_name[20];
+	unsigned short m_use_flag;
+	unsigned short m_device_id;
+	unsigned int m_uhs_max_dtr;
+};
+
+enum wifi_clk_table_e {
+	WIFI_CLOCK_TABLE_8822BS = 0,
+	WIFI_CLOCK_TABLE_8822CS = 1,
+	WIFI_CLOCK_TABLE_QCA6174 = 2,
+	WIFI_CLOCK_TABLE_MAX,
 };
 
 void sdio_reinit(void);

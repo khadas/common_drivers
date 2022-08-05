@@ -1425,7 +1425,7 @@
 	cap-sd-highspeed;
 	sd-uhs-sdr50;
 	sd-uhs-sdr104;
-	max-frequency = <170000000>;
+	max-frequency = <200000000>;
 
 	non-removable;
 	disable-wp;

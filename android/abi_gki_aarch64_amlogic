@@ -251,11 +251,9 @@
   cma_for_each_area
   cma_get_name
   compat_ptr_ioctl
-  ion_cma_allocated
   mod_node_page_state
   sched_set_normal
   split_page
-  cma_mmu_op
   gen_pool_add_owner
   gen_pool_alloc_algo_owner
   gen_pool_avail

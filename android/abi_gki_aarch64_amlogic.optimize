@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+[abi_symbol_list]
+
+# page trace illegal symbol:
+  unpack_ip
+  pack_ip
+  find_page_base
+  get_page_trace
+  set_page_trace
+  reset_page_trace
+  ion_cma_allocated
+
+  cma_mmu_op
+  set_dump_dmc_func

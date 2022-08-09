@@ -8,7 +8,6 @@ CONFIG_AMLOGIC_IN_KERNEL_MODULES=y
 CONFIG_DEVTMPFS=y
 
 # build in for amlogic memory change
-CONFIG_CMA_SIZE_MBYTES=8
 
 # meson_uart built into kernel
 CONFIG_AMLOGIC_SERIAL_MESON=y

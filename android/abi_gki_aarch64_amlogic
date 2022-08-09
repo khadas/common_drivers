@@ -280,15 +280,15 @@
   atomic_notifier_chain_unregister
   backlight_device_register
   backlight_device_unregister
-  cfb_copyarea
-  cfb_fillrect
-  cfb_imageblit
+#  cfb_copyarea
+#  cfb_fillrect
+#  cfb_imageblit
   debugfs_create_blob
   devm_clk_put
-  fb_alloc_cmap
-  fb_dealloc_cmap
-  framebuffer_alloc
-  framebuffer_release
+#  fb_alloc_cmap
+#  fb_dealloc_cmap
+#  framebuffer_alloc
+#  framebuffer_release
   hdmi_avi_infoframe_init
   hdmi_avi_infoframe_pack
   hdmi_drm_infoframe_init
@@ -310,7 +310,7 @@
   rb_first
   rb_insert_color
   rb_next
-  register_framebuffer
+#  register_framebuffer
   release_resource
   sched_setscheduler_nocheck
   set_freezable
@@ -318,7 +318,7 @@
   spi_new_device
   strncasecmp
   strnchr
-  unregister_framebuffer
+#  unregister_framebuffer
   v4l2_device_register
   v4l2_device_unregister
   v4l2_fh_open

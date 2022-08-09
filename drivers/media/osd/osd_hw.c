@@ -54,6 +54,10 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 #include <linux/amlogic/media/vpu_secure/vpu_secure.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_SW_SYNC
+#include "../common/sw_sync/osd_sw_sync.h"
+#endif
+
 /* Local Headers */
 #include "osd_canvas.h"
 #include "osd_prot.h"
@@ -67,7 +71,6 @@
 #include "osd_hw.h"
 #include "osd_hw_def.h"
 #include "osd_fb.h"
-#include "osd_sw_sync.h"
 
 #ifdef CONFIG_AMLOGIC_VSYNC_FIQ_ENABLE
 #define FIQ_VSYNC

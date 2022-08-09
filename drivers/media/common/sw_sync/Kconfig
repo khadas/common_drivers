@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# SW_SYNC driver configuration
+#
+
+menu "SW_SYNC driver"
+
+config AMLOGIC_MEDIA_SW_SYNC
+	bool "Amlogic SW_SYNC  driver"
+	default y
+	help
+		remove SW_SYNC driver from media/osd
+endmenu

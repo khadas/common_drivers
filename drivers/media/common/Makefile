@@ -15,3 +15,4 @@ include $(COMMON_DRIVERS_DIR)/drivers/media/common/lut_dma/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/common/vpu_security/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/common/resource_mgr/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/common/dma-buf-heaps/Makefile
+include $(COMMON_DRIVERS_DIR)/drivers/media/common/sw_sync/Makefile

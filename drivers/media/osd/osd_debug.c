@@ -19,6 +19,9 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_GE2D
 #include <linux/amlogic/media/ge2d/ge2d.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_SW_SYNC
+#include "../common/sw_sync/osd_sw_sync.h"
+#endif
 
 /* Local Headers */
 #include "osd_canvas.h"
@@ -26,7 +29,7 @@
 #include "osd_reg.h"
 #include "osd_io.h"
 #include "osd_hw.h"
-#include "osd_sw_sync.h"
+
 
 #define OSD_TEST_DURATION 200
 

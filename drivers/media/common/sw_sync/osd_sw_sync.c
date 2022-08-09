@@ -8,7 +8,6 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <linux/sync_file.h>
-
 #include "osd_sw_sync.h"
 
 #define MAX_NUM 64
@@ -58,12 +57,12 @@ static struct sync_timeline *sync_timeline_create(const char *name)
 
 	kref_init(&obj->kref);
 	obj->context = dma_fence_context_alloc(1);
-	strlcpy(obj->name, name, sizeof(obj->name));
+	strncpy(obj->name, name, sizeof(obj->name));
 	INIT_LIST_HEAD(&obj->active_list_head);
 	INIT_LIST_HEAD(&obj->pt_list);
 	spin_lock_init(&obj->lock);
 	if (timeline_num < MAX_NUM)
-		strlcpy(timeline_debug_s[timeline_num].name,
+		strncpy(timeline_debug_s[timeline_num].name,
 			name, sizeof(obj->name));
 	timeline_num++;
 	return obj;

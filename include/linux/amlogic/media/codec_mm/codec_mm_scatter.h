@@ -35,7 +35,6 @@ struct codec_mm_scatter {
 	/* mutex lock */
 	struct mutex mutex;
 	struct list_head list;	/*hold list. */
-	struct list_head map_list;	/*map list. */
 };
 
 enum e_mmu_free_status {

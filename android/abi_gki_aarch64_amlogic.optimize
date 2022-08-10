@@ -13,3 +13,13 @@
 
   cma_mmu_op
   set_dump_dmc_func
+
+# amlogic debug illegal symbol:
+  irq_trace_start_hook
+  irq_trace_stop_hook
+  meson_atrace
+  pstore_io_save
+  __arm_smccc_smc_glue
+  __tracepoint_softirq_entry
+  __tracepoint_softirq_exit
+  dump_cpu_task

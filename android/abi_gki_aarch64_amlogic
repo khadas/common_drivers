@@ -215,20 +215,15 @@
   __tracepoint_irq_handler_exit
   __tracepoint_android_vh_cpu_idle_enter
   __tracepoint_android_vh_cpu_idle_exit
-  __tracepoint_softirq_entry
-  __tracepoint_softirq_exit
   register_kprobe
   register_kretprobe
   console_printk
-  dump_cpu_task
   __tracepoint_android_vh_sched_show_task
   stack_trace_print
   stack_trace_save
   trace_print_flags_seq
   oops_in_progress
   unregister_kprobe
-  __arm_smccc_smc_glue
-  meson_atrace
   kasan_restore_multi_shot
   kasan_save_enable_multi_shot
   strncpy_from_user

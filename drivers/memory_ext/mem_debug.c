@@ -8,7 +8,11 @@
 #include <linux/errno.h>
 #include <asm/sections.h>
 #include <linux/sizes.h>
+#ifdef CONFIG_RISCV
+#include <asm/pgtable.h>
+#else
 #include <asm/memory.h>
+#endif
 #include <linux/init.h>
 #include <linux/initrd.h>
 #include <linux/gfp.h>
@@ -83,7 +87,7 @@ void dump_mem_layout(char *buf)
 		MLM(__phys_to_virt(memblock_start_of_DRAM()),
 		    (unsigned long)high_memory), (unsigned long)memblock_start_of_DRAM());
 	pos += sprintf(buf + pos, "     offset : 0x%lx\n", kaslr_offset());
-#else
+#elif defined CONFIG_ARM
 		sprintf(buf, "Virtual kernel memory layout:\n"
 #ifdef CONFIG_KASAN
 					"	 kasan	 : 0x%08lx - 0x%08lx   (%4ld MB)\n"
@@ -128,6 +132,45 @@ void dump_mem_layout(char *buf)
 					MLK_ROUNDUP(__init_begin, __init_end),
 					MLK_ROUNDUP(_sdata, _edata),
 					MLK_ROUNDUP(__bss_start, __bss_stop));
+#elif defined CONFIG_RISCV
+	int pos = 0;
+
+	pos += sprintf(buf + pos, "Virtual kernel memory layout:\n");
+	pos += sprintf(buf + pos, "      fixed : 0x%16lx - 0x%16lx   (%6ld KB)\n",
+		MLK(FIXADDR_START, FIXADDR_TOP));
+	pos += sprintf(buf + pos, "    PCI I/O : 0x%16lx - 0x%16lx   (%6ld MB)\n",
+		MLM(PCI_IO_START, PCI_IO_END));
+#ifdef CONFIG_SPARSEMEM_VMEMMAP
+	pos += sprintf(buf + pos, "    vmemmap : 0x%16lx - 0x%16lx   (%6ld GB maximum)\n",
+		MLG(VMEMMAP_START, VMEMMAP_START + VMEMMAP_SIZE));
+	pos += sprintf(buf + pos, "              0x%16lx - 0x%16lx   (%6ld MB actual)\n",
+		MLM((unsigned long)phys_to_page(memblock_start_of_DRAM()),
+		    (unsigned long)virt_to_page(high_memory)));
+#endif
+	pos += sprintf(buf + pos, "    vmalloc : 0x%16lx - 0x%16lx   (%6ld GB)\n",
+		MLG(VMALLOC_START, VMALLOC_START + VMALLOC_SIZE));
+	pos += sprintf(buf + pos, "     memory : 0x%16lx - 0x%16lx   (%6ld MB) 0x%lx\n",
+		MLM(PAGE_OFFSET, (unsigned long)high_memory),
+		(unsigned long)memblock_start_of_DRAM());
+	pos += sprintf(buf + pos, "    modules : 0x%16lx - 0x%16lx   (%6ld MB)\n",
+		MLM(MODULES_VADDR, MODULES_END));
+
+	pos += sprintf(buf + pos, "     kernel : 0x%16lx - 0x%16lx   (%6ld MB)\n",
+		MLM(KERNEL_LINK_ADDR, ADDRESS_SPACE_END));
+	pos += sprintf(buf + pos, "      .text : 0x%px" " - 0x%px" "   (%6ld KB) 0x%lx\n",
+		MLK_ROUNDUP(_text, _etext), (unsigned long)__pa_symbol(_text));
+	pos += sprintf(buf + pos, "      .init : 0x%px" " - 0x%px" "   (%6ld KB) 0x%lx\n",
+		MLK_ROUNDUP(__init_begin, __init_end),
+		(unsigned long)__pa_symbol(__init_begin));
+	pos += sprintf(buf + pos, "    .rodata : 0x%px" " - 0x%px" "   (%6ld KB) 0x%lx\n",
+		MLK_ROUNDUP(__start_rodata, __end_rodata),
+		(unsigned long)__pa_symbol(__start_rodata));
+	pos += sprintf(buf + pos, "      .data : 0x%px" " - 0x%px" "   (%6ld KB) 0x%lx\n",
+		MLK_ROUNDUP(_data, _edata),
+		(unsigned long)__pa_symbol(_data));
+	pos += sprintf(buf + pos, "       .bss : 0x%px" " - 0x%px" "   (%6ld KB) 0x%lx\n",
+		MLK_ROUNDUP(__bss_start, __bss_stop),
+		(unsigned long)__pa_symbol(__bss_start));
 #endif
 }
 

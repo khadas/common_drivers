@@ -36,14 +36,18 @@
 #include <trace/hooks/mpam.h>
 
 #include <asm/compat.h>
+#ifndef CONFIG_RISCV
 #include <asm/cpufeature.h>
+#endif
 #include <asm/cacheflush.h>
 #include <asm/exec.h>
 #include <asm/mmu_context.h>
 #include <asm/processor.h>
 #include <asm/stacktrace.h>
 #include <asm/switch_to.h>
+#ifndef CONFIG_RISCV
 #include <asm/system_misc.h>
+#endif
 
 #include <linux/mm_inline.h>
 #include <linux/amlogic/user_fault.h>
@@ -51,6 +55,7 @@
 #include <linux/amlogic/secmon.h>
 #endif
 
+#ifndef CONFIG_RISCV
 #ifndef CONFIG_ARM64
 #include <asm/ptrace.h>
 #include <asm/vdso/cp15.h>
@@ -70,6 +75,7 @@
 	__show_ratelimited;						\
 })
 #endif
+#endif
 
 static void show_data(unsigned long addr, int nbytes, const char *name)
 {
@@ -81,9 +87,12 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	 * don't attempt to dump non-kernel addresses or
 	 * values that are probably just small negative numbers
 	 */
+#ifdef CONFIG_RISCV
+	if (addr < VMALLOC_START || addr > -256UL)
+#else
 	if (addr < PAGE_OFFSET || addr > -256UL)
+#endif
 		return;
-
 	/*
 	 * Treating data in general purpose register as an address
 	 * and dereferencing it is quite a dangerous behaviour,
@@ -138,7 +147,7 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 /*
  * dump a block of user memory from around the given address
  */
-#ifdef CONFIG_ARM64
+#if defined(CONFIG_ARM64) || defined(CONFIG_RISCV)
 static void show_user_data(unsigned long addr, int nbytes, const char *name)
 {
 	int	i, j;
@@ -188,7 +197,9 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 		pr_cont("\n");
 	}
 }
+#endif
 
+#ifdef CONFIG_ARM64
 static void show_pfn(unsigned long reg, char *s)
 {
 	struct page *page;
@@ -228,7 +239,7 @@ static void show_regs_pfn(struct pt_regs *regs)
 	}
 }
 
-#else
+#elif defined CONFIG_ARM
 static void show_user_data(unsigned long addr, int nbytes, const char *name)
 {
 	int	i, j;
@@ -310,6 +321,61 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 		}
 	}
 }
+#elif defined CONFIG_RISCV
+static void show_pfn(unsigned long reg, const char *s)
+{
+	struct page *page;
+
+	if (reg < (unsigned long)VMALLOC_START) {
+		pr_info("%s : %016lx  U\n", s, reg);
+	} else if (reg <= (unsigned long)PAGE_OFFSET) {
+		page = vmalloc_to_page((const void *)reg);
+		if (page)
+			pr_info("%s : %016lx, PFN:%5lx V\n", s, reg, page_to_pfn(page));
+		else
+			pr_info("%s : %016lx, PFN:***** V\n", s, reg);
+	} else if (reg <= (unsigned long)high_memory) {
+		pr_info("%s : %016lx, PFN:%5lx L\n", s, reg, virt_to_pfn(reg));
+	} else if (reg <= KERNEL_LINK_ADDR) {
+	} else if (reg <= kernel_map.virt_addr + kernel_map.size) {
+		pr_info("%s : %016lx, PFN:%5lx L\n", s, reg, virt_to_pfn(reg));
+	}
+}
+
+static const char * const regs_name[] = {
+	"epc", "ra", "sp", "gp", "tp", "t0", "t1", "t2", "s0", "s1",
+	"a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "s2", "s3",
+	"s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "t3", "t4",
+	"t5", "t6"
+};
+
+static void show_regs_pfn(struct pt_regs *regs)
+{
+	int i;
+	struct page *page;
+	unsigned long *reg_array = (unsigned long *)regs;
+
+	for (i = 0; i < 32; i++) {
+		if (reg_array[i] < (unsigned long)VMALLOC_START) {
+			continue;
+		} else if (reg_array[i] <= (unsigned long)PAGE_OFFSET) {
+			page = vmalloc_to_page((void *)reg_array[i]);
+			if (page)
+				pr_info("%-3s : %016lx, PFN:%5lx V\n",
+					regs_name[i], reg_array[i], page_to_pfn(page));
+			else
+				pr_info("%-3s : %016lx, PFN:***** V\n",
+					regs_name[i], reg_array[i]);
+		} else if (reg_array[i] <= (unsigned long)high_memory) {
+			pr_info("%-3s : %016lx, PFN:%5lx L\n",
+				regs_name[i], reg_array[i], virt_to_pfn((void *)reg_array[i]));
+		} else if (reg_array[i] <= KERNEL_LINK_ADDR) {
+		} else if (reg_array[i] <= kernel_map.virt_addr + kernel_map.size) {
+			pr_info("%-3s : %016lx, PFN:%5lx L\n",
+				regs_name[i], reg_array[i], virt_to_pfn((void *)reg_array[i]));
+		}
+	}
+}
 #endif /* CONFIG_ARM64 */
 
 #ifdef CONFIG_ARM64
@@ -355,7 +421,7 @@ static void show_user_extra_register_data(struct pt_regs *regs, int nbytes)
 		show_user_data(regs->regs[i] - nbytes, nbytes * 2, name);
 	}
 }
-#else
+#elif defined CONFIG_ARM
 static void show_extra_register_data(struct pt_regs *regs, int nbytes)
 {
 	show_data(regs->ARM_pc - nbytes, nbytes * 2, "PC");
@@ -410,6 +476,28 @@ void show_vmalloc_pfn(struct pt_regs *regs)
 				i, regs->uregs[i], page_to_pfn(page));
 		}
 	}
+}
+#elif defined CONFIG_RISCV
+static void show_extra_register_data(struct pt_regs *regs, int nbytes)
+{
+	int i;
+	unsigned long *reg_array = (unsigned long *)regs;
+
+	show_data(regs->badaddr - nbytes, nbytes * 2, "badaddr");
+
+	for (i = 0; i < 32; i++)
+		show_data(reg_array[i] - nbytes, nbytes * 2, regs_name[i]);
+}
+
+static void show_user_extra_register_data(struct pt_regs *regs, int nbytes)
+{
+	int i;
+	unsigned long *reg_array = (unsigned long *)regs;
+
+	show_user_data(regs->badaddr - nbytes, nbytes * 2, "badaddr");
+
+	for (i = 0; i < 32; i++)
+		show_user_data(reg_array[i] - nbytes, nbytes * 2, regs_name[i]);
 }
 #endif
 
@@ -601,7 +689,7 @@ void show_all_pfn(struct task_struct *task, struct pt_regs *regs)
 	pr_info("unused :  %016lx  %s\n", far, s1);
 	pr_info("offset :  %016lx\n", kaslr_offset());
 }
-#else
+#elif defined CONFIG_ARM
 static unsigned char *regidx_to_name[] = {
 	"r0 ", "r1 ", "r2 ", "r3 ",
 	"r4 ", "r5 ", "r6 ", "r7 ",
@@ -644,6 +732,51 @@ void show_debug_ratelimited(struct pt_regs *regs, unsigned int reg_en)
 			show_regs(regs);
 	}
 }
+#elif defined CONFIG_RISCV
+void show_all_pfn(struct task_struct *task, struct pt_regs *regs)
+{
+	int i;
+	long pfn1;
+	char s1[10];
+	int top = 32;
+	unsigned long *reg_array = (unsigned long *)regs;
+
+	pr_info("reg              value       pfn  ");
+	pr_cont("reg              value       pfn\n");
+	for (i = 0; i < top; i++) {
+		pfn1 = get_user_pfn(task->mm, reg_array[i]);
+		if (pfn1 >= 0)
+			sprintf(s1, "%8lx", pfn1);
+		else
+			sprintf(s1, "--------");
+		if (i % 2 == 1)
+			pr_cont("%-3s:  %016lx  %s\n", regs_name[i], reg_array[i], s1);
+		else
+			pr_info("%-3s:  %016lx  %s  ", regs_name[i], reg_array[i], s1);
+	}
+	pr_cont("\n");
+	pfn1 = get_user_pfn(task->mm, regs->epc);
+	if (pfn1 >= 0)
+		sprintf(s1, "%8lx", pfn1);
+	else
+		sprintf(s1, "--------");
+	pr_info("pc :  %016lx  %s\n", regs->epc, s1);
+	pfn1 = get_user_pfn(task->mm, regs->sp);
+	if (pfn1 >= 0)
+		sprintf(s1, "%8lx", pfn1);
+	else
+		sprintf(s1, "--------");
+	pr_info("sp :  %016lx  %s\n", regs->sp, s1);
+
+	pfn1 = get_user_pfn(task->mm, regs->badaddr);
+	if (pfn1 >= 0)
+		sprintf(s1, "%8lx", pfn1);
+	else
+		sprintf(s1, "--------");
+	pr_info("unused :  %016lx  %s\n", regs->badaddr, s1);
+//	pr_info("offset :  %016lx\n", kaslr_offset());
+}
+
 #endif
 
 static int (*dmc_cb)(char *);
@@ -675,11 +808,20 @@ void show_user_fault_info(struct pt_regs *regs, u64 lr, u64 sp)
 	show_pfn(sp, "SP");
 	show_pfn(read_sysreg(far_el1), "FAR");
 	show_regs_pfn(regs);
-#else
+#elif defined CONFIG_ARM
 	if (user_mode(regs)) {
 		show_vma(current->mm, instruction_pointer(regs));
 		show_vma(current->mm, regs->ARM_lr);
 	}
+#elif defined CONFIG_RISCV
+	if (user_mode(regs)) {
+		show_vma(current->mm, instruction_pointer(regs));
+		show_vma(current->mm, lr);
+		show_vma(current->mm, regs->badaddr);
+	}
+
+	show_pfn(regs->badaddr, "badaddr");
+	show_regs_pfn(regs);
 #endif
 }
 

@@ -108,9 +108,11 @@ fi
 
 if [[ $ARCH == arm64 ]]; then
 	OUTDIR=${ROOT_DIR}/out/kernel-5.15-64
-else
+elif [[ $ARCH == arm ]]; then
 	OUTDIR=${ROOT_DIR}/out/kernel-5.15-32
 	tool_args+=("LOADADDR=0x208000")
+elif [[ $ARCH == riscv ]]; then
+	OUTDIR=${ROOT_DIR}/out/riscv-kernel-5.15-64
 fi
 TOOL_ARGS="${tool_args[@]}"
 
@@ -188,7 +190,7 @@ if [[ $ARCH == arm64 ]]; then
 	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} INSTALL_MOD_STRIP=1 modules_install -j12 &&
 	make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
-else
+elif [[ $ARCH == arm ]]; then
 	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
 	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
 	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} uImage -j12 &&
@@ -196,6 +198,14 @@ else
 	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} INSTALL_MOD_STRIP=1 modules_install -j12 &&
 	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm/configs/${DEFCONFIG}
+elif [[ $ARCH == riscv ]]; then
+	make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
+	make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
+	make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} Image -j12 &&
+	make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
+	make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
+	make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
+	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/riscv/configs/${DEFCONFIG}
 fi
 cp ${OUT_DIR}/arch/${ARCH}/boot/Image* ${DIST_DIR}
 cp ${OUT_DIR}/arch/${ARCH}/boot/uImage* ${DIST_DIR}

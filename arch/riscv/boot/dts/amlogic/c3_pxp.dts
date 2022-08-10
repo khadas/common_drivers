@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+/dts-v1/;
+
+#include "meson-c3.dtsi"
+
+#define TIMERCLK_FREQ       900000000
+
+/ {
+	compatible = "amlogic, c3";
+	model = "Amlogic";
+
+	aliases {
+		serial0 = &uart_B;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	cpus {
+		timebase-frequency = <TIMERCLK_FREQ>;
+	};
+
+	memory@00000000 {
+		device_type = "memory";
+		linux,usable-memory = <0x0 0x0 0x0 0x40000000>;
+	};
+};
+
+&uart_B {
+	status = "okay";
+};

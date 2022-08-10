@@ -31,6 +31,7 @@ void cpuinfo_get_chipid(unsigned char *cid, unsigned int size)
 	memcpy(&cid[0], cpuinfo_chip_id, size);
 }
 
+#if IS_ENABLED(CONFIG_AMLOGIC_SHOW_CPU_CHIPID)
 void show_cpu_chipid(void *data, struct seq_file *m)
 {
 	unsigned char chipid[CHIPID_LEN];
@@ -43,6 +44,7 @@ void show_cpu_chipid(void *data, struct seq_file *m)
 	seq_puts(m, "\n");
 	seq_printf(m, "Hardware\t: %s\n\n", "Amlogic");
 }
+#endif
 
 static noinline int fn_smc(u64 function_id,
 			   u64 arg0,
@@ -99,9 +101,11 @@ static int cpuinfo_probe(struct platform_device *pdev)
 		pr_cont("\n");
 	}
 
+#if IS_ENABLED(CONFIG_AMLOGIC_SHOW_CPU_CHIPID)
 	ret = register_trace_android_vh_show_cpu_chipid(show_cpu_chipid, NULL);
 	if (ret)
 		pr_err("register_trace_android_vh_show_cpu_chipid fail ret=%d\n", ret);
+#endif
 
 	return ret;
 }

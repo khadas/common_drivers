@@ -1292,6 +1292,9 @@
 		compatible = "amlogic, adapter";
 		reg = <0xff01b000 0x4000>;
 		reg-names = "adapter";
+		interrupts = <0 145 1>,
+				<0 155 1>,
+				<0 144 1>;
 	};
 
 	isp0: isp0@ff000000 {
@@ -1301,7 +1304,6 @@
 		clocks = <&clkc CLKID_ISP0_CLK>,
 				<&clkc CLKID_VAPB_CLK>;
 		clock-names = "mipi_isp_clk", "vapb_clk";
-		interrupts = <0 145 1>;
 	};
 
 	camera0 {

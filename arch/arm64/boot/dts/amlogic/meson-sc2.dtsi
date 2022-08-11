@@ -1043,6 +1043,8 @@
 				 <&clkc CLKID_FCLK_DIV2P5>;
 			clock-names = "core", "mux0", "mux1",
 					"clkin0", "clkin1", "clkin2";
+			no-sdio;
+			no-sd;
 			card_type = <1>;
 			tx_delay = <22>;
 			mmc_debug_flag;
@@ -1055,7 +1057,7 @@
 				<0x0 0xfe000164 0x0 0x4>,
 				<0x0 0xfe004024 0x0 0x4>;
 			interrupts = <GIC_SPI 177 IRQ_TYPE_EDGE_RISING>;
-			status = "okay";
+			status = "disabled";
 			clocks = <&clkc CLKID_SD_EMMC_B>,
 				<&clkc CLKID_SD_EMMC_B_CLK_MUX>,
 				 <&clkc CLKID_SD_EMMC_B_CLK>,
@@ -1065,6 +1067,8 @@
 					"clkin0", "clkin1";
 			card_type = <5>;
 			mmc_debug_flag;
+			no-mmc;
+			no-sdio;
 			//resets = <&reset RESET_SD_EMMC_B>;
 		};
 
@@ -1074,7 +1078,7 @@
 				<0x0 0xfe000164 0x0 0x4>,
 				<0x0 0xfe00400c 0x0 0x4>;
 			interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
+			status = "okay";
 			clocks = <&clkc CLKID_SD_EMMC_A>,
 				<&clkc CLKID_SD_EMMC_A_CLK_MUX>,
 				 <&clkc CLKID_SD_EMMC_A_CLK>,
@@ -1086,6 +1090,8 @@
 			mmc_debug_flag;
 			cap-sdio-irq;
 			keep-power-in-suspend;
+			no-mmc;
+			no-sd;
 			//resets = <&reset RESET_SD_EMMC_A>;
 		};
 

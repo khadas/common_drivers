@@ -18,7 +18,7 @@ config AMLOGIC_V4L_VIDEO
 config AMLOGIC_V4L_VIDEO2
 		tristate "Amlogic v4l video2 device support"
 		depends on VIDEO_DEV
-		select VIDEOBUF_GEN
+		depends on VIDEOBUF_GEN
 		depends on AMLOGIC_MEDIA_COMMON
 		depends on AMLOGIC_VIDEOBUF_RESOURCE
 		depends on AMLOGIC_MEDIA_GE2D

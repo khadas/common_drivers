@@ -345,23 +345,6 @@
   video_device_release
   video_ioctl2
   video_unregister_device
-  videobuf_dqbuf
-  videobuf_iolock
-  videobuf_mmap_free
-  videobuf_mmap_mapper
-  videobuf_poll_stream
-  videobuf_qbuf
-  videobuf_querybuf
-  videobuf_queue_cancel
-  videobuf_queue_core_init
-  videobuf_queue_is_busy
-  videobuf_read_stream
-  videobuf_reqbufs
-  videobuf_stop
-  videobuf_streamoff
-  videobuf_streamon
-  videobuf_waiton
-
 
 # aml-crypto-dma.ko
   crypto_alloc_skcipher

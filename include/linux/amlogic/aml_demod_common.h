@@ -12,7 +12,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/of_gpio.h>
-#include <uapi/amlogic/dvb/frontend.h>
+#include <uapi/linux/dvb/frontend.h>
 
 enum tuner_type {
 	AM_TUNER_NONE = 0,

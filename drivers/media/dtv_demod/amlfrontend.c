@@ -5367,7 +5367,7 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 			status = BLINDSCAN_UPDATEPROCESS | FE_HAS_LOCK;
 			PR_DVBS("fft search:blind process %d%%\n",
 				fe->dtv_property_cache.frequency);
-			amlogic_dvb_frontend_add_event(fe, status);
+			dvb_frontend_add_event(fe, status);
 		}
 
 		freq = freq + freq_step;
@@ -5416,7 +5416,7 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 					PR_DVBS("try to lock search:blind process %d%%\n",
 						fe->dtv_property_cache.frequency);
 					if (fe->dtv_property_cache.frequency < 100)
-						amlogic_dvb_frontend_add_event(fe, status);
+						dvb_frontend_add_event(fe, status);
 				} else {/* lock */
 					freq_offset = dvbs_get_freq_offset(&polarity);
 					if (polarity)
@@ -5464,7 +5464,7 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 							symbol_rate_hw,
 							cur_locked_freq);
 
-						amlogic_dvb_frontend_add_event(fe, status);
+						dvb_frontend_add_event(fe, status);
 					}
 				}
 
@@ -5476,7 +5476,7 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 				fe->dtv_property_cache.frequency = 100;
 				demod->blind_result_frequency = 100;
 				PR_DVBS("100%% to upper layer\n");
-				amlogic_dvb_frontend_add_event(fe, status);
+				dvb_frontend_add_event(fe, status);
 			}
 		}
 	}
@@ -5488,7 +5488,7 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 		demod->blind_result_frequency = 100;
 		status = BLINDSCAN_UPDATEPROCESS | FE_HAS_LOCK;
 		PR_DVBS("%s:force 100%% to upper layer\n", __func__);
-		amlogic_dvb_frontend_add_event(fe, status);
+		dvb_frontend_add_event(fe, status);
 	}
 }
 

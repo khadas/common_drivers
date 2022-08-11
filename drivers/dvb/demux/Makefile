@@ -26,8 +26,8 @@ $(MODULE_NAME)-y += aml_dvb.o
 $(MODULE_NAME)-y += aml_dsc.o
 $(MODULE_NAME)-y += aml_dmx.o
 $(MODULE_NAME)-y += aml_key.o
-$(MODULE_NAME)-y += dmxdev.o
-$(MODULE_NAME)-y += ringbuffer.o
+#$(MODULE_NAME)-y += dmxdev.o
+#$(MODULE_NAME)-y += ringbuffer.o
 
 $(MODULE_NAME)-y += sw_demux/swdmx_cb_list.o
 $(MODULE_NAME)-y += sw_demux/swdmx_crc32.o

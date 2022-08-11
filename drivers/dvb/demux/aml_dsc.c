@@ -28,8 +28,8 @@
 #include <linux/amlogic/media/utils/amstream.h>
 #include <linux/amlogic/cpu_version.h>
 #include <linux/clk.h>
-#include <amlogic/dvb/ca.h>
-#include <amlogic/dvb/dmx.h>
+#include <linux/dvb/ca.h>
+#include <linux/dvb/dmx.h>
 #include <linux/version.h>
 #include <linux/amlogic/aml_key.h>
 #include "aml_dvb.h"

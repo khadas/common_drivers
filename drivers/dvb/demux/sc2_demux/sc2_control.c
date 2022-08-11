@@ -4,7 +4,7 @@
  */
 
 #include <linux/kernel.h>
-#include <amlogic/dvb/ca.h>
+#include <linux/dvb/ca.h>
 #include <linux/module.h>
 #include <linux/delay.h>
 

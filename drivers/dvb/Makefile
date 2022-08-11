@@ -11,8 +11,7 @@ aml_dvb_extern-objs = \
 		aml_dtvdemod.o \
 		aml_tuner_ops.o \
 		aml_demod_ops.o \
-		aml_dvb_extern_driver.o \
-		dvb_frontend.o
+		aml_dvb_extern_driver.o
 
 ccflags-y += -I.
 ccflags-y += -I$(srctree)/drivers/media/dvb-core

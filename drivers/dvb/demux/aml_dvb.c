@@ -23,7 +23,7 @@
 #include <linux/spinlock.h>
 #include <linux/string.h>
 #include <linux/of.h>
-#include <amlogic/dvb/dmx.h>
+#include <uapi/linux/dvb/dmx.h>
 #include <linux/amlogic/tee.h>
 #include <linux/amlogic/aml_key.h>
 #include <linux/amlogic/tee_demux.h>

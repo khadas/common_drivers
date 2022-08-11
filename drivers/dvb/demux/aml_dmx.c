@@ -1860,7 +1860,7 @@ int dmx_init(struct aml_dmx *pdmx, struct dvb_adapter *dvb_adapter)
 	pdmx->dev.filternum = (MAX_TS_FEED_NUM + MAX_SEC_FEED_NUM);
 	pdmx->dev.demux = &pdmx->dmx;
 	pdmx->dev.capabilities = DMXDEV_CAP_DUPLEX;
-	ret = amlogic_dvb_dmxdev_init(&pdmx->dev, dvb_adapter);
+	ret = dvb_dmxdev_init(&pdmx->dev, dvb_adapter);
 	if (ret < 0) {
 		dprint("dvb_dmxdev_init failed: error %d\n", ret);
 		vfree(pdmx->ts_feed);
@@ -1900,7 +1900,7 @@ int dmx_destroy(struct aml_dmx *pdmx)
 			ts_input_close(pdmx->sc2_input);
 			pdmx->sc2_input = NULL;
 		}
-		amlogic_dvb_dmxdev_release(&pdmx->dev);
+		dvb_dmxdev_release(&pdmx->dev);
 		pdmx->init = 0;
 	}
 	return 0;

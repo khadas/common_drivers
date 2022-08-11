@@ -21,9 +21,9 @@
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/codec_mm/dmabuf_manage.h>
 #include <linux/amlogic/media/codec_mm/configs.h>
-#include <uapi/amlogic/dvb/dmx.h>
-#include "demux/dmxdev.h"
-#include "demux/demux.h"
+#include <uapi/linux/dvb/dmx.h>
+#include "dmxdev.h"
+#include "demux.h"
 
 static int dmabuf_manage_debug;
 module_param(dmabuf_manage_debug, int, 0644);

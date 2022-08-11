@@ -12,7 +12,7 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/string.h>
-#include <amlogic/dvb/dmx.h>
+#include <linux/dvb/dmx.h>
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/dma-mapping.h>

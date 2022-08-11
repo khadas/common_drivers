@@ -14,7 +14,7 @@
 #include "sc2_demux/mem_desc.h"
 #include "demux.h"
 #include "dvbdev.h"
-#include "dmxdev.h"
+#include <dmxdev.h>
 
 struct sw_demux_ts_feed {
 	struct dmx_ts_feed ts_feed;

@@ -49,6 +49,7 @@ obj-$(CONFIG_AMLOGIC_SMARTCARD)		+= smartcard_sc2/
 obj-y        				+= dvb/
 obj-$(CONFIG_AMLOGIC_DRM)		+= drm/
 obj-y              			+= pci/
+obj-y					+= ddr_scrambler/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
 all:

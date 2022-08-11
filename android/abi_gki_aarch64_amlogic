@@ -528,8 +528,3 @@
 
 # CFG80211: cfg80211.ko
   rfkill_set_sw_state
-
-# v4l2 vendor hooks
-  __tracepoint_android_vh_meta_ptr_update
-  __tracepoint_android_vh_fill_fmtdesc
-  __tracepoint_android_vh_strparm_save

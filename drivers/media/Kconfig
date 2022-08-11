@@ -63,6 +63,9 @@ config AMLOGIC_MEDIA_NO_PARSER
 		SC2 platform. therefore the parser modules can't be
 		builded in ko if enable this item.
 
+config AMLOGIC_V4L2
+	bool "Amlogic V4L2 VENDOR HOORKS"
+
 if AMLOGIC_MEDIA_COMMON
 source "$(COMMON_DRIVERS_DIR)/drivers/media/common/Kconfig"
 endif

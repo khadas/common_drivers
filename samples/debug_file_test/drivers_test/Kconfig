@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_SAMPLES_DEBUG_FILE_TEST
+	tristate "Amlogic debug file test support"
+	depends on AMLOGIC_DEBUG_FILE
+	default n
+	help
+		This builds an Amlogic debug file function example

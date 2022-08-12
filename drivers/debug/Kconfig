@@ -58,3 +58,9 @@ config AMLOGIC_DEBUG_SCRAMBLER_RAMOOPS
 	help
 		Preserve ddr scrambler key to dump kernel console message and panic/oops
 		message.
+
+config AMLOGIC_DEBUG_FILE
+	bool "Amlogic dump log to debug file"
+	default n
+	help
+		Provide some interfaces for dumping log to debug file

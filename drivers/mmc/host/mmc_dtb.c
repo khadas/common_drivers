@@ -37,7 +37,6 @@
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 #include <linux/amlogic/aml_sd.h>
-#include <trace/hooks/mmc_part.h>
 #include "mmc_common.h"
 
 static dev_t amlmmc_dtb_no;

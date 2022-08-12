@@ -67,6 +67,6 @@ void register_key_dtb(void);
 void emmc_key_init(struct mmc_card *card, int *retp);
 
 extern struct task_struct      *thread_dtb_key_task;
-extern struct mmc_host *mmc_dtbkey;
+
 #endif
 

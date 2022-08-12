@@ -119,7 +119,7 @@ struct meson_host {
 	struct	meson_mmc_data *data;
 	struct	mmc_host	*mmc;
 	struct	mmc_command	*cmd;
-
+	struct delayed_work dtbkey;
 	void __iomem *regs;
 	void __iomem *pin_mux_base;
 	void __iomem *clk_tree_base;

@@ -3569,28 +3569,24 @@ static int erase_count_show(struct seq_file *s, void *data)
 }
 DEFINE_SHOW_ATTRIBUTE(erase_count);
 
-int add_dtbkey_thread(void *data)
+void add_dtbkey(struct work_struct *work)
 {
 	int ret;
-	static int inited;
-	struct meson_host *host = mmc_priv(mmc_dtbkey);
+	struct meson_host *host =
+		container_of(work, struct meson_host, dtbkey.work);
+	struct mmc_host *mmc = mmc_from_priv(host);
 
-	if (!aml_card_type_mmc(host)) {
-		pr_err("%s:%d,no emmc card, no dtb and key device init\n", __func__, __LINE__);
-		return 0;
-	}
-	WARN_ON(inited == 1);
-	if (!inited) {
-		emmc_key_init(mmc_dtbkey->card, &ret);
+	if (mmc->card) {
+		emmc_key_init(mmc->card, &ret);
 		if (ret)
 			pr_err("%s:%d,emmc_key_init fail\n", __func__, __LINE__);
 
-		amlmmc_dtb_init(mmc_dtbkey->card, &ret);
+		amlmmc_dtb_init(mmc->card, &ret);
 		if (ret)
 			pr_err("%s:%d,amlmmc_dtb_init fail\n", __func__, __LINE__);
-		inited = 1;
+	} else {
+		schedule_delayed_work(&host->dtbkey, 50);
 	}
-	return 0;
 }
 
 static int meson_mmc_probe(struct platform_device *pdev)
@@ -3599,18 +3595,10 @@ static int meson_mmc_probe(struct platform_device *pdev)
 	struct mmc_host *mmc;
 	int ret;
 	u32 val;
-	static int registered;
 
 	mmc = mmc_alloc_host(sizeof(struct meson_host), &pdev->dev);
 	if (!mmc)
 		return -ENOMEM;
-
-
-	if (registered == 0) {
-		/*register amlmmc_dtb_key_init vendor-hook function*/
-		register_key_dtb();
-		registered = 1;
-	}
 
 	host = mmc_priv(mmc);
 	host->mmc = mmc;
@@ -3636,15 +3624,6 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		goto free_host;
 	}
 	amlogic_of_parse(mmc);
-
-	if (aml_card_type_mmc(host)) {
-		mmc_dtbkey = mmc;
-		thread_dtb_key_task = kthread_create(add_dtbkey_thread, NULL, "dtbkey_task");
-		if (IS_ERR(thread_dtb_key_task)) {
-			pr_err("%s:%d,thread_dtb_key_task create fail\n", __func__, __LINE__);
-			thread_dtb_key_task = NULL;
-		}
-	}
 
 	if (aml_card_type_non_sdio(host)) {
 		if (!IS_ERR(mmc->supply.vqmmc))
@@ -3844,6 +3823,11 @@ static int meson_mmc_probe(struct platform_device *pdev)
 
 	if (aml_card_type_sdio(host)) {/* if sdio_wifi */
 		sdio_host = mmc;
+	}
+
+	if (aml_card_type_mmc(host)) {
+		INIT_DELAYED_WORK(&host->dtbkey, add_dtbkey);
+		schedule_delayed_work(&host->dtbkey, 50);
 	}
 
 	if (mmc->debugfs_root && aml_card_type_mmc(host)) {

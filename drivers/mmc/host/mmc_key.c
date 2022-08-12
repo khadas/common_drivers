@@ -38,10 +38,8 @@
 #include <linux/amlogic/key_manage.h>
 
 #include <linux/amlogic/aml_sd.h>
-#include <trace/hooks/mmc_part.h>
 #include "mmc_common.h"
 
-struct mmc_host *mmc_dtbkey;
 struct task_struct      *thread_dtb_key_task;
 unsigned int    key_stamp;
 #define		EMMC_BLOCK_SIZE		(0x100)
@@ -552,28 +550,3 @@ int32_t emmc_key_read(u8 *buffer,
 }
 EXPORT_SYMBOL(emmc_key_read);
 
-void amlmmc_dtb_key_init(void *at, int *retp)
-{
-	static int waked;
-
-	if (!mmc_dtbkey || !mmc_dtbkey->card) {
-		pr_info("no emmc host or emmc card!\n");
-	} else if (waked == 1) {
-		pr_debug("emmc key and dtb already inited\n");
-	} else {
-		pr_debug("wakeup dtbkey_task\n");
-		wake_up_process(thread_dtb_key_task);
-		waked = 1;
-	}
-
-	*retp = 0;
-}
-
-void register_key_dtb(void)
-{
-	int ret = 0;
-
-	ret = register_trace_android_vh_amlmmc_dtb_key_init(amlmmc_dtb_key_init, NULL);
-	if (ret)
-		pr_err("register_trace_android_vh_emmc_key_init ret=%d\n", ret);
-}

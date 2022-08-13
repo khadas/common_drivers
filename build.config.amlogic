@@ -134,4 +134,4 @@ if [[ `grep "CONFIG_AMLOGIC_BREAK_GKI=y" ${ROOT_DIR}/${FRAGMENT_CONFIG}` ]]; the
 	"
 fi
 
-ABI_DEFINITION=${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.xml
+# ABI_DEFINITION=${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.xml

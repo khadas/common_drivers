@@ -1,6 +1,8 @@
 #!/bin/bash
 
 function pre_defconfig_cmds() {
+	export OUT_AMLOGIC_DIR=$(readlink -m ${COMMON_OUT_DIR}/amlogic)
+
 	if [[ ${GKI_CONFIG} == gki ]]; then
 		KCONFIG_CONFIG=${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${ROOT_DIR}/${FRAGMENT_CONFIG}
 	elif [[ ${GKI_CONFIG} == gki_user ]]; then
@@ -161,9 +163,9 @@ function extra_cmds() {
 	while read LINE
 	do
 		find -name ${LINE} >> modules.order
-	done < ${DIST_DIR}/modules/modules.order
+	done < ${OUT_AMLOGIC_DIR}/modules/modules.order
 	sed -i "s/^\.\///" modules.order
-	: > ${DIST_DIR}/ext_modules/ext_modules.order
+	: > ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
 	ext_modules=
 	for ext_module in ${EXT_MODULES}; do
 		if [[ ${ext_module} =~ "../" ]]; then
@@ -178,12 +180,12 @@ function extra_cmds() {
 			ext_dir_top=${ext_module%/*}
 			sed -i "s/\.\.\///g" ${ext_modules_order_file}
 			cat ${ext_modules_order_file} >> modules.order
-			cat ${ext_modules_order_file} | awk -F/ '{print $NF}' >> ${DIST_DIR}/ext_modules/ext_modules.order
+			cat ${ext_modules_order_file} | awk -F/ '{print $NF}' >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
 			: > ${ext_modules_order_file}
 		else
 			ext_modules_order_file=$(ls extra/${ext_module}/modules.order.*)
 			cat ${ext_modules_order_file} >> modules.order
-			cat ${ext_modules_order_file} | awk -F/ '{print $NF}' >> ${DIST_DIR}/ext_modules/ext_modules.order
+			cat ${ext_modules_order_file} | awk -F/ '{print $NF}' >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
 			: > ${ext_modules_order_file}
 		fi
 		ext_modules="${ext_modules} ${ext_module}"
@@ -210,6 +212,7 @@ function extra_cmds() {
 		echo "COMMON_OUT_DIR=${COMMON_OUT_DIR}" >>  ${KERNEL_BUILD_VAR_FILE}
 		echo "OUT_DIR=${OUT_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "DIST_DIR=${DIST_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "OUT_AMLOGIC_DIR=${OUT_AMLOGIC_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "MODULES_STAGING_DIR=${MODULES_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "MODULES_PRIVATE_DIR=${MODULES_PRIVATE_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "INITRAMFS_STAGING_DIR=${INITRAMFS_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
@@ -372,10 +375,10 @@ create_ramdisk_vendor() {
 function modules_install() {
 	arg1=$1
 
-	pushd ${DIST_DIR}
-	rm -rf modules ext_modules
-	mkdir modules ext_modules
-	popd
+	rm -rf ${OUT_AMLOGIC_DIR}
+	mkdir -p ${OUT_AMLOGIC_DIR}
+	mkdir -p ${OUT_AMLOGIC_DIR}/modules
+	mkdir -p ${OUT_AMLOGIC_DIR}/ext_modules
 
 	local MODULES_ROOT_DIR=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
 	pushd ${MODULES_ROOT_DIR}
@@ -384,23 +387,23 @@ function modules_install() {
 	for module in ${modules_list}; do
 		if [[ -n ${ANDROID_PROJECT} ]]; then			# copy internal build modules
 			if [[ `echo ${module} | grep -E "\.\/kernel\/|\/${common_drivers}\/"` ]]; then
-				cp ${module} ${DIST_DIR}/modules/
+				cp ${module} ${OUT_AMLOGIC_DIR}/modules/
 			else
-				cp ${module} ${DIST_DIR}/ext_modules/
+				cp ${module} ${OUT_AMLOGIC_DIR}/ext_modules/
 			fi
 		else							# copy all modules, include external modules
-			cp ${module} ${DIST_DIR}/modules/
+			cp ${module} ${OUT_AMLOGIC_DIR}/modules/
 		fi
 	done
 
 	if [[ -n ${ANDROID_PROJECT} ]]; then				# internal build modules
-		grep -E "^kernel\/|^${common_drivers}\/" modules.dep > ${DIST_DIR}/modules/modules.dep
+		grep -E "^kernel\/|^${common_drivers}\/" modules.dep > ${OUT_AMLOGIC_DIR}/modules/modules.dep
 	else								# all modules, include external modules
-		cp modules.dep ${DIST_DIR}/modules
+		cp modules.dep ${OUT_AMLOGIC_DIR}/modules
 	fi
 	popd
 
-	pushd ${DIST_DIR}/modules
+	pushd ${OUT_AMLOGIC_DIR}/modules
 	sed -i 's#[^ ]*/##g' modules.dep
 
 	adjust_sequence_modules_loading "${arg1[*]}"
@@ -438,7 +441,7 @@ function modules_install() {
 export -f modules_install
 
 function rebuild_rootfs() {
-	pushd ${DIST_DIR}
+	pushd ${OUT_AMLOGIC_DIR}
 
 	local ARCH=arm64
 	if [[ -n $1 ]]; then
@@ -464,13 +467,14 @@ function rebuild_rootfs() {
 	mkimage -A ${ARCH} -O linux -T ramdisk -C none -d rootfs_new.cpio.gz rootfs_new.cpio.gz.uboot
 	mv rootfs_new.cpio.gz.uboot ../
 	cd ../
+	cp rootfs_new.cpio.gz.uboot ${DIST_DIR}
 
 	popd
 }
 export -f rebuild_rootfs
 
 function check_undefined_symbol() {
-	pushd ${DIST_DIR}/modules
+	pushd ${OUT_AMLOGIC_DIR}/modules
 	echo
 	echo "========================================================"
 	echo "Functions or variables not defined in this module refer to which module."

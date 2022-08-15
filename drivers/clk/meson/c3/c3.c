@@ -84,7 +84,6 @@ struct clk_regmap _name = {						\
 
 /* PLL clock in gates,its parent is xtal */
 /* CLKTREE_OSCIN_CTRL */
-static MESON_C3_XTAL_RO_GATE(xtal_clktree,		OSCIN_CTRL,	0);
 static MESON_C3_XTAL_RO_GATE(xtal_ddrpll,		OSCIN_CTRL,	1);
 static MESON_C3_XTAL_RO_GATE(xtal_ddrphy,		OSCIN_CTRL,	2);
 static MESON_C3_XTAL_RO_GATE(xtal_plltop,		OSCIN_CTRL,	4);
@@ -732,6 +731,7 @@ static const struct reg_sequence c3_hifi_init_regs[] = {
 static const struct pll_params_table c3_hifi_pll_params_table[] = {
 	PLL_PARAMS(150, 1, 1), /* DCO = 3600M, CLK_OUT = 1800M */
 	PLL_PARAMS(130, 1, 1), /* DCO = 3120M, CLK_OUT = 1560M */
+	PLL_PARAMS(192, 1, 2), /* DCO = 4608M, CLK_OUT = 1152M */
 	PLL_PARAMS(125, 1, 2), /* DCO = 3000M, CLK_OUT = 750M */
 	{ /* sentinel */  },
 };
@@ -739,6 +739,7 @@ static const struct pll_params_table c3_hifi_pll_params_table[] = {
 static const struct pll_params_table c3_hifi_pll_params_table[] = {
 	PLL_PARAMS(150, 1), /* DCO = 3600M */
 	PLL_PARAMS(130, 1), /* DCO = 3120M */
+	PLL_PARAMS(192, 1), /* DCO = 4608M */
 	PLL_PARAMS(125, 1), /* DCO = 3000M */
 	{ /* sentinel */  },
 };
@@ -1396,7 +1397,8 @@ static struct clk_regmap axi_b = {
 			&axi_b_div.hw,
 		},
 		.num_parents = 1,
-		.flags = CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED,
+		.flags = CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED |
+			CLK_IS_CRITICAL,
 	},
 };
 
@@ -1445,7 +1447,8 @@ static struct clk_regmap axi_a = {
 			&axi_a_div.hw,
 		},
 		.num_parents = 1,
-		.flags = CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED,
+		.flags = CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED |
+			CLK_IS_CRITICAL,
 	},
 };
 
@@ -2650,6 +2653,7 @@ static struct clk_regmap hcodec_b_clk_sel = {
 		.offset = VDEC3_CLK_CTRL,
 		.mask = 0x7,
 		.shift = 9,
+		.table = mux_table_hcodec,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "hcodec_b_clk_sel",
@@ -2712,7 +2716,7 @@ static struct clk_regmap hcodec_clk = {
 	},
 };
 
-static u32 mux_table_vc9000e[] = { 0, 1, 2, 3, 4, 6, 7 };
+static u32 mux_table_vc9000e[] = { 0, 1, 2, 3, 4, 5, 7 };
 static const struct clk_parent_data vc9000e_parent_names[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &c3_fclk_div4.hw },
@@ -2778,6 +2782,7 @@ static struct clk_regmap vc9000e_core_clk_sel = {
 		.offset = VC9000E_CLK_CTRL,
 		.mask = 0x7,
 		.shift = 25,
+		.table = mux_table_vc9000e,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "vc9000e_core_clk_sel",
@@ -3409,7 +3414,6 @@ static struct clk_hw_onecell_data c3_hw_onecell_data = {
 		[CLKID_AXI_CLK]			= &axi_clk.hw,
 		[CLKID_CPU_DYN_CLK]		= &c3_cpu_dyn_clk.hw,
 		[CLKID_CPU_CLK]			= &c3_cpu_clk.hw,
-		[CLKID_XTAL_CLKTREE]		= &xtal_clktree.hw,
 		[CLKID_XTAL_DDRPLL]		= &xtal_ddrpll.hw,
 		[CLKID_XTAL_DDRPHY]		= &xtal_ddrphy.hw,
 		[CLKID_XTAL_PLLTOP]		= &xtal_plltop.hw,
@@ -3631,7 +3635,6 @@ static struct clk_hw_onecell_data c3_hw_onecell_data = {
 
 /* Convenience table to populate regmap in .probe */
 static struct clk_regmap *const c3_clk_regmaps[] = {
-	&xtal_clktree,
 	&xtal_ddrpll,
 	&xtal_ddrphy,
 	&xtal_plltop,

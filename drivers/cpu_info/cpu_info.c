@@ -22,7 +22,7 @@
 #include <linux/arm-smccc.h>
 #include <linux/amlogic/cpu_version.h>
 #include <linux/seq_file.h>
-#include <trace/hooks/cpuinfo.h>
+#include <linux/proc_fs.h>
 
 static unsigned char cpuinfo_chip_id[CHIPID_LEN];
 
@@ -30,21 +30,32 @@ void cpuinfo_get_chipid(unsigned char *cid, unsigned int size)
 {
 	memcpy(&cid[0], cpuinfo_chip_id, size);
 }
+EXPORT_SYMBOL(cpuinfo_get_chipid);
 
-#if IS_ENABLED(CONFIG_AMLOGIC_SHOW_CPU_CHIPID)
-void show_cpu_chipid(void *data, struct seq_file *m)
+static int cpu_chipid_show(struct seq_file *m, void *arg)
 {
-	unsigned char chipid[CHIPID_LEN];
 	int i;
 
-	cpuinfo_get_chipid(chipid, CHIPID_LEN);
-	seq_puts(m, "Serial\t\t: ");
-	for (i = 0; i < 16; i++)
-		seq_printf(m, "%02x", chipid[i]);
+	seq_puts(m, "Serial:\t\t ");
+	for (i = 0; i < CHIPID_LEN; i++)
+		seq_printf(m, "%02x", cpuinfo_chip_id[i]);
 	seq_puts(m, "\n");
-	seq_printf(m, "Hardware\t: %s\n\n", "Amlogic");
+	seq_printf(m, "Hardware:\t %s\n", "Amlogic");
+
+	return 0;
 }
-#endif
+
+static int cpu_chipid_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, cpu_chipid_show, NULL);
+}
+
+static const struct proc_ops cpu_chipid_ops = {
+	.proc_open	= cpu_chipid_open,
+	.proc_read	= seq_read,
+	.proc_lseek	= seq_lseek,
+	.proc_release	= single_release,
+};
 
 static noinline int fn_smc(u64 function_id,
 			   u64 arg0,
@@ -66,6 +77,7 @@ static int cpuinfo_probe(struct platform_device *pdev)
 	void __iomem *shm_out;
 	struct device_node *np = pdev->dev.of_node;
 	int cmd, ret, i;
+	struct proc_dir_entry *proc;
 
 	if (of_property_read_u32(np, "cpuinfo_cmd", &cmd))
 		return -EINVAL;
@@ -99,13 +111,13 @@ static int cpuinfo_probe(struct platform_device *pdev)
 		for (i = 0; i < CHIPID_LEN; i++)
 			pr_cont("%02x", cpuinfo_chip_id[i]);
 		pr_cont("\n");
-	}
 
-#if IS_ENABLED(CONFIG_AMLOGIC_SHOW_CPU_CHIPID)
-	ret = register_trace_android_vh_show_cpu_chipid(show_cpu_chipid, NULL);
-	if (ret)
-		pr_err("register_trace_android_vh_show_cpu_chipid fail ret=%d\n", ret);
-#endif
+		proc = proc_create("cpu_chipid", 0444, NULL, &cpu_chipid_ops);
+		if (IS_ERR_OR_NULL(proc)) {
+			pr_err("create cpu_chipid proc failed\n");
+			return -EINVAL;
+		}
+	}
 
 	return ret;
 }
@@ -126,6 +138,9 @@ static  struct platform_driver cpuinfo_platform_driver = {
 
 static int __init meson_cpuinfo_init(void)
 {
+#ifdef	COMMON_DRIVER_RELEASE
+	pr_notice("common_drivers release =%s\n", COMMON_DRIVER_RELEASE);
+#endif
 	meson_cpu_version_init();
 
 	return  platform_driver_register(&cpuinfo_platform_driver);

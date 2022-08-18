@@ -39,6 +39,7 @@
 #include <linux/debugfs.h>
 #include "mmc_key.h"
 #include "mmc_dtb.h"
+#include <trace/hooks/mmc.h>
 
 struct mmc_gpio {
 	struct gpio_desc *ro_gpio;
@@ -51,6 +52,21 @@ struct mmc_gpio {
 
 static struct mmc_host *sdio_host;
 static char *caps2_quirks = "none";
+
+void mmc_sd_update_cmdline_timing(void *data, struct mmc_card *card, int *err)
+{
+	/* nothing */
+	*err = 0;
+}
+
+void mmc_sd_update_dataline_timing(void *data, struct mmc_card *card, int *err)
+{
+	/* nothing */
+	*err = 0;
+}
+
+#define SD_CMD_TIMING mmc_sd_update_cmdline_timing
+#define SD_DATA_TIMING mmc_sd_update_dataline_timing
 
 static inline u32 aml_mv_dly1_nommc(u32 x)
 {
@@ -3762,6 +3778,8 @@ static int meson_mmc_probe(struct platform_device *pdev)
 	mmc->max_req_size = SD_EMMC_MAX_REQ_SIZE;
 	mmc->max_seg_size = mmc->max_req_size;
 	mmc->ocr_avail = 0x200080;
+	mmc->max_current_180 = 300; /* 300 mA in 1.8V */
+	mmc->max_current_330 = 300; /* 300 mA in 3.3V */
 
 	/*
 	 * At the moment, we don't know how to reliably enable HS400.
@@ -3828,6 +3846,19 @@ static int meson_mmc_probe(struct platform_device *pdev)
 	if (aml_card_type_mmc(host)) {
 		INIT_DELAYED_WORK(&host->dtbkey, add_dtbkey);
 		schedule_delayed_work(&host->dtbkey, 50);
+	}
+
+	if (aml_card_type_non_sdio(host)) {
+		ret =
+		register_trace_android_vh_mmc_sd_update_cmdline_timing(SD_CMD_TIMING,
+			NULL);
+		if (ret)
+			pr_err("register update_cmdline_timing failed, err:%d\n", ret);
+		ret =
+		register_trace_android_vh_mmc_sd_update_dataline_timing(SD_DATA_TIMING,
+			NULL);
+		if (ret)
+			pr_err("register update_dataline timing failed, err:%d\n", ret);
 	}
 
 	if (mmc->debugfs_root && aml_card_type_mmc(host)) {

@@ -16,8 +16,7 @@
 #include <linux/vmalloc.h>
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/codec_mm/dmabuf_manage.h>
-
-#define DMA_BUF_CODEC_MM "DMA_BUF"
+#include <linux/amlogic/media/dmabuf_heaps/amlogic_dmabuf_heap.h>
 
 static struct dma_heap *secure_heap;
 
@@ -429,7 +428,7 @@ int __init amlogic_system_secure_dma_buf_init(void)
 	struct dma_heap_export_info exp_info;
 
 	pr_enter();
-	exp_info.name = "system-secure-uncached";
+	exp_info.name = SYSTEM_SECURE_UNCACHE_HEAP_NAME;
 	exp_info.ops = &secure_heap_ops;
 	exp_info.priv = NULL;
 

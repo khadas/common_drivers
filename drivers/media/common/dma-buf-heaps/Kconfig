@@ -16,5 +16,11 @@ config AMLOGIC_HEAP_CMA
 	help
 		Select to enable "Amlogic cma dmaheap support.
 
+config AMLOGIC_HEAP_CODEC_MM
+	tristate "Amlogic codec_mm dmaheap support"
+	depends on DMABUF_HEAPS
+	default n
+	help
+		Select to enable "Amlogic codec_mm dmaheap support.
 endmenu
 

@@ -626,4 +626,13 @@ static int amlogic_system_secure_dma_buf_init(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_HEAP_CODEC_MM)
+int __init amlogic_codec_mm_dma_buf_init(void);
+#else
+static int amlogic_codec_mm_dma_buf_init(void)
+{
+	return 0;
+}
+#endif
+
 #endif

@@ -3194,8 +3194,13 @@ static void sdio_reset_comm(struct mmc_card *card)
 void sdio_reinit(void)
 {
 	if (sdio_host) {
-		if (sdio_host->card)
+		struct mmc_ios *ios = &sdio_host->ios;
+
+		if (sdio_host->card) {
+			if (ios)
+				ios->timing = 0;
 			sdio_reset_comm(sdio_host->card);
+		}
 		else
 			sdio_rescan(sdio_host);
 	} else {

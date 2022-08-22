@@ -518,11 +518,6 @@
   drm_mode_get_hv_timing
   drm_property_add_enum
 
-# mtd: mtd_blkdevs.ko nand.ko ubi.ko
-  blk_mq_alloc_sq_tag_set
-  gpiod_get_index_optional
-  vfs_getattr
-
 # PCI: amlogic-pcie-v2-host.ko
   dw_pcie_host_deinit
 

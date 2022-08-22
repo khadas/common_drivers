@@ -66,33 +66,12 @@ bool parameqn(const char *a, const char *b, size_t n)
 	return true;
 }
 
-bool parameq(const char *a, const char *b)
-{
-	return parameqn(a, b, strlen(a) + 1);
-}
-
-static bool param_check_unsafe(const struct kernel_param *kp)
-{
-	if (kp->flags & KERNEL_PARAM_FL_HWPARAM &&
-	    security_locked_down(LOCKDOWN_MODULE_PARAMETERS))
-		return false;
-
-	if (kp->flags & KERNEL_PARAM_FL_UNSAFE) {
-		pr_notice("Setting dangerous option %s - tainting kernel\n",
-			  kp->name);
-		add_taint(TAINT_USER, LOCKDEP_STILL_OK);
-	}
-
-	return true;
-}
-
 /* hook func of module_init() */
 void __module_init_hook(struct module *m)
 {
 	const struct kernel_symbol *sym;
 	struct gki_module_setup_struct *s;
 	int i, j;
-	int ret;
 
 	for (i = 0; i < m->num_syms; i++) {
 		sym = &m->syms[i];
@@ -111,29 +90,6 @@ void __module_init_hook(struct module *m)
 					fn(cpv[j].val);
 					continue;
 				}
-			}
-		}
-	}
-
-	for (i = 0; i < m->num_kp; i++) {
-		pr_debug("module_param: %s\n", m->kp[i].name);
-		for (j = 0; j < cpv_count; j++) {
-			int n = strlen(m->name);
-
-			if ((cpv[j].val || m->kp[i].ops->flags & KERNEL_PARAM_OPS_FL_NOARG) &&
-			    parameqn(cpv[j].param, m->name, strlen(m->name)) &&
-			    (cpv[j].param[n] == '.') &&
-			    parameq(&cpv[j].param[n + 1], m->kp[i].name)) {
-				pr_debug("cmd_param_val: %s=%s\n", cpv[j].param, cpv[j].val);
-				kernel_param_lock(m);
-				if (param_check_unsafe(&m->kp[i]))
-					ret = m->kp[i].ops->set(cpv[j].val, &m->kp[i]);
-				else
-					ret = -EPERM;
-				kernel_param_unlock(m);
-				if (ret)
-					pr_debug("parm set result: %d\n", ret);
-				continue;
 			}
 		}
 	}

@@ -226,7 +226,13 @@ static void push_ip(struct page_trace *base, struct page_trace *ip)
 
 static inline int is_module_addr(unsigned long ip)
 {
+#ifdef CONFIG_RANDOMIZE_BASE
+	u64 module_alloc_end = module_alloc_base + MODULES_VSIZE;
+
+	if (ip >= module_alloc_base && ip < module_alloc_end)
+#else
 	if (ip >= MODULES_VADDR && ip < MODULES_END)
+#endif
 		return 1;
 	return 0;
 }
@@ -458,7 +464,11 @@ unsigned long unpack_ip(struct page_trace *trace)
 		return 0;
 
 	if (trace->module_flag)
+#ifdef CONFIG_RANDOMIZE_BASE
+		text = module_alloc_base;
+#else
 		text = MODULES_VADDR;
+#endif
 	else
 		text = (unsigned long)_text;
 	return text + ((trace->ret_ip) << 2);
@@ -579,7 +589,11 @@ unsigned int pack_ip(unsigned long ip, unsigned int order, gfp_t flag)
 	if (ip >= (unsigned long)_text) {
 		text = (unsigned long)_text;
 	} else if (is_module_addr(ip)) {
+#ifdef CONFIG_RANDOMIZE_BASE
+		text = module_alloc_base;
+#else
 		text = MODULES_VADDR;
+#endif
 		trace.module_flag = 1;
 	}
 

@@ -9,3 +9,5 @@ dtb-y += c3_c302x_aw409_256m.dtb
 dtb-y += c3_c308l_aw429_256m.dtb
 dtb-y += c3_c302x_aw409_128m.dtb
 dtb-y += c3_c308l_aw429_128m.dtb
+dtbo-y += android_overlay_dt.dtbo
+dtb-y += sc2_s905x4_ah212_drm.dtb

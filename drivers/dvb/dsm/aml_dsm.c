@@ -15,6 +15,7 @@
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/compat.h>
+#include <linux/random.h>
 #include "aml_dsm.h"
 
 #define DEVICE_NAME "aml_dsm"

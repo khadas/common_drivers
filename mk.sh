@@ -3,6 +3,7 @@
 function show_help {
 	echo "USAGE: $0 [--nongki] [--abi]"
 	echo
+	echo "  --arch                  for ARCH, build 64 or 32 bit kernel, arm|arm64[default], require parameter value"
 	echo "  --abi                   for ABI, call build_abi.sh not build.sh, 1|0[default], not require parameter value"
 	echo "  --build_config          for BUILD_CONFIG, common_drivers/build.config.amlogic[default]|common/build.config.gki.aarch64, require parameter value"
 	echo "  --symbol_strict         for KMI_SYMBOL_LIST_STRICT_MODE, 1[default]|0, require parameter value"
@@ -27,6 +28,11 @@ ARGS=()
 for i in "$@"
 do
 	case $i in
+	--arch)
+		ARCH=$2
+		VA=1
+		shift
+		;;
 	--abi)
 		ABI=1
 		shift
@@ -120,8 +126,14 @@ do
 		;;
 	esac
 done
-set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
 
+if [ "${ARCH}" = "arm" ]; then
+	ARGS+=("LOADADDR=0x108000")
+else
+	ARCH=arm64
+fi
+
+set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
 				# amlogic parameters default value
 if [[ -z "${ABI}" ]]; then
 	ABI=0
@@ -148,7 +160,11 @@ if [[ ! -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh ]]; then
 	exit
 fi
 if [[ -z "${BUILD_CONFIG}" ]]; then
-	BUILD_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic
+	if [ "${ARCH}" = "arm64" ]; then
+			BUILD_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic
+	elif [ "${ARCH}" = "arm" ]; then
+			BUILD_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic32
+	fi
 fi
 if [[ -z "${BUILD_DIR}" ]]; then
 	BUILD_DIR=build
@@ -182,7 +198,7 @@ echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_M
 export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG
 echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} GKI_CONFIG=${GKI_CONFIG}
 
-source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic
+source ${ROOT_DIR}/${BUILD_CONFIG}
 
 if [ "${ABI}" -eq "1" ]; then
 	export OUT_DIR_SUFFIX="_abi"
@@ -264,7 +280,7 @@ fi
 echo "========================================================"
 if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
 	echo "Rebuild rootfs in order to install modules!"
-	rebuild_rootfs
+	rebuild_rootfs ${ARCH}
 else
 	echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
 fi

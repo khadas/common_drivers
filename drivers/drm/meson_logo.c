@@ -78,7 +78,7 @@ static u32 drm_logo_bpp;
 static u32 drm_logo_width;
 static u32 drm_logo_height;
 
-static int __init drm_logo_bpp_setup(char *str)
+static int drm_logo_bpp_setup(char *str)
 {
 	int ret;
 
@@ -92,7 +92,7 @@ static u32 drm_logo_get_display_bpp(void)
 	return drm_logo_bpp;
 }
 
-static int __init drm_logo_width_setup(char *str)
+static int drm_logo_width_setup(char *str)
 {
 	int ret;
 
@@ -106,7 +106,7 @@ static u32 drm_logo_get_fb_width(void)
 	return drm_logo_width;
 }
 
-static int __init drm_logo_height_setup(char *str)
+static int drm_logo_height_setup(char *str)
 {
 	int ret;
 
@@ -221,7 +221,7 @@ static inline int install_osd_reverse_info(struct osd_info_s *init_osd_info,
 	return 0;
 }
 
-static int __init drm_logo_reverse_setup(char *str)
+static int drm_logo_reverse_setup(char *str)
 {
 	char	*ptr = str;
 	char	sep[2];

@@ -87,7 +87,9 @@ static struct clk_regmap sc2_fixed_pll = {
 	},
 };
 
+#ifdef CONFIG_ARM
 static const struct clk_ops meson_pll_clk_no_ops = {};
+#endif
 
 /*
  * the sys pll DCO value should be 3G~6G,
@@ -561,6 +563,14 @@ static struct clk_regmap sc2_gp1_pll_dco = {
 			.shift   = 10,
 			.width   = 5,
 		},
+#ifdef CONFIG_ARM
+		/* for 32bit */
+		.od = {
+			.reg_off = ANACTRL_GP1PLL_CTRL0,
+			.shift	 = 16,
+			.width	 = 3,
+		},
+#endif
 		.frac = {
 			.reg_off = ANACTRL_GP1PLL_CTRL1,
 			.shift   = 0,
@@ -593,6 +603,20 @@ static struct clk_regmap sc2_gp1_pll_dco = {
 	},
 };
 
+#ifdef CONFIG_ARM
+static struct clk_regmap sc2_gp1_pll = {
+	.hw.init = &(struct clk_init_data){
+		.name = "gp1_pll",
+		.ops = &meson_pll_clk_no_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&sc2_gp1_pll_dco.hw
+		},
+		.num_parents = 1,
+		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT,
+	},
+};
+
+#else
 static struct clk_regmap sc2_gp1_pll = {
 	.data = &(struct clk_regmap_div_data){
 		.offset = ANACTRL_GP1PLL_CTRL0,
@@ -613,6 +637,7 @@ static struct clk_regmap sc2_gp1_pll = {
 		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT,
 	},
 };
+#endif
 
 /*cpu_clk*/
 static const struct cpu_dyn_table sc2_cpu_dyn_table[] = {

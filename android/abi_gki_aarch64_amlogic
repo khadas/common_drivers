@@ -61,16 +61,13 @@
   platform_device_register
 
 # amlogic-gkitool.ko
-  kernel_read_file_from_path
   proc_create
   single_open_size
   strcat
   next_arg
   skip_spaces
-  add_taint
   kernel_param_lock
   kernel_param_unlock
-  security_locked_down
   param_ops_string
 
 # amlogic-ir.ko
@@ -224,8 +221,6 @@
   trace_print_flags_seq
   oops_in_progress
   unregister_kprobe
-  kasan_restore_multi_shot
-  kasan_save_enable_multi_shot
   strncpy_from_user
   vm_mmap
   vm_munmap
@@ -521,5 +516,3 @@
 # PCI: amlogic-pcie-v2-host.ko
   dw_pcie_host_deinit
 
-# CFG80211: cfg80211.ko
-  rfkill_set_sw_state

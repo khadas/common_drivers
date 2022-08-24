@@ -434,7 +434,7 @@ function modules_install() {
 	chmod 755 install.sh
 
 	echo "/modules/: all `wc -l modules.dep | awk '{print $1}'` modules."
-	rm __install.sh __install.sh.tmp modules.dep
+	rm __install.sh __install.sh.tmp
 
 	popd
 }

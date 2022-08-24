@@ -50,14 +50,6 @@ config AMLOGIC_CRG
           corigine
           support
 
-config AMLOGIC_USB_HOST_ELECT_TEST
-	bool
-	default n if AMLOGIC_USB
-	default y
-	help
-	  Say yes Enable this config to support USB High speed electric test,
-	  othervise say no
-
 config AMLOGIC_USBPHY
 	bool "Amlogic USB PHY Driver"
 	depends on AMLOGIC_USB

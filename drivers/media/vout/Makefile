@@ -4,6 +4,8 @@ include $(COMMON_DRIVERS_DIR)/drivers/media/vout/vclk_serve/Makefile
 
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/vout_serve/Makefile
 
+include $(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx_common/Makefile
+
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx21/Makefile
 
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx/Makefile

@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+#
+# HDMITX Common
+#
+menu "Amlogic HDMITX Common Module"
+
+config AMLOGIC_HDMITX_COMMON
+	bool "AMLOGIC HDMITX common"
+	default n
+	help
+	This option is used to configure Amlogic drivers
+        of the hdmi tx common software part
+
+endmenu

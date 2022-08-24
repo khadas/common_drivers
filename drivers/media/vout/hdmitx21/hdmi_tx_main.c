@@ -54,6 +54,7 @@
 #include <uapi/drm/drm_mode.h>
 #include <drm/amlogic/meson_drm_bind.h>
 #include <../../vin/tvin/tvin_global.h>
+#include <hdmitx_boot_parameters.h>
 
 #define HDMI_TX_COUNT 32
 #define HDMI_TX_POOL_NUM  6
@@ -374,13 +375,6 @@ static struct early_suspend hdmitx_early_suspend_handler = {
 };
 #endif
 
-#define INIT_FLAG_VDACOFF		0x1
-	/* unplug powerdown */
-#define INIT_FLAG_POWERDOWN	 0x2
-
-#define INIT_FLAG_NOT_LOAD 0x80
-
-static u8 init_flag;
 #undef DISABLE_AUDIO
 
 int get21_cur_vout_index(void)
@@ -5192,7 +5186,7 @@ static void hdmitx_init_parameters(struct hdmitx_info *info)
 	info->audio_out_changing_flag = 1;
 }
 
-static int amhdmitx21_device_init(struct hdmitx_dev *hdmi_dev)
+static int amhdmitx21_device_init(struct hdmitx_dev *hdmi_dev, struct hdmitx_boot_param *params)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	static struct hdmi_format_para para;
@@ -5202,6 +5196,17 @@ static int amhdmitx21_device_init(struct hdmitx_dev *hdmi_dev)
 
 	memset(&para, 0, sizeof(para));
 	pr_info("Ver: %s\n", HDMITX_VER);
+
+	/*load tx boot params*/
+	memcpy(hdmi_dev->fmt_attr, params->color_attr,
+	       sizeof(hdmi_dev->fmt_attr));
+	memcpy(hdmi_dev->backup_fmt_attr, hdmi_dev->fmt_attr,
+	       sizeof(hdmi_dev->fmt_attr));
+
+	hdmi_dev->frac_rate_policy = params->fraction_refreshrate;
+	hdmi_dev->backup_frac_rate_policy = hdmi_dev->frac_rate_policy;
+
+	hdmi_dev->hdr_priority = params->hdr_mask;
 
 	hdmi_dev->hdtx_dev = NULL;
 
@@ -5228,12 +5233,7 @@ static int amhdmitx21_device_init(struct hdmitx_dev *hdmi_dev)
 	hdev->flag_3dss = 0;
 	hdev->flag_3dtb = 0;
 	hdev->def_stream_type = DEFAULT_STREAM_TYPE;
-	if ((init_flag & INIT_FLAG_POWERDOWN) &&
-	    hdev->hpdmode == 2)
-		hdev->mux_hpd_if_pin_high_flag = 0;
-	else
-		hdev->mux_hpd_if_pin_high_flag = 1;
-
+	hdev->mux_hpd_if_pin_high_flag = 1;
 	hdev->audio_param_update_flag = 0;
 	/* 1: 2ch */
 	hdev->hdmi_ch = 1;
@@ -5501,7 +5501,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 
 	pr_debug("%s start\n", __func__);
 
-	amhdmitx21_device_init(hdev);
+	amhdmitx21_device_init(hdev, get_hdmitx_boot_params());
 	amhdmitx_infoframe_init(hdev);
 
 	ret = amhdmitx_get_dt_info(pdev);
@@ -5805,7 +5805,9 @@ static struct platform_driver amhdmitx_driver = {
 
 int  __init amhdmitx21_init(void)
 {
-	if (init_flag & INIT_FLAG_NOT_LOAD)
+	struct hdmitx_boot_param *param = get_hdmitx_boot_params();
+
+	if (param->init_state & INIT_FLAG_NOT_LOAD)
 		return 0;
 
 	return platform_driver_register(&amhdmitx_driver);
@@ -5821,174 +5823,6 @@ void __exit amhdmitx21_exit(void)
 //MODULE_DESCRIPTION("AMLOGIC HDMI TX driver");
 //MODULE_LICENSE("GPL");
 //MODULE_VERSION("1.0.0");
-
-/* besides characters defined in separator, '\"' are used as separator;
- * and any characters in '\"' will not act as separator
- */
-static char *next_token_ex(char *separator, char *buf, u32 size,
-			   u32 offset, u32 *token_len,
-			   u32 *token_offset)
-{
-	char *ptoken = NULL;
-	char last_separator = 0;
-	char trans_char_flag = 0;
-
-	if (buf) {
-		for (; offset < size; offset++) {
-			int ii = 0;
-		char ch;
-
-		if (buf[offset] == '\\') {
-			trans_char_flag = 1;
-			continue;
-		}
-		while (((ch = separator[ii++]) != buf[offset]) && (ch))
-			;
-		if (ch) {
-			if (!ptoken) {
-				continue;
-		} else {
-			if (last_separator != '"') {
-				*token_len = (unsigned int)
-					(buf + offset - ptoken);
-				*token_offset = offset;
-				return ptoken;
-			}
-		}
-		} else if (!ptoken) {
-			if (trans_char_flag && (buf[offset] == '"'))
-				last_separator = buf[offset];
-			ptoken = &buf[offset];
-		} else if ((trans_char_flag && (buf[offset] == '"')) &&
-			   (last_separator == '"')) {
-			*token_len = (unsigned int)(buf + offset - ptoken - 2);
-			*token_offset = offset + 1;
-			return ptoken + 1;
-		}
-		trans_char_flag = 0;
-	}
-	if (ptoken) {
-		*token_len = (unsigned int)(buf + offset - ptoken);
-		*token_offset = offset;
-	}
-	}
-	return ptoken;
-}
-
-/* check the colorattribute from uboot */
-static void check_hdmiuboot_attr(char *token)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	char attr[16] = {0};
-	const char * const cs[] = {
-		"444", "422", "rgb", "420", NULL};
-	const char * const cd[] = {
-		"8bit", "10bit", "12bit", "16bit", NULL};
-	int i;
-
-	if (hdev->fmt_attr[0] != 0)
-		return;
-
-	if (!token)
-		return;
-
-	for (i = 0; cs[i]; i++) {
-		if (strstr(token, cs[i])) {
-			if (strlen(cs[i]) < sizeof(attr))
-				strcpy(attr, cs[i]);
-			strcat(attr, ",");
-			break;
-		}
-	}
-	for (i = 0; cd[i]; i++) {
-		if (strstr(token, cd[i])) {
-			if (strlen(cd[i]) < sizeof(attr))
-				if (strlen(cd[i]) <
-					(sizeof(attr) - strlen(attr)))
-					strcat(attr, cd[i]);
-			strncpy(hdev->fmt_attr, attr,
-				sizeof(hdev->fmt_attr));
-			hdev->fmt_attr[15] = '\0';
-			break;
-		}
-	}
-	memcpy(hdev->backup_fmt_attr, hdev->fmt_attr,
-	       sizeof(hdev->fmt_attr));
-}
-
-static int hdmitx21_boot_para_setup(char *s)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	char separator[] = {' ', ',', ';', 0x0};
-	char *token;
-	u32 token_len = 0;
-	u32 token_offset = 0;
-	u32 offset = 0;
-	int size = strlen(s);
-
-	memset(hdev->fmt_attr, 0, sizeof(hdev->fmt_attr));
-	memset(hdev->backup_fmt_attr, 0,
-	       sizeof(hdev->backup_fmt_attr));
-
-	do {
-		token = next_token_ex(separator, s, size, offset,
-				      &token_len, &token_offset);
-		if (token) {
-			if (token_len == 3 &&
-			    strncmp(token, "off", token_len) == 0) {
-				init_flag |= INIT_FLAG_NOT_LOAD;
-			}
-			check_hdmiuboot_attr(token);
-		}
-		offset = token_offset;
-	} while (token);
-	return 0;
-}
-
-__setup("hdmitx=", hdmitx21_boot_para_setup);
-
-static int hdmitx21_boot_frac_rate(char *str)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	if (strncmp("0", str, 1) == 0)
-		hdev->frac_rate_policy = 0;
-	else
-		hdev->frac_rate_policy = 1;
-
-	pr_info("hdmitx boot frac_rate_policy: %d",
-		hdev->frac_rate_policy);
-
-	hdev->backup_frac_rate_policy = hdev->frac_rate_policy;
-	return 0;
-}
-
-__setup("frac_rate_policy=", hdmitx21_boot_frac_rate);
-
-static int hdmitx21_boot_hdr_priority(char *str)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	unsigned int val = 0;
-
-	if ((strncmp("1", str, 1) == 0) || (strncmp("2", str, 1) == 0)) {
-		val = str[0] - '0';
-		hdev->hdr_priority = val;
-		pr_info("hdmitx boot hdr_priority: %d\n", val);
-	}
-	return 0;
-}
-
-__setup("hdr_priority=", hdmitx21_boot_hdr_priority);
-
-static int __init get_hdmi21_checksum(char *str)
-{
-	snprintf(hdmichecksum, sizeof(hdmichecksum), "%s", str);
-
-	pr_info("get hdmi checksum: %s\n", hdmichecksum);
-	return 0;
-}
-
-__setup("hdmichecksum=", get_hdmi21_checksum);
 
 MODULE_PARM_DESC(log21_level, "\n log21_level\n");
 module_param(log21_level, int, 0644);

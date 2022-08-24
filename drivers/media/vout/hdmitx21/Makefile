@@ -12,4 +12,6 @@ $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_HDMITX21) += vout/hdmitx21/hdmi_param.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_HDMITX21) += vout/hdmitx21/hdmi_tx_vrr.o
 $(MEDIA_MODULE_NAME)-y += vout/hdmitx21/hdmi_tx_ext.o
 
+ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx_common
+
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/hdmitx21/hw/Makefile

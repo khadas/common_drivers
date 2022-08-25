@@ -516,3 +516,47 @@
 # PCI: amlogic-pcie-v2-host.ko
   dw_pcie_host_deinit
 
+# NTFS3: ntfs3.ko
+  __fs_parse
+  __generic_file_write_iter
+  __set_page_dirty_buffers
+  blkdev_issue_discard
+  block_truncate_page
+  block_write_begin
+  block_write_end
+  clean_bdev_aliases
+  copy_page_from_iter_atomic
+  current_umask
+  discard_new_inode
+  fault_in_iov_iter_readable
+  fiemap_fill_next_extent
+  fiemap_prep
+  file_remove_privs
+  file_update_time
+  filemap_fdatawrite
+  filemap_flush
+  filemap_write_and_wait_range
+  fs_param_is_string
+  fs_param_is_u32
+  generic_permission
+  get_tree_bdev
+  grab_cache_page_write_begin
+  inode_dio_wait
+  inode_get_bytes
+  inode_init_owner
+  inode_needs_sync
+  inode_set_bytes
+  insert_inode_locked
+  invalidate_bdev
+  iov_iter_zero
+  iter_file_splice_write
+  kfree_link
+  ll_rw_block
+  mpage_readahead
+  noop_backing_dev_info
+  pagecache_write_begin
+  pagecache_write_end
+  posix_acl_chmod
+  set_bh_page
+  sync_inode_metadata
+  utf8_to_utf32

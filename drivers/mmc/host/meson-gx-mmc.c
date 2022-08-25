@@ -3695,6 +3695,7 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		goto free_host;
 	}
 	amlogic_of_parse(mmc);
+	mmc->hold_retune = 1;
 
 	if (aml_card_type_non_sdio(host)) {
 		if (!IS_ERR(mmc->supply.vqmmc))

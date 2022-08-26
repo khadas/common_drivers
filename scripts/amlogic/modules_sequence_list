@@ -15,14 +15,33 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-reset
 	amlogic-efuse-unifykey
 	amlogic-mmc
+	amlogic-spi.ko
+	amlogic-tee.ko
+	videobuf-core.ko
+	dvb-core.ko
+	amlogic-input-gpiokey.ko
+	amlogic-input-adckey.ko
+	amlogic-pm.ko
+	amlogic-input-ir.ko
+	amlogic-watchdog.ko
+	aml_dvb_extern.ko
+	aml_media.ko
+	amlogic-adc.ko
+	amlogic-rtc-virtual.ko
+	amlogic-thermal.ko
+	amlogic_usb2_phy.ko
+	amlogic_usb3_v2_phy.ko
+	amlogic_usb_crg.ko
+	amlogic-irblaster.ko
+	amlogic-reboot.ko
+	amlogic-inphy.ko
+	amlogic-drm.ko
 )
 
 VENDOR_MODULES_LOAD_FIRST_LIST=(
 	amlogic-i2c
-	amlogic-spi
 	amlogic-rng
 	amlogic-crypto-dma
-	amlogic-tee
 )
 
 VENDOR_MODULES_LOAD_LAST_LIST=(

@@ -35,7 +35,7 @@ module_param(dma_buf_debug, int, 0644);
 #define pr_enter()			pr_inf("enter")
 
 #define SECURE_DMA_BLOCK_PADDING_SIZE		(64 * 1024)
-#define SECURE_DMA_BLOCK_MIN_SZIE			(16 * 1024)
+#define SECURE_DMA_BLOCK_MIN_SZIE			(4 * 1024)
 #define SECURE_DMA_BLOCK_ALIGN_2N			12
 
 struct secure_block_info {
@@ -252,12 +252,6 @@ static int secure_heap_mmap(struct dma_buf *dmabuf,
 		case 2:
 			if (block->version >= SECURE_HEAP_SUPPORT_MULTI_POOL_VERSION) {
 				paddr = block->phyaddr;
-				if (block->size && block->phyaddr) {
-					if (secure_block_free(block->phyaddr, block->size))
-						pr_err("Secure buffer free err please fix it");
-					block->phyaddr = 0;
-					block->size = 0;
-				}
 				if (block->id != 0 && block->allocsize > 0) {
 					block->freenum =
 						dmabuf_manage_get_can_alloc_blocknum(block->id,

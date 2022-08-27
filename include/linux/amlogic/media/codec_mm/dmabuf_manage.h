@@ -10,13 +10,15 @@
 #include <linux/types.h>
 
 #define AML_DMA_BUF_MANAGER_VERSION  1
-#define DMA_BUF_MANAGER_MAX_BUFFER_LEN 128
+#define VIDEODEC_DATA_MAX_LEN 256
+#define DMA_BUF_MANAGER_MAX_BUFFER_LEN 320
 
 enum dmabuf_manage_type {
 	DMA_BUF_TYPE_INVALID,
 	DMA_BUF_TYPE_SECMEM,
-	DMA_BUF_TYPE_DMXES,
+	DMA_BUF_TYPE_DMX_ES,
 	DMA_BUF_TYPE_DMABUF,
+	DMA_BUF_TYPE_VIDEODEC_ES,
 	DMA_BUF_TYPE_MAX
 };
 
@@ -49,6 +51,16 @@ struct secmem_block {
 	__u32 handle;
 };
 
+enum dmabuf_manage_videodec_type {
+	DMA_BUF_VIDEODEC_HDR10PLUS = 1
+};
+
+struct dmabuf_videodec_es_data {
+	__u32 data_type;
+	__u8  data[VIDEODEC_DATA_MAX_LEN];
+	__u32 data_len;
+};
+
 struct dmabuf_manage_buffer {
 	__u32 type;
 	__u32 fd;
@@ -59,15 +71,19 @@ struct dmabuf_manage_buffer {
 	__u32 extend;
 	union {
 		struct dmabuf_dmx_sec_es_data dmxes;
+		struct dmabuf_videodec_es_data vdecdata;
 		__u8 data[DMA_BUF_MANAGER_MAX_BUFFER_LEN];
 	} buffer;
 };
+
+#define DMABUF_ALLOC_FROM_CMA   1
 
 struct dmabuf_manage_block {
 	__u32 paddr;
 	__u32 size;
 	__u32 handle;
 	__u32 type;
+	__u32 flags;
 	void *priv;
 };
 

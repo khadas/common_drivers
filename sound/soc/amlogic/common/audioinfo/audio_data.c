@@ -16,6 +16,7 @@
 #include <linux/slab.h>
 #include <linux/arm-smccc.h>
 #include <linux/io.h>
+#include <linux/amlogic/secmon.h>
 
 #ifdef CONFIG_MESON_TRUSTZONE
 #include <mach/meson-secure.h>
@@ -31,7 +32,7 @@ static int major_audio_data;
 /* device class and device var */
 static struct class *class_audio_data;
 static struct device  *dev_audio_data;
-void __iomem *sharemem_input;/*used as input and output memory, may not ok*/
+void __iomem *sharemem_in_base;
 unsigned int efuse_query_licence_cmd;
 unsigned int mem_in_base_cmd;
 
@@ -53,15 +54,6 @@ static struct file_operations const audio_data_fops = {
 	/* .unlocked_ioctl = audio_data_ioctl, */
 };
 
-static unsigned long get_sharemem_info(unsigned long function_id)
-{
-	struct arm_smccc_res res;
-
-	arm_smccc_smc((unsigned long)function_id, 0, 0, 0, 0, 0, 0, 0, &res);
-
-	return res.a0;
-}
-
 int meson_efuse_fn_smc_query_audioinfo(struct efuse_hal_api_arg *arg)
 {
 	int ret;
@@ -71,16 +63,16 @@ int meson_efuse_fn_smc_query_audioinfo(struct efuse_hal_api_arg *arg)
 
 	if (!arg)
 		return -1;
-	if (!sharemem_input)
-		return -1;
 
 	retcnt = (unsigned long *)(arg->retcnt);
 	cmd = arg->cmd;
 	offset = arg->offset;
 	size = arg->size;
 
+	meson_sm_mutex_lock();
+
 	/*write data*/
-	memcpy((void *)sharemem_input, (const void *)arg->buffer, size);
+	memcpy((void *)sharemem_in_base, (const void *)arg->buffer, size);
 
 	asm __volatile__("" : : : "memory");
 
@@ -93,8 +85,11 @@ int meson_efuse_fn_smc_query_audioinfo(struct efuse_hal_api_arg *arg)
 	if (ret == 0) {
 		memset((void *)arg->buffer, 0, arg->size);
 		memcpy((void *)arg->buffer,
-				(const void *)sharemem_input, arg->size);
+				(const void *)sharemem_in_base, arg->size);
 	}
+
+	meson_sm_mutex_unlock();
+
 	return ret;
 }
 
@@ -118,21 +113,12 @@ unsigned long audio_info_get(char *buf, unsigned long count,
 	struct efuse_hal_api_arg arg;
 	unsigned long retcnt;
 	int ret;
-	long phy_in_base;
 
 	arg.cmd =  efuse_query_licence_cmd;
 	arg.offset = pos;
 	arg.size = count;
 	arg.buffer = (unsigned long)buf;
 	arg.retcnt = (unsigned long)&retcnt;
-
-	//sharemem_input = get_secmon_sharemem_input_base();
-	phy_in_base = get_sharemem_info(mem_in_base_cmd);
-
-	if (!pfn_valid(__phys_to_pfn(phy_in_base)))
-		sharemem_input = ioremap(phy_in_base, count);
-	else
-		sharemem_input = phys_to_virt(phy_in_base);
 
 	ret = meson_trustzone_audio_info_get(&arg);
 
@@ -228,13 +214,17 @@ static int audio_data_probe(struct platform_device *pdev)
 	ptr_err = dev_audio_data;
 	if (IS_ERR(ptr_err))
 		goto err1;
+
+	sharemem_in_base = get_meson_sm_input_base();
+	if (!sharemem_in_base) {
+		MYPRT("%s:get share memory fail\n", __func__);
+		goto err1;
+	}
+
 	if (pdev->dev.of_node) {
 		int ret;
 		struct device_node *np = pdev->dev.of_node;
 		of_node_get(np);
-
-		ret = of_property_read_u32(np, "mem_in_base_cmd",
-				&mem_in_base_cmd);
 
 		ret = of_property_read_u32(np, "query_licence_cmd",
 				&efuse_query_licence_cmd);

@@ -185,6 +185,18 @@ CONFIG_AMLOGIC_MESON_IR=m
 # amlogic-pwm.ko
 CONFIG_AMLOGIC_PWM_MESON=m
 
+# support led
+CONFIG_AMLOGIC_LED=y
+
+# leds-tlc59116.ko
+CONFIG_AMLOGIC_LEDS_TLC59116=m
+
+# leds_state.ko
+CONFIG_AMLOGIC_LEDS_STATE=m
+
+# leds-aw9523b.ko
+CONFIG_AMLOGIC_LEDS_AW9523B=m
+
 # pwm-regulator.ko
 CONFIG_REGULATOR_PWM=m
 

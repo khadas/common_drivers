@@ -909,6 +909,7 @@ int aml_cma_alloc_range(unsigned long start, unsigned long end,
 	cur_alloc_end = end;
 	cma_isolated += (pfn_max_align_up(end) - pfn_max_align_down(start));
 try_again:
+	lru_add_drain();
 	drain_all_pages(cc.zone);
 	/*
 	 * try to use more cpu to do this job when alloc count is large

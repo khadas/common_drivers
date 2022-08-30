@@ -31,6 +31,10 @@ module_param(dmabuf_manage_debug, int, 0644);
 static int secure_vdec_def_size_bytes;
 static u32 secure_block_align_2n;
 static u32 secure_heap_version = SECURE_HEAP_SUPPORT_MULTI_POOL_VERSION;
+static u32 secure_es_def_size = 2 * 1024 * 1024;
+static u32 secure_pool_def_block_num = 8;
+static u32 secure_pool_def_size = 4 * 1024 * 1024;
+static u32 secure_pool_4k_size = 12 * 1024 * 1024;
 
 #define  DEVICE_NAME "secmem"
 #define  CLASS_NAME  "dmabuf_manage"
@@ -62,10 +66,6 @@ struct kdmabuf_attachment {
 #define SECURE_MM_DEF_VDEC_SIZE_BYTES		(28 * 1024 * 1024)
 #define SECURE_MM_MID_VDEC_SIZE_BYTES		(20 * 1024 * 1024)
 #define SECURE_MM_MIN_VDEC_SIZE_BYTES		(8 * 1024 * 1024)
-#define SECURE_ES_DEF_SIZE					(2 * 1024 * 1024)
-#define SECURE_VDEC_DEF_SIZE				(4 * 1024 * 1024)
-#define SECURE_VDEC_BLOCK_NUM_EVERY_POOL	8
-#define SECURE_VDEC_DEF_4K_SIZE				(12 * 1024 * 1024)
 #define SECURE_MM_MIN_CMA_SIZE_BYTES		(320 * 1024 * 1024)
 #define SECURE_MAX_VDEC_POOL_NUM			4
 
@@ -829,7 +829,7 @@ static int secure_block_pool_init(void)
 	if (g_vdec_info.used)
 		return 0;
 	if (secure_heap_version >= SECURE_HEAP_SUPPORT_MULTI_POOL_VERSION &&
-		vdec_size > SECURE_VDEC_DEF_SIZE) {
+		vdec_size > secure_pool_def_size) {
 		pr_info("Use customer defined vdec size %x", vdec_size);
 	} else {
 		if (vdec_size < SECURE_MM_MIN_VDEC_SIZE_BYTES ||
@@ -952,8 +952,8 @@ static ssize_t dmabuf_manage_dump_vdec_info(int forceshow)
 
 static u32 secure_get_subpoolsize_by_framesize(unsigned long framesize)
 {
-	return framesize >= SECURE_ES_DEF_SIZE ? SECURE_VDEC_DEF_4K_SIZE :
-		SECURE_VDEC_DEF_SIZE;
+	return framesize >= secure_es_def_size ? secure_pool_4k_size :
+		secure_pool_def_size;
 }
 
 static u32 secure_get_subpoolindex_by_framesize(u32 framesize, u32 ignorebind)
@@ -963,7 +963,7 @@ static u32 secure_get_subpoolindex_by_framesize(u32 framesize, u32 ignorebind)
 	for (index = 0; index < SECURE_MAX_VDEC_POOL_NUM; index++) {
 		if (g_vdec_info.vdec_pool[index].pool &&
 			g_vdec_info.vdec_pool[index].frame_size == framesize &&
-			g_vdec_info.vdec_pool[index].block_num < SECURE_VDEC_BLOCK_NUM_EVERY_POOL) {
+			g_vdec_info.vdec_pool[index].block_num < secure_pool_def_block_num) {
 			if (!ignorebind && g_vdec_info.vdec_pool[index].bind)
 				continue;
 			break;
@@ -1019,7 +1019,7 @@ static struct secure_pool_info *secure_subpool_init(int poolsize, int *subindex,
 		} else {
 			poolsize -= 1024 * 1024;
 		}
-	} while (!vdec_pool->pool && poolsize > SECURE_VDEC_DEF_SIZE);
+	} while (!vdec_pool->pool && poolsize > secure_pool_def_size);
 	if (!vdec_pool->pool) {
 		pr_error("secure pool create failed\n");
 		goto error_init_subpool1;
@@ -1174,12 +1174,15 @@ unsigned int dmabuf_manage_get_can_alloc_blocknum(unsigned long id,
 	unsigned long maxsize, unsigned long predictedsize, unsigned long addr)
 {
 	u32 num = 0;
-	phys_addr_t paddr[SECURE_VDEC_BLOCK_NUM_EVERY_POOL] = { 0 };
+	phys_addr_t *paddr = NULL;
 	struct secure_pool_info *vdec_pool = NULL;
 	u32 index = 0;
 	u32 i = 0;
 	unsigned long alignsize = secure_align_up2n(predictedsize, SECURE_MM_BLOCK_ALIGNED_2N);
 
+	paddr = kcalloc(secure_pool_def_block_num, sizeof(phys_addr_t), GFP_KERNEL);
+	if (!paddr)
+		goto error_alloc_object;
 	mutex_lock(&g_dmabuf_mutex);
 	pr_enter();
 	if (g_vdec_info.used && id > 0 && predictedsize > 0) {
@@ -1188,7 +1191,7 @@ unsigned int dmabuf_manage_get_can_alloc_blocknum(unsigned long id,
 			index = secure_get_vdec_pool_by_paddr(addr);
 		if (index < SECURE_MAX_VDEC_POOL_NUM) {
 			vdec_pool = &g_vdec_info.vdec_pool[index];
-			for (i = 0; i < SECURE_VDEC_BLOCK_NUM_EVERY_POOL; i++, num++) {
+			for (i = 0; i < secure_pool_def_block_num; i++, num++) {
 				paddr[i] = secure_pool_alloc(vdec_pool->pool, alignsize);
 				if (paddr[i] <= 0)
 					break;
@@ -1204,6 +1207,8 @@ unsigned int dmabuf_manage_get_can_alloc_blocknum(unsigned long id,
 		}
 	}
 	mutex_unlock(&g_dmabuf_mutex);
+	kfree(paddr);
+error_alloc_object:
 	return num;
 }
 
@@ -1373,6 +1378,10 @@ static ssize_t dmabuf_manage_config_store(struct class *class,
 
 static struct mconfig dmabuf_manage_configs[] = {
 	MC_PI32("secure_vdec_def_size_bytes", &secure_vdec_def_size_bytes),
+	MC_PI32("secure_es_def_size", &secure_es_def_size),
+	MC_PI32("secure_pool_def_block_num", &secure_pool_def_block_num),
+	MC_PI32("secure_pool_def_size", &secure_pool_def_size),
+	MC_PI32("secure_pool_4k_size", &secure_pool_4k_size),
 	MC_PI32("secure_block_align_2n", &secure_block_align_2n),
 	MC_PI32("secure_heap_version", &secure_heap_version)
 };

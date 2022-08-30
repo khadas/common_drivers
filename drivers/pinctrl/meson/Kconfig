@@ -51,8 +51,17 @@ config AMLOGIC_PINCTRL_MESON_SC2
 	tristate "Meson SC2 Soc pinctrl driver"
 	default n
 	help
-	  the chip of A1 will be built
+	  the chip of SC2 will be built
 	  when enable this config.
 	  SC2 pinctrl can work.
-	  otherwise A1 pinctrl can't work
+	  otherwise SC2 pinctrl can't work
+
+config AMLOGIC_PINCTRL_MESON_T3
+	tristate "Meson T3 Soc pinctrl driver"
+	default n
+	help
+	  the chip of T3 will be built
+	  when enable this config.
+	  T3 pinctrl can work.
+	  otherwise T3 pinctrl can't work
 endif

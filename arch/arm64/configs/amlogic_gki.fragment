@@ -33,6 +33,9 @@ CONFIG_AMLOGIC_COMMON_CLK_S4=m
 # amlogic-clk-soc-sc2.ko
 CONFIG_AMLOGIC_COMMON_CLK_SC2=m
 
+# amlogic-clk-soc-t3.ko
+CONFIG_AMLOGIC_COMMON_CLK_T3=m
+
 # amlogic-pinctrl.ko
 CONFIG_AMLOGIC_PINCTRL_MESON=m
 
@@ -41,6 +44,9 @@ CONFIG_AMLOGIC_PINCTRL_MESON_S4=m
 
 # amlogic-pinctrl-soc-sc2.ko
 CONFIG_AMLOGIC_PINCTRL_MESON_SC2=m
+
+# amlogic-pinctrl-soc-t3.ko
+CONFIG_AMLOGIC_PINCTRL_MESON_T3=m
 
 # amlogic-irqchip.ko
 CONFIG_AMLOGIC_MESON_IRQ_GPIO=m

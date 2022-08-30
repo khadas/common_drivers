@@ -32,10 +32,13 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic_usb2_phy.ko
 	amlogic_usb3_v2_phy.ko
 	amlogic_usb_crg.ko
+	amlogic_usb_otg.ko
 	amlogic-irblaster.ko
 	amlogic-reboot.ko
 	amlogic-inphy.ko
 	amlogic-drm.ko
+	dwc3.ko
+	dwc_otg.ko
 )
 
 VENDOR_MODULES_LOAD_FIRST_LIST=(
@@ -45,8 +48,6 @@ VENDOR_MODULES_LOAD_FIRST_LIST=(
 )
 
 VENDOR_MODULES_LOAD_LAST_LIST=(
-	dwc3
-	dwc_otg
 )
 
 MODULES_LOAD_BLACK_LIST=(

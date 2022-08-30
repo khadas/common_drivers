@@ -2819,7 +2819,7 @@ void dtmb_poll_v3(struct aml_dtvdemod *demod)
 		dtmb_save_status(demod, s);
 	}
 
-	/*no siganel check process */
+	/*no signal check process */
 	if (pollm->crrcnt < DTMBM_POLL_CNT_NO_SIGNAL) {
 		dtmb_no_signal_check_v3(demod);
 		pollm->crrcnt++;
@@ -5086,6 +5086,7 @@ int dtvdemod_set_iccfg_by_dts(struct platform_device *pdev)
 	}
 
 	return 0;
+
 }
 
 /* It's a correspondence with enum es_map_addr*/
@@ -7157,7 +7158,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 
 		default:
 			ic_is_supportted = 0;
-			PR_ERR("%s: error unsupportted ic=%d\n", __func__, ic_version);
+			PR_ERR("%s: error unsupported ic=%d\n", __func__, ic_version);
 			kfree(demod);
 			mutex_unlock(&amldtvdemod_device_mutex);
 

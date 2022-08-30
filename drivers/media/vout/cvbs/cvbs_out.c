@@ -528,7 +528,7 @@ static long cvbs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		spin_lock_irqsave(&tvout_clk_lock, flags);
 		if (copy_from_user(&parm, argp,
 				sizeof(struct vout_cc_parm_s))) {
-			cvbs_log_err("VOUT_IOC_CC_DATAinvalid parameter\n");
+			cvbs_log_err("VOUT_IOC_CC_DATA invalid parameter\n");
 			ret = -EFAULT;
 			spin_unlock_irqrestore(&tvout_clk_lock, flags);
 			break;
@@ -1269,7 +1269,7 @@ static void cvbs_debug_store(const char *buf)
 
 	case CMD_REG_WRITE_BITS:
 		if (argc != 6) {
-			pr_info("[%s] cmd_reg_wrute_bits format:\n"
+			pr_info("[%s] cmd_reg_write_bits format:\n"
 			"\twb value_hex c/h/v address_hex start_dec length_dec\n",
 				__func__);
 			goto DEBUG_END;

@@ -1580,7 +1580,7 @@ static ssize_t osd_read(struct fb_info *info, char __user *buf,
 			/*nocache*/
 			pgprot = pgprot_writecombine(PAGE_KERNEL);
 			if (vaddr) {
-				/*  unmap prevois vaddr */
+				/*  unmap previous vaddr */
 				vunmap(vaddr);
 				vaddr = NULL;
 			}
@@ -1611,7 +1611,7 @@ static ssize_t osd_read(struct fb_info *info, char __user *buf,
 		/*nocache*/
 		pgprot = pgprot_writecombine(PAGE_KERNEL);
 		if (vaddr) {
-			/*unmap prevois vaddr */
+			/*unmap previous vaddr */
 			vunmap(vaddr);
 			vaddr = NULL;
 		}
@@ -1709,7 +1709,7 @@ static ssize_t osd_write(struct fb_info *info,
 			/*nocache*/
 			pgprot = pgprot_writecombine(PAGE_KERNEL);
 			if (vaddr) {
-				/* unmap prevois vaddr */
+				/* unmap previous vaddr */
 				vunmap(vaddr);
 				vaddr = NULL;
 			}
@@ -1740,7 +1740,7 @@ static ssize_t osd_write(struct fb_info *info,
 		/*nocache*/
 		pgprot = pgprot_writecombine(PAGE_KERNEL);
 		if (vaddr) {
-			/*  unmap prevois vaddr */
+			/*  unmap previous vaddr */
 			vunmap(vaddr);
 			vaddr = NULL;
 		}
@@ -2779,7 +2779,7 @@ static ssize_t show_antiflicker(struct device *device,
 	struct fb_info *fb_info = dev_get_drvdata(device);
 
 	osd_get_antiflicker_hw(fb_info->node, &osd_antiflicker);
-	return snprintf(buf, PAGE_SIZE, "osd_antifliter:[%s]\n",
+	return snprintf(buf, PAGE_SIZE, "osd_antifilter:[%s]\n",
 			osd_antiflicker ? "ON" : "OFF");
 }
 

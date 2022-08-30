@@ -414,7 +414,7 @@ void rx_debug_pktinfo(char input[][20])
 			return;
 
 		packet_fifo_cfg |= sts;
-		/* not work immediately ?? meybe int is not open*/
+		/* not work immediately ?? maybe int is not open*/
 		enable = hdmirx_rd_dwc(DWC_PDEC_CTRL);
 		enable |= sts;
 		hdmirx_wr_dwc(DWC_PDEC_CTRL, enable);
@@ -429,7 +429,7 @@ void rx_debug_pktinfo(char input[][20])
 			return;
 
 		packet_fifo_cfg &= (~sts);
-		/* not work immediately ?? meybe int is not open*/
+		/* not work immediately ?? maybe int is not open*/
 		enable = hdmirx_rd_dwc(DWC_PDEC_CTRL);
 		enable &= (~sts);
 		hdmirx_wr_dwc(DWC_PDEC_CTRL, enable);

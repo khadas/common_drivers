@@ -1486,7 +1486,7 @@ static const char * const pwm_parent_names[] = {
 /*
  * add CLK_IGNORE_UNUSED flag for pwm controller GATE
  * clk core will disable unused clock, it may disable
- * vddcore voltage which contrlled by one pwm in bl21.
+ * vddcore voltage which controlled by one pwm in bl21.
  * add the flag to avoid changing cpu voltage.
  */
 #define MESON_C2_PWM_SEL(_name, _reg, _mask, _shift)			\
@@ -2058,7 +2058,7 @@ static struct clk_regmap sd_emmc_c_gate = {
  *	   when bit 28 = 0
  *	         f = 24M/N0
  *	   when bit 28 = 1
- *	         output N1 and N2 in rurn.
+ *	         output N1 and N2 in run.
  *	   T = (x*T1 + y*T2)/x+y
  *	   f = (24M/(N0*M0 + N1*M1)) * (M0 + M1)
  *	   f: the frequecy value (HZ)

@@ -204,7 +204,7 @@ static int am_meson_drm_bind(struct device *dev)
 	ret = of_property_read_u32_array(dev->of_node, "crtc_masks",
 		crtc_masks, ENCODER_MAX);
 	if (ret) {
-		DRM_ERROR("crtc_maskss get fail from dts!\n");
+		DRM_ERROR("crtc_masks get fail from dts!\n");
 	} else {
 		for (i = 0; i < ENCODER_MAX; i++)
 			priv->crtc_masks[i] = crtc_masks[i];

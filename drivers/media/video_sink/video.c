@@ -5094,7 +5094,7 @@ static int hdmi_in_delay_check(struct vframe_s *vf)
 
 	if (hdmin_delay_start_time == -1) {
 		hdmin_delay_start_time = jiffies_to_msecs(jiffies);
-		/*this funtcion lead to one vsync delay */
+		/*this function lead to one vsync delay */
 		/*hdmin_delay_start_time -= vsync_duration;*/
 
 		if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
@@ -7077,7 +7077,7 @@ static irqreturn_t vsync_isr_in(int irq, void *dev_id)
 				time_setomxpts = 0;
 				time_setomxpts_last = 0;
 				if (debug_flag & DEBUG_FLAG_PTS_TRACE)
-					pr_info("omxpts is not update for a while,do not need compenstate\n");
+					pr_info("omxpts is not update for a while,do not need compensate\n");
 			} else {
 				diff -=  delta1 * 90 / 1000;
 			}
@@ -8213,16 +8213,16 @@ SET_FILTER:
 		cur_blackout = blackout_pip | force_blackout;
 	} else if ((vd1_path_id != VFM_PATH_INVALID) &&
 		   (vd1_path_id != VFM_PATH_AUTO)) {
-		/* priamry display on VD1 */
+		/* primary display on VD1 */
 		new_frame = path0_new_frame;
 		if (!new_frame) {
 			if (!cur_dispbuf) {
-				/* priamry no frame in display */
+				/* primary no frame in display */
 				if (cur_vd1_path_id != vd1_path_id)
 					safe_switch_videolayer(0, false, true);
 				vd_layer[0].dispbuf = NULL;
 			} else if (cur_dispbuf == &vf_local) {
-				/* priamry keep frame */
+				/* primary keep frame */
 				vd_layer[0].dispbuf = cur_dispbuf;
 			} else if (vd_layer[0].dispbuf
 				!= cur_dispbuf) {
@@ -8622,7 +8622,7 @@ SET_FILTER:
 		pr_info("new_frame2=%p\n", new_frame2);
 		cur_blackout = 1;
 	} else if (vd2_path_id == VFM_PATH_AMVIDEO) {
-		/* priamry display in VD2 */
+		/* primary display in VD2 */
 		new_frame2 = path0_new_frame;
 		if (!new_frame2) {
 			if (!cur_dispbuf) {
@@ -8631,7 +8631,7 @@ SET_FILTER:
 					safe_switch_videolayer(1, false, true);
 				vd_layer[1].dispbuf = NULL;
 			} else if (cur_dispbuf == &vf_local) {
-				/* priamry keep frame */
+				/* primary keep frame */
 				vd_layer[1].dispbuf = cur_dispbuf;
 			} else if (vd_layer[1].dispbuf
 				!= cur_dispbuf) {
@@ -8907,7 +8907,7 @@ SET_FILTER:
 				vd_layer[2].dispbuf_mapping = &gvideo_recv[2]->cur_buf;
 			cur_blackout = 1;
 		} else if (vd3_path_id == VFM_PATH_AMVIDEO) {
-			/* priamry display in VD3 */
+			/* primary display in VD3 */
 			new_frame3 = path0_new_frame;
 			if (!new_frame3) {
 				if (!cur_dispbuf) {
@@ -8916,7 +8916,7 @@ SET_FILTER:
 						safe_switch_videolayer(2, false, true);
 					vd_layer[2].dispbuf = NULL;
 				} else if (cur_dispbuf == &vf_local) {
-					/* priamry keep frame */
+					/* primary keep frame */
 					vd_layer[2].dispbuf = cur_dispbuf;
 				} else if (vd_layer[2].dispbuf
 					!= cur_dispbuf) {
@@ -10918,7 +10918,7 @@ static void set_omx_pts(u32 *p)
 			omx_check_previous_session = false;
 		} else {
 			mutex_unlock(&omx_mutex);
-			pr_info("check session return: tmp_pts %dsession=0x%x\n",
+			pr_info("check session return: tmp_pts %d session=0x%x\n",
 				tmp_pts, omx_cur_session);
 			omx_pts_set_index = 0;
 			return;
@@ -10946,7 +10946,7 @@ static void set_omx_pts(u32 *p)
 		       DEBUG_FLAG_OMX_DISABLE_DROP_FRAME)) {
 			omx_continuous_drop_flag = true;
 			if (debug_flag & DEBUG_FLAG_OMX_DEBUG_DROP_FRAME)
-				pr_info("countinous drop %d\n",
+				pr_info("continuous drop %d\n",
 					omx_continuous_drop_count);
 		}
 	}

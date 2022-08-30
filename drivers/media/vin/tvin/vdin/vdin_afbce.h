@@ -305,7 +305,7 @@
 //Bit 31:29 reserved
 //Bit 28:16 reg_y_end  default = 0, the canvas ver end pixel position
 //Bit 15:13 reserved
-//Bit 12: 0 reg_y_start default = 0, the canvas ver start pixel positio
+//Bit 12: 0 reg_y_start default = 0, the canvas ver start pixel position
 
 #define AFBCE_MMU_RMIF_RO_STAT    0x41c6
 

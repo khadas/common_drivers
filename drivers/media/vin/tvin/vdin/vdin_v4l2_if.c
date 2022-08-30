@@ -320,7 +320,7 @@ static int vdin_vidioc_reqbufs(struct file *file, void *priv,
 		return -EINVAL;
 	}
 
-	/*need config by input surce type*/
+	/*need config by input source type*/
 	pdev->source_bitdepth = VDIN_COLOR_DEEPS_8BIT;
 	pdev->vbqueue.type = reqbufs->type;
 
@@ -1080,7 +1080,7 @@ static const struct v4l2_file_operations vdin_v4l2_fops = {
 	.release = vdin_v4l2_release, /*release files resource*/
 	.poll = vdin_v4l2_poll, /*files poll interface*/
 	.mmap = vdin_v4l2_mmap, /*files memory mapp*/
-	.unlocked_ioctl = vdin_v4l2_ioctl, /*iocontorl op interface*/
+	.unlocked_ioctl = vdin_v4l2_ioctl, /*iocontrol op interface*/
 };
 
 static int vdin_v4l2_queue_init(struct vdin_dev_s *devp,

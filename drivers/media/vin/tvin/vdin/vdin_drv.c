@@ -123,7 +123,7 @@ unsigned int max_ignore_frame_cnt = 2;
 unsigned int skip_frame_debug;
 
 /* viu isr select:
- * enable viu_hw_irq for the bandwidth is enough on gxbb/gxtvbb and laters ic
+ * enable viu_hw_irq for the bandwidth is enough on gxbb/gxtvbb and later ic
  */
 static bool viu_hw_irq = 1;
 static bool de_fmt_flag;
@@ -278,7 +278,7 @@ EXPORT_SYMBOL(get_vdin_buffer_num);
  *		c. set clock auto.
  *		a&b will enable hw work.
  * 3. call the callback function of the frontend to open.
- * 4. regiseter provider.
+ * 4. register provider.
  * 5. create timer for state machine.
  *
  * port: the port supported by frontend
@@ -332,7 +332,7 @@ int vdin_open_fe(enum tvin_port_e port, int index,  struct vdin_dev_s *devp)
  *		a. mux null input.
  *		b. set clock off.
  * 2. delete timer for state machine.
- * 3. unregiseter provider & notify receiver.
+ * 3. unregister provider & notify receiver.
  * 4. call the callback function of the frontend to close.
  */
 void vdin_close_fe(struct vdin_dev_s *devp)
@@ -1278,7 +1278,7 @@ int start_tvin_service(int no, struct vdin_parm_s  *para)
 
 	vdin0_devp->pre_prop.hdcp_sts = vdin0_devp->prop.hdcp_sts;
 	devp->matrix_pattern_mode = 0;
-	/* check input content is pretected */
+	/* check input content is protected */
 	if ((vdin0_devp->flags & VDIN_FLAG_DEC_OPENED) &&
 	    (vdin0_devp->flags & VDIN_FLAG_DEC_STARTED) &&
 	    vdin0_devp->prop.hdcp_sts) {
@@ -1288,7 +1288,7 @@ int start_tvin_service(int no, struct vdin_parm_s  *para)
 		vdin0_devp->prop.hdcp_sts = 0;
 		devp->matrix_pattern_mode = 0;
 	}
-	pr_info("vdin0 port:0x%x, flag:0x%x, hdcp sts:%d matx:%d\n",
+	pr_info("vdin0 port:0x%x, flag:0x%x, hdcp sts:%d max:%d\n",
 	       vdin0_devp->parm.port, vdin0_devp->flags,
 	       vdin0_devp->prop.hdcp_sts, devp->matrix_pattern_mode);
 
@@ -2817,7 +2817,7 @@ irqreturn_t vdin_v4l2_isr(int irq, void *dev_id)
 		/* avoid null pointer oops */
 		stamp  = vdin_get_meas_vstamp(offset);
 
-	/* check input content is pretected */
+	/* check input content is protected */
 	pretect_mode = vdin0_devp->prop.hdcp_sts ? 4 : 0;
 	if (pretect_mode != devp->matrix_pattern_mode) {
 		devp->matrix_pattern_mode = pretect_mode;

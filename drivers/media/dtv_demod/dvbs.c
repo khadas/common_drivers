@@ -389,7 +389,7 @@ static struct stchip_register_t l2a_def_val_local[] = {
 	{0x8a4,    0x00},/* REG_RL2A_DVBSX_HWARE_GEN_TSTTSRS */
 	{0x8c0,    0x06},/* REG_RL2A_DVBSX_HWARE_GEN_GCTRL */
 	{0x8c1,    0xc8},/* REG_RL2A_DVBSX_HWARE_GEN_FFTCTRL */
-	{0x8c2,    0x0a},/* REG_RL2A_DVBSX_HWARE_GEN_FFTACC */
+	{0x8c2,    0x0a},/* REG_RL2A_DVBSX_HWARE_GEN_ftacc */
 	{0x8c3,    0x04},/* REG_RL2A_DVBSX_HWARE_GEN_THRESHOLD */
 	{0x8c4,    0x00},/* REG_RL2A_DVBSX_HWARE_GEN_GAINCONT */
 	{0x8c5,    0x00},/* REG_RL2A_DVBSX_HWARE_GEN_UPDCONT */
@@ -506,7 +506,7 @@ static struct stchip_register_t l2a_def_val_local[] = {
 	{0x973,    0x40},/* REG_RL2A_DVBSX_DEMOD_IQFILT1 */
 	{0x974,    0x40},/* REG_RL2A_DVBSX_DEMOD_IQFILT2 */
 	{0x975,    0x40},/* REG_RL2A_DVBSX_DEMOD_IQFILT3 */
-	/* REG_RL2A_DVBSX_DEMOD_CORRELMANT, 0x58 for tracking low CNR, 0x8C for acqusisiton */
+	/* REG_RL2A_DVBSX_DEMOD_CORRELMANT, 0x58 for tracking low CNR, 0x8C for acquisiton */
 	{0x980,    0x8C},
 	{0x981,    0x60},/* REG_RL2A_DVBSX_DEMOD_CORRELABS */
 	{0x982,    0x40},/* REG_RL2A_DVBSX_DEMOD_CORRELABSM */
@@ -1445,7 +1445,7 @@ unsigned int dvbs_get_quality(void)
 
 	if ((dvbs_rd_byte(0x932) & 0x60) >> 5 == 0x2) {
 		lookup = &fe_l2a_s2_cn_lookup;
-		//If DVBS2 use PLH normilized noise indicators
+		//If DVBS2 use PLH normalized noise indicators
 		noisefield1 = 0xaa4;
 		noisefield0 = 0xaa5;
 	} else {

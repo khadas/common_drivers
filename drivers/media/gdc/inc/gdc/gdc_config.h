@@ -1340,7 +1340,7 @@ static inline u32 gdc_capability_mask_read(void)
 }
 
 // ----------------------------------- //
-// Register: Eight bit data suppoirted
+// Register: Eight bit data supported
 // ----------------------------------- //
 
 // ----------------------------------- //

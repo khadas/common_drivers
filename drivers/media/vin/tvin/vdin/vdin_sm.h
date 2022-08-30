@@ -44,7 +44,7 @@ enum tvin_sg_chg_flg {
 	TVIN_SIG_CHG_NO2DV	= 0x08,
 	TVIN_SIG_CHG_COLOR_FMT	= 0x10,
 	TVIN_SIG_CHG_RANGE	= 0x20,	/*color range:full or limit*/
-	TVIN_SIG_CHG_BIT	= 0x40,	/*color bit deepth: 8,10,12 ...*/
+	TVIN_SIG_CHG_BIT	= 0x40,	/*color bit depth: 8,10,12 ...*/
 	TVIN_SIG_CHG_VS_FRQ	= 0x80,
 	TVIN_SIG_CHG_DV_ALLM	= 0x100,
 	TVIN_SIG_CHG_AFD	= 0x200,/*aspect ratio*/

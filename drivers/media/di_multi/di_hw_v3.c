@@ -1457,7 +1457,7 @@ static unsigned int set_afbce_cfg_v1(int index,
 	op->bwr(reg[AFBCEX_MMU_RMIF_SCOPE_X], 0x1ffe, 16, 13);
 	op->bwr(reg[AFBCEX_MMU_RMIF_CTRL3], 0x1fff, 0, 13);
 
-	op->bwr(reg[AFBCEX_PIP_CTRL], afbce->reg_init_ctrl, 1, 1);//pii_moide
+	op->bwr(reg[AFBCEX_PIP_CTRL], afbce->reg_init_ctrl, 1, 1);//pii_mode
 	op->bwr(reg[AFBCEX_PIP_CTRL], afbce->reg_pip_mode, 0, 1);
 
 	op->bwr(reg[AFBCEX_ROT_CTRL], afbce->rot_en, 4, 1);
@@ -2262,7 +2262,7 @@ static void set_wrmif_simple
 		op = opin;
 
 	////////////////////////////
-	//////Afbce addreess mux
+	//////Afbce addressed mux
 	////////////////////////////
 	if (index > (DIM_WRMIF_MIF_V3_NUB - 1)) {
 		stimulus_print("ERROR:WR_MIF WRONG!!!\n");
@@ -2318,7 +2318,7 @@ static void set_wrmif_simple_v3(struct DI_SIM_MIF_s *mif,
 	const struct reg_acc *op;
 
 	////////////////////////////
-	//////Afbce addreess mux
+	//////Afbce addressed mux
 	////////////////////////////
 	if (mifsel > (DIM_WRMIF_MIF_V3_NUB - 1)) {
 		PR_ERR("%s:%d\n", __func__, mifsel);
@@ -3977,7 +3977,7 @@ void set_di_memcpy_rot(struct mem_cpy_s *cfg)
 		dim_sc2_4k_set(0);
 	#endif
 #ifdef ARY_MARK
-	/* closr pr/post_link */
+	/* close pr/post_link */
 	op->bwr(DI_TOP_PRE_CTRL, 0, 30, 2);
 
 	/* pre afbc_vd_sel[2:0] */
@@ -5107,7 +5107,7 @@ static void di_post_set_flow_v3(unsigned int post_wr_en,
 	case EDI_POST_FLOW_STEP3_IRQ:
 		op->wr(DI_SC2_POST_GL_CTRL, 0x1);
 		/* DI_POST_CTRL
-		 *	disable wr back avoid pps sreay in g12a
+		 *	disable wr back avoid pps relay in g12a
 		 *	[7]: set 0;
 		 */
 		op->wr(DI_POST_CTRL, 0x80000001); /*ary sc2 ??*/

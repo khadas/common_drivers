@@ -579,7 +579,7 @@ tvafe_store_err:
 
 static const char *tvafe_debug_usage_str = {
 "Usage:\n"
-"    echo cvdfmt ntsc/ntsc443/pali/palm/palcn/pal60/secam/null > /sys/class/tvafe/tvafe0/debug;conifg manual fmt\n"
+"    echo cvdfmt ntsc/ntsc443/pali/palm/palcn/pal60/secam/null > /sys/class/tvafe/tvafe0/debug;config manual fmt\n"
 "\n"
 "    echo disableapi val(d) > /sys/class/tvafe/tvafe0/debug;enable/ignore api cmd\n"
 "\n"
@@ -889,9 +889,9 @@ static ssize_t cutwin_show(struct device *dev,
 	ssize_t len = 0;
 
 	len += sprintf(buf + len,
-		"echo h index(d) val(d) > /sys/class/tvafe/tvafe0/cutwin;conifg cutwindow_h value\n");
+		"echo h index(d) val(d) > /sys/class/tvafe/tvafe0/cutwin;config cutwindow_h value\n");
 	len += sprintf(buf + len,
-		"echo v index(d) val(d) > /sys/class/tvafe/tvafe0/cutwin;conifg cutwindow_v value\n");
+		"echo v index(d) val(d) > /sys/class/tvafe/tvafe0/cutwin;config cutwindow_v value\n");
 	len += sprintf(buf + len,
 		"echo r > /sys/class/tvafe/tvafe0/cutwin;read cutwindow value\n");
 	return len;

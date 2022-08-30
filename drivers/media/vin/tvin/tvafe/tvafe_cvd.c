@@ -177,7 +177,7 @@ static bool cvd_pr2_chroma_flag;
 static unsigned int chroma_sum_pre1;
 static unsigned int chroma_sum_pre2;
 static unsigned int chroma_sum_pre3;
-/* fanghui,noise det to juge some reg setting */
+/* fanghui,noise det to judge some reg setting */
 static unsigned int noise1;
 static unsigned int noise2;
 static unsigned int noise3;
@@ -962,7 +962,7 @@ static void tvafe_cvd2_get_signal_status(struct tvafe_cvd2_s *cvd2)
 	}
 
 	/* 0xD and 0x87 modify for no color burst pattern occur offset. */
-	/* 0xD influence no clolr burst switch to color bar pattern and */
+	/* 0xD influence no color burst switch to color bar pattern and */
 	/* atv no color burst pattern display, so add off/on switch. */
 	if ((cvd2->vd_port == TVIN_PORT_CVBS1 ||
 	    cvd2->vd_port == TVIN_PORT_CVBS2) && !no_color_burst_cfg) {
@@ -1261,7 +1261,7 @@ static void tvafe_cvd2_non_std_signal_det(struct tvafe_cvd2_s *cvd2)
 				__func__, cvd2->info.scene_colorful,
 				chroma_sum_filt,
 				cvd2->hw.h_nonstd, cvd2->hw.v_nonstd);
-			tvafe_pr_info("%s: smr_cnt=%d, nonstd_cnt=%d, stabl_cnt=%d, nonstd_flag=%d, dgain=0x%x, non_std_enable=%d\n",
+			tvafe_pr_info("%s: smr_cnt=%d, nonstd_cnt=%d, stable_cnt=%d, nonstd_flag=%d, dgain=0x%x, non_std_enable=%d\n",
 				__func__, cvd2->info.smr_cnt,
 				cvd2->info.nonstd_cnt,
 				cvd2->info.nonstd_stable_cnt,
@@ -1284,7 +1284,7 @@ static void tvafe_cvd2_non_std_signal_det(struct tvafe_cvd2_s *cvd2)
 					chroma_sum_filt,
 					cvd2->hw.h_nonstd,
 					cvd2->hw.v_nonstd);
-				tvafe_pr_info("%s: smr_cnt=%d, nonstd_cnt=%d, stabl_cnt=%d, nonstd_flag=%d, dgain=0x%x, non_std_enable=%d\n",
+				tvafe_pr_info("%s: smr_cnt=%d, nonstd_cnt=%d, stable_cnt=%d, nonstd_flag=%d, dgain=0x%x, non_std_enable=%d\n",
 					__func__, cvd2->info.smr_cnt,
 					cvd2->info.nonstd_cnt,
 					cvd2->info.nonstd_stable_cnt,
@@ -1309,7 +1309,7 @@ static bool tvafe_cvd2_sig_unstable(struct tvafe_cvd2_s *cvd2)
 }
 
 /*
- * tvafe cvd2 checkt current format match condition
+ * tvafe cvd2 check current format match condition
  */
 static bool tvafe_cvd2_condition_shift(struct tvafe_cvd2_s *cvd2)
 {

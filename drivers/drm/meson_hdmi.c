@@ -368,7 +368,7 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 			mode->flags |= timing->vsync_polarity ?
 				DRM_MODE_FLAG_PVSYNC : DRM_MODE_FLAG_NVSYNC;
 
-			/* use logical display timing for drm. vidsplay
+			/* use logical display timing for drm. display
 			 * while amlogic vout use half value.
 			 */
 			if (hdmi_para->hdmitx_vinfo.field_height !=
@@ -1449,7 +1449,7 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 				DRM_MODE_CONTENT_PROTECTION_UNDESIRED;
 		}
 	} else {
-		DRM_ERROR("%s no HDCP func regsitered.\n", __func__);
+		DRM_ERROR("%s no HDCP func registered.\n", __func__);
 		am_hdmi_info.android_path = true;
 	}
 

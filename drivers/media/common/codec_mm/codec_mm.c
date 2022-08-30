@@ -1096,7 +1096,7 @@ void codec_mm_release(struct codec_mm_s *mem, const char *owner)
 
 	spin_lock_irqsave(&mgt->lock, flags);
 	if (!codec_mm_valid_mm_locked(mem)) {
-		pr_err("codec mm not valied!\n");
+		pr_err("codec mm not valid!\n");
 		spin_unlock_irqrestore(&mgt->lock, flags);
 		return;
 	}
@@ -1303,7 +1303,7 @@ int codec_mm_has_owner(struct codec_mm_s *mem, const char *owner)
 		spin_lock_irqsave(&mgt->lock, flags);
 		if (!codec_mm_valid_mm_locked(mem)) {
 			spin_unlock_irqrestore(&mgt->lock, flags);
-			pr_err("codec mm %p not valied!\n", mem);
+			pr_err("codec mm %p not valid!\n", mem);
 			return 0;
 		}
 

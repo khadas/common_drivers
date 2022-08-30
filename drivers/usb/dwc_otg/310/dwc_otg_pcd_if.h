@@ -61,7 +61,7 @@ typedef int (*dwc_completion_cb_t) (dwc_otg_pcd_t *pcd, void *ep_handle,
 				    void *req_handle, int32_t status,
 				    uint32_t actual);
 /**
- * This function will be called whenever a previousle queued ISOC request has
+ * This function will be called whenever a previously queued ISOC request has
  * completed. Count of ISOC packets could be read using dwc_otg_pcd_get_iso_packet_count
  * function.
  * The status of each ISOC packet could be read using dwc_otg_pcd_get_iso_packet_*
@@ -162,7 +162,7 @@ extern void dwc_otg_pcd_start(dwc_otg_pcd_t *pcd,
  * core for that interface.
  *
  * Returns -DWC_E_INVALID if invalid parameters were passed.
- * Returns -DWC_E_SHUTDOWN if any other error ocurred.
+ * Returns -DWC_E_SHUTDOWN if any other error occured.
  * Returns 0 on success.
  *
  * @param pcd The PCD
@@ -195,7 +195,7 @@ extern int dwc_otg_pcd_ep_disable(dwc_otg_pcd_t *pcd, void *ep_handle);
  * for internal data structures.
  *
  * Returns -DWC_E_INVALID if invalid parameters were passed.
- * Returns -DWC_E_SHUTDOWN if any other error ocurred.
+ * Returns -DWC_E_SHUTDOWN if any other error occurred.
  * Returns 0 on success. */
 extern int dwc_otg_pcd_ep_queue(dwc_otg_pcd_t *pcd, void *ep_handle,
 				uint8_t *buf, dwc_dma_t dma_buf,
@@ -218,7 +218,7 @@ extern int dwc_otg_pcd_xiso_ep_queue(dwc_otg_pcd_t *pcd, void *ep_handle,
 /** De-queue the specified data transfer that has not yet completed.
  *
  * Returns -DWC_E_INVALID if invalid parameters were passed.
- * Returns -DWC_E_SHUTDOWN if any other error ocurred.
+ * Returns -DWC_E_SHUTDOWN if any other error occured.
  * Returns 0 on success. */
 extern int dwc_otg_pcd_ep_dequeue(dwc_otg_pcd_t *pcd, void *ep_handle,
 				  void *req_handle);
@@ -226,7 +226,7 @@ extern int dwc_otg_pcd_ep_dequeue(dwc_otg_pcd_t *pcd, void *ep_handle,
 /** Halt (STALL) an endpoint or clear it.
  *
  * Returns -DWC_E_INVALID if invalid parameters were passed.
- * Returns -DWC_E_SHUTDOWN if any other error ocurred.
+ * Returns -DWC_E_SHUTDOWN if any other error occured.
  * Returns -DWC_E_AGAIN if the STALL cannot be sent and must be tried again later
  * Returns 0 on success. */
 extern int dwc_otg_pcd_ep_halt(dwc_otg_pcd_t *pcd, void *ep_handle, int value);
@@ -240,7 +240,7 @@ extern int dwc_otg_pcd_get_frame_number(dwc_otg_pcd_t *pcd);
 /**
  * Start isochronous transfers on the endpoint referenced by ep_handle.
  * For isochronous transfers duble buffering is used.
- * After processing each of buffers comlete callback will be called with
+ * After processing each of buffers complete callback will be called with
  * status for each transaction.
  *
  * @param pcd The PCD
@@ -255,7 +255,7 @@ extern int dwc_otg_pcd_get_frame_number(dwc_otg_pcd_t *pcd);
  * @param start_frame Frame number to start transfers, if -1 then start transfers ASAP.
  * @param buf_proc_intrvl Interval of ISOC Buffer processing
  * @param req_handle Handle of ISOC request
- * @param atomic_alloc Specefies whether to perform atomic allocation for
+ * @param atomic_alloc Specifies whether to perform atomic allocation for
  *			internal data structures.
  *
  * Returns -DWC_E_NO_MEMORY if there is no enough memory.
@@ -287,7 +287,7 @@ int dwc_otg_pcd_iso_ep_stop(dwc_otg_pcd_t *pcd, void *ep_handle,
  *
  * @param pcd The PCD
  * @param ep_handle The handle of the endpoint
- * @param iso_req_handle Isochronoush request handle
+ * @param iso_req_handle isochronous request handle
  * @param packet Number of packet
  * @param status Out parameter for returning status
  * @param actual Out parameter for returning actual length
@@ -337,7 +337,7 @@ extern void dwc_otg_pcd_initiate_srp(dwc_otg_pcd_t *pcd);
 /** Starts remote wakeup signaling. */
 extern void dwc_otg_pcd_remote_wakeup(dwc_otg_pcd_t *pcd, int set);
 
-/** Starts micorsecond soft disconnect. */
+/** Starts microsecond wq soft disconnect. */
 extern void dwc_otg_pcd_disconnect_us(dwc_otg_pcd_t *pcd, int no_of_usecs);
 /** This function returns whether device is dualspeed.*/
 extern uint32_t dwc_otg_pcd_is_dualspeed(dwc_otg_pcd_t *pcd);

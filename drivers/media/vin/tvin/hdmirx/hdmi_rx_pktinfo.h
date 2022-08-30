@@ -868,7 +868,7 @@ struct drm_infoframe_st {
 			/*PB0*/
 			u8 checksum;
 			/*PB1*/
-			/*electrico-optinal transfer function*/
+			/*electric-optinal transfer function*/
 			u8 eotf:3;
 			u8 rev0:5;
 			/*PB2*/

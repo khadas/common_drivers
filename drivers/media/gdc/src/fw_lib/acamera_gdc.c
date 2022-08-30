@@ -135,7 +135,7 @@ static void set_ext_8g_msb(struct gdc_dma_cfg_t *dma_cfg, u32 format_plane)
 	}
 
 	/* write ext_8g_msb reg
-	 * SYSCTRL_BUS_CFG1 bit[15:14] extadr_gdc
+	 * SYSCTRL_BUS_CFG1 bit[15:14] extase_gdc
 	 */
 	curr = system_ext_8g_msb_read_32();
 	curr &= ~(3 << 14);

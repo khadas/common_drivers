@@ -205,7 +205,7 @@ void vdin_canvas_start_config(struct vdin_dev_s *devp)
 		/*use_reserved_mem or alloc_from_contiguous*/
 		devp->mem_start = roundup(devp->mem_start, devp->canvas_align);
 #ifdef VDIN_DEBUG
-		pr_info("vdin%d cnavas start configuration table:\n",
+		pr_info("vdin%d canvas start configuration table:\n",
 			devp->index);
 #endif
 		for (i = 0; i < devp->canvas_max_num; i++) {
@@ -232,7 +232,7 @@ void vdin_canvas_start_config(struct vdin_dev_s *devp)
 		}
 	} else if (devp->cma_config_flag & 0x100) {
 #ifdef VDIN_DEBUG
-		pr_info("vdin%d cnavas start configuration table:\n",
+		pr_info("vdin%d canvas start configuration table:\n",
 			devp->index);
 #endif
 		for (i = 0; i < devp->canvas_max_num; i++) {
@@ -269,7 +269,7 @@ unsigned int vdin_get_canvas_num(struct vdin_dev_s *devp)
 /*
  *this function used for configure canvas when canvas_config_mode=2
  *base on the input format
- *also used for input resalution over 1080p such as camera input 200M,500M
+ *also used for input resolution over 1080p such as camera input 200M,500M
  *YUV422-8BIT:1pixel = 2byte;
  *YUV422-10BIT:1pixel = 3byte;
  *YUV422-10BIT-FULLPACK:1pixel = 2.5byte;
@@ -382,7 +382,7 @@ void vdin_canvas_auto_config(struct vdin_dev_s *devp)
 	devp->vfmem_max_cnt = min(devp->vfmem_max_cnt, devp->canvas_max_num);
 
 #ifdef VDIN_DEBUG
-	pr_info("vdin%d cnavas auto configuration table:\n",
+	pr_info("vdin%d canvas auto configuration table:\n",
 		devp->index);
 #endif
 	for (i = 0; i < devp->canvas_max_num; i++) {
@@ -574,7 +574,7 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 	 * 1st, small frame for dw
 	 * 2nd, big frame for dw, or normal frame for non-dw
 	 * 3rd, header if afbce enabled
-	 * 4th, table if afbece enabled
+	 * 4th, table if afbce enabled
 	 * ---------------------
 	 * |    small frame    |
 	 * |                   |

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Amogic Generic ASoC Sound Card driver
+ * Amlogic Generic ASoC Sound Card driver
  *
  * Copyright (C) 2019 Amlogic, Inc. All rights reserved.
  *
@@ -944,7 +944,7 @@ static irqreturn_t aml_audio_exception64_isr(int irq, void *dev_id)
 	intrpt_status0 = audiobus_read(EE_AUDIO_EXCEPTION_IRQ_STS0);
 	intrpt_status1 = audiobus_read(EE_AUDIO_EXCEPTION_IRQ_STS1);
 
-	/* clear irq bits immediametely */
+	/* clear irq bits immediately */
 	audiobus_write(EE_AUDIO_EXCEPTION_IRQ_CLR0, intrpt_status0);
 	audiobus_write(EE_AUDIO_EXCEPTION_IRQ_CLR1, intrpt_status1);
 

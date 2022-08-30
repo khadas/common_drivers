@@ -402,7 +402,7 @@ static struct clk_regmap a1_hifi_pll = {
 /*
  * SYS PLL rang from 768M to 1536M
  * the PLL parameter table is for hifi/sys pll.
- * Adtional, there is no OD in A1 PLL.
+ * Additional, there is no OD in A1 PLL.
  */
 #ifdef CONFIG_ARM
 static const struct pll_params_table a1_pll_params_table[] = {
@@ -1157,7 +1157,7 @@ static struct clk_regmap a1_saradc_gate = {
 /*
  * add CLK_IGNORE_UNUSED flag for pwm controller GATE
  * clk core will disable unused clock, it may disable
- * vddcore voltage which contrlled by one pwm in bl21.
+ * vddcore voltage which controlled by one pwm in bl21.
  * add the flag to avoid changing cpu voltage.
  */
 static struct clk_regmap a1_pwm_a_sel = {
@@ -1946,7 +1946,7 @@ static struct clk_regmap a1_fixed_pll_div2_gate = {
  *	   when bit 28 = 0
  *	         f = 24M/N0
  *	   when bit 28 = 1
- *	         output N1 and N2 in rurn.
+ *	         output N1 and N2 in run.
  *	   T = (x*T1 + y*T2)/x+y
  *	   f = (24M/(N0*M0 + N1*M1)) * (M0 + M1)
  *	   f: the frequecy value (HZ)

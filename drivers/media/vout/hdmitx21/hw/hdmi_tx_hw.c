@@ -1045,7 +1045,7 @@ static void set_aud_acr_pkt(struct hdmitx_dev *hdev,
 	else
 		aud_n_para = hdmi21_get_aud_n_paras(audio_param->sample_rate,
 						  hdev->para->cd, char_rate);
-	/* N must mutiples 4 for DD+ */
+	/* N must multiples 4 for DD+ */
 	switch (audio_param->type) {
 	case CT_DOLBY_D:
 		aud_n_para *= 4;

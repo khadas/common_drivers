@@ -767,7 +767,7 @@ static int __init page_trace_pre_work(unsigned long size)
 #define LARGE	1024
 #define SMALL	256
 
-/* caller for unmovalbe are max */
+/* caller for unmovable are max */
 #define MT_UNMOVABLE_IDX	0                            /* 0,UNMOVABLE   */
 #define MT_MOVABLE_IDX		(MT_UNMOVABLE_IDX   + LARGE) /* 1,MOVABLE     */
 #define MT_RECLAIMABLE_IDX	(MT_MOVABLE_IDX     + SMALL) /* 2,RECLAIMABLE */

@@ -466,7 +466,7 @@ static int tvafe_dec_open(struct tvin_frontend_s *fe, enum tvin_port_e port)
 	tvafe->parm.port = port;
 	vs_adj_val_pre = 0;
 
-	/* set the flag to enabble ioctl access */
+	/* set the flag to enable ioctl access */
 	devp->flags |= TVAFE_FLAG_DEV_OPENED;
 	tvafe_clk_status = true;
 #ifdef CONFIG_AMLOGIC_ATV_DEMOD
@@ -936,7 +936,7 @@ static bool tvafe_is_nosig(struct tvin_frontend_s *fe)
 			tvafe_snow_config_acd_resume();
 	}
 
-	/* normal sigal & adc reg error, reload source mux */
+	/* normal signal & adc reg error, reload source mux */
 	if (tvafe->cvd2.info.adc_reload_en && !ret) {
 		adc_ch = tvafe_port_to_channel(port, devp->pinmux);
 		tvafe_adc_pin_muxing(adc_ch);
@@ -2005,7 +2005,7 @@ static void tvafe_drv_shutdown(struct platform_device *pdev)
 		W_APB_BIT(TVFE_VAFE_CTRL0, 0, 19, 1);
 		W_APB_BIT(TVFE_VAFE_CTRL1, 0, 8, 1);
 	}
-	tvafe_pr_info("%s: tvafe sutdown ok.\n", __func__);
+	tvafe_pr_info("%s: tvafe shutdown ok.\n", __func__);
 }
 
 static struct platform_driver tvafe_driver = {

@@ -895,7 +895,7 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	// cfg_mc_loss(frc_top->mc_loss_en);
 
 	/*protect mode, enable: memc delay 2 frame*/
-	/*disable: memc delay n frame, n depend on candence, for debug*/
+	/*disable: memc delay n frame, n depend on cadence, for debug*/
 	if (frc_top->frc_prot_mode) {
 		WRITE_FRC_BITS(FRC_REG_TOP_CTRL9, 1, 24, 4);//dly_num =1
 		WRITE_FRC_BITS(FRC_REG_TOP_CTRL17, 1, 8, 1);//buf prot open
@@ -1119,7 +1119,7 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		//}
 
 		//else if(film_mode == EN_FILM22224) {
-		//    //candence=22224(10),table_cnt=  12,match_data=0xaa8
+		//    //cadence=22224(10),table_cnt=  12,match_data=0xaa8
 		//    //    pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
 		//    phs_lut_table[0]={ 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd1,     8'd0,   8'd53,     8'd1,       8'd0};
 		//    phs_lut_table[1]={ 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,    4'd2,     8'd53,   8'd53,     8'd2,       8'd0};
@@ -1135,14 +1135,14 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		//    phs_lut_table[11]={ 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,    4'd4,     8'd74,   8'd74,     8'd0,       8'd0};
 		//}
 		//else if(film_mode == EN_FILM33) {
-		//    //candence=33(11),table_cnt=   3,match_data=0x4
+		//    //cadence=33(11),table_cnt=   3,match_data=0x4
 		//    //    pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
 		//    phs_lut_table[0]={ 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,    4'd1,     8'd0,   8'd42,     8'd1,       8'd0};
 		//    phs_lut_table[1]={ 1'd0,   4'd3,      4'd2,      4'd6,     4'd4,    4'd2,     8'd42,   8'd42,     8'd2,       8'd0};
 		//    phs_lut_table[2]={ 1'd0,   4'd3,      4'd2,      4'd7,     4'd4,    4'd3,     8'd85,   8'd85,     8'd0,       8'd0};
 		//}
 		//else if(film_mode == EN_FILM334) {
-		//    //candence=334(12),table_cnt=  10,match_data=0x248
+		//    //cadence=334(12),table_cnt=  10,match_data=0x248
 		//    //    pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
 		//    phs_lut_table[0]={ 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd1,     8'd0,   8'd38,     8'd1,       8'd0};
 		//    phs_lut_table[1]={ 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,    4'd2,     8'd38,   8'd38,     8'd2,       8'd0};
@@ -1157,7 +1157,7 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		//
 		//}
 		//else if(film_mode == EN_FILM55) {
-		//    //candence=55(13),table_cnt=   5,match_data=0x10
+		//    //cadence=55(13),table_cnt=   5,match_data=0x10
 		//    //               pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
 		//    phs_lut_table[0]={ 1'd1,      4'd3,      4'd2,      4'd7,     4'd6,    4'd1,     8'd0,    8'd25,     8'd1,     8'd0};
 		//    phs_lut_table[1]={ 1'd0,      4'd3,      4'd2,      4'd8,     4'd6,    4'd2,     8'd25,   8'd25,     8'd2,     8'd0};
@@ -1167,7 +1167,7 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		//
 		//}
 		//else if(film_mode == EN_FILM64) {
-		//    //candence=64(14),table_cnt=  10,match_data=0x220
+		//    //cadence=64(14),table_cnt=  10,match_data=0x220
 		//    //               pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
 		//    phs_lut_table[0]={ 1'd1,      4'd3,      4'd2,      4'd8,     4'd7,    4'd1,     8'd0,    8'd25,     8'd1,       8'd0};
 		//    phs_lut_table[1]={ 1'd0,      4'd3,      4'd2,      4'd9,     4'd7,    4'd2,     8'd25,   8'd25,     8'd2,       8'd0};
@@ -1181,7 +1181,7 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		//    phs_lut_table[9]={ 1'd0,      4'd3,      4'd2,      4'd12,    4'd7,    4'd6,     8'd102,  8'd102,    8'd0,       8'd0};
 		//}
 		//else if(film_mode == EN_FILM66) {
-		//    //candence=66(15),table_cnt=   6,match_data=0x20
+		//    //cadence=66(15),table_cnt=   6,match_data=0x20
 		//    //    pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
 		//    phs_lut_table[0]={ 1'd1,   4'd3,      4'd2,      4'd8,     4'd7,    4'd1,     8'd0,   8'd21,     8'd1,       8'd0};
 		//    phs_lut_table[1]={ 1'd0,   4'd3,      4'd2,      4'd9,     4'd7,    4'd2,     8'd21,   8'd21,     8'd2,       8'd0};
@@ -1191,7 +1191,7 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		//    phs_lut_table[5]={ 1'd0,   4'd3,      4'd2,      4'd13,     4'd7,    4'd6,     8'd106,   8'd106,     8'd0,       8'd0};
 		//}
 		//else if(film_mode == EN_FILM87) {
-		//    //candence=87(16),table_cnt=  15,match_data=0x4080
+		//    //cadence=87(16),table_cnt=  15,match_data=0x4080
 		//    //              pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
 		//    //phs_lut_table[0]= { 1'd1,   4'd3,      4'd2,      4'd4,      4'd10,    4'd0,     8'd0,    8'd17,    8'd1,     8'd0};
 		//    //phs_lut_table[1]= { 1'd0,   4'd3,      4'd2,      4'd4,      4'd1,     4'd0,     8'd17,   8'd17,    8'd2,     8'd0};
@@ -1226,7 +1226,7 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		//    phs_lut_table[14]={ 1'd0,   4'd3,      4'd12,     4'd8,     4'd6,     4'd3,     8'd110,  8'd110,   8'd0,     8'd0};
 		//}
 		//else if(film_mode == EN_FILM212) {
-		//    //candence=212(17),table_cnt=   5,match_data=0x1a
+		//    //cadence=212(17),table_cnt=   5,match_data=0x1a
 		//    //pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
 		//    phs_lut_table[0]={ 1'd1,   4'd3,      4'd2,      4'd5,     4'd3,    4'd1,     8'd0,   8'd76,      8'd1,       8'd0};
 		//    phs_lut_table[1]={ 1'd0,   4'd4,      4'd3,      4'd6,     4'd3,    4'd2,     8'd76,   8'd76,     8'd2,       8'd0};
@@ -2256,7 +2256,7 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	cfg_me_loss(frc_top->me_loss_en);
 	cfg_mc_loss(frc_top->mc_loss_en);
 	/*protect mode, enable: memc delay 2 frame*/
-	/*disable: memc delay n frame, n depend on candence, for debug*/
+	/*disable: memc delay n frame, n depend on cadence, for debug*/
 	pr_frc(0, "%s\n", __func__);
 	return;
 }

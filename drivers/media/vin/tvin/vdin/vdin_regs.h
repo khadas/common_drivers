@@ -766,7 +766,7 @@
  */
 #define VDIN_BLKBAR_IND_RIGHT2_CNT      ((0x126a))/* + 0xd0100000) */
 /* Readonly */
-/* Bit 31:30 Resersed */
+/* Bit 31:30 Reserved */
 /* Bit 29    blkbar_ind_black_det_done.
  * LEFT/RIGHT Black detection done
  */
@@ -776,7 +776,7 @@
 #define VDIN_BLKBAR_STATUS0    ((0x126b))/* + 0xd0100000) */
 /* Readonly */
 /* Bit 31:29 Reserved */
-/* Bit 28:16 blkbar_left_pos.       Left black bar posiont */
+/* Bit 28:16 blkbar_left_pos.       Left black bar position */
 /* Bit 15:13 Reserved */
 /* Bit 12:0  blkbar_right_pos.      Right black bar position */
 #define VDIN_BLKBAR_STATUS1      ((0x126c))/* + 0xd0100000) */

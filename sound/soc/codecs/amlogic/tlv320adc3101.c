@@ -400,7 +400,7 @@ static int adc3101_hw_params(struct snd_pcm_substream *substream,
 	/* Use PLL as CODEC_CLKIN and DAC_MOD_CLK as BDIV_CLKIN */
 	snd_soc_component_write(component, ADC3101_CLKMUX, 0);
 
-	/* We will fix R value to 1 and will make P & J=K.D as varialble */
+	/* We will fix R value to 1 and will make P & J=K.D as variable */
 	data = snd_soc_component_read(component, ADC3101_PLLPR);
 	data &= ~(7 << 4);
 

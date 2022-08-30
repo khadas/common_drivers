@@ -21,7 +21,7 @@
  * at afbce mode, 1 block = 32 * 4 pixel
  * there is a header in one block.
  * for example at 1080p,
- * header nembers = block nembers = 1920 * 1080 / (32 * 4)
+ * header members = block members = 1920 * 1080 / (32 * 4)
  *
  * table map(only at non-mmu mode):
  * afbce data was saved at "body" region,

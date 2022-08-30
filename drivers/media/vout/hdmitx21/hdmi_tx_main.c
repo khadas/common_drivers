@@ -3743,7 +3743,7 @@ static int hdmitx_set_current_vmode(enum vmode_e mode, void *data)
 	struct vinfo_s *vinfo;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	/* get current vinfo and refesh */
+	/* get current vinfo and refresh */
 	vinfo = hdmitx_get_current_vinfo(NULL);
 	if (vinfo && vinfo->name)
 		recalc_vinfo_sync_duration(vinfo,
@@ -4953,7 +4953,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&hdev->work_cedst, hdmitx_cedst_process);
 
 	hdev->tx_aud_cfg = 1; /* default audio configure is on */
-	/* When bootup mbox and TV simutanously, TV may not handle SCDC/DIV40 */
+	/* When bootup mbox and TV simultaneously, TV may not handle SCDC/DIV40 */
 	if (hdev->hpd_state && is_cur_tmds_div40(hdev))
 		hdmitx_resend_div40(hdev);
 
@@ -5481,7 +5481,7 @@ static void drm_hdmitx_hdcp_enable(int hdcp_type)
 
 	switch (hdcp_type) {
 	case HDCP_NULL:
-		pr_err("%s enabld HDCP_NULL\n", __func__);
+		pr_err("%s enabled HDCP_NULL\n", __func__);
 		break;
 	case HDCP_MODE14:
 		hdev->hdcp_mode = 0x11;

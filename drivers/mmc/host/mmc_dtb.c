@@ -73,7 +73,7 @@ struct mmc_dtb {
 #define	DTB_SIZE		(DTB_BLK_CNT * DTB_BLK_SIZE)
 #define DTB_COPIES		(2)
 #define DTB_AREA_BLK_CNT	(DTB_BLK_CNT * DTB_COPIES)
-/* pertransfer for internal opearations. */
+/* pertransfer for internal operations. */
 #define MAX_TRANS_BLK		(256)
 #define	MAX_TRANS_SIZE		(MAX_TRANS_BLK * DTB_BLK_SIZE)
 

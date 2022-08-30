@@ -102,7 +102,7 @@ struct meson_i2c {
 	int			pos;
 	int			error;
 
-	spinlock_t		lock;		//protection for i2c contrloller critical section
+	spinlock_t		lock;		//protection for i2c controller critical section
 	struct completion	done;
 	u32			tokens[2];
 	int			num_tokens;

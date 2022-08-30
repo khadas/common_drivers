@@ -353,6 +353,7 @@ const struct regs_t reg_bits_tab_afbce[] = {
 	{EAFBCE_MMU_RMIF_CTRL1, 16,  8, E_AFBCE_CANVAS_ID, "canvas_id"},
 	{EAFBCE_MMU_RMIF_CTRL1, 24,  2, E_AFBCE_SYNC_SEL, "sync_sel"},
 	{EAFBCE_MMU_RMIF_CTRL2,  0, 17, E_AFBCE_UNGENT_CTRL, "ungent_ctrl"},
+
 	{EAFBCE_MMU_RMIF_CTRL2, 18,  6,
 		E_AFBCE_RMIF_GCLK_CTRL, "rmif_gclk_ctrl"},
 	{EAFBCE_MMU_RMIF_CTRL2, 30,  2, E_AFBCE_SW_RST, "sw_rst"},

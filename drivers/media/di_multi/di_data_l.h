@@ -119,7 +119,7 @@ enum EDPST_OUT_MODE {
 
 enum DIME_REG_MODE {
 	DIME_REG_MODE_VFM,	/* vframe */
-	DIME_REG_MODE_NEW,	/* new infterface */
+	DIME_REG_MODE_NEW,	/* new interface */
 };
 
 /* ************************************** */
@@ -870,7 +870,7 @@ enum EDI_BUF_TYPE {
 
 /**************************************
  *
- * summmary variable
+ * summary variable
  * also see:di_sum_name_tab
  **************************************/
 
@@ -1619,7 +1619,7 @@ struct dim_pat_s {
 
 /*que post afbc tabl end*/
 /************************************************/
-/* que buf loacal buffer exit data */
+/* que buf local buffer exit data */
 enum QBF_IAT_Q_TYPE {
 	QBF_IAT_Q_IDLE,
 	QBF_IAT_Q_READY, /* multi wr, multi rd */
@@ -1638,7 +1638,7 @@ struct dim_iat_s {
 	bool		mcinfo_alloc_flg;
 };
 
-/*que loacal buffer exit data end*/
+/*que local buffer exit data end*/
 /************************************************/
 /* que buf sct data */
 enum QBF_SCT_Q_TYPE {

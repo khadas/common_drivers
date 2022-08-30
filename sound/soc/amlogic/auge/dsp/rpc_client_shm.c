@@ -144,7 +144,7 @@ AML_MEM_HANDLE aml_mem_allocate(size_t size)
 
 	arg.h_shm = 0;
 	arg.size = size;
-	arg.pid = 0; /* TODO: pid as ownwer of SHM getpid(); */
+	arg.pid = 0; /* TODO: pid as owner of SHM getpid(); */
 	if (g_acodec_shmpool_info.rpchdl < 0) {
 		if (aml_acodecmemory_init()) {
 			pr_info("Initialize audio codec shm pool fail\n");

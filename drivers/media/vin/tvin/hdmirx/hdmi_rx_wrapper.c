@@ -1249,9 +1249,9 @@ static bool fmt_vic_abnormal(void)
 	} else if (rx.pre.sw_vic >= HDMI_VESA_OFFSET &&
 		   rx.pre.sw_vic < HDMI_UNSUPPORT &&
 		   rx.pre.repeat != 0) {
-		/* no pixel repeatition for VESA mode */
+		/* no pixel repetition for VESA mode */
 		if (log_level & VIDEO_LOG)
-			rx_pr("repeatition abnormal for vesa\n");
+			rx_pr("repetition abnormal for vesa\n");
 		return true;
 	} else if ((rx.pre.sw_vic == HDMI_1080p_ALTERNATIVE) &&
 			   (rx.pre.sw_dvi ||
@@ -1925,7 +1925,7 @@ void rx_dwc_reset(void)
 	rx_sw_reset(rst_lvl);
 	//rx_irq_en(true);
 	/* for hdcp1.4 interact very early cases, don't do
-	 * esm reset to avoid interaction be interferenced.
+	 * esm reset to avoid interaction be interfered.
 	 */
 	rx_esm_reset(3);
 }
@@ -2162,7 +2162,7 @@ void rx_get_global_variable(const char *buf)
 {
 	int i = 1;
 
-	rx_pr("index %-30s   value\n", "varaible");
+	rx_pr("index %-30s   value\n", "variable");
 	pr_var(dwc_rst_wait_cnt_max, i++);
 	pr_var(sig_stable_max, i++);
 	pr_var(hpd_wait_max, i++);
@@ -2253,7 +2253,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(aud_compose_type, i++);
 	pr_var(vrr_range_dynamic_update_en, i++);
 	pr_var(rx.var.force_pattern, i++);
-	/* phy var definitioin */
+	/* phy var definition */
 	pr_var(rx.aml_phy.sqrst_en, i++);
 	pr_var(rx.aml_phy.vga_dbg, i++);
 	pr_var(rx.aml_phy.dfe_en, i++);

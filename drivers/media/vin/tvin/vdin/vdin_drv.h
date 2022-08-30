@@ -671,7 +671,7 @@ struct vdin_dev_s {
 	bool black_bar_enable;
 	bool hist_bar_enable;
 	unsigned int ignore_frames;
-	/*use frame rate to cal duraton*/
+	/*use frame rate to cal duration*/
 	unsigned int use_frame_rate;
 	unsigned int irq_cnt;
 	unsigned int vpu_crash_cnt;
@@ -710,7 +710,7 @@ struct vdin_dev_s {
 	struct v4l2_format v4lfmt;
 
 	struct mutex lock;/*v4l lock*/
-	struct mutex ioctrl_lock;/*vl2 ioctrol lock*/
+	struct mutex ioctrl_lock;/*vl2 ioctrl lock*/
 	spinlock_t qlock; /*v4l qlock*/
 	struct list_head buf_list;	/* buffer list head */
 	struct vdin_vb_buff *cur_buff;	/* vdin video frame buffer */

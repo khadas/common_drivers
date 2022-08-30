@@ -327,7 +327,7 @@ enum tvafe_adc_ch_e tvafe_port_to_channel(enum tvin_port_e port,
 }
 
 /*
- * tvafe pin mux setting for input source, cvd2 video poaition reg setting
+ * tvafe pin mux setting for input source, cvd2 video position reg setting
  */
 int tvafe_adc_pin_muxing(enum tvafe_adc_ch_e adc_ch)
 {

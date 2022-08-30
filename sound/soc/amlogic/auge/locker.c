@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * audio locker ASoc drirver
+ * audio locker ASoc driver
  *
  * Copyright (C) 2019 Amlogic, Inc. All rights reserved.
  *

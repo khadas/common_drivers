@@ -1771,7 +1771,7 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 	u32 aud_flag = 0;
 
 	if (blockbuf[0] == 0x0)
-		pr_info(EDID "unkonw Extension Tag detected, continue\n");
+		pr_info(EDID "unknow Extension Tag detected, continue\n");
 	if (blockbuf[0] != 0x02)
 		return -1; /* not a CEA BLOCK. */
 	end = blockbuf[2]; /* CEA description. */
@@ -1858,7 +1858,7 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 					!!(blockbuf[offset + 7] & (1 << 0));
 			}
 
-			offset += count; /* ignore the remaind. */
+			offset += count; /* ignore the remind. */
 			break;
 
 		case HDMI_EDID_BLOCK_TYPE_SPEAKER:
@@ -2729,7 +2729,7 @@ static bool is_rx_support_y420(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 }
 
 /* For some TV's EDID, there maybe exist some information ambiguous.
- * Such as EDID declears support 2160p60hz(Y444 8bit), but no valid
+ * Such as EDID declares support 2160p60hz(Y444 8bit), but no valid
  * Max_TMDS_Clock2 to indicate that it can support 5.94G signal.
  */
 bool hdmitx21_edid_check_valid_mode(struct hdmitx_dev *hdev,

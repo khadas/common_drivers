@@ -452,7 +452,7 @@ bool cec_message_op(unsigned char *msg, unsigned char len)
 	int i, j;
 
 	if (((msg[0] & 0xf0) >> 4) == cec_dev->cec_info.log_addr) {
-		CEC_ERR("bad iniator with self 0x%x",
+		CEC_ERR("bad initiator with self 0x%x",
 			cec_dev->cec_info.log_addr);
 		return false;
 	}
@@ -627,7 +627,7 @@ void cecb_check_irq_enable(void)
 {
 	unsigned int reg32;
 
-	/* irq on chip txlx has sperate from EE cec, no need check */
+	/* irq on chip txlx has separate from EE cec, no need check */
 	if (cec_dev->plat_data->ee_to_ao)
 		return;
 

@@ -880,7 +880,7 @@ MODULE_PARM_DESC(customer_master_display_param,
 static int customer_hdmi_display_en;
 static uint num_customer_hdmi_display_param = 14;
 static uint customer_hdmi_display_param[14] = {
-	9, /* color priamry = bt2020 */
+	9, /* color primary = bt2020 */
 	16, /* characteristic = st2084 */
 	0.17 * INORM + 0.5, 0.797 * INORM + 0.5,      /* G */
 	0.131 * INORM + 0.5, 0.046 * INORM + 0.5,     /* B */
@@ -3343,7 +3343,7 @@ void set_vpp_lut(enum vpp_lut_sel_e lut_sel,
 /* extern unsigned int cm2_patch_flag; */
 /* extern struct ve_dnlp_s am_ve_dnlp; */
 /* extern struct ve_dnlp_table_s am_ve_new_dnlp; */
-/* extern int cm_en; //0:disabel;1:enable */
+/* extern int cm_en; //0:disable;1:enable */
 /* extern struct tcon_gamma_table_s video_gamma_table_r; */
 /* extern struct tcon_gamma_table_s video_gamma_table_g; */
 /* extern struct tcon_gamma_table_s video_gamma_table_b; */
@@ -3582,7 +3582,7 @@ static void vpp_set_matrix(enum vpp_matrix_sel_e vd1_or_vd2_or_post,
 	}
 }
 
-/* matrix betreen xvycclut and linebuffer*/
+/* matrix between xvycclut and linebuffer*/
 static uint cur_csc_mode = 0xff;
 static void vpp_set_matrix3(unsigned int on,
 			    enum vpp_matrix_csc_e csc_mode)

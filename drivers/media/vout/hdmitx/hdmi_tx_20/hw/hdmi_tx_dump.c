@@ -381,7 +381,7 @@ static void hdmitx_parsing_avipkt(struct seq_file *s)
 	default:
 		conf = "xvYCC601";
 	}
-	seq_printf(s, "extended_colorimetriy: %s\n", conf);
+	seq_printf(s, "extended_colorimetry: %s\n", conf);
 
 	switch ((reg_val & 0xc) >> 2) {
 	case 0:
@@ -1264,7 +1264,7 @@ static void print_current_dv_hdr_(struct seq_file *s)
 	seq_printf(s, "hdr_transfer_feature: %d\n",
 		   hdev->hdr_transfer_feature);
 	seq_printf(s, "hdr_color_feature: %d\n", hdev->hdr_color_feature);
-	seq_printf(s, "colormetry: %d\n", hdev->colormetry);
+	seq_printf(s, "colorimetry: %d\n", hdev->colormetry);
 }
 
 static void hdmitx_parsing_vsifpkt(struct seq_file *s)

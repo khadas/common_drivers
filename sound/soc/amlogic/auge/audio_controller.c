@@ -140,7 +140,7 @@ static int aml_audio_controller_probe(struct platform_device *pdev)
 
 	ret = of_property_read_u32(node, "chip_id", &chip_id);
 	if (ret < 0)
-		/* defulat set 0 */
+		/* default set 0 */
 		chip_id = 0;
 
 	return register_audio_controller(pdev, actrl);

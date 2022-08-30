@@ -289,7 +289,7 @@ static int record_stack(unsigned int hash, unsigned long *stack)
 			if (memcmp(stack, tmp->stack, sizeof(tmp->stack))) {
 				int i;
 
-				pr_err("%s stack hash confilct:%x\n",
+				pr_err("%s stack hash conflict:%x\n",
 				       __func__, hash);
 				for (i = 0; i < SLAB_STACK_DEP; i++) {
 					pr_err("%16lx %16lx, %ps, %ps\n",

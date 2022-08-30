@@ -199,7 +199,7 @@ enum AWE_RET aml_awe_getparam(struct AWE *awe, enum AWE_PARA_ID para_id, union A
  * @param[in/out] Length in bytes of a input stream buffer. Return
  * remained pcm in bytes after the call.
  *
- * @param[out] Aarry of buffers. A member of
+ * @param[out] Array of buffers. A member of
  * this array represent a output pcm stream. The buffer
  * is filled with processed pcm by AWE. The pcm is in none interleave
  * format, out0|out1.

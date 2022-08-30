@@ -788,7 +788,7 @@ void vdin_get_format_convert(struct vdin_dev_s *devp)
 		devp->mif_fmt);
 }
 
-/*functiong:
+/*function:
  *	format_convert
  *	based on dest_cfmt
  */
@@ -822,7 +822,7 @@ vdin_get_format_convert_matrix0(struct vdin_dev_s *devp)
 	return format_convert;
 }
 
-/*functiong:
+/*function:
  *	format_convert
  *	based on color_cfmt
  */
@@ -1462,7 +1462,7 @@ void vdin_change_matrix1(u32 offset, u32 matrix_csc)
 }
 
 /*
- * after, equel g12a have this matrix
+ * after, equal g12a have this matrix
  */
 void vdin_change_matrixhdr(u32 offset, u32 matrix_csc)
 {
@@ -1752,7 +1752,7 @@ void vdin_set_hdr(struct vdin_dev_s *devp)
 /*set matrix based on rgb_info_enable:
  * 0:set matrix0, disable matrix1
  * 1:set matrix1, set matrix0
- * after equal g12a: matris1, matrixhdr2
+ * after equal g12a: matrix1, matrixhdr2
  */
 void vdin_set_matrix(struct vdin_dev_s *devp)
 {
@@ -2567,7 +2567,7 @@ void vdin_set_crc_pulse(struct vdin_dev_s *devp)
 #endif
 }
 
-/* reset default writing cavnas register */
+/* reset default writing canvas register */
 void vdin_set_def_wr_canvas(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
@@ -3019,7 +3019,7 @@ void vdin_set_all_regs(struct vdin_dev_s *devp)
 	/* hist sub-module */
 	vdin_set_histogram(devp->addr_offset, 0,
 			   devp->h_active - 1, 0, devp->v_active - 1);
-	/* hist mux selecttion */
+	/* hist mux selection */
 	vdin_set_hist_mux(devp);
 	/* write sub-module */
 	vdin_set_wr_ctrl(devp, devp->addr_offset, devp->v_active,
@@ -3200,14 +3200,14 @@ void vdin_set_default_regmap(struct vdin_dev_s *devp)
 	/* [12: 0]      matrix.coef22           = 0 <s2.10> */
 	wr(offset, VDIN_MATRIX_COEF22, 0x00000000);
 	/* [26:16]      matrix.offset0          = 0 <s8.2> */
-	/* [10: 0]      matrix.ofsset1          = 0 <s8.2> */
+	/* [10: 0]      matrix.offset1          = 0 <s8.2> */
 	wr(offset, VDIN_MATRIX_OFFSET0_1, 0x00000000);
-	/* [10: 0]      matrix.ofsset2          = 0 <s8.2> */
+	/* [10: 0]      matrix.offset2          = 0 <s8.2> */
 	wr(offset, VDIN_MATRIX_OFFSET2, 0x00000000);
 	/* [26:16]      matrix.pre_offset0      = 0 <s8.2> */
-	/* [10: 0]      matrix.pre_ofsset1      = 0 <s8.2> */
+	/* [10: 0]      matrix.pre_offset1      = 0 <s8.2> */
 	wr(offset, VDIN_MATRIX_PRE_OFFSET0_1, 0x00000000);
-	/* [10: 0]      matrix.pre_ofsset2      = 0 <s8.2> */
+	/* [10: 0]      matrix.pre_offset2      = 0 <s8.2> */
 	wr(offset, VDIN_MATRIX_PRE_OFFSET2, 0x00000000);
 	/* [11: 0]       write.lfifo_buf_size   = 0x100 */
 
@@ -3789,7 +3789,7 @@ static void vdin_set_hscale(struct vdin_dev_s *devp, unsigned int dst_w)
 }
 
 /*
- *just for veritical scale src_w is origin height,
+ *just for vertical scale src_w is origin height,
  *just dst_h is the height after scale
  */
 static void vdin_set_vscale(struct vdin_dev_s *devp)
@@ -3986,7 +3986,7 @@ static void vdin_set_vshrink(struct vdin_dev_s *devp)
 	pr_info("vdin.%d set_vshrink done!\n", devp->index);
 }
 
-/*function:set horizontal and veritical scale
+/*function:set horizontal and vertical scale
  *vdin scaler path:
  *	vdin0:prehsc-->hscaler-->vscaler;
  *	vdin1:prehsc-->hscaler-->vshrink-->vscaler
@@ -4215,7 +4215,7 @@ void vdin_set_to_vpp_parm(struct vdin_dev_s *devp)
 	vdin_start_notify_vpp(&devp->vdin2vpp_info);
 }
 
-/* do horizontal reverse and veritical reverse
+/* do horizontal reverse and vertical reverse
  * hreverse:
  * VDIN_WR_H_START_END
  * Bit29:	1.reverse	0.do not reverse
@@ -4969,9 +4969,9 @@ void vdin_dolby_desc_to_4448bit(struct vdin_dev_s *devp,
 			/*small path size in*/
 			wr_bits(offset, VDIN_SCB_CTRL1, devp->v_shrink_out, 0, 13);
 			wr_bits(offset, VDIN_SCB_CTRL1, devp->h_shrink_out, 16, 13);
-			/*de-cramble enable*/
+			/*de-scramble enable*/
 			wr_bits(offset, VDIN_VSHRK_CTRL, 0x1, 28, 1);
-			/*small path cramble enable*/
+			/*small path scramble enable*/
 			wr_bits(offset, VDIN_VSHRK_CTRL, 0x1, 29, 1);
 			if (vdin_dbg_en)
 				pr_info("vdin SC small in:(%d, %d)\n",
@@ -4990,9 +4990,9 @@ void vdin_dolby_desc_to_4448bit(struct vdin_dev_s *devp,
 		} else {
 			/* disable descramble & scramble */
 			/*small patch disable*/
-			/*de-cramble disable*/
+			/*de-scramble disable*/
 			wr_bits(offset, VDIN_VSHRK_CTRL, 0x0, 28, 1);
-			/*small path cramble enable*/
+			/*small path scramble enable*/
 			wr_bits(offset, VDIN_VSHRK_CTRL, 0x0, 29, 1);
 			/* normal path disable */
 			wr_bits(offset, VDIN_SCB_CTRL0, 0x0, 28, 1);

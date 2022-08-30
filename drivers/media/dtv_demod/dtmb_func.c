@@ -238,7 +238,7 @@ void dtmb_all_reset(struct aml_dtvdemod *demod)
 	}
 
 	/*for non-standard signal,
-	 *ignore calculatiing amplitude tps(transport parameter signalling)
+	 *ignore calculating amplitude tps(transport parameter signalling)
 	 */
 	dtmb_write_reg(DTMB_CHE_IBDFE_CONF0,
 		dtmb_read_reg(DTMB_CHE_IBDFE_CONF0) & 0xfffff0ff);

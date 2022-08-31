@@ -1928,7 +1928,7 @@ static void parse_samesrc_channel_mask(struct aml_tdm *p_tdm)
 	/* channel mask */
 	np = of_get_child_by_name(node, "Channel_Mask");
 	if (!np) {
-		pr_info("No channel mask node %s\n",
+		pr_debug("No channel mask node %s\n",
 				"Channel_Mask");
 		return;
 	}
@@ -1939,7 +1939,7 @@ static void parse_samesrc_channel_mask(struct aml_tdm *p_tdm)
 	ret = of_property_read_string(np,
 			"Spdif_samesource_Channel_Mask", &str);
 	if (ret) {
-		pr_err("error:read Spdif_samesource_Channel_Mask\n");
+		pr_debug("error:read Spdif_samesource_Channel_Mask\n");
 		return;
 	}
 	p_tdm->lane_ss = check_channel_mask(str);
@@ -2025,7 +2025,7 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 		} else {
 			p_tdm->samesource_sel = ss;
 
-			pr_info("TDM id %d samesource_sel:%d\n",
+			pr_debug("TDM id %d samesource_sel:%d\n",
 				p_tdm->id,
 				p_tdm->samesource_sel);
 		}
@@ -2073,8 +2073,7 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 	if (ret < 0)
 		p_tdm->setting.lane_mask_out = 0x1;
 
-	dev_info(&pdev->dev, "lane_mask_out = %x\n",
-		 p_tdm->setting.lane_mask_out);
+	pr_debug("lane_mask_out = %x\n", p_tdm->setting.lane_mask_out);
 
 	p_tdm->clk = devm_clk_get(&pdev->dev, "clk_srcpll");
 	if (IS_ERR(p_tdm->clk)) {
@@ -2113,10 +2112,8 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 	if (!IS_ERR(p_tdm->clk_gate))
 		clk_prepare_enable(p_tdm->clk_gate);
 	p_tdm->pin_ctl = devm_pinctrl_get_select(dev, "tdm_pins");
-	if (IS_ERR(p_tdm->pin_ctl)) {
-		dev_info(dev, "aml_tdm_get_pins error!\n");
-		/*return PTR_ERR(p_tdm->pin_ctl);*/
-	}
+	if (IS_ERR(p_tdm->pin_ctl))
+		pr_info("aml_tdm_get_pins error!\n");
 
 	ret = of_property_read_u32(node, "start_clk_enable", &p_tdm->start_clk_enable);
 	if (ret < 0)

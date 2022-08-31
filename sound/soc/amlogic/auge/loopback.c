@@ -31,6 +31,8 @@
 
 #define DRV_NAME "loopback"
 
+//#define DEBUG
+
 struct lb_src_table {
 	enum datalb_src src;
 	char *name;
@@ -607,6 +609,8 @@ static int loopback_set_ctrl(struct loopback *p_loopback, int bitwidth)
 		if (p_loopback->id == 0)
 			datalb_cfg.resample_enable =
 				(unsigned int)get_resample_enable(RESAMPLE_B);
+		else
+			datalb_cfg.resample_enable = 0;
 
 		lb_set_datalb_cfg(p_loopback->id,
 			&datalb_cfg,
@@ -1604,18 +1608,18 @@ static int loopback_parse_of(struct device_node *node,
 		/* default format is I2S and mask two channels */
 		p_loopback->lb_lane_chmask = 0x3;
 	}
-	pr_info("\tdatain_src:%d, datain_chnum:%d, datain_chumask:%x\n",
+	pr_debug("\tdatain_src:%d, datain_chnum:%d, datain_chumask:%x\n",
 		p_loopback->datain_src,
 		p_loopback->datain_chnum,
 		p_loopback->datain_chmask);
-	pr_info("\tdatalb_src:%d, datalb_chnum:%d, datalb_chmask:%x\n",
+	pr_debug("\tdatalb_src:%d, datalb_chnum:%d, datalb_chmask:%x\n",
 		p_loopback->datalb_src,
 		p_loopback->datalb_chnum,
 		p_loopback->datalb_chmask);
-	pr_info("\tdatain_lane_mask:0x%x, datalb_lane_mask:0x%x\n",
+	pr_debug("\tdatain_lane_mask:0x%x, datalb_lane_mask:0x%x\n",
 		p_loopback->datain_lane_mask,
 		p_loopback->datalb_lane_mask);
-	pr_info("datalb_format: %d, chmask for lanes: %#x\n",
+	pr_debug("datalb_format: %d, chmask for lanes: %#x\n",
 		p_loopback->lb_format, p_loopback->lb_lane_chmask);
 
 	ret = datain_parse_of(node, p_loopback);
@@ -1711,7 +1715,7 @@ static int loopback_platform_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	pr_info("%s, p_loopback->id:%d register soc platform\n",
+	pr_debug("%s, p_loopback->id:%d register soc platform\n",
 		__func__,
 		p_loopback->id);
 

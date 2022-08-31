@@ -22,6 +22,7 @@
 #include "iomap.h"
 
 #define DRV_NAME "Effects"
+//#define DEBUG
 
 /*
  * AED Diagram
@@ -137,7 +138,7 @@ static int eqdrc_clk_set(struct audioeffect *p_effect)
 	/* defaule clk */
 	clk_set_rate(p_effect->clk, 200000000);
 
-	pr_info("%s, src pll:%lu, clk:%lu\n",
+	pr_debug("%s, src pll:%lu, clk:%lu\n",
 		__func__,
 		clk_get_rate(p_effect->srcpll),
 		clk_get_rate(p_effect->clk));
@@ -636,8 +637,6 @@ static int effect_platform_probe(struct platform_device *pdev)
 	struct effect_chipinfo *p_chipinfo;
 	int lane_mask = -1, channel_mask = -1, eqdrc_module = -1;
 	int ret;
-
-	pr_info("%s, line:%d\n", __func__, __LINE__);
 
 	p_effect = devm_kzalloc(&pdev->dev,
 			sizeof(struct audioeffect),

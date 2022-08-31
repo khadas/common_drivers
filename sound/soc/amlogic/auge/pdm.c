@@ -37,6 +37,8 @@
 #define DRV_NAME_B "snd_pdm_b"
 #define PDM_BUFFER_BYTES (512 * 1024)
 
+//#define DEBUG
+
 static struct snd_pcm_hardware aml_pdm_hardware = {
 	.info			=
 					SNDRV_PCM_INFO_MMAP |
@@ -1165,7 +1167,7 @@ static int aml_pdm_platform_probe(struct platform_device *pdev)
 	ret = snd_soc_of_get_slot_mask(node, "lane-mask-in",
 				       &p_pdm->lane_mask_in);
 	if (!ret) {
-		pr_warn("default set lane_mask_in as all lanes.\n");
+		pr_debug("default set lane_mask_in as all lanes.\n");
 		p_pdm->lane_mask_in = 0xf;
 	}
 

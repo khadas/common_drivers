@@ -4,7 +4,7 @@
  *
  */
 
-#define DEBUG
+//#define DEBUG
 #undef pr_fmt
 #define pr_fmt(fmt) "audio_ddr_mngr: " fmt
 
@@ -2457,7 +2457,7 @@ static int aml_ddr_mngr_platform_probe(struct platform_device *pdev)
 		toddrs[i].chipinfo   = p_ddr_chipinfo;
 		toddrs[i].actrl      = actrl;
 
-		dev_info(&pdev->dev, "%d, irqs toddr %d\n", i, toddrs[i].irq);
+		pr_debug("ddr_manager: %d, irqs toddr %d\n", i, toddrs[i].irq);
 
 		if (toddrs[i].irq <= 0) {
 			dev_err(&pdev->dev, "%s, get irq failed\n", __func__);

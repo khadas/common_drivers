@@ -506,7 +506,7 @@ void aml_tdm_set_format(struct aml_audio_controller *actrl,
 		}
 	}
 
-	pr_info("master_mode(%d), binv(%d), finv(%d) out_skew(%d), in_skew(%d)\n",
+	pr_debug("master_mode(%d), bclk inv(%d), fclk inv(%d) out_skew(%d), in_skew(%d)\n",
 			master_mode, binv, finv, bclkout_skew, bclkin_skew);
 
 	/* TDM out */

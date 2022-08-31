@@ -1117,7 +1117,7 @@ static int vad_platform_probe(struct platform_device *pdev)
 		"wakeup_sample_rate",
 		&p_vad->wakeup_sample_rate);
 	if (ret < 0) {
-		pr_err("%s, failed to get vad wakeup sample rate\n", __func__);
+		pr_debug("%s, failed to get vad wakeup sample rate\n", __func__);
 		p_vad->wakeup_sample_rate = DEFAULT_WAKEUP_SAMPLERATE;
 	}
 	pr_debug("%s, vad wakeup sample rate = %d\n", __func__, p_vad->wakeup_sample_rate);
@@ -1129,7 +1129,7 @@ static int vad_platform_probe(struct platform_device *pdev)
 	p_chipinfo = (struct vad_chipinfo *)
 		of_device_get_match_data(dev);
 	if (!p_chipinfo)
-		dev_warn_once(dev, "check whether to update vad chipinfo\n");
+		dev_dbg_once(dev, "check whether to update vad chipinfo\n");
 
 	p_vad->chipinfo = p_chipinfo;
 
@@ -1211,7 +1211,7 @@ static int vad_platform_probe(struct platform_device *pdev)
 		p_vad->level = 0;
 	}
 
-	pr_info("%s vad data source sel:%d, level:%d\n",
+	pr_debug("%s vad data source sel:%d, level:%d\n",
 		__func__,
 		p_vad->src,
 		p_vad->level);

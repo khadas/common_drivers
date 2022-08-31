@@ -254,6 +254,16 @@ struct dwc_otg_pcd {
 
 };
 
+struct dwc_gadget_lock {
+	struct wakeup_source *wakesrc;
+	bool held;
+};
+
+extern struct dwc_gadget_lock dwc_otg_gadget_lock;
+
+void dwc_otg_gadget_hold(struct dwc_gadget_lock *lock);
+void dwc_otg_gadget_drop(struct dwc_gadget_lock *lock);
+
 /** Pullup enable */
 static inline void dwc_otg_device_soft_connect(dwc_otg_core_if_t *_core_if)
 {

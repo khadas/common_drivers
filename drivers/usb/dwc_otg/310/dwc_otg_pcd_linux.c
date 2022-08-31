@@ -1281,6 +1281,24 @@ int dwc_usb_change(struct notifier_block *nb,
 	return 0;
 }
 
+struct dwc_gadget_lock dwc_otg_gadget_lock;
+
+void dwc_otg_gadget_hold(struct dwc_gadget_lock *lock)
+{
+	if (!lock->held) {
+		__pm_stay_awake(lock->wakesrc);
+		lock->held = true;
+	}
+}
+
+void dwc_otg_gadget_drop(struct dwc_gadget_lock *lock)
+{
+	if (lock->held) {
+		__pm_relax(lock->wakesrc);
+		lock->held = false;
+	}
+}
+
 /**
  * This function initialized the PCD portion of the driver.
  *
@@ -1349,6 +1367,11 @@ int pcd_init(struct platform_device *pdev)
 		return -EBUSY;
 
 	}
+	if (!dwc_otg_gadget_lock.wakesrc) {
+		dwc_otg_gadget_lock.wakesrc = wakeup_source_register(NULL, "dwc-gadget-connect");
+		if (!dwc_otg_gadget_lock.wakesrc)
+			pr_info("----register  gadget-connect wakeup source  failed\n");
+	}
 	return retval;
 }
 
@@ -1373,6 +1396,10 @@ void pcd_remove(struct platform_device *pdev)
 	free_irq(irq, pcd);
 	free_wrapper(gadget_wrapper);
 	dwc_otg_pcd_remove(otg_dev->pcd);
+	if (dwc_otg_gadget_lock.wakesrc) {
+		wakeup_source_unregister(dwc_otg_gadget_lock.wakesrc);
+		dwc_otg_gadget_lock.wakesrc = NULL;
+	}
 #ifdef CONFIG_AMLOGIC_USB3PHY
 	if (otg_dev->core_if->phy_interface != 1) {
 		if (otg_dev->core_if->phy_otg == 1)

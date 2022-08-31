@@ -1095,6 +1095,8 @@ int32_t dwc_otg_pcd_handle_enum_done_intr(dwc_otg_pcd_t *pcd)
 	}
 #endif
 
+	if (dwc_otg_gadget_lock.wakesrc)
+		dwc_otg_gadget_hold(&dwc_otg_gadget_lock);
 	if (GET_CORE_IF(pcd)->phy_interface == 0)
 		DWC_TIMER_SCHEDULE(GET_CORE_IF(pcd)->device_connect_timer, 1000);
 

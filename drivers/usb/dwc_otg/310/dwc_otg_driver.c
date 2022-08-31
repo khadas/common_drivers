@@ -652,6 +652,8 @@ static void amlogic_device_detect_work(struct work_struct *work)
 			DWC_PRINTF("usbplug out,stop pcd!\n");
 			if (pcd_cb->stop)
 				pcd_cb->stop(otgdev->pcd);
+			if (dwc_otg_gadget_lock.wakesrc)
+				dwc_otg_gadget_drop(&dwc_otg_gadget_lock);
 			sofstop_flag = 0;
 		} else {
 			schedule_delayed_work(&otgdev->work,

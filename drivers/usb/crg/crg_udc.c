@@ -297,6 +297,11 @@ struct crg_setup_packet {
 	u16 setup_tag;
 };
 
+struct crg_udc_lock {
+	struct wakeup_source *wakesrc;
+	bool held;
+};
+
 struct crg_gadget_dev {
 	void __iomem *mmio_virt_base;
 	void __iomem *phy_reg_addr;
@@ -311,6 +316,7 @@ struct crg_gadget_dev {
 	struct device *dev;
 	struct usb_gadget gadget;
 	struct usb_gadget_driver *gadget_driver;
+	struct crg_udc_lock crg_gadget_lock;
 
 	int irq;
 	struct task_struct *vbus_task;
@@ -414,6 +420,22 @@ static struct usb_endpoint_descriptor crg_udc_ep0_desc = {
 	.bmAttributes = USB_ENDPOINT_XFER_CONTROL,
 	.wMaxPacketSize = cpu_to_le16(64),
 };
+
+void crg_gadget_hold(struct crg_udc_lock *lock)
+{
+	if (!lock->held) {
+		__pm_stay_awake(lock->wakesrc);
+		lock->held = true;
+	}
+}
+
+void crg_gadget_drop(struct crg_udc_lock *lock)
+{
+	if (lock->held) {
+		__pm_relax(lock->wakesrc);
+		lock->held = false;
+	}
+}
 
 static int get_ep_state(struct crg_gadget_dev *crg_udc, int DCI)
 {
@@ -2663,8 +2685,9 @@ static int init_ep0(struct crg_gadget_dev *crg_udc)
 
 static int EP0_Start(struct crg_gadget_dev *crg_udc)
 {
+	spin_lock(&crg_udc->udc_lock);
 	crg_udc->udc_ep[0].desc = &crg_udc_ep0_desc;
-
+	spin_unlock(&crg_udc->udc_lock);
 	return 0;
 }
 
@@ -3920,6 +3943,8 @@ int crg_handle_port_status(struct crg_gadget_dev *crg_udc)
 			pdebug("gadget speed = 0x%x\n", crg_udc->gadget.speed);
 
 			update_ep0_maxpacketsize(crg_udc);
+			if (crg_udc->crg_gadget_lock.wakesrc)
+				crg_gadget_hold(&crg_udc->crg_gadget_lock);
 
 			crg_udc->connected = 1;
 
@@ -4053,6 +4078,8 @@ int crg_handle_port_status(struct crg_gadget_dev *crg_udc)
 		}  else if (CRG_U3DC_PORTSC_PLS_GET(tmp) == 0x3) {
 			if (crg_udc->gadget_driver->disconnect) {
 				spin_unlock(&crg_udc->udc_lock);
+				if (crg_udc->crg_gadget_lock.wakesrc)
+					crg_gadget_drop(&crg_udc->crg_gadget_lock);
 				crg_udc->gadget_driver->disconnect(&crg_udc->gadget);
 				spin_lock(&crg_udc->udc_lock);
 			}
@@ -4505,6 +4532,13 @@ static int crg_udc_probe(struct platform_device *pdev)
 	if (ret)
 		goto err0;
 
+	if (!crg_udc->crg_gadget_lock.wakesrc) {
+		crg_udc->crg_gadget_lock.wakesrc =
+			wakeup_source_register(NULL, "crg-gadget-connect");
+		if (!crg_udc->crg_gadget_lock.wakesrc)
+			pr_info("----register  gadget-connect wakeup source  failed\n");
+	}
+
 	/*g_vaddr = dma_alloc_coherent(crg_udc->dev,4096, &g_dma, */
 	/*	GFP_KERNEL);*/
 
@@ -4528,6 +4562,11 @@ static int crg_udc_remove(struct platform_device *pdev)
 	crg_vbus_detect(crg_udc, 0);
 
 	device_remove_file(&pdev->dev, &dev_attr_udc_debug);
+
+	if (crg_udc->crg_gadget_lock.wakesrc) {
+		wakeup_source_unregister(crg_udc->crg_gadget_lock.wakesrc);
+		crg_udc->crg_gadget_lock.wakesrc = NULL;
+	}
 
 	usb_del_gadget_udc(&crg_udc->gadget);
 

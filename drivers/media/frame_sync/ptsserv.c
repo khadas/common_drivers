@@ -202,7 +202,7 @@ int pts_cached_time(u8 type)
 }
 EXPORT_SYMBOL(pts_cached_time);
 
-int calculation_stream_delayed_ms(u8 type, u32 *latestbitrate,
+int calculation_stream_delayed_ms(u8 type, u32 *latest_bitrate,
 		u32 *avg_bitare)
 {
 	struct pts_table_s *ptable;
@@ -337,8 +337,8 @@ int calculation_stream_delayed_ms(u8 type, u32 *latestbitrate,
 	}
 	}
 
-	if (latestbitrate)
-		*latestbitrate = ptable->last_bitrate;
+	if (latest_bitrate)
+		*latest_bitrate = ptable->last_bitrate;
 
 	if (avg_bitare)
 		*avg_bitare = ptable->last_avg_bitrate;

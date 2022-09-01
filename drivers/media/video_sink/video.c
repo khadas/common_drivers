@@ -6452,7 +6452,7 @@ static int update_pip2_recycle_buffer(void)
 }
 
 void set_alpha_scpxn(struct video_layer_s *layer,
-			   struct componser_info_t *componser_info)
+			   struct composer_info_t *composer_info)
 {
 	struct pip_alpha_scpxn_s alpha_win;
 	int win_num = 0;
@@ -6461,14 +6461,14 @@ void set_alpha_scpxn(struct video_layer_s *layer,
 
 	memset(&alpha_win, 0, sizeof(struct pip_alpha_scpxn_s));
 
-	if (componser_info)
-		win_num = componser_info->count;
+	if (composer_info)
+		win_num = composer_info->count;
 
 	for (i = 0; i < win_num; i++) {
-		alpha_win.scpxn_bgn_h[i] = componser_info->axis[i][0];
-		alpha_win.scpxn_end_h[i] = componser_info->axis[i][2];
-		alpha_win.scpxn_bgn_v[i] = componser_info->axis[i][1];
-		alpha_win.scpxn_end_v[i] = componser_info->axis[i][3];
+		alpha_win.scpxn_bgn_h[i] = composer_info->axis[i][0];
+		alpha_win.scpxn_end_h[i] = composer_info->axis[i][2];
+		alpha_win.scpxn_bgn_v[i] = composer_info->axis[i][1];
+		alpha_win.scpxn_end_v[i] = composer_info->axis[i][3];
 		win_en |= 1 << i;
 	}
 	set_alpha(layer, win_en, &alpha_win);
@@ -8341,7 +8341,7 @@ SET_FILTER:
 		if (vd_layer[0].dispbuf->flag & VFRAME_FLAG_MIRROR_V)
 			mirror = V_MIRROR;
 		_set_video_mirror(&glayer_info[0], mirror);
-		set_alpha_scpxn(&vd_layer[0], vd_layer[0].dispbuf->componser_info);
+		set_alpha_scpxn(&vd_layer[0], vd_layer[0].dispbuf->composer_info);
 		glayer_info[0].zorder = vd_layer[0].dispbuf->zorder;
 	}
 
@@ -8725,7 +8725,7 @@ SET_FILTER:
 		if (vd_layer[1].dispbuf->flag & VFRAME_FLAG_MIRROR_V)
 			mirror = V_MIRROR;
 		_set_video_mirror(&glayer_info[1], mirror);
-		set_alpha_scpxn(&vd_layer[1], vd_layer[1].dispbuf->componser_info);
+		set_alpha_scpxn(&vd_layer[1], vd_layer[1].dispbuf->composer_info);
 		glayer_info[1].zorder = vd_layer[1].dispbuf->zorder;
 	}
 
@@ -9003,7 +9003,7 @@ SET_FILTER:
 				source_type != VFRAME_SOURCE_TYPE_TUNER &&
 				source_type != VFRAME_SOURCE_TYPE_HWC)
 				_set_video_crop(&glayer_info[2], crop);
-			set_alpha_scpxn(&vd_layer[2], vd_layer[2].dispbuf->componser_info);
+			set_alpha_scpxn(&vd_layer[2], vd_layer[2].dispbuf->composer_info);
 			glayer_info[2].zorder = vd_layer[2].dispbuf->zorder;
 		}
 
@@ -17512,7 +17512,7 @@ static struct early_suspend video_early_suspend_handler = {
 #endif
 
 static struct amvideo_device_data_s amvideo = {
-	.cpu_type = MESON_CPU_MAJOR_ID_COMPATIBALE,
+	.cpu_type = MESON_CPU_MAJOR_ID_COMPATIBLE,
 	.sr_reg_offt = 0xff,
 	.sr_reg_offt2 = 0xff,
 	.layer_support[0] = 0xff,
@@ -18255,7 +18255,7 @@ bool has_pre_vscaler_ntap(u8 layer_id)
 static void video_cap_set(struct amvideo_device_data_s *p_amvideo)
 {
 	if (p_amvideo->cpu_type ==
-		MESON_CPU_MAJOR_ID_COMPATIBALE) {
+		MESON_CPU_MAJOR_ID_COMPATIBLE) {
 		if (legacy_vpp)
 			layer_cap =
 				LAYER1_AFBC |

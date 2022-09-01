@@ -31,7 +31,7 @@ static DEFINE_MUTEX(video_display_mutex);
 static struct composer_dev *mdev[3];
 
 static int get_count[MAX_VIDEO_COMPOSER_INSTANCE_NUM];
-static unsigned int countinue_vsync_count[MAX_VIDEO_COMPOSER_INSTANCE_NUM];
+static unsigned int continue_vsync_count[MAX_VIDEO_COMPOSER_INSTANCE_NUM];
 
 #define PATTERN_32_DETECT_RANGE 7
 #define PATTERN_22_DETECT_RANGE 7
@@ -60,7 +60,7 @@ void vsync_notify_video_composer(void)
 	for (i = 0; i < count; i++) {
 		vsync_count[i]++;
 		get_count[i] = 0;
-		countinue_vsync_count[i]++;
+		continue_vsync_count[i]++;
 		patten_trace[i]++;
 	}
 	do_gettimeofday(&vsync_time);
@@ -223,7 +223,7 @@ static void vd_ready_q_uninit(struct composer_dev *dev)
 	}
 }
 
-void video_dispaly_push_ready(struct composer_dev *dev, struct vframe_s *vf)
+void video_display_push_ready(struct composer_dev *dev, struct vframe_s *vf)
 {
 	u32 vsync_index = vsync_count[dev->index];
 
@@ -469,9 +469,9 @@ static inline int vd_perform_pulldown(struct composer_dev *dev,
 	if (*expired) {
 		if (patten_trace[dev->index] < expected_curr_interval) {
 			/* 2323232323..2233..2323, prev=2, curr=3,*/
-			/* check if next frame will toggle after 3 vsyncs */
+			/* check if next frame will toggle after 3 vsync */
 			/* 22222...22222 -> 222..2213(2)22...22 */
-			/* check if next frame will toggle after 3 vsyncs */
+			/* check if next frame will toggle after 3 vsync */
 			*expired = false;
 			vc_print(dev->index, PRINT_PATTERN,
 				"patten:hold frame for pattern: %d",
@@ -480,11 +480,11 @@ static inline int vd_perform_pulldown(struct composer_dev *dev,
 	} else {
 		if (patten_trace[dev->index] >= expected_curr_interval) {
 			/* 23232323..233223...2323 curr=2, prev=3 */
-			/* check if this frame will expire next vsyncs and */
-			/* next frame will expire after 3 vsyncs */
+			/* check if this frame will expire next vsync and */
+			/* next frame will expire after 3 vsync */
 			/* 22222...22222 -> 222..223122...22 */
-			/* check if this frame will expire next vsyncs and */
-			/* next frame will expire after 2 vsyncs */
+			/* check if this frame will expire next vsync and */
+			/* next frame will expire after 2 vsync */
 			*expired = true;
 			vc_print(dev->index, PRINT_PATTERN,
 				"patten: pull frame for pattern: %d",
@@ -546,7 +546,7 @@ bool pulldown_support_vf(u32 duration)
 }
 
 /* -----------------------------------------------------------------
- *           provider opeations
+ *           provider operations
  * -----------------------------------------------------------------
  */
 static struct vframe_s *vc_vf_peek(void *op_arg)
@@ -710,13 +710,13 @@ static struct vframe_s *vc_vf_get(void *op_arg)
 			 vf->index_disp,
 			 get_count[dev->index],
 			 dev->fget_count,
-			 countinue_vsync_count[dev->index],
+			 continue_vsync_count[dev->index],
 			 vsync_index_diff,
 			 vf->duration);
 
 		if (vf->vc_private)
 			vf->vc_private->last_disp_count =
-				countinue_vsync_count[dev->index];
+				continue_vsync_count[dev->index];
 
 		if (dev->enable_pulldown) {
 			dev->patten_factor_index++;
@@ -729,7 +729,7 @@ static struct vframe_s *vc_vf_get(void *op_arg)
 			patten_trace[dev->index] = 0;
 		}
 
-		countinue_vsync_count[dev->index] = 0;
+		continue_vsync_count[dev->index] = 0;
 		dev->last_vf_index = vf->omx_index;
 		return vf;
 	} else {
@@ -945,7 +945,7 @@ struct vd_prepare_s *vd_prepare_data_q_get(struct composer_dev *dev)
 
 int vd_render_index_get(struct composer_dev *dev)
 {
-	int reveiver_id = 0;
+	int receiver_id = 0;
 	int render_index = 0;
 
 	if (!dev) {
@@ -956,11 +956,11 @@ int vd_render_index_get(struct composer_dev *dev)
 				"%s: invalid param.\n",
 				__func__);
 		} else {
-			reveiver_id = get_receiver_id(dev->index);
-			if (reveiver_id >= 5)
-				render_index = reveiver_id - 3;
-			else if (reveiver_id <= 3)
-				render_index = reveiver_id - 2;
+			receiver_id = get_receiver_id(dev->index);
+			if (receiver_id >= 5)
+				render_index = receiver_id - 3;
+			else if (receiver_id <= 3)
+				render_index = receiver_id - 2;
 			else
 				render_index = 0;
 		}
@@ -1033,7 +1033,7 @@ static struct composer_dev *video_display_getdev(int layer_index)
 	struct video_composer_port_s *port;
 
 	vc_print(layer_index, PRINT_OTHER,
-		"%s: video_composerdev_%d.\n",
+		"%s: video_composer_dev_%d.\n",
 		__func__, layer_index);
 	if (layer_index >= MAX_VIDEO_COMPOSER_INSTANCE_NUM) {
 		vc_print(layer_index, PRINT_ERROR,
@@ -1337,7 +1337,7 @@ int video_display_setframe(int layer_index,
 	vf->repeat_count[dev->index] = 0;
 	dev->vd_prepare_last = vd_prepare;
 
-	video_dispaly_push_ready(dev, vf);
+	video_display_push_ready(dev, vf);
 
 	if (!kfifo_put(&dev->ready_q, (const struct vframe_s *)vf)) {
 		vc_print(layer_index, PRINT_ERROR,
@@ -1451,7 +1451,7 @@ int mbd_video_display_setframe(int layer_index,
 	vf->repeat_count[dev->index] = 0;
 	dev->vd_prepare_last = vd_prepare;
 
-	video_dispaly_push_ready(dev, vf);
+	video_display_push_ready(dev, vf);
 
 	if (!kfifo_put(&dev->ready_q, (const struct vframe_s *)vf)) {
 		vc_print(layer_index, PRINT_ERROR,

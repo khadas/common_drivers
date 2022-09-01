@@ -457,7 +457,7 @@ enum {
 	OLD_CORE0_CORE1,
 };
 enum cpu_type_e {
-	MESON_CPU_MAJOR_ID_COMPATIBALE = 0x1,
+	MESON_CPU_MAJOR_ID_COMPATIBLE = 0x1,
 	MESON_CPU_MAJOR_ID_TM2_REVB,
 	MESON_CPU_MAJOR_ID_SC2_,
 	MESON_CPU_MAJOR_ID_T5_,
@@ -756,7 +756,7 @@ bool has_pre_vscaler_ntap(u8 layer_id);
 void _set_video_window(struct disp_info_s *layer, int *p);
 void _set_video_crop(struct disp_info_s *layer, int *p);
 void set_alpha_scpxn(struct video_layer_s *layer,
-			   struct componser_info_t *componser_info);
+			   struct composer_info_t *composer_info);
 void di_used_vd1_afbc(bool di_used);
 void pip_swap_frame(struct video_layer_s *layer, struct vframe_s *vf,
 		    const struct vinfo_s *vinfo);
@@ -854,7 +854,7 @@ static inline void timestamp_pcrscr_inc_scale(s32 inc, u32 base) {}
 static inline void timestamp_pcrscr_enable(u32 enable) {}
 static inline u32 timestamp_pcrscr_enable_state(void) { return 0; }
 
-static inline int calculation_stream_delayed_ms(u8 type, u32 *latestbirate,
+static inline int calculation_stream_delayed_ms(u8 type, u32 *latest_bitrate,
 						u32 *avg_bitare)
 {return 0; }
 

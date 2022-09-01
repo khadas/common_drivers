@@ -438,7 +438,7 @@ static int set_vfm_type(struct vp_frame_s *frame_info,
 		| (5 << 26)  /* unspecified */
 		| (0 << 25)  /* limited */
 		| (1 << 24); /* color available */
-	if (video_p	rovider_device.vinfo->width >= 1280 &&
+	if (video_provider_device.vinfo->width >= 1280 &&
 		video_provider_device.vinfo->height >= 720) {
 		/* >= 720p, use 709 */
 		vf->signal_type |=

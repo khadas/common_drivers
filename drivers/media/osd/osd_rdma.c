@@ -667,7 +667,7 @@ static inline u32 read_reg_internal(u32 vpp_index, u32 addr)
 	return osd_reg_read(addr);
 }
 
-static inline int wrtie_reg_internal(u32 vpp_index, u32 addr, u32 val)
+static inline int write_reg_internal(u32 vpp_index, u32 addr, u32 val)
 {
 	struct rdma_table_item request_item;
 	u32 rdma_en = 0;
@@ -1836,9 +1836,9 @@ int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit)
 	}
 
 	if (reset_reg_mask) {
-		wrtie_reg_internal(output_index, VIU_SW_RESET,
+		write_reg_internal(output_index, VIU_SW_RESET,
 				   reset_reg_mask);
-		wrtie_reg_internal(output_index, VIU_SW_RESET, 0);
+		write_reg_internal(output_index, VIU_SW_RESET, 0);
 	}
 
 	/* same bit, but gxm only reset hardware, not top reg*/
@@ -1850,7 +1850,7 @@ int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit)
 	while ((reset_bit & HW_RESET_OSD1_REGS) &&
 	       (i < OSD_REG_BACKUP_COUNT)) {
 		addr = osd_reg_backup[i];
-		wrtie_reg_internal(output_index, addr, osd_backup[addr - base]);
+		write_reg_internal(output_index, addr, osd_backup[addr - base]);
 		i++;
 	}
 	i = 0;
@@ -1861,7 +1861,7 @@ int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit)
 		value = osd_afbc_backup[addr - base];
 		if (addr == OSD1_AFBCD_ENABLE)
 			value |=  0x100;
-		wrtie_reg_internal(output_index, addr, value);
+		write_reg_internal(output_index, addr, value);
 		i++;
 	}
 
@@ -1879,7 +1879,7 @@ int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit)
 				i++) {
 				addr = mali_afbc_reg_backup[i];
 				value = mali_afbc_backup[addr - base];
-				wrtie_reg_internal(output_index, addr, value);
+				write_reg_internal(output_index, addr, value);
 			}
 		}
 	}
@@ -1902,7 +1902,7 @@ int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit)
 					i++) {
 					addr = mali_afbc_reg_t7_backup[i];
 					value = mali_afbc_t7_backup[addr - base];
-					wrtie_reg_internal(output_index, addr, value);
+					write_reg_internal(output_index, addr, value);
 				}
 			}
 		}
@@ -1920,7 +1920,7 @@ int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit)
 					i++) {
 					addr = mali_afbc1_reg_t7_backup[i];
 					value = mali_afbc1_t7_backup[addr - base];
-					wrtie_reg_internal(output_index, addr, value);
+					write_reg_internal(output_index, addr, value);
 				}
 			}
 		}
@@ -1938,7 +1938,7 @@ int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit)
 					i++) {
 					addr = mali_afbc2_reg_t7_backup[i];
 					value = mali_afbc2_t7_backup[addr - base];
-					wrtie_reg_internal(output_index, addr, value);
+					write_reg_internal(output_index, addr, value);
 				}
 			}
 		}
@@ -1947,7 +1947,7 @@ int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit)
 	if (osd_hw.osd_meson_dev.afbc_type == MALI_AFBC &&
 	    osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE &&
 	    !osd_dev_hw.multi_afbc_core)
-		wrtie_reg_internal(output_index, VPU_MAFBC_COMMAND, 1);
+		write_reg_internal(output_index, VPU_MAFBC_COMMAND, 1);
 
 	if (osd_hw.osd_meson_dev.afbc_type == MALI_AFBC &&
 	    osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE &&
@@ -1965,7 +1965,7 @@ int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit)
 
 			osd_reg = &hw_osd_reg_array[i];
 
-			wrtie_reg_internal(output_index,
+			write_reg_internal(output_index,
 					   osd_reg->vpu_mafbc_command, 1);
 			osd_log_dbg2(MODULE_BASE,
 				     "%s, AFBC osd%d start command\n",

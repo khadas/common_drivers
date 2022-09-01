@@ -144,7 +144,7 @@ enum {
 #define VDIF_BURSTSIZE_CR_BIT        12
 #define VDIF_BURSTSIZE_CB_BIT        10
 #define VDIF_BURSTSIZE_Y_BIT         8
-#define VDIF_MANULE_START_FRAME      BIT(7)
+#define VDIF_MANUAL_START_FRAME      BIT(7)
 #define VDIF_CHRO_RPT_LAST           BIT(6)
 #define VDIF_CHROMA_HZ_AVG           BIT(3)
 #define VDIF_LUMA_HZ_AVG             BIT(2)

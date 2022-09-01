@@ -151,7 +151,7 @@ struct vidc_buf_status {
 struct dst_buf_t {
 	int index;
 	struct vframe_s frame;
-	struct componser_info_t componser_info;
+	struct composer_info_t composer_info;
 	bool dirty;
 	u32 phy_addr;
 	u32 buf_w;
@@ -275,7 +275,7 @@ struct video_composer_port_s *video_composer_get_port(u32 index);
 int vc_print(int index, int debug_flag, const char *fmt, ...);
 void videocomposer_vf_put(struct vframe_s *vf, void *op_arg);
 struct vframe_s *videocomposer_vf_peek(void *op_arg);
-void video_dispaly_push_ready(struct composer_dev *dev, struct vframe_s *vf);
+void video_display_push_ready(struct composer_dev *dev, struct vframe_s *vf);
 void vc_private_q_init(struct composer_dev *dev);
 void vc_private_q_recycle(struct composer_dev *dev,
 	struct video_composer_private *vc_private);

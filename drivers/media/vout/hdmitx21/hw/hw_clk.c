@@ -748,7 +748,7 @@ static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 {
 	struct hdmi_format_para *para = hdev->para;
 
-	frac_rate = hdev->frac_rate_policy;
+	frac_rate = hdev->tx_comm.frac_rate_policy;
 	if (para && para->timing.name && likely_frac_rate_mode(para->timing.name)) {
 		;
 	} else {
@@ -756,7 +756,7 @@ static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 		frac_rate = 0;
 	}
 
-	pr_info("frac_rate = %d\n", hdev->frac_rate_policy);
+	pr_info("frac_rate = %d\n", hdev->tx_comm.frac_rate_policy);
 }
 
 void hdmitx21_set_clk(struct hdmitx_dev *hdev)

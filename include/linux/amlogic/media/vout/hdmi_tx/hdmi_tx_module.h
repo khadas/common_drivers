@@ -20,6 +20,7 @@
 #endif
 #include <linux/spinlock.h>
 #include <drm/amlogic/meson_connector_dev.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
 
 #define DEVICE_NAME "amhdmitx"
 
@@ -314,6 +315,7 @@ struct st_debug_param {
 #define EDID_MAX_BLOCK              8
 struct hdmitx_dev {
 	struct cdev cdev; /* The cdev structure */
+	struct hdmitx_dev_common tx_comm;
 	dev_t hdmitx_id;
 	struct proc_dir_entry *proc_file;
 	struct task_struct *task;
@@ -433,8 +435,6 @@ struct hdmitx_dev {
 	unsigned char unplug_powerdown;
 	unsigned short physical_addr;
 	unsigned int cur_VIC;
-	char fmt_attr[16];
-	char backup_fmt_attr[16];
 	atomic_t kref_video_mute;
 	atomic_t kref_audio_mute;
 	/**/
@@ -464,9 +464,6 @@ struct hdmitx_dev {
 	bool hdcp22_type;
 	unsigned int repeater_tx;
 	struct hdcprp_topo *topo_info;
-	/* 0.1% clock shift, 1080p60hz->59.94hz */
-	unsigned int frac_rate_policy;
-	unsigned int backup_frac_rate_policy;
 	unsigned int rxsense_policy;
 	unsigned int cedst_policy;
 	struct ced_cnt ced_cnt;
@@ -500,7 +497,6 @@ struct hdmitx_dev {
 	enum eotf_type hdmi_current_eotf_type;
 	enum mode_type hdmi_current_tunnel_mode;
 	bool hdmi_current_signal_sdr;
-	unsigned int hdr_priority;
 	unsigned int flag_3dfp:1;
 	unsigned int flag_3dtb:1;
 	unsigned int flag_3dss:1;

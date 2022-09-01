@@ -316,6 +316,7 @@ struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 	const char *attr)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 	const struct hdmi_timing *timing;
 	struct vinfo_s *tx_vinfo = &hdev->para->hdmitx_vinfo;
 	struct hdmi_format_para *para = hdev->para;
@@ -351,7 +352,7 @@ struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 		tx_vinfo->sync_duration_den = 1000;
 	}
 	/* for 24/30/60/120/240hz, recalc sync duration */
-	recalc_vinfo_sync_duration(tx_vinfo, hdev->frac_rate_policy);
+	recalc_vinfo_sync_duration(tx_vinfo, tx_comm->frac_rate_policy);
 	tx_vinfo->video_clk = timing->pixel_freq;
 	tx_vinfo->htotal = timing->h_total;
 	tx_vinfo->vtotal = timing->v_total;

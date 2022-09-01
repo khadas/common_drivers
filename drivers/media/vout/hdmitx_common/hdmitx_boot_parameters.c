@@ -9,7 +9,10 @@
 #include <linux/amlogic/gki_module.h>
 #include "hdmitx_boot_parameters.h"
 
-static struct hdmitx_boot_param tx_params;
+static struct hdmitx_boot_param tx_params = {
+	.fraction_refreshrate = 1,
+	.edid_chksum = "invalidcrc",
+};
 
 struct hdmitx_boot_param *get_hdmitx_boot_params(void)
 {

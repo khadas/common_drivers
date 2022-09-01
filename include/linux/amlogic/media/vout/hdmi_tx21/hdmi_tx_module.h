@@ -19,6 +19,7 @@
 #include <linux/amlogic/media/vrr/vrr.h>
 #include <drm/amlogic/meson_connector_dev.h>
 #include <linux/miscdevice.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
 
 #define DEVICE_NAME "amhdmitx21"
 
@@ -302,6 +303,7 @@ struct hdmitx_match_frame_table_s {
 #define EDID_MAX_BLOCK              8
 struct hdmitx_dev {
 	struct cdev cdev; /* The cdev structure */
+	struct hdmitx_dev_common tx_comm;
 	dev_t hdmitx_id;
 	struct proc_dir_entry *proc_file;
 	struct task_struct *task;
@@ -385,8 +387,6 @@ struct hdmitx_dev {
 	u8 unplug_powerdown;
 	unsigned short physical_addr;
 	u32 cur_VIC;
-	char fmt_attr[16];
-	char backup_fmt_attr[16];
 	atomic_t kref_video_mute;
 	atomic_t kref_audio_mute;
 	/**/
@@ -408,9 +408,6 @@ struct hdmitx_dev {
 	u32 audio_notify_flag;
 	u32 audio_step;
 	u32 repeater_tx;
-	/* 0.1% clock shift, 1080p60hz->59.94hz */
-	u32 frac_rate_policy;
-	u32 backup_frac_rate_policy;
 	u32 rxsense_policy;
 	u32 cedst_policy;
 	u32 enc_idx;
@@ -450,7 +447,6 @@ struct hdmitx_dev {
 	u32 flag_3dss:1;
 	u32 dongle_mode:1;
 	u32 cedst_en:1; /* configure in DTS */
-	u32 hdr_priority;
 	u32 bist_lock:1;
 	u32 vend_id_hit:1;
 	u32 fr_duration;

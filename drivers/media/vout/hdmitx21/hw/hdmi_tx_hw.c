@@ -362,7 +362,7 @@ static void hdmi_hwp_init(struct hdmitx_dev *hdev)
 				if (tp) {
 					name = tp->sname ? tp->sname : tp->name;
 					hdev->para = hdmitx21_get_fmtpara(name,
-						hdev->fmt_attr);
+						hdev->tx_comm.fmt_attr);
 				}
 			} else {
 				pr_info("hdmitx21: failed to get para\n");

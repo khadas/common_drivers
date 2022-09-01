@@ -1019,7 +1019,7 @@ static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 	enum hdmi_vic vic = hdev->cur_VIC;
 	struct hdmi_format_para *para = NULL;
 
-	frac_rate = hdev->frac_rate_policy;
+	frac_rate = hdev->tx_comm.frac_rate_policy;
 	para = hdmi_get_fmt_paras(vic);
 	if (para && para->name && likely_frac_rate_mode(para->name)) {
 		;
@@ -1028,7 +1028,7 @@ static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 		frac_rate = 0;
 	}
 
-	pr_info("frac_rate = %d\n", hdev->frac_rate_policy);
+	pr_info("frac_rate = %d\n", hdev->tx_comm.frac_rate_policy);
 }
 
 void hdmitx_set_clk(struct hdmitx_dev *hdev)

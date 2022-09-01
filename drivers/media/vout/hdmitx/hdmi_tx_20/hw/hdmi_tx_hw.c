@@ -2647,7 +2647,7 @@ static void set_aud_acr_pkt(struct hdmitx_dev *hdev,
 	    audio_param->type == CT_DTS_HD_MA)
 		hdmitx_wr_reg(HDMITX_DWC_AUD_INPUTCLKFS, 2);
 
-	if (hdev->frac_rate_policy && hdev->para->timing.frac_freq)
+	if (hdev->tx_comm.frac_rate_policy && hdev->para->timing.frac_freq)
 		char_rate = hdev->para->timing.frac_freq;
 	else
 		char_rate = hdev->para->timing.pixel_freq;

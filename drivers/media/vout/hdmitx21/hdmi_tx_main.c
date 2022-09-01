@@ -128,9 +128,7 @@ static const struct component_ops meson_hdmitx_bind_ops = {
 static DEFINE_MUTEX(setclk_mutex);
 static DEFINE_MUTEX(getedid_mutex);
 
-static struct hdmitx_dev hdmitx21_device = {
-	.frac_rate_policy = 1,
-};
+static struct hdmitx_dev hdmitx21_device;
 
 struct hdmitx_dev *get_hdmitx21_device(void)
 {
@@ -591,6 +589,7 @@ static int set_disp_mode_auto(void)
 
 	struct vinfo_s *info = NULL;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 	struct hdmi_format_para *para = NULL;
 	u8 mode[32];
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
@@ -630,13 +629,13 @@ static int set_disp_mode_auto(void)
 		}
 	}
 
-	para = hdmitx21_get_fmtpara(mode, hdev->fmt_attr);
+	para = hdmitx21_get_fmtpara(mode, tx_comm->fmt_attr);
 	if (!para) {
 		pr_info("%s[%d] %s %s\n", __func__, __LINE__, mode,
-			hdev->fmt_attr);
+			tx_comm->fmt_attr);
 		return -1;
 	}
-	pr_info("setting hdmi mode %s %s\n", mode, hdev->fmt_attr);
+	pr_info("setting hdmi mode %s %s\n", mode, tx_comm->fmt_attr);
 	pr_info("cd/cs/cr: %d/%d/%d\n", para->cd, para->cs, para->cr);
 	hdev->para = para;
 	vic = hdmitx21_edid_get_VIC(hdev, mode, 1);
@@ -783,13 +782,14 @@ static ssize_t attr_show(struct device *dev,
 {
 	int pos = 0;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
-	if (!memcmp(hdev->fmt_attr, "default,", 7)) {
-		memset(hdev->fmt_attr, 0,
-		       sizeof(hdev->fmt_attr));
+	if (!memcmp(tx_comm->fmt_attr, "default,", 7)) {
+		memset(tx_comm->fmt_attr, 0,
+		       sizeof(tx_comm->fmt_attr));
 		hdmitx21_fmt_attr(hdev);
 	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "%s\n\r", hdev->fmt_attr);
+	pos += snprintf(buf + pos, PAGE_SIZE, "%s\n\r", tx_comm->fmt_attr);
 	return pos;
 }
 
@@ -798,14 +798,15 @@ static ssize_t attr_store(struct device *dev,
 		   const char *buf, size_t count)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
-	strncpy(hdev->fmt_attr, buf, sizeof(hdev->fmt_attr));
-	hdev->fmt_attr[15] = '\0';
-	if (!memcmp(hdev->fmt_attr, "rgb", 3))
+	strncpy(tx_comm->fmt_attr, buf, sizeof(tx_comm->fmt_attr));
+	tx_comm->fmt_attr[15] = '\0';
+	if (!memcmp(tx_comm->fmt_attr, "rgb", 3))
 		hdev->para->cs = HDMI_COLORSPACE_RGB;
-	else if (!memcmp(hdev->fmt_attr, "422", 3))
+	else if (!memcmp(tx_comm->fmt_attr, "422", 3))
 		hdev->para->cs = HDMI_COLORSPACE_YUV422;
-	else if (!memcmp(hdev->fmt_attr, "420", 3))
+	else if (!memcmp(tx_comm->fmt_attr, "420", 3))
 		hdev->para->cs = HDMI_COLORSPACE_YUV420;
 	else
 		hdev->para->cs = HDMI_COLORSPACE_YUV444;
@@ -818,16 +819,18 @@ void setup21_attr(const char *buf)
 {
 	char attr[16] = {0};
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
 	memcpy(attr, buf, sizeof(attr));
-	memcpy(hdev->fmt_attr, attr, sizeof(hdev->fmt_attr));
+	memcpy(tx_comm->fmt_attr, attr, sizeof(tx_comm->fmt_attr));
 }
 
 void get21_attr(char attr[16])
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
-	memcpy(attr, hdev->fmt_attr, sizeof(hdev->fmt_attr));
+	memcpy(attr, tx_comm->fmt_attr, sizeof(tx_comm->fmt_attr));
 }
 
 /*edid attr*/
@@ -1576,6 +1579,7 @@ static void update_current_para(struct hdmitx_dev *hdev)
 {
 	struct vinfo_s *info = NULL;
 	u8 mode[32];
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
 	info = hdmitx_get_current_vinfo(NULL);
 	if (!info)
@@ -1583,7 +1587,7 @@ static void update_current_para(struct hdmitx_dev *hdev)
 
 	memset(mode, 0, sizeof(mode));
 	strncpy(mode, info->name, sizeof(mode) - 1);
-	hdev->para = hdmitx21_get_fmtpara(mode, hdev->fmt_attr);
+	hdev->para = hdmitx21_get_fmtpara(mode, tx_comm->fmt_attr);
 }
 
 static struct vsif_debug_save vsif_debug_info;
@@ -3258,9 +3262,10 @@ static ssize_t hdr_cap_show(struct device *dev,
 {
 	int pos = 0;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 	const struct hdr_info *info = &hdev->rxcap.hdr_info;
 
-	if (hdev->hdr_priority == 2) {
+	if (tx_comm->hdr_priority == 2) {
 		pos += snprintf(buf + pos, PAGE_SIZE,
 			"mask rx hdr capability\n");
 		return pos;
@@ -3395,9 +3400,10 @@ static ssize_t dv_cap_show(struct device *dev,
 {
 	int pos = 0;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 	const struct dv_info *dv = &hdev->rxcap.dv_info;
 
-	if (dv->ieeeoui != DV_IEEE_OUI || hdev->hdr_priority) {
+	if (dv->ieeeoui != DV_IEEE_OUI || tx_comm->hdr_priority) {
 		pos += snprintf(buf + pos, PAGE_SIZE,
 			"The Rx don't support DolbyVision\n");
 		return pos;
@@ -3671,12 +3677,13 @@ static ssize_t frac_rate_policy_store(struct device *dev,
 {
 	int val = 0;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
 	if (isdigit(buf[0])) {
 		val = buf[0] - '0';
 		pr_info("set frac_rate_policy as %d\n", val);
 		if (val == 0 || val == 1)
-			hdev->frac_rate_policy = val;
+			tx_comm->frac_rate_policy = val;
 		else
 			pr_info("only accept as 0 or 1\n");
 	}
@@ -3690,9 +3697,10 @@ static ssize_t frac_rate_policy_show(struct device *dev,
 {
 	int pos = 0;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
 	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
-		hdev->frac_rate_policy);
+		tx_comm->frac_rate_policy);
 
 	return pos;
 }
@@ -4220,12 +4228,13 @@ static enum vmode_e hdmitx_validate_vmode(char *_mode, u32 frac, void *data)
 {
 	struct hdmi_format_para *para = NULL;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 	char mode[32] = {0};
 
 	strncpy(mode, _mode, sizeof(mode));
 	mode[31] = 0;
 
-	para = hdmitx21_get_fmtpara(mode, hdev->fmt_attr);
+	para = hdmitx21_get_fmtpara(mode, tx_comm->fmt_attr);
 
 	if (para) {
 		/* //remove frac support for vout api
@@ -4252,12 +4261,13 @@ static int hdmitx_vmode_is_supported(enum vmode_e mode, void *data)
 static int hdmitx_module_disable(enum vmode_e cur_vmod, void *data)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
 	hdev->hwop.cntlconfig(hdev, CONF_CLR_AVI_PACKET, 0);
 	hdev->hwop.cntlconfig(hdev, CONF_CLR_VSDB_PACKET, 0);
 	hdev->hwop.cntlmisc(hdev, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 	hdmitx21_disable_clk(hdev);
-	hdev->para = hdmitx21_get_fmtpara("invalid", hdev->fmt_attr);
+	hdev->para = hdmitx21_get_fmtpara("invalid", tx_comm->fmt_attr);
 	hdmitx_validate_vmode("null", 0, NULL);
 	if (hdev->cedst_policy)
 		cancel_delayed_work(&hdev->work_cedst);
@@ -4290,12 +4300,13 @@ static int hdmitx_vout_get_state(void *data)
 static int hdmitx_check_same_vmodeattr(char *name, void *data)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
-	if (memcmp(hdev->backup_fmt_attr, hdev->fmt_attr, 16) == 0 &&
-	    hdev->backup_frac_rate_policy == hdev->frac_rate_policy)
+	if (memcmp(tx_comm->backup_fmt_attr, tx_comm->fmt_attr, 16) == 0 &&
+	    tx_comm->backup_frac_rate_policy == tx_comm->frac_rate_policy)
 		return 1;
-	memcpy(hdev->backup_fmt_attr, hdev->fmt_attr, 16);
-	hdev->backup_frac_rate_policy = hdev->frac_rate_policy;
+	memcpy(tx_comm->backup_fmt_attr, tx_comm->fmt_attr, 16);
+	tx_comm->backup_frac_rate_policy = tx_comm->frac_rate_policy;
 	return 0;
 }
 
@@ -4666,6 +4677,8 @@ u32 hdmitx21_check_edid_all_zeros(u8 *buf)
 
 static void hdmitx_get_edid(struct hdmitx_dev *hdev)
 {
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
+
 	mutex_lock(&getedid_mutex);
 	/* TODO hdmitx21_edid_ram_buffer_clear(hdev); */
 	hdev->hwop.cntlddc(hdev, DDC_RESET_EDID, 0);
@@ -4694,13 +4707,13 @@ static void hdmitx_get_edid(struct hdmitx_dev *hdev)
 	hdmitx21_edid_parse(hdev);
 	hdmitx21_edid_buf_compare_print(hdev);
 
-	if (hdev->hdr_priority == 1) { /* clear dv_info */
+	if (tx_comm->hdr_priority == 1) { /* clear dv_info */
 		struct dv_info *dv = &hdev->rxcap.dv_info;
 
 		memset(dv, 0, sizeof(struct dv_info));
 		pr_info("clear dv_info\n");
 	}
-	if (hdev->hdr_priority == 2) { /* clear dv_info/hdr_info */
+	if (tx_comm->hdr_priority == 2) { /* clear dv_info/hdr_info */
 		struct dv_info *dv = &hdev->rxcap.dv_info;
 		struct hdr_info *hdr = &hdev->rxcap.hdr_info;
 
@@ -4962,6 +4975,7 @@ static bool is_cur_tmds_div40(struct hdmitx_dev *hdev)
 	const struct hdmi_timing *tp;
 	const char *name;
 	unsigned int act_clk = 0;
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
 	if (!hdev)
 		return false;
@@ -4969,13 +4983,13 @@ static bool is_cur_tmds_div40(struct hdmitx_dev *hdev)
 	if (tp) {
 		name = tp->sname ? tp->sname : tp->name;
 		hdev->para = hdmitx21_get_fmtpara(name,
-			hdev->fmt_attr);
+			tx_comm->fmt_attr);
 	}
 	if (!hdev->para)
 		return false;
 	act_clk = hdev->para->tmds_clk / 1000;
 	pr_info("hdmitx: get vic %d cscd %s act_clk %d\n",
-		hdev->cur_VIC, hdev->fmt_attr, act_clk);
+		hdev->cur_VIC, tx_comm->fmt_attr, act_clk);
 
 	if (act_clk > 340)
 		return true;
@@ -5036,88 +5050,49 @@ static int get_dt_vend_init_data(struct device_node *np,
 
 void hdmitx21_fmt_attr(struct hdmitx_dev *hdev)
 {
-	if (strlen(hdev->fmt_attr) >= 8) {
-		pr_info("fmt_attr %s\n", hdev->fmt_attr);
-		return;
-	}
-	memset(hdev->fmt_attr, 0, sizeof(hdev->fmt_attr));
-	switch (hdev->para->cs) {
-	case HDMI_COLORSPACE_RGB:
-		memcpy(hdev->fmt_attr, "rgb,", 5);
-		break;
-	case HDMI_COLORSPACE_YUV422:
-		memcpy(hdev->fmt_attr, "422,", 5);
-		break;
-	case HDMI_COLORSPACE_YUV444:
-		memcpy(hdev->fmt_attr, "444,", 5);
-		break;
-	case HDMI_COLORSPACE_YUV420:
-		memcpy(hdev->fmt_attr, "420,", 5);
-		break;
-	default:
-		break;
-	}
-	switch (hdev->para->cd) {
-	case COLORDEPTH_24B:
-		strcat(hdev->fmt_attr, "8bit");
-		break;
-	case COLORDEPTH_30B:
-		strcat(hdev->fmt_attr, "10bit");
-		break;
-	case COLORDEPTH_36B:
-		strcat(hdev->fmt_attr, "12bit");
-		break;
-	case COLORDEPTH_48B:
-		strcat(hdev->fmt_attr, "16bit");
-		break;
-	default:
-		break;
-	}
-	pr_info("fmt_attr %s\n", hdev->fmt_attr);
-}
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 
-static void hdmitx_init_fmt_attr(struct hdmitx_dev *hdev)
-{
 	if (!hdev->para)
 		return;
-	if (strlen(hdev->fmt_attr) >= 8) {
-		pr_info("fmt_attr %s\n", hdev->fmt_attr);
+
+	if (strlen(tx_comm->fmt_attr) >= 8) {
+		pr_info("fmt_attr %s\n", tx_comm->fmt_attr);
 		return;
 	}
-	memset(hdev->fmt_attr, 0, sizeof(hdev->fmt_attr));
+	memset(tx_comm->fmt_attr, 0, sizeof(tx_comm->fmt_attr));
 	switch (hdev->para->cs) {
 	case HDMI_COLORSPACE_RGB:
-		memcpy(hdev->fmt_attr, "rgb,", 5);
+		memcpy(tx_comm->fmt_attr, "rgb,", 5);
 		break;
 	case HDMI_COLORSPACE_YUV422:
-		memcpy(hdev->fmt_attr, "422,", 5);
+		memcpy(tx_comm->fmt_attr, "422,", 5);
 		break;
 	case HDMI_COLORSPACE_YUV444:
-		memcpy(hdev->fmt_attr, "444,", 5);
+		memcpy(tx_comm->fmt_attr, "444,", 5);
 		break;
 	case HDMI_COLORSPACE_YUV420:
-		memcpy(hdev->fmt_attr, "420,", 5);
+		memcpy(tx_comm->fmt_attr, "420,", 5);
 		break;
 	default:
 		break;
 	}
 	switch (hdev->para->cd) {
 	case COLORDEPTH_24B:
-		strcat(hdev->fmt_attr, "8bit");
+		strcat(tx_comm->fmt_attr, "8bit");
 		break;
 	case COLORDEPTH_30B:
-		strcat(hdev->fmt_attr, "10bit");
+		strcat(tx_comm->fmt_attr, "10bit");
 		break;
 	case COLORDEPTH_36B:
-		strcat(hdev->fmt_attr, "12bit");
+		strcat(tx_comm->fmt_attr, "12bit");
 		break;
 	case COLORDEPTH_48B:
-		strcat(hdev->fmt_attr, "16bit");
+		strcat(tx_comm->fmt_attr, "16bit");
 		break;
 	default:
 		break;
 	}
-	pr_debug("fmt_attr %s\n", hdev->fmt_attr);
+	pr_info("fmt_attr %s\n", tx_comm->fmt_attr);
 }
 
 /* for notify to cec */
@@ -5186,7 +5161,7 @@ static void hdmitx_init_parameters(struct hdmitx_info *info)
 	info->audio_out_changing_flag = 1;
 }
 
-static int amhdmitx21_device_init(struct hdmitx_dev *hdmi_dev, struct hdmitx_boot_param *params)
+static int amhdmitx21_device_init(struct hdmitx_dev *hdmi_dev)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	static struct hdmi_format_para para;
@@ -5196,17 +5171,6 @@ static int amhdmitx21_device_init(struct hdmitx_dev *hdmi_dev, struct hdmitx_boo
 
 	memset(&para, 0, sizeof(para));
 	pr_info("Ver: %s\n", HDMITX_VER);
-
-	/*load tx boot params*/
-	memcpy(hdmi_dev->fmt_attr, params->color_attr,
-	       sizeof(hdmi_dev->fmt_attr));
-	memcpy(hdmi_dev->backup_fmt_attr, hdmi_dev->fmt_attr,
-	       sizeof(hdmi_dev->fmt_attr));
-
-	hdmi_dev->frac_rate_policy = params->fraction_refreshrate;
-	hdmi_dev->backup_frac_rate_policy = hdmi_dev->frac_rate_policy;
-
-	hdmi_dev->hdr_priority = params->hdr_mask;
 
 	hdmi_dev->hdtx_dev = NULL;
 
@@ -5500,8 +5464,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	pr_debug("%s start\n", __func__);
-
-	amhdmitx21_device_init(hdev, get_hdmitx_boot_params());
+	hdmitx_common_init(&hdev->tx_comm);
+	amhdmitx21_device_init(hdev);
 	amhdmitx_infoframe_init(hdev);
 
 	ret = amhdmitx_get_dt_info(pdev);
@@ -5616,7 +5580,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 #endif
 
 	/* update fmt_attr */
-	hdmitx_init_fmt_attr(hdev);
+	hdmitx21_fmt_attr(hdev);
 
 	hdev->hpd_state = !!hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0);
 	hdmitx21_set_uevent(HDMITX_HDCPPWR_EVENT, HDMI_WAKEUP);
@@ -5913,14 +5877,17 @@ static void drm_hdmitx_set_phy(unsigned char en)
 static void drm_hdmitx_setup_attr(const char *buf)
 {
 	char attr[16] = {0};
+	struct hdmitx_dev_common *tx_comm = &hdmitx21_device.tx_comm;
 
 	memcpy(attr, buf, sizeof(attr));
-	memcpy(hdmitx21_device.fmt_attr, attr, sizeof(hdmitx21_device.fmt_attr));
+	memcpy(tx_comm->fmt_attr, attr, sizeof(tx_comm->fmt_attr));
 }
 
 static void drm_hdmitx_get_attr(char attr[16])
 {
-	memcpy(attr, hdmitx21_device.fmt_attr, sizeof(hdmitx21_device.fmt_attr));
+	struct hdmitx_dev_common *tx_comm = &hdmitx21_device.tx_comm;
+
+	memcpy(attr, tx_comm->fmt_attr, sizeof(tx_comm->fmt_attr));
 }
 
 static bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr)
@@ -6027,7 +5994,7 @@ static const struct hdr_info *drm_hdmitx_get_hdr_info(void)
 
 static int drm_hdmitx_get_hdr_priority(void)
 {
-	return hdmitx21_device.hdr_priority;
+	return hdmitx21_device.tx_comm.hdr_priority;
 }
 
 /*hdcp functions*/

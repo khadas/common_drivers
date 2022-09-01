@@ -913,6 +913,7 @@ static bool check_qms_brr_format(const enum hdmi_vic vic)
 int hdmitx_set_fr_hint(int rate, void *data)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
 	struct rx_cap *prxcap = &hdev->rxcap;
 	struct vrr_conf_para para;
 	enum TARGET_FRAME_RATE tfr = TFR_QMSVRR_INACTIVE;
@@ -963,7 +964,7 @@ int hdmitx_set_fr_hint(int rate, void *data)
 		 * QMS: 1080p24   set frac_rate_policy as 0 and fr_hint as 24
 		 * QMS: 1080p223.976   set frac_rate_policy as 1 and fr_hint as 24
 		 */
-		if (hdev->frac_rate_policy) {
+		if (tx_comm->frac_rate_policy) {
 			switch (rate) {
 			case 2400:
 			case 3000:

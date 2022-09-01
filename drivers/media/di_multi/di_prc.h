@@ -354,7 +354,7 @@ int dbg_dct_contr_show(struct seq_file *s, void *v);
 void dim_dbg_dct_info(struct dcntr_mem_s *pprecfg);
 /* dct pre */
 void dct_pre_prob(struct platform_device *pdev);
-void dct_pre_revome(struct platform_device *pdev);
+void dct_pre_remove(struct platform_device *pdev);
 
 int dct_pre_ch_show(struct seq_file *s, void *v);
 int dct_pre_reg_show(struct seq_file *s, void *v);

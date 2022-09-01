@@ -121,32 +121,32 @@
     #define DET3D_CHESSBD_VER_VALUE_WID				16
 
 /* #define DET3D_RO_SPLT_HT					0x173f */
-    #define DET3D_SPLIT_HT_VAILID_BIT				24
-    #define DET3D_SPLIT_HT_VAILID_WID				1
+    #define DET3D_SPLIT_HT_VALID_BIT				24
+    #define DET3D_SPLIT_HT_VALID_WID				1
     #define DET3D_SPLIT_HT_PXNUM_BIT				16
     #define DET3D_SPLIT_HT_PXNUM_WID				5
     #define DET3D_SPLIT_HT_IDXX4_BIT				0
     #define DET3D_SPLIT_HT_IDXX4_WID				10
 
 /* #define DET3D_RO_SPLT_HB					0x1780 */
-    #define DET3D_SPLIT_HB_VAILID_BIT				24
-    #define DET3D_SPLIT_HB_VAILID_WID				1
+    #define DET3D_SPLIT_HB_VALID_BIT				24
+    #define DET3D_SPLIT_HB_VALID_WID				1
     #define DET3D_SPLIT_HB_PXNUM_BIT				16
     #define DET3D_SPLIT_HB_PXNUM_WID				5
     #define DET3D_SPLIT_HB_IDXX4_BIT				0
     #define DET3D_SPLIT_HB_IDXX4_WID				10
 
 /* #define DET3D_RO_SPLT_VL					0x1781 */
-    #define DET3D_SPLIT_VL_VAILID_BIT				24
-    #define DET3D_SPLIT_VL_VAILID_WID				1
+    #define DET3D_SPLIT_VL_VALID_BIT				24
+    #define DET3D_SPLIT_VL_VALID_WID				1
     #define DET3D_SPLIT_VL_PXNUM_BIT				16
     #define DET3D_SPLIT_VL_PXNUM_WID				5
     #define DET3D_SPLIT_VL_IDXX4_BIT				0
     #define DET3D_SPLIT_VL_IDXX4_WID				10
 
 /* #define DET3D_RO_SPLT_VR					0x1782 */
-    #define DET3D_SPLIT_VR_VAILID_BIT				24
-    #define DET3D_SPLIT_VR_VAILID_WID				1
+    #define DET3D_SPLIT_VR_VALID_BIT				24
+    #define DET3D_SPLIT_VR_VALID_WID				1
     #define DET3D_SPLIT_VR_PXNUM_BIT				16
     #define DET3D_SPLIT_VR_PXNUM_WID				5
     #define DET3D_SPLIT_VR_IDXX4_BIT				0

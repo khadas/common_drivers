@@ -1728,7 +1728,7 @@ enum QBF_NINS_Q_TYPE {
 	QBF_NINS_Q_IDLE,
 	QBF_NINS_Q_CHECK,
 	QBF_NINS_Q_USED,
-	QBF_NINS_Q_RECYCL,
+	QBF_NINS_Q_RECYCLE,
 	/*for vfm clear, not back dec vf */
 	/* when reset, move used to usedb */
 	QBF_NINS_Q_USEDB,

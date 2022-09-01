@@ -36,9 +36,9 @@
 #define TRIGGER_PRE_BY_TIMER			't'
 #define TRIGGER_PRE_BY_FORCE_UNREG		'f'
 #define TRIGGER_PRE_BY_VFRAME_READY		'r'
-#define TRIGGER_PRE_BY_PROVERDER_UNREG	'n'
+#define TRIGGER_PRE_BY_PROVIDER_UNREG	'n'
 #define TRIGGER_PRE_BY_DEBUG_DISABLE	'd'
-#define TRIGGER_PRE_BY_PROVERDER_REG	'R'
+#define TRIGGER_PRE_BY_PROVIDER_REG	'R'
 
 #define DI_RUN_FLAG_RUN			0
 #define DI_RUN_FLAG_PAUSE		1
@@ -487,7 +487,7 @@ unsigned long get_di_reg_unreg_timeout_cnt(void);
 struct vframe_s **get_di_vframe_in(void);
 
 extern s32 di_request_afbc_hw(u8 id, bool on);
-u32 di_requeset_afbc(u32 onoff);
+u32 di_request_afbc(u32 onoff);
 /***********************/
 extern bool di_wr_cue_int(void);
 extern int reg_cue_int_show(struct seq_file *seq, void *v);

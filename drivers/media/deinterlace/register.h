@@ -409,7 +409,7 @@ void DI_VSYNC_WR_MPEG_REG_BITS(unsigned int addr,
 /* bit 26:24,   reg_demon_mux */
 /* bit 23:20,   reg_right_win */
 /* bit 19:16,   reg_left_win */
-/* bit 7:4,     reg_ei_sadm_quatize_margin */
+/* bit 7:4,     reg_ei_sad_max_quantize_margin */
 /* bit 1:0,     reg_ei_sad_relative_mode */
 #define DI_EI_CTRL4                       ((0x171a)) /* << 2) + 0xd0100000) */
 /* bit 29,      reg_ei_caldrt_ambliike2_biasvertical */

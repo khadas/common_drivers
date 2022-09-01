@@ -739,11 +739,11 @@ store_dbg(struct device *dev,
 		afbc_disable_flag = val > 0 ? 0:1;
 		pr_info("afbc_disable_flag:%d\n", afbc_disable_flag);
 	} else if (strncmp(buf, "reqafbc", 7) == 0) {
-		val = di_requeset_afbc(true);
+		val = di_request_afbc(true);
 		di_pre_stru.wait_afbc = false;
 		pr_info("request_afbc(%d)\n", val);
 	} else if (strncmp(buf, "rlsafbc", 7) == 0) {
-		val = di_requeset_afbc(false);
+		val = di_request_afbc(false);
 		di_pre_stru.wait_afbc = false;
 		pr_info("rlease_afbc(%d)\n", val);
 	} else {
@@ -4037,7 +4037,7 @@ module_param_named(pre_hsc_down_en, pre_hsc_down_en, bool, 0644);
 static int pre_hsc_down_width = 480;
 module_param_named(pre_hsc_down_width, pre_hsc_down_width, int, 0644);
 
-u32 di_requeset_afbc(u32 onoff)
+u32 di_request_afbc(u32 onoff)
 {
 	u32 afbc_busy;
 
@@ -4169,7 +4169,7 @@ jiffies_to_msecs(jiffies_64 - vframe->ready_jiffies64));
 			rls_timeout =
 				jiffies_to_msecs(jiffies_64 -
 					di_pre_stru.afbc_rls_time);
-			afbc_busy = di_requeset_afbc(true);
+			afbc_busy = di_request_afbc(true);
 			if (afbc_busy && (rls_timeout < 80)) {
 				vf_put(vframe, VFM_NAME);
 				vf_notify_provider(
@@ -4178,7 +4178,7 @@ jiffies_to_msecs(jiffies_64 - vframe->ready_jiffies64));
 					afbc_busy, rls_timeout);
 				return 0;
 			} else if (!afbc_busy) {
-				/*afbc_busy = di_requeset_afbc(false);*/
+				/*afbc_busy = di_request_afbc(false);*/
 				di_pre_stru.wait_afbc = false;
 				pr_info("di: afbc hw free\n");
 			} else {
@@ -4374,7 +4374,7 @@ jiffies_to_msecs(jiffies_64 - vframe->ready_jiffies64));
 					IS_COMP_MODE(di_pre_stru.cur_inp_type)
 					&& !afbc_is_free()
 					&& !di_pre_stru.wait_afbc) {
-					afbc_busy = di_requeset_afbc(true);
+					afbc_busy = di_request_afbc(true);
 					vf_put(vframe, VFM_NAME);
 					vf_notify_provider(VFM_NAME,
 					VFRAME_EVENT_RECEIVER_PUT, NULL);
@@ -7555,8 +7555,8 @@ static int di_receiver_event_fun(int type, void *data, void *arg)
 		di_pre_stru.unreg_req_flag = 1;
 		di_pre_stru.vdin_source = false;
 
-		/*di_requeset_afbc(false);*/
-		trigger_pre_di_process(TRIGGER_PRE_BY_PROVERDER_UNREG);
+		/*di_request_afbc(false);*/
+		trigger_pre_di_process(TRIGGER_PRE_BY_PROVIDER_UNREG);
 		di_pre_stru.unreg_req_flag_cnt = 0;
 		//wait 10ms:
 		if (di_pre_stru.pre_de_process_flag
@@ -7804,7 +7804,7 @@ static int di_receiver_event_fun(int type, void *data, void *arg)
 		atomic_set(&di_flag_unreg, 0); //ary
 		bypass_state = 0;
 		di_pre_stru.reg_req_flag = 1;
-		trigger_pre_di_process(TRIGGER_PRE_BY_PROVERDER_REG);
+		trigger_pre_di_process(TRIGGER_PRE_BY_PROVIDER_REG);
 		/*check unreg process*/
 		di_pre_stru.reg_req_flag_cnt = 0;
 		while (di_pre_stru.reg_req_flag) {

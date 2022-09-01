@@ -66,8 +66,8 @@ UINT8 FlmVOFSftInt(struct sFlmSftPar *pPar)
 	pPar->flm22_comlev = 22;
 	pPar->flm22_comlev1 = 8;
 	pPar->flm22_comlev2 = 22;
-	pPar->flm22_comnum = 115;
-	pPar->flm22_comth = 15;
+	pPar->flm22_com_num = 115;
+	pPar->flm22_com_th = 15;
 	pPar->flm22_dif01_avgth = 55;
 	pPar->dif01rate = 20;
 	pPar->flag_di01th = 0;
@@ -284,7 +284,7 @@ int FlmVOFSftTop(UINT8 *rCmb32Spcl, unsigned short *rPstCYWnd0,
 	static int num;
 	static int num32;
 	static int flag_pre;
-	static int comsumpre;
+	static int com_sum_pre;
 	static int nS1pre;
 	int dif01th = 0;
 	int avg_flag = 0;
@@ -303,10 +303,10 @@ int FlmVOFSftTop(UINT8 *rCmb32Spcl, unsigned short *rPstCYWnd0,
 	int flm32 = pPar->flm32_en;
 	int flm22_flag = pPar->flm22_flag;
 	int flm2224_flag = pPar->flm2224_flag;
-	int flm22_comth = pPar->flm22_comth;
+	int flm22_com_th = pPar->flm22_com_th;
 	int flm22_avg_flag = pPar->flm22_avg_flag;
 	int flm22_force =  pPar->flm22_force;
-	int comdif = 0;
+	int com_dif = 0;
 	int dif01avg = 0;
 
 	int nT0 = 0;
@@ -541,13 +541,13 @@ int FlmVOFSftTop(UINT8 *rCmb32Spcl, unsigned short *rPstCYWnd0,
 				else
 					pRDat.mNum22[HISDETNUM - 1] = 0;
 			}
-			comdif = (comsumpre < comsum) ?  (comsum - comsumpre)
-				: (comsumpre - comsum);
+			com_dif = (com_sum_pre < comsum) ?  (comsum - com_sum_pre)
+				: (com_sum_pre - comsum);
 			if (pr_pd)
-				pr_info("comsum=%d, comsumpre=%d, flev=%d\n",
-					comsum, comsumpre, nS1);
-			if ((comsum < 200) && (comsum > pPar->flm22_comnum)
-				&& (comdif < flm22_comth) &&
+				pr_info("comsum=%d, com_sum_pre=%d, film22_enter_level=%d\n",
+					comsum, com_sum_pre, nS1);
+			if (comsum < 200 && comsum > pPar->flm22_com_num &&
+				com_dif < flm22_com_th &&
 				flm22_dif01a_flag) {
 				if (nS1 < pPar->flm22_comlev)
 					nS1 = 0;
@@ -561,8 +561,8 @@ int FlmVOFSftTop(UINT8 *rCmb32Spcl, unsigned short *rPstCYWnd0,
 					nS1 = nS1 - pPar->flm22_comlev;
 			}
 			if (pr_pd)
-				pr_info("flev=%d\n", nS1);
-			comsumpre = comsum;
+				pr_info("film22_enter_level=%d\n", nS1);
+			com_sum_pre = comsum;
 		} else if (nS1pre < 100) {
 			if (nS1 < pPar->flm22_comlev2)
 				nS1 = 0;
@@ -1290,7 +1290,7 @@ int Flm22DetSft(struct sFlmDatSt *pRDat, int *nDif02,
 	int flm22_flag = pPar->flm22_flag;
 	int flm22_comlev = pPar->flm22_comlev;
 	int flm22_comlev1 = pPar->flm22_comlev1;
-	int flm22_comnum = pPar->flm22_comnum;
+	int flm22_com_num = pPar->flm22_com_num;
 
 	int dif_flag;
 	int flm22_min;
@@ -1730,7 +1730,7 @@ int Flm22DetSft(struct sFlmDatSt *pRDat, int *nDif02,
 	/* ---------------------- */
 		if (pFlg[HISDETNUM-1] == 3
 				|| pFlg[HISDETNUM-1] == 1) {
-			if (comsum > flm22_comnum) {
+			if (comsum > flm22_com_num) {
 				if (num22 < 30)
 					num22 = num22 + 1;
 				else
@@ -1741,8 +1741,8 @@ int Flm22DetSft(struct sFlmDatSt *pRDat, int *nDif02,
 			}
 			/* if(prt_flg)
 			 * pr_info("nFlm22Lvl = %d, comsum=%d,num22=%d,"
-			 * "flm22_comnum=%d,flm22_flag=%d\n",
-			 * nFlm22Lvl,comsum,num22,flm22_comnum,flm22_flag);
+			 * "flm22_com_num=%d,flm22_flag=%d\n",
+			 * nFlm22Lvl,comsum,num22,flm22_com_num,flm22_flag);
 			 */
 		}
 		if (nFlgCk20 < flm22_chk20_sml)

@@ -76,3 +76,10 @@ $(T3_MODULE_NAME)-y += t3.o
 PR_FMT_T3 = $(subst amlogic-,,$(T3_MODULE_NAME))
 PR_FMT_DEFINE_T3="-Dpr_fmt(fmt)= \"[$(PR_FMT_T3)]: \" fmt"
 CFLAGS_t3.o += $(PR_FMT_DEFINE_T3)
+
+T7_MODULE_NAME = amlogic-clk-soc-t7
+obj-$(CONFIG_AMLOGIC_COMMON_CLK_T7) += $(T7_MODULE_NAME).o
+$(T7_MODULE_NAME)-y += t7.o
+PR_FMT_T7 = $(subst amlogic-,,$(T7_MODULE_NAME))
+PR_FMT_DEFINE_T7="-Dpr_fmt(fmt)= \"[$(PR_FMT_T7)]: \" fmt"
+CFLAGS_t7.o += $(PR_FMT_DEFINE_T7)

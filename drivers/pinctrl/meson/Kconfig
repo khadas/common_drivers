@@ -64,4 +64,14 @@ config AMLOGIC_PINCTRL_MESON_T3
 	  when enable this config.
 	  T3 pinctrl can work.
 	  otherwise T3 pinctrl can't work
+
+config AMLOGIC_PINCTRL_MESON_T7
+	tristate "Meson T7 Soc pinctrl driver"
+	default n
+	help
+	  the chip of T7 will be built
+	  when enable this config.
+	  T7 pinctrl can work.
+	  otherwise T7 pinctrl can't work
+
 endif

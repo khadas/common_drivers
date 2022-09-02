@@ -860,6 +860,22 @@ int aml_check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
 	return pfn < end_pfn ? -EBUSY : 0;
 }
 
+static unsigned long cur_alloc_start;
+static unsigned long cur_alloc_end;
+
+int in_cma_allocating(struct page *page)
+{
+	unsigned long pfn;
+
+	if (!page)
+		return 0;
+	pfn = page_to_pfn(page);
+	if (pfn >= cur_alloc_start && pfn <= cur_alloc_end)
+		return 1;
+
+	return 0;
+}
+
 int aml_cma_alloc_range(unsigned long start, unsigned long end,
 			unsigned int migrate_type, gfp_t gfp_mask)
 {
@@ -889,6 +905,8 @@ int aml_cma_alloc_range(unsigned long start, unsigned long end,
 	}
 
 	mutex_lock(&cma_mutex);
+	cur_alloc_start = start;
+	cur_alloc_end = end;
 	cma_isolated += (pfn_max_align_up(end) - pfn_max_align_down(start));
 try_again:
 	drain_all_pages(cc.zone);
@@ -965,6 +983,8 @@ done:
 	undo_isolate_page_range(pfn_max_align_down(start),
 				pfn_max_align_up(end), migrate_type);
 	cma_isolated -= (pfn_max_align_up(end) - pfn_max_align_down(start));
+	cur_alloc_start = 0;
+	cur_alloc_end = 0;
 	mutex_unlock(&cma_mutex);
 
 	return ret;

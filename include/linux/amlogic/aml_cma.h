@@ -57,6 +57,9 @@ struct page *compaction_cma_alloc(struct page *migratepage,
 int cma_mmu_op(struct page *page, int count, bool set);
 int setup_cma_full_pagemap(unsigned long pfn, unsigned long count);
 
+/* check page in cma allocating process */
+int in_cma_allocating(struct page *page);
+
 #define cma_debug(l, p, format, args...)	\
 	{								\
 		if ((l) < cma_debug_level) {				\

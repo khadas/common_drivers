@@ -124,6 +124,7 @@ echo "========================================================"
 echo ""
 export DIST_DIR=$(readlink -m ${OUTDIR}/dist)
 export MODULES_STAGING_DIR=$(readlink -m ${OUTDIR}/staging)
+export OUT_AMLOGIC_DIR=$(readlink -m ${OUTDIR}/amlogic)
 echo OUTDIR=$OUTDIR DIST_DIR=$DIST_DIR MODULES_STAGING_DIR=$MODULES_STAGING_DIR KERNEL_DIR=$KERNEL_DIR
 
 source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
@@ -196,6 +197,10 @@ else
 	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
 	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm/configs/${DEFCONFIG}
 fi
+cp ${OUT_DIR}/arch/${ARCH}/boot/Image* ${DIST_DIR}
+cp ${OUT_DIR}/arch/${ARCH}/boot/uImage* ${DIST_DIR}
+cp ${OUT_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/boot/dts/amlogic/*.dtb ${DIST_DIR}
+cp ${OUT_DIR}/vmlinux ${DIST_DIR}
 set +x
 
 function build_ext_modules() {
@@ -220,39 +225,25 @@ eval ${POST_KERNEL_BUILD_CMDS}
 build_ext_modules
 eval ${EXTRA_CMDS}
 
-IN_KERNEL_MODULES=1
-
-INITRAMFS_STAGING_DIR=${MODULES_STAGING_DIR}/initramfs_staging
-rm -rf ${INITRAMFS_STAGING_DIR}
-
 MODULES=$(find ${MODULES_STAGING_DIR} -type f -name "*.ko")
 if [ -n "${MODULES}" ]; then
-  if [ -n "${IN_KERNEL_MODULES}" -o -n "${EXT_MODULES}" -o -n "${EXT_MODULES_MAKEFILE}" ]; then
-    echo "========================================================"
-    echo " Copying modules files"
-    #cp -p ${MODULES} ${DIST_DIR}
-    for module in ${MODULES}; do
-	cp ${module} ${DIST_DIR}
-    done
-    if [ "${COMPRESS_MODULES}" = "1" ]; then
-      echo " Archiving modules to ${MODULES_ARCHIVE}"
-      tar --transform="s,.*/,," -czf ${DIST_DIR}/${MODULES_ARCHIVE} ${MODULES[@]}
-    fi
-  fi
+	if [ -n "${IN_KERNEL_MODULES}" -o -n "${EXT_MODULES}" -o -n "${EXT_MODULES_MAKEFILE}" ]; then
+		echo "========================================================"
+		echo " Copying modules files"
+		for module in ${MODULES}; do
+			cp ${module} ${DIST_DIR}
+		done
+		if [ "${COMPRESS_MODULES}" = "1" ]; then
+			echo " Archiving modules to ${MODULES_ARCHIVE}"
+			tar --transform="s,.*/,," -czf ${DIST_DIR}/${MODULES_ARCHIVE} ${MODULES[@]}
+		fi
+	fi
 
-  echo "========================================================"
-  echo "prepare modules"
-
-  modules_install
-  #chip=(c2)
-  #modules_install "${chip[*]}"
-  #modules_install "c2 c3"
-
-  if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
-    echo "Rebuild rootfs in order to install modules!"
-    rebuild_rootfs ${ARCH}
-    echo "Build success!"
-  else
-    echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
-  fi
+	if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
+		echo "Rebuild rootfs in order to install modules!"
+		rebuild_rootfs ${ARCH}
+		echo "Build success!"
+	else
+		echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
+	fi
 fi

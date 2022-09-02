@@ -6,7 +6,7 @@ DO_NOT_STRIP_MODULES=		#strip modules
 # TOP_EXT_MODULE_COPY_BUILD=1
 # AUTO_ADD_EXT_SYMBOLS=1
 
-BUILD_INITRAMFS=${BUILD_INITRAMFS:-1}
+BUILD_INITRAMFS=
 # LZ4_RAMDISK=${BUILD_INITRAMFS:-1}
 # BUILD_SYSTEM_DLKM=
 
@@ -18,9 +18,9 @@ MODULES_BLOCKLIST=
 VENDOR_DLKM_MODULES_LIST=
 VENDOR_DLKM_MODULES_BLOCKLIST=
 
-TRIM_UNUSED_MODULES=1
+# TRIM_UNUSED_MODULES=1
 # BUILD_BOOT_IMG=1		# Need to add dtb files to FILES, otherwise an error occurs when building boot.img, such as s4d_s905y4_ap222_drm.dtb
-BUILD_VENDOR_BOOT_IMG=1	# boot.img and dtb.img will be built only when BUILD_BOOT_IMG and BUILD_VENDOR_BOOT_IMG are set to 1
+# BUILD_VENDOR_BOOT_IMG=1	# boot.img and dtb.img will be built only when BUILD_BOOT_IMG and BUILD_VENDOR_BOOT_IMG are set to 1
 # KERNEL_BINARY=Image.lz4	# Need to set the value of AA, otherwise an error occurs when building boot.img,
 				# whether the value is Image.lz4 or vmlinux is uncertain due to different descriptions
 if [[ -n ${ANDROID_PROJECT} ]]; then
@@ -51,14 +51,11 @@ FILES="
 if [[ -n ${ANDROID_PROJECT} ]]; then
 MAKE_GOALS="
 	${MAKE_GOALS}
-	Image.gz
-	android_overlay_dt.dtbo
 	${MAKE_GOALS_ANDROID}
 "
 
 FILES="
-	arch/arm/boot/Image.gz
-	android_overlay_dt.dtbo
+	${FILES}
 	${FILES_ANDROID}
 "
 for device_tree in ${KERNEL_DEVICETREE}; do

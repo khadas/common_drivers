@@ -1103,7 +1103,7 @@ int lcd_tcon_gamma_pattern_tl1(struct aml_lcd_drv_s *pdrv,
 		val_b = (gamma_b << 4);
 		break;
 	default:
-		LCDERR("gamam_set: invalid bit_width %d\n", bit_width);
+		LCDERR("gamma_set: invalid bit_width %d\n", bit_width);
 		return -1;
 	}
 
@@ -1192,7 +1192,7 @@ int lcd_tcon_gamma_pattern_t5(struct aml_lcd_drv_s *pdrv,
 		val_b = (gamma_b << 2) & 0x3ff;
 		break;
 	default:
-		LCDERR("gamam_set: invalid bit_width %d\n", bit_width);
+		LCDERR("gamma_set: invalid bit_width %d\n", bit_width);
 		return -1;
 	}
 

@@ -95,7 +95,7 @@ static void ldim_vpu_dma_mif_set(int rw_sel, unsigned int hist_vnum,
 		else if (zone_num <= 1536)
 			data_num = zone_num / 4;
 		else
-			LDIMERR("unsuppose zone_num: %d\n", zone_num);
+			LDIMERR("unsupport zone_num: %d\n", zone_num);
 		ldim_wr_vcbus_bits(VPU_DMA_WRMIF_CTRL3, data_num, 0, 13);
 		ldim_wr_vcbus(VPU_DMA_WRMIF_BADDR0, ldim_drv->rmem->wr_mem_paddr1);
 		ldim_wr_vcbus(VPU_DMA_WRMIF_BADDR1, ldim_drv->rmem->wr_mem_paddr1);
@@ -145,7 +145,7 @@ static void ldim_vpu_dma_mif_set_tm2b(int rw_sel, unsigned int hist_vnum,
 		else if (zone_num <= 1536)
 			data_num = zone_num / 4;
 		else
-			LDIMERR("unsuppose zone_num: %d\n", zone_num);
+			LDIMERR("unsupport zone_num: %d\n", zone_num);
 		ldim_wr_vcbus_bits(VPU_DMA_WRMIF_CTRL3, data_num, 0, 13);
 		ldim_wr_vcbus(VPU_DMA_WRMIF_BADDR0, ldim_drv->rmem->wr_mem_paddr1);
 		ldim_wr_vcbus(VPU_DMA_WRMIF_BADDR1, ldim_drv->rmem->wr_mem_paddr1);

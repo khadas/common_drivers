@@ -484,7 +484,7 @@ static void dsi_phy_init(struct aml_lcd_drv_s *pdrv, struct dsi_phy_s *dphy)
 		      (0 << 9)  | /* enable the divider clock out */
 		      (0 << 10) | /* clock divider. 1: freq/4, 0: freq/2 */
 		      (0 << 11) |
-			/* 1: select the mipi DDRCLKHS from clock divider,
+			/* 1: select the mipi DDR_CLK_HS from clock divider,
 			 * 0: from PLL clock
 			 */
 		      (0 << 12)); /* enable the byte clock generateion. */
@@ -509,7 +509,7 @@ static void dsi_phy_init(struct aml_lcd_drv_s *pdrv, struct dsi_phy_s *dphy)
 			      (dphy->hs_zero << 16) |
 			      (dphy->hs_prepare << 24)));
 	} else {
-		LCDPR("bit_rata = %d\n", pconf->timing.bit_rate);
+		LCDPR("bit_rate = %d\n", pconf->timing.bit_rate);
 		dsi_phy_write(pdrv, MIPI_DSI_HS_TIM,
 			      (dphy->hs_exit | ((dphy->hs_trail / 2) << 8) |
 			      (dphy->hs_zero << 16) |
@@ -685,12 +685,12 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv,
 	if (operation_mode == OPERATION_VIDEO_MODE) {
 		/* 3.1   Configure Low power and video mode type settings */
 		dsi_host_write(pdrv, MIPI_DSI_DWC_VID_MODE_CFG_OS,
-			       (1 << BIT_LP_HFP_EN)  |       /* enalbe lp */
-			       (1 << BIT_LP_HBP_EN)  |       /* enalbe lp */
-			       (1 << BIT_LP_VCAT_EN) |       /* enalbe lp */
-			       (1 << BIT_LP_VFP_EN)  |       /* enalbe lp */
-			       (1 << BIT_LP_VBP_EN)  |       /* enalbe lp */
-			       (1 << BIT_LP_VSA_EN)  |       /* enalbe lp */
+			       (1 << BIT_LP_HFP_EN)  |       /* enable lp */
+			       (1 << BIT_LP_HBP_EN)  |       /* enable lp */
+			       (1 << BIT_LP_VCAT_EN) |       /* enable lp */
+			       (1 << BIT_LP_VFP_EN)  |       /* enable lp */
+			       (1 << BIT_LP_VBP_EN)  |       /* enable lp */
+			       (1 << BIT_LP_VSA_EN)  |       /* enable lp */
 			       (0 << BIT_FRAME_BTA_ACK_EN) |
 			   /* enable BTA after one frame, TODO, need check */
 			/* (1 << BIT_LP_CMD_EN) |  */

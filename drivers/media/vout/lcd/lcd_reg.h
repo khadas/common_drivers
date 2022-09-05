@@ -826,7 +826,7 @@
 #define TCON_CONTROL_LO                            0x14cd
    /* Bit 5:0 (enable pclk on TCON channel 7 to 2) */
    #define     tcon_pclk_enable           26
-   /* Bit 1:0 (control phy clok divide 2,4,6,8) */
+   /* Bit 1:0 (control phy clock divide 2,4,6,8) */
    #define     tcon_pclk_div              24
    /* Bit 23:0 (3 bit for each channel) */
    #define     tcon_delay                  0
@@ -849,12 +849,12 @@
    #define     ODD_EVEN_SWP     2
    #define     LVDS_REPACK      0
 /* New from M3 :
- * Bit 15:12 -- Enable OFFSET Double Generate(TOCN7-TCON4)
+ * Bit 15:12 -- Enable OFFSET Double Generate(TCON7-TCON4)
  * Bit 11:0 -- de_hs(old tcon) second offset_hs (new tcon)
  */
 #define DE_HS_ADDR                                 0x14d1
 /* New from M3 :
- * Bit 15:12 -- Enable OFFSET Double Generate(TOCN3-TCON0)
+ * Bit 15:12 -- Enable OFFSET Double Generate(TCON3-TCON0)
  */
 #define DE_HE_ADDR                                 0x14d2
 #define DE_VS_ADDR                                 0x14d3
@@ -917,7 +917,7 @@
    #define     mlvds_clk_pattern_reserved 31
    /* Bit 2:0 */
    #define     mpclk_dly                  28
-   /* Bit 1:0 (control phy clok divide 2,4,6,8) */
+   /* Bit 1:0 (control phy clock divide 2,4,6,8) */
    #define     mpclk_div                  26
    #define     use_mpclk                  25
    #define     mlvds_clk_half_delay       24
@@ -965,7 +965,7 @@
 
 #define DE_HS_ADDR_T7                              0x19d1
 // New from M3 :
-// Bit 15:12 -- Enable OFFSET Double Generate(TOCN3-TCON0)
+// Bit 15:12 -- Enable OFFSET Double Generate(TCON3-TCON0)
 #define DE_HE_ADDR_T7                               0x19d2
 #define DE_VS_ADDR_T7                              0x19d3
 #define DE_VE_ADDR_T7                              0x19d4
@@ -1584,8 +1584,8 @@
  * [3]  force data byte lane in stop mode.
  * [2]  force data byte lane 0 in receiver mode.
  * [1]  write 1 to sync the txclkesc input. the internal logic have to
- *	use txclkesc to decide Txvalid and Txready.
- * [0]  enalbe the MIPI DSI PHY TxDDRClk.
+ *	use txclkesc to decide Tx_valid and Tx_ready.
+ * [0]  enable the MIPI DSI PHY TxDDRClk.
  */
 #define MIPI_DSI_PHY_CTRL       0x0
 /* [31] clk lane tx_hs_en control selection.
@@ -1605,7 +1605,7 @@
  * [22] register bit from chan0 rx_lp_en.
  * [21] chan0 contention detection enable control selection.
  *		1: from register. 0: from chan0 state machine.
- * [20] register bit from chan0 contention dectection enable.
+ * [20] register bit from chan0 contention detection enable.
  * [19] chan1 tx_hs_en control selection.
  *		1: from register. 0: from chan0 state machine.
  * [18] register bit for chan1 tx_hs_en.
@@ -1635,7 +1635,7 @@
 /* [24]   rx turn watch dog triggered.
  * [23]   rx esc watchdog  triggered.
  * [22]   mbias ready.
- * [21]   txclkesc  synced and ready.
+ * [21]   txclkesc synced and ready.
  * [20:17] clk lane state. {mbias_ready, tx_stop, tx_ulps, tx_hs_active}
  * [16:13] chan3 state{0, tx_stop, tx_ulps, tx_hs_active}
  * [12:9]  chan2 state.{0, tx_stop, tx_ulps, tx_hs_active}

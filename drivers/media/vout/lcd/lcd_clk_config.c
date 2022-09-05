@@ -3315,16 +3315,16 @@ static void lcd_clk_gate_switch_dft(struct aml_lcd_drv_s *pdrv, int status)
 		else
 			clk_prepare_enable(cconf->clktree.encl_top_gate);
 		if (IS_ERR_OR_NULL(cconf->clktree.encl_int_gate))
-			LCDERR("%s: encl_int_gata\n", __func__);
+			LCDERR("%s: encl_int_gate\n", __func__);
 		else
 			clk_prepare_enable(cconf->clktree.encl_int_gate);
 	} else {
 		if (IS_ERR_OR_NULL(cconf->clktree.encl_int_gate))
-			LCDERR("%s: encl_int_gata\n", __func__);
+			LCDERR("%s: encl_int_gate\n", __func__);
 		else
 			clk_disable_unprepare(cconf->clktree.encl_int_gate);
 		if (IS_ERR_OR_NULL(cconf->clktree.encl_top_gate))
-			LCDERR("%s: encl_top_gata\n", __func__);
+			LCDERR("%s: encl_top_gate\n", __func__);
 		else
 			clk_disable_unprepare(cconf->clktree.encl_top_gate);
 	}
@@ -3363,7 +3363,7 @@ static void lcd_clk_gate_switch_g12a(struct aml_lcd_drv_s *pdrv, int status)
 		else
 			clk_prepare_enable(cconf->clktree.encl_top_gate);
 		if (IS_ERR_OR_NULL(cconf->clktree.encl_int_gate))
-			LCDERR("%s: encl_int_gata\n", __func__);
+			LCDERR("%s: encl_int_gate\n", __func__);
 		else
 			clk_prepare_enable(cconf->clktree.encl_int_gate);
 	} else {
@@ -4179,7 +4179,7 @@ void lcd_vlock_m_update(int index, unsigned int vlock_m)
 
 	vlock_m &= 0xff;
 	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2) {
-		LCDPR("[%d]: %s, vlcok_m: 0x%x,",
+		LCDPR("[%d]: %s, vlock_m: 0x%x,",
 		      index, __func__, vlock_m);
 	}
 

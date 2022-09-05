@@ -461,7 +461,7 @@ static void ld_func_cfg_ldreg_tm2(struct ld_reg_s *reg)
 
 	/******	FBC3 fw_hw_alg_frm	*******/
 	reg->reg_ldfw_blest_acmode = 0;
-	/* u3: 0: est on BLmatrix; 1: est on (BL-DC);
+	/* u3: 0: est on BL_matrix; 1: est on (BL-DC);
 	 *	2: est on (BL-MIN); 3: est on (BL-MAX) 4: 2048; 5:1024
 	 */
 
@@ -584,7 +584,7 @@ static void ld_func_cfg_ldreg_tm2(struct ld_reg_s *reg)
 	reg->reg_ld_litshft = 3;
 	/* u3	right shif of bits for the all Lit's sum */
 	ld_func_init_data(reg->reg_ld_bklit_valid, 32, 1);
-	/*u1x32: valid bits for the 32 cell Bklit to contribut to current
+	/*u1x32: valid bits for the 32 cell Bklit to contribute to current
 	 *	position (refer to the backlit padding pattern)
 	 * region division index  1  2	3	4 5(0) 6(1) 7(2) 8(3) 9(4)
 	 *	10(5)11(6)12(7)13(8) 14(9)15(10) 16   17   18	19
@@ -752,7 +752,7 @@ void ld_func_fw_cfg_once(struct ld_reg_s *nprm)
 		if (nprm->reg_ld_sta1max_vidx[k] > 4095)
 			nprm->reg_ld_sta1max_vidx[k] = 4095;/* clip to U12 */
 	}
-	/* config LD_STA2max_H/Vidx/LD_STAhist_H/Vidx */
+	/* config LD_STA2max_H/Vidx/LD_STA_hist_H/Vidx */
 	for (k = 0; k < LD_STA_LEN_H; k++) {
 		nprm->reg_ld_sta2max_hidx[k] = nprm->reg_ld_sta1max_hidx[k];
 		nprm->reg_ld_sta_hist_hidx[k] = nprm->reg_ld_sta1max_hidx[k];
@@ -820,7 +820,7 @@ void ld_func_fw_cfg_once(struct ld_reg_s *nprm)
 			nprm->reg_ld_lut_vhk_lext = 2 * nprm->reg_ld_lut_vhk[0]
 				- nprm->reg_ld_lut_vhk[1];
 			nprm->reg_ld_litgain = 230;
-			/* u12 will be adjust according to pannel */
+			/* u12 will be adjust according to panel */
 			/* specially for TXLX config of one
 			 * side led mode(mode=1)--kite1023
 			 */
@@ -1035,7 +1035,7 @@ void ld_func_fw_cfg_once(struct ld_reg_s *nprm)
 	nprm->reg_ld_sta2max_lpf = 1;
 	/* u1: STA2max statistics on [1 2 1]/4 filtered results */
 	nprm->reg_ld_sta_hist_lpf = 1;
-	/*u1: STAhist statistics on [1 2 1]/4 filtered results */
+	/*u1: STA_hist statistics on [1 2 1]/4 filtered results */
 	nprm->reg_ld_x_lut_interp_mode[0] = 0;
 	nprm->reg_ld_x_lut_interp_mode[1] = 0;
 	nprm->reg_ld_x_lut_interp_mode[2] = 0;

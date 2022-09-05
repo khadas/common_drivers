@@ -114,7 +114,7 @@ static int iw7038_wregs(struct spi_device *spi,
 		return -1;
 
 	if (len == 1 && devaddr == 0x3f) {
-		//write sigle data to same reg of all spi
+		//write single data to same reg of all spi
 		tbuf[0] = devaddr | BROADCAST_MSG | SINGLE_DATA;
 		addr_h = (addr >> 8) & WRITE_MSG;
 		addr_l = addr & 0xff;
@@ -857,7 +857,7 @@ static ssize_t iw7038_store(struct class *class,
 			LDIMPR("test brightness[%d] = %d\n", val, val2);
 		}
 	} else {
-		LDIMERR("LDIM argment error!\n");
+		LDIMERR("LDIM argument error!\n");
 	}
 	return count;
 }

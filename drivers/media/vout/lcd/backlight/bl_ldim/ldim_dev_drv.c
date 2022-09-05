@@ -302,7 +302,7 @@ static char *ldim_pinmux_str[] = {
 	"ldim_pwm_vs_combo",      /* 3 */
 	"ldim_pwm_off",           /* 4 */
 	"ldim_pwm_combo_off",     /* 5 */
-	"custome",
+	"custom",
 };
 
 static int ldim_pwm_pinmux_ctrl(struct ldim_dev_driver_s *dev_drv, int status)
@@ -542,12 +542,12 @@ static void ldim_dev_config_print(struct aml_ldim_driver_s *ldim_drv)
 	}
 	bl_pwm = &ldim_drv->dev_drv->ldim_pwm_config;
 	if (bl_pwm->pwm_port < BL_PWM_MAX) {
-		pr_info("lidm_pwm_port:       %d\n"
-			"lidm_pwm_pol:        %d\n"
-			"lidm_pwm_freq:       %d\n"
-			"lidm_pwm_cnt:        %d\n"
-			"lidm_pwm_level:      %d\n"
-			"lidm_pwm_duty:       %d%%\n",
+		pr_info("ldim_pwm_port:       %d\n"
+			"ldim_pwm_pol:        %d\n"
+			"ldim_pwm_freq:       %d\n"
+			"ldim_pwm_cnt:        %d\n"
+			"ldim_pwm_level:      %d\n"
+			"ldim_pwm_duty:       %d%%\n",
 			bl_pwm->pwm_port, bl_pwm->pwm_method,
 			bl_pwm->pwm_freq, bl_pwm->pwm_cnt,
 			bl_pwm->pwm_level, bl_pwm->pwm_duty);
@@ -559,13 +559,13 @@ static void ldim_dev_config_print(struct aml_ldim_driver_s *ldim_drv)
 		case BL_PWM_E:
 		case BL_PWM_F:
 			if (IS_ERR_OR_NULL(bl_pwm->pwm_data.pwm)) {
-				pr_info("lidm_pwm invalid\n");
+				pr_info("ldim_pwm invalid\n");
 				break;
 			}
-			pr_info("lidm_pwm_pointer:    0x%p\n",
+			pr_info("ldim_pwm_pointer:    0x%p\n",
 				bl_pwm->pwm_data.pwm);
 			pwm_get_state(bl_pwm->pwm_data.pwm, &pstate);
-			pr_info("lidm_pwm state:\n"
+			pr_info("ldim_pwm state:\n"
 				"  period:            %lld\n"
 				"  duty_cycle:        %lld\n"
 				"  polarity:          %d\n"
@@ -574,10 +574,10 @@ static void ldim_dev_config_print(struct aml_ldim_driver_s *ldim_drv)
 				pstate.polarity, pstate.enabled);
 			break;
 		case BL_PWM_VS:
-			pr_info("lidm_pwm_reg0:       0x%08x\n"
-				"lidm_pwm_reg1:       0x%08x\n"
-				"lidm_pwm_reg2:       0x%08x\n"
-				"lidm_pwm_reg3:       0x%08x\n",
+			pr_info("ldim_pwm_reg0:       0x%08x\n"
+				"ldim_pwm_reg1:       0x%08x\n"
+				"ldim_pwm_reg2:       0x%08x\n"
+				"ldim_pwm_reg3:       0x%08x\n",
 				lcd_vcbus_read(VPU_VPU_PWM_V0),
 				lcd_vcbus_read(VPU_VPU_PWM_V1),
 				lcd_vcbus_read(VPU_VPU_PWM_V2),
@@ -1104,7 +1104,7 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 	if (ret) {
 		strcpy(dev_drv->pinmux_name, "invalid");
 	} else {
-		LDIMPR("find custome ldim_pwm_pinmux_sel: %s\n", str);
+		LDIMPR("find customer ldim_pwm_pinmux_sel: %s\n", str);
 		strcpy(dev_drv->pinmux_name, str);
 	}
 
@@ -1467,7 +1467,7 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv,
 		strcpy(dev_drv->pinmux_name, "invalid");
 	} else {
 		strncpy(dev_drv->pinmux_name, str, (LDIM_DEV_NAME_MAX - 1));
-		LDIMPR("find custome ldim_pwm_pinmux_sel: %s\n", str);
+		LDIMPR("find customer ldim_pwm_pinmux_sel: %s\n", str);
 	}
 
 	/* ctrl (271Byte) */

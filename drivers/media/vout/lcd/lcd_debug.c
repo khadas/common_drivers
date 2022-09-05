@@ -4126,7 +4126,7 @@ static ssize_t lcd_debug_vlock_show(struct device *dev,
 	struct aml_lcd_drv_s *pdrv = dev_get_drvdata(dev);
 	ssize_t len = 0;
 
-	len = sprintf(buf, "custome vlock attr:\n"
+	len = sprintf(buf, "custom vlock attr:\n"
 		      "vlock_valid:        %d\n"
 		      "vlock_en:           %d\n"
 		      "vlock_work_mode:    %d\n"
@@ -4373,7 +4373,7 @@ static const char *lcd_rgb_debug_usage_str = {
 "    <clk_pol>      : 0=negative, 1=positive\n"
 "    <de_valid>     : for DE, 0=invalid, 1=valid\n"
 "    <sync_valid>   : for hvsync, 0=invalid, 1=valid\n"
-"    <rb_swpa>      : for R/B port, 0=normal, 1=swap\n"
+"    <rb_swap>      : for R/B port, 0=normal, 1=swap\n"
 "    <bit_swap>     : for RGB MSB/LSB, 0=normal, 1=swap\n"
 "\n"
 };

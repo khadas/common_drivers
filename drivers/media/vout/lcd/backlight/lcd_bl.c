@@ -1774,7 +1774,7 @@ static void bl_on_function(struct aml_bl_drv_s *bdrv)
 	mutex_unlock(&bl_level_mutex);
 }
 
-static void bl_delayd_on(struct work_struct *p_work)
+static void bl_delayed_on(struct work_struct *p_work)
 {
 	struct delayed_work *d_work;
 	struct aml_bl_drv_s *bdrv;
@@ -3820,7 +3820,7 @@ static void aml_bl_config_probe_work(struct work_struct *work)
 	bdrv->probe_done = 1;
 
 	/* init workqueue */
-	INIT_DELAYED_WORK(&bdrv->delayed_on_work, bl_delayd_on);
+	INIT_DELAYED_WORK(&bdrv->delayed_on_work, bl_delayed_on);
 
 	bl_init_status_update(bdrv);
 

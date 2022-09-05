@@ -23,7 +23,7 @@
 
 /*V1.0: Local_contrast Basic function, iir algorithm, debug interface for tool*/
 /*V1.1: add ioctrl load interface supprt*/
-/*v2.0: add lc tune curve node patch by vlsi-guopan*/
+/*v2.0: add lc tune curve node patch by vlsi*/
 #define LC_VER		"Ref.2019/05/30-V2.0"
 
 enum lc_mtx_sel_e {

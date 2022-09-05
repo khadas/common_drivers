@@ -1861,7 +1861,7 @@ static unsigned int osd_oetf_41_2084_mapping[OSD_OETF_LUT_SIZE] = {
 	1023
 };
 
-/* osd eotf lut: 709 from baozheng */
+/* osd eotf lut: 709 from  */
 static unsigned int osd_eotf_33_709_mapping_100[EOTF_LUT_SIZE] = {
 	    0,     8,    37,    90,   169,   276,   412,   579,
 	  776,  1006,  1268,  1564,  1894,  2258,  2658,  3094,
@@ -1870,7 +1870,7 @@ static unsigned int osd_eotf_33_709_mapping_100[EOTF_LUT_SIZE] = {
 	16384
 };
 
-/* osd oetf lut: 2084 from baozheng */
+/* osd oetf lut: 2084 from  */
 static unsigned int osd_oetf_41_2084_mapping_100[OSD_OETF_LUT_SIZE] = {
 	   0,  110,  141,  162,  178,  191,  203,  212,
 	 221,  270,  302,  325,  344,  360,  374,  386,
@@ -1888,7 +1888,7 @@ static unsigned int osd_eotf_33_709_mapping_290[EOTF_LUT_SIZE] = {
 	16384
 };
 
-/* osd oetf lut: 2084 from baozheng */
+/* osd oetf lut: 2084 from  */
 static unsigned int osd_oetf_41_2084_mapping_290[OSD_OETF_LUT_SIZE] = {
 	   0,  141,  178,  203,  221,  236,  249,  260,
 	 270,  325,  360,  386,  406,  423,  438,  451,
@@ -1906,7 +1906,7 @@ static unsigned int osd_eotf_33_709_mapping_330[EOTF_LUT_SIZE] = {
 	16384
 };
 
-/* osd oetf lut: 2084 from baozheng */
+/* osd oetf lut: 2084 from  */
 static unsigned int osd_oetf_41_2084_mapping_330[OSD_OETF_LUT_SIZE] = {
 	   0,  166,  207,  233,  254,  270,  284,  296,
 	 307,  366,  402,  429,  451,  469,  484,  498,

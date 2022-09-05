@@ -647,7 +647,7 @@ void vpp_datapath_config(unsigned int node, unsigned int param1,
 		vpp_extend_mode_core1(param1);
 		vpp_bypas_core1(param2);
 		break;
-	case PRE_BLEDN_SWITCH:
+	case PRE_BLEND_SWITCH:
 		vpp_skip_pps(param1);
 		break;
 	case DITHER:
@@ -662,7 +662,7 @@ void vpp_datapath_config(unsigned int node, unsigned int param1,
 	case PRE_S2U:
 		vpp_set_pre_s2u(param1);
 		break;
-	case POST_BLEDN_SWITCH:
+	case POST_BLEND_SWITCH:
 		break;
 	case WATER_MARK_SWITCH:
 		vpp_skip_vadj2_matrix3(param1);
@@ -746,7 +746,7 @@ void vpp_datapath_status(void)
 	pr_info("core1_bypass(%d):%d(0:no bypass;1:bypass)\n",
 		CORE1_EXTMODE, core1_bypass);
 	pr_info("pre_blend_switch(%d):%d(0:pre_blend to dither;1:pre_blend to pre u2s)\n",
-		PRE_BLEDN_SWITCH, pre_blend_switch);
+		PRE_BLEND_SWITCH, pre_blend_switch);
 	pr_info("dither_mode(%d):%d(0:cut high 2 bits;1:cut low 2 bits)\n",
 		DITHER, dither_mode);
 	pr_info("dither_enable(%d):%d(0:disable;1:enable)\n",

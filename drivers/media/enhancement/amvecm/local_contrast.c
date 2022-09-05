@@ -1733,7 +1733,7 @@ void lc_read_region(int blk_vnum, int blk_hnum)
 				}
 			}
 
-			/*part3: add tune curve node patch--by vlsi-guopan*/
+			/*part3: add tune curve node patch--by vlsi*/
 			if (tune_curve_en == 2) {
 				tune_nodes_patch(&lc_szcurve[cur_block * 6],
 						 &lc_hist[cur_block * 17],

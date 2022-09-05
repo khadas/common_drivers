@@ -281,7 +281,7 @@ struct pgm_param_s fw_pre_gma_parm = {
 	.pre_gamma_proc = NULL,
 };
 
-static int gain_pregamma_init(void)
+static int gain_pre_gamma_init(void)
 {
 	int i, j;
 
@@ -317,11 +317,11 @@ struct cabc_fw_param_s *cabc_fw_param_get(void)
 }
 EXPORT_SYMBOL(cabc_fw_param_get);
 
-struct pgm_param_s *pregam_fw_param_get(void)
+struct pgm_param_s *pre_gam_fw_param_get(void)
 {
 	return &fw_pre_gma_parm;
 }
-EXPORT_SYMBOL(pregam_fw_param_get);
+EXPORT_SYMBOL(pre_gam_fw_param_get);
 
 int fw_en_get(void)
 {
@@ -406,7 +406,7 @@ void aml_cabc_alg_bypass(struct work_struct *work)
 {
 	if (!cabc_aad_en && status_flag) {
 		pre_gam.en = 0;
-		gain_pregamma_init();
+		gain_pre_gamma_init();
 		pre_gamma_data_cp(&pre_gam);
 		set_pre_gamma_reg(&pre_gam);
 		pr_cabc_aad_dbg("%s\n", __func__);
@@ -1150,7 +1150,7 @@ int aad_alg_state(void)
 int pre_gamma_alg_state(void)
 {
 	int i;
-	struct pgm_param_s *fw_pregm_param = pregam_fw_param_get();
+	struct pgm_param_s *fw_pregm_param = pre_gam_fw_param_get();
 
 	pr_info("\n--------pre gamma print-------\n");
 	pr_info("fw_pre_gamma_en = %d\n", fw_pregm_param->fw_pre_gamma_en);
@@ -1264,7 +1264,7 @@ int cabc_aad_debug(char **param)
 	long val;
 	struct aad_fw_param_s *fw_aad_param = aad_fw_param_get();
 	struct cabc_fw_param_s *fw_cabc_param = cabc_fw_param_get();
-	struct pgm_param_s *fw_pregm_param = pregam_fw_param_get();
+	struct pgm_param_s *fw_pregm_param = pre_gam_fw_param_get();
 	int lut[48] = {0};
 	int i, j;
 
@@ -2112,7 +2112,7 @@ int cabc_aad_debug(char **param)
 		aad_alg_state();
 	} else if (!strcmp(param[0], "cabc_print")) {
 		cabc_alg_state();
-	} else if (!strcmp(param[0], "pregamma_print")) {
+	} else if (!strcmp(param[0], "pre_gamma_print")) {
 		pre_gamma_alg_state();
 	}
 

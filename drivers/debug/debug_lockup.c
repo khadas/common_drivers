@@ -26,8 +26,8 @@
 #include <linux/time.h>
 #include <linux/delay.h>
 #include "../../../kernel/sched/sched.h"
-
 #include <linux/amlogic/debug_irqflags.h>
+#include <linux/amlogic/debug_ftrace_ramoops.h>
 
 /*isr trace*/
 #define ns2us			(1000)
@@ -273,13 +273,39 @@ static void idle_out_hook(void *data, int state, struct cpuidle_device *dev)
 	info->idle_enter_time = 0;
 }
 
-static void smc_in_hook(unsigned long a0, unsigned long a1,
-		 unsigned long a2, unsigned long a3, unsigned long a4,
-		 unsigned long a5, unsigned long a6, unsigned long a7,
-		 struct arm_smccc_res *res, struct arm_smccc_quirk *quirk)
+static unsigned long smcid_skip_list[] = {
+	0x84000001, /* suspend A32*/
+	0xC4000001, /* suspend A64*/
+	0x84000002, /* cpu off */
+	0x84000008, /* system off */
+	0x84000009, /* system reset */
+	0x8400000E, /* system suspend A32 */
+	0xC400000E, /* system suspend A64 */
+};
+
+static bool notrace is_noret_smcid(unsigned long smcid)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(smcid_skip_list); i++) {
+		if (smcid == smcid_skip_list[i])
+			return true;
+	}
+
+	return false;
+}
+
+static void smc_in_hook(unsigned long smcid, unsigned long val, bool noret)
 {
 	int cpu;
 	struct lockup_info *info;
+
+	if (noret) {
+		pstore_ftrace_io_smc_noret_in(smcid, val);
+		return;
+	}
+
+	pstore_ftrace_io_smc_in(smcid, val);
 
 	if (!initialized || !smc_check_en)
 		return;
@@ -288,28 +314,21 @@ static void smc_in_hook(unsigned long a0, unsigned long a1,
 	info = per_cpu_ptr(infos, cpu);
 
 	info->smc_enter_time = sched_clock();
-	info->curr_smc_a0 = a0;
-	info->curr_smc_a1 = a1;
-	info->curr_smc_a2 = a2;
-	info->curr_smc_a3 = a3;
-	info->curr_smc_a4 = a4;
-	info->curr_smc_a5 = a5;
-	info->curr_smc_a6 = a6;
-	info->curr_smc_a7 = a7;
+	info->curr_smc_a0 = smcid;
+	info->curr_smc_a1 = val;
 
 	memset(info->smc_enter_trace_entries, 0, sizeof(info->smc_enter_trace_entries));
 	info->smc_enter_trace_entries_nr = stack_trace_save(info->smc_enter_trace_entries, ENTRY, 0);
 }
 
-static void smc_out_hook(unsigned long a0, unsigned long a1,
-		 unsigned long a2, unsigned long a3, unsigned long a4,
-		 unsigned long a5, unsigned long a6, unsigned long a7,
-		 struct arm_smccc_res *res, struct arm_smccc_quirk *quirk)
+static void smc_out_hook(unsigned long smcid, unsigned long val)
 {
 	int cpu;
 	unsigned long rem_nsec;
 	unsigned long long ts, delta;
 	struct lockup_info *info;
+
+	pstore_ftrace_io_smc_out(smcid, val);
 
 	if (!initialized || !smc_check_en)
 		return;
@@ -325,16 +344,10 @@ static void smc_out_hook(unsigned long a0, unsigned long a1,
 		ts = info->smc_enter_time;
 		rem_nsec = do_div(ts, 1000000000);
 
-		pr_err("SMCLong___ERR. smc_time:%llu ms(%lx %lx %lx %lx %lx %lx %lx %lx), entered at: %llu.%06lu\n",
+		pr_err("SMCLong___ERR. smc_time:%llu ms(%lx %lx), entered at: %llu.%06lu\n",
 		       div_u64(delta, ns2ms),
 		       info->curr_smc_a0,
 		       info->curr_smc_a1,
-		       info->curr_smc_a2,
-		       info->curr_smc_a3,
-		       info->curr_smc_a4,
-		       info->curr_smc_a5,
-		       info->curr_smc_a6,
-		       info->curr_smc_a7,
 		       ts, rem_nsec / 1000);
 
 		stack_trace_print(info->smc_enter_trace_entries, info->smc_enter_trace_entries_nr, 0);
@@ -344,25 +357,6 @@ static void smc_out_hook(unsigned long a0, unsigned long a1,
 	info->smc_enter_time = 0;
 
 }
-
-void __arm_smccc_smc_glue(unsigned long a0, unsigned long a1,
-			unsigned long a2, unsigned long a3, unsigned long a4,
-			unsigned long a5, unsigned long a6, unsigned long a7,
-			struct arm_smccc_res *res, struct arm_smccc_quirk *quirk)
-{
-	int not_in_idle = current->pid != 0;
-
-	if (not_in_idle)
-		preempt_disable_notrace();
-
-	smc_in_hook(a0, a1, a2, a3, a4, a5, a6, a7, res, quirk);
-	__arm_smccc_smc(a0, a1, a2, a3, a4, a5, a6, a7, res, quirk);
-	smc_out_hook(a0, a1, a2, a3, a4, a5, a6, a7, res, quirk);
-
-	if (not_in_idle)
-		preempt_enable_notrace();
-}
-EXPORT_SYMBOL(__arm_smccc_smc_glue);
 
 static void irq_trace_start(unsigned long flags)
 {
@@ -559,6 +553,17 @@ static void rt_throttle_func(void *data, int cpu, u64 clock, ktime_t rt_period, 
 		cpu, rt_time, rq->curr->comm, rq->curr->pid,
 		rq->curr->prio, exec_runtime);
 }
+
+void __arm_smccc_smc_glue(unsigned long a0, unsigned long a1,
+			  unsigned long a2, unsigned long a3, unsigned long a4,
+			  unsigned long a5, unsigned long a6, unsigned long a7,
+			  struct arm_smccc_res *res, struct arm_smccc_quirk *quirk)
+{
+	smc_in_hook(a0, a1, is_noret_smcid(a0));
+	__arm_smccc_smc(a0, a1, a2, a3, a4, a5, a6, a7, res, quirk);
+	smc_out_hook(a0, a1);
+}
+EXPORT_SYMBOL(__arm_smccc_smc_glue);
 
 int debug_lockup_init(void)
 {

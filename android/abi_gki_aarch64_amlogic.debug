@@ -27,6 +27,7 @@
   dump_cpu_task
   debug_filp_open
   debug_vfs_setxattr
+  ramoops_io_en
 
 # v4l2 vendor hooks
   __tracepoint_android_vh_v4l2_meta_ptr_update

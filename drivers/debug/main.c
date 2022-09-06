@@ -7,9 +7,13 @@
 
 static int __init debug_main_init(void)
 {
+#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
 	debug_lockup_init();
 	cpu_mhz_init();
+#endif
+#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
 	meson_atrace_init();
+#endif
 
 	return 0;
 }

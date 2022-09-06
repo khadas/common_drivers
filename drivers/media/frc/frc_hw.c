@@ -1235,7 +1235,7 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		//    phs_lut_table[4]={ 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,    4'd2,     8'd51,   8'd51,     8'd0,       8'd0};
 		//}
 		//else {
-		//      stimulus_print ("==== USE ERROR CANDENCE ====");
+		//      stimulus_print ("==== USE ERROR CADENCE ====");
 		//}
 
 		input_n          = 1;
@@ -1368,7 +1368,7 @@ void config_phs_regs(enum frc_ratio_mode_type frc_ratio_mode,
 			reg_out_frm_dly_num = 15;
 		}
 		else {
-			  pr_frc(0, "==== USE ERROR CANDENCE ====\n");
+			pr_frc(0, "==== USE ERROR CADENCE ====\n");
 		}
 	}
 	else {

@@ -15,7 +15,9 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-reset
 	amlogic-efuse-unifykey
 	amlogic-mmc
+	amlogic-i2c.ko
 	amlogic-spi.ko
+	amlogic-rng.ko
 	amlogic-tee.ko
 	videobuf-core.ko
 	dvb-core.ko
@@ -42,8 +44,6 @@ RAMDISK_MODULES_LOAD_LIST=(
 )
 
 VENDOR_MODULES_LOAD_FIRST_LIST=(
-	amlogic-i2c
-	amlogic-rng
 	amlogic-crypto-dma
 )
 

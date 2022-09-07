@@ -146,10 +146,10 @@ int aml_free_nonslab_page(struct page *page, void *object)
 	VM_BUG_ON_PAGE(!PageCompound(page), page);
 	kmemleak_free(object);
 	kasan_kfree_large(object);
-	mod_lruvec_page_state(page, NR_SLAB_UNRECLAIMABLE_B, -nr_pages);
+	mod_lruvec_page_state(page, NR_SLAB_UNRECLAIMABLE_B, -(nr_pages * PAGE_SIZE));
 	if (unlikely(PageOwnerPriv1(page))) {
 		aml_slub_free_large(page, object);
-		return -1;
+		return 1;
 	}
 
 	return 0;

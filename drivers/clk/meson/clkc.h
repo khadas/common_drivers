@@ -84,7 +84,7 @@ struct pll_params_table {
  * for hdmi pll different rate need different
  * parameters
  */
-struct pravite_pll_parm {
+struct private_pll_parm {
 	unsigned long rate;
 	const struct reg_sequence *rate_regs;
 	unsigned int regs_count;
@@ -106,7 +106,7 @@ struct meson_clk_pll_data {
  *           will init initialize init_regs.
  */
 	u8 init_en;
-	const struct pravite_pll_parm *pri_table;
+	const struct private_pll_parm *pri_table;
 	u8 pri_table_count;
 #endif
 	struct parm l;

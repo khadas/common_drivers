@@ -60,7 +60,7 @@ enum err_code_e {
 	ERR_DE_UNSTABLE,
 	ERR_NO_HDCP14_KEY,
 	ERR_TIMECHANGE,
-	ERR_UNKONW
+	ERR_UNKNOWN
 };
 
 enum irq_flag_e {

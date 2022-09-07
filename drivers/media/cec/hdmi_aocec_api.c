@@ -660,7 +660,7 @@ int cecb_irq_stat(void)
 	return intr_cec;
 }
 
-int cecb_trigle_tx(const unsigned char *msg, unsigned char len, unsigned char sig_free)
+int cecb_trigger_tx(const unsigned char *msg, unsigned char len, unsigned char sig_free)
 {
 	int i = 0, size = 0;
 	int lock;
@@ -908,7 +908,7 @@ static void ao_ceca_irq_enable(bool enable)
 }
 
 /* return value: 1: successful	  0: error */
-int ceca_trigle_tx(const unsigned char *msg, int len)
+int ceca_trigger_tx(const unsigned char *msg, int len)
 {
 	int i;
 	unsigned int n;
@@ -1340,7 +1340,7 @@ enum hrtimer_restart cec_line_check(struct hrtimer *timer)
 	return HRTIMER_RESTART;
 }
 
-int check_confilct(void)
+int check_conflict(void)
 {
 	int i;
 

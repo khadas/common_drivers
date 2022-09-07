@@ -36,11 +36,11 @@ unsigned int read_ao(unsigned int addr);
 void write_ao(unsigned int addr, unsigned int data);
 
 void ceca_rx_buf_clear(void);
-int ceca_trigle_tx(const unsigned char *msg, int len);
+int ceca_trigger_tx(const unsigned char *msg, int len);
 unsigned int ao_ceca_intr_stat(void);
 void ceca_hw_reset(void);
 
-int cecb_trigle_tx(const unsigned char *msg, unsigned char len, unsigned char sig_free);
+int cecb_trigger_tx(const unsigned char *msg, unsigned char len, unsigned char sig_free);
 void cecb_check_irq_enable(void);
 int cecb_irq_stat(void);
 inline void cecb_clear_irq(unsigned int flags);
@@ -60,7 +60,7 @@ void cec_restore_logical_addr(unsigned int cec_sel, unsigned int addr_en);
 void cec_enable_arc_pin(bool enable);
 
 enum hrtimer_restart cec_line_check(struct hrtimer *timer);
-int check_confilct(void);
+int check_conflict(void);
 void cec_ip_share_io(u32 share, u32 cec_ip);
 
 /* msg related */

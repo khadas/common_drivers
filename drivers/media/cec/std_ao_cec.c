@@ -534,8 +534,8 @@ try_again:
 	 * device, we should wait it finished.
 	 */
 	if (cec_dev->sw_chk_bus) {
-		if (check_confilct()) {
-			CEC_ERR("bus confilct too long\n");
+		if (check_conflict()) {
+			CEC_ERR("bus conflict too long\n");
 			mutex_unlock(&cec_dev->cec_tx_mutex);
 			return CEC_FAIL_BUSY;
 		}
@@ -543,9 +543,9 @@ try_again:
 	/* for std cec, driver never retry itself */
 	retry = 0;
 	if (cec_sel == CEC_B)
-		ret = cecb_trigle_tx(msg, len, signal_free_time);
+		ret = cecb_trigger_tx(msg, len, signal_free_time);
 	else
-		ret = ceca_trigle_tx(msg, len);
+		ret = ceca_trigger_tx(msg, len);
 	if (ret < 0) {
 		/* we should increase send idx if busy */
 		CEC_INFO("tx busy\n");
@@ -1171,7 +1171,7 @@ static ssize_t cmda_store(struct class *cla, struct class_attribute *attr,
 		buf[i] = (char)tmpbuf[i];
 
 	if (cec_dev->cec_num > ENABLE_ONE_CEC)
-		ceca_trigle_tx(buf, cnt);
+		ceca_trigger_tx(buf, cnt);
 
 	return count;
 }
@@ -1198,7 +1198,7 @@ static ssize_t cmdb_store(struct class *cla, struct class_attribute *attr,
 		buf[i] = (char)tmpbuf[i];
 
 	if (cec_dev->cec_num > ENABLE_ONE_CEC)
-		cecb_trigle_tx(buf, cnt, 5);
+		cecb_trigger_tx(buf, cnt, 5);
 
 	return count;
 }

@@ -128,9 +128,9 @@
 #define SPIFC_USER_CTRL2	(0x0082 << 2)
 	#define USER_DUMMY_ENABLE			BIT(31)
 	#define USER_DUMMY_MODE				GENMASK(30, 29)
-	#define USER_DUMMY_CLK_SYCLES			GENMASK(28, 23)
+	#define USER_DUMMY_CLK_CYCLES			GENMASK(28, 23)
 	#define USER_DUMMY_MODE_SHIFT			29
-	#define USER_DUMMY_CLK_SYCLES_SHIFT		23
+	#define USER_DUMMY_CLK_CYCLES_SHIFT		23
 
 #define SPIFC_USER_CTRL3	(0x0083 << 2)
 	#define USER_DIN_ENABLE				BIT(31)
@@ -158,7 +158,7 @@
 #define SPIFC_AHB_REQ_CTRL1	(0x0086 << 2)
 	#define AHB_DUMMY_ENABLE			BIT(31)
 	#define AHB_DUMMY_MODE				GENMASK(30, 29)
-	#define AHB_DUMMY_CLK_SYCLES			GENMASK(28, 23)
+	#define AHB_DUMMY_CLK_CYCLES			GENMASK(28, 23)
 	#define AHB_DUMMY_OUTPUT_DATA			GENMASK(15, 0)
 
 #define SPIFC_AHB_REQ_CTRL2	(0x0087 << 2)
@@ -241,7 +241,7 @@ struct meson_spifc {
 	u16 addr_nbits	:2;
 	u8 addr_len;		// in bytes
 	u16 dummy_nbits	:2;
-	u8 dummy_clk_sycles;	// in bits
+	u8 dummy_clk_cycles;	// in bits
 	u16 dout_nbits	:2;
 	u16 din_nbits	:2;
 	u32 speed;
@@ -381,7 +381,7 @@ static void meson_spifc_user_init(struct meson_spifc *spifc)
 	spifc->cmd_nbits = 0;
 	spifc->addr_len = 0;
 	spifc->addr_nbits = 0;
-	spifc->dummy_clk_sycles = 0;
+	spifc->dummy_clk_cycles = 0;
 	spifc->dummy_nbits = 0;
 	spifc->din_nbits = 0;
 	spifc->dout_nbits = 0;
@@ -425,9 +425,9 @@ static void meson_spifc_set_dummy(struct meson_spifc *spifc)
 	u32 regv;
 
 	regmap_read(spifc->regmap, SPIFC_USER_CTRL2, &regv);
-	regv &= ~(USER_DUMMY_MODE | USER_DUMMY_CLK_SYCLES);
+	regv &= ~(USER_DUMMY_MODE | USER_DUMMY_CLK_CYCLES);
 	regv |= (u32)(spifc->dummy_nbits << USER_DUMMY_MODE_SHIFT)
-		| (u32)(spifc->dummy_clk_sycles << USER_DUMMY_CLK_SYCLES_SHIFT)
+		| (u32)(spifc->dummy_clk_cycles << USER_DUMMY_CLK_CYCLES_SHIFT)
 		| USER_DUMMY_ENABLE;
 
 	regmap_write(spifc->regmap, SPIFC_USER_CTRL2, regv);
@@ -539,8 +539,8 @@ static int meson_spifc_transfer_one(struct spi_master *master,
 			ret = meson_spifc_start_then_wait_ready(spifc, 0);
 	} else if (stage == 3) {
 		spifc->dummy_nbits = convert_nbits(xfer->tx_nbits);
-		spifc->dummy_clk_sycles = xfer->len << 3;
-		spifc_dbg("dummy: clk_sycles=%d\n", spifc->dummy_clk_sycles);
+		spifc->dummy_clk_cycles = xfer->len << 3;
+		spifc_dbg("dummy: clk_cycles=%d\n", spifc->dummy_clk_cycles);
 		meson_spifc_set_dummy(spifc);
 		if (last_xfer)
 			ret = meson_spifc_start_then_wait_ready(spifc, 0);
@@ -552,7 +552,7 @@ static int meson_spifc_transfer_one(struct spi_master *master,
 			meson_spifc_set_cmd(spifc);
 			if (spifc->addr_len)
 				meson_spifc_set_addr(spifc);
-			if (spifc->dummy_clk_sycles)
+			if (spifc->dummy_clk_cycles)
 				meson_spifc_set_dummy(spifc);
 			ret = meson_spifc_dout(spifc, (u8 *)xfer->tx_buf,
 					       done, len);
@@ -573,7 +573,7 @@ static int meson_spifc_transfer_one(struct spi_master *master,
 			meson_spifc_set_cmd(spifc);
 			if (spifc->addr_len)
 				meson_spifc_set_addr(spifc);
-			if (spifc->dummy_clk_sycles)
+			if (spifc->dummy_clk_cycles)
 				meson_spifc_set_dummy(spifc);
 			ret = meson_spifc_din(spifc, (u8 *)xfer->rx_buf,
 					      done, len);
@@ -623,7 +623,7 @@ ssize_t meson_snor_read(struct spi_nor *nor, loff_t from,
 			size_t len, u_char *read_buf)
 {
 	struct meson_spifc *spifc = nor->priv;
-	int lening, done = 0, ret = 0;
+	int current_len, done = 0, ret = 0;
 
 	spifc_dbg("read: cmd=0x%x, len=%d, from=0x%x\n",
 		  nor->read_opcode, (u32)len, (u32)from);
@@ -632,19 +632,19 @@ ssize_t meson_snor_read(struct spi_nor *nor, loff_t from,
 	spifc->cmd = nor->read_opcode;
 	spifc->addr = from;
 	spifc->addr_len = nor->addr_width; /* 3 */
-	spifc->dummy_clk_sycles = nor->read_dummy;
+	spifc->dummy_clk_cycles = nor->read_dummy;
 	spifc->din_nbits = convert_nbits(SNOR_PROTO_DATA(nor->read_proto));
 	while (done < len && !ret) {
-		lening = min_t(int, len - done, SPIFC_BUFFER_SIZE);
+		current_len = min_t(int, len - done, SPIFC_BUFFER_SIZE);
 		meson_spifc_set_cmd(spifc);
 		meson_spifc_set_addr(spifc);
-		if (spifc->dummy_clk_sycles)
+		if (spifc->dummy_clk_cycles)
 			meson_spifc_set_dummy(spifc);
-		ret = meson_spifc_din(spifc, read_buf, done, lening);
+		ret = meson_spifc_din(spifc, read_buf, done, current_len);
 		if (ret)
 			break;
-		done += lening;
-		spifc->addr += lening;
+		done += current_len;
+		spifc->addr += current_len;
 	}
 
 	return ret ? 0 : len;
@@ -670,7 +670,7 @@ static ssize_t meson_snor_write(struct spi_nor *nor, loff_t to,
 				size_t len, const u_char *write_buf)
 {
 	struct meson_spifc *spifc = nor->priv;
-	int lening, done = 0, ret = 0;
+	int current_len, done = 0, ret = 0;
 
 	spifc_dbg("write: cmd=0x%x, len=%d, to=0x%x\n",
 		  nor->program_opcode, (u32)len, (u32)to);
@@ -681,14 +681,14 @@ static ssize_t meson_snor_write(struct spi_nor *nor, loff_t to,
 	spifc->addr_len = nor->addr_width; /* 3 */
 	spifc->dout_nbits = convert_nbits(SNOR_PROTO_DATA(nor->write_proto));
 	while (done < len && !ret) {
-		lening = min_t(int, len - done, SPIFC_BUFFER_SIZE);
+		current_len = min_t(int, len - done, SPIFC_BUFFER_SIZE);
 		meson_spifc_set_cmd(spifc);
 		meson_spifc_set_addr(spifc);
-		ret = meson_spifc_dout(spifc, (u8 *)write_buf, done, lening);
+		ret = meson_spifc_dout(spifc, (u8 *)write_buf, done, current_len);
 		if (ret)
 			break;
-		done += lening;
-		spifc->addr += lening;
+		done += current_len;
+		spifc->addr += current_len;
 	}
 
 	return ret ? 0 : len;

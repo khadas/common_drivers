@@ -404,8 +404,10 @@ static int mua_handle_alloc(struct dma_buf *dmabuf, struct uvm_alloc_data *data,
 	if (data->flags & MUA_IMM_ALLOC) {
 		if (data->flags & MUA_USAGE_PROTECTED)
 			name = CODECMM_SECURE_HEAP_NAME;
-		else if (data->flags & ION_FLAG_CACHED)
+		else if (data->flags & MUA_BUFFER_CACHED)
 			name = CODECMM_CACHED_HEAP_NAME;
+
+		MUA_PRINTK(0, "%s: dma_heap name is %s\n", __func__, name);
 
 		heap = dma_heap_find(name);
 		if (!heap) {

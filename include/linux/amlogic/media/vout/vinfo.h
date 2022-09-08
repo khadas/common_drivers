@@ -127,6 +127,9 @@ struct hdr_info {
 	u32 lumi_avg; /* RX EDID Lumi Avg value */
 	u32 lumi_min; /* RX EDID Lumi Min value */
 	struct cuva_info cuva_info;
+
+	u8 ldim_support;
+	u32 lumi_peak;
 };
 
 struct hdr10plus_para {
@@ -181,6 +184,7 @@ struct dv_vsif_para {
 			u8 auxiliary_runmode;
 			u8 auxiliary_runversion;
 			u8 auxiliary_debug0;
+			u8 src_dm_version:3;
 		} ver2;
 		struct {
 			u8 low_latency:1;
@@ -192,6 +196,7 @@ struct dv_vsif_para {
 			u8 auxiliary_runmode;
 			u8 auxiliary_runversion;
 			u8 auxiliary_debug0;
+			u8 src_dm_version:3;
 			u8 content_type;
 			u8 content_sub_type;
 			u8 crf;
@@ -291,9 +296,9 @@ struct dv_info {
 	u8 dm_major_ver;
 	u8 dm_minor_ver;
 	u8 dm_version;
-	u8 tmaxLUM;
+	u8 tmax_lum;
 	u8 colorimetry:1;/* ver1*/
-	u8 tminLUM;
+	u8 tmin_lum;
 	u8 low_latency;/* ver1_12 and 2*/
 	u8 sup_backlight_control:1;/*only ver2*/
 	u8 backlt_min_luma;/*only ver2*/
@@ -332,6 +337,21 @@ struct vinfo_base_s {
 	u32 screen_real_height;
 	u32 video_clk;
 	enum color_fmt_e viu_color_fmt;
+};
+
+struct optical_base_s {
+	u32 primaries[3][2];	/* normalized 50000 in G,B,R order */
+	u32 white_point[2];	/* normalized 50000 */
+	u32 lumi_max; /* max/min lumin, normalized 10000 */
+	u32 lumi_min; /* max/min lumin, normalized 10000 */
+	u32 lumi_avg; /* max/min lumin, normalized 10000 */
+	u32 lumi_peak;
+
+	u8 ldim_support;
+	u8 dummy_flag1;
+	u8 dummy_flag2;
+	u8 dummy_flag3;
+	u32 dummy_val[8];
 };
 
 #define LATENCY_INVALID_UNKNOWN	0

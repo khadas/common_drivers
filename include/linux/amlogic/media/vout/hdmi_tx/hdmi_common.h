@@ -110,7 +110,7 @@ enum hdmi_vic {
 	HDMI_720x480p240_16x9 = 57,
 	HDMI_720x480i240_4x3 = 58,
 	HDMI_720x480i240_16x9 = 59,
-	/* Refer to CEA 861-F */
+	/* Refet to CEA 861-F */
 	HDMI_1280x720p24_16x9 = 60,
 	HDMI_1280x720p25_16x9 = 61,
 	HDMI_1280x720p30_16x9 = 62,
@@ -312,6 +312,16 @@ enum hdmi_color_space {
 	COLORSPACE_YUV444 = 2,
 	COLORSPACE_YUV420 = 3,
 	COLORSPACE_RESERVED,
+};
+
+enum hdmi_hdr_status {
+	HDR10PLUS_VSIF = 0,
+	dolbyvision_std = 1,
+	dolbyvision_lowlatency = 2,
+	HDR10_GAMMA_ST2084 = 3,
+	HDR10_others,
+	HDR10_GAMMA_HLG,
+	SDR,
 };
 
 enum hdmi_color_range {

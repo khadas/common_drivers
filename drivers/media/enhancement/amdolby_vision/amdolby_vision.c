@@ -9695,17 +9695,17 @@ int dolby_vision_parse_metadata(struct vframe_s *vf,
 			if (vinfo->vout_device->dv_info->ver == 0) {
 				/* need lookup PQ table ... */
 			} else if (vinfo->vout_device->dv_info->ver == 1) {
-				if (vinfo->vout_device->dv_info->tmaxLUM) {
+				if (vinfo->vout_device->dv_info->tmax_lum) {
 					/* Target max luminance = 100+50*CV */
 					graphic_max =
 					target_lumin_max =
 						(vinfo->vout_device
-						->dv_info->tmaxLUM
+						->dv_info->tmax_lum
 						* 50 + 100);
 					/* Target min luminance = (CV/127)^2 */
 					graphic_min =
 					dolby_vision_target_min =
-					(vinfo->vout_device->dv_info->tminLUM
+					(vinfo->vout_device->dv_info->tmin_lum
 					^ 2) * 10000 / (127 * 127);
 				}
 			}

@@ -40,7 +40,7 @@ enum hdmi_scan {
 	/* where some active pixelsand lines at the edges are not displayed. */
 	SS_SCAN_OVER,
 	/* where all active pixels&lines are displayed,
-	 * with or without border.
+	 * with or withouta border.
 	 */
 	SS_SCAN_UNDER,
 	SS_RSV
@@ -61,7 +61,7 @@ enum hdmi_slacing {
 	SC_NO_UINFORM = 0,
 	/* Picture has been scaled horizontally */
 	SC_SCALE_HORIZ,
-	SC_SCALE_VERT, /* Picture has been scaled vertically */
+	SC_SCALE_VERT, /* Picture has been scaled verticallv */
 	SC_SCALE_HORIZ_VERT,
 /* Picture has been scaled horizontally & SC_SCALE_H_V */
 };
@@ -194,6 +194,8 @@ struct hdmitx_audpara {
 	enum hdmi_audio_chnnum channel_num;
 	enum hdmi_audio_fs sample_rate;
 	enum hdmi_audio_sampsize sample_size;
+	enum hdmi_audio_source_if aud_src_if;
+	unsigned char status[24]; /* AES/IEC958 channel status bits */
 };
 
 struct hdmitx_supaudinfo {

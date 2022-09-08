@@ -224,6 +224,12 @@ int rx_set_receiver_edid(const char *data, int len)
 	return true;
 }
 
+bool get_rx_active_sts(void)
+{
+	return rx.open_fg;
+}
+EXPORT_SYMBOL(get_rx_active_sts);
+
 void rx_hdcp14_resume(void)
 {
 	hdcp22_kill_esm = 0;

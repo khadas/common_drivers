@@ -243,4 +243,3 @@ int aout_notifier_call_chain(unsigned long val, void *v)
 	return blocking_notifier_call_chain(&aout_notifier_list, val, v);
 }
 EXPORT_SYMBOL_GPL(aout_notifier_call_chain);
-

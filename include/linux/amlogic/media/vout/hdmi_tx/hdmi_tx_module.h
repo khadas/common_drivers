@@ -282,6 +282,19 @@ enum hdmi_hdr_color {
 	C_BT2020,
 };
 
+enum hdmitx_aspect_ratio {
+	AR_UNKNOWM = 0,
+	AR_4X3,
+	AR_16X9,
+};
+
+struct aspect_ratio_list {
+	enum hdmi_vic vic;
+	int flag;
+	char aspect_ratio_num;
+	char aspect_ratio_den;
+};
+
 struct hdmitx_clk_tree_s {
 	/* hdmitx clk tree */
 	struct clk *hdmi_clk_vapb;
@@ -350,7 +363,7 @@ struct hdmitx_dev {
 		void (*setpacket)(int type, unsigned char *DB,
 				  unsigned char *HB);
 		void (*disablepacket)(int type);
-		/* In original setpacket, there are many policy, like
+		/* In original setpacket, there are many policys, like
 		 *  if ((DB[4] >> 4) == T3D_FRAME_PACKING)
 		 * Need a only pure data packet to call
 		 */
@@ -434,6 +447,7 @@ struct hdmitx_dev {
 	unsigned char force_audio_flag;
 	unsigned char mux_hpd_if_pin_high_flag;
 	int auth_process_timer;
+	int aspect_ratio;	/* 1, 4:3; 2, 16:9 */
 	struct hdmitx_info hdmi_info;
 	unsigned int log;
 	unsigned int tx_aud_cfg; /* 0, off; 1, on */
@@ -458,7 +472,7 @@ struct hdmitx_dev {
 	struct ced_cnt ced_cnt;
 	struct scdc_locked_st chlocked_st;
 	unsigned int allm_mode; /* allm_mode: 1/on 0/off */
-	unsigned int ct_mode; /* 0/off 1/game, 2/graphics, 3/photo, 4/cinema */
+	unsigned int ct_mode; /* 0/off 1/game, 2/graphcis, 3/photo, 4/cinema */
 	unsigned int sspll;
 	unsigned int hdmi_rext; /* Rext resistor */
 	/* if HDMI plugin even once time, then set 1 */
@@ -598,6 +612,8 @@ struct hdmitx_dev {
 #define AUDIO_MUTE          0x1
 #define AUDIO_UNMUTE        0x2
 #define CONF_CLR_AUDINFO_PACKET (CMD_CONF_OFFSET + 0x1000 + 0x01)
+#define CONF_GET_AUDIO_MUTE_ST	(CMD_CONF_OFFSET + 0x1000 + 0x02)
+#define CONF_ASPECT_RATIO	(CMD_CONF_OFFSET + 0x101a)
 
 /***********************************************************************
  *             MISC control, hpd, hpll //cntlmisc
@@ -733,6 +749,11 @@ bool is_hdmi4k_420(enum hdmi_vic vic);
 
 /* set vic to AVI.VIC */
 void hdmitx_set_avi_vic(enum hdmi_vic vic);
+
+/* the hdmitx output limits to 1080p */
+bool hdmitx_limited_1080p(void);
+/* test current vic is over limited or not */
+bool is_vic_over_limited_1080p(enum hdmi_vic vic);
 
 /*
  * HDMI Repeater TX I/F
@@ -924,4 +945,6 @@ bool hdmitx_find_vendor_6g(struct hdmitx_dev *hdev);
 bool hdmitx_find_vendor_ratio(struct hdmitx_dev *hdev);
 
 int hdmitx_uboot_already_display(int type);
+
+int read_phy_status(void);
 #endif

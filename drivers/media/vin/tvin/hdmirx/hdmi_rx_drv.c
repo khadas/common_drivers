@@ -1770,25 +1770,25 @@ static ssize_t hw_info_store(struct device *dev,
 	return count;
 }
 
-static ssize_t edid_dw_show(struct device *dev,
-			    struct device_attribute *attr,
-			    char *buf)
-{
-	return 0;
-}
+//static ssize_t edid_dw_show(struct device *dev,
+			    //struct device_attribute *attr,
+			    //char *buf)
+//{
+	//return 0;
+//}
 
-static ssize_t edid_dw_store(struct device *dev,
-			     struct device_attribute *attr,
-			     const char *buf,
-			     size_t count)
-{
-	int cnt = count;
+//static ssize_t edid_dw_store(struct device *dev,
+			     //struct device_attribute *attr,
+			    // const char *buf,
+			     //size_t count)
+//{
+	//int cnt = count;
 
-	rx_pr("edid store len: %d\n", cnt);
-	rx_set_receiver_edid(buf, cnt);
+	//rx_pr("edid store len: %d\n", cnt);
+	//rx_set_receiver_edid(buf, cnt);
 
-	return count;
-}
+	//return count;
+//}
 
 static ssize_t edid_with_port_show(struct device *dev,
 	struct device_attribute *attr,
@@ -2130,7 +2130,7 @@ static DEVICE_ATTR_RW(arc_aud_type);
 static DEVICE_ATTR_RW(reset22);
 static DEVICE_ATTR_RW(hdcp_version);
 static DEVICE_ATTR_RW(hw_info);
-static DEVICE_ATTR_RW(edid_dw);
+//static DEVICE_ATTR_RW(edid_dw);
 static DEVICE_ATTR_RW(ksvlist);
 static DEVICE_ATTR_RW(earc_cap_ds);
 static DEVICE_ATTR_RW(edid_select);
@@ -2747,11 +2747,11 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_pr("hdmirx: fail to create cur 5v file\n");
 		goto fail_create_hw_info;
 	}
-	ret = device_create_file(hdevp->dev, &dev_attr_edid_dw);
-	if (ret < 0) {
-		rx_pr("hdmirx: fail to create edid_dw file\n");
-		goto fail_create_edid_dw;
-	}
+	//ret = device_create_file(hdevp->dev, &dev_attr_edid_dw);
+	//if (ret < 0) {
+		//rx_pr("hdmirx: fail to create edid_dw file\n");
+		//goto fail_create_edid_dw;
+	//}
 	ret = device_create_file(hdevp->dev, &dev_attr_ksvlist);
 	if (ret < 0) {
 		rx_pr("hdmirx: fail to create ksvlist file\n");
@@ -3138,8 +3138,8 @@ fail_create_earc_cap_ds:
 	device_remove_file(hdevp->dev, &dev_attr_earc_cap_ds);
 fail_create_ksvlist:
 	device_remove_file(hdevp->dev, &dev_attr_ksvlist);
-fail_create_edid_dw:
-	device_remove_file(hdevp->dev, &dev_attr_edid_dw);
+//fail_create_edid_dw:
+	//device_remove_file(hdevp->dev, &dev_attr_edid_dw);
 fail_create_hw_info:
 	device_remove_file(hdevp->dev, &dev_attr_hw_info);
 fail_create_hdcp_version:
@@ -3215,7 +3215,7 @@ static int hdmirx_remove(struct platform_device *pdev)
 	device_remove_file(hdevp->dev, &dev_attr_arc_aud_type);
 	device_remove_file(hdevp->dev, &dev_attr_earc_cap_ds);
 	device_remove_file(hdevp->dev, &dev_attr_ksvlist);
-	device_remove_file(hdevp->dev, &dev_attr_edid_dw);
+	//device_remove_file(hdevp->dev, &dev_attr_edid_dw);
 	device_remove_file(hdevp->dev, &dev_attr_hw_info);
 	device_remove_file(hdevp->dev, &dev_attr_hdcp_version);
 	device_remove_file(hdevp->dev, &dev_attr_reset22);

@@ -74,9 +74,9 @@ core_param(outputmode, logo.outputmode_t, charp, 0644);
 #endif
 
 #ifndef CONFIG_AMLOGIC_MEDIA_FB
-static u32 drm_logo_bpp;
-static u32 drm_logo_width;
-static u32 drm_logo_height;
+static u32 drm_logo_bpp = 24;
+static u32 drm_logo_width = 1920;
+static u32 drm_logo_height = 1080;
 
 static int drm_logo_bpp_setup(char *str)
 {
@@ -753,23 +753,29 @@ void am_meson_logo_init(struct drm_device *dev)
 			of_node_put(mem_node);
 			if (rmem) {
 				logo.size = rmem->size;
-				DRM_INFO("of read reserved memory size=0x%x\n",
-					 logo.size);
+				DRM_INFO("of read %s reservememsize=0x%x, base 0x%x\n",
+					rmem->name, logo.size, rmem->base);
 			}
 		} else {
 			DRM_ERROR("no memory-region\n");
 		}
-
 		cma_logo = dev_get_cma_area(&gp_dev->dev);
 		if (cma_logo) {
 			if (logo.size > 0) {
-				logo.logo_page =
-				cma_alloc(cma_logo, logo.size >> PAGE_SHIFT,
-					  0, 0);
+				logo.logo_page = cma_alloc(cma_logo,
+						ALIGN(logo.size, PAGE_SIZE) >> PAGE_SHIFT,
+						0, false);
+
 				if (!logo.logo_page)
 					DRM_ERROR("allocate buffer failed\n");
 				else
 					am_meson_logo_info_update(private);
+
+				DRM_INFO(" cma_alloc from %s start page %px-%px size %x\n",
+					cma_get_name(cma_logo),
+					logo.logo_page,
+					logo.start,
+					logo.size);
 			}
 		} else {
 			DRM_INFO("------ NO CMA\n");
@@ -832,8 +838,8 @@ void am_meson_logo_init(struct drm_device *dev)
 
 	if (drm_framebuffer_read_refcount(fb) > 1)
 		drm_framebuffer_put(fb);
-	DRM_INFO("drm_fb[id:%d,ref:%d]\n", fb->base.id,
-	 kref_read(&fb->base.refcount));
+
+	DRM_INFO("drm_fb[id:%d,ref:%d]\n", fb->base.id, kref_read(&fb->base.refcount));
 
 	private->logo_show_done = true;
 

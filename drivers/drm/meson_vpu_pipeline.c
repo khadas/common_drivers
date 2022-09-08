@@ -379,7 +379,7 @@ static void vpu_pipeline_planes_calc(struct meson_vpu_pipeline *pipeline,
 				mvps->plane_info[i].dst_h);
 			mvps->num_plane++;
 		} else {
-			DRM_DEBUG("osdplane indx [%d] disable.\n", i);
+			DRM_DEBUG("osdplane index [%d] disable.\n", i);
 		}
 	}
 

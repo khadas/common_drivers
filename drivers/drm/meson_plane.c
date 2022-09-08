@@ -280,15 +280,15 @@ meson_plane_check_size_range(struct meson_vpu_osd_layer_info *plane_info)
 		ratio_x = (src_w + dst_w - 1) / dst_w;
 	if (src_h > dst_h)
 		ratio_y = (src_h + dst_h - 1) / dst_h;
-	if (ratio_x > MESON_OSD_SCLAE_DOWN_LIMIT ||
-	    ratio_y > MESON_OSD_SCLAE_DOWN_LIMIT)
+	if (ratio_x > MESON_OSD_SCALE_DOWN_LIMIT ||
+	    ratio_y > MESON_OSD_SCALE_DOWN_LIMIT)
 		ret = -EDOM;
 	if (src_w < dst_w)
 		ratio_x = (dst_w + src_w - 1) / src_w;
 	if (src_h < dst_h)
 		ratio_y = (dst_h + src_h - 1) / src_h;
-	if (ratio_x > MESON_OSD_SCLAE_UP_LIMIT ||
-	    ratio_y > MESON_OSD_SCLAE_UP_LIMIT)
+	if (ratio_x > MESON_OSD_SCALE_UP_LIMIT ||
+	    ratio_y > MESON_OSD_SCALE_UP_LIMIT)
 		ret = -EDOM;
 	return ret;
 }
@@ -1041,7 +1041,7 @@ static int meson_video_plane_atomic_check(struct drm_plane *plane,
 		return -EINVAL;
 	}
 
-	DRM_DEBUG("planeidx [%d]\n", video_plane->plane_index);
+	DRM_DEBUG("planeindex [%d]\n", video_plane->plane_index);
 
 	mvps = meson_vpu_pipeline_get_state(drv->pipeline, atomic_state);
 	if (!mvps || video_plane->plane_index >= MESON_MAX_VIDEO) {

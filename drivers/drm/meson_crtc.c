@@ -166,7 +166,7 @@ static int meson_crtc_atomic_get_property(struct drm_crtc *crtc,
 	if (property == meson_crtc->hdr_policy) {
 		*val = crtc_state->crtc_hdr_process_policy;
 		return 0;
-	} else if (property == meson_crtc->hdmi_etof) {
+	} else if (property == meson_crtc->hdmi_eotf) {
 		*val = crtc_state->eotf_type_by_property;
 		return 0;
 	} else if (property == meson_crtc->dv_enable_property) {
@@ -193,7 +193,7 @@ static int meson_crtc_atomic_set_property(struct drm_crtc *crtc,
 	if (property == meson_crtc->hdr_policy) {
 		crtc_state->crtc_hdr_process_policy = val;
 		return 0;
-	} else if (property == meson_crtc->hdmi_etof) {
+	} else if (property == meson_crtc->hdmi_eotf) {
 		crtc_state->eotf_type_by_property = val;
 		crtc_state->crtc_eotf_by_property_flag = true;
 		return 0;
@@ -656,7 +656,7 @@ static void am_meson_crtc_atomic_flush(struct drm_crtc *crtc,
 #endif
 }
 
-bool am_meson_crtc_get_scannout_position(struct drm_crtc *crtc,
+bool am_meson_crtc_get_scanout_position(struct drm_crtc *crtc,
 				 bool in_vblank_irq, int *vpos, int *hpos,
 				 ktime_t *stime, ktime_t *etime,
 				 const struct drm_display_mode *mode)
@@ -664,7 +664,7 @@ bool am_meson_crtc_get_scannout_position(struct drm_crtc *crtc,
 	int ret = 0;
 	struct am_meson_crtc *am_crtc = to_am_meson_crtc(crtc);
 
-	ret = am_crtc->get_scannout_position(am_crtc,
+	ret = am_crtc->get_scanout_position(am_crtc,
 		in_vblank_irq, vpos, hpos, stime, etime, mode);
 
 	return (ret == 0) ? true : false;
@@ -677,10 +677,10 @@ static const struct drm_crtc_helper_funcs am_crtc_helper_funcs = {
 	.atomic_flush	= am_meson_crtc_atomic_flush,
 	.atomic_enable	= am_meson_crtc_atomic_enable,
 	.atomic_disable	= am_meson_crtc_atomic_disable,
-	.get_scanout_position = am_meson_crtc_get_scannout_position,
+	.get_scanout_position = am_meson_crtc_get_scanout_position,
 };
 
-static int meson_crtc_get_scannout_position(struct am_meson_crtc *crtc,
+static int meson_crtc_get_scanout_position(struct am_meson_crtc *crtc,
 	bool in_vblank_irq, int *vpos, int *hpos,
 	ktime_t *stime, ktime_t *etime,
 	const struct drm_display_mode *mode)
@@ -727,10 +727,10 @@ static void meson_crtc_init_hdmi_eotf_property(struct drm_device *drm_dev,
 					hdmi_eotf_enum_list,
 					ARRAY_SIZE(hdmi_eotf_enum_list));
 	if (prop) {
-		amcrtc->hdmi_etof = prop;
+		amcrtc->hdmi_eotf = prop;
 		drm_object_attach_property(&amcrtc->base.base, prop, EOTF_RESERVED);
 	} else {
-		DRM_ERROR("Failed to ETOF property\n");
+		DRM_ERROR("Failed to EOTF property\n");
 	}
 }
 
@@ -825,7 +825,7 @@ struct am_meson_crtc *meson_crtc_bind(struct meson_drm *priv, int idx)
 	drm_crtc_enable_color_mgmt(crtc, 0, true, gamma_lut_size);
 #endif
 
-	amcrtc->get_scannout_position = meson_crtc_get_scannout_position;
+	amcrtc->get_scanout_position = meson_crtc_get_scanout_position;
 	amcrtc->force_crc_chk = 8;
 	meson_crtc_init_property(priv->drm, amcrtc);
 	meson_crtc_init_hdmi_eotf_property(priv->drm, amcrtc);

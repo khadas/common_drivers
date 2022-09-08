@@ -40,7 +40,7 @@ struct am_hdmi_tx am_hdmi_info;
 bool attr_force_debugfs;
 char attr_debugfs[16];
 
-/*for hw limitiation, limit to 1080p/720p for recovery ui.*/
+/*for hw limitation, limit to 1080p/720p for recovery ui.*/
 static bool hdmitx_set_smaller_pref = true;
 
 /*TODO:will remove later.*/
@@ -149,7 +149,7 @@ static void build_hdmitx_attr_str(char *attr_str, u32 format, u32 bit_depth)
 		break;
 	default:
 		colorspace = "rgb";
-		DRM_ERROR("Unknown colospace valu %d\n", format);
+		DRM_ERROR("Unknown colospace value %d\n", format);
 		break;
 	};
 
@@ -547,7 +547,7 @@ int meson_hdmitx_atomic_check(struct drm_connector *connector,
 	/*check content type.*/
 	if (((1 << new_hdmitx_state->base.content_type) &
 		hdmitx_content_type) == 0) {
-		DRM_ERROR("[%s] check contentype[%d-%u] fail\n",
+		DRM_ERROR("[%s] check content type[%d-%u] fail\n",
 			__func__,
 			new_hdmitx_state->base.content_type,
 			hdmitx_content_type);
@@ -629,7 +629,7 @@ void meson_hdmitx_reset(struct drm_connector *connector)
 
 	hdmitx_state->pref_hdr_policy = MESON_PREF_SDR;
 
-	/*drm api need update state, so need delay attch when create state.*/
+	/*drm api need update state, so need delay attach when create state.*/
 	if (!connector->max_bpc_property)
 		drm_connector_attach_max_bpc_property
 				(connector, 8, HDMITX_MAX_BPC);
@@ -1490,7 +1490,7 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 
 	drm_connector_attach_encoder(connector, encoder);
 
-	/*hpd irq moved to amhdmitx, registe call back */
+	/*hpd irq moved to amhdmitx, register call back */
 	hpd_cb.callback = meson_hdmitx_hpd_cb;
 	hpd_cb.data = &am_hdmi_info;
 	am_hdmi->hdmitx_dev->register_hpd_cb(&hpd_cb);

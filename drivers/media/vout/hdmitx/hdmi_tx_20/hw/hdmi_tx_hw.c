@@ -2657,7 +2657,7 @@ static void set_aud_acr_pkt(struct hdmitx_dev *hdev,
 	else
 		aud_n_para = hdmi_get_aud_n_paras(audio_param->sample_rate,
 						  hdev->para->cd, char_rate);
-	/* N must mutiples 4 for DD+ */
+	/* N must multiples 4 for DD+ */
 	switch (audio_param->type) {
 	case CT_DD_P:
 		aud_n_para *= 4;
@@ -3123,7 +3123,7 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 		hdev->hwop.cntlddc(hdev, DDC_RESET_EDID, 0);
 		hdev->hwop.cntlddc(hdev, DDC_EDID_READ_DATA, 0);
 		return;
-	} else if (strncmp(tmpbuf, "i2creactive", 11) == 0) {
+	} else if (strncmp(tmpbuf, "i2c_reactive", 12) == 0) {
 		hdev->hwop.cntlmisc(hdev, MISC_I2C_REACTIVE, 0);
 		return;
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {
@@ -4862,7 +4862,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 
 	/* Frame Composer configuration */
 
-	/* Video definitions, as per output video(for packet gen/schedulling) */
+	/* Video definitions, as per output video(for packet gen/scheduling) */
 
 	data32  = 0;
 	data32 |= (1 << 7);
@@ -5072,13 +5072,13 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	hdmitx_wr_reg(HDMITX_DWC_FC_CTRLQHIGH,  15);
 	hdmitx_wr_reg(HDMITX_DWC_FC_CTRLQLOW, 3);
 
-	/* packet scheduller configuration for SPD, VSD, ISRC1/2, ACP. */
+	/* packet scheduler configuration for SPD, VSD, ISRC1/2, ACP. */
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_DATAUTO0, 0, 0, 3);
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_DATAUTO0, 0, 4, 4);
 	hdmitx_wr_reg(HDMITX_DWC_FC_DATAUTO1, 0);
 	hdmitx_wr_reg(HDMITX_DWC_FC_DATMAN, 0);
 
-	/* packet scheduller configuration for AVI, GCP, AUDI, ACR. */
+	/* packet scheduler configuration for AVI, GCP, AUDI, ACR. */
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_DATAUTO3, 0x6, 0, 6);
 	/* If RX  support 2084 or hlg , and the hdr_src_feature is 2020
 	 *  then enable HDR send out
@@ -5296,7 +5296,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 		      hdmitx_rd_reg(HDMITX_DWC_FC_VSYNCINWIDTH));
 
 	hdmitx_wr_reg(HDMITX_DWC_MC_CLKDIS, 0);
-	/* hd_write_reg(P_ENCP_VIDEO_EN, 1); */ /* enable it finially */
+	/* hd_write_reg(P_ENCP_VIDEO_EN, 1); */ /* enable it finally */
 } /* config_hdmi20_tx */
 
 static void hdmitx_csc_config(unsigned char input_color_format,

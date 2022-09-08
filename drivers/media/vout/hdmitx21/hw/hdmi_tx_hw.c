@@ -1080,7 +1080,7 @@ static void set_aud_acr_pkt(struct hdmitx_dev *hdev,
 	else
 		aud_n_para = hdmi21_get_aud_n_paras(audio_param->sample_rate,
 						  hdev->para->cd, char_rate);
-	/* N must mutiples 4 for DD+ */
+	/* N must multiples 4 for DD+ */
 	switch (audio_param->type) {
 	case CT_DD_P:
 		aud_n_para *= 4;
@@ -1399,7 +1399,7 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 		hdev->hwop.cntlddc(hdev, DDC_RESET_EDID, 0);
 		hdev->hwop.cntlddc(hdev, DDC_EDID_READ_DATA, 0);
 		return;
-	} else if (strncmp(tmpbuf, "i2creactive", 11) == 0) {
+	} else if (strncmp(tmpbuf, "i2c_reactive", 12) == 0) {
 		hdev->hwop.cntlmisc(hdev, MISC_I2C_REACTIVE, 0);
 		return;
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {

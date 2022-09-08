@@ -39,7 +39,7 @@ enum hdmi_scan {
 	/* where some active pixelsand lines at the edges are not displayed. */
 	SS_SCAN_OVER,
 	/* where all active pixels&lines are displayed,
-	 * with or withouta border.
+	 * with or without a border.
 	 */
 	SS_SCAN_UNDER,
 	SS_RSV
@@ -56,11 +56,11 @@ enum hdmi_colourimetry {
 	CC_NO_DATA = 0, CC_ITU601, CC_ITU709, CC_XVYCC601, CC_XVYCC709,
 };
 
-enum hdmi_slacing {
+enum hdmi_scaling {
 	SC_NO_UINFORM = 0,
 	/* Picture has been scaled horizontally */
 	SC_SCALE_HORIZ,
-	SC_SCALE_VERT, /* Picture has been scaled verticallv */
+	SC_SCALE_VERT, /* Picture has been scaled vertically */
 	SC_SCALE_HORIZ_VERT,
 /* Picture has been scaled horizontally & SC_SCALE_H_V */
 };
@@ -74,7 +74,7 @@ struct hdmi_videoinfo {
 	enum hdmi_aspect_ratio aspect_ratio;
 	enum hdmi_colourimetry cc;
 	enum hdmi_scan ss;
-	enum hdmi_slacing sc;
+	enum hdmi_scaling sc;
 };
 
 /* -------------------HDMI VIDEO END---------------------------- */
@@ -198,7 +198,7 @@ struct hdmitx_vidpara {
 	enum hdmi_aspect_ratio aspect_ratio;
 	enum hdmi_colourimetry cc;
 	enum hdmi_scan ss;
-	enum hdmi_slacing sc;
+	enum hdmi_scaling sc;
 };
 
 struct hdmitx_audpara {

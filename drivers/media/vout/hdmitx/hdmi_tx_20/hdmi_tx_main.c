@@ -338,7 +338,7 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	/* for huawei TV, it will display green screen pattern under
 	 * 4k50/60hz y420 deep color when receive amvute. After disable
 	 * phy of box, TV will continue mute and stay in still frame
-	 * mode for a few frames, if it receives scdc clk raito change
+	 * mode for a few frames, if it receives scdc clk ratio change
 	 * during this period, it may recognize it as signal unstable
 	 * instead of no signal, and keep mute pattern for several
 	 * seconds. Here keep hdmi output disabled for a few frames
@@ -2513,7 +2513,7 @@ static void hdmitx_set_emp_pkt(unsigned char *data, unsigned int type,
 	unsigned char sync = 0;
 	unsigned char  new = 0;
 	unsigned char  end = 0;
-	unsigned int organzation_id = 0;
+	unsigned int organization_id = 0;
 	unsigned int data_set_tag = 0;
 	unsigned int data_set_length = 0;
 
@@ -2566,7 +2566,7 @@ static void hdmitx_set_emp_pkt(unsigned char *data, unsigned int type,
 			AFR = 0;
 			new = 0x1; /*todo*/
 			end = 0x1; /*todo*/
-			organzation_id = 2;
+			organization_id = 2;
 		break;
 	case VIDEO_TIMING_EXTENDED:
 		break;
@@ -2588,7 +2588,7 @@ static void hdmitx_set_emp_pkt(unsigned char *data, unsigned int type,
 				(ds_type << 4) | (AFR << 3) |
 				(VFR << 2) | (sync << 1);
 			virt_ptr_align32bit[4] = 0;/*Rsvd*/
-			virt_ptr_align32bit[5] = organzation_id;
+			virt_ptr_align32bit[5] = organization_id;
 			virt_ptr_align32bit[6] = (data_set_tag >> 8) & 0xFF;
 			virt_ptr_align32bit[7] = data_set_tag & 0xFF;
 			virt_ptr_align32bit[8] = (data_set_length >> 8)
@@ -3138,7 +3138,7 @@ bool is_vic_over_limited_1080p(enum hdmi_vic vic)
 	struct hdmi_format_para *para = hdmi_get_fmt_paras(vic);
 
 	/* if the vic equals to HDMI_UNKNOWN or VESA,
-	 * then treate it as over limited
+	 * then create it as over limited
 	 */
 	if (vic == HDMI_UNKNOWN || vic >= HDMITX_VESA_OFFSET)
 		return 1;
@@ -5788,7 +5788,7 @@ static int hdmitx_set_current_vmode(enum vmode_e mode, void *data)
 	struct vinfo_s *vinfo;
 
 	pr_info("%s[%d]\n", __func__, __LINE__);
-	/* get current vinfo and refesh */
+	/* get current vinfo and refresh */
 	vinfo = hdmitx_get_current_vinfo(NULL);
 	if (vinfo && vinfo->name)
 		recalc_vinfo_sync_duration(vinfo,
@@ -7257,7 +7257,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	}
 	/* Trigger HDMITX IRQ*/
 	if (hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0)) {
-		/* When bootup mbox and TV simutanously,
+		/* When bootup mbox and TV simultaneously,
 		 * TV may not handle SCDC/DIV40
 		 */
 		if (is_cur_tmds_div40(hdev))

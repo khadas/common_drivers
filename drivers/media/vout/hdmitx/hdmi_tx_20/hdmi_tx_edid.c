@@ -242,7 +242,7 @@ static void edid_establishedtimings(struct rx_cap *prxcap, unsigned char *data)
 		store_vesa_idx(prxcap, HDMIV_1024x768p60hz);
 }
 
-static void edid_standardtimingiii(struct rx_cap *prxcap, unsigned char *data)
+static void edid_standard_timing_iii(struct rx_cap *prxcap, unsigned char *data)
 {
 	if (data[0] & (1 << 0))
 		store_vesa_idx(prxcap, HDMIV_1152x864p75hz);
@@ -1927,7 +1927,7 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 	 * so continue parse as other sources do
 	 */
 	if (blockbuf[0] == 0x0)
-		pr_info(EDID "unkonw Extension Tag detected, continue\n");
+		pr_info(EDID "unknown Extension Tag detected, continue\n");
 	else if (blockbuf[0] != 0x02)
 		return -1; /* not a CEA BLOCK. */
 	end = blockbuf[2]; /* CEA description. */
@@ -1996,7 +1996,7 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 				(blockbuf[offset + 2] == 0xc4))
 				hdmitx_parse_sink_capability(prxcap,
 					offset, blockbuf, count);
-			offset += count; /* ignore the remaind. */
+			offset += count; /* ignore the remind. */
 			break;
 
 		case HDMI_EDID_BLOCK_TYPE_SPEAKER:
@@ -2816,7 +2816,7 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 			edid_cvt_timing(prxcap, &EDID_buf[idx[i] + 6]);
 			break;
 		case TAG_ESTABLISHED_TIMING_III:
-			edid_standardtimingiii(prxcap, &EDID_buf[idx[i] + 6]);
+			edid_standard_timing_iii(prxcap, &EDID_buf[idx[i] + 6]);
 			break;
 		case TAG_RANGE_LIMITS:
 			break;
@@ -3045,7 +3045,7 @@ static bool is_rx_support_y420(struct hdmitx_dev *hdev)
 }
 
 /* For some TV's EDID, there maybe exist some information ambiguous.
- * Such as EDID declears support 2160p60hz(Y444 8bit), but no valid
+ * Such as EDID declare support 2160p60hz(Y444 8bit), but no valid
  * Max_TMDS_Clock2 to indicate that it can support 5.94G signal.
  */
 bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,

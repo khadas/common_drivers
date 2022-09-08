@@ -344,10 +344,18 @@ static int am_meson_gem_object_mmap(struct am_meson_gem_object *obj,
 	vma->vm_flags &= ~VM_PFNMAP;
 	vma->vm_pgoff = 0;
 
-	if (obj->base.import_attach)
+	if (obj->base.import_attach) {
 		DRM_ERROR("Not support import buffer from other driver.\n");
-	else
+	} else {
+		if (!(buffer->flags & ION_FLAG_CACHED))
+			vma->vm_page_prot =
+				pgprot_writecombine(vma->vm_page_prot);
+
+		mutex_lock(&buffer->lock);
+		/* now map it to userspace */
 		ret = ion_heap_map_user(heap, buffer, vma);
+		mutex_unlock(&buffer->lock);
+	}
 
 	if (ret) {
 		DRM_ERROR("failure mapping buffer to userspace (%d)\n", ret);

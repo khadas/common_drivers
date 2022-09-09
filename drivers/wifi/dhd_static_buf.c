@@ -341,7 +341,7 @@ int bcmdhd_init_wlan_mem(unsigned int buf_level)
 #endif
 	unsigned long size = 0;
 
-	DHD_STATIC_MSG("%s\n", DHD_STATIC_VERSION_STR);
+	DHD_STATIC_TRACE("%s\n", DHD_STATIC_VERSION_STR);
 	if (buf_level > 0) {
 #if defined(BCMDHD_SDIO) || defined(BCMDHD_PCIE)
 		for (i = 0; i < WLAN_SKB_BUF_NUM; i++)
@@ -534,7 +534,7 @@ int bcmdhd_init_wlan_mem(unsigned int buf_level)
 			DHD_PREALLOC_NAN_EVENT_RING, NAN_EVENT_RING_SIZE);
 #endif /* BCMDHD_UNUSE_MEM */
 	}
-	DHD_STATIC_MSG("prealloc ok: %ld(%ldK)\n", size, size / 1024);
+	DHD_STATIC_TRACE("prealloc ok: %ld(%ldK)\n", size, size / 1024);
 	return 0;
 
 err_mem_alloc:

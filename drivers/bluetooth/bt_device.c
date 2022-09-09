@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+//#define DEBUG
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
@@ -111,7 +112,7 @@ static ssize_t value_store(struct class *cls,
 	if (bt_addr[strlen(bt_addr) - 1] == '\n')
 		bt_addr[strlen(bt_addr) - 1] = '\0';
 
-	pr_info("bt_addr=%s\n", bt_addr);
+	pr_debug("bt_addr=%s\n", bt_addr);
 	return count;
 }
 static CLASS_ATTR_RW(value);
@@ -123,7 +124,7 @@ struct bt_dev_runtime_data {
 
 static void off_def_power(struct bt_dev_data *pdata, unsigned long down_time)
 {
-	pr_info("[%s]: pid: %d comm: %s\n", __func__,
+	pr_debug("[%s]: pid: %d comm: %s\n", __func__,
 		current->pid, current->comm);
 
 	if (pdata->gpio_reset > 0) {
@@ -151,7 +152,7 @@ static void off_def_power(struct bt_dev_data *pdata, unsigned long down_time)
 
 static void on_def_power(struct bt_dev_data *pdata, unsigned long up_time)
 {
-	pr_info("[%s]: pid: %d comm: %s\n", __func__,
+	pr_debug("[%s]: pid: %d comm: %s\n", __func__,
 		current->pid, current->comm);
 
 	if (pdata->gpio_reset > 0) {
@@ -298,7 +299,7 @@ static irqreturn_t bt_interrupt(int irq, void *dev_id)
 
 	if (btirq_flag == 1) {
 		schedule_work(&pdata->btwakeup_work);
-		pr_info("freeze: test BT IRQ\n");
+		pr_debug("freeze: test BT IRQ\n");
 	}
 
 	return IRQ_HANDLED;
@@ -318,7 +319,7 @@ static enum hrtimer_restart btwakeup_timer_handler(struct hrtimer *timer)
 			flag_n++;
 		cnt++;
 	}
-	pr_info("%s power: %d,netflix:%d\n", __func__, flag_p, flag_n);
+	pr_debug("%s power: %d,netflix:%d\n", __func__, flag_p, flag_n);
 	if (flag_p >= 7) {
 		pr_info("%s power: %d\n", __func__, flag_p);
 		btwake_evt = 2;
@@ -561,7 +562,7 @@ static int bt_probe(struct platform_device *pdev)
 			      &bt_rfkill_ops, pdata);
 
 	if (!bt_rfk) {
-		pr_info("rfk alloc fail\n");
+		pr_debug("rfk alloc fail\n");
 		ret = -ENOMEM;
 		goto err_rfk_alloc;
 	}
@@ -731,7 +732,7 @@ MODULE_LICENSE("GPL");
 static int mac_addr_set(char *line)
 {
 	if (line) {
-		pr_info("try to read bt mac from emmc key!\n");
+		pr_debug("try to read bt mac from emmc key!\n");
 		strncpy(bt_addr, line, sizeof(bt_addr) - 1);
 		bt_addr[sizeof(bt_addr) - 1] = '\0';
 		btmac = (char *)bt_addr;

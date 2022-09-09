@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+//#define DEBUG
 #include <linux/amlogic/wifi_dt.h>
 #include <linux/amlogic/dhd_buf.h>
 
@@ -24,6 +25,7 @@
 #include <linux/uaccess.h>
 #include <linux/pci.h>
 #include <linux/amlogic/aml_sd.h>
+#include <linux/printk.h>
 #ifdef CONFIG_AMLOGIC_PWM_32K
 #include <linux/pwm.h>
 #include <linux/amlogic/pwm-meson.h>
@@ -113,10 +115,10 @@ static int usb_power;
 static DEFINE_MUTEX(wifi_bt_mutex);
 
 #define WIFI_INFO(fmt, args...)	\
-	dev_info(wifi_info.dev, "[%s] " fmt, __func__, ##args)
+	pr_info("[%s] " fmt, __func__, ##args)
 
 #define WIFI_DEBUG(fmt, args...)	\
-	dev_dbg(wifi_info.dev, "[%s] " fmt, __func__, ##args)
+	pr_debug("[%s] " fmt, __func__, ##args)
 
 #ifdef CONFIG_OF
 static const struct of_device_id wifi_match[] = {
@@ -630,7 +632,7 @@ int pwm_single_channel_conf(struct wifi_plat_info *plat)
 	pwm_config(pwm, duty_value, pstate.period);
 	pwm_enable(pwm);
 
-	WIFI_INFO("pwm period val=%lld, pwm duty val=%lld\n",
+	WIFI_DEBUG("pwm period val=%lld, pwm duty val=%lld\n",
 		  pstate.period, pstate.duty_cycle);
 	WIFI_INFO("wifi pwm conf ok\n");
 
@@ -866,11 +868,13 @@ static int wifi_dev_probe(struct platform_device *pdev)
 		}
 		plat->plat_info_valid = 1;
 
-		WIFI_DEBUG("interrupt_pin=%d\n", plat->interrupt_pin);
-		WIFI_DEBUG("irq_num=%d, irq_trigger_type=%d\n",
-			  plat->irq_num, plat->irq_trigger_type);
-		WIFI_DEBUG("power_on_pin=%d\n", plat->power_on_pin);
-		WIFI_DEBUG("clock_32k_pin=%d\n", plat->clock_32k_pin);
+		if (!(plat->interrupt_pin)) {
+			WIFI_INFO("interrupt_pin=%d\n", plat->interrupt_pin);
+			WIFI_INFO("irq_num=%d, irq_trigger_type=%d\n",
+				  plat->irq_num, plat->irq_trigger_type);
+			WIFI_INFO("power_on_pin=%d\n", plat->power_on_pin);
+			WIFI_INFO("clock_32k_pin=%d\n", plat->clock_32k_pin);
+		}
 	}
 #endif
 	ret = alloc_chrdev_region(&wifi_power_devno,

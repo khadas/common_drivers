@@ -819,7 +819,7 @@ void demod_config_in(u8 port, u8 wire_type)
 	data &= ~(0x1 << FEC_S2P_3WIRE);
 	data &= ~(0x1 << TS_S_OR_P_SEL1);
 
-	dprint_i("port:%d, wire_type:%d\n", port, wire_type);
+	pr_dbg("port:%d, wire_type:%d\n", port, wire_type);
 
 	if (wire_type == DEMOD_3WIRE) {
 		data |= 1 << FEC_S2P_SEL;

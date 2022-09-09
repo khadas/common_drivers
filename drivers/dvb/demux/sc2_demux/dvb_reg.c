@@ -74,7 +74,7 @@ int init_demux_addr(struct platform_device *pdev)
 		return -1;
 	}
 
-	dprint("%s test addr = %lx\n", __func__,
+	pr_dbg("%s test addr = %lx\n", __func__,
 		       (unsigned long)res->start);
 
 	/*this is T5W base address */
@@ -86,10 +86,10 @@ int init_demux_addr(struct platform_device *pdev)
 	if (p_hw_base) {
 		if (chip_flag != 1)
 			p_hw_base += 0x440000;
-		dprint("%s base addr = %lx\n", __func__,
+		pr_dbg("%s base addr = %lx\n", __func__,
 		       (unsigned long)p_hw_base);
 	} else {
-		dprint("%s base addr error\n", __func__);
+		pr_dbg("%s base addr error\n", __func__);
 	}
 	/*fix pcr clk gate issue*/
 	if (chip_flag) {
@@ -102,7 +102,7 @@ int init_demux_addr(struct platform_device *pdev)
 			dprint("%s base addr fail\n", __func__);
 			return -1;
 		}
-		dprint("%s pcr base addr = %lx\n", __func__,
+		pr_dbg("%s pcr base addr = %lx\n", __func__,
 				   (unsigned long)res1->start);
 		pcr_base = devm_ioremap(&pdev->dev, res1->start, resource_size(res1));
 		if (pcr_base) {
@@ -110,7 +110,7 @@ int init_demux_addr(struct platform_device *pdev)
 			value |= (1 << 18);
 			writel(value, pcr_base + 0x64);
 			value = readl(pcr_base + 0x64);
-			dprint("get value from reg:0x%0x\n", value);
+			pr_dbg("get value from reg:0x%0x\n", value);
 		} else {
 			dprint("can't set pcr clk gate\n");
 		}

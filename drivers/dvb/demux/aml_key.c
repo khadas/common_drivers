@@ -809,7 +809,7 @@ int dmx_key_init(void)
 	}
 	mutex_init(&mutex);
 	kt_init();
-	dprint("%s success\n", __func__);
+//	dprint("%s success\n", __func__);
 	return 0;
 }
 

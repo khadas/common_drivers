@@ -1846,7 +1846,7 @@ int ts_output_init(int sid_num, int *sid_info)
 		psid->used = 1;
 		psid->pid_entry_begin = ts_output_max_pid_num_per_sid * i;
 		psid->pid_entry_num = ts_output_max_pid_num_per_sid;
-		dprint("%s sid:%d,pid start:%d, len:%d\n",
+		pr_dbg("%s sid:%d,pid start:%d, len:%d\n",
 		       __func__, sid_info[i],
 		       psid->pid_entry_begin, psid->pid_entry_num);
 		tsout_config_sid_table(sid_info[i],

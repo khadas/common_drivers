@@ -44,7 +44,7 @@
 	dprintk(LOG_DBG, debug_dvb, "dvb:" fmt, ## args)
 
 MODULE_PARM_DESC(debug_dvb, "\n\t\t Enable demux debug information");
-static int debug_dvb = 1;
+static int debug_dvb;
 module_param(debug_dvb, int, 0644);
 
 #define CARD_NAME "amlogic-dvb"
@@ -186,7 +186,7 @@ static ssize_t get_chip_version(char *buf)
 	else
 		total = sprintf(buf, "%x-%x\n", cpu_type, minor_type);
 
-	dprint("version:%s", buf);
+	pr_dbg("version:%s", buf);
 
 	return total;
 }
@@ -496,7 +496,7 @@ int dmx_get_dev_num(struct platform_device *pdev)
 	snprintf(buf, sizeof(buf), "dmxdev_num");
 	ret = of_property_read_u32(pdev->dev.of_node, buf, &dmxdev);
 	if (!ret)
-		dprint("%s: 0x%x\n", buf, dmxdev);
+		pr_dbg("%s: 0x%x\n", buf, dmxdev);
 	else
 		dmxdev = DEFAULT_DMX_DEV_NUM;
 
@@ -517,7 +517,7 @@ int dmx_get_tsn_flag(struct platform_device *pdev, int *tsn_in, int *tsn_out)
 	snprintf(buf, sizeof(buf), "tsn_from");
 	ret = of_property_read_string(pdev->dev.of_node, buf, &str);
 	if (!ret) {
-		dprint("%s:%s\n", buf, str);
+		pr_dbg("%s:%s\n", buf, str);
 		if (!strcmp(str, "demod"))
 			source = INPUT_DEMOD;
 		else if (!strcmp(str, "local"))
@@ -675,7 +675,7 @@ static int aml_dvb_probe(struct platform_device *pdev)
 	int valid_ts = 0;
 	char buf[255];
 
-	dprint("probe amlogic dvb driver [%s].\n", DVB_VERSION);
+	pr_dbg("probe amlogic dvb driver [%s].\n", DVB_VERSION);
 	memset(&buf, 0, sizeof(buf));
 	cpu_type = get_cpu_type();
 	minor_type = get_meson_cpu_version(MESON_CPU_VERSION_LVL_MINOR);
@@ -761,7 +761,7 @@ static int aml_dvb_probe(struct platform_device *pdev)
 	ret = tee_demux_get(TEE_DMX_GET_SECURITY_ENABLE,
 			NULL, 0, &is_security_dmx, sizeof(is_security_dmx));
 
-	dprint("probe dvb done, ret:%d, is_security_dmx:%d\n",
+	pr_dbg("probe dvb done, ret:%d, is_security_dmx:%d\n",
 			ret, is_security_dmx);
 
 	return 0;

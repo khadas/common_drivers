@@ -161,7 +161,7 @@ static void set_dvb_ts(struct platform_device *pdev,
 		return;
 	}
 	if (!strcmp(str, "serial-3wire")) {
-		dprint("ts%d:%s\n", i, str);
+		pr_dbg("ts%d:%s\n", i, str);
 
 		memset(buf, 0, 32);
 		snprintf(buf, sizeof(buf), "s_ts%d", i);
@@ -171,7 +171,7 @@ static void set_dvb_ts(struct platform_device *pdev,
 		demod_config_in(i, DEMOD_3WIRE);
 		demod_config_tsin_invert(i, control);
 	} else if (!strcmp(str, "serial-4wire")) {
-		dprint("ts%d:%s\n", i, str);
+		pr_dbg("ts%d:%s\n", i, str);
 
 		memset(buf, 0, 32);
 		snprintf(buf, sizeof(buf), "s_ts%d", i);
@@ -181,7 +181,7 @@ static void set_dvb_ts(struct platform_device *pdev,
 		demod_config_in(i, DEMOD_4WIRE);
 		demod_config_tsin_invert(i, control);
 	} else if (!strcmp(str, "parallel")) {
-		dprint("ts%d:%s\n", i, str);
+		pr_dbg("ts%d:%s\n", i, str);
 
 		/*internal demod will use tsin_b/tsin_c parallel*/
 //		if (i != 1) {
@@ -199,10 +199,10 @@ static void set_dvb_ts(struct platform_device *pdev,
 	}
 
 	if (IS_ERR_OR_NULL(advb->ts[i].pinctrl))
-		dprint("ts%d:pinctrl:%p Fail.\n",
+		pr_dbg("ts%d:pinctrl:%p Fail.\n",
 				i, advb->ts[i].pinctrl);
 	else
-		dprint("ts%d:pinctrl:%p OK.\n",
+		pr_dbg("ts%d:pinctrl:%p OK.\n",
 				i, advb->ts[i].pinctrl);
 }
 
@@ -260,10 +260,10 @@ static void ts_process(struct platform_device *pdev)
 		snprintf(buf, sizeof(buf), "ts%d_control", i);
 		ret = of_property_read_u32(pdev->dev.of_node, buf, &value);
 		if (!ret) {
-			dprint("%s: 0x%x\n", buf, value);
+			pr_dbg("%s: 0x%x\n", buf, value);
 			advb->ts[i].control = value;
 		} else {
-			dprint("read error:%s: 0x%x\n", buf, value);
+			pr_dbg("read error:%s: 0x%x\n", buf, value);
 		}
 
 		memset(buf, 0, 32);

@@ -1350,7 +1350,7 @@ void vdin_set_cutwin(struct vdin_dev_s *devp)
 }
 
 /*adjust the brightness for txhd hardware snow*/
-void vdin_adjust_tvafesnow_brightness(void)
+void vdin_adjust_tvafe_snow_brightness(void)
 {
 	enum vdin_matrix_sel_e maxsel;
 
@@ -1375,7 +1375,7 @@ void vdin_adjust_tvafesnow_brightness(void)
 	wr(0, VDIN_MATRIX_COEF20_21, 0);
 	wr(0, VDIN_MATRIX_COEF22, 0);
 }
-EXPORT_SYMBOL(vdin_adjust_tvafesnow_brightness);
+EXPORT_SYMBOL(vdin_adjust_tvafe_snow_brightness);
 
 void vdin_set_config(struct vdin_dev_s *devp)
 {
@@ -1844,7 +1844,7 @@ void vdin_set_matrix(struct vdin_dev_s *devp)
 		vdin_set_matrix_color(devp);
 }
 
-void vdin_set_matrixs(struct vdin_dev_s *devp, unsigned char id,
+void vdin_select_matrix(struct vdin_dev_s *devp, unsigned char id,
 		      enum vdin_format_convert_e csc)
 {
 	switch (id) {
@@ -2052,7 +2052,7 @@ static inline void vdin_set_wr_ctrl(struct vdin_dev_s *devp,
 				    unsigned int h,
 				    enum vdin_format_convert_e format_convert,
 				    unsigned int full_pack,
-				    unsigned int source_bitdeth)
+				    unsigned int source_bitdepth)
 {
 	enum vdin_mif_fmt write_fmt = MIF_FMT_YUV422;
 	unsigned int swap_cbcr = 0;
@@ -2096,7 +2096,7 @@ static inline void vdin_set_wr_ctrl(struct vdin_dev_s *devp,
 	     format_convert == VDIN_FORMAT_CONVERT_GBR_YUV422 ||
 	     format_convert == VDIN_FORMAT_CONVERT_BRG_YUV422) &&
 	    full_pack == VDIN_422_FULL_PK_EN &&
-	    source_bitdeth > VDIN_COLOR_DEEPS_8BIT &&
+	    source_bitdepth > VDIN_COLOR_DEEPS_8BIT &&
 	    vdin_is_support_10bit_for_dw(devp)) {
 		write_fmt = MIF_FMT_YUV422_FULL_PACK;
 
@@ -2160,7 +2160,7 @@ static inline void vdin_set_wr_ctrl(struct vdin_dev_s *devp,
 	/*only for vdin0*/
 	if (devp->urgent_en && devp->index == 0)
 		vdin_urgent_patch(offset, v, h);
-	/* dis ctrl reg wpulse */
+	/* dis ctrl reg w_pulse */
 	/*if (is_meson_g9tv_cpu() || is_meson_m8_cpu() ||
 	 *	is_meson_m8m2_cpu() || is_meson_gxbb_cpu() ||
 	 *	is_meson_m8b_cpu())
@@ -2217,7 +2217,7 @@ void vdin_set_wr_ctrl_vsync(struct vdin_dev_s *devp,
 			    unsigned int offset,
 			    enum vdin_format_convert_e format_convert,
 			    unsigned int full_pack,
-			    unsigned int source_bitdeth,
+			    unsigned int source_bitdepth,
 			    unsigned int rdma_enable)
 {
 	enum vdin_mif_fmt write_fmt = MIF_FMT_YUV422;
@@ -2256,7 +2256,7 @@ void vdin_set_wr_ctrl_vsync(struct vdin_dev_s *devp,
 	     format_convert == VDIN_FORMAT_CONVERT_RGB_YUV422 ||
 	     format_convert == VDIN_FORMAT_CONVERT_GBR_YUV422 ||
 	     format_convert == VDIN_FORMAT_CONVERT_BRG_YUV422) &&
-	    full_pack == VDIN_422_FULL_PK_EN && source_bitdeth > 8 &&
+	    full_pack == VDIN_422_FULL_PK_EN && source_bitdepth > 8 &&
 	    vdin_is_support_10bit_for_dw(devp)) {
 		write_fmt = MIF_FMT_YUV422_FULL_PACK;
 
@@ -3843,7 +3843,7 @@ static void vdin_set_vscale(struct vdin_dev_s *devp)
  * do hscaler down when scaling4w is smaller than half of h_active
  * which is closed by default
  */
-static void vdin_set_prehscale(struct vdin_dev_s *devp)
+static void vdin_set_pre_h_scale(struct vdin_dev_s *devp)
 {
 	wr_bits(devp->addr_offset, VDIN_SC_MISC_CTRL, 0, PRE_HSCL_MODE_BIT,
 		PRE_HSCL_MODE_WID);
@@ -3971,7 +3971,7 @@ static void vdin_set_vshrink(struct vdin_dev_s *devp)
 			VSHRK_INPUT_HEIGHT_BIT, VSHRK_INPUT_HEIGHT_WID);
 		/*dummy data 0x8080*/
 		wr_bits(offset, VDIN_VSHRK_CTRL, 0x8080,
-			VDIN_VSHRK_DYMMY_BIT, VDIN_VSHRK_DYMMY_WID);
+			VDIN_VSHRK_DUMMY_BIT, VDIN_VSHRK_DUMMY_WID);
 	} else {
 		wr_bits(offset, VDIN_SCIN_HEIGHTM1, src_h - 1,
 			VSHRK_INPUT_HEIGHT_BIT, VSHRK_INPUT_HEIGHT_WID);
@@ -4008,7 +4008,7 @@ void vdin_set_hvscale(struct vdin_dev_s *devp)
 	    devp->prop.scaling4w > 0) {
 		if (devp->prehsc_en && (devp->prop.scaling4w <=
 		    (devp->h_active >> 1)))
-			vdin_set_prehscale(devp);
+			vdin_set_pre_h_scale(devp);
 
 		if (devp->prop.scaling4w < devp->h_active)
 			vdin_set_hscale(devp, devp->prop.scaling4w);
@@ -5045,7 +5045,7 @@ void vdin_dolby_de_tunnel_to_44410bit(struct vdin_dev_s *devp,
 			devp->h_active_org, devp->v_active_org);
 }
 
-void vdin_dv_detunel_tunel_set(struct vdin_dev_s *devp)
+void vdin_dv_tunnel_set(struct vdin_dev_s *devp)
 {
 	if (!vdin_is_dolby_signal_in(devp))
 		return;

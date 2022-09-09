@@ -202,7 +202,7 @@ void vdin_set_chma_canvas_id(struct vdin_dev_s *devp,
 void vdin_set_crc_pulse(struct vdin_dev_s *devp);
 void vdin_enable_module(struct vdin_dev_s *devp, bool enable);
 void vdin_set_matrix(struct vdin_dev_s *devp);
-void vdin_set_matrixs(struct vdin_dev_s *devp, unsigned char no,
+void vdin_select_matrix(struct vdin_dev_s *devp, unsigned char no,
 		      enum vdin_format_convert_e csc);
 bool vdin_check_cycle(struct vdin_dev_s *devp);
 bool vdin_write_done_check(unsigned int offset,
@@ -217,7 +217,7 @@ void vdin_set_cm2(unsigned int offset, unsigned int w,
 void vdin_bypass_isp(unsigned int offset);
 void vdin_set_mpegin(struct vdin_dev_s *devp);
 void vdin_force_gofiled(struct vdin_dev_s *devp);
-void vdin_adjust_tvafesnow_brightness(void);
+void vdin_adjust_tvafe_snow_brightness(void);
 void vdin_set_config(struct vdin_dev_s *devp);
 void vdin_set_wr_mif(struct vdin_dev_s *devp);
 void vdin_dolby_config(struct vdin_dev_s *devp);
@@ -237,7 +237,7 @@ void vdin_set_wr_ctrl_vsync(struct vdin_dev_s *devp,
 			    unsigned int offset,
 			    enum vdin_format_convert_e format_convert,
 			    unsigned int full_pack,
-			    unsigned int source_bitdeth,
+			    unsigned int source_bitdepth,
 			    unsigned int rdma_enable);
 
 void vdin_urgent_patch_resume(unsigned int offset);
@@ -308,7 +308,7 @@ void vdin_set_frame_mif_write_addr(struct vdin_dev_s *devp,
 			unsigned int rdma_enable, struct vf_entry *vfe);
 void vdin_dolby_pr_meta_data(void *addr, unsigned int size);
 bool vdin_is_dv_meta_data_case(struct vdin_dev_s *devp);
-void vdin_dv_detunel_tunel_set(struct vdin_dev_s *devp);
+void vdin_dv_tunnel_set(struct vdin_dev_s *devp);
 void vdin_dolby_de_tunnel_to_44410bit(struct vdin_dev_s *devp,
 				   unsigned int onoff);
 void vdin_dolby_desc_to_4448bit(struct vdin_dev_s *devp,

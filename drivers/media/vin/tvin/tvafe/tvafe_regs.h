@@ -3848,7 +3848,7 @@
 #define MOTION_DEBUG_BIT                0
 #define MOTION_DEBUG_WID                8
 
-#define CVD2_PHASE_OFFSE_RANGE            ((CVD_BASE_ADD + 0xF0) << 2)
+#define CVD2_PHASE_OFFSET_RANGE            ((CVD_BASE_ADD + 0xF0) << 2)
 #define PHASE_OFFSET_RANGE_BIT          0
 #define PHASE_OFFSET_RANGE_WID          8
 

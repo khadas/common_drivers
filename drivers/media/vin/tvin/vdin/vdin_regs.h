@@ -817,8 +817,8 @@
 #define VDIN_VSHRK_MODE_WID	2
 #define VDIN_HSHRK_EN_BIT	30
 #define VDIN_HSHRK_EN_WID	1
-#define VDIN_VSHRK_DYMMY_BIT	0
-#define VDIN_VSHRK_DYMMY_WID	24
+#define VDIN_VSHRK_DUMMY_BIT	0
+#define VDIN_VSHRK_DUMMY_WID	24
 
 #define VDIN_DNLP_HIST32         ((0x1272))/* + 0xd0100000) */
 /* Read only */
@@ -1068,10 +1068,10 @@
 #define LFIFO_BUF_CNT_BIT               3
 #define LFIFO_BUF_CNT_WID               10   /* wren + read - */
 #define DIRECT_DONE_STATUS_BIT          2
-/* direct_done_clr_bit & reg_wpluse */
+/* direct_done_clr_bit & reg_w_pluse */
 #define DIRECT_DONE_STATUS_WID          1
 #define NR_DONE_STATUS_BIT              1
- /* nr_done_clr_bit & reg_wpluse */
+ /* nr_done_clr_bit & reg_w_pluse */
 #define NR_DONE_STATUS_WID              1
 #define VDIN_FLD_EVEN_BIT               0
 #define VDIN_FLD_EVEN_WID               1

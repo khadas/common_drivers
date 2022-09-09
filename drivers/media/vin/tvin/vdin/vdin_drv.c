@@ -616,7 +616,7 @@ static void vdin_handle_game_mode_chg(struct vdin_dev_s *devp)
 static void vdin_vf_init(struct vdin_dev_s *devp)
 {
 	int i = 0;
-	unsigned int chromaid, addr, index;
+	unsigned int chroma_id, addr, index;
 	struct vf_entry *master, *slave;
 	struct vframe_s *vf;
 	struct vf_pool *p = devp->vfp;
@@ -667,8 +667,8 @@ static void vdin_vf_init(struct vdin_dev_s *devp)
 		case VDIN_FORMAT_CONVERT_RGB_NV21:
 			chroma_size = devp->canvas_w * devp->canvas_h / 2;
 			luma_size = devp->canvas_w * devp->canvas_h;
-			chromaid = (vdin_canvas_ids[index][(vf->index << 1) + 1]) << 8;
-			addr = vdin_canvas_ids[index][vf->index << 1] | chromaid;
+			chroma_id = (vdin_canvas_ids[index][(vf->index << 1) + 1]) << 8;
+			addr = vdin_canvas_ids[index][vf->index << 1] | chroma_id;
 			vf->plane_num = 2;
 			break;
 		default:
@@ -944,7 +944,7 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 	}
 	vdin_set_cutwin(devp);
 	vdin_set_hvscale(devp);
-	vdin_dv_detunel_tunel_set(devp);
+	vdin_dv_tunnel_set(devp);
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_GXTVBB))
 		vdin_set_bitdepth(devp);
 
@@ -1675,7 +1675,7 @@ static int vdin_func(int no, struct vdin_arg_s *arg)
 	switch (parm->cmd) {
 	/*ajust vdin1 matrix1 & matrix2 for isp to get histogram information*/
 	case VDIN_CMD_SET_CSC:
-		vdin_set_matrixs(devp, parm->matrix_id, parm->color_convert);
+		vdin_select_matrix(devp, parm->matrix_id, parm->color_convert);
 		break;
 	case VDIN_CMD_SET_CM2:
 		vdin_set_cm2(devp->addr_offset, devp->h_active,

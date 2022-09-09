@@ -161,7 +161,7 @@ void vf_log_print(struct vf_pool *p)
 
 	pr_info("%-10s %-10s %-10s %-10s %-10s %-10s %5s\n",
 		"WR_LIST", "RW_MODE", "RD_LIST", "RD_MODE", "WT_LIST",
-		"OPERATIOIN", "TIME");
+		"OPERATION", "TIME");
 
 	for (i = 0; i < log->log_cur; i++) {
 		memset(buf1, 0, sizeof(buf1));

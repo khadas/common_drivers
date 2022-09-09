@@ -2017,7 +2017,7 @@ start_chk:
 		/* param.scan_mode = TVIN_SCAN_MODE_PROGRESSIVE; */
 		/*start the vdin hardware*/
 		start_tvin_service(devp->index, &param);
-	} else if (!strcmp(parm[0], "disablesm")) {
+	} else if (!strcmp(parm[0], "disable_sm")) {
 		del_timer_sync(&devp->timer);
 	} else if (!strcmp(parm[0], "freeze")) {
 		if (!(devp->flags & VDIN_FLAG_DEC_STARTED))

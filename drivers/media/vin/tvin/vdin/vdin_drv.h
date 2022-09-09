@@ -710,7 +710,7 @@ struct vdin_dev_s {
 	struct v4l2_format v4lfmt;
 
 	struct mutex lock;/*v4l lock*/
-	struct mutex ioctrl_lock;/*vl2 ioctrl lock*/
+	struct mutex ioctrl_lock;/*vl2 ioctl lock*/
 	spinlock_t qlock; /*v4l qlock*/
 	struct list_head buf_list;	/* buffer list head */
 	struct vdin_vb_buff *cur_buff;	/* vdin video frame buffer */

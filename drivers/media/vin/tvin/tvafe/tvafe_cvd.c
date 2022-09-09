@@ -1406,7 +1406,7 @@ static bool tvafe_cvd2_condition_shift(struct tvafe_cvd2_s *cvd2)
 					PALSW_LVL_BIT, PALSW_LVL_WID);
 				W_APB_BIT(CVD2_COMB_LOCK_CONFIG, 0x7,
 			LOSE_CHROMALOCK_LVL_BIT, LOSE_CHROMALOCK_LVL_WID);
-				W_APB_BIT(CVD2_PHASE_OFFSE_RANGE, 0x20,
+				W_APB_BIT(CVD2_PHASE_OFFSET_RANGE, 0x20,
 			PHASE_OFFSET_RANGE_BIT, PHASE_OFFSET_RANGE_WID);
 			}
 			if (!cvd_pr1_chroma_flag &&
@@ -1432,7 +1432,7 @@ static bool tvafe_cvd2_condition_shift(struct tvafe_cvd2_s *cvd2)
 				W_APB_BIT(CVD2_COMB_LOCK_CONFIG, 2,
 					LOSE_CHROMALOCK_LVL_BIT,
 					LOSE_CHROMALOCK_LVL_WID);
-				W_APB_BIT(CVD2_PHASE_OFFSE_RANGE, 0x15,
+				W_APB_BIT(CVD2_PHASE_OFFSET_RANGE, 0x15,
 					PHASE_OFFSET_RANGE_BIT,
 					PHASE_OFFSET_RANGE_WID);
 			}
@@ -2837,7 +2837,7 @@ void tvafe_snow_config_clamp(unsigned int onoff)
 	if (tvafe_cpu_type() == TVAFE_CPU_TYPE_TL1 ||
 	    tvafe_cpu_type() >= TVAFE_CPU_TYPE_TM2) {
 		if (onoff)
-			vdin_adjust_tvafesnow_brightness();
+			vdin_adjust_tvafe_snow_brightness();
 		return;
 	}
 	if (tvafe_snow_function_flag == 0)

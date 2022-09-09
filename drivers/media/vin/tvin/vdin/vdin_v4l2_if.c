@@ -376,7 +376,7 @@ static int vdin_vidioc_querybuf(struct file *file, void *priv,
 	if (IS_ERR_OR_NULL(pdev))
 		return -EFAULT;
 
-	/*pr_iotrl("%s idx:%d\n", __func__, v4lbuf->index);*/
+	/*pr_ioctl("%s idx:%d\n", __func__, v4lbuf->index);*/
 
 	vbque = &pdev->vbqueue;
 	vb2buf = vbque->bufs[v4lbuf->index];
@@ -495,7 +495,7 @@ static int vdin_vidioc_dqbuf(struct file *file, void *priv,
 	/*static unsigned int framecnt;*/
 	/*struct vframe_s *vf;*/
 
-	/*pr_iotrl("%s\n", __func__);*/
+	/*pr_ioctl("%s\n", __func__);*/
 	ret = vb2_ioctl_dqbuf(file, priv, p);
 	if (ret) {
 		dprintk(0, "DQ error\n");
@@ -702,7 +702,7 @@ static const struct v4l2_ioctl_ops vdin_v4l2_ioctl_ops = {
 	.vidioc_enum_input = vdin_vidioc_enum_input,
 	.vidioc_querycap = vdin_vidioc_querycap,
 
-	/*queue ioctrol*/
+	/*queue io_control*/
 	.vidioc_reqbufs = vdin_vidioc_reqbufs,
 	.vidioc_create_bufs = vdin_vidioc_create_bufs,
 	.vidioc_querybuf = vdin_vidioc_querybuf,
@@ -1080,7 +1080,7 @@ static const struct v4l2_file_operations vdin_v4l2_fops = {
 	.release = vdin_v4l2_release, /*release files resource*/
 	.poll = vdin_v4l2_poll, /*files poll interface*/
 	.mmap = vdin_v4l2_mmap, /*files memory mapp*/
-	.unlocked_ioctl = vdin_v4l2_ioctl, /*iocontrol op interface*/
+	.unlocked_ioctl = vdin_v4l2_ioctl, /*io_control op interface*/
 };
 
 static int vdin_v4l2_queue_init(struct vdin_dev_s *devp,

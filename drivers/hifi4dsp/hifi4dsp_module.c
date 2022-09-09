@@ -1002,6 +1002,8 @@ void get_dsp_baseaddr(struct platform_device *pdev)
 	g_regbases.dspa_addr = devm_ioremap_resource(&pdev->dev, res);
 	g_regbases.rega_size = resource_size(res);
 
+	if (pdev->num_resources < 2)
+		return;
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	if (!res) {
 		dev_err(&pdev->dev, "failed to get dspb base address\n");
@@ -1010,6 +1012,8 @@ void get_dsp_baseaddr(struct platform_device *pdev)
 	g_regbases.dspb_addr = devm_ioremap_resource(&pdev->dev, res);
 	g_regbases.regb_size = resource_size(res);
 
+	if (pdev->num_resources < 3)
+		return;
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 2);
 	if (!res) {
 		dev_err(&pdev->dev, "failed to get dsp hiu address\n");
@@ -1025,8 +1029,10 @@ void get_dsp_statusreg(struct platform_device *pdev, int dsp_cnt,
 	struct resource *res;
 	int i;
 
+	if (pdev->num_resources < 3)
+		return;
 	for (i = 0; i < dsp_cnt; i++) {
-		res = platform_get_resource(pdev, IORESOURCE_MEM, 3 + i);
+		res = platform_get_resource(pdev, IORESOURCE_MEM, 2 + i);
 		if (!res) {
 			dev_err(&pdev->dev, "failed to get dsp%d status register.\n", i);
 			return;
@@ -1088,7 +1094,8 @@ static int get_hifi_firmware_mem(struct reserved_mem *fwmem, struct platform_dev
 	/*parse sram fwmem*/
 	ret = of_property_read_u32(pdev->dev.of_node, "dspsrambase", &dspsrambase);
 	if (ret < 0) {
-		dev_err(&pdev->dev, "Can't retrieve srambase\n");
+		if (ret != -EINVAL)
+			dev_err(&pdev->dev, "Can't retrieve srambase\n");
 		goto parse_cma;
 	}
 	pr_debug("of read dspsrambase=0x%08x\n", dspsrambase);
@@ -1128,7 +1135,7 @@ parse_cma:
 		if (cma_pages) {
 			fwmem->base = page_to_phys(cma_pages);
 			fwmem->priv = "ddr";
-			pr_info("of read fwmem phys = [0x%lx 0x%lx]\n",
+			pr_debug("of read fwmem phys = [0x%lx 0x%lx]\n",
 				(unsigned long)fwmem->base, (unsigned long)fwmem->size);
 		}
 	} else {
@@ -1143,6 +1150,8 @@ static int get_hifi_share_mem(struct reserved_mem *shmem, struct platform_device
 {
 	struct resource *dsp_shm_res;
 
+	if (pdev->num_resources < 5)
+		return -1;
 	/*parse shmem*/
 	dsp_shm_res = platform_get_resource(pdev, IORESOURCE_MEM, 4);
 	if (!dsp_shm_res) {
@@ -1471,7 +1480,7 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 	pr_debug("%s of read dspboffset=0x%08x\n", __func__, dspboffset);
 
 	ret = of_property_read_u32(np, "dsp-monitor-period-ms", &dsp_monitor_period_ms);
-	if (ret < 0)
+	if (ret && ret != -EINVAL)
 		dev_err(&pdev->dev, "Can't retrieve dsp-monitor-period-ms\n");
 
 	/*boot from DDR or SRAM or ...*/
@@ -1482,7 +1491,7 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 	}
 	pr_debug("%s of read dsp bootlocation=%x\n", __func__, bootlocation);
 	if (bootlocation == 1) {
-		pr_info("Dsp boot from DDR !\n");
+		pr_debug("Dsp boot from DDR !\n");
 	} else if (bootlocation == 2) {
 		ret = of_property_read_u32(np, "boot_sram_addr",
 					   &boot_sram_addr);
@@ -1496,25 +1505,25 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "Can't retrieve boot_sram_size\n");
 			goto err1;
 		}
-		pr_info("Dsp boot from SRAM !boot addr : 0x%08x, allocate size: 0x%08x\n",
+		pr_debug("Dsp boot from SRAM !boot addr : 0x%08x, allocate size: 0x%08x\n",
 			boot_sram_addr, boot_sram_size);
 		g_regbases.sram_base = ioremap(boot_sram_addr,
 						       boot_sram_size);
 	}
 
 	ret = of_property_read_u32_array(np, "optimize_longcall", &optimize_longcall[0], 2);
-	if (ret)
+	if (ret && ret != -EINVAL)
 		pr_debug("can't get optimize_longcall\n");
 	ret = of_property_read_u32_array(np, "sram_remap_addr", &sram_remap_addr[0], 4);
-	if (ret)
+	if (ret && ret != -EINVAL)
 		pr_debug("can't get sram_remap_addr\n");
 	ret = of_property_read_u32_array(np, "suspend_resume_support", &pm_support[0], 2);
-	if (ret)
+	if (ret && ret != -EINVAL)
 		pr_debug("can't get suspend_resume_support\n");
 
 	ret = of_property_read_u32(np, "logbuff-polling-period-ms",
 			&dsp_logbuff_polling_period_ms);
-	if (ret < 0)
+	if (ret && ret != -EINVAL)
 		dev_err(&pdev->dev, "Can't retrieve logbuff-polling-period-ms\n");
 
 	/*init hifi4dsp_dsp*/
@@ -1603,7 +1612,7 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 		pdata += i;
 		dsp += i;
 		dsp_firmware += i;
-		pr_info("\nregister dsp-%d start\n", id);
+		pr_info("register dsp-%d start\n", id);
 
 		/*get boot address*/
 		pr_debug("reserved_mem :base:0x%llx, size:0x%lx\n",
@@ -1618,7 +1627,7 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 			((unsigned long)hifi4_rmem.size - dspboffset));
 		hifi_fw_mem_update(id, &hifi4base, &hifi4size);
 		fw_addr = hifi_fw_mem_map(hifi4base, hifi4size);
-		pr_info("hifi4dsp%d, firmware :base:0x%llx, size:0x%x, virt:%lx\n",
+		pr_debug("hifi4dsp%d, firmware :base:0x%llx, size:0x%x, virt:%lx\n",
 			 id,
 			 (unsigned long long)hifi4base,
 			 hifi4size,
@@ -1648,11 +1657,6 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 
 		/*init hifi4dsp_miscdev_t ->priv*/
 		p_dsp_miscdev->priv = priv;
-		if (!(p_dsp_miscdev->priv))
-			pr_info("register dsp _p_dsp_miscdev->priv alloc error");
-		else
-			pr_info("register dsp _p_dsp_miscdev->priv alloc success");
-
 		/*of read clk and add to priv*/
 		dsp_clk = of_read_dsp_clk(pdev, id);
 		priv->p_clk = dsp_clk;

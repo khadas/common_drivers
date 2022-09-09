@@ -150,7 +150,11 @@ static void amlogic_crg_otg_work(struct work_struct *work)
 		amlogic_m31_set_vbus_power(phy, 0);
 		crg_gadget_init();
 		if (UDC_v2_exist_flag != 1) {
+#ifdef CONFIG_AMLOGIC_COMMON_USB
 			ret = crg_otg_write_UDC(crg_v2_UDC_name);
+#else
+			ret = 0;
+#endif
 			if (ret == 0 || ret == -EBUSY)
 				UDC_v2_exist_flag = 1;
 		}

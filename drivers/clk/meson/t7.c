@@ -10,6 +10,7 @@
 #include <linux/clk.h>
 #include <linux/module.h>
 #include <linux/of_address.h>
+#include <linux/clkdev.h>
 
 #include "clk-mpll.h"
 #include "clk-pll.h"
@@ -1628,7 +1629,7 @@ static struct clk_regmap t7_mpll3 = {
  *	   when bit 28 = 0
  *	         f = 24M/N0
  *	   when bit 28 = 1
- *	         output N1 and N2 in run.
+ *	         output N1 and N2 in turns.
  *	   T = (x*T1 + y*T2)/x+y
  *	   f = (24M/(N0*M0 + N1*M1)) * (M0 + M1)
  *	   f: the frequecy value (HZ)
@@ -8261,6 +8262,16 @@ static int __ref meson_t7_probe(struct platform_device *pdev)
 			dev_err(dev, "Clock registration failed\n");
 			return ret;
 		}
+
+#ifdef CONFIG_AMLOGIC_CLK_DEBUG
+		ret = devm_clk_hw_register_clkdev(dev, t7_hw_onecell_data.hws[i],
+						  NULL,
+						  clk_hw_get_name(t7_hw_onecell_data.hws[i]));
+		if (ret < 0) {
+			dev_err(dev, "Failed to clkdev register: %d\n", ret);
+			return ret;
+		}
+#endif
 	}
 
 	meson_t7_dvfs_setup(pdev);

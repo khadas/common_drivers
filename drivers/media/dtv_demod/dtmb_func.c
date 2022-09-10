@@ -35,7 +35,7 @@ void dtmb_set_fe_config_modify(unsigned int modify)
 	fe_cofig.b.fe_modify = modify;
 
 	dtmb_write_reg(DTMB_SYNC_FE_CONFIG, fe_cofig.d32);
-	PR_DTMB("set modiy=0x%x,0x%x\n", modify, fe_cofig.d32);
+	PR_DTMB("set modify=0x%x,0x%x\n", modify, fe_cofig.d32);
 }
 /* formula: fs(MHz)
  *  2*7.56*2^23/fs/256

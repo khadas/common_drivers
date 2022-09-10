@@ -1257,7 +1257,7 @@ static int aml_dvb_extern_probe(struct platform_device *pdev)
 
 	cdevno_maj = register_chrdev(cdevno_maj, AML_DVB_EXTERN_DEVICE_NAME, &cfg_dev_fops);
 	dvbdev->cfgdevno = MKDEV(cdevno_maj, cdevno_min);
-	pr_err("aml_dvb_cfgdev: MAJOR Number %d, MINOR Numbe %d\n",
+	pr_debug("aml_dvb_cfgdev: MAJOR Number %d, MINOR Numbe %d\n",
 		MAJOR(dvbdev->cfgdevno), MINOR(dvbdev->cfgdevno));
 
 	pcfgdev = device_create(&dvbdev->class, NULL, dvbdev->cfgdevno,

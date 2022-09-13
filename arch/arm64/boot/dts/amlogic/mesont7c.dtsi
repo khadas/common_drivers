@@ -2032,31 +2032,15 @@
 			clock-names = "clk_uart";
 			xtal_tick_en = <2>;
 			fifosize = < 64 >;
-			pinctrl-names = "default";
-			//pinctrl-0 = <&a_uart_pins1>;
 		};
-//		uart_A: serial@fe078000 {
-//			compatible = "amlogic, meson-uart";
-//			reg = <0x0 0xfe078000 0x0 0x18>;
-//			interrupts = <0 168 1>;
-//			status = "disabled";
-//			clocks = <&xtal
-//						&clkc CLKID_UART_A>;
-//			clock-names = "clk_uart",
-//				"clk_gate";
-//			xtal_tick_en = <3>;
-//			fifosize = < 128 >;
-//			pinctrl-names = "default";
-//			pinctrl-0 = <&a_uart_pins1>;
-//		};
-//
+
 		uart_C: serial@fe07c000 {
 			compatible = "amlogic,meson-uart";
 			reg = <0x0 0xfe07c000 0x0 0x18>;
 			interrupts = <0 170 1>;
 			status = "disabled";
 			clocks = <&xtal
-						&clkc CLKID_UART_C>;
+				&clkc CLKID_UART_C>;
 			clock-names = "clk_uart",
 				"clk_gate";
 			fifosize = < 64 >;
@@ -2070,7 +2054,7 @@
 			reg = <0x0 0xfe07e000 0x0 0x18>;
 			interrupts = <0 171 1>;
 			clocks = <&xtal
-					&clkc CLKID_UART_D>;
+				&clkc CLKID_UART_D>;
 			clock-names = "clk_uart",
 					"clk_gate";
 			fifosize = < 64 >;
@@ -2084,9 +2068,9 @@
 			reg = <0x0 0xfe080000 0x0 0x18>;
 			interrupts = <0 172 1>;
 			clocks = <&xtal
-					&clkc CLKID_UART_E>;
+				&clkc CLKID_UART_E>;
 			clock-names = "clk_uart",
-						"clk_gate";
+					"clk_gate";
 			fifosize = < 64 >;
 			pinctrl-names = "default";
 			pinctrl-0 = <&e_uart_pins>;
@@ -2098,9 +2082,9 @@
 			reg = <0x0 0xfe082000 0x0 0x18>;
 			interrupts = <0 173 1>;
 			clocks = <&xtal
-					&clkc CLKID_UART_F>;
+				&clkc CLKID_UART_F>;
 			clock-names = "clk_uart",
-						"clk_gate";
+					"clk_gate";
 			fifosize = < 64 >;
 			pinctrl-names = "default";
 			pinctrl-0 = <&f_uart_pins>;

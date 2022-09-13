@@ -1868,6 +1868,10 @@ static const struct of_device_id vpu_of_table[] = {
 		.compatible = "amlogic, vpu-c3",
 		.data = &vpu_data_c3,
 	},
+	{
+		.compatible = "amlogic, vpu-t7c",
+		.data = &vpu_data_t7,
+	},
 	{}
 };
 

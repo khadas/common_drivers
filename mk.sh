@@ -18,9 +18,9 @@ function show_help {
 	echo "  --check_defconfig       for check defconfig"
 	echo "  --modules_depend        for check modules depend"
 	echo "  --android_project       for android project build"
-	echo "  --gki"					for build gki kernel:           gki_defconfig + amlogic_gki.fragment
-	echo "  --gki_user"				for build gki user kernel:      gki_defconfig + amlogic_gki.fragment + amlogic_gki.optimize
-	echo "  --gki_userdebug"        for build gki userdebug kernel: gki_defconfig + amlogic_gki.fragment + amlogic_gki.optimize + amlogic_gki.debug
+	echo "  --gki_20"		for build gki 2.0 kernel:	gki_defconfig + amlogic_gki.fragment
+	echo "  --gki_10"		for build gki 1.0 kernel:	gki_defconfig + amlogic_gki.fragment + amlogic_gki.10
+	echo "  --gki_debug"        	for build gki debug kernel:	gki_defconfig + amlogic_gki.fragment + amlogic_gki.10 + amlogic_gki.debug
 }
 
 VA=
@@ -97,16 +97,16 @@ do
 		VA=1
 		shift
 		;;
-	--gki)
-		GKI_CONFIG=gki
+	--gki_20)
+		GKI_CONFIG=gki_20
 		shift
 		;;
-	--gki_user)
-		GKI_CONFIG=gki_user
+	--gki_10)
+		GKI_CONFIG=gki_10
 		shift
 		;;
-	--gki_userdebug)
-		GKI_CONFIG=gki_userdebug
+	--gki_debug)
+		GKI_CONFIG=gki_debug
 		shift
 		;;
 	-h|--help)
@@ -190,7 +190,7 @@ if [[ ! -f ${KERNEL_BUILD_VAR_FILE} ]]; then
 	RM_KERNEL_BUILD_VAR_FILE=1
 fi
 
-GKI_CONFIG=${GKI_CONFIG:-gki_userdebug}
+GKI_CONFIG=${GKI_CONFIG:-gki_debug}
 
 set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG

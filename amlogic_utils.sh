@@ -6,12 +6,12 @@ function pre_defconfig_cmds() {
 		export PATH=${PATH}:/usr/bin/
 	fi
 
-	if [[ ${GKI_CONFIG} == gki ]]; then
-		KCONFIG_CONFIG=${ROOT_DIR}/${KERNEL_DIR}/arch/${ARCH}/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG}
-	elif [[ ${GKI_CONFIG} == gki_user ]]; then
-		KCONFIG_CONFIG=${ROOT_DIR}/${KERNEL_DIR}/arch/${ARCH}/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_OPTIMIZE}
-	elif [[ ${GKI_CONFIG} == gki_userdebug ]]; then
-		KCONFIG_CONFIG=${ROOT_DIR}/${KERNEL_DIR}/arch/${ARCH}/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_OPTIMIZE} ${ROOT_DIR}/${FRAGMENT_CONFIG_DEBUG}
+	if [[ ${GKI_CONFIG} == gki_20 ]]; then
+		KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG}
+	elif [[ ${GKI_CONFIG} == gki_10 ]]; then
+		KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_GKI10}
+	elif [[ ${GKI_CONFIG} == gki_debug ]]; then
+		KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_GKI10} ${ROOT_DIR}/${FRAGMENT_CONFIG_DEBUG}
 	fi
 }
 export -f pre_defconfig_cmds
@@ -20,7 +20,7 @@ function post_defconfig_cmds() {
 	if [[ ${CHECK_DEFCONFIG} -eq "1" ]]; then
 		check_defconfig
 	fi
-	rm ${ROOT_DIR}/${KERNEL_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
+	rm ${ROOT_DIR}/${KCONFIG_DEFCONFIG}
 }
 export -f post_defconfig_cmds
 

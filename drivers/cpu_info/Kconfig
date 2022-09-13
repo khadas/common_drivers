@@ -14,7 +14,7 @@ config AMLOGIC_CPU_INFO
 	  cpu version, access with reg
 
 config AMLOGIC_SHOW_CPU_CHIPID
-	bool "Amlogic show cpu chipid in /proc/cpuinfo"
+	bool "Amlogic show cpu chipid in /proc/cpu_chipid"
 	depends on AMLOGIC_CPU_INFO
 	default n
 	help

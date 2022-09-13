@@ -36,9 +36,6 @@ CONFIG_AMLOGIC_DEBUG_RELABEL_GKI=n
 # amlogic-i2c.ko
 CONFIG_I2C_COMPAT=y
 
-# amlogic-cpuinfo.ko
-CONFIG_AMLOGIC_SHOW_CPU_CHIPID=y
-
 # usb xxx ko
 CONFIG_AMLOGIC_COMMON_USB=y
 

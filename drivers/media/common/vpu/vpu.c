@@ -189,8 +189,10 @@ static int vpu_vmod_mem_pd_switch_new(unsigned int vmod, int flag)
 #ifdef CONFIG_AMLOGIC_POWER
 	ret = vpu_mempd_psci_smc(vmod, state);
 #endif
-	if (ret)
-		VPUPR("switch_vpu_mem_pd: unsupport vpu mod: %d\n", vmod);
+	if (ret) {
+		if (vpu_debug_print_flag)
+			VPUPR("switch_vpu_mem_pd: unsupport vpu mod: %d\n", vmod);
+	}
 
 	return ret;
 }
@@ -652,8 +654,10 @@ void vpu_dev_mem_power_on(struct vpu_dev_s *vpu_dev)
 	spin_lock_irqsave(&vpu_mem_lock, flags);
 	ret = vpu_conf.data->mempd_switch(vpu_dev->dev_id, VPU_MEM_POWER_ON);
 	spin_unlock_irqrestore(&vpu_mem_lock, flags);
-	if (ret)
-		VPUPR("%s: unsupport vpu mod: %d\n", __func__, vpu_dev->dev_id);
+	if (ret) {
+		if (vpu_debug_print_flag)
+			VPUPR("%s: unsupport vpu mod: %d\n", __func__, vpu_dev->dev_id);
+	}
 
 	if (vpu_debug_print_flag) {
 		VPUPR("%s: %s in %s\n",
@@ -702,8 +706,10 @@ void vpu_dev_mem_power_down(struct vpu_dev_s *vpu_dev)
 	spin_lock_irqsave(&vpu_mem_lock, flags);
 	ret = vpu_conf.data->mempd_switch(vpu_dev->dev_id, VPU_MEM_POWER_DOWN);
 	spin_unlock_irqrestore(&vpu_mem_lock, flags);
-	if (ret)
-		VPUPR("%s: unsupport vpu mod: %d\n", __func__, vpu_dev->dev_id);
+	if (ret) {
+		if (vpu_debug_print_flag)
+			VPUPR("%s: unsupport vpu mod: %d\n", __func__, vpu_dev->dev_id);
+	}
 
 	if (vpu_debug_print_flag) {
 		VPUPR("%s: %s in %s\n",
@@ -1449,15 +1455,15 @@ static struct vpu_data_s vpu_data_sc2 = {
 	.reg_map_table = vpu_reg_table_new,
 	.test_reg_table = vcbus_test_reg,
 
-	.vpu_clk_reg = CLKCTRL_VOUTENC_CLK_CTRL,
-	.vapb_clk_reg = VPU_REG_END,
+	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
+	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 
 	.gp_pll_valid = 0,
-	.mem_pd_reg[0] = VPU_REG_END,
-	.mem_pd_reg[1] = VPU_REG_END,
-	.mem_pd_reg[2] = VPU_REG_END,
-	.mem_pd_reg[3] = VPU_REG_END,
-	.mem_pd_reg[4] = VPU_REG_END,
+	.mem_pd_reg[0] = PWRCTRL_MEM_PD5_SC2,
+	.mem_pd_reg[1] = PWRCTRL_MEM_PD6_SC2,
+	.mem_pd_reg[2] = PWRCTRL_MEM_PD7_SC2,
+	.mem_pd_reg[3] = PWRCTRL_MEM_PD8_SC2,
+	.mem_pd_reg[4] = PWRCTRL_MEM_PD9_SC2,
 	.mem_pd_reg_flag = 1,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,

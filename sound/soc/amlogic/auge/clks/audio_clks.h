@@ -92,7 +92,14 @@ struct audio_clk_init {
 
 extern struct audio_clk_init sm1_audio_clks_init;
 extern struct audio_clk_init sc2_audio_clks_init;
+extern struct audio_clk_init tm2_audio_clks_init;
 extern struct audio_clk_init a1_audio_clks_init;
+extern struct audio_clk_init t5_audio_clks_init;
+extern struct audio_clk_init t7_audio_clks_init;
+extern struct audio_clk_init t3_audio_clks_init;
+extern struct audio_clk_init p1_audio_clks_init;
+extern struct audio_clk_init a5_audio_clks_init;
+extern struct audio_clk_init axg_audio_clks_init;
 extern struct audio_clk_init c3_audio_clks_init;
 extern spinlock_t aclk_lock;
 

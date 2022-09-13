@@ -6,11 +6,15 @@
  *
  */
 
-#ifdef CONFIG_AMLOGIC_ATV_DEMOD
+#include <sound/asoundef.h>
+
+#if (defined CONFIG_AMLOGIC_ATV_DEMOD ||\
+		defined CONFIG_AMLOGIC_ATV_DEMOD_MODULE)
 #include <linux/amlogic/aml_atvdemod.h>
 #endif
 
-#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_HDMI
+#if (defined CONFIG_AMLOGIC_MEDIA_TVIN_HDMI ||\
+		defined CONFIG_AMLOGIC_MEDIA_TVIN_HDMI_MODULE)
 #include <linux/amlogic/media/frame_provider/tvin/tvin.h>
 #endif
 
@@ -21,11 +25,12 @@ static const char *const audio_is_stable[] = {
 	"true"
 };
 
-#ifdef CONFIG_AMLOGIC_ATV_DEMOD
+#if (defined CONFIG_AMLOGIC_ATV_DEMOD ||\
+		defined CONFIG_AMLOGIC_ATV_DEMOD_MODULE)
 
 const struct soc_enum atv_audio_status_enum =
-SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(audio_is_stable),
-		audio_is_stable);
+	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(audio_is_stable),
+			audio_is_stable);
 
 int aml_get_atv_audio_stable(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
@@ -38,21 +43,23 @@ int aml_get_atv_audio_stable(struct snd_kcontrol *kcontrol,
 }
 #endif /* CONFIG_AMLOGIC_ATV_DEMOD */
 
-#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_AVDETECT
+#if (defined CONFIG_AMLOGIC_MEDIA_TVIN_AVDETECT ||\
+		defined CONFIG_AMLOGIC_MEDIA_TVIN_AVDETECT_MODULE)
 
 const struct soc_enum av_audio_status_enum =
-SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(audio_is_stable),
-		audio_is_stable);
+	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(audio_is_stable),
+			audio_is_stable);
 
 int aml_get_av_audio_stable(struct snd_kcontrol *kcontrol,
-			    struct snd_ctl_elem_value *ucontrol)
+			struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.integer.value[0] = tvin_get_av_status();
 	return 0;
 }
 #endif /* CONFIG_AMLOGIC_MEDIA_TVIN_AVDETECT */
 
-#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_HDMI
+#if (defined CONFIG_AMLOGIC_MEDIA_TVIN_HDMI ||\
+		defined CONFIG_AMLOGIC_MEDIA_TVIN_HDMI_MODULE)
 int hdmiin_fifo_disable_count;
 
 int get_hdmi_sample_rate_index(void)
@@ -88,7 +95,7 @@ int get_hdmi_sample_rate_index(void)
 		break;
 	default:
 		pr_err("HDMIRX samplerate not support: %d\n",
-		       aud_sts.aud_sr);
+			aud_sts.aud_sr);
 		break;
 	}
 	return val;
@@ -177,6 +184,18 @@ static const char * const hdmi_in_audio_packet[] = {
 	"MAS"
 };
 
+static const char * const hdmi_in_bitwidth[] = {
+	"REFER_TO_HEADER",
+	"16bit",
+	"20bit",
+	"24bit"
+};
+
+static const char * const hdmi_in_nonaudio[] = {
+	"PCM",
+	"NONAUDIO"
+};
+
 const struct soc_enum hdmi_in_status_enum[] = {
 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(audio_is_stable),
 			audio_is_stable),
@@ -187,17 +206,31 @@ const struct soc_enum hdmi_in_status_enum[] = {
 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(hdmi_in_format),
 			hdmi_in_format),
 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(hdmi_in_audio_packet),
-			hdmi_in_audio_packet)
+			hdmi_in_audio_packet),
+	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(hdmi_in_bitwidth),
+			hdmi_in_bitwidth),
+	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(hdmi_in_nonaudio),
+			hdmi_in_nonaudio)
 };
+
+int get_hdmiin_audio_stable(void)
+{
+	struct rx_audio_stat_s aud_sts;
+	bool audio_packet = 0;
+	bool rx_sample_rate = 0;
+
+	rx_get_audio_status(&aud_sts);
+	rx_sample_rate = (aud_sts.aud_sr > 0) ? 1 : 0;
+	audio_packet = (aud_sts.aud_rcv_packet == 0) ? 0 : 1;
+
+	return (aud_sts.aud_stb_flag && audio_packet && rx_sample_rate);
+}
 
 int aml_get_hdmiin_audio_stable(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
-	struct rx_audio_stat_s aud_sts;
-
-	rx_get_audio_status(&aud_sts);
 	ucontrol->value.integer.value[0] =
-		(aud_sts.aud_rcv_packet == 0) ? 0 : 1;
+		get_hdmiin_audio_stable();
 
 	return 0;
 }
@@ -220,6 +253,17 @@ int aml_get_hdmiin_audio_channels(struct snd_kcontrol *kcontrol,
 	rx_get_audio_status(&aud_sts);
 	if (aud_sts.aud_channel_cnt <= 7)
 		ucontrol->value.integer.value[0] = aud_sts.aud_channel_cnt;
+
+	return 0;
+}
+
+int aml_get_hdmiin_audio_allocation(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	struct rx_audio_stat_s aud_sts;
+
+	rx_get_audio_status(&aud_sts);
+	ucontrol->value.integer.value[0] = aud_sts.aud_alloc;
 
 	return 0;
 }
@@ -296,4 +340,19 @@ int aml_get_hdmiin_audio_packet(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+int aml_get_hdmiin_nonaudio(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	struct rx_audio_stat_s aud_sts;
+	int nonaudio = 0;
+	(void)kcontrol;
+
+	rx_get_audio_status(&aud_sts);
+	if (aud_sts.ch_sts[0] & IEC958_AES0_NONAUDIO)
+		nonaudio = 1;
+
+	ucontrol->value.integer.value[0] = nonaudio;
+
+	return 0;
+}
 #endif

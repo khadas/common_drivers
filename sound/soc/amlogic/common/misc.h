@@ -45,8 +45,14 @@ int aml_get_hdmiin_audio_samplerate(struct snd_kcontrol *kcontrol,
 int aml_get_hdmiin_audio_channels(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol);
 
+int aml_get_hdmiin_audio_allocation(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol);
+
 int aml_get_hdmiin_audio_format(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol);
+
+int aml_get_hdmiin_audio_bitwidth(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol);
 
 int aml_set_atmos_audio_edid(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol);
@@ -56,6 +62,11 @@ int aml_get_atmos_audio_edid(struct snd_kcontrol *kcontrol,
 
 int aml_get_hdmiin_audio_packet(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol);
+int aml_get_hdmiin_nonaudio(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol);
+
+int get_hdmiin_audio_stable(void);
+int get_hdmi_sample_rate_index(void);
 
 #endif
 

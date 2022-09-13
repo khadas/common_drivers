@@ -14,7 +14,7 @@
 #include "ddr_mngr.h"
 #include "spdif.h"
 #include "spdif_hw.h"
-//#include "earc.h"
+#include "earc.h"
 
 struct samesrc_ops *samesrc_ops_table[SHAREBUFFER_SRC_NUM];
 
@@ -105,7 +105,7 @@ void sharebuffer_enable(int sel, bool enable, bool reenable)
 		/* same source with spdif a/b */
 		spdifout_enable(sel - 3, enable, reenable);
 	} else if (sel == SHAREBUFFER_EARCTX) {
-		//aml_earctx_enable(enable);
+		aml_earctx_enable(enable);
 	}
 }
 
@@ -126,9 +126,9 @@ int sharebuffer_prepare(struct snd_pcm_substream *substream,
 		sharebuffer_spdifout_prepare
 		(substream, fr, samesource_sel - 3, lane_i2s, type, separated);
 	} else if (samesource_sel == SHAREBUFFER_EARCTX) {
-		//sharebuffer_earctx_prepare(substream, fr, type, lane_i2s);
-		//if (!aml_get_earctx_enable())
-		//	return 0;
+		sharebuffer_earctx_prepare(substream, fr, type, lane_i2s);
+		if (!aml_get_earctx_enable())
+			return 0;
 	}
 
 	/* frddr, share buffer, src_sel1 */
@@ -188,11 +188,13 @@ void sharebuffer_get_mclk_fs_ratio(int samesource_sel,
 {
 	if (samesource_sel < SHAREBUFFER_TDMA) {
 		pr_err("Not support same source\n");
-	} else if (samesource_sel < 3) {
+	} else if (samesource_sel <= SHAREBUFFER_TDMC) {
 		// TODO: same with tdm
-	} else if (samesource_sel < 5) {
+	} else if (samesource_sel <= SHAREBUFFER_SPDIFB) {
 		/* spdif a/b */
 		*pll_mclk_ratio = 4;
 		*mclk_fs_ratio = 128;
+	} else if (samesource_sel == SHAREBUFFER_EARCTX) {
+		//TODO: earxtx
 	}
 }

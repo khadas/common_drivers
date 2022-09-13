@@ -308,8 +308,11 @@ static int vad_engine_check(struct vad *p_vad, bool init)
 		int frame_count1 = p_vad->dma_buffer.bytes / chnum / bytes_per_sample;
 		int send_size = frame_count1 * chnum * bytes_per_sample;
 
-		pr_info("%s copy vad whole buffer\n", __func__);
 		curr_addr = aml_toddr_get_position(p_vad->tddr);
+		pr_info("%s copy vad whole buffer, start:%x, end:%x, curr_addr:%x, last_addr:%x\n",
+			__func__, start, end, curr_addr, last_addr);
+		if (curr_addr < start || start > end)
+			return 0;
 		memcpy(p_vad->vad_whole_buf, hwbuf + curr_addr - start, end - curr_addr);
 		memcpy(p_vad->vad_whole_buf + end - curr_addr, hwbuf, curr_addr - start);
 
@@ -639,7 +642,6 @@ void vad_update_buffer(bool isvadbuf)
 			__func__, p_vad->a2v_buf, isvadbuf);
 		return;
 	}
-	p_vad->a2v_buf = isvadbuf;
 
 	if (isvadbuf) {	/* switch to vad buffer */
 		struct toddr *tddr = p_vad->tddr;
@@ -649,21 +651,14 @@ void vad_update_buffer(bool isvadbuf)
 		p_vad->threshold  = tddr->threshold;
 
 		rd_th = tddr->chipinfo->fifo_depth * 3 / 4;
-
-		pr_info("Switch to VAD buffer\n");
-		pr_debug("\t ASAL start:%x, end:%x, bytes:%d\n",
-			tddr->start_addr, tddr->end_addr,
-			tddr->end_addr - tddr->start_addr);
-
 		start = p_vad->dma_buffer.addr;
 		end   = start + p_vad->dma_buffer.bytes - 8;
 
-		pr_debug("\t VAD start:%x, end:%x, bytes:%d\n",
+		pr_info("Switch to VAD buffer, VAD start:%x, end:%x, bytes:%d\n",
 			start, end,
 			end - start);
 	} else {
-		pr_info("Switch to ALSA buffer\n");
-		pr_debug("\t ASAL start:%x, end:%x, bytes:%d\n",
+		pr_info("Switch to ALSA buffe, ALSA start:%x, end:%x, bytes:%d\n",
 			 p_vad->start_last, p_vad->end_last,
 			 p_vad->end_last - p_vad->start_last);
 
@@ -728,6 +723,7 @@ void vad_update_buffer(bool isvadbuf)
 
 		aml_toddr_set_fifos(p_vad->tddr, rd_th);
 	}
+	p_vad->a2v_buf = isvadbuf;
 	p_vad->addr = 0;
 }
 
@@ -1262,7 +1258,7 @@ static int vad_platform_suspend(struct platform_device *pdev, pm_message_t state
 	pr_info("%s\n", __func__);
 
 	/* whether in freeze */
-	if (/*is_pm_s2idle_mode() && */vad_is_enable()) {
+	if (is_pm_s2idle_mode() && vad_is_enable()) {
 		pr_info("%s, Entry in freeze\n", __func__);
 
 		if (p_vad->level == LEVEL_USER)
@@ -1280,13 +1276,14 @@ static int vad_platform_resume(struct platform_device *pdev)
 	pr_info("%s\n", __func__);
 
 	/* whether in freeze mode */
-	if (/*is_pm_s2idle_mode() && */vad_is_enable()) {
+	if (is_pm_s2idle_mode() && vad_is_enable()) {
 		pr_info("%s, Exist from freeze\n", __func__);
 
 		if (p_vad->level == LEVEL_USER)
 			dev_pm_clear_wake_irq(dev);
 	}
-
+	if (get_resume_method() == VAD_WAKEUP)
+		vad_key_report();
 	return 0;
 }
 

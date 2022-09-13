@@ -333,8 +333,7 @@ int resample_set(enum resample_idx id, enum samplerate_index index)
 				del_timer(&p_resample->timer);
 			}
 		} else if (p_resample->chipinfo->resample_version == AXG_RESAMPLE) {
-			//TODO
-			//frhdmirx_afifo_reset();
+			frhdmirx_afifo_reset();
 		}
 	} else {
 		if (p_resample->chipinfo->resample_version >= SM1_RESAMPLE) {

@@ -5,7 +5,7 @@
 
 #include <linux/clk.h>
 #include <linux/pinctrl/consumer.h>
-#include "../common/misc.h"
+#include "misc.h"
 
 #define DEFAULT_FS_RATIO		256
 
@@ -49,6 +49,7 @@ struct pdm_chipinfo {
 	/* vad top */
 	bool vad_top;
 	bool regulator;
+	bool oscin_divide;
 };
 
 struct aml_pdm {

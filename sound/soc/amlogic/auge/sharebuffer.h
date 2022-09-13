@@ -7,7 +7,7 @@
 #define __AML_AUDIO_SHAREBUFFER_H__
 
 #include <sound/pcm.h>
-#include "../common/iec_info.h"
+#include "iec_info.h"
 
 enum sharebuffer_srcs {
 	SHAREBUFFER_NONE = -1,

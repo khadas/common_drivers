@@ -222,10 +222,14 @@ enum audio_coding_types iec_61937_pc_to_coding_type(unsigned int pc)
 		break;
 	case 3:
 		coding_type = AUDIO_CODING_TYPE_PAUSE;
+		pr_debug("get iec_61937 pause package, pc:%#x, data_type:%#x, subdata_type:%#x\n",
+			pc, data_type, subdata_type);
 		break;
 	case 0:
 		/* invalid data */
 		coding_type = AUDIO_CODING_TYPE_PAUSE;
+		pr_debug("get iec_61937 pause package, pc:%#x, data_type:%#x, subdata_type:%#x\n",
+			pc, data_type, subdata_type);
 		break;
 	default:
 		break;
@@ -411,6 +415,7 @@ void spdif_notify_to_hdmitx(struct snd_pcm_substream *substream,
 	aud_param.rate = substream->runtime->rate;
 	aud_param.size = substream->runtime->sample_bits;
 	aud_param.chs  = substream->runtime->channels;
+	aud_param.aud_src_if = AUD_SRC_IF_SPDIF;
 
 	if (codec_type == AUD_CODEC_TYPE_AC3) {
 		aout_notifier_call_chain(AOUT_EVENT_RAWDATA_AC_3,

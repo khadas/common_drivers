@@ -16,15 +16,17 @@
 #include <linux/of.h>
 #include <linux/regmap.h>
 #include <linux/clk-provider.h>
+#include <linux/of_platform.h>
+
+#include "iomapres.h"
 
 #include "audio_io.h"
 #include "regs.h"
 
 /* #define REG_DEBUG */
-#ifdef REG_DEBUG
 #include "audio_aed_reg_list.h"
 #include "audio_top_reg_list.h"
-#endif
+#include "audio_controller.h"
 
 #define DRV_NAME "aml-audio-controller"
 
@@ -34,39 +36,35 @@ static unsigned int aml_audio_mmio_read(struct aml_audio_controller *actrlr,
 					unsigned int reg)
 {
 	struct regmap *regmap = actrlr->regmap;
-	unsigned int val;
 
-	regmap_read(regmap, (reg << 2), &val);
-
-	return val;
+	return mmio_read(regmap, reg);
 }
 
 static int aml_audio_mmio_write(struct aml_audio_controller *actrlr,
 				unsigned int reg, unsigned int value)
 {
 	struct regmap *regmap = actrlr->regmap;
-#ifdef REG_DEBUG
-	pr_info
-		("audio top reg:[%s] addr: [%#x] val: [%#x]\n",
-		top_register_table[reg].name,
-		top_register_table[reg].addr,
-		value);
-#endif
-	return regmap_write(regmap, (reg << 2), value);
+
+	pr_debug("audio top reg:[%s] addr: [%#x] val: [%#x]\n",
+		 top_register_table[reg].name,
+		 top_register_table[reg].addr,
+		 value);
+
+	return mmio_write(regmap, reg, value);
 }
 
 static int aml_audio_mmio_update_bits(struct aml_audio_controller *actrlr,
-				      unsigned int reg, unsigned int mask, unsigned int value)
+				      unsigned int reg, unsigned int mask,
+				      unsigned int value)
 {
 	struct regmap *regmap = actrlr->regmap;
-#ifdef REG_DEBUG
-	pr_info
-		("audio top reg:[%s] addr: [%#x] mask: [%#x] val: [%#x]\n",
-		top_register_table[reg].name,
-		top_register_table[reg].addr,
-		mask, value);
-#endif
-	return regmap_update_bits(regmap, (reg << 2), mask, value);
+
+	pr_debug("audio top reg:[%s] addr: [%#x] mask: [%#x] val: [%#x]\n",
+		 top_register_table[reg].name,
+		 top_register_table[reg].addr,
+		 mask, value);
+
+	return mmio_update_bits(regmap, reg, mask, value);
 }
 
 int aml_return_chip_id(void)
@@ -75,8 +73,8 @@ int aml_return_chip_id(void)
 }
 
 struct aml_audio_ctrl_ops aml_actrl_mmio_ops = {
-	.read			= aml_audio_mmio_read,
-	.write			= aml_audio_mmio_write,
+	.read		= aml_audio_mmio_read,
+	.write		= aml_audio_mmio_write,
 	.update_bits	= aml_audio_mmio_update_bits,
 };
 
@@ -86,8 +84,22 @@ static struct regmap_config aml_audio_regmap_config = {
 	.reg_stride = 4,
 };
 
+struct gate_info {
+	bool clk1_gate_off;
+};
+
+static struct gate_info axg_info = {
+	.clk1_gate_off = true,
+};
+
 static const struct of_device_id amlogic_audio_controller_of_match[] = {
-	{ .compatible = "amlogic, audio-controller" },
+	{
+		.compatible = "amlogic, audio-controller"
+	},
+	{
+		.compatible = "amlogic, axg-audio-controller",
+		.data       = &axg_info,
+	},
 	{},
 };
 
@@ -97,6 +109,7 @@ static int register_audio_controller(struct platform_device *pdev,
 	struct resource *res_mem;
 	void __iomem *regs;
 	struct regmap *regmap;
+	struct gate_info *info = (struct gate_info *)of_device_get_match_data(&pdev->dev);
 
 	/* get platform res from dtb */
 	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -109,9 +122,8 @@ static int register_audio_controller(struct platform_device *pdev,
 
 	aml_audio_regmap_config.max_register = 4 * resource_size(res_mem);
 
-	regmap = devm_regmap_init_mmio
-				(&pdev->dev, regs,
-			    &aml_audio_regmap_config);
+	regmap = devm_regmap_init_mmio(&pdev->dev, regs,
+				       &aml_audio_regmap_config);
 	if (IS_ERR(regmap))
 		return PTR_ERR(regmap);
 
@@ -121,10 +133,9 @@ static int register_audio_controller(struct platform_device *pdev,
 
 	/* gate on all clks on bringup stage, need gate separately */
 	aml_audiobus_write(actrl, EE_AUDIO_CLK_GATE_EN0, 0xffffffff);
-	aml_audiobus_update_bits(actrl, EE_AUDIO_CLK_GATE_EN1, 0x7, 0x7);
 
-	pr_debug("%s, registered audio controller\n", __func__);
-
+	if (info && !info->clk1_gate_off)
+		aml_audiobus_update_bits(actrl, EE_AUDIO_CLK_GATE_EN1, 0x7, 0x7);
 	return 0;
 }
 
@@ -154,7 +165,6 @@ static struct platform_driver aml_audio_controller_driver = {
 	.probe = aml_audio_controller_probe,
 };
 
-#ifdef MODULE
 int __init audio_controller_init(void)
 {
 	return platform_driver_register(&aml_audio_controller_driver);
@@ -164,9 +174,10 @@ void __exit audio_controller_exit(void)
 {
 	platform_driver_unregister(&aml_audio_controller_driver);
 }
-#else
-module_platform_driver(aml_audio_controller_driver);
 
+#ifndef MODULE
+module_init(audio_controller_init);
+module_exit(audio_controller_exit);
 MODULE_AUTHOR("Amlogic, Inc.");
 MODULE_DESCRIPTION("Amlogic audio controller ASoc driver");
 MODULE_LICENSE("GPL");

@@ -8,7 +8,7 @@
 #include "audio_io.h"
 #include "regs.h"
 
-#include "../common/iec_info.h"
+#include "iec_info.h"
 
 void aml_spdifin_chnum_en(struct aml_audio_controller *actrl,
 			  int index,

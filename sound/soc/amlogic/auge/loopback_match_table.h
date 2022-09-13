@@ -305,6 +305,10 @@ static const struct of_device_id loopback_device_id[] = {
 		.data = &a5_loopbacka_chipinfo,
 	},
 	{
+		.compatible = "amlogic, axg-loopback",
+		.data = &g12a_loopbacka_chipinfo,
+	},
+	{
 		.compatible = "amlogic, a1-loopbacka",
 		.data		= &a1_loopbacka_chipinfo,
 	},

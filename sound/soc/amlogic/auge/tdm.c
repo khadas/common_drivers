@@ -41,10 +41,10 @@
 #include "tdm_match_table.h"
 #include "effects_v2.h"
 #include "spdif.h"
-#include "../common/misc.h"
-#include "../common/debug.h"
+#include "misc.h"
+#include "debug.h"
 #include "pcpd_monitor.h"
-#include "../common/iec_info.h"
+#include "iec_info.h"
 #include "iomap.h"
 #include "audio_utils.h"
 
@@ -134,6 +134,7 @@ struct aml_tdm {
 	int pcpd_monitor_enable;
 	struct regulator *regulator_vcc3v3;
 	struct regulator *regulator_vcc5v;
+	int suspend_clk_off;
 };
 
 #define TDM_BUFFER_BYTES (512 * 1024)
@@ -261,7 +262,8 @@ static int aml_tdm_set_lanes(struct aml_tdm *p_tdm,
 		}
 		swap_val = 0x76543210;
 		/* TODO: find why LFE and FC(2ch, 3ch) HDMITX needs swap */
-		if (p_tdm->i2s2hdmitx)
+		if (p_tdm->i2s2hdmitx &&
+			spdif_get_codec() == AUD_CODEC_TYPE_MULTI_LPCM)
 			swap_val = 0x76542310;
 		if (p_tdm->lane_cnt > LANE_MAX1)
 			swap_val1 = 0xfedcba98;
@@ -358,6 +360,10 @@ static unsigned int aml_mpll_mclk_ratio(unsigned int freq)
 		if (mpll_freq > AML_MPLL_FREQ_MIN)
 			break;
 	}
+	//Currently for tdmB/spdifab with the samesource while the tdma running
+	//tdmb sysclk 12288000  tdma sysclk 8192000
+	if (freq % 8000 == 0)
+		ratio = 491520000 / freq;
 
 	return ratio;
 }
@@ -957,7 +963,7 @@ static void tdm_sharebuffer_trigger(struct aml_tdm *p_tdm,
 	if (ops) {
 		int reenable = 0;
 
-		if (channels > 2)
+		if (channels > 2 && !(p_tdm->fddr->chipinfo->chnum_sync))
 			reenable = 1;
 		ops->trigger(cmd,
 			p_tdm->samesource_sel,
@@ -1006,7 +1012,7 @@ static void tdm_sharebuffer_reset(struct aml_tdm *p_tdm, int channels)
 		return;
 
 	ops = get_samesrc_ops(p_tdm->samesource_sel);
-	if (ops && channels > 2)
+	if (ops && channels > 2 && !(p_tdm->fddr->chipinfo->chnum_sync))
 		ops->reset(p_tdm->samesource_sel - 3);
 }
 
@@ -1245,6 +1251,15 @@ static const struct snd_soc_component_driver aml_tdm_component = {
 	.mmap = aml_tdm_mmap,
 };
 
+static void set_aud_param_ch_status(struct iec958_chsts *chsts,
+	struct aud_para *aud_param)
+{
+	aud_param->status[0] = chsts->chstat0_l & 0xff;
+	aud_param->status[1] = (chsts->chstat0_l >> 8) & 0xff;
+	aud_param->status[2] = chsts->chstat1_l & 0xff;
+	aud_param->status[3] = (chsts->chstat1_l >> 8) & 0xff;
+}
+
 static int aml_dai_tdm_prepare(struct snd_pcm_substream *substream,
 			       struct snd_soc_dai *cpu_dai)
 {
@@ -1274,15 +1289,27 @@ static int aml_dai_tdm_prepare(struct snd_pcm_substream *substream,
 
 		/* i2s source to hdmix */
 		if (p_tdm->i2s2hdmitx) {
-			separated = p_tdm->chipinfo->separate_tohdmitx_en;
-			i2s_to_hdmitx_ctrl(separated, p_tdm->id);
-			if (spdif_get_codec() == AUD_CODEC_TYPE_MULTI_LPCM)
-				aout_notifier_call_chain(AOUT_EVENT_IEC_60958_PCM,
-							 &aud_param);
-			else
-				pr_warn("%s(), i2s2hdmi with wrong fmt,codec_type:%d\n",
-					__func__, spdif_get_codec());
+			enum aud_codec_types codec_type = spdif_get_codec();
+			unsigned int event_type = 0;
+			struct iec958_chsts chsts;
 
+			memset(&chsts, 0, sizeof(chsts));
+			separated = p_tdm->chipinfo->separate_tohdmitx_en;
+			aud_param.aud_src_if = AUD_SRC_IF_I2S;
+			pr_info("notify tdm to hdmitx,id %d codec_type %d",
+				p_tdm->id, codec_type);
+			i2s_to_hdmitx_ctrl(separated, p_tdm->id, p_tdm->clk_sel);
+
+			if (codec_type == AUD_CODEC_TYPE_TRUEHD)
+				event_type = AOUT_EVENT_RAWDATA_MAT_MLP;
+			else if (codec_type == AUD_CODEC_TYPE_DTS_HD_MA)
+				event_type = AOUT_EVENT_RAWDATA_DTS_HD_MA;
+			else
+				event_type = AOUT_EVENT_IEC_60958_PCM;
+			iec_get_channel_status_info(&chsts, codec_type,
+				runtime->rate, 0);
+			set_aud_param_ch_status(&chsts, &aud_param);
+			aout_notifier_call_chain(event_type, &aud_param);
 		}
 
 		fifo_id = aml_frddr_get_fifo_id(fr);
@@ -2014,6 +2041,12 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 		return -ENXIO;
 	}
 
+	ret = of_property_read_u32(node, "suspend-clk-off",
+			&p_tdm->suspend_clk_off);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "Can't retrieve suspend-clk-off\n");
+	}
+
 	/* default no same source */
 	if (p_tdm->chipinfo->same_src_fn) {
 		int ss = 0;
@@ -2214,14 +2247,21 @@ static int aml_tdm_platform_suspend(struct platform_device *pdev,
 {
 	struct aml_tdm *p_tdm = dev_get_drvdata(&pdev->dev);
 
-	if (!IS_ERR(p_tdm->mclk2pad)) {
-		while (__clk_is_enabled(p_tdm->mclk2pad))
-			clk_disable_unprepare(p_tdm->mclk2pad);
-	}
+	if (p_tdm->chipinfo->regulator || (p_tdm->suspend_clk_off && !is_pm_s2idle_mode())) {
+		if (!IS_ERR(p_tdm->mclk2pad)) {
+			while (__clk_is_enabled(p_tdm->mclk2pad))
+				clk_disable_unprepare(p_tdm->mclk2pad);
+		}
 
-	if (!IS_ERR(p_tdm->mclk)) {
-		while (__clk_is_enabled(p_tdm->mclk))
-			clk_disable_unprepare(p_tdm->mclk);
+		if (!IS_ERR(p_tdm->mclk)) {
+			while (__clk_is_enabled(p_tdm->mclk))
+				clk_disable_unprepare(p_tdm->mclk);
+		}
+
+		if (!IS_ERR_OR_NULL(p_tdm->regulator_vcc5v))
+			regulator_disable(p_tdm->regulator_vcc5v);
+		if (!IS_ERR_OR_NULL(p_tdm->regulator_vcc3v3))
+			regulator_disable(p_tdm->regulator_vcc3v3);
 	}
 
 	/*mute default clk */
@@ -2234,11 +2274,6 @@ static int aml_tdm_platform_suspend(struct platform_device *pdev,
 			pr_info("%s tdm pins disable!\n", __func__);
 		}
 	}
-
-	if (!IS_ERR_OR_NULL(p_tdm->regulator_vcc5v))
-		regulator_disable(p_tdm->regulator_vcc5v);
-	if (!IS_ERR_OR_NULL(p_tdm->regulator_vcc3v3))
-		regulator_disable(p_tdm->regulator_vcc3v3);
 
 	pr_info("%s tdm:(%d)\n", __func__, p_tdm->id);
 	return 0;
@@ -2253,22 +2288,44 @@ static int aml_tdm_platform_resume(struct platform_device *pdev)
 	out_lanes = pop_count(p_tdm->setting.lane_mask_out);
 	in_lanes = pop_count(p_tdm->setting.lane_mask_in);
 
-	audiobus_write(EE_AUDIO_CLK_GATE_EN0, 0xffffffff);
-	audiobus_update_bits(EE_AUDIO_CLK_GATE_EN1, 0x7, 0x7);
+	if (p_tdm->chipinfo->regulator || (p_tdm->suspend_clk_off && !is_pm_s2idle_mode())) {
 
-	if (!IS_ERR(p_tdm->mclk) && !IS_ERR(p_tdm->clk)) {
-		clk_set_parent(p_tdm->mclk, NULL);
-		ret = clk_set_parent(p_tdm->mclk, p_tdm->clk);
-		if (ret)
-			dev_warn(&pdev->dev, "can't set tdm parent clock\n");
-	}
+		audiobus_write(EE_AUDIO_CLK_GATE_EN0, 0xffffffff);
+		audiobus_update_bits(EE_AUDIO_CLK_GATE_EN1, 0x7, 0x7);
 
-	if (!IS_ERR(p_tdm->mclk2pad)) {
-		clk_set_parent(p_tdm->mclk2pad, NULL);
-		ret = clk_set_parent(p_tdm->mclk2pad, p_tdm->mclk);
+		if (!IS_ERR(p_tdm->mclk) && !IS_ERR(p_tdm->clk)) {
+			clk_set_parent(p_tdm->mclk, NULL);
+			ret = clk_set_parent(p_tdm->mclk, p_tdm->clk);
+			if (ret)
+				dev_warn(&pdev->dev, "can't set tdm parent clock\n");
+		}
+
+		if (!IS_ERR(p_tdm->mclk2pad)) {
+			clk_set_parent(p_tdm->mclk2pad, NULL);
+			ret = clk_set_parent(p_tdm->mclk2pad, p_tdm->mclk);
+			if (ret)
+				dev_warn(&pdev->dev, "Can't set tdm mclk_pad parent\n");
+			clk_prepare_enable(p_tdm->mclk2pad);
+		}
+
+		if (in_lanes > 0 && in_lanes <= LANE_MAX3)
+			aml_tdm_set_slot_in(p_tdm->actrl,
+				p_tdm->id, p_tdm->id, p_tdm->setting.slot_width,
+				p_tdm->chipinfo->use_vadtop);
+
+		if (out_lanes > 0 && out_lanes <= LANE_MAX3)
+			aml_tdm_set_slot_out(p_tdm->actrl,
+				p_tdm->id, p_tdm->setting.slots, p_tdm->setting.slot_width);
+
+		if (!IS_ERR_OR_NULL(p_tdm->regulator_vcc5v))
+			ret = regulator_enable(p_tdm->regulator_vcc5v);
 		if (ret)
-			dev_warn(&pdev->dev, "Can't set tdm mclk_pad parent\n");
-		clk_prepare_enable(p_tdm->mclk2pad);
+			dev_err(&pdev->dev, "regulator tdm5v enable failed:   %d\n", ret);
+
+		if (!IS_ERR_OR_NULL(p_tdm->regulator_vcc3v3))
+			ret = regulator_enable(p_tdm->regulator_vcc3v3);
+		if (ret)
+			dev_err(&pdev->dev, "regulator tdm3v3 enable failed:   %d\n", ret);
 	}
 
 	/*set default clk for output*/
@@ -2277,32 +2334,12 @@ static int aml_tdm_platform_resume(struct platform_device *pdev)
 
 	if (!IS_ERR_OR_NULL(p_tdm->pin_ctl)) {
 		struct pinctrl_state *state = NULL;
-
 		state = pinctrl_lookup_state(p_tdm->pin_ctl, "tdm_pins");
 		if (!IS_ERR_OR_NULL(state)) {
 			pinctrl_select_state(p_tdm->pin_ctl, state);
 			pr_info("%s tdm pins enable!\n", __func__);
 		}
 	}
-
-	if (in_lanes > 0 && in_lanes <= LANE_MAX3)
-		aml_tdm_set_slot_in(p_tdm->actrl,
-			p_tdm->id, p_tdm->id, p_tdm->setting.slot_width,
-			p_tdm->chipinfo->use_vadtop);
-
-	if (out_lanes > 0 && out_lanes <= LANE_MAX3)
-		aml_tdm_set_slot_out(p_tdm->actrl,
-			p_tdm->id, p_tdm->setting.slots, p_tdm->setting.slot_width);
-
-	if (!IS_ERR_OR_NULL(p_tdm->regulator_vcc5v))
-		ret = regulator_enable(p_tdm->regulator_vcc5v);
-	if (ret)
-		dev_err(&pdev->dev, "regulator tdm5v enable failed:   %d\n", ret);
-
-	if (!IS_ERR_OR_NULL(p_tdm->regulator_vcc3v3))
-		ret = regulator_enable(p_tdm->regulator_vcc3v3);
-	if (ret)
-		dev_err(&pdev->dev, "regulator tdm3v3 enable failed:   %d\n", ret);
 
 	pr_info("%s tdm:(%d)\n", __func__, p_tdm->id);
 	return 0;

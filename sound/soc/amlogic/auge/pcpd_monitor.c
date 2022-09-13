@@ -7,7 +7,7 @@
 
 #include "regs.h"
 #include "pcpd_monitor.h"
-#include "../common/iec_info.h"
+#include "iec_info.h"
 
 #if (defined CONFIG_AMLOGIC_MEDIA_TVIN_HDMI ||\
 defined CONFIG_AMLOGIC_MEDIA_TVIN_HDMI_MODULE)

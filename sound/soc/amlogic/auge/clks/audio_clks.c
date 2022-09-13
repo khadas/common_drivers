@@ -13,7 +13,7 @@
 
 #include "audio_clks.h"
 #include "../regs.h"
-#include "../../common/iomapres.h"
+#include "iomapres.h"
 
 #define DRV_NAME "audio-clocks"
 
@@ -25,8 +25,36 @@ static const struct of_device_id audio_clocks_of_match[] = {
 		.data		= &sm1_audio_clks_init,
 	},
 	{
+		.compatible = "amlogic, tm2-audio-clocks",
+		.data		= &tm2_audio_clks_init,
+	},
+	{
 		.compatible = "amlogic, sc2-audio-clocks",
 		.data       = &sc2_audio_clks_init,
+	},
+	{
+		.compatible = "amlogic, t5-audio-clocks",
+		.data		= &t5_audio_clks_init,
+	},
+	{
+		.compatible = "amlogic, t7-audio-clocks",
+		.data		= &t7_audio_clks_init,
+	},
+	{
+		.compatible = "amlogic, t3-audio-clocks",
+		.data		= &t3_audio_clks_init,
+	},
+	{
+		.compatible = "amlogic, p1-audio-clocks",
+		.data		= &p1_audio_clks_init,
+	},
+	{
+		.compatible = "amlogic, a5-audio-clocks",
+		.data           = &a5_audio_clks_init,
+	},
+	{
+		.compatible = "amlogic, axg-audio-clocks",
+		.data           = &axg_audio_clks_init,
 	},
 	{
 		.compatible = "amlogic, a1-audio-clocks",

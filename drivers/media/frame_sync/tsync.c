@@ -137,7 +137,7 @@ static int vpts_discontinue;
 static int pts_discontinue;
 static u32 apts_discontinue_diff;
 static u32 vpts_discontinue_diff;
-static int tsync_abreak;
+static int tsync_aBreak;
 static bool tsync_pcr_recover_enable;
 static int pcr_sync_stat = PCR_SYNC_UNSET;
 static int pcr_recover_trigger;
@@ -190,18 +190,18 @@ static int startsync_mode = 2;
  *AMASTER<-------------->  |<-----DYNAMIC VMASTER---->|   VMASTER
  *static mode  | a dynamic  |            dynamic mode  |static mode
  *
- *static mode(S), Amster and Vmaster..
- *dynamic mode (D)  : discontinue....>min,< max,can switch to static mode,
- *		if diff is <min,and become to Sd mode if timerout.
- *sdynamic mode (A): dynamic mode become to static mode,because timer out,
+ *static mode(S), Amaster and Vmaster..
+ *dynamic mode (D) : discontinue....> min, < max, can switch to static mode,
+ *		if diff is < min, and become to Sd mode if timerout.
+ *dynamicToStatic mode (A) : dynamic mode become to static mode, because timer out,
  *		Don't do switch  before timeout.
  *
  *tsync_av_mode switch...
  *(AMASTER S)<-->(D VMASTER)<--> (S VMASTER)
  *(D VMASTER)--time out->(A AMASTER)--time out->((AMASTER S))
  */
-unsigned int tsync_av_threshold_min = AV_DISCONTINUE_THREDHOLD_MIN;
-unsigned int tsync_av_threshold_max = AV_DISCONTINUE_THREDHOLD_MAX;
+unsigned int tsync_av_threshold_min = AV_DISCONTINUE_THRESHOLD_MIN;
+unsigned int tsync_av_threshold_max = AV_DISCONTINUE_THRESHOLD_MAX;
 #define TSYNC_STATE_S  ('S')
 #define TSYNC_STATE_A ('A')
 #define TSYNC_STATE_D  ('D')
@@ -370,7 +370,7 @@ static void tsync_pcr_recover_timer_func(struct timer_list *arg)
 
 static int tsync_mode_switch(int mode, unsigned long diff_pts, int jump_pts)
 {
-	int debugcnt = 0;
+	int debugCount = 0;
 	int old_tsync_mode = tsync_mode;
 	int old_tsync_av_mode = tsync_av_mode;
 	char VA[] = "VA--";
@@ -401,7 +401,7 @@ static int tsync_mode_switch(int mode, unsigned long diff_pts, int jump_pts)
 	}
 	if (mode == 'T') {	/*D/A--> ... */
 		if (tsync_av_mode == TSYNC_STATE_D) {
-			debugcnt |= 1 << 1;
+			debugCount |= 1 << 1;
 			tsync_av_mode = TSYNC_STATE_A;
 			tsync_mode = TSYNC_MODE_AMASTER;
 			tsync_av_latest_switch_time_ms = jiffies_ms;
@@ -410,7 +410,7 @@ static int tsync_mode_switch(int mode, unsigned long diff_pts, int jump_pts)
 			if (tsync_av_dynamic_duration_ms > 5 * 1000)
 				tsync_av_dynamic_duration_ms = 5 * 1000;
 		} else if (tsync_av_mode == TSYNC_STATE_A) {
-			debugcnt |= 1 << 2;
+			debugCount |= 1 << 2;
 			tsync_av_mode = TSYNC_STATE_S;
 			tsync_mode = TSYNC_MODE_AMASTER;
 			tsync_av_latest_switch_time_ms = jiffies_ms;
@@ -438,22 +438,22 @@ static int tsync_mode_switch(int mode, unsigned long diff_pts, int jump_pts)
 			pr_info("mode changes:tsync_mode:%c->%c,state:%c->%c,",
 				VA[old_tsync_mode], VA[tsync_mode],
 				old_tsync_av_mode, tsync_av_mode);
-			pr_info("debugcnt=0x%x,diff_pts=%lu\n",
-				debugcnt,
+			pr_info("debugCount=0x%x,diff_pts=%lu\n",
+				debugCount,
 				diff_pts);
 		return 0;
 	}
 
 	if (diff_pts < tsync_av_threshold_min) {
 		/*->min*/
-		debugcnt |= 1 << 1;
+		debugCount |= 1 << 1;
 		tsync_av_mode = TSYNC_STATE_S;
 		tsync_mode = TSYNC_MODE_AMASTER;
 		tsync_av_latest_switch_time_ms = jiffies_ms;
 		tsync_av_dynamic_duration_ms = 0;
 	} else if (diff_pts <= tsync_av_threshold_max) {	/*min<-->max */
 		if (tsync_av_mode == TSYNC_STATE_S) {
-			debugcnt |= 1 << 2;
+			debugCount |= 1 << 2;
 			tsync_av_mode = TSYNC_STATE_D;
 			tsync_mode = TSYNC_MODE_VMASTER;
 			tsync_av_latest_switch_time_ms = jiffies_ms;
@@ -461,7 +461,7 @@ static int tsync_mode_switch(int mode, unsigned long diff_pts, int jump_pts)
 		} else if (tsync_av_mode ==
 				   TSYNC_STATE_D) {
 			/*new discontinue,continue wait.... */
-			debugcnt |= 1 << 7;
+			debugCount |= 1 << 7;
 			tsync_av_mode = TSYNC_STATE_D;
 			tsync_mode = TSYNC_MODE_VMASTER;
 			tsync_av_latest_switch_time_ms = jiffies_ms;
@@ -469,20 +469,20 @@ static int tsync_mode_switch(int mode, unsigned long diff_pts, int jump_pts)
 		}
 	} else if (diff_pts >= tsync_av_threshold_max) {	/*max<-- */
 		if (tsync_av_mode == TSYNC_STATE_D) {
-			debugcnt |= 1 << 3;
+			debugCount |= 1 << 3;
 			tsync_av_mode = TSYNC_STATE_S;
 			tsync_mode = TSYNC_MODE_VMASTER;
 			tsync_av_latest_switch_time_ms = jiffies_ms;
 			tsync_av_dynamic_duration_ms = 0;
 		} else if (tsync_mode != TSYNC_MODE_VMASTER) {
-			debugcnt |= 1 << 4;
+			debugCount |= 1 << 4;
 			tsync_av_mode = TSYNC_STATE_S;
 			tsync_mode = TSYNC_MODE_VMASTER;
 			tsync_av_latest_switch_time_ms = jiffies_ms;
 			tsync_av_dynamic_duration_ms = 0;
 		}
 	} else {
-		debugcnt |= 1 << 16;
+		debugCount |= 1 << 16;
 	}
 
 	if (oldtimeout != tsync_av_latest_switch_time_ms +
@@ -496,8 +496,8 @@ static int tsync_mode_switch(int mode, unsigned long diff_pts, int jump_pts)
 		VA[old_tsync_mode], VA[tsync_mode],
 		old_tsync_av_mode, tsync_av_mode,
 		(u32)jiffies_ms32);
-	pr_info("debugcnt=0x%x,diff_pts=%lu,tsync_mode=%d\n",
-		debugcnt, diff_pts, tsync_mode);
+	pr_info("debugCount=0x%x,diff_pts=%lu,tsync_mode=%d\n",
+		debugCount, diff_pts, tsync_mode);
 	return 0;
 }
 
@@ -906,21 +906,21 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 		break;
 
 	/*
-	 *Note:
-	 *Video and audio PTS discontinue happens typically with a loopback
-	 *playback, with same bit stream play in loop and PTS wrap back from
-	 *start point.
-	 *When VIDEO_TSTAMP_DISCONTINUITY happens early, PCRSCR is set
-	 *immedately to make video still keep running in VMATSER mode. This
-	 *mode is restored to AMASTER mode when AUDIO_TSTAMP_DISCONTINUITY
-	 *reports, or apts is close to scr later.
-	 *When AUDIO_TSTAMP_DISCONTINUITY happens early, VMASTER mode is
-	 *set to make video still keep running w/o setting PCRSCR. This mode
-	 *is restored to AMASTER mode when VIDEO_TSTAMP_DISCONTINUITY
-	 *reports, and scr is restored along with new video time stamp also.
+	 * Note:
+	 * Video and audio PTS discontinue happens typically with a loopback
+	 * playback, with same bit stream play in loop and PTS wrap back from
+	 * start point.
+	 * When VIDEO_TSTAMP_DISCONTINUITY happens early, PCRSCR is set
+	 * immediately to make video still keep running in VMASTER mode. This
+	 * mode is restored to AMASTER mode when AUDIO_TSTAMP_DISCONTINUITY
+	 * reports, or apts is close to scr later.
+	 * When AUDIO_TSTAMP_DISCONTINUITY happens early, VMASTER mode is
+	 * set to make video still keep running w/o setting PCRSCR. This mode
+	 * is restored to AMASTER mode when VIDEO_TSTAMP_DISCONTINUITY
+	 * reports, and scr is restored along with new video time stamp also.
 	 */
 	case VIDEO_TSTAMP_DISCONTINUITY: {
-		unsigned int oldpts = timestamp_vpts_get();
+		unsigned int old_pts = timestamp_vpts_get();
 		int oldmod = tsync_mode;
 
 		if (tsync_mode == TSYNC_MODE_VMASTER &&
@@ -929,7 +929,7 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 		else
 			t = timestamp_pcrscr_get();
 		if (tsync_get_demux_pcrscr_valid()) {
-			if (abs(param - oldpts) > tsync_av_threshold_min) {
+			if (abs(param - old_pts) > tsync_av_threshold_min) {
 				vpts_discontinue = 1;
 				if (apts_discontinue == 1) {
 					apts_discontinue = 0;
@@ -956,12 +956,12 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 		 *amlog_level(LOG_LEVEL_ATTENTION,
 		 *"VIDEO_TSTAMP_DISCONTINUITY, 0x%x, 0x%x\n", t, param);
 		 */
-		if ((abs(param - oldpts) > tsync_av_threshold_min) &&
+		if ((abs(param - old_pts) > tsync_av_threshold_min) &&
 		    (!get_vsync_pts_inc_mode())) {
 			vpts_discontinue = 1;
 			vpts_discontinue_diff = abs(param - t);
 			tsync_mode_switch('V', abs(param - t),
-					  param - oldpts);
+					  param - old_pts);
 		}
 
 		timestamp_vpts_set(param);
@@ -978,14 +978,14 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 	break;
 
 	case AUDIO_TSTAMP_DISCONTINUITY: {
-		unsigned int oldpts = timestamp_apts_get();
+		unsigned int old_pts = timestamp_apts_get();
 		int oldmod = tsync_mode;
 
 		amlog_level(LOG_LEVEL_ATTENTION,
 			    "audio discontinue, reset apts, 0x%x\n",
 				param);
 		if (tsync_get_demux_pcrscr_valid()) {
-			if (abs(param - oldpts) > tsync_av_threshold_min) {
+			if (abs(param - old_pts) > tsync_av_threshold_min) {
 				apts_discontinue = 1;
 				if (vpts_discontinue == 1) {
 					pr_info("set para->pcrsrc,pcrsrc from %x to %x,diff %d\n",
@@ -1021,12 +1021,12 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 		amlog_level(LOG_LEVEL_ATTENTION,
 			    "AUDIO_TSTAMP_DISCONTINUITY, 0x%x, 0x%x\n",
 				t, param);
-		if ((abs(param - oldpts) > tsync_av_threshold_min) &&
+		if ((abs(param - old_pts) > tsync_av_threshold_min) &&
 		    (!get_vsync_pts_inc_mode())) {
 			apts_discontinue = 1;
 			apts_discontinue_diff = abs(param - t);
 			tsync_mode_switch('A', abs(param - t),
-					  param - oldpts);
+					  param - old_pts);
 		}
 		timestamp_apts_set(param);
 		if (tsync_mode == TSYNC_MODE_AMASTER) {
@@ -1077,7 +1077,7 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 		pr_info("[%s]param %d, t %d\n",
 					__func__, param, t);
 
-		tsync_abreak = 0;
+		tsync_aBreak = 0;
 		/* after reset, video should be played first */
 		if (tsync_dec_reset_flag) {
 			int vpts = timestamp_vpts_get();
@@ -1115,7 +1115,7 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 		tsync_set_av_state(1, AUDIO_STOP);
 		timestamp_apts_enable(0);
 		timestamp_apts_set(-1);
-		tsync_abreak = 0;
+		tsync_aBreak = 0;
 		if (tsync_trickmode)
 			tsync_stat = TSYNC_STAT_PCRSCR_SETUP_VIDEO;
 		else
@@ -1202,7 +1202,7 @@ EXPORT_SYMBOL(tsync_avevent);
 
 void tsync_audio_break(int audio_break)
 {
-	tsync_abreak = audio_break;
+	tsync_aBreak = audio_break;
 }
 EXPORT_SYMBOL(tsync_audio_break);
 
@@ -1273,15 +1273,15 @@ void tsync_set_sync_vdiscont_diff(u32 discontinue_diff)
 }
 EXPORT_SYMBOL(tsync_set_sync_vdiscont_diff);
 
-void tsync_set_sync_adiscont(int syncdiscont)
+void tsync_set_sync_adiscont(int sync_discontinue)
 {
-	apts_discontinue = syncdiscont;
+	apts_discontinue = sync_discontinue;
 }
 EXPORT_SYMBOL(tsync_set_sync_adiscont);
 
-void tsync_set_sync_vdiscont(int syncdiscont)
+void tsync_set_sync_vdiscont(int sync_discontinue)
 {
-	vpts_discontinue = syncdiscont;
+	vpts_discontinue = sync_discontinue;
 }
 EXPORT_SYMBOL(tsync_set_sync_vdiscont);
 
@@ -1305,7 +1305,7 @@ int tsync_set_apts(unsigned int pts)
 {
 	unsigned int t;
 	/* ssize_t r; */
-	unsigned int oldpts = timestamp_apts_get();
+	unsigned int old_pts = timestamp_apts_get();
 	int oldmod = tsync_mode;
 
 	if (tsync_mode == TSYNC_MODE_PCRMASTER) {
@@ -1313,8 +1313,8 @@ int tsync_set_apts(unsigned int pts)
 		return 0;
 	}
 
-	if (tsync_abreak)
-		tsync_abreak = 0;
+	if (tsync_aBreak)
+		tsync_aBreak = 0;
 	if (!tsync_enable) {
 		timestamp_apts_set(pts);
 		return 0;
@@ -1335,12 +1335,12 @@ int tsync_set_apts(unsigned int pts)
 		return 0;
 	}
 	/* do not switch tsync mode until first video toggled. */
-	if ((abs(oldpts - pts) > tsync_av_threshold_min) &&
+	if ((abs(old_pts - pts) > tsync_av_threshold_min) &&
 	    (timestamp_firstvpts_get() > 0)) {	/* is discontinue */
 		apts_discontinue = 1;
 		/*if in VMASTER ,just wait */
 		tsync_mode_switch('A', abs(pts - t),
-				  pts - oldpts);
+				  pts - old_pts);
 	}
 	timestamp_apts_set(pts);
 
@@ -1360,7 +1360,7 @@ int tsync_set_apts(unsigned int pts)
 				 100 * TIME_UNIT90K / 1000)) {
 				pr_info
 				("[%d:avsync_test]reset apts:0x%x-->0x%x,",
-				 __LINE__, oldpts, pts);
+				 __LINE__, old_pts, pts);
 				pr_info(" pcr 0x%x, diff %d\n",
 					t, pts - t);
 				timestamp_pcrscr_set(pts);
@@ -1379,7 +1379,7 @@ int tsync_set_apts(unsigned int pts)
 				 500 * TIME_UNIT90K / 1000)) {
 				pr_info
 				("[%d]reset apts:0x%x-->0x%x, ",
-				 __LINE__, oldpts, pts);
+				 __LINE__, old_pts, pts);
 				pr_info("pcr 0x%x, diff %d\n",
 					t, pts - t);
 				timestamp_pcrscr_set(pts);
@@ -1389,7 +1389,7 @@ int tsync_set_apts(unsigned int pts)
 						   100 * TIME_UNIT90K / 1000)) {
 				pr_info
 				("[%d]reset apts:0x%x-->0x%x, ",
-				 __LINE__, oldpts, pts);
+				 __LINE__, old_pts, pts);
 				pr_info("pcr 0x%x, diff %d\n",
 					t, pts - t);
 				timestamp_pcrscr_set(pts);
@@ -2157,7 +2157,7 @@ static ssize_t avsync_count_store(struct class *class,
 }
 
 static ssize_t apts_lookup_show(struct class *class,
-				struct class_attribute *attrr, char *buf)
+				struct class_attribute *attribute, char *buf)
 {
 	u32 frame_size;
 	unsigned int  pts = 0xffffffff;
@@ -2461,7 +2461,7 @@ static int tsync_release(struct inode *inode, struct file *file)
 static long tsync_ioctl(struct file *file, unsigned int cmd, ulong arg)
 {
 	long ret = 0;
-	unsigned int tmppts = 0;
+	unsigned int tmp_pts = 0;
 	void __user *argp = (void __user *)arg;
 
 	switch (cmd) {
@@ -2484,8 +2484,8 @@ static long tsync_ioctl(struct file *file, unsigned int cmd, ulong arg)
 		break;
 
 	case TSYNC_IOC_SET_FIRST_CHECKIN_APTS:
-		if (new_arch && get_user(tmppts, (unsigned int *)arg) >= 0)
-			timestamp_checkin_firstapts_set(tmppts);
+		if (new_arch && get_user(tmp_pts, (unsigned int *)arg) >= 0)
+			timestamp_checkin_firstapts_set(tmp_pts);
 		break;
 
 	case TSYNC_IOC_SET_LAST_CHECKIN_APTS:
@@ -2621,7 +2621,7 @@ int __init tsync_module_init(void)
 	/*
 	 *"new_arch" is true means X4 demux was used.
 	 we use the conditions "chip type >= sc2 and exclude some
-	 X2 demux chip typs, such as: such as T5/T5D".
+	 X2 demux chip types, such as: such as T5/T5D".
 	 */
 	if (chip >= MESON_CPU_MAJOR_ID_SC2 &&
 	    chip != MESON_CPU_MAJOR_ID_T5 &&

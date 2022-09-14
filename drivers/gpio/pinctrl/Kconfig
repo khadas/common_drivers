@@ -74,4 +74,13 @@ config AMLOGIC_PINCTRL_MESON_T7
 	  T7 pinctrl can work.
 	  otherwise T7 pinctrl can't work
 
+config AMLOGIC_PINCTRL_MESON_T5M
+	tristate "Meson T5M Soc pinctrl driver"
+	default n
+	help
+	  the chip of T5M will be built
+	  when enable this config.
+	  T5M pinctrl can work.
+	  otherwise T5M pinctrl can't work
+
 endif

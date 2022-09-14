@@ -78,6 +78,9 @@ CONFIG_AMLOGIC_PINCTRL_MESON_T3=m
 # amlogic-pinctrl-soc-t7.ko
 CONFIG_AMLOGIC_PINCTRL_MESON_T7=m
 
+# amlogic-pinctrl-soc-t5m.ko
+CONFIG_AMLOGIC_PINCTRL_MESON_T5M=m
+
 # amlogic-secmon.ko
 CONFIG_AMLOGIC_SECMON=m
 CONFIG_AMLOGIC_DOLBY_FW=y

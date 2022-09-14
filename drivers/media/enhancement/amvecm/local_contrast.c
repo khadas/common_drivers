@@ -1733,7 +1733,7 @@ void lc_read_region(int blk_vnum, int blk_hnum)
 				}
 			}
 
-			/*part3: add tune curve node patch--by vlsi*/
+			/*part3: add tune curve node patch--by vlsi-guopan*/
 			if (tune_curve_en == 2) {
 				tune_nodes_patch(&lc_szcurve[cur_block * 6],
 						 &lc_hist[cur_block * 17],
@@ -1783,28 +1783,37 @@ void lc_init(int bitdepth)
 	h_num = 12;
 	v_num = 8;
 
-	lc_szcurve = kcalloc(LC_CURV_SIZE, sizeof(int), GFP_KERNEL);
+	if (!lc_szcurve)
+		lc_szcurve = kcalloc(LC_CURV_SIZE, sizeof(int), GFP_KERNEL);
 	if (!lc_szcurve)
 		return;
-	curve_nodes_cur = kcalloc(LC_CURV_SIZE, sizeof(int), GFP_KERNEL);
+
+	if (!curve_nodes_cur)
+		curve_nodes_cur = kcalloc(LC_CURV_SIZE, sizeof(int), GFP_KERNEL);
 	if (!curve_nodes_cur) {
 		kfree(lc_szcurve);
 		return;
 	}
-	curve_nodes_pre = kcalloc(LC_CURV_SIZE, sizeof(int), GFP_KERNEL);
+
+	if (!curve_nodes_pre)
+		curve_nodes_pre = kcalloc(LC_CURV_SIZE, sizeof(int), GFP_KERNEL);
 	if (!curve_nodes_pre) {
 		kfree(lc_szcurve);
 		kfree(curve_nodes_cur);
 		return;
 	}
-	lc_hist = kcalloc(LC_HIST_SIZE, sizeof(int), GFP_KERNEL);
+
+	if (!lc_hist)
+		lc_hist = kcalloc(LC_HIST_SIZE, sizeof(int), GFP_KERNEL);
 	if (!lc_hist) {
 		kfree(lc_szcurve);
 		kfree(curve_nodes_cur);
 		kfree(curve_nodes_pre);
 		return;
 	}
-	curve_nodes_pre_raw = kcalloc(LC_CURV_SIZE,
+
+	if (!curve_nodes_pre_raw)
+		curve_nodes_pre_raw = kcalloc(LC_CURV_SIZE,
 				      sizeof(int64_t),
 					GFP_KERNEL);
 	if (!curve_nodes_pre_raw) {

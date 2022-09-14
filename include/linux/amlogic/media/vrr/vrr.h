@@ -29,6 +29,10 @@ struct vrr_device_s {
 	unsigned int vline_min;
 	unsigned int vfreq_max;
 	unsigned int vfreq_min;
+
+	void *dev_data;
+	unsigned int (*lfc_switch)(void *dev_data, int fps);
+	int (*disable_cb)(void *dev_data);
 };
 
 struct vrr_notifier_data_s {
@@ -40,6 +44,8 @@ struct vrr_notifier_data_s {
 	unsigned int line_dly;
 
 	unsigned int vrr_mode;
+	unsigned int lfc_en;
+	unsigned int vrr_policy; /* 0:fix fps as vlock, 1:dynamic fps */
 };
 
 /* **********************************
@@ -66,12 +72,16 @@ struct vrr_notifier_data_s {
 #define FRAME_LOCK_EVENT_OFF			BIT(1)
 #define FRAME_LOCK_EVENT_VRR_ON_MODE	BIT(2)
 #define FRAME_LOCK_EVENT_VRR_OFF_MODE	BIT(3)
-#define VRR_EVENT_UPDATE				BIT(4)
+#define VRR_EVENT_UPDATE		BIT(4)
+#define VRR_EVENT_LFC_ON		BIT(5)
+#define VRR_EVENT_LFC_OFF		BIT(6)
+#define VRR_EVENT_GET_STATE		BIT(7)
 
 /* ************************************************************* */
 #ifdef CONFIG_AMLOGIC_MEDIA_VRR
 int aml_vrr_state(void);
 int aml_vrr_func_en(int flag);
+int aml_vrr_flc_update(int flag, int fps);
 
 int aml_vrr_register_device(struct vrr_device_s *vrr_dev, int index);
 int aml_vrr_unregister_device(int index);

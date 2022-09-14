@@ -20,7 +20,6 @@
 #include "clk-pll.h"
 #include "clk-regmap.h"
 #include "c3.h"
-#include "c3/clk-pll-c3.h"
 /*
  * GATE for c3
  * its parent clock is sys clock, the same the
@@ -571,7 +570,7 @@ static struct clk_regmap c3_gp0_pll_vco = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "gp0_pll_vco",
-		.ops = &meson_c3_clk_pll_ops,
+		.ops = &meson_clk_pll_v3_ops,
 		.parent_hws = (const struct clk_hw *[]) {
 			&xtal_plltop.hw,
 		},
@@ -795,7 +794,7 @@ static struct clk_regmap c3_hifi_pll_vco = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "hifi_pll_vco",
-		.ops = &meson_c3_clk_pll_ops,
+		.ops = &meson_clk_pll_v3_ops,
 		.parent_hws = (const struct clk_hw *[]) {
 			&xtal_plltop.hw,
 		},
@@ -893,7 +892,7 @@ static struct clk_regmap c3_mclk_pll_vco = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "mclk_pll_vco",
-		.ops = &meson_c3_clk_pll_ops,
+		.ops = &meson_clk_pll_v3_ops,
 		.parent_hws = (const struct clk_hw *[]) {
 			&xtal_plltop.hw,
 		},
@@ -1710,7 +1709,7 @@ struct clk_regmap _name = {						\
 		.name = #_name,						\
 		.ops = &clk_regmap_divider_ops,				\
 		.parent_hws = (const struct clk_hw *[]) {		\
-			&_parent.hw,					\
+			&(_parent).hw,					\
 		},							\
 		.num_parents =  1,					\
 		.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,	\
@@ -1727,7 +1726,7 @@ struct clk_regmap _name = {						\
 		.name = #_name,						\
 		.ops = &clk_regmap_gate_ops,				\
 		.parent_hws = (const struct clk_hw *[]) {		\
-			&_parent.hw,					\
+			&(_parent).hw,					\
 		},							\
 		.num_parents = 1,					\
 		.flags = CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED,	\

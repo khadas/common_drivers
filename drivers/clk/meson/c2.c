@@ -15,8 +15,10 @@
 #include <linux/of_address.h>
 #include <linux/clkdev.h>
 
-#include "../clkc.h"
-#include "../clk-dualdiv.h"
+#include "clk-dualdiv.h"
+#include "clk-cpu-dyndiv.h"
+#include "clk-pll.h"
+#include "clk-regmap.h"
 #include "c2.h"
 /*
  * GATE for c2
@@ -224,7 +226,7 @@ static struct clk_regmap c2_fixed_pll = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "fixed_pll",
-		.ops = &meson_c1_clk_pll_ro_ops,
+		.ops = &meson_clk_pll_ro_ops,
 		.parent_names = (const char *[]){ "xtal_fixpll" },
 		.num_parents = 1,
 		.flags = CLK_IS_CRITICAL,
@@ -494,7 +496,7 @@ static struct clk_regmap c2_gp_pll_vco = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "gp_pll_vco",
-		.ops = &meson_c2_clk_gp_pll_ops,
+		.ops = &meson_clk_pll_v3_ops,
 		.parent_names = (const char *[]){ "xtal_gppll" },
 		.num_parents = 1,
 	},
@@ -801,7 +803,7 @@ static struct clk_regmap c2_hifi_pll = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "hifi_pll",
-		.ops = &meson_c2_clk_pll_ops,
+		.ops = &meson_clk_pll_v3_ops,
 		.parent_names = (const char *[]){ "xtal_hifipll" },
 		.num_parents = 1,
 		.flags = CLK_IGNORE_UNUSED,
@@ -895,7 +897,7 @@ static struct clk_regmap c2_sys_pll_vco = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "sys_pll_vco",
-		.ops = &meson_c2_clk_pll_ops,
+		.ops = &meson_clk_pll_v3_ops,
 		.parent_names = (const char *[]){ "xtal_syspll" },
 		.num_parents = 1,
 		.flags = CLK_IGNORE_UNUSED,

@@ -119,3 +119,12 @@ config AMLOGIC_ZSTD
 		in zram, to improve the compression ratio
 		and save memory
 
+config AMLOGIC_MEMORY_STAT
+	bool "Amlogic stat memory info"
+	depends on AMLOGIC_MEMORY_EXTEND
+	default n
+	help
+		This config use to stat memory info,
+		include count free pages in migrate
+		list, print more memory information.
+

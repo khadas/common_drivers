@@ -49,13 +49,6 @@ void lcd_gamma_debug_test_en(struct aml_lcd_drv_s *pdrv, int flag)
 	lcd_venc_op.gamma_test_en(pdrv, flag);
 }
 
-static void lcd_test_pattern_check(struct work_struct *work)
-{
-	struct aml_lcd_drv_s *pdrv;
-
-	pdrv = container_of(work, struct aml_lcd_drv_s, test_check_work);
-	aml_lcd_notifier_call_chain(LCD_EVENT_TEST_PATTERN, (void *)pdrv);
-}
 
 void lcd_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
 {
@@ -200,7 +193,6 @@ int lcd_venc_probe(struct aml_lcd_drv_s *pdrv)
 	lcd_venc_op.init_flag = 1;
 	pdrv->lcd_screen_restore = lcd_screen_restore;
 	pdrv->lcd_screen_black = lcd_screen_black;
-	INIT_WORK(&pdrv->test_check_work, lcd_test_pattern_check);
 
 	return 0;
 }

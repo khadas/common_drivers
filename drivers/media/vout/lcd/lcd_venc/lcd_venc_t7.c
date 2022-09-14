@@ -120,7 +120,7 @@ static int lcd_venc_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
 
 	offset = pdrv->data->offset_venc[pdrv->index];
 
-	lcd_queue_work(&pdrv->test_check_work);
+	//lcd_queue_work(&pdrv->test_check_work);
 
 	h_active = pdrv->config.basic.h_active;
 	video_on_pixel = pdrv->config.timing.hstart;

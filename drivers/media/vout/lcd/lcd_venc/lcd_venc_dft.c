@@ -357,6 +357,14 @@ static int lcd_venc_get_init_config(struct aml_lcd_drv_s *pdrv)
 	return init_state;
 }
 
+static void lcd_test_pattern_check(struct work_struct *work)
+{
+	struct aml_lcd_drv_s *pdrv;
+
+	pdrv = container_of(work, struct aml_lcd_drv_s, test_check_work);
+	aml_lcd_notifier_call_chain(LCD_EVENT_TEST_PATTERN, (void *)pdrv);
+}
+
 int lcd_venc_op_init_dft(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_op)
 {
 	if (!venc_op)
@@ -371,6 +379,8 @@ int lcd_venc_op_init_dft(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
 	venc_op->mute_set = lcd_venc_mute_set;
 	venc_op->get_venc_init_config = lcd_venc_get_init_config;
+
+	INIT_WORK(&pdrv->test_check_work, lcd_test_pattern_check);
 
 	return 0;
 };

@@ -570,7 +570,7 @@ static inline void lcd_vsync_handler(struct aml_lcd_drv_s *pdrv)
 			pdrv->lcd_screen_black(pdrv);
 		}
 	} else {
-		if (pdrv->mute_state) {
+		if (pdrv->mute_state && pdrv->lcd_screen_restore) {
 			pdrv->mute_state = 0;
 			pdrv->lcd_screen_restore(pdrv);
 		}

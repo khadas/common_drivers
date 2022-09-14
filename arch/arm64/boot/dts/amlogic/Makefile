@@ -19,3 +19,4 @@ dtb-y += s4d_s905c3_ap232_drm.dtb
 dtb-y += s4d_s905c3_ap232_mxl258c_drm.dtb
 dtb-y += s4_s905w2_ap201_1g.dtb
 dtb-y += t7c_a311d2_an400_4g.dtb
+dtb-y += t5m_pxp.dtb

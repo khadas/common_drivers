@@ -129,7 +129,7 @@ static int meson_tlc59116_i2c_writes(struct i2c_client *client,
 
 	ret = i2c_transfer(client->adapter, &msg, 1);
 	if (ret < 0) {
-		pr_err("[tlc59116_i2c_writes]error...\n");
+		pr_debug("[tlc59116_i2c_writes]error...\n");
 		return ret;
 	}
 
@@ -148,7 +148,7 @@ static int meson_tlc59116_i2c_write(struct meson_tlc59116 *tlc59116,
 						reg_addr,
 						reg_data);
 		if (ret < 0)
-			pr_err("%s: i2c_write cnt = %d error = %d\n",
+			pr_debug("%s: i2c_write cnt = %d error = %d\n",
 			       __func__, cnt, ret);
 		else
 			break;
@@ -170,7 +170,7 @@ static int meson_tlc59116_i2c_read(struct meson_tlc59116 *tlc59116,
 	while (cnt < MESON_TLC59116_I2C_RETRIES) {
 		ret = i2c_smbus_read_byte_data(tlc59116->i2c, reg_addr);
 		if (ret < 0) {
-			pr_err("%s: i2c_read cnt = %d error = %d\n",
+			pr_debug("%s: i2c_read cnt = %d error = %d\n",
 			       __func__, cnt, ret);
 		} else {
 			*reg_data = ret;
@@ -192,7 +192,7 @@ static int meson_tlc59116_set_colors(struct meson_tlc59116 *tlc59116)
 	unsigned int i;
 
 	if (meson_tlc59116_debug) {
-		pr_info("tlc59116 set colors: 0x%x 0x%x 0x%x 0x%x\n",
+		pr_debug("tlc59116 set colors: 0x%x 0x%x 0x%x 0x%x\n",
 			tlc59116->colors_buf[0], tlc59116->colors_buf[1],
 			tlc59116->colors_buf[2], tlc59116->colors_buf[3]);
 	}
@@ -230,7 +230,7 @@ static ssize_t colors_store(struct device *dev,
 		     &tlc59116->colors_buf[1], &tlc59116->colors_buf[2],
 		     &tlc59116->colors_buf[3]);
 	if (ret != 4) {
-		pr_info(" enter,Line:...set led colors fail!\n");
+		pr_debug(" enter,Line:...set led colors fail!\n");
 		return count;
 	}
 
@@ -365,12 +365,12 @@ static int meson_tlc59116_set_singlecolors(u32 ledid, struct meson_tlc59116 *tlc
 	u8 color_data[MESON_TLC59116_MAX_IO];
 
 	if (ledid > 3) {
-		pr_info(" Exceed the maximum number of leds!\n");
+		pr_debug(" Exceed the maximum number of leds!\n");
 		return 0;
 	}
 
 	if (meson_tlc59116_debug) {
-		pr_info("tlc59116 set colors: 0x%x\n",
+		pr_debug("tlc59116 set colors: 0x%x\n",
 				tlc59116->colors_buf[0]);
 	}
 
@@ -461,7 +461,7 @@ static ssize_t single_colors_store(struct device *dev,
 
 	ret = sscanf(buf, "%d %x", &ledid, &tlc59116->colors_buf[0]);
 		if (ret != 2) {
-			pr_info(" enter,Line:...set led colors fail!\n");
+			dev_err(dev, "enter,Line:...set led colors fail!\n");
 			return count;
 		}
 	meson_tlc59116_set_singlecolors(ledid, tlc59116);
@@ -606,7 +606,7 @@ static int meson_tlc59116_i2c_probe(struct i2c_client *i2c,
 	struct meson_tlc59116 *tlc59116;
 	int ret;
 
-	pr_info("%s enter,Line:%d version:%s\n",
+	pr_debug("%s enter,Line:%d version:%s\n",
 		__func__, __LINE__, MESON_TLC59116_VERSION);
 
 	if (!i2c_check_functionality(i2c->adapter,
@@ -647,10 +647,9 @@ static int meson_tlc59116_i2c_probe(struct i2c_client *i2c,
 			__func__);
 		return ret;
 	}
-
 	ret = meson_tlc59116_init_data(tlc59116);
 	if (ret) {
-		dev_err(&i2c->dev, "%s error tlc59116 init led fail!\n",
+		dev_err(&i2c->dev, "%s: there is no tlc59116!\n",
 			__func__);
 		return ret;
 	}

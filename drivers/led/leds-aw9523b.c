@@ -367,7 +367,7 @@ static int aw9523_i2c_read(struct meson_aw9523 *aw9523,
 	while (cnt < AW_I2C_RETRIES) {
 		ret = i2c_smbus_read_byte_data(aw9523->i2c, reg_addr);
 		if (ret < 0) {
-			pr_err("%s: i2c_read cnt=%d error=%d\n", __func__, cnt, ret);
+			pr_debug("%s: i2c_read cnt=%d error=%d\n", __func__, cnt, ret);
 		} else {
 			*reg_data = ret;
 			break;
@@ -404,7 +404,7 @@ static int aw9523_parse_dt(struct device *dev, struct meson_aw9523 *aw9523,
 			return ret;
 		}
 	}
-	dev_info(dev, "%s: reset gpio provided ok\n", __func__);
+	dev_dbg(dev, "%s: reset gpio provided ok\n", __func__);
 	gpio_direction_output(aw9523->reset_gpio, 1);
 
 	return 0;
@@ -447,12 +447,10 @@ static int aw9523_read_chipid(struct meson_aw9523 *aw9523)
 
 	while (cnt < AW_READ_CHIPID_RETRIES) {
 		ret = aw9523_i2c_read(aw9523, REG_ID, &reg_val);
-		if (ret < 0) {
-			dev_err(aw9523->dev,
-				"%s: failed to read register aw9523_REG_ID: %d\n",
-				__func__, ret);
-			return -EIO;
-		}
+		if (ret < 0)
+			dev_dbg(aw9523->dev,
+				"%s: failed to read register aw9523_REG_ID: %d retry: %d\n",
+				__func__, ret, cnt);
 		switch (reg_val) {
 		case AW9523_ID:
 			pr_debug("Tiger]%s aw9523 detected\n", __func__);
@@ -634,7 +632,7 @@ static ssize_t led1_store(struct device *dev, struct device_attribute *attr,
 			databuf[0] = !databuf[0];
 		aw9523_i2c_read(aw9523, REG_OUTPUT_P1, &led_value);
 		led_value = ((led_value & 0xE0) | (databuf[0] << 4));
-		dev_info(dev, "Tiger] databuf=%x, led_value: %d\n\n", databuf[0], led_value);
+		dev_dbg(dev, "Tiger] databuf=%x, led_value: %d\n\n", databuf[0], led_value);
 		aw9523_i2c_write(aw9523, REG_OUTPUT_P1, led_value);
 	}
 
@@ -670,7 +668,7 @@ static ssize_t led2_store(struct device *dev, struct device_attribute *attr,
 			databuf[0] = !databuf[0];
 		aw9523_i2c_read(aw9523, REG_OUTPUT_P1, &led_value);
 		led_value = ((led_value & 0xD0) | (databuf[0] << 5));
-		dev_info(dev, "Tiger] databuf=%x, led_value: %d\n\n", databuf[0], led_value);
+		dev_dbg(dev, "Tiger] databuf=%x, led_value: %d\n\n", databuf[0], led_value);
 		aw9523_i2c_write(aw9523, REG_OUTPUT_P1, led_value);
 	}
 
@@ -707,7 +705,7 @@ static ssize_t led3_store(struct device *dev, struct device_attribute *attr,
 			databuf[0] = !databuf[0];
 		aw9523_i2c_read(aw9523, REG_OUTPUT_P1, &led_value);
 		led_value = ((led_value & 0xB0) | (databuf[0] << 6));
-		dev_info(dev, "Tiger] databuf=%x, led_value: %d\n\n", databuf[0], led_value);
+		dev_dbg(dev, "Tiger] databuf=%x, led_value: %d\n\n", databuf[0], led_value);
 		aw9523_i2c_write(aw9523, REG_OUTPUT_P1, led_value);
 	}
 
@@ -863,7 +861,7 @@ static int aw9523_parse_led_cdev(struct meson_aw9523 *aw9523,
 	if (ret < 0)
 		dev_err(aw9523->dev, "Tiger] %s:%d default platform_id=%d\n", __func__,
 				__LINE__, platform_id);
-	dev_info(aw9523->dev, "Tiger] %s:%d set platform_id=%d\n", __func__, __LINE__, platform_id);
+	dev_dbg(aw9523->dev, "Tiger] %s:%d set platform_id=%d\n", __func__, __LINE__, platform_id);
 	aw9523->cdev.name = MESON_LEDS_CDEV_NAME;
 	aw9523->cdev.brightness = 0;
 	aw9523->cdev.max_brightness = 255;
@@ -919,7 +917,7 @@ static int aw9523_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *
 	/* aw9523 chip id */
 	ret = aw9523_read_chipid(aw9523);
 	if (ret < 0) {
-		dev_err(&i2c->dev, "%s: aw9523_read_chipid failed ret=%d\n", __func__, ret);
+		dev_err(&i2c->dev, "%s: there is no aw9523 ret=%d\n", __func__, ret);
 		goto err_id;
 	}
 	dev_set_drvdata(&i2c->dev, aw9523);

@@ -21,9 +21,9 @@
 #include <linux/slab.h>
 #include <linux/amlogic/aml_cma.h>
 #include <../../../mm/internal.h>
+#include <linux/kmemleak.h>
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE
 #include <linux/amlogic/page_trace.h>
-#include <linux/kmemleak.h>
 #include <linux/kasan.h>
 #endif
 

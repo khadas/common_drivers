@@ -27,7 +27,7 @@ config AMLOGIC_PAGE_TRACE_INLINE
 	depends on AMLOGIC_PAGE_TRACE
 	depends on 64BIT
 	depends on !KASAN_HW_TAGS && !KASAN_SW_TAGS
-	default y
+	default n
 	help
 		This feature enable to inline page trace into high 32bits of
 		page->flags on 64 bit kernel. Because other total page flags

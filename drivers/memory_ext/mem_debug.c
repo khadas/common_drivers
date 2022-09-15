@@ -24,6 +24,9 @@
 #include <asm/fixmap.h>
 #include <linux/kasan.h>
 #include <linux/seq_file.h>
+#ifdef CONFIG_HIGHMEM
+#include <asm/highmem.h>
+#endif
 #ifdef CONFIG_AMLOGIC_CMA
 #include <linux/amlogic/aml_cma.h>
 #endif

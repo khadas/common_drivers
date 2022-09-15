@@ -6,9 +6,6 @@
 #ifndef __AMLOGIC_CMA_H__
 #define __AMLOGIC_CMA_H__
 
-#include <linux/migrate_mode.h>
-#include <linux/pagemap.h>
-
 #ifdef CONFIG_AMLOGIC_CMA
 #define GFP_NO_CMA    (__GFP_NO_CMA | __GFP_WRITE)
 static inline bool cma_forbidden_mask(gfp_t gfp_flags)

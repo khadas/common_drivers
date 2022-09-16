@@ -21,7 +21,7 @@
 #include <linux/amlogic/cpu_info.h>
 #include <linux/arm-smccc.h>
 #include <linux/amlogic/cpu_version.h>
-#ifdef COFIG_AMLOGIC_SHOW_CPU_CHIPID
+#ifdef CONFIG_AMLOGIC_SHOW_CPU_CHIPID
 #include <linux/seq_file.h>
 #include <linux/proc_fs.h>
 #endif
@@ -34,7 +34,7 @@ void cpuinfo_get_chipid(unsigned char *cid, unsigned int size)
 }
 EXPORT_SYMBOL(cpuinfo_get_chipid);
 
-#ifdef COFIG_AMLOGIC_SHOW_CPU_CHIPID
+#ifdef CONFIG_AMLOGIC_SHOW_CPU_CHIPID
 static int cpu_chipid_show(struct seq_file *m, void *arg)
 {
 	int i;
@@ -81,7 +81,7 @@ static int cpuinfo_probe(struct platform_device *pdev)
 	void __iomem *shm_out;
 	struct device_node *np = pdev->dev.of_node;
 	int cmd, ret, i;
-#ifdef COFIG_AMLOGIC_SHOW_CPU_CHIPID
+#ifdef CONFIG_AMLOGIC_SHOW_CPU_CHIPID
 	struct proc_dir_entry *proc;
 #endif
 
@@ -118,7 +118,7 @@ static int cpuinfo_probe(struct platform_device *pdev)
 			pr_cont("%02x", cpuinfo_chip_id[i]);
 		pr_cont("\n");
 
-#ifdef COFIG_AMLOGIC_SHOW_CPU_CHIPID
+#ifdef CONFIG_AMLOGIC_SHOW_CPU_CHIPID
 		proc = proc_create("cpu_chipid", 0444, NULL, &cpu_chipid_ops);
 		if (IS_ERR_OR_NULL(proc)) {
 			pr_err("create cpu_chipid proc failed\n");

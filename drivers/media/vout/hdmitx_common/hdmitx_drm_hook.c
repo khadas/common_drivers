@@ -8,9 +8,9 @@
 #include "hdmitx_drm_hook.h"
 
 /*!!Only one instance supported.*/
-struct hdmitx_common *global_tx_base;
+static struct hdmitx_common *global_tx_base;
+static struct hdmitx_hw_common *global_tx_hw;
 static struct meson_hdmitx_dev hdmitx_drm_instance;
-
 static int drm_hdmitx_id;
 
 static int drm_hdmitx_get_hpd_state(void)
@@ -75,6 +75,23 @@ static const struct hdr_info *drm_hdmitx_get_hdr_info(void)
 	return &hdrinfo;
 }
 
+static void drm_hdmitx_avmute(unsigned char mute)
+{
+	int muteflag = OFF_AVMUTE;
+
+	if (mute == 0)
+		muteflag = CLR_AVMUTE;
+	else
+		muteflag = SET_AVMUTE;
+
+	hdmitx_hw_avmute(global_tx_hw, muteflag);
+}
+
+static void drm_hdmitx_set_phy(unsigned char en)
+{
+	hdmitx_hw_set_phy(global_tx_hw, en);
+}
+
 static int meson_hdmitx_bind(struct device *dev,
 			      struct device *master, void *data)
 {
@@ -118,12 +135,14 @@ static const struct component_ops meson_hdmitx_bind_ops = {
 
 int hdmitx_bind_meson_drm(struct device *device,
 	struct hdmitx_common *tx_base,
+	struct hdmitx_hw_common *tx_hw,
 	struct meson_hdmitx_dev *diff)
 {
 	if (global_tx_base)
 		pr_err("global_tx_base [%p] already hooked.\n", global_tx_base);
 
 	global_tx_base = tx_base;
+	global_tx_hw = tx_hw;
 
 	hdmitx_drm_instance = *diff;
 	hdmitx_drm_instance.base.ver = MESON_DRM_CONNECTOR_V10;
@@ -141,15 +160,21 @@ int hdmitx_bind_meson_drm(struct device *device,
 	hdmitx_drm_instance.get_dv_info = drm_hdmitx_get_dv_info;
 	hdmitx_drm_instance.get_hdr_info = drm_hdmitx_get_hdr_info;
 
+	/*hw related*/
+	hdmitx_drm_instance.avmute = drm_hdmitx_avmute;
+	hdmitx_drm_instance.set_phy = drm_hdmitx_set_phy;
+
 	return component_add(device, &meson_hdmitx_bind_ops);
 }
 
 int hdmitx_unbind_meson_drm(struct device *device,
 	struct hdmitx_common *tx_base,
+	struct hdmitx_hw_common *tx_hw,
 	struct meson_hdmitx_dev *diff)
 {
 	if (drm_hdmitx_id != 0)
 		component_del(device, &meson_hdmitx_bind_ops);
 	global_tx_base = 0;
+	global_tx_hw = 0;
 	return 0;
 }

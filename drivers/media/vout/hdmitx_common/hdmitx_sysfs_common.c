@@ -9,6 +9,7 @@
 
 /*!!Only one instance supported.*/
 static struct hdmitx_common *global_tx_common;
+static struct hdmitx_hw_common *global_tx_hw;
 
 /************************common sysfs*************************/
 static ssize_t attr_show(struct device *dev,
@@ -512,16 +513,124 @@ static ssize_t frac_rate_policy_show(struct device *dev,
 
 static DEVICE_ATTR_RW(frac_rate_policy);
 
+static ssize_t avmute_show(struct device *dev,
+			   struct device_attribute *attr, char *buf)
+{
+	int ret = 0;
+	int pos = 0;
+
+	ret = global_tx_hw->cntlmisc(global_tx_hw, MISC_READ_AVMUTE_OP, 0);
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d", ret);
+
+	return pos;
+}
+
+/*
+ *  1: set avmute
+ * -1: clear avmute
+ *  0: off avmute
+ */
+static ssize_t avmute_store(struct device *dev,
+			    struct device_attribute *attr,
+			    const char *buf, size_t count)
+{
+	int cmd = OFF_AVMUTE;
+	static int mask0;
+	static int mask1;
+	static DEFINE_MUTEX(avmute_mutex);
+	/*
+	 *unsigned int mute_us =
+	 *	hdmitx_device.debug_param.avmute_frame * hdmitx_get_frame_duration();
+	 */
+	pr_info("%s %s\n", __func__, buf);
+	mutex_lock(&avmute_mutex);
+	if (strncmp(buf, "-1", 2) == 0) {
+		cmd = CLR_AVMUTE;
+		mask0 = -1;
+	} else if (strncmp(buf, "0", 1) == 0) {
+		cmd = OFF_AVMUTE;
+		mask0 = 0;
+	} else if (strncmp(buf, "1", 1) == 0) {
+		cmd = SET_AVMUTE;
+		mask0 = 1;
+	}
+	if (strncmp(buf, "r-1", 3) == 0) {
+		cmd = CLR_AVMUTE;
+		mask1 = -1;
+	} else if (strncmp(buf, "r0", 2) == 0) {
+		cmd = OFF_AVMUTE;
+		mask1 = 0;
+	} else if (strncmp(buf, "r1", 2) == 0) {
+		cmd = SET_AVMUTE;
+		mask1 = 1;
+	}
+	if (mask0 == 1 || mask1 == 1)
+		cmd = SET_AVMUTE;
+	else if ((mask0 == -1) && (mask1 == -1))
+		cmd = CLR_AVMUTE;
+
+	hdmitx_hw_avmute(global_tx_hw, cmd);
+	/*
+	 *if (cmd == SET_AVMUTE && hdmitx_device.debug_param.avmute_frame > 0)
+	 *	msleep(mute_us / 1000);
+	 */
+	mutex_unlock(&avmute_mutex);
+
+	return count;
+}
+
+static DEVICE_ATTR_RW(avmute);
+
+/*
+ *  1: enable hdmitx phy
+ *  0: disable hdmitx phy
+ */
+static ssize_t phy_store(struct device *dev,
+			 struct device_attribute *attr,
+			 const char *buf, size_t count)
+{
+	int cmd = TMDS_PHY_ENABLE;
+
+	pr_info("%s %s\n", __func__, buf);
+
+	if (strncmp(buf, "0", 1) == 0)
+		cmd = TMDS_PHY_DISABLE;
+	else if (strncmp(buf, "1", 1) == 0)
+		cmd = TMDS_PHY_ENABLE;
+	else
+		pr_info("set phy wrong: %s\n", buf);
+
+	global_tx_hw->cntlmisc(global_tx_hw, MISC_TMDS_PHY_OP, cmd);
+	return count;
+}
+
+static ssize_t phy_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+/*
+ *	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
+ *		read_phy_status());
+ */
+	pos += snprintf(buf + pos, PAGE_SIZE, "ok\n");
+
+	return pos;
+}
+
+static DEVICE_ATTR_RW(phy);
+
 /*************************tx20 sysfs*************************/
 
 /*************************tx21 sysfs*************************/
 
 int hdmitx_sysfs_common_create(struct device *dev,
-			struct hdmitx_common *tx_comm)
+		struct hdmitx_common *tx_comm,
+		struct hdmitx_hw_common *tx_hw)
 {
 	int ret = 0;
 
 	global_tx_common = tx_comm;
+	global_tx_hw = tx_hw;
 
 	ret = device_create_file(dev, &dev_attr_attr);
 	ret = device_create_file(dev, &dev_attr_hpd_state);
@@ -536,6 +645,9 @@ int hdmitx_sysfs_common_create(struct device *dev,
 	ret = device_create_file(dev, &dev_attr_hdr_cap2);
 	ret = device_create_file(dev, &dev_attr_dv_cap);
 	ret = device_create_file(dev, &dev_attr_dv_cap2);
+
+	ret = device_create_file(dev, &dev_attr_avmute);
+	ret = device_create_file(dev, &dev_attr_phy);
 
 	return ret;
 }
@@ -556,7 +668,11 @@ int hdmitx_sysfs_common_destroy(struct device *dev)
 	device_remove_file(dev, &dev_attr_dv_cap);
 	device_remove_file(dev, &dev_attr_dv_cap2);
 
+	device_remove_file(dev, &dev_attr_avmute);
+	device_remove_file(dev, &dev_attr_phy);
+
 	global_tx_common = 0;
+	global_tx_hw = 0;
 
 	return 0;
 }

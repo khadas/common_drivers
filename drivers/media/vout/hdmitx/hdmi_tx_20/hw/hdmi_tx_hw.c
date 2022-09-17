@@ -45,6 +45,8 @@
 #include "checksha.h"
 #include "reg_sc2.h"
 
+#define to_hdmitx20_dev(x)	container_of(x, struct hdmitx_dev, tx_hw)
+
 static void mode420_half_horizontal_para(void);
 static void hdmi_phy_suspend(void);
 static void hdmi_phy_wakeup(struct hdmitx_dev *hdev);
@@ -88,7 +90,7 @@ static int hdmitx_get_state(struct hdmitx_dev *hdev, unsigned int cmd,
 			    unsigned int argv);
 static int hdmitx_cntl_config(struct hdmitx_dev *hdev, unsigned int cmd,
 			      unsigned int argv);
-static int hdmitx_cntl_misc(struct hdmitx_dev *hdev, unsigned int cmd,
+static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			    unsigned int  argv);
 static enum hdmi_vic get_vic_from_pkt(void);
 
@@ -648,10 +650,10 @@ void hdmitx_meson_init(struct hdmitx_dev *hdev)
 	hdev->hwop.getstate = hdmitx_get_state;
 	hdev->hwop.cntlpacket = hdmitx_cntl;
 	hdev->hwop.cntlconfig = hdmitx_cntl_config;
-	hdev->hwop.cntlmisc = hdmitx_cntl_misc;
+	hdev->tx_hw.cntlmisc = hdmitx_cntl_misc;
 	hdmi_hwp_init(hdev);
 	hdmi_hwi_init(hdev);
-	hdev->hwop.cntlmisc(hdev, MISC_AVMUTE_OP, CLR_AVMUTE);
+	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, CLR_AVMUTE);
 	hdmitx_debugfs_init();
 }
 
@@ -3129,7 +3131,7 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 		hdev->hwop.cntlddc(hdev, DDC_EDID_READ_DATA, 0);
 		return;
 	} else if (strncmp(tmpbuf, "i2c_reactive", 12) == 0) {
-		hdev->hwop.cntlmisc(hdev, MISC_I2C_REACTIVE, 0);
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_I2C_REACTIVE, 0);
 		return;
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {
 		if (strncmp(tmpbuf + 4, "off", 3) == 0) {
@@ -4277,7 +4279,7 @@ static int hdmitx_tmds_rxsense(void)
 		hd_write_reg(P_HHI_HDMI_PHY_CNTL3, curr3);
 		break;
 	}
-	if (!(hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0)))
+	if (!(hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_HPD_GPI_ST, 0)))
 		return 0;
 	if (ret == 0) {
 		count++;
@@ -4297,12 +4299,13 @@ static int hdmitx_tmds_cedst(struct hdmitx_dev *hdev)
 	return scdc_status_flags(hdev);
 }
 
-static int hdmitx_cntl_misc(struct hdmitx_dev *hdev, unsigned int cmd,
+static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			    unsigned int argv)
 {
 	static int st;
 	unsigned int pll_cntl = P_HHI_HDMI_PLL_CNTL;
 	u8 rx_ver;
+	struct hdmitx_dev *hdev = to_hdmitx20_dev(tx_hw);
 
 	if ((cmd & CMD_MISC_OFFSET) != CMD_MISC_OFFSET) {
 		pr_err(HW "misc: w: invalid cmd 0x%x\n", cmd);

@@ -296,9 +296,9 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	mutex_lock(&hdmimode_mutex);
 
 	hdev->ready = 0;
-	hdev->hwop.cntlmisc(hdev, MISC_SUSFLAG, 1);
+	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_SUSFLAG, 1);
 	usleep_range(10000, 10010);
-	hdev->hwop.cntlmisc(hdev, MISC_AVMUTE_OP, SET_AVMUTE);
+	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, SET_AVMUTE);
 	/* delay 100ms after avmute is a empirical value,
 	 * mute_us is for debug, at least 16ms for 60fps
 	 */
@@ -363,11 +363,11 @@ static void hdmitx_late_resume(struct early_suspend *h)
 	mutex_lock(&hdmimode_mutex);
 
 	if (info && (hdmitx_is_hdmi_vmode(info->name) == 1))
-		hdev->hwop.cntlmisc(&hdmitx_device, MISC_HPLL_FAKE, 0);
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_HPLL_FAKE, 0);
 
 	hdev->hpd_lock = 0;
 	/* update status for hpd and switch/state */
-	hpd_state = !!(hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0));
+	hpd_state = !!(hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_HPD_GPI_ST, 0));
 	/* for RDK userspace, after receive plug change uevent,
 	 * it will check connector state before enable encoder.
 	 * so should not change hpd_state other than in plug handler
@@ -384,7 +384,7 @@ static void hdmitx_late_resume(struct early_suspend *h)
 		/*add i2c soft reset before read EDID */
 		hdev->hwop.cntlddc(hdev, DDC_GLITCH_FILTER_RESET, 0);
 		if (hdev->data->chip_type >= MESON_CPU_ID_G12A)
-			hdev->hwop.cntlmisc(hdev, MISC_I2C_RESET, 0);
+			hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_I2C_RESET, 0);
 		hdmitx_get_edid(hdev);
 	}
 	hdmitx_notify_hpd(hpd_state,
@@ -402,7 +402,7 @@ static void hdmitx_late_resume(struct early_suspend *h)
 	pr_info("amhdmitx: late resume module %d\n", __LINE__);
 	hdev->hwop.cntl(hdev, HDMITX_EARLY_SUSPEND_RESUME_CNTL,
 		HDMITX_LATE_RESUME);
-	hdev->hwop.cntlmisc(hdev, MISC_SUSFLAG, 0);
+	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_SUSFLAG, 0);
 	pr_info(SYS "HDMITX: Late Resume\n");
 	mutex_unlock(&hdmimode_mutex);
 	/* hpd plug uevent may not be handled by rdk userspace
@@ -426,12 +426,12 @@ static int hdmitx_reboot_notifier(struct notifier_block *nb,
 		hdev->debug_param.avmute_frame * hdmitx_get_frame_duration();
 
 	hdev->ready = 0;
-	hdev->hwop.cntlmisc(hdev, MISC_AVMUTE_OP, SET_AVMUTE);
+	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, SET_AVMUTE);
 	if (hdev->debug_param.avmute_frame > 0)
 		msleep(mute_us / 1000);
 	else
 		msleep(100);
-	hdev->hwop.cntlmisc(hdev, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
+	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 	hdev->hwop.cntl(hdev, HDMITX_EARLY_SUSPEND_RESUME_CNTL,
 		HDMITX_EARLY_SUSPEND);
 
@@ -514,7 +514,7 @@ static void hdmitx_pre_display_init(void)
 	hdmitx_device.hwop.cntlddc(&hdmitx_device, DDC_HDCP_MUX_INIT, 1);
 	hdmitx_device.hwop.cntlddc(&hdmitx_device, DDC_HDCP_OP, HDCP14_OFF);
 	/* msleep(10); */
-	hdmitx_device.hwop.cntlmisc(&hdmitx_device, MISC_TMDS_PHY_OP,
+	hdmitx_device.tx_hw.cntlmisc(&hdmitx_device.tx_hw, MISC_TMDS_PHY_OP,
 		TMDS_PHY_DISABLE);
 	hdmitx_device.hwop.cntlconfig(&hdmitx_device,
 		CONF_CLR_AVI_PACKET, 0);
@@ -648,7 +648,7 @@ static int set_disp_mode_auto(void)
 		pr_info(SYS "%s not valid hdmi mode\n", info->name);
 		hdev->hwop.cntlconfig(hdev, CONF_CLR_AVI_PACKET, 0);
 		hdev->hwop.cntlconfig(hdev, CONF_CLR_VSDB_PACKET, 0);
-		hdev->hwop.cntlmisc(hdev, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 		hdev->para = hdmi_get_fmt_name("invalid", tx_comm->fmt_attr);
 		if (hdev->cedst_policy)
 			cancel_delayed_work(&hdev->work_cedst);
@@ -3538,69 +3538,6 @@ static ssize_t aud_ch_store(struct device *dev,
 }
 
 /*
- *  1: set avmute
- * -1: clear avmute
- *  0: off avmute
- */
-static ssize_t avmute_store(struct device *dev,
-			    struct device_attribute *attr,
-			    const char *buf, size_t count)
-{
-	int cmd = OFF_AVMUTE;
-	static int mask0;
-	static int mask1;
-	static DEFINE_MUTEX(avmute_mutex);
-	unsigned int mute_us =
-		hdmitx_device.debug_param.avmute_frame * hdmitx_get_frame_duration();
-
-	pr_info("%s %s\n", __func__, buf);
-	mutex_lock(&avmute_mutex);
-	if (strncmp(buf, "-1", 2) == 0) {
-		cmd = CLR_AVMUTE;
-		mask0 = -1;
-	} else if (strncmp(buf, "0", 1) == 0) {
-		cmd = OFF_AVMUTE;
-		mask0 = 0;
-	} else if (strncmp(buf, "1", 1) == 0) {
-		cmd = SET_AVMUTE;
-		mask0 = 1;
-	}
-	if (strncmp(buf, "r-1", 3) == 0) {
-		cmd = CLR_AVMUTE;
-		mask1 = -1;
-	} else if (strncmp(buf, "r0", 2) == 0) {
-		cmd = OFF_AVMUTE;
-		mask1 = 0;
-	} else if (strncmp(buf, "r1", 2) == 0) {
-		cmd = SET_AVMUTE;
-		mask1 = 1;
-	}
-	if (mask0 == 1 || mask1 == 1)
-		cmd = SET_AVMUTE;
-	else if ((mask0 == -1) && (mask1 == -1))
-		cmd = CLR_AVMUTE;
-	hdmitx_device.hwop.cntlmisc(&hdmitx_device, MISC_AVMUTE_OP, cmd);
-	if (cmd == SET_AVMUTE && hdmitx_device.debug_param.avmute_frame > 0)
-		msleep(mute_us / 1000);
-	mutex_unlock(&avmute_mutex);
-
-	return count;
-}
-
-static ssize_t avmute_show(struct device *dev,
-			   struct device_attribute *attr, char *buf)
-{
-	struct hdmitx_dev *hdev = &hdmitx_device;
-	int ret = 0;
-	int pos = 0;
-
-	ret = hdev->hwop.cntlmisc(hdev, MISC_READ_AVMUTE_OP, 0);
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d", ret);
-
-	return pos;
-}
-
-/*
  * 0: clear vic
  */
 static ssize_t vic_store(struct device *dev,
@@ -3626,40 +3563,6 @@ static ssize_t vic_show(struct device *dev,
 
 	vic = hdev->hwop.getstate(hdev, STAT_VIDEO_VIC, 0);
 	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n", vic);
-
-	return pos;
-}
-
-/*
- *  1: enable hdmitx phy
- *  0: disable hdmitx phy
- */
-static ssize_t phy_store(struct device *dev,
-			 struct device_attribute *attr,
-			 const char *buf, size_t count)
-{
-	int cmd = TMDS_PHY_ENABLE;
-
-	pr_info(SYS "%s %s\n", __func__, buf);
-
-	if (strncmp(buf, "0", 1) == 0)
-		cmd = TMDS_PHY_DISABLE;
-	else if (strncmp(buf, "1", 1) == 0)
-		cmd = TMDS_PHY_ENABLE;
-	else
-		pr_info(SYS "set phy wrong: %s\n", buf);
-
-	hdmitx_device.hwop.cntlmisc(&hdmitx_device, MISC_TMDS_PHY_OP, cmd);
-	return count;
-}
-
-static ssize_t phy_show(struct device *dev,
-			struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
-		read_phy_status());
 
 	return pos;
 }
@@ -3844,7 +3747,7 @@ static ssize_t hdcp_clkdis_store(struct device *dev,
 				 struct device_attribute *attr,
 				 const char *buf, size_t count)
 {
-	hdmitx_device.hwop.cntlmisc(&hdmitx_device, MISC_HDCP_CLKDIS,
+	hdmitx_device.tx_hw.cntlmisc(&hdmitx_device.tx_hw, MISC_HDCP_CLKDIS,
 		buf[0] == '1' ? 1 : 0);
 	return count;
 }
@@ -3890,7 +3793,7 @@ static ssize_t hdcp_byp_store(struct device *dev,
 {
 	pr_info(SYS "%s...\n", __func__);
 
-	hdmitx_device.hwop.cntlmisc(&hdmitx_device, MISC_HDCP_CLKDIS,
+	hdmitx_device.tx_hw.cntlmisc(&hdmitx_device.tx_hw, MISC_HDCP_CLKDIS,
 		buf[0] == '1' ? 1 : 0);
 
 	return count;
@@ -4290,7 +4193,7 @@ static ssize_t rxsense_state_show(struct device *dev,
 	int sense;
 	struct hdmitx_dev *hdev = &hdmitx_device;
 
-	sense = hdev->hwop.cntlmisc(hdev, MISC_TMDS_RXSENSE, 0);
+	sense = hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_RXSENSE, 0);
 
 	pos += snprintf(buf + pos, PAGE_SIZE, "%d", sense);
 	return pos;
@@ -4339,7 +4242,7 @@ static ssize_t rhpd_state_show(struct device *dev,
 	struct hdmitx_dev *hdev = &hdmitx_device;
 	int st;
 
-	st = hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0);
+	st = hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_HPD_GPI_ST, 0);
 
 	return snprintf(buf, PAGE_SIZE, "%d", hdev->rhpd_state);
 }
@@ -5106,10 +5009,8 @@ static DEVICE_ATTR_RO(allm_cap);
 static DEVICE_ATTR_RW(allm_mode);
 static DEVICE_ATTR_RW(contenttype_mode);
 static DEVICE_ATTR_RW(aud_ch);
-static DEVICE_ATTR_RW(avmute);
 static DEVICE_ATTR_RW(swap);
 static DEVICE_ATTR_RW(vic);
-static DEVICE_ATTR_RW(phy);
 static DEVICE_ATTR_RW(sspll);
 static DEVICE_ATTR_RW(rxsense_policy);
 static DEVICE_ATTR_RW(cedst_policy);
@@ -5263,7 +5164,7 @@ static int hdmitx_module_disable(enum vmode_e cur_vmod, void *data)
 
 	hdev->hwop.cntlconfig(hdev, CONF_CLR_AVI_PACKET, 0);
 	hdev->hwop.cntlconfig(hdev, CONF_CLR_VSDB_PACKET, 0);
-	hdev->hwop.cntlmisc(hdev, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
+	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 	hdev->para = hdmi_get_fmt_name("invalid", tx_comm->fmt_attr);
 	hdmitx_validate_vmode("null", 0, NULL);
 	if (hdev->cedst_policy)
@@ -5522,7 +5423,7 @@ static int hdmitx_notify_callback_a(struct notifier_block *block,
 		}
 	}
 	if (aud_param->fifo_rst)
-		hdev->hwop.cntlmisc(hdev, MISC_AUDIO_RESET, 1);
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AUDIO_RESET, 1);
 
 	return 0;
 }
@@ -5588,7 +5489,7 @@ static void hdmitx_rxsense_process(struct work_struct *work)
 	struct hdmitx_dev *hdev = container_of((struct delayed_work *)work,
 		struct hdmitx_dev, work_rxsense);
 
-	sense = hdev->hwop.cntlmisc(hdev, MISC_TMDS_RXSENSE, 0);
+	sense = hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_RXSENSE, 0);
 	hdmitx_set_uevent(HDMITX_RXSENSE_EVENT, sense);
 	queue_delayed_work(hdev->rxsense_wq, &hdev->work_rxsense, HZ);
 }
@@ -5599,7 +5500,7 @@ static void hdmitx_cedst_process(struct work_struct *work)
 	struct hdmitx_dev *hdev = container_of((struct delayed_work *)work,
 		struct hdmitx_dev, work_cedst);
 
-	ced = hdev->hwop.cntlmisc(hdev, MISC_TMDS_CEDST, 0);
+	ced = hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_CEDST, 0);
 	/* firstly send as 0, then real ced, A trigger signal */
 	hdmitx_set_uevent(HDMITX_CEDST_EVENT, 0);
 	hdmitx_set_uevent(HDMITX_CEDST_EVENT, ced);
@@ -5649,7 +5550,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	}
 	pr_info(SYS "plugin\n");
 	if (hdev->data->chip_type >= MESON_CPU_ID_G12A)
-		hdev->hwop.cntlmisc(hdev, MISC_I2C_RESET, 0);
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_I2C_RESET, 0);
 	hdev->hdmitx_event &= ~HDMI_TX_HPD_PLUGIN;
 	/* start reading E-EDID */
 	if (hdev->repeater_tx)
@@ -5665,7 +5566,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 			CONF_HDMI_DVI_MODE, HDMI_MODE);
 	mutex_lock(&getedid_mutex);
 	if (hdev->data->chip_type < MESON_CPU_ID_G12A)
-		hdev->hwop.cntlmisc(hdev, MISC_I2C_REACTIVE, 0);
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_I2C_REACTIVE, 0);
 	mutex_unlock(&getedid_mutex);
 	if (hdev->repeater_tx) {
 		if (check_fbc_special(&hdev->tx_comm.EDID_buf[0]) ||
@@ -5693,7 +5594,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 		if (is_cur_tmds_div40(hdev))
 			hdmitx_resend_div40(hdev);
 		if (!is_tv_changed()) {
-			hdev->hwop.cntlmisc(hdev, MISC_AVMUTE_OP,
+			hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP,
 					    CLR_AVMUTE);
 		} else {
 			/* keep avmute & clear pkt */
@@ -5745,7 +5646,7 @@ static void hdmitx_aud_hpd_plug_handler(struct work_struct *work)
 	struct hdmitx_dev *hdev = container_of((struct delayed_work *)work,
 		struct hdmitx_dev, work_aud_hpd_plug);
 
-	st = hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0);
+	st = hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_HPD_GPI_ST, 0);
 	pr_info("%s state:%d\n", __func__, st);
 	hdmitx_set_uevent(HDMITX_AUDIO_EVENT, st);
 }
@@ -5786,7 +5687,7 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 		hdmitx_edid_ram_buffer_clear(hdev);
 		hdev->tx_comm.hpd_state = 0;
 		hdmitx_notify_hpd(hdev->tx_comm.hpd_state, NULL);
-		hdev->hwop.cntlmisc(hdev, MISC_AVMUTE_OP, SET_AVMUTE);
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, SET_AVMUTE);
 		hdmitx_set_uevent(HDMITX_HPD_EVENT, 0);
 		hdmitx_set_uevent(HDMITX_AUDIO_EVENT, 0);
 		mutex_unlock(&hdmimode_mutex);
@@ -5807,9 +5708,9 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 	hdev->hwop.cntlddc(hdev, DDC_HDCP_MUX_INIT, 1);
 	hdev->hwop.cntlddc(hdev, DDC_HDCP_OP, HDCP14_OFF);
 	hdev->hwop.cntlddc(hdev, DDC_HDCP_SET_TOPO_INFO, 0);
-	hdev->hwop.cntlmisc(hdev, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
+	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 	hdev->hdmitx_event &= ~HDMI_TX_HPD_PLUGOUT;
-	hdev->hwop.cntlmisc(hdev, MISC_ESM_RESET, 0);
+	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_ESM_RESET, 0);
 	clear_rx_vinfo(hdev);
 	rx_edid_physical_addr(0, 0, 0, 0);
 	hdmitx_edid_clear(hdev);
@@ -6503,10 +6404,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_aud_cap);
 	ret = device_create_file(dev, &dev_attr_hdmi_hdr_status);
 	ret = device_create_file(dev, &dev_attr_aud_ch);
-	ret = device_create_file(dev, &dev_attr_avmute);
 	ret = device_create_file(dev, &dev_attr_swap);
 	ret = device_create_file(dev, &dev_attr_vic);
-	ret = device_create_file(dev, &dev_attr_phy);
 	ret = device_create_file(dev, &dev_attr_sspll);
 	ret = device_create_file(dev, &dev_attr_rxsense_policy);
 	ret = device_create_file(dev, &dev_attr_rxsense_state);
@@ -6585,7 +6484,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	/* update fmt_attr */
 	hdmitx_fmt_attr(hdev);
 
-	hdev->tx_comm.hpd_state = !!hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0);
+	hdev->tx_comm.hpd_state = !!hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_HPD_GPI_ST, 0);
 	hdmitx_notify_hpd(hdev->tx_comm.hpd_state, NULL);
 	hdmitx_set_uevent(HDMITX_HDCPPWR_EVENT, HDMI_WAKEUP);
 	INIT_WORK(&hdev->work_hdr, hdr_work_func);
@@ -6622,20 +6521,20 @@ static int amhdmitx_probe(struct platform_device *pdev)
 		edidinfo_attach_to_vinfo(hdev);
 	}
 	/* Trigger HDMITX IRQ*/
-	if (hdev->hwop.cntlmisc(hdev, MISC_HPD_GPI_ST, 0)) {
+	if (hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_HPD_GPI_ST, 0)) {
 		/* When bootup mbox and TV simultaneously,
 		 * TV may not handle SCDC/DIV40
 		 */
 		if (is_cur_tmds_div40(hdev))
 			hdmitx_resend_div40(hdev);
-		hdev->hwop.cntlmisc(hdev,
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw,
 			MISC_TRIGGER_HPD, 1);
 		hdev->already_used = 1;
 	} else {
 		/* may plugout during uboot finish--kernel start,
 		 * treat it as normal hotplug out, for > 3.4G case
 		 */
-		hdev->hwop.cntlmisc(hdev,
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw,
 			MISC_TRIGGER_HPD, 0);
 	}
 
@@ -6647,7 +6546,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 
 	hdmitx_hook_drm(&pdev->dev);
 	/*everything is ready, create sysfs here.*/
-	hdmitx_sysfs_common_create(dev, tx_comm);
+	hdmitx_sysfs_common_create(dev, &hdev->tx_comm, &hdev->tx_hw);
 
 	return r;
 }
@@ -6703,7 +6602,6 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_hdmi_init);
 	device_remove_file(dev, &dev_attr_ready);
 	device_remove_file(dev, &dev_attr_support_3d);
-	device_remove_file(dev, &dev_attr_avmute);
 	device_remove_file(dev, &dev_attr_vic);
 	device_remove_file(dev, &dev_attr_sspll);
 	device_remove_file(dev, &dev_attr_rxsense_policy);
@@ -6747,7 +6645,7 @@ static void _amhdmitx_suspend(void)
 	/* drm tx22 enters AUTH_STOP, don't do hdcp22 IP reset */
 	if (hdmitx_device.hdcp_ctl_lvl > 0)
 		return;
-	hdmitx_device.hwop.cntlmisc(&hdmitx_device, MISC_DIS_HPLL, 0);
+	hdmitx_device.tx_hw.cntlmisc(&hdmitx_device.tx_hw, MISC_DIS_HPLL, 0);
 	hdmitx_device.hwop.cntlddc(&hdmitx_device,
 		DDC_RESET_HDCP, 0);
 	pr_info("amhdmitx: suspend and reset hdcp\n");
@@ -6772,7 +6670,7 @@ static int amhdmitx_resume(struct platform_device *pdev)
 		return 0;
 
 	pr_info("amhdmitx: I2C_REACTIVE\n");
-	hdev->hwop.cntlmisc(hdev, MISC_I2C_REACTIVE, 0);
+	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_I2C_REACTIVE, 0);
 
 	return 0;
 }
@@ -7009,33 +6907,6 @@ int drm_get_hdcp_auth_sts(void)
 	return hdmitx_device.hwop.cntlddc(&hdmitx_device, DDC_HDCP_GET_AUTH, 0);
 }
 
-void drm_hdmitx_avmute(unsigned char mute)
-{
-	int cmd = OFF_AVMUTE;
-
-	if (hdmitx_device.hdmi_init != 1)
-		return;
-	if (mute == 0)
-		cmd = CLR_AVMUTE;
-	else
-		cmd = SET_AVMUTE;
-	hdmitx_device.hwop.cntlmisc(&hdmitx_device, MISC_AVMUTE_OP, cmd);
-}
-
-void drm_hdmitx_set_phy(unsigned char en)
-{
-	int cmd = TMDS_PHY_ENABLE;
-
-	if (hdmitx_device.hdmi_init != 1)
-		return;
-
-	if (en == 0)
-		cmd = TMDS_PHY_DISABLE;
-	else
-		cmd = TMDS_PHY_ENABLE;
-	hdmitx_device.hwop.cntlmisc(&hdmitx_device, MISC_TMDS_PHY_OP, cmd);
-}
-
 bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr)
 {
 	struct hdmi_format_para *para = NULL;
@@ -7108,10 +6979,7 @@ static int drm_hdmitx_set_contenttype(int content_type)
 static struct meson_hdmitx_dev drm_hdmitx_instance = {
 	.get_vic_list = drm_hdmitx_get_vic_list,
 	.set_content_type = drm_hdmitx_set_contenttype,
-
 	.test_attr = drm_hdmitx_chk_mode_attr_sup,
-	.avmute = drm_hdmitx_avmute,
-	.set_phy = drm_hdmitx_set_phy,
 	.get_hdmi_hdr_status = hdmi_hdr_status_to_drm,
 
 	/*hdcp apis*/
@@ -7130,6 +6998,7 @@ int hdmitx_hook_drm(struct device *device)
 {
 	return hdmitx_bind_meson_drm(device,
 		&hdmitx_device.tx_comm,
+		&hdmitx_device.tx_hw,
 		&drm_hdmitx_instance);
 }
 
@@ -7137,6 +7006,7 @@ int hdmitx_unhook_drm(struct device *device)
 {
 	return hdmitx_unbind_meson_drm(device,
 		&hdmitx_device.tx_comm,
+		&hdmitx_device.tx_hw,
 		&drm_hdmitx_instance);
 }
 

@@ -426,7 +426,7 @@ static void am_hdmitx_set_out_mode(void)
 	}
 
 	if (hdmitx_dev->hdcp_ctl_lvl > 0) {
-		drm_hdmitx_avmute(1);
+		hdmitx_hw_avmute(&hdmitx_dev->tx_hw, 1);
 		/* may reduce */
 		msleep(100);
 		last_hdcp_mode = meson_hdcp.hdcp_execute_type;
@@ -437,7 +437,7 @@ static void am_hdmitx_set_out_mode(void)
 	set_vout_mode_post_process(vmode);
 	/* msleep(1000); */
 	if (hdmitx_dev->hdcp_ctl_lvl > 0) {
-		drm_hdmitx_avmute(0);
+		hdmitx_hw_avmute(&hdmitx_dev->tx_hw, 0);
 		meson_hdcp_enable(last_hdcp_mode);
 	}
 }

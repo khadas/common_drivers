@@ -101,12 +101,12 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 	}
 
 	if (param->cs == HDMI_COLORSPACE_YUV444)
-		if (!(hdev->rxcap.native_Mode & (1 << 5))) {
+		if (!(hdev->tx_comm.rxcap.native_Mode & (1 << 5))) {
 			param->cs = HDMI_COLORSPACE_YUV422;
 			pr_info("change cs from 444 to 422\n");
 		}
 	if (param->cs == HDMI_COLORSPACE_YUV422)
-		if (!(hdev->rxcap.native_Mode & (1 << 4))) {
+		if (!(hdev->tx_comm.rxcap.native_Mode & (1 << 4))) {
 			param->cs = HDMI_COLORSPACE_RGB;
 			pr_info("change cs from 422 to rgb\n");
 		}
@@ -139,7 +139,7 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 		 * TMDS_MODE[hdmi_config]
 		 * 0: DVI Mode	   1: HDMI Mode
 		 */
-		if (is_dvi_device(&hdev->rxcap)) {
+		if (is_dvi_device(&hdev->tx_comm.rxcap)) {
 			pr_info(VID "Sink is DVI device\n");
 			hdev->hwop.cntlconfig(hdev,
 				CONF_HDMI_DVI_MODE, DVI_MODE);
@@ -191,7 +191,7 @@ static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 		return;
 	}
 
-	if (hdev->rxcap.dv_info.block_flag == CORRECT ||
+	if (hdev->tx_comm.rxcap.dv_info.block_flag == CORRECT ||
 	    hdev->dv_src_feature == 1) {	   /* For dolby */
 		return;
 	}

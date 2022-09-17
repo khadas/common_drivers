@@ -1799,16 +1799,16 @@ static int hdmitx_cntl_ddc(struct hdmitx_dev *hdev, u32 cmd,
 
 	switch (cmd) {
 	case DDC_RESET_EDID:
-		memset(hdev->tmp_edid_buf, 0, ARRAY_SIZE(hdev->tmp_edid_buf));
+		memset(hdev->tx_comm.tmp_edid_buf, 0, ARRAY_SIZE(hdev->tx_comm.tmp_edid_buf));
 		break;
 	case DDC_EDID_READ_DATA:
-		hdmitx21_read_edid(hdev->tmp_edid_buf);
+		hdmitx21_read_edid(hdev->tx_comm.tmp_edid_buf);
 		break;
 	case DDC_EDID_GET_DATA:
 		if (argv == 0)
-			hdmitx_getediddata(hdev->EDID_buf, hdev->tmp_edid_buf);
+			hdmitx_getediddata(hdev->tx_comm.EDID_buf, hdev->tx_comm.tmp_edid_buf);
 		else
-			hdmitx_getediddata(hdev->EDID_buf1, hdev->tmp_edid_buf);
+			hdmitx_getediddata(hdev->tx_comm.EDID_buf1, hdev->tx_comm.tmp_edid_buf);
 		break;
 	case DDC_GLITCH_FILTER_RESET:
 		hdmitx21_set_reg_bits(HDMITX_TOP_SW_RESET, 1, 6, 1);
@@ -2262,7 +2262,7 @@ static void config_hdmi21_tx(struct hdmitx_dev *hdev)
 	hdmitx21_wr_reg(HDMITX_TOP_HV_ACTIVE, data32);
 	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 3, 1, 2);
 	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 0, 1, 2);
-	if (hdev->rxcap.ieeeoui == HDMI_IEEE_OUI)
+	if (hdev->tx_comm.rxcap.ieeeoui == HDMI_IEEE_OUI)
 		hdmitx21_set_reg_bits(TPI_SC_IVCTX, 1, 0, 1);
 	else
 		hdmitx21_set_reg_bits(TPI_SC_IVCTX, 0, 0, 1);

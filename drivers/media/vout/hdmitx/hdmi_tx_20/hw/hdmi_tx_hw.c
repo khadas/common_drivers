@@ -3884,16 +3884,16 @@ static int hdmitx_cntl_ddc(struct hdmitx_dev *hdev, unsigned int cmd,
 		return ret;
 	case DDC_RESET_EDID:
 		hdmitx_wr_reg(HDMITX_DWC_I2CM_SOFTRSTZ, 0);
-		memset(hdev->tmp_edid_buf, 0, ARRAY_SIZE(hdev->tmp_edid_buf));
+		memset(hdev->tx_comm.tmp_edid_buf, 0, ARRAY_SIZE(hdev->tx_comm.tmp_edid_buf));
 		break;
 	case DDC_EDID_READ_DATA:
-		hdmitx_read_edid(hdev->tmp_edid_buf);
+		hdmitx_read_edid(hdev->tx_comm.tmp_edid_buf);
 		break;
 	case DDC_EDID_GET_DATA:
 		if (argv == 0)
-			hdmitx_getediddata(hdev->EDID_buf, hdev->tmp_edid_buf);
+			hdmitx_getediddata(hdev->tx_comm.EDID_buf, hdev->tx_comm.tmp_edid_buf);
 		else
-			hdmitx_getediddata(hdev->EDID_buf1, hdev->tmp_edid_buf);
+			hdmitx_getediddata(hdev->tx_comm.EDID_buf1, hdev->tx_comm.tmp_edid_buf);
 		break;
 	case DDC_GLITCH_FILTER_RESET:
 		hdmitx_set_reg_bits(HDMITX_TOP_SW_RESET, 1, 6, 1);
@@ -4737,7 +4737,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	 * If don't sleep for 200ms, the color of video will turn
 	 * magenta or green with low probability.
 	 */
-	if (LGAVIErrorTV(&hdev->rxcap))
+	if (LGAVIErrorTV(&hdev->tx_comm.rxcap))
 		msleep(200);
 
 	/* Configure video packetizer */
@@ -5083,7 +5083,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	/* If RX  support 2084 or hlg , and the hdr_src_feature is 2020
 	 *  then enable HDR send out
 	 */
-	if ((hdev->rxcap.hdr_info2.hdr_support & 0xc) &&
+	if ((hdev->tx_comm.rxcap.hdr_info2.hdr_support & 0xc) &&
 	    hdev->hdr_color_feature == C_BT2020) {
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_DATAUTO3, 1, 6, 1);
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 1, 7, 1);

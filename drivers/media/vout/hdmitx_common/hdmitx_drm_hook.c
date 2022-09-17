@@ -23,6 +23,11 @@ static int drm_hdmitx_register_hpd_cb(struct connector_hpd_cb *hpd_cb)
 	return hdmitx_register_hpd_cb(global_tx_base, hpd_cb);
 }
 
+static unsigned char *drm_hdmitx_get_raw_edid(void)
+{
+	return hdmitx_get_raw_edid(global_tx_base);
+}
+
 static void drm_hdmitx_setup_attr(const char *buf)
 {
 	hdmitx_setup_attr(global_tx_base, buf);
@@ -36,6 +41,38 @@ static void drm_hdmitx_get_attr(char attr[16])
 static int drm_hdmitx_get_hdr_priority(void)
 {
 	return global_tx_base->hdr_priority;
+}
+
+static unsigned int drm_hdmitx_get_contenttypes(void)
+{
+	unsigned int types = 1 << DRM_MODE_CONTENT_TYPE_NO_DATA;/*NONE DATA*/
+	struct rx_cap *prxcap = &global_tx_base->rxcap;
+
+	if (prxcap->cnc0)
+		types |= 1 << DRM_MODE_CONTENT_TYPE_GRAPHICS;
+	if (prxcap->cnc1)
+		types |= 1 << DRM_MODE_CONTENT_TYPE_PHOTO;
+	if (prxcap->cnc2)
+		types |= 1 << DRM_MODE_CONTENT_TYPE_CINEMA;
+	if (prxcap->cnc3)
+		types |= 1 << DRM_MODE_CONTENT_TYPE_GAME;
+
+	return types;
+}
+
+static const struct dv_info *drm_hdmitx_get_dv_info(void)
+{
+	const struct dv_info *dv = &global_tx_base->rxcap.dv_info;
+
+	return dv;
+}
+
+static const struct hdr_info *drm_hdmitx_get_hdr_info(void)
+{
+	static struct hdr_info hdrinfo;
+
+	hdmitx_get_hdrinfo(global_tx_base, &hdrinfo);
+	return &hdrinfo;
 }
 
 static int meson_hdmitx_bind(struct device *dev,
@@ -97,6 +134,12 @@ int hdmitx_bind_meson_drm(struct device *device,
 	hdmitx_drm_instance.setup_attr = drm_hdmitx_setup_attr;
 	hdmitx_drm_instance.get_attr = drm_hdmitx_get_attr;
 	hdmitx_drm_instance.get_hdr_priority = drm_hdmitx_get_hdr_priority;
+
+	/*edid related.*/
+	hdmitx_drm_instance.get_raw_edid = drm_hdmitx_get_raw_edid;
+	hdmitx_drm_instance.get_content_types = drm_hdmitx_get_contenttypes;
+	hdmitx_drm_instance.get_dv_info = drm_hdmitx_get_dv_info;
+	hdmitx_drm_instance.get_hdr_info = drm_hdmitx_get_hdr_info;
 
 	return component_add(device, &meson_hdmitx_bind_ops);
 }

@@ -60,37 +60,6 @@ struct amhdmitx_data_s {
 /************************************
  *    hdmitx device structure
  *************************************/
-/*  VIC_MAX_VALID_MODE and VIC_MAX_NUM are associated with
- *	HDMITX_VIC420_OFFSET and HDMITX_VIC_MASK in hdmi_common.h
- */
-#define VIC_MAX_VALID_MODE	256 /* consider 4k2k */
-/* half for valid vic, half for vic with y420*/
-#define VIC_MAX_NUM 512
-#define AUD_MAX_NUM 60
-struct rx_audiocap {
-	unsigned char audio_format_code;
-	unsigned char channel_num_max;
-	unsigned char freq_cc;
-	unsigned char cc3;
-};
-
-struct dolby_vsadb_cap {
-	unsigned char rawdata[7 + 1]; // padding extra 1 byte
-	unsigned int ieeeoui;
-	unsigned char length;
-	unsigned char dolby_vsadb_ver;
-	unsigned char spk_center:1;
-	unsigned char spk_surround:1;
-	unsigned char spk_height:1;
-	unsigned char headphone_only:1;
-	unsigned char mat_48k_pcm_only:1;
-};
-
-#define MAX_RAW_LEN 64
-struct raw_block {
-	int len;
-	char raw[MAX_RAW_LEN];
-};
 
 enum hd_ctrl {
 	VID_EN, VID_DIS, AUD_EN, AUD_DIS, EDID_EN, EDID_DIS, HDCP_EN, HDCP_DIS,
@@ -101,92 +70,6 @@ struct hdr_dynamic_struct {
 	unsigned int hd_len;/*hdr_dynamic_length*/
 	unsigned char support_flags;
 	unsigned char optional_fields[20];
-};
-
-#define VESA_MAX_TIMING 64
-
-struct rx_cap {
-	unsigned int native_Mode;
-	/*video*/
-	unsigned int VIC[VIC_MAX_NUM];
-	unsigned int VIC_count;
-	unsigned int native_VIC;
-	enum hdmi_vic vesa_timing[VESA_MAX_TIMING]; /* Max 64 */
-	/*audio*/
-	struct rx_audiocap RxAudioCap[AUD_MAX_NUM];
-	unsigned char AUD_count;
-	unsigned char RxSpeakerAllocation;
-	struct dolby_vsadb_cap dolby_vsadb_cap;
-	/*vendor*/
-	unsigned int ieeeoui;
-	unsigned char Max_TMDS_Clock1; /* HDMI1.4b TMDS_CLK */
-	unsigned int hf_ieeeoui;	/* For HDMI Forum */
-	unsigned int Max_TMDS_Clock2; /* HDMI2.0 TMDS_CLK */
-	/* CEA861-F, Table 56, Colorimetry Data Block */
-	unsigned int colorimetry_data;
-	unsigned int scdc_present:1;
-	unsigned int scdc_rr_capable:1; /* SCDC read request */
-	unsigned int lte_340mcsc_scramble:1;
-	unsigned int dc_y444:1;
-	unsigned int dc_30bit:1;
-	unsigned int dc_36bit:1;
-	unsigned int dc_48bit:1;
-	unsigned int dc_30bit_420:1;
-	unsigned int dc_36bit_420:1;
-	unsigned int dc_48bit_420:1;
-	unsigned int max_frl_rate:4;
-	unsigned int fpap_start_loc:1;
-	unsigned int allm:1;
-	unsigned int cnc0:1; /* Graphics */
-	unsigned int cnc1:1; /* Photo */
-	unsigned int cnc2:1; /* Cinema */
-	unsigned int cnc3:1; /* Game */
-	unsigned int mdelta:1;
-	unsigned int fva:1;
-	struct hdr_info hdr_info;
-	struct dv_info dv_info;
-	/* When hdr_priority is 1, then dv_info will be all 0;
-	 * when hdr_priority is 2, then dv_info/hdr_info will be all 0
-	 * App won't get real dv_cap/hdr_cap, but can get real dv_cap2/hdr_cap2
-	 */
-	struct hdr_info hdr_info2;
-	struct dv_info dv_info2;
-	unsigned char IDManufacturerName[4];
-	unsigned char IDProductCode[2];
-	unsigned char IDSerialNumber[4];
-	unsigned char ReceiverProductName[16];
-	unsigned char manufacture_week;
-	unsigned char manufacture_year;
-	unsigned short physical_width;
-	unsigned short physical_height;
-	unsigned char edid_version;
-	unsigned char edid_revision;
-	unsigned char ColorDeepSupport;
-	unsigned int vLatency;
-	unsigned int aLatency;
-	unsigned int i_vLatency;
-	unsigned int i_aLatency;
-	unsigned int threeD_present;
-	unsigned int threeD_Multi_present;
-	unsigned int hdmi_vic_LEN;
-	unsigned int HDMI_3D_LEN;
-	unsigned int threeD_Structure_ALL_15_0;
-	unsigned int threeD_MASK_15_0;
-	struct {
-		unsigned char frame_packing;
-		unsigned char top_and_bottom;
-		unsigned char side_by_side;
-	} support_3d_format[VIC_MAX_NUM];
-	enum hdmi_vic preferred_mode;
-	struct dtd dtd[16];
-	unsigned char dtd_idx;
-	unsigned char flag_vfpdb;
-	unsigned char number_of_dtd;
-	struct raw_block asd;
-	struct raw_block vsd;
-	/*blk0 check sum*/
-	unsigned char blk0_chksum;
-	unsigned char chksum[10];
 };
 
 struct cts_conftab {
@@ -312,7 +195,6 @@ struct st_debug_param {
 	unsigned int avmute_frame;
 };
 
-#define EDID_MAX_BLOCK              8
 struct hdmitx_dev {
 	struct cdev cdev; /* The cdev structure */
 	struct hdmitx_common tx_comm;
@@ -416,16 +298,6 @@ struct hdmitx_dev {
 	unsigned int irq_hpd;
 	unsigned int irq_viu1_vsync;
 	/*EDID*/
-	unsigned int cur_edid_block;
-	unsigned int cur_phy_block_ptr;
-	unsigned char EDID_buf[EDID_MAX_BLOCK * 128];
-	unsigned char EDID_buf1[EDID_MAX_BLOCK * 128]; /* for second read */
-	unsigned char tmp_edid_buf[128 * EDID_MAX_BLOCK];
-	unsigned char *edid_ptr;
-	/* indicate RX edid data integrated, HEAD valid and checksum pass */
-	unsigned int edid_parsing;
-	unsigned char EDID_hash[20];
-	struct rx_cap rxcap;
 	struct hdmitx_vidpara *cur_video_param;
 	int vic_count;
 	struct hdmitx_clk_tree_s hdmitx_clk_tree;

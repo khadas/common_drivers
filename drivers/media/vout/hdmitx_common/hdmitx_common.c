@@ -48,6 +48,14 @@ int hdmitx_register_hpd_cb(struct hdmitx_common *tx_comm, struct connector_hpd_c
 	return 0;
 }
 
+unsigned char *hdmitx_get_raw_edid(struct hdmitx_common *tx_comm)
+{
+	if (tx_comm->edid_ptr)
+		return tx_comm->edid_ptr;
+	else
+		return tx_comm->EDID_buf;
+}
+
 int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf)
 {
 	char attr[16] = {0};
@@ -62,3 +70,15 @@ int hdmitx_get_attr(struct hdmitx_common *tx_comm, char attr[16])
 	memcpy(attr, tx_comm->fmt_attr, sizeof(tx_comm->fmt_attr));
 	return 0;
 }
+
+int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo)
+{
+	struct rx_cap *prxcap = &tx_comm->rxcap;
+
+	memcpy(hdrinfo, &prxcap->hdr_info, sizeof(struct hdr_info));
+	hdrinfo->colorimetry_support = prxcap->colorimetry_data;
+	pr_info("update rx hdr info %x\n", hdrinfo->hdr_support);
+
+	return 0;
+}
+

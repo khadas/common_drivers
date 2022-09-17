@@ -26,10 +26,10 @@ bool hdmitx_find_vendor_6g(struct hdmitx_dev *hdev)
 {
 	int i;
 
-	if (!hdev || !hdev->edid_ptr)
+	if (!hdev || !hdev->tx_comm.edid_ptr)
 		return false;
 	for (i = 0; i < ARRAY_SIZE(vendor_6g); i++) {
-		if (memcmp(&hdev->edid_ptr[8], vendor_6g[i].data,
+		if (memcmp(&hdev->tx_comm.edid_ptr[8], vendor_6g[i].data,
 			   sizeof(vendor_6g[i].data)) == 0)
 			return true;
 	}
@@ -41,10 +41,10 @@ bool hdmitx_find_vendor_ratio(struct hdmitx_dev *hdev)
 {
 	int i;
 
-	if (!hdev || !hdev->edid_ptr)
+	if (!hdev || !hdev->tx_comm.edid_ptr)
 		return false;
 	for (i = 0; i < ARRAY_SIZE(vendor_ratio); i++) {
-		if (memcmp(&hdev->edid_ptr[8], vendor_ratio[i].data,
+		if (memcmp(&hdev->tx_comm.edid_ptr[8], vendor_ratio[i].data,
 			   sizeof(vendor_ratio[i].data)) == 0)
 			return true;
 	}

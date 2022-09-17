@@ -9,6 +9,7 @@
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 
 /* HDMI VIC definitions */
 
@@ -548,25 +549,6 @@ struct parse_cs {
 struct parse_cr {
 	enum hdmi_quantization_range cr;
 	const char *name;
-};
-
-/* Refer CEA861-D Page 116 Table 55 */
-struct dtd {
-	unsigned short pixel_clock;
-	unsigned short h_active;
-	unsigned short h_blank;
-	unsigned short v_active;
-	unsigned short v_blank;
-	unsigned short h_sync_offset;
-	unsigned short h_sync;
-	unsigned short v_sync_offset;
-	unsigned short v_sync;
-	unsigned short h_image_size;
-	unsigned short v_image_size;
-	unsigned char h_border;
-	unsigned char v_border;
-	unsigned char flags;
-	enum hdmi_vic vic;
 };
 
 struct vesa_standard_timing {

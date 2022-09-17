@@ -855,7 +855,7 @@ ssize_t _vrr_cap_show(struct device *dev,
 {
 	int pos = 0;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct rx_cap *prxcap = &hdev->rxcap;
+	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 	struct vrr_device_s *vrr = &hdev->hdmitx_vrr_dev;
 
 	pos += snprintf(buf + pos, PAGE_SIZE,
@@ -914,7 +914,7 @@ int hdmitx_set_fr_hint(int rate, void *data)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-	struct rx_cap *prxcap = &hdev->rxcap;
+	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 	struct vrr_conf_para para;
 	enum TARGET_FRAME_RATE tfr = TFR_QMSVRR_INACTIVE;
 	int tmp_rate;
@@ -1022,7 +1022,7 @@ void hdmitx_register_vrr(struct hdmitx_dev *hdev)
 {
 	int ret;
 	char *name = "hdmitx_vrr";
-	struct rx_cap *prxcap = &hdev->rxcap;
+	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 	struct vinfo_s *vinfo;
 	struct vrr_device_s *vrr = &hdev->hdmitx_vrr_dev;
 

@@ -954,7 +954,7 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 		/* HDMI CT 7-24 Pixel Encoding
 		 * YCbCr to YCbCr Sink
 		 */
-		switch (hdev->rxcap.native_Mode & 0x30) {
+		switch (hdev->tx_comm.rxcap.native_Mode & 0x30) {
 		case 0x20:/*bit5==1, then support YCBCR444 + RGB*/
 		case 0x30:
 			param->color = HDMI_COLORSPACE_YUV444;
@@ -994,7 +994,7 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 			 * TMDS_MODE[hdmi_config]
 			 * 0: DVI Mode	   1: HDMI Mode
 			 */
-			if (is_dvi_device(&hdev->rxcap)) {
+			if (is_dvi_device(&hdev->tx_comm.rxcap)) {
 				pr_info(VID "Sink is DVI device\n");
 				hdev->hwop.cntlconfig(hdev,
 					CONF_HDMI_DVI_MODE, DVI_MODE);
@@ -1047,7 +1047,7 @@ static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 		return;
 	}
 
-	if (hdev->rxcap.dv_info.block_flag == CORRECT ||
+	if (hdev->tx_comm.rxcap.dv_info.block_flag == CORRECT ||
 	    hdev->dv_src_feature == 1) {	   /* For dolby */
 		return;
 	}

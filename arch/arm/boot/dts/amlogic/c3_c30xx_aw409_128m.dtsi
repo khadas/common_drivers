@@ -43,9 +43,10 @@
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
 			no-map;
-			size = <0xc00000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x05000000 0xc00000>;
+			size = <0x100000>;
+			alignment = <0x100000>;
+			//alloc-ranges = <0x07C00000 0x8000000>;
+			reg = <0x07F00000 0x100000>;
 		};
 		nna_cma_reserved: linux,nna_cma {
 			compatible = "shared-dma-pool";
@@ -71,14 +72,14 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x3000000>;
+			size = <0x400000>;
 			alignment = <0x400000>;
 			status = "disabled";
 		};
 
 		rtos_reserved:linux,rtos_reserved {
 			compatible = "amlogic, aml_rtos_memory";
-			status = "okay";
+			status = "disabled";
 			reg = <0x4800000 0x200000>;
 			no-map;
 		};
@@ -99,22 +100,34 @@
 			ftrace-size = <0x80000>;
 			pmsg-size = <0x0>;
 			no-map;
+			status = "disabled";
+		};
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x400000>;
+			alignment = <0x400000>;
+			alloc-ranges = <0x07000000 0x7800000>;
+			linux,cma-default;
 		};
 
 		pmz_cma_a1_reserved:anonymous {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x4000000>;
+			size = <0x4400000>;
 			alignment = <0x400000>;
+			alloc-ranges = <0x3000000 0x7400000>;
 		};
 
-		pmz_cma_a2_reserved:user_pmz {
+		pmz_cma_a2_reserved:anonymous_ext{
 			compatible = "shared-dma-pool";
 			reusable;
 			size = <0x1000000>;
 			alignment = <0x400000>;
 			status = "disabled";
+			//alloc-ranges = <0x0 0x7B00000>;
 		};
+
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -130,6 +143,7 @@
 			size = <0x0>;
 			alignment = <0x100000>;
 			//no-map;
+			status = "disabled";
 		};
 		jpegenc_cma_reserved:linux,jpegenc_cma {
 			compatible = "shared-dma-pool";
@@ -188,7 +202,6 @@
             interrupts = <0x00 0x86 0x01 0x00 0x87 0x01 0x00 0x88 0x01>;
             interrupt-names = "vc9000e_irq0\0vc9000e_irq1\0vc9000e_irq1";
         };
-
 
 	/* Audio Related start */
 	dummy_codec:dummy_codec{
@@ -577,6 +590,8 @@
 		start_clk_enable = <1>;
 		//power-domains = <&pwrdm PDID_CX_AUDIO>;
 
+		src-clk-freq = <1155072000>;
+
 		status = "okay";
 	};
 
@@ -848,6 +863,7 @@
 			function = "pdm";
 		};
 	};
+
 	/* Audio Related end */
 };
 
@@ -983,7 +999,6 @@
 //	pinctrl-7 = <&sdcard_pins &b_uart_enable_pins1>;
 //	pinctrl-8 = <&b_uart_pins1
 //		     &ao_to_sd_uart_pins>;
-//	pinctrl-9 = <&sdcard_pins_sleep>;
 	pinctrl-names = "sd_default",
 			"clk-gate",
 			"sd_1bit_pins",
@@ -1184,5 +1199,5 @@
 };
 
 &freertos {
-	status = "okay";
+	status = "disabled";
 };

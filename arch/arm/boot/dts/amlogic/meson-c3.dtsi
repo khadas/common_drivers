@@ -1332,7 +1332,7 @@
 	secmon {
 		compatible = "amlogic, secmon";
 		memory-region = <&secmon_reserved>;
-		reserve_mem_size = <0x00300000>;
+		reserve_mem_size = <0x00100000>;
 		in_base_func = <0x82000020>;
 		out_base_func = <0x82000021>;
 	};

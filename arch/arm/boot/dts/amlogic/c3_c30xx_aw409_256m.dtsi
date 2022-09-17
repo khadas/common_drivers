@@ -43,9 +43,10 @@
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
 			no-map;
-			size = <0xc00000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x05000000 0xc00000>;
+			size = <0x100000>;
+			alignment = <0x100000>;
+			//alloc-ranges =  <0x05000000 0x8000000>;
+			reg = <0x07F00000 0x100000>;
 		};
 		nna_cma_reserved: linux,nna_cma {
 			compatible = "shared-dma-pool";
@@ -99,22 +100,35 @@
 			ftrace-size = <0x80000>;
 			pmsg-size = <0x0>;
 			no-map;
+			status = "disabled";
 		};
 
 		pmz_cma_a1_reserved:anonymous {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x8400000>;
+			size = <0x8000000>;
 			alignment = <0x400000>;
+			alloc-ranges = <0x8000000 0x10000000>;
+			status = "okay";
 		};
 
-		pmz_cma_a2_reserved:user_pmz {
+		pmz_cma_a2_reserved:anonymous_ext{
 			compatible = "shared-dma-pool";
 			reusable;
 			size = <0x1000000>;
 			alignment = <0x400000>;
 			status = "disabled";
 		};
+
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x400000>;
+			alignment = <0x400000>;
+			alloc-ranges = <0x05000000 0x7F00000>;
+			linux,cma-default;
+		};
+
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -179,7 +193,7 @@
 	pmz_a2_dev {
 		compatible = "amlogic, pmz_dev";
 		memory-region = <&pmz_cma_a2_reserved>;
-		status = "disabled";
+		status = "okay";
 	};
 
         hantro {

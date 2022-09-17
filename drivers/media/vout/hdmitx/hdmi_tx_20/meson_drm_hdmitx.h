@@ -11,7 +11,6 @@ int drm_hdmitx_register_hdcp_cb(struct drm_hdmitx_hdcp_cb *hdcp_cb);
 
 void drm_hdmitx_hdcp22_init(void);
 
-void drm_hdmitx_setup_attr(const char *buf);
 void drm_hdmitx_get_attr(char attr[16]);
 bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr);
 

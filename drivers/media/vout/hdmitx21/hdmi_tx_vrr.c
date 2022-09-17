@@ -913,7 +913,7 @@ static bool check_qms_brr_format(const enum hdmi_vic vic)
 int hdmitx_set_fr_hint(int rate, void *data)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_dev_common *tx_comm = &hdev->tx_comm;
+	struct hdmitx_common *tx_comm = &hdev->tx_comm;
 	struct rx_cap *prxcap = &hdev->rxcap;
 	struct vrr_conf_para para;
 	enum TARGET_FRAME_RATE tfr = TFR_QMSVRR_INACTIVE;

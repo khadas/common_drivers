@@ -1460,7 +1460,7 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 	} else if (strncmp(tmpbuf, "ss", 2) == 0) {
 		pr_info("hdev->output_blank_flag: 0x%x\n",
 			hdev->output_blank_flag);
-		pr_info("hdev->hpd_state: 0x%x\n", hdev->hpd_state);
+		pr_info("hdev->hpd_state: 0x%x\n", hdev->tx_comm.hpd_state);
 		pr_info("hdev->cur_VIC: 0x%x\n", hdev->cur_VIC);
 	} else if (strncmp(tmpbuf, "hpd_lock", 8) == 0) {
 		if (tmpbuf[8] == '1') {

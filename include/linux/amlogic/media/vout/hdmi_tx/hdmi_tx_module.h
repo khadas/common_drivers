@@ -20,7 +20,7 @@
 #endif
 #include <linux/spinlock.h>
 #include <drm/amlogic/meson_connector_dev.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 #define DEVICE_NAME "amhdmitx"
 
@@ -315,7 +315,7 @@ struct st_debug_param {
 #define EDID_MAX_BLOCK              8
 struct hdmitx_dev {
 	struct cdev cdev; /* The cdev structure */
-	struct hdmitx_dev_common tx_comm;
+	struct hdmitx_common tx_comm;
 	dev_t hdmitx_id;
 	struct proc_dir_entry *proc_file;
 	struct task_struct *task;
@@ -439,7 +439,6 @@ struct hdmitx_dev {
 	atomic_t kref_audio_mute;
 	/**/
 	unsigned char hpd_event; /* 1, plugin; 2, plugout */
-	unsigned char hpd_state; /* 1, connect; 0, disconnect */
 	unsigned char drm_mode_setting; /* 1, setting; 0, keeping */
 	unsigned char rhpd_state; /* For repeater use only, no delay */
 	unsigned char hdcp_max_exceed_state;
@@ -512,8 +511,6 @@ struct hdmitx_dev {
 	spinlock_t edid_spinlock; /* edid hdr/dv cap lock */
 
 	/*DRM related*/
-	int drm_hdmitx_id;
-	struct connector_hpd_cb drm_hpd_cb;
 	struct drm_hdmitx_hdcp_cb drm_hdcp_cb;
 
 #ifdef CONFIG_AMLOGIC_VPU

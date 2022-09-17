@@ -19,7 +19,7 @@
 #include <linux/amlogic/media/vrr/vrr.h>
 #include <drm/amlogic/meson_connector_dev.h>
 #include <linux/miscdevice.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 #define DEVICE_NAME "amhdmitx21"
 
@@ -303,7 +303,7 @@ struct hdmitx_match_frame_table_s {
 #define EDID_MAX_BLOCK              8
 struct hdmitx_dev {
 	struct cdev cdev; /* The cdev structure */
-	struct hdmitx_dev_common tx_comm;
+	struct hdmitx_common tx_comm;
 	dev_t hdmitx_id;
 	struct proc_dir_entry *proc_file;
 	struct task_struct *task;
@@ -391,7 +391,6 @@ struct hdmitx_dev {
 	atomic_t kref_audio_mute;
 	/**/
 	u8 hpd_event; /* 1, plugin; 2, plugout */
-	u8 hpd_state; /* 1, connect; 0, disconnect */
 	u8 drm_mode_setting; /* 1, setting; 0, keeping */
 	u8 rhpd_state; /* For repeater use only, no delay */
 	u8 force_audio_flag;
@@ -456,8 +455,6 @@ struct hdmitx_dev {
 	unsigned int hdcp_ctl_lvl;
 
 	/*DRM related*/
-	int drm_hdmitx_id;
-	struct connector_hpd_cb drm_hpd_cb;
 	struct connector_hdcp_cb drm_hdcp_cb;
 
 	struct miscdevice hdcp_comm_device;

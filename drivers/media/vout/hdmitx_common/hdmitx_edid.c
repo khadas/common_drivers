@@ -2,8 +2,8 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-
 #include <linux/errno.h>
+#include <linux/kernel.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 
 static bool hdmitx_edid_header_invalid(u8 *buf)
@@ -63,4 +63,33 @@ int hdmitx_edid_validate(u8 *rawedid)
 	/* may extend NG case here */
 
 	return 0;
+}
+
+/*index is hdmi 1.4 vic in vsif, value is hdmi2.0 vic*/
+static const u32 hdmi14_4k_vics[] = {
+/* 0 - dummy*/
+	0,
+/* 1 - 3840x2160@30Hz */
+	95,
+/* 2 - 3840x2160@25Hz */
+	94,
+/* 3 - 3840x2160@24Hz */
+	93,
+/* 4 - 4096x2160@24Hz (SMPTE) */
+	98,
+};
+
+u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic)
+{
+	bool ret = 0;
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(hdmi14_4k_vics); i++) {
+		if (vic == hdmi14_4k_vics[i]) {
+			ret = i;
+			break;
+		}
+	}
+
+	return ret;
 }

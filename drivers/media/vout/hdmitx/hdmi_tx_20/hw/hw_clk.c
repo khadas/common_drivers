@@ -877,7 +877,7 @@ static struct hw_enc_clk_val_group setting_3dfp_enc_clk_val[] = {
 static void set_hdmitx_fe_clk(struct hdmitx_dev *hdev)
 {
 	unsigned int tmp = 0;
-	enum hdmi_vic vic = hdev->cur_VIC;
+	enum hdmi_vic vic = hdev->tx_comm.cur_VIC;
 	unsigned int vid_clk_cntl2 = P_HHI_VID_CLK_CNTL2;
 	unsigned int vid_clk_div = P_HHI_VID_CLK_DIV;
 	unsigned int hdmi_clk_cntl = P_HHI_HDMI_CLK_CNTL;
@@ -910,7 +910,7 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev)
 	int i = 0;
 	int j = 0;
 	struct hw_enc_clk_val_group *p_enc = NULL;
-	enum hdmi_vic vic = hdev->cur_VIC;
+	enum hdmi_vic vic = hdev->tx_comm.cur_VIC;
 	enum hdmi_colorspace cs = hdev->para->cs;
 	enum hdmi_color_depth cd = hdev->para->cd;
 
@@ -1016,7 +1016,7 @@ static int likely_frac_rate_mode(char *m)
 
 static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 {
-	enum hdmi_vic vic = hdev->cur_VIC;
+	enum hdmi_vic vic = hdev->tx_comm.cur_VIC;
 	struct hdmi_format_para *para = NULL;
 
 	frac_rate = hdev->tx_comm.frac_rate_policy;

@@ -219,8 +219,6 @@ struct hdmitx_dev {
 		/* Audio/Video/System Status */
 		int (*getstate)(struct hdmitx_dev *hdev, u32 cmd, u32 arg);
 		int (*cntlpacket)(struct hdmitx_dev *hdev, u32 cmd, u32 arg); /* Packet control */
-		/* Configure control */
-		int (*cntlconfig)(struct hdmitx_dev *hdev, u32 cmd, u32 arg);
 		int (*cntl)(struct hdmitx_dev *hdev, u32 cmd, u32 arg); /* Other control */
 	} hwop;
 	struct {
@@ -244,7 +242,6 @@ struct hdmitx_dev {
 	int audio_param_update_flag;
 	u8 unplug_powerdown;
 	unsigned short physical_addr;
-	u32 cur_VIC;
 	atomic_t kref_video_mute;
 	atomic_t kref_audio_mute;
 	/**/
@@ -271,9 +268,6 @@ struct hdmitx_dev {
 	u32 vrr_type; /* 1: GAME-VRR, 2: QMS-VRR */
 	struct ced_cnt ced_cnt;
 	struct scdc_locked_st chlocked_st;
-	u32 allm_mode; /* allm_mode: 1/on 0/off */
-	u32 ct_mode; /* 0/off 1/game, 2/graphics, 3/photo, 4/cinema */
-	bool it_content;
 	u32 sspll;
 	/* if HDMI plugin even once time, then set 1 */
 	/* if never hdmi plugin, then keep as 0 */
@@ -336,40 +330,6 @@ struct hdmitx_dev {
 #define DDC_SCDC_DIV40_SCRAMB	(CMD_DDC_OFFSET + 0x20)
 
 /***********************************************************************
- *             CONFIG CONTROL //cntlconfig
- **********************************************************************/
-/* Video part */
-#define CONF_HDMI_DVI_MODE      (CMD_CONF_OFFSET + 0x02)
-#define HDMI_MODE           0x1
-#define DVI_MODE            0x2
-/* set value as HDMI_COLORSPACE_RGB, YUV422, YUV444, YUV420 */
-#define CONF_CT_MODE		(CMD_CONF_OFFSET + 0X2000 + 0x04)
-	#define SET_CT_OFF		0
-	#define SET_CT_GAME		1
-	#define SET_CT_GRAPHICS	2
-	#define SET_CT_PHOTO	3
-	#define SET_CT_CINEMA	4
-	#define IT_CONTENT	1
-#define CONF_VIDEO_MUTE_OP      (CMD_CONF_OFFSET + 0x1000 + 0x04)
-#define VIDEO_MUTE          0x1
-#define VIDEO_UNMUTE        0x2
-#define CONF_EMP_NUMBER         (CMD_CONF_OFFSET + 0x3000 + 0x00)
-#define CONF_EMP_PHY_ADDR       (CMD_CONF_OFFSET + 0x3000 + 0x01)
-
-/* Audio part */
-#define CONF_CLR_AVI_PACKET     (CMD_CONF_OFFSET + 0x04)
-#define CONF_CLR_VSDB_PACKET    (CMD_CONF_OFFSET + 0x05)
-#define CONF_VIDEO_MAPPING	(CMD_CONF_OFFSET + 0x06)
-#define CONF_GET_HDMI_DVI_MODE	(CMD_CONF_OFFSET + 0x07)
-#define CONF_CLR_DV_VS10_SIG	(CMD_CONF_OFFSET + 0x10)
-
-#define CONF_AUDIO_MUTE_OP      (CMD_CONF_OFFSET + 0x1000 + 0x00)
-#define AUDIO_MUTE          0x1
-#define AUDIO_UNMUTE        0x2
-#define CONF_CLR_AUDINFO_PACKET (CMD_CONF_OFFSET + 0x1000 + 0x01)
-#define CONF_ASPECT_RATIO	(CMD_CONF_OFFSET + 0x60c)
-
-/***********************************************************************
  *                          Get State //getstate
  **********************************************************************/
 #define STAT_VIDEO_VIC          (CMD_STAT_OFFSET + 0x00)
@@ -403,43 +363,13 @@ void hdmitx21_edid_buf_compare_print(struct hdmitx_dev *hdev);
 int hdmitx21_read_phy_status(void);
 void hdmitx21_dither_config(struct hdmitx_dev *hdev);
 
-/* VSIF: Vendor Specific InfoFrame
- * It has multiple purposes:
- * 1. HDMI1.4 4K, HDMI_VIC=1/2/3/4, 2160p30/25/24hz, smpte24hz, AVI.VIC=0
- *    In CTA-861-G, matched with AVI.VIC=95/94/93/98
- * 2. 3D application, TB/SS/FP
- * 3. DolbyVision, with Len=0x18
- * 4. HDR10plus
- * 5. HDMI20 3D OSD disparity / 3D dual-view / 3D independent view / ALLM
- * Some functions are exclusive, but some may compound.
- * Consider various state transitions carefully, such as play 3D under HDMI14
- * 4K, exit 3D under 4K, play DV under 4K, enable ALLM under 3D dual-view
- */
-enum vsif_type {
-	/* Below 4 functions are exclusive */
-	VT_HDMI14_4K = 1,
-	VT_T3D_VIDEO,
-	VT_DOLBYVISION,
-	VT_HDR10PLUS,
-	/* Maybe compound 3D dualview + ALLM */
-	VT_T3D_OSD_DISPARITY = 0x10,
-	VT_T3D_DUALVIEW,
-	VT_T3D_INDEPENDVEW,
-	VT_ALLM,
-	/* default: if non-HDMI4K, no any vsif; if HDMI4k, = VT_HDMI14_4K */
-	VT_DEFAULT,
-	VT_MAX,
-};
-
-int hdmitx21_construct_vsif(struct hdmitx_dev *hdev, enum vsif_type type, int on, void *param);
+int hdmitx21_construct_vsif(struct hdmitx_common *tx_comm,
+	enum vsif_type type, int on, void *param);
 
 /* if vic is 93 ~ 95, or 98 (HDMI14 4K), return 1 */
 bool _is_hdmi14_4k(enum hdmi_vic vic);
 /* if vic is 96, 97, 101, 102, 106, 107, 4k 50/60hz, return 1 */
 bool _is_y420_vic(enum hdmi_vic vic);
-
-/* set vic to AVI.VIC */
-void hdmitx21_set_avi_vic(enum hdmi_vic vic);
 
 /*
  * HDMI Repeater TX I/F

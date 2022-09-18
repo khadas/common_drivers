@@ -59,7 +59,7 @@ static int hdmitx_cntl_ddc(struct hdmitx_dev *hdev, u32 cmd,
 			   unsigned long argv);
 static int hdmitx_get_state(struct hdmitx_dev *hdev, u32 cmd,
 			    u32 argv);
-static int hdmitx_cntl_config(struct hdmitx_dev *hdev, u32 cmd,
+static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 			      u32 argv);
 static int hdmitx_cntl_misc(struct hdmitx_hw_common *tx_hw, u32 cmd,
 			    u32  argv);
@@ -136,10 +136,6 @@ static void config_avmute(u32 val)
 	default:
 		break;
 	}
-}
-
-void hdmitx21_set_avi_vic(enum hdmi_vic vic)
-{
 }
 
 static int read_avmute(void)
@@ -359,7 +355,7 @@ static void hdmi_hwp_init(struct hdmitx_dev *hdev)
 				vic = avi->video_code;
 				if (vic == HDMI_0_UNKNOWN)
 					vic = _get_vic_from_vsif(hdev);
-				hdev->cur_VIC = vic;
+				hdev->tx_comm.cur_VIC = vic;
 				tp = hdmitx21_gettiming_from_vic(vic);
 				if (tp) {
 					name = tp->sname ? tp->sname : tp->name;
@@ -372,7 +368,7 @@ static void hdmi_hwp_init(struct hdmitx_dev *hdev)
 				hdev->para->cd = COLORDEPTH_24B;
 			}
 			pr_info("hdmitx21: parsing AVI CS%d CD%d VIC%d\n",
-				avi->colorspace, hdev->para->cd, hdev->cur_VIC);
+				avi->colorspace, hdev->para->cd, hdev->tx_comm.cur_VIC);
 		}
 		return;
 	}
@@ -456,6 +452,12 @@ int hdmitx21_uboot_audio_en(void)
 	return 0;
 }
 
+void hdmitx_set_datapacket(int type,
+	unsigned char *DB, unsigned char *HB)
+{
+	hdmi_vend_infoframe_rawset(HB, DB);
+}
+
 void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 {
 	hdev->hwop.setdispmode = hdmitx_set_dispmode;
@@ -467,8 +469,9 @@ void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 	hdev->hwop.cntlddc = hdmitx_cntl_ddc;
 	hdev->hwop.getstate = hdmitx_get_state;
 	hdev->hwop.cntlpacket = hdmitx_cntl;
-	hdev->hwop.cntlconfig = hdmitx_cntl_config;
+	hdev->tx_hw.cntlconfig = hdmitx_cntl_config;
 	hdev->tx_hw.cntlmisc = hdmitx_cntl_misc;
+	hdev->tx_hw.setdatapacket = hdmitx_set_datapacket;
 	hdmi_hwp_init(hdev);
 	hdmitx21_debugfs_init();
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, CLR_AVMUTE);
@@ -827,7 +830,7 @@ static int hdmitx_set_dispmode(struct hdmitx_dev *hdev)
 	data32 |= (1920 << 0);  // [13: 0] cntl_hdcp22_min_size_h
 	hdmitx21_wr_reg(HDMITX_TOP_HDCP22_MIN_SIZE, data32);
 
-	hdev->cur_VIC = hdev->para->timing.vic;
+	hdev->tx_comm.cur_VIC = hdev->para->timing.vic;
 
 pr_info("%s[%d]\n", __func__, __LINE__);
 	hdmitx21_set_clk(hdev);
@@ -1395,7 +1398,7 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 
 	if (strncmp(tmpbuf, "testhpll", 8) == 0) {
 		ret = kstrtoul(tmpbuf + 8, 10, &value);
-		hdev->cur_VIC = value;
+		hdev->tx_comm.cur_VIC = value;
 		hdmitx21_set_clk(hdev);
 		return;
 	} else if (strncmp(tmpbuf, "testedid", 8) == 0) {
@@ -1463,7 +1466,7 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 		pr_info("hdev->output_blank_flag: 0x%x\n",
 			hdev->output_blank_flag);
 		pr_info("hdev->hpd_state: 0x%x\n", hdev->tx_comm.hpd_state);
-		pr_info("hdev->cur_VIC: 0x%x\n", hdev->cur_VIC);
+		pr_info("hdev->tx_comm.cur_VIC: 0x%x\n", hdev->tx_comm.cur_VIC);
 	} else if (strncmp(tmpbuf, "hpd_lock", 8) == 0) {
 		if (tmpbuf[8] == '1') {
 			hdev->hpd_lock = 1;
@@ -1853,10 +1856,11 @@ static int hdmitx_get_hdmi_dvi_config(struct hdmitx_dev *hdev)
 	return HDMI_MODE;
 }
 
-static int hdmitx_cntl_config(struct hdmitx_dev *hdev, u32 cmd,
+static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 			      u32 argv)
 {
 	int ret = 0;
+	struct hdmitx_dev *hdev = to_hdmitx21_dev(tx_hw);
 
 	if ((cmd & CMD_CONF_OFFSET) != CMD_CONF_OFFSET) {
 		pr_err(HW "config: invalid cmd 0x%x\n", cmd);
@@ -1901,6 +1905,9 @@ static int hdmitx_cntl_config(struct hdmitx_dev *hdev, u32 cmd,
 		pr_info("%s argv = %d\n", __func__, argv);
 		hdmi_avi_infoframe_config(CONF_AVI_VIC, argv >> 2);
 		hdmi_avi_infoframe_config(CONF_AVI_AR, argv & 0x3);
+		break;
+	case CONF_AVI_VIC:
+		hdmi_avi_infoframe_config(CONF_AVI_VIC, argv);
 		break;
 	case CONF_AVI_BT2020:
 		break;

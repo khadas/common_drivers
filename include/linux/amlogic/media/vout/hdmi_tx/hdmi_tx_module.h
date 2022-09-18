@@ -249,12 +249,6 @@ struct hdmitx_dev {
 		void (*setpacket)(int type, unsigned char *DB,
 				  unsigned char *HB);
 		void (*disablepacket)(int type);
-		/* In original setpacket, there are many policies, like
-		 *  if ((DB[4] >> 4) == T3D_FRAME_PACKING)
-		 * Need a only pure data packet to call
-		 */
-		void (*setdatapacket)(int type, unsigned char *DB,
-				      unsigned char *HB);
 		void (*setaudioinfoframe)(unsigned char *AUD_DB,
 					  unsigned char *CHAN_STAT_BUF);
 		int (*setdispmode)(struct hdmitx_dev *hdmitx_device);
@@ -277,9 +271,6 @@ struct hdmitx_dev {
 		int (*cntlpacket)(struct hdmitx_dev *hdmitx_device,
 				  unsigned int cmd,
 				  unsigned int arg); /* Packet control */
-		int (*cntlconfig)(struct hdmitx_dev *hdmitx_device,
-				  unsigned int cmd,
-				  unsigned int arg); /* Configure control */
 		int (*cntl)(struct hdmitx_dev *hdmitx_device, unsigned int cmd,
 			    unsigned int arg); /* Other control */
 		void (*am_hdmitx_set_hdcp_mode)(unsigned int user_type);
@@ -306,7 +297,6 @@ struct hdmitx_dev {
 	int audio_param_update_flag;
 	unsigned char unplug_powerdown;
 	unsigned short physical_addr;
-	unsigned int cur_VIC;
 	atomic_t kref_video_mute;
 	atomic_t kref_audio_mute;
 	/**/
@@ -339,8 +329,6 @@ struct hdmitx_dev {
 	unsigned int cedst_policy;
 	struct ced_cnt ced_cnt;
 	struct scdc_locked_st chlocked_st;
-	unsigned int allm_mode; /* allm_mode: 1/on 0/off */
-	unsigned int ct_mode; /* 0/off 1/game, 2/graphics, 3/photo, 4/cinema */
 	unsigned int sspll;
 	unsigned int hdmi_rext; /* Rext resistor */
 	/* if HDMI plugin even once time, then set 1 */
@@ -426,55 +414,6 @@ struct hdmitx_dev {
 #define DDC_HDCP14_SAVE_OBS	(CMD_DDC_OFFSET + 0x40)
 
 /***********************************************************************
- *             CONFIG CONTROL //cntlconfig
- **********************************************************************/
-/* Video part */
-#define CONF_HDMI_DVI_MODE      (CMD_CONF_OFFSET + 0x02)
-#define HDMI_MODE           0x1
-#define DVI_MODE            0x2
-#define CONF_AVI_BT2020		(CMD_CONF_OFFSET + 0X2000 + 0x00)
-	#define CLR_AVI_BT2020	0x0
-	#define SET_AVI_BT2020	0x1
-/* set value as HDMI_COLORSPACE_RGB, YUV422, YUV444, YUV420 */
-#define CONF_AVI_RGBYCC_INDIC	(CMD_CONF_OFFSET + 0X2000 + 0x01)
-#define CONF_AVI_Q01		(CMD_CONF_OFFSET + 0X2000 + 0x02)
-	#define RGB_RANGE_DEFAULT	0
-	#define RGB_RANGE_LIM		1
-	#define RGB_RANGE_FUL		2
-	#define RGB_RANGE_RSVD		3
-#define CONF_AVI_YQ01		(CMD_CONF_OFFSET + 0X2000 + 0x03)
-	#define YCC_RANGE_LIM		0
-	#define YCC_RANGE_FUL		1
-	#define YCC_RANGE_RSVD		2
-#define CONF_CT_MODE		(CMD_CONF_OFFSET + 0X2000 + 0x04)
-	#define SET_CT_OFF		0
-	#define SET_CT_GAME		1
-	#define SET_CT_GRAPHICS	2
-	#define SET_CT_PHOTO	3
-	#define SET_CT_CINEMA	4
-#define CONF_GET_AVI_BT2020 (CMD_CONF_OFFSET + 0X2000 + 0x05)
-#define CONF_VIDEO_MUTE_OP      (CMD_CONF_OFFSET + 0x1000 + 0x04)
-#define VIDEO_NONE_OP		0x0
-#define VIDEO_MUTE          0x1
-#define VIDEO_UNMUTE        0x2
-#define CONF_EMP_NUMBER         (CMD_CONF_OFFSET + 0x3000 + 0x00)
-#define CONF_EMP_PHY_ADDR       (CMD_CONF_OFFSET + 0x3000 + 0x01)
-
-/* Audio part */
-#define CONF_CLR_AVI_PACKET     (CMD_CONF_OFFSET + 0x04)
-#define CONF_CLR_VSDB_PACKET    (CMD_CONF_OFFSET + 0x05)
-#define CONF_VIDEO_MAPPING	(CMD_CONF_OFFSET + 0x06)
-#define CONF_GET_HDMI_DVI_MODE	(CMD_CONF_OFFSET + 0x07)
-#define CONF_CLR_DV_VS10_SIG	(CMD_CONF_OFFSET + 0x10)
-
-#define CONF_AUDIO_MUTE_OP      (CMD_CONF_OFFSET + 0x1000 + 0x00)
-#define AUDIO_MUTE          0x1
-#define AUDIO_UNMUTE        0x2
-#define CONF_CLR_AUDINFO_PACKET (CMD_CONF_OFFSET + 0x1000 + 0x01)
-#define CONF_GET_AUDIO_MUTE_ST	(CMD_CONF_OFFSET + 0x1000 + 0x02)
-#define CONF_ASPECT_RATIO	(CMD_CONF_OFFSET + 0x101a)
-
-/***********************************************************************
  *                          Get State //getstate
  **********************************************************************/
 #define STAT_VIDEO_VIC          (CMD_STAT_OFFSET + 0x00)
@@ -488,15 +427,6 @@ struct hdmitx_dev {
 
 /* HDMI LOG */
 #define HDMI_LOG_HDCP           BIT(0)
-
-#define HDMI_SOURCE_DESCRIPTION 0
-#define HDMI_PACKET_VEND        1
-#define HDMI_MPEG_SOURCE_INFO   2
-#define HDMI_PACKET_AVI         3
-#define HDMI_AUDIO_INFO         4
-#define HDMI_AUDIO_CONTENT_PROTECTION   5
-#define HDMI_PACKET_HBR         6
-#define HDMI_PACKET_DRM		0x86
 
 #define HDMI_PROCESS_DELAY  msleep(10)
 /* reduce a little time, previous setting is 4000/10 */
@@ -526,45 +456,14 @@ extern struct hdmitx_audpara hdmiaud_config_data;
 extern struct hdmitx_audpara hsty_hdmiaud_config_data[8];
 extern unsigned int hsty_hdmiaud_config_loc, hsty_hdmiaud_config_num;
 
-/* VSIF: Vendor Specific InfoFrame
- * It has multiple purposes:
- * 1. HDMI1.4 4K, HDMI_VIC=1/2/3/4, 2160p30/25/24hz, smpte24hz, AVI.VIC=0
- *    In CTA-861-G, matched with AVI.VIC=95/94/93/98
- * 2. 3D application, TB/SS/FP
- * 3. DolbyVision, with Len=0x18
- * 4. HDR10plus
- * 5. HDMI20 3D OSD disparity / 3D dual-view / 3D independent view / ALLM
- * Some functions are exclusive, but some may compound.
- * Consider various state transitions carefully, such as play 3D under HDMI14
- * 4K, exit 3D under 4K, play DV under 4K, enable ALLM under 3D dual-view
- */
-enum vsif_type {
-	/* Below 4 functions are exclusive */
-	VT_HDMI14_4K = 1,
-	VT_T3D_VIDEO,
-	VT_DOLBYVISION,
-	VT_HDR10PLUS,
-	/* Maybe compound 3D dualview + ALLM */
-	VT_T3D_OSD_DISPARITY = 0x10,
-	VT_T3D_DUALVIEW,
-	VT_T3D_INDEPENDVEW,
-	VT_ALLM,
-	/* default: if non-HDMI4K, no any vsif; if HDMI4k, = VT_HDMI14_4K */
-	VT_DEFAULT,
-	VT_MAX,
-};
-
-int hdmitx_construct_vsif(struct hdmitx_dev *hdev, enum vsif_type type, int on,
-			  void *param);
+int hdmitx_construct_vsif(struct hdmitx_common *tx_comm,
+	enum vsif_type type, int on, void *param);
 
 /* if vic is 93 ~ 95, or 98 (HDMI14 4K), return 1 */
 bool is_hdmi14_4k(enum hdmi_vic vic);
 
 /* if 4k is Y420, return 1 */
 bool is_hdmi4k_420(enum hdmi_vic vic);
-
-/* set vic to AVI.VIC */
-void hdmitx_set_avi_vic(enum hdmi_vic vic);
 
 /* the hdmitx output limits to 1080p */
 bool hdmitx_limited_1080p(void);

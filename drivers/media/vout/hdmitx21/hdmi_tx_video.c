@@ -19,7 +19,11 @@
 
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_info_global.h>
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
+
 #include "hw/common.h"
+
+#define to_hdmitx21_dev(x)	container_of(x, struct hdmitx_dev, tx_comm)
 
 static void hdmitx_set_spd_info(struct hdmitx_dev *hdmitx_device);
 static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
@@ -92,7 +96,7 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 	pr_info(VID "already init VIC = %d  Now VIC = %d\n",
 		vic, videocode);
 	if (vic != HDMI_0_UNKNOWN && vic == videocode)
-		hdev->cur_VIC = vic;
+		hdev->tx_comm.cur_VIC = vic;
 
 	param = hdev->para;
 	if (!param) {
@@ -141,11 +145,11 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 		 */
 		if (is_dvi_device(&hdev->tx_comm.rxcap)) {
 			pr_info(VID "Sink is DVI device\n");
-			hdev->hwop.cntlconfig(hdev,
+			hdev->tx_hw.cntlconfig(&hdev->tx_hw,
 				CONF_HDMI_DVI_MODE, DVI_MODE);
 		} else {
 			pr_info(VID "Sink is HDMI device\n");
-			hdev->hwop.cntlconfig(hdev,
+			hdev->tx_hw.cntlconfig(&hdev->tx_hw,
 				CONF_HDMI_DVI_MODE, HDMI_MODE);
 		}
 		if (videocode == HDMI_95_3840x2160p30_16x9 ||
@@ -159,13 +163,13 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 		else
 			;
 
-		if (hdev->allm_mode) {
-			hdmitx21_construct_vsif(hdev, VT_ALLM, 1, NULL);
-			hdev->hwop.cntlconfig(hdev, CONF_CT_MODE,
+		if (hdev->tx_comm.allm_mode) {
+			hdmitx21_construct_vsif(&hdev->tx_comm, VT_ALLM, 1, NULL);
+			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE,
 				SET_CT_OFF);
 		} else {
-			hdev->hwop.cntlconfig(hdev, CONF_CT_MODE,
-				hdev->ct_mode | hdev->it_content << 4);
+			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE,
+				hdev->tx_comm.ct_mode);
 		}
 		ret = 0;
 	}
@@ -278,76 +282,10 @@ static void hdmitx_set_spd_info(struct hdmitx_dev *hdev)
 	// TODO hdev->hwop.setinfoframe(HDMI_INFOFRAME_TYPE_SPD, SPD_HB);
 }
 
-static void fill_hdmi4k_vsif_data(enum hdmi_vic vic, u8 *db,
-				  u8 *hb)
+int hdmitx21_construct_vsif(struct hdmitx_common *tx_comm,
+	enum vsif_type type, int on, void *param)
 {
-	if (!db || !hb)
-		return;
+	struct hdmitx_dev *hdev = to_hdmitx21_dev(tx_comm);
 
-	if (vic == HDMI_95_3840x2160p30_16x9)
-		db[4] = 0x1;
-	else if (vic == HDMI_94_3840x2160p25_16x9)
-		db[4] = 0x2;
-	else if (vic == HDMI_93_3840x2160p24_16x9)
-		db[4] = 0x3;
-	else if (vic == HDMI_98_4096x2160p24_256x135)
-		db[4] = 0x4;
-	else
-		return;
-	hb[0] = 0x81;
-	hb[1] = 0x01;
-	hb[2] = 0x5;
-	db[3] = 0x20;
-}
-
-int hdmitx21_construct_vsif(struct hdmitx_dev *hdev, enum vsif_type type,
-			  int on, void *param)
-{
-	u8 hb[3] = {0x81, 0x1, 0};
-	u8 len = 0; /* hb[2] = len */
-	u8 vsif_db[28] = {0}; /* to be fulfilled */
-	u8 *db = &vsif_db[1]; /* to be fulfilled */
-	u32 ieeeoui = 0;
-	struct hdmi_vendor_infoframe *info;
-
-	info = &hdev->infoframes.vend.vendor.hdmi;
-
-	if (!hdev || type >= VT_MAX)
-		return 0;
-
-	switch (type) {
-	case VT_DEFAULT:
-		break;
-	case VT_HDMI14_4K:
-		ieeeoui = HDMI_IEEE_OUI;
-		len = 5;
-		if (_is_hdmi14_4k(hdev->cur_VIC)) {
-			fill_hdmi4k_vsif_data(hdev->cur_VIC, db, hb);
-			hdmitx21_set_avi_vic(0);
-		}
-		break;
-	case VT_ALLM:
-		ieeeoui = HDMI_FORUM_IEEE_OUI;
-		len = 5;
-		db[3] = 0x1; /* Fixed value */
-		if (on) {
-			db[4] |= 1 << 1; /* set bit1, ALLM_MODE */
-			if (_is_hdmi14_4k(hdev->cur_VIC))
-				hdmitx21_set_avi_vic(hdev->cur_VIC);
-		} else {
-			db[4] &= ~(1 << 1); /* clear bit1, ALLM_MODE */
-			/* still send out HS_VSIF, no set AVI.VIC = 0 */
-		}
-		break;
-	default:
-		break;
-	}
-
-	hb[2] = len;
-	db[0] = GET_OUI_BYTE0(ieeeoui);
-	db[1] = GET_OUI_BYTE1(ieeeoui);
-	db[2] = GET_OUI_BYTE2(ieeeoui);
-
-	hdmi_vend_infoframe_rawset(hb, vsif_db);
-	return 1;
+	return hdmitx_dev_setup_vsif_packet(tx_comm, &hdev->tx_hw, type, on, param);
 }

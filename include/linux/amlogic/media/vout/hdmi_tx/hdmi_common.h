@@ -39,10 +39,6 @@ enum hdmi_tf_type {
 	HDMI_HDR10P_DV_VSIF	= HDMI_HDR10P_TYPE | 1,
 };
 
-#define GET_OUI_BYTE0(oui)	((oui) & 0xff) /* Little Endian */
-#define GET_OUI_BYTE1(oui)	(((oui) >> 8) & 0xff)
-#define GET_OUI_BYTE2(oui)	(((oui) >> 16) & 0xff)
-
 enum hdmi_vic {
 	/* Refer to CEA 861-D */
 	HDMI_UNKNOWN = 0,

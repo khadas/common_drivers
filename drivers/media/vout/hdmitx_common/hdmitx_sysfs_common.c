@@ -5,6 +5,7 @@
 
 #include <linux/kernel.h>
 #include <linux/types.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
 #include "hdmitx_sysfs_common.h"
 
 /*!!Only one instance supported.*/
@@ -481,9 +482,9 @@ static ssize_t dv_cap2_show(struct device *dev,
 static DEVICE_ATTR_RO(dv_cap2);
 
 static ssize_t frac_rate_policy_store(struct device *dev,
-				      struct device_attribute *attr,
-				      const char *buf,
-				      size_t count)
+				struct device_attribute *attr,
+				const char *buf,
+				size_t count)
 {
 	int val = 0;
 
@@ -500,8 +501,8 @@ static ssize_t frac_rate_policy_store(struct device *dev,
 }
 
 static ssize_t frac_rate_policy_show(struct device *dev,
-				     struct device_attribute *attr,
-				     char *buf)
+				struct device_attribute *attr,
+				char *buf)
 {
 	int pos = 0;
 
@@ -514,7 +515,7 @@ static ssize_t frac_rate_policy_show(struct device *dev,
 static DEVICE_ATTR_RW(frac_rate_policy);
 
 static ssize_t avmute_show(struct device *dev,
-			   struct device_attribute *attr, char *buf)
+				struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
 	int pos = 0;
@@ -531,8 +532,8 @@ static ssize_t avmute_show(struct device *dev,
  *  0: off avmute
  */
 static ssize_t avmute_store(struct device *dev,
-			    struct device_attribute *attr,
-			    const char *buf, size_t count)
+				struct device_attribute *attr,
+				const char *buf, size_t count)
 {
 	int cmd = OFF_AVMUTE;
 	static int mask0;
@@ -586,8 +587,8 @@ static DEVICE_ATTR_RW(avmute);
  *  0: disable hdmitx phy
  */
 static ssize_t phy_store(struct device *dev,
-			 struct device_attribute *attr,
-			 const char *buf, size_t count)
+				 struct device_attribute *attr,
+				 const char *buf, size_t count)
 {
 	int cmd = TMDS_PHY_ENABLE;
 
@@ -605,7 +606,7 @@ static ssize_t phy_store(struct device *dev,
 }
 
 static ssize_t phy_show(struct device *dev,
-			struct device_attribute *attr, char *buf)
+				struct device_attribute *attr, char *buf)
 {
 	int pos = 0;
 /*
@@ -618,6 +619,64 @@ static ssize_t phy_show(struct device *dev,
 }
 
 static DEVICE_ATTR_RW(phy);
+
+static ssize_t contenttype_mode_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+	static char * const ct_names[] = {
+		"off",
+		"game",
+		"graphics",
+		"photo",
+		"cinema",
+	};
+
+	if (global_tx_common->ct_mode >= 0 &&
+		global_tx_common->ct_mode < ARRAY_SIZE(ct_names))
+		pos += snprintf(buf + pos, PAGE_SIZE, "%s\n\r",
+					ct_names[global_tx_common->ct_mode]);
+
+	return pos;
+}
+
+static inline int com_str(const char *buf, const char *str)
+{
+	return strncmp(buf, str, strlen(str)) == 0;
+}
+
+static ssize_t contenttype_mode_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	u32 ct_mode = SET_CT_OFF;
+
+	pr_info("hdmitx: store contenttype_mode as %s\n", buf);
+
+	if (global_tx_common->allm_mode == 1) {
+		global_tx_common->allm_mode = 0;
+		hdmitx_dev_setup_vsif_packet(global_tx_common, global_tx_hw, VT_ALLM, 0, NULL);
+	}
+	hdmitx_dev_setup_vsif_packet(global_tx_common, global_tx_hw, VT_HDMI14_4K, 1, NULL);
+
+	if (com_str(buf, "0") || com_str(buf, "off"))
+		ct_mode = SET_CT_OFF;
+	else if (com_str(buf, "1") || com_str(buf, "game"))
+		ct_mode = SET_CT_GAME;
+	else if (com_str(buf, "2") || com_str(buf, "graphics"))
+		ct_mode = SET_CT_GRAPHICS;
+	else if (com_str(buf, "3") || com_str(buf, "photo"))
+		ct_mode = SET_CT_PHOTO;
+	else if (com_str(buf, "4") || com_str(buf, "cinema"))
+		ct_mode = SET_CT_CINEMA;
+
+	global_tx_hw->cntlconfig(global_tx_hw, CONF_CT_MODE, ct_mode);
+	global_tx_common->ct_mode = ct_mode;
+
+	return count;
+}
+
+static DEVICE_ATTR_RW(contenttype_mode);
 
 /*************************tx20 sysfs*************************/
 
@@ -649,6 +708,8 @@ int hdmitx_sysfs_common_create(struct device *dev,
 	ret = device_create_file(dev, &dev_attr_avmute);
 	ret = device_create_file(dev, &dev_attr_phy);
 
+	ret = device_create_file(dev, &dev_attr_contenttype_mode);
+
 	return ret;
 }
 
@@ -670,6 +731,8 @@ int hdmitx_sysfs_common_destroy(struct device *dev)
 
 	device_remove_file(dev, &dev_attr_avmute);
 	device_remove_file(dev, &dev_attr_phy);
+
+	device_remove_file(dev, &dev_attr_contenttype_mode);
 
 	global_tx_common = 0;
 	global_tx_hw = 0;

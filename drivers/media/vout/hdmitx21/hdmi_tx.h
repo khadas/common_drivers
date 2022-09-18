@@ -211,16 +211,6 @@ struct tx_vrr_params {
 	u8 fapa_early_cnt;
 };
 
-enum avi_component_conf {
-	CONF_AVI_CS,
-	CONF_AVI_BT2020,
-	CONF_AVI_Q01,
-	CONF_AVI_YQ01,
-	CONF_AVI_VIC,
-	CONF_AVI_AR,
-	CONF_AVI_CT_TYPE,
-};
-
 enum vrr_component_conf {
 	CONF_HEADER_INIT,
 	CONF_HEADER_LAST,
@@ -244,18 +234,6 @@ enum vrr_component_conf {
 	CONF_BASE_REFRESH_RATE,
 };
 
-/* CONF_AVI_BT2020 */
-#define CLR_AVI_BT2020	0x0
-#define SET_AVI_BT2020	0x1
-/* CONF_AVI_Q01 */
-#define RGB_RANGE_DEFAULT	0
-#define RGB_RANGE_LIM		1
-#define RGB_RANGE_FUL		2
-#define RGB_RANGE_RSVD		3
-/* CONF_AVI_YQ01 */
-#define YCC_RANGE_LIM		0
-#define YCC_RANGE_FUL		1
-#define YCC_RANGE_RSVD		2
 void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val);
 
 int hdmitx_infoframe_rawget(u8 info_type, u8 *body);

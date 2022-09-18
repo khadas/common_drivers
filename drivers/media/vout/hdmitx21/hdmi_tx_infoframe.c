@@ -86,7 +86,7 @@ void hdmi_avi_infoframe_rawset(u8 *hb, u8 *pb)
 	hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_AVI, body);
 }
 
-void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val)
+void hdmi_avi_infoframe_config(u32 conf, u8 val)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmi_avi_infoframe *info = &hdev->infoframes.avi.avi;
@@ -130,8 +130,8 @@ void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val)
 		info->picture_aspect = val;
 		break;
 	case CONF_AVI_CT_TYPE:
-		info->itc = (val >> 4) & 0x1;
-		val = val & 0xf;
+		/*ITC is 1 when CN0/CN1 set.*/
+		info->itc = (val == SET_CT_OFF) ? 0 : 1;
 		if (val == SET_CT_OFF)
 			info->content_type = 0;
 		else if (val == SET_CT_GRAPHICS)

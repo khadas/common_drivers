@@ -20,10 +20,6 @@
 
 #define HDMITX_VIC_MASK			0xff
 
-#define GET_OUI_BYTE0(oui)	((oui) & 0xff) /* Little Endian */
-#define GET_OUI_BYTE1(oui)	(((oui) >> 8) & 0xff)
-#define GET_OUI_BYTE2(oui)	(((oui) >> 16) & 0xff)
-
 #define HDMI_PACKET_TYPE_GCP 0x3
 
 enum hdmi_hdr_status {

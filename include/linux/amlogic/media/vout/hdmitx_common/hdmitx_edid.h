@@ -2,19 +2,11 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-
 #ifndef __HDMITX_EDID_H_
 #define __HDMITX_EDID_H_
 
 #include <linux/types.h>
 #include <linux/amlogic/media/vout/vinfo.h>
-
-/* Refer to http://standards-oui.ieee.org/oui/oui.txt */
-#define HDMI_IEEEOUI		0x000C03
-#define HF_IEEEOUI		0xC45DD8
-#define DOVI_IEEEOUI		0x00D046
-#define HDR10PLUS_IEEEOUI	0x90848B
-#define CUVA_IEEEOUI		0x047503
 
 #define EDID_MAX_BLOCK		8
 #define VESA_MAX_TIMING		64
@@ -177,6 +169,47 @@ struct rx_cap {
 	u8 blk0_chksum;
 	u8 chksum[10];
 };
+
+/* VSIF: Vendor Specific InfoFrame
+ * It has multiple purposes:
+ * 1. HDMI1.4 4K, HDMI_VIC=1/2/3/4, 2160p30/25/24hz, smpte24hz, AVI.VIC=0
+ *    In CTA-861-G, matched with AVI.VIC=95/94/93/98
+ * 2. 3D application, TB/SS/FP
+ * 3. DolbyVision, with Len=0x18
+ * 4. HDR10plus
+ * 5. HDMI20 3D OSD disparity / 3D dual-view / 3D independent view / ALLM
+ * Some functions are exclusive, but some may compound.
+ * Consider various state transitions carefully, such as play 3D under HDMI14
+ * 4K, exit 3D under 4K, play DV under 4K, enable ALLM under 3D dual-view
+ */
+enum vsif_type {
+	/* Below 4 functions are exclusive */
+	VT_HDMI14_4K = 1,
+	VT_T3D_VIDEO,
+	VT_DOLBYVISION,
+	VT_HDR10PLUS,
+	/* Maybe compound 3D dualview + ALLM */
+	VT_T3D_OSD_DISPARITY = 0x10,
+	VT_T3D_DUALVIEW,
+	VT_T3D_INDEPENDVEW,
+	VT_ALLM,
+	/* default: if non-HDMI4K, no any vsif; if HDMI4k, = VT_HDMI14_4K */
+	VT_DEFAULT,
+	VT_MAX,
+};
+
+/* Refer to http://standards-oui.ieee.org/oui/oui.txt */
+#define DOVI_IEEEOUI		0x00D046
+#define HDR10PLUS_IEEEOUI	0x90848B
+#define CUVA_IEEEOUI		0x047503
+//#define HF_IEEEOUI		0xC45DD8
+
+#define GET_OUI_BYTE0(oui)	((oui) & 0xff) /* Little Endian */
+#define GET_OUI_BYTE1(oui)	(((oui) >> 8) & 0xff)
+#define GET_OUI_BYTE2(oui)	(((oui) >> 16) & 0xff)
+
+/*edid apis*/
+u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic);
 
 /*edid is good return 0, otherwise return < 0.*/
 int hdmitx_edid_validate(unsigned char *rawedid);

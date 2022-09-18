@@ -1302,7 +1302,7 @@ static void hdmitx_parsing_vsifpkt(struct seq_file *s)
 		    vsd_ieee_id[2] << 16;
 	seq_printf(s, "ieee_id: 0x%x\n", ieee_code);
 	pb4 = hdmitx_rd_reg(HDMITX_DWC_FC_VSDPAYLOAD0);
-	if (ieee_code == HDMI_IEEEOUI && pb4 == 0x20) {
+	if (ieee_code == HDMI_IEEE_OUI && pb4 == 0x20) {
 		/* HDMI 4K */
 		seq_printf(s, "HDMI 4K %s[%d]\n", __func__, __LINE__);
 		reg_adr = HDMITX_DWC_FC_VSDPAYLOAD1;
@@ -1310,7 +1310,7 @@ static void hdmitx_parsing_vsifpkt(struct seq_file *s)
 		seq_printf(s, "vic: 0x%x\n", tmp);
 		return;
 	}
-	if (ieee_code == HDMI_IEEEOUI && pb4 == 0x40) {
+	if (ieee_code == HDMI_IEEE_OUI && pb4 == 0x40) {
 		/* HDMI 3D */
 		seq_printf(s, "HDMI 3D %s[%d]\n", __func__, __LINE__);
 		reg_adr = HDMITX_DWC_FC_VSDPAYLOAD1;

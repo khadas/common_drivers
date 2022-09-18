@@ -6,6 +6,8 @@
 #ifndef __HDMITX_HW_COMMON_H
 #define __HDMITX_HW_COMMON_H
 
+#include <linux/types.h>
+
 /*hw cntl cmd define, abstract from hdmi_tx_module.h*/
 #define CMD_DDC_OFFSET          (0x10 << 24)
 #define CMD_STATUS_OFFSET       (0x11 << 24)
@@ -57,9 +59,95 @@
 #define MISC_AUDIO_RESET	(CMD_MISC_OFFSET + 0x16)
 #define MISC_DIS_HPLL		(CMD_MISC_OFFSET + 0x17)
 
+/***********************************************************************
+ *             CONFIG CONTROL //cntlconfig
+ **********************************************************************/
+/* Video part */
+#define CONF_HDMI_DVI_MODE      (CMD_CONF_OFFSET + 0x02)
+	#define HDMI_MODE           0x1
+	#define DVI_MODE            0x2
+/* set value as COLORSPACE_RGB444, YUV422, YUV444, YUV420 */
+#define CONF_AVI_RGBYCC_INDIC	(CMD_CONF_OFFSET + 0X2000 + 0x01)
+#define CONF_CT_MODE		(CMD_CONF_OFFSET + 0X2000 + 0x04)
+#define CONF_GET_AVI_BT2020		(CMD_CONF_OFFSET + 0X2000 + 0x05)
+#define CONF_VIDEO_MUTE_OP		(CMD_CONF_OFFSET + 0x1000 + 0x04)
+	#define VIDEO_NONE_OP		0x0
+	#define VIDEO_MUTE          0x1
+	#define VIDEO_UNMUTE        0x2
+#define CONF_EMP_NUMBER         (CMD_CONF_OFFSET + 0x3000 + 0x00)
+#define CONF_EMP_PHY_ADDR       (CMD_CONF_OFFSET + 0x3000 + 0x01)
+
+/* Audio part */
+#define CONF_CLR_AVI_PACKET		(CMD_CONF_OFFSET + 0x04)
+#define CONF_CLR_VSDB_PACKET	(CMD_CONF_OFFSET + 0x05)
+#define CONF_VIDEO_MAPPING		(CMD_CONF_OFFSET + 0x06)
+#define CONF_GET_HDMI_DVI_MODE	(CMD_CONF_OFFSET + 0x07)
+#define CONF_CLR_DV_VS10_SIG	(CMD_CONF_OFFSET + 0x10)
+
+#define CONF_AUDIO_MUTE_OP      (CMD_CONF_OFFSET + 0x1000 + 0x00)
+	#define AUDIO_MUTE          0x1
+	#define AUDIO_UNMUTE        0x2
+#define CONF_CLR_AUDINFO_PACKET (CMD_CONF_OFFSET + 0x1000 + 0x01)
+#define CONF_GET_AUDIO_MUTE_ST	(CMD_CONF_OFFSET + 0x1000 + 0x02)
+
+#define CONF_ASPECT_RATIO	(CMD_CONF_OFFSET + 0x101a)
+
+enum avi_component_conf {
+	CONF_AVI_CS,
+	CONF_AVI_BT2020,
+	CONF_AVI_Q01,
+	CONF_AVI_YQ01,
+	CONF_AVI_VIC,
+	CONF_AVI_AR,
+	CONF_AVI_CT_TYPE,
+};
+
+/* CONF_AVI_BT2020 CMD*/
+#define CLR_AVI_BT2020	0x0
+#define SET_AVI_BT2020	0x1
+/* CONF_AVI_Q01 CMD*/
+#define RGB_RANGE_DEFAULT	0
+#define RGB_RANGE_LIM		1
+#define RGB_RANGE_FUL		2
+#define RGB_RANGE_RSVD		3
+/* CONF_AVI_YQ01 */
+#define YCC_RANGE_LIM		0
+#define YCC_RANGE_FUL		1
+#define YCC_RANGE_RSVD		2
+/* CN TYPE define */
+enum {
+	SET_CT_OFF = 0,
+	SET_CT_GAME = 1,
+	SET_CT_GRAPHICS = 2,
+	SET_CT_PHOTO = 3,
+	SET_CT_CINEMA = 4,
+};
+
+/*set packet cmd*/
+#define HDMI_SOURCE_DESCRIPTION 0
+#define HDMI_PACKET_VEND        1
+#define HDMI_MPEG_SOURCE_INFO   2
+#define HDMI_PACKET_AVI         3
+#define HDMI_AUDIO_INFO         4
+#define HDMI_AUDIO_CONTENT_PROTECTION   5
+#define HDMI_PACKET_HBR         6
+#define HDMI_PACKET_DRM		0x86
+
+/***********************************************************************
+ *             HDMITX COMMON STRUCT & API
+ **********************************************************************/
 struct hdmitx_hw_common {
 	int (*cntlmisc)(struct hdmitx_hw_common *tx_hw,
-			unsigned int cmd, unsigned int arg);
+			u32 cmd, u32 arg);
+	/* Configure control */
+	int (*cntlconfig)(struct hdmitx_hw_common *tx_hw,
+			u32 cmd, u32 arg);
+	/* In original setpacket, there are many policies, like
+	 *	if ((DB[4] >> 4) == T3D_FRAME_PACKING)
+	 * Need a only pure data packet to call
+	 */
+	void (*setdatapacket)(int type, unsigned char *DB,
+				  unsigned char *HB);
 };
 
 int hdmitx_hw_avmute(struct hdmitx_hw_common *tx_hw,

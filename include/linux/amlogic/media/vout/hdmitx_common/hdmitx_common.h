@@ -47,10 +47,18 @@ struct hdmitx_common {
 	u32 frac_rate_policy;
 	u32 backup_frac_rate_policy;
 
+	/*current mode vic.*/
+	u32 cur_VIC;
+
+	/* allm_mode: 1/on 0/off */
+	u32 allm_mode;
+	/* contenttype:0/off 1/game, 2/graphics, 3/photo, 4/cinema */
+	u32 ct_mode;
+
 	/*protect hotplug flow and related struct.*/
 	struct mutex setclk_mutex;
-
-	unsigned char hpd_state; /* 1, connect; 0, disconnect */
+	/* 1, connect; 0, disconnect */
+	unsigned char hpd_state;
 
 	/*edid related*/
 	unsigned char *edid_ptr;

@@ -421,9 +421,9 @@ int edid_parse_check_hdmi_vsdb(struct hdmitx_dev *hdev,
 	if (temp_addr >= VSpecificBoundary) {
 		ret = -1;
 	} else {
-		if (buff[blockaddr + 1] != GET_OUI_BYTE0(HDMI_IEEEOUI) ||
-		    buff[blockaddr + 2] != GET_OUI_BYTE1(HDMI_IEEEOUI) ||
-		    buff[blockaddr + 3] != GET_OUI_BYTE2(HDMI_IEEEOUI))
+		if (buff[blockaddr + 1] != GET_OUI_BYTE0(HDMI_IEEE_OUI) ||
+		    buff[blockaddr + 2] != GET_OUI_BYTE1(HDMI_IEEE_OUI) ||
+		    buff[blockaddr + 3] != GET_OUI_BYTE2(HDMI_IEEE_OUI))
 			ret = -1;
 	}
 	return ret;
@@ -1725,7 +1725,7 @@ static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
 {
 	int idx = 0, tmp = 0;
 
-	prxcap->ieeeoui = HDMI_IEEEOUI;
+	prxcap->ieeeoui = HDMI_IEEE_OUI;
 	prxcap->ColorDeepSupport =
 	(count > 5) ? blockbuf[offset + 5] : 0;
 	set_vsdb_dc_cap(prxcap);
@@ -1856,7 +1856,7 @@ static void hdmitx_parse_sink_capability(struct rx_cap *prxcap,
 	unsigned char offset, unsigned char *blockbuf,
 	unsigned char count)
 {
-	prxcap->hf_ieeeoui = HF_IEEEOUI;
+	prxcap->hf_ieeeoui = HDMI_IEEE_OUI;
 	prxcap->Max_TMDS_Clock2 = blockbuf[offset + 4];
 	prxcap->scdc_present =
 		!!(blockbuf[offset + 5] & (1 << 7));
@@ -2658,9 +2658,9 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 		if ((checksum & 0xff) == 0)
 			hdmitx_device->tx_comm.rxcap.ieeeoui = 0;
 		else
-			hdmitx_device->tx_comm.rxcap.ieeeoui = HDMI_IEEEOUI;
+			hdmitx_device->tx_comm.rxcap.ieeeoui = HDMI_IEEE_OUI;
 		if (zero_numbers > 120)
-			hdmitx_device->tx_comm.rxcap.ieeeoui = HDMI_IEEEOUI;
+			hdmitx_device->tx_comm.rxcap.ieeeoui = HDMI_IEEE_OUI;
 		edid_standardtiming(prxcap, &EDID_buf[0x26], 8);
 		edid_decodestandardtiming(&hdmitx_device->hdmi_info, &EDID_buf[26], 8);
 		edid_parseceatiming(prxcap, &EDID_buf[0x36]);
@@ -2793,7 +2793,7 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 	}
 
 	if (hdmitx_edid_search_IEEEOUI(&EDID_buf[128])) {
-		prxcap->ieeeoui = HDMI_IEEEOUI;
+		prxcap->ieeeoui = HDMI_IEEE_OUI;
 		pr_debug(EDID "find IEEEOUT\n");
 	} else {
 		prxcap->ieeeoui = 0x0;
@@ -2807,10 +2807,10 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 		prxcap->ieeeoui = 0x0;
 		pr_debug(EDID "sink is DVI device\n");
 	} else {
-		prxcap->ieeeoui = HDMI_IEEEOUI;
+		prxcap->ieeeoui = HDMI_IEEE_OUI;
 	}
 	if (edid_zero_data(EDID_buf))
-		prxcap->ieeeoui = HDMI_IEEEOUI;
+		prxcap->ieeeoui = HDMI_IEEE_OUI;
 
 	if (!prxcap->AUD_count && !prxcap->ieeeoui)
 		hdmitx_edid_set_default_aud(hdmitx_device);
@@ -2818,8 +2818,8 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 	hdmitx_update_edid_chksum(EDID_buf, blockcount + 1, prxcap);
 
 	if (!hdmitx_edid_check_valid_blocks(&EDID_buf[0])) {
-		prxcap->ieeeoui = HDMI_IEEEOUI;
-		pr_debug(EDID "Invalid edid, consider RX as HDMI device\n");
+		prxcap->ieeeoui = HDMI_IEEE_OUI;
+		pr_info(EDID "Invalid edid, consider RX as HDMI device\n");
 	}
 	dv = &prxcap->dv_info;
 	/* if sup_2160p60hz of dv or dv2 is true, check the MAX_TMDS*/
@@ -3067,7 +3067,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	prxcap = &hdev->tx_comm.rxcap;
 
 	/* DVI case, only 8bit */
-	if (prxcap->ieeeoui != HDMI_IEEEOUI) {
+	if (prxcap->ieeeoui != HDMI_IEEE_OUI) {
 		if (para->cd != COLORDEPTH_24B)
 			return 0;
 	}
@@ -3321,7 +3321,7 @@ void hdmitx_edid_clear(struct hdmitx_dev *hdmitx_device)
 	/* Note: in most cases, we think that rx is tv and the default
 	 * IEEEOUI is HDMI Identifier
 	 */
-	prxcap->ieeeoui = HDMI_IEEEOUI;
+	prxcap->ieeeoui = HDMI_IEEE_OUI;
 
 	hdmitx_device->vic_count = 0;
 	memset(&hdmitx_device->tx_comm.EDID_hash[0], 0,

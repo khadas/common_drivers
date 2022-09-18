@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_dev_common.h>
 #include <drm/amlogic/meson_drm_bind.h>
 #include <linux/component.h>
 #include "hdmitx_drm_hook.h"
@@ -92,6 +93,49 @@ static void drm_hdmitx_set_phy(unsigned char en)
 	hdmitx_hw_set_phy(global_tx_hw, en);
 }
 
+static int drm_hdmitx_set_contenttype(int content_type)
+{
+	int ret = 0;
+
+	/* for content type game function conflict with ALLM, so
+	 * reset allm to enable contenttype.
+	 * TODO: follow spec to skip contenttype when ALLM is on.
+	 */
+	hdmitx_dev_setup_vsif_packet(global_tx_base,
+		global_tx_hw, VT_HDMI14_4K, 1, NULL);
+
+	/*reset previous ct.*/
+	global_tx_hw->cntlconfig(global_tx_hw, CONF_CT_MODE, SET_CT_OFF);
+	global_tx_base->ct_mode = 0;
+
+	switch (content_type) {
+	case DRM_MODE_CONTENT_TYPE_GRAPHICS:
+		content_type = SET_CT_GRAPHICS;
+		break;
+	case DRM_MODE_CONTENT_TYPE_PHOTO:
+		content_type = SET_CT_PHOTO;
+		break;
+	case DRM_MODE_CONTENT_TYPE_CINEMA:
+		content_type = SET_CT_CINEMA;
+		break;
+	case DRM_MODE_CONTENT_TYPE_GAME:
+		content_type = SET_CT_GAME;
+		break;
+	default:
+		pr_err("[%s]: [%d] unsupported type\n",
+			__func__, content_type);
+		content_type = 0;
+		ret = -EINVAL;
+		break;
+	};
+
+	global_tx_hw->cntlconfig(global_tx_hw,
+		CONF_CT_MODE, content_type);
+	global_tx_base->ct_mode = content_type;
+
+	return ret;
+}
+
 static int meson_hdmitx_bind(struct device *dev,
 			      struct device *master, void *data)
 {
@@ -163,6 +207,8 @@ int hdmitx_bind_meson_drm(struct device *device,
 	/*hw related*/
 	hdmitx_drm_instance.avmute = drm_hdmitx_avmute;
 	hdmitx_drm_instance.set_phy = drm_hdmitx_set_phy;
+
+	hdmitx_drm_instance.set_content_type = drm_hdmitx_set_contenttype;
 
 	return component_add(device, &meson_hdmitx_bind_ops);
 }

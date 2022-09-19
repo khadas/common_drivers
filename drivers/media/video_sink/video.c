@@ -14732,6 +14732,36 @@ static ssize_t di_release_count_store(struct class *cla,
 	return count;
 }
 
+#ifndef CONFIG_AMLOGIC_MEDIA_CODEC_MM
+unsigned long codec_mm_alloc_for_dma(const char *owner, int page_cnt,
+				     int align2n, int memflags)
+{
+	return 0;
+}
+
+int codec_mm_free_for_dma(const char *owner, unsigned long phy_addr)
+{
+	return 0;
+}
+
+int codec_mm_keeper_unmask_keeper(int keep_id, int delayms)
+{
+	return 0;
+}
+
+int codec_mm_keeper_mask_keep_mem(void *mem_handle, int type)
+{
+	return 0;
+}
+
+int configs_register_path_configs(const char *path,
+				  struct mconfig *configs, int num)
+{
+	return 0;
+}
+
+#endif
+
 static int free_alloced_hist_test_buffer(void)
 {
 	if (hist_buffer_addr) {

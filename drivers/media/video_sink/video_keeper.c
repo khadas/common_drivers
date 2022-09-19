@@ -698,6 +698,7 @@ static void ge2d_keeplastframe_block(int cur_index, int format)
 }
 #endif
 
+#ifdef DEBUG_CANVAS_DUP
 #ifndef CONFIG_AMLOGIC_MEDIA_GE2D
 #define FETCHBUF_SIZE (64 * 1024) /*DEBUG_TMP*/
 static int canvas_dup(ulong dst, ulong src_paddr, ulong size)
@@ -718,6 +719,8 @@ static int canvas_dup(ulong dst, ulong src_paddr, ulong size)
 	return 0;
 }
 #endif
+#endif
+
 #ifdef RESERVE_CLR_FRAME
 static int free_alloced_keep_buffer(void)
 {
@@ -741,6 +744,7 @@ static int free_alloced_keep_buffer(void)
 	return 0;
 }
 
+#ifdef CONFIG_AMLOGIC_MEDIA_GE2D
 static int alloc_keep_buffer(void)
 {
 	int flags = CODEC_MM_FLAGS_DMA |
@@ -796,7 +800,7 @@ static int alloc_keep_buffer(void)
 	free_alloced_keep_buffer();
 	return -ENOMEM;
 }
-
+#endif
 /*
  *flags,used per bit:
  *default free alloced keeper buffer.
@@ -1302,6 +1306,12 @@ static unsigned int vf_ge2d_keep_frame_locked(struct vframe_s *ge2d_buf)
 	pr_info("%s: use ge2d keep video\n", __func__);
 	return 1;
 }
+#else
+static unsigned int vf_ge2d_keep_frame_locked(struct vframe_s *ge2d_buf)
+{
+	return 0;
+}
+
 #endif
 
 static unsigned int vf_keep_current_locked(struct vframe_s *cur_buf,

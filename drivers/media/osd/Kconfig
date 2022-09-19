@@ -10,6 +10,7 @@ config AMLOGIC_MEDIA_FB
 	select FB_CFB_FILLRECT
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
+	select AMLOGIC_MEDIA_FB_OSD_SYNC_FENCE
 #	depends on AMLOGIC_MEDIA_CANVAS
 #	depends on AMLOGIC_VOUT_SERVE
 	default n
@@ -24,9 +25,9 @@ config AMLOGIC_MEDIA_FB_OSD_SYNC_FENCE
 	bool "OSD SYNC FENCE"
 	default n
 	depends on AMLOGIC_MEDIA_FB
-	depends on STAGING
-	depends on ANDROID
-	depends on SYNC_FILE
+#	depends on STAGING
+#	depends on ANDROID
+#	depends on SYNC_FILE
 	help
 		Select to enable OSD SYNC FENCE.
 		This is the frame buffer device driver.

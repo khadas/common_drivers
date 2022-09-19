@@ -770,6 +770,13 @@ static void get_dma_buffer_id(struct fb_info *info,
 	dmaexp->flags = O_CLOEXEC;
 }
 
+#ifndef CONFIG_AMLOGIC_ION_DEV
+int meson_ion_share_fd_to_phys(int fd, phys_addr_t *addr, size_t *len)
+{
+	return 0;
+}
+#endif
+
 static int sync_render_add(struct fb_sync_request_s *sync_request,
 			   struct fb_info *info)
 {

@@ -32,6 +32,11 @@ static int am_meson_fbdev_alloc_fb_gem(struct fb_info *info)
 	size_t size = info->fix.smem_len;
 	struct am_meson_gem_object *meson_gem;
 	void *vaddr;
+	struct page **pages;
+	struct page **tmp;
+	struct sg_page_iter piter;
+	pgprot_t pgprot;
+	int npages;
 
 	if (!fbdev->fb_gem) {
 		meson_gem = am_meson_gem_object_create(dev, 0, size);
@@ -47,8 +52,27 @@ static int am_meson_fbdev_alloc_fb_gem(struct fb_info *info)
 			return -EINVAL;
 		}
 		meson_fb->bufp[0] = meson_gem;
-		vaddr = ion_heap_map_kernel(meson_gem->ionbuffer->heap,
-					meson_gem->ionbuffer);
+		if (meson_gem->is_dma) {
+			npages = PAGE_ALIGN(meson_gem->base.size) / PAGE_SIZE;
+			pages = vmalloc(array_size(npages, sizeof(struct page *)));
+			tmp = pages;
+
+			if (!pages)
+				return -ENOMEM;
+
+			pgprot = pgprot_writecombine(PAGE_KERNEL);
+
+			for_each_sgtable_page(meson_gem->sg_table, &piter, 0) {
+				WARN_ON(tmp - pages >= npages);
+				*tmp++ = sg_page_iter_page(&piter);
+			}
+
+			vaddr = vmap(pages, npages, VM_MAP, pgprot);
+			vfree(pages);
+		} else {
+			vaddr = ion_heap_map_kernel(meson_gem->ionbuffer->heap,
+						meson_gem->ionbuffer);
+		}
 		info->screen_base = (char __iomem *)vaddr;
 
 		DRM_DEBUG("alloc memory %d done\n", (u32)size);
@@ -76,8 +100,9 @@ static void am_meson_fbdev_free_fb_gem(struct fb_info *info)
 		struct am_meson_gem_object *meson_gem = container_of(gem_obj,
 					struct am_meson_gem_object, base);
 
-		ion_heap_unmap_kernel(meson_gem->ionbuffer->heap,
-				meson_gem->ionbuffer);
+		if (!meson_gem->is_dma)
+			ion_heap_unmap_kernel(meson_gem->ionbuffer->heap,
+					meson_gem->ionbuffer);
 		info->screen_base = NULL;
 
 		am_meson_gem_object_free(fbdev->fb_gem);

@@ -27,6 +27,8 @@ struct am_meson_gem_object {
 	bool is_uvm;
 	bool is_afbc;
 	bool is_secure;
+	bool is_dma;
+	struct dma_buf_attachment *attachment;
 	struct uvm_handle *dma_handle;
 	struct uvm_buf_obj ubo;
 };

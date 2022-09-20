@@ -35,6 +35,7 @@
 #include <linux/cma.h>
 #include <linux/dma-map-ops.h>
 #include <linux/dma-mapping.h>
+#include <linux/compat.h>
 #include <linux/sched/clock.h>
 #include <linux/amlogic/media/vpu/vpu.h>
 #include <linux/amlogic/media/vout/lcd/aml_ldim.h>
@@ -174,6 +175,7 @@ static struct aml_ldim_driver_s ldim_driver = {
 	.load_db_en = 1,
 	.db_print_flag = 0,
 	.level_update = 0,
+	.resolution_update = 0,
 
 	.state = LDIM_STATE_LD_EN,
 	.data_min = LD_DATA_MIN,
@@ -411,9 +413,11 @@ static int ldim_power_on(void)
 	if (ldim_driver.data->drv_init)
 		ldim_driver.data->drv_init(&ldim_driver);
 
+	ldim_driver.init_on_flag = 1;
+
 	if (ldim_driver.dev_drv && ldim_driver.dev_drv->power_on)
 		ldim_driver.dev_drv->power_on(&ldim_driver);
-	ldim_driver.init_on_flag = 1;
+
 	ldim_driver.level_update = 1;
 	ldim_driver.state |= LDIM_STATE_POWER_ON;
 
@@ -607,6 +611,17 @@ static void ldim_time_sort_save(unsigned long long *table,
 static void ldim_on_vs_brightness(void);
 static void ldim_off_vs_brightness(void);
 
+atomic_t ldim_inirq_flag = ATOMIC_INIT(0);
+
+int is_in_ldim_vsync_isr(void)
+{
+	if (atomic_read(&ldim_inirq_flag) > 0)
+		return 1;
+	else
+		return 0;
+}
+EXPORT_SYMBOL(is_in_ldim_vsync_isr);
+
 static irqreturn_t ldim_vsync_isr(int irq, void *dev_id)
 {
 	unsigned long long local_time[3];
@@ -614,6 +629,7 @@ static irqreturn_t ldim_vsync_isr(int irq, void *dev_id)
 
 	if (ldim_driver.init_on_flag == 0 && ldim_driver.func_en == 0)
 		return IRQ_HANDLED;
+	atomic_set(&ldim_inirq_flag, 1);
 
 	spin_lock_irqsave(&ldim_isr_lock, flags);
 
@@ -640,6 +656,7 @@ static irqreturn_t ldim_vsync_isr(int irq, void *dev_id)
 	ldim_driver.in_vsync_flag = 0;
 
 	spin_unlock_irqrestore(&ldim_isr_lock, flags);
+	atomic_set(&ldim_inirq_flag, 0);
 
 	return IRQ_HANDLED;
 }
@@ -651,8 +668,8 @@ static irqreturn_t ldim_pwm_vs_isr(int irq, void *dev_id)
 	if (ldim_driver.init_on_flag == 0)
 		return IRQ_HANDLED;
 
-	if (ldim_driver.pwm_vs_irq_cnt == ldim_driver.irq_cnt)
-		return IRQ_HANDLED;
+	//if (ldim_driver.pwm_vs_irq_cnt == ldim_driver.irq_cnt)
+	//return IRQ_HANDLED;
 
 	ldim_driver.pwm_vs_irq_cnt = ldim_driver.irq_cnt;
 
@@ -1640,6 +1657,13 @@ static void ldim_remap_update_t3(struct ld_reg_s *nprm,
 		return;
 	}
 
+	if (ldim_driver.resolution_update) {
+		LDIMPR("%s  resolution_update = %d\n", __func__,
+			ldim_driver.resolution_update);
+		ldc_set_t7(&ldim_driver);
+		ldim_driver.resolution_update = 0;
+	}
+
 	if (ldim_config.func_en != ldim_driver.func_en) {
 		if (ldim_debug_print == 5)
 			LDIMPR("%s  func_en = %d : %d\n", __func__,
@@ -1841,6 +1865,7 @@ int aml_ldim_probe(struct platform_device *pdev)
 	if (ret)
 		return -1;
 
+	ldim_driver.resolution_update = 0;
 	ldim_driver.in_vsync_flag = 0;
 	ldim_driver.level_update = 0;
 	ldim_driver.duty_update_flag = 0;

@@ -52,6 +52,7 @@ static int __init media_main_init(void)
 	call_sub_init(aml_bl_init);
 	call_sub_init(aml_bl_extern_init);
 	call_sub_init(ldim_dev_init);
+	call_sub_init(peripheral_lcd_init);
 	call_sub_init(dummy_venc_init);
 	call_sub_init(vout_sys_serve_init);
 	call_sub_init(vout_init_module);

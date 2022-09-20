@@ -32,7 +32,7 @@
 
 #define LCD_DEBUG_VSYNC_INTERVAL  60
 
-//#define LCD_DEBUG_INFO
+/* #define LCD_DEBUG_INFO */
 extern unsigned int lcd_debug_print_flag;
 #define LCD_DBG_PR_NORMAL       BIT(0)
 #define LCD_DBG_PR_ADV          BIT(1)
@@ -89,18 +89,19 @@ enum lcd_mode_e {
 };
 
 enum lcd_chip_e {
-	LCD_CHIP_G12A = 0,
-	LCD_CHIP_G12B,  /* 1 */
-	LCD_CHIP_TL1,   /* 2 */
-	LCD_CHIP_SM1,	/* 3 */
-	LCD_CHIP_TM2,   /* 4 */
-	LCD_CHIP_TM2B,  /* 5 */
-	LCD_CHIP_T5,    /* 6 */
-	LCD_CHIP_T5D,   /* 7 */
-	LCD_CHIP_T7,    /* 8 */
-	LCD_CHIP_T3,	/* 9 */
-	LCD_CHIP_T5W,	/* 10 */
-	LCD_CHIP_C3,	/* 11 */
+	LCD_CHIP_AXG = 0,
+	LCD_CHIP_G12A,  /* 1 */
+	LCD_CHIP_G12B,  /* 2 */
+	LCD_CHIP_TL1,   /* 3 */
+	LCD_CHIP_SM1,	/* 4 */
+	LCD_CHIP_TM2,   /* 5 */
+	LCD_CHIP_TM2B,  /* 6 */
+	LCD_CHIP_T5,    /* 7 */
+	LCD_CHIP_T5D,   /* 8 */
+	LCD_CHIP_T7,    /* 9 */
+	LCD_CHIP_T3,	/* 10 */
+	LCD_CHIP_T5W,	/* 11 */
+	LCD_CHIP_C3,	/* 12 */
 	LCD_CHIP_MAX,
 };
 
@@ -214,6 +215,12 @@ struct lcd_optical_info_s {
 	unsigned int luma_max;
 	unsigned int luma_min;
 	unsigned int luma_avg;
+
+	unsigned char ldim_support;  //adv_flag_0
+	unsigned char adv_flag_1;
+	unsigned char adv_flag_2;
+	unsigned char adv_flag_3;
+	unsigned int luma_peak;
 };
 
 struct rgb_config_s {
@@ -504,6 +511,20 @@ struct phy_config_s {
 struct cus_ctrl_config_s {
 	unsigned int flag;
 	unsigned char dlg_flag;
+	unsigned long long mute_time;
+	unsigned long long unmute_time;
+	unsigned long long switch_time;
+	unsigned long long power_off_time;
+	unsigned long long bl_off_time;
+	unsigned long long bl_on_time;
+	unsigned long long driver_change_time;
+	unsigned long long driver_disable_time;
+	unsigned long long driver_init_time;
+	unsigned long long tcon_reload_time;
+	unsigned long long reg_set_time;
+	unsigned long long data_set_time;
+	unsigned long long level_shift_time;
+	unsigned long long dlg_time;
 	unsigned short attr_0_para0;
 	unsigned short attr_0_para1;
 	unsigned short attr_0_para2;
@@ -615,6 +636,7 @@ struct lcd_reg_map_s {
 
 #define LCD_VIU_SEL_NONE         0
 #define EXTERN_MUL_MAX	         10
+#define LCD_VSYNC_COMPLETE	BIT(7)
 struct aml_lcd_drv_s {
 	unsigned int index;
 	unsigned int status;
@@ -631,6 +653,10 @@ struct aml_lcd_drv_s {
 	unsigned char test_flag;
 	unsigned char mute_state;
 	unsigned char mute_flag;
+	unsigned char mute_count;
+	unsigned char mute_count_test;
+	unsigned char unmute_count_test;
+	unsigned char tcon_isr_bypass;
 	unsigned char probe_done;
 	unsigned char viu_sel;
 	unsigned char gamma_en_flag;
@@ -683,12 +709,14 @@ struct aml_lcd_drv_s {
 	struct work_struct test_check_work;
 	struct work_struct late_resume_work;
 	struct work_struct vx1_reset_work;
+	struct work_struct screen_restore_work;
 	struct delayed_work test_delayed_work;
 	struct resource *res_vsync_irq[3];
 	struct resource *res_vx1_irq;
 	struct resource *res_tcon_irq;
 	struct timer_list pll_mnt_timer;
 	struct timer_list vs_none_timer;
+	struct completion vsync_done;
 	spinlock_t isr_lock; /* for mute and test isr */
 
 #ifdef CONFIG_AMLOGIC_VPU
@@ -715,6 +743,9 @@ struct aml_lcd_tcon_bin_s {
 		long long ptr_length;
 	};
 };
+
+void set_output_mute(bool on);
+int get_output_mute(void);
 
 #define LCD_IOC_TYPE               'C'
 #define LCD_IOC_NR_GET_HDR_INFO    0x0

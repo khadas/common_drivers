@@ -241,6 +241,8 @@ struct ldim_dev_driver_s {
 	unsigned char write_check;
 	unsigned char pinmux_flag;
 	unsigned char chip_cnt;
+	unsigned int mcu_header;
+	unsigned int mcu_dim;
 
 	unsigned int bl_row;
 	unsigned int bl_col;
@@ -347,6 +349,7 @@ struct aml_ldim_driver_s {
 	unsigned char load_db_en;
 	unsigned char db_print_flag;
 	unsigned char level_update;
+	unsigned char resolution_update;
 
 	unsigned int state;
 	unsigned int data_min;

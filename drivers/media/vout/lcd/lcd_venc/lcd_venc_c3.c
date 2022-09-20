@@ -167,6 +167,8 @@ int lcd_venc_op_init_c3(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_o
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
 	venc_op->mute_set = lcd_venc_mute_set;
 	venc_op->get_venc_init_config = lcd_venc_get_init_config;
+	venc_op->venc_vrr_recovery = NULL;
+	venc_op->get_encl_lint_cnt = NULL;
 
 	return 0;
 };

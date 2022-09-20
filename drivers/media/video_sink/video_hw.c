@@ -11846,3 +11846,8 @@ module_param(debug_flag_3d, uint, 0664);
 MODULE_PARM_DESC(vd1_matrix, "\n vd1_matrix\n");
 module_param(vd1_matrix, uint, 0664);
 
+int get_output_mute(void)
+{
+	return video_mute_status;
+}
+EXPORT_SYMBOL(get_output_mute);

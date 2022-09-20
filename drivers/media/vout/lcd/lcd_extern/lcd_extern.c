@@ -14,6 +14,7 @@
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
+#include <linux/compat.h>
 #include <linux/of.h>
 #include <linux/amlogic/media/vout/lcd/lcd_extern.h>
 #include <linux/amlogic/media/vout/lcd/lcd_unifykey.h>
@@ -1584,7 +1585,7 @@ static void lcd_extern_dev_probe_work(struct work_struct *work)
 		goto lcd_extern_dev_probe_work_err;
 
 	dev_index = 0;
-	edrv->dev_cnt = 1;
+
 	edrv->dev[edrv->dev_cnt] = lcd_extern_dev_malloc(dev_index);
 	EXTPR("[%d]: %s: from unifykey\n", edrv->index, __func__);
 	ret = lcd_extern_get_config_unifykey(edrv, edrv->dev[edrv->dev_cnt], skey);
@@ -1600,8 +1601,9 @@ static void lcd_extern_dev_probe_work(struct work_struct *work)
 		lcd_extern_dev_free(edrv->dev[edrv->dev_cnt]);
 		edrv->dev[edrv->dev_cnt] = NULL;
 		goto lcd_extern_dev_probe_work_err;
+	} else {
+		edrv->dev_cnt++;
 	}
-	edrv->dev_cnt++;
 
 	return;
 
@@ -1679,9 +1681,9 @@ static int lcd_extern_config_load(struct lcd_extern_driver_s *edrv)
 			if (ret) {
 				lcd_extern_dev_free(edrv->dev[edrv->dev_cnt]);
 				edrv->dev[edrv->dev_cnt] = NULL;
+			} else {
+				edrv->dev_cnt++;
 			}
-
-			edrv->dev_cnt++;
 		}
 	}
 

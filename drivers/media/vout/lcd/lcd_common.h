@@ -16,6 +16,7 @@
 /* 20220610: add c3 support*/
 /* 20220619: c3 mipi-dsi display ok*/
 /* 20220622: c3 support bt656/1120*/
+/* 20220916: port k5.4 code to k5.15*/
 /* 20221115: support force unfit mipi-dsi bit_rate_max*/
 /* 20221116: add pinmux lock for c3*/
 #define LCD_DRV_VERSION    "20221116"
@@ -76,6 +77,8 @@ void lcd_if_enable_retry(struct aml_lcd_drv_s *pdrv);
 void lcd_vout_notify_mode_change_pre(struct aml_lcd_drv_s *pdrv);
 void lcd_vout_notify_mode_change(struct aml_lcd_drv_s *pdrv);
 void lcd_vinfo_update(struct aml_lcd_drv_s *pdrv);
+unsigned int lcd_vrr_lfc_switch(void *dev_data, int fps);
+int lcd_vrr_disable_cb(void *dev_data);
 void lcd_vrr_dev_update(struct aml_lcd_drv_s *pdrv);
 
 void lcd_queue_work(struct work_struct *work);
@@ -124,22 +127,28 @@ int lcd_tcon_od_get(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_core_reg_get(struct aml_lcd_drv_s *pdrv,
 			  unsigned char *buf, unsigned int size);
 int lcd_tcon_enable(struct aml_lcd_drv_s *pdrv);
+int lcd_tcon_reload(struct aml_lcd_drv_s *pdrv);
+int lcd_tcon_reload_pre(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_vsync_isr(struct aml_lcd_drv_s *pdrv);
 
 /* lcd debug */
 int lcd_debug_info_len(int num);
 void lcd_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num);
+void lcd_test_pattern_init(struct aml_lcd_drv_s *pdrv, unsigned int num);
 int lcd_debug_probe(struct aml_lcd_drv_s *pdrv);
 int lcd_debug_remove(struct aml_lcd_drv_s *pdrv);
 
 /* lcd venc */
+unsigned int lcd_get_encl_lint_cnt(struct aml_lcd_drv_s *pdrv);
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv);
+
 void lcd_gamma_debug_test_en(struct aml_lcd_drv_s *pdrv, int flag);
 void lcd_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num);
 void lcd_set_venc_timing(struct aml_lcd_drv_s *pdrv);
 void lcd_set_venc(struct aml_lcd_drv_s *pdrv);
 void lcd_venc_change(struct aml_lcd_drv_s *pdrv);
+void lcd_venc_vrr_recovery(struct aml_lcd_drv_s *pdrv);
 void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag);
 void lcd_mute_set(struct aml_lcd_drv_s *pdrv, unsigned char flag);
 int lcd_get_venc_init_config(struct aml_lcd_drv_s *pdrv);

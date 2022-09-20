@@ -126,10 +126,9 @@ struct hdr_info {
 	u32 lumi_max; /* RX EDID Lumi Max value */
 	u32 lumi_avg; /* RX EDID Lumi Avg value */
 	u32 lumi_min; /* RX EDID Lumi Min value */
+	u32 lumi_peak; /* RX EDID Lumi Peak value */
+	u32 ldim_support; /* RX EDID Local Dimming Support */
 	struct cuva_info cuva_info;
-
-	u8 ldim_support;
-	u32 lumi_peak;
 };
 
 struct hdr10plus_para {

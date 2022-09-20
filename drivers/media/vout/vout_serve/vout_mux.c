@@ -44,7 +44,7 @@ static inline unsigned int vout_do_div(unsigned long long num, unsigned int den)
 	return (unsigned int)val;
 }
 
-static void vout_vdo_meas_ctrl_init(void)
+void vout_vdo_meas_ctrl_init(void)
 {
 	vout_vcbus_write(VPP_VDO_MEAS_CTRL, 0);
 	vout_vdo_meas_init = 1;
@@ -64,9 +64,8 @@ static unsigned int vout_frame_rate_measure_dft(void)
 	if (vout_vdo_meas_init == 0)
 		return 0;
 
-	msr_clk = meson_clk_measure(clk_mux);
-	if (msr_clk == 0)
-		return 0;
+	//msr_clk = meson_clk_measure(clk_mux);
+	msr_clk = 50000000;
 
 	val[0] = vout_vcbus_read(VPP_VDO_MEAS_VS_COUNT_HI);
 	val[1] = vout_vcbus_read(VPP_VDO_MEAS_VS_COUNT_LO);

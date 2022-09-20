@@ -29,6 +29,8 @@ static struct lcd_venc_op_s lcd_venc_op = {
 	.venc_enable = NULL,
 	.mute_set = NULL,
 	.get_venc_init_config = NULL,
+	.venc_vrr_recovery = NULL,
+	.get_encl_lint_cnt = NULL
 };
 
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv)
@@ -163,6 +165,31 @@ int lcd_get_venc_init_config(struct aml_lcd_drv_s *pdrv)
 
 	ret = lcd_venc_op.get_venc_init_config(pdrv);
 	return ret;
+}
+
+unsigned int lcd_get_encl_lint_cnt(struct aml_lcd_drv_s *pdrv)
+{
+	if (!lcd_venc_op.get_encl_lint_cnt)
+		return 0;
+
+	int ret = 0;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s\n", pdrv->index, __func__);
+
+	ret = lcd_venc_op.get_encl_lint_cnt(pdrv);
+	return ret;
+}
+
+void lcd_venc_vrr_recovery(struct aml_lcd_drv_s *pdrv)
+{
+	if (!lcd_venc_op.venc_vrr_recovery)
+		return;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDERR("[%d]: %s\n", pdrv->index, __func__);
+
+	lcd_venc_op.venc_vrr_recovery(pdrv);
 }
 
 int lcd_venc_probe(struct aml_lcd_drv_s *pdrv)

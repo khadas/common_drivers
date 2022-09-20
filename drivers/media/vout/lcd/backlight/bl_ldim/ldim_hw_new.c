@@ -245,12 +245,12 @@ void ldc_gain_lut_set_t7(void)
 	for (i = 0; i < 16; i++) {
 		p = ldc_gain_lut_array[i];
 		for (j = 0; j < 64; j = j + 2) {
-			lcd_vcbus_write(LDC_GAIN_LUT_ADDR, ram_base);
+			VSYNC_WR_MPEG_REG(LDC_GAIN_LUT_ADDR, ram_base);
 			data = ((p[j + 1] << 12) + p[j]);
-			lcd_vcbus_write(LDC_GAIN_LUT_DATA, data);
-			lcd_vcbus_write(LDC_GAIN_LUT_CTRL0, 0x1);
-			lcd_vcbus_write(LDC_GAIN_LUT_CTRL1, 0x0);
-			lcd_vcbus_write(LDC_GAIN_LUT_CTRL1, 0x1);
+			VSYNC_WR_MPEG_REG(LDC_GAIN_LUT_DATA, data);
+			VSYNC_WR_MPEG_REG(LDC_GAIN_LUT_CTRL0, 0x1);
+			VSYNC_WR_MPEG_REG(LDC_GAIN_LUT_CTRL1, 0x0);
+			VSYNC_WR_MPEG_REG(LDC_GAIN_LUT_CTRL1, 0x1);
 
 			ram_base = ram_base + 2;
 			lcd_vcbus_read(LDC_REG_PANEL_SIZE);
@@ -458,9 +458,7 @@ static void ldc_factor_init(unsigned int width, unsigned int height,
 
 #define MAX_SEG_COL_NUM 48
 #define MAX_SEG_ROW_NUM 32
-static void ldc_set_t7(struct aml_ldim_driver_s *ldim_drv,
-		       unsigned int width, unsigned int height,
-		       unsigned int col_num, unsigned int row_num)
+void ldc_set_t7(struct aml_ldim_driver_s *ldim_drv)
 {
 	unsigned int seg_base;
 	unsigned short seg_x_bdy[MAX_SEG_COL_NUM]; //col_num
@@ -468,9 +466,15 @@ static void ldc_set_t7(struct aml_ldim_driver_s *ldim_drv,
 	unsigned int temp[2], data;
 	unsigned int overlap = 4;
 	int i;
+	unsigned int width, height, col_num, row_num;
 
-//	LDIMPR("width:%d, height:%d, col_num:%d, row_num:%d\n",
-//	       width, height, col_num, row_num);
+	width = ldim_drv->conf->hsize;
+	height = ldim_drv->conf->vsize;
+	col_num = ldim_drv->conf->seg_col;
+	row_num = ldim_drv->conf->seg_row;
+
+	LDIMPR("width:%d, height:%d, col_num:%d, row_num:%d\n",
+	       width, height, col_num, row_num);
 
 	lcd_vcbus_setb(LDC_REG_PANEL_SIZE, width, 16, 16);
 	lcd_vcbus_setb(LDC_REG_PANEL_SIZE, height, 0, 16);
@@ -1022,7 +1026,7 @@ void ldim_func_ctrl_t7(struct aml_ldim_driver_s *ldim_drv, int flag)
 
 void ldim_drv_init_t7(struct aml_ldim_driver_s *ldim_drv)
 {
-	unsigned int width, height, col_num, row_num;
+	// unsigned int width, height, col_num, row_num;
 
 	if (!ldim_drv)
 		return;
@@ -1031,28 +1035,26 @@ void ldim_drv_init_t7(struct aml_ldim_driver_s *ldim_drv)
 	if (ldim_drv->dev_drv)
 		ldim_profile_load(ldim_drv);
 
-	width = ldim_drv->conf->hsize;
-	height = ldim_drv->conf->vsize;
-	col_num = ldim_drv->conf->seg_col;
-	row_num = ldim_drv->conf->seg_row;
+	// width = ldim_drv->conf->hsize;
+	// height = ldim_drv->conf->vsize;
+	// col_num = ldim_drv->conf->seg_col;
+	// row_num = ldim_drv->conf->seg_row;
 
 	lcd_vcbus_write(VPU_RDARB_MODE_L2C1, 0); //change ldc to vpu read0
 
 	lcd_vcbus_write(LDC_REG_BLOCK_NUM, 0);
 	lcd_vcbus_write(LDC_DDR_ADDR_BASE, (ldim_drv->rmem->profile_mem_paddr >> 2));
 
-	ldc_min_gain_lut_set();
-	ldc_dither_lut_set();
-	ldc_set_t7(ldim_drv, width, height, col_num, row_num);
-	ldc_gain_lut_set_t7();
+	ldc_set_t7(ldim_drv);
+	ldim_drv->pq_updating = 1;
 
-	LDIMPR("drv_init: col: %d, row: %d, axi paddr: 0x%lx\n",
-		col_num, row_num, (unsigned long)ldim_drv->rmem->rsv_mem_paddr);
+	LDIMPR("drv_init: axi paddr: 0x%lx\n",
+		(unsigned long)ldim_drv->rmem->rsv_mem_paddr);
 }
 
 void ldim_drv_init_t3(struct aml_ldim_driver_s *ldim_drv)
 {
-	unsigned int width, height, col_num, row_num;
+	// unsigned int width, height, col_num, row_num;
 
 	if (!ldim_drv)
 		return;
@@ -1061,20 +1063,17 @@ void ldim_drv_init_t3(struct aml_ldim_driver_s *ldim_drv)
 	if (ldim_drv->dev_drv)
 		ldim_profile_load(ldim_drv);
 
-	width = ldim_drv->conf->hsize;
-	height = ldim_drv->conf->vsize;
-	col_num = ldim_drv->conf->seg_col;
-	row_num = ldim_drv->conf->seg_row;
+	// width = ldim_drv->conf->hsize;
+	// height = ldim_drv->conf->vsize;
+	// col_num = ldim_drv->conf->seg_col;
+	// row_num = ldim_drv->conf->seg_row;
 
 	lcd_vcbus_write(LDC_REG_BLOCK_NUM, 0);
 	lcd_vcbus_write(LDC_DDR_ADDR_BASE, (ldim_drv->rmem->profile_mem_paddr >> 2));
 
-	ldc_min_gain_lut_set();
-	ldc_dither_lut_set();
-	ldc_set_t7(ldim_drv, width, height, col_num, row_num);
-	ldc_gain_lut_set_t3();
-	ldim_config_update_t7(ldim_drv);
+	ldc_set_t7(ldim_drv);
+	ldim_drv->pq_updating = 1;
 
-	LDIMPR("drv_init: col: %d, row: %d, axi paddr: 0x%lx\n",
-		col_num, row_num, (unsigned long)ldim_drv->rmem->rsv_mem_paddr);
+	LDIMPR("drv_init: axi paddr: 0x%lx\n",
+		(unsigned long)ldim_drv->rmem->rsv_mem_paddr);
 }

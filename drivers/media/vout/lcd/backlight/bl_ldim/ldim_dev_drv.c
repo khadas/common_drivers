@@ -34,7 +34,8 @@
 #include <linux/amlogic/gki_module.h>
 
 static DEFINE_MUTEX(ldim_dev_dbg_mutex);
-static struct work_struct ldim_dev_probe_work;
+static struct delayed_work ldim_dev_probe_dly_work;
+static unsigned int ldim_dev_probe_retry_cnt;
 
 struct bl_gpio_s ldim_gpio[BL_GPIO_NUM_MAX] = {
 	{.probe_flag = 0, .register_flag = 0,},
@@ -80,14 +81,14 @@ struct ldim_dev_driver_s ldim_dev_drv = {
 	.ldim_pwm_config = {
 		.pwm_method = BL_PWM_POSITIVE,
 		.pwm_port = BL_PWM_MAX,
-		.pwm_duty_max = 100,
+		.pwm_duty_max = 4095,
 		.pwm_duty_min = 0,
 	},
 	.analog_pwm_config = {
 		.pwm_method = BL_PWM_POSITIVE,
 		.pwm_port = BL_PWM_MAX,
 		.pwm_freq = 1000,
-		.pwm_duty_max = 100,
+		.pwm_duty_max = 4095,
 		.pwm_duty_min = 10,
 	},
 
@@ -273,13 +274,16 @@ void ldim_set_duty_pwm(struct bl_pwm_config_s *bl_pwm)
 
 	if (bl_pwm->pwm_port >= BL_PWM_MAX)
 		return;
+	if (bl_pwm->pwm_duty_max == 0)
+		return;
 
 	temp = bl_pwm->pwm_cnt;
-	bl_pwm->pwm_level = bl_do_div(((temp * bl_pwm->pwm_duty) + 50), 100);
+	bl_pwm->pwm_level = bl_do_div(((temp * bl_pwm->pwm_duty) +
+		((bl_pwm->pwm_duty_max + 1) >> 1)), bl_pwm->pwm_duty_max);
 
 	if (ldim_debug_print == 2) {
-		LDIMPR("pwm port %d: duty=%d%%, pwm_max=%d, pwm_min=%d, pwm_level=%d\n",
-		       bl_pwm->pwm_port, bl_pwm->pwm_duty,
+		LDIMPR("pwm port %d: duty= %d / %d, pwm_max=%d, pwm_min=%d, pwm_level=%d\n",
+		       bl_pwm->pwm_port, bl_pwm->pwm_duty, bl_pwm->pwm_duty_max,
 		       bl_pwm->pwm_max, bl_pwm->pwm_min, bl_pwm->pwm_level);
 	}
 
@@ -547,10 +551,11 @@ static void ldim_dev_config_print(struct aml_ldim_driver_s *ldim_drv)
 			"ldim_pwm_freq:       %d\n"
 			"ldim_pwm_cnt:        %d\n"
 			"ldim_pwm_level:      %d\n"
-			"ldim_pwm_duty:       %d%%\n",
+			"ldim_pwm_duty:       %d / %d\n",
 			bl_pwm->pwm_port, bl_pwm->pwm_method,
 			bl_pwm->pwm_freq, bl_pwm->pwm_cnt,
-			bl_pwm->pwm_level, bl_pwm->pwm_duty);
+			bl_pwm->pwm_level,
+			bl_pwm->pwm_duty, bl_pwm->pwm_duty_max);
 		switch (bl_pwm->pwm_port) {
 		case BL_PWM_A:
 		case BL_PWM_B:
@@ -594,9 +599,9 @@ static void ldim_dev_config_print(struct aml_ldim_driver_s *ldim_drv)
 			"analog_pwm_freq:     %d\n"
 			"analog_pwm_cnt:      %d\n"
 			"analog_pwm_level:    %d\n"
-			"analog_pwm_duty:     %d%%\n"
-			"analog_pwm_duty_max: %d%%\n"
-			"analog_pwm_duty_min: %d%%\n",
+			"analog_pwm_duty:     %d\n"
+			"analog_pwm_duty_max: %d\n"
+			"analog_pwm_duty_min: %d\n",
 			bl_pwm->pwm_port, bl_pwm->pwm_method,
 			bl_pwm->pwm_freq, bl_pwm->pwm_cnt,
 			bl_pwm->pwm_level, bl_pwm->pwm_duty,
@@ -1092,7 +1097,7 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 		}
 		LDIMPR("get analog_pwm pol = %d, freq = %d\n",
 			bl_pwm->pwm_method, bl_pwm->pwm_freq);
-		LDIMPR("duty max = %d%%, min = %d%%, default = %d%%\n",
+		LDIMPR("duty max = %d, min = %d, default = %d\n",
 			bl_pwm->pwm_duty_max,
 			bl_pwm->pwm_duty_min, bl_pwm->pwm_duty);
 
@@ -1157,6 +1162,20 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 		dev_drv->dim_max = temp[0];
 		dev_drv->dim_min = temp[1];
 	}
+
+	ret = of_property_read_u32(child, "mcu_header", &val);
+	if (ret)
+		dev_drv->mcu_header = 0;
+	else
+		dev_drv->mcu_header = (unsigned int)val;
+
+	ret = of_property_read_u32(child, "mcu_dim", &val);
+	if (ret)
+		dev_drv->mcu_dim = 0;
+	else
+		dev_drv->mcu_dim = (unsigned int)val;
+	LDIMPR("mcu_header: 0x%x, mcu_dim: 0x%x\n",
+	dev_drv->mcu_header, dev_drv->mcu_dim);
 
 	ret = of_property_read_u32(child, "chip_count", &val);
 	if (ret)
@@ -1455,7 +1474,7 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv,
 			((*(p + LCD_UKEY_LDIM_DEV_PWM_ADJ_ATTR_1 + 1)) << 8));
 		LDIMPR("get analog_pwm pol = %d, freq = %d\n",
 			bl_pwm->pwm_method, bl_pwm->pwm_freq);
-		LDIMPR("duty max = %d%%, min = %d%%, default = %d%%\n",
+		LDIMPR("duty max = %d, min = %d, default = %d\n",
 			bl_pwm->pwm_duty_max,
 			bl_pwm->pwm_duty_min, bl_pwm->pwm_duty);
 		bl_pwm_config_init(bl_pwm);
@@ -1505,6 +1524,19 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv,
 		(*(p + LCD_UKEY_LDIM_DEV_CHIP_COUNT) |
 		((*(p + LCD_UKEY_LDIM_DEV_CHIP_COUNT + 1)) << 8));
 	LDIMPR("chip_count: %d\n", dev_drv->chip_cnt);
+
+	dev_drv->mcu_header =
+		(*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_0) |
+		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_0 + 1)) << 8) |
+		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_0 + 2)) << 16) |
+		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_0 + 3)) << 24));
+	dev_drv->mcu_dim =
+		(*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_1) |
+		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_1 + 1)) << 8) |
+		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_1 + 2)) << 16) |
+		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_1 + 3)) << 24));
+	LDIMPR("mcu_header: 0x%x, mcu_dim: 0x%x\n",
+	dev_drv->mcu_header, dev_drv->mcu_dim);
 
 	str = (const char *)(p + LCD_UKEY_LDIM_DEV_ZONE_MAP_PATH);
 	if (strlen(str) == 0) {
@@ -1661,7 +1693,7 @@ static ssize_t ldim_dev_pwm_ldim_show(struct class *class, struct class_attribut
 			"ldim_pwm: freq=%d, pol=%d, duty_max=%d, duty_min=%d,",
 			bl_pwm->pwm_freq, bl_pwm->pwm_method,
 			bl_pwm->pwm_duty_max, bl_pwm->pwm_duty_min);
-		len += sprintf(buf + len, " duty_value=%d%%\n",
+		len += sprintf(buf + len, " duty_value=%d\n",
 			       bl_pwm->pwm_duty);
 	}
 
@@ -1694,7 +1726,7 @@ static void ldim_dev_pwm_debug(struct bl_pwm_config_s *bl_pwm, const char *buf, 
 			bl_pwm->pwm_duty = val;
 			ldim_set_duty_pwm(bl_pwm);
 			if (ldim_debug_print) {
-				LDIMPR("set ldim_pwm (port 0x%x): duty = %d%%\n",
+				LDIMPR("set ldim_pwm (port 0x%x): duty = %d\n",
 				       bl_pwm->pwm_port, bl_pwm->pwm_duty);
 			}
 		} else {
@@ -1725,7 +1757,7 @@ static void ldim_dev_pwm_debug(struct bl_pwm_config_s *bl_pwm, const char *buf, 
 				bl_pwm_config_init(bl_pwm);
 				ldim_set_duty_pwm(bl_pwm);
 				if (ldim_debug_print) {
-					LDIMPR("set ldim_pwm (port 0x%x): duty_max = %d%%\n",
+					LDIMPR("set ldim_pwm (port 0x%x): duty_max = %d\n",
 				 bl_pwm->pwm_port,
 				 bl_pwm->pwm_duty_max);
 				}
@@ -1741,7 +1773,7 @@ static void ldim_dev_pwm_debug(struct bl_pwm_config_s *bl_pwm, const char *buf, 
 				bl_pwm_config_init(bl_pwm);
 				ldim_set_duty_pwm(bl_pwm);
 				if (ldim_debug_print) {
-					LDIMPR("set ldim_pwm (port 0x%x): duty_min = %d%%\n",
+					LDIMPR("set ldim_pwm (port 0x%x): duty_min = %d\n",
 				 bl_pwm->pwm_port,
 				 bl_pwm->pwm_duty_min);
 				}
@@ -1782,7 +1814,7 @@ static ssize_t ldim_dev_pwm_analog_show(struct class *class, struct class_attrib
 			"analog_pwm: freq=%d, pol=%d, duty_max=%d, duty_min=%d,",
 			bl_pwm->pwm_freq, bl_pwm->pwm_method,
 			bl_pwm->pwm_duty_max, bl_pwm->pwm_duty_min);
-		len += sprintf(buf + len, " duty_value=%d%%\n", bl_pwm->pwm_duty);
+		len += sprintf(buf + len, " duty_value=%d\n", bl_pwm->pwm_duty);
 	}
 
 	return len;
@@ -2065,17 +2097,18 @@ static int ldim_dev_remove_driver(struct aml_ldim_driver_s *ldim_drv)
 	return ret;
 }
 
-#define LDIM_DEV_PROBE_WAIT_TIMEOUT    8000
+#define LDIM_DEV_PROBE_WAIT_TIMEOUT    16000
 static void ldim_dev_probe_func(struct work_struct *work)
 {
 	struct aml_ldim_driver_s *ldim_drv = aml_ldim_get_driver();
-	unsigned int val, i = 0;
+	unsigned int val;
 	int ret = -1;
 
-	while (ldim_drv->valid_flag == 0) {
-		if (i++ >= LDIM_DEV_PROBE_WAIT_TIMEOUT)
-			break;
-		lcd_delay_ms(20);
+	if (ldim_drv->valid_flag == 0) {
+		if (ldim_dev_probe_retry_cnt++ < LDIM_DEV_PROBE_WAIT_TIMEOUT) {
+			lcd_queue_delayed_work(&ldim_dev_probe_dly_work, 10);
+			return;
+		}
 	}
 	if (ldim_drv->valid_flag == 0)
 		return;
@@ -2091,6 +2124,8 @@ static void ldim_dev_probe_func(struct work_struct *work)
 	ldim_drv->dev_drv = &ldim_dev_drv;
 	ldim_dev_drv.bl_row = ldim_drv->conf->seg_row;
 	ldim_dev_drv.bl_col = ldim_drv->conf->seg_col;
+	ldim_dev_drv.ldim_pwm_config.pwm_duty_max = 4095;
+	ldim_dev_drv.analog_pwm_config.pwm_duty_max = 4095;
 	val = ldim_dev_drv.bl_row * ldim_dev_drv.bl_col;
 	ldim_dev_drv.zone_num = val;
 	ldim_dev_drv.bl_mapping = kcalloc(val, sizeof(unsigned short), GFP_KERNEL);
@@ -2130,8 +2165,9 @@ static int ldim_dev_probe(struct platform_device *pdev)
 	/* set drvdata */
 	platform_set_drvdata(pdev, &ldim_dev_drv);
 
-	INIT_WORK(&ldim_dev_probe_work, ldim_dev_probe_func);
-	lcd_queue_work(&ldim_dev_probe_work);
+	ldim_dev_probe_retry_cnt = 0;
+	INIT_DELAYED_WORK(&ldim_dev_probe_dly_work, ldim_dev_probe_func);
+	lcd_queue_delayed_work(&ldim_dev_probe_dly_work, 0);
 
 	return 0;
 }
@@ -2140,6 +2176,7 @@ static int __exit ldim_dev_remove(struct platform_device *pdev)
 {
 	struct aml_ldim_driver_s *ldim_drv = aml_ldim_get_driver();
 
+	cancel_delayed_work(&ldim_dev_probe_dly_work);
 	if (ldim_dev_drv.index != 0xff)
 		ldim_dev_remove_driver(ldim_drv);
 

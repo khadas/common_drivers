@@ -15,6 +15,7 @@
 
 #define LCD_PRIORITY_DLG_POWER_IF_OFF  5
 #define LCD_PRIORITY_DLG_POWER_IF_ON   2
+#define LCD_PRIORITY_DLG_SWITCH_MODE   2
 #define LCD_PRIORITY_SCREEN_BLACK      7
 #define LCD_PRIORITY_POWER_BL_OFF      6
 #define LCD_PRIORITY_POWER_IF_OFF      5
@@ -35,6 +36,7 @@
 #define LCD_EVENT_SCREEN_RESTORE       BIT(7)
 #define LCD_EVENT_DLG_POWER_ON         BIT(8)
 #define LCD_EVENT_DLG_POWER_OFF        BIT(9)
+#define LCD_EVENT_DLG_SWITCH_MODE      BIT(10)
 
 /* combined event */
 #define LCD_EVENT_POWER_ON             \
@@ -74,6 +76,9 @@
 #define LCD_EVENT_BACKLIGHT_GD_SEL     BIT(27)
 /* lcd backlight brightness on/off by local dimming */
 #define LCD_EVENT_BACKLIGHT_LD_SEL     BIT(28)
+/* lcd backlight brightness update by driver api */
+#define LCD_EVENT_BACKLIGHT_BRTNESS_DIM     BIT(29)
+
 
 /* blocking notify */
 int aml_lcd_notifier_register(struct notifier_block *nb);

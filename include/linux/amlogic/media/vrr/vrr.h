@@ -68,8 +68,8 @@ struct vrr_notifier_data_s {
  * **********************************
  */
 /* original event */
-#define FRAME_LOCK_EVENT_ON				BIT(0)
-#define FRAME_LOCK_EVENT_OFF			BIT(1)
+#define FRAME_LOCK_EVENT_ON		BIT(0)
+#define FRAME_LOCK_EVENT_OFF		BIT(1)
 #define FRAME_LOCK_EVENT_VRR_ON_MODE	BIT(2)
 #define FRAME_LOCK_EVENT_VRR_OFF_MODE	BIT(3)
 #define VRR_EVENT_UPDATE		BIT(4)

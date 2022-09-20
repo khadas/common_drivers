@@ -172,10 +172,11 @@
 #define CLKCTRL_TCON_CLK_CNTL                      0x0087
 
 /* T5W */
-#define HHI_VIID_CLK0_DIV		0x0a0
-#define HHI_VIID_CLK0_CTRL		0x0a1
-#define HHI_VID_CLK0_CTRL2              0x0a4
-
+#define HHI_VIID_CLK0_DIV                          0x0a0
+#define HHI_VIID_CLK0_CTRL                         0x0a1
+#define HHI_VID_CLK0_CTRL2                         0x0a4
+#define HHI_LVDS_TX_PHY_CNTL2                      0x09c
+#define HHI_LVDS_TX_PHY_CNTL3                      0x09d
 /* g12A */
 #define HHI_HDMI_PLL_CNTL0                         0xc8
 #define HHI_HDMI_PLL_CNTL1                         0xc9
@@ -218,6 +219,14 @@
 #define HHI_DIF_CSI_PHY_CNTL7                      0xeb
 #define HHI_DIF_CSI_PHY_CNTL8                      0xec
 #define HHI_DIF_CSI_PHY_CNTL9                      0xed
+
+/* AXG use PLL   0xff63c000 */
+#define HHI_GP0_PLL_CNTL_AXG                       0x10
+#define HHI_GP0_PLL_CNTL2_AXG                      0x11
+#define HHI_GP0_PLL_CNTL3_AXG                      0x12
+#define HHI_GP0_PLL_CNTL4_AXG                      0x13
+#define HHI_GP0_PLL_CNTL5_AXG                      0x14
+#define HHI_GP0_PLL_CNTL1_AXG                      0x16
 
 /* G12A use PLL   0xff63c000 */
 #define HHI_GP0_PLL_CNTL0                          0x10
@@ -1162,6 +1171,7 @@
 #define ENCL_INBUF_CNT                             0x1cd5
 
 #define VPU_VENC_CTRL                              0x1cef
+#define VPP_INT_LINE_NUM                           0x1dce
 #define VPU_DISP_VIU0_CTRL                         0x2786
 #define VPU_DISP_VIU1_CTRL                         0x2787
 #define VPU_DISP_VIU2_CTRL                         0x2788
@@ -1722,6 +1732,13 @@ unsigned int lcd_vcbus_getb(unsigned int reg,
 			    unsigned int start, unsigned int len);
 void lcd_vcbus_set_mask(unsigned int reg, unsigned int mask);
 void lcd_vcbus_clr_mask(unsigned int reg, unsigned int mask);
+
+unsigned int lcd_hiu_read(unsigned int reg);
+void lcd_hiu_write(unsigned int reg, unsigned int value);
+void lcd_hiu_setb(unsigned int reg, unsigned int value,
+		  unsigned int start, unsigned int len);
+unsigned int lcd_hiu_getb(unsigned int reg,
+			  unsigned int start, unsigned int len);
 
 unsigned int lcd_clk_read(unsigned int reg);
 void lcd_clk_write(unsigned int reg, unsigned int value);

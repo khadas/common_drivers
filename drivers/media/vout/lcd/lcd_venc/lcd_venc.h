@@ -20,6 +20,8 @@ struct lcd_venc_op_s {
 	void (*venc_enable)(struct aml_lcd_drv_s *pdrv, int flag);
 	void (*mute_set)(struct aml_lcd_drv_s *pdrv, unsigned char flag);
 	int (*get_venc_init_config)(struct aml_lcd_drv_s *pdrv);
+	void (*venc_vrr_recovery)(struct aml_lcd_drv_s *pdrv);
+	unsigned int (*get_encl_lint_cnt)(struct aml_lcd_drv_s *pdrv);
 };
 
 int lcd_venc_op_init_dft(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_op);

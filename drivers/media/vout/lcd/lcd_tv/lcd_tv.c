@@ -20,6 +20,8 @@
 #include <linux/of.h>
 #include <linux/reset.h>
 #include <linux/clk.h>
+#include <linux/io.h>
+#include <linux/sched/clock.h>
 #ifdef CONFIG_AMLOGIC_VPU
 #include <linux/amlogic/media/vpu/vpu.h>
 #endif
@@ -32,6 +34,7 @@
 #include "lcd_tv.h"
 #include "../lcd_reg.h"
 #include "../lcd_common.h"
+#include "../lcd_tcon.h"
 
 static int lcd_init_on_flag;
 /* ************************************************** *
@@ -474,7 +477,7 @@ static void lcd_vmode_vinfo_update(struct aml_lcd_drv_s *pdrv, enum vmode_e mode
 	}
 
 	lcd_optical_vinfo_update(pdrv);
-	lcd_vrr_dev_update(pdrv);
+	// lcd_vrr_dev_update(pdrv);
 }
 
 static unsigned int lcd_parse_vout_init_name(char *name)
@@ -564,22 +567,86 @@ static struct vinfo_s *lcd_get_current_info(void *data)
 
 static inline void lcd_vmode_switch(struct aml_lcd_drv_s *pdrv, int flag)
 {
+	unsigned long flags = 0;
+	unsigned long long local_time[3];
+	int ret;
+
+	local_time[0] = sched_clock();
 	if (pdrv->vmode_update == 0)
 		return;
+
+	if (pdrv->config.cus_ctrl.dlg_flag == 3) {
+		if (!flag) {
+			//mute
+			lcd_screen_black(pdrv);
+			reinit_completion(&pdrv->vsync_done);
+			spin_lock_irqsave(&pdrv->isr_lock, flags);
+			if (pdrv->mute_count_test)
+				pdrv->mute_count = pdrv->mute_count_test;
+			else
+				pdrv->mute_count = 3;
+			pdrv->mute_flag = 1;
+			spin_unlock_irqrestore(&pdrv->isr_lock, flags);
+			//wait for mute apply
+			ret = wait_for_completion_timeout(&pdrv->vsync_done,
+							  msecs_to_jiffies(500));
+			if (!ret)
+				LCDPR("wait_for_completion_timeout\n");
+			lcd_tcon_reload_pre(pdrv);
+			local_time[1] = sched_clock();
+			pdrv->config.cus_ctrl.mute_time = local_time[1] - local_time[0];
+			return;
+		}
+
+		//vmode switch
+		aml_lcd_notifier_call_chain(LCD_EVENT_DLG_SWITCH_MODE, (void *)pdrv);
+		lcd_queue_work(&pdrv->screen_restore_work);
+		local_time[1] = sched_clock();
+
+		pdrv->config.cus_ctrl.switch_time = local_time[1] - local_time[0];
+		return;
+	}
 
 	/* include lcd_vout_mutex */
 	if (flag) {
 		aml_lcd_notifier_call_chain(LCD_EVENT_DLG_IF_POWER_ON, (void *)pdrv);
 		lcd_if_enable_retry(pdrv);
+		local_time[1] = sched_clock();
+		pdrv->config.cus_ctrl.switch_time = local_time[1] - local_time[0];
 	} else {
 		aml_lcd_notifier_call_chain(LCD_EVENT_DLG_IF_POWER_OFF, (void *)pdrv);
+		local_time[1] = sched_clock();
+		pdrv->config.cus_ctrl.power_off_time = local_time[1] - local_time[0];
 	}
+}
+
+static void lcd_dlg_time_init(struct aml_lcd_drv_s *pdrv)
+{
+	if (!pdrv)
+		return;
+
+	pdrv->config.cus_ctrl.mute_time = 0;
+	pdrv->config.cus_ctrl.unmute_time = 0;
+	pdrv->config.cus_ctrl.switch_time = 0;
+	pdrv->config.cus_ctrl.power_off_time = 0;
+	pdrv->config.cus_ctrl.bl_off_time = 0;
+	pdrv->config.cus_ctrl.bl_on_time = 0;
+	pdrv->config.cus_ctrl.driver_change_time = 0;
+	pdrv->config.cus_ctrl.driver_disable_time = 0;
+	pdrv->config.cus_ctrl.driver_init_time = 0;
+	pdrv->config.cus_ctrl.tcon_reload_time = 0;
+	pdrv->config.cus_ctrl.level_shift_time = 0;
+	pdrv->config.cus_ctrl.dlg_time = 0;
 }
 
 static int lcd_set_current_vmode(enum vmode_e mode, void *data)
 {
 	int ret = 0;
 	struct aml_lcd_drv_s *pdrv = (struct aml_lcd_drv_s *)data;
+	unsigned long long local_time[3];
+
+	lcd_dlg_time_init(pdrv);
+	local_time[0] = sched_clock();
 
 	if (!pdrv)
 		return -1;
@@ -632,9 +699,15 @@ static int lcd_set_current_vmode(enum vmode_e mode, void *data)
 		ret = -EINVAL;
 	}
 
+	/* must update vrr dev after driver change for panel parameters update */
+	lcd_vrr_dev_update(pdrv);
+
 	pdrv->vmode_update = 0;
 	pdrv->status |= LCD_STATUS_VMODE_ACTIVE;
 	mutex_unlock(&lcd_power_mutex);
+	local_time[1] = sched_clock();
+	pdrv->config.cus_ctrl.dlg_time = local_time[1] - local_time[0];
+
 	return ret;
 }
 
@@ -785,6 +858,7 @@ static int lcd_framerate_automation_set_mode(struct aml_lcd_drv_s *pdrv)
 		return -1;
 
 	LCDPR("[%d]: %s\n", pdrv->index, __func__);
+	lcd_vout_notify_mode_change_pre(pdrv);
 
 	/* update interface timing */
 	lcd_tv_config_update(pdrv);
@@ -1199,6 +1273,9 @@ int lcd_mode_tv_init(struct aml_lcd_drv_s *pdrv)
 	if (pdrv->vrr_dev) {
 		sprintf(pdrv->vrr_dev->name, "lcd%d_dev", pdrv->index);
 		pdrv->vrr_dev->output_src = VRR_OUTPUT_ENCL;
+		pdrv->vrr_dev->lfc_switch = lcd_vrr_lfc_switch;
+		pdrv->vrr_dev->disable_cb = lcd_vrr_disable_cb;
+		pdrv->vrr_dev->dev_data = (void *)pdrv;
 		lcd_vrr_dev_update(pdrv);
 		aml_vrr_register_device(pdrv->vrr_dev, pdrv->index);
 	}

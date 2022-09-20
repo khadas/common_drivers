@@ -244,11 +244,11 @@ static int vpts_error_num;
 int register_tsync_callbackfunc(enum tysnc_func_type_e ntype, void *pfunc)
 {
 	if (new_arch) {
-		pr_info("no need to register_tync_func.\n");
+		pr_debug("no need to register_tync_func.\n");
 		return -1;
 	}
 	if (ntype >= TSYNC_FUNC_TYPE_MAX) {
-		pr_info("register_tync_func ntype is err.\n");
+		pr_debug("register_tync_func ntype is err.\n");
 		return -1;
 	}
 	switch (ntype) {

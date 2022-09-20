@@ -29,9 +29,5 @@
   debug_vfs_setxattr
   ramoops_io_en
 
-# v4l2 vendor hooks
-  __tracepoint_android_vh_v4l2_meta_ptr_update
-  __tracepoint_android_vh_v4l2_fill_fmtdesc
-
 # CFG80211: cfg80211.ko
   rfkill_set_sw_state

@@ -40,12 +40,12 @@ static unsigned int secmon_size;
  #define OUT_SIZE 0x1000
 static DEFINE_MUTEX(sharemem_mutex);
 #define DEV_REGISTERED 1
-#define DEV_UNREGISTED 0
+#define DEV_UNREGISTERED 0
 
 unsigned int sharemem_in_size = IN_SIZE;
 unsigned int sharemem_out_size = OUT_SIZE;
 
-static int secmon_dev_registered = DEV_UNREGISTED;
+static int secmon_dev_registered = DEV_UNREGISTERED;
 static long get_sharemem_info(unsigned int function_id)
 {
 	struct arm_smccc_res res;

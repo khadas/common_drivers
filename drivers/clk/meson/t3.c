@@ -336,7 +336,7 @@ static struct clk_regmap t3_fixed_pll_dco = {
 		},
 		.num_parents = 1,
 		/*
-		 * This clock feeds the sysytem, avoid disabling it
+		 * This clock feeds the system, avoid disabling it
 		 * Register has the risk of being directly operated
 		 */
 		.flags = CLK_IGNORE_UNUSED | CLK_GET_RATE_NOCACHE,
@@ -1569,7 +1569,7 @@ static struct clk_regmap t3_mpll3 = {
  *	   when bit 28 = 0
  *	         f = 24M/N0
  *	   when bit 28 = 1
- *	         output N1 and N2 in rurn.
+ *	         output N1 and N2 in run.
  *	   T = (x*T1 + y*T2)/x+y
  *	   f = (24M/(N0*M0 + N1*M1)) * (M0 + M1)
  *	   f: the frequecy value (HZ)

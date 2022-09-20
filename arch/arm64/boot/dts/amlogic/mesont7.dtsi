@@ -2017,7 +2017,7 @@
 				<0x0 0xfe000168 0x0 0x4>,
 				<0x0 0xfe004000 0x0 0x4>;
 			interrupts = <GIC_SPI 178 IRQ_TYPE_EDGE_RISING>;
-			status = "disabled";
+			status = "okay";
 			clocks = <&clkc CLKID_SD_EMMC_C>,
 				<&clkc CLKID_SD_EMMC_C_CLK_MUX>,
 				 <&clkc CLKID_SD_EMMC_C_CLK>,
@@ -2032,6 +2032,8 @@
 			ignore_desc_busy;
 			tx_delay = <16>;
 			nwr_cnt = <12>;
+			no-sd;
+			no-sdio;
 		//	resets = <&reset RESET_SD_EMMC_C>;
 		};
 
@@ -2041,7 +2043,7 @@
 				<0x0 0xfe00016c 0x0 0x4>,
 				<0x0 0xfe00401c 0x0 0x4>;
 			interrupts = <GIC_SPI 177 IRQ_TYPE_EDGE_RISING>;
-			status = "disabled";
+			status = "okay";
 			clocks = <&clkc CLKID_SD_EMMC_B>,
 				<&clkc CLKID_SD_EMMC_B_CLK_MUX>,
 				 <&clkc CLKID_SD_EMMC_B_CLK>,
@@ -2051,6 +2053,8 @@
 					"clkin0", "clkin1";
 			card_type = <5>;
 			mmc_debug_flag;
+			no-sdio;
+			no-mmc;
 			//resets = <&reset RESET_SD_EMMC_B>;
 		};
 
@@ -2060,7 +2064,7 @@
 				<0x0 0xfe00016c 0x0 0x4>,
 				<0x0 0xfe004008 0x0 0x4>;
 			interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
+			status = "okay";
 			clocks = <&clkc CLKID_SD_EMMC_A>,
 				<&clkc CLKID_SD_EMMC_A_CLK_MUX>,
 				 <&clkc CLKID_SD_EMMC_A_CLK>,
@@ -2073,6 +2077,8 @@
 			keep-power-in-suspend;
 			use_intf3_tuning;
 			mmc_debug_flag;
+			no-mmc;
+			no-sd;
 			//resets = <&reset RESET_SD_EMMC_A>;
 		};
 
@@ -3268,8 +3274,8 @@
 	aml_wifi: aml_wifi {
 		compatible = "amlogic, aml-wifi";
 		status = "disabled";
-		irq_trigger_type = "GPIO_IRQ_LOW";
-		dhd_static_buf;
+		irq_trigger_type = "IRQF_TRIGGER_LOW";
+		wifi_static_buf = <2>;
 		//pinctrl-0 = <&pwm_e_pins>;
 		//pinctrl-names = "default";
 		pwm_config = <&wifi_pwm_conf>;

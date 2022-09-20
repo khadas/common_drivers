@@ -1410,7 +1410,7 @@
 //	sd-uhs-sdr12;
 //	sd-uhs-sdr25;
 //	sd-uhs-sdr50;
-//	sd_uhs-sdr104;
+//	sd-uhs-sdr104;
 	max-frequency = <200000000>;
 
 	disable-wp;
@@ -1429,7 +1429,7 @@
 
 	bus-width = <8>;
 	cap-mmc-highspeed;
-	//mmc-ddr-1_8v;
+	mmc-ddr-1_8v;
 	mmc-hs200-1_8v;
 	mmc-hs400-1_8v;
 	max-frequency = <200000000>;

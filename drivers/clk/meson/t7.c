@@ -5510,7 +5510,7 @@ static struct clk_regmap t7_sd_emmc_c_clk0_div = {
 			&t7_sd_emmc_c_clk0_sel.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT
+		.flags = CLK_GET_RATE_NOCACHE //| CLK_SET_RATE_PARENT
 	},
 };
 
@@ -5526,7 +5526,7 @@ static struct clk_regmap t7_sd_emmc_c_clk0 = {
 			&t7_sd_emmc_c_clk0_div.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT
+		.flags = CLK_GET_RATE_NOCACHE //| CLK_SET_RATE_PARENT
 	},
 };
 
@@ -5558,7 +5558,7 @@ static struct clk_regmap t7_sd_emmc_a_clk0_div = {
 			&t7_sd_emmc_a_clk0_sel.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT,
+		.flags = CLK_GET_RATE_NOCACHE //| CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -5574,7 +5574,7 @@ static struct clk_regmap t7_sd_emmc_a_clk0 = {
 			&t7_sd_emmc_a_clk0_div.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT,
+		.flags = CLK_GET_RATE_NOCACHE //| CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -5606,7 +5606,7 @@ static struct clk_regmap t7_sd_emmc_b_clk0_div = {
 			&t7_sd_emmc_b_clk0_sel.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT
+		.flags = CLK_GET_RATE_NOCACHE //| CLK_SET_RATE_PARENT
 	},
 };
 
@@ -5622,7 +5622,7 @@ static struct clk_regmap t7_sd_emmc_b_clk0 = {
 			&t7_sd_emmc_b_clk0_div.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE |	CLK_SET_RATE_PARENT
+		.flags = CLK_GET_RATE_NOCACHE //|	CLK_SET_RATE_PARENT
 	},
 };
 

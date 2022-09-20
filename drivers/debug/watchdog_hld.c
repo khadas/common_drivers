@@ -85,7 +85,9 @@ void watchdog_check_hardlockup_other_cpu(void)
 		/* only warn once */
 		if (per_cpu(hard_watchdog_warn, next_cpu) == true)
 			return;
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_LOCKUP)
 		pr_lockup_info(next_cpu);
+#endif
 		if (hardlockup_panic)
 			panic("Watchdog detected hard LOCKUP on cpu %u",
 			      next_cpu);

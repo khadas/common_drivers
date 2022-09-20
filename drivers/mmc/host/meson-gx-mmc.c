@@ -3904,6 +3904,7 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		schedule_delayed_work(&host->dtbkey, 50);
 	}
 
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
 	if (aml_card_type_non_sdio(host)) {
 		ret =
 		register_trace_android_vh_mmc_sd_update_cmdline_timing(SD_CMD_TIMING,
@@ -3916,6 +3917,7 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		if (ret)
 			pr_err("register update_dataline timing failed, err:%d\n", ret);
 	}
+#endif
 
 	if (mmc->debugfs_root && aml_card_type_mmc(host)) {
 		host->debugfs_root = debugfs_create_dir(dev_name(&pdev->dev), mmc->debugfs_root);

@@ -31,11 +31,11 @@
 #include <asm/stacktrace.h>
 #include <internal.h>
 
-#define DEBUG							0
+#define DEBUG_VMAP							0
 #define MODULE_NAME						"amlogic-vmap"
 
 #define D(format, args...)					\
-	{ if (DEBUG)						\
+	{ if (DEBUG_VMAP)						\
 		pr_info("%s " format, __func__, ##args);	\
 	}
 
@@ -574,7 +574,7 @@ static void check_sp_fault_again(struct pt_regs *regs)
 
 		D("map page:%5lx for addr:%lx\n", page_to_pfn(page), addr);
 		atomic_inc(&vmap_pre_handle_count);
-	#if DEBUG
+	#if DEBUG_VMAP
 		show_fault_stack(addr, regs);
 	#endif
 	}
@@ -656,7 +656,7 @@ int __handle_vmap_fault(unsigned long addr, unsigned int esr,
 
 	atomic_inc(&vmap_fault_count);
 	D("map page:%5lx for addr:%lx\n", page_to_pfn(page), addr);
-#if DEBUG
+#if DEBUG_VMAP
 	show_fault_stack(addr, regs);
 #endif
 	return 0;
@@ -862,7 +862,7 @@ void aml_stack_free(struct task_struct *tsk)
 	spin_unlock_irqrestore(&avmap->vmap_lock, flags);
 }
 
-#if DEBUG
+#if DEBUG_VMAP
 static void check_stack_depth(void *p, int cnt)
 {
 	unsigned char stack_buf[32];
@@ -900,7 +900,7 @@ static int vmap_task(void *data)
 	unsigned long flags;
 	struct aml_vmap *v = (struct aml_vmap *)data;
 
-#if DEBUG
+#if DEBUG_VMAP
 	stack_test();
 #endif
 	set_user_nice(current, -19);

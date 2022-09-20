@@ -132,7 +132,7 @@ struct bc_dev {
 #ifdef CONFIG_AMLOGIC_BC
 void amlogic_bc_init(void);
 #else
-static void amlogic_bc_init(void)
+static inline void amlogic_bc_init(void)
 {
 }
 #endif

@@ -124,7 +124,7 @@ extern struct dmc_mon_ops c3_dmc_mon_ops;
 int __init dmc_monitor_init(void);
 void dmc_monitor_exit(void);
 #else
-static int dmc_monitor_init(void)
+static inline int dmc_monitor_init(void)
 {
 	return 0;
 }

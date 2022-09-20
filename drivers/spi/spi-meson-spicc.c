@@ -238,10 +238,11 @@ struct meson_spicc_device {
 };
 
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef CONFIG_PM_SLEEP
 static int meson_spicc_runtime_suspend(struct device *dev);
 static int meson_spicc_runtime_resume(struct device *dev);
+#endif
 static void dirspi_set_cs(struct spi_device *spi, bool enable);
-
 static void meson_spicc_auto_io_delay(struct meson_spicc_device *spicc)
 {
 	u32 div, hz;
@@ -804,6 +805,7 @@ static void meson_spicc_cleanup(struct spi_device *spi)
 }
 
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef CONFIG_PM_SLEEP
 static int meson_spicc_clk_enable(struct meson_spicc_device *spicc)
 {
 	int ret;
@@ -836,6 +838,7 @@ static void meson_spicc_clk_disable(struct meson_spicc_device *spicc)
 	if (spicc->data->has_async_clk && !IS_ERR_OR_NULL(spicc->async_clk))
 		clk_disable_unprepare(spicc->async_clk);
 }
+#endif
 
 static int meson_spicc_hw_init(struct meson_spicc_device *spicc)
 {
@@ -1477,6 +1480,7 @@ static int meson_spicc_resume(struct device *dev)
 }
 #endif /* CONFIG_PM_SLEEP */
 
+#ifdef CONFIG_PM_SLEEP
 static int meson_spicc_runtime_suspend(struct device *dev)
 {
 	struct meson_spicc_device *spicc = dev_get_drvdata(dev);
@@ -1503,7 +1507,7 @@ static const struct dev_pm_ops meson_spicc_pm_ops = {
 			   meson_spicc_runtime_resume,
 			   NULL)
 };
-
+#endif
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static struct meson_spicc_data meson_spicc_gx_data __initdata = {
 	.max_speed_hz = 30000000,

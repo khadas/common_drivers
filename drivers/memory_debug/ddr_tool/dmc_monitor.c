@@ -482,6 +482,11 @@ EXPORT_SYMBOL(dmc_monitor_disable);
 static ssize_t range_show(struct class *cla,
 			  struct class_attribute *attr, char *buf)
 {
+	if (!dmc_mon->ops) {
+		pr_err("Can't find ops for chip:%x\n", dmc_mon->chip);
+		return 0;
+	}
+
 	return sprintf(buf, "%08lx - %08lx\n",
 		       dmc_mon->addr_start, dmc_mon->addr_end);
 }
@@ -492,6 +497,11 @@ static ssize_t range_store(struct class *cla,
 {
 	int ret;
 	unsigned long start, end;
+
+	if (!dmc_mon->ops) {
+		pr_err("Can't find ops for chip:%x\n", dmc_mon->chip);
+		return count;
+	}
 
 	ret = sscanf(buf, "%lx %lx", &start, &end);
 	if (ret != 2) {
@@ -508,6 +518,11 @@ static ssize_t device_store(struct class *cla,
 			    const char *buf, size_t count)
 {
 	int i;
+
+	if (!dmc_mon->ops) {
+		pr_err("Can't find ops for chip:%x\n", dmc_mon->chip);
+		return count;
+	}
 
 	if (!strncmp(buf, "none", 4)) {
 		dmc_monitor_disable();
@@ -560,6 +575,11 @@ static ssize_t device_show(struct class *cla,
 			   struct class_attribute *attr, char *buf)
 {
 	int i, s = 0;
+
+	if (!dmc_mon->ops) {
+		pr_err("Can't find ops for chip:%x\n", dmc_mon->chip);
+		return 0;
+	}
 
 	s += sprintf(buf + s, "supported device:\n");
 	for (i = 0; i < dmc_mon->port_num; i++) {
@@ -747,14 +767,12 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 	case DMC_TYPE_T3:
 		mon->ops = &t7_dmc_mon_ops;
 		mon->configs |= POLICY_INCLUDE;
-		mon->configs |= DMC_MULTIPLE;
 		mon->configs |= DMC_DEVICE_8BIT;
 		mon->mon_number = 2;
 		break;
 	case DMC_TYPE_P1:
 		mon->ops = &t7_dmc_mon_ops;
 		mon->configs |= POLICY_INCLUDE;
-		mon->configs |= DMC_MULTIPLE;
 		mon->configs |= DMC_DEVICE_8BIT;
 		mon->mon_number = 4;
 		break;

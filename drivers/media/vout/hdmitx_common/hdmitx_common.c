@@ -52,7 +52,7 @@ int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf)
 {
 	char attr[16] = {0};
 
-	memcpy(attr, buf, sizeof(attr) - 1);
+	memcpy(attr, buf, sizeof(attr));
 	memcpy(tx_comm->fmt_attr, attr, sizeof(tx_comm->fmt_attr));
 	return 0;
 }

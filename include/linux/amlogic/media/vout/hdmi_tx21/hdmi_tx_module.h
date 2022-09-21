@@ -491,7 +491,7 @@ struct hdmitx_dev {
 #define CONF_HDMI_DVI_MODE      (CMD_CONF_OFFSET + 0x02)
 #define HDMI_MODE           0x1
 #define DVI_MODE            0x2
-/* set value as COLORSPACE_RGB444, YUV422, YUV444, YUV420 */
+/* set value as HDMI_COLORSPACE_RGB, YUV422, YUV444, YUV420 */
 #define CONF_CT_MODE		(CMD_CONF_OFFSET + 0X2000 + 0x04)
 	#define SET_CT_OFF		0
 	#define SET_CT_GAME		1

@@ -8,6 +8,7 @@
 
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 /* HDMI VIC definitions */
 
@@ -298,22 +299,6 @@ struct hdmi_cea_timing {
 	unsigned short v_sync_ln;
 };
 
-enum hdmi_color_depth {
-	COLORDEPTH_24B = 4,
-	COLORDEPTH_30B = 5,
-	COLORDEPTH_36B = 6,
-	COLORDEPTH_48B = 7,
-	COLORDEPTH_RESERVED,
-};
-
-enum hdmi_color_space {
-	COLORSPACE_RGB444 = 0,
-	COLORSPACE_YUV422 = 1,
-	COLORSPACE_YUV444 = 2,
-	COLORSPACE_YUV420 = 3,
-	COLORSPACE_RESERVED,
-};
-
 enum hdmi_hdr_status {
 	HDR10PLUS_VSIF = 0,
 	dolbyvision_std = 1,
@@ -322,11 +307,6 @@ enum hdmi_hdr_status {
 	HDR10_others,
 	HDR10_GAMMA_HLG,
 	SDR,
-};
-
-enum hdmi_color_range {
-	COLORRANGE_LIM,
-	COLORRANGE_FUL,
 };
 
 enum hdmi_3d_type {
@@ -352,8 +332,8 @@ struct hdmi_format_para {
 	unsigned char *sname;
 	char ext_name[32];
 	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
-	enum hdmi_color_space cs; /* rgb, y444, y422, y420 */
-	enum hdmi_color_range cr; /* limit, full */
+	enum hdmi_colorspace cs; /* rgb, y444, y422, y420 */
+	enum hdmi_quantization_range cr; /* limit, full */
 	unsigned int pixel_repetition_factor;
 	unsigned int progress_mode:1;
 	unsigned int scrambler_en:1;
@@ -561,12 +541,12 @@ struct parse_cd {
 };
 
 struct parse_cs {
-	enum hdmi_color_space cs;
+	enum hdmi_colorspace cs;
 	const char *name;
 };
 
 struct parse_cr {
-	enum hdmi_color_range cr;
+	enum hdmi_quantization_range cr;
 	const char *name;
 };
 

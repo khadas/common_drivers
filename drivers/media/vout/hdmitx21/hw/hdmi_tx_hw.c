@@ -2059,11 +2059,6 @@ static void hdmi_phy_wakeup(struct hdmitx_dev *hdev)
 #define HDMI_COLOR_DEPTH_36B            6
 #define HDMI_COLOR_DEPTH_48B            7
 
-#define HDMI_COLOR_FORMAT_RGB 0
-#define HDMI_COLORSPACE_YUV422           1
-#define HDMI_COLOR_FORMAT_444           2
-#define HDMI_COLORSPACE_YUV420           3
-
 #define HDMI_COLOR_RANGE_LIM 0
 #define HDMI_COLOR_RANGE_FUL            1
 
@@ -2086,10 +2081,10 @@ static void config_hdmi21_tx(struct hdmitx_dev *hdev)
 	u8 color_depth = COLORDEPTH_24B; // Pixel bit width: 4=24-bit; 5=30-bit; 6=36-bit; 7=48-bit.
 	// Pixel format: 0=RGB444; 1=YCbCr422; 2=YCbCr444; 3=YCbCr420.
 	u8 input_color_format = HDMI_COLORSPACE_YUV444;
-	u8 input_color_range = COLORRANGE_LIM; // Pixel range: 0=limited; 1=full.
+	u8 input_color_range = HDMI_QUANTIZATION_RANGE_LIMITED; // Pixel range: 0=limited; 1=full.
 	// Pixel format: 0=RGB444; 1=YCbCr422; 2=YCbCr444; 3=YCbCr420.
 	u8 output_color_format = HDMI_COLORSPACE_YUV444;
-	u8 output_color_range = COLORRANGE_LIM; // Pixel range: 0=limited; 1=full.
+	u8 output_color_range = HDMI_QUANTIZATION_RANGE_LIMITED; // Pixel range: 0=limited; 1=full.
 	u32 active_pixels = 1920; // Number of active pixels per line
 	u32 active_lines = 1080; // Number of active lines per field
 	// 0=I2S 2-channel; 1=I2S 4 x 2-channel; 2=channel 0/1, 4/5 valid.

@@ -94,7 +94,7 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 		     hdev->para->vic == HDMI_3840x2160p60_16x9 ||
 		     hdev->para->vic == HDMI_3840x2160p50_64x27 ||
 		     hdev->para->vic == HDMI_3840x2160p60_64x27) &&
-		     hdev->para->cs != COLORSPACE_YUV420) {
+		     hdev->para->cs != HDMI_COLORSPACE_YUV420) {
 			hd_write_reg(P_HHI_HDMI_PLL_CNTL3, 0x6a685c00);
 			hd_write_reg(P_HHI_HDMI_PLL_CNTL4, 0x11551293);
 		} else {
@@ -110,7 +110,7 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 		    hdev->para->vic == HDMI_3840x2160p60_64x27 ||
 		    hdev->para->vic == HDMI_4096x2160p50_256x135 ||
 		    hdev->para->vic == HDMI_4096x2160p60_256x135) &&
-		    hdev->para->cs != COLORSPACE_YUV420) {
+		    hdev->para->cs != HDMI_COLORSPACE_YUV420) {
 			hd_write_reg(P_HHI_HDMI_PLL_CNTL3, 0x6a685c00);
 			hd_write_reg(P_HHI_HDMI_PLL_CNTL4, 0x11551293);
 		} else {
@@ -171,7 +171,7 @@ static bool set_hpll_hclk_v3(unsigned int m, unsigned int frac_val)
 static inline int is_dongle_mode(struct hdmitx_dev *hdev)
 {
 	return hdev->dongle_mode &&
-		(hdev->para->cs == COLORSPACE_YUV422 ||
+		(hdev->para->cs == HDMI_COLORSPACE_YUV422 ||
 		hdev->para->cd == COLORDEPTH_24B) &&
 		(hdev->cur_VIC == HDMI_1280x720p50_16x9 ||
 		 hdev->cur_VIC == HDMI_1280x720p60_16x9 ||

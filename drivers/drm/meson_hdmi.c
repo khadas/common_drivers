@@ -63,35 +63,35 @@ static struct drm_display_mode dummy_mode = {
 };
 
 struct hdmitx_color_attr dv_color_attr_list[] = {
-	{COLORSPACE_YUV444, 8}, //"444,8bit"
-	{COLORSPACE_RESERVED, COLORDEPTH_RESERVED}
+	{HDMI_COLORSPACE_YUV444, 8}, //"444,8bit"
+	{HDMI_COLORSPACE_RESERVED6, COLORDEPTH_RESERVED}
 };
 
 struct hdmitx_color_attr dv_ll_color_attr_list[] = {
-	{COLORSPACE_YUV422, 12}, //"422,12bit"
-	{COLORSPACE_RESERVED, COLORDEPTH_RESERVED}
+	{HDMI_COLORSPACE_YUV422, 12}, //"422,12bit"
+	{HDMI_COLORSPACE_RESERVED6, COLORDEPTH_RESERVED}
 };
 
 /* this is prior selected list of
  * 4k2k50hz, 4k2k60hz smpte50hz, smpte60hz
  */
 struct hdmitx_color_attr color_attr_list[] = {
-	{COLORSPACE_YUV420, 10}, //"420,10bit"
-	{COLORSPACE_YUV422, 12}, //"422,12bit"
-	{COLORSPACE_YUV420, 8}, //"420,8bit"
-	{COLORSPACE_YUV444, 8}, //"444,8bit"
-	{COLORSPACE_RGB444, 8}, //"rgb,8bit"
-	{COLORSPACE_RESERVED, COLORDEPTH_RESERVED}
+	{HDMI_COLORSPACE_YUV420, 10}, //"420,10bit"
+	{HDMI_COLORSPACE_YUV422, 12}, //"422,12bit"
+	{HDMI_COLORSPACE_YUV420, 8}, //"420,8bit"
+	{HDMI_COLORSPACE_YUV444, 8}, //"444,8bit"
+	{HDMI_COLORSPACE_RGB, 8}, //"rgb,8bit"
+	{HDMI_COLORSPACE_RESERVED6, COLORDEPTH_RESERVED}
 };
 
 /* this is prior selected list of other display mode */
 struct hdmitx_color_attr other_color_attr_list[] = {
-	{COLORSPACE_YUV444, 10}, //"444,10bit"
-	{COLORSPACE_YUV422, 12}, //"422,12bit"
-	{COLORSPACE_RGB444, 10}, //"rgb,10bit"
-	{COLORSPACE_YUV444, 8}, //"444,8bit"
-	{COLORSPACE_RGB444, 8}, //"rgb,8bit"
-	{COLORSPACE_RESERVED, COLORDEPTH_RESERVED}
+	{HDMI_COLORSPACE_YUV444, 10}, //"444,10bit"
+	{HDMI_COLORSPACE_YUV422, 12}, //"422,12bit"
+	{HDMI_COLORSPACE_RGB, 10}, //"rgb,10bit"
+	{HDMI_COLORSPACE_YUV444, 8}, //"444,8bit"
+	{HDMI_COLORSPACE_RGB, 8}, //"rgb,8bit"
+	{HDMI_COLORSPACE_RESERVED6, COLORDEPTH_RESERVED}
 };
 
 #define MODE_4K2K24HZ                   "2160p24hz"
@@ -107,20 +107,20 @@ struct hdmitx_color_attr other_color_attr_list[] = {
 void convert_attrstr(char *attr_str,
 	struct hdmitx_color_attr *attr_param)
 {
-	attr_param->colorformat = COLORSPACE_RESERVED;
+	attr_param->colorformat = HDMI_COLORSPACE_RESERVED6;
 	attr_param->bitdepth = COLORDEPTH_RESERVED;
 
 	if (strstr(attr_str, "420"))
-		attr_param->colorformat = COLORSPACE_YUV420;
+		attr_param->colorformat = HDMI_COLORSPACE_YUV420;
 	else if (strstr(attr_str, "422"))
-		attr_param->colorformat = COLORSPACE_YUV422;
+		attr_param->colorformat = HDMI_COLORSPACE_YUV422;
 	else if (strstr(attr_str, "444"))
-		attr_param->colorformat = COLORSPACE_YUV444;
+		attr_param->colorformat = HDMI_COLORSPACE_YUV444;
 	else if (strstr(attr_str, "rgb"))
-		attr_param->colorformat = COLORSPACE_RGB444;
+		attr_param->colorformat = HDMI_COLORSPACE_RGB;
 
 	/*parse colorspace success*/
-	if (attr_param->colorformat != COLORSPACE_RESERVED) {
+	if (attr_param->colorformat != HDMI_COLORSPACE_RESERVED6) {
 		if (strstr(attr_str, "12bit"))
 			attr_param->bitdepth = 12;
 		else if (strstr(attr_str, "10bit"))
@@ -135,16 +135,16 @@ static void build_hdmitx_attr_str(char *attr_str, u32 format, u32 bit_depth)
 	const char *colorspace;
 
 	switch (format) {
-	case COLORSPACE_YUV420:
+	case HDMI_COLORSPACE_YUV420:
 		colorspace = "420";
 		break;
-	case COLORSPACE_YUV422:
+	case HDMI_COLORSPACE_YUV422:
 		colorspace = "422";
 		break;
-	case COLORSPACE_YUV444:
+	case HDMI_COLORSPACE_YUV444:
 		colorspace = "444";
 		break;
-	case COLORSPACE_RGB444:
+	case HDMI_COLORSPACE_RGB:
 		colorspace = "rgb";
 		break;
 	default:
@@ -191,14 +191,14 @@ static bool meson_hdmitx_test_color_attr(struct am_meson_crtc_state *crtc_state,
 	char attr_str[HDMITX_ATTR_LEN_MAX];
 	u8 max_bpc = conn_state->base.max_bpc;
 
-	if (test_attr->colorformat == COLORSPACE_RESERVED ||
+	if (test_attr->colorformat == HDMI_COLORSPACE_RESERVED6 ||
 		test_attr->bitdepth > max_bpc)
 		return false;
 
 	attr_list = meson_hdmitx_get_candidate_attr_list(crtc_state);
 
 	do {
-		if (attr_list->colorformat == COLORSPACE_RESERVED)
+		if (attr_list->colorformat == HDMI_COLORSPACE_RESERVED6)
 			break;
 
 		if (attr_list->colorformat == test_attr->colorformat &&
@@ -215,7 +215,7 @@ static bool meson_hdmitx_test_color_attr(struct am_meson_crtc_state *crtc_state,
 		}
 	} while (attr_list++);
 
-	if (attr_list->colorformat == COLORSPACE_RESERVED)
+	if (attr_list->colorformat == HDMI_COLORSPACE_RESERVED6)
 		return false;
 	else
 		return true;
@@ -237,7 +237,7 @@ static int meson_hdmitx_decide_color_attr
 	attr_list = meson_hdmitx_get_candidate_attr_list(crtc_state);
 
 	do {
-		if (attr_list->colorformat == COLORSPACE_RESERVED)
+		if (attr_list->colorformat == HDMI_COLORSPACE_RESERVED6)
 			break;
 
 		if (attr_list->bitdepth <= max_bpc) {
@@ -255,9 +255,9 @@ static int meson_hdmitx_decide_color_attr
 			}
 		}
 	} while (attr_list++);
-	if (attr_list->colorformat == COLORSPACE_RESERVED) {
+	if (attr_list->colorformat == HDMI_COLORSPACE_RESERVED6) {
 		DRM_ERROR("%s no attr found, reset to 444,8bit.\n", __func__);
-		attr->colorformat = COLORSPACE_RGB444;
+		attr->colorformat = HDMI_COLORSPACE_RGB;
 		attr->bitdepth = 8;
 	}
 
@@ -592,7 +592,7 @@ struct drm_connector_state *meson_hdmitx_atomic_duplicate_state
 
 	new_state->update = false;
 	new_state->color_force = false;
-	new_state->color_attr_para.colorformat = COLORSPACE_RESERVED;
+	new_state->color_attr_para.colorformat = HDMI_COLORSPACE_RESERVED6;
 	new_state->color_attr_para.bitdepth = COLORDEPTH_RESERVED;
 	new_state->pref_hdr_policy = cur_state->pref_hdr_policy;
 
@@ -1163,7 +1163,7 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	}
 
 	if (!hdmitx_state->color_force) {
-		if (attr->colorformat != COLORSPACE_RESERVED) {
+		if (attr->colorformat != HDMI_COLORSPACE_RESERVED6) {
 			if (meson_hdmitx_test_color_attr(meson_crtc_state,
 				hdmitx_state, attr)) {
 				update_attr = false;
@@ -1317,11 +1317,11 @@ MODULE_DEVICE_TABLE(of, am_meson_hdmi_dt_ids);
 
 /* Optional colorspace properties. */
 static const struct drm_prop_enum_list hdmi_color_space_enum_list[] = {
-	{ COLORSPACE_RGB444, "RGB" },
-	{ COLORSPACE_YUV422, "422" },
-	{ COLORSPACE_YUV444, "444" },
-	{ COLORSPACE_YUV420, "420" },
-	{ COLORSPACE_RESERVED, "COLORSPACE_RESERVED" }
+	{ HDMI_COLORSPACE_RGB, "RGB" },
+	{ HDMI_COLORSPACE_YUV422, "422" },
+	{ HDMI_COLORSPACE_YUV444, "444" },
+	{ HDMI_COLORSPACE_YUV420, "420" },
+	{ HDMI_COLORSPACE_RESERVED6, "HDMI_COLORSPACE_RESERVED6" }
 };
 
 static void meson_hdmitx_init_colorspace_property(struct drm_device *drm_dev,

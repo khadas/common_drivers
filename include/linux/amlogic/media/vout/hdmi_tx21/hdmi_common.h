@@ -9,6 +9,7 @@
 #include <linux/hdmi.h>
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 /* HDMI VIC definitions */
 
@@ -291,19 +292,6 @@ struct hdmi_timing {
 	unsigned short v_pixel;
 };
 
-enum hdmi_color_depth {
-	COLORDEPTH_24B = 4,
-	COLORDEPTH_30B = 5,
-	COLORDEPTH_36B = 6,
-	COLORDEPTH_48B = 7,
-	COLORDEPTH_RESERVED,
-};
-
-enum hdmi_color_range {
-	COLORRANGE_LIM,
-	COLORRANGE_FUL,
-};
-
 enum hdmi_3d_type {
 	T3D_FRAME_PACKING = 0,
 	T3D_FIELD_ALTER = 1,
@@ -324,7 +312,7 @@ enum hdmi_3d_type {
 struct hdmi_format_para {
 	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
 	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */
-	enum hdmi_color_range cr; /* limit, full */
+	enum hdmi_quantization_range cr; /* limit, full */
 	u32 scrambler_en:1;
 	u32 tmds_clk_div40:1;
 	u32 tmds_clk; /* Unit: 1000 */
@@ -502,7 +490,7 @@ struct parse_cs {
 };
 
 struct parse_cr {
-	enum hdmi_color_range cr;
+	enum hdmi_quantization_range cr;
 	const char *name;
 };
 

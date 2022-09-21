@@ -8,7 +8,27 @@
 
 #include <linux/types.h>
 #include <linux/mutex.h>
+#include <linux/hdmi.h>
+
 #include <drm/amlogic/meson_connector_dev.h>
+
+enum hdmi_color_depth {
+	COLORDEPTH_24B = 4,
+	COLORDEPTH_30B = 5,
+	COLORDEPTH_36B = 6,
+	COLORDEPTH_48B = 7,
+	COLORDEPTH_RESERVED,
+};
+
+struct hdmi_format_para_new {
+	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
+	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */
+	enum hdmi_quantization_range cr; /* limit, full */
+
+	u32 scrambler_en:1;
+	u32 tmds_clk_div40:1;
+	u32 tmds_clk; /* Unit: 1000 */
+};
 
 struct hdmitx_common {
 	u32 hdr_priority;

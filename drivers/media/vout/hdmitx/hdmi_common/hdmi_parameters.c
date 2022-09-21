@@ -3176,15 +3176,15 @@ static struct parse_cd parse_cd_[] = {
 };
 
 static struct parse_cs parse_cs_[] = {
-	{COLORSPACE_RGB444, "rgb",},
-	{COLORSPACE_YUV422, "422",},
-	{COLORSPACE_YUV444, "444",},
-	{COLORSPACE_YUV420, "420",},
+	{HDMI_COLORSPACE_RGB, "rgb",},
+	{HDMI_COLORSPACE_YUV422, "422",},
+	{HDMI_COLORSPACE_YUV444, "444",},
+	{HDMI_COLORSPACE_YUV420, "420",},
 };
 
 static struct parse_cr parse_cr_[] = {
-	{COLORRANGE_LIM, "limit",},
-	{COLORRANGE_FUL, "full",},
+	{HDMI_QUANTIZATION_RANGE_LIMITED, "limit",},
+	{HDMI_QUANTIZATION_RANGE_FULL, "full",},
 };
 
 const char *hdmi_get_str_cd(struct hdmi_format_para *para)
@@ -3245,7 +3245,7 @@ static void hdmi_parse_attr(struct hdmi_format_para *para, char const *name)
 	}
 	/* set default value */
 	if (i == sizeof(parse_cs_) / sizeof(struct parse_cs))
-		para->cs = COLORSPACE_YUV444;
+		para->cs = HDMI_COLORSPACE_YUV444;
 
 	/* parse color range */
 	for (i = 0; i < sizeof(parse_cr_) / sizeof(struct parse_cr); i++) {
@@ -3256,7 +3256,7 @@ static void hdmi_parse_attr(struct hdmi_format_para *para, char const *name)
 	}
 	/* set default value */
 	if (i == sizeof(parse_cr_) / sizeof(struct parse_cr))
-		para->cr = COLORRANGE_FUL;
+		para->cr = HDMI_QUANTIZATION_RANGE_FULL;
 }
 
 /*
@@ -3303,10 +3303,10 @@ struct hdmi_format_para *hdmi_get_fmt_name(char const *name, char const *attr)
 		hdmi_parse_attr(para, attr);
 	}
 	if (strstr(name, "420"))
-		para->cs = COLORSPACE_YUV420;
+		para->cs = HDMI_COLORSPACE_YUV420;
 
 	/* only 2160p60/50hz smpte60/50hz have Y420 mode */
-	if (para->cs == COLORSPACE_YUV420) {
+	if (para->cs == HDMI_COLORSPACE_YUV420) {
 		switch ((para->vic) & 0xff) {
 		case HDMI_3840x2160p50_16x9:
 		case HDMI_3840x2160p60_16x9:
@@ -3372,10 +3372,10 @@ struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr)
 		hdmi_parse_attr(&tst_para, attr);
 	}
 	if (strstr(name, "420"))
-		tst_para.cs = COLORSPACE_YUV420;
+		tst_para.cs = HDMI_COLORSPACE_YUV420;
 
 	/* only 2160p60/50hz smpte60/50hz have Y420 mode */
-	if (tst_para.cs == COLORSPACE_YUV420) {
+	if (tst_para.cs == HDMI_COLORSPACE_YUV420) {
 		switch ((tst_para.vic) & 0xff) {
 		case HDMI_3840x2160p50_16x9:
 		case HDMI_3840x2160p60_16x9:
@@ -3936,9 +3936,9 @@ static const unsigned char coef_yc444_rgb_24bit_709[] = {
 };
 
 static const struct hdmi_csc_coef_table hdmi_csc_coef[] = {
-	{COLORSPACE_YUV444, COLORSPACE_RGB444, COLORDEPTH_24B, 0,
+	{HDMI_COLORSPACE_YUV444, HDMI_COLORSPACE_RGB, COLORDEPTH_24B, 0,
 		sizeof(coef_yc444_rgb_24bit_601), coef_yc444_rgb_24bit_601},
-	{COLORSPACE_YUV444, COLORSPACE_RGB444, COLORDEPTH_24B, 1,
+	{HDMI_COLORSPACE_YUV444, HDMI_COLORSPACE_RGB, COLORDEPTH_24B, 1,
 		sizeof(coef_yc444_rgb_24bit_709), coef_yc444_rgb_24bit_709},
 };
 

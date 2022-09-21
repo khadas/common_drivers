@@ -116,7 +116,7 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 	case HDMI_97_3840x2160p60_16x9:
 	case HDMI_101_4096x2160p50_256x135:
 	case HDMI_102_4096x2160p60_256x135:
-		//param->cs = COLORSPACE_YUV420; /* TODO */
+		//param->cs = HDMI_COLORSPACE_YUV420; /* TODO */
 		break;
 	default:
 		break;

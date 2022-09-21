@@ -99,7 +99,7 @@ static enum hdmi_vic get_vic_from_pkt(void);
 /* VSYNC polarity: active high */
 #define VSYNC_POLARITY	 1
 /* Pixel format: 0=RGB444; 1=YCbCr444; 2=Rsrv; 3=YCbCr422. */
-#define TX_INPUT_COLOR_FORMAT   COLORSPACE_YUV444
+#define TX_INPUT_COLOR_FORMAT   HDMI_COLORSPACE_YUV444
 /* Pixel range: 0=16-235/240; 1=16-240; 2=1-254; 3=0-255. */
 #define TX_INPUT_COLOR_RANGE	0
 /* Pixel bit width: 4=24-bit; 5=30-bit; 6=36-bit; 7=48-bit. */
@@ -478,20 +478,20 @@ static void hdmi_hwp_init(struct hdmitx_dev *hdev)
 		/* Get uboot output color space from AVI */
 		switch (hdmitx_rd_reg(HDMITX_DWC_FC_AVICONF0) & 0x3) {
 		case 1:
-			hdev->para->cs = COLORSPACE_YUV422;
+			hdev->para->cs = HDMI_COLORSPACE_YUV422;
 			break;
 		case 2:
-			hdev->para->cs = COLORSPACE_YUV444;
+			hdev->para->cs = HDMI_COLORSPACE_YUV444;
 			break;
 		case 3:
-			hdev->para->cs = COLORSPACE_YUV420;
+			hdev->para->cs = HDMI_COLORSPACE_YUV420;
 			break;
 		default:
-			hdev->para->cs = COLORSPACE_RGB444;
+			hdev->para->cs = HDMI_COLORSPACE_RGB;
 			break;
 		}
 		/* If color space is not 422, then get depth from VP_PR_CD */
-		if (hdev->para->cs != COLORSPACE_YUV422) {
+		if (hdev->para->cs != HDMI_COLORSPACE_YUV422) {
 			switch ((hdmitx_rd_reg(HDMITX_DWC_VP_PR_CD) >> 4) &
 				0xf) {
 			case 5:
@@ -526,7 +526,7 @@ static void hdmi_hwp_init(struct hdmitx_dev *hdev)
 		}
 	} else {
 		hdev->para->cd = COLORDEPTH_RESERVED;
-		hdev->para->cs = COLORSPACE_RESERVED;
+		hdev->para->cs = HDMI_COLORSPACE_RESERVED6;
 		/* reset HDMITX APB & TX & PHY */
 		hdmitx_sys_reset();
 		if (hdev->data->chip_type < MESON_CPU_ID_G12A) {
@@ -1967,7 +1967,7 @@ do { \
 	case HDMI_3840x2160p60_16x9:
 	case HDMI_4096x2160p50_256x135:
 	case HDMI_4096x2160p60_256x135:
-		if (hdev->para->cs != COLORSPACE_YUV420)
+		if (hdev->para->cs != HDMI_COLORSPACE_YUV420)
 			set_phy_by_mode(HDMI_PHYPARA_6G);
 		else
 			if (hdev->para->cd == COLORDEPTH_36B)
@@ -1996,7 +1996,7 @@ do { \
 	case HDMI_4k2k_smpte_24:
 	case HDMI_4096x2160p25_256x135:
 	case HDMI_4096x2160p30_256x135:
-		if (hdev->para->cs == COLORSPACE_YUV422 ||
+		if (hdev->para->cs == HDMI_COLORSPACE_YUV422 ||
 		    hdev->para->cd == COLORDEPTH_24B)
 			set_phy_by_mode(HDMI_PHYPARA_3G);
 		else
@@ -2044,7 +2044,7 @@ static void hdmitx_set_scdc(struct hdmitx_dev *hdev)
 	case HDMI_3840x2160p60_16x9:
 	case HDMI_4096x2160p50_256x135:
 	case HDMI_4096x2160p60_256x135:
-		if (hdev->para->cs == COLORSPACE_YUV420 &&
+		if (hdev->para->cs == HDMI_COLORSPACE_YUV420 &&
 		    hdev->para->cd == COLORDEPTH_24B)
 			hdev->para->tmds_clk_div40 = 0;
 		else
@@ -2070,7 +2070,7 @@ static void hdmitx_set_scdc(struct hdmitx_dev *hdev)
 	case HDMI_3840x2160p30_16x9:
 	case HDMI_3840x2160p30_64x27:
 	case HDMI_4096x2160p30_256x135:
-		if (hdev->para->cs == COLORSPACE_YUV422 ||
+		if (hdev->para->cs == HDMI_COLORSPACE_YUV422 ||
 		    hdev->para->cd == COLORDEPTH_24B)
 			hdev->para->tmds_clk_div40 = 0;
 		else
@@ -2133,11 +2133,11 @@ void hdmitx_set_enc_hw(struct hdmitx_dev *hdev)
 	/* [ 3: 2] chroma_dnsmp. 0=use pixel 0; 1=use pixel 1; 2=use average. */
 	/* [	5] hdmi_dith_md: random noise selector. */
 	hd_write_reg(P_VPU_HDMI_FMT_CTRL, (((TX_INPUT_COLOR_FORMAT ==
-			COLORSPACE_YUV420) ? 2 : 0)  << 0) | (2 << 2) |
+			HDMI_COLORSPACE_YUV420) ? 2 : 0)  << 0) | (2 << 2) |
 				(0 << 4) | /* [4]dith_en: disable dithering */
 				(0	<< 5) |
 				(0 << 6)); /* [ 9: 6] hdmi_dith10_cntl. */
-	if (hdev->para->cs == COLORSPACE_YUV420) {
+	if (hdev->para->cs == HDMI_COLORSPACE_YUV420) {
 		hd_set_reg_bits(P_VPU_HDMI_FMT_CTRL, 2, 0, 2);
 		hd_set_reg_bits(P_VPU_HDMI_SETTING, 0, 4, 4);
 		hd_set_reg_bits(P_VPU_HDMI_SETTING, 1, 8, 1);
@@ -2146,7 +2146,7 @@ void hdmitx_set_enc_hw(struct hdmitx_dev *hdev)
 			hd_set_reg_bits(P_VPU_HDMI_SETTING, 0, 8, 1);
 	}
 
-	if (hdev->para->cs == COLORSPACE_YUV422) {
+	if (hdev->para->cs == HDMI_COLORSPACE_YUV422) {
 		hd_set_reg_bits(P_VPU_HDMI_FMT_CTRL, 1, 0, 2);
 		hd_set_reg_bits(P_VPU_HDMI_SETTING, 0, 4, 4);
 	}
@@ -2651,7 +2651,7 @@ static void set_aud_acr_pkt(struct hdmitx_dev *hdev,
 		char_rate = hdev->para->timing.frac_freq;
 	else
 		char_rate = hdev->para->timing.pixel_freq;
-	if (hdev->para->cs == COLORSPACE_YUV422)
+	if (hdev->para->cs == HDMI_COLORSPACE_YUV422)
 		aud_n_para = hdmi_get_aud_n_paras(audio_param->sample_rate,
 						  COLORDEPTH_24B, char_rate);
 	else
@@ -3092,7 +3092,7 @@ static void mode420_half_horizontal_para(void)
 
 static void hdmitx_set_fake_vic(struct hdmitx_dev *hdev)
 {
-	hdev->para->cs = COLORSPACE_YUV444;
+	hdev->para->cs = HDMI_COLORSPACE_YUV444;
 	hdev->cur_VIC = HDMI_VIC_FAKE;
 	set_vmode_clk(hdev);
 }
@@ -4061,7 +4061,7 @@ static int hdmitx_hdmi_dvi_config(struct hdmitx_dev *hdev,
 {
 	if (dvi_mode == 1) {
 		hdmitx_csc_config(TX_INPUT_COLOR_FORMAT,
-				  COLORSPACE_RGB444, TX_COLOR_DEPTH);
+				  HDMI_COLORSPACE_RGB, TX_COLOR_DEPTH);
 
 		/* set dvi flag */
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_INVIDCONF, 0, 3, 1);
@@ -4645,7 +4645,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	hdmitx_wr_reg(HDMITX_TOP_BIST_CNTL, data32);
 
 	/* Configure video */
-	if (input_color_format == COLORSPACE_RGB444) {
+	if (input_color_format == HDMI_COLORSPACE_RGB) {
 		if (color_depth == COLORDEPTH_24B)
 			vid_map = 0x01;
 		else if (color_depth == COLORDEPTH_30B)
@@ -4654,9 +4654,9 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 			vid_map = 0x05;
 		else
 			vid_map = 0x07;
-	} else if (((input_color_format == COLORSPACE_YUV444) ||
-		(input_color_format == COLORSPACE_YUV420)) &&
-		(output_color_format != COLORSPACE_YUV422)) {
+	} else if (((input_color_format == HDMI_COLORSPACE_YUV444) ||
+		(input_color_format == HDMI_COLORSPACE_YUV420)) &&
+		(output_color_format != HDMI_COLORSPACE_YUV422)) {
 		if (color_depth == COLORDEPTH_24B)
 			vid_map = 0x09;
 		else if (color_depth == COLORDEPTH_30B)
@@ -4691,7 +4691,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	case HDMI_720x576i200_16x9:
 	case HDMI_720x480i240_4x3:
 	case HDMI_720x480i240_16x9:
-		if (output_color_format == COLORSPACE_YUV422) {
+		if (output_color_format == HDMI_COLORSPACE_YUV422) {
 			if (color_depth == COLORDEPTH_24B)
 				vid_map = 0x09;
 			if (color_depth == COLORDEPTH_30B)
@@ -4729,8 +4729,8 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	hdmitx_wr_reg(HDMITX_DWC_MC_FLOWCTRL, data32);
 
 	data32  = 0;
-	data32 |= ((((input_color_format == COLORSPACE_YUV422) &&
-		(output_color_format != COLORSPACE_YUV422)) ? 2 : 0) << 4);
+	data32 |= ((((input_color_format == HDMI_COLORSPACE_YUV422) &&
+		(output_color_format != HDMI_COLORSPACE_YUV422)) ? 2 : 0) << 4);
 	hdmitx_wr_reg(HDMITX_DWC_CSC_CFG, data32);
 	hdmitx_csc_config(input_color_format, output_color_format, color_depth);
 	/* The time of the LG49UF6600 TV processing AVI infoframe is particular.
@@ -4744,7 +4744,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 
 	/* Video Packet color depth and pixel repetition */
 	data32  = 0;
-	data32 |= (((output_color_format == COLORSPACE_YUV422) ?
+	data32 |= (((output_color_format == HDMI_COLORSPACE_YUV422) ?
 		COLORDEPTH_24B : color_depth) << 4);
 	data32 |= (0 << 0);
 	/* HDMI1.4 CTS7-19, CD of GCP for Y422 should be 0 */
@@ -4765,7 +4765,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	data32 |= (((color_depth == COLORDEPTH_30B) ? 1 :
 		(color_depth == COLORDEPTH_36B) ? 2 : 0) << 0);
 	hdmitx_wr_reg(HDMITX_DWC_VP_REMAP, data32);
-	if (output_color_format == COLORSPACE_YUV422) {
+	if (output_color_format == HDMI_COLORSPACE_YUV422) {
 		switch (color_depth) {
 		case COLORDEPTH_36B:
 			tmp = 2;
@@ -4783,15 +4783,15 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 
 	/* Video Packet configuration */
 	data32  = 0;
-	data32 |= ((((output_color_format != COLORSPACE_YUV422) &&
+	data32 |= ((((output_color_format != HDMI_COLORSPACE_YUV422) &&
 		 (color_depth == COLORDEPTH_24B)) ? 1 : 0) << 6);
-	data32 |= ((((output_color_format == COLORSPACE_YUV422) ||
+	data32 |= ((((output_color_format == HDMI_COLORSPACE_YUV422) ||
 		 (color_depth == COLORDEPTH_24B)) ? 0 : 1) << 5);
 	data32 |= (0 << 4);
-	data32 |= (((output_color_format == COLORSPACE_YUV422) ? 1 : 0)
+	data32 |= (((output_color_format == HDMI_COLORSPACE_YUV422) ? 1 : 0)
 		<< 3);
 	data32 |= (1 << 2);
-	data32 |= (((output_color_format == COLORSPACE_YUV422) ? 1 :
+	data32 |= (((output_color_format == HDMI_COLORSPACE_YUV422) ? 1 :
 		(color_depth == COLORDEPTH_24B) ? 2 : 0) << 0);
 	hdmitx_wr_reg(HDMITX_DWC_VP_CONF, data32);
 
@@ -4913,7 +4913,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	data32  = t->v_sync & 0x3f;
 	hdmitx_wr_reg(HDMITX_DWC_FC_VSYNCINWIDTH,   data32);
 
-	if (hdev->para->cs == COLORSPACE_YUV420)
+	if (hdev->para->cs == HDMI_COLORSPACE_YUV420)
 		mode420_half_horizontal_para();
 
 	/* control period duration (typ 12 tmds periods) */
@@ -4944,16 +4944,16 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	data32 |= (0x2 << 0);    /* FIXED YCBCR 444 */
 	hdmitx_wr_reg(HDMITX_DWC_FC_AVICONF0, data32);
 	switch (output_color_format) {
-	case COLORSPACE_RGB444:
+	case HDMI_COLORSPACE_RGB:
 		tmp = 0;
 		break;
-	case COLORSPACE_YUV422:
+	case HDMI_COLORSPACE_YUV422:
 		tmp = 1;
 		break;
-	case COLORSPACE_YUV420:
+	case HDMI_COLORSPACE_YUV420:
 		tmp = 3;
 		break;
-	case COLORSPACE_YUV444:
+	case HDMI_COLORSPACE_YUV444:
 	default:
 		tmp = 2;
 		break;
@@ -5004,7 +5004,7 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 		hdev->hwop.cntlconfig(hdev, CONF_AVI_BT2020, SET_AVI_BT2020);
 
 	data32  = 0;
-	data32 |= (((0 == COLORRANGE_FUL) ? 1 : 0) << 2);
+	data32 |= (((0 == HDMI_QUANTIZATION_RANGE_FULL) ? 1 : 0) << 2);
 	data32 |= (0 << 0);
 	hdmitx_wr_reg(HDMITX_DWC_FC_AVICONF3,   data32);
 
@@ -5311,12 +5311,12 @@ static void hdmitx_csc_config(unsigned char input_color_format,
 	unsigned long csc_coeff_c1, csc_coeff_c2, csc_coeff_c3, csc_coeff_c4;
 	unsigned long data32;
 
-	conv_en = (((input_color_format  == COLORSPACE_RGB444) ||
-		(output_color_format == COLORSPACE_RGB444)) &&
+	conv_en = (((input_color_format  == HDMI_COLORSPACE_RGB) ||
+		(output_color_format == HDMI_COLORSPACE_RGB)) &&
 		(input_color_format  != output_color_format)) ? 1 : 0;
 
 	if (conv_en) {
-		if (output_color_format == COLORSPACE_RGB444) {
+		if (output_color_format == HDMI_COLORSPACE_RGB) {
 			csc_coeff_a1 = 0x2000;
 			csc_coeff_a2 = 0x6926;
 			csc_coeff_a3 = 0x74fd;
@@ -5340,7 +5340,7 @@ static void hdmitx_csc_config(unsigned char input_color_format,
 			(color_depth == COLORDEPTH_36B) ? 0x63a6 :
 			(color_depth == COLORDEPTH_48B) ? 0x63a6 : 0x7e3b;
 		csc_scale = 1;
-	} else { /* input_color_format == COLORSPACE_RGB444 */
+	} else { /* input_color_format == HDMI_COLORSPACE_RGB */
 		csc_coeff_a1 = 0x2591;
 		csc_coeff_a2 = 0x1322;
 		csc_coeff_a3 = 0x074b;
@@ -5412,16 +5412,16 @@ static void hdmitx_csc_config(unsigned char input_color_format,
 
 	/* set rgb_ycc indicator */
 	switch (output_color_format) {
-	case COLORSPACE_RGB444:
+	case HDMI_COLORSPACE_RGB:
 		rgb_ycc_indicator = 0x0;
 		break;
-	case COLORSPACE_YUV422:
+	case HDMI_COLORSPACE_YUV422:
 		rgb_ycc_indicator = 0x1;
 		break;
-	case COLORSPACE_YUV420:
+	case HDMI_COLORSPACE_YUV420:
 		rgb_ycc_indicator = 0x3;
 		break;
-	case COLORSPACE_YUV444:
+	case HDMI_COLORSPACE_YUV444:
 	default:
 		rgb_ycc_indicator = 0x2;
 		break;

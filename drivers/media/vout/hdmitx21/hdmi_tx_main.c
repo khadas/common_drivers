@@ -56,6 +56,7 @@
 #include <../../vin/tvin/tvin_global.h>
 #include <hdmitx_boot_parameters.h>
 #include <hdmitx_drm_hook.h>
+#include <hdmitx_sysfs_common.h>
 
 #define HDMI_TX_COUNT 32
 #define HDMI_TX_POOL_NUM  6
@@ -769,60 +770,14 @@ static ssize_t disp_mode_store(struct device *dev,
 	return count;
 }
 
-static ssize_t attr_show(struct device *dev,
-			 struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-
-	if (!memcmp(tx_comm->fmt_attr, "default,", 7)) {
-		memset(tx_comm->fmt_attr, 0,
-		       sizeof(tx_comm->fmt_attr));
-		hdmitx21_fmt_attr(hdev);
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "%s\n\r", tx_comm->fmt_attr);
-	return pos;
-}
-
-static ssize_t attr_store(struct device *dev,
-		   struct device_attribute *attr,
-		   const char *buf, size_t count)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-
-	strncpy(tx_comm->fmt_attr, buf, sizeof(tx_comm->fmt_attr));
-	tx_comm->fmt_attr[15] = '\0';
-	if (!memcmp(tx_comm->fmt_attr, "rgb", 3))
-		hdev->para->cs = HDMI_COLORSPACE_RGB;
-	else if (!memcmp(tx_comm->fmt_attr, "422", 3))
-		hdev->para->cs = HDMI_COLORSPACE_YUV422;
-	else if (!memcmp(tx_comm->fmt_attr, "420", 3))
-		hdev->para->cs = HDMI_COLORSPACE_YUV420;
-	else
-		hdev->para->cs = HDMI_COLORSPACE_YUV444;
-	return count;
-}
-
-/*aud_mode attr*/
-
 void setup21_attr(const char *buf)
 {
-	char attr[16] = {0};
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-
-	memcpy(attr, buf, sizeof(attr));
-	memcpy(tx_comm->fmt_attr, attr, sizeof(tx_comm->fmt_attr));
+	hdmitx_setup_attr(&get_hdmitx21_device()->tx_comm, buf);
 }
 
 void get21_attr(char attr[16])
 {
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-
-	memcpy(attr, tx_comm->fmt_attr, sizeof(tx_comm->fmt_attr));
+	hdmitx_get_attr(&get_hdmitx21_device()->tx_comm, attr);
 }
 
 /*edid attr*/
@@ -3983,17 +3938,6 @@ static ssize_t hdcp_ver_show(struct device *dev,
 	return pos;
 }
 
-static ssize_t hpd_state_show(struct device *dev,
-			      struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d",
-		hdev->tx_comm.hpd_state);
-	return pos;
-}
-
 static ssize_t rxsense_state_show(struct device *dev,
 			      struct device_attribute *attr, char *buf)
 {
@@ -4138,7 +4082,6 @@ static ssize_t hdmitx21_show(struct device *dev,
 }
 
 static DEVICE_ATTR_RW(disp_mode);
-static DEVICE_ATTR_RW(attr);
 static DEVICE_ATTR_RW(vid_mute);
 static DEVICE_ATTR_RW(edid);
 static DEVICE_ATTR_RO(rawedid);
@@ -4177,7 +4120,6 @@ static DEVICE_ATTR_RW(hdcp_type_policy);
 static DEVICE_ATTR_RW(hdcp_lstore);
 static DEVICE_ATTR_RO(hdmi_repeater_tx);
 static DEVICE_ATTR_RW(div40);
-static DEVICE_ATTR_RO(hpd_state);
 static DEVICE_ATTR_RO(hdmi_used);
 static DEVICE_ATTR_RO(rxsense_state);
 static DEVICE_ATTR_RW(fake_plug);
@@ -5485,7 +5427,6 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	}
 	hdev->hdtx_dev = dev;
 	ret = device_create_file(dev, &dev_attr_disp_mode);
-	ret = device_create_file(dev, &dev_attr_attr);
 	ret = device_create_file(dev, &dev_attr_vid_mute);
 	ret = device_create_file(dev, &dev_attr_edid);
 	ret = device_create_file(dev, &dev_attr_rawedid);
@@ -5518,7 +5459,6 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_hdmi_repeater_tx);
 	ret = device_create_file(dev, &dev_attr_hdcp_lstore);
 	ret = device_create_file(dev, &dev_attr_div40);
-	ret = device_create_file(dev, &dev_attr_hpd_state);
 	ret = device_create_file(dev, &dev_attr_hdmi_used);
 	ret = device_create_file(dev, &dev_attr_fake_plug);
 	ret = device_create_file(dev, &dev_attr_ready);
@@ -5623,9 +5563,11 @@ static int amhdmitx_probe(struct platform_device *pdev)
 
 	/*bind to drm.*/
 	hdmitx_hook_drm(&pdev->dev);
-
 	tee_comm_dev_reg(hdev);
 	pr_info("%s end\n", __func__);
+
+	/*everything is ready, create sysfs here.*/
+	hdmitx_sysfs_common_create(dev, &hdev->tx_comm);
 
 	return r;
 }
@@ -5634,6 +5576,9 @@ static int amhdmitx_remove(struct platform_device *pdev)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct device *dev = hdev->hdtx_dev;
+
+	/*remove sysfs before uninit/*/
+	hdmitx_sysfs_common_destroy(dev);
 
 	tee_comm_dev_unreg(hdev);
 	/*unbind from drm.*/
@@ -5661,7 +5606,6 @@ static int amhdmitx_remove(struct platform_device *pdev)
 
 	/* Remove the cdev */
 	device_remove_file(dev, &dev_attr_disp_mode);
-	device_remove_file(dev, &dev_attr_attr);
 	device_remove_file(dev, &dev_attr_vid_mute);
 	device_remove_file(dev, &dev_attr_edid);
 	device_remove_file(dev, &dev_attr_rawedid);
@@ -5685,7 +5629,6 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_contenttype_cap);
 	device_remove_file(dev, &dev_attr_contenttype_mode);
 	device_remove_file(dev, &dev_attr_ll_mode);
-	device_remove_file(dev, &dev_attr_hpd_state);
 	device_remove_file(dev, &dev_attr_hdmi_used);
 	device_remove_file(dev, &dev_attr_fake_plug);
 	device_remove_file(dev, &dev_attr_ready);

@@ -67,7 +67,7 @@ enum hdmi_scaling {
 
 struct hdmi_videoinfo {
 	enum hdmi_vic VIC;
-	enum hdmi_color_space color;
+	enum hdmi_colorspace color;
 	enum hdmi_color_depth color_depth;
 	enum hdmi_barinfo bar_info;
 	enum hdmi_pixel_repeat repeat_time;
@@ -190,8 +190,8 @@ struct hdmitx_supspeakerformat {
 
 struct hdmitx_vidpara {
 	unsigned int VIC;
-	enum hdmi_color_space color_prefer;
-	enum hdmi_color_space color;
+	enum hdmi_colorspace color_prefer;
+	enum hdmi_colorspace color;
 	enum hdmi_color_depth color_depth;
 	enum hdmi_barinfo bar_info;
 	enum hdmi_pixel_repeat repeat_time;

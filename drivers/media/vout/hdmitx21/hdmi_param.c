@@ -33,15 +33,15 @@ static struct parse_cs parse_cs_[] = {
 };
 
 static struct parse_cr parse_cr_[] = {
-	{COLORRANGE_LIM, "limit",},
-	{COLORRANGE_FUL, "full",},
+	{HDMI_QUANTIZATION_RANGE_LIMITED, "limit",},
+	{HDMI_QUANTIZATION_RANGE_FULL, "full",},
 };
 
 /* parse the name string to cs/cd/cr */
 static void _parse_hdmi_attr(char const *name,
 	enum hdmi_colorspace *cs,
 	enum hdmi_color_depth *cd,
-	enum hdmi_color_range *cr)
+	enum hdmi_quantization_range *cr)
 {
 	int i;
 
@@ -51,7 +51,7 @@ static void _parse_hdmi_attr(char const *name,
 		/* assign defalut value*/
 		*cs = HDMI_COLORSPACE_RGB;
 		*cd = COLORDEPTH_24B;
-		*cr = COLORRANGE_FUL;
+		*cr = HDMI_QUANTIZATION_RANGE_FULL;
 		return;
 	}
 
@@ -86,7 +86,7 @@ static void _parse_hdmi_attr(char const *name,
 	}
 	/* set default value */
 	if (i == sizeof(parse_cr_) / sizeof(struct parse_cr))
-		*cr = COLORRANGE_FUL;
+		*cr = HDMI_QUANTIZATION_RANGE_FULL;
 }
 
 static u32 _calc_tmds_clk(u32 pixel_freq, enum hdmi_colorspace cs,

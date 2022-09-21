@@ -60,6 +60,7 @@
 #include <drm/amlogic/meson_drm_bind.h>
 #include <hdmitx_boot_parameters.h>
 #include <hdmitx_drm_hook.h>
+#include <hdmitx_sysfs_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 #define DEVICE_NAME "amhdmitx"
@@ -766,54 +767,14 @@ static ssize_t disp_mode_store(struct device *dev,
 	return count;
 }
 
-static ssize_t attr_show(struct device *dev,
-			 struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	struct hdmitx_common *tx_comm = &hdmitx_device.tx_comm;
-
-	if (!memcmp(tx_comm->fmt_attr, "default,", 7)) {
-		memset(tx_comm->fmt_attr, 0,
-		       sizeof(tx_comm->fmt_attr));
-		hdmitx_fmt_attr(&hdmitx_device);
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "%s\n\r", tx_comm->fmt_attr);
-	return pos;
-}
-
-ssize_t attr_store(struct device *dev,
-		   struct device_attribute *attr,
-		   const char *buf, size_t count)
-{
-	struct hdmitx_common *tx_comm = &hdmitx_device.tx_comm;
-
-	strncpy(tx_comm->fmt_attr, buf, sizeof(tx_comm->fmt_attr));
-	tx_comm->fmt_attr[15] = '\0';
-	if (!memcmp(tx_comm->fmt_attr, "rgb", 3))
-		hdmitx_device.para->cs = COLORSPACE_RGB444;
-	else if (!memcmp(tx_comm->fmt_attr, "422", 3))
-		hdmitx_device.para->cs = COLORSPACE_YUV422;
-	else if (!memcmp(tx_comm->fmt_attr, "420", 3))
-		hdmitx_device.para->cs = COLORSPACE_YUV420;
-	else
-		hdmitx_device.para->cs = COLORSPACE_YUV444;
-	return count;
-}
-
 void setup20_attr(const char *buf)
 {
-	char attr[16] = {0};
-	struct hdmitx_common *tx_comm = &hdmitx_device.tx_comm;
-
-	memcpy(attr, buf, sizeof(attr));
-	memcpy(tx_comm->fmt_attr, attr, sizeof(tx_comm->fmt_attr));
+	hdmitx_setup_attr(&hdmitx_device.tx_comm, buf);
 }
 
 void get20_attr(char attr[16])
 {
-	struct hdmitx_common *tx_comm = &hdmitx_device.tx_comm;
-
-	memcpy(attr, tx_comm->fmt_attr, sizeof(tx_comm->fmt_attr));
+	hdmitx_get_attr(&hdmitx_device.tx_comm, attr);
 }
 
 /* for android application data exchange / swap */
@@ -2068,13 +2029,13 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 			if (tunnel_mode == RGB_8BIT) {
 				hdev->hwop.cntlconfig(hdev,
 					CONF_AVI_RGBYCC_INDIC,
-					COLORSPACE_RGB444);
+					HDMI_COLORSPACE_RGB);
 				hdev->hwop.cntlconfig(hdev, CONF_AVI_Q01,
 					RGB_RANGE_FUL);
 			} else {
 				hdev->hwop.cntlconfig(hdev,
 					CONF_AVI_RGBYCC_INDIC,
-					COLORSPACE_YUV422);
+					HDMI_COLORSPACE_YUV422);
 				hdev->hwop.cntlconfig(hdev, CONF_AVI_YQ01,
 					YCC_RANGE_FUL);
 			}
@@ -2174,13 +2135,13 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 			if (tunnel_mode == RGB_8BIT) {/*RGB444*/
 				hdev->hwop.cntlconfig(hdev,
 					CONF_AVI_RGBYCC_INDIC,
-					COLORSPACE_RGB444);
+					HDMI_COLORSPACE_RGB);
 				hdev->hwop.cntlconfig(hdev, CONF_AVI_Q01,
 					RGB_RANGE_FUL);
 			} else {/*YUV422*/
 				hdev->hwop.cntlconfig(hdev,
 					CONF_AVI_RGBYCC_INDIC,
-					COLORSPACE_YUV422);
+					HDMI_COLORSPACE_YUV422);
 				hdev->hwop.cntlconfig(hdev, CONF_AVI_YQ01,
 					YCC_RANGE_FUL);
 			}
@@ -2200,20 +2161,20 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 			if (tunnel_mode == RGB_10_12BIT) {/*10/12bit RGB444*/
 				hdev->hwop.cntlconfig(hdev,
 					CONF_AVI_RGBYCC_INDIC,
-					COLORSPACE_RGB444);
+					HDMI_COLORSPACE_RGB);
 				hdev->hwop.cntlconfig(hdev, CONF_AVI_Q01,
 					RGB_RANGE_LIM);
 			} else if (tunnel_mode == YUV444_10_12BIT) {
 				/*10/12bit YUV444*/
 				hdev->hwop.cntlconfig(hdev,
 					CONF_AVI_RGBYCC_INDIC,
-					COLORSPACE_YUV444);
+					HDMI_COLORSPACE_YUV444);
 				hdev->hwop.cntlconfig(hdev, CONF_AVI_YQ01,
 					YCC_RANGE_LIM);
 			} else {/*YUV422*/
 				hdev->hwop.cntlconfig(hdev,
 					CONF_AVI_RGBYCC_INDIC,
-					COLORSPACE_YUV422);
+					HDMI_COLORSPACE_YUV422);
 				hdev->hwop.cntlconfig(hdev, CONF_AVI_YQ01,
 					YCC_RANGE_LIM);
 			}
@@ -2641,16 +2602,16 @@ static ssize_t config_show(struct device *dev,
 		pos += snprintf(buf + pos, PAGE_SIZE, "colordepth: %s\n",
 				conf);
 		switch (hdev->para->cs) {
-		case COLORSPACE_RGB444:
+		case HDMI_COLORSPACE_RGB:
 			conf = "RGB";
 			break;
-		case COLORSPACE_YUV422:
+		case HDMI_COLORSPACE_YUV422:
 			conf = "422";
 			break;
-		case COLORSPACE_YUV444:
+		case HDMI_COLORSPACE_YUV444:
 			conf = "444";
 			break;
-		case COLORSPACE_YUV420:
+		case HDMI_COLORSPACE_YUV420:
 			conf = "420";
 			break;
 		default:
@@ -4842,16 +4803,6 @@ next:	/* Detect RX support HDCP14 */
 	return pos;
 }
 
-static ssize_t hpd_state_show(struct device *dev,
-			      struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d",
-		hdmitx_device.tx_comm.hpd_state);
-	return pos;
-}
-
 static ssize_t rxsense_state_show(struct device *dev,
 			      struct device_attribute *attr, char *buf)
 {
@@ -5324,9 +5275,11 @@ static ssize_t hdmi_config_info_show(struct device *dev,
 	vic = hdmitx_device.hwop.getstate(&hdmitx_device, STAT_VIDEO_VIC, 0);
 	pr_info("out:%s\n", hdmitx_edid_vic_tab_map_string(vic));
 
+/*
 	pos = attr_show(dev, attr, buf);
 	buf[pos] = '\0';
 	pr_info("attr\nin:%s\t", buf);
+*/
 
 	pos = create_hdmitx_out_attr(buf);
 	buf[pos] = '\0';
@@ -5426,11 +5379,12 @@ static ssize_t hdmirx_info_show(struct device *dev,
 
 	pr_info("************hdmirx_info************\n\n");
 
+/*
 	pos = hpd_state_show(dev, attr, buf);
 	buf[pos] = '\0';
 	pr_info("******hpd_edid_parsing******\n");
 	pr_info("hpd:%s\t", buf);
-
+*/
 	pos = edid_parsing_show(dev, attr, buf);
 	buf[pos] = '\0';
 	pr_info("edid_parsing:%s\n", buf);
@@ -5650,7 +5604,6 @@ static ssize_t hdmi_hsty_config_show(struct device *dev,
 }
 
 static DEVICE_ATTR_RW(disp_mode);
-static DEVICE_ATTR_RW(attr);
 static DEVICE_ATTR_RW(aud_mode);
 static DEVICE_ATTR_RW(vid_mute);
 static DEVICE_ATTR_RW(edid);
@@ -5704,7 +5657,6 @@ static DEVICE_ATTR_RW(hdcp_ctrl);
 static DEVICE_ATTR_RO(disp_cap_3d);
 static DEVICE_ATTR_RO(hdcp_ksv_info);
 static DEVICE_ATTR_RO(hdcp_ver);
-static DEVICE_ATTR_RO(hpd_state);
 static DEVICE_ATTR_RO(hdmi_used);
 static DEVICE_ATTR_RO(rhpd_state);
 static DEVICE_ATTR_RO(rxsense_state);
@@ -6457,9 +6409,9 @@ static bool is_cur_tmds_div40(struct hdmitx_dev *hdev)
 	}
 	pr_info("hdmitx: tmds clock %d\n", para2->tmds_clk / 1000);
 	act_clk = para2->tmds_clk / 1000;
-	if (para2->cs == COLORSPACE_YUV420)
+	if (para2->cs == HDMI_COLORSPACE_YUV420)
 		act_clk = act_clk / 2;
-	if (para2->cs != COLORSPACE_YUV422) {
+	if (para2->cs != HDMI_COLORSPACE_YUV422) {
 		switch (para2->cd) {
 		case COLORDEPTH_30B:
 			act_clk = act_clk * 5 / 4;
@@ -6566,21 +6518,21 @@ static void hdmitx_fmt_attr(struct hdmitx_dev *hdev)
 		return;
 	}
 	if (hdev->para->cd == COLORDEPTH_RESERVED &&
-	    hdev->para->cs == COLORSPACE_RESERVED) {
+	    hdev->para->cs == HDMI_COLORSPACE_RESERVED6) {
 		strcpy(tx_comm->fmt_attr, "default");
 	} else {
 		memset(tx_comm->fmt_attr, 0, sizeof(tx_comm->fmt_attr));
 		switch (hdev->para->cs) {
-		case COLORSPACE_RGB444:
+		case HDMI_COLORSPACE_RGB:
 			memcpy(tx_comm->fmt_attr, "rgb,", 5);
 			break;
-		case COLORSPACE_YUV422:
+		case HDMI_COLORSPACE_YUV422:
 			memcpy(tx_comm->fmt_attr, "422,", 5);
 			break;
-		case COLORSPACE_YUV444:
+		case HDMI_COLORSPACE_YUV444:
 			memcpy(tx_comm->fmt_attr, "444,", 5);
 			break;
-		case COLORSPACE_YUV420:
+		case HDMI_COLORSPACE_YUV420:
 			memcpy(tx_comm->fmt_attr, "420,", 5);
 			break;
 		default:
@@ -7055,7 +7007,6 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	}
 	hdev->hdtx_dev = dev;
 	ret = device_create_file(dev, &dev_attr_disp_mode);
-	ret = device_create_file(dev, &dev_attr_attr);
 	ret = device_create_file(dev, &dev_attr_aud_mode);
 	ret = device_create_file(dev, &dev_attr_vid_mute);
 	ret = device_create_file(dev, &dev_attr_edid);
@@ -7104,7 +7055,6 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_hdcp_rptxlstore);
 	ret = device_create_file(dev, &dev_attr_div40);
 	ret = device_create_file(dev, &dev_attr_hdcp_ctrl);
-	ret = device_create_file(dev, &dev_attr_hpd_state);
 	ret = device_create_file(dev, &dev_attr_hdmi_used);
 	ret = device_create_file(dev, &dev_attr_rhpd_state);
 	ret = device_create_file(dev, &dev_attr_max_exceed);
@@ -7222,12 +7172,18 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	pr_info(SYS "%s end\n", __func__);
 
 	hdmitx_hook_drm(&pdev->dev);
+	/*everything is ready, create sysfs here.*/
+	hdmitx_sysfs_common_create(dev, tx_comm);
+
 	return r;
 }
 
 static int amhdmitx_remove(struct platform_device *pdev)
 {
 	struct device *dev = hdmitx_device.hdtx_dev;
+
+	/*remove sysfs before uninit/*/
+	hdmitx_sysfs_common_destroy(dev);
 
 	/*unbind from drm.*/
 	hdmitx_unhook_drm(&pdev->dev);
@@ -7251,7 +7207,6 @@ static int amhdmitx_remove(struct platform_device *pdev)
 
 	/* Remove the cdev */
 	device_remove_file(dev, &dev_attr_disp_mode);
-	device_remove_file(dev, &dev_attr_attr);
 	device_remove_file(dev, &dev_attr_aud_mode);
 	device_remove_file(dev, &dev_attr_vid_mute);
 	device_remove_file(dev, &dev_attr_edid);
@@ -7275,7 +7230,6 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_allm_mode);
 	device_remove_file(dev, &dev_attr_contenttype_cap);
 	device_remove_file(dev, &dev_attr_contenttype_mode);
-	device_remove_file(dev, &dev_attr_hpd_state);
 	device_remove_file(dev, &dev_attr_hdmi_used);
 	device_remove_file(dev, &dev_attr_fake_plug);
 	device_remove_file(dev, &dev_attr_rhpd_state);

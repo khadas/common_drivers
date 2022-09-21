@@ -27,7 +27,7 @@ enum {
 };
 
 struct hdmitx_color_attr {
-	int colorformat;
+	enum hdmi_colorspace colorformat;
 	int bitdepth;
 };
 

@@ -911,11 +911,11 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev)
 	int j = 0;
 	struct hw_enc_clk_val_group *p_enc = NULL;
 	enum hdmi_vic vic = hdev->cur_VIC;
-	enum hdmi_color_space cs = hdev->para->cs;
+	enum hdmi_colorspace cs = hdev->para->cs;
 	enum hdmi_color_depth cd = hdev->para->cd;
 
 	/* YUV 422 always use 24B mode */
-	if (cs == COLORSPACE_YUV422)
+	if (cs == HDMI_COLORSPACE_YUV422)
 		cd = COLORDEPTH_24B;
 
 	if (hdev->flag_3dfp) {

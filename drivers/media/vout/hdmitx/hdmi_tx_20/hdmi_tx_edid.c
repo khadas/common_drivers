@@ -3090,14 +3090,14 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	case HDMI_4096x2160p60_256x135:
 	case HDMI_3840x2160p50_64x27:
 	case HDMI_3840x2160p60_64x27:
-		if (para->cs == COLORSPACE_RGB444 ||
-		    para->cs == COLORSPACE_YUV444)
+		if (para->cs == HDMI_COLORSPACE_RGB ||
+		    para->cs == HDMI_COLORSPACE_YUV444)
 			if (para->cd != COLORDEPTH_24B)
 				return 0;
 		break;
 	case HDMI_720x480i60_16x9:
 	case HDMI_720x576i50_16x9:
-		if (para->cs == COLORSPACE_YUV422)
+		if (para->cs == HDMI_COLORSPACE_YUV422)
 			return 0;
 	default:
 		break;
@@ -3119,7 +3119,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	if (para->vic >= HDMITX_VESA_OFFSET) {
 		if (para->cd != COLORDEPTH_24B)
 			return 0;
-		if (para->cs != COLORSPACE_RGB444)
+		if (para->cs != HDMI_COLORSPACE_RGB)
 			return 0;
 		for (i = 0; vesa_t[i] && i < VESA_MAX_TIMING; i++) {
 			struct hdmi_format_para *param = NULL;
@@ -3156,9 +3156,9 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	}
 
 	calc_tmds_clk = para->tmds_clk;
-	if (para->cs == COLORSPACE_YUV420)
+	if (para->cs == HDMI_COLORSPACE_YUV420)
 		calc_tmds_clk = calc_tmds_clk / 2;
-	if (para->cs != COLORSPACE_YUV422) {
+	if (para->cs != HDMI_COLORSPACE_YUV422) {
 		switch (para->cd) {
 		case COLORDEPTH_30B:
 			calc_tmds_clk = calc_tmds_clk * 5 / 4;
@@ -3184,7 +3184,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	else
 		return 0;
 
-	if (para->cs == COLORSPACE_YUV444) {
+	if (para->cs == HDMI_COLORSPACE_YUV444) {
 		/* Rx may not support Y444 */
 		if (!(prxcap->native_Mode & (1 << 5)))
 			return 0;
@@ -3200,13 +3200,13 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 			valid = 0;
 		return valid;
 	}
-	if (para->cs == COLORSPACE_YUV422) {
+	if (para->cs == HDMI_COLORSPACE_YUV422) {
 		/* Rx may not support Y422 */
 		if (!(prxcap->native_Mode & (1 << 4)))
 			return 0;
 		return 1;
 	}
-	if (para->cs == COLORSPACE_RGB444) {
+	if (para->cs == HDMI_COLORSPACE_RGB) {
 		/* Always assume RX supports RGB444 */
 		if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1)
 			rx_rgb_max_dc = COLORDEPTH_30B;
@@ -3218,7 +3218,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 			valid = 0;
 		return valid;
 	}
-	if (para->cs == COLORSPACE_YUV420) {
+	if (para->cs == HDMI_COLORSPACE_YUV420) {
 		if (!is_rx_support_y420(hdev))
 			return 0;
 		if (prxcap->dc_30bit_420)

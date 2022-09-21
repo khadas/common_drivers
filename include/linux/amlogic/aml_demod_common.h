@@ -200,6 +200,8 @@ struct aml_tuner {
 	unsigned int i2c_adapter_id;
 };
 
+typedef struct dvb_frontend *(*dm_attach_cb)(const struct demod_config *config);
+
 /** generic AML DVB attach function. */
 #if (defined CONFIG_AMLOGIC_DVB_EXTERN ||\
 		defined CONFIG_AMLOGIC_DVB_EXTERN_MODULE)
@@ -281,6 +283,7 @@ int aml_platform_driver_register(struct platform_driver *drv);
 void aml_platform_driver_unregister(struct platform_driver *drv);
 int aml_platform_device_register(struct platform_device *pdev);
 void aml_platform_device_unregister(struct platform_device *pdev);
+int demod_attach_register_cb(const enum dtv_demod_type type, dm_attach_cb funcb);
 #else
 static inline __maybe_unused const char *v4l2_std_to_str(v4l2_std_id std)
 {
@@ -384,6 +387,11 @@ static inline __maybe_unused void aml_platform_device_unregister(
 {
 }
 
+static inline __maybe_unused int demod_attach_register_cb(const enum dtv_demod_type type,
+		dm_attach_cb funcb)
+{
+	return -ENODEV;
+}
 #endif
 
 #endif /* __AML_DEMOD_COMMON_H__ */

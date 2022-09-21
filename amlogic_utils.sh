@@ -233,7 +233,7 @@ export -f extra_cmds
 function mod_probe() {
 	local ko=$1
 	local loop
-	for loop in `grep "$ko:" modules.dep | sed 's/.*://'`; do
+	for loop in `grep "^$ko:" modules.dep | sed 's/.*://'`; do
 		mod_probe $loop
 		echo insmod $loop >> __install.sh
 	done

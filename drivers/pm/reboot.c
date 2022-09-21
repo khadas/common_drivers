@@ -182,6 +182,30 @@ ssize_t reboot_reason_show(struct device *dev,
 
 static DEVICE_ATTR_RO(reboot_reason);
 
+static ssize_t reset_test_store(struct device *dev,
+			   struct device_attribute *attr,  const char *buf, size_t count)
+{
+	char s[64] = {0};
+	u32 reason, i = 0;
+
+	if (count > 64) {
+		pr_err("%s: Error: string length %u is over maximum limits 64\n",
+		       __func__, (u32)count);
+		return count;
+	}
+
+	while (*buf != '\n')
+		s[i++] = *buf++;
+	reason = parse_reason(s);
+
+	pr_info("[%s %d]%s reset, reboot reason:%u\n", __func__, __LINE__, s, reason);
+	do_aml_restart(NULL, 0, (void *)s);
+
+	return count;
+}
+
+static DEVICE_ATTR_WO(reset_test);
+
 static void disable_non_bootcpu_shutdown(void)
 {
 	int error = 0, cpu, primary = 0;
@@ -233,6 +257,10 @@ static int aml_restart_probe(struct platform_device *pdev)
 	if (!of_property_read_u32(pdev->dev.of_node, "sys_reset", &id)) {
 		psci_function_id_restart = id;
 		register_restart_handler(&aml_restart_nb);
+		ret = device_create_file(&pdev->dev, &dev_attr_reset_test);
+		if (ret != 0)
+			pr_err("%s, device create file failed, ret = %d!\n",
+			       __func__, ret);
 	}
 
 	if (!of_property_read_u32(pdev->dev.of_node, "sys_poweroff", &id)) {

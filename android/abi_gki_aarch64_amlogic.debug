@@ -36,6 +36,3 @@
 
 # CFG80211: cfg80211.ko
   rfkill_set_sw_state
-
-# usb related
-  crg_otg_write_UDC

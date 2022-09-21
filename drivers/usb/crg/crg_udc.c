@@ -31,6 +31,8 @@
 #include <linux/clk.h>
 #include "crg_udc.h"
 #include <linux/amlogic/usb-v2.h>
+#include <linux/usb/composite.h>
+#include <linux/configfs.h>
 
 #define MAX_PACKET_SIZE 1024
 int g_dnl_board_usb_cable_connected(void);
@@ -361,6 +363,34 @@ struct crg_gadget_dev {
 	int portsc_on_reconnecting;
 	int controller_type;
 	u32 phy_id;
+};
+
+struct gadget_info {
+	struct config_group group;
+	struct config_group functions_group;
+	struct config_group configs_group;
+	struct config_group strings_group;
+	struct config_group os_desc_group;
+	/*copy from configfs.c*/
+	struct mutex lock;
+	struct usb_gadget_strings *gstrings[2 + 1];
+	struct list_head string_list;
+	struct list_head available_func;
+
+	struct usb_composite_driver composite;
+	struct usb_composite_dev cdev;
+	bool use_os_desc;
+	char b_vendor_code;
+	char qw_sign[OS_STRING_QW_SIGN_LEN];
+	/*copy from configfs.c*/
+	spinlock_t spinlock;
+	bool unbind;
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	bool connected;
+	bool sw_connected;
+	struct work_struct work;
+	struct device *dev;
+#endif
 };
 
 /*An array should be implemented if we want to support multi
@@ -4631,6 +4661,64 @@ int usb_gadget_handle_interrupts(int index)
 
 	return ret;
 }
+
+int crg_otg_write_UDC(const char *udc_name)
+{
+	struct crg_gadget_dev *crg_udc;
+	struct gadget_info *gi;
+	struct usb_composite_dev *cdev;
+	char *name;
+	int ret = -1;
+	size_t len;
+
+	crg_udc = &crg_udc_dev;
+	cdev = get_gadget_data(&crg_udc->gadget);
+	if (!cdev)
+		return -ENODEV;
+
+	gi = container_of(cdev, struct gadget_info, cdev);
+	if (!gi)
+		return -ENOMEM;
+	len = strlen(udc_name);
+
+	name = kstrdup(udc_name, GFP_KERNEL);
+	if (!name)
+		return -ENOMEM;
+	if (name[len - 1] == '\n')
+		name[len - 1] = '\0';
+
+	mutex_lock(&gi->lock);
+
+	if (!strlen(name) || strcmp(name, "none") == 0) {
+		if (!gi->composite.gadget_driver.udc_name)
+			goto err;
+
+		ret = usb_gadget_unregister_driver(&gi->composite.gadget_driver);
+		if (ret)
+			goto err;
+		kfree(gi->composite.gadget_driver.udc_name);
+		gi->composite.gadget_driver.udc_name = NULL;
+		kfree(name);
+	} else {
+		if (gi->composite.gadget_driver.udc_name) {
+			ret = -EBUSY;
+			goto err;
+		}
+		gi->composite.gadget_driver.udc_name = name;
+		ret = usb_gadget_probe_driver(&gi->composite.gadget_driver);
+		if (ret) {
+			gi->composite.gadget_driver.udc_name = NULL;
+			goto err;
+		}
+	}
+	mutex_unlock(&gi->lock);
+	return 0;
+err:
+	kfree(name);
+	mutex_unlock(&gi->lock);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(crg_otg_write_UDC);
 
 #ifdef CONFIG_PM
 static int crg_udc_suspend(struct device *dev)

@@ -9,7 +9,7 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 int hdmitx_sysfs_common_create(struct device *dev,
-			struct hdmitx_common *tx_comm);
+		struct hdmitx_common *tx_comm);
 
 int hdmitx_sysfs_common_destroy(struct device *dev);
 

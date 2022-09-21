@@ -20,11 +20,6 @@
 
 #define HDMITX_VIC_MASK			0xff
 
-/* Refer to http://standards-oui.ieee.org/oui/oui.txt */
-#define DOVI_IEEEOUI		0x00D046
-#define HDR10PLUS_IEEEOUI	0x90848B
-#define CUVA_IEEEOUI		0x047503
-
 #define GET_OUI_BYTE0(oui)	((oui) & 0xff) /* Little Endian */
 #define GET_OUI_BYTE1(oui)	(((oui) >> 8) & 0xff)
 #define GET_OUI_BYTE2(oui)	(((oui) >> 16) & 0xff)

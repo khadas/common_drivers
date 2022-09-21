@@ -79,4 +79,13 @@ int hdmitx_setup_attr(struct hdmitx_common *tx_comm, const char *buf);
 int hdmitx_get_attr(struct hdmitx_common *tx_comm, char attr[16]);
 
 int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo);
+
+/*edid related function.*/
+int hdmitx_update_edid_chksum(u8 *buf, u32 block_cnt, struct rx_cap *rxcap);
+
+/*debug functions*/
+int hdmitx_load_edid_file(char *path);
+int hdmitx_save_edid_file(unsigned char *rawedid, char *path);
+int hdmitx_print_sink_cap(struct hdmitx_common *tx_comm, char *buffer, int buffer_len);
+
 #endif

@@ -6,6 +6,16 @@
 #ifndef __HDMITX_EDID_H_
 #define __HDMITX_EDID_H_
 
+#include <linux/types.h>
+#include <linux/amlogic/media/vout/vinfo.h>
+
+/* Refer to http://standards-oui.ieee.org/oui/oui.txt */
+#define HDMI_IEEEOUI		0x000C03
+#define HF_IEEEOUI		0xC45DD8
+#define DOVI_IEEEOUI		0x00D046
+#define HDR10PLUS_IEEEOUI	0x90848B
+#define CUVA_IEEEOUI		0x047503
+
 #define EDID_MAX_BLOCK		8
 #define VESA_MAX_TIMING		64
 #define AUD_MAX_NUM			60
@@ -167,5 +177,9 @@ struct rx_cap {
 	u8 blk0_chksum;
 	u8 chksum[10];
 };
+
+/*edid is good return 0, otherwise return < 0.*/
+int hdmitx_edid_validate(unsigned char *rawedid);
+bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);
 
 #endif

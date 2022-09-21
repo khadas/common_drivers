@@ -22,13 +22,6 @@
 
 #define HDMITX_VIC_MASK			0xff
 
-/* Refer to http://standards-oui.ieee.org/oui/oui.txt */
-#define HDMI_IEEEOUI		0x000C03
-#define HF_IEEEOUI		0xC45DD8
-#define DOVI_IEEEOUI		0x00D046
-#define HDR10PLUS_IEEEOUI	0x90848B
-#define CUVA_IEEEOUI		0x047503
-
 enum hdmi_tf_type {
 	HDMI_NONE = 0,
 	/* HDMI_HDR_TYPE, HDMI_DV_TYPE, and HDMI_HDR10P_TYPE

@@ -780,266 +780,6 @@ void get21_attr(char attr[16])
 	hdmitx_get_attr(&get_hdmitx21_device()->tx_comm, attr);
 }
 
-/*edid attr*/
-static ssize_t edid_show(struct device *dev,
-			 struct device_attribute *attr,
-			 char *buf)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	return hdmitx21_edid_dump(hdev, buf, PAGE_SIZE);
-}
-
-static int dump_edid_data(u32 type, char *path)
-{
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct file *filp = NULL;
-	loff_t pos = 0;
-	char line[128] = {0};
-	u32 i = 0, j = 0, k = 0, size = 0, block_cnt = 0;
-	u32 index = 0, tmp = 0;
-
-	filp = filp_open(path, O_RDWR | O_CREAT, 0666);
-	if (IS_ERR(filp)) {
-		pr_info("[%s] failed to open/create file: |%s|\n",
-			__func__, path);
-		goto PROCESS_END;
-	}
-
-	block_cnt = hdev->tx_comm.EDID_buf[0x7e] + 1;
-	if (hdev->tx_comm.EDID_buf[0x7e] != 0 &&
-		hdev->tx_comm.EDID_buf[128 + 4] == 0xe2 &&
-		hdev->tx_comm.EDID_buf[128 + 5] == 0x78)
-		block_cnt = hdev->tx_comm.EDID_buf[128 + 6] + 1;
-	if (type == 2) {
-		/* dump as txt file*/
-		for (i = 0; i < block_cnt; i++) {
-			for (j = 0; j < 8; j++) {
-				for (k = 0; k < 16; k++) {
-					index = i * 128 + j * 16 + k;
-					tmp = hdev->tx_comm.EDID_buf[index];
-					snprintf((char *)&line[k * 6], 7,
-						 "0x%02x, ",
-						 tmp);
-				}
-				line[16 * 6 - 1] = '\n';
-				line[16 * 6] = 0x0;
-				pos = (i * 8 + j) * 16 * 6;
-			}
-		}
-	}
-
-	pr_info("[%s] write %d bytes to file %s\n", __func__, size, path);
-
-	vfs_fsync(filp, 0);
-	filp_close(filp, NULL);
-
-PROCESS_END:
-#endif
-	return 0;
-}
-
-static int load_edid_data(u32 type, char *path)
-{
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
-	struct file *filp = NULL;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	struct kstat stat;
-	u32 length = 0, max_len = EDID_MAX_BLOCK * 128;
-	char *buf = NULL;
-
-
-	filp = filp_open(path, O_RDONLY, 0444);
-	if (IS_ERR(filp)) {
-		pr_info("[%s] failed to open file: |%s|\n", __func__, path);
-		goto PROCESS_END;
-	}
-
-	WARN_ON(vfs_stat(path, &stat));
-
-	length = (stat.size > max_len) ? max_len : stat.size;
-
-	buf = kmalloc(length, GFP_KERNEL);
-	if (!buf)
-		goto PROCESS_END;
-
-	memcpy(hdev->tx_comm.EDID_buf, buf, length);
-
-	kfree(buf);
-	filp_close(filp, NULL);
-
-	pr_info("[%s] %d bytes loaded from file %s\n", __func__, length, path);
-
-	hdmitx21_edid_clear(hdev);
-	hdmitx21_edid_parse(hdev);
-	pr_info("[%s] new edid loaded!\n", __func__);
-
-PROCESS_END:
-#endif
-	return 0;
-}
-
-static ssize_t edid_store(struct device *dev,
-			  struct device_attribute *attr,
-			  const char *buf, size_t count)
-{
-	u32 argn = 0;
-	char *p = NULL, *para = NULL, *argv[8] = {NULL};
-	u32 path_length = 0;
-	u32 index = 0, tmp = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	p = kstrdup(buf, GFP_KERNEL);
-	if (!p)
-		return count;
-
-	do {
-		para = strsep(&p, " ");
-		if (para) {
-			argv[argn] = para;
-			argn++;
-			if (argn > 7)
-				break;
-		}
-	} while (para);
-
-	if (buf[0] == 'h') {
-		int i;
-
-		pr_info("EDID hash value:\n");
-		for (i = 0; i < 20; i++)
-			pr_info("%02x", hdev->tx_comm.EDID_hash[i]);
-		pr_info("\n");
-	}
-	if (buf[0] == 'd') {
-		int ii, jj;
-		unsigned long block_idx;
-		int ret;
-
-		ret = kstrtoul(buf + 1, 16, &block_idx);
-		if (block_idx < EDID_MAX_BLOCK) {
-			for (ii = 0; ii < 8; ii++) {
-				for (jj = 0; jj < 16; jj++) {
-					index = block_idx * 128 + ii * 16 + jj;
-					tmp = hdev->tx_comm.EDID_buf1[index];
-					pr_info("%02x ", tmp);
-				}
-				pr_info("\n");
-			}
-		pr_info("\n");
-	}
-	}
-	if (buf[0] == 'e') {
-		int ii, jj;
-		unsigned long block_idx;
-		int ret;
-
-		ret = kstrtoul(buf + 1, 16, &block_idx);
-		if (block_idx < EDID_MAX_BLOCK) {
-			for (ii = 0; ii < 8; ii++) {
-				for (jj = 0; jj < 16; jj++) {
-					index = block_idx * 128 + ii * 16 + jj;
-					tmp = hdev->tx_comm.EDID_buf1[index];
-					pr_info("%02x ", tmp);
-				}
-				pr_info("\n");
-			}
-			pr_info("\n");
-		}
-	}
-
-	if (!strncmp(argv[0], "save", strlen("save"))) {
-		u32 type = 0;
-
-		if (argn != 3) {
-			pr_info("[%s] cmd format: save bin/txt edid_file_path\n",
-				__func__);
-			goto PROCESS_END;
-		}
-		if (!strncmp(argv[1], "bin", strlen("bin")))
-			type = 1;
-		else if (!strncmp(argv[1], "txt", strlen("txt")))
-			type = 2;
-
-		if (type == 1 || type == 2) {
-			/* clean '\n' from file path*/
-			path_length = strlen(argv[2]);
-			if (argv[2][path_length - 1] == '\n')
-				argv[2][path_length - 1] = 0x0;
-
-			dump_edid_data(type, argv[2]);
-		}
-	} else if (!strncmp(argv[0], "load", strlen("load"))) {
-		if (argn != 2) {
-			pr_info("[%s] cmd format: load edid_file_path\n",
-				__func__);
-			goto PROCESS_END;
-		}
-
-		/* clean '\n' from file path*/
-		path_length = strlen(argv[1]);
-		if (argv[1][path_length - 1] == '\n')
-			argv[1][path_length - 1] = 0x0;
-		load_edid_data(0, argv[1]);
-	}
-
-PROCESS_END:
-	kfree(p);
-	return 16;
-}
-
-/* rawedid attr */
-static ssize_t rawedid_show(struct device *dev,
-			    struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	int i;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	int num;
-	int block_no = 0;
-
-	/* prevent null prt */
-	if (!hdev->tx_comm.edid_ptr)
-		hdev->tx_comm.edid_ptr = hdev->tx_comm.EDID_buf;
-	block_no = hdev->tx_comm.edid_ptr[126];
-	if (block_no == 1)
-		if (hdev->tx_comm.edid_ptr[128 + 4] == 0xe2 &&
-			hdev->tx_comm.edid_ptr[128 + 5] == 0x78)
-			block_no = hdev->tx_comm.edid_ptr[128 + 6];
-	if (block_no < 8)
-		num = (block_no + 1) * 0x80;
-	else
-		num = 8 * 128;
-
-	for (i = 0; i < num; i++)
-		pos += snprintf(buf + pos, PAGE_SIZE, "%02x",
-				hdev->tx_comm.edid_ptr[i]);
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "\n");
-
-	return pos;
-}
-
-/*
- * edid_parsing attr
- * If RX edid data are all correct, HEAD(00ffffffffffff00), checksum,
- * version, etc), then return "ok". Otherwise, "ng"
- * Actually, in some old televisions, EDID is stored in EEPROM.
- * some bits in EEPROM may reverse with time.
- * But it does not affect  edid_parsing.
- * Therefore, we consider the RX edid data are all correct, return "OK"
- */
-static ssize_t edid_parsing_show(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "ok\n");
-	return pos;
-}
-
 /*
  * sink_type attr
  * sink, or repeater
@@ -2899,25 +2639,6 @@ static ssize_t allm_mode_store(struct device *dev,
 	return count;
 }
 
-static ssize_t contenttype_cap_show(struct device *dev,
-				    struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
-
-	if (prxcap->cnc0)
-		pos += snprintf(buf + pos, PAGE_SIZE, "graphics\n\r");
-	if (prxcap->cnc1)
-		pos += snprintf(buf + pos, PAGE_SIZE, "photo\n\r");
-	if (prxcap->cnc2)
-		pos += snprintf(buf + pos, PAGE_SIZE, "cinema\n\r");
-	if (prxcap->cnc3)
-		pos += snprintf(buf + pos, PAGE_SIZE, "game\n\r");
-
-	return pos;
-}
-
 static ssize_t contenttype_mode_show(struct device *dev,
 				     struct device_attribute *attr, char *buf)
 {
@@ -3125,249 +2846,11 @@ void hdmitx_update_latency_info(struct tvin_latency_s *latency_info)
 }
 EXPORT_SYMBOL(hdmitx_update_latency_info);
 
-/**/
-static ssize_t _hdr_cap_show(struct device *dev,
-			     struct device_attribute *attr,
-			     char *buf,
-			     const struct hdr_info *hdr)
-{
-	int pos = 0;
-	unsigned int i, j;
-	int hdr10plugsupported = 0;
-	const struct cuva_info *cuva = &hdr->cuva_info;
-	const struct hdr10_plus_info *hdr10p = &hdr->hdr10plus_info;
-
-	if (hdr10p->ieeeoui == HDR10_PLUS_IEEE_OUI &&
-		hdr10p->application_version != 0xFF)
-		hdr10plugsupported = 1;
-	pos += snprintf(buf + pos, PAGE_SIZE, "HDR10Plus Supported: %d\n",
-		hdr10plugsupported);
-	pos += snprintf(buf + pos, PAGE_SIZE, "HDR Static Metadata:\n");
-	pos += snprintf(buf + pos, PAGE_SIZE, "    Supported EOTF:\n");
-	pos += snprintf(buf + pos, PAGE_SIZE, "        Traditional SDR: %d\n",
-		!!(hdr->hdr_support & 0x1));
-	pos += snprintf(buf + pos, PAGE_SIZE, "        Traditional HDR: %d\n",
-		!!(hdr->hdr_support & 0x2));
-	pos += snprintf(buf + pos, PAGE_SIZE, "        SMPTE ST 2084: %d\n",
-		!!(hdr->hdr_support & 0x4));
-	pos += snprintf(buf + pos, PAGE_SIZE, "        Hybrid Log-Gamma: %d\n",
-		!!(hdr->hdr_support & 0x8));
-	pos += snprintf(buf + pos, PAGE_SIZE, "    Supported SMD type1: %d\n",
-		hdr->static_metadata_type1);
-	pos += snprintf(buf + pos, PAGE_SIZE, "    Luminance Data\n");
-	pos += snprintf(buf + pos, PAGE_SIZE, "        Max: %d\n",
-		hdr->lumi_max);
-	pos += snprintf(buf + pos, PAGE_SIZE, "        Avg: %d\n",
-		hdr->lumi_avg);
-	pos += snprintf(buf + pos, PAGE_SIZE, "        Min: %d\n\n",
-		hdr->lumi_min);
-	pos += snprintf(buf + pos, PAGE_SIZE, "HDR Dynamic Metadata:");
-
-	for (i = 0; i < 4; i++) {
-		if (hdr->dynamic_info[i].type == 0)
-			continue;
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"\n    metadata_version: %x\n",
-			hdr->dynamic_info[i].type);
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"        support_flags: %x\n",
-			hdr->dynamic_info[i].support_flags);
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"        optional_fields:");
-		for (j = 0; j <
-			(hdr->dynamic_info[i].of_len - 3); j++)
-			pos += snprintf(buf + pos, PAGE_SIZE, " %x",
-				hdr->dynamic_info[i].optional_fields[j]);
-	}
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "\n\ncolorimetry_data: %x\n",
-		hdr->colorimetry_support);
-	if (cuva->ieeeoui == CUVA_IEEEOUI) {
-		pos += snprintf(buf + pos, PAGE_SIZE, "CUVA supported: 1\n");
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"  system_start_code: %u\n", cuva->system_start_code);
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"  version_code: %u\n", cuva->version_code);
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"  display_maximum_luminance: %u\n",
-			cuva->display_max_lum);
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"  display_minimum_luminance: %u\n",
-			cuva->display_min_lum);
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"  monitor_mode_support: %u\n", cuva->monitor_mode_sup);
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"  rx_mode_support: %u\n", cuva->rx_mode_sup);
-		for (i = 0; i < (cuva->length + 1); i++)
-			pos += snprintf(buf + pos, PAGE_SIZE, "%02x",
-				cuva->rawdata[i]);
-		pos += snprintf(buf + pos, PAGE_SIZE, "\n");
-	}
-	return pos;
-}
-
-static ssize_t hdr_cap_show(struct device *dev,
-			    struct device_attribute *attr, char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-	const struct hdr_info *info = &hdev->tx_comm.rxcap.hdr_info;
-
-	if (tx_comm->hdr_priority == 2) {
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"mask rx hdr capability\n");
-		return pos;
-	}
-
-	return _hdr_cap_show(dev, attr, buf, info);
-}
-
-static ssize_t hdr_cap2_show(struct device *dev,
-			    struct device_attribute *attr,
-			    char *buf)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	const struct hdr_info *info2 = &hdev->tx_comm.rxcap.hdr_info2;
-
-	return _hdr_cap_show(dev, attr, buf, info2);
-}
-
 static ssize_t vrr_cap_show(struct device *dev,
 			    struct device_attribute *attr,
 			    char *buf)
 {
 	return _vrr_cap_show(dev, attr, buf);
-}
-
-static ssize_t _show_dv_cap(struct device *dev,
-			    struct device_attribute *attr,
-			    char *buf,
-			    const struct dv_info *dv)
-{
-	int pos = 0;
-	int i;
-
-	if (dv->ieeeoui != DV_IEEE_OUI || dv->block_flag != CORRECT) {
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"The Rx don't support DolbyVision\n");
-		return pos;
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE,
-		"DolbyVision RX support list:\n");
-
-	if (dv->ver == 0) {
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"VSVDB Version: V%d\n", dv->ver);
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"2160p%shz: 1\n",
-			dv->sup_2160p60hz ? "60" : "30");
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"Support mode:\n");
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"  DV_RGB_444_8BIT\n");
-		if (dv->sup_yuv422_12bit)
-			pos += snprintf(buf + pos, PAGE_SIZE,
-				"  DV_YCbCr_422_12BIT\n");
-	}
-	if (dv->ver == 1) {
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"VSVDB Version: V%d(%d-byte)\n",
-			dv->ver, dv->length + 1);
-		if (dv->length == 0xB) {
-			pos += snprintf(buf + pos, PAGE_SIZE,
-				"2160p%shz: 1\n",
-				dv->sup_2160p60hz ? "60" : "30");
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"Support mode:\n");
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"  DV_RGB_444_8BIT\n");
-		if (dv->sup_yuv422_12bit)
-			pos += snprintf(buf + pos, PAGE_SIZE,
-			"  DV_YCbCr_422_12BIT\n");
-		if (dv->low_latency == 0x01)
-			pos += snprintf(buf + pos, PAGE_SIZE,
-				"  LL_YCbCr_422_12BIT\n");
-		}
-
-		if (dv->length == 0xE) {
-			pos += snprintf(buf + pos, PAGE_SIZE,
-				"2160p%shz: 1\n",
-				dv->sup_2160p60hz ? "60" : "30");
-			pos += snprintf(buf + pos, PAGE_SIZE,
-				"Support mode:\n");
-			pos += snprintf(buf + pos, PAGE_SIZE,
-				"  DV_RGB_444_8BIT\n");
-			if (dv->sup_yuv422_12bit)
-				pos += snprintf(buf + pos, PAGE_SIZE,
-				"  DV_YCbCr_422_12BIT\n");
-		}
-	}
-	if (dv->ver == 2) {
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"VSVDB Version: V%d\n", dv->ver);
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"2160p%shz: 1\n",
-			dv->sup_2160p60hz ? "60" : "30");
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"Support mode:\n");
-		if (dv->Interface != 0x00 && dv->Interface != 0x01) {
-			pos += snprintf(buf + pos, PAGE_SIZE,
-				"  DV_RGB_444_8BIT\n");
-			if (dv->sup_yuv422_12bit)
-				pos += snprintf(buf + pos, PAGE_SIZE,
-					"  DV_YCbCr_422_12BIT\n");
-		}
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"  LL_YCbCr_422_12BIT\n");
-		if (dv->Interface == 0x01 || dv->Interface == 0x03) {
-			if (dv->sup_10b_12b_444 == 0x1) {
-				pos += snprintf(buf + pos, PAGE_SIZE,
-					"  LL_RGB_444_10BIT\n");
-			}
-			if (dv->sup_10b_12b_444 == 0x2) {
-				pos += snprintf(buf + pos, PAGE_SIZE,
-					"  LL_RGB_444_12BIT\n");
-			}
-		}
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE,
-		"IEEEOUI: 0x%06x\n", dv->ieeeoui);
-	pos += snprintf(buf + pos, PAGE_SIZE,
-		"EMP: %d\n", dv->dv_emp_cap);
-	pos += snprintf(buf + pos, PAGE_SIZE, "VSVDB: ");
-	for (i = 0; i < (dv->length + 1); i++)
-		pos += snprintf(buf + pos, PAGE_SIZE, "%02x",
-		dv->rawdata[i]);
-	pos += snprintf(buf + pos, PAGE_SIZE, "\n");
-	return pos;
-}
-
-static ssize_t dv_cap_show(struct device *dev,
-			   struct device_attribute *attr,
-			   char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-	const struct dv_info *dv = &hdev->tx_comm.rxcap.dv_info;
-
-	if (dv->ieeeoui != DV_IEEE_OUI || tx_comm->hdr_priority) {
-		pos += snprintf(buf + pos, PAGE_SIZE,
-			"The Rx don't support DolbyVision\n");
-		return pos;
-	}
-	return _show_dv_cap(dev, attr, buf, dv);
-}
-
-static ssize_t dv_cap2_show(struct device *dev,
-			    struct device_attribute *attr,
-			    char *buf)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	const struct dv_info *dv2 = &hdev->tx_comm.rxcap.dv_info2;
-
-	return _show_dv_cap(dev, attr, buf, dv2);
 }
 
 /*
@@ -3615,41 +3098,6 @@ static ssize_t sspll_show(struct device *dev,
 
 	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
 		hdev->sspll);
-
-	return pos;
-}
-
-static ssize_t frac_rate_policy_store(struct device *dev,
-				      struct device_attribute *attr,
-				      const char *buf,
-				      size_t count)
-{
-	int val = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-
-	if (isdigit(buf[0])) {
-		val = buf[0] - '0';
-		pr_info("set frac_rate_policy as %d\n", val);
-		if (val == 0 || val == 1)
-			tx_comm->frac_rate_policy = val;
-		else
-			pr_info("only accept as 0 or 1\n");
-	}
-
-	return count;
-}
-
-static ssize_t frac_rate_policy_show(struct device *dev,
-				     struct device_attribute *attr,
-				     char *buf)
-{
-	int pos = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
-		tx_comm->frac_rate_policy);
 
 	return pos;
 }
@@ -4084,10 +3532,7 @@ static ssize_t hdmitx21_show(struct device *dev,
 
 static DEVICE_ATTR_RW(disp_mode);
 static DEVICE_ATTR_RW(vid_mute);
-static DEVICE_ATTR_RW(edid);
-static DEVICE_ATTR_RO(rawedid);
 static DEVICE_ATTR_RO(sink_type);
-static DEVICE_ATTR_RO(edid_parsing);
 static DEVICE_ATTR_RW(config);
 static DEVICE_ATTR_WO(debug);
 static DEVICE_ATTR_RO(disp_cap);
@@ -4097,21 +3542,15 @@ static DEVICE_ATTR_RO(cea_cap);
 static DEVICE_ATTR_RO(vesa_cap);
 static DEVICE_ATTR_RO(aud_cap);
 static DEVICE_ATTR_RO(hdmi_hdr_status);
-static DEVICE_ATTR_RO(hdr_cap);
-static DEVICE_ATTR_RO(hdr_cap2);
-static DEVICE_ATTR_RO(dv_cap);
-static DEVICE_ATTR_RO(dv_cap2);
 static DEVICE_ATTR_RO(dc_cap);
 static DEVICE_ATTR_RW(valid_mode);
 static DEVICE_ATTR_RO(allm_cap);
 static DEVICE_ATTR_RW(allm_mode);
-static DEVICE_ATTR_RO(contenttype_cap);
 static DEVICE_ATTR_RW(contenttype_mode);
 static DEVICE_ATTR_RW(ll_mode);
 static DEVICE_ATTR_RW(avmute);
 static DEVICE_ATTR_RW(phy);
 static DEVICE_ATTR_RW(sspll);
-static DEVICE_ATTR_RW(frac_rate_policy);
 static DEVICE_ATTR_RW(rxsense_policy);
 static DEVICE_ATTR_RW(cedst_policy);
 static DEVICE_ATTR_RO(cedst_count);
@@ -4594,22 +4033,7 @@ static int hdmitx_notify_callback_a(struct notifier_block *block,
 
 	return 0;
 }
-
 #endif
-u32 hdmitx21_check_edid_all_zeros(u8 *buf)
-{
-	u32 i = 0, j = 0;
-	u32 chksum = 0;
-
-	for (j = 0; j < EDID_MAX_BLOCK; j++) {
-		chksum = 0;
-		for (i = 0; i < 128; i++)
-			chksum += buf[i + j * 128];
-		if (chksum != 0)
-			return 0;
-	}
-	return 1;
-}
 
 static void hdmitx_get_edid(struct hdmitx_dev *hdev)
 {
@@ -4622,7 +4046,7 @@ static void hdmitx_get_edid(struct hdmitx_dev *hdev)
 	/* start reading edid frist time */
 	hdev->hwop.cntlddc(hdev, DDC_EDID_READ_DATA, 0);
 	hdev->hwop.cntlddc(hdev, DDC_EDID_GET_DATA, 0);
-	if (hdmitx21_check_edid_all_zeros(hdev->tx_comm.EDID_buf)) {
+	if (hdmitx_edid_is_all_zeros(hdev->tx_comm.EDID_buf)) {
 		hdev->hwop.cntlddc(hdev, DDC_GLITCH_FILTER_RESET, 0);
 		hdev->hwop.cntlddc(hdev, DDC_EDID_READ_DATA, 0);
 		hdev->hwop.cntlddc(hdev, DDC_EDID_GET_DATA, 0);
@@ -4633,7 +4057,7 @@ static void hdmitx_get_edid(struct hdmitx_dev *hdev)
 		/* start reading edid second time */
 		hdev->hwop.cntlddc(hdev, DDC_EDID_READ_DATA, 0);
 		hdev->hwop.cntlddc(hdev, DDC_EDID_GET_DATA, 1);
-		if (hdmitx21_check_edid_all_zeros(hdev->tx_comm.EDID_buf1)) {
+		if (hdmitx_edid_is_all_zeros(hdev->tx_comm.EDID_buf1)) {
 			hdev->hwop.cntlddc(hdev, DDC_GLITCH_FILTER_RESET, 0);
 			hdev->hwop.cntlddc(hdev, DDC_EDID_READ_DATA, 0);
 			hdev->hwop.cntlddc(hdev, DDC_EDID_GET_DATA, 1);
@@ -5431,10 +4855,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	hdev->hdtx_dev = dev;
 	ret = device_create_file(dev, &dev_attr_disp_mode);
 	ret = device_create_file(dev, &dev_attr_vid_mute);
-	ret = device_create_file(dev, &dev_attr_edid);
-	ret = device_create_file(dev, &dev_attr_rawedid);
 	ret = device_create_file(dev, &dev_attr_sink_type);
-	ret = device_create_file(dev, &dev_attr_edid_parsing);
 	ret = device_create_file(dev, &dev_attr_config);
 	ret = device_create_file(dev, &dev_attr_debug);
 	ret = device_create_file(dev, &dev_attr_disp_cap);
@@ -5444,13 +4865,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_vesa_cap);
 	ret = device_create_file(dev, &dev_attr_aud_cap);
 	ret = device_create_file(dev, &dev_attr_hdmi_hdr_status);
-	ret = device_create_file(dev, &dev_attr_hdr_cap);
-	ret = device_create_file(dev, &dev_attr_hdr_cap2);
-	ret = device_create_file(dev, &dev_attr_dv_cap);
-	ret = device_create_file(dev, &dev_attr_dv_cap2);
 	ret = device_create_file(dev, &dev_attr_avmute);
 	ret = device_create_file(dev, &dev_attr_phy);
-	ret = device_create_file(dev, &dev_attr_frac_rate_policy);
 	ret = device_create_file(dev, &dev_attr_sspll);
 	ret = device_create_file(dev, &dev_attr_rxsense_policy);
 	ret = device_create_file(dev, &dev_attr_rxsense_state);
@@ -5470,7 +4886,6 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_valid_mode);
 	ret = device_create_file(dev, &dev_attr_allm_cap);
 	ret = device_create_file(dev, &dev_attr_allm_mode);
-	ret = device_create_file(dev, &dev_attr_contenttype_cap);
 	ret = device_create_file(dev, &dev_attr_contenttype_mode);
 	ret = device_create_file(dev, &dev_attr_ll_mode);
 	ret = device_create_file(dev, &dev_attr_hdmitx21);
@@ -5610,10 +5025,7 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	/* Remove the cdev */
 	device_remove_file(dev, &dev_attr_disp_mode);
 	device_remove_file(dev, &dev_attr_vid_mute);
-	device_remove_file(dev, &dev_attr_edid);
-	device_remove_file(dev, &dev_attr_rawedid);
 	device_remove_file(dev, &dev_attr_sink_type);
-	device_remove_file(dev, &dev_attr_edid_parsing);
 	device_remove_file(dev, &dev_attr_config);
 	device_remove_file(dev, &dev_attr_debug);
 	device_remove_file(dev, &dev_attr_disp_cap);
@@ -5621,15 +5033,10 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_preferred_mode);
 	device_remove_file(dev, &dev_attr_cea_cap);
 	device_remove_file(dev, &dev_attr_vesa_cap);
-	device_remove_file(dev, &dev_attr_hdr_cap);
-	device_remove_file(dev, &dev_attr_hdr_cap2);
-	device_remove_file(dev, &dev_attr_dv_cap);
-	device_remove_file(dev, &dev_attr_dv_cap2);
 	device_remove_file(dev, &dev_attr_dc_cap);
 	device_remove_file(dev, &dev_attr_valid_mode);
 	device_remove_file(dev, &dev_attr_allm_cap);
 	device_remove_file(dev, &dev_attr_allm_mode);
-	device_remove_file(dev, &dev_attr_contenttype_cap);
 	device_remove_file(dev, &dev_attr_contenttype_mode);
 	device_remove_file(dev, &dev_attr_ll_mode);
 	device_remove_file(dev, &dev_attr_hdmi_used);
@@ -5637,7 +5044,6 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_ready);
 	device_remove_file(dev, &dev_attr_support_3d);
 	device_remove_file(dev, &dev_attr_avmute);
-	device_remove_file(dev, &dev_attr_frac_rate_policy);
 	device_remove_file(dev, &dev_attr_sspll);
 	device_remove_file(dev, &dev_attr_rxsense_policy);
 	device_remove_file(dev, &dev_attr_rxsense_state);

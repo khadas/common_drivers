@@ -558,8 +558,6 @@ enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdmitx_device,
 				  char force_flag);
 int hdmitx_edid_VIC_support(enum hdmi_vic vic);
 
-int hdmitx_edid_dump(struct hdmitx_dev *hdmitx_device, char *buffer,
-		     int buffer_len);
 bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 				  struct hdmi_format_para *para);
 const char *hdmitx_edid_vic_tab_map_string(enum hdmi_vic vic);
@@ -568,8 +566,6 @@ void hdmitx_edid_clear(struct hdmitx_dev *hdmitx_device);
 void hdmitx_edid_ram_buffer_clear(struct hdmitx_dev *hdmitx_device);
 void hdmitx_edid_buf_compare_print(struct hdmitx_dev *hdmitx_device);
 const char *hdmitx_edid_get_native_VIC(struct hdmitx_dev *hdmitx_device);
-bool hdmitx_check_edid_all_zeros(unsigned char *buf);
-bool hdmitx_edid_notify_ng(unsigned char *buf);
 
 extern struct hdmitx_audpara hdmiaud_config_data;
 extern struct hdmitx_audpara hsty_hdmiaud_config_data[8];

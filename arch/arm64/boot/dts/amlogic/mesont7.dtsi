@@ -1974,6 +1974,7 @@
 				0x0 0xfe002044 0x0 0x10>;
 			reg-names = "elbi", "cfg", "config", "phy", "reset";
 			interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "msi";
 			#interrupt-cells = <1>;
 			bus-range = <0x0 0xff>;
 			#address-cells = <3>;
@@ -1985,8 +1986,10 @@
 				/* downstream I/O */
 				0x82000000 0 0xf5700000 0x0 0xf5700000 0 0x1900000>;
 				/* non-prefetchable memory */
+			linux,pci-domain = <0>;
 			num-lanes = <1>;
 			pcie-num = <1>;
+			max-link-speed = <2>;
 
 			clocks = <&clkc CLKID_PCIE_PLL
 				&clkc CLKID_PCIE
@@ -2000,13 +2003,8 @@
 			gpio-type = <2>;
 			pcie-apb-rst-bit = <14>;
 			pcie-phy-rst-bit = <13>;
-			pcie-ctrl-a-rst-bit = <12>;
-			pwr-ctl = <0>;
+			pcie-ctrl-rst-bit = <12>;
 			power-domains = <&pwrdm PDID_T7_PCIE>;
-			pcie-ctrl-sleep-shift = <15>;
-			pcie-hhi-mem-pd-shift = <26>;
-			pcie-hhi-mem-pd-mask = <0xf>;
-			pcie-ctrl-iso-shift = <15>;
 			status = "disabled";
 			dma-ranges = <0x0 0x0 0x0 0x0 0x0 0x0 0xe0000000>;
 		};

@@ -635,4 +635,12 @@ static int amlogic_codec_mm_dma_buf_init(void)
 }
 #endif
 
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_PRIME_SL
+int amprime_sl_init(void);
+#else
+static inline int amprime_sl_init(void)
+{
+	return 0;
+}
+#endif
 #endif

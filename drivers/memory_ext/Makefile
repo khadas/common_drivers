@@ -14,3 +14,4 @@ obj-$(CONFIG_AMLOGIC_FILE_CACHE)	+= file_cache.o
 obj-$(CONFIG_AMLOGIC_MEMORY_EXTEND)	+= memory.o
 obj-$(CONFIG_AMLOGIC_USER_FAULT)	+= user_fault.o
 obj-$(CONFIG_AMLOGIC_WATCHPOINT)	+= watch_point.o
+obj-$(CONFIG_AMLOGIC_PIN_LOCKED_FILE)	+= pin_file.o

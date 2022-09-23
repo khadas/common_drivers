@@ -216,8 +216,6 @@ struct hdmitx_dev {
 		int (*cntlpower)(struct hdmitx_dev *hdev, u32 cmd, u32 arg);
 		/* edid/hdcp control */
 		int (*cntlddc)(struct hdmitx_dev *hdev, u32 cmd, unsigned long arg);
-		/* Audio/Video/System Status */
-		int (*getstate)(struct hdmitx_dev *hdev, u32 cmd, u32 arg);
 		int (*cntlpacket)(struct hdmitx_dev *hdev, u32 cmd, u32 arg); /* Packet control */
 		int (*cntl)(struct hdmitx_dev *hdev, u32 cmd, u32 arg); /* Other control */
 	} hwop;
@@ -329,17 +327,6 @@ struct hdmitx_dev {
 #define DDC_GLITCH_FILTER_RESET	(CMD_DDC_OFFSET + 0x11)
 #define DDC_SCDC_DIV40_SCRAMB	(CMD_DDC_OFFSET + 0x20)
 
-/***********************************************************************
- *                          Get State //getstate
- **********************************************************************/
-#define STAT_VIDEO_VIC          (CMD_STAT_OFFSET + 0x00)
-#define STAT_VIDEO_CLK          (CMD_STAT_OFFSET + 0x01)
-#define STAT_AUDIO_FORMAT       (CMD_STAT_OFFSET + 0x10)
-#define STAT_AUDIO_CHANNEL      (CMD_STAT_OFFSET + 0x11)
-#define STAT_AUDIO_CLK_STABLE   (CMD_STAT_OFFSET + 0x12)
-#define STAT_AUDIO_PACK         (CMD_STAT_OFFSET + 0x13)
-#define STAT_HDR_TYPE		(CMD_STAT_OFFSET + 0x20)
-
 struct hdmitx_dev *get_hdmitx21_device(void);
 
 /***********************************************************************
@@ -360,7 +347,6 @@ const char *hdmitx21_edid_vic_to_string(enum hdmi_vic vic);
 void hdmitx21_edid_clear(struct hdmitx_dev *hdev);
 void hdmitx21_edid_ram_buffer_clear(struct hdmitx_dev *hdev);
 void hdmitx21_edid_buf_compare_print(struct hdmitx_dev *hdev);
-int hdmitx21_read_phy_status(void);
 void hdmitx21_dither_config(struct hdmitx_dev *hdev);
 
 int hdmitx21_construct_vsif(struct hdmitx_common *tx_comm,

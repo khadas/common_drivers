@@ -86,7 +86,7 @@ static int hdmitx_cntl(struct hdmitx_dev *hdev, unsigned int cmd,
 		       unsigned int argv);
 static int hdmitx_cntl_ddc(struct hdmitx_dev *hdev, unsigned int cmd,
 			   unsigned long argv);
-static int hdmitx_get_state(struct hdmitx_dev *hdev, unsigned int cmd,
+static int hdmitx_get_state(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			    unsigned int argv);
 static int hdmitx_cntl_config(struct hdmitx_hw_common *hdev, unsigned int cmd,
 			      unsigned int argv);
@@ -642,7 +642,7 @@ void hdmitx_meson_init(struct hdmitx_dev *hdev)
 	hdev->hwop.uninit = hdmitx_uninit;
 	hdev->hwop.cntl = hdmitx_cntl;	/* todo */
 	hdev->hwop.cntlddc = hdmitx_cntl_ddc;
-	hdev->hwop.getstate = hdmitx_get_state;
+	hdev->tx_hw.getstate = hdmitx_get_state;
 	hdev->hwop.cntlpacket = hdmitx_cntl;
 	hdev->tx_hw.cntlconfig = hdmitx_cntl_config;
 	hdev->tx_hw.cntlmisc = hdmitx_cntl_misc;
@@ -4474,7 +4474,27 @@ static enum hdmi_vic get_vic_from_pkt(void)
 	return vic;
 }
 
-static int hdmitx_get_state(struct hdmitx_dev *hdev, unsigned int cmd,
+static int read_phy_status(struct hdmitx_hw_common *tx_hw)
+{
+	int phy_val = 0;
+	struct hdmitx_dev *hdev = to_hdmitx20_dev(tx_hw);
+
+	switch (hdev->data->chip_type) {
+	case MESON_CPU_ID_SC2:
+		phy_val = !!(hd_read_reg(P_ANACTRL_HDMIPHY_CTRL0) & 0xffff);
+		break;
+	case MESON_CPU_ID_TM2:
+	case MESON_CPU_ID_TM2B:
+		phy_val = !!(hd_read_reg(P_TM2_HHI_HDMI_PHY_CNTL0) & 0xffff);
+		break;
+	default:
+		phy_val = !!(hd_read_reg(P_HHI_HDMI_PHY_CNTL0) & 0xffff);
+		break;
+	}
+	return phy_val;
+}
+
+static int hdmitx_get_state(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 			    unsigned int argv)
 {
 	if ((cmd & CMD_STAT_OFFSET) != CMD_STAT_OFFSET) {
@@ -4489,6 +4509,8 @@ static int hdmitx_get_state(struct hdmitx_dev *hdev, unsigned int cmd,
 		break;
 	case STAT_HDR_TYPE:
 		return hdmitx_rd_reg(HDMITX_DWC_FC_DRM_PB00) & 0xff;
+	case STAT_TX_PHY:
+		return read_phy_status(tx_hw);
 	default:
 		break;
 	}
@@ -5465,22 +5487,3 @@ static void hdmitx_set_hw(struct hdmitx_dev *hdev)
 			 hdev->para->cs);
 }
 
-int read_phy_status(void)
-{
-	int phy_val = 0;
-	struct hdmitx_dev *hdev = get_hdmitx_device();
-
-	switch (hdev->data->chip_type) {
-	case MESON_CPU_ID_SC2:
-		phy_val = !!(hd_read_reg(P_ANACTRL_HDMIPHY_CTRL0) & 0xffff);
-		break;
-	case MESON_CPU_ID_TM2:
-	case MESON_CPU_ID_TM2B:
-		phy_val = !!(hd_read_reg(P_TM2_HHI_HDMI_PHY_CNTL0) & 0xffff);
-		break;
-	default:
-		phy_val = !!(hd_read_reg(P_HHI_HDMI_PHY_CNTL0) & 0xffff);
-		break;
-	}
-	return phy_val;
-}

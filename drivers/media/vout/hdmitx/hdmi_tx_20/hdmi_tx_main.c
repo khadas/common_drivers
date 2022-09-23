@@ -1219,7 +1219,7 @@ int hdmitx_get_aspect_ratio(void)
 	int x, y;
 	struct hdmitx_dev *hdev = &hdmitx_device;
 
-	vic = hdev->hwop.getstate(hdev, STAT_VIDEO_VIC, 0);
+	vic = hdev->tx_hw.getstate(&hdev->tx_hw, STAT_VIDEO_VIC, 0);
 
 	if (vic == HDMI_720x480p60_4x3 || vic == HDMI_720x576p50_4x3)
 		return AR_4X3;
@@ -1288,7 +1288,7 @@ void hdmitx_set_aspect_ratio(int aspect_ratio)
 		return;
 	}
 
-	vic = hdev->hwop.getstate(hdev, STAT_VIDEO_VIC, 0);
+	vic = hdev->tx_hw.getstate(&hdev->tx_hw, STAT_VIDEO_VIC, 0);
 	ret = hdmitx_check_valid_aspect_ratio(vic, aspect_ratio);
 	pr_info("%s vic = %d, ret = %d\n", __func__, vic, ret);
 
@@ -1379,7 +1379,7 @@ static void init_drm_db0(struct hdmitx_dev *hdev, unsigned char *dat)
 
 	if (once_flag) {
 		once_flag = 0;
-		*dat = hdev->hwop.getstate(hdev, STAT_HDR_TYPE, 0);
+		*dat = hdev->tx_hw.getstate(&hdev->tx_hw, STAT_HDR_TYPE, 0);
 	}
 }
 
@@ -3516,7 +3516,7 @@ static ssize_t vic_show(struct device *dev,
 	enum hdmi_vic vic = HDMI_UNKNOWN;
 	int pos = 0;
 
-	vic = hdev->hwop.getstate(hdev, STAT_VIDEO_VIC, 0);
+	vic = hdev->tx_hw.getstate(&hdev->tx_hw, STAT_VIDEO_VIC, 0);
 	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n", vic);
 
 	return pos;
@@ -3915,7 +3915,7 @@ static ssize_t hdcp_mode_store(struct device *dev,
 			       const char *buf, size_t count)
 {
 	enum hdmi_vic vic =
-		hdmitx_device.hwop.getstate(&hdmitx_device, STAT_VIDEO_VIC, 0);
+		hdmitx_device.tx_hw.getstate(&hdmitx_device.tx_hw, STAT_VIDEO_VIC, 0);
 
 	pr_info(SYS "hdcp: set mode as %s\n", buf);
 	hdmitx_device.hwop.cntlddc(&hdmitx_device, DDC_HDCP_MUX_INIT, 1);
@@ -4611,7 +4611,7 @@ static ssize_t hdmi_config_info_show(struct device *dev,
 	pr_info("display_mode\nin:%s\t",
 		get_vout_mode_internal());
 
-	vic = hdmitx_device.hwop.getstate(&hdmitx_device, STAT_VIDEO_VIC, 0);
+	vic = hdmitx_device.tx_hw.getstate(&hdmitx_device.tx_hw, STAT_VIDEO_VIC, 0);
 	pr_info("out:%s\n", hdmitx_edid_vic_tab_map_string(vic));
 
 /*
@@ -6831,7 +6831,7 @@ int drm_hdmitx_hdcp_enable(unsigned int content_type)
 
 	if (hdmitx_device.hdmi_init != 1)
 		return 1;
-	vic = hdmitx_device.hwop.getstate(&hdmitx_device, STAT_VIDEO_VIC, 0);
+	vic = hdmitx_device.tx_hw.getstate(&hdmitx_device.tx_hw, STAT_VIDEO_VIC, 0);
 
 	hdmitx_device.hwop.cntlddc(&hdmitx_device, DDC_HDCP_GET_AUTH, 0);
 

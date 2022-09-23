@@ -609,11 +609,10 @@ static ssize_t phy_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int pos = 0;
-/*
- *	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
- *		read_phy_status());
- */
-	pos += snprintf(buf + pos, PAGE_SIZE, "ok\n");
+	int state = 0;
+
+	state = global_tx_hw->getstate(global_tx_hw, STAT_TX_PHY, 0);
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d\n", state);
 
 	return pos;
 }

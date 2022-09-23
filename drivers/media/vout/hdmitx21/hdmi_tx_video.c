@@ -90,7 +90,7 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 	enum hdmi_vic vic;
 	int ret = -1;
 
-	vic = hdev->hwop.getstate(hdev, STAT_VIDEO_VIC, 0);
+	vic = hdev->tx_hw.getstate(&hdev->tx_hw, STAT_VIDEO_VIC, 0);
 	if (hdev->vend_id_hit)
 		pr_info(VID "special tv detected\n");
 	pr_info(VID "already init VIC = %d  Now VIC = %d\n",

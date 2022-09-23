@@ -57,7 +57,7 @@ static int hdmitx_cntl(struct hdmitx_dev *hdev, u32 cmd,
 		       u32 argv);
 static int hdmitx_cntl_ddc(struct hdmitx_dev *hdev, u32 cmd,
 			   unsigned long argv);
-static int hdmitx_get_state(struct hdmitx_dev *hdev, u32 cmd,
+static int hdmitx_get_state(struct hdmitx_hw_common *tx_hw, u32 cmd,
 			    u32 argv);
 static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, u32 cmd,
 			      u32 argv);
@@ -467,7 +467,7 @@ void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 	hdev->hwop.uninit = hdmitx_uninit;
 	hdev->hwop.cntl = hdmitx_cntl;	/* todo */
 	hdev->hwop.cntlddc = hdmitx_cntl_ddc;
-	hdev->hwop.getstate = hdmitx_get_state;
+	hdev->tx_hw.getstate = hdmitx_get_state;
 	hdev->hwop.cntlpacket = hdmitx_cntl;
 	hdev->tx_hw.cntlconfig = hdmitx_cntl_config;
 	hdev->tx_hw.cntlmisc = hdmitx_cntl_misc;
@@ -2025,9 +2025,11 @@ static enum hdmi_vic get_vic_from_pkt(void)
 	return vic;
 }
 
-static int hdmitx_get_state(struct hdmitx_dev *hdev, u32 cmd,
+static int hdmitx_get_state(struct hdmitx_hw_common *tx_hw, u32 cmd,
 			    u32 argv)
 {
+	int value = 0;
+
 	if ((cmd & CMD_STAT_OFFSET) != CMD_STAT_OFFSET) {
 		pr_err(HW "state: invalid cmd 0x%x\n", cmd);
 		return -1;
@@ -2040,6 +2042,9 @@ static int hdmitx_get_state(struct hdmitx_dev *hdev, u32 cmd,
 		break;
 	case STAT_HDR_TYPE:
 		return 0;
+	case STAT_TX_PHY:
+		value = !!(hd21_read_reg(ANACTRL_HDMIPHY_CTRL0) & 0xffff);
+		return value;
 	default:
 		break;
 	}
@@ -2404,15 +2409,6 @@ void hdmitx_vrr_set_maxlncnt(u32 max_lcnt)
 u32 hdmitx_vrr_get_maxlncnt(void)
 {
 	return hd21_read_reg(ENCP_VIDEO_MAX_LNCNT) + 1;
-}
-
-int hdmitx21_read_phy_status(void)
-{
-	int phy_value = 0;
-
-	phy_value = !!(hd21_read_reg(ANACTRL_HDMIPHY_CTRL0) & 0xffff);
-
-	return phy_value;
 }
 
 void hdmitx21_dither_config(struct hdmitx_dev *hdev)

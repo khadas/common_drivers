@@ -265,9 +265,6 @@ struct hdmitx_dev {
 		/* edid/hdcp control */
 		int (*cntlddc)(struct hdmitx_dev *hdmitx_device,
 			       unsigned int cmd, unsigned long arg);
-		/* Audio/Video/System Status */
-		int (*getstate)(struct hdmitx_dev *hdmitx_device,
-				unsigned int cmd, unsigned int arg);
 		int (*cntlpacket)(struct hdmitx_dev *hdmitx_device,
 				  unsigned int cmd,
 				  unsigned int arg); /* Packet control */
@@ -412,18 +409,6 @@ struct hdmitx_dev {
 #define DDC_HDCP14_GET_TOPO_INFO (CMD_DDC_OFFSET + 0x31)
 #define DDC_HDCP_SET_TOPO_INFO (CMD_DDC_OFFSET + 0x32)
 #define DDC_HDCP14_SAVE_OBS	(CMD_DDC_OFFSET + 0x40)
-
-/***********************************************************************
- *                          Get State //getstate
- **********************************************************************/
-#define STAT_VIDEO_VIC          (CMD_STAT_OFFSET + 0x00)
-#define STAT_VIDEO_CLK          (CMD_STAT_OFFSET + 0x01)
-#define STAT_AUDIO_FORMAT       (CMD_STAT_OFFSET + 0x10)
-#define STAT_AUDIO_CHANNEL      (CMD_STAT_OFFSET + 0x11)
-#define STAT_AUDIO_CLK_STABLE   (CMD_STAT_OFFSET + 0x12)
-#define STAT_AUDIO_PACK         (CMD_STAT_OFFSET + 0x13)
-#define STAT_HDR_TYPE		(CMD_STAT_OFFSET + 0x20)
-
 
 /* HDMI LOG */
 #define HDMI_LOG_HDCP           BIT(0)
@@ -661,6 +646,4 @@ bool hdmitx_find_vendor_ratio(struct hdmitx_dev *hdev);
 bool hdmitx_find_vendor_null_pkt(struct hdmitx_dev *hdev);
 
 int hdmitx_uboot_already_display(int type);
-
-int read_phy_status(void);
 #endif

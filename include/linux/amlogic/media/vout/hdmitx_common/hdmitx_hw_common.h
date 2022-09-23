@@ -60,6 +60,19 @@
 #define MISC_DIS_HPLL		(CMD_MISC_OFFSET + 0x17)
 
 /***********************************************************************
+ *                          Get State //getstate
+ **********************************************************************/
+#define STAT_VIDEO_VIC			(CMD_STAT_OFFSET + 0x00)
+#define STAT_VIDEO_CLK			(CMD_STAT_OFFSET + 0x01)
+#define STAT_AUDIO_FORMAT		(CMD_STAT_OFFSET + 0x10)
+#define STAT_AUDIO_CHANNEL		(CMD_STAT_OFFSET + 0x11)
+#define STAT_AUDIO_CLK_STABLE	(CMD_STAT_OFFSET + 0x12)
+#define STAT_AUDIO_PACK			(CMD_STAT_OFFSET + 0x13)
+#define STAT_HDR_TYPE			(CMD_STAT_OFFSET + 0x20)
+
+#define STAT_TX_PHY				(CMD_STAT_OFFSET + 0x30)
+
+/***********************************************************************
  *             CONFIG CONTROL //cntlconfig
  **********************************************************************/
 /* Video part */
@@ -68,14 +81,14 @@
 	#define DVI_MODE            0x2
 /* set value as COLORSPACE_RGB444, YUV422, YUV444, YUV420 */
 #define CONF_AVI_RGBYCC_INDIC	(CMD_CONF_OFFSET + 0X2000 + 0x01)
-#define CONF_CT_MODE		(CMD_CONF_OFFSET + 0X2000 + 0x04)
+#define CONF_CT_MODE			(CMD_CONF_OFFSET + 0X2000 + 0x04)
 #define CONF_GET_AVI_BT2020		(CMD_CONF_OFFSET + 0X2000 + 0x05)
 #define CONF_VIDEO_MUTE_OP		(CMD_CONF_OFFSET + 0x1000 + 0x04)
 	#define VIDEO_NONE_OP		0x0
-	#define VIDEO_MUTE          0x1
-	#define VIDEO_UNMUTE        0x2
-#define CONF_EMP_NUMBER         (CMD_CONF_OFFSET + 0x3000 + 0x00)
-#define CONF_EMP_PHY_ADDR       (CMD_CONF_OFFSET + 0x3000 + 0x01)
+	#define VIDEO_MUTE			0x1
+	#define VIDEO_UNMUTE		0x2
+#define CONF_EMP_NUMBER			(CMD_CONF_OFFSET + 0x3000 + 0x00)
+#define CONF_EMP_PHY_ADDR		(CMD_CONF_OFFSET + 0x3000 + 0x01)
 
 /* Audio part */
 #define CONF_CLR_AVI_PACKET		(CMD_CONF_OFFSET + 0x04)
@@ -84,13 +97,13 @@
 #define CONF_GET_HDMI_DVI_MODE	(CMD_CONF_OFFSET + 0x07)
 #define CONF_CLR_DV_VS10_SIG	(CMD_CONF_OFFSET + 0x10)
 
-#define CONF_AUDIO_MUTE_OP      (CMD_CONF_OFFSET + 0x1000 + 0x00)
-	#define AUDIO_MUTE          0x1
-	#define AUDIO_UNMUTE        0x2
-#define CONF_CLR_AUDINFO_PACKET (CMD_CONF_OFFSET + 0x1000 + 0x01)
+#define CONF_AUDIO_MUTE_OP		(CMD_CONF_OFFSET + 0x1000 + 0x00)
+	#define AUDIO_MUTE			0x1
+	#define AUDIO_UNMUTE		0x2
+#define CONF_CLR_AUDINFO_PACKET	(CMD_CONF_OFFSET + 0x1000 + 0x01)
 #define CONF_GET_AUDIO_MUTE_ST	(CMD_CONF_OFFSET + 0x1000 + 0x02)
 
-#define CONF_ASPECT_RATIO	(CMD_CONF_OFFSET + 0x101a)
+#define CONF_ASPECT_RATIO		(CMD_CONF_OFFSET + 0x101a)
 
 enum avi_component_conf {
 	CONF_AVI_CS,
@@ -147,7 +160,10 @@ struct hdmitx_hw_common {
 	 * Need a only pure data packet to call
 	 */
 	void (*setdatapacket)(int type, unsigned char *DB,
-				  unsigned char *HB);
+			unsigned char *HB);
+	/* Audio/Video/System Status */
+	int (*getstate)(struct hdmitx_hw_common *tx_hw,
+			u32 cmd, u32 arg);
 };
 
 int hdmitx_hw_avmute(struct hdmitx_hw_common *tx_hw,

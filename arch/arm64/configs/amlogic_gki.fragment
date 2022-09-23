@@ -224,6 +224,9 @@ CONFIG_AMLOGIC_LEDS_AW9523B=y
 # pwm-regulator.ko
 CONFIG_REGULATOR_PWM=m
 
+# gpio-regulator.ko
+CONFIG_REGULATOR_GPIO=m
+
 # amlogic-cpufreq.ko
 CONFIG_AMLOGIC_MESON_CPUFREQ=m
 

@@ -349,6 +349,12 @@
   video_ioctl2
   video_unregister_device
 
+# amlcam.ko
+  v4l2_ctrl_new_int_menu
+  v4l2_querymenu
+  vb2_discard_done
+  fwnode_graph_get_endpoint_by_id
+
 # aml-crypto-dma.ko
   crypto_alloc_skcipher
   crypto_dequeue_request

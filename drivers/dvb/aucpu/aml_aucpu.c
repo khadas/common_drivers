@@ -1288,6 +1288,8 @@ static s32 aucpu_probe(struct platform_device *pdev)
 			 pctx->aucpu_reg.base);
 	}
 
+	s_aucpu_register_base = pctx->aucpu_reg.base;
+
 	/* get the major number of the character device */
 	if (init_Aucpu_device()) {
 		err = -EBUSY;

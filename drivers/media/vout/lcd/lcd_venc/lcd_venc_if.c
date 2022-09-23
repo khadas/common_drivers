@@ -69,7 +69,7 @@ void lcd_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
 		LCDPR("[%d]: disable test pattern\n", pdrv->index);
 }
 
-static void lcd_screen_restore(struct aml_lcd_drv_s *pdrv)
+void lcd_screen_restore(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int num;
 	int ret;
@@ -85,7 +85,7 @@ static void lcd_screen_restore(struct aml_lcd_drv_s *pdrv)
 	}
 }
 
-static void lcd_screen_black(struct aml_lcd_drv_s *pdrv)
+void lcd_screen_black(struct aml_lcd_drv_s *pdrv)
 {
 	if (!lcd_venc_op.mute_set) {
 		LCDERR("[%d]: %s: invalid\n", pdrv->index, __func__);
@@ -191,8 +191,6 @@ int lcd_venc_probe(struct aml_lcd_drv_s *pdrv)
 	}
 
 	lcd_venc_op.init_flag = 1;
-	pdrv->lcd_screen_restore = lcd_screen_restore;
-	pdrv->lcd_screen_black = lcd_screen_black;
 
 	return 0;
 }

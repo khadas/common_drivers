@@ -144,6 +144,8 @@ void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag);
 void lcd_mute_set(struct aml_lcd_drv_s *pdrv, unsigned char flag);
 int lcd_get_venc_init_config(struct aml_lcd_drv_s *pdrv);
 int lcd_venc_probe(struct aml_lcd_drv_s *pdrv);
+void lcd_screen_black(struct aml_lcd_drv_s *pdrv);
+void lcd_screen_restore(struct aml_lcd_drv_s *pdrv);
 
 /* lcd driver */
 #ifdef CONFIG_AMLOGIC_LCD_TV

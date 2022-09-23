@@ -36,6 +36,8 @@ static struct kmem_cache *slab_trace_cache;
 static struct slab_stack_master *stm;
 static struct proc_dir_entry *d_slabtrace;
 
+struct slab_trace_group *trace_group[KMALLOC_SHIFT_HIGH + 1] = {};
+
 struct page_summary {
 	struct rb_node entry;
 	unsigned long ip;
@@ -112,6 +114,7 @@ int __init slab_trace_init(void)
 	int cache_size;
 	char buf[64] = {0};
 	int i;
+	int size;
 
 	if (!slab_trace_en)
 		return -EINVAL;
@@ -136,17 +139,21 @@ int __init slab_trace_init(void)
 		spin_lock_init(&group->lock);
 		list_add(&group->list, &st_root);
 		group->object_size = cache->size;
-		cache->trace_group = group;
+		trace_group[i] = group;
 		pr_debug("%s, trace group %p for %s, %d:%d, cache_size:%d:%d\n",
 			 __func__, group, cache->name,
 			 cache->size, cache->object_size,
 			 cache_size, get_cache_max_order(cache));
 	}
 	stm = kzalloc(sizeof(*stm), GFP_KERNEL);
-	stm->slab_stack_cache = KMEM_CACHE(slab_stack, SLAB_NOLEAKTRACE);
+	//stm->slab_stack_cache = KMEM_CACHE(slab_stack, SLAB_NOLEAKTRACE);
+	size = sizeof(struct slab_stack);
+	stm->slab_stack_cache = kmem_cache_create("slab_stack", size, size, SLAB_NOLEAKTRACE, NULL);
 	spin_lock_init(&stm->stack_lock);
 
-	slab_trace_cache = KMEM_CACHE(slab_trace, SLAB_NOLEAKTRACE);
+	//slab_trace_cache = KMEM_CACHE(slab_trace, SLAB_NOLEAKTRACE);
+	size = sizeof(struct slab_trace);
+	slab_trace_cache = kmem_cache_create("slab_trace", size, size, SLAB_NOLEAKTRACE, NULL);
 	WARN_ON(!slab_trace_cache);
 	pr_debug("%s, create slab trace cache:%p\n",
 		__func__, slab_trace_cache);
@@ -181,6 +188,76 @@ static struct slab_trace *find_slab_trace(struct slab_trace_group *group,
 	return NULL;
 }
 
+/*
+ * Conversion table for small slabs sizes / 8 to the index in the
+ * kmalloc array. This is necessary for slabs < 192 since we have non power
+ * of two cache sizes there. The size of larger slabs can be determined using
+ * fls.
+ */
+static u8 size_index[24] __ro_after_init = {
+	3,	/* 8 */
+	4,	/* 16 */
+	5,	/* 24 */
+	5,	/* 32 */
+	6,	/* 40 */
+	6,	/* 48 */
+	6,	/* 56 */
+	6,	/* 64 */
+	1,	/* 72 */
+	1,	/* 80 */
+	1,	/* 88 */
+	1,	/* 96 */
+	7,	/* 104 */
+	7,	/* 112 */
+	7,	/* 120 */
+	7,	/* 128 */
+	2,	/* 136 */
+	2,	/* 144 */
+	2,	/* 152 */
+	2,	/* 160 */
+	2,	/* 168 */
+	2,	/* 176 */
+	2,	/* 184 */
+	2	/* 192 */
+};
+
+static inline unsigned int size_index_elem(unsigned int bytes)
+{
+	return (bytes - 1) / 8;
+}
+
+/*
+ * Find the kmem_cache structure that serves a given size of
+ * allocation
+ */
+static int get_kmem_cache_by_size(size_t size)
+{
+	int index;
+
+	if (size <= 192) {
+		if (!size)
+			return -1;
+
+		index = size_index[size_index_elem(size)];
+	} else {
+		if (WARN_ON_ONCE(size > KMALLOC_MAX_CACHE_SIZE))
+			return -1;
+		index = fls(size - 1);
+	}
+
+	return index;
+}
+
+static int is_trace_func(const char *name)
+{
+	int ret = 0;
+
+	if (!strncmp(name, "kmalloc-", 8))
+		ret = 1;
+
+	return ret;
+}
+
 int slab_trace_add_page(struct page *page, unsigned int order,
 			struct kmem_cache *s, gfp_t flag)
 {
@@ -190,8 +267,16 @@ int slab_trace_add_page(struct page *page, unsigned int order,
 	void *buf = NULL;
 	unsigned long addr, flags;
 	int obj_cnt;
+	int s_index;
 
-	if (!slab_trace_en || !page || !s || !s->trace_group)
+	if (!slab_trace_en || !page || !s || !is_trace_func(s->name))
+		return -EINVAL;
+
+	s_index = get_kmem_cache_by_size(s->size);
+	if (s_index < 0 || s_index > KMALLOC_SHIFT_HIGH)
+		return -EINVAL;
+	group = trace_group[s_index];
+	if (!group)
 		return -EINVAL;
 
 	trace = kmem_cache_alloc(slab_trace_cache, SLAB_TRACE_FLAG);
@@ -199,7 +284,6 @@ int slab_trace_add_page(struct page *page, unsigned int order,
 		goto nomem;
 
 	obj_cnt = PAGE_SIZE * (1 << order) / s->size;
-	group = s->trace_group;
 	buf = kmem_cache_alloc(group->ip_cache, SLAB_TRACE_FLAG);
 	if (!buf)
 		goto nomem;
@@ -243,12 +327,19 @@ int slab_trace_remove_page(struct page *page, unsigned int order, struct kmem_ca
 	struct slab_trace *trace = NULL;
 	struct slab_trace_group *group;
 	unsigned long addr, flags;
+	int s_index;
 
-	if (!slab_trace_en || !page || !s || !s->trace_group)
+	if (!slab_trace_en || !page || !s || !is_trace_func(s->name))
+		return -EINVAL;
+
+	s_index = get_kmem_cache_by_size(s->size);
+	if (s_index < 0 || s_index > KMALLOC_SHIFT_HIGH)
+		return -EINVAL;
+	group = trace_group[s_index];
+	if (!group)
 		return -EINVAL;
 
 	addr  = (unsigned long)page_address(page);
-	group = s->trace_group;
 	spin_lock_irqsave(&group->lock, flags);
 	trace = find_slab_trace(group, addr);
 	if (!trace) {
@@ -346,12 +437,19 @@ int slab_trace_mark_object(void *object, unsigned long ip,
 	unsigned long addr, flags, index;
 	unsigned long stack[SLAB_STACK_DEP] = {0};
 	unsigned int hash, len;
+	int s_index;
 
-	if (!slab_trace_en || !object || !s || !s->trace_group)
+	if (!slab_trace_en || !object || !s || !is_trace_func(s->name))
+		return -EINVAL;
+
+	s_index = get_kmem_cache_by_size(s->size);
+	if (s_index < 0 || s_index > KMALLOC_SHIFT_HIGH)
+		return -EINVAL;
+	group = trace_group[s_index];
+	if (!group)
 		return -EINVAL;
 
 	addr  = (unsigned long)object;
-	group = s->trace_group;
 	spin_lock_irqsave(&group->lock, flags);
 	trace = find_slab_trace(group, addr);
 	spin_unlock_irqrestore(&group->lock, flags);
@@ -381,12 +479,19 @@ int slab_trace_remove_object(void *object, struct kmem_cache *s)
 	unsigned long addr, flags, index;
 	unsigned int hash, need_free = 0;
 	struct slab_stack *ss;
+	int s_index;
 
-	if (!slab_trace_en || !object || !s || !s->trace_group)
+	if (!slab_trace_en || !object || !s || !is_trace_func(s->name))
+		return -EINVAL;
+
+	s_index = get_kmem_cache_by_size(s->size);
+	if (s_index < 0 || s_index > KMALLOC_SHIFT_HIGH)
+		return -EINVAL;
+	group = trace_group[s_index];
+	if (!group)
 		return -EINVAL;
 
 	addr  = (unsigned long)object;
-	group = s->trace_group;
 	spin_lock_irqsave(&group->lock, flags);
 	trace = find_slab_trace(group, addr);
 	spin_unlock_irqrestore(&group->lock, flags);

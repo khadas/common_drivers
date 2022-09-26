@@ -9,6 +9,13 @@ config AMLOGIC_FREERTOS
 	help
 	  Say Y here to enable freertos support.
 
+config AMLOGIC_FREERTOS_T7
+	bool "Amlogic Freertos Support with t7"
+	depends on AMLOGIC_FREERTOS
+	default n
+	help
+	  Say Y here to enable freertos support.
+
 config AMLOGIC_AUTO_CAPTURE
 	bool "Amlogic camera auto capture"
 	default n

@@ -15,4 +15,8 @@ u32 freertos_get_irqregval(u32 val, u32 oldval,
 			   unsigned int n);
 struct xrtosinfo_t *freertos_get_info(void);
 
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+void arch_send_ipi_rtos(int cpu);
+#endif
+
 #endif

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-//#define pr_fmt(fmt)	"freertos: " fmt
+//#define DEBUG
 
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -29,8 +29,9 @@
 #include <uapi/linux/psci.h>
 #include <linux/debugfs.h>
 #include <linux/sched/signal.h>
-
+#include <linux/of_reserved_mem.h>
 #include <linux/amlogic/freertos.h>
+#include <linux/mm.h>
 
 #define AML_RTOS_NAME "freertos"
 
@@ -40,6 +41,10 @@
 #define SMC_UNK				-1
 #define RSVED_MAX_IRQ			1024
 
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+#define RTOS_RUN_FLAG			0xA5A5A5A5
+#endif
+
 #define LOGBUF_RDFLG	0x80000000
 struct logbuf_t {
 	u32 write;
@@ -47,6 +52,9 @@ struct logbuf_t {
 	char buf[0];
 };
 
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+static struct reserved_mem res_mem;
+#endif
 static unsigned long rtosinfo_phy;
 static struct xrtosinfo_t *rtosinfo;
 static int freertos_finished;
@@ -61,6 +69,98 @@ static struct logbuf_t *logbuf;
 static struct dentry *rtos_logbuf_file;
 static DEFINE_MUTEX(freertos_logbuf_lock);
 
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+static BLOCKING_NOTIFIER_HEAD(rtos_nofitier_chain);
+
+int register_freertos_notifier(struct notifier_block *nb)
+{
+	int err;
+
+	err = blocking_notifier_chain_register(&rtos_nofitier_chain, nb);
+	return err;
+}
+EXPORT_SYMBOL_GPL(register_freertos_notifier);
+
+int unregister_freertos_notifier(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_unregister(&rtos_nofitier_chain, nb);
+}
+EXPORT_SYMBOL(unregister_freertos_notifier);
+
+static int call_freertos_notifiers(unsigned long val, void *v)
+{
+	return blocking_notifier_call_chain(&rtos_nofitier_chain, val, v);
+}
+#endif
+
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+static unsigned long freertos_request_info(void)
+{
+	struct device_node *rtos_reserved, *freertos;
+	struct reserved_mem *rmem;
+	unsigned int info_offset;
+	unsigned long info_base;
+	int r = 0;
+
+	rtos_reserved = of_find_compatible_node(NULL, NULL, "amlogic, aml_rtos_memory");
+	if (!rtos_reserved) {
+		pr_err("rtos_reserved device node find error\n");
+		return 0;
+	}
+
+	rmem = of_reserved_mem_lookup(rtos_reserved);
+	if (!rmem) {
+		pr_err("%s no such reserved mem\n", (char *)rtos_reserved->name);
+		return 0;
+	}
+
+	if (!rmem->base || !rmem->size) {
+		pr_err("%s unexpected reserved memory\n", (char *)rtos_reserved->name);
+		return 0;
+	}
+	info_base = rmem->base;
+	res_mem.base = rmem->base;
+	res_mem.size = rmem->size;
+
+	freertos = of_find_compatible_node(NULL, NULL, "amlogic,freertos");
+	if (!freertos) {
+		pr_err("freertos device node find error\n");
+		return 0;
+	}
+	r = of_property_read_u32(freertos, "info_offset", &info_offset);
+	if (r < 0) {
+		pr_err("rtos info offset find error\n");
+		return 0;
+	}
+	pr_debug("rtos base:%lx, info offset:%x\n", info_base, info_offset);
+
+	return (info_base + info_offset);
+}
+
+unsigned long freertos_is_run(void)
+{
+	unsigned long phy;
+	struct xrtosinfo_t *info;
+
+	phy = freertos_request_info();
+	if (!phy)
+		return 0;
+
+	info = (struct xrtosinfo_t *)memremap(phy, sizeof(struct xrtosinfo_t), MEMREMAP_WB);
+	if (info) {
+		if (info->rtos_run_flag != RTOS_RUN_FLAG) {
+			pr_debug("rtos_run_flag:%x\n", info->rtos_run_flag);
+			return 0;
+		}
+	} else {
+		pr_err("%s,map freertos info failed\n", __func__);
+		return 0;
+	}
+	iounmap(info);
+	return phy;
+}
+EXPORT_SYMBOL(freertos_is_run);
+#else
 static unsigned long freertos_request_info(void)
 {
 	struct arm_smccc_res res;
@@ -78,6 +178,7 @@ static unsigned long freertos_allow_coreup(void)
 		      0, 0, 0, 0, 0, 0, &res);
 	return res.a0;
 }
+#endif
 
 //////////temporary walk around method///////////
 #include <linux/delay.h>
@@ -137,11 +238,26 @@ static int freertos_coreup_prepare(int cpu, int bootup)
 		return -1;
 	}
 	pr_info("cpu %u power off success\n", cpu);
+#ifndef CONFIG_AMLOGIC_FREERTOS_T7
 	freertos_allow_coreup();
+#endif
 	if (bootup)
 		usleep_range(10000, 15000);
 	return 0;
 }
+
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+static void freertos_coreup(int cpu, int bootup)
+{
+	if (bootup) {
+		pr_debug("cpu %u power on start\n", cpu);
+		if (!device_online(get_cpu_device(cpu)))
+			pr_info("cpu %u power on success\n", cpu);
+		else
+			pr_err("cpu %u power on failed\n", cpu);
+	}
+}
+#endif
 
 static void freertos_do_finish(int bootup)
 {
@@ -158,6 +274,23 @@ static void freertos_do_finish(int bootup)
 		 *}
 		 */
 		for_each_present_cpu(cpu) {
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+			if (rtosinfo->cpumask & (1 << cpu)) {
+				if (!cpu_online(cpu)) {
+					pr_info("cpu %u finish\n", cpu);
+					if (freertos_coreup_prepare(cpu, bootup) < 0)
+						continue;
+					freertos_coreup(cpu, bootup);
+				} else {
+					pr_info("cpu %u already take over\n", cpu);
+				}
+				free_reserved_area(__va(res_mem.base),
+					__va(PAGE_ALIGN(res_mem.base + res_mem.size)),
+						   0,
+						   "free_mem");
+				call_freertos_notifiers(1, NULL);
+			}
+#else
 			if ((rtosinfo->cpumask & (1 << cpu)) &&
 			    !cpu_online(cpu)) {
 				pr_info("cpu %u finish\n", cpu);
@@ -169,6 +302,7 @@ static void freertos_do_finish(int bootup)
 					pr_info("cpu %u power on success\n", cpu);
 				}
 			}
+#endif
 		}
 //done:
 		freertos_finished = 1;
@@ -195,6 +329,17 @@ int freertos_finish(void)
 	    !freertos_finished &&
 	    rtosinfo->status == ertosstat_done) {
 		pr_info("ipi received\n");
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+		for_each_present_cpu(cpu) {
+			if (rtosinfo->cpumask & (1 << cpu)) {
+				if (cpu_online(cpu))
+					pr_info("cpu %u already take over\n", cpu);
+				else
+					chk = 1;
+				break;
+			}
+		}
+#else
 		for_each_present_cpu(cpu) {
 			if ((rtosinfo->cpumask & (1 << cpu)) &&
 			    cpu_online(cpu))
@@ -202,6 +347,7 @@ int freertos_finish(void)
 		}
 		chk = 1;
 ipircved:
+#endif
 		ipi_rcv = 1;
 	}
 	spin_unlock_irqrestore(&freertos_chk_lock, flg);
@@ -340,7 +486,11 @@ static int aml_rtos_logbuf_init(void)
 	size = rtosinfo->logbuf_len;
 	pr_info("logbuffer: 0x%x, 0x%x\n",
 		rtosinfo->logbuf_phy, rtosinfo->logbuf_len);
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+	logbuf = memremap(phy, size, MEMREMAP_WB);
+#else
 	logbuf = ioremap_cache(phy, size);
+#endif
 	if (!logbuf) {
 		pr_err("map log buffer failed\n");
 		return -1;
@@ -363,6 +513,66 @@ static void aml_rtos_logbuf_deinit(void)
 	}
 }
 
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+static ssize_t android_status_store(struct class *cla,
+			  struct class_attribute *attr,
+			  const char *buf, size_t count)
+{
+	long val = 0;
+
+	if (kstrtoul(buf, 0, &val)) {
+		pr_err("invalid input:%s\n", buf);
+		return count;
+	}
+
+	pr_info("set android_status is %ld\n", val);
+	rtosinfo->android_status = val;
+
+	return count;
+}
+
+static ssize_t android_status_show(struct class *cla,
+			 struct class_attribute *attr, char *buf)
+{
+	int cnt = 0;
+
+	cnt =  sprintf(buf, "%d\n", rtosinfo->android_status);
+
+	return cnt;
+}
+static CLASS_ATTR_RW(android_status);
+
+static ssize_t ipi_send_store(struct class *cla,
+			  struct class_attribute *attr,
+			  const char *buf, size_t count)
+{
+	long cpu = 0;
+
+	if (kstrtoul(buf, 0, &cpu)) {
+		pr_err("invalid input cpu number:%s\n", buf);
+		return count;
+	}
+
+	pr_info("set ipi to cpu%ld\n", cpu);
+	arch_send_ipi_rtos(cpu);
+
+	return count;
+}
+static CLASS_ATTR_WO(ipi_send);
+
+static struct attribute *freertos_attrs[] = {
+	&class_attr_android_status.attr,
+	&class_attr_ipi_send.attr,
+	NULL
+};
+ATTRIBUTE_GROUPS(freertos);
+
+static struct class freertos_class = {
+	.name = "freertos",
+	.class_groups = freertos_groups,
+};
+#endif
+
 static int aml_rtos_probe(struct platform_device *pdev)
 {
 	rtos_debug_dir = debugfs_create_dir("freertos", NULL);
@@ -372,9 +582,14 @@ static int aml_rtos_probe(struct platform_device *pdev)
 	    (int)rtosinfo_phy == SMC_UNK)
 		return 0;
 
-	rtosinfo = (struct xrtosinfo_t *)
-		   ioremap(rtosinfo_phy,
-			   sizeof(struct xrtosinfo_t));
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+	rtosinfo = (struct xrtosinfo_t *)memremap(rtosinfo_phy,
+						  sizeof(struct xrtosinfo_t),
+						  MEMREMAP_WB);
+#else
+	rtosinfo = (struct xrtosinfo_t *)ioremap(rtosinfo_phy,
+						sizeof(struct xrtosinfo_t));
+#endif
 	if (rtosinfo) {
 		freertos_do_finish(1);
 	} else {
@@ -382,6 +597,14 @@ static int aml_rtos_probe(struct platform_device *pdev)
 		goto finish;
 	}
 
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+	if (rtosinfo->rtos_run_flag == RTOS_RUN_FLAG) {
+		if (class_register(&freertos_class)) {
+			pr_err("regist freertos_class failed\n");
+			return -EINVAL;
+		}
+	}
+#endif
 	aml_rtos_logbuf_init();
 
 finish:
@@ -428,10 +651,15 @@ static void freertos_get_irqrsved(void)
 		goto exit;
 	freertos_irqrsv_inited = 1;
 
-	tmp = freertos_request_info();
-	if (tmp == 0 ||
-	    tmp == SMC_UNK)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+	tmp = freertos_is_run();
+	if (!tmp)
 		goto exit;
+#else
+	tmp = freertos_request_info();
+	if (tmp == 0 || tmp == SMC_UNK)
+		goto exit;
+#endif
 
 	np = of_find_matching_node_and_match(NULL,
 					     aml_freertos_dt_match, NULL);

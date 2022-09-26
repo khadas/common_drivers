@@ -102,7 +102,7 @@
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1920x1080x4x4 round up 4M align */
+			/* 1920x1080x4x6 round up 4M align */
 			size = <0x0 0x3400000>;
 			alignment = <0x0 0x400000>;
 		};

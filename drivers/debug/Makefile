@@ -12,7 +12,6 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE) += debug_ftrace_ramoops.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_ATRACE) += meson_atrace.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_PRINTK) += debug_printk.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_RELABEL) += debug_relabel.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_SCRAMBLER_RAMOOPS) += debug_scrambler_ramoops.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_FILE) += debug_file.o
 
 #autotest

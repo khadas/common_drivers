@@ -1,7 +1,0 @@
-config AMLOGIC_DDR_SCRAMBLER
-	tristate "Amlogic ddr scrambler keypreserve mode for pstore debug"
-	depends on PSTORE
-	default n
-	help
-		Preserve ddr scrambler key to dump kernel console message and panic/oops
-		message.

@@ -65,15 +65,6 @@ config AMLOGIC_DEBUG_RELABEL_GKI
 	  if build with gki set this config to y,
 	  else set this config to n.
 
-config AMLOGIC_DEBUG_SCRAMBLER_RAMOOPS
-	bool "Amlogic ddr scrambler keypreserve mode for pstore debug"
-	depends on AMLOGIC_DEBUG
-	depends on PSTORE
-	default n
-	help
-	  Preserve ddr scrambler key to dump kernel console message and panic/oops
-	  message.
-
 config AMLOGIC_DEBUG_FILE
 	bool "Amlogic dump log to debug file"
 	default n

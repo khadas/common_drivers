@@ -4,8 +4,6 @@ config AMLOGIC_CPU_INFO
 	tristate "Amlogic chipid"
 	depends on AMLOGIC_SECMON
 	depends on MFD_SYSCON
-	depends on ANDROID_VENDOR_HOOKS
-	depends on AMLOGIC_BREAK_GKI
 	default n
 	help
 	  say y to enable Amlogic chipid driver

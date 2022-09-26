@@ -21,6 +21,7 @@
 #define IEEE_VSI21		0xc45dd8
 #define IEEE_HDR10PLUS		0x90848b
 #define IEEE_DV_PLUS_ALLM 0x1
+#define IEEE_FREESYNC	0x00001a
 
 #define VSIF_TYPE_DV15		1
 #define VSIF_TYPE_HDR10P	2
@@ -63,6 +64,7 @@ enum pkt_decode_type {
 	PKT_BUFF_SET_DRM   = 0x100,
 	PKT_BUFF_SET_NVBI = 0x200,
 	PKT_BUFF_SET_EMP = 0x400,
+	PKT_BUFF_SET_SPD = 0x800,
 
 	PKT_BUFF_SET_UNKNOWN = 0xffff,
 };
@@ -120,7 +122,7 @@ enum pkt_op_flag {
 	PKT_OP_AMP = 0x4000,
 };
 
-struct pkt_typeregmap_st {
+struct pkt_type_reg_map_st {
 	u32 pkt_type;
 	u32 reg_bit;
 };
@@ -241,7 +243,7 @@ struct gcp_pkt_st {
 		u8 sb0_zero1:3;
 		/*SB1*/
 		u8 colordepth:4;
-		u8 pixelpkgphase:4;
+		u8 pixel_pkg_phase:4;
 		/*SB2*/
 		u8 def_phase:1;
 		u8 sb2_zero:7;
@@ -352,7 +354,7 @@ struct gamutmeta_pkt_st {
 	/*HB1*/
 	u8 affect_seq_num:4;
 	u8 gbd_profile:3;
-	u8 next_feild:1;
+	u8 next_field:1;
 	/*HB2*/
 	u8 cur_seq_num:4;
 	u8 pkt_seq:2;
@@ -373,7 +375,7 @@ struct gamutmeta_pkt_st {
 };
 
 /* 3d audio sample pkt - 0xb */
-struct a3dsmp_pkt_st {
+struct a3d_smp_pkt_st {
 	/*packet header*/
 	u8 pkttype;
 	/*hb1*/
@@ -590,12 +592,12 @@ struct vsi_infoframe_st {
 	/*body by different format*/
 	union vsi_sbpkt_u {
 		struct payload_st {
-			u32 data[6];
+			u32 data[7];
 		} __packed payload;
 
 		/* video format 0x01*/
 		struct vsi_st {
-			u8 data[24];
+			u8 data[28];
 		} __packed vsi_st;
 
 		/* 3D: video format(0x2) */
@@ -777,18 +779,49 @@ struct avi_infoframe_st {
 } __packed;
 
 /* source product descriptor infoFrame  - 0x83 */
+//0x00 "unknown",
+//0x01 "Digital STB",
+//0x02 "DVD player",
+//0x03 "D-VHS",
+//0x04 "HDD Videorecorder",
+//0x05 "DVC",
+//0x06 "DSC",
+//0x07 "Video CD",
+//0x08 "Game",
+//0x09 "PC general",
+//0x0A "Blu-Ray Disc (BD)",
+//0x0B "Super Audio CD",
+//0x0C "HD DVD",
+//0x0D "PMP",
+//0x1A "FREESYNC"
 struct spd_infoframe_st {
 	u8 pkttype;
 	u8 version;
-	u8 length;				/*length=25*/
-	u8 rsd;
+	u8 length;
+	//u8 rsd;  //note: T3 has not this byte. T5 has it.
 	u8 checksum;
-	/*Vendor Name Character*/
-	u8 vendor_name[8];
-	/*Product Description Character*/
-	u8 product_des[16];
-	/*byte 25*/
-	u8 source_info;
+	//u8 ieee_oui[3]; //data[1:3]
+	union meta_u {
+		struct freesync_st {
+			/*PB1-3*/
+			u32 ieee:24;
+			u32 rsvd:8;
+			u8 rsvd1;
+			/*PB6*/
+			u8 supported:1;
+			u8 enabled:1;
+			u8 active:1;
+			u8 cs_active:1;
+			u8 rsvd2:2;
+			u8 ld_disable:1;
+			u8 rsvd3:3;
+			u8 min_frame_rate;
+			u8 max_frame_rate;
+			/*pb9-pb27*/
+			u8 data[19];
+		} __packed freesync;
+		u8 data[28];
+	} __packed des_u;
 } __packed;
 
 /* audio infoFrame packet - 0x84 */
@@ -868,7 +901,7 @@ struct drm_infoframe_st {
 			/*PB0*/
 			u8 checksum;
 			/*PB1*/
-			/*electric-optinal transfer function*/
+			/*electric-optional transfer function*/
 			u8 eotf:3;
 			u8 rev0:5;
 			/*PB2*/
@@ -910,7 +943,7 @@ union pktinfo {
 	struct dstaud_pkt_st dstaud_pkt;
 	struct hbraud_pkt_st hbraud_pkt;
 	struct gamutmeta_pkt_st gamutmeta_pkt;
-	struct a3dsmp_pkt_st aud3dsmp_pkt;
+	struct a3d_smp_pkt_st aud3dsmp_pkt;
 	struct ob3d_smppkt_st oneb3dsmp_pkt;
 	struct audmtdata_pkt_st audmeta_pkt;
 	struct msaudsmp_pkt_st mulstraudsamp_pkt;
@@ -946,7 +979,6 @@ struct rxpkt_st {
 	u32 pkt_cnt_audif;
 	u32 pkt_cnt_mpeg;
 	u32 pkt_cnt_nvbi;
-
 	u32 pkt_cnt_acr;
 	u32 pkt_cnt_gcp;
 	u32 pkt_cnt_acp;
@@ -955,7 +987,7 @@ struct rxpkt_st {
 	u32 pkt_cnt_gameta;
 	u32 pkt_cnt_amp;
 	u32 pkt_cnt_emp;
-
+	//modify to rcvd
 	u32 pkt_cnt_vsi_ex;
 	u32 pkt_cnt_drm_ex;
 	u32 pkt_cnt_gmd_ex;
@@ -966,7 +998,7 @@ struct rxpkt_st {
 	u32 pkt_cnt_amp_ex;
 	u32 pkt_cnt_nvbi_ex;
 	u32 pkt_cnt_emp_ex;
-
+	u32 pkt_spd_updated;
 	u32 pkt_op_flag;
 
 	u32 fifo_int_cnt;
@@ -1057,7 +1089,7 @@ struct st_pkt_test_buff {
 	/* packet type 0x7f EMP */
 	struct pd_infoframe_s emp_info;
 
-	/*externl set*/
+	/*external set*/
 	struct pd_infoframe_s ex_vsi;
 	struct pd_infoframe_s ex_avi;
 	struct pd_infoframe_s ex_audif;
@@ -1070,8 +1102,9 @@ struct st_pkt_test_buff {
 };
 
 extern struct packet_info_s rx_pkt;
-extern u32 vsif_type;
-extern u32 emp_type;
+extern u32 rx_vsif_type;
+extern u32 rx_emp_type;
+extern u32 rx_spd_type;
 /*extern bool hdr_enable;*/
 void rx_pkt_status(void);
 void rx_pkt_debug(void);
@@ -1100,6 +1133,9 @@ void rx_pkt_get_gcp_ex(void *pktinfo);
 u32 rx_pkt_chk_attach_vsi(void);
 void rx_pkt_clr_attach_vsi(void);
 u32 rx_pkt_chk_attach_drm(void);
+//SPD
+u32 rx_pkt_chk_updated_spd(void);
+void rx_pkt_clr_updated_spd(void);
 void rx_pkt_clr_attach_drm(void);
 u32 rx_pkt_chk_busy_vsi(void);
 u32 rx_pkt_chk_busy_drm(void);
@@ -1108,4 +1144,5 @@ void rx_get_pd_fifo_param(enum pkt_type_e pkt_type,
 void rx_get_avi_info(struct avi_infoframe_st *st_pkt);
 void rx_get_vtem_info(void);
 void rx_get_aif_info(void);
+void dump_pktinfo_status(void);
 #endif

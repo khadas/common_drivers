@@ -325,7 +325,7 @@ static long init(struct file *f, void __user *arg)
 		}
 
 		esm->hpi = ioremap(hpi_mem->start,
-				   resource_size(hpi_mem));
+					   resource_size(hpi_mem));
 		if (!esm->hpi) {
 			rc = -ENOMEM;
 			goto err_release_region;

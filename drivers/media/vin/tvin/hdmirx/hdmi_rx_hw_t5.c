@@ -41,22 +41,22 @@ u32 rterm_trim_val_t5;
 static const u32 phy_misci_t5[][4] = {
 		 /* 0x05	 0x06	 0x07	 0x08 */
 	{	 /* 24~45M */
-		0x200773ff, 0x000c01c0, 0x0, 0x00000817,
+		0x200773f8, 0x000c01c0, 0x0, 0x00000817,
 	},
 	{	 /* 45~74.5M */
-		0x200773ff, 0x000c01c0, 0x0, 0x00000817,
+		0x200773f8, 0x000c01c0, 0x0, 0x00000817,
 	},
 	{	 /* 77~155M */
-		0x200773ff, 0x000c01c0, 0x0, 0x00000817,
+		0x200773f8, 0x000c01c0, 0x0, 0x00000817,
 	},
 	{	 /* 155~340M */
-		0x200773ff, 0x000c01c0, 0x0, 0x00000817,
+		0x200773f8, 0x000c01c0, 0x0, 0x00000817,
 	},
 	{	 /* 340~525M */
-		0x200773ff, 0x000c01c0, 0x0, 0x00000817,
+		0x200773f8, 0x000c01c0, 0x0, 0x00000817,
 	},
 	{	 /* 525~600M */
-		0x200773ff, 0x000c01c0, 0x0, 0x00000817,
+		0x200773f8, 0x000c01c0, 0x0, 0x00000817,
 	},
 };
 
@@ -776,7 +776,7 @@ void get_eq_val(void)
 
 void aml_eq_cfg_t5(void)
 {
-	/* dont need to run eq if no sqo_clk or pll not lock */
+	/* do not need to run eq if no sqo_clk or pll not lock */
 	if (!aml_phy_pll_lock())
 		return;
 	/* step10 */
@@ -1238,7 +1238,7 @@ void dump_aml_phy_sts_t5(void)
 	sli1_ofst5 = (data32 >> 8) & 0x3f;
 	sli2_ofst5 = (data32 >> 16) & 0x3f;
 
-	rx_pr("\nhdmirx phy status:\n");
+	rx_pr("\n hdmirx phy status:\n");
 	rx_pr("pll_lock=%d, squelch=%d, terminal=%d\n", pll_lock, squelch, terminal);
 	rx_pr("vga_gain=[%d,%d,%d]\n",
 	      ch0_vga, ch1_vga, ch2_vga);
@@ -1303,7 +1303,7 @@ void aml_phy_short_bist_t5(void)
 		usleep_range(5, 10);
 		data32 |= 1 << 11;
 		hdmirx_wr_amlphy(HHI_RX_PHY_MISC_CNTL3, data32);
-		rx_pr("\nport=%x\n", rd_reg_hhi(HHI_RX_PHY_MISC_CNTL3));
+		rx_pr("\n port=%x\n", rd_reg_hhi(HHI_RX_PHY_MISC_CNTL3));
 		usleep_range(5, 10);
 		hdmirx_wr_amlphy(HHI_RX_PHY_DCHA_CNTL0, 0x10210fff);
 		usleep_range(5, 10);

@@ -64,14 +64,15 @@ enum tvin_port_e {
 	TVIN_PORT_HDMI7,
 	TVIN_PORT_DVIN0 = 0x00008000,
 	TVIN_PORT_VIU1 = 0x0000a000,
-	TVIN_PORT_VIU1_VIDEO,
-	TVIN_PORT_VIU1_WB0_VD1,
-	TVIN_PORT_VIU1_WB0_VD2,
-	TVIN_PORT_VIU1_WB0_OSD1,
-	TVIN_PORT_VIU1_WB0_OSD2,
-	TVIN_PORT_VIU1_WB0_VPP,
+	TVIN_PORT_VIU1_VIDEO, /* vpp0 preblend vd1 */
+	TVIN_PORT_VIU1_WB0_VD1, /* vpp0 vadj1 output */
+	TVIN_PORT_VIU1_WB0_VD2, /* vpp0 vd2 postblend input */
+	TVIN_PORT_VIU1_WB0_OSD1, /* vpp0 osd1 postblend input */
+	TVIN_PORT_VIU1_WB0_OSD2, /* vpp0 osd2 postblend input */
+	TVIN_PORT_VIU1_WB0_VPP, /* vpp0 output */
+	TVIN_PORT_VIU1_WB0_POST_BLEND, /* vpp0 postblend output */
 	TVIN_PORT_VIU1_WB0_VDIN_BIST,
-	TVIN_PORT_VIU1_WB0_POST_BLEND,
+	TVIN_PORT_VIU1_WB1_VIDEO,
 	TVIN_PORT_VIU1_WB1_VD1,
 	TVIN_PORT_VIU1_WB1_VD2,
 	TVIN_PORT_VIU1_WB1_OSD1,
@@ -82,6 +83,17 @@ enum tvin_port_e {
 	TVIN_PORT_VIU2_ENCL,
 	TVIN_PORT_VIU2_ENCI,
 	TVIN_PORT_VIU2_ENCP,
+	TVIN_PORT_VIU2_VD1, /* vpp1 vd1 output */
+	TVIN_PORT_VIU2_OSD1, /* vpp1 osd1 output */
+	TVIN_PORT_VIU2_VPP, /* vpp1 output */
+	TVIN_PORT_VIU3 = 0x0000D000,
+	TVIN_PORT_VIU3_VD1, /* vpp2 vd1 output */
+	TVIN_PORT_VIU3_OSD1, /* vpp2 osd1 output */
+	TVIN_PORT_VIU3_VPP, /* vpp2 output */
+	TVIN_PORT_VENC = 0x0000E000,
+	TVIN_PORT_VENC0,
+	TVIN_PORT_VENC1,
+	TVIN_PORT_VENC2,
 	TVIN_PORT_MIPI = 0x00010000,
 	TVIN_PORT_ISP = 0x00020000,
 	TVIN_PORT_MAX = 0x80000000,
@@ -202,7 +214,15 @@ enum tvin_sig_fmt_e {
 	TVIN_SIG_FMT_HDMI_1920X2160_60HZ = 0x454,
 	TVIN_SIG_FMT_HDMI_960X540_60HZ = 0x455,
 	TVIN_SIG_FMT_HDMI_2560X1440_00HZ = 0x456,
-	TVIN_SIG_FMT_HDMI_MAX,
+	TVIN_SIG_FMT_HDMI_640X350_85HZ = 0x457,
+	TVIN_SIG_FMT_HDMI_640X400_85HZ = 0x458,
+	TVIN_SIG_FMT_HDMI_848X480_60HZ = 0x459,
+	TVIN_SIG_FMT_HDMI_1792X1344_85HZ = 0x45a,
+	TVIN_SIG_FMT_HDMI_1856X1392_00HZ = 0x45b,
+	TVIN_SIG_FMT_HDMI_1920X1440_00HZ = 0x45c,
+	TVIN_SIG_FMT_HDMI_2048X1152_60HZ = 0x45d,
+	TVIN_SIG_FMT_HDMI_2560X1600_00HZ = 0x45e,
+	TVIN_SIG_FMT_HDMI_MAX = 0x45f,
 	TVIN_SIG_FMT_HDMI_THRESHOLD = 0x600,
 	/* Video Formats */
 	TVIN_SIG_FMT_CVBS_NTSC_M = 0x601,
@@ -312,7 +332,7 @@ enum tvin_color_fmt_e {
 };
 
 enum tvin_color_fmt_range_e {
-	TVIN_FMT_RANGE_NULL = 0,	/* depend on video fromat */
+	TVIN_FMT_RANGE_NULL = 0,	/* depend on vedio fromat */
 	TVIN_RGB_FULL,		/* 1 */
 	TVIN_RGB_LIMIT,		/* 2 */
 	TVIN_YUV_FULL,		/* 3 */
@@ -391,6 +411,14 @@ struct tvin_info_s {
 	 */
 	unsigned int signal_type;
 	enum tvin_aspect_ratio_e aspect_ratio;
+	/*
+	 * 0:no dv 1:visf 2:emp
+	 */
+	u8 dolby_vision;
+	/*
+	 * 0:sink-led 1:source-led
+	 */
+	u8 low_latency;
 };
 
 struct tvin_frontend_info_s {
@@ -492,6 +520,7 @@ struct tvafe_pin_mux_s {
 bool IS_TVAFE_SRC(enum tvin_port_e port);
 bool IS_TVAFE_ATV_SRC(enum tvin_port_e port);
 bool IS_TVAFE_AVIN_SRC(enum tvin_port_e port);
+bool IS_HDMI_SRC(enum tvin_port_e port);
 
 /* ************************************************************************* */
 

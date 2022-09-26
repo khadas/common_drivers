@@ -45,7 +45,125 @@ static void amlogic_crg_drd_usb3phy_shutdown(struct usb_phy *x)
 	phy->suspend_flag = 1;
 }
 
-static void usb3_phy_cr_config(struct amlogic_usb_v2 *phy)
+static void crg_bus_addr(struct amlogic_usb_v2 *phy_v3, unsigned int addr)
+{
+	union phy3_r4 phy_r4 = {.d32 = 0};
+	union phy3_r5 phy_r5 = {.d32 = 0};
+	unsigned long timeout_jiffies;
+
+	phy_r4.b.phy_cr_data_in = addr;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+
+	phy_r4.b.phy_cr_cap_addr = 0;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	phy_r4.b.phy_cr_cap_addr = 1;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	timeout_jiffies = jiffies +
+			msecs_to_jiffies(1000);
+	do {
+		phy_r5.d32 = readl(phy_v3->phy3_cfg_r5);
+	} while (phy_r5.b.phy_cr_ack == 0 &&
+		time_is_after_jiffies(timeout_jiffies));
+
+	phy_r4.b.phy_cr_cap_addr = 0;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	timeout_jiffies = jiffies +
+			msecs_to_jiffies(1000);
+	do {
+		phy_r5.d32 = readl(phy_v3->phy3_cfg_r5);
+	} while (phy_r5.b.phy_cr_ack == 1 &&
+		time_is_after_jiffies(timeout_jiffies));
+}
+
+static int crg_bus_read(struct amlogic_usb_v2 *phy_v3, unsigned int addr)
+{
+	int data;
+	union phy3_r4 phy_r4 = {.d32 = 0};
+	union phy3_r5 phy_r5 = {.d32 = 0};
+	unsigned long timeout_jiffies;
+
+	crg_bus_addr(phy_v3, addr);
+
+	phy_r4.b.phy_cr_read = 0;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	phy_r4.b.phy_cr_read = 1;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+
+	timeout_jiffies = jiffies +
+			msecs_to_jiffies(1000);
+	do {
+		phy_r5.d32 = readl(phy_v3->phy3_cfg_r5);
+	} while (phy_r5.b.phy_cr_ack == 0 &&
+		time_is_after_jiffies(timeout_jiffies));
+
+	data = phy_r5.b.phy_cr_data_out;
+
+	phy_r4.b.phy_cr_read = 0;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	timeout_jiffies = jiffies +
+			msecs_to_jiffies(1000);
+	do {
+		phy_r5.d32 = readl(phy_v3->phy3_cfg_r5);
+	} while (phy_r5.b.phy_cr_ack == 1 &&
+		time_is_after_jiffies(timeout_jiffies));
+
+	return data;
+}
+
+static void crg_bus_write(struct amlogic_usb_v2 *phy_v3,
+			 unsigned int addr, unsigned int data)
+{
+	union phy3_r4 phy_r4 = {.d32 = 0};
+	union phy3_r5 phy_r5 = {.d32 = 0};
+	unsigned long timeout_jiffies;
+
+	crg_bus_addr(phy_v3, addr);
+
+	phy_r4.b.phy_cr_data_in = data;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+
+	phy_r4.b.phy_cr_cap_data = 0;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	phy_r4.b.phy_cr_cap_data = 1;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	timeout_jiffies = jiffies +
+		msecs_to_jiffies(1000);
+	do {
+		phy_r5.d32 = readl(phy_v3->phy3_cfg_r5);
+	} while (phy_r5.b.phy_cr_ack == 0 &&
+		time_is_after_jiffies(timeout_jiffies));
+
+	phy_r4.b.phy_cr_cap_data = 0;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	timeout_jiffies = jiffies +
+		msecs_to_jiffies(1000);
+	do {
+		phy_r5.d32 = readl(phy_v3->phy3_cfg_r5);
+	} while (phy_r5.b.phy_cr_ack == 1 &&
+		time_is_after_jiffies(timeout_jiffies));
+
+	phy_r4.b.phy_cr_write = 0;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	phy_r4.b.phy_cr_write = 1;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	timeout_jiffies = jiffies +
+		msecs_to_jiffies(1000);
+	do {
+		phy_r5.d32 = readl(phy_v3->phy3_cfg_r5);
+	} while (phy_r5.b.phy_cr_ack == 0 &&
+		time_is_after_jiffies(timeout_jiffies));
+
+	phy_r4.b.phy_cr_write = 0;
+	writel(phy_r4.d32, phy_v3->phy3_cfg_r4);
+	timeout_jiffies = jiffies +
+		msecs_to_jiffies(1000);
+	do {
+		phy_r5.d32 = readl(phy_v3->phy3_cfg_r5);
+	} while (phy_r5.b.phy_cr_ack == 1 &&
+		time_is_after_jiffies(timeout_jiffies));
+}
+
+static void usb3_phy_crg_config(struct amlogic_usb_v2 *phy)
 {
 	u32 data = 0;
 
@@ -56,14 +174,14 @@ static void usb3_phy_cr_config(struct amlogic_usb_v2 *phy)
 	 * LANE0.TX_ALT_BLOCK.EN_ALT_BUS to enable TX to use alt bus
 	 * mode
 	 */
-	data = cr_bus_read(0x102d);
+	data = crg_bus_read(phy, 0x102d);
 	data |= (1 << 7);
-	cr_bus_write(0x102D, data);
+	crg_bus_write(phy, 0x102D, data);
 
-	data = cr_bus_read(0x1010);
+	data = crg_bus_read(phy, 0x1010);
 	data &= ~0xff0;
 	data |= 0x20;
-	cr_bus_write(0x1010, data);
+	crg_bus_write(phy, 0x1010, data);
 
 	/*
 	 * Fix RX Equalization setting as follows
@@ -72,13 +190,13 @@ static void usb3_phy_cr_config(struct amlogic_usb_v2 *phy)
 	 * LANE0.RX_OVRD_IN_HI.RX_EQ set to 3
 	 * LANE0.RX_OVRD_IN_HI.RX_EQ_OVRD set to 1
 	 */
-	data = cr_bus_read(0x1006);
+	data = crg_bus_read(phy, 0x1006);
 	data &= ~(1 << 6);
 	data |= (1 << 7);
 	data &= ~(0x7 << 8);
 	data |= (0x3 << 8);
 	data |= (0x1 << 11);
-	cr_bus_write(0x1006, data);
+	crg_bus_write(phy, 0x1006, data);
 
 	/*
 	 * S	et EQ and TX launch amplitudes as follows
@@ -86,20 +204,20 @@ static void usb3_phy_cr_config(struct amlogic_usb_v2 *phy)
 	 * LANE0.TX_OVRD_DRV_LO.AMPLITUDE set to 127
 	 * LANE0.TX_OVRD_DRV_LO.EN set to 1.
 	 */
-	data = cr_bus_read(0x1002);
+	data = crg_bus_read(phy, 0x1002);
 	data &= ~0x3f80;
 	data |= (0x16 << 7);
 	data &= ~0x7f;
 	data |= (0x7f | (1 << 14));
-	cr_bus_write(0x1002, data);
+	crg_bus_write(phy, 0x1002, data);
 
 	/*
 	 * MPLL_LOOP_CTL.PROP_CNTRL
 	 */
-	data = cr_bus_read(0x30);
+	data = crg_bus_read(phy, 0x30);
 	data &= ~(0xf << 4);
 	data |= (0x8 << 4);
-	cr_bus_write(0x30, data);
+	crg_bus_write(phy, 0x30, data);
 	udelay(2);
 }
 
@@ -161,7 +279,7 @@ static int amlogic_crg_drd_usb3_init(struct usb_phy *x)
 		writel(p3_r2.d32, phy->phy3_cfg_r2);
 		udelay(2);
 
-		usb3_phy_cr_config(phy);
+		usb3_phy_crg_config(phy);
 
 		/*
 		 * LOS_BIAS to 0x5

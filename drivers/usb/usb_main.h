@@ -69,6 +69,7 @@ int __init amlogic_crg_drd_usb2_drv_init(void);
 int __init amlogic_crg_init(void);
 int __init amlogic_crg_drd_usb3_drv_init(void);
 int __init amlogic_crg_host_driver_init(void);
+int __init crg_otg_init(void);
 int __init crg_otg_v2_init(void);
 #else
 static inline  int __init amlogic_crg_drd_usb2_drv_init(void)
@@ -87,6 +88,11 @@ static inline  int __init amlogic_crg_drd_usb3_drv_init(void)
 }
 
 static inline  int __init amlogic_crg_host_driver_init(void)
+{
+	return -1;
+}
+
+static inline int __init crg_otg_init(void)
 {
 	return -1;
 }

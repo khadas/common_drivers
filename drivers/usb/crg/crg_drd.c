@@ -57,6 +57,7 @@ struct crg_drd {
 	unsigned		super_speed_support:1;
 	bool		usb_phy_init;
 	bool		usb_suspend;
+	struct clk		*general_clk;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -97,6 +98,15 @@ static void crg_core_exit(struct crg_drd	*crg)
 
 static int crg_core_init(struct crg_drd *crg)
 {
+	int			ret;
+
+	ret = crg_core_soft_reset(crg);
+	if (ret)
+		return ret;
+
+	usb_phy_set_suspend(crg->usb2_phy, 0);
+	usb_phy_set_suspend(crg->usb3_phy, 0);
+
 	switch (crg->dr_mode) {
 	case USB_DR_MODE_PERIPHERAL:
 		crg_set_mode(crg, CRG_GCTL_PRTCAP_DEVICE);
@@ -325,6 +335,14 @@ static int crg_probe(struct platform_device *pdev)
 	if (!crg->regs) {
 		dev_err(dev, "ioremap failed\n");
 		return -ENODEV;
+	}
+
+	crg->general_clk = devm_clk_get(dev, "crg_general");
+	if (IS_ERR(crg->general_clk)) {
+		ret = PTR_ERR(crg->general_clk);
+		goto err0;
+	} else {
+		clk_prepare_enable(crg->general_clk);
 	}
 
 	platform_set_drvdata(pdev, crg);

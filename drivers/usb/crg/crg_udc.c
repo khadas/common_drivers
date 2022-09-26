@@ -4437,6 +4437,9 @@ static int crg_udc_probe(struct platform_device *pdev)
 	const void *prop;
 	int retval = 0;
 	u32 phy_id = 1;
+	struct device		*sysdev;
+
+	memset(&crg_udc_dev, 0, sizeof(struct crg_gadget_dev));
 
 	crg_udc = &crg_udc_dev;
 	crg_udc->dev = &pdev->dev;
@@ -4497,8 +4500,15 @@ static int crg_udc_probe(struct platform_device *pdev)
 		}
 	}
 
+	sysdev = &pdev->dev;
+	ret = dma_set_mask_and_coherent(sysdev, DMA_BIT_MASK(32));
+	if (ret)
+		return ret;
+
 	if (!phy_reg_addr)
 		return -ENODEV;
+
+	pdev->id = phy_id;
 
 	if (crg_clk_enable_usb(pdev,
 		(unsigned long)phy_reg_addr, controller_type)) {
@@ -4617,6 +4627,8 @@ static int crg_udc_remove(struct platform_device *pdev)
 	platform_set_drvdata(pdev, 0);
 
 	CRG_DEBUG("%s %d gadget remove\n", __func__, __LINE__);
+
+	memset(&crg_udc_dev, 0, sizeof(struct crg_gadget_dev));
 
 	return 0;
 }

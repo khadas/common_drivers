@@ -1652,7 +1652,7 @@
 			usb2-phy-reg-size = <0x80>;
 			usb3-phy-reg = <0xfe03a080>;
 			usb3-phy-reg-size = <0x20>;
-			interrupts = <0 129 IRQ_TYPE_EDGE_RISING>;
+			interrupts = <GIC_SPI 129 IRQ_TYPE_EDGE_RISING>;
 		};
 
 		crg21_otg: crg21otg@fe03a020 {
@@ -1662,13 +1662,13 @@
 			usb2-phy-reg-size = <0x60>;
 			usb3-phy-reg = <0xfe03a080>;
 			usb3-phy-reg-size = <0x20>;
-			interrupts = <0 281 IRQ_TYPE_EDGE_RISING>;
+			interrupts = <GIC_SPI 281 IRQ_TYPE_EDGE_RISING>;
 		};
 
 		crg2_drd: crg2drd@fdd00000 {
 			status = "disabled";
 			reg = <0x0 0xfdd00000 0x0 0x100000>;
-			interrupts = <0 131 IRQ_TYPE_EDGE_RISING>;
+			interrupts = <GIC_SPI 131 IRQ_TYPE_EDGE_RISING>;
 			usb-phy = <&crg_phy_21>, <&crg3_phy_21>;
 			cpu-type = "gxl";
 			clock-src = "usb3.0";
@@ -1680,7 +1680,7 @@
 		crg3_drd: crg3drd@fde00000 {
 			status = "disabled";
 			reg = <0x0 0xfde00000 0x0 0x100000>;
-			interrupts = <0 130 IRQ_TYPE_EDGE_RISING>;
+			interrupts = <GIC_SPI 130 IRQ_TYPE_EDGE_RISING>;
 			usb-phy = <&crg_phy_20>, <&crg3_phy_20>;
 			cpu-type = "gxl";
 			clock-src = "usb3.0";
@@ -1694,7 +1694,8 @@
 			status = "disable";
 			device_name = "crg_udc_3";
 			reg = <0x0 0xfde00000 0x0 0x100000>;
-			interrupts = <0 130 IRQ_TYPE_EDGE_RISING>;
+			interrupts = <GIC_SPI 130 IRQ_TYPE_EDGE_RISING>;
+			interrupt-names = "crg_udc";
 			clock-src = "usb0"; /** clock src */
 			port-speed = <5>; /** 0: default, high, 1: full */
 			phy-reg = <0xfe03a000>;
@@ -1709,7 +1710,8 @@
 			status = "disable";
 			device_name = "crg_udc_2";
 			reg = <0x0 0xfdd00000 0x0 0x100000>;
-			interrupts = <0 131 IRQ_TYPE_EDGE_RISING>;
+			interrupts = <GIC_SPI 131 IRQ_TYPE_EDGE_RISING>;
+			interrupt-names = "crg_udc";
 			clock-src = "usb0"; /** clock src */
 			port-speed = <3>; /** 0: default, high, 1: full */
 			phy-reg = <0xfe03a020>;

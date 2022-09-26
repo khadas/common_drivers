@@ -1268,7 +1268,8 @@ void meson_hdmitx_encoder_atomic_enable(struct drm_encoder *encoder,
 		meson_hdmitx_update_hdcp();
 	}
 
-	if (mode_vrefresh != meson_crtc_state->brr) {
+	if (meson_crtc_state->base.vrr_enabled &&
+	    mode_vrefresh != meson_crtc_state->brr) {
 		set_vframe_rate_hint(mode_vrefresh  * 100);
 		DRM_INFO("%s, vrr set rate hint, %d\n", __func__,
 			 mode_vrefresh  * 100);

@@ -282,7 +282,6 @@ CONFIG_AMLOGIC_GX_REBOOT=m
 
 # amlogic-crypto-dma.ko
 CONFIG_AMLOGIC_CRYPTO_DMA=m
-CONFIG_CRYPTO_DES=y
 
 # amlogic-snd-soc.ko
 CONFIG_AMLOGIC_SND_SOC=m

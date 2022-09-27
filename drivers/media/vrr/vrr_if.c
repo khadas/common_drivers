@@ -27,14 +27,33 @@
 #include "vrr_drv.h"
 #include "vrr_reg.h"
 
-/* check viu0 mux enc index */
 static struct aml_vrr_drv_s *vrr_drv_active_sel(void)
 {
+	struct vinfo_s *vinfo = NULL;
 	struct aml_vrr_drv_s *vdrv = NULL;
 	int index = 0;
 
+	vinfo = get_current_vinfo();
+	if (!vinfo)
+		return NULL;
+
+	index = (vinfo->viu_mux >> 4) & 0xf;
 	vdrv = vrr_drv_get(index);
 	return vdrv;
+}
+
+static void vrr_drv_state_active_update(int index)
+{
+	struct aml_vrr_drv_s *vdrv = NULL;
+	int i;
+
+	for (i = 0; i < VRR_MAX_DRV; i++) {
+		vdrv = vrr_drv_get(i);
+		if (i == index)
+			vdrv->state |= VRR_STATE_ACTIVE;
+		else
+			vdrv->state &= ~VRR_STATE_ACTIVE;
+	}
 }
 
 ssize_t vrr_active_status_show(struct device *dev,
@@ -43,6 +62,11 @@ ssize_t vrr_active_status_show(struct device *dev,
 	struct aml_vrr_drv_s *vdrv = vrr_drv_active_sel();
 	unsigned int offset;
 	ssize_t len = 0;
+
+	if (!vdrv) {
+		len = sprintf(buf, "active vrr is null\n");
+		return len;
+	}
 
 	offset = vdrv->data->offset[vdrv->index];
 
@@ -62,12 +86,16 @@ ssize_t vrr_active_status_show(struct device *dev,
 				vdrv->vrr_dev->vline_min);
 		len += sprintf(buf + len, "dev->vfreq_max:  %d\n",
 				vdrv->vrr_dev->vfreq_max);
-		len += sprintf(buf + len, "dev->vfreq_min:  %d\n",
+		len += sprintf(buf + len, "dev->vfreq_min:  %d\n\n",
 				vdrv->vrr_dev->vfreq_min);
 	}
+	len += sprintf(buf + len, "vrr_policy:      %d\n", vdrv->policy);
+	len += sprintf(buf + len, "lfc_en:          %d\n", vdrv->lfc_en);
+	len += sprintf(buf + len, "adj_vline_max:   %d\n", vdrv->adj_vline_max);
+	len += sprintf(buf + len, "adj_vline_min:   %d\n", vdrv->adj_vline_min);
 	len += sprintf(buf + len, "line_dly:        %d\n", vdrv->line_dly);
-	len += sprintf(buf + len, "state:           0x%x\n", vdrv->state);
-	len += sprintf(buf + len, "enable:          0x%x\n", vdrv->enable);
+	len += sprintf(buf + len, "state:           0x%08x\n", vdrv->state);
+	len += sprintf(buf + len, "enable:          %d\n\n", vdrv->enable);
 
 	/** vrr reg info **/
 	len += sprintf(buf + len, "VENC_VRR_CTRL: 0x%x\n",
@@ -80,7 +108,7 @@ ssize_t vrr_active_status_show(struct device *dev,
 			vrr_reg_read(VENP_VRR_CTRL + offset));
 	len += sprintf(buf + len, "VENP_VRR_ADJ_LMT: 0x%x\n",
 			vrr_reg_read(VENP_VRR_ADJ_LMT + offset));
-	len += sprintf(buf + len, "VENP_VRR_CTRL1: 0x%x\n",
+	len += sprintf(buf + len, "VENP_VRR_CTRL1: 0x%x\n\n",
 			vrr_reg_read(VENP_VRR_CTRL1 + offset));
 
 	/** vrr timer **/
@@ -95,13 +123,17 @@ ssize_t vrr_active_status_show(struct device *dev,
 int aml_vrr_state(void)
 {
 	struct aml_vrr_drv_s *vdrv_active = vrr_drv_active_sel();
+	int ret = 0;
 
 	if (!vdrv_active)
 		return 0;
 
 	if (vdrv_active->state & VRR_STATE_EN)
-		return 1;
-	return 0;
+		ret = 1;
+	else
+		ret = 0;
+
+	return ret;
 }
 
 int aml_vrr_func_en(int flag)
@@ -112,10 +144,29 @@ int aml_vrr_func_en(int flag)
 	if (!vdrv_active)
 		return -1;
 
+	if (vrr_debug_print & VRR_DBG_PR_ADV)
+		dump_stack();
+
 	if (flag)
 		ret = vrr_drv_func_en(vdrv_active, 1);
 	else
 		ret = vrr_drv_func_en(vdrv_active, 0);
+
+	return ret;
+}
+
+static int aml_vrr_lfc_update(int flag, int fps)
+{
+	struct aml_vrr_drv_s *vdrv_active = vrr_drv_active_sel();
+	int ret;
+
+	if (!vdrv_active)
+		return -1;
+
+	if (flag)
+		ret = vrr_drv_lfc_update(vdrv_active, 1, fps);
+	else
+		ret = vrr_drv_lfc_update(vdrv_active, 0, 0);
 
 	return ret;
 }
@@ -129,9 +180,17 @@ static int aml_vrr_drv_update(void)
 	if (!vdrv_active)
 		return -1;
 
+	if (vdrv_active->state & VRR_STATE_TRACE)
+		vrr_drv_trace(vdrv_active, "vrr drv update for mode_change\n");
+
+	vrr_drv_state_active_update(vdrv_active->index);
 	if (vdrv_active->vrr_dev) {
 		vdata.dev_vfreq_max = vdrv_active->vrr_dev->vfreq_max;
-		vdata.dev_vfreq_min = vdrv_active->vrr_dev->vfreq_min;
+		vdata.dev_vfreq_min = vdrv_active->vrr_dev->vfreq_min + 5;
+		if (vrr_debug_print & VRR_DBG_PR_NORMAL) {
+			VRRPR("%s: dev_vfreq max:%d, min:%d\n",
+				__func__, vdata.dev_vfreq_max, vdata.dev_vfreq_min);
+		}
 		aml_vrr_atomic_notifier_call_chain(VRR_EVENT_UPDATE, &vdata);
 	}
 
@@ -159,8 +218,10 @@ static int aml_vrr_switch_notify_callback(struct notifier_block *block,
 		if (!para)
 			break;
 		vdata = (struct vrr_notifier_data_s *)para;
-		if (vdrv_active)
+		if (vdrv_active) {
 			vdrv_active->line_dly = vdata->line_dly;
+			vdrv_active->policy = vdata->vrr_policy;
+		}
 		aml_vrr_func_en(1);
 		break;
 	case FRAME_LOCK_EVENT_VRR_OFF_MODE:
@@ -173,6 +234,41 @@ static int aml_vrr_switch_notify_callback(struct notifier_block *block,
 	return 0;
 }
 
+static int aml_vrr_lfc_notify_callback(struct notifier_block *block,
+				       unsigned long event, void *para)
+{
+	int fps;
+
+	switch (event) {
+	case VRR_EVENT_LFC_ON:
+		if (!para) {
+			VRRERR("%s: para is null\n", __func__);
+			return 0;
+		}
+		fps = *(int *)para;
+		aml_vrr_lfc_update(1, fps);
+		break;
+	case VRR_EVENT_LFC_OFF:
+		aml_vrr_lfc_update(0, 0);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static int aml_vrr_get_state_notify_callback(struct notifier_block *block,
+					     unsigned long event, void *para)
+{
+	if (event != VRR_EVENT_GET_STATE)
+		return 0;
+
+	*(int *)para = aml_vrr_state();
+
+	return 0;
+}
+
 static struct notifier_block aml_vrr_vout_notifier = {
 	.notifier_call = aml_vrr_vout_notify_callback,
 };
@@ -181,10 +277,20 @@ static struct notifier_block aml_vrr_switch_notifier = {
 	.notifier_call = aml_vrr_switch_notify_callback,
 };
 
+static struct notifier_block aml_vrr_lfc_notifier = {
+	.notifier_call = aml_vrr_lfc_notify_callback,
+};
+
+static struct notifier_block aml_vrr_get_state_notifier = {
+	.notifier_call = aml_vrr_get_state_notify_callback,
+};
+
 int aml_vrr_if_probe(void)
 {
-	aml_vrr_atomic_notifier_register(&aml_vrr_vout_notifier);
+	vout_register_client(&aml_vrr_vout_notifier);
 	aml_vrr_atomic_notifier_register(&aml_vrr_switch_notifier);
+	aml_vrr_atomic_notifier_register(&aml_vrr_lfc_notifier);
+	aml_vrr_atomic_notifier_register(&aml_vrr_get_state_notifier);
 
 	return 0;
 }
@@ -192,7 +298,9 @@ int aml_vrr_if_probe(void)
 int aml_vrr_if_remove(void)
 {
 	aml_vrr_atomic_notifier_unregister(&aml_vrr_switch_notifier);
-	aml_vrr_atomic_notifier_unregister(&aml_vrr_vout_notifier);
+	aml_vrr_atomic_notifier_unregister(&aml_vrr_lfc_notifier);
+	aml_vrr_atomic_notifier_unregister(&aml_vrr_get_state_notifier);
+	vout_unregister_client(&aml_vrr_vout_notifier);
 
 	return 0;
 }

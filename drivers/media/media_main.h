@@ -176,9 +176,16 @@ static inline int aml_vdac_init(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_ION_DEV)
 int ion_device_create_init(void);
 int ion_system_heap_create_init(void);
 int ion_system_contig_heap_create_init(void);
+#else
+static inline int ion_device_create_init(void) { return 0; }
+static inline int ion_system_heap_create_init(void) { return 0; }
+static inline int ion_system_contig_heap_create_init(void) { return 0; }
+#endif
+
 #ifdef CONFIG_AMLOGIC_ION
 int ion_init(void);
 #else

@@ -19,6 +19,9 @@ static inline bool cma_forbidden_mask(gfp_t gfp_flags)
 }
 #endif
 
+/* the highest bit of total_migrate_scanned in struct compact_control */
+#define FORBID_TO_CMA_BIT	63
+
 extern unsigned long ion_cma_allocated;
 extern int cma_debug_level;
 

@@ -451,7 +451,8 @@ void check_page_to_cma(struct compact_control *cc, struct page *page)
 {
 	struct address_space *mapping;
 
-	if (cc->forbid_to_cma)	/* no need check once it is true */
+	/* no need check once it is true */
+	if (test_bit(FORBID_TO_CMA_BIT, &cc->total_migrate_scanned))
 		return;
 
 	mapping = page_mapping(page);
@@ -459,10 +460,10 @@ void check_page_to_cma(struct compact_control *cc, struct page *page)
 		mapping = NULL;
 
 	if (PageKsm(page) && !PageSlab(page))
-		cc->forbid_to_cma = true;
+		__set_bit(FORBID_TO_CMA_BIT, &cc->total_migrate_scanned);
 
 	if (mapping && cma_forbidden_mask(mapping_gfp_mask(mapping)))
-		cc->forbid_to_cma = true;
+		__set_bit(FORBID_TO_CMA_BIT, &cc->total_migrate_scanned);
 }
 
 static int can_migrate_to_cma(struct page *page)

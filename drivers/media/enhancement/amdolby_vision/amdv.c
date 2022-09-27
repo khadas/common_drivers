@@ -11002,7 +11002,8 @@ static int amdolby_vision_process_v2_stb
 	}
 
 	if (!layerid_valid(hdmi_path_id) || !dv_inst_valid(hdmi_inst_id)) {
-		tv_dovi_setting->input_mode = 0;
+		if (tv_dovi_setting)
+			tv_dovi_setting->input_mode = 0;
 		hdmi_in_allm = false;
 	}
 

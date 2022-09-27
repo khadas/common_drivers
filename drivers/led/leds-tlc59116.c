@@ -24,8 +24,8 @@
 #define MESON_LEDS_CDEV_NAME			"i2c_leds"
 #define MESON_TLC59116_VERSION			"v2.0.0"
 
-#define MESON_TLC59116_I2C_RETRIES		5
-#define MESON_TLC59116_I2C_RETRY_DELAY		5
+#define MESON_TLC59116_I2C_RETRIES		3
+#define MESON_TLC59116_I2C_RETRY_DELAY	1
 #define MESON_TLC59116_COLORS_COUNT		3
 #define MESON_TLC59116_MAX_IO			16
 #define MESON_TLC59116_BRI_MAX			0xFF
@@ -180,6 +180,16 @@ static int meson_tlc59116_i2c_read(struct meson_tlc59116 *tlc59116,
 		cnt++;
 		msleep(MESON_TLC59116_I2C_RETRY_DELAY);
 	}
+
+	return ret;
+}
+
+static int check_tlc59116_valid(struct meson_tlc59116 *tlc59116)
+{
+	int ret = -1;
+	unsigned char reg_data = 0;
+
+	ret = meson_tlc59116_i2c_read(tlc59116, MESON_TLC59116_REG_MODE_1, &reg_data);
 
 	return ret;
 }
@@ -647,13 +657,14 @@ static int meson_tlc59116_i2c_probe(struct i2c_client *i2c,
 			__func__);
 		return ret;
 	}
-	ret = meson_tlc59116_init_data(tlc59116);
-	if (ret) {
+	ret = check_tlc59116_valid(tlc59116);
+	if (ret < 0) {
 		dev_err(&i2c->dev, "%s: there is no tlc59116!\n",
 			__func__);
 		return ret;
 	}
 
+	meson_tlc59116_init_data(tlc59116);
 	i2c_set_clientdata(i2c, tlc59116);
 	dev_set_drvdata(&i2c->dev, tlc59116);
 	tlc59116->cdev.name = MESON_LEDS_CDEV_NAME;

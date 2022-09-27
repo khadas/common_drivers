@@ -45,10 +45,9 @@
 
 #define AW9523_VERSION "v2.0.0"
 
-#define AW_I2C_RETRIES 5
-#define AW_I2C_RETRY_DELAY 5
-#define AW_READ_CHIPID_RETRIES 5
-#define AW_READ_CHIPID_RETRY_DELAY 5
+#define AW_I2C_RETRIES 3
+#define AW_I2C_RETRY_DELAY 1
+#define AW_READ_CHIPID_RETRIES 1
 #define AW9523_COLORS_COUNT	3
 #define AW9523_MAX_IO	15
 
@@ -460,7 +459,6 @@ static int aw9523_read_chipid(struct meson_aw9523 *aw9523)
 			break;
 		}
 		cnt++;
-		msleep(AW_READ_CHIPID_RETRY_DELAY);
 	}
 	return -EINVAL;
 }

@@ -348,7 +348,16 @@ function adjust_sequence_modules_loading() {
 create_ramdisk_vendor() {
 	install_temp=$1
 	source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list
-	last_ramdisk_module=${RAMDISK_MODULES_LOAD_LIST[${#RAMDISK_MODULES_LOAD_LIST[@]}-1]}
+	ramdisk_module_i=${#RAMDISK_MODULES_LOAD_LIST[@]}
+	while [ ${ramdisk_module_i} -gt 0 ]; do
+		let ramdisk_module_i--
+		echo ramdisk_module_i=$ramdisk_module_i ${RAMDISK_MODULES_LOAD_LIST[${ramdisk_module_i}]}
+		if [[ `grep "${RAMDISK_MODULES_LOAD_LIST[${ramdisk_module_i}]}" ${install_temp}` ]]; then
+			last_ramdisk_module=${RAMDISK_MODULES_LOAD_LIST[${ramdisk_module_i}]}
+			break;
+		fi
+	done
+	# last_ramdisk_module=${RAMDISK_MODULES_LOAD_LIST[${#RAMDISK_MODULES_LOAD_LIST[@]}-1]}
 	last_ramdisk_module_line=`sed -n "/${last_ramdisk_module}/=" ${install_temp}`
 	for line in ${last_ramdisk_module_line}; do
 		ramdisk_last_line=${line}

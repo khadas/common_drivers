@@ -863,7 +863,7 @@ static int secure_block_pool_init(void)
 	if (g_vdec_info.used)
 		return 0;
 	if (secure_heap_version >= SECURE_HEAP_SUPPORT_MULTI_POOL_VERSION &&
-		vdec_size > secure_pool_def_size) {
+		vdec_size >= secure_pool_def_size) {
 		pr_info("Use customer defined vdec size %x", vdec_size);
 	} else {
 		if (vdec_size < SECURE_MM_MIN_VDEC_SIZE_BYTES ||

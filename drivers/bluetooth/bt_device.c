@@ -60,7 +60,6 @@ static int btpower_evt;
 static int flag_n;
 static int flag_p;
 static int cnt;
-static int rfk_reg = 1;
 
 static int distinguish_module(void)
 {
@@ -364,12 +363,6 @@ static void get_btwakeup_irq_work(struct work_struct *work)
 static int bt_set_block(void *data, bool blocked)
 {
 	struct bt_dev_data *pdata = data;
-
-	if (rfk_reg) {
-		pr_debug("first rfkill_register skip\n");
-		rfk_reg = 0;
-		return 0;
-	}
 
 	pr_info("BT_RADIO going: %s\n", blocked ? "off" : "on");
 

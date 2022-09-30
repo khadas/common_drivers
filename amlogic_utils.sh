@@ -239,6 +239,10 @@ function extra_cmds() {
 		echo "VENDOR_DLKM_STAGING_DIR=${VENDOR_DLKM_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "MKBOOTIMG_STAGING_DIR=${MKBOOTIMG_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 	fi
+
+	for module_path in ${PREBUILT_MODULES_PATH}; do
+		find ${module_path} -type f -name "*.ko" -exec cp {} ${DIST_DIR} \;
+	done
 }
 
 export -f extra_cmds

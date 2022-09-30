@@ -144,8 +144,10 @@ static int aml_dma_queue_manage(void *data)
 
 				if (strstr(driver_name, "aes"))
 					ret = aml_aes_process(req);
+#if ENABLE_TDES && defined(CONFIG_CRYPTO_DES)
 				else if (strstr(driver_name, "des"))
 					ret = aml_tdes_process(req);
+#endif
 				else
 					ret = -EINVAL;
 			}
@@ -269,7 +271,7 @@ static int __init aml_dma_driver_init(void)
 	if (ret)
 		goto sha_init_failed;
 #endif
-#if ENABLE_TDES
+#if ENABLE_TDES && defined(CONFIG_CRYPTO_DES)
 	ret = aml_tdes_driver_init();
 	if (ret)
 		goto tdes_init_failed;
@@ -299,7 +301,7 @@ crypto_dev_init_failed:
 aes_init_failed:
 	aml_aes_driver_exit();
 #endif
-#if ENABLE_TDES
+#if ENABLE_TDES && defined(CONFIG_CRYPTO_DES)
 tdes_init_failed:
 	aml_tdes_driver_exit();
 #endif
@@ -317,7 +319,7 @@ static void __exit aml_dma_driver_exit(void)
 #if ENABLE_SHA
 	aml_sha_driver_exit();
 #endif
-#if ENABLE_TDES
+#if ENABLE_TDES && defined(CONFIG_CRYPTO_DES)
 	aml_tdes_driver_exit();
 #endif
 #if ENABLE_AES

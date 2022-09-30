@@ -463,7 +463,6 @@ static void hdrinfo_to_vinfo(struct hdr_info *hdrinfo, struct hdmitx_dev *hdev)
 {
 	memcpy(hdrinfo, &hdev->tx_comm.rxcap.hdr_info, sizeof(struct hdr_info));
 	hdrinfo->colorimetry_support = hdev->tx_comm.rxcap.colorimetry_data;
-	pr_info("update rx hdr info %x\n", hdrinfo->hdr_support);
 }
 
 static void rxlatency_to_vinfo(struct vinfo_s *info, struct rx_cap *rx)

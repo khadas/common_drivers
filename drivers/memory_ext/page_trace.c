@@ -547,7 +547,6 @@ struct page_trace *find_page_base(struct page *page)
 	return NULL;
 }
 #endif
-EXPORT_SYMBOL(find_page_base);
 
 unsigned long get_page_trace(struct page *page)
 {
@@ -559,7 +558,6 @@ unsigned long get_page_trace(struct page *page)
 
 	return 0;
 }
-EXPORT_SYMBOL(get_page_trace);
 
 #ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 static void __init set_init_page_trace(struct page *page, unsigned int order, gfp_t flag)

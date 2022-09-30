@@ -553,9 +553,12 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 #endif
 #ifdef CONFIG_AMLOGIC_DMC_MONITOR_TM2
 	case DMC_TYPE_TM2:
+	/* cpuinfo build module not used is_meson_rev_b() */
+	#ifdef CONFIG_AMLOGIC_CPU_INFO
 		if (is_meson_rev_b())
 			mon->ops = &tm2_dmc_mon_ops;
 		else
+	#endif
 		#ifdef CONFIG_AMLOGIC_DMC_MONITOR_G12
 			mon->ops = &g12_dmc_mon_ops;
 		#else

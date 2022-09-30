@@ -26,7 +26,6 @@
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/codec_mm/codec_mm_scatter.h>
 #include <linux/amlogic/media/codec_mm/configs.h>
-#include <linux/amlogic/aml_cma.h>
 
 #if IS_ENABLED(CONFIG_AMLOGIC_CPU_INFO)
 #include <linux/amlogic/media/registers/cpu_version.h>
@@ -82,7 +81,8 @@ void tee_unprotect_mem(u32 handle)
 }
 #endif
 
-#ifndef CONFIG_AMLOGIC_CMA
+#ifndef CONFIG_AMLOGIC_CMA_DIS
+/* aml_media is ko can't use cma_mmu_op() func */
 int cma_mmu_op(struct page *page, int count, bool set)
 {
 	return 0;

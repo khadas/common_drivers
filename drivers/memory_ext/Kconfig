@@ -128,3 +128,11 @@ config AMLOGIC_MEMORY_STAT
 		include count free pages in migrate
 		list, print more memory information.
 
+config AMLOGIC_CMA_DIS
+	bool "Amlogic CMA disable change fot gki"
+	depends on AMLOGIC_MEMORY_EXTEND
+	depends on CMA
+	default n
+	help
+		Amlogic disable CMA optimization for gki needs.
+

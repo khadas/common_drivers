@@ -88,6 +88,9 @@ static unsigned long cma_isolated;
 
 static atomic_t cma_allocate;
 
+#ifdef CONFIG_AMLOGIC_CMA_DIS
+unsigned long ion_cma_allocated;
+#endif
 /*
  * We insert a none-mapping vm area to vmalloc space
  * and dynamic adjust it's size according nr_cma_allocated.
@@ -95,8 +98,6 @@ static atomic_t cma_allocate;
  * into KernelUsed item for dumpsys meminfo command on Android
  * layer
  */
-unsigned long ion_cma_allocated;
-EXPORT_SYMBOL(ion_cma_allocated);
 
 static int cma_alloc_ref(void)
 {
@@ -445,7 +446,6 @@ int cma_mmu_op(struct page *page, int count, bool set)
 	}
 	return 0;
 }
-EXPORT_SYMBOL(cma_mmu_op);
 
 void check_page_to_cma(struct compact_control *cc, struct page *page)
 {

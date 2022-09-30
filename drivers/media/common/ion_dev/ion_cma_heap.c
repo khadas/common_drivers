@@ -10,7 +10,7 @@
 #include <linux/cma.h>
 #include <linux/scatterlist.h>
 #include <linux/highmem.h>
-#ifdef CONFIG_AMLOGIC_CMA
+#ifdef CONFIG_AMLOGIC_CMA_DIS
 #include <linux/amlogic/aml_cma.h>
 #endif
 
@@ -69,7 +69,7 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
 	buffer->priv_virt = pages;
 	buffer->sg_table = table;
 
-#ifdef CONFIG_AMLOGIC_CMA
+#ifdef CONFIG_AMLOGIC_CMA_DIS
 	ion_cma_allocated += len / PAGE_SIZE;
 #endif
 	return 0;
@@ -89,7 +89,7 @@ static void ion_cma_free(struct ion_buffer *buffer)
 
 	/* release memory */
 	cma_release(cma_heap->cma, pages, nr_pages);
-#ifdef CONFIG_AMLOGIC_CMA
+#ifdef CONFIG_AMLOGIC_CMA_DIS
 	ion_cma_allocated -= buffer->size / PAGE_SIZE;
 #endif
 	/* release sg table */

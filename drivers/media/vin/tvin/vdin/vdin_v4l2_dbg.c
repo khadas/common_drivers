@@ -34,23 +34,26 @@ static void vdin_v4l2_status(struct vdin_dev_s *devp)
 	pr_info("vdin_v4l_ver:0x%x\n", VDIN_DEV_VER);
 	pr_info("ver2:%s\n", VDIN_DEV_VER2);
 	pr_info("work_mode:%d\n", devp->work_mode);
-	pr_info("type:%d\n", devp->vbqueue.type);
-	pr_info("memory:%d(%s)\n", devp->vbqueue.memory,
-		vb2_memory_sts_to_str(devp->vbqueue.memory));
-	pr_info("num_buffers:%d\n", devp->vbqueue.num_buffers);
-	pr_info("queued_count:%d\n", devp->vbqueue.queued_count);
-	pr_info("streaming:%d\n", devp->vbqueue.streaming);
-	pr_info("buf_struct_size:%d\n", devp->vbqueue.buf_struct_size);
-	pr_info("min_buffers_needed:%d\n", devp->vbqueue.min_buffers_needed);
+	pr_info("type:%d\n", devp->vb_queue.type);
+	pr_info("memory:%d(%s)\n", devp->vb_queue.memory,
+		vb2_memory_sts_to_str(devp->vb_queue.memory));
+	pr_info("num_buffers:%d\n", devp->vb_queue.num_buffers);
+	pr_info("queued_count:%d\n", devp->vb_queue.queued_count);
+	pr_info("streaming:%d\n", devp->vb_queue.streaming);
+	pr_info("buf_struct_size:%d\n", devp->vb_queue.buf_struct_size);
+	pr_info("min_buffers_needed:%d\n", devp->vb_queue.min_buffers_needed);
 	pr_info("v4l_support_en:%d\n", devp->v4l_support_en);
-	pr_info("dbg_v4l_done_cnt:%d\n", devp->dbg_v4l_done_cnt);
-	pr_info("dbg_v4l_que_cnt:%d\n", devp->dbg_v4l_que_cnt);
-	pr_info("dbg_v4l_dque_cnt:%d\n", devp->dbg_v4l_dque_cnt);
+	pr_info("secure_flg:%d\n", devp->vdin_v4l2.secure_flg);
+
+	/* vdin v4l2 stats */
+	pr_info("done_cnt:%u\n", devp->vdin_v4l2.stats.done_cnt);
+	pr_info("dque_cnt:%u\n", devp->vdin_v4l2.stats.dque_cnt);
+	pr_info("que_cnt:%u\n", devp->vdin_v4l2.stats.que_cnt);
+	pr_info("drop_divide:%u\n", devp->vdin_v4l2.stats.drop_divide);
 }
 
-static ssize_t v4ldbg_show(struct device *dev,
-			   struct device_attribute *attr,
-			   char *buf)
+static ssize_t v4l_dbg_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
 {
 	/*struct vdin_dev_s *devp = dev_get_drvdata(dev);*/
 	ssize_t len = 0;
@@ -63,9 +66,8 @@ static ssize_t v4ldbg_show(struct device *dev,
 	return len;
 }
 
-static ssize_t v4ldbg_store(struct device *dev,
-			    struct device_attribute *attr,
-			    const char *buf, size_t len)
+static ssize_t v4l_dbg_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t len)
 {
 	char *parm[47] = {NULL};
 	char *buf_orig = kstrdup(buf, GFP_KERNEL);
@@ -92,11 +94,19 @@ static ssize_t v4ldbg_store(struct device *dev,
 		if (kstrtol(parm[1], 10, &val) == 0)
 			devp->dbg_v4l_pause = val;
 		pr_info("v4l pause %d\n", devp->dbg_v4l_pause);
+	} else if (!strcmp(parm[0], "no_vdin_ioctl")) {/* for v4l2 test app */
+		if (kstrtol(parm[1], 0, &val) == 0)
+			devp->dbg_v4l_no_vdin_ioctl = val;
+		pr_info("v4l dbg_v4l_no_vdin_ioctl %d\n", devp->dbg_v4l_no_vdin_ioctl);
+	} else if (!strcmp(parm[0], "no_vdin_event")) {/* for v4l2 test app */
+		if (kstrtol(parm[1], 0, &val) == 0)
+			devp->dbg_v4l_no_vdin_event = val;
+		pr_info("v4l dbg_v4l_no_vdin_event %d\n", devp->dbg_v4l_no_vdin_event);
 	}
 
 	return len;
 }
-static DEVICE_ATTR_RW(v4ldbg);
+static DEVICE_ATTR_RW(v4l_dbg);
 
 static ssize_t v4l_work_mode_show(struct device *dev,
 				  struct device_attribute *attr,
@@ -126,13 +136,13 @@ static DEVICE_ATTR_RW(v4l_work_mode);
 
 void vdin_v4l2_create_device_files(struct device *dev)
 {
-	device_create_file(dev, &dev_attr_v4ldbg);
+	device_create_file(dev, &dev_attr_v4l_dbg);
 	device_create_file(dev, &dev_attr_v4l_work_mode);
 }
 
 void vdin_v4l2_remove_device_files(struct device *dev)
 {
-	device_remove_file(dev, &dev_attr_v4ldbg);
+	device_remove_file(dev, &dev_attr_v4l_dbg);
 	device_remove_file(dev, &dev_attr_v4l_work_mode);
 }
 

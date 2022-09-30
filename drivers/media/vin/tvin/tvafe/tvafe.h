@@ -20,7 +20,15 @@
 /* ************************************************* */
 /* *** macro definitions ********************************************* */
 /* *********************************************************** */
-#define TVAFE_VER "Ref.2021/12/25 tvafe change clamp config"
+/* 20211225: tvafe change clamp config */
+/* 20220415: pq_reg_trust_table add register mask */
+/* 20220430: PALM CC not display */
+/* 20220513: add electrical performance debug adjust command */
+/* 20220602: call avin read crash after shutdown */
+/* 20220613: tvafe shutdown not close clk stuck */
+/* 20220708: ntsc-m set 0x2e to default value */
+/* 20220812: avin 0% white cannot detect signal */
+#define TVAFE_VER "20220812:avin 0% white cannot detect signal"
 
 /* used to set the flag of tvafe_dev_s */
 #define TVAFE_FLAG_DEV_OPENED 0x00000010
@@ -60,6 +68,10 @@ struct tvafe_info_s {
 struct tvafe_user_param_s {
 	unsigned int cutwindow_val_h[5];
 	unsigned int cutwindow_val_v[5];
+	unsigned int horizontal_dir0[5];
+	unsigned int horizontal_dir1[5];
+	unsigned int horizontal_stp0[5];
+	unsigned int horizontal_stp1[5];
 	unsigned int cutwindow_val_vs_ve;
 	unsigned int cdto_adj_hcnt_th;
 	unsigned int cdto_adj_ratio_p;
@@ -68,6 +80,7 @@ struct tvafe_user_param_s {
 	unsigned int cdto_adj_offset_n;
 	unsigned int auto_adj_en;
 	unsigned int vline_chk_cnt;
+	unsigned int hline_chk_cnt;
 	unsigned int nostd_vs_th;
 	unsigned int nostd_no_vs_th;
 	unsigned int nostd_vs_cntl;
@@ -145,7 +158,7 @@ void cvd_set_shift_cnt(enum tvafe_cvd2_shift_cnt_e src, unsigned int val);
 unsigned int cvd_get_shift_cnt(enum tvafe_cvd2_shift_cnt_e src);
 int tvafe_bringup_detect_signal(struct tvafe_dev_s *devp, enum tvin_port_e port);
 
-extern bool disableapi;
+extern bool disable_api;
 extern bool force_stable;
 extern bool tvafe_atv_search_channel;
 
@@ -157,6 +170,8 @@ extern unsigned int force_nostd;
 #define TVAFE_DBG_SMR2       BIT(9)
 #define TVAFE_DBG_NOSTD      BIT(12)
 #define TVAFE_DBG_NOSTD2     BIT(13)
+#define TVAFE_DBG_AUTO_VS    BIT(14)
+#define TVAFE_DBG_AUTO_HS    BIT(15)
 extern unsigned int tvafe_dbg_print;
 
 #endif  /* _TVAFE_H */

@@ -41,32 +41,53 @@
 			pr_info("vdin:dv " fmt, ## arg); \
 	} while (0)
 
-void vdin_wrmif2_enable(struct vdin_dev_s *devp, u32 en)
+void vdin_wrmif2_enable(struct vdin_dev_s *devp, u32 en, unsigned int rdma_enable)
 {
-	u32 offset = 0;
-
-	if (devp->dtdata->hw_ver != VDIN_HW_T7)
+	if (devp->dtdata->hw_ver != VDIN_HW_T7 || devp->index)
 		return;
 
-	/*clear int status*/
-	wr_bits(0, VDIN2_WR_CTRL, 1,
-			DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
-	wr_bits(0, VDIN2_WR_CTRL, 0,
-			DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
+#ifdef CONFIG_AMLOGIC_MEDIA_RDMA
+	if (rdma_enable) {
+		/*clear int status*/
+		rdma_write_reg_bits(devp->rdma_handle, VDIN2_WR_CTRL, 1,
+				DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
+		rdma_write_reg_bits(devp->rdma_handle, VDIN2_WR_CTRL, 0,
+				DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
 
-	/*write mif2 int*/
-	if (en)
-		wr_bits(offset, VDIN_TOP_DOUBLE_CTRL, 0x3,
-			VDIN1_INT_MASK_BIT, 3);
-	else
-		wr_bits(offset, VDIN_TOP_DOUBLE_CTRL, 0x7,
-			VDIN1_INT_MASK_BIT, 3);
+		/*write mif2 int*/
+		if (en)
+			rdma_write_reg_bits(devp->rdma_handle, VDIN_TOP_DOUBLE_CTRL, 0x3,
+				VDIN1_INT_MASK_BIT, 3);
+		else
+			rdma_write_reg_bits(devp->rdma_handle, VDIN_TOP_DOUBLE_CTRL, 0x7,
+				VDIN1_INT_MASK_BIT, 3);
 
-	if (en)
-		wr_bits(offset, VDIN2_WR_CTRL, 1, 8, 1);
-	else
-		wr_bits(offset, VDIN2_WR_CTRL, 0, 8, 1);
+		if (en)
+			rdma_write_reg_bits(devp->rdma_handle, VDIN2_WR_CTRL, 1, 8, 1);
+		else
+			rdma_write_reg_bits(devp->rdma_handle, VDIN2_WR_CTRL, 0, 8, 1);
+	} else {
+#endif
+		/*clear int status*/
+		wr_bits(0, VDIN2_WR_CTRL, 1,
+				DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
+		wr_bits(0, VDIN2_WR_CTRL, 0,
+				DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
+		/*write mif2 int*/
+		if (en)
+			wr_bits(0, VDIN_TOP_DOUBLE_CTRL, 0x3,
+				VDIN1_INT_MASK_BIT, 3);
+		else
+			wr_bits(0, VDIN_TOP_DOUBLE_CTRL, 0x7,
+				VDIN1_INT_MASK_BIT, 3);
 
+		if (en)
+			wr_bits(0, VDIN2_WR_CTRL, 1, 8, 1);
+		else
+			wr_bits(0, VDIN2_WR_CTRL, 0, 8, 1);
+#ifdef CONFIG_AMLOGIC_MEDIA_RDMA
+	}
+#endif
 	dprintk(1, "%s %d\n", __func__, en);
 }
 
@@ -129,19 +150,19 @@ void vdin_wrmif2_addr_update(struct vdin_dev_s *devp)
 	if (devp->dtdata->hw_ver != VDIN_HW_T7)
 		return;
 
-	baddr = devp->dv.meta_data_raw_pbuff0;
+	baddr = devp->dv.meta_data_raw_p_buffer0;
 	if (!baddr)
-		dprintk(0, "err: meta_data_raw_pbuff0\n");
+		dprintk(0, "err: meta_data_raw_p_buffer0\n");
 	stride_luma = ((hsize * 8) + 511) >> 9;
 
-	/*dprintk(0, "%s baddr:0x%x strid:0x%x\n", __func__,*/
+	/*dprintk(0, "%s baddr:0x%x stride:0x%x\n", __func__,*/
 	/*	baddr, stride_luma);*/
 
 	wr(offset, VDIN2_WR_BADDR_LUMA, baddr >> 4);
 	wr(offset, VDIN2_WR_STRIDE_LUMA, stride_luma << 2);
 }
 
-irqreturn_t vdin_wrmif2_dvmeta_wr_done_isr(int irq, void *dev_id)
+irqreturn_t vdin_wrmif2_dv_meta_wr_done_isr(int irq, void *dev_id)
 {
 	/*struct vdin_dev_s *devp = (struct vdin_dev_s *)dev_id;*/
 	irqreturn_t sts = IRQ_HANDLED;
@@ -160,8 +181,8 @@ irqreturn_t vdin_wrmif2_dvmeta_wr_done_isr(int irq, void *dev_id)
 	if (devp->dtdata->hw_ver != VDIN_HW_T7)
 		return sts;
 
-	src_dv_meta_vaddr = devp->dv.meta_data_raw_vbuff0;
-	dst_dv_meta_vaddr = devp->dv.meta_data_raw_buff1;
+	src_dv_meta_vaddr = devp->dv.meta_data_raw_v_buffer0;
+	dst_dv_meta_vaddr = devp->dv.meta_data_raw_buffer1;
 
 	if (IS_ERR_OR_NULL(src_dv_meta_vaddr) ||
 	    IS_ERR_OR_NULL(dst_dv_meta_vaddr)) {
@@ -175,7 +196,7 @@ irqreturn_t vdin_wrmif2_dvmeta_wr_done_isr(int irq, void *dev_id)
 		return IRQ_NONE;
 
 	dma_sync_single_for_device(&devp->this_pdev->dev,
-				   devp->dv.meta_data_raw_pbuff0,
+				   devp->dv.meta_data_raw_p_buffer0,
 				   K_DV_META_RAW_BUFF0,
 				   DMA_TO_DEVICE);
 	/*for debug*/

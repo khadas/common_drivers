@@ -60,6 +60,9 @@ enum tvin_sg_chg_flg {
 #define RE_CONFIG_HDR_EN	0x02
 #define RE_CONFIG_ALLM_EN	0x04
 
+#define VDIN_STABLED_CNT		500
+#define VDIN_SEND_EVENT_INTERVAL	50 /* Experience value can be adjusted */
+
 enum vdin_sm_log_level {
 	VDIN_SM_LOG_L_1 = 0x01,
 	VDIN_SM_LOG_L_2 = 0x02,
@@ -76,7 +79,7 @@ struct tvin_sm_s {
 	unsigned int back_nosig_cnt; /* STATE_UNSTABLE */
 	unsigned int back_stable_cnt; /* STATE_UNSTABLE */
 	unsigned int exit_prestable_cnt; /* STATE_PRESTABLE */
-	/* thresholds of state switchted */
+	/* thresholds of state switched */
 	int back_nosig_max_cnt;
 	int atv_unstable_in_cnt;
 	int atv_unstable_out_cnt;

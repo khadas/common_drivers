@@ -5108,7 +5108,7 @@ static int amlvideo2_start_tvin_service(struct amlvideo2_node *node)
 	const struct vinfo_s *vinfo;
 #endif
 	int dst_w, dst_h;
-	int angle = node->qctl_regs[0];
+	//int angle = node->qctl_regs[0];
 
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN
 	vinfo = get_current_vinfo();
@@ -5167,10 +5167,10 @@ static int amlvideo2_start_tvin_service(struct amlvideo2_node *node)
 		output_axis_adjust(vinfo->width, vinfo->height, (int *)&dst_w,
 				   (int *)&dst_h, 0, NULL);
 	}
-	para.dest_hactive = dst_w;
-	para.dest_vactive = dst_h;
+	para.dest_h_active = dst_w;
+	para.dest_v_active = dst_h;
 	if (para.scan_mode == TVIN_SCAN_MODE_INTERLACED)
-		para.dest_vactive = para.dest_vactive / 2;
+		para.dest_v_active = para.dest_v_active / 2;
 
 	if (para.port == TVIN_PORT_VIU1_VIDEO ||
 	    para.port == TVIN_PORT_VIU1_WB0_VD1)
@@ -5181,10 +5181,10 @@ static int amlvideo2_start_tvin_service(struct amlvideo2_node *node)
 			node->r_type, node->p_type);
 		pr_info("para.h_active: %d, para.v_active: %d,",
 			para.h_active, para.v_active);
-		pr_info("para.dest_hactive: %d, para.dest_vactive: %d,",
-			para.dest_hactive, para.dest_vactive);
-		pr_info("fh->width: %d, fh->height: %d,angle=%d\n",
-			fh->width, fh->height, angle);
+		pr_info("para.dest_h_active: %d, para.dest_v_active: %d,",
+			para.dest_h_active, para.dest_v_active);
+		pr_info("fh->width: %d, fh->height: %d,",
+			fh->width, fh->height);
 		pr_info("vinfo->mode: %d,para.scan_mode: %d\n",
 			vinfo->mode, para.scan_mode);
 		pr_info("node->vdin_device_num = %d .\n",
@@ -5474,23 +5474,23 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 				   (int *)&dst_h, 0, NULL);
 	}
 
-	para.dest_hactive = dst_w;
-	para.dest_vactive = dst_h;
+	para.dest_h_active = dst_w;
+	para.dest_v_active = dst_h;
 
 	if (amlvideo2_dest_w != 0)
-		para.dest_hactive = amlvideo2_dest_w;
+		para.dest_h_active = amlvideo2_dest_w;
 
 	if (amlvideo2_dest_h != 0)
-		para.dest_hactive = amlvideo2_dest_h;
+		para.dest_h_active = amlvideo2_dest_h;
 
-	para.reserved |= PARAM_STATE_SCREENCAP;
+	para.reserved |= PARAM_STATE_SCREEN_CAP;
 	if (para.scan_mode == TVIN_SCAN_MODE_INTERLACED)
-		para.dest_vactive = para.dest_vactive / 2;
+		para.dest_v_active = para.dest_v_active / 2;
 	if (para.port == TVIN_PORT_VIU1_VIDEO ||
 	    para.port == TVIN_PORT_VIU1_WB0_VD1) {
 		if (node->ge2d_multi_process_flag) {
-			para.dest_hactive = 384;
-			para.dest_vactive = 216;
+			para.dest_h_active = 384;
+			para.dest_v_active = 216;
 		} else {
 			para.cfmt = 1;
 		}
@@ -5498,10 +5498,10 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 	if (amlvideo2_dbg_en) {
 		pr_info("para.h_active: %d, para.v_active: %d,",
 			para.h_active, para.v_active);
-		pr_info("para.dest_hactive: %d, para.dest_vactive: %d,",
-			para.dest_hactive, para.dest_vactive);
-		pr_info("fh->width: %d, fh->height: %d,angle=%d",
-			fh->width, fh->height, angle);
+		pr_info("para.dest_h_active: %d, para.dest_v_active: %d,",
+			para.dest_h_active, para.dest_v_active);
+		pr_info("fh->width: %d, fh->height: %d,",
+			fh->width, fh->height);
 		pr_info("vinfo->mode: %d,para.scan_mode: %d\n",
 			vinfo->mode, para.scan_mode);
 		pr_info("node->vdin_device_num = %d .\n",

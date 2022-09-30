@@ -71,7 +71,7 @@ enum tvin_port_e {
 	TVIN_PORT_VIU1_WB0_OSD2, /* vpp0 osd2 postblend input */
 	TVIN_PORT_VIU1_WB0_VPP, /* vpp0 output */
 	TVIN_PORT_VIU1_WB0_POST_BLEND, /* vpp0 postblend output */
-	TVIN_PORT_VIU1_WB0_VDIN_BIST,
+	TVIN_PORT_VIU1_WB1_VDIN_BIST,
 	TVIN_PORT_VIU1_WB1_VIDEO,
 	TVIN_PORT_VIU1_WB1_VD1,
 	TVIN_PORT_VIU1_WB1_VD2,
@@ -524,7 +524,7 @@ bool IS_HDMI_SRC(enum tvin_port_e port);
 
 /* ************************************************************************* */
 
-/* *** IOCTL command definition ******************************************* */
+/* *** IO_CTL command definition ******************************************* */
 
 /* ************************************************************************* */
 
@@ -549,8 +549,8 @@ bool IS_HDMI_SRC(enum tvin_port_e port);
 #define TVIN_IOC_VF_UNREG           _IO(_TM_T, 0x44)
 #define TVIN_IOC_FREEZE_VF          _IO(_TM_T, 0x45)
 #define TVIN_IOC_UNFREEZE_VF        _IO(_TM_T, 0x46)
-#define TVIN_IOC_SNOWON             _IO(_TM_T, 0x47)
-#define TVIN_IOC_SNOWOFF            _IO(_TM_T, 0x48)
+#define TVIN_IOC_SNOW_ON             _IO(_TM_T, 0x47)
+#define TVIN_IOC_SNOW_OFF            _IO(_TM_T, 0x48)
 #define TVIN_IOC_GET_COLOR_RANGE	_IOR(_TM_T, 0X49,\
 	enum tvin_force_color_range_e)
 #define TVIN_IOC_SET_COLOR_RANGE	_IOW(_TM_T, 0X4a,\
@@ -579,12 +579,12 @@ bool IS_HDMI_SRC(enum tvin_port_e port);
 #define TVIN_IOC_CALLMASTER_GET	    _IO(_TM_T, 0x1d)
 #define TVIN_IOC_G_AFE_CVBS_STD     _IOW(_TM_T, 0x1e, enum tvin_sig_fmt_e)
 #define TVIN_IOC_LOAD_REG          _IOW(_TM_T, 0x20, struct am_regs_s)
-#define TVIN_IOC_S_AFE_SONWON     _IO(_TM_T, 0x22)
-#define TVIN_IOC_S_AFE_SONWOFF     _IO(_TM_T, 0x23)
+#define TVIN_IOC_S_AFE_SNOW_ON     _IO(_TM_T, 0x22)
+#define TVIN_IOC_S_AFE_SNOW_OFF     _IO(_TM_T, 0x23)
 #define TVIN_IOC_G_VDIN_HIST       _IOW(_TM_T, 0x24, struct vdin_hist_s)
 #define TVIN_IOC_S_VDIN_V4L2START  _IOW(_TM_T, 0x25, struct vdin_v4l2_param_s)
 #define TVIN_IOC_S_VDIN_V4L2STOP   _IO(_TM_T, 0x26)
-#define TVIN_IOC_S_AFE_SONWCFG     _IOW(_TM_T, 0x27, unsigned int)
+#define TVIN_IOC_S_AFE_SNOW_CFG     _IOW(_TM_T, 0x27, unsigned int)
 #define TVIN_IOC_S_DV_DESCRAMBLE	_IOW(_TM_T, 0x28, unsigned int)
 #define TVIN_IOC_S_AFE_ATV_SEARCH  _IOW(_TM_T, 0x29, unsigned int)
 

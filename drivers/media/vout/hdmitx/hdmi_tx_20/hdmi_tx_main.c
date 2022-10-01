@@ -176,6 +176,7 @@ static int log_level;
  */
 static int hdr_mute_frame = 20;
 static unsigned int res_1080p;
+static u32 max_refreshrate = 60;
 static char suspend_fmt_attr[16];
 
 struct vout_device_s hdmitx_vdev = {
@@ -2814,6 +2815,25 @@ static bool is_over_pixel_150mhz(struct hdmi_format_para *para)
 	return 0;
 }
 
+bool validate_mode_refreshrate(enum hdmi_vic vic, u32 maxfreq)
+{
+	struct hdmi_format_para *para = hdmi_get_fmt_paras(vic);
+
+	/* if the vic equals to HDMI_UNKNOWN or VESA,
+	 * then create it as over limited
+	 */
+	if (vic == HDMI_UNKNOWN || vic >= HDMITX_VESA_OFFSET)
+		return true;
+
+	if (para->timing.v_freq > (maxfreq * 1000)) {
+		pr_info("validate refreshrate (%s)-(%d) fail\n",
+					para->name, para->timing.v_freq);
+		return false;
+	}
+
+	return true;
+}
+
 bool is_vic_over_limited_1080p(enum hdmi_vic vic)
 {
 	struct hdmi_format_para *para = hdmi_get_fmt_paras(vic);
@@ -2887,10 +2907,17 @@ static ssize_t disp_cap_show(struct device *dev,
 			memset(mode_tmp, 0, sizeof(mode_tmp));
 			strncpy(mode_tmp, disp_mode_t[i], 31);
 			vic = hdmitx_edid_get_VIC(&hdmitx_device, mode_tmp, 0);
+
+			/*filter 1080p max size.*/
 			if (hdmitx_limited_1080p()) {
 				if (is_vic_over_limited_1080p(vic))
 					continue;
 			}
+
+			/*filter max refreshrate.*/
+			if (validate_mode_refreshrate(vic, max_refreshrate) == false)
+				continue;
+
 			/* Handling only 4k420 mode */
 			if (vic == HDMI_UNKNOWN && is_4k50_fmt(mode_tmp)) {
 				strcat(mode_tmp, "420");
@@ -6175,6 +6202,7 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev)
 	struct device_node *init_data;
 	const struct of_device_id *match;
 #endif
+	u32 refreshrate_limit = 0;
 
 	/* HDMITX pinctrl config for hdp and ddc*/
 	if (pdev->dev.pins) {
@@ -6240,6 +6268,12 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev)
 		ret = of_property_read_u32(pdev->dev.of_node, "res_1080p",
 					   &res_1080p);
 		res_1080p = !!res_1080p;
+
+		ret = of_property_read_u32(pdev->dev.of_node, "max_refreshrate",
+					   &refreshrate_limit);
+		if (ret == 0 && refreshrate_limit > 0)
+			max_refreshrate = refreshrate_limit;
+
 		/* Get repeater_tx information */
 		ret = of_property_read_u32(pdev->dev.of_node,
 					   "repeater_tx", &val);
@@ -6818,6 +6852,10 @@ static int drm_hdmitx_get_vic_list(int **vics)
 			if (is_vic_over_limited_1080p(vic))
 				continue;
 		}
+
+		if (validate_mode_refreshrate(vic, max_refreshrate) == false)
+			continue;
+
 		/* Handling only 4k420 mode */
 		if (vic == HDMI_UNKNOWN && is_4k50_fmt(mode_tmp)) {
 			strcat(mode_tmp, "420");

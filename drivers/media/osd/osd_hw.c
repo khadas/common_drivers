@@ -7645,22 +7645,10 @@ static void osd_update_disp_osd_rotate(u32 index)
 	u32 data32;
 	enum color_index_e idx;
 	struct dispdata_s src_data;
-#ifdef CONFIG_AMLOGIC_VOUT
-	const struct vinfo_s *vinfo = NULL;
-#endif
 	int out_y_crop_start = 0, out_y_crop_end = 0;
-
-	if (osd_hw.osd_meson_dev.cpu_id != __MESON_CPU_MAJOR_ID_G12B)
-		return;
-	src_fmt = get_viu2_src_format();
-	src_data.x = 0;
-	src_data.y = 0;
-	src_data.w = osd_hw.fb_gem[index].xres;
-	src_data.h = osd_hw.fb_gem[index].yres;
-#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
-	vinfo = get_current_vinfo2();
-#endif
 #ifdef CONFIG_AMLOGIC_VOUT
+#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
+	const struct vinfo_s *vinfo = get_current_vinfo2();
 	if (!vinfo) {
 		osd_log_err("current vinfo NULL\n");
 		return;
@@ -7669,6 +7657,15 @@ static void osd_update_disp_osd_rotate(u32 index)
 		out_y_crop_end = vinfo->height;
 	}
 #endif
+#endif
+
+	if (osd_hw.osd_meson_dev.cpu_id != __MESON_CPU_MAJOR_ID_G12B)
+		return;
+	src_fmt = get_viu2_src_format();
+	src_data.x = 0;
+	src_data.y = 0;
+	src_data.w = osd_hw.fb_gem[index].xres;
+	src_data.h = osd_hw.fb_gem[index].yres;
 	src_width = src_data.w;
 	src_height = src_data.h;
 

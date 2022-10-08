@@ -505,6 +505,7 @@ struct vdin_dev_s {
 	unsigned int mem_size;
 	unsigned long vfmem_start[VDIN_CANVAS_MAX_CNT];
 	struct page *vfvenc_pages[VDIN_CANVAS_MAX_CNT];
+	struct codec_mm_s *vf_codec_mem[VDIN_CANVAS_MAX_CNT];
 
 	/* save secure handle */
 	unsigned int secure_handle;

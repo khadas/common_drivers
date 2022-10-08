@@ -46,9 +46,9 @@
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
 			no-map;
-			size = <0xc00000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x05000000 0xc00000>;
+			size = <0x100000>;
+			alignment = <0x100000>;
+			reg = <0x07F00000 0x100000>;
 		};
 		nna_cma_reserved: linux,nna_cma {
 			compatible = "shared-dma-pool";
@@ -107,6 +107,7 @@
 			reusable;
 			size = <0x10000000>;
 			alignment = <0x400000>;
+			status = "okay";
 		};
 
 		pmz_cma_a2_reserved:anonymous_ext{
@@ -114,6 +115,7 @@
 			reusable;
 			size = <0x6000000>;
 			alignment = <0x400000>;
+			status = "disabled";
 		};
 
 		codec_mm_cma:linux,codec_mm_cma {

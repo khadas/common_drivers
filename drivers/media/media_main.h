@@ -391,6 +391,15 @@ static inline void vdetect_exit(void)
 }
 #endif
 
+#ifdef CONFIG_AMLOGIC_VIDEOQUEUE
+int videoqueue_init(void);
+#else
+static inline int videoqueue_init(void)
+{
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 int frc_init(void);
 #else

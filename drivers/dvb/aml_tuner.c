@@ -24,12 +24,14 @@ AML_TUNER_ATTACH_FUNCTION(atbm253);
 AML_TUNER_ATTACH_FUNCTION(si2124);
 AML_TUNER_ATTACH_FUNCTION(av2011);
 AML_TUNER_ATTACH_FUNCTION(av2012);
+AML_TUNER_ATTACH_FUNCTION(av2018);
 AML_TUNER_ATTACH_FUNCTION(mxl603);
 AML_TUNER_ATTACH_FUNCTION(r836);
-AML_TUNER_ATTACH_FUNCTION(av2018);
 AML_TUNER_ATTACH_FUNCTION(r848);
 AML_TUNER_ATTACH_FUNCTION(rt710);
 AML_TUNER_ATTACH_FUNCTION(r850);
+AML_TUNER_ATTACH_FUNCTION(rda5160);
+AML_TUNER_ATTACH_FUNCTION(rda5815m);
 
 static struct dvb_frontend *aml_tuner_attach(const struct tuner_module *module,
 		struct dvb_frontend *fe, const struct tuner_config *cfg);
@@ -400,6 +402,68 @@ static const struct tuner_module tuner_modules[] = {
 		.detach = aml_tuner_detach,
 		.match = aml_tuner_match,
 		.detect = aml_tuner_detect
+	},
+	{
+		.name = "cxd2871",
+		.id = AM_TUNER_CXD2871,
+		.delsys = { SYS_DVBC_ANNEX_A, SYS_DVBC_ANNEX_B, SYS_DVBT,
+				SYS_ISDBT, SYS_ISDBC, SYS_ATSC, SYS_ATSCMH, SYS_DTMB,
+				SYS_DVBT2, SYS_DVBC_ANNEX_C
+		},
+		.type = { FE_OFDM, FE_ATSC, FE_QAM,
+				FE_DTMB, FE_ISDBT,
+				AML_FE_UNDEFINED
+		},
+		.attach_symbol = NULL,
+		.attach = aml_tuner_attach,
+		.detach = aml_tuner_detach,
+		.match = aml_tuner_match,
+		.detect = aml_tuner_detect
+	},
+	{
+		.name = "cxd6866",
+		.id = AM_TUNER_CXD6866,
+		.delsys = { SYS_DVBC_ANNEX_A, SYS_DVBC_ANNEX_B, SYS_DVBT,
+				SYS_ISDBT, SYS_ISDBC, SYS_ATSC, SYS_ATSCMH, SYS_DTMB,
+				SYS_DVBT2, SYS_DVBC_ANNEX_C, SYS_DVBS, SYS_DVBS2, SYS_ISDBS
+		},
+		.type = { FE_OFDM, FE_ATSC, FE_QAM,
+				FE_DTMB, FE_ISDBT, FE_QPSK,
+				AML_FE_UNDEFINED
+		},
+		.attach_symbol = NULL,
+		.attach = aml_tuner_attach,
+		.detach = aml_tuner_detach,
+		.match = aml_tuner_match,
+		.detect = aml_tuner_detect
+	},
+	{
+		.name = "rda5160",
+		.id = AM_TUNER_RDA5160,
+		.delsys = { SYS_DVBC_ANNEX_A, SYS_DVBC_ANNEX_B, SYS_DVBT,
+				SYS_ISDBT, SYS_ATSC, SYS_DTMB, SYS_DVBT2,
+				SYS_DVBC_ANNEX_C, SYS_ANALOG
+		},
+		.type = { FE_OFDM, FE_ATSC, FE_QAM,
+				FE_DTMB, FE_ISDBT, FE_ANALOG,
+				AML_FE_UNDEFINED
+		},
+		.attach_symbol = NULL,
+		.attach = aml_tuner_attach,
+		.detach = aml_tuner_detach,
+		.match = aml_tuner_match,
+		.detect = aml_tuner_detect
+	},
+	{
+		.name = "rda5815m",
+		.id = AM_TUNER_RDA5815M,
+		.delsys = { SYS_DVBS, SYS_DVBS2 },
+		.type = { FE_QPSK, AML_FE_UNDEFINED },
+		.attach_symbol = NULL,
+		.attach = aml_tuner_attach,
+		.detach = aml_tuner_detach,
+		.match = aml_tuner_match,
+		.detect = aml_tuner_detect
 	}
 };
 
@@ -520,6 +584,7 @@ static struct dvb_frontend *aml_attach_detach_tuner(const enum tuner_type type,
 	case AM_TUNER_AV2018:
 		attach ? (p = aml_dvb_attach(av2018_attach, fe, cfg)) :
 				aml_dvb_detach(av2018_attach);
+		break;
 	case AM_TUNER_MXL603:
 		attach ? (p = aml_dvb_attach(mxl603_attach, fe, cfg)) :
 				aml_dvb_detach(mxl603_attach);
@@ -539,6 +604,14 @@ static struct dvb_frontend *aml_attach_detach_tuner(const enum tuner_type type,
 	case AM_TUNER_R850:
 		attach ? (p = aml_dvb_attach(r850_attach, fe, cfg)) :
 				aml_dvb_detach(r850_attach);
+		break;
+	case AM_TUNER_RDA5160:
+		attach ? (p = aml_dvb_attach(rda5160_attach, fe, cfg)) :
+				aml_dvb_detach(rda5160_attach);
+		break;
+	case AM_TUNER_RDA5815M:
+		attach ? (p = aml_dvb_attach(rda5815m_attach, fe, cfg)) :
+				aml_dvb_detach(rda5815m_attach);
 		break;
 	default:
 		p = NULL;

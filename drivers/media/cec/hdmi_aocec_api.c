@@ -1103,10 +1103,17 @@ void cec_hw_init(void)
 		ao_cecb_init();
 		cec_ip_share_io(cec_dev->plat_data->share_io, ee_cec);
 	} else {
-		if (ee_cec == CEC_B)
+		if (ee_cec == CEC_B) {
 			ao_cecb_init();
-		else
+			/* on T7, only use CEC_A pin for CEC on board,
+			 * for cec robustness, use cecb controller
+			 * with CEC_A pin(share to CEC_B)
+			 */
+			if (cec_dev->plat_data->chip_id == CEC_CHIP_T7)
+				cec_ip_share_io(true, CEC_A);
+		} else {
 			ao_ceca_init();
+		}
 	}
 }
 
@@ -1143,6 +1150,7 @@ void cec_hw_reset(unsigned int cec_sel)
 	cec_restore_logical_addr(cec_sel, cec_dev->cec_info.addr_enable);
 }
 
+/* interface only for debug */
 void cec_logicaddr_set(int l_add)
 {
 	/* save logical address for suspend/wake up */
@@ -1192,10 +1200,12 @@ void cec_logicaddr_add(unsigned int cec_sel, unsigned int l_add)
 		ceca_addr_add(l_add);
 }
 
+/* interface only for debug */
 void cec_logicaddr_remove(unsigned int cec_sel, unsigned int l_add)
 {
 	unsigned int addr;
 	unsigned int i;
+	unsigned char temp;
 
 	if (cec_sel == CEC_B) {
 		if (l_add < 8) {
@@ -1231,6 +1241,16 @@ void cec_logicaddr_remove(unsigned int cec_sel, unsigned int l_add)
 			}
 		}
 	}
+
+	/* clear saved logic addr */
+	temp = (read_ao(AO_DEBUG_REG1) >> 16) & 0xf;
+	if (temp == l_add) {
+		cec_set_reg_bits(AO_DEBUG_REG1, 0, 16, 4);
+	} else {
+		temp = (read_ao(AO_DEBUG_REG1) >> 24) & 0xf;
+		if (temp == l_add)
+			cec_set_reg_bits(AO_DEBUG_REG1, 0, 24, 4);
+	}
 }
 
 void cec_restore_logical_addr(unsigned int cec_sel, unsigned int addr_en)
@@ -1248,6 +1268,15 @@ void cec_restore_logical_addr(unsigned int cec_sel, unsigned int addr_en)
 	dprintk(L_4, "%s cec:%d, en:%d\n", __func__, cec_sel, addr_en);
 }
 
+/* should not clean logic addr in AO_DEBUG_REG1
+ * for chips not g12a/b/sm1 but uses uboot2015,
+ * it will clear logic addr before
+ * enter suspend, and AO_DEBUG_REG1 is
+ * used to store the logic addr used under uboot;
+ * for g12a/b, in addition to AO_DEBUG_REG1
+ * cec related data are transferred to uboot
+ * by mailbox(SWPL-32434)
+ */
 void cec_clear_all_logical_addr(unsigned int cec_sel)
 {
 	CEC_INFO("clear all logical addr %d\n", cec_sel);
@@ -1263,6 +1292,13 @@ void cec_clear_all_logical_addr(unsigned int cec_sel)
 		aocec_wr_reg(CEC_LOGICAL_ADDR4, 0);
 	}
 	/*udelay(100);*/
+}
+
+void cec_clear_saved_logic_addr(void)
+{
+	/* clear saved logic addr */
+	cec_set_reg_bits(AO_DEBUG_REG1, 0, 16, 4);
+	cec_set_reg_bits(AO_DEBUG_REG1, 0, 24, 4);
 }
 
 void cec_irq_enable(bool enable)
@@ -1368,7 +1404,7 @@ void cec_ip_share_io(u32 share, u32 cec_ip)
 		if (cec_ip == CEC_A) {
 			cec_set_reg_bits(AO_CEC_GEN_CNTL, 1, 4, 1);
 			cec_set_reg_bits(AO_CECB_GEN_CNTL, 0, 4, 1);
-			/*CEC_ERR("share pin mux to b\n");*/
+			CEC_ERR("share pin mux to b\n");
 		} else {
 			cec_set_reg_bits(AO_CEC_GEN_CNTL, 0, 4, 1);
 			cec_set_reg_bits(AO_CECB_GEN_CNTL, 1, 4, 1);
@@ -1602,11 +1638,11 @@ unsigned int cec_config(unsigned int value, bool wr_flag)
 
 /*
  *wr_flag: reg AO_DEBUG_REG1 (bit 0-16)
- *	1 write; value valid
- *	0 read;  value invalid
- *		0-15 : phy addr+
- *		16-19: logical address+
- *		20-23: device type+
+ * 1 write; value valid
+ * 0 read; value invalid
+ * 0-15: phy addr+
+ * 16-19: logical address+
+ * 20-23: device type+
  */
 unsigned int cec_config2_phyaddr(unsigned int value, bool wr_flag)
 {
@@ -1618,17 +1654,27 @@ unsigned int cec_config2_phyaddr(unsigned int value, bool wr_flag)
 
 /*
  *wr_flag: reg AO_DEBUG_REG1 (bit 16-19)
- *	1 write; value valid
- *	0 read;  value invalid
- *		0-15 : phy addr+
- *		16-19: logical address+
- *		20-23: device type+
+ * 1 write; value valid
+ * 0 read; value invalid
+ * 0-15: phy addr+
+ * 16-19: logical address+
+ * 20-23: device type+
+ * 24-27: second logical address (new, for soundbar)
  */
 unsigned int cec_config2_logaddr(unsigned int value, bool wr_flag)
 {
-	if (wr_flag)
-		cec_set_reg_bits(AO_DEBUG_REG1, value, 16, 4);
+	unsigned char temp;
 
+	if (wr_flag) {
+		temp = (read_ao(AO_DEBUG_REG1) >> 16) & 0xf;
+		if (temp == 0) {
+			cec_set_reg_bits(AO_DEBUG_REG1, value, 16, 4);
+		} else if (temp != value) {
+			/* assume platform will only alloc correct logic addr */
+			cec_set_reg_bits(AO_DEBUG_REG1, value, 24, 4);
+			CEC_INFO("save second logic addr: %d\n", value);
+		}
+	}
 	return (read_ao(AO_DEBUG_REG1) >> 16) & 0xf;
 }
 
@@ -1890,6 +1936,8 @@ void cec_save_mail_box(void)
 	cec_mailbox.phy_addr = cec_config2_phyaddr(0, 0);
 	cec_mailbox.phy_addr |= cec_config2_logaddr(0, 0) << 16;
 	cec_mailbox.phy_addr |= cec_config2_devtype(0, 0) << 20;
+	/* for second logic addr */
+	cec_mailbox.phy_addr |= ((read_ao(AO_DEBUG_REG1) >> 24) & 0xf) << 24;
 	CEC_INFO("phy_addr:0x%x", cec_mailbox.phy_addr);
 
 	cec_mailbox.vendor_id = cec_dev->cec_info.vendor_id;

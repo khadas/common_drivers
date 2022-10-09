@@ -136,3 +136,13 @@ config AMLOGIC_CMA_DIS
 	help
 		Amlogic disable CMA optimization for gki needs.
 
+config AMLOGIC_MEMORY_OPT
+	bool "Amlogic memory optimization support"
+	depends on AMLOGIC_MEMORY_EXTEND
+	default n
+	help
+		Amlogic memory optimization support,
+		distinguish from AMLOGIC_MEMORY_EXTEND,
+		because of gki requirements, enable in
+		aarch32.
+

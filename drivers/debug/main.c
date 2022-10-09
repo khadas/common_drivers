@@ -22,7 +22,7 @@ static void __exit debug_main_exit(void)
 {
 }
 
-subsys_initcall(debug_main_init);
+module_init(debug_main_init);
 module_exit(debug_main_exit);
 
 MODULE_LICENSE("GPL v2");

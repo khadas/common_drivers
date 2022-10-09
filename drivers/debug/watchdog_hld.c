@@ -10,7 +10,6 @@
  * to those contributors as well.
  */
 
-
 #include <linux/nmi.h>
 #include <linux/atomic.h>
 #include <linux/module.h>
@@ -24,12 +23,13 @@ static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
 static cpumask_t __read_mostly watchdog_cpus;
 static unsigned long __maybe_unused hardlockup_allcpu_dumped;
 
-static int hardlockup_panic;
+static int hardlockup_panic = 1;
 core_param(hardlockup_panic, hardlockup_panic, int, 0644);
 
 DECLARE_PER_CPU(unsigned long, hrtimer_interrupts);
 DECLARE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
-extern void pr_lockup_info(int lock_cpu);
+
+extern void (*pr_lockup_info_hook)(int lockup_cpu);
 
 static unsigned int watchdog_next_cpu(unsigned int cpu)
 {
@@ -57,7 +57,7 @@ static int is_hardlockup_other_cpu(unsigned int cpu)
 	return 0;
 }
 
-void watchdog_check_hardlockup_other_cpu(void)
+void __nocfi watchdog_check_hardlockup_other_cpu(void)
 {
 	unsigned int next_cpu;
 	/*
@@ -85,9 +85,8 @@ void watchdog_check_hardlockup_other_cpu(void)
 		/* only warn once */
 		if (per_cpu(hard_watchdog_warn, next_cpu) == true)
 			return;
-#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_LOCKUP)
-		pr_lockup_info(next_cpu);
-#endif
+		pr_lockup_info_hook(next_cpu);
+
 		if (hardlockup_panic)
 			panic("Watchdog detected hard LOCKUP on cpu %u",
 			      next_cpu);

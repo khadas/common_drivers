@@ -1,5 +1,5 @@
 config AMLOGIC_DEBUG
-	bool "AMLOGIC kernel debug"
+	tristate "AMLOGIC kernel debug"
 	depends on AMLOGIC_BREAK_GKI
 	default n
 	help
@@ -11,6 +11,7 @@ config AMLOGIC_DEBUG
 config AMLOGIC_DEBUG_LOCKUP
 	bool "Amlogic Kernel ATrace"
 	depends on AMLOGIC_DEBUG
+	depends on TRACEPOINTS
 	default n
 	help
 	  Amlogic lockup code compatible with GKI mode,
@@ -33,7 +34,7 @@ config AMLOGIC_BOOT_TIME
 	  if you want to optimize boot time, please set this config to y.
 
 config AMLOGIC_DEBUG_PRINTK
-	tristate "Amlogic printk support"
+	bool "Amlogic printk support"
 	depends on AMLOGIC_DEBUG
 	default n
 	help
@@ -42,7 +43,6 @@ config AMLOGIC_DEBUG_PRINTK
 
 config AMLOGIC_DEBUG_FTRACE_PSTORE
 	bool "Amlogic ftrace pstore debug"
-	depends on AMLOGIC_DEBUG
 	depends on PSTORE_FTRACE
 	default n
 	help
@@ -51,7 +51,7 @@ config AMLOGIC_DEBUG_FTRACE_PSTORE
 	  Enable if doubt
 
 config AMLOGIC_DEBUG_RELABEL
-	tristate "Amlogic filp relabel support"
+	bool "Amlogic filp relabel support"
 	depends on AMLOGIC_DEBUG
 	default n
 	help
@@ -59,7 +59,7 @@ config AMLOGIC_DEBUG_RELABEL
 	  please use this option switch it.
 
 config AMLOGIC_DEBUG_RELABEL_GKI
-	tristate "Amlogic filp relabel gki support"
+	bool "Amlogic filp relabel gki support"
 	default n
 	help
 	  if build with gki set this config to y,
@@ -70,3 +70,18 @@ config AMLOGIC_DEBUG_FILE
 	default n
 	help
 	  Provide some interfaces for dumping log to debug file
+
+config AMLOGIC_DEBUG_TEST
+	bool "Amlogic debug test on init"
+	depends on AMLOGIC_DEBUG_LOCKUP
+	default n
+	help
+	  auto test on debug init
+
+config AMLOGIC_HARDLOCKUP_DETECTOR
+	bool "Amlogic hardlockup detector support"
+	depends on TRACEPOINTS
+	default n
+	help
+	  if you want to hardlockup detector support,
+	  please use this option switch it.

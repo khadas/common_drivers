@@ -13,16 +13,9 @@
   set_dump_dmc_func
 
 # amlogic debug illegal symbol:
-  irq_trace_start_hook
-  irq_trace_stop_hook
-  meson_atrace
-  pstore_io_save
-  __arm_smccc_smc_glue
-  __tracepoint_softirq_entry
-  __tracepoint_softirq_exit
-  dump_cpu_task
   debug_filp_open
   debug_vfs_setxattr
+  pstore_io_save
   ramoops_io_en
 
 # CFG80211: cfg80211.ko

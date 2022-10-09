@@ -6,13 +6,15 @@ PR_FMT_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT)]: \" fmt"
 ccflags-y += $(PR_FMT_DEFINE)
 
 obj-$(CONFIG_AMLOGIC_DEBUG) = $(MODULE_NAME).o
-$(MODULE_NAME)-y = main.o   watchdog_hld.o
+$(MODULE_NAME)-y = main.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_LOCKUP) += debug_lockup.o cpu_mhz.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE) += debug_ftrace_ramoops.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_ATRACE) += meson_atrace.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_PRINTK) += debug_printk.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_RELABEL) += debug_relabel.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_FILE) += debug_file.o
 
-#autotest
-# obj-m += debug_auto_test.o
+obj-$(CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE) += debug_ftrace_ramoops.o
+
+obj-$(CONFIG_AMLOGIC_DEBUG_RELABEL) += debug_relabel.o
+obj-$(CONFIG_AMLOGIC_DEBUG_FILE) += debug_file.o
+
+# builtin hardlockup detector support
+obj-$(CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR) += watchdog_hld.o

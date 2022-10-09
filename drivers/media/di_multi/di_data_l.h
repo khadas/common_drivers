@@ -190,16 +190,16 @@ enum EDIM_NIN_TYPE {
 union di_cfg_tdata_u {
 	unsigned int d32;
 	struct {
-		unsigned int val_df:4,/**/
-		val_dts:4,
-		val_dbg:4,
-		val_c:4,
+		unsigned int val_df:6,/**/
+		val_dts:6,
+		val_dbg:6,
+		val_c:6,
 		dts_en:1,
 		dts_have:1,
 		dbg_have:1,
 		rev_en:1,
-		en_update:4,
-		reserved:8;
+		en_update:4;
+		//reserved:0;
 	} b;
 };
 
@@ -1510,6 +1510,16 @@ struct qs_cls_s {
 	struct qs_err_log_s *plog;
 };
 
+enum EBUF_QUE_ID {
+	EBUF_QUE_ID_BLK = 1,
+	EBUF_QUE_ID_MEM,
+	EBUF_QUE_ID_PAT,
+	EBUF_QUE_ID_IAT,
+	EBUF_QUE_ID_SCT,
+	EBUF_QUE_ID_NIN,
+	EBUF_QUE_ID_NDIS
+};
+
 struct buf_que_s;
 
 struct qb_ops_s {
@@ -1529,6 +1539,7 @@ struct buf_que_s {
 	struct qs_cls_s	*pque[MAX_FIFO_SIZE];/**/
 	bool	rflg;	/*resource flg*/
 	char	*name;
+	unsigned int	bque_id; /* 05/26 dbg only */
 	unsigned int	nub_que;
 	unsigned int	nub_buf;
 	struct qs_err_log_s log;
@@ -1553,6 +1564,7 @@ struct qbuf_creat_s {
 	unsigned int nub_que;
 	unsigned int nub_buf;
 	unsigned int code;
+	unsigned int que_id;
 };
 
 /* di_que_buf end */
@@ -1572,7 +1584,7 @@ struct dim_sub_mem_s {
 	unsigned int	cnt;
 };
 
-#define DIM_BLK_NUB	20 /* buf number*/
+#define DIM_BLK_NUB	25 /* buf number*/
 struct dim_mm_blk_s {
 	struct qs_buf_s	header;
 
@@ -1604,7 +1616,7 @@ enum QBF_PAT_Q_TYPE {
 	QBF_PAT_Q_NUB,
 };
 
-#define DIM_PAT_NUB	16 /* buf number*/
+#define DIM_PAT_NUB	POST_BUF_NUM	//16 /* buf number*/
 struct dim_pat_s {
 	struct qs_buf_s	header;
 
@@ -1764,7 +1776,7 @@ enum QBF_NDIS_Q_TYPE {
 	QBF_NDIS_Q_NUB,
 };
 
-#define DIM_NDIS_NUB	(12) /* buf number*/
+#define DIM_NDIS_NUB	(18) /* buf number*/
 
 struct dsub_ndis_s {
 	struct di_buf_s *di_buf;

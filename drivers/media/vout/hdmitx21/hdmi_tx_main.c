@@ -46,6 +46,9 @@
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_config.h>
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include <linux/amlogic/media/vrr/vrr.h>
+#include <linux/extcon.h>
+#include <linux/extcon-provider.h>
+
 #include "hdmi_tx_ext.h"
 #include "hdmi_tx.h"
 
@@ -159,6 +162,13 @@ static struct vout_device_s hdmitx_vdev = {
 	.get_attr = get21_attr,
 	.setup_attr = setup21_attr,
 	.video_mute = hdmitx21_video_mute_op,
+};
+
+static struct extcon_dev *hdmitx_extcon_hdmi;
+
+static const unsigned int hdmi_extcon_cable[] = {
+	EXTCON_DISP_HDMI,
+	EXTCON_NONE,
 };
 
 static struct hdmitx_uevent hdmi_events[] = {
@@ -329,6 +339,8 @@ static void hdmitx_late_resume(struct early_suspend *h)
 	hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_AUDIO_MUTE_OP, AUDIO_MUTE);
 	/* set_disp_mode_auto(); */
 
+	extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI,
+			hdev->tx_comm.hpd_state);
 	hdmitx21_set_uevent(HDMITX_HPD_EVENT, hdev->tx_comm.hpd_state);
 	hdmitx21_set_uevent(HDMITX_HDCPPWR_EVENT, HDMI_WAKEUP);
 	hdmitx21_set_uevent(HDMITX_AUDIO_EVENT, hdev->tx_comm.hpd_state);
@@ -3264,6 +3276,8 @@ static ssize_t fake_plug_store(struct device *dev,
 	/*notify to drm hdmi*/
 	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 
+	extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI,
+			hdev->tx_comm.hpd_state);
 	hdmitx21_set_uevent(HDMITX_HPD_EVENT, hdev->tx_comm.hpd_state);
 
 	return count;
@@ -4025,6 +4039,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	/*notify to drm hdmi*/
 	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 
+	extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 1);
 	hdmitx21_set_uevent(HDMITX_HPD_EVENT, 1);
 	hdmitx21_set_uevent(HDMITX_AUDIO_EVENT, 1);
 	/* Should be started at end of output */
@@ -4098,6 +4113,7 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 			hdmitx_notify_hpd(hdev->tx_comm.hpd_state, NULL);
 		}
 		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, SET_AVMUTE);
+		extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 0);
 		hdmitx21_set_uevent(HDMITX_HPD_EVENT, 0);
 		hdmitx21_set_uevent(HDMITX_AUDIO_EVENT, 0);
 		mutex_unlock(&hdev->tx_comm.setclk_mutex);
@@ -4128,6 +4144,7 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 	/*notify to drm hdmi*/
 	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 
+	extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 0);
 	hdmitx21_set_uevent(HDMITX_HPD_EVENT, 0);
 	hdmitx21_set_uevent(HDMITX_AUDIO_EVENT, 0);
 
@@ -4324,6 +4341,30 @@ void hdmitx21_event_notify(unsigned long state, void *arg)
 void hdmitx21_hdcp_status(int hdmi_authenticated)
 {
 	hdmitx21_set_uevent(HDMITX_HDCP_EVENT, hdmi_authenticated);
+}
+
+/* for compliance with p/q/r/s/t, need both extcon and hdmi_event
+ * there're mixed combination,  P/Q only listen to extcon;
+ * while R/S only listen to uevent
+ * t need listen to extcon(only hdmi hpd) and uevent
+ */
+static int hdmitx_extcon_register(struct platform_device *pdev, struct device *dev)
+{
+	int ret;
+
+	/*hdmitx extcon hdmi*/
+	hdmitx_extcon_hdmi = devm_extcon_dev_allocate(&pdev->dev, hdmi_extcon_cable);
+	if (IS_ERR(hdmitx_extcon_hdmi)) {
+		pr_info("%s[%d] hdmitx_extcon_hdmi allocated failed\n", __func__, __LINE__);
+		if (PTR_ERR(hdmitx_extcon_hdmi) != -ENODEV)
+			return PTR_ERR(hdmitx_extcon_hdmi);
+		hdmitx_extcon_hdmi = NULL;
+	}
+	ret = devm_extcon_dev_register(&pdev->dev, hdmitx_extcon_hdmi);
+	if (ret < 0)
+		pr_info("%s[%d] hdmitx_extcon_hdmi register failed\n", __func__, __LINE__);
+
+	return 0;
 }
 
 static void hdmitx_init_parameters(struct hdmitx_info *info)
@@ -4744,7 +4785,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	}
 	aout_register_client(&hdmitx_notifier_nb_a);
 #endif
-
+	hdmitx_extcon_register(pdev, dev);
 	/* update fmt_attr */
 	hdmitx21_fmt_attr(hdev);
 

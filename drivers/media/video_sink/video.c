@@ -636,10 +636,27 @@ int video_property_notify(int flag)
 
 void get_video_axis_offset(s32 *x_offset, s32 *y_offset)
 {
+	s32 x_end, y_end;
 	struct disp_info_s *layer = &glayer_info[0];
+	const struct vinfo_s *info = get_current_vinfo();
 
-	*x_offset = layer->layer_left;
-	*y_offset = layer->layer_top;
+	if (!info) {
+		*x_offset = 0;
+		*y_offset = 0;
+		return;
+	}
+
+	/* TODO: mirror case */
+	if (layer->reverse) {
+		/* reverse x/y start */
+		x_end = layer->layer_left + layer->layer_width - 1;
+		*x_offset = info->width - x_end - 1;
+		y_end = layer->layer_top + layer->layer_height - 1;
+		*y_offset = info->height - y_end - 1;
+	} else {
+		*x_offset = layer->layer_left;
+		*y_offset = layer->layer_top;
+	}
 }
 
 #if defined(PTS_LOGGING)
@@ -5427,22 +5444,25 @@ void _set_video_crop(struct disp_info_s *layer, int *p)
 	}
 }
 
+extern int get_osd_reverse(void);
+
 void _set_video_window(struct disp_info_s *layer, int *p)
 {
 	int w, h;
 	int *parsed = p;
 	int last_x, last_y, last_w, last_h;
 	int new_x, new_y, new_w, new_h;
-#ifdef TV_REVERSE
-	int temp, temp1;
 	const struct vinfo_s *info = get_current_vinfo();
-#endif
 
 	if (!layer)
+		return;
+	if (!info || info->mode == VMODE_INVALID)
 		return;
 
 #ifdef TV_REVERSE
 	if (reverse) {
+		int temp, temp1;
+
 		temp = parsed[0];
 		temp1 = parsed[1];
 		if (get_osd_reverse() & 1) {
@@ -9912,17 +9932,29 @@ static void video_vf_light_unreg_provider(int need_keep_frame)
 static int  get_display_info(void *data)
 {
 	s32 w, h, x, y;
+	s32 x_end, y_end;
 	struct vdisplay_info_s  *info_para = (struct vdisplay_info_s *)data;
 	const struct vinfo_s *info = get_current_vinfo();
 	struct disp_info_s *layer = &glayer_info[0];
 
 	if (!cur_frame_par || !info)
 		return -1;
+	if (info->mode == VMODE_INVALID)
+		return -1;
 
 	x = layer->layer_left;
 	y = layer->layer_top;
 	w = layer->layer_width;
 	h = layer->layer_height;
+
+	/* TODO: mirror case */
+	if (layer->reverse) {
+		/* reverse x/y start */
+		x_end = x + w - 1;
+		x = info->width - x_end - 1;
+		y_end = y + h - 1;
+		y = info->height - y_end - 1;
+	}
 
 	if (w == 0 || w  > info->width)
 		w =  info->width;
@@ -15497,19 +15529,23 @@ static ssize_t vdx_state_show(u32 index, char *buf)
 	struct vppfilter_mode_s *vpp_filter = NULL;
 	struct vpp_frame_par_s *_cur_frame_par = NULL;
 	struct video_layer_s *_vd_layer = NULL;
+	struct disp_info_s *layer_info = NULL;
 
 	switch (index) {
 	case 0:
 		_cur_frame_par = cur_frame_par;
 		_vd_layer = &vd_layer[0];
+		layer_info = &glayer_info[0];
 		break;
 	case 1:
 		_cur_frame_par = curpip_frame_par;
 		_vd_layer = &vd_layer[1];
+		layer_info = &glayer_info[1];
 		break;
 	case 2:
 		_cur_frame_par = curpip2_frame_par;
 		_vd_layer = &vd_layer[2];
+		layer_info = &glayer_info[2];
 		break;
 	}
 	if (!_cur_frame_par)
@@ -15608,6 +15644,27 @@ static ssize_t vdx_state_show(u32 index, char *buf)
 		       _cur_frame_par->VPP_vsc_endp);
 	if (index == 0)
 		len += aisr_state_show(buf + len);
+	if (layer_info) {
+		len += sprintf(buf + len, "mirror: %d\n",
+			layer_info->mirror);
+		len += sprintf(buf + len, "reverse: %s\n",
+			layer_info->reverse ? "true" : "false");
+		if (layer_info->afd_enable) {
+			len += sprintf(buf + len, "afd: enable\n");
+			len += sprintf(buf + len, "afd_pos: %d %d %d %d\n",
+				layer_info->afd_pos.x_start,
+				layer_info->afd_pos.y_start,
+				layer_info->afd_pos.x_end,
+				layer_info->afd_pos.y_end);
+			len += sprintf(buf + len, "afd_crop: %d %d %d %d\n",
+				layer_info->afd_crop.top,
+				layer_info->afd_crop.left,
+				layer_info->afd_crop.bottom,
+				layer_info->afd_crop.right);
+		} else {
+			len += sprintf(buf + len, "afd: disable\n");
+		}
+	}
 	return len;
 }
 
@@ -18581,6 +18638,15 @@ bool video_is_meson_c3_cpu(void)
 {
 	if (amvideo_meson_dev.cpu_type ==
 		MESON_CPU_MAJOR_ID_C3_)
+		return true;
+	else
+		return false;
+}
+
+bool video_is_meson_t5w_cpu(void)
+{
+	if (amvideo_meson_dev.cpu_type ==
+		MESON_CPU_MAJOR_ID_T5W_)
 		return true;
 	else
 		return false;

@@ -39,6 +39,7 @@
 #define DEBUG_FLAG_BLACKOUT     0x200
 #define DEBUG_FLAG_NO_CLIP_SETTING     0x400
 #define DEBUG_FLAG_VPP_GET_BUFFER_TIME     0x800
+#define DEBUG_FLAG_AFD_INFO	        0x8000
 #define DEBUG_FLAG_TOGGLE_SKIP_KEEP_CURRENT  0x10000
 #define DEBUG_FLAG_TOGGLE_FRAME_PER_VSYNC    0x20000
 #define DEBUG_FLAG_RDMA_WAIT_1		     0x40000
@@ -734,6 +735,7 @@ bool video_is_meson_t7_cpu(void);
 bool video_is_meson_s4_cpu(void);
 bool video_is_meson_t5d_revb_cpu(void);
 bool video_is_meson_t3_cpu(void);
+bool video_is_meson_t5w_cpu(void);
 bool video_is_meson_c3_cpu(void);
 void set_alpha(struct video_layer_s *layer,
 	       u32 win_en,

@@ -44,7 +44,7 @@ int meson_panel_get_modes(struct drm_connector *connector)
 	return modes_cnt;
 }
 
-int meson_panel_check_mode(struct drm_connector *connector,
+enum drm_mode_status meson_panel_check_mode(struct drm_connector *connector,
 	struct drm_display_mode *mode)
 {
 	return MODE_OK;
@@ -275,7 +275,7 @@ int meson_panel_dev_bind(struct drm_device *drm,
 			break;
 		};
 
-		DRM_INFO("%s: bind %d -> connector-%s-%d,endcoder-%d\n",
+		DRM_INFO("%s: bind %d -> connector-%s-%d,encoder-%d\n",
 			__func__, type, connector_name, connector_type, encoder_type);
 	}
 

@@ -1524,6 +1524,8 @@ static int lcd_mode_probe(struct aml_lcd_drv_s *pdrv)
 	if (pdrv->auto_test)
 		lcd_auto_test_func(pdrv);
 
+	lcd_drm_add(pdrv->dev);
+
 	return 0;
 }
 
@@ -1981,6 +1983,8 @@ static int lcd_remove(struct platform_device *pdev)
 
 	if (!pdrv)
 		return 0;
+
+	lcd_drm_remove(pdrv->dev);
 
 	index = pdrv->index;
 

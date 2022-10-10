@@ -24,6 +24,12 @@
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_common.h>
 #include <linux/miscdevice.h>
+
+#ifdef CONFIG_DEBUG_FS
+#include <linux/debugfs.h>
+#include <drm/drm_debugfs.h>
+#endif
+
 #include <drm/amlogic/meson_connector_dev.h>
 #include <vout/vout_serve/vout_func.h>
 #include <enhancement/amvecm/amcsc.h>
@@ -455,6 +461,170 @@ static enum drm_connector_status am_hdmitx_connector_detect
 		connector_status_connected : connector_status_disconnected;
 }
 
+static int get_hdr_info(void)
+{
+	static int hdr_cap_value;
+	const struct hdr_info *hdr = am_hdmi_info.hdmitx_dev->get_hdr_info();
+	const struct hdr10_plus_info *hdr10p = &hdr->hdr10plus_info;
+	unsigned int hdr_priority =  am_hdmi_info.hdmitx_dev->get_hdr_priority();
+
+	/*mask rx hdr capability*/
+	if (hdr_priority == 2)
+		return 0;
+
+	/*hdr10plugsupported*/
+	if (hdr10p->ieeeoui == HDR10_PLUS_IEEE_OUI &&
+		hdr10p->application_version != 0xFF)
+		hdr_cap_value |= 1 << 0;
+
+	/*
+	 *HDR Static Metadata:
+	 *Supported EOTF:
+	 */
+
+	/*Traditional SDR*/
+	hdr_cap_value |= (!!(hdr->hdr_support & 0x1)) << 1;
+
+	/*Traditional HDR*/
+	hdr_cap_value |= (!!(hdr->hdr_support & 0x2)) << 2;
+
+	/*SMPTE ST 2084*/
+	hdr_cap_value |= (!!(hdr->hdr_support & 0x4)) << 3;
+
+	/*Hybrid Log-Gamma*/
+	hdr_cap_value |= (!!(hdr->hdr_support & 0x8)) << 4;
+
+	/*Supported SMD type1*/
+	hdr_cap_value |= hdr->static_metadata_type1 << 5;
+
+	return hdr_cap_value;
+}
+
+static int get_dv_info(void)
+{
+	unsigned int hdr_priority =  am_hdmi_info.hdmitx_dev->get_hdr_priority();
+	const struct dv_info *dv = am_hdmi_info.hdmitx_dev->get_dv_info();
+	int dv_flag = 0;
+
+	if (dv->ieeeoui != DV_IEEE_OUI || hdr_priority) {
+		/*The Rx don't support DolbyVision*/
+		return 0;
+	}
+
+	/*The Rx don't support DolbyVision*/
+	if (dv->ieeeoui != DV_IEEE_OUI || dv->block_flag != CORRECT)
+		return 0;
+
+	/*DolbyVision RX support list:*/
+
+	if (dv->ver == 0) {
+		/*VSVDB Version:  bit0,1*/
+		dv_flag |= 0 << 0;
+		/*2160p%shz: 1*/
+		dv_flag |= (dv->sup_2160p60hz ? 1 : 0) << 2;
+		/*Support mode:*/
+		/*DV_RGB_444_8BIT*/
+		dv_flag |= 1 << 3;
+		/*DV_YCbCr_422_12BIT*/
+		dv_flag |= (dv->sup_yuv422_12bit ? 1 : 0) << 4;
+	}
+
+	if (dv->ver == 1) {
+		/*VSVDB Version: %d-byte*/
+		dv_flag |= 1 << 0;
+
+		if (dv->length == 0xB) {
+			/*2160p%shz: 1*/
+			dv_flag |= (dv->sup_2160p60hz ? 1 : 0) << 2;
+			/*Support mode:*/
+			/*DV_RGB_444_8BIT*/
+			dv_flag |= 1 << 3;
+			/*DV_YCbCr_422_12BIT*/
+			dv_flag |= (dv->sup_yuv422_12bit ? 1 : 0) << 4;
+			/*LL_YCbCr_422_12BIT*/
+			if (dv->low_latency == 0x01)
+				dv_flag |= 1 << 5;
+		}
+
+		if (dv->length == 0xE) {
+			/*2160p%shz: 1*/
+			dv_flag |= (dv->sup_2160p60hz ? 1 : 0) << 2;
+			/*Support mode:*/
+			/*DV_RGB_444_8BIT*/
+			dv_flag |= 1 << 3;
+			/*DV_YCbCr_422_12BIT*/
+			dv_flag |= (dv->sup_yuv422_12bit ? 1 : 0) << 4;
+		}
+	}
+
+	if (dv->ver == 2) {
+		/*VSVDB Version:*/
+		dv_flag |= 2 << 0;
+
+		/*2160p%shz: 1*/
+		dv_flag |= (dv->sup_2160p60hz ? 1 : 0) << 2;
+		/*Support mode:*/
+
+		if (dv->Interface != 0x00 && dv->Interface != 0x01) {
+			/*DV_RGB_444_8BIT*/
+			dv_flag |= 1 << 3;
+			/*DV_YCbCr_422_12BIT*/
+			if (dv->sup_yuv422_12bit)
+				dv_flag |= (dv->sup_yuv422_12bit ? 1 : 0) << 4;
+		}
+
+		/*LL_YCbCr_422_12BIT*/
+		dv_flag |= 1 << 5;
+
+		if (dv->Interface == 0x01 || dv->Interface == 0x03) {
+			if (dv->sup_10b_12b_444 == 0x1) {
+				/*LL_RGB_444_10BITT*/
+				dv_flag |= 1 << 6;
+			}
+			if (dv->sup_10b_12b_444 == 0x2) {
+				/*LL_RGB_444_12BIT*/
+				dv_flag |= 1 << 7;
+			}
+		}
+	}
+
+	return dv_flag;
+}
+
+static int hdcp_rx_ver(void)
+{
+	unsigned int hdcp_rx_type = am_hdmi_info.hdmitx_dev->get_rx_hdcp_cap();
+
+	/* Detect RX support HDCP14
+	 * Here, must assume RX support HDCP14, otherwise affect 1A-03
+	 */
+
+	if (hdcp_rx_type == 0x3)
+		return 36;
+	else
+		return 14;
+
+	return 0;
+}
+
+/*like hdmitx hdcp_mode node*/
+static int get_hdcp_mode(void)
+{
+	int hdcp_mode_flag = 0;
+
+	if (am_hdmi_info.hdcp_mode) {
+		hdcp_mode_flag |= am_hdmi_info.hdcp_mode;
+		if (am_hdmi_info.hdcp_state == HDCP_STATE_SUCCESS)
+			hdcp_mode_flag |= 1 << 3;
+		else if (am_hdmi_info.hdcp_state == HDCP_STATE_FAIL)
+			hdcp_mode_flag |= 0 << 3;
+	} else {
+		return 0;
+	}
+
+	return hdcp_mode_flag;
+}
+
 static int am_hdmitx_connector_atomic_set_property
 	(struct drm_connector *connector,
 	struct drm_connector_state *state,
@@ -509,9 +679,89 @@ static int am_hdmitx_connector_atomic_get_property
 	} else if (property == am_hdmi->avmute_prop) {
 		*val = hdmitx_state->avmute;
 		return 0;
+	} else if (property == am_hdmi->hdmi_hdr_status_prop) {
+		*val = am_hdmi_info.hdmitx_dev->get_hdmi_hdr_status();
+		return 0;
+	} else if (property == am_hdmi->hdr_cap_property) {
+		*val = get_hdr_info();
+		return 0;
+	} else if (property == am_hdmi->dv_cap_property) {
+		*val = get_dv_info();
+		return 0;
+	} else if (property == am_hdmi->hdcp_ver_prop) {
+		*val = hdcp_rx_ver();
+		return 0;
+	} else if (property == am_hdmi->hdcp_mode_property) {
+		*val = get_hdcp_mode();
+		return 0;
 	}
 
 	return -EINVAL;
+}
+
+#ifdef CONFIG_DEBUG_FS
+static ssize_t meson_connector_attr_write(struct file *file, const char __user *ubuf,
+				size_t len, loff_t *offp)
+{
+	if (len > sizeof(attr_debugfs) - 1)
+		return -EINVAL;
+
+	if (copy_from_user(attr_debugfs, ubuf, len))
+		return -EFAULT;
+	if (attr_debugfs[len - 1] == '\n')
+		attr_debugfs[len - 1] = '\0';
+	attr_debugfs[len] = '\0';
+
+	attr_force_debugfs = true;
+	return len;
+}
+
+static int meson_connector_attr_show(struct seq_file *sf, void *data)
+{
+	am_hdmi_info.hdmitx_dev->get_attr(attr_debugfs);
+	seq_printf(sf, "hdmitx_attr: %s\n", attr_debugfs);
+	return 0;
+}
+
+static int meson_connector_attr_open(struct inode *inode, struct file *file)
+{
+	struct drm_connector *connector = inode->i_private;
+
+	return single_open(file, meson_connector_attr_show, connector);
+}
+
+static const struct file_operations meson_connector_attr_fops = {
+	.owner = THIS_MODULE,
+	.open = meson_connector_attr_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+	.write = meson_connector_attr_write,
+};
+
+static int meson_connector_debugfs_init(struct drm_connector *connector,
+		struct dentry *root)
+{
+	struct dentry *entry;
+
+	entry = debugfs_create_file("hdmitx_attr", 0644, root,
+			connector, &meson_connector_attr_fops);
+	if (!entry) {
+		DRM_ERROR("create attr debugfs node error\n");
+		debugfs_remove_recursive(root);
+	}
+	return 0;
+}
+#endif
+
+static int am_hdmitx_connector_late_register(struct drm_connector *connector)
+{
+	#ifdef CONFIG_DEBUG_FS
+	struct am_hdmi_tx *am_hdmitx = connector_to_am_hdmi(connector);
+
+	meson_connector_debugfs_init(&am_hdmitx->base.connector, connector->debugfs_entry);
+	#endif
+	return 0;
 }
 
 static void am_hdmitx_connector_destroy(struct drm_connector *connector)
@@ -627,7 +877,7 @@ void meson_hdmitx_reset(struct drm_connector *connector)
 	hdmitx_state->base.hdcp_content_type = am_hdmi_info.hdcp_request_content_type;
 	hdmitx_state->base.content_protection = am_hdmi_info.hdcp_request_content_protection;
 
-	hdmitx_state->pref_hdr_policy = MESON_PREF_SDR;
+	hdmitx_state->pref_hdr_policy = MESON_PREF_DV;
 
 	/*drm api need update state, so need delay attach when create state.*/
 	if (!connector->max_bpc_property)
@@ -816,17 +1066,6 @@ void meson_hdmitx_update_hdcp(void)
 		DRM_ERROR("No valid hdcp mode exit, maybe hdcp havenot init.\n");
 }
 
-void meson_hdmitx_update_hdcp_locked(void)
-{
-	struct drm_connector *connector = &am_hdmi_info.base.connector;
-	struct drm_modeset_lock *mode_lock =
-		&connector->dev->mode_config.connection_mutex;
-
-	drm_modeset_lock(mode_lock, NULL);
-	meson_hdmitx_update_hdcp();
-	drm_modeset_unlock(mode_lock);
-}
-
 void meson_hdmitx_update(struct drm_connector_state *new_state,
 	struct drm_connector_state *old_state)
 {
@@ -871,16 +1110,27 @@ void meson_hdmitx_update(struct drm_connector_state *new_state,
 
 static void meson_hdmitx_hdcp_notify(void *data, int type, int result)
 {
+	struct drm_connector *connector = &am_hdmi_info.base.connector;
+	struct drm_modeset_lock *mode_lock =
+		&connector->dev->mode_config.connection_mutex;
+	bool locked_outer = drm_modeset_is_locked(mode_lock);
+
+	if (!locked_outer)
+		drm_modeset_lock(mode_lock, NULL);
+
+	if (!am_hdmi_info.hdmitx_on)
+		goto end;
+
 	if (type == HDCP_KEY_UPDATE && result == HDCP_AUTH_UNKNOWN) {
 		DRM_ERROR("HDCP statue changed, need re-run hdcp\n");
-		meson_hdmitx_update_hdcp_locked();
-		return;
+		meson_hdmitx_update_hdcp();
+		goto end;
 	}
 
 	if (type != am_hdmi_info.hdcp_mode) {
 		DRM_DEBUG("notify type is mismatch[%d]-[%d]\n",
 			type, am_hdmi_info.hdcp_mode);
-		return;
+		goto end;
 	}
 
 	if (result == HDCP_AUTH_OK) {
@@ -900,6 +1150,10 @@ static void meson_hdmitx_hdcp_notify(void *data, int type, int result)
 	} else {
 		DRM_ERROR("HDCP report unknown result [%d-%d]\n", type, result);
 	}
+end:
+	if (!locked_outer)
+		drm_modeset_unlock(mode_lock);
+	return;
 }
 
 static const struct drm_connector_helper_funcs am_hdmi_connector_helper_funcs = {
@@ -914,6 +1168,7 @@ static const struct drm_connector_funcs am_hdmi_connector_funcs = {
 	.fill_modes		= drm_helper_probe_single_connector_modes,
 	.atomic_set_property	= am_hdmitx_connector_atomic_set_property,
 	.atomic_get_property	= am_hdmitx_connector_atomic_get_property,
+	.late_register = am_hdmitx_connector_late_register,
 	.destroy		= am_hdmitx_connector_destroy,
 	.reset			= meson_hdmitx_reset,
 	.atomic_duplicate_state	= meson_hdmitx_atomic_duplicate_state,
@@ -999,6 +1254,11 @@ static int meson_hdmitx_decide_eotf_type
 	u8 crtc_eotf_type = HDMI_EOTF_TRADITIONAL_GAMMA_SDR;
 	int ret = 0;
 	struct drm_display_mode *mode = &meson_crtc_state->base.adjusted_mode;
+
+	/*If the HDMI cable is not plugin before starting the board,pref_hdr_policy
+	 *may not be available in am_meson_update_output_state() function
+	 */
+	hdmitx_state->pref_hdr_policy = am_hdmi_info.hdmitx_dev->get_hdr_priority();
 
 	/* TODO:hdr priority handled by hdmitx, and dont support dynamic set.
 	 * Currently checking is to confirm crtc_eotf_type == dv/dv_ll mode,
@@ -1133,6 +1393,8 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	if (am_hdmi_info.android_path)
 		return;
 
+	DRM_INFO("%s enter:attr[%d-%d]\n", __func__,
+		attr->colorformat, attr->bitdepth);
 	meson_hdmitx_decide_eotf_type(meson_crtc_state, hdmitx_state);
 
 	/*check force attr info: from uboot set or debugfs;
@@ -1141,20 +1403,17 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	 */
 	if (attr_force_debugfs) {
 		attr_force_debugfs = false;
-		convert_attrstr(attr_debugfs, attr);
 		am_hdmi_info.hdmitx_dev->setup_attr(attr_debugfs);
 		DRM_INFO("debugfs attr\n");
-		goto end;
+		return;
 	}
 
 	if (hdmitx_state->color_force) {
-		u8 max_bpc = hdmitx_state->base.max_bpc;
 		char attr_char[16];
 		char *name = meson_crtc_state->base.adjusted_mode.name;
 
 		build_hdmitx_attr_str(attr_char, attr->colorformat, attr->bitdepth);
-		if (attr->bitdepth <= max_bpc &&
-			am_hdmi_info.hdmitx_dev->test_attr(name, attr_char)) {
+		if (am_hdmi_info.hdmitx_dev->test_attr(name, attr_char)) {
 			DRM_INFO("color property setting successfully\n");
 		} else {
 			hdmitx_state->color_force = false;
@@ -1184,9 +1443,6 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	}
 
 	meson_hdmitx_setup_color_attr(attr);
-
-end:
-	DRM_INFO("[%s]end\n", __func__);
 }
 
 static
@@ -1316,6 +1572,64 @@ static const struct of_device_id am_meson_hdmi_dt_ids[] = {
 
 MODULE_DEVICE_TABLE(of, am_meson_hdmi_dt_ids);
 
+static const struct drm_prop_enum_list hdmi_hdr_status_enum_list[] = {
+	{ HDR10PLUS_VSIF, "HDR10Plus-VSIF" },
+	{ dolbyvision_std, "DolbyVision-Std" },
+	{ dolbyvision_lowlatency, "DolbyVision-Lowlatency" },
+	{ HDR10_GAMMA_ST2084, "HDR10-GAMMA_ST2084" },
+	{ HDR10_others, "HDR10-others" },
+	{ HDR10_GAMMA_HLG, "HDR10-GAMMA_HLG" },
+	{ SDR, "SDR" }
+};
+
+static void meson_hdmitx_init_hdmi_hdr_status_property(struct drm_device *drm_dev,
+						  struct am_hdmi_tx *am_hdmi)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_enum(drm_dev, 0, "hdmi_hdr_status",
+					hdmi_hdr_status_enum_list,
+					ARRAY_SIZE(hdmi_hdr_status_enum_list));
+	if (prop) {
+		am_hdmi->hdmi_hdr_status_prop = prop;
+		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to hdmi_hdr_status property\n");
+	}
+}
+
+static void meson_hdmitx_init_hdcp_ver_property(struct drm_device *drm_dev,
+						  struct am_hdmi_tx *am_hdmi)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(drm_dev, 0,
+			"hdcp_ver", 0, 36);
+
+	if (prop) {
+		am_hdmi->hdcp_ver_prop = prop;
+		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to hdcp_ver property\n");
+	}
+}
+
+static void meson_hdmitx_init_hdcp_mode_property(struct drm_device *drm_dev,
+						  struct am_hdmi_tx *am_hdmi)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(drm_dev, 0,
+			"hdcp_mode", 0, 36);
+
+	if (prop) {
+		am_hdmi->hdcp_mode_property = prop;
+		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to hdcp_mode property\n");
+	}
+}
+
 /* Optional colorspace properties. */
 static const struct drm_prop_enum_list hdmi_color_space_enum_list[] = {
 	{ HDMI_COLORSPACE_RGB, "RGB" },
@@ -1357,6 +1671,38 @@ static void meson_hdmitx_init_colordepth_property(struct drm_device *drm_dev,
 	}
 }
 
+static void meson_hdmitx_init_hdr_cap_property(struct drm_device *drm_dev,
+						  struct am_hdmi_tx *am_hdmi)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(drm_dev, 0,
+			"hdr_cap", 0, 1023);
+
+	if (prop) {
+		am_hdmi->hdr_cap_property = prop;
+		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to hdr_cap property\n");
+	}
+}
+
+static void meson_hdmitx_init_dv_cap_property(struct drm_device *drm_dev,
+						  struct am_hdmi_tx *am_hdmi)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(drm_dev, 0,
+			"dv_cap", 0, 1023);
+
+	if (prop) {
+		am_hdmi->dv_cap_property = prop;
+		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to dv_cap property\n");
+	}
+}
+
 static void meson_hdmitx_init_property(struct drm_device *drm_dev,
 						  struct am_hdmi_tx *am_hdmi)
 {
@@ -1388,14 +1734,19 @@ static void meson_hdmitx_init_avmute_property(struct drm_device *drm_dev,
 static void meson_hdmitx_hpd_cb(void *data)
 {
 	struct am_hdmi_tx *am_hdmi = (struct am_hdmi_tx *)data;
+	struct drm_connector *connector = &am_hdmi_info.base.connector;
+	struct drm_modeset_lock *mode_lock =
+		&connector->dev->mode_config.connection_mutex;
 #ifdef CONFIG_CEC_NOTIFIER
 	struct edid *pedid;
 #endif
 
 	DRM_INFO("drm hdmitx hpd notify\n");
 	if (am_hdmi->hdmitx_dev->detect() == 0 && !am_hdmi->android_path) {
+		drm_modeset_lock(mode_lock, NULL);
 		meson_hdmitx_disconnect_hdcp();
 		am_hdmi_info.hdmitx_on = 0;
+		drm_modeset_unlock(mode_lock);
 	}
 #ifdef CONFIG_CEC_NOTIFIER
 	if (am_hdmi->hdmitx_dev->detect()) {
@@ -1409,7 +1760,7 @@ static void meson_hdmitx_hpd_cb(void *data)
 					   CEC_PHYS_ADDR_INVALID);
 	}
 #endif
-	drm_helper_hpd_irq_event(am_hdmi->base.connector.dev);
+	drm_kms_helper_hotplug_event(am_hdmi->base.connector.dev);
 }
 
 int meson_hdmitx_dev_bind(struct drm_device *drm,
@@ -1425,19 +1776,23 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 #ifdef CONFIG_CEC_NOTIFIER
 	struct edid *pedid;
 #endif
-	struct hdmitx_dev *hdmitx_dev = get_hdmitx_device();
 	struct connector_hdcp_cb hdcp_cb;
+	int hdcp_ctl_lvl;
 
 	DRM_INFO("[%s] in\n", __func__);
 	memset(&am_hdmi_info, 0, sizeof(am_hdmi_info));
-
 	am_hdmi_info.hdmitx_dev = to_meson_hdmitx_dev(intf);
+	if (am_hdmi_info.hdmitx_dev->get_hdcp_ctl_lvl)
+		hdcp_ctl_lvl = am_hdmi_info.hdmitx_dev->get_hdcp_ctl_lvl();
+	else
+		hdcp_ctl_lvl = 0;
 
-	if (hdmitx_dev->hdcp_ctl_lvl == 0) {
+	DRM_INFO("hdcp_ctl_lvl=%d\n", hdcp_ctl_lvl);
+	if (hdcp_ctl_lvl == 0) {
 		am_hdmi_info.android_path = true;
 	} else if (am_hdmi_info.hdmitx_dev->hdcp_init) {
 		am_hdmi_info.hdmitx_dev->hdcp_init();
-		if (hdmitx_dev->hdcp_ctl_lvl == 1) {
+		if (hdcp_ctl_lvl == 1) {
 			/*TODO: for westeros start hdcp by driver, will move to userspace.*/
 			am_hdmi_info.hdcp_request_content_type =
 				DRM_MODE_HDCP_CONTENT_TYPE0;
@@ -1514,6 +1869,11 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	meson_hdmitx_init_colordepth_property(drm, am_hdmi);
 	meson_hdmitx_init_colorspace_property(drm, am_hdmi);
 	meson_hdmitx_init_avmute_property(drm, am_hdmi);
+	meson_hdmitx_init_hdmi_hdr_status_property(drm, am_hdmi);
+	meson_hdmitx_init_hdr_cap_property(drm, am_hdmi);
+	meson_hdmitx_init_dv_cap_property(drm, am_hdmi);
+	meson_hdmitx_init_hdcp_ver_property(drm, am_hdmi);
+	meson_hdmitx_init_hdcp_mode_property(drm, am_hdmi);
 
 	/*TODO:update compat_mode for drm driver, remove later.*/
 	priv->compat_mode = am_hdmi_info.android_path;

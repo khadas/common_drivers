@@ -143,28 +143,36 @@ static struct drm_driver meson_driver = {
 	.minor			= 0,
 };
 
-static int meson_worker_thread_init(struct meson_drm *priv)
+static int meson_worker_thread_init(struct meson_drm *priv,
+				    unsigned int num_crtcs)
 {
-	int ret;
+	int i, ret;
 	struct sched_param param;
+	struct kthread_worker *worker;
+	char thread_name[16];
+	struct meson_drm_thread *drm_thread;
 	struct drm_device *drm = priv->drm;
 
 	param.sched_priority = 16;
 
-	kthread_init_worker(&priv->commit_thread[0].worker);
-	priv->commit_thread[0].dev = drm;
-	priv->commit_thread[0].thread = kthread_run(kthread_worker_fn,
-						    &priv->commit_thread[0].worker,
-						    "crtc_commit");
-	if (IS_ERR(priv->commit_thread[0].thread)) {
-		DRM_ERROR("failed to create commit thread\n");
-		priv->commit_thread[0].thread = NULL;
-		return -1;
-	}
+	for (i = 0; i < num_crtcs; i++) {
+		drm_thread = &priv->commit_thread[i];
+		worker = &drm_thread->worker;
+		kthread_init_worker(worker);
+		drm_thread->dev = drm;
+		snprintf(thread_name, 16, "crtc%d_commit", i);
+		drm_thread->thread = kthread_run(kthread_worker_fn,
+						 worker, thread_name);
+		if (IS_ERR(drm_thread->thread)) {
+			DRM_ERROR("failed to create commit thread\n");
+			priv->commit_thread[0].thread = NULL;
+			return -1;
+		}
 
-	ret = sched_setscheduler(priv->commit_thread[0].thread, SCHED_FIFO, &param);
-	if (ret)
-		DRM_ERROR("failed to set priority\n");
+		ret = sched_setscheduler(drm_thread->thread, SCHED_FIFO, &param);
+		if (ret)
+			DRM_ERROR("failed to set priority\n");
+	}
 
 	return 0;
 }
@@ -197,14 +205,14 @@ static int am_meson_drm_bind(struct device *dev)
 	priv->bound_data.connector_component_bind = meson_connector_dev_bind;
 	priv->bound_data.connector_component_unbind = meson_connector_dev_unbind;
 	priv->osd_occupied_index = -1;
-	/*initialize encoders possible_crtcs, it will replaced by dts*/
+	/*initialize encoders crtc_masks, it will replaced by dts*/
 	for (i = 0; i < ENCODER_MAX; i++)
 		priv->crtc_masks[i] = 1;
 
 	ret = of_property_read_u32_array(dev->of_node, "crtc_masks",
 		crtc_masks, ENCODER_MAX);
 	if (ret) {
-		DRM_ERROR("crtc_masks get fail from dts!\n");
+		DRM_ERROR("crtc_masks get fail!\n");
 	} else {
 		for (i = 0; i < ENCODER_MAX; i++)
 			priv->crtc_masks[i] = crtc_masks[i];
@@ -242,7 +250,7 @@ static int am_meson_drm_bind(struct device *dev)
 		goto err_gem;
 	DRM_INFO("mode_config crtc number:%d\n", drm->mode_config.num_crtc);
 
-	ret = meson_worker_thread_init(priv);
+	ret = meson_worker_thread_init(priv, drm->mode_config.num_crtc);
 	if (ret)
 		goto err_unbind_all;
 

@@ -25,6 +25,7 @@
 #include <linux/seq_file.h>
 #include <linux/proc_fs.h>
 #endif
+#include <linux/upstream_version.h>
 
 static unsigned char cpuinfo_chip_id[CHIPID_LEN];
 
@@ -146,9 +147,10 @@ static  struct platform_driver cpuinfo_platform_driver = {
 
 static int __init meson_cpuinfo_init(void)
 {
-#ifdef	COMMON_DRIVER_RELEASE
-	pr_notice("common_drivers release =%s\n", COMMON_DRIVER_RELEASE);
-#endif
+	pr_notice("build info: %s, common_drivers: %s\n", BUILD_TIME, COMMON_DRIVER_RELEASE);
+	pr_notice("kernel upgrade info: <%d> <%s> <%s-%s>\n",
+		  AML_KERNEL_VERSION, MERGE_DATE, UPSTREAM_VERSION, AML_PATCH_VERSION);
+
 	meson_cpu_version_init();
 
 	return  platform_driver_register(&cpuinfo_platform_driver);

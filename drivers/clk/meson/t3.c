@@ -10,7 +10,7 @@
 #include <linux/clk.h>
 #include <linux/module.h>
 #include <linux/of_address.h>
-
+#include <linux/clkdev.h>
 #include "clk-mpll.h"
 #include "clk-pll.h"
 #include "clk-regmap.h"
@@ -6996,6 +6996,16 @@ static int __ref meson_t3_probe(struct platform_device *pdev)
 			dev_err(dev, "Clock registration failed\n");
 			return ret;
 		}
+
+#ifdef CONFIG_AMLOGIC_CLK_DEBUG
+		ret = devm_clk_hw_register_clkdev(dev, t3_hw_onecell_data.hws[i],
+						  NULL,
+						  clk_hw_get_name(t3_hw_onecell_data.hws[i]));
+		if (ret < 0) {
+			dev_err(dev, "Failed to clkdev register: %d\n", ret);
+			return ret;
+		}
+#endif
 	}
 
 	meson_t3_dvfs_setup(pdev);

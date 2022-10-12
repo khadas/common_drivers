@@ -143,7 +143,7 @@ struct ker_start_policy {
 #define AMSYNCS_IOC_SET_A_TS		_IOW((_A_M_SS), 0x06, struct pts_tri)
 #define AMSYNCS_IOC_GET_A_TS		_IOWR((_A_M_SS), 0x07, struct pts_tri)
 #define AMSYNCS_IOC_SEND_EVENT		_IOWR((_A_M_SS), 0x08, struct session_event)
-//For PCR/IPTV mode only
+/* For PCR/IPTV mode only */
 #define AMSYNCS_IOC_GET_SYNC_STAT	_IOWR((_A_M_SS), 0x09, struct session_sync_stat)
 #define AMSYNCS_IOC_SET_PCR		_IOW((_A_M_SS), 0x0a, struct pcr_pair)
 #define AMSYNCS_IOC_GET_PCR		_IOWR((_A_M_SS), 0x0b, struct pcr_pair)
@@ -158,7 +158,7 @@ struct ker_start_policy {
 #define AMSYNCS_IOC_SET_CLK_DEV	_IOW((_A_M_SS), 0x14, int)
 #define AMSYNCS_IOC_GET_CLK_DEV	_IOR((_A_M_SS), 0x15, int)
 
-//For debuging
+/* For debuging */
 #define AMSYNCS_IOC_GET_DEBUG_MODE	_IOR((_A_M_SS), 0x100, struct session_debug)
 
 int msync_vsync_update(void);

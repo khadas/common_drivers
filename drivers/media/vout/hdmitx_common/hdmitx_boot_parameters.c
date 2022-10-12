@@ -102,7 +102,7 @@ static int get_hdmitx_color_attr(char *token, char *color_attr)
 					strcat(attr, cd[i]);
 
 			if (strlen(attr) >= sizeof(attr)) {
-				pr_err("get err attr: %d-%s\n", strlen(attr), attr);
+				pr_err("get err attr: %ld-%s\n", strlen(attr), attr);
 			} else {
 				strncpy(color_attr, attr, strlen(attr));
 				ret = 0;

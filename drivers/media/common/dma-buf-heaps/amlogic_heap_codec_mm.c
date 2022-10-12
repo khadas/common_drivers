@@ -413,7 +413,7 @@ free_tables:
 	sg_free_table(table);
 free_buffer:
 	kfree(buffer);
-	pr_err("Allocate dmabuf %x %x %x failed", len, fd_flags, heap_flags);
+	pr_err("Allocate dmabuf %lx %lx %lx failed", len, fd_flags, heap_flags);
 	return ERR_PTR(ret);
 }
 

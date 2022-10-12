@@ -753,7 +753,7 @@ void am_meson_logo_init(struct drm_device *dev)
 			of_node_put(mem_node);
 			if (rmem) {
 				logo.size = rmem->size;
-				DRM_INFO("of read %s reservememsize=0x%x, base 0x%x\n",
+				DRM_INFO("of read %s reservememsize=0x%x, base 0x%llx\n",
 					rmem->name, logo.size, rmem->base);
 			}
 		} else {
@@ -774,7 +774,7 @@ void am_meson_logo_init(struct drm_device *dev)
 				DRM_INFO(" cma_alloc from %s start page %px-%px size %x\n",
 					cma_get_name(cma_logo),
 					logo.logo_page,
-					logo.start,
+					(void *)logo.start,
 					logo.size);
 			}
 		} else {

@@ -417,6 +417,7 @@ static struct dvb_frontend *aml_attach_detach_dtvdemod(enum dtv_demod_type type,
 	case AM_DTV_DEMOD_AMLDTV:
 		attch ? (p = aml_dvb_attach(aml_dtvdm_attach, cfg)) :
 				aml_dvb_detach(aml_dtvdm_attach);
+		break;
 	case AM_DTV_DEMOD_M1:
 		attch ? (p = aml_dvb_attach(m1_attach, cfg)) :
 				aml_dvb_detach(m1_attach);

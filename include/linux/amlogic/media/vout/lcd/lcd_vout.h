@@ -276,6 +276,7 @@ struct vbyone_config_s {
 	unsigned int intr_en;
 	unsigned int vsync_intr_en;
 
+	unsigned int intr_state;
 	unsigned int ctrl_flag;
 		/*  bit[0]:power_on_reset_en
 		 *  bit[1]:hpd_data_delay_en

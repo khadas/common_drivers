@@ -9594,13 +9594,17 @@ int get_current_vscale_skip_count(struct vframe_s *vf)
 	int ret = 0;
 	static struct vpp_frame_par_s frame_par;
 
-	vpp_set_filters
-		(&glayer_info[0],
-		vf, &frame_par, vinfo,
-		(is_amdv_on() &&
-		is_amdv_stb_mode() &&
-		for_amdv_certification()),
-		OP_FORCE_NOT_SWITCH_VF);
+	ret = vpp_set_filters
+			(&glayer_info[0],
+			vf, &frame_par, vinfo,
+			(is_amdv_on() &&
+			is_amdv_stb_mode() &&
+			for_amdv_certification()),
+			OP_FORCE_NOT_SWITCH_VF);
+	if (ret < 0) {
+		pr_info("%s vpp_set_filter fail\n", __func__);
+		return ret;
+	}
 	ret = frame_par.vscale_skip_count;
 	if (cur_frame_par && (process_3d_type & MODE_3D_ENABLE))
 		ret |= (cur_frame_par->vpp_3d_mode << 8);
@@ -14455,8 +14459,8 @@ static ssize_t process_fmt_show
 	int ret = 0;
 	struct vframe_s *dispbuf = NULL;
 	enum vframe_signal_fmt_e fmt;
-	char process_name[MAX_VD_LAYER][32];
-	char output_fmt[32];
+	char process_name[MAX_VD_LAYER][32] = {{'\0'},};
+	char output_fmt[32] = {'\0',};
 	bool amdv_on = false;
 	bool hdr_bypass = false;
 	int l;

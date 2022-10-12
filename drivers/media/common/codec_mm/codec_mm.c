@@ -2835,10 +2835,12 @@ static ssize_t tvp_enable_store(struct class *class,
 	 * always free all scatter cache and unused keeper for
 	 * tvp changes when tvp mode is 0.
 	 */
-	mutex_lock(&mgt->tvp_protect_lock);
-	codec_mm_keeper_free_all_keep(2);
-	codec_mm_scatter_free_all_ignorecache(3);
-	mutex_unlock(&mgt->tvp_protect_lock);
+	if (tvp_mode < 1) {
+		mutex_lock(&mgt->tvp_protect_lock);
+		codec_mm_keeper_free_all_keep(2);
+		codec_mm_scatter_free_all_ignorecache(3);
+		mutex_unlock(&mgt->tvp_protect_lock);
+	}
 	switch (val) {
 	case 0:
 		codec_mm_disable_tvp();

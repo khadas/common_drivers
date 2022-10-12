@@ -41,6 +41,31 @@ static unsigned int ge2d_com_debug;
 MODULE_PARM_DESC(ge2d_com_debug, "\n ge2d_com_debug\n");
 module_param(ge2d_com_debug, uint, 0664);
 
+#ifndef CONFIG_AMLOGIC_MEDIA_GE2D
+void stretchblt_noalpha(struct ge2d_context_s *wq,
+			int src_x, int src_y, int src_w, int src_h,
+			int dst_x, int dst_y, int dst_w, int dst_h)
+{
+}
+
+int  destroy_ge2d_work_queue(struct ge2d_context_s *ge2d_work_queue)
+{
+	return 0;
+}
+
+void fillrect(struct ge2d_context_s *wq,
+	      int x, int y, int w, int h, unsigned int color)
+{
+}
+#endif
+
+#ifndef CONFIG_AMLOGIC_UVM_CORE
+struct vframe_s *dmabuf_get_vframe(struct dma_buf *dmabuf)
+{
+	return NULL;
+}
+#endif
+
 static int get_source_type(struct src_data_para *src_data)
 {
 	enum videocom_source_type ret;

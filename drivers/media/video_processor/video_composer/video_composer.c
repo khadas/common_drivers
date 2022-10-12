@@ -173,6 +173,43 @@ struct video_composer_port_s *video_composer_get_port(u32 index)
 	}
 }
 
+#ifndef CONFIG_AMLOGIC_UVM_CORE
+int dmabuf_put_vframe(struct dma_buf *dmabuf)
+{
+	return 0;
+}
+
+bool is_valid_mod_type(struct dma_buf *dmabuf,
+		       enum uvm_hook_mod_type type)
+{
+	return false;
+}
+
+int uvm_put_hook_mod(struct dma_buf *dmabuf, int type)
+{
+	return 0;
+}
+
+struct uvm_hook_mod *uvm_get_hook_mod(struct dma_buf *dmabuf,
+				      int type)
+{
+	return NULL;
+}
+#endif
+
+#ifndef CONFIG_AMLOGIC_MEDIA_GE2D
+struct ge2d_context_s *create_ge2d_work_queue(void)
+{
+	return NULL;
+}
+
+int ge2d_context_config_ex(struct ge2d_context_s *context,
+			   struct config_para_ex_s *ge2d_config)
+{
+	return -1;
+}
+#endif
+
 static void *video_timeline_create(struct composer_dev *dev)
 {
 	const char *tl_name = "videocomposer_timeline_0";

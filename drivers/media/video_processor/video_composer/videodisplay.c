@@ -15,11 +15,11 @@
  * more details.
  *
  */
- #include <linux/amlogic/meson_uvm_core.h>
- #include <linux/amlogic/media/utils/am_com.h>
- #include <linux/amlogic/media/codec_mm/codec_mm.h>
- #include <linux/amlogic/media/vfm/vframe.h>
- #ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
+#include <linux/amlogic/meson_uvm_core.h>
+#include <linux/amlogic/media/utils/am_com.h>
+#include <linux/amlogic/media/codec_mm/codec_mm.h>
+#include <linux/amlogic/media/vfm/vframe.h>
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
 #include <linux/amlogic/media/video_sink/video.h>
 #endif
 #include "videodisplay.h"

@@ -133,5 +133,8 @@ union uvm_ioctl_arg {
 #define UVM_IOC_GET_USAGE _IOWR(UVM_IOC_MAGIC, 10, \
 				struct uvm_usage_data)
 
+size_t mua_calc_real_dmabuf_size(struct mua_buffer *buffer);
+int meson_uvm_fill_pattern(struct mua_buffer *buffer, struct dma_buf *dmabuf, void *vaddr);
+
 #endif
 

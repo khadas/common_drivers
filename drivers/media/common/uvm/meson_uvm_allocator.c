@@ -36,6 +36,8 @@ static int enable_screencap;
 module_param_named(enable_screencap, enable_screencap, int, 0664);
 static int mua_debug_level;
 module_param(mua_debug_level, int, 0644);
+static int realloc_size;
+module_param(realloc_size, int, 0644);
 
 #define MUA_PRINTK(level, fmt, arg...) \
 	do {	\
@@ -90,7 +92,7 @@ static void mua_handle_free(struct uvm_buf_obj *obj)
 	kfree(buffer);
 }
 
-static int meson_uvm_fill_pattern(struct mua_buffer *buffer, struct dma_buf *dmabuf, void *vaddr)
+int meson_uvm_fill_pattern(struct mua_buffer *buffer, struct dma_buf *dmabuf, void *vaddr)
 {
 	struct v4l_data_t val_data;
 
@@ -101,13 +103,31 @@ static int meson_uvm_fill_pattern(struct mua_buffer *buffer, struct dma_buf *dma
 	val_data.width = buffer->width;
 	val_data.height = buffer->height;
 	val_data.phy_addr[0] = buffer->paddr;
-	MUA_PRINTK(1, "%s. width=%d height=%d byte_stride=%d\n",
-			__func__, buffer->width, buffer->height, buffer->byte_stride);
+	MUA_PRINTK(1, "%s. width=%d height=%d byte_stride=%d align=%d\n",
+			__func__, buffer->width, buffer->height,
+			buffer->byte_stride, buffer->align);
 #ifdef CONFIG_AMLOGIC_V4L_VIDEO3
 	v4lvideo_data_copy(&val_data, dmabuf, buffer->align);
 #endif
-	vunmap(vaddr);
+
 	return 0;
+}
+
+size_t mua_calc_real_dmabuf_size(struct mua_buffer *buffer)
+{
+	size_t size = 0;
+	int align = buffer->align;
+	int byte_stride = buffer->byte_stride;
+	int height = ALIGN(buffer->height, align);
+
+	if (buffer)
+		size = byte_stride * height * 3 / 2;
+	if (realloc_size > 0) {
+		size = realloc_size;
+		MUA_PRINTK(1, "%s. align=%d height=%d byte_stride=%d in_size:%d\n",
+			__func__, align, height, byte_stride, realloc_size);
+	}
+	return size;
 }
 
 static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
@@ -133,13 +153,17 @@ static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
 				__func__, scalar, buffer->width, buffer->height);
 	memset(&info, 0, sizeof(info));
 
+	MUA_PRINTK(1, "%s, current->tgid:%d mdev->pid:%d buffer->commit_display:%d.\n",
+		__func__, current->tgid, mdev->pid, buffer->commit_display);
+
 	if (!enable_screencap && current->tgid == mdev->pid &&
 	    buffer->commit_display) {
 		MUA_PRINTK(0, "gpu_realloc: screen cap should not access the uvm buffer.\n");
 		return -ENODEV;
 	}
 
-	dmabuf->size = buffer->size * scalar * scalar;
+//	dmabuf->size = buffer->size * scalar * scalar;
+	dmabuf->size = mua_calc_real_dmabuf_size(buffer);
 	MUA_PRINTK(1, "buffer(0x%p)->size:%zu realloc dmabuf->size=%zu\n",
 			buffer, buffer->size, dmabuf->size);
 	heap = dma_heap_find(CODECMM_HEAP_NAME);
@@ -249,6 +273,7 @@ static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
 	//start to filldata
 	meson_uvm_fill_pattern(buffer, dmabuf, vaddr);
 
+	vunmap(vaddr);
 	if (src_sgt && attachment) {
 		dma_buf_unmap_attachment(attachment, src_sgt, DMA_BIDIRECTIONAL);
 		dma_buf_detach(idmabuf, attachment);
@@ -407,7 +432,7 @@ static int mua_handle_alloc(struct dma_buf *dmabuf, struct uvm_alloc_data *data,
 		else if (data->flags & MUA_BUFFER_CACHED)
 			name = CODECMM_CACHED_HEAP_NAME;
 
-		MUA_PRINTK(0, "%s: dma_heap name is %s\n", __func__, name);
+		MUA_PRINTK(1, "%s: dma_heap name is %s\n", __func__, name);
 
 		heap = dma_heap_find(name);
 		if (!heap) {

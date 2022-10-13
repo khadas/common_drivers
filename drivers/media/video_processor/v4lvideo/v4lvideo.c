@@ -52,6 +52,10 @@
 #define V4LVIDEO_DEVICE_NAME   "v4lvideo"
 //#define DUR2PTS(x) ((x) - ((x) >> 4))
 
+static unsigned short convert_mask = 65472;//0xFFC0
+module_param(convert_mask, ushort, 0664);
+MODULE_PARM_DESC(convert_mask, "convert_mask");
+
 static atomic_t global_set_cnt = ATOMIC_INIT(0);
 static u32 alloc_sei = 1;
 
@@ -887,6 +891,7 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 	short *y_src, *u_src, *v_src, *s2c, *s2c1;
 	u8 *tmp, *tmp1;
 	u8 *y_dst, *vu_dst;
+	short *y_dst_10, *vu_dst_10;
 	int bit_10;
 	struct timeval start, end;
 	struct fbc_decoder_param param;
@@ -936,7 +941,9 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 	v_src = planes[2];
 
 	y_dst = v4l_data->dst_addr;
+	y_dst_10 = (short *)(v4l_data->dst_addr);
 	vu_dst = v4l_data->dst_addr + v4l_data->byte_stride * v4l_data->height;
+	vu_dst_10 = (short *)(v4l_data->dst_addr + v4l_data->byte_stride * v4l_data->height);
 
 	do_gettimeofday(&start);
 	for (i = 0; i < vf->compHeight; i++) {
@@ -944,12 +951,12 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 			s2c = y_src + j;
 			tmp = (u8 *)(s2c);
 			if (bit_10)
-				*(y_dst + j) = *s2c >> 2;
+				*(y_dst_10 + j) = *s2c << 6 & convert_mask;
 			else
 				*(y_dst + j) = tmp[0];
 		}
-
 			y_dst += v4l_data->byte_stride;
+			y_dst_10 = (short *)y_dst;
 			y_src += vf->compWidth;
 	}
 
@@ -961,14 +968,15 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 			tmp1 = (u8 *)(s2c1);
 
 			if (bit_10) {
-				*(vu_dst + j) = *s2c >> 2;
-				*(vu_dst + j + 1) = *s2c1 >> 2;
+				*(vu_dst_10 + j) = *s2c1 << 6 & convert_mask;
+				*(vu_dst_10 + j + 1) = *s2c << 6 & convert_mask;
 			} else {
 				*(vu_dst + j) = tmp[0];
 				*(vu_dst + j + 1) = tmp1[0];
 			}
 		}
 		vu_dst += v4l_data->byte_stride;
+		vu_dst_10 = (short *)vu_dst;
 		u_src += (vf->compWidth / 2);
 		v_src += (vf->compWidth / 2);
 	}
@@ -987,14 +995,14 @@ free:
 
 /* for fbc output video:vp9 */
 static bool need_do_extend_one_column_fbc(struct vframe_s *vf,
-					  struct v4l_data_t *v4l_data)
+					  struct v4l_data_t *v4l_data, int bit_10)
 {
 	u32 video_idx;
 
 	pr_info("vf->compwidth:%d v4l_data->byte_stride:%d num_vp9_videos:%d\n",
 		 vf->compWidth, v4l_data->byte_stride, num_vp9_videos);
 
-	if (cts_video_flag || vf->compWidth >= v4l_data->byte_stride)
+	if (cts_video_flag || vf->compWidth >= v4l_data->byte_stride || bit_10)
 		return false;
 
 	for (video_idx = 0; video_idx < num_vp9_videos; video_idx++) {
@@ -1008,14 +1016,14 @@ static bool need_do_extend_one_column_fbc(struct vframe_s *vf,
 }
 
 static bool need_do_extend_one_row_fbc(struct vframe_s *vf,
-				       struct v4l_data_t *v4l_data)
+				       struct v4l_data_t *v4l_data, int bit_10)
 {
 	u32 video_idx;
 
 	pr_info("vf->compHeight:%d v4l_data->height:%d num_vp9_videos:%d\n",
 		 vf->compHeight, v4l_data->height, num_vp9_videos);
 
-	if (cts_video_flag || vf->compHeight >= v4l_data->height)
+	if (cts_video_flag || vf->compHeight >= v4l_data->height || bit_10)
 		return false;
 
 	for (video_idx = 0; video_idx < num_vp9_videos; video_idx++) {
@@ -1041,6 +1049,7 @@ void v4lvideo_data_copy(struct v4l_data_t *v4l_data,
 	bool is_10bit = false;
 	bool is_dec_vf = false;
 	u32 aligned_height = 0;
+	int bit_10 = 0;
 	char *y_vaddr = NULL;
 	char *uv_vaddr = NULL;
 	char *y_src = NULL;
@@ -1106,12 +1115,15 @@ void v4lvideo_data_copy(struct v4l_data_t *v4l_data,
 	if ((vf->type & VIDTYPE_COMPRESS)) {
 		if (print_flag)
 			pr_info("fbc decoder path\n");
+		if ((vf->bitdepth & BITDEPTH_YMASK)  == BITDEPTH_Y10)
+			bit_10 = 1;
+		else
+			bit_10 = 0;
 		do_vframe_afbc_soft_decode(v4l_data, vf);
 		y_vaddr = v4l_data->dst_addr;
 		uv_vaddr = y_vaddr +
 			v4l_data->byte_stride * v4l_data->height;
-		do_vframe_afbc_soft_decode(v4l_data, vf);
-		if (need_do_extend_one_column_fbc(vf, v4l_data) == true) {
+		if (need_do_extend_one_column_fbc(vf, v4l_data, bit_10) == true) {
 			for (row = 0; row < vf->compHeight; row++) {
 				int cnt = vf->compWidth +
 					row * v4l_data->byte_stride;
@@ -1142,7 +1154,7 @@ void v4lvideo_data_copy(struct v4l_data_t *v4l_data,
 			}
 		}
 
-		if (need_do_extend_one_row_fbc(vf, v4l_data) == false)
+		if (need_do_extend_one_row_fbc(vf, v4l_data, bit_10) == false)
 			return;
 
 		if (print_flag)

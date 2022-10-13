@@ -202,6 +202,7 @@ static int get_lcd_tablet_modes(struct meson_panel_dev *panel,
 	*num = 1;
 	*modes = kmalloc_array(*num, sizeof(struct drm_display_mode), GFP_KERNEL);
 	mode = modes[0];
+	memset(mode, 0, sizeof(struct drm_display_mode));
 
 	if (pdrv->index == 0) {
 		snprintf(mode->name, DRM_DISPLAY_MODE_LEN, "panel");

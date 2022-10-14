@@ -1956,11 +1956,11 @@ static struct meson_bank meson_t5m_periphs_banks[] = {
 		0x2b,  0,   0x2c,  0,   0x2a, 0,   0x29,  0,  0x28,  0,  0x2f, 0),
 	BANK_DS("C",    GPIOC_0,    GPIOC_10, 14, 29,
 		0x33,  0,   0x34,  0,   0x32, 0,   0x31,  0,  0x30,  0,  0x37, 0),
-	BANK_DS("P",    GPIOP_0,    GPIOP_9,  11, 36,
+	BANK_DS("P",    GPIOP_0,    GPIOP_9,  143, 152,
 		0x3b,  0,   0x3c,  0,   0x3a, 0,   0x39,  0,  0x38,  0,  0x3f, 0),
-	BANK_DS("W",    GPIOW_0,    GPIOW_12, 30, 42,
+	BANK_DS("W",    GPIOW_0,    GPIOW_16, 30, 42,
 		0x63,  0,  0x64,  0,  0x62,   0,  0x61,   0,  0x60, 0,  0x67, 0),
-	BANK_DS("M",    GPIOM_0,    GPIOM_15, 76, 91,
+	BANK_DS("M",    GPIOM_0,    GPIOM_29, 76, 91,
 		0x73,  0,  0x74,  0,  0x72,   0,  0x71,   0,  0x70, 0,  0x77, 0),
 	BANK_DS("GPIO_TEST_N", GPIO_TEST_N,    GPIO_TEST_N, 135, 135,
 		0x83,  0,  0x84,  0,  0x82,   0,  0x81,   0,  0x80, 0,  0x87, 0)
@@ -2012,6 +2012,7 @@ static struct meson_pinctrl_data meson_t5m_periphs_pinctrl_data __refdata = {
 	.num_banks	= ARRAY_SIZE(meson_t5m_periphs_banks),
 	.pmx_ops	= &meson_axg_pmx_ops,
 	.pmx_data	= &meson_t5m_periphs_pmx_banks_data,
+	.parse_dt	= &meson_a1_parse_dt_extra,
 };
 
 static const struct of_device_id meson_t5m_pinctrl_dt_match[] = {

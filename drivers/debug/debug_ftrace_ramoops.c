@@ -66,18 +66,14 @@ unsigned int dump_iomap;
 core_param(dump_iomap, dump_iomap, uint, 0664);
 
 unsigned int ramoops_ftrace_en;
-EXPORT_SYMBOL(ramoops_ftrace_en);
 
 int ramoops_io_en;
-EXPORT_SYMBOL(ramoops_io_en);
 core_param(ramoops_io_en, ramoops_io_en, int, 0664);
 
 int ramoops_io_dump;
-EXPORT_SYMBOL(ramoops_io_dump);
 core_param(ramoops_io_dump, ramoops_io_dump, int, 0664);
 
-int ramoops_io_skip;
-EXPORT_SYMBOL(ramoops_io_skip);
+static int ramoops_io_skip = 1;
 core_param(ramoops_io_skip, ramoops_io_skip, int, 0664);
 
 static int dump_phys_addr;
@@ -447,7 +443,7 @@ static unsigned long virt_convert_phys_addr(unsigned long virt_addr)
 	return -1;
 }
 
-void notrace pstore_io_save(unsigned long reg, unsigned long val,
+void notrace __pstore_io_save(unsigned long reg, unsigned long val,
 			    unsigned long parent, unsigned int flag,
 			    unsigned long *irq_flag)
 {
@@ -546,7 +542,6 @@ void notrace pstore_io_save(unsigned long reg, unsigned long val,
 	    IRQ_D)
 		local_irq_restore(*irq_flag);
 }
-EXPORT_SYMBOL(pstore_io_save);
 
 static void notrace __pstore_io_rw_dump(struct pstore_ftrace_record *rec)
 {

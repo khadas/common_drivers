@@ -52,6 +52,11 @@ struct meson_gxbb_wdt {
 #endif
 };
 
+#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+static int wdt_debug;
+module_param(wdt_debug, int, 0644);
+#endif
+
 static int meson_gxbb_wdt_start(struct watchdog_device *wdt_dev)
 {
 	struct meson_gxbb_wdt *data = watchdog_get_drvdata(wdt_dev);
@@ -83,7 +88,7 @@ static int meson_gxbb_wdt_ping(struct watchdog_device *wdt_dev)
 	struct meson_gxbb_wdt *data = watchdog_get_drvdata(wdt_dev);
 
 #ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
-	if (ramoops_io_en)
+	if (wdt_debug)
 		pr_info("meson gxbb wdt ping\n");
 #endif
 	writel(0, data->reg_base + GXBB_WDT_RSET_REG);

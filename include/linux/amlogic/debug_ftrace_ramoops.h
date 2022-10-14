@@ -35,6 +35,16 @@ void notrace pstore_io_save(unsigned long reg, unsigned long val,
 			    unsigned long parant, unsigned int flag,
 			    unsigned long *irq_flag);
 
+void notrace __pstore_io_save(unsigned long reg, unsigned long val,
+			    unsigned long parant, unsigned int flag,
+			    unsigned long *irq_flag);
+
+#ifdef MODULE
+#define PSTORE_IO_SAVE pstore_io_save
+#else
+#define PSTORE_IO_SAVE __pstore_io_save
+#endif
+
 struct persistent_ram_zone;
 void pstore_ftrace_dump_old(struct persistent_ram_zone *prz);
 
@@ -43,50 +53,49 @@ void save_iomap_info(unsigned long virt_addr, unsigned long phys_addr,
 
 void delete_iomap_info(unsigned long addr);
 
-//#define SKIP_IO_TRACE
 #if (defined CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE) && (!defined SKIP_IO_TRACE)
 #define pstore_ftrace_io_wr(reg, val)	\
 unsigned long irqflg;					\
-pstore_io_save(reg, val, CALLER_ADDR_0, PSTORE_FLAG_IO_W, &irqflg)
+PSTORE_IO_SAVE(reg, val, CALLER_ADDR_0, PSTORE_FLAG_IO_W, &irqflg)
 
 #define pstore_ftrace_io_wr_end(reg, val)	\
-pstore_io_save(reg, val, CALLER_ADDR_0, PSTORE_FLAG_IO_W_END, &irqflg)
+PSTORE_IO_SAVE(reg, val, CALLER_ADDR_0, PSTORE_FLAG_IO_W_END, &irqflg)
 
 #define pstore_ftrace_io_rd(reg)		\
 unsigned long irqflg;					\
-pstore_io_save(reg, 0, CALLER_ADDR_0, PSTORE_FLAG_IO_R, &irqflg)
+PSTORE_IO_SAVE(reg, 0, CALLER_ADDR_0, PSTORE_FLAG_IO_R, &irqflg)
 
 #define pstore_ftrace_io_rd_end(reg)	\
-pstore_io_save(reg, 0, CALLER_ADDR_0, PSTORE_FLAG_IO_R_END, &irqflg)
+PSTORE_IO_SAVE(reg, 0, CALLER_ADDR_0, PSTORE_FLAG_IO_R_END, &irqflg)
 
 #define pstore_ftrace_io_tag(reg, val)  \
-pstore_io_save(reg, val, CALLER_ADDR_0, PSTORE_FLAG_IO_TAG, NULL)
+PSTORE_IO_SAVE(reg, val, CALLER_ADDR_0, PSTORE_FLAG_IO_TAG, NULL)
 
 #define need_dump_iomap()               (ramoops_io_en | dump_iomap)
 
 #define pstore_ftrace_sched_switch(next_pid, next_comm)	\
-pstore_io_save(next_pid, next_comm, 0, PSTORE_FLAG_IO_SCHED_SWITCH, NULL)
+PSTORE_IO_SAVE(next_pid, next_comm, 0, PSTORE_FLAG_IO_SCHED_SWITCH, NULL)
 
 #define pstore_ftrace_io_smc_in(a0, a1)	\
-pstore_io_save(a0, a1, CALLER_ADDR_0, PSTORE_FLAG_IO_SMC_IN, NULL)
+PSTORE_IO_SAVE(a0, a1, CALLER_ADDR_0, PSTORE_FLAG_IO_SMC_IN, NULL)
 
 #define pstore_ftrace_io_smc_out(a0, a1) \
-pstore_io_save(a0, a1, CALLER_ADDR_0, PSTORE_FLAG_IO_SMC_OUT, NULL)
+PSTORE_IO_SAVE(a0, a1, CALLER_ADDR_0, PSTORE_FLAG_IO_SMC_OUT, NULL)
 
 #define pstore_ftrace_io_smc_noret_in(a0, a1)	\
-pstore_io_save(a0, a1, CALLER_ADDR_0, PSTORE_FLAG_IO_SMC_NORET_IN, NULL)
+PSTORE_IO_SAVE(a0, a1, CALLER_ADDR_0, PSTORE_FLAG_IO_SMC_NORET_IN, NULL)
 
 #define pstore_ftrace_clk_enable(name) \
-pstore_io_save(0, name, CALLER_ADDR_0, PSTORE_FLAG_CLK_ENABLE, NULL)
+PSTORE_IO_SAVE(0, name, CALLER_ADDR_0, PSTORE_FLAG_CLK_ENABLE, NULL)
 
 #define pstore_ftrace_clk_disable(name) \
-pstore_io_save(0, name, CALLER_ADDR_0, PSTORE_FLAG_CLK_DISABLE, NULL)
+PSTORE_IO_SAVE(0, name, CALLER_ADDR_0, PSTORE_FLAG_CLK_DISABLE, NULL)
 
 #define pstore_ftrace_pd_power_on(name) \
-pstore_io_save(0, name, CALLER_ADDR_0, PSTORE_FLAG_PD_POWER_ON, NULL)
+PSTORE_IO_SAVE(0, name, CALLER_ADDR_0, PSTORE_FLAG_PD_POWER_ON, NULL)
 
 #define pstore_ftrace_pd_power_off(name) \
-pstore_io_save(0, name, CALLER_ADDR_0, PSTORE_FLAG_PD_POWER_OFF, NULL)
+PSTORE_IO_SAVE(0, name, CALLER_ADDR_0, PSTORE_FLAG_PD_POWER_OFF, NULL)
 
 #else
 #define pstore_ftrace_io_wr(reg, val)                   do {    } while (0)
@@ -109,24 +118,24 @@ pstore_io_save(0, name, CALLER_ADDR_0, PSTORE_FLAG_PD_POWER_OFF, NULL)
 #ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
 #define pstore_ftrace_io_copy_from(reg, cnt)	\
 unsigned long irqflg;                                   \
-pstore_io_save(reg, cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_R, &irqflg)
+PSTORE_IO_SAVE(reg, cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_R, &irqflg)
 
 #define pstore_ftrace_io_copy_from_end(reg, cnt)	\
-pstore_io_save(reg, cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_R_END, &irqflg)
+PSTORE_IO_SAVE(reg, cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_R_END, &irqflg)
 
 #define pstore_ftrace_io_copy_to(reg, cnt)	\
 unsigned long irqflg;                                   \
-pstore_io_save(reg, 0x12340000 | cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_W, &irqflg)
+PSTORE_IO_SAVE(reg, 0x12340000 | cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_W, &irqflg)
 
 #define pstore_ftrace_io_copy_to_end(reg, cnt)		\
-pstore_io_save(reg, 0x12340000 | cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_W_END, &irqflg)
+PSTORE_IO_SAVE(reg, 0x12340000 | cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_W_END, &irqflg)
 
 #define pstore_ftrace_io_memset(reg, cnt)	\
 unsigned long irqflg;					\
-pstore_io_save(reg, 0xabcd0000 | cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_W, &irqflg)
+PSTORE_IO_SAVE(reg, 0xabcd0000 | cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_W, &irqflg)
 
 #define pstore_ftrace_io_memset_end(reg, cnt)		\
-pstore_io_save(reg, 0xabcd0000 | cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_W_END, &irqflg)
+PSTORE_IO_SAVE(reg, 0xabcd0000 | cnt, CALLER_ADDR_0, PSTORE_FLAG_IO_W_END, &irqflg)
 #else
 #define pstore_ftrace_io_copy_from(reg, cnt)		do {	} while (0)
 #define pstore_ftrace_io_copy_from_end(reg, cnt)	do {	} while (0)

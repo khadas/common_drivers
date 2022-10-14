@@ -15,8 +15,6 @@
 # amlogic debug illegal symbol:
   debug_filp_open
   debug_vfs_setxattr
-  pstore_io_save
-  ramoops_io_en
 
 # CFG80211: cfg80211.ko
   rfkill_set_sw_state

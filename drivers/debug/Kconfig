@@ -44,6 +44,7 @@ config AMLOGIC_DEBUG_PRINTK
 config AMLOGIC_DEBUG_FTRACE_PSTORE
 	bool "Amlogic ftrace pstore debug"
 	depends on PSTORE_FTRACE
+	depends on AMLOGIC_DEBUG_LOCKUP
 	default n
 	help
 	  Dump function call and register access to ramoops after watchdog

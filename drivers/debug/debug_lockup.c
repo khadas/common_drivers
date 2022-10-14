@@ -44,6 +44,12 @@ DEFINE_TRACE(inject_pr_lockup_info,
 	     TP_ARGS(dummy));
 #endif
 
+#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+DEFINE_TRACE(inject_pstore_io_save,
+	     TP_PROTO(int dummy),
+	     TP_ARGS(dummy));
+#endif
+
 /*isr trace*/
 #define ns2us			(1000)
 #define ns2ms			(1000 * 1000)
@@ -622,6 +628,9 @@ void debug_trace_container(void)
 #ifdef CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR
 	trace_inject_pr_lockup_info(0);
 #endif
+#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+	trace_inject_pstore_io_save(0);
+#endif
 }
 
 static void irq_hooks_probe(void *data, int dummy)
@@ -646,6 +655,30 @@ static void pr_lockup_info_probe(void *data, int dummy)
 void inject_pr_lockup_info(void)
 {
 	register_trace_inject_pr_lockup_info(pr_lockup_info_probe, pr_lockup_info);
+}
+#endif
+
+#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+static void (*pstore_io_save_hook)(unsigned long reg, unsigned long val,
+				    unsigned long parent, unsigned int flag,
+				    unsigned long *irq_flag);
+
+void notrace pstore_io_save(unsigned long reg, unsigned long val,
+			    unsigned long parent, unsigned int flag,
+			    unsigned long *irq_flag)
+{
+	if (pstore_io_save_hook)
+		pstore_io_save_hook(reg, val, parent, flag, irq_flag);
+}
+EXPORT_SYMBOL(pstore_io_save);
+
+static void pstore_io_save_probe(void *data, int dummy)
+{
+}
+
+void inject_pstore_io_save(void)
+{
+	register_trace_inject_pstore_io_save(pstore_io_save_probe, &pstore_io_save_hook);
 }
 #endif
 
@@ -690,6 +723,10 @@ int debug_lockup_init(void)
 
 #ifdef CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR
 	inject_pr_lockup_info();
+#endif
+
+#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+	inject_pstore_io_save();
 #endif
 
 	/* CONFIG_IRQSOFF_TRACER is not enabled, can't use below function */

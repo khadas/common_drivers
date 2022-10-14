@@ -19,6 +19,12 @@ DECLARE_TRACE(inject_pr_lockup_info,
 	      TP_ARGS(dummy));
 #endif
 
+#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+DECLARE_TRACE(inject_pstore_io_save,
+	      TP_PROTO(int dummy),
+	      TP_ARGS(dummy));
+#endif
+
 #endif /* _TRACE_AMLOGIC_DEBUG_H */
 
 /* This part must be outside protection */

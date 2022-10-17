@@ -29,6 +29,7 @@ struct sw_demux_ts_feed {
 	int state;
 	int format;
 	int temi_index;
+	struct dump_node *dump;
 };
 
 struct sw_demux_sec_filter {
@@ -57,6 +58,19 @@ struct pid_node {
 	int pid;
 	struct dmx_ts_feed *feed;
 	struct list_head node;
+};
+
+/*extend enum uses flags[16:23] in dmx.h*/
+/*private define for dump data*/
+enum {
+	DMX_DUMP_DVR_TYPE = 0x80,
+	DMX_DUMP_PES_TYPE,
+	DMX_DUMP_ES_TYPE,
+	DMX_DUMP_ES_VIDEO_TYPE,
+	DMX_DUMP_ES_AUDIO_TYPE,
+	DMX_DUMP_SECTION_TYPE,
+	DMX_DUMP_TS_TYPE,
+	DMX_DUMP_INPUT_TYPE
 };
 
 struct aml_dmx {

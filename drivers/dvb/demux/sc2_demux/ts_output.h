@@ -189,7 +189,6 @@ struct out_elem *ts_output_find_dvr(int sid);
 int ts_output_sid_debug(void);
 int ts_output_dump_info(char *buf);
 int ts_output_update_filter(int dmx_no, int sid);
-int ts_output_set_dump_timer(int flag);
 
 int ts_output_set_decode_info(int sid, struct decoder_mem_info *info);
 int ts_output_check_flow_control(int sid, int percentage);
@@ -200,4 +199,5 @@ int ts_output_alloc_pcr_temi_entry(int *pcr_index, int *temi_index,
 								int *is_same_pid, int pid);
 int ts_output_free_pcr_temi_entry(int index);
 
+int ts_output_add_dump_cb(struct list_head *node, int type, dmx_dump_cb cb);
 #endif

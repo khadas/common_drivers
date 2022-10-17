@@ -74,9 +74,17 @@ struct jiffies_pcr {
 #define MAX_PCR_DIFF		100
 
 //#define OPEN_REGISTER_NODE
+struct dump_node {
+	int sid;
+	int pid;
+	int dump_type;
+	struct sw_demux_ts_feed *feed;
+	struct list_head node;
+};
+
+//#define OPEN_REGISTER_NODE
 
 static struct jiffies_pcr jiffies_pcr_record[MAX_PCR_NUM];
-static struct out_elem *ts_out_elem;
 
 MODULE_PARM_DESC(debug_dmx, "\n\t\t Enable demux debug information");
 static int debug_dmx;
@@ -354,6 +362,82 @@ static int _ts_out_sec_cb(struct out_elem *pout, char *buf,
 	return ret;
 }
 
+int _dmx_dump_input_cb(int sid, int pid, int type,
+			char *buf, int len, void *v_head)
+{
+	struct dump_node *d_entry = NULL;
+	struct dump_node *d_tmp = NULL;
+	struct list_head *head = v_head;
+	struct sw_demux_ts_feed	*sw_feed = NULL;
+
+	list_for_each_entry_safe(d_entry, d_tmp, head, node) {
+		if (d_entry->sid == sid &&
+			d_entry->dump_type == type &&
+			type == DMX_DUMP_INPUT_TYPE) {
+			sw_feed = d_entry->feed;
+			if (sw_feed->ts_cb)
+				sw_feed->ts_cb(buf, len, NULL, 0, &d_entry->feed->ts_feed, NULL);
+		}
+	}
+
+	return 0;
+}
+
+int _dmx_dump_es_cb(int sid, int pid, int type,
+			char *buf, int len, void *v_head)
+{
+	struct dump_node *d_entry = NULL;
+	struct dump_node *d_tmp = NULL;
+	struct list_head *head = v_head;
+	struct sw_demux_ts_feed	*sw_feed = NULL;
+
+	list_for_each_entry_safe(d_entry, d_tmp, head, node) {
+		if (d_entry->sid == sid &&
+			d_entry->dump_type == type &&
+			(d_entry->pid == pid || d_entry->pid == 0x1fff)) {
+			sw_feed = d_entry->feed;
+			if (sw_feed->ts_cb)
+				sw_feed->ts_cb(buf, len, NULL, 0, &d_entry->feed->ts_feed, NULL);
+		}  else if (d_entry->sid == sid &&
+			d_entry->dump_type == DMX_DUMP_ES_TYPE &&
+			(type == DMX_DUMP_ES_VIDEO_TYPE || type == DMX_DUMP_ES_AUDIO_TYPE) &&
+			(d_entry->pid == pid || d_entry->pid == 0x1fff)) {
+			sw_feed = d_entry->feed;
+			if (sw_feed->ts_cb)
+				sw_feed->ts_cb(buf, len, NULL, 0, &d_entry->feed->ts_feed, NULL);
+		}
+	}
+
+	return 0;
+}
+
+int _dmx_dump_other_cb(int sid, int pid,
+			int type, char *buf, int len, void *v_head)
+{
+	struct dump_node *d_entry = NULL;
+	struct dump_node *d_tmp = NULL;
+	struct list_head *head = v_head;
+	struct sw_demux_ts_feed	*sw_feed = NULL;
+
+	list_for_each_entry_safe(d_entry, d_tmp, head, node) {
+		if (d_entry->sid == sid &&
+			d_entry->dump_type == type &&
+			type == DMX_DUMP_DVR_TYPE) {
+			sw_feed = d_entry->feed;
+			if (sw_feed->ts_cb)
+				sw_feed->ts_cb(buf, len, NULL, 0, &d_entry->feed->ts_feed, NULL);
+		} else if (d_entry->sid == sid &&
+			d_entry->dump_type == type &&
+			(d_entry->pid == pid || d_entry->pid == 0x1fff)) {
+			sw_feed = d_entry->feed;
+			if (sw_feed->ts_cb)
+				sw_feed->ts_cb(buf, len, NULL, 0, &d_entry->feed->ts_feed, NULL);
+		}
+	}
+
+	return 0;
+}
+
 static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 			    enum dmx_ts_pes pes_type, ktime_t timeout)
 {
@@ -376,6 +460,9 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 	int is_temi_and_pcr = 0;
 	int pcr_index = -1;
 	int is_same_pid = 0;
+	struct dump_node *d_node = NULL;
+	int dump_type = 0;
+	int dump_sid = 0;
 
 	feed->temi_index = -1;
 
@@ -386,6 +473,51 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 
 	if (mutex_lock_interruptible(demux->pmutex))
 		return -ERESTARTSYS;
+
+	if (pes_type == DMX_PES_OTHER && ((filter->params.pes.flags & (0xffff << 16)) != 0)) {
+		dump_sid = ((filter->params.pes.flags >> 24) & 0xff);
+		dump_type = ((filter->params.pes.flags >> 16) & 0xff);
+		if (dump_type == DMX_DUMP_TS_TYPE) {
+			/* nothing to do */
+		} else {
+			d_node = kmalloc(sizeof(*d_node), GFP_KERNEL);
+			if (!d_node) {
+				mutex_unlock(demux->pmutex);
+				return -ENOMEM;
+			}
+
+			memset(d_node, 0, sizeof(struct dump_node));
+			INIT_LIST_HEAD(&d_node->node);
+
+			d_node->feed = feed;
+			d_node->sid = dump_sid;
+			d_node->pid = pid & 0x1fff;
+			d_node->dump_type = dump_type;
+			feed->dump = d_node;
+
+			if (d_node->dump_type == DMX_DUMP_INPUT_TYPE) {
+				SC2_add_dump_cb(&d_node->node, _dmx_dump_input_cb);
+			} else if (d_node->dump_type == DMX_DUMP_ES_TYPE ||
+				d_node->dump_type == DMX_DUMP_ES_AUDIO_TYPE ||
+				d_node->dump_type == DMX_DUMP_ES_VIDEO_TYPE) {
+				ts_output_add_dump_cb(&d_node->node, d_node->dump_type,
+							_dmx_dump_es_cb);
+			} else {
+				ts_output_add_dump_cb(&d_node->node, d_node->dump_type,
+							_dmx_dump_other_cb);
+			}
+
+			feed->format = d_node->sid;
+			feed->pid = pid & 0x1fff;
+			feed->ts_type = ts_type;
+			feed->pes_type = d_node->dump_type;
+			feed->state = DMX_STATE_READY;
+			feed->type = OTHER_TYPE;
+
+			mutex_unlock(demux->pmutex);
+			return 0;
+		}
+	}
 
 	if (ts_type & TS_DECODER) {
 		if (pes_type >= DMX_PES_OTHER) {
@@ -407,7 +539,6 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 //                      return -ENOMEM;
 //              }
 //      }
-
 	if (demux->source != INPUT_DEMOD)
 		sid = demux->local_sid;
 	else
@@ -596,6 +727,12 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 			mem_size = dvr_buf_size;
 			pr_dbg("%s DVR_FORMAT\n", __func__);
 		}
+	}
+
+	if (dump_type == DMX_DUMP_TS_TYPE) {
+		sid = dump_sid;
+		format = DVR_FORMAT;
+		mem_size = dvr_buf_size;
 	}
 
 	if (format == DVR_FORMAT) {
@@ -1248,6 +1385,23 @@ static int _dmx_release_ts_feed(struct dmx_demux *dmx,
 
 	if (mutex_lock_interruptible(demux->pmutex))
 		return -ERESTARTSYS;
+
+	if (feed->pes_type >= DMX_DUMP_DVR_TYPE) {
+		if (feed->pes_type == DMX_DUMP_INPUT_TYPE) {
+			SC2_add_dump_cb(&feed->dump->node, NULL);
+			kfree(feed->dump);
+			feed->dump = NULL;
+		} else {
+			ts_output_add_dump_cb(&feed->dump->node, feed->pes_type, NULL);
+			kfree(feed->dump);
+			feed->dump = NULL;
+		}
+
+		feed->state = DMX_STATE_FREE;
+
+		mutex_unlock(demux->pmutex);
+		return 0;
+	}
 
 	if (feed->type == VIDEO_TYPE) {
 		demux->video_pid = -1;
@@ -2293,65 +2447,6 @@ static ssize_t dump_av_level_show(struct class *class,
 	return total;
 }
 
-static ssize_t dump_ts_show(struct class *class,
-				struct class_attribute *attr, char *buf)
-{
-	return 0;
-}
-
-static ssize_t dump_ts_store(struct class *class,
-				 struct class_attribute *attr,
-				 const char *buf, size_t size)
-{
-	struct aml_dvb *advb = aml_get_dvb_device();
-	int ret = 0;
-	int sid = 0;
-	long val = 0;
-
-	if (kstrtol(buf, 0, &val) == 0) {
-		sid = (int)val;
-		dprint("dump sid:0x%0x\n", sid);
-	} else {
-		dprint("%s parameter fail\n", buf);
-		return size;
-	}
-	if (sid == -1 && !ts_out_elem) {
-		dprint("no dump_ts to free\n");
-		return size;
-	}
-	if (mutex_lock_interruptible(&advb->mutex))
-		return -ERESTARTSYS;
-	if (sid == -1 && ts_out_elem) {
-		ts_output_remove_pid(ts_out_elem, 0x1fff);
-		ts_output_close(ts_out_elem);
-		ts_out_elem = NULL;
-		dprint("have free dump_ts");
-		mutex_unlock(&advb->mutex);
-		return size;
-	}
-
-	ts_out_elem = ts_output_open(sid, 0, DVR_FORMAT, OTHER_TYPE, 0, 0);
-	if (ts_out_elem) {
-		ret = ts_output_set_mem(ts_out_elem,
-					dvr_buf_size, 0,
-					TS_OUTPUT_CHAN_PTS_BUF_SIZE, 0);
-		if (ret != 0) {
-			ts_output_close(ts_out_elem);
-			ts_out_elem = NULL;
-			mutex_unlock(&advb->mutex);
-			return size;
-		}
-		ts_output_set_dump_timer(1);
-		ts_output_add_pid(ts_out_elem, 0x1fff, 0x1fff, 0, NULL);
-		dprint("create dump ts success\n");
-	} else {
-		dprint("%s error\n", __func__);
-	}
-
-	mutex_unlock(&advb->mutex);
-	return size;
-}
-
 static ssize_t dmx_source_show(struct class *class,
 				struct class_attribute *attr, char *buf)
 {
@@ -2427,7 +2522,6 @@ static CLASS_ATTR_RW(dump_register);
 static CLASS_ATTR_RW(dump_filter);
 static CLASS_ATTR_RO(dump_av_level);
 static CLASS_ATTR_RW(cache_status);
-static CLASS_ATTR_RW(dump_ts);
 static CLASS_ATTR_RW(dmx_source);
 
 static struct attribute *aml_dmx_class_attrs[] = {
@@ -2439,7 +2533,6 @@ static struct attribute *aml_dmx_class_attrs[] = {
 	&class_attr_dump_filter.attr,
 	&class_attr_dump_av_level.attr,
 	&class_attr_cache_status.attr,
-	&class_attr_dump_ts.attr,
 	&class_attr_dmx_source.attr,
 	NULL
 };

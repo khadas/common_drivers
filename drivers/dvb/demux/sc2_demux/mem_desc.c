@@ -71,13 +71,6 @@ MODULE_PARM_DESC(dmc_keep_alive, "\n\t\t Enable keep dmc alive");
 static int dmc_keep_alive;
 module_param(dmc_keep_alive, int, 0644);
 
-#ifdef KERNEL_FILE_WR
-static loff_t input_file_pos;
-static struct file *input_dump_fp;
-
-#define INPUT_DUMP_FILE   "/data/input_dump.ts"
-#endif
-
 struct mem_cache {
 	unsigned long start_virt;
 	unsigned long start_phys;
@@ -120,6 +113,9 @@ struct dmc_mem {
 
 #define DMC_MEM_DEFAULT_SIZE (20 * 1024 * 1024)
 static struct dmc_mem dmc_mem_level[7];
+static dmx_dump_cb dump_input_cb;
+static int dump_input_cb_ref;
+LIST_HEAD(dump_input_head);
 
 static int cache_init(int cache_level)
 {
@@ -302,51 +298,6 @@ int cache_adjust(int cache0_count, int cache1_count)
 	cache_init(1);
 	return 0;
 }
-
-#ifdef KERNEL_FILE_WR
-static void dump_file_open(char *path)
-{
-	if (input_dump_fp)
-		return;
-
-	input_dump_fp = filp_open(path, O_CREAT | O_RDWR, 0666);
-	if (IS_ERR(input_dump_fp)) {
-		pr_err("create input dump [%s] file failed [%d]\n",
-			path, (int)PTR_ERR(input_dump_fp));
-		input_dump_fp = NULL;
-	} else {
-		dprint("create dump ts:%s success\n", path);
-	}
-}
-
-static void dump_file_write(char *buf, size_t count)
-{
-	mm_segment_t old_fs;
-
-	if (!input_dump_fp) {
-		pr_err("Failed to write ts dump file fp is null\n");
-		return;
-	}
-
-	old_fs = get_fs();
-	set_fs(KERNEL_DS);
-
-	if (count != vfs_write(input_dump_fp, buf, count,
-			&input_file_pos))
-		pr_err("Failed to write video dump file\n");
-
-	set_fs(old_fs);
-}
-
-static void dump_file_close(void)
-{
-	if (input_dump_fp) {
-		vfs_fsync(input_dump_fp, 0);
-		filp_close(input_dump_fp, current->files);
-		input_dump_fp = NULL;
-	}
-}
-#endif
 
 int cache_status_info(char *buf)
 {
@@ -971,9 +922,6 @@ int SC2_bufferid_dealloc(struct chan_id *pchan)
 		_bufferid_free_desc_mem(pchan);
 		pchan->is_es = 0;
 		pchan->used = 0;
-#ifdef KERNEL_FILE_WR		
-		dump_file_close();
-#endif
 	} else {
 		_bufferid_free_desc_mem(pchan);
 		pchan->is_es = 0;
@@ -1257,9 +1205,8 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 	unsigned int tmp;
 	unsigned int times = 0;
 	struct dmx_sec_ts_data ts_data;
-#ifdef KERNEL_FILE_WR	
 	unsigned long mem;
-#endif
+
 	pr_dbg("%s start w:%d\n", __func__, r);
 	do {
 	} while (!rdma_get_ready(pchan->id) && times++ < 20);
@@ -1286,15 +1233,13 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 			pchan->memdescs->bits.byte_length =
 				ts_data.buf_end - ts_data.buf_start;
 
-#ifdef KERNEL_FILE_WR
-			if (dump_input_ts) {
-				dump_file_open(INPUT_DUMP_FILE);
+			if (dump_input_cb) {
 				mem = (unsigned long)
 					phys_to_virt(ts_data.buf_start);
-				dump_file_write((char *)mem,
-					pchan->memdescs->bits.byte_length);
+				dump_input_cb(pchan->id, -1, DMX_DUMP_INPUT_TYPE, (char *)mem,
+					pchan->memdescs->bits.byte_length, &dump_input_head);
 			}
-#endif
+
 			dma_sync_single_for_device(aml_get_device(),
 				pchan->memdescs_phy, sizeof(union mem_desc),
 				DMA_TO_DEVICE);
@@ -1319,12 +1264,10 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 			}
 			if (check_ts_align)
 				check_packet_align_virt((char *)pchan->mem, len);
-#ifdef KERNEL_FILE_WR			
-			if (dump_input_ts) {
-				dump_file_open(INPUT_DUMP_FILE);
-				dump_file_write((char *)pchan->mem, len);
-			}
-#endif			
+
+			if (dump_input_cb)
+				dump_input_cb(pchan->id, -1, DMX_DUMP_INPUT_TYPE,
+					(char *)pchan->mem, len, &dump_input_head);
 			dma_sync_single_for_device(aml_get_device(),
 				pchan->mem_phy, pchan->mem_size, DMA_TO_DEVICE);
 
@@ -1469,3 +1412,19 @@ int SC2_bufferid_write_empty(struct chan_id *pchan, int pid)
 	return len;
 }
 
+int SC2_add_dump_cb(struct list_head *node, dmx_dump_cb cb)
+{
+	if (cb) {
+		dump_input_cb_ref++;
+		list_add(node, &dump_input_head);
+		if (!dump_input_cb)
+			dump_input_cb = cb;
+	} else {
+		dump_input_cb_ref--;
+		list_del(node);
+		if (dump_input_cb_ref == 0)
+			dump_input_cb = NULL;
+	}
+
+	return 0;
+}

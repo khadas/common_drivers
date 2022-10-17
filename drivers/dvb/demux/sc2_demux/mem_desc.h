@@ -56,6 +56,9 @@ enum bufferid_mode {
 	u8 req_id;
 };
 
+typedef int (*dmx_dump_cb) (int sid, int pid,
+			int type, char *buf, int len, void *udata);
+
 /**
  * chan init
  * \retval 0: success
@@ -152,6 +155,7 @@ unsigned int SC2_bufferid_get_wp_offset(struct chan_id *pchan);
 unsigned int SC2_bufferid_get_data_len(struct chan_id *pchan);
 int SC2_bufferid_read_header_again(struct chan_id *pchan, char **pread);
 int SC2_bufferid_read_newest_pts(struct chan_id *pchan, char **pread);
+int SC2_add_dump_cb(struct list_head *node, dmx_dump_cb cb);
 
 int _alloc_buff(unsigned int len, int sec_level,
 		unsigned long *vir_mem, unsigned long *phy_mem);

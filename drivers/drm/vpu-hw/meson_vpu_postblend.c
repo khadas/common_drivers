@@ -10,10 +10,23 @@
 #include <linux/amlogic/media/amvecm/amvecm.h>
 #endif
 
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
+#include <linux/amlogic/media/video_sink/video.h>
+#endif
+
 #include "meson_crtc.h"
 #include "meson_vpu_pipeline.h"
 #include "meson_vpu_util.h"
+#include "meson_vpu_reg.h"
 #include "meson_vpu_postblend.h"
+
+static u32 osd_vpp_misc_mask = 0x33330;
+static u32 osd_vpp1_bld_ctrl;
+static u32 osd_vpp1_bld_ctrl_mask = 0x30;
+static u32 osd_vpp2_bld_ctrl;
+static u32 osd_vpp2_bld_ctrl_mask = 0x30;
+/* indicates whether vpp1&vpp2 has been notified or not */
+static u32 osd_vpp_bld_ctrl_update_mask = 0x80000000;
 
 static struct postblend_reg_s postblend_reg = {
 	VPP_OSD1_BLD_H_SCOPE,
@@ -109,6 +122,14 @@ static void vpp_osd1_postblend_mux_set(struct meson_vpu_block *vblk,
 	reg_ops->rdma_write_reg_bits(reg->osd1_blend_src_ctrl, src_sel, 8, 4);
 }
 
+static void vpp1_osd1_postblend_mux_set(struct meson_vpu_block *vblk,
+					struct rdma_reg_ops *reg_ops,
+					struct postblend1_reg_s *reg,
+					enum vpp_blend_src_e src_sel)
+{
+	reg_ops->rdma_write_reg_bits(reg->vpp_bld_ctrl, src_sel, 4, 4);
+}
+
 /*vpp osd2 postblend mux sel*/
 static void vpp_osd2_postblend_mux_set(struct meson_vpu_block *vblk,
 				       struct rdma_reg_ops *reg_ops,
@@ -116,14 +137,6 @@ static void vpp_osd2_postblend_mux_set(struct meson_vpu_block *vblk,
 				       enum vpp_blend_src_e src_sel)
 {
 	reg_ops->rdma_write_reg_bits(reg->osd2_blend_src_ctrl, src_sel, 8, 4);
-}
-
-static void vpp1_osd1_postblend_mux_set(struct meson_vpu_block *vblk,
-					struct rdma_reg_ops *reg_ops,
-					struct postblend1_reg_s *reg,
-					enum vpp_blend_src_e src_sel)
-{
-	reg_ops->rdma_write_reg_bits(reg->vpp_bld_ctrl, src_sel, 4, 4);
 }
 
 /*vpp osd1 blend scope set*/
@@ -136,6 +149,27 @@ static void vpp_osd1_blend_scope_set(struct meson_vpu_block *vblk,
 				(scope.h_start << 16) | scope.h_end);
 	reg_ops->rdma_write_reg(reg->vpp_osd1_bld_v_scope,
 				(scope.v_start << 16) | scope.v_end);
+}
+
+static int drm_postblend_notify_amvideo(void)
+{
+	u32 para[7];
+
+	para[0] = meson_drm_read_reg(VPP_MISC);
+	para[1] = osd_vpp_misc_mask;
+	/* osd_vpp1_bld_ctrl */
+	para[2] = osd_vpp1_bld_ctrl;
+	para[3] = osd_vpp1_bld_ctrl_mask;
+	/* osd_vpp2_bld_ctrl */
+	para[4] = osd_vpp2_bld_ctrl;
+	para[5] = osd_vpp2_bld_ctrl_mask;
+	para[6] = osd_vpp_bld_ctrl_update_mask;
+
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
+	amvideo_notifier_call_chain(AMVIDEO_UPDATE_OSD_MODE,
+					    (void *)&para[0]);
+#endif
+	return 0;
 }
 
 static void vpp1_osd1_blend_scope_set(struct meson_vpu_block *vblk,
@@ -321,7 +355,7 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 	} else {
 		/* 1:vd1-din0, 2:osd1-din1 */
 
-		u32 val, vpp1_bld;
+		u32 val, vppx_bld;
 		u32 bld_src2_sel = 2;
 		u32 scaler_index = 2;
 		u32 bld_w, bld_h;
@@ -347,10 +381,19 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 		reg_ops->rdma_write_reg(reg1->vpp_bld_out_size,
 					bld_w | (bld_h << 16));
 
-		vpp1_bld = reg_ops->rdma_read_reg(reg1->vpp_bld_ctrl);
-		val = vpp1_bld | 2 << 4 | 1 << 31;
-		if (vpp1_bld != val)
+		vppx_bld = reg_ops->rdma_read_reg(reg1->vpp_bld_ctrl);
+		val = vppx_bld | 2 << 4 | 1 << 31;
+		if (vppx_bld != val)
 			reg_ops->rdma_write_reg(reg1->vpp_bld_ctrl, val);
+
+		if (crtc_index == 1)
+			osd_vpp1_bld_ctrl = val;
+		else if (crtc_index == 2)
+			osd_vpp2_bld_ctrl = val;
+		else
+			DRM_DEBUG("invalid crtc index\n");
+
+		drm_postblend_notify_amvideo();
 
 		if (bld_src2_sel == 2) {
 			reg_ops->rdma_write_reg(VPP_OSD3_SCALE_CTRL, 0x7);
@@ -376,10 +419,27 @@ static void postblend_hw_enable(struct meson_vpu_block *vblk,
 static void postblend_hw_disable(struct meson_vpu_block *vblk,
 				 struct meson_vpu_block_state *state)
 {
+	u32 vppx_bld;
+	int crtc_index = vblk->index;
 	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
+	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
+	struct postblend1_reg_s *reg1 = postblend->reg1;
 
 	if (vblk->index == 0)
 		vpp_osd1_postblend_mux_set(vblk, state->sub->reg_ops, postblend->reg, VPP_NULL);
+	else if (vblk->index == 1 || vblk->index == 2) {
+		vppx_bld = reg_ops->rdma_read_reg(reg1->vpp_bld_ctrl);
+		vppx_bld = vppx_bld & 0xffffff0f;
+		if (crtc_index == 1)
+			osd_vpp1_bld_ctrl = vppx_bld;
+		else if (crtc_index == 2)
+			osd_vpp2_bld_ctrl = vppx_bld;
+		else
+			DRM_DEBUG("invalid crtc index\n");
+
+		vpp1_osd1_postblend_mux_set(vblk, state->sub->reg_ops, postblend->reg1, VPP_NULL);
+		drm_postblend_notify_amvideo();
+	}
 
 	DRM_DEBUG("%s disable called.\n", postblend->base.name);
 }
@@ -519,10 +579,6 @@ static void t7_postblend_hw_init(struct meson_vpu_block *vblk)
 	if (vblk->index == 0) {
 		fix_vpu_clk2_default_regs(vblk, vblk->pipeline->subs[0].reg_ops);
 		postblend_osd2_def_conf(vblk);
-	} else if (vblk->index == 1) {
-		/*vpp1_bld_ctrl keep on osd3 enable*/
-		vpp1_osd1_postblend_mux_set(vblk, vblk->pipeline->subs[0].reg_ops,
-			postblend->reg1, 2);
 	}
 
 	DRM_DEBUG("%s hw_init called.\n", postblend->base.name);

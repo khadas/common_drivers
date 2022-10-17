@@ -390,7 +390,7 @@
 
 			cpu_version {
 				compatible = "amlogic,meson-gx-ao-secure", "syscon";
-				reg=<0x5a20 0x140>;
+				reg=<0x10220 0x140>;
 				amlogic,has-chip-id;
 			};
 

@@ -712,6 +712,11 @@
 		out_base_func = <0x82000021>;
 	};
 
+	optee {
+		compatible = "linaro,optee-tz";
+		method = "smc";
+	};
+
 	amlogic_unifykey: unifykey{
 		compatible = "amlogic,unifykey";
 		status = "okay";

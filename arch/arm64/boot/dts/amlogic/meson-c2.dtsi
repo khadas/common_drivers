@@ -1292,6 +1292,11 @@
 		out_base_func = <0x82000021>;
 	};
 
+	optee {
+		compatible = "linaro,optee-tz";
+		method = "smc";
+	};
+
 	cma_shrinker: cma_shrinker {
 		compatible = "amlogic, cma-shrinker";
 		status = "okay";

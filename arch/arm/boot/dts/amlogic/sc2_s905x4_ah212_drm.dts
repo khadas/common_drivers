@@ -64,6 +64,7 @@
 
 		pcie_reserved: linux,pcie {
 			compatible = "shared-dma-pool";
+			status = "disabled";
 			reusable;
 			size = <0x4000000>;
 			alignment = <0x400000>;

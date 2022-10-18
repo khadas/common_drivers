@@ -1,6 +1,6 @@
-[abi_symbol_list]
-# commonly used symbols
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
+[abi_symbol_list]
 # clk: amlogic-clk.ko amlogic-clk-soc.ko
   clk_hw_set_parent
   clk_mux_determine_rate_flags

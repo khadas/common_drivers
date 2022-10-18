@@ -3433,6 +3433,9 @@ int is_amdv_frame(struct vframe_s *vf)
 		return 0;
 
 	dv_id = vf->src_fmt.dv_id;
+	if (!dv_inst_valid(dv_id))
+		dv_id = 0;
+
 	fmt = get_vframe_src_fmt(vf);
 	if (fmt == VFRAME_SIGNAL_FMT_DOVI)
 		return true;

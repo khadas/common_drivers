@@ -18,4 +18,7 @@ static inline int meson_atrace_init(void)
 }
 #endif
 
+int debug_file_init(void);
+void debug_file_exit(void);
+
 #endif

@@ -251,7 +251,7 @@ int debug_file_close(struct debug_file *filp)
 }
 EXPORT_SYMBOL(debug_file_close);
 
-static int __init debug_file_init(void)
+int __init debug_file_init(void)
 {
 	int ret;
 
@@ -283,7 +283,7 @@ err1:
 	return -1;
 }
 
-static void __exit debug_file_exit(void)
+void __exit debug_file_exit(void)
 {
 	while (1) {
 		if (list_empty(&files_list) && list_empty(&files_release_list))
@@ -294,7 +294,3 @@ static void __exit debug_file_exit(void)
 	proc_remove(proc_debug_file);
 	kfifo_free(&files_info);
 }
-
-module_init(debug_file_init);
-module_exit(debug_file_exit);
-MODULE_LICENSE("GPL v2");

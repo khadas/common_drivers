@@ -1,9 +1,3 @@
-# amlogic debug illegal symbol:
-  debug_file_close
-  debug_file_open
-  debug_file_write
-  debug_file_read
-
 # page trace illegal symbol:
   unpack_ip
   pack_ip

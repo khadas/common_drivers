@@ -14,12 +14,17 @@ static int __init debug_main_init(void)
 #ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
 	meson_atrace_init();
 #endif
-
+#ifdef CONFIG_AMLOGIC_DEBUG_FILE
+	debug_file_init();
+#endif
 	return 0;
 }
 
 static void __exit debug_main_exit(void)
 {
+#ifdef CONFIG_AMLOGIC_DEBUG_FILE
+	debug_file_exit();
+#endif
 }
 
 module_init(debug_main_init);

@@ -207,7 +207,7 @@ int hdmitx_print_sink_cap(struct hdmitx_common *tx_comm,
 		"Manufacture Year: %d\n", prxcap->manufacture_year + 1990);
 
 	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Physcial size(mm): %d x %d\n",
+		"Physical size(mm): %d x %d\n",
 		prxcap->physical_width, prxcap->physical_height);
 
 	pos += snprintf(buffer + pos, buffer_len - pos,

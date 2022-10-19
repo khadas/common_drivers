@@ -117,7 +117,7 @@ struct rx_cap {
 	u32 allm:1;
 	u32 fapa_start_loc:1;
 	u32 fapa_end_extended:1;
-	u32 cinemavrr:1;
+	u32 cinema_vrr:1;
 	u32 vrr_max;
 	u32 vrr_min;
 	struct hdr_info hdr_info;
@@ -202,7 +202,7 @@ enum vsif_type {
 #define DOVI_IEEEOUI		0x00D046
 #define HDR10PLUS_IEEEOUI	0x90848B
 #define CUVA_IEEEOUI		0x047503
-//#define HF_IEEEOUI		0xC45DD8
+#define HF_IEEEOUI		0xC45DD8
 
 #define GET_OUI_BYTE0(oui)	((oui) & 0xff) /* Little Endian */
 #define GET_OUI_BYTE1(oui)	(((oui) >> 8) & 0xff)
@@ -214,5 +214,8 @@ u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic);
 /*edid is good return 0, otherwise return < 0.*/
 int hdmitx_edid_validate(unsigned char *rawedid);
 bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);
+int _check_base_structure(unsigned char *buf);
+int _check_edid_blk_chksum(unsigned char *block);
+int check_dvi_hdmi_edid_valid(unsigned char *buf);
 
 #endif

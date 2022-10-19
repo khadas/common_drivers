@@ -158,6 +158,7 @@ void hdmitx_audio_mute_op(unsigned int flag);
 void hdmitx_video_mute_op(u32 flag);
 int register_earcrx_callback(pf_callback callback);
 void unregister_earcrx_callback(void);
+unsigned int hdmitx_drv_ver(void);
 
 /*
  * HDMI TX output enable, such as ACRPacket/AudInfo/AudSample

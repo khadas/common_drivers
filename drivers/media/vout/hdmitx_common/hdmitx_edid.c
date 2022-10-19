@@ -5,6 +5,7 @@
 #include <linux/errno.h>
 #include <linux/kernel.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
+#include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 
 static bool hdmitx_edid_header_invalid(u8 *buf)
 {
@@ -50,18 +51,96 @@ bool hdmitx_edid_is_all_zeros(u8 *rawedid)
 	return true;
 }
 
+/* check the first edid block */
+int _check_base_structure(unsigned char *buf)
+{
+	unsigned int i = 0;
+
+	/* check block 0 first 8 bytes */
+	if (buf[0] != 0 && buf[7] != 0)
+		return 0;
+
+	for (i = 1; i < 7; i++) {
+		if (buf[i] != 0xff)
+			return 0;
+	}
+
+	if (_check_edid_blk_chksum(buf) == 0)
+		return 0;
+
+	return 1;
+}
+
+/* check the checksum for each sub block */
+int _check_edid_blk_chksum(unsigned char *block)
+{
+	unsigned int chksum = 0;
+	unsigned int i = 0;
+
+	for (chksum = 0, i = 0; i < 0x80; i++)
+		chksum += block[i];
+	if ((chksum & 0xff) != 0)
+		return 0;
+	else
+		return 1;
+}
+
+/*
+ * check the EDID validity
+ * base structure: header, checksum
+ * extension: the first non-zero byte, checksum
+ */
+int check_dvi_hdmi_edid_valid(unsigned char *buf)
+{
+	int i;
+	int blk_cnt = buf[0x7e] + 1;
+
+	/* limit blk_cnt to EDID_MAX_BLOCK  */
+	if (blk_cnt > EDID_MAX_BLOCK)
+		blk_cnt = EDID_MAX_BLOCK;
+
+	/* check block 0 */
+	if (_check_base_structure(&buf[0]) == 0)
+		return 0;
+
+	if (blk_cnt == 1)
+		return 1;
+
+	/* check extension block 1 and more */
+	for (i = 1; i < blk_cnt; i++) {
+		if (buf[i * 0x80] == 0)
+			return 0;
+		if (_check_edid_blk_chksum(&buf[i * 0x80]) == 0)
+			return 0;
+	}
+
+	return 1;
+}
+
+/* return 0 means valid */
 int hdmitx_edid_validate(u8 *rawedid)
 {
+	unsigned int hdmi_ver = hdmitx_drv_ver();
+
+	/* notify EDID NG to systemcontrol */
+	/* todo: hdmi21 for tv_ts */
 	if (!rawedid)
 		return -EINVAL;
-	/* notify EDID NG to systemcontrol */
-	if (hdmitx_edid_is_all_zeros(rawedid))
+	if (hdmi_ver == 0) {
 		return -EINVAL;
-	else if ((rawedid[0x7e] > 3) &&
-		hdmitx_edid_header_invalid(rawedid))
-		return -EINVAL;
-	/* may extend NG case here */
-
+	} else if (hdmi_ver == 20) {
+		if (check_dvi_hdmi_edid_valid(rawedid))
+			return 0;
+		else
+			return -EINVAL;
+	} else if (hdmi_ver == 21) {
+		if (hdmitx_edid_is_all_zeros(rawedid))
+			return -EINVAL;
+		else if ((rawedid[0x7e] > 3) &&
+			hdmitx_edid_header_invalid(rawedid))
+			return -EINVAL;
+		/* may extend NG case here */
+	}
 	return 0;
 }
 

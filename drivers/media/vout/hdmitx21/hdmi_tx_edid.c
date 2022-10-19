@@ -102,7 +102,7 @@ static int edid_decodeheader(struct hdmitx_info *info, u8 *buff)
 	return ret;
 }
 
-static void edid_parsingidmanufacturername(struct rx_cap *prxcap,
+static void edid_parsing_id_manufacturer_name(struct rx_cap *prxcap,
 					   u8 *data)
 {
 	int i;
@@ -125,7 +125,7 @@ static void edid_parsingidmanufacturername(struct rx_cap *prxcap,
 		prxcap->IDManufacturerName[i] = uppercase[brand[i] - 1];
 }
 
-static void edid_parsingidproductcode(struct rx_cap *prxcap,
+static void edid_parsing_id_product_code(struct rx_cap *prxcap,
 				      u8 *data)
 {
 	if (!data)
@@ -134,7 +134,7 @@ static void edid_parsingidproductcode(struct rx_cap *prxcap,
 	prxcap->IDProductCode[1] = data[0];
 }
 
-static void edid_parsingidserialnumber(struct rx_cap *prxcap,
+static void edid_parsing_id_serial_number(struct rx_cap *prxcap,
 				       u8 *data)
 {
 	int i;
@@ -199,7 +199,7 @@ static void store_y420_idx(struct rx_cap *prxcap, enum hdmi_vic vic)
 	}
 }
 
-static void edid_establishedtimings(struct rx_cap *prxcap, u8 *data)
+static void edid_established_timings(struct rx_cap *prxcap, u8 *data)
 {
 	if (data[0] & (1 << 5))
 		store_vesa_idx(prxcap, HDMIV_640x480p60hz);
@@ -1680,34 +1680,34 @@ static void get_ilatency(struct rx_cap *prxcap, u8 *val)
 
 static void hdmitx21_edid_parse_hdmi14(struct rx_cap *prxcap,
 				     u8 offset,
-				     u8 *blockbuf,
+				     u8 *block_buf,
 				     u8 count)
 {
 	int idx = 0, tmp = 0;
 
 	prxcap->ieeeoui = HDMI_IEEE_OUI;
 	prxcap->ColorDeepSupport =
-	(count > 5) ? blockbuf[offset + 5] : 0;
+	(count > 5) ? block_buf[offset + 5] : 0;
 	set_vsdb_dc_cap(prxcap);
 	prxcap->Max_TMDS_Clock1 =
-	(count > 6) ? blockbuf[offset + 6] : 0;
+	(count > 6) ? block_buf[offset + 6] : 0;
 
 	if (count > 7) {
-		tmp = blockbuf[offset + 7];
+		tmp = block_buf[offset + 7];
 		idx = offset + 8;
 		if (tmp & (1 << 6)) {
 			u8 val[2];
 
-			val[0] = blockbuf[idx];
-			val[1] = blockbuf[idx + 1];
+			val[0] = block_buf[idx];
+			val[1] = block_buf[idx + 1];
 			get_latency(prxcap, val);
 			idx += 2;
 		}
 		if (tmp & (1 << 7)) {
 			u8 val[2];
 
-			val[0] = blockbuf[idx];
-			val[1] = blockbuf[idx + 1];
+			val[0] = block_buf[idx];
+			val[1] = block_buf[idx + 1];
 			get_ilatency(prxcap, val);
 			idx += 2;
 		}
@@ -1718,15 +1718,15 @@ static void hdmitx21_edid_parse_hdmi14(struct rx_cap *prxcap,
 		if (tmp & (1 << 5)) {
 			idx += 1;
 			/* valid 4k */
-			if (blockbuf[idx] & 0xe0) {
+			if (block_buf[idx] & 0xe0) {
 				hdmitx_edid_4k2k_parse(prxcap,
-						       &blockbuf[idx + 1],
-				blockbuf[idx] >> 5);
+						       &block_buf[idx + 1],
+				block_buf[idx] >> 5);
 			}
 			/* valid 3D */
-			if (blockbuf[idx - 1] & 0xe0) {
+			if (block_buf[idx - 1] & 0xe0) {
 				hdmitx_edid_3d_parse(prxcap,
-						     &blockbuf[offset + 7],
+						     &block_buf[offset + 7],
 				count - 7);
 			}
 		}
@@ -1734,36 +1734,36 @@ static void hdmitx21_edid_parse_hdmi14(struct rx_cap *prxcap,
 }
 
 static void hdmitx21_edid_parse_hfscdb(struct rx_cap *prxcap,
-	u8 offset, u8 *blockbuf, u8 count)
+	u8 offset, u8 *block_buf, u8 count)
 {
 	prxcap->hf_ieeeoui = HDMI_FORUM_IEEE_OUI;
-	prxcap->Max_TMDS_Clock2 = blockbuf[offset + 4];
-	prxcap->scdc_present = !!(blockbuf[offset + 5] & (1 << 7));
-	prxcap->scdc_rr_capable = !!(blockbuf[offset + 5] & (1 << 6));
-	prxcap->lte_340mcsc_scramble = !!(blockbuf[offset + 5] & (1 << 3));
-	set_vsdb_dc_420_cap(prxcap, &blockbuf[offset]);
+	prxcap->Max_TMDS_Clock2 = block_buf[offset + 4];
+	prxcap->scdc_present = !!(block_buf[offset + 5] & (1 << 7));
+	prxcap->scdc_rr_capable = !!(block_buf[offset + 5] & (1 << 6));
+	prxcap->lte_340mcsc_scramble = !!(block_buf[offset + 5] & (1 << 3));
+	set_vsdb_dc_420_cap(prxcap, &block_buf[offset]);
 
 	if (count < 8)
 		return;
-	prxcap->allm = !!(blockbuf[offset + 7] & (1 << 1));
-	prxcap->fva = !!(blockbuf[offset + 7] & (1 << 2));
-	prxcap->neg_mvrr = !!(blockbuf[offset + 7] & (1 << 3));
-	prxcap->cinemavrr = !!(blockbuf[offset + 7] & (1 << 4));
-	prxcap->mdelta = !!(blockbuf[offset + 7] & (1 << 5));
-	prxcap->qms = !!(blockbuf[offset + 7] & (1 << 6));
-	prxcap->fapa_end_extended = !!(blockbuf[offset + 7] & (1 << 7));
+	prxcap->allm = !!(block_buf[offset + 7] & (1 << 1));
+	prxcap->fva = !!(block_buf[offset + 7] & (1 << 2));
+	prxcap->neg_mvrr = !!(block_buf[offset + 7] & (1 << 3));
+	prxcap->cinema_vrr = !!(block_buf[offset + 7] & (1 << 4));
+	prxcap->mdelta = !!(block_buf[offset + 7] & (1 << 5));
+	prxcap->qms = !!(block_buf[offset + 7] & (1 << 6));
+	prxcap->fapa_end_extended = !!(block_buf[offset + 7] & (1 << 7));
 
 	if (count < 10)
 		return;
-	prxcap->vrr_max = (((blockbuf[offset + 8] & 0xc0) >> 6) << 8) +
-				blockbuf[offset + 9];
-	prxcap->vrr_min = (blockbuf[offset + 8] & 0x3f);
-	prxcap->fapa_start_loc = !!(blockbuf[offset + 7] & (1 << 0));
+	prxcap->vrr_max = (((block_buf[offset + 8] & 0xc0) >> 6) << 8) +
+				block_buf[offset + 9];
+	prxcap->vrr_min = (block_buf[offset + 8] & 0x3f);
+	prxcap->fapa_start_loc = !!(block_buf[offset + 7] & (1 << 0));
 
 	if (count < 11)
 		return;
-	prxcap->qms_tfr_min = !!(blockbuf[offset + 10] & (1 << 4));
-	prxcap->qms_tfr_max = !!(blockbuf[offset + 10] & (1 << 5));
+	prxcap->qms_tfr_min = !!(block_buf[offset + 10] & (1 << 4));
+	prxcap->qms_tfr_max = !!(block_buf[offset + 10] & (1 << 5));
 }
 
 /* refer to CEA-861-G 7.5.1 video data block */
@@ -1789,7 +1789,7 @@ static void _store_vics(struct rx_cap *prxcap, u8 vic_dat)
 }
 
 static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
-				   u8 *blockbuf)
+				   u8 *block_buf)
 {
 	u8 offset, end;
 	u8 count;
@@ -1799,13 +1799,13 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 	u32 aud_flag = 0;
 
-	if (blockbuf[0] == 0x0)
+	if (block_buf[0] == 0x0)
 		pr_debug(EDID "unknown Extension Tag detected, continue\n");
-	if (blockbuf[0] != 0x02)
+	if (block_buf[0] != 0x02)
 		return -1; /* not a CEA BLOCK. */
-	end = blockbuf[2]; /* CEA description. */
-	prxcap->native_Mode = blockbuf[3];
-	prxcap->number_of_dtd += blockbuf[3] & 0xf;
+	end = block_buf[2]; /* CEA description. */
+	prxcap->native_Mode = block_buf[3];
+	prxcap->number_of_dtd += block_buf[3] & 0xf;
 
 	/*prxcap->native_vic = 0;*/
 	/*prxcap->native_vic2 = 0;*/
@@ -1815,8 +1815,8 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 	if (end > 126)
 		return 0;
 	for (offset = 4 ; offset < end ; ) {
-		tag = blockbuf[offset] >> 5;
-		count = blockbuf[offset] & 0x1f;
+		tag = block_buf[offset] >> 5;
+		count = block_buf[offset] & 0x1f;
 		switch (tag) {
 		case HDMI_EDID_BLOCK_TYPE_AUDIO:
 			aud_flag = 1;
@@ -1826,13 +1826,13 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 			offset++;
 			for (i = 0; i < tmp; i++) {
 				prxcap->RxAudioCap[idx + i].audio_format_code =
-					(blockbuf[offset + i * 3] >> 3) & 0xf;
+					(block_buf[offset + i * 3] >> 3) & 0xf;
 				prxcap->RxAudioCap[idx + i].channel_num_max =
-					blockbuf[offset + i * 3] & 0x7;
+					block_buf[offset + i * 3] & 0x7;
 				prxcap->RxAudioCap[idx + i].freq_cc =
-					blockbuf[offset + i * 3 + 1] & 0x7f;
+					block_buf[offset + i * 3 + 1] & 0x7f;
 				prxcap->RxAudioCap[idx + i].cc3 =
-					blockbuf[offset + i * 3 + 2];
+					block_buf[offset + i * 3 + 2];
 			}
 			offset += count;
 			break;
@@ -1840,29 +1840,29 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 		case HDMI_EDID_BLOCK_TYPE_VIDEO:
 			offset++;
 			for (i = 0; i < count ; i++)
-				_store_vics(prxcap, blockbuf[offset + i]);
+				_store_vics(prxcap, block_buf[offset + i]);
 			offset += count;
 			break;
 
 		case HDMI_EDID_BLOCK_TYPE_VENDER:
 			offset++;
-			if (blockbuf[offset] == 0x03 &&
-			    blockbuf[offset + 1] == 0x0c &&
-			    blockbuf[offset + 2] == 0x00) {
+			if (block_buf[offset] == 0x03 &&
+			    block_buf[offset + 1] == 0x0c &&
+			    block_buf[offset + 2] == 0x00) {
 				hdmitx21_edid_parse_hdmi14(prxcap, offset,
-							 blockbuf, count);
-			} else if ((blockbuf[offset] == 0xd8) &&
-				(blockbuf[offset + 1] == 0x5d) &&
-				(blockbuf[offset + 2] == 0xc4)) {
+							 block_buf, count);
+			} else if ((block_buf[offset] == 0xd8) &&
+				(block_buf[offset + 1] == 0x5d) &&
+				(block_buf[offset + 2] == 0xc4)) {
 				hdmitx21_edid_parse_hfscdb(prxcap, offset,
-							 blockbuf, count);
+							 block_buf, count);
 			}
 			offset += count; /* ignore the remind. */
 			break;
 
 		case HDMI_EDID_BLOCK_TYPE_SPEAKER:
 			offset++;
-			prxcap->RxSpeakerAllocation = blockbuf[offset];
+			prxcap->RxSpeakerAllocation = block_buf[offset];
 			offset += count;
 			break;
 
@@ -1875,26 +1875,26 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 			{
 				u8 ext_tag = 0;
 
-				ext_tag = blockbuf[offset + 1];
+				ext_tag = block_buf[offset + 1];
 				switch (ext_tag) {
 				case EXTENSION_VENDOR_SPECIFIC:
 					edid_parsingvendspec(hdev, prxcap,
-							     &blockbuf[offset]);
+							     &block_buf[offset]);
 					break;
 				case EXTENSION_COLORMETRY_TAG:
 					prxcap->colorimetry_data =
-						blockbuf[offset + 2];
+						block_buf[offset + 2];
 					break;
 				case EXTENSION_DRM_STATIC_TAG:
 					edid_parsedrmsb(prxcap,
-							&blockbuf[offset]);
-					rx_set_hdr_lumi(&blockbuf[offset],
-							(blockbuf[offset] &
+							&block_buf[offset]);
+					rx_set_hdr_lumi(&block_buf[offset],
+							(block_buf[offset] &
 							 0x1f) + 1);
 					break;
 				case EXTENSION_DRM_DYNAMIC_TAG:
 					edid_parsedrmdb(prxcap,
-							&blockbuf[offset]);
+							&block_buf[offset]);
 					break;
 				case EXTENSION_VFPDB_TAG:
 /* Just record VFPDB offset address, call Edid_ParsingVFPDB() after DTD
@@ -1902,23 +1902,23 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
  * SVR >=129 and SVR <=144, Interpret as the Kth DTD in the EDID,
  * where K = SVR – 128 (for K=1 to 16)
  */
-					vfpdb_offset = &blockbuf[offset];
+					vfpdb_offset = &block_buf[offset];
 					break;
 				case EXTENSION_Y420_VDB_TAG:
 					edid_parsingy420vdb(prxcap,
-							    &blockbuf[offset]);
+							    &block_buf[offset]);
 					break;
 				case EXTENSION_Y420_CMDB_TAG:
 					edid_parsingy420cmdb(hdev,
-							     &blockbuf[offset]);
+							     &block_buf[offset]);
 					break;
 				case EXTENSION_DOLBY_VSADB:
 					edid_parsingdolbyvsadb(hdev,
-							     &blockbuf[offset]);
+							     &block_buf[offset]);
 					break;
 				case EXTENSION_SCDB_EXT_TAG:
 					hdmitx21_edid_parse_hfscdb(prxcap, offset + 1,
-							 blockbuf, count);
+							 block_buf, count);
 					break;
 				default:
 					break;
@@ -1950,9 +1950,9 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdev,
 
 	/* dtds in extended blocks */
 	i = 0;
-	offset = blockbuf[2] + i * 18;
+	offset = block_buf[2] + i * 18;
 	for ( ; (offset + 18) < 0x7f; i++) {
-		edid_dtd_parsing(prxcap, &blockbuf[offset]);
+		edid_dtd_parsing(prxcap, &block_buf[offset]);
 		offset += 18;
 	}
 
@@ -2101,7 +2101,7 @@ int check21_dvi_hdmi_edid_valid(u8 *buf)
 	return 1;
 }
 
-static void edid_manufacturedateparse(struct rx_cap *prxcap,
+static void edid_manufacture_date_parse(struct rx_cap *prxcap,
 				      u8 *data)
 {
 	if (!data)
@@ -2127,7 +2127,7 @@ static void edid_manufacturedateparse(struct rx_cap *prxcap,
 		(data[1] <= 0xf) ? 0 : data[1];
 }
 
-static void edid_versionparse(struct rx_cap *prxcap,
+static void edid_version_parse(struct rx_cap *prxcap,
 			      u8 *data)
 {
 	if (!data)
@@ -2146,7 +2146,7 @@ static void edid_versionparse(struct rx_cap *prxcap,
 	prxcap->edid_revision = (data[1] < 0x5) ? data[1] : 0;
 }
 
-static void Edid_PhyscialSizeParse(struct rx_cap *prxcap,
+static void Edid_Physical_Size_Parse(struct rx_cap *prxcap,
 				   u8 *data)
 {
 	if (data[0] != 0 && data[1] != 0) {
@@ -2492,17 +2492,17 @@ int hdmitx21_edid_parse(struct hdmitx_dev *hdmitx_device)
 	if (checksum != 0)
 		pr_debug(EDID "PLUGIN_DVI_OUT\n");
 
-	edid_parsingidmanufacturername(&hdmitx_device->tx_comm.rxcap, &EDID_buf[8]);
-	edid_parsingidproductcode(&hdmitx_device->tx_comm.rxcap, &EDID_buf[0x0A]);
-	edid_parsingidserialnumber(&hdmitx_device->tx_comm.rxcap, &EDID_buf[0x0C]);
+	edid_parsing_id_manufacturer_name(&hdmitx_device->tx_comm.rxcap, &EDID_buf[8]);
+	edid_parsing_id_product_code(&hdmitx_device->tx_comm.rxcap, &EDID_buf[0x0A]);
+	edid_parsing_id_serial_number(&hdmitx_device->tx_comm.rxcap, &EDID_buf[0x0C]);
 
-	edid_establishedtimings(&hdmitx_device->tx_comm.rxcap, &EDID_buf[0x23]);
+	edid_established_timings(&hdmitx_device->tx_comm.rxcap, &EDID_buf[0x23]);
 
-	edid_manufacturedateparse(&hdmitx_device->tx_comm.rxcap, &EDID_buf[16]);
+	edid_manufacture_date_parse(&hdmitx_device->tx_comm.rxcap, &EDID_buf[16]);
 
-	edid_versionparse(&hdmitx_device->tx_comm.rxcap, &EDID_buf[18]);
+	edid_version_parse(&hdmitx_device->tx_comm.rxcap, &EDID_buf[18]);
 
-	Edid_PhyscialSizeParse(&hdmitx_device->tx_comm.rxcap, &EDID_buf[21]);
+	Edid_Physical_Size_Parse(&hdmitx_device->tx_comm.rxcap, &EDID_buf[21]);
 
 	blockcount = EDID_buf[0x7E];
 	hdmitx_device->tx_comm.rxcap.blk0_chksum = EDID_buf[0x7F];

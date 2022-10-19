@@ -348,10 +348,13 @@ static int aw9523_i2c_write(struct meson_aw9523 *aw9523,
 
 	while (cnt < AW_I2C_RETRIES) {
 		ret = i2c_smbus_write_byte_data(aw9523->i2c, reg_addr, reg_data);
-		if (ret < 0)
+		if (ret < 0) {
 			pr_err("%s: i2c_write cnt=%d error=%d\n", __func__, cnt, ret);
-		cnt++;
-		msleep(AW_I2C_RETRY_DELAY);
+			cnt++;
+			msleep(AW_I2C_RETRY_DELAY);
+		} else {
+			break;
+		}
 	}
 
 	return ret;

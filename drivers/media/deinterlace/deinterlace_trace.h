@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * drivers/media/deinterlace/deinterlace_trace.h
+ * drivers/amlogic/media/deinterlace/deinterlace_trace.h
  *
  * Copyright (C) 2017 Amlogic, Inc. All rights reserved.
  *

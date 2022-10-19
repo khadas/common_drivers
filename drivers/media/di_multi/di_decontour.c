@@ -794,17 +794,22 @@ irqreturn_t dct_pre_isr(int irq, void *dev_id)
 {
 	struct di_hdct_s  *dct = &get_datal()->hw_dct;
 	ulong flags = 0;
+	unsigned int nub = 0;
 
 	spin_lock_irqsave(&dct_pre, flags);
 	if (!atomic_dec_and_test(&dct->irq_wait)) {
 		PR_ERR("%s:%d\n", "irq_dct", atomic_read(&dct->irq_wait));
 		spin_unlock_irqrestore(&dct_pre, flags);
+		task_send_ready(25);
 		return IRQ_HANDLED;
 	}
-	dim_tr_ops.irq_dct(dct->curr_nins->c.cnt);
+	if (dct->curr_nins)
+		nub = dct->curr_nins->c.cnt;
+	dim_tr_ops.irq_dct(nub);
 	spin_unlock_irqrestore(&dct_pre, flags);
 
 	dbg_dctp("decontour: isr %d\n", atomic_read(&dct->irq_wait));
+	task_send_ready(24);
 	return IRQ_HANDLED;
 }
 
@@ -960,6 +965,7 @@ int decontour_dump_output(u32 w, u32 h,
 {
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *fp;
+	mm_segment_t fs;
 	loff_t pos;
 	char name_buf[32];
 	int write_size;
@@ -980,12 +986,15 @@ int decontour_dump_output(u32 w, u32 h,
 	PR_INF("(ulong)data =%lx\n", (ulong)data);
 	if (!data)
 		return -2;
+	fs = get_fs();
+	set_fs(KERNEL_DS);
 	pos = 0;
 	vfs_write(fp, data, write_size, &pos);
 	vfs_fsync(fp, 0);
 	PR_INF("decontour: write %u size to addr%p\n", write_size, data);
 	codec_mm_unmap_phyaddr(data);
 	filp_close(fp, NULL);
+	set_fs(fs);
 
 	PR_INF("decontour:dump_2.0/2");
 	write_size = w * h;
@@ -1005,6 +1014,8 @@ int decontour_dump_output(u32 w, u32 h,
 	PR_INF("decontour:dump_3\n");
 	if (!data)
 		return -5;
+	fs = get_fs();
+	set_fs(KERNEL_DS);
 	pos = 0;
 	vfs_write(fp, data, write_size, &pos);
 	vfs_fsync(fp, 0);
@@ -1022,6 +1033,7 @@ int decontour_dump_output(u32 w, u32 h,
 	PR_INF("decontour: write %u size to file.addr%p\n", write_size, data);
 	codec_mm_unmap_phyaddr(data);
 	filp_close(fp, NULL);
+	set_fs(fs);
 #endif
 	return 0;
 }
@@ -2165,6 +2177,10 @@ int dct_pre_reg_show(struct seq_file *s, void *v)
 	int i;
 	const struct reg_acc *op = &di_pre_regset;
 
+	if (!IS_IC_SUPPORT(DECONTOUR)) {
+		seq_printf(s, "%s\n", "no dct");
+		return 0;
+	}
 	for (i = 0x4a00; i < 0x4a12; i++) {
 		value = op->rd(i);
 		seq_printf(s, "reg=%x, value= %x\n", i, value);

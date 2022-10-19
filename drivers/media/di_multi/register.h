@@ -425,7 +425,7 @@ unsigned int DIM_VSC_WR_MPG_BT(unsigned int addr,
 /* bit 26:24,   reg_demon_mux */
 /* bit 23:20,   reg_right_win */
 /* bit 19:16,   reg_left_win */
-/* bit 7:4,     reg_ei_sad_max_quantize_margin */
+/* bit 7:4,     reg_ei_sadm_quantize_margin */
 /* bit 1:0,     reg_ei_sad_relative_mode */
 #define DI_EI_CTRL4                       ((0x171a)) /* << 2) + 0xd0100000) */
 /* bit 29,      reg_ei_caldrt_ambliike2_biasvertical */
@@ -1705,7 +1705,7 @@ unsigned int DIM_VSC_WR_MPG_BT(unsigned int addr,
 /* Bit 31    it true, disable clock, otherwise enable clock        */
 /* Bit 30    soft rst bit */
 /* Bit 28    if true, horizontal formatter use repeating to */
-/*generate pixel, otherwise use bilinear interpolation */
+/* generate pixel, otherwise use bilinear interpolation */
 /* Bit 27:24 horizontal formatter initial phase */
 /* Bit 23    horizontal formatter repeat pixel 0 enable */
 /* Bit 22:21 horizontal Y/C ratio, 00: 1:1, 01: 2:1, 10: 4:1 */
@@ -2879,7 +2879,7 @@ unsigned int DIM_VSC_WR_MPG_BT(unsigned int addr,
  * valid mode for lmv calc., 100b:use char det, 010b: use flt,001b: use hori flg
  */
 /* Bit 11:10, reg_mcdi_lmvgainmvmode
- * four modes of mv selection for lmv weight calculator, default = 1
+ * four modes of mv selection for lmv weight calculation, default = 1
  */
 /* 0: cur(x-3), lst(x-1,x,x+1); 1: cur(x-4,x-3), lst(x,x+1);
  * 2: cur(x-5,x-4,x-3), lst(x-1,x,x+1,x+2,x+3);
@@ -4099,13 +4099,13 @@ unsigned int DIM_VSC_WR_MPG_BT(unsigned int addr,
  * detected before MA blending, normalized 8 as '1', set 15 to 16, default = 8
  */
 #define MCDI_MC_REL_GAIN_OFFST_1                   ((0x2f77))
-/* Bit 31:24, reg_mcdi_mcoutofboundrayoffst.
+/* Bit 31:24, reg_mcdi_mcoutofboundaryoffset.
  * offset (rel + offset) for rel (MC blending coef.) refinement
  * if MC pointed out
  * of boundray before MC blending before MC blending, default = 255
  */
 /* Bit 23:20, reserved*/
-/* Bit 19:16, reg_mcdi_mcoutofboundraygain.
+/* Bit 19:16, reg_mcdi_mcoutofboundarygain.
  * gain for rel (MC blending coef.) refinement
  * if MC pointed out of boundray before
  * MC blending, normalized 8 as '1', set 15 to 16, default = 8
@@ -4473,6 +4473,7 @@ unsigned int DIM_VSC_WR_MPG_BT(unsigned int addr,
 #define DI_INP_AFBC_PIXEL_HOR_SCOPE	(0x180f)
 #define DI_INP_AFBC_PIXEL_VER_SCOPE	(0x1810)
 #define DI_INP_AFBC_VD_CFMT_H		(0x1811)
+#define DI_INP_AFBC_IQUANT_ENABLE	(0x1812)
 
 #define DI_MEM_AFBC_ENABLE		(0x1820)
 #define DI_MEM_AFBC_MODE		(0x1821)
@@ -4492,6 +4493,7 @@ unsigned int DIM_VSC_WR_MPG_BT(unsigned int addr,
 #define DI_MEM_AFBC_PIXEL_HOR_SCOPE	(0x182f)
 #define DI_MEM_AFBC_PIXEL_VER_SCOPE	(0x1830)
 #define DI_MEM_AFBC_VD_CFMT_H		(0x1831)
+#define DI_MEM_AFBC_IQUANT_ENABLE	(0x1832)
 
 #define DI_AFBCE_CTRL			(0x2003) /* ary sc2 ? */
 /*

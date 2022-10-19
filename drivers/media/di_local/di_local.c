@@ -44,6 +44,7 @@
 #include <linux/amlogic/media/vfm/vframe.h>
 #include <linux/amlogic/media/vpu/vpu.h>	//VPU_MEM_POWER_ON
 #include "../deinterlace/di_pqa.h"
+#include <linux/amlogic/media/di/di_interface.h>
 
 /*for di_ext_ops*/
 /*#include <linux/amlogic/media/video_sink/video.h> */
@@ -79,16 +80,16 @@ static unsigned int cpuver_id;
 /***************************************
  * dil api for make a distinction between old/new DI function *
  **************************************/
-void dil_set_diffver_flag(unsigned int para)
+void dil_set_diff_ver_flag(unsigned int para)
 {
 	diffver_flag = para;
 }
-EXPORT_SYMBOL(dil_set_diffver_flag);
-unsigned int dil_get_diffver_flag(void)
+EXPORT_SYMBOL(dil_set_diff_ver_flag);
+unsigned int dil_get_diff_ver_flag(void)
 {
 	return diffver_flag;
 }
-EXPORT_SYMBOL(dil_get_diffver_flag);
+EXPORT_SYMBOL(dil_get_diff_ver_flag);
 
 /***************************************
  * dil api for cpu version *
@@ -138,7 +139,7 @@ unsigned int DI_POST_REG_RD(unsigned int addr)
 	if (dil_api && dil_api->di_post_reg_rd)
 		return dil_api->di_post_reg_rd(addr);
 
-	PR_ERR("%s:not attach\n", __func__);
+	//PR_ERR("%s:not attach\n", __func__);
 	return 0;
 }
 EXPORT_SYMBOL(DI_POST_REG_RD);
@@ -183,6 +184,155 @@ void dim_polic_cfg(unsigned int cmd, bool on)
 		dil_api->polic_cfg(cmd, on);
 }
 EXPORT_SYMBOL(dim_polic_cfg);
+
+/***************************************
+ * new interface *
+ **************************************/
+int di_create_instance(struct di_init_parm parm)
+{
+	if (dil_api && dil_api->new_create_instance)
+		return dil_api->new_create_instance(parm);
+	PR_ERR("%s:not attach\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(di_create_instance);
+
+int di_destroy_instance(int index)
+{
+	if (dil_api && dil_api->new_destroy_instance)
+		return dil_api->new_destroy_instance(index);
+	PR_ERR("%s:not attach\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(di_destroy_instance);
+
+enum DI_ERRORTYPE di_empty_input_buffer(int index, struct di_buffer *buffer)
+{
+	if (dil_api && dil_api->new_empty_input_buffer)
+		return dil_api->new_empty_input_buffer(index, buffer);
+	PR_ERR("%s:not attach\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(di_empty_input_buffer);
+
+enum DI_ERRORTYPE di_fill_output_buffer(int index, struct di_buffer *buffer)
+{
+	if (dil_api && dil_api->new_fill_output_buffer)
+		return dil_api->new_fill_output_buffer(index, buffer);
+	PR_ERR("%s:not attach\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(di_fill_output_buffer);
+
+int di_get_state(int index, struct di_status *status)
+{
+	if (dil_api && dil_api->new_get_state)
+		return dil_api->new_get_state(index, status);
+	PR_ERR("%s:not attach\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(di_get_state);
+
+int di_write(struct di_buffer *buffer, struct composer_dst *dst)
+{
+	if (dil_api && dil_api->new_write)
+		return dil_api->new_write(buffer, dst);
+	PR_ERR("%s:not attach\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(di_write);
+
+int di_release_keep_buf(struct di_buffer *buffer)
+{
+	if (dil_api && dil_api->new_release_keep_buf)
+		return dil_api->new_release_keep_buf(buffer);
+	PR_ERR("%s:not attach\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(di_release_keep_buf);
+
+int di_get_output_buffer_num(int index)
+{
+	if (dil_api && dil_api->new_get_output_buffer_num)
+		return dil_api->new_get_output_buffer_num(index);
+	PR_ERR("%s:not attach\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(di_get_output_buffer_num);
+
+int di_get_input_buffer_num(int index)
+{
+	if (dil_api && dil_api->new_get_input_buffer_num)
+		return dil_api->new_get_input_buffer_num(index);
+	PR_ERR("%s:not attach\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(di_get_input_buffer_num);
+
+int pvpp_display(struct vframe_s *vfm,
+			    struct pvpp_dis_para_in_s *in_para,
+			    void *out_para)
+{
+	int ret = -1;
+
+	if (dil_api && dil_api->pre_vpp_link_display)
+		ret = dil_api->pre_vpp_link_display(vfm, in_para, out_para);
+	PR_ERR("%s:not attach\n", __func__);
+	return ret;
+}
+EXPORT_SYMBOL(pvpp_display);
+
+int pvpp_check_vf(struct vframe_s *vfm)
+{
+	if (dil_api && dil_api->pre_vpp_link_check_vf)
+		return dil_api->pre_vpp_link_check_vf(vfm);
+	PR_ERR("%s:not attach\n", __func__);
+	return -1;
+}
+EXPORT_SYMBOL(pvpp_check_vf);
+
+int pvpp_check_act(void)
+{
+	if (dil_api && dil_api->pre_vpp_link_check_act)
+		return dil_api->pre_vpp_link_check_act();
+	PR_ERR("%s:not attach\n", __func__);
+	return -1;
+}
+EXPORT_SYMBOL(pvpp_check_act);
+
+int pvpp_sw(bool on)
+{
+	if (dil_api && dil_api->pre_vpp_link_sw)
+		return dil_api->pre_vpp_link_sw(on);
+	PR_ERR("%s:not attach\n", __func__);
+	return -1;
+}
+EXPORT_SYMBOL(pvpp_sw);
+
+u32 di_api_get_plink_instance_id(void)
+{
+	if (dil_api && dil_api->pre_vpp_get_ins_id)
+		return dil_api->pre_vpp_get_ins_id();
+	PR_ERR("%s:not attach\n", __func__);
+	return 0;
+}
+EXPORT_SYMBOL(di_api_get_plink_instance_id);
+
+bool dim_config_crc_ic(void)
+{
+	if (dil_api && dil_api->config_crc_ic)
+		return dil_api->config_crc_ic();
+	return 0;
+}
+EXPORT_SYMBOL(dim_config_crc_ic);
+
+int di_s_bypass_ch(int index, bool on)
+{
+	if (dil_api && dil_api->s_bypass_ch)
+		return dil_api->s_bypass_ch(index, on);
+	return DI_ERR_UNDEFINED;
+}
+EXPORT_SYMBOL(di_s_bypass_ch);
 
 /***************************************
  * reserved mem for di *
@@ -336,6 +486,7 @@ static int dil_remove(struct platform_device *pdev)
 
 	/*data*/
 	kfree(pdv);
+	pdv = NULL;
 
 	PR_INF("%s ok.\n", __func__);
 	return 0;

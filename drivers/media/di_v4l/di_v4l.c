@@ -27,6 +27,7 @@
 #include <linux/init.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
+#include <linux/compat.h>
 #include <linux/mutex.h>
 #include <linux/dma-mapping.h>
 #include <linux/of_fdt.h>
@@ -40,7 +41,6 @@
 #include <linux/amlogic/major.h>
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/utils/amstream.h>
-#include <linux/compat.h>
 
 #define V4L_DI_DEVICE_NAME   "di_v4l"
 
@@ -179,6 +179,7 @@ static void dump_yuv_data(struct di_v4l_dev *dev,
 {
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *fp;
+	mm_segment_t fs;
 	char name_buf[DUMP_NAME_SIZE];
 	u32 write_size;
 	u32 phy_addr_y;
@@ -214,6 +215,8 @@ static void dump_yuv_data(struct di_v4l_dev *dev,
 	snprintf(name_buf, DUMP_NAME_SIZE, "/data/tmp/diout%d-%d-%d.raw",
 		 vf->width, vf->height, index);
 
+	fs = get_fs();
+	set_fs(KERNEL_DS);
 	fp = filp_open(name_buf, O_WRONLY | O_CREAT, 0666);
 	if (IS_ERR(fp)) {
 		di_v4l_print(dev->index, PRINT_ERROR,
@@ -226,6 +229,7 @@ static void dump_yuv_data(struct di_v4l_dev *dev,
 		unmap_virt_from_phys(buffer_start);
 		filp_close(fp, NULL);
 	}
+	set_fs(fs);
 #endif
 }
 

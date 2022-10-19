@@ -835,7 +835,7 @@ void dump_di_buf(struct di_buf_s *di_buf)
 		di_buf->mtn_canvas_idx);
 	pr_info("cnt_adr 0x%lx, cnt_canvas_idx 0x%x\n",
 		di_buf->cnt_adr, di_buf->cnt_canvas_idx);
-	pr_info("di_cnt %d, private %u.\n",
+	pr_info("di_cnt %d, privated %u.\n",
 			atomic_read(&di_buf->di_cnt), di_buf->privated);
 }
 

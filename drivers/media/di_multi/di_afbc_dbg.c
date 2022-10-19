@@ -353,7 +353,6 @@ const struct regs_t reg_bits_tab_afbce[] = {
 	{EAFBCE_MMU_RMIF_CTRL1, 16,  8, E_AFBCE_CANVAS_ID, "canvas_id"},
 	{EAFBCE_MMU_RMIF_CTRL1, 24,  2, E_AFBCE_SYNC_SEL, "sync_sel"},
 	{EAFBCE_MMU_RMIF_CTRL2,  0, 17, E_AFBCE_UNGENT_CTRL, "ungent_ctrl"},
-
 	{EAFBCE_MMU_RMIF_CTRL2, 18,  6,
 		E_AFBCE_RMIF_GCLK_CTRL, "rmif_gclk_ctrl"},
 	{EAFBCE_MMU_RMIF_CTRL2, 30,  2, E_AFBCE_SW_RST, "sw_rst"},
@@ -428,7 +427,9 @@ EXPORT_SYMBOL(dbg_afbce_bits_show);
 void dbg_mif_wr_bits_show(struct seq_file *s, enum EDI_MIFSM mifsel)
 {
 	seq_printf(s, "dump bits:wr[%d]\n", mifsel);
-	dbg_regs_tab(s, opl1()->reg_mif_wr_bits_tab, opl1()->reg_mif_wr_tab[mifsel]);
+	if (opl1()->reg_mif_wr_bits_tab)
+		dbg_regs_tab(s, opl1()->reg_mif_wr_bits_tab,
+			     opl1()->reg_mif_wr_tab[mifsel]);
 }
 EXPORT_SYMBOL(dbg_mif_wr_bits_show);
 

@@ -16,6 +16,8 @@
 #include "di_task.h"
 
 #include "di_vframe.h"
+#define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_DIM
+#include <trace/events/meson_atrace.h>
 
 #ifdef MARK_HIS
 const struct di_init_parm dim_cfg_parm_default = {
@@ -320,13 +322,37 @@ void dim_dbg_buffer2(struct di_buffer *buffer, unsigned int id)
 	}
 }
 
+static void cfg_ch_set_for_s4_cp(struct di_ch_s *pch)
+{
+	unsigned int out_format;
+
+	if (pch->itf.u.dinst.parm.work_mode != WORK_MODE_S4_DCOPY)
+		return;
+	cfgsch(pch, KEEP_DEC_VF, 0); // for all new_interface
+	out_format = pch->itf.u.dinst.parm.output_format &
+		DIM_OUT_FORMAT_FIX_MASK;
+	/* out: nv21 */
+	if (out_format == DI_OUTPUT_NV21)
+		cfgsch(pch, POUT_FMT, 1);
+	else
+		cfgsch(pch, POUT_FMT, 2);
+	PR_INF("%s:output_format:0x%x\n", __func__, out_format);
+	cfgsch(pch, IOUT_FMT, 1);
+	cfgsch(pch, ALLOC_SCT, 0);
+	cfgsch(pch, DAT, 0);
+	cfgsch(pch, 4K, 1);
+	cfgsch(pch, HF, 0);
+	cfgsch(pch, DCT, 0);
+	cfgsch(pch, DW_EN, 0);
+}
+
 static void cfg_ch_set(struct di_ch_s *pch)
 {
 	struct di_init_parm *parm;
 	unsigned int out_format;
 	bool used_di_define = false;
 	parm = &pch->itf.u.dinst.parm;
-	out_format = parm->output_format & 0xffff;
+	out_format = parm->output_format & DIM_OUT_FORMAT_FIX_MASK;
 
 	if (parm->output_format & DI_OUTPUT_BY_DI_DEFINE &&
 	    pch->itf.tmode == EDIM_TMODE_3_PW_LOCAL)
@@ -380,7 +406,7 @@ static void cfg_ch_set(struct di_ch_s *pch)
  * @param[in]  parm    Pointer of parm structure
  * @return      di index for success, or fail type if < 0
  **********************************************************/
-int di_create_instance(struct di_init_parm parm)
+int new_create_instance(struct di_init_parm parm)
 {
 	int ret;
 	unsigned int ch;
@@ -406,6 +432,20 @@ int di_create_instance(struct di_init_parm parm)
 	memcpy(&itf->u.dinst.parm, &parm, sizeof(struct di_init_parm));
 
 	itf->tmode = EDIM_TMODE_2_PW_OUT;
+	if (s4dw_test_ins()) {
+		/*used local buffer to check s4 copy */
+		itf->tmode = EDIM_TMODE_3_PW_LOCAL;
+		itf->u.dinst.parm.work_mode = WORK_MODE_S4_DCOPY;
+	}
+	//check ic:
+	if (itf->u.dinst.parm.work_mode == WORK_MODE_S4_DCOPY) {
+		if (!DIM_IS_IC(S4) && !DIM_IS_IC(T3)) {
+			PR_ERR("%s:copy only support for s4\n", __func__);
+			return DI_ERR_UNSUPPORT;
+		}
+		PR_INF("S4 DW\n");
+	}
+
 	if (itf->u.dinst.parm.work_mode == WORK_MODE_PRE_POST) {
 		switch (itf->u.dinst.parm.buffer_mode) {
 		case BUFFER_MODE_ALLOC_BUF:
@@ -419,6 +459,27 @@ int di_create_instance(struct di_init_parm parm)
 			       itf->u.dinst.parm.buffer_mode);
 			break;
 		}
+	} else if (itf->u.dinst.parm.work_mode == WORK_MODE_S4_DCOPY) {
+		#ifndef TMP_FOR_S4DW
+		if (itf->u.dinst.parm.buffer_mode != BUFFER_MODE_USE_BUF)
+			PR_INF("%s:S4_DCOPY: need use exit buffer %d\n",
+			       itf->u.dinst.parm.buffer_mode);
+		/* fix setting */
+		itf->tmode = EDIM_TMODE_2_PW_OUT;
+		#else
+		switch (itf->u.dinst.parm.buffer_mode) {
+		case BUFFER_MODE_ALLOC_BUF:
+			itf->tmode = EDIM_TMODE_3_PW_LOCAL;
+			break;
+		case BUFFER_MODE_USE_BUF:
+			itf->tmode = EDIM_TMODE_2_PW_OUT;
+			break;
+		default:
+			PR_ERR("%s:bmode[%d]\n", __func__,
+			       itf->u.dinst.parm.buffer_mode);
+			break;
+		}
+		#endif
 	} else {
 		PR_ERR("%s:wmode[%d]\n", __func__,
 		       itf->u.dinst.parm.work_mode);
@@ -426,6 +487,8 @@ int di_create_instance(struct di_init_parm parm)
 
 	//reg:
 	mutex_lock(&pch->itf.lock_reg);
+	if (parm.output_format & DI_OUTPUT_BYPASS)
+		itf->bypass_ext = true;
 	pch->sum_reg_cnt++;
 	dim_api_reg(DIME_REG_MODE_NEW, pch);
 	npst_reset(pch);
@@ -438,14 +501,22 @@ int di_create_instance(struct di_init_parm parm)
 		itf->op_fill_ready	= ndrd_m1_fill_ready;
 		itf->op_ready_out	= dip_itf_ndrd_ins_m1_out;
 	}
-	itf->op_cfg_ch_set	= cfg_ch_set;
+
+	if (itf->u.dinst.parm.work_mode == WORK_MODE_S4_DCOPY) {
+		itf->op_cfg_ch_set	= cfg_ch_set_for_s4_cp;
+		itf->flg_s4dw	= true;
+		pch->s4dw	= &dim_s4dw_def;
+	} else {
+		itf->op_cfg_ch_set	= cfg_ch_set;
+		itf->flg_s4dw	= false;
+		pch->s4dw	= NULL;
+	}
 	//cfg_ch_set(pch);
 	mutex_unlock(&pch->itf.lock_reg);
 	PR_INF("%s:ch[%d],tmode[%d]\n", "create", ch, itf->tmode);
 	PR_INF("\tout:0x%x\n", itf->u.dinst.parm.output_format);
 	return ch;
 }
-EXPORT_SYMBOL(di_create_instance);
 
 /**********************************************************
  **
@@ -456,7 +527,7 @@ EXPORT_SYMBOL(di_create_instance);
  * @return      0 for success, or fail type if < 0
  *
  **********************************************************/
-int di_destroy_instance(int index)
+int new_destroy_instance(int index)
 {
 	struct dim_itf_s *pintf;
 	unsigned int ch;
@@ -478,7 +549,7 @@ int di_destroy_instance(int index)
 		mutex_unlock(&pch->itf.lock_reg);
 		return 0;
 	}
-
+	pintf->bypass_ext = false;
 	pintf->reg = 0;
 	//dip_event_unreg_chst(ch);
 	dim_trig_unreg(ch);
@@ -487,7 +558,6 @@ int di_destroy_instance(int index)
 	PR_INF("%s:ch[%d]:end\n", __func__, ch);
 	return 0;
 }
-EXPORT_SYMBOL(di_destroy_instance);
 
 /**********************************************************
  **
@@ -498,7 +568,7 @@ EXPORT_SYMBOL(di_destroy_instance);
  *
  * @return      Success or fail type
  **********************************************************/
-enum DI_ERRORTYPE di_empty_input_buffer(int index, struct di_buffer *buffer)
+enum DI_ERRORTYPE new_empty_input_buffer(int index, struct di_buffer *buffer)
 {
 	struct dim_itf_s *pintf;
 	unsigned int ch;
@@ -509,6 +579,7 @@ enum DI_ERRORTYPE di_empty_input_buffer(int index, struct di_buffer *buffer)
 	struct buf_que_s *pbufq;
 	struct dim_nins_s	*pins;
 	bool flg_q;
+	unsigned int bindex = 0;
 //	unsigned int err;
 
 	ch = index_2_ch(index);
@@ -517,11 +588,16 @@ enum DI_ERRORTYPE di_empty_input_buffer(int index, struct di_buffer *buffer)
 		return DI_ERR_INDEX_OVERFLOW;
 	}
 	pch = get_chdata(ch);
+	if (pch->itf.pre_vpp_link && dpvpp_vf_ops())
+		return dpvpp_empty_input_buffer(DIM_PRE_VPP_NUB, buffer);
 	pintf = &pch->itf;
 	if (!pintf->reg) {
 		PR_WARN("%s:ch[%d] not reg\n", __func__, ch);
 		return DI_ERR_INDEX_NOT_ACTIVE;
 	}
+
+	if (pintf->u.dinst.parm.work_mode == WORK_MODE_S4_DCOPY)
+		return s4dw_empty_input(pch, buffer);
 
 	#ifdef MARK_HIS
 	qued_ops.peek(pch, QUED_T_IS_FREE, &buf_index);
@@ -543,12 +619,12 @@ enum DI_ERRORTYPE di_empty_input_buffer(int index, struct di_buffer *buffer)
 	}
 
 	/* get ins */
-	flg_q = qbuf_out(pbufq, QBF_NINS_Q_IDLE, &index);
+	flg_q = qbuf_out(pbufq, QBF_NINS_Q_IDLE, &bindex);
 	if (!flg_q) {
 		PR_ERR("%s:qout\n", __func__);
 		return DI_ERR_IN_NO_SPACE;
 	}
-	pins = (struct dim_nins_s *)pbufq->pbuf[index].qbc;
+	pins = (struct dim_nins_s *)pbufq->pbuf[bindex].qbc;
 	pins->c.ori = buffer;
 	//pins->c.etype = EDIM_NIN_TYPE_VFM;
 	if (dip_itf_is_ins(pch) && dim_dbg_new_int(2))
@@ -585,10 +661,11 @@ enum DI_ERRORTYPE di_empty_input_buffer(int index, struct di_buffer *buffer)
 		memcpy(&pins->c.vfm_cp, buffer->vf, sizeof(pins->c.vfm_cp));
 	}
 	if (get_datal()->dct_op && get_datal()->dct_op->is_en(pch))
-		flg_q = qbuf_in(pbufq, QBF_NINS_Q_DCT, index);
+		flg_q = qbuf_in(pbufq, QBF_NINS_Q_DCT, bindex);
 	else
-		flg_q = qbuf_in(pbufq, QBF_NINS_Q_CHECK, index);
+		flg_q = qbuf_in(pbufq, QBF_NINS_Q_CHECK, bindex);
 	sum_g_inc(ch);
+	ATRACE_COUNTER("dim_in", pins->c.vfm_cp.index_disp);
 	if (!flg_q) {
 		PR_ERR("%s:qin check\n", __func__);
 		qbuf_in(pbufq, QBF_NINS_Q_IDLE, index);
@@ -605,7 +682,6 @@ enum DI_ERRORTYPE di_empty_input_buffer(int index, struct di_buffer *buffer)
 	task_send_ready(20);
 	return DI_ERR_NONE;
 }
-EXPORT_SYMBOL(di_empty_input_buffer);
 
 //@ary_note mem alloc by outside
 static enum DI_ERRORTYPE di_fill_output_buffer_mode2(struct di_ch_s *pch,
@@ -694,7 +770,7 @@ static enum DI_ERRORTYPE di_fill_output_buffer_mode3(struct di_ch_s *pch,
  *
  * @return      Success or fail type
  *********************************************************/
-enum DI_ERRORTYPE di_fill_output_buffer(int index, struct di_buffer *buffer)
+enum DI_ERRORTYPE new_fill_output_buffer(int index, struct di_buffer *buffer)
 {
 	struct dim_itf_s *pintf;
 	unsigned int ch;
@@ -708,6 +784,8 @@ enum DI_ERRORTYPE di_fill_output_buffer(int index, struct di_buffer *buffer)
 		return DI_ERR_INDEX_OVERFLOW;
 	}
 	pch = get_chdata(ch);
+	if (pch->itf.pre_vpp_link && dpvpp_vf_ops())
+		return dpvpp_fill_output_buffer(DIM_PRE_VPP_NUB, buffer);
 	pintf = &pch->itf;
 	dim_print("%s:ch[%d],ptf ch[%d]\n", __func__, ch, pintf->ch);
 	if (!pintf->reg) {
@@ -715,16 +793,18 @@ enum DI_ERRORTYPE di_fill_output_buffer(int index, struct di_buffer *buffer)
 		return DI_ERR_INDEX_NOT_ACTIVE;
 	}
 
-	if (pintf->tmode == EDIM_TMODE_2_PW_OUT)
+	if (pintf->tmode == EDIM_TMODE_2_PW_OUT) {
+		//dbg:
+		dim_dbg_buffer_ext(pch, buffer, 1);
 		ret = di_fill_output_buffer_mode2(pch, buffer);
-	else if (pintf->tmode == EDIM_TMODE_3_PW_LOCAL)
+	} else if (pintf->tmode == EDIM_TMODE_3_PW_LOCAL) {
 		ret = di_fill_output_buffer_mode3(pch, buffer);
+	}
 	task_send_ready(21);
 	return ret;
 }
-EXPORT_SYMBOL(di_fill_output_buffer);
 
-int di_release_keep_buf(struct di_buffer *buffer)
+int new_release_keep_buf(struct di_buffer *buffer)
 {
 	/*back buf to di */
 //	struct dim_itf_s *pintf;
@@ -732,10 +812,19 @@ int di_release_keep_buf(struct di_buffer *buffer)
 	unsigned int ch;
 	struct dim_ndis_s *ndis1;
 
-	if (!buffer || !buffer->private_data) {
-		PR_INF("%s:no di data\n", __func__);
+	if (!buffer) {
+		PR_INF("%s:buffer\n", __func__);
 		return -1;
 	}
+
+	if (buffer->mng.ch == DIM_PRE_VPP_NUB)
+		return dpvpp_fill_output_buffer(DIM_PRE_VPP_NUB, buffer);
+
+	if (!buffer->private_data) {
+		PR_INF("%s:no di data:0x%px\n", __func__, buffer);
+		return -1;
+	}
+
 	ndis1 = (struct dim_ndis_s *)buffer->private_data;
 
 	ch = buffer->mng.ch;
@@ -749,7 +838,6 @@ int di_release_keep_buf(struct di_buffer *buffer)
 			     ndis1->header.index));
 	return 0;
 }
-EXPORT_SYMBOL(di_release_keep_buf);
 
 /**********************************************************
  * @brief  di_get_output_buffer_num  get output buffer num
@@ -759,7 +847,7 @@ EXPORT_SYMBOL(di_release_keep_buf);
  *
  * @return      number or fail type
  *********************************************************/
-int di_get_output_buffer_num(int index)
+int new_get_output_buffer_num(int index)
 {
 	struct dim_itf_s *pintf;
 	unsigned int ch = 0;
@@ -780,7 +868,6 @@ int di_get_output_buffer_num(int index)
 	dbg_reg("%s:end\n", __func__);
 	return ret;
 }
-EXPORT_SYMBOL(di_get_output_buffer_num);
 
 /**********************************************************
  * @brief  di_get_input_buffer_num  get input buffer num
@@ -790,7 +877,7 @@ EXPORT_SYMBOL(di_get_output_buffer_num);
  *
  * @return      number or fail type
  *********************************************************/
-int di_get_input_buffer_num(int index)
+int new_get_input_buffer_num(int index)
 {
 	struct dim_itf_s *pintf;
 	unsigned int ch = 0;
@@ -811,5 +898,153 @@ int di_get_input_buffer_num(int index)
 	dbg_reg("%s:end\n", __func__);
 	return ret;
 }
-EXPORT_SYMBOL(di_get_input_buffer_num);
+
+/*di_display_pre_vpp_link*/
+int dim_pre_vpp_link_display(struct vframe_s *vfm,
+			  struct pvpp_dis_para_in_s *in_para, void *out_para)
+{
+	int ret = 0;
+	struct pvpp_dis_para_in_s *in;
+	static int last_x, last_v;
+
+	di_g_plink_dbg()->display_cnt++;
+	if (in_para && in_para->unreg_bypass) {
+		if (dpvpp_ops_api() && dpvpp_ops_api()->display_unreg_bypass)
+			ret = dpvpp_ops_api()->display_unreg_bypass();
+		else
+			PR_ERR("%s:no unreg_bypass?\n", __func__);
+		return ret;
+	}
+	if (!vfm)
+		return 0;
+	dbg_link("%s:0x%px, 0x%px:\n", __func__, vfm, in_para);
+	/* dbg only */
+	if (in_para) {
+		if (last_x != in_para->win.x_end ||
+		    last_v != in_para->win.y_end) {
+			PR_INF("itf:disp:<%d,%d><%d,%d>\n",
+				last_x,
+				last_v,
+				in_para->win.x_end,
+				in_para->win.y_end);
+			last_x = in_para->win.x_end;
+			last_v = in_para->win.y_end;
+		}
+	}
+	if (dpvpp_ops_api() && dpvpp_ops_api()->display) {
+		ret = dpvpp_ops_api()->display(vfm, in_para, out_para);
+		in = in_para;
+		dbg_link("%s:ret:0x%x:\n", "api:display", ret);
+		if (in)
+			dbg_link("\tm[%d]:\n", in->dmode);
+
+		if (di_g_plink_dbg()->display_sts != ret) {
+			PR_INF("%s:%d->%d\n", "api:display",
+			       di_g_plink_dbg()->display_sts, ret);
+			di_g_plink_dbg()->display_sts = ret;
+		}
+	}
+
+	return ret;
+}
+
+//EXPORT_SYMBOL(di_display_pre_vpp_link);
+
+int dpvpp_check_vf(struct vframe_s *vfm)
+{
+	int ret = 0;
+#if defined(DBG_QUE_IN_OUT) || defined(DBG_QUE_INTERFACE)
+	static ud vfm_last; //dbg only
+	ud vfm_cur;
+#endif
+	if (!vfm) {
+		PR_WARN("%s:no vf\n", __func__);
+		return -1;
+	}
+	if (dpvpp_ops_api() && dpvpp_ops_api()->check_vf)
+		ret = dpvpp_ops_api()->check_vf(vfm);
+
+	if (di_g_plink_dbg()->flg_check_vf != ret) { /*dbg*/
+		PR_INF("%s:%d->%d\n", "api:check vf",
+		       di_g_plink_dbg()->flg_check_vf,
+		       ret);
+		di_g_plink_dbg()->flg_check_vf = ret;
+	}
+
+#if defined(DBG_QUE_IN_OUT) || defined(DBG_QUE_INTERFACE)
+	vfm_cur = (ud)vfm;
+	if (vfm_cur != vfm_last) {
+		PR_INF("%s:0x%px:0x%x\n", "api:check",
+			vfm,
+			ret);
+		PR_INF("func:0x%px\n", vfm->process_fun);
+		vfm_last = vfm_cur;
+	}
+#endif
+	return ret;
+}
+
+int dpvpp_check_di_act(void)
+{
+	int ret = EPVPP_ERROR_DI_NOT_REG;
+
+	if (dpvpp_ops_api() && dpvpp_ops_api()->check_di_act)
+		ret = dpvpp_ops_api()->check_di_act();
+	if (di_g_plink_dbg()->flg_check_di_act != ret) {
+		PR_INF("%s:%d->%d\n", "api:check act",
+		       di_g_plink_dbg()->flg_check_di_act,
+		       ret);
+		di_g_plink_dbg()->flg_check_di_act = ret;
+	}
+
+	return ret;
+}
+
+int dpvpp_sw(bool on)
+{
+	int ret = 0;
+
+	if (dpvpp_ops_api() && dpvpp_ops_api()->vpp_sw)
+		ret = dpvpp_ops_api()->vpp_sw(on);
+	if (di_g_plink_dbg()->flg_sw != on) {
+		PR_INF("%s:%d->%d:%d\n", "api:sw",
+		       di_g_plink_dbg()->flg_sw,
+		       on, ret);
+		di_g_plink_dbg()->flg_sw = on;
+	}
+
+	return ret;
+}
+
+unsigned int dpvpp_get_ins_id(void)
+{
+	unsigned int ret = 0;
+
+	if (!get_dim_de_devp() || !get_dim_de_devp()->data_l)
+		return 0;
+
+	ret = (unsigned int)atomic_read(&get_datal()->cnt_reg_pre_link);
+	return ret;
+}
+
+int di_ls_bypass_ch(int index, bool on)
+{
+	struct dim_itf_s *pintf;
+	unsigned int ch = 0;
+	struct di_ch_s *pch;
+
+	dbg_reg("%s:\n", __func__);
+	ch = index_2_ch(index);
+	if (ch == ERR_INDEX) {
+		PR_ERR("%s:index overflow\n", __func__);
+		return DI_ERR_INDEX_OVERFLOW;
+	}
+	pch = get_chdata(ch);
+	mutex_lock(&pch->itf.lock_reg);
+	pintf = &pch->itf;
+	pintf->bypass_ext = on;
+	mutex_unlock(&pch->itf.lock_reg);
+	PR_INF("%s:ch[%d]:%d\n", __func__, pch->ch_id, on);
+	return DI_ERR_NONE;
+}
 

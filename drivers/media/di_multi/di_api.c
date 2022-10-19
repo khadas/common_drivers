@@ -28,11 +28,25 @@
  * DI api is used for other module
  *********************************/
 static const struct di_ext_ops di_ext = {
-	.di_post_reg_rd             = l_DI_POST_REG_RD,
-	.di_post_wr_reg_bits        = l_DI_POST_WR_REG_BITS,
+	.di_post_reg_rd             = NULL, //l_DI_POST_REG_RD,
+	.di_post_wr_reg_bits        = NULL, //l_DI_POST_WR_REG_BITS,
 	.post_update_mc		    = NULL,
-	.post_keep_cmd_release2		= dim_post_keep_cmd_release2_local,
+	.post_keep_cmd_release2		= dim_post_keep_cmd_release2_local,//NULL, //
 	.polic_cfg			= dim_polic_cfg_local,
+	.s_bypass_ch		= di_ls_bypass_ch,
+	.new_create_instance	= new_create_instance,
+	.new_destroy_instance	= new_destroy_instance,
+	.new_empty_input_buffer	= new_empty_input_buffer,
+	.new_fill_output_buffer	= new_fill_output_buffer,
+	.new_release_keep_buf	= new_release_keep_buf,
+	.new_get_output_buffer_num	= new_get_output_buffer_num,
+	.new_get_input_buffer_num	= new_get_input_buffer_num,
+	.config_crc_ic		= dim_config_crc_icl,
+	.pre_vpp_link_display	= dim_pre_vpp_link_display,
+	.pre_vpp_link_check_vf	= dpvpp_check_vf,
+	.pre_vpp_link_check_act = dpvpp_check_di_act,
+	.pre_vpp_link_sw	= dpvpp_sw,
+	.pre_vpp_get_ins_id	= dpvpp_get_ins_id
 };
 
 void dim_attach_to_local(void)

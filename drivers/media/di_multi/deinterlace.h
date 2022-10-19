@@ -23,6 +23,7 @@
 #include <linux/amlogic/media/vfm/vframe.h>
 #include <linux/amlogic/media/vfm/vframe_provider.h>
 #include <linux/amlogic/media/di/di.h>
+#include <linux/amlogic/media/di/di_interface.h>
 
 #include "../di_local/di_local.h"
 //#include "di_local.h"
@@ -39,9 +40,25 @@
 //#define TEST_PIP	(1)
 
 /************************************************
- * from t7 cvs address is ulong
+ * vframe use ud meta data
  ************************************************/
-//#define CVS_UINT	(1)
+#define DIM_EN_UD_USED	(1)
+
+/************************************************
+ * function:hdr
+ ************************************************/
+#define DIM_HAVE_HDR	(1)
+
+/************************************************
+ * pre-vpp link
+ ************************************************/
+#define VPP_LINK_USED_FUNC	(1)
+
+/************************************************
+ * ext function:hf
+ *	function:is_di_hf_y_reverse not define
+ ************************************************/
+//#define DIM_EXT_NO_HF	(1)
 
 /*trigger_pre_di_process param*/
 #define TRIGGER_PRE_BY_PUT			'p'
@@ -66,7 +83,7 @@
 /* buffer management related */
 #define MAX_IN_BUF_NUM				(15)	/*change 4 to 8*/
 #define MAX_LOCAL_BUF_NUM			(5)//(7)
-//#define MAX_LOCAL_BUF_NUM_REAL			(MAX_LOCAL_BUF_NUM << 1)
+#define MAX_LOCAL_BUF_NUM_REAL			(MAX_LOCAL_BUF_NUM << 1)
 //#define MAX_POST_BUF_NUM			(20)//(11)	/*(5)*/ /* 16 */
 #define POST_BUF_NUM				(20)
 #define MAX_POST_BUF_NUM			(POST_BUF_NUM + 3)//(11)	/*(5)*/ /* 16 */
@@ -102,6 +119,8 @@
 #define VSYNC_RD_MPEG_REG(adr) aml_read_vcbus(adr)
 #endif
 #endif
+#define DIM_BYPASS_VF_TYPE	(VIDTYPE_MVC | VIDTYPE_VIU_444 | \
+				 VIDTYPE_PIC | VIDTYPE_RGB_444)
 
 #define IS_I_SRC(vftype) ((vftype) & VIDTYPE_INTERLACE_BOTTOM)
 #define IS_FIELD_I_SRC(vftype) ((vftype) & VIDTYPE_INTERLACE_BOTTOM && \
@@ -134,6 +153,7 @@
 
 #define VFMT_IS_TOP(vfm)	(((vfm) & VIDTYPE_TYPEMASK) ==	\
 				VIDTYPE_INTERLACE_TOP)
+#define VFMT_IS_EOS(vftype) ((vftype) & VIDTYPE_V4L_EOS)
 
 #define IS_NV21_12(vftype) ((vftype) & (VIDTYPE_VIU_NV12 | VIDTYPE_VIU_NV21))
 
@@ -144,8 +164,11 @@
 				 VIDTYPE_VIU_NV21	|	\
 				 VIDTYPE_MVC		|	\
 				 VIDTYPE_VIU_SINGLE_PLANE |	\
+				 VIDTYPE_VIU_FIELD	|	\
 				 VIDTYPE_PIC		|	\
 				 VIDTYPE_RGB_444	|	\
+				 VIDTYPE_SCATTER	|	\
+				 VIDTYPE_COMB_MODE	|	\
 				 VIDTYPE_COMPRESS)
 
 #define VFMT_COLOR_MSK		(VIDTYPE_VIU_NV12	|	\
@@ -153,6 +176,30 @@
 				 VIDTYPE_VIU_NV21	|	\
 				 VIDTYPE_VIU_422	|	\
 				 VIDTYPE_RGB_444)
+
+#define DIM_BYPASS_VF_TYPE	(VIDTYPE_MVC | VIDTYPE_VIU_444 | \
+				 VIDTYPE_PIC | VIDTYPE_RGB_444)
+#define VFMT_DIPVPP_CHG_MASK	(VIDTYPE_TYPEMASK	|	\
+				 VIDTYPE_VIU_422	|	\
+				 VIDTYPE_VIU_444	|	\
+				 VIDTYPE_VIU_NV21	|	\
+				 VIDTYPE_VIU_NV12	|	\
+				 VIDTYPE_VIU_SINGLE_PLANE |	\
+				 VIDTYPE_VIU_FIELD	|	\
+				 VIDTYPE_COMPRESS	|	\
+				 VIDTYPE_SCATTER	|	\
+				 VIDTYPE_COMB_MODE	|	\
+				 VIDTYPE_DI_PW)
+
+//need add :VFRAME_FLAG_DI_BYPASS
+#define VFMT_FLG_CHG_MASK	(VFRAME_FLAG_DI_PW_VFM	|	\
+				 VFRAME_FLAG_DI_PW_N_LOCAL |	\
+				 VFRAME_FLAG_DI_PW_N_EXT |	\
+				 VFRAME_FLAG_HF	|		\
+				 VFRAME_FLAG_DI_DW	|	\
+				 VFRAME_FLAG_VIDEO_LINEAR	|	\
+				 VFRAME_FLAG_DI_PVPPLINK	|	\
+				 VFRAME_FLAG_DI_BYPASS)
 
 enum process_fun_index_e {
 	PROCESS_FUN_NULL = 0,
@@ -177,13 +224,14 @@ enum EDI_SGN {
 	EDI_SGN_OTHER,
 };
 
+#ifdef HIS_CODE	// move to di_interlace.h
 struct di_win_s {
 	unsigned int x_size;
 	unsigned int y_size;
 	unsigned int x_st;
 	unsigned int y_st;
 };
-
+#endif
 #define pulldown_mode_t enum pulldown_mode_e
 
 struct dsub_bufv_s {
@@ -326,6 +374,7 @@ struct di_buf_s {
 	u32 local_ud_total_size;
 	bool hf_irq;
 	bool dw_have;
+	bool flg_dummy;
 };
 
 #define RDMA_DET3D_IRQ			0x20
@@ -462,14 +511,14 @@ struct di_pre_stru_s {
 	struct di_buf_s *di_mem_buf_dup_p;
 	struct di_buf_s *di_chan2_buf_dup_p;
 /* pre output */
-	struct DI_SIM_MIF_s	di_nrwr_mif;
-	struct DI_SIM_MIF_s	di_mtnwr_mif;
+	struct DI_SIM_MIF_S	di_nrwr_mif;
+	struct DI_SIM_MIF_S	di_mtnwr_mif;
 	struct di_buf_s *di_wr_buf;
 	struct di_buf_s *di_post_wr_buf;
-	struct DI_SIM_MIF_s	di_contp2rd_mif;
-	struct DI_SIM_MIF_s	di_contprd_mif;
-	struct DI_SIM_MIF_s	di_contwr_mif;
-	struct DI_SIM_MIF_s	hf_mif;
+	struct DI_SIM_MIF_S	di_contp2rd_mif;
+	struct DI_SIM_MIF_S	di_contprd_mif;
+	struct DI_SIM_MIF_S	di_contwr_mif;
+	struct DI_SIM_MIF_S	hf_mif;
 	int		field_count_for_cont;
 /*
  * 0 (f0,null,f0)->nr0,
@@ -511,12 +560,13 @@ struct di_pre_stru_s {
 	bool input_size_change_flag;
 /* true: bypass di all logic, false: not bypass */
 	bool bypass_flag;
-	unsigned int is_bypass_all	: 1;
 	/* bit0 for cfg, bit1 for t5dvb*/
-	unsigned int is_bypass_mem	: 2;
+	unsigned int is_bypass_mem	: 4;
+	unsigned int is_bypass_all	: 1;
 	unsigned int is_bypass_fg	: 1;
 	unsigned int is_disable_chan2	: 1;
-	unsigned int rev1		: 27;
+	unsigned int is_disable_nr	: 1;	//for t5d vb
+	unsigned int rev1		: 24;
 	unsigned char prog_proc_type;
 /* set by prog_proc_config when source is vdin,0:use 2 i
  * serial buffer,1:use 1 p buffer,3:use 2 i paralleling buffer
@@ -573,6 +623,11 @@ struct di_pre_stru_s {
 	struct SHRK_S shrk_cfg;
 	struct dvfm_s dw_wr_dvfm;
 	bool timeout_check;
+	bool used_pps;
+	unsigned int afbc_skip_w;
+	unsigned int afbc_skip_h;
+	unsigned int pps_width;
+	unsigned int pps_height;
 };
 
 struct dim_fmt_s;
@@ -581,9 +636,9 @@ struct di_post_stru_s {
 	struct DI_MIF_S	di_buf0_mif;
 	struct DI_MIF_S	di_buf1_mif;
 	struct DI_MIF_S	di_buf2_mif;
-	struct DI_SIM_MIF_s di_diwr_mif;
-	struct DI_SIM_MIF_s hf_mif;
-	struct DI_SIM_MIF_s	di_mtnprd_mif;
+	struct DI_SIM_MIF_S di_diwr_mif;
+	struct DI_SIM_MIF_S hf_mif;
+	struct DI_SIM_MIF_S	di_mtnprd_mif;
 	struct DI_MC_MIF_s	di_mcvecrd_mif;
 	/*post doing buf and write buf to post ready*/
 	struct di_buf_s *cur_post_buf;
@@ -601,6 +656,7 @@ struct di_post_stru_s {
 	int		buf_type;
 	int de_post_process_done;
 	int post_de_busy;
+	bool process_doing;/* for pre-vpp-link sw */
 	int di_post_num;
 	unsigned int post_peek_underflow;
 	unsigned int di_post_process_cnt;
@@ -799,6 +855,7 @@ void dbg_h_w(unsigned int ch, unsigned int nub);
 void di_set_default(unsigned int ch);
 //bool dim_dbg_is_cnt(void);
 bool pre_dbg_is_run(void);
+irqreturn_t dpvpp_irq(int irq, void *dev_instance);
 
 /*---------------------*/
 const struct afd_ops_s *dim_afds(void);
@@ -830,6 +887,7 @@ store_kpi_frame_num(struct device *dev, struct device_attribute *attr,
 		    const char *buf, size_t len);
 
 ssize_t dim_read_log(char *buf);
+void di_load_pq_table(void);
 
 /*---------------------*/
 void test_display(void);
@@ -877,6 +935,17 @@ void dpre_vdoing(unsigned int ch);
 //#define TST_NEW_INS_INTERFACE		(1)
 
 //#define TMP_TEST	(1)
-
+#define VPP_LINK_NEED_CHECK	(1)
 //#define TMP_MASK_FOR_T7 (1)
+#define TMP_FOR_S4DW	(1)
+/* dimp_get(edi_mp_mcpre_en) */
+//#define TMP_S4DW_MC_EN	(1)
+//#define DBG_BUFFER_FLOW	(1)
+//#define DBG_CLEAR_MEM	(1)
+#define DBG_BUFFER_EXT	(1)
+#define DBG_VFM_CVS	(1)
+//#define DBG_EXTBUFFER_ONLY_ADDR	(1)
+//#define S4D_OLD_SETTING_KEEP (1)
+//#define S4D_OLD_PQ_KEEP (1)
+
 #endif

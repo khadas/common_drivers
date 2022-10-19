@@ -45,6 +45,7 @@
 #include <linux/dma-map-ops.h>
 #include <linux/ctype.h>
 #include <linux/string.h>
+#include <linux/compat.h>
 #include <linux/of_device.h>
 
 #include <linux/amlogic/media/vfm/vframe.h>
@@ -220,7 +221,8 @@ static bool mm_codec_alloc(const char *owner, size_t count,
 	return true;
 }
 
-static bool mm_cma_alloc(struct device *dev, size_t count,
+//static
+bool mm_cma_alloc(struct device *dev, size_t count,
 			 struct dim_mm_s *o)
 {
 	o->ppage = dma_alloc_from_contiguous(dev, count, 0, 0);
@@ -264,6 +266,47 @@ bool dim_mm_release(int cma_mode,
 						  pages,
 						  count);
 	return ret;
+}
+
+bool cma_alloc_blk_block(struct dim_mm_blk_s *blk_buf,
+		      unsigned int cma_type,
+		      unsigned int tvp,
+		      unsigned int size_page)
+{
+	bool aret;
+	struct dim_mm_s omm;
+
+	aret = dim_mm_alloc_api(cma_type,
+				size_page,
+				&omm, 0); //ary tmp tvp set 0
+	if (!aret) {
+		blk_buf->pages		= NULL;
+		blk_buf->flg_alloc	= false;
+		PR_ERR("%s:fail.\n",	__func__);
+		return false;
+	}
+	blk_buf->pages	= omm.ppage;
+	blk_buf->mem_start	= omm.addr;
+	blk_buf->flg.b.page	= size_page;
+	blk_buf->flg_alloc	= true;
+	return true;
+}
+
+void cma_release_blk_block(struct dim_mm_blk_s *blk_buf,
+				  unsigned int cma_type)
+{
+	if (!blk_buf->pages) {
+		PR_WARN("%s:no pages\n", __func__);
+		return;
+	}
+
+	dim_mm_release_api(cma_type,
+			   blk_buf->pages,
+			   blk_buf->flg.b.page,
+			   blk_buf->mem_start);
+	blk_buf->pages = NULL;
+	blk_buf->flg.d32 = 0;
+	blk_buf->flg_alloc = false;
 }
 
 unsigned int dim_cma_alloc_total(struct di_dev_s *de_devp)
@@ -539,6 +582,7 @@ void blk_polling(unsigned int ch, struct mtsk_cmd_s *cmd)
 	struct div2_mm_s *mm;
 	unsigned int size_p;
 	enum EDI_TOP_STATE chst;
+	u64 timer_st, timer_end, diff; //debug only
 
 	//struct di_dev_s *de_devp = get_dim_de_devp();
 
@@ -604,23 +648,7 @@ void blk_polling(unsigned int ch, struct mtsk_cmd_s *cmd)
 				break;
 			blk_buf = (struct dim_mm_blk_s *)pbufq->pbuf[index].qbc;
 			/* hf */
-			if (blk_buf->flg_hf) {
-				//ret = dim_mm_release(EDI_MEM_M_CMA,
-				ret = dim_mm_release(cfgg(MEM_FLAG),
-					blk_buf->hf_buff.pages,
-					blk_buf->hf_buff.cnt,
-					blk_buf->hf_buff.mem_start);
-				if (ret) {
-					fcmd->sum_hf_psize -= blk_buf->hf_buff.cnt;
-					memset(&blk_buf->hf_buff, 0, sizeof(blk_buf->hf_buff));
-					blk_buf->flg_hf = 0;
-					fcmd->sum_hf_alloc--;
-					dbg_mem2("release:hf:%d\n", blk_buf->header.index);
-				} else {
-					PR_ERR("%s:fail.release hf [%d] 0x%x:\n", __func__,
-					       index, fcmd->sum_hf_psize);
-				}
-			}
+			dim_mng_hf_release_all(pch, blk_buf);
 
 			/* hf end */
 			ret = dim_mm_release(cfgg(MEM_FLAG),
@@ -643,7 +671,7 @@ void blk_polling(unsigned int ch, struct mtsk_cmd_s *cmd)
 				blk_buf->flg_alloc	= false;
 				blk_buf->flg.d32	= 0;
 				blk_buf->sct		= NULL;
-				blk_buf->sct_keep	= 0xff;
+				blk_buf->sct_keep	= DIM_KEEP_NONE;
 				qbuf_in(pbufq, QBF_BLK_Q_IDLE, index);
 				cnt++;
 				fcmd->sum_alloc--;
@@ -701,23 +729,7 @@ void blk_polling(unsigned int ch, struct mtsk_cmd_s *cmd)
 				break;
 			blk_buf = (struct dim_mm_blk_s *)pbufq->pbuf[index].qbc;
 			/* hf */
-			if (blk_buf->flg_hf) {
-				//ret = dim_mm_release(EDI_MEM_M_CMA,
-				ret = dim_mm_release(cfgg(MEM_FLAG),
-					blk_buf->hf_buff.pages,
-					blk_buf->hf_buff.cnt,
-					blk_buf->hf_buff.mem_start);
-				if (ret) {
-					fcmd->sum_hf_psize -= blk_buf->hf_buff.cnt;
-					memset(&blk_buf->hf_buff, 0, sizeof(blk_buf->hf_buff));
-					blk_buf->flg_hf = 0;
-					dbg_mem2("release:hf:%d\n", blk_buf->header.index);
-					fcmd->sum_hf_alloc--;
-				} else {
-					PR_ERR("%s:fail.release hf [%d]\n", __func__,
-					       index);
-				}
-			}
+			dim_mng_hf_release(pch, blk_buf);
 			/* hf end */
 
 			ret = dim_mm_release(cfgg(MEM_FLAG),
@@ -740,7 +752,7 @@ void blk_polling(unsigned int ch, struct mtsk_cmd_s *cmd)
 				blk_buf->flg_alloc	= false;
 				blk_buf->flg.d32	= 0;
 				blk_buf->sct		= NULL;
-				blk_buf->sct_keep	= 0xff;
+				blk_buf->sct_keep	= DIM_KEEP_NONE;
 				atomic_set(&blk_buf->p_ref_mem, 0);
 				qbuf_in(pbufq, QBF_BLK_Q_IDLE, index);
 				cnt++;
@@ -765,6 +777,7 @@ void blk_polling(unsigned int ch, struct mtsk_cmd_s *cmd)
 	case ECMD_BLK_ALLOC:
 		/* alloc */
 		chst = dip_chst_get(ch);
+		dbg_timer(ch, EDBG_TIMER_MEM_1);
 		dbg_mem2("%s:ch[%d] alloc:nub[%d],size[0x%x],top_sts[%d],block[%d]\n",
 			 __func__, ch, cmd->nub, size_p, chst, cmd->block_mode);
 		cnt = 0;
@@ -780,10 +793,14 @@ void blk_polling(unsigned int ch, struct mtsk_cmd_s *cmd)
 
 			/*alloc*/
 			omm.flg = 0;
+			timer_st = cur_to_msecs();//dbg
 			aret = dim_mm_alloc(cfgg(MEM_FLAG),
 					    size_p,
 					    &omm,
 					    cmd->flg.b.tvp);
+			timer_end = cur_to_msecs();//dbg
+			diff = timer_end - timer_st;
+			dbg_mem2("a:a%d:%ums\n", i, (unsigned int)diff);
 			if (!aret) {
 				PR_ERR("2:%s: alloc failed %d fail.\n",
 				       __func__,
@@ -803,7 +820,7 @@ void blk_polling(unsigned int ch, struct mtsk_cmd_s *cmd)
 			blk_buf->flg_alloc	= true;
 			blk_buf->reg_cnt	= pch->sum_reg_cnt;
 			blk_buf->sct		= NULL;
-			blk_buf->sct_keep	= 0xff;
+			blk_buf->sct_keep	= DIM_KEEP_NONE;
 			blk_buf->pat_buf	= NULL;
 			if (blk_buf->flg.b.is_i)
 				mm->sts.num_local++;
@@ -814,30 +831,7 @@ void blk_polling(unsigned int ch, struct mtsk_cmd_s *cmd)
 				 blk_buf->mem_start, size_p);
 			/*alloc hf */
 			if (cmd->hf_need && !blk_buf->flg_hf) {
-				memset(&omm, 0, sizeof(omm));
-				//aret = dim_mm_alloc(EDI_MEM_M_CMA,
-				aret = dim_mm_alloc(cfgg(MEM_FLAG),
-						    mm->cfg.size_buf_hf >> PAGE_SHIFT,
-						    &omm,
-						    0);
-				if (!aret) {
-					PR_ERR("2:%s: alloc hf failed %d fail.0x%x;%d\n",
-					       __func__,
-						blk_buf->header.index,
-						fcmd->sum_hf_psize,
-						fcmd->sum_hf_alloc);
-					blk_buf->flg_hf = 0;
-				} else {
-					blk_buf->flg_hf = 1;
-					blk_buf->hf_buff.mem_start = omm.addr;
-					blk_buf->hf_buff.cnt = mm->cfg.size_buf_hf >> PAGE_SHIFT;
-					blk_buf->hf_buff.pages = omm.ppage;
-					fcmd->sum_hf_psize += blk_buf->hf_buff.cnt;
-					fcmd->sum_hf_alloc++;
-					dbg_mem2("alloc:hf:%d:0x%x\n",
-						 blk_buf->header.index, fcmd->sum_hf_psize);
-				}
-
+				dim_mng_hf_alloc(pch, blk_buf, mm->cfg.size_buf_hf);
 			} else if (cmd->hf_need && blk_buf->flg_hf) {
 				PR_ERR("%s:have hf?%d\n", __func__, blk_buf->header.index);
 			} else {
@@ -1139,7 +1133,9 @@ void pre_sec_alloc(struct di_ch_s *pch, unsigned int flg)
 		dbg_reg("%s:no size\n", __func__);
 		return;
 	}
+	dbg_timer(pch->ch_id, EDBG_TIMER_SEC_PRE_B);
 	ret = mm_cma_alloc(NULL, idat_size, &omm);
+	dbg_timer(pch->ch_id, EDBG_TIMER_SEC_PRE_E);
 	idat->flg_from = 1;
 	if (!ret) {
 		PR_WARN("%s:try:cma di:\n", __func__);
@@ -1206,7 +1202,9 @@ void pst_sec_alloc(struct di_ch_s *pch, unsigned int flg)
 		       pdat->flg_alloc, flg);
 		return;
 	}
+	dbg_timer(pch->ch_id, EDBG_TIMER_SEC_PST_B);
 	ret = mm_cma_alloc(NULL, dat_size, &omm);
+	dbg_timer(pch->ch_id, EDBG_TIMER_SEC_PST_E);
 	pdat->flg_from = 1;
 	if (!ret) {
 		PR_WARN("%s:try:cma di:\n", __func__);
@@ -1400,7 +1398,7 @@ static void dim_buf_set_addr(unsigned int ch, struct di_buf_s *buf_p)
 			buf_p->afbc_adr	= buf_p->adr_start;
 			buf_p->afbct_adr = 0;
 			buf_p->blk_buf->pat_buf = NULL;
-		} else if (mm->cfg.dat_pafbct_flg.b.page) {
+		} else if (/*mm->cfg.dat_pafbct_flg.b.page*/!mm->cfg.dis_afbce) {
 			pat_buf = qpat_out_ready(pch);
 			if (pat_buf) {
 				addr_afbct = pat_buf->mem_start;
@@ -1420,12 +1418,17 @@ static void dim_buf_set_addr(unsigned int ch, struct di_buf_s *buf_p)
 
 		if (mm->cfg.size_buf_hf) {
 			if (buf_p->blk_buf->flg_hf) {
-				buf_p->hf_adr = buf_p->blk_buf->hf_buff.mem_start;
-				di_hf_set_buffer(buf_p, mm);
+				if (buf_p->blk_buf->hf_buff) {
+					buf_p->hf_adr = buf_p->blk_buf->hf_buff->mem_start;
+					di_hf_set_buffer(buf_p, mm);
+				} else {
+					PR_WARN("%s:%d\n", __func__, buf_p->blk_buf->header.index);
+				}
 			} else {
-				PR_ERR("%s:size:[%d]:flg[%d]\n",
-				       __func__,
-				       mm->cfg.size_buf_hf, buf_p->blk_buf->flg_hf);
+				if (!mm->cfg.is_4k)
+					PR_ERR("%s:size:[%d]:flg[%d]\n",
+					       __func__,
+					       mm->cfg.size_buf_hf, buf_p->blk_buf->flg_hf);
 				buf_p->hf_adr = 0;
 			}
 		} else {
@@ -1467,6 +1470,16 @@ static void dim_buf_set_addr(unsigned int ch, struct di_buf_s *buf_p)
 		buf_p->canvas_width[NR_CANVAS]	= mm->cfg.pst_cvs_w;
 		buf_p->canvas_height	= mm->cfg.pst_cvs_h;
 		buf_p->insert_adr	= 0;
+		#ifdef DBG_CLEAR_MEM
+		afbce_map.tabadd	= buf_p->adr_start;
+		afbce_map.size_tab	= mm->cfg.size_post;
+		dim_int_tab(&devp->pdev->dev,
+							    &afbce_map);
+		PR_INF("%s:addr:0x%lx, canvas_height[%d]\n",
+			__func__,
+			buf_p->nr_adr,
+			buf_p->canvas_height);
+		#endif
 	}
 
 	dbg_mem2("%s:%px,btype[%d]:index[%d]:i[%d]:nr[0x%lx]:hf:[0x%lx]\n", __func__,
@@ -2243,10 +2256,10 @@ void mem_release_one_inused(struct di_ch_s *pch, struct dim_mm_blk_s *blk_buf)
 		return;
 	}
 
-	if (blk_buf->sct_keep != 0xff) {
+	if (blk_buf->sct_keep != DIM_KEEP_NONE) {
 		codec_mm_keeper_unmask_keeper(blk_buf->sct_keep, 1);
-		PR_INF("%s:sct_keep[0x%x]\n", "release", blk_buf->sct_keep);
-		blk_buf->sct_keep = 0xff;
+		dbg_mem2("scta:release:%d]\n", (int)blk_buf->sct_keep);
+		blk_buf->sct_keep = DIM_KEEP_NONE;
 		f_sctkeep = true;
 	}
 
@@ -2259,7 +2272,7 @@ void mem_release_one_inused(struct di_ch_s *pch, struct dim_mm_blk_s *blk_buf)
 	} else if (blk_buf->pat_buf) {
 		/* recycle pat*/
 		pat_buf = (struct dim_pat_s *)blk_buf->pat_buf;
-		if (blk_buf->sct_keep) {
+		if (blk_buf->sct_keep) { //need check??
 			pat_buf->flg_mode = 0;
 			pat_release_vaddr(pat_buf);
 		}
@@ -3674,6 +3687,7 @@ static const struct di_meson_data  data_sc2 = {
 static const struct di_meson_data  data_t5 = {
 	.name = "dim_t5",
 	.ic_id	= DI_IC_ID_T5,
+	.support = IC_SUPPORT_PRE_VPP_LINK
 };
 
 static const struct di_meson_data  data_t7 = {
@@ -3690,6 +3704,7 @@ static const struct di_meson_data  data_t5d_va = {
 static const struct di_meson_data  data_t5d_vb = {
 	.name = "dim_t5d_vb", //note: this is vb
 	.ic_id	= DI_IC_ID_T5DB,
+	.support = IC_SUPPORT_PRE_VPP_LINK
 };
 
 static const struct di_meson_data  data_s4 = {
@@ -3702,6 +3717,13 @@ static const struct di_meson_data  data_t3 = {
 	.ic_id	= DI_IC_ID_T3,
 	.support = IC_SUPPORT_DECONTOUR	|
 		   IC_SUPPORT_HDR	|
+		   IC_SUPPORT_DW
+};
+
+static const struct di_meson_data  data_s5 = {
+	.name = "dim_s5",
+	.ic_id	= DI_IC_ID_S5,
+	.support = IC_SUPPORT_HDR	|
 		   IC_SUPPORT_DW
 };
 
@@ -3730,6 +3752,8 @@ static const struct of_device_id amlogic_deinterlace_dt_match[] = {
 		.data = &data_s4,
 	}, {	.compatible = "amlogic, dim-t3",
 		.data = &data_t3,
+	}, {	.compatible = "amlogic, dim-s5",
+		.data = &data_s5,
 	}, {}
 };
 
@@ -3755,7 +3779,7 @@ static int dim_probe(struct platform_device *pdev)
 	const struct of_device_id *match;
 	struct di_data_l_s *pdata;
 
-	PR_INF("%s:\n", __func__);
+	dbg_mem("%s:\n", __func__);
 
 	/*move from init to here*/
 	di_pdev = kzalloc(sizeof(*di_pdev), GFP_KERNEL);
@@ -3826,12 +3850,12 @@ static int dim_probe(struct platform_device *pdev)
 	else
 		pdata->ic_sub_ver = DI_IC_REV_MAJOR;
 
-	PR_INF("match name: %s:id[%d]:ver[%d]\n", pdata->mdata->name,
+	PR_INF("name: %s:id[%d]:ver[%d]\n", pdata->mdata->name,
 	       pdata->mdata->ic_id, pdata->ic_sub_ver);
 
 	ret = of_reserved_mem_device_init(&pdev->dev);
 	if (ret != 0)
-		PR_INF("no reserved mem.\n");
+		dbg_mem("no reserved mem.\n");
 
 	di_cfg_top_dts();
 
@@ -3860,17 +3884,17 @@ static int dim_probe(struct platform_device *pdev)
 	atomic_set(&di_devp->pq_io, 1); /* idle */
 
 	di_devp->pre_irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
-	PR_INF("pre_irq:%d\n", di_devp->pre_irq);
+	dbg_mem("pre_irq:%d\n", di_devp->pre_irq);
 	di_devp->post_irq = irq_of_parse_and_map(pdev->dev.of_node, 1);
-	PR_INF("post_irq:%d\n",	di_devp->post_irq);
+	dbg_mem("post_irq:%d\n",	di_devp->post_irq);
 
 	di_devp->aisr_irq = -ENXIO;
 
 	di_devp->aisr_irq = platform_get_irq_byname(pdev, "aisr_irq");
 	if (di_devp->aisr_irq  == -ENXIO)
-		PR_INF("no aisr_irq\n");
+		dbg_mem("no aisr_irq\n");
 	else
-		PR_INF("aisr_irq:%d\n", di_devp->aisr_irq);
+		dbg_mem("aisr_irq:%d\n", di_devp->aisr_irq);
 
 	//di_pr_info("%s allocate rdma channel %d.\n", __func__,
 	//	   di_devp->rdma_handle);
@@ -3878,7 +3902,7 @@ static int dim_probe(struct platform_device *pdev)
 		dim_get_vpu_clkb(&pdev->dev, di_devp);
 		#ifdef CLK_TREE_SUPPORT
 		clk_prepare_enable(di_devp->vpu_clkb);
-		PR_INF("vpu clkb =%ld.\n", clk_get_rate(di_devp->vpu_clkb));
+		dbg_mem("vpu clkb =%ld.\n", clk_get_rate(di_devp->vpu_clkb));
 		#else
 		aml_write_hiubus(HHI_VPU_CLKB_CNTL, 0x1000100);
 		#endif
@@ -3901,14 +3925,14 @@ static int dim_probe(struct platform_device *pdev)
 		dimp_set(edi_mp_nr10bit_support, 0);/*nr10bit_support = 0;*/
 	else	/*nr10bit_support = di_devp->nr10bit_support;*/
 		dimp_set(edi_mp_nr10bit_support, di_devp->nr10bit_support);
-
+#ifdef DIM_EN_UD_USED
 	di_pdev->local_meta_size =
 			LOCAL_META_BUFF_SIZE * DI_CHANNEL_NUB *
 			(MAX_IN_BUF_NUM + MAX_POST_BUF_NUM +
 			(MAX_LOCAL_BUF_NUM * 2)) * sizeof(u8);
 	di_pdev->local_meta_addr = vmalloc(di_pdev->local_meta_size);
 	if (!di_pdev->local_meta_addr) {
-		PR_INF("alloc local meta buffer fail\n");
+		PR_WARN("alloc local meta buffer fail\n");
 		di_pdev->local_meta_size = 0;
 	}
 
@@ -3918,10 +3942,10 @@ static int dim_probe(struct platform_device *pdev)
 			(MAX_LOCAL_BUF_NUM * 2)) * sizeof(u8);
 	di_pdev->local_ud_addr = vmalloc(di_pdev->local_ud_size);
 	if (!di_pdev->local_ud_addr) {
-		PR_INF("alloc local ud buffer fail\n");
+		PR_WARN("alloc local ud buffer fail\n");
 		di_pdev->local_ud_addr = 0;
 	}
-
+#endif /* DIM_EN_UD_USED */
 	device_create_file(di_devp->dev, &dev_attr_config);
 	device_create_file(di_devp->dev, &dev_attr_debug);
 	device_create_file(di_devp->dev, &dev_attr_dump_pic);
@@ -3933,7 +3957,7 @@ static int dim_probe(struct platform_device *pdev)
 	dim_vpu_dev_register(di_devp);
 
 	//set ic version need before PQ init
-	dil_set_diffver_flag(1);
+	dil_set_diff_ver_flag(1);
 	dil_set_cpuver_flag(get_datal()->mdata->ic_id);
 	if (DIM_IS_IC(SC2) || DIM_IS_IC(S4))
 		di_devp->is_crc_ic = true;
@@ -3980,6 +4004,7 @@ static int dim_probe(struct platform_device *pdev)
 	dim_dw_prob();
 	dip_prob_ch();
 	dim_hdr_prob();
+	dim_mng_hf_prob();
 
 	task_start();
 	mtask_start();
@@ -4130,6 +4155,18 @@ static int di_suspend(struct device *dev)
 
 	di_devp = dev_get_drvdata(dev);
 	di_devp->flags |= DI_SUSPEND_FLAG;
+
+	/*set clkb to low ratio*/
+		if (DIM_IS_IC(T5)	||
+		   DIM_IS_IC(T5DB)	||
+		   DIM_IS_IC(T5D)) {
+	#ifdef CLK_TREE_SUPPORT
+			if (dimp_get(edi_mp_clock_low_ratio)) {
+				clk_set_rate(di_devp->vpu_clkb,
+					dimp_get(edi_mp_clock_low_ratio));
+			}
+	#endif
+		}
 
 	di_clear_for_suspend(di_devp);
 

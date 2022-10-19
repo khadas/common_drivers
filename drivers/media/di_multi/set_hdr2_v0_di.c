@@ -14,8 +14,8 @@
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
 #endif
 
-#include <linux/amlogic/media/amvecm/hdr2_ext.h>
 #include "deinterlace.h"
+#include <linux/amlogic/media/amvecm/hdr2_ext.h>
 #include "di_data_l.h"
 #include <linux/amlogic/media/di/di.h>
 #include "register.h"
@@ -355,7 +355,6 @@ static void dim_hdr_set_matrix(struct di_hdr_s *pd,
 			/* 2048 as 1.0 for gamut coeff */
 			gmut_shift = 11;
 		}
-
 		for (i = 0; i < 3; i++)
 			c_gain_lim_coef[i] = pmtx->mtx_cgain[i] << 2;
 
@@ -866,7 +865,6 @@ const struct di_hdr_ops_s di_hdr_op_data = {
 	.get_setting	= hdr_get_setting,
 	.set		= dim_hdr_set,
 	.get_pre_post	= hdr_get_pre_post,
-
 };
 
 void dim_hdr_prob(void)

@@ -129,8 +129,11 @@ enum AFBC_WK_MODE {
 #define AFBC_VTYPE_MASK_SAV	(VIDTYPE_TYPEMASK	|	\
 				 VIDTYPE_VIU_422	|	\
 				 VIDTYPE_VIU_444	|	\
+				 VIDTYPE_RGB_444	|	\
 				 VIDTYPE_VIU_NV21	|	\
 				 VIDTYPE_VIU_NV12	|	\
+				 VIDTYPE_VIU_FIELD	|	\
+				 VIDTYPE_VIU_SINGLE_PLANE |	\
 				 VIDTYPE_COMPRESS	|	\
 				 VIDTYPE_SCATTER	|	\
 				 VIDTYPE_COMB_MODE)
@@ -153,6 +156,8 @@ enum AFBC_WK_MODE {
 /*define in vpp*/
 s32 di_request_afbc_hw(u8 id, bool on);
 unsigned int afbce_read_used(enum EAFBC_ENC enc);
+void afbcd_enable_only_t5dvb(void);
+void disable_afbcd_t5dvb(void);
 //bool cfg_pmode(void);
 //bool cfg_test4k(void);
 //bool dbg_di_prelink(void);

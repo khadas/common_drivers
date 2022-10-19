@@ -575,7 +575,7 @@ int get_di_dump_state_flag(void)
  ********************************************/
 void di_trig_free_mirror_mem(void)
 {
-	if (dil_get_diffver_flag())
+	if (dil_get_diff_ver_flag())
 		return;
 
 	if (atomic_read(&di_flag_unreg)
@@ -598,7 +598,7 @@ u32 di_api_get_instance_id(void)
 {
 	u32 ret = 0;
 
-	if (dil_get_diffver_flag())
+	if (dil_get_diff_ver_flag())
 		return ret;
 
 	if (de_devp)
@@ -1491,6 +1491,7 @@ store_dump_mem(struct device *dev, struct device_attribute *attr,
 	struct file *filp = NULL;
 	loff_t pos = 0;
 	void *buff = NULL;
+	mm_segment_t old_fs;
 	bool bflg_vmap = false;
 
 	buf_orig = kstrdup(buf, GFP_KERNEL);
@@ -1529,6 +1530,8 @@ store_dump_mem(struct device *dev, struct device_attribute *attr,
 		nr_size = canvas_w * canvas_h * 2;
 		dump_adr = di_buf->nr_adr;
 	}
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
 /* pr_dbg("dump path =%s\n",dump_path); */
 		filp = filp_open(parm[1], O_RDWR | O_CREAT, 0666);
 		if (IS_ERR(filp)) {
@@ -1578,6 +1581,7 @@ store_dump_mem(struct device *dev, struct device_attribute *attr,
 			iounmap(buff);
 		dump_state_flag = 0;
 		filp_close(filp, NULL);
+		set_fs(old_fs);
 #endif
 	return len;
 }
@@ -2082,7 +2086,7 @@ static bool mm_codec_alloc(const char *owner, size_t count,
 }
 
 /**********************************************************
- *	./include/linux/dma-map-ops.h:
+ *	./include/linux/dma-contiguous.h:
  * struct page *dma_alloc_from_contiguous(struct device *dev,
  *					size_t count,
  *					unsigned int order);
@@ -2659,7 +2663,7 @@ static int di_init_buf(int width, int height, unsigned char prog_flag)
 	frame_count = 0;
 	disp_frame_count = 0;
 	cur_post_ready_di_buf = NULL;
-	/* decoder'buffer had been releae no need put */
+	/* decoder'buffer had been release no need put */
 	for (i = 0; i < MAX_IN_BUF_NUM; i++)
 		vframe_in[i] = NULL;
 	memset(&di_pre_stru, 0, sizeof(di_pre_stru));
@@ -2967,7 +2971,7 @@ static void di_uninit_buf(unsigned int disable_mirror)
 		pr_dbg(")\n");
 	}
 	queue_init(0);
-	/* decoder'buffer had been releae no need put */
+	/* decoder'buffer had been release no need put */
 	for (i = 0; i < MAX_IN_BUF_NUM; i++)
 		vframe_in[i] = NULL;
 	di_pre_stru.pre_de_process_done = 0;
@@ -3531,7 +3535,7 @@ static void pre_de_process(void)
 	}
 
 	/*patch for SECAM signal format from vlsi-feijun for all IC*/
-	secam_cfr_adjust(di_pre_stru.di_inp_buf->vframe->sig_fmt,
+	di_nr_opl()->secam_cfr_adjust(di_pre_stru.di_inp_buf->vframe->sig_fmt,
 			 di_pre_stru.di_inp_buf->vframe->type);
 
 	/* set interrupt mask for pre module.
@@ -3705,7 +3709,8 @@ static void pre_de_done_buf_config(void)
 			post_wr_buf->vframe->di_gmv = 0;
 			post_wr_buf->vframe->di_cm_cnt = 0;
 		}
-
+		if (IS_ERR_OR_NULL(post_wr_buf))
+			return;
 		if (post_wr_buf && !di_pre_stru.cur_prog_flag) {
 			read_pulldown_info(&glb_frame_mot_num,
 				&glb_field_mot_num);
@@ -3729,7 +3734,7 @@ static void pre_de_done_buf_config(void)
 					glb_frame_mot_num,
 					di_force_bit_mode);
 			if (cpu_after_eq(MESON_CPU_MAJOR_ID_GXLX))
-				adaptive_cue_adjust(glb_frame_mot_num,
+				di_nr_opl()->adaptive_cue_adjust(glb_frame_mot_num,
 					glb_field_mot_num);
 			pulldown_info_clear_g12a();
 		}
@@ -5117,7 +5122,7 @@ static irqreturn_t de_irq(int irq, void *dev_instance)
 			calc_lmv_base_mcinfo((di_pre_stru.cur_height>>1),
 				di_pre_stru.di_wr_buf->mcinfo_vaddr);
 		}
-		nr_process_in_irq();
+		di_nr_opl()->nr_process_in_irq();
 		if ((data32&0x200) && de_devp->nrds_enable)
 			nr_ds_irq();
 		/* disable mif */
@@ -5153,7 +5158,7 @@ static irqreturn_t post_irq(int irq, void *dev_instance)
 				di_post_stru.post_wr_cnt,
 				di_post_stru.irq_time);
 		DI_Wr(DI_INTR_CTRL, (data32&0xffff0004)|(intr_mode<<30));
-		/* disable wr back avoid pps relay in g12a */
+		/* disable wr back avoid pps read in g12a */
 		DI_Wr_reg_bits(DI_POST_CTRL, 0, 7, 1);
 	}
 	ddbg_mod_save(eDI_DBG_MOD_POST_IRQE, 0, 0);
@@ -5302,7 +5307,7 @@ static int de_post_disable_fun(void *arg, vframe_t *disp_vf)
 
 void di_api_post_disable(void)
 {
-	if (dil_get_diffver_flag())
+	if (dil_get_diff_ver_flag())
 		return;
 
 	di_print("%s:\n", __func__);
@@ -6812,7 +6817,7 @@ static void di_unreg_process_irq(void)
 		|| is_meson_tl1_cpu() || is_meson_sm1_cpu() ||
 		is_meson_tm2_cpu()) {
 		di_pre_gate_control(false, mcpre_en);
-		nr_gate_control(false);
+		di_nr_opl()->nr_gate_control(false);
 	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_GXTVBB)) {
 		DI_Wr(DI_CLKG_CTRL, 0x80f60000);
 		DI_Wr(DI_PRE_CTRL, 0);
@@ -6926,7 +6931,7 @@ static void di_pre_size_change(unsigned short width,
 	unsigned int blkhsize = 0;
 	int pps_w = 0, pps_h = 0;
 
-	nr_all_config(width, height, vf_type);
+	di_nr_opl()->nr_all_config(width, height, vf_type);
 	#ifdef DET3D
 	det3d_config(det3d_en ? 1 : 0);
 	#endif
@@ -6989,9 +6994,30 @@ static void di_pre_size_change(unsigned short width,
 		di_pre_stru.mcdi_enable);
 }
 
+void di_vf_x_y(struct vframe_s *vf, unsigned int *x, unsigned int *y)
+{
+	*x = 0;
+	*y = 0;
+
+	if (!vf)
+		return;
+	*x = vf->width;
+	*y = vf->height;
+
+	if (vf->type & VIDTYPE_COMPRESS) {
+		*x = vf->compWidth;
+		*y = vf->compHeight;
+	}
+}
+
 static bool need_bypass(struct vframe_s *vf)
 {
+	unsigned int x, y;
+
 	needbypass_flag = true;
+
+	di_vf_x_y(vf, &x, &y);
+
 	if (vf->type & VIDTYPE_MVC)
 		return true;
 
@@ -7011,8 +7037,8 @@ static bool need_bypass(struct vframe_s *vf)
 	if (vf->type & VIDTYPE_COMPRESS) {
 		if (!afbc_is_supported())
 			return true;
-		if ((vf->compHeight > (default_height + 8))
-			|| (vf->compWidth > default_width))
+		if ((y > (default_height + 8)) ||
+			x > default_width)
 			return true;
 	}
 #endif
@@ -7022,7 +7048,7 @@ static bool need_bypass(struct vframe_s *vf)
 
 	/*true bypass for 720p above*/
 	if ((vf->flag & VFRAME_FLAG_GAME_MODE) &&
-		(vf->width > 720))
+		(x > 720))
 		return true;
 
 	needbypass_flag = false;
@@ -7102,7 +7128,7 @@ static void di_reg_process_irq(void)
 			di_pre_gate_control(true, mcpre_en);
 			di_rst_protect(true);/*2019-01-22 by VLSI feng.wang*/
 			di_pre_nr_wr_done_sel(true);
-			nr_gate_control(true);
+			di_nr_opl()->nr_gate_control(true);
 		} else {
 			/* if mcdi enable DI_CLKG_CTRL should be 0xfef60000 */
 			DI_Wr(DI_CLKG_CTRL, 0xfef60001);
@@ -7174,7 +7200,7 @@ static void di_reg_process_irq(void)
 					vframe->sig_fmt);
 
 		di_patch_post_update_mc_sw(DI_MC_SW_REG, true);
-		cue_int(vframe);
+		di_nr_opl()->cue_int(vframe);
 		if (de_devp->flags & DI_LOAD_REG_FLAG)
 			up(&di_sema);
 
@@ -8387,11 +8413,11 @@ static int __init rmem_di_device_init(struct reserved_mem *rmem,
 		if (!of_get_flat_dt_prop(rmem->fdt_node, "no-map", NULL))
 			di_devp->flags |= DI_MAP_FLAG;
 		#endif
-	pr_dbg("di reserved memory 0x%lx, size %uMB.\n",
+	pr_dbg("di reverse memory 0x%lx, size %uMB.\n",
 			di_devp->mem_start, (di_devp->mem_size >> 20));
 		return 0;
 	}
-/* pr_dbg("di reserved memory 0x%x, size %u B.\n",
+/* pr_dbg("di reverse memory 0x%x, size %u B.\n",
  * rmem->base, rmem->size);
  */
 	return 1;
@@ -8785,7 +8811,7 @@ static int di_probe(struct platform_device *pdev)
 	device_create_file(di_devp->dev, &dev_attr_frame_format);
 	device_create_file(di_devp->dev, &dev_attr_tvp_region);
 	pd_device_files_add(di_devp->dev);
-	nr_drv_init(di_devp->dev);
+	di_nr_opl()->nr_drv_init(di_devp->dev);
 	mutex_init(&di_event_mutex);
 	di_vpu_dev_register(di_devp);
 
@@ -8833,7 +8859,7 @@ static int di_probe(struct platform_device *pdev)
 	dil_attach_ext_api(&di_ext);
 	di_patch_mov_ini();
 
-	dil_set_diffver_flag(0);
+	dil_set_diff_ver_flag(0);
 
 	di_pr_info("%s:ok\n", __func__);
 	return ret;
@@ -8887,7 +8913,7 @@ static int di_remove(struct platform_device *pdev)
 	device_remove_file(di_devp->dev, &dev_attr_frame_format);
 	device_remove_file(di_devp->dev, &dev_attr_tvp_region);
 	pd_device_files_del(di_devp->dev);
-	nr_drv_uninit(di_devp->dev);
+	di_nr_opl()->nr_drv_uninit(di_devp->dev);
 	cdev_del(&di_devp->cdev);
 
 	if (di_devp->flag_cma == 2) {

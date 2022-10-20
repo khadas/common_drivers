@@ -397,16 +397,16 @@ const char *_3d_structure[] = {
 	"L + depth + graphics + graphics-depth",
 	"Top-and-Bottom",
 	/* value 0x0111: Reserved for future use */
-	"Resvrd",
+	"Resrvd",
 	/* value 0x1000 */
 	"Side-by-Side(Half) with horizontal sub-sampling",
 	/* value 0x1001-0x1110:Reserved for future use */
-	"Resvrd",
-	"Resvrd",
-	"Resvrd",
-	"Resvrd",
-	"Resvrd",
-	"Resvrd",
+	"Resrvd",
+	"Resrvd",
+	"Resrvd",
+	"Resrvd",
+	"Resrvd",
+	"Resrvd",
 	"Side-by-Side(Half) with all quincunx sub-sampling",
 };
 
@@ -1003,7 +1003,7 @@ void rx_mix_edid_audio(u8 *cur_data, u8 *addition, int free_size)
 					add_data[i].max_channel) ?
 					ori_data[j].max_channel :
 					add_data[i].max_channel);
-				/*mix sample freqence*/
+				/*mix sample frequency*/
 				*(((unsigned char *)&ori_data[j]) + 1) =
 				*(((unsigned char *)&ori_data[j]) + 1) |
 					*(((unsigned char *)&add_data[i]) + 1);
@@ -3156,9 +3156,9 @@ static void get_edid_y420_cap_map_data(unsigned char *buff,
 
 	if (!buff || !edid_info)
 		return;
-	/* 31 SVD maxmium, 4 bytes needed */
+	/* 31 SVD maximum, 4 bytes needed */
 	if (len > 4) {
-		rx_pr("31 SVD maxmium, all-zero data not needed\n");
+		rx_pr("31 SVD maximum, all-zero data not needed\n");
 		len = 4;
 	}
 	edid_info->contain_y420_cmdb = true;

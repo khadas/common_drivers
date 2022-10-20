@@ -155,7 +155,7 @@ unsigned int hdmirx_rd_dwc(unsigned int addr)
 }
 
 /*
- * hdmirx_rd_bits_dwc - read specfied bits of HDMI RX CTRL reg
+ * hdmirx_rd_bits_dwc - read specified bits of HDMI RX CTRL reg
  * @addr: register address
  * @mask: bits mask
  *
@@ -192,7 +192,7 @@ void hdmirx_wr_dwc(unsigned int addr, unsigned int data)
 }
 
 /*
- * hdmirx_wr_bits_dwc - write specfied bits of HDMI RX CTRL reg
+ * hdmirx_wr_bits_dwc - write specified bits of HDMI RX CTRL reg
  * @addr: register address
  * @mask: bits mask
  * @value: new register value
@@ -237,7 +237,7 @@ unsigned int hdmirx_rd_phy(unsigned int reg_address)
 }
 
 /*
- * hdmirx_rd_bits_phy - read specfied bits of HDMI RX phy reg
+ * hdmirx_rd_bits_phy - read specified bits of HDMI RX phy reg
  * @addr: register address
  * @mask: bits mask
  *
@@ -285,7 +285,7 @@ unsigned int hdmirx_wr_phy(unsigned int reg_address, unsigned int data)
 }
 
 /*
- * hdmirx_wr_bits_phy - write specfied bits of HDMI RX phy reg
+ * hdmirx_wr_bits_phy - write specified bits of HDMI RX phy reg
  * @addr: register address
  * @mask: bits mask
  * @value: new register value
@@ -592,7 +592,7 @@ unsigned int rd_reg_hhi(unsigned int offset)
 }
 
 /*
- * rd_reg_hhi_bits - read specfied bits of HHI reg
+ * rd_reg_hhi_bits - read specified bits of HHI reg
  * @addr: register address
  * @mask: bits mask
  *
@@ -4122,7 +4122,7 @@ void rx_get_avi_params(void)
 		}
 	} else {
 		rx.cur.hw_vic = hdmirx_rd_bits_dwc(DWC_PDEC_AVI_PB, VID_IDENT_CODE);
-		rx.cur.cn_type = hdmirx_rd_bits_dwc(DWC_PDEC_AVI_HB, CONETNT_TYPE);
+		rx.cur.cn_type = hdmirx_rd_bits_dwc(DWC_PDEC_AVI_HB, CONTENT_TYPE);
 		rx.cur.repeat = hdmirx_rd_bits_dwc(DWC_PDEC_AVI_HB, PIX_REP_FACTOR);
 		rx.cur.colorspace = hdmirx_rd_bits_dwc(DWC_PDEC_AVI_PB, VIDEO_FORMAT);
 		rx.cur.it_content = hdmirx_rd_bits_dwc(DWC_PDEC_AVI_PB, IT_CONTENT);

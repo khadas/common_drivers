@@ -210,7 +210,7 @@ struct specific_vic_3d {
 	unsigned char _2d_vic_order:4;
 	unsigned char _3d_struct:4;
 	unsigned char _3d_detail:4;
-	unsigned char resvrd:4;
+	unsigned char resrvd:4;
 };
 
 struct vsdb_s {
@@ -342,7 +342,7 @@ struct colorimetry_db_s {
 	unsigned char xvycc709:1;
 	unsigned char xvycc601:1;
 
-	unsigned char resvd:4;
+	unsigned char resrvd:4;
 	/* MDX: designated for future gamut-related metadata. As yet undefined,
 	 * this metadata is carried in an interface-specific way.
 	 */
@@ -415,7 +415,7 @@ struct dv_vsvdb_s {
 	unsigned char target_min_lum:7;
 	unsigned char colormetry:1;
 
-	unsigned char resvrd;
+	unsigned char resrvd;
 	u16 Rx;
 	u16 Ry;
 	u16 Gx;
@@ -469,7 +469,7 @@ struct cta_blk_parse_info {
 	bool contain_y420_vdb;
 	unsigned char y420_vic_len;
 	unsigned char y420_vdb_vic[6];
-	/* Y420 Capability Map Data Block: 31 SVD maxmium */
+	/* Y420 Capability Map Data Block: 31 SVD maximum */
 	bool contain_y420_cmdb;
 	unsigned char y420_all_vic;
 	unsigned char y420_cmdb_vic[31];

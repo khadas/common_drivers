@@ -18,6 +18,7 @@
 #include <dt-bindings/iio/adc/amlogic-saradc.h>
 #include "meson-ir-map.dtsi"
 #include "mesong12a-bifrost.dtsi"
+#include <dt-bindings/mailbox/amlogic,mbox.h>
 / {
 	cpus:cpus {
 		#address-cells = <2>;
@@ -357,17 +358,18 @@
 		dis_nb_cpus_in_shutdown;
 	};
 
-	mhu_fifo: mhu@0 {
-		status = "disabled";
+	mhu_fifo: mhu@0xfe006000 {
+		status = "okay";
 		compatible = "amlogic, meson_mhu_fifo";
-		reg = <0x0 0xfe006000 0x0 0x1000>,  /* mhu wr fifo */
+		reg = <0x0 0xfe006000 0x0 0x800>,  /* mhu wr fifo */
 		      <0x0 0xfe007180 0x0 0x80>,   /* mhu set reg */
 		      <0x0 0xfe007200 0x0 0x80>,   /* mhu clr reg */
 		      <0x0 0xfe007280 0x0 0x80>,   /* mhu sts reg */
 		      <0x0 0xfe007040 0x0 0xc0>;   /* mhu irqctrl reg */
 		interrupts = <0 248 1>;   /* irq top */
-		mbox-irqmax = <64>;
-		mbox-irqctlr = <0>;
+		mbox-irqmax = <32>;
+		mbox-irqctlr = <0x14>;
+		mbox-irqclr = <0x8>;
 		mbox-nums = <4>;
 		mbox-names = "dsp_dev",
 			     "ap_to_dspa",
@@ -380,6 +382,15 @@
 		mbox-id = <0x0 0x1 0x2 0x3>;
 		mbox-wr-rd = <1>;
 		#mbox-cells = <1>;
+	};
+
+	mbox_user: mbox-user@0 {
+		status = "okay";
+		compatible = "amlogic, meson-mbox-user";
+		mbox-nums = <1>;
+		mbox-names = "ree2aocpu";
+		mboxes = <&mhu_fifo 3>;
+		mbox-dests = <MAILBOX_AOCPU>;
 	};
 
 	vdac: vdac {

@@ -2178,7 +2178,7 @@ static int bl_brightness_dimming_notifier(struct notifier_block *nb,
 	unsigned int level;
 
 	/* If we aren't interested in this event, skip it immediately */
-	if (event != LCD_EVENT_BACKLIGHT_BRTNESS_DIM)
+	if (event != LCD_EVENT_BACKLIGHT_BRIGHTNESS_DIM)
 		return NOTIFY_DONE;
 
 	if (aml_bl_check_driver(bdrv))

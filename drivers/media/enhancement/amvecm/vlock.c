@@ -2731,7 +2731,7 @@ u32 vlock_fsm_en_step1_func(struct stvlock_sig_sts *pvlock,
 		/*WRITE_VPP_REG_BITS(VPU_VLOCK_CTRL + offset_vlck, 0, 5, 1);*/
 		vlock_reset(pvlock, 0);
 		/*
-		 * tl1 auto pll,swich clk need after
+		 * tl1 auto pll,switch clk need after
 		 *several frames
 		 */
 

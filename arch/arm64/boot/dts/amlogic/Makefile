@@ -7,6 +7,7 @@ dtbo-y += android_overlay_dt.dtbo
 dtb-y += a1-a113l-ad403.dtb
 dtb-y += sc2_s905x4_ah212_drm.dtb
 dtb-y += t3_t965d4_ar321-2g.dtb
+dtb-y += t3_t982_ar301-2g.dtb
 dtb-y += t7_a311d2_an400_4g.dtb
 dtb-y += s4_s805x2_aq222_drm_1.5g.dtb
 dtb-y += s4_s905y4_ap222_drm.dtb

@@ -965,6 +965,72 @@
 		status = "disabled";
 		pq_en = <1>;
 	};
+
+	cam_vcc_reg: fixedregulator@1_1{
+		compatible = "regulator-fixed";
+		vin-supply = <&vcc5v_reg>;
+		regulator-name = "CAM_VCC";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		// CI CAM control gpio by self driver
+		//gpio = <&gpio GPIOM_28 GPIO_ACTIVE_LOW>;
+		startup-delay-us = <70000>;
+		enable-active-low;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	lnb_vsm_reg: fixedregulator@5{
+		vin-supply = <&vbat>;
+		compatible = "regulator-fixed";
+		regulator-name = "LNB_VSW";
+		regulator-min-microvolt = <19000000>;
+		regulator-max-microvolt = <19000000>;
+		// DVB-S power control gpio by self driver
+		//LNB_EN: H -> Power ON, L -> Power OFF
+		//gpio = <&gpio GPIOZ_2 GPIO_ACTIVE_HIGH>;
+		//LNB_SEL: H -> 19V, L -> 14V
+		//gpio = <&gpio GPIOZ_3 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vdd_ee2_reg: fixedregulator@2_1{
+		compatible = "regulator-fixed";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-name = "VDD_EE2";
+		regulator-min-microvolt = <820000>;
+		regulator-max-microvolt = <820000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddio_m_reg: fixedregulator@2_2_2{
+		compatible = "regulator-fixed";
+		vin-supply = <&vddio_3v3_reg>;
+		regulator-name = "VDDIO_M";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc_ir_reg: fixedregulator@2_2_3{
+		compatible = "regulator-fixed";
+		vin-supply = <&vddio_3v3_reg>;
+		regulator-name = "VCC_IR";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		// audio driver default 3.3v now
+		gpio = <&gpio GPIOZ_18 GPIO_ACTIVE_LOW>;
+		startup-delay-us = <70000>;
+		enable-active-low;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
 }; /* end of / */
 
 &thermal_zones {

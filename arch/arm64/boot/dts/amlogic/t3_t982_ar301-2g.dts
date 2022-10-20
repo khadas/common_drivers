@@ -919,6 +919,28 @@
 		status = "disabled";
 		pq_en = <1>;
 	};
+
+	vddio_h_reg: fixedregulator@2_2_2{
+		compatible = "regulator-fixed";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-name = "VDDIO_H";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	//option 64GB EMMC
+	vddio_ao1v8_reg: fixedregulator@6{
+		compatible = "regulator-fixed";
+		vin-supply = <&vbat>;
+		regulator-name = "VDDAO_1.8V_";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
 }; /* end of / */
 
 &thermal_zones {

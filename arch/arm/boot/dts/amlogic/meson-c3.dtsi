@@ -1691,10 +1691,11 @@
 	};
 
 	mbd_audio: mbd_audio {
-		compatible = "amlogic, mbd-audio";
+		compatible = "amlogic, mbd_audio";
 		status = "okay";
 
 		avout_mute-gpios = <&gpio GPIOD_0 GPIO_ACTIVE_HIGH>;
+		hp_mute-gpios = <&gpio GPIOD_1 GPIO_ACTIVE_HIGH>;
 
 		// power-domains = <&pwrdm PDID_AUDIO>;
 		//power-domains = <&pwrdm PDID_ACODEC>; // PDM, AUDIO

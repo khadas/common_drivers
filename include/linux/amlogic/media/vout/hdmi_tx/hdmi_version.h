@@ -35,6 +35,7 @@
 	"V03.00.01.00.01.03.06 [20220915] [BUG] Don't reset variables when parse a new block\n" \
 	"V03.00.01.00.01.03.07 [20220926] [BUG] enable null packt for special TV\n" \
 	"V03.00.01.00.01.03.08 [20221012] [NEW] add hdmi hpd extcon\n" \
-	"V01.01.00.00.01.03.04 [20221018] [AUD] optimise the audio setting flow\n"
+	"V03.00.02.00.01.03.08 [20221018] [AUD] optimise the audio setting flow\n" \
+	"V03.00.02.00.01.03.09 [20221021] [BUG] not read EDID again if EDID already read done\n"
 
 #endif // __HDMI20_VERSION_H__

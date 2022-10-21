@@ -58,48 +58,63 @@ static LIST_HEAD(files_release_list);
 
 static void *file_read_write_thread_func(void *arg)
 {
-	int ret;
+	int ret, count, len;
 	struct debug_file *filp = arg;
 	char full_name[DEBUG_FILE_NAME_LEN + 20];
 	char *page_buf;
-	int len;
-	int i;
 	struct debug_file_param param;
 	int status = FILE_OPEN_FROM_KERNEL;
+	fd_set fd_set_read;
+	struct timeval time;
+
+	FD_ZERO(&fd_set_read);
+	time.tv_sec = 0;
+	time.tv_usec = 10000;
 
 	strcpy(full_name, proc_path);
 	strcat(full_name, basename(filp->param.filename));
 	page_buf = malloc(page_size);
+
 	if (filp->param.flags == O_RDONLY) {
 		filp->fd_read = open(filp->param.filename, O_RDONLY);
-		printf("open file:%d - %s with read\n", filp->param.id, filp->param.filename);
+		printf("app open file: %s, id: %d, ready read\n",
+				filp->param.filename, filp->param.id);
 		filp->fd_write = open(full_name, O_WRONLY);
 
 		while (1) {
-			ret = read(filp->fd_read, page_buf, page_size);
-			if (ret < 0) {
-				status = FILE_READ_ERR;
-				goto read_exit;
-			}
-			if (ret == 0) {
-				status = FILE_READ_END;
-				goto read_exit;
-			}
-			len = ret;
-			i = 0;
-			while (i < len) {
-				if (filp->param.status == FILE_CLOSE_FROM_KERNEL) {
-					status = FILE_CLOSE_READY;
+			FD_SET(filp->fd_read, &fd_set_read);
+			ret = select(filp->fd_read + 1, &fd_set_read, NULL, NULL, &time);
+			if (ret < 0)
+				printf("app %s select failed\n", filp->param.filename);
+			if (FD_ISSET(filp->fd_read, &fd_set_read)) {
+				count = read(filp->fd_read, page_buf, page_size);
+				if (count < 0) {
+					status = FILE_READ_ERR;
+					printf("app file %s read error: %s\n",
+						filp->param.filename, strerror(errno));
 					goto read_exit;
 				}
-				ret = write(filp->fd_write, page_buf, len - i);
-				if (ret < 0) {
-					status = FILE_READ_TO_FIFO_ERR;
+				if (count == 0) {
+					printf("app file %s read end\n", filp->param.filename);
+					status = FILE_READ_END;
 					goto read_exit;
 				}
-				i += ret;
-				if (ret == 0)
-					sleep(1);
+				len = 0;
+				while (len < count) {
+					ret = write(filp->fd_write, page_buf, count - len);
+					if (ret < 0) {
+						status = FILE_READ_TO_FIFO_ERR;
+						goto read_exit;
+					}
+					len += ret;
+					if (ret == 0)
+						usleep(10000);
+				}
+			}
+			if (filp->param.status == FILE_CLOSE_FROM_KERNEL) {
+				status = FILE_CLOSE_READY;
+				printf("app receive close read file %s\n", full_name);
+				goto read_exit;
 			}
 		}
 read_exit:
@@ -113,44 +128,49 @@ read_exit:
 			ret = write(files_info_fd, &param + len,
 				    sizeof(struct debug_file_param) - len);
 			if (ret < 0) {
-				printf("write proc files_info failed: %s\n", strerror(errno));
+				printf("app write proc files_info failed: %s\n", strerror(errno));
 				goto exit;
 			}
 			len += ret;
 			if (ret == 0)
-				sleep(1);
+				usleep(10000);
 		}
 	} else if (filp->param.flags & O_WRONLY) {
 		filp->fd_read = open(full_name, O_RDONLY);
 		strcpy(full_name, filp->param.filename);
 		filp->fd_write = open(full_name, filp->param.flags);
-		printf("open file:%d - %s with write\n", filp->param.id, filp->param.filename);
+		printf("app open file: %s, id: %d, ready write\n",
+				filp->param.filename, filp->param.id);
 
 		while (1) {
-			ret = read(filp->fd_read, page_buf, page_size);
-			if (ret < 0) {
-				status = FILE_WRITE_GET_FIFO_ERR;
-				printf("read %s%s failed: %s\n", proc_path, filp->param.filename,
-					strerror(errno));
-				goto write_exit;
-			}
-			if (ret == 0 && filp->param.status == FILE_CLOSE_FROM_KERNEL) {
-				status = FILE_CLOSE_READY;
-				printf("close file %s with write\n", full_name);
-				goto write_exit;
-			}
-			if (ret == 0)
-				sleep(1);
-			len = ret;
-			i = 0;
-			while (i < len) {
-				ret = write(filp->fd_write, page_buf, len - i);
-				if (ret < 0) {
-					status = FILE_WRITE_ERR;
-					printf("write %s failed %s\n", full_name, strerror(errno));
+			FD_SET(filp->fd_read, &fd_set_read);
+			ret = select(filp->fd_read + 1, &fd_set_read, NULL, NULL, &time);
+			if (ret < 0)
+				printf("app %s select failed\n", filp->param.filename);
+			if (FD_ISSET(filp->fd_read, &fd_set_read)) {
+				count = read(filp->fd_read, page_buf, page_size);
+				if (count < 0) {
+					status = FILE_WRITE_GET_FIFO_ERR;
+					printf("app file %s%s read failed: %s\n", proc_path,
+						filp->param.filename, strerror(errno));
 					goto write_exit;
 				}
-				i += ret;
+				len = 0;
+				while (len < count) {
+					ret = write(filp->fd_write, page_buf, count - len);
+					if (ret < 0) {
+						status = FILE_WRITE_ERR;
+						printf("app file %s write failed %s\n",
+								full_name, strerror(errno));
+						goto write_exit;
+					}
+					len += ret;
+				}
+			}
+			if (filp->param.status == FILE_CLOSE_FROM_KERNEL) {
+				status = FILE_CLOSE_READY;
+				printf("app receive close write file %s\n", full_name);
+				goto write_exit;
 			}
 		}
 
@@ -165,17 +185,16 @@ write_exit:
 			ret = write(files_info_fd, &param + len,
 				    sizeof(struct debug_file_param) - len);
 			if (ret < 0) {
-				printf("write proc files_info failed: %s\n", strerror(errno));
+				printf("app write proc files_info failed: %s\n", strerror(errno));
 				goto exit;
 			}
 			len += ret;
 			if (ret == 0)
-				sleep(1);
+				usleep(10000);
 		}
 	}
 
 exit:
-	printf("close file %s, id %d\n", filp->param.filename, filp->param.id);
 	close(filp->fd_read);
 	close(filp->fd_write);
 	free(page_buf);
@@ -188,8 +207,9 @@ static void *files_info_thread_func(void *arg)
 	int ret;
 	struct debug_file *filp;
 	struct debug_file *entry;
-	int len;
+	int len = 0;
 	void *res;
+	fd_set fd_set_read;
 
 	files_info_fd = open("/proc/debug_file/files_info", O_RDWR);
 	if (files_info_fd < 0) {
@@ -197,22 +217,33 @@ static void *files_info_thread_func(void *arg)
 		return NULL;
 	}
 
-	while (1) {
-		filp = malloc(sizeof(struct debug_file));
-		filp->filp = filp;
+	FD_ZERO(&fd_set_read);
 
-		len = 0;
-		while (len != sizeof(struct debug_file_param)) {
-			ret = read(files_info_fd, &filp->param + len,
-				    sizeof(struct debug_file_param) - len);
-			if (ret < 0) {
-				printf("read proc files_info failed: %s, read %dbytes\n",
-					strerror(errno), len);
-				exit(EXIT_FAILURE);
-			}
-			len += ret;
-			if (ret == 0)
-				sleep(1);
+	while (1) {
+		if (!len) {
+			filp = malloc(sizeof(struct debug_file));
+			filp->filp = filp;
+		}
+		FD_SET(files_info_fd, &fd_set_read);
+		if (select(files_info_fd + 1, &fd_set_read, NULL, NULL, NULL) < 0)
+			printf("/proc/debug_file/files_info select failed\n");
+		ret = read(files_info_fd, &filp->param + len,
+				sizeof(struct debug_file_param) - len);
+		if (ret < 0) {
+			printf("read proc files_info failed: %s, read %d bytes\n",
+				strerror(errno), len);
+			free(filp);
+			exit(EXIT_FAILURE);
+		}
+		len += ret;
+		if (len < sizeof(struct debug_file_param)) {
+			continue;
+		} else if (len > sizeof(struct debug_file_param)) {
+			len = 0;
+			free(filp);
+			continue;
+		} else if (len == sizeof(struct debug_file_param)) {
+			len = 0;
 		}
 
 		if (filp->param.status == FILE_OPEN_FROM_KERNEL) {
@@ -243,9 +274,7 @@ static void *files_info_thread_func(void *arg)
 			free(filp);
 		}
 	}
-
 	close(files_info_fd);
-
 	return NULL;
 }
 

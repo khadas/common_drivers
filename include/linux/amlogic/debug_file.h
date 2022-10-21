@@ -26,6 +26,7 @@ struct debug_file {
 	struct mutex mutex; /* */
 	struct proc_dir_entry *proc_file;
 	struct debug_file_param param;
+	wait_queue_head_t wq;
 };
 
 struct debug_file *debug_file_open(const char *filename, int flags, umode_t mode);

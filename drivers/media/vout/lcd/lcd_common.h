@@ -16,7 +16,8 @@
 /* 20220610: add c3 support*/
 /* 20220619: c3 mipi-dsi display ok*/
 /* 20220622: c3 support bt656/1120*/
-#define LCD_DRV_VERSION    "20220622"
+/* 20221115: support force unfit mipi-dsi bit_rate_max*/
+#define LCD_DRV_VERSION    "20221115"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

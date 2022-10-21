@@ -270,7 +270,7 @@
 			status = "okay";
 			type = <0>; /* 0=i2c, 1=spi, 2=mipi */
 			i2c_address = <0x48>; /*7bit i2c_addr*/
-			i2c_second_address = <0x49>;
+			i2c_address2 = <0x49>;
 			cmd_size = <0xff>;
 			init_on = <
 				0xc0 2 0x08 0xff

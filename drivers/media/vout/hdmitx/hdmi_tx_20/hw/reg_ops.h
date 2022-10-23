@@ -45,6 +45,7 @@ enum map_addr_idx_e {
 	RESETCTRL_REG_IDX,
 	SYSCTRL_REG_IDX,
 	CLKCTRL_REG_IDX,
+	PADCTRL_REG_IDX,
 	REG_IDX_END
 };
 
@@ -72,6 +73,8 @@ enum map_addr_idx_e {
 	((SYSCTRL_REG_IDX << BASE_REG_OFFSET) + ((reg) << 2))
 #define CLKCTRL_REG_ADDR(reg) \
 	((CLKCTRL_REG_IDX << BASE_REG_OFFSET) + ((reg) << 2))
+#define PADCTRL_REG_ADDR(reg) \
+	((PADCTRL_REG_IDX << BASE_REG_OFFSET) + ((reg) << 2))
 
 extern struct reg_map reg_maps[REG_IDX_END];
 

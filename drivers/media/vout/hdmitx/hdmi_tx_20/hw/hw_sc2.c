@@ -433,3 +433,9 @@ void set_hpll_sspll_sc2(enum hdmi_vic vic)
 		break;
 	}
 }
+
+bool get_sc2_gpi_hpd(void)
+{
+	return (hd_read_reg(P_PADCTRL_GPIOH_I) >> 2) & 0x1;
+}
+

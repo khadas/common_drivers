@@ -239,7 +239,7 @@ struct debug_file *debug_file_open(const char *filename, int flags, umode_t mode
 		if (!exit_flag)
 			break;
 
-		mdelay(1000);
+		mdelay(100);
 	}
 
 	INIT_DELAYED_WORK(&filp->release_work, release_work);

@@ -379,6 +379,9 @@ CONFIG_MAC80211=m
 #ntfs3.ko
 CONFIG_NTFS3_FS=m
 
+# amlogic-debug-utils.ko
+CONFIG_AMLOGIC_DEBUG_UTILS=m
+
 
 #enable dvb
 CONFIG_MEDIA_DIGITAL_TV_SUPPORT=y

@@ -93,3 +93,9 @@ config AMLOGIC_HOTPLUG_ARM_CPU0
 	help
 	  if build with arm set this config to y for vts thermal 1.0 test,
 	  set config to n for arm64
+
+config AMLOGIC_DEBUG_UTILS
+	tristate "Amlogic debug utils"
+	default n
+	help
+	  add some debug tools

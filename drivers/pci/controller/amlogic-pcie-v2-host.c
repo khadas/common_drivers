@@ -51,6 +51,11 @@ enum pcie_data_rate {
 	PCIE_GEN4
 };
 
+enum pcie_phy_type {
+	DW_PHY,
+	M31_COMBPHY,
+};
+
 struct amlogic_pcie {
 	struct dw_pcie pci;
 
@@ -76,6 +81,7 @@ struct amlogic_pcie {
 
 	int reset_gpio;
 	u32 gpio_type;
+	u32 phy_type;
 };
 
 static inline void amlogic_pcie_disable_clocks(struct amlogic_pcie *aml_pcie)
@@ -192,7 +198,9 @@ static int amlogic_pcie_get_mems(struct amlogic_pcie *aml_pcie)
 
 static int amlogic_pcie_phy_power_on(struct amlogic_pcie *aml_pcie)
 {
+	struct device *dev = aml_pcie->pci.dev;
 	int ret = 0;
+	u32 val;
 
 	if (IS_ERR(aml_pcie->phy))
 		goto set_phy_reg;
@@ -210,12 +218,29 @@ static int amlogic_pcie_phy_power_on(struct amlogic_pcie *aml_pcie)
 	return 0;
 
 set_phy_reg:
-	writel(0x1c, aml_pcie->phy_base);
+	switch (aml_pcie->phy_type) {
+	case M31_COMBPHY:
+		dev_dbg(dev, " pcie init port and M31_COMBPHY\n");
+		val = readl(aml_pcie->phy_base);
+		val &= ~(BIT(0) | BIT(22) | BIT(25));
+		val |= BIT(17);
+		writel(val, aml_pcie->phy_base);
+		break;
+	case DW_PHY:
+	default:
+		dev_dbg(dev, " pcie init port and DW_PHY\n");
+		writel(0x1c, aml_pcie->phy_base);
+		break;
+	}
+
 	return 0;
 }
 
 static void amlogic_pcie_phy_power_off(struct amlogic_pcie *aml_pcie)
 {
+	struct device *dev = aml_pcie->pci.dev;
+	u32 val;
+
 	if (IS_ERR(aml_pcie->phy))
 		goto set_phy_reg;
 
@@ -223,7 +248,19 @@ static void amlogic_pcie_phy_power_off(struct amlogic_pcie *aml_pcie)
 	phy_exit(aml_pcie->phy);
 
 set_phy_reg:
-	writel(0x1d, aml_pcie->phy_base);
+	switch (aml_pcie->phy_type) {
+	case M31_COMBPHY:
+		dev_dbg(dev, " pcie deinit port and M31_COMBPHY\n");
+		val = readl(aml_pcie->reset_base);
+		val &= ~(1 << aml_pcie->phy_rst_bit);
+		writel(val, aml_pcie->reset_base);
+		break;
+	case DW_PHY:
+	default:
+		dev_dbg(dev, " pcie deinit port and DW_PHY\n");
+		writel(0x1d, aml_pcie->phy_base);
+		break;
+	}
 }
 
 static int amlogic_pcie_get_phy(struct amlogic_pcie *aml_pcie)
@@ -251,6 +288,10 @@ get_phy_reg:
 		dev_err(dev, "failed to get phy_base resource\n");
 		return -ENODEV;
 	}
+
+	if (of_property_read_u32(dev->of_node, "phy-type", &aml_pcie->phy_type))
+		aml_pcie->phy_type = DW_PHY;
+	dev_dbg(dev, "PCIE phy type is %d\n", aml_pcie->phy_type);
 
 	return 0;
 }

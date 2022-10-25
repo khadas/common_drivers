@@ -31,6 +31,7 @@
 #include <linux/thermal.h>
 #include <linux/arm-smccc.h>
 #include <linux/proc_fs.h>
+#include <linux/amlogic/gki_module.h>
 
 #define CREATE_TRACE_POINTS
 /*whether use different tables or not*/
@@ -44,6 +45,32 @@ static u32 dsu_freq_vote_result[VOTER_NUM];
 	typeof(x1) _x1 = x1; \
 	typeof(x2) _x2 = x2; \
 	(_x1 > _x2 ? _x1 : _x2); })
+
+static unsigned int freqmax[MAX_CLUSTERS];
+static int freqmax0_param(char *buff)
+{
+	if (!buff)
+		return -EINVAL;
+	/*Example: freqmax0=1800000*/
+	if (kstrtoint(buff, 0, &freqmax[0]))
+		return -EINVAL;
+
+	return 0;
+}
+
+static int freqmax1_param(char *buff)
+{
+	if (!buff)
+		return -EINVAL;
+	/*Example: freqmax1=1800000*/
+	if (kstrtoint(buff, 0, &freqmax[1]))
+		return -EINVAL;
+
+	return 0;
+}
+
+__setup("freqmax0=", freqmax0_param);
+__setup("freqmax1=", freqmax1_param);
 
 static unsigned int get_cpufreq_table_index(u64 function_id,
 					    u64 arg0, u64 arg1, u64 arg2)
@@ -1079,12 +1106,28 @@ static void meson_cpufreq_register_em(struct cpufreq_policy *policy)
 	create_meson_cpufreq_proc_files(policy);
 }
 
+static int meson_cpufreq_verify(struct cpufreq_policy_data *pd)
+{
+	int ret;
+	unsigned int maxfreq = pd->cpu ? freqmax[1] : freqmax[0];
+
+	ret = cpufreq_generic_frequency_table_verify(pd);
+	if (ret)
+		return ret;
+
+	if (maxfreq && maxfreq >= pd->min && maxfreq < pd->max) {
+		pr_info("policy%d: set policy->max to %u from bootargs\n", pd->cpu, maxfreq);
+		pd->max = maxfreq;
+	}
+	return ret;
+}
+
 static struct cpufreq_driver meson_cpufreq_driver = {
 	.name			= "arm-big-little",
 	.flags			= CPUFREQ_IS_COOLING_DEV |
 					CPUFREQ_HAVE_GOVERNOR_PER_POLICY |
 					CPUFREQ_NEED_INITIAL_FREQ_CHECK,
-	.verify			= cpufreq_generic_frequency_table_verify,
+	.verify			= meson_cpufreq_verify,
 	.target_index	= meson_cpufreq_set_target,
 	.get			= meson_cpufreq_get_rate,
 	.init			= meson_cpufreq_init,

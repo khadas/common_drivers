@@ -40,6 +40,7 @@ obj-$(CONFIG_AMLOGIC_MTD_COMMON)	+= mtd/common/
 obj-$(CONFIG_AMLOGIC_MTD_SPI_NAND)	+= mtd/spinand/
 obj-$(CONFIG_AMLOGIC_MTD_NAND)		+= mtd/nand/
 obj-y        				+= dvb/
+obj-y                           	+= dvb_ci/
 obj-$(CONFIG_AMLOGIC_DRM)		+= drm/
 obj-y              			+= pci/
 obj-$(CONFIG_AMLOGIC_LED)		+= led/

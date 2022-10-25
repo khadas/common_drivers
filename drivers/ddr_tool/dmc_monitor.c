@@ -31,6 +31,9 @@
 #include "dmc_monitor.h"
 #include "ddr_port.h"
 #include <linux/amlogic/gki_module.h>
+#include <trace/hooks/mm.h>
+#include <asm/module.h>
+#include <linux/mmzone.h>
 
 // #define DEBUG
 struct dmc_monitor *dmc_mon;
@@ -71,6 +74,126 @@ static int early_dmc_param(char *buf)
 }
 __setup("dmc_monitor=", early_dmc_param);
 
+#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+#ifdef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
+struct page_trace *dmc_find_page_base(struct page *page)
+{
+	struct page_trace *trace;
+
+	trace = (struct page_trace *)&page->trace;
+	return trace;
+}
+#else
+struct page_trace *dmc_trace_buffer;
+static unsigned long long _kernel_text;
+static unsigned int dmc_trace_step;
+static u64 module_alloc_base_dmc;
+
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+void get_page_trace_buf_hook(void *data, struct zone *preferred_zone, struct zone *zone,
+		unsigned int order, gfp_t gfp_flags,
+		unsigned int alloc_flags, int migratetype)
+{
+	if (order != 1024)
+		return;
+
+	dmc_trace_buffer = (struct page_trace *)preferred_zone;
+	_kernel_text = (unsigned long long)zone;
+	dmc_trace_step = alloc_flags;
+	module_alloc_base_dmc = (u64)migratetype;
+	unregister_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);
+	pr_info("%s, %d: got pagetrace buffer.\n", __func__, __LINE__);
+}
+#endif
+
+static struct pglist_data *next_online_pgdat_dmc(struct pglist_data *pgdat)
+{
+	int nid = next_online_node(pgdat->node_id);
+
+	if (nid == MAX_NUMNODES)
+		return NULL;
+	return NODE_DATA(nid);
+}
+
+/*
+ * next_zone - helper magic for for_each_zone()
+ */
+static struct zone *next_zone_dmc(struct zone *zone)
+{
+	pg_data_t *pgdat = zone->zone_pgdat;
+
+	if (zone < pgdat->node_zones + MAX_NR_ZONES - 1) {
+		zone++;
+	} else {
+		pgdat = next_online_pgdat_dmc(pgdat);
+		if (pgdat)
+			zone = pgdat->node_zones;
+		else
+			zone = NULL;
+	}
+	return zone;
+}
+
+struct page_trace *dmc_find_page_base(struct page *page)
+{
+	unsigned long pfn, zone_offset = 0, offset;
+	struct zone *zone;
+	struct page_trace *p;
+
+	if (!dmc_trace_buffer)
+		return NULL;
+
+	pfn = page_to_pfn(page);
+	for (zone = (NODE_DATA(first_online_node))->node_zones; zone;
+			zone = next_zone_dmc(zone)) {
+		if (!populated_zone(zone)) {
+			; /* do nothing */
+		} else {
+			/* pfn is in this zone */
+			if (pfn <= zone_end_pfn(zone) &&
+				pfn >= zone->zone_start_pfn) {
+				offset = pfn - zone->zone_start_pfn;
+				p = dmc_trace_buffer;
+				return p + ((offset + zone_offset) * dmc_trace_step);
+			}
+			/* next zone */
+			zone_offset += zone->spanned_pages;
+		}
+	}
+	return NULL;
+}
+#endif
+
+static unsigned long dmc_unpack_ip(struct page_trace *trace)
+{
+	unsigned long text;
+
+	if (trace->order == IP_INVALID)
+		return 0;
+
+	if (trace->module_flag)
+#ifdef CONFIG_RANDOMIZE_BASE
+		text = module_alloc_base_dmc;
+#else
+		text = MODULES_VADDR;
+#endif
+	else
+		text = (unsigned long)_kernel_text;
+	return text + ((trace->ret_ip) << 2);
+}
+
+unsigned long dmc_get_page_trace(struct page *page)
+{
+	struct page_trace *trace;
+
+	trace = dmc_find_page_base(page);
+	if (trace)
+		return dmc_unpack_ip(trace);
+
+	return 0;
+}
+#endif
+
 void show_violation_mem(unsigned long addr)
 {
 	struct page *page;
@@ -92,7 +215,7 @@ void show_violation_mem(unsigned long addr)
 	pr_emerg(DMC_TAG "[%08lx]:%016lx, f:%8lx, m:%p, a:%ps\n",
 		 (unsigned long)q, *q, page->flags & 0xffffffff,
 		 page->mapping,
-		 (void *)get_page_trace(page));
+		 (void *)dmc_get_page_trace(page));
 	kunmap_atomic(p);
 }
 
@@ -739,6 +862,13 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 	}
 #if defined(CONFIG_AMLOGIC_USER_FAULT) && defined(CONFIG_AMLOGIC_BRACK_GKI)
 	set_dump_dmc_func(dump_dmc_reg);
+#endif
+#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+#ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+	register_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);
+#endif
+#endif
 #endif
 	return 0;
 }

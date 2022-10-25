@@ -474,7 +474,6 @@ unsigned long unpack_ip(struct page_trace *trace)
 		text = (unsigned long)_text;
 	return text + ((trace->ret_ip) << 2);
 }
-EXPORT_SYMBOL(unpack_ip);
 
 unsigned long find_back_trace(void)
 {
@@ -614,7 +613,6 @@ unsigned int pack_ip(unsigned long ip, unsigned int order, gfp_t flag)
 #endif
 	return *((unsigned int *)&trace);
 }
-EXPORT_SYMBOL(pack_ip);
 
 void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *func)
 {
@@ -627,6 +625,13 @@ void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *fun
 #ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 	if (!trace_buffer)
 		return;
+#ifdef CONFIG_RANDOMIZE_BASE
+		ip = module_alloc_base;
+#else
+		ip = MODULES_VADDR;
+#endif
+	trace_android_vh_rmqueue((struct zone *)trace_buffer,
+		(struct zone *)_text, 1024, 0, trace_step, ip);
 #endif
 	if (!func)
 		ip = find_back_trace();
@@ -654,7 +659,6 @@ void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *fun
 		}
 	}
 }
-EXPORT_SYMBOL(set_page_trace);
 
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 void reset_page_trace(struct page *page, unsigned int order)
@@ -697,7 +701,6 @@ void reset_page_trace(struct page *page, unsigned int order)
 	}
 }
 #endif
-EXPORT_SYMBOL(reset_page_trace);
 
 void replace_page_trace(struct page *new, struct page *old)
 {

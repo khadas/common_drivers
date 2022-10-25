@@ -2,11 +2,6 @@
 
 [abi_symbol_list]
 # page trace illegal symbol:
-  unpack_ip
-  pack_ip
-  set_page_trace
-  reset_page_trace
-
   set_dump_dmc_func
 
 # amlogic debug illegal symbol:

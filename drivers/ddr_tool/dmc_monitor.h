@@ -134,6 +134,21 @@ void dmc_monitor_exit(void)
 }
 #endif
 
+#if defined(CONFIG_AMLOGIC_PAGE_TRACE)
+struct page_trace *dmc_find_page_base(struct page *page);
+unsigned long dmc_get_page_trace(struct page *page);
+#else
+static inline struct page_trace *dmc_find_page_base(struct page *page)
+{
+	return NULL;
+}
+
+static inline unsigned long dmc_get_page_trace(struct page *page)
+{
+	return 0;
+}
+#endif
+
 #if defined(CONFIG_AMLOGIC_USER_FAULT) && defined(CONFIG_AMLOGIC_BRACK_GKI)
 void set_dump_dmc_func(void *f);
 #else

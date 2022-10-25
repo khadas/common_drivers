@@ -24,7 +24,6 @@
 #include <linux/kallsyms.h>
 #include <linux/of_irq.h>
 #include <linux/interrupt.h>
-#include <linux/amlogic/page_trace.h>
 #include "ddr_port.h"
 #include "dmc_monitor.h"
 
@@ -117,7 +116,7 @@ static void check_violation(struct dmc_monitor *mon, void *data)
 	}
 	/* ignore cma driver pages */
 	page = phys_to_page(addr);
-	trace = find_page_base(page);
+	trace = dmc_find_page_base(page);
 	if (trace && trace->migrate_type == MIGRATE_CMA) {
 		if (mon->debug & DMC_DEBUG_CMA)
 			sprintf(title, "%s", "_CMA");

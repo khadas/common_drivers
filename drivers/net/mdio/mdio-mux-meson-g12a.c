@@ -163,7 +163,7 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 
 	/* Initialize ephy control */
 	writel(EPHY_G12A_ID, priv->regs + ETH_PHY_CNTL0);
-	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 3) |
+	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 7) |
 	       FIELD_PREP(PHY_CNTL1_ST_PHYADD, EPHY_DFLT_ADD) |
 	       FIELD_PREP(PHY_CNTL1_MII_MODE, EPHY_MODE_RMII) |
 	       PHY_CNTL1_CLK_EN |
@@ -171,14 +171,14 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 	       PHY_CNTL1_PHY_ENB,
 	       priv->regs + ETH_PHY_CNTL1);
 
-	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 3) |
+	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 7) |
 	       FIELD_PREP(PHY_CNTL1_ST_PHYADD, EPHY_DFLT_ADD) |
 	       FIELD_PREP(PHY_CNTL1_MII_MODE, EPHY_MODE_RMII) |
 	       PHY_CNTL1_CLK_EN |
 	       PHY_CNTL1_CLKFREQ,
 	       priv->regs + ETH_PHY_CNTL1);
 
-	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 3) |
+	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 7) |
 	       FIELD_PREP(PHY_CNTL1_ST_PHYADD, EPHY_DFLT_ADD) |
 	       FIELD_PREP(PHY_CNTL1_MII_MODE, EPHY_MODE_RMII) |
 	       PHY_CNTL1_CLK_EN |

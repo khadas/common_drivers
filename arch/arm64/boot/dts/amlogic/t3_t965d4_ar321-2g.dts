@@ -1434,10 +1434,8 @@
 &sd_emmc_b {
 	status = "okay";
 	pinctrl-0 = <&sd_all_pins>;
-	//pinctrl-1 = <&sd_1bit_pins>;
 	pinctrl-1 = <&sd_clk_gate_pins>;
 	pinctrl-names = "default",
-	//		"sd_1bit_pins",
 			"clk-gate";
 	bus-width = <4>;
 	cap-sd-highspeed;
@@ -1449,6 +1447,8 @@
 
 	non-removable;
 	disable-wp;
+	no-sd;
+	no-mmc;
 	//amlogic,dram-access-quirk;
 
 	//cd-gpios = <&gpio GPIOC_10 GPIO_ACTIVE_HIGH>;
@@ -1503,6 +1503,8 @@
 	max-frequency = <200000000>;
 	non-removable;
 	disable-wp;
+	no-sdio;
+	no-sd;
 //	amlogic,dram-access-quirk;
 
 //	mmc-pwrseq = <&emmc_pwrseq>;

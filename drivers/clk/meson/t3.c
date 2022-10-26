@@ -4186,7 +4186,7 @@ static struct clk_regmap t3_sd_emmc_c_clk0_div = {
 			&t3_sd_emmc_c_clk0_sel.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT
+		.flags = CLK_GET_RATE_NOCACHE
 	},
 };
 
@@ -4202,7 +4202,7 @@ static struct clk_regmap t3_sd_emmc_c_clk0 = {
 			&t3_sd_emmc_c_clk0_div.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT
+		.flags = CLK_GET_RATE_NOCACHE
 	},
 };
 
@@ -4282,7 +4282,7 @@ static struct clk_regmap t3_sd_emmc_b_clk0_div = {
 			&t3_sd_emmc_b_clk0_sel.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT
+		.flags = CLK_GET_RATE_NOCACHE
 	},
 };
 
@@ -4298,7 +4298,7 @@ static struct clk_regmap t3_sd_emmc_b_clk0 = {
 			&t3_sd_emmc_b_clk0_div.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE |	CLK_SET_RATE_PARENT
+		.flags = CLK_GET_RATE_NOCACHE
 	},
 };
 

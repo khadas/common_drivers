@@ -1475,6 +1475,8 @@
 
 	card_type = <5>;
 	disable-wp;
+	no-sdio;
+	no-mmc;
 //	amlogic,dram-access-quirk;
 
 	cd-gpios = <&gpio GPIOC_10 GPIO_ACTIVE_HIGH>;
@@ -1497,6 +1499,8 @@
 	max-frequency = <200000000>;
 	non-removable;
 	disable-wp;
+	no-sdio;
+	no-sd;
 //	amlogic,dram-access-quirk;
 
 //	mmc-pwrseq = <&emmc_pwrseq>;

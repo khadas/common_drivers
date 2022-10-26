@@ -502,6 +502,8 @@ static int audio_inskew_get_enum(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#define TDMIN_SKEW_VALUE_MAX 7
+#define TDMIN_ID_VALUE_MAX 2
 static int audio_inskew_set_enum(struct snd_kcontrol *kcontrol,
 				 struct snd_ctl_elem_value *ucontrol)
 {
@@ -510,7 +512,17 @@ static int audio_inskew_set_enum(struct snd_kcontrol *kcontrol,
 	int id;
 
 	id = (ucontrol->value.enumerated.item[0] >> 16) & 0xffff;
+	if (id > TDMIN_ID_VALUE_MAX) {
+		pr_warn("%s(), invalid id = %d\n", __func__, id);
+		return 0;
+	}
+
 	inskew = (int)(ucontrol->value.enumerated.item[0] & 0xffff);
+	if (inskew > TDMIN_SKEW_VALUE_MAX) {
+		pr_warn("%s(), invalid inskew = %d\n", __func__, inskew);
+		return 0;
+	}
+
 	audio_inskew = inskew;
 	off_set = EE_AUDIO_TDMIN_B_CTRL - EE_AUDIO_TDMIN_A_CTRL;
 	reg_in = EE_AUDIO_TDMIN_A_CTRL + off_set * id;

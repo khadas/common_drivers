@@ -7,6 +7,7 @@
 
 #include "mesont3.dtsi"
 #include "partition_normal_PR_32.dtsi"
+#include "mesont3_drm.dtsi"
 #include "mesont3_ar301-panel.dtsi"
 
 / {
@@ -90,7 +91,7 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x8000000>;
+			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 		};
 		/* secure ion for gpu, advice size is 80M */
@@ -104,7 +105,7 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			/* 1920x1080x4x3 round up 4M align */
-			size = <0x0 0x1c00000>;
+			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 		};
 
@@ -160,6 +161,20 @@
 			size = <0x0 0x0>;
 			alignment = <0x0 0x100000>;
 			//no-map;
+		};
+
+		dmaheap_cma_reserved:heap-gfx {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 8000000>;
+			alignment = <0x0 0x400000>;
+		};
+		dmaheap_fb_reserved:heap-fb {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* 1920x1080x4x6+3840x2160x4x3 round up 4M align */
+			size = <0x0 0x1c00000>;
+			alignment = <0x0 0x400000>;
 		};
 
 		/* POST PROCESS MANAGER */
@@ -978,12 +993,37 @@
 };
 
 &fb {
-	status = "okay";
+	status = "disabled";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1980000 0x100000 0x100000>;
 	logo_addr = "0x7f800000";
 	mem_alloc = <0>;
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
+};
+
+&drm_vpu {
+	status = "okay";
+	logo_addr = "0x7f800000";
+
+	connectors_dev: port@1 {
+		drm_to_lcd0: endpoint@1 {
+			reg = <1>;
+			remote-endpoint = <&lcd0_to_drm>;
+		};
+	};
+};
+
+&lcd {
+	ports {
+		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			lcd0_to_drm: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&drm_to_lcd0>;
+			};
+		};
+	};
 };
 
 &audiobus {

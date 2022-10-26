@@ -85,7 +85,7 @@ struct page_trace *dmc_find_page_base(struct page *page)
 }
 #else
 struct page_trace *dmc_trace_buffer;
-static unsigned long long _kernel_text;
+static unsigned long _kernel_text;
 static unsigned int dmc_trace_step;
 static u64 module_alloc_base_dmc;
 
@@ -98,7 +98,7 @@ void get_page_trace_buf_hook(void *data, struct zone *preferred_zone, struct zon
 		return;
 
 	dmc_trace_buffer = (struct page_trace *)preferred_zone;
-	_kernel_text = (unsigned long long)zone;
+	_kernel_text = (unsigned long)zone;
 	dmc_trace_step = alloc_flags;
 	module_alloc_base_dmc = (u64)migratetype;
 	unregister_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);

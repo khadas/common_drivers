@@ -120,7 +120,7 @@ static int picdec_buffer_status;
 #define GE2D_BIG_ENDIAN             (0 << GE2D_ENDIAN_SHIFT)
 #define GE2D_LITTLE_ENDIAN          BIT(GE2D_ENDIAN_SHIFT)
 
-#define PROVIDER_NAME "decoder.pic"
+#define PROVIDER_NAME "pic_dec"
 static DEFINE_SPINLOCK(lock);
 static struct vframe_receiver_op_s *picdec_stop(void);
 static inline void ptr_atomic_wrap_inc(u32 *ptr)
@@ -324,8 +324,8 @@ static int render_frame(struct ge2d_context_s *context,
 {
 	struct vframe_s *new_vf;
 	int index;
-	struct timespec64 start;
-	struct timespec64 end;
+	struct timeval start;
+	struct timeval end;
 
 	unsigned long time_use = 0;
 	int temp;
@@ -334,7 +334,7 @@ static int render_frame(struct ge2d_context_s *context,
 	struct picdec_device_s *dev =  &picdec_device;
 	struct source_input_s *input = &picdec_input;
 
-	ktime_get_real_ts64(&start);
+	do_gettimeofday(&start);
 	index = get_unused_picdec_index();
 	if (index < 0) {
 		pr_info("no buffer available, need post ASAP\n");
@@ -428,19 +428,118 @@ static int render_frame(struct ge2d_context_s *context,
 	new_vf->ratio_control = 0;
 	vfbuf_use[index]++;
 	picdec_fill_buffer(new_vf, context, ge2d_config);
-	ktime_get_real_ts64(&end);
+	do_gettimeofday(&end);
 	time_use = (end.tv_sec - start.tv_sec) * 1000 +
-			   (end.tv_nsec - start.tv_nsec) / 1000000;
+			   (end.tv_usec - start.tv_usec) / 1000;
 	pr_info("render frame time use: %ldms\n", time_use);
 	return 0;
 }
+
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+static int copy_phybuf_to_file(ulong phys, u32 size,
+			       struct file *fp, loff_t pos)
+{
+	u8 *p;
+
+	p = codec_mm_vmap(phys, size);
+	if (!p)
+		return -1;
+	codec_mm_dma_flush(p, size, DMA_FROM_DEVICE);
+	vfs_write(fp, (char *)p, size, &pos);
+	codec_mm_unmap_phyaddr(p);
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+static int colorbar_left = 0xff0000;
+static int colorbar_middle = 0x00ff00;
+static int colorbar_right = 0x0000ff;
+#endif
+
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+static int cpu_draw_colorbar(struct vframe_s *vf, struct ge2d_context_s *context)
+{
+	struct canvas_s cs0;
+	struct file *filp = NULL;
+	loff_t pos = 0;
+	int ret = 0;
+	void __iomem *p;
+	int i, j;
+	unsigned int dst_addr_off = 0;
+	int frame_width = picdec_input.frame_width;
+	int frame_height = picdec_input.frame_height;
+	int bp = ((frame_width + 0x1f) & ~0x1f) * 3;
+
+	canvas_read(vf->canvas0Addr & 0xff, &cs0);
+
+	vf->flag |= VFRAME_FLAG_VIDEO_LINEAR;
+	p = map_virt_from_phys
+		(cs0.addr,
+		 cs0.width * cs0.height);
+	aml_pr_info(1, "%s cs0.width = %d, cs0.height = %d\n", __func__, cs0.width, cs0.height);
+	aml_pr_info(1, "%s cpu draw colorbar width = %d, height = %d\n",
+					__func__, frame_width, frame_height);
+
+	if (!picdec_input.input) {
+		for (j = 0; j < frame_height; j++) {
+			for (i = 0; i < frame_width; i += 3) {
+				dst_addr_off = i + bp * j;
+				*(char *)(p + dst_addr_off) = (colorbar_left & 0xff0000) >> 16;
+				*(char *)(p + dst_addr_off + 1) = (colorbar_left & 0x00ff00) >> 8;
+				*(char *)(p + dst_addr_off + 2) = (colorbar_left & 0x0000ff);
+			}
+			for (i = frame_width; i < frame_width * 2; i += 3) {
+				dst_addr_off = i + bp * j;
+				*(char *)(p + dst_addr_off) = (colorbar_middle & 0xff0000) >> 16;
+				*(char *)(p + dst_addr_off + 1) = (colorbar_middle & 0x00ff00) >> 8;
+				*(char *)(p + dst_addr_off + 2) = (colorbar_middle & 0x0000ff);
+			}
+			for (i = frame_width * 2; i < frame_width * 3; i += 3) {
+				dst_addr_off = i + bp * j;
+				*(char *)(p + dst_addr_off) = (colorbar_right & 0xff0000) >> 16;
+				*(char *)(p + dst_addr_off + 1) = (colorbar_right & 0x00ff00) >> 8;
+				*(char *)(p + dst_addr_off + 2) = (colorbar_right & 0x0000ff);
+			}
+		}
+		aml_pr_info(1, "%s test color copy finish ###\n", __func__);
+	}
+	if ((dump_file_flag) && picdec_device.origin_width > 100) {
+		if (picdec_device.output_format_mode) {
+			filp = filp_open("/data/temp/rgb24.rgb",
+					 O_RDWR | O_CREAT, 0666);
+			if (IS_ERR(filp)) {
+				aml_pr_info(0, "open file failed\n");
+			} else {
+				if (!cma_layout_flag) {
+					pr_info("%s %d start writing file\n", __func__, __LINE__);
+					vfs_write(filp, (char *)p,
+						  cs0.width * cs0.height, &pos);
+					unmap_virt_from_phys(p);
+					pr_info("%s %d finish writing file\n", __func__, __LINE__);
+				} else {
+					ret = copy_phybuf_to_file
+						(cs0.addr,
+						 cs0.width * cs0.height,
+						 filp, 0);
+					if (ret < 0)
+						pr_err("write rgb24 file failed.\n");
+				}
+				vfs_fsync(filp, 0);
+				filp_close(filp, NULL);
+			}
+		}
+	}
+	return 0;
+}
+#endif
 
 static int render_frame_block(void)
 {
 	struct vframe_s *new_vf;
 	int index;
-	struct timespec64 start;
-	struct timespec64 end;
+	struct timeval start;
+	struct timeval end;
 	int temp;
 	unsigned int phase = 0;
 	unsigned int h_phase, v_phase;
@@ -450,7 +549,7 @@ static int render_frame_block(void)
 	struct picdec_device_s *dev = &picdec_device;
 	struct source_input_s	*input = &picdec_input;
 
-	ktime_get_real_ts64(&start);
+	do_gettimeofday(&start);
 	memset(&ge2d_config, 0, sizeof(struct config_para_ex_s));
 	index = get_unused_picdec_index();
 	if (index < 0) {
@@ -525,6 +624,7 @@ static int render_frame_block(void)
 		    dev->p2p_mode, index);
 	aml_pr_info(1, "render target width: %d ; target height: %d\n",
 		    dev->target_width, dev->target_height);
+
 	if (dev->output_format_mode)
 		new_vf->type =
 			VIDTYPE_VIU_444 | VIDTYPE_VIU_SINGLE_PLANE
@@ -562,9 +662,9 @@ static int render_frame_block(void)
 	aml_pr_info(1, "picdec_fill_buffer start\n");
 	picdec_fill_buffer(new_vf, context, &ge2d_config);
 	aml_pr_info(1, "picdec_fill_buffer finish\n");
-	ktime_get_real_ts64(&end);
+	do_gettimeofday(&end);
 	time_use = (end.tv_sec - start.tv_sec) * 1000 +
-			   (end.tv_nsec - start.tv_nsec) / 1000000;
+			   (end.tv_usec - start.tv_usec) / 1000;
 	aml_pr_info(1, "Total render frame time use: %ldms\n", time_use);
 	return 0;
 }
@@ -699,11 +799,11 @@ int picdec_pre_process(void)
 	int frame_width = picdec_device.origin_width;
 	int frame_height = picdec_device.origin_height;
 	int bp = ((frame_width + 0x1f) & ~0x1f) * 3;
-	struct timespec64 start;
-	struct timespec64 end;
+	struct timeval start;
+	struct timeval end;
 	unsigned long time_use = 0;
 
-	ktime_get_real_ts64(&start);
+	do_gettimeofday(&start);
 	get_picdec_buf_info(NULL, NULL, &mapping_wc);
 	if (picdec_device.use_reserved) {
 		if (!mapping_wc)
@@ -802,9 +902,9 @@ int picdec_pre_process(void)
 			  bp * frame_height);
 		unmap_virt_from_phys(buffer_start);
 	}
-	ktime_get_real_ts64(&end);
+	do_gettimeofday(&end);
 	time_use = (end.tv_sec - start.tv_sec) * 1000 +
-		    (end.tv_nsec - start.tv_nsec) / 1000000;
+		    (end.tv_usec - start.tv_usec) / 1000;
 	aml_pr_info(2, "%s time use: %ldms\n", __func__, time_use);
 	return 0;
 }
@@ -866,19 +966,26 @@ int fill_black_color_by_ge2d(struct vframe_s *vf,
 
 static int picdec_memset_phyaddr(ulong phys, u32 size, u32 val)
 {
-	u32 i, span = SZ_1M;
-	u32 count = size / PAGE_ALIGN(span);
+	u32 span = SZ_1M, remained_size = size, temp_size;
 	ulong addr = phys;
 	u8 *p;
 
-	for (i = 0; i < count; i++) {
-		addr = phys + i * span;
-		p = codec_mm_vmap(addr, span);
+	aml_pr_info(1, "picdec_memset_phyaddr, size:%d\n", size);
+	while (remained_size > 0) {
+		if (remained_size >= span) {
+			temp_size = span;
+			remained_size -= span;
+		} else {
+			temp_size = remained_size;
+			remained_size = 0;
+		}
+		p = codec_mm_vmap(addr, temp_size);
 		if (!p)
 			return -1;
-		memset(p, val, span);
-		codec_mm_dma_flush(p, span, DMA_TO_DEVICE);
+		memset(p, val, temp_size);
+		codec_mm_dma_flush(p, temp_size, DMA_TO_DEVICE);
 		codec_mm_unmap_phyaddr(p);
+		addr += temp_size;
 	}
 	return 0;
 }
@@ -888,19 +995,18 @@ int fill_color(struct vframe_s *vf, struct ge2d_context_s *context,
 {
 	struct io_mapping *mapping_wc;
 	struct canvas_s cs0, cs1, cs2;
-	struct timespec64 start;
-	struct timespec64 end;
+	struct timeval start;
+	struct timeval end;
 	unsigned long time_use = 0;
 	void __iomem *p;
 	int ret = 0;
 
-	ktime_get_real_ts64(&start);
+	do_gettimeofday(&start);
 	get_picdec_buf_info(NULL, NULL, &mapping_wc);
 	if (picdec_device.use_reserved) {
 		if (!mapping_wc)
 			return -1;
 	}
-
 	canvas_read(vf->canvas0Addr & 0xff, &cs0);
 	canvas_read((vf->canvas0Addr >> 8) & 0xff, &cs1);
 	canvas_read((vf->canvas0Addr >> 16) & 0xff, &cs2);
@@ -939,9 +1045,9 @@ int fill_color(struct vframe_s *vf, struct ge2d_context_s *context,
 			}
 		}
 	}
-	ktime_get_real_ts64(&end);
+	do_gettimeofday(&end);
 	time_use = (end.tv_sec - start.tv_sec) * 1000 +
-			   (end.tv_nsec - start.tv_nsec) / 1000000;
+			   (end.tv_usec - start.tv_usec) / 1000;
 	if (debug_flag)
 		pr_info("clear background time use: %ldms\n", time_use);
 	return 0;
@@ -972,10 +1078,10 @@ int picdec_fill_buffer(struct vframe_s *vf, struct ge2d_context_s *context,
 	int canvas_width = (picdec_device.origin_width + 0x1f) & ~0x1f;
 	int canvas_height = (picdec_device.origin_height + 0xf) & ~0xf;
 	int dst_top, dst_left, dst_width, dst_height;
-#ifdef CONFIG_AMLOGIC_DUMP_GE2D
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+	int ret = 0;
 	struct file *filp = NULL;
 	loff_t pos = 0;
-	int ret = 0;
 	void __iomem *p;
 #endif
 
@@ -1105,10 +1211,9 @@ int picdec_fill_buffer(struct vframe_s *vf, struct ge2d_context_s *context,
 		    dst_left, dst_top, dst_width, dst_height,
 		    vf->width, vf->height);
 /*dump ge2d output buffer data. use this function should close selinux*/
-#ifdef CONFIG_AMLOGIC_DUMP_GE2D
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	if ((dump_file_flag) && picdec_device.origin_width > 100) {
 		if (picdec_device.output_format_mode) {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 			filp = filp_open("/data/temp/yuv444.yuv",
 					 O_RDWR | O_CREAT, 0666);
 			if (IS_ERR(filp)) {
@@ -1132,9 +1237,7 @@ int picdec_fill_buffer(struct vframe_s *vf, struct ge2d_context_s *context,
 				vfs_fsync(filp, 0);
 				filp_close(filp, NULL);
 			}
-#endif
 		} else {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 			filp = filp_open("/data/temp/NV21.yuv",
 					 O_RDWR | O_CREAT, 0666);
 			if (IS_ERR(filp)) {
@@ -1174,7 +1277,6 @@ int picdec_fill_buffer(struct vframe_s *vf, struct ge2d_context_s *context,
 				vfs_fsync(filp, 0);
 				filp_close(filp, NULL);
 			}
-#endif
 		}
 	}
 #endif
@@ -1322,21 +1424,13 @@ int picdec_cma_buf_init(void)
 
 int picdec_cma_buf_uninit(void)
 {
-	struct page *cma_pages = NULL;
-	struct cma *cma_area;
-	struct device *dev = &picdec_device.pdev->dev;
-
-	/* change in kernel5.15 */
-	if (dev && dev->cma_area)
-		cma_area = dev->cma_area;
-	else
-		cma_area = dma_contiguous_default_area;
-
 	if (!picdec_device.use_reserved) {
 		if (picdec_device.output_format_mode) {
 			if (picdec_device.cma_mode == 0) {
 				if (picdec_device.cma_pages) {
-					cma_release(cma_area, cma_pages,
+					dma_release_from_contiguous
+						(&picdec_device.pdev->dev,
+						 picdec_device.cma_pages,
 						(72 * SZ_1M) >> PAGE_SHIFT);
 					picdec_device.cma_pages = NULL;
 				}
@@ -1353,8 +1447,10 @@ int picdec_cma_buf_uninit(void)
 		} else {
 			if (picdec_device.cma_mode == 0) {
 				if (picdec_device.cma_pages) {
-					cma_release(cma_area, cma_pages,
-						(56 * SZ_1M) >> PAGE_SHIFT);
+					dma_release_from_contiguous
+						(&picdec_device.pdev->dev,
+						 picdec_device.cma_pages,
+						 (56 * SZ_1M) >> PAGE_SHIFT);
 					picdec_device.cma_pages = NULL;
 				}
 			} else {
@@ -1387,7 +1483,6 @@ int picdec_buffer_init(void)
 	picdec_device.vinfo = get_current_vinfo();
 	picdec_device.disp_width = picdec_device.vinfo->width;
 	picdec_device.disp_height = picdec_device.vinfo->height;
-
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_TXLX) &&
 	    ((picdec_device.disp_width * picdec_device.disp_height) >=
 	1920 * 1080))
@@ -1425,7 +1520,8 @@ int picdec_buffer_init(void)
 				      canvas_height,
 				      CANVAS_ADDR_NOWRAP,
 				      CANVAS_BLKMODE_LINEAR);
-			offset = canvas_width * canvas_height * 3;
+			offset += canvas_width * canvas_height * 3;
+			offset = PAGE_ALIGN(offset);
 			picdec_canvas_table[i] = canvas_table[i];
 			vfbuf_use[i] = 0;
 		}
@@ -1462,17 +1558,14 @@ int picdec_buffer_init(void)
 			picdec_canvas_table[i] =
 				(canvas_table[2 * i] |
 				(canvas_table[2 * i + 1] << 8));
+			offset = PAGE_ALIGN(offset);
 			vfbuf_use[i] = 0;
 		}
 		picdec_canvas_table[i] = canvas_table[2 * i];
 	}
 
-	if (picdec_device.output_format_mode)
-		picdec_device.assit_buf_start =
-			buf_start + canvas_width * canvas_height * 6;
-	else
-		picdec_device.assit_buf_start =
-			buf_start + canvas_width * canvas_height * 3;
+	picdec_device.assit_buf_start =
+		buf_start + offset;
 exit:
 	return ret;
 }

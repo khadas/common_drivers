@@ -32,6 +32,8 @@ extern u32 vd_max_hold_count;
 extern u32 vsync_pts_inc_scale;
 extern u32 vsync_pts_inc_scale_base;
 extern u32 vd_set_frame_delay[];
+extern struct vframe_s *current_display_vf;
+extern u32 vpp_drop_count;
 
 struct video_display_frame_info_t {
 	struct dma_buf *dmabuf;
@@ -92,4 +94,6 @@ void vd_prepare_data_q_put(struct composer_dev *dev,
 			struct vd_prepare_s *vd_prepare);
 struct vd_prepare_s *vd_prepare_data_q_get(struct composer_dev *dev);
 int vd_render_index_get(struct composer_dev *dev);
+void video_display_para_reset(int layer_index);
+
 #endif

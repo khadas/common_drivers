@@ -587,6 +587,7 @@ int get_vdetect_canvas_index(struct vdetect_output *output,
 static int copy_phybuf_to_file(ulong phys, u32 size,
 			       struct file *fp, loff_t pos)
 {
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	u32 span = SZ_1M;
 	u8 *p;
 	int remain_size = 0;
@@ -612,6 +613,7 @@ static int copy_phybuf_to_file(ulong phys, u32 size,
 		pr_info("pos: %lld, phys: %lx, remain_size: %d\n",
 			pos, phys, remain_size);
 	}
+#endif
 	return 0;
 }
 
@@ -871,9 +873,8 @@ static int vdetect_fill_buffer(struct vdetect_dev *dev)
 
 	vdetect_print(dev->inst, PRINT_CAPTUREINFO,
 		      "%s line: %d\n", __func__, __LINE__);
-
-	if (detect_dump & 1) {
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+	if (detect_dump & 1) {
 		filp_scr = filp_open("/data/temp/screen_capture",
 				     O_RDWR | O_CREAT, 0666);
 		if (IS_ERR(filp_scr)) {
@@ -903,8 +904,8 @@ static int vdetect_fill_buffer(struct vdetect_dev *dev)
 			vfs_fsync(filp_scr, 0);
 			filp_close(filp_scr, NULL);
 		}
-#endif
 	}
+#endif
 	mutex_unlock(&dev->vf_mutex);
 	do_gettimeofday(&time_begin);
 	ret = vdetect_ge2d_process(&ge2d_config, &output, dev);
@@ -2371,7 +2372,7 @@ static int vdetect_create_instance(int inst)
 	 * Provide a mutex to v4l2 core. It will be used to protect
 	 * all fops and v4l2 ioctls.
 	 */
-	ret = video_register_device(vfd, VFL_TYPE_VIDEO,
+	ret = video_register_device(vfd, VFL_TYPE_GRABBER,
 				    dev->inst + vdetect_base);
 	if (ret < 0)
 		goto unreg_dev;

@@ -21,7 +21,6 @@
 #include <linux/sizes.h>
 #include <linux/dma-mapping.h>
 #include <linux/of_fdt.h>
-#include <linux/dma-map-ops.h>
 /**************************************************************
  *
  *                         macro define
@@ -90,11 +89,6 @@ struct picdec_private_s {
 	unsigned long phyaddr;
 	unsigned int buf_len;
 };
-
-/*
-close_fd can't use, change in kernel5.15
-#define CONFIG_AMLOGIC_DUMP_GE2D
-*/
 
 #define PICDEC_IOC_MAGIC  'P'
 #define PICDEC_IOC_FRAME_RENDER     _IOW(PICDEC_IOC_MAGIC, 0x00, \

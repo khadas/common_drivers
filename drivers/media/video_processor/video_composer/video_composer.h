@@ -41,11 +41,17 @@
 #include <linux/amlogic/media/video_sink/v4lvideo_ext.h>
 #include <linux/dma-mapping.h>
 #include <linux/dma-mapping.h>
-#include <linux/dma-map-ops.h>
 #include "vfq.h"
 #include <linux/amlogic/media/ge2d/ge2d.h>
+#include <linux/amlogic/media/video_sink/video.h>
 #include "vframe_ge2d_composer.h"
-#include <linux/amlogic/media/utils/am_com.h>
+#include "vframe_dewarp_composer.h"
+#include "vframe_vicp_composer.h"
+
+#define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_VIDEO_COMPOSER
+#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+#include <trace/events/meson_atrace.h>
+#endif
 
 #define MXA_LAYER_COUNT 9
 #define COMPOSER_READY_POOL_SIZE 32
@@ -72,10 +78,15 @@
 #define PRINT_PATTERN	        0X0020
 #define PRINT_OTHER		0X0040
 #define PRINT_NN		0X0080
+#define PRINT_DEWARP		0X0100
+#define PRINT_VICP		0X0200
+
 
 #define SOURCE_DTV_FIX_TUNNEL		0x1
 #define SOURCE_HWC_CREAT_ION		0x2
 #define SOURCE_PIC_MODE		0x4
+
+extern int actual_delay_count[MAX_VD_LAYERS];
 
 enum vc_transform_t {
 	/* flip source image horizontally */
@@ -146,18 +157,6 @@ struct videocom_frame_s {
 struct vidc_buf_status {
 	int index;
 	int dirty;
-};
-
-struct dst_buf_t {
-	int index;
-	struct vframe_s frame;
-	struct composer_info_t composer_info;
-	bool dirty;
-	u32 phy_addr;
-	u32 buf_w;
-	u32 buf_h;
-	u32 buf_size;
-	bool is_tvp;
 };
 
 struct output_axis {
@@ -243,6 +242,7 @@ struct composer_dev {
 	bool composer_enabled;
 	bool thread_need_stop;
 	bool is_drm_enable;
+	bool is_dewarp_support;
 	u32 video_render_index;
 	u32 vframe_dump_flag;
 	u32 pre_pat_trace;
@@ -258,6 +258,7 @@ struct composer_dev {
 	u32 patten_factor[PATTEN_FACTOR_MAX];
 	u32 patten_factor_index;
 	u32 next_factor;
+	u32 last_drop_cnt;
 };
 
 #define VIDEO_COMPOSER_IOC_MAGIC  'V'

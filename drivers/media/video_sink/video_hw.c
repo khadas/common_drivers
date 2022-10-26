@@ -6060,6 +6060,18 @@ int get_video_mute(void)
 }
 EXPORT_SYMBOL(get_video_mute);
 
+int get_video_mute_val(void)
+{
+	return video_mute_on;
+}
+EXPORT_SYMBOL(get_video_mute_val);
+
+void set_output_mute(bool on)
+{
+	video_mute_on = on;
+}
+EXPORT_SYMBOL(set_output_mute);
+
 static inline bool is_tv_panel(void)
 {
 	const struct vinfo_s *vinfo = get_current_vinfo();

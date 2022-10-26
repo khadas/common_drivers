@@ -2090,14 +2090,11 @@ static void process_vf_rotate(struct vframe_s *vf,
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *filp_scr = NULL;
 	struct file *filp_dst = NULL;
-#endif
 	char source_path[64];
 	char dst_path[64];
 	int count;
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	int result = 0;
 #endif
-
 	if (ppmgr_device.debug_ppmgr_flag)
 		pr_info("ppmgr:rotate\n");
 
@@ -2215,7 +2212,10 @@ static void process_vf_rotate(struct vframe_s *vf,
 	pp_vf->angle = cur_angle;
 	new_vf->duration = vf->duration;
 #endif
-
+	new_vf->ready_jiffies64 = vf->ready_jiffies64;
+	new_vf->ready_clock[0] = vf->ready_clock[0];
+	new_vf->ready_clock[1] = vf->ready_clock[1];
+	new_vf->ready_clock[2] = vf->ready_clock[2];
 	new_vf->duration_pulldown = vf->duration_pulldown;
 	new_vf->mem_sec = vf->mem_sec;
 	new_vf->pts = vf->pts;
@@ -2431,13 +2431,12 @@ static void process_vf_rotate(struct vframe_s *vf,
 	pp_vf->angle = cur_angle;
 	stretchblt_noalpha(context, 0, 0, vf->width, vf->height,
 			   0, 0, new_vf->width, new_vf->height);
-
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	if (strstr(ppmgr_device.dump_path, "scr") && dumpfirstframe == 2) {
 		count = strlen(ppmgr_device.dump_path);
 		ppmgr_device.dump_path[count] = count_scr;
 		sprintf(source_path, "%s_scr", ppmgr_device.dump_path);
 		count_scr++;
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 		filp_scr = filp_open(source_path, O_RDWR | O_CREAT, 0666);
 		if (IS_ERR(filp_scr)) {
 			PPMGRVPP_INFO("open %s failed\n", source_path);
@@ -2463,20 +2462,19 @@ static void process_vf_rotate(struct vframe_s *vf,
 			vfs_fsync(filp_scr, 0);
 			filp_close(filp_scr, NULL);
 		}
-#endif
 	}
+#endif
 rotate_done:
 	ppmgr_vf_put_dec(vf);
 	new_vf->source_type = VFRAME_SOURCE_TYPE_PPMGR;
 	if (dumpfirstframe != 2)
 		vfq_push(&q_ready, new_vf);
-
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	if (strstr(ppmgr_device.dump_path, "dst") && dumpfirstframe == 2) {
 		count = strlen(ppmgr_device.dump_path);
 		ppmgr_device.dump_path[count] = count_dst;
 		sprintf(dst_path, "%s_dst", ppmgr_device.dump_path);
 		count_dst++;
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 		filp_dst = filp_open(dst_path,	O_RDWR | O_CREAT, 0666);
 		if (IS_ERR(filp_dst)) {
 			PPMGRVPP_INFO("open %s failed\n", dst_path);
@@ -2499,11 +2497,10 @@ rotate_done:
 			vfs_fsync(filp_dst, 0);
 			filp_close(filp_dst, NULL);
 		}
-#endif
 		if (count_dst >= ppmgr_device.ppmgr_debug)
 			dumpfirstframe = 0;
 	}
-
+#endif
 #ifdef DDD
 	PPMGRVPP_WARN("rotate avail=%d, free=%d\n",
 		      vfq_level(&q_ready), vfq_level(&q_free));
@@ -2828,6 +2825,7 @@ static int ppmgr_task(void *data)
 	u8 reset_tb = 0;
 	u32 init_mute = 0;
 #endif
+	unsigned int newvideoangle = 0;
 	memset(&ge2d_config, 0, sizeof(struct config_para_ex_s));
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	allow_signal(SIGTERM);
@@ -2897,6 +2895,10 @@ static int ppmgr_task(void *data)
 					 ppmgr_device.orientation) % 4;
 				set_property_change(1);
 				ppmgr_device.started = 0;
+			} else {
+				newvideoangle = (ppmgr_device.angle + ppmgr_device.orientation) % 4;
+				if (newvideoangle == ppmgr_device.videoangle)
+					set_property_change(0);
 			}
 			vf->video_angle = (ppmgr_device.angle
 					   + ppmgr_device.orientation

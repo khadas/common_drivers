@@ -33,17 +33,6 @@
 #define VIDEOCOM_ERR(fmt, args...)	\
 	pr_err("video_composer: err:" fmt "", ## args)
 
-enum videocom_source_type {
-	DECODER_8BIT_NORMAL = 0,
-	DECODER_8BIT_BOTTOM,
-	DECODER_8BIT_TOP,
-	DECODER_10BIT_NORMAL,
-	DECODER_10BIT_BOTTOM,
-	DECODER_10BIT_TOP,
-	VDIN_8BIT_NORMAL,
-	VDIN_10BIT_NORMAL,
-};
-
 enum ge2d_angle_type {
 	GE2D_ANGLE_TYPE_ROT_90 = 1,
 	GE2D_ANGLE_TYPE_ROT_180,
@@ -66,9 +55,8 @@ struct ge2d_composer_para {
 	int canvas_scr[3];
 	int canvas_dst[3];
 	u32 phy_addr[3];
-	u32 canvas0Addr;
+	u32 canvas0_addr;
 	struct ge2d_context_s *context;
-	struct config_para_ex_s *ge2d_config;
 	int angle;
 	bool is_tvp;
 };
@@ -78,8 +66,8 @@ struct src_data_para {
 	u32 canvas1Addr;
 	u32 plane_num;
 	u32 type;
-	u32 posion_x;
-	u32 posion_y;
+	u32 position_x;
+	u32 position_y;
 	u32 width;
 	u32 height;
 	u32 bitdepth;
@@ -107,6 +95,10 @@ int init_ge2d_composer(struct ge2d_composer_para *ge2d_comp_para);
 int uninit_ge2d_composer(struct ge2d_composer_para *ge2d_comp_para);
 
 int fill_vframe_black(struct ge2d_composer_para *ge2d_comp_para);
+
+int config_ge2d_data(struct vframe_s *src_vf, unsigned long addr, int buf_w, int buf_h,
+	int data_w, int data_h, int crop_x, int crop_y, int crop_w, int crop_h,
+	struct src_data_para *data);
 
 int ge2d_data_composer(struct src_data_para *src_para,
 		       struct ge2d_composer_para *ge2d_comp_para);

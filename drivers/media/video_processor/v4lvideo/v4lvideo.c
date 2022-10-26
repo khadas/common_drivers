@@ -1382,8 +1382,10 @@ struct file_private_data *v4lvideo_get_file_private_data(struct file *file_vf,
 		pr_err("v4lvideo: get_file_private_data fail\n");
 		return NULL;
 	}
+
 	if (is_v4lvideo_buf_file(file_vf))
 		is_v4lvideo_fd = true;
+
 	if (is_v4lvideo_fd) {
 		file_private_data =
 			(struct file_private_data *)(file_vf->private_data);
@@ -1863,6 +1865,30 @@ static bool pop_specific_from_display_q(struct v4lvideo_dev *dev,
 		atomic_set(&v4lvideo_file->on_use, false);
 	return ret;
 }
+
+static void v4lvideo_vf_put(struct v4lvideo_dev *dev, struct vframe_s *vf)
+{
+	bool is_di_pw = false;
+
+	if (vf->type & VIDTYPE_DI_PW)
+		is_di_pw = true;
+
+	if (vf_put(vf, dev->vf_receiver_name) < 0) {
+		pr_err("v4lvideo: put err!!!\n");
+		if (is_di_pw) {
+			pr_err("v4lvideo: put err, release di vf\n");
+			v4l_print(dev->inst, PRINT_OTHER,
+				"put: release omx_index=%d\n", vf->omx_index);
+			dim_post_keep_cmd_release2(vf);
+			total_release_count[dev->inst]++;
+		}
+	} else {
+		put_count[dev->inst]++;
+		if (is_di_pw)
+			total_put_count[dev->inst]++;
+	}
+}
+
 static int vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 {
 	struct v4lvideo_dev *dev = video_drvdata(file);
@@ -1910,10 +1936,7 @@ static int vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 				if (dev->receiver_register) {
 					if (flag & V4LVIDEO_FLAG_DI_DEC)
 						vf_p = vf_ext_p;
-					if (vf_p->type & VIDTYPE_DI_PW)
-						total_put_count[inst_id]++;
-					vf_put(vf_p, dev->vf_receiver_name);
-					put_count[inst_id]++;
+					v4lvideo_vf_put(dev, vf_p);
 				} else {
 					vf_free(file_private_data);
 					pr_err("%s: vfm is unreg\n", __func__);
@@ -2055,10 +2078,8 @@ static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 		total_get_count[inst_id]++;
 
 	if (vf->type & VIDTYPE_V4L_EOS) {
-		vf_put(vf, dev->vf_receiver_name);
+		v4lvideo_vf_put(dev, vf);
 		mutex_unlock(&dev->mutex_input);
-		put_count[inst_id]++;
-		total_put_count[inst_id]++;
 		return -EAGAIN;
 	}
 
@@ -2099,10 +2120,7 @@ static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 	buf = v4l2q_pop(&dev->input_queue);
 	if (!buf) {
 		pr_err("pop buf is NULL\n");
-		put_count[inst_id]++;
-		if (vf->type & VIDTYPE_DI_PW)
-			total_put_count[inst_id]++;
-		vf_put(vf, dev->vf_receiver_name);
+		v4lvideo_vf_put(dev, vf);
 		mutex_unlock(&dev->mutex_input);
 		return -EAGAIN;
 	}
@@ -2116,10 +2134,7 @@ static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 
 	file_private_data = v4lvideo_get_file_private_data(file_vf, false);
 	if (!file_private_data) {
-		put_count[inst_id]++;
-		if (vf->type & VIDTYPE_DI_PW)
-			total_put_count[inst_id]++;
-		vf_put(vf, dev->vf_receiver_name);
+		v4lvideo_vf_put(dev, vf);
 		mutex_unlock(&dev->mutex_input);
 		fput(file_vf);
 		pr_err("v4lvideo: file_private_data NULL\n");
@@ -2175,7 +2190,6 @@ static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 	active_file_list_push(dev, file_private_data);
 
 	fput(file_vf);
-	mutex_unlock(&dev->mutex_input);
 
 	if (vf->pts_us64) {
 		dev->first_frame = 1;
@@ -2219,6 +2233,11 @@ static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 		p->timecode.flags = vf->height;
 	}
 	p->sequence = dev->frame_num++;
+
+	if (vf->type_original & VIDTYPE_INTERLACE || vf->type & VIDTYPE_INTERLACE)
+		p->field = V4L2_FIELD_INTERLACED;
+
+	mutex_unlock(&dev->mutex_input);
 	//pr_err("dqbuf: frame_num=%d\n", p->sequence);
 	dq_count[inst_id]++;
 	return 0;
@@ -2567,6 +2586,11 @@ static int v4lvideo_fd_link(int src_fd, int dst_fd)
 	struct file_private_data *private_data0 = NULL;
 	struct file_private_data *private_data1 = NULL;
 
+	if (src_fd == dst_fd) {
+		pr_err("%s:invalid param: src_fd:%d, dst_fd:%d.\n", __func__, src_fd, dst_fd);
+		return -EINVAL;
+	}
+
 	file0 = fget(src_fd);
 	if (!file0) {
 		pr_err("v4lvideo: %s source file is NULL\n", __func__);
@@ -2576,6 +2600,13 @@ static int v4lvideo_fd_link(int src_fd, int dst_fd)
 	if (!file1) {
 		fput(file0);
 		pr_err("v4lvideo: %s dst file is NULL\n", __func__);
+		return -EINVAL;
+	}
+
+	if (!is_v4lvideo_buf_file(file0) || !is_v4lvideo_buf_file(file1)) {
+		pr_err("%s: file is not v4lvideo.\n", __func__);
+		fput(file0);
+		fput(file1);
 		return -EINVAL;
 	}
 

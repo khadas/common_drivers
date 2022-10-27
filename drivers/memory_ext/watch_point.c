@@ -41,6 +41,7 @@
 #include <linux/smp.h>
 #include <linux/amlogic/watch_point.h>
 #include <linux/sched/debug.h>
+#include <asm/hw_breakpoint.h>
 
 struct aml_watch_points {
 	struct perf_event * __percpu *wp_event[MAX_WATCH_POINTS];
@@ -51,6 +52,189 @@ struct aml_watch_points {
 };
 
 struct aml_watch_points *awp;
+
+#ifdef CONFIG_ARM64
+#define READ_WB_REG_CASE(OFF, N, REG, VAL)		\
+	do {						\
+		case (OFF + N):				\
+			AARCH64_DBG_READ(N, REG, VAL);	\
+			break;				\
+	} while (0)
+
+#define GEN_READ_WB_REG_CASES(OFF, REG, VAL)		\
+	do {						\
+		READ_WB_REG_CASE(OFF,  0, REG, VAL);	\
+		READ_WB_REG_CASE(OFF,  1, REG, VAL);	\
+		READ_WB_REG_CASE(OFF,  2, REG, VAL);	\
+		READ_WB_REG_CASE(OFF,  3, REG, VAL);	\
+		READ_WB_REG_CASE(OFF,  4, REG, VAL);	\
+		READ_WB_REG_CASE(OFF,  5, REG, VAL);	\
+		READ_WB_REG_CASE(OFF,  6, REG, VAL);	\
+		READ_WB_REG_CASE(OFF,  7, REG, VAL);	\
+		READ_WB_REG_CASE(OFF,  8, REG, VAL);	\
+		READ_WB_REG_CASE(OFF,  9, REG, VAL);	\
+		READ_WB_REG_CASE(OFF, 10, REG, VAL);	\
+		READ_WB_REG_CASE(OFF, 11, REG, VAL);	\
+		READ_WB_REG_CASE(OFF, 12, REG, VAL);	\
+		READ_WB_REG_CASE(OFF, 13, REG, VAL);	\
+		READ_WB_REG_CASE(OFF, 14, REG, VAL);	\
+		READ_WB_REG_CASE(OFF, 15, REG, VAL);	\
+	} while (0)
+
+static u64 read_wb_reg(int reg, int n)
+{
+	u64 val = 0;
+
+	switch (reg + n) {
+	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_BVR, AARCH64_DBG_REG_NAME_BVR, val);
+	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_BCR, AARCH64_DBG_REG_NAME_BCR, val);
+	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_WVR, AARCH64_DBG_REG_NAME_WVR, val);
+	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_WCR, AARCH64_DBG_REG_NAME_WCR, val);
+	default:
+		pr_warn("attempt to read unknown breakpoint register %d\n", n);
+	}
+
+	return val;
+}
+
+/* Determine number of WRP registers available. */
+static int aml_get_num_wrps(void)
+{
+	u64 dfr0 = read_sanitised_ftr_reg(SYS_ID_AA64DFR0_EL1);
+#ifdef CONFIG_AMLOGIC_VMAP
+	return (1 +
+		cpuid_feature_extract_unsigned_field(dfr0,
+						ID_AA64DFR0_WRPS_SHIFT)) - 2;
+#else
+	return 1 +
+		cpuid_feature_extract_unsigned_field(dfr0,
+						ID_AA64DFR0_WRPS_SHIFT);
+#endif
+}
+#else
+#define READ_WB_REG_CASE(OP2, M, VAL)				\
+	do {							\
+		case ((OP2 << 4) + M):				\
+			ARM_DBG_READ(c0, c ## M, OP2, VAL);	\
+			break;					\
+	} while (0)
+
+#define GEN_READ_WB_REG_CASES(OP2, VAL)			\
+	do {						\
+		READ_WB_REG_CASE(OP2, 0, VAL);		\
+		READ_WB_REG_CASE(OP2, 1, VAL);		\
+		READ_WB_REG_CASE(OP2, 2, VAL);		\
+		READ_WB_REG_CASE(OP2, 3, VAL);		\
+		READ_WB_REG_CASE(OP2, 4, VAL);		\
+		READ_WB_REG_CASE(OP2, 5, VAL);		\
+		READ_WB_REG_CASE(OP2, 6, VAL);		\
+		READ_WB_REG_CASE(OP2, 7, VAL);		\
+		READ_WB_REG_CASE(OP2, 8, VAL);		\
+		READ_WB_REG_CASE(OP2, 9, VAL);		\
+		READ_WB_REG_CASE(OP2, 10, VAL);		\
+		READ_WB_REG_CASE(OP2, 11, VAL);		\
+		READ_WB_REG_CASE(OP2, 12, VAL);		\
+		READ_WB_REG_CASE(OP2, 13, VAL);		\
+		READ_WB_REG_CASE(OP2, 14, VAL);		\
+		READ_WB_REG_CASE(OP2, 15, VAL);		\
+	} while (0)
+
+static u32 read_wb_reg(int n)
+{
+	u32 val = 0;
+
+	switch (n) {
+	GEN_READ_WB_REG_CASES(ARM_OP2_BVR, val);
+	GEN_READ_WB_REG_CASES(ARM_OP2_BCR, val);
+	GEN_READ_WB_REG_CASES(ARM_OP2_WVR, val);
+	GEN_READ_WB_REG_CASES(ARM_OP2_WCR, val);
+	default:
+		pr_warn("attempt to read from register %d\n", n);
+	}
+
+	return val;
+}
+
+/* Determine debug architecture. */
+static u8 get_debug_arch(void)
+{
+	u32 didr;
+
+	/* Do we implement the extended CPUID interface? */
+	if (((read_cpuid_id() >> 16) & 0xf) != 0xf) {
+		pr_warn_once("CPUID not support.\n");
+		return ARM_DEBUG_ARCH_V6;
+	}
+
+	ARM_DBG_READ(c0, c0, 0, didr);
+	return (didr >> 16) & 0xf;
+}
+
+static int debug_arch_supported(void)
+{
+	u8 arch = get_debug_arch();
+
+	/* We don't support the memory-mapped interface. */
+	return (arch >= ARM_DEBUG_ARCH_V6 && arch <= ARM_DEBUG_ARCH_V7_ECP14) ||
+		arch >= ARM_DEBUG_ARCH_V7_1;
+}
+
+/* Determine number of WRP registers available. */
+static int get_num_wrp_resources(void)
+{
+	u32 didr;
+
+	ARM_DBG_READ(c0, c0, 0, didr);
+	return ((didr >> 28) & 0xf) + 1;
+}
+
+/* Determine number of usable WRPs available. */
+static int aml_get_num_wrps(void)
+{
+	/*
+	 * On debug architectures prior to 7.1, when a watchpoint fires, the
+	 * only way to work out which watchpoint it was is by disassembling
+	 * the faulting instruction and working out the address of the memory
+	 * access.
+	 *
+	 * Furthermore, we can only do this if the watchpoint was precise
+	 * since imprecise watchpoints prevent us from calculating register
+	 * based addresses.
+	 *
+	 * Providing we have more than 1 breakpoint register, we only report
+	 * a single watchpoint register for the time being. This way, we always
+	 * know which watchpoint fired. In the future we can either add a
+	 * disassembler and address generation emulator, or we can insert a
+	 * check to see if the DFAR is set on watchpoint exception entry
+	 * [the ARM ARM states that the DFAR is UNKNOWN, but experience shows
+	 * that it is set on some implementations].
+	 */
+	if (get_debug_arch() < ARM_DEBUG_ARCH_V7_1)
+		return 1;
+
+	return get_num_wrp_resources();
+}
+#endif
+
+static int aml_hw_breakpoint_slots(int type)
+{
+#ifdef CONFIG_ARM
+	if (!debug_arch_supported())
+		return 0;
+#endif
+
+	/*
+	 * We can be called early, so don't rely on
+	 * our static variables being initialised.
+	 */
+	switch (type) {
+	case TYPE_DATA:
+		return aml_get_num_wrps();
+	default:
+		pr_warn("unknown slot type: %d\n", type);
+		return 0;
+	}
+}
 
 static void get_cpu_wb_reg(void *info)
 {
@@ -164,11 +348,13 @@ static void wp_replace_back(struct work_struct *data)
 		cpus_read_lock();
 		for_each_online_cpu(cpu) {
 			bp = per_cpu(*awp->wp_event[i], cpu);
+		#ifdef CONFIG_AMLOGIC_DIS
 			if (is_default_overflow_handler(bp)) {
 				bp->overflow_handler = awp->handler[i];
 				pr_info("replace handler for wp:%lx\n",
 					(unsigned long)bp->attr.bp_addr);
 			}
+		#endif
 		}
 		cpus_read_unlock();
 	#else
@@ -194,7 +380,9 @@ static void aml_default_hbp_handler(struct perf_event *bp,
 	pr_info("watch addr %llx triggered, pc:%ps, lr:%ps\n",
 		bp->attr.bp_addr, (void *)regs->pc,
 		(void *)regs->compat_lr_fiq);
+#ifdef CONFIG_AMLOGIC_DIS
 	bp->overflow_handler = perf_event_output_forward;
+#endif
 	show_regs(regs);
 	dump_stack();
 #else
@@ -224,7 +412,8 @@ static void aml_default_hbp_handler(struct perf_event *bp,
 	}
 	if (event)
 		awp->wp_event[i] = wp_flag(awp->wp_event[i], 1);
-	show_regs(regs);
+	//show_regs(regs);
+	dump_stack();
 #endif
 //	schedule_work_on(smp_processor_id(), &awp->replace_work);
 }
@@ -445,7 +634,7 @@ static int __init aml_watch_point_probe(struct platform_device *pdev)
 {
 	int r;
 
-	r = hw_breakpoint_slots(TYPE_DATA);
+	r = aml_hw_breakpoint_slots(TYPE_DATA);
 	pr_info("%s, in, wp:%d\n", __func__, r);
 	if (!r)
 		return -ENODEV;

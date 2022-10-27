@@ -29,6 +29,11 @@
   of_find_node_by_name
   copy_from_kernel_nofault
 
+# watch_point.ko
+  read_sanitised_ftr_reg
+  register_wide_hw_breakpoint
+  unregister_wide_hw_breakpoint
+
 # amlogic-cpuinfo.ko
   dump_stack
   tracepoint_probe_register

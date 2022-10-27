@@ -12,12 +12,6 @@
 
 #define MAX_WATCH_POINTS	16
 
-#ifdef CONFIG_ARM64
-extern u64 read_wb_reg(int reg, int n);
-#else
-extern u32 read_wb_reg(int n);
-#endif
-
 #ifdef CONFIG_HAVE_HW_BREAKPOINT
 extern int aml_watch_point_register(unsigned long addr,
 				    unsigned int len,

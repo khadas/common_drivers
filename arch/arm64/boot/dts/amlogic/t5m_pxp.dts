@@ -237,7 +237,7 @@
 
 	unifykey {
 		compatible = "amlogic,unifykey";
-		status = "disabled";
+		status = "okay";
 
 		unifykey-num = <24>;
 		unifykey-index-0 = <&keysn_0>;
@@ -1031,7 +1031,7 @@
 
 /* SD card */
 &sd_emmc_b {
-	status = "disabled";
+	status = "okay";
 	pinctrl-0 = <&sd_all_pins>;
 	pinctrl-1 = <&sd_1bit_pins>;
 	pinctrl-2 = <&sd_clk_gate_pins>;
@@ -1046,18 +1046,18 @@
 //	sd_uhs-sdr104;
 	max-frequency = <200000000>;
 
-	non-removable;
+	//non-removable;
 	disable-wp;
 	amlogic,dram-access-quirk;
 
-	cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
+	cd-gpios = <&gpio GPIOC_10 GPIO_ACTIVE_HIGH>;
 	//dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
 	//vmmc-supply = <&vddao_3v3>;
 	//vqmmc-supply = <&emmc_1v8>;
 };
 
 &sd_emmc_c {
-	status = "disabled";
+	status = "okay";
 	pinctrl-0 = <&emmc_pins>, <&emmc_ds_pins>;
 	pinctrl-1 = <&emmc_clk_gate_pins>;
 	pinctrl-names = "default", "clk-gate";

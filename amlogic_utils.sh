@@ -437,6 +437,8 @@ function modules_install() {
 		}
 	}' > __install.sh.tmp
 
+	cp modules.order modules.order.back
+	cut -d ' ' -f 2 __install.sh.tmp > modules.order
 	create_ramdisk_vendor __install.sh.tmp
 
 	echo "#!/bin/sh" > install.sh

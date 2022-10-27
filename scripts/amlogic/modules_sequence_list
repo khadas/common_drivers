@@ -41,8 +41,6 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-drm.ko
 	dwc3.ko
 	dwc_otg.ko
-	mdio
-	amlogic
 )
 
 VENDOR_MODULES_LOAD_FIRST_LIST=(

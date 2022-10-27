@@ -65,6 +65,12 @@ void should_wakeup_kswap(gfp_t gfp_mask, int order,
 }
 EXPORT_SYMBOL(should_wakeup_kswap);
 
+unsigned long aml_free_reserved_area(void *start, void *end, int poison, const char *s)
+{
+	return free_reserved_area(start, end, poison, s);
+}
+EXPORT_SYMBOL(aml_free_reserved_area);
+
 void adjust_redzone_end(const void *ptr, size_t size, unsigned long *p_end)
 {
 	if (PageOwnerPriv1(virt_to_page(ptr))) { /* end of this page was freed */

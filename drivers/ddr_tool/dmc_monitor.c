@@ -74,7 +74,7 @@ static int early_dmc_param(char *buf)
 }
 __setup("dmc_monitor=", early_dmc_param);
 
-#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE)
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 struct page_trace *dmc_find_page_base(struct page *page)
 {
@@ -88,6 +88,7 @@ struct page_trace *dmc_trace_buffer;
 static unsigned long _kernel_text;
 static unsigned int dmc_trace_step;
 static u64 module_alloc_base_dmc;
+static int once_flag = 1;
 
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
 void get_page_trace_buf_hook(void *data, struct zone *preferred_zone, struct zone *zone,
@@ -101,8 +102,6 @@ void get_page_trace_buf_hook(void *data, struct zone *preferred_zone, struct zon
 	_kernel_text = (unsigned long)zone;
 	dmc_trace_step = alloc_flags;
 	module_alloc_base_dmc = (u64)migratetype;
-	unregister_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);
-	pr_info("%s, %d: got pagetrace buffer.\n", __func__, __LINE__);
 }
 #endif
 
@@ -544,6 +543,13 @@ static ssize_t device_store(struct class *cla,
 	if (dmc_mon->addr_start < dmc_mon->addr_end && dmc_mon->ops &&
 	     dmc_mon->ops->set_monitor)
 		dmc_mon->ops->set_monitor(dmc_mon);
+#if (IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE)		&& \
+	!IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE_INLINE)	&& \
+	IS_ENABLED(CONFIG_TRACEPOINTS)			&& \
+	IS_ENABLED(CONFIG_ANDROID_VENDOR_HOOKS))
+	if (once_flag && !dmc_trace_buffer)
+		register_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);
+#endif
 
 	return count;
 }
@@ -569,6 +575,16 @@ static CLASS_ATTR_RW(device);
 static ssize_t dump_show(struct class *cla,
 			 struct class_attribute *attr, char *buf)
 {
+#if (IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE)		&& \
+	!IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE_INLINE)	&& \
+	IS_ENABLED(CONFIG_TRACEPOINTS)			&& \
+	IS_ENABLED(CONFIG_ANDROID_VENDOR_HOOKS))
+	if (once_flag && dmc_trace_buffer) {
+		pr_info("%s, %d: got pagetrace buffer.\n", __func__, __LINE__);
+		unregister_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);
+		once_flag = 0;
+	}
+#endif
 	return dump_dmc_reg(buf);
 }
 static CLASS_ATTR_RO(dump);
@@ -862,13 +878,6 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 	}
 #if defined(CONFIG_AMLOGIC_USER_FAULT) && defined(CONFIG_AMLOGIC_BRACK_GKI)
 	set_dump_dmc_func(dump_dmc_reg);
-#endif
-#ifdef CONFIG_AMLOGIC_PAGE_TRACE
-#ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
-	register_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);
-#endif
-#endif
 #endif
 	return 0;
 }

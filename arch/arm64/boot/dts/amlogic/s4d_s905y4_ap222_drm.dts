@@ -1347,7 +1347,7 @@
 
 /* SDIO */
 &sd_emmc_a {
-	status = "disabled";
+	status = "okay";
 	pinctrl-0 = <&sdio_pins>;
 	pinctrl-1 = <&sdio_clk_gate_pins>;
 	pinctrl-names = "default", "clk-gate";
@@ -1356,8 +1356,8 @@
 
 	bus-width = <4>;
 	cap-sd-highspeed;
-//	sd-uhs-sdr50;
-//	sd-uhs-sdr104;
+	sd-uhs-sdr50;
+	sd-uhs-sdr104;
 	max-frequency = <200000000>;
 
 	non-removable;

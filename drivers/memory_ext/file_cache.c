@@ -24,10 +24,12 @@
 #include <asm/stacktrace.h>
 #include <linux/amlogic/file_cache.h>
 #include <linux/tick.h>
+#include <trace/hooks/mm.h>
 
 static int file_cache_filter = 64; /* not print size < file_cache_filter, kb */
 
 static struct proc_dir_entry *d_filecache;
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
 static int record_fct(struct page *page, struct file_cache_trace *fct,
 		      int *used, struct rb_root *root, int mc,
 		      int active)
@@ -77,6 +79,7 @@ static int record_fct(struct page *page, struct file_cache_trace *fct,
 	rb_insert_color(&tmp->entry, root);
 	return 0;
 }
+#endif
 
 struct filecache_stat {
 	unsigned int total;
@@ -84,75 +87,158 @@ struct filecache_stat {
 	unsigned int files;
 };
 
-static void update_file_cache(struct filecache_stat *fs,
-			      struct file_cache_trace *fct)
+static struct filecache_stat fs;
+
+static inline unsigned long vma_start_pgoff(struct vm_area_struct *v)
 {
-	struct lruvec *lruvec;
-	pg_data_t *pgdat, *tmp;
+	return v->vm_pgoff;
+}
+
+static inline unsigned long vma_last_pgoff(struct vm_area_struct *v)
+{
+	return v->vm_pgoff + vma_pages(v) - 1;
+}
+
+/*
+ * Iterate over intervals intersecting [start;last]
+ *
+ * Note that a node's interval intersects [start;last] iff:
+ *   Cond1: vma_start_pgoff(node) <= last
+ * and
+ *   Cond2: start <= vma_last_pgoff(node)
+ */
+
+static struct vm_area_struct *
+aml_vma_subtree_search(struct vm_area_struct *node, unsigned long start, unsigned long last)
+{
+	while (true) {
+		/*
+		 * Loop invariant: start <= node->shared.rb_subtree_last
+		 * (Cond2 is satisfied by one of the subtree nodes)
+		 */
+		if (node->shared.rb.rb_left) {
+			struct vm_area_struct *left = rb_entry(node->shared.rb.rb_left,
+						  struct vm_area_struct, shared.rb);
+			if (start <= left->shared.rb_subtree_last) {
+				/*
+				 * Some nodes in left subtree satisfy Cond2.
+				 * Iterate to find the leftmost such node N.
+				 * If it also satisfies Cond1, that's the
+				 * match we are looking for. Otherwise, there
+				 * is no matching interval as nodes to the
+				 * right of N can't satisfy Cond1 either.
+				 */
+				node = left;
+				continue;
+			}
+		}
+		if (vma_start_pgoff(node) <= last) {		/* Cond1 */
+			if (start <= vma_last_pgoff(node))	/* Cond2 */
+				return node;	/* node is leftmost match */
+			if (node->shared.rb.rb_right) {
+				node = rb_entry(node->shared.rb.rb_right,
+						struct vm_area_struct, shared.rb);
+				if (start <= node->shared.rb_subtree_last)
+					continue;
+			}
+		}
+		return NULL;	/* No match */
+	}
+}
+
+static struct vm_area_struct *
+aml_vma_iter_first(struct rb_root_cached *root,
+			unsigned long start, unsigned long last)
+{
+	struct vm_area_struct *node, *leftmost;
+
+	if (!root->rb_root.rb_node)
+		return NULL;
+
+	/*
+	 * Fastpath range intersection/overlap between A: [a0, a1] and
+	 * B: [b0, b1] is given by:
+	 *
+	 *         a0 <= b1 && b0 <= a1
+	 *
+	 *  ... where A holds the lock range and B holds the smallest
+	 * 'start' and largest 'last' in the tree. For the later, we
+	 * rely on the root node, which by augmented interval tree
+	 * property, holds the largest value in its last-in-subtree.
+	 * This allows mitigating some of the tree walk overhead for
+	 * non-intersecting ranges, maintained and consulted in O(1).
+	 */
+	node = rb_entry(root->rb_root.rb_node, struct vm_area_struct, shared.rb);
+	if (node->shared.rb_subtree_last < start)
+		return NULL;
+
+	leftmost = rb_entry(root->rb_leftmost, struct vm_area_struct, shared.rb);
+	if (vma_start_pgoff(leftmost) > last)
+		return NULL;
+
+	return aml_vma_subtree_search(node, start, last);
+}
+
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+void get_file_cache_hook(void *data, struct lruvec *lruvec)
+{
 	struct page *page, *next;
 	struct list_head *list;
 	struct rb_root fct_root = RB_ROOT;
 	unsigned int t = 0, in = 0, an = 0;
 	int r, mc, lru = 0, a = 0;
-	struct mem_cgroup *root = NULL, *memcg;
+	struct file_cache_trace *fct = (struct file_cache_trace *)data;
 
-	for_each_online_pgdat(pgdat) {
-		memcg = mem_cgroup_iter(root, NULL, NULL);
-		do {
-			lruvec = mem_cgroup_lruvec(memcg, pgdat);
-			tmp = lruvec_pgdat(lruvec);
+	for_each_lru(lru) {
+		/* only count for filecache */
+		if (!is_file_lru(lru) &&
+				lru != LRU_UNEVICTABLE)
+			continue;
 
-			for_each_lru(lru) {
-				/* only count for filecache */
-				if (!is_file_lru(lru) &&
-				   lru != LRU_UNEVICTABLE)
-					continue;
+		if (lru == LRU_ACTIVE_FILE)
+			a = 1;
+		else
+			a = 0;
 
-				if (lru == LRU_ACTIVE_FILE)
-					a = 1;
+		list = &lruvec->lists[lru];
+		spin_lock_irq(&lruvec->lru_lock);
+		list_for_each_entry_safe(page, next,
+				list, lru) {
+			if (!page_is_file_lru(page))
+				continue;
+
+			t++;
+			mc = page_mapcount(page);
+			if (mc <= 0) {
+				if (a)
+					an++;
 				else
-					a = 0;
-
-				list = &lruvec->lists[lru];
-				spin_lock_irq(&lruvec->lru_lock);
-				list_for_each_entry_safe(page, next,
-							 list, lru) {
-					if (!page_is_file_lru(page))
-						continue;
-
-					t++;
-					mc = page_mapcount(page);
-					if (mc <= 0) {
-						if (a)
-							an++;
-						else
-							in++;
-						continue;
-					}
-					r = record_fct(page, fct, &fs->files,
-						       &fct_root, mc, a);
-					/* some data may lost */
-					if (r == -ERANGE) {
-						spin_unlock_irq(&lruvec->lru_lock);
-						goto out;
-					}
-					if (r) {
-						if (a)
-							an++;
-						else
-							in++;
-					}
-				}
-				spin_unlock_irq(&lruvec->lru_lock);
+					in++;
+				continue;
 			}
-		} while ((memcg =  mem_cgroup_iter(root, memcg, NULL)));
+			r = record_fct(page, fct, &fs.files,
+					&fct_root, mc, a);
+			/* some data may lost */
+			if (r == -ERANGE) {
+				spin_unlock_irq(&lruvec->lru_lock);
+				goto out;
+			}
+			if (r) {
+				if (a)
+					an++;
+				else
+					in++;
+			}
+		}
+		spin_unlock_irq(&lruvec->lru_lock);
 	}
 out:	/* update final statistics */
-	fs->total    = t;
-	fs->nomap[0] = an + in;
-	fs->nomap[1] = in;
-	fs->nomap[2] = an;
+	fs.total    += t;
+	fs.nomap[0] += an + in;
+	fs.nomap[1] += in;
+	fs.nomap[2] += an;
 }
+#endif
 
 static int fcmp(const void *x1, const void *x2)
 {
@@ -171,7 +257,7 @@ static char *parse_fct_name(struct file_cache_trace *fct, char *buf)
 	struct file *file;
 
 	pgoff = fct->off;
-	vma = vma_interval_tree_iter_first(&mapping->i_mmap, pgoff, pgoff);
+	vma = aml_vma_iter_first(&mapping->i_mmap, pgoff, pgoff);
 	if (!vma) {
 		pr_err("%s, can't find vma for mapping:%p\n",
 		       __func__, mapping);
@@ -204,6 +290,22 @@ static u64 get_iowait_time(struct kernel_cpustat *kcs, int cpu)
 	return iowait;
 }
 #else
+static u64 aml_get_idle_time(struct kernel_cpustat *kcs, int cpu)
+{
+	u64 idle, idle_usecs = -1ULL;
+
+	if (cpu_online(cpu))
+		idle_usecs = get_cpu_idle_time_us(cpu, NULL);
+
+	if (idle_usecs == -1ULL)
+		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+		idle = kcs->cpustat[CPUTIME_IDLE];
+	else
+		idle = idle_usecs * NSEC_PER_USEC;
+
+	return idle;
+}
+
 static u64 get_iowait_time(struct kernel_cpustat *kcs, int cpu)
 {
 	u64 iowait, iowait_usecs = -1ULL;
@@ -244,7 +346,7 @@ static u64 get_iow_time(u64 *cpu)
 		user += kcpustat_cpu(i).cpustat[CPUTIME_USER];
 		nice += kcpustat_cpu(i).cpustat[CPUTIME_NICE];
 		system += kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM];
-		idle += get_idle_time(kcs, i);
+		idle += aml_get_idle_time(kcs, i);
 		iowait += get_iowait_time(kcs, i);
 		irq += kcpustat_cpu(i).cpustat[CPUTIME_IRQ];
 		softirq += kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ];
@@ -266,7 +368,6 @@ static int filecache_show(struct seq_file *m, void *arg)
 	u64 iow = 0, cputime = 0;
 	char fname[256];
 	struct file_cache_trace *fct;
-	struct filecache_stat fs = {0};
 	unsigned int small_files = 0, small_fcache = 0;
 	unsigned int small_active = 0, small_inactive = 0;
 
@@ -275,7 +376,14 @@ static int filecache_show(struct seq_file *m, void *arg)
 		return -ENOMEM;
 
 	tick = sched_clock();
-	update_file_cache(&fs, fct);
+	/* update_file_cache(&fs, fct); */
+	memset(&fs, 0, sizeof(struct filecache_stat));
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+	register_trace_android_vh_do_traversal_lruvec(get_file_cache_hook, (void *)fct);
+	do_traversal_all_lruvec();
+	unregister_trace_android_vh_do_traversal_lruvec(get_file_cache_hook, (void *)fct);
+#endif
+
 	now  = sched_clock();
 	tick = now - tick;
 
@@ -343,3 +451,5 @@ static void __exit filecache_module_exit(void)
 }
 module_init(filecache_module_init);
 module_exit(filecache_module_exit);
+
+MODULE_LICENSE("GPL v2");

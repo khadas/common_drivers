@@ -34,6 +34,9 @@
   register_wide_hw_breakpoint
   unregister_wide_hw_breakpoint
 
+# file_cache.ko
+  mangle_path
+
 # amlogic-cpuinfo.ko
   dump_stack
   tracepoint_probe_register

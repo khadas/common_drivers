@@ -86,3 +86,10 @@ config AMLOGIC_HARDLOCKUP_DETECTOR
 	help
 	  if you want to hardlockup detector support,
 	  please use this option switch it.
+
+config AMLOGIC_HOTPLUG_ARM_CPU0
+	bool "Support VTS thermal 1.0 test on arm"
+	default n
+	help
+	  if build with arm set this config to y for vts thermal 1.0 test,
+	  set config to n for arm64

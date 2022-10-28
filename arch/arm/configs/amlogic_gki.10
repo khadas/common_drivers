@@ -8,3 +8,6 @@ CONFIG_I2C_COMPAT=y
 
 # usb xxx ko
 CONFIG_AMLOGIC_COMMON_USB=y
+
+#support for vts thermal 1.0 test
+CONFIG_AMLOGIC_HOTPLUG_ARM_CPU0=y

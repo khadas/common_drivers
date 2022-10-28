@@ -1733,16 +1733,6 @@
 		compatible = "amlogic, codec, streambuf";
 		dev_name = "mesonstream";
 		status = "okay";
-		clocks = <&clkc CLKID_SYS_CLK_DOS
-			&clkc CLKID_VDEC
-			&clkc CLKID_HCODEC
-			&clkc CLKID_HEVCF
-			&clkc CLKID_HEVCB>;
-		clock-names = "vdec",
-			"clk_vdec_mux",
-			"clk_hcodec_mux",
-			"clk_hevcf_mux",
-			"clk_hevcb_mux";
 		assigned-clock-parents = <&clkc CLKID_VDEC_0>,
 			<&clkc CLKID_HEVCF_0>,
 			<&clkc CLKID_HEVCB_0>;
@@ -1775,13 +1765,29 @@
 		power-domain-names = "pwrc-vdec",
 			"pwrc-hevc", "pwrc-hcodec";
 	};
-	vdec_cpu_ver: cpu_ver_name {
-		compatible = "amlogic, cpu-major-id-t3";
-	};
 	vcodec_dec {
 		compatible = "amlogic, vcodec-dec";
 		dev_name = "aml-vcodec-dec";
 		status = "okay";
+	};
+	vcodec_dos_dev: vcodec_dos_dev {
+		compatible = "amlogic, cpu-major-id-t3";
+		dev_name = "vcodec_dos_dev";
+		status = "okay";
+		reg = <0x0 0xfe320000 0x0 0x10000>,
+			<0x0 0xfe036000 0x0 0x2000>;
+		reg-names = "dosbus",
+			"dmcbus";
+		clocks = <&clkc CLKID_SYS_CLK_DOS
+			&clkc CLKID_VDEC
+			&clkc CLKID_HCODEC
+			&clkc CLKID_HEVCF
+			&clkc CLKID_HEVCB>;
+		clock-names = "vdec",
+			"clk_vdec_mux",
+			"clk_hcodec_mux",
+			"clk_hevcf_mux",
+			"clk_hevcb_mux";
 	};
 
 	meson-amvideom {

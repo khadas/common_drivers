@@ -137,6 +137,7 @@
 			size = <0x0 0x1BC00000>;
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 
 		/*di CMA pool */

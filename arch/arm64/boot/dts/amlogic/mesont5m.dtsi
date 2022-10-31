@@ -10,7 +10,7 @@
 #include <dt-bindings/clock/amlogic,t3-audio-clk.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/gpio/meson-t5m-gpio.h>
-#include <dt-bindings/power/t3-pd.h>
+#include <dt-bindings/power/t5m-pd.h>
 #include <dt-bindings/pwm/pwm.h>
 #include <dt-bindings/pwm/meson.h>
 #include <dt-bindings/input/input.h>
@@ -312,9 +312,9 @@
 	};
 
 	pwrdm: power-domains {
-		compatible = "amlogic,t3-power-domain";
+		compatible = "amlogic,t5m-power-domain";
 		#power-domain-cells = <1>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	galcore {
@@ -331,7 +331,7 @@
 		assigned-clock-rates =  <1704000000>;
 		interrupts = <0 59 4>;
 		interrupt-names = "galcore";
-		power-domains = <&pwrdm PDID_T3_NNA>;
+		//power-domains = <&pwrdm PDID_T3_NNA>;
 		reg = <0x0 0xfdb00000 0x0 0x40000
 		      0x0 0xfe090000 0x0 0x2000
 		      0x0 0xfe00c0a4 0x0 0x4
@@ -427,7 +427,7 @@
 		//dspsrambase = <0xf7100000>;
 		//dspsramsize = <0x100000>;
 		suspend_resume_support = <1 0>;
-		power-domains = <&pwrdm PDID_T3_DSPA>;
+		//power-domains = <&pwrdm PDID_T3_DSPA>;
 		power-domain-names = "dspa";
 		status = "disabled";
 	};
@@ -836,7 +836,7 @@
 				clock-names = "core", "async";
 				#address-cells = <1>;
 				#size-cells = <0>;
-				power-domains = <&pwrdm PDID_T3_SPICC0>;
+				//power-domains = <&pwrdm PDID_T3_SPICC0>;
 				status = "disabled";
 			};
 
@@ -849,7 +849,7 @@
 				clock-names = "core", "async";
 				#address-cells = <1>;
 				#size-cells = <0>;
-				power-domains = <&pwrdm PDID_T3_SPICC1>;
+				//power-domains = <&pwrdm PDID_T3_SPICC1>;
 				status = "disabled";
 			};
 
@@ -862,7 +862,7 @@
 				clock-names = "core", "async";
 				#address-cells = <1>;
 				#size-cells = <0>;
-				power-domains = <&pwrdm PDID_T3_SPICC2>;
+				//power-domains = <&pwrdm PDID_T3_SPICC2>;
 				status = "disabled";
 			};
 
@@ -1056,7 +1056,7 @@
 			      <0x0 0xfe024000 0x0 0x8>;
 			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq";
-			power-domains = <&pwrdm PDID_T3_ETH>;
+			//power-domains = <&pwrdm PDID_T3_ETH>;
 			//clocks = <&clkc CLKID_SYS_CLK_ETH>,
 			//	 <&clkc CLKID_FCLK_DIV2>,
 				 //<&clkc CLKID_MPLL2>;
@@ -1231,7 +1231,7 @@
 			#size-cells = <2>;
 			ranges = <0x0 0x0 0x0 0xFE330000 0x0 0x3000>;
 
-			power-domains = <&pwrdm PDID_T3_AUDIO>;
+			//power-domains = <&pwrdm PDID_T3_AUDIO>;
 			chip_id = <0x38>;
 			status = "disabled";
 
@@ -1747,7 +1747,7 @@
 			"clk_ge2d",
 			"clk_ge2d_gate";
 		reg = <0x0 0xff040000 0x0 0x100>;
-		power-domains = <&pwrdm PDID_T3_GE2D>;
+		//power-domains = <&pwrdm PDID_T3_GE2D>;
 	};
 
 	amlvecm: amlvecm {
@@ -1805,9 +1805,9 @@
 			"mailbox_1",
 			"mailbox_2",
 			"parser_b";
-		power-domains = <&pwrdm PDID_T3_DOS_VDEC>,
-			<&pwrdm PDID_T3_DOS_HEVC>,
-			<&pwrdm PDID_T3_DOS_HCODEC>;
+		//power-domains = <&pwrdm PDID_T3_DOS_VDEC>,
+			//<&pwrdm PDID_T3_DOS_HEVC>,
+			//<&pwrdm PDID_T3_DOS_HCODEC>;
 		power-domain-names = "pwrc-vdec",
 			"pwrc-hevc", "pwrc-hcodec";
 	};
@@ -2216,7 +2216,7 @@
 		pcie-ctrl-a-rst-bit = <12>;
 		pwr-ctl = <0>;
 		phy-type = <1>;
-		power-domains = <&pwrdm PDID_T3_PCIE>;
+		//power-domains = <&pwrdm PDID_T3_PCIE>;
 		pcie-ctrl-sleep-shift = <15>;
 		pcie-hhi-mem-pd-shift = <26>;
 		pcie-hhi-mem-pd-mask = <0xf>;

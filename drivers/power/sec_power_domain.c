@@ -18,6 +18,7 @@
 #include <dt-bindings/power/p1-pd.h>
 #include <dt-bindings/power/c3-pd.h>
 #include <dt-bindings/power/a1-pd.h>
+#include <dt-bindings/power/t5m-pd.h>
 #include <linux/kallsyms.h>
 
 struct sec_pm_private_domain {
@@ -468,6 +469,24 @@ static struct sec_pm_domain_data t5w_pm_domain_data __initdata = {
 	.domains_count = ARRAY_SIZE(t5w_pm_domains),
 };
 
+static struct sec_pm_private_domain t5m_pm_domains[] __initdata = {
+	[PDID_T5M_DOS_HEVC] = POWER_DOMAIN(hevc, PDID_T5M_DOS_HEVC,
+					   DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_T5M_DOS_GE2D_WRAP] = POWER_DOMAIN(ge2d, PDID_T5M_DOS_GE2D_WRAP,
+						DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_T5M_VPU_HDMI] = POWER_DOMAIN(vpu, PDID_T5M_VPU_HDMI,
+					DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_T5M_DEMOD] = POWER_DOMAIN(demod, PDID_T5M_DEMOD,
+					DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_T5M_FRC_TOP] = POWER_DOMAIN(frc, PDID_T5M_FRC_TOP,
+					  DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+};
+
+static struct sec_pm_domain_data t5m_pm_domain_data __initdata = {
+	.domains = t5m_pm_domains,
+	.domains_count = ARRAY_SIZE(t5m_pm_domains),
+};
+
 static struct sec_pm_private_domain c3_pm_domains[] __initdata = {
 	[PDID_C3_NNA] = POWER_DOMAIN(nna, PDID_C3_NNA, DOMAIN_INIT_OFF, 0),
 	[PDID_C3_AUDIO] = POWER_DOMAIN(audio, PDID_C3_AUDIO, DOMAIN_INIT_ON,
@@ -634,6 +653,10 @@ static const struct of_device_id pd_match_table[] = {
 	{
 		.compatible = "amlogic,a1-power-domain",
 		.data = &a1_pm_domain_data,
+	},
+	{
+		.compatible = "amlogic,t5m-power-domain",
+		.data = &t5m_pm_domain_data,
 	},
 	{}
 };

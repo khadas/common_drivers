@@ -588,8 +588,8 @@
 		memory-region = <&frc_cma_reserved>;
 		clocks = <&clkc CLKID_FRC>, <&clkc CLKID_ME>;
 		clock-names = "clk_frc", "clk_me";
-		power-domains = <&pwrdm PDID_T3_FRCTOP>, <&pwrdm PDID_T3_FRCME>,
-				<&pwrdm PDID_T3_FRCMC>;
+		//power-domains = <&pwrdm PDID_T3_FRCTOP>, <&pwrdm PDID_T3_FRCME>,
+				//<&pwrdm PDID_T3_FRCMC>;
 		power-domain-names = "frc-top","frc-me","frc-mc";
 		reg = <0x0 0xFF050000 0x0 0x30000 /*frc reg*/
 		       0x0 0xFE000000 0x0 0x300

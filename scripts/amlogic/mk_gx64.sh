@@ -20,8 +20,9 @@ ${ROOT_DIR}/common/scripts/kconfig/merge_config.sh -m -r \
 	${ROOT_DIR}/common/common_drivers/arch/arm64/configs/amlogic_gki.debug \
 	${ROOT_DIR}/common/common_drivers/arch/arm64/configs/amlogic_gcc64_deconfig
 
+export -n KCONFIG_CONFIG
 CROSS_COMPILE_TOOL=${ROOT_DIR}/prebuilts/gcc/linux-x86/host/x86_64-aarch64-10.3-2021.07/bin/aarch64-none-linux-gnu-
 
 source ${ROOT_DIR}/common/common_drivers/scripts/amlogic/mk_smarthome_common.sh $@
 
-rm ${KCONFIG_CONFIG}
+rm ${KCONFIG_CONFIG}*

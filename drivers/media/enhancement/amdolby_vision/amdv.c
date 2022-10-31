@@ -2554,7 +2554,6 @@ static void update_src_format_v2(enum signal_format_enum src_format, struct vfra
 		dv_id = vf->src_fmt.dv_id;
 
 	if (!dv_inst_valid(dv_id)) {
-		pr_err("[%s]err inst %d\n", __func__, dv_id);
 		dv_id = 0;
 	}
 	cur_format = dv_inst[dv_id].amdv_src_format;
@@ -4407,7 +4406,6 @@ int parse_sei_and_meta_ext_v2(struct vframe_s *vf,
 	int dv_id = vf->src_fmt.dv_id;
 
 	if (!dv_inst_valid(dv_id)) {
-		pr_err("err inst %d\n", dv_id);
 		return 1;
 	}
 
@@ -7985,7 +7983,6 @@ int amdv_parse_metadata_v2_stb(struct vframe_s *vf,
 
 		dv_id = vf->src_fmt.dv_id;
 		if (!dv_inst_valid(dv_id)) {
-			pr_err("[%s]err inst %d\n", __func__, dv_id);
 			dv_id = 0;
 		}
 
@@ -9085,6 +9082,8 @@ int amdv_control_path(struct vframe_s *vf, struct vframe_s *vf_2)
 
 	if (vf) {
 		dv_id = vf->src_fmt.dv_id;
+		if (!dv_inst_valid(dv_id))
+			dv_id = 0;
 		w = (vf->type & VIDTYPE_COMPRESS) ?
 			vf->compWidth : vf->width;
 		h = (vf->type & VIDTYPE_COMPRESS) ?
@@ -9098,6 +9097,8 @@ int amdv_control_path(struct vframe_s *vf, struct vframe_s *vf_2)
 
 	if (vf_2) {
 		dv_id_2 = vf_2->src_fmt.dv_id;
+		if (!dv_inst_valid(dv_id_2))
+			dv_id_2 = 1;
 		w = (vf_2->type & VIDTYPE_COMPRESS) ?
 			vf_2->compWidth : vf_2->width;
 		h = (vf_2->type & VIDTYPE_COMPRESS) ?
@@ -9555,7 +9556,6 @@ int amdv_wait_metadata_v2(struct vframe_s *vf, enum vd_path_e vd_path)
 	if (vf) {
 		dv_id = vf->src_fmt.dv_id;
 		if (!dv_inst_valid(dv_id)) {
-			pr_err("[%s]err inst %d\n", __func__, dv_id);
 			dv_id = 0;
 		}
 	} else {
@@ -9859,7 +9859,6 @@ int amdv_update_src_format_v2(struct vframe_s *vf, u8 toggle_mode, enum vd_path_
 		dv_id = vf->src_fmt.dv_id;
 
 	if (!dv_inst_valid(dv_id)) {
-		pr_err("[%s]err inst %d\n", __func__, dv_id);
 		dv_id = 0;
 	}
 	if (vd_path < NUM_IPCORE1)
@@ -11029,14 +11028,20 @@ static int amdolby_vision_process_v2_stb
 
 	if (dolby_vision_flags & FLAG_CERTIFICAION) {
 		if (vf) {
-			dv_id = vf->src_fmt.dv_id;
+			if (dv_inst_valid(vf->src_fmt.dv_id))
+				dv_id = vf->src_fmt.dv_id;
+			else
+				dv_id = 0;
 			h_size[dv_id] = (vf->type & VIDTYPE_COMPRESS) ?
 				vf->compWidth : vf->width;
 			v_size[dv_id] = (vf->type & VIDTYPE_COMPRESS) ?
 				vf->compHeight : vf->height;
 		}
 		if (vf_2) {
-			dv_id = vf_2->src_fmt.dv_id;
+			if (dv_inst_valid(vf_2->src_fmt.dv_id))
+				dv_id = vf_2->src_fmt.dv_id;
+			else
+				dv_id = 1;
 			h_size[dv_id] = (vf_2->type & VIDTYPE_COMPRESS) ?
 				vf_2->compWidth : vf_2->width;
 			v_size[dv_id] = (vf_2->type & VIDTYPE_COMPRESS) ?
@@ -11060,12 +11065,18 @@ static int amdolby_vision_process_v2_stb
 
 	if (dolby_vision_flags & FLAG_TOGGLE_FRAME) {
 		if (vf) {
-			dv_id = vf->src_fmt.dv_id;
+			if (dv_inst_valid(vf->src_fmt.dv_id))
+				dv_id = vf->src_fmt.dv_id;
+			else
+				dv_id = 0;
 			h_size[dv_id] = (display_size >> 16) & 0xffff;
 			v_size[dv_id] = display_size & 0xffff;
 		}
 		if (vf_2) {
-			dv_id = vf_2->src_fmt.dv_id;
+			if (dv_inst_valid(vf_2->src_fmt.dv_id))
+				dv_id = vf_2->src_fmt.dv_id;
+			else
+				dv_id = 1;
 			h_size[dv_id] = (display_size_2 >> 16) & 0xffff;
 			v_size[dv_id] = display_size_2 & 0xffff;
 		}
@@ -11204,7 +11215,10 @@ static int amdolby_vision_process_v2_stb
 			amdv_control_path(vf, vf_2);
 
 		if (vf) {
-			dv_id = vf->src_fmt.dv_id;
+			if (dv_inst_valid(vf->src_fmt.dv_id))
+				dv_id = vf->src_fmt.dv_id;
+			else
+				dv_id = 0;
 			h_size[dv_id] = (display_size >> 16) & 0xffff;
 			v_size[dv_id] = display_size & 0xffff;
 			if (h_size[dv_id] && v_size[dv_id]) {
@@ -11216,7 +11230,10 @@ static int amdolby_vision_process_v2_stb
 			}
 		}
 		if (vf_2) {
-			dv_id = vf_2->src_fmt.dv_id;
+			if (dv_inst_valid(vf_2->src_fmt.dv_id))
+				dv_id = vf_2->src_fmt.dv_id;
+			else
+				dv_id = 1;
 			h_size[dv_id] = (display_size_2 >> 16) & 0xffff;
 			v_size[dv_id] = display_size_2 & 0xffff;
 			if (h_size[dv_id] && v_size[dv_id]) {

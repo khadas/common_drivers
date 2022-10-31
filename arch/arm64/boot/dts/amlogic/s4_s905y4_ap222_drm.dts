@@ -1523,7 +1523,7 @@
 
 &drm_vpu {
 	status = "okay";
-	logo_addr = "0x7f800000";
+	logo_addr = "0x3fc00000";
 
 };
 

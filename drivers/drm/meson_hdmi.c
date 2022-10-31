@@ -811,7 +811,7 @@ int meson_hdmitx_atomic_check(struct drm_connector *connector,
 		return 0;
 
 	if (state->allow_modeset && new_crtc_state) {
-		if (!am_hdmi_info.hdmitx_on) {
+		if (!am_hdmi_info.hdmitx_on && !am_hdmi_info.android_path) {
 			new_crtc_state->connectors_changed = true;
 			DRM_ERROR("hdmitx_on changed, force modeset.\n");
 		}

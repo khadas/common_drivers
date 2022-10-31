@@ -369,7 +369,7 @@ static int __init canvas_probe(struct platform_device *pdev)
 	info->canvas_dev = pdev;
 	canvas_info = info;
 
-	pr_debug("%s ok, reg=%lx, size=%x base =%px\n", __func__,
+	pr_info("%s ok, reg=%lx, size=%x base =%px\n", __func__,
 		(unsigned long)res->start, size, info->reg_base);
 	return 0;
 err1:

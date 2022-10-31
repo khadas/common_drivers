@@ -1639,7 +1639,7 @@
 
 	canvas: canvas {
 		compatible = "amlogic, meson, canvas";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe036048 0x0 0x2000>;
 	};
 
@@ -1655,7 +1655,7 @@
 
 	rdma {
 		compatible = "amlogic, meson-t3, rdma";
-		status = "disabled";
+		status = "okay";
 		interrupts = <GIC_SPI 215 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "rdma";
 		/* after sc2 */
@@ -1665,8 +1665,8 @@
 	};
 
 	codec_io: codec_io {
-		compatible = "amlogic, meson-t3, codec-io";
-		status = "disabled";
+		compatible = "amlogic, meson-t5m, codec-io";
+		status = "okay";
 		#address-cells=<2>;
 		#size-cells=<2>;
 		ranges;
@@ -1674,7 +1674,7 @@
 			<0x0 0xfe320000 0x0 0x10000>,
 			<0x0 0x0 0x0 0x0>,
 			<0x0 0x0 0x0 0x00>,
-			<0x0 0xff000000 0x0 0x40000>,
+			<0x0 0xff800000 0x0 0x40000>,
 			<0x0 0xfe036000 0x0 0x2000>,
 			<0x0 0x0 0x0 0x0>,
 			<0x0 0xfe0a8000 0x0 0x2000>;
@@ -1719,7 +1719,7 @@
 	};
 
 	fb: fb {
-		compatible = "amlogic, fb-t3";
+		compatible = "amlogic, fb-t5m";
 		memory-region = <&logo_reserved>;
 		status = "disabled";
 		interrupts = <GIC_SPI 197 IRQ_TYPE_EDGE_RISING

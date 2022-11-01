@@ -1128,6 +1128,10 @@
 	};
 };
 
+&drm_amcvbsout {
+	status = "okay";
+};
+
 &lcd {
 	ports {
 		port {

@@ -1,8 +1,5 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
-# amlogic-i2c.ko
-CONFIG_I2C_COMPAT=y
-
 # build in for amlogic memory change
 CONFIG_AMLOGIC_MEMORY_EXTEND=y
 CONFIG_AMLOGIC_MEM_DEBUG=y
@@ -15,6 +12,3 @@ CONFIG_AMLOGIC_DEBUG_LOCKUP=y
 CONFIG_AMLOGIC_DEBUG_ATRACE=y
 CONFIG_AMLOGIC_DEBUG_TEST=n
 CONFIG_AMLOGIC_DEBUG_FILE=n
-
-# enable for fatload console
-CONFIG_DEVTMPFS=y

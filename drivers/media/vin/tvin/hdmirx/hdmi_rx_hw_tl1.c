@@ -338,7 +338,12 @@ void aml_pll_bw_cfg_tl1(void)
 	N = apll_tab_tl1[bw].N;
 	od2_div = apll_tab_tl1[bw].od2_div;
 	od2 = apll_tab_tl1[bw].od2;
+	u32 clk_rate;
 
+	clk_rate = rx_get_scdc_clkrate_sts();
+	bw = aml_phy_pll_band(rx.clk.cable_clk, clk_rate);
+	if (!is_clk_stable() || !cableclk)
+		return;
 	/*set audio pll divider*/
 	rx.phy.aud_div = apll_tab_tl1[bw].aud_div;
 	vco_clk = (cableclk * M) / N; /*KHz*/

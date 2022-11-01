@@ -183,7 +183,7 @@ static int am_meson_drm_bind(struct device *dev)
 	struct drm_device *drm;
 	struct platform_device *pdev = to_platform_device(dev);
 	u32 crtc_masks[ENCODER_MAX];
-	int i, ret = 0;
+	int i, vpu_dma_mask, ret = 0;
 
 	meson_driver.driver_features = DRIVER_HAVE_IRQ | DRIVER_GEM |
 		DRIVER_MODESET | DRIVER_ATOMIC | DRIVER_RENDER;
@@ -216,6 +216,17 @@ static int am_meson_drm_bind(struct device *dev)
 	} else {
 		for (i = 0; i < ENCODER_MAX; i++)
 			priv->crtc_masks[i] = crtc_masks[i];
+	}
+
+	vpu_dma_mask = 0;
+	ret = of_property_read_u32(dev->of_node, "vpu_dma_mask", &vpu_dma_mask);
+	if (!ret && vpu_dma_mask == 1) {
+		ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64));
+		if (ret)
+			ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+
+		if (ret)
+			DRM_ERROR("drm set dma mask fail\n");
 	}
 
 	dev_set_drvdata(dev, priv);

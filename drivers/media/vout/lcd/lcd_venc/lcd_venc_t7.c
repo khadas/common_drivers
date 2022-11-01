@@ -299,6 +299,7 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_T5W:
+	case LCD_CHIP_T5M:
 		/*[15:14]: 2'b10 or 2'b01*/
 		lcd_vcbus_write(ENCL_INBUF_CNTL1 + offset,
 				(2 << 14) | (pconf->basic.h_active - 1));

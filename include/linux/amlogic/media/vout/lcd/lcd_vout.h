@@ -102,6 +102,7 @@ enum lcd_chip_e {
 	LCD_CHIP_T3,	/* 10 */
 	LCD_CHIP_T5W,	/* 11 */
 	LCD_CHIP_C3,	/* 12 */
+	LCD_CHIP_T5M,	/* 13 */
 	LCD_CHIP_MAX,
 };
 

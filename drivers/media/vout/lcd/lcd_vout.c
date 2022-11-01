@@ -264,7 +264,8 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 		}
 		if (power_step->type != LCD_POWER_TYPE_WAIT_GPIO &&
 		    power_step->delay > 0)
-			lcd_delay_ms(power_step->delay);
+			if (!pdrv->lcd_pxp)
+				lcd_delay_ms(power_step->delay);
 		i++;
 	}
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
@@ -1980,6 +1981,16 @@ static struct lcd_data_s lcd_data_c3 = {
 	.offset_venc_data = {0},
 };
 
+static struct lcd_data_s lcd_data_t5m = {
+	.chip_type = LCD_CHIP_T5M,
+	.chip_name = "t5m",
+	.reg_map_table = &lcd_reg_t5[0],
+	.drv_max = 1,
+	.offset_venc = {0x0},
+	.offset_venc_if = {0x0},
+	.offset_venc_data = {0x0},
+};
+
 static const struct of_device_id lcd_dt_match_table[] = {
 	{
 		.compatible = "amlogic, lcd-axg",
@@ -2028,6 +2039,10 @@ static const struct of_device_id lcd_dt_match_table[] = {
 	{
 		.compatible = "amlogic, lcd-c3",
 		.data = &lcd_data_c3,
+	},
+	{
+		.compatible = "amlogic, lcd-t5m",
+		.data = &lcd_data_t5m,
 	},
 	{}
 };

@@ -6,6 +6,7 @@
 /dts-v1/;
 
 #include "mesont5m.dtsi"
+#include "mesont5m_pxp-panel.dtsi"
 
 / {
 	model = "Amlogic";

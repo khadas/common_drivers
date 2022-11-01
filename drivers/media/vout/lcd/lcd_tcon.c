@@ -2756,7 +2756,7 @@ static void lcd_tcon_axi_mem_secure_t3(void)
 }
 
 #if IS_ENABLED(CONFIG_AMLOGIC_TEE)
-int lcd_tcon_mem_tee_get_status(void)
+void lcd_tcon_mem_tee_get_status(void)
 {
 	unsigned int i;
 
@@ -2764,8 +2764,6 @@ int lcd_tcon_mem_tee_get_status(void)
 		LCDPR("tcon tee secure memory(%d) protect status %d\n",
 		      i, tcon_local_cfg.secure_cfg[i].protect);
 	}
-
-	return 0;
 }
 
 int lcd_tcon_mem_tee_protect(int mem_flag, int protect_en)

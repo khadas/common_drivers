@@ -54,7 +54,8 @@ static unsigned int lcd_vbyone_get_fsm_state(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
-	    pdrv->data->chip_type == LCD_CHIP_T3) {
+	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_status = VBO_STATUS_L_T7 + offset;
 	} else {
@@ -74,6 +75,7 @@ static void lcd_vbyone_force_cdr(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T7 ||
 	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M ||
 	    pdrv->data->chip_type == LCD_CHIP_T5W) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_insgn_ctrl = VBO_INSGN_CTRL_T7 + offset;
@@ -93,6 +95,7 @@ static void lcd_vbyone_force_lock(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T7 ||
 	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M ||
 	    pdrv->data->chip_type == LCD_CHIP_T5W) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_insgn_ctrl = VBO_INSGN_CTRL_T7 + offset;
@@ -135,7 +138,8 @@ void lcd_vbyone_sw_reset(struct aml_lcd_drv_s *pdrv)
 		lcd_combo_dphy_setb(pdrv, reg_phy_tx_ctrl0, 0, 8, 2);
 		lcd_vcbus_write(reg_rst, 0);
 	} else if (pdrv->data->chip_type == LCD_CHIP_T5W ||
-		   pdrv->data->chip_type == LCD_CHIP_T3) {
+		   pdrv->data->chip_type == LCD_CHIP_T3 ||
+		   pdrv->data->chip_type == LCD_CHIP_T5M) {
 		switch (pdrv->index) {
 		case 0:
 			reg_phy_tx_ctrl0 = ANACTRL_LVDS_TX_PHY_CNTL0;
@@ -192,6 +196,7 @@ static void lcd_vbyone_hw_filter(struct aml_lcd_drv_s *pdrv, int flag)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M ||
 	    pdrv->data->chip_type == LCD_CHIP_T3) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_filter_l = VBO_INFILTER_CTRL_T7 + offset;
@@ -251,6 +256,7 @@ static void lcd_vbyone_sync_pol(struct aml_lcd_drv_s *pdrv,
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M ||
 	    pdrv->data->chip_type == LCD_CHIP_T3) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		lcd_vcbus_setb(VBO_VIN_CTRL_T7 + offset, hsync_pol, 4, 1);
@@ -309,6 +315,7 @@ static int lcd_vbyone_lanes_set(struct aml_lcd_drv_s *pdrv, int lane_num,
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M ||
 	    pdrv->data->chip_type == LCD_CHIP_T3) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		sublane_num = lane_num / region_num; /* lane num in each region */
@@ -543,6 +550,7 @@ void lcd_vbyone_wait_timing_stable(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M ||
 	    pdrv->data->chip_type == LCD_CHIP_T3) {
 		offset = pdrv->data->offset_venc[pdrv->index];
 
@@ -579,7 +587,8 @@ void lcd_vbyone_cdr_training_hold(struct aml_lcd_drv_s *pdrv, int flag)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
-	    pdrv->data->chip_type == LCD_CHIP_T3) {
+	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M) {
 		offset = pdrv->data->offset_venc[pdrv->index];
 		reg = VBO_FSM_HOLDER_H_T7 + offset;
 	} else {
@@ -601,7 +610,8 @@ void lcd_vbyone_wait_hpd(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
-	    pdrv->data->chip_type == LCD_CHIP_T3) {
+	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_status = VBO_STATUS_L_T7 + offset;
 		reg_ctrl = VBO_INSGN_CTRL_T7 + offset;
@@ -643,7 +653,8 @@ static void lcd_vbyone_power_on_wait_lockn(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
-	    pdrv->data->chip_type == LCD_CHIP_T3) {
+	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_status = VBO_STATUS_L_T7 + offset;
 	} else {
@@ -700,7 +711,8 @@ void lcd_vbyone_wait_stable(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
-	    pdrv->data->chip_type == LCD_CHIP_T3) {
+	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_status = VBO_STATUS_L_T7 + offset;
 	} else {
@@ -732,7 +744,8 @@ void lcd_vbyone_interrupt_enable(struct aml_lcd_drv_s *pdrv, int flag)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
-	    pdrv->data->chip_type == LCD_CHIP_T3) {
+	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_ctrl = VBO_INTR_STATE_CTRL_T7 + offset;
 		reg_holder_l = VBO_FSM_HOLDER_L_T7 + offset;
@@ -832,7 +845,8 @@ static void lcd_vx1_hold_reset(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
-	    pdrv->data->chip_type == LCD_CHIP_T3) {
+	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_ctrl = VBO_INTR_STATE_CTRL_T7 + offset;
 		reg_unmask = VBO_INTR_UNMASK_T7 + offset;
@@ -895,7 +909,8 @@ static int lcd_vbyone_vsync_handler(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
-	    pdrv->data->chip_type == LCD_CHIP_T3) {
+	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_status = VBO_STATUS_L_T7 + offset;
 		reg_intr_ctrl = VBO_INTR_STATE_CTRL_T7 + offset;
@@ -1022,7 +1037,8 @@ static irqreturn_t lcd_vbyone_interrupt_handler(int irq, void *data)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
-	    pdrv->data->chip_type == LCD_CHIP_T3) {
+	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_status = VBO_STATUS_L_T7 + offset;
 		reg_intr_ctrl = VBO_INTR_STATE_CTRL_T7 + offset;
@@ -1163,7 +1179,8 @@ static void lcd_vbyone_interrupt_init(struct aml_lcd_drv_s *pdrv)
 	vx1_conf = &pdrv->config.control.vbyone_cfg;
 	if (pdrv->data->chip_type == LCD_CHIP_T5W ||
 	    pdrv->data->chip_type == LCD_CHIP_T7 ||
-	    pdrv->data->chip_type == LCD_CHIP_T3) {
+	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M) {
 		offset = pdrv->data->offset_venc_if[pdrv->index];
 		reg_insig_ctrl = VBO_INSGN_CTRL_T7 + offset;
 		reg_holder_l = VBO_FSM_HOLDER_L_T7 + offset;

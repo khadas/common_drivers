@@ -1966,6 +1966,10 @@ static const struct of_device_id dummy_venc_dt_match_table[] = {
 		.compatible = "amlogic, dummy_venc_t5w",
 		.data = &dummy_venc_match_data_t5w,
 	},
+	{
+		.compatible = "amlogic, dummy_venc_t5m",
+		.data = &dummy_venc_match_data_t7,
+	},
 	{}
 };
 

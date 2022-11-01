@@ -23,7 +23,6 @@
 #define LCDUKEYERR(fmt, args...)  \
 		pr_info("lcd ukey err: error: " fmt "", ## args)
 
-#ifdef CONFIG_AMLOGIC_UNIFYKEY
 unsigned int cal_crc32(unsigned int crc, const unsigned char *buf,
 		       int buf_len)
 {
@@ -51,6 +50,7 @@ unsigned int cal_crc32(unsigned int crc, const unsigned char *buf,
 	return ~crcu32;
 }
 
+#ifdef CONFIG_AMLOGIC_UNIFYKEY
 bool lcd_unifykey_init_get(void)
 {
 	if (key_unify_get_init_flag())

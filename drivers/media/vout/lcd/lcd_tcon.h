@@ -168,7 +168,7 @@ struct lcd_tcon_local_cfg_s {
 };
 
 #if IS_ENABLED(CONFIG_AMLOGIC_TEE)
-int lcd_tcon_mem_tee_get_status(void);
+void lcd_tcon_mem_tee_get_status(void);
 int lcd_tcon_mem_tee_protect(int mem_flag, int protect_en);
 #endif
 

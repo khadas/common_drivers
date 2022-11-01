@@ -123,7 +123,8 @@ static void lcd_lvds_clk_util_set(struct aml_lcd_drv_s *pdrv)
 				     (1 << 6) | (1 << 0));
 		/* decoupling fifo write enable after fifo enable */
 		lcd_combo_dphy_setb(pdrv, reg_phy_tx_ctrl1, 1, 7, 1);
-	} else if (pdrv->data->chip_type == LCD_CHIP_T3) {
+	} else if (pdrv->data->chip_type == LCD_CHIP_T3 ||
+				pdrv->data->chip_type == LCD_CHIP_T5M) {
 		/* set fifo_clk_sel: div 7 */
 		lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL0, (1 << 6));
 		/* set cntl_ser_en:  8-channel to 1 */
@@ -189,6 +190,7 @@ static void lcd_lvds_control_set(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->data->chip_type == LCD_CHIP_T7 ||
 	    pdrv->data->chip_type == LCD_CHIP_T3 ||
+	    pdrv->data->chip_type == LCD_CHIP_T5M ||
 	    pdrv->data->chip_type == LCD_CHIP_T5W) {
 		reg_lvds_pack_ctrl = LVDS_PACK_CNTL_ADDR_T7 + offset;
 		reg_lvds_gen_ctrl = LVDS_GEN_CNTL_T7 + offset;
@@ -332,6 +334,7 @@ static void lcd_lvds_control_set(struct aml_lcd_drv_s *pdrv)
 		lcd_vcbus_write(P2P_BIT_REV_T7 + offset, 2);
 		break;
 	case LCD_CHIP_T3:
+	case LCD_CHIP_T5M:
 	case LCD_CHIP_T5W:
 		/* lvds channel:    //tx 12 channels
 		 *    0: d0_a
@@ -409,7 +412,8 @@ static void lcd_lvds_disable(struct aml_lcd_drv_s *pdrv)
 		lcd_combo_dphy_setb(pdrv, reg_dphy_tx_ctrl1, 0, 6, 2);
 		/* disable lane */
 		lcd_combo_dphy_setb(pdrv, reg_dphy_tx_ctrl0, 0, 16, 10);
-	} else if (pdrv->data->chip_type == LCD_CHIP_T3) {
+	} else if (pdrv->data->chip_type == LCD_CHIP_T3 ||
+				pdrv->data->chip_type == LCD_CHIP_T5M) {
 		/* disable lvds fifo */
 		lcd_vcbus_setb(LVDS_GEN_CNTL_T7, 0, 3, 1);
 		lcd_vcbus_setb(LVDS_GEN_CNTL_T7, 0, 0, 2);
@@ -501,7 +505,8 @@ static void lcd_vbyone_clk_util_set(struct aml_lcd_drv_s *pdrv)
 				     (1 << 6) | (1 << 0));
 		/* decoupling fifo write enable after fifo enable */
 		lcd_combo_dphy_setb(pdrv, reg_phy_tx_ctrl1, 1, 7, 1);
-	} else if (pdrv->data->chip_type == LCD_CHIP_T3) {
+	} else if (pdrv->data->chip_type == LCD_CHIP_T3 ||
+				pdrv->data->chip_type == LCD_CHIP_T5M) {
 		switch (pdrv->index) {
 		case 0:
 			reg_phy_tx_ctrl0 = ANACTRL_LVDS_TX_PHY_CNTL0;
@@ -565,6 +570,7 @@ static void lcd_vbyone_control_set(struct aml_lcd_drv_s *pdrv)
 	case LCD_CHIP_T7:
 	case LCD_CHIP_T3:
 	case LCD_CHIP_T5W:
+	case LCD_CHIP_T5M:
 		lcd_vbyone_enable_t7(pdrv);
 		break;
 	default:
@@ -604,6 +610,7 @@ static void lcd_vbyone_control_off(struct aml_lcd_drv_s *pdrv)
 		lcd_combo_dphy_setb(pdrv, reg_dphy_tx_ctrl0, 0, 16, 8);
 		break;
 	case LCD_CHIP_T3:
+	case LCD_CHIP_T5M:
 		switch (pdrv->index) {
 		case 0:
 			reg_dphy_tx_ctrl0 = ANACTRL_LVDS_TX_PHY_CNTL0;
@@ -665,6 +672,7 @@ static void lcd_mlvds_control_set(struct aml_lcd_drv_s *pdrv)
 
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_T3:
+	case LCD_CHIP_T5M:
 		/* fifo_clk_sel[7:6]: 0=div6, 1=div 7, 2=div8, 3=div10 */
 		lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL0, (div_sel << 6));
 		/* serializer_en[27:16] */
@@ -725,6 +733,7 @@ static void lcd_mlvds_disable(struct aml_lcd_drv_s *pdrv)
 
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_T3:
+	case LCD_CHIP_T5M:
 		/* disable fifo */
 		lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 30, 2);
 		/* disable lane */
@@ -762,6 +771,7 @@ static void lcd_p2p_control_set(struct aml_lcd_drv_s *pdrv)
 
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_T3:
+	case LCD_CHIP_T5M:
 		/* fifo_clk_sel[7:6]: 0=div6, 1=div 7, 2=div8, 3=div10 */
 		lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL0, (phy_div << 6));
 		/* serializer_en[27:16] */
@@ -822,6 +832,7 @@ static void lcd_p2p_disable(struct aml_lcd_drv_s *pdrv)
 
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_T3:
+	case LCD_CHIP_T5M:
 		/* disable fifo */
 		lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 30, 2);
 		/* disable lane */

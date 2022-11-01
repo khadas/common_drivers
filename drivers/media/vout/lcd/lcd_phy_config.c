@@ -1775,6 +1775,9 @@ int lcd_phy_probe(struct aml_lcd_drv_s *pdrv)
 int lcd_phy_config_init(struct aml_lcd_drv_s *pdrv)
 {
 	lcd_phy_ctrl = NULL;
+#ifdef CONFIG_AML_LCD_PXP
+	return 0;
+#endif
 
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_AXG:
@@ -1807,6 +1810,7 @@ int lcd_phy_config_init(struct aml_lcd_drv_s *pdrv)
 		lcd_phy_ctrl = &lcd_phy_ctrl_t7;
 		break;
 	case LCD_CHIP_T3:
+	case LCD_CHIP_T5M:
 		lcd_phy_ctrl = &lcd_phy_ctrl_t3;
 		break;
 	case LCD_CHIP_T5W:

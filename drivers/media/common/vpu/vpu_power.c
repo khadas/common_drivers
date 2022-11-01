@@ -29,8 +29,9 @@ void vpu_module_init_config(void)
 	VPUPR("%s\n", __func__);
 
 	/* vpu clk gate init off */
-	ctrl_table = vpu_conf.data->module_init_table;
-	if (ctrl_table) {
+	//ctrl_table = vpu_conf.data->module_init_table;
+	if (vpu_conf.data->module_init_table) {
+		ctrl_table = vpu_conf.data->module_init_table;
 		i = 0;
 		while (i < VPU_MOD_INIT_CNT_MAX) {
 			if (ctrl_table[i].reg == VPU_REG_END)
@@ -53,6 +54,7 @@ void vpu_module_init_config(void)
 	case VPU_CHIP_S4:
 	case VPU_CHIP_S4D:
 	case VPU_CHIP_T3:
+	case VPU_CHIP_T5M:
 		vpu_vcbus_write(VPU_RDARB_MODE_L1C1, 0x210000);
 		vpu_vcbus_write(VPU_RDARB_MODE_L1C2, 0x10000);
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x900000);

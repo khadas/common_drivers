@@ -725,41 +725,29 @@ void replace_page_trace(struct page *new, struct page *old)
  */
 static int __init page_trace_pre_work(unsigned long size)
 {
-	unsigned int order = get_order(size);
-	unsigned long addr;
-	unsigned long used, end;
 	struct page *page;
+	void *paddr;
+	void *pend;
 
-	if (order >= MAX_ORDER) {
-		pr_err("trace buffer size %lx is too large\n", size);
-		return -1;
-	}
-	addr = __get_free_pages(GFP_KERNEL, order);
-	if (!addr)
+	paddr = memblock_alloc_low(size, PAGE_SIZE);
+	if (!paddr) {
+		panic("%s: Failed to allocate %lu bytes.\n", __func__, size);
 		return -ENOMEM;
+	}
 
-	trace_buffer = (struct page_trace *)addr;
-	end  = addr + (PAGE_SIZE << order);
-	used = addr + size;
-	pr_info("%s, trace buffer:%p, size:%lx, used:%lx, end:%lx\n",
-		__func__, trace_buffer, size, used, end);
-	memset((void *)addr, 0, size);
+	trace_buffer = (struct page_trace *)paddr;
+	pend = paddr + size;
+	pr_info("%s, trace buffer:%px, size:%lx, end:%px\n",
+			__func__, trace_buffer, size, pend);
+	memset(paddr, 0, size);
 
-	for (; addr < end; addr += PAGE_SIZE) {
-		if (addr < used) {
-			page = virt_to_page((void *)addr);
-			set_init_page_trace(page, 0, GFP_KERNEL);
-		#if DEBUG_PAGE_TRACE
-			pr_info("%s, trace page:%p, %lx\n",
+	for (; paddr < pend; paddr += PAGE_SIZE) {
+		page = virt_to_page(paddr);
+		set_init_page_trace(page, 0, GFP_KERNEL);
+	#if DEBUG_PAGE_TRACE
+		pr_info("%s, trace page:%p, %lx\n",
 				__func__, page, page_to_pfn(page));
-		#endif
-		} else {
-			free_page(addr);
-		#if DEBUG_PAGE_TRACE
-			pr_info("%s, free page:%lx, %lx\n", __func__,
-				addr, page_to_pfn(virt_to_page(addr)));
-		#endif
-		}
+	#endif
 	}
 	return 0;
 }
@@ -951,7 +939,7 @@ static int update_page_trace(struct seq_file *m, struct zone *zone,
 {
 	unsigned long pfn;
 	unsigned long start_pfn = zone->zone_start_pfn;
-	unsigned long end_pfn = zone_end_pfn(zone);
+	unsigned long end_pfn = start_pfn + zone->present_pages;
 	int    ret = 0, mt;
 	struct page_trace *trace;
 	struct page_summary *p;

@@ -30,13 +30,17 @@
 //Bit 15:13        reserved
 //Bit 12:0         reg_frc_probe_pt_x    // unsigned ,   RW, default = 100  reg_mc_probe_pt_x mc_probe positon registers
 #define FRC_INP_HOLD_CTRL                          0x0002
-//Bit 31           pls_inp_frm_start     // unsigned ,   RW, default = 0,start by write high in pluse start mode
-//Bit 30:21        reserved
-//Bit 20           reg_frc_win_en        // unsigned ,   RW, default = 1,0:auto start mode 1:pluse start mode
-//Bit 19:17        reserved
-//Bit 16           reg_inp_frm_start_sel // unsigned ,   RW, default = 0,0:auto start mode 1:pluse start mode
-//Bit 15:13        reserved
-//Bit 12:0         reg_inp_hold_line     // unsigned ,   RW, default = 6,inp start reg_inp_hold_line after go_field in auto start mode
+//Bit 31      pls_inp_frm_start // unsigned ,
+//RW, default = 0,start by write high in pulse start mode
+//Bit 30:21   reserved
+//Bit 20      reg_frc_win_en        // unsigned ,
+//RW, default = 1,0:auto start mode 1:pulse start mode
+//Bit 19:17   reserved
+//Bit 16      reg_inp_frm_start_sel // unsigned ,
+//RW, default = 0,0:auto start mode 1:pulse start mode
+//Bit 15:13   reserved
+//Bit 12:0    reg_inp_hold_line     // unsigned ,
+//RW, default = 6,inp start reg_inp_hold_line after go_field in auto start mode
 #define FRC_OUT_HOLD_CTRL                          0x0003
 //Bit 31           reg_mc_frm_ctrl       // unsigned ,   RW, default = 1,1:use mc_frm_rst/en by frc_top 0:generate mc_frm_rst/en before first me out
 //Bit 30:24        reg_mc_hold_regen     // unsigned ,   RW, default = 2,hold_line for  regenerate frm_rst/me
@@ -1728,7 +1732,8 @@
 //Bit 31: 4        reserved
 //Bit  3: 0        reg_ds_nr_lut_15          // unsigned ,    RW, default = 0  coef of NR temporal filter for ME image.
 #define FRC_REG_GLB_MOTION                         0x041b
-//Bit 31: 0        ro_ds_glb_motion          // unsigned ,    RO, default = 0  gobal motion based on downsample data
+//Bit 31: 0        ro_ds_glb_motion
+// unsigned ,    RO, default = 0  global motion based on downsample data
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -1747,7 +1752,7 @@
 //Bit  5: 4        reg_ip_pat_sel            // unsigned ,    RW, default = 2  selection ip pattern generation, 0: static dot-by-dot check pattern, 1: ramp or purely color, 2or3: moving blocks  with cadences;
 //Bit  3           reg_ip_pat_xrmp_mode      // unsigned ,    RW, default = 0  0: ramp-up; 1: 256 gain for this direction
 //Bit  2           reg_ip_pat_yrmp_mode      // unsigned ,    RW, default = 1  0: ramp-up; 1: 256 gain for this direction
-//Bit  1           reg_ip_pat_xinvt          // unsigned ,    RW, default = 0  enalbe x index invert
+//Bit  1           reg_ip_pat_xinvt          // unsigned ,    RW, default = 0  enable x index invert
 //Bit  0           reg_ip_pat_yinvt          // unsigned ,    RW, default = 0  enable y index invert
 #define FRC_IP_PAT_XY_SCL                          0x0481
 //Bit 31:29        reserved
@@ -5039,24 +5044,36 @@
 //Bit  7: 0        reg_me_rpd_min_peak_th    // unsigned ,    RW, default = 0  min peak threshold for repeated pattern search
 #define FRC_ME_RPD_T1_FLAT                         0x112c
 //Bit 31:28        reserved
-//Bit 27:16        reg_me_rpd_t1_flat_th0    // unsigned ,    RW, default = 256  flat threshold0 cleanig false type one detection for repeated pattern search
-//Bit 15: 8        reg_me_rpd_t1_flat_th1    // unsigned ,    RW, default = 6  flat threshold1 cleanig false type one detection for repeated pattern search
-//Bit  7: 0        reg_me_rpd_t1_th          // unsigned ,    RW, default = 64  type one rp threshold for repeated pattern search
+//Bit 27:16        reg_me_rpd_t1_flat_th0    // unsigned ,
+//RW, default = 256  flat threshold0 cleaning false type one detection for repeated pattern search
+//Bit 15: 8        reg_me_rpd_t1_flat_th1    // unsigned ,
+//RW, default = 6  flat threshold1 cleaning false type one detection for repeated pattern search
+//Bit  7: 0        reg_me_rpd_t1_th          // unsigned ,
+//RW, default = 64  type one rp threshold for repeated pattern search
 #define FRC_ME_RPD_T2_LHL                          0x112d
-//Bit 31:24        reg_me_rpd_t2_lhl_th      // unsigned ,    RW, default = 12  type two lhl threshold for repeated pattern search
-//Bit 23:16        reg_me_rpd_t2_lhlhl_th    // unsigned ,    RW, default = 4  type two lhlhl threshold for repeated pattern search
+//Bit 31:24        reg_me_rpd_t2_lhl_th      // unsigned ,
+//RW, default = 12  type two lhl threshold for repeated pattern search
+//Bit 23:16        reg_me_rpd_t2_lhlhl_th    // unsigned ,
+//RW, default = 4  type two lhlhl threshold for repeated pattern search
 //Bit 15: 8        reserved
-//Bit  7: 0        reg_me_rpd_t2_flat_th3    // unsigned ,    RW, default = 8  flat threshold3 cleanig false type two detection for repeated pattern search
+//Bit  7: 0        reg_me_rpd_t2_flat_th3    // unsigned ,
+//RW, default = 8  flat threshold3 cleaning false type two detection for repeated pattern search
 #define FRC_ME_RPD_T2_FLAT                         0x112e
-//Bit 31:20        reg_me_rpd_t2_flat_th0    // unsigned ,    RW, default = 256  flat threshold0 cleanig false type two detection for repeated pattern search
-//Bit 19:12        reg_me_rpd_t2_flat_th1    // unsigned ,    RW, default = 6  flat threshold1 cleanig false type two detection for repeated pattern search
-//Bit 11: 0        reg_me_rpd_t2_flat_th2    // unsigned ,    RW, default = 128  flat threshold2 cleanig false type two detection for repeated pattern search
+//Bit 31:20        reg_me_rpd_t2_flat_th0    // unsigned ,
+//RW, default = 256  flat threshold0 cleaning false type two detection for repeated pattern search
+//Bit 19:12        reg_me_rpd_t2_flat_th1    // unsigned ,
+//RW, default = 6  flat threshold1 cleaning false type two detection for repeated pattern search
+//Bit 11: 0        reg_me_rpd_t2_flat_th2    // unsigned ,
+//RW, default = 128  flat threshold2 cleaning false type two detection for repeated pattern search
 #define FRC_ME_RPD_T3_FLAT                         0x112f
 //Bit 31:30        reserved
-//Bit 29:24        reg_me_rpd_t3_th          // unsigned ,    RW, default = 2  type three threshold for repeated pattern search, 8 is normalized as 1
-//Bit 23:16        reg_me_rpd_t3_flat_th1    // unsigned ,    RW, default = 6  flat threshold1 cleanig false type three detection for repeated pattern search
+//Bit 29:24        reg_me_rpd_t3_th          // unsigned ,
+//RW, default = 2  type three threshold for repeated pattern search, 8 is normalized as 1
+//Bit 23:16        reg_me_rpd_t3_flat_th1    // unsigned ,
+//RW, default = 6  flat threshold1 cleaning false type three detection for repeated pattern search
 //Bit 15:12        reserved
-//Bit 11: 0        reg_me_rpd_t3_flat_th0    // unsigned ,    RW, default = 256  flat threshold0 cleanig false type three detection for repeated pattern search
+//Bit 11: 0        reg_me_rpd_t3_flat_th0    // unsigned ,
+//RW, default = 256  flat threshold0 cleaning false type three detection for repeated pattern search
 #define FRC_ME_RPD_AUTO_FLAT                       0x1130
 //Bit 31:28        reserved
 //Bit 27:16        reg_me_rpd_auto_flat_th0  // unsigned ,    RW, default = 256  auto flat flag threshold0 for repeated pattern search
@@ -7435,71 +7452,94 @@
 //Bit 31            reserved
 //Bit 30: 0        ro_me_region_apl_sum_11   // unsigned ,    RO, default = 0  12 region apl sum for phase loop
 #define FRC_ME_RO_S_CONSIS_0                       0x186c
-//Bit 31: 0        ro_me_glb_s_consis_0      // unsigned ,    RO, default = 0  gobal spatial consistences in each loop
+//Bit 31: 0        ro_me_glb_s_consis_0      // unsigned ,
+//RO, default = 0  global spatial consistences in each loop
 #define FRC_ME_RO_T_CONSIS_0                       0x186d
-//Bit 31: 0        ro_me_glb_t_consis_0      // unsigned ,    RO, default = 0  gobal temporal consistences in each loop
+//Bit 31: 0        ro_me_glb_t_consis_0      // unsigned ,
+//RO, default = 0  global temporal consistences in each loop
 #define FRC_ME_RO_APL_0                            0x186e
 //Bit 31:24        reserved
-//Bit 23: 0        ro_me_glb_apl_sum_0       // unsigned ,    RO, default = 0  global apl for each loop
+//Bit 23: 0        ro_me_glb_apl_sum_0       // unsigned ,
+//RO, default = 0  global apl for each loop
 #define FRC_ME_RO_DTL_0                            0x186f
-//Bit 31: 0        ro_me_glb_dtl_sum_0       // unsigned ,    RO, default = 0  global detail for each loop
+//Bit 31: 0        ro_me_glb_dtl_sum_0       // unsigned ,
+//RO, default = 0  global detail for each loop
 #define FRC_ME_RO_SAD_0                            0x1870
-//Bit 31: 0        ro_me_glb_sad_sum_0       // unsigned ,    RO, default = 0  gobal sad sum in each loop
+//Bit 31: 0        ro_me_glb_sad_sum_0       // unsigned ,
+//RO, default = 0  global sad sum in each loop
 #define FRC_ME_RO_BLK_CNT_SAD_0                    0x1871
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_bad_sad_cnt_0   // unsigned ,    RO, default = 0  gobal bad sad count in each loop
+//Bit 17: 0        ro_me_glb_bad_sad_cnt_0   // unsigned ,
+//RO, default = 0  global bad sad count in each loop
 #define FRC_ME_RO_BLK_CNT_0                        0x1872
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_cnt_0           // unsigned ,    RO, default = 0  gobal valid block count each loop
+//Bit 17: 0        ro_me_glb_cnt_0           // unsigned ,
+//RO, default = 0  global valid block count each loop
 #define FRC_ME_RO_TCMV_CNT_0                       0x1873
 //Bit 31: 0        ro_me_tot_cmv_cnt_0       // unsigned ,    RO, default = 0  total cmv count
 #define FRC_ME_RO_FCMV_CNT_0                       0x1874
 //Bit 31: 0        ro_me_fin_cmv_cnt_0       // unsigned ,    RO, default = 0  fine/final cmv count
 #define FRC_ME_RO_S_CONSIS_1                       0x1875
-//Bit 31: 0        ro_me_glb_s_consis_1      // unsigned ,    RO, default = 0  gobal spatial consistences in each loop
+//Bit 31: 0        ro_me_glb_s_consis_1      // unsigned ,
+//RO, default = 0  global spatial consistences in each loop
 #define FRC_ME_RO_T_CONSIS_1                       0x1876
-//Bit 31: 0        ro_me_glb_t_consis_1      // unsigned ,    RO, default = 0  gobal temporal consistences in each loop
+//Bit 31: 0        ro_me_glb_t_consis_1      // unsigned ,
+//RO, default = 0  global temporal consistences in each loop
 #define FRC_ME_RO_APL_1                            0x1877
 //Bit 31:24        reserved
-//Bit 23: 0        ro_me_glb_apl_sum_1       // unsigned ,    RO, default = 0  global apl for each loop
+//Bit 23: 0        ro_me_glb_apl_sum_1       // unsigned ,
+//RO, default = 0  global apl for each loop
 #define FRC_ME_RO_DTL_1                            0x1878
-//Bit 31: 0        ro_me_glb_dtl_sum_1       // unsigned ,    RO, default = 0  global detail for each loop
+//Bit 31: 0        ro_me_glb_dtl_sum_1       // unsigned ,
+//RO, default = 0  global detail for each loop
 #define FRC_ME_RO_SAD_1                            0x1879
-//Bit 31: 0        ro_me_glb_sad_sum_1       // unsigned ,    RO, default = 0  gobal sad sum in each loop
+//Bit 31: 0        ro_me_glb_sad_sum_1       // unsigned ,
+//RO, default = 0  global sad sum in each loop
 #define FRC_ME_RO_BLK_CNT_SAD_1                    0x187a
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_bad_sad_cnt_1   // unsigned ,    RO, default = 0  gobal bad sad count in each loop
+//Bit 17: 0        ro_me_glb_bad_sad_cnt_1   // unsigned ,
+//RO, default = 0  global bad sad count in each loop
 #define FRC_ME_RO_BLK_CNT_1                        0x187b
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_cnt_1           // unsigned ,    RO, default = 0  gobal valid block count each loop
+//Bit 17: 0        ro_me_glb_cnt_1           // unsigned ,
+//RO, default = 0  global valid block count each loop
 #define FRC_ME_RO_TCMV_CNT_1                       0x187c
-//Bit 31: 0        ro_me_tot_cmv_cnt_1       // unsigned ,    RO, default = 0  total cmv count
+//Bit 31: 0        ro_me_tot_cmv_cnt_1       // unsigned ,
+//RO, default = 0  total cmv count
 #define FRC_ME_RO_FCMV_CNT_1                       0x187d
-//Bit 31: 0        ro_me_fin_cmv_cnt_1       // unsigned ,    RO, default = 0  fine/final cmv count
+//Bit 31: 0        ro_me_fin_cmv_cnt_1       // unsigned ,
+//RO, default = 0  fine/final cmv count
 #define FRC_ME_RO_S_CONSIS_2                       0x187e
-//Bit 31: 0        ro_me_glb_s_consis_2      // unsigned ,    RO, default = 0  gobal spatial consistences in each loop
+//Bit 31: 0        ro_me_glb_s_consis_2      // unsigned ,
+//RO, default = 0  global spatial consistences in each loop
 #define FRC_ME_RO_T_CONSIS_2                       0x187f
-//Bit 31: 0        ro_me_glb_t_consis_2      // unsigned ,    RO, default = 0  gobal temporal consistences in each loop
+//Bit 31: 0        ro_me_glb_t_consis_2      // unsigned ,
+//RO, default = 0  global temporal consistences in each loop
 #define FRC_ME_RO_APL_2                            0x1880
 //Bit 31:24        reserved
-//Bit 23: 0        ro_me_glb_apl_sum_2       // unsigned ,    RO, default = 0  global apl for each loop
+//Bit 23: 0        ro_me_glb_apl_sum_2       // unsigned ,
+//RO, default = 0  global apl for each loop
 #define FRC_ME_RO_DTL_2                            0x1881
-//Bit 31: 0        ro_me_glb_dtl_sum_2       // unsigned ,    RO, default = 0  global detail for each loop
+//Bit 31: 0        ro_me_glb_dtl_sum_2       // unsigned ,
+//RO, default = 0  global detail for each loop
 #define FRC_ME_RO_SAD_2                            0x1882
-//Bit 31: 0        ro_me_glb_sad_sum_2       // unsigned ,    RO, default = 0  gobal sad sum in each loop
+//Bit 31: 0        ro_me_glb_sad_sum_2       // unsigned ,
+//RO, default = 0  global sad sum in each loop
 #define FRC_ME_RO_BLK_CNT_SAD_2                    0x1883
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_bad_sad_cnt_2   // unsigned ,    RO, default = 0  gobal bad sad count in each loop
+//Bit 17: 0        ro_me_glb_bad_sad_cnt_2   // unsigned ,
+//RO, default = 0  global bad sad count in each loop
 #define FRC_ME_RO_BLK_CNT_2                        0x1884
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_cnt_2           // unsigned ,    RO, default = 0  gobal valid block count each loop
+//Bit 17: 0        ro_me_glb_cnt_2           // unsigned ,
+//RO, default = 0  global valid block count each loop
 #define FRC_ME_RO_TCMV_CNT_2                       0x1885
 //Bit 31: 0        ro_me_tot_cmv_cnt_2       // unsigned ,    RO, default = 0  total cmv count
 #define FRC_ME_RO_FCMV_CNT_2                       0x1886
 //Bit 31: 0        ro_me_fin_cmv_cnt_2       // unsigned ,    RO, default = 0  fine/final cmv count
 #define FRC_ME_RO_FCMV_CNT                         0x1887
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_unstable_cnt    // unsigned ,    RO, default = 0  gobal unstable count
+//Bit 17: 0        ro_me_glb_unstable_cnt    // unsigned ,    RO, default = 0  global unstable count
 #define FRC_ME_RO_GMV_ROUGH                        0x1888
 //Bit 31:29        reserved
 //Bit 28:16        ro_me_gmv_rough_vector_0  // signed ,    RO, default = 0  mv detected by FW, [mvx, mvy] s9.2, replace the bv if reg_me_ovrwrite_bv_en=1, otherwise is gmv of each loop, only care about the vector, no care of the sad and so on.
@@ -9113,8 +9153,10 @@
 //Bit  7: 0        reg_fg_mv_length_th       // unsigned ,    RW, default = 12  threshold to foreground mv length for bgmv check
 #define FRC_VP_DEHALO_RULE_EN                      0x1e4c
 //Bit 31:11        reserved
-//Bit 10           reg_dehalo_pht_replace    // unsigned ,    RW, default = 1  enalbe for replace mc_mv with pht, 0 disable, 1: enable
-//Bit  9           reg_dehalo_oct_replace    // unsigned ,    RW, default = 1  enalbe for replace mc_oct with oct, 0 disable, 1: enable
+//Bit 10           reg_dehalo_pht_replace    // unsigned ,
+//RW, default = 1  enable for replace mc_mv with pht, 0 disable, 1: enable
+//Bit  9           reg_dehalo_oct_replace    // unsigned ,
+//RW, default = 1  enable for replace mc_oct with oct, 0 disable, 1: enable
 //Bit  8           reg_dehalo_basic_en       // unsigned ,    RW, default = 1  enable for 2.1.1 of basic rule, 0 disable, 1: enable
 //Bit  7           reg_dehalo_track_en       // unsigned ,    RW, default = 1  enable for 2.1.2 of double fg rule, 0 disable, 1: enable
 //Bit  6           reg_dehalo_mvchk1_en      // unsigned ,    RW, default = 1  enable for 2.1.3 of mvchk1 rule, 0 disable, 1: enable
@@ -11838,7 +11880,9 @@
 //Bit 31:15        reserved
 //Bit 14           reg_mc_force_deflicker_en // unsigned ,    RW, default = 0  force deflicker
 //Bit 13           reg_mc_flicker0_mode      // unsigned ,    RW, default = 0  do-deflicker == 0 mode 0: use all bilinear(c v h c2 v2 h2); mode 1: c use h8v4, v h c2 h2 v2 use bilinear
-//Bit 12           reg_mc_flicker1_mode      // unsigned ,    RW, default = 0  do-deflicker == 1 mode 0: just c use h8v4 not do obmc; mode 1: c use h8 v4, v h c2 h2 v2 use binilear
+//Bit 12           reg_mc_flicker1_mode      // unsigned ,
+//RW, default = 0  do-deflicker == 1
+//mode 0: just c use h8v4 not do obmc; mode 1: c use h8 v4, v h c2 h2 v2 use bilinear
 //Bit 11:10        reserved
 //Bit  9: 0        reg_mc_diff_mv_thrd       // unsigned ,    RW, default = 0  mv diff th
 #define FRC_MC_INVALID_CHECK_MODE                  0x3202
@@ -13043,14 +13087,91 @@
 
 extern void __iomem *frc_base;
 
+/******************************************************************************/
+extern u32 regdata_inpholdctl_0002;     // FRC_INP_HOLD_CTRL 0x0002
+extern u32 regdata_outholdctl_0003;     // FRC_OUT_HOLD_CTRL 0x0003
+extern u32 regdata_top_ctl_0007;        // FRC_REG_TOP_CTRL7  0x0007
+extern u32 regdata_top_ctl_0009;        // FRC_REG_TOP_CTRL9
+extern u32 regdata_top_ctl_0017;        // FRC_REG_TOP_CTRL17
+
+extern u32 regdata_pat_pointer_0102;
+extern u32 regdata_loadorgframe[16];    // 0x0103
+
+extern u32 regdata_phs_tab_0116;
+
+extern u32 regdata_blksizexy_012b;
+extern u32 regdata_blkscale_012c;
+extern u32 regdata_hme_scale_012d;
+
+extern u32 regdata_logodbg_0142;         // FRC_LOGO_DEBUG    0x0142
+extern u32 regdata_inpmoden_04f9;        // FRC_REG_INP_MODULE_EN  0x04f9
+extern u32 regdata_iplogo_en_0503;       // FRC_IPLOGO_EN    0x0503
+extern u32 regdata_bbd_t2b_0604;         // FRC_BBD_DETECT_REGION_TOP2BOT  0x0604
+extern u32 regdata_bbd_l2r_0605;         // FRC_BBD_DETECT_REGION_LFT2RIT  0x0605
+
+extern u32 regdata_me_en_1100;           // FRC_ME_EN   0x1100
+extern u32 regdata_me_bbpixed_1108;      // FRC_ME_BB_PIX_ED  0x1108
+extern u32 regdata_me_bbblked_110a;      // FRC_ME_BB_BLK_ED  0x110a
+extern u32 regdata_me_stat12rhst_110b;   // FRC_ME_STAT_12R_HST  0x110b
+extern u32 regdata_me_stat12rh_110c;     // FRC_ME_STAT_12R_H01  0x110c
+extern u32 regdata_me_stat12rh_110d;     // FRC_ME_STAT_12R_H23  0x110d
+extern u32 regdata_me_stat12rv_110e;     // FRC_ME_STAT_12R_V0   0x110e
+extern u32 regdata_me_stat12rv_110f;     // FRC_ME_STAT_12R_V1   0x110f
+
+extern u32 regdata_vpbb1_1e03;          // FRC_VP_BB_1      0x1e03
+extern u32 regdata_vpbb2_1e04;          // FRC_VP_BB_2      0x1e04
+extern u32 regdata_vpmebb1_1e05;        // FRC_VP_ME_BB_1   0x1e05
+extern u32 regdata_vpmebb2_1e06;        // FRC_VP_ME_BB_2   0x1e06
+
+extern u32 regdata_vp_win1_1e58;        // FRC_VP_REGION_WINDOW_1 0x1e58
+extern u32 regdata_vp_win2_1e59;        // FRC_VP_REGION_WINDOW_2 0x1e59
+extern u32 regdata_vp_win3_1e5a;        // FRC_VP_REGION_WINDOW_3 0x1e5a
+extern u32 regdata_vp_win4_1e5b;        // FRC_VP_REGION_WINDOW_4 0x1e5b
+
+extern u32 regdata_mcset1_3000;         // FRC_MC_SETTING1   0x3000
+extern u32 regdata_mcset2_3001;         // FRC_MC_SETTING2   0x3001
+
+extern u32 regdata_mcdemo_win_3200;     // FRC_MC_DEMO_WINDOW  0x3200
+extern u32 regdata_topctl_3f01;
+
+///////////////////////////////////////////////////////////////////////////////
+
+extern u32 regdata_fd_enable_0700;      // FRC_FD_ENABLE     0x0700
+extern u32 regdata_film_phs1_0117;      // FRC_REG_FILM_PHS_1     0x0117
+extern u32 regdata_me_stat_glb_apl_156c;// FRC_ME_STAT_GLB_APL    0x156c
+
+extern u32 regdata_fwd_phs_0146;        // FRC_REG_FWD_PHS     0x0146
+extern u32 regdata_fwd_phs_ro_016f;     //  FRC_REG_FWD_PHS_RO   0x016f
+extern u32 regdata_fwd_phs_adj_016b;    // FRC_REG_FWD_PHS_ADJ       0x016b
+extern u32 regdata_load_frame_flag0_0149;     // FRC_REG_LOAD_FRAME_FLAG_0  0x0149
+extern u32 regdata_load_frame_flag1_014a;     //  FRC_REG_LOAD_FRAME_FLAG_1  0x014a
+extern u32 regdata_fwd_table_cnt_phaofs_016c; //  FRC_REG_FWD_TABLE_CNT_PHAOFS 0x016c
+extern u32 regdata_fwd_sign_ro_016e;          //  FRC_REG_FWD_SIGN_RO  x016e
+extern u32 regdata_fwd_fid_0147;              // FRC_REG_FWD_FID     0x0147
+extern u32 regdata_fwd_fid_posi_0148;         // FRC_REG_FWD_FID_POSI   0x0148
+
+extern int fw_idx;
+
+/******************************************************************************/
 inline void WRITE_FRC_REG(unsigned int reg, unsigned int val);
+inline void WRITE_FRC_REG_BY_CPU(unsigned int reg, unsigned int val);
+
 inline void WRITE_FRC_BITS(unsigned int reg, unsigned int value,
-					unsigned int start, unsigned int len);
+	unsigned int start, unsigned int len);
+
 inline void UPDATE_FRC_REG_BITS(unsigned int reg, unsigned int value, unsigned int mask);
+// #define UPDATE_FRC_REG_BITS(addr, val, mask) FRC_RDMA_VSYNC_REG_UPDATE(addr, val, mask)
+
+inline void UPDATE_FRC_REG_BITS_1(unsigned int reg, unsigned int value, unsigned int mask);
+inline int is_rdma_enable(void);
+
 inline int READ_FRC_REG(unsigned int reg);
 inline u32 READ_FRC_BITS(u32 reg, const u32 start, const u32 len);
 inline u32 floor_rs(u32 ix, u32 rs);
 inline u32 ceil_rx(u32 ix, u32 rs);
 inline s32  negative_convert(s32 data, u32 fbits);
+inline void frc_config_reg_value(u32 need_val, u32 mask, u32 *reg_val);
+void check_fw_table(u8 flag);
+
 
 #endif

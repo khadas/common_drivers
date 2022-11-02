@@ -26,10 +26,20 @@
 #include <linux/page-flags.h>
 #include <linux/amlogic/media/frc/frc_reg.h>
 #include <linux/amlogic/media/frc/frc_common.h>
+#include <linux/sched/clock.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+#include <linux/module.h>
 
 #include "frc_drv.h"
 #include "frc_buf.h"
+#include "frc_rdma.h"
 
+int frc_buf_test = 1;
+module_param(frc_buf_test, int, 0664);
+MODULE_PARM_DESC(frc_buf_test, "frc dynamic buf debug");
+
+static u8 cur_state = 1;
 
 void frc_dump_mm_data(void *addr, u32 size)
 {
@@ -256,9 +266,12 @@ void frc_buf_dump_memory_size_info(struct frc_dev_s *devp)
 	       devp->buf.lossy_me_x_info_buf_size * 1);
 
 	/*lossy mc data buffer*/
-	pr_frc(log, "lossy_mc_data_buf_size=%d, all:%d\n",
+	pr_frc(log, "lossy_mc_y_data_buf_size=%d, all:%d\n",
+	       devp->buf.lossy_mc_y_data_buf_size[0],
+	       devp->buf.lossy_mc_y_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
+	pr_frc(log, "lossy_mc_c_data_buf_size=%d, all:%d\n",
 	       devp->buf.lossy_mc_c_data_buf_size[0],
-	       devp->buf.lossy_mc_c_data_buf_size[0] * FRC_TOTAL_BUF_NUM * 2);
+	       devp->buf.lossy_mc_c_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
 
 	/*lossy me data buffer*/
 	pr_frc(log, "lossy_me_data_buf_size=%d, all:%d\n",
@@ -382,26 +395,30 @@ void frc_buf_dump_link_tab(struct frc_dev_s *devp, u32 mode)
 
 void frc_dump_buf_data(struct frc_dev_s *devp, u32 cma_addr, u32 size)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef DEMOD_KERNEL_WR
 	struct file *filp = NULL;
 	loff_t pos = 0;
 	void *buf = NULL;
 	unsigned int len = size;
+	mm_segment_t old_fs = get_fs();
 	char *path = "/data/frc.bin";
 
 	pr_info("%s paddr:0x%x, size:0x%x\n", __func__, cma_addr, size);
 	if ((size > 1024 * 1024 * 20) || size == 0)
 		return;
 
+	set_fs(KERNEL_DS);
 	filp = filp_open(path, O_RDWR | O_CREAT, 0666);
 
 	if (IS_ERR_OR_NULL(filp)) {
 		pr_info("create %s error or filp is NULL\n", path);
+		set_fs(old_fs);
 		return;
 	}
 
 	if (!devp->buf.cma_mem_alloced) {
 		pr_frc(0, "%s:no cma alloc mem\n", __func__);
+		set_fs(old_fs);
 		return;
 	}
 
@@ -418,6 +435,7 @@ void frc_dump_buf_data(struct frc_dev_s *devp, u32 cma_addr, u32 size)
 exit:
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
+	set_fs(old_fs);
 #endif
 }
 
@@ -509,33 +527,81 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 		return -1;
 	}
 
-	devp->buf.cma_mem_paddr_pages =
-	dma_alloc_from_contiguous(&devp->pdev->dev, devp->buf.cma_mem_size >> PAGE_SHIFT, 0, 0);
+	/* The total memory size is 0xa000000 160M
+	 * buffer 8+8 relese memory size: 0x4ee0000 78M
+	 * buffer 12+4 relese memory size: 0x2770000 39M
+	 * buffer 14+2 relese memory size: 0x13b8000 19M
+	 */
+	devp->buf.cma_mem_size2 = 0x2770000;
+	devp->buf.cma_mem_size = 0xa000000 -
+		devp->buf.cma_mem_size2 - FRC_RDMA_SIZE;
 
-	if (!devp->buf.cma_mem_paddr_pages) {
-		devp->buf.cma_mem_size = 0;
-		pr_frc(0, "cma_alloc fail\n");
-		return -0;
+	if (!devp->buf.cma_buf_alloc) {
+		devp->buf.cma_mem_paddr_pages =
+			dma_alloc_from_contiguous(&devp->pdev->dev,
+				devp->buf.cma_mem_size >> PAGE_SHIFT, 0, 0);
+		if (!devp->buf.cma_mem_paddr_pages) {
+			devp->buf.cma_mem_size = 0;
+			pr_frc(0, "cma_alloc buffer1 fail\n");
+			return -1;
+		}
+		devp->buf.cma_buf_alloc = 1;
+		/*physical pages address to real address*/
+		devp->buf.cma_mem_paddr_start =
+			page_to_phys(devp->buf.cma_mem_paddr_pages);
+		pr_frc(0, "cma paddr_start=0x%lx size:0x%x\n",
+			(ulong)devp->buf.cma_mem_paddr_start, devp->buf.cma_mem_size);
+		// rdma buf alloc 1M
+		frc_rdma_alloc_buf();
 	}
-	/*physical pages address to real address*/
-	devp->buf.cma_mem_paddr_start = page_to_phys(devp->buf.cma_mem_paddr_pages);
-	devp->buf.cma_mem_alloced = 1;
-	pr_frc(0, "cma paddr_start=0x%lx size:0x%x\n", (ulong)devp->buf.cma_mem_paddr_start,
-	       devp->buf.cma_mem_size);
+	if (!devp->buf.cma_buf_alloc2) {
+		devp->buf.cma_mem_paddr_pages2 =
+			dma_alloc_from_contiguous(&devp->pdev->dev,
+				devp->buf.cma_mem_size2 >> PAGE_SHIFT, 0, 0);
+		if (!devp->buf.cma_mem_paddr_pages2) {
+			devp->buf.cma_mem_size2 = 0;
+			pr_frc(0, "cma_alloc buffer2 fail\n");
+			return -1;
+		}
+		devp->buf.cma_buf_alloc2 = 1;
+		/*physical pages address to real address*/
+		devp->buf.cma_mem_paddr_start2 =
+			page_to_phys(devp->buf.cma_mem_paddr_pages2);
+		// pr_frc(0, "cma paddr_start2=0x%lx size:0x%x\n",
+		// (ulong)devp->buf.cma_mem_paddr_start2, devp->buf.cma_mem_size2);
+	}
 
 	return 0;
 }
 
 int frc_buf_release(struct frc_dev_s *devp)
 {
-	if (devp->buf.cma_mem_size && devp->buf.cma_mem_paddr_pages) {
-		dma_release_from_contiguous(&devp->pdev->dev, devp->buf.cma_mem_paddr_pages,
-					    devp->buf.cma_mem_size >> PAGE_SHIFT);
+	if (devp->buf.cma_mem_size &&
+		devp->buf.cma_mem_paddr_pages && devp->buf.cma_buf_alloc) {
+		dma_release_from_contiguous(&devp->pdev->dev,
+			devp->buf.cma_mem_paddr_pages, devp->buf.cma_mem_size >> PAGE_SHIFT);
 		devp->buf.cma_mem_paddr_pages = NULL;
 		devp->buf.cma_mem_paddr_start = 0;
 		devp->buf.cma_mem_alloced = 0;
+		devp->buf.cma_buf_alloc = 0;
+		pr_frc(2, "%s buffer1 released\n", __func__);
+		//rdma buf release
+		frc_rdma_release_buf();
 	} else {
 		pr_frc(0, "%s no buffer exist\n", __func__);
+	}
+
+	if (devp->buf.cma_mem_size2 &&
+		devp->buf.cma_mem_paddr_pages2 && devp->buf.cma_buf_alloc2) {
+		dma_release_from_contiguous(&devp->pdev->dev,
+			devp->buf.cma_mem_paddr_pages2, devp->buf.cma_mem_size2 >> PAGE_SHIFT);
+		devp->buf.cma_mem_paddr_pages2 = NULL;
+		devp->buf.cma_mem_paddr_start2 = 0;
+		devp->buf.cma_mem_alloced = 0;
+		devp->buf.cma_buf_alloc2 = 0;
+		pr_frc(2, "%s buffer2 released\n", __func__);
+	} else {
+		pr_frc(0, "%s no buffer2 exist\n", __func__);
 	}
 
 	return 0;
@@ -555,6 +621,15 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 
 	if (!devp)
 		return -1;
+
+	if (devp->buf.memc_comprate == 0)
+		devp->buf.memc_comprate = FRC_COMPRESS_RATE;
+	if (devp->buf.me_comprate == 0)
+		devp->buf.me_comprate = FRC_COMPRESS_RATE_ME;
+	if (devp->buf.mc_c_comprate == 0)
+		devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
+	if (devp->buf.mc_y_comprate == 0)
+		devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
 
 	/*size initial, alloc max support size accordint to vout*/
 	devp->buf.in_hsize = devp->out_sts.vout_width;
@@ -612,6 +687,9 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	       devp->buf.hme_blk_vsize);
 
 	/* ------------ cal buffer start -----------------*/
+	pr_frc(0, "dc_rate:(me:%d,mc_y:%d,mc_c:%d)\n",
+		devp->buf.me_comprate, devp->buf.mc_y_comprate,
+		devp->buf.mc_c_comprate);
 
 	/*mc y/c/v info buffer, address 64 bytes align*/
 	devp->buf.lossy_mc_y_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
@@ -637,12 +715,13 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	/*lossy mc data buffer*/
 	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
 		devp->buf.lossy_mc_y_data_buf_size[i] = ALIGN_4K * ratio +
-			(temp * align_vsize * FRC_COMPRESS_RATE) / 100;
+			(temp * align_vsize * devp->buf.mc_y_comprate) / 100;
 		devp->buf.lossy_mc_c_data_buf_size[i] = ALIGN_4K * ratio +
-			(temp * align_vsize * FRC_COMPRESS_RATE) / 100;
+			(temp * align_vsize * devp->buf.mc_c_comprate) / 100;
 		devp->buf.lossy_mc_v_data_buf_size[i] = 0;//ALIGN_4K * 4 +
 			//(temp * align_vsize * FRC_COMPRESS_RATE) / 100;
-		devp->buf.total_size += devp->buf.lossy_mc_y_data_buf_size[i] * 2;
+		devp->buf.total_size += devp->buf.lossy_mc_y_data_buf_size[i];
+		devp->buf.total_size += devp->buf.lossy_mc_c_data_buf_size[i];
 		devp->buf.total_size += devp->buf.lossy_mc_v_data_buf_size[i];
 	}
 	pr_frc(log, "lossy_mc_data_buf_size=%d, line buf:%d all:%d\n",
@@ -653,7 +732,7 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	/*lossy me data buffer*/
 	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
 		devp->buf.lossy_me_data_buf_size[i] = ALIGN_4K * ratio +
-			(temp * devp->buf.me_vsize * FRC_COMPRESS_RATE) / 100;
+			(temp * devp->buf.me_vsize * devp->buf.me_comprate) / 100;
 		devp->buf.total_size += devp->buf.lossy_me_data_buf_size[i];
 	}
 	pr_frc(log, "lossy_me_data_buf_size=%d, line buf:%d all:%d\n",
@@ -766,11 +845,13 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 {
 	u32 i;
 	u32 real_onebuf_size;
-	u32 paddr = 0, base;
+	u32 paddr = 0, base, base2;
+	u32 paddr2 = 0;
 	int log = 2;
 
 	/*----------------- buffer alloc------------------*/
 	base = devp->buf.cma_mem_paddr_start;
+	base2 = devp->buf.cma_mem_paddr_start2;
 	/*mc y/c/v me info buffer, address 64 bytes align*/
 	devp->buf.lossy_mc_y_info_buf_paddr = paddr;
 	pr_frc(log, "lossy_mc_y_info_buf_paddr:0x%x", paddr);
@@ -784,66 +865,6 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 	devp->buf.lossy_me_x_info_buf_paddr = paddr;
 	pr_frc(log, "lossy_me_x_info_buf_paddr:0x%x", paddr);
 	paddr += roundup(devp->buf.lossy_me_x_info_buf_size, ALIGN_4K);
-
-	/*lossy lossy_mc_y data buffer*/
-	paddr = roundup(paddr, ALIGN_4K * 16);/*secure size need 64K align*/
-	real_onebuf_size = roundup(devp->buf.lossy_mc_y_data_buf_size[0], ALIGN_4K);
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
-		devp->buf.lossy_mc_y_data_buf_paddr[i] = paddr;
-		pr_frc(log, "lossy_mc_y_data_buf_paddr[%d]:0x%x\n", i, paddr);
-		paddr += real_onebuf_size;
-	}
-	/*lossy lossy_mc_c data buffer*/
-	real_onebuf_size = roundup(devp->buf.lossy_mc_c_data_buf_size[0], ALIGN_4K);
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
-		devp->buf.lossy_mc_c_data_buf_paddr[i] = paddr;
-		pr_frc(log, "lossy_mc_c_data_buf_paddr[%d]:0x%x\n", i, paddr);
-		paddr += real_onebuf_size;
-	}
-	/*lossy lossy_mc_v data buffer*/
-	real_onebuf_size = roundup(devp->buf.lossy_mc_v_data_buf_size[0], ALIGN_4K);
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
-		devp->buf.lossy_mc_v_data_buf_paddr[i] = paddr;
-		pr_frc(log, "lossy_mc_v_data_buf_paddr[%d]:0x%x\n", i, paddr);
-		paddr += real_onebuf_size;
-	}
-	/*lossy lossy_me data buffer*/
-	real_onebuf_size = roundup(devp->buf.lossy_me_data_buf_size[0], ALIGN_4K);
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
-		devp->buf.lossy_me_data_buf_paddr[i] = paddr;
-		pr_frc(log, "lossy_me_data_buf_paddr[%d]:0x%x\n", i, paddr);
-		paddr += real_onebuf_size;
-	}
-
-	paddr = roundup(paddr, ALIGN_4K * 16);/*secure size need 64K align*/
-	/*link buffer*/
-	real_onebuf_size = roundup(devp->buf.lossy_mc_y_link_buf_size[0], ALIGN_4K);
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
-		devp->buf.lossy_mc_y_link_buf_paddr[i] = paddr;
-		pr_frc(log, "lossy_mc_y_link_buf_paddr[%d]:0x%x\n", i, paddr);
-		paddr += real_onebuf_size;
-	}
-
-	real_onebuf_size = roundup(devp->buf.lossy_mc_c_link_buf_size[0], ALIGN_4K);
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
-		devp->buf.lossy_mc_c_link_buf_paddr[i] = paddr;
-		pr_frc(log, "lossy_mc_c_link_buf_paddr[%d]:0x%x\n", i, paddr);
-		paddr += real_onebuf_size;
-	}
-
-	real_onebuf_size = roundup(devp->buf.lossy_mc_v_link_buf_size[0], ALIGN_4K);
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
-		devp->buf.lossy_mc_v_link_buf_paddr[i] = paddr;
-		pr_frc(log, "lossy_mc_v_link_buf_paddr[%d]:0x%x\n", i, paddr);
-		paddr += real_onebuf_size;
-	}
-
-	real_onebuf_size = roundup(devp->buf.lossy_me_link_buf_size[0], ALIGN_4K);
-	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
-		devp->buf.lossy_me_link_buf_paddr[i] = paddr;
-		pr_frc(log, "lossy_me_link_buf_paddr[%d]:0x%x\n", i, paddr);
-		paddr += real_onebuf_size;
-	}
 
 	/*norm buffer*/
 	paddr = roundup(paddr, ALIGN_4K * 16);/*secure size need 64K align*/
@@ -905,11 +926,109 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 		pr_frc(log, "norm_melogo_buf_paddr[%d]:0x%x\n", i, paddr);
 		paddr += real_onebuf_size;
 	}
-	paddr = roundup(paddr, ALIGN_4K);
-	devp->buf.real_total_size = paddr;
-	if (paddr > devp->buf.cma_mem_size)
-		pr_frc(0, "buf err: need %d, cur size:%d\n", paddr, devp->buf.cma_mem_size);
-	pr_frc(0, "%s base:0x%x real_total_size:0x%x(%d)\n", __func__, base, paddr, paddr);
+
+	paddr = roundup(paddr, ALIGN_4K * 16);/*secure size need 64K align*/
+	/*link buffer*/
+	real_onebuf_size = roundup(devp->buf.lossy_mc_y_link_buf_size[0], ALIGN_4K);
+	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+		devp->buf.lossy_mc_y_link_buf_paddr[i] = paddr;
+		pr_frc(log, "lossy_mc_y_link_buf_paddr[%d]:0x%x\n", i, paddr);
+		paddr += real_onebuf_size;
+	}
+
+	real_onebuf_size = roundup(devp->buf.lossy_mc_c_link_buf_size[0], ALIGN_4K);
+	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+		devp->buf.lossy_mc_c_link_buf_paddr[i] = paddr;
+		pr_frc(log, "lossy_mc_c_link_buf_paddr[%d]:0x%x\n", i, paddr);
+		paddr += real_onebuf_size;
+	}
+
+	real_onebuf_size = roundup(devp->buf.lossy_mc_v_link_buf_size[0], ALIGN_4K);
+	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+		devp->buf.lossy_mc_v_link_buf_paddr[i] = paddr;
+		pr_frc(log, "lossy_mc_v_link_buf_paddr[%d]:0x%x\n", i, paddr);
+		paddr += real_onebuf_size;
+	}
+
+	real_onebuf_size = roundup(devp->buf.lossy_me_link_buf_size[0], ALIGN_4K);
+	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+		devp->buf.lossy_me_link_buf_paddr[i] = paddr;
+		pr_frc(log, "lossy_me_link_buf_paddr[%d]:0x%x\n", i, paddr);
+		paddr += real_onebuf_size;
+	}
+
+	/*lossy lossy_mc_y data buffer*/
+	/*0-7 data buffer*/
+	paddr = roundup(paddr, ALIGN_4K * 16);/*secure size need 64K align*/
+	real_onebuf_size = roundup(devp->buf.lossy_mc_y_data_buf_size[0], ALIGN_4K);
+	for (i = 0; i < FRC_RE_BUF_NUM; i++) {
+		devp->buf.lossy_mc_y_data_buf_paddr[i] = paddr;
+		pr_frc(log, "lossy_mc_y_data_buf_paddr[%d]:0x%x\n", i, paddr);
+		paddr += real_onebuf_size;
+	}
+
+	/*lossy lossy_mc_c data buffer*/
+	real_onebuf_size = roundup(devp->buf.lossy_mc_c_data_buf_size[0], ALIGN_4K);
+	for (i = 0; i < FRC_RE_BUF_NUM; i++) {
+		devp->buf.lossy_mc_c_data_buf_paddr[i] = paddr;
+		pr_frc(log, "lossy_mc_c_data_buf_paddr[%d]:0x%x\n", i, paddr);
+		paddr += real_onebuf_size;
+	}
+	/*lossy lossy_mc_v data buffer*/
+	real_onebuf_size = roundup(devp->buf.lossy_mc_v_data_buf_size[0], ALIGN_4K);
+	for (i = 0; i < FRC_RE_BUF_NUM; i++) {
+		devp->buf.lossy_mc_v_data_buf_paddr[i] = paddr;
+		pr_frc(log, "lossy_mc_v_data_buf_paddr[%d]:0x%x\n", i, paddr);
+		paddr += real_onebuf_size;
+	}
+	/*lossy lossy_me data buffer*/
+	real_onebuf_size = roundup(devp->buf.lossy_me_data_buf_size[0], ALIGN_4K);
+	for (i = 0; i < FRC_RE_BUF_NUM; i++) {
+		devp->buf.lossy_me_data_buf_paddr[i] = paddr;
+		pr_frc(log, "lossy_me_data_buf_paddr[%d]:0x%x\n", i, paddr);
+		paddr += real_onebuf_size;
+	}
+
+	paddr2 = roundup(paddr2, ALIGN_4K * 16);
+	// 8-15 data buffer
+	real_onebuf_size = roundup(devp->buf.lossy_mc_y_data_buf_size[0], ALIGN_4K);
+	for (i = FRC_RE_BUF_NUM; i < FRC_TOTAL_BUF_NUM; i++) {
+		devp->buf.lossy_mc_y_data_buf_paddr[i] = paddr2;
+		pr_frc(log, "lossy_mc_y_data_buf_paddr[%d]:0x%x\n", i, paddr2);
+		paddr2 += real_onebuf_size;
+	}
+	/*lossy lossy_mc_c data buffer*/
+	real_onebuf_size = roundup(devp->buf.lossy_mc_c_data_buf_size[0], ALIGN_4K);
+	for (i = FRC_RE_BUF_NUM; i < FRC_TOTAL_BUF_NUM; i++) {
+		devp->buf.lossy_mc_c_data_buf_paddr[i] = paddr2;
+		pr_frc(log, "lossy_mc_c_data_buf_paddr[%d]:0x%x\n", i, paddr2);
+		paddr2 += real_onebuf_size;
+	}
+	/*lossy lossy_mc_v data buffer*/
+	real_onebuf_size = roundup(devp->buf.lossy_mc_v_data_buf_size[0], ALIGN_4K);
+	for (i = FRC_RE_BUF_NUM; i < FRC_TOTAL_BUF_NUM; i++) {
+		devp->buf.lossy_mc_v_data_buf_paddr[i] = paddr2;
+		pr_frc(log, "lossy_mc_v_data_buf_paddr[%d]:0x%x\n", i, paddr2);
+		paddr2 += real_onebuf_size;
+	}
+	/*lossy lossy_me data buffer*/
+	real_onebuf_size = roundup(devp->buf.lossy_me_data_buf_size[0], ALIGN_4K);
+	for (i = FRC_RE_BUF_NUM; i < FRC_TOTAL_BUF_NUM; i++) {
+		devp->buf.lossy_me_data_buf_paddr[i] = paddr2;
+		pr_frc(log, "lossy_me_data_buf_paddr[%d]:0x%x\n", i, paddr2);
+		paddr2 += real_onebuf_size;
+	}
+
+	paddr = roundup(paddr, ALIGN_4K * 16);
+	paddr2 = roundup(paddr2, ALIGN_4K * 16);/*secure size need 64K align*/
+
+	devp->buf.real_total_size = paddr + paddr2;
+	if (devp->buf.real_total_size > devp->buf.cma_mem_size + devp->buf.cma_mem_size2)
+		pr_frc(0, "buf err: need %d, cur size:%d\n", paddr + paddr2,
+			devp->buf.cma_mem_size + devp->buf.cma_mem_size2);
+	else
+		pr_frc(0, "%s base:0x%x base2:0x%x real_total_size:0x%x(%d)\n",
+			__func__, base, base2, paddr + paddr2, paddr + paddr2);
 
 	return 0;
 }
@@ -920,9 +1039,9 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 {
 	u32 i, j, k = 0;
-	phys_addr_t cma_paddr = 0;
+	phys_addr_t cma_paddr = 0, cma_paddr2 = 0;
 	dma_addr_t paddr;
-	u8 *cma_vaddr = 0;
+	u8 *cma_vaddr = 0, *cma_vaddr2 = 0;
 	u32 vmap_offset_start = 0, vmap_offset_end;
 	u32 *linktab_vaddr = NULL;
 	u8 *p = NULL;
@@ -932,23 +1051,26 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 	//u32 *init_start_addr;
 
 	cma_paddr = devp->buf.cma_mem_paddr_start;
+	cma_paddr2 = devp->buf.cma_mem_paddr_start2;
 	link_tab_all_size =
-		devp->buf.norm_hme_data_buf_paddr[0] - devp->buf.lossy_mc_y_link_buf_paddr[0];
+		devp->buf.lossy_mc_y_data_buf_paddr[0] - devp->buf.lossy_mc_y_link_buf_paddr[0];
 	pr_frc(log, "paddr start:0x%lx, link start=0x%08x - 0x%08x, size:0x%x\n",
 	       (ulong)devp->buf.cma_mem_paddr_start,
-	       devp->buf.lossy_mc_y_link_buf_paddr[0], devp->buf.norm_hme_data_buf_paddr[0],
+	       devp->buf.lossy_mc_y_link_buf_paddr[0], devp->buf.lossy_mc_y_data_buf_paddr[0],
 	       link_tab_all_size);
 
-	if (link_tab_all_size == 0) {
+	if (link_tab_all_size <= 0) {
 		pr_frc(0, "link buf err\n");
 		return -1;
 	}
 
 	vmap_offset_start = devp->buf.lossy_mc_y_link_buf_paddr[0];
-	vmap_offset_end = devp->buf.norm_hme_data_buf_paddr[0];
+	vmap_offset_end = devp->buf.lossy_mc_y_data_buf_paddr[0];
 	cma_vaddr = frc_buf_vmap(cma_paddr, vmap_offset_end);
-	pr_frc(0, "map: paddr=0x%lx, vaddr=0x%lx, link tab size=0x%x (%d)\n", (ulong)cma_paddr,
-	       (ulong)cma_vaddr, link_tab_all_size, link_tab_all_size);
+	cma_vaddr2 = frc_buf_vmap(cma_paddr2, vmap_offset_end);
+	pr_frc(0, "map: paddr=0x%lx, vaddr=0x%lx, vaddr2=0x%lx, link tab size=0x%x (%d)\n",
+		(ulong)cma_paddr, (ulong)cma_vaddr, (ulong)cma_vaddr2,
+		link_tab_all_size, link_tab_all_size);
 
 	//init_start_addr = (u32 *)(cma_vaddr + vmap_offset_start);
 	//for (i = 0; i < link_tab_all_size; i++) {
@@ -956,17 +1078,22 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 	//	init_start_addr++;
 	//}
 	memset(cma_vaddr + vmap_offset_start, 0, link_tab_all_size);
+	memset(cma_vaddr2 + vmap_offset_start, 0, link_tab_all_size);
 
 	/*split data buffer and fill to link mc buffer: mc y*/
 	data_buf_size = roundup(devp->buf.lossy_mc_y_data_buf_size[0], ALIGN_4K);
 	if (data_buf_size > 0) {
 		pr_frc(log, "lossy_mc_y_data_buf_size:0x%x (%d)\n", data_buf_size, data_buf_size);
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+			if (i < FRC_RE_BUF_NUM)
+				data_buf_addr =
+				(cma_paddr + devp->buf.lossy_mc_y_data_buf_paddr[i]) & 0xffffffff;
+			else
+				data_buf_addr =
+				(cma_paddr2 + devp->buf.lossy_mc_y_data_buf_paddr[i]) & 0xffffffff;
 			p = cma_vaddr + devp->buf.lossy_mc_y_link_buf_paddr[i];
 			paddr = cma_paddr + devp->buf.lossy_mc_y_link_buf_paddr[i];
 			linktab_vaddr = (u32 *)p;
-			data_buf_addr =
-				(cma_paddr + devp->buf.lossy_mc_y_data_buf_paddr[i]) & 0xffffffff;
 			k = 0;
 			for (j = 0; j < data_buf_size; j += ALIGN_4K) {
 				*linktab_vaddr = data_buf_addr + j;
@@ -983,11 +1110,15 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 	if (data_buf_size > 0) {
 		pr_frc(log, "lossy_mc_c_data_buf_size:0x%x (%d)\n", data_buf_size, data_buf_size);
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+			if (i < FRC_RE_BUF_NUM)
+				data_buf_addr =
+				(cma_paddr + devp->buf.lossy_mc_c_data_buf_paddr[i]) & 0xffffffff;
+			else
+				data_buf_addr =
+				(cma_paddr2 + devp->buf.lossy_mc_c_data_buf_paddr[i]) & 0xffffffff;
 			p = cma_vaddr + devp->buf.lossy_mc_c_link_buf_paddr[i];
 			paddr = cma_paddr + devp->buf.lossy_mc_y_link_buf_paddr[i];
 			linktab_vaddr = (u32 *)p;
-			data_buf_addr =
-				(cma_paddr + devp->buf.lossy_mc_c_data_buf_paddr[i]) & 0xffffffff;
 			k = 0;
 			for (j = 0; j < data_buf_size; j += ALIGN_4K) {
 				*linktab_vaddr = data_buf_addr + j;
@@ -1004,11 +1135,15 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 	if (data_buf_size > 0) {
 		pr_frc(log, "lossy_mc_v_data_buf_size:0x%x (%d)\n", data_buf_size, data_buf_size);
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+			if (i < FRC_RE_BUF_NUM)
+				data_buf_addr =
+				(cma_paddr + devp->buf.lossy_mc_v_data_buf_paddr[i]) & 0xffffffff;
+			else
+				data_buf_addr =
+				(cma_paddr2 + devp->buf.lossy_mc_v_data_buf_paddr[i]) & 0xffffffff;
 			p = cma_vaddr + devp->buf.lossy_mc_v_link_buf_paddr[i];
 			paddr = cma_paddr + devp->buf.lossy_mc_y_link_buf_paddr[i];
 			linktab_vaddr = (u32 *)p;
-			data_buf_addr =
-				(cma_paddr + devp->buf.lossy_mc_v_data_buf_paddr[i]) & 0xffffffff;
 			k = 0;
 			for (j = 0; j < data_buf_size; j += ALIGN_4K) {
 				*linktab_vaddr = data_buf_addr + j;
@@ -1024,11 +1159,15 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 	if (data_buf_size > 0) {
 		pr_frc(log, "lossy_me_data_buf_size:0x%x (%d)\n", data_buf_size, data_buf_size);
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+			if (i < FRC_RE_BUF_NUM)
+				data_buf_addr =
+				(cma_paddr + devp->buf.lossy_me_data_buf_paddr[i]) & 0xffffffff;
+			else
+				data_buf_addr =
+				(cma_paddr2 + devp->buf.lossy_me_data_buf_paddr[i]) & 0xffffffff;
 			p = cma_vaddr + devp->buf.lossy_me_link_buf_paddr[i];
 			paddr = cma_paddr + devp->buf.lossy_mc_y_link_buf_paddr[i];
 			linktab_vaddr = (u32 *)p;
-			data_buf_addr =
-				(cma_paddr + devp->buf.lossy_me_data_buf_paddr[i]) & 0xffffffff;
 			k = 0;
 			for (j = 0; j < data_buf_size; j += ALIGN_4K) {
 				*linktab_vaddr = data_buf_addr + j;
@@ -1041,6 +1180,7 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 		}
 	}
 	frc_buf_unmap((u32 *)cma_vaddr);
+	frc_buf_unmap((u32 *)cma_vaddr2);
 
 	return 0;
 }
@@ -1052,8 +1192,8 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 int frc_buf_config(struct frc_dev_s *devp)
 {
 	u32 i = 0;
-	u32 base;
-	u32 log = 2;
+	u32 base, base2;
+	u32 log = 0;
 
 	if (!devp) {
 		pr_frc(0, "%s fail<devp is null>\n", __func__);
@@ -1066,68 +1206,69 @@ int frc_buf_config(struct frc_dev_s *devp)
 		return -1;
 	}
 	base = devp->buf.cma_mem_paddr_start;
-	pr_frc(log, "%s cma base:0x%x\n", __func__, base);
+	base2 = devp->buf.cma_mem_paddr_start2;
+	pr_frc(log, "%s cma base:0x%x, base2:0x%x\n", __func__, base, base2);
 	/*mc info buffer*/
-	WRITE_FRC_REG(FRC_REG_MC_YINFO_BADDR, base + devp->buf.lossy_mc_y_info_buf_paddr);
-	WRITE_FRC_REG(FRC_REG_MC_CINFO_BADDR, base + devp->buf.lossy_mc_c_info_buf_paddr);
-	WRITE_FRC_REG(FRC_REG_MC_VINFO_BADDR, base + devp->buf.lossy_mc_v_info_buf_paddr);
-	WRITE_FRC_REG(FRC_REG_ME_XINFO_BADDR, base + devp->buf.lossy_me_x_info_buf_paddr);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_MC_YINFO_BADDR, base + devp->buf.lossy_mc_y_info_buf_paddr);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_MC_CINFO_BADDR, base + devp->buf.lossy_mc_c_info_buf_paddr);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_MC_VINFO_BADDR, base + devp->buf.lossy_mc_v_info_buf_paddr);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_ME_XINFO_BADDR, base + devp->buf.lossy_me_x_info_buf_paddr);
 
 	/*lossy mc y,c,v data buffer, data buffer needn't config*/
 	/*lossy me data buffer, data buffer needn't config*/
 
 	/*lossy mc link buffer*/
 	for (i = FRC_REG_MC_YBUF_ADDRX_0; i <= FRC_REG_MC_YBUF_ADDRX_15; i++) {
-		WRITE_FRC_REG(i,
+		WRITE_FRC_REG_BY_CPU(i,
 			base + devp->buf.lossy_mc_y_link_buf_paddr[i - FRC_REG_MC_YBUF_ADDRX_0]);
 	}
 	for (i = FRC_REG_MC_CBUF_ADDRX_0; i <= FRC_REG_MC_CBUF_ADDRX_15; i++)
-		WRITE_FRC_REG(i,
+		WRITE_FRC_REG_BY_CPU(i,
 			base + devp->buf.lossy_mc_c_link_buf_paddr[i - FRC_REG_MC_CBUF_ADDRX_0]);
 
 	for (i = FRC_REG_MC_VBUF_ADDRX_0; i <= FRC_REG_MC_VBUF_ADDRX_15; i++)
-		WRITE_FRC_REG(i,
+		WRITE_FRC_REG_BY_CPU(i,
 			base + devp->buf.lossy_mc_v_link_buf_paddr[i - FRC_REG_MC_VBUF_ADDRX_0]);
 
 	/*lossy me link buffer*/
 	for (i = FRC_REG_ME_BUF_ADDRX_0; i <= FRC_REG_ME_BUF_ADDRX_15; i++)
-		WRITE_FRC_REG(i,
+		WRITE_FRC_REG_BY_CPU(i,
 			base + devp->buf.lossy_me_link_buf_paddr[i - FRC_REG_ME_BUF_ADDRX_0]);
 
 	/*norm hme data buffer*/
 	for (i = FRC_REG_HME_BUF_ADDRX_0; i <= FRC_REG_HME_BUF_ADDRX_15; i++)
-		WRITE_FRC_REG(i,
+		WRITE_FRC_REG_BY_CPU(i,
 			base + devp->buf.norm_hme_data_buf_paddr[i - FRC_REG_HME_BUF_ADDRX_0]);
 
 	/*norm memv buffer*/
 	for (i = FRC_REG_ME_NC_UNI_MV_ADDRX_0; i <= FRC_REG_ME_PC_PHS_MV_ADDR; i++)
-		WRITE_FRC_REG(i,
+		WRITE_FRC_REG_BY_CPU(i,
 			base + devp->buf.norm_memv_buf_paddr[i - FRC_REG_ME_NC_UNI_MV_ADDRX_0]);
 
 	/*norm hmemv buffer*/
 	for (i = FRC_REG_HME_NC_UNI_MV_ADDRX_0; i <= FRC_REG_VP_PF_UNI_MV_ADDR; i++)
-		WRITE_FRC_REG(i,
+		WRITE_FRC_REG_BY_CPU(i,
 			base + devp->buf.norm_hmemv_buf_paddr[i - FRC_REG_HME_NC_UNI_MV_ADDRX_0]);
 
 	/*norm mevp buffer*/
 	for (i = FRC_REG_VP_MC_MV_ADDRX_0; i <= FRC_REG_VP_MC_MV_ADDRX_1; i++)
-		WRITE_FRC_REG(i,
+		WRITE_FRC_REG_BY_CPU(i,
 			base + devp->buf.norm_mevp_out_buf_paddr[i - FRC_REG_VP_MC_MV_ADDRX_0]);
 
 	/*norm iplogo buffer*/
 	for (i = FRC_REG_IP_LOGO_ADDRX_0; i <= FRC_REG_IP_LOGO_ADDRX_15; i++)
-		WRITE_FRC_REG(i,
+		WRITE_FRC_REG_BY_CPU(i,
 			base + devp->buf.norm_iplogo_buf_paddr[i - FRC_REG_IP_LOGO_ADDRX_0]);
 
 	/*norm logo irr buffer*/
-	WRITE_FRC_REG(FRC_REG_LOGO_IIR_BUF_ADDR, base + devp->buf.norm_logo_irr_buf_paddr);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_LOGO_IIR_BUF_ADDR, base + devp->buf.norm_logo_irr_buf_paddr);
 
 	/*norm logo scc buffer*/
-	WRITE_FRC_REG(FRC_REG_LOGO_SCC_BUF_ADDR, base + devp->buf.norm_logo_scc_buf_paddr);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_LOGO_SCC_BUF_ADDR, base + devp->buf.norm_logo_scc_buf_paddr);
 
 	/*norm iplogo buffer*/
 	for (i = FRC_REG_ME_LOGO_ADDRX_0; i <= FRC_REG_ME_LOGO_ADDRX_15; i++)
-		WRITE_FRC_REG(i,
+		WRITE_FRC_REG_BY_CPU(i,
 			base + devp->buf.norm_melogo_buf_paddr[i - FRC_REG_ME_LOGO_ADDRX_0]);
 
 	frc_buf_mapping_tab_init(devp);
@@ -1136,3 +1277,46 @@ int frc_buf_config(struct frc_dev_s *devp)
 	return 0;
 }
 
+void frc_mem_dynamic_proc(struct work_struct *work)
+{
+	u8 buf_ctrl;
+	u64 timestamp, timestamp2;
+
+	struct frc_dev_s *devp = get_frc_devp();
+
+	pr_frc(0, "%s buf_ctrl = %d\n", __func__, devp->buf.buf_ctrl);
+	buf_ctrl = devp->buf.buf_ctrl; // 0 release buf, 1 alloc buf
+	/* HDMI/cvbd/tuner or debug_test*/
+	if (devp->in_sts.frc_is_tvin || !frc_buf_test) {
+		if (!devp->buf.cma_buf_alloc2) // buffer2 released
+			buf_ctrl = 1;
+		else
+			return;
+	}
+	if (cur_state == buf_ctrl)
+		return;
+	cur_state = buf_ctrl;
+	if (buf_ctrl) {
+		timestamp = sched_clock();
+		frc_buf_alloc(devp);
+		//frc_buf_mapping_tab_init(devp);
+		timestamp2 = sched_clock();
+		if (devp->buf.cma_buf_alloc && devp->buf.cma_buf_alloc2)
+			devp->buf.cma_mem_alloced = 1;
+		pr_frc(0, "%s cma paddr_start2=0x%lx size:0x%x used time:%lld\n",
+			__func__, (ulong)devp->buf.cma_mem_paddr_start2,
+			devp->buf.cma_mem_size2, timestamp2 - timestamp);
+	} else {
+		timestamp = sched_clock();
+		if (devp->buf.cma_buf_alloc == 1) {
+			devp->buf.cma_buf_alloc = 0;   /*keep cma paddr_start*/
+			frc_buf_release(devp);
+			devp->buf.cma_buf_alloc = 1;
+		} else {
+			pr_frc(0, "%s release buffer error\n", __func__);
+		}
+		timestamp2 = sched_clock();
+		pr_frc(0, "%s frc buffer2 released, used time:%lld\n",
+		__func__, timestamp2 - timestamp);
+	}
+}

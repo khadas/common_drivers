@@ -29,11 +29,11 @@ enum frc_fpp_state_e {
 	FPP_MEMC_MAX,
 };
 
-//==== ioctrl define =============
+//==== ioctl define =============
 #define FRC_IOC_MAGIC                   'F'
 #define FRC_IOC_GET_FRC_EN		_IOR(FRC_IOC_MAGIC, 0x00, unsigned int)
 #define FRC_IOC_GET_FRC_STS		_IOR(FRC_IOC_MAGIC, 0x01, unsigned int)
-#define FRC_IOC_SET_FRC_CADENCE         _IOW(FRC_IOC_MAGIC, 0x02, unsigned int)
+#define FRC_IOC_SET_FRC_CADENCE	_IOW(FRC_IOC_MAGIC, 0x02, unsigned int)
 #define FRC_IOC_GET_VIDEO_LATENCY	_IOR(FRC_IOC_MAGIC, 0x03, unsigned int)
 #define FRC_IOC_GET_IS_ON		_IOR(FRC_IOC_MAGIC, 0x04, unsigned int)
 #define FRC_IOC_SET_INPUT_VS_RATE	_IOW(FRC_IOC_MAGIC, 0x05, unsigned int)

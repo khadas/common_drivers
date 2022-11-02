@@ -55,7 +55,6 @@
  * called in vpp vs ir :vsync_fisr_in
  * defined(CONFIG_AMLOGIC_MEDIA_FRC)
  */
-
 int frc_input_handle(struct vframe_s *vf, struct vpp_frame_par_s *cur_video_sts)
 {
 	struct frc_dev_s *devp = get_frc_devp();
@@ -69,6 +68,7 @@ int frc_input_handle(struct vframe_s *vf, struct vpp_frame_par_s *cur_video_sts)
 
 	/*update vs time*/
 	devp->frc_sts.vs_cnt++;
+	timestamp = div64_u64(timestamp, 1000);
 	devp->vs_duration = timestamp - devp->vs_timestamp;
 	devp->vs_timestamp = timestamp;
 	frc_vpp_vs_ir_chk_film(devp);
@@ -77,7 +77,8 @@ int frc_input_handle(struct vframe_s *vf, struct vpp_frame_par_s *cur_video_sts)
 
 	/*frc work mode handle*/
 	// frc_state_handle_old(devp);
-	frc_state_handle(devp);
+	// frc_state_handle(devp);
+	frc_state_handle_new(devp);
 	return 0;
 }
 EXPORT_SYMBOL(frc_input_handle);
@@ -154,7 +155,7 @@ int frc_is_on(void)
 	chip = frc_data->match_data->chip;
 
 	if (chip == ID_T3 && is_meson_rev_a() &&
-		READ_FRC_BITS(FRC_TOP_CTRL, 0, 1) == FRC_STATE_ENABLE)
+		(READ_FRC_REG(FRC_TOP_CTRL) & 0x01) == FRC_STATE_ENABLE)
 		return 1;
 
 	return 0;

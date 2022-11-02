@@ -156,6 +156,10 @@ enum en_film_mode {
 	EN_FILM1123,
 	EN_FILM7231313,
 	EN_FILM31,
+	EN_FILM6446,
+	EN_FILM64644,
+	EN_FILM1010,
+	EN_FILM128,
 	EN_FILM_MAX = 0xFF,
 };
 
@@ -178,8 +182,11 @@ struct frc_top_type_s {
 	enum en_film_mode    film_mode;//film_mode
 	u32       film_hwfw_sel;//0:hw 1:fw
 	u32       is_me1mc4;//1: me:mc=1/4, 0 : me:mc=1/2, default 0
-	u32       me_loss_en;//default 0
-	u32       mc_loss_en;//default 0
+	u32       memc_loss_en;//default 0
+	u8        rdma_en; //1:rdma 0:cpu interrupt access reg
+	u8        rdma_reserved1;
+	u8        rdma_reserved2;
+	u8        rdma_reserved3;
 	u32       frc_prot_mode;//0:memc prefetch acorrding mode frame 1:memc prefetch 1 frame
 	u32       force_en;    // for debug
 	u32       in_out_ratio;  // for debug

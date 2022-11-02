@@ -4,7 +4,14 @@ config AMLOGIC_SECMON
 	tristate "Amlogic secure monitor driver support"
 	default n
 	help
-		This is the Amlogic secure monitor driver
-		this config only ctrl in makefile
-		prepare share memory
-		etc
+	  This is the Amlogic secure monitor driver
+	  this config only ctrl in makefile
+	  prepare share memory
+	  etc
+
+config AMLOGIC_DOLBY_FW
+	bool "Dolby FW kernel driver"
+	depends on AMLOGIC_SECMON
+	default n
+	help
+	  This is Dolby FW Driver.

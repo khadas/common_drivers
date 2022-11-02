@@ -553,7 +553,7 @@ static struct platform_driver dolby_fw_driver = {
 	},
 };
 
-static int __init dolby_fw_init(void)
+int __init dolby_fw_init(void)
 {
 	int ret = -1;
 
@@ -566,13 +566,7 @@ static int __init dolby_fw_init(void)
 }
 
 /* module unload */
-static  void __exit dolby_fw_exit(void)
+void __exit dolby_fw_exit(void)
 {
 	platform_driver_unregister(&dolby_fw_driver);
 }
-
-MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Amlogic DOLBY FW Interface driver");
-
-module_init(dolby_fw_init);
-module_exit(dolby_fw_exit);

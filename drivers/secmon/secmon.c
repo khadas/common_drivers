@@ -32,12 +32,13 @@ static long phy_out_base;
 static unsigned long secmon_start_virt;
 static unsigned int secmon_size;
 
-#ifdef CONFIG_ARM64
+#if IS_ENABLED(CONFIG_ARM64)
 #define IN_SIZE	0x6000
 #else
- #define IN_SIZE	0x6000
+#define IN_SIZE	0x6000
 #endif
- #define OUT_SIZE 0x1000
+
+#define OUT_SIZE 0x1000
 static DEFINE_MUTEX(sharemem_mutex);
 #define DEV_REGISTERED 1
 #define DEV_UNREGISTERED 0
@@ -287,13 +288,6 @@ int __init meson_secmon_init(void)
 	     "ERROR: secmon device must be enable!!!\n");
 	return ret;
 }
-
-#ifdef MODULE
-module_init(meson_secmon_init);
-MODULE_LICENSE("GPL v2");
-#else
-subsys_initcall(meson_secmon_init);
-#endif
 
 void meson_sm_mutex_lock(void)
 {

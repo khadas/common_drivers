@@ -65,6 +65,7 @@ CONFIG_AMLOGIC_MESON_IRQ_GPIO=m
 
 # amlogic-secmon.ko
 CONFIG_AMLOGIC_SECMON=m
+CONFIG_AMLOGIC_DOLBY_FW=y
 
 # amlogic-power.ko
 CONFIG_AMLOGIC_POWER=m
@@ -327,9 +328,6 @@ CONFIG_AMLOGIC_AUDIO_DSP=m
 
 # amaudio.ko
 CONFIG_AMLOGIC_AMAUDIO=m
-
-# amlogic-dolbyfw.ko
-CONFIG_AMLOGIC_DOLBY_FW=m
 
 # etherent
 CONFIG_STMMAC_ETH=m

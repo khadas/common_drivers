@@ -198,7 +198,10 @@ static void vd_dump_vf(struct vframe_s *vf)
 
 static int vd_vframe_afbc_soft_decode(struct vframe_s *vf)
 {
-	int i, j, ret, y_size, free_cnt;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+	int ret;
+#endif
+	int i, j, y_size, free_cnt;
 	short *planes[4];
 	short *y_src, *u_src, *v_src, *s2c, *s2c1;
 	u8 *tmp, *tmp1;
@@ -240,13 +243,14 @@ static int vd_vframe_afbc_soft_decode(struct vframe_s *vf)
 	param.compWidth = vf->compWidth;
 	param.compHeight = vf->compHeight;
 	param.bitdepth = vf->bitdepth;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	ret = AMLOGIC_FBC_vframe_decoder_v1((void **)planes, &param, 0, 0);
 	if (ret < 0) {
 		pr_err("amlogic_fbc_lib.ko error %d", ret);
 		vfree(p);
 		goto free;
 	}
-
+#endif
 	do_gettimeofday(&end);
 	time_use = (end.tv_sec - start.tv_sec) * 1000 +
 				(end.tv_usec - start.tv_usec) / 1000;
@@ -1522,8 +1526,10 @@ static void vframe_composer(struct composer_dev *dev)
 
 	check_dewarp_support_status(dev, received_frames_tmp);
 	is_tvp = received_frames_tmp->is_tvp;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	if (meson_uvm_get_usage(received_frames_tmp->file_vf[0]->private_data, &usage) < 0)
 		vc_print(dev->index, PRINT_ERROR, "meson_uvm_get_usage fail.\n");
+#endif
 	ret = video_composer_init_buffer(dev, is_tvp, usage);
 	if (ret != 0) {
 		vc_print(dev->index, PRINT_ERROR, "vc: init buffer failed!\n");

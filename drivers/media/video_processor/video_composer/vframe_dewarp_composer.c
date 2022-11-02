@@ -47,10 +47,10 @@ int get_dewarp_format(struct vframe_s *vf)
 	return format;
 }
 
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static int dump_vframe(char *path, u32 phy_adr, int size)
 {
 	int ret = 0;
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *fp = NULL;
 	loff_t position = 0;
 	u8 *data;
@@ -82,9 +82,9 @@ static int dump_vframe(char *path, u32 phy_adr, int size)
 
 	pr_info("%s: want write size: %d, real write size: %d.\n",
 			__func__, size, ret);
-#endif
 	return ret;
 }
+#endif
 
 bool is_dewarp_supported(struct dewarp_composer_para *param)
 {
@@ -95,13 +95,13 @@ bool is_dewarp_supported(struct dewarp_composer_para *param)
 	char file_name[64];
 	int rotate_value = 0;
 	struct composer_vf_para *composer_vf_param = NULL;
-
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	if (!is_aml_gdc_supported()) {
 		vc_print(param->vc_index, PRINT_DEWARP,
 			"%s: hardware not support.\n", __func__);
 		return false;
 	}
-
+#endif
 	if (IS_ERR_OR_NULL(param)) {
 		vc_print(param->vc_index, PRINT_DEWARP,
 			"%s: NULL param, please check.\n", __func__);
@@ -151,15 +151,16 @@ bool is_dewarp_supported(struct dewarp_composer_para *param)
 int init_dewarp_composer(struct dewarp_composer_para *param)
 {
 	int ret = 0;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	char file_name[64];
 	int rotate_value = 0;
-
+#endif
 	if (IS_ERR_OR_NULL(param)) {
 		vc_print(param->vc_index, PRINT_ERROR,
 			"%s: NULL param, please check.\n", __func__);
 		return -1;
 	}
-
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	if (param->fw_load.phys_addr == 0) {
 		if (param->vf_para->src_vf_angle == VC_TRANSFORM_ROT_90)
 			rotate_value = 90;
@@ -175,7 +176,6 @@ int init_dewarp_composer(struct dewarp_composer_para *param)
 			param->vf_para->dst_vf_width,
 			param->vf_para->dst_vf_height,
 			rotate_value);
-
 		ret = load_firmware_by_name(file_name, &param->fw_load);
 		if (ret <= 0) {
 			vc_print(param->vc_index, PRINT_ERROR,
@@ -203,7 +203,7 @@ int init_dewarp_composer(struct dewarp_composer_para *param)
 		vc_print(param->vc_index, PRINT_DEWARP,
 			"%s: dewrap work queue exist.\n", __func__);
 	}
-
+#endif
 	return ret;
 }
 
@@ -216,7 +216,7 @@ int uninit_dewarp_composer(struct dewarp_composer_para *param)
 			"%s: NULL param, please check.\n", __func__);
 		return -1;
 	}
-
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	if (param->fw_load.phys_addr != 0) {
 		vc_print(param->vc_index, PRINT_DEWARP,
 			"%s: release firmware.\n", __func__);
@@ -225,7 +225,6 @@ int uninit_dewarp_composer(struct dewarp_composer_para *param)
 		vc_print(param->vc_index, PRINT_DEWARP,
 			"%s: firmware don't load.\n", __func__);
 	}
-
 	if (!IS_ERR_OR_NULL(param->context)) {
 		ret = destroy_gdc_work_queue(param->context);
 		if (ret != 0) {
@@ -243,7 +242,7 @@ int uninit_dewarp_composer(struct dewarp_composer_para *param)
 			"%s: dewarp work queue not create.\n",
 			__func__);
 	}
-
+#endif
 	return ret;
 }
 
@@ -306,11 +305,12 @@ int config_dewarp_vframe(int vc_index, int rotation,
 
 int dewarp_data_composer(struct dewarp_composer_para *param)
 {
-	int ret, dump_num = 0;
+	int ret = 0;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct gdc_phy_setting gdc_config;
+	int dump_num = 0;
 	int src_vf_size, dst_vf_size;
 	char dump_name[32];
-
 	if (IS_ERR_OR_NULL(param)) {
 		vc_print(param->vc_index, PRINT_ERROR,
 			"%s: NULL param, please check.\n", __func__);
@@ -344,7 +344,6 @@ int dewarp_data_composer(struct dewarp_composer_para *param)
 	gdc_config.config_paddr = param->fw_load.phys_addr;
 	gdc_config.config_size = param->fw_load.size_32bit; /* in 32bit */
 	gdc_config.use_sec_mem = 0; /* secure mem access */
-
 	ret = gdc_process_phys(param->context, &gdc_config);
 	if (ret < 0) {
 		vc_print(param->vc_index, PRINT_ERROR,
@@ -363,6 +362,6 @@ int dewarp_data_composer(struct dewarp_composer_para *param)
 			dump_num = dewarp_com_dump;
 		}
 	}
-
+#endif
 	return ret;
 }

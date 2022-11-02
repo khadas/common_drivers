@@ -882,6 +882,7 @@ static void dump_yuv_data(struct vframe_s *vf,
 static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 					struct vframe_s *vf)
 {
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	int i, j, ret, y_size, free_cnt;
 	short *planes[4];
 	short *y_src, *u_src, *v_src, *s2c, *s2c1;
@@ -922,7 +923,6 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 		pr_err("amlogic_fbc_lib.ko error %d", ret);
 		goto free;
 	}
-
 	do_gettimeofday(&end);
 	time_use = (end.tv_sec - start.tv_sec) * 1000 +
 				(end.tv_usec - start.tv_usec) / 1000;
@@ -980,6 +980,7 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 free:
 	for (i = 0; i < free_cnt; i++)
 		vfree(planes[i]);
+#endif
 }
 
 /* for fbc output video:vp9 */

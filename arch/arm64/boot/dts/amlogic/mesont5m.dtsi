@@ -5,7 +5,7 @@
 
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
-#include <dt-bindings/reset/amlogic,meson-t3-reset.h>
+#include <dt-bindings/reset/amlogic,meson-t5m-reset.h>
 #include <dt-bindings/clock/t5m-clkc.h>
 #include <dt-bindings/clock/amlogic,t3-audio-clk.h>
 #include <dt-bindings/gpio/gpio.h>
@@ -748,10 +748,9 @@
 			ranges = <0x0 0x0 0x0 0xfe000000 0x0 0x480000>;
 
 			reset: reset-controller@2000 {
-				compatible = "amlogic,meson-t7-reset";
+				compatible = "amlogic,meson-t5m-reset";
 				reg = <0x0 0x2000 0x0 0x98>;
 				#reset-cells = <1>;
-				status = "disabled";
 			};
 
 			watchdog@2100 {

@@ -545,10 +545,3 @@ void __exit dsm_exit(void)
 	class_destroy(dsm_class);
 	unregister_chrdev_region(dsm_devno, 1);
 }
-
-MODULE_AUTHOR("Tao Guo <tao.guo@amlogic.com>");
-MODULE_DESCRIPTION("Amlogic Descrambler Session Manager Driver");
-MODULE_LICENSE("GPL");
-
-module_init(dsm_init);
-module_exit(dsm_exit);

@@ -3,12 +3,12 @@
 #Makefile for the dvb dmx drivers
 #
 
-MODULE_NAME = amlogic-dvb-demux
-obj-$(CONFIG_AMLOGIC_DVB_DMX) = $(MODULE_NAME).o
+MODULE_NAME_DEMUX = amlogic-dvb-demux
+obj-$(CONFIG_AMLOGIC_DVB_DMX) = $(MODULE_NAME_DEMUX).o
 
-#PR_FMT = $(subst amlogic-,,$(MODULE_NAME)) 
-#PR_FMT_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT)]: \" fmt"
-# ccflags-y += $(PR_FMT_DEFINE)
+#PR_FMT_DEMUX = $(subst amlogic-,,$(MODULE_NAME_DEMUX))
+#PR_FMT__DEMUX_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT_DEMUX)]: \" fmt"
+# ccflags-y += $(PR_FMT__DEMUX_DEFINE)
 
 #ccflags-y += -I$(srctree)/drivers/media/dvb-core -I$(srctree)/drivers/gpio -I$(srctree)/include -fno-tree-scev-cprop
 #ccflags-y += -I$(srctree)/drivers/media/dvb-core -fno-tree-scev-cprop
@@ -22,21 +22,21 @@ ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/dvb
 #ccflags-y += -I.
 #ccflags-y += -DCOMMON_DRIVERS_DIR=$(COMMON_DRIVERS_DIR)
 
-$(MODULE_NAME)-y += aml_dvb.o
-$(MODULE_NAME)-y += aml_dsc.o
-$(MODULE_NAME)-y += aml_dmx.o
-$(MODULE_NAME)-y += aml_key.o
-#$(MODULE_NAME)-y += dmxdev.o
-#$(MODULE_NAME)-y += ringbuffer.o
+$(MODULE_NAME_DEMUX)-y += aml_dvb.o
+$(MODULE_NAME_DEMUX)-y += aml_dsc.o
+$(MODULE_NAME_DEMUX)-y += aml_dmx.o
+$(MODULE_NAME_DEMUX)-y += aml_key.o
+#$(MODULE_NAME_DEMUX)-y += dmxdev.o
+#$(MODULE_NAME_DEMUX)-y += ringbuffer.o
 
-$(MODULE_NAME)-y += sw_demux/swdmx_cb_list.o
-$(MODULE_NAME)-y += sw_demux/swdmx_crc32.o
-$(MODULE_NAME)-y += sw_demux/swdmx_demux.o
-$(MODULE_NAME)-y += sw_demux/swdmx_ts_parser.o
+$(MODULE_NAME_DEMUX)-y += sw_demux/swdmx_cb_list.o
+$(MODULE_NAME_DEMUX)-y += sw_demux/swdmx_crc32.o
+$(MODULE_NAME_DEMUX)-y += sw_demux/swdmx_demux.o
+$(MODULE_NAME_DEMUX)-y += sw_demux/swdmx_ts_parser.o
 
-$(MODULE_NAME)-y += sc2_demux/sc2_control.o
-$(MODULE_NAME)-y += sc2_demux/mem_desc.o
-$(MODULE_NAME)-y += sc2_demux/ts_output.o
-$(MODULE_NAME)-y += sc2_demux/ts_input.o
-$(MODULE_NAME)-y += sc2_demux/frontend.o
-$(MODULE_NAME)-y += sc2_demux/dvb_reg.o
+$(MODULE_NAME_DEMUX)-y += sc2_demux/sc2_control.o
+$(MODULE_NAME_DEMUX)-y += sc2_demux/mem_desc.o
+$(MODULE_NAME_DEMUX)-y += sc2_demux/ts_output.o
+$(MODULE_NAME_DEMUX)-y += sc2_demux/ts_input.o
+$(MODULE_NAME_DEMUX)-y += sc2_demux/frontend.o
+$(MODULE_NAME_DEMUX)-y += sc2_demux/dvb_reg.o

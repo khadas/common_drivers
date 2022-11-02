@@ -130,7 +130,7 @@ do {\
 		pr_err("Smartcard: " fmt, ## args); \
 } \
 while (0)
-#define Fpr(a...)	do { if (smc_debug > 1) printk(a); } while (0)
+#define Fpr(a...)	do { if (smc_debug > 1) pr_info(a); } while (0)
 #define Ipr		 Fpr
 //#else
 //#define pr_dbg(fmt, args...)
@@ -1347,7 +1347,7 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 	reg_int->cwt_expired_int_mask = 1;
 	reg_int->bwt_expired_int_mask = 1;
 	reg_int->write_full_fifo_int_mask = 1;
-	reg_int->send_and_recv_confilt_int_mask = 1;
+	reg_int->send_and_recv_confict_int_mask = 1;
 	reg_int->recv_error_int_mask = 1;
 	reg_int->send_error_int_mask = 1;
 	reg_int->rst_expired_int_mask = 1;
@@ -3045,7 +3045,7 @@ static struct platform_driver smc_driver = {
 	},
 };
 
-static int __init smc_sc2_mod_init(void)
+int __init smc_sc2_mod_init(void)
 {
 	int ret = -1;
 
@@ -3076,20 +3076,10 @@ error_register_chrdev:
 	return ret;
 }
 
-static void __exit smc_sc2_mod_exit(void)
+void __exit smc_sc2_mod_exit(void)
 {
 	platform_driver_unregister(&smc_driver);
 	class_unregister(&smc_class);
 	unregister_chrdev(smc_major, SMC_DEV_NAME);
 	mutex_destroy(&smc_lock);
 }
-
-module_init(smc_sc2_mod_init);
-
-module_exit(smc_sc2_mod_exit);
-
-MODULE_AUTHOR("AMLOGIC");
-
-MODULE_DESCRIPTION("AMLOGIC smart card driver");
-
-MODULE_LICENSE("GPL");

@@ -3,7 +3,4 @@
 #Makefile for the amlogic DVB aucpu driver
 #
 
-MODULE_NAME = amlogic-aucpu
-obj-$(CONFIG_AMLOGIC_AUCPU) = $(MODULE_NAME).o
-
-$(MODULE_NAME)-y += aml_aucpu.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_AUCPU) += aucpu/aml_aucpu.o

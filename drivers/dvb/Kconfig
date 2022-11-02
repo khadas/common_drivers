@@ -1,41 +1,42 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-menu "AMLOGIC DVB EXTERN support"
+
+config AMLOGIC_DVB_CONFIG
+	tristate "Amlogic dvb support"
+	default n
+	help
+		amlogic dvb support
+		Y: enable
+		N: disable
+		M: build as module
+
+if AMLOGIC_DVB_CONFIG
 
 config AMLOGIC_DVB_EXTERN
-	tristate "Amlogic dvb extern drivers"
+	bool "Amlogic dvb extern drivers"
 	help
-		select it to support amlogic dvb extern driver.
-		Y: enable
-		N: disable
-		M: build as module
-endmenu
-
-menu "DVB AUCPU support"
-	source "$(COMMON_DRIVERS_DIR)/drivers/dvb/aucpu/Kconfig"
-endmenu
-#
-#dvb driver for demux
-#
-menu "AMLOGIC DVB demux/dsc support"
-
-config AMLOGIC_DVB_DMX
-	tristate "AMLOGIC DVB DMX"
-	help
-		support dmx/dsc driver.
+		Say Y here if you want to support amlogic dvb extern driver.
 
 config AMLOGIC_DVB_DSM
-	tristate "AMLOGIC DVB DSM"
+	bool "AMLOGIC DVB DSM"
 	help
 		Amlogic DVB Descrambler Session Manager
-		Y: enable
-		N: disable
-		M: build as module
-
-endmenu
 
 config AMLOGIC_DVB_COMPAT
-	tristate "AMLOGIC DVB COMPAT"
+	bool "AMLOGIC DVB COMPAT"
+	default n
 	help
 		if define Amlogic define demod or dmx
 		it should define AMLOGIC_DVB_COMPAT
 
+source "$(COMMON_DRIVERS_DIR)/drivers/dvb/aucpu/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/dvb/smartcard_sc2/Kconfig"
+
+endif
+
+#
+#dvb driver for demux
+#
+config AMLOGIC_DVB_DMX
+	tristate "AMLOGIC DVB DMX"
+	help
+		support dmx/dsc driver.

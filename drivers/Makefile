@@ -39,7 +39,6 @@ obj-$(CONFIG_AMLOGIC_INPHY)		+= net/
 obj-$(CONFIG_AMLOGIC_MTD_COMMON)	+= mtd/common/
 obj-$(CONFIG_AMLOGIC_MTD_SPI_NAND)	+= mtd/spinand/
 obj-$(CONFIG_AMLOGIC_MTD_NAND)		+= mtd/nand/
-obj-$(CONFIG_AMLOGIC_SMARTCARD)		+= smartcard_sc2/
 obj-y        				+= dvb/
 obj-$(CONFIG_AMLOGIC_DRM)		+= drm/
 obj-y              			+= pci/

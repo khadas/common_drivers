@@ -3,5 +3,4 @@
 #Makefile for the dvb dsm drivers
 #
 
-obj-$(CONFIG_AMLOGIC_DVB_DSM) += aml_dsm.o
-
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_DVB_DSM) += dsm/aml_dsm.o

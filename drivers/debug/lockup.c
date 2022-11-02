@@ -30,8 +30,8 @@
 #include <trace/hooks/preemptirq.h>
 #include <linux/time.h>
 #include <linux/delay.h>
-#include "../../../kernel/sched/sched.h"
-#include "debug_trace.h"
+#include <sched.h>
+#include "trace.h"
 
 #define CREATE_TRACE_POINTS
 DEFINE_TRACE(inject_irq_hooks,

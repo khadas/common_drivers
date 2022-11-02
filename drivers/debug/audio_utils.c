@@ -261,6 +261,7 @@ static void __exit audio_utils_exit(void)
 	unregister_chrdev(major, DEVICE_NAME);
 	class_unregister(&audio_utils_class);
 }
+
 module_init(audio_utils_init);
 module_exit(audio_utils_exit);
 MODULE_LICENSE("GPL");

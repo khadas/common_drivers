@@ -28,7 +28,7 @@
 #include <linux/debugfs.h>
 #include <linux/err.h>
 #include <linux/amlogic/debug_ftrace_ramoops.h>
-#include <../../../fs/pstore/internal.h>
+#include <internal.h>
 #include <linux/trace_clock.h>
 #include <linux/percpu.h>
 #include <linux/moduleparam.h>

@@ -18,7 +18,7 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 
-#include "gki_tool.h"
+#include "gki_config.h"
 
 /*
  * single_open() default buffer size is 4KB, but gki_config size is
@@ -56,14 +56,15 @@ static const struct proc_ops gki_config_ops = {
 	.proc_release	= single_release,
 };
 
-void gki_config_init(void)
+int __init gki_config_init(void)
 {
 	struct proc_dir_entry *dentry;
 
 	dentry = proc_create("gki_config", 0644, NULL, &gki_config_ops);
 	if (IS_ERR_OR_NULL(dentry)) {
 		pr_err("%s, create sysfs failed\n", __func__);
-		return;
+		return -1;
 	}
+	return 0;
 }
 #endif

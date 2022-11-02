@@ -79,8 +79,15 @@ config AMLOGIC_HOTPLUG_ARM_CPU0
 	  if build with arm set this config to y for vts thermal 1.0 test,
 	  set config to n for arm64
 
-config AMLOGIC_DEBUG_UTILS
-	tristate "Amlogic debug utils"
+config AMLOGIC_AUDIO_UTILS
+	tristate "Amlogic audio utils"
 	default n
 	help
 	  add some debug tools
+
+config AMLOGIC_GKI_CONFIG
+	bool "Meson gki config"
+	depends on AMLOGIC_DEBUG
+	default n
+	help
+	  support GKI config enable or not

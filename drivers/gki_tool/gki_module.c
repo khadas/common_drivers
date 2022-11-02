@@ -155,10 +155,8 @@ void gki_module_init(void)
 	}
 
 	cmdline = kmalloc(len1 + len2 + 2, GFP_KERNEL);
-	if (!cmdline) {
-		pr_err("couldn't allocate memory for cmdline %dbyte\n", len1 + len2 + 2);
+	if (!cmdline)
 		return;
-	}
 
 	if (len1) {
 		strcpy(cmdline, config_cmdline);

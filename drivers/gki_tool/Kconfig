@@ -4,12 +4,5 @@ config AMLOGIC_GKI_TOOL
 	tristate "Meson gki tool"
 	default n
 	help
-		provide common tools for GKI ko,
-		including __setup...
-
-config AMLOGIC_GKI_CONFIG
-	bool "Meson gki config"
-	depends on AMLOGIC_GKI_TOOL
-	default n
-	help
-		support GKI config enable or not
+	  provide common tools for GKI ko,
+	  including __setup...

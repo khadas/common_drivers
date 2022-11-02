@@ -286,6 +286,12 @@ static struct platform_driver aml_restart_driver = {
 	},
 };
 
-module_platform_driver(aml_restart_driver);
+int __init reboot_init(void)
+{
+	return platform_driver_register(&aml_restart_driver);
+}
 
-MODULE_LICENSE("GPL");
+void __exit reboot_exit(void)
+{
+	platform_driver_unregister(&aml_restart_driver);
+}

@@ -1,8 +1,0 @@
-# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
-
-# Amlogic POWER OFF
-config AMLOGIC_GX_REBOOT
-	tristate "Amlogic reboot gx"
-	default n
-	help
-	  This is the Amlogic GX reboot driver.

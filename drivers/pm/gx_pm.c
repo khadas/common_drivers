@@ -31,7 +31,7 @@
 #include <linux/amlogic/power_domain.h>
 #include <linux/syscore_ops.h>
 
-#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+#if IS_ENABLED(CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND)
 
 static DEFINE_MUTEX(early_suspend_lock);
 static DEFINE_MUTEX(sysfs_trigger_lock);
@@ -348,7 +348,7 @@ static CLASS_ATTR_RW(time_out);
 static struct attribute *meson_pm_attrs[] = {
 	&class_attr_suspend_reason.attr,
 	&class_attr_time_out.attr,
-#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+#if IS_ENABLED(CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND)
 	&class_attr_early_suspend_trigger.attr,
 #endif
 	NULL,
@@ -409,7 +409,7 @@ static int meson_pm_probe(struct platform_device *pdev)
 
 	gx_pm_init_ops();
 
-#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+#if IS_ENABLED(CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND)
 	err = register_pm_notifier(&lgcy_early_suspend_notifier);
 	if (unlikely(err))
 		return err;
@@ -435,7 +435,7 @@ static int __exit meson_pm_remove(struct platform_device *pdev)
 
 	class_unregister(&meson_pm_class);
 
-#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+#if IS_ENABLED(CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND)
 	lgcy_early_suspend_exit(pdev);
 #endif
 	return 0;
@@ -464,7 +464,12 @@ static struct platform_driver meson_pm_driver = {
 	.shutdown = meson_pm_shutdown,
 };
 
-module_platform_driver(meson_pm_driver);
-MODULE_AUTHOR("Amlogic");
-MODULE_DESCRIPTION("Amlogic suspend driver");
-MODULE_LICENSE("GPL");
+int __init pm_init(void)
+{
+	return platform_driver_register(&meson_pm_driver);
+}
+
+void __exit pm_exit(void)
+{
+	platform_driver_unregister(&meson_pm_driver);
+}

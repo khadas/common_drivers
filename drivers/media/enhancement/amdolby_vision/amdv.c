@@ -290,6 +290,7 @@ static u32 vsync_count;
 static u32 vpp_data_422T0444_backup;
 
 static bool is_osd_off;
+static bool osd_onoff_changed;
 static int core1_switch;
 static int core3_switch;
 bool force_set_lut;
@@ -1192,6 +1193,7 @@ static int is_graphic_changed(void)
 		if (!is_osd_off) {
 			pr_dv_dbg("osd off\n");
 			is_osd_off = true;
+			osd_onoff_changed = true;
 			ret |= 1;
 		}
 	} else if (is_osd_off) {
@@ -1200,6 +1202,7 @@ static int is_graphic_changed(void)
 		force_set_lut = true;
 		pr_dv_dbg("osd on\n");
 		is_osd_off = false;
+		osd_onoff_changed = true;
 		ret |= 2;
 	}
 
@@ -8281,14 +8284,16 @@ int amdv_parse_metadata_v2_stb(struct vframe_s *vf,
 				dv_inst[dv_id].last_mel_mode = mel_flag;
 			}
 		} else if (meta_flag_bl && meta_flag_el) {
-			total_md_size = dv_inst[dv_id].last_total_md_size;
-			total_comp_size = dv_inst[dv_id].last_total_comp_size;
+			total_md_size = m_dovi_setting.input[dv_id].in_md_size;
+			total_comp_size = m_dovi_setting.input[dv_id].in_comp_size;
 			el_flag = m_dovi_setting.input[dv_id].el_flag;
 			mel_flag = dv_inst[dv_id].last_mel_mode;
 			if (debug_dolby & 2)
 				pr_dv_dbg("update el_flag %d, melFlag %d\n",
 					     el_flag, mel_flag);
 			meta_flag_bl = 0;
+			if (total_md_size == 0)
+				src_format = FORMAT_SDR;
 		}
 		if (el_flag && !enable_mel)
 			el_flag = 0;
@@ -9126,6 +9131,12 @@ int amdv_control_path(struct vframe_s *vf, struct vframe_s *vf_2)
 		new_m_dovi_setting.reserved[2] = 0;/*user white point*/
 		new_m_dovi_setting.reserved[3] = 0;/*byte2*/
 		new_m_dovi_setting.reserved[4] = 0;/*byte3*/
+	}
+
+	if (osd_onoff_changed) {
+		pr_dv_dbg("osd onoff changed\n");
+		p_funcs_stb->multi_control_path(&invalid_m_dovi_setting);
+		osd_onoff_changed = false;
 	}
 
 	if (enable_multi_core1) {

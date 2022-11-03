@@ -406,7 +406,6 @@ static int copy_phybuf_to_file(struct canvas_config_s *config,
 	return 0;
 }
 #endif
-
 static bool dump_data(struct dump_param *para, enum buffer_data type)
 {
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
@@ -474,8 +473,9 @@ static bool dump_data(struct dump_param *para, enum buffer_data type)
 	}
 end:
 	return ret;
-#endif
+#else
 	return false;
+#endif
 }
 
 int fill_vframe_black(struct ge2d_composer_para *ge2d_comp_para)

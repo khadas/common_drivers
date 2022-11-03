@@ -882,7 +882,6 @@ static void dump_yuv_data(struct vframe_s *vf,
 static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 					struct vframe_s *vf)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	int i, j, ret, y_size, free_cnt;
 	short *planes[4];
 	short *y_src, *u_src, *v_src, *s2c, *s2c1;
@@ -918,7 +917,11 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 	param.compWidth = vf->compWidth;
 	param.compHeight = vf->compHeight;
 	param.bitdepth = vf->bitdepth;
+#ifdef CONFIG_AMLOGIC_UVM_CORE
 	ret = AMLOGIC_FBC_vframe_decoder_v1((void **)planes, &param, 0, 0);
+#else
+	ret = -1;
+#endif
 	if (ret < 0) {
 		pr_err("amlogic_fbc_lib.ko error %d", ret);
 		goto free;
@@ -980,7 +983,6 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 free:
 	for (i = 0; i < free_cnt; i++)
 		vfree(planes[i]);
-#endif
 }
 
 /* for fbc output video:vp9 */

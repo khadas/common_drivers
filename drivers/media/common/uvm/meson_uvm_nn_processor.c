@@ -391,8 +391,10 @@ int dump_hf(struct vf_nn_sr_t *nn_sr_dst)
 	nn_print(PRINT_OTHER, "nn: write %u size to addr%p\n", write_size, data);
 	codec_mm_unmap_phyaddr(data);
 	filp_close(fp, NULL);
-#endif
 	return 0;
+#else
+	return -1;
+#endif
 }
 
 int nn_mod_setinfo(void *arg, char *buf)

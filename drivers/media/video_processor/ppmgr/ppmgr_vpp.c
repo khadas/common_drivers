@@ -2501,6 +2501,7 @@ rotate_done:
 			dumpfirstframe = 0;
 	}
 #endif
+
 #ifdef DDD
 	PPMGRVPP_WARN("rotate avail=%d, free=%d\n",
 		      vfq_level(&q_ready), vfq_level(&q_free));

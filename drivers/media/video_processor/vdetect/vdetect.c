@@ -613,8 +613,10 @@ static int copy_phybuf_to_file(ulong phys, u32 size,
 		pr_info("pos: %lld, phys: %lx, remain_size: %d\n",
 			pos, phys, remain_size);
 	}
-#endif
 	return 0;
+#else
+	return -1;
+#endif
 }
 
 static int vdetect_ge2d_process(struct config_para_ex_s *ge2d_config,

@@ -1,6 +1,15 @@
-menu "Amlogic input device support"
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
+config AMLOGIC_INPUT
+	tristate "Amlogic input devices support"
+	default n
+	help
+	  input devices support
+	  select y for built-in
+	  select m for ko
+	  select n for disable
+
+if AMLOGIC_INPUT
 source "$(COMMON_DRIVERS_DIR)/drivers/input/keyboard/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/input/ir/Kconfig"
-
-endmenu
+endif

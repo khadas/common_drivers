@@ -879,7 +879,7 @@ static struct platform_driver meson_ir_driver = {
 	},
 };
 
-static int __init meson_ir_driver_init(void)
+int __init meson_ir_driver_init(void)
 {
 	int ret;
 
@@ -889,15 +889,9 @@ static int __init meson_ir_driver_init(void)
 
 	return platform_driver_register(&meson_ir_driver);
 }
-module_init(meson_ir_driver_init);
 
-static void __exit meson_ir_driver_exit(void)
+void __exit meson_ir_driver_exit(void)
 {
 	meson_ir_xmp_decode_exit();
 	platform_driver_unregister(&meson_ir_driver);
 }
-module_exit(meson_ir_driver_exit);
-
-MODULE_AUTHOR("AMLOGIC");
-MODULE_DESCRIPTION("AMLOGIC IR DRIVER");
-MODULE_LICENSE("GPL v2");

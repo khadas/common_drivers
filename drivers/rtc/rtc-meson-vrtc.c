@@ -309,7 +309,12 @@ static struct platform_driver meson_vrtc_driver = {
 #endif
 };
 
-module_platform_driver(meson_vrtc_driver);
+int __init vrtc_init(void)
+{
+	return platform_driver_register(&meson_vrtc_driver);
+}
 
-MODULE_DESCRIPTION("Amlogic Virtual Wakeup RTC Timer driver");
-MODULE_LICENSE("GPL");
+void __exit vrtc_exit(void)
+{
+	platform_driver_unregister(&meson_vrtc_driver);
+}

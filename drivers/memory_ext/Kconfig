@@ -62,14 +62,6 @@ config AMLOGIC_MEM_DEBUG
 	help
 		Memory debug which hacking to kernel mm source.
 
-config AMLOGIC_FILE_CACHE
-	tristate "Amlogic file cache"
-	depends on AMLOGIC_MEMORY_EXTEND
-	default n
-	help
-		Memory debug which statisticint filecache information.
-		Enable if doubt.
-
 config AMLOGIC_STACKPROTECTOR
 	bool "Amlogic stack protector"
 	depends on AMLOGIC_MEMORY_EXTEND
@@ -99,16 +91,6 @@ config AMLOGIC_USER_FAULT
 		memory around all registers
 		maps with pc/lr
 		pfn for all virtual address of regirsters
-
-config AMLOGIC_WATCHPOINT
-	tristate "Amlogic point driver"
-	depends on AMLOGIC_MEMORY_EXTEND
-	depends on HAVE_HW_BREAKPOINT
-	default n
-	help
-		This driver export a debug sysfs in order
-		to using watch point function on ARMv8.
-		say y to enable Amlogic watch point driver
 
 config AMLOGIC_ZSTD
 	tristate "Amlogic zstd optimize"

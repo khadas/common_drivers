@@ -203,7 +203,7 @@ static const struct file_operations dump_file_ops = {
 	.release	= single_release,
 };
 
-static int __init aml_debug_init(void)
+int __init aml_reg_init(void)
 {
 	static struct dentry *dir_aml_reg;
 
@@ -223,12 +223,6 @@ static int __init aml_debug_init(void)
 	return 0;
 }
 
-static void __exit aml_debug_exit(void)
+void __exit aml_reg_exit(void)
 {
 }
-
-module_init(aml_debug_init);
-module_exit(aml_debug_exit);
-
-MODULE_DESCRIPTION("Amlogic debug module");
-MODULE_LICENSE("GPL");

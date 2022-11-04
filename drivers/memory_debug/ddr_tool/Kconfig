@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
 config AMLOGIC_DDR_TOOL
-	tristate "Meson cpu ddr tool"
+	bool "Meson cpu ddr tool"
 	depends on AMLOGIC_DRIVER
 	default n
 	help

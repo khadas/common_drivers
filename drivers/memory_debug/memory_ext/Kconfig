@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_FILE_CACHE
+	bool "Amlogic file cache"
+	depends on AMLOGIC_MEMORY_EXTEND
+	default n
+	help
+	  Memory debug which statisticint filecache information.
+	  Enable if doubt.
+
+config AMLOGIC_WATCHPOINT
+	bool "Amlogic point driver"
+	depends on AMLOGIC_MEMORY_EXTEND
+	depends on HAVE_HW_BREAKPOINT
+	default n
+	help
+	  This driver export a debug sysfs in order
+	  to using watch point function on ARMv8.
+	  say y to enable Amlogic watch point driver

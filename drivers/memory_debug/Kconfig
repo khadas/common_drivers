@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+menu "Meson core memory debug driver"
+
+config AMLOGIC_MEMORY_DEBUG
+	tristate "Meson debug driver"
+	default n
+	help
+	  This is the meson memory driver
+
+source "$(COMMON_DRIVERS_DIR)/drivers/memory_debug/memory_ext/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/memory_debug/reg_access/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/memory_debug/ddr_tool/Kconfig"
+
+endmenu

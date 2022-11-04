@@ -771,7 +771,12 @@ static struct i2c_driver meson_tlc59116_driver = {
 	.id_table = meson_tlc59116_i2c_id,
 };
 
-module_i2c_driver(meson_tlc59116_driver);
-MODULE_AUTHOR("Bichao Zheng <bichao.zheng@amlogic.com>");
-MODULE_LICENSE("GPL v2");
-MODULE_DESCRIPTION("TLC59116 LED Driver");
+int __init led_tlc59116_init(void)
+{
+	return i2c_add_driver(&meson_tlc59116_driver);
+}
+
+void __exit led_tlc59116_exit(void)
+{
+	return i2c_del_driver(&meson_tlc59116_driver);
+}

@@ -385,8 +385,12 @@ static struct platform_driver led_state_driver = {
 	},
 };
 
-module_platform_driver(led_state_driver);
+int __init led_state_init(void)
+{
+	return platform_driver_register(&led_state_driver);
+}
 
-MODULE_AUTHOR("Bichao Zheng <bichao.zheng@amlogic.com>");
-MODULE_DESCRIPTION("LED STATE driver for amlogic");
-MODULE_LICENSE("GPL");
+void __exit led_state_exit(void)
+{
+	platform_driver_unregister(&led_state_driver);
+}

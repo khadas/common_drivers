@@ -991,8 +991,12 @@ static struct i2c_driver meson_aw9523_driver = {
 	.id_table = aw9523_i2c_id,
 };
 
-module_i2c_driver(meson_aw9523_driver);
+int __init led_aw9523_init(void)
+{
+	return i2c_add_driver(&meson_aw9523_driver);
+}
 
-MODULE_AUTHOR("Tiger Hu <huyh@seirobotics.net>");
-MODULE_DESCRIPTION("AW9523 LED Driver");
-MODULE_LICENSE("GPL v2");
+void __exit led_aw9523_exit(void)
+{
+	return i2c_del_driver(&meson_aw9523_driver);
+}

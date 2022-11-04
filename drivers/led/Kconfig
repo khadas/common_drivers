@@ -1,22 +1,24 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 #
 # LED drivers configuration
 #
 
-menuconfig AMLOGIC_LED
-	bool "Amlogic LED Support"
+config AMLOGIC_LED
+	tristate "Amlogic LED Support"
 	default n
 	help
-	  Say Y here to get to see options for led drivers.
+	  amlogic led support
+	  select y for built-in
+	  select m for ko
+	  select n for disable
 	  This option alone does not add any kernel code.
-
 	  If you say N, all options in this submenu will be
 	  skipped and disabled.
-
 
 if AMLOGIC_LED
 
 config AMLOGIC_LEDS_TLC59116
-	tristate "LED Support for the TLC59116"
+	bool "LED Support for the TLC59116"
 	depends on LEDS_CLASS
 	default n
 	help
@@ -24,7 +26,7 @@ config AMLOGIC_LEDS_TLC59116
 	  TLC59116.
 
 config AMLOGIC_LEDS_AW9523B
-	tristate "LED Support for the AW9523B"
+	bool "LED Support for the AW9523B"
 	depends on LEDS_CLASS
 	default n
 	help
@@ -32,11 +34,11 @@ config AMLOGIC_LEDS_AW9523B
 	  AW9523B.
 
 config AMLOGIC_LEDS_STATE
-	tristate "LED state support"
+	bool "LED state support"
 	depends on LEDS_CLASS
 	default n
 	help
 	  Choose this option if you want to use the LED state
-		and led function
+	  and led function
 
 endif

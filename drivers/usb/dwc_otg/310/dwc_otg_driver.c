@@ -1577,11 +1577,14 @@ static struct platform_driver dwc_otg_driver = {
 };
 
 
-static int __init dwc_otg_init(void)
+int __init dwc_otg_init(void)
 {
 	return platform_driver_register(&dwc_otg_driver);
 }
+
+#if 0
 late_initcall(dwc_otg_init);
+#endif
 
 MODULE_DESCRIPTION(DWC_DRIVER_DESC);
 MODULE_AUTHOR("Synopsys Inc.");

@@ -294,24 +294,14 @@ CONFIG_AMLOGIC_SND_CODEC_DUMMY_CODEC=m
 # amlogic-snd-codec-t9015.ko
 CONFIG_AMLOGIC_SND_CODEC_AMLT9015=m
 
-# usb xxx ko
+# amlogic-usb ko
 CONFIG_AMLOGIC_USB=y
 CONFIG_AMLOGIC_USB_SUPPORT=m
-
-# amlogic_usb2_phy.ko
 CONFIG_AMLOGIC_USB2PHY=y
-
-# amlogic_usb3_v2_phy.ko
 CONFIG_AMLOGIC_USBPHY=y
-
-# amlogic_usb_otg.ko
 CONFIG_AMLOGIC_USB3PHY=y
-
-# amlogic_usb_crg.ko
 CONFIG_AMLOGIC_CRG=y
-
-# dwc_otg.ko
-CONFIG_AMLOGIC_USB_DWC_OTG_HCD=m
+CONFIG_AMLOGIC_USB_DWC_OTG_HCD=y
 
 # etherent
 CONFIG_STMMAC_ETH=m

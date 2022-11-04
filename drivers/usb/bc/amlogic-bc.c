@@ -297,9 +297,17 @@ static struct platform_driver amlogic_bc_driver = {
 	},
 };
 
+#if 0
 module_platform_driver(amlogic_bc_driver);
 
 MODULE_ALIAS("platform: amlogic_bc");
 MODULE_AUTHOR("Amlogic Inc.");
 MODULE_DESCRIPTION("amlogic BC driver");
 MODULE_LICENSE("GPL v2");
+#else
+int __init amlogic_bc_driver_init(void)
+{
+	return platform_driver_register(&amlogic_bc_driver);
+}
+#endif
+

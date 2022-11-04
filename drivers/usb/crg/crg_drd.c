@@ -571,13 +571,13 @@ static const struct dev_pm_ops crg_dev_pm_ops = {
 };
 
 #ifdef CONFIG_OF
-static const struct of_device_id of_crg_match[] = {
+static const struct of_device_id of_crg_drd_match[] = {
 	{
 		.compatible = "amlogic, crg-drd"
 	},
 	{ },
 };
-MODULE_DEVICE_TABLE(of, of_crg_match);
+MODULE_DEVICE_TABLE(of, of_crg_drd_match);
 #endif
 
 static struct platform_driver crg_driver = {
@@ -586,7 +586,7 @@ static struct platform_driver crg_driver = {
 	.shutdown	= crg_shutdown,
 	.driver		= {
 		.name	= "crg_drd_otg",
-		.of_match_table	= of_match_ptr(of_crg_match),
+		.of_match_table	= of_match_ptr(of_crg_drd_match),
 		.pm	= &crg_dev_pm_ops,
 	},
 };
@@ -624,15 +624,18 @@ int crg_init(void)
 EXPORT_SYMBOL_GPL(crg_init);
 
 /* AMLOGIC corigine driver does not allow module unload */
-static int __init amlogic_crg_init(void)
+int __init amlogic_crg_host_driver_init(void)
 {
 	platform_driver_probe(&crg_host_driver, crg_probe);
 
 	return 0;
 }
+
+#if 0
 late_initcall(amlogic_crg_init);
 
 MODULE_ALIAS("platform:crg");
 MODULE_AUTHOR("yue wang <yue.wang@amlogic.com>");
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("corigine USB3 DRD Controller Driver");
+#endif

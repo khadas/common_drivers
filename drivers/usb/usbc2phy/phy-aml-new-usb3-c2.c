@@ -628,9 +628,17 @@ static struct platform_driver amlogic_new_c2_usb3_v2_driver = {
 	},
 };
 
+#if 0
 module_platform_driver(amlogic_new_c2_usb3_v2_driver);
 
 MODULE_ALIAS("platform: amlogic_c2_usb3_v2");
 MODULE_AUTHOR("Amlogic Inc.");
 MODULE_DESCRIPTION("amlogic c2 USB3 v2 phy driver");
 MODULE_LICENSE("GPL v2");
+#else
+int __init amlogic_new_c2_usb3_v2_driver_init(void)
+{
+	return platform_driver_register(&amlogic_new_c2_usb3_v2_driver);
+}
+#endif
+

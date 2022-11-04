@@ -1,8 +1,3 @@
 # SPDX-License-Identifier: GPL-2.0
-MODULE_NAME = amlogic_usb3_v3_phy
-obj-$(CONFIG_AMLOGIC_USBPHY)      += $(MODULE_NAME).o
-$(MODULE_NAME)-y += phy-aml-new-usb3-v3.o
-
-PR_FMT = $(subst amlogic-,,$(MODULE_NAME))
-PR_FMT_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT)]: \" fmt"
-ccflags-y += $(PR_FMT_DEFINE)
+#MODULE_NAME = amlogic_usb3_v3_phy
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_USB3PHY) += usb3v3phy/phy-aml-new-usb3-v3.o

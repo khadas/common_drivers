@@ -743,9 +743,16 @@ static struct platform_driver amlogic_crg_drd_usb2_driver = {
 	},
 };
 
+#if 0
 module_platform_driver(amlogic_crg_drd_usb2_driver);
 
 MODULE_ALIAS("platform: amlogic_crg_drd");
 MODULE_AUTHOR("Amlogic Inc.");
 MODULE_DESCRIPTION("amlogic crg drd USB2 phy driver");
 MODULE_LICENSE("GPL v2");
+#else
+int __init amlogic_crg_drd_usb2_drv_init(void)
+{
+	return platform_driver_register(&amlogic_crg_drd_usb2_driver);
+}
+#endif

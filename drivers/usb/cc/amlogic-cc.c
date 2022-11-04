@@ -229,10 +229,17 @@ static struct platform_driver amlogic_cc_driver = {
 	},
 };
 
+#if 0
 module_platform_driver(amlogic_cc_driver);
 
 MODULE_ALIAS("platform: amlogic_cc");
 MODULE_AUTHOR("Amlogic Inc.");
 MODULE_DESCRIPTION("amlogic CC driver");
 MODULE_LICENSE("GPL v2");
+#else
+int __init amlogic_cc_driver_init(void)
+{
+	return platform_driver_register(&amlogic_cc_driver);
+}
+#endif
 

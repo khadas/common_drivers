@@ -48,7 +48,7 @@ struct amlogic_crg_otg {
 };
 
 bool crg_force_device_v2_mode;
-module_param_named(otg_device, crg_force_device_v2_mode,
+module_param_named(crg_otg_device, crg_force_device_v2_mode,
 		bool, 0644);
 
 static char otg_mode_string[2] = "0";
@@ -62,7 +62,7 @@ static int crg_drd_force_otg_mode(char *s)
 		crg_force_device_v2_mode = 1;
 	return 0;
 }
-__setup("otg_device=", crg_drd_force_otg_mode);
+__setup("crg_otg_device=", crg_drd_force_otg_mode);
 
 static void set_mode
 	(unsigned long reg_addr, int mode, unsigned long phy3_addr);
@@ -550,15 +550,18 @@ static struct platform_driver amlogic_crg_otg_v2_driver = {
 	},
 };
 
-static int __init crg_otg_v2_init(void)
+int __init crg_otg_v2_init(void)
 {
 	platform_driver_register(&amlogic_crg_otg_v2_driver);
 
 	return 0;
 }
+
+#if 0
 late_initcall(crg_otg_v2_init);
 
 MODULE_ALIAS("platform: amlogic crg otg v2");
 MODULE_AUTHOR("Amlogic Inc.");
 MODULE_DESCRIPTION("amlogic crg otg v2 driver");
 MODULE_LICENSE("GPL v2");
+#endif

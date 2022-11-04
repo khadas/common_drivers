@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_WIRELESS
+	tristate "Amlogic wifi and bluetooth support"
+	default n
+	help
+	  wifi and bluetooth support
+	  select y for built-in
+	  select m for ko
+	  select n for disable
+
+if AMLOGIC_WIRELESS
+source "$(COMMON_DRIVERS_DIR)/drivers/wireless/bluetooth/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/wireless/wifi/Kconfig"
+endif

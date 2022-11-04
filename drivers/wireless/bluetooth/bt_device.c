@@ -696,14 +696,14 @@ static struct platform_driver bt_driver = {
 	.resume		= bt_resume,
 };
 
-static int __init bt_init(void)
+int __init bt_init(void)
 {
 	pr_info("amlogic rfkill init\n");
 
 	return platform_driver_register(&bt_driver);
 }
 
-static void __exit bt_exit(void)
+void __exit bt_exit(void)
 {
 	platform_driver_unregister(&bt_driver);
 }
@@ -713,11 +713,6 @@ MODULE_PARM_DESC(btpower_evt, "btpower_evt");
 
 module_param(btwake_evt, int, 0664);
 MODULE_PARM_DESC(btwake_evt, "btwake_evt");
-module_init(bt_init);
-module_exit(bt_exit);
-MODULE_DESCRIPTION("bt rfkill");
-MODULE_AUTHOR("");
-MODULE_LICENSE("GPL");
 
 /**************** bt mac *****************/
 

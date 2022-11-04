@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
 menuconfig AMLOGIC_WIFI
-	tristate "WiFi support"
+	bool "WiFi support"
 	select WIRELESS_EXT
 	select WEXT_PRIV
 	default n

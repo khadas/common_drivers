@@ -935,7 +935,7 @@ static struct platform_driver wifi_plat_driver = {
 	},
 };
 
-static int __init wifi_dt_init(void)
+int __init wifi_dt_init(void)
 {
 	int ret;
 
@@ -943,18 +943,10 @@ static int __init wifi_dt_init(void)
 	return ret;
 }
 
-/* module_init(wifi_dt_init); */
-fs_initcall_sync(wifi_dt_init);
-
-static void __exit wifi_dt_exit(void)
+void __exit wifi_dt_exit(void)
 {
 	platform_driver_unregister(&wifi_plat_driver);
 }
-module_exit(wifi_dt_exit);
-
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("AMLOGIC");
-MODULE_DESCRIPTION("wifi device tree driver");
 
 /**************** wifi mac *****************/
 u8 WIFI_MAC[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -1049,6 +1041,3 @@ int wifi_irq_trigger_level(void)
 	return wifi_info.irq_trigger_type;
 }
 EXPORT_SYMBOL(wifi_irq_trigger_level);
-MODULE_DESCRIPTION("Amlogic S912/wifi driver");
-MODULE_AUTHOR("Kevin Hilman <khilman@baylibre.com>");
-MODULE_LICENSE("GPL");

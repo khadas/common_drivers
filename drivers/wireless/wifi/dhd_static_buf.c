@@ -595,6 +595,3 @@ err_skb_alloc:
 	return -ENOMEM;
 }
 EXPORT_SYMBOL(bcmdhd_init_wlan_mem);
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("AMLOGIC");
-MODULE_DESCRIPTION("wifi device tree driver");

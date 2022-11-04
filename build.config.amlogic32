@@ -51,11 +51,13 @@ FILES="
 if [[ -n ${ANDROID_PROJECT} ]]; then
 MAKE_GOALS="
 	${MAKE_GOALS}
+	android_overlay_dt.dtbo
 	${MAKE_GOALS_ANDROID}
 "
 
 FILES="
 	${FILES}
+	android_overlay_dt.dtbo
 	${FILES_ANDROID}
 "
 for device_tree in ${KERNEL_DEVICETREE}; do

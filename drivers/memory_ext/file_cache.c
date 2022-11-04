@@ -25,6 +25,7 @@
 #include <linux/amlogic/file_cache.h>
 #include <linux/tick.h>
 #include <trace/hooks/mm.h>
+#include <linux/amlogic/pin_file.h>
 
 static int file_cache_filter = 64; /* not print size < file_cache_filter, kb */
 
@@ -273,7 +274,7 @@ static char *parse_fct_name(struct file_cache_trace *fct, char *buf)
 		else
 			return NULL;
 	}
-	if (mapping->flags & (1 << 6))
+	if (mapping->flags & (1 << AS_LOCK_MAPPING))
 		strncat(buf, " [pin]", 255);
 
 	return buf;

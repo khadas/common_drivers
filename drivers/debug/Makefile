@@ -15,7 +15,6 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_FILE) += debug_file.o
 obj-$(CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE) += debug_ftrace_ramoops.o
 obj-$(CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR) += watchdog_hld.o
 obj-$(CONFIG_AMLOGIC_DEBUG_PRINTK) += debug_printk.o
-obj-$(CONFIG_AMLOGIC_DEBUG_RELABEL) += debug_relabel.o
 
 UTILS_MODULE_NAME = amlogic-debug-utils
 obj-$(CONFIG_AMLOGIC_DEBUG_UTILS) += $(UTILS_MODULE_NAME).o

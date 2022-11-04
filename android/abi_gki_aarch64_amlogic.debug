@@ -4,9 +4,5 @@
 # page trace illegal symbol:
   set_dump_dmc_func
 
-# amlogic debug illegal symbol:
-  debug_filp_open
-  debug_vfs_setxattr
-
 # CFG80211: cfg80211.ko
   rfkill_set_sw_state

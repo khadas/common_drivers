@@ -51,21 +51,6 @@ config AMLOGIC_DEBUG_FTRACE_PSTORE
 	  reboot.
 	  Enable if doubt
 
-config AMLOGIC_DEBUG_RELABEL
-	bool "Amlogic filp relabel support"
-	depends on AMLOGIC_DEBUG
-	default n
-	help
-	  if you want to print information such as cpu irq,
-	  please use this option switch it.
-
-config AMLOGIC_DEBUG_RELABEL_GKI
-	bool "Amlogic filp relabel gki support"
-	default n
-	help
-	  if build with gki set this config to y,
-	  else set this config to n.
-
 config AMLOGIC_DEBUG_FILE
 	bool "Amlogic dump log to debug file"
 	default n

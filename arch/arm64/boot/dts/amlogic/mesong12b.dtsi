@@ -1239,7 +1239,7 @@
 		dev_name = "vdin0";
 		status = "disabled";
 		reserve-iomap = "true";
-		flag_cma = <0>;/*1:share with codec_mm;2:cma alone*/
+		flag_cma = <0x101>;/*1:share with codec_mm;2:cma alone*/
 		/*MByte, if 10bit disable: 64M(YUV422),
 		 *if 10bit enable: 64*1.5 = 96M(YUV422)
 		 *if support 4K2K-YUV444-10bit-WR:3840*2160*4*4 ~= 128M
@@ -1250,8 +1250,8 @@
 		/*cma_size = <16>;*/
 		interrupts = <0 83 1>;
 		rdma-irq = <2>;
-		/*clocks = <&clock CLK_FPLL_DIV5>,
-		 *	<&clock CLK_VDIN_MEAS_CLK>;
+		/*clocks = <&clkc CLKID_FCLK_DIV5>,
+		 *	<&clkc CLK_CLKID_VDIN_MEAS_GATE>;
 		 *clock-names = "fclk_div5", "cts_vdin_meas_clk";
 		 */
 		vdin_id = <0>;
@@ -1264,8 +1264,8 @@
 		flag_cma = <0>;/*1:share with codec_mm;0:cma alone*/
 		interrupts = <0 85 1>;
 		rdma-irq = <4>;
-		/*clocks = <&clock CLK_FPLL_DIV5>,
-		 *	<&clock CLK_VDIN_MEAS_CLK>;
+		/*clocks = <&clkc CLKID_FCLK_DIV5>,
+		 *	<&clkc CLK_CLKID_VDIN_MEAS_GATE>;
 		 *clock-names = "fclk_div5", "cts_vdin_meas_clk";
 		 */
 		vdin_id = <1>;

@@ -1507,6 +1507,8 @@ static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 		buf_num, devp->canvas_max_num, buff);
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
+	pr_info("%s done,write buffer %2d\n", __func__, buf_num);
+#endif
 #endif
 #endif
 }

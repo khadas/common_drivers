@@ -13,8 +13,8 @@
 #include <linux/syscalls.h>
 #include <linux/delay.h>
 
-//#define CHECK_PACKET_ALIGNM
-#ifdef CHECK_PACKET_ALIGNM
+//#define CHECK_PACKET_ALIGN
+#ifdef CHECK_PACKET_ALIGN
 #include <linux/highmem.h>
 #endif
 
@@ -62,6 +62,14 @@ module_param(rch_sync_num, int, 0644);
 MODULE_PARM_DESC(dump_input_ts, "\n\t\t dump input ts packet");
 static int dump_input_ts;
 module_param(dump_input_ts, int, 0644);
+
+MODULE_PARM_DESC(check_ts_align, "\n\t\t check input ts align");
+static int check_ts_align;
+module_param(check_ts_align, int, 0644);
+
+MODULE_PARM_DESC(dmc_keep_alive, "\n\t\t Enable keep dmc alive");
+static int dmc_keep_alive;
+module_param(dmc_keep_alive, int, 0644);
 
 #ifdef KERNEL_FILE_WR
 static loff_t input_file_pos;
@@ -161,6 +169,12 @@ static int cache_init(int cache_level)
 		}
 		second_cache->start_virt =
 		(unsigned long)codec_mm_phys_to_virt(second_cache->start_phys);
+		if (IS_ERR_OR_NULL((const void *)second_cache->start_phys)) {
+			codec_mm_free_for_dma("dmx", second_cache->start_phys);
+			vfree(second_cache);
+			dprint("phys to virt addr failed\n");
+			return -1;
+		}
 	}
 	return 0;
 }
@@ -404,6 +418,11 @@ static int dmc_mem_init(struct dmc_mem *mem, int sec_level)
 		return -1;
 	}
 	buf_start_virt = (unsigned long)codec_mm_phys_to_virt(buf_start);
+	if (IS_ERR_OR_NULL((const void *)buf_start_virt)) {
+		codec_mm_free_for_dma("dmx", buf_start);
+		dprint("phys to virt addr failed\n");
+		return -1;
+	}
 	pr_dbg("dmc mem init phy:0x%lx, virt:0x%lx, len:%d\n",
 		buf_start, buf_start_virt, len);
 	memset((char *)buf_start_virt, 0, len);
@@ -552,7 +571,7 @@ static int dmc_mem_free(unsigned long buf, unsigned int len, int sec_level)
 	ret = dmc_mem_free_block(&dmc_mem_level[dmc_index], buf);
 	if (ret != 0)
 		return -1;
-	if (!dmc_mem_level[dmc_index].ref)
+	if (!dmc_mem_level[dmc_index].ref && !dmc_keep_alive)
 		ret = dmc_mem_destroy(&dmc_mem_level[dmc_index]);
 
 	return ret;
@@ -643,6 +662,11 @@ int _alloc_buff(unsigned int len, int sec_level,
 		return -1;
 	}
 	buf_start_virt = (unsigned long)codec_mm_phys_to_virt(buf_start);
+	if (IS_ERR_OR_NULL((const void *)buf_start_virt)) {
+		codec_mm_free_for_dma("dmx", buf_start);
+		dprint("phys to virt addr failed\n");
+		return -1;
+	}
 	pr_dbg("init phy:0x%lx, virt:0x%lx, len:%d\n",
 			buf_start, buf_start_virt, len);
 	memset((char *)buf_start_virt, 0xa5, len);
@@ -726,11 +750,13 @@ static int _bufferid_malloc_desc_mem(struct chan_id *pchan,
 	dma_sync_single_for_device(aml_get_device(),
 		pchan->memdescs_phy, sizeof(union mem_desc), DMA_TO_DEVICE);
 	pr_dbg("flush mem descs to ddr\n");
-	pr_dbg("%s mem_desc phy addr 0x%x, memdesc:0x%lx\n", __func__,
+	pr_dbg("%s mem_desc phy addr 0x%x, memdescs:0x%lx\n", __func__,
 	       pchan->memdescs_phy, (unsigned long)pchan->memdescs);
 
-	dma_sync_single_for_device(aml_get_device(),
-		mem_phy, mem_size, DMA_TO_DEVICE);
+	/*mem from secure os, don't operate this memory*/
+	if (pchan->sec_size == 0)
+		dma_sync_single_for_device(aml_get_device(),
+			mem_phy, mem_size, DMA_TO_DEVICE);
 
 	pchan->r_offset = 0;
 	pchan->last_w_addr = 0;
@@ -816,8 +842,8 @@ static int _bufferid_alloc_chan_r_for_ts(struct chan_id **pchan, u8 req_id)
 	return 0;
 }
 
-#ifdef CHECK_PACKET_ALIGNM
-static void check_packet_alignm(unsigned int start, unsigned int end)
+#ifdef CHECK_PACKET_ALIGN
+static void check_packet_align(unsigned int start, unsigned int end)
 {
 	int n = 0;
 	char *p = NULL;
@@ -825,12 +851,12 @@ static void check_packet_alignm(unsigned int start, unsigned int end)
 	unsigned int detect_len = end - start;
 
 	if (detect_len % 188 != 0) {
-		dprint_i("len:%d not alignm\n", detect_len);
+		dprint_i("len:%d not align\n", detect_len);
 		return;
 	}
 	reg = round_down(start, 0x3);
 	if (reg != start)
-		dprint_i("mem addr not alignm 4\n");
+		dprint_i("mem addr not align 4\n");
 
 	if (!pfn_valid(__phys_to_pfn(reg)))
 		p = (void *)ioremap(reg, 0x4);
@@ -840,10 +866,10 @@ static void check_packet_alignm(unsigned int start, unsigned int end)
 		dprint_i("phy transfer to virt fail\n");
 		return;
 	}
-	//detect packet alignm
+	//detect packet align
 	for (n = 0; n < detect_len / 188; n++) {
 		if (p[n * 188] != 0x47) {
-			dprint_i("packet not alignm at %d,header:0x%0x\n",
+			dprint_i("packet not align at %d,header:0x%0x\n",
 				n * 188, p[n * 188]);
 			break;
 		}
@@ -852,6 +878,30 @@ static void check_packet_alignm(unsigned int start, unsigned int end)
 		kunmap(pfn_to_page(__phys_to_pfn(reg)));
 }
 #endif
+
+static void check_packet_align_virt(char *mem_start, unsigned int len)
+{
+	int n = 0;
+	char *p = mem_start;
+	unsigned int detect_len = len;
+
+	if (detect_len % 188 != 0) {
+		dprint_i("len:%d not align\n", detect_len);
+		return;
+	}
+	if (!p) {
+		dprint_i("mem_start fail\n");
+		return;
+	}
+	//detect packet align
+	for (n = 0; n < detect_len / 188; n++) {
+		if (p[n * 188] != 0x47) {
+			dprint_i("packet not align at %d,header:0x%0x\n",
+				n * 188, p[n * 188]);
+			break;
+		}
+	}
+}
 
 /**
  * chan init
@@ -1065,6 +1115,41 @@ int SC2_bufferid_read_header_again(struct chan_id *pchan, char **pread)
 	return 0;
 }
 
+int SC2_bufferid_read_newest_pts(struct chan_id *pchan, char **pread)
+{
+	unsigned int w_offset = 0;
+	unsigned int w_offset_org = 0;
+	unsigned int buf_len = 16;
+	int overflow = 0;
+	int pts_mem_offset = 0;
+
+	if (!pchan || !pchan->mem_phy) {
+		dprint("pchan is null or pchan->mem_phy is 0\n");
+		return 0;
+	}
+
+	w_offset_org = wdma_get_wr_len(pchan->id, &overflow);
+	w_offset = w_offset_org % pchan->mem_size;
+	w_offset = w_offset / buf_len * buf_len;
+
+	if (w_offset != pchan->pts_newest_r_offset) {
+//		dprint("%s w:0x%0x, r:0x%0x, wr_len:0x%0x\n", __func__,
+//		       (u32)w_offset, (u32)(pchan->pts_newest_r_offset),
+//		       (u32)w_offset_org);
+		if (w_offset == 0)
+			pts_mem_offset = pchan->mem_size - buf_len;
+		else
+			pts_mem_offset = w_offset - buf_len;
+		dma_sync_single_for_cpu(aml_get_device(),
+				(dma_addr_t)(pchan->mem_phy + pts_mem_offset),
+				buf_len, DMA_FROM_DEVICE);
+		*pread = (char *)pchan->mem + pts_mem_offset;
+		pchan->pts_newest_r_offset = w_offset;
+		return buf_len;
+	}
+	return 0;
+}
+
 /**
  * chan read
  * \param pchan:struct chan_id handle
@@ -1193,8 +1278,8 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 				dprint("copy_from user error\n");
 				return -EFAULT;
 			}
-#ifdef CHECK_PACKET_ALIGNM
-			check_packet_alignm(ts_data.buf_start, ts_data.buf_end);
+#ifdef CHECK_PACKET_ALIGN
+			check_packet_align(ts_data.buf_start, ts_data.buf_end);
 #endif
 			tmp = (unsigned long)ts_data.buf_start & 0xFFFFFFFF;
 			pchan->memdescs->bits.address = tmp;
@@ -1232,6 +1317,8 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 				dprint("copy_from user error\n");
 				return -EFAULT;
 			}
+			if (check_ts_align)
+				check_packet_align_virt((char *)pchan->mem, len);
 #ifdef KERNEL_FILE_WR			
 			if (dump_input_ts) {
 				dump_file_open(INPUT_DUMP_FILE);
@@ -1378,7 +1465,7 @@ int SC2_bufferid_write_empty(struct chan_id *pchan, int pid)
 
 	rdma_config_ready(pchan->id);
 	cache_free(len, phys);
-	dprint("%s end\n", __func__);
+	dprint("%s pid:%d end\n", __func__, pid);
 	return len;
 }
 

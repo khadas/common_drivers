@@ -69,6 +69,7 @@
 #define MKL_USAGE_TDES       (1)
 #define MKL_USAGE_DES        (2)
 #define MKL_USAGE_S17		 (3)
+#define MKL_USAGE_SM4        (4)
 #define MKL_USAGE_NDL        (7)
 #define MKL_USAGE_ND         (8)
 #define MKL_USAGE_CSA3       (9)
@@ -319,6 +320,9 @@ static int kt_config(u32 handle, int key_userid, int key_algo, unsigned int ext_
 				}
 			}
 			break;
+		case KEY_ALGO_SM4:
+			key_table[index].key_algo = MKL_USAGE_SM4;
+			break;
 		default:
 			dprint("%s, %d invalid algo\n",
 			       __func__, __LINE__);
@@ -474,12 +478,14 @@ static int kt_set(u32 handle, unsigned char key[32], unsigned int key_len)
 		} while (res & (KTE_PENDING << KTE_PENDING_OFFSET));
 	} else {
 		if (get_cpu_type() == MESON_CPU_MAJOR_ID_T5W) {
-			if (algo == MKL_USAGE_AES)
-				algo = 2;
-			else if (algo == MKL_USAGE_TDES)
-				algo = 1;
-			else /*csa2 and des is 0*/
-				algo = 0;
+			if (algo != 0xf) {
+				if (algo == MKL_USAGE_AES)
+					algo = 2;
+				else if (algo == MKL_USAGE_TDES)
+					algo = 1;
+				else /*csa2 and des is 0*/
+					algo = 0;
+			}
 		}
 		WRITE_CBUS_REG(KT_KEY0, key0);
 		WRITE_CBUS_REG(KT_KEY1, key1);

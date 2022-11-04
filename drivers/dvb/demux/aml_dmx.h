@@ -28,6 +28,7 @@ struct sw_demux_ts_feed {
 	int pid;
 	int state;
 	int format;
+	int temi_index;
 };
 
 struct sw_demux_sec_filter {
@@ -108,6 +109,8 @@ struct aml_dmx {
 	 */
 	int reset_init;
 	int video_pid;
+	int reset_init_audio;
+	int audio_pid;
 
 	/* pid list */
 	struct list_head pid_head;

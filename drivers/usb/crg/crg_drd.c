@@ -239,7 +239,9 @@ static int crg_host_init(struct crg_drd *crg)
 	memset(props, 0, sizeof(struct property_entry) * ARRAY_SIZE(props));
 
 	if (crg->super_speed_support)
-		props[prop_idx++].name = "super_speed_support";
+		props[prop_idx++] = PROPERTY_ENTRY_BOOL("super_speed_support");
+
+	props[prop_idx++] = PROPERTY_ENTRY_BOOL("xhci-crg-host");
 
 	if (prop_idx) {
 		ret = device_create_managed_software_node(&xhci->dev, props, NULL);

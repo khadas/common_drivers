@@ -83,16 +83,11 @@ int gpiod_set_pull(struct gpio_desc *desc, unsigned int value)
 }
 EXPORT_SYMBOL_GPL(gpiod_set_pull);
 
-static int __init pinctrl_module_init(void)
+int __init gpiolib_module_init(void)
 {
 	return 0;
 }
 
-static void __exit pinctrl_module_exit(void)
+void __exit gpiolib_module_exit(void)
 {
 }
-
-module_init(pinctrl_module_init);
-module_exit(pinctrl_module_exit);
-
-MODULE_LICENSE("GPL v2");

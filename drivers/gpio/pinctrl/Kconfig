@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 menuconfig AMLOGIC_PINCTRL_MESON
-	tristate "Amlogic SoC pinctrl drivers"
+	bool "Amlogic SoC pinctrl drivers"
 	depends on OF
 	depends on PINMUX
 	depends on PINCONF

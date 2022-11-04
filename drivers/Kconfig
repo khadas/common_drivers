@@ -4,8 +4,6 @@ menu "Amlogic Device Drivers"
 
 source "$(COMMON_DRIVERS_DIR)/drivers/tty/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/clk/Kconfig"
-source "$(COMMON_DRIVERS_DIR)/drivers/pinctrl/Kconfig"
-source "$(COMMON_DRIVERS_DIR)/drivers/irqchip/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/secmon/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/drm/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/Kconfig"

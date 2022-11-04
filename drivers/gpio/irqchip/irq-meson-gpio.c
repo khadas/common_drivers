@@ -836,7 +836,6 @@ free_ctl:
 	return ret;
 }
 
-#ifdef MODULE
 static int meson_gpio_irq_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
@@ -858,10 +857,13 @@ static struct platform_driver meson_gpio_irq_driver = {
 		.of_match_table = meson_gpio_irq_match_table,
 	},
 };
-module_platform_driver(meson_gpio_irq_driver);
-#else
-IRQCHIP_DECLARE(meson_gpio_intc, "amlogic,meson-gpio-intc",
-		meson_gpio_irq_of_init);
-#endif
 
-MODULE_LICENSE("GPL v2");
+int __init meson_gpio_irq_init(void)
+{
+	return platform_driver_register(&meson_gpio_irq_driver);
+}
+
+void __exit meson_gpio_irq_exit(void)
+{
+	platform_driver_unregister(&meson_gpio_irq_driver);
+}

@@ -2,13 +2,11 @@
 
 obj-y					+= tty/
 obj-y					+= clk/
-obj-$(CONFIG_PINCTRL)			+= pinctrl/
-obj-y					+= irqchip/
 obj-$(CONFIG_AMLOGIC_SECMON)		+= secmon/
 obj-y					+= power/
 obj-$(CONFIG_AMLOGIC_CPU_INFO)		+= cpu_info/
 obj-$(CONFIG_AMLOGIC_GX_SUSPEND)	+= pm/
-obj-$(CONFIG_GPIOLIB)			+= gpio/
+obj-$(CONFIG_AMLOGIC_GPIO)		+= gpio/
 obj-$(CONFIG_INPUT)			+= input/
 obj-y					+= i2c/
 obj-$(CONFIG_SPI)			+= spi/

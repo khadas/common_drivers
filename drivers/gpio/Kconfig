@@ -1,10 +1,26 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
+config AMLOGIC_GPIO
+	tristate "Amlogic gpio support"
+	default n
+	help
+	  gpio device support
+	  select y for built-in
+	  select m for ko
+	  select n for disable
+
+if AMLOGIC_GPIO
+
 config AMLOGIC_GPIOLIB
-        tristate "Amlogic gpiolib expand"
+	bool "Amlogic gpiolib expand"
+	depends on AMLOGIC_GPIO
 	depends on GPIOLIB
 	default n
-        help
-          Say Y here if you want to use the
+	help
+	  Say Y here if you want to use the
 	  amlogic gpiolib expand.
 
+source "$(COMMON_DRIVERS_DIR)/drivers/gpio/irqchip/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/gpio/pinctrl/Kconfig"
+
+endif # AMLOGIC_GPIO

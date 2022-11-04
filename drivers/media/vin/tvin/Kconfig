@@ -22,3 +22,10 @@ source "$(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/viu/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/bt656/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/hdmirx/Kconfig"
 endif
+
+config AMLOGIC_TVIN_USE_DEBUG_FILE
+        tristate "Enable vdin debug file"
+        depends on AMLOGIC_DEBUG_FILE
+        default y
+        help
+            Debug file for vdin write buffer

@@ -35,6 +35,52 @@ static struct class *tvcom_clsp;
 static struct list_head head = LIST_HEAD_INIT(head);
 static DEFINE_SPINLOCK(list_lock);
 
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+/*
+ * dump file with debug file API
+ */
+int tvin_df_write(struct debug_file *df, void *buf,
+	unsigned int want_size)
+{
+	int try_size, ret = 0;
+	unsigned int retry = 0, time_out;
+	void *buf_tmp = NULL;
+
+	/* write times in theory */
+	time_out    = (want_size + DEBUG_FILE_FIFO_SIZE / 2)
+					/ DEBUG_FILE_FIFO_SIZE;
+	time_out   *= 2;/* wait twice per call */
+	if (time_out < DEBUG_FILE_TIMEOUT)
+		time_out = DEBUG_FILE_TIMEOUT;
+	buf_tmp  = buf;
+	try_size = want_size;
+	while (try_size > 0 && retry++ < time_out) {
+		ret = debug_file_write(df, buf_tmp, try_size);
+		if (ret < 0) {
+			pr_err("debug_file_write failed with:%d\n", ret);
+			break;
+		} else if (ret == try_size) {
+			break;
+		}
+		pr_err("retry = %d try_size:%d, ret:%d, total:%d\n",
+			retry, try_size, ret, want_size);
+		try_size = try_size - ret;
+		buf_tmp  = (unsigned char *)buf_tmp + ret;
+	}
+	if (ret < 0) {
+		pr_err("retry = %d/%d try_size:%d, ret:%d, total:%d\n",
+			retry, time_out, try_size, ret, want_size);
+		return DF_WRITE_RET_FAILED;
+	} else if (retry >= time_out) {
+		pr_err("retry = %d/%d try_size:%d, ret:%d, total:%d\n",
+			retry, time_out, try_size, ret, want_size);
+		return DF_WRITE_RET_TIMEOUT;
+	}
+	return DF_WRITE_RET_OK;
+}
+EXPORT_SYMBOL(tvin_df_write);
+#endif
+
 int tvin_frontend_init(struct tvin_frontend_s *fe,
 		       struct tvin_decoder_ops_s *dec_ops,
 		       struct tvin_state_machine_ops_s *sm_ops,

@@ -27,6 +27,18 @@
 #include <linux/amlogic/media/registers/cpu_version.h>
 #include <linux/amlogic/media/vfm/vframe.h>
 
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/sched/task.h>
+#include <linux/amlogic/debug_file.h>
+#define DEBUG_FILE_TIMEOUT		100
+#define DEBUG_FILE_FIFO_SIZE	8192
+#define DF_WRITE_RET_TIMEOUT	(-2)
+#define DF_WRITE_RET_FAILED		(-1)
+#define DF_WRITE_RET_OK			(0)
+#endif //CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE
+
 #ifdef TVBUS_REG_ADDR
 #define R_APB_REG(reg) aml_read_reg32(TVBUS_REG_ADDR(reg))
 #define W_APB_REG(reg, val) aml_write_reg32(TVBUS_REG_ADDR(reg), val)

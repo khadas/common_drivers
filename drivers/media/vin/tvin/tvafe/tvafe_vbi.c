@@ -37,6 +37,7 @@
 #include "tvafe_vbi.h"
 #include "tvafe_debug.h"
 #include "../tvin_global.h"
+#include "../tvin_frontend.h"
 
 #define VBI_NAME               "vbi"
 #define VBI_DRIVER_NAME        "vbi"
@@ -1825,8 +1826,71 @@ static void vbi_parse_param(char *buf_orig, char **parm)
 	}
 }
 
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+static void vbi_dump_mem_df(char *path, struct vbi_dev_s *devp)
+{
+	int ret;
+	struct debug_file *df;
+
+	if (!path) {
+		tvafe_pr_info("%s file path is null\n", __func__);
+		return;
+	}
+
+	df = debug_file_open(path, O_CREAT | O_WRONLY, 0664);
+	if (!df) {
+		pr_info("create %s error or df is NULL.\n", path);
+		return;
+	}
+
+	ret = tvin_df_write(df, devp->pac_addr_start, devp->mem_size);
+	if (ret != DF_WRITE_RET_OK) {
+		pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+		return;
+	}
+	tvafe_pr_info("write buffer addr:0x%p size: %2u  to %s.\n",
+			devp->pac_addr_start, devp->mem_size, path);
+	debug_file_close(df);
+}
+
+static void vbi_dump_buf_df(char *path, struct vbi_dev_s *devp)
+{
+	void *buf = NULL;
+	int ret;
+	struct debug_file *df;
+
+	if (!path) {
+		tvafe_pr_info("%s file path is null\n", __func__);
+		return;
+	}
+
+	df = debug_file_open(path, O_CREAT | O_WRONLY, 0666);
+	if (!df) {
+		pr_info("create %s error or df is NULL.\n", path);
+		return;
+	}
+
+	buf = (void *)devp->slicer->buffer.data;
+	if (!buf) {
+		tvafe_pr_info("buf is null!!!.\n");
+		return;
+	}
+	ret = tvin_df_write(df, buf, devp->slicer->buffer.size);
+	if (ret != DF_WRITE_RET_OK) {
+		pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+		return;
+	}
+	tvafe_pr_info("write buffer addr:0x%p size: %2u  to %s.\n",
+			buf, devp->slicer->buffer.size, path);
+	debug_file_close(df);
+}
+#endif
+
 static void vbi_dump_mem(char *path, struct vbi_dev_s *devp)
 {
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+	vbi_dump_mem_df(path, devp);
+#else
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *filp = NULL;
 	loff_t pos = 0;
@@ -1849,10 +1913,14 @@ static void vbi_dump_mem(char *path, struct vbi_dev_s *devp)
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 #endif
+#endif
 }
 
 static void vbi_dump_buf(char *path, struct vbi_dev_s *devp)
 {
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+	vbi_dump_buf_df(path, devp);
+#else
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *filp = NULL;
 	loff_t pos = 0;
@@ -1879,6 +1947,7 @@ static void vbi_dump_buf(char *path, struct vbi_dev_s *devp)
 			buf, devp->slicer->buffer.size, path);
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
+#endif
 #endif
 }
 

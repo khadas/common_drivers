@@ -688,8 +688,62 @@ static void tvafe_dumpmem_adc(struct tvafe_dev_s *devp)
 	tvafe_pr_info("%s: adc data write done\n", __func__);
 }
 
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+static int tvafe_dumpmem_save_buf_df(struct tvafe_dev_s *devp, const char *str)
+{
+	unsigned int highmem_flag = 0;
+	unsigned long high_addr;
+	void *buf = NULL;
+	int i, ret;
+	struct debug_file *df;
+
+	df = debug_file_open(str, O_CREAT | O_WRONLY, 0666);
+	if (!df) {
+		tvafe_pr_err("create %s error.\n", str);
+		return -1;
+	}
+
+	highmem_flag = PageHighMem(phys_to_page(devp->mem.start));
+	pr_info("highmem_flag:%d\n", highmem_flag);
+	if (devp->cma_config_flag == 1 && highmem_flag != 0) {
+		/*tvafe dts config 5M memory*/
+		for (i = 0; i < devp->cma_mem_size / SZ_1M; i++) {
+			high_addr = devp->mem.start + i * SZ_1M;
+			buf = vdin_vmap(high_addr, SZ_1M);
+			if (!buf) {
+				pr_info("vdin_vmap error\n");
+				return -1;
+			}
+			pr_info("buf:0x%p\n", buf);
+/*vdin_dma_flush(devp, buf, SZ_1M, DMA_FROM_DEVICE);*/
+			ret = tvin_df_write(df, buf, SZ_1M);
+			if (ret != DF_WRITE_RET_OK) {
+				pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+				return -1;
+			}
+			vdin_unmap_phyaddr(buf);
+		}
+	} else {
+		buf = phys_to_virt(devp->mem.start);
+		ret = tvin_df_write(df, buf, devp->mem.size);
+		if (ret != DF_WRITE_RET_OK) {
+			pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+			return -1;
+		}
+	}
+	debug_file_close(df);
+
+	tvafe_pr_info("write mem 0x%x (size 0x%x) to %s done\n",
+		      devp->mem.start, devp->mem.size, str);
+	return 0;
+}
+#endif
+
 static int tvafe_dumpmem_save_buf(struct tvafe_dev_s *devp, const char *str)
 {
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+	return tvafe_dumpmem_save_buf_df(devp, str);
+#else
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	unsigned int highmem_flag = 0;
 	unsigned long high_addr;
@@ -729,6 +783,7 @@ static int tvafe_dumpmem_save_buf(struct tvafe_dev_s *devp, const char *str)
 
 	tvafe_pr_info("write mem 0x%x (size 0x%x) to %s done\n",
 		      devp->mem.start, devp->mem.size, str);
+#endif
 #endif
 	return 0;
 }

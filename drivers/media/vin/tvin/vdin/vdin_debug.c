@@ -32,7 +32,6 @@
 #include <linux/delay.h>
 #include <linux/sched/rt.h>
 #include <uapi/linux/sched/types.h>
-
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #ifdef CONFIG_AMLOGIC_PIXEL_PROBE
 #include <linux/amlogic/pixel_probe.h>
@@ -249,9 +248,577 @@ ssize_t attr_show(struct device *dev,
 	return len;
 }
 
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+static void vdin_dump_one_buf_mem_df(char *path, struct vdin_dev_s *devp,
+				  unsigned int buf_num)
+{
+	void *buf = NULL;
+	int highmem_flag;
+	int ret = 0;
+	unsigned int i, j;
+	unsigned int span = 0, count = 0;
+	unsigned long high_addr;
+	unsigned long phys;
+	struct debug_file *df;
+
+	if (devp->mem_protected) {
+		pr_err("can not capture picture in secure mode, return directly\n");
+		return;
+	}
+	if ((devp->cma_config_flag & 0x1) &&
+		devp->cma_mem_alloc == 0) {
+		pr_info("%s:no cma alloc mem!!!\n", __func__);
+		return;
+	}
+	if (buf_num >= devp->canvas_max_num) {
+		pr_info("buf_num > canvas_max_num, vdin exit dump\n");
+		return;
+	}
+	df = debug_file_open(path, O_CREAT | O_WRONLY, 0664);
+	if (!df) {
+		pr_info("create %s error or df is NULL.\n", path);
+		return;
+	}
+
+	if (devp->cma_config_flag & 0x100)
+		highmem_flag = PageHighMem(phys_to_page(devp->vf_mem_start[0]));
+	else
+		highmem_flag = PageHighMem(phys_to_page(devp->mem_start));
+
+	if (vdin_is_convert_to_nv21(devp->format_convert))
+		count = (devp->canvas_h * 3) / 2;
+	else
+		count = devp->canvas_h;
+
+	if (highmem_flag == 0) {
+		pr_info("low mem area: one line size (%d, active:%d),vf_mem_start[%d]:%lx\n",
+			devp->canvas_w, devp->canvas_active_w, buf_num,
+			devp->vf_mem_start[buf_num]);
+		if (devp->cma_config_flag & 0x1)
+			buf = codec_mm_phys_to_virt(devp->vf_mem_start[buf_num]);
+		else
+			buf = phys_to_virt(devp->vf_mem_start[buf_num]);
+		/*only write active data*/
+		for (i = 0; i < count; i++) {
+			//pr_info("debug_file_write %d / %d\n", i, count);
+			vdin_dma_flush(devp, buf, devp->canvas_w,
+					   DMA_FROM_DEVICE);
+			ret = tvin_df_write(df, buf, devp->canvas_active_w);
+			if (ret != DF_WRITE_RET_OK) {
+				pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+				break;
+			}
+			buf += devp->canvas_w;
+		}
+		/*vfs_write(filp, buf, devp->canvas_max_size, &pos);*/
+		pr_info("write buffer %2d of %2u  to %s.\n",
+			buf_num, devp->canvas_max_num, path);
+	} else {
+		pr_info("high mem area: one line size (%d, active:%d)\n",
+			devp->canvas_w, devp->canvas_active_w);
+		span = devp->canvas_active_w;
+		phys = devp->vf_mem_start[buf_num];
+
+		for (j = 0; j < count; j++) {
+			high_addr = phys + j * devp->canvas_w;
+			buf = vdin_vmap(high_addr, span);
+			if (!buf) {
+				pr_info("vdin_vmap error\n");
+				debug_file_close(df);
+				return;
+			}
+			vdin_dma_flush(devp, buf, span, DMA_FROM_DEVICE);
+			ret = tvin_df_write(df, buf, devp->canvas_active_w);
+			if (ret != DF_WRITE_RET_OK) {
+				pr_info("%s:%d,write failed\n", __func__, __LINE__);
+				break;
+			}
+			vdin_unmap_phyaddr(buf);
+		}
+		pr_info("high-mem write buffer %2d of %2u to %s.\n",
+			buf_num, devp->canvas_max_num, path);
+	}
+	debug_file_close(df);
+}
+
+static void vdin_dump_mem_df(char *path, struct vdin_dev_s *devp)
+{
+	//loff_t mem_size = 0;
+	unsigned int i = 0, j = 0;
+	unsigned int span = 0;
+	unsigned int count = 0;
+	unsigned long high_addr;
+	unsigned long phys;
+	int highmem_flag, ret;
+	void *buf = NULL;
+	struct debug_file *df;
+
+	if (devp->mem_protected) {
+		pr_err("can not capture picture in secure mode, return directly\n");
+		return;
+	}
+
+	if (devp->cma_mem_alloc == 0) {
+		pr_info("%s:no cma alloc mem!!!\n", __func__);
+		return;
+	}
+
+	df = debug_file_open(path, O_CREAT | O_WRONLY, 0664);
+	if (!df) {
+		pr_info("create %s error or df is NULL.\n", path);
+		return;
+	}
+
+	if (vdin_is_convert_to_nv21(devp->format_convert))
+		count = (devp->canvas_h * 3) / 2;
+	else
+		count = devp->canvas_h;
+
+	//mem_size = (loff_t)devp->canvas_active_w * count;
+
+	if (devp->cma_config_flag & 0x100)
+		highmem_flag = PageHighMem(phys_to_page(devp->vf_mem_start[0]));
+	else
+		highmem_flag = PageHighMem(phys_to_page(devp->mem_start));
+	pr_info("cma_config_flag:0x%x\n", devp->cma_config_flag);
+	if (highmem_flag == 0) {
+		/*low mem area*/
+		pr_info("low mem area: one line size (%d, active:%d)\n",
+			devp->canvas_w, devp->canvas_active_w);
+		for (i = 0; i < devp->canvas_max_num; i++) {
+			//pos = mem_size * i;
+			if (devp->cma_config_flag & 0x1)/* share with codec_mm */
+				buf = codec_mm_phys_to_virt(devp->vf_mem_start[i]);
+			else /* discontinuous alloc way */
+				buf = phys_to_virt(devp->vf_mem_start[i]);
+
+			/*only write active data*/
+			for (j = 0; j < count; j++) {
+				vdin_dma_flush(devp, buf, devp->canvas_w,
+					       DMA_FROM_DEVICE);
+				ret = tvin_df_write(df, buf, devp->canvas_active_w);
+				if (ret != DF_WRITE_RET_OK) {
+					pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+					return;
+				}
+				buf += devp->canvas_w;
+			}
+			pr_info("write buffer %2d of %2u to %s.\n",
+				i, devp->canvas_max_num, path);
+		}
+	} else {
+		/*high mem area*/
+		pr_info("high mem area: one line size (%d, active:%d)\n",
+			devp->canvas_w, devp->canvas_active_w);
+		span = devp->canvas_active_w;
+
+		for (i = 0; i < devp->canvas_max_num; i++) {
+			//pos = mem_size * i;
+			phys = devp->vf_mem_start[i];
+			for (j = 0; j < count; j++) {
+				high_addr = phys + j * devp->canvas_w;
+				buf = vdin_vmap(high_addr, span);
+				if (!buf) {
+					//vfs_fsync(filp, 0);
+					//filp_close(filp, NULL);
+					pr_info("vdin_vmap error\n");
+					return;
+				}
+
+				vdin_dma_flush(devp, buf, span,
+					       DMA_FROM_DEVICE);
+				//vfs_write(filp, buf, span, &pos);
+				ret = tvin_df_write(df, buf, span);
+				if (ret != DF_WRITE_RET_OK) {
+					pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+					return;
+				}
+				vdin_unmap_phyaddr(buf);
+			}
+			pr_info("high-mem write buffer %2d of %2u to %s.\n",
+				i, devp->canvas_max_num, path);
+		}
+	}
+	debug_file_close(df);
+}
+
+static void dump_other_mem_df(struct vdin_dev_s *devp, char *path,
+			   unsigned int start, unsigned int offset)
+{
+	int ret = 0;
+	void *buf = NULL;
+	struct debug_file *df;
+
+	if (devp->mem_protected) {
+		pr_err("can not capture picture in secure mode, return directly\n");
+		return;
+	}
+
+	df = debug_file_open(path, O_CREAT | O_WRONLY, 0664);
+	if (!df) {
+		pr_info("create %s error or df is NULL.\n", path);
+		return;
+	}
+
+	buf = phys_to_virt(start);
+	ret = tvin_df_write(df, buf, offset);
+	if (ret != DF_WRITE_RET_OK) {
+		pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+		return;
+	}
+	pr_info("write from 0x%x to 0x%x to %s.\n",
+		start, start + offset, path);
+
+	debug_file_close(df);
+}
+
+static void vdin_dump_more_mem_df(char *path, struct vdin_dev_s *devp,
+				unsigned int dump_num, int sel_start)
+{
+	loff_t mem_size = 0;
+	void *buf = NULL;
+	int k;
+	int ret = 0;
+	unsigned int i;
+	unsigned int count = 0;
+	unsigned long pre_put_frames;
+	unsigned int *rec_dum_frame = NULL;
+	unsigned long phys;
+	unsigned long high_addr;
+	ulong vf_phy_addr;
+	int highmem_flag;
+	unsigned int dump_frame_count = dump_num;
+	struct debug_file *df;
+
+	if (devp->mem_protected) {
+		pr_err("can not capture picture in secure mode, return directly\n");
+		return;
+	}
+
+	if (devp->cma_mem_alloc == 0) {
+		pr_info("%s:no cma alloc mem!!!\n", __func__);
+		return;
+	}
+
+	rec_dum_frame = kzalloc(sizeof(unsigned int) * dump_frame_count, GFP_KERNEL);
+	if (!rec_dum_frame) {
+		//pr_info("kzalloc mem fail\n");
+		return;
+	}
+
+	df = debug_file_open(path, O_CREAT | O_WRONLY, 0664);
+	if (!df) {
+		pr_info("create %s error or df is NULL.\n", path);
+		kfree(rec_dum_frame);
+		return;
+	}
+
+	if (vdin_is_convert_to_nv21(devp->format_convert))
+		count = (devp->canvas_h * 3) / 2;
+	else
+		count = devp->canvas_h;
+	mem_size = (loff_t)devp->canvas_active_w * count;
+	pr_info("put_frame_cnt:%d\n", devp->put_frame_cnt);
+
+	if (sel_start) {
+		while (!(devp->flags & VDIN_FLAG_DEC_STARTED) ||
+			devp->frame_cnt > 1)
+			usleep_range(5000, 6000);
+	}
+
+	if (devp->cma_config_flag & 0x100)
+		highmem_flag = PageHighMem(phys_to_page(devp->vf_mem_start[0]));
+	else
+		highmem_flag = PageHighMem(phys_to_page(devp->mem_start));
+
+	pre_put_frames = devp->put_frame_cnt;
+	if (highmem_flag == 0) {
+		/*low mem area*/
+		for (k = 0; k < dump_frame_count; k++) {
+			if (pre_put_frames == devp->put_frame_cnt ||
+			    !devp->put_frame_cnt) {
+				k--;
+				usleep_range(5, 8);
+				continue;
+			}
+			pre_put_frames = devp->put_frame_cnt;
+			rec_dum_frame[k] = pre_put_frames;
+			vf_phy_addr = devp->vfp->last_last_vfe->vf.canvas0_config[0].phy_addr;
+			if (devp->cma_config_flag == 0x1)
+				buf = codec_mm_phys_to_virt(vf_phy_addr);
+			else if (devp->cma_config_flag == 0x101)
+				buf = codec_mm_phys_to_virt(vf_phy_addr);
+			else if (devp->cma_config_flag == 0x100)
+				buf = phys_to_virt(vf_phy_addr);
+			else
+				buf = phys_to_virt(vf_phy_addr);
+
+			/*only write active data*/
+			for (i = 0; i < count; i++) {
+				vdin_dma_flush(devp, buf, devp->canvas_w, DMA_FROM_DEVICE);
+				//vfs_write(filp, buf, devp->canvas_active_w, &pos);
+				ret = tvin_df_write(df, buf, devp->canvas_active_w);
+				if (ret != DF_WRITE_RET_OK) {
+					pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+					return;
+				}
+				buf += devp->canvas_w;
+			}
+		}
+	} else {
+		/*high mem area*/
+		for (k = 0; k < dump_frame_count; k++) {
+			if (pre_put_frames == devp->put_frame_cnt ||
+			    !devp->put_frame_cnt) {
+				k--;
+				usleep_range(5, 8);
+				continue;
+			}
+			pre_put_frames = devp->put_frame_cnt;
+			rec_dum_frame[k] = pre_put_frames;
+			phys = devp->vfp->last_last_vfe->vf.canvas0_config[0].phy_addr;
+			for (i = 0; i < count; i++) {
+				high_addr = phys + i * devp->canvas_w;
+				buf = vdin_vmap(high_addr, devp->canvas_active_w);
+				if (!buf) {
+					debug_file_close(df);
+					kfree(rec_dum_frame);
+					pr_info("vdin_vmap error\n");
+					return;
+				}
+
+				vdin_dma_flush(devp, buf, devp->canvas_active_w, DMA_FROM_DEVICE);
+				ret = tvin_df_write(df, buf, devp->canvas_active_w);
+				if (ret != DF_WRITE_RET_OK) {
+					pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+					return;
+				}
+				vdin_unmap_phyaddr(buf);
+			}
+		}
+	}
+
+	pr_info("wrt %2d wrd %2d put%d\n", dump_num, k, devp->put_frame_cnt);
+	if ((rec_dum_frame[dump_frame_count - 1] - rec_dum_frame[0] + 1) == dump_num)
+		pr_info("dump_num:%u start:%u end:%u continuous ok\n", dump_num,
+			rec_dum_frame[0], rec_dum_frame[dump_frame_count - 1]);
+	else
+		pr_info("dump_num:%u start:%u end:%u not continuous\n", dump_num,
+			rec_dum_frame[0], rec_dum_frame[dump_frame_count - 1]);
+	debug_file_close(df);
+	kfree(rec_dum_frame);
+}
+
+static void vdin_dump_one_afbce_mem_df(char *path, struct vdin_dev_s *devp,
+				    unsigned int buf_num)
+{
+	#define K_PATH_BUFF_LENGTH	128
+	void *buf_head = NULL;
+	void *buf_table = NULL;
+	void *buf_body = NULL;
+	unsigned long high_addr;
+	unsigned long phys;
+	int highmem_flag = 0;
+	unsigned int span = 0;
+	unsigned int remain = 0;
+	unsigned int count = 0;
+	unsigned int j = 0;
+	void *virt_buf = NULL;
+	int ret;
+	unsigned char buff[K_PATH_BUFF_LENGTH];
+	struct debug_file *df;
+
+	if (buf_num >= devp->canvas_max_num) {
+		pr_info("%s: param error", __func__);
+		return;
+	}
+
+	if ((devp->cma_config_flag & 0x1) &&
+	    devp->cma_mem_alloc == 0) {
+		pr_info("%s:no cma alloc mem!!!\n", __func__);
+		return;
+	}
+
+	highmem_flag = PageHighMem(phys_to_page(devp->afbce_info->fm_body_paddr[0]));
+
+	if (highmem_flag == 0) {
+		/*low mem area*/
+		pr_info("low mem area,flag:%#x\n", devp->cma_config_flag);
+		if (devp->cma_config_flag == 0x101) {
+			buf_head =
+			codec_mm_phys_to_virt(devp->afbce_info->fm_head_paddr[buf_num]);
+			buf_table =
+			codec_mm_phys_to_virt(devp->afbce_info->fm_table_paddr[buf_num]);
+			buf_body =
+			codec_mm_phys_to_virt(devp->afbce_info->fm_body_paddr[buf_num]);
+
+			pr_info(".head_paddr=0x%lx,table_paddr=0x%lx,body_paddr=0x%lx\n",
+				devp->afbce_info->fm_head_paddr[buf_num],
+				(devp->afbce_info->fm_table_paddr[buf_num]),
+				devp->afbce_info->fm_body_paddr[buf_num]);
+		} else if (devp->cma_config_flag == 0) {
+			buf_head =
+				phys_to_virt(devp->afbce_info->fm_head_paddr[buf_num]);
+			buf_table =
+				phys_to_virt(devp->afbce_info->fm_table_paddr[buf_num]);
+			buf_body =
+				phys_to_virt(devp->afbce_info->fm_body_paddr[buf_num]);
+
+			pr_info("head_paddr=0x%lx,table_paddr=0x%lx,body_paddr=0x%lx\n",
+				devp->afbce_info->fm_head_paddr[buf_num],
+				(devp->afbce_info->fm_table_paddr[buf_num]),
+				devp->afbce_info->fm_body_paddr[buf_num]);
+		}
+	} else {
+		/*high mem area*/
+		pr_info("high mem area\n");
+		buf_head = vdin_vmap(devp->afbce_info->fm_head_paddr[buf_num],
+				     devp->afbce_info->frame_head_size);
+
+		buf_table = vdin_vmap(devp->afbce_info->fm_table_paddr[buf_num],
+				      devp->afbce_info->frame_table_size);
+
+		pr_info(".head_paddr=0x%lx,table_paddr=0x%lx,body_paddr=0x%lx\n",
+			devp->afbce_info->fm_head_paddr[buf_num],
+			(devp->afbce_info->fm_table_paddr[buf_num]),
+			devp->afbce_info->fm_body_paddr[buf_num]);
+	}
+	/*write header bin*/
+	if (strlen(path) < K_PATH_BUFF_LENGTH) {
+		//strcpy(buff, path);
+		snprintf(buff, sizeof(buff), "%s/img_%03d", path, buf_num);
+	} else {
+		pr_info("err path len\n");
+		return;
+	}
+	strcat(buff, "header.bin");
+
+	df = debug_file_open(buff, O_CREAT | O_WRONLY, 0664);
+	if (!df) {
+		pr_info("create %s error or df is NULL.\n", buff);
+		return;
+	}
+	vdin_dma_flush(devp, buf_head,
+		       devp->afbce_info->frame_head_size,
+		       DMA_FROM_DEVICE);
+
+	ret = tvin_df_write(df, buf_head, devp->afbce_info->frame_head_size);
+	if (ret != DF_WRITE_RET_OK) {
+		pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+		debug_file_close(df);
+		return;
+	}
+
+	if (highmem_flag)
+		vdin_unmap_phyaddr(buf_head);
+	pr_info("write buffer %2d of %2u head to %s.\n",
+		buf_num, devp->canvas_max_num, buff);
+	debug_file_close(df);
+
+	/*write table bin*/
+	//strcpy(buff, path);
+	snprintf(buff, sizeof(buff), "%s/img_%03d", path, buf_num);
+	strcat(buff, "table.bin");
+	df = debug_file_open(buff, O_CREAT | O_WRONLY, 0664);
+	if (!df) {
+		pr_info("create %s error or df is NULL.\n", buff);
+		return;
+	}
+
+	vdin_dma_flush(devp, buf_table,
+		       devp->afbce_info->frame_table_size,
+		       DMA_FROM_DEVICE);
+
+	ret = tvin_df_write(df, buf_table, devp->afbce_info->frame_table_size);
+	if (ret != DF_WRITE_RET_OK) {
+		pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+		debug_file_close(df);
+		return;
+	}
+
+	if (highmem_flag)
+		vdin_unmap_phyaddr(buf_table);
+	pr_info("write buffer %2d of %2u table to %s.\n",
+		buf_num, devp->canvas_max_num, buff);
+	debug_file_close(df);
+
+	/*write body bin*/
+	//strcpy(buff, path);
+	snprintf(buff, sizeof(buff), "%s/img_%03d", path, buf_num);
+	strcat(buff, "body.bin");
+	df = debug_file_open(buff, O_CREAT | O_WRONLY, 0664);
+	if (!df) {
+		pr_info("create %s error or df is NULL.\n", buff);
+		return;
+	}
+
+	if (highmem_flag == 0) {
+		vdin_dma_flush(devp, buf_body,
+				   devp->afbce_info->frame_body_size,
+				   DMA_FROM_DEVICE);
+		ret = tvin_df_write(df, buf_body, devp->afbce_info->frame_body_size);
+		if (ret != DF_WRITE_RET_OK) {
+			pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+			debug_file_close(df);
+			return;
+		}
+	} else {
+		span = SZ_1M;
+		count = devp->afbce_info->frame_body_size / PAGE_ALIGN(span);
+		remain = devp->afbce_info->frame_body_size % PAGE_ALIGN(span);
+		phys = devp->afbce_info->fm_body_paddr[buf_num];
+
+		for (j = 0; j < count; j++) {
+			high_addr = phys + j * span;
+			virt_buf = vdin_vmap(high_addr, span);
+			if (!virt_buf) {
+				debug_file_close(df);
+				pr_info("vdin_vmap error\n");
+				return;
+			}
+
+			vdin_dma_flush(devp, virt_buf, span, DMA_FROM_DEVICE);
+			ret = tvin_df_write(df, virt_buf, span);
+			if (ret != DF_WRITE_RET_OK) {
+				pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+				debug_file_close(df);
+				return;
+			}
+			vdin_unmap_phyaddr(virt_buf);
+		}
+
+		if (remain) {
+			span = devp->afbce_info->frame_body_size - remain;
+			high_addr = phys + span;
+			virt_buf = vdin_vmap(high_addr, remain);
+			if (!virt_buf) {
+				debug_file_close(df);
+				pr_info("vdin_vmap1 error\n");
+				return;
+			}
+
+			vdin_dma_flush(devp, virt_buf, remain, DMA_FROM_DEVICE);
+			ret = tvin_df_write(df, virt_buf, remain);
+			if (ret != DF_WRITE_RET_OK) {
+				pr_info("line:%d,write failed with %d\n", __LINE__, ret);
+				debug_file_close(df);
+				return;
+			}
+			vdin_unmap_phyaddr(virt_buf);
+		}
+	}
+	pr_info("write buffer %2d of %2u body to %s.\n",
+		buf_num, devp->canvas_max_num, buff);
+	debug_file_close(df);
+}
+#endif
+
 static void vdin_dump_more_mem(char *path, struct vdin_dev_s *devp,
 				unsigned int dump_num, int sel_start)
 {
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+	vdin_dump_more_mem_df(path, devp, dump_num, sel_start);
+#else
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *filp = NULL;
 	loff_t pos = 0;
@@ -386,11 +953,15 @@ static void vdin_dump_more_mem(char *path, struct vdin_dev_s *devp,
 	kfree(rec_dum_frame);
 	rec_dum_frame = NULL;
 #endif
+#endif
 }
 
 static void vdin_dump_one_buf_mem(char *path, struct vdin_dev_s *devp,
 				  unsigned int buf_num)
 {
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+	vdin_dump_one_buf_mem_df(path, devp, buf_num);
+#else
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *filp = NULL;
 	loff_t pos = 0;
@@ -479,10 +1050,14 @@ static void vdin_dump_one_buf_mem(char *path, struct vdin_dev_s *devp,
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 #endif
+#endif
 }
 
 static void vdin_dump_mem(char *path, struct vdin_dev_s *devp)
 {
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+	vdin_dump_mem_df(path, devp);
+#else
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *filp = NULL;
 	loff_t pos = 0;
@@ -590,11 +1165,15 @@ static void vdin_dump_mem(char *path, struct vdin_dev_s *devp)
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 #endif
+#endif
 }
 
 static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 				    unsigned int buf_num)
 {
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+	vdin_dump_one_afbce_mem_df(path, devp, buf_num);
+#else
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	#define K_PATH_BUFF_LENGTH	128
 	struct file *filp = NULL;
@@ -768,12 +1347,16 @@ static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 		buf_num, devp->canvas_max_num, buff);
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
-	#endif
+#endif
+#endif
 }
 
 static void dump_other_mem(struct vdin_dev_s *devp, char *path,
 			   unsigned int start, unsigned int offset)
 {
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+	dump_other_mem_df(devp, path, start, offset);
+#else
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *filp = NULL;
 	loff_t pos = 0;
@@ -796,7 +1379,8 @@ static void dump_other_mem(struct vdin_dev_s *devp, char *path,
 		start, start + offset, path);
 	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
-	#endif
+#endif
+#endif
 }
 
 static void vdin_dv_debug(struct vdin_dev_s *devp)

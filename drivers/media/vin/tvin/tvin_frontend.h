@@ -81,7 +81,10 @@ struct tvin_frontend_s {
 };
 
 #define VDIN_FRONTEND_IDX	0x10
-
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+int tvin_df_write(struct debug_file *df, void *buf,
+	unsigned int want_size);
+#endif
 int tvin_frontend_init(struct tvin_frontend_s *fe,
 		       struct tvin_decoder_ops_s *dec_ops,
 		       struct tvin_state_machine_ops_s *sm_ops, int index);

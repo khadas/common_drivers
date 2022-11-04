@@ -284,6 +284,12 @@ static int mhu_sec_probe(struct platform_device *pdev)
 		dev_err(dev, "failed to register mailbox controller\n");
 		return -ENOMEM;
 	}
+
+	err = mhu_controller_register(mhu_ctlr);
+	if (err) {
+		dev_err(dev, "failed to register mhu controller\n");
+		return err;
+	}
 	for (idx = 0; idx < num_chans; idx++) {
 		if (BIT(idx) & REV_MBOX_MASK)
 			continue;

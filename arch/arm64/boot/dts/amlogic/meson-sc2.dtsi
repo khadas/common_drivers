@@ -333,7 +333,7 @@
 	};
 
 	mbox_mhu_sec: mhu_sec@0xfe441800 {
-		status = "disabled";
+		status = "okay";
 		compatible = "amlogic, meson_mhu_sec";
 		reg = <0x0 0xfe441800 0x0 0x10>,  /* nee2scpu csr */
 		      <0x0 0xfe441c00 0x0 0x10>,  /* scpu2nee csr */

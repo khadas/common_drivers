@@ -59,11 +59,19 @@ static int __init sound_soc_init(void)
 	//call_sub_init(earc_init);
 	call_sub_init(aml_card_init);
 
+	call_sub_init(audiodsp_init_module);
+	call_sub_init(amaudio_init);
+	call_sub_init(audio_data_init);
+
 	return 0;
 }
 
 static __exit void sound_soc_exit(void)
 {
+	call_sub_exit(audio_data_exit);
+	call_sub_exit(amaudio_exit);
+	call_sub_exit(audiodsp_exit_module);
+
 	call_sub_exit(aml_card_exit);
 	call_sub_exit(aud_sram_exit);
 	call_sub_exit(vad_dev_exit);

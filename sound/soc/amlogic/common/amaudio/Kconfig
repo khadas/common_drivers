@@ -4,7 +4,7 @@ menu "Audio Interface"
 # amaudio drivers
 #
 config AMLOGIC_AMAUDIO
-	tristate "Amlogic Audio Interface"
+	bool "Amlogic Audio Interface"
 	default n
 	depends on SOUND
 	depends on SND_SOC

@@ -529,12 +529,12 @@ struct audiodsp_priv *audiodsp_privdata(void)
 	return audiodsp_p;
 }
 
-static int __init audiodsp_init_module(void)
+int __init audiodsp_init_module(void)
 {
 	return audiodsp_probe();
 }
 
-static void __exit audiodsp_exit_module(void)
+void __exit audiodsp_exit_module(void)
 {
 	struct audiodsp_priv *priv;
 
@@ -551,6 +551,3 @@ static void __exit audiodsp_exit_module(void)
 	kfree(priv);
 	priv = NULL;
 }
-
-module_init(audiodsp_init_module);
-module_exit(audiodsp_exit_module);

@@ -1,9 +1,5 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
-obj-y    += common/audiodsp/
-obj-y    += common/amaudio/
-obj-y    += common/audioinfo/
-
 KBUILD_CFLAGS += -Wlarger-than=32768
 # KBUILD_CFLAGS += -Wstack-usage=1856
 
@@ -12,6 +8,8 @@ MODULE_NAME = amlogic-snd-soc
 PR_FMT = $(subst amlogic-,,$(MODULE_NAME))
 PR_FMT_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT)]: \" fmt"
 ccflags-y += $(PR_FMT_DEFINE)
+
+ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/efuse_unifykey/
 
 obj-$(CONFIG_AMLOGIC_SND_SOC) += $(MODULE_NAME).o
 $(MODULE_NAME)-y += sound_init.o
@@ -74,3 +72,7 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += common/iec_info.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += common/misc.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += common/audio_uevent.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_SND_SOC_AUGE) += common/iomapres.o
+
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_AUDIO_DSP) += common/audiodsp/audiodsp_module.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_AMAUDIO) += common/amaudio/amaudio.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_AUDIO_INFO) += common/audioinfo/audio_data.o

@@ -265,7 +265,7 @@ static struct platform_driver audio_data_driver = {
 	},
 };
 
-static int __init audio_data_init(void)
+int __init audio_data_init(void)
 {
 	int ret = -1;
 
@@ -278,14 +278,7 @@ static int __init audio_data_init(void)
 }
 
 /* module unload */
-static  void __exit audio_data_exit(void)
+void __exit audio_data_exit(void)
 {
 	platform_driver_unregister(&audio_data_driver);
 }
-
-MODULE_LICENSE("GPL");
-/* MODULE_LICENSE("Proprietary"); */
-MODULE_DESCRIPTION("Amlogic audio debug Interface driver");
-
-module_init(audio_data_init);
-module_exit(audio_data_exit);

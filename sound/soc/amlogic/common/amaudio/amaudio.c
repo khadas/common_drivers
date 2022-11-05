@@ -262,7 +262,7 @@ static struct platform_driver amlogic_amaudio_driver = {
 	},
 };
 
-static int __init amaudio_init(void)
+int __init amaudio_init(void)
 {
 	int ret = 0;
 	int i = 0;
@@ -329,7 +329,7 @@ static int __init amaudio_init(void)
 	return ret;
 }
 
-static void __exit amaudio_exit(void)
+void __exit amaudio_exit(void)
 {
 	int i = 0;
 	struct amaudio_port_t *ap;
@@ -343,11 +343,3 @@ static void __exit amaudio_exit(void)
 
 	platform_driver_unregister(&amlogic_amaudio_driver);
 }
-
-module_init(amaudio_init);
-module_exit(amaudio_exit);
-
-MODULE_DESCRIPTION("AMLOGIC Audio Control Interface driver");
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Amlogic Inc.");
-MODULE_VERSION("1.0.0");

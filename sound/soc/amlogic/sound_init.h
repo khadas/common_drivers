@@ -43,4 +43,47 @@ void __exit auge_snd_iomap_exit(void);
 void __exit audio_clocks_exit(void);
 void __exit pcpd_monitor_exit(void);
 void __exit aud_sram_exit(void);
+
+#if IS_ENABLED(CONFIG_AMLOGIC_AUDIO_DSP)
+int __init audiodsp_init_module(void);
+void __exit audiodsp_exit_module(void);
+#else
+static inline int audiodsp_init_module(void)
+{
+	return 0;
+}
+
+static inline void audiodsp_exit_module(void)
+{
+}
+#endif
+
+#if IS_ENABLED(CONFIG_AMLOGIC_AMAUDIO)
+int __init amaudio_init(void);
+void __exit amaudio_exit(void);
+#else
+static inline int amaudio_init(void)
+{
+	return 0;
+}
+
+static inline void amaudio_exit(void)
+{
+}
+#endif
+
+#if IS_ENABLED(CONFIG_AMLOGIC_AUDIO_INFO)
+int __init audio_data_init(void);
+void __exit audio_data_exit(void);
+#else
+static inline int audio_data_init(void)
+{
+	return 0;
+}
+
+static inline void audio_data_exit(void)
+{
+}
+#endif
+
 #endif

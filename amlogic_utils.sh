@@ -282,6 +282,32 @@ function adjust_sequence_modules_loading() {
 		echo delete_soc_module=${delete_soc_module[*]}
 	fi
 
+	if [[ -n ${CLK_SOC_MODULE} ]]; then
+		delete_clk_soc_module=()
+		for module in `ls amlogic-clk-soc-*`; do
+			if [[ "${CLK_SOC_MODULE}" != "${module}" ]] ; then
+				echo Delete clk soc module: ${module}
+				sed -n "/${module}:/p" modules.dep.temp
+				sed -i "/${module}:/d" modules.dep.temp
+				delete_clk_soc_module=(${delete_clk_soc_module[@]} ${module})
+			fi
+		done
+		echo delete_clk_soc_module=${delete_clk_soc_module[*]}
+	fi
+
+	if [[ -n ${PINCTRL_SOC_MODULE} ]]; then
+		delete_pinctrl_soc_module=()
+		for module in `ls amlogic-pinctrl-soc-*`; do
+			if [[ "${PINCTRL_SOC_MODULE}" != "${module}" ]] ; then
+				echo Delete pinctrl soc module: ${module}
+				sed -n "/${module}:/p" modules.dep.temp
+				sed -i "/${module}:/d" modules.dep.temp
+				delete_pinctrl_soc_module=(${delete_pinctrl_soc_module[@]} ${module})
+			fi
+		done
+		echo delete_pinctrl_soc_module=${delete_pinctrl_soc_module[*]}
+	fi
+
 	delete_module=()
 	for module in ${MODULES_LOAD_BLACK_LIST[@]}; do
 		modules=`ls ${module}*`
@@ -299,8 +325,11 @@ function adjust_sequence_modules_loading() {
 	fi
 
 	cat modules.dep.temp | cut -d ':' -f 2 > modules.dep.temp1
-	delete_modules=(${delete_soc_module[@]} ${delete_module[@]})
+	delete_modules=(${delete_soc_module[@]} ${delete_clk_soc_module} ${delete_pinctrl_soc_module} ${delete_module[@]})
 	for module in ${delete_modules[@]}; do
+		if [[ ! `ls $module` ]]; then
+			continue
+		fi
 		match=`sed -n "/${module}/=" modules.dep.temp1`
 		for match in ${match[@]}; do
 			match_count=(${match_count[@]} $match)

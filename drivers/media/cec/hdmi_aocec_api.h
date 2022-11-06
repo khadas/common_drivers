@@ -46,7 +46,7 @@ void cecb_check_irq_enable(void);
 int cecb_irq_stat(void);
 inline void cecb_clear_irq(unsigned int flags);
 
-void cec_set_clk(struct platform_device *pdev);
+void cec_set_clk(struct device *dev);
 void cec_hw_init(void);
 void cec_pre_init(void);
 void cec_hw_reset(unsigned int cec_sel);
@@ -99,12 +99,17 @@ void cec_get_wakeup_reason(void);
 unsigned int cec_get_wk_port_id(unsigned int phy_addr);
 void cec_clear_wakeup_reason(void);
 void cec_get_wakeup_data(void);
-int dump_cecrx_reg(char *b);
+int dump_cec_reg(char *b);
+int dump_cec_status(char *buf);
 int cec_set_uevent(enum cec_event_type type, unsigned int val);
 int cec_set_dev_info(uint8_t dev_idx);
 int hdmirx_get_connect_info(void);
 int hdmirx_set_cec_cfg(u32 cfg);
 bool cec_message_op(unsigned char *msg, unsigned char len);
+void cec_debug_fs_init(void);
+unsigned int read_clock(unsigned int addr);
+unsigned int read_periphs(unsigned int addr);
+inline unsigned int get_pin_status(void);
 
 #define CEC_ERR(format, args...)				\
 	do {	\
@@ -122,6 +127,13 @@ bool cec_message_op(unsigned char *msg, unsigned char len);
 	do { \
 		if (cec_msg_dbg_en >= (level) && cec_dev->dbg_dev) \
 			pr_info("cec: " fmt, ## arg); \
+	} while (0)
+
+/* print tx/rx status */
+#define CEC_PRINT(fmt, args...) \
+	do { \
+		if (cec_msg_dbg_en || cec_dev->cec_log_en) \
+			pr_info("cec: " fmt, ##args); \
 	} while (0)
 
 #endif

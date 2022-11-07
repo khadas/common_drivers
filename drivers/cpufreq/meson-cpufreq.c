@@ -792,7 +792,7 @@ static void create_meson_cpufreq_proc_files(struct cpufreq_policy *policy)
 	struct meson_cpufreq_driver_data *data = policy->driver_data;
 
 	snprintf(policy_name, sizeof(policy_name), "policy%u",
-		cpumask_first(policy->related_cpus));
+		cpumask_first(policy->cpus));
 	data->parent_proc = proc_mkdir(policy_name, cpufreq_proc);
 	if (data->parent_proc) {
 		proc_create_data("opp-table", 0444, data->parent_proc,
@@ -1027,6 +1027,7 @@ static int meson_cpufreq_init(struct cpufreq_policy *policy)
 		freq_hz =  policy->cur * 1000;
 
 	nr_opp = dev_pm_opp_get_opp_count(cpu_dev);
+	create_meson_cpufreq_proc_files(policy);
 
 	dev_dbg(cpu_dev, "%s: CPU %d initialized\n", __func__, policy->cpu);
 	return ret;
@@ -1103,7 +1104,6 @@ static void meson_cpufreq_register_em(struct cpufreq_policy *policy)
 	struct device *cpu_dev = get_cpu_device(policy->cpu);
 
 	dev_pm_opp_of_register_em(cpu_dev, policy->cpus);
-	create_meson_cpufreq_proc_files(policy);
 }
 
 static int meson_cpufreq_verify(struct cpufreq_policy_data *pd)

@@ -981,6 +981,9 @@ static int __exit frc_remove(struct platform_device *pdev)
 {
 	struct frc_dev_s *frc_devp = &frc_dev;
 
+	if (!frc_devp || !frc_devp->probe_ok)
+		return -1;
+
 	PR_FRC("%s:module remove\n", __func__);
 	// frc_devp = platform_get_drvdata(pdev);
 	cancel_work_sync(&frc_devp->frc_clk_work);
@@ -1016,6 +1019,9 @@ static int __exit frc_remove(struct platform_device *pdev)
 static void frc_shutdown(struct platform_device *pdev)
 {
 	struct frc_dev_s *frc_devp = &frc_dev;
+
+	if (!frc_devp || !frc_devp->probe_ok)
+		return;
 
 	PR_FRC("%s:module shutdown\n", __func__);
 	// frc_devp = platform_get_drvdata(pdev);
@@ -1056,7 +1062,7 @@ static int frc_suspend(struct platform_device *pdev, pm_message_t state)
 	struct frc_dev_s *devp = NULL;
 
 	devp = get_frc_devp();
-	if (!devp)
+	if (!devp || !devp->probe_ok)
 		return -1;
 	PR_FRC("%s ...\n", __func__);
 	frc_power_domain_ctrl(devp, 0);
@@ -1071,7 +1077,7 @@ static int frc_resume(struct platform_device *pdev)
 	struct frc_dev_s *devp = NULL;
 
 	devp = get_frc_devp();
-	if (!devp)
+	if (!devp || !devp->probe_ok)
 		return -1;
 	PR_FRC("%s ...\n", __func__);
 	frc_power_domain_ctrl(devp, 1);

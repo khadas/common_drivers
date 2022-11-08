@@ -5512,8 +5512,6 @@ static void lcd_clk_config_chip_init(struct aml_lcd_drv_s *pdrv, struct lcd_clk_
 		cconf->data->enc_clk_msr_id = -1;
 		break;
 	case LCD_CHIP_T5M: //the same as t3, but only support 1 driver
-		if (pdrv->index)
-			break;
 	case LCD_CHIP_T3: /* only one pll */
 		cconf->data = &lcd_clk_data_t3;
 		switch (pdrv->index) {

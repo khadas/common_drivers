@@ -6,6 +6,7 @@
 /dts-v1/;
 
 #include "mesont5m.dtsi"
+#include "mesont5m_drm.dtsi"
 #include "mesont5m_pxp-panel.dtsi"
 
 / {
@@ -606,6 +607,31 @@
 	logo_addr = "0x3f800000";
 	mem_alloc = <0>;
 	pxp_mode = <1>; /** 0:normal mode 1:pxp mode */
+};
+
+&drm_vpu {
+	status = "okay";
+	logo_addr = "0x3f800000";
+
+	connectors_dev: port@1 {
+		drm_to_lcd0: endpoint@2 {
+			reg = <2>;
+			remote-endpoint = <&lcd0_to_drm>;
+		};
+	};
+};
+
+&lcd {
+	ports {
+		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			lcd0_to_drm: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&drm_to_lcd0>;
+			};
+		};
+	};
 };
 
 &audiobus {

@@ -17,7 +17,8 @@
 /* 20220619: c3 mipi-dsi display ok*/
 /* 20220622: c3 support bt656/1120*/
 /* 20221115: support force unfit mipi-dsi bit_rate_max*/
-#define LCD_DRV_VERSION    "20221115"
+/* 20221116: add pinmux lock for c3*/
+#define LCD_DRV_VERSION    "20221116"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;
@@ -53,6 +54,7 @@ void lcd_vbyone_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_mlvds_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_p2p_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_edp_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
+void lcd_mipi_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 
 int lcd_base_config_load_from_dts(struct aml_lcd_drv_s *pdrv);
 int lcd_get_config(struct aml_lcd_drv_s *pdrv);

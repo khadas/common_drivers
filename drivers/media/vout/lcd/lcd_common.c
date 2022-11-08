@@ -715,6 +715,46 @@ void lcd_edp_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
 	pconf->pinmux_flag = index;
 }
 
+static char *lcd_mipi_pinmux_str[] = {
+	"dsi_on",
+	"dsi_off",
+	"none",
+};
+
+void lcd_mipi_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
+{
+	struct lcd_config_s *pconf;
+	unsigned int index;
+
+	if (pdrv->data->chip_type != LCD_CHIP_C3)
+		return;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s: %d\n", pdrv->index, __func__, status);
+
+	pconf = &pdrv->config;
+	index = (status) ? 0 : 1;
+
+	if (pconf->pinmux_flag == index) {
+		LCDPR("[%d]: pinmux %s is already selected\n",
+		      pdrv->index, lcd_mipi_pinmux_str[index]);
+		return;
+	}
+
+	pconf->pin = devm_pinctrl_get_select(pdrv->dev, lcd_mipi_pinmux_str[index]);
+	if (IS_ERR(pconf->pin)) {
+		LCDERR("[%d]: set mipi pinmux %s error\n",
+		       pdrv->index, lcd_mipi_pinmux_str[index]);
+	} else {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("[%d]: set mipi pinmux %s: 0x%px\n",
+			      pdrv->index, lcd_mipi_pinmux_str[index],
+			      pconf->pin);
+		}
+	}
+	pconf->pinmux_flag = index;
+}
+
 /* ************************************************** *
  * lcd config
  * **************************************************
@@ -2361,6 +2401,9 @@ static int lcd_config_load_init(struct aml_lcd_drv_s *pdrv)
 			break;
 		case LCD_EDP:
 			lcd_edp_pinmux_set(pdrv, 1);
+			break;
+		case LCD_MIPI:
+			lcd_mipi_pinmux_set(pdrv, 1);
 			break;
 		default:
 			break;

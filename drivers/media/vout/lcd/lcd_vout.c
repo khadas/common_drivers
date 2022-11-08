@@ -1715,6 +1715,9 @@ static int lcd_config_probe(struct aml_lcd_drv_s *pdrv, struct platform_device *
 		case LCD_EDP:
 			lcd_edp_pinmux_set(pdrv, 1);
 			break;
+		case LCD_MIPI:
+			lcd_mipi_pinmux_set(pdrv, 1);
+			break;
 		default:
 			break;
 		}

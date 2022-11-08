@@ -221,17 +221,18 @@ struct aucpu_ctx_t {
 
 static struct platform_device *aucpu_pdev;
 static struct aucpu_ctx_t *s_aucpu_ctx;
+static s32 aucpu_init_try(struct platform_device *pdev);
 
 static void dma_flush(u32 buf_start, u32 buf_size)
 {
-	if (aucpu_pdev)
+	if (aucpu_pdev && load_firmware_status == 0)
 		dma_sync_single_for_device(&aucpu_pdev->dev, buf_start,
 			buf_size, DMA_TO_DEVICE);
 }
 
 static void cache_flush(u32 buf_start, u32 buf_size)
 {
-	if (aucpu_pdev)
+	if (aucpu_pdev && load_firmware_status == 0)
 		dma_sync_single_for_cpu(&aucpu_pdev->dev, buf_start,
 			buf_size, DMA_FROM_DEVICE);
 }
@@ -1025,6 +1026,15 @@ EXPORT_SYMBOL(aml_aucpu_strm_get_status);
 
 s32 aml_aucpu_strm_get_load_firmware_status(void)
 {
+	static int retry_times;
+
+	//load firmware fail, it will retry it 3 times.
+	if (load_firmware_status == AUCPU_ERROR_NOT_IMPLEMENTED) {
+		if (aucpu_pdev && retry_times < 3) {
+			aucpu_init_try(aucpu_pdev);
+			retry_times++;
+		}
+	}
 	return load_firmware_status;
 }
 EXPORT_SYMBOL(aml_aucpu_strm_get_load_firmware_status);
@@ -1214,7 +1224,7 @@ static s32 aucpu_mem_device_init(struct reserved_mem *rmem,
 	return r;
 }
 
-static s32 aucpu_probe(struct platform_device *pdev)
+static s32 aucpu_init_try(struct platform_device *pdev)
 {
 	s32 err = 0, irq, idx;
 	struct aucpu_ctx_t *pctx;
@@ -1228,7 +1238,8 @@ static s32 aucpu_probe(struct platform_device *pdev)
 	s_aucpu_delaywork_requested = false;
 
 	aucpu_dev = NULL;
-	aucpu_pdev = NULL;
+	if (!aucpu_pdev)
+		aucpu_pdev = pdev;
 	s_register_flag = 0;
 	s_aucpu_register_base = 0;
 	s_aucpu_ctx = kzalloc(sizeof(*s_aucpu_ctx), GFP_KERNEL);
@@ -1329,7 +1340,7 @@ static s32 aucpu_probe(struct platform_device *pdev)
 	}
 	s_aucpu_irq_requested = true;
 	schedule_delayed_work(&pctx->dbg_work, DBG_POLL_TIME);
-	aucpu_pdev = pdev;
+//	aucpu_pdev = pdev;
 	aucpu_pr(LOG_ERROR, "Amlogic Aucpu driver installed\n");
 	return 0;
 
@@ -1352,6 +1363,11 @@ ERROR_PROVE_DEVICE:
 	kfree(s_aucpu_ctx);
 	s_aucpu_ctx = NULL;
 	return err;
+}
+
+static s32 aucpu_probe(struct platform_device *pdev)
+{
+	return aucpu_init_try(pdev);
 }
 
 static s32 aucpu_remove(struct platform_device *pdev)

@@ -29,10 +29,9 @@ ${ROOT_DIR}/common/scripts/kconfig/merge_config.sh -m -r \
 	${ROOT_DIR}/common/common_drivers/arch/arm/configs/meson64_a32_C3_mini_defconfig
 fi
 
+export -n KCONFIG_CONFIG
 CROSS_COMPILE_TOOL=${ROOT_DIR}/prebuilts/gcc/linux-x86/host/x86_64-arm-10.3-2021.07/bin/arm-none-linux-gnueabihf-
 
 source ${ROOT_DIR}/common/common_drivers/scripts/amlogic/mk_smarthome_common.sh $@
 
-cp ${KCONFIG_CONFIG} ${OUTDIR}/common/.config
-
-rm ${KCONFIG_CONFIG} ${KCONFIG_CONFIG}.old
+rm ${KCONFIG_CONFIG}*

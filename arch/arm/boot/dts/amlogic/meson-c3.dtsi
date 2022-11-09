@@ -1802,7 +1802,7 @@
 	freertos: freertos {
 		compatible = "amlogic,freertos";
 		status = "disabled";
-		irqs_rsv = <59>;
+		irqs_rsv = <32 177>;
 	};
 
 	aml_dma: aml_dma@0xfe440400 {

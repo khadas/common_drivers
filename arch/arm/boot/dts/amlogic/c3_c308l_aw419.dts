@@ -80,7 +80,7 @@
 		rtos_reserved:linux,rtos_reserved {
 			compatible = "amlogic, aml_rtos_memory";
 			status = "okay";
-			reg = <0x4800000 0x200000>;
+			reg = <0x4e00000 0x3000000>;
 			no-map;
 		};
 

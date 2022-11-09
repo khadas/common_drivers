@@ -3,9 +3,8 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-gkitool
 	amlogic-secmon
 	amlogic-clk
-	amlogic-gpiolib
+	amlogic-gpio
 	amlogic-pinctrl
-	amlogic-irqchip
 	amlogic-mailbox
 	amlogic-pwm
 	pwm-regulator
@@ -21,26 +20,18 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-tee.ko
 	videobuf-core.ko
 	dvb-core.ko
-	amlogic-input-gpiokey.ko
-	amlogic-input-adckey.ko
 	amlogic-pm.ko
-	amlogic-input-ir.ko
+	amlogic-input.ko
 	amlogic-watchdog.ko
-	aml_dvb_extern.ko
+	aml-dvb.ko
 	aml_media.ko
 	amlogic-adc.ko
 	amlogic-rtc-virtual.ko
 	amlogic-thermal.ko
-	amlogic_usb2_phy.ko
-	amlogic_usb3_v2_phy.ko
-	amlogic_usb_crg.ko
-	amlogic_usb_otg.ko
+	amlogic-usb.ko
 	amlogic-irblaster.ko
-	amlogic-reboot.ko
 	amlogic-inphy.ko
 	amlogic-drm.ko
-	dwc3.ko
-	dwc_otg.ko
 )
 
 VENDOR_MODULES_LOAD_FIRST_LIST=(

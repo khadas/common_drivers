@@ -145,11 +145,6 @@ static int v4l2_frontend_is_exiting(struct v4l2_frontend *v4l2_fe)
 
 	if (fepriv->exit != V4L2_FE_NO_EXIT)
 		return 1;
-#if 0
-	if (time_after_eq(jiffies, fepriv->release_jiffies +
-			v4l2_shutdown_timeout * HZ))
-		return 1;
-#endif
 	return 0;
 }
 

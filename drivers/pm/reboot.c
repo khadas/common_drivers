@@ -34,8 +34,11 @@ static void __iomem *reboot_reason_vaddr;
 static u32 psci_function_id_restart;
 static u32 psci_function_id_poweroff;
 static char *kernel_panic;
+/* Represents if it can support reboot reason extension - */
+/* which can support up to 128 kind of reboot reasons */
+static bool support_reboot_reason_ext;
 
-static struct reboot_reason_str reboot_reason_name[] = {
+static struct reboot_reason_str reboot_reason_name[MESON_MAX_REBOOT] = {
 	[MESON_COLD_REBOOT] = { .name = "cold reboot" },
 	[MESON_NORMAL_BOOT] = { .name = "normal boot" },
 	[MESON_FACTORY_RESET_REBOOT] = { .name = "factory reset reboot" },
@@ -97,13 +100,36 @@ static void scramble_clear_preserve(void)
 }
 #endif
 
-u32 get_reboot_reason(void)
+static u32 get_reboot_reason_val(void)
 {
 	u32 value;
-	u32 reboot_reason;
+	u32 reboot_reason_val;
+
+	if (!reboot_reason_vaddr) {
+		pr_err("%s: reboot_reason_vaddr is NULL!\n", __func__);
+		return 0;
+	}
 
 	value = readl(reboot_reason_vaddr);
-	reboot_reason = (value >> 12) & 0xf;
+	if (support_reboot_reason_ext)
+		reboot_reason_val = (value >> 12) & 0xff;
+	else
+		reboot_reason_val = (value >> 12) & 0xf;
+
+	return reboot_reason_val;
+}
+
+u32 get_reboot_reason(void)
+{
+	u32 reboot_reason;
+	u32 reboot_reason_val;
+
+	reboot_reason_val = get_reboot_reason_val();
+
+	if (support_reboot_reason_ext)
+		reboot_reason = reboot_reason_val & 0x7f;
+	else
+		reboot_reason = reboot_reason_val & 0xf;
 
 	return reboot_reason;
 }
@@ -152,7 +178,8 @@ static u32 parse_reason(const char *cmd)
 		}
 	}
 
-	pr_info("reboot reason = %d, %s\n", reboot_reason, reboot_reason_name[reboot_reason].name);
+	pr_info("reboot reason = %d, %s\n", reboot_reason,
+			reboot_reason_name[reboot_reason].name);
 
 	return reboot_reason;
 }
@@ -221,14 +248,15 @@ static struct notifier_block panic_notifier = {
 ssize_t reboot_reason_show(struct device *dev,
 			   struct device_attribute *attr, char *buf)
 {
-	unsigned int value, len, reboot_reason;
+	unsigned int len;
+	u32 reboot_reason;
+	u32 reboot_reason_reg;
 
-	if (!reboot_reason_vaddr)
-		return 0;
-	value = readl(reboot_reason_vaddr);
-	reboot_reason = ((value >> 12) & 0xf);
-	len = sprintf(buf, "reboot reason = %d, %s\n", reboot_reason,
-		      reboot_reason_name[reboot_reason].name);
+	reboot_reason_reg = get_reboot_reason_val();
+	reboot_reason = get_reboot_reason();
+	len = sprintf(buf, "reg val: 0x%x\nreboot reason = %d, %s\n",
+			reboot_reason_reg, reboot_reason,
+			reboot_reason_name[reboot_reason].name);
 
 	return len;
 }
@@ -244,7 +272,7 @@ static ssize_t reset_test_store(struct device *dev,
 	if (count > 64) {
 		pr_err("%s: Error: string length %u is over maximum limits 64\n",
 		       __func__, (u32)count);
-		return count;
+		return -EINVAL;
 	}
 
 	while (*buf != '\n')
@@ -327,6 +355,9 @@ static int aml_restart_probe(struct platform_device *pdev)
 		if (ret != 0)
 			pr_err("%s, device create file failed, ret = %d!\n",
 			       __func__, ret);
+
+		support_reboot_reason_ext = of_property_read_bool(pdev->dev.of_node,
+				"extend_reboot_reason");
 	}
 
 	if (of_property_read_bool(pdev->dev.of_node,

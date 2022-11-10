@@ -4575,6 +4575,25 @@ static struct osd_device_data_s osd_c3 = {
 	.has_vpp2 = 0,
 };
 
+static struct osd_device_data_s osd_t5m = {
+	.cpu_id = __MESON_CPU_MAJOR_ID_T5M,
+	.osd_ver = OSD_HIGH_ONE,
+	.afbc_type = MALI_AFBC,
+	.osd_count = 3,
+	.has_deband = 0,
+	.has_lut = 1,
+	.has_rdma = 1,
+	.has_dolby_vision = 1,
+	.osd_fifo_len = 64, /* fifo len 64*8 = 512 */
+	.vpp_fifo_len = 0xfff,/* 2048 */
+	.dummy_data = 0x00808000,
+	.has_viu2 = 0,
+	.osd0_sc_independ = 0,
+	.mif_linear = 1,
+	.has_vpp1 = 1,
+	.has_vpp2 = 0,
+};
+
 static const struct of_device_id meson_fb_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -4666,6 +4685,10 @@ static const struct of_device_id meson_fb_dt_match[] = {
 	{
 		.compatible = "amlogic, fb-c3",
 		.data = &osd_c3,
+	},
+	{
+		.compatible = "amlogic, fb-t5m",
+		.data = &osd_t5m,
 	},
 	{},
 };
@@ -4767,7 +4790,8 @@ static int __init osd_probe(struct platform_device *pdev)
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T3)
 		memcpy(&osd_dev_hw, &t3_dev_property,
 		       sizeof(struct osd_device_hw_s));
-	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5W)
+	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5W ||
+			osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5M)
 		memcpy(&osd_dev_hw, &t5w_dev_property,
 		       sizeof(struct osd_device_hw_s));
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_C3)
@@ -4777,6 +4801,7 @@ static int __init osd_probe(struct platform_device *pdev)
 		memcpy(&osd_dev_hw, &legcy_dev_property,
 		       sizeof(struct osd_device_hw_s));
 	/* get interrupt resource */
+
 	int_viu_vsync = platform_get_irq_byname(pdev, "viu-vsync");
 	if (int_viu_vsync  == -ENXIO) {
 		osd_log_err("cannot get viu irq resource\n");

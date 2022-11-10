@@ -8,7 +8,7 @@
 
 #include <linux/types.h>
 #include "sc2_control.h"
-#include <linux/dvb/dmx.h>
+#include <linux/dvb/aml_dmx_ext.h>
 
 struct pts_dts {
 	int pid;

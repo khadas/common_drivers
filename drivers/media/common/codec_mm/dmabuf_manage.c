@@ -21,7 +21,7 @@
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/codec_mm/dmabuf_manage.h>
 #include <linux/amlogic/media/codec_mm/configs.h>
-#include <uapi/linux/dvb/dmx.h>
+#include <uapi/linux/dvb/aml_dmx_ext.h>
 #include "dmxdev.h"
 #include "demux.h"
 
@@ -100,7 +100,7 @@ struct secure_vdec_info {
 	struct secure_pool_info vdec_pool[SECURE_MAX_VDEC_POOL_NUM];
 };
 
-typedef int (*decode_info)(struct dmx_demux *demux, struct decoder_mem_info *info);
+typedef int (*decode_info)(struct dmx_demux *demux, void *info);
 
 struct dmx_filter_info {
 	struct list_head list;

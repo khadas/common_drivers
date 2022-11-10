@@ -1633,11 +1633,11 @@ static int _dmx_set_input(struct dmx_demux *demux, int source)
 }
 
 int _dmx_get_ts_mem_info(struct dmx_demux *dmx,
-			 struct dmx_ts_feed *feed, struct dmx_mem_info *info)
+			 void *v_feed, void *v_info)
 {
 	struct aml_dmx *demux = (struct aml_dmx *)dmx->priv;
-
-	struct sw_demux_ts_feed *ts_feed = (struct sw_demux_ts_feed *)feed;
+	struct sw_demux_ts_feed *ts_feed = (struct sw_demux_ts_feed *)v_feed;
+	struct dmx_mem_info *info = v_info;
 
 	if (mutex_lock_interruptible(demux->pmutex))
 		return -ERESTARTSYS;
@@ -1652,13 +1652,14 @@ int _dmx_get_ts_mem_info(struct dmx_demux *dmx,
 }
 
 int _dmx_get_sec_mem_info(struct dmx_demux *dmx,
-			  struct dmx_section_feed *feed,
-			  struct dmx_mem_info *info)
+			  void *v_feed,
+			  void *v_info)
 {
 	struct sw_demux_sec_feed *sec_feed;
 	struct aml_dmx *demux = (struct aml_dmx *)dmx->priv;
+	struct dmx_mem_info *info = v_info;
 
-	sec_feed = (struct sw_demux_sec_feed *)feed;
+	sec_feed = (struct sw_demux_sec_feed *)v_feed;
 
 	if (mutex_lock_interruptible(demux->pmutex))
 		return -ERESTARTSYS;
@@ -1673,7 +1674,7 @@ int _dmx_get_sec_mem_info(struct dmx_demux *dmx,
 	return 0;
 }
 
-int _dmx_get_mem_info(struct dmx_demux *dmx, struct dmx_filter_mem_info *info)
+int _dmx_get_mem_info(struct dmx_demux *dmx, void *v_info)
 {
 	struct aml_dmx *demux = (struct aml_dmx *)dmx->priv;
 	int filter_num = 0;
@@ -1687,6 +1688,7 @@ int _dmx_get_mem_info(struct dmx_demux *dmx, struct dmx_filter_mem_info *info)
 	unsigned int buf_phy_start;
 	unsigned int wp_offset;
 	struct filter_mem_info *pinfo;
+	struct dmx_filter_mem_info *info = v_info;
 
 	if (mutex_lock_interruptible(demux->pmutex))
 		return -ERESTARTSYS;
@@ -1876,9 +1878,10 @@ static int _dmx_get_hw_source(struct dmx_demux *dmx, int *hw_source)
 	return 0;
 }
 
-static int _dmx_set_sec_mem(struct dmx_demux *dmx, struct dmx_sec_mem *sec_mem)
+static int _dmx_set_sec_mem(struct dmx_demux *dmx, void *v_sec_mem)
 {
 	struct aml_dmx *demux = (struct aml_dmx *)dmx->priv;
+	struct dmx_sec_mem *sec_mem = v_sec_mem;
 
 	pr_dbg("%s dmx%d\n", __func__, demux->id);
 
@@ -1892,13 +1895,14 @@ static int _dmx_set_sec_mem(struct dmx_demux *dmx, struct dmx_sec_mem *sec_mem)
 }
 
 static int _dmx_get_dvr_mem(struct dmx_demux *dmx,
-			struct dvr_mem_info *info)
+			void *v_info)
 {
 	struct aml_dmx *demux = (struct aml_dmx *)dmx->priv;
 	unsigned int total_mem = 0;
 	unsigned int buf_phy_start = 0;
 	unsigned int free_mem = 0;
 	unsigned int wp_offset = 0;
+	struct dvr_mem_info *info = v_info;
 
 	pr_dbg("%s dmx%d\n", __func__, demux->id);
 
@@ -1937,9 +1941,10 @@ static int _dmx_remap_pid(struct dmx_demux *dmx, u16 pids[2])
 	return 0;
 }
 
-static int _dmx_decode_info(struct dmx_demux *dmx, struct decoder_mem_info *info)
+static int _dmx_decode_info(struct dmx_demux *dmx, void *v_info)
 {
 	struct aml_dmx *demux = (struct aml_dmx *)dmx->priv;
+	struct decoder_mem_info *info = v_info;
 
 //	pr_dbg("%s dmx%d\n", __func__, demux->id);
 

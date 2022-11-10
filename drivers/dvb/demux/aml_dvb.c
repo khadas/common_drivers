@@ -23,11 +23,12 @@
 #include <linux/spinlock.h>
 #include <linux/string.h>
 #include <linux/of.h>
-#include <uapi/linux/dvb/dmx.h>
 #include <linux/amlogic/tee.h>
 #include <linux/amlogic/aml_key.h>
 #include <linux/amlogic/tee_demux.h>
 #include <linux/amlogic/cpu_version.h>
+
+#include <linux/dvb/aml_dmx_ext.h>
 
 #include "aml_dvb.h"
 #include "am_key.h"

@@ -19,6 +19,7 @@
 /* 20220916: port k5.4 code to k5.15*/
 /* 20221012: correct t5w vbyone reset reg*/
 /* 20221028: fix lane lock && fix t7 mipi lprx reg set*/
+/* 20221111: modify edp transmit_unit_size to 48(temporary)*/
 /* 20221115: support force unfit mipi-dsi bit_rate_max*/
 /* 20221116: add pinmux lock for c3*/
 #define LCD_DRV_VERSION    "20221116"

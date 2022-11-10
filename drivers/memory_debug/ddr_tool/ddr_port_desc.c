@@ -914,6 +914,40 @@ static struct ddr_port_desc ddr_port_desc_c3_mon[] __initdata = {
 	{ .port_id = 7, .port_name = "HCODEC"         },
 };
 
+static struct ddr_port_desc ddr_port_desc_t5m[] __initdata = {
+	/* TOP*/
+	{ .port_id =  2, .port_name = "ARM_A55"       },
+	{ .port_id =  4, .port_name = "MALI"          },
+	/* NIC_SYS */
+	{ .port_id = 8, .port_name = "AOCPU"          },
+	{ .port_id = 32, .port_name = "AUDIO"         },
+	{ .port_id = 33, .port_name = "ETH"           },
+	{ .port_id = 36, .port_name = "SDEMMCB"       },
+	{ .port_id = 37, .port_name = "SDEMMCC"       },
+	{ .port_id = 38, .port_name = "DMA"           },
+	{ .port_id = 54, .port_name = "DEMUX"         },
+	{ .port_id = 56, .port_name = "USB2_0"        },
+	{ .port_id = 57, .port_name = "USB2_1"        },
+	{ .port_id = 58, .port_name = "USB3"          },
+	{ .port_id = 59, .port_name = "TVFE"          },
+	{ .port_id = 60, .port_name = "HDMIRX"        },
+	{ .port_id = 61, .port_name = "JTAG"          },
+	/* NIC_VPU */
+	{ .port_id = 62, .port_name = "VPU0"          },
+	{ .port_id = 64, .port_name = "VPU1"          },
+	{ .port_id = 66, .port_name = "VPU2"          },
+	/* NIC_EMEC*/
+	{ .port_id = 68, .port_name = "FRC0"          },
+	{ .port_id = 70, .port_name = "FRC1"          },
+	{ .port_id = 72, .port_name = "FRC2"          },
+	/* NIC_DOS*/
+	{ .port_id = 74, .port_name = "HEVC"          },
+	{ .port_id = 82, .port_name = "VDEC"          },
+	{ .port_id = 90, .port_name = "HCODEC"        },
+	/* NIC_GE2D*/
+	{ .port_id = 98, .port_name = "GE2D"          },
+};
+
 static struct ddr_port_desc *chip_ddr_port;
 static unsigned int chip_ddr_port_num __initdata;
 
@@ -1059,6 +1093,11 @@ int __init ddr_find_port_desc_type(int cpu_type, struct ddr_port_desc **desc, in
 			*desc = ddr_port_desc_c3_prot;
 			desc_size = ARRAY_SIZE(ddr_port_desc_c3_prot);
 		}
+		break;
+
+	case DMC_TYPE_T5M:
+		*desc = ddr_port_desc_t5m;
+		desc_size = ARRAY_SIZE(ddr_port_desc_t5m);
 		break;
 
 	default:

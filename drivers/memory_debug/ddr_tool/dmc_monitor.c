@@ -790,6 +790,14 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 		mon->configs |= DMC_DEVICE_8BIT;
 		break;
 #endif
+#ifdef CONFIG_AMLOGIC_DMC_MONITOR_T5M
+	case DMC_TYPE_T5M:
+		mon->ops = &t5m_dmc_mon_ops;
+		mon->configs |= POLICY_INCLUDE;
+		mon->configs |= DMC_DEVICE_8BIT;
+		mon->mon_number = 2;
+		break;
+#endif
 	default:
 		pr_err("%s, Can't find ops for chip:%x\n", __func__, chip);
 		break;
@@ -1045,6 +1053,10 @@ static const struct of_device_id dmc_monitor_match[] = {
 	{
 		.compatible = "amlogic,dmc_monitor-c3",
 		.data = (void *)DMC_TYPE_C3,
+	},
+	{
+		.compatible = "amlogic,dmc_monitor-t5m",
+		.data = (void *)DMC_TYPE_T5M,
 	},
 	{}
 };

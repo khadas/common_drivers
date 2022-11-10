@@ -80,6 +80,7 @@
 #ifdef CONFIG_AMLOGIC_USBPHY
 #include <linux/amlogic/usb-v2.h>
 #endif
+#include "../../usb_main.h"
 
 //#include <linux/amlogic/gki_module.h>
 
@@ -244,22 +245,6 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.eltest_flag = -1,
 };
 
-bool force_device_mode;
-module_param_named(otg_device, force_device_mode,
-		bool, S_IRUGO | S_IWUSR);
-
-static char otg_mode_string[2] = "0";
-static int force_otg_mode(char *s)
-{
-	if (s != NULL)
-		sprintf(otg_mode_string, "%s", s);
-	if (strcmp(otg_mode_string, "0") == 0)
-		force_device_mode = 0;
-	else
-		force_device_mode = 1;
-	return 0;
-}
-__setup("otg_device=", force_otg_mode);
 
 static u64 dwc2_dmamask = DMA_BIT_MASK(32);
 
@@ -967,7 +952,7 @@ void xhci_force_disable_port(void)
 
 	controller_type = g_dwc_otg_device[0]->core_if->controller_type;
 
-	if (force_device_mode && controller_type == USB_HOST_ONLY)
+	if (get_otg_mode() && controller_type == USB_HOST_ONLY)
 		controller_setting = USB_DEVICE_ONLY;
 	else
 		controller_setting = controller_type;
@@ -1137,12 +1122,12 @@ static int dwc_otg_driver_probe(struct platform_device *pdev)
 		return 0;
 	}
 
-	if (controller_type == USB_HOST_ONLY && !force_device_mode) {
+	if (controller_type == USB_HOST_ONLY && !get_otg_mode()) {
 		DWC_PRINTF("%s host only, not probe usb_otg!!!\n", __func__);
 		return -ENODEV;
 	}
 #ifdef CONFIG_AMLOGIC_USBPHYC2
-	if (controller_type == USB_DEVICE_ONLY || force_device_mode)
+	if (controller_type == USB_DEVICE_ONLY || get_otg_mode())
 		set_usb_phy_reg10(1);
 #endif
 
@@ -1196,7 +1181,7 @@ static int dwc_otg_driver_probe(struct platform_device *pdev)
 
 	pcore_para = &dwc_otg_module_params;
 
-	if (force_device_mode && (port_index == 0))
+	if (get_otg_mode() && port_index == 0)
 		port_type = USB_PORT_TYPE_SLAVE;
 
 	if (port_type == USB_PORT_TYPE_HOST)

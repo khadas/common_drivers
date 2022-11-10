@@ -116,4 +116,6 @@ static inline  int __init amlogic_bc_driver_init(void)
 }
 #endif
 
+int get_otg_mode(void);
+
 #endif

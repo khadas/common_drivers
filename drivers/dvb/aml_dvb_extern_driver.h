@@ -72,4 +72,6 @@ struct dvb_extern_device {
 	dev_t cfgdevno;
 };
 
+struct device *aml_get_dvb_extern_dev(void);
+
 #endif /* __AML_DVB_EXTERN_DRIVER_H__ */

@@ -286,26 +286,26 @@ static void ts_process(struct platform_device *pdev)
 
 int frontend_probe(struct platform_device *pdev)
 {
-#if (defined CONFIG_AMLOGIC_DVB_EXTERN ||\
-		defined CONFIG_AMLOGIC_DVB_EXTERN_MODULE)
-	int ret = 0;
-	struct aml_dvb *advb = aml_get_dvb_device();
-#endif
+//#if (defined CONFIG_AMLOGIC_DVB_EXTERN ||\
+//		defined CONFIG_AMLOGIC_DVB_EXTERN_MODULE)
+//	int ret = 0;
+//	struct dvb_adapter *padapter = aml_dvb_get_adapter();
+//#endif
 
 #ifdef CONFIG_OF
 	if (pdev->dev.of_node)
 		ts_process(pdev);
 #endif
 
-#if (defined CONFIG_AMLOGIC_DVB_EXTERN ||\
-		defined CONFIG_AMLOGIC_DVB_EXTERN_MODULE)
-	ret = dvb_extern_register_frontend(&advb->dvb_adapter);
-	if (ret) {
-		dprint_i("aml register dvb frontend failed.\n");
+//#if (defined CONFIG_AMLOGIC_DVB_EXTERN ||\
+//		defined CONFIG_AMLOGIC_DVB_EXTERN_MODULE)
+//	ret = dvb_extern_register_frontend(padapter);
+//	if (ret) {
+//		dprint_i("aml register dvb frontend failed.\n");
 
-		return ret;
-	}
-#endif
+//		return ret;
+//	}
+//#endif
 
 	return 0;
 }
@@ -336,10 +336,10 @@ void frontend_config_ts_sid(void)
 
 int frontend_remove(void)
 {
-#if (defined CONFIG_AMLOGIC_DVB_EXTERN ||\
-		defined CONFIG_AMLOGIC_DVB_EXTERN_MODULE)
-	dvb_extern_unregister_frontend();
-#endif
+//#if (defined CONFIG_AMLOGIC_DVB_EXTERN ||\
+//		defined CONFIG_AMLOGIC_DVB_EXTERN_MODULE)
+//	dvb_extern_unregister_frontend();
+//#endif
 
 	return 0;
 }

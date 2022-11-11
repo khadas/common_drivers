@@ -1204,6 +1204,11 @@ static const struct of_device_id aml_dvb_extern_dt_match[] = {
 	}
 };
 
+struct device *aml_get_dvb_extern_dev(void)
+{
+	return dvb_extern_dev->dev;
+}
+
 static int aml_dvb_extern_probe(struct platform_device *pdev)
 {
 	int ret = -1, i = 0;

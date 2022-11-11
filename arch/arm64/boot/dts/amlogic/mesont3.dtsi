@@ -3274,14 +3274,6 @@ dvb_p_ts2_pins: dvb_p_ts2_pins {
 		};
 	};
 
-	spicc1_cs_pins: spicc1_cs_pins {
-		mux {
-			groups = "spi_b_ss0_h";
-			function = "spi_b";
-			drive-strength-microamp = <2000>;
-		};
-	};
-
 	spicc2_pins: spicc2_pins {
 		mux {
 			groups = "spi_c_mosi",

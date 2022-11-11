@@ -78,7 +78,7 @@ TRACE_EVENT(tracing_mark_write,
 		  __get_str(name), __entry->value)
 );
 
-#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 void meson_atrace(int tag, const char *name, unsigned int flags,
 		  unsigned long value);
 

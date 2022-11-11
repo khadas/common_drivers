@@ -5779,7 +5779,7 @@ static struct regmap *sc2_regmap_resource(struct device *dev, char *name)
 	return devm_regmap_init_mmio(dev, base, &clkc_regmap_config);
 }
 
-static int __ref meson_sc2_probe(struct platform_device *pdev)
+static int meson_sc2_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct regmap *basic_map;

@@ -49,7 +49,7 @@
 #include "vframe_vicp_composer.h"
 
 #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_VIDEO_COMPOSER
-#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 #include <trace/events/meson_atrace.h>
 #endif
 

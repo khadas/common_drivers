@@ -15,7 +15,7 @@
 #include <linux/platform_device.h>
 #include <linux/amlogic/major.h>
 #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_IONVIDEO
-#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 #include <trace/events/meson_atrace.h>
 #endif
 #define IONVIDEO_MODULE_NAME "ionvideo"
@@ -376,7 +376,7 @@ static void ionvideo_thread_tick(struct ionvideo_dev *dev)
 	v4l2q_push(&dev->output_queue, buf);
 	dma_q->vb_ready++;
 	mutex_unlock(&dev->mutex_output);
-	#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+	#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 	ATRACE_COUNTER(dev->v4l2_dev.name, dma_q->vb_ready);
 	#endif
 	wake_up_interruptible(&dma_q->wq_poll);
@@ -409,11 +409,11 @@ static void ionvideo_sleep(struct ionvideo_dev *dev)
 			 (v4l2q_peek(&dev->input_queue)),
 			 msecs_to_jiffies(5));
 	}
-	#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+	#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 	ATRACE_BEGIN("ionvideo_thread_tick");
 	#endif
 	ionvideo_thread_tick(dev);
-	#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+	#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 	ATRACE_END();
 	#endif
 
@@ -764,7 +764,7 @@ static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 	if (out_put) {
 		dma_q->vb_ready--;
 		*p = *out_put;
-		#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+		#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 		ATRACE_COUNTER(dev->v4l2_dev.name, dma_q->vb_ready);
 		#endif
 	} else {

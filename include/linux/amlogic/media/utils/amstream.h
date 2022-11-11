@@ -10,7 +10,7 @@
 #include <linux/amlogic/media/utils/vformat.h>
 #include <linux/amlogic/media/utils/aformat.h>
 
-//#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+//#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 #include <trace/events/meson_atrace.h>
 //#endif
 
@@ -988,7 +988,7 @@ int get_sub_type(void);
 
 #endif				/**/
 
-//#ifndef CONFIG_AMLOGIC_DEBUG_ATRACE
+//#if !IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 //static inline void ATRACE_COUNTER(const char *name, int val) { return; }
 //#endif
 

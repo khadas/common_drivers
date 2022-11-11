@@ -1,6 +1,5 @@
 config AMLOGIC_DEBUG
 	tristate "AMLOGIC kernel debug"
-	depends on AMLOGIC_BREAK_GKI
 	default n
 	help
 	  This option is set up for Amlogic kernel debug,
@@ -8,14 +7,14 @@ config AMLOGIC_DEBUG
 	  prefix.If you want to add debug code to the kernel,please
 	  use this option switch it.
 
-config AMLOGIC_DEBUG_LOCKUP
-	bool "Amlogic Kernel ATrace"
+config AMLOGIC_BGKI_DEBUG_MISC
+	bool "Amlogic Debug Builtin Code"
 	depends on AMLOGIC_DEBUG
-	depends on TRACEPOINTS
+	depends on AMLOGIC_BREAK_GKI
 	default n
 	help
-	  Amlogic lockup code compatible with GKI mode,
-	  includes isr, sirq, smc, idle check
+	  Amlogic debug code must builtin
+	  Enable if doubt
 
 config AMLOGIC_DEBUG_ATRACE
 	bool "Amlogic Kernel ATrace"
@@ -41,10 +40,10 @@ config AMLOGIC_DEBUG_PRINTK
 	  if you want to print information such as cpu irq,
 	  please use this option switch it.
 
-config AMLOGIC_DEBUG_FTRACE_PSTORE
+config AMLOGIC_BGKI_DEBUG_IOTRACE
 	bool "Amlogic ftrace pstore debug"
-	depends on PSTORE_FTRACE
-	depends on AMLOGIC_DEBUG_LOCKUP
+	depends on AMLOGIC_BREAK_GKI
+	select PSTORE_FTRACE
 	default n
 	help
 	  Dump function call and register access to ramoops after watchdog
@@ -58,15 +57,15 @@ config AMLOGIC_DEBUG_FILE
 	  Provide some interfaces for dumping log to debug file
 
 config AMLOGIC_DEBUG_TEST
-	bool "Amlogic debug test on init"
-	depends on AMLOGIC_DEBUG_LOCKUP
+	tristate "Amlogic debug test on init"
+	depends on AMLOGIC_DEBUG
 	default n
 	help
 	  auto test on debug init
 
-config AMLOGIC_HARDLOCKUP_DETECTOR
+config AMLOGIC_DEBUG_HLD
 	bool "Amlogic hardlockup detector support"
-	depends on TRACEPOINTS
+	depends on AMLOGIC_DEBUG
 	default n
 	help
 	  if you want to hardlockup detector support,

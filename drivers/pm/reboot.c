@@ -26,6 +26,10 @@
 #include <linux/syscore_ops.h>
 #include <linux/cpu.h>
 
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
+#include <linux/amlogic/gki_module.h>
+#endif
+
 static void __iomem *reboot_reason_vaddr;
 static u32 psci_function_id_restart;
 static u32 psci_function_id_poweroff;
@@ -48,6 +52,50 @@ static struct reboot_reason_str reboot_reason_name[] = {
 		.name = "recovery quiescent reboot" },
 	[MESON_FFV_REBOOT] = { .name = "ffv reboot" },
 };
+
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
+static unsigned int scramble_reg;
+module_param(scramble_reg, uint, 0644);
+
+static int scramble_reg_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtouint(buf, 16, &scramble_reg)) {
+		pr_err("!scramble_reg error: %s, scramble_reg=%x\n", buf, scramble_reg);
+		return -EINVAL;
+	}
+
+	pr_info("scramble_reg=%x\n", scramble_reg);
+
+	return 0;
+}
+__setup("scramble_reg=", scramble_reg_setup);
+
+/*
+ * scramble_clear_preserve() will clear scramble_reg bit0,
+ * this will cause fresh ddr data after reboot
+ */
+static void scramble_clear_preserve(void)
+{
+	void __iomem *vaddr;
+	unsigned int val;
+
+	if (scramble_reg) {
+		vaddr = ioremap(scramble_reg, 4);
+		if (!vaddr)
+			return;
+
+		val = readl(vaddr);
+		val = val & (~0x1);
+		writel(val, vaddr);
+
+		iounmap(vaddr);
+		pr_info("clear STARTUP_KEY_PRESERVE bit0, no request to preserve REE Scramble Key\n");
+	}
+}
+#endif
 
 u32 get_reboot_reason(void)
 {
@@ -131,6 +179,11 @@ void meson_smc_restart(u64 function_id, u64 reboot_reason)
 void meson_common_restart(char mode, const char *cmd)
 {
 	u32 reboot_reason = parse_reason(cmd);
+
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
+	if (reboot_reason != MESON_KERNEL_PANIC)
+		scramble_clear_preserve();
+#endif
 
 	if (psci_function_id_restart)
 		meson_smc_restart((u64)psci_function_id_restart,

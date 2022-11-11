@@ -11,11 +11,11 @@ ccflags-y += -I$(srctree)/kernel/sched/
 ccflags-y += "-DGKI_CONFIG=\"$(srctree)/$(COMMON_DRIVERS_DIR)/arch/arm64/configs/amlogic_gki.fragment\""
 
 obj-$(CONFIG_AMLOGIC_DEBUG) = $(MODULE_NAME).o
-$(MODULE_NAME)-y = main.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_LOCKUP) += lockup.o cpu_mhz.o
+$(MODULE_NAME)-y = main.o lockup.o cpu_mhz.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_ATRACE) += atrace.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_FILE) += debug_file.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_GKI_CONFIG) += gki_config.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_HLD) += watchdog_hld.o
 ifeq ($(CONFIG_AMLOGIC_DEBUG_PRINTK),m)
 	$(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_PRINTK) += printk.o
 else
@@ -23,9 +23,11 @@ else
 endif
 
 # builtin
-obj-$(CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE) += ftrace_ramoops.o
-obj-$(CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR) += watchdog_hld.o
+obj-$(CONFIG_AMLOGIC_BGKI_DEBUG_MISC) += debug_misc.o
+obj-$(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE) += ftrace_ramoops.o
 
+# debug test ko
+obj-$(CONFIG_AMLOGIC_DEBUG_TEST) += debug_test.o
 
 
 AUDIO_UTILS_MODULE_NAME = amlogic-audio-utils

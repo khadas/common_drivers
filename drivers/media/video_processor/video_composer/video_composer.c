@@ -2853,7 +2853,7 @@ static void set_frames_info(struct composer_dev *dev,
 			if (dev->index == 0) {
 				drop_cnt = vf->omx_index + 1
 					    - dev->received_new_count;
-#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 				if (drop_cnt == 0)
 					ATRACE_COUNTER("video_composer_drop_cnt", 0);
 				if (drop_cnt != dev->last_drop_cnt) {
@@ -2891,7 +2891,7 @@ static void set_frames_info(struct composer_dev *dev,
 				 dev->cur_streamline_val,
 				 vf->index_disp,
 				 vf->pts_us64);
-#ifdef CONFIG_AMLOGIC_DEBUG_ATRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 			ATRACE_COUNTER("video_composer_sf_omx_index", vf->omx_index);
 			ATRACE_COUNTER("video_composer_sf_omx_index", 0);
 #endif

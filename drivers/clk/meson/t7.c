@@ -8208,7 +8208,7 @@ static int ignore_pll_init;
 module_param(ignore_pll_init, int, 0664);
 MODULE_PARM_DESC(ignore_pll_init, "ignore_pll_init");
 
-static int __ref meson_t7_probe(struct platform_device *pdev)
+static int meson_t7_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct regmap *basic_map;

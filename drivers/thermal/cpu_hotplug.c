@@ -189,7 +189,7 @@ static void set_hotplug_offline(unsigned int cluster)
 	}
 }
 
-static void __ref hotplug_work(struct work_struct *work)
+static void hotplug_work(struct work_struct *work)
 {
 	unsigned int cluster, flg;
 

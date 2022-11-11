@@ -15,7 +15,7 @@
  * more details.
  *
  */
-
+#include <linux/ftrace.h>
 #include <linux/kernel.h>
 #include <linux/compiler.h>
 #include <linux/irqflags.h>
@@ -23,7 +23,6 @@
 #include <linux/smp.h>
 #include <linux/atomic.h>
 #include <linux/types.h>
-#include <linux/ftrace.h>
 #include <linux/fs.h>
 #include <linux/debugfs.h>
 #include <linux/err.h>
@@ -40,6 +39,10 @@
 #include <linux/of.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
+#include <linux/module.h>
+#include <trace/hooks/gic_v3.h>
+
+#include "lockup.h"
 
 static DEFINE_PER_CPU(int, en);
 
@@ -482,7 +485,7 @@ void notrace __pstore_io_save(unsigned long reg, unsigned long val,
 		break;
 	default:
 		rec.ip = CALLER_ADDR0;
-		rec.parent_ip = parent;
+		rec.parent_ip = CALLER_ADDR1;
 		break;
 	}
 
@@ -665,3 +668,30 @@ void notrace pstore_ftrace_dump_old(struct persistent_ram_zone *prz)
 		rec++;
 	}
 }
+
+static struct delayed_work pstore_attach_work;
+
+static void pstore_attach_func(struct work_struct *work)
+{
+	unsigned long data[2];
+
+	data[0] = (unsigned long)__pstore_io_save;
+	data[1] = 0;
+
+	trace_android_rvh_gic_v3_set_affinity((void *)DEBUG_HOOK_MAGIC,
+					      (void *)DEBUG_HOOK_PSTORE_ATTACH,
+					      (void *)data,
+					      0, 0, 0, 0);
+
+	if (data[1] != 1)
+		schedule_delayed_work(&pstore_attach_work, HZ);
+}
+
+static int ftrace_ramoops_init(void)
+{
+	INIT_DELAYED_WORK(&pstore_attach_work, pstore_attach_func);
+
+	schedule_delayed_work(&pstore_attach_work, HZ);
+	return 0;
+}
+module_init(ftrace_ramoops_init);

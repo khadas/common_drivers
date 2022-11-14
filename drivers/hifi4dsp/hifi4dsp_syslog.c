@@ -34,7 +34,6 @@
 #include <linux/vmalloc.h>
 #include <linux/clk.h>
 #include <asm/cacheflush.h>
-#include <linux/amlogic/scpi_protocol.h>
 #include "hifi4dsp_priv.h"
 #include "hifi4dsp_dsp.h"
 #include "hifi4dsp_firmware.h"

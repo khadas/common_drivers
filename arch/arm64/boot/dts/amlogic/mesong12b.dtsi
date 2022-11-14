@@ -19,6 +19,7 @@
 #include <dt-bindings/thermal/thermal.h>
 #include <dt-bindings/reset/amlogic,meson-g12a-reset.h>
 #include <dt-bindings/input/meson_ir.h>
+#include <dt-bindings/mailbox/g12b-mbox.h>
 #include "meson-ir-map.dtsi"
 
 / {
@@ -297,22 +298,19 @@
 		storage_version = <0x8200006C>;
 	};
 
-	mailbox: mhu@c883c400 {
-		compatible = "amlogic, meson_mhu";
+	mbox_pl: mbox_pl@0xfffe7000 {
+		compatible = "amlogic, g12b-mbox-pl-old";
 		status = "okay";
-		reg = <0x0 0xff63c400 0x0 0x4c>,   /* MHU registers */
-		      <0x0 0xfffe7000 0x0 0x800>;   /* Payload area */
-		interrupts = <0 209 1>,   /* low priority interrupt */
-			     <0 210 1>,   /* bl4 receive interrupt */
-			     <0 213 1>;   /* bl4 send interrupt */
+		reg = <0x0 0xfffe7200 0x0 0x200>,   // aocpu tx low buf
+		      <0x0 0xfffe7000 0x0 0x200>,   // aocpu rx low buf
+		      <0x0 0xff63c434 0x0 0x4>,     // aocpu tx set low addr
+		      <0x0 0xff63c418 0x0 0x4>,     // aocpu rx clr low addr
+		      <0x0 0xff63c414 0x0 0x4>;     // aocpu rx sts low addr
+		interrupts = <GIC_SPI 209 IRQ_TYPE_EDGE_RISING>;   /* low mbox aocpu irq */
+		mbox-tx = "tx";
+		mbox-nums = <G12B_MBOX_AO_NUMS>;
+		mboxids = <G12B_MBOX_REE2AO>;
 		#mbox-cells = <1>;
-		mbox-names = "cpu_to_scp_low", "bl4_to_cpu", "cpu_to_bl4";
-		mboxes = <&mailbox 0 &mailbox 1 &mailbox 2>;
-		num-chans-to-scp = <1>;  /*number of chans to send m3*/
-		send-isr-bits = <5>;     /*BIT(idx) of isr listen when ap send*/
-		ack-isr-bits = <4>;      /*BIT(idx) of ack isr*/
-		m4-isr-bits = <6>;       /*BIT(idx) of m4 isr*/
-		mbox-chans = <3>;        /*chan number*/
 	};
 
 	cpu_iomap {
@@ -347,6 +345,7 @@
 	rtc{
 		compatible = "amlogic,meson-vrtc";
 		reg = <0x0 0xff8000a8 0x0 0x4>;
+		mboxes = <&mbox_pl G12B_REE2AO_VRTC>;
 		status = "okay";
 	};
 

@@ -296,8 +296,8 @@
 		compatible = "amlogic, wwe";
 		#sound-dai-cells = <0>;
 		channel_mask = <0x3>;
-		mboxes = <&mailbox_pl 1>,
-			 <&mailbox_pl 3>;
+		mboxes = <&mbox_pl A1_REE2DSPA_AUDIO>,
+			 <&mbox_pl A1_REE2DSPB_AUDIO>;
 		status = "disabled";
 	};
 

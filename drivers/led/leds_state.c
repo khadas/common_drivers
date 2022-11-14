@@ -12,8 +12,12 @@
 #include <linux/leds.h>
 #include <linux/string.h>
 #include <linux/delay.h>
-#include <linux/amlogic/scpi_protocol.h>
+#include <linux/mailbox_client.h>
+#include <linux/mailbox_controller.h>
+#include <linux/amlogic/aml_mbox.h>
 #include <linux/amlogic/leds_state.h>
+
+struct mbox_chan *led_mbox_chan;
 
 static ssize_t blink_off_store(struct device *dev,
 			   struct device_attribute *attr,
@@ -138,9 +142,10 @@ int meson_led_state_set_brightness(u32 led_id, u32 brightness)
 	data[2] = brightness;
 
 	for (count = 0; count < MESON_LEDS_SCPI_CNT; count++) {
-		ret = scpi_send_data((void *)data, sizeof(data), SCPI_AOCPU,
-				     SCPI_CMD_LEDS_STATE, NULL, 0);
-		if (ret == 0)
+		ret = aml_mbox_transfer_data(led_mbox_chan, MBOX_CMD_LEDS_STATE,
+					     (void *)data, sizeof(data),
+					     NULL, 0, MBOX_SYNC);
+		if (ret >= 0)
 			break;
 		mdelay(5);
 	}
@@ -171,9 +176,10 @@ int meson_led_state_set_breath(u32 led_id, u32 breath_id)
 	data[2] = breath_id;
 
 	for (count = 0; count < MESON_LEDS_SCPI_CNT; count++) {
-		ret = scpi_send_data((void *)data, sizeof(data), SCPI_AOCPU,
-				     SCPI_CMD_LEDS_STATE, NULL, 0);
-		if (ret == 0)
+		ret = aml_mbox_transfer_data(led_mbox_chan, MBOX_CMD_LEDS_STATE,
+					     (void *)data, sizeof(data),
+					     NULL, 0, MBOX_SYNC);
+		if (ret >= 0)
 			break;
 		mdelay(5);
 	}
@@ -216,10 +222,10 @@ int meson_led_state_set_blink_on(u32 led_id, u32 blink_times,
 	data[4] = blink_low;
 
 	for (count = 0; count < MESON_LEDS_SCPI_CNT; count++) {
-		ret = scpi_send_data((void *)data, sizeof(data),
-				     SCPI_AOCPU, SCPI_CMD_LEDS_STATE,
-				     NULL, 0);
-		if (ret == 0)
+		ret = aml_mbox_transfer_data(led_mbox_chan, MBOX_CMD_LEDS_STATE,
+					     (void *)data, sizeof(data),
+					     NULL, 0, MBOX_SYNC);
+		if (ret >= 0)
 			break;
 		mdelay(5);
 	}
@@ -261,9 +267,10 @@ int meson_led_state_set_blink_off(u32 led_id, u32 blink_times,
 	data[4] = blink_low;
 
 	for (count = 0; count < MESON_LEDS_SCPI_CNT; count++) {
-		ret = scpi_send_data((void *)data, sizeof(data), SCPI_AOCPU,
-				     SCPI_CMD_LEDS_STATE, NULL, 0);
-		if (ret == 0)
+		ret = aml_mbox_transfer_data(led_mbox_chan, MBOX_CMD_LEDS_STATE,
+					     (void *)data, sizeof(data),
+					     NULL, 0, MBOX_SYNC);
+		if (ret >= 0)
 			break;
 		mdelay(5);
 	}
@@ -317,6 +324,9 @@ static int meson_led_state_probe(struct platform_device *pdev)
 			data->cdev.name);
 		goto err;
 	}
+
+	/* mbox request channel */
+	led_mbox_chan = aml_mbox_request_channel_byidx(&pdev->dev, 0);
 
 	/*should after led_classdev_register,
 	 *the stateled dir should be created first

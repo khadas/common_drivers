@@ -44,7 +44,7 @@
 #include <linux/poll.h>
 #include <linux/amlogic/pm.h>
 #include <linux/amlogic/cpu_version.h>
-#include <linux/amlogic/scpi_protocol.h>
+#include <linux/amlogic/aml_mbox.h>
 #include <linux/amlogic/pm.h>
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
@@ -3011,8 +3011,9 @@ static void cec_get_wk_msg(void)
 	int i = 0;
 
 	memset(cec_dev->cec_wk_otp_msg, 0, sizeof(cec_dev->cec_wk_otp_msg));
-	scpi_get_cec_wk_msg(SCPI_CMD_GET_CEC_OTP_MSG,
-		 cec_dev->cec_wk_otp_msg);
+	aml_mbox_transfer_data(mbox_chan, MBOX_CMD_GET_CEC_OTP_MSG,
+				  NULL, 0, cec_dev->cec_wk_otp_msg,
+				  sizeof(cec_dev->cec_wk_otp_msg), MBOX_SYNC);
 	CEC_INFO("cec_wk_otp_msg len: %x\n", cec_dev->cec_wk_otp_msg[0]);
 	for (i = 0; i < cec_dev->cec_wk_otp_msg[0]; i++)
 		CEC_INFO("cec_wk_otp_msg[%d] %02x\n", i,
@@ -3026,8 +3027,9 @@ static void cec_get_wk_msg(void)
 	}
 
 	memset(cec_dev->cec_wk_as_msg, 0, sizeof(cec_dev->cec_wk_as_msg));
-	scpi_get_cec_wk_msg(SCPI_CMD_GET_CEC_AS_MSG,
-		 cec_dev->cec_wk_as_msg);
+	aml_mbox_transfer_data(mbox_chan, MBOX_CMD_GET_CEC_AS_MSG,
+				  NULL, 0, cec_dev->ec_wk_as_msg,
+				  sizeof(cec_dev->ec_wk_as_msg), MBOX_SYNC);
 	CEC_INFO("cec_wk_as_msg len: %x\n", cec_dev->cec_wk_as_msg[0]);
 	for (i = 0; i < cec_dev->cec_wk_as_msg[0]; i++)
 		CEC_INFO("cec_wk_as_msg[%d] %02x\n", i,

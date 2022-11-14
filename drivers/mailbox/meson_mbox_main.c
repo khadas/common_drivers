@@ -15,30 +15,31 @@
 #include <linux/of.h>
 #include <linux/ctype.h>
 #include <linux/kallsyms.h>
-#include "meson_mhu.h"
-#include "meson_mhu_pl.h"
-#include "meson_mhu_fifo.h"
-#include "meson_mhu_sec.h"
-#include "meson_mhu_user.h"
+#include "meson_mbox_fifo.h"
+#include "meson_mbox_pl.h"
+#include "meson_mbox_sec.h"
+#include "meson_mbox_devfs.h"
 
 static int __init mailbox_init(void)
 {
-	aml_mhu_init();
-	aml_mhu_pl_init();
-	aml_mhu_fifo_init();
-	aml_mhu_sec_init();
-	aml_mhu_user_init();
+	mbox_fifo_init();
+	mbox_pl_v0_init();
+	mbox_pl_v1_init();
+	mbox_pl_v2_init();
+	mbox_sec_init();
+	mbox_devfs_init();
 
 	return 0;
 }
 
 static void __exit mailbox_exit(void)
 {
-	aml_mhu_exit();
-	aml_mhu_pl_exit();
-	aml_mhu_fifo_exit();
-	aml_mhu_sec_exit();
-	aml_mhu_user_exit();
+	mbox_devfs_exit();
+	mbox_sec_exit();
+	mbox_pl_v2_exit();
+	mbox_pl_v1_exit();
+	mbox_pl_v0_exit();
+	mbox_fifo_exit();
 }
 
 module_init(mailbox_init);

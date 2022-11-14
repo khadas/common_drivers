@@ -8,7 +8,7 @@
 #include <dt-bindings/power/txhd2-pd.h>
 #include <dt-bindings/clock/txhd2-clkc.h>
 #include <dt-bindings/clock/txhd2-aoclkc.h>
-#include <dt-bindings/mailbox/amlogic,mbox.h>
+#include <dt-bindings/mailbox/txhd2-mbox.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/gpio/meson-txhd2-gpio.h>
 #include <dt-bindings/pwm/pwm.h>
@@ -342,30 +342,32 @@
 		#clock-cells = <0>;
 	};
 
-	mailbox_pl: mhu@ff63c420 {
+	mbox_pl: mbox_pl@ff63c420 {
 		status = "okay";
-		compatible = "amlogic, meson_mhu_pl";
-		reg = <0xff63c420 0x4>,   /*from ao sts registers */
-		      <0xff63c428 0x4>,   /*to ao set registers */
-		      <0xff63c430 0x4>,   /*to ao clr registers */
-		      <0xfffc7400 0x400>;   /*to ao payload */
-		interrupts = <0 211 1>,  /* ap Rev ao*/
-			     <0 136 1>;  /* ap Send ao*/
-		mbox-names = "ao_dev",
-			     "ap_to_ao";
+		compatible = "amlogic, txhd2-mbox-pl";
+		reg = <0xfffc7400 0x200>, /*ao rx buf */
+		      <0xff63c41C 0x4>,   /*ao rx set addr*/
+		      <0xff63c424 0x4>,   /*ao rx clr addr*/
+		      <0xff63c420 0x4>,   /*ao rx sts addr*/
+		      <0xfffc7600 0x200>, /*ao tx buf */
+		      <0xff63c428 0x4>,   /*ao tx set addr*/
+		      <0xff63c430 0x4>,   /*ao tx clr addr*/
+		      <0xff63c42C 0x4>;   /*ao tx sts addr*/
+		interrupts = <GIC_SPI 210 IRQ_TYPE_EDGE_RISING>,
+			     <GIC_SPI 136 IRQ_TYPE_EDGE_RISING>;
 		#mbox-cells = <1>;
-		mboxes = <&mailbox_pl 0>,
-			 <&mailbox_pl 1>;
-		mbox-nums = <2>;
-		mbox-mb = <1>;
+		mbox-tx = "rx", "tx";
+		mbox-nums = <TXHD2_MBOX_NUMS>;
+		mboxids = <TXHD2_MBOX_AO2REE>,
+			  <TXHD2_MBOX_REE2AO>;
 	};
 
-	mbox_user: mbox-user@0 {
+	mbox_devfs: mbox-devfs@0 {
 		status = "okay";
-		compatible = "amlogic, meson-mbox-user";
+		compatible = "amlogic, mbox-devfs";
 		mbox-nums = <1>;
 		mbox-names = "ree2aocpu";
-		mboxes = <&mailbox_pl 1>;
+		mboxes = <&mbox_pl TXHD2_REE2AO_DEV>;
 		mbox-dests = <MAILBOX_AOCPU>;
 	};
 
@@ -589,7 +591,7 @@
 		compatible = "amlogic,meson-vrtc";
 		reg = <0xff8000a8 0x4>;
 		status = "okay";
-		mboxes = <&mailbox_pl 1>;
+		mboxes = <&mbox_pl TXHD2_REE2AO_VRTC>;
 	};
 
 	vcodec_dec {
@@ -1562,6 +1564,7 @@
 			clock-names = "stmmaceth", "clkin0", "clkin1";
 			rx-fifo-depth = <4096>;
 			tx-fifo-depth = <2048>;
+			mboxes = <&mbox_pl TXHD2_REE2AO_ETH>;
 			status = "disabled";
 			analog_version = <1>;
 
@@ -1647,6 +1650,8 @@
 		       0xff646000 0x2000
 		       0xff634400 0x2000>;
 		reg-names = "ao","periphs","clock", "pad";
+		mbox-names = "mbox_cec";
+		mboxes = <&mbox_pl TXHD2_REE2AO_AOCEC>;
 	};
 
 	pinctrl_aobus: pinctrl@ff800014{

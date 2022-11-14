@@ -43,9 +43,11 @@
 #include <linux/pm.h>
 #include <linux/poll.h>
 #include <linux/compat.h>
+#include <linux/mailbox_client.h>
+#include <linux/mailbox_controller.h>
 #include <linux/amlogic/pm.h>
 #include <linux/amlogic/cpu_version.h>
-#include <linux/amlogic/scpi_protocol.h>
+#include <linux/amlogic/aml_mbox.h>
 #include <linux/amlogic/pm.h>
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
@@ -81,6 +83,7 @@ static bool pin_status;
 static void cec_store_msg_to_buff(unsigned char len, unsigned char *msg);
 static void cec_new_msg_push(void);
 static void cec_stored_msg_push(void);
+struct mbox_chan *cec_mbox_chan;
 
 #if (defined(CONFIG_AMLOGIC_HDMITX) || defined(CONFIG_AMLOGIC_HDMITX21))
 static int hdmitx_notify_callback(struct notifier_block *block,
@@ -2719,6 +2722,8 @@ static int aml_cec_probe(struct platform_device *pdev)
 		cec_dev->cec_log_en = 0;
 	}
 
+	cec_mbox_chan = aml_mbox_request_channel_byname(&pdev->dev, "mbox_cec");
+
 	cec_set_clk(&pdev->dev);
 	/* irq set */
 	cec_irq_enable(false);
@@ -3056,8 +3061,9 @@ static void cec_get_wk_msg(void)
 	int i = 0;
 
 	memset(cec_dev->cec_wk_otp_msg, 0, sizeof(cec_dev->cec_wk_otp_msg));
-	scpi_get_cec_wk_msg(SCPI_CMD_GET_CEC_OTP_MSG,
-		 cec_dev->cec_wk_otp_msg);
+	aml_mbox_transfer_data(cec_mbox_chan, MBOX_CMD_GET_CEC_OTP_MSG,
+				  NULL, 0, cec_dev->cec_wk_otp_msg,
+				  sizeof(cec_dev->cec_wk_otp_msg), MBOX_SYNC);
 	CEC_INFO("cec_wk_otp_msg len: %x\n", cec_dev->cec_wk_otp_msg[0]);
 	for (i = 0; i < cec_dev->cec_wk_otp_msg[0]; i++)
 		CEC_INFO("cec_wk_otp_msg[%d] %02x\n", i,
@@ -3071,8 +3077,9 @@ static void cec_get_wk_msg(void)
 	}
 
 	memset(cec_dev->cec_wk_as_msg, 0, sizeof(cec_dev->cec_wk_as_msg));
-	scpi_get_cec_wk_msg(SCPI_CMD_GET_CEC_AS_MSG,
-		 cec_dev->cec_wk_as_msg);
+	aml_mbox_transfer_data(cec_mbox_chan, MBOX_CMD_GET_CEC_AS_MSG,
+				  NULL, 0, cec_dev->cec_wk_as_msg,
+				  sizeof(cec_dev->cec_wk_as_msg), MBOX_SYNC);
 	CEC_INFO("cec_wk_as_msg len: %x\n", cec_dev->cec_wk_as_msg[0]);
 	for (i = 0; i < cec_dev->cec_wk_as_msg[0]; i++)
 		CEC_INFO("cec_wk_as_msg[%d] %02x\n", i,

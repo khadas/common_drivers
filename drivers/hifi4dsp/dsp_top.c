@@ -18,7 +18,7 @@
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
 #include <linux/arm-smccc.h>
-#include <linux/amlogic/scpi_protocol.h>
+#include <linux/amlogic/aml_mbox.h>
 #include <linux/amlogic/power_domain.h>
 #include <linux/pm_runtime.h>
 #include <linux/pm_domain.h>
@@ -93,6 +93,11 @@ static void start_dsp(u32 dsp_id, u32 reset_addr)
 	u32 tmp;
 	u32 read;
 	void __iomem *reg;
+	struct __packed {
+		u32 id;
+		u32 addr;
+		u32 cfg0;
+	} buf;
 
 	reg = get_dsp_addr(dsp_id);
 	StatVectorSel = (reset_addr != 0xfffa0000);
@@ -100,7 +105,12 @@ static void start_dsp(u32 dsp_id, u32 reset_addr)
 	tmp = 0x1 |  StatVectorSel << 1 | strobe << 2;
 	switch (hifi4dsp_p[dsp_id]->dsp->start_mode) {
 	case SCPI_START_MODE:
-		scpi_init_dsp_cfg0(dsp_id, reset_addr, tmp);
+		buf.id = dsp_id;
+		buf.addr = reset_addr;
+		buf.cfg0 = tmp;
+
+		aml_mbox_transfer_data(hifi4dsp_p[dsp_id]->dsp->init_mbox_chan, MBOX_CMD_INIT_DSP,
+				       &buf, sizeof(buf), NULL, 0, MBOX_ASYNC);
 		break;
 	case SMC_START_MODE:
 		init_dsp_psci_smc(dsp_id, reset_addr, tmp);

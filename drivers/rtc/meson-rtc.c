@@ -11,7 +11,6 @@
 #include <linux/time64.h>
 #include <linux/delay.h>
 #include <linux/amlogic/rtc.h>
-#include <linux/amlogic/scpi_protocol.h>
 #include <linux/clk.h>
 
 #define RTC_CALIBRATION

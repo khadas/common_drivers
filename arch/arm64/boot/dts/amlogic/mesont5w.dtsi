@@ -14,7 +14,7 @@
 #include <dt-bindings/clock/t5w-clkc.h>
 #include <dt-bindings/clock/t5w-aoclkc.h>
 #include <dt-bindings/power/t5-pd.h>
-#include <dt-bindings/mailbox/amlogic,mbox.h>
+#include <dt-bindings/mailbox/t5w-mbox.h>
 #include <dt-bindings/clock/amlogic,t3-audio-clk.h>
 #include "mesong12a-bifrost.dtsi"
 #include "meson-ir-map.dtsi"
@@ -199,7 +199,7 @@
 		compatible = "amlogic,meson-vrtc";
 		reg = <0x0 0xff8000a8 0x0 0x4>;
 		status = "okay";
-		mboxes = <&mbox_pl 1>;
+		mboxes = <&mbox_pl T5W_REE2AO_VRTC>;
 	};
 
 	reboot {
@@ -1243,32 +1243,34 @@
 			status = "okay";
 		};
 
-		mbox_pl: mhu@ff63c420 {
+		mbox_pl: mbox_pl@ff63c420 {
 			status = "okay";
-			compatible = "amlogic, meson_mhu_pl";
-			reg = <0x0 0xff63c420 0x0 0x4>,   /*from ao sts registers */
-			      <0x0 0xff63c428 0x0 0x4>,   /*to ao set registers */
-			      <0x0 0xff63c430 0x0 0x4>,   /*to ao clr registers */
-			      <0x0 0xfffc7400 0x0 0x400>;   /*to ao payload */
-			interrupts = <0 210 1>,  /* ap Rev se*/
-				     <0 136 1>;  /* ap Send se*/
-			mbox-names = "ao_dev",
-				     "ap_to_ao";
+			compatible = "amlogic, t5w-mbox-pl";
+			reg = <0x0 0xfffc7400 0x0 0x200>, /*ao rx buf */
+			      <0x0 0xff63c41C 0x0 0x4>,   /*ao rx set addr*/
+			      <0x0 0xff63c424 0x0 0x4>,   /*ao rx clr addr*/
+			      <0x0 0xff63c420 0x0 0x4>,   /*ao rx sts addr*/
+			      <0x0 0xfffc7600 0x0 0x200>, /*ao tx buf */
+			      <0x0 0xff63c428 0x0 0x4>,   /*ao tx set addr*/
+			      <0x0 0xff63c430 0x0 0x4>,   /*ao tx clr addr*/
+			      <0x0 0xff63c42C 0x0 0x4>;   /*ao tx sts addr*/
+			interrupts = <GIC_SPI 210 IRQ_TYPE_EDGE_RISING>,
+				     <GIC_SPI 136 IRQ_TYPE_EDGE_RISING>;
 			#mbox-cells = <1>;
-			mboxes = <&mbox_pl 0>,
-				 <&mbox_pl 1>;
-			mbox-nums = <2>;
-			mbox-mb = <1>;
+			mbox-tx = "rx", "tx";
+			mbox-nums = <T5W_MBOX_NUMS>;
+			mboxids = <T5W_MBOX_AO2REE>,
+				  <T5W_MBOX_REE2AO>;
 		};
 
-		mbox_user: mbox-user@0 {
+		mbox_devfs: mbox-devfs@0 {
 			status = "okay";
-			compatible = "amlogic, meson-mbox-user";
+			compatible = "amlogic, mbox-devfs";
 			mbox-nums = <1>;
 			mbox-names = "ree2aocpu";
-			mboxes = <&mbox_pl 1>;
+			mboxes = <&mbox_pl T5W_REE2AO_DEV>;
 			mbox-dests = <MAILBOX_AOCPU>;
-		};
+	};
 
 		jtag {
 			compatible = "amlogic, jtag";
@@ -1857,6 +1859,7 @@
 			clock-names = "stmmaceth", "clkin0", "clkin1";
 			rx-fifo-depth = <4096>;
 			tx-fifo-depth = <2048>;
+			mboxes = <&mbox_pl T5W_REE2AO_ETH>;
 			status = "disabled";
 
 			mdio0: mdio {
@@ -1894,6 +1897,8 @@
 			reg = <0x0 0xFF800000 0x0 0x400
 			       0x0 0xFF634400 0x0 0x400>;
 			reg-names = "ao", "pad_reg";
+			mbox-names = "mbox_cec";
+			mboxes = <&mbox_pl T5W_REE2AO_AOCEC>;
 		};
 
 		ionvideo {

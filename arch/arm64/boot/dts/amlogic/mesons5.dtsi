@@ -15,7 +15,7 @@
 #include <dt-bindings/pwm/meson.h>
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/meson_ir.h>
-#include <dt-bindings/mailbox/amlogic,mbox.h>
+#include <dt-bindings/mailbox/s5-mbox.h>
 #include "meson-ir-map.dtsi"
 #include "meson-valhall.dtsi"
 //#include <dt-bindings/memory/meson-p1-sid-map.h>
@@ -356,7 +356,7 @@
 		compatible = "amlogic,meson-vrtc";
 		reg = <0x0 0xfe010288 0x0 0x4>;
 		status = "okay";
-		mboxes = <&mhu_fifo S5_REE2AO>;
+		mboxes = <&mbox_fifo S5_REE2AO_VRTC>;
 	};
 
 	pwrdm: power-domains {
@@ -1641,6 +1641,7 @@
 			/*1:inphy; 2:exphy;*/
 			internal_phy = <2>;
 			cali_val = <0xC0000>;
+			mboxes = <&mbox_fifo S5_REE2AO_ETH>;
 			status = "disabled";
 
 			ext_mdio: mdio {
@@ -2123,6 +2124,8 @@
 		       0x0 0xfe000000 0x0 0x2000
 		       0x0 0xfe004000 0x0 0x2000>;
 		reg-names = "ao","periphs","clock","pad_reg";
+		mbox-names = "mbox_cec";
+		mboxes = <&mbox_fifo S5_REE2AO_AOCEC>;
 	};
 
 	aml_dma {
@@ -2913,34 +2916,31 @@
 		//		<&pwrdm PDID_P1_DEWC>;
 	};
 
-	mhu_fifo: mhu@0 {
+	mbox_fifo: mbox_fifo@0xfe006000 {
 		status = "okay";
-		compatible = "amlogic, meson_mhu_fifo";
-		reg = <0x0 0xfe006000 0x0 0x1000>,  /* mhu wr fifo */
-		      <0x0 0xfe00719C 0x0 0x80>,   /* mhu set reg */
-		      <0x0 0xfe00721C 0x0 0x80>,   /* mhu clr reg */
-		      <0x0 0xfe00729C 0x0 0x80>,   /* mhu sts reg */
-		      <0x0 0xfe007044 0x0 0xc0>;   /* mhu irqctrl reg */
-		interrupts = <0 248 1>;   /* irq top */
+		compatible = "amlogic, s5-mbox-fifo";
+		reg = <0x0 0xfe006000 0x0 0x1000>,  /* mbox wr fifo */
+		      <0x0 0xfe00719c 0x0 0x80>,    /* mbox set reg */
+		      <0x0 0xfe00721c 0x0 0x80>,    /* mbox clr reg */
+		      <0x0 0xfe00729c 0x0 0x80>,    /* mbox sts reg */
+		      <0x0 0xfe007044 0x0 0xc0>;    /* mbox irqctrl reg */
+		interrupts = <GIC_SPI 248 IRQ_TYPE_EDGE_RISING>;   /* mbox top irq */
 		mbox-irqmax = <64>;
-		mbox-irqctlr = <2>;
-		mbox-irqclr = <1>;
-		mbox-nums = <2>;
-		mbox-names = "ao_to_ap",
-			     "ap_to_ao";
-		mboxes = <&mhu_fifo S5_AO2REE>,
-			 <&mhu_fifo S5_REE2AO>;
-		mbox-id = <0x2 0x3>;
-		mbox-wr-rd = <1>;
+		mbox-irqctlr = <0x18>;
+		mbox-irqclr = <0xA>;
+		mbox-nums = <S5_MBOX_NUMS>;
+		mboxids = <S5_MBOX_AO2REE>,
+			  <S5_MBOX_REE2AO>;
 		#mbox-cells = <1>;
+		mbox-wr-same;
 	};
 
-	mbox_user: mbox-user@0 {
+	mbox_devfs {
 		status = "okay";
-		compatible = "amlogic, meson-mbox-user";
+		compatible = "amlogic, mbox-devfs";
 		mbox-nums = <1>;
 		mbox-names = "ree2aocpu";
-		mboxes = <&mhu_fifo S5_REE2AO>;
+		mboxes = <&mbox_fifo S5_REE2AO_DEV>;
 		mbox-dests = <MAILBOX_AOCPU>;
 	};
 
@@ -2958,6 +2958,7 @@
 
 	state_led:state_led {
 		compatible = "amlogic,state-led-aocpu";
+		mboxes = <&mbox_fifo S5_REE2AO_LED>;
 		status = "disabled";
 	};
 	efuse: efuse{

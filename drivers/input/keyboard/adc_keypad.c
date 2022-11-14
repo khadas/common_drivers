@@ -16,7 +16,9 @@
 #include <linux/string.h>
 #include <linux/of.h>
 #include <linux/iio/consumer.h>
-#include <linux/amlogic/scpi_protocol.h>
+#include <linux/mailbox_controller.h>
+#include <linux/mailbox_client.h>
+#include <linux/amlogic/aml_mbox.h>
 #ifdef CONFIG_AMLOGIC_GX_SUSPEND
 #include <linux/amlogic/pm.h>
 #endif
@@ -29,6 +31,7 @@
 static char adc_key_mode_name[MAX_NAME_LEN] = "abcdef";
 static char kernelkey_en_name[MAX_NAME_LEN] = "abcdef";
 static bool keypad_enable_flag = true;
+struct mbox_chan *adc_mbox_chan;
 
 static int meson_adc_kp_search_key(struct meson_adc_kp *kp)
 {
@@ -96,20 +99,23 @@ static void meson_adc_kp_poll(struct work_struct *pwork)
 			   msecs_to_jiffies(kp->poll_period));
 }
 
-static void send_data_to_bl301(void)
+static void send_data_to_bl301(struct mbox_chan *adc_mbox_chan)
 {
 	u32 val;
+	struct __packed {
+		u32 status;
+		u32 val1;
+	} buf;
 
 	if (!strcmp(adc_key_mode_name, "POWER_WAKEUP_POWER")) {
 		val = 0;  /*only power key resume*/
-		scpi_send_usr_data(SCPI_CL_POWER, &val, sizeof(val));
 	} else if (!strcmp(adc_key_mode_name, "POWER_WAKEUP_ANY")) {
 		val = 1; /*any key resume*/
-		scpi_send_usr_data(SCPI_CL_POWER, &val, sizeof(val));
 	} else if (!strcmp(adc_key_mode_name, "POWER_WAKEUP_NONE")) {
 		val = 2; /*no key can resume*/
-		scpi_send_usr_data(SCPI_CL_POWER, &val, sizeof(val));
 	}
+	aml_mbox_transfer_data(adc_mbox_chan, MBOX_CMD_SET_USR_DATA,
+			       &val, sizeof(val), &buf, sizeof(buf), MBOX_SYNC);
 }
 
 static void kernel_keypad_enable_mode_enable(void)
@@ -487,12 +493,16 @@ static int meson_adc_kp_probe(struct platform_device *pdev)
 	struct meson_adc_kp *kp;
 	int ret = 0;
 
-	send_data_to_bl301();
+	adc_mbox_chan = aml_mbox_request_channel_byidx(&pdev->dev, 0);
+	send_data_to_bl301(adc_mbox_chan);
 	kernel_keypad_enable_mode_enable();
 
 	kp = kzalloc(sizeof(*kp), GFP_KERNEL);
-	if (!kp)
+	if (!kp) {
+		if (!IS_ERR_OR_NULL(adc_mbox_chan))
+			mbox_free_channel(adc_mbox_chan);
 		return -ENOMEM;
+	}
 
 	platform_set_drvdata(pdev, kp);
 	mutex_init(&kp->kp_lock);
@@ -561,6 +571,8 @@ err2:
 err1:
 	input_free_device(kp->input);
 err:
+	if (!IS_ERR_OR_NULL(adc_mbox_chan))
+		mbox_free_channel(adc_mbox_chan);
 	meson_adc_kp_list_free(kp);
 	kfree(kp);
 
@@ -592,6 +604,7 @@ static int meson_adc_kp_resume(struct platform_device *pdev)
 {
 	struct adc_key *key;
 	struct meson_adc_kp *kp = platform_get_drvdata(pdev);
+	int val = 0;
 
 	if (get_resume_method() == POWER_KEY_WAKEUP) {
 		list_for_each_entry(key, &kp->adckey_head, list) {
@@ -603,10 +616,10 @@ static int meson_adc_kp_resume(struct platform_device *pdev)
 				input_report_key(kp->input, KEY_POWER, 0);
 				input_sync(kp->input);
 
-				if (scpi_clr_wakeup_reason())
+				aml_mbox_transfer_data(adc_mbox_chan, MBOX_CMD_WAKEUP_REASON_CLR,
+						       NULL, 0, &val, sizeof(val), MBOX_SYNC);
+				if (val)
 					pr_debug("clr adc wakeup reason fail.\n");
-
-				break;
 			}
 		}
 	}

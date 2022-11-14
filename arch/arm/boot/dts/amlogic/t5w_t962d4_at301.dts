@@ -422,6 +422,7 @@
 		key_code = <116 114 115 28 139 466 174>;
 		key_val = <0 143 266 389 507 143 266>; //val=voltage/1800mV*1023
 		key_tolerance = <40 40 40 40 40 40 40>;
+		mboxes = <&mbox_pl T5W_REE2AO_KEYPAD>;
 	};
 
 	/* Audio Related start */

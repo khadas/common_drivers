@@ -286,8 +286,8 @@
 	audiobridge {
 		compatible = "amlogic, audio-bridge";
 		status = "disabled";
-		mboxes = <&mailbox_pl 1>,
-			 <&mailbox_pl 3>;
+		mboxes = <&mbox_pl A1_REE2DSPA_AUDIO>,
+			 <&mbox_pl A1_REE2DSPB_AUDIO>;
 		#mbox-cells = <1>;
 		aml-audio-line,link@0 {
 			auto-running = <1>;

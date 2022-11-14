@@ -37,8 +37,9 @@
 #include <asm/cacheflush.h>
 #include <linux/pm_runtime.h>
 #include <linux/pm_domain.h>
-#include <linux/amlogic/scpi_protocol.h>
 #include <linux/dma-map-ops.h>
+#include <linux/mailbox_client.h>
+#include <linux/amlogic/aml_mbox.h>
 
 #include "hifi4dsp_api.h"
 #include "hifi4dsp_priv.h"
@@ -711,8 +712,10 @@ static int hifi4dsp_driver_dsp_start(struct hifi4dsp_dsp *dsp)
 	rb = kzalloc(sizeof(*rb), GFP_KERNEL);
 	if (!rb)
 		goto out;
-	scpi_send_data(requestinfo, sizeof(requestinfo), dsp->id ? SCPI_DSPB : SCPI_DSPA,
-		SCPI_CMD_HIFI5_SYSLOG_START, rb, sizeof(*rb));
+	aml_mbox_transfer_data(dsp->mbox_chan, MBOX_CMD_HIFI5_SYSLOG_START,
+			       requestinfo, sizeof(requestinfo),
+			       rb, sizeof(*rb), MBOX_SYNC);
+
 	if (rb->magic == DSP_LOGBUFF_MAGIC) {
 #ifdef CONFIG_ARM64
 		if (pfn_is_map_memory(__phys_to_pfn(rb->basepaddr)))
@@ -760,8 +763,9 @@ static int hifi4dsp_driver_dsp_stop(struct hifi4dsp_dsp *dsp)
 		goto out;
 
 	if (hifi4dsp_p[dsp->id]->dsp->status_reg && !dsp->dsphang) {
-		scpi_send_data(message, sizeof(message), dsp->id ? SCPI_DSPB : SCPI_DSPA,
-			SCPI_CMD_HIFI4STOP, NULL, 0);
+		aml_mbox_transfer_data(dsp->mbox_chan, MBOX_CMD_HIFI4STOP,
+				       message, sizeof(message),
+				       NULL, 0, MBOX_SYNC);
 		msleep(50);
 	}
 	clear_bit(dsp->id, &dsp_online);
@@ -1325,14 +1329,9 @@ static int hifi4dsp_driver_dsp_suspend(struct hifi4dsp_dsp *dsp)
 
 	strcpy(message, "SCPI_CMD_HIFI4SUSPEND");
 
-	if (!dsp->id)
-		scpi_send_data(message, sizeof(message),
-				  SCPI_DSPA, SCPI_CMD_HIFI4SUSPEND,
-				  message, sizeof(message));
-	else
-		scpi_send_data(message, sizeof(message),
-				  SCPI_DSPB, SCPI_CMD_HIFI4SUSPEND,
-				  message, sizeof(message));
+	aml_mbox_transfer_data(dsp->mbox_chan, MBOX_CMD_HIFI4SUSPEND,
+			       message, sizeof(message),
+			       message, sizeof(message), MBOX_SYNC);
 	hifi4dsp_clk_to_24M(dsp);
 
 	return 0;
@@ -1347,14 +1346,9 @@ static int hifi4dsp_driver_dsp_resume(struct hifi4dsp_dsp *dsp)
 
 	strcpy(message, "SCPI_CMD_HIFI4RESUME");
 
-	if (!dsp->id)
-		scpi_send_data(message, sizeof(message),
-				  SCPI_DSPA, SCPI_CMD_HIFI4RESUME,
-				  message, sizeof(message));
-	else
-		scpi_send_data(message, sizeof(message),
-				  SCPI_DSPB, SCPI_CMD_HIFI4RESUME,
-				  message, sizeof(message));
+	aml_mbox_transfer_data(dsp->mbox_chan, MBOX_CMD_HIFI4RESUME,
+				   message, sizeof(message),
+				   message, sizeof(message), MBOX_SYNC);
 	return 0;
 }
 
@@ -1438,9 +1432,9 @@ static ssize_t suspend_store(struct device *dev,
 	if (!dsp || !dsp->suspend_resume_support)
 		return 0;
 
-	scpi_send_data(message, sizeof(message),
-				  dspid ? SCPI_DSPB : SCPI_DSPA, SCPI_CMD_HIFI4SUSPEND,
-				  message, sizeof(message));
+	aml_mbox_transfer_data(dsp->mbox_chan, MBOX_CMD_HIFI4SUSPEND,
+			       message, sizeof(message),
+			       message, sizeof(message), MBOX_SYNC);
 	hifi4dsp_clk_to_24M(dsp);
 
 	return size;
@@ -1471,9 +1465,9 @@ static ssize_t resume_store(struct device *dev,
 		return 0;
 
 	hifi4dsp_clk_to_normal(dsp);
-	scpi_send_data(message, sizeof(message),
-				  dspid ? SCPI_DSPB : SCPI_DSPA, SCPI_CMD_HIFI4RESUME,
-				  message, sizeof(message));
+	aml_mbox_transfer_data(dsp->mbox_chan, MBOX_CMD_HIFI4RESUME,
+			       message, sizeof(message),
+			       message, sizeof(message), MBOX_SYNC);
 
 	return size;
 }
@@ -1520,6 +1514,8 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 	struct hifi4dsp_info_t *hifi_info = NULL;
 	unsigned int dsp_freqs[2];
 	unsigned int bootlocation[2];
+
+	struct mbox_chan *mbox_chan;
 
 	np = pdev->dev.of_node;
 
@@ -1654,6 +1650,7 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 	else
 		pr_debug("\ndsp_clk_freqs not configed in dtsi.");
 
+	mbox_chan = aml_mbox_request_channel_byname(&pdev->dev, "init_dsp");
 	mutex_init(&hifi4dsp_flock);
 
 	for (i = 0; i < dsp_cnt; i++) {
@@ -1754,6 +1751,12 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 		dsp->sram_remap_addr[0] = sram_remap_addr[2 * id];
 		dsp->sram_remap_addr[1] = sram_remap_addr[2 * id + 1];
 		dsp->suspend_resume_support = pm_support[id];
+
+		/* mbox channel request */
+		dsp->mbox_chan = aml_mbox_request_channel_byidx(&pdev->dev, id);
+		if (!IS_ERR_OR_NULL(mbox_chan))
+			dsp->init_mbox_chan = mbox_chan;
+
 		priv->dsp = dsp;
 		hifi4dsp_p[i] = priv;
 

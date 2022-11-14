@@ -937,6 +937,7 @@
 		key_code = <141 114 115>;
 		key_val = <900 511 0>; //val=voltage/1800mV*1023
 		key_tolerance = <40 40 40>;
+		mboxes = <&mbox_fifo S5_REE2AO_KEYPAD>;
 	};
 
 	vddnpu: pwm_ef-regulator {

@@ -17,6 +17,8 @@
 #include <dt-bindings/input/meson_ir.h>
 #include "meson-ir-map.dtsi"
 #include "mesong12a-bifrost.dtsi"
+#include <dt-bindings/mailbox/t7-mbox.h>
+
 / {
 	cpus:cpus {
 		#address-cells = <2>;
@@ -362,7 +364,7 @@
 		compatible = "amlogic,meson-vrtc";
 		reg = <0x0 0xfe010288 0x0 0x4>;
 		status = "okay";
-		mboxes = <&mhu_fifo 5>;
+		mboxes = <&mbox_fifo T7_REE2AO_VRTC>;
 	};
 
 	pwrdm: power-domains {
@@ -515,6 +517,8 @@
 		power-domain-names = "dspa", "dspb";
 		//dsp_logbuff = <0x40000000 0x1000 0x40002000 0x1000>;
 		logbuff-polling-period-ms = <50>;
+		mboxes = <&mbox_fifo T7_REE2DSPA_DSP>,
+			 <&mbox_fifo T7_REE2DSPB_DSP>;
 		status = "okay";
 	};
 
@@ -2142,6 +2146,7 @@
 			tx-fifo-depth = <2048>;
 			/*1:inphy; 2:exphy;*/
 			internal_phy = <1>;
+			mboxes = <&mbox_fifo T7_REE2AO_ETH>;
 			status = "disabled";
 
 			mdio0: mdio {
@@ -2601,6 +2606,8 @@
 		       0x0 0xfe000000 0x0 0xfff
 		       0x0 0xfe004000 0x0 0x2000>;
 		reg-names = "ao","periphs","clock","pad_reg";
+		mbox-names = "mbox_cec";
+		mboxes = <&mbox_fifo T7_REE2AO_AOCEC>;
 	};
 
 	aml_dma {
@@ -3394,33 +3401,48 @@
 		power-domains = <&pwrdm PDID_T7_DEWARP>;
 	};
 
-	mhu_fifo: mhu@0 {
+	mbox_fifo: mbox_fifo@0xfe006000 {
 		status = "okay";
-		compatible = "amlogic, meson_mhu_fifo";
-		reg = <0x0 0xfe006000 0x0 0x1000>,  /* mhu wr fifo */
-		      <0x0 0xfe007180 0x0 0x80>,   /* mhu set reg */
-		      <0x0 0xfe007200 0x0 0x80>,   /* mhu clr reg */
-		      <0x0 0xfe007280 0x0 0x80>,   /* mhu sts reg */
-		      <0x0 0xfe007040 0x0 0xc0>;   /* mhu irqctrl reg */
-		interrupts = <0 248 1>;   /* irq top */
-		mbox-irqmax = <64>;
-		mbox-irqctlr = <0>;
-		mbox-nums = <6>;
-		mbox-names = "dsp_dev",
-			     "ap_to_dspa",
-			     "dspb_dev",
-			     "ap_to_dspb",
-			     "ao_dev",
-			     "ap_to_ao";
-		mboxes = <&mhu_fifo 0>,
-			 <&mhu_fifo 1>,
-			 <&mhu_fifo 2>,
-			 <&mhu_fifo 3>,
-			 <&mhu_fifo 4>,
-			 <&mhu_fifo 5>;
-		mbox-id = <0x0 0x1 0x6 0x7 0x2 0x3>;
-		mbox-wr-rd = <1>;
+		compatible = "amlogic, t7-mbox-fifo";
+		reg = <0x0 0xfe006000 0x0 0x1000>, /* mbox wr fifo */
+		      <0x0 0xfe007180 0x0 0x80>,   /* mbox set reg */
+		      <0x0 0xfe007200 0x0 0x80>,   /* mbox clr reg */
+		      <0x0 0xfe007280 0x0 0x80>,   /* mbox sts reg */
+		      <0x0 0xfe007040 0x0 0xc0>;   /* mbox irqctrl reg */
+		interrupts = <GIC_SPI 248 IRQ_TYPE_EDGE_RISING>;   /* mbox top irq */
+		mbox-irqnums = <64>;
+		mbox-irqctlr = <0x14>;
+		mbox-irqclr = <0x8>;
+		mbox-nums = <T7_MBOX_NUMS>;
+		mboxids = <T7_MBOX_DSPA2REE>,
+			  <T7_MBOX_REE2DSPA>,
+			  <T7_MBOX_AO2REE>,
+			  <T7_MBOX_REE2AO>,
+			  <T7_MBOX_DSPB2REE>,
+			  <T7_MBOX_REE2DSPB>;
 		#mbox-cells = <1>;
+		mbox-wr-same;
+	};
+
+	mbox_devfs {
+		status = "okay";
+		compatible = "amlogic, mbox-devfs";
+		mbox-nums = <5>;
+		mbox-names = "ree2aocpu",
+			     "dsp_dev",
+			     "dspa2ree",
+			     "dspb_dev",
+			     "dspb2ree";
+		mboxes = <&mbox_fifo T7_REE2AO_DEV>,
+			 <&mbox_fifo T7_REE2DSPA_DEV>,
+			 <&mbox_fifo T7_DSPA2REE_DEV>,
+			 <&mbox_fifo T7_REE2DSPB_DEV>,
+			 <&mbox_fifo T7_DSPB2REE_DEV>;
+		mbox-dests = <MAILBOX_AOCPU>,
+			     <MAILBOX_DSP>,
+			     <MAILBOX_DSP>,
+			     <MAILBOX_DSP>,
+			     <MAILBOX_DSP>;
 	};
 
 	lut_dma:lut_dma {
@@ -3430,6 +3452,7 @@
 
 	state_led:state_led {
 		compatible = "amlogic,state-led-aocpu";
+		mboxes = <&mbox_fifo T7_REE2AO_LED>;
 		status = "disabled";
 	};
 	efuse: efuse{

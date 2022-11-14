@@ -520,6 +520,7 @@
 		/* key_val = voltage / 1800mV * 1023 */
 		key_val = <0 143 266 389>;
 		key_tolerance = <40 40 40 40>;
+		mboxes = <&mbox_pl TXHD2_REE2AO_KEYPAD>;
 	};
 
 	atv-demod {

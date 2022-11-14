@@ -8,11 +8,10 @@
 
 #include <linux/cdev.h>
 #include <linux/mailbox_controller.h>
-#include <linux/amlogic/meson_mhu_common.h>
 
 #define MBOX_SEC_SIZE		0x80
 /* u64 compete*/
 #define MBOX_COMPETE_LEN	8
-int __init aml_mhu_sec_init(void);
-void __exit aml_mhu_sec_exit(void);
+int __init mbox_sec_init(void);
+void __exit mbox_sec_exit(void);
 #endif

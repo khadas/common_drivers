@@ -12,7 +12,10 @@
 #include <linux/time64.h>
 
 #ifdef CONFIG_AMLOGIC_MODIFY
-#include <linux/amlogic/scpi_protocol.h>
+#include <linux/mailbox_controller.h>
+#include <linux/amlogic/aml_mbox.h>
+#include <linux/mailbox_client.h>
+#include <linux/delay.h>
 /*
  * Seconds sinc epoch time
  */
@@ -29,6 +32,7 @@ struct meson_vrtc_data {
 	bool find_mboxes;
 	/* boot time when suspend */
 	struct timespec64 sus_time;
+	struct mbox_chan *mbox_chan;
 #else
 	unsigned long alarm_time;
 #endif
@@ -213,22 +217,20 @@ static int meson_vrtc_probe(struct platform_device *pdev)
 	vrtc->rtc->ops = &meson_vrtc_ops;
 
 #ifdef CONFIG_AMLOGIC_MODIFY
-	vrtc->find_mboxes = false;
-	if (of_find_property(pdev->dev.of_node, "mboxes", NULL))
-		vrtc->find_mboxes = true;
-	if (vrtc->find_mboxes) {
-		if (mbox_message_send_ao_sync(&pdev->dev, SCPI_CMD_GET_RTC,
-				NULL, 0, &vrtc_val, sizeof(vrtc_val), 0) < 0) {
-			vrtc_init_date = 0;
-		} else {
-			vrtc_init_date = vrtc_val;
-		}
+
+	vrtc->mbox_chan = aml_mbox_request_channel_byidx(&pdev->dev, 0);
+	if (IS_ERR_OR_NULL(vrtc->mbox_chan)) {
+		vrtc_val = 0;
 	} else {
-		if (scpi_get_vrtc(&vrtc_val) == 0)
-			vrtc_init_date = vrtc_val;
-		else
-			vrtc_init_date = 0;
+		ret = aml_mbox_transfer_data(vrtc->mbox_chan, MBOX_CMD_GET_RTC,
+				       NULL, 0, &vrtc_val, sizeof(vrtc_val),
+				       MBOX_SYNC);
+		if (ret < 0) {
+			vrtc_val = 0;
+			dev_err(&pdev->dev, "Fail to send mbox message\n");
+		}
 	}
+	vrtc_init_date = vrtc_val;
 
 	timer_setup(&vrtc->alarm, meson_vrtc_alarm_handler, 0);
 	vrtc->alarm.expires = 0;
@@ -307,13 +309,9 @@ static void meson_vrtc_shutdown(struct platform_device *pdev)
 	struct meson_vrtc_data *vrtc = dev_get_drvdata(&pdev->dev);
 
 	ktime_get_real_ts64(&now);
-	if (vrtc->find_mboxes) {
-		mbox_message_send_ao_sync(&pdev->dev, SCPI_CMD_SET_RTC,
-				&now.tv_sec, sizeof(now.tv_sec), NULL, 0, 0);
-	} else {
-		scpi_set_vrtc(now.tv_sec);
-	}
-
+	aml_mbox_transfer_data(vrtc->mbox_chan, MBOX_CMD_SET_RTC,
+			       &now.tv_sec, sizeof(now.tv_sec),
+			       NULL, 0, MBOX_SYNC);
 	vrtc->alarm_time = vrtc->alarm_time
 			   - div64_u64(jiffies - last_jiffies, HZ);
 	if (vrtc->alarm_time > 0) {

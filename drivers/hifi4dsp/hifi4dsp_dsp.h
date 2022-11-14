@@ -154,6 +154,8 @@ struct hifi4dsp_dsp {
 	u32 sram_remap_addr[2];
 	struct dsp_ring_buffer *logbuff;
 	struct dentry *debug_dir;
+	struct mbox_chan *mbox_chan;  /* dsp mbox chan */
+	struct mbox_chan *init_mbox_chan; /* aocpu mbox chan*/
 
 	void *info;
 	void *priv;

@@ -20,6 +20,7 @@
 #include <dt-bindings/input/meson_ir.h>
 #include <dt-bindings/reset/amlogic,meson-dos-reset.h>
 #include <dt-bindings/power/amlogic-sm1-power.h>
+#include <dt-bindings/mailbox/sm1-mbox.h>
 #include "meson-ir-map.dtsi"
 
 / {
@@ -242,22 +243,48 @@
 		storage_version = <0x8200006C>;
 	};
 
-	mailbox: mhu@c883c400 {
-		compatible = "amlogic, meson_mhu";
+	mbox_pl1: mbox_pl1@0xfffe7400 {
 		status = "okay";
-		reg = <0x0 0xff63c400 0x0 0x4c>,   /* MHU registers */
-		      <0x0 0xfffe7000 0x0 0x800>;   /* Payload area */
-		interrupts = <0 209 1>,   /* low priority interrupt */
-			     <0 210 1>,   /* bl4 receive interrupt */
-			     <0 213 1>;   /* bl4 send interrupt */
+		compatible = "amlogic, sm1-mbox-pl";
+		reg = <0x0 0xfffe7600 0x0 0x200>,   // m4 rx buf
+		      <0x0 0xff63c41c 0x0 0x4>,     // m4 rx set addr
+		      <0x0 0xff63c424 0x0 0x4>,     // m4 rx clr addr
+		      <0x0 0xff63c420 0x0 0x4>,     // m4 rx sts addr
+		      <0x0 0xfffe7400 0x0 0x200>,   // m4 tx buf
+		      <0x0 0xff63c440 0x0 0x4>,     // m4 tx set addr
+		      <0x0 0xff63c448 0x0 0x4>,     // m4 tx clr addr
+		      <0x0 0xff63c444 0x0 0x4>;     // m4 tx sts addr
+		interrupts = <GIC_SPI 210 IRQ_TYPE_EDGE_RISING>,   // mbox rx irq
+			     <GIC_SPI 213 IRQ_TYPE_EDGE_RISING>;   // mbox tx irq
+		mbox-tx = "rx", "tx";
+		mbox-nums = <SM1_MBOX_MF_NUMS>;
+		mboxids = <SM1_MBOX_MF2REE>,
+			  <SM1_MBOX_REE2MF>;
 		#mbox-cells = <1>;
-		mbox-names = "cpu_to_scp_low", "bl4_to_cpu", "cpu_to_bl4";
-		mboxes = <&mailbox 0 &mailbox 1 &mailbox 2>;
-		num-chans-to-scp = <1>;  /*number of chans to send m3*/
-		send-isr-bits = <5>;     /*BIT(idx) of isr listen when ap send*/
-		ack-isr-bits = <4>;      /*BIT(idx) of ack isr*/
-		m4-isr-bits = <6>;       /*BIT(idx) of m4 isr*/
-		mbox-chans = <3>;        /*chan number*/
+	};
+
+	mbox_pl0: mbox_pl0@0xfffe7000 {
+		status = "okay";
+		compatible = "amlogic, sm1-mbox-pl-old";
+		reg = <0x0 0xfffe7200 0x0 0x200>,   // aocpu tx buf
+		      <0x0 0xfffe7000 0x0 0x200>,   // aocpu rx buf
+		      <0x0 0xff63c434 0x0 0x4>,     // aocpu tx set addr
+		      <0x0 0xff63c418 0x0 0x4>,     // aocpu rx clr addr
+		      <0x0 0xff63c414 0x0 0x4>;     // aocpu rx sts addr
+		interrupts = <GIC_SPI 209 IRQ_TYPE_EDGE_RISING>;   /* mbox aocpu irq */
+		mbox-tx = "tx";
+		mbox-nums = <SM1_MBOX_AO_NUMS>;
+		mboxids = <SM1_MBOX_REE2AO>;
+		#mbox-cells = <1>;
+	};
+
+	mbox_devfs {
+		status = "okay";
+		compatible = "amlogic, mbox-devfs";
+		mbox-nums = <1>;
+		mbox-names = "ree2aocpu";
+		mboxes = <&mbox_pl0 SM1_REE2AO_DEV>;
+		mbox-dests = <MAILBOX_AOCPU>;
 	};
 
 	cpu_iomap {
@@ -292,6 +319,7 @@
 	rtc{
 		compatible = "amlogic,meson-vrtc";
 		reg = <0x0 0xff8000a8 0x0 0x4>;
+		mboxes = <&mbox_pl0 SM1_REE2AO_VRTC>;
 		status = "okay";
 	};
 
@@ -699,6 +727,9 @@
 
 	bl40: bl40 {
 		compatible = "amlogic, bl40-bootup";
+		mbox-names = "mbox_m3", "mbox_mf";
+		mboxes = <&mbox_pl0 SM1_REE2AO_MF>,
+			 <&mbox_pl1 SM1_REE2MF_MF>;
 		status = "okay";
 	};
 

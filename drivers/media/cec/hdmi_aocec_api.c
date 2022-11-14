@@ -38,8 +38,8 @@
 #include <linux/pm_wakeirq.h>
 #include <linux/pm.h>
 #include <linux/amlogic/cpu_version.h>
-#include <linux/amlogic/scpi_protocol.h>
 #include <linux/amlogic/pm.h>
+#include <linux/amlogic/aml_mbox.h>
 #include "hdmi_aocec_api.h"
 #include <media/cec.h>
 #include "linux/rtc.h"
@@ -2138,12 +2138,14 @@ void cec_save_mail_box(void)
 	 * by SCPI_CMD_SET_CEC_DATA
 	 */
 	if (cec_dev->plat_data->chip_id >= CEC_CHIP_SC2)
-		scpi_send_cec_data(SCPI_CMD_SET_CEC_DATA, (void *)&cec_mailbox,
-				   sizeof(struct st_cec_mailbox_data));
+		aml_mbox_transfer_data(cec_mbox_chan, MBOX_CMD_SET_CEC_DATA,
+				       (void *)&cec_mailbox, sizeof(struct st_cec_mailbox_data),
+				       NULL, 0, MBOX_SYNC);
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	else
-		scpi_send_usr_data(SCPI_CL_SET_CEC_DATA, (void *)&cec_mailbox,
-				   sizeof(struct st_cec_mailbox_data));
+		aml_mbox_transfer_data(cec_mbox_chan, MBOX_CMD_SET_USR_DATA,
+				       (void *)&cec_mailbox, sizeof(struct st_cec_mailbox_data),
+				       NULL, 0, MBOX_SYNC);
 #endif
 }
 
@@ -2155,7 +2157,12 @@ void cec_get_wakeup_reason(void)
 	 * for tm2, also need to use scpi interface
 	 * for resume reason
 	 */
-	scpi_get_wakeup_reason(&cec_dev->wakeup_reason);
+	if (IS_ERR_OR_NULL(cec_mbox_chan)) {
+		CEC_ERR("cec_mbox_chan is NULL\n");
+		return;
+	}
+	aml_mbox_transfer_data(cec_mbox_chan, MBOX_CMD_WAKEUP_REASON_GET,
+			       NULL, 0, &cec_dev->wakeup_reason, 0, MBOX_SYNC);
 	/* cec_dev->wakeup_reason = get_resume_reason(); */
 	CEC_ERR("wakeup_reason:0x%x\n", cec_dev->wakeup_reason);
 }
@@ -2163,9 +2170,11 @@ void cec_get_wakeup_reason(void)
 void cec_clear_wakeup_reason(void)
 {
 	int ret;
+	int val;
 
-	ret = scpi_clr_wakeup_reason();
-	if (ret < 0)
+	ret = aml_mbox_transfer_data(cec_mbox_chan, MBOX_CMD_WAKEUP_REASON_CLR,
+			       NULL, 0, &val, sizeof(val), MBOX_SYNC);
+	if (ret < 0 || val != 0)
 		CEC_INFO("clr wakeup reason fail\n");
 }
 
@@ -2213,8 +2222,10 @@ void cec_get_wakeup_data(void)
 	memset(cec_dev->cec_wk_otp_msg, 0, sizeof(cec_dev->cec_wk_otp_msg));
 	memset(cec_dev->cec_wk_as_msg, 0, sizeof(cec_dev->cec_wk_as_msg));
 #ifdef CEC_MAIL_BOX
-	scpi_get_cec_val(SCPI_CMD_GET_CEC1, &stick_cec1);
-	scpi_get_cec_val(SCPI_CMD_GET_CEC2, &stick_cec2);
+	aml_mbox_transfer_data(cec_mbox_chan, MBOX_CMD_GET_CEC1,
+			       NULL, 0, &stick_cec1, sizeof(stick_cec1), MBOX_SYNC);
+	aml_mbox_transfer_data(cec_mbox_chan, MBOX_CMD_GET_CEC2,
+			       NULL, 0, &stick_cec2, sizeof(stick_cec2), MBOX_SYNC);
 #endif
 	CEC_ERR("wakeup_data: %#x %#x\n", stick_cec1, stick_cec2);
 

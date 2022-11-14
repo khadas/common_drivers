@@ -30,9 +30,9 @@
 #include <linux/platform_device.h>
 #include <linux/of_device.h>
 #include <linux/of_reserved_mem.h>
-#include <linux/amlogic/scpi_protocol.h>
 #include <linux/mailbox_client.h>
 #include <linux/spinlock.h>
+#include <linux/amlogic/aml_mbox.h>
 #include "bl40_module.h"
 
 #define AMLOGIC_BL40_BOOTUP	0x8200004E
@@ -41,11 +41,19 @@ struct bl40_info {
 	char name[30];
 };
 
+struct bl40_msg_buf {
+	int size;
+	char buf[96];
+} __packed;
+
 struct bl40_msg {
 	struct list_head list;
 	struct bl40_msg_buf msg_buf;
 	struct completion complete;
 };
+
+struct mbox_chan *m3_chan;
+struct mbox_chan *mf_chan;
 
 /*for listen list*/
 spinlock_t lock;
@@ -118,7 +126,8 @@ static long bl40_miscdev_ioctl(struct file *fp, unsigned int cmd,
 		phy_addr = virt_to_phys(virt_addr);
 
 		/* unlock bl40 */
-		scpi_unlock_bl40();
+		aml_mbox_transfer_data(m3_chan, MBOX_CMD_BL4_WAIT_UNLOCK,
+				       NULL, 0, NULL, 0, MBOX_SYNC);
 		arm_smccc_smc(AMLOGIC_BL40_BOOTUP, phy_addr,
 			      size, 0, 0, 0, 0, 0, &res);
 		pr_info("free memory\n");
@@ -132,7 +141,9 @@ static long bl40_miscdev_ioctl(struct file *fp, unsigned int cmd,
 		ret = copy_from_user((void *)&bl40_buf,
 				     argp, sizeof(bl40_buf));
 		pr_debug("Enter BL40_CMD_SEND\n");
-		scpi_send_bl40(SCPI_CMD_BL4_SEND, &bl40_buf);
+		aml_mbox_transfer_data(mf_chan, MBOX_CMD_BL4_SEND,
+				       bl40_buf.buf, bl40_buf.size,
+				       bl40_buf.buf, sizeof(bl40_buf.buf), MBOX_SYNC);
 		ret = copy_to_user(argp, &bl40_buf, sizeof(bl40_buf));
 	}
 	break;
@@ -178,6 +189,9 @@ static int bl40_platform_probe(struct platform_device *pdev)
 	int ret;
 
 	device = &pdev->dev;
+
+	m3_chan = aml_mbox_request_channel_byname(device, "mbox_m3");
+	mf_chan = aml_mbox_request_channel_byname(device, "mbox_mf");
 	platform_set_drvdata(pdev, NULL);
 	ret = misc_register(&bl40_miscdev);
 	pr_info("bl40 probe\n");

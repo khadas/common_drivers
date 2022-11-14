@@ -54,6 +54,8 @@
 					<&cpu_opp_table1>,
 					<&cpu_opp_table2>,
 					<&cpu_opp_table3>;
+			dvfs_sibling_core_num = <2>;
+			dvfs_sibling_cores = <0 1>;
 		};
 
 		cpu1: cpu@1 {
@@ -80,6 +82,8 @@
 					<&cpu_opp_table1>,
 					<&cpu_opp_table2>,
 					<&cpu_opp_table3>;
+			dvfs_sibling_core_num = <2>;
+			dvfs_sibling_cores = <0 1>;
 		};
 
 		idle-states {

@@ -1,8 +1,5 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
 [abi_symbol_list]
-# page trace illegal symbol:
-  set_dump_dmc_func
-
 # CFG80211: cfg80211.ko
   rfkill_set_sw_state

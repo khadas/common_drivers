@@ -149,10 +149,4 @@ static inline unsigned long dmc_get_page_trace(struct page *page)
 }
 #endif
 
-#if defined(CONFIG_AMLOGIC_USER_FAULT) && defined(CONFIG_AMLOGIC_BRACK_GKI)
-void set_dump_dmc_func(void *f);
-#else
-void __weak set_dump_dmc_func(void *f) {}
-#endif /* CONFIG_AMLOGIC_USER_FAULT */
-
 #endif /* __DMC_MONITOR_H__ */

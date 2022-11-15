@@ -32,7 +32,7 @@
 #include "hdmi_rx_hw.h"
 #include "hdmi_rx_wrapper.h"
 /* FT trim flag:1-valid, 0-not valid */
-bool rterm_trim_flag_t7;
+u32 rterm_trim_flag_t7;
 /* FT trim value 4 bits */
 u32 rterm_trim_val_t7;
 
@@ -202,7 +202,8 @@ void aml_pll_bw_cfg_t7(void)
 				      MSK(2, 25), (phy_dcha_t7[idx][2] >> 25) & 0x3);
 		hdmirx_wr_bits_amlphy(HHI_RX_PHY_DCHD_CNTL2,
 				      MSK(20, 0), (phy_dchd_t7[idx][2] & 0x1fffff));
-		rx_pr("phy_bw\n");
+		if (log_level & PHY_LOG)
+			rx_pr("phy_bw\n");
 	}
 
 	/* over sample control */
@@ -298,7 +299,8 @@ void aml_pll_bw_cfg_t7(void)
 			      aml_phy_pll_lock());
 		}
 	} while (!is_tmds_clk_stable() && is_clk_stable() && !aml_phy_pll_lock());
-	rx_pr("pll done\n");
+	if (log_level & PHY_LOG)
+		rx_pr("pll done\n");
 	/* t7 debug */
 	/* manual VGA mode for debug */
 	if (rx.aml_phy.vga_gain <= 0xfff) {
@@ -547,7 +549,8 @@ void aml_dfe_en_t7(void)
 		if (rx.aml_phy.dfe_hold)
 			hdmirx_wr_bits_amlphy(HHI_RX_PHY_DCHD_CNTL2,
 					      DFE_HOLD, 1);
-		rx_pr("dfe\n");
+		if (log_level & PHY_LOG)
+			rx_pr("dfe\n");
 	}
 }
 
@@ -898,11 +901,19 @@ void aml_phy_get_trim_val_t7(void)
 {
 	u32 data32;
 
-	data32 = hdmirx_rd_amlphy(HHI_RX_PHY_MISC_CNTL1);
-	/* bit [12: 15]*/
-	rterm_trim_val_t7 = (data32 >> 12) & 0xf;
-	/* bit'0*/
-	rterm_trim_flag_t7 = data32 & 0x1;
+	dts_debug_flag = (phy_term_lel >> 4) & 0x1;
+	if (dts_debug_flag == 0) {
+		data32 = hdmirx_rd_amlphy(HHI_RX_PHY_MISC_CNTL1);
+		/* bit [12: 15]*/
+		rterm_trim_val_t7 = (data32 >> 12) & 0xf;
+		/* bit'0*/
+		rterm_trim_flag_t7 = data32 & 0x1;
+	} else {
+		rlevel = phy_term_lel & 0xf;
+		if (rlevel > 15)
+			rlevel = 15;
+		rterm_trim_flag_t7 = dts_debug_flag;
+	}
 	if (rterm_trim_flag_t7)
 		rx_pr("rterm trim=0x%x\n", rterm_trim_val_t7);
 }
@@ -914,7 +925,8 @@ void aml_phy_cfg_t7(void)
 	u32 term_value = hdmirx_rd_top(TOP_HPD_PWR5V) & 0x7;
 
 	if (rx.aml_phy.pre_int) {
-		rx_pr("\nphy reg init\n");
+		if (log_level & PHY_LOG)
+			rx_pr("\nphy reg init\n");
 		if (rx.aml_phy.ofst_en)
 			aml_phy_offset_cal_t7();
 		hdmirx_wr_bits_amlphy(HHI_RX_PHY_DCHD_CNTL1,
@@ -928,9 +940,13 @@ void aml_phy_cfg_t7(void)
 		usleep_range(5, 10);
 
 		data32 = phy_misci_t7[idx][1];
-		if (rterm_trim_flag_t7)
+		aml_phy_get_trim_val_t7();
+		if (rterm_trim_flag_t7) {
+			if (dts_debug_flag)
+				rterm_trim_val_t7 = t5_t7_rlevel[rlevel];
 			data32 = ((data32 & (~((0xf << 12) | 0x1))) |
 				(rterm_trim_val_t7 << 12) | rterm_trim_flag_t7);
+		}
 		/* step2-0xd8 */
 		hdmirx_wr_amlphy(HHI_RX_PHY_MISC_CNTL1, data32);
 		/*step2-0xe0*/
@@ -2063,6 +2079,8 @@ void rx_set_irq_t7(bool en)
 		//hdmirx_wr_cor(CP2PAX_INTR0_MASK_HDCP2X_IVCRX, 0x3);
 		//hdmirx_wr_cor(RX_INTR13_MASK_PWD_IVCRX, 0x02);// int
 		//hdmirx_wr_cor(RX_PWD_INT_CTRL, 0x00);//[1] reg_intr_polarity, default = 1
+		/* clear enable */
+		hdmirx_wr_cor(RX_DEPACK_INTR2_MASK_DP2_IVCRX, 0);//interrupt mask
 		/* clear status */
 		hdmirx_wr_cor(RX_DEPACK_INTR2_DP2_IVCRX, 0xff);
 		//hdmirx_wr_cor(RX_DEPACK_INTR4_MASK_DP2_IVCRX, 0x00);//interrupt mask
@@ -2157,7 +2175,7 @@ void hdcp_init_t7(void)
 	//----clear ksv fifo rdy --------
 	data8  =  0;
 	data8 |= (1 << 3);//bit[  3] reg_hdmi_clr_en
-	data8 |= (7 << 0);//bit[2:0] reg_fifordy_clr_en
+	data8 |= (7 << 0);//bit[2:0] reg_fifo_rdy_clr_en
 	hdmirx_wr_cor(RX_RPT_RDY_CTRL_PWD_IVCRX, data8);//register address: 0x1010 (0x0f)
 
 	//----BCAPS config-----

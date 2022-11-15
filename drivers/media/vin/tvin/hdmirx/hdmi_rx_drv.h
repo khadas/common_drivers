@@ -149,6 +149,7 @@ struct hdmirx_dev_s {
 #define HDMI_IOC_HDCP22_NOT_SUPPORT _IO(HDMI_IOC_MAGIC, 0x0e)
 #define HDMI_IOC_SET_AUD_SAD	_IOW(HDMI_IOC_MAGIC, 0x0f, char*)
 #define HDMI_IOC_GET_AUD_SAD	_IOR(HDMI_IOC_MAGIC, 0x10, char*)
+#define HDMI_IOC_GET_SPD_SRC_INFO	_IOR(HDMI_IOC_MAGIC, 0x11, struct spd_infoframe_st)
 
 #define IOC_SPD_INFO  _BIT(0)
 #define IOC_AUD_INFO  _BIT(1)
@@ -593,9 +594,9 @@ struct emp_buff {
 	void __iomem *store_a;
 	void __iomem *store_b;
 	void __iomem *ready;
-	unsigned long irqcnt;
-	unsigned int emppktcnt;
-	unsigned int tmdspktcnt;
+	unsigned long irq_cnt;
+	unsigned int emp_pkt_cnt;
+	unsigned int tmds_pkt_cnt;
 	bool end;
 	u8 ogi_id;
 	unsigned int emp_tagid;
@@ -633,6 +634,7 @@ struct rx_s {
 	u32 skip;
 	/*avmute*/
 	u32 avmute_skip;
+	bool vpp_mute;
 	/** HDMI RX input port 0 (A) or 1 (B) (or 2(C) or 3 (D)) */
 	u8 port;
 	/* first boot flag */
@@ -646,6 +648,7 @@ struct rx_s {
 	bool open_fg;
 	bool cableclk_stb_flg;
 	u8 irq_flag;
+	bool firm_change;/*hdcp2.2 rp/rx switch time*/
 	/** HDMI RX controller HDCP configuration */
 	struct hdmi_rx_hdcp hdcp;
 	/*report hpd status to app*/
@@ -683,7 +686,7 @@ struct rx_s {
 	/*struct pd_infoframe_s dbg_info;*/
 	struct phy_sts phy;
 	struct clk_msr clk;
-	struct emp_buff empbuff;
+	struct emp_buff emp_buff;
 	u32 arc_port;
 	enum edid_ver_e edid_ver;
 	bool arc_5vsts;

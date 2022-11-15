@@ -13,6 +13,8 @@
 #define MAX_HDR_LUMI_LEN	3
 #define MAX_EDID_BUF_SIZE	(EDID_SIZE * 6)
 #define PORT_NUM		3
+#define LATENCY_MAX		254
+#define EDID_MAX_REFRESH_RATE 123 //No use for reference board
 
 /* CTA-861G Table 54~57 CTA data block tag codes */
 /* tag code 0x0: reserved */
@@ -55,6 +57,7 @@
 #define SLDB_TAG 20	/* Speaker Location Data Block */
 /* extend tag code 21~31: Reserved */
 #define IFDB_TAG 32 /* infoframe data block */
+#define HF_EEODB 0x78 /* HDMI forum EDID extension override data block */
 #define HDMI_VIC420_OFFSET 0x100
 #define HDMI_3D_OFFSET 0x180
 #define HDMI_VESA_OFFSET 0x200
@@ -76,6 +79,11 @@
 /* maximum VSVDB length is VSVDB V0: 26bytes */
 #define VSVDB_LEN	26
 #define MAX_AUDIO_BLK_LEN 31
+#define MAX_PIXEL_CLK 600
+#define MAX_H_ACTIVE 3840
+#define MAX_V_ACTIVE 2160
+#define MAX_FRAME_RATE 60
+#define REFRESH_RATE 60
 
 enum edid_audio_format_e {
 	AUDIO_FORMAT_HEADER,
@@ -123,8 +131,10 @@ union bit_rate_u {
 struct edid_audio_block_t {
 	unsigned char max_channel:3;
 	unsigned char format_code:4;
-	unsigned char fmt_code_resrvd:1;
-
+	unsigned char fmt_code_resvrd:1;
+	union u_sr {
+		unsigned char freq_list;
+		struct s_sr {
 	unsigned char freq_32khz:1;
 	unsigned char freq_44_1khz:1;
 	unsigned char freq_48khz:1;
@@ -133,6 +143,8 @@ struct edid_audio_block_t {
 	unsigned char freq_176_4khz:1;
 	unsigned char freq_192khz:1;
 	unsigned char freq_reserv:1;
+		} ssr;
+	} usr;
 	union bit_rate_u bit_rate;
 };
 
@@ -170,6 +182,11 @@ struct detailed_timing_desc {
 	unsigned int pixel_clk;
 	unsigned int hactive;
 	unsigned int vactive;
+	unsigned int hblank;
+	unsigned int vblank;
+	unsigned int htotal;
+	unsigned int vtotal;
+	unsigned int framerate;
 };
 
 struct video_db_s {
@@ -216,6 +233,11 @@ struct specific_vic_3d {
 };
 
 struct vsdb_s {
+	u8 len:5;
+	u8 tag:3;
+	u8 ieee_third;
+	u8 ieee_second;
+	u8 ieee_first;
 	unsigned int ieee_oui;
 	/* phy addr 2 bytes */
 	unsigned char a:4;
@@ -227,19 +249,19 @@ struct vsdb_s {
 	 * one function that uses information carried by the
 	 * ACP, ISRC1, or ISRC2 packets.
 	 */
-	unsigned char support_AI:1;
+	unsigned char support_ai:1;
 	/* the three DC_XXbit bits above only indicate support
 	 * for RGB4:4:4 at that pixel size.Support for YCbCb4:4:4
 	 * in Deep Color modes is indicated with the DC_Y444 bit.
 	 * If DC_Y444 is set, then YCbCr4:4:4 is supported for
 	 * all modes indicated by the DC_XXbit flags.
 	 */
-	unsigned char DC_48bit:1;
-	unsigned char DC_36bit:1;
-	unsigned char DC_30bit:1;
+	unsigned char dc_48bit:1;
+	unsigned char dc_36bit:1;
+	unsigned char dc_30bit:1;
 	/* DC_Y444: Set if supports YCbCb4:4:4 Deep Color modes */
-	unsigned char DC_y444:1;
-	unsigned char resrvd1:2;
+	unsigned char dc_y444:1;
+	unsigned char resvd1:2;
 	/* Set if Sink supports DVI dual-link operation */
 	unsigned char dvi_dual:1;
 
@@ -251,10 +273,10 @@ struct vsdb_s {
 	unsigned char resrvd2:1;
 	/* each bit indicates support for particular Content Type */
 	unsigned char cnc3:1;/* game */
+	unsigned char rsv_2:1;
 	unsigned char cnc2:1;/* cinema */
 	unsigned char cnc1:1;/* photo*/
 	unsigned char cnc0:1;/* graphics */
-
 	unsigned char video_latency;
 	unsigned char audio_latency;
 	unsigned char interlaced_video_latency;
@@ -267,7 +289,6 @@ struct vsdb_s {
 
 	unsigned char hdmi_vic_len:3;
 	unsigned char hdmi_3d_len:5;
-
 	unsigned char hdmi_4k2k_30hz_sup;
 	unsigned char hdmi_4k2k_25hz_sup;
 	unsigned char hdmi_4k2k_24hz_sup;
@@ -281,6 +302,11 @@ struct vsdb_s {
 };
 
 struct hf_vsdb_s {
+	u8 len:5;
+	u8 tag:3;
+	u8 ieee_third;
+	u8 ieee_second;
+	u8 ieee_first;
 	unsigned int ieee_oui;
 	//pb1
 	unsigned char version;
@@ -330,8 +356,9 @@ struct hf_vsdb_s {
 	unsigned char dsc_max_slices:4;
 	//pb10
 	unsigned char rsvd1:2;
-	unsigned char dsc_totalchunkkbytes:6;
+	unsigned char dsc_total_chunk_kbytes:6;
 
+	unsigned char rsv[18];
 };
 
 struct colorimetry_db_s {
@@ -527,6 +554,12 @@ struct edid_info_s {
 	int free_size;
 	unsigned char total_free_size;
 	unsigned char dtd_size;
+};
+
+struct edid_standard_timing {
+	u8 h_active[8];
+	u8 aspect_ratio[8];
+	u8 refresh_rate[8];
 };
 
 struct cta_blk_pair {
@@ -767,6 +800,9 @@ extern unsigned char edid_temp[MAX_EDID_BUF_SIZE];
 extern unsigned int edid_select;
 extern u32 vsvdb_update_hpd_en;
 extern enum edid_delivery_mothed_e edid_delivery_mothed;
+#ifdef CONFIG_AMLOGIC_HDMITX
+extern u32 tx_hdr_priority;
+#endif
 
 int rx_set_hdr_lumi(unsigned char *data, int len);
 void rx_edid_physical_addr(int a, int b, int c, int d);
@@ -812,8 +848,19 @@ bool rx_set_vsvdb(unsigned char *data, unsigned int len);
 u_char rx_edid_get_aud_sad(u_char *sad_data);
 bool rx_edid_set_aud_sad(u_char *sad, u_char len);
 u_int rx_get_cea_tag_offset(u8 *cur_edid, u16 tag_code);
+void get_edid_standard_timing_info(u8 *p_edid, struct edid_standard_timing *edid_st_info);
+void rm_unsupported_st(u8 *p_edid,
+	struct edid_standard_timing *edid_st_info, unsigned int refresh_rate);
 #ifdef CONFIG_AMLOGIC_HDMITX
 bool rx_update_tx_edid_with_audio_block(unsigned char *edid_data,
 					unsigned char *audio_block);
+void rpt_edid_hf_vs_db_extraction(unsigned char *p_edid);
+void rpt_edid_14_vs_db_extraction(unsigned char *p_edid);
+void rpt_edid_video_db_extraction(unsigned char *p_edid);
+void rpt_edid_audio_db_extraction(unsigned char *p_edid);
+void rpt_edid_colorimetry_db_extraction(unsigned char *p_edid);
+void rpt_edid_420_vdb_extraction(unsigned char *p_edid);
+void rpt_edid_hdr_static_db_extraction(unsigned char *p_edid);
+void rpt_edid_extraction(unsigned char *p_edid);
 #endif
 #endif

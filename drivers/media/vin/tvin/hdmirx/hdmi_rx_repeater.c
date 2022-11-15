@@ -40,10 +40,10 @@ MODULE_PARM_DESC(edid_len, "\n edid_len\n");
 module_param(edid_len, int, 0664);
 bool new_edid;
 /*original bksv from device*/
-//unsigned char receive_hdcp[MAX_KSV_LIST_SIZE];
-//int hdcp_array_len = MAX_KSV_LIST_SIZE;
-//MODULE_PARM_DESC(receive_hdcp, "\n receive_hdcp\n");
-//module_param_array(receive_hdcp, byte, &hdcp_array_len, 0664);
+unsigned char receive_hdcp[MAX_KSV_LIST_SIZE];
+int hdcp_array_len = MAX_KSV_LIST_SIZE;
+MODULE_PARM_DESC(receive_hdcp, "\n receive_hdcp\n");
+module_param_array(receive_hdcp, byte, &hdcp_array_len, 0664);
 int hdcp_len;
 int hdcp_repeat_depth;
 bool new_hdcp;
@@ -66,10 +66,10 @@ u8 ksvlist[10] = {
 	//0x88, 0xcb, 0xbc, 0xab, 0x95
 };
 
-//unsigned char *rx_get_dw_hdcp_addr(void)
-//{
-	//return receive_hdcp;
-///}
+unsigned char *rx_get_dw_hdcp_addr(void)
+{
+	return receive_hdcp;
+}
 
 void rx_start_repeater_auth(void)
 {
@@ -105,6 +105,7 @@ static struct hdcp_topo_s hdcp_convert_topo;
 #define HDMITX_UNPLUG			2
 #define HDMITX_PHY_ADDR_VALID	3
 #define HDMITX_KSVLIST			4
+#define HDMITX_HDR_PRIORITY		5
 int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 				     unsigned long value, void *p)
 {
@@ -136,15 +137,27 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 			rx_pr("%s, HDMITX_UNPLUG, recover primary EDID\n",
 			      __func__);
 		rx.hdcp.repeat = false;
-		if (rpt_only_mode == 1)
+		if (rpt_only_mode == 1) {
 			rx_force_hpd_rxsense_cfg(0);
-		else
+		} else {
 			rx_update_tx_edid_with_audio_block(NULL, NULL);
-		hdmi_rx_top_edid_update();
-		hdcp_init_t7();
+			hdmi_rx_top_edid_update();
+			hdcp_init_t7();
+		}
 		//rx_irq_en(false);
 		//rx_set_cur_hpd(0, 4);
 		//fsm_restart();
+		ret = NOTIFY_OK;
+		break;
+	case HDMITX_HDR_PRIORITY:
+		tx_hdr_priority = *((u32 *)p);
+		if (log_level & EDID_LOG)
+			rx_pr("tx_hdr_priority = %d\n", tx_hdr_priority);
+		rx_irq_en(false);
+		rx_set_cur_hpd(0, 4);
+		if (!rx.open_fg)
+			port_hpd_rst_flag = 7;
+		fsm_restart();
 		ret = NOTIFY_OK;
 		break;
 	case HDMITX_PHY_ADDR_VALID:
@@ -198,15 +211,17 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 		} else {
 			rx_update_rpt_sts(&pre_topo);
 		}
-		rx_pr("seq_num_V: 0x%x\n", rx.hdcp.topo_updated);
+		if (log_level & HDCP_LOG)
+			rx_pr("seq_num_V: 0x%x\n", rx.hdcp.topo_updated);
 		if (rx.hdcp.rpt_reauth_event == HDCP_VER_22) {
 			rx.hdcp.topo_updated++;
-			if (rx.hdcp.topo_updated > 0xFFFFFF)
+			if (rx.hdcp.topo_updated > 0xFFFFFFUL)
 				rx.hdcp.topo_updated = 0;
 		}
 		//hdmirx_wr_cor(RX_SHA_ctrl_HDCP1X_IVCRX, 1);
 		mdelay(1);
-		rx_pr("step3\n");
+		if (log_level & HDCP_LOG)
+			rx_pr("step3\n");
 		/* only update topo for corresponding hdcp version */
 		if (rx.hdcp.rpt_reauth_event == HDCP_VER_14)
 			rx.hdcp.hdcp14_ready = true;
@@ -249,12 +264,14 @@ void rx_check_repeat(void)
 	if (rx.hdcp.hdcp14_ready) {
 		//hdmirx_wr_cor(RX_SHA_ctrl_HDCP1X_IVCRX, 1);
 		hdmirx_wr_cor(RX_BCAPS_SET_HDCP1X_IVCRX, 0xe0);
-		rx_pr("step4\n");
+		if (log_level & HDCP_LOG)
+			rx_pr("step4\n");
 		rx.hdcp.hdcp14_ready = false;
 	}
 	if (rx.hdcp.stream_manage_rcvd) {
 		data8 = rx_get_stream_manage_info();
-		rx_pr("step5-%d\n", data8);
+		if (log_level & HDCP_LOG)
+			rx_pr("step5-%d\n", data8);
 		rx.hdcp.stream_type = data8;
 		/*#ifdef CONFIG_AMLOGIC_HDMITX
 		 *	hdmitx_reauth_request(data8 | 0x10);

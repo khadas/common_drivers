@@ -821,6 +821,15 @@ struct spd_infoframe_st {
 			u8 data[19];
 		} __packed freesync;
 		u8 data[28];
+		struct spd_data_st {
+	/*Vendor Name Character*/
+	u8 vendor_name[8];
+	/*Product Description Character*/
+	u8 product_des[16];
+	/*byte 25*/
+	u8 source_info;
+			u8 rsvd[3];
+		} __packed spd_data;
 	} __packed des_u;
 } __packed;
 

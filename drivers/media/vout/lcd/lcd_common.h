@@ -10,7 +10,6 @@
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/amlogic/media/vout/lcd/lcd_vout.h>
-#include "lcd_clk_config.h"
 
 /* 20220430: initial version*/
 /* 20220610: add c3 support*/
@@ -26,7 +25,8 @@
 /* 20221207: support drm display mode timing for different frame rate*/
 /* 20221208: remove black pattern when enable*/
 /* 20221215: remove unnecessary tcon top reset*/
-#define LCD_DRV_VERSION    "20221215"
+/* 20221216: optimize lcd clk code*/
+#define LCD_DRV_VERSION    "20221216"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;
@@ -144,6 +144,32 @@ void lcd_tcon_vsync_isr(struct aml_lcd_drv_s *pdrv);
 int lcd_debug_info_len(int num);
 int lcd_debug_probe(struct aml_lcd_drv_s *pdrv);
 int lcd_debug_remove(struct aml_lcd_drv_s *pdrv);
+
+/* lcd clk */
+extern spinlock_t lcd_clk_lock;
+int meson_clk_measure(unsigned int clk_mux);
+int lcd_debug_info_len(int num);
+void lcd_clk_generate_parameter(struct aml_lcd_drv_s *pdrv);
+
+int lcd_get_ss(struct aml_lcd_drv_s *pdrv, char *buf);
+void lcd_clk_ss_config_update(struct aml_lcd_drv_s *pdrv);
+int lcd_set_ss(struct aml_lcd_drv_s *pdrv, unsigned int level,
+				unsigned int freq, unsigned int mode);
+int lcd_get_ss_num(struct aml_lcd_drv_s *pdrv,
+	unsigned int *level, unsigned int *freq, unsigned int *mode);
+int lcd_encl_clk_msr(struct aml_lcd_drv_s *pdrv);
+void lcd_pll_reset(struct aml_lcd_drv_s *pdrv);
+void lcd_update_clk(struct aml_lcd_drv_s *pdrv);
+void lcd_set_clk(struct aml_lcd_drv_s *pdrv);
+void lcd_disable_clk(struct aml_lcd_drv_s *pdrv);
+void lcd_clk_gate_switch(struct aml_lcd_drv_s *pdrv, int status);
+int lcd_clk_clkmsr_print(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
+int lcd_clk_config_print(struct aml_lcd_drv_s *pdrv, char *buf, int offset);
+int lcd_clk_path_change(struct aml_lcd_drv_s *pdrv, int sel);
+void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv);
+void lcd_clk_config_remove(struct aml_lcd_drv_s *pdrv);
+void lcd_clk_config_init(void);
+void aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int mode_flag);
 
 /* lcd venc */
 unsigned int lcd_get_encl_lint_cnt(struct aml_lcd_drv_s *pdrv);

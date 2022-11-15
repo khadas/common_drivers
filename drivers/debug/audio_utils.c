@@ -44,7 +44,7 @@ static ssize_t audio_utils_write(struct file *file, const char __user *buffer,
 
 	count = _count;
 	while (count > 0) {
-		page = alloc_page(GFP_HIGHUSER_MOVABLE);
+		page = alloc_page(GFP_HIGHUSER);
 		if (!page) {
 			pr_err("%s, %d\n", __func__, __LINE__);
 			return -ENOMEM;
@@ -54,13 +54,17 @@ static ssize_t audio_utils_write(struct file *file, const char __user *buffer,
 		tmp = kmap_atomic(page);
 		WARN_ON(!tmp);
 		if (count >= PAGE_SIZE) {
-			if (copy_from_user(tmp, buffer + write, PAGE_SIZE))
+			if (copy_from_user(tmp, buffer + write, PAGE_SIZE)) {
+				pr_err("%s, %d\n", __func__, __LINE__);
 				return -EINVAL;
+			}
 			count -= PAGE_SIZE;
 			write += PAGE_SIZE;
 		} else if (count) { /* remain */
-			if (copy_from_user(tmp, buffer + write, count))
+			if (copy_from_user(tmp, buffer + write, count)) {
+				pr_err("%s, %d\n", __func__, __LINE__);
 				return -EINVAL;
+			}
 			count -= count;
 			write += count;
 		}
@@ -91,13 +95,17 @@ static long audio_utils_ioctl(struct file *f,
 		break;
 
 	case TEST_IOC_WRITE_LIB:
-		audio_utils_write(f, argp, lib_size, NULL);
+		if (audio_utils_write(f, argp, lib_size, NULL) != lib_size) {
+			pr_err("%s, %d\n", __func__, __LINE__);
+			return -EINVAL;
+		}
 		break;
 
 	case TEST_IOC_FREE_LIB:
 		list_for_each_entry_safe(page, next, &code_list, lru) {
 			__free_page(page);
 		}
+		INIT_LIST_HEAD(&code_list);
 		break;
 
 	default:
@@ -130,8 +138,10 @@ static int audio_utils_mmap(struct file *file, struct vm_area_struct *vma)
 		ret = vm_insert_page(vma, addr, page);
 		pr_debug("%s, insert page %5lx for %lx, ret:%d\n",
 			 __func__, page_to_pfn(page), addr, ret);
-		if (ret < 0)
-			break;
+		if (ret < 0) {
+			pr_err("%s, %d\n", __func__, __LINE__);
+			return ret;
+		}
 		addr += PAGE_SIZE;
 		page = list_next_entry(page, lru);
 		if (&page->lru == &code_list)
@@ -176,10 +186,14 @@ ssize_t audio_utils_read(struct file *file, char __user *buf,
 
 	while (rd_size > 0) {
 		tmp = kmap_atomic(page);
-		if (!tmp)
+		if (!tmp) {
+			pr_err("%s, %d\n", __func__, __LINE__);
 			return -EINVAL;
-		if (copy_to_user(buf + to, tmp, can_read))
+		}
+		if (copy_to_user(buf + to, tmp, can_read)) {
+			pr_err("%s, %d\n", __func__, __LINE__);
 			return -EINVAL;
+		}
 		pr_debug("%s, buf:%p, to:%d, canread:%d, rdsize:%d, page:%lx\n",
 			 __func__, buf, to, can_read,
 			 rd_size, page_to_pfn(page));

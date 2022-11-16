@@ -118,8 +118,9 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			/* ion_codec_mm max can alloc size 80M*/
-			size = <0x0 0x1000000>;
+			size = <0x0 0x13400000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x00000000 0x0 0x40000000>;
 			linux,contiguous-region;
 		};
 
@@ -183,7 +184,7 @@
 		compatible = "amlogic, codec, mm";
 		memory-region = <&codec_mm_cma &codec_mm_reserved>;
 		dev_name = "codec_mm";
-		status = "disabled";
+		status = "okay";
 	};
 
 	picdec {

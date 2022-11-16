@@ -53,4 +53,9 @@ static inline int gki_config_init(void)
 }
 #endif
 
+#if IS_MODULE(CONFIG_AMLOGIC_DEBUG_PRINTK)
+int printk_vendor_hook_init(void);
+void printk_vendor_hook_exit(void);
+#endif
+
 #endif /*_DEBUG_MAIN_H__*/

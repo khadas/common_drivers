@@ -11,6 +11,9 @@
 static int __init debug_main_init(void)
 {
 	pr_debug("### %s() start\n", __func__);
+#if IS_MODULE(CONFIG_AMLOGIC_DEBUG_PRINTK)
+	call_sub_init(printk_vendor_hook_init);
+#endif
 	call_sub_init(debug_lockup_init);
 	call_sub_init(cpu_mhz_init);
 	call_sub_init(meson_atrace_init);
@@ -23,6 +26,9 @@ static int __init debug_main_init(void)
 static void __exit debug_main_exit(void)
 {
 	debug_file_exit();
+#if IS_MODULE(CONFIG_AMLOGIC_DEBUG_PRINTK)
+	printk_vendor_hook_exit();
+#endif
 }
 
 module_init(debug_main_init);

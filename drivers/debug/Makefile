@@ -16,11 +16,16 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_LOCKUP) += lockup.o cpu_mhz.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_ATRACE) += atrace.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_FILE) += debug_file.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_GKI_CONFIG) += gki_config.o
+ifeq ($(CONFIG_AMLOGIC_DEBUG_PRINTK),m)
+	$(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_PRINTK) += printk.o
+else
+	obj-$(CONFIG_AMLOGIC_DEBUG_PRINTK) += printk.o
+endif
 
 # builtin
 obj-$(CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE) += ftrace_ramoops.o
 obj-$(CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR) += watchdog_hld.o
-obj-$(CONFIG_AMLOGIC_DEBUG_PRINTK) += printk.o
+
 
 
 AUDIO_UTILS_MODULE_NAME = amlogic-audio-utils

@@ -33,6 +33,7 @@ struct pcr_pair {
 struct pts_wall {
 	uint32_t wall_clock;
 	uint32_t interval;
+	uint32_t dis_delay;
 };
 
 enum av_sync_mode {
@@ -71,6 +72,8 @@ struct session_sync_stat {
 	uint32_t flag;
 	/* enum av_sync_stat */
 	uint32_t stat;
+	/* clean poll stat after stat */
+	uint32_t clean_poll;
 };
 
 enum avs_event {
@@ -116,7 +119,9 @@ struct session_debug {
 struct ker_start_policy {
 	/* start policy */
 	uint32_t policy;
-	/* in audio timeout value for no video case, in ms */
+	/* in audio timeout value for no video case, in ms
+	 * -1 means ignore this value
+	 */
 	int timeout;
 };
 
@@ -143,7 +148,7 @@ struct ker_start_policy {
 #define AMSYNCS_IOC_SET_A_TS		_IOW((_A_M_SS), 0x06, struct pts_tri)
 #define AMSYNCS_IOC_GET_A_TS		_IOWR((_A_M_SS), 0x07, struct pts_tri)
 #define AMSYNCS_IOC_SEND_EVENT		_IOWR((_A_M_SS), 0x08, struct session_event)
-/* For PCR/IPTV mode only */
+//For PCR/IPTV mode only
 #define AMSYNCS_IOC_GET_SYNC_STAT	_IOWR((_A_M_SS), 0x09, struct session_sync_stat)
 #define AMSYNCS_IOC_SET_PCR		_IOW((_A_M_SS), 0x0a, struct pcr_pair)
 #define AMSYNCS_IOC_GET_PCR		_IOWR((_A_M_SS), 0x0b, struct pcr_pair)
@@ -157,8 +162,9 @@ struct ker_start_policy {
 #define AMSYNCS_IOC_AUDIO_START	_IOW((_A_M_SS), 0x13, struct audio_start)
 #define AMSYNCS_IOC_SET_CLK_DEV	_IOW((_A_M_SS), 0x14, int)
 #define AMSYNCS_IOC_GET_CLK_DEV	_IOR((_A_M_SS), 0x15, int)
+#define AMSYNCS_IOC_SET_STOP_AUDIO_WAIT	_IOR((_A_M_SS), 0x16, int)
 
-/* For debuging */
+//For debuging
 #define AMSYNCS_IOC_GET_DEBUG_MODE	_IOR((_A_M_SS), 0x100, struct session_debug)
 
 int msync_vsync_update(void);

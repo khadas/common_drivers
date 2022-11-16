@@ -323,6 +323,11 @@ struct vout_device_s {
 	void (*video_mute)(unsigned int flag);
 };
 
+struct venc_base_s {
+	u8 venc_index; /*such as 0, 1, 2*/
+	u8 venc_sel;  /*such as 0=encl, 1=enci, 2=encp, 3=invalid*/
+};
+
 struct vinfo_base_s {
 	enum vmode_e mode;
 	u32 width;

@@ -761,15 +761,6 @@ static void aml_bl_set_level(struct aml_bl_drv_s *bdrv, unsigned int level)
 	}
 }
 
-static unsigned int aml_bl_get_level_brightness(struct aml_bl_drv_s *bdrv)
-{
-	if (aml_bl_check_driver(bdrv))
-		return 0;
-
-	BLPR("aml bl state: 0x%x\n", bdrv->state);
-	return bdrv->level_brightness;
-}
-
 static inline unsigned int bl_brightness_level_map(struct aml_bl_drv_s *bdrv,
 						   unsigned int brightness)
 {
@@ -787,8 +778,7 @@ static inline unsigned int bl_brightness_level_map(struct aml_bl_drv_s *bdrv,
 	return level;
 }
 
-static inline unsigned int bl_gd_level_map(struct aml_bl_drv_s *bdrv,
-					   unsigned int gd_level)
+static inline unsigned int bl_gd_level_map(struct aml_bl_drv_s *bdrv, unsigned int gd_level)
 {
 	unsigned int max, min, val;
 
@@ -799,8 +789,7 @@ static inline unsigned int bl_gd_level_map(struct aml_bl_drv_s *bdrv,
 	return val;
 }
 
-static unsigned int aml_bl_init_level(struct aml_bl_drv_s *bdrv,
-				      unsigned int level)
+static unsigned int aml_bl_init_level(struct aml_bl_drv_s *bdrv, unsigned int level)
 {
 	unsigned int bl_level = level;
 
@@ -825,10 +814,12 @@ static unsigned int aml_bl_init_level(struct aml_bl_drv_s *bdrv,
 	return 0;
 }
 
-static int aml_bl_update_status(struct backlight_device *bd)
+int aml_bl_set_level_brightness(struct aml_bl_drv_s *bdrv, unsigned int brightness)
 {
-	struct aml_bl_drv_s *bdrv = (struct aml_bl_drv_s *)bl_get_data(bd);
 	unsigned int level;
+
+	if (aml_bl_check_driver(bdrv))
+		return -1;
 
 	if (bdrv->debug_force) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_ADV)
@@ -837,8 +828,7 @@ static int aml_bl_update_status(struct backlight_device *bd)
 	}
 
 	mutex_lock(&bl_status_mutex);
-	bdrv->level_brightness = bl_brightness_level_map(bdrv,
-					bdrv->bldev->props.brightness);
+	bdrv->level_brightness = bl_brightness_level_map(bdrv, brightness);
 
 	if (bdrv->level_brightness == 0) {
 		if (bdrv->state & BL_STATE_BL_ON)
@@ -857,6 +847,23 @@ static int aml_bl_update_status(struct backlight_device *bd)
 	mutex_unlock(&bl_status_mutex);
 
 	return 0;
+}
+
+unsigned int aml_bl_get_level_brightness(struct aml_bl_drv_s *bdrv)
+{
+	if (aml_bl_check_driver(bdrv))
+		return 0;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_ADV)
+		BLPR("aml bl state: 0x%x\n", bdrv->state);
+	return bdrv->level_brightness;
+}
+
+static int aml_bl_update_status(struct backlight_device *bd)
+{
+	struct aml_bl_drv_s *bdrv = (struct aml_bl_drv_s *)bl_get_data(bd);
+
+	return aml_bl_set_level_brightness(bdrv, bdrv->bldev->props.brightness);
 }
 
 static int aml_bl_get_brightness(struct backlight_device *bd)

@@ -46,7 +46,7 @@
 #define RP_LOG		0x40000
 
 /* add aif parsing for t7 */
-#define RX_VER1 "ver.2022/03/04"
+#define RX_VER1 "ver.2022/11/17"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 
@@ -574,6 +574,7 @@ struct phy_sts {
 
 struct clk_msr {
 	u32 cable_clk;
+	u32 cable_clk_pre;
 	u32 tmds_clk;
 	u32 pixel_clk;
 	u32 mpll_clk;

@@ -1062,7 +1062,7 @@
 	logo_addr = "0xe800000";
 	/* display_device_cnt = <2>; */ /* for dual screen upport */
 	mem_alloc = <1>;
-	pxp_mode = <1>; /** 0:normal mode 1:pxp mode */
+	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
 &mtd_nand {

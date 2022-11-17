@@ -181,10 +181,12 @@ function extra_cmds() {
 	pushd ${src_dir}
 	cp modules.order modules_order.back
 	: > modules.order
+	set +x
 	while read LINE
 	do
 		find -name ${LINE} >> modules.order
 	done < ${OUT_AMLOGIC_DIR}/modules/modules.order
+	set -x
 	sed -i "s/^\.\///" modules.order
 	: > ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
 	ext_modules=
@@ -258,6 +260,15 @@ function mod_probe() {
 	for loop in `grep "^$ko:" modules.dep | sed 's/.*://'`; do
 		mod_probe $loop
 		echo insmod $loop >> __install.sh
+	done
+}
+
+function mod_probe_recovery() {
+	local ko=$1
+	local loop
+	for loop in `grep "^$ko:" modules_recovery.dep | sed 's/.*://'`; do
+		mod_probe_recovery $loop
+		echo insmod $loop >> __install_recovery.sh
 	done
 }
 
@@ -414,6 +425,11 @@ function adjust_sequence_modules_loading() {
 		sed -i "/${module}.*\.ko:/d" modules.dep.temp
 	done
 
+	if [[ -n ${ANDROID_PROJECT} ]]; then
+		cp modules.dep.temp modules_recovery.dep.temp
+		cp modules.dep.temp1 modules_recovery.dep.temp1
+	fi
+
 	for module in ${VENDOR_MODULES_LOAD_FIRST_LIST[@]}; do
 		echo VENDOR_MODULES_LOAD_FIRST_LIST: $module
 		sed -n "/${module}:/p" modules.dep.temp
@@ -445,10 +461,31 @@ function adjust_sequence_modules_loading() {
 	rm modules.dep.temp
 	rm modules.dep.temp1
 	rm modules.dep.temp2
+
+	if [[ -n ${ANDROID_PROJECT} ]]; then
+		for module in ${RECOVERY_MODULES_LOAD_LIST[@]}; do
+			echo RECOVERY_MODULES_LOAD_LIST: $module
+			sed -n "/${module}:/p" modules_recovery.dep.temp
+			sed -n "/${module}:/p" modules_recovery.dep.temp >> modules_recovery.dep.temp1
+			sed -i "/${module}:/d" modules_recovery.dep.temp
+			sed -n "/${module}.*\.ko:/p" modules_recovery.dep.temp
+			sed -n "/${module}.*\.ko:/p" modules_recovery.dep.temp >> modules_recovery.dep.temp1
+			sed -i "/${module}.*\.ko:/d" modules_recovery.dep.temp
+		done
+
+		cat modules_recovery.dep.temp >> modules_recovery.dep.temp1
+
+		cp modules_recovery.dep.temp1 modules_recovery.dep
+		rm modules_recovery.dep.temp
+		rm modules_recovery.dep.temp1
+	fi
 }
 
-create_ramdisk_vendor() {
+create_ramdisk_vendor_recovery() {
 	install_temp=$1
+	if [[ -n ${ANDROID_PROJECT} ]]; then
+		recovery_install_temp=$2
+	fi
 	source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list
 	ramdisk_module_i=${#RAMDISK_MODULES_LOAD_LIST[@]}
 	while [ ${ramdisk_module_i} -gt 0 ]; do
@@ -465,6 +502,35 @@ create_ramdisk_vendor() {
 		ramdisk_last_line=${line}
 	done
 	export ramdisk_last_line
+
+	if [[ -n ${ANDROID_PROJECT} ]]; then
+		recovery_module_i=${#RECOVERY_MODULES_LOAD_LIST[@]}
+		while [ ${recovery_module_i} -gt 0 ]; do
+			let recovery_module_i--
+			echo recovery_module_i=$recovery_module_i ${RECOVERY_MODULES_LOAD_LIST[${recovery_module_i}]}
+			if [[ `grep "${RECOVERY_MODULES_LOAD_LIST[${recovery_module_i}]}" ${recovery_install_temp}` ]]; then
+				last_recovery_module=${RECOVERY_MODULES_LOAD_LIST[${recovery_module_i}]}
+				break;
+			fi
+		done
+		# last_recovery_module=${RECOVERY_MODULES_LOAD_LIST[${#RECOVERY_MODULES_LOAD_LIST[@]}-1]}
+		last_recovery_module_line=`sed -n "/${last_recovery_module}/=" ${recovery_install_temp}`
+		for line in ${last_recovery_module_line}; do
+			recovery_last_line=${line}
+		done
+
+		sed -n "${ramdisk_last_line},${recovery_last_line}p" ${recovery_install_temp} > recovery_install.sh
+		sed -i "1d" recovery_install.sh
+		mkdir recovery
+		cat recovery_install.sh | cut -d ' ' -f 2 > recovery/recovery_modules.order
+		cat recovery_install.sh | cut -d ' ' -f 2 | xargs cp -t recovery/
+
+		sed -i '1s/^/#!\/bin\/sh\n\nset -x\n/' recovery_install.sh
+		echo "echo Install recovery modules success!" >> recovery_install.sh
+		chmod 755 recovery_install.sh
+		mv recovery_install.sh recovery/
+	fi
+
 	head -n ${ramdisk_last_line} ${install_temp} > ramdisk_install.sh
 	mkdir ramdisk
 	cat ramdisk_install.sh | cut -d ' ' -f 2 > ramdisk/ramdisk_modules.order
@@ -541,7 +607,26 @@ function modules_install() {
 
 	cp modules.order modules.order.back
 	cut -d ' ' -f 2 __install.sh.tmp > modules.order
-	create_ramdisk_vendor __install.sh.tmp
+
+	if [[ -n ${ANDROID_PROJECT} ]]; then
+		touch __install_recovery.sh
+		touch modules_recovery.order
+		for loop in `cat modules_recovery.dep | sed 's/:.*//'`; do
+		        mod_probe_recovery $loop
+			echo $loop >> modules_recovery.order
+		        echo insmod $loop >> __install_recovery.sh
+		done
+
+		cat __install_recovery.sh  | awk ' {
+			if (!cnt[$2]) {
+				print $0;
+				cnt[$2]++;
+			}
+		}' > __install_recovery.sh.tmp
+
+		cut -d ' ' -f 2 __install_recovery.sh.tmp > modules_recovery.order
+	fi
+	create_ramdisk_vendor_recovery __install.sh.tmp __install_recovery.sh.tmp
 
 	echo "#!/bin/sh" > install.sh
 	echo "cd ramdisk" >> install.sh
@@ -553,6 +638,10 @@ function modules_install() {
 
 	echo "/modules/: all `wc -l modules.dep | awk '{print $1}'` modules."
 	rm __install.sh __install.sh.tmp
+
+	if [[ -n ${ANDROID_PROJECT} ]]; then
+		rm __install_recovery.sh __install_recovery.sh.tmp
+	fi
 
 	popd
 }

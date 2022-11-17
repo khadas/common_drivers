@@ -866,7 +866,7 @@ static int dv_core1_set(u32 dm_count,
 		reset = true;
 	}
 
-	if (dolby_vision_flags & FLAG_CERTIFICAION)
+	if (dolby_vision_flags & FLAG_CERTIFICATION)
 		reset = true;
 
 	if (bl_enable && amdv_core1_on_cnt < DV_CORE1_RECONFIG_CNT) {
@@ -1432,7 +1432,7 @@ static int dv_core1a_set(u32 dm_count,
 		reset = true;
 	}
 
-	if (dolby_vision_flags & FLAG_CERTIFICAION)
+	if (dolby_vision_flags & FLAG_CERTIFICATION)
 		reset = true;
 
 	if (core1a_enable &&
@@ -1885,7 +1885,7 @@ static int dv_core1a_set(u32 dm_count,
 	#endif
 	set_dovi_setting_update_flag(true);
 
-	if ((dolby_vision_flags & FLAG_CERTIFICAION) &&
+	if ((dolby_vision_flags & FLAG_CERTIFICATION) &&
 	    !(dolby_vision_flags & FLAG_DISABLE_CRC))
 		VSYNC_WR_DV_REG(AMDV_CORE1_CRC_CTRL, 1);
 
@@ -1963,7 +1963,7 @@ static int dv_core1b_set(u32 dm_count,
 		reset = true;
 	}
 
-	if (dolby_vision_flags & FLAG_CERTIFICAION)
+	if (dolby_vision_flags & FLAG_CERTIFICATION)
 		reset = true;
 
 	if (core1b_enable &&
@@ -2269,7 +2269,7 @@ static int dv_core2c_set
 		amdv_core2_on_cnt++;
 	}
 
-	if (dolby_vision_flags & FLAG_CERTIFICAION)
+	if (dolby_vision_flags & FLAG_CERTIFICATION)
 		reset = true;
 
 	if (update_core2_reg) {
@@ -2456,7 +2456,7 @@ static int dv_core2a_set
 		amdv_core2_on_cnt++;
 	}
 
-	if (dolby_vision_flags & FLAG_CERTIFICAION)
+	if (dolby_vision_flags & FLAG_CERTIFICATION)
 		reset = true;
 
 	if (update_core2_reg) {
@@ -2666,7 +2666,7 @@ static int dv_core3_set
 		return 0;
 
 	if (!dolby_vision_on ||
-		(dolby_vision_flags & FLAG_CERTIFICAION))
+		(dolby_vision_flags & FLAG_CERTIFICATION))
 		reset = true;
 
 	if (force_update_reg & 4)
@@ -2886,7 +2886,7 @@ static int dv_core3_set
 
 	VSYNC_WR_DV_REG(AMDV_CORE3_DIAG_CTRL, diag_mode);
 
-	if ((dolby_vision_flags & FLAG_CERTIFICAION) &&
+	if ((dolby_vision_flags & FLAG_CERTIFICATION) &&
 	    !(dolby_vision_flags & FLAG_DISABLE_CRC))
 		VSYNC_WR_DV_REG(AMDV_CORE3_CRC_CTRL, 1);
 	/* enable core3 */
@@ -2937,6 +2937,8 @@ void apply_stb_core_settings(dma_addr_t dma_paddr,
 	int cur_core_switch = 0;
 	bool dv_unique_drm = false;
 	enum signal_format_enum format[NUM_IPCORE1];/*core1a core1b input fmt*/
+	int vd1_dv_id;
+	int vd2_dv_id;
 
 	if (multi_dv_mode) {
 		cur_core_switch = get_core1a_core1b_switch();
@@ -2980,7 +2982,10 @@ void apply_stb_core_settings(dma_addr_t dma_paddr,
 		v_size[0] = frame_size_2 & 0xffff;
 		format[0] = new_m_dovi_setting.input[1].src_format;
 		format[1] = new_m_dovi_setting.input[0].src_format;
-		dv_unique_drm = dv_inst[1].dv_unique_drm;
+		vd2_dv_id = layer_id_to_dv_id(VD2_PATH);
+		if (!dv_inst_valid(vd2_dv_id))
+			vd2_dv_id = 0;
+		dv_unique_drm = dv_inst[vd2_dv_id].dv_unique_drm;
 	} else {
 		h_size[0] = (frame_size >> 16) & 0xffff;
 		v_size[0] = frame_size & 0xffff;
@@ -2989,7 +2994,10 @@ void apply_stb_core_settings(dma_addr_t dma_paddr,
 		if (multi_dv_mode) {
 			format[0] = new_m_dovi_setting.input[0].src_format;
 			format[1] = new_m_dovi_setting.input[1].src_format;
-			dv_unique_drm = dv_inst[0].dv_unique_drm;
+			vd1_dv_id = layer_id_to_dv_id(VD1_PATH);
+			if (!dv_inst_valid(vd1_dv_id))
+				vd1_dv_id = 0;
+			dv_unique_drm = dv_inst[vd1_dv_id].dv_unique_drm;
 		}
 	}
 
@@ -3010,7 +3018,7 @@ void apply_stb_core_settings(dma_addr_t dma_paddr,
 	stb_core_setting_update_flag |= update_flag_more;
 
 	if (is_amdv_stb_mode() &&
-	    (dolby_vision_flags & FLAG_CERTIFICAION)) {
+	    (dolby_vision_flags & FLAG_CERTIFICATION)) {
 		graphics_w = dv_cert_graphic_width;
 		graphics_h = dv_cert_graphic_height;
 	}
@@ -3285,11 +3293,11 @@ void video_effect_bypass(int bypass)
 	if (is_aml_tvmode()) {
 		/*bypass vpp pq only for IDK cert or debug mode*/
 		if (!debug_bypass_vpp_pq &&
-		    !(dolby_vision_flags & FLAG_CERTIFICAION))
+		    !(dolby_vision_flags & FLAG_CERTIFICATION))
 			return;
 	}
 	if (debug_bypass_vpp_pq == 1) {
-		if ((dolby_vision_flags & FLAG_CERTIFICAION) ||
+		if ((dolby_vision_flags & FLAG_CERTIFICATION) ||
 		    bypass_all_vpp_pq)
 			dv_pq_ctl(DV_PQ_CERT);
 		else if (is_aml_tvmode())
@@ -3338,7 +3346,7 @@ void video_effect_bypass(int bypass)
 				VSYNC_WR_DV_REG(VPP_GAINOFF_CTRL0, 0);
 #endif
 			} else {
-				if ((dolby_vision_flags & FLAG_CERTIFICAION) ||
+				if ((dolby_vision_flags & FLAG_CERTIFICATION) ||
 				    bypass_all_vpp_pq)
 					dv_pq_ctl(DV_PQ_CERT);
 				else if (is_aml_tvmode())
@@ -3642,7 +3650,7 @@ void enable_amdv_v1(int enable)
 					/* stop hdr core before */
 					/* start dv core */
 					if (dolby_vision_flags &
-					FLAG_CERTIFICAION)
+					FLAG_CERTIFICATION)
 						hdr_vd1_off(VPP_TOP0);
 					if ((amdv_mask & 1) &&
 					    amdv_setting_video_flag) {
@@ -3681,7 +3689,7 @@ void enable_amdv_v1(int enable)
 					/* stop hdr core before */
 					/* start dv core */
 					if (dolby_vision_flags &
-						FLAG_CERTIFICAION)
+						FLAG_CERTIFICATION)
 						hdr_vd1_off(VPP_TOP0);
 					if ((amdv_mask & 1) &&
 						amdv_setting_video_flag) {
@@ -3732,7 +3740,7 @@ void enable_amdv_v1(int enable)
 					/* stop hdr core before */
 					/* start dv core */
 					if (dolby_vision_flags &
-						FLAG_CERTIFICAION)
+						FLAG_CERTIFICATION)
 						hdr_vd1_off(VPP_TOP0);
 					if ((amdv_mask & 1) &&
 						amdv_setting_video_flag) {
@@ -3780,7 +3788,7 @@ void enable_amdv_v1(int enable)
 						amdv_core1_on = false;
 					}
 				}
-				if (dolby_vision_flags & FLAG_CERTIFICAION) {
+				if (dolby_vision_flags & FLAG_CERTIFICATION) {
 					/* bypass dither/PPS/SR/CM, EO/OE */
 					bypass_pps_sr_gamma_gainoff(3);
 					/* bypass all video effect */
@@ -3858,7 +3866,7 @@ void enable_amdv_v1(int enable)
 					(VIU_MISC_CTRL1,
 					 ((amdv_mask & 2) ? 0 : 1),
 					 18, 1); /* core2 */
-				if (dolby_vision_flags & FLAG_CERTIFICAION) {
+				if (dolby_vision_flags & FLAG_CERTIFICATION) {
 					/* bypass dither/PPS/SR/CM*/
 					/*   bypass EO/OE*/
 					/*   bypass vadj2/mtx/gainoff */
@@ -4108,7 +4116,7 @@ void enable_amdv_v1(int enable)
 						hdr_vd1_iptmap(VPP_TOP0);
 					}
 				}
-				if (dolby_vision_flags & FLAG_CERTIFICAION) {
+				if (dolby_vision_flags & FLAG_CERTIFICATION) {
 					/* bypass dither/PPS/SR/CM*/
 					/*   bypass EO/OE*/
 					/*   bypass vadj2/mtx/gainoff */
@@ -4210,7 +4218,7 @@ void enable_amdv_v1(int enable)
 					 (0 << 2) |
 					 /* 19 osd2 enable */
 					 ((dolby_vision_flags
-					 & FLAG_CERTIFICAION)
+					 & FLAG_CERTIFICATION)
 					 ? (0 << 1) : (1 << 1)) |
 					 /* 18 core2 bypass */
 					 ((amdv_mask & 2) ?
@@ -4232,7 +4240,7 @@ void enable_amdv_v1(int enable)
 				}
 				/* bypass all video effect */
 				if ((dolby_vision_flags & FLAG_BYPASS_VPP) ||
-				    (dolby_vision_flags & FLAG_CERTIFICAION))
+				    (dolby_vision_flags & FLAG_CERTIFICATION))
 					video_effect_bypass(1);
 				VSYNC_WR_DV_REG(VPP_MATRIX_CTRL, 0);
 				VSYNC_WR_DV_REG(VPP_DUMMY_DATA1, 0x20000000);
@@ -4818,7 +4826,8 @@ void enable_amdv_v2_stb(int enable)
 	u32 core_flag = 0;
 	u32 diagnostic_enable = m_dovi_setting.diagnostic_enable;
 	bool dovi_ll_enable = m_dovi_setting.dovi_ll_enable;
-	/*int dv_id = 0;*/
+	int vd1_dv_id = 0;
+	int vd2_dv_id = 1;
 
 	if (debug_dolby & 8)
 		pr_dv_dbg("enable %d, dv on %d, mode %d %d\n",
@@ -5301,8 +5310,12 @@ void enable_amdv_v2_stb(int enable)
 				dv_core1[0].core1_on_cnt = 0;
 				dv_core1[1].core1_on = false;
 				dv_core1[1].core1_on_cnt = 0;
-				dv_inst[0].frame_count = 0;
-				dv_inst[1].frame_count = 0;
+				vd1_dv_id = layer_id_to_dv_id(VD1_PATH);
+				vd2_dv_id = layer_id_to_dv_id(VD2_PATH);
+				if (dv_inst_valid(vd1_dv_id))
+					dv_inst[vd1_dv_id].frame_count = 0;
+				if (dv_inst_valid(vd2_dv_id))
+					dv_inst[vd2_dv_id].frame_count = 0;
 				pr_dv_dbg("DV core1 turn off\n");
 			} else if (dv_core1[0].core1_on &&
 				(!(amdv_mask & 1) ||
@@ -5349,7 +5362,7 @@ void enable_amdv_v2_stb(int enable)
 				}
 			}
 		}
-		if (dolby_vision_flags & FLAG_CERTIFICAION) {
+		if (dolby_vision_flags & FLAG_CERTIFICATION) {
 			/* 1.not bypass dither/PPS/SR/CM here due to some hdmi-in*/
 			/* case need pps scaler, handle in bypass_pps_path*/
 			/* 2.bypass EO/OE*/

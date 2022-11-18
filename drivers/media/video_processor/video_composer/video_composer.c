@@ -41,6 +41,7 @@
 #include <linux/sched/clock.h>
 #include <linux/sync_file.h>
 #include <linux/ctype.h>
+#include <linux/amlogic/media/registers/cpu_version.h>
 #include <linux/amlogic/media/vfm/amlogic_fbc_hook_v1.h>
 #include "../../gdc/inc/api/gdc_api.h"
 
@@ -4079,6 +4080,8 @@ static int video_composer_probe(struct platform_device *pdev)
 		video_composer_instance_num++;
 	if (layer_cap & LAYER2_SCALER)
 		video_composer_instance_num++;
+	if (is_meson_c3_cpu())
+		video_composer_instance_num = 1;
 	ret = class_register(&video_composer_class);
 	if (ret < 0)
 		return ret;

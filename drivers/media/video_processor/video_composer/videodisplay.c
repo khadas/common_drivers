@@ -22,6 +22,7 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
 #include <linux/amlogic/media/video_sink/video.h>
 #endif
+#include <linux/amlogic/media/registers/cpu_version.h>
 #include "videodisplay.h"
 #include "video_composer.h"
 
@@ -113,7 +114,6 @@ static void vd_display_q_uninit(struct composer_dev *dev)
 	struct vframe_s *vf = NULL;
 	struct file *file_vf = NULL;
 	int repeat_count;
-	int i;
 	u32 dma_flag = 0;
 	struct vd_prepare_s *vd_prepare;
 	struct mbp_buffer_info_t *mpb_buf = NULL;
@@ -142,23 +142,21 @@ static void vd_display_q_uninit(struct composer_dev *dev)
 					 __func__,
 					 repeat_count,
 					 vf->omx_index);
-				for (i = 0; i <= repeat_count; i++) {
-					if (!dma_flag) {
-						dma_buf_put((struct dma_buf *)file_vf);
-						dma_fence_signal(vd_prepare->release_fence);
-						dma_fence_put(vd_prepare->release_fence);
-						vc_print(dev->index, PRINT_FENCE,
-						"%s: release_fence = %px\n",
-						__func__,
-						vd_prepare->release_fence);
-					} else {
-						vc_print(dev->index, PRINT_FENCE,
-							"put dma bufer!!!\n");
-						mpb_buf = (struct mbp_buffer_info_t *)file_vf;
-						vf->vc_private->unlock_buffer_cb(mpb_buf);
-					}
-					dev->fput_count++;
+				if (!dma_flag) {
+					dma_buf_put((struct dma_buf *)file_vf);
+					dma_fence_signal(vd_prepare->release_fence);
+					dma_fence_put(vd_prepare->release_fence);
+					vc_print(dev->index, PRINT_FENCE,
+					"%s: release_fence = %px\n",
+					__func__,
+					vd_prepare->release_fence);
+				} else {
+					vc_print(dev->index, PRINT_FENCE,
+						"put dma bufer!!!\n");
+					mpb_buf = (struct mbp_buffer_info_t *)file_vf;
+					vf->vc_private->unlock_buffer_cb(mpb_buf);
 				}
+				dev->fput_count++;
 			} else if (!(vf->flag
 				     & VFRAME_FLAG_VIDEO_COMPOSER)) {
 				vc_print(dev->index, PRINT_ERROR,
@@ -173,8 +171,6 @@ static void vd_ready_q_uninit(struct composer_dev *dev)
 {
 	struct vframe_s *vf = NULL;
 	struct file *file_vf = NULL;
-	int repeat_count;
-	int i;
 	struct vd_prepare_s *vd_prepare;
 	struct mbp_buffer_info_t *mpb_buf = NULL;
 	u32 dma_flag = 0;
@@ -202,32 +198,28 @@ static void vd_ready_q_uninit(struct composer_dev *dev)
 				return;
 			}
 
-			repeat_count = vf->repeat_count[dev->index];
 			file_vf = vf->file_vf;
 			dma_flag = vf->flag & VFRAME_FLAG_VIDEO_COMPOSER_DMA;
-			for (i = 0; i <= repeat_count; i++) {
-				if (dma_flag) {
-					vc_print(dev->index, PRINT_FENCE,
-						"put dma bufer!!!\n");
-					mpb_buf = (struct mbp_buffer_info_t *)file_vf;
-					if (IS_ERR_OR_NULL(mpb_buf)) {
-						vc_print(dev->index, PRINT_ERROR,
-							"%s: mpb_buf is NULL.\n",
-							__func__);
-						continue;
-					}
-					vf->vc_private->unlock_buffer_cb(mpb_buf);
-				} else {
-					dma_buf_put((struct dma_buf *)file_vf);
-					dma_fence_signal(vd_prepare->release_fence);
-					dma_fence_put(vd_prepare->release_fence);
-					vc_print(dev->index, PRINT_FENCE,
-						"%s: release_fence = %px\n",
-						__func__,
-						vd_prepare->release_fence);
+			if (dma_flag) {
+				vc_print(dev->index, PRINT_FENCE, "put dma bufer!!!\n");
+				mpb_buf = (struct mbp_buffer_info_t *)file_vf;
+				if (IS_ERR_OR_NULL(mpb_buf)) {
+					vc_print(dev->index, PRINT_ERROR,
+						"%s: mpb_buf is NULL.\n",
+						__func__);
+					continue;
 				}
-				dev->fput_count++;
+				vf->vc_private->unlock_buffer_cb(mpb_buf);
+			} else {
+				dma_buf_put((struct dma_buf *)file_vf);
+				dma_fence_signal(vd_prepare->release_fence);
+				dma_fence_put(vd_prepare->release_fence);
+				vc_print(dev->index, PRINT_FENCE,
+					"%s: release_fence = %px\n",
+					__func__,
+					vd_prepare->release_fence);
 			}
+			dev->fput_count++;
 		}
 	}
 }
@@ -595,17 +587,33 @@ static struct vframe_s *vc_vf_peek(void *op_arg)
 
 		/*apk/sf drop 0/3 4; vc receive 1 2 5 in one vsync*/
 		/*apk queue 5 and wait 1, it will fence timeout*/
-		if ((get_count[dev->index] == 2 && dev->video_render_index != 5)) {
+		/* dev->video_render_index == 5 means T7 dual screen mode */
+		/*input 120hz with 60hz output or input 100hz with 50hz output no need check*/
+		if (get_count[dev->index] == 2 && dev->video_render_index != 5) {
 			vc_print(dev->index, PRINT_ERROR,
 				 "has already get 2, can not get more, video_render.%d",
 				 dev->video_render_index);
 			return NULL;
 		}
+
+		time_vsync = (u64)1000000
+			* (time2.tv_sec - time1.tv_sec)
+			+ time2.tv_usec - time1.tv_usec;
+
+		/*dv video on TV platform tog more then 2ms, if hwc set frame after HW vsync 1ms,*/
+		/*this vf will be get by current vsync;*/
+		/*only enable for android, if linux set frame also set pts_us64, we can enable it */
+		if (!is_meson_t7_cpu() && !dev->is_drm_enable) {
+			if (vf->pts_us64 >= time_vsync && vf->pts_us64 < (time_vsync + 10000)) {
+				vc_print(dev->index, PRINT_PATTERN,
+					 "display next vsync: pts_us64=%lld, time_vsync=%lld\n",
+					 vf->pts_us64, time_vsync);
+				return NULL;
+			}
+		}
+
 		if (get_count[dev->index] > 0 &&
 			!(vf->flag & VFRAME_FLAG_GAME_MODE)) {
-			time_vsync = (u64)1000000
-				* (time2.tv_sec - time1.tv_sec)
-				+ time2.tv_usec - time1.tv_usec;
 			interval_time = abs(time_vsync - vf->pts_us64);
 			vc_print(dev->index, PRINT_PERFORMANCE,
 				 "time_vsync=%lld, vf->pts_us64=%lld\n",
@@ -769,7 +777,6 @@ static struct vframe_s *vc_vf_get(void *op_arg)
 static void vc_vf_put(struct vframe_s *vf, void *op_arg)
 {
 	int repeat_count;
-	int i;
 	struct file *file_vf;
 	struct composer_dev *dev = (struct composer_dev *)op_arg;
 	struct vd_prepare_s *vd_prepare_tmp;
@@ -780,18 +787,13 @@ static void vc_vf_put(struct vframe_s *vf, void *op_arg)
 
 	if (dev->is_drm_enable) {
 		if (vf->flag & VFRAME_FLAG_FAKE_FRAME) {
-			vc_print(dev->index, PRINT_OTHER,
-				 "put: fake frame\n");
+			vc_print(dev->index, PRINT_OTHER, "put: fake frame\n");
 			return;
 		}
 
-		vd_prepare_tmp = container_of(vf,
-					struct vd_prepare_s,
-					dst_frame);
+		vd_prepare_tmp = container_of(vf, struct vd_prepare_s, dst_frame);
 		if (IS_ERR_OR_NULL(vd_prepare_tmp)) {
-			vc_print(dev->index, PRINT_ERROR,
-				"%s: prepare is NULL.\n",
-				__func__);
+			vc_print(dev->index, PRINT_ERROR, "%s: prepare is NULL.\n", __func__);
 			return;
 		}
 
@@ -799,35 +801,29 @@ static void vc_vf_put(struct vframe_s *vf, void *op_arg)
 		file_vf = vf->file_vf;
 
 		vf_pop_display_q(dev, vf);
-		for (i = 0; i <= repeat_count; i++) {
-			if (!file_vf) {
+		if (!file_vf)
+			vc_print(dev->index, PRINT_ERROR, "put: file error!!!\n");
+
+		if (vf->flag & VFRAME_FLAG_VIDEO_COMPOSER_DMA) {
+			vc_print(dev->index, PRINT_FENCE, "put dma bufer!!!\n");
+			mpb_buf = (struct mbp_buffer_info_t *)file_vf;
+			if (IS_ERR_OR_NULL(mpb_buf)) {
 				vc_print(dev->index, PRINT_ERROR,
-					"put: file error!!!\n");
+					"%s: mpb_buf is NULL.\n",
+					__func__);
 			}
-
-			if (vf->flag & VFRAME_FLAG_VIDEO_COMPOSER_DMA) {
-				vc_print(dev->index, PRINT_FENCE,
-					"put dma bufer!!!\n");
-				mpb_buf = (struct mbp_buffer_info_t *)file_vf;
-				if (IS_ERR_OR_NULL(mpb_buf)) {
-					vc_print(dev->index, PRINT_ERROR,
-						"%s: mpb_buf is NULL.\n",
-						__func__);
-					continue;
-				}
-				vf->vc_private->unlock_buffer_cb(mpb_buf);
-			} else {
-				dma_buf_put((struct dma_buf *)file_vf);
-				dma_fence_signal(vd_prepare_tmp->release_fence);
-				dma_fence_put(vd_prepare_tmp->release_fence);
-				vc_print(dev->index, PRINT_FENCE,
-					"%s: release_fence = %px\n",
-					__func__,
-					vd_prepare_tmp->release_fence);
-			}
-
-			dev->fput_count++;
+			vf->vc_private->unlock_buffer_cb(mpb_buf);
+		} else {
+			dma_buf_put((struct dma_buf *)file_vf);
+			dma_fence_signal(vd_prepare_tmp->release_fence);
+			dma_fence_put(vd_prepare_tmp->release_fence);
+			vc_print(dev->index, PRINT_FENCE,
+				"%s: release_fence = %px\n",
+				__func__,
+				vd_prepare_tmp->release_fence);
 		}
+
+		dev->fput_count++;
 		vd_prepare_data_q_put(dev, vd_prepare_tmp);
 		if (vf->vc_private) {
 			vc_private_q_recycle(dev, vf->vc_private);
@@ -1284,6 +1280,7 @@ int video_display_setframe(int layer_index,
 		is_repeat_vf = true;
 
 	if (is_repeat_vf) {
+		dma_buf_put(frame_info->dmabuf);
 		vd_prepare = dev->vd_prepare_last;
 	} else {
 		vd_prepare = vd_prepare_data_q_get(dev);
@@ -1313,7 +1310,6 @@ int video_display_setframe(int layer_index,
 
 	vf = &vd_prepare->dst_frame;
 
-	vf->vc_private = vc_private_q_pop(dev);
 	vf->axis[0] = frame_info->dst_x;
 	vf->axis[1] = frame_info->dst_y;
 	vf->axis[2] = frame_info->dst_w + frame_info->dst_x - 1;
@@ -1330,6 +1326,14 @@ int video_display_setframe(int layer_index,
 	vf->flag |= VFRAME_FLAG_VIDEO_COMPOSER
 		| VFRAME_FLAG_VIDEO_COMPOSER_BYPASS;
 	vf->disp_pts = 0;
+
+	if (is_repeat_vf) {
+		vf->repeat_count[dev->index]++;
+		vc_print(layer_index, PRINT_OTHER,
+			"%s: repeat frame, repeat_count is %d.\n",
+			__func__, vf->repeat_count[dev->index]);
+		return 0;
+	}
 
 	if (!(is_dec_vf || is_v4l_vf)) {
 		vf->flag |= VFRAME_FLAG_VIDEO_LINEAR;
@@ -1370,14 +1374,8 @@ int video_display_setframe(int layer_index,
 			BITDEPTH_Y8 | BITDEPTH_U8 | BITDEPTH_V8;
 	}
 
-	if (is_repeat_vf) {
-		vf->repeat_count[dev->index]++;
-		vc_print(layer_index, PRINT_ERROR,
-			"%s: repeat frame, repeat_count is %d.\n",
-			__func__, vf->repeat_count[dev->index]);
-		return 0;
-	}
 	dev->last_file = (struct file *)frame_info->dmabuf;
+	vf->vc_private = vc_private_q_pop(dev);
 	vf->file_vf = (struct file *)(frame_info->dmabuf);
 	vf->repeat_count[dev->index] = 0;
 	dev->vd_prepare_last = vd_prepare;
@@ -1385,15 +1383,11 @@ int video_display_setframe(int layer_index,
 	video_display_push_ready(dev, vf);
 
 	if (!kfifo_put(&dev->ready_q, (const struct vframe_s *)vf)) {
-		vc_print(layer_index, PRINT_ERROR,
-			"%s: ready_q is full.\n",
-			__func__);
+		vc_print(layer_index, PRINT_ERROR, "%s: ready_q is full.\n", __func__);
 		return -EAGAIN;
 	}
 	ready_count = kfifo_len(&dev->ready_q);
-	vc_print(layer_index, PRINT_OTHER,
-		"%s: ready_q count is %d.\n",
-		__func__, ready_count);
+	vc_print(layer_index, PRINT_OTHER, "%s: ready_q count is %d.\n", __func__, ready_count);
 
 	return 0;
 }
@@ -1450,9 +1444,6 @@ int mbd_video_display_setframe(int layer_index,
 	}
 
 	vf = &vd_prepare->dst_frame;
-	vf->vc_private->lock_buffer_cb = frame_info->lock_buffer_cb;
-	vf->vc_private->unlock_buffer_cb = frame_info->unlock_buffer_cb;
-	vf->vc_private->lock_buffer_cb((void *)frame_info->buffer_info);
 	vf->axis[0] = frame_info->dst_x;
 	vf->axis[1] = frame_info->dst_y;
 	vf->axis[2] = frame_info->dst_w + frame_info->dst_x - 1;
@@ -1487,15 +1478,21 @@ int mbd_video_display_setframe(int layer_index,
 
 	if (is_repeat_vf) {
 		vf->repeat_count[dev->index]++;
-		vc_print(layer_index, PRINT_ERROR,
+		vc_print(layer_index, PRINT_OTHER,
 			"%s: repeat frame, repeat_count is %d.\n",
 			__func__, vf->repeat_count[dev->index]);
 		return 0;
 	}
+
+	vf->vc_private = vc_private_q_pop(dev);
+	vf->vc_private->lock_buffer_cb = frame_info->lock_buffer_cb;
+	vf->vc_private->unlock_buffer_cb = frame_info->unlock_buffer_cb;
+	vf->vc_private->lock_buffer_cb((void *)frame_info->buffer_info);
 	dev->last_file = (struct file *)frame_info->buffer_info;
 	vf->file_vf = (struct file *)(frame_info->buffer_info);
 	vf->repeat_count[dev->index] = 0;
 	dev->vd_prepare_last = vd_prepare;
+
 	video_display_push_ready(dev, vf);
 	if (!kfifo_put(&dev->ready_q, (const struct vframe_s *)vf)) {
 		vc_print(layer_index, PRINT_ERROR,

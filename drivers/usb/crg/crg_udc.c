@@ -4677,8 +4677,6 @@ int crg_otg_write_UDC(const char *udc_name)
 		return -ENODEV;
 
 	gi = container_of(cdev, struct gadget_info, cdev);
-	if (!gi)
-		return -ENOMEM;
 	len = strlen(udc_name);
 
 	name = kstrdup(udc_name, GFP_KERNEL);

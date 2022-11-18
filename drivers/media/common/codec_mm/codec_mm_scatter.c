@@ -728,6 +728,11 @@ codec_mm_slot_alloc(struct codec_mm_scatter_mgt *smgt, int size, int flags)
 		}
 		slot->from_type = SLOT_FROM_GET_FREE_PAGES;
 		slot->mm = NULL;
+		/*
+		 * get_oredr() input is signed int type,
+		 * here large_shift will not exceed 31
+		 */
+		/*coverity[large_shift:SUPPRESS]*/
 		slot->page_num = 1 << page_order;
 		slot->phy_addr =
 			virt_to_phys((unsigned long *)slot->page_header);

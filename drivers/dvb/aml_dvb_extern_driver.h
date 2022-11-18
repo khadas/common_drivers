@@ -43,6 +43,11 @@ struct compact_tuner_config {
 	u32 reserved1;
 };
 
+struct aml_attach_work {
+	struct work_struct work;
+	int cur_id;
+};
+
 struct dvb_extern_device {
 	char *name;
 	struct class class;
@@ -66,6 +71,7 @@ struct dvb_extern_device {
 	int demod_cur_attached;
 
 	struct work_struct work;
+	struct aml_attach_work attach_work;
 
 	/* to set config from userspace */
 	struct device cdev;

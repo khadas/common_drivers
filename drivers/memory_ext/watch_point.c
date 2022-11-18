@@ -347,6 +347,11 @@ static void wp_replace_back(struct work_struct *data)
 	#ifdef CONFIG_ARM64
 		cpus_read_lock();
 		for_each_online_cpu(cpu) {
+			/*
+			 * We don't have more than 8 cores,
+			 * so for_each_online_cpu() doesn't go out of bounds.
+			 */
+			/* coverity[overrun-local:SUPPRESS] */
 			bp = per_cpu(*awp->wp_event[i], cpu);
 		#ifdef CONFIG_AMLOGIC_DIS
 			if (is_default_overflow_handler(bp)) {

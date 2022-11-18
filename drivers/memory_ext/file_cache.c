@@ -342,6 +342,11 @@ static u64 get_iow_time(u64 *cpu)
 	guest_nice = 0;
 
 	for_each_possible_cpu(i) {
+		/*
+		 * When runtime, it will reallocate a
+		 * new buffer based on the number of CPUs.
+		 */
+		/* coverity[overrun-call:SUPPRESS] */
 		struct kernel_cpustat *kcs = &kcpustat_cpu(i);
 
 		user += kcpustat_cpu(i).cpustat[CPUTIME_USER];

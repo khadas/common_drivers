@@ -1718,6 +1718,11 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 	if (register_die_notifier(&die_notifier))
 		pr_err("%s,register die notifier failed!\n", __func__);
 
+	/*
+	 * The driver always uses memory and doesn't need to be freed
+	 */
+	/* coverity[leaked_storage:SUPPRESS] */
+
 	pr_info("%s done\n", __func__);
 	return 0;
 

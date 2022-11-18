@@ -34,6 +34,8 @@
 #include <linux/amlogic/vmap_stack.h>
 #endif
 
+static int pagemap_en;
+
 void dump_mem_layout(char *buf)
 {
 #define MLK(b, t) b, t, ((t) - (b)) >> 10
@@ -141,6 +143,7 @@ static int mdebug_show(struct seq_file *m, void *arg)
 	/* update only once */
 	dump_mem_layout(buf);
 	seq_printf(m, "%s\n", buf);
+	pr_info("pagemap_en:%d\n", pagemap_en);
 
 	kfree(buf);
 
@@ -152,9 +155,60 @@ static int mdebug_open(struct inode *inode, struct file *file)
 	return single_open(file, mdebug_show, NULL);
 }
 
+int pagemap_enabled(void)
+{
+	return pagemap_en;
+}
+
+static int early_pagemap(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (!strncmp(buf, "eng", 3) ||
+	    !strncmp(buf, "userdebug", 9))
+		pagemap_en = 1;
+
+	pr_info("%s pagemap for %s build\n",
+		pagemap_en ? "enable" : "disable", buf);
+
+	return 0;
+}
+__setup("buildvariant=", early_pagemap);
+
+static ssize_t mdebug_write(struct file *file, const char __user *buffer,
+			    size_t count, loff_t *ppos)
+{
+	char *buf;
+	unsigned long arg = 0;
+
+	buf = kmalloc(count, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	if (copy_from_user(buf, buffer, count)) {
+		kfree(buf);
+		return -EINVAL;
+	}
+
+	if (!strncmp(buf, "pagemap_en=", 6)) {	/* option for 'pagemap_en=' */
+		if (sscanf(buf, "pagemap_en=%ld", &arg) < 0) {
+			kfree(buf);
+			return -EINVAL;
+		}
+		pagemap_en = arg ? 1 : 0;
+		pr_info("set pagemap_en to %d\n", pagemap_en);
+	}
+
+	kfree(buf);
+
+	return count;
+}
+
 static const struct proc_ops mdebug_ops = {
 	.proc_open	= mdebug_open,
 	.proc_read	= seq_read,
+	.proc_write	= mdebug_write,
 	.proc_lseek	= seq_lseek,
 	.proc_release	= single_release,
 };

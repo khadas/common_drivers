@@ -191,7 +191,7 @@ static void am_meson_gem_free_video_secure_buf(struct am_meson_gem_object *meson
 	DRM_DEBUG("free secure addr (%p).\n", &meson_gem_obj->addr);
 }
 
-static void meson_gem_object_free(struct drm_gem_object *obj)
+void meson_gem_object_free(struct drm_gem_object *obj)
 {
 	struct am_meson_gem_object *meson_gem_obj = to_am_meson_gem_obj(obj);
 
@@ -338,7 +338,9 @@ static struct sg_table *meson_gem_prime_get_sg_table(struct drm_gem_object *obj)
 	meson_gem_obj = to_am_meson_gem_obj(obj);
 	DRM_DEBUG("%s %p.\n", __func__, meson_gem_obj);
 
-	if (!meson_gem_obj->base.import_attach) {
+	if (!meson_gem_obj->base.import_attach && meson_gem_obj->is_dma) {
+		return meson_gem_obj->sg;
+	} else if (!meson_gem_obj->base.import_attach && meson_gem_obj->ionbuffer) {
 		src_table = meson_gem_obj->ionbuffer->sg_table;
 		dst_table = kmalloc(sizeof(*dst_table), GFP_KERNEL);
 		if (!dst_table) {
@@ -392,7 +394,7 @@ static void meson_gem_prime_vunmap(struct drm_gem_object *obj, struct dma_buf_ma
 	}
 }
 
-static int am_meson_gem_object_mmap(struct am_meson_gem_object *obj,
+int am_meson_gem_object_mmap(struct am_meson_gem_object *obj,
 			     struct vm_area_struct *vma)
 {
 	int ret = 0;
@@ -459,7 +461,7 @@ static int am_meson_gem_object_mmap_dma(struct am_meson_gem_object *meson_gem_ob
 	return 0;
 }
 
-static int meson_gem_prime_mmap(struct drm_gem_object *obj,
+int meson_gem_prime_mmap(struct drm_gem_object *obj,
 			    struct vm_area_struct *vma)
 {
 	struct am_meson_gem_object *meson_gem_obj;

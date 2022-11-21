@@ -10,7 +10,8 @@
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_uapi.h>
 #include <drm/drm_atomic_helper.h>
-#include <linux/ion.h>
+#include <linux/dma-buf.h>
+#include <linux/amlogic/ion.h>
 
 #include "meson_drv.h"
 #include "meson_gem.h"
@@ -62,7 +63,7 @@ static int am_meson_fbdev_alloc_fb_gem(struct fb_info *info)
 
 			pgprot = pgprot_writecombine(PAGE_KERNEL);
 
-			for_each_sgtable_page(meson_gem->sg_table, &piter, 0) {
+			for_each_sgtable_page(meson_gem->sg, &piter, 0) {
 				WARN_ON(tmp - pages >= npages);
 				*tmp++ = sg_page_iter_page(&piter);
 			}
@@ -105,7 +106,7 @@ static void am_meson_fbdev_free_fb_gem(struct fb_info *info)
 					meson_gem->ionbuffer);
 		info->screen_base = NULL;
 
-		am_meson_gem_object_free(fbdev->fb_gem);
+		meson_gem_object_free(fbdev->fb_gem);
 		fbdev->fb_gem = NULL;
 
 		fb = helper->fb;
@@ -153,7 +154,7 @@ static int am_meson_fbdev_mmap(struct fb_info *info,
 	meson_gem = container_of(fbdev->fb_gem,
 				 struct am_meson_gem_object, base);
 
-	return am_meson_gem_object_mmap(meson_gem, vma);
+	return meson_gem_prime_mmap(fbdev->fb_gem, vma);
 }
 
 static int am_meson_drm_fbdev_sync(struct fb_info *info)
@@ -664,17 +665,11 @@ struct meson_drm_fbdev *am_meson_create_drm_fbdev(struct drm_device *dev,
 
 	drm_fb_helper_prepare(dev, helper, &meson_drm_fb_helper_funcs);
 
-	ret = drm_fb_helper_init(dev, helper, MESON_DRM_MAX_CONNECTOR);
+	ret = drm_fb_helper_init(dev, helper);
 	if (ret < 0) {
 		dev_err(dev->dev, "Failed to initialize drm fb helper - %d.\n",
 			ret);
 		goto err_free;
-	}
-
-	ret = drm_fb_helper_single_add_all_connectors(helper);
-	if (ret < 0) {
-		dev_err(dev->dev, "Failed to add connectors - %d.\n", ret);
-		goto err_drm_fb_helper_fini;
 	}
 
 	ret = drm_fb_helper_initial_config(helper, bpp);

@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+//#define DEBUG
 #include <linux/mmc/core.h>
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
@@ -379,7 +380,7 @@ static int _dtb_init(struct mmc_card *mmc)
 				info->stamp[cpy] = dtb->timestamp;
 				info->valid[cpy] = 1;
 			} else {
-				pr_info("cpy %d is not valid\n", cpy);
+				pr_debug("cpy %d is not valid\n", cpy);
 			}
 		}
 		valid += info->valid[cpy];

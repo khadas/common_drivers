@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
 ccflags-y += -I$(srctree)/drivers/mmc/core
+#ccflags-y += -DDEBUG
 
 MODULE_NAME = amlogic-mmc
 obj-$(CONFIG_AMLOGIC_MMC_MESON_GX) = $(MODULE_NAME).o

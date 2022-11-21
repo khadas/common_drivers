@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+//#define DEBUG
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -600,7 +601,7 @@ static int meson_mmc_clk_init(struct meson_host *host)
 	host->mux_div = devm_clk_get(host->dev, "mux_div");
 	if (IS_ERR(host->mux_div)) {
 		host->mux_div = NULL;
-		dev_err(host->dev,
+		dev_dbg(host->dev,
 			"Missing clock %s(only c1/c2 have mux_div)\n",
 			"mux_div");
 	} else {
@@ -847,7 +848,7 @@ static int find_best_win(struct mmc_host *mmc,
 
 	sprintf(adj_print + len, ">\n");
 	if (num <= AML_FIXED_ADJ_MAX)
-		pr_info("%s", host->adj_win);
+		pr_debug("%s", host->adj_win);
 
 	/* last point is ok! */
 	if (curr_win_start >= 0) {
@@ -911,7 +912,7 @@ static unsigned long _test_fixed_adj(struct mmc_host *mmc,
 				mmc_hostname(mmc), adj + i, nmatch);
 	}
 	len += sprintf(adj_print + len, ">\n");
-	pr_info("%s", host->adj_win);
+	pr_debug("%s", host->adj_win);
 
 	return fixed_adj_map;
 }
@@ -968,7 +969,7 @@ static void set_fixed_adj_line_delay(u32 step,
 			writel(AML_MV_DLY2_NOMMC_CMD(step),
 					host->regs + SD_EMMC_DELAY2);
 	}
-	pr_info("step:%u, delay1:0x%x, delay2:0x%x\n",
+	pr_debug("step:%u, delay1:0x%x, delay2:0x%x\n",
 			step,
 			readl(host->regs + SD_EMMC_DELAY1),
 			readl(host->regs + SD_EMMC_DELAY2));
@@ -1067,7 +1068,7 @@ static int meson_mmc_fixadj_tuning(struct mmc_host *mmc, u32 opcode)
 
 	old_dly = readl(host->regs + SD_EMMC_V3_ADJUST);
 	d1_dly = (old_dly >> 0x6) & 0x3F;
-	pr_info("Data 1 aligned delay is %d\n", d1_dly);
+	pr_debug("Data 1 aligned delay is %d\n", d1_dly);
 	writel(0, host->regs + SD_EMMC_V3_ADJUST);
 
 tuning:
@@ -1082,7 +1083,7 @@ tuning:
 	len += sprintf(adj_print + len, "%s: adj_win: < ", mmc_hostname(mmc));
 	vclk = readl(host->regs + SD_EMMC_CLOCK);
 	clk_div = vclk & CLK_DIV_MASK;
-	pr_info("%s: clk %d div %d tuning start\n",
+	pr_debug("%s: clk %d div %d tuning start\n",
 			mmc_hostname(mmc), mmc->actual_clock, clk_div);
 
 	if (clk_div <= AML_FIXED_ADJ_MAX)
@@ -1100,7 +1101,7 @@ tuning:
 	}
 
 	len += sprintf(adj_print + len, ">\n");
-	pr_info("%s", host->adj_win);
+	pr_debug("%s", host->adj_win);
 
 	find_best_win(mmc, rx_adj, clk_div, &best_s, &best_sz, true);
 
@@ -1127,7 +1128,7 @@ tuning:
 		all_flag = true;
 		dly = readl(host->regs + SD_EMMC_DELAY1);
 		d1_dly = (dly >> 0x6) & 0x3F;
-		pr_warn("%s() d1_dly %d, window start %d, size %d\n",
+		pr_debug("%s() d1_dly %d, window start %d, size %d\n",
 			__func__, d1_dly, best_s, best_sz);
 		if (++d1_dly > 0x3F) {
 			pr_err("%s: tuning failed\n",
@@ -1139,7 +1140,7 @@ tuning:
 		writel(dly, host->regs + SD_EMMC_DELAY1);
 		goto tuning;
 	} else {
-		pr_info("%s: best_s = %d, best_sz = %d\n",
+		pr_debug("%s: best_s = %d, best_sz = %d\n",
 				mmc_hostname(mmc),
 				best_s, best_sz);
 	}
@@ -1183,7 +1184,7 @@ int sdio_get_device(void)
 			break;
 		}
 	}
-	pr_info("sdio device is 0x%x\n", device);
+	pr_debug("sdio device is 0x%x\n", device);
 	return device;
 }
 
@@ -1986,7 +1987,7 @@ static u32 scan_emmc_cmd_win(struct mmc_host *mmc,
 	after_time = sched_clock();
 	host->is_tuning = 0;
 	host->cmd_retune = 1;
-	pr_info("scan time distance: %llu ns\n", after_time - before_time);
+	pr_debug("scan time distance: %llu ns\n", after_time - before_time);
 	writel(delay2_bak, host->regs + SD_EMMC_DELAY2);
 	cmd_delay = emmc_search_cmd_delay(str, repeat_times, pcmd_size);
 	if (!send_status)
@@ -2077,7 +2078,7 @@ static unsigned int tl1_emmc_line_timing(struct mmc_host *mmc)
 		(host->cmd_c << 24);
 	writel(delay1, host->regs + SD_EMMC_DELAY1);
 	writel(delay2, host->regs + SD_EMMC_DELAY2);
-	pr_info("[%s], delay1: 0x%x, delay2: 0x%x\n",
+	pr_debug("[%s], delay1: 0x%x, delay2: 0x%x\n",
 		__func__, readl(host->regs + SD_EMMC_DELAY1),
 		readl(host->regs + SD_EMMC_DELAY2));
 	return 0;
@@ -2198,11 +2199,11 @@ static int emmc_ds_manual_sht(struct mmc_host *mmc)
 	intf3 &= ~DS_SHT_EXP_MASK;
 	intf3 |= (best_start + best_size / 2) << __ffs(DS_SHT_M_MASK);
 	writel(intf3, host->regs + SD_EMMC_INTF3);
-	pr_info("ds_sht: %lu, window:%d, intf3:0x%x, clock:0x%x",
+	pr_info("ds_sht:%lu, window:%d, intf3:0x%x, clock:0x%x, adjust:0x%x",
 		(intf3 & DS_SHT_M_MASK) >> __ffs(DS_SHT_M_MASK), best_size,
 		readl(host->regs + SD_EMMC_INTF3),
-		readl(host->regs + SD_EMMC_CLOCK));
-	pr_info("adjust:0x%x\n", readl(host->regs + SD_EMMC_V3_ADJUST));
+		readl(host->regs + SD_EMMC_CLOCK),
+		readl(host->regs + SD_EMMC_V3_ADJUST));
 	return 0;
 }
 
@@ -2747,7 +2748,7 @@ static irqreturn_t meson_mmc_irq(int irq, void *dev_id)
 	}
 
 	if (status & IRQ_TIMEOUTS) {
-		if (!host->is_tuning)
+		if (!host->is_tuning && !(cmd->arg == 0xc00 || cmd->arg == 0x80000c08))
 			dev_err(host->dev, "%d [0x%x], TIMEOUT[0x%04x]\n",
 				cmd->opcode, cmd->arg, status);
 		if (host->debug_flag && !host->is_tuning) {
@@ -3207,7 +3208,7 @@ void sdio_reinit(void)
 		pr_info("Error: sdio_host is NULL\n");
 	}
 
-	pr_info("[%s] finish\n", __func__);
+	pr_debug("[%s] finish\n", __func__);
 }
 EXPORT_SYMBOL(sdio_reinit);
 

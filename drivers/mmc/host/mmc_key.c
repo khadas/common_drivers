@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+//#define DEBUG
 #include <linux/sched.h>
 #include <linux/err.h>
 #include <linux/slab.h>
@@ -151,7 +152,7 @@ static int update_key_info(struct mmc_card *mmc, unsigned char *addr)
 			if (!ret && key_infos[cpy].magic != 0)
 				valid_flag += cpy + 1;
 			else
-				pr_err("cpy %d is not valid\n", cpy);
+				pr_debug("cpy %d is not valid\n", cpy);
 		}
 		cpy--;
 	}

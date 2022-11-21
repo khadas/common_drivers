@@ -16566,6 +16566,7 @@ static ssize_t reg_dump_store(struct class *cla,
 			dump_mif_reg();
 			dump_vout_blend_reg();
 		} else {
+			dump_mif_reg();
 			dump_afbc_reg();
 			dump_pps_reg();
 			dump_vpp_blend_reg();
@@ -18580,6 +18581,58 @@ static struct amvideo_device_data_s amvideo_c3 = {
 	.has_vpp2 = 0,
 };
 
+static struct amvideo_device_data_s amvideo_t5m = {
+	.cpu_type = MESON_CPU_MAJOR_ID_T5M_,
+	.sr_reg_offt = 0x1e00,
+	.sr_reg_offt2 = 0x1f80,
+	.layer_support[0] = 1,
+	.layer_support[1] = 1,
+	.layer_support[2] = 0,
+	.afbc_support[0] = 1,
+	.afbc_support[1] = 1,
+	.afbc_support[2] = 0,
+	.pps_support[0] = 1,
+	.pps_support[1] = 1,
+	.pps_support[2] = 0,
+	.alpha_support[0] = 1,
+	.alpha_support[1] = 1,
+	.alpha_support[2] = 0,
+	.dv_support = 1,
+	.sr0_support = 1,
+	.sr1_support = 1,
+	.core_v_disable_width_max[0] = 2048,
+	.core_v_disable_width_max[1] = 4096,
+	.core_v_enable_width_max[0] = 1024,
+	.core_v_enable_width_max[1] = 2048,
+	.supscl_path = CORE0_PPS_CORE1,
+	.fgrain_support[0] = 1,
+	.fgrain_support[1] = 1,
+	.fgrain_support[2] = 0,
+	.has_hscaler_8tap[0] = 1,
+	.has_hscaler_8tap[1] = 1,
+	.has_hscaler_8tap[2] = 0,
+	.has_pre_hscaler_ntap[0] = 2,
+	.has_pre_hscaler_ntap[1] = 2,
+	.has_pre_hscaler_ntap[2] = 0,
+	.has_pre_vscaler_ntap[0] = 1,
+	.has_pre_vscaler_ntap[1] = 1,
+	.has_pre_vscaler_ntap[2] = 0,
+	.src_width_max[0] = 4096,
+	.src_width_max[1] = 2048,
+	.src_width_max[2] = 4096,
+	.src_height_max[0] = 2160,
+	.src_height_max[1] = 1080,
+	.src_height_max[2] = 2160,
+	.ofifo_size = 0x1000,
+	.afbc_conv_lbuf_len[0] = 0x100,
+	.afbc_conv_lbuf_len[1] = 0x80,
+	.mif_linear = 1,
+	.display_type = T7_DISPLAY,
+	.max_vd_layers = 2,
+	.has_vpp1 = 1,
+	.has_vpp2 = 0,
+};
+
 static struct video_device_hw_s legcy_dev_property = {
 	.vd2_independ_blend_ctrl = 0,
 	.aisr_support = 0,
@@ -18656,6 +18709,10 @@ static const struct of_device_id amlogic_amvideom_dt_match[] = {
 	{
 		.compatible = "amlogic, amvideom-c3",
 		.data = &amvideo_c3,
+	},
+	{
+		.compatible = "amlogic, amvideom-t5m",
+		.data = &amvideo_t5m,
 	},
 	{}
 };
@@ -18917,7 +18974,8 @@ static int amvideom_probe(struct platform_device *pdev)
 		set_vpu_super_urgent(VPU1_R, 0, 0);
 		set_vpu_super_urgent(VPU1_W, 0, 0);
 		set_vpu_super_urgent(VPU2_R, 3, 5);
-	} else if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_T5W_) {
+	} else if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_T5W_ ||
+		amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_T5M_) {
 		memcpy(&amvideo_meson_dev.dev_property, &t5w_dev_property,
 		       sizeof(struct video_device_hw_s));
 		cur_dev->power_ctrl = true;

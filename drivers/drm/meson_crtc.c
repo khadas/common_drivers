@@ -5,6 +5,8 @@
 
 #include "meson_crtc.h"
 #include "meson_vpu_pipeline.h"
+#include <linux/init.h>
+#include <linux/amlogic/gki_module.h>
 
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <vout/vout_serve/vout_func.h>
@@ -20,6 +22,20 @@
 int crtc_force_hint;
 MODULE_PARM_DESC(crtc_force_hint, "\n force modesetting hint\n");
 module_param(crtc_force_hint, int, 0644);
+
+int gamma_ctl = 1;
+
+static int gamma_boot_ctl(char *str)
+{
+	if (strncmp("0", str, 1) == 0)
+		gamma_ctl = 0;
+	else
+		gamma_ctl = 1;
+
+	return 0;
+}
+
+__setup("gamma=", gamma_boot_ctl);
 
 /*
  **********TV SUPPORT DV****************
@@ -618,7 +634,7 @@ static void am_meson_crtc_atomic_flush(struct drm_crtc *crtc,
 			#endif
 		}
 	}
-	if (crtc->state->gamma_lut != priv->gamma_lut_blob) {
+	if (crtc->state->gamma_lut != priv->gamma_lut_blob && gamma_ctl) {
 		DRM_DEBUG("%s GAMMA LUT blob changed!\n", __func__);
 		drm_property_blob_put(priv->gamma_lut_blob);
 		priv->gamma_lut_blob = NULL;
@@ -830,10 +846,12 @@ struct am_meson_crtc *meson_crtc_bind(struct meson_drm *priv, int idx)
 	meson_vpu_reg_handle_register(amcrtc->crtc_index);
 #endif
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT
-	amvecm_drm_init(0);
-	gamma_lut_size = amvecm_drm_get_gamma_size(0);
-	drm_mode_crtc_set_gamma_size(crtc, gamma_lut_size);
-	drm_crtc_enable_color_mgmt(crtc, 0, true, gamma_lut_size);
+	if (gamma_ctl) {
+		amvecm_drm_init(0);
+		gamma_lut_size = amvecm_drm_get_gamma_size(0);
+		drm_mode_crtc_set_gamma_size(crtc, gamma_lut_size);
+		drm_crtc_enable_color_mgmt(crtc, 0, true, gamma_lut_size);
+	}
 #endif
 
 	amcrtc->get_scanout_position = meson_crtc_get_scanout_position;

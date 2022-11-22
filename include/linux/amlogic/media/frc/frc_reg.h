@@ -13078,7 +13078,6 @@
 #define ENCL_VIDEO_MAX_LNCNT			0x1cbb
 #define ENCL_FRC_CTRL				0x1cdd
 #define ENCL_VIDEO_VAVON_BLINE			0x1cb4
-#define ENCL_VIDEO_MAX_LNCNT			0x1cbb
 #define ENCL_VIDEO_MAX_PXCNT			0x1cb0
 
 #define VD1_BLEND_SRC_CTRL   0x1dfb

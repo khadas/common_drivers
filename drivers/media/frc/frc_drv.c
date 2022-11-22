@@ -848,6 +848,7 @@ static int frc_probe(struct platform_device *pdev)
 	//	PR_ERR("%s: frc_dev kzalloc memory failed\n", __func__);
 	//	goto fail_alloc_dev;
 	// }
+	pr_frc(0, "%s, frc T5M probe start 1124-1549\n", __func__);
 	memset(frc_devp, 0, (sizeof(struct frc_dev_s)));
 
 	frc_devp->data = NULL;

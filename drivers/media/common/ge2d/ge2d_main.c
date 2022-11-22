@@ -1482,6 +1482,22 @@ static struct ge2d_device_data_s ge2d_c3 = {
 	.cmd_queue_mode = 1,
 };
 
+static struct ge2d_device_data_s ge2d_t5m = {
+	.ge2d_rate = 500000000,
+	.src2_alp = 1,
+	.canvas_status = 2,
+	.deep_color = 1,
+	.hang_flag = 1,
+	.fifo = 1,
+	.has_self_pwr = 0,
+	.chip_type = MESON_CPU_MAJOR_ID_T5M,
+	.adv_matrix = 1,
+	.src2_repeat = 1,
+	.dst_repeat = 1,
+	.dst_sign_mode = 1,
+	.blk_stride_mode = 1,
+};
+
 static const struct of_device_id ge2d_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -1552,6 +1568,10 @@ static const struct of_device_id ge2d_dt_match[] = {
 	{
 		.compatible = "amlogic, ge2d-c3",
 		.data = &ge2d_c3,
+	},
+	{
+		.compatible = "amlogic, ge2d-t5m",
+		.data = &ge2d_t5m,
 	},
 	{},
 };

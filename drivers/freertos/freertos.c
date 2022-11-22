@@ -367,7 +367,7 @@ static int aml_rtos_probe(struct platform_device *pdev)
 {
 	rtos_debug_dir = debugfs_create_dir("freertos", NULL);
 	rtosinfo_phy = freertos_request_info();
-	pr_debug("rtosinfo_phy=%lx\n", rtosinfo_phy);
+	pr_info("rtosinfo_phy=%lx\n", rtosinfo_phy);
 	if (rtosinfo_phy == 0 ||
 	    (int)rtosinfo_phy == SMC_UNK)
 		return 0;

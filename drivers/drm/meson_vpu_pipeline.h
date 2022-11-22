@@ -623,6 +623,7 @@ extern u32 overwrite_reg[256];
 extern u32 overwrite_val[256];
 extern int overwrite_enable;
 extern int reg_num;
+void meson_crtc_debugfs_late_init(struct drm_crtc *crtc);
 #endif
 
 #endif

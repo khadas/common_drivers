@@ -122,14 +122,6 @@ static void vpp_osd1_postblend_mux_set(struct meson_vpu_block *vblk,
 	reg_ops->rdma_write_reg_bits(reg->osd1_blend_src_ctrl, src_sel, 8, 4);
 }
 
-static void vpp1_osd1_postblend_mux_set(struct meson_vpu_block *vblk,
-					struct rdma_reg_ops *reg_ops,
-					struct postblend1_reg_s *reg,
-					enum vpp_blend_src_e src_sel)
-{
-	reg_ops->rdma_write_reg_bits(reg->vpp_bld_ctrl, src_sel, 4, 4);
-}
-
 /*vpp osd2 postblend mux sel*/
 static void vpp_osd2_postblend_mux_set(struct meson_vpu_block *vblk,
 				       struct rdma_reg_ops *reg_ops,
@@ -382,9 +374,10 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 					bld_w | (bld_h << 16));
 
 		vppx_bld = reg_ops->rdma_read_reg(reg1->vpp_bld_ctrl);
-		val = vppx_bld | 2 << 4 | 1 << 31;
-		if (vppx_bld != val)
-			reg_ops->rdma_write_reg(reg1->vpp_bld_ctrl, val);
+		if (amc->blank_enable)
+			val = (vppx_bld & ~0xf0) | 1 << 31;
+		else
+			val = vppx_bld | 2 << 4 | 1 << 31;
 
 		if (crtc_index == 1)
 			osd_vpp1_bld_ctrl = val;
@@ -437,7 +430,6 @@ static void postblend_hw_disable(struct meson_vpu_block *vblk,
 		else
 			DRM_DEBUG("invalid crtc index\n");
 
-		vpp1_osd1_postblend_mux_set(vblk, state->sub->reg_ops, postblend->reg1, VPP_NULL);
 		drm_postblend_notify_amvideo();
 	}
 

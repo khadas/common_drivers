@@ -323,6 +323,18 @@ static void meson_crtc_disable_vblank(struct drm_crtc *crtc)
 {
 }
 
+static int meson_crtc_late_register(struct drm_crtc *crtc)
+{
+	if (IS_ENABLED(CONFIG_DEBUG_FS))
+		meson_crtc_debugfs_late_init(crtc);
+
+	return 0;
+}
+
+static void meson_crtc_early_unregister(struct drm_crtc *crtc)
+{
+}
+
 static const struct drm_crtc_funcs am_meson_crtc_funcs = {
 	.atomic_destroy_state	= meson_crtc_destroy_state,
 	.atomic_duplicate_state = meson_crtc_duplicate_state,
@@ -339,6 +351,8 @@ static const struct drm_crtc_funcs am_meson_crtc_funcs = {
 	.enable_vblank = meson_crtc_enable_vblank,
 	.disable_vblank = meson_crtc_disable_vblank,
 	.get_vblank_timestamp = drm_crtc_vblank_helper_get_vblank_timestamp,
+	.late_register = meson_crtc_late_register,
+	.early_unregister = meson_crtc_early_unregister,
 };
 
 static bool am_meson_crtc_mode_fixup(struct drm_crtc *crtc,

@@ -325,6 +325,12 @@ static const struct file_operations meson_blank_fops = {
 	.write = meson_blank_write,
 };
 
+void meson_crtc_debugfs_late_init(struct drm_crtc *crtc)
+{
+	debugfs_create_file("blank", 0644, crtc->debugfs_entry,
+			    crtc, &meson_blank_fops);
+}
+
 static int meson_osd_reverse_show(struct seq_file *sf, void *data)
 {
 	struct drm_plane *plane = sf->private;
@@ -708,8 +714,10 @@ void meson_debugfs_init(struct drm_minor *minor)
 					minor->debugfs_root, minor);
 
 	drm_for_each_crtc(crtc, dev) {
-		meson_crtc_debugfs_init(crtc, minor->debugfs_root);
+		if (!crtc->index)
+			meson_crtc_debugfs_init(crtc, minor->debugfs_root);
 	}
+
 	drm_for_each_plane(plane, dev) {
 		meson_plane_debugfs_init(plane, minor->debugfs_root);
 	}

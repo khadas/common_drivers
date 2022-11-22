@@ -73,28 +73,22 @@ void lcd_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
 
 void lcd_screen_restore(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned int num;
-	int ret;
-
-	num = pdrv->test_state;
-	if (!lcd_venc_op.venc_debug_test)
-		return;
-
-	ret = lcd_venc_op.venc_debug_test(pdrv, num);
-	if (ret) {
-		LCDERR("[%d]: %s: test %d not support\n",
-			pdrv->index, __func__, num);
+	if (pdrv->viu_sel == 1) {
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
+		set_output_mute(false);
+		LCDPR("[%d]: %s\n", pdrv->index, __func__);
+#endif
 	}
 }
 
 void lcd_screen_black(struct aml_lcd_drv_s *pdrv)
 {
-	if (!lcd_venc_op.mute_set) {
-		LCDERR("[%d]: %s: invalid\n", pdrv->index, __func__);
-		return;
+	if (pdrv->viu_sel == 1) {
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
+		set_output_mute(true);
+		LCDPR("[%d]: %s\n", pdrv->index, __func__);
+#endif
 	}
-
-	lcd_venc_op.mute_set(pdrv, 1);
 }
 
 void lcd_set_venc_timing(struct aml_lcd_drv_s *pdrv)

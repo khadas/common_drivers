@@ -264,8 +264,7 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 		}
 		if (power_step->type != LCD_POWER_TYPE_WAIT_GPIO &&
 		    power_step->delay > 0)
-			if (!pdrv->lcd_pxp)
-				lcd_delay_ms(power_step->delay);
+			lcd_delay_ms(power_step->delay);
 		i++;
 	}
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)

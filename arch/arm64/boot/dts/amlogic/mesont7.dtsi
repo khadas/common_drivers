@@ -2739,6 +2739,8 @@
 	vout_mux: vout_mux {
 		compatible = "amlogic, vout_mux-t7";
 		status = "okay";
+		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VDIN_MEAS_GATE>;
+		clock-names = "fclk_div5", "vdin_meas_clk";
 	};
 
 	vout: vout {

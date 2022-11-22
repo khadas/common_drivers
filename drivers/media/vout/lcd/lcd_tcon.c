@@ -1282,7 +1282,7 @@ static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
 	case LCD_TCON_DATA_CTRL_MULTI_VFREQ_DIRECT:
 		if (data_cnt != 2)
 			goto lcd_tcon_data_multi_match_check_err_data_cnt;
-		temp = vout_frame_rate_measure(); //1000 multi
+		temp = vout_frame_rate_measure(1); //1000 multi
 		if (temp == 0)
 			temp = pdrv->config.timing.frame_rate;
 		else
@@ -1668,7 +1668,7 @@ int lcd_tcon_data_multi_set(struct aml_lcd_drv_s *pdrv,
 		lcd_tcon_dbg_vsync_time_save(local_time[0], line_cnt, 0);
 	}
 
-	temp = vout_frame_rate_measure(); //1000 multi
+	temp = vout_frame_rate_measure(1); //1000 multi
 	if (temp == 0)
 		temp = pdrv->config.timing.frame_rate;
 	else

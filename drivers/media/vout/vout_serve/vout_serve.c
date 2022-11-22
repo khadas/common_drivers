@@ -215,7 +215,7 @@ static irqreturn_t vout_vsync_irq_handler(int irq, void *data)
 	case VMODE_DUMMY_ENCP:
 	case VMODE_DUMMY_ENCI:
 	case VMODE_DUMMY_ENCL:
-		fr = vout_frame_rate_measure();
+		fr = vout_frame_rate_measure(1);
 		vinfo->sync_duration_num = fr;
 		vinfo->sync_duration_den = 1000;
 		break;
@@ -498,7 +498,7 @@ static ssize_t vout_frame_rate_show(struct class *class,
 	unsigned int fr;
 	int ret = 0;
 
-	fr = vout_frame_rate_measure();
+	fr = vout_frame_rate_measure(1);
 	ret = sprintf(buf, "%d.%03d\n", (fr / 1000), (fr % 1000));
 
 	return ret;
@@ -547,7 +547,7 @@ static ssize_t vout_vinfo_show(struct class *class,
 	if (!info)
 		return sprintf(buf, "current vinfo is null\n");
 
-	fr = vout_frame_rate_measure();
+	fr = vout_frame_rate_measure(1);
 	len = sprintf(buf, "current vinfo:\n"
 		       "    name:                  %s\n"
 		       "    mode:                  %d\n"

@@ -22,6 +22,7 @@
 /* 20221111: modify edp transmit_unit_size to 48(temporary)*/
 /* 20221115: support force unfit mipi-dsi bit_rate_max*/
 /* 20221116: add pinmux lock for c3*/
+/* 20221123: add ioctl functions, include: power,mute,phy,ss*/
 /* 20221207: support drm display mode timing for different frame rate*/
 #define LCD_DRV_VERSION    "20221207"
 

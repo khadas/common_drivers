@@ -9,6 +9,7 @@ function pre_defconfig_cmds() {
 	if [[ -z ${ANDROID_PROJECT} ]]; then
 		local temp_file=`mktemp /tmp/config.XXXXXXXXXXXX`
 		echo "CONFIG_AMLOGIC_SERIAL_MESON=y" > ${temp_file}
+		echo "CONFIG_DEVTMPFS=y" >> ${temp_file}
 		if [[ ${GKI_CONFIG} == gki_20 ]]; then
 			KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${temp_file}
 		elif [[ ${GKI_CONFIG} == gki_10 ]]; then

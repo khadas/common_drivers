@@ -24,8 +24,8 @@
 #include <linux/poll.h>
 #include <linux/sched.h>
 #include <linux/jiffies.h>
-#include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/compat.h>
+#include <linux/amlogic/media/codec_mm/codec_mm.h>
 
 #include "resourcemanage.h"
 #define RESMAM_ENABLE_JSON  (1)
@@ -42,12 +42,7 @@
 #define RESMAN_VERSION         (3)
 #define SINGLE_SIZE           (64)
 #define EXT_MAX_SIZE     (64 * 1024)
-#define EXTCONFIGNAME "/vendor/etc/resman.json"
-#define EXTCONFIGNAMELIX "/etc/resman.json"
-#define EXTCONFIGCUSTOMNAME "/vendor/etc/resmanext.json"
-#define EXTCONFIGCUSTOMNAMELIX "/etc/resmanext.json"
-#define COMMOMCONFIG  (1)
-#define CUSTOMCONFIG  (2)
+#define STR_MAX_SIZE     (32)
 
 struct {
 	int id;
@@ -221,7 +216,6 @@ static int sess_id = 1;
 static struct cdev *resman_cdev;
 static struct class *resman_class;
 static char *resman_configs;
-static bool extloaded;
 
 module_param(resman_debug, int, 0644);
 module_param(preempt_timeout_ms, int, 0644);
@@ -297,6 +291,32 @@ static struct resman_node *resman_find_node_by_resource_id
 			return ret;
 	}
 	return NULL;
+}
+
+static void resman_find_appname_by_resource_name(const char *name, char *appname)
+{
+	struct list_head *pos1, *tmp1;
+	struct list_head *pos2, *tmp2;
+	struct resman_resource *resource;
+	struct resman_session *sess;
+	struct resman_node *node;
+
+	mutex_lock(&resource_lock);
+	mutex_lock(&sessions_lock);
+	list_for_each_safe(pos2, tmp2, &sessions_head) {
+		sess = list_entry(pos2, struct resman_session, list);
+		list_for_each_safe(pos1, tmp1, &sess->resources) {
+			node = list_entry(pos1, struct resman_node, rlist);
+			resource = node->resource_ptr;
+			if (resource && appname && !strcmp(name, resource->name)) {
+				dprintk(2, "acquired app_name %s\n", sess->app_name);
+				strncpy(appname, sess->app_name, STR_MAX_SIZE);
+				break;
+			}
+		}
+	}
+	mutex_unlock(&sessions_lock);
+	mutex_unlock(&resource_lock);
 }
 
 static int resman_count_codec_mm_session(bool secure)
@@ -935,8 +955,10 @@ static bool resman_codec_mm_acquire(struct resman_session *sess,
 	char *opt;
 
 	while ((opt = strsep(&arg, ","))) {
-		if (!strncmp(opt, "size", 4))
-			resman_parser_kv(opt, "size", &score);
+		if (!strncmp(opt, "size", 4)) {
+			if (!resman_parser_kv(opt, "size", &score))
+				dprintk(1, "parser size error\n");
+		}
 		else if (!strcmp(opt, "single"))
 		/*single mode, 64M codec mm size is enough*/
 			score = SINGLE_SIZE;
@@ -1139,7 +1161,8 @@ static bool resman_capacity_acquire(struct resman_session *sess,
 
 	while ((opt = strsep(&arg, ","))) {
 		if (!strncmp(opt, "size", 4))
-			resman_parser_kv(opt, "size", &size);
+			if (!resman_parser_kv(opt, "size", &size))
+				return ret;
 	}
 	if (size <= 0) {
 		dprintk(0, "%d size %d parameter format:size:X!\n", sess->id, size);
@@ -1255,7 +1278,7 @@ static bool resman_create_resource(const char *name,
 
 	switch (type) {
 	default:
-		dprintk(0, "%s error, unknow type\n", __func__);
+		dprintk(0, "%s error, unknown type\n", __func__);
 		goto error;
 	case RESMAN_TYPE_COUNTER:
 		resource->acquire = resman_counter_acquire;
@@ -1561,64 +1584,6 @@ static bool resman_parser_config(const char *buf)
 
 #endif
 
-static bool ext_resource_init(u32 conftype)
-{
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
-	bool ret = false;
-	struct file *extfile = NULL;
-	struct kstat stat;
-	char *extfilename = (conftype == CUSTOMCONFIG) ? EXTCONFIGCUSTOMNAME : EXTCONFIGNAME;
-	char *extconfig = NULL;
-	loff_t pos = 0;
-	unsigned int flen = 0, readlen = 0;
-	int error;
-
-	extfile = filp_open(extfilename, O_RDONLY, 0);
-
-	if (IS_ERR_OR_NULL(extfile)) {
-		/*First access the Android path , if fail access Linux path*/
-		dprintk(2, "There(%s) is no ext config or read failed\n", extfilename);
-		extfilename = (conftype == CUSTOMCONFIG) ?
-						EXTCONFIGCUSTOMNAMELIX : EXTCONFIGNAMELIX;
-		extfile = filp_open(extfilename, O_RDONLY, 0);
-		if (IS_ERR_OR_NULL(extfile)) {
-			dprintk(2, "There(%s) is no ext config or read failed\n", extfilename);
-			return false;
-		}
-	}
-
-	error = vfs_stat(extfilename, &stat);
-	if (error) {
-		dprintk(0, "vfs_stat fail %s\n", extfilename);
-		ret = false;
-		goto error;
-	}
-	if (flen > EXT_MAX_SIZE)
-		dprintk(0, "extconfig file is too large%lld\n", stat.size);
-	else
-		dprintk(3, "%s file size %lld\n", __func__, stat.size);
-	flen = (stat.size > EXT_MAX_SIZE) ? EXT_MAX_SIZE : stat.size;
-	extconfig = kzalloc(flen + 8, GFP_KERNEL);
-	if (extconfig) {
-		readlen = vfs_read(extfile, extconfig,
-					flen, &pos);
-		if (readlen < flen)
-			dprintk(0, "size %d read %d\n", flen, readlen);
-#ifdef RESMAM_ENABLE_JSON
-		ret = resman_config_from_json(extconfig);
-#else
-		resman_parser_config(extconfig);
-#endif
-		kfree(extconfig);
-	}
-
-error:
-	filp_close(extfile, NULL);
-	return ret;
-#else
-	return 0;
-#endif
-}
 
 static void all_resource_init(void)
 {
@@ -1816,6 +1781,12 @@ static long resman_ioctl_query(struct resman_session *sess, unsigned long para)
 		resman.v.query.value = resource->value;
 		resman.v.query.avail =
 			resource->d.counter.avail;
+		if (resman.v.query.value > 0) {
+			memset(resman.v.query.app_name, 0,
+				sizeof(resman.v.query.app_name));
+			resman_find_appname_by_resource_name(resman.v.query.name,
+				resman.v.query.app_name);
+		}
 		break;
 	case RESMAN_TYPE_CODEC_MM:
 		resman.v.query.avail =
@@ -1916,6 +1887,36 @@ static long resman_ioctl_checksupportres(struct resman_session *sess,
 	return r;
 }
 
+static long resman_ioctl_load_res(struct resman_session *sess,
+				 unsigned long para)
+{
+	long r = 0;
+	struct res_item __user *argp = (void __user *)para;
+	struct res_item item;
+	int arglen = 0;
+	char *itemarg = NULL;
+
+	mutex_lock(&resource_lock);
+	item.name[sizeof(item.name) - 1] = '\0';
+	item.arg[sizeof(item.arg) - 1] = '\0';
+	if (copy_from_user((void *)&item, argp, sizeof(item))) {
+		dprintk(1, "load res FAIL!!\n");
+	} else {
+		item.name[sizeof(item.name) - 1] = '\0';
+		item.arg[sizeof(item.arg) - 1] = '\0';
+		if (strlen(item.name) > 0 && strlen(item.name) < STR_MAX_SIZE) {
+			if (strlen(item.arg) > 0 && strlen(item.arg) < STR_MAX_SIZE)
+				arglen = strlen(item.arg);
+			if (arglen > 0 && arglen < STR_MAX_SIZE)
+				itemarg = item.arg;
+			if (!resman_create_resource(item.name, item.type, itemarg))
+				r = -1;
+		}
+	}
+	mutex_unlock(&resource_lock);
+	return r;
+}
+
 static long resman_ioctl_release_all(struct resman_session *sess,
 				     unsigned long para)
 {
@@ -2009,8 +2010,6 @@ static ssize_t config_show(struct class *class,
 	return size;
 }
 
-#undef APPEND_ATTR_BUF
-
 static ssize_t config_store(struct class *class,
 			    struct class_attribute *attr,
 			    const char *buf, size_t size)
@@ -2024,54 +2023,47 @@ static ssize_t config_store(struct class *class,
 	return size;
 }
 
-static ssize_t extconfig_show(struct class *class,
+static ssize_t ver_show(struct class *class,
 			   struct class_attribute *attr,
 			   char *buf)
 {
 	ssize_t size = 0;
 
-	if (resman_configs)
-		dprintk(0, "%s\n", resman_configs);
-	return size;
+	APPEND_ATTR_BUF("%d\n", RESMAN_VERSION)
+	return RESMAN_VERSION;
 }
 
-static ssize_t extconfig_store(struct class *class,
-			    struct class_attribute *attr,
-			    const char *buf, size_t size)
-{
-	int r;
-	int val;
-
-	if (extloaded && resman_debug != 4) {
-		dprintk(0, "extconfig has already loaded\n");
-		return size;
-	}
-
-	r = kstrtoint(buf, 10, &val);
-	if (r < 0) {
-		dprintk(0, "extconfig format has error\n");
-		return -EINVAL;
-	}
-	/*First access common config resman.json, then access custom config resmanext.json*/
-	if (val == 1 && ext_resource_init(COMMOMCONFIG)) {
-		extloaded = true;
-		dprintk(3, "resman.json loading successful\n");
-	}
-	if (val == 1 && ext_resource_init(CUSTOMCONFIG)) {
-		extloaded = true;
-		dprintk(3, "resmanext.json loading successful\n");
-	}
-
-	return size;
-}
-
-static ssize_t ver_show(struct class *class,
+static ssize_t res_show(struct class *class,
 			   struct class_attribute *attr,
 			   char *buf)
 {
-	sprintf(buf, "%d\n", RESMAN_VERSION);
-	return RESMAN_VERSION;
+	ssize_t size = 0;
+	struct list_head *pos1, *tmp1;
+	struct resman_resource *resource;
+
+	mutex_lock(&resource_lock);
+	APPEND_ATTR_BUF("%-32s", "name")
+	APPEND_ATTR_BUF("%-10s\n", "avail")
+	list_for_each_safe(pos1, tmp1, &resources_head) {
+		resource = list_entry(pos1, struct resman_resource, list);
+		APPEND_ATTR_BUF("%-32s", resource->name)
+		if (resource->type == RESMAN_TYPE_COUNTER)
+			APPEND_ATTR_BUF("%d", resource->d.counter.avail)
+		else if (resource->type == RESMAN_TYPE_CODEC_MM)
+			APPEND_ATTR_BUF("total%d uhd%d fhd%d secure%d, counts%d countnon%d",
+				resource->d.codec_mm.total, resource->d.codec_mm.uhd,
+				resource->d.codec_mm.fhd, resource->d.codec_mm.secure,
+				resource->d.codec_mm.counter_secure.counter,
+				resource->d.codec_mm.counter_nonsecure.counter)
+		else if (resource->type == RESMAN_TYPE_CAPACITY_SIZE)
+			APPEND_ATTR_BUF("%d", resource->d.capacity.total)
+		APPEND_ATTR_BUF("%s", "\n")
+	}
+	mutex_unlock(&resource_lock);
+	return size;
 }
+
+#undef APPEND_ATTR_BUF
 
 /* ------------------------------------------------------------------
  * File operations for the device
@@ -2159,6 +2151,9 @@ long resman_ioctl(struct file *filp, unsigned int cmd, unsigned long para)
 	case RESMAN_IOC_RELEASE_ALL:
 		retval = resman_ioctl_release_all(sess, para);
 		break;
+	case RESMAN_IOC_LOAD_RES:
+		retval = resman_ioctl_load_res(sess, para);
+		break;
 	default:
 		retval = -EINVAL;
 		break;
@@ -2213,7 +2208,7 @@ static struct class_attribute resman_class_attrs[] = {
 	__ATTR_RO(usage),
 	__ATTR_RW(config),
 	__ATTR_RO(ver),
-	__ATTR_RW(extconfig),
+	__ATTR_RO(res),
 	__ATTR_NULL
 };
 

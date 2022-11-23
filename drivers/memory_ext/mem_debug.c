@@ -39,6 +39,7 @@
 #endif
 
 static int pagemap_en;
+unsigned long mlock_fault_size;
 
 void dump_mem_layout(char *buf)
 {
@@ -187,6 +188,9 @@ static int mdebug_show(struct seq_file *m, void *arg)
 	dump_mem_layout(buf);
 	seq_printf(m, "%s\n", buf);
 	pr_info("pagemap_en:%d\n", pagemap_en);
+	memset(buf, 0, 4096);
+	sprintf(buf, "mlock_fault_size: %ldkb\n", mlock_fault_size * 4);
+	seq_printf(m, "%s\n", buf);
 
 	kfree(buf);
 

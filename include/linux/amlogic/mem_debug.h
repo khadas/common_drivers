@@ -9,4 +9,5 @@
 void dump_mem_layout(char *buf);
 void dump_mem_layout_boot_phase(void);
 
+extern unsigned long mlock_fault_size;
 #endif

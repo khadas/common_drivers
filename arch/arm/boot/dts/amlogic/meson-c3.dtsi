@@ -891,7 +891,7 @@
 					<721000 90>,
 					<711000 95>,
 					<701000 100>;
-			status = "okay";
+			status = "disabled";
 		};
 
 		ethmac: ethernet@fdc00000 {

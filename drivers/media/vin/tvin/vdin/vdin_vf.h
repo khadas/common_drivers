@@ -40,7 +40,7 @@
 
 #define VF_FLAG_NORMAL_FRAME		 0x00000001
 #define VF_FLAG_FREEZED_FRAME		 0x00000002
-#define VFRAME_DISP_MAX_NUM 20
+#define VFRAME_DISP_MAX_NUM 25
 #define VDIN_CANVAS_MAX_CNT	11
 /* total canvas num in chips */
 #define VDIN_TOTAL_CANVAS_NUM	20

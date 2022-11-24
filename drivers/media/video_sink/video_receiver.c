@@ -84,10 +84,6 @@ static inline struct vframe_s *common_vf_get(struct video_recv_s *ins)
 		vf->index_disp, ktime_to_us(ktime_get()));
 
 	if (vf) {
-		if (!tvin_vf_disp_mode_check(vf)) {
-			vf_put(vf, ins->recv_name);
-			return NULL;
-		}
 		if (vf->type & VIDTYPE_V4L_EOS) {
 			vf_put(vf, ins->recv_name);
 			return NULL;

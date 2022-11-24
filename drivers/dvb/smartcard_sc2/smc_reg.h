@@ -28,11 +28,11 @@
 #define ATR_CLK_MUX_DEFAULT 4
 #define ATR_HOLDOFF_TCNT_DEFAULT 255
 #define ATR_FINAL_TCNT_DEFAULT 40000
-#define DET_FILTER_SEL_DEFAULT 3
-#define IO_FILTER_SEL_DEFAULT 3
+#define DET_FILTER_SEL_DEFAULT 0
+#define IO_FILTER_SEL_DEFAULT 0
 #define BWT_BASE_DEFAULT 999
 #define N_DEFAULT 0
-#define CWI_DEFAULT 13
+#define CWI_DEFAULT 14
 #define BWI_DEFAULT 4
 #define BGT_DEFAULT 22
 
@@ -137,7 +137,7 @@ struct smc_status_reg {
 	unsigned cwt_expired_status:1;	/* Bit 2*/
 	unsigned bwt_expired_status:1;	/* Bit 3*/
 	unsigned write_full_send_fifo_status:1;	/* Bit 4*/
-	unsigned send_and_recv_confict_status:1;	/* Bit 5*/
+	unsigned send_and_recv_conflict_status:1;	/* Bit 5*/
 	unsigned recv_error_status:1;	/* Bit 6*/
 	unsigned send_error_status:1;	/* Bit 7*/
 	unsigned rst_expired_status:1;	/* Bit 8*/
@@ -169,7 +169,7 @@ struct smc_status_reg {
 	unsigned rst_expired_status:1;	/* Bit 8*/
 	unsigned send_error_status:1;	/* Bit 7*/
 	unsigned recv_error_status:1;	/* Bit 6*/
-	unsigned send_and_recv_confict_status:1;	/* Bit 5*/
+	unsigned send_and_recv_conflict_status:1;	/* Bit 5*/
 	unsigned write_full_send_fifo_status:1;	/* Bit 4*/
 	unsigned bwt_expired_status:1;	/* Bit 3*/
 	unsigned cwt_expired_status:1;	/* Bit 2*/
@@ -185,7 +185,7 @@ struct smc_interrupt_reg {
 	unsigned cwt_expired_int:1;	/* Bit 2*/
 	unsigned bwt_expired_int:1;	/* Bit 3*/
 	unsigned write_full_fifo_int:1;	/* Bit 4*/
-	unsigned send_and_recv_confict_int:1;	/* Bit 5*/
+	unsigned send_and_recv_conflict_int:1;	/* Bit 5*/
 	unsigned recv_error_int:1;		/* Bit 6*/
 	unsigned send_error_int:1;		/* Bit 7*/
 	unsigned rst_expired_int:1;		/* Bit 8*/
@@ -196,7 +196,7 @@ struct smc_interrupt_reg {
 	unsigned cwt_expired_int_mask:1;	/* Bit 18*/
 	unsigned bwt_expired_int_mask:1;	/* Bit 19*/
 	unsigned write_full_fifo_int_mask:1;	/* Bit 20*/
-	unsigned send_and_recv_confict_int_mask:1;	/* Bit 21*/
+	unsigned send_and_recv_conflict_int_mask:1;	/* Bit 21*/
 	unsigned recv_error_int_mask:1;	/* Bit 22*/
 	unsigned send_error_int_mask:1;	/* Bit 23*/
 	unsigned rst_expired_int_mask:1;	/* Bit 24*/
@@ -208,7 +208,7 @@ struct smc_interrupt_reg {
 	unsigned rst_expired_int_mask:1;	/* Bit 24*/
 	unsigned send_error_int_mask:1;	/* Bit 23*/
 	unsigned recv_error_int_mask:1;	/* Bit 22*/
-	unsigned send_and_recv_confict_int_mask:1;	/* Bit 21*/
+	unsigned send_and_recv_conflict_int_mask:1;	/* Bit 21*/
 	unsigned write_full_fifo_int_mask:1;	/* Bit 20*/
 	unsigned bwt_expired_int_mask:1;	/* Bit 19*/
 	unsigned cwt_expired_int_mask:1;	/* Bit 18*/
@@ -219,7 +219,7 @@ struct smc_interrupt_reg {
 	unsigned rst_expired_int:1;		/* Bit 8*/
 	unsigned send_error_int:1;		/* Bit 7*/
 	unsigned recv_error_int:1;		/* Bit 6*/
-	unsigned send_and_recv_confict_int:1;	/* Bit 5*/
+	unsigned send_and_recv_conflict_int:1;	/* Bit 5*/
 	unsigned write_full_fifo_int:1;	/* Bit 4*/
 	unsigned bwt_expired_int:1;	/* Bit 3*/
 	unsigned cwt_expired_int:1;	/* Bit 2*/
@@ -259,6 +259,25 @@ struct smccard_hw_reg6 {
 	unsigned bgt:8;				/* Bit 19:12*/
 	unsigned cwi_value:4;			/* Bit 11:8*/
 	unsigned N_parameter:8;		/* Bit 7:0*/
+#endif
+};
+
+/*this register replace recv_fifo_threshold in reg0 and
+ *recv_fifo_count in status
+ */
+struct smccard_hw_reg8 {
+#ifdef __LITTLE_ENDIAN__
+	unsigned lrg_fifo_recv_thr:8;	/* Bit 7:0*/
+	unsigned use_lrg_fifo_recv:1;	/* Bit 8*/
+	unsigned unused1:7;	/* Bit 15:9*/
+	unsigned recv_fifo_count:8;	/* Bit 23:16*/
+	unsigned unused2:8;	/* Bit 31:24*/
+#else
+	unsigned unused2:8;	/* Bit 31:24*/
+	unsigned recv_fifo_count:8;	/* Bit 23:16*/
+	unsigned unused1:7;				/* Bit 15:9*/
+	unsigned use_lrg_fifo_recv:1;	/* Bit 8*/
+	unsigned lrg_fifo_recv_thr:8;	/* Bit 7:0*/
 #endif
 };
 

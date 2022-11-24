@@ -74,7 +74,7 @@
 #define PULLHIGH 0
 
 /*#define FILE_DEBUG*/
-/*#define MEM_DEBUG*/
+#define MEM_DEBUG
 
 #ifdef FILE_DEBUG
 #define DBUF_SIZE (512 * 2)
@@ -99,9 +99,12 @@
 #define pr_dbg(fmt, args...) \
 	do {\
 		if (smc_debug > 0) { \
-			if (dwrite > (DBUF_SIZE - 512)) \
-				sprintf(dbuf + dwrite, "lost\n"); \
-			else { \
+			if (dwrite > (DBUF_SIZE - 512)) { \
+				dcnt = sprintf(dbuf + dwrite, fmt, ## args); \
+				dwrite += dcnt; \
+				dwrite = 0; \
+				dread = 0; \
+			} else { \
 				dcnt = sprintf(dbuf + dwrite, fmt, ## args); \
 				dwrite += dcnt; \
 			} \
@@ -110,9 +113,14 @@
 #define Fpr(_a...) \
 do { \
 	if (smc_debug > 1) { \
-		if (dwrite > (DBUF_SIZE - 512)) \
-			sprintf(dbuf + dwrite, "lost\n"); \
-		else { \
+		if (dwrite > (DBUF_SIZE - 512)) { \
+			dcnt = print_time(local_clock(), dbuf + dwrite); \
+			dwrite += dcnt; \
+			dcnt = sprintf(dbuf + dwrite, _a); \
+			dwrite += dcnt; \
+			dwrite = 0; \
+			dread = 0; \
+		} else { \
 			dcnt = print_time(local_clock(), dbuf + dwrite); \
 			dwrite += dcnt; \
 			dcnt = sprintf(dbuf + dwrite, _a); \
@@ -142,10 +150,11 @@ while (0)
 #define pr_inf(fmt, args...)  pr_err(fmt, ## args)
 #define DEBUG_FILE_NAME	 "/storage/external_storage/debug.smc"
 #ifdef MEM_DEBUG
-static struct file *debug_filp;
-static loff_t debug_file_pos;
+//static struct file *debug_filp;
+//static loff_t debug_file_pos;
 #endif
 static int smc_debug;
+static int smc_debug_save;
 #ifdef MEM_DEBUG
 static char *dbuf;
 static int dread, dwrite;
@@ -159,42 +168,46 @@ static int smartcard_mpll0;
 #define REG_READ 0
 #define REG_WRITE 1
 
-#define MEASURE_GUARD_TIME_BY_SW
-
-#ifdef MEASURE_GUARD_TIME_BY_SW
-static s64 etu_nsec;
-static s64 total_guard_time_nsec;
-static s64 prev_transmit_time_nsec;
-
-#endif
 
 #ifdef MEM_DEBUG
 static void debug_write(const char __user *buf, size_t count)
 {
-	if (!debug_filp)
-		return;
+	int str_len = 0;
+	int cur_offset = 0;
+	int next_offset = 0;
+	char tmpbuf[255];
+	char *p = NULL;
 
-	if (count != kernel_write(debug_filp, buf, count, &debug_file_pos))
-		pr_dbg("Failed to write debug file\n");
-}
+	while (cur_offset < count) {
+		//find the str end character
+		while (next_offset < count) {
+			if (buf[next_offset] == '\n')
+				break;
+			next_offset++;
+		}
+		if (next_offset >= count)
+			return;
 
-static void open_debug(void)
-{
-	debug_filp = filp_open(DEBUG_FILE_NAME, O_WRONLY, 0);
-	if (IS_ERR(debug_filp)) {
-		pr_dbg("smartcard: open debug file failed\n");
-		debug_filp = NULL;
-	} else {
-		pr_dbg("smc: debug file[%s] open.\n", DEBUG_FILE_NAME);
-	}
-}
-
-static void close_debug(void)
-{
-	if (debug_filp) {
-		filp_close(debug_filp, current->files);
-		debug_filp = NULL;
-		debug_file_pos = 0;
+		str_len = next_offset - cur_offset + 1;
+		if (str_len >= 2) {
+			if (str_len > sizeof(tmpbuf)) {
+				p = vmalloc(str_len);
+				if (p) {
+					memset(p, 0, str_len);
+					memcpy(p, &buf[cur_offset], str_len);
+					pr_err("%s\n", p);
+					vfree(p);
+				} else {
+					pr_err("%s vmalloc fail\n", __func__);
+				}
+			}  else {
+				memset(&tmpbuf, 0, sizeof(tmpbuf));
+				memcpy(&tmpbuf, &buf[cur_offset], str_len);
+				pr_err("%s\n", (char *)&tmpbuf);
+			}
+		}
+		next_offset++;
+		cur_offset = next_offset;
 	}
 }
 
@@ -250,6 +263,30 @@ module_param(etu_msr_en, int, 0644);
 MODULE_PARM_DESC(clock_source, "\n\t\t clock_source");
 static int clock_source;
 module_param(clock_source, int, 0644);
+
+MODULE_PARM_DESC(atr_timeout, "\n\t\t atr_timeout");
+static int atr_timeout = 200000;
+module_param(atr_timeout, int, 0644);
+
+MODULE_PARM_DESC(atr1_timeout, "\n\t\t atr1_timeout");
+static int atr1_timeout = 1000000;
+module_param(atr1_timeout, int, 0644);
+
+MODULE_PARM_DESC(atr_reset, "\n\t\t atr_reset");
+static int atr_reset = 1;
+module_param(atr_reset, int, 0644);
+
+MODULE_PARM_DESC(bwt_time, "\n\t\t bwt_time");
+static int bwt_time = BWT_BASE_DEFAULT;
+module_param(bwt_time, int, 0644);
+
+MODULE_PARM_DESC(atr_clk_mux, "\n\t\t atr_clk_mux");
+static int atr_clk_mux = ATR_CLK_MUX_DEFAULT;
+module_param(atr_clk_mux, int, 0644);
+
+MODULE_PARM_DESC(atr_final_tcnt, "\n\t\t atr_final_tcnt");
+static int atr_final_tcnt = ATR_FINAL_TCNT_DEFAULT;
+module_param(atr_final_tcnt, int, 0644);
 
 #define NO_HOT_RESET
 /*#define DISABLE_RECV_INT*/
@@ -311,6 +348,8 @@ struct smc_dev {
 	int send_count;
 	char recv_buf[RECV_BUF_SIZE];
 	char send_buf[SEND_BUF_SIZE];
+	char r_cache[RECV_BUF_SIZE];
+	char w_cache[SEND_BUF_SIZE];
 	struct am_smc_param param;
 	struct am_smc_atr atr;
 
@@ -443,8 +482,8 @@ static void sc2_write_smc(unsigned int reg, unsigned int val)
 	void *ptr = (void *)(p_smc_hw_base + reg);
 
 	writel(val, ptr);
-	pr_dbg("write addr:%lx, org v:0x%0x, ret v:0x%0x\n",
-	       (unsigned long)ptr, val, readl(ptr));
+//	pr_dbg("write addr:%lx, org v:0x%0x, ret v:0x%0x\n",
+//	       (unsigned long)ptr, val, readl(ptr));
 }
 
 static int sc2_read_smc(unsigned int reg)
@@ -453,7 +492,7 @@ static int sc2_read_smc(unsigned int reg)
 	int ret = 0;
 
 	ret = readl(addr);
-	pr_dbg("read addr:%lx, value:0x%0x\n", (unsigned long)addr, ret);
+//	pr_dbg("read addr:%lx, value:0x%0x\n", (unsigned long)addr, ret);
 	return ret;
 }
 
@@ -465,8 +504,8 @@ static void sc2_write_sys(unsigned int reg, unsigned int val)
 		return;
 
 	writel(val, ptr);
-	pr_dbg("write addr:%lx, org v:0x%0x, ret v:0x%0x\n",
-	       (unsigned long)ptr, val, readl(ptr));
+//	pr_dbg("write addr:%lx, org v:0x%0x, ret v:0x%0x\n",
+//	       (unsigned long)ptr, val, readl(ptr));
 }
 
 static int sc2_read_sys(unsigned int reg)
@@ -478,7 +517,7 @@ static int sc2_read_sys(unsigned int reg)
 		return -1;
 
 	ret = readl(addr);
-	pr_dbg("read addr:%lx, value:0x%0x\n", (unsigned long)addr, ret);
+//	pr_dbg("read addr:%lx, value:0x%0x\n", (unsigned long)addr, ret);
 	return ret;
 }
 
@@ -714,8 +753,19 @@ static ssize_t debug_store(struct class *class,
 	switch (buf[0]) {
 	case '2':
 	case '1':{
-			void *p =
-			    krealloc((const void *)dbuf, DBUF_SIZE, GFP_KERNEL);
+			if (dbuf) {
+				if (buf[0] == '2')
+					smc_debug = 2;
+				else if (buf[0] == '1')
+					smc_debug = 1;
+				memset(dbuf, 0, DBUF_SIZE);
+				dwrite = 0;
+				dread = 0;
+				pr_inf("dbuf cleanup\n");
+				break;
+			}
+			{
+			void *p = kmalloc(DBUF_SIZE, GFP_KERNEL);
 
 			smc_debug_level++;
 			if (buf[0] == '2')
@@ -724,11 +774,16 @@ static ssize_t debug_store(struct class *class,
 			if (p) {
 				dbuf = (char *)p;
 				smc_debug = smc_debug_level;
+				memset(dbuf, 0, DBUF_SIZE);
+				dwrite = 0;
+				dread = 0;
+				pr_inf("dbuf cleanup\n");
 			} else {
 				pr_error("krealloc(dbuf:%d) failed\n",
 					 DBUF_SIZE);
 			}
 			break;
+			}
 		}
 	case '0':
 		smc_debug = 0;
@@ -746,10 +801,8 @@ static ssize_t debug_store(struct class *class,
 		break;
 	case 'd':
 	case 'D':
-		if (smc_debug) {
-			open_debug();
-			debug_write(dbuf, dwrite + 5);
-			close_debug();
+		if (smc_debug || smc_debug_save) {
+			debug_write(dbuf, DBUF_SIZE);
 			pr_inf("dbuf dump ok\n");
 		}
 		break;
@@ -1062,6 +1115,8 @@ static void smc_mp0_clk_set(int clk)
 		data |= 0x049;
 	else if (clk == 13500)
 		data |= 0x024;
+	else
+		data |= 500000 / clk - 1;
 
 	sc2_write_sys(SMARTCARD_CLK_CTRL, data);
 	pr_error("%s data:0x%0x\n", __func__, data);
@@ -1094,6 +1149,10 @@ static int smc_hw_set_param(struct smc_dev *smc)
 	unsigned long freq_cpu = 0;
 
 	pr_error("hw set param\n");
+	if (smc->param.freq == 0 || smc->param.d == 0) {
+		pr_error("hw set param, freq or d = 0 invalid\n");
+		return 0;
+	}
 
 	if (smartcard_mpll0) {
 		smc_mp0_clk_set(smc->param.freq);
@@ -1172,7 +1231,7 @@ static int smc_hw_set_param(struct smc_dev *smc)
 	v = SMC_READ_REG(REG5);
 	reg5 = (struct smccard_hw_reg5 *)&v;
 	reg5->cwt_detect_en = cwt_det_en;
-	reg5->bwt_base_time_gnt = BWT_BASE_DEFAULT;
+	reg5->bwt_base_time_gnt = bwt_time;
 	SMC_WRITE_REG(REG5, v);
 	pr_error("REG5: 0x%08lx\n", v);
 
@@ -1181,13 +1240,8 @@ static int smc_hw_set_param(struct smc_dev *smc)
 	reg6->cwi_value = smc->param.cwi;
 	reg6->bwi = smc->param.bwi;
 	reg6->bgt = smc->param.bgt - 2;
-#ifdef MEASURE_GUARD_TIME_BY_SW
-	etu_nsec = div64_s64((s64)smc->param.f * 1000000,
-			     ((s64)smc->param.d * (s64)smc->param.freq));
-	total_guard_time_nsec = (12 + smc->param.n) * etu_nsec;
-#else
 	reg6->N_parameter = smc->param.n;
-#endif
+
 	SMC_WRITE_REG(REG6, v);
 	pr_error("REG6: 0x%08lx\n", v);
 	pr_error("N	  :%d\n", smc->param.n);
@@ -1195,10 +1249,6 @@ static int smc_hw_set_param(struct smc_dev *smc)
 	pr_error("bgt	 :%d\n", smc->param.bgt);
 	pr_error("bwi	 :%d\n", smc->param.bwi);
 
-#ifdef MEASURE_GUARD_TIME_BY_SW
-	pr_error("etu (ns)   :%lld\n", etu_nsec);
-	pr_error("total guard time	:%lld", total_guard_time_nsec);
-#endif
 	return 0;
 }
 
@@ -1234,6 +1284,7 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 	struct smc_interrupt_reg *reg_int;
 	struct smccard_hw_reg5 *reg5;
 	struct smccard_hw_reg6 *reg6;
+	struct smccard_hw_reg8 *reg8;
 	unsigned long freq_cpu = 0;
 
 	if (t5w_smartcard) {
@@ -1255,11 +1306,11 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 			freq_cpu = 500000;
 			break;
 		}
+		pr_error("SMC CLK SOURCE - %luKHz\n", freq_cpu);
 	} else {
 		if (!smartcard_mpll0)
-			clk_set_rate(aml_smartcard_clk, FREQ_DEFAULT * 1000);
+			clk_set_rate(aml_smartcard_clk, smc->param.freq * 1000);
 	}
-	pr_error("SMC CLK SOURCE - %luKHz\n", freq_cpu);
 
 #ifdef RST_FROM_PIO
 	_gpio_out(smc->reset_pin, RESET_ENABLE, SMC_RESET_PIN_NAME);
@@ -1278,7 +1329,7 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 //      reg0->start_atr_en = 0;
 	reg0->rst_level = RESET_ENABLE;
 //      reg0->io_level = 0;
-	reg0->recv_fifo_threshold = FIFO_THRESHOLD_DEFAULT;
+//	reg0->recv_fifo_threshold = FIFO_THRESHOLD_DEFAULT;
 #if (ETU_CLK_SEL == 0)
 	reg0->etu_divider = ETU_DIVIDER_CLOCK_HZ * smc->param.f
 	    / (smc->param.d * smc->param.freq) - 1;
@@ -1299,12 +1350,12 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 
 	v = SMC_READ_REG(REG1);
 	reg1 = (struct smc_answer_t0_rst *)&v;
-	reg1->atr_final_tcnt = ATR_FINAL_TCNT_DEFAULT;
+	reg1->atr_final_tcnt = atr_final_tcnt;
 	reg1->atr_holdoff_tcnt = ATR_HOLDOFF_TCNT_DEFAULT;
-	reg1->atr_clk_mux = ATR_CLK_MUX_DEFAULT;
+	reg1->atr_clk_mux = atr_clk_mux;
 	reg1->atr_holdoff_en = atr_holdoff;	/*ATR_HOLDOFF_EN; */
 	reg1->etu_clk_sel = ETU_CLK_SEL;
-	reg1->atr_reset = 1;
+	reg1->atr_reset = atr_reset;
 	SMC_WRITE_REG(REG1, v);
 	pr_error("REG1: 0x%08lx\n", v);
 
@@ -1347,7 +1398,7 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 	reg_int->cwt_expired_int_mask = 1;
 	reg_int->bwt_expired_int_mask = 1;
 	reg_int->write_full_fifo_int_mask = 1;
-	reg_int->send_and_recv_confict_int_mask = 1;
+	reg_int->send_and_recv_conflict_int_mask = 1;
 	reg_int->recv_error_int_mask = 1;
 	reg_int->send_error_int_mask = 1;
 	reg_int->rst_expired_int_mask = 1;
@@ -1360,7 +1411,7 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 	reg5->cwt_detect_en = cwt_det_en;
 	reg5->btw_detect_en = btw_det_en;
 	reg5->etu_msr_en = etu_msr_en;
-	reg5->bwt_base_time_gnt = BWT_BASE_DEFAULT;
+	reg5->bwt_base_time_gnt = bwt_time;
 	SMC_WRITE_REG(REG5, v);
 	pr_error("REG5: 0x%08lx\n", v);
 
@@ -1371,22 +1422,20 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 	reg6->bgt = smc->param.bgt - 2;
 	reg6->bwi = smc->param.bwi;
 
-#ifdef MEASURE_GUARD_TIME_BY_SW
-	prev_transmit_time_nsec = 0;
-	etu_nsec = div64_s64((s64)smc->param.f * 1000000,
-			     ((s64)smc->param.d * (s64)smc->param.freq));
-	total_guard_time_nsec = (12 + smc->param.n) * etu_nsec;
-#endif
 	SMC_WRITE_REG(REG6, v);
 	pr_error("REG6: 0x%08lx\n", v);
 	pr_error("N	  :%d\n", smc->param.n);
 	pr_error("cwi	 :%d\n", smc->param.cwi);
 	pr_error("bgt	 :%d\n", smc->param.bgt);
 	pr_error("bwi	 :%d\n", smc->param.bwi);
-#ifdef MEASURE_GUARD_TIME_BY_SW
-	pr_error("etu(ns)    :%lld\n", etu_nsec);
-	pr_error("total guard time	:%lld", total_guard_time_nsec);
-#endif
+
+	/*use new recv_fifo_count(8bits) to void overflow(4bits) issue*/
+	v = SMC_READ_REG(REG8);
+	reg8 = (struct smccard_hw_reg8 *)&v;
+	reg8->lrg_fifo_recv_thr = FIFO_THRESHOLD_DEFAULT;
+	reg8->use_lrg_fifo_recv = 1;
+	SMC_WRITE_REG(REG8, v);
+
 	return 0;
 }
 
@@ -1470,6 +1519,14 @@ static int smc_hw_active(struct smc_dev *smc)
 
 static int smc_hw_deactive(struct smc_dev *smc)
 {
+	//for loop print, it can stop by strigger
+//	if (smc_debug) {
+//		debug_write(dbuf, DBUF_SIZE);
+//		smc_debug = 0;
+//		smc_debug_save = 1;
+//		pr_inf("dbuf dump ok\n");
+//	}
+
 	if (smc->active) {
 		unsigned long sc_reg0 = SMC_READ_REG(REG0);
 		struct smccard_hw_reg0 *sc_reg0_reg = (void *)&sc_reg0;
@@ -1512,18 +1569,29 @@ static int smc_hw_deactive(struct smc_dev *smc)
 #ifndef ATR_FROM_INT
 static int smc_hw_get(struct smc_dev *smc, int cnt, int timeout)
 {
-	unsigned long sc_status;
-	int times = timeout * 100;
+	unsigned int sc_status;
+	unsigned int rev_status;
+	s64 char_nsec = (s64)timeout * 1000;
+	s64 prev_time_nsec;
+	int times = timeout / 10;
 	struct smc_status_reg *sc_status_reg =
 	    (struct smc_status_reg *)&sc_status;
+	struct smccard_hw_reg8 *rev_status_reg =
+	    (struct smccard_hw_reg8 *)&rev_status;
+
+	prev_time_nsec = ktime_to_ns(ktime_get());
 
 	while ((times > 0) && (cnt > 0)) {
 		sc_status = SMC_READ_REG(STATUS);
+		rev_status = SMC_READ_REG(REG8);
 
-		/*pr_dbg("read atr status %08x\n", sc_status); */
+//		if (times % 1000 == 0)
+//			pr_dbg("read atr status %08x\n", sc_status);
 
-		if (sc_status_reg->rst_expired_status)
+		if (sc_status_reg->rst_expired_status) {
 			pr_error("atr timeout\n");
+			return -1;
+		}
 
 		if (sc_status_reg->cwt_expired_status) {
 			pr_error("cwt timeout when get atr,");
@@ -1534,23 +1602,7 @@ static int smc_hw_get(struct smc_dev *smc, int cnt, int timeout)
 			usleep_range(10, 20);
 			times--;
 		} else {
-			/*handle overflow*/
-			if (sc_status_reg->recv_fifo_count == 0) {
-				u8 byte = (SMC_READ_REG(FIFO)) & 0xff;
-#ifdef SW_INVERT
-				if (smc->sc_type == SC_INVERSE)
-					byte = inv_table[byte];
-#endif
-				smc->atr.atr[smc->atr.atr_len++] = byte;
-				cnt--;
-				if (cnt == 0) {
-					pr_dbg("read atr bytes ok\n");
-					return 0;
-				}
-				continue;
-			}
-
-			while (sc_status_reg->recv_fifo_count > 0) {
+			while (rev_status_reg->recv_fifo_count > 0) {
 				u8 byte = (SMC_READ_REG(FIFO)) & 0xff;
 
 #ifdef SW_INVERT
@@ -1559,7 +1611,7 @@ static int smc_hw_get(struct smc_dev *smc, int cnt, int timeout)
 #endif
 
 				smc->atr.atr[smc->atr.atr_len++] = byte;
-				sc_status_reg->recv_fifo_count--;
+				rev_status_reg->recv_fifo_count--;
 				cnt--;
 				if (cnt == 0) {
 					pr_dbg("read atr bytes ok\n");
@@ -1567,9 +1619,11 @@ static int smc_hw_get(struct smc_dev *smc, int cnt, int timeout)
 				}
 			}
 		}
+		if ((ktime_to_ns(ktime_get()) - prev_time_nsec) > char_nsec)
+			break;
 	}
 
-	pr_error("read atr failed\n");
+	pr_error("read atr failed cnt:%d\n", cnt);
 	return -1;
 }
 
@@ -1634,7 +1688,6 @@ static int smc_hw_read_atr(struct smc_dev *smc)
 	int i;
 
 	pr_dbg("read atr\n");
-
 #ifdef ATR_FROM_INT
 #define smc_hw_get smc_fiq_get
 #endif
@@ -1642,8 +1695,16 @@ static int smc_hw_read_atr(struct smc_dev *smc)
 	smc->atr.atr_len = 0;
 	//from 2000 to 100 for reducing to get
 	//ATR time
-	if (smc_hw_get(smc, 2, 100) < 0)
-		goto end;
+	if (atr_timeout == 200000) {
+		if (smc_hw_get(smc, 2, atr_timeout) < 0)
+			goto end;
+	} else {
+		if (smc_hw_get(smc, 1, atr_timeout) < 0)
+			goto end;
+
+		if (smc_hw_get(smc, 1, atr_timeout) < 0)
+			goto end;
+	}
 
 #ifdef SW_INVERT
 	if (ptr[0] == 0x03) {
@@ -1672,19 +1733,19 @@ static int smc_hw_read_atr(struct smc_dev *smc)
 		tnext = 0;
 		loop_cnt++;
 		if (ptr[0] & 0x10) {
-			if (smc_hw_get(smc, 1, 1000) < 0)
+			if (smc_hw_get(smc, 1, atr1_timeout) < 0)
 				goto end;
 		}
 		if (ptr[0] & 0x20) {
-			if (smc_hw_get(smc, 1, 1000) < 0)
+			if (smc_hw_get(smc, 1, atr1_timeout) < 0)
 				goto end;
 		}
 		if (ptr[0] & 0x40) {
-			if (smc_hw_get(smc, 1, 1000) < 0)
+			if (smc_hw_get(smc, 1, atr1_timeout) < 0)
 				goto end;
 		}
 		if (ptr[0] & 0x80) {
-			if (smc_hw_get(smc, 1, 1000) < 0)
+			if (smc_hw_get(smc, 1, atr1_timeout) < 0)
 				goto end;
 
 			ptr = &smc->atr.atr[smc->atr.atr_len - 1];
@@ -1698,7 +1759,9 @@ static int smc_hw_read_atr(struct smc_dev *smc)
 
 	if (!only_t0)
 		his_len++;
-	smc_hw_get(smc, his_len, 2000);
+	for (i = 0; i < his_len; i++)
+		if (smc_hw_get(smc, 1, atr1_timeout) < 0)
+			goto end;
 
 	pr_dbg("get atr len:%d data: ", smc->atr.atr_len);
 	for (i = 0; i < smc->atr.atr_len; i++)
@@ -1798,10 +1861,14 @@ static int smc_hw_reset(struct smc_dev *smc)
 			/*disable receive interrupt */
 			sc_int = SMC_READ_REG(INTR);
 			sc_int_reg->recv_fifo_bytes_threshold_int_mask = 0;
+			sc_int_reg->rst_expired_int_mask = 0;
 			SMC_WRITE_REG(INTR, sc_int | 0x3FF);
 
 			sc_reg0_reg->rst_level = RESET_DISABLE;
 			sc_reg0_reg->start_atr = 1;
+			SMC_WRITE_REG(REG0, sc_reg0);
+
+			/*write again for atr count*/
 			SMC_WRITE_REG(REG0, sc_reg0);
 #ifdef RST_FROM_PIO
 			_gpio_out(smc->reset_pin,
@@ -1840,6 +1907,7 @@ static int smc_hw_reset(struct smc_dev *smc)
 			/*disable receive interrupt */
 			sc_int = SMC_READ_REG(INTR);
 			sc_int_reg->recv_fifo_bytes_threshold_int_mask = 0;
+			sc_int_reg->rst_expired_int_mask = 0;
 			SMC_WRITE_REG(INTR, sc_int | 0x3FF);
 
 			sc_reg0_reg->rst_level = RESET_DISABLE;
@@ -1852,6 +1920,9 @@ static int smc_hw_reset(struct smc_dev *smc)
 #else
 			sc_reg0_reg->etu_divider = smc->param.f / smc->param.d - 1;
 #endif
+			SMC_WRITE_REG(REG0, sc_reg0);
+
+			/*write again for atr count*/
 			SMC_WRITE_REG(REG0, sc_reg0);
 #ifdef RST_FROM_PIO
 
@@ -1935,11 +2006,15 @@ static int smc_hw_hot_reset(struct smc_dev *smc)
 			/*disable receive interrupt */
 			sc_int = SMC_READ_REG(INTR);
 			sc_int_reg->recv_fifo_bytes_threshold_int_mask = 0;
+			sc_int_reg->rst_expired_int_mask = 0;
 			SMC_WRITE_REG(INTR, sc_int | 0x3FF);
 
 			sc_reg0_reg->rst_level = RESET_DISABLE;
 			sc_reg0_reg->start_atr = 1;
 			sc_reg0_reg->enable = 1;
+			SMC_WRITE_REG(REG0, sc_reg0);
+
+			/*write again for atr count*/
 			SMC_WRITE_REG(REG0, sc_reg0);
 #ifdef RST_FROM_PIO
 			_gpio_out(smc->reset_pin, RESET_DISABLE,
@@ -2065,6 +2140,28 @@ static int smc_hw_start_send(struct smc_dev *smc)
 	    (struct smc_status_reg *)&sc_status;
 	u8 byte;
 
+	{
+		unsigned long v = 0;
+		struct smccard_hw_reg6 *reg6;
+
+		v = SMC_READ_REG(REG6);
+		reg6 = (struct smccard_hw_reg6 *)&v;
+
+		/*Just write one byte, set N = 0*/
+		if ((smc->send_end + 1) % SEND_BUF_SIZE == smc->send_start) {
+			if (reg6->N_parameter != 0) {
+				reg6->N_parameter = 0;
+				SMC_WRITE_REG(REG6, v);
+			}
+		} else {
+			/*recovery register N_parameter*/
+			if (reg6->N_parameter != smc->param.n) {
+				reg6->N_parameter = smc->param.n;
+				SMC_WRITE_REG(REG6, v);
+			}
+		}
+	}
+
 	/*trigger only */
 	sc_status = SMC_READ_REG(STATUS);
 	if (smc->send_end != smc->send_start &&
@@ -2078,7 +2175,6 @@ static int smc_hw_start_send(struct smc_dev *smc)
 #endif
 		SMC_WRITE_REG(FIFO, byte);
 		pr_dbg("send 1st byte to hw\n");
-		prev_transmit_time_nsec = ktime_to_ns(ktime_get());
 	}
 
 	return 0;
@@ -2109,11 +2205,14 @@ static void smc_irq_handler(void)
 	unsigned int sc_status;
 	unsigned int sc_reg0;
 	unsigned int sc_int;
+	unsigned int rev_status;
 	struct smc_status_reg *sc_status_reg =
 	    (struct smc_status_reg *)&sc_status;
 	struct smc_interrupt_reg *sc_int_reg =
 	    (struct smc_interrupt_reg *)&sc_int;
 	struct smccard_hw_reg0 *sc_reg0_reg = (void *)&sc_reg0;
+	struct smccard_hw_reg8 *rev_status_reg =
+		(struct smccard_hw_reg8 *)&rev_status;
 
 	sc_int = SMC_READ_REG(INTR);
 	/*Fpr("smc intr:0x%x\n", sc_int); */
@@ -2122,14 +2221,15 @@ static void smc_irq_handler(void)
 		int num = 0;
 
 		sc_status = SMC_READ_REG(STATUS);
-		num = sc_status_reg->recv_fifo_count;
+		rev_status = SMC_READ_REG(REG8);
+		num = rev_status_reg->recv_fifo_count;
 
 		if (num > smc_can_recv_max(smc)) {
 			pr_error("receive buffer overflow\n");
 		} else {
 			u8 byte;
 
-			while (sc_status_reg->recv_fifo_count) {
+			while (rev_status_reg->recv_fifo_count) {
 				byte = SMC_READ_REG(FIFO);
 #ifdef SW_INVERT
 				if (!smc->atr_mode &&
@@ -2207,6 +2307,22 @@ static int transmit_chars(struct smc_dev *smc)
 		status = SMC_READ_REG(STATUS);
 		if (smc->send_end == start || status_r->xmit_fifo_full)
 			break;
+		/*N !=0, last byte will set N=0, then avoid lost ACK*/
+		if (smc->param.n != 0) {
+			if ((smc->send_end + 1) % SEND_BUF_SIZE == start) {
+				if (cnt == 0) {
+					unsigned long v = 0;
+					struct smccard_hw_reg6 *reg6;
+
+					v = SMC_READ_REG(REG6);
+					reg6 = (struct smccard_hw_reg6 *)&v;
+					reg6->N_parameter = 0;
+					SMC_WRITE_REG(REG6, v);
+				} else {
+					break;
+				}
+			}
+		}
 
 		byte = smc->send_buf[smc->send_end];
 		Ipr("s > %02x\n", byte);
@@ -2214,14 +2330,6 @@ static int transmit_chars(struct smc_dev *smc)
 #ifdef SW_INVERT
 		if (smc->sc_type == SC_INVERSE)
 			byte = inv_table[byte];
-#endif
-#ifdef MEASURE_GUARD_TIME_BY_SW
-		//just wait until current time > prev time + total guard time if necessary
-		while ((ktime_to_ns(ktime_get()) - prev_transmit_time_nsec) <
-		       total_guard_time_nsec)
-			usleep_range(1, 10);
-
-		prev_transmit_time_nsec = ktime_to_ns(ktime_get());
 #endif
 		SMC_WRITE_REG(FIFO, byte);
 		cnt++;
@@ -2234,20 +2342,18 @@ static int transmit_chars(struct smc_dev *smc)
 static int receive_chars(struct smc_dev *smc)
 {
 	unsigned int status;
-	unsigned int intr;
+	unsigned int rev_status;
 	struct smc_status_reg *status_r = (struct smc_status_reg *)&status;
+	struct smccard_hw_reg8 *rev_status_reg =
+		(struct smccard_hw_reg8 *)&rev_status;
 	int cnt = 0;
 	u8 byte;
 
-	status = SMC_READ_REG(STATUS);
-	if (status_r->recv_fifo_empty > smc_can_recv_max(smc)) {
-		pr_error("receive buffer overflow\n");
+	rev_status = SMC_READ_REG(REG8);
+	if (rev_status_reg->recv_fifo_count > smc_can_recv_max(smc)) {
+		Ipr("receive buffer overflow\n");
 		return -1;
 	}
-
-	/*clear recv_fifo_bytes_threshold_int_mask or INT lost */
-	intr = SMC_READ_REG(INTR);
-	SMC_WRITE_REG(INTR, (intr & ~0x103ff));
 
 	status = SMC_READ_REG(STATUS);
 	while (!status_r->recv_fifo_empty) {
@@ -2285,10 +2391,14 @@ static void smc_irq_bh_handler(unsigned long arg)
 	if (smc->detect_invert)
 		smc->cardin = !smc->cardin;
 
-	if (smc->recv_start != smc->recv_end)
+	if (smc->recv_start != smc->recv_end) {
 		wake_up_interruptible(&smc->rd_wq);
-	if (smc->send_start == smc->send_end)
+		Fpr("wakeup recv\n");
+	}
+	if (smc->send_start == smc->send_end) {
 		wake_up_interruptible(&smc->wr_wq);
+		Fpr("wakeup send\n");
+	}
 }
 
 static irqreturn_t smc_irq_handler(int irq, void *data)
@@ -2298,11 +2408,10 @@ static irqreturn_t smc_irq_handler(int irq, void *data)
 	unsigned int sc_int;
 	struct smc_status_reg *sc_status_reg =
 	    (struct smc_status_reg *)&sc_status;
-	struct smc_interrupt_reg *sc_int_reg =
-	    (struct smc_interrupt_reg *)&sc_int;
 
 	sc_int = SMC_READ_REG(INTR);
 	Ipr("Int:0x%x\n", sc_int);
+
 	sc_status = SMC_READ_REG(STATUS);
 	Ipr("Sta:0x%x\n", sc_status);
 
@@ -2311,17 +2420,12 @@ static irqreturn_t smc_irq_handler(int irq, void *data)
 	if (!sc_status_reg->recv_fifo_empty)
 		receive_chars(smc);
 
+	SMC_WRITE_REG(INTR, sc_int);
+
 	/* Send */
 	sc_status = SMC_READ_REG(STATUS);
-	if (!sc_status_reg->xmit_fifo_full) {
+	if (!sc_status_reg->xmit_fifo_full)
 		transmit_chars(smc);
-		if (smc->send_end == smc->send_start) {
-			sc_int_reg->send_fifo_last_byte_int_mask = 0;
-			sc_int_reg->recv_fifo_bytes_threshold_int_mask = 1;
-		}
-	}
-
-	SMC_WRITE_REG(INTR, sc_int | 0x3FF);
 
 	tasklet_schedule(&smc->tasklet);
 
@@ -2611,17 +2715,10 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 
 	request_fiq(smc->irq_num, &smc_irq_handler);
 #else
-#ifdef MEASURE_GUARD_TIME_BY_SW
-	smc->irq_num = request_threaded_irq(smc->irq_num,
-		NULL, smc_irq_handler, //smc_irq_thread_handler,
-		IRQF_ONESHOT | IRQF_SHARED | IRQF_TRIGGER_RISING,
-		"smc", smc);
-#else
 	smc->irq_num = request_irq(smc->irq_num,
 				   (irq_handler_t)smc_irq_handler,
-				   IRQF_SHARED | IRQF_TRIGGER_RISING,
+				   IRQF_SHARED | IRQF_TRIGGER_HIGH,
 				   "smc", smc);
-#endif
 	if (smc->irq_num < 0) {
 		pr_error("request irq error %d!\n", smc->irq_num);
 		smc_dev_deinit(smc);
@@ -2657,10 +2754,6 @@ static int smc_open(struct inode *inode, struct file *filp)
 	smc = &smc_dev[id];
 	mutex_init(&smc->lock);
 	mutex_lock(&smc->lock);
-
-#ifdef FILE_DEBUG
-	open_debug();
-#endif
 
 	if (smc->used) {
 		mutex_unlock(&smc->lock);
@@ -2699,10 +2792,6 @@ static int smc_close(struct inode *inode, struct file *filp)
 	switch_mod_gate_by_name("smart_card", 0);
 #endif
 
-#ifdef FILE_DEBUG
-	close_debug();
-#endif
-
 	mutex_unlock(&smc->lock);
 
 	return 0;
@@ -2715,7 +2804,10 @@ static ssize_t smc_read(struct file *filp,
 	unsigned long flags;
 	int ret;
 	int start = 0, end;
+	int cnt = 0;
+	long cr;
 
+	memset(&smc->r_cache, 0, RECV_BUF_SIZE);
 	ret = mutex_lock_interruptible(&smc->lock);
 	if (ret)
 		return ret;
@@ -2738,18 +2830,16 @@ static ssize_t smc_read(struct file *filp,
 	}
 
 	if (ret > 0) {
-		int cnt = RECV_BUF_SIZE - start;
-		long cr;
-
 		pr_dbg("read %d bytes\n", ret);
+		cnt = RECV_BUF_SIZE - start;
 		spin_unlock_irqrestore(&smc->slock, flags);
 		if (cnt >= ret) {
-			cr = copy_to_user(buff, smc->recv_buf + start, ret);
+			memcpy(smc->r_cache, smc->recv_buf + start, ret);
 		} else {
 			int cnt1 = ret - cnt;
 
-			cr = copy_to_user(buff, smc->recv_buf + start, cnt);
-			cr = copy_to_user(buff + cnt, smc->recv_buf, cnt1);
+			memcpy(smc->r_cache, smc->recv_buf + start, cnt);
+			memcpy(smc->r_cache + cnt, smc->recv_buf, cnt1);
 		}
 		spin_lock_irqsave(&smc->slock, flags);
 		_atomic_wrap_add(&smc->recv_start, ret, RECV_BUF_SIZE);
@@ -2757,6 +2847,13 @@ static ssize_t smc_read(struct file *filp,
 	spin_unlock_irqrestore(&smc->slock, flags);
 
 	mutex_unlock(&smc->lock);
+	if (ret > 0) {
+		cr = copy_to_user(buff, smc->r_cache, ret);
+		if (cr != 0) {
+			pr_error("copy_to_user fail ret:%ld\n", cr);
+			return -1;
+		}
+	}
 
 	return ret;
 }
@@ -2770,6 +2867,17 @@ static ssize_t smc_write(struct file *filp,
 	unsigned long sc_int;
 	struct smc_interrupt_reg *sc_int_reg = (void *)&sc_int;
 	int start = 0, end;
+	long cp_ret;
+
+	if (size > SEND_BUF_SIZE)
+		return -1;
+
+	memset(&smc->w_cache, 0, SEND_BUF_SIZE);
+	cp_ret = copy_from_user(&smc->w_cache, buff, size);
+	if (cp_ret != 0) {
+		pr_error("smc:copy_from_user fail\n");
+		return -1;
+	}
 
 	ret = mutex_lock_interruptible(&smc->lock);
 	if (ret)
@@ -2794,16 +2902,15 @@ static ssize_t smc_write(struct file *filp,
 
 	if (ret > 0) {
 		int cnt = SEND_BUF_SIZE - start;
-		long cr;
 
 		spin_unlock_irqrestore(&smc->slock, flags);
 		if (cnt >= ret) {
-			cr = copy_from_user(smc->send_buf + start, buff, ret);
+			memcpy(smc->send_buf + start, smc->w_cache, ret);
 		} else {
 			int cnt1 = ret - cnt;
 
-			cr = copy_from_user(smc->send_buf + start, buff, cnt);
-			cr = copy_from_user(smc->send_buf, buff + cnt, cnt1);
+			memcpy(smc->send_buf + start, smc->w_cache, cnt);
+			memcpy(smc->send_buf, smc->w_cache + cnt, cnt1);
 		}
 		spin_lock_irqsave(&smc->slock, flags);
 		_atomic_wrap_add(&smc->send_start, ret, SEND_BUF_SIZE);
@@ -2816,6 +2923,7 @@ static ssize_t smc_write(struct file *filp,
 #ifdef DISABLE_RECV_INT
 		sc_int_reg->recv_fifo_bytes_threshold_int_mask = 0;
 #endif
+		sc_int_reg->recv_fifo_bytes_threshold_int_mask = 1;
 		sc_int_reg->send_fifo_last_byte_int_mask = 1;
 		SMC_WRITE_REG(INTR, sc_int | 0x3FF);
 
@@ -2840,10 +2948,14 @@ static unsigned int smc_poll(struct file *filp, struct poll_table_struct *wait)
 
 	spin_lock_irqsave(&smc->slock, flags);
 
-	if (smc->recv_start != smc->recv_end)
+	if (smc->recv_start != smc->recv_end) {
 		ret |= POLLIN | POLLRDNORM;
-	if (smc->send_start == smc->send_end)
+		Fpr("rd\n");
+	}
+	if (smc->send_start == smc->send_end) {
 		ret |= POLLOUT | POLLWRNORM;
+		Fpr("wd\n");
+	}
 	if (!smc->cardin)
 		ret |= POLLERR;
 

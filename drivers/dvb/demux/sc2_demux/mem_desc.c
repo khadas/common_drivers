@@ -13,8 +13,8 @@
 #include <linux/syscalls.h>
 #include <linux/delay.h>
 
-//#define CHECK_PACKET_ALIGN
-#ifdef CHECK_PACKET_ALIGN
+//#define CHECK_PACKET_ALIGNM
+#ifdef CHECK_PACKET_ALIGNM
 #include <linux/highmem.h>
 #endif
 
@@ -63,9 +63,9 @@ MODULE_PARM_DESC(dump_input_ts, "\n\t\t dump input ts packet");
 static int dump_input_ts;
 module_param(dump_input_ts, int, 0644);
 
-MODULE_PARM_DESC(check_ts_align, "\n\t\t check input ts align");
-static int check_ts_align;
-module_param(check_ts_align, int, 0644);
+MODULE_PARM_DESC(check_ts_alignm, "\n\t\t check input ts alignm");
+static int check_ts_alignm;
+module_param(check_ts_alignm, int, 0644);
 
 MODULE_PARM_DESC(dmc_keep_alive, "\n\t\t Enable keep dmc alive");
 static int dmc_keep_alive;
@@ -793,8 +793,8 @@ static int _bufferid_alloc_chan_r_for_ts(struct chan_id **pchan, u8 req_id)
 	return 0;
 }
 
-#ifdef CHECK_PACKET_ALIGN
-static void check_packet_align(unsigned int start, unsigned int end)
+#ifdef CHECK_PACKET_ALIGNM
+static void check_packet_alignm(unsigned int start, unsigned int end)
 {
 	int n = 0;
 	char *p = NULL;
@@ -802,12 +802,12 @@ static void check_packet_align(unsigned int start, unsigned int end)
 	unsigned int detect_len = end - start;
 
 	if (detect_len % 188 != 0) {
-		dprint_i("len:%d not align\n", detect_len);
+		dprint_i("len:%d not alignm\n", detect_len);
 		return;
 	}
 	reg = round_down(start, 0x3);
 	if (reg != start)
-		dprint_i("mem addr not align 4\n");
+		dprint_i("mem addr not alignm 4\n");
 
 	if (!pfn_valid(__phys_to_pfn(reg)))
 		p = (void *)ioremap(reg, 0x4);
@@ -817,10 +817,10 @@ static void check_packet_align(unsigned int start, unsigned int end)
 		dprint_i("phy transfer to virt fail\n");
 		return;
 	}
-	//detect packet align
+	//detect packet alignm
 	for (n = 0; n < detect_len / 188; n++) {
 		if (p[n * 188] != 0x47) {
-			dprint_i("packet not align at %d,header:0x%0x\n",
+			dprint_i("packet not alignm at %d,header:0x%0x\n",
 				n * 188, p[n * 188]);
 			break;
 		}
@@ -830,24 +830,24 @@ static void check_packet_align(unsigned int start, unsigned int end)
 }
 #endif
 
-static void check_packet_align_virt(char *mem_start, unsigned int len)
+static void check_packet_alignm_virt(char *mem_start, unsigned int len)
 {
 	int n = 0;
 	char *p = mem_start;
 	unsigned int detect_len = len;
 
 	if (detect_len % 188 != 0) {
-		dprint_i("len:%d not align\n", detect_len);
+		dprint_i("len:%d not alignm\n", detect_len);
 		return;
 	}
 	if (!p) {
 		dprint_i("mem_start fail\n");
 		return;
 	}
-	//detect packet align
+	//detect packet alignm
 	for (n = 0; n < detect_len / 188; n++) {
 		if (p[n * 188] != 0x47) {
-			dprint_i("packet not align at %d,header:0x%0x\n",
+			dprint_i("packet not alignm at %d,header:0x%0x\n",
 				n * 188, p[n * 188]);
 			break;
 		}
@@ -1225,8 +1225,8 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 				dprint("copy_from user error\n");
 				return -EFAULT;
 			}
-#ifdef CHECK_PACKET_ALIGN
-			check_packet_align(ts_data.buf_start, ts_data.buf_end);
+#ifdef CHECK_PACKET_ALIGNM
+			check_packet_alignm(ts_data.buf_start, ts_data.buf_end);
 #endif
 			tmp = (unsigned long)ts_data.buf_start & 0xFFFFFFFF;
 			pchan->memdescs->bits.address = tmp;
@@ -1262,8 +1262,8 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 				dprint("copy_from user error\n");
 				return -EFAULT;
 			}
-			if (check_ts_align)
-				check_packet_align_virt((char *)pchan->mem, len);
+			if (check_ts_alignm)
+				check_packet_alignm_virt((char *)pchan->mem, len);
 
 			if (dump_input_cb)
 				dump_input_cb(pchan->id, -1, DMX_DUMP_INPUT_TYPE,

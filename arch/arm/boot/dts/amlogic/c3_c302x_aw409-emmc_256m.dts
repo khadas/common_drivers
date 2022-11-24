@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+/dts-v1/;
+
+#include "c3_c30xx_aw409_256m.dtsi"
+/ {
+		model = "Amlogic";
+		amlogic-dt-id = "c3_c302x_aw409-256m";
+		compatible = "amlogic, c3";
+};
+
+&sd_emmc_c
+{
+	status = "okay";
+	pinctrl-0 = <&emmc_pins>;
+	pinctrl-1 = <&emmc_clk_gate_pins>;
+	pinctrl-2 = <&emmc_pins_sleep>;
+	pinctrl-names = "default", "clk-gate", "sleep";
+	cap-mmc-highspeed;
+	non-removable;
+	//mmc-run-pxp;
+	//mmc-ddr-1_8v;
+	/delete-property/ mmc-hs200-1_8v;
+	/delete-property/ mmc-hs400-1_8v;
+	max-frequency = <50000000>;
+	disable-wp;
+	bus-width = <8>;
+};

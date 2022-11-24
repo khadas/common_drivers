@@ -60,7 +60,9 @@
 /* 2021/11/05 --- V2.31 --- Bringup t5w. */
 /* 2021/12/24 --- V2.32 --- Fix shutdown. */
 /* 2021/12/29 --- V2.33 --- Fix unable to find symbol aml_atvdemod_attach. */
-#define AMLATVDEMOD_VER "V2.33"
+/* 2022/06/16 --- V2.34 --- Fix audio setting and resume. */
+/* 2022/08/27 --- V2.35 --- Fix ripples. */
+#define AMLATVDEMOD_VER "V2.35"
 
 struct aml_atvdemod_device *amlatvdemod_devp;
 
@@ -71,7 +73,7 @@ static ssize_t atvdemod_debug_store(struct class *class,
 		struct class_attribute *attr, const char *buf, size_t count)
 {
 	int n = 0;
-	unsigned int ret = 0;
+	int ret = 0;
 	char *buf_orig = NULL, *ps = NULL, *token = NULL;
 	char *parm[4] = { NULL };
 	unsigned int data_snr[128] = { 0 };
@@ -580,8 +582,7 @@ int aml_atvdemod_attach_demod(struct aml_atvdemod_device *dev)
 	struct v4l2_frontend *v4l2_fe = &dev->v4l2_fe;
 	struct dvb_frontend *fe = &v4l2_fe->fe;
 
-	p = v4l2_attach(aml_atvdemod_attach, fe, v4l2_fe,
-				&dev->i2c_adap, dev->i2c_addr, dev->tuner_id);
+	p = aml_atvdemod_attach(fe, v4l2_fe, &dev->i2c_adap, dev->i2c_addr, dev->tuner_id);
 	if (p) {
 		dev->analog_attached = true;
 	} else {

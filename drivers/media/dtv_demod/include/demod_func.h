@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
 
 #ifndef __DEMOD_FUNC_H__
@@ -84,61 +84,61 @@ extern int aml_demod_debug;
 #define DBG_ISDBT	BIT(8)
 #define DBG_TIME	BIT(9)
 
-#define PR_INFO(fmt, args ...)	printk("dtv_dmd:"fmt, ##args)
+#define PR_INFO(fmt, args ...)	pr_info("dtv_dmd:" fmt, ##args)
 
 #define PR_TIME(fmt, args ...) \
 	do { \
 		if (aml_demod_debug & DBG_TIME) { \
-			printk("dtv_dmd:" fmt, ##args); \
+			pr_info("dtv_dmd:" fmt, ##args); \
 		} \
 	} while (0)
 
 #define PR_DBG(fmt, args ...) \
 	do { \
 		if (aml_demod_debug & DBG_INFO) { \
-			printk("dtv_dmd:"fmt, ##args); \
+			pr_info("dtv_dmd:" fmt, ##args); \
 		} \
 	} while (0)
 
 #define PR_ATSC(fmt, args ...) \
 	do { \
 		if (aml_demod_debug & DBG_ATSC) { \
-			printk("dtv_dmd:"fmt, ##args); \
+			pr_info("dtv_dmd:" fmt, ##args); \
 		} \
 	} while (0)
 
 #define PR_DVBC(fmt, args ...) \
 	do { \
 		if (aml_demod_debug & DBG_DVBC) { \
-			pr_info("dtv_dmd:"fmt, ##args); \
+			pr_info("dtv_dmd:" fmt, ##args); \
 		} \
 	} while (0)
 
 #define PR_DVBT(fmt, args ...) \
 	do { \
 		if (aml_demod_debug & DBG_DVBT) { \
-			pr_info("dtv_dmd:"fmt, ##args); \
+			pr_info("dtv_dmd:" fmt, ##args); \
 		} \
 	} while (0)
 
 #define PR_DVBS(fmt, args ...) \
 	do { \
 		if (aml_demod_debug & DBG_DVBS) { \
-			pr_info("dtv_dmd:"fmt, ##args); \
+			pr_info("dtv_dmd:" fmt, ##args); \
 		} \
 	} while (0)
 
 #define PR_DTMB(fmt, args ...) \
 	do { \
 		if (aml_demod_debug & DBG_DTMB) { \
-			pr_info("dtv_dmd:"fmt, ##args); \
+			pr_info("dtv_dmd:" fmt, ##args); \
 		} \
 	} while (0)
 
 #define PR_ISDBT(fmt, args ...) \
 	do { \
 		if (aml_demod_debug & DBG_ISDBT) { \
-			pr_info("dtv_dmd:"fmt, ##args); \
+			pr_info("dtv_dmd:" fmt, ##args); \
 		} \
 	} while (0)
 
@@ -146,12 +146,12 @@ extern int aml_demod_debug;
 #define PR_DBGL(fmt, args ...) \
 	do { \
 		if (aml_demod_debug & DBG_LOOP) { \
-			pr_info("dtv_dmd:"fmt, ##args); \
+			pr_info("dtv_dmd:" fmt, ##args); \
 		} \
 	} while (0)
 
-#define PR_ERR(fmt, args ...) pr_err("dtv_dmd:"fmt, ## args)
-#define PR_WAR(fmt, args...)  pr_warn("dtv_dmd:" fmt, ## args)
+#define PR_ERR(fmt, args ...) pr_err("dtv_dmd:" fmt, ##args)
+#define PR_WAR(fmt, args...)  pr_warn("dtv_dmd:" fmt, ##args)
 
 
 enum demod_reg_mode {
@@ -221,6 +221,7 @@ struct stchip_register_t {
 };
 
 void st_dvbs2_init(void);
+bool tuner_find_by_name(struct dvb_frontend *fe, const char *name);
 void tuner_set_params(struct dvb_frontend *fe);
 int tuner_get_ch_power(struct dvb_frontend *fe);
 
@@ -236,18 +237,7 @@ unsigned int dvbt_set_ch(struct aml_dtvdemod *demod,
 		struct aml_demod_dvbt *demod_dvbt, struct dvb_frontend *fe);
 int dvbt2_set_ch(struct aml_dtvdemod *demod, struct dvb_frontend *fe);
 
-struct demod_status_ops {
-	int (*get_status)(void);
-	int (*get_ber)(void);
-	int (*get_snr)(struct aml_demod_sta *demod_sta);
-	int (*get_strength)(struct aml_demod_sta *demod_sta);
-	int (*get_ucblocks)(struct aml_demod_sta *demod_sta);
-};
-
-struct demod_status_ops *dvbt_get_status_ops(void);
-
 /* dvbc */
-
 int dvbc_set_ch(struct aml_dtvdemod *demod, struct aml_demod_dvbc *demod_dvbc,
 		struct dvb_frontend *fe);
 int dvbc_status(struct aml_dtvdemod *demod, struct aml_demod_sts *demod_sts,
@@ -270,15 +260,20 @@ void dvbc_kill_cci_task(struct aml_dtvdemod *demod);
 void dvbc_reg_initial_old(struct aml_dtvdemod *demod);
 
 /*txlx*/
+enum dvbc_sym_speed {
+	SYM_SPEED_NORMAL,
+	SYM_SPEED_MIDDLE,
+	SYM_SPEED_HIGH
+};
 void dvbc_reg_initial(struct aml_dtvdemod *demod, struct dvb_frontend *fe);
 void demod_dvbc_fsm_reset(struct aml_dtvdemod *demod);
 void demod_dvbc_set_qam(struct aml_dtvdemod *demod, unsigned int qam);
 void dvbc_init_reg_ext(struct aml_dtvdemod *demod);
 u32 dvbc_get_ch_sts(struct aml_dtvdemod *demod);
 u32 dvbc_get_qam_mode(struct aml_dtvdemod *demod);
-void dvbc_cfg_sr_cnt(struct aml_dtvdemod *demod, bool force);
-void dvbc_cfg_sr_scan_speed(struct aml_dtvdemod *demod, bool force);
-void dvbc_cfg_tim_sweep_range(struct aml_dtvdemod *demod, bool force);
+void dvbc_cfg_sr_cnt(struct aml_dtvdemod *demod, enum dvbc_sym_speed spd);
+void dvbc_cfg_sr_scan_speed(struct aml_dtvdemod *demod, enum dvbc_sym_speed spd);
+void dvbc_cfg_tim_sweep_range(struct aml_dtvdemod *demod, enum dvbc_sym_speed spd);
 void dvbc_cfg_sw_hw_sr_max(struct aml_dtvdemod *demod, unsigned int max_sr);
 unsigned int dvbc_auto_qam_process(struct aml_dtvdemod *demod);
 
@@ -624,7 +619,7 @@ int aml_demod_init(void);
 void aml_demod_exit(void);
 unsigned int write_riscv_ram(void);
 unsigned int dvbs_get_quality(void);
-void dvbs2_reg_initial(unsigned int symb_rate, unsigned int is_blind_scan);
+void dvbs2_reg_initial(unsigned int symb_rate_kbs, unsigned int is_blind_scan);
 int dvbs_get_signal_strength_off(void);
 void t3_revb_set_ambus_state(bool enable, bool is_t2);
 void t5w_write_ambus_reg(u32 addr,

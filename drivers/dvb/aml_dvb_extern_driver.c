@@ -66,6 +66,23 @@ static char *fe_delsys_name[] = {
 	"SYS_ANALOG"
 };
 
+static char *fe_modulation_name[] = {
+	"QPSK",
+	"QAM_16",
+	"QAM_32",
+	"QAM_64",
+	"QAM_128",
+	"QAM_256",
+	"QAM_AUTO",
+	"VSB_8",
+	"VSB_16",
+	"PSK_8",
+	"APSK_16",
+	"APSK_32",
+	"DQPSK",
+	"QAM_4_NR"
+};
+
 static void aml_dvb_extern_set_power(struct gpio_config *pin_cfg, int on)
 {
 	if (!aml_gpio_is_valid(pin_cfg->pin)) {
@@ -116,7 +133,9 @@ void aml_attach_work(struct work_struct *work)
 	cur_id = p->cur_id;
 
 	demod->attach(demod, true);
+	demod->detect(demod);
 	demod->register_frontend(demod, true);
+	demod->pre_init(demod);
 
 	if (cur_id >= dvb_extern_dev->demod_num) {
 		pr_err("demod index %d error, the max is %d, use default %d.\n",
@@ -757,6 +776,37 @@ static ssize_t demod_debug_store(struct class *class,
 		demod->register_frontend(demod, true);
 	} else if (!strncmp(parm[0], "unregister", 10)) {
 		demod->register_frontend(demod, false);
+	} else if (!strncmp(parm[0], "getprop", 7)) { //ioctl cmd:FE_GET_PROPERTY
+		if (!strncmp(parm[1], "enum_delsys", 11)) { //prop cmd:DTV_ENUM_DELSYS
+			n = 0;
+			while (n < MAX_DELSYS && fe->ops.delsys[n]) {
+				pr_err("%s\n", fe_delsys_name[fe->ops.delsys[n]]);
+				n++;
+			}
+		} else if (!strncmp(parm[1], "ts_input", 8)) { //prop cmd: DTV_TS_INPUT
+			memset(&tvp, 0, sizeof(tvp));
+			tvp.cmd = DTV_TS_INPUT;
+
+			if (fe->ops.get_property) {
+				ret = fe->ops.get_property(fe, &tvp);
+				if (ret < 0)
+					pr_err("get_property failed.\n");
+				else
+					pr_err("ts in port: %d\n", tvp.u.data);
+			}
+		} else if (!strncmp(parm[1], "freq", 4)) { //prop cmd: DTV_FREQUENCY
+			pr_err("frequency_hz: %d\n", c->frequency);
+		} else if (!strncmp(parm[1], "mod", 3)) { //prop cmd: DTV_MODULATION
+			pr_err("modulation: %s\n", fe_modulation_name[c->modulation]);
+		} else if (!strncmp(parm[1], "bw", 2)) { //prop cmd: DTV_BANDWIDTH_HZ
+			pr_err("bandwidth_hz: %d\n", c->bandwidth_hz);
+		} else if (!strncmp(parm[1], "symbol_rate", 11)) { //prop cmd: DTV_SYMBOL_RATE
+			pr_err("symbol_rate: %d\n", c->symbol_rate);
+		} else if (!strncmp(parm[1], "delsys", 6)) { //prop cmd: DTV_DELIVERY_SYSTEM
+			pr_err("delsys: %s\n", fe_delsys_name[c->delivery_system]);
+		} else {
+			pr_err("invalid prop cmd: %s.\n", parm[1]);
+		}
 	} else {
 		pr_err("invalid command: %s.\n", parm[0]);
 	}
@@ -842,6 +892,10 @@ static ssize_t demod_debug_show(struct class *class,
 	n += sprintf(buff + n, "\tROLLOFF_25   : 2\n");
 	n += sprintf(buff + n, "\tROLLOFF_AUTO : 3\n");
 	n += sprintf(buff + n, "[uninit]\necho uninit > %s\n", path);
+	n += sprintf(buff + n, "[getprop]\n");
+	n += sprintf(buff + n, "echo getprop [prop_cmd] > %s\n", path);
+	n += sprintf(buff + n,
+			"\tprop_cmd: enum_delsys, ts_input, freq, mod, bw, symbol_rate, delsys\n");
 
 	n += sprintf(buff + n, "\n------------------------------------------------------------\n");
 	n += sprintf(buff + n, "\nDemod Status:\n");

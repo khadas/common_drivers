@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
 
 #ifndef AML_DEMOD_H
@@ -94,6 +94,7 @@ struct aml_demod_sta {
 	u8_t spectrum;
 	u8_t is_blind_scan;
 	enum fe_delivery_system delsys;
+	u8_t is_singlecable;
 };
 
 struct aml_demod_dvbc {

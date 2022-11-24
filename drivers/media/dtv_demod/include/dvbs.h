@@ -1,15 +1,22 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
 
 #ifndef __DVBS_FUNC_H__
 #define __DVBS_FUNC_H__
 #include <media/dvb_frontend.h>
+#define ALIGN_24	16777216
+#define SR_LOW_THRD	11000000
+
+#define BLIND_SEARCH_AGC2BANDWIDTH_40 (40)
+#define BLIND_SEARCH_AGC2BANDWIDTH_80 (80)
+#define BLIND_SEARCH_POW_TH           (25000)
+#define BLIND_SEARCH_BW_MIN           (6)
 
 #define CNR_HIGH	0xcae
 #define CNR_LOW		0xcad
-#define AUTOSR_REG   0x922
+#define AUTOSR_REG 0x922
 #define AUTOSR_OFF 0xcc
 #define AUTOSR_ON  0xdc
 
@@ -24,8 +31,8 @@ enum diseq_irq_flag {
 };
 
 struct fe_lla_lookpoint_t {
-	s32 realval;	//real value
-	s32 regval;	//binary value
+	s32 realval; //real value
+	s32 regval; //binary value
 };
 
 struct fe_lla_lookup_t {
@@ -49,15 +56,15 @@ struct fft_search_result {
 };
 
 struct fft_in_bw_result {
-	s32 found_tp_num;
-	u32 in_bw_result_frc[45];
-	u32 in_bw_result_bw[45];
+	s32 tp_num;
+	u32 freq[45];
+	u32 bw[45];
 };
 
 struct fft_total_result {
-	s32 found_tp_num;
-	u32 total_result_frc[1000];
-	u32 total_result_bw[1000];
+	s32 tp_num;
+	u32 freq[1000];
+	u32 bw[1000];
 };
 
 #define DVBS_REG_MRELEASE	0x100
@@ -128,6 +135,8 @@ struct fft_total_result {
 #define DVBS_REG_ACRPRESC	0x31E
 #define DVBS_REG_ACRDIV		0x31F
 
+#define DVBS_REG_DSQADCINCFG	0x121
+
 #define DSTATUS		0x934
 
 /* carrier offset */
@@ -135,19 +144,27 @@ struct fft_total_result {
 #define	CFR11	0x9d0
 #define	CFR10	0x9d1
 
+#define DVBS_AGC_LEVEL_ADDR     0x91a
+
 void dvbs2_diseqc_send_msg(unsigned int len, unsigned char *msg);
-void dvbs2_diseqc_read_msg(unsigned int *len, unsigned char *msg);
+unsigned int dvbs2_diseqc_read_msg(unsigned int len, unsigned char *msg);
 unsigned int dvbs2_diseqc_irq_check(void);
-void dvbs2_diseqc_irq_en(unsigned int onoff);
+unsigned int dvbs2_diseqc_rx_check(void);
+void dvbs2_diseqc_reset(void);
+void dvbs2_diseqc_send_irq_en(bool onoff);
+void dvbs2_diseqc_recv_irq_en(bool onoff);
 void dvbs2_diseqc_init(void);
-void dvbs2_diseqc_continuous_tone(unsigned int onoff);
+void dvbs2_diseqc_recv_en(bool onoff);
+void dvbs2_diseqc_continuous_tone(bool onoff);
 void dvbs_check_status(struct seq_file *seq);
 unsigned int dvbs_get_freq_offset(unsigned int *polarity);
+unsigned int dvbs_get_symbol_rate(void);
 void dvbs_fft_reg_init(unsigned int *reg_val);
 void dvbs_fft_reg_term(unsigned int reg_val[60]);
 void dvbs_blind_fft_work(struct fft_threadcontrols *spectr_ana_data,
 	int frq, struct fft_search_result *search_result);
 void dvbs_blind_fft_result_handle(struct fft_total_result *total_result);
-unsigned int dvbs_blind_check_AGC2_bandwidth(void);
+unsigned int dvbs_blind_check_AGC2_bandwidth_new(int *next_step_khz);
+unsigned int dvbs_blind_check_AGC2_bandwidth_old(int *next_step_khz);
 
 #endif

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
 
 #ifndef __ADDR_ATSC_DEMOD_H__
@@ -65,6 +65,7 @@
 #define  ATSC_DEMOD_REG_0X88                  ATSC_DEMOD_ADDR(0x88)
 
 /* AGC */
+#define  ATSC_AGC_REG_0X42                  (0x42)
 #define  ATSC_AGC_REG_0X44                  (0x44)
 
 /* FEC */

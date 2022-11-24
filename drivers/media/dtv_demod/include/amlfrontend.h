@@ -1,13 +1,14 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
 
 #ifndef _AMLFRONTEND_H
 #define _AMLFRONTEND_H
-/**/
-#include "depend.h" /**/
+
+#include "depend.h"
 #include "dvbc_func.h"
+#include "dvbs_diseqc.h"
 #include <linux/amlogic/cpu_version.h>
 #include <linux/amlogic/aml_dtvdemod.h>
 
@@ -41,6 +42,26 @@
 /*  V1.1.48  fixed 16qam/32qam cost long time to lock up or error */
 /*  V1.1.49  fix HRC freq of 79M lock failed */
 /*  V1.1.50  fixed data type of memory address and read/write */
+/*  V1.1.51  fixed dvbs/s2/isdbt aft test and support dvbt2 5/6/1.7M */
+/*  V1.1.52  add ambus exit processing when switching mode */
+/*  V1.1.53  fixed dvb-c auto qam unlock when 16qam/32qam */
+/*  V1.1.54  rebuild atsc to improve signal locking performance */
+/*  V1.1.55  improve atsc cci */
+/*  V1.1.56  add dvbt2 fef info */
+/*  V1.1.57  fix auto qam(t5w) and sr */
+/*  V1.1.58  fix delsys exit setting and r842 dvbc auto sr */
+/*  V1.1.59  fix dvbs/s2 aft range and different tuner blind window settings */
+/*  V1.1.60  support diseqc2.0 */
+/*  V1.1.61  fix T5W T and T2 channel switch unlock */
+/*  V1.1.62  implement get RSSI function for av2018 */
+/*  V1.1.63  fix dvbc 128/256qam unlock */
+/*  V1.1.64  fix atsc static echo test failed in -30us */
+/*  V1.1.65  fix locking qam64 signal failed in j83b */
+/*  V1.1.66  improve dvbs blind scan and support single cable */
+/*  V1.1.67  avoid dvbc missing channel */
+/*  V1.1.68  add a function to invert the spectrum in dvbs blind scan */
+/*  V1.1.69  fixed atsc agc speed test */
+/*  V1.1.70  improve diseqc lnb control */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -57,19 +78,20 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.50"
-#define DTVDEMOD_VER	"2022/05/06: fixed data type of memory address and read/write"
-#define AMLDTVDEMOD_T2_FW_VER "V1417.0909"
+#define AMLDTVDEMOD_VER "V1.1.70"
+#define DTVDEMOD_VER	"2022/11/17: improve diseqc lnb control"
+#define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
-#define THRD_TUNER_STRENTH_ATSC (-87)
-#define THRD_TUNER_STRENTH_J83 (-76)
+#define THRD_TUNER_STRENGTH_ATSC (-87)
+#define THRD_TUNER_STRENGTH_J83 (-76)
 /* tested on BTC, sensitivity of demod is -100dBm */
-#define THRD_TUNER_STRENTH_DVBT (-101)
-#define THRD_TUNER_STRENTH_DVBS (-79)
-#define THRD_TUNER_STRENTH_DTMB (-92)
+#define THRD_TUNER_STRENGTH_DVBT (-101)
+#define THRD_TUNER_STRENGTH_DVBS (-79)
+#define THRD_TUNER_STRENGTH_DTMB (-100)
+#define THRD_TUNER_STRENGTH_DVBC (-87)
 
-#define TIMEOUT_ATSC		2000
+#define TIMEOUT_ATSC		3000
 #define TIMEOUT_DVBT		3000
 #define TIMEOUT_DVBS		2000
 #define TIMEOUT_DVBC		3000
@@ -205,6 +227,7 @@ struct aml_demod_para_real {
 	u32_t symbol;
 	u32_t snr;
 	u32_t plp_num;
+	u32_t fef_info;
 };
 
 #define CAP_NAME_LEN	100
@@ -247,6 +270,7 @@ struct aml_dtvdemod {
 	unsigned int sr_val_hw;
 	unsigned int sr_val_hw_stable;
 	unsigned int sr_val_hw_count;
+	unsigned int sr_val_uf_count;
 	unsigned int symb_rate_en;
 	unsigned int auto_sr;
 	unsigned int auto_sr_done;
@@ -306,7 +330,8 @@ struct aml_dtvdemod {
 	struct aml_demod_para_real real_para;
 
 	struct pinctrl *pin_agc;    /*agc pinctrl*/
-	struct pinctrl *pin_diseqc; /*diseqc out pin*/
+	struct pinctrl *pin_diseqc_out; /*diseqc out pin*/
+	struct pinctrl *pin_diseqc_in; /*diseqc in pin*/
 
 	u32 blind_result_frequency;
 	u32 blind_result_symbol_rate;
@@ -373,10 +398,8 @@ struct amldtvdemod_device_s {
 	struct work_struct blind_scan_work;
 
 	/* diseqc */
-	const char *diseqc_name;
-	unsigned int demod_irq_num;
-	unsigned int demod_irq_en;
-	struct mutex mutex_tx_msg;/*pretect tx cec msg*/
+	struct aml_diseqc diseqc;
+
 	unsigned int print_on;
 	int tuner_strength_limit;
 	unsigned int debug_on;
@@ -395,9 +418,13 @@ struct amldtvdemod_device_s {
 	unsigned int blind_debug_min_frc;
 	unsigned int blind_same_frec;
 
+#ifdef CONFIG_AMLOGIC_DVB_COMPAT
+	struct dvbsx_singlecable_parameters singlecable_param;
+#endif
+
 	bool vdac_enable;
 	bool dvbc_inited;
-	int peak[2048];
+	unsigned int peak[2048];
 	unsigned int ber_base;
 	unsigned int atsc_cr_step_size_dbg;
 	unsigned char index;
@@ -558,6 +585,7 @@ unsigned int dtvdemod_get_atsc_lock_sts(struct aml_dtvdemod *demod);
 const char *dtvdemod_get_cur_delsys(enum fe_delivery_system delsys);
 void aml_dtv_demode_isr_en(struct amldtvdemod_device_s *devp, u32 en);
 u32 dvbc_get_symb_rate(struct aml_dtvdemod *demod);
+u32 dvbc_get_per(struct aml_dtvdemod *demod);
 unsigned int demod_is_t5d_cpu(struct amldtvdemod_device_s *devp);
 int dtmb_information(struct seq_file *seq);
 

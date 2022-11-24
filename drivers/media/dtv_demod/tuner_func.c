@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
 
 #include <linux/kernel.h>
@@ -9,6 +9,13 @@
 #include "demod_func.h"
 /*#include "aml_fe.h"*/
 
+bool tuner_find_by_name(struct dvb_frontend *fe, const char *name)
+{
+	if (!strncmp(fe->ops.tuner_ops.info.name, name, strlen(name)))
+		return true;
+	else
+		return false;
+}
 
 /*add to replase aml_fe_analog_set_frontend*/
 void tuner_set_params(struct dvb_frontend *fe)
@@ -18,7 +25,7 @@ void tuner_set_params(struct dvb_frontend *fe)
 	if (fe->ops.tuner_ops.set_params)
 		ret = fe->ops.tuner_ops.set_params(fe);
 	else
-		PR_ERR("error: no tuner");
+		PR_ERR("error: no tuner, set_params == NULL.\n");
 }
 
 int tuner_get_ch_power(struct dvb_frontend *fe)
@@ -38,7 +45,6 @@ int tuner_get_ch_power(struct dvb_frontend *fe)
 		}
 #endif
 	}
-
 
 	return strength;
 }

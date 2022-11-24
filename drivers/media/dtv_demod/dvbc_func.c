@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
 
 #include <linux/kernel.h>
@@ -300,10 +300,10 @@ int dvbc_set_ch(struct aml_dtvdemod *demod, struct aml_demod_dvbc *demod_dvbc,
 	symb_rate = demod_dvbc->symb_rate;
 	ch_freq = demod_dvbc->ch_freq;
 
-	if (mode > 4) {
-		/* auto QAM mode, force to QAM64 */
-		mode = 2;
-		PR_DVBC("[id %d] QAM mode option %d\n", demod->id, mode);
+	if (mode == QAM_MODE_AUTO) {
+		/* auto QAM mode, force to QAM256 */
+		mode = QAM_MODE_256;
+		PR_DVBC("[id %d] auto QAM, set mode %d.\n", demod->id, mode);
 	}
 
 	if (ch_freq < 1000 || ch_freq > 900000) {

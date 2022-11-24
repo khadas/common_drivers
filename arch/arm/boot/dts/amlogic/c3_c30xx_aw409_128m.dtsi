@@ -539,6 +539,14 @@
 	};
 };
 
+&cpu0 {
+	operating-points-v2 = <&cpu_opp_table0_aw409>;
+};
+
+&cpu1 {
+	operating-points-v2 = <&cpu_opp_table0_aw409>;
+};
+
 /* Audio Related start */
 &audiobus {
 	tdma: tdm@0 {

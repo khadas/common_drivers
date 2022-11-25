@@ -121,6 +121,7 @@ static struct drm_crtc_state *meson_crtc_duplicate_state(struct drm_crtc *crtc)
 	new_state->crtc_hdr_enable = cur_state->crtc_hdr_enable;
 	new_state->crtc_eotf_by_property_flag = cur_state->crtc_eotf_by_property_flag;
 	new_state->eotf_type_by_property = cur_state->eotf_type_by_property;
+	new_state->vmode = cur_state->vmode;
 
 	/*reset dynamic info.*/
 	if (amcrtc->priv->logo_show_done)
@@ -163,6 +164,7 @@ static void meson_crtc_reset(struct drm_crtc *crtc)
 
 	crtc->state = &meson_crtc_state->base;
 	crtc->state->crtc = crtc;
+	meson_crtc_state->vmode = VMODE_INVALID;
 
 	meson_crtc_init_hdr_preference(meson_crtc_state);
 }
@@ -415,8 +417,9 @@ static void am_meson_crtc_atomic_enable(struct drm_crtc *crtc,
 			  adjusted_mode->name);
 		return;
 	}
-	DRM_INFO("%s: %s, %s, %d\n", __func__, adjusted_mode->name,
-		 old_mode->name, meson_crtc_state->uboot_mode_init);
+	DRM_INFO("%s: new[%s], old[%s], vmode[%d], uboot[%d]\n",
+		__func__, adjusted_mode->name, old_mode->name,
+		meson_crtc_state->vmode, meson_crtc_state->uboot_mode_init);
 	adjusted_vrefresh = drm_mode_vrefresh(adjusted_mode);
 
 	if (!priv->compat_mode) {
@@ -460,11 +463,16 @@ static void am_meson_crtc_atomic_enable(struct drm_crtc *crtc,
 			name = brr_name;
 	}
 
-	mode = vout_func_validate_vmode(amcrtc->vout_index, name, 0);
-	if (mode == VMODE_MAX) {
-		DRM_ERROR("no matched vout mode\n");
-		return;
+	if (meson_crtc_state->vmode == VMODE_INVALID) {
+		meson_crtc_state->vmode = vout_func_validate_vmode(amcrtc->vout_index, name, 0);
+		if (meson_crtc_state->vmode == VMODE_MAX) {
+			DRM_ERROR("no matched vout mode\n");
+			return;
+		}
 	}
+
+	mode = meson_crtc_state->vmode;
+	DRM_INFO(" %s final vmode %s, %d\n", __func__, name, mode);
 
 	if (mode == VMODE_DUMMY_ENCL ||
 		mode == VMODE_DUMMY_ENCI ||
@@ -490,8 +498,6 @@ static void am_meson_crtc_atomic_enable(struct drm_crtc *crtc,
 		vout_func_update_viu(amcrtc->vout_index);
 	}
 
-	meson_crtc_state->vmode = mode;
-
 	memcpy(&pipeline->subs[amcrtc->crtc_index].mode, adjusted_mode,
 	       sizeof(struct drm_display_mode));
 
@@ -508,6 +514,8 @@ static void am_meson_crtc_atomic_disable(struct drm_crtc *crtc,
 	struct drm_display_mode *adjusted_mode = &crtc->state->adjusted_mode;
 	struct drm_crtc_state *old_crtc_state;
 	struct drm_display_mode *old_mode;
+	struct am_meson_crtc_state *meson_crtc_state =
+		to_am_meson_crtc_state(crtc->state);
 	enum vmode_e mode;
 
 	DRM_INFO("%s:in\n", __func__);
@@ -534,6 +542,8 @@ static void am_meson_crtc_atomic_disable(struct drm_crtc *crtc,
 		crtc->state->event = NULL;
 	}
 	disable_irq(amcrtc->irq);
+
+	meson_crtc_state->vmode = VMODE_INVALID;
 	/* disable output by config null
 	 * Todo: replace or delete it if have new method
 	 */

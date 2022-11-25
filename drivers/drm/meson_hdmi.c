@@ -1385,10 +1385,32 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	struct drm_display_mode *adj_mode = &crtc_state->adjusted_mode;
 	struct am_hdmi_tx *hdmitx = encoder_to_am_hdmi(encoder);
 	bool update_attr = false;
+	char *modename = adj_mode->name;
+	enum vmode_e vout_mode;
+	bool bvalid_vmode = false;
 
 	DRM_DEBUG("%s[%d]: enter\n", __func__, __LINE__);
 	if (crtc_state->vrr_enabled)
 		meson_hdmitx_cal_brr(hdmitx, meson_crtc_state, adj_mode);
+
+	/* check if hdmi can support this mode. if not, set vmode to dummy*/
+	vout_mode = validate_vmode(modename, 0);
+	DRM_DEBUG(" %s validate vmode %s, %x\n", __func__, modename, vout_mode);
+	if (vout_mode != VMODE_HDMI) {
+		if (meson_crtc_state->vmode == VMODE_HDMI)
+			meson_crtc_state->vmode = VMODE_INVALID;
+		DRM_ERROR("no matched hdmi mode\n");
+		return;
+	}
+
+	bvalid_vmode = hdmitx->hdmitx_dev->test_attr(modename, "rgb,8bit");
+	if (!bvalid_vmode) {
+		DRM_ERROR("mode %s NOT supporteds\n", modename);
+		vout_mode = validate_vmode(dummy_mode.name, 0);
+	}
+
+	meson_crtc_state->vmode = vout_mode;
+	DRM_INFO("%s update %s vmode %x\n", __func__, modename, vout_mode);
 
 	if (am_hdmi_info.android_path)
 		return;
@@ -1495,13 +1517,9 @@ void meson_hdmitx_encoder_atomic_enable(struct drm_encoder *encoder,
 	struct am_meson_crtc *amcrtc = to_am_meson_crtc(encoder->crtc);
 	enum vmode_e vmode = meson_crtc_state->vmode;
 
-	if (vmode == VMODE_HDMI) {
-		DRM_INFO("[%s]\n", __func__);
-	} else {
-		if (vmode == (VMODE_HDMI | VMODE_INIT_BIT_MASK))
-			am_hdmi_info.hdmitx_on = 1;
-
-		DRM_INFO("[%s] vmode:%d\n", __func__, vmode);
+	DRM_DEBUG("%s[%d]\n", __func__, __LINE__);
+	if ((vmode & VMODE_MODE_BIT_MASK) != VMODE_HDMI) {
+		DRM_INFO("[%s] fail! vmode:%d\n", __func__, vmode);
 		return;
 	}
 

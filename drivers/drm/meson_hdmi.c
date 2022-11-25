@@ -1386,7 +1386,7 @@ void meson_hdmitx_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	struct am_hdmi_tx *hdmitx = encoder_to_am_hdmi(encoder);
 	bool update_attr = false;
 
-	DRM_INFO("%s: enter\n", __func__);
+	DRM_DEBUG("%s[%d]: enter\n", __func__, __LINE__);
 	if (crtc_state->vrr_enabled)
 		meson_hdmitx_cal_brr(hdmitx, meson_crtc_state, adj_mode);
 
@@ -1501,7 +1501,7 @@ void meson_hdmitx_encoder_atomic_enable(struct drm_encoder *encoder,
 		if (vmode == (VMODE_HDMI | VMODE_INIT_BIT_MASK))
 			am_hdmi_info.hdmitx_on = 1;
 
-		DRM_INFO("[%s] fail! vmode:%d\n", __func__, vmode);
+		DRM_INFO("[%s] vmode:%d\n", __func__, vmode);
 		return;
 	}
 
@@ -1750,12 +1750,12 @@ static void meson_hdmitx_hpd_cb(void *data)
 	}
 #ifdef CONFIG_CEC_NOTIFIER
 	if (am_hdmi->hdmitx_dev->detect()) {
-		DRM_INFO("%s[%d]\n", __func__, __LINE__);
+		DRM_DEBUG("%s[%d]\n", __func__, __LINE__);
 		pedid = (struct edid *)am_hdmi->hdmitx_dev->get_raw_edid();
 		cec_notifier_set_phys_addr_from_edid(am_hdmi->cec_notifier,
 						     pedid);
 	} else {
-		DRM_INFO("%s[%d]\n", __func__, __LINE__);
+		DRM_DEBUG("%s[%d]\n", __func__, __LINE__);
 		cec_notifier_set_phys_addr(am_hdmi->cec_notifier,
 					   CEC_PHYS_ADDR_INVALID);
 	}
@@ -1779,7 +1779,7 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	struct connector_hdcp_cb hdcp_cb;
 	int hdcp_ctl_lvl;
 
-	DRM_INFO("[%s] in\n", __func__);
+	DRM_DEBUG("%s [%d]\n", __func__, __LINE__);
 	memset(&am_hdmi_info, 0, sizeof(am_hdmi_info));
 	am_hdmi_info.hdmitx_dev = to_meson_hdmitx_dev(intf);
 	if (am_hdmi_info.hdmitx_dev->get_hdcp_ctl_lvl)
@@ -1787,7 +1787,7 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	else
 		hdcp_ctl_lvl = 0;
 
-	DRM_INFO("hdcp_ctl_lvl=%d\n", hdcp_ctl_lvl);
+	DRM_DEBUG("hdcp_ctl_lvl=%d\n", hdcp_ctl_lvl);
 	if (hdcp_ctl_lvl == 0) {
 		am_hdmi_info.android_path = true;
 	} else if (am_hdmi_info.hdmitx_dev->hdcp_init) {
@@ -1882,7 +1882,7 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	 */
 #ifdef CONFIG_CEC_NOTIFIER
 	if (am_hdmi->hdmitx_dev->detect()) {
-		DRM_INFO("%s[%d]\n", __func__, __LINE__);
+		DRM_DEBUG("%s[%d]\n", __func__, __LINE__);
 		pedid = (struct edid *)am_hdmi->hdmitx_dev->get_raw_edid();
 		cec_notifier_set_phys_addr_from_edid(am_hdmi->cec_notifier,
 						     pedid);
@@ -1891,7 +1891,7 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 					   CEC_PHYS_ADDR_INVALID);
 	}
 #endif
-	DRM_INFO("[%s] out\n", __func__);
+	DRM_DEBUG("%s out[%d]\n", __func__, __LINE__);
 	return 0;
 }
 

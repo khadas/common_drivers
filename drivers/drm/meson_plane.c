@@ -523,7 +523,6 @@ static u32 meson_video_parse_config(struct drm_device *dev)
 	if (ret)
 		DRM_INFO("%s parse vfm mode fail!\n", __func__);
 
-	DRM_INFO("vfm_mode=%d\n", mode_flag);
 	return mode_flag;
 }
 
@@ -1547,7 +1546,6 @@ int am_meson_plane_create(struct meson_drm *priv)
 		priv->osd_planes[i] = plane;
 		priv->num_planes++;
 	}
-	DRM_INFO("create %d osd plane done\n", pipeline->num_osds);
 	vfm_mode = meson_video_parse_config(priv->drm);
 
 	/*video plane: init after osd to provide osd id at first.*/
@@ -1561,7 +1559,6 @@ int am_meson_plane_create(struct meson_drm *priv)
 		priv->video_planes[i] = video_plane;
 		priv->num_planes++;
 	}
-	DRM_INFO("create %d video plane done\n", pipeline->num_video);
 
 	return 0;
 }

@@ -331,7 +331,7 @@ static int am_meson_logo_init_fb(struct drm_device *dev,
 
 	if (!strcmp("null", slogo->outputmode) ||
 		!strcmp("dummy_l", slogo->outputmode)) {
-		DRM_ERROR("NULL MODE or DUMMY MODE, nothing to do.");
+		DRM_DEBUG("NULL MODE or DUMMY MODE, nothing to do.");
 		kfree(slogo);
 		return -EINVAL;
 	}
@@ -342,9 +342,9 @@ static int am_meson_logo_init_fb(struct drm_device *dev,
 
 	DRM_INFO("logo%d width=%d,height=%d,start_addr=0x%pa,size=%d\n",
 		 idx, slogo->width, slogo->height, &slogo->start, slogo->size);
-	DRM_INFO("bpp=%d,alloc_flag=%d, osd_reverse=%d\n",
+	DRM_DEBUG("bpp=%d,alloc_flag=%d, osd_reverse=%d\n",
 		 slogo->bpp, slogo->alloc_flag, slogo->osd_reverse);
-	DRM_INFO("outputmode=%s\n", slogo->outputmode);
+	DRM_DEBUG("outputmode=%s\n", slogo->outputmode);
 
 	meson_fb = to_am_meson_fb(fb);
 	meson_fb->logo = slogo;
@@ -510,7 +510,7 @@ int __am_meson_drm_set_config(struct drm_mode_set *set,
 		meson_crtc_state->uboot_mode_init = get_vout3_mode_uboot_state();
 #endif
 	}
-	DRM_INFO("uboot_mode_init=%d\n", meson_crtc_state->uboot_mode_init);
+	DRM_DEBUG("uboot_mode_init=%d\n", meson_crtc_state->uboot_mode_init);
 
 	osd_plane = private->osd_planes[idx];
 	if (!osd_plane)
@@ -646,7 +646,7 @@ static void am_meson_load_logo(struct drm_device *dev,
 	struct am_meson_fb *meson_fb;
 	u32 found, num_modes;
 
-	DRM_INFO("%s idx[%d]\n", __func__, idx);
+	DRM_DEBUG("%s idx[%d]\n", __func__, idx);
 
 	if (!logo.alloc_flag) {
 		DRM_INFO("%s: logo memory is not cma alloc\n", __func__);
@@ -654,7 +654,7 @@ static void am_meson_load_logo(struct drm_device *dev,
 	}
 
 	if (am_meson_logo_init_fb(dev, fb, idx)) {
-		DRM_INFO("vout%d logo is disabled!\n", idx + 1);
+		DRM_DEBUG("vout%d logo is disabled!\n", idx + 1);
 		return;
 	}
 
@@ -681,7 +681,7 @@ static void am_meson_load_logo(struct drm_device *dev,
 				break;
 		}
 
-		DRM_INFO("Connector[%d] status[%d]\n",
+		DRM_DEBUG("Connector[%d] status[%d]\n",
 			connector->connector_type, connector->status);
 	}
 
@@ -703,7 +703,7 @@ static void am_meson_load_logo(struct drm_device *dev,
 	if (!connector_set)
 		return;
 
-	DRM_INFO("mode flag %x\n", mode->flags);
+	DRM_DEBUG("mode flag %x\n", mode->flags);
 
 	connector_set[0] = connector;
 	set.crtc = &private->crtcs[idx]->base;
@@ -737,7 +737,7 @@ void am_meson_logo_init(struct drm_device *dev)
 	u32 reverse_type, osd_index;
 	int i, ret;
 
-	DRM_INFO("%s\n", __func__);
+	DRM_DEBUG("%s in[%d]\n", __func__, __LINE__);
 
 	gp_dev = pdev;
 	/* init reserved memory */
@@ -753,7 +753,7 @@ void am_meson_logo_init(struct drm_device *dev)
 			of_node_put(mem_node);
 			if (rmem) {
 				logo.size = rmem->size;
-				DRM_INFO("of read %s reservememsize=0x%x, base 0x%llx\n",
+				DRM_DEBUG("of read %s reservememsize=0x%x, base 0x%llx\n",
 					rmem->name, logo.size, rmem->base);
 			}
 		} else {
@@ -771,14 +771,12 @@ void am_meson_logo_init(struct drm_device *dev)
 				else
 					am_meson_logo_info_update(private);
 
-				DRM_INFO(" cma_alloc from %s start page %px-%px size %x\n",
+				DRM_DEBUG(" cma_alloc from %s start page %px-%px size %x\n",
 					cma_get_name(cma_logo),
 					logo.logo_page,
 					(void *)logo.start,
 					logo.size);
 			}
-		} else {
-			DRM_INFO("------ NO CMA\n");
 		}
 #endif
 		if (gem_mem_start) {
@@ -788,8 +786,6 @@ void am_meson_logo_init(struct drm_device *dev)
 							gem_mem_size);
 			DRM_INFO("meson drm mem_start = 0x%x, size = 0x%x\n",
 				(u32)gem_mem_start, (u32)gem_mem_size);
-		} else {
-			DRM_INFO("------ NO reserved dma\n");
 		}
 	}
 
@@ -839,11 +835,11 @@ void am_meson_logo_init(struct drm_device *dev)
 	if (drm_framebuffer_read_refcount(fb) > 1)
 		drm_framebuffer_put(fb);
 
-	DRM_INFO("drm_fb[id:%d,ref:%d]\n", fb->base.id, kref_read(&fb->base.refcount));
+	DRM_DEBUG("drm_fb[id:%d,ref:%d]\n", fb->base.id, kref_read(&fb->base.refcount));
 
 	private->logo_show_done = true;
 
-	DRM_INFO("%s end\n", __func__);
+	DRM_DEBUG("%s end[%d]\n", __func__, __LINE__);
 }
 
 static int gem_mem_device_init(struct reserved_mem *rmem, struct device *dev)

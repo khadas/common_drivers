@@ -103,8 +103,7 @@ enum drm_mode_status am_cvbs_tx_check_mode(struct drm_connector *connector,
 		    (drm_mode_vrefresh(&cvbs_mode[i]) == checked_vrefresh))
 			return MODE_OK;
 
-		DRM_INFO("hdisplay = %d\nvdisplay = %d\n"
-			 "vrefresh = %d\n", mode->hdisplay,
+		DRM_INFO("hdisplay = %d,vdisplay = %d,vrefresh = %d\n", mode->hdisplay,
 			 mode->vdisplay, checked_vrefresh);
 	}
 
@@ -198,7 +197,7 @@ int meson_cvbs_dev_bind(struct drm_device *drm,
 	struct drm_connector *connector;
 	int ret = 0;
 
-	DRM_INFO("[%s] in\n", __func__);
+	DRM_DEBUG("%s in[%d]\n", __func__, __LINE__);
 
 	am_drm_cvbs = kzalloc(sizeof(*am_drm_cvbs), GFP_KERNEL);
 	if (!am_drm_cvbs) {
@@ -239,7 +238,7 @@ int meson_cvbs_dev_bind(struct drm_device *drm,
 		goto cvbs_err;
 	}
 
-	DRM_INFO("[%s] out\n", __func__);
+	DRM_DEBUG("%s out[%d]\n", __func__, __LINE__);
 	return ret;
 
 cvbs_err:

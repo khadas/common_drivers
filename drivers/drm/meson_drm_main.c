@@ -24,7 +24,7 @@ static int __init meson_drm_main_init(void)
 {
 	int ret;
 
-	DRM_INFO("%s() start\n", __func__);
+	DRM_DEBUG("%s() start[%d]\n", __func__, __LINE__);
 	ret = am_meson_vpu_init();
 	if (ret) {
 		DRM_ERROR("am_meson_vpu_init fail\n");
@@ -35,16 +35,16 @@ static int __init meson_drm_main_init(void)
 		DRM_ERROR("am_meson_drm_init fail\n");
 		return ret;
 	}
-	DRM_INFO("%s() end\n", __func__);
+	DRM_DEBUG("%s() end[%d]\n", __func__, __LINE__);
 	return 0;
 }
 
 static void __exit meson_drm_main_exit(void)
 {
-	DRM_INFO("%s() start\n", __func__);
+	DRM_DEBUG("%s() start[%d]\n", __func__, __LINE__);
 	am_meson_vpu_exit();
 	am_meson_drm_exit();
-	DRM_INFO("%s() end\n", __func__);
+	DRM_DEBUG("%s() end[%d]\n", __func__, __LINE__);
 }
 
 module_init(meson_drm_main_init);

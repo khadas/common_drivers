@@ -385,7 +385,7 @@ static void am_meson_crtc_atomic_enable(struct drm_crtc *crtc,
 	struct meson_drm *priv = amcrtc->priv;
 	int hdrpolicy = 0;
 
-	DRM_INFO("%s:in\n", __func__);
+	DRM_DEBUG("%s[%d]:in\n", __func__, __LINE__);
 	old_crtc_state = drm_atomic_get_old_crtc_state(old_atomic_state, crtc);
 	if (!old_crtc_state) {
 		DRM_INFO("%s crtc state is NULL!\n", __func__);
@@ -482,7 +482,7 @@ static void am_meson_crtc_atomic_enable(struct drm_crtc *crtc,
 	drm_crtc_vblank_on(crtc);
 	enable_irq(amcrtc->irq);
 
-	DRM_INFO("%s-%d:out\n", __func__, meson_crtc_state->uboot_mode_init);
+	DRM_DEBUG("%s-%d:out\n", __func__, meson_crtc_state->uboot_mode_init);
 }
 
 static void am_meson_crtc_atomic_disable(struct drm_crtc *crtc,
@@ -800,7 +800,7 @@ struct am_meson_crtc *meson_crtc_bind(struct meson_drm *priv, int idx)
 	int ret, plane_index;
 	char crtc_name[64];
 
-	DRM_INFO("%s\n", __func__);
+	DRM_DEBUG("%s[%d]\n", __func__, __LINE__);
 
 	amcrtc = devm_kzalloc(priv->dev, sizeof(*amcrtc), GFP_KERNEL);
 	if (!amcrtc)

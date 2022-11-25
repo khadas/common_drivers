@@ -32,7 +32,7 @@ void __iomem *PREG_ETH_REG1;
 #define ETH_MAC_0_Configuration			(0x0000)
 #define ETH_MMC_rxicmp_err_octets		(0x0284)
 #define ETH_DMA_0_Bus_Mode			(0x1000)
-#define ETH_DMA_21_Curr_Host_Re_Buffer_Addr	(0x1054)
+#define ETH_DMA_21_Curr_Host_Re_Buffer_Addr	(0x1058)
 
 static int g_phyreg;
 static void __iomem *c_ioaddr;
@@ -734,6 +734,32 @@ static ssize_t linkspeed_show(struct class *class,
 	return ret;
 }
 
+unsigned int wol_switch_from_user;
+EXPORT_SYMBOL_GPL(wol_switch_from_user);
+static ssize_t wol_show(struct class *class,
+	struct class_attribute *attr, char *buf)
+{
+	if (!c_phy_dev)
+		return 0;
+
+	return sprintf(buf, "0x%x\n", wol_switch_from_user);
+}
+
+static ssize_t wol_store(struct class *class,
+	struct class_attribute *attr,
+	const char *buf, size_t count)
+{
+	unsigned int tmp, r;
+
+	if (!c_phy_dev)
+		return 0;
+
+	r = kstrtoint(buf, 16, &tmp);
+	wol_switch_from_user = tmp;
+
+	return count;
+}
+
 int auto_cali(void)
 {
 	unsigned int value;
@@ -914,6 +940,7 @@ static CLASS_ATTR_RW(phyreg);
 static CLASS_ATTR_RW(macreg);
 static CLASS_ATTR_RO(linkspeed);
 static CLASS_ATTR_WO(cali);
+static CLASS_ATTR_RW(wol);
 //extern void __iomem *ioaddr_dbg;
 //EXPORT_SYMBOL(ioaddr_dbg);
 int gmac_create_sysfs(struct phy_device *phydev, void __iomem *ioaddr)
@@ -941,6 +968,7 @@ int gmac_create_sysfs(struct phy_device *phydev, void __iomem *ioaddr)
 	ret = class_create_file(phy_sys_class, &class_attr_macreg);
 	ret = class_create_file(phy_sys_class, &class_attr_linkspeed);
 	ret = class_create_file(phy_sys_class, &class_attr_cali);
+	ret = class_create_file(phy_sys_class, &class_attr_wol);
 	return 0;
 }
 EXPORT_SYMBOL(gmac_create_sysfs);

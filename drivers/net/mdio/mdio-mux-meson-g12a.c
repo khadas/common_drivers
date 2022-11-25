@@ -14,6 +14,12 @@
 #include <linux/phy.h>
 #include <linux/platform_device.h>
 
+#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+#include <linux/amlogic/aml_phy_debug.h>
+void __iomem *phy_analog_config_addr;
+EXPORT_SYMBOL_GPL(phy_analog_config_addr);
+#endif
+
 #define ETH_PLL_STS		0x40
 #define ETH_PLL_CTL0		0x44
 #define  PLL_CTL0_LOCK_DIG	BIT(30)
@@ -57,6 +63,9 @@ struct g12a_mdio_mux {
 	void *mux_handle;
 	struct clk *pclk;
 	struct clk *pll;
+#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+	struct device *dev;
+#endif
 };
 
 struct g12a_ephy_pll {
@@ -151,7 +160,28 @@ static const struct clk_ops g12a_ephy_pll_ops = {
 static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 {
 	int ret;
+#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+	void __iomem *tx_amp_src = NULL;
+	struct device_node *np = priv->dev->of_node;
+	unsigned int tx_amp_addr = 0;
+	unsigned int st_mode = 0;
 
+	if (of_property_read_u32(np, "tx_amp_src", &tx_amp_addr) != 0)
+		pr_info("no amp setting\n");
+
+	if (tx_amp_addr != 0) {
+		pr_info("tx_amp_addr %x\n", tx_amp_addr);
+		tx_amp_src = devm_ioremap(priv->dev,
+				(resource_size_t)tx_amp_addr, sizeof(resource_size_t));
+		tx_amp_bl2 = (readl(tx_amp_src) & 0x3f);
+		pr_info("txamp 0x%x\n", readl(tx_amp_src));
+	}
+
+	if (of_property_read_u32(np, "st_mode", &st_mode) != 0) {
+		pr_info("use default st_mode\n");
+		st_mode = 7;
+	}
+#endif
 	/* Enable the phy clock */
 	if (!priv->pll_is_enabled) {
 		ret = clk_prepare_enable(priv->pll);
@@ -163,7 +193,7 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 
 	/* Initialize ephy control */
 	writel(EPHY_G12A_ID, priv->regs + ETH_PHY_CNTL0);
-	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 7) |
+	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, st_mode) |
 	       FIELD_PREP(PHY_CNTL1_ST_PHYADD, EPHY_DFLT_ADD) |
 	       FIELD_PREP(PHY_CNTL1_MII_MODE, EPHY_MODE_RMII) |
 	       PHY_CNTL1_CLK_EN |
@@ -171,14 +201,14 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 	       PHY_CNTL1_PHY_ENB,
 	       priv->regs + ETH_PHY_CNTL1);
 
-	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 7) |
+	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, st_mode) |
 	       FIELD_PREP(PHY_CNTL1_ST_PHYADD, EPHY_DFLT_ADD) |
 	       FIELD_PREP(PHY_CNTL1_MII_MODE, EPHY_MODE_RMII) |
 	       PHY_CNTL1_CLK_EN |
 	       PHY_CNTL1_CLKFREQ,
 	       priv->regs + ETH_PHY_CNTL1);
 
-	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, 7) |
+	writel(FIELD_PREP(PHY_CNTL1_ST_MODE, st_mode) |
 	       FIELD_PREP(PHY_CNTL1_ST_PHYADD, EPHY_DFLT_ADD) |
 	       FIELD_PREP(PHY_CNTL1_MII_MODE, EPHY_MODE_RMII) |
 	       PHY_CNTL1_CLK_EN |
@@ -334,6 +364,10 @@ static int g12a_mdio_mux_probe(struct platform_device *pdev)
 	if (IS_ERR(priv->regs))
 		return PTR_ERR(priv->regs);
 
+#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+	phy_analog_config_addr = priv->regs;
+	priv->dev = dev;
+#endif
 	priv->pclk = devm_clk_get(dev, "pclk");
 	if (IS_ERR(priv->pclk)) {
 		ret = PTR_ERR(priv->pclk);

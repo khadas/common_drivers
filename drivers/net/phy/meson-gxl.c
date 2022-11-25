@@ -10,6 +10,9 @@
 #include <linux/phy.h>
 #include <linux/netdevice.h>
 #include <linux/bitfield.h>
+#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+#include <linux/amlogic/aml_phy_debug.h>
+#endif
 
 #define TSTCNTL		20
 #define  TSTCNTL_READ		BIT(15)
@@ -242,6 +245,57 @@ static irqreturn_t meson_gxl_handle_interrupt(struct phy_device *phydev)
 	return IRQ_HANDLED;
 }
 
+#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+/*tx_amp*/
+unsigned int tx_amp_bl2;
+EXPORT_SYMBOL_GPL(tx_amp_bl2);
+static int custom_internal_config(struct phy_device *phydev)
+{
+	unsigned int efuse_valid = 0;
+	unsigned int efuse_amp = 0;
+	unsigned int setup_amp = 0;
+
+	efuse_amp = tx_amp_bl2;
+	efuse_valid = ((efuse_amp >> 4) & 0x3);
+	setup_amp = efuse_amp & 0xf;
+
+	if (efuse_valid) {
+		/*Enable Analog and DSP register Bank access by*/
+		phy_write(phydev, 0x14, 0x0000);
+		phy_write(phydev, 0x14, 0x0400);
+		phy_write(phydev, 0x14, 0x0000);
+		phy_write(phydev, 0x14, 0x0400);
+		phy_write(phydev, 0x17, setup_amp);
+		phy_write(phydev, 0x14, 0x4418);
+		pr_info("set phy setup_amp = %d\n", setup_amp);
+	} else {
+		/*env not set, efuse not valid return*/
+		pr_info("env not set, efuse also invalid\n");
+	}
+	return 0;
+}
+
+static int gxl_suspend(struct phy_device *phydev)
+{
+	int rtn = 0;
+
+	if (wol_switch_from_user == 0)
+		rtn = genphy_suspend(phydev);
+
+	return rtn;
+}
+
+static int gxl_resume(struct phy_device *phydev)
+{
+	int rtn = 0;
+
+	if (wol_switch_from_user == 0)
+		rtn = genphy_resume(phydev);
+
+	return rtn;
+}
+#endif
+
 static struct phy_driver meson_gxl_phy[] = {
 	{
 		PHY_ID_MATCH_EXACT(0x01814400),
@@ -263,8 +317,14 @@ static struct phy_driver meson_gxl_phy[] = {
 		.soft_reset     = genphy_soft_reset,
 		.config_intr	= meson_gxl_config_intr,
 		.handle_interrupt = meson_gxl_handle_interrupt,
+#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+		.config_init	= custom_internal_config,
+		.suspend        = gxl_suspend,
+		.resume         = gxl_resume,
+#else
 		.suspend        = genphy_suspend,
 		.resume         = genphy_resume,
+#endif
 	},
 };
 

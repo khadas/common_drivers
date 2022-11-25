@@ -21,7 +21,10 @@
 
 #define MESON_NUM_PWMS		2
 #define MESON_DOUBLE_NUM_PWMS	4
-#define DEFAULT_EXTERN_CLK	24000000
+#define DEFAULT_CLK		24000000
+#define OSIN_CLK		24000000
+#define FCLK_DIV4_CLK	500000000
+#define FCLK_DIV3_CLK	667000000
 
 /*a group pwm registers offset address
  * for example:
@@ -78,6 +81,18 @@
 #define PWM_DISABLE				0
 #define MISC_CLK_SEL_MASK			0x3
 
+/*
+ * external clk reg field
+ */
+#define EXT_CLK_A_EN				BIT(8)
+#define EXT_CLK_B_EN				BIT(24)
+#define EXT_CLK_A_DIV_SHIFT			0
+#define EXT_CLK_B_DIV_SHIFT			16
+#define EXT_CLK_A_SEL_SHIFT			9
+#define EXT_CLK_B_SEL_SHIFT			25
+#define EXT_CLK_DIV_MASK			0xff
+#define EXT_CLK_SEL_MASK			0x3
+
 static const unsigned int mux_reg_shifts[] = {
 	MISC_A_CLK_SEL_SHIFT,
 	MISC_B_CLK_SEL_SHIFT,
@@ -98,7 +113,7 @@ struct meson_pwm_variant {
  * double_channel = false ,could use PWM A
  * double_channel = true , could use PWM A and PWM A2
  * extern_clk = false , clk div, gate, mux in pwm controller
- * extern_clk = true , clk div, gate, mux in clktree
+ * extern_clk = true , clk div, gate, mux in external clk controller
  */
 struct meson_pwm_data {
 	char **parent_names;
@@ -110,9 +125,8 @@ struct meson_pwm_data {
 struct meson_pwm_channel {
 	unsigned int hi;
 	unsigned int lo;
-#ifdef CONFIG_AMLOGIC_MODIFY
 	unsigned int clk_rate;
-#endif
+	u8 clk_div;
 	u8 pre_div;
 
 	struct clk *clk_parent;
@@ -126,6 +140,7 @@ struct meson_pwm {
 	struct meson_pwm_channel channels[MESON_DOUBLE_NUM_PWMS];
 	struct meson_pwm_variant variant;
 	void __iomem *base;
+	void __iomem *ext_clk_base;
 	/*
 	 * Protects register (write) access to the REG_MISC_AB register
 	 * that is shared between the two PWMs.
@@ -148,4 +163,3 @@ int pwm_blink_disable(struct meson_pwm *meson, int index);
 int pwm_set_blink_times(struct meson_pwm *meson, int index, int value);
 int pwm_set_times(struct meson_pwm *meson, int index, int value);
 #endif   /* _PWM_MESON_H_ */
-

@@ -449,56 +449,56 @@
 
 			pwm_ab: pwm@2400 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x2400 0x24>;
+				reg = <0x2400 0x24>,
+					  <0x8c4 0x4>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_A>,
-					 <&clkc CLKID_PWM_B>;
-				clock-names = "clkin0",
-					      "clkin1";
+				clocks = <&clkc CLKID_PWM_A_SEL>,
+					 <&clkc CLKID_PWM_B_SEL>;
+				clock-names = "clkin0", "clkin1";
 				status = "okay";
 			};
 
 			pwm_cd: pwm@2800 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x2800 0x24>;
+				reg = <0x2800 0x24>,
+					  <0x8c8 0x4>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_C>,
-					 <&clkc CLKID_PWM_D>;
-				clock-names = "clkin0",
-					      "clkin1";
+				clocks = <&clkc CLKID_PWM_C_SEL>,
+					 <&clkc CLKID_PWM_D_SEL>;
+				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};
 
 			pwm_ef: pwm@5400 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x5400 0x24>;
+				reg = <0x5400 0x24>,
+					  <0x8cc 0x4>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_E>,
-					 <&clkc CLKID_PWM_F>;
-				clock-names = "clkin0",
-					      "clkin1";
+				clocks = <&clkc CLKID_PWM_E_SEL>,
+					 <&clkc CLKID_PWM_F_SEL>;
+				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};
 
 			pwm_gh: pwm@a400 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0xa400 0x24>;
+				reg = <0xa400 0x24>,
+					  <0x928 0x4>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_G>,
-					 <&clkc CLKID_PWM_H>;
-				clock-names = "clkin0",
-					      "clkin1";
+				clocks = <&clkc CLKID_PWM_G_SEL>,
+					 <&clkc CLKID_PWM_H_SEL>;
+				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};
 
 			pwm_ij: pwm@a800 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0xa800 0x24>;
+				reg = <0xa800 0x24>,
+					  <0x92c 0x4>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_I>,
-					 <&clkc CLKID_PWM_J>;
-				clock-names = "clkin0",
-					      "clkin1";
+				clocks = <&clkc CLKID_PWM_I_SEL>,
+					 <&clkc CLKID_PWM_J_SEL>;
+				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};
 

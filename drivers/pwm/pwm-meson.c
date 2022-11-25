@@ -45,6 +45,16 @@
 
 #ifdef CONFIG_AMLOGIC_MODIFY
 #include <linux/amlogic/pwm-meson.h>
+
+//#define FOR_BACK_TRACE
+//#define M_DEBUG
+#ifdef M_DEBUG
+#define DEBUG
+#define PWM_DBG(fmt, ...) pr_info("%s ," fmt, "[MESON PWM]", ##__VA_ARGS__)
+#else
+#define PWM_DBG(fmt, ...)
+#endif /*endif M_DEBUG*/
+
 #else
 #define REG_PWM_A		0x0
 #define REG_PWM_B		0x4
@@ -92,7 +102,7 @@ struct meson_pwm {
 	 */
 	spinlock_t lock;
 };
-#endif
+#endif /*endif CONFIG_AMLOGIC_MODIFY*/
 
 static struct meson_pwm_channel_data {
 	u8		reg_offset;
@@ -101,9 +111,12 @@ static struct meson_pwm_channel_data {
 	u32		clk_en_mask;
 	u32		pwm_en_mask;
 #ifdef CONFIG_AMLOGIC_MODIFY
+	/*external clk*/
+	u8		ext_clk_div_shift;
+	u32		ext_clk_en_mask;
 } meson_pwm_per_channel_data[] = {
 #else
-} meson_pwm_per_channel_data[MESON_NUM_PWMS] = {
+} meson_pwm_per_channel_data[MESON_NUM_PWMS] = { /*need add external clk*/
 #endif
 	{
 		.reg_offset	= REG_PWM_A,
@@ -111,6 +124,10 @@ static struct meson_pwm_channel_data {
 		.clk_div_shift	= MISC_A_CLK_DIV_SHIFT,
 		.clk_en_mask	= MISC_A_CLK_EN,
 		.pwm_en_mask	= MISC_A_EN,
+#ifdef CONFIG_AMLOGIC_MODIFY
+		.ext_clk_div_shift	= EXT_CLK_A_DIV_SHIFT,
+		.ext_clk_en_mask	= EXT_CLK_A_EN,
+#endif
 	},
 	{
 		.reg_offset	= REG_PWM_B,
@@ -118,6 +135,10 @@ static struct meson_pwm_channel_data {
 		.clk_div_shift	= MISC_B_CLK_DIV_SHIFT,
 		.clk_en_mask	= MISC_B_CLK_EN,
 		.pwm_en_mask	= MISC_B_EN,
+#ifdef CONFIG_AMLOGIC_MODIFY
+		.ext_clk_div_shift	= EXT_CLK_B_DIV_SHIFT,
+		.ext_clk_en_mask	= EXT_CLK_B_EN,
+#endif
 	},
 #ifdef CONFIG_AMLOGIC_MODIFY
 	{
@@ -126,6 +147,8 @@ static struct meson_pwm_channel_data {
 		.clk_div_shift	= MISC_A_CLK_DIV_SHIFT,
 		.clk_en_mask	= MISC_A_CLK_EN,
 		.pwm_en_mask	= MISC_A2_EN,
+		.ext_clk_div_shift	= EXT_CLK_A_DIV_SHIFT,
+		.ext_clk_en_mask	= EXT_CLK_A_EN,
 	},
 	{
 		.reg_offset	= REG_PWM_B2,
@@ -133,6 +156,8 @@ static struct meson_pwm_channel_data {
 		.clk_div_shift	= MISC_B_CLK_DIV_SHIFT,
 		.clk_en_mask	= MISC_B_CLK_EN,
 		.pwm_en_mask	= MISC_B2_EN,
+		.ext_clk_div_shift	= EXT_CLK_B_DIV_SHIFT,
+		.ext_clk_en_mask	= EXT_CLK_B_EN,
 	},
 #endif
 };
@@ -174,11 +199,7 @@ static int meson_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 
 #ifdef CONFIG_AMLOGIC_MODIFY
 	if (meson->data->extern_clk) {
-		err = clk_set_rate(channel->clk, DEFAULT_EXTERN_CLK);
-		if (err) {
-			pr_err("%s: error in setting pwm rate!\n", __func__);
-			return err;
-		}
+		return pwm_set_chip_data(pwm, channel);
 	}
 #endif
 
@@ -191,6 +212,8 @@ static int meson_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 
 #ifdef CONFIG_AMLOGIC_MODIFY
 	channel->clk_rate = clk_get_rate(channel->clk);
+	if (FCLK_DIV4_CLK - 100 <= channel->clk_rate && channel->clk_rate <= FCLK_DIV4_CLK + 100)
+		channel->clk_rate = FCLK_DIV4_CLK;
 #endif
 
 	return pwm_set_chip_data(pwm, channel);
@@ -198,10 +221,14 @@ static int meson_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 
 static void meson_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
 {
+	struct meson_pwm *meson = to_meson_pwm(chip);
 	struct meson_pwm_channel *channel = pwm_get_chip_data(pwm);
 
+	if (meson->data->extern_clk)
+		return;
 	if (channel)
 		clk_disable_unprepare(channel->clk);
+
 }
 
 static int meson_pwm_calc(struct meson_pwm *meson, struct pwm_device *pwm,
@@ -218,9 +245,9 @@ static int meson_pwm_calc(struct meson_pwm *meson, struct pwm_device *pwm,
 		duty = period - duty;
 
 #ifdef CONFIG_AMLOGIC_MODIFY
-	/*get_clk_rate()not use in Interrupt context*/
 	fin_freq = channel->clk_rate;
 #else
+	/*clk_get_rate()not use in Interrupt context*/
 	fin_freq = clk_get_rate(channel->clk);
 #endif
 
@@ -231,13 +258,22 @@ static int meson_pwm_calc(struct meson_pwm *meson, struct pwm_device *pwm,
 
 	dev_dbg(meson->chip.dev, "fin_freq: %lu Hz\n", fin_freq);
 
-	pre_div = div64_u64(fin_freq * (u64)period, NSEC_PER_SEC * 0xffffLL);
+	pre_div = DIV64_U64_ROUND_CLOSEST(fin_freq * (u64)period, NSEC_PER_SEC * 0xffffLL);
 	if (pre_div > MISC_CLK_DIV_MASK) {
 		dev_err(meson->chip.dev, "unable to get period pre_div\n");
 		return -EINVAL;
 	}
 
-	cnt = div64_u64(fin_freq * (u64)period, NSEC_PER_SEC * (pre_div + 1));
+#if defined(CONFIG_AMLOGIC_MODIFY) && defined(FOR_BACK_TRACE)
+	if (fin_freq == FCLK_DIV4_CLK)
+		/*set it hard to div 5 then period cnt could be divided evenly
+		 * 500Mhz/5 = 100MHz
+		 */
+		pre_div = 4;
+	PWM_DBG("%s, fin_freq=%lu, pre_div=%d", __func__, fin_freq, pre_div + 1);
+#endif
+
+	cnt = DIV64_U64_ROUND_CLOSEST(fin_freq * (u64)period, NSEC_PER_SEC * (pre_div + 1));
 	if (cnt > 0xffff) {
 		dev_err(meson->chip.dev, "unable to get period cnt\n");
 		return -EINVAL;
@@ -256,7 +292,7 @@ static int meson_pwm_calc(struct meson_pwm *meson, struct pwm_device *pwm,
 		channel->lo = cnt;
 	} else {
 		/* Then check is we can have the duty with the same pre_div */
-		duty_cnt = div64_u64(fin_freq * (u64)duty,
+		duty_cnt = DIV64_U64_ROUND_CLOSEST(fin_freq * (u64)duty,
 				     NSEC_PER_SEC * (pre_div + 1));
 		if (duty_cnt > 0xffff) {
 			dev_err(meson->chip.dev, "unable to get duty cycle\n");
@@ -300,21 +336,18 @@ static void meson_pwm_enable(struct meson_pwm *meson, struct pwm_device *pwm)
 	struct meson_pwm_channel_data *channel_data;
 	unsigned long flags;
 	u32 value;
-#ifdef CONFIG_AMLOGIC_MODIFY
-	static u8 clk_div;
-	unsigned long set_clk;
-	u32 err;
-#endif
 
 	channel_data = &meson_pwm_per_channel_data[pwm->hwpwm];
 
 	spin_lock_irqsave(&meson->lock, flags);
 
+	/*following filed are invalid on new soc*/
 	value = readl(meson->base + REG_MISC_AB);
 	value &= ~(MISC_CLK_DIV_MASK << channel_data->clk_div_shift);
 	value |= channel->pre_div << channel_data->clk_div_shift;
 	value |= channel_data->clk_en_mask;
 	writel(value, meson->base + REG_MISC_AB);
+	/*upper filed are invalid on new soc*/
 
 	value = FIELD_PREP(PWM_HIGH_MASK, channel->hi) |
 		FIELD_PREP(PWM_LOW_MASK, channel->lo);
@@ -323,25 +356,18 @@ static void meson_pwm_enable(struct meson_pwm *meson, struct pwm_device *pwm)
 	value = readl(meson->base + REG_MISC_AB);
 	value |= channel_data->pwm_en_mask;
 	writel(value, meson->base + REG_MISC_AB);
-
-	spin_unlock_irqrestore(&meson->lock, flags);
 #ifdef CONFIG_AMLOGIC_MODIFY
+	PWM_DBG("%s,set pwm hi 0x%x, lo 0x%x\n", __func__, channel->hi, channel->lo);
 	if (meson->data->extern_clk) {
-		/*get_clk_rate()not use in Interrupt context*/
-		if (clk_div == channel->pre_div)
-			return;
-
-		set_clk = channel->clk_rate;
-		if (set_clk == 0)
-			dev_err(meson->chip.dev, "invalid source clock frequency\n");
-
-		set_clk /= (channel->pre_div + 1);
-		err = clk_set_rate(channel->clk, set_clk);
-		if (err)
-			pr_err("%s: error in setting pwm rate!\n", __func__);
-		clk_div = channel->pre_div;
+		value = readl(meson->ext_clk_base);
+		value &= ~(EXT_CLK_DIV_MASK << channel_data->ext_clk_div_shift);
+		value |= channel->pre_div << channel_data->ext_clk_div_shift;
+		value |= channel_data->ext_clk_en_mask;
+		writel(value, meson->ext_clk_base);
+		channel->clk_div = channel->pre_div;
 	}
 #endif
+	spin_unlock_irqrestore(&meson->lock, flags);
 }
 
 static void meson_pwm_disable(struct meson_pwm *meson, struct pwm_device *pwm)
@@ -394,7 +420,10 @@ static int meson_pwm_apply(struct pwm_chip *chip, struct pwm_device *pwm,
 		err = meson_pwm_calc(meson, pwm, state);
 		if (err < 0)
 			return err;
-
+#ifdef CONFIG_AMLOGIC_MODIFY
+		PWM_DBG("%s, calc pwm state period: %lluns, duty: %lluns\n",
+						__func__, state->period, state->duty_cycle);
+#endif
 		meson_pwm_enable(meson, pwm);
 	}
 
@@ -408,17 +437,31 @@ static unsigned int meson_pwm_cnt_to_ns(struct pwm_chip *chip,
 	struct meson_pwm_channel *channel;
 	unsigned long fin_freq;
 	u32 fin_ns;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	unsigned long div_fin_freq;
 
 	/* to_meson_pwm() can only be used after .get_state() is called */
 	channel = &meson->channels[pwm->hwpwm];
+	if (meson->data->extern_clk)
+		fin_freq = channel->clk_rate;
+	else
+		fin_freq = clk_get_rate(channel->clk);
+	div_fin_freq = DIV_ROUND_CLOSEST_ULL(fin_freq, channel->pre_div + 1);
+	fin_ns = DIV_ROUND_CLOSEST_ULL(NSEC_PER_SEC, div_fin_freq);
+	PWM_DBG("%s,the final clk rate:%uns pr_div:%d", __func__, fin_ns, channel->pre_div + 1);
 
+	return cnt * fin_ns;
+#else
+	/* to_meson_pwm() can only be used after .get_state() is called */
+	channel = &meson->channels[pwm->hwpwm];
 	fin_freq = clk_get_rate(channel->clk);
 	if (fin_freq == 0)
 		return 0;
 
-	fin_ns = div_u64(NSEC_PER_SEC, fin_freq);
+	fin_ns = DIV_ROUND_CLOSEST_ULL(NSEC_PER_SEC, fin_freq);
 
 	return cnt * fin_ns * (channel->pre_div + 1);
+#endif
 }
 
 #ifdef CONFIG_AMLOGIC_MODIFY
@@ -426,32 +469,78 @@ static void meson_v2_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm
 				   struct pwm_state *state)
 {
 	struct meson_pwm *meson = to_meson_pwm(chip);
-	u32 value, mask;
+	struct meson_pwm_channel *channel;
+	struct meson_pwm_channel_data *channel_data;
+	u32 value, tmp_value, en_mask, constant_mask;
+	bool constant_enabled;
 
+	channel = &meson->channels[pwm->hwpwm];
+	channel_data = &meson_pwm_per_channel_data[pwm->hwpwm];
 	if (!state)
 		return;
 
 	switch (pwm->hwpwm) {
 	case 0:
-		mask = MISC_A_EN;
+		en_mask = MISC_A_EN;
+		constant_mask = MISC_A_CONSTANT;
 		break;
 
 	case 1:
-		mask = MISC_B_EN;
+		en_mask = MISC_B_EN;
+		constant_mask = MISC_B_CONSTANT;
 		break;
 
 	case 2:
-		mask = MISC_A2_EN;
+		en_mask = MISC_A2_EN;
+		constant_mask = MISC_A_CONSTANT;
 		break;
 
 	case 3:
-		mask = MISC_B2_EN;
+		en_mask = MISC_B2_EN;
+		constant_mask = MISC_B_CONSTANT;
 
 	default:
 		return;
 	}
 	value = readl(meson->base + REG_MISC_AB);
-	state->enabled = (value & mask) != 0;
+	tmp_value = value;
+	state->enabled = (value & en_mask) != 0;
+	constant_enabled = (value & constant_mask) != 0;
+#ifdef FOR_BACK_TRACE
+	value = readl(meson->base + channel_data->reg_offset);
+	channel->lo = FIELD_GET(PWM_LOW_MASK, value);
+	channel->hi = FIELD_GET(PWM_HIGH_MASK, value);
+	PWM_DBG("%s, get pwm state hi 0x%x, li 0x%x\n", __func__, channel->hi, channel->lo);
+	if (meson->data->extern_clk) {
+		value = readl(meson->ext_clk_base);
+		tmp_value = value >> channel_data->ext_clk_div_shift;
+		channel->pre_div = FIELD_GET(EXT_CLK_DIV_MASK, tmp_value);
+	}
+	if (channel->lo == 0) {
+		if (constant_enabled) {
+			state->period = meson_pwm_cnt_to_ns(chip, pwm, channel->hi);
+			state->duty_cycle = state->period;
+		} else {
+			state->period = meson_pwm_cnt_to_ns(chip, pwm, channel->hi + 2);
+			state->duty_cycle = meson_pwm_cnt_to_ns(chip, pwm, channel->hi + 1);
+		}
+	} else if (channel->hi == 0) {
+		if (constant_enabled) {
+			state->period = meson_pwm_cnt_to_ns(chip, pwm, channel->lo);
+			state->duty_cycle = 0;
+		} else {
+			state->period = meson_pwm_cnt_to_ns(chip, pwm, channel->lo + 2);
+			state->duty_cycle = meson_pwm_cnt_to_ns(chip, pwm, channel->hi + 1);
+		}
+	} else {
+		state->period = meson_pwm_cnt_to_ns(chip, pwm,
+						    channel->lo + channel->hi + 2);
+		state->duty_cycle = meson_pwm_cnt_to_ns(chip, pwm,
+							channel->hi + 1);
+	}
+	PWM_DBG("%s, get pwm state period: %lluns, duty: %lluns\n",
+					__func__, state->period, state->duty_cycle);
+#endif /*FOR_BACK_TRACE*/
 }
 #endif
 
@@ -462,14 +551,36 @@ static void meson_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm,
 	struct meson_pwm_channel_data *channel_data;
 	struct meson_pwm_channel *channel;
 	u32 value, tmp;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	bool constant_enabled;
+	u32 constant_mask;
+#endif
 
 	if (!state)
 		return;
 
 #ifdef CONFIG_AMLOGIC_MODIFY
-/* TODO: later, clk tree will be used to synchronize the status of pwm */
 	if (meson->data->extern_clk)
 		return meson_v2_pwm_get_state(chip, pwm, state);
+	switch (pwm->hwpwm) {
+	case 0:
+		constant_mask = MISC_A_CONSTANT;
+		break;
+
+	case 1:
+		constant_mask = MISC_B_CONSTANT;
+		break;
+
+	case 2:
+		constant_mask = MISC_A_CONSTANT;
+		break;
+
+	case 3:
+		constant_mask = MISC_B_CONSTANT;
+
+	default:
+		return;
+	}
 #endif
 
 	channel = &meson->channels[pwm->hwpwm];
@@ -479,7 +590,9 @@ static void meson_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm,
 
 	tmp = channel_data->pwm_en_mask | channel_data->clk_en_mask;
 	state->enabled = (value & tmp) == tmp;
-
+#ifdef CONFIG_AMLOGIC_MODIFY
+	constant_enabled = (value & constant_mask) != 0;
+#endif
 	tmp = value >> channel_data->clk_div_shift;
 	channel->pre_div = FIELD_GET(MISC_CLK_DIV_MASK, tmp);
 
@@ -487,7 +600,33 @@ static void meson_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm,
 
 	channel->lo = FIELD_GET(PWM_LOW_MASK, value);
 	channel->hi = FIELD_GET(PWM_HIGH_MASK, value);
-
+#if defined(CONFIG_AMLOGIC_MODIFY) && defined(FOR_BACK_TRACE)
+	PWM_DBG("%s, get pwm state hi 0x%x, li 0x%x\n", __func__, channel->hi, channel->lo);
+	if (channel->lo == 0) {
+		if (constant_enabled) {
+			state->period = meson_pwm_cnt_to_ns(chip, pwm, channel->hi);
+			state->duty_cycle = state->period;
+		} else {
+			state->period = meson_pwm_cnt_to_ns(chip, pwm, channel->hi + 2);
+			state->duty_cycle = meson_pwm_cnt_to_ns(chip, pwm, channel->hi + 1);
+		}
+	} else if (channel->hi == 0) {
+		if (constant_enabled) {
+			state->period = meson_pwm_cnt_to_ns(chip, pwm, channel->lo);
+			state->duty_cycle = 0;
+		} else {
+			state->period = meson_pwm_cnt_to_ns(chip, pwm, channel->lo + 2);
+			state->duty_cycle = meson_pwm_cnt_to_ns(chip, pwm, channel->hi + 1);
+		}
+	} else {
+		state->period = meson_pwm_cnt_to_ns(chip, pwm,
+							channel->lo + channel->hi + 2);
+		state->duty_cycle = meson_pwm_cnt_to_ns(chip, pwm,
+							channel->hi + 1);
+	}
+	PWM_DBG("%s, get pwm state period: %lluns, duty: %lluns\n",
+					__func__, state->period, state->duty_cycle);
+#else
 	if (channel->lo == 0) {
 		state->period = meson_pwm_cnt_to_ns(chip, pwm, channel->hi);
 		state->duty_cycle = state->period;
@@ -500,6 +639,7 @@ static void meson_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm,
 		state->period = 0;
 		state->duty_cycle = 0;
 	}
+#endif
 }
 
 static const struct pwm_ops meson_pwm_ops = {
@@ -564,7 +704,7 @@ static struct meson_pwm_data pwm_axg_ee_data __refdata = {
 };
 
 static char *pwm_axg_ao_parent_names[] __initdata = {
-	"aoclk81", "xtal", "fclk_div4", "fclk_div5"
+	"xtal", "aoclk81", "fclk_div4", "fclk_div5"
 };
 
 static struct meson_pwm_data pwm_axg_ao_data __refdata = {
@@ -750,9 +890,14 @@ static int meson_pwm_v2_init_channels(struct meson_pwm *meson)
 			dev_err(meson->chip.dev, "can't get device clock\n");
 			return PTR_ERR((channels + i)->clk);
 		}
+		(channels + i)->clk_rate = clk_get_rate((channels + i)->clk);
+		if (FCLK_DIV4_CLK - 100 <= (channels + i)->clk_rate &&
+					(channels + i)->clk_rate <= FCLK_DIV4_CLK + 100)
+			(channels + i)->clk_rate = FCLK_DIV4_CLK;
+		PWM_DBG("get clock sel%d freq= %u\n", i, (channels + i)->clk_rate);
 		(channels + i + 2)->clk = (channels + i)->clk;
+		(channels + i + 2)->clk_rate = (channels + i)->clk_rate;
 	}
-
 	return 0;
 }
 
@@ -770,6 +915,9 @@ static int meson_pwm_probe(struct platform_device *pdev)
 	struct resource *regs;
 	int err;
 	int i;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	struct resource *ext_clk_regs;
+#endif
 
 	meson = devm_kzalloc(&pdev->dev, sizeof(*meson), GFP_KERNEL);
 	if (!meson)
@@ -777,7 +925,6 @@ static int meson_pwm_probe(struct platform_device *pdev)
 	meson->data = devm_kzalloc(&pdev->dev, sizeof(*meson->data), GFP_KERNEL);
 	if (!meson->data)
 		return -ENOMEM;
-
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	meson->base = devm_ioremap_resource(&pdev->dev, regs);
 	if (IS_ERR(meson->base))
@@ -803,7 +950,16 @@ static int meson_pwm_probe(struct platform_device *pdev)
 			GFP_KERNEL);
 	if (!meson->data)
 		return -ENOMEM;
-
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (meson->data->extern_clk) {
+		ext_clk_regs = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+		PWM_DBG("get clk reg start:0x%p end:0x%p\n", (void *)(ext_clk_regs->start),
+			 (void *)(ext_clk_regs->end));
+		meson->ext_clk_base = devm_ioremap(&pdev->dev, ext_clk_regs->start, 4);
+		if (IS_ERR(meson->ext_clk_base))
+			return PTR_ERR(meson->ext_clk_base);
+	}
+#endif
 	for (i = 0; i < match->num_parents; i++)
 		meson->data->parent_names[i] = devm_kstrdup(&pdev->dev, match->parent_names[i],
 				GFP_KERNEL);
@@ -851,6 +1007,7 @@ static int meson_pwm_remove(struct platform_device *pdev)
 		meson_pwm_sysfs_exit(&pdev->dev);
 #endif
 	pwmchip_remove(&meson->chip);
+
 	return 0;
 }
 

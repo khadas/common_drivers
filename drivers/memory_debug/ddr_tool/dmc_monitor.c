@@ -34,7 +34,6 @@
 #include <trace/hooks/mm.h>
 #include <asm/module.h>
 #include <linux/mmzone.h>
-#include <trace/hooks/fault.h>
 #include <trace/hooks/traps.h>
 
 // #define DEBUG
@@ -752,16 +751,10 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 	}
 }
 
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
-void serror_dump_dmc_reg_hook(void *data, struct pt_regs *regs, unsigned int esr)
-{
-	char buf[1024] = {0};
-
-	dump_dmc_reg(buf);
-	pr_crit("%s\n", buf);
-}
-
-void sea_dump_dmc_reg_hook(void *data, unsigned long addr, unsigned int esr, struct pt_regs *regs)
+#if defined(CONFIG_AMLOGIC_USER_FAULT) && \
+	defined(CONFIG_TRACEPOINTS) && \
+	defined(CONFIG_ANDROID_VENDOR_HOOKS)
+void serror_dump_dmc_reg_hook(void *data, struct pt_regs *regs, unsigned int esr, int *ret)
 {
 	char buf[1024] = {0};
 
@@ -896,9 +889,10 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 		dmc_set_monitor(init_start_addr,
 				init_end_addr, init_dev_mask, 1);
 	}
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
-	register_trace_android_rvh_do_sea(sea_dump_dmc_reg_hook, NULL);
-	register_trace_android_rvh_arm64_serror_panic(serror_dump_dmc_reg_hook, NULL);
+#if defined(CONFIG_AMLOGIC_USER_FAULT) && \
+	defined(CONFIG_TRACEPOINTS) && \
+	defined(CONFIG_ANDROID_VENDOR_HOOKS)
+	register_trace_android_rvh_do_serror(serror_dump_dmc_reg_hook, NULL);
 #endif
 	return 0;
 }

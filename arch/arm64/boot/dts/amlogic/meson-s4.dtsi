@@ -2047,7 +2047,7 @@
 		compatible = "amlogic, aml-wifi";
 		status = "disabled";
 		irq_trigger_type = "IRQF_TRIGGER_LOW";
-		//dhd_static_buf; /* if use bcm wifi, config dhd_static_buf */
+		wifi_static_buf = <0>;
 		//pinctrl-0 = <&pwm_e_pins>;
 		//pinctrl-names = "default";
 		pwm_config = <&wifi_pwm_conf>;

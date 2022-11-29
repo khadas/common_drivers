@@ -38,3 +38,5 @@ dtb-y += t5m_reva_t963d4_ay301_2g.dtb
 dtb-y += t5m_reva_t963d4_ay301_3g.dtb
 dtb-y += t5m_reva_t963d4_ay309_2g.dtb
 dtb-y += t5m_reva_t963d4_ay309_3g.dtb
+dtb-y += g12b_a311d_w400.dtb
+dtb-y += sm1_s905d3_ac200.dtb

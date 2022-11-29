@@ -4,7 +4,7 @@
  */
 
 #include <linux/types.h>
-#include <uapi/linux/dvb/frontend.h>
+#include <uapi/linux/dvb/aml_fe_ext.h>
 
 #include "atvdemod_func.h"
 #include "atv_demod_afc.h"

@@ -64,7 +64,7 @@ static unsigned int vs_meas_en;
 static bool disable_modesysfs;
 static bool enable_debugmode;
 
-int vout_debug_print = 1;
+int vout_debug_print;
 
 /* **********************************************************
  * null display support
@@ -824,7 +824,7 @@ static int vout_io_open(struct inode *inode, struct file *file)
 	struct vout_cdev_s *vcdev;
 
 	if (vout_debug_print)
-		VOUTPR("%s: vout_io__open\n");
+		VOUTPR("vout io__open\n");
 	vcdev = container_of(inode->i_cdev, struct vout_cdev_s, cdev);
 	file->private_data = vcdev;
 	return 0;
@@ -833,7 +833,7 @@ static int vout_io_open(struct inode *inode, struct file *file)
 static int vout_io_release(struct inode *inode, struct file *file)
 {
 	if (vout_debug_print)
-		VOUTPR("%s: vout_io_release\n");
+		VOUTPR("vout io_release\n");
 	file->private_data = NULL;
 	return 0;
 }

@@ -72,7 +72,7 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			alignment = <0x0 0x400000>;
-			reg = <0x0 0x3fc00000 0x0 0x400000>;
+			reg = <0x0 0x7f800000 0x0 0x800000>;
 		};
 
 		ion_cma_reserved:linux,ion-dev {
@@ -1523,7 +1523,7 @@
 
 &drm_vpu {
 	status = "okay";
-	logo_addr = "0x3fc00000";
+	logo_addr = "0x7f800000";
 
 };
 

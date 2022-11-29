@@ -8575,7 +8575,8 @@ SET_FILTER:
 	}
 
 #if defined(CONFIG_AMLOGIC_MEDIA_FRC)
-	frc_input_handle(vd_layer[0].dispbuf, cur_frame_par);
+	// frc_input_handle(vd_layer[0].dispbuf, cur_frame_par);cur_frame_par(0)
+	frc_input_handle(vd_layer[0].dispbuf, vd_layer[0].next_frame_par);
 #endif
 	if (atomic_read(&axis_changed)) {
 		video_prop_status |= VIDEO_PROP_CHANGE_AXIS;

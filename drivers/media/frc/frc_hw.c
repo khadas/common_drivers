@@ -891,7 +891,7 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 				gst_frc_param.frc_mcfixlines = 0;
 			gst_frc_param.s2l_en = 1;
 			if (vlock_sync_frc_vporch(gst_frc_param) < 0)
-				pr_frc(0, "frc_on_set maxlnct fail !!!\n");
+				PR_ERR("frc_infrom vlock fail, check vlock st!\n");
 			else
 				pr_frc(0, "frc_on_set maxlnct success!!!\n");
 
@@ -914,7 +914,7 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 				gst_frc_param.frc_mcfixlines = 0;
 			gst_frc_param.s2l_en = 0;
 			if (vlock_sync_frc_vporch(gst_frc_param) < 0)
-				pr_frc(0, "frc_infrom vlock fail !!!\n");
+				PR_ERR("frc_infrom vlock fail, check vlock st!\n");
 			else
 				pr_frc(0, "frc_infrom vlock success!!!\n");
 		}
@@ -931,14 +931,14 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	} else {
 		/*T3 revB*/
 		frc_v_porch = frc_vporch_cal;
-		pr_frc(2, "%s T3 revB chip validation\n", __func__);
+		pr_frc(2, "%s revB no care frc_vporch\n", __func__);
 		gst_frc_param.frc_mcfixlines =
 			mc_frm_dly + mc_hold_line - reg_mc_out_line;
 		if (mc_frm_dly + mc_hold_line < reg_mc_out_line)
 			gst_frc_param.frc_mcfixlines = 0;
 		gst_frc_param.s2l_en = 2; /* rev B chip*/
 		if (vlock_sync_frc_vporch(gst_frc_param) < 0)
-			pr_frc(0, "frc_infrom vlock fail !!!\n");
+			PR_ERR("frc_infrom vlock fail, check vlock st!\n");
 		else
 			pr_frc(0, "frc_infrom vlock success!!!\n");
 		vpu_reg_write_bits(ENCL_FRC_CTRL, memc_frm_dly - reg_mc_out_line, 0, 16);

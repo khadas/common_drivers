@@ -6243,17 +6243,18 @@ static int delsys_set(struct dvb_frontend *fe, unsigned int delsys)
 	case SYS_TURBO:
 	case SYS_UNDEFINED:
 		return 0;
+	}
 
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
-	case SYS_ANALOG:
+	if (cdelsys == SYS_ANALOG) {
 		if (get_dtvpll_init_flag()) {
 			PR_INFO("delsys not support : %d\n", cdelsys);
 			delsys_exit(demod, ldelsys, SYS_UNDEFINED);
 		}
 
 		return 0;
-#endif
 	}
+#endif
 
 	if (cdelsys != SYS_UNDEFINED) {
 		if (ldelsys != SYS_UNDEFINED)

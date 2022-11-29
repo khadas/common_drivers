@@ -3,9 +3,10 @@
  * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
 
-#include <uapi/linux/dvb/frontend.h>
 #include <linux/errno.h>
+#include <uapi/linux/dvb/aml_fe_ext.h>
 #include "dvbs_singlecable.h"
+#include <linux/errno.h>
 
 static int add_pin_code(struct dvb_diseqc_master_cmd *cmd, unsigned char pin);
 

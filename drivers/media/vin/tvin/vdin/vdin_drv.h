@@ -175,6 +175,7 @@ enum vdin_hw_ver_e {
 	VDIN_HW_T3,
 	VDIN_HW_T5W,
 	VDIN_HW_S5,
+	VDIN_HW_T5M,
 };
 
 enum vdin_irq_flg_e {

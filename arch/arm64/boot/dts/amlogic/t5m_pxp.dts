@@ -262,6 +262,45 @@
 		interrupts = <0 210 1>;
 	};
 
+	tvafe_avin_detect {
+		compatible = "amlogic, t5m_tvafe_avin_detect";
+		status = "okay";
+		device_mask = <1>;/*bit0:ch1;bit1:ch2*/
+		reg = <0x0 0xfe00a000 0x0 0x400>; /* cvbs irq base */
+		interrupts = <0 173 1>,
+				<0 172 1>;
+	};
+
+	tvafe {
+		compatible = "amlogic, tvafe-t5m";
+		/*memory-region = <&tvafe_cma_reserved>;*/
+		status = "okay";
+		flag_cma = <1>;/*1:share with codec_mm;0:cma alone*/
+		cma_size = <5>;/*MByte*/
+		reg = <0x0 0xfe072000 0x0 0x2000/*tvafe reg base*/
+			0x0 0xfe008000 0x0 0x2000>; /*ana reg base*/
+		reserve-iomap = "true";
+		tvafe_id = <0>;
+		//pinctrl-names = "default";
+		/*!!particular sequence, no more and no less!!!*/
+		tvafe_pin_mux = <
+				3 /* TVAFE_CVBS_IN2, CVBS_IN0 = 0 */
+				1 /* TVAFE_CVBS_IN0, CVBS_IN1 */
+				2 /* TVAFE_CVBS_IN1, CVBS_IN2 */
+				4 /* TVAFE_CVBS_IN3, CVBS_IN3 */
+		>;
+		clocks = <&clkc CLKID_CDAC_CLK>;
+		clock-names = "vdac_clk_gate";
+		cutwindow_val_h = <0 0 0 0 8>; /* level 0~4 */
+		cutwindow_val_v = <4 8 14 16 24>;  /* level 0~4 */
+	};
+
+	vbi {
+		compatible = "amlogic, vbi";
+		status = "okay";
+		interrupts = <0 210 1>;
+	};
+
 	multi-di {
 		//status = "okay";
 		/***************************************************
@@ -1138,7 +1177,7 @@
 /*if you want to use vdin just modify status to "ok"*/
 &vdin0 {
 	/*memory-region = <&vdin0_cma_reserved>;*/
-	status = "disabled";
+	status = "okay";
 	/*MByte, if 10bit disable: 64M(YUV422),
 	 *if 10bit enable: 64*1.5 = 96M(YUV422)
 	 *if support 4K2K-YUV444-10bit-WR:3840*2160*4*4 ~= 128M
@@ -1150,13 +1189,13 @@
 	 * dw:960x540x3 = 1.5M
 	 * total size:(27.5+1.5)x buffernumber
 	 */
-	cma_size = <300>;
-	frame_buff_num = <10>;
+	cma_size = <330>;
+	frame_buff_num = <11>;
 };
 
 &vdin1 {
 	memory-region = <&vdin1_cma_reserved>;
-	status = "disabled";
+	status = "okay";
 };
 
 /* SDIO */

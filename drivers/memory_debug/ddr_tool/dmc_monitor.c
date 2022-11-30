@@ -646,7 +646,7 @@ static ssize_t dev_access_store(struct class *cla,
 {
 	int ret;
 	unsigned long addr = 0, size = 0;
-	char id = 0;
+	int id = 0;
 
 	ret = sscanf(buf, "%d %lx %lx", &id, &addr, &size);
 	if (ret != 3) {

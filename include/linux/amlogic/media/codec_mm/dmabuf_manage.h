@@ -98,8 +98,8 @@ unsigned int dmabuf_manage_get_can_alloc_blocknum(unsigned long id, unsigned lon
 	unsigned long predictedsize, unsigned long paddr);
 unsigned int dmabuf_manage_get_allocated_blocknum(unsigned long id);
 unsigned int dmabuf_manage_get_secure_heap_version(void);
-unsigned int dmabuf_manage_get_type(unsigned int fd);
-void *dmabuf_manage_get_info(unsigned int fd, unsigned int type);
+unsigned int dmabuf_manage_get_type(struct dma_buf *dbuf);
+void *dmabuf_manage_get_info(struct dma_buf *dbuf, unsigned int type);
 
 #define DMABUF_MANAGE_IOC_MAGIC			'S'
 

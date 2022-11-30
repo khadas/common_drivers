@@ -741,13 +741,11 @@ error_copy:
 	return -EFAULT;
 }
 
-unsigned int dmabuf_manage_get_type(unsigned int fd)
+unsigned int dmabuf_manage_get_type(struct dma_buf *dbuf)
 {
 	int ret = DMA_BUF_TYPE_INVALID;
 	struct dmabuf_manage_block *block;
-	struct dma_buf *dbuf;
 
-	dbuf = dma_buf_get(fd);
 	if (!dbuf) {
 		pr_dbg("acquire dma_buf failed");
 		goto error;
@@ -757,21 +755,18 @@ unsigned int dmabuf_manage_get_type(unsigned int fd)
 		if (block)
 			ret = block->type;
 	}
-	dma_buf_put(dbuf);
 error:
 	return ret;
 }
 EXPORT_SYMBOL(dmabuf_manage_get_type);
 
-void *dmabuf_manage_get_info(unsigned int fd, unsigned int type)
+void *dmabuf_manage_get_info(struct dma_buf *dbuf, unsigned int type)
 {
 	void *buf = NULL;
 	struct dmabuf_manage_block *block;
-	struct dma_buf *dbuf;
 
 	if (type == DMA_BUF_TYPE_INVALID)
 		goto error;
-	dbuf = dma_buf_get(fd);
 	if (!dbuf) {
 		pr_dbg("acquire dma_buf failed");
 		goto error;
@@ -795,7 +790,6 @@ void *dmabuf_manage_get_info(unsigned int fd, unsigned int type)
 			break;
 		}
 	}
-	dma_buf_put(dbuf);
 error:
 	return buf;
 }

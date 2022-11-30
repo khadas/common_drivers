@@ -86,17 +86,10 @@ void printk_caller(void *data, char *caller, size_t size, u32 id, int *ret)
 		sprintf(task_name, "T%u", pid);
 	}
 
-	*ret = sprintf(caller, "@%d %-6s %c%c",
+	*ret = snprintf(caller, size, "%d %-6.6s %c%c",
 				cpu,
 				task_name,
 				irqs_off, hardsoft_irq);
-	if (*ret > size) {
-		pr_notice("caller should not than %zu\n", size);
-		snprintf(caller, size, "@%d %-6s %c%c",
-			cpu,
-			task_name,
-			irqs_off, hardsoft_irq);
-	}
 }
 
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)

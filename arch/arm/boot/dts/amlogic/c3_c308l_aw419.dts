@@ -538,11 +538,17 @@
 };
 
 &cpu0 {
-	operating-points-v2 = <&cpu_opp_table0_aw419>;
+	operating-points-v2 = <&cpu_opp_table0_bga>,
+			<&cpu_opp_table1_bga>,
+			<&cpu_opp_table2_bga>,
+			<&cpu_opp_table3_bga>;
 };
 
 &cpu1 {
-	operating-points-v2 = <&cpu_opp_table0_aw419>;
+	operating-points-v2 = <&cpu_opp_table0_bga>,
+			<&cpu_opp_table1_bga>,
+			<&cpu_opp_table2_bga>,
+			<&cpu_opp_table3_bga>;
 };
 
 /* Audio Related start */

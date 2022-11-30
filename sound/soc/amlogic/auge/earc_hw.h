@@ -204,7 +204,7 @@ enum cmdc_st {
 	CMDC_ST_ARC
 };
 
-/* attended type: disconect, ARC, eARC */
+/* attended type: disconnect, ARC, eARC */
 enum attend_type {
 	ATNDTYP_DISCNCT,
 	ATNDTYP_ARC,

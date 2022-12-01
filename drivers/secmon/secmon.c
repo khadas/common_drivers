@@ -4,7 +4,7 @@
  */
 // #define DEBUG
 // #define USE_CMA
-// #define TEST_ACESS
+// #define TEST_ACCESS
 #include <linux/errno.h>
 #include <linux/err.h>
 #include <linux/of.h>
@@ -119,7 +119,7 @@ static int get_reserver_base_size(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef TEST_ACESS
+#ifdef TEST_ACCESS
 static void test_access_secmon(void)
 {
 	int	i, j;
@@ -217,7 +217,7 @@ static int secmon_probe(struct platform_device *pdev)
 		secmon_start_virt = (unsigned long)page_to_virt(page);
 #endif
 
-#ifdef TEST_ACESS
+#ifdef TEST_ACCESS
 		test_access_secmon();
 #endif
 	}

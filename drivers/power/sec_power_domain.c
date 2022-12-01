@@ -116,7 +116,7 @@ static struct sec_pm_private_domain c1_pm_domains[] __initdata = {
 	[PDID_CX_DSP_B] = POWER_DOMAIN(dsp_b, PDID_CX_DSP_B, DOMAIN_INIT_OFF, 0),
 	[PDID_CX_UART] = POWER_DOMAIN(uart, PDID_CX_UART, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
 	[PDID_CX_DMC] = POWER_DOMAIN(dmc, PDID_CX_DMC, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
-		/* If there is GENPD_FLAG_ALWAYS_ON, the domian must be initialized to on */
+		/* If there is GENPD_FLAG_ALWAYS_ON, the domain must be initialized to on */
 	[PDID_CX_I2C] = POWER_DOMAIN(i2c, PDID_CX_I2C, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
 	[PDID_CX_SDEMMC_B] = POWER_DOMAIN(sdemmc_b, PDID_CX_SDEMMC_B, DOMAIN_INIT_ON, 0),
 	[PDID_CX_ACODEC] = POWER_DOMAIN(acodec, PDID_CX_ACODEC, DOMAIN_INIT_ON, 0),
@@ -156,7 +156,7 @@ static struct sec_pm_domain_data c1_pm_domain_data __initdata = {
 };
 #endif
 
-/* If there is GENPD_FLAG_ALWAYS_ON, the domian must be initialized to on */
+/* If there is GENPD_FLAG_ALWAYS_ON, the domain must be initialized to on */
 static struct sec_pm_private_domain c2_pm_domains[] __initdata = {
 	[PDID_CX_CPU_PWR0] = POWER_DOMAIN(cpu_pwr0, PDID_CX_CPU_PWR0, DOMAIN_INIT_ON,
 					GENPD_FLAG_ALWAYS_ON),

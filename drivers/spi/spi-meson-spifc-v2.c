@@ -21,6 +21,9 @@
 #include <linux/atomic.h>
 
 #define CONFIG_SPIFC_HWCAPS_DUAL_QUAD
+
+#define SPIFC_AHB_BUF_CACHE_SIZE	(4096 + 256)
+#define CONFIG_ENABLE_AHB_MODE		1
 //#define CONFIG_SPIFC_DEBUG
 
 /* register map */
@@ -38,6 +41,7 @@
 	#define CLR_HRDATA2				BIT(14)
 	#define CLR_HRDATA1				BIT(13)
 	#define CLR_HRDATA0				BIT(12)
+	#define AHB_CLEAN_HRDATA_BUF_SHIFT		12
 
 #define SPIFC_CLK_CTRL		(0x0001 << 2)
 	#define ASYNC_BUFFER_AHB_CLK_DISABLE		BIT(14) // 1-disable
@@ -154,12 +158,18 @@
 	#define AHB_DIN_MODE				GENMASK(9, 8)
 	#define AHB_DIN_AES_ENABLE			BIT(7)
 	#define AHB_DIN_BYTES				GENMASK(1, 0)
+	#define AHB_CMD_MODE_SHIFT			28
+	#define AHB_CMD_CODE_SHIFT			20
+	#define AHB_ADDR_MODE_SHIFT			17
+	#define AHB_ADDR_BYTES_SHIFT			15
+	#define AHB_DIN_MODE_SHIFT			8
 
 #define SPIFC_AHB_REQ_CTRL1	(0x0086 << 2)
 	#define AHB_DUMMY_ENABLE			BIT(31)
 	#define AHB_DUMMY_MODE				GENMASK(30, 29)
 	#define AHB_DUMMY_CLK_CYCLES			GENMASK(28, 23)
 	#define AHB_DUMMY_OUTPUT_DATA			GENMASK(15, 0)
+	#define AHB_DUMMY_CYCLE_SHIFT			23
 
 #define SPIFC_AHB_REQ_CTRL2	(0x0087 << 2)
 
@@ -207,6 +217,7 @@
 	#define SPI_RESET				BIT(0)
 
 #define SPIFC_BUFFER_SIZE	512
+#define SPI_ADDR_BASE		0xf1000000
 #define convert_nbits(n)	(fls(n) - 1)
 
 /**
@@ -216,6 +227,16 @@
 #define SPINAND_CMD_PROG_LOAD_RDM_DATA		0x84
 #define SPINAND_CMD_PROG_LOAD_X4		0x32
 #define SPINAND_CMD_PROG_LOAD_RDM_DATA_X4	0x34
+
+/* flash std/dual/quad read command */
+#define FCMD_READ                                       0x03
+#define FCMD_READ_FAST                                  0x0b
+#define FCMD_READ_DUAL_OUT                              0x3b
+#define FCMD_READ_QUAD_OUT                              0x6b
+#define FCMD_READ_DUAL_IO                               0xbb
+#define FCMD_READ_QUAD_IO                               0xeb
+
+void __iomem *spifc_ahb_map_addr;
 
 /**
  * struct meson_spifc
@@ -271,6 +292,18 @@ static void meson_spifc_dump(struct meson_spifc *spifc)
 	regmap_read(spifc->regmap, SPIFC_USER_DBUF_ADDR, &buf[6]);
 	pr_info("0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
 		buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
+}
+
+static void meson_spifc_ahb_dump(struct meson_spifc *spifc)
+{
+	u32 buf[4];
+
+	regmap_read(spifc->regmap, SPIFC_AHB_REQ_CTRL, &buf[0]);
+	regmap_read(spifc->regmap, SPIFC_AHB_REQ_CTRL1, &buf[1]);
+	regmap_read(spifc->regmap, SPIFC_AHB_REQ_CTRL2, &buf[2]);
+	regmap_read(spifc->regmap, SPIFC_AHB_CTRL, &buf[3]);
+	pr_info("0x%x, 0x%x, 0x%x, 0x%x\n",
+		buf[0], buf[1], buf[2], buf[3]);
 }
 #else
 #define spifc_dbg(fmt, args...)
@@ -374,6 +407,81 @@ static int meson_spifc_setup_speed(struct meson_spifc *spifc, u32 speed)
 	}
 
 	return ret;
+}
+
+static int meson_spifc_ahb_enable(struct meson_spifc *spifc)
+{
+	unsigned int val0, val1;
+	unsigned char cmd;
+	u16 bits;
+	u32 regv;
+	u32 data;
+	unsigned long deadline = jiffies + msecs_to_jiffies(200);
+
+	cmd = spifc->cmd;
+	bits = spifc->addr_len ? (spifc->addr_len - 1) : 0;
+
+	val0 = AHB_CMD_ENABLE | AHB_ADDR_ENABLE |
+			(cmd << AHB_CMD_CODE_SHIFT) | (bits << AHB_ADDR_BYTES_SHIFT);
+	val1 = AHB_DUMMY_ENABLE | (8 << AHB_DUMMY_CYCLE_SHIFT);
+
+	if (cmd == FCMD_READ_DUAL_OUT)
+		val0 |= ((1 << AHB_DIN_MODE_SHIFT));
+	else if (cmd == FCMD_READ_QUAD_OUT)
+		val0 |= ((2 << AHB_DIN_MODE_SHIFT));
+
+	regmap_write(spifc->regmap, SPIFC_AHB_REQ_CTRL, val0);
+	regmap_write(spifc->regmap, SPIFC_AHB_REQ_CTRL1, val1);
+	regmap_write(spifc->regmap, SPIFC_AHB_REQ_CTRL2, 0);
+	regmap_write(spifc->regmap, SPIFC_USER_DBUF_ADDR, 0);
+	regmap_write(spifc->regmap, SPIFC_AHB_CTRL, AHB_BUS_EN);
+	/* clean the HRDATA buffer */
+	regmap_read(spifc->regmap, SPIFC_AHB_CTRL, &regv);
+	regv |= (7 << AHB_CLEAN_HRDATA_BUF_SHIFT);
+	regmap_write(spifc->regmap, SPIFC_AHB_CTRL, regv);
+
+	do {
+		regmap_read(spifc->regmap, SPIFC_AHB_CTRL, &data);
+		if (!(data & CLR_HRDATA0) && !(data & CLR_HRDATA1) && !(data & CLR_HRDATA2))
+			return 0;
+		cond_resched();
+	} while (!time_after(jiffies, deadline));
+
+	return -ETIMEDOUT;
+}
+
+static void meson_spifc_ahb_disable(struct meson_spifc *spifc)
+{
+	u32 regv;
+
+	regmap_write(spifc->regmap, SPIFC_AHB_REQ_CTRL, 0);
+	regmap_write(spifc->regmap, SPIFC_AHB_REQ_CTRL1, 0);
+	regmap_write(spifc->regmap, SPIFC_AHB_REQ_CTRL2, 0);
+	regmap_read(spifc->regmap, SPIFC_AHB_CTRL, &regv);
+	regv &= ~(AHB_BUS_EN);
+	regmap_write(spifc->regmap, SPIFC_AHB_CTRL, regv);
+}
+
+static void spifc_user_ahb_din(struct meson_spifc *spifc, u8 *buf, int len)
+{
+	void __iomem *dbuf = spifc_ahb_map_addr + spifc->addr;
+	u32 regv;
+	u32 data, *p = (u32 *)buf;
+	int i = len >> 2;
+	u32 *tmp = (u32 *)dbuf;
+
+	regmap_read(spifc->regmap, SPIFC_AHB_REQ_CTRL, &regv);
+	regv |= AHB_REQ_ENABLE;
+	regmap_write(spifc->regmap, SPIFC_AHB_REQ_CTRL, regv);
+
+	while (i--)
+		*p++ = readl_relaxed(tmp++);
+
+	len %= 4;
+	if (len) {
+		data = readl_relaxed(tmp++);
+		memcpy((void *)p, (void *)&data, len);
+	}
 }
 
 static void meson_spifc_user_init(struct meson_spifc *spifc)
@@ -522,7 +630,17 @@ static int meson_spifc_transfer_one(struct spi_master *master,
 		spifc->cmd = *p;
 		spifc->cmd_nbits = convert_nbits(xfer->tx_nbits);
 		spifc_dbg("cmd=0x%x\n", spifc->cmd);
-		meson_spifc_set_cmd(spifc);
+		if (!CONFIG_ENABLE_AHB_MODE) {
+			meson_spifc_set_cmd(spifc);
+		} else {
+			if ((spifc->cmd != FCMD_READ &&
+				spifc->cmd != FCMD_READ_FAST &&
+				spifc->cmd != FCMD_READ_DUAL_OUT &&
+				spifc->cmd != FCMD_READ_QUAD_OUT &&
+				spifc->cmd != FCMD_READ_DUAL_IO &&
+				spifc->cmd != FCMD_READ_QUAD_IO))
+				meson_spifc_set_cmd(spifc);
+		}
 		if (last_xfer)
 			ret = meson_spifc_start_then_wait_ready(spifc, 0);
 	} else if (stage == 2) {
@@ -534,14 +652,34 @@ static int meson_spifc_transfer_one(struct spi_master *master,
 		spifc->addr_nbits = convert_nbits(xfer->tx_nbits);
 		spifc->addr_len = xfer->len;
 		spifc_dbg("addr=0x%x, len=%d\n", spifc->addr, spifc->addr_len);
-		meson_spifc_set_addr(spifc);
+		if (!CONFIG_ENABLE_AHB_MODE) {
+			meson_spifc_set_addr(spifc);
+		} else {
+			if ((spifc->cmd != FCMD_READ &&
+				spifc->cmd != FCMD_READ_FAST &&
+				spifc->cmd != FCMD_READ_DUAL_OUT &&
+				spifc->cmd != FCMD_READ_QUAD_OUT &&
+				spifc->cmd != FCMD_READ_DUAL_IO &&
+				spifc->cmd != FCMD_READ_QUAD_IO))
+				meson_spifc_set_addr(spifc);
+		}
 		if (last_xfer)
 			ret = meson_spifc_start_then_wait_ready(spifc, 0);
 	} else if (stage == 3) {
 		spifc->dummy_nbits = convert_nbits(xfer->tx_nbits);
 		spifc->dummy_clk_cycles = xfer->len << 3;
 		spifc_dbg("dummy: clk_cycles=%d\n", spifc->dummy_clk_cycles);
-		meson_spifc_set_dummy(spifc);
+		if (!CONFIG_ENABLE_AHB_MODE) {
+			meson_spifc_set_dummy(spifc);
+		} else {
+			if ((spifc->cmd != FCMD_READ &&
+				spifc->cmd != FCMD_READ_FAST &&
+				spifc->cmd != FCMD_READ_DUAL_OUT &&
+				spifc->cmd != FCMD_READ_QUAD_OUT &&
+				spifc->cmd != FCMD_READ_DUAL_IO &&
+				spifc->cmd != FCMD_READ_QUAD_IO))
+				meson_spifc_set_dummy(spifc);
+		}
 		if (last_xfer)
 			ret = meson_spifc_start_then_wait_ready(spifc, 0);
 	} else if (xfer->tx_buf) {
@@ -568,19 +706,32 @@ static int meson_spifc_transfer_one(struct spi_master *master,
 	} else if (xfer->rx_buf) {
 		spifc->din_nbits = convert_nbits(xfer->rx_nbits);
 		spifc_dbg("din: len=%d\n", xfer->len);
-		while (done < xfer->len && !ret) {
-			len = min_t(int, xfer->len - done, SPIFC_BUFFER_SIZE);
-			meson_spifc_set_cmd(spifc);
-			if (spifc->addr_len)
-				meson_spifc_set_addr(spifc);
-			if (spifc->dummy_clk_cycles)
-				meson_spifc_set_dummy(spifc);
-			ret = meson_spifc_din(spifc, (u8 *)xfer->rx_buf,
-					      done, len);
-			spifc_dbg("  cmd=0x%x, len=%d, addr=0x%x\n",
-				  spifc->cmd, len, spifc->addr);
-			done += len;
-			spifc->addr += len;
+		if ((spifc->cmd == FCMD_READ ||
+			spifc->cmd == FCMD_READ_FAST ||
+			spifc->cmd == FCMD_READ_DUAL_OUT ||
+			spifc->cmd == FCMD_READ_QUAD_OUT ||
+			spifc->cmd == FCMD_READ_DUAL_IO ||
+			spifc->cmd == FCMD_READ_QUAD_IO) && CONFIG_ENABLE_AHB_MODE) {
+			ret = meson_spifc_ahb_enable(spifc);
+			if (ret)
+				pr_info("enable spifc ahb failed!\n");
+			spifc_user_ahb_din(spifc, (u8 *)xfer->rx_buf, xfer->len);
+			meson_spifc_ahb_disable(spifc);
+		} else {
+			while (done < xfer->len && !ret) {
+				len = min_t(int, xfer->len - done, SPIFC_BUFFER_SIZE);
+				meson_spifc_set_cmd(spifc);
+				if (spifc->addr_len)
+					meson_spifc_set_addr(spifc);
+				if (spifc->dummy_clk_cycles)
+					meson_spifc_set_dummy(spifc);
+				ret = meson_spifc_din(spifc, (u8 *)xfer->rx_buf,
+							done, len);
+				spifc_dbg("  cmd=0x%x, len=%d, addr=0x%x\n",
+					spifc->cmd, len, spifc->addr);
+				done += len;
+				spifc->addr += len;
+			}
 		}
 	}
 	return ret;
@@ -804,6 +955,10 @@ static int meson_spifc_probe(struct platform_device *pdev)
 		ret = PTR_ERR(spifc->regmap);
 		goto out_err;
 	}
+
+	spifc_ahb_map_addr = ioremap(SPI_ADDR_BASE, SPIFC_AHB_BUF_CACHE_SIZE);
+	if (!spifc_ahb_map_addr)
+		pr_info("spifc ahb address map failed!\n");
 
 	spifc->clk = devm_clk_get(spifc->dev, NULL);
 	if (IS_ERR(spifc->clk)) {

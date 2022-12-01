@@ -7,6 +7,7 @@
 #define _AML_DMX_H_
 
 #include <linux/list.h>
+#include <media/aml_demux_ext.h>
 
 #include "sw_demux/swdemux.h"
 #include "sc2_demux/ts_output.h"
@@ -74,7 +75,7 @@ enum {
 };
 
 struct aml_dmx {
-	struct dmx_demux dmx;
+	struct dmx_demux_ext dmx_ext;
 	struct dmxdev dev;
 	void *priv;
 	int id;

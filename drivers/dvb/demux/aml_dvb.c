@@ -101,14 +101,14 @@ ssize_t get_pcr_show(struct class *class,
 		value = 0;
 		base = 0;
 		if (print_stc) {
-			ret = dmx_get_stc(&dvb->dmx[print_dmx].dmx, i,
+			ret = dmx_get_stc(&dvb->dmx[print_dmx].dmx_ext.dmx, i,
 				&value, &base);
 			if (ret != 0)
 				continue;
 			r = sprintf(buf, "dmx:%d num%d stc:0x%llx base:%d\n",
 				print_dmx, i, value, base);
 		} else {
-			ret = dmx_get_pcr(&dvb->dmx[print_dmx].dmx, i, &value);
+			ret = dmx_get_pcr(&dvb->dmx[print_dmx].dmx_ext.dmx, i, &value);
 			if (ret != 0)
 				continue;
 			r = sprintf(buf, "dmx:%d num%d pcr:0x%llx\n",
@@ -207,7 +207,7 @@ int demux_get_stc(int demux_device_index, int index,
 	if (demux_device_index >= DMX_DEV_COUNT || demux_device_index < 0)
 		return -1;
 
-	dmx_get_stc(&dvb->dmx[demux_device_index].dmx, index, stc, base);
+	dmx_get_stc(&dvb->dmx[demux_device_index].dmx_ext.dmx, index, stc, base);
 
 	return 0;
 }
@@ -220,7 +220,7 @@ int demux_get_pcr(int demux_device_index, int index, u64 *pcr)
 	if (demux_device_index >= DMX_DEV_COUNT || demux_device_index < 0)
 		return -1;
 
-	return dmx_get_pcr(&dvb->dmx[demux_device_index].dmx, index, pcr);
+	return dmx_get_pcr(&dvb->dmx[demux_device_index].dmx_ext.dmx, index, pcr);
 }
 EXPORT_SYMBOL(demux_get_pcr);
 

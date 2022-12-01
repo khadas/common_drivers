@@ -22,6 +22,9 @@
 #include <linux/amlogic/media/codec_mm/dmabuf_manage.h>
 #include <linux/amlogic/media/codec_mm/configs.h>
 #include <uapi/linux/dvb/aml_dmx_ext.h>
+#ifdef CONFIG_AMLOGIC_DVB_COMPAT
+#include <media/aml_demux_ext.h>
+#endif
 #include "dmxdev.h"
 #include "demux.h"
 
@@ -624,6 +627,7 @@ static long dmabuf_manage_set_filterfd(unsigned long args)
 	struct fd f;
 	struct dmxdev_filter *dmxdevfilter = NULL;
 	struct dmxdev *dmxdev = NULL;
+	struct dmx_demux_ext *demux_ext = NULL;
 #endif
 	pr_enter();
 	if (copy_from_user((void *)&info, (void __user *)args, sizeof(info))) {
@@ -678,7 +682,8 @@ static long dmabuf_manage_set_filterfd(unsigned long args)
 		}
 		if (dmxdev && dmxdev->demux) {
 			demux = dmxdev->demux;
-			decode_info_func = dmxdev->demux->decode_info;
+			demux_ext = container_of(demux, struct dmx_demux_ext, dmx);
+			decode_info_func = demux_ext->decode_info;
 		} else {
 			pr_error("Invalid filter fd\n");
 		}

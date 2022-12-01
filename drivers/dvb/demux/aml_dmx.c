@@ -1613,7 +1613,7 @@ static int _dmx_connect_frontend(struct dmx_demux *dmx,
 
 static int _dmx_disconnect_frontend(struct dmx_demux *dmx)
 {
-	struct aml_dmx *demux = (struct aml_dmx *)dmx;
+	struct aml_dmx *demux = (struct aml_dmx *)dmx->priv;
 
 	mutex_lock(demux->pmutex);
 
@@ -1624,7 +1624,7 @@ static int _dmx_disconnect_frontend(struct dmx_demux *dmx)
 
 static int _dmx_get_pes_pids(struct dmx_demux *dmx, u16 *pids)
 {
-	struct aml_dmx *demux = (struct aml_dmx *)dmx;
+	struct aml_dmx *demux = (struct aml_dmx *)dmx->priv;
 
 	memcpy(pids, demux->pids, 5 * sizeof(u16));
 	return 0;
@@ -1634,7 +1634,7 @@ int dmx_get_pcr(struct dmx_demux *dmx, unsigned int num, u64 *pcr)
 {
 	int ret = 0;
 	int pcr_index = 0;
-	struct aml_dmx *demux = (struct aml_dmx *)dmx;
+	struct aml_dmx *demux = (struct aml_dmx *)dmx->priv;
 
 //      mutex_lock(demux->pmutex);
 	if (num >= EACH_DMX_MAX_PCR_NUM) {
@@ -1666,7 +1666,7 @@ int dmx_get_stc(struct dmx_demux *dmx, unsigned int num,
 	int pcr_diff = 0;
 	int jiffes_diff = 0;
 	int pcr_index = 0;
-	struct aml_dmx *demux = (struct aml_dmx *)dmx;
+	struct aml_dmx *demux = (struct aml_dmx *)dmx->priv;
 
 	mutex_lock(demux->pmutex);
 //      pr_dbg("%s num:%d\n", __func__, num);
@@ -1738,7 +1738,7 @@ int dmx_get_stc(struct dmx_demux *dmx, unsigned int num,
 
 static int _dmx_set_input(struct dmx_demux *demux, int source)
 {
-	struct aml_dmx *pdmx = (struct aml_dmx *)demux;
+	struct aml_dmx *pdmx = (struct aml_dmx *)demux->priv;
 	int sec_level = 0;
 
 	pr_dbg("%s local:%d, input:%d\n", __func__, pdmx->source, source);
@@ -2124,10 +2124,10 @@ int dmx_init(struct aml_dmx *pdmx, struct dvb_adapter *dvb_adapter)
 	int ret;
 	int i = 0;
 
-	pdmx->dmx.capabilities =
+	pdmx->dmx_ext.dmx.capabilities =
 	    (DMX_TS_FILTERING | DMX_SECTION_FILTERING |
 	     DMX_MEMORY_BASED_FILTERING);
-	pdmx->dmx.priv = pdmx;
+	pdmx->dmx_ext.dmx.priv = pdmx;
 
 	pdmx->ts_feed_num = MAX_TS_FEED_NUM;
 	pdmx->ts_feed = vmalloc(sizeof(*pdmx->ts_feed) * pdmx->ts_feed_num);
@@ -2159,33 +2159,33 @@ int dmx_init(struct aml_dmx *pdmx, struct dvb_adapter *dvb_adapter)
 	for (i = 0; i < EACH_DMX_MAX_PCR_NUM; i++)
 		pdmx->pcr_index[i] = 0xffff;
 
-	pdmx->dmx.open = _dmx_open;
-	pdmx->dmx.close = _dmx_close;
-	pdmx->dmx.write = _dmx_write_from_user;
-	pdmx->dmx.allocate_ts_feed = _dmx_allocate_ts_feed;
-	pdmx->dmx.release_ts_feed = _dmx_release_ts_feed;
-	pdmx->dmx.allocate_section_feed = _dmx_allocate_section_feed;
-	pdmx->dmx.release_section_feed = _dmx_release_section_feed;
+	pdmx->dmx_ext.dmx.open = _dmx_open;
+	pdmx->dmx_ext.dmx.close = _dmx_close;
+	pdmx->dmx_ext.dmx.write = _dmx_write_from_user;
+	pdmx->dmx_ext.dmx.allocate_ts_feed = _dmx_allocate_ts_feed;
+	pdmx->dmx_ext.dmx.release_ts_feed = _dmx_release_ts_feed;
+	pdmx->dmx_ext.dmx.allocate_section_feed = _dmx_allocate_section_feed;
+	pdmx->dmx_ext.dmx.release_section_feed = _dmx_release_section_feed;
 
-	pdmx->dmx.add_frontend = _dmx_add_frontend;
-	pdmx->dmx.remove_frontend = _dmx_remove_frontend;
-	pdmx->dmx.get_frontends = _dmx_get_frontends;
-	pdmx->dmx.connect_frontend = _dmx_connect_frontend;
-	pdmx->dmx.disconnect_frontend = _dmx_disconnect_frontend;
-	pdmx->dmx.get_pes_pids = _dmx_get_pes_pids;
-	pdmx->dmx.get_stc = dmx_get_stc;
-	pdmx->dmx.set_input = _dmx_set_input;
-	pdmx->dmx.get_sec_mem_info = _dmx_get_sec_mem_info;
-	pdmx->dmx.get_ts_mem_info = _dmx_get_ts_mem_info;
-	pdmx->dmx.set_hw_source = _dmx_set_hw_source;
-	pdmx->dmx.get_hw_source = _dmx_get_hw_source;
-	pdmx->dmx.get_dmx_mem_info = _dmx_get_mem_info;
-	pdmx->dmx.set_sec_mem = _dmx_set_sec_mem;
-	pdmx->dmx.get_dvr_mem = _dmx_get_dvr_mem;
-	pdmx->dmx.remap_pid = _dmx_remap_pid;
-	pdmx->dmx.decode_info = _dmx_decode_info;
+	pdmx->dmx_ext.dmx.add_frontend = _dmx_add_frontend;
+	pdmx->dmx_ext.dmx.remove_frontend = _dmx_remove_frontend;
+	pdmx->dmx_ext.dmx.get_frontends = _dmx_get_frontends;
+	pdmx->dmx_ext.dmx.connect_frontend = _dmx_connect_frontend;
+	pdmx->dmx_ext.dmx.disconnect_frontend = _dmx_disconnect_frontend;
+	pdmx->dmx_ext.dmx.get_pes_pids = _dmx_get_pes_pids;
+	pdmx->dmx_ext.dmx.get_stc = dmx_get_stc;
+	pdmx->dmx_ext.set_input = _dmx_set_input;
+	pdmx->dmx_ext.get_sec_mem_info = _dmx_get_sec_mem_info;
+	pdmx->dmx_ext.get_ts_mem_info = _dmx_get_ts_mem_info;
+	pdmx->dmx_ext.set_hw_source = _dmx_set_hw_source;
+	pdmx->dmx_ext.get_hw_source = _dmx_get_hw_source;
+	pdmx->dmx_ext.get_dmx_mem_info = _dmx_get_mem_info;
+	pdmx->dmx_ext.set_sec_mem = _dmx_set_sec_mem;
+	pdmx->dmx_ext.get_dvr_mem = _dmx_get_dvr_mem;
+	pdmx->dmx_ext.remap_pid = _dmx_remap_pid;
+	pdmx->dmx_ext.decode_info = _dmx_decode_info;
 	pdmx->dev.filternum = (MAX_TS_FEED_NUM + MAX_SEC_FEED_NUM);
-	pdmx->dev.demux = &pdmx->dmx;
+	pdmx->dev.demux = &pdmx->dmx_ext.dmx;
 	pdmx->dev.capabilities = DMXDEV_CAP_DUPLEX;
 	ret = dvb_dmxdev_init(&pdmx->dev, dvb_adapter);
 	if (ret < 0) {
@@ -2196,13 +2196,13 @@ int dmx_init(struct aml_dmx *pdmx, struct dvb_adapter *dvb_adapter)
 	pdmx->dev.dvr_dvbdev->writers = MAX_SW_DEMUX_USERS;
 
 	pdmx->mem_fe.source = DMX_MEMORY_FE;
-	ret = pdmx->dmx.add_frontend(&pdmx->dmx, &pdmx->mem_fe);
+	ret = pdmx->dmx_ext.dmx.add_frontend(&pdmx->dmx_ext.dmx, &pdmx->mem_fe);
 	if (ret < 0) {
 		dprint("dvb_dmxdev_init add frontend: error %d\n", ret);
 		vfree(pdmx->ts_feed);
 		return -1;
 	}
-	pdmx->dmx.connect_frontend(&pdmx->dmx, &pdmx->mem_fe);
+	pdmx->dmx_ext.dmx.connect_frontend(&pdmx->dmx_ext.dmx, &pdmx->mem_fe);
 	if (ret < 0) {
 		dprint("dvb_dmxdev_init connect frontend: error %d\n", ret);
 		vfree(pdmx->ts_feed);
@@ -2374,7 +2374,7 @@ static ssize_t dump_av_level_show(struct class *class,
 			continue;
 
 		memset(&info, 0, sizeof(struct dmx_filter_mem_info));
-		_dmx_get_mem_info(&advb->dmx[h].dmx, &info);
+		_dmx_get_mem_info(&advb->dmx[h].dmx_ext.dmx, &info);
 		for (i = 0; i < info.filter_num; i++) {
 			if (info.info[i].type != DMX_VIDEO_TYPE &&
 				info.info[i].type != DMX_AUDIO_TYPE)

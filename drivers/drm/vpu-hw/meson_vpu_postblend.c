@@ -350,7 +350,6 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 		u32 val, vppx_bld;
 		u32 bld_src2_sel = 2;
 		u32 scaler_index = 2;
-		u32 bld_w, bld_h;
 		struct postblend1_reg_s *reg1 = postblend->reg1;
 
 		for (i = 0; i < MESON_MAX_OSDS; i++) {
@@ -361,17 +360,13 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 				break;
 			}
 		}
-		bld_w = mvps->scaler_param[scaler_index].output_width;
-		bld_h = mvps->scaler_param[scaler_index].output_height;
 
-		scope.h_start = 0;
-		scope.h_end = mvps->scaler_param[scaler_index].output_width - 1;
-		scope.v_start = 0;
-		scope.v_end = mvps->scaler_param[scaler_index].output_height - 1;
+		scope.h_start = mvps->plane_info[scaler_index].dst_x;
+		scope.h_end = scope.h_start + mvps->scaler_param[scaler_index].output_width - 1;
+		scope.v_start = mvps->plane_info[scaler_index].dst_y;
+		scope.v_end = scope.v_start + mvps->scaler_param[scaler_index].output_height - 1;
 
 		vpp1_osd1_blend_scope_set(vblk, reg_ops, reg1, scope);
-		reg_ops->rdma_write_reg(reg1->vpp_bld_out_size,
-					bld_w | (bld_h << 16));
 
 		vppx_bld = reg_ops->rdma_read_reg(reg1->vpp_bld_ctrl);
 		if (amc->blank_enable)

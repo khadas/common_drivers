@@ -3,7 +3,7 @@
 menu "Amlogic Thermal and Cooling devices"
 
 config AMLOGIC_AMLOGIC_THERMAL
-	tristate "Amlgoic temperature sensor Support"
+	tristate "Amlogic temperature sensor Support"
 	depends on THERMAL && AMLOGIC_SECMON
 	default n
 	help

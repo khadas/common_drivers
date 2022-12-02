@@ -544,7 +544,7 @@ int32_t dwc_otg_pcd_handle_np_tx_fifo_empty_intr(dwc_otg_pcd_t *pcd)
 /**
  * This function is called when dedicated Tx FIFO Empty interrupt occurs.
  * The active request is checked for the next packet to be loaded into
- * apropriate Tx FIFO.
+ * appropriate Tx FIFO.
  */
 static int32_t write_empty_tx_fifo(dwc_otg_pcd_t *pcd, uint32_t epnum)
 {
@@ -1323,7 +1323,7 @@ int32_t dwc_otg_pcd_handle_ep_fetsusp_intr(dwc_otg_pcd_t *pcd)
 }
 
 /**
- * This funcion stalls EP0.
+ * This function stalls EP0.
  */
 static inline void ep0_do_stall(dwc_otg_pcd_t *pcd, const int err_val)
 {
@@ -1474,7 +1474,7 @@ static inline void pcd_clear_halt(dwc_otg_pcd_t *pcd, dwc_otg_pcd_ep_t *ep)
 		 * epmismatch not yet implemented. */
 
 		/*
-		 * Above fixme is solved by implmenting a tasklet to call the
+		 * Above fixme is solved by implementing a tasklet to call the
 		 * start_next_request(), outside of interrupt context at some
 		 * time after the current time, after a clear-halt setup packet.
 		 * Still need to implement ep mismatch in the future if a gadget
@@ -2343,10 +2343,10 @@ static void complete_ep(dwc_otg_pcd_ep_t *ep)
 					 * a 0 length packet at the end. For Slave and
 					 * Buffer DMA modes in this case SW has
 					 * to initiate 2 transfers one with transfer size,
-					 * and the second with 0 size. For Desriptor
+					 * and the second with 0 size. For Descriptor
 					 * DMA mode SW is able to initiate a transfer,
 					 * which will handle all the packets including
-					 * the last  0 legth.
+					 * the last  0 length.
 					 */
 					ep->dwc_ep.sent_zlp = 0;
 					dwc_otg_ep_start_zl_transfer(core_if,
@@ -2447,10 +2447,10 @@ static void complete_ep(dwc_otg_pcd_ep_t *ep)
 					 * a 0 length packet at the end. For Slave and
 					 * Buffer DMA modes in this case SW has
 					 * to initiate 2 transfers one with transfer size,
-					 * and the second with 0 size. For Desriptor
+					 * and the second with 0 size. For Descriptor
 					 * DMA mode SW is able to initiate a transfer,
 					 * which will handle all the packets including
-					 * the last  0 legth.
+					 * the last  0 length.
 					 */
 					ep->dwc_ep.sent_zlp = 0;
 					dwc_otg_ep_start_zl_transfer(core_if,
@@ -2666,7 +2666,7 @@ static void set_ddma_iso_pkts_info(dwc_otg_core_if_t *core_if,
 
 				sts.d32 = dma_desc->status.d32;
 
-				/* Write status in iso_packet_decsriptor  */
+				/* Write status in iso_packet_descriptor  */
 				iso_packet->status =
 				    sts.b_iso_out.rxsts +
 				    (sts.b_iso_out.bs ^ BS_DMA_DONE);
@@ -2703,7 +2703,7 @@ static void set_ddma_iso_pkts_info(dwc_otg_core_if_t *core_if,
 
 			sts.d32 = dma_desc->status.d32;
 
-			/* Write status in iso_packet_decsriptor  */
+			/* Write status in iso_packet_descriptor  */
 			iso_packet->status =
 			    sts.b_iso_out.rxsts +
 			    (sts.b_iso_out.bs ^ BS_DMA_DONE);
@@ -2723,7 +2723,7 @@ static void set_ddma_iso_pkts_info(dwc_otg_core_if_t *core_if,
 
 		sts.d32 = dma_desc->status.d32;
 
-		/* Write status in iso_packet_decsriptor  */
+		/* Write status in iso_packet_descriptor  */
 		iso_packet->status =
 		    sts.b_iso_out.rxsts + (sts.b_iso_out.bs ^ BS_DMA_DONE);
 		if (iso_packet->status)
@@ -3186,7 +3186,7 @@ static void dwc_otg_pcd_handle_noniso_bna(dwc_otg_pcd_ep_t *ep)
 /**
  * This function handles EP0 Control transfers.
  *
- * The state of the control tranfers are tracked in
+ * The state of the control transfers are tracked in
  * <code>ep0state</code>.
  */
 static void handle_ep0(dwc_otg_pcd_t *pcd)
@@ -3378,7 +3378,7 @@ static void restart_transfer(dwc_otg_pcd_t *pcd, const uint32_t epnum)
 
 
 /*
- * This function create new nextep sequnce based on Learn Queue.
+ * This function create new nextep sequence based on Learn Queue.
  *
  * @param core_if Programming view of DWC_otg controller
  */
@@ -3699,7 +3699,7 @@ static inline void handle_in_ep_timeout_intr(dwc_otg_pcd_t *pcd,
 
 	ep = get_in_ep(pcd, epnum);
 
-	/* Disable the NP Tx Fifo Empty Interrrupt */
+	/* Disable the NP Tx Fifo Empty Interrupt */
 	if (!core_if->dma_enable) {
 		intr_mask.b.nptxfempty = 1;
 		DWC_MODIFY_REG32(&core_if->core_global_regs->gintmsk,
@@ -3893,7 +3893,7 @@ do { \
 					   dev_global_regs->dtknqr4_fifoemptymsk);
 
 			DWC_DEBUGPL(DBG_PCDV,
-				    "IN EP INTERRUPT - %d\nepmty_msk - %8x  diepctl - %8x\n",
+				    "IN EP INTERRUPT - %d\nempty_msk - %8x  diepctl - %8x\n",
 				    epnum, empty_msk, depctl.d32);
 
 			DWC_DEBUGPL(DBG_PCD,
@@ -3910,7 +3910,7 @@ do { \
 			/* Transfer complete */
 			if (diepint.b.xfercompl) {
 				/* Disable the NP Tx FIFO Empty
-				 * Interrrupt */
+				 * Interrupt */
 				if (core_if->en_multiple_tx_fifo == 0) {
 					intr_mask.b.nptxfempty = 1;
 					DWC_MODIFY_REG32
@@ -4076,7 +4076,7 @@ do { \
 					}
 				}
 			}
-			/* NAK Interrutp */
+			/* NAK Interrupt */
 			if (diepint.b.nak) {
 				DWC_DEBUGPL(DBG_ANY, "EP%d IN NAK Interrupt\n",
 					    epnum);
@@ -4577,7 +4577,7 @@ exit_xfercompl:
 					  epnum, core_if->dev_if->out_ep_regs[epnum]->doepdma);
 				CLEAR_OUT_EP_INTR(core_if, epnum, ahberr);
 			}
-			/* Setup Phase Done (contorl EPs) */
+			/* Setup Phase Done (control EPs) */
 			if (doepint.b.setup) {
 #ifdef DEBUG_EP0
 				DWC_DEBUGPL(DBG_PCD, "EP%d SETUP Done\n",
@@ -4645,14 +4645,14 @@ exit_xfercompl:
 				CLEAR_OUT_EP_INTR(core_if, epnum, outtknepdis);
 			}
 
-			/* NAK Interrutp */
+			/* NAK Interrupt */
 			if (doepint.b.nak) {
 				DWC_DEBUGPL(DBG_ANY, "EP%d OUT NAK\n", epnum);
 				handle_out_ep_nak_intr(pcd, epnum);
 
 				CLEAR_OUT_EP_INTR(core_if, epnum, nak);
 			}
-			/* NYET Interrutp */
+			/* NYET Interrupt */
 			if (doepint.b.nyet) {
 				DWC_DEBUGPL(DBG_ANY, "EP%d OUT NYET\n", epnum);
 				handle_out_ep_nyet_intr(pcd, epnum);

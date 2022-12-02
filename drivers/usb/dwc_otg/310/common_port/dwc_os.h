@@ -789,7 +789,7 @@ extern char *DWC_STRDUP(char const *str);
  * "0x" prefix if base 16.  The remaining characters must be valid digits for
  * the number and end with a NULL character.  If any invalid characters are
  * encountered or it returns with a negative error code and the results of the
- * conversion are undefined.  On sucess it returns 0.  Overflow conditions are
+ * conversion are undefined.  On success it returns 0.  Overflow conditions are
  * undefined.  An example implementation using atoi() can be referenced from the
  * Linux implementation. */
 extern int DWC_ATOI(const char *str, int32_t *value);
@@ -1026,7 +1026,7 @@ struct dwc_spinlock;
 /** Type for a spinlock */
 typedef struct dwc_spinlock dwc_spinlock_t;
 
-/** Type for the 'flags' argument to spinlock funtions */
+/** Type for the 'flags' argument to spinlock functions */
 typedef unsigned long dwc_irqflags_t;
 
 /** Returns an initialized lock variable.  This function should allocate and
@@ -1206,7 +1206,7 @@ extern uint32_t DWC_TIME(void);
  * - Crypto - Used internally only.  See dwc_crypto.h
  *
  *
- * @section prereq Prerequistes For dwc_os.h
+ * @section prereq Prerequisites For dwc_os.h
  * @subsection types Data Types
  *
  * The dwc_os.h file assumes that several low-level data types are pre defined for the

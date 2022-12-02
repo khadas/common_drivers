@@ -46,6 +46,9 @@ struct am_osd_plane {
 	u32 osd_reverse;
 	u32 osd_blend_bypass;
 	u32 osd_read_ports;
+	void *vir_addr;
+	u32 dump_size;
+	bool bflg;
 };
 
 struct am_video_plane {

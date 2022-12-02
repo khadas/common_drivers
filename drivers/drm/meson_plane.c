@@ -321,6 +321,7 @@ static int meson_plane_fb_check(struct drm_plane *plane,
 	if (meson_fb->logo && meson_fb->logo->alloc_flag &&
 	    meson_fb->logo->start) {
 		phyaddr = meson_fb->logo->start;
+		fb_size = meson_fb->logo->size;
 		DRM_DEBUG("logo->phyaddr=0x%pa\n", &phyaddr);
 	} else  if (meson_fb->bufp[0]) {
 		phyaddr = am_meson_gem_object_get_phyaddr(drv,

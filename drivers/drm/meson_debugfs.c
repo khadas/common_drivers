@@ -19,7 +19,7 @@
 #define HDMITX_ATTR_LEN_MAX 16
 
 #ifdef CONFIG_DEBUG_FS
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+
 static u8 *meson_drm_vmap(ulong addr, u32 size, bool *bflg)
 {
 	u8 *vaddr = NULL;
@@ -68,128 +68,76 @@ static void meson_drm_unmap_phyaddr(u8 *vaddr)
 {
 	void *addr = (void *)(PAGE_MASK & (ulong)vaddr);
 
+	DRM_DEBUG("unmap va(%p)\n", addr);
 	vunmap(addr);
 }
-#endif
 
-static int meson_dump_show(struct seq_file *sf, void *data)
+static ssize_t osd_fbdump_read(struct file *filp, char __user *buf,
+				size_t size, loff_t *ppos)
 {
-	struct drm_crtc *crtc = sf->private;
-	struct am_meson_crtc *amc = to_am_meson_crtc(crtc);
+	ssize_t count;
+	struct drm_plane *plane = filp->private_data;
+	struct am_osd_plane *amp = to_am_osd_plane(plane);
 
-	seq_puts(sf, "echo 1 > dump to enable the osd dump func\n");
-	seq_puts(sf, "echo 0 > dump to disable the osd dump func\n");
-	seq_printf(sf, "dump_enable: %d\n", amc->dump_enable);
-	seq_printf(sf, "dump_counts: %d\n", amc->dump_counts);
+	count = simple_read_from_buffer(buf, size, ppos, amp->vir_addr,
+					amp->dump_size);
+	return count;
+}
+
+static int osd_fbdump_release(struct inode *inode, struct file *filp)
+{
+	struct drm_plane *plane = filp->private_data;
+	struct am_osd_plane *amp = to_am_osd_plane(plane);
+
+	if (amp->bflg)
+		meson_drm_unmap_phyaddr(amp->vir_addr);
+
 	return 0;
 }
 
-static int meson_dump_open(struct inode *inode, struct file *file)
+static int osd_fbdump_open(struct inode *inode, struct file *filp)
 {
-	struct drm_crtc *crtc = inode->i_private;
-
-	return single_open(file, meson_dump_show, crtc);
-}
-
-static ssize_t meson_dump_write(struct file *file, const char __user *ubuf,
-				size_t len, loff_t *offp)
-{
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
-	int i, j, num_plane;
-	char buf[8];
-	char name_buf[64];
-	int counts = 0;
-	struct file *fp;
-	mm_segment_t fs;
-	loff_t pos;
-	bool bflg = false;
-	void *buff = NULL;
-	u64 phy_addrs[MESON_MAX_OSD];
-	u32 fb_sizes[MESON_MAX_OSD];
-	u32 osd_index[MESON_MAX_OSD];
+	bool bflg;
+	u32 index;
+	u32 fb_size;
+	void *vir_addr;
+	u64 phy_addr;
+	struct meson_vpu_pipeline *pipeline;
 	struct meson_vpu_osd_layer_info *info;
+	struct meson_drm *priv;
 	struct meson_vpu_pipeline_state *mvps;
-	struct seq_file *sf = file->private_data;
-	struct drm_crtc *crtc = sf->private;
-	struct am_meson_crtc *amc = to_am_meson_crtc(crtc);
-	struct meson_vpu_pipeline *pipeline = amc->pipeline;
+	struct drm_plane *plane = inode->i_private;
+	struct am_osd_plane *amp = to_am_osd_plane(plane);
 
+	filp->private_data = inode->i_private;
+	priv = plane->dev->dev_private;
+	pipeline = priv->pipeline;
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
 
-	if (len > sizeof(buf) - 1)
-		return -EINVAL;
+	index = plane->index;
+	info = &mvps->plane_info[index];
 
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	if (buf[len - 1] == '\n')
-		buf[len - 1] = '\0';
-	buf[len] = '\0';
-
-	if (strncmp(buf, "0", 1) == 0) {
-		amc->dump_enable = 0;
-		DRM_INFO("disable the osd dump\n");
-	} else {
-		if (kstrtoint(buf, 0, &counts) == 0) {
-			amc->dump_counts = (counts > 0) ? counts : 0;
-			amc->dump_enable = (counts > 0) ? 1 : 0;
-		}
+	if (!info->enable) {
+		DRM_INFO("osd is disabled\n");
+		return 0;
 	}
 
-	if (amc->dump_enable) {
-		num_plane = 0;
-		for (i = 0; i < pipeline->num_osds; i++) {
-			if (mvps->plane_info[i].enable) {
-				info = &mvps->plane_info[i];
-				osd_index[num_plane] = i;
-				phy_addrs[num_plane] = info->phy_addr;
-				fb_sizes[num_plane] = info->fb_size;
-				num_plane++;
-			}
-		}
+	phy_addr = info->phy_addr;
+	fb_size = info->fb_size;
+	bflg = false;
+	vir_addr = meson_drm_vmap(phy_addr, fb_size, &bflg);
+	amp->bflg = bflg;
+	amp->vir_addr = vir_addr;
+	amp->dump_size = fb_size;
 
-		for (i = 0; i < num_plane; i++) {
-			j = osd_index[i];
-			DRM_DEBUG("start to dump gem buff.\n");
-			memset(name_buf, 0, sizeof(name_buf));
-			snprintf(name_buf, sizeof(name_buf),
-				"%s/plane%d.dump%llu",
-				amc->osddump_path, j,
-				drm_crtc_accurate_vblank_count(crtc));
-
-			fs = get_fs();
-			set_fs(KERNEL_DS);
-			pos = 0;
-			fp = filp_open(name_buf, O_CREAT | O_RDWR, 0644);
-			if (IS_ERR(fp)) {
-				DRM_ERROR("create %s fail.\n", name_buf);
-			} else {
-				DRM_DEBUG("phy_addr-%llx, fb_size-%u\n",
-					phy_addrs[i], fb_sizes[i]);
-				buff = meson_drm_vmap(phy_addrs[i],
-					fb_sizes[i], &bflg);
-				DRM_DEBUG("vir_addr-%px\n", buff);
-				vfs_write(fp, buff, fb_sizes[i], &pos);
-				filp_close(fp, NULL);
-			}
-
-			set_fs(fs);
-			DRM_DEBUG("low_mem: %d.\n", bflg);
-
-			if (bflg)
-				meson_drm_unmap_phyaddr(buff);
-		}
-	}
-#endif
-	return len;
+	return 0;
 }
 
-static const struct file_operations meson_dump_fops = {
+static const struct file_operations meson_osd_fbdump_fops = {
 	.owner = THIS_MODULE,
-	.open = meson_dump_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-	.write = meson_dump_write,
+	.open = osd_fbdump_open,
+	.read = osd_fbdump_read,
+	.release = osd_fbdump_release,
 };
 
 static int meson_regdump_show(struct seq_file *sf, void *data)
@@ -225,49 +173,6 @@ static const struct file_operations meson_regdump_fops = {
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
-};
-
-static int meson_imgpath_show(struct seq_file *sf, void *data)
-{
-	struct drm_crtc *crtc = sf->private;
-	struct am_meson_crtc *amc = to_am_meson_crtc(crtc);
-
-	seq_puts(sf, "echo /tmp/osd_path > imgpath to store the osd dump path\n");
-	seq_printf(sf, "imgpath: %s\n", amc->osddump_path);
-	return 0;
-}
-
-static int meson_imgpath_open(struct inode *inode, struct file *file)
-{
-	struct drm_crtc *crtc = inode->i_private;
-
-	return single_open(file, meson_imgpath_show, crtc);
-}
-
-static ssize_t meson_imgpath_write(struct file *file, const char __user *ubuf,
-				   size_t len, loff_t *offp)
-{
-	struct seq_file *sf = file->private_data;
-	struct drm_crtc *crtc = sf->private;
-	struct am_meson_crtc *amc = to_am_meson_crtc(crtc);
-
-	if (len > sizeof(amc->osddump_path) - 1)
-		return -EINVAL;
-
-	if (copy_from_user(amc->osddump_path, ubuf, len))
-		return -EFAULT;
-	amc->osddump_path[len - 1] = '\0';
-
-	return len;
-}
-
-static const struct file_operations meson_imgpath_fops = {
-	.owner = THIS_MODULE,
-	.open = meson_imgpath_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-	.write = meson_imgpath_write,
 };
 
 static int meson_blank_show(struct seq_file *sf, void *data)
@@ -623,24 +528,10 @@ int meson_crtc_debugfs_init(struct drm_crtc *crtc, struct dentry *root)
 
 	meson_vpu_root = debugfs_create_dir("vpu", root);
 
-	entry = debugfs_create_file("dump", 0644, meson_vpu_root, crtc,
-				    &meson_dump_fops);
-	if (!entry) {
-		DRM_ERROR("create dump node error\n");
-		debugfs_remove_recursive(meson_vpu_root);
-	}
-
 	entry = debugfs_create_file("reg_dump", 0400, meson_vpu_root, crtc,
 				    &meson_regdump_fops);
 	if (!entry) {
 		DRM_ERROR("create reg_dump node error\n");
-		debugfs_remove_recursive(meson_vpu_root);
-	}
-
-	entry = debugfs_create_file("imgpath", 0644, meson_vpu_root, crtc,
-				    &meson_imgpath_fops);
-	if (!entry) {
-		DRM_ERROR("create imgpath node error\n");
 		debugfs_remove_recursive(meson_vpu_root);
 	}
 
@@ -688,6 +579,15 @@ int meson_plane_debugfs_init(struct drm_plane *plane, struct dentry *root)
 				    &meson_osd_read_port_fops);
 	if (!entry) {
 		DRM_ERROR("create osd_blend_bypass node error\n");
+		debugfs_remove_recursive(meson_vpu_root);
+	}
+
+	entry = debugfs_create_file("fbdump", 0644,
+				    meson_vpu_root, plane,
+				    &meson_osd_fbdump_fops);
+
+	if (!entry) {
+		DRM_ERROR("create osd fbdump node error\n");
 		debugfs_remove_recursive(meson_vpu_root);
 	}
 

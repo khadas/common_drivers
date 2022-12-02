@@ -2836,11 +2836,9 @@ static int lcd_tcon_mem_config(void)
 
 	if (lcd_tcon_conf->tcon_axi_mem_config)
 		lcd_tcon_conf->tcon_axi_mem_config();
-	// if (lcd_tcon_conf->tcon_axi_mem_secure)
-		// lcd_tcon_conf->tcon_axi_mem_secure();
 
 	tcon_rmem.bin_path_rmem.mem_size = lcd_tcon_conf->bin_path_size;
-	tcon_rmem.bin_path_rmem.mem_paddr = tcon_rmem.axi_mem_paddr;
+	tcon_rmem.bin_path_rmem.mem_paddr = tcon_rmem.sw_mem_paddr;
 	tcon_rmem.bin_path_rmem.mem_vaddr =
 		lcd_tcon_paddrtovaddr(tcon_rmem.bin_path_rmem.mem_paddr,
 				      tcon_rmem.bin_path_rmem.mem_size);

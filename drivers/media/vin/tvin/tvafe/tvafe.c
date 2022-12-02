@@ -1701,6 +1701,14 @@ static struct meson_tvafe_data meson_t5w_tvafe_data = {
 	.rf_pq_conf = NULL,
 };
 
+static struct meson_tvafe_data meson_t5m_tvafe_data = {
+	.cpu_id = TVAFE_CPU_TYPE_T5M,
+	.name = "meson-t5m-tvafe",
+
+	.cvbs_pq_conf = NULL,
+	.rf_pq_conf = NULL,
+};
+
 static const struct of_device_id meson_tvafe_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -1726,6 +1734,9 @@ static const struct of_device_id meson_tvafe_dt_match[] = {
 	}, {
 		.compatible = "amlogic, tvafe-t5w",
 		.data		= &meson_t5w_tvafe_data,
+	}, {
+		.compatible = "amlogic, tvafe-t5m",
+		.data		= &meson_t5m_tvafe_data,
 	},
 	{}
 };
@@ -1915,7 +1926,8 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 	    (tvafe_cpu_type() == TVAFE_CPU_TYPE_T5D) ||
 	    (tvafe_cpu_type() == TVAFE_CPU_TYPE_T5W))
 		sys_clk_reg_base = HHI_ANA_CLK_BASE;
-	else if (tvafe_cpu_type() == TVAFE_CPU_TYPE_T3)
+	else if (tvafe_cpu_type() == TVAFE_CPU_TYPE_T3 ||
+		 tvafe_cpu_type() == TVAFE_CPU_TYPE_T5M)
 		sys_clk_reg_base = ATV_DMD_SYS_CLK_CNTL;
 	ana_addr = ioremap(sys_clk_reg_base, 0x5);
 	if (!ana_addr) {

@@ -797,6 +797,7 @@ extern bool hdcp22_stop_auth;
 extern bool hdcp22_esm_reset2;
 extern int esm_recovery_mode;
 extern u32 dbg_pkt;
+extern int disable_hdr;
 /*
  *#ifdef CONFIG_AMLOGIC_HDMITX
  *void hdmitx_update_latency_info(struct tvin_latency_s *latency_info);

@@ -1203,7 +1203,7 @@ static s32 aucpu_mem_device_init(struct reserved_mem *rmem,
 	}
 
 	if (!rmem->base) {
-		aucpu_pr(LOG_ERROR, " Aucpu NO reserved mem assgned\n");
+		aucpu_pr(LOG_ERROR, " Aucpu NO reserved mem assigned\n");
 		r = -EFAULT;
 		return r;
 	}

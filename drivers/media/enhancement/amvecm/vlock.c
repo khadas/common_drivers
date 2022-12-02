@@ -3127,7 +3127,7 @@ u32 vlock_chk_is_small_win(struct vpp_frame_par_s *cur_video_sts)
 	return 0;
 }
 
-/*new packed separeted from amvecm_on_vs,avoid the influence of repeate call,
+/*new packed separated from amvecm_on_vs,avoid the influence of repeate call,
  *which may affect vlock process
  */
 void vlock_process(struct vframe_s *vf,

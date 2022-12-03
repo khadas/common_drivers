@@ -41,19 +41,19 @@
  *for skip two vframe case,need +2
  */
 static unsigned int max_buf_num = VDIN_CANVAS_MAX_CNT;
-static unsigned int min_buf_num = 4;
+static unsigned int min_buf_num = VDIN_CANVAS_MIN_CNT;
 static unsigned int max_buf_width = VDIN_CANVAS_MAX_WIDTH_HD;
 static unsigned int max_buf_height = VDIN_CANVAS_MAX_HEIGHT;
 /* one frame max metadata size:32x280 bits = 1120bytes(0x460) */
 unsigned int dolby_size_byte = K_DV_META_BUFF_SIZE;
 
-#ifdef DEBUG_SUPPORT
 module_param(max_buf_num, uint, 0664);
 MODULE_PARM_DESC(max_buf_num, "vdin max buf num.\n");
 
 module_param(min_buf_num, uint, 0664);
 MODULE_PARM_DESC(min_buf_num, "vdin min buf num.\n");
 
+#ifdef DEBUG_SUPPORT
 module_param(max_buf_width, uint, 0664);
 MODULE_PARM_DESC(max_buf_width, "vdin max buf width.\n");
 
@@ -452,6 +452,10 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 	    devp->frame_buff_num <= max_buf_num)
 		max_buffer_num = devp->frame_buff_num;
 
+	if (!devp->index && devp->frame_buff_num < VDIN_CANVAS_INTERLACED_MIN_CNT &&
+	    devp->fmt_info_p->scan_mode == TVIN_SCAN_MODE_INTERLACED)
+		max_buffer_num = VDIN_CANVAS_INTERLACED_MIN_CNT;
+
 	devp->canvas_max_num = max_buffer_num;
 	devp->vf_mem_max_cnt = max_buffer_num;
 	if (devp->cma_config_en == 0 || devp->cma_mem_alloc == 1) {
@@ -650,10 +654,12 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 		/*return 1;*/
 	}
 
-	if (devp->index == 0)
-		strcpy(vdin_name, "vdin0");
-	else if (devp->index == 1)
-		strcpy(vdin_name, "vdin1");
+	if (devp->cma_config_flag & MEM_ALLOC_FROM_CODEC) {
+		if (devp->index == 0)
+			strcpy(vdin_name, "vdin0");
+		else if (devp->index == 1)
+			strcpy(vdin_name, "vdin1");
+	}
 
 	if (devp->set_canvas_manual == 1 || devp->cfg_dma_buf) {
 		for (i = 0; i < VDIN_CANVAS_MAX_CNT; i++) {
@@ -718,10 +724,6 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 				if (j >= 20) {
 					pr_err("vdin%d buf[%d]codec alloc fail!!!\n",
 					       devp->index, i);
-					if (i <= min_buf_num) {
-						devp->cma_mem_alloc = 0;
-						return 1;
-					}
 					/*real buffer number*/
 					max_buffer_num = i;
 					devp->canvas_max_num = i;
@@ -736,10 +738,6 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 								  frame_size >> PAGE_SHIFT, 0, 0);
 				if (!devp->vf_venc_pages[i]) {
 					pr_err("vdin%d cma mem undefined2.\n", devp->index);
-					if (i <= min_buf_num) {
-						devp->cma_mem_alloc = 0;
-						return 1;
-					}
 					/*real buffer number*/
 					max_buffer_num = i;
 					devp->canvas_max_num = i;
@@ -835,6 +833,12 @@ unsigned int vdin_cma_alloc(struct vdin_dev_s *devp)
 
 	pr_info("vdin%d cma alloc %d buffers ok!\n", devp->index,
 		devp->vf_mem_max_cnt);
+	if (devp->vf_mem_max_cnt < min_buf_num) {
+		pr_info("vdin%d cma alloc num too less need release\n", devp->index);
+		vdin_cma_release(devp);
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -859,10 +863,13 @@ void vdin_cma_release(struct vdin_dev_s *devp)
 			       devp->cma_mem_alloc);
 		return;
 	}
-	if (devp->index == 0)
-		strcpy(vdin_name, "vdin0");
-	else if (devp->index == 1)
-		strcpy(vdin_name, "vdin1");
+
+	if (devp->cma_config_flag & MEM_ALLOC_FROM_CODEC) {
+		if (devp->index == 0)
+			strcpy(vdin_name, "vdin0");
+		else if (devp->index == 1)
+			strcpy(vdin_name, "vdin1");
+	}
 
 	if (devp->cma_config_flag & MEM_ALLOC_DISCRETE) {
 		if (devp->cma_config_flag & MEM_ALLOC_FROM_CODEC) {

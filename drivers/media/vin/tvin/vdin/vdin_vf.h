@@ -41,7 +41,9 @@
 #define VF_FLAG_NORMAL_FRAME		 0x00000001
 #define VF_FLAG_FREEZED_FRAME		 0x00000002
 #define VFRAME_DISP_MAX_NUM 25
+#define VDIN_CANVAS_MIN_CNT	4
 #define VDIN_CANVAS_MAX_CNT	11
+#define VDIN_CANVAS_INTERLACED_MIN_CNT	8
 /* total canvas num in chips */
 #define VDIN_TOTAL_CANVAS_NUM	20
 /* real canvas num for each vdin */
@@ -133,10 +135,12 @@ struct vf_pool {
 	struct list_head wr_list; /* vf_entry */
 	spinlock_t wr_lock;
 	unsigned int wr_list_size;
+	unsigned int wr_mode_size;
 	struct list_head *wr_next;
 	struct list_head rd_list; /* vf_entry */
 	spinlock_t rd_lock;
 	unsigned int rd_list_size;
+	unsigned int rd_mode_size;
 	struct list_head wt_list; /* vframe_s */
 	spinlock_t wt_lock;
 	unsigned int fz_list_size;

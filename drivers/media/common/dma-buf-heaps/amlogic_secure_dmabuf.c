@@ -210,10 +210,12 @@ static int secure_heap_mmap(struct dma_buf *dmabuf,
 	unsigned long len = 0;
 	unsigned long paddr = 0;
 	struct secure_block_info *block = NULL;
+	int ret = -1;
 
 	pr_enter();
 	if (!buffer)
-		return -1;
+		goto out;
+	mutex_lock(&buffer->lock);
 	if (buffer->block &&
 		buffer->block->version >= SECURE_HEAP_SUPPORT_DELAY_ALLOC_VERSION) {
 		block = buffer->block;
@@ -236,7 +238,7 @@ static int secure_heap_mmap(struct dma_buf *dmabuf,
 				paddr = secure_block_alloc(len, buffer->len, block->id);
 				if (!paddr) {
 					pr_err("No more secure memory can be alloc %ld", len);
-					return -1;
+					goto out_unlock;
 				}
 				sg_set_page(buffer->sg_table.sgl,
 					pfn_to_page(PFN_DOWN(paddr)), len, 0);
@@ -279,10 +281,12 @@ static int secure_heap_mmap(struct dma_buf *dmabuf,
 			break;
 		}
 	}
-	return remap_pfn_range(vma, vma->vm_start,
-						page_to_pfn(buffer->block_page),
-						PAGE_SIZE,
-						vma->vm_page_prot);
+	ret = remap_pfn_range(vma, vma->vm_start, page_to_pfn(buffer->block_page),
+			PAGE_SIZE, vma->vm_page_prot);
+out_unlock:
+	mutex_unlock(&buffer->lock);
+out:
+	return ret;
 }
 
 static int secure_heap_vmap(struct dma_buf *dmabuf, struct dma_buf_map *vaddr)

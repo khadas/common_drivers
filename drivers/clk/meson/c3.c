@@ -846,7 +846,7 @@ static const struct reg_sequence c3_mclk_init_regs[] = {
 	{ .reg = ANACTRL_MPLL_CTRL1,	.def = 0x1420500f },
 	{ .reg = ANACTRL_MPLL_CTRL2,	.def = 0x00023041 },
 	{ .reg = ANACTRL_MPLL_CTRL3,	.def = 0x18180000 },
-	{ .reg = ANACTRL_MPLL_CTRL4,	.def = 0x00101307 },
+	{ .reg = ANACTRL_MPLL_CTRL4,	.def = 0x00101206 },
 	{ .reg = ANACTRL_MPLL_CTRL0,	.def = 0x10011063 },
 	{ .reg = ANACTRL_MPLL_CTRL2,	.def = 0x00023001 },
 };

@@ -2681,7 +2681,8 @@ int layer_id_to_dv_id(enum vd_path_e vd_path)
 		if (dv_id >= 0)
 			return dv_id;
 
-		pr_dv_dbg("vd%d not found dv_id, please check\n", vd_path + 1);
+		if (debug_dolby & 0x1000)
+			pr_dv_dbg("vd%d not found dv_id, please check\n", vd_path + 1);
 		return dv_id;
 
 		/*If no dv inst display on vd_path, */
@@ -9140,8 +9141,11 @@ int amdv_control_path(struct vframe_s *vf, struct vframe_s *vf_2)
 	if (!dolby_vision_enable || !module_installed || !p_funcs_stb)
 		return -1;
 
-	new_m_dovi_setting.input[0].valid = 0;
-	new_m_dovi_setting.input[1].valid = 0;
+	for (i = 0; i < NUM_IPCORE1; i++) {
+		new_m_dovi_setting.input[i].valid = 0;
+		new_m_dovi_setting.input[i].in_md_size = 0;
+		new_m_dovi_setting.input[i].in_comp_size = 0;
+	}
 	for (i = 0; i < NUM_INST; i++)
 		dv_inst[i].valid = 0;
 	/*update new_m_dovi_setting.input, choose the two inst that display on vd1/vd2*/
@@ -9226,7 +9230,6 @@ int amdv_control_path(struct vframe_s *vf, struct vframe_s *vf_2)
 				dv_inst[id].frame_count, dolby_vision_flags);
 				p_funcs_stb->multi_control_path(&invalid_m_dovi_setting);
 			}
-			new_m_dovi_setting.dst_format = dst_format;
 			new_m_dovi_setting.input[i].input_mode = dv_inst[id].input_mode;
 			new_m_dovi_setting.input[i].video_width = dv_inst[id].video_width;
 			new_m_dovi_setting.input[i].video_height = dv_inst[id].video_height;
@@ -9269,6 +9272,7 @@ int amdv_control_path(struct vframe_s *vf, struct vframe_s *vf_2)
 			new_m_dovi_setting.input[i].el_halfsize_flag = dv_inst[id].el_halfsize_flag;
 		}
 	}
+	new_m_dovi_setting.dst_format = dst_format;
 	new_m_dovi_setting.enable_debug = debug_ko;
 	new_m_dovi_setting.enable_multi_core1 = enable_multi_core1;
 	new_m_dovi_setting.pri_input = pri_input;
@@ -11733,7 +11737,7 @@ static int amdolby_vision_process_v2_stb
 			if (vinfo)
 				send_hdmi_pkt
 					(cur_src_format,
-					 m_dovi_setting.dst_format,
+					 g_dst_format,
 					 vinfo, vf);
 			update_amdv_status
 				(cur_src_format);
@@ -11763,7 +11767,7 @@ static int amdolby_vision_process_v2_stb
 					cur_src_format = m_dovi_setting.input[pri_input].src_format;
 				send_hdmi_pkt
 					(cur_src_format,
-					 m_dovi_setting.dst_format,
+					 g_dst_format,
 					 vinfo, vf);
 			}
 		}

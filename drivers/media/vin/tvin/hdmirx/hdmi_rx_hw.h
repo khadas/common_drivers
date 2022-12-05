@@ -303,6 +303,7 @@
 #define TOP_EDID_PORT2_ADDR_E			0x13ff
 #define TOP_EDID_PORT3_ADDR_S			0x1400
 #define TOP_EDID_PORT3_ADDR_E			0x15ff
+#define TOP_EDID_PORT4_ADDR_S			0x1600
 
 /* TL1/TM2/T5/T5D */
 #define TOP_DWC_BASE_OFFSET				0x8000
@@ -1077,15 +1078,19 @@
 /* tl1 HIU related register */
 #define HHI_HDMIRX_AXI_CLK_CNTL			(0xb8 << 2)
 
+/* tl1/TM2 HIU apll register */
+
 /* tl1/TM2 HIU PHY register */
 #define HHI_HDMIRX_PHY_MISC_CNTL0		(0xd7 << 2)
 #define MISCI_COMMON_RST				_BIT(10)
 #define HHI_HDMIRX_PHY_MISC_CNTL1		(0xd8 << 2)
 #define MISCI_MANUAL_MODE				_BIT(22)
 #define HHI_HDMIRX_PHY_MISC_CNTL2		(0xe0 << 2)
+
 	/*[4:5] in trim,[6:7] im trim*/
 #define HHI_HDMIRX_PHY_DCHD_CNTL0		(0xe5 << 2)
 #define HHI_HDMIRX_PHY_DCHD_CNTL1		(0xe6 << 2)
+
 #define HHI_HDMIRX_PHY_ARC_CNTL			(0xe8 << 2)
 #define HHI_HDMIRX_EARCTX_CNTL0			(0x69 << 2)
 #define HHI_HDMIRX_EARCTX_CNTL1			(0x6a << 2)
@@ -1093,9 +1098,7 @@
 #define HHI_HDMIRX_PHY_DCHD_STAT		(0xef << 2)
 
 /* T5 HIU apll register */
-
-/* T7 HIU PHY register */
-
+/* T5 HIU PHY register */
 #define TMDS_CLK_MIN			(15000UL)
 #define TMDS_CLK_MAX			(340000UL)
 
@@ -3259,6 +3262,10 @@ void rx_dig_clk_en(bool en);
 void dump_reg_phy_tl1_tm2(void);
 void aml_phy_get_trim_val_tl1_tm2(void);
 
+/* tm2 extern */
+
+/* t5 extern */
+
 void hdmirx_wr_bits_amlphy(unsigned int addr,
 			   unsigned int mask,
 			   unsigned int value);
@@ -3268,11 +3275,11 @@ unsigned int hdmirx_rd_amlphy(unsigned int addr);
 
 void hdmirx_irq_hdcp_enable(bool enable);
 u8 rx_get_avmute_sts(void);
+/* T7 */
 u8 hdmirx_rd_cor(u32 addr);
 void hdmirx_wr_cor(u32 addr, u8 data);
 u8 hdmirx_rd_bits_cor(u32 addr, u32 mask);
 void hdmirx_wr_bits_cor(u32 addr, u32 mask, u8 value);
-
 void rx_hdcp_22_sent_reauth(void);
 void rx_hdcp_14_sent_reauth(void);
 u32 rx_get_ecc_err(void);

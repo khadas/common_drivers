@@ -859,17 +859,11 @@ void aml_phy_get_trim_val_t5(void)
 {
 	u32 data32;
 
-	dts_debug_flag = (phy_term_lel >> 4) & 0x1;
-	if (dts_debug_flag == 0) {
-		data32 = hdmirx_rd_amlphy(T5_HHI_RX_PHY_MISC_CNTL1);
-		rterm_trim_val_t5 = (data32 >> 12) & 0xf;
-		rterm_trim_flag_t5 = data32 & 0x1;
-	} else {
-		rlevel = phy_term_lel & 0xf;
-		if (rlevel > 15)
-			rlevel = 15;
-		rterm_trim_flag_t5 = dts_debug_flag;
-	}
+	data32 = hdmirx_rd_amlphy(T5_HHI_RX_PHY_MISC_CNTL1);
+	/* bit [12: 15]*/
+	rterm_trim_val_t5 = (data32 >> 12) & 0xf;
+	/* bit'0*/
+	rterm_trim_flag_t5 = data32 & 0x1;
 	if (rterm_trim_flag_t5)
 		rx_pr("rterm trim=0x%x\n", rterm_trim_val_t5);
 }
@@ -1326,7 +1320,7 @@ void aml_phy_short_bist_t5(void)
 		usleep_range(5, 10);
 		data32 |= 1 << 11;
 		hdmirx_wr_amlphy(T5_HHI_RX_PHY_MISC_CNTL3, data32);
-		rx_pr("\nport=%x\n", rd_reg_hhi(T5_HHI_RX_PHY_MISC_CNTL3));
+		rx_pr("\n port=%x\n", rd_reg_hhi(T5_HHI_RX_PHY_MISC_CNTL3));
 		usleep_range(5, 10);
 		hdmirx_wr_amlphy(T5_HHI_RX_PHY_DCHA_CNTL0, 0x10210fff);
 		usleep_range(5, 10);
@@ -1611,7 +1605,7 @@ int aml_phy_get_iq_skew_val_t5(u32 val_0, u32 val_1)
 /* IQ skew monitor */
 void aml_phy_iq_skew_monitor_t5(void)
 {
-	int data32;
+		int data32;
 	int bist_mode = 3;
 	u32 cdr0_code_0, cdr0_code_1, cdr0_code_2;/*clk0*/
 	u32 cdr1_code_0, cdr1_code_1, cdr1_code_2;/*clk90*/

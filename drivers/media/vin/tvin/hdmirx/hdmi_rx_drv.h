@@ -98,9 +98,15 @@ enum phy_ver_e {
 	PHY_VER_T3X,
 };
 
+enum port_num_e {
+	PORT_NUM_3 = 3,
+	PORT_NUM_4,
+};
+
 struct meson_hdmirx_data {
 	enum chip_id_e chip_id;
 	enum phy_ver_e phy_ver;
+	enum port_num_e port_num;
 	struct ctrl *phyctrl;
 };
 
@@ -703,6 +709,7 @@ struct rx_s {
 	u32 ecc_err;
 	u32 ecc_err_frames_cnt;
 	bool ddc_filter_en;
+	unsigned char port_num;
 #ifdef CONFIG_AMLOGIC_HDMITX
 	struct notifier_block tx_notify;
 #endif

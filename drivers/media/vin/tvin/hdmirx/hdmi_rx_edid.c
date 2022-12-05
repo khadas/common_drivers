@@ -553,10 +553,11 @@ static struct cta_blk_pair cta_blk[] = {
 	{},
 };
 
-static u_int edid_addr[PORT_NUM] = {
+static u_int edid_addr[E_PORT_NUM] = {
 	TOP_EDID_ADDR_S,
 	TOP_EDID_PORT2_ADDR_S,
 	TOP_EDID_PORT3_ADDR_S,
+	TOP_EDID_PORT4_ADDR_S
 };
 
 char *rx_get_cta_blk_name(u16 tag)
@@ -1528,6 +1529,18 @@ void rx_edid_fill_to_register(u_char *pedid1,
 			hdmirx_wr_top(TOP_EDID_PORT3_ADDR_S + 0x100 + i,
 				      pedid[i]);
 		}
+		/* fill for port D */
+		edid_slt = get_edid_selection(E_PORT3);
+		if (edid_slt == EDID_V14)
+			pedid = pedid1;
+		else
+			pedid = pedid2;
+		for (i = 0; i <= 255; i++) {
+			hdmirx_wr_top(TOP_EDID_PORT4_ADDR_S + i,
+						pedid[i]);
+			hdmirx_wr_top(TOP_EDID_PORT4_ADDR_S + 0x100 + i,
+						pedid[i]);
+		}
 
 		/* calculate checksum for each port*/
 		for (i = 0; i < E_PORT_NUM; i++) {
@@ -1968,6 +1981,8 @@ bool hdmi_rx_top_edid_update(void)
 	/* HDMI3 1.4/2.0 EDID */
 	u_char *pedid_data5 = NULL;
 	u_char *pedid_data6 = NULL;
+	u_char *pedid_data7 = NULL;
+	u_char *pedid_data8 = NULL;
 	u_char *pedid = NULL;
 	bool sts;
 	u_int phy_addr_offset[E_PORT_NUM] = {0, 0, 0, 0};
@@ -2004,6 +2019,8 @@ bool hdmi_rx_top_edid_update(void)
 		pedid_data4 = pedid_data3 + EDID_SIZE;
 		pedid_data5 = pedid_data4 + EDID_SIZE;
 		pedid_data6 = pedid_data5 + EDID_SIZE;
+		pedid_data7 = pedid_data5;
+		pedid_data8 = pedid_data6;
 		if (log_level & EDID_LOG)
 			rx_pr("independent edid for each port\n");
 	} else if (size == 2 * EDID_SIZE) {
@@ -2093,7 +2110,7 @@ bool hdmi_rx_top_edid_update(void)
 			rx_pr("err: independent edid only for >= TM2\n");
 			return false;
 		}
-		for (i = 0; i < PORT_NUM; i++) {
+		for (i = 0; i < rx.port_num; i++) {
 			rx.fs_mode.edid_ver[i] = get_edid_selection(i);
 			if (up_phy_addr)
 				ui_port_num = (port_map >> (i * 4)) & 0xF;
@@ -2122,6 +2139,14 @@ bool hdmi_rx_top_edid_update(void)
 				#ifdef CONFIG_AMLOGIC_HDMITX
 					if (edid_from_tx & 1)
 						pedid = pedid_data6;
+				#endif
+				break;
+			case 4:
+				pedid = (rx.fs_mode.edid_ver[i] == EDID_V20) ?
+					pedid_data8 : pedid_data7;
+				#ifdef CONFIG_AMLOGIC_HDMITX
+					if (edid_from_tx & 1)
+						pedid = pedid_data8;
 				#endif
 				break;
 			default:

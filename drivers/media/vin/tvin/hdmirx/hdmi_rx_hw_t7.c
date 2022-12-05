@@ -903,17 +903,11 @@ void aml_phy_get_trim_val_t7(void)
 {
 	u32 data32;
 
-	dts_debug_flag = (phy_term_lel >> 4) & 0x1;
-	if (dts_debug_flag == 0) {
-		data32 = hdmirx_rd_amlphy(T7_HHI_RX_PHY_MISC_CNTL1);
-		rterm_trim_val_t7 = (data32 >> 12) & 0xf;
-		rterm_trim_flag_t7 = data32 & 0x1;
-	} else {
-		rlevel = phy_term_lel & 0xf;
-		if (rlevel > 15)
-			rlevel = 15;
-		rterm_trim_flag_t7 = dts_debug_flag;
-	}
+	data32 = hdmirx_rd_amlphy(T7_HHI_RX_PHY_MISC_CNTL1);
+	/* bit [12: 15]*/
+	rterm_trim_val_t7 = (data32 >> 12) & 0xf;
+	/* bit'0*/
+	rterm_trim_flag_t7 = data32 & 0x1;
 	if (rterm_trim_flag_t7)
 		rx_pr("rterm trim=0x%x\n", rterm_trim_val_t7);
 }

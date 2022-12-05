@@ -151,7 +151,7 @@ void aml_pll_bw_cfg_t3x(void)
 	if (rx.aml_phy.osc_mode && idx == PHY_BW_5) {
 		/* sel osc as pll clock */
 		hdmirx_wr_bits_amlphy(T3X_HDMIRX20PHY_DCHA_MISC2, T3X_PLL_CLK_SEL, 1);
-		/* 9028: select tmds_clk from tclk or tmds_ch_clk */
+		/* t3x: select tmds_clk from tclk or tmds_ch_clk */
 		/* cdr = tmds_ch_ck,  vco =tclk */
 		hdmirx_wr_bits_amlphy(T3X_HDMIRX20PHY_DCHA_MISC1, T3X_VCO_TMDS_EN, 0);
 	}
@@ -218,7 +218,7 @@ void aml_pll_bw_cfg_t3x(void)
 		}
 	} while (!is_pll_lock_t3x());
 	rx_pr("pll done\n");
-	/* t9028 debug */
+	/* t3x debug */
 	/* manual VGA mode for debug,hyper gain=1 */
 	if (rx.aml_phy.vga_gain <= 0xfff) {
 		hdmirx_wr_bits_amlphy(T3X_HDMIRX20PHY_DCHA_AFE, MSK(12, 0),

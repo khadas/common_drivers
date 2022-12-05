@@ -13,6 +13,8 @@
 	#define T5M_LEQ_HYPER_GAIN_CH0		_BIT(3)
 	#define T5M_LEQ_HYPER_GAIN_CH1		_BIT(7)
 	#define T5M_LEQ_HYPER_GAIN_CH2		_BIT(11)
+	#define T5M_LEQ_BUF_GAIN            MSK(3, 16)
+	#define T5M_LEQ_POLE                MSK(3, 12)
 #define T5M_HDMIRX20PHY_DCHA_DFE		(0x003 << 2)
 	#define T5M_SLICER_OFSTCAL_START	_BIT(13)
 #define T5M_HDMIRX20PHY_DCHD_CDR		(0x004 << 2)
@@ -58,8 +60,8 @@
 #define T5M_HDMIRX_PHY_PROD_TEST0       (0x080 << 2)
 #define T5M_HDMIRX_PHY_PROD_TEST1       (0x081 << 2)
 
-#define T5M_RG_RX20PLL_0		0x100
-#define T5M_RG_RX20PLL_1		0x104
+#define T5M_RG_RX20PLL_0		0x000
+#define T5M_RG_RX20PLL_1		0x004
 
 /*--------------------------function declare------------------*/
 /* T5m */

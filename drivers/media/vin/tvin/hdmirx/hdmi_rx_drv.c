@@ -190,72 +190,86 @@ static struct notifier_block aml_hdcp22_pm_notifier = {
 static struct meson_hdmirx_data rx_t3x_data = {
 	.chip_id = CHIP_ID_T3X,
 	.phy_ver = PHY_VER_T3X,
+	.port_num = PORT_NUM_4,
 };
 
 static struct meson_hdmirx_data rx_t5m_data = {
 	.chip_id = CHIP_ID_T5M,
 	.phy_ver = PHY_VER_T5M,
+	.port_num = PORT_NUM_4,
 };
 
 static struct meson_hdmirx_data rx_t5w_data = {
 	.chip_id = CHIP_ID_T5W,
 	.phy_ver = PHY_VER_T5W,
+	.port_num = PORT_NUM_3,
 };
 
 static struct meson_hdmirx_data rx_t3_data = {
 	.chip_id = CHIP_ID_T3,
 	.phy_ver = PHY_VER_T3,
+	.port_num = PORT_NUM_3,
 };
 
 static struct meson_hdmirx_data rx_t7_data = {
 	.chip_id = CHIP_ID_T7,
 	.phy_ver = PHY_VER_T7,
+	.port_num = PORT_NUM_3,
 };
 
 static struct meson_hdmirx_data rx_t5d_data = {
 	.chip_id = CHIP_ID_T5D,
 	.phy_ver = PHY_VER_T5,
+	.port_num = PORT_NUM_3,
 };
 
 static struct meson_hdmirx_data rx_t5_data = {
 	.chip_id = CHIP_ID_T5,
 	.phy_ver = PHY_VER_T5,
+	.port_num = PORT_NUM_3,
 };
 
 static struct meson_hdmirx_data rx_tm2_b_data = {
 	.chip_id = CHIP_ID_TM2,
 	.phy_ver = PHY_VER_TM2,
+	.port_num = PORT_NUM_3,
 };
 
 static struct meson_hdmirx_data rx_tm2_data = {
 	.chip_id = CHIP_ID_TM2,
 	.phy_ver = PHY_VER_TL1,
+	.port_num = PORT_NUM_3,
 };
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static struct meson_hdmirx_data rx_tl1_data = {
 	.chip_id = CHIP_ID_TL1,
 	.phy_ver = PHY_VER_TL1,
+	.port_num = PORT_NUM_3,
 };
 
 static struct meson_hdmirx_data rx_txhd_data = {
 	.chip_id = CHIP_ID_TXHD,
 	.phy_ver = PHY_VER_ORG,
+	.port_num = PORT_NUM_4,
 };
 
 static struct meson_hdmirx_data rx_txlx_data = {
 	.chip_id = CHIP_ID_TXLX,
 	.phy_ver = PHY_VER_ORG,
+	.port_num = PORT_NUM_4,
 };
 
 static struct meson_hdmirx_data rx_txl_data = {
 	.chip_id = CHIP_ID_TXL,
 	.phy_ver = PHY_VER_ORG,
+	.port_num = PORT_NUM_4,
 };
 
 static struct meson_hdmirx_data rx_gxtvbb_data = {
 	.chip_id = CHIP_ID_GXTVBB,
 	.phy_ver = PHY_VER_ORG,
+	.port_num = PORT_NUM_4,
 };
 #endif
 
@@ -1195,10 +1209,10 @@ void rx_set_sig_info(void)
 
 void rx_update_sig_info(void)
 {
-	rx_get_vsi_info();
-	rx_get_vtem_info();
-	rx_get_aif_info();
-	rx_set_sig_info();
+	//rx_get_vsi_info();
+	//rx_get_vtem_info();
+	//rx_get_aif_info();
+	//rx_set_sig_info();
 }
 
 /*
@@ -2796,6 +2810,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 	if (hdevp->data) {
 		rx.chip_id = hdevp->data->chip_id;
 		rx.phy_ver = hdevp->data->phy_ver;
+		rx.port_num = hdevp->data->port_num;
 		rx_pr("chip id:%d\n", rx.chip_id);
 		rx_pr("phy ver:%d\n", rx.hdmirxdev->data->phy_ver);
 	} else {

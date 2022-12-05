@@ -39,6 +39,8 @@
 #include "hdmi_rx_hw_t7.h"
 #include "hdmi_rx_hw_tl1.h"
 #include "hdmi_rx_hw_tm2.h"
+#include "hdmi_rx_hw_t5m.h"
+#include "hdmi_rx_hw_t3x.h"
 
 static int pll_unlock_cnt;
 static int pll_unlock_max;
@@ -3637,6 +3639,10 @@ static void dump_phy_status(void)
 		dump_aml_phy_sts_t5();
 	else if (rx.phy_ver >= PHY_VER_T7)
 		dump_aml_phy_sts_t7();
+	else if (rx.phy_ver == PHY_VER_T5M)
+		dump_aml_phy_sts_t5m();
+	else if (rx.phy_ver == PHY_VER_T3X)
+		dump_aml_phy_sts_t3x();
 	else
 		dump_aml_phy_sts_tl1();
 }

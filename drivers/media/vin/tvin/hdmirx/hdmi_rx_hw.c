@@ -68,7 +68,7 @@ int hdcp_enc_mode;
 int top_intr_maskn_value;
 u32 afifo_overflow_cnt;
 u32 afifo_underflow_cnt;
-int rx_afifo_dbg_en;
+int rx_afifo_dbg_en = 1;
 bool hdcp_enable = 1;
 int acr_mode;
 int auto_aclk_mute = 2;
@@ -4468,6 +4468,7 @@ void rx_clkmsr_handler(struct work_struct *work)
 		break;
 	case CHIP_ID_T7:
 	case CHIP_ID_T3:
+	case CHIP_ID_T5M:
 		/* to decrease cpu loading of clk_msr work queue */
 		/* 64: clk_msr resample time 32us,previous setting is 640us */
 		rx.clk.cable_clk = meson_clk_measure_with_precision(44, 32);
@@ -4785,8 +4786,12 @@ void dump_reg_phy(void)
 {
 	if (rx.phy_ver == PHY_VER_T5)
 		dump_reg_phy_t5();
-	else if (rx.phy_ver >= PHY_VER_T7)
+	else if (rx.phy_ver >= PHY_VER_T7 && rx.phy_ver <= PHY_VER_T5W)
 		dump_reg_phy_t7();
+	else if (rx.phy_ver == PHY_VER_T5M)
+		dump_reg_phy_t5m();
+	else if (rx.phy_ver == PHY_VER_T3X)
+		dump_reg_phy_t3x();
 	else
 		dump_reg_phy_tl1_tm2();
 }
@@ -5034,6 +5039,10 @@ void aml_phy_switch_port(void)
 		aml_phy_switch_port_t5();
 	else if (rx.chip_id >= CHIP_ID_T7)
 		aml_phy_switch_port_t7();
+	else if (rx.chip_id == CHIP_ID_T5M)
+		aml_phy_switch_port_t5m();
+	else if (rx.chip_id == CHIP_ID_T3X)
+		aml_phy_switch_port_t3x();
 }
 
 bool is_ft_trim_done(void)
@@ -5065,6 +5074,10 @@ void aml_phy_get_trim_val(void)
 		aml_phy_get_trim_val_t5();
 	else if (rx.chip_id >= CHIP_ID_T7)
 		aml_phy_get_trim_val_t7();
+	else if (rx.chip_id == CHIP_ID_T5M)
+		aml_phy_get_trim_val_t5m();
+	else if (rx.chip_id == CHIP_ID_T3X)
+		aml_phy_get_trim_val_t3x();
 }
 
 void rx_get_best_eq_setting(void)

@@ -354,6 +354,8 @@ static inline int amvideo_notifier_call_chain(unsigned long val, void *v)
 #define VIDEO_TESTPATTERN_OFF 1
 void set_video_mute(bool on);
 int get_video_mute(void);
+void set_output_mute(bool on);
+int get_output_mute(void);
 void set_vdx_test_pattern(u32 index, bool on, u32 color);
 void get_vdx_test_pattern(u32 index, bool *on, u32 *color);
 void set_postblend_test_pattern(bool on, u32 color);

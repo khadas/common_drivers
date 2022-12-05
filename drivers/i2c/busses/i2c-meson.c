@@ -87,7 +87,7 @@ enum {
  * @frequency:	Operating frequency of I2C bus clock
  * @tokens:	Sequence of tokens to be written to the device
  * @num_tokens:	Number of tokens
- * @data:	Pointer to the controlller's platform data
+ * @data:	Pointer to the controller's platform data
  */
 struct meson_i2c {
 	struct i2c_adapter	adap;

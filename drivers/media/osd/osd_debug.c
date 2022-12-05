@@ -384,16 +384,16 @@ static void osd_debug_dump_register_all(void)
 			reg = osd_reg->afbc_buffer_hight_s;
 			osd_log_info("reg[0x%x]: 0x%08x\n",
 				     reg, osd_reg_read(reg));
-			reg = osd_reg->afbc_boundings_box_x_start_s;
+			reg = osd_reg->afbc_bounding_box_x_start_s;
 			osd_log_info("reg[0x%x]: 0x%08x\n",
 				     reg, osd_reg_read(reg));
-			reg = osd_reg->afbc_boundings_box_x_end_s;
+			reg = osd_reg->afbc_bounding_box_x_end_s;
 			osd_log_info("reg[0x%x]: 0x%08x\n",
 				     reg, osd_reg_read(reg));
-			reg = osd_reg->afbc_boundings_box_y_start_s;
+			reg = osd_reg->afbc_bounding_box_y_start_s;
 			osd_log_info("reg[0x%x]: 0x%08x\n",
 				     reg, osd_reg_read(reg));
-			reg = osd_reg->afbc_boundings_box_y_end_s;
+			reg = osd_reg->afbc_bounding_box_y_end_s;
 			osd_log_info("reg[0x%x]: 0x%08x\n",
 				     reg, osd_reg_read(reg));
 			reg = osd_reg->afbc_output_buf_addr_low_s;

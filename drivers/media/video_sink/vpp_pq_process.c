@@ -161,7 +161,7 @@ enum iir_policy_e aipq_tiir_policy_proc(int (*prob)[2], int sc_chg,
 		}
 		ret_plcy = SC_INVALID;
 		break;
-	case AIPQ_DET_STATBLE:
+	case AIPQ_DET_STABLE:
 		if (policy == SC_INVALID) {
 			unstb_cnt++;
 			*kp_flag = 1;
@@ -284,7 +284,7 @@ int aipq_scs_bld_proc(int (*cfg)[SCENES_VALUE], int (*prob)[2],
 		break;
 	case SC_INVALID:
 		if (pq_debug[2] > 0x10)
-			pr_info("detected unstable: skip aipq seeting\n");
+			pr_info("detected unstable: skip aipq seting\n");
 		break;
 	default:
 		break;

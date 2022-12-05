@@ -838,7 +838,7 @@ static int osd_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 	u32 gbl_alpha;
 	u32 osd_order;
 	u32 blank;
-	u32 capbility;
+	u32 capability;
 	s32 osd_axis[4] = {0};
 	s32 osd_dst_axis[4] = {0};
 	u32 hwc_enable;
@@ -1040,9 +1040,9 @@ static int osd_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 			arg = REVERSE_FALSE;
 		osd_set_reverse_hw(info->node, arg, 1);
 		break;
-	case FBIOGET_OSD_CAPBILITY:
-		capbility = osd_get_capbility(info->node);
-		ret = copy_to_user(argp, &capbility, sizeof(u32));
+	case FBIOGET_OSD_CAPABILITY:
+		capability = osd_get_capability(info->node);
+		ret = copy_to_user(argp, &capability, sizeof(u32));
 		break;
 	case FBIOGET_OSD_DMABUF:
 		dmaexp = kzalloc(sizeof(*dmaexp),

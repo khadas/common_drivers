@@ -88,7 +88,7 @@ enum color_index_e {
 #define FBIOPUT_OSD_HWC_ENABLE           0x451a
 #define FBIOPUT_OSD_DO_HWC               0x451b
 #define FBIOPUT_OSD_BLANK                0x451c
-#define FBIOGET_OSD_CAPBILITY            0x451e
+#define FBIOGET_OSD_CAPABILITY           0x451e
 
 #define FB_IOC_MAGIC   'O'
 #define FBIOPUT_OSD_CURSOR	\
@@ -632,10 +632,10 @@ struct hw_osd_reg_s {
 	u32 afbc_format_specifier_s;/* VPU_MAFBC_FORMAT_SPECIFIER_S0 */
 	u32 afbc_buffer_width_s;/* VPU_MAFBC_BUFFER_WIDTH_S0 */
 	u32 afbc_buffer_hight_s;/* VPU_MAFBC_BUFFER_HEIGHT_S0 */
-	u32 afbc_boundings_box_x_start_s;/* VPU_MAFBC_BOUNDING_BOX_X_START_S0 */
-	u32 afbc_boundings_box_x_end_s;/* VPU_MAFBC_BOUNDING_BOX_X_END_S0 */
-	u32 afbc_boundings_box_y_start_s;/* VPU_MAFBC_BOUNDING_BOX_Y_START_S0 */
-	u32 afbc_boundings_box_y_end_s;/* VPU_MAFBC_BOUNDING_BOX_Y_END_S0 */
+	u32 afbc_bounding_box_x_start_s;/* VPU_MAFBC_BOUNDING_BOX_X_START_S0 */
+	u32 afbc_bounding_box_x_end_s;/* VPU_MAFBC_BOUNDING_BOX_X_END_S0 */
+	u32 afbc_bounding_box_y_start_s;/* VPU_MAFBC_BOUNDING_BOX_Y_START_S0 */
+	u32 afbc_bounding_box_y_end_s;/* VPU_MAFBC_BOUNDING_BOX_Y_END_S0 */
 	u32 afbc_output_buf_addr_low_s;/* VPU_MAFBC_OUTPUT_BUF_ADDR_LOW_S0 */
 	u32 afbc_output_buf_addr_high_s;/* VPU_MAFBC_OUTPUT_BUF_ADDR_HIGH_S0 */
 	u32 afbc_output_buf_stride_s;/* VPU_MAFBC_OUTPUT_BUF_STRIDE_S0 */

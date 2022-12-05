@@ -483,7 +483,7 @@ static int update_table_item(u32 vpp_index, u32 addr, u32 val, u8 irq_mode)
 	static int pace_logging[VPP_NUM];
 
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
-	if (item_count[vpp_index] > 500 || rdma_reset_tigger_flag) {
+	if (item_count[vpp_index] > 500 || rdma_reset_trigger_flag) {
 //#else
 //	if (item_count[vpp_index] > 500) {
 #endif
@@ -1755,7 +1755,7 @@ void osd_rdma_interrupt_done_clear(u32 vpp_index)
 	osd_rdma_done[vpp_index] = false;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
-	if (rdma_reset_tigger_flag) {
+	if (rdma_reset_trigger_flag) {
 		u32 rdma_status;
 
 		rdma_status =
@@ -1764,7 +1764,7 @@ void osd_rdma_interrupt_done_clear(u32 vpp_index)
 			rdma_status);
 		osd_rdma_enable(vpp_index, 0);
 		osd_rdma_enable(vpp_index, 2);
-		rdma_reset_tigger_flag = 0;
+		rdma_reset_trigger_flag = 0;
 	}
 #endif
 }
@@ -2122,7 +2122,7 @@ static int osd_rdma_init(void)
 #ifdef OSD_RDMA_ISR
 	if (rdma_mgr_irq_request) {
 		second_rdma_irq = 1;
-		pr_info("osd rdma request irq as second interrput function!\n");
+		pr_info("osd rdma request irq as second interrupt function!\n");
 	}
 	if (request_irq(INT_RDMA, &osd_rdma_isr,
 			IRQF_SHARED, "osd_rdma", (void *)"osd_rdma")) {

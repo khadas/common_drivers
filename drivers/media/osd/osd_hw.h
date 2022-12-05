@@ -199,7 +199,7 @@ void osd_set_afbc_format(u32 index, u32 format, u32 inter_format);
 void osd_get_hwc_enable(u32 index, u32 *hwc_enable);
 void osd_set_hwc_enable(u32 index, u32 hwc_enable);
 void osd_do_hwc(u32 index);
-int osd_get_capbility(u32 index);
+int osd_get_capability(u32 index);
 void osd_backup_screen_info(u32 index,
 			    unsigned long screen_base,
 			    unsigned long screen_size);

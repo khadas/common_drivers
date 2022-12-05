@@ -262,7 +262,7 @@ const u32 vpp_filter_coefs_3point_triangle_sharp[] = {
 	0x0d660d00
 };
 
-const u32 vpp_filter_coefs_2point_binilear[] = {
+const u32 vpp_filter_coefs_2point_bilinear[] = {
 	2,
 	33,
 	0x80000000, 0x7e020000, 0x7c040000, 0x7a060000,
@@ -280,7 +280,7 @@ static const u32 *filter_table[] = {
 	vpp_filter_coefs_3point_triangle,
 	vpp_filter_coefs_4point_triangle,
 	vpp_filter_coefs_bilinear,
-	vpp_filter_coefs_2point_binilear,
+	vpp_filter_coefs_2point_bilinear,
 	vpp_filter_coefs_bicubic_sharp,
 	vpp_filter_coefs_3point_triangle_sharp,
 	vpp_filter_coefs_3point_bspline,
@@ -527,7 +527,7 @@ static uint horz_coeff_settings[MAX_COEFF_LEVEL] = {
 	/* this setting is most smooth */
 };
 
-static uint hert_coeff_settings_sc2[MAX_COEFF_LEVEL_SC2] = {
+static uint horz_coeff_settings_sc2[MAX_COEFF_LEVEL_SC2] = {
 	/* in:out */
 	COEF_BICUBIC_8TAP,
 	COEF_LANCZOS_8TAP_A2,
@@ -568,7 +568,7 @@ static uint coeff(uint *settings, uint ratio, uint phase,
 #endif
 	} else {
 		/*
-		 *gxtvbb use dejaggy in SR0 to reduce intelace combing
+		 *gxtvbb use dejaggy in SR0 to reduce interlace combing
 		 *other chip no dejaggy, need switch to more blur filter
 		 */
 		if (interlace && coeff_select < 3 && vpp_filter_fix)
@@ -1563,7 +1563,7 @@ RESTART:
 		ext_sar = false;
 	}
 
-	/* speical mode did not use ext sar mode */
+	/* special mode did not use ext sar mode */
 	if (wide_mode == VIDEO_WIDEOPTION_NONLINEAR ||
 	    wide_mode == VIDEO_WIDEOPTION_NORMAL_NOSCALEUP ||
 	    wide_mode == VIDEO_WIDEOPTION_NONLINEAR_T)
@@ -1905,7 +1905,7 @@ RESTART:
 		}
 	}
 
-	/* set filter co-efficients */
+	/* set filter co-efficient */
 	tmp_ratio_y = ratio_y;
 	ratio_y <<= height_shift;
 	ratio_y = ratio_y / (next_frame_par->vscale_skip_count + 1);
@@ -2035,7 +2035,7 @@ RESTART:
 			w_in, end - start + 1,
 			next_frame_par);
 	}
-	/* speical mode did not use aisr */
+	/* special mode did not use aisr */
 	/* 3d not use aisr */
 	if (wide_mode == VIDEO_WIDEOPTION_NONLINEAR ||
 	    wide_mode == VIDEO_WIDEOPTION_NORMAL_NOSCALEUP ||
@@ -2219,7 +2219,7 @@ RESTART:
 	/* avoid hscaler fitler adjustion affect on picture shift*/
 	if (hscaler_8tap_enable[input->layer_id])
 		filter->vpp_horz_filter =
-			coeff_sc2(hert_coeff_settings_sc2,
+			coeff_sc2(horz_coeff_settings_sc2,
 				  filter->vpp_hf_start_phase_step);
 	else
 		filter->vpp_horz_filter =
@@ -2303,7 +2303,7 @@ RESTART:
 
 	/* vscaler enable
 	 * vout 4k 50hz
-	 * video src heiht >= 2160*60%
+	 * video src height >= 2160*60%
 	 * 4tap pre-hscaler bandwidth issue, need used old pre hscaler
 	 */
 	}
@@ -2446,13 +2446,13 @@ RESTART:
 
 static s64 s3_to_s64(s64 data)
 {
-	s64 conver_data = -1;
+	s64 convert_data = -1;
 
 	if (data & 0x4)
-		conver_data = (conver_data & (~0x3)) | (data & 0x3);
+		convert_data = (convert_data & (~0x3)) | (data & 0x3);
 	else
-		conver_data = data;
-	return conver_data;
+		convert_data = data;
+	return convert_data;
 }
 
 static void vd_hphase_ctrl_adjust(struct vpp_frame_par_s *frame_par)
@@ -2738,7 +2738,7 @@ void aisr_set_filters(struct disp_info_s *input,
 	aisr_frame_par->vscale_skip_count = 0;
 	filter = &aisr_frame_par->vpp_filter;
 
-	/* speical mode did not use ext sar mode */
+	/* special mode did not use ext sar mode */
 	/* 3d not use aisr */
 	if (wide_mode == VIDEO_WIDEOPTION_NONLINEAR ||
 	    wide_mode == VIDEO_WIDEOPTION_NORMAL_NOSCALEUP ||
@@ -2824,7 +2824,7 @@ RESTART:
 	aisr_frame_par->VPP_vsc_startp = start;
 	aisr_frame_par->VPP_vsc_endp = end;
 
-	/* set filter co-efficients */
+	/* set filter co-efficient */
 	filter->vpp_vsc_start_phase_step = ratio_y << 6;
 
 	/* horizontal */
@@ -2858,7 +2858,7 @@ RESTART:
 		      vf->combing_cur_lev);
 		if (hscaler_8tap_enable[layer_id])
 			filter->vpp_horz_filter =
-				coeff_sc2(hert_coeff_settings_sc2,
+				coeff_sc2(horz_coeff_settings_sc2,
 					  filter->vpp_hf_start_phase_step);
 		else
 			filter->vpp_horz_filter =
@@ -3227,7 +3227,7 @@ static void vpp_set_super_scaler
 		(1 << PPS_FRAC_BITS) /
 		next_frame_par->vpp_filter.vpp_vsc_start_phase_step;
 
-	/* just calcuate the enable sclaer module */
+	/* just calculate the enable sclaer module */
 	/*
 	 *note:if first check h may cause v can't do scaling;
 	 * for example: 1920x1080(input),3840x2160(output);
@@ -4273,7 +4273,7 @@ RESTART:
 			(end >> 1) : end;
 	}
 
-	/* set filter co-efficients */
+	/* set filter co-efficient */
 	ratio_y <<= height_shift;
 	ratio_tmp = ratio_y / (next_frame_par->vscale_skip_count + 1);
 	ratio_y = ratio_tmp;

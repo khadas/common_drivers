@@ -62,25 +62,25 @@ canvas_lut_data_build(ulong addr, u32 width, u32 height,
 	 *high 32bits of canvas data which need to be configured
 	 *to canvas memory.
 	 *64bits CANVAS look up table
-	 *bit 61:58   Endian control.
-	 *bit 61:  1 : switch 2 64bits data inside 128bits boundary.
+	 *bit 61 : 58   Endian control.
+	 *bit 61 :  1 : switch 2 64bits data inside 128bits boundary.
 	 *0 : no change.
-	 *bit 60:  1 : switch 2 32bits data inside 64bits data boundary.
+	 *bit 60 :  1 : switch 2 32bits data inside 64bits data boundary.
 	 *0 : no change.
-	 *bit 59:  1 : switch 2 16bits data inside 32bits data boundary.
+	 *bit 59 :  1 : switch 2 16bits data inside 32bits data boundary.
 	 *0 : no change.
-	 *bit 58:  1 : switch 2 8bits data  inside 16bits data bournday.
+	 *bit 58 :  1 : switch 2 8bits data  inside 16bits data boundary.
 	 *0 : no change.
-	 *bit 57:56.   Canvas block mode.  2 : 64x32, 1: 32x32;
+	 *bit 57 : 56.   Canvas block mode.  2 : 64x32, 1: 32x32;
 	 *0 : linear mode.
-	 *bit 55:      canvas Y direction wrap control.
+	 *bit 55 :      canvas Y direction wrap control.
 	 *1: wrap back in y.  0: not wrap back.
-	 *bit 54:      canvas X direction wrap control.
+	 *bit 54 :      canvas X direction wrap control.
 	 *1: wrap back in X.  0: not wrap back.
-	 *bit 53:41.   canvas Hight.
-	 *bit 40:29.   canvas Width, unit: 8bytes. must in 32bytes boundary.
+	 *bit 53 : 41.   canvas Hight.
+	 *bit 40 : 29.   canvas Width, unit: 8bytes. must in 32bytes boundary.
 	 *that means last 2 bits must be 0.
-	 *bit 28:0.    canvas start address.   unit. 8 bytes. must be in
+	 *bit 28 : 0.    canvas start address.   unit. 8 bytes. must be in
 	 *32bytes boundary. that means last 2bits must be 0.
 	 */
 

@@ -17,7 +17,7 @@
  */
 #define codec_info(args...) pr_info(args)
 #define codec_err(args...)  pr_err(args)
-#define codec_waring(args...)  pr_warn(args)
+#define codec_warning(args...)  pr_warn(args)
 /*
  *#ifdef pr_info
  *#undef pr_info
@@ -27,7 +27,7 @@
  *
  *#define pr_info(args...) codec_info(args)
  *#define pr_err(args...) codec_err(args)
- *#define pr_warn(args...) codec_waring(args)
+ *#define pr_warn(args...) codec_warning(args)
  *#define pr_warning pr_warn
  *
  *

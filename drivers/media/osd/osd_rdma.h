@@ -10,7 +10,7 @@
 #include "osd_io.h"
 #include "osd_reg.h"
 
-extern int rdma_reset_tigger_flag;
+extern int rdma_reset_trigger_flag;
 extern int rdma_mgr_irq_request;
 
 struct rdma_table_item {

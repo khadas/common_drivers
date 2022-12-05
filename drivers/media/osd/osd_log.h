@@ -35,28 +35,28 @@ extern unsigned int osd_log_module;
 #define osd_log_err(fmt, ...) \
 	pr_err(fmt, ##__VA_ARGS__)
 
-#define osd_log_dbg(moudle, fmt, ...) \
+#define osd_log_dbg(module, fmt, ...) \
 	do { \
 		if (osd_log_level >= OSD_LOG_LEVEL_DEBUG) { \
-			if ((moudle) & osd_log_module) { \
+			if ((module) & osd_log_module) { \
 				pr_info(fmt, ##__VA_ARGS__); \
 			} \
 		} \
 	} while (0)
 
-#define osd_log_dbg2(moudle, fmt, ...) \
+#define osd_log_dbg2(module, fmt, ...) \
 	do { \
 		if (osd_log_level >= OSD_LOG_LEVEL_DEBUG2) { \
-			if ((moudle) & osd_log_module) { \
+			if ((module) & osd_log_module) { \
 				pr_info(fmt, ##__VA_ARGS__); \
 			} \
 		} \
 	} while (0)
 
-#define osd_log_dbg3(moudle, fmt, ...) \
+#define osd_log_dbg3(module, fmt, ...) \
 	do { \
 		if (osd_log_level >= OSD_LOG_LEVEL_DEBUG3) { \
-			if ((moudle) & osd_log_module) { \
+			if ((module) & osd_log_module) { \
 				pr_info(fmt, ##__VA_ARGS__); \
 			} \
 		} \

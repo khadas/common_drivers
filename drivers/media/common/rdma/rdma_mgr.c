@@ -51,7 +51,7 @@
 /* #define SKIP_OSD_CHANNEL */
 int has_multi_vpp;
 int rdma_mgr_irq_request;
-int rdma_reset_tigger_flag;
+int rdma_reset_trigger_flag;
 
 struct reset_control *rdma_rst;
 static int debug_flag;
@@ -935,7 +935,7 @@ int rdma_watchdog_setting(int flag)
 		rdma_watchdog_count = 0;
 		rdma_force_reset = 0;
 		rdma_reset(1);
-		rdma_reset_tigger_flag = 1;
+		rdma_reset_trigger_flag = 1;
 		ret = 1;
 	}
 	return ret;

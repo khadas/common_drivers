@@ -64,7 +64,7 @@ enum iir_policy_e {
 enum aipq_state_mach {
 	AIPQ_IDLE = 0,
 	AIPQ_DET_UNSTABLE,
-	AIPQ_DET_STATBLE
+	AIPQ_DET_STABLE
 };
 
 #define DET_STABLE_CNT 30

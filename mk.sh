@@ -21,6 +21,7 @@ function show_help {
 	echo "  --gki_20"		for build gki 2.0 kernel:	gki_defconfig + amlogic_gki.fragment
 	echo "  --gki_10"		for build gki 1.0 kernel:	gki_defconfig + amlogic_gki.fragment + amlogic_gki.10
 	echo "  --gki_debug"        	for build gki debug kernel:	gki_defconfig + amlogic_gki.fragment + amlogic_gki.10 + amlogic_gki.debug
+	echo "  --upgrade		for android upgrade builtin module optimize vendor_boot size"
 }
 
 VA=
@@ -109,6 +110,10 @@ do
 		GKI_CONFIG=gki_debug
 		shift
 		;;
+	--upgrade)
+		UPGRADE_PROJECT=1
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -195,8 +200,8 @@ GKI_CONFIG=${GKI_CONFIG:-gki_debug}
 set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG
 echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG}
-export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG
-echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} GKI_CONFIG=${GKI_CONFIG}
+export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT
+echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT}
 
 export CROSS_COMPILE=
 

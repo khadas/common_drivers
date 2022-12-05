@@ -2,7 +2,6 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-#ifdef MODULE
 
 //#define DEBUG
 #include <linux/cdev.h>
@@ -55,7 +54,7 @@ static char dash2underscore(char c)
 	return c;
 }
 
-bool parameqn(const char *a, const char *b, size_t n)
+bool gki_tool_parameqn(const char *a, const char *b, size_t n)
 {
 	size_t i;
 
@@ -85,7 +84,7 @@ void __module_init_hook(struct module *m)
 				int n = strlen(cpv[j].param);
 				int (*fn)(char *str) = s->fn;
 
-				if (parameqn(cpv[j].param, s->str, n) &&
+				if (gki_tool_parameqn(cpv[j].param, s->str, n) &&
 				   (s->str[n] == '=' || !s->str[n])) {
 					fn(cpv[j].val);
 					continue;
@@ -174,4 +173,3 @@ void gki_module_init(void)
 	cmdline_parse_args(cmdline);
 }
 
-#endif

@@ -6,10 +6,6 @@
 #ifndef __GKI_TOOL_AMLOGIC_H
 #define __GKI_TOOL_AMLOGIC_H
 
-#ifdef MODULE
-
 void gki_module_init(void);
-
-#endif
 
 #endif //__GKI_TOOL_AMLOGIC_H

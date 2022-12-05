@@ -33,6 +33,7 @@ KCONFIG_DEFCONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEF
 FRAGMENT_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/amlogic_gki.fragment
 FRAGMENT_CONFIG_GKI10=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/amlogic_gki.10
 FRAGMENT_CONFIG_DEBUG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/amlogic_gki.debug
+FRAGMENT_CONFIG_UPGRADE=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/amlogic_upgrade.defconfig
 
 PRE_DEFCONFIG_CMDS="pre_defconfig_cmds"
 POST_DEFCONFIG_CMDS="post_defconfig_cmds"
@@ -134,6 +135,11 @@ if [[ `grep "CONFIG_AMLOGIC_BREAK_GKI=y" ${ROOT_DIR}/${FRAGMENT_CONFIG}` ]]; the
 		${ADDITIONAL_KMI_SYMBOL_LISTS}
 		${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.illegal
 	"
+fi
+
+if [[ -n ${UPGRADE_PROJECT} ]]; then
+	KMI_SYMBOL_LIST_STRICT_MODE=""
+	TRIM_NONLISTED_KMI=""
 fi
 
 # ABI_DEFINITION=${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.xml

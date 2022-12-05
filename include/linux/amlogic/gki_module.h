@@ -6,12 +6,6 @@
 #ifndef __GKI_MODULE_AMLOGIC_H
 #define __GKI_MODULE_AMLOGIC_H
 
-#ifdef MODULE
-
-#undef __setup
-#undef __setup_param
-#undef early_param
-
 #define GKI_MODULE_SETUP_MAGIC1 0x014589cd
 #define GKI_MODULE_SETUP_MAGIC2 0x2367abef
 
@@ -36,12 +30,6 @@ struct cmd_param_val {
 		   str, fn, early};                                     \
 	EXPORT_SYMBOL(__gki_setup_##fn)
 
-#define __setup(str, fn)						\
-		__setup_gki_module(str, fn, 0)
-
-#define early_param(str, fn)						\
-		__setup_gki_module(str, fn, 1)
-
 static inline unsigned long gki_symbol_value(const struct kernel_symbol *sym)
 {
 #ifdef CONFIG_HAVE_ARCH_PREL32_RELOCATIONS
@@ -52,6 +40,18 @@ static inline unsigned long gki_symbol_value(const struct kernel_symbol *sym)
 	return sym->value;
 #endif
 }
+
+#ifdef MODULE
+
+#undef __setup
+#undef __setup_param
+#undef early_param
+
+#define __setup(str, fn)						\
+		__setup_gki_module(str, fn, 0)
+
+#define early_param(str, fn)						\
+		__setup_gki_module(str, fn, 1)
 
 void __module_init_hook(struct module *m);
 

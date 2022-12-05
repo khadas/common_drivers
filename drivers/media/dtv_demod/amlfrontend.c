@@ -1902,7 +1902,7 @@ static int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 	union ATSC_DEMOD_REG_0X6A_BITS Val_0x6a;
 	union atsc_cntl_reg_0x20 val;
 	int nco_rate;
-	/*[0]: specturm inverse(1),normal(0); [1]:if_frequency*/
+	/*[0]: spectrum inverse(1),normal(0); [1]:if_frequency*/
 	unsigned int tuner_freq[2] = {0};
 	enum fe_delivery_system delsys = demod->last_delsys;
 
@@ -1987,7 +1987,7 @@ static int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 			/* CW bin frequency */
 			atsc_write_reg_v4(ATSC_DEMOD_REG_0X61, 0x2ee);
 
-			/*bit 2: invert specturm, for r842 tuner AGC control*/
+			/*bit 2: invert spectrum, for r842 tuner AGC control*/
 			if (tuner_freq[0] == 1)
 				atsc_write_reg_v4(ATSC_DEMOD_REG_0X56, 0x4);
 			else
@@ -2028,7 +2028,7 @@ static int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 			param_atsc.mode = c->modulation;
 			atsc_set_ch(demod, &param_atsc);
 
-			/* bit 2: invert specturm, 0:normal, 1:invert */
+			/* bit 2: invert spectrum, 0:normal, 1:invert */
 			if (tuner_freq[0] == 1)
 				atsc_write_reg(0x716, atsc_read_reg(0x716) | 0x4);
 			else
@@ -3018,7 +3018,7 @@ static int gxtv_demod_dtmb_set_frontend(struct dvb_frontend *fe)
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	struct aml_demod_dtmb param;
 	int times;
-	/*[0]: specturm inverse(1),normal(0); [1]:if_frequency*/
+	/*[0]: spectrum inverse(1),normal(0); [1]:if_frequency*/
 	unsigned int tuner_freq[2] = {0};
 
 	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d.\n",
@@ -3056,7 +3056,7 @@ static int gxtv_demod_dtmb_set_frontend(struct dvb_frontend *fe)
 		else if (tuner_freq[0] == 1)
 			demod->demod_status.spectrum = 1;
 		else
-			pr_err("wrong specturm val get from tuner\n");
+			pr_err("wrong spectrum val get from tuner\n");
 	}
 
 	dtmb_set_ch(demod, &param);

@@ -773,6 +773,7 @@ struct hdr_metadata_info_s {
 	u32 primaries[3][2];		/* normalized 50000 in G,B,R order */
 	u32 white_point[2];		/* normalized 50000 */
 	u32 luminance[2];		/* max/min lumin, normalized 10000 */
+	struct vframe_content_light_level_s content_light_level;
 };
 
 void vpp_vd_adj1_saturation_hue(signed int sat_val,

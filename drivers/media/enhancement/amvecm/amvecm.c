@@ -1317,9 +1317,24 @@ static void ioctrl_get_hdr_metadata(struct vframe_s *vf)
 			memset(vpp_hdr_metadata_s.primaries, 0,
 			       sizeof(vpp_hdr_metadata_s.primaries));
 		}
+
+		if (vf->prop.master_display_colour.content_light_level.present_flag) {
+			vpp_hdr_metadata_s.content_light_level.present_flag = 1;
+			vpp_hdr_metadata_s.content_light_level.max_content =
+				vf->prop.master_display_colour.content_light_level.max_content;
+			vpp_hdr_metadata_s.content_light_level.max_pic_average =
+				vf->prop.master_display_colour.content_light_level.max_pic_average;
+		} else {
+			vpp_hdr_metadata_s.content_light_level.present_flag = 0;
+			vpp_hdr_metadata_s.content_light_level.max_content = 0;
+			vpp_hdr_metadata_s.content_light_level.max_pic_average = 0;
+		}
 	} else {
 		memset(vpp_hdr_metadata_s.primaries, 0,
 		       sizeof(vpp_hdr_metadata_s.primaries));
+		vpp_hdr_metadata_s.content_light_level.present_flag = 0;
+		vpp_hdr_metadata_s.content_light_level.max_content = 0;
+		vpp_hdr_metadata_s.content_light_level.max_pic_average = 0;
 	}
 }
 

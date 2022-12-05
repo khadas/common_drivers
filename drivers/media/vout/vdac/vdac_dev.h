@@ -57,6 +57,7 @@ enum vdac_cpu_type {
 	VDAC_CPU_T3   = 8,
 	VDAC_CPU_S4D   = 9,
 	VDAC_CPU_T5W   = 10,
+	VDAC_CPU_T5M   = 11,
 	VDAC_CPU_MAX,
 };
 
@@ -72,7 +73,9 @@ struct meson_vdac_data {
 	unsigned int reg_vid_clk_ctrl2;
 	unsigned int reg_vid2_clk_div;
 	struct meson_vdac_ctrl_s *ctrl_table;
-	unsigned int cdac_disable;
+	unsigned int cdac_disable; //tv chip cvbsout use headset detection control
+	unsigned int bypass_cfg_cntl0; //av cvbsout bypass config
+	unsigned int cvbsout_cfg_cntl0; //atv bypass/cvbsout/dtv demod bypass config
 };
 
 struct meson_vdac_ctrl_s {

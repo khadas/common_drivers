@@ -219,6 +219,34 @@ static int vdac_ctrl_config(bool on, unsigned int reg, unsigned int bit)
 	return ret;
 }
 
+//config on/off ctrl_table value
+static int vdac_ctrl_table_config(bool on)
+{
+	struct meson_vdac_ctrl_s *table = s_vdac_data->ctrl_table;
+	unsigned int val;
+	int i = 0;
+	int ret = -1;
+
+	while (i < VDAC_CTRL_MAX) {
+		if (table[i].reg == VDAC_REG_MAX)
+			break;
+		if (on)
+			val = table[i].val;
+		else
+			val = table[i].val ? 0 : 1;
+		vdac_ana_reg_setb(table[i].reg, val, table[i].bit, table[i].len);
+		if (vdac_debug_print) {
+			pr_info("vdac: reg=0x%02x set bit%d=%d, readback=0x%08x\n",
+				table[i].reg, table[i].bit, val, vdac_ana_reg_read(table[i].reg));
+		}
+		ret = 0;
+		i++;
+	}
+
+	return ret;
+}
+
+// avout_atv/dtv_demod/cvbsout config
 static void vdac_enable_dac_input(unsigned int reg_cntl0)
 {
 	vdac_ana_reg_setb(reg_cntl0, 0x2, 0, 3);
@@ -228,6 +256,7 @@ static void vdac_enable_dac_input(unsigned int reg_cntl0)
 	vdac_ana_reg_setb(reg_cntl0, 0x10, 18, 5);
 }
 
+// av cvbsout config
 static void vdac_enable_dac_bypass(unsigned int reg_cntl0)
 {
 	vdac_ana_reg_setb(reg_cntl0, 0x2, 0, 3);
@@ -263,7 +292,12 @@ static void vdac_enable_avout_atv(bool on)
 		/* vdac_clk gated clock control */
 		vdac_vcbus_reg_setb(VENC_VDAC_DACSEL0, 1, 5, 1);
 
-		if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
+		if (s_vdac_data->cpu_id >= VDAC_CPU_T5M) {
+			if (!s_vdac_data->cdac_disable) {
+				vdac_ana_reg_write(reg_cntl0, s_vdac_data->cvbsout_cfg_cntl0);
+				vdac_ctrl_table_config(1);
+			}
+		} else if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
 		    s_vdac_data->cpu_id < VDAC_CPU_MAX) {
 			vdac_enable_dac_input(reg_cntl0);
 			if (!s_vdac_data->cdac_disable)
@@ -280,7 +314,9 @@ static void vdac_enable_avout_atv(bool on)
 			vdac_ctrl_config(1, reg_cntl0, 24);
 		}
 	} else {
-		if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
+		if (s_vdac_data->cpu_id >= VDAC_CPU_T5M) {
+			vdac_ctrl_table_config(0);
+		} else if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
 		    s_vdac_data->cpu_id < VDAC_CPU_MAX) {
 			vdac_ana_reg_setb(reg_cntl0, 0x0, 4, 1);
 			vdac_ctrl_config(0, reg_cntl1, 7);
@@ -311,7 +347,12 @@ static void vdac_enable_dtv_demod(bool on)
 	unsigned int reg_cntl1 = s_vdac_data->reg_cntl1;
 
 	if (on) {
-		if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
+		if (s_vdac_data->cpu_id >= VDAC_CPU_T5M) {
+			if (!s_vdac_data->cdac_disable) {
+				vdac_ana_reg_write(reg_cntl0, s_vdac_data->cvbsout_cfg_cntl0);
+				vdac_ctrl_table_config(1);
+			}
+		} else if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
 		    s_vdac_data->cpu_id < VDAC_CPU_MAX) {
 			vdac_enable_dac_input(reg_cntl0);
 			if (!s_vdac_data->cdac_disable)
@@ -325,7 +366,9 @@ static void vdac_enable_dtv_demod(bool on)
 			vdac_ctrl_config(1, reg_cntl0, 24);
 		}
 	} else {
-		if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
+		if (s_vdac_data->cpu_id >= VDAC_CPU_T5M) {
+			vdac_ctrl_table_config(0);
+		} else if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
 		    s_vdac_data->cpu_id < VDAC_CPU_MAX) {
 			vdac_ana_reg_setb(reg_cntl0, 0x0, 4, 1);
 			vdac_ctrl_config(0, reg_cntl1, 7);
@@ -342,7 +385,10 @@ static void vdac_enable_avout_av(bool on)
 	unsigned int reg_cntl1 = s_vdac_data->reg_cntl1;
 
 	if (on) {
-		if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
+		if (s_vdac_data->cpu_id >= VDAC_CPU_T5M) {
+			if (!s_vdac_data->cdac_disable)
+				vdac_ana_reg_write(reg_cntl0, s_vdac_data->bypass_cfg_cntl0);
+		} else if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
 		    s_vdac_data->cpu_id < VDAC_CPU_MAX) {
 			vdac_enable_dac_bypass(reg_cntl0);
 			if (!s_vdac_data->cdac_disable) {
@@ -365,8 +411,11 @@ static void vdac_enable_avout_av(bool on)
 			}
 		}
 	} else {
-		if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
-		    s_vdac_data->cpu_id < VDAC_CPU_MAX) {
+		if (s_vdac_data->cpu_id >= VDAC_CPU_T5M) {
+			vdac_ctrl_table_config(0);
+			vdac_ctrl_config(0, reg_cntl1, 7);
+		} else if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
+			   s_vdac_data->cpu_id < VDAC_CPU_MAX) {
 			vdac_disable_dac_bypass(reg_cntl0);
 			vdac_ctrl_config(0, reg_cntl1, 7);
 		} else {
@@ -393,7 +442,12 @@ static void vdac_enable_cvbs_out(bool on)
 	unsigned int reg_cntl1 = s_vdac_data->reg_cntl1;
 
 	if (on) {
-		if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
+		if (s_vdac_data->cpu_id >= VDAC_CPU_T5M) {
+			if (!s_vdac_data->cdac_disable) {
+				vdac_ana_reg_write(reg_cntl0, s_vdac_data->cvbsout_cfg_cntl0);
+				vdac_ctrl_table_config(1);
+			}
+		} else if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
 		    s_vdac_data->cpu_id < VDAC_CPU_MAX) {
 			vdac_enable_dac_input(reg_cntl0);
 			if (!s_vdac_data->cdac_disable)
@@ -408,8 +462,10 @@ static void vdac_enable_cvbs_out(bool on)
 				vdac_ctrl_config(0, reg_cntl0, 10);
 		}
 	} else {
-		if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
-		    s_vdac_data->cpu_id < VDAC_CPU_MAX) {
+		if (s_vdac_data->cpu_id >= VDAC_CPU_T5M) {
+			vdac_ctrl_table_config(0);
+		} else if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
+			   s_vdac_data->cpu_id < VDAC_CPU_MAX) {
 			vdac_ana_reg_setb(reg_cntl0, 0x0, 4, 1);
 			vdac_ctrl_config(0, reg_cntl1, 7);
 		} else {

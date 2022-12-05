@@ -403,7 +403,7 @@
 		compatible = "amlogic, adc-t3";
 		status = "disabled";
 		reg = <0x0 0xfe072000 0x0 0x2000/* afe reg base */
-			0x0 0xfe008000 0x0 0x2000/* hiu base */
+			0x0 0xfe008000 0x0 0x2000/* ana base */
 			>;
 	};
 
@@ -1570,6 +1570,19 @@
 		interrupts = <GIC_SPI 197 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "vsync";
 		vs_meas=<0>;
+	};
+
+	vdac {
+		compatible = "amlogic, vdac-t5m";
+		status = "okay";
+	};
+
+	adc: adc {
+		compatible = "amlogic, adc-t5m";
+		status = "okay";
+		reg = <0x0 0xfe072000 0x0 0x2000/* afe reg base */
+			0x0 0xfe008000 0x0 0x2000/* hiu base */
+		>;
 	};
 
 	vout2: vout2 {

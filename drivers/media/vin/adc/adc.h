@@ -41,6 +41,9 @@
 #define HHI_ADC_PLL_CNTL6	0x9f
 #define HHI_ADC_PLL_CNTL0_TL1	0xb0
 
+// t5m add
+#define ANACTRL_ADC_PLL_STS	0x9e
+
 #define HHI_DEMOD_CLK_CNTL	0x74
 
 #define RESET1_REGISTER		0x1102
@@ -113,6 +116,7 @@ enum adc_chip_ver {
 	ADC_CHIP_T3,
 	ADC_CHIP_S4D,
 	ADC_CHIP_T5W,
+	ADC_CHIP_T5M,
 };
 
 struct adc_reg_phy {

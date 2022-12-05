@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
-# Amlogic AUCPU driver configuation
+# Amlogic AUCPU driver configuration
 #
 config AMLOGIC_AUCPU
 	bool "Amlogic Aucpu driver"

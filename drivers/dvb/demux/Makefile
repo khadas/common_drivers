@@ -10,17 +10,12 @@ obj-$(CONFIG_AMLOGIC_DVB_DMX) = $(MODULE_NAME_DEMUX).o
 #PR_FMT__DEMUX_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT_DEMUX)]: \" fmt"
 # ccflags-y += $(PR_FMT__DEMUX_DEFINE)
 
-#ccflags-y += -I$(srctree)/drivers/media/dvb-core -I$(srctree)/drivers/gpio -I$(srctree)/include -fno-tree-scev-cprop
-#ccflags-y += -I$(srctree)/drivers/media/dvb-core -fno-tree-scev-cprop
 ccflags-y += -I$(srctree)/include
 ccflags-y += -I$(srctree)/include/media
 ccflags-y += -I$(srctree)/include/uapi
 ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/include/linux/amlogic
 ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/include/uapi
 ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/dvb
-
-#ccflags-y += -I.
-#ccflags-y += -DCOMMON_DRIVERS_DIR=$(COMMON_DRIVERS_DIR)
 
 $(MODULE_NAME_DEMUX)-y += aml_dvb.o
 $(MODULE_NAME_DEMUX)-y += aml_dsc.o

@@ -182,12 +182,12 @@ struct aucpu_inst_t {
 	struct aucpu_buffer_t reprt_buf; //report result buffer
 	struct aucpu_buffer_t in_upd_buf; //report result buffer
 	u32 src_update_index; //source pointer update demux channel index
-	s32 inst_handle; // handle from aucpu returned.
+	s32 inst_handle; //handle from aucpu returned.
 	// below are runtime  status
 	u32 work_state; // the working  status of the instance
 	u32 src_wrptr; //source buffer wrptr
 	u32 src_rdptr; //source rdprt
-	u32 src_byte_cnt; // source totol processed bytes shadow
+	u32 src_byte_cnt; // source total processed bytes shadow
 	u32 dst_wrptr;  // dst wrptr shadow
 	u32 dst_byte_cnt; // dst total processed bytes shadow
 
@@ -651,8 +651,8 @@ static int load_start_aucpu_fw(struct device *device)
 
 	aucpu_pr(LOG_DEBUG, "FW\n");
 
-	request_firmware(&my_fw, "aucpu_fw.bin", device);
-	if (!my_fw) {
+	result = request_firmware(&my_fw, "aucpu_fw.bin", device);
+	if (!my_fw || result < 0) {
 		aucpu_pr(LOG_ERROR, "load aucpu_fw.bin fail\n");
 		result = AUCPU_ERROR_NOT_IMPLEMENTED;
 		return result;

@@ -188,7 +188,7 @@ struct ld_reg_s {
 	int reg_ld_litshft;
 	/*u3   right shif of bits for the all Lit's sum*/
 	int reg_ld_bklit_valid[32];
-	/*u1x32: valid bits for the 32 cell Bklit to contribut to current
+	/*u1x32: valid bits for the 32 cell Bklit to contribute to current
 	 *	position (refer to the backlit padding pattern)
 	 */
 	/* region division index 1 2 3 4 5(0) 6(1) 7(2)
@@ -207,7 +207,7 @@ struct ld_reg_s {
 	int reg_ld_lut_vhk_neg[32];   /* u8*/
 	int reg_ld_lut_hhk[32];
 	/* u8 side gain for LED direction hdist gain for different LED*/
-	/* VHo possitive and negative side offset, use with LS, (x<<LS)*/
+	/* VHo positive and negative side offset, use with LS, (x<<LS)*/
 	int reg_ld_lut_vho_pos[32];   /* s8*/
 	int reg_ld_lut_vho_neg[32];   /* s8*/
 	int reg_ld_lut_vho_ls;/* u3:0~6,left shift bits of VH0_pos/neg*/

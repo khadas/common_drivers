@@ -685,7 +685,7 @@ void osd_scaler_config(struct osd_scaler_reg_s *reg,
 	bool scaler_enable;
 
 	if (width_in == width_out && height_in == height_out &&
-	    version > OSD_V2)
+	    version > OSD_V2 && version < OSD_V7)
 		scaler_enable = false;
 	else
 		scaler_enable = true;

@@ -36,6 +36,10 @@ unsigned char get_meson_cpu_version(int level)
 }
 #endif
 
+#if IS_BUILTIN(CONFIG_AMLOGIC_MEDIA_MODULE)
+#include <linux/amlogic/aml_cma.h>
+#endif
+
 #include "codec_mm_priv.h"
 #include "codec_mm_scatter_priv.h"
 #include "codec_mm_keeper_priv.h"
@@ -81,7 +85,7 @@ void tee_unprotect_mem(u32 handle)
 }
 #endif
 
-#ifndef CONFIG_AMLOGIC_CMA_DIS
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
 /* aml_media is ko can't use cma_mmu_op() func */
 int cma_mmu_op(struct page *page, int count, bool set)
 {
@@ -128,6 +132,11 @@ static inline u32 codec_mm_align_up2n(u32 addr, u32 alg2n)
 	return ((addr + (1 << alg2n) - 1) & (~((1 << alg2n) - 1)));
 }
 
+/* dma_alloc_from_contiguous and dma_release_from_contiguous
+ * not EXPORT_SYMBOL in kernel. To be consistent with 5.4,
+ * copy them in here when media build as ko.
+ */
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
 /**
  * dma_alloc_from_contiguous() - allocate pages from contiguous area
  * @dev:   Pointer to device for which the allocation is performed.
@@ -198,6 +207,7 @@ unsigned long cma_get_size(const struct cma *cma)
 {
 	return cma->count << PAGE_SHIFT;
 }
+#endif
 
 /*
  *debug_mode:

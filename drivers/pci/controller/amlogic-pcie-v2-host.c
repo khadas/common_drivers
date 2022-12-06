@@ -17,7 +17,9 @@
 #include <linux/types.h>
 #include <linux/phy/phy.h>
 #include <linux/module.h>
+#include <linux/swiotlb.h>
 
+#include <linux/amlogic/tee.h>
 #include "pcie-designware.h"
 
 #define to_amlogic_pcie(x) dev_get_drvdata((x)->dev)
@@ -727,6 +729,7 @@ static int amlogic_pcie_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct dw_pcie *pci;
 	struct amlogic_pcie *aml_pcie;
+	struct io_tlb_mem *mem;
 	u8 offset;
 	int ret;
 	u32 tmp;
@@ -749,6 +752,26 @@ static int amlogic_pcie_probe(struct platform_device *pdev)
 		return ret;
 
 	platform_set_drvdata(pdev, aml_pcie);
+
+	/* add pcie dev memory protect*/
+	if (!dev->dma_io_tlb_mem ||
+	    !of_property_read_bool(dev->of_node, "memory-region")) {
+		dev_err(dev, "PCIe device memory protect failed, pls check dts\n");
+	} else {
+		u32 tee_start, tee_end, handle;
+
+		mem = dev->dma_io_tlb_mem;
+		tee_start = roundup(mem->start, TEE_MEM_ALIGN_SIZE);
+		tee_end = rounddown(mem->end, TEE_MEM_ALIGN_SIZE);
+		dev_info(dev, "tee_start = 0x%x, tee_end = 0x%x\n", tee_start, tee_end);
+
+		ret = tee_protect_mem_by_type(TEE_MEM_TYPE_PCIE, tee_start,
+					      tee_end - tee_start, &handle);
+		if (ret) {
+			dev_err(dev, "Set pcie tee mem protect failed Error = 0x%x\n", ret);
+			return -ENOMEM;
+		}
+	}
 
 	ret = dw_pcie_host_init(&pci->pp);
 	if (ret < 0) {

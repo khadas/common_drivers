@@ -4,6 +4,7 @@ menu "Amlogic PCI Support"
 
 config AMLOGIC_PCI_HOST
 	bool "Amlogic PCI controller support"
+	select SWIOTLB
 	default n
 	help
 	  Amlogic PCI controller drivers support

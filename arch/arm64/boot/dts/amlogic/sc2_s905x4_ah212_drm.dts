@@ -62,15 +62,6 @@
 			bconsole-size = <0x10000>;
 		};
 
-		pcie_reserved: linux,pcie {
-			compatible = "shared-dma-pool";
-			status = "disabled";
-			reusable;
-			size = <0x0 0x4000000>;
-			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x54c00000 0x0 0x4000000>;
-		};
-
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
 			/*reusable;*/
@@ -187,6 +178,12 @@
 			size = <0x0 0x800000>;
 			alignment = <0x0 0x400000>;
 			linux,cma-default;
+		};
+
+		restricted_dma_reserved: restricted_dma_reserved {
+			compatible = "restricted-dma-pool";
+			size = <0x0 0x4000000>;
+			alloc-ranges = <0x0 0x0 0x0 0x80000000>;
 		};
 	};
 
@@ -1452,7 +1449,7 @@
 
 &pcie {
 	reset-gpio = <&gpio GPIOX_7 GPIO_ACTIVE_HIGH>;
-	memory-region = <&pcie_reserved>;
+	memory-region = <&restricted_dma_reserved>;
 	status = "disable";
 };
 

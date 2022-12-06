@@ -22,7 +22,8 @@
 /* 20221111: modify edp transmit_unit_size to 48(temporary)*/
 /* 20221115: support force unfit mipi-dsi bit_rate_max*/
 /* 20221116: add pinmux lock for c3*/
-#define LCD_DRV_VERSION    "20221116"
+/* 20221207: support drm display mode timing for different frame rate*/
+#define LCD_DRV_VERSION    "20221207"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

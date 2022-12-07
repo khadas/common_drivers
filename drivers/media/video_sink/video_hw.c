@@ -6573,6 +6573,16 @@ static void post_blend_dummy_data_update(u32 vpp_index)
 		rdma_wr(VPP_POST_BLEND_BLEND_DUMMY_DATA, bg_color & 0x00ffffff);
 		rdma_wr(VPP_POST_BLEND_DUMMY_ALPHA,
 			vd_layer[0].dummy_alpha);
+		if (vpp_index == 1) {
+			rdma_wr(VPP1_BLEND_BLEND_DUMMY_DATA, bg_color & 0x00ffffff);
+			rdma_wr(VPP1_BLEND_DUMMY_ALPHA,
+				vd_layer[0].dummy_alpha);
+		}
+		if (vpp_index == 2) {
+			rdma_wr(VPP2_BLEND_BLEND_DUMMY_DATA, bg_color & 0x00ffffff);
+			rdma_wr(VPP2_BLEND_DUMMY_ALPHA,
+				vd_layer[0].dummy_alpha);
+		}
 	} else {
 		rdma_wr(VPP_DUMMY_DATA1, bg_color & 0x00ffffff);
 	}
@@ -7951,6 +7961,7 @@ void vpp1_blend_update(u32 vpp_index)
 		vpp1_blend_ctrl);
 
 	blend_en_status_save = vd_layer_vpp[0].vppx_blend_en;
+	post_blend_dummy_data_update(vpp_index);
 	if (vd_layer_vpp[0].vpp_index != VPP0 &&
 	    videox_off_req) {
 		if (vd_layer_vpp[0].layer_id == 1)
@@ -8094,6 +8105,7 @@ void vpp2_blend_update(u32 vpp_index)
 		vpp2_blend_ctrl);
 
 	blend_en_status_save = vd_layer_vpp[1].vppx_blend_en;
+	post_blend_dummy_data_update(vpp_index);
 	if (vd_layer_vpp[1].vpp_index != VPP0 &&
 	    videox_off_req) {
 		if (vd_layer_vpp[1].layer_id == 2)

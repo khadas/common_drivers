@@ -13353,6 +13353,14 @@ static ssize_t video_rgb_screen_store(struct class *cla,
 		WRITE_VCBUS_REG
 			(VPP_POST_BLEND_BLEND_DUMMY_DATA,
 			yuv_eight & 0x00ffffff);
+		if (amvideo_meson_dev.has_vpp1) {
+			WRITE_VCBUS_REG(VPP1_BLEND_BLEND_DUMMY_DATA,
+				yuv_eight & 0x00ffffff);
+		}
+		if (amvideo_meson_dev.has_vpp2) {
+			WRITE_VCBUS_REG(VPP2_BLEND_BLEND_DUMMY_DATA,
+				yuv_eight & 0x00ffffff);
+		}
 	} else if (is_meson_gxtvbb_cpu()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		WRITE_VCBUS_REG(VPP_DUMMY_DATA1,

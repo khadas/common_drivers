@@ -1412,6 +1412,16 @@ void hdmi_packet_process(int signal_change_flag,
 			vd_signal.signal_type = SIGNAL_SDR;
 			notify_vd_signal_to_amvideo(&vd_signal, vpp_index);
 		}
+		output_format = BT709;
+		pr_csc(4,
+			"am_vecm: vd%d %s %s, vd2 %s %s, update output_format %s => %s\n",
+			vd_path + 1,
+			is_video_layer_on(VD1_PATH) ? "on" : "off",
+			output_str[target_format[VD1_PATH]],
+			is_video_layer_on(VD2_PATH) ? "on" : "off",
+			output_str[target_format[VD2_PATH]],
+			output_str[cur_output_format],
+			output_str[output_format]);
 		return;
 	}
 
@@ -1428,7 +1438,7 @@ void hdmi_packet_process(int signal_change_flag,
 		pr_info("vdev->fresh_tx_hdr_pkt is null, return\n");
 		/* continue */
 	}
-	pr_csc(12,
+	pr_csc(4,
 	       "am_vecm: vd%d %s %s, vd2 %s %s, output_format %s,%s, flag 0x%x, hdr_cap = 0x%x\n",
 	       vd_path + 1,
 	       is_video_layer_on(VD1_PATH) ? "on" : "off",

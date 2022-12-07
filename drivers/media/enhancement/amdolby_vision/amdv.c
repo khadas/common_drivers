@@ -3507,6 +3507,7 @@ int is_amdv_frame(struct vframe_s *vf)
 	unsigned int type = 0;
 	enum vframe_signal_fmt_e fmt;
 	int dv_id;
+	int layer_id = VD1_PATH;
 
 	if (!vf)
 		return 0;
@@ -3514,6 +3515,9 @@ int is_amdv_frame(struct vframe_s *vf)
 	dv_id = vf->src_fmt.dv_id;
 	if (!dv_inst_valid(dv_id))
 		dv_id = 0;
+
+	if (dv_inst[dv_id].layer_id >= 0 && dv_inst[dv_id].layer_id < VD3_PATH)
+		layer_id = dv_inst[dv_id].layer_id;
 
 	fmt = get_vframe_src_fmt(vf);
 	if (fmt == VFRAME_SIGNAL_FMT_DOVI)
@@ -3557,9 +3561,9 @@ int is_amdv_frame(struct vframe_s *vf)
 		}
 		return 0;
 	} else if (vf->source_type == VFRAME_SOURCE_TYPE_OTHERS) {
-		if (!strcmp(dv_provider[dv_id], "dvbldec") ||
-			!strcmp(dv_provider[dv_id], "dvbldec2"))
-			vf_notify_provider_by_name(dv_provider[dv_id],
+		if (!strcmp(dv_provider[layer_id], "dvbldec") ||
+			!strcmp(dv_provider[layer_id], "dvbldec2"))
+			vf_notify_provider_by_name(dv_provider[layer_id],
 					   VFRAME_EVENT_RECEIVER_GET_AUX_DATA,
 					   (void *)&req);
 		if (req.dv_enhance_exist)
@@ -3592,6 +3596,7 @@ bool is_dovi_dual_layer_frame(struct vframe_s *vf)
 	struct provider_aux_req_s req;
 	enum vframe_signal_fmt_e fmt;
 	int dv_id;
+	int layer_id = VD1_PATH;
 
 	if (!vf)
 		return false;
@@ -3600,6 +3605,12 @@ bool is_dovi_dual_layer_frame(struct vframe_s *vf)
 		return false;
 
 	dv_id = vf->src_fmt.dv_id;
+	if (!dv_inst_valid(dv_id))
+		dv_id = 0;
+
+	if (dv_inst[dv_id].layer_id >= 0 && dv_inst[dv_id].layer_id < VD3_PATH)
+		layer_id = dv_inst[dv_id].layer_id;
+
 	fmt = get_vframe_src_fmt(vf);
 	/* valid src_fmt = DOVI or invalid src_fmt will check dual layer */
 	/* otherwise, it certainly is a non-dv vframe */
@@ -3614,9 +3625,9 @@ bool is_dovi_dual_layer_frame(struct vframe_s *vf)
 	req.dv_enhance_exist = 0;
 
 	if (vf->source_type == VFRAME_SOURCE_TYPE_OTHERS) {
-		if (!strcmp(dv_provider[dv_id], "dvbldec") ||
-			!strcmp(dv_provider[dv_id], "dvbldec2"))
-			vf_notify_provider_by_name(dv_provider[dv_id],
+		if (!strcmp(dv_provider[layer_id], "dvbldec") ||
+			!strcmp(dv_provider[layer_id], "dvbldec2"))
+			vf_notify_provider_by_name(dv_provider[layer_id],
 			VFRAME_EVENT_RECEIVER_GET_AUX_DATA,
 			(void *)&req);
 		if (req.dv_enhance_exist)

@@ -29,7 +29,7 @@
 #define GET_BIT(x) (0x01 << (x))
 #define GET_BITS(x, y) (((0x01 << (y)) - 1) << (x))
 
-/* useful inline fucntions to handle different offset */
+/* useful inline functions to handle different offset */
 static inline bool cpu_after_eq_t7(void)
 {
 	return cpu_after_eq(MESON_CPU_MAJOR_ID_T7);

@@ -382,7 +382,7 @@ static struct vframe_s *dbg_vf[VD_PATH_MAX] = {NULL, NULL};
 struct master_display_info_s dbg_hdr_send;
 static struct hdr_info receiver_hdr_info;
 
-/* extra hdr process code, udpated per signal change */
+/* extra hdr process code, updated per signal change */
 static u32 hdr_ex;
 
 static bool print_lut_mtx;
@@ -7205,7 +7205,7 @@ static void hdr_tx_pkt_cb(struct vinfo_s *vinfo,
 		    csc_type < VPP_MATRIX_BT2020YUV_BT2020RGB) {
 			/* sdr source convert to hdr */
 			/* send hdr info */
-			/* use the features to discribe source info */
+			/* use the features to describe source info */
 			send_info.features =
 					(0 << 30) /*sdr output 709*/
 					| (1 << 29)	/*video available*/
@@ -7242,7 +7242,7 @@ static void hdr_tx_pkt_cb(struct vinfo_s *vinfo,
 			   hlg_process_mode[vd_path] == PROC_BYPASS &&
 			   csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB) {
 			/* source is hdr, send hdr info */
-			/* use the features to discribe source info */
+			/* use the features to describe source info */
 			send_info.features =
 					(0 << 30) /*sdr output 709*/
 					| (1 << 29)	/*video available*/
@@ -7270,7 +7270,7 @@ static void hdr_tx_pkt_cb(struct vinfo_s *vinfo,
 			   hlg_process_mode[vd_path] == PROC_MATCH &&
 			   csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB) {
 			/* source is hdr, send hdr info */
-			/* use the features to discribe source info */
+			/* use the features to describe source info */
 			if (get_hdr_type() & HLG_FLAG) {
 				send_info.features =
 					(0 << 30) /*sdr output 709*/
@@ -7313,7 +7313,7 @@ static void hdr_tx_pkt_cb(struct vinfo_s *vinfo,
 			   hlg_process_mode[vd_path] == PROC_BYPASS &&
 			   csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB) {
 			/* source is hdr, send hdr info */
-			/* use the features to discribe source info */
+			/* use the features to describe source info */
 			if (get_hdr_type() & HLG_FLAG) {
 				send_info.features =
 					(0 << 30) /*sdr output 709*/
@@ -7353,7 +7353,7 @@ static void hdr_tx_pkt_cb(struct vinfo_s *vinfo,
 		} else if (hdr10_plus_process_mode[vd_path] == 0 &&
 			   csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB_DYNAMIC) {
 			/* source is hdr10+, send hdr10 drm packet as well*/
-			/* use the features to discribe source info */
+			/* use the features to describe source info */
 			send_info.features =
 					(0 << 30) /*sdr output 709*/
 					| (1 << 29)	/*video available*/
@@ -7390,7 +7390,7 @@ static void hdr_tx_pkt_cb(struct vinfo_s *vinfo,
 
 		} else {
 			/* sdr source send normal info*/
-			/* use the features to discribe source info */
+			/* use the features to describe source info */
 			if (((sink_hdr_support(vinfo) & HDR_SUPPORT) ||
 			     (sink_hdr_support(vinfo) & HLG_SUPPORT)) &&
 			     csc_type < VPP_MATRIX_BT2020YUV_BT2020RGB &&

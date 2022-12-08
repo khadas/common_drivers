@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+//#define DEBUG
 #include <linux/module.h>
 #include <linux/printk.h>
 #include <linux/kernel.h>
@@ -275,7 +276,7 @@ static void set_hpll_clk_out(unsigned int clk)
 		break;
 	}
 
-	pr_info("config HPLL done\n");
+	pr_debug("config HPLL done\n");
 }
 
 /* HERE MUST BE BIT OPERATION!!! */
@@ -464,7 +465,7 @@ static void set_hpll_od3_clk_div(int div_sel)
 	struct hdmitx_dev *hdev = get_hdmitx_device();
 	unsigned int reg_vid_pll = P_HHI_VID_PLL_CLK_DIV;
 
-	pr_info("%s[%d] div = %d\n", __func__, __LINE__, div_sel);
+	pr_debug("%s[%d] div = %d\n", __func__, __LINE__, div_sel);
 
 	if (hdev->data->chip_type >= MESON_CPU_ID_SC2)
 		reg_vid_pll = P_CLKCTRL_VID_PLL_CLK_DIV;
@@ -1005,7 +1006,7 @@ next:
 	set_hpll_od2(p_enc[j].od2);
 	set_hpll_od3(p_enc[j].od3);
 	set_hpll_od3_clk_div(p_enc[j].vid_pll_div);
-	pr_info("j = %d  vid_clk_div = %d\n", j, p_enc[j].vid_clk_div);
+	pr_debug("j = %d  vid_clk_div = %d\n", j, p_enc[j].vid_clk_div);
 	set_vid_clk_div(hdev, p_enc[j].vid_clk_div);
 	set_hdmi_tx_pixel_div(hdev, p_enc[j].hdmi_tx_pixel_div);
 

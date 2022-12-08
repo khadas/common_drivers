@@ -3,6 +3,10 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+/* define DEBUG macro to enable pr_debug
+ * print to log buffer
+ */
+//#define DEBUG
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/types.h>
@@ -559,8 +563,9 @@ static void hdmi_physical_size_update(struct hdmitx_dev *hdev)
 			info->screen_real_width = width;
 			info->screen_real_height = height;
 		}
-		pr_info(SYS "update physical size: %d %d\n",
-			info->screen_real_width, info->screen_real_height);
+		if (hdev->log_level & VINFO_LOG)
+			pr_info(SYS "update physical size: %d %d\n",
+				info->screen_real_width, info->screen_real_height);
 	}
 }
 
@@ -3729,7 +3734,7 @@ static ssize_t hdcp_pwr_store(struct device *dev,
 {
 	if (buf[0] == '1') {
 		hdmitx_device.hdcp_tst_sig = 1;
-		pr_info(SYS "set hdcp_pwr 1\n");
+		pr_debug(SYS "set hdcp_pwr 1\n");
 	}
 
 	return count;
@@ -3745,7 +3750,7 @@ static ssize_t hdcp_pwr_show(struct device *dev,
 		pos += snprintf(buf + pos, PAGE_SIZE, "%d\n",
 			hdmitx_device.hdcp_tst_sig);
 		hdmitx_device.hdcp_tst_sig = 0;
-		pr_info(SYS "restore hdcp_pwr 0\n");
+		pr_debug(SYS "restore hdcp_pwr 0\n");
 	}
 
 	return pos;
@@ -4053,7 +4058,8 @@ static ssize_t hdcp_ctrl_store(struct device *dev,
 
 	/* for repeater */
 	if (hdev->repeater_tx) {
-		dev_warn(dev, "hdmitx20: %s\n", buf);
+		if (hdev->log_level & HDCP_LOG)
+			pr_info("hdmitx20: %s\n", buf);
 		if (strncmp(buf, "rstop", 5) == 0) {
 			if (strncmp(buf + 5, "14", 2) == 0)
 				hdev->hwop.cntlddc(hdev, DDC_HDCP_OP,
@@ -4068,7 +4074,8 @@ static ssize_t hdcp_ctrl_store(struct device *dev,
 	}
 	/* for non repeater */
 	if (strncmp(buf, "stop", 4) == 0) {
-		dev_warn(dev, "hdmitx20: %s\n", buf);
+		if (hdev->log_level & HDCP_LOG)
+			pr_info("hdmitx20: %s\n", buf);
 		if (strncmp(buf + 4, "14", 2) == 0)
 			hdev->hwop.cntlddc(hdev, DDC_HDCP_OP, HDCP14_OFF);
 		if (strncmp(buf + 4, "22", 2) == 0)
@@ -4338,6 +4345,26 @@ static ssize_t hdr_mute_frame_store(struct device *dev,
 	pr_info("set hdr_mute_frame: %s\n", buf);
 	if (kstrtoul(buf, 10, &mute_frame) == 0)
 		hdr_mute_frame = mute_frame;
+	return count;
+}
+
+static ssize_t log_level_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+
+	pos += snprintf(buf + pos, PAGE_SIZE, "%x\r\n", hdmitx_device.log_level);
+	return pos;
+}
+
+static ssize_t log_level_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned long log_level = 0;
+
+	pr_info("set log_level: %s\n", buf);
+	if (kstrtoul(buf, 16, &log_level) == 0)
+		hdmitx_device.log_level = log_level;
 	return count;
 }
 
@@ -5013,6 +5040,7 @@ static DEVICE_ATTR_RW(sysctrl_enable);
 static DEVICE_ATTR_RW(hdcp_ctl_lvl);
 static DEVICE_ATTR_RO(hdmitx_drm_flag);
 static DEVICE_ATTR_RW(hdr_mute_frame);
+static DEVICE_ATTR_RW(log_level);
 
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
 static struct vinfo_s *hdmitx_get_current_vinfo(void *data)
@@ -5037,9 +5065,11 @@ static struct frac_rate_table fr_tab[] = {
 static void recalc_vinfo_sync_duration(struct vinfo_s *info, unsigned int frac)
 {
 	struct frac_rate_table *fr = &fr_tab[0];
+	struct hdmitx_dev *hdev = get_hdmitx_device();
 
-	pr_info(SYS "recalc before %s %d %d, frac %d\n", info->name,
-		info->sync_duration_num, info->sync_duration_den, info->frac);
+	if (hdev->log_level & VINFO_LOG)
+		pr_info(SYS "recalc before %s %d %d, frac %d\n", info->name,
+			info->sync_duration_num, info->sync_duration_den, info->frac);
 
 	while (fr->hz) {
 		if (strstr(info->name, fr->hz)) {
@@ -5056,9 +5086,9 @@ static void recalc_vinfo_sync_duration(struct vinfo_s *info, unsigned int frac)
 		}
 		fr++;
 	}
-
-	pr_info(SYS "recalc after %s %d %d, frac %d\n", info->name,
-		info->sync_duration_num, info->sync_duration_den, info->frac);
+	if (hdev->log_level & VINFO_LOG)
+		pr_info(SYS "recalc after %s %d %d, frac %d\n", info->name,
+			info->sync_duration_num, info->sync_duration_den, info->frac);
 }
 
 static int hdmitx_set_current_vmode(enum vmode_e mode, void *data)
@@ -5716,7 +5746,8 @@ static void hdmitx_internal_intr_handler(struct work_struct *work)
 	struct hdmitx_dev *hdev = container_of((struct delayed_work *)work,
 		struct hdmitx_dev, work_internal_intr);
 
-	hdev->hwop.debugfun(hdev, "dumpintr");
+	if (hdev->log_level & REG_LOG)
+		hdev->hwop.debugfun(hdev, "dumpintr");
 }
 
 int get20_hpd_state(void)
@@ -5758,16 +5789,16 @@ static bool is_cur_tmds_div40(struct hdmitx_dev *hdev)
 
 	para1 = hdmi_get_fmt_paras(hdev->tx_comm.cur_VIC);
 	if (!para1) {
-		pr_info("%s[%d]\n", __func__, __LINE__);
+		pr_err("%s[%d] can't get fmt parameters\n", __func__, __LINE__);
 		return 0;
 	}
-	pr_info("hdmitx: mode name %s\n", para1->name);
+	pr_debug("hdmitx: mode name %s\n", para1->name);
 	para2 = hdmi_tst_fmt_name(para1->name, tx_comm->fmt_attr);
 	if (!para2) {
 		pr_info("%s[%d]\n", __func__, __LINE__);
 		return 0;
 	}
-	pr_info("hdmitx: tmds clock %d\n", para2->tmds_clk / 1000);
+	pr_debug("hdmitx: tmds clock %d\n", para2->tmds_clk / 1000);
 	act_clk = para2->tmds_clk / 1000;
 	if (para2->cs == HDMI_COLORSPACE_YUV420)
 		act_clk = act_clk / 2;
@@ -5788,7 +5819,8 @@ static bool is_cur_tmds_div40(struct hdmitx_dev *hdev)
 			break;
 		}
 	}
-	pr_info("hdmitx: act clock: %d\n", act_clk);
+	if (hdev->log_level & SCDC_LOG)
+		pr_info("hdmitx: act clock: %d\n", act_clk);
 
 	if (act_clk > 340)
 		return 1;
@@ -5834,7 +5866,7 @@ EXPORT_SYMBOL(get_hdmitx_device);
 
 static int get_hdmitx_hdcp_ctl_lvl_to_drm(void)
 {
-	pr_info("%s hdmitx20_%d\n", __func__, hdmitx_device.hdcp_ctl_lvl);
+	pr_debug("%s hdmitx20_%d\n", __func__, hdmitx_device.hdcp_ctl_lvl);
 	return hdmitx_device.hdcp_ctl_lvl;
 }
 
@@ -5874,7 +5906,7 @@ static void hdmitx_fmt_attr(struct hdmitx_dev *hdev)
 	struct hdmitx_common *tx_comm = &hdev->tx_comm;
 
 	if (strlen(tx_comm->fmt_attr) >= 8) {
-		pr_info(SYS "fmt_attr %s\n", tx_comm->fmt_attr);
+		pr_debug(SYS "fmt_attr %s\n", tx_comm->fmt_attr);
 		return;
 	}
 	if (hdev->para->cd == COLORDEPTH_RESERVED &&
@@ -5915,7 +5947,7 @@ static void hdmitx_fmt_attr(struct hdmitx_dev *hdev)
 			break;
 		}
 	}
-	pr_info(SYS "fmt_attr %s\n", tx_comm->fmt_attr);
+	pr_debug(SYS "fmt_attr %s\n", tx_comm->fmt_attr);
 }
 
 /* for notify to cec */
@@ -6042,7 +6074,8 @@ static int amhdmitx_device_init(struct hdmitx_dev *hdmi_dev, struct hdmitx_boot_
 	if (!hdmi_dev)
 		return 1;
 
-	pr_info(SYS "Ver: %s\n", HDMITX_VER);
+	/* there's common_driver commit id in boot up log */
+	pr_debug(SYS "Ver: %s\n", HDMITX_VER);
 
 	hdmi_dev->hdtx_dev = NULL;
 
@@ -6095,6 +6128,7 @@ static int amhdmitx_device_init(struct hdmitx_dev *hdmi_dev, struct hdmitx_boot_
 		pr_info("failed to alloc hdcp topo info\n");
 	hdmitx_init_parameters(&hdmitx_device.hdmi_info);
 	hdmitx_device.vid_mute_op = VIDEO_NONE_OP;
+	hdmitx_device.log_level = LOG_EN;
 	/* init debug param */
 	hdmitx_device.debug_param.avmute_frame = 0;
 	return 0;
@@ -6120,12 +6154,12 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev)
 		hdmitx_device.pinctrl_default =
 			pinctrl_lookup_state(pdev->dev.pins->p, "default");
 		if (IS_ERR(hdmitx_device.pinctrl_default))
-			pr_info(SYS "no default of pinctrl state\n");
+			pr_err(SYS "no default of pinctrl state\n");
 
 		hdmitx_device.pinctrl_i2c =
 			pinctrl_lookup_state(pdev->dev.pins->p, "hdmitx_i2c");
 		if (IS_ERR(hdmitx_device.pinctrl_i2c))
-			pr_info(SYS "no hdmitx_i2c of pinctrl state\n");
+			pr_debug(SYS "no hdmitx_i2c of pinctrl state\n");
 
 		pinctrl_select_state(pdev->dev.pins->p,
 				     hdmitx_device.pinctrl_default);
@@ -6243,12 +6277,12 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev)
 		ret = of_property_read_u32(pdev->dev.of_node,
 					   "pwr-ctrl", &val);
 		if (ret)
-			pr_info(SYS "not find match pwr-ctl\n");
+			pr_debug(SYS "not find match pwr-ctl\n");
 		if (ret == 0) {
 			phandle = val;
 			init_data = of_find_node_by_phandle(phandle);
 			if (!init_data)
-				pr_info(SYS "not find device node\n");
+				pr_debug(SYS "not find device node\n");
 			hdmitx_device.config_data.pwr_ctl =
 			kzalloc((sizeof(struct hdmi_pwr_ctl)) *
 			HDMI_TX_PWR_CTRL_NUM, GFP_KERNEL);
@@ -6257,7 +6291,7 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev)
 			memset(hdmitx_device.config_data.pwr_ctl, 0,
 			       sizeof(struct hdmi_pwr_ctl));
 			if (ret)
-				pr_info(SYS "not find pwr_ctl\n");
+				pr_debug(SYS "not find pwr_ctl\n");
 		}
 		/* hdcp ctrl 0:sysctrl, 1: drv, 2: linux app */
 		ret = of_property_read_u32(pdev->dev.of_node, "hdcp_ctl_lvl",
@@ -6468,6 +6502,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_hdcp_ctl_lvl);
 	ret = device_create_file(dev, &dev_attr_hdmitx_drm_flag);
 	ret = device_create_file(dev, &dev_attr_hdr_mute_frame);
+	ret = device_create_file(dev, &dev_attr_log_level);
 
 #ifdef CONFIG_AMLOGIC_VPU
 	hdmitx_device.encp_vpu_dev = vpu_dev_register(VPU_VENCP, DEVICE_NAME);
@@ -6566,7 +6601,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 
 	hdmitx_hdcp_init();
 
-	pr_info(SYS "%s end\n", __func__);
+	pr_debug(SYS "%s end\n", __func__);
 
 	hdmitx_hook_drm(&pdev->dev);
 	/*everything is ready, create sysfs here.*/
@@ -6650,6 +6685,7 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_hdcp_ctl_lvl);
 	device_remove_file(dev, &dev_attr_hdmitx_drm_flag);
 	device_remove_file(dev, &dev_attr_hdr_mute_frame);
+	device_remove_file(dev, &dev_attr_log_level);
 
 	cdev_del(&hdmitx_device.cdev);
 

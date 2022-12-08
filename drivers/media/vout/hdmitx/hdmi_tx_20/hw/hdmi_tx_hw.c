@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+//#define DEBUG
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/types.h>
@@ -739,9 +740,10 @@ static irqreturn_t intr_handler(int irq, void *dev)
 	if (dat_top & (1 << 3)) {
 		unsigned int rd_nonce_mode =
 			hdmitx_rd_reg(HDMITX_TOP_SKP_CNTL_STAT) & 0x1;
-		pr_info(HW "hdcp22: Nonce %s  Vld: %d\n",
-			rd_nonce_mode ? "HW" : "SW",
-			((hdmitx_rd_reg(HDMITX_TOP_SKP_CNTL_STAT) >> 31) & 1));
+		if (hdev->log_level & HDCP_LOG)
+			pr_info(HW "hdcp22: Nonce %s  Vld: %d\n",
+				rd_nonce_mode ? "HW" : "SW",
+				((hdmitx_rd_reg(HDMITX_TOP_SKP_CNTL_STAT) >> 31) & 1));
 		if (!rd_nonce_mode) {
 			hdmitx_wr_reg(HDMITX_TOP_NONCE_0,  0x32107654);
 			hdmitx_wr_reg(HDMITX_TOP_NONCE_1,  0xba98fedc);
@@ -2556,7 +2558,7 @@ static void set_aud_chnls(struct hdmitx_dev *hdev,
 {
 	int i;
 
-	pr_info(HW "set channel status\n");
+	pr_debug(HW "set channel status\n");
 	for (i = 0; i < 9; i++)
 		/* First, set all status to 0 */
 		hdmitx_wr_reg(HDMITX_DWC_FC_AUDSCHNLS0 + i, 0x00);
@@ -2814,7 +2816,7 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev,
 		return 0;
 	if (!audio_param)
 		return 0;
-	pr_info(HW "set audio\n");
+	pr_debug(HW "set audio\n");
 	mutex_lock(&aud_mutex);
 	memcpy(&hdmiaud_config_data,
 		   audio_param, sizeof(struct hdmitx_audpara));
@@ -2906,7 +2908,7 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev,
 		msleep(20);
 	}
 	data32 = hdmitx_rd_reg(HDMITX_DWC_FC_PACKET_TX_EN);
-	pr_info(HW "[0x10e3] = 0x%x\n", data32);
+	pr_debug(HW "[0x10e3] = 0x%x\n", data32);
 	set_aud_fifo_rst();
 	usleep_range(9, 11);
 	hdmitx_wr_reg(HDMITX_DWC_AUD_N1, hdmitx_rd_reg(HDMITX_DWC_AUD_N1));
@@ -2916,7 +2918,7 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev,
 	data32 = hdmitx_rd_reg(HDMITX_DWC_FC_PACKET_TX_EN);
 	if ((data32 & 0x9) == 0x8) {
 		hdmitx_set_reg_bits(HDMITX_DWC_FC_PACKET_TX_EN, 1, 0, 1);
-		pr_info(HW "enable ACR: [0x10e3] = 0x%x\n", data32);
+		pr_debug(HW "enable ACR: [0x10e3] = 0x%x\n", data32);
 	}
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_DATAUTO3, 1, 0, 1);
 	mutex_unlock(&aud_mutex);
@@ -4135,7 +4137,6 @@ static int hdmitx_cntl_config(struct hdmitx_hw_common *tx_hw, unsigned int cmd,
 		}
 		break;
 	case CONF_CLR_AVI_PACKET:
-		pr_info("%s ***clr avi***\n", __func__);
 		hdmitx_wr_reg(HDMITX_DWC_FC_AVIVID, 0);
 		if (hdmitx_rd_reg(HDMITX_DWC_FC_VSDPAYLOAD0) == 0x20)
 			hdmitx_wr_reg(HDMITX_DWC_FC_VSDPAYLOAD1, 0);

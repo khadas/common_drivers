@@ -1809,7 +1809,7 @@ static void edid_descriptor_pmt(struct rx_cap *prxcap,
 	para = hdmi_get_vesa_paras(t);
 	if (para && (para->vic < (HDMI_3840x2160p60_64x27 + 1))) {
 		prxcap->native_vic = para->vic;
-		pr_info("hdmitx: get PMT vic: %d\n", para->vic);
+		pr_debug("hdmitx: get PMT vic: %d\n", para->vic);
 	}
 	if (para && para->vic >= HDMITX_VESA_OFFSET)
 		store_vesa_idx(prxcap, para->vic);
@@ -2071,7 +2071,7 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 		hdmitx_device->tx_comm.edid_parsing = 1;
 
 	hdmitx_device->tx_comm.edid_ptr = EDID_buf;
-	pr_info(EDID "EDID Parser:\n");
+	pr_debug(EDID "EDID Parser:\n");
 	/* Calculate the EDID hash for special use */
 	memset(hdmitx_device->tx_comm.EDID_hash, 0,
 	       ARRAY_SIZE(hdmitx_device->tx_comm.EDID_hash));
@@ -2742,6 +2742,8 @@ void hdmitx_edid_clear(struct hdmitx_dev *hdmitx_device)
 	rx_set_receiver_edid(&tmp[0], 2);
 }
 
+#undef pr_fmt
+#define pr_fmt(fmt) "" fmt
 /*
  * print one block data of edid
  */
@@ -2756,16 +2758,18 @@ static void hdmitx_edid_blk_print(unsigned char *blk, unsigned int blk_idx)
 		return;
 
 	memset(tmp_buf, 0, TMP_EDID_BUF_SIZE);
-	pr_info(EDID "blk%d raw data\n", blk_idx);
+	pr_info("hdmitx: edid: blk%d raw data\n", blk_idx);
 	for (i = 0, pos = 0; i < 128; i++) {
 		pos += sprintf(tmp_buf + pos, "%02x", blk[i]);
-		if (((i + 1) & 0x1f) == 0)    /* print 32bytes a line */
+		if (((i + 1) & 0x3f) == 0)    /* print 64 bytes a line */
 			pos += sprintf(tmp_buf + pos, "\n");
 	}
-	pos += sprintf(tmp_buf + pos, "\n");
-	pr_info(EDID "\n%s\n", tmp_buf);
+	pr_info("%s", tmp_buf);
 	kfree(tmp_buf);
 }
+
+#undef pr_fmt
+#define pr_fmt(fmt) "hdmitx: " fmt
 
 /*
  * check EDID buf contains valid block numbers

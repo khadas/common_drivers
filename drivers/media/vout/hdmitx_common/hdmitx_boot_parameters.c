@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+//#define DEBUG
 #include <linux/module.h>
 #include <linux/mm.h>
 #include <linux/string.h>
@@ -141,9 +142,9 @@ static int parse_hdmitx_boot_para(char *s)
 		offset = token_offset;
 	} while (token);
 
-	pr_info("hdmitx_param:[color_attr]=[%s]\n",
+	pr_debug("hdmitx_param:[color_attr]=[%s]\n",
 		tx_params.color_attr);
-	pr_info("hdmitx_param:[init_state]=[%x]\n",
+	pr_debug("hdmitx_param:[init_state]=[%x]\n",
 		tx_params.init_state);
 
 	return 0;
@@ -157,7 +158,7 @@ static int parse_hdmitx_fraction_rate(char *str)
 	else
 		tx_params.fraction_refreshrate = 1;
 
-	pr_info("hdmitx_param:[fraction_rate]=[%d]\n",
+	pr_debug("hdmitx_param:[fraction_rate]=[%d]\n",
 		tx_params.fraction_refreshrate);
 
 	return 0;
@@ -171,7 +172,7 @@ static int parse_hdmitx_hdr_priority(char *str)
 	else
 		tx_params.hdr_mask = 0;
 
-	pr_info("hdmitx_param:[hdr_priority]=[%d]\n",
+	pr_debug("hdmitx_param:[hdr_priority]=[%d]\n",
 		tx_params.hdr_mask);
 	return 0;
 }
@@ -180,7 +181,7 @@ __setup("hdr_priority=", parse_hdmitx_hdr_priority);
 static int parse_hdmitx_checksum(char *str)
 {
 	snprintf(tx_params.edid_chksum, sizeof(tx_params.edid_chksum), "%s", str);
-	pr_info("hdmitx_param:[checksum]=[%s]\n", tx_params.edid_chksum);
+	pr_debug("hdmitx_param:[checksum]=[%s]\n", tx_params.edid_chksum);
 
 	return 0;
 }

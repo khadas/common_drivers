@@ -99,7 +99,7 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 	meson_gem_obj->dmabuf = dmabuf;
 
 	if (meson_gem_obj->is_dma) {
-		attachment = dma_buf_attach(dmabuf, dma_heap_get_dev(heap));
+		attachment = dma_buf_attach(dmabuf, meson_gem_obj->base.dev->dev);
 		if (!attachment) {
 			DRM_ERROR("%s: dma_buf_attach fail", __func__);
 			return -ENOMEM;

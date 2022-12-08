@@ -24,7 +24,7 @@ config AMLOGIC_GX_SUSPEND
 	  If you want this support, you should say Y here.
 
 config AMLOGIC_LEGACY_EARLY_SUSPEND
-	bool "A re-implement early_suspend instead of legacy ealry_suspend."
+	bool "A re-implement early_suspend instead of legacy early_suspend."
 	depends on AMLOGIC_GX_SUSPEND
 	depends on PM
 	default n

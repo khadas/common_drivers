@@ -2118,17 +2118,17 @@
 			sustainable-power = <5160>;
 			thermal-sensors = <&cpu_tsensor 0>;
 			trips {
-				cpuswitch_on: trip-point@0 {
+				cpu_switch_on: trip-point@0 {
 					temperature = <95000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				cpucontrol: trip-point@1 {
+				cpu_control: trip-point@1 {
 					temperature = <105000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				cpucritical: trip-point@2 {
+				cpu_critical: trip-point@2 {
 					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";
@@ -2136,12 +2136,12 @@
 			};
 			cooling-maps {
 				cpufreq_cooling_map {
-					trip = <&cpucontrol>;
+					trip = <&cpu_control>;
 					cooling-device = <&CPU0 0 8>;
 					contribution = <1024>;
 				};
 				gpufreq_cooling_map {
-					trip = <&cpucontrol>;
+					trip = <&cpu_control>;
 					cooling-device = <&gpu 0 3>;
 					contribution = <1024>;
 				};
@@ -2153,17 +2153,17 @@
 			sustainable-power = <960>;
 			thermal-sensors = <&nna_tsensor 1>;
 			trips {
-				nnaswitch_on: trip-point@0 {
+				nna_switch_on: trip-point@0 {
 					temperature = <95000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				nnacontrol: trip-point@1 {
+				nna_control: trip-point@1 {
 					temperature = <105000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				nnacritical: trip-point@2 {
+				nna_critical: trip-point@2 {
 					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";
@@ -2176,17 +2176,17 @@
 			sustainable-power = <400>;
 			thermal-sensors = <&vpu_tsensor 2>;
 			trips {
-				vpuswitch_on: trip-point@0 {
+				vpu_switch_on: trip-point@0 {
 					temperature = <95000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				vpucontrol: trip-point@1 {
+				vpu_control: trip-point@1 {
 					temperature = <105000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				vpucritical: trip-point@2 {
+				vpu_critical: trip-point@2 {
 					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";

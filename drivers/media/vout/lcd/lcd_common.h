@@ -24,7 +24,8 @@
 /* 20221116: add pinmux lock for c3*/
 /* 20221123: add ioctl functions, include: power,mute,phy,ss*/
 /* 20221207: support drm display mode timing for different frame rate*/
-#define LCD_DRV_VERSION    "20221207"
+/* 20221208: remove black pattern when enable*/
+#define LCD_DRV_VERSION    "20221208"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;
@@ -140,7 +141,6 @@ void lcd_tcon_vsync_isr(struct aml_lcd_drv_s *pdrv);
 
 /* lcd debug */
 int lcd_debug_info_len(int num);
-void lcd_test_pattern_init(struct aml_lcd_drv_s *pdrv, unsigned int num);
 int lcd_debug_probe(struct aml_lcd_drv_s *pdrv);
 int lcd_debug_remove(struct aml_lcd_drv_s *pdrv);
 

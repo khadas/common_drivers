@@ -144,6 +144,29 @@ static int lcd_venc_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
 	return 0;
 }
 
+static void lcd_test_pattern_init(struct aml_lcd_drv_s *pdrv, unsigned int num)
+{
+	unsigned int h_active, video_on_pixel, offset;
+
+	num = (num >= LCD_ENC_TST_NUM_MAX) ? 0 : num;
+	offset = pdrv->data->offset_venc[pdrv->index];
+
+	h_active = pdrv->config.basic.h_active;
+	video_on_pixel = pdrv->config.timing.hstart;
+
+	lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL + offset, lcd_enc_tst[num][6]);
+	lcd_vcbus_write(ENCL_TST_MDSEL + offset, lcd_enc_tst[num][0]);
+	lcd_vcbus_write(ENCL_TST_Y + offset, lcd_enc_tst[num][1]);
+	lcd_vcbus_write(ENCL_TST_CB + offset, lcd_enc_tst[num][2]);
+	lcd_vcbus_write(ENCL_TST_CR + offset, lcd_enc_tst[num][3]);
+	lcd_vcbus_write(ENCL_TST_CLRBAR_STRT + offset, video_on_pixel);
+	lcd_vcbus_write(ENCL_TST_CLRBAR_WIDTH + offset, (h_active / 9));
+	lcd_vcbus_write(ENCL_TST_EN + offset, lcd_enc_tst[num][4]);
+	lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV + offset, lcd_enc_tst[num][5], 3, 1);
+	if (num > 0)
+		LCDPR("[%d]: init test pattern: %s\n", pdrv->index, lcd_enc_tst_str[num]);
+}
+
 static void lcd_venc_gamma_init(struct aml_lcd_drv_s *pdrv)
 {
 	int index = pdrv->index;
@@ -338,13 +361,8 @@ static void lcd_venc_set(struct aml_lcd_drv_s *pdrv)
 	lcd_set_venc_timing(pdrv);
 
 	lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL + offset, 3);
-	/* default black pattern */
-	lcd_vcbus_write(ENCL_TST_MDSEL + offset, 0);
-	lcd_vcbus_write(ENCL_TST_Y + offset, 0);
-	lcd_vcbus_write(ENCL_TST_CB + offset, 0);
-	lcd_vcbus_write(ENCL_TST_CR + offset, 0);
-	lcd_vcbus_write(ENCL_TST_EN + offset, 1);
-	lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV + offset, 0, 3, 1);
+	//restore test pattern
+	lcd_test_pattern_init(pdrv, pdrv->test_state);
 
 	lcd_vcbus_write(ENCL_VIDEO_EN + offset, 1);
 

@@ -1737,7 +1737,7 @@
 	};
 
 	amlvecm: amlvecm {
-		compatible = "amlogic, vecm-t3";
+		compatible = "amlogic, vecm-t5m";
 		status = "disabled";
 		dev_name = "aml_vecm";
 		clocks = <&clkc CLKID_VID_LOCK>;

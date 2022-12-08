@@ -304,6 +304,15 @@
 #define VI_HIST_BLACK_WHITE_VALUE  0x2e29
 #define VI_HIST_GCLK_CTRL  0x2e2a
 
+/*T5M addd dark area hist*/
+/*   7 hist_idx_clr  //default 0
+ *   6 idx_auto_inc  //default 0, 0 not increase 1: auto increase
+ * 5:0 hist_idx_init //default 0, init hist value
+ */
+#define VI_RO_HIST_LOW_IDX  0x2e2b
+/* 23:0 ro, hist counts in each bin for 0~63 bins*/
+#define VI_RO_HIST_LOW      0x2e2c
+
 #define VPP_IN_H_V_SIZE  0x1da6
 
 /* 3D process */
@@ -1356,6 +1365,11 @@
 #define RO_CM_BRT_BIN	0x267
 /*TL1 cm HIST reg end*/
 
+/*T5M add luma/sat/hue final gain*/
+#define CM_FINAL_GAIN_LUMA       0X268
+#define CM_FINAL_GAIN_SAT        0x269
+#define CM_FINAL_GAIN_HUE        0x26a
+
 /*LC register begin*/
 #define SRSHARP1_LC_INPUT_MUX     0x3fb1
 #define SRSHARP1_LC_TOP_CTRL     0x3fc0
@@ -1502,6 +1516,10 @@
 #define LCD_GAMMA_DATA_PORT0    0x14b5
 #define LCD_GAMMA_ADDR_PORT0    0x14b6
 #define L_H_AUTO_INC            8
+
+/*T5M 257 point gamma, index 0~8, auto inc bit9*/
+#define L_H_AUTO_INC_2            9
+
 /* 10bit */
 #define L_GAMMA_R               20
 #define L_GAMMA_G               10

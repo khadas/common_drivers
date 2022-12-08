@@ -90,6 +90,7 @@ struct vpp_hist_param_s {
 	unsigned int vpp_luma_sum;
 	unsigned int vpp_pixel_sum;
 	unsigned short vpp_histgram[DNLP_VPP_HIST_BIN_NUM];
+	unsigned short vpp_dark_hist[DNLP_VPP_HIST_BIN_NUM];
 	unsigned int hdr_histgram[HDR_HIST_BIN_NUM];
 	unsigned int hue_histgram[HUE_HIST_BIN_NUM];
 	unsigned int sat_histgram[SAT_HIST_BIN_NUM];

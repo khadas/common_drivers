@@ -111,7 +111,7 @@ struct amvecm_dev_s {
 	wait_queue_head_t           hdr_queue;
 	/*hdr*/
 	struct hdr_data_t	hdr_d;
-
+	struct gamma_data_s gm_data;
 };
 
 #ifdef CONFIG_AMLOGIC_LCD
@@ -124,6 +124,8 @@ static struct resource *res_lc_curve_irq;
 static struct workqueue_struct *aml_cabc_queue;
 static struct work_struct cabc_proc_work;
 static struct work_struct cabc_bypass_work;
+
+enum chip_type chip_type_id;
 
 /*gamma loading protect*/
 spinlock_t vpp_lcd_gamma_lock;
@@ -257,7 +259,7 @@ unsigned int vecm_latch_flag2;
 module_param(vecm_latch_flag2, uint, 0664);
 MODULE_PARM_DESC(vecm_latch_flag2, "\n vecm_latch_flag2\n");
 
-unsigned int pq_load_en = 1;/* load pq table enable/disable */
+unsigned int pq_load_en;/* load pq table enable/disable */
 module_param(pq_load_en, uint, 0664);
 MODULE_PARM_DESC(pq_load_en, "\n pq_load_en\n");
 
@@ -968,6 +970,8 @@ static void vpp_backup_histgram(struct vframe_s *vf)
 		vpp_hist_param.hue_histgram[i] = vf->prop.hist.vpp_hue_gamma[i];
 	for (i = 0; i < 32; i++)
 		vpp_hist_param.sat_histgram[i] = vf->prop.hist.vpp_sat_gamma[i];
+	for (i = 0; i < 64; i++)
+		vpp_hist_param.vpp_dark_hist[i] = vf->prop.hist.vpp_dark_hist[i];
 }
 
 static void vpp_dump_histgram(void)
@@ -992,6 +996,13 @@ static void vpp_dump_histgram(void)
 		if ((i + 1) % 8 == 0)
 			pr_info("\n");
 	}
+
+	pr_info("\n\t dump vpp dark hist\n");
+	for (i = 0; i < 64; i++) {
+		pr_info("[%d]0x%-8x\t", i, vpp_hist_param.vpp_dark_hist[i]);
+		if ((i + 1) % 8 == 0)
+			pr_info("\n");
+	}
 	pr_info("\n\t dump_dnlp_hist done\n");
 }
 
@@ -1007,6 +1018,20 @@ void vpp_get_hist_en(void)
 }
 
 static unsigned int vpp_luma_max;
+
+void get_dark_luma_hist(struct vframe_s *vf)
+{
+	int i;
+	int hist_idx;
+
+	if (chip_type_id == chip_t5m) {
+		hist_idx = 1 << 6;
+		WRITE_VPP_REG(VI_RO_HIST_LOW_IDX, hist_idx);
+		for (i = 0; i < 64; i++)
+			vf->prop.hist.vpp_dark_hist[i] = READ_VPP_REG(VI_RO_HIST_LOW);
+	}
+}
+
 void vpp_get_vframe_hist_info(struct vframe_s *vf)
 {
 	unsigned int hist_height, hist_width, i;
@@ -1249,7 +1274,8 @@ void vpp_get_vframe_hist_info(struct vframe_s *vf)
 			  VI_HIST_ON_BIN_63_BIT, VI_HIST_ON_BIN_63_WID);
 
 	if (get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W) {
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+		chip_type_id == chip_t5m) {
 		vf->fmeter0_hcnt[0] =
 		READ_VPP_REG(SRSHARP0_RO_FMETER_HCNT_TYPE0);
 		vf->fmeter0_hcnt[1] =
@@ -1288,6 +1314,9 @@ void vpp_get_vframe_hist_info(struct vframe_s *vf)
 				READ_VPP_REG(VPP_CHROMA_DATA_PORT);
 		}
 	}
+
+	get_dark_luma_hist(vf);
+
 	if (debug_game_mode_1 &&
 	    vpp_luma_max != vf->prop.hist.vpp_luma_max) {
 		divid = sched_clock();
@@ -1297,6 +1326,7 @@ void vpp_get_vframe_hist_info(struct vframe_s *vf)
 			divid, vpp_luma_max, vf->prop.hist.vpp_luma_max);
 		vpp_luma_max = vf->prop.hist.vpp_luma_max;
 	}
+
 }
 
 static void ioctrl_get_hdr_metadata(struct vframe_s *vf)
@@ -1978,7 +2008,8 @@ int amvecm_on_vs(struct vframe_s *vf,
 			/*1080i pulldown combing workaround*/
 			amvecm_dejaggy_patch(toggle_vf);
 			if ((get_cpu_type() == MESON_CPU_MAJOR_ID_T3) ||
-				(get_cpu_type() == MESON_CPU_MAJOR_ID_T5W)) {
+				(get_cpu_type() == MESON_CPU_MAJOR_ID_T5W) ||
+				chip_type_id == chip_t5m) {
 				/*frequence meter size config*/
 				amve_fmetersize_config(vf->width, vf->height,
 					sps_w_in, sps_h_in);
@@ -4802,6 +4833,278 @@ free_buf:
 	return -EINVAL;
 }
 
+static ssize_t amvecm_gamma_v2_show(struct class *cls,
+				 struct class_attribute *attr,
+			char *buf)
+{
+	int i;
+	int len = 0;
+	struct gamma_data_s *p_gm;
+	int max_idx;
+
+	if (chip_type_id < chip_t5m)
+		return 0;
+
+	p_gm = get_gm_data();
+	max_idx = p_gm->max_idx;
+
+	if (vecm_latch_flag2 & GAMMA_READ_R) {
+		for (i = 0; i < max_idx; i++)
+			len += sprintf(buf + len, "%03x",
+				p_gm->dbg_gm_tbl.gamma_r[i]);
+		len += sprintf(buf + len, "\n");
+		vecm_latch_flag2 &= ~GAMMA_READ_R;
+		return len;
+	}
+
+	if (vecm_latch_flag2 & GAMMA_READ_G) {
+		for (i = 0; i < max_idx; i++)
+			len += sprintf(buf + len, "%03x",
+				p_gm->dbg_gm_tbl.gamma_g[i]);
+		len += sprintf(buf + len, "\n");
+		vecm_latch_flag2 &= ~GAMMA_READ_G;
+		return len;
+	}
+
+	if (vecm_latch_flag2 & GAMMA_READ_B) {
+		for (i = 0; i < max_idx; i++)
+			len += sprintf(buf + len, "%03x",
+				p_gm->dbg_gm_tbl.gamma_b[i]);
+		len += sprintf(buf + len, "\n");
+		vecm_latch_flag2 &= ~GAMMA_READ_B;
+		return len;
+	}
+
+	if (vecm_latch_flag2 & GAMMA_CRC_PASS) {
+		len += sprintf(buf + len, "gamma set crc pass\n");
+		vecm_latch_flag2 &= ~GAMMA_CRC_PASS;
+		return len;
+	}
+
+	if (vecm_latch_flag2 & GAMMA_CRC_FAIL) {
+		len += sprintf(buf + len, "gamma set crc fail\n");
+		vecm_latch_flag2 &= ~GAMMA_CRC_FAIL;
+		return len;
+	}
+
+	pr_info("Usage:");
+	pr_info("	echo sgr|sgg|sgb xxx...xx > /sys/class/amvecm/gamma_v2\n");
+	pr_info("Notes:\n");
+	pr_info("	if the string xxx......xx is less than 257*3,");
+	pr_info("	then the remaining will be set value 0\n");
+	pr_info("	if the string xxx......xx is more than 257*3, ");
+	pr_info("	then the remaining will be ignored\n");
+	pr_info("Usage:");
+	pr_info("	echo ggr|ggg|ggb xxx > /sys/class/amvecm/gamma_v2\n");
+	pr_info("Notes:\n");
+	pr_info("	read all as point......xxx is 'all'.\n");
+	pr_info("	read all as strings......xxx is 'all_str'.\n");
+	pr_info("	read one point......xxx is a value '0~256'.\n ");
+	return 0;
+}
+
+static ssize_t amvecm_gamma_v2_store(struct class *cls,
+				  struct class_attribute *attr,
+			const char *buffer, size_t count)
+{
+	int n = 0;
+	char *buf_orig, *ps, *token;
+	char *parm[4] = {NULL};
+	unsigned short *gm_cv;
+	unsigned int gamma_count;
+	char gamma[4];
+	int i = 0;
+	long val;
+	char delim1[3] = " ";
+	char delim2[2] = "\n";
+	char *stemp = NULL;
+	unsigned int len;
+	unsigned int crc_data;
+	struct gamma_data_s *p_gm;
+	int max_idx;
+
+	stemp = kmalloc(600, GFP_KERNEL);
+	if (!stemp)
+		return -ENOMEM;
+
+	if (chip_type_id < chip_t5m)
+		return -EIO;
+
+	p_gm = get_gm_data();
+	max_idx = p_gm->max_idx;
+
+	gm_cv = kmalloc_array(max_idx, sizeof(unsigned short), GFP_KERNEL);
+	if (!gm_cv) {
+		kfree(stemp);
+		return -ENOMEM;
+	}
+
+	buf_orig = kstrdup(buffer, GFP_KERNEL);
+	if (!buf_orig)
+		goto free_buf;
+	ps = buf_orig;
+	strcat(delim1, delim2);
+	while (1) {
+		token = strsep(&ps, delim1);
+		if (!token)
+			break;
+		if (*token == '\0')
+			continue;
+		parm[n++] = token;
+	}
+	if (!gm_cv || !stemp || n == 0)
+		goto free_buf;
+
+	// parm[0] sgr/sgg/sgb/ggr/ggg/ggb
+	if ((parm[0][0] == 's') && (parm[0][1] == 'g') &&
+		((parm[0][2] == 'r') || (parm[0][2] == 'g') || (parm[0][2] == 'b'))) {
+		len = strlen(parm[1]);
+		if (len != max_idx * 3) {
+			vecm_latch_flag2 |= GAMMA_CRC_FAIL;
+			pr_info("data length is not 771 Bytes.\n");
+			goto free_buf;
+		}
+
+		//gamma data should be hex character
+		for (i = 0; i < len; i++) {
+			if ((parm[1][i] - '0') < 10 || (parm[1][i] | 0x20) - 'a' < 6)
+				continue;
+			pr_info("error char\n");
+			goto free_buf;
+		}
+
+		//parm[2] crc value
+		if (parm[2]) {
+			crc_data = cal_crc32(0, parm[1], len);
+			if (kstrtoul(parm[2], 16, &val) < 0) {
+				pr_info("cmd crc error\n");
+				goto free_buf;
+			}
+			if (crc_data == val) {
+				vecm_latch_flag2 |= GAMMA_CRC_PASS;
+			} else {
+				vecm_latch_flag2 |= GAMMA_CRC_FAIL;
+				goto free_buf;
+			}
+		}
+		memset(gm_cv, 0, max_idx * sizeof(unsigned short));
+		gamma_count = (strlen(parm[1]) + 2) / 3;
+		if (gamma_count > max_idx)
+			gamma_count = max_idx;
+
+		for (i = 0; i < gamma_count; ++i) {
+			gamma[0] = parm[1][3 * i + 0];
+			gamma[1] = parm[1][3 * i + 1];
+			gamma[2] = parm[1][3 * i + 2];
+			gamma[3] = '\0';
+			if (kstrtol(gamma, 16, &val) < 0)
+				goto free_buf;
+			gm_cv[i] = val;
+		}
+
+		switch (parm[0][2]) {
+		case 'r':
+			amve_write_gamma_table(gm_cv, H_SEL_R);
+			break;
+
+		case 'g':
+			amve_write_gamma_table(gm_cv, H_SEL_G);
+			break;
+
+		case 'b':
+			amve_write_gamma_table(gm_cv, H_SEL_B);
+			break;
+		default:
+			break;
+		}
+	} else if (!strcmp(parm[0], "ggr")) {
+		vpp_get_lcd_gamma_table(H_SEL_R);
+		if (!strcmp(parm[1], "all")) {
+			for (i = 0; i < 256; i++)
+				pr_info("gamma_r[%d] = %x\n",
+					i, p_gm->dbg_gm_tbl.gamma_r[i]);
+		} else if (!strcmp(parm[1], "all_str")) {
+			if (!parm[2]) {
+				for (i = 0; i < 256; i++)
+					d_convert_str(p_gm->dbg_gm_tbl.gamma_r[i], i, stemp, 3, 16);
+				pr_info("gamma_r str: %s\n", stemp);
+			} else if (!strcmp(parm[2], "adb")) {
+				vecm_latch_flag2 |= GAMMA_READ_R;
+			}
+		} else {
+			if (kstrtoul(parm[1], 10, &val) < 0) {
+				pr_info("invalid command\n");
+				goto free_buf;
+			}
+			i = val;
+			if (i >= 0 && i <= 256)
+				pr_info("gamma_r[%d] = %x\n",
+					i, p_gm->dbg_gm_tbl.gamma_r[i]);
+		}
+	} else if (!strcmp(parm[0], "ggg")) {
+		vpp_get_lcd_gamma_table(H_SEL_G);
+		if (!strcmp(parm[1], "all")) {
+			for (i = 0; i < 256; i++)
+				pr_info("gamma_g[%d] = %x\n",
+					i, p_gm->dbg_gm_tbl.gamma_g[i]);
+		} else if (!strcmp(parm[1], "all_str")) {
+			if (!parm[2]) {
+				for (i = 0; i < 256; i++)
+					d_convert_str(p_gm->dbg_gm_tbl.gamma_g[i], i, stemp, 3, 16);
+				pr_info("gamma_g str: %s\n", stemp);
+			} else if (!strcmp(parm[2], "adb")) {
+				vecm_latch_flag2 |= GAMMA_READ_G;
+			}
+		} else {
+			if (kstrtoul(parm[1], 10, &val) < 0) {
+				pr_info("invalid command\n");
+				goto free_buf;
+			}
+			i = val;
+			if (i >= 0 && i <= 255)
+				pr_info("gamma_g[%d] = %x\n",
+					i, p_gm->dbg_gm_tbl.gamma_g[i]);
+		}
+
+	} else if (!strcmp(parm[0], "ggb")) {
+		vpp_get_lcd_gamma_table(H_SEL_B);
+		if (!strcmp(parm[1], "all")) {
+			for (i = 0; i < 256; i++)
+				pr_info("gamma_b[%d] = %x\n",
+					i, p_gm->dbg_gm_tbl.gamma_b[i]);
+		} else if (!strcmp(parm[1], "all_str")) {
+			if (!parm[2]) {
+				for (i = 0; i < 256; i++)
+					d_convert_str(p_gm->dbg_gm_tbl.gamma_b[i], i, stemp, 3, 16);
+				pr_info("gamma_b str: %s\n", stemp);
+			} else if (!strcmp(parm[2], "adb")) {
+				vecm_latch_flag2 |= GAMMA_READ_B;
+			}
+		} else {
+			if (kstrtoul(parm[1], 10, &val) < 0) {
+				pr_info("invalid command\n");
+				goto free_buf;
+			}
+			i = val;
+			if (i >= 0 && i <= 255)
+				pr_info("gamma_b[%d] = %x\n",
+					i, p_gm->dbg_gm_tbl.gamma_b[i]);
+		}
+	} else {
+		pr_info("invalid command\n");
+		pr_info("please: cat /sys/class/amvecm/gamma");
+	}
+	kfree(buf_orig);
+	kfree(stemp);
+	kfree(gm_cv);
+	return count;
+free_buf:
+	kfree(buf_orig);
+	kfree(stemp);
+	kfree(gm_cv);
+	return -EINVAL;
+}
+
 static ssize_t set_gamma_pattern_show(struct class *cla,
 				      struct class_attribute *attr, char *buf)
 {
@@ -4817,7 +5120,7 @@ static ssize_t set_gamma_pattern_store(struct class *cls,
 				       struct class_attribute *attr,
 			const char *buffer, size_t count)
 {
-	static unsigned short r_val[256], g_val[256], b_val[256];
+	static unsigned short r_val[257], g_val[257], b_val[257];
 	int n = 0;
 	char *buf_orig, *ps, *token;
 	char *parm[4];
@@ -4896,14 +5199,14 @@ static ssize_t set_gamma_pattern_store(struct class *cls,
 		gamma[2] = val << 2;
 	}
 
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < 257; i++) {
 		r_val[i] = gamma[0];
 		g_val[i] = gamma[1];
 		b_val[i] = gamma[2];
 	}
 
 	if (cpu_after_eq_t7()) {
-		lcd_gamma_api(gamma_index, r_val, g_val, b_val, 0, 0);
+		lcd_gamma_api(gamma_index, r_val, g_val, b_val, WR_VCB, WR_MOD);
 	} else {
 		amve_write_gamma_table(r_val, H_SEL_R);
 		amve_write_gamma_table(g_val, H_SEL_G);
@@ -7545,6 +7848,16 @@ static void cm_init_config(int bitdepth)
 			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, reg);
 			WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, 0x0);
 		}
+
+		/*T5M add final gain*/
+		if (chip_type_id == chip_t5m) {
+			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, CM_FINAL_GAIN_LUMA);
+			WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, 0x800);
+			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, CM_FINAL_GAIN_SAT);
+			WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, 0x800);
+			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, CM_FINAL_GAIN_HUE);
+			WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, 0x800);
+		}
 	}
 }
 
@@ -9566,7 +9879,8 @@ void init_pq_setting(void)
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T7 ||
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W)
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+		chip_type_id == chip_t5m)
 		goto tvchip_pq_setting;
 	else if (is_meson_g12a_cpu() || is_meson_g12b_cpu() ||
 		 is_meson_sm1_cpu() ||
@@ -9608,7 +9922,8 @@ tvchip_pq_setting:
 		else if (get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
 			     get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
 			     get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-			     get_cpu_type() == MESON_CPU_MAJOR_ID_T5W)
+			     get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+			     chip_type_id == chip_t5m)
 			bitdepth = 10;
 		else if (is_meson_tm2_cpu())
 			bitdepth = 12;
@@ -9623,7 +9938,8 @@ tvchip_pq_setting:
 
 		/*frequence meter init*/
 		if (get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-			get_cpu_type() == MESON_CPU_MAJOR_ID_T5W)
+			get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+			chip_type_id == chip_t5m)
 			amve_fmeter_init(fmeter_en);
 
 		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
@@ -9684,10 +10000,38 @@ tvchip_pq_setting:
 
 /* #endif*/
 
+struct gamma_data_s *get_gm_data(void)
+{
+	return &amvecm_dev.gm_data;
+}
+
 void amvecm_gamma_init(bool en)
 {
 	unsigned int i, j, k;
 	unsigned short data[256];
+	unsigned short temp;
+	struct gamma_data_s *p_gm;
+
+	if (chip_type_id == chip_t5m) {
+		p_gm = get_gm_data();
+		p_gm->max_idx = 257;
+		p_gm->auto_inc = 1 << L_H_AUTO_INC_2;
+		p_gm->addr_port = LCD_GAMMA_ADDR_PORT0;
+		p_gm->data_port = LCD_GAMMA_DATA_PORT0;
+		for (i = 0; i < p_gm->max_idx; i++) {
+			temp = i << 2;
+			if (temp >= (1 << 10))
+				temp = (1 << 10) - 1;
+			p_gm->gm_tbl.gamma_r[i] = temp;
+			p_gm->gm_tbl.gamma_g[i] = temp;
+			p_gm->gm_tbl.gamma_b[i] = temp;
+		}
+		lcd_gamma_api(0, p_gm->gm_tbl.gamma_r,
+				p_gm->gm_tbl.gamma_g,
+				p_gm->gm_tbl.gamma_b,
+				WR_VCB, WR_MOD);
+		return;
+	}
 
 	for (i = 0; i < 256; i++) {
 		data[i] = i << 2;
@@ -9709,7 +10053,7 @@ void amvecm_gamma_init(bool en)
 			lcd_gamma_api(0, video_gamma_table_r.data,
 				video_gamma_table_g.data,
 				video_gamma_table_b.data,
-				0, 0);
+				WR_VCB, WR_MOD);
 		}
 	} else {
 		vpp_disable_lcd_gamma_table(0, 0);
@@ -9844,6 +10188,9 @@ static struct class_attribute amvecm_class_attrs[] = {
 	__ATTR(gamma, 0644,
 	       amvecm_gamma_show,
 		amvecm_gamma_store),
+	__ATTR(gamma_v2, 0644,
+	       amvecm_gamma_v2_show,
+		amvecm_gamma_v2_store),
 	__ATTR(wb, 0644,
 	       amvecm_wb_show,
 		amvecm_wb_store),
@@ -9956,6 +10303,7 @@ static const struct file_operations amvecm_fops = {
 };
 
 static const struct vecm_match_data_s vecm_dt_xxx = {
+	.chip_id = chip_other,
 	.vlk_chip = vlock_chip_txlx,
 	.vlk_support = true,
 	.vlk_new_fsm = 0,
@@ -9966,6 +10314,7 @@ static const struct vecm_match_data_s vecm_dt_xxx = {
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static const struct vecm_match_data_s vecm_dt_tl1 = {
+	.chip_id = chip_other,
 	.vlk_chip = vlock_chip_tl1,
 	.vlk_support = true,
 	.vlk_new_fsm = 1,
@@ -9976,6 +10325,7 @@ static const struct vecm_match_data_s vecm_dt_tl1 = {
 #endif
 
 static const struct vecm_match_data_s vecm_dt_sm1 = {
+	.chip_id = chip_other,
 	.vlk_chip = vlock_chip_sm1,
 	.vlk_support = false,
 	.vlk_new_fsm = 1,
@@ -9985,6 +10335,7 @@ static const struct vecm_match_data_s vecm_dt_sm1 = {
 };
 
 static const struct vecm_match_data_s vecm_dt_tm2 = {
+	.chip_id = chip_other,
 	.vlk_chip = vlock_chip_tm2,
 	.vlk_support = true,
 	.vlk_new_fsm = 1,
@@ -9994,6 +10345,7 @@ static const struct vecm_match_data_s vecm_dt_tm2 = {
 };
 
 static const struct vecm_match_data_s vecm_dt_tm2_verb = {
+	.chip_id = chip_other,
 	.vlk_chip = vlock_chip_tm2,
 	.vlk_support = true,
 	.vlk_new_fsm = 1,
@@ -10003,6 +10355,7 @@ static const struct vecm_match_data_s vecm_dt_tm2_verb = {
 };
 
 static const struct vecm_match_data_s vecm_dt_t5 = {
+	.chip_id = chip_other,
 	.vlk_chip = vlock_chip_t5,
 	.vlk_support = true,
 	.vlk_new_fsm = 1,
@@ -10012,6 +10365,7 @@ static const struct vecm_match_data_s vecm_dt_t5 = {
 };
 
 static const struct vecm_match_data_s vecm_dt_t5d = {
+	.chip_id = chip_other,
 	.vlk_chip = vlock_chip_t5,/*same as t5d*/
 	.vlk_support = true,
 	.vlk_new_fsm = 1,
@@ -10021,6 +10375,7 @@ static const struct vecm_match_data_s vecm_dt_t5d = {
 };
 
 static const struct vecm_match_data_s vecm_dt_t7 = {
+	.chip_id = chip_other,
 	.vlk_chip = vlock_chip_t7,
 	.vlk_support = true,
 	.vlk_new_fsm = 1,
@@ -10031,6 +10386,7 @@ static const struct vecm_match_data_s vecm_dt_t7 = {
 };
 
 static const struct vecm_match_data_s vecm_dt_t3 = {
+	.chip_id = chip_t3,
 	.vlk_chip = vlock_chip_t3,
 	.vlk_support = true,
 	.vlk_new_fsm = 1,
@@ -10043,12 +10399,25 @@ static const struct vecm_match_data_s vecm_dt_t3 = {
 
 /*t5w vlock follow t5 */
 static const struct vecm_match_data_s vecm_dt_t5w = {
+	.chip_id = chip_t5w,
 	.vlk_chip = vlock_chip_t5,
 	.vlk_support = true,
 	.vlk_new_fsm = 1,
 	.vlk_hwver = vlock_hw_tm2verb,
 	.vlk_phlock_en = true,
 	.vlk_pll_sel = vlock_pll_sel_tcon,
+	.vrr_support_flag = 1,
+};
+
+static const struct vecm_match_data_s vecm_dt_t5m = {
+	.chip_id = chip_t5m,
+	.vlk_chip = vlock_chip_t5,
+	.vlk_support = true,
+	.vlk_new_fsm = 1,
+	.vlk_hwver = vlock_hw_tm2verb,
+	.vlk_phlock_en = true,
+	.vlk_pll_sel = vlock_pll_sel_tcon,
+	.vlk_ctl_for_frc = 0,
 	.vrr_support_flag = 1,
 };
 
@@ -10095,8 +10464,18 @@ static const struct of_device_id aml_vecm_dt_match[] = {
 		.compatible = "amlogic, vecm-t5w",
 		.data = &vecm_dt_t5w,
 	},
+	{
+		.compatible = "amlogic, vecm-t5m",
+		.data = &vecm_dt_t5m,
+	},
 	{},
 };
+
+static void aml_vecm_match_init(struct vecm_match_data_s *pdata)
+{
+	chip_type_id = pdata->chip_id;
+	pr_info("vecm chip id: %d\n", chip_type_id);
+}
 
 static void aml_vecm_dt_parse(struct platform_device *pdev)
 {
@@ -10211,6 +10590,7 @@ static void aml_vecm_dt_parse(struct platform_device *pdev)
 			matchdata = (struct vecm_match_data_s *)&vecm_dt_xxx;
 			pr_amvecm_dbg("unable to get matched device\n");
 		}
+		aml_vecm_match_init(matchdata);
 		vlock_dt_match_init(matchdata);
 
 		frame_lock_set_vrr_support_flag(matchdata->vrr_support_flag);

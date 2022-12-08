@@ -403,15 +403,19 @@ void vpp_disable_lcd_gamma_table(int viu_sel, int rdma_write)
 
 /*new gamma interface, start from T7*/
 /*data[3][256] is r/g/b 256 data
- *rdma_write:  1 rdma write, 0 write directly
- *rw_flag:  0 write gamma,  1: read gamma
+ *wr_mod:  reg write mode: rdma or vcbus
+ *rw_mod:  read gamma or write gamma
  */
-void lcd_gamma_api(unsigned int index, u16 *r_data, u16 *g_data, u16 *b_data,
-	int rdma_write, int rw_flag)
+void lcd_gamma_api(unsigned int index,
+	u16 *r_data, u16 *g_data, u16 *b_data,
+	enum wr_md_e wr_mod, enum rw_md_e rw_mod)
 {
 	int i;
 	unsigned int val;
 	unsigned int offset = 0;
+	int auto_inc = 0;
+	int max_idx = 0;
+	struct gamma_data_s *p_gm;
 
 	/*force init gamma*/
 	/*if (!gamma_en)*/
@@ -424,32 +428,47 @@ void lcd_gamma_api(unsigned int index, u16 *r_data, u16 *g_data, u16 *b_data,
 	else if (index == 2)
 		offset = 0x200;
 
-	if (rw_flag) {
+	if (chip_type_id == chip_t5m) {
+		p_gm = get_gm_data();
+		auto_inc = p_gm->auto_inc;
+		max_idx = p_gm->max_idx;
+	} else {
+		auto_inc = 1 << L_H_AUTO_INC;
+		max_idx = 256;
+	}
+
+	if (rw_mod == RD_MOD) {
 		WRITE_VPP_REG(LCD_GAMMA_ADDR_PORT0 + offset,
-			(0x1 << L_H_AUTO_INC));
-		for (i = 0; i < 256; i++) {
+			auto_inc);
+		for (i = 0; i < max_idx; i++) {
 			val = READ_VPP_REG(LCD_GAMMA_DATA_PORT0 + offset);
 			r_data[i] = (val >> L_GAMMA_R) & 0x3ff;
 			g_data[i] = (val >> L_GAMMA_G) & 0x3ff;
 			b_data[i] = (val >> L_GAMMA_B) & 0x3ff;
 		}
-	} else {
-		if (rdma_write) {
-			VSYNC_WRITE_VPP_REG(LCD_GAMMA_ADDR_PORT0 + offset,
-				(0x1 << L_H_AUTO_INC));
-			for (i = 0; i < 256; i++)
-				VSYNC_WRITE_VPP_REG(LCD_GAMMA_DATA_PORT0 +
-					offset,
-				(r_data[i] << L_GAMMA_R) | (g_data[i] << L_GAMMA_G) |
-				(b_data[i] << L_GAMMA_B));
-		} else {
-			WRITE_VPP_REG(LCD_GAMMA_ADDR_PORT0 + offset,
-				(0x1 << L_H_AUTO_INC));
-			for (i = 0; i < 256; i++)
-				WRITE_VPP_REG(LCD_GAMMA_DATA_PORT0 + offset,
-				(r_data[i] << L_GAMMA_R) | (g_data[i] << L_GAMMA_G) |
-				(b_data[i] << L_GAMMA_B));
-		}
+		return;
+	}
+
+	switch (wr_mod) {
+	case WR_VCB:
+		WRITE_VPP_REG(LCD_GAMMA_ADDR_PORT0 + offset,
+			auto_inc);
+		for (i = 0; i < max_idx; i++)
+			WRITE_VPP_REG(LCD_GAMMA_DATA_PORT0 + offset,
+			(r_data[i] << L_GAMMA_R) | (g_data[i] << L_GAMMA_G) |
+			(b_data[i] << L_GAMMA_B));
+		break;
+	case WR_DMA:
+		VSYNC_WRITE_VPP_REG(LCD_GAMMA_ADDR_PORT0 + offset,
+			auto_inc);
+		for (i = 0; i < max_idx; i++)
+			VSYNC_WRITE_VPP_REG(LCD_GAMMA_DATA_PORT0 +
+				offset,
+			(r_data[i] << L_GAMMA_R) | (g_data[i] << L_GAMMA_G) |
+			(b_data[i] << L_GAMMA_B));
+		break;
+	default:
+		break;
 	}
 }
 
@@ -514,10 +533,18 @@ void vpp_get_lcd_gamma_table(u32 rgb_mask)
 {
 	int i;
 	int cnt = 0;
+	struct gamma_data_s *p_gm;
 
 	if (cpu_after_eq_t7()) {
-		lcd_gamma_api(gamma_index, gamma_data_r,
-			gamma_data_g, gamma_data_b, 0, 1);
+		if (chip_type_id == chip_t5m) {
+			p_gm = get_gm_data();
+			lcd_gamma_api(gamma_index, p_gm->dbg_gm_tbl.gamma_r,
+				p_gm->dbg_gm_tbl.gamma_g, p_gm->dbg_gm_tbl.gamma_b,
+				WR_VCB, RD_MOD);
+		} else {
+			lcd_gamma_api(gamma_index, gamma_data_r,
+				gamma_data_g, gamma_data_b, WR_VCB, RD_MOD);
+		}
 		return;
 	}
 
@@ -570,18 +597,37 @@ void amve_write_gamma_table(u16 *data, u32 rgb_mask)
 	int i;
 	int cnt = 0;
 	unsigned long flags = 0;
+	struct gamma_data_s *p_gm;
+	int max_idx;
 
 	if (cpu_after_eq_t7()) {
-		lcd_gamma_api(gamma_index, gamma_data_r,
-			gamma_data_g, gamma_data_b, 0, 1);
-		if (rgb_mask == H_SEL_R)
-			memcpy(gamma_data_r, data, sizeof(u16) * 256);
-		else if (rgb_mask == H_SEL_G)
-			memcpy(gamma_data_g, data, sizeof(u16) * 256);
-		else if (rgb_mask == H_SEL_B)
-			memcpy(gamma_data_b, data, sizeof(u16) * 256);
-		lcd_gamma_api(gamma_index, gamma_data_r,
-			gamma_data_g, gamma_data_b, 0, 0);
+		if (chip_type_id == chip_t5m) {
+			p_gm = get_gm_data();
+			max_idx = p_gm->max_idx;
+			lcd_gamma_api(gamma_index, p_gm->dbg_gm_tbl.gamma_r,
+				p_gm->dbg_gm_tbl.gamma_g, p_gm->dbg_gm_tbl.gamma_b,
+				WR_VCB, RD_MOD);
+			if (rgb_mask == H_SEL_R)
+				memcpy(p_gm->dbg_gm_tbl.gamma_r, data, sizeof(u16) * max_idx);
+			else if (rgb_mask == H_SEL_G)
+				memcpy(p_gm->dbg_gm_tbl.gamma_g, data, sizeof(u16) * max_idx);
+			else if (rgb_mask == H_SEL_B)
+				memcpy(p_gm->dbg_gm_tbl.gamma_b, data, sizeof(u16) * max_idx);
+			lcd_gamma_api(gamma_index, p_gm->dbg_gm_tbl.gamma_r,
+				p_gm->dbg_gm_tbl.gamma_g, p_gm->dbg_gm_tbl.gamma_b,
+				WR_VCB, WR_MOD);
+		} else {
+			lcd_gamma_api(gamma_index, gamma_data_r,
+				gamma_data_g, gamma_data_b, WR_VCB, RD_MOD);
+			if (rgb_mask == H_SEL_R)
+				memcpy(gamma_data_r, data, sizeof(u16) * 256);
+			else if (rgb_mask == H_SEL_G)
+				memcpy(gamma_data_g, data, sizeof(u16) * 256);
+			else if (rgb_mask == H_SEL_B)
+				memcpy(gamma_data_b, data, sizeof(u16) * 256);
+			lcd_gamma_api(gamma_index, gamma_data_r,
+				gamma_data_g, gamma_data_b, WR_VCB, WR_MOD);
+		}
 		return;
 	}
 
@@ -1011,6 +1057,7 @@ void ve_lcd_gamma_process(void)
 {
 	int viu_sel;
 	struct tcon_gamma_table_s *ptable;
+	struct gamma_data_s *p_gm;
 
 	if (cpu_after_eq_t7()) {
 		viu_sel = vpp_get_vout_viu_mux();
@@ -1038,10 +1085,18 @@ void ve_lcd_gamma_process(void)
 		vecm_latch_flag &= ~FLAG_GAMMA_TABLE_G;
 		vecm_latch_flag &= ~FLAG_GAMMA_TABLE_B;
 		if (cpu_after_eq_t7()) {
-			lcd_gamma_api(gamma_index, video_gamma_table_r.data,
-					video_gamma_table_g.data,
-					video_gamma_table_b.data,
-					1, 0);
+			if (chip_type_id == chip_t5m) {
+				p_gm = get_gm_data();
+				lcd_gamma_api(gamma_index, p_gm->dbg_gm_tbl.gamma_r,
+						p_gm->dbg_gm_tbl.gamma_g,
+						p_gm->dbg_gm_tbl.gamma_b,
+						WR_DMA, WR_MOD);
+			} else {
+				lcd_gamma_api(gamma_index, video_gamma_table_r.data,
+						video_gamma_table_g.data,
+						video_gamma_table_b.data,
+						WR_DMA, WR_MOD);
+			}
 		} else {
 			vpp_set_lcd_gamma_table(video_gamma_table_r.data, H_SEL_R,
 				viu_sel);
@@ -2198,7 +2253,8 @@ void vpp_lut3d_table_init(int r, int g, int b)
 	    is_meson_t5d_cpu() ||
 	    is_meson_t5_cpu() ||
 	    is_meson_t3_cpu() ||
-	    is_meson_t5w_cpu())
+	    is_meson_t5w_cpu() ||
+	    chip_type_id == chip_t5m)
 		max_val = 1023;
 
 	step = (max_val + 1) / 16;

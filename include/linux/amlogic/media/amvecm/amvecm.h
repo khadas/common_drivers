@@ -309,7 +309,12 @@ enum dv_pq_ctl_e {
 
 enum wr_md_e {
 	WR_VCB = 0,
-	WR_DMA,
+	WR_DMA
+};
+
+enum rw_md_e {
+	RD_MOD = 1,
+	WR_MOD
 };
 
 enum pq_table_name_e {
@@ -677,6 +682,14 @@ enum vlk_chiptype {
 	vlock_chip_t3,
 };
 
+enum chip_type {
+	chip_other = 0,
+	chip_t3,
+	chip_t5w,
+	chip_t5m,
+	chip_s5
+};
+
 enum vlock_hw_ver_e {
 	/*gxtvbb*/
 	vlock_hw_org = 0,
@@ -699,6 +712,7 @@ enum vlock_hw_ver_e {
 };
 
 struct vecm_match_data_s {
+	enum chip_type chip_id;
 	enum vlk_chiptype vlk_chip;
 	u32 vlk_support;
 	u32 vlk_new_fsm;
@@ -746,6 +760,7 @@ extern enum ecm_color_type cm_cur_work_color_md;
 extern int cm2_debug;
 
 extern unsigned int ct_en;
+extern enum chip_type chip_type_id;
 
 int amvecm_on_vs(struct vframe_s *display_vf,
 		 struct vframe_s *toggle_vf,
@@ -830,5 +845,22 @@ extern int freerun_en;
 u32 hdr_set(u32 module_sel, u32 hdr_process_select, enum vpp_index vpp_index);
 int vinfo_lcd_support(void);
 int dv_pq_ctl(enum dv_pq_ctl_e ctl);
+
+struct venc_gamma_table_s {
+	u16 gamma_r[257];
+	u16 gamma_g[257];
+	u16 gamma_b[257];
+};
+
+struct gamma_data_s {
+	int max_idx;
+	unsigned int auto_inc;
+	int addr_port;
+	int data_port;
+	struct venc_gamma_table_s gm_tbl;
+	struct venc_gamma_table_s dbg_gm_tbl;
+};
+
+struct gamma_data_s *get_gm_data(void);
 #endif /* AMVECM_H */
 

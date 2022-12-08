@@ -2695,7 +2695,8 @@ void hdr_gclk_ctrl_switch(enum hdr_module_sel module_sel,
 
 	/* only support T3 */
 	if (get_cpu_type() != MESON_CPU_MAJOR_ID_T3 &&
-		get_cpu_type() != MESON_CPU_MAJOR_ID_T5W)
+		get_cpu_type() != MESON_CPU_MAJOR_ID_T5W &&
+		chip_type_id != chip_t5m)
 		return;
 
 	if (hdr_process_select & HDR_BYPASS)
@@ -2764,13 +2765,15 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 	switch (module_sel) {
 	case OSD2_HDR:
 		if (get_cpu_type() != MESON_CPU_MAJOR_ID_T3 &&
-			get_cpu_type() != MESON_CPU_MAJOR_ID_T5W)
+			get_cpu_type() != MESON_CPU_MAJOR_ID_T5W &&
+			chip_type_id != chip_t5m)
 			return hdr_process_select;
 		break;
 	case OSD3_HDR:
 		if (get_cpu_type() != MESON_CPU_MAJOR_ID_T3 &&
 			get_cpu_type() != MESON_CPU_MAJOR_ID_T7 &&
-			get_cpu_type() != MESON_CPU_MAJOR_ID_T5W)
+			get_cpu_type() != MESON_CPU_MAJOR_ID_T5W &&
+			chip_type_id != chip_t5m)
 			return hdr_process_select;
 		break;
 	case VD3_HDR:
@@ -2852,7 +2855,8 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
 	    is_meson_s4_cpu() ||
 	    get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W)
+	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+	    chip_type_id == chip_t5m)
 		bit_depth = 10;
 
 	/*lut parameters*/
@@ -3553,7 +3557,8 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_T3 &&
 		(module_sel == OSD2_HDR ||
 		module_sel == OSD3_HDR)) ||
-		(get_cpu_type() == MESON_CPU_MAJOR_ID_T5W &&
+		((get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+		chip_type_id == chip_t5m) &&
 		(module_sel == OSD1_HDR ||
 		module_sel == OSD2_HDR ||
 		module_sel == OSD3_HDR))) {
@@ -3586,7 +3591,8 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 
 	if (clip_func == 0xff) {
 		if (get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-			get_cpu_type() == MESON_CPU_MAJOR_ID_T5W)
+			get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+			chip_type_id == chip_t5m)
 			clip_func_after_ootf(hdr_mtx_param.mtx_gamut_mode,
 						module_sel, vpp_index);
 	}
@@ -3764,13 +3770,15 @@ enum hdr_process_sel hdr10p_func(enum hdr_module_sel module_sel,
 	switch (module_sel) {
 	case OSD2_HDR:
 		if (get_cpu_type() != MESON_CPU_MAJOR_ID_T3 &&
-			get_cpu_type() != MESON_CPU_MAJOR_ID_T5W)
+			get_cpu_type() != MESON_CPU_MAJOR_ID_T5W &&
+			chip_type_id != chip_t5m)
 			return hdr_process_select;
 		break;
 	case OSD3_HDR:
 		if (get_cpu_type() != MESON_CPU_MAJOR_ID_T3 &&
 			get_cpu_type() != MESON_CPU_MAJOR_ID_T7 &&
-			get_cpu_type() != MESON_CPU_MAJOR_ID_T5W)
+			get_cpu_type() != MESON_CPU_MAJOR_ID_T5W &&
+			chip_type_id != chip_t5m)
 			return hdr_process_select;
 		break;
 	case VD3_HDR:
@@ -3831,7 +3839,8 @@ enum hdr_process_sel hdr10p_func(enum hdr_module_sel module_sel,
 	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
 	    is_meson_s4_cpu() ||
 	    get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W)
+	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+	    chip_type_id == chip_t5m)
 		bit_depth = 10;
 
 	/*lut parameters*/
@@ -4010,7 +4019,8 @@ enum hdr_process_sel hdr10p_func(enum hdr_module_sel module_sel,
 
 	if (clip_func == 0xff) {
 		if (get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-			get_cpu_type() == MESON_CPU_MAJOR_ID_T5W)
+			get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+			chip_type_id == chip_t5m)
 			clip_func_after_ootf(hdr_mtx_param.mtx_gamut_mode,
 						module_sel, vpp_index);
 	}

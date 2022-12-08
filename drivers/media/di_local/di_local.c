@@ -73,7 +73,7 @@ static struct dil_dev_s *pdv;
 
 static const struct di_ext_ops *dil_api;	//temp
 
-static unsigned int diffver_flag;
+static unsigned int diff_ver_flag;
 
 static unsigned int cpuver_id;
 
@@ -82,12 +82,12 @@ static unsigned int cpuver_id;
  **************************************/
 void dil_set_diff_ver_flag(unsigned int para)
 {
-	diffver_flag = para;
+	diff_ver_flag = para;
 }
 EXPORT_SYMBOL(dil_set_diff_ver_flag);
 unsigned int dil_get_diff_ver_flag(void)
 {
-	return diffver_flag;
+	return diff_ver_flag;
 }
 EXPORT_SYMBOL(dil_get_diff_ver_flag);
 

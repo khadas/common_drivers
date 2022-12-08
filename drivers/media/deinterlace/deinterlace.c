@@ -7491,7 +7491,7 @@ static void di_pre_process_irq(struct di_pre_stru_s *pre_stru_p)
 
 	if (active_flag) {
 		/* must wait pre de done or time out to clear the de_busy
-		 * otherwise may appear watch dog reboot probablity
+		 * otherwise may appear watch dog reboot probability
 		 * caused by disable mif in unreg_process_irq
 		 */
 		if (pre_stru_p->unreg_req_flag_irq &&
@@ -8956,7 +8956,7 @@ static void di_shutdown(struct platform_device *pdev)
 
 	di_devp = platform_get_drvdata(pdev);
 	ret = hrtimer_cancel(&di_pre_hrtimer);
-	pr_info("di pre hrtimer canel %d.\n", ret);
+	pr_info("di pre hrtimer cancel %d.\n", ret);
 	tasklet_kill(&di_pre_tasklet);
 	tasklet_disable(&di_pre_tasklet);
 

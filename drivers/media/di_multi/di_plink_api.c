@@ -5106,7 +5106,7 @@ static bool dpvpp_parser_nr(struct dimn_itf_s *itf,
 		/* debug only */
 		if (cfgg(PAUSE_SRC_CHG)) {
 			pre_run_flag = DI_RUN_FLAG_PAUSE;
-			PR_INF("dbg change:p_pause\n");
+			PR_INF("dbg change:ppause\n");
 		}
 		/* change */
 		PR_INF("source change:p:0x%x/%d/%d/%d=>0x%x/%d/%d/%d:%d\n",

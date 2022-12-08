@@ -1078,7 +1078,7 @@ store_dump_mem(struct device *dev, struct device_attribute *attr,
 		ppre = get_pre_stru(channel);
 		ppost = get_post_stru(channel);
 		#ifdef MARK_SC2
-		/*mm-0705	if (indx >= ppost->di_post_num) {*/
+		/*mm-0705	if (index >= ppost->di_post_num) {*/
 		if (index >= mm->sts.num_post) {
 			PR_ERR("c_post:index is overflow:%d[%d]\n", index,
 			       mm->sts.num_post);
@@ -1228,9 +1228,9 @@ store_dump_mem(struct device *dev, struct device_attribute *attr,
 		ppre = get_pre_stru(channel);
 		ppost = get_post_stru(channel);
 		#ifdef MARK_HIS
-		if (indx >= ppost->di_post_num) {
+		if (index >= ppost->di_post_num) {
 			PR_ERR("c_local:index is overflow:%d[%d]\n",
-			       indx, ppost->di_post_num);
+			       index, ppost->di_post_num);
 			kfree(buf_orig);
 			return 0;
 		}
@@ -3932,7 +3932,7 @@ void dim_pre_de_process(unsigned int channel)
 			ppre->is_disable_chan2 = 1;
 		else
 			ppre->is_disable_chan2 = 0;
-		//when p mode/frist frame ,set 0 to reset the mc vec wr,
+		//when p mode/first frame ,set 0 to reset the mc vec wr,
 		//second frame write back to 1,from vlsi feijun.fan for DMC bug
 
 		if (ppre->field_count_for_cont < 1 &&
@@ -4159,7 +4159,7 @@ void dim_pre_de_done_buf_config(unsigned int channel, bool flg_timeout)
 	unsigned int pd_info = 0;
 	struct di_pre_stru_s *ppre = get_pre_stru(channel);
 	struct di_ch_s *pch;
-	//struct di_buf_s *bufn;
+	//struct di_buf_s *n_buf;
 	//bool crc_right;
 	unsigned int afbce_used;
 
@@ -4211,13 +4211,13 @@ void dim_pre_de_done_buf_config(unsigned int channel, bool flg_timeout)
 			//ppre->di_wr_buf->flg_afbce_set = 0;
 			//afbce_sw(EAFBC_ENC0, 0);
 			#ifdef DBG_CRC
-			bufn = next_buf(ppre->di_wr_buf);
-			if (bufn) {
-				crc_right = dbg_checkcrc(bufn);
+			n_buf = next_buf(ppre->di_wr_buf);
+			if (n_buf) {
+				crc_right = dbg_checkcrc(n_buf);
 				if (!crc_right)
 					PR_ERR("pre crc next err:b[%d]nb[%d]\n",
 					       ppre->di_wr_buf->index,
-					       bufn->index);
+					       n_buf->index);
 			}
 			#endif
 		} else {

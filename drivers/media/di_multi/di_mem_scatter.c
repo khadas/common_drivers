@@ -732,7 +732,7 @@ static void sct_alloc_in_poling(unsigned int ch)
 
 	if (!cnt_sct_req)
 		return;
-	psct->flg_allocing = 1;
+	psct->flg_allocating = 1;
 	for (i = 0; i < cnt_sct_req; i++) {
 		/* peek */
 
@@ -761,7 +761,7 @@ static void sct_alloc_in_poling(unsigned int ch)
 			break;
 		}
 	}
-	psct->flg_allocing = 0;
+	psct->flg_allocating = 0;
 }
 
 static void pat_set_vaddr(struct dim_pat_s *pat, unsigned int buf_size)
@@ -1187,7 +1187,7 @@ int dim_dbg_sct_top_show(struct seq_file *s, void *what)
 	seq_printf(s, "\t%s:%d\n", "flg_no_buf", psct->flg_no_buf);
 	seq_printf(s, "\t%s:%d\n", "flg_act_box", psct->flg_act_box);
 	seq_printf(s, "\t%s:%d\n", "flg_trig_dis", psct->flg_trig_dis);
-	seq_printf(s, "\t%s:%d\n", "flg_allocing", psct->flg_allocing);
+	seq_printf(s, "\t%s:%d\n", "flg_allocating", psct->flg_allocating);
 	seq_printf(s, "%s:\n", "sum");
 	seq_printf(s, "\t%s:%d\n", "max_nub", psum->max_nub);
 	seq_printf(s, "\t%s:%d\n", "max_size", psum->max_size);

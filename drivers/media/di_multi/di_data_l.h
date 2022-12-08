@@ -1175,7 +1175,7 @@ struct dev_vfram_t {
 	/*provider:*/
 	struct vframe_provider_s di_vf_prov;
 
-	unsigned int indx;
+	unsigned int index;
 	/*status:*/
 	bool bypass_complete;
 	bool reg;	/*use this for vframe reg/unreg*/
@@ -1789,7 +1789,7 @@ struct dim_mscttop_s {
 	bool	flg_no_buf;
 	bool	flg_act_box;
 	bool	flg_trig_dis;
-	bool	flg_allocing;
+	bool	flg_allocating;
 	struct mutex lock_ready; /* for sct ready */
 	struct dim_msc_sum_s sum;
 };
@@ -2142,7 +2142,7 @@ struct di_dbg_reg {
 };
 
 struct di_dbg_mod {
-	unsigned int lable;	/*0xf001: mean dbg mode*/
+	unsigned int label;	/*0xf001: mean dbg mode*/
 	unsigned int ch:8,
 		mod:8,
 		res:16;

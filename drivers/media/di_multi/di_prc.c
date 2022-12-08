@@ -2519,7 +2519,7 @@ void do_table_init(struct do_table_s *pdo,
 
 /*if change to async?*/
 /* now only call in same thread */
-void do_talbe_cmd(struct do_table_s *pdo, enum EDO_TABLE_CMD cmd)
+void do_table_cmd(struct do_table_s *pdo, enum EDO_TABLE_CMD cmd)
 {
 	switch (cmd) {
 	case EDO_TABLE_CMD_NONE:
@@ -5774,7 +5774,7 @@ bool vf_from_subvf(struct vframe_s *vfm, struct dsub_vf_s *vfms)
 	return true;
 }
 
-void dim_dvf_cp(struct dvfm_s *dvfm, struct vframe_s *vfm, unsigned int indx)
+void dim_dvf_cp(struct dvfm_s *dvfm, struct vframe_s *vfm, unsigned int index)
 {
 	if (!dvfm || !vfm)
 		return;
@@ -8648,7 +8648,7 @@ void dbg_buffer(struct seq_file *s, void *in)
 
 	buffer = (struct di_buffer *)in;
 	seq_printf(s, "%s:%px\n", "dbg_buffer", buffer);
-	seq_printf(s, "\t:code:0x%x,ch[%d],indx[%d], type[%d]\n",
+	seq_printf(s, "\t:code:0x%x,ch[%d],index[%d], type[%d]\n",
 		buffer->mng.code, buffer->mng.ch,
 		buffer->mng.index, buffer->mng.type);
 	if (buffer->vf)
@@ -8663,7 +8663,7 @@ void dbg_buffer_print(void *in)
 
 	buffer = (struct di_buffer *)in;
 	PR_INF("%s:%px\n", "dbg_buffer", buffer);
-	PR_INF("\t:code:0x%x,ch[%d],indx[%d], type[%d]\n",
+	PR_INF("\t:code:0x%x,ch[%d],index[%d], type[%d]\n",
 		buffer->mng.code,
 		buffer->mng.ch, buffer->mng.index, buffer->mng.type);
 	if (buffer->vf)

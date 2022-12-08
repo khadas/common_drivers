@@ -918,7 +918,7 @@ const struct di_hdr_ops_s *dim_hdr_ops(void)
 	return hdr->ops;
 }
 
-int dim_dbg_hdr_reg1(struct seq_file *s, void *v, unsigned int indx)
+int dim_dbg_hdr_reg1(struct seq_file *s, void *v, unsigned int index)
 {
 	int i;
 	unsigned int rbase = 0;
@@ -930,10 +930,10 @@ int dim_dbg_hdr_reg1(struct seq_file *s, void *v, unsigned int indx)
 	off3 = 0x28;
 	nub3  = 0x18;
 
-	if (indx == VD1_HDR) {
+	if (index == VD1_HDR) {
 		seq_puts(s, "VD1_HDR\n");
 		rbase = 0x3800;//VD1_HDR2_CTRL;
-	} else if (indx == DI_HDR || indx == DI_M2M_HDR) {
+	} else if (index == DI_HDR || index == DI_M2M_HDR) {
 		seq_puts(s, "DI_HDR\n");
 		rbase = DI_HDR2_CTRL;
 	}

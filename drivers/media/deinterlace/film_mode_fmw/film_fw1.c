@@ -535,7 +535,7 @@ int FlmVOFSftTop(UINT8 *rCmb32Spcl, unsigned short *rPstCYWnd0,
 		if (pRDat.mNum32[HISDETNUM - 1] < 255)	/* maximum */
 			pRDat.mNum32[HISDETNUM - 1] += 1;
 
-		/* 3-2 film combing special precessing (A-A-A) */
+		/* 3-2 film combing special processing (A-A-A) */
 		if (pRDat.pFlg32[HISDETNUM - 1] == (mNDly % 5))
 			*rCmb32Spcl = 1;
 		pRDat.enter_cnt[1] = 0;
@@ -1125,7 +1125,7 @@ int Flm32DetSft(struct sFlmDatSt *pRDat, int *nDif02,
 
 	/* if (pFlg32[HISDETNUM-1] == 4) { */
 	/* B-B A-A-A X-Y-Z */
-	/* ---------=>Sceen changed */
+	/* ---------=>Screen changed */
 	if (pFlg32[HISDETNUM-1] == 4 || pFlg32[HISDETNUM-1] == 5) {
 		nFlgChk3 = nFlgChk1;
 		for (nT0 = 2; nT0 <= 5; nT0++) {
@@ -1361,7 +1361,7 @@ int Flm32DetSft(struct sFlmDatSt *pRDat, int *nDif02,
 	/* dif02(flg=2 vs 1) almost same */
 	/* dif02(flg=4 vs 3) almost same */
 	/* nFlgChk3: for Mit32VHLine */
-	/* last: for sceen change */
+	/* last: for screen change */
 	if (((nFlgChk1 > flm32_chk1_rtn) &&
 		(nFlgChk3 > flm32_ck13_rtn))
 		|| (nFlgChk2 > flm32_chk2_rtn)
@@ -1926,7 +1926,7 @@ int Flm22DetSft(struct sFlmDatSt *pRDat, int *nDif02,
 
 		/* --------------------------------------- */
 		/* patch for toilet paper */
-		/* Low average avg>(totoal*x) x>1 */
+		/* Low average avg>(total*x) x>1 */
 		/* tMgn = (nAV22 * 64) >> 8; */
 		/* if(tMgn > 720*240) */
 		/* if(tMgn > iWidth*iHeight*32) */ /*toilet paper*/

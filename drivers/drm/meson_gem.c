@@ -51,7 +51,7 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 	 *if flags is set to 0, need to use ion dma buffer.
 	 */
 	if (((flags & (MESON_USE_SCANOUT | MESON_USE_CURSOR)) != 0) || flags == 0) {
-		heap = dma_heap_find("heap-gfx");
+		heap = dma_heap_find("heap-fb");
 		if (!IS_ERR_OR_NULL(heap)) {
 			dmabuf = dma_heap_buffer_alloc(heap, meson_gem_obj->base.size, O_RDWR,
 				DMA_HEAP_VALID_HEAP_FLAGS);
@@ -60,7 +60,7 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 		}
 
 		if (!from_heap_gfx) {
-			heap = dma_heap_find("heap-fb");
+			heap = dma_heap_find("heap-gfx");
 			if (IS_ERR_OR_NULL(heap)) {
 				DRM_ERROR("%s: dma_heap_find fail.\n", __func__);
 				return -ENOMEM;

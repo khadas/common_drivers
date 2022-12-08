@@ -2410,6 +2410,7 @@ static ssize_t config_show(struct device *dev,
 		break;
 	case AUD_SRC_IF_TDM:
 		conf = "TDM";
+		break;
 	default:
 		conf = "none";
 	}

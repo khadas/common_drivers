@@ -58,6 +58,7 @@ static const struct pll_params_table t5m_sys_pll_params_table[] = {
 	PLL_PARAMS(75, 1),  /*DCO=1800M OD=DCO/1=1800M*/
 	PLL_PARAMS(80, 1),  /*DCO=1920M OD=DCO/1=1920M*/
 	PLL_PARAMS(84, 1),  /*DCO=2016M OD=DCO/1=2016M*/
+	{ /* sentinel */ }
 };
 #endif
 
@@ -276,11 +277,13 @@ static struct clk_regmap t5m_sys1_pll = {
 #ifdef CONFIG_ARM
 static const struct pll_params_table t5m_fix_pll_params_table[] = {
 	PLL_PARAMS(166, 1, 0), /*DCO=3984M OD=DCO/2=1992M*/
+	{ /* sentinel */ }
 };
 
 #else
 static const struct pll_params_table t5m_fix_pll_params_table[] = {
 	PLL_PARAMS(166, 1), /*DCO=3984M OD=DCO/2=1992M*/
+	{ /* sentinel */ }
 };
 #endif
 
@@ -294,17 +297,12 @@ static struct clk_regmap t5m_fixed_pll_dco = {
 		.m = {
 			.reg_off = ANACTRL_FIXPLL_CTRL0,
 			.shift   = 0,
-			.width   = 9,
+			.width   = 8,
 		},
 		.n = {
 			.reg_off = ANACTRL_FIXPLL_CTRL0,
-			.shift   = 10,
+			.shift   = 16,
 			.width   = 5,
-		},
-		.frac = {
-			.reg_off = ANACTRL_FIXPLL_CTRL1,
-			.shift   = 0,
-			.width   = 19,
 		},
 		.l = {
 			.reg_off = ANACTRL_FIXPLL_CTRL0,
@@ -313,8 +311,8 @@ static struct clk_regmap t5m_fixed_pll_dco = {
 		},
 		.od = {
 			.reg_off = ANACTRL_FIXPLL_CTRL0,
-			.shift	 = 16,
-			.width	 = 2,
+			.shift	 = 12,
+			.width	 = 3,
 		},
 		.rst = {
 			.reg_off = ANACTRL_FIXPLL_CTRL0,
@@ -363,8 +361,8 @@ static struct clk_regmap t5m_fixed_pll = {
 static struct clk_regmap t5m_fixed_pll = {
 	.data = &(struct clk_regmap_div_data) {
 		.offset = ANACTRL_FIXPLL_CTRL0,
-		.shift = 16,
-		.width = 2,
+		.shift = 12,
+		.width = 3,
 		.flags = CLK_DIVIDER_POWER_OF_TWO,
 		.smc_id = SECURE_PLL_CLK,
 		.secid = SECID_FIX_PLL_OD
@@ -547,15 +545,15 @@ static struct clk_regmap t5m_fclk_div2p5 = {
 #ifdef CONFIG_ARM
 static const struct pll_params_table t5m_gp0_pll_table[] = {
 	PLL_PARAMS(128, 1, 2), /* DCO = 3072M OD = 2 PLL = 768M */
-	PLL_PARAMS(96, 1, 1), /* DCO = 4608M OD = 4 PLL = 1152M */
-	PLL_PARAMS(128, 1, 1), /* DCO = 3072M OD = 2 PLL = 1536M */
+	PLL_PARAMS(96, 1, 1), /* DCO = 2304M OD = 1 PLL = 1152M */
+	PLL_PARAMS(128, 1, 1), /* DCO = 3072M OD = 1 PLL = 1536M */
 	{ /* sentinel */  }
 };
 #else
 static const struct pll_params_table t5m_gp0_pll_table[] = {
 	PLL_PARAMS(128, 1), /* DCO = 3072M OD = 2 PLL = 768M */
-	PLL_PARAMS(96, 1), /* DCO = 4608M OD = 4 PLL = 1152M */
-	PLL_PARAMS(128, 1), /* DCO = 3072M OD = 2 PLL = 1536M */
+	PLL_PARAMS(96, 1), /* DCO = 2304M OD = 1 PLL = 1152M */
+	PLL_PARAMS(128, 1), /* DCO = 3072M OD = 1 PLL = 1536M */
 	{ /* sentinel */  }
 };
 #endif
@@ -590,7 +588,7 @@ static struct clk_regmap t5m_gp0_pll_dco = {
 		/* for 32bit */
 		.od = {
 			.reg_off = ANACTRL_GP0PLL_CTRL0,
-			.shift	 = 16,
+			.shift	 = 10,
 			.width	 = 3,
 		},
 #endif
@@ -643,7 +641,7 @@ static struct clk_regmap t5m_gp0_pll = {
 static struct clk_regmap t5m_gp0_pll = {
 	.data = &(struct clk_regmap_div_data){
 		.offset = ANACTRL_GP0PLL_CTRL0,
-		.shift = 12,
+		.shift = 10,
 		.width = 3,
 		.flags = (CLK_DIVIDER_POWER_OF_TWO |
 			  CLK_DIVIDER_ROUND_CLOSEST),
@@ -2508,6 +2506,7 @@ static struct clk_regmap t5m_vid_lock_clk  = {
 	},
 };
 
+static u32 mux_table_dec[] = { 0, 1, 2, 3, 4};
 /* cts_vdec_clk */
 static const struct clk_parent_data t5m_dec_parent_hws[] = {
 	{ .hw = &t5m_fclk_div2p5.hw },
@@ -2515,9 +2514,6 @@ static const struct clk_parent_data t5m_dec_parent_hws[] = {
 	{ .hw = &t5m_fclk_div4.hw },
 	{ .hw = &t5m_fclk_div5.hw },
 	{ .hw = &t5m_fclk_div7.hw },
-	{ .hw = &t5m_hifi_pll.hw },
-	{ .hw = &t5m_gp0_pll.hw },
-	{ .fw_name = "xtal", }
 };
 
 static struct clk_regmap t5m_vdec_0_sel = {
@@ -2525,6 +2521,7 @@ static struct clk_regmap t5m_vdec_0_sel = {
 		.offset = CLKCTRL_VDEC_CLK_CTRL,
 		.mask = 0x7,
 		.shift = 9,
+		.table = mux_table_dec
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "vdec_0_sel",
@@ -2573,6 +2570,7 @@ static struct clk_regmap t5m_vdec_1_sel = {
 		.offset = CLKCTRL_VDEC3_CLK_CTRL,
 		.mask = 0x7,
 		.shift = 9,
+		.table = mux_table_dec
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "vdec_1_sel",

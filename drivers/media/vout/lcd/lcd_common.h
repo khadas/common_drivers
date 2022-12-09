@@ -25,13 +25,14 @@
 /* 20221207: support drm display mode timing for different frame rate*/
 /* 20221208: remove black pattern when enable*/
 /* 20221215: remove unnecessary tcon top reset*/
-/* 20221216: optimize lcd clk code*/
+/* 20221216: optimize clk code*/
 /* 20230105: update clk ss support*/
 /* 20230110: optimize config probe workqueue*/
 /* 20230222: update tcon tee memory debug info*/
 /* 20230303: fix hdmi mode 47hz & 95hz timing*/
 /* 20230313: update tcon debug info print*/
-#define LCD_DRV_VERSION    "20230313"
+/* 20230319: optimize phy code*/
+#define LCD_DRV_VERSION    "20230319"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

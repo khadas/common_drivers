@@ -31,7 +31,7 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-thermal.ko
 	amlogic-irblaster.ko
 	amlogic-inphy.ko
-	amlogic-drm.ko
+	aml_drm.ko
 )
 
 VENDOR_MODULES_LOAD_FIRST_LIST=(

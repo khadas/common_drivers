@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
-MESON_DRM_MODULE_NAME = amlogic-drm
+MESON_DRM_MODULE_NAME = aml_drm
 obj-$(CONFIG_AMLOGIC_DRM) = $(MESON_DRM_MODULE_NAME).o
 $(MESON_DRM_MODULE_NAME)-y = meson_drm_main.o
 ifeq ($(CONFIG_DRM_MESON_USE_ION),y)

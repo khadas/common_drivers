@@ -8,7 +8,8 @@ function show_help {
 	echo "  --build_config          for BUILD_CONFIG, common_drivers/build.config.amlogic[default]|common/build.config.gki.aarch64, require parameter value"
 	echo "  --symbol_strict         for KMI_SYMBOL_LIST_STRICT_MODE, 1[default]|0, require parameter value"
 	echo "  --lto                   for LTO, full|thin[default]|none, require parameter value"
-	echo "  --savedefconfig         for only savedefconfig, not require parameter value"
+	echo "  --menuconfig            for only menuconfig, not require parameter value"
+	echo "  --basicconfig           for basicconfig, m(menuconfig)[default]|n"
 	echo "  --image                 for only build kernel, not require parameter value"
 	echo "  --modules               for only build modules, not require parameter value"
 	echo "  --dtbs                  for only build dtbs, not require parameter value"
@@ -18,10 +19,13 @@ function show_help {
 	echo "  --check_defconfig       for check defconfig"
 	echo "  --modules_depend        for check modules depend"
 	echo "  --android_project       for android project build"
-	echo "  --gki_20"		for build gki 2.0 kernel:	gki_defconfig + amlogic_gki.fragment
-	echo "  --gki_10"		for build gki 1.0 kernel:	gki_defconfig + amlogic_gki.fragment + amlogic_gki.10
-	echo "  --gki_debug"        	for build gki debug kernel:	gki_defconfig + amlogic_gki.fragment + amlogic_gki.10 + amlogic_gki.debug
-	echo "  --upgrade		for android upgrade builtin module optimize vendor_boot size"
+	echo "  --gki_20                for build gki 2.0 kernel:   gki_defconfig + amlogic_gki.fragment"
+	echo "  --gki_10                for build gki 1.0 kernel:   gki_defconfig + amlogic_gki.fragment + amlogic_gki.10"
+	echo "  --gki_debug             for build gki debug kernel: gki_defconfig + amlogic_gki.fragment + amlogic_gki.10 + amlogic_gki.debug"
+	echo "                          for note: current can't use --gki_10, amlogic_gki.10 for optimize, amlogic_gki.debug for debug, and follow GKI1.0"
+	echo "                                    so build GKI1.0 Image need with --gki_debug, default parameter --gki_debug"
+	echo "  --fast_build            for fast build"
+	echo "  --upgrade               for android upgrade builtin module optimize vendor_boot size"
 }
 
 VA=
@@ -53,8 +57,17 @@ do
 		VA=1
                 shift
 		;;
-	--savedefconfig)
-		SAVEDEFCONFIG=1
+	--menuconfig)
+		MENUCONFIG=1
+		shift
+		;;
+	--basicconfig)
+		if [ "$2" = "m" ] || [ "$2" = "n" ]; then
+			BASICCONFIG=$2
+		else
+			BASICCONFIG="m"
+		fi
+		VA=1
 		shift
 		;;
 	--image)
@@ -108,6 +121,13 @@ do
 		;;
 	--gki_debug)
 		GKI_CONFIG=gki_debug
+		shift
+		;;
+	--fast_build)
+		SKIP_MRPROPER=1
+		LZ4_RAMDISK_COMPRESS_ARGS="--fast"
+		LTO="thin"
+		SKIP_CP_KERNEL_HDR=1
 		shift
 		;;
 	--upgrade)
@@ -201,11 +221,11 @@ set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG
 echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG}
 export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT
-echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT}
+echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT}
+export SKIP_MRPROPER LZ4_RAMDISK_COMPRESS_ARGS LTO SKIP_CP_KERNEL_HDR
+echo SKIP_MRPROPER=${SKIP_MRPROPER} LZ4_RAMDISK_COMPRESS_ARGS=${LZ4_RAMDISK_COMPRESS_ARGS} LTO=${LTO} SKIP_CP_KERNEL_HDR=${SKIP_CP_KERNEL_HDR}
 
 export CROSS_COMPILE=
-
-source ${ROOT_DIR}/${BUILD_CONFIG}
 
 if [ "${ABI}" -eq "1" ]; then
 	export OUT_DIR_SUFFIX="_abi"
@@ -213,63 +233,160 @@ else
 	OUT_DIR_SUFFIX=
 fi
 
-echo SAVEDEFCONFIG=${SAVEDEFCONFIG} IMAGE=${IMAGE} MODULES=${MODULES} DTB_BUILD=${DTB_BUILD}
-if [[ -n ${SAVEDEFCONFIG} ]] || [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n ${DTB_BUILD} ]]; then
-
-	source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
+echo MENUCONFIG=${MENUCONFIG} BASICCONFIG=${BASICCONFIG} IMAGE=${IMAGE} MODULES=${MODULES} DTB_BUILD=${DTB_BUILD}
+if [[ -n ${MENUCONFIG} ]] || [[ -n ${BASICCONFIG} ]]; then
+	# ${ROOT_DIR}/${BUILD_DIR}/config.sh menuconfig
+	HERMETIC_TOOLCHAIN=0
 	source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
+	source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
 
-	if [[ -n ${SAVEDEFCONFIG} ]]; then
+	orig_config=$(mktemp)
+	new_config="${OUT_DIR}/.config"
+	changed_config=$(mktemp)
+
+	if [[ -n ${BASICCONFIG} ]]; then
+		set -x
+		defconfig_name=`basename ${GKI_BASE_CONFIG}`
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${defconfig_name})
+		cp ${OUT_DIR}/.config ${orig_config}
+		if [ "${BASICCONFIG}" = "m" ]; then
+			(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" menuconfig)
+		fi
+		${KERNEL_DIR}/scripts/diffconfig -m ${orig_config} ${new_config} > ${changed_config}
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
+		if [ "${ARCH}" = "arm" ]; then
+			cp ${OUT_DIR}/defconfig ${GKI_BASE_CONFIG}
+		fi
+		set +x
+		echo
+		echo "========================================================"
+		echo "The differences of the modified configs are as follows:"
+		cat ${changed_config}
+		echo "========================================================"
+		echo
+	else
 		set -x
 		pre_defconfig_cmds
 		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${DEFCONFIG})
+		cp ${OUT_DIR}/.config ${orig_config}
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" menuconfig)
+		${KERNEL_DIR}/scripts/diffconfig -m ${orig_config} ${new_config} > ${changed_config}
 		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
 		post_defconfig_cmds
 		set +x
+		echo
+		echo "========================================================"
+		echo "if the config follows GKI2.0, please add it to the file amlogic_gki.fragment manually"
+		echo "if the config follows GKI1.0 optimize, please add it to the file amlogic_gki.10 manually"
+		echo "if the config follows GKI1.0 debug, please add it to the file amlogic_gki.debug manually"
+		echo
+		echo "The differences of the modified configs are as follows:"
+		cat ${changed_config}
+		echo "========================================================"
+		echo
 	fi
-	if [[ -n ${IMAGE} ]]; then
-		set -x
-		(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) Image)
-		set +x
-	fi
-	if [[ -n ${MODULES} ]]; then
-		if [[ ${IN_KERNEL_MODULES} -eq "1" ]];
-		then
-			set -x
-			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) modules)
-			set +x
-		else
-			echo EXT_MODULES=$EXT_MODULES
-			set -x
-			prepare_module_build
-			if [[ -z "${SKIP_EXT_MODULES}" ]] && [[ -n "${EXT_MODULES}" ]]; then
-				echo "========================================================"
-				echo " Building external modules and installing them into staging directory"
+	rm -f ${orig_config} ${changed_config}
+	exit
+fi
 
-				MODULES_STAGING_DIR=$(readlink -m ${COMMON_OUT_DIR}/staging)
-				KERNEL_UAPI_HEADERS_DIR=$(readlink -m ${COMMON_OUT_DIR}/kernel_uapi_headers)
-				for EXT_MOD in ${EXT_MODULES}; do
-					EXT_MOD_REL=$(rel_path ${ROOT_DIR}/${EXT_MOD} ${KERNEL_DIR})
-					mkdir -p ${OUT_DIR}/${EXT_MOD_REL}
-					set -x
-					make -C ${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
-						O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}"
-					make -C ${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
-						O=${OUT_DIR} ${TOOL_ARGS} ${MODULE_STRIP_FLAG}         \
-						INSTALL_MOD_PATH=${MODULES_STAGING_DIR}                \
-						INSTALL_HDR_PATH="${KERNEL_UAPI_HEADERS_DIR}/usr"      \
-						"${MAKE_ARGS[@]}" modules_install
-					set +x
-				done
-			fi
-			set +x
+if [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n ${DTB_BUILD} ]]; then
+	old_path=${PATH}
+	source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
+	source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
+
+	if [[ -n ${IMAGE} ]]; then
+		pre_defconfig_cmds
+		set -x
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${DEFCONFIG})
+		set +x
+		post_defconfig_cmds
+		set -x
+		if [ "${ARCH}" = "arm64" ]; then
+			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) Image)
+		elif [ "${ARCH}" = "arm" ]; then
+			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) LOADADDR=0x108000 uImage)
 		fi
+		set +x
 	fi
 	if [[ -n ${DTB_BUILD} ]]; then
 		set -x
 		(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) dtbs)
 		set +x
 	fi
+	if [[ -n ${MODULES} ]]; then
+		export MODULES_STAGING_DIR=$(readlink -m ${COMMON_OUT_DIR}/staging)
+		rm -rf ${MODULES_STAGING_DIR}
+		mkdir -p ${MODULES_STAGING_DIR}
+		if [ "${DO_NOT_STRIP_MODULES}" != "1" ]; then
+			MODULE_STRIP_FLAG="INSTALL_MOD_STRIP=1"
+		fi
+		if [[ `grep "CONFIG_AMLOGIC_IN_KERNEL_MODULES=y" ${ROOT_DIR}/${FRAGMENT_CONFIG}` ]]; then
+			set -x
+			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) modules)
+			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} ${MODULE_STRIP_FLAG} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} "${MAKE_ARGS[@]}" modules_install)
+			set +x
+		fi
+		echo EXT_MODULES=$EXT_MODULES
+		prepare_module_build
+		if [[ -z "${SKIP_EXT_MODULES}" ]] && [[ -n "${EXT_MODULES}" ]]; then
+			echo "========================================================"
+			echo " Building external modules and installing them into staging directory"
+			KERNEL_UAPI_HEADERS_DIR=$(readlink -m ${COMMON_OUT_DIR}/kernel_uapi_headers)
+			for EXT_MOD in ${EXT_MODULES}; do
+				EXT_MOD_REL=$(rel_path ${ROOT_DIR}/${EXT_MOD} ${KERNEL_DIR})
+				mkdir -p ${OUT_DIR}/${EXT_MOD_REL}
+				set -x
+				make -C ${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
+					O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}"
+				make -C ${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
+					O=${OUT_DIR} ${TOOL_ARGS} ${MODULE_STRIP_FLAG}         \
+					INSTALL_MOD_PATH=${MODULES_STAGING_DIR}                \
+					INSTALL_MOD_DIR="extra/${EXT_MOD}"                     \
+					INSTALL_HDR_PATH="${KERNEL_UAPI_HEADERS_DIR}/usr"      \
+					"${MAKE_ARGS[@]}" modules_install
+				set +x
+			done
+		fi
+		export OUT_AMLOGIC_DIR=$(readlink -m ${COMMON_OUT_DIR}/amlogic)
+		set -x
+		extra_cmds
+		set +x
+		mkdir -p ${DIST_DIR}
+		MODULES=$(find ${MODULES_STAGING_DIR} -type f -name "*.ko")
+		cp -p ${MODULES} ${DIST_DIR}
+
+		new_path=${PATH}
+		PATH=${old_path}
+		echo "========================================================"
+		if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
+			echo "Rebuild rootfs in order to install modules!"
+			rebuild_rootfs ${ARCH}
+		else
+			echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
+		fi
+		PATH=${new_path}
+	fi
+	if [ -n "${DTS_EXT_DIR}" ]; then
+		if [ -d "${ROOT_DIR}/${DTS_EXT_DIR}" ]; then
+			DTS_EXT_DIR=$(rel_path ${ROOT_DIR}/${DTS_EXT_DIR} ${KERNEL_DIR})
+			if [ -d ${OUT_DIR}/${DTS_EXT_DIR} ]; then
+				FILES="$FILES `ls ${OUT_DIR}/${DTS_EXT_DIR}`"
+			fi
+		fi
+	fi
+	for FILE in ${FILES}; do
+		if [ -f ${OUT_DIR}/${FILE} ]; then
+			echo "  $FILE"
+			cp -p ${OUT_DIR}/${FILE} ${DIST_DIR}/
+		elif [[ "${FILE}" =~ \.dtb|\.dtbo ]]  && \
+			[ -n "${DTS_EXT_DIR}" ] && [ -f "${OUT_DIR}/${DTS_EXT_DIR}/${FILE}" ] ; then
+			# DTS_EXT_DIR is recalculated before to be relative to KERNEL_DIR
+			echo "  $FILE"
+			cp -p "${OUT_DIR}/${DTS_EXT_DIR}/${FILE}" "${DIST_DIR}/"
+		else
+			echo "  $FILE is not a file, skipping"
+		fi
+	done
 	exit
 fi
 
@@ -278,6 +395,8 @@ if [ "${ABI}" -eq "1" ]; then
 else
 	${ROOT_DIR}/${BUILD_DIR}/build.sh "$@"
 fi
+
+source ${ROOT_DIR}/${BUILD_CONFIG}
 
 source ${KERNEL_BUILD_VAR_FILE}
 if [[ -n ${RM_KERNEL_BUILD_VAR_FILE} ]]; then

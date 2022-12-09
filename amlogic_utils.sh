@@ -71,7 +71,7 @@ function read_ext_module_predefine() {
 top_ext_drivers=top_ext_drivers
 function prepare_module_build() {
 	local temp_file=`mktemp /tmp/kernel.XXXXXXXXXXXX`
-	if [[ -z ${IN_KERNEL_MODULES} ]]; then
+	if [[ ! `grep "CONFIG_AMLOGIC_IN_KERNEL_MODULES=y" ${ROOT_DIR}/${FRAGMENT_CONFIG}` ]]; then
 		sed 's:#.*$::g' ${ROOT_DIR}/${FRAGMENT_CONFIG} | sed '/^$/d' | sed 's/^[ ]*//' | sed 's/[ ]*$//' > ${temp_file}
 		GKI_EXT_KERNEL_MODULE_CONFIG=$(read_ext_module_config ${temp_file})
 		GKI_EXT_KERNEL_MODULE_PREDEFINE=$(read_ext_module_predefine ${temp_file})
@@ -226,7 +226,7 @@ function extra_cmds() {
 
 	popd
 
-	if [[ -z ${ANDROID_PROJECT} ]]; then
+	if [[ -z ${ANDROID_PROJECT} ]] && [[ -d ${OUT_DIR}/${DTS_EXT_DIR} ]]; then
 		FILES="$FILES `ls ${OUT_DIR}/${DTS_EXT_DIR}`"
 	fi
 
@@ -552,7 +552,7 @@ function check_undefined_symbol() {
 	else
 		echo "can't find compile tool"
 	fi
-	${compile_tool}nm ../vmlinux | grep -E " T | D | B | R | W "> vmlinux_T.txt
+	${compile_tool}nm ${DIST_DIR}/vmlinux | grep -E " T | D | B | R | W "> vmlinux_T.txt
 	# cat __install.sh | grep "insmod" | cut -d ' ' -f 2 > module_list.txt
 	cat ramdisk/ramdisk_install.sh | grep "insmod" | cut -d ' ' -f 2 > module_list.txt
 	cat vendor/vendor_install.sh | grep "insmod" | cut -d ' ' -f 2 >> module_list.txt

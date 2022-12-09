@@ -1488,9 +1488,12 @@ int meson_nand_block_isbad(struct mtd_info *mtd, loff_t offs)
 	nanddev_offs_to_pos(nand, offs, &pos);
 	if (nfc->block_status) {
 		block_status = nfc->block_status[pos.eraseblock];
-		if (block_status == NAND_BLOCK_BAD ||
-		    block_status == NAND_FACTORY_BAD)
+		if (block_status == NAND_BLOCK_BAD)
 			pr_info("NAND bbt detect Bad block at %llx\n",
+				(u64)offs);
+
+		if (block_status == NAND_FACTORY_BAD)
+			pr_info("NAND bbt detect factory Bad block at %llx\n",
 				(u64)offs);
 	}
 	nand_release_device(chip);

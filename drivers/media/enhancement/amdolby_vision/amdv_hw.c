@@ -215,7 +215,7 @@ void adjust_vpotch_tv(void)
 	const struct vinfo_s *vinfo = get_current_vinfo();
 
 	if (is_aml_tm2() || is_aml_t7() ||
-	    is_aml_t3() || is_aml_t5w()) {
+	    is_aml_t3() || is_aml_t5w() || is_aml_t5m()) {
 		if (debug_dma_start_line) {
 			dma_start_line = debug_dma_start_line;
 		} else if (vinfo) {
@@ -236,7 +236,7 @@ static void amdv_core_reset(enum core_type type)
 		if (is_aml_txlx())
 			VSYNC_WR_DV_REG(VIU_SW_RESET, 1 << 9);
 		else if (is_aml_tm2() || is_aml_t7() ||
-			 is_aml_t3() || is_aml_t5w())
+			 is_aml_t3() || is_aml_t5w() || is_aml_t5m())
 			VSYNC_WR_DV_REG(VIU_SW_RESET, 1 << 1);
 		VSYNC_WR_DV_REG(VIU_SW_RESET, 0);
 		break;
@@ -358,7 +358,7 @@ int tv_dv_core1_set(u64 *dma_data,
 		runmode_cnt = dv_core1[hdmi_path_id].run_mode_count;
 	}
 
-	if (is_aml_t3() || is_aml_t5w()) {
+	if (is_aml_t3() || is_aml_t5w() || is_aml_t5m()) {
 		VSYNC_WR_DV_REG_BITS(VPP_TOP_VTRL, 0, 0, 1); //AMDV TV select
 		//T3 enable tvcore clk
 		if (!dolby_vision_on) {/*enable once*/
@@ -369,7 +369,7 @@ int tv_dv_core1_set(u64 *dma_data,
 
 	adjust_vpotch_tv();
 	if (is_aml_tm2() || is_aml_t7() ||
-	    is_aml_t3() || is_aml_t5w()) {
+	    is_aml_t3() || is_aml_t5w() || is_aml_t5m()) {
 		/* mempd for ipcore */
 		if (is_aml_tm2_stbmode() || is_aml_t7_stbmode()) {
 			if (get_dv_vpu_mem_power_status(VPU_DOLBY0) ==
@@ -385,7 +385,7 @@ int tv_dv_core1_set(u64 *dma_data,
 				dv_mem_power_on(VPU_DOLBY0);
 			VSYNC_WR_DV_REG_BITS(AMDV_TV_SWAP_CTRL7, 0, 4, 9);
 			if (is_aml_tm2revb() || is_aml_t7() ||
-			    is_aml_t3() || is_aml_t5w()) {
+			    is_aml_t3() || is_aml_t5w() || is_aml_t5m()) {
 				/* comp on, mempd on */
 				VSYNC_WR_DV_REG_BITS(AMDV_TV_SWAP_CTRL7,
 						     0, 14, 4);
@@ -424,7 +424,8 @@ int tv_dv_core1_set(u64 *dma_data,
 	/*set diag reg to 0xb can bypass dither, not need set swap ctrl6 */
 	if (!is_aml_tm2() && !is_aml_t7() &&
 	    !is_aml_t3() &&
-	    !is_aml_t5w()) {
+	    !is_aml_t5w() &&
+	    !is_aml_t5m()) {
 		VSYNC_WR_DV_REG_BITS(AMDV_TV_SWAP_CTRL6, 1, 20, 1);
 		/* bypass dither */
 		VSYNC_WR_DV_REG_BITS(AMDV_TV_SWAP_CTRL6, 1, 25, 1);
@@ -469,7 +470,7 @@ int tv_dv_core1_set(u64 *dma_data,
 				(AMDV_PATH_CTRL,
 				 el_enable ? 0 : 2, 0, 2);
 		} else if (is_aml_t7_tvmode() ||
-			is_aml_t3_tvmode() || is_aml_t5w()) {
+			is_aml_t3_tvmode() || is_aml_t5w() || is_aml_t5m()) {
 			/*enable tv core*/
 			if (is_aml_t7_tvmode())
 				VSYNC_WR_DV_REG_BITS
@@ -520,7 +521,7 @@ int tv_dv_core1_set(u64 *dma_data,
 			VSYNC_WR_DV_REG_BITS
 				(VIU_VD1_PATH_CTRL,
 				 1, 16, 1);
-		} else if (is_aml_t5w()) {
+		} else if (is_aml_t5w() || is_aml_t5m()) {
 			VSYNC_WR_DV_REG_BITS
 				(VIU_VD1_PATH_CTRL,
 				 1, 16, 1);
@@ -584,12 +585,12 @@ int tv_dv_core1_set(u64 *dma_data,
 	(!core1_on_flag &&
 	(is_aml_tm2_stbmode() || is_aml_t7_stbmode()))) {
 		WRITE_VPP_DV_REG(AMDV_TV_AXI2DMA_CTRL1, 0x6f666080);
-		if (is_aml_t7() || is_aml_t3() || is_aml_t5w())
+		if (is_aml_t7() || is_aml_t3() || is_aml_t5w() || is_aml_t5m())
 			WRITE_VPP_DV_REG(AMDV_TV_AXI2DMA_CTRL2, (u32)(dma_paddr >> 4));
 		else
 			WRITE_VPP_DV_REG(AMDV_TV_AXI2DMA_CTRL2, (u32)(dma_paddr));
 
-		if (is_aml_t3() || is_aml_t5w())
+		if (is_aml_t3() || is_aml_t5w() || is_aml_t5m())
 			WRITE_VPP_DV_REG(AMDV_TV_AXI2DMA_CTRL3,
 				 0x88000000 | dma_start_line);
 		else
@@ -604,11 +605,11 @@ int tv_dv_core1_set(u64 *dma_data,
 		}
 	}
 	if (reset) {
-		if (is_aml_t7() || is_aml_t3() || is_aml_t5w())
+		if (is_aml_t7() || is_aml_t3() || is_aml_t5w() || is_aml_t5m())
 			VSYNC_WR_DV_REG(AMDV_TV_AXI2DMA_CTRL2, (u32)(dma_paddr >> 4));
 		else
 			VSYNC_WR_DV_REG(AMDV_TV_AXI2DMA_CTRL2, (u32)(dma_paddr));
-		if (is_aml_t3() || is_aml_t5w())
+		if (is_aml_t3() || is_aml_t5w() || is_aml_t5m())
 			VSYNC_WR_DV_REG(AMDV_TV_AXI2DMA_CTRL3,
 				0x88000000 | dma_start_line);
 		else
@@ -3414,7 +3415,7 @@ static void bypass_pps_sr_gamma_gainoff(int flag)
 	pr_dv_dbg("%s: %d\n", __func__, flag);
 
 	if (flag & 1) {
-		if (is_aml_t3() || is_aml_t5w()) {
+		if (is_aml_t3() || is_aml_t5w() || is_aml_t5m()) {
 			/*from t3, 1d93 bit0 change to 1d26 bit8*/
 			VSYNC_WR_DV_REG_BITS(VPP_MISC, 1, 8, 1);
 			force_bypass_from_prebld_to_vadj1 = true;
@@ -3735,7 +3736,7 @@ void enable_amdv_v1(int enable)
 						amdv_core1_on = false;
 					}
 				} else  if (is_aml_t3_tvmode() ||
-					    is_aml_t5w()) {
+					    is_aml_t5w() || is_aml_t5m()) {
 					/* common flow should */
 					/* stop hdr core before */
 					/* start dv core */
@@ -4367,7 +4368,7 @@ void enable_amdv_v1(int enable)
 						hdr_vd1_off(VPP_TOP0);
 					}
 				} else if (is_aml_t7_tvmode() ||
-				is_aml_t3_tvmode() || is_aml_t5w()) {
+				is_aml_t3_tvmode() || is_aml_t5w() || is_aml_t5m()) {
 					/* enable core1 */
 					if (is_aml_t7_tvmode())
 						VSYNC_WR_DV_REG_BITS
@@ -4467,7 +4468,8 @@ void enable_amdv_v1(int enable)
 					dv_mem_power_off(VPU_DOLBY0);
 				} else if (is_aml_t7_tvmode() ||
 					is_aml_t3_tvmode() ||
-					is_aml_t5w()) {
+					is_aml_t5w() ||
+					is_aml_t5m()) {
 					/* disable coretv */
 					if (is_aml_t7_tvmode())
 						VSYNC_WR_DV_REG_BITS
@@ -4496,7 +4498,7 @@ void enable_amdv_v1(int enable)
 						(AMDV_TV_CLKGATE_CTRL,
 						0x55555455);
 					dv_mem_power_off(VPU_DOLBY0);
-					if (is_aml_t3() || is_aml_t5w())
+					if (is_aml_t3() || is_aml_t5w() || is_aml_t5m())
 						vpu_module_clk_disable
 							(0, DV_TVCORE, 0);
 				} else {
@@ -4530,7 +4532,7 @@ void enable_amdv_v1(int enable)
 					(AMDV_PATH_CTRL, 3, 0, 2);
 				} else if (is_aml_t7_tvmode() ||
 					   is_aml_t3_tvmode() ||
-					   is_aml_t5w()) {
+					   is_aml_t5w() || is_aml_t5m()) {
 					if (is_aml_t7_tvmode())
 						VSYNC_WR_DV_REG_BITS
 							(VPP_VD1_DSC_CTRL,
@@ -4553,7 +4555,7 @@ void enable_amdv_v1(int enable)
 				}
 				if (is_aml_tm2_tvmode() || is_aml_t7_tvmode() ||
 				    is_aml_t3_tvmode() ||
-				    is_aml_t5w()) {
+				    is_aml_t5w() || is_aml_t5m()) {
 					VSYNC_WR_DV_REG(AMDV_TV_AXI2DMA_CTRL0,
 						0x01000042);
 					VSYNC_WR_DV_REG_BITS
@@ -4563,7 +4565,7 @@ void enable_amdv_v1(int enable)
 						(AMDV_TV_CLKGATE_CTRL,
 						0x55555555);
 					dv_mem_power_off(VPU_DOLBY0);
-					if (is_aml_t3() || is_aml_t5w())
+					if (is_aml_t3() || is_aml_t5w() || is_aml_t5m())
 						vpu_module_clk_disable
 							(0, DV_TVCORE, 0);
 				}

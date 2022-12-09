@@ -1803,9 +1803,9 @@
 	};
 
 	amdolby_vision {
-		compatible = "amlogic, dolby_vision_t3";
+		compatible = "amlogic, dolby_vision_t5m";
 		dev_name = "aml_amdolby_vision_driver";
-		status = "disabled";
+		status = "okay";
 		tv_mode = <1>;/*1:enable ;0:disable*/
 	};
 

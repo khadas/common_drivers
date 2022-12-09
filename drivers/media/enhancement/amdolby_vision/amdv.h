@@ -627,6 +627,7 @@ enum cpu_id_e {
 	_CPU_MAJOR_ID_T3,
 	_CPU_MAJOR_ID_S4D,
 	_CPU_MAJOR_ID_T5W,
+	_CPU_MAJOR_ID_T5M,
 	_CPU_MAJOR_ID_UNKNOWN,
 };
 
@@ -827,6 +828,7 @@ bool is_aml_t7_stbmode(void);
 bool is_aml_t3(void);
 bool is_aml_t3_tvmode(void);
 bool is_aml_t5w(void);
+bool is_aml_t5m(void);
 bool is_amdv_stb_mode(void);
 
 u32 VSYNC_RD_DV_REG(u32 adr);

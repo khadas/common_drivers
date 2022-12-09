@@ -711,6 +711,14 @@ bool is_aml_t5w(void)
 		return false;
 }
 
+bool is_aml_t5m(void)
+{
+	if (dv_meson_dev.cpu_id == _CPU_MAJOR_ID_T5M)
+		return true;
+	else
+		return false;
+}
+
 bool is_amdv_stb_mode(void)
 {
 	return is_aml_txlx_stbmode() ||
@@ -726,7 +734,8 @@ bool is_aml_tvmode(void)
 	    is_aml_txlx_tvmode() ||
 	    is_aml_t7_tvmode() ||
 	    is_aml_t3_tvmode() ||
-	    is_aml_t5w())
+	    is_aml_t5w() ||
+	    is_aml_t5m())
 		return true;
 	else
 		return false;
@@ -805,7 +814,7 @@ static void amdv_addr(void)
 		CORE1A_BASE = 0x3300;
 		CORE2A_BASE = 0x3400;
 		CORE3_BASE = 0x3600;
-	} else if (is_aml_t5w()) {
+	} else if (is_aml_t5w() || is_aml_t5m()) {
 		CORETV_BASE = 0x4300;
 	}
 }
@@ -955,7 +964,7 @@ static void dump_tv_setting
 			pr_info("t7_tv reg: vd3 dv 0x1a85(bit4) val = 0x%x\n",
 				READ_VPP_DV_REG(VPP_VD3_DSC_CTRL));
 		} else if (is_aml_t3_tvmode() ||
-			is_aml_t5w()) {
+			is_aml_t5w() || is_aml_t5m()) {
 			pr_info("t3/5w_tv reg: TV select 0x2749(bit16) val = 0x%x\n",
 				READ_VPP_DV_REG(VPP_TOP_VTRL));
 			pr_info("t3/5w_tv reg: SWAP_CTRL1 0x1a70 val = 0x%x\n",
@@ -1351,6 +1360,7 @@ int amdv_update_setting(struct vframe_s *vf)
 	if (is_aml_tm2_tvmode() ||
 	    is_aml_t3_tvmode() ||
 	    is_aml_t5w() ||
+	    is_aml_t5m() ||
 	    (is_aml_tm2_stbmode() && is_aml_stb_hdmimode() &&
 	    !core1_detunnel())) {
 		dma_data = tv_dovi_setting->core1_reg_lut;
@@ -1679,7 +1689,7 @@ void amdv_init_receiver(void *pdev)
 	alloc_size = (alloc_size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 	dma_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
 		alloc_size, &dma_paddr, GFP_KERNEL);
-	pr_info("get dma_vaddr %p\n", dma_vaddr);
+	pr_info("get dma_vaddr %px %px\n", dma_vaddr, dma_paddr);
 	for (i = 0; i < 2; i++) {
 		md_buf[i] = vmalloc(MD_BUF_SIZE);
 		if (md_buf[i])
@@ -6509,7 +6519,8 @@ int amdv_parse_metadata_v1(struct vframe_s *vf,
 			}
 			if (is_aml_tm2_tvmode() || is_aml_t7_tvmode() ||
 			    is_aml_t3_tvmode() ||
-			    is_aml_t5w()) {
+			    is_aml_t5w() ||
+			    is_aml_t5m()) {
 				if (src_format != FORMAT_DOVI &&
 					(is_hlg_frame(vf) || force_hdmin_fmt == 2)) {
 					src_format = FORMAT_HLG;
@@ -9643,7 +9654,7 @@ int amdv_wait_metadata_v1(struct vframe_s *vf)
 			if (READ_VPP_DV_REG(VPP_MISC) & (1 << 10))
 				vd1_on = true;
 		} else if (is_aml_tm2() || is_aml_sc2() || is_aml_t7() ||
-			   is_aml_t3() || is_aml_s4d() || is_aml_t5w()) {
+			   is_aml_t3() || is_aml_s4d() || is_aml_t5w() || is_aml_t5m()) {
 			if (READ_VPP_DV_REG(VD1_BLEND_SRC_CTRL) & (1 << 0))
 				vd1_on = true;
 		}
@@ -9816,7 +9827,7 @@ int amdv_wait_metadata_v2(struct vframe_s *vf, enum vd_path_e vd_path)
 			if (READ_VPP_DV_REG(VPP_MISC) & (1 << 10))
 				vd_on = true;
 		} else if (is_aml_tm2() || is_aml_sc2() || is_aml_t7() ||
-		    is_aml_t3() || is_aml_s4d() || is_aml_t5w()) {
+		    is_aml_t3() || is_aml_s4d() || is_aml_t5w() || is_aml_t5m()) {
 			if (vd_path == VD1_PATH) {
 				if (READ_VPP_DV_REG(VD1_BLEND_SRC_CTRL) & (1 << 0))
 					vd_on = true;
@@ -12285,6 +12296,8 @@ static int get_chip_name(void)
 		snprintf(chip_name, sizeof("s4d"), "%s", "s4d");
 	else if (is_aml_t5w())
 		snprintf(chip_name, sizeof("t5w"), "%s", "t5w");
+	else if (is_aml_t5m())
+		snprintf(chip_name, sizeof("t5m"), "%s", "t5m");
 	else
 		snprintf(chip_name, sizeof("null"), "%s", "null");
 
@@ -12309,7 +12322,8 @@ bool chip_support_dv(void)
 	    is_aml_g12() || is_aml_tm2() ||
 	    is_aml_sc2() || is_aml_t7() ||
 	    is_aml_t3() || is_aml_s4d() ||
-	    is_aml_t5w())
+	    is_aml_t5w() ||
+	    is_aml_t5m())
 		return true;
 	else
 		return false;
@@ -12356,7 +12370,7 @@ int register_dv_functions(const struct dolby_vision_func_s *func)
 		return ret;
 	}
 	if (is_aml_t7() || is_aml_t3() || is_aml_s4d() ||
-	    is_aml_t5w()) {
+	    is_aml_t5w() || is_aml_t5m()) {
 		total_name_len = get_chip_name();
 		get_ko = strstr(func->version_info, total_chip_name);
 
@@ -12526,7 +12540,7 @@ int register_dv_functions(const struct dolby_vision_func_s *func)
 		/* get efuse flag*/
 
 		if (is_aml_txlx() || is_aml_tm2() || is_aml_t7() ||
-		    is_aml_t3() || is_aml_t5w()) {
+		    is_aml_t3() || is_aml_t5w() || is_aml_t5m()) {
 			reg_clk = READ_VPP_DV_REG(AMDV_TV_CLKGATE_CTRL);
 			WRITE_VPP_DV_REG(AMDV_TV_CLKGATE_CTRL, 0x2800);
 			reg_value = READ_VPP_DV_REG(AMDV_TV_REG_START + 1);
@@ -12983,6 +12997,7 @@ static long amdolby_vision_ioctl(struct file *file,
 			    is_aml_t7_tvmode() ||
 			    is_aml_t3_tvmode() ||
 			    is_aml_t5w() ||
+			    is_aml_t5m() ||
 			    p_funcs_tv) {
 				memcpy(bin_name, config_file.bin_name, MAX_BYTES - 1);
 				memcpy(cfg_name, config_file.cfg_name, MAX_BYTES - 1);
@@ -13183,7 +13198,7 @@ static ssize_t amdolby_vision_debug_store
 		enable_tunnel = val;
 		pr_info("enable_tunnel %d\n", enable_tunnel);
 		if (is_aml_sc2() || is_aml_t7() || is_aml_t3() ||
-		    is_aml_s4d() || is_aml_t5w()) {/*not include tm2*/
+		    is_aml_s4d() || is_aml_t5w() || is_aml_t5m()) {/*not include tm2*/
 			/*for vdin1 loop back, 444,12bit->422,12bit->444,8bit*/
 			if (enable_tunnel) {
 				if (vpp_data_422T0444_backup == 0) {
@@ -13530,7 +13545,7 @@ unsigned int amdv_check_enable(void)
 
 	/*first step: check tv mode, dv is disabled by default */
 	if (is_aml_tm2_tvmode() || is_aml_t7_tvmode() ||
-	    is_aml_t3() || is_aml_t5w()) {
+	    is_aml_t3() || is_aml_t5w() || is_aml_t5m()) {
 		if (!amdv_on_in_uboot) {
 			/* tm2/t7 also has stb core, should power off stb core*/
 			if (is_aml_tm2_tvmode() || is_aml_t7_tvmode()) {
@@ -13566,7 +13581,7 @@ unsigned int amdv_check_enable(void)
 			WRITE_VPP_DV_REG
 				(AMDV_TV_CLKGATE_CTRL,
 				0x55555555);
-			if (is_aml_t3() || is_aml_t5w())
+			if (is_aml_t3() || is_aml_t5w() || is_aml_t5m())
 				vpu_module_clk_disable(0, DV_TVCORE, 1);
 			pr_info("dovi disable in uboot\n");
 		}
@@ -14509,6 +14524,10 @@ static struct dv_device_data_s dolby_vision_t5w = {
 	.cpu_id = _CPU_MAJOR_ID_T5W,
 };
 
+static struct dv_device_data_s dolby_vision_t5m = {
+	.cpu_id = _CPU_MAJOR_ID_T5M,
+};
+
 static const struct of_device_id amlogic_dolby_vision_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -14559,6 +14578,10 @@ static const struct of_device_id amlogic_dolby_vision_match[] = {
 	{
 		.compatible = "amlogic, dolby_vision_t5w",
 		.data = &dolby_vision_t5w,
+	},
+	{
+		.compatible = "amlogic, dolby_vision_t5m",
+		.data = &dolby_vision_t5m,
 	},
 	{},
 };
@@ -14643,6 +14666,11 @@ static int amdolby_vision_probe(struct platform_device *pdev)
 	if (IS_ERR(devp->dev)) {
 		ret = PTR_ERR(devp->dev);
 		goto fail_create_device;
+	}
+	if (is_aml_t5m()) {
+		/* rdma alloc in 1G */
+		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(30);
+		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 	}
 	amdv_addr();
 	amdv_init_receiver(pdev);

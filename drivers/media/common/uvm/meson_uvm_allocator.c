@@ -715,6 +715,7 @@ static long mua_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = meson_uvm_getinfo(dmabuf,
 						data.hook_data.mode_type,
 						data.hook_data.data_buf);
+		dma_buf_put(dmabuf);
 		if (ret < 0) {
 			MUA_PRINTK(1, "meson_uvm_getinfo fail.\n");
 			return -EINVAL;
@@ -730,6 +731,7 @@ static long mua_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = meson_uvm_setinfo(dmabuf,
 						data.hook_data.mode_type,
 						data.hook_data.data_buf);
+		dma_buf_put(dmabuf);
 		if (ret < 0) {
 			MUA_PRINTK(1, "meson_uvm_setinfo fail.\n");
 			return -EINVAL;
@@ -798,6 +800,7 @@ static long mua_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		dmabuf = dma_buf_get(fd);
 		usage = data.usage_data.uvm_data_usage;
 		ret = meson_uvm_set_usage(dmabuf, usage);
+		dma_buf_put(dmabuf);
 		if (ret < 0) {
 			MUA_PRINTK(1, "meson_uvm_set_usage fail.\n");
 			return -EINVAL;
@@ -809,6 +812,7 @@ static long mua_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return -EINVAL;
 		dmabuf = dma_buf_get(fd);
 		ret = meson_uvm_get_usage(dmabuf, &usage);
+		dma_buf_put(dmabuf);
 		if (ret < 0) {
 			MUA_PRINTK(1, "meson_uvm_get_usage fail.\n");
 			return -EINVAL;

@@ -9834,7 +9834,7 @@ static int fgrain_write(u32 layer_id, ulong fgs_table_addr)
 static int get_viu_irq_source(u8 vpp_index)
 {
 	u32 venc_mux = 3;
-	u32 irq_source = ENCP_GO_FEILD;
+	u32 irq_source = ENCP_GO_FIELD;
 
 	venc_mux = READ_VCBUS_REG(VPU_VIU_VENC_MUX_CTRL) & 0x3f;
 	venc_mux >>= (vpp_index * 2);
@@ -9843,13 +9843,13 @@ static int get_viu_irq_source(u8 vpp_index)
 	switch (venc_mux) {
 	case 0:
 		/* venc0 */
-		irq_source = VENC0_GO_FEILD;
+		irq_source = VENC0_GO_FIELD;
 		break;
 	case 1:
-		irq_source = VENC1_GO_FEILD;
+		irq_source = VENC1_GO_FIELD;
 		break;
 	case 2:
-		irq_source = VENC2_GO_FEILD;
+		irq_source = VENC2_GO_FIELD;
 		break;
 	}
 	return irq_source;
@@ -9857,7 +9857,7 @@ static int get_viu_irq_source(u8 vpp_index)
 
 static void fgrain_update_irq_source(u8 layer_id, u8 vpp_index)
 {
-	u32 irq_source = ENCP_GO_FEILD;
+	u32 irq_source = ENCP_GO_FIELD;
 	u32 viu, channel = 0;
 
 	if (cur_dev->display_type == T7_DISPLAY) {
@@ -9868,13 +9868,13 @@ static void fgrain_update_irq_source(u8 layer_id, u8 vpp_index)
 
 		switch (viu) {
 		case 0:
-			irq_source = ENCL_GO_FEILD;
+			irq_source = ENCL_GO_FIELD;
 			break;
 		case 1:
-			irq_source = ENCI_GO_FEILD;
+			irq_source = ENCI_GO_FIELD;
 			break;
 		case 2:
-			irq_source = ENCP_GO_FEILD;
+			irq_source = ENCP_GO_FIELD;
 			break;
 		}
 	}

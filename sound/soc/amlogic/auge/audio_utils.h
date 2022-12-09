@@ -12,4 +12,5 @@ int audio_locker_get(void);
 void fratv_enable(bool enable);
 void cec_arc_enable(int src, bool enable);
 void aml_audio_reset(int reg, int shift, bool use_vadtop);
+bool is_force_mpll_clk(void);
 #endif

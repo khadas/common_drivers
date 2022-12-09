@@ -17,6 +17,7 @@
 
 #include <linux/amlogic/iomap.h>
 #include <linux/amlogic/media/sound/auge_utils.h>
+#include <linux/amlogic/cpu_version.h>
 
 struct snd_elem_info {
 	struct soc_enum *ee;
@@ -26,6 +27,8 @@ struct snd_elem_info {
 };
 
 static unsigned int audio_inskew;
+/* For S4 HIFI used by EMMC/audio, we need force mpll in DTV */
+static bool force_mpll_clk;
 
 #define SND_BYTE(xname, type, func, xshift, xmask)   \
 {                                      \
@@ -439,6 +442,25 @@ static int tdmout_c_binv_set_enum(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int clk_get_force_mpll(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = force_mpll_clk;
+
+	return 0;
+}
+
+static int clk_set_force_mpll(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	/* only valid for S4 */
+	if (get_cpu_type() == MESON_CPU_MAJOR_ID_S4)
+		force_mpll_clk = ucontrol->value.integer.value[0];
+	pr_info("%s: force_mpll_clk = %d\n", __func__, force_mpll_clk);
+
+	return 0;
+}
+
 #define SND_MIX(xname, type, xenum, xshift, xmask)   \
 	SND_ENUM(xname, type, CTRL0, xenum, xshift, xmask)
 
@@ -484,6 +506,10 @@ static const struct snd_kcontrol_new snd_auge_controls[] = {
 		     tdmout_c_binv_enum,
 		     tdmout_c_binv_get_enum,
 		     tdmout_c_binv_set_enum),
+	SOC_SINGLE_BOOL_EXT("DTV clk force MPLL",
+			0,
+			clk_get_force_mpll,
+			clk_set_force_mpll),
 };
 
 int snd_card_add_kcontrols(struct snd_soc_card *card)
@@ -624,4 +650,9 @@ void aml_audio_reset(int reg, int shift, bool use_vadtop)
 		audiobus_update_bits(reg, 0x1 << shift, 0x1 << shift);
 		audiobus_update_bits(reg, 0x1 << shift, 0);
 	}
+}
+
+bool is_force_mpll_clk(void)
+{
+	return force_mpll_clk;
 }

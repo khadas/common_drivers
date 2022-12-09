@@ -60,6 +60,7 @@ static const struct pll_params_table t3_sys_pll_params_table[] = {
 	PLL_PARAMS(75, 1),  /*DCO=1800M OD=DCO/1=1800M*/
 	PLL_PARAMS(80, 1),  /*DCO=1920M OD=DCO/1=1920M*/
 	PLL_PARAMS(84, 1),  /*DCO=2016M OD=DCO/1=2016M*/
+	{ /* sentinel */ }
 };
 #endif
 
@@ -278,11 +279,13 @@ static struct clk_regmap t3_sys1_pll = {
 #ifdef CONFIG_ARM
 static const struct pll_params_table t3_fix_pll_params_table[] = {
 	PLL_PARAMS(166, 1, 0), /*DCO=3984M OD=DCO/2=1992M*/
+	{ /* sentinel */ }
 };
 
 #else
 static const struct pll_params_table t3_fix_pll_params_table[] = {
 	PLL_PARAMS(166, 1), /*DCO=3984M OD=DCO/2=1992M*/
+	{ /* sentinel */ }
 };
 #endif
 

@@ -90,6 +90,7 @@
 			/* 1920x1080x4x6 round up 4M align */
 			size = <0x0 0x3400000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x20000000 0x0 0x03400000>;
 		};
 
 		/*  vdin0 CMA pool */

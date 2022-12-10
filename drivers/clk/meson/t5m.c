@@ -553,7 +553,6 @@ static const struct pll_params_table t5m_gp0_pll_table[] = {
 static const struct pll_params_table t5m_gp0_pll_table[] = {
 	PLL_PARAMS(128, 1), /* DCO = 3072M OD = 2 PLL = 768M */
 	PLL_PARAMS(96, 1), /* DCO = 2304M OD = 1 PLL = 1152M */
-	PLL_PARAMS(128, 1), /* DCO = 3072M OD = 1 PLL = 1536M */
 	{ /* sentinel */  }
 };
 #endif
@@ -564,7 +563,7 @@ static const struct pll_params_table t5m_gp0_pll_table[] = {
 static const struct reg_sequence t5m_gp0_init_regs[] = {
 	{ .reg = ANACTRL_GP0PLL_CTRL1,	.def = 0x03a00000 },
 	{ .reg = ANACTRL_GP0PLL_CTRL2,	.def = 0x00040000 },
-	{ .reg = ANACTRL_GP0PLL_CTRL3,	.def = 0x090da000 },
+	{ .reg = ANACTRL_GP0PLL_CTRL3,	.def = 0x090da200 },
 };
 
 static struct clk_regmap t5m_gp0_pll_dco = {
@@ -592,11 +591,6 @@ static struct clk_regmap t5m_gp0_pll_dco = {
 			.width	 = 3,
 		},
 #endif
-		.frac = {
-			.reg_off = ANACTRL_GP0PLL_CTRL1,
-			.shift   = 0,
-			.width   = 19,
-		},
 		.l = {
 			.reg_off = ANACTRL_GP0PLL_CTRL0,
 			.shift   = 31,
@@ -870,9 +864,9 @@ static struct t5m_sys_pll_nb_data t5m_sys_pll_nb_data = {
 };
 
 static const struct reg_sequence t5m_hifi_init_regs[] = {
-	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x03a10000 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x03a00000 },
 	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00040000 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL3,	.def = 0x090da000 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL3,	.def = 0x090da200 },
 };
 
 static const struct pll_mult_range t5m_hifi_pll_mult_range = {
@@ -925,7 +919,7 @@ static struct clk_regmap t5m_hifi_pll_dco = {
 static struct clk_regmap t5m_hifi_pll = {
 	.data = &(struct clk_regmap_div_data) {
 		.offset = ANACTRL_HIFIPLL_CTRL0,
-		.shift = 12,
+		.shift = 10,
 		.width = 3,
 		.flags = (CLK_DIVIDER_POWER_OF_TWO | CLK_DIVIDER_ROUND_CLOSEST),
 	},
@@ -985,7 +979,7 @@ static struct clk_regmap t5m_hifi1_pll_dco = {
 static struct clk_regmap t5m_hifi1_pll = {
 	.data = &(struct clk_regmap_div_data) {
 		.offset = ANACTRL_HIFI1PLL_CTRL0,
-		.shift = 12,
+		.shift = 10,
 		.width = 3,
 		.flags = (CLK_DIVIDER_POWER_OF_TWO | CLK_DIVIDER_ROUND_CLOSEST),
 	},

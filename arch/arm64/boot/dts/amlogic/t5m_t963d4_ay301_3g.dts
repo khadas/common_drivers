@@ -192,6 +192,12 @@
 		status = "okay";
 	};
 
+	ionvideo {
+		compatible = "amlogic, ionvideo";
+		dev_name = "ionvideo";
+		status = "okay";
+	};
+
 	picdec {
 		compatible = "amlogic, picdec";
 		memory-region = <&picdec_cma_reserved>;
@@ -201,18 +207,23 @@
 	ppmgr {
 		compatible = "amlogic, ppmgr";
 		memory-region = <&ppmgr_reserved>;
-		status = "disabled";
+		status = "okay";
 	};
 	vdetect {
 		compatible = "amlogic, vdetect";
 		dev_name = "vdetect";
-		status = "disabled";
+		status = "okay";
 	};
 
+	video_queue {
+		compatible = "amlogic, video_queue";
+		dev_name = "videoqueue";
+		status = "okay";
+	};
 	amlvideo2_0 {
 		compatible = "amlogic, amlvideo2";
 		dev_name = "amlvideo2";
-		status = "disabled";
+		status = "okay";
 		amlvideo2_id = <0>;
 		cma_mode = <1>;
 	};
@@ -220,7 +231,7 @@
 	amlvideo2_1 {
 		compatible = "amlogic, amlvideo2";
 		dev_name = "amlvideo2";
-		status = "disabled";
+		status = "okay";
 		amlvideo2_id = <1>;
 		cma_mode = <1>;
 	};

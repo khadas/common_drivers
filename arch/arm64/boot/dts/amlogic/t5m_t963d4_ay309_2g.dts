@@ -25,6 +25,11 @@
 		spi1 = &spicc0;
 		spi2 = &spicc1;
 		spi3 = &spicc2;
+		i2c0 = &i2c0;
+		i2c1 = &i2c1;
+		i2c2 = &i2c2;
+		i2c3 = &i2c3;
+		i2c4 = &i2c4;
 	};
 
 	memory@00000000 {

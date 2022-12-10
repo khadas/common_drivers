@@ -1674,6 +1674,11 @@ static int __init rdma_probe(struct platform_device *pdev)
 	WRITE_VCBUS_REG(RDMA_CTRL, data32);
 
 	info->rdma_dev = pdev;
+	if (is_meson_t5m_cpu()) {
+		/* rdma alloc in 1G */
+		info->rdma_dev->dev.coherent_dma_mask = DMA_BIT_MASK(30);
+		info->rdma_dev->dev.dma_mask = &info->rdma_dev->dev.coherent_dma_mask;
+	}
 
 	handle = rdma_register(get_rdma_ops(VSYNC_RDMA),
 			       NULL, rdma_table_size);

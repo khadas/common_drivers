@@ -11,7 +11,7 @@
 
 / {
 	model = "Amlogic";
-	amlogic-dt-id = "t5m_t963d4_ay301_3g";
+	amlogic-dt-id = "t5m_t963d4_ay301-3g";
 	compatible = "amlogic, t5m";
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;

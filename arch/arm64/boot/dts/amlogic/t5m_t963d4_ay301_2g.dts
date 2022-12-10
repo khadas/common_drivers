@@ -1183,3 +1183,9 @@
 	pinctrl-0 = <&spicc2_pins>;
 	cs-gpios = <&gpio GPIOC_3 GPIO_ACTIVE_HIGH>;
 };
+
+&ir {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&remote_pins>;
+};

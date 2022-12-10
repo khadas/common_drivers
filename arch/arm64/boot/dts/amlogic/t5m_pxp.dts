@@ -20,8 +20,7 @@
 	aliases {
 		serial0 = &uart_B;
 		tsensor0 = &cpu_tsensor;
-		tsensor1 = &nna_tsensor;
-		tsensor2 = &vpu_tsensor;
+		tsensor1 = &top_tsensor;
 		spi0 = &spifc;
 		spi1 = &spicc0;
 		spi2 = &spicc1;

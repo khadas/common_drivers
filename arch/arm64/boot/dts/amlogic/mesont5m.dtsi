@@ -1899,7 +1899,7 @@
 
 	cpu_tsensor: cpu_tsensor@fe022000 {
 		compatible = "amlogic, r1p1-tsensor";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe022000 0x0 0x50>;
 		tsensor_id = <1>;
 		cal_type = <0x11>;
@@ -1911,25 +1911,11 @@
 		#thermal-sensor-cells = <1>;
 	};
 
-	nna_tsensor: a53_tsensor@fe020000 {
+	top_tsensor: top_tsensor@fe01c000 {
 		compatible = "amlogic, r1p1-tsensor";
-		status = "disabled";
-		reg = <0x0 0xfe020000 0x0 0x50>;
-		tsensor_id = <2>;
-		cal_type = <0x11>;
-		cal_coeff = <324 424 3159 9411>;
-		rtemp = <115000>;
-		interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>;
-		clocks = <&clkc CLKID_TS_CLK>;
-		clock-names = "ts_comp";
-		#thermal-sensor-cells = <1>;
-	};
-
-	vpu_tsensor: gpu_tsensor@fe01c000 {
-		compatible = "amlogic, r1p1-tsensor";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe01c000 0x0 0x50>;
-		tsensor_id = <3>;
+		tsensor_id = <2>;
 		cal_type = <0x11>;
 		cal_coeff = <324 424 3159 9411>;
 		rtemp = <115000>;
@@ -1988,75 +1974,40 @@
 			sustainable-power = <5160>;
 			thermal-sensors = <&cpu_tsensor 0>;
 			trips {
-				cpuswitch_on: trip-point@0 {
+				cpu_switch_on: trip-point@0 {
 					temperature = <95000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				cpucontrol: trip-point@1 {
+				cpu_control: trip-point@1 {
 					temperature = <105000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				cpucritical: trip-point@2 {
+				cpu_critical: trip-point@2 {
 					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";
 				};
 			};
-			cooling-maps {
-				cpufreq_cooling_map {
-					trip = <&cpucontrol>;
-					cooling-device = <&CPU0 0 8>;
-					contribution = <1024>;
-				};
-				gpufreq_cooling_map {
-					trip = <&cpucontrol>;
-					cooling-device = <&gpu 0 3>;
-					contribution = <1024>;
-				};
-			};
 		};
-		nna_thermal: nna_thermal {
+		top_thermal: top_thermal {
 			polling-delay = <2000>;
 			polling-delay-passive = <1000>;
 			sustainable-power = <960>;
-			thermal-sensors = <&nna_tsensor 1>;
+			thermal-sensors = <&top_tsensor 1>;
 			trips {
-				nnaswitch_on: trip-point@0 {
+				top_switch_on: trip-point@0 {
 					temperature = <95000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				nnacontrol: trip-point@1 {
+				top_control: trip-point@1 {
 					temperature = <105000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				nnacritical: trip-point@2 {
-					temperature = <115000>;
-					hysteresis = <1000>;
-					type = "critical";
-				};
-			};
-		};
-		vpu_thermal: vpu_thermal {
-			polling-delay = <2000>;
-			polling-delay-passive = <1000>;
-			sustainable-power = <400>;
-			thermal-sensors = <&vpu_tsensor 2>;
-			trips {
-				vpuswitch_on: trip-point@0 {
-					temperature = <95000>;
-					hysteresis = <5000>;
-					type = "passive";
-				};
-				vpucontrol: trip-point@1 {
-					temperature = <105000>;
-					hysteresis = <5000>;
-					type = "passive";
-				};
-				vpucritical: trip-point@2 {
+				top_critical: trip-point@2 {
 					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";

@@ -1154,55 +1154,52 @@
 		dummy_codec:dummy{
 			#sound-dai-cells = <0>;
 			compatible = "amlogic, aml_dummy_codec";
-			status = "disabled";
+			status = "okay";
 		};
+
 		video_composer {
 			compatible = "amlogic, video_composer";
 			dev_name = "video_composer";
 			status = "okay";
 		};
+
 		acodec:codec {
 			#sound-dai-cells = <0>;
-			compatible = "amlogic, t3_acodec";
+			compatible = "amlogic, t5w_acodec";
+			status = "okay";
 			reg = <0x0 0xfe01a000 0x0 0x1c>;
 			tdmout_index = <1>;
 			tdmin_index = <1>;
 			dat0_ch_sel = <2>;
 			reset-names = "acodec";
 			resets = <&reset RESET_ACODEC>;
-			status = "disabled";
 		};
 
 		audio_data: audio_data {
 			compatible = "amlogic, audio_data";
 			mem_in_base_cmd = <0x82000020>;
 			query_licence_cmd = <0x82000050>;
-			status = "disabled";
+			status = "okay";
 		};
 
 		amaudio: amaudio {
 			compatible = "amlogic, amaudio";
-			reg = <0x0 0xfe440000 0x0 0x10000>;
+			reg = <0x0 0xff610000 0x0 0x10000>;
 			reg-names = "otp_tee_base";
 			status = "disabled";
 		};
 
 		audiobus: audiobus@0xFE330000 {
 			compatible = "amlogic, audio-controller", "simple-bus";
-			reg = <0x0 0xFE330000 0x0 0x3000>;
 			#address-cells = <2>;
 			#size-cells = <2>;
+			reg = <0x0 0xFE330000 0x0 0x3000>;
 			ranges = <0x0 0x0 0x0 0xFE330000 0x0 0x3000>;
-
-			//power-domains = <&pwrdm PDID_T3_AUDIO>;
-			chip_id = <0x38>;
-			status = "disabled";
-
-			clkaudio: audio_clocks {
+			chip_id = <0x41>;
+			clkaudio:audio_clocks {
 				compatible = "amlogic, t3-audio-clocks";
 				#clock-cells = <1>;
 				reg = <0x0 0x0 0x0 0xb0>;
-				status = "disabled";
 			};
 			ddr_manager {
 				compatible =
@@ -1222,12 +1219,24 @@
 					"toddr_d",
 					"frddr_a", "frddr_b", "frddr_c",
 					"frddr_d";
-				status = "disabled";
+			};
+			pcpd_monitor_a: pcpd_monitor@0 {
+				compatible = "amlogic, pcpda_monitor";
+				interrupts = <GIC_SPI 149
+					IRQ_TYPE_EDGE_RISING>;
+				interrupt-names = "irq_pcpd";
+				status = "okay";
+			};
+			pcpd_monitor_b: pcpd_monitor@1 {
+				compatible = "amlogic, pcpdb_monitor";
+				interrupts = <GIC_SPI 148
+					IRQ_TYPE_EDGE_RISING>;
+				interrupt-names = "irq_pcpd";
+				status = "okay";
 			};
 
-		pinctrl_audio: pinctrl {
+			pinctrl_audio: pinctrl {
 				compatible = "amlogic, audio-pinctrl";
-				status = "disabled";
 			};
 		};/* end of audiobus*/
 
@@ -1384,40 +1393,49 @@
 			#address-cells = <2>;
 			#size-cells = <2>;
 			ranges = <0x0 0x0 0x0 0xfe333000 0x0 0x1000>;
-
 			earc: earc@0 {
-				compatible = "amlogic, t3-snd-earc";
+				compatible = "amlogic, t7-snd-earc";
 				#sound-dai-cells = <0>;
 
 				status = "disabled";
 
-				reg =	<0x0 0x0 0x0 0x400>,
+				reg =<0x0 0x0 0x0 0x400>,
 					<0x0 0x400 0x0 0x200>,
 					<0x0 0x600 0x0 0x200>;
 				reg-names = "tx_cmdc",
-					"tx_dmac",
-					"tx_top";
+						"tx_dmac",
+						"tx_top";
+				clocks = < &clkaudio CLKID_EARCTX_CMDC
+						&clkaudio CLKID_EARCTX_DMAC
+						&clkc CLKID_FCLK_DIV4
+						&clkc CLKID_HIFI_PLL
+						>;
+				clock-names =
+						"tx_cmdc",
+						"tx_dmac",
+						"tx_cmdc_srcpll",
+						"tx_dmac_srcpll";
 
-				//clocks = < &clkaudio CLKID_EARCTX_CMDC
-				//	&clkaudio CLKID_EARCTX_DMAC
-				//	&clkc CLKID_FCLK_DIV4
-				//	&clkc CLKID_MPLL2
-				//	>;
-				//clock-names =
-				//	"tx_cmdc",
-				//	"tx_dmac",
-				//	"tx_cmdc_srcpll",
-				//	"tx_dmac_srcpll";
 				interrupts = <
-					GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;
+						GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;
 				interrupt-names ="earc_tx";
 			};
+		};
+
+		//hdmirx arc
+		hdmirx_arc {
+			compatible = "amlogic, hdmirx-arc-iomap";
+			reg = <0x0 0xfe39c000 0x0 0x3>;
+			#address-cells = <2>;
+			#size-cells = <2>;
+			ranges = <0x0 0x0 0x0 0xfe39c000 0x0 0x3>;
+			reg-names = "hdmirx-arc";
 		};
 
 		/* Sound iomap */
 		aml_snd_iomap {
 			compatible = "amlogic, snd-iomap";
-			status = "disabled";
+			status = "okay";
 			#address-cells=<2>;
 			#size-cells=<2>;
 			ranges;
@@ -1442,17 +1460,6 @@
 			resampleB_base {
 				reg = <0x0 0xFE334000 0x0 0x104>;
 			};
-		};
-
-		//hdmirx arc
-		hdmirx_arc {
-			status = "disabled";
-			compatible = "amlogic, hdmirx-arc-iomap";
-			reg = <0x0 0xfe39c000 0x0 0x10c>;
-			#address-cells = <2>;
-			#size-cells = <2>;
-
-			reg-names = "hdmirx-arc";
 		};
 
 		aml_bt: aml_bt {
@@ -2298,6 +2305,37 @@
 			function = "gpio_periphs";
 			bias-pull-down;
 			drive-strength-microamp = <4000>;
+		};
+	};
+
+	pdmin: pdmin {
+		mux { /* GPIOH_19, GPIOH_18 */
+			groups = "pdm_dclk_h19",
+				"pdm_din0_h18",
+				"pdm_din1_h14";
+			function = "pdm";
+		};
+	};
+
+	spdif_out_a_z19_pins: spdifout_a {
+		mux { /* GPIOZ_19 */
+			groups = "spdif_out_a_z19";
+			function = "spdif_out_a";
+		};
+	};
+
+	spdifout_z19_mute: spdifout_a_mute {
+		mux { /* GPIOZ-19*/
+			groups = "GPIOZ_19";
+			function = "gpio_periphs";
+			output-low;
+		};
+	};
+
+	spdifin_m29_pins: spdifin {
+		mux { /* GPIOM_29 */
+			groups = "spdif_in_m";
+			function = "spdif_in";
 		};
 	};
 

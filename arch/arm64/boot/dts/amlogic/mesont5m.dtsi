@@ -811,7 +811,6 @@
 			};
 
 			analog_pinctrl: analog-pinctrl@4054 {
-				status = "disabled";
 				compatible = "amlogic,meson-t5m-analog-pinctrl";
 				#address-cells = <2>;
 				#size-cells = <2>;

@@ -1922,9 +1922,9 @@ static struct meson_pmx_func meson_t5m_periphs_functions[] __initdata = {
 };
 
 static struct meson_bank meson_t5m_analog_banks[] = {
-	BANK("ANALOG", CDAC_IOUT, CVBS1,   131, 133,
+	BANK("ANALOG", CDAC_IOUT, CVBS1,   140, 142,
 	     0,  31, 0, 30, 0, 0, 0, 0, 1, 0),
-	BANK("ANALOG", SARADC_CH0_IO, SARADC_CH4_IO,   131, 133,
+	BANK("ANALOG", SARADC_CH0_IO, SARADC_CH4_IO,  -1, -1,
 	     0,  31, 0, 30, 0, 0, 0, 0, 1, 0)
 };
 
@@ -1940,29 +1940,29 @@ static struct meson_axg_pmx_data meson_t5m_analog_pmx_banks_data = {
 
 static struct meson_bank meson_t5m_periphs_banks[] = {
 	/* name  first  last  irq  pullen  pull  dir  out  in ds */
-	BANK_DS("D",    GPIOD_0,    GPIOD_14, 86, 98,
+	BANK_DS("D",    GPIOD_0,    GPIOD_14, 42, 56,
 		0x03,  0,   0x04,  0,   0x02,  0,  0x01,  0,  0x00,  0,  0x07, 0),
-	BANK_DS("E",    GPIOE_0,    GPIOE_1, 52, 65,
+	BANK_DS("E",    GPIOE_0,    GPIOE_1, 57, 58,
 		0x0b,  0,   0x0c,  0,   0x0a,  0,  0x09,  0,  0x08,  0,  0x0f, 0),
-	BANK_DS("Z",    GPIOZ_0,    GPIOZ_15, 56, 71,
+	BANK_DS("Z",    GPIOZ_0,    GPIOZ_15, 59, 74,
 		0x13,  0,   0x14,  0,   0x12,  0,  0x11,  0,  0x10,  0,  0x17, 0),
-	BANK_DS("Z1",   GPIOZ_16,   GPIOZ_19, 72, 75,
+	BANK_DS("Z1",   GPIOZ_16,   GPIOZ_19, 75, 78,
 		0x13, 16,   0x14, 16,   0x12, 16,  0x11,  16, 0x10,  16, 0xc0, 0),
-	BANK_DS("H",    GPIOH_0,    GPIOH_15, 107, 122,
+	BANK_DS("H",    GPIOH_0,    GPIOH_15, 109, 124,
 		0x1b,  0,   0x1c,  0,   0x1a, 0,   0x19,  0,  0x18,  0,  0x1f, 0),
-	BANK_DS("H1",   GPIOH_16,   GPIOH_29, 123, 134,
+	BANK_DS("H1",   GPIOH_16,   GPIOH_29, 125, 138,
 		0x1b, 16,   0x1c, 16,   0x1a, 16,  0x19, 16,  0x18,  16, 0xc1, 0),
 	BANK_DS("B",    GPIOB_0,    GPIOB_13, 0, 13,
 		0x2b,  0,   0x2c,  0,   0x2a, 0,   0x29,  0,  0x28,  0,  0x2f, 0),
-	BANK_DS("C",    GPIOC_0,    GPIOC_10, 14, 29,
+	BANK_DS("C",    GPIOC_0,    GPIOC_10, 14, 24,
 		0x33,  0,   0x34,  0,   0x32, 0,   0x31,  0,  0x30,  0,  0x37, 0),
 	BANK_DS("P",    GPIOP_0,    GPIOP_9,  143, 152,
 		0x3b,  0,   0x3c,  0,   0x3a, 0,   0x39,  0,  0x38,  0,  0x3f, 0),
-	BANK_DS("W",    GPIOW_0,    GPIOW_16, 30, 42,
+	BANK_DS("W",    GPIOW_0,    GPIOW_16, 25, 41,
 		0x63,  0,  0x64,  0,  0x62,   0,  0x61,   0,  0x60, 0,  0x67, 0),
-	BANK_DS("M",    GPIOM_0,    GPIOM_29, 76, 91,
+	BANK_DS("M",    GPIOM_0,    GPIOM_29, 79, 108,
 		0x73,  0,  0x74,  0,  0x72,   0,  0x71,   0,  0x70, 0,  0x77, 0),
-	BANK_DS("GPIO_TEST_N", GPIO_TEST_N,    GPIO_TEST_N, 135, 135,
+	BANK_DS("GPIO_TEST_N", GPIO_TEST_N,    GPIO_TEST_N, 139, 139,
 		0x83,  0,  0x84,  0,  0x82,   0,  0x81,   0,  0x80, 0,  0x87, 0)
 };
 

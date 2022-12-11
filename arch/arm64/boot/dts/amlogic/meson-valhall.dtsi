@@ -20,6 +20,7 @@
 
 		num_of_pp = <2>;
 		sc_mpp = <1>; /* number of shader cores used most of time. */
+		def_clk = <0>;
 
 		tbl =  <&dvfs285_cfg
 			&dvfs400_cfg

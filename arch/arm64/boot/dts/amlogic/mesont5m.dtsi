@@ -1744,7 +1744,7 @@
 	};
 
 	ion_dev {
-		status = "disabled";
+		status = "okay";
 		compatible = "amlogic, ion_dev";
 		memory-region = <&ion_cma_reserved
 				&ion_fb_reserved
@@ -3411,7 +3411,8 @@ dvb_p_ts2_pins: dvb_p_ts2_pins {
 	status = "okay";
 	operating-points-v2 = <&gpu_opp_table>;
 	reg =   <0 0xFE400000 0 0x04000>, /*mali APB bus base address*/
-		<0 0xFE002000 0 0x01000>; /*reset register*/
+		<0 0xFE002000 0 0x01000>, /*reset register*/
+		<0 0xFE000000 0 0x01000>; /*hiu register*/
 
 	interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>,
 		     <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
@@ -3444,9 +3445,4 @@ dvb_p_ts2_pins: dvb_p_ts2_pins {
 		&dvfs800_cfg
 		&dvfs800_cfg>;
 
-//	reset_cfg:reset_cfg {
-//		reg_level = <0x16>;
-//		reg_mask = <0x26>;
-//		reg_bit = <10>;
-//	};
 };

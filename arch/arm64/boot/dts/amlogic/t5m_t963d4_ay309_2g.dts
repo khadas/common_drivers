@@ -1085,7 +1085,7 @@
 
 	//non-removable;
 	disable-wp;
-	amlogic,dram-access-quirk;
+//	amlogic,dram-access-quirk;
 
 	cd-gpios = <&gpio GPIOC_10 GPIO_ACTIVE_HIGH>;
 	//dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
@@ -1102,12 +1102,12 @@
 	bus-width = <8>;
 	cap-mmc-highspeed;
 	//mmc-ddr-1_8v;
-	//mmc-hs200-1_8v;
+	mmc-hs200-1_8v;
 	//mmc-hs400-1_8v;
 	max-frequency = <200000000>;
 	non-removable;
 	disable-wp;
-	amlogic,dram-access-quirk;
+//	amlogic,dram-access-quirk;
 
 //	mmc-pwrseq = <&emmc_pwrseq>;
 //	vmmc-supply = <&vddao_3v3>;

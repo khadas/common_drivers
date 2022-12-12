@@ -1003,7 +1003,6 @@
 			};
 
 			eth_phy: mdio-multiplexer@28000 {
-				status = "disabled";
 				compatible = "amlogic,g12a-mdio-mux";
 				reg = <0x0 0x28000 0x0 0xa4>;
 
@@ -1016,6 +1015,7 @@
 				#size-cells = <0>;
 				enet_type = <5>;
 				tx_amp_src = <0xFE010330>;
+				st_mode = <3>;
 
 				ext_mdio: mdio@0 {
 					reg = <0>;
@@ -1031,7 +1031,7 @@
 					internal_ephy: ethernet_phy@8 {
 						compatible = "ethernet-phy-id0180.3301",
 							     "ethernet-phy-ieee802.3-c22";
-						interrupts = <GIC_SPI 340 IRQ_TYPE_LEVEL_HIGH>;
+						interrupts = <GIC_SPI 219 IRQ_TYPE_LEVEL_HIGH>;
 						reg = <8>;
 						max-speed = <100>;
 					};
@@ -1054,10 +1054,10 @@
 			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq";
 			//power-domains = <&pwrdm PDID_T3_ETH>;
-			//clocks = <&clkc CLKID_SYS_CLK_ETH>,
-			//	 <&clkc CLKID_FCLK_DIV2>,
-				 //<&clkc CLKID_MPLL2>;
-			//clock-names = "stmmaceth", "clkin0", "clkin1";
+			clocks = <&clkc CLKID_SYS_CLK_ETH>,
+				 <&clkc CLKID_FCLK_DIV2>,
+				 <&clkc CLKID_MPLL_50M>;
+			clock-names = "stmmaceth", "clkin0", "clkin1";
 			rx-fifo-depth = <4096>;
 			tx-fifo-depth = <2048>;
 			/*1:inphy; 2:exphy;*/

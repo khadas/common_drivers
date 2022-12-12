@@ -1164,6 +1164,12 @@
 	//gpios = <&gpio GPIOM_8 GPIO_ACTIVE_HIGH>;
 };
 
+&ethmac {
+	status = "okay";
+	phy-handle = <&internal_ephy>;
+	phy-mode = "rmii";
+};
+
 &crg20 {
 	compatible = "amlogic, crg-host-drd";
 	status = "okay";

@@ -2907,8 +2907,7 @@ static void meson_mmc_cfg_init(struct meson_host *host)
 	writel(cfg, host->regs + SD_EMMC_CFG);
 
 	/* The resp returned by cmd19 and cmd52/3 can't use the same mask */
-	if (!aml_card_type_mmc(host))
-		writel(0x0, host->regs + 0x150);
+	writel(0x0, host->regs + 0x150);
 
 	host->timing = -1;
 }

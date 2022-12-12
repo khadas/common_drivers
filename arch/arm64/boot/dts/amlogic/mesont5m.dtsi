@@ -1121,7 +1121,7 @@
 			src_clk_rate = <1152000000>;
 			mmc_debug_flag;
 			ignore_desc_busy;
-			tx_delay = <16>;
+			tx_delay = <18>;
 			no-sd;
 			no-sdio;
 		//	resets = <&reset RESET_SD_EMMC_C>;

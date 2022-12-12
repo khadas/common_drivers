@@ -526,6 +526,19 @@ static u32 meson_video_parse_config(struct drm_device *dev)
 	return mode_flag;
 }
 
+static u32 meson_osd_parse_config(struct drm_device *dev)
+{
+	u32 osd_afbc_mask = 0;
+	int ret;
+
+	ret = of_property_read_u32(dev->dev->of_node,
+				   "osd_afbc_mask", &osd_afbc_mask);
+	if (ret)
+		DRM_INFO("%s parse osd afbc mask fail!\n", __func__);
+
+	return osd_afbc_mask;
+}
+
 static const char *am_meson_video_fence_get_driver_name(struct dma_fence *fence)
 {
 	return "meson";
@@ -1434,12 +1447,23 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 	else
 		osd_plane->osd_occupied = false;
 
-	drm_universal_plane_init(priv->drm, plane, 1 << crtc_mask,
-				 &am_osd_plane_funs,
-				 supported_drm_formats,
-				 ARRAY_SIZE(supported_drm_formats),
-				 afbc_modifier,
-				 type, const_plane_name);
+	if (priv->osd_afbc_mask) {
+		priv->drm->mode_config.allow_fb_modifiers = false;
+		drm_universal_plane_init(priv->drm, plane, 1 << crtc_mask,
+					 &am_osd_plane_funs,
+					 supported_drm_formats,
+					 ARRAY_SIZE(supported_drm_formats),
+					 NULL,
+					 type, const_plane_name);
+		priv->drm->mode_config.allow_fb_modifiers = true;
+	} else {
+		drm_universal_plane_init(priv->drm, plane, 1 << crtc_mask,
+					 &am_osd_plane_funs,
+					 supported_drm_formats,
+					 ARRAY_SIZE(supported_drm_formats),
+					 afbc_modifier,
+					 type, const_plane_name);
+	}
 	drm_plane_create_blend_mode_property(plane,
 				BIT(DRM_MODE_BLEND_PIXEL_NONE) |
 				BIT(DRM_MODE_BLEND_PREMULTI)   |
@@ -1522,12 +1546,14 @@ int am_meson_plane_create(struct meson_drm *priv)
 	enum drm_plane_type type[MESON_MAX_OSD];
 	int i, osd_index, video_index;
 	u32 vfm_mode;
+	u32 osd_afbc_mask;
 
 	memset(priv->osd_planes, 0, sizeof(struct am_osd_plane *) * MESON_MAX_OSD);
 	memset(priv->video_planes, 0, sizeof(struct am_video_plane *) * MESON_MAX_VIDEO);
 
 	/*calculate primary plane*/
 	meson_plane_get_primary_plane(priv, type);
+	osd_afbc_mask = meson_osd_parse_config(priv->drm);
 
 	/*osd plane*/
 	for (i = 0; i < MESON_MAX_OSD; i++) {
@@ -1535,6 +1561,7 @@ int am_meson_plane_create(struct meson_drm *priv)
 			continue;
 
 		osd_index = pipeline->osds[i]->base.index;
+		priv->osd_afbc_mask = osd_afbc_mask >> i & 1;
 		plane = am_osd_plane_create(priv, osd_index, priv->crtcmask_osd[i], type[i]);
 
 		if (!plane)

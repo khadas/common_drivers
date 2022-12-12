@@ -62,6 +62,20 @@ static const struct pll_params_table t5m_sys_pll_params_table[] = {
 };
 #endif
 
+#ifdef CONFIG_ARM
+static const struct pll_params_table t5m_sys1_pll_params_table[] = {
+	PLL_PARAMS(100, 1, 1), /*DCO=2400M OD=DCO/2=1200M*/
+	PLL_PARAMS(125, 1, 1), /*DCO=3000M OD=DCO/2=1500M*/
+	{ /* sentinel */ }
+};
+#else
+static const struct pll_params_table t5m_sys1_pll_params_table[] = {
+	PLL_PARAMS(100, 1), /*DCO=2400M OD=DCO/2=1200M*/
+	PLL_PARAMS(125, 1), /*DCO=3000M OD=DCO/2=1500M*/
+	{ /* sentinel */ }
+};
+#endif
+
 static struct clk_regmap t5m_sys_pll_dco = {
 	.data = &(struct meson_clk_pll_data){
 		.en = {
@@ -142,7 +156,7 @@ static struct clk_regmap t5m_sys1_pll_dco = {
 			.width	 = 3,
 		},
 #endif
-		.table = t5m_sys_pll_params_table,
+		.table = t5m_sys1_pll_params_table,
 		.l = {
 			.reg_off = ANACTRL_SYS1PLL_CTRL0,
 			.shift   = 31,
@@ -169,6 +183,16 @@ static struct clk_regmap t5m_sys1_pll_dco = {
 		 */
 		.flags = CLK_GET_RATE_NOCACHE | CLK_IGNORE_UNUSED,
 	},
+};
+
+/* od can not set 5/6/7 in sys0/sys1/fixed/gp0/hifi/hifi1 pll */
+static const struct clk_div_table t5m_pll_od_tab[] = {
+	{0, 1},
+	{1, 2},
+	{2, 4},
+	{3, 8},
+	{4, 16},
+	{ /* sentinel */ }
 };
 
 #ifdef CONFIG_ARM
@@ -228,7 +252,8 @@ static struct clk_regmap t5m_sys_pll = {
 		.offset = ANACTRL_SYS0PLL_CTRL0,
 		.shift = 12,
 		.width = 3,
-		.flags = CLK_DIVIDER_POWER_OF_TWO,
+		.table = t5m_pll_od_tab,
+		.flags = CLK_DIVIDER_ALLOW_ZERO,
 		.smc_id = SECURE_PLL_CLK,
 		.secid = SECID_SYS0_PLL_OD
 	},
@@ -253,7 +278,8 @@ static struct clk_regmap t5m_sys1_pll = {
 		.offset = ANACTRL_SYS1PLL_CTRL0,
 		.shift = 12,
 		.width = 3,
-		.flags = CLK_DIVIDER_POWER_OF_TWO,
+		.table = t5m_pll_od_tab,
+		.flags = CLK_DIVIDER_ALLOW_ZERO,
 		.smc_id = SECURE_PLL_CLK,
 		.secid = SECID_SYS1_PLL_OD
 	},
@@ -363,7 +389,8 @@ static struct clk_regmap t5m_fixed_pll = {
 		.offset = ANACTRL_FIXPLL_CTRL0,
 		.shift = 12,
 		.width = 3,
-		.flags = CLK_DIVIDER_POWER_OF_TWO,
+		.table = t5m_pll_od_tab,
+		.flags = CLK_DIVIDER_ALLOW_ZERO,
 		.smc_id = SECURE_PLL_CLK,
 		.secid = SECID_FIX_PLL_OD
 	},
@@ -637,7 +664,8 @@ static struct clk_regmap t5m_gp0_pll = {
 		.offset = ANACTRL_GP0PLL_CTRL0,
 		.shift = 10,
 		.width = 3,
-		.flags = (CLK_DIVIDER_POWER_OF_TWO |
+		.table = t5m_pll_od_tab,
+		.flags = (CLK_DIVIDER_ALLOW_ZERO |
 			  CLK_DIVIDER_ROUND_CLOSEST),
 	},
 	.hw.init = &(struct clk_init_data){
@@ -891,6 +919,11 @@ static struct clk_regmap t5m_hifi_pll_dco = {
 			.shift   = 0,
 			.width   = 8,
 		},
+		.frac = {
+			.reg_off = ANACTRL_HIFIPLL_CTRL1,
+			.shift   = 0,
+			.width   = 19,
+		},
 		.l = {
 			.reg_off = ANACTRL_HIFIPLL_CTRL0,
 			.shift   = 31,
@@ -904,6 +937,7 @@ static struct clk_regmap t5m_hifi_pll_dco = {
 		.range = &t5m_hifi_pll_mult_range,
 		.init_regs = t5m_hifi_init_regs,
 		.init_count = ARRAY_SIZE(t5m_hifi_init_regs),
+		.new_frac = 1,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hifi_pll_dco",
@@ -921,7 +955,8 @@ static struct clk_regmap t5m_hifi_pll = {
 		.offset = ANACTRL_HIFIPLL_CTRL0,
 		.shift = 10,
 		.width = 3,
-		.flags = (CLK_DIVIDER_POWER_OF_TWO | CLK_DIVIDER_ROUND_CLOSEST),
+		.table = t5m_pll_od_tab,
+		.flags = CLK_DIVIDER_ALLOW_ZERO | CLK_DIVIDER_ROUND_CLOSEST
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hifi_pll",
@@ -932,6 +967,12 @@ static struct clk_regmap t5m_hifi_pll = {
 		.num_parents = 1,
 		.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
 	},
+};
+
+static const struct reg_sequence t5m_hifi1_init_regs[] = {
+	{ .reg = ANACTRL_HIFI1PLL_CTRL1, .def = 0x03a00000 },
+	{ .reg = ANACTRL_HIFI1PLL_CTRL2, .def = 0x00040000 },
+	{ .reg = ANACTRL_HIFI1PLL_CTRL3, .def = 0x090da200 },
 };
 
 static struct clk_regmap t5m_hifi1_pll_dco = {
@@ -951,6 +992,11 @@ static struct clk_regmap t5m_hifi1_pll_dco = {
 			.shift   = 0,
 			.width   = 8,
 		},
+		.frac = {
+			.reg_off = ANACTRL_HIFI1PLL_CTRL1,
+			.shift   = 0,
+			.width   = 19,
+		},
 		.l = {
 			.reg_off = ANACTRL_HIFI1PLL_CTRL0,
 			.shift   = 31,
@@ -962,8 +1008,9 @@ static struct clk_regmap t5m_hifi1_pll_dco = {
 			.width   = 1,
 		},
 		.range = &t5m_hifi_pll_mult_range,
-		.init_regs = t5m_hifi_init_regs,
-		.init_count = ARRAY_SIZE(t5m_hifi_init_regs),
+		.init_regs = t5m_hifi1_init_regs,
+		.init_count = ARRAY_SIZE(t5m_hifi1_init_regs),
+		.new_frac = 1,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hifi1_pll_dco",
@@ -981,7 +1028,8 @@ static struct clk_regmap t5m_hifi1_pll = {
 		.offset = ANACTRL_HIFI1PLL_CTRL0,
 		.shift = 10,
 		.width = 3,
-		.flags = (CLK_DIVIDER_POWER_OF_TWO | CLK_DIVIDER_ROUND_CLOSEST),
+		.table = t5m_pll_od_tab,
+		.flags = CLK_DIVIDER_ALLOW_ZERO | CLK_DIVIDER_ROUND_CLOSEST
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hifi1_pll",
@@ -5069,8 +5117,8 @@ static struct clk_hw_onecell_data t5m_hw_onecell_data = {
 		[CLKID_DSU_CLK]				= &t5m_dsu_clk.hw,
 		[CLKID_HIFI_PLL_DCO]			= &t5m_hifi_pll_dco.hw,
 		[CLKID_HIFI_PLL]			= &t5m_hifi_pll.hw,
-		//[CLKID_HIFI1_PLL_DCO]			= &t5m_hifi1_pll_dco.hw,
-		//[CLKID_HIFI1_PLL]			= &t5m_hifi1_pll.hw,
+		[CLKID_HIFI1_PLL_DCO]			= &t5m_hifi1_pll_dco.hw,
+		[CLKID_HIFI1_PLL]			= &t5m_hifi1_pll.hw,
 		[CLKID_MPLL_50M_DIV]			= &t5m_mpll_50m_div.hw,
 		[CLKID_MPLL_50M]			= &t5m_mpll_50m.hw,
 		[CLKID_RTC_32K_CLKIN]			= &t5m_rtc_32k_clkin.hw,

@@ -3379,6 +3379,7 @@ int lcd_tcon_probe(struct aml_lcd_drv_s *pdrv)
 		lcd_tcon_conf = &tcon_data_t5d;
 		break;
 	case LCD_CHIP_T3:
+	case LCD_CHIP_T5M:
 		lcd_tcon_conf = &tcon_data_t3;
 		break;
 	case LCD_CHIP_T5W:

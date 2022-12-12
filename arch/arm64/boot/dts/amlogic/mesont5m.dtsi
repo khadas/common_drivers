@@ -1017,7 +1017,7 @@
 				#address-cells = <1>;
 				#size-cells = <0>;
 				clocks = <&clkc CLKID_SYS_CLK_I2C_M_C>;
-				status = "disabled";
+				status = "okay";
 			};
 
 			i2c3: i2c@6c000 {

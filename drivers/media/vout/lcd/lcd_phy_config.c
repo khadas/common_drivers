@@ -1305,7 +1305,7 @@ static void lcd_p2p_phy_set_t5m(struct aml_lcd_drv_s *pdrv, int status)
 			}
 
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL14, cntl14);
-			lcd_phy_cntl_set_t3(phy, status, 1, 1, 0);
+			lcd_phy_cntl_set_t5m(phy, status, 1, 1, 0);
 			break;
 		case P2P_CHPI: /* low common mode */
 		case P2P_CSPI:

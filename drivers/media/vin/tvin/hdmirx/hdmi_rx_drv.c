@@ -527,7 +527,7 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 			}
 		}
 	}
-	/* if there is any error or overflow, do some reset, then rerurn -1;*/
+	/* if there is any error or overflow, do some reset, then return -1;*/
 	if (parm->info.status != TVIN_SIG_STATUS_STABLE ||
 	    parm->info.fmt == TVIN_SIG_FMT_NULL)
 		return -1;
@@ -2538,7 +2538,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 	}
 	hdmirx_get_base_addr(pdev->dev.of_node);
 	hdevp->index = 0; /* pdev->id; */
-	/* create cdev and reigser with sysfs */
+	/* create cdev and register with sysfs */
 	ret = hdmirx_add_cdev(&hdevp->cdev, &hdmirx_fops, hdevp->index);
 	if (ret) {
 		rx_pr("%s: failed to add cdev\n", __func__);
@@ -3154,7 +3154,7 @@ static int hdmirx_suspend(struct platform_device *pdev, pm_message_t state)
 		rx_phy_suspend();
 	/*
 	 * clk source changed under suspend mode,
-	 * div must change togther.
+	 * div must change together.
 	 */
 	rx_set_suspend_edid_clk(true);
 	rx_dig_clk_en(0);

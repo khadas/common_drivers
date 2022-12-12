@@ -661,7 +661,7 @@ unsigned int rd_reg(enum map_addr_module_e module,
 }
 
 /*
- * wr_reg - regisger write
+ * wr_reg - register write
  * @module: module index of the reg_map table
  * @reg_addr: offset address of specified phy addr
  * @val: value being written
@@ -677,7 +677,7 @@ void wr_reg(enum map_addr_module_e module,
 }
 
 /*
- * rd_reg_b - regisger read byte mode
+ * rd_reg_b - register read byte mode
  * @module: module index of the reg_map table
  * @reg_addr: offset address of specified phy addr
  *
@@ -697,7 +697,7 @@ unsigned char rd_reg_b(enum map_addr_module_e module,
 }
 
 /*
- * wr_reg_b - regisger write byte mode
+ * wr_reg_b - register write byte mode
  * @module: module index of the reg_map table
  * @reg_addr: offset address of specified phy addr
  * @val: value being written
@@ -1686,7 +1686,7 @@ int packet_init_t7(void)
 	data8 |= 4 << 2; /* clr register if 4 frames no pkt */
 	hdmirx_wr_cor(VSI_CTRL1_DP3_IVCRX, data8);
 	hdmirx_wr_cor(VSI_CTRL3_DP3_IVCRX, 1);
-	/* aif to stort hdr10+ */
+	/* aif to store hdr10+ */
 	hdmirx_wr_cor(VSI_ID1_DP3_IVCRX, 0x8b);
 	hdmirx_wr_cor(VSI_ID2_DP3_IVCRX, 0x84);
 	hdmirx_wr_cor(VSI_ID3_DP3_IVCRX, 0x90);
@@ -3095,8 +3095,8 @@ bool rx_clkrate_monitor(void)
 	int error = 0;
 
 	clk_rate = rx_get_scdc_clkrate_sts();
-	/* should rm squelch judgement for low-emplitude issue */
-	/* otherwise,sw can not detect the low-emplitude signal */
+	/* should rm squelch judgement for low-amplitude issue */
+	/* otherwise,sw can not detect the low-amplitude signal */
 	/* if (rx.state < FSM_WAIT_CLK_STABLE) */
 		/*return changed;*/
 	/*if (is_clk_stable()) { */
@@ -3520,7 +3520,7 @@ void cor_init(void)
 	hdmirx_wr_cor(RX_ACR_CTRL1_AUD_IVCRX, data8);//register address: 0x1400 (0x7a)
 
 	data8 = 0;
-	data8 |= (0 << 6);//[7:6] rhdmi_aud_smaple_f_extn
+	data8 |= (0 << 6);//[7:6] rhdmi_aud_sample_f_extn
 	data8 |= (0 << 4);//[4]   reg_fs_filter_en
 	data8 |= (0 << 0);//[3:0] rhdmi_aud_sample_f
 	hdmirx_wr_cor(RX_TCLK_FS_AUD_IVCRX, data8);	//register address: 0x1417 (0x0)

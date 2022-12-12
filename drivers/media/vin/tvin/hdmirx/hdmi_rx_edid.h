@@ -123,7 +123,7 @@ union bit_rate_u {
 struct edid_audio_block_t {
 	unsigned char max_channel:3;
 	unsigned char format_code:4;
-	unsigned char fmt_code_resvrd:1;
+	unsigned char fmt_code_resrvd:1;
 
 	unsigned char freq_32khz:1;
 	unsigned char freq_44_1khz:1;
@@ -201,11 +201,11 @@ struct speaker_alloc_db_s {
 	unsigned char fc:1;
 	unsigned char lfe:1;
 	unsigned char fl_fr:1;
-	unsigned char resvd1:5;
+	unsigned char resrvd1:5;
 	unsigned char fch:1;
 	unsigned char tc:1;
 	unsigned char flh_frh:1;
-	unsigned char resvd2;
+	unsigned char resrvd2;
 };
 
 struct specific_vic_3d {
@@ -239,7 +239,7 @@ struct vsdb_s {
 	unsigned char DC_30bit:1;
 	/* DC_Y444: Set if supports YCbCb4:4:4 Deep Color modes */
 	unsigned char DC_y444:1;
-	unsigned char resvd1:2;
+	unsigned char resrvd1:2;
 	/* Set if Sink supports DVI dual-link operation */
 	unsigned char dvi_dual:1;
 
@@ -248,7 +248,7 @@ struct vsdb_s {
 	unsigned char latency_fields_present:1;
 	unsigned char i_latency_fields_present:1;
 	unsigned char hdmi_video_present:1;
-	unsigned char resvd2:1;
+	unsigned char resrvd2:1;
 	/* each bit indicates support for particular Content Type */
 	unsigned char cnc3:1;/* game */
 	unsigned char cnc2:1;/* cinema */
@@ -263,7 +263,7 @@ struct vsdb_s {
 	unsigned char _3d_present:1;
 	unsigned char _3d_multi_present:2;
 	unsigned char image_size:2;
-	unsigned char resvd3:3;
+	unsigned char resrvd3:3;
 
 	unsigned char hdmi_vic_len:3;
 	unsigned char hdmi_3d_len:5;
@@ -359,7 +359,7 @@ struct hdr_db_s {
 	/* ET_4 to ET_5 shall be set to 0. Future
 	 * Specifications may define other EOTFs
 	 */
-	unsigned char resvd1: 4;
+	unsigned char resrvd1: 4;
 	unsigned char eotf_hlg:1;
 	/* SMPTE ST 2084[2] */
 	unsigned char eotf_smpte_st_2084:1;

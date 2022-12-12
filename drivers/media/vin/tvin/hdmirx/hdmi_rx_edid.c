@@ -424,11 +424,11 @@ const char *_3d_detail_x[] = {
 	"ODD_left_EVEN_right",
 	"EVEN_left_ODD_right",
 	"EVEN_left_EVEN_right",
-	"Resvrd1",
-	"Resvrd2",
-	"Resvrd3",
-	"Resvrd4",
-	"Resvrd5",
+	"Resrvd1",
+	"Resrvd2",
+	"Resrvd3",
+	"Resrvd4",
+	"Resrvd5",
 };
 
 const char *aud_fmt[] = {
@@ -2424,7 +2424,7 @@ static void get_edid_range_limits(unsigned char *p_edid,
 		if (p_edid[start + i * 18 + 3] == 0xFD)
 			break;
 	}
-	/*maxmium supported pixel clock*/
+	/*maximum supported pixel clock*/
 	edid_info->max_sup_pixel_clk = p_edid[0x36 + i * 18 + 9] * 10;
 }
 
@@ -2732,7 +2732,7 @@ static int get_edid_vsdb(unsigned char *buff,
 	edid_info->vsdb.b = buff[start + 3] & 0xf;
 	edid_info->vsdb.c = (buff[start + 4] >> 4) & 0xf;
 	edid_info->vsdb.d = buff[start + 4] & 0xf;
-	/* after first 5 bytes: vsdb1.4 extension fileds */
+	/* after first 5 bytes: vsdb1.4 extension fields */
 	if (len > 5) {
 		edid_info->vsdb.support_AI = (buff[start + 5] >> 7) & 0x1;
 		edid_info->vsdb.DC_48bit = (buff[start + 5] >> 6) & 0x1;
@@ -3027,7 +3027,7 @@ static void get_edid_vcdb(unsigned char *buff,
 	 * parse the single byte as defined in CEA861-F Table 59.
 	 */
 	if (len != 2 - 1) {
-		rx_pr("invalid length for video cap data blcok: %d!\n", len);
+		rx_pr("invalid length for video cap data block: %d!\n", len);
 		/* return; */
 	}
 	edid_info->contain_vcdb = true;

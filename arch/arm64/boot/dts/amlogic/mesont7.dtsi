@@ -2494,8 +2494,8 @@
 			<0x0 0xfe000000 0x0 0x2000>,
 			<0x0 0xfe004000 0x0 0x200>;
 		reg-names = "vpu",
-			    "hdmitxcor",
-			    "hdmitxtop",
+			    "hdmitx_cor",
+			    "hdmitx_top",
 			    "sysctrl",
 			    "pwrctrl",
 			    "anactrl",

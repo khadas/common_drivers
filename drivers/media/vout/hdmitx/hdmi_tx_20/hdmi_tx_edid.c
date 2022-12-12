@@ -67,7 +67,7 @@
 #define EDID_DETAILED_TIMING_DES_BLOCK2_POS 0x5A
 #define EDID_DETAILED_TIMING_DES_BLOCK3_POS 0x6C
 
-/* EDID Descrptor Tag */
+/* EDID Descriptor Tag */
 #define TAG_PRODUCT_SERIAL_NUMBER 0xFF
 #define TAG_ALPHA_DATA_STRING 0xFE
 #define TAG_RANGE_LIMITS 0xFD
@@ -2661,7 +2661,7 @@ static bool is_sink_only_sd_4x3(struct hdmitx_dev *hdev,
 }
 
 /* force_flag: 0 means check with RX's edid */
-/* 1 means no check wich RX's edid */
+/* 1 means no check with RX's edid */
 enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdev,
 				  const char *disp_mode,
 				  char force_flag)

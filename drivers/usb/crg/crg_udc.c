@@ -4594,8 +4594,10 @@ static int crg_udc_remove(struct platform_device *pdev)
 {
 	struct crg_gadget_dev *crg_udc;
 	u32 tmp = 0;
+	struct crg_uccr *uccr;
 
 	crg_udc = &crg_udc_dev;
+	uccr = crg_udc->uccr;
 	CRG_DEBUG("%s %d called\n", __func__, __LINE__);
 
 	crg_udc->device_state = USB_STATE_ATTACHED;
@@ -4609,6 +4611,10 @@ static int crg_udc_remove(struct platform_device *pdev)
 	}
 
 	usb_del_gadget_udc(&crg_udc->gadget);
+
+	tmp = reg_read(&uccr->control);
+	tmp |= CRG_U3DC_CTRL_SWRST;
+	reg_write(&uccr->control, tmp);
 
 	/* set controller host role*/
 	tmp = reg_read(crg_udc->mmio_virt_base + 0x20FC) & ~0x1;
@@ -4785,7 +4791,8 @@ static struct platform_driver crg_udc_driver = {
 void crg_gadget_exit(void)
 {
 	CRG_ERROR("crg gadget exit\n");
-
+	if (!crg_udc_driver.driver.p)
+		return;
 	platform_driver_unregister(&crg_udc_driver);
 }
 EXPORT_SYMBOL_GPL(crg_gadget_exit);

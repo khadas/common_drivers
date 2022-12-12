@@ -2007,39 +2007,81 @@
 		};
 	};/*thermal zone end*/
 
-	crg20: crg@fdd00000 {
-		compatible = "amlogic, crg";
+	crg30_otg: crg30otg@fe03a000 {
+		compatible = "amlogic, amlogic-crg-otg";
 		status = "disabled";
-		reg = <0x0 0xfdd00000 0x0 0x100000>;
-		interrupts = <0 131 4>;
-		usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;
+		usb2-phy-reg = <0xfe03a08c>;
+		usb2-phy-reg-size = <0x80>;
+		m31-phy-reg = <0xfe02a000>;
+		m31-phy-reg-size = <0x1000>;
+		usb3-phy-reg = <0xfe03a080>;
+		usb3-phy-reg-size = <0x20>;
+		interrupts = <0 135 IRQ_TYPE_EDGE_RISING>;
+		//interrupts = <0 54 IRQ_TYPE_EDGE_RISING>;
+		udc-name = "fe350000.crgudc3";
+	};
+
+	crg20: crg20@fe300000 {
+		status = "disabled";
+		reg = <0x0 0xfe300000 0x0 0x10000>;
+		interrupts = <0 131 IRQ_TYPE_EDGE_RISING>;
+		usb-phy = <&crg_phy_20>, <&crg3_phy_20>;
 		cpu-type = "gxl";
 		clock-src = "usb3.0";
 		clocks = <&clkc CLKID_SYS_CLK_USB>;
 		clock-names = "crg_general";
 	};
 
-	crg30: crg@fde00000 {
-		compatible = "amlogic, crg";
+	crg21: crg21@fe310000 {
 		status = "disabled";
-		reg = <0x0 0xfde00000 0x0 0x100000>;
-		interrupts = <0 130 4>;
-		usb-phy = <&usb2_m31_phy>, <&usb3_m31_phy>;
+		reg = <0x0 0xfe310000 0x0 0x10000>;
+		interrupts = <0 130 IRQ_TYPE_EDGE_RISING>;
+		usb-phy = <&crg_phy_21>, <&crg3_phy_21>;
 		cpu-type = "gxl";
 		clock-src = "usb3.0";
 		clocks = <&clkc CLKID_SYS_CLK_USB>;
 		clock-names = "crg_general";
 	};
 
-	usb2_phy_v2: usb2phy@fe03a000 {
-		compatible = "amlogic, amlogic-new-usb2-v2";
+	crg30_drd: crg3drd@fe350000 {
+		status = "disabled";
+		reg = <0x0 0xfe350000 0x0 0x10000>;
+		interrupts = <0 129 IRQ_TYPE_EDGE_RISING>;
+		usb-phy = <&usb2_m31_0_phy>, <&usb3_m31_0_phy>;
+		cpu-type = "gxl";
+		clock-src = "usb3.0";
+		clocks = <&clkc CLKID_SYS_CLK_USB>;
+		clock-names = "crg_general";
+	};
+
+	usb2_m31_0_phy: usb2m310phy {
+		compatible = "amlogic, amlogic-usb2-m31-phy";
 		status = "disable";
 		#phy-cells = <0>;
-		reg = <0x0 0xfe03a020 0x0 0x60
+	};
+
+	usb3_m31_0_phy: usb3m310phy {
+		compatible = "amlogic, amlogic-usb3-m31-phy";
+		status = "disable";
+		#phy-cells = <0>;
+		reg = <0x0 0xfe002000 0x0 0x100>;
+		reset-level = <0x40>;
+		phy-reg = <0xfe02a000>;
+		phy-reg-size = <0x2000>;
+		m31phy-reset-level-bit = <45>;
+		m31ctl-reset-level-bit = <6>;
+		m31-utmi-reset-level-bit = <42>;
+		//u3-combx0-reset-bit = <53>;
+		uncomposite = <1>;
+	};
+
+	crg_phy_20: crgphy20@fe03e000 {
+		compatible = "amlogic, amlogic-crg-drd-usb2";
+		status = "disable";
+		#phy-cells = <0>;
+		reg = <0x0 0xfe03a000 0x0 0x20
 			0x0 0xFE002000 0x0 0x100
-			0x0 0xfe03e000 0x0 0x2000
-			0x0 0xfe032000 0x0 0x2000
-			0x0 0xfe030000 0x0 0x2000>;
+			0x0 0xfe03e000 0x0 0x2000>;
 		pll-setting-1 = <0x09400414>;
 		pll-setting-2 = <0x927E0000>;
 		pll-setting-3 = <0xac5f69e5>;
@@ -2048,126 +2090,87 @@
 		pll-setting-6 = <0x78000>;
 		pll-setting-7 = <0xe0004>;
 		pll-setting-8 = <0xe000c>;
-		dis-thred-enhance = <0x2>;/**t3-0x38:bit[27-28]**/
+		dis-thred-enhance = <0x2>;/**t7-0x38:bit[26-27]**/
 		version = <3>;
 		//power-domains = <&pwrdm PDID_SC2_USB_COMB>;
-		phy20-reset-level-bit = <9>;
-		phy21-reset-level-bit = <3>;
-		phy22-reset-level-bit = <2>;
-		usb-reset-bit = <4>;
+		phy0-reset-level-bit = <9>;
+		usb-reset-bit = <3>;
 		reset-level = <0x40>;
-		otg-phy-index = <0>;
-		usb-phy-trim-reg = <0xfe010330>;
-	};
-
-	usb3_phy_v2: usb3phy@fe03a080 {
-		compatible = "amlogic, amlogic-new-usb3-v2";
-		status = "disable";
-		#phy-cells = <0>;
-		reg = <0x0 0xfe03a080 0x0 0x20
-			0x0 0xfe002000 0x0 0x100>;
-		phy-reg = <0xfe02a000>;
-		phy-reg-size = <0x2000>;
-		usb2-phy-reg = <0xfe03a000>;
-		usb2-phy-reg-size = <0x80>;
-		xhci-port-a-reg = <0xfdd00420>;
-		//clocks = <&clkc CLKID_PCIE_PLL>;
-		//clock-names = "pcie_refpll";
-		interrupts = <0 281 4>;
-		version = <1>;
-	};
-
-	usb2_m31_phy: usb2m31phy {
-		compatible = "amlogic, amlogic-usb2-m31-phy";
-		status = "disable";
-		#phy-cells = <0>;
-	};
-
-	usb3_m31_phy: usb3m31phy {
-		compatible = "amlogic, amlogic-usb3-m31-phy";
-		status = "disable";
-		#phy-cells = <0>;
-		reg = <0x0 0xfe002000 0x0 0x100>;
-		//clocks = <&clkc CLKID_PCIE_PLL>;
-		//clock-names = "pcie_refpll";
-		reset-level = <0x40>;
-		phy-reg = <0xfe02a000>;
-		phy-reg-size = <0x2000>;
-		m31phy-reset-level-bit = <45>;
-		m31ctl-reset-level-bit = <6>;
-	};
-
-	dwc2_a: dwc2_a@fdf00000 {
-		compatible = "amlogic,dwc2";
-		status = "disable";
-		device_name = "dwc2_a";
-		reg = <0x0 0xfdf00000 0x0 0x100000>;
-		interrupts = <0 129 4>;
-		pl-periph-id = <0>; /** lm name */
-		clock-src = "usb0"; /** clock src */
-		port-id = <0>;  /** ref to mach/usb.h */
-		port-type = <2>;        /** 0: otg, 1: host, 2: slave */
-		port-speed = <0>; /** 0: default, high, 1: full */
-		port-config = <0>; /** 0: default */
-		/*0:default,1:single,2:incr,3:incr4,4:incr8,5:incr16,6:disable*/
-		port-dma = <0>;
-		port-id-mode = <0>; /** 0: hardware, 1: sw_host, 2: sw_slave*/
-		usb-fifo = <728>;
-		cpu-type = "v2";
-		phy-reg = <0xfe03a000>;
-		phy-reg-size = <0xa0>;
-		/** phy-interface: 0x0: amlogic phy, 0x1: synopsys phy **/
-		phy-interface = <0x2>;
-		clocks = <&clkc CLKID_SYS_CLK_USB
-			&clkc CLKID_SYS_CLK_USB>;
-		clock-names = "usb_general",
-				"usb1";
-	};
-
-	pcie: pcie@f8000000 {
-		compatible = "amlogic, amlogic-pcie-v2", "snps,dw-pcie";
-		reg = <0x0 0xf8000000 0x0 0x400000
-			0x0 0xfe02c000 0x0 0x2000
-			0x0 0xf8400000 0x0 0x200000
-			0x0 0xfe02a000 0x0 0x2000
-			0x0 0xfe002044 0x0 0x10>;
-		reg-names = "elbi", "cfg", "config", "phy", "reset";
-		interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_HIGH>;
-		#interrupt-cells = <1>;
-		bus-range = <0x0 0xff>;
-		#address-cells = <3>;
-		#size-cells = <2>;
-		interrupt-map-mask = <0 0 0 0>;
-		interrupt-map = <0 0 0 0 &gic GIC_SPI 143 IRQ_TYPE_EDGE_RISING>;
-		device_type = "pci";
-		ranges = <0x81000000 0 0 0 0xf8600000 0x0 0x100000
-			/* downstream I/O */
-			0x82000000 0 0xf8700000 0x0 0xf8700000 0 0x1900000>;
-			/* non-prefetchable memory */
-		num-lanes = <1>;
-		pcie-num = <1>;
-
-		//clocks = <&clkc CLKID_PCIE_PLL
-		//		&clkc CLKID_SYS_CLK_PCIE
-		//		&clkc CLKID_SYS_CLK_PCIE_PHY
-		//		&clkc CLKID_PCIE_HCSL>;
-		//clock-names = "pcie_refpll",
-		//		"pcie",
-		//		"pcie_phy",
-		//		"pcie_hcsl";
-		/*reset-gpio-type 0:Shared pad(no reset)1:OD pad2:Normal pad*/
-		gpio-type = <2>;
-		pcie-apb-rst-bit = <14>;
-		pcie-phy-rst-bit = <13>;
-		pcie-ctrl-a-rst-bit = <12>;
 		pwr-ctl = <0>;
-		phy-type = <1>;
-		//power-domains = <&pwrdm PDID_T3_PCIE>;
-		pcie-ctrl-sleep-shift = <15>;
-		pcie-hhi-mem-pd-shift = <26>;
-		pcie-hhi-mem-pd-mask = <0xf>;
-		pcie-ctrl-iso-shift = <15>;
-		status = "disabled";
+		clocks = <&clkc CLKID_SYS_CLK_USB>;
+		clock-names = "crg_general";
+		phy-id = <0>;
+		//usb-phy-trim-reg = <0xfe010330>;
+	};
+
+	crg3_phy_20: crg3phy20@fe03a080 {
+		compatible = "amlogic, amlogic-crg-drd-usb3";
+		status = "disable";
+		#phy-cells = <0>;
+		reg = <0x0 0xfe03a080 0x0 0x20>;
+		phy1-reg = <0xfe03e000>;
+		phy1-reg-size = <0x2000>;
+		reset-reg = <0xFE002000>;
+		reset-reg-size = <0x100>;
+		reset-level = <0x40>;
+		phy-id = <0>;
+	};
+
+	crg_phy_21: crgphy21@fe032000 {
+		compatible = "amlogic, amlogic-crg-drd-usb2";
+		status = "disable";
+		#phy-cells = <0>;
+		reg = <0x0 0xfe03a020 0x0 0x60
+			0x0 0xFE002000 0x0 0x100
+			0x0 0xfe032000 0x0 0x2000>;
+		pll-setting-1 = <0x09400414>;
+		pll-setting-2 = <0x927E0000>;
+		pll-setting-3 = <0xac5f69e5>;
+		pll-setting-4 = <0xbe18>;
+		pll-setting-5 = <0x7>;
+		pll-setting-6 = <0x78000>;
+		pll-setting-7 = <0xe0004>;
+		pll-setting-8 = <0xe000c>;
+		dis-thred-enhance = <0x2>;/**t7-0x38:bit[26-27]**/
+		version = <3>;
+		//power-domains = <&pwrdm PDID_SC2_USB_COMB>;
+		phy0-reset-level-bit = <8>;
+		usb-reset-bit = <3>;
+		reset-level = <0x40>;
+		pwr-ctl = <0>;
+		clocks = <&clkc CLKID_SYS_CLK_USB>;
+		clock-names = "crg_general";
+		phy-id = <1>;
+		//usb-phy-trim-reg = <0xfe010330>;
+	};
+
+	crg3_phy_21: crg3phy21@fe03a080 {
+		compatible = "amlogic, amlogic-crg-drd-usb3";
+		status = "disable";
+		#phy-cells = <0>;
+		reg = <0x0 0xfe03a080 0x0 0x20>;
+		phy1-reg = <0xfe032000>;
+		phy1-reg-size = <0x2000>;
+		reset-reg = <0xFE002000>;
+		reset-reg-size = <0x100>;
+		reset-level = <0x40>;
+		phy-id = <1>;
+	};
+
+	crg_udc_3: crgudc3@0xfe350000 {
+		compatible = "amlogic, crg_udc";
+		status = "disable";
+		device_name = "crg_udc_3";
+		reg = <0x0 0xfe350000 0x0 0x10000>;
+		interrupts = <0 129 IRQ_TYPE_EDGE_RISING>;
+		clock-src = "usb0"; /** clock src */
+		port-speed = <3>; /** 0: default, high, 1: full */
+		phy-reg = <0xfe02a000>;
+		phy-reg-size = <0x1000>;
+		clocks = <&clkc CLKID_SYS_CLK_USB>;
+		clock-names = "usb_general";
+		//phy-id = <2>;
+		controller-type = <4>;
 	};
 
 	cpu_info {

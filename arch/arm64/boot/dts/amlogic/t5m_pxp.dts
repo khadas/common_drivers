@@ -1148,43 +1148,60 @@
 		&dvfs500_cfg>;
 };
 
+&crg30_otg {
+	status = "disabled";
+	controller-type = <1>;
+	//gpio-vbus-power = "GPIOM_8";
+	//gpios = <&gpio GPIOM_8 GPIO_ACTIVE_HIGH>;
+};
+
 &crg20 {
+	compatible = "amlogic, crg-host-drd";
 	status = "disabled";
 };
 
-&crg30 {
+&crg21 {
+	compatible = "amlogic, crg-host-drd";
 	status = "disabled";
 };
 
-&usb2_phy_v2 {
-	status = "disabled";
-	portnum = <3>;
-};
-
-&usb3_phy_v2 {
-	status = "disabled";
-	portnum = <0>;
-	otg = <0>;
-};
-
-&usb2_m31_phy {
+&crg30_drd {
+	compatible = "amlogic, crg-drd";
 	status = "disabled";
 };
 
-&usb3_m31_phy {
+&usb2_m31_0_phy {
+	status = "disabled";
+};
+
+&usb3_m31_0_phy {
 	status = "disabled";
 	portnum = <1>;
 };
 
-&dwc2_a {
-	status = "disabled";
-	/** 0: normal, 1: otg+dwc3 host only, 2: otg+dwc3 device only*/
-	controller-type = <1>;
+&crg_phy_20 {
+	status = "okay";
+	portnum = <1>;
 };
 
-&pcie {
-	reset-gpio = <&gpio GPIOH_22 GPIO_ACTIVE_HIGH>;
-	status = "disable";
+&crg3_phy_20 {
+	status = "okay";
+	portnum = <0>;
+};
+
+&crg_phy_21 {
+	status = "okay";
+	portnum = <1>;
+};
+
+&crg3_phy_21 {
+	status = "okay";
+	portnum = <0>;
+};
+
+&crg_udc_3 {
+	status = "disabled";
+	controller-type = <4>;
 };
 
 &spicc0 {	//for TCON

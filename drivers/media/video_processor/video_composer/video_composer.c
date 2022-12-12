@@ -107,7 +107,7 @@ u32 vd_max_hold_count = 300;
 u32 vd_set_frame_delay[MAX_VIDEO_COMPOSER_INSTANCE_NUM];
 u32 vd_dump_vframe;
 u32 vpp_drop_count;
-u32 composer_dev_choice = 1; /*0 dewarp, 1 vicp, 2 ge2d*/
+u32 composer_dev_choice = 2; /*0 ge2d, 1 dewarp, 2 vicp*/
 struct vframe_s *current_display_vf;
 
 #define to_dst_buf(vf)	\
@@ -1515,6 +1515,7 @@ static void vframe_composer(struct composer_dev *dev)
 	ulong buf_addr[3];
 	int fbc_init_ctrl, fbc_pip_mode;
 	u32 src_fmt = 0;
+	enum com_dev_choice composer_device_choice = 0;
 
 	if (IS_ERR_OR_NULL(dev)) {
 		vc_print(dev->index, PRINT_ERROR, "%s: invalid param.\n", __func__);
@@ -1691,7 +1692,7 @@ static void vframe_composer(struct composer_dev *dev)
 		if (max_bottom < (dst_axis.top + dst_axis.height))
 			max_bottom = dst_axis.top + dst_axis.height;
 
-		if (dev->is_dewarp_support && composer_dev_choice == 0) {
+		if (dev->is_dewarp_support && composer_dev_choice == 1) {
 			memset(&vframe_para, 0, sizeof(vframe_para));
 			config_dewarp_vframe(dev->index, transform, scr_vf, dst_buf, &vframe_para);
 			dewarp_param.vf_para = &vframe_para;
@@ -1702,7 +1703,8 @@ static void vframe_composer(struct composer_dev *dev)
 				vc_print(dev->index, PRINT_ERROR, "dewarp composer failed\n");
 
 			uninit_dewarp_composer(&dewarp_param);
-		} else if (is_vicp_supported() && composer_dev_choice == 1 && transform == 0) {
+			composer_device_choice = DEWARP;
+		} else if (is_vicp_supported() && composer_dev_choice == 2 && transform == 0) {
 			memset(&data_config, 0, sizeof(struct vicp_data_config_t));
 			config_vicp_input_data(scr_vf,
 					addr,
@@ -1760,6 +1762,7 @@ static void vframe_composer(struct composer_dev *dev)
 			ret = vicp_data_composer(&data_config);
 			if (ret < 0)
 				vc_print(dev->index, PRINT_ERROR, "vicp composer failed\n");
+			composer_device_choice = VICP;
 		} else {
 			if (src_fmt == YUV444)
 				src_data.is_yuv444 = true;
@@ -1788,6 +1791,7 @@ static void vframe_composer(struct composer_dev *dev)
 			ret = ge2d_data_composer(&src_data, &dev->ge2d_para);
 			if (ret < 0)
 				vc_print(dev->index, PRINT_ERROR, "ge2d composer failed\n");
+			composer_device_choice = GE2D;
 		}
 	}
 
@@ -1850,7 +1854,7 @@ static void vframe_composer(struct composer_dev *dev)
 		dst_vf->crop[2] = 0;
 		dst_vf->crop[3] = 0;
 	} else {
-		if (!dev->is_dewarp_support) {
+		if (composer_device_choice != DEWARP) {
 			dst_vf->crop[0] = min_top * dst_buf->buf_h / dev->vinfo_h;
 			dst_vf->crop[1] = min_left * dst_buf->buf_w / dev->vinfo_w;
 			dst_vf->crop[2] = dst_buf->buf_h -
@@ -1876,7 +1880,7 @@ static void vframe_composer(struct composer_dev *dev)
 	dst_vf->zorder = frames_info->disp_zorder;
 	dst_vf->canvas0Addr = -1;
 	dst_vf->canvas1Addr = -1;
-	if (vicp_fbcout_en && is_vicp_supported() && composer_dev_choice == 1 && transform == 0) {
+	if (vicp_fbcout_en && is_vicp_supported() && composer_dev_choice == 2 && transform == 0) {
 		dst_vf->type |= (VIDTYPE_COMPRESS | VIDTYPE_SCATTER);
 		dst_vf->compWidth = dst_buf->buf_w;
 		dst_vf->compHeight = dst_buf->buf_h;
@@ -1928,7 +1932,7 @@ static void vframe_composer(struct composer_dev *dev)
 		dump_vf(dst_vf, 1);
 		if (vicp_fbcout_en &&
 			is_vicp_supported() &&
-			composer_dev_choice == 1 &&
+			composer_dev_choice == 2 &&
 			transform == 0) {
 			dump_fbc_out_data(dst_buf->afbc_head_addr, dst_buf->afbc_head_size);
 			dump_fbc_out_data(dst_buf->afbc_body_addr, dst_buf->afbc_body_size);
@@ -3968,7 +3972,7 @@ static ssize_t composer_dev_choice_show(struct class *cla, struct class_attribut
 	char *buf)
 {
 	return snprintf(buf, 80,
-		"0 dewarp, 1 vicp, 2 ge2d. current choice is %d.\n", composer_dev_choice);
+		"0 ge2d, 1 dewarp, 2 vicp. current choice is %d.\n", composer_dev_choice);
 }
 
 static ssize_t composer_dev_choice_store(struct class *cla, struct class_attribute *attr,

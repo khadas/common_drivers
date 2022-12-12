@@ -29,7 +29,7 @@ static void meson_vpu_vsync_rdma_irq(void *arg)
 	if (drm_vsync_rdma_handle[vpp_index] == -1)
 		return;
 
-	//vpu_pipeline_check_finish_reg(vpp_index);
+	vpu_pipeline_check_finish_reg(vpp_index);
 }
 
 static void meson_vpu1_vsync_rdma_irq(void *arg)
@@ -40,7 +40,7 @@ static void meson_vpu1_vsync_rdma_irq(void *arg)
 	if (drm_vsync_rdma_handle[vpp_index] == -1)
 		return;
 
-	//vpu_pipeline_check_finish_reg(vpp_index);
+	vpu_pipeline_check_finish_reg(vpp_index);
 }
 
 static void meson_vpu2_vsync_rdma_irq(void *arg)
@@ -51,7 +51,7 @@ static void meson_vpu2_vsync_rdma_irq(void *arg)
 	if (drm_vsync_rdma_handle[vpp_index] == -1)
 		return;
 
-	//vpu_pipeline_check_finish_reg(vpp_index);
+	vpu_pipeline_check_finish_reg(vpp_index);
 }
 
 static struct rdma_op_s meson_vpu_vsync_rdma_op = {

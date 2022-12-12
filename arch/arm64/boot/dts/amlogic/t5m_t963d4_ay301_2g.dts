@@ -19,6 +19,8 @@
 
 	aliases {
 		serial0 = &uart_B;
+		serial1 = &uart_A;
+		serial2 = &uart_C;
 		tsensor0 = &cpu_tsensor;
 		tsensor1 = &top_tsensor;
 		spi0 = &spifc;

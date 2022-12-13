@@ -108,5 +108,3 @@ fi
 
 POST_KERNEL_BUILD_CMDS="prepare_module_build"
 EXTRA_CMDS="extra_cmds"
-
-# ABI_DEFINITION=${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.xml

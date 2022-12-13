@@ -141,5 +141,3 @@ if [[ -n ${UPGRADE_PROJECT} ]]; then
 	KMI_SYMBOL_LIST_STRICT_MODE=""
 	TRIM_NONLISTED_KMI=""
 fi
-
-# ABI_DEFINITION=${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.xml

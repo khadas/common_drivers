@@ -51,7 +51,7 @@ int vt_free_id(struct vt_session *session, int tunnel_id);
 int vt_producer_connect(struct vt_session *session, int tunnel_id);
 
 /**
- * vt_producer_disconnect - producer disconnect to a sepecific videotunnel
+ * vt_producer_disconnect - producer disconnect to a specific videotunnel
  * @session:	the vt_session
  * @tunnel_id:	tunnel id on which to disconnect
  *

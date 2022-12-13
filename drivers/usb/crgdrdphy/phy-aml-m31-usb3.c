@@ -46,15 +46,6 @@ static void amlogic_usb3_m31_shutdown(struct usb_phy *x)
 		writel((val & (~temp)), (void __iomem	*)
 			((unsigned long)phy->reset_regs +
 			(phy->reset_level - mask) + shift));
-
-		temp = 1 << (phy->m31ctl_reset_level_bit % 32);
-		shift = (phy->m31ctl_reset_level_bit / 32) * 4;
-		val = readl((void __iomem		*)
-			((unsigned long)phy->reset_regs +
-			(phy->reset_level - mask) + shift));
-		writel((val & (~temp)), (void __iomem	*)
-			((unsigned long)phy->reset_regs +
-			(phy->reset_level - mask) + shift));
 	}
 
 	phy->suspend_flag = 1;

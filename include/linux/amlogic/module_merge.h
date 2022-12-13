@@ -6,6 +6,8 @@
 #ifndef _MODULE_MERGE_H_
 #define _MODULE_MERGE_H_
 
+#include <linux/amlogic/gki_module.h>
+
 #define call_sub_init(func) \
 { \
 	int ret = 0; \

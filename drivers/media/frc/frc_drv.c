@@ -53,6 +53,9 @@
 #include <linux/amlogic/media/frc/frc_reg.h>
 #include <linux/amlogic/media/frc/frc_common.h>
 #include <linux/amlogic/power_domain.h>
+#if IS_ENABLED(CONFIG_AMLOGIC_DMC_DEV_ACCESS)
+#include <linux/amlogic/dmc_dev_access.h>
+#endif
 #include <dt-bindings/power/t3-pd.h>
 #include <dt-bindings/power/t5m-pd.h>
 #include <linux/amlogic/media/video_sink/video_signal_notify.h>
@@ -789,6 +792,99 @@ static struct miscdevice frc_misc = {
 	.name = "runtime_frc",
 	.fops = &runtimepm_frc_fops,
 };
+
+/****************************************************************************/
+#if IS_ENABLED(CONFIG_AMLOGIC_DMC_DEV_ACCESS)
+
+static int frc0_dmc_dev_access_notify(struct notifier_block *nb, unsigned long id, void *data)
+{
+	struct dmc_dev_access_data *dmc = (struct dmc_dev_access_data *)data;
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (devp->dmc_cfg[0].id == id) {
+		devp->dmc_cfg[0].ddr_addr = dmc->addr;
+		devp->dmc_cfg[0].ddr_size = dmc->size;
+		pr_frc(0, "%s:id(%d)-trust handle addr:0x%lX,size:0x%lX\n",
+				__func__, (int)id, dmc->addr, dmc->size);
+	}
+	return 0;
+}
+
+static int frc1_dmc_dev_access_notify(struct notifier_block *nb, unsigned long id, void *data)
+{
+	struct dmc_dev_access_data *dmc = (struct dmc_dev_access_data *)data;
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (devp->dmc_cfg[1].id == id) {
+		devp->dmc_cfg[1].ddr_addr = dmc->addr;
+		devp->dmc_cfg[1].ddr_size = dmc->size;
+		pr_frc(0, "%s:id(%d)--trust handle addr:0x%lX,size:0x%lX\n",
+				__func__, (int)id, dmc->addr, dmc->size);
+	}
+	return 0;
+}
+
+static int frc2_dmc_dev_access_notify(struct notifier_block *nb, unsigned long id, void *data)
+{
+	struct dmc_dev_access_data *dmc = (struct dmc_dev_access_data *)data;
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (devp->dmc_cfg[2].id == id) {
+		devp->dmc_cfg[2].ddr_addr = dmc->addr;
+		devp->dmc_cfg[2].ddr_size = dmc->size;
+		pr_frc(0, "%s:id(%d)-trust handle addr:0x%lX,size:0x%lX\n",
+				__func__, (int)id, dmc->addr, dmc->size);
+	}
+	return 0;
+}
+
+static struct notifier_block frc0_dmc_dev_access_nb = {
+	.notifier_call = frc0_dmc_dev_access_notify,
+};
+
+static struct notifier_block frc1_dmc_dev_access_nb = {
+	.notifier_call = frc1_dmc_dev_access_notify,
+};
+
+static struct notifier_block frc2_dmc_dev_access_nb = {
+	.notifier_call = frc2_dmc_dev_access_notify,
+};
+
+void frc_dmc_notifier(void)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (unlikely(!devp)) {
+		PR_ERR("%s:devp is NULL\n", __func__);
+		return;
+	}
+	devp->dmc_cfg[0].id = register_dmc_dev_access_notifier("FRC0",
+				&frc0_dmc_dev_access_nb);
+	devp->dmc_cfg[1].id = register_dmc_dev_access_notifier("FRC1",
+				&frc1_dmc_dev_access_nb);
+	devp->dmc_cfg[2].id = register_dmc_dev_access_notifier("FRC2",
+				&frc2_dmc_dev_access_nb);
+}
+
+//unregister notifier
+void frc_dmc_un_notifier(void)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (unlikely(!devp)) {
+		PR_ERR("%s:devp is NULL\n", __func__);
+		return;
+	}
+
+	devp->dmc_cfg[0].id = unregister_dmc_dev_access_notifier("FRC0",
+			&frc0_dmc_dev_access_nb);
+	devp->dmc_cfg[0].id = unregister_dmc_dev_access_notifier("FRC1",
+			&frc1_dmc_dev_access_nb);
+	devp->dmc_cfg[0].id = unregister_dmc_dev_access_notifier("FRC2",
+			&frc2_dmc_dev_access_nb);
+}
+#endif
+/****************************************************************************/
 static void frc_clock_workaround(struct work_struct *work)
 {
 	struct frc_dev_s *devp = container_of(work,
@@ -1076,6 +1172,9 @@ static int frc_probe(struct platform_device *pdev)
 	runtime_frc_dev = pdev;
 	pm_runtime_forbid(&pdev->dev);
 
+#if IS_ENABLED(CONFIG_AMLOGIC_DMC_DEV_ACCESS)
+	frc_dmc_notifier();
+#endif
 	PR_FRC("%s probe st:%d", __func__, frc_devp->probe_ok);
 	return ret;
 fail_dev_create:
@@ -1133,6 +1232,9 @@ static int __exit frc_remove(struct platform_device *pdev)
 	frc_buf_release(frc_devp);
 	kfree(frc_devp->data);
 	frc_devp->data = NULL;
+#if IS_ENABLED(CONFIG_AMLOGIC_DMC_DEV_ACCESS)
+	frc_dmc_un_notifier();
+#endif
 	// kfree(frc_dev);
 	// frc_dev = NULL;
 	PR_FRC("%s:module remove done\n", __func__);
@@ -1175,6 +1277,9 @@ static void frc_shutdown(struct platform_device *pdev)
 	frc_devp->data = NULL;
 	// kfree(frc_dev);
 	// frc_dev = NULL;
+#if IS_ENABLED(CONFIG_AMLOGIC_DMC_DEV_ACCESS)
+	frc_dmc_un_notifier();
+#endif
 	if (chip == ID_T3) {
 		pwr_ctrl_psci_smc(PDID_T3_FRCTOP, PWR_OFF);
 		pwr_ctrl_psci_smc(PDID_T3_FRCME, PWR_OFF);

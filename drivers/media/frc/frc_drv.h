@@ -410,6 +410,12 @@ struct frc_crc_data_s {
 	struct crc_parm_s mc_wr_crc;
 };
 
+struct frc_dmc_cfg_s {
+	unsigned int id;
+	unsigned long ddr_addr;
+	unsigned long ddr_size;
+};
+
 struct frc_ud_s {
 	unsigned inp_ud_dbg_en:1;
 	unsigned meud_dbg_en:1;
@@ -570,6 +576,7 @@ struct frc_dev_s {
 	struct frc_ud_s ud_dbg;
 	struct frc_force_size_s force_size;
 	struct frc_hw_stats_s hw_stats;
+	struct frc_dmc_cfg_s  dmc_cfg[3];
 };
 
 struct frc_dev_s *get_frc_devp(void);

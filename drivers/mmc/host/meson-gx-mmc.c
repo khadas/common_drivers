@@ -41,6 +41,8 @@
 #include "mmc_key.h"
 #include "mmc_dtb.h"
 #include <trace/hooks/mmc.h>
+#include <linux/moduleparam.h>
+#include <linux/amlogic/gki_module.h>
 
 struct mmc_gpio {
 	struct gpio_desc *ro_gpio;
@@ -3712,6 +3714,7 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		if (!IS_ERR(mmc->supply.vqmmc))
 			regulator_set_voltage_triplet(mmc->supply.vqmmc, 1700000, 1800000, 1950000);
 	}
+
 	/* caps2 qurik for eMMC */
 	if (aml_card_type_mmc(host) && caps2_quirks &&
 		!strncmp(caps2_quirks,
@@ -4041,10 +4044,18 @@ static struct platform_driver meson_mmc_driver = {
 	},
 };
 
+static int caps2_setup(char *p)
+{
+	caps2_quirks = p;
+	return 0;
+}
+
+__setup("meson-gx-mmc.caps2_quirks=", caps2_setup);
+
 module_platform_driver(meson_mmc_driver);
 
-module_param(caps2_quirks, charp, 0444);
-MODULE_PARM_DESC(caps2_quirks, "Force certain caps2.");
+//module_param(caps2_quirks, charp, 0444);
+//MODULE_PARM_DESC(caps2_quirks, "Force certain caps2.");
 
 MODULE_DESCRIPTION("Amlogic S905*/GX*/AXG SD/eMMC driver");
 MODULE_AUTHOR("Kevin Hilman <khilman@baylibre.com>");

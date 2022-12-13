@@ -16,7 +16,7 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_DDR_BANDWIDTH_C3)       += ddr_tool/ddr_band_op_
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DDR_BANDWIDTH_T5M)	+= ddr_tool/ddr_band_op_t5m.o
 
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR)		+= ddr_tool/dmc_monitor.o ddr_tool/dmc_port_sub.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR)		+= ddr_tool/dmc_dev_access.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_DEV_ACCESS)		+= ddr_tool/dmc_dev_access.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_G12)	+= ddr_tool/dmc_g12.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_TM2)	+= ddr_tool/dmc_tm2.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_GX)		+= ddr_tool/dmc_gx.o

@@ -800,12 +800,12 @@
 				ranges;
 
 				gpio: bank@4000 {
-					reg = <0x0 0x4000 0x0 0x0054>,
+					reg = <0x0 0x4000 0x0 0x0058>,
 					      <0x0 0x40c0 0x0 0x030c>;
 					reg-names = "mux", "gpio";
 					gpio-controller;
 					#gpio-cells = <2>;
-					gpio-ranges = <&periphs_pinctrl 0 0 136>;
+					gpio-ranges = <&periphs_pinctrl 0 0 150>;
 				};
 			};
 
@@ -821,7 +821,7 @@
 					reg-names = "mux", "gpio";
 					gpio-controller;
 					#gpio-cells = <2>;
-					gpio-ranges = <&analog_pinctrl 0 0 3>;
+					gpio-ranges = <&analog_pinctrl 0 0 8>;
 				};
 			};
 

@@ -461,8 +461,8 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 	int pcr_index = -1;
 	int is_same_pid = 0;
 	struct dump_node *d_node = NULL;
-	int dump_type = 0;
 	int dump_sid = 0;
+	int dump_type = ((filter->params.pes.flags >> 16) & 0xff);
 
 	feed->temi_index = -1;
 
@@ -474,9 +474,10 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 	if (mutex_lock_interruptible(demux->pmutex))
 		return -ERESTARTSYS;
 
-	if (pes_type == DMX_PES_OTHER && ((filter->params.pes.flags & (0xffff << 16)) != 0)) {
+	if (pes_type == DMX_PES_OTHER && dump_type >= DMX_DUMP_DVR_TYPE &&
+		dump_type <= DMX_DUMP_INPUT_TYPE) {
 		dump_sid = ((filter->params.pes.flags >> 24) & 0xff);
-		dump_type = ((filter->params.pes.flags >> 16) & 0xff);
+		filter->params.pes.flags = 0;
 		if (dump_type == DMX_DUMP_TS_TYPE) {
 			/* nothing to do */
 		} else {

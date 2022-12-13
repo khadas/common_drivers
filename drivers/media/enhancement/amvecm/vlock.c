@@ -571,6 +571,8 @@ int vlock_sync_frc_vporch(struct stvlock_frc_param frc_param)
 
 	if (!pvlock)
 		return ret;
+	if (!pvlock->dtdata)
+		return ret;
 
 	vlock_manual = frc_param.frc_mcfixlines;
 	vlock_frc_is_on = frc_param.s2l_en;

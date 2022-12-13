@@ -1482,15 +1482,15 @@
 	};
 
 	aocec: aocec {
-		compatible = "amlogic, aocec-t3";
+		compatible = "amlogic, aocec-t5m";
 		dev_name = "aocec";
-		status = "disabled";
+		status = "okay";
 		vendor_name = "Amlogic"; /* Max Chars: 8     */
 		/* Refer to the following URL at:
 		 * http://standards.ieee.org/develop/regauth/oui/oui.txt
 		 */
 		vendor_id = <0x000000>;
-		product_desc = "T3"; /* Max Chars: 16    */
+		product_desc = "T5M"; /* Max Chars: 16    */
 		cec_osd_string = "AML_TV"; /* Max Chars: 14    */
 		cec_version = <5>;/*5:1.4;6:2.0*/
 		port_num = <3>;
@@ -1508,8 +1508,9 @@
 		clock-names = "cecb_clk";
 		reg = <0x0 0xfe044000 0x0 0x2000
 		       0x0 0xfe010000 0x0 0x2000
-		       0x0 0xfe000000 0x0 0x2000>;
-		reg-names = "ao","periphs","clock"/*ao_exit sys_ctrl clk_ctrl*/;
+		       0x0 0xfe000000 0x0 0x2000
+		       0x0 0xfe004000 0x0 0x2000>;
+		reg-names = "ao","periphs","clock","pad_reg";
 	};
 
 	aml_dma {

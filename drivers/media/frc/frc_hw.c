@@ -424,7 +424,7 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 		WRITE_FRC_REG_BY_CPU(FRC_INP_UE_CLR, 0x0);
 		frc_devp->ud_dbg.inp_undone_err = inp_ud_flag;
 		frc_devp->frc_sts.inp_undone_cnt++;
-		if (frc_devp->ud_dbg.inpud_dbg_en != 0) {
+		if (frc_devp->ud_dbg.inp_ud_dbg_en != 0) {
 			if (frc_devp->frc_sts.inp_undone_cnt % 0x30 == 0) {
 				PR_ERR("inp_ud_err=0x%x,err_cnt=%d,vs_cnt=%d\n",
 					inp_ud_flag,
@@ -807,7 +807,7 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	adj_mc_dly = frc_devp->out_line;    // from user debug
 
 	// reg_me_dly_vofst = reg_mc_out_line;
-	reg_me_dly_vofst = reg_mc_dly_vofst0;  // change for keep me frist run
+	reg_me_dly_vofst = reg_mc_dly_vofst0;  // change for keep me first run
 	if (frc_top->hsize <= 1920 && (frc_top->hsize * frc_top->vsize <= 1920 * 1080)) {
 		frc_top->is_me1mc4 = 0;/*me:mc 1:2*/
 		WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x0);  //8*8 align

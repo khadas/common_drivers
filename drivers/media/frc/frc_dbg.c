@@ -378,7 +378,7 @@ void frc_debug_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		}
 		if (kstrtoint(parm[1], 10, &val1) == 0)
-			devp->ud_dbg.inpud_dbg_en = val1;
+			devp->ud_dbg.inp_ud_dbg_en = val1;
 		if (kstrtoint(parm[2], 10, &val1) == 0) {
 			devp->ud_dbg.meud_dbg_en = val1;
 			devp->ud_dbg.mcud_dbg_en = val1;

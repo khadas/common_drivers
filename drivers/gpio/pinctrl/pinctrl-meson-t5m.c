@@ -1975,7 +1975,8 @@ static struct meson_pmx_bank meson_t5m_periphs_pmx_banks[] = {
 	BANK_PMX("D",    GPIOD_0,  GPIOD_14, 0xb,  0),
 	BANK_PMX("E",    GPIOE_0,  GPIOE_1,  0xd,  0),
 	BANK_PMX("M",    GPIOM_0,  GPIOM_29, 0xe,  0),
-	BANK_PMX("W",    GPIOW_0,  GPIOW_16, 0x12, 0),
+	BANK_PMX("W",    GPIOW_0,  GPIOW_15, 0x12, 0),
+	BANK_PMX("W1",   GPIOW_16, GPIOW_16, 0x11, 28),
 	BANK_PMX("P",	 GPIOP_0,  GPIOP_9,  0x14, 0),
 	BANK_PMX("TSTN", GPIO_TEST_N,  GPIO_TEST_N, 0x15,  16)
 };

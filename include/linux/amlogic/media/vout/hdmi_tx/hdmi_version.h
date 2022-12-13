@@ -42,5 +42,6 @@
 	"V03.00.02.00.01.04.11 [20221102] [EDID] adjust edid parsing for tvts\n" \
 	"V03.00.02.00.01.04.12 [20221111] [HPD] add hpd GPI status\n" \
 	"V03.00.02.00.01.04.13 [20221117] [BUG] remove audio mute when adaptive from sdr to hdr\n" \
-	"V03.00.02.00.02.04.13 [20221130] [HDCP] optimise drm hdcp flow when switch mode\n"
+	"V03.00.02.00.02.04.13 [20221130] [HDCP] optimise drm hdcp flow when switch mode\n" \
+	"V03.00.02.00.02.05.13 [20221214] [EDID] Adjust the maximum supported TMDS clk\n"
 #endif // __HDMI20_VERSION_H__

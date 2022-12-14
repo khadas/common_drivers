@@ -1459,7 +1459,7 @@ static int dvbt_isdbt_set_frontend(struct dvb_frontend *fe)
 	param.dat0 = 1;
 	demod->last_lock = -1;
 
-	if (is_meson_t5w_cpu() || is_meson_t3_cpu() ||
+	if (is_meson_t5w_cpu() || is_meson_t3_cpu() || is_meson_t5m_cpu() ||
 		demod_is_t5d_cpu(devp)) {
 		dvbt_isdbt_wr_reg((0x2 << 2), 0x111021b);
 		dvbt_isdbt_wr_reg((0x2 << 2), 0x011021b);
@@ -1529,7 +1529,7 @@ static int dvbt2_set_frontend(struct dvb_frontend *fe)
 	demod->p1_peak = 0;
 	real_para_clear(&demod->real_para);
 
-	if (is_meson_t5w_cpu() || is_meson_t3_cpu() ||
+	if (is_meson_t5w_cpu() || is_meson_t3_cpu() || is_meson_t5m_cpu() ||
 		demod_is_t5d_cpu(devp)) {
 		demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x182);
 		dvbt_t2_wr_byte_bits(0x09, 1, 4, 1);
@@ -4673,6 +4673,7 @@ static void demod_32k_ctrl(unsigned int onoff)
 	}
 
 	if (devp->data->hw_ver != DTVDEMOD_HW_T3 &&
+		devp->data->hw_ver != DTVDEMOD_HW_T5M &&
 		devp->data->hw_ver != DTVDEMOD_HW_T5W)
 		return;
 
@@ -4937,7 +4938,7 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 
 		if (is_meson_t3_cpu() && is_meson_rev_b())
 			t3_revb_set_ambus_state(true, false);
-	} else if ((is_meson_t5w_cpu() || is_meson_t3_cpu() ||
+	} else if ((is_meson_t5w_cpu() || is_meson_t3_cpu() || is_meson_t5m_cpu() ||
 		demod_is_t5d_cpu(devp)) && ldelsys == SYS_DVBT2) {
 		demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x182);
 		dvbt_t2_wr_byte_bits(0x09, 1, 4, 1);
@@ -4953,7 +4954,7 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 
 		if (is_meson_t5w_cpu())
 			t5w_write_ambus_reg(0x3c4e, 0x1, 23, 1);
-	} else if ((is_meson_t5w_cpu() || is_meson_t3_cpu() ||
+	} else if ((is_meson_t5w_cpu() || is_meson_t3_cpu() || is_meson_t5m_cpu() ||
 		demod_is_t5d_cpu(devp)) && ldelsys == SYS_ISDBT) {
 		dvbt_isdbt_wr_reg((0x2 << 2), 0x111021b);
 		dvbt_isdbt_wr_reg((0x2 << 2), 0x011021b);
@@ -4970,8 +4971,7 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 		(cdelsys == SYS_UNDEFINED || cdelsys == SYS_ANALOG))
 		fe->ops.tuner_ops.release(fe);
 
-	if ((is_meson_t5w_cpu() ||
-		is_meson_t3_cpu() ||
+	if ((is_meson_t5w_cpu() || is_meson_t3_cpu() || is_meson_t5m_cpu() ||
 		demod_is_t5d_cpu(devp)) &&
 		(ldelsys == SYS_DTMB ||
 		ldelsys == SYS_DVBT2 ||
@@ -5177,6 +5177,25 @@ const struct meson_ddemod_data  data_t5w = {
 	.hw_ver = DTVDEMOD_HW_T5W,
 };
 
+const struct meson_ddemod_data  data_t5m = {
+	.dig_clk = {
+		.demod_clk_ctl = 0x82,
+		.demod_clk_ctl_1 = 0x83,
+	},
+	.regoff = {
+		.off_demod_top = 0xf000,
+		.off_dvbc = 0x1000,
+		.off_dtmb = 0x0000,
+		.off_atsc = 0x0c00,
+		.off_isdbt = 0x800,
+		.off_front = 0x3800,
+		.off_dvbs = 0x2000,
+		.off_dvbt_isdbt = 0x800,
+		.off_dvbt_t2 = 0x0000,
+	},
+	.hw_ver = DTVDEMOD_HW_T5M,
+};
+
 static const struct of_device_id meson_ddemod_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -5223,6 +5242,9 @@ static const struct of_device_id meson_ddemod_match[] = {
 	}, {
 		.compatible = "amlogic, ddemod-t5w",
 		.data		= &data_t5w,
+	}, {
+		.compatible = "amlogic, ddemod-t5m",
+		.data		= &data_t5m,
 	},
 	/* DO NOT remove, to avoid scan err of KASAN */
 	{}
@@ -5276,6 +5298,7 @@ static int dds_init_reg_map(struct platform_device *pdev)
 
 	case DTVDEMOD_HW_T3:
 	case DTVDEMOD_HW_T5W:
+	case DTVDEMOD_HW_T5M:
 		break;
 
 	default:
@@ -7502,6 +7525,23 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 #endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT ddemod t5w");
+			break;
+		case DTVDEMOD_HW_T5M:
+			/* max delsys is 8, index: 0~7 */
+			aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
+			aml_dtvdm_ops.delsys[1] = SYS_ATSC;
+			aml_dtvdm_ops.delsys[2] = SYS_DVBS2;
+			aml_dtvdm_ops.delsys[3] = SYS_ISDBT;
+			aml_dtvdm_ops.delsys[4] = SYS_DVBS;
+			aml_dtvdm_ops.delsys[5] = SYS_DVBT2;
+			aml_dtvdm_ops.delsys[6] = SYS_DVBT;
+			aml_dtvdm_ops.delsys[7] = SYS_DVBC_ANNEX_B;
+			aml_dtvdm_ops.delsys[8] = SYS_DTMB;
+#ifdef CONFIG_AMLOGIC_DVB_COMPAT
+			aml_dtvdm_ops.delsys[9] = SYS_ANALOG;
+#endif
+			strcpy(aml_dtvdm_ops.info.name,
+					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT/DTMB ddemod t5m");
 			break;
 
 		default:

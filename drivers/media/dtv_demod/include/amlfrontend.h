@@ -63,6 +63,7 @@
 /*  V1.1.69  fixed atsc agc speed test */
 /*  V1.1.70  improve diseqc lnb control */
 /*  V1.1.71  fix dvbt2 ddr abnormal access */
+/*  V1.1.72  t5m ATVDemod/DTVDemod/Tuner bringup */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -79,8 +80,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.71"
-#define DTVDEMOD_VER	"2022/12/06: fix dvbt2 ddr abnormal access"
+#define AMLDTVDEMOD_VER "V1.1.72"
+#define DTVDEMOD_VER	"2022/12/15: t5m ATVDemod/DTVDemod/Tuner bringup"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
@@ -178,6 +179,7 @@ enum dtv_demod_hw_ver_e {
 	DTVDEMOD_HW_T3,
 	DTVDEMOD_HW_S4D,
 	DTVDEMOD_HW_T5W,
+	DTVDEMOD_HW_T5M,
 };
 
 struct ddemod_dig_clk_addr {

@@ -555,7 +555,7 @@ void demod_set_mode_ts(enum fe_delivery_system delsys)
 		dvbt_mode = 0x110011;
 
 		/* fix T and T2 channel switch unlock. */
-		if (is_meson_t5w_cpu())
+		if (is_meson_t5w_cpu() || is_meson_t5m_cpu())
 			cfg0.b.adc_regout = 0;
 		break;
 

@@ -62,7 +62,8 @@
 /* 2021/12/29 --- V2.33 --- Fix unable to find symbol aml_atvdemod_attach. */
 /* 2022/06/16 --- V2.34 --- Fix audio setting and resume. */
 /* 2022/08/27 --- V2.35 --- Fix ripples. */
-#define AMLATVDEMOD_VER "V2.35"
+/* 2022/12/15 --- V2.36 --- t5m ATVDemod/DTVDemod/Tuner bringup */
+#define AMLATVDEMOD_VER "V2.36"
 
 struct aml_atvdemod_device *amlatvdemod_devp;
 
@@ -754,7 +755,7 @@ static int aml_atvdemod_probe(struct platform_device *pdev)
 
 		pr_info("audio_reg_base = 0x%p.\n", dev->audio_reg_base);
 #endif
-	} else if (is_meson_t3_cpu()) {
+	} else if (is_meson_t3_cpu() || is_meson_t5m_cpu()) {
 		dev->audio_reg_base = ioremap(round_down(0xfe33074c, 0x3), 4);
 
 		pr_info("audio_reg_base = 0x%p.\n", dev->audio_reg_base);

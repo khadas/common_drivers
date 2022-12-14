@@ -257,7 +257,8 @@ void dtmb_initial(struct aml_dtvdemod *demod)
 	/* dtmb_write_reg(0x049, memstart);		//only for init */
 	dtmb_register_reset();
 
-	if (devp->data->hw_ver == DTVDEMOD_HW_T3) {
+	if (devp->data->hw_ver == DTVDEMOD_HW_T3 ||
+			devp->data->hw_ver == DTVDEMOD_HW_T5M) {
 		clear_ddr_bus_data(demod);
 		//dtmb_write_reg(0x47, 0x133220);
 		dtmb_write_reg_bits(0x47, 0x0, 22, 1);
@@ -265,7 +266,8 @@ void dtmb_initial(struct aml_dtvdemod *demod)
 	}
 	dtmb_all_reset(demod);
 
-	if (devp->data->hw_ver == DTVDEMOD_HW_T3) {
+	if (devp->data->hw_ver == DTVDEMOD_HW_T3 ||
+			devp->data->hw_ver == DTVDEMOD_HW_T5M) {
 		//dtmb_write_reg(0x7, 0x4ffffff);
 		dtmb_write_reg_bits(0x7, 0x1, 26, 1);
 		dtmb_write_reg_bits(0x7, 0x0, 25, 1);
@@ -411,7 +413,8 @@ int dtmb_bch_check(struct dvb_frontend *fe)
 	if ((dtmb_reg_r_bch()-fec_bch_add) >= 50) {
 		PR_DTMB("%s\n", info1);
 
-		if (devp->data->hw_ver == DTVDEMOD_HW_T3) {
+		if (devp->data->hw_ver == DTVDEMOD_HW_T3 ||
+				devp->data->hw_ver == DTVDEMOD_HW_T5M) {
 			value_before = dtmb_read_reg(0x7);
 			PR_INFO("dtmb set ddr\n");
 			dtmb_write_reg(0x7, 0x6ffffd);
@@ -425,7 +428,8 @@ int dtmb_bch_check(struct dvb_frontend *fe)
 		sw_rst.b.ctrl_sw_rst_noreg = 1;
 		dtmb_write_reg(DTMB_TOP_CTRL_SW_RST, sw_rst.d32);
 
-		if (devp->data->hw_ver == DTVDEMOD_HW_T3) {
+		if (devp->data->hw_ver == DTVDEMOD_HW_T3 ||
+				devp->data->hw_ver == DTVDEMOD_HW_T5M) {
 			clear_ddr_bus_data(demod);
 			dtmb_write_reg(0x7, value_before);
 			dtmb_write_reg_bits(0x47, 0x0, 22, 1);

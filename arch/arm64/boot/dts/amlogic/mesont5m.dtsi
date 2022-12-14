@@ -1665,7 +1665,7 @@
 	amvenc_avc{
 		compatible = "amlogic, amvenc_avc";
 		dev_name = "amvenc_avc";
-		status = "disabled";
+		status = "okay";
 		clocks = <&clkc CLKID_HCODEC>;
 		clock-names = "cts_hcodec_aclk";
 		interrupts = <0 93 1>;
@@ -1676,7 +1676,7 @@
 	jpegenc{
 		compatible = "amlogic, jpegenc";
 		dev_name = "jpegenc";
-		status = "disabled";
+		status = "okay";
 		clocks = <&clkc CLKID_HCODEC>;
 		clock-names = "clk_jpeg_enc";
 		interrupts = <0 93 1>;

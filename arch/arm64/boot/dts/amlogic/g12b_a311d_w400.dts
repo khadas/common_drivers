@@ -51,6 +51,13 @@
 			pmsg-size = <0x20000>;
 		};
 
+		defendkey_reserved:linux,defendkey {
+			compatible = "amlogic, defendkey";
+			reusable;
+			size = <0x0 0x100000>;
+			alignment = <0x0 0x100000>;
+			alloc-ranges = <0x0 0x04F00000 0x0 0x100000>;
+		};
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
 			reusable;

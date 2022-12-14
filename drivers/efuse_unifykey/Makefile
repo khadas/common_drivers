@@ -6,6 +6,7 @@ $(MODULE_NAME)-y += efuse_unifykey.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_EFUSE) += efuse.o efuse_api.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_EFUSE_BURN) +=  efuse_burn.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_UNIFYKEY) += security_key.o unifykey.o unifykey_dts.o storage_key.o normal_key.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_DEFENDKEY) += defendkey.o securekey.o
 
 PR_FMT = $(subst amlogic-,,$(MODULE_NAME))
 PR_FMT_DEFINE="-Dpr_fmt(fmt)= \"[$(PR_FMT)]: \" fmt"

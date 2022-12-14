@@ -5757,10 +5757,6 @@ unsigned char dim_pre_de_buf_config(unsigned int channel)
 							provider_name);
 					}
 				}
-				pr_info("DI: get meta data error:%px size:%d; aux_buf:%px, size:%d (%d), %s\n",
-							req.aux_buf, req.aux_size,
-							di_buf->local_meta_total_size,
-							provider_name);
 			}
 		}
 #endif  /* DIM_EN_UD_USED */

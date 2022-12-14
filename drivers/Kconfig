@@ -48,4 +48,5 @@ source "$(COMMON_DRIVERS_DIR)/drivers/cpuidle/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/pci/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/led/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/dvb_ci/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/md/Kconfig"
 endmenu

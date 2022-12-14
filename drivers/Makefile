@@ -44,6 +44,7 @@ obj-$(CONFIG_AMLOGIC_MTD_NAND)		+= mtd/nand/
 obj-$(CONFIG_AMLOGIC_FREERTOS)		+= freertos/
 obj-$(CONFIG_AMLOGIC_JTAG_MESON)	+= jtag/
 obj-$(CONFIG_AMLOGIC_MEMORY_EXTEND)	+= memory_ext/
+obj-$(CONFIG_DM_BOW)			+= md/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
 all:

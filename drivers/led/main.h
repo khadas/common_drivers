@@ -48,4 +48,18 @@ static inline void led_tlc59116_exit(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_LEDS_DCON)
+void led_unipolar_ctrl_exit(void);
+int led_unipolar_ctrl_init(void);
+#else
+static inline int led_unipolar_ctrl_init(void)
+{
+	return 0;
+}
+
+static inline void led_unipolar_ctrl_exit(void)
+{
+}
+#endif
+
 #endif /*__LED_MAIN_H_*/

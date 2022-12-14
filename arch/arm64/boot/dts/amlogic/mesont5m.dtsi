@@ -1040,6 +1040,13 @@
 				status = "disabled";
 			};
 
+			dcon_led: dcon_led@0x74000 {
+				compatible = "amlogic,led_unipolar_ctrl";
+				reg = <0x0 0x74000 0x0 0x88>;
+				interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
+				status = "disabled";
+			};
+
 			ir: ir@8000 {
 				compatible = "amlogic, meson-ir";
 				reg = <0x0 0x84040 0x0 0xA4>,
@@ -3108,6 +3115,69 @@
 			groups = "i2c4_sck_h20",
 				"i2c4_sda_h21";
 			function = "i2c4";
+			drive-strength-microamp = <3000>;
+			bias-disable;
+		};
+	};
+
+	dcon_led_pins1:dcon_led_pins1 {
+		mux {
+			groups = "dcon_led_d7";
+			function = "dcon_led";
+			drive-strength-microamp = <3000>;
+			bias-disable;
+		};
+	};
+
+	dcon_led_pins2:dcon_led_pins2 {
+		mux {
+			groups = "dcon_led_c";
+			function = "dcon_led";
+			drive-strength-microamp = <3000>;
+			bias-disable;
+		};
+	};
+
+	dcon_led_pins3:dcon_led_pins3 {
+		mux {
+			groups = "dcon_led_z";
+			function = "dcon_led";
+			drive-strength-microamp = <3000>;
+			bias-disable;
+		};
+	};
+
+	dcon_led_pins4:dcon_led_pins4 {
+		mux {
+			groups = "dcon_led_h";
+			function = "dcon_led";
+			drive-strength-microamp = <3000>;
+			bias-disable;
+		};
+	};
+
+	dcon_led_pins5:dcon_led_pins5 {
+		mux {
+			groups = "dcon_led_p";
+			function = "dcon_led";
+			drive-strength-microamp = <3000>;
+			bias-disable;
+		};
+	};
+
+	dcon_led_pins6:dcon_led_pins6 {
+		mux {
+			groups = "dcon_led_d8";
+			function = "dcon_led";
+			drive-strength-microamp = <3000>;
+			bias-disable;
+		};
+	};
+
+	dcon_led_pins7:dcon_led_pins7 {
+		mux {
+			groups = "dcon_led_d9";
+			function = "dcon_led";
 			drive-strength-microamp = <3000>;
 			bias-disable;
 		};

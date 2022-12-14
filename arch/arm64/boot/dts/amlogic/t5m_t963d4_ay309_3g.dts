@@ -1782,6 +1782,13 @@
 	pinctrl-0 = <&remote_pins>;
 };
 
+&dcon_led {
+	status = "disabled";
+	led_number = <13>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&dcon_led_pins1>;
+};
+
 &i2c0 {
 	status = "okay";
 	clock-frequency = <300000>;

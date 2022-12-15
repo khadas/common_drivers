@@ -1125,7 +1125,7 @@ static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
 			devp->print_en = val;
 	} else if (parm[0] && !strcmp(parm[0], "atv_demod")) {
 		if (kstrtouint(parm[1], 10, &val) < 0) {
-			pr_info("val error\n");
+			pr_err("val error\n");
 			goto tvin_adc_store_err;
 		}
 
@@ -1138,7 +1138,7 @@ static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
 		}
 	} else if (parm[0] && !strcmp(parm[0], "tvafe")) {
 		if (kstrtouint(parm[1], 10, &val) < 0) {
-			pr_info("val error\n");
+			pr_err("val error\n");
 			goto tvin_adc_store_err;
 		}
 
@@ -1153,12 +1153,12 @@ static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
 		struct dfe_adcpll_para p_dtv_para;
 
 		if (kstrtouint(parm[1], 10, &val) < 0) {
-			pr_info("val error\n");
+			pr_err("val error\n");
 			goto tvin_adc_store_err;
 		}
 
 		if (kstrtouint(parm[2], 10, &tmp_val) < 0) {
-			pr_info("val error\n");
+			pr_err("val error\n");
 			goto tvin_adc_store_err;
 		}
 
@@ -1183,7 +1183,7 @@ static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
 		struct dfe_adcpll_para p_dtv_para;
 
 		if (kstrtouint(parm[1], 10, &val) < 0) {
-			pr_info("val error\n");
+			pr_err("val error\n");
 			goto tvin_adc_store_err;
 		}
 		if (val) {
@@ -1199,12 +1199,12 @@ static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
 		}
 	} else if (parm[0] && parm[1] && parm[2]) {
 		if (kstrtouint(parm[1], 16, &reg_addr) < 0) {
-			pr_info("reg addr error\n");
+			pr_err("reg addr error\n");
 			goto tvin_adc_store_err;
 		}
 
 		if (kstrtouint(parm[2], 16, &reg_val) < 0) {
-			pr_info("reg value error\n");
+			pr_err("reg value error\n");
 			goto tvin_adc_store_err;
 		}
 

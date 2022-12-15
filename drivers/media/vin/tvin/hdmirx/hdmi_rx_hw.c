@@ -3863,7 +3863,7 @@ void rx_aud_pll_ctl(bool en)
 				tmp &= ~(1 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
 				wr_reg_clk_ctl(RX_CLK_CTRL2, tmp);
 			}
-		} else if (rx.chip_id == CHIP_ID_T3) {
+		} else if (rx.chip_id == CHIP_ID_T3 || rx.chip_id == CHIP_ID_T5M) {
 			if (en) {
 				tmp = rd_reg_clk_ctl(RX_CLK_CTRL2);
 				tmp |= (1 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk

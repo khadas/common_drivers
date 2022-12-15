@@ -221,8 +221,8 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.ofst_en = 0;
 		rx.aml_phy.cdr_mode = 0;
 		rx.aml_phy.pre_int = 1;
-		rx.aml_phy.pre_int_en = 0;
-		rx.aml_phy.phy_bwth = 1;
+		rx.aml_phy.pre_int_en = 1;
+		rx.aml_phy.phy_bwth = 0;
 		rx.aml_phy.alirst_en = 0;
 		rx.aml_phy.tap1_byp = 1;
 		rx.aml_phy.eq_byp = 1;
@@ -233,7 +233,7 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.vga_dbg = 1;
 		rx.aml_phy.vga_dbg_delay = 200;
 		rx.aml_phy.eq_fix_val = 16;
-		rx.aml_phy.cdr_fr_en = 100;
+		rx.aml_phy.cdr_fr_en = 0;
 		rx.aml_phy.force_sqo = 0;
 		/* add for t5 */
 		rx.aml_phy.os_rate = 3;
@@ -2364,6 +2364,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(vrr_range_dynamic_update_en, i++);
 	pr_var(phy_term_lel, i++);
 	pr_var(rx.var.force_pattern, i++);
+	pr_var(rx_phy_level, i++);
 	/* phy var definition */
 	pr_var(rx.aml_phy.sqrst_en, i++);
 	pr_var(rx.aml_phy.vga_dbg, i++);
@@ -2647,6 +2648,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(vrr_range_dynamic_update_en),
 	    &vrr_range_dynamic_update_en, value))
 		return pr_var(vrr_range_dynamic_update_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx_phy_level),
+	    &rx_phy_level, value))
+		return pr_var(rx_phy_level, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.var.force_pattern), &rx.var.force_pattern, value))
 		return pr_var(rx.var.force_pattern, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.sqrst_en), &rx.aml_phy.sqrst_en, value))
@@ -3637,7 +3641,7 @@ static void dump_phy_status(void)
 		dump_aml_phy_sts_tm2();
 	else if (rx.phy_ver == PHY_VER_T5)
 		dump_aml_phy_sts_t5();
-	else if (rx.phy_ver >= PHY_VER_T7)
+	else if (rx.phy_ver >= PHY_VER_T7 && rx.phy_ver <= PHY_VER_T5W)
 		dump_aml_phy_sts_t7();
 	else if (rx.phy_ver == PHY_VER_T5M)
 		dump_aml_phy_sts_t5m();

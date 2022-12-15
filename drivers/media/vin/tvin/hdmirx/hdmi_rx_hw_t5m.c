@@ -95,13 +95,13 @@ static const u32 phy_dchd_t5m[][2] = {
 		0x04007015, 0x30883069,
 	},
 	{	 /* 155~340M */
-		0x04007015, 0x30e33050,
+		0x04087015, 0x30e33050,
 	},
 	{	 /* 340~525M */
-		0x04007013, 0x30e33450
+		0x04087013, 0x30e33450
 	},
 	{	 /* 525~600M */
-		0x04007013, 0x30e33450,
+		0x04087013, 0x30e33450,
 	},
 };
 
@@ -141,6 +141,114 @@ unsigned int graytodecimal_t5m(unsigned int x)
 bool is_pll_lock_t5m(void)
 {
 	return ((hdmirx_rd_amlphy(T5M_HDMIRX20PLL_CTRL0) >> 31) & 0x1);
+}
+
+void t5m_480p_pll_cfg(void)
+{
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0530a000);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0530a001);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0530a003);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x81401236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0530a007);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x4530a007);
+	usleep_range(10, 20);
+}
+
+void t5m_720p_pll_cfg(void)
+{
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302803);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x41401236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
+	usleep_range(10, 20);
+}
+
+void t5m_1080p_pll_cfg(void)
+{
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302803);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x41401236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
+	usleep_range(10, 20);
+}
+
+void t5m_4k30_pll_cfg(void)
+{
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302810);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302811);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302813);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x21401236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302817);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302817);
+	usleep_range(10, 20);
+}
+
+void t5m_4k60_pll_cfg(void)
+{
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302803);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
+	usleep_range(10, 20);
+}
+
+void t5m_6g_pll_cfg(void)
+{
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302803);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
+	usleep_range(10, 20);
 }
 
 void aml_pll_bw_cfg_t5m(void)
@@ -190,21 +298,39 @@ void aml_pll_bw_cfg_t5m(void)
 				      T5M_BYP_TAP0_EN, 1);
 		rx_pr("phy_bw\n");
 	}
+	switch (idx) {
+	case PHY_BW_0:
+		t5m_480p_pll_cfg();
+		break;
+	case PHY_BW_1:
+		t5m_720p_pll_cfg();
+		break;
+	case PHY_BW_2:
+		t5m_1080p_pll_cfg();
+		break;
+	case PHY_BW_3:
+		t5m_4k30_pll_cfg();
+		break;
+	case PHY_BW_4:
+		t5m_4k60_pll_cfg();
+		break;
+	case PHY_BW_5:
+		t5m_6g_pll_cfg();
+		break;
+	}
 	do {
-		/* pll cfg */
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
-		usleep_range(10, 30);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
-		usleep_range(10, 60);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302803);
-		usleep_range(10, 15);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
-		usleep_range(10, 60);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
-		usleep_range(10, 15);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
-		usleep_range(10, 60);
+		if (idx == PHY_BW_0)
+			t5m_480p_pll_cfg();
+		if (idx == PHY_BW_1)
+			t5m_720p_pll_cfg();
+		if (idx == PHY_BW_2)
+			t5m_1080p_pll_cfg();
+		if (idx == PHY_BW_3)
+			t5m_4k30_pll_cfg();
+		if (idx == PHY_BW_4)
+			t5m_4k60_pll_cfg();
+		if (idx == PHY_BW_5)
+			t5m_6g_pll_cfg();
 		rx_pr("PLL0=0x%x\n", hdmirx_rd_amlphy(T5M_RG_RX20PLL_0));
 		if (pll_rst_cnt++ > pll_rst_max) {
 			if (log_level & VIDEO_LOG)
@@ -216,7 +342,7 @@ void aml_pll_bw_cfg_t5m(void)
 			      hdmirx_rd_top(TOP_MISC_STAT0) & 0x1,
 			      is_pll_lock_t5m());
 		}
-	} while (!is_pll_lock_t5m());
+	} while (!is_tmds_clk_stable() && is_clk_stable() && !aml_phy_pll_lock());
 	rx_pr("pll done\n");
 	/* t5m debug */
 	/* manual VGA mode for debug,hyper gain=1 */
@@ -242,106 +368,55 @@ void aml_pll_bw_cfg_t5m(void)
 void t5m_pll_cfg(void)
 {
 	u32 idx = rx.phy.phy_bw;
+	int pll_rst_cnt = 0;
 
-	rx_pr("pll_cfg");
+	if (log_level & PHY_LOG)
+		rx_pr("pll_cfg");
 	switch (idx) {
 	case PHY_BW_0:
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0530a000);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0530a001);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0530a003);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0530a007);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x4530a007);
-		usleep_range(10, 20);
+		t5m_480p_pll_cfg();
 		break;
 	case PHY_BW_1:
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302803);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
-		usleep_range(10, 20);
+		t5m_720p_pll_cfg();
 		break;
 	case PHY_BW_2:
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302803);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
-		usleep_range(10, 20);
+		t5m_1080p_pll_cfg();
 		break;
 	case PHY_BW_3:
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302810);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302811);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302813);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302817);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302817);
-		usleep_range(10, 20);
+		t5m_4k30_pll_cfg();
 		break;
 	case PHY_BW_4:
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302803);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
-		usleep_range(10, 20);
+		t5m_4k60_pll_cfg();
 		break;
 	case PHY_BW_5:
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302803);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
-		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
-		usleep_range(10, 20);
+		t5m_6g_pll_cfg();
 		break;
 	}
+	do {
+		if (idx == PHY_BW_0)
+			t5m_480p_pll_cfg();
+		if (idx == PHY_BW_1)
+			t5m_720p_pll_cfg();
+		if (idx == PHY_BW_2)
+			t5m_1080p_pll_cfg();
+		if (idx == PHY_BW_3)
+			t5m_4k30_pll_cfg();
+		if (idx == PHY_BW_4)
+			t5m_4k60_pll_cfg();
+		if (idx == PHY_BW_5)
+			t5m_6g_pll_cfg();
+		rx_pr("PLL0=0x%x\n", hdmirx_rd_amlphy(T5M_RG_RX20PLL_0));
+		if (pll_rst_cnt++ > pll_rst_max) {
+			if (log_level & VIDEO_LOG)
+				rx_pr("pll rst error\n");
+			break;
+		}
+		if (log_level & VIDEO_LOG) {
+			rx_pr("sq=%d,pll_lock=%d",
+			      hdmirx_rd_top(TOP_MISC_STAT0) & 0x1,
+			      is_pll_lock_t5m());
+		}
+	} while (!is_tmds_clk_stable() && is_clk_stable() && !aml_phy_pll_lock());
 }
 
 int get_tap2_t5m(int val)
@@ -905,12 +980,6 @@ void aml_phy_cfg_t5m(void)//
 		rx_pr("\nphy reg init\n");
 		if (rx.aml_phy.ofst_en)
 			aml_phy_offset_cal_t5m();
-		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-				      T5M_OFSET_CAL_START, 0);
-		usleep_range(100, 110);
-		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_DFE,
-				      T5M_SLICER_OFSTCAL_START, 0);
-		usleep_range(20, 30);
 		data32 = phy_dcha_t5m[idx][0];
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_AFE, data32);
 		data32 = phy_dcha_t5m[idx][1];
@@ -937,21 +1006,24 @@ void aml_phy_cfg_t5m(void)//
 		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, T5M_SQ_RSTN, 1);
 	}
 	/* step5 */
-	/* disable cdr */
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_CDR_RSTB, 0);
-	/* disable dfe */
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_DFE_RSTB, 0);
-	/* disable eq */
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_EQ_RSTB, 0);
-	/* disable lckdet */
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_CDR_LKDET_EN, 0);
+	if (rx_phy_level) {
+		/* disable cdr */
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_CDR_RSTB, 0);
+		/* disable dfe */
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_DFE_RSTB, 0);
+		/* disable eq */
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_EQ_RSTB, 0);
+		/* disable lckdet */
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_CDR_LKDET_EN, 0);
+	}
 }
 
 void t5m_phy_cfg(void)
 {
 	u32 idx = rx.phy.phy_bw;
 
-	rx_pr("phy_cfg");
+	if (log_level & PHY_LOG)
+		rx_pr("phy_cfg");
 	switch (idx) {
 	case PHY_BW_0:
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, 0x30883060);
@@ -1042,13 +1114,13 @@ void t5m_phy_cfg(void)
  /* For t5m */
 void aml_phy_init_t5m(void)
 {
-	//aml_phy_cfg_t5m();
-	t5m_phy_cfg();
+	aml_phy_cfg_t5m();
+	//t5m_phy_cfg();
 	usleep_range(10, 20);
-	//aml_pll_bw_cfg_t5m();
-	t5m_pll_cfg();
+	aml_pll_bw_cfg_t5m();
+	//t5m_pll_cfg();
 	usleep_range(10, 20);
-	//aml_eq_cfg_t5m();
+	aml_eq_cfg_t5m();
 }
 
 void dump_reg_phy_t5m(void)

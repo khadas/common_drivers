@@ -182,6 +182,7 @@ int aud_compose_type = 1;
  * vrr field VRRmin/max dynamic update enable
  */
 int vrr_range_dynamic_update_en;
+int rx_phy_level;
 
 static struct notifier_block aml_hdcp22_pm_notifier = {
 	.notifier_call = aml_hdcp22_pm_notify,
@@ -1209,10 +1210,14 @@ void rx_set_sig_info(void)
 
 void rx_update_sig_info(void)
 {
-	//rx_get_vsi_info();
-	//rx_get_vtem_info();
-	//rx_get_aif_info();
-	//rx_set_sig_info();
+	//if ((rx_vdin_level & 0x1) == 1)
+		rx_get_vsi_info();
+	//if (((rx_vdin_level >> 1) & 0x1) == 1)
+		rx_get_vtem_info();
+	//if (((rx_vdin_level >> 2) & 0x1) == 1)
+		rx_get_aif_info();
+	//if (((rx_vdin_level >> 3) & 0x1) == 1)
+		rx_set_sig_info();
 }
 
 /*
@@ -2793,7 +2798,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 	/*get compatible matched device, to get chip related data*/
 	of_id = of_match_device(hdmirx_dt_match, &pdev->dev);
 	if (!of_id) {
-		rx_pr("unable to get matched device\n");
+		rx_pr("t5m unable to get matched device\n");
 		return -1;
 	}
 	/* allocate memory for the per-device structure */

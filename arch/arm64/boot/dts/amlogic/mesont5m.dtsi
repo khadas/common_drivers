@@ -2328,11 +2328,11 @@
 		compatible = "operating-points-v2";
 
 		opp-250 {
-			opp-hz = /bits/ 64 <500000000>;
+			opp-hz = /bits/ 64 <250000000>;
 			opp-microvolt = <1150>;
 		};
 		opp-400 {
-			opp-hz = /bits/ 64 <500000000>;
+			opp-hz = /bits/ 64 <400000000>;
 			opp-microvolt = <1150>;
 		};
 		opp-500 {
@@ -2340,11 +2340,11 @@
 			opp-microvolt = <1150>;
 		};
 		opp-666 {
-			opp-hz = /bits/ 64 <500000000>;
+			opp-hz = /bits/ 64 <666666666>;
 			opp-microvolt = <1150>;
 		};
 		opp-800 {
-			opp-hz = /bits/ 64 <500000000>;
+			opp-hz = /bits/ 64 <800000000>;
 			opp-microvolt = <1150>;
 		};
 	};
@@ -3430,11 +3430,11 @@ dvb_p_ts2_pins: dvb_p_ts2_pins {
 	assigned-clocks = <&clkc CLKID_MALI_0_SEL>,
 			  <&clkc CLKID_MALI_0>,
 			  <&clkc CLKID_MALI>; /* Glitch free mux */
-	assigned-clock-parents = <&clkc CLKID_FCLK_DIV4>,
+	assigned-clock-parents = <&clkc CLKID_FCLK_DIV2P5>,
 				 <0>, /* Do Nothing */
 				 <&clkc CLKID_MALI_0>;
 	assigned-clock-rates = <0>, /* Do Nothing */
-			       <500000000>,
+			       <800000000>,
 			       <0>; /* Do Nothing */
 
 	tbl =  <&dvfs250_cfg

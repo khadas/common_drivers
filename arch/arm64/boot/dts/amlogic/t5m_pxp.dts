@@ -1273,15 +1273,6 @@
 //	vqmmc-supply = <&vddao_1v8>;
 };
 
-&gpu{
-	tbl =  <&dvfs500_cfg
-		&dvfs500_cfg
-		&dvfs500_cfg
-		&dvfs500_cfg
-		&dvfs500_cfg
-		&dvfs500_cfg>;
-};
-
 &crg30_otg {
 	status = "disabled";
 	controller-type = <1>;

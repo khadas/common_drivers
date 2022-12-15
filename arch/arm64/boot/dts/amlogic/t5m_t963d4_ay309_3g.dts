@@ -1566,15 +1566,6 @@
 	};
 };
 
-&gpu{
-	tbl =  <&dvfs500_cfg
-		&dvfs500_cfg
-		&dvfs500_cfg
-		&dvfs500_cfg
-		&dvfs500_cfg
-		&dvfs500_cfg>;
-};
-
 &crg30_otg {
 	status = "okay";
 	controller-type = <1>;

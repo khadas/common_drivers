@@ -1175,10 +1175,10 @@ tuning:
 	return 0;
 }
 
-void sdio_get_card(struct mmc_host *host, struct mmc_card *card)
-{
-	host->card = card;
-}
+//void sdio_get_card(struct mmc_host *host, struct mmc_card *card)
+//{
+//	host->card = card;
+//}
 
 int sdio_get_device(void)
 {
@@ -3511,7 +3511,7 @@ static const struct mmc_host_ops meson_mmc_ops = {
 	.hs400_complete = aml_post_hs400_timming,
 	.card_busy	= meson_mmc_card_busy,
 	.start_signal_voltage_switch = meson_mmc_voltage_switch,
-	.init_card      = sdio_get_card,
+//	.init_card      = sdio_get_card,
 };
 
 static int mmc_clktest_show(struct seq_file *s, void *data)

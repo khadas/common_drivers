@@ -922,6 +922,9 @@ unsigned int rx_set_hdcp14_secure_key(void)
 	return (unsigned int)((res.a0) & 0xffffffff);
 }
 
+/*
+ * rx_smc_cmd_handler: communicate with bl31
+ */
 u32 rx_smc_cmd_handler(u32 index, u32 value)
 {
 	struct arm_smccc_res res;
@@ -2486,7 +2489,7 @@ void hdcp22_clk_en(bool en)
 		if (rx.chip_id >= CHIP_ID_TM2)
 			/* Enable axi_clk,for tm2 */
 			/* AXI arbiter is moved outside of hdmitx. */
-			/* There is an AXI arbiter in the chip’s EE domain */
+			/* There is an AXI arbiter in the chip's EE domain */
 			/* for arbitrating AXI requests from HDMI TX and RX.*/
 			hdmirx_wr_bits_top(TOP_CLK_CNTL, MSK(1, 12), 0x1);
 	} else {
@@ -3059,8 +3062,10 @@ bool rx_eq_done(void)
 
 void aml_phy_offset_cal(void)
 {
-	if (rx.phy_ver >= PHY_VER_T7)
+	if (rx.phy_ver >= PHY_VER_T7 && rx.phy_ver <= PHY_VER_T5W)
 		aml_phy_offset_cal_t7();
+	else if (rx.phy_ver == PHY_VER_T5M)
+		aml_phy_offset_cal_t5m();
 	else if (rx.phy_ver == PHY_VER_T5)
 		aml_phy_offset_cal_t5();
 }
@@ -5037,7 +5042,7 @@ void aml_phy_switch_port(void)
 	else if (rx.chip_id >= CHIP_ID_T5 &&
 		rx.chip_id <= CHIP_ID_T5D)
 		aml_phy_switch_port_t5();
-	else if (rx.chip_id >= CHIP_ID_T7)
+	else if (rx.chip_id >= CHIP_ID_T7 && rx.chip_id <= CHIP_ID_T5W)
 		aml_phy_switch_port_t7();
 	else if (rx.chip_id == CHIP_ID_T5M)
 		aml_phy_switch_port_t5m();
@@ -5885,4 +5890,9 @@ int is_rx_hdcp22key_crc0_pass(void)
 int is_rx_hdcp22key_crc1_pass(void)
 {
 	return rx_smc_cmd_handler(HDCP22_CRC1_STS, 0);
+}
+
+void rx_hdcp_crc_check(void)
+{
+	rx_smc_cmd_handler(HDCP_CRC_CHK, 0);
 }

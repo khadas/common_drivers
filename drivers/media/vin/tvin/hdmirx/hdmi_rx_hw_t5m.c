@@ -37,12 +37,13 @@
 bool rterm_trim_flag_t5m;
 /* FT trim value 4 bits */
 u32 rterm_trim_val_t5m;
+int value;
 
 /* for T5m */
 static const u32 phy_misc_t5m[][2] = {
 		/*  0x18	0x1c	*/
 	{	 /* 24~45M */
-		0xffe000c0, 0x11c73001,
+		0xffe00080, 0x11c73001,
 	},
 	{	 /* 45~74.5M */
 		0xffe00080, 0x11c73001,
@@ -86,7 +87,7 @@ static const u32 phy_dcha_t5m[][2] = {
 static const u32 phy_dchd_t5m[][2] = {
 		/*  0x10	 0x14 */
 	{	 /* 24~45M */
-		0x04007917, 0x30883060,
+		0x04007a17, 0x30883060,
 	},
 	{	 /* 45~74.5M */
 		0x04007015, 0x30883060,
@@ -650,76 +651,71 @@ void aml_dfe_en_t5m(void)
 /* phy offset calibration based on different chip and board */
 void aml_phy_offset_cal_t5m(void)
 {
-	u32 data32;
-	u32 idx = PHY_BW_2;
-
-	data32 = phy_misc_t5m[idx][0];
-	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, data32);
-	data32 = phy_misc_t5m[idx][1];
-	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, data32);
-	data32 = phy_dcha_t5m[idx][0];
-	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_AFE, data32);
-	data32 = phy_dcha_t5m[idx][1];
-	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_DFE, data32);
-	data32 = phy_dchd_t5m[idx][0];
-	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, data32);
-	data32 = phy_dchd_t5m[idx][1];
-	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, data32);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_CDR_FR_EN, 0);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ,
-			      T5M_DFE_RSTB, 0);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_CDR_RSTB, 0);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_EQ_RSTB, 0);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_CDR_LKDET_EN, 0);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2,
-			      T5M_PLL_CLK_SEL, 0);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2,
-			      T5M_TMDS_VALID_SEL, 1);
+	/* PHY */
+	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, 0x70080050);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, 0x0400b013);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_DFE, 0x40102459);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_AFE, 0x02821666);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, 0x11c73220);
+	usleep_range(10, 20);
+	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, 0xffe00100);
+	usleep_range(10, 20);
 
 	/* PLL */
-	hdmirx_wr_amlphy(T5M_HDMIRX20PLL_CTRL0, 0x05302800);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0500f800);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_HDMIRX20PLL_CTRL1, 0x01481236);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_HDMIRX20PLL_CTRL0, 0x05302801);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0500f801);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_HDMIRX20PLL_CTRL0, 0x05302803);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0500f803);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_HDMIRX20PLL_CTRL1, 0x01401236);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_HDMIRX20PLL_CTRL0, 0x05302807);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0500f807);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_HDMIRX20PLL_CTRL0, 0x45302807);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x4500f807);
 	usleep_range(10, 20);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_DFE,
-			      T5M_SLICER_OFSTCAL_START, 1);
+	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, 0x0c00b013);
 	usleep_range(100, 110);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_OFSET_CAL_START, 1);
-	usleep_range(100, 110);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_CDR_RSTB, 1);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_EQ_RSTB, 1);
-	usleep_range(10, 20);
-
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(27), 0);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_DFE, _BIT(13), 0);
 	rx_pr("ofst cal\n");
+}
+
+void get_flag_val_t5m(char *temp, unsigned int val, int len)
+{
+	if ((val >> (len - 1)) == 0)
+		sprintf(temp, "-%d", val & (~(1 << (len - 1))));
+	else
+		sprintf(temp, "+%d", val & (~(1 << (len - 1))));
+}
+
+void comb_flag_val_t5m(char *type, unsigned int val_0, unsigned int val_1,
+		 unsigned int val_2, int len)
+{
+	char out[32], v0_buf[16], v1_buf[16], v2_buf[16];
+	int pos = 0;
+
+	get_flag_val_t5m(v0_buf, val_0, len);
+	get_flag_val_t5m(v1_buf, val_1, len);
+	get_flag_val_t5m(v2_buf, val_2, len);
+	pos += snprintf(out + pos, 32 - pos, "%s[", type);
+	pos += snprintf(out + pos, 32 - pos, " %s,", v0_buf);
+	pos += snprintf(out + pos, 32 - pos, " %s,", v1_buf);
+	pos += snprintf(out + pos, 32 - pos, " %s]", v2_buf);
+	rx_pr("%s\n", out);
 }
 
 /* hardware eye monitor */
 void aml_eq_eye_monitor_t5m(void)
 {
 	u32 data32;
-	u32 err_cnt0, err_cnt1, err_cnt2;
-	u32 scan_state0, scan_state1, scan_state2;
 	u32 positive_eye_height0, positive_eye_height1, positive_eye_height2;
-	u32 negative_eye_height0, negative_eye_height1, negative_eye_height2;
-	u32 left_eye_width0, left_eye_width1, left_eye_width2;
-	u32 right_eye_width0, right_eye_width1, right_eye_width2;
 
 	/* hold dfe tap1~tap8 */
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ,
@@ -749,48 +745,13 @@ void aml_eq_eye_monitor_t5m(void)
 	/* Check status */
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
 			      T5M_EHM_DBG_SEL, 1);
-	/* error cnt */
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_DFE_OFST_DBG_SEL, T5M_ERROR_CNT);
-	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
-	err_cnt0 = data32 & 0xff;
-	err_cnt1 = (data32 >> 8) & 0xff;
-	err_cnt2 = (data32 >> 16) & 0xff;
-	/* scan state */
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_DFE_OFST_DBG_SEL, T5M_SCAN_STATE);
-	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
-	scan_state0 = data32 & 0xff;
-	scan_state1 = (data32 >> 8) & 0xff;
-	scan_state2 = (data32 >> 16) & 0xff;
 	/* positive eye height  */
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_DFE_OFST_DBG_SEL, T5M_POSITIVE_EYE_HEIGHT);
+			      T5M_EHM_DBG_SEL, 1);
 	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
 	positive_eye_height0 = data32 & 0xff;
 	positive_eye_height1 = (data32 >> 8) & 0xff;
 	positive_eye_height2 = (data32 >> 16) & 0xff;
-	/* positive eye height  */
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_DFE_OFST_DBG_SEL, T5M_NEGATIVE_EYE_HEIGHT);
-	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
-	negative_eye_height0 = data32 & 0xff;
-	negative_eye_height1 = (data32 >> 8) & 0xff;
-	negative_eye_height2 = (data32 >> 16) & 0xff;
-	/* left eye width */
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_DFE_OFST_DBG_SEL, T5M_LEFT_EYE_WIDTH);
-	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
-	left_eye_width0 = data32 & 0xff;
-	left_eye_width1 = (data32 >> 8) & 0xff;
-	left_eye_width2 = (data32 >> 16) & 0xff;
-	/* left eye width */
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR,
-			      T5M_DFE_OFST_DBG_SEL, T5M_RIGHT_EYE_WIDTH);
-	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
-	right_eye_width0 = data32 & 0xff;
-	right_eye_width1 = (data32 >> 8) & 0xff;
-	right_eye_width2 = (data32 >> 16) & 0xff;
 
 	/* exit eye monitor scan mode */
 	/* disable hw scan mode */
@@ -807,18 +768,8 @@ void aml_eq_eye_monitor_t5m(void)
 			      T5M_DFE_HOLD_EN, 0);
 
 	rx_pr("eye monitor status:\n");
-	rx_pr("          error cnt[%5d, %5d, %5d]\n",
-	      err_cnt0, err_cnt1, err_cnt2);
-	rx_pr("         scan state[%5d, %5d, %5d]\n",
-	      scan_state0, scan_state1, scan_state2);
-	rx_pr("positive eye height[%5d, %5d, %5d]\n",
-	      positive_eye_height0, positive_eye_height1, positive_eye_height2);
-	rx_pr("negative eye height[%5d, %5d, %5d]\n",
-	      negative_eye_height0, negative_eye_height1, negative_eye_height2);
-	rx_pr("     left eye width[%5d, %5d, %5d]\n",
-	      left_eye_width0, left_eye_width1, left_eye_width2);
-	rx_pr("	   right eye width[%5d, %5d, %5d]\n",
-	      right_eye_width0, right_eye_width1, right_eye_width2);
+	comb_flag_val_t5m("eye height",
+		  positive_eye_height0, positive_eye_height1, positive_eye_height2, 8);
 }
 
 void get_eq_val_t5m(void)
@@ -944,7 +895,8 @@ void aml_eq_cfg_t5m(void)
 		}
 	}
 	/* enable dfe for all frequency */
-	aml_dfe_en_t5m();
+	if (rx.phy.phy_bw >= PHY_BW_3)
+		aml_dfe_en_t5m();
 	if (is_eq1_tap0_err_t5m()) {
 		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_AFE, T5M_LEQ_BUF_GAIN, 0x0);
 		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_AFE, T5M_LEQ_POLE, 0x2);
@@ -958,7 +910,7 @@ void aml_eq_cfg_t5m(void)
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_CDR_LKDET_EN, 1);
 }
 
-void aml_phy_get_trim_val_t5m(void)//
+void aml_phy_get_trim_val_t5m(void)
 {
 	u32 data32;
 
@@ -971,7 +923,7 @@ void aml_phy_get_trim_val_t5m(void)//
 		rx_pr("rterm trim=0x%x\n", rterm_trim_val_t5m);
 }
 
-void aml_phy_cfg_t5m(void)//
+void aml_phy_cfg_t5m(void)
 {
 	u32 idx = rx.phy.phy_bw;
 	u32 data32;
@@ -991,11 +943,14 @@ void aml_phy_cfg_t5m(void)//
 		data32 = phy_misc_t5m[idx][0];
 		if (rterm_trim_flag_t5m)
 			data32 = ((data32 & (~((0xf << 12) | 0x1))) |
-				(rterm_trim_val_t5m << 12) | rterm_trim_flag_t5m);
+			(rterm_trim_val_t5m << 12) | rterm_trim_flag_t5m);
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, data32);
 		data32 = phy_misc_t5m[idx][1];
+		data32 &= (~(0xf << 28));
+		data32 |= ((1 << rx.port) << 28);
+		data32 &= (~(0xf << 24));
+		data32 |= ((1 << rx.port) << 24);
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, data32);
-
 		if (!rx.aml_phy.pre_int_en)
 			rx.aml_phy.pre_int = 0;
 	}
@@ -1089,7 +1044,7 @@ void t5m_phy_cfg(void)
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_AFE, 0x02821000);
 		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, 0x11c73000);
+		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, 0x11c73001);
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, 0xffe00000);
 		usleep_range(10, 20);
@@ -1103,7 +1058,7 @@ void t5m_phy_cfg(void)
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_AFE, 0x02821000);
 		usleep_range(10, 20);
-		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, 0x11c73000);
+		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, 0x11c73001);
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, 0xffe00000);
 		usleep_range(10, 20);
@@ -1665,11 +1620,11 @@ void aml_phy_switch_port_t5m(void)
 	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2);
 	data32 &= (~(0xf << 24));
 	data32 |= ((1 << rx.port) << 24);
-	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, data32);
+	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, data32);
 	data32 &= (~(1 << 26));
 	/* release reset */
 	data32 |= (1 << 26);
-	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, data32);
+	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, data32);
 	udelay(5);
 
 	hdmirx_wr_bits_top(TOP_PORT_SEL, MSK(4, 0), (1 << rx.port));

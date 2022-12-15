@@ -76,6 +76,7 @@ bool aml_get_tmds_valid_t5(void);
 void aml_phy_power_off_t5(void);
 void aml_phy_switch_port_t5(void);
 void aml_phy_get_trim_val_t5(void);
+void aml_phy_offset_cal_t5m(void);
 
 /*function declare end*/
 

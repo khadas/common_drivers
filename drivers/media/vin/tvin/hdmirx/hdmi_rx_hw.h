@@ -1127,6 +1127,7 @@
 #define HDCP14_CRC_STS	0x10
 #define HDCP22_CRC0_STS	0x11
 #define HDCP22_CRC1_STS	0x12
+#define HDCP_CRC_CHK	0x13
 
 /* COR reg start */
 #define COR_SCDC_TMDS_CFG	0x7820
@@ -3315,4 +3316,5 @@ int is_rx_hdcp22key_loaded_t7(void);
 int is_rx_hdcp14key_crc_pass(void);
 int is_rx_hdcp22key_crc0_pass(void);
 int is_rx_hdcp22key_crc1_pass(void);
+void rx_hdcp_crc_check(void);
 #endif

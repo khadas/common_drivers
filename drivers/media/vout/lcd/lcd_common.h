@@ -25,7 +25,8 @@
 /* 20221123: add ioctl functions, include: power,mute,phy,ss*/
 /* 20221207: support drm display mode timing for different frame rate*/
 /* 20221208: remove black pattern when enable*/
-#define LCD_DRV_VERSION    "20221208"
+/* 20221215: remove unnecessary tcon top reset*/
+#define LCD_DRV_VERSION    "20221215"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

@@ -992,6 +992,58 @@
 		tuner1_xtal_mode = <0>;  // NO_SHARE_XTAL(0), SLAVE_XTAL_SHARE(3)
 		tuner1_xtal_cap = <30>;
 	};
+
+	dvb-demux {
+		compatible = "amlogic sc2, dvb-demux"; /* same as sc2 */
+		dev_name = "dvb-demux";
+		status = "okay";
+
+		reg = <0x0 0xfe000000 0x0 0x480000>;
+
+		dmxdev_num = <4>;
+
+		tsn_from = "demod";
+
+		/*single demod setting */
+		ts1_sid = <0x21>;
+		ts1 = "parallel";
+		ts1_control = <0x0>;
+		ts1_invert = <0>;
+
+		ts2_sid = <0x22>;
+		ts2 = "parallel";
+		ts2_control = <0x0>;
+		ts2_invert = <0>;
+		pinctrl-names = "p_ts2";
+		pinctrl-0 = <&dvb_p_ts2_pins>;
+	};
+
+	dvbci {
+		compatible = "amlogic, dvbci";
+		dev_name = "dvbci";
+		status = "disabled";
+
+		io_type = <4>; /* 0=iobus,1=spi,2=cimax,3=spi-t312 4:T5D,ci bus*/
+		addr_ts_mode_multiplex = <0>; /*AY309 not multi ts and addr,default 1*/
+		le_enable_level = <1>; /*LE pin enable level*/
+		/*gpio pin define*/
+		pinctrl-names= "ci_ts_pins", "ci_addr_pins";
+		pinctrl-0=<&dvb_ci_bus_pins &ci_ts_pins &ci_ts_clk_pins>;
+		pinctrl-1=<&dvb_ci_bus_pins &ci_addr_pins &ci_gpio_pins>;
+		reg = <0x0 0xFE080000 0x0 0x1FFF>;
+		/*irq define*/
+		interrupts = <0 186 1
+				0 187 1>;
+		interrupt-names = "irq_cmp",
+					"irq_timeout";
+		dvbci_io {
+			/*gpio define  GPIOM_27 GPIOM_28 GPIOM_30*/
+			cd_pin1 = <&gpio       GPIOM_27       GPIO_ACTIVE_HIGH>;
+			pwr_pin = <&gpio       GPIOM_28       GPIO_ACTIVE_HIGH>;
+			le_pin = <&gpio       GPIOM_29       GPIO_ACTIVE_HIGH>;
+		};
+	};
+
 }; /* end of / */
 
 &fb {

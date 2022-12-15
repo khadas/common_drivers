@@ -17,8 +17,10 @@
 
 #define DMC_QOS_IRQ			BIT(30)
 #define MAX_CHANNEL			8
+#define MAX_DMC_NUM			4
 
 /* for soc_feature */
+#define DMC_ASYMMETRY		BIT(3)
 #define DMC_DEVICE_8BIT		BIT(2)
 #define PLL_IS_SEC		BIT(1)
 
@@ -143,6 +145,15 @@ struct ddr_avg_bandwidth {
 	unsigned int sample_count;
 };
 
+struct ddr_data_extern {
+	char data_bus_width;
+	unsigned int usage_stat[10];
+	struct ddr_grant dg;
+	struct ddr_bandwidth_sample cur_sample;
+	struct ddr_bandwidth_sample max_sample;
+	struct ddr_avg_bandwidth avg;
+};
+
 struct bandwidth_addr_range {
 	unsigned long start;
 	unsigned long end;
@@ -174,7 +185,8 @@ struct ddr_bandwidth {
 	spinlock_t lock;		/* lock for usage statistics */
 	struct ddr_bandwidth_sample cur_sample;
 	struct ddr_bandwidth_sample max_sample;
-	struct ddr_avg_bandwidth    avg;
+	struct ddr_avg_bandwidth avg;
+	struct ddr_data_extern data_extern[MAX_DMC_NUM];
 	struct bandwidth_addr_range range[MAX_CHANNEL];
 	u64	     port[MAX_CHANNEL];
 	void __iomem *ddr_reg1;		/* dmc 1 */

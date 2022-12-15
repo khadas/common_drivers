@@ -919,7 +919,11 @@ static struct ddr_port_desc ddr_port_desc_t5m[] __initdata = {
 	{ .port_id =  2, .port_name = "ARM_A55"       },
 	{ .port_id =  4, .port_name = "MALI"          },
 	/* NIC_SYS */
-	{ .port_id = 8, .port_name = "AOCPU"          },
+	{ .port_id =  8, .port_name = "AOCPU"         },
+	{ .port_id = 16, .port_name = "SPICC0"        },
+	{ .port_id = 17, .port_name = "SPICC1"        },
+	{ .port_id = 18, .port_name = "SPICC2"        },
+	{ .port_id = 19, .port_name = "DEMOD"         },
 	{ .port_id = 32, .port_name = "AUDIO"         },
 	{ .port_id = 33, .port_name = "ETH"           },
 	{ .port_id = 36, .port_name = "SDEMMCB"       },

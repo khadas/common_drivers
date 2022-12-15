@@ -206,9 +206,14 @@ static int t5m_handle_irq(struct ddr_bandwidth *db, struct ddr_grant *dg)
 		 */
 		dg->all_grant    += readl(io + DMC_MON_ALL_BW);
 		dg->all_grant16  += readl(io + DMC_MON_ALL16_BW);
+
+		db->data_extern[d].dg.all_grant = readl(io + DMC_MON_ALL_BW);
+		db->data_extern[d].dg.all_grant16 = readl(io + DMC_MON_ALL16_BW);
+
 		for (i = 0; i < db->channels; i++) {
 			off = i * 16 + DMC_MON0_BW;
 			dg->channel_grant[i] += readl(io + off);
+			db->data_extern[d].dg.channel_grant[i] = readl(io + off);
 		}
 		/* clear irq flags */
 		writel(val, io + DMC_MON_CTRL0);
@@ -221,6 +226,13 @@ static int t5m_handle_irq(struct ddr_bandwidth *db, struct ddr_grant *dg)
 	dg->all_grant16 *= 16;
 	for (i = 0; i < db->channels; i++)
 		dg->channel_grant[i] *= 16;
+
+	for (d = 0; d < db->dmc_number; d++) {
+		db->data_extern[d].dg.all_grant   *= 16;
+		db->data_extern[d].dg.all_grant16 *= 16;
+		for (i = 0; i < db->channels; i++)
+			db->data_extern[d].dg.channel_grant[i] *= 16;
+	}
 
 	return ret;
 }

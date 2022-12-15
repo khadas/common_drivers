@@ -71,14 +71,81 @@ static int dmc_dev_is_byte(struct ddr_bandwidth *db)
 	return 0;
 }
 
-static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
+static int dmc_is_asymmetry(struct ddr_bandwidth *db)
+{
+	if (db && (db->soc_feature & DMC_ASYMMETRY))
+		return 1;
+	return 0;
+}
+
+static void cal_ddr_usage_single(struct ddr_bandwidth *db)
 {
 	u64 mul, mbw; /* avoid overflow */
+	int i, j;
+	unsigned long cnt, freq = 0;
+
+	if (db->ops && db->ops->get_freq)
+		freq = db->ops->get_freq(db);
+	cnt  = db->clock_count;
+
+	for (i = 0; i < db->dmc_number; i++) {
+		/* mbw = ((freq * 2) * 2 * (data_bus_width/8)) */
+		mbw = (u64)freq * db->data_extern[i].data_bus_width / 2;
+		mbw /= 1024;
+		mul  = db->data_extern[i].dg.all_grant + db->data_extern[i].dg.all_grant16;
+		mul *= freq;
+		mul /= 1024;
+		do_div(mul, cnt);
+		if (mul >= mbw) {
+			/* sample may overflow if irq tick changed, ignore it */
+			pr_emerg("dmc%d, bandwidth:%lld large than max :%lld\n", i, mul, mbw);
+		}
+		db->data_extern[i].cur_sample.total_bandwidth = mul;
+		mul *= 10000ULL;
+		do_div(mul, mbw);
+		db->data_extern[i].cur_sample.total_usage = mul;
+		db->data_extern[i].cur_sample.tick = sched_clock();
+		for (j = 0; j < db->channels; j++) {
+			mul  =  db->data_extern[i].dg.channel_grant[j];
+			mul *= freq;
+			mul /= 1024;
+			do_div(mul, cnt);
+			db->data_extern[i].cur_sample.bandwidth[j] = mul;
+		}
+
+		/* update max sample */
+		if (db->data_extern[i].cur_sample.total_bandwidth >
+			db->data_extern[i].max_sample.total_bandwidth)
+			memcpy(&db->data_extern[i].max_sample, &db->data_extern[i].cur_sample,
+			sizeof(struct ddr_bandwidth_sample));
+
+		/* update usage statistics */
+		db->data_extern[i].usage_stat[db->data_extern[i].cur_sample.total_usage / 1000]++;
+
+		/* collect for average bandwidth calculate */
+		db->data_extern[i].avg.avg_bandwidth +=
+						db->data_extern[i].cur_sample.total_bandwidth;
+		db->data_extern[i].avg.avg_usage     += db->data_extern[i].cur_sample.total_usage;
+		for (j = 0; j < db->channels; j++) {
+			db->data_extern[i].avg.avg_port[j]  +=
+						db->data_extern[i].cur_sample.bandwidth[j];
+			if (db->data_extern[i].cur_sample.bandwidth[j] >
+						db->data_extern[i].avg.max_bandwidth[j])
+				db->data_extern[i].avg.max_bandwidth[j] =
+							db->data_extern[i].cur_sample.bandwidth[j];
+		}
+		db->data_extern[i].avg.sample_count++;
+	}
+}
+
+static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
+{
+	u64 mul, mbw = 0; /* avoid overflow */
 	unsigned long i, cnt, freq = 0, flags;
 
 	if (db->mode == MODE_AUTODETECT) { /* ignore mali bandwidth */
 		static int count;
-		unsigned int grant = dg->all_grant;
+		unsigned int grant = dg->all_grant + dg->all_grant16;
 
 		if (db->mali_port[0] >= 0)
 			grant -= dg->channel_grant[0];
@@ -105,11 +172,21 @@ static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 	if (db->ops && db->ops->get_freq)
 		freq = db->ops->get_freq(db);
 	cnt  = db->clock_count;
+
 	if (freq) {
 		/* calculate in KB */
-		mbw  = (u64)freq * db->bytes_per_cycle * db->dmc_number;
+		if (dmc_is_asymmetry(aml_db)) {
+			for (i = 0; i < db->dmc_number; i++)
+				mbw += (u64)freq * db->data_extern[i].data_bus_width / 2;
+		} else {
+			mbw = (u64)freq * db->bytes_per_cycle * db->dmc_number;
+		}
+		if (!mbw) {
+			pr_emerg("warning: theoretic max bandwidth is zer0\n");
+			return;
+		}
 		mbw /= 1024;	/* theoretic max bandwidth */
-		mul  = dg->all_grant;
+		mul  = dg->all_grant + dg->all_grant16;
 		mul *= freq;
 		mul /= 1024;
 		do_div(mul, cnt);
@@ -154,6 +231,11 @@ static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 			db->avg.max_bandwidth[i] = db->cur_sample.bandwidth[i];
 	}
 	db->avg.sample_count++;
+
+	/* calculate single dmc bandwidth*/
+	if (dmc_is_asymmetry(aml_db))
+		cal_ddr_usage_single(db);
+
 	spin_unlock_irqrestore(&aml_db->lock, flags);
 }
 
@@ -198,12 +280,21 @@ static char *find_port_name(int id)
 static void clear_bandwidth_statistics(void)
 {
 	unsigned long flags;
+	int i;
 
 	/* clear flag and start statistics */
 	spin_lock_irqsave(&aml_db->lock, flags);
 	memset(&aml_db->max_sample, 0, sizeof(struct ddr_bandwidth_sample));
 	memset(aml_db->usage_stat, 0, 10 * sizeof(int));
 	memset(&aml_db->avg, 0, sizeof(struct ddr_avg_bandwidth));
+	if (dmc_is_asymmetry(aml_db)) {
+		for (i = 0; i < aml_db->dmc_number; i++) {
+			memset(&aml_db->data_extern[i].max_sample, 0,
+							sizeof(struct ddr_bandwidth_sample));
+			memset(aml_db->data_extern[i].usage_stat, 0, 10 * sizeof(int));
+			memset(&aml_db->data_extern[i].avg, 0, sizeof(struct ddr_avg_bandwidth));
+		}
+	}
 	spin_unlock_irqrestore(&aml_db->lock, flags);
 }
 
@@ -470,6 +561,72 @@ static ssize_t usage_stat_store(struct class *cla,
 	return count;
 }
 
+static ssize_t usage_stat_show_single(char *buf, ssize_t offset)
+{
+	ssize_t s = offset;
+	int percent, rem, i, j;
+	unsigned long long tick;
+	unsigned long total_count = 0;
+	struct ddr_avg_bandwidth tmp;
+#define MAX_PREFIX "MAX bandwidth: %8d KB/s, usage: %2d.%02d%%"
+#define AVG_PREFIX "AVG bandwidth: %8lld KB/s, usage: %2d.%02d%%"
+
+	for (i = 0; i < aml_db->dmc_number; i++) {
+		s += sprintf(buf + s, "DMC%d:\n", i);
+
+		total_count = aml_db->data_extern[i].avg.sample_count;
+
+		/* show for max bandwidth */
+		percent = aml_db->data_extern[i].max_sample.total_usage / 100;
+		rem     = aml_db->data_extern[i].max_sample.total_usage % 100;
+		tick    = aml_db->data_extern[i].max_sample.tick;
+		do_div(tick, 1000);
+		s      += sprintf(buf + s, MAX_PREFIX ", tick:%lld us\n",
+				aml_db->data_extern[i].max_sample.total_bandwidth,
+				percent, rem, tick);
+
+		/* show for average bandwidth */
+		memcpy(&tmp, &aml_db->data_extern[i].avg, sizeof(tmp));
+		do_div(tmp.avg_bandwidth, total_count);
+		do_div(tmp.avg_usage,     total_count);
+		for (j = 0; j < aml_db->channels; j++)
+			do_div(tmp.avg_port[j], total_count);
+
+		rem     = do_div(tmp.avg_usage, 100);
+		percent = tmp.avg_usage;
+		s      += sprintf(buf + s, AVG_PREFIX ", samples:%ld\n",
+				tmp.avg_bandwidth,
+				percent, rem, total_count);
+
+		s += sprintf(buf + s, "\nbandwidth status for each channel\n");
+		s += sprintf(buf + s, "ch,        %s, avg bw(KB/s), max bw(KB/s), %s\n",
+			"port mask", "bw@max sample(KB/s)");
+		for (j = 0; j < aml_db->channels; j++) {
+			s += sprintf(buf + s,
+				"%2d, %16llx,     %8lld,     %8ld,          %8d\n",
+				j, aml_db->port[j],
+				tmp.avg_port[j],
+				tmp.max_bandwidth[j],
+				aml_db->data_extern[i].max_sample.bandwidth[j]);
+		}
+
+		/* show for usage statistics */
+		s += sprintf(buf + s, "\nusage distribution:\n");
+		s += sprintf(buf + s, "range,         count,  proportion\n");
+		for (j = 0; j < 10; j++) {
+			percent = aml_db->data_extern[i].usage_stat[j] * 10000 / total_count;
+			rem     = percent % 100;
+			percent = percent / 100;
+			s += sprintf(buf + s, "%2d%% ~ %3d%%: %8d,  %3d.%02d%%\n",
+				j * 10, (j + 1) * 10,
+				aml_db->data_extern[i].usage_stat[j], percent, rem);
+		}
+		s += sprintf(buf + s, "\n");
+	}
+
+	return s;
+}
+
 static ssize_t usage_stat_show(struct class *cla,
 			       struct class_attribute *attr, char *buf)
 {
@@ -483,6 +640,9 @@ static ssize_t usage_stat_show(struct class *cla,
 
 	if (aml_db->mode != MODE_ENABLE)
 		return sprintf(buf, "set mode to enable(1) first.\n");
+
+	if (dmc_is_asymmetry(aml_db))
+		s += sprintf(buf + s, "DMC ALL:\n");
 
 	total_count = aml_db->avg.sample_count;
 	if (!total_count)
@@ -534,9 +694,40 @@ static ssize_t usage_stat_show(struct class *cla,
 			     aml_db->usage_stat[i], percent, rem);
 	}
 	s += sprintf(buf + s, "\n");
+
+	if (dmc_is_asymmetry(aml_db))
+		s = usage_stat_show_single(buf, s);
+
 	return s;
 }
 static CLASS_ATTR_RW(usage_stat);
+
+static ssize_t bandwidth_show_single(char *buf, ssize_t offset)
+{
+	size_t s = offset;
+	int percent, rem, i, j;
+	unsigned long long tick;
+#define BANDWIDTH_PREFIX "Total bandwidth: %8d KB/s, usage: %2d.%02d%%\n"
+
+	for (i = 0; i < aml_db->dmc_number; i++) {
+		percent = aml_db->data_extern[i].cur_sample.total_usage / 100;
+		rem     = aml_db->data_extern[i].cur_sample.total_usage % 100;
+		tick    = aml_db->data_extern[i].cur_sample.tick;
+		do_div(tick, 1000);
+
+		s += sprintf(buf + s, "DMC%d:\n", i);
+		s      += sprintf(buf + s, BANDWIDTH_PREFIX,
+				aml_db->data_extern[i].cur_sample.total_bandwidth,
+				percent, rem);
+
+		for (j = 0; j < aml_db->channels; j++) {
+			s += sprintf(buf + s, "ch:%d port:%16llx: %8d KB/s\n",
+				j, aml_db->port[j],
+				aml_db->data_extern[i].cur_sample.bandwidth[j]);
+		}
+	}
+	return s;
+}
 
 static ssize_t bandwidth_show(struct class *cla,
 			      struct class_attribute *attr, char *buf)
@@ -553,6 +744,10 @@ static ssize_t bandwidth_show(struct class *cla,
 	rem     = aml_db->cur_sample.total_usage % 100;
 	tick    = aml_db->cur_sample.tick;
 	do_div(tick, 1000);
+
+	if (dmc_is_asymmetry(aml_db))
+		s += sprintf(buf + s, "DMC ALL:\n");
+
 	s      += sprintf(buf + s, BANDWIDTH_PREFIX,
 			  aml_db->cur_sample.total_bandwidth,
 			  percent, rem);
@@ -562,6 +757,10 @@ static ssize_t bandwidth_show(struct class *cla,
 			     i, aml_db->port[i],
 			     aml_db->cur_sample.bandwidth[i]);
 	}
+
+	if (dmc_is_asymmetry(aml_db))
+		s = bandwidth_show_single(buf, s);
+
 	return s;
 }
 static CLASS_ATTR_RO(bandwidth);
@@ -978,6 +1177,7 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 		band->channels     = 8;
 		band->dmc_number   = 2;
 		band->soc_feature |= DMC_DEVICE_8BIT;
+		band->soc_feature |= DMC_ASYMMETRY;
 		band->mali_port[0] = 4;
 		band->mali_port[1] = -1;
 		break;
@@ -987,6 +1187,18 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 		return -1;
 	}
 	return 0;
+}
+
+static void single_bus_width_init(struct ddr_bandwidth *band)
+{
+	if (dmc_is_asymmetry(band)) {
+		if (band->cpu_type == DMC_TYPE_T5M) {
+			band->data_extern[0].data_bus_width = 32;
+			band->data_extern[1].data_bus_width = 16;
+			band->data_extern[2].data_bus_width = 0;
+			band->data_extern[3].data_bus_width = 0;
+		}
+	}
 }
 
 static void get_ddr_external_bus_width(struct ddr_bandwidth *db,
@@ -1064,6 +1276,8 @@ static int __init ddr_bandwidth_probe(struct platform_device *pdev)
 		aml_db = NULL;
 		return -EINVAL;
 	}
+
+	single_bus_width_init(aml_db);
 
 #ifdef CONFIG_OF
 	/* resource 0 for ddr register base */

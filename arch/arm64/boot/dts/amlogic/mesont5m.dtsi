@@ -1178,7 +1178,6 @@
 			clock-names = "core", "mux0", "mux1",
 					"clkin0", "clkin1";
 			card_type = <5>;
-			src_clk_rate = <1152000000>;
 			//use_intf3_tuning;
 			mmc_debug_flag;
 			no-mmc;

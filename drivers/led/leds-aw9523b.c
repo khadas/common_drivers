@@ -991,7 +991,7 @@ static struct i2c_driver meson_aw9523_driver = {
 	.id_table = aw9523_i2c_id,
 };
 
-int __init led_aw9523_init(void)
+int led_aw9523_init(void)
 {
 	return i2c_add_driver(&meson_aw9523_driver);
 }

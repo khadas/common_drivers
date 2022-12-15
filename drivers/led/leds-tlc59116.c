@@ -771,7 +771,7 @@ static struct i2c_driver meson_tlc59116_driver = {
 	.id_table = meson_tlc59116_i2c_id,
 };
 
-int __init led_tlc59116_init(void)
+int led_tlc59116_init(void)
 {
 	return i2c_add_driver(&meson_tlc59116_driver);
 }

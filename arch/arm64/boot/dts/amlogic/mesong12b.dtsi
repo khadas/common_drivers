@@ -17,6 +17,7 @@
 //#include "mesong12a-bifrost.dtsi"
 //#include "g12b-sched-energy.dtsi"
 #include <dt-bindings/thermal/thermal.h>
+#include <dt-bindings/reset/amlogic,meson-g12a-reset.h>
 
 / {
 	cpus:cpus {
@@ -574,6 +575,12 @@
 			#address-cells = <2>;
 			#size-cells = <2>;
 			ranges = <0x0 0x0 0x0 0xffd00000 0x0 0x26000>;
+
+			reset: reset-controller@1004 {
+				compatible = "amlogic,meson-axg-reset";
+				reg = <0x0 0x1004 0x0 0x9c>;
+				#reset-cells = <1>;
+			};
 
 			gpio_intc: interrupt-controller@f080 {
 				compatible = "amlogic,meson-gpio-intc",

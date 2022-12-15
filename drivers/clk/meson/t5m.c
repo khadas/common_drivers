@@ -148,14 +148,13 @@ static struct clk_regmap t5m_sys1_pll_dco = {
 			.shift   = 16,
 			.width   = 5,
 		},
-#ifdef CONFIG_ARM
 		/* od for 32bit */
+		/* set m, n, od in enable callback when set the same rate */
 		.od = {
 			.reg_off = ANACTRL_SYS1PLL_CTRL0,
 			.shift	 = 12,
 			.width	 = 3,
 		},
-#endif
 		.table = t5m_sys1_pll_params_table,
 		.l = {
 			.reg_off = ANACTRL_SYS1PLL_CTRL0,
@@ -253,7 +252,6 @@ static struct clk_regmap t5m_sys_pll = {
 		.shift = 12,
 		.width = 3,
 		.table = t5m_pll_od_tab,
-		.flags = CLK_DIVIDER_ALLOW_ZERO,
 		.smc_id = SECURE_PLL_CLK,
 		.secid = SECID_SYS0_PLL_OD
 	},
@@ -279,7 +277,6 @@ static struct clk_regmap t5m_sys1_pll = {
 		.shift = 12,
 		.width = 3,
 		.table = t5m_pll_od_tab,
-		.flags = CLK_DIVIDER_ALLOW_ZERO,
 		.smc_id = SECURE_PLL_CLK,
 		.secid = SECID_SYS1_PLL_OD
 	},
@@ -390,7 +387,6 @@ static struct clk_regmap t5m_fixed_pll = {
 		.shift = 12,
 		.width = 3,
 		.table = t5m_pll_od_tab,
-		.flags = CLK_DIVIDER_ALLOW_ZERO,
 		.smc_id = SECURE_PLL_CLK,
 		.secid = SECID_FIX_PLL_OD
 	},
@@ -665,8 +661,7 @@ static struct clk_regmap t5m_gp0_pll = {
 		.shift = 10,
 		.width = 3,
 		.table = t5m_pll_od_tab,
-		.flags = (CLK_DIVIDER_ALLOW_ZERO |
-			  CLK_DIVIDER_ROUND_CLOSEST),
+		.flags = CLK_DIVIDER_ROUND_CLOSEST,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "gp0_pll",
@@ -795,7 +790,7 @@ static struct clk_regmap t5m_dsu_pre_clk = {
 static struct clk_regmap t5m_dsu_clk = {
 	.data = &(struct clk_regmap_mux_data){
 		.mask = 0x1,
-		.shift = 27,
+		.shift = 31,
 		.smc_id = SECURE_CPU_CLK,
 		.secid = SECID_DSU_CLK_SEL,
 		.secid_rd = SECID_DSU_CLK_RD,
@@ -956,7 +951,7 @@ static struct clk_regmap t5m_hifi_pll = {
 		.shift = 10,
 		.width = 3,
 		.table = t5m_pll_od_tab,
-		.flags = CLK_DIVIDER_ALLOW_ZERO | CLK_DIVIDER_ROUND_CLOSEST
+		.flags = CLK_DIVIDER_ROUND_CLOSEST
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hifi_pll",
@@ -1029,7 +1024,7 @@ static struct clk_regmap t5m_hifi1_pll = {
 		.shift = 10,
 		.width = 3,
 		.table = t5m_pll_od_tab,
-		.flags = CLK_DIVIDER_ALLOW_ZERO | CLK_DIVIDER_ROUND_CLOSEST
+		.flags = CLK_DIVIDER_ROUND_CLOSEST
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hifi1_pll",

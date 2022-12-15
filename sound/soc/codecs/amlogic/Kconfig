@@ -92,6 +92,15 @@ config AMLOGIC_SND_CODEC_A1_ACODEC
 # Third part codecs
 # Amlogic add codecs
 
+config AMLOGIC_SND_SOC_AD82128
+	tristate "ESMT AD82128"
+	depends on AMLOGIC_SND_SOC_CODECS
+	depends on I2C
+	default n
+	help
+		Enable Support for ESMT AD82128 CODEC.
+		Select this if your AD82128 is connected via an I2C bus.
+
 config AMLOGIC_SND_SOC_TAS5805
 	tristate "Texas Instruments TAS5805 amplifier"
 	depends on AMLOGIC_SND_SOC_CODECS

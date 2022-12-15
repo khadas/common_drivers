@@ -598,7 +598,7 @@
 		aml-audio-card,dai-link@1 {
 			format = "i2s";
 			mclk-fs = <256>;
-			//continuous-clock;
+			continuous-clock;
 			//bitclock-inversion;
 			//frame-inversion;
 			/* master mode */
@@ -619,7 +619,7 @@
 			};
 			tdmbcodec: codec {
 				prefix-names = "AMP";
-				sound-dai = <&tas5805 &acodec>;
+				sound-dai = <&ad82128 &acodec>;
 			};
 		};
 
@@ -1385,10 +1385,10 @@
 			function = "pdm";
 		};
 	};
-	tdm_b_pins: tdm_a_pin {
+	tdm_b_pins: tdm_b_pin {
 		mux { /* GPIOH_16, GPIOH_15, GPIOH_17 */
 			groups = "tdm_sclk1_h",
-				"tdm_fs1_h",
+				"tdm_fs1_h15",
 				"tdm_d0_h";
 			function = "tdm";
 		};
@@ -1430,10 +1430,10 @@
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins1>;
-	tas5805: tas5805@34 {
-		compatible = "ti, tas5805";
+	clock-frequency = <100000>;
+	ad82128: ad82128@34 {
+		compatible = "ESMT,ad82128";
 		#sound-dai-cells = <0>;
-		codec_name = "tas5805";
 		reset_pin = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
 		reg = <0x34>;
 		status = "okay";

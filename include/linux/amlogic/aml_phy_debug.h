@@ -77,7 +77,9 @@ struct phylink {
 	u8 sfp_port;
 };
 
+#ifdef CONFIG_PM_SLEEP
 extern unsigned int wol_switch_from_user;
+#endif
 extern unsigned int tx_amp_bl2;
 //#endif
 int gmac_create_sysfs(struct phy_device *phydev, void __iomem *ioaddr);

@@ -1093,6 +1093,7 @@ u8 scpi_get_ethernet_calc(void)
 EXPORT_SYMBOL(scpi_get_ethernet_calc);
 
 #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+#ifdef CONFIG_PM_SLEEP
 u32 scpi_set_ethernet_wol(u32 flag)
 {
 	struct scpi_data_buf sdata;
@@ -1108,6 +1109,7 @@ u32 scpi_set_ethernet_wol(u32 flag)
 	return buf.status;
 }
 EXPORT_SYMBOL(scpi_set_ethernet_wol);
+#endif
 #endif
 
 int scpi_get_cpuinfo(enum scpi_get_pfm_type type, u32 *freq, u32 *vol)

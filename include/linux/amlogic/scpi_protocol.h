@@ -60,7 +60,9 @@ enum scpi_std_cmd {
 	SCPI_CMD_GET_CPUINFO = 0x33,
 	SCPI_CMD_INIT_DSP = 0x34,
 #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+#ifdef CONFIG_PM_SLEEP
 	SCPI_CMD_SET_ETHERNET_WOL = 0x35,
+#endif
 #endif
 	SCPI_CMD_HIFI4STOP	= 0x4d,
 	SCPI_CMD_HIFI4SUSPEND		= 0x4e,
@@ -143,7 +145,9 @@ int scpi_send_cec_data(u32 cmd_id, u32 *val, u32 size);
 int scpi_get_cec_wk_msg(enum scpi_std_cmd index, unsigned char *cec_msg);
 u8  scpi_get_ethernet_calc(void);
 #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+#ifdef CONFIG_PM_SLEEP
 u32 scpi_set_ethernet_wol(u32 flag);
+#endif
 #endif
 int scpi_get_cpuinfo(enum scpi_get_pfm_type type, u32 *freq, u32 *vol);
 int scpi_init_dsp_cfg0(u32 id, u32 addr, u32 cfg0);

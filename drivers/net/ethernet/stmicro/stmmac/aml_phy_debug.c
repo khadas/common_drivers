@@ -734,6 +734,7 @@ static ssize_t linkspeed_show(struct class *class,
 	return ret;
 }
 
+#ifdef CONFIG_PM_SLEEP
 unsigned int wol_switch_from_user;
 EXPORT_SYMBOL_GPL(wol_switch_from_user);
 static ssize_t wol_show(struct class *class,
@@ -759,7 +760,7 @@ static ssize_t wol_store(struct class *class,
 
 	return count;
 }
-
+#endif
 int auto_cali(void)
 {
 	unsigned int value;
@@ -940,7 +941,9 @@ static CLASS_ATTR_RW(phyreg);
 static CLASS_ATTR_RW(macreg);
 static CLASS_ATTR_RO(linkspeed);
 static CLASS_ATTR_WO(cali);
+#ifdef CONFIG_PM_SLEEP
 static CLASS_ATTR_RW(wol);
+#endif
 //extern void __iomem *ioaddr_dbg;
 //EXPORT_SYMBOL(ioaddr_dbg);
 int gmac_create_sysfs(struct phy_device *phydev, void __iomem *ioaddr)
@@ -968,7 +971,9 @@ int gmac_create_sysfs(struct phy_device *phydev, void __iomem *ioaddr)
 	ret = class_create_file(phy_sys_class, &class_attr_macreg);
 	ret = class_create_file(phy_sys_class, &class_attr_linkspeed);
 	ret = class_create_file(phy_sys_class, &class_attr_cali);
+#ifdef CONFIG_PM_SLEEP
 	ret = class_create_file(phy_sys_class, &class_attr_wol);
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(gmac_create_sysfs);

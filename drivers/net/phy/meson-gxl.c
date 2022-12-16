@@ -275,6 +275,7 @@ static int custom_internal_config(struct phy_device *phydev)
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
 static int gxl_suspend(struct phy_device *phydev)
 {
 	int rtn = 0;
@@ -295,7 +296,7 @@ static int gxl_resume(struct phy_device *phydev)
 	return rtn;
 }
 #endif
-
+#endif
 static struct phy_driver meson_gxl_phy[] = {
 	{
 		PHY_ID_MATCH_EXACT(0x01814400),
@@ -319,8 +320,10 @@ static struct phy_driver meson_gxl_phy[] = {
 		.handle_interrupt = meson_gxl_handle_interrupt,
 #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
 		.config_init	= custom_internal_config,
+#ifdef CONFIG_PM_SLEEP
 		.suspend        = gxl_suspend,
 		.resume         = gxl_resume,
+#endif
 #else
 		.suspend        = genphy_suspend,
 		.resume         = genphy_resume,

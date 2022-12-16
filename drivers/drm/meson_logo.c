@@ -74,7 +74,7 @@ core_param(outputmode, logo.outputmode_t, charp, 0644);
 #endif
 
 #ifndef CONFIG_AMLOGIC_MEDIA_FB
-static u32 drm_logo_bpp = 24;
+static u32 drm_logo_bpp = 16;
 static u32 drm_logo_width = 1920;
 static u32 drm_logo_height = 1080;
 

@@ -383,9 +383,10 @@
 			reg = <0x0 0xff800014 0x0 0x8>,
 				  <0x0 0xff800024 0x0 0x14>,
 				  <0x0 0xff80001c 0x0 0x8>;
-			reg-names = "mux","gpio", "drive-strength";
+			reg-names = "mux","gpio", "ds";
 			gpio-controller;
 			#gpio-cells = <2>;
+			gpio-ranges = <&pinctrl_aobus 0 0 15>;
 		};
 	};
 
@@ -405,9 +406,10 @@
 				"pull",
 				"pull-enable",
 				"gpio",
-				"drive-strength";
+				"ds";
 			gpio-controller;
 			#gpio-cells = <2>;
+			gpio-ranges = <&pinctrl_periphs 0 0 85>;
 		};
 	};
 
@@ -502,9 +504,9 @@
 
 	jtag {
 		compatible = "amlogic, jtag";
-		status = "disabled";
+		status = "okay";
 		select = "disable"; /* disable/apao/apee */
-		pinctrl-names="jtag_apao_pins", "jtag_apee_pins";
+		pinctrl-names="jtag_a_pins", "jtag_b_pins";
 		pinctrl-0=<&jtag_apao_pins>;
 		pinctrl-1=<&jtag_apee_pins>;
 	};
@@ -590,7 +592,6 @@
 				#interrupt-cells = <2>;
 				amlogic,channel-interrupts =
 						<64 65 66 67 68 69 70 71>;
-				status = "disabled";
 			};
 
 			meson_clk_msr {
@@ -2771,8 +2772,8 @@
 
 	irblaster_pins:irblaster_pin {
 		mux {
-			groups = "remote_out_ao";
-			function = "remote_out_ao";
+			groups = "remote_ao_out";
+			function = "remote_ao_out";
 		};
 	};
 

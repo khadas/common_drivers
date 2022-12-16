@@ -60,3 +60,10 @@ $(T5M_MODULE_NAME)-y += pinctrl/pinctrl-meson-t5m.o
 PR_FMT_T5M = $(subst amlogic-,,$(T5M_MODULE_NAME))
 PR_FMT_DEFINE_T5M="-Dpr_fmt(fmt)= \"[$(PR_FMT_T5M)]: \" fmt"
 CFLAGS_pinctrl-meson-t5m.o += $(PR_FMT_DEFINE_T5M)
+
+G12A_MODULE_NAME = amlogic-pinctrl-soc-g12a
+obj-$(CONFIG_AMLOGIC_PINCTRL_MESON_G12A) += $(G12A_MODULE_NAME).o
+$(G12A_MODULE_NAME)-y += pinctrl/pinctrl-meson-g12a.o
+PR_FMT_G12A = $(subst amlogic-,,$(G12A_MODULE_NAME))
+PR_FMT_DEFINE_G12A="-Dpr_fmt(fmt)= \"[$(PR_FMT_G12A)]: \" fmt"
+CFLAGS_pinctrl-meson-g12a.o += $(PR_FMT_DEFINE_G12A)

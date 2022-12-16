@@ -40,7 +40,7 @@
 #include "frc_proc.h"
 #include "frc_rdma.h"
 
-int frc_dbg_ctrl;
+int frc_dbg_ctrl = 1;
 module_param(frc_dbg_ctrl, int, 0664);
 MODULE_PARM_DESC(frc_dbg_ctrl, "frc_dbg_ctrl");
 

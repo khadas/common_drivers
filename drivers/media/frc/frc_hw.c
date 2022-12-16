@@ -839,8 +839,8 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	}
 
 	if (frc_top->out_hsize == 1920 && frc_top->out_vsize == 1080) {
-		mevp_frm_dly = 130;
-		mc_frm_dly   = 11 ;//inp performace issue, need frc_clk >  enc0_clk
+		mevp_frm_dly = 110;
+		mc_frm_dly   = 5;//inp performace issue, need frc_clk >  enc0_clk
 	} else if (frc_top->out_hsize == 3840 && frc_top->out_vsize == 2160) {
 		mevp_frm_dly = 222; // reg readback  under 333MHz
 		mc_frm_dly = 28;   // reg readback (14)  under 333MHz
@@ -1842,7 +1842,7 @@ void frc_set_val_from_reg(void)
 /* driver probe call */
 void frc_internal_initial(struct frc_dev_s *frc_devp)
 {
-	int i;
+	// int i;
 	//int mc_range_norm_lut[36] = {
 	//	-8, 8, -24, 24, -16, 16, -16, 16,
 	//	-24, 24, -8, 8, 0, 0, 0, 0,
@@ -1870,8 +1870,9 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
 
-	for (i = 0; i < REG_NUM; i++)
-		WRITE_FRC_REG_BY_CPU(regs_table[i].addr, regs_table[i].value);
+	// for (i = 0; i < REG_NUM; i++)
+	// WRITE_FRC_REG_BY_CPU(regs_table[i].addr, regs_table[i].value);
+	WRITE_FRC_REG_BY_CPU(0x2, 0x4);
 	pr_frc(0, "regs_table[%d] init done\n", REG_NUM);
 
 	frc_set_val_from_reg();

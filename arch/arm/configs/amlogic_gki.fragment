@@ -328,9 +328,6 @@ CONFIG_AMLOGIC_SMARTCARD=y
 # amlogic-dvb-demux.ko
 CONFIG_AMLOGIC_DVB_DMX=m
 
-#dvb_dsm.ko
-CONFIG_AMLOGIC_DVB_DSM=m
-
 # aml_drm.ko
 CONFIG_AMLOGIC_DRM=m
 CONFIG_DRM_MESON=m

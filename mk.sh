@@ -294,12 +294,15 @@ if [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n ${DTB_BUILD} ]]; then
 	source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
 	source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
 
-	if [[ -n ${IMAGE} ]]; then
+	if [[ ! -f ${OUT_DIR}/.config ]]; then
 		pre_defconfig_cmds
 		set -x
 		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${DEFCONFIG})
 		set +x
 		post_defconfig_cmds
+	fi
+
+	if [[ -n ${IMAGE} ]]; then
 		set -x
 		if [ "${ARCH}" = "arm64" ]; then
 			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) Image)
@@ -308,6 +311,7 @@ if [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n ${DTB_BUILD} ]]; then
 		fi
 		set +x
 	fi
+	mkdir -p ${DIST_DIR}
 	if [[ -n ${DTB_BUILD} ]]; then
 		set -x
 		(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) dtbs)
@@ -351,7 +355,6 @@ if [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n ${DTB_BUILD} ]]; then
 		set -x
 		extra_cmds
 		set +x
-		mkdir -p ${DIST_DIR}
 		MODULES=$(find ${MODULES_STAGING_DIR} -type f -name "*.ko")
 		cp -p ${MODULES} ${DIST_DIR}
 

@@ -292,41 +292,92 @@ function adjust_sequence_modules_loading() {
 	fi
 
 	if [[ -n ${CLK_SOC_MODULE} ]]; then
-		delete_clk_soc_module=()
+		delete_clk_soc_modules=()
 		for module in `ls amlogic-clk-soc-*`; do
 			if [[ "${CLK_SOC_MODULE}" != "${module}" ]] ; then
 				echo Delete clk soc module: ${module}
 				sed -n "/${module}:/p" modules.dep.temp
 				sed -i "/${module}:/d" modules.dep.temp
-				delete_clk_soc_module=(${delete_clk_soc_module[@]} ${module})
+				delete_clk_soc_modules=(${delete_clk_soc_modules[@]} ${module})
 			fi
 		done
-		echo delete_clk_soc_module=${delete_clk_soc_module[*]}
+		echo delete_clk_soc_modules=${delete_clk_soc_modules[*]}
 	fi
 
 	if [[ -n ${PINCTRL_SOC_MODULE} ]]; then
-		delete_pinctrl_soc_module=()
+		delete_pinctrl_soc_modules=()
 		for module in `ls amlogic-pinctrl-soc-*`; do
 			if [[ "${PINCTRL_SOC_MODULE}" != "${module}" ]] ; then
 				echo Delete pinctrl soc module: ${module}
 				sed -n "/${module}:/p" modules.dep.temp
 				sed -i "/${module}:/d" modules.dep.temp
-				delete_pinctrl_soc_module=(${delete_pinctrl_soc_module[@]} ${module})
+				delete_pinctrl_soc_modules=(${delete_pinctrl_soc_modules[@]} ${module})
 			fi
 		done
-		echo delete_pinctrl_soc_module=${delete_pinctrl_soc_module[*]}
+		echo delete_pinctrl_soc_modules=${delete_pinctrl_soc_modules[*]}
 	fi
 
-	delete_module=()
+	in_line_i=a
+	delete_type_modules=()
+	echo "TYPE_MODULE_SELECT_MODULE=${TYPE_MODULE_SELECT_MODULE}"
+	mkdir temp_dir
+	cd temp_dir
+	in_temp_dir=y
+	for element in ${TYPE_MODULE_SELECT_MODULE}; do
+		if [[ ${in_temp_dir} = y ]]; then
+			cd ../
+			rm -r temp_dir
+			in_temp_dir=
+		fi
+		if [[ ${in_line_i} = a ]]; then
+			in_line_i=b
+			type_module=${element}
+			select_modules_i=0
+			select_modules_count=
+			select_modules=
+		elif [[ ${in_line_i} = b ]]; then
+			in_line_i=c
+			select_modules_count=${element}
+		else
+			let select_modules_i+=1
+			select_modules="${select_modules} ${element}"
+			if [[ ${select_modules_i} -eq ${select_modules_count} ]]; then
+				in_line_i=a
+				echo type_module=$type_module select_modules=$select_modules
+				for module in `ls ${type_module}`; do
+					dont_delete_module=0
+					for select_module in ${select_modules}; do
+						if [[ "${select_module}" == "${module}" ]] ; then
+							dont_delete_module=1
+							break;
+						fi
+					done
+					if [[ ${dont_delete_module} != 1 ]]; then
+						echo Delete module: ${module}
+						sed -n "/${module}:/p" modules.dep.temp
+						sed -i "/${module}:/d" modules.dep.temp
+						delete_type_modules=(${delete_type_modules[@]} ${module})
+					fi
+				done
+				echo delete_type_modules=${delete_type_modules[*]}
+			fi
+		fi
+	done
+	if [[ -n ${in_temp_dir} ]]; then
+		cd ../
+		rm -r temp_dir
+	fi
+
+	black_modules=()
 	for module in ${MODULES_LOAD_BLACK_LIST[@]}; do
 		modules=`ls ${module}*`
-		delete_module=(${delete_module[@]} ${modules[@]})
+		black_modules=(${black_modules[@]} ${modules[@]})
 	done
-	if [[ ${#delete_module[@]} == 0 ]]; then
-		echo "No delete module, MODULES_LOAD_BLACK_LIST=${MODULES_LOAD_BLACK_LIST[*]}"
+	if [[ ${#black_modules[@]} == 0 ]]; then
+		echo "black_modules is null, don't delete modules, MODULES_LOAD_BLACK_LIST=${MODULES_LOAD_BLACK_LIST[*]}"
 	else
-		echo delete_module=${delete_module[*]}
-		for module in ${delete_module[@]}; do
+		echo black_modules=${black_modules[*]}
+		for module in ${black_modules[@]}; do
 			echo Delete module: ${module}
 			sed -n "/${module}:/p" modules.dep.temp
 			sed -i "/${module}:/d" modules.dep.temp
@@ -334,7 +385,7 @@ function adjust_sequence_modules_loading() {
 	fi
 
 	cat modules.dep.temp | cut -d ':' -f 2 > modules.dep.temp1
-	delete_modules=(${delete_soc_module[@]} ${delete_clk_soc_module} ${delete_pinctrl_soc_module} ${delete_module[@]})
+	delete_modules=(${delete_soc_module[@]} ${delete_clk_soc_modules[@]} ${delete_pinctrl_soc_modules[@]} ${delete_type_modules[@]} ${black_modules[@]})
 	for module in ${delete_modules[@]}; do
 		if [[ ! `ls $module` ]]; then
 			continue

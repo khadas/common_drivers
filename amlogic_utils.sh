@@ -220,7 +220,7 @@ function extra_cmds() {
 	let line=${file_last_line}-${ramdisk_last_line}
 	tail -n ${line} modules.order > vendor_dlkm_modules
 	export MODULES_LIST=${src_dir}/system_dlkm_modules
-	if [ "${ARCH}" = "arm64" ]; then
+	if [ "${ARCH}" = "arm64" -a -z ${FAST_BUILD} ]; then
 		export VENDOR_DLKM_MODULES_LIST=${src_dir}/vendor_dlkm_modules
 	fi
 

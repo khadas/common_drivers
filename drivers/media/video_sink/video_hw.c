@@ -11732,9 +11732,11 @@ int video_early_init(struct amvideo_device_data_s *p_amvideo)
 			       sizeof(struct hw_pps_reg_s));
 	} else if (cur_dev->display_type == C3_DISPLAY) {
 		for (i = 0; i < cur_dev->max_vd_layers; i++) {
+			/*coverity[overrun-buffer-arg] copy size is same size*/
 			memcpy(&vd_layer[i].vd_mif_reg,
 				   &vd_mif_reg_c3_array[i],
 				   sizeof(struct hw_vd_reg_s));
+			/*coverity[overrun-buffer-arg] copy size is same size*/
 			memcpy(&vd_layer[i].vd_mif_linear_reg,
 				  &vd_mif_linear_reg_c3_array[i],
 				  sizeof(struct hw_vd_linear_reg_s));

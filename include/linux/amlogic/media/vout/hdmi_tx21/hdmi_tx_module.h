@@ -147,7 +147,7 @@ enum hdmi_hdr_color {
 };
 
 enum hdmitx_aspect_ratio {
-	AR_UNKNOWM = 0,
+	AR_UNKNOWN = 0,
 	AR_4X3,
 	AR_16X9,
 };

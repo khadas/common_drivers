@@ -1491,7 +1491,7 @@ bool is_clk_stable(void)
 
 	if (clk && rx.clk.cable_clk > TMDS_CLK_MIN * KHz) {
 		if (rx.state >= FSM_EQ_START &&
-			(abs(rx.clk.cable_clk - rx.clk.cable_clk_pre) > 5 * MHz))
+			(abs(rx.clk.cable_clk - rx.clk.cable_clk_pre) > 10 * MHz))
 			return false;
 		return true;
 	} else {
@@ -4991,20 +4991,37 @@ u32 aml_cable_clk_band(u32 cableclk, u32 clkrate)
 		cab_clk = cableclk << 2;
 
 	/* 1:10 */
-	if (cab_clk < (45 * MHz))
-		bw = PHY_BW_0;
-	else if (cab_clk < (77 * MHz))
-		bw = PHY_BW_1;
-	else if (cab_clk < (155 * MHz))
-		bw = PHY_BW_2;
-	else if (cab_clk < (340 * MHz))
-		bw = PHY_BW_3;
-	else if (cab_clk < (525 * MHz))
-		bw = PHY_BW_4;
-	else if (cab_clk < (600 * MHz))
-		bw = PHY_BW_5;
-	else
-		bw = PHY_BW_2;
+	if (rx.chip_id == CHIP_ID_T5M) {
+		if (cab_clk < (35 * MHz))
+			bw = PHY_BW_0;
+		else if (cab_clk < (72 * MHz))
+			bw = PHY_BW_1;
+		else if (cab_clk < (145 * MHz))
+			bw = PHY_BW_2;
+		else if (cab_clk < (340 * MHz))
+			bw = PHY_BW_3;
+		else if (cab_clk < (525 * MHz))
+			bw = PHY_BW_4;
+		else if (cab_clk < (600 * MHz))
+			bw = PHY_BW_5;
+		else
+			bw = PHY_BW_2;
+	} else {
+		if (cab_clk < (45 * MHz))
+			bw = PHY_BW_0;
+		else if (cab_clk < (77 * MHz))
+			bw = PHY_BW_1;
+		else if (cab_clk < (155 * MHz))
+			bw = PHY_BW_2;
+		else if (cab_clk < (340 * MHz))
+			bw = PHY_BW_3;
+		else if (cab_clk < (525 * MHz))
+			bw = PHY_BW_4;
+		else if (cab_clk < (600 * MHz))
+			bw = PHY_BW_5;
+		else
+			bw = PHY_BW_2;
+	}
 	return bw;
 }
 
@@ -5017,19 +5034,33 @@ u32 aml_phy_pll_band(u32 cableclk, u32 clkrate)
 		cab_clk = cableclk << 2;
 
 	/* 1:10 */
-	if (cab_clk < (35 * MHz))
-		bw = PLL_BW_0;
-	else if (cab_clk < (77 * MHz))
-		bw = PLL_BW_1;
-	else if (cab_clk < (155 * MHz))
-		bw = PLL_BW_2;
-	else if (cab_clk < (340 * MHz))
-		bw = PLL_BW_3;
-	else if (cab_clk < (600 * MHz))
-		bw = PLL_BW_4;
-	else
-		bw = PLL_BW_2;
-
+	if (rx.chip_id == CHIP_ID_T5M) {
+		if (cab_clk < (35 * MHz))
+			bw = PLL_BW_0;
+		else if (cab_clk < (72 * MHz))
+			bw = PLL_BW_1;
+		else if (cab_clk < (145 * MHz))
+			bw = PLL_BW_2;
+		else if (cab_clk < (340 * MHz))
+			bw = PLL_BW_3;
+		else if (cab_clk < (600 * MHz))
+			bw = PLL_BW_4;
+		else
+			bw = PLL_BW_2;
+	} else {
+		if (cab_clk < (35 * MHz))
+			bw = PLL_BW_0;
+		else if (cab_clk < (77 * MHz))
+			bw = PLL_BW_1;
+		else if (cab_clk < (155 * MHz))
+			bw = PLL_BW_2;
+		else if (cab_clk < (340 * MHz))
+			bw = PLL_BW_3;
+		else if (cab_clk < (600 * MHz))
+			bw = PLL_BW_4;
+		else
+			bw = PLL_BW_2;
+	}
 	return bw;
 }
 

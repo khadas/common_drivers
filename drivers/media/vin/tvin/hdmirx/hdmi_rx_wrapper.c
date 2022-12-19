@@ -233,7 +233,7 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.vga_dbg = 1;
 		rx.aml_phy.vga_dbg_delay = 200;
 		rx.aml_phy.eq_fix_val = 16;
-		rx.aml_phy.cdr_fr_en = 0;
+		rx.aml_phy.cdr_fr_en = 1;
 		rx.aml_phy.force_sqo = 0;
 		/* add for t5 */
 		rx.aml_phy.os_rate = 3;

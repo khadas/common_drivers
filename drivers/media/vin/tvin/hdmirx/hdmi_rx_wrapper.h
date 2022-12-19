@@ -149,6 +149,8 @@ void dump_state(int enable);
 void hdmirx_init_params(void);
 void fs_mode_init(void);
 void set_video_mute(bool on);
+void rx_dwc_reset(void);
+
 //void __weak set_video_mute(bool on)
 //{
 //}

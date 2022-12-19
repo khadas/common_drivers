@@ -22,7 +22,7 @@
 	#define T5M_OFSET_CAL_START		_BIT(27)
 	#define T5M_CDR_LKDET_EN		_BIT(14)
 	#define T5M_CDR_RSTB			_BIT(13)
-	#define T5M_CDR_FR_EN			_BIT(6)
+	#define T5M_CDR_FR_EN				_BIT(6)
 	#define T5M_MUX_CDR_DBG_SEL		_BIT(19)
 	#define T5M_CDR_OS_RATE			MSK(2, 8)
 	#define T5M_DFE_OFST_DBG_SEL		MSK(3, 28)
@@ -81,6 +81,11 @@ void rx_set_aud_output_t5m(u32 param);
 void rx_sw_reset_t5m(int level);
 void hdcp_init_t5m(void);
 void aml_phy_get_trim_val_t5m(void);
+void comb_val_t5m(void (*p)(char *, unsigned int, int),
+	     char *type, unsigned int val_0, unsigned int val_1,
+		 unsigned int val_2, int len);
+void get_flag_val_t5m(char *temp, unsigned int val, int len);
+
 /*function declare end*/
 
 #endif /*_HDMI_RX_T5M_H*/

@@ -7657,6 +7657,7 @@ static void osd_update_disp_osd_rotate(u32 index)
 		osd_log_err("current vinfo NULL\n");
 		return;
 	} else {
+		/*coverity[dead_error_begin] reserve code*/
 		out_y_crop_start = 0;
 		out_y_crop_end = vinfo->height;
 	}

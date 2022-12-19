@@ -62,6 +62,7 @@ static struct sync_timeline *sync_timeline_create(const char *name)
 	INIT_LIST_HEAD(&obj->pt_list);
 	spin_lock_init(&obj->lock);
 	if (timeline_num < MAX_NUM)
+		/*coverity[buffer_size_warning] size is enough*/
 		strncpy(timeline_debug_s[timeline_num].name,
 			name, sizeof(obj->name));
 	timeline_num++;

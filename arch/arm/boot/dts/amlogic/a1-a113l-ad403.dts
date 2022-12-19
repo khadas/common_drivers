@@ -687,6 +687,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&spifc_pins>;
 	spi-nor@1 {
+		reg = <1>;
 		compatible = "jedec,spi-nor";
 		spi-max-frequency = <16000000>;
 	};
@@ -963,7 +964,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc0_led_pins_a>;
 	//cs-gpios = <&gpio GPIOA_8 0>;
-	spidev {
+	spidev@0 {
 		compatible = "rohm, dh2228fv";
 		status = "okay";
 		reg = <0>;

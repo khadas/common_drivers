@@ -1102,11 +1102,46 @@
 };
 
 &i2c3 {
-	status = "disabled";
+	status = "okay";
 	pinctrl-names="default";
 	pinctrl-0=<&i2c3_master_pins2>;
 	clock-frequency = <100000>; /* default 100k */
 
+	aw9523: aw9523_led@5b {
+		compatible = "amlogic,aw9523b_led";
+		reg = <0x5b>;
+		status = "okay";
+		// reset-gpio = <&gpio GPIOD_11 GPIO_ACTIVE_HIGH>;
+		platform = <4>;
+
+		led1 {
+			default_colors = <0 0 0>;
+			r_io_number = <0>;
+			g_io_number = <1>;
+			b_io_number = <2>;
+		};
+
+		led2 {
+			default_colors = <0 0 0>;
+			r_io_number = <3>;
+			g_io_number = <4>;
+			b_io_number = <5>;
+		};
+
+		led3 {
+			default_colors = <0 0 0>;
+			r_io_number = <6>;
+			g_io_number = <7>;
+			b_io_number = <8>;
+		};
+
+		led4 {
+			default_colors = <0 0 0>;
+			r_io_number = <9>;
+			g_io_number = <10>;
+			b_io_number = <11>;
+		};
+	};
 	/* for ref board */
 	ad82584f_62: ad82584f_62@62 {
 		compatible = "ESMT, ad82584f";

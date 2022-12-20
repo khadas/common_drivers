@@ -10,12 +10,12 @@
 int led_state_init(void);
 void led_state_exit(void);
 #else
-static inline void led_state_init(void)
+static inline int led_state_init(void)
 {
 	return 0;
 }
 
-static inline int led_state_exit(void)
+static inline void led_state_exit(void)
 {
 }
 #endif

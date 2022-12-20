@@ -211,12 +211,13 @@ int vfm_map_add(char *id, char *name_chain)
 retry:
 	for (i = 0; i < vfm_map_num; i++) {
 		struct vfm_map_s *pi = vfm_map[i];
-
+		/*coverity[string_null] this string has terminated*/
 		if (!pi || (strcmp(pi->id, p->id))) {
 			/*not same id to next one*/
 			continue;
 		} else if (pi->valid) {
 			for (j = 0; j < p->vfm_map_size; j++) {
+				/*coverity[string_null] this string has terminated*/
 				if (strcmp(pi->name[j],
 					   p->name[j])){
 					break;
@@ -236,6 +237,7 @@ retry:
 			 */
 			for (j = 0; j < p->vfm_map_size; j++) {
 				/*over write node.*/
+				/*coverity[string_null] this string has terminated*/
 				strcpy(pi->name[j], p->name[j]);
 			}
 			pi->vfm_map_size = p->vfm_map_size;

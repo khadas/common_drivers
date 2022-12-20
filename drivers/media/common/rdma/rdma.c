@@ -246,14 +246,15 @@ void pre_vsync_rdma_config(void)
 EXPORT_SYMBOL(pre_vsync_rdma_config);
 void _vsync_rdma_config_pre(int rdma_type)
 {
+	int iret;
 	int enable_ = cur_enable[rdma_type] & 0xf;
 
 	if (vsync_rdma_handle[rdma_type] == 0)
 		return;
 	if (enable_ == 3)/*manually in next vsync*/
-		rdma_config(vsync_rdma_handle[rdma_type], 0);
+		iret = rdma_config(vsync_rdma_handle[rdma_type], 0);
 	else if (enable_ == 6)
-		rdma_config(vsync_rdma_handle[rdma_type], 0x101); /*for debug*/
+		iret = rdma_config(vsync_rdma_handle[rdma_type], 0x101); /*for debug*/
 }
 
 void vsync_rdma_config_pre(void)
@@ -873,7 +874,7 @@ static int parse_para(const char *para, int para_num, int *result)
 			token++;
 			len--;
 		}
-		if (len == 0)
+		if (len == 0 || !token)
 			break;
 		ret = kstrtoint(token, 0, &res);
 		if (ret < 0)

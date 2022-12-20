@@ -131,6 +131,7 @@ int register_reg_ops_per_cpu(struct chip_register_ops *sops,
 		return -ENOMEM;
 	memcpy(ops, sops, size * ops_size);
 	for (i = 0; i < ops_size; i++)
+		/*coverity[leaked_storage] misjudgment*/
 		register_reg_onebus_ops(&ops[i]);
 	return 0;
 }

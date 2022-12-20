@@ -771,7 +771,6 @@ static struct clk_regmap t7_mclk_pll_dco = {
 		.table = t7_mclk_pll_table,
 		.init_regs = t7_mclk_init_regs,
 		.init_count = ARRAY_SIZE(t7_mclk_init_regs),
-		.ignore_init = false
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "mclk_pll_dco",
@@ -8250,7 +8249,7 @@ static int __ref meson_t7_probe(struct platform_device *pdev)
 
 	mclk_data = t7_mclk_pll_dco.data;
 	if (ignore_pll_init)
-		mclk_data->ignore_init = true;
+		mclk_data->flags |= CLK_MESON_PLL_IGNORE_INIT;
 
 	for (i = 0; i < t7_hw_onecell_data.num; i++) {
 		/* array might be sparse */

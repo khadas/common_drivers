@@ -109,7 +109,9 @@ static unsigned long meson_clk_pll_recalc_rate(struct clk_hw *hw,
 
 	n = meson_parm_read(clk->map, &pll->n);
 	m = meson_parm_read(clk->map, &pll->m);
-	od = meson_parm_read(clk->map, &pll->od);
+	od = MESON_PARM_APPLICABLE(&pll->od) ?
+		meson_parm_read(clk->map, &pll->od) :
+		0;
 
 	frac = MESON_PARM_APPLICABLE(&pll->frac) ?
 		meson_parm_read(clk->map, &pll->frac) :
@@ -468,8 +470,12 @@ static int meson_clk_pll_init(struct clk_hw *hw)
 	struct clk_regmap *clk = to_clk_regmap(hw);
 	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
 
-	/* Do not init pll, it will gate pll which is needed in RTOS */
-	if (pll->ignore_init) {
+	/*
+	 * Do not init pll
+	 * 1. it will gate pll which is needed in RTOS
+	 * 2. it will gate sys pll who is feeding CPU
+	 */
+	if (pll->flags & CLK_MESON_PLL_IGNORE_INIT) {
 		pr_warn("ignore %s clock init\n", clk_hw_get_name(hw));
 		return 0;
 	}

@@ -530,6 +530,7 @@ static struct clk_regmap a1_sys_pll = {
 		.table = a1_pll_params_table,
 		.init_regs = a1_sys_init_regs,
 		.init_count = ARRAY_SIZE(a1_sys_init_regs),
+		.flags = CLK_MESON_PLL_IGNORE_INIT
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "sys_pll",

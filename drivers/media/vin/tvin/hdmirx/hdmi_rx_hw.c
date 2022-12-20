@@ -68,7 +68,7 @@ int hdcp_enc_mode;
 int top_intr_maskn_value;
 u32 afifo_overflow_cnt;
 u32 afifo_underflow_cnt;
-int rx_afifo_dbg_en = 1;
+int rx_afifo_dbg_en;
 bool hdcp_enable = 1;
 int acr_mode;
 int auto_aclk_mute = 2;
@@ -1491,7 +1491,7 @@ bool is_clk_stable(void)
 
 	if (clk && rx.clk.cable_clk > TMDS_CLK_MIN * KHz) {
 		if (rx.state >= FSM_EQ_START &&
-			(abs(rx.clk.cable_clk - rx.clk.cable_clk_pre) > 10 * MHz))
+			(abs(rx.clk.cable_clk - rx.clk.cable_clk_pre) > 5 * MHz))
 			return false;
 		return true;
 	} else {

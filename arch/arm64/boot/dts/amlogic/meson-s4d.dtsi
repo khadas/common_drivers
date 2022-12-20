@@ -124,7 +124,7 @@
 		idle-states {
 			entry-method = "arm,psci-0.2";
 			CPU_SLEEP_0: cpu-sleep-0 {
-					/* compatible = "arm,idle-state"; */
+					compatible = "arm,idle-state";
 					arm,psci-suspend-param = <0x0010000>;
 					local-timer-stop;
 					entry-latency-us = <4000>;
@@ -226,6 +226,14 @@
 		sys_poweroff = <0x84000008>;
 		dis_nb_cpus_in_shutdown;
 		reg = <0x0 0xfe01037c 0x0 0x4>; /* AO_SEC_SD_CFG15 */
+		status = "okay";
+	};
+	ram-dump {
+		compatible = "amlogic, ram_dump";
+		status = "okay";
+		reg = <0x0 0xFE0102D8 0x0 4>;
+		reg-names = "SYSCTRL_STICKY_REG6";
+		store_device = "data";
 	};
 
 	secmon {
@@ -235,6 +243,10 @@
 		out_base_func = <0x82000021>;
 		inout_size_func = <0x8200002a>;
 		reserve_mem_size = <0x03300000>;
+	};
+	optee {
+		compatible = "linaro,optee-tz";
+		method = "smc";
 	};
 
 	cma_shrinker: cma_shrinker {
@@ -281,7 +293,7 @@
 		compatible = "amlogic, audio_data";
 		mem_in_base_cmd = <0x82000020>;
 		query_licence_cmd = <0x82000050>;
-		status = "okay";
+		status = "disabled";
 	};
 
 	amaudio: amaudio {
@@ -395,7 +407,7 @@
 				<709000 95>,
 				<699000 98>,
 				<689000 100>;
-		status = "okay";
+		status = "disabled";
 	};
 
 	cpu_opp_table0: cpu_opp_table0 {
@@ -797,7 +809,7 @@
 				clocks = <&clkc CLKID_PWM_I_GATE>,
 						<&clkc CLKID_PWM_J_GATE>;
 				clock-names = "clkin0", "clkin1";
-				status = "okay";
+				status = "disabled";
 			};
 
 			i2c0: i2c@66000 {
@@ -994,7 +1006,7 @@
 			power-domains = <&pwrdm PDID_S4_AUDIO>;
 
 			clkaudio: audio_clocks {
-				compatible = "amlogic, sm1-audio-clocks";
+				compatible = "amlogic, sc2-audio-clocks";
 				#clock-cells = <1>;
 				reg = <0x0 0x0 0x0 0xb0>;
 			};
@@ -1246,6 +1258,7 @@
 			clock-names = "clk_uart",
 				"clk_gate";
 			xtal_tick_en = <3>;
+			uart_for_bt = <1>;
 			fifosize = < 64 >;
 			pinctrl-names = "default";
 			pinctrl-0 = <&a_uart_pins>;
@@ -1617,7 +1630,7 @@
 			0x0 0xfe000000 0x0 0x4a0>; /* clk reg */
 	};
 
-	vdac {
+	vdac:vdac {
 		compatible = "amlogic, vdac-s4d";
 		status = "okay";
 	};
@@ -1781,7 +1794,7 @@
 	vdin0: vdin0 {
 		compatible = "amlogic, vdin-s4d";
 		dev_name = "vdin0";
-		status = "disabled";
+		status = "okay";
 		reserve-iomap = "true";
 		flag_cma = <0>;/*1:share with codec_mm;2:cma alone*/
 		/*MByte, if 10bit disable: 64M(YUV422),
@@ -1797,16 +1810,47 @@
 		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VDIN_MEAS_GATE>;
 		clock-names = "fclk_div5", "cts_vdin_meas_clk";
 		vdin_id = <0>;
+		/* vdin v4l2 */
+		v4l_support_en = <0>;
+		v4l_vd_num = <70>;
+		/* v4l2 capability */
+		driver   = "vdinvideo";
+		card     = "meson-s4";
+		bus_info = "vdin0 v4l2";
+		version  = <0x20220120>;
+		/* fe_ports refer to tvin.h */
+		fe_ports = <0x00001001   /* CVBS1 */
+			0x00004000   /* HDMI0 */
+			0x00004001   /* HDMI1 */
+			0x00004002>; /* HDMI2 */
+		/* vdin v4l2 end */
 	};
 	vdin1: vdin1 {
 		compatible = "amlogic, vdin-s4d";
 		dev_name = "vdin1";
-		status = "disabled";
+		status = "okay";
 		reserve-iomap = "true";
 		flag_cma = <0>;/*1:share with codec_mm;0:cma alone*/
 		interrupts = <0 212 1>;
 		rdma-irq = <4>;
 		vdin_id = <1>;
+		/* vdin v4l2 */
+		v4l_support_en = <0>;
+		v4l_vd_num = <71>;
+		/* v4l2 capability */
+		driver   = "vdinvideo";
+		card     = "meson-s4";
+		bus_info = "vdin1 v4l2";
+		version  = <0x20220120>;
+		/* fe_ports refer to tvin.h */
+		fe_ports = <0x0000a002   /* WB0_VD1 */
+			0x0000a003   /* WB0_VD2 */
+			0x0000a004   /* WB0_OSD1 */
+			0x0000a005   /* WB0_OSD2 */
+			0x0000a006   /* WB0_VPP */
+			0x0000a007   /* WB0_VDIN_BIST */
+			0x0000a008>; /* WB0_POST_BLEND */
+		/* vdin v4l2 end */
 	};
 
 	meson-amvideom {
@@ -1923,6 +1967,7 @@
 		mem_in_base_cmd = <0x82000020>;
 		mem_out_base_cmd = <0x82000021>;
 		efuse_pattern_size = <0x600>;
+		efuse_obj_cmd_status = <0x1>;
 		key = <&efusekey>;
 		check = <&efusecheck>;
 		clock-names = "efuse_clk";
@@ -1957,8 +2002,37 @@
 		};
 	};
 
+	aml_mkl {
+		compatible = "amlogic,aml_mkl";
+		dev_name = "aml_mkl_dev";
+		status = "okay";
+		reg = <0x0 0xfe440200 0x0 0x80>;
+	};
 	chosen {
 		kaslr-seed = <0x0 0x0>;
+	};
+	gpu_opp_table: gpu_opp_table {
+		compatible = "operating-points-v2";
+		opp-285 {
+			opp-hz = /bits/ 64 <285714281>;
+			opp-microvolt = <1150>;
+		};
+		opp-400 {
+			opp-hz = /bits/ 64 <400000000>;
+			opp-microvolt = <1150>;
+		};
+		opp-500 {
+			opp-hz = /bits/ 64 <500000000>;
+			opp-microvolt = <1150>;
+		};
+		opp-666 {
+			opp-hz = /bits/ 64 <666666666>;
+			opp-microvolt = <1150>;
+		};
+		opp-846 {
+			opp-hz = /bits/ 64 <846000000>;
+			opp-microvolt = <1150>;
+		};
 	};
 };
 
@@ -2650,6 +2724,7 @@
 };
 
 &gpu{
+	operating-points-v2 = <&gpu_opp_table>;
 	reg =   <0 0xFE400000 0 0x04000>, /*mali APB bus base address*/
 		<0 0xFE002000 0 0x01000>, /*reset register*/
 		<0 0xFF800000 0 0x01000>, /*aobus TODO update*/

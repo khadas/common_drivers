@@ -127,7 +127,7 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			/* ion_codec_mm max can alloc size 80M*/
-			size = <0x0 0x1b000000>;
+			size = <0x0 0x21C00000>;
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
 		};
@@ -339,9 +339,9 @@
 		compatible = "amlogic, vecm";
 		dev_name = "aml_vecm";
 		status = "okay";
-		gamma_en = <0>;/*1:enabel ;0:disable*/
-		wb_en = <0>;/*1:enabel ;0:disable*/
-		cm_en = <0>;/*1:enabel ;0:disable*/
+		gamma_en = <0>;/*1:enable ;0:disable*/
+		wb_en = <0>;/*1:enable ;0:disable*/
+		cm_en = <0>;/*1:enable ;0:disable*/
 		/*0: 709/601  1: bt2020*/
 		tx_op_color_primary = <0>;
 	};

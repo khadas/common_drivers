@@ -17,6 +17,7 @@
 #include <dt-bindings/pwm/meson.h>
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/meson_ir.h>
+#include <dt-bindings/mailbox/amlogic,mbox.h>
 #include "meson-ir-map.dtsi"
 #include "mesong12a-bifrost.dtsi"
 / {
@@ -192,7 +193,8 @@
 
 	soc_info {
 		compatible = "amlogic, socdata";
-		reg= <0x0 0xfe010000 0x0 0x8 0x0 0xfe010180 0x0 0x4>;
+		reg =	<0x0 0xfe010000 0x0 0xc>,
+			<0x0 0xfe010180 0x0 0x4>;
 		read_nocsdata_cmd =<0x82000039>;
 		write_nocsdata_cmd=<0x82000038>;
 		auth_reg_ops_cmd=<0x820000f0>;
@@ -1465,16 +1467,6 @@
 		compatible = "amlogic, codec, streambuf";
 		dev_name = "mesonstream";
 		status = "okay";
-		clocks = <&clkc CLKID_DOS
-			&clkc CLKID_VDEC_MUX
-			&clkc CLKID_HCODEC_MUX
-			&clkc CLKID_HEVCF_MUX
-			&clkc CLKID_HEVCB_MUX>;
-		clock-names = "vdec",
-			"clk_vdec_mux",
-			"clk_hcodec_mux",
-			"clk_hevcf_mux",
-			"clk_hevcb_mux";
 	};
 
 	vdec {
@@ -1500,13 +1492,29 @@
 		power-domain-names = "pwrc-vdec",
 			"pwrc-hevc";
 	};
-	vdec_cpu_ver: cpu_ver_name {
-		compatible = "amlogic, cpu-major-id-s4";
-	};
 	vcodec_dec {
 		compatible = "amlogic, vcodec-dec";
 		dev_name = "aml-vcodec-dec";
 		status = "okay";
+	};
+	vcodec_dos_dev: vcodec_dos_dev {
+		compatible = "amlogic, cpu-major-id-s4d";
+		dev_name = "vcodec_dos_dev";
+		status = "okay";
+		reg = <0x0 0xfe320000 0x0 0x10000>,
+			<0x0 0xfe036000 0x0 0x2000>;
+		reg-names = "dosbus",
+			"dmcbus";
+		clocks = <&clkc CLKID_DOS
+			&clkc CLKID_VDEC_MUX
+			&clkc CLKID_HCODEC_MUX
+			&clkc CLKID_HEVCF_MUX
+			&clkc CLKID_HEVCB_MUX>;
+		clock-names = "vdec",
+			"clk_vdec_mux",
+			"clk_hcodec_mux",
+			"clk_hevcf_mux",
+			"clk_hevcb_mux";
 	};
 
 	ddr_bandwidth {
@@ -1648,6 +1656,13 @@
 			status = "okay";
 		};
 
+		crypto {
+			compatible = "amlogic,crypto_sc2";
+			dev_name = "aml_crypto_dev";
+			status = "okay";
+			thread = /bits/ 8 <0x5>;
+			interrupts = <0 29 1>;
+		};
 	};
 
 	rng {
@@ -1662,6 +1677,7 @@
 
 	canvas: canvas{
 		compatible = "amlogic, meson, canvas";
+		dev_name = "amlogic-canvas";
 		status = "okay";
 		reg = <0x0 0xfe036048 0x0 0x2000>;
 	};
@@ -1678,6 +1694,7 @@
 			<0x0 0x0 0x0 0x00>,
 			<0x0 0xff000000 0x0 0x40000>,
 			<0x0 0xfe036000 0x0 0x2000>,
+			<0x0 0x0 0x0 0x0>,
 			<0x0 0x0 0x0 0x0>;
 		reg-names = "cbus",
 			    "dosbus",
@@ -1685,7 +1702,8 @@
 			    "aobus",
 			    "vcbus",
 			    "dmcbus",
-			    "efusebus";
+			    "efusebus",
+			    "nocbus";
 	};
 
 	amvenc_avc{

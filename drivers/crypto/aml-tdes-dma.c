@@ -139,7 +139,7 @@ static int set_tdes_kl_key_iv(struct aml_tdes_dev *dd,
 	struct dma_dsc *dsc = dd->descriptor;
 	struct device *dev = dd->dev;
 	u32 *key_iv = kzalloc(DMA_KEY_IV_BUF_SIZE, GFP_ATOMIC);
-	u32 *piv = key_iv; // + 8;
+	u32 *piv = key_iv;
 	u32 len = keylen;
 	dma_addr_t dma_addr_key;
 
@@ -190,7 +190,7 @@ static int set_tdes_kl_key_iv(struct aml_tdes_dev *dd,
 
 	aml_write_crypto_reg(dd->thread,
 			     (uintptr_t)dd->dma_descript_tab | 2);
-	aml_dma_debug(dsc, 1, __func__, dd->thread, dd->status);
+	aml_dma_debug(dsc, iv ? 2 : 1, __func__, dd->thread, dd->status);
 	while (aml_read_crypto_reg(dd->status) == 0)
 		;
 	aml_write_crypto_reg(dd->status, 0xf);

@@ -1580,30 +1580,37 @@
 	};
 
 	aml_dma {
-		status = "disabled";
 		compatible = "amlogic,aml_txlx_dma";
 		reg = <0x0 0xfe440400 0x0 0x48>;
 		interrupts = <0 24 1>;
+		status = "okay";
 
 		aml_aes {
 			compatible = "amlogic,aes_g12a_dma";
 			dev_name = "aml_aes_dma";
 			iv_swap = /bits/ 8 <0x0>;
-			status = "disabled";
+			status = "okay";
 		};
 
 		aml_sha {
 			compatible = "amlogic,sha_dma";
 			dev_name = "aml_sha_dma";
-			status = "disabled";
+			status = "okay";
 		};
 
 		aml_tdes {
-			compatible = "amlogic,tdes_dma";
+			compatible = "amlogic,des_dma,tdes_dma";
 			dev_name = "aml_tdes_dma";
-			status = "disabled";
+			status = "okay";
 		};
 
+		crypto {
+			compatible = "amlogic,crypto_sc2";
+			dev_name = "aml_crypto_dev";
+			status = "okay";
+			thread = /bits/ 8 <0x5>;
+			interrupts = <0 29 1>;
+		};
 	};
 
 	rng {

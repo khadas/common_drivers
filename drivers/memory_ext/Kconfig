@@ -159,3 +159,19 @@ config AMLOGIC_FIXED_AREA_CMA
 		Asymmetric memory system, provide an interface for
 		allocating memory in different areas.
 
+config AMLOGIC_PCIE_DMA_OPS
+	tristate "Amlogic PCIE dma_ops"
+	depends on AMLOGIC_MEMORY_EXTEND
+	default n
+	help
+		custom a dma_ops to limit the memory for PCIE device
+		operations to a fixed area
+
+config AMLOGIC_FAKE_SMMU
+	tristate "Amlogic fake smmu"
+	depends on AMLOGIC_MEMORY_EXTEND
+	depends on AMLOGIC_PCIE_DMA_OPS
+	default n
+	help
+		Register a fake smmu device to replace ops for 64bit
+

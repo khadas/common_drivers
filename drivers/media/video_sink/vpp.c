@@ -4667,15 +4667,6 @@ RERTY:
 	if (!local_input.pps_support)
 		wide_mode = VIDEO_WIDEOPTION_NORMAL;
 
-	if ((vf->flag & VFRAME_FLAG_COMPOSER_DONE) &&
-		(vf->flag & VFRAME_FLAG_FIX_TUNNEL)) {
-		wide_mode = VIDEO_WIDEOPTION_FULL_STRETCH;
-		local_input.crop_top = vf->crop[0];
-		local_input.crop_left = vf->crop[1];
-		local_input.crop_bottom = vf->crop[2];
-		local_input.crop_right = vf->crop[3];
-	}
-
 	if (local_input.afd_enable && !disable_adapted) {
 		wide_mode = VIDEO_WIDEOPTION_FULL_STRETCH;
 		local_input.crop_top = local_input.afd_crop.top;
@@ -4702,6 +4693,15 @@ RERTY:
 				local_input.afd_crop.bottom,
 				local_input.afd_crop.right);
 		vpp_flags |= VPP_FLAG_FORCE_AFD_ENABLE;
+	}
+
+	if ((vf->flag & VFRAME_FLAG_COMPOSER_DONE) &&
+		(vf->flag & VFRAME_FLAG_FIX_TUNNEL)) {
+		wide_mode = VIDEO_WIDEOPTION_FULL_STRETCH;
+		local_input.crop_top = vf->crop[0];
+		local_input.crop_left = vf->crop[1];
+		local_input.crop_bottom = vf->crop[2];
+		local_input.crop_right = vf->crop[3];
 	}
 
 	if (local_input.layer_left == 0 &&

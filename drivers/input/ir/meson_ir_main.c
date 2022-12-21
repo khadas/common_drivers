@@ -427,9 +427,9 @@ static int meson_ir_get_custom_tables(struct device_node *node,
 		return -ENODATA;
 	}
 
-	ret = of_property_read_u32(custom_maps, "mapnum", &value);
+	ret = of_property_read_u32(custom_maps, "map_num", &value);
 	if (ret) {
-		dev_err(chip->dev, "please config correct mapnum item\n");
+		dev_err(chip->dev, "please config correct map num item\n");
 		return -ENODATA;
 	}
 	chip->custom_num = value;

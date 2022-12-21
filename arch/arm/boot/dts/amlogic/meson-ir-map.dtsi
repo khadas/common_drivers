@@ -6,7 +6,7 @@
 / {
 
 	custom_maps: custom_maps {
-		mapnum = <4>;
+		map_num = <4>;
 		map0 = <&map_0>;
 		map1 = <&map_1>;
 		map2 = <&map_2>;

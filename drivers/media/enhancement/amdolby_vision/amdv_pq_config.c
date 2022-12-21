@@ -27,6 +27,7 @@
 #include <linux/string.h>
 #include <linux/vmalloc.h>
 #include <linux/arm-smccc.h>
+#include <linux/firmware.h>
 
 static u32 tv_max_lin = 200;
 static u16 tv_max_pq = 2372;
@@ -708,7 +709,6 @@ void restore_dv_pq_setting(enum pq_reset_e pq_reset)
 		pr_info("reset pq %d\n", pq_reset);
 }
 
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static void set_dv_pq_center(void)
 {
 	int mode = 0;
@@ -732,9 +732,7 @@ static void set_dv_pq_center(void)
 	}
 #endif
 }
-#endif
 
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static void set_dv_pq_range(void)
 {
 	pq_range[PQ_BRIGHTNESS].left = LEFT_RANGE_BRIGHTNESS;
@@ -756,9 +754,7 @@ static void remove_comments(char *p_buf)
 
 	*p_buf = 0;
 }
-#endif
 
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 #define MAX_READ_SIZE 256
 static char cur_line[MAX_READ_SIZE];
 
@@ -806,9 +802,7 @@ static bool get_one_line(char **cfg_buf, char *line_buf, bool ignore_comments)
 		pr_info("get line: %s\n", line_buf);
 	return eof_flag;
 }
-#endif
 
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 static void get_picture_mode_info(char *cfg_buf)
 {
 	char *ptr_line;
@@ -906,7 +900,151 @@ static void get_picture_mode_info(char *cfg_buf)
 		}
 	}
 }
-#endif
+
+#define MAX_PATH_LEN 256
+/* path: "/vendor/lib/firmware/amdv/" */
+#define FIRMWARE_DIR "amdv"
+
+/*load bin file*/
+static int load_bin_by_name(char *fw_name)
+{
+	int ret = 0;
+	const struct firmware *fw = NULL;
+	char name[MAX_PATH_LEN] = {0};
+	char amdv_name[MAX_PATH_LEN] = {0};
+	unsigned int bin_len = sizeof(struct pq_config) * MAX_DV_PICTUREMODES;
+	int i = 0;
+	char *tmp = NULL;
+	unsigned int length = 0;
+	struct device *dev = NULL;
+
+	if (!bin_to_cfg)
+		bin_to_cfg = vmalloc(bin_len);
+	if (!bin_to_cfg)
+		return false;
+
+	dev = get_amdv_device();
+
+	if (!fw_name || !dev) {
+		pr_dv_dbg("NULL param, %s (%d)\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+
+	/*remove directory, only need file name*/
+	tmp = strrchr(fw_name, '/');
+	if (tmp)
+		strncpy(name, tmp + 1, MAX_PATH_LEN - 1);
+	else
+		strncpy(name, fw_name, MAX_PATH_LEN - 1);
+	snprintf(amdv_name, (MAX_PATH_LEN - 1), "%s/%s",
+		 FIRMWARE_DIR, name);
+
+	if (debug_dolby & 0x200)
+		pr_dv_dbg("Try to load %s, filename: %s\n", fw_name, amdv_name);
+
+	ret = request_firmware(&fw, amdv_name, dev);
+	if (ret < 0) {
+		pr_dv_dbg("Error : %d can't load the %s.\n", ret, amdv_name);
+		return -ENOENT;
+	}
+
+	if (fw->size <= 0) {
+		pr_dv_dbg("size error, wrong firmware or no enough mem.\n");
+		ret = -ENOMEM;
+		goto release;
+	}
+
+	length = (fw->size > bin_len) ? bin_len : fw->size;
+	num_picture_mode = length / sizeof(struct pq_config);
+
+	if (num_picture_mode >
+	    sizeof(cfg_info) / sizeof(struct dv_cfg_info_s)) {
+		pr_dv_dbg("dv_config.bin size(%d) larger than cfg_info(%d)\n",
+			num_picture_mode,
+			(int)(sizeof(cfg_info) / sizeof(struct dv_cfg_info_s)));
+		num_picture_mode =
+			sizeof(cfg_info) / sizeof(struct dv_cfg_info_s);
+	}
+	if (num_picture_mode == 1)
+		default_pic_mode = 0;
+
+	memcpy((char *)bin_to_cfg, (char *)fw->data, length);
+
+	for (i = 0; i < num_picture_mode; i++) {
+		cfg_info[i].id = i;
+		strcpy(cfg_info[i].pic_mode_name, "uninitialized");
+	}
+
+	pr_dv_dbg("load bin size: %zd, name: %s.\n",
+		fw->size, name);
+
+release:
+	release_firmware(fw);
+	return ret;
+}
+
+/*load cfg file*/
+static int load_cfg_by_name(char *fw_name)
+{
+	int ret = 0;
+	const struct firmware *fw = NULL;
+	char name[MAX_PATH_LEN] = {0};
+	char amdv_name[MAX_PATH_LEN] = {0};
+	char *txt_buf = NULL;
+	char *tmp = NULL;
+	struct device *dev = NULL;
+
+	dev = get_amdv_device();
+
+	if (!fw_name || !dev) {
+		pr_dv_dbg("NULL param, %s (%d)\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+
+	/*remove directory, only need file name*/
+	tmp = strrchr(fw_name, '/');
+	if (tmp)
+		strncpy(name, tmp + 1, MAX_PATH_LEN - 1);
+	else
+		strncpy(name, fw_name, MAX_PATH_LEN - 1);
+
+	snprintf(amdv_name, (MAX_PATH_LEN - 1), "%s/%s",
+		 FIRMWARE_DIR, name);
+
+	if (debug_dolby & 0x200)
+		pr_dv_dbg("Try to load %s, filename: %s\n", fw_name, amdv_name);
+
+	ret = request_firmware(&fw, amdv_name, dev);
+	if (ret < 0) {
+		pr_dv_dbg("Error : %d can't load the %s.\n", ret, amdv_name);
+		return -ENOENT;
+	}
+
+	if (fw->size <= 0) {
+		pr_dv_dbg("size error, wrong firmware or no enough mem.\n");
+		ret = -ENOMEM;
+		goto release;
+	}
+
+	txt_buf = vmalloc(fw->size + 2);
+	memset(txt_buf, 0, fw->size + 2);
+
+	if (!txt_buf) {
+		ret = -ENOMEM;
+		goto release;
+	}
+	memcpy(txt_buf, (char *)fw->data, fw->size);
+	get_picture_mode_info(txt_buf);
+
+	pr_dv_dbg("load bin size: %zd, name: %s.\n",
+		fw->size, name);
+
+release:
+	if (txt_buf)
+		vfree(txt_buf);
+	release_firmware(fw);
+	return ret;
+}
 
 bool load_dv_pq_config_data(char *bin_path, char *txt_path)
 {
@@ -1006,7 +1144,18 @@ LOAD_END:
 	if (txt_buf)
 		vfree(txt_buf);
 	set_fs(old_fs);
+	return true;
 #else
+
+	if (load_bin_by_name(bin_path) >= 0 && load_cfg_by_name(txt_path) >= 0) {
+		set_dv_pq_center();
+		set_dv_pq_range();
+		restore_dv_pq_setting(RESET_ALL);
+		update_vsvdb_to_rx();
+		use_target_lum_from_cfg = true;
+		load_bin_config = true;
+		pr_info("DV config: load %d picture mode\n", num_picture_mode);
+	}
 	return true;
 #endif
 }

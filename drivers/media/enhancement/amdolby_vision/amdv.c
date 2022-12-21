@@ -6088,6 +6088,11 @@ static int prepare_dv_meta
 	return out->size;
 }
 
+struct device *get_amdv_device(void)
+{
+	return amdolby_vision_dev.dev;
+}
+
 #define VSEM_BUF_SIZE 0x1000
 #define VSIF_PAYLOAD_LEN   24
 #define VSEM_PKT_BODY_SIZE   28

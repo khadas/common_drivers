@@ -893,5 +893,6 @@ void calculate_panel_max_pq
 int layer_id_to_dv_id(enum vd_path_e vd_path);
 bool layerid_valid(int layerid);
 bool dv_inst_valid(int id);
+struct device *get_amdv_device(void);
 
 #endif

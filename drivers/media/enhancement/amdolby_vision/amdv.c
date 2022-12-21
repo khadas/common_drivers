@@ -8983,8 +8983,8 @@ int amdv_parse_metadata_v2_stb(struct vframe_s *vf,
 			dv_inst[dv_id].in_md_size = total_md_size;
 			dv_inst[dv_id].in_comp_size = total_comp_size;
 		} else {
-			dv_inst[dv_id].in_md_size = total_md_size;
-			dv_inst[dv_id].in_comp_size = total_comp_size;
+			dv_inst[dv_id].in_md_size = 0;
+			dv_inst[dv_id].in_comp_size = 0;
 		}
 
 		dv_inst[dv_id].src_format = src_format;

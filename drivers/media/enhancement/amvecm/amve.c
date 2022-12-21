@@ -1087,9 +1087,9 @@ void ve_lcd_gamma_process(void)
 		if (cpu_after_eq_t7()) {
 			if (chip_type_id == chip_t5m) {
 				p_gm = get_gm_data();
-				lcd_gamma_api(gamma_index, p_gm->dbg_gm_tbl.gamma_r,
-						p_gm->dbg_gm_tbl.gamma_g,
-						p_gm->dbg_gm_tbl.gamma_b,
+				lcd_gamma_api(gamma_index, p_gm->gm_tbl.gamma_r,
+						p_gm->gm_tbl.gamma_g,
+						p_gm->gm_tbl.gamma_b,
 						WR_DMA, WR_MOD);
 			} else {
 				lcd_gamma_api(gamma_index, video_gamma_table_r.data,

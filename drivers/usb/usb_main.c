@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
+//#define DEBUG
 #include <linux/cdev.h>
 #include <linux/types.h>
 #include <linux/fs.h>
@@ -14,18 +15,7 @@
 #include <linux/ctype.h>
 #include <linux/kallsyms.h>
 #include "usb_main.h"
-#include <linux/amlogic/gki_module.h>
-
-#ifndef DEBUG
-##define DEBUG
-#endif
-
-#define call_sub_init(func) \
-{ \
-	int ret = 0; \
-	ret = func(); \
-	pr_debug("call %s() ret=%d\n", #func, ret); \
-}
+#include <linux/amlogic/module_merge.h>
 
 bool force_device_mode;
 module_param_named(otg_device, force_device_mode,

@@ -85,7 +85,9 @@
 // frc_20221102 frc clean up typo err
 // frc_20221024 frc support t5m pxp
 // frc_20221215 frc t5m bringup
-#define FRC_FW_VER			"2022-1225 add powerdomain etc."
+// frc_20221225 add powerdomain etc.
+
+#define FRC_FW_VER			"2023-0102 frc t5m bringup"
 #define FRC_KERDRV_VER                  2339
 
 #define FRC_DEVNO	1
@@ -103,15 +105,15 @@ extern int frc_dbg_en;
 	} while (0)
 */
 //------------------------------------------------------- buf define start
-#define FRC_COMPRESS_RATE		60                 /*100: means no compress,60,80,50,55*/
+#define FRC_COMPRESS_RATE		100                 /*100: means no compress,60,80,50,55*/
 #define FRC_COMPRESS_RATE_60_SIZE       (212 * 1024 * 1024)    // Need 209.2MB ( 0xD60000) 4MB Align
 #define FRC_COMPRESS_RATE_80_SIZE       (276 * 1024 * 1024)    // Need 274.7MB  4MB Align
 #define FRC_COMPRESS_RATE_50_SIZE       (180 * 1024 * 1024)    // Need 176.4MB  4MB Align
 #define FRC_COMPRESS_RATE_55_SIZE       (196 * 1024 * 1024)    // Need 192.7MB  4MB Align
 // mc-y 48%  mc-c 39%  me 60%
-#define FRC_COMPRESS_RATE_MC_Y		48
-#define FRC_COMPRESS_RATE_MC_C		39
-#define FRC_COMPRESS_RATE_ME		60
+#define FRC_COMPRESS_RATE_MC_Y		100
+#define FRC_COMPRESS_RATE_MC_C		100
+#define FRC_COMPRESS_RATE_ME		100
 
 #define FRC_TOTAL_BUF_NUM		16
 #define FRC_TOTAL_BUF_NUM_8     8
@@ -196,6 +198,7 @@ struct st_frc_buf {
 	/*cma memory define*/
 	u32 cma_mem_size;
 	u32 cma_mem_size2;
+	u32 cma_rdma_size;
 	struct page *cma_mem_paddr_pages;
 	struct page *cma_mem_paddr_pages2;
 	phys_addr_t cma_mem_paddr_start;
@@ -375,6 +378,11 @@ enum frc_mtx_csc_e {
 	RGB_YUV709F,
 	YUV709L_RGB,
 	YUV709F_RGB,
+	PAT_RD,
+	PAT_GR,
+	PAT_BU,
+	PAT_WT,
+	PAT_BK,
 };
 
 struct crc_parm_s {

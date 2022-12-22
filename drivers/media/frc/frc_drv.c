@@ -48,7 +48,6 @@
 #include <linux/pm_runtime.h>
 #include <linux/pm_domain.h>
 #include <linux/miscdevice.h>
-
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/frc/frc_reg.h>
@@ -57,6 +56,12 @@
 #include <dt-bindings/power/t3-pd.h>
 #include <dt-bindings/power/t5m-pd.h>
 #include <linux/amlogic/media/video_sink/video_signal_notify.h>
+#include <linux/io.h>
+#include <linux/of_address.h>
+#include <linux/dma-map-ops.h>
+#include <linux/cma.h>
+#include <linux/genalloc.h>
+#include <linux/dma-mapping.h>
 
 #include "frc_drv.h"
 #include "frc_proc.h"
@@ -484,6 +489,7 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 	struct resource *res;
 	resource_size_t *base;
 	struct frc_data_s *frc_data;
+	struct device_node *np = pdev->dev.of_node;
 
 	of_node = pdev->dev.of_node;
 	of_id = of_match_device(frc_dts_match, &pdev->dev);
@@ -603,13 +609,23 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 		vpu_base = NULL;
 	}
 
-	ret = of_reserved_mem_device_init(&pdev->dev);
+	// frc buf reserved
+	ret = of_reserved_mem_device_init_by_idx(&pdev->dev, np, 0);
 	if (ret) {
-		pr_frc(0, "resource undefined !\n");
+		pr_frc(0, "cma resource undefined !\n");
 		frc_devp->buf.cma_mem_size = 0;
 	}
 	frc_devp->buf.cma_mem_size = dma_get_cma_size_int_byte(&pdev->dev);
 	pr_frc(0, "cma_mem_size=0x%x\n", frc_devp->buf.cma_mem_size);
+
+	// frc rdma reserved
+	ret = of_reserved_mem_device_init_by_idx(&pdev->dev, np, 1);
+	if (ret) {
+		pr_frc(0, "rdma resource undefined !\n");
+		frc_devp->buf.cma_rdma_size = 0;
+	}
+	frc_devp->buf.cma_rdma_size = dma_get_cma_size_int_byte(&pdev->dev);
+	pr_frc(0, "cma_rdma_size=0x%x\n", frc_devp->buf.cma_rdma_size);
 
 	frc_devp->clk_frc = clk_get(&pdev->dev, "clk_frc");
 	frc_devp->clk_me = clk_get(&pdev->dev, "clk_me");
@@ -843,6 +859,7 @@ int frc_buf_set(struct frc_dev_s *frc_devp)
 	if (frc_devp->buf.cma_buf_alloc && frc_devp->buf.cma_buf_alloc2)
 		frc_devp->buf.cma_mem_alloced = 1;
 	frc_buf_distribute(frc_devp);
+	frc_rdma_alloc_buf();
 	if (frc_buf_config(frc_devp) != 0)
 		return -1;
 	else

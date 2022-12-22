@@ -30,7 +30,13 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/of_irq.h>
-
+#include <linux/of_device.h>
+#include <linux/types.h>
+#include <linux/of_address.h>
+#include <linux/of_reserved_mem.h>
+#include <linux/dma-map-ops.h>
+#include <linux/cma.h>
+#include <linux/genalloc.h>
 #include <linux/amlogic/media/frc/frc_reg.h>
 
 #include "frc_drv.h"
@@ -196,41 +202,56 @@ void frc_rdma_write_test(dma_addr_t phy_addr, u32 size)
 
 void frc_rdma_alloc_buf(void)
 {
+	int ret;
 	dma_addr_t dma_handle;
 	struct frc_dev_s *devp = get_frc_devp();
 	struct frc_rdma_info *frc_rdma = frc_get_rdma_info();
 	struct frc_rdma_info *frc_rdma2 = &frc_rdma_s2;
+	struct device_node *np = devp->pdev->dev.of_node;
+
+	if (frc_rdma->buf_status)
+		return;
+
+	ret = of_reserved_mem_device_init_by_idx(&devp->pdev->dev, np, 1);
 
 	frc_rdma->rdma_table_size = FRC_RDMA_SIZE;
 
 	frc_rdma->rdma_table_addr = dma_alloc_coherent(&devp->pdev->dev,
-		FRC_RDMA_SIZE / 2, &dma_handle, GFP_KERNEL);
+		FRC_RDMA_SIZE * 2, &dma_handle, GFP_KERNEL);
 	frc_rdma->rdma_table_phy_addr = (ulong)(dma_handle);
 
 	frc_rdma2->rdma_table_addr = dma_alloc_coherent(&devp->pdev->dev,
-		FRC_RDMA_SIZE / 2, &dma_handle, GFP_KERNEL);
+		FRC_RDMA_SIZE * 2, &dma_handle, GFP_KERNEL);
 	frc_rdma2->rdma_table_phy_addr = (ulong)(dma_handle);
 
 	pr_frc(0, "%s rdma_table_addr: %lx phy:%lx size:%lx\n",
 		__func__, (unsigned long)frc_rdma->rdma_table_addr,
-		frc_rdma->rdma_table_phy_addr, FRC_RDMA_SIZE / 2);
+		frc_rdma->rdma_table_phy_addr, FRC_RDMA_SIZE * 2);
 	pr_frc(0, "%s rdma_table_addr2: %lx phy2:%lx size2:%lx\n",
 		__func__, (unsigned long)frc_rdma2->rdma_table_addr,
-		frc_rdma2->rdma_table_phy_addr, FRC_RDMA_SIZE / 2);
+		frc_rdma2->rdma_table_phy_addr, FRC_RDMA_SIZE * 2);
 
-	if (frc_rdma->rdma_table_addr)
+	if (frc_rdma->rdma_table_addr && frc_rdma2->rdma_table_addr)
 		frc_rdma->buf_status = 1;
-	if (frc_rdma2->rdma_table_addr)
-		frc_rdma2->buf_status = 1;
 }
 
 void frc_rdma_release_buf(void)
 {
+	int ret;
 	struct frc_dev_s *devp = get_frc_devp();
 	struct frc_rdma_info *frc_rdma = frc_get_rdma_info();
+	struct device_node *np = devp->pdev->dev.of_node;
+	struct frc_rdma_info *frc_rdma2 = &frc_rdma_s2;
 
-	dma_free_coherent(&devp->pdev->dev, frc_rdma->rdma_table_size,
+	ret = of_reserved_mem_device_init_by_idx(&devp->pdev->dev, np, 1);
+
+	dma_free_coherent(&devp->pdev->dev, FRC_RDMA_SIZE * 2,
 		frc_rdma->rdma_table_addr, (dma_addr_t)frc_rdma->rdma_table_phy_addr);
+	dma_free_coherent(&devp->pdev->dev, FRC_RDMA_SIZE * 2,
+		frc_rdma2->rdma_table_addr, (dma_addr_t)frc_rdma2->rdma_table_phy_addr);
+
+	frc_rdma->buf_status = 0;
+	pr_frc(0, "%s rdma buffer released\n", __func__);
 }
 
 void frc_rdma_reg_status(void)
@@ -999,9 +1020,12 @@ int frc_rdma_init(void)
 	//frc_rdma_alloc_buf(frc_rdma);
 	if (frc_rdma->buf_status) {
 	   //RDMA buf ready
-		frc_rdma_enable = 0;
-		fw_data->frc_top_type.rdma_en = 0;  // init rdma on
-		pr_frc(0, "int rdma ok with off stats\n");
+		frc_rdma_enable = 1;     // 0:closed 1:open
+		fw_data->frc_top_type.rdma_en = 0;  // init rdma off
+		if (frc_rdma_enable && fw_data->frc_top_type.rdma_en)
+			pr_frc(0, "frc rdma ready.\n");
+		else
+			pr_frc(0, "frc rdma disable.\n");
 	} else {
 		PR_ERR("alloc frc rdma buffer failed\n");
 		return 0;

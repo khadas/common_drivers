@@ -40,7 +40,7 @@
 #include "frc_proc.h"
 #include "frc_rdma.h"
 
-int frc_dbg_ctrl = 1;
+int frc_dbg_ctrl;
 module_param(frc_dbg_ctrl, int, 0664);
 MODULE_PARM_DESC(frc_dbg_ctrl, "frc_dbg_ctrl");
 
@@ -568,6 +568,16 @@ void frc_debug_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			fw_data->frc_top_type.rdma_en = val1;
+	} else if (!strcmp(parm[0], "frc_dp")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			frc_set_output_pattern(val1);
+	} else if (!strcmp(parm[0], "frc_ip")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			frc_set_input_pattern(val1);
 	}
 exit:
 	kfree(buf_orig);

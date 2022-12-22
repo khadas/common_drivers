@@ -30,6 +30,7 @@
 #include <linux/moduleparam.h>
 #include <linux/init.h>
 #include <linux/module.h>
+#include <linux/amlogic/media/codec_mm/codec_mm.h>
 
 #include "frc_drv.h"
 #include "frc_buf.h"
@@ -522,8 +523,13 @@ void frc_dump_buf_reg(void)
  */
 int frc_buf_alloc(struct frc_dev_s *devp)
 {
-	if (devp->buf.cma_mem_size == 0) {
-		pr_frc(0, "cma_mem_size err\n");
+	int ret;
+	struct device_node *np = devp->pdev->dev.of_node;
+
+	ret = of_reserved_mem_device_init_by_idx(&devp->pdev->dev, np, 0);
+	if (ret) {
+		pr_frc(0, "%s cma resource undefined!\n", __func__);
+		devp->buf.cma_mem_size = 0;
 		return -1;
 	}
 
@@ -532,14 +538,22 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 	 * buffer 12+4 release memory size: 0x2770000 39M
 	 * buffer 14+2 release memory size: 0x13b8000 19M
 	 */
-	devp->buf.cma_mem_size2 = 0x2770000;
-	devp->buf.cma_mem_size = 0xa000000 -
-		devp->buf.cma_mem_size2 - FRC_RDMA_SIZE;
+	/* no compress cma_mem_size2 = 0x5800000*/
+	devp->buf.cma_mem_size = dma_get_cma_size_int_byte(&devp->pdev->dev);
+	devp->buf.cma_mem_size2 = 0x5800000; //buf2 size is between 0x2600000 ~ 0x2800000
+	// devp->buf.cma_mem_size = 0xa000000 -
+	// devp->buf.cma_mem_size2 - FRC_RDMA_SIZE;
+	devp->buf.cma_mem_size =
+		devp->buf.cma_mem_size - devp->buf.cma_mem_size2;
 
 	if (!devp->buf.cma_buf_alloc) {
 		devp->buf.cma_mem_paddr_pages =
 			dma_alloc_from_contiguous(&devp->pdev->dev,
 				devp->buf.cma_mem_size >> PAGE_SHIFT, 0, 0);
+		if (ret) {
+			pr_frc(0, "dma alloc failed\n");
+			return -1;
+		}
 		if (!devp->buf.cma_mem_paddr_pages) {
 			devp->buf.cma_mem_size = 0;
 			pr_frc(0, "cma_alloc buffer1 fail\n");
@@ -551,10 +565,9 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 			page_to_phys(devp->buf.cma_mem_paddr_pages);
 		pr_frc(0, "cma paddr_start=0x%lx size:0x%x\n",
 			(ulong)devp->buf.cma_mem_paddr_start, devp->buf.cma_mem_size);
-		// rdma buf alloc 1M
-		frc_rdma_alloc_buf();
 	}
 	if (!devp->buf.cma_buf_alloc2) {
+		// ret = of_reserved_mem_device_init_by_idx(&devp->pdev->dev, np, 0);
 		devp->buf.cma_mem_paddr_pages2 =
 			dma_alloc_from_contiguous(&devp->pdev->dev,
 				devp->buf.cma_mem_size2 >> PAGE_SHIFT, 0, 0);
@@ -567,8 +580,8 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 		/*physical pages address to real address*/
 		devp->buf.cma_mem_paddr_start2 =
 			page_to_phys(devp->buf.cma_mem_paddr_pages2);
-		// pr_frc(0, "cma paddr_start2=0x%lx size:0x%x\n",
-		// (ulong)devp->buf.cma_mem_paddr_start2, devp->buf.cma_mem_size2);
+		pr_frc(2, "cma paddr_start2=0x%lx size:0x%x\n",
+		(ulong)devp->buf.cma_mem_paddr_start2, devp->buf.cma_mem_size2);
 	}
 
 	return 0;
@@ -576,8 +589,12 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 
 int frc_buf_release(struct frc_dev_s *devp)
 {
+	int ret;
+	struct device_node *np = devp->pdev->dev.of_node;
+
 	if (devp->buf.cma_mem_size &&
 		devp->buf.cma_mem_paddr_pages && devp->buf.cma_buf_alloc) {
+		ret = of_reserved_mem_device_init_by_idx(&devp->pdev->dev, np, 0);
 		dma_release_from_contiguous(&devp->pdev->dev,
 			devp->buf.cma_mem_paddr_pages, devp->buf.cma_mem_size >> PAGE_SHIFT);
 		devp->buf.cma_mem_paddr_pages = NULL;
@@ -585,7 +602,6 @@ int frc_buf_release(struct frc_dev_s *devp)
 		devp->buf.cma_mem_alloced = 0;
 		devp->buf.cma_buf_alloc = 0;
 		pr_frc(2, "%s buffer1 released\n", __func__);
-		//rdma buf release
 		frc_rdma_release_buf();
 	} else {
 		pr_frc(0, "%s no buffer exist\n", __func__);
@@ -593,6 +609,7 @@ int frc_buf_release(struct frc_dev_s *devp)
 
 	if (devp->buf.cma_mem_size2 &&
 		devp->buf.cma_mem_paddr_pages2 && devp->buf.cma_buf_alloc2) {
+		ret = of_reserved_mem_device_init_by_idx(&devp->pdev->dev, np, 0);
 		dma_release_from_contiguous(&devp->pdev->dev,
 			devp->buf.cma_mem_paddr_pages2, devp->buf.cma_mem_size2 >> PAGE_SHIFT);
 		devp->buf.cma_mem_paddr_pages2 = NULL;
@@ -847,7 +864,7 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 	u32 real_onebuf_size;
 	u32 paddr = 0, base, base2;
 	u32 paddr2 = 0;
-	int log = 2;
+	int log = 0;
 
 	/*----------------- buffer alloc------------------*/
 	base = devp->buf.cma_mem_paddr_start;

@@ -1712,12 +1712,16 @@ void frc_chk_vd_sts_chg(struct frc_dev_s *devp, struct vframe_s *vf)
 
 u16 frc_check_film_mode(struct frc_dev_s *frc_devp)
 {
-	if (frc_devp->frc_sts.state == FRC_STATE_ENABLE ||
-		(frc_devp->frc_sts.new_state == FRC_STATE_ENABLE &&
-			frc_devp->frc_sts.state != FRC_STATE_ENABLE))
-		frc_devp->film_mode = READ_FRC_REG(FRC_REG_PHS_TABLE) & 0xFF;
+	struct frc_fw_data_s *fw_data;
+	struct frc_top_type_s *frc_top;
+
+	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
+	frc_top = &fw_data->frc_top_type;
+
+	if (frc_devp->frc_sts.state == FRC_STATE_ENABLE)
+		frc_top->film_mode  = READ_FRC_REG(FRC_REG_PHS_TABLE) >> 8 & 0xFF;
 	else
-		frc_devp->film_mode = EN_VIDEO;
-	return (u16)(frc_devp->film_mode);
+		frc_top->film_mode  = EN_VIDEO;
+	return (u16)(frc_top->film_mode);
 }
 

@@ -407,6 +407,9 @@ void frc_mc_crc_read(struct frc_dev_s *frc_devp)
 
 void inp_undone_read(struct frc_dev_s *frc_devp)
 {
+	u32 offset = 0x0;
+	enum chip_id chip;
+	struct frc_data_s *frc_data;
 	u32 inp_ud_flag, readval, timeout;
 
 	if (!frc_devp)
@@ -418,10 +421,19 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 	if (frc_devp->frc_sts.state != FRC_STATE_ENABLE ||
 		frc_devp->frc_sts.new_state != FRC_STATE_ENABLE)
 		return;
-	inp_ud_flag = READ_FRC_REG(FRC_INP_UE_DBG) & 0x3f;
+
+	frc_data = (struct frc_data_s *)frc_devp->data;
+	chip = frc_data->match_data->chip;
+
+	if (chip == ID_T3)
+		offset = 0xa;
+	else if (chip == ID_T5M)
+		offset = 0x0;
+
+	inp_ud_flag = READ_FRC_REG(FRC_INP_UE_DBG + offset) & 0x3f;
 	if (inp_ud_flag != 0) {
-		WRITE_FRC_REG_BY_CPU(FRC_INP_UE_CLR, 0x3f);
-		WRITE_FRC_REG_BY_CPU(FRC_INP_UE_CLR, 0x0);
+		WRITE_FRC_REG_BY_CPU(FRC_INP_UE_CLR + offset, 0x3f);
+		WRITE_FRC_REG_BY_CPU(FRC_INP_UE_CLR + offset, 0x0);
 		frc_devp->ud_dbg.inp_undone_err = inp_ud_flag;
 		frc_devp->frc_sts.inp_undone_cnt++;
 		if (frc_devp->ud_dbg.inp_ud_dbg_en != 0) {
@@ -434,7 +446,7 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 		}
 		timeout = 0;
 		do {
-			readval = READ_FRC_REG(FRC_INP_UE_CLR) & 0x3f;
+			readval = READ_FRC_REG(FRC_INP_UE_CLR + offset) & 0x3f;
 			if (readval == 0)
 				break;
 		} while (timeout++ < 100);
@@ -550,7 +562,12 @@ const char * const csc_str[] = {
 	"RGB_YUV709L",
 	"RGB_YUV709F",
 	"YUV709L_RGB",
-	"YUV709F_RGB"
+	"YUV709F_RGB",
+	"PAT_RED",
+	"PAT_GREEN",
+	"PAT_BLUE",
+	"PAT_WHITE",
+	"PAT_BLACK",
 };
 
 void frc_mtx_cfg(enum frc_mtx_e mtx_sel, enum frc_mtx_csc_e mtx_csc)
@@ -608,7 +625,53 @@ void frc_mtx_cfg(enum frc_mtx_e mtx_sel, enum frc_mtx_csc_e mtx_csc)
 		pst_offset01 = 0x0;
 		pst_offset2 = 0x0;
 		break;
+	case PAT_RD:
+		coef00_01 = 0x0;
+		coef02_10 = 0x0;
+		coef11_12 = 0x0;
+		coef20_21 = 0x0;
+		coef22 = 0x0;
+		pst_offset01 = 0x0;
+		pst_offset2 = 0xFFF;
+		break;
+	case PAT_GR:
+		coef00_01 = 0x0;
+		coef02_10 = 0x0;
+		coef11_12 = 0x0;
+		coef20_21 = 0x0;
+		coef22 = 0x0;
+		pst_offset01 = 0x0FFF0000;
+		pst_offset2 = 0x0;
+		break;
+	case PAT_BU:
+		coef00_01 = 0x0;
+		coef02_10 = 0x0;
+		coef11_12 = 0x0;
+		coef20_21 = 0x0;
+		coef22 = 0x0;
+		pst_offset01 = 0x0FFF;
+		pst_offset2 = 0x0;
+		break;
+	case PAT_WT:
+		coef00_01 = 0x0;
+		coef02_10 = 0x0;
+		coef11_12 = 0x0;
+		coef20_21 = 0x0;
+		coef22 = 0x0;
+		pst_offset01 = 0x0FFF0FFF;
+		pst_offset2 = 0x0200;
+		break;
+	case PAT_BK:
+		coef00_01 = 0x0;
+		coef02_10 = 0x0;
+		coef11_12 = 0x0;
+		coef20_21 = 0x0;
+		coef22 = 0x0;
+		pst_offset01 = 0x0200;
+		pst_offset2 = 0x0200;
+		break;
 	default:
+		en = 0;  // invalid case
 		break;
 	}
 
@@ -618,6 +681,35 @@ void frc_mtx_cfg(enum frc_mtx_e mtx_sel, enum frc_mtx_csc_e mtx_csc)
 		else if (mtx_sel == FRC_OUTPUT_CSC)
 			WRITE_FRC_BITS(FRC_MC_CSC_CTRL, en, 3, 1);
 		return;
+	} else {
+		switch (mtx_sel) {
+		case FRC_INPUT_CSC:
+			WRITE_FRC_REG(FRC_INP_CSC_OFFSET_INP01, pre_offset01);
+			WRITE_FRC_REG(FRC_INP_CSC_OFFSET_INP2, pre_offset2);
+			WRITE_FRC_REG(FRC_INP_CSC_COEF_00_01, coef00_01);
+			WRITE_FRC_REG(FRC_INP_CSC_COEF_02_10, coef02_10);
+			WRITE_FRC_REG(FRC_INP_CSC_COEF_11_12, coef11_12);
+			WRITE_FRC_REG(FRC_INP_CSC_COEF_20_21, coef20_21);
+			WRITE_FRC_REG(FRC_INP_CSC_COEF_22, coef22);
+			WRITE_FRC_REG(FRC_INP_CSC_OFFSET_OUP01, pst_offset01);
+			WRITE_FRC_REG(FRC_INP_CSC_OFFSET_OUP2, pst_offset2);
+			WRITE_FRC_BITS(FRC_INP_CSC_CTRL, en, 3, 1);
+			break;
+		case FRC_OUTPUT_CSC:
+			WRITE_FRC_REG(FRC_MC_CSC_OFFSET_INP01, pre_offset01);
+			WRITE_FRC_REG(FRC_MC_CSC_OFFSET_INP2, pre_offset2);
+			WRITE_FRC_REG(FRC_MC_CSC_COEF_00_01, coef00_01);
+			WRITE_FRC_REG(FRC_MC_CSC_COEF_02_10, coef02_10);
+			WRITE_FRC_REG(FRC_MC_CSC_COEF_11_12, coef11_12);
+			WRITE_FRC_REG(FRC_MC_CSC_COEF_20_21, coef20_21);
+			WRITE_FRC_REG(FRC_MC_CSC_COEF_22, coef22);
+			WRITE_FRC_REG(FRC_MC_CSC_OFFSET_OUP01, pst_offset01);
+			WRITE_FRC_REG(FRC_MC_CSC_OFFSET_OUP2, pst_offset2);
+			WRITE_FRC_BITS(FRC_MC_CSC_CTRL, en, 3, 1);
+			break;
+		default:
+			break;
+		}
 	}
 
 	switch (mtx_sel) {
@@ -688,9 +780,22 @@ static void set_vd1_out_size(struct frc_dev_s *frc_devp)
 
 void frc_pattern_on(u32 en)
 {
+	u32 offset = 0x0;
+	enum chip_id chip;
+	struct frc_data_s *frc_data;
+	struct frc_dev_s *frc_devp = get_frc_devp();
+
+	frc_data = (struct frc_data_s *)frc_devp->data;
+	chip = frc_data->match_data->chip;
+
+	if (chip == ID_T3)
+		offset = 0xa;
+	else if (chip == ID_T5M)
+		offset = 0x0;
+
 	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN, en, 6, 1);
 	frc_config_reg_value(en << 6, 0x40, &regdata_inpmoden_04f9);
-	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN, regdata_inpmoden_04f9);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN + offset, regdata_inpmoden_04f9);
 
 	if (en == 1) {
 		frc_mtx_cfg(FRC_INPUT_CSC, RGB_YUV709L);
@@ -978,11 +1083,11 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	/*disable: memc delay n frame, n depend on cadence, for debug*/
 	if (frc_top->frc_prot_mode) {
 		regdata_top_ctl_0009 = READ_FRC_REG(0x0009);
-		regdata_top_ctl_0017 = READ_FRC_REG(0x0017);
+		regdata_top_ctl_0011 = READ_FRC_REG(0x0011);
 		frc_config_reg_value(0x01000000, 0x0F000000, &regdata_top_ctl_0009);
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL9, regdata_top_ctl_0009); //dly_num =1
-		frc_config_reg_value(0x100, 0x100, &regdata_top_ctl_0017);
-		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL17, regdata_top_ctl_0017); //buf prot open
+		frc_config_reg_value(0x100, 0x100, &regdata_top_ctl_0011);
+		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL17, regdata_top_ctl_0011); //buf prot open
 		WRITE_FRC_REG_BY_CPU(FRC_MODE_OPT, 0x6); // set bit1/bit2
 	} else {
 		WRITE_FRC_REG_BY_CPU(FRC_MODE_OPT, 0x0); // clear bit1/bit2
@@ -993,15 +1098,28 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 /*buffer number can dynamic kmalloc,  film_hwfw_sel ????*/
 void frc_inp_init(void)
 {
+	u32 offset = 0x0;
+	enum chip_id chip;
+	struct frc_data_s *frc_data;
+	struct frc_dev_s *frc_devp = get_frc_devp();
+
+	frc_data = (struct frc_data_s *)frc_devp->data;
+	chip = frc_data->match_data->chip;
+
+	if (chip == ID_T3)
+		offset = 0xa;
+	else if (chip == ID_T5M)
+		offset = 0x0;
+
 	WRITE_FRC_REG_BY_CPU(FRC_FRAME_BUFFER_NUM, 16 << 8 | 16);
 	WRITE_FRC_REG_BY_CPU(FRC_MC_PRB_CTRL1, 0x00640164); // bit8 set 1 close reg_mc_probe_en
 
-	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN, 1, 5, 1);//close reg_inp_logo_en
-	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN, 1, 8, 1);//open
-	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN, 1, 7, 1);//open  bbd en
+	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 5, 1);//close reg_inp_logo_en
+	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 8, 1);//open
+	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 7, 1);//open  bbd en
 
-	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN, 0x211e);//aligned padding value
-	regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN + offset, 0x211e);//aligned padding value
+	regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN + offset);
 
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL25, 0x4080200); //aligned padding value
 
@@ -1336,8 +1454,8 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		input_n          = 1;
 		output_m         = 1;
 	}
-	frc_config_reg_value(0x08, 0x18, &regdata_top_ctl_0017); //lut_cfg_en
-	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL17, regdata_top_ctl_0017);
+	frc_config_reg_value(0x08, 0x18, &regdata_top_ctl_0011); //lut_cfg_en
+	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL17, regdata_top_ctl_0011);
 	WRITE_FRC_REG_BY_CPU(FRC_TOP_LUT_ADDR, 0);
 	// for (i = 0; i < 256; i++) {
 	for (i = 0; i < lut_ary_size + 2; i++) {
@@ -1350,8 +1468,8 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 			WRITE_FRC_REG_BY_CPU(FRC_TOP_LUT_DATA, 0xffffffff);
 		}
 	}
-	frc_config_reg_value(0x10, 0x18, &regdata_top_ctl_0017); //lut_cfg_en
-	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL17, regdata_top_ctl_0017);
+	frc_config_reg_value(0x10, 0x18, &regdata_top_ctl_0011); //lut_cfg_en
+	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL17, regdata_top_ctl_0011);
 
 	tmpregdata = input_n << 24 | output_m << 16;
 	frc_config_reg_value(tmpregdata, 0xffff0000, &regdata_phs_tab_0116);
@@ -1646,8 +1764,20 @@ void enable_nr(void)
 {
 	u32  reg_data;
 	u32  reg_nr_misc_data;
+	u32 offset = 0x0;
+	enum chip_id chip;
+	struct frc_data_s *frc_data;
+	struct frc_dev_s *frc_devp = get_frc_devp();
 
-	WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN, 1, 9, 1); //reg_mc_nr_en
+	frc_data = (struct frc_data_s *)frc_devp->data;
+	chip = frc_data->match_data->chip;
+
+	if (chip == ID_T3)
+		offset = 0xa;
+	else if (chip == ID_T5M)
+		offset = 0x0;
+
+	WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 9, 1); //reg_mc_nr_en
 	reg_data = READ_FRC_REG(FRC_NR_MISC);
 	reg_nr_misc_data = reg_data & 0x00000001;
 	WRITE_FRC_BITS(FRC_NR_MISC, reg_nr_misc_data, 0, 32); //reg_nr_misc
@@ -1655,9 +1785,22 @@ void enable_nr(void)
 
 void enable_bbd(void)
 {
-	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN, 1, 7, 1); //reg_inp_bbd_en
+	u32 offset = 0x0;
+	enum chip_id chip;
+	struct frc_data_s *frc_data;
+	struct frc_dev_s *frc_devp = get_frc_devp();
+
+	frc_data = (struct frc_data_s *)frc_devp->data;
+	chip = frc_data->match_data->chip;
+
+	if (chip == ID_T3)
+		offset = 0xa;
+	else if (chip == ID_T5M)
+		offset = 0x0;
+
+	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 7, 1); //reg_inp_bbd_en
 	frc_config_reg_value(0x80, 0x80, &regdata_inpmoden_04f9);
-	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN, regdata_inpmoden_04f9);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN + offset, regdata_inpmoden_04f9);
 }
 
 void set_mc_lbuf_ext(void)
@@ -1763,10 +1906,23 @@ void frc_dump_fixed_table(void)
 {
 	int i = 0;
 	unsigned int value = 0;
+	struct frc_data_s *frc_data;
+	enum chip_id chip;
+	struct frc_dev_s *frc_devp = get_frc_devp();
 
-	for (i = 0; i < REG_NUM; i++) {
-		value = READ_FRC_REG(regs_table[i].addr);
-		pr_frc(0, "0x%04x, 0x%08x\n", regs_table[i].addr, value);
+	frc_data = (struct frc_data_s *)frc_devp->data;
+	chip = frc_data->match_data->chip;
+
+	if (chip == ID_T3) {
+		for (i = 0; i < T3_DRV_REG_NUM; i++) {
+			value = READ_FRC_REG(t3_drv_regs_table[i].addr);
+			pr_frc(0, "0x%04x, 0x%08x\n", t3_drv_regs_table[i].addr, value);
+		}
+	} else if (chip == ID_T5M) {
+		for (i = 0; i < T5M_REG_NUM; i++) {
+			value = READ_FRC_REG(t5m_regs_table[i].addr);
+			pr_frc(0, "0x%04x, 0x%08x\n", t5m_regs_table[i].addr, value);
+		}
 	}
 }
 
@@ -1795,7 +1951,7 @@ void frc_set_val_from_reg(void)
 	regdata_outholdctl_0003 = READ_FRC_REG(0x0003);
 	regdata_top_ctl_0007 = READ_FRC_REG(0x0007);
 	regdata_top_ctl_0009 = READ_FRC_REG(0x0009);
-	regdata_top_ctl_0017 =  READ_FRC_REG(0x0017);
+	regdata_top_ctl_0011 =  READ_FRC_REG(0x0011);
 
 	regdata_pat_pointer_0102 = READ_FRC_REG(0x0102);
 	// regdata_loadorgframe[16];		// 0x0103
@@ -1842,7 +1998,13 @@ void frc_set_val_from_reg(void)
 /* driver probe call */
 void frc_internal_initial(struct frc_dev_s *frc_devp)
 {
-	// int i;
+	int i;
+	struct frc_data_s *frc_data;
+	enum chip_id chip;
+
+	if (!frc_devp)
+		return;
+
 	//int mc_range_norm_lut[36] = {
 	//	-8, 8, -24, 24, -16, 16, -16, 16,
 	//	-24, 24, -8, 8, 0, 0, 0, 0,
@@ -1867,13 +2029,21 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	struct frc_fw_data_s *fw_data;
 	struct frc_top_type_s *frc_top;
 
+	frc_data = (struct frc_data_s *)frc_devp->data;
+	chip = frc_data->match_data->chip;
 	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
 
-	// for (i = 0; i < REG_NUM; i++)
-	// WRITE_FRC_REG_BY_CPU(regs_table[i].addr, regs_table[i].value);
-	WRITE_FRC_REG_BY_CPU(0x2, 0x4);
-	pr_frc(0, "regs_table[%d] init done\n", REG_NUM);
+	if (chip == ID_T3) {
+		for (i = 0; i < T3_DRV_REG_NUM; i++)
+			WRITE_FRC_REG_BY_CPU(t3_drv_regs_table[i].addr, t3_drv_regs_table[i].value);
+		pr_frc(0, "t3_regs_table[%d] init done\n", T3_DRV_REG_NUM);
+
+	} else if (chip == ID_T5M) {
+		for (i = 0; i < T5M_REG_NUM; i++)
+			WRITE_FRC_REG_BY_CPU(t5m_regs_table[i].addr, t5m_regs_table[i].value);
+		pr_frc(0, "t5m_regs_table[%d] init done\n", T5M_REG_NUM);
+	}
 
 	frc_set_val_from_reg();
 
@@ -2035,4 +2205,32 @@ void frc_set_notell_film(struct frc_dev_s *frc_devp, u16 flag)
 	else
 		pfw_data->frc_top_type.vfp &= ~BIT_7;
 	pfw_data->frc_top_type.vfp &= ~BIT_6;
+}
+
+void frc_set_output_pattern(u8 enpat)
+{
+	u8 realpattern =  4;
+
+	if (enpat) {
+		realpattern = realpattern + enpat;
+		if (realpattern > 9)
+			realpattern = 9;
+		frc_mtx_cfg(FRC_OUTPUT_CSC, realpattern);
+	} else {
+		frc_mtx_cfg(FRC_OUTPUT_CSC, CSC_OFF);
+	}
+}
+
+void frc_set_input_pattern(u8 enpat)
+{
+	u8 realpattern =  4;
+
+	if (enpat) {
+		realpattern = realpattern + enpat;
+		if (realpattern > 9)
+			realpattern = 9;
+		frc_mtx_cfg(FRC_INPUT_CSC, realpattern);
+	} else {
+		frc_mtx_cfg(FRC_INPUT_CSC, CSC_OFF);
+	}
 }

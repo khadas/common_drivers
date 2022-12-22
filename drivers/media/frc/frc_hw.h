@@ -98,5 +98,8 @@ void frc_get_film_base_vf(struct frc_dev_s *frc_devp);
 void frc_set_enter_forcefilm(struct frc_dev_s *frc_devp, u16 flag);
 void frc_set_notell_film(struct frc_dev_s *frc_devp, u16 flag);
 void frc_set_val_from_reg(void);
+/* pat: 1-red,2-green,3-blue,4-white,5-black */
+void frc_set_input_pattern(u8 enpat);
+void frc_set_output_pattern(u8 enpat);
 
 #endif

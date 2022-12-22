@@ -576,10 +576,12 @@ int tv_dv_core1_set(u64 *dma_data,
 	}
 	if (reset)
 		VSYNC_WR_DV_REG(AMDV_TV_REG_START + 1, run_mode);
-	if ((is_aml_tm2_stbmode() || is_aml_t7_stbmode()) && !core1_detunnel())
-		VSYNC_WR_DV_REG(AMDV_TV_REG_START + 0xe7, 1);/*diag bypass*/
-	else
-		VSYNC_WR_DV_REG(AMDV_TV_REG_START + 0xe7, 0);
+	if (is_aml_tm2_stbmode() || is_aml_t7_stbmode()) {
+		if (!core1_detunnel()) /*if use tvcore detunnel, tvcore diag bypass*/
+			VSYNC_WR_DV_REG(AMDV_TV_REG_START + 0xe7, 1);
+		else
+			VSYNC_WR_DV_REG(AMDV_TV_REG_START + 0xe7, 0);
+	}
 
 	if (!dolby_vision_on ||
 	(!core1_on_flag &&

@@ -10437,6 +10437,10 @@ int amdolby_vision_process_v1(struct vframe_s *vf,
 
 	last_toggle_mode = toggle_mode;
 
+	if (debug_dolby & 0x2000)
+		pr_info("setting_update_count %d,crc_read_delay %d,crc_count %d\n",
+			setting_update_count, crc_read_delay, crc_count);
+
 	if ((dolby_vision_flags & FLAG_CERTIFICATION) &&
 	    !(dolby_vision_flags & FLAG_DISABLE_CRC) &&
 	    setting_update_count > crc_count &&
@@ -12729,13 +12733,17 @@ void amdv_insert_crc(bool print)
 		pr_info("%s\n", str);
 	crc_count++;
 
-	if ((debug_dolby & 0x10000)) {
+	if ((debug_dolby & 0x10000) && is_aml_tvmode()) {
+		pr_info("tvcore crc 0x%x, diag ctrl 0x%x\n",
+			READ_VPP_DV_REG(AMDV_TV_OUTPUT_DM_CRC),
+			READ_VPP_DV_REG(AMDV_TV_DIAG_CTRL));
+	} else if ((debug_dolby & 0x10000) && is_amdv_stb_mode()) {
 		pr_info("core1 bl crc 0x%x,dm crc 0x%x,core3 in crc 0x%x, out crc 0x%x, crc enable %d\n",
 			READ_VPP_DV_REG(AMDV_CORE1_BL_CRC),
 			READ_VPP_DV_REG(AMDV_CORE1_CSC_OUTPUT_CRC),
 			READ_VPP_DV_REG(AMDV_CORE3_INPUT_CSC_CRC),
 			READ_VPP_DV_REG(AMDV_CORE3_OUTPUT_CSC_CRC),
-			READ_VPP_DV_REG(0x36fb));
+			READ_VPP_DV_REG(AMDV_CORE3_CRC_CTRL));
 	}
 
 	snprintf(cur_crc, sizeof(cur_crc), "0x%08x", crc);
@@ -14086,7 +14094,7 @@ static ssize_t amdolby_vision_src_format_show
 	ssize_t len = 0;
 	int i;
 	int fmt;
-	int fmt_inside;
+	int fmt_inside = 0;
 	int dv_id;
 
 	if (multi_dv_mode) {
@@ -14121,7 +14129,26 @@ static ssize_t amdolby_vision_src_format_show
 		len += sprintf(buf + len, "graphic: %s\n",
 			       signal_format_str[fmt]);
 	} else {
-		len += sprintf(buf, "%s\n", input_str[amdv_src_format]);
+		if (is_aml_tvmode()) {
+			if (tv_dovi_setting)
+				fmt_inside = tv_dovi_setting->src_format + 1;
+			if (fmt_inside < 0 ||
+				fmt_inside >= sizeof(signal_format_str) /
+				sizeof(signal_format_str[0]))
+				fmt_inside = 0;
+			len += sprintf(buf + len, "%s, inside: %s\n",
+				       input_str[amdv_src_format],
+				       signal_format_str[fmt_inside]);
+		} else {
+			fmt_inside = dovi_setting.src_format + 1;
+			if (fmt_inside < 0 ||
+				fmt_inside >= sizeof(signal_format_str) /
+				sizeof(signal_format_str[0]))
+				fmt_inside = 0;
+			len += sprintf(buf + len, "%s, inside: %s\n",
+					   input_str[amdv_src_format],
+					   signal_format_str[fmt_inside]);
+		}
 	}
 	return len;
 }

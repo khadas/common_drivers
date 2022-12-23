@@ -1572,16 +1572,14 @@
 		reset = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
 		ports {
 			port@0 {
-				imx290_2_ep: imx290 {
-					reg = <0>;
+				imx290_2_ep: endpoint {
 					data-lanes = <0 1 2 3>;
 					link-frequencies = /bits/ 64 <222750000>;
 					remote-endpoint = <&csiphy0_ep>;
 				};
 			};
 			port@1 {
-				imx415_4_ep: imx415 {
-					reg = <1>;
+				imx415_4_ep: endpoint {
 					data-lanes = <0 1 2 3>;
 					link-frequencies = /bits/ 64 <1440000000>;
 					remote-endpoint = <&csiphy0_ep_4>;
@@ -1604,7 +1602,7 @@
 		pwdn = <&gpio GPIOM_5 GPIO_ACTIVE_HIGH>;
 		reset = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
 		port {
-			ov08a10_0_ep: ov08a10 {
+			ov08a10_0_ep: endpoint {
 				data-lanes = <0 1 2 3>;
 				link-frequencies = /bits/ 64 <1440000000>;
 				remote-endpoint = <&csiphy0_ep_2>;
@@ -1634,8 +1632,7 @@
 		reset = <&gpio GPIOM_9 GPIO_ACTIVE_HIGH>;
 		ports {
 			port@0 {
-				imx290_1_ep: imx290 {
-					reg = <0>;
+				imx290_1_ep: endpoint {
 					data-lanes = <0 1 2 3>;
 					link-frequencies = /bits/ 64 <222750000>;
 					remote-endpoint = <&csiphy2_ep>;
@@ -1744,7 +1741,6 @@
 	ports {
 		port@0 {
 			csiphy0_ep_2: endpoint {
-				reg = <0>;
 				status = "disable";
 				clock-lanes = <4>;
 				data-lanes = <0 1 2 3>;
@@ -1753,7 +1749,6 @@
 		};
 		port@1 {
 			csiphy0_ep: endpoint {
-				reg = <0>;
 				status = "okay";
 				clock-lanes = <4>;
 				data-lanes = <0 1 2 3>;
@@ -1762,7 +1757,6 @@
 		};
 		port@2 {
 			csiphy0_ep_4: endpoint {
-				reg = <0>;
 				status = "disable";
 				clock-lanes = <4>;
 				data-lanes = <0 1 2 3>;
@@ -1784,7 +1778,6 @@
 	ports {
 		port@0 {
 			csiphy2_ep: endpoint {
-				reg = <2>;
 				status = "okay";
 				clock-lanes = <4>;
 				data-lanes = <0 1 2 3>;

@@ -164,6 +164,7 @@ static int dcnt;
 static struct clk *aml_smartcard_clk;
 static int t5w_smartcard;
 static int smartcard_mpll0;
+static int cpu_type;
 
 #define REG_READ 0
 #define REG_WRITE 1
@@ -543,6 +544,7 @@ static int sc2_smc_addr(struct platform_device *pdev)
 	if (res->start == 0xfe000000) {
 		p_smc_hw_base += 0x38000;
 		pr_error("sc2 smartcard\n");
+		cpu_type = get_cpu_type();
 	} else {
 		pr_error("t5w smartcard\n");
 		t5w_smartcard = 1;
@@ -1108,6 +1110,36 @@ static void smc_mp0_clk_set(int clk)
 
 	data = sc2_read_sys(SMARTCARD_CLK_CTRL);
 
+	/*for new chip, such as s5/t5m*/
+	if (cpu_type == MESON_CPU_MAJOR_ID_S5) {
+		data &= 0xFFF00000;
+		if (clk == 4500)
+			data |= 0x50124;
+		else if (clk == 6750)
+			data |= 0x30124;
+		else if (clk == 13500)
+			data |= 0x10124;
+		else
+			data |= 0x500 + 400000 / clk - 1;
+
+		sc2_write_sys(SMARTCARD_CLK_CTRL, data);
+		pr_error("%s S5 data:0x%0x\n", __func__, data);
+		return;
+	} else if (cpu_type == MESON_CPU_MAJOR_ID_T5M) {
+		data &= 0xFFF00000;
+		if (clk == 4500)
+			data |= 0x50924;
+		else if (clk == 6750)
+			data |= 0x30924;
+		else if (clk == 13500)
+			data |= 0x10924;
+		else
+			data |= 0x500 + 400000 / clk - 1;
+
+		sc2_write_sys(SMARTCARD_CLK_CTRL, data);
+		pr_error("%s T5M data:0x%0x\n", __func__, data);
+		return;
+	}
 	data &= 0xFFFFF900;
 	if (clk == 4500)
 		data |= 0x224;
@@ -1119,7 +1151,7 @@ static void smc_mp0_clk_set(int clk)
 		data |= 500000 / clk - 1;
 
 	sc2_write_sys(SMARTCARD_CLK_CTRL, data);
-	pr_error("%s data:0x%0x\n", __func__, data);
+	pr_error("%s other data:0x%0x\n", __func__, data);
 }
 
 static void smc_clk_enable(int enable)
@@ -3120,6 +3152,12 @@ static int smc_probe(struct platform_device *pdev)
 		else if (!t5w_smartcard)
 			clk_set_rate(aml_smartcard_clk, 4000000);
 	}
+	/* s5 and t5m chip add twice div to support 27M clk
+	 * for CLKCTRL_SC_CLK_CTRL, it extend to support 4.5M/6.75M/13.5M
+	 * it force to control register.
+	 */
+	if (cpu_type == MESON_CPU_MAJOR_ID_S5 || cpu_type == MESON_CPU_MAJOR_ID_T5M)
+		smartcard_mpll0 = 1;
 	if (smc) {
 		smc->init = 1;
 		smc->pdev = pdev;

@@ -2334,6 +2334,17 @@ static ssize_t hdmi_hdr_status_show(struct device *dev,
 	}
 	return len;
 }
+
+static ssize_t hdcp_auth_sts_show(struct device *dev,
+			  struct device_attribute *attr,
+			  char *buf)
+{
+	int pos = 0;
+
+	pos += sprintf(buf, "%d", rx_get_hdcp_auth_sts());
+	return pos;
+}
+
 static DEVICE_ATTR_RW(debug);
 static DEVICE_ATTR_RW(edid);
 static DEVICE_ATTR_RW(key);
@@ -2362,6 +2373,7 @@ static DEVICE_ATTR_RO(colorspace);
 static DEVICE_ATTR_RO(colordepth);
 static DEVICE_ATTR_RO(frac_mode);
 static DEVICE_ATTR_RO(hdmi_hdr_status);
+static DEVICE_ATTR_RO(hdcp_auth_sts);
 
 static int hdmirx_add_cdev(struct cdev *cdevp,
 			   const struct file_operations *fops,
@@ -2964,6 +2976,10 @@ static int hdmirx_probe(struct platform_device *pdev)
 	}
 	ret = device_create_file(hdevp->dev, &dev_attr_mode);
 	if (ret < 0) {
+		rx_pr("hdmirx: fail to create hdcp_auth_sts file\n");
+		goto fail_create_hdcp_auth_sts;
+	}
+	if (ret < 0) {
 		rx_pr("hdmirx: fail to create mode file\n");
 		goto fail_create_mode;
 	}
@@ -3333,6 +3349,8 @@ fail_kmalloc_pd_fifo:
 	return ret;
 fail_get_resource_irq:
 	return ret;
+fail_create_hdcp_auth_sts:
+	device_remove_file(hdevp->dev, &dev_attr_hdcp_auth_sts);
 fail_create_hdmi_hdr_status:
 	device_remove_file(hdevp->dev, &dev_attr_hdmi_hdr_status);
 fail_create_frac_mode:
@@ -3419,6 +3437,7 @@ static int hdmirx_remove(struct platform_device *pdev)
 	unregister_early_suspend(&hdmirx_early_suspend_handler);
 #endif
 	mutex_destroy(&hdevp->rx_lock);
+	device_remove_file(hdevp->dev, &dev_attr_hdcp_auth_sts);
 	device_remove_file(hdevp->dev, &dev_attr_hdmi_hdr_status);
 	device_remove_file(hdevp->dev, &dev_attr_frac_mode);
 	device_remove_file(hdevp->dev, &dev_attr_colordepth);

@@ -592,12 +592,12 @@ struct vsi_infoframe_st {
 	/*body by different format*/
 	union vsi_sbpkt_u {
 		struct payload_st {
-			u32 data[7];
+			u32 data[6];
 		} __packed payload;
 
 		/* video format 0x01*/
 		struct vsi_st {
-			u8 data[28];
+			u8 data[24];
 		} __packed vsi_st;
 
 		/* 3D: video format(0x2) */
@@ -693,8 +693,8 @@ struct vsi_infoframe_st {
 			u8 knee_point_y_hi:2;
 			u8 knee_point_x_lo:6;
 			u8 knee_point_y_lo;
-			/*pb17~26*/
-			u8 data[10]; /* val=0 */
+			/*pb18~26*/
+			u8 data[9]; /* val=0 */
 			u8 rsvd1:6;
 			u8 vsif_timing_mode:1;
 			u8 graphics_overlay_flag:1;
@@ -811,25 +811,25 @@ struct spd_infoframe_st {
 			u8 supported:1;
 			u8 enabled:1;
 			u8 active:1;
-			u8 cs_active:1;
-			u8 rsvd2:2;
-			u8 ld_disable:1;
-			u8 rsvd3:3;
+			//u8 cs_active:1;
+			u8 rsvd2:5;
+			//u8 ld_disable:1;
+			//u8 rsvd3:3;
 			u8 min_frame_rate;
 			u8 max_frame_rate;
 			/*pb9-pb27*/
 			u8 data[19];
 		} __packed freesync;
-		u8 data[28];
+		u8 data[27];
 		struct spd_data_st {
-	/*Vendor Name Character*/
-	u8 vendor_name[8];
-	/*Product Description Character*/
-	u8 product_des[16];
-	/*byte 25*/
-	u8 source_info;
+			/*Vendor Name Character*/
+			u8 vendor_name[8];
+			/*Product Description Character*/
+			u8 product_des[16];
+			/*byte 25*/
+			u8 source_info;
 			u8 rsvd[3];
-		} __packed spd_data;
+		} __packed spddata;
 	} __packed des_u;
 } __packed;
 
@@ -1154,4 +1154,5 @@ void rx_get_avi_info(struct avi_infoframe_st *st_pkt);
 void rx_get_vtem_info(void);
 void rx_get_aif_info(void);
 void dump_pktinfo_status(void);
+bool rx_is_specific_20_dev(void);
 #endif

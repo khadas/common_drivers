@@ -23,7 +23,7 @@
 #include "hdmi_rx_drv_ext.h"
 
 /* repeater */
-#define RX_VER0 "ver.2022/07/26"
+#define RX_VER0 "ver.2022/09/06"
 
 /*print type*/
 #define	LOG_EN		0x01
@@ -45,7 +45,7 @@
 #define EDID_DATA_LOG	0x20000
 #define RP_LOG		0x40000
 
-/* add aif parsing for t7 */
+/* reconfig phy when cable clk changed */
 #define RX_VER1 "ver.2022/11/17"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
@@ -82,6 +82,8 @@ enum chip_id_e {
 	CHIP_ID_T7,
 	CHIP_ID_T3,
 	CHIP_ID_T5W,
+	CHIP_ID_T5M,
+	CHIP_ID_T3X,
 };
 
 enum phy_ver_e {
@@ -92,6 +94,8 @@ enum phy_ver_e {
 	PHY_VER_T7,
 	PHY_VER_T3,
 	PHY_VER_T5W,
+	PHY_VER_T5M,
+	PHY_VER_T3X,
 };
 
 struct meson_hdmirx_data {
@@ -147,8 +151,8 @@ struct hdmirx_dev_s {
 #define HDMI_IOC_HDCP14_KEY_MODE _IOR(HDMI_IOC_MAGIC, 0x0d,\
 	enum hdcp14_key_mode_e)
 #define HDMI_IOC_HDCP22_NOT_SUPPORT _IO(HDMI_IOC_MAGIC, 0x0e)
-#define HDMI_IOC_SET_AUD_SAD	_IOW(HDMI_IOC_MAGIC, 0x0f, char*)
-#define HDMI_IOC_GET_AUD_SAD	_IOR(HDMI_IOC_MAGIC, 0x10, char*)
+#define HDMI_IOC_SET_AUD_SAD	_IOW(HDMI_IOC_MAGIC, 0x0f, int)
+#define HDMI_IOC_GET_AUD_SAD	_IOR(HDMI_IOC_MAGIC, 0x10, int)
 #define HDMI_IOC_GET_SPD_SRC_INFO	_IOR(HDMI_IOC_MAGIC, 0x11, struct spd_infoframe_st)
 
 #define IOC_SPD_INFO  _BIT(0)

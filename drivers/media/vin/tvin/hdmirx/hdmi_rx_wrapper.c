@@ -35,6 +35,10 @@
 #include "hdmi_rx_pktinfo.h"
 #include "hdmi_rx_edid.h"
 #include "hdmi_rx_drv_ext.h"
+#include "hdmi_rx_hw_t5.h"
+#include "hdmi_rx_hw_t7.h"
+#include "hdmi_rx_hw_tl1.h"
+#include "hdmi_rx_hw_tm2.h"
 
 static int pll_unlock_cnt;
 static int pll_unlock_max;
@@ -304,7 +308,7 @@ void hdmirx_fsm_var_init(void)
 		clk_unstable_max = 100;
 		esd_phy_rst_max = 4;
 		pll_unlock_max = 30;
-		stable_check_lvl = 0x17df;
+		stable_check_lvl = 0x17cf;
 		pll_lock_max = 2;
 		err_cnt_sum_max = 10;
 		hpd_wait_max = 40;
@@ -329,7 +333,9 @@ void hdmirx_fsm_var_init(void)
 		clk_unstable_max = 50;
 		esd_phy_rst_max = 16;
 		pll_unlock_max = 30;
-		stable_check_lvl = 0x7d3;
+		//do not to check colorspace changes
+		//Vdin can adapt it automatically
+		stable_check_lvl = 0x7c3;
 		pll_lock_max = 2;
 		err_cnt_sum_max = 10;
 		hpd_wait_max = 40;
@@ -1183,10 +1189,10 @@ static const u32 sr_tbl[][2] = {
 	{32000, 3000},
 	{44100, 2000},
 	{48000, 2000},
-	{88200, 3000},
-	{96000, 3000},
-	{176400, 3000},
-	{192000, 3000},
+	{88200, 4000},
+	{96000, 4000},
+	{176400, 5000},
+	{192000, 5000},
 	{0, 0}
 };
 
@@ -1321,7 +1327,7 @@ static bool fmt_vic_abnormal(void)
 			   rx.cur.hdcp14_state == 3) {
 		if (log_level & VIDEO_LOG)
 			rx_pr("hdcp sts err\n");
-		return true;
+		return false;
 	}
 	return false;
 }
@@ -1679,6 +1685,22 @@ bool rx_is_nosig(void)
 	return rx.no_signal;
 }
 
+static bool rx_is_color_space_stable(void)
+{
+	bool ret = true;
+
+	if (rx.chip_id < CHIP_ID_T7)
+		return ret;
+
+	if (rx.pre.colorspace != rx.cur.colorspace) {
+		ret = false;
+		if (log_level & VIDEO_LOG)
+			rx_pr("colorspace(%d=>%d),",
+			      rx.pre.colorspace,
+			      rx.cur.colorspace);
+	}
+	return ret;
+}
 /*
  * check timing info
  */
@@ -1728,15 +1750,6 @@ static bool rx_is_timing_stable(void)
 				rx_pr("vtotal(%d=>%d),",
 				      rx.pre.vtotal,
 				      rx.cur.vtotal);
-		}
-	}
-	if (stable_check_lvl & COLSPACE_EN) {
-		if (rx.pre.colorspace != rx.cur.colorspace) {
-			ret = false;
-			if (log_level & VIDEO_LOG)
-				rx_pr("colorspace(%d=>%d),",
-				      rx.pre.colorspace,
-				      rx.cur.colorspace);
 		}
 	}
 	if (stable_check_lvl & REFRESH_RATE_EN) {
@@ -1915,15 +1928,18 @@ static void signal_status_init(void)
 	//#endif
 }
 
-bool edid_ver_chg(enum hdcp_version_e pre, enum hdcp_version_e cur)
+bool edid_ver_need_chg(void)
 {
 	bool flag = false;
 
-	if (pre == HDCP_VER_NONE || pre == HDCP_VER_14) {
+	if (rx.fs_mode.hdcp_ver[rx.port] == HDCP_VER_NONE ||
+		rx.fs_mode.hdcp_ver[rx.port] == HDCP_VER_14) {
 		/* if detect hdcp22 auth, update to edid2.0 */
-		if (cur == HDCP_VER_22 &&
-		    rx.fs_mode.edid_ver[rx.port] != EDID_V20)
+		if ((rx.hdcp.hdcp_version == HDCP_VER_22 || rx_is_specific_20_dev()) &&
+			rx.fs_mode.edid_ver[rx.port] != EDID_V20) {
+			rx.fs_mode.hdcp_ver[rx.port] = HDCP_VER_22;
 			flag = true;
+		}
 	}
 	/* if change from hdcp22 to hdcp none/14,
 	 * need to update to edid1.4
@@ -1949,15 +1965,13 @@ void fs_mode_init(void)
 void hdcp_sts_update(void)
 {
 	unsigned char edid_auto = (edid_select >> (rx.port * 4)) & 0x2;
-	bool edid_chg = edid_ver_chg(rx.fs_mode.hdcp_ver[rx.port],
-				     rx.hdcp.hdcp_version);
 
-	if (rx.fs_mode.hdcp_ver[rx.port] != rx.hdcp.hdcp_version) {
-		rx.fs_mode.hdcp_ver[rx.port] = rx.hdcp.hdcp_version;
-		if (edid_auto && edid_chg) {
-			hdmi_rx_top_edid_update();
-			rx.state = FSM_HPD_LOW;
-		}
+	if (!edid_auto)
+		return;
+
+	if (edid_ver_need_chg()) {
+		hdmi_rx_top_edid_update();
+		rx.state = FSM_HPD_LOW;
 	}
 }
 
@@ -2703,6 +2717,8 @@ void skip_frame(unsigned int cnt)
 		rx.skip = cnt * rx.skip;
 		rx_pr("rx.skip = %d\n", rx.skip);
 	}
+	//do not depend on state mechine condition
+	rx_notify_vdin_skip_frame();
 }
 
 void wait_ddc_idle(void)
@@ -2731,7 +2747,12 @@ void hdmirx_open_port(enum tvin_port_e port)
 	i2c_err_cnt = 0;
 	dvi_check_en = true;
 	rx.ddc_filter_en = false;
-	//if (hdmirx_repeat_support())
+	if (hdmirx_repeat_support()) {
+		if (pre_port != rx.port)
+			rx.hdcp.stream_type = 0;
+		else if (rx.hdcp.hdcp_version == HDCP_VER_22)
+			hdmitx_reauth_request(rx.hdcp.stream_type | UPSTREAM_ACTIVE);
+	}
 		//rx.hdcp.repeat = repeat_plug;
 	//else
 		//rx.hdcp.repeat = 0;
@@ -2778,6 +2799,8 @@ void hdmirx_close_port(void)
 	if (disable_port_en)
 		rx_set_port_hpd(disable_port_num, 0);
 	hdmirx_top_irq_en(0, 0);
+	if (hdmirx_repeat_support())
+		hdmitx_reauth_request(UPSTREAM_INACTIVE);
 	/* extcon_set_state_sync(rx.rx_extcon_open, EXTCON_DISP_HDMI, 0); */
 	/* after port close, stop count DE/AVI infoframe */
 	rx.var.de_stable = false;
@@ -3199,7 +3222,6 @@ void rx_main_state_machine(void)
 			rx.state = FSM_WAIT_CLK_STABLE;
 			break;
 		}
-
 		dwc_rst_wait_cnt++;
 		if (dwc_rst_wait_cnt < dwc_rst_wait_cnt_max)
 			break;
@@ -3386,12 +3408,29 @@ void rx_main_state_machine(void)
 				rx_esm_reset(0);
 				break;
 			}
+		} else if (!rx_is_color_space_stable()) {
+			//Color space changes, no need to do EQ training
+			skip_frame(skip_frame_cnt);
+			if (++sig_unready_cnt >= sig_unready_max) {
+				/*sig_lost_lock_cnt = 0;*/
+				rx.unready_timestamp = rx.timestamp;
+				rx.err_code = ERR_TIMECHANGE;
+				rx_i2c_init();
+				rx_pr("colorspace changes from %d to %d\n",
+					  rx.pre.colorspace, rx.cur.colorspace);
+				rx.var.de_stable = false;
+				rx.hdcp.hdcp_pre_ver = rx.hdcp.hdcp_version;
+				/* need to clr to none, for dishNXT box */
+				hdmirx_output_en(false);
+				rx.state = FSM_SIG_WAIT_STABLE;
+				break;
+			}
 		} else {
 			sig_unready_cnt = 0;
 			one_frame_cnt = (1000 * 100 / rx.pre.frame_rate / 12) + 1;
 			if (rx.skip > 0) {
 				rx.skip--;
-			} else if (video_mute_enabled()) {
+			} else if (vpp_mute_enable) {
 				/* clear vpp mute after signal stable */
 				if (get_video_mute()) {
 					if (rx.var.mute_cnt++ < one_frame_cnt + 1)
@@ -3460,9 +3499,9 @@ void rx_main_state_machine(void)
 	/* for fsm debug */
 	if (rx.state != rx.pre_state) {
 		if (log_level & LOG_EN)
-			rx_pr("fsm %d(%s) to %d(%s)\n",
-			      rx.pre_state, fsm_st[rx.pre_state],
-			      rx.state, fsm_st[rx.state]);
+			rx_pr("fsm (%s) to (%s)\n",
+			      fsm_st[rx.pre_state],
+			      fsm_st[rx.state]);
 		rx.pre_state = rx.state;
 	}
 }
@@ -3644,7 +3683,7 @@ static void dump_video_status(void)
 	else if (rx.cur.colorspace == 3)
 		rx_pr("colorspace:YUV420\n");
 	else
-		rx_pr("colorspace %d,", rx.cur.colorspace);
+		rx_pr("colorspace:%d\n", rx.cur.colorspace);
 	rx_pr("colordepth %d\n", rx.cur.colordepth);
 	rx_pr("interlace %d\n", rx.cur.interlaced);
 	rx_pr("htotal %d\n", rx.cur.htotal);
@@ -3674,11 +3713,7 @@ static void dump_video_status(void)
 	rx_pr("dv ll = %d\n", rx.vs_info_details.low_latency);
 	//rx_pr("VTEM = %d\n", rx.vrr_en);
 	rx_pr("DRM = %d\n", rx_pkt_chk_attach_drm());
-	dump_clk_status();
-	if (rx.phy_ver == PHY_VER_TL1)
-		rx_pr("eq=%x\n",
-		      (rd_reg_hhi(HHI_HDMIRX_PHY_DCHD_CNTL1) >> 4) &
-		      0xffff);
+	rx_pr("freesync = %d\n-bit0 supported,bit1:enabled.bit2:active", rx.free_sync_sts);
 	rx_pr("edid_selected_ver: %s\n",
 	      edid_slt == EDID_AUTO ?
 	      "auto" : (edid_slt == EDID_V20 ? "2.0" : "1.4"));
@@ -3700,10 +3735,8 @@ static void dump_audio_status(void)
 	rx_pr(" CA=%u\n", a.auds_ch_alloc);
 	rx_pr("CTS=%d, N=%d,", a.cts, a.n);
 	rx_pr("acr clk=%d\n", a.arc);
-	if (rx.chip_id >= CHIP_ID_TL1) {
-		rx_get_audio_N_CTS(&val0, &val1);
-		rx_pr("top CTS:%d, N:%d\n", val1, val0);
-	}
+	rx_get_audio_N_CTS(&val0, &val1);
+	rx_pr("top CTS:%d, N:%d\n", val1, val0);
 	rx_pr("audio receive data:%d\n", auds_rcv_sts);
 	rx_pr("aud mute = %d", a.aud_mute_en);
 	rx_pr("overflow_cnt = %d", afifo_overflow_cnt);
@@ -4088,7 +4121,6 @@ void hdmirx_timer_handler(struct timer_list *t)
 		term_flag = 0;
 	}
 	rx_5v_monitor();
-	rx_check_repeat();
 	rx_dw_edid_monitor();
 	rx_clkmsr_monitor();
 	if (rx.open_fg) {

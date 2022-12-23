@@ -187,6 +187,16 @@ static struct notifier_block aml_hdcp22_pm_notifier = {
 	.notifier_call = aml_hdcp22_pm_notify,
 };
 
+static struct meson_hdmirx_data rx_t3x_data = {
+	.chip_id = CHIP_ID_T3X,
+	.phy_ver = PHY_VER_T3X,
+};
+
+static struct meson_hdmirx_data rx_t5m_data = {
+	.chip_id = CHIP_ID_T5M,
+	.phy_ver = PHY_VER_T5M,
+};
+
 static struct meson_hdmirx_data rx_t5w_data = {
 	.chip_id = CHIP_ID_T5W,
 	.phy_ver = PHY_VER_T5W,
@@ -250,6 +260,14 @@ static struct meson_hdmirx_data rx_gxtvbb_data = {
 #endif
 
 static const struct of_device_id hdmirx_dt_match[] = {
+	{
+		.compatible		= "amlogic, hdmirx_t3x",
+		.data			= &rx_t3x_data
+	},
+	{
+		.compatible		= "amlogic, hdmirx_t5m",
+		.data			= &rx_t5m_data
+	},
 	{
 		.compatible		= "amlogic, hdmirx_t5w",
 		.data			= &rx_t5w_data
@@ -521,7 +539,7 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
 
-	if (!rx.var.force_pattern) {
+	if (!rx.var.force_pattern && rx.chip_id < CHIP_ID_T7) {
 		/*prevent spurious pops or noise when pw down*/
 		if (rx.state == FSM_SIG_READY) {
 			avmuteflag = rx_get_avmute_sts();
@@ -1140,6 +1158,11 @@ void hdmirx_get_latency_info(struct tvin_sig_property_s *prop)
 static u32 emp_irq_cnt;
 void hdmirx_get_emp_info(struct tvin_sig_property_s *prop)
 {
+	//emp buffer not only stores DV_EMP packet, but also other packets.
+	//only DV_EMP is needed here
+	if (rx.vs_info_details.dolby_vision_flag != DV_EMP)
+		return;
+
 	prop->emp_data.size = rx.vs_info_details.emp_pkt_cnt;
 	if (rx.vs_info_details.emp_pkt_cnt)
 		memcpy(&prop->emp_data.empbuf,
@@ -1799,7 +1822,7 @@ static ssize_t edid_show(struct device *dev,
 				struct device_attribute *attr,
 				char *buf)
 {
-	return hdmirx_read_edid_buf(buf, HDCP14_KEY_SIZE);
+	return hdmirx_read_edid_buf(buf, MAX_EDID_BUF_SIZE);
 }
 
 static ssize_t edid_store(struct device *dev,
@@ -2842,10 +2865,12 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_pr("hdmirx: fail to create info attribute file\n");
 		goto fail_create_info_file;
 	}
-	ret = device_create_file(hdevp->dev, &dev_attr_esm_base);
-	if (ret < 0) {
-		rx_pr("hdmirx: fail to create esm_base attribute file\n");
-		goto fail_create_esm_base_file;
+	if (rx.chip_id < CHIP_ID_T7) {
+		ret = device_create_file(hdevp->dev, &dev_attr_esm_base);
+		if (ret < 0) {
+			rx_pr("hdmirx: fail to create esm_base attribute file\n");
+			goto fail_create_esm_base_file;
+		}
 	}
 	ret = device_create_file(hdevp->dev, &dev_attr_cec);
 	if (ret < 0) {
@@ -3135,10 +3160,11 @@ static int hdmirx_probe(struct platform_device *pdev)
 	eq_wq = create_singlethread_workqueue(hdevp->frontend.name);
 	INIT_DELAYED_WORK(&eq_dwork, eq_dwork_handler);
 
-	esm_wq = create_singlethread_workqueue(hdevp->frontend.name);
-	INIT_DELAYED_WORK(&esm_dwork, rx_hpd_to_esm_handle);
-	/* queue_delayed_work(eq_wq, &eq_dwork, msecs_to_jiffies(5)); */
-
+	if (rx.chip_id < CHIP_ID_T7) {
+		esm_wq = create_singlethread_workqueue(hdevp->frontend.name);
+		INIT_DELAYED_WORK(&esm_dwork, rx_hpd_to_esm_handle);
+		/* queue_delayed_work(eq_wq, &eq_dwork, msecs_to_jiffies(5)); */
+	}
 	/* create for aml phy init */
 	amlphy_wq = create_workqueue(hdevp->frontend.name);
 	INIT_WORK(&amlphy_dwork, aml_phy_init_handler);
@@ -3440,12 +3466,10 @@ static int aml_hdcp22_pm_notify(struct notifier_block *nb,
 				break;
 			msleep(20);
 		}
-		if (!hdcp22_kill_esm) {
+		if (!hdcp22_kill_esm)
 			rx_pr("hdcp22 kill ok!\n");
-		} else {
+		else
 			rx_pr("hdcp22 kill timeout!\n");
-			kill_esm_fail = 1;
-		}
 		hdcp_22_off();
 	} else if ((event == PM_POST_SUSPEND) && hdcp22_on) {
 		rx_pr("PM_POST_SUSPEND\n");
@@ -3474,15 +3498,6 @@ static int hdmirx_suspend(struct platform_device *pdev, pm_message_t state)
 	 */
 	rx_set_suspend_edid_clk(true);
 	rx_dig_clk_en(0);
-	if (rx.chip_id < CHIP_ID_T7) {
-		if (hdcp22_on) {
-			if (kill_esm_fail) {
-				rx_kill_esm();
-				kill_esm_fail = 0;
-				rx_pr("kill esm fail rst\n");
-			}
-		}
-	}
 	rx_pr("hdmirx: suspend success\n");
 	return 0;
 }

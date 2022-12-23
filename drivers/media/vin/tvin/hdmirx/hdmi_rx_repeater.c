@@ -29,6 +29,7 @@
 #include "hdmi_rx_hw.h"
 #include "hdmi_rx_wrapper.h"
 #include "hdmi_rx_edid.h"
+#include "hdmi_rx_hw_t7.h"
 /*edid original data from device*/
 static unsigned char receive_edid[MAX_RECEIVE_EDID];
 int receive_edid_len = MAX_RECEIVE_EDID;
@@ -40,10 +41,10 @@ MODULE_PARM_DESC(edid_len, "\n edid_len\n");
 module_param(edid_len, int, 0664);
 bool new_edid;
 /*original bksv from device*/
-unsigned char receive_hdcp[MAX_KSV_LIST_SIZE];
-int hdcp_array_len = MAX_KSV_LIST_SIZE;
-MODULE_PARM_DESC(receive_hdcp, "\n receive_hdcp\n");
-module_param_array(receive_hdcp, byte, &hdcp_array_len, 0664);
+//unsigned char receive_hdcp[MAX_KSV_LIST_SIZE];
+//int hdcp_array_len = MAX_KSV_LIST_SIZE;
+//MODULE_PARM_DESC(receive_hdcp, "\n receive_hdcp\n");
+//module_param_array(receive_hdcp, byte, &hdcp_array_len, 0664);
 int hdcp_len;
 int hdcp_repeat_depth;
 bool new_hdcp;
@@ -66,10 +67,10 @@ u8 ksvlist[10] = {
 	//0x88, 0xcb, 0xbc, 0xab, 0x95
 };
 
-unsigned char *rx_get_dw_hdcp_addr(void)
-{
-	return receive_hdcp;
-}
+//unsigned char *rx_get_dw_hdcp_addr(void)
+//{
+	//return receive_hdcp;
+///}
 
 void rx_start_repeater_auth(void)
 {
@@ -291,18 +292,6 @@ bool get_rx_active_sts(void)
 	return rx.open_fg;
 }
 EXPORT_SYMBOL(get_rx_active_sts);
-
-void rx_hdcp14_resume(void)
-{
-	hdcp22_kill_esm = 0;
-	/* extcon_set_state_sync(rx.rx_excton_rx22, EXTCON_DISP_HDMI, 0); */
-	rx_hdcp22_send_uevent(0);
-	hdmirx_wr_dwc(DWC_HDCP22_CONTROL, 0x1000);
-	/* extcon_set_state_sync(rx.rx_excton_rx22, EXTCON_DISP_HDMI, 1); */
-	rx_hdcp22_send_uevent(1);
-	hpd_to_esm = 1;
-	rx_pr("hdcp14 on\n");
-}
 
 void rx_set_repeater_support(bool enable)
 {

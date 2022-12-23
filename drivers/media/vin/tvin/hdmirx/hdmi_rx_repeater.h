@@ -23,6 +23,9 @@
 #define KSV_V_WR_TH			500
 #define KSV_LIST_WR_MAX			5
 #define KSV_LIST_WAIT_DELAY		500/*according to the timer,5s*/
+#define STREAMTYPE_UPDATE 0x10
+#define UPSTREAM_INACTIVE 0x20
+#define UPSTREAM_ACTIVE 0x40
 
 enum repeater_state_e {
 	REPEATER_STATE_WAIT_KSV,
@@ -30,6 +33,15 @@ enum repeater_state_e {
 	REPEATER_STATE_IDLE,
 	REPEATER_STATE_START,
 };
+
+struct hdcp14_topo_s {
+	unsigned char max_cascade_exceeded:1;
+	unsigned char depth:3;
+	unsigned char rsvd : 4;
+	unsigned char max_devs_exceeded:1;
+	unsigned char device_count:7; /* 1 ~ 127 */
+	unsigned char ksv_list[HDCP14_KSV_MAX_COUNT * 5];
+} __packed;
 
 struct hdcp_topo_s {
 	unsigned char hdcp_ver;
@@ -53,17 +65,18 @@ struct hdcp_hw_info_s {
 extern int receive_edid_len;
 extern int tx_hpd_event;
 extern bool new_edid;
-//extern int hdcp_array_len;
+extern int hdcp_array_len;
 extern int hdcp_len;
 extern int hdcp_repeat_depth;
 extern bool new_hdcp;
 extern bool repeat_plug;
 extern int up_phy_addr;/*d c b a 4bit*/
-//extern unsigned char receive_hdcp[MAX_KSV_LIST_SIZE];
+extern unsigned char receive_hdcp[MAX_KSV_LIST_SIZE];
 extern u8 ksvlist[10];
 
 int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 				     unsigned long value, void *p);
+u8 hdmitx_reauth_request(u8 hdcp_version);
 /*#ifdef CONFIG_AMLOGIC_HDMITX
  *	u8 hdmitx_reauth_request(u8 hdcp_version);
  *#endif

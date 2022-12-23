@@ -450,6 +450,11 @@ void hdmirx_dec_stop(struct tvin_frontend_s *fe, enum tvin_port_e port)
 
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
+	if (vpp_mute_enable) {
+		if (get_video_mute() && rx.vpp_mute)
+			set_video_mute(false);
+		rx.vpp_mute = false;
+	}
 	/* parm->info.fmt = TVIN_SIG_FMT_NULL; */
 	/* parm->info.status = TVIN_SIG_STATUS_NULL; */
 	rx_pr("%s ok\n", __func__);
@@ -493,8 +498,9 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 	parm->info.status = TVIN_SIG_STATUS_NULL;
 	/* clear vpp mute, such as after unplug */
 	if (vpp_mute_enable) {
-		if (get_video_mute())
+		if (get_video_mute() && rx.vpp_mute)
 			set_video_mute(false);
+		rx.vpp_mute = false;
 	}
 	rx_pr("%s ok\n", __func__);
 }
@@ -1013,7 +1019,8 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop)
 		prop->hdr10p_info.hdr10p_on = false;
 		last_vsi_state = rx.vs_info_details.vsi_state;
 	}
-	prop->dolby_vision = rx.vs_info_details.dolby_vision_flag;
+	if (rx.pre.colorspace != E_COLOR_YUV420)
+		prop->dolby_vision = rx.vs_info_details.dolby_vision_flag;
 	switch (rx.vs_info_details.vsi_state) {
 	case E_VSI_HDR10PLUS:
 		prop->hdr10p_info.hdr10p_on = rx.vs_info_details.hdr10plus;
@@ -1110,7 +1117,7 @@ void hdmirx_get_latency_info(struct tvin_sig_property_s *prop)
 		rx.vs_info_details.hdmi_allm || rx.vs_info_details.dv_allm;
 	prop->latency.it_content = rx.cur.it_content;
 	prop->latency.cn_type = rx.cur.cn_type;
-
+#ifdef CONFIG_AMLOGIC_HDMITX
 	if (rx.open_fg  &&
 		(latency_info.allm_mode != rx.vs_info_details.hdmi_allm ||
 		latency_info.it_content != rx.cur.it_content ||
@@ -1124,6 +1131,7 @@ void hdmirx_get_latency_info(struct tvin_sig_property_s *prop)
 		 *#endif
 		 */
 	}
+#endif
 }
 
 static u32 emp_irq_cnt;
@@ -1134,9 +1142,9 @@ void hdmirx_get_emp_info(struct tvin_sig_property_s *prop)
 		memcpy(&prop->emp_data.empbuf,
 		       emp_buf, rx.vs_info_details.emp_pkt_cnt * 32);
 #ifndef HDMIRX_SEND_INFO_TO_VDIN
-	if (emp_irq_cnt == rx.empbuff.irqcnt)
+	if (emp_irq_cnt == rx.emp_buff.irq_cnt)
 		rx.vs_info_details.emp_pkt_cnt = 0;
-	emp_irq_cnt = rx.empbuff.irqcnt;
+	emp_irq_cnt = rx.emp_buff.irq_cnt;
 #endif
 }
 
@@ -1345,6 +1353,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 	u32 param = 0, temp_val, temp;
 	//unsigned int size = sizeof(struct pd_infoframe_s);
 	struct pd_infoframe_s pkt_info;
+	struct spd_infoframe_st *spd_pkt;
 	void *srcbuff;
 	u8 sad_data[30];
 	u8 len = 0;
@@ -1528,6 +1537,19 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		}
 		if (!rx_edid_set_aud_sad(sad_data, len))
 			rx_pr("sad data length err\n");
+		break;
+	case HDMI_IOC_GET_SPD_SRC_INFO:
+		spd_pkt = (struct spd_infoframe_st *)&rx_pkt.spd_info;
+		if (!argp)
+			return -EINVAL;
+		mutex_lock(&devp->rx_lock);
+		if (copy_to_user(argp, spd_pkt, sizeof(struct spd_infoframe_st))) {
+			pr_err("spd src info err\n");
+			ret = -EFAULT;
+			mutex_unlock(&devp->rx_lock);
+			break;
+		}
+		mutex_unlock(&devp->rx_lock);
 		break;
 	default:
 		ret = -ENOIOCTLCMD;
@@ -2159,6 +2181,114 @@ static ssize_t audio_blk_store(struct device *dev,
 	return count;
 }
 
+static ssize_t mode_show(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
+{
+	ssize_t len = 0;
+
+	if (abs(rx.cur.hactive - 3840) < 5 && abs(rx.cur.vactive - 2160) < 5) {
+		len += snprintf(buf + len, PAGE_SIZE, "2160");
+	} else if (abs(rx.cur.hactive - 1920) < 5 && abs(rx.cur.vactive - 2160) < 5 &&
+			   rx.cur.colorspace == E_COLOR_YUV420) {
+		len += snprintf(buf + len, PAGE_SIZE, "2160");
+	} else if (abs(rx.cur.hactive - 1920) < 5 && abs(rx.cur.vactive - 1080) < 5) {
+		len += snprintf(buf + len, PAGE_SIZE, "1080");
+	} else if (abs(rx.cur.hactive - 1280) < 5 && abs(rx.cur.vactive - 720) < 5) {
+		len += snprintf(buf + len, PAGE_SIZE, "720");
+	} else if (abs(rx.cur.hactive - 720) < 5 && abs(rx.cur.vactive - 480) < 5) {
+		len += snprintf(buf + len, PAGE_SIZE, "480");
+	} else if (abs(rx.cur.hactive - 720) < 5 && abs(rx.cur.vactive - 576) < 5) {
+		len += snprintf(buf + len, PAGE_SIZE, "576");
+	} else if ((rx.cur.hactive != 0) && (rx.cur.vactive != 0)) {
+		len += snprintf(buf + len, PAGE_SIZE, "%dx%d",
+		rx.cur.hactive, rx.cur.vactive);
+	} else {
+		len += snprintf(buf + len, PAGE_SIZE, "invalid");
+		return len;
+	}
+	len += snprintf(buf + len, PAGE_SIZE, "%s",
+			(rx.cur.interlaced) ? "i" : "p");
+	len += snprintf(buf + len, PAGE_SIZE, "%dhz",
+			(rx.cur.frame_rate + 50) / 100);
+
+	return len;
+}
+
+static ssize_t colorspace_show(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
+{
+	ssize_t len = 0;
+
+	if (rx.cur.colorspace == E_COLOR_RGB)
+		len += snprintf(buf + len, PAGE_SIZE, "rgb");
+	else if (rx.cur.colorspace == E_COLOR_YUV422)
+		len += snprintf(buf + len, PAGE_SIZE, "422");
+	else if (rx.cur.colorspace == E_COLOR_YUV444)
+		len += snprintf(buf + len, PAGE_SIZE, "444");
+	else if (rx.cur.colorspace == E_COLOR_YUV420)
+		len += snprintf(buf + len, PAGE_SIZE, "420");
+	else
+		len += snprintf(buf + len, PAGE_SIZE, "invalid\n");
+
+	return len;
+}
+
+static ssize_t colordepth_show(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
+{
+	ssize_t len = 0;
+
+	len += snprintf(buf + len, PAGE_SIZE, "%d", rx.cur.colordepth);
+
+	return len;
+}
+
+static ssize_t frac_mode_show(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
+{
+	ssize_t len = 0;
+
+	if (rx.cur.frame_rate && (rx.cur.frame_rate % 100 == 0))
+		len += snprintf(buf + len, PAGE_SIZE, "0");
+	else
+		len += snprintf(buf + len, PAGE_SIZE, "1");
+
+	return len;
+}
+
+static ssize_t hdmi_hdr_status_show(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
+{
+	ssize_t len = 0;
+	struct drm_infoframe_st *drmpkt;
+
+	drmpkt = (struct drm_infoframe_st *)&rx_pkt.drm_info;
+
+	if (rx.vs_info_details.dolby_vision_flag == 1) {
+		if (rx.vs_info_details.low_latency)
+			len += snprintf(buf + len, PAGE_SIZE, "DolbyVision-Lowlatency");
+		else
+			len += snprintf(buf + len, PAGE_SIZE, "DolbyVision-Std");
+	} else if (rx.vs_info_details.hdr10plus != 0) {
+		len += snprintf(buf + len, PAGE_SIZE, "HDR10Plus");
+	} else if (drmpkt->des_u.tp1.eotf == EOTF_SDR) {
+		len += snprintf(buf + len, PAGE_SIZE, "SDR");
+	} else if (drmpkt->des_u.tp1.eotf == EOTF_HDR) {
+		len += snprintf(buf + len, PAGE_SIZE, "HDR");
+	} else if (drmpkt->des_u.tp1.eotf == EOTF_SMPTE_ST_2048) {
+		len += snprintf(buf + len, PAGE_SIZE, "HDR10-GAMMA_ST2084");
+	} else if (drmpkt->des_u.tp1.eotf == EOTF_HLG) {
+		len += snprintf(buf + len, PAGE_SIZE, "HDR10-GAMMA_HLG");
+	} else {
+		len += snprintf(buf + len, PAGE_SIZE, "SDR");
+	}
+	return len;
+}
 static DEVICE_ATTR_RW(debug);
 static DEVICE_ATTR_RW(edid);
 static DEVICE_ATTR_RW(key);
@@ -2173,6 +2303,7 @@ static DEVICE_ATTR_RW(reset22);
 static DEVICE_ATTR_RW(hdcp_version);
 static DEVICE_ATTR_RW(hw_info);
 //static DEVICE_ATTR_RW(edid_dw);
+//static DEVICE_ATTR_RW(ksvlist);
 static DEVICE_ATTR_RW(earc_cap_ds);
 static DEVICE_ATTR_RW(edid_select);
 static DEVICE_ATTR_RW(audio_blk);
@@ -2181,6 +2312,11 @@ static DEVICE_ATTR_RW(edid_with_port);
 static DEVICE_ATTR_RW(vrr_func_ctrl);
 static DEVICE_ATTR_RO(hdcp14_onoff);
 static DEVICE_ATTR_RO(hdcp22_onoff);
+static DEVICE_ATTR_RO(mode);
+static DEVICE_ATTR_RO(colorspace);
+static DEVICE_ATTR_RO(colordepth);
+static DEVICE_ATTR_RO(frac_mode);
+static DEVICE_ATTR_RO(hdmi_hdr_status);
 
 static int hdmirx_add_cdev(struct cdev *cdevp,
 			   const struct file_operations *fops,
@@ -2313,40 +2449,40 @@ void rx_emp_resource_allocate(struct device *dev)
 {
 	if (rx.chip_id >= CHIP_ID_TL1) {
 		/* allocate buffer */
-		if (!rx.empbuff.store_a)
-			rx.empbuff.store_a =
+		if (!rx.emp_buff.store_a)
+			rx.emp_buff.store_a =
 				kmalloc(EMP_BUFFER_SIZE, GFP_KERNEL);
 		else
 			rx_pr("malloc emp buffer err\n");
 
-		if (rx.empbuff.store_a)
-			rx.empbuff.store_b =
-				rx.empbuff.store_a + (EMP_BUFFER_SIZE >> 1);
+		if (rx.emp_buff.store_a)
+			rx.emp_buff.store_b =
+				rx.emp_buff.store_a + (EMP_BUFFER_SIZE >> 1);
 		else
 			rx_pr("emp buff err-0\n");
-		rx_pr("pktbuffa=0x%p\n", rx.empbuff.store_a);
-		rx_pr("pktbuffb=0x%p\n", rx.empbuff.store_b);
-		rx.empbuff.dump_mode = DUMP_MODE_EMP;
+		rx_pr("pkt_buff_a=0x%p\n", rx.emp_buff.store_a);
+		rx_pr("pkt_buff_b=0x%p\n", rx.emp_buff.store_b);
+		rx.emp_buff.dump_mode = DUMP_MODE_EMP;
 		/* allocate buffer for hw access*/
-		rx.empbuff.pg_addr =
+		rx.emp_buff.pg_addr =
 			dma_alloc_from_contiguous(dev,
-						  EMP_BUFFER_SIZE >> PAGE_SHIFT, 0, false);
-		if (rx.empbuff.pg_addr) {
+						  EMP_BUFFER_SIZE >> PAGE_SHIFT, 0, 0);
+		if (rx.emp_buff.pg_addr) {
 			/* hw access */
 			/* page to real physical address*/
-			rx.empbuff.p_addr_a =
-				page_to_phys(rx.empbuff.pg_addr);
-			rx.empbuff.p_addr_b =
-				rx.empbuff.p_addr_a + (EMP_BUFFER_SIZE >> 1);
+			rx.emp_buff.p_addr_a =
+				page_to_phys(rx.emp_buff.pg_addr);
+			rx.emp_buff.p_addr_b =
+				rx.emp_buff.p_addr_a + (EMP_BUFFER_SIZE >> 1);
 			//page_address
-			rx_pr("buffa paddr=0x%p\n",
-			      (void *)rx.empbuff.p_addr_a);
+			rx_pr("buff_a paddr=0x%p\n",
+			      (void *)rx.emp_buff.p_addr_a);
 			rx_pr("buffb paddr=0x%p\n",
-			      (void *)rx.empbuff.p_addr_b);
+			      (void *)rx.emp_buff.p_addr_b);
 		} else {
 			rx_pr("emp buff err-1\n");
 		}
-		rx.empbuff.emppktcnt = 0;
+		rx.emp_buff.emp_pkt_cnt = 0;
 	}
 }
 
@@ -2384,35 +2520,35 @@ void rx_tmds_resource_allocate(struct device *dev)
 	/*struct page *pg_addr;*/
 
 	if (rx.chip_id >= CHIP_ID_TL1) {
-		if (rx.empbuff.dump_mode == DUMP_MODE_EMP) {
-			if (rx.empbuff.pg_addr) {
+		if (rx.emp_buff.dump_mode == DUMP_MODE_EMP) {
+			if (rx.emp_buff.pg_addr) {
 				dma_release_from_contiguous(dev,
-							    rx.empbuff.pg_addr,
+							    rx.emp_buff.pg_addr,
 							    EMP_BUFFER_SIZE >> PAGE_SHIFT);
 				/*free_reserved_area();*/
-				rx.empbuff.pg_addr = 0;
+				rx.emp_buff.pg_addr = 0;
 				rx_pr("release emp data buffer\n");
 			}
 		} else {
-			if (rx.empbuff.pg_addr)
+			if (rx.emp_buff.pg_addr)
 				dma_release_from_contiguous(dev,
-							    rx.empbuff.pg_addr,
+							    rx.emp_buff.pg_addr,
 							    TMDS_BUFFER_SIZE >> PAGE_SHIFT);
-			rx.empbuff.pg_addr = 0;
+			rx.emp_buff.pg_addr = 0;
 			rx_pr("release pre tmds data buffer\n");
 		}
 
 		/* allocate tmds data buffer */
-		rx.empbuff.pg_addr =
+		rx.emp_buff.pg_addr =
 			dma_alloc_from_contiguous(dev, TMDS_BUFFER_SIZE >> PAGE_SHIFT, 0, 0);
 
-		if (rx.empbuff.pg_addr)
-			rx.empbuff.p_addr_a =
-				page_to_phys(rx.empbuff.pg_addr);
+		if (rx.emp_buff.pg_addr)
+			rx.emp_buff.p_addr_a =
+				page_to_phys(rx.emp_buff.pg_addr);
 		else
 			rx_pr("allocate tmds data buff fail\n");
-		rx.empbuff.dump_mode = DUMP_MODE_TMDS;
-		rx_pr("buffa paddr=0x%p\n", (void *)rx.empbuff.p_addr_a);
+		rx.emp_buff.dump_mode = DUMP_MODE_TMDS;
+		rx_pr("buff_a paddr=0x%p\n", (void *)rx.emp_buff.p_addr_a);
 	}
 }
 
@@ -2422,7 +2558,31 @@ void rx_tmds_resource_allocate(struct device *dev)
  */
 void rx_emp_data_capture(void)
 {
-	return;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+	struct file *filp = NULL;
+	loff_t pos = 0;
+	void *buf = NULL;
+	char *path = "/data/emp_data.bin";
+	static unsigned int offset;
+
+	filp = filp_open(path, O_RDWR | O_CREAT, 0666);
+
+	if (IS_ERR(filp)) {
+		rx_pr("create %s error.\n", path);
+		return;
+	}
+
+	pos += offset;
+	/*start buffer address*/
+	buf = rx.emp_buff.ready;
+	/*write size*/
+	offset = rx.emp_buff.emp_pkt_cnt * 32;
+	vfs_write(filp, buf, offset, &pos);
+	rx_pr("write from 0x%x to 0x%x to %s.\n",
+	      0, 0 + offset, path);
+	vfs_fsync(filp, 0);
+	filp_close(filp, NULL);
+#endif
 }
 
 /*
@@ -2431,8 +2591,95 @@ void rx_emp_data_capture(void)
  */
 void rx_tmds_data_capture(void)
 {
-	return;
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+	/* data to terminal or save a file */
+	struct file *filp = NULL;
+	loff_t pos = 0;
+	char *path = "/data/tmds_data.bin";
+	unsigned int offset = 0;
+	char *src_v_addr;
+	unsigned int recv_pagenum = 0, i, j;
+	unsigned int recv_byte_cnt;
+	struct page *pg_addr;
+	phys_addr_t p_addr;
+	char *tmp_buff;
+	unsigned int *paddr;
+
+	filp = filp_open(path, O_RDWR | O_CREAT, 0666);
+
+	if (IS_ERR(filp)) {
+		pr_info("create %s error.\n", path);
+		return;
+	}
+
+	tmp_buff = kmalloc(PAGE_SIZE + 16, GFP_KERNEL);
+	if (!tmp_buff) {
+		rx_pr("tmds malloc buffer err\n");
+		return;
+	}
+	memset(tmp_buff, 0, PAGE_SIZE);
+	recv_byte_cnt = rx.emp_buff.tmds_pkt_cnt * 4;
+	recv_pagenum = (recv_byte_cnt >> PAGE_SHIFT) + 1;
+
+	rx_pr("total byte:%d page:%d\n", recv_byte_cnt, recv_pagenum);
+	for (i = 0; i < recv_pagenum; i++) {
+		/* one page 4k,tmds data physical address, need map v addr */
+		p_addr = rx.emp_buff.p_addr_a + i * PAGE_SIZE;
+		pg_addr = phys_to_page(p_addr);
+		src_v_addr = kmap(pg_addr);
+		dma_sync_single_for_cpu(hdmirx_dev,
+					p_addr,
+					PAGE_SIZE,
+					DMA_TO_DEVICE);
+		pos = i * PAGE_SIZE;
+		if (recv_byte_cnt >= PAGE_SIZE) {
+			offset = PAGE_SIZE;
+			memcpy(tmp_buff, src_v_addr, PAGE_SIZE);
+			vfs_write(filp, tmp_buff, offset, &pos);
+			recv_byte_cnt -= PAGE_SIZE;
+		} else {
+			offset = recv_byte_cnt;
+			memcpy(tmp_buff, src_v_addr, recv_byte_cnt);
+			vfs_write(filp, tmp_buff, offset, &pos);
+			recv_byte_cnt = 0;
+		}
+
+		/* release current page */
+		kunmap(pg_addr);
+	}
+
+	/* for test */
+	for (i = 0; i < recv_pagenum; i++) {
+		p_addr = rx.emp_buff.p_addr_a + i * PAGE_SIZE;
+		pg_addr = phys_to_page(p_addr);
+		/* p addr map to v addr*/
+		paddr = kmap(pg_addr);
+		for (j = 0; j < PAGE_SIZE;) {
+			*paddr = 0xaabbccdd;
+			paddr++;
+			j += 4;
+		}
+		rx_pr(".");
+		dma_sync_single_for_device(hdmirx_dev,
+					   p_addr,
+					   PAGE_SIZE,
+					   DMA_TO_DEVICE);
+		/* release current page */
+		kunmap(pg_addr);
+	}
+
+	kfree(tmp_buff);
+	rx_pr("write to %s\n", path);
+	vfs_fsync(filp, 0);
+	filp_close(filp, NULL);
+#endif
 }
+
+/* for HDMIRX/CEC notify */
+#define HDMITX_PLUG                     1
+#define HDMITX_UNPLUG                   2
+#define HDMITX_PHY_ADDR_VALID           3
+#define HDMITX_HDCP14_KSVLIST           4
 
 #ifdef CONFIG_AMLOGIC_MEDIA_VRR
 static int rx_vrr_notify_handler(struct notifier_block *nb,
@@ -2666,6 +2913,31 @@ static int hdmirx_probe(struct platform_device *pdev)
 	if (ret < 0) {
 		rx_pr("hdmirx: fail to create hdcp22_onoff file\n");
 		goto fail_create_hdcp22_onoff;
+	}
+	ret = device_create_file(hdevp->dev, &dev_attr_mode);
+	if (ret < 0) {
+		rx_pr("hdmirx: fail to create mode file\n");
+		goto fail_create_mode;
+	}
+	ret = device_create_file(hdevp->dev, &dev_attr_colorspace);
+	if (ret < 0) {
+		rx_pr("hdmirx: fail to create colorspace file\n");
+		goto fail_create_colorspace;
+	}
+	ret = device_create_file(hdevp->dev, &dev_attr_colordepth);
+	if (ret < 0) {
+		rx_pr("hdmirx: fail to create colordepth file\n");
+		goto fail_create_colordepth;
+	}
+	ret = device_create_file(hdevp->dev, &dev_attr_frac_mode);
+	if (ret < 0) {
+		rx_pr("hdmirx: fail to create frac_mode file\n");
+		goto fail_create_frac_mode;
+	}
+	ret = device_create_file(hdevp->dev, &dev_attr_hdmi_hdr_status);
+	if (ret < 0) {
+		rx_pr("hdmirx: fail to create hdmi_hdr_status file\n");
+		goto fail_create_hdmi_hdr_status;
 	}
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (!res) {
@@ -3005,6 +3277,16 @@ fail_kmalloc_pd_fifo:
 	return ret;
 fail_get_resource_irq:
 	return ret;
+fail_create_hdmi_hdr_status:
+	device_remove_file(hdevp->dev, &dev_attr_hdmi_hdr_status);
+fail_create_frac_mode:
+	device_remove_file(hdevp->dev, &dev_attr_frac_mode);
+fail_create_colordepth:
+	device_remove_file(hdevp->dev, &dev_attr_colordepth);
+fail_create_colorspace:
+	device_remove_file(hdevp->dev, &dev_attr_colorspace);
+fail_create_mode:
+	device_remove_file(hdevp->dev, &dev_attr_mode);
 fail_create_hdcp22_onoff:
 	device_remove_file(hdevp->dev, &dev_attr_hdcp22_onoff);
 fail_create_hdcp14_onoff:
@@ -3019,6 +3301,8 @@ fail_create_vrr_func_ctrl:
 	device_remove_file(hdevp->dev, &dev_attr_vrr_func_ctrl);
 fail_create_earc_cap_ds:
 	device_remove_file(hdevp->dev, &dev_attr_earc_cap_ds);
+//fail_create_ksvlist:
+	//device_remove_file(hdevp->dev, &dev_attr_ksvlist);
 //fail_create_edid_dw:
 	//device_remove_file(hdevp->dev, &dev_attr_edid_dw);
 fail_create_hw_info:
@@ -3079,6 +3363,11 @@ static int hdmirx_remove(struct platform_device *pdev)
 	unregister_early_suspend(&hdmirx_early_suspend_handler);
 #endif
 	mutex_destroy(&hdevp->rx_lock);
+	device_remove_file(hdevp->dev, &dev_attr_hdmi_hdr_status);
+	device_remove_file(hdevp->dev, &dev_attr_frac_mode);
+	device_remove_file(hdevp->dev, &dev_attr_colordepth);
+	device_remove_file(hdevp->dev, &dev_attr_colorspace);
+	device_remove_file(hdevp->dev, &dev_attr_mode);
 	device_remove_file(hdevp->dev, &dev_attr_hdcp22_onoff);
 	device_remove_file(hdevp->dev, &dev_attr_hdcp14_onoff);
 	device_remove_file(hdevp->dev, &dev_attr_scan_mode);
@@ -3110,6 +3399,21 @@ static int hdmirx_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_AMLOGIC_HDMITX
+int get_tx_boot_hdr_priority(char *str)
+{
+	unsigned int val = 0;
+
+	if ((strncmp("1", str, 1) == 0) || (strncmp("2", str, 1) == 0)) {
+		val = str[0] - '0';
+		tx_hdr_priority = val;
+		pr_info("tx_hdr_priority: %d\n", val);
+	}
+	return 0;
+}
+__setup("hdr_priority=", get_tx_boot_hdr_priority);
+#endif
+
 static int aml_hdcp22_pm_notify(struct notifier_block *nb,
 				unsigned long event, void *dummy)
 {
@@ -3126,10 +3430,12 @@ static int aml_hdcp22_pm_notify(struct notifier_block *nb,
 				break;
 			msleep(20);
 		}
-		if (!hdcp22_kill_esm)
+		if (!hdcp22_kill_esm) {
 			rx_pr("hdcp22 kill ok!\n");
-		else
+		} else {
 			rx_pr("hdcp22 kill timeout!\n");
+			kill_esm_fail = 1;
+		}
 		hdcp_22_off();
 	} else if ((event == PM_POST_SUSPEND) && hdcp22_on) {
 		rx_pr("PM_POST_SUSPEND\n");
@@ -3158,6 +3464,15 @@ static int hdmirx_suspend(struct platform_device *pdev, pm_message_t state)
 	 */
 	rx_set_suspend_edid_clk(true);
 	rx_dig_clk_en(0);
+	if (rx.chip_id < CHIP_ID_T7) {
+		if (hdcp22_on) {
+			if (kill_esm_fail) {
+				rx_kill_esm();
+				kill_esm_fail = 0;
+				rx_pr("kill esm fail rst\n");
+			}
+		}
+	}
 	rx_pr("hdmirx: suspend success\n");
 	return 0;
 }

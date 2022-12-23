@@ -69,7 +69,7 @@ struct st_pkt_test_buff *pkt_testbuff;
 void rx_pkt_status(void)
 {
 	/*u32 i;*/
-
+	rx_pr("pkt module ver: 1.1\n");
 	//rx_pr("packet_fifo_cfg=0x%x\n", packet_fifo_cfg);
 	/*rx_pr("pdec_ists_en=0x%x\n\n", pdec_ists_en);*/
 	rx_pr("fifo_Int_cnt=%d\n", rxpktsts.fifo_int_cnt);
@@ -100,7 +100,10 @@ void rx_pkt_status(void)
 	rx_pr("pkt_cnt_nvbi_ex=%d\n", rxpktsts.pkt_cnt_nvbi_ex);
 	rx_pr("pkt_cnt_emp_ex=%d\n", rxpktsts.pkt_cnt_emp_ex);
 	rx_pr("pkt_chk_flg=%d\n", rxpktsts.pkt_chk_flg);
-
+	rx_pr("FIFO_STS=0x%x(b31-b16/b15-b0)\n",
+	      hdmirx_rd_dwc(DWC_PDEC_FIFO_STS));
+	rx_pr("FIFO_STS1=0x%x(b15-b0)\n",
+	      hdmirx_rd_dwc(DWC_PDEC_FIFO_STS1));
 }
 
 void rx_pkt_debug(void)
@@ -534,6 +537,51 @@ static void rx_pktdump_avi(void *pdata)
 	rx_pr(">------------------>end\n");
 }
 
+#define WHITE_LIST_SIZE 25
+#define DEVICE_CNT 4
+const u8 spd_white_list[DEVICE_CNT][WHITE_LIST_SIZE] = {
+	/* ps5 */
+	{0x53, 0x43, 0x45, 0x49, 0x0, 0x0, 0x0, 0x0, 0x50, 0x53, 0x35, 0x0, 0x0,
+		0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8},
+	/* xbox one*/
+	{0x4d, 0x53, 0x46, 0x54, 0x0, 0x0, 0x0, 0x0, 0x58, 0x62, 0x6f, 0x78,
+		0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8},
+	/* ps */
+	{0x53, 0x43, 0x45, 0x49, 0x0, 0x0, 0x0, 0x0, 0x50, 0x53, 0x34, 0x0,
+		0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8},
+	/* xbox one series*/
+	{0x4d, 0x53, 0x46, 0x54, 0x0, 0x0, 0x0, 0x0, 0x58, 0x62, 0x6f, 0x78,
+		0x20, 0x4f, 0x6e, 0x65, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8},
+	/* test dev,for debug only */
+	/*{0x41, 0x6d, 0x6c, 0x6f, 0x67, 0x69, 0x63, 0x0, 0x4d, 0x42, 0x6f, 0x78,*/
+		/*0x20, 0x4d, 0x65, 0x73, 0x6f, 0x6e, 0x20, 0x52, 0x65, 0x66, 0x0, 0x0, 0x1},*/
+};
+
+bool rx_is_specific_20_dev(void)
+{
+	struct spd_infoframe_st *spd_pkt;
+	bool ret = false;
+	int i;
+
+	spd_pkt = (struct spd_infoframe_st *)&rx_pkt.spd_info;
+	if (log_level & 0x1000) {
+		rx_pr("type: 0x%x\n", spd_pkt->pkttype);
+		rx_pr("ver: %d\n", spd_pkt->version);
+		rx_pr("length: %d\n", spd_pkt->length);
+
+		rx_pr("vendor name: %s\n", spd_pkt->des_u.spd_data.vendor_name);
+		rx_pr("product des: %s\n", spd_pkt->des_u.spd_data.product_des);
+		rx_pr("source info: 0x%x\n", spd_pkt->des_u.spd_data.source_info);
+	}
+	for (i = 0; i < DEVICE_CNT; i++) {
+		if (!memcmp((char *)spd_pkt + 5, spd_white_list[i], WHITE_LIST_SIZE)) {
+			ret = true;
+			if (log_level & 0x1000)
+				rx_pr("white dev=%d\n", i);
+		}
+	}
+	return ret;
+}
 static void rx_pktdump_spd(void *pdata)
 {
 	struct spd_infoframe_st *pktdata = pdata;
@@ -1039,6 +1087,11 @@ void rx_pkt_get_vsi_ex(void *pktinfo)
 				if ((tmp >> 1) & 1)
 					pkt->ieee = IEEE_DV_PLUS_ALLM;
 			}
+		} else if (rx_vsif_type & VSIF_TYPE_HDMI14) {
+			pkt->pkttype = PKT_TYPE_INFOFRAME_VSI;
+			pkt->length = hdmirx_rd_cor(VSIRX_LENGTH_DP3_IVCRX) & 0x1f;
+			pkt->ver_st.version = 1;//hdmirx_rd_cor(VSIRX_VERS_DP3_IVCRX);
+			pkt->ieee = IEEE_VSI14;
 			for (i = 0; i < 24; i++) {
 				tmp = hdmirx_rd_cor(AUDRX_DBYTE4_DP2_IVCRX + i);
 				pkt->sbpkt.vsi_st.data[i] = tmp;
@@ -1306,8 +1359,8 @@ void rx_get_vsi_info(void)
 	rx.vs_info_details.hdmi_allm = false;
 	rx.vs_info_details.dolby_vision_flag = DV_NULL;
 	rx.vs_info_details.hdr10plus = false;
-	rx.vs_info_details.emp_pkt_cnt = rx.empbuff.emppktcnt;
-	rx.empbuff.emppktcnt = 0;
+	rx.vs_info_details.emp_pkt_cnt = rx.emp_buff.emp_pkt_cnt;
+	rx.emp_buff.emp_pkt_cnt = 0;
 	pkt = (struct vsi_infoframe_st *)&rx_pkt.vs_info;
 
 	if (log_level & PACKET_LOG)
@@ -1402,6 +1455,7 @@ void rx_get_vsi_info(void)
 			if ((pkt->sbpkt.payload.data[0] & 0xffff) == 0)
 				pkt->sbpkt.payload.data[0] = 0xffff;
 			rx.vs_info_details.vsi_state = E_VSI_DV10;
+			pkt->ver_st.version = 1;
 		} else if ((pkt->length == E_PKT_LENGTH_5) &&
 			(pkt->sbpkt.payload.data[0] & 0xffff)) {
 			rx.vs_info_details.dolby_vision_flag = DV_NULL;
@@ -1426,17 +1480,17 @@ void rx_get_vsi_info(void)
 		break;
 	}
 	if (rx.vs_info_details.emp_pkt_cnt &&
-	    rx.empbuff.emp_tagid == IEEE_DV15) {
-		//pkt->ieee = rx.empbuff.emp_tagid;
+	    rx.emp_buff.emp_tagid == IEEE_DV15) {
+		//pkt->ieee = rx.emp_buff.emp_tagid;
 		rx.vs_info_details.dolby_vision_flag = DV_EMP;
 		rx.vs_info_details.vsi_state = E_VSI_DV15;
 		pkt->sbpkt.vsi_dobv15.dv_vs10_sig_type = 1;
 		pkt->sbpkt.vsi_dobv15.ll =
-			(rx.empbuff.data_ver & 1) ? 1 : 0;
+			(rx.emp_buff.data_ver & 1) ? 1 : 0;
 		pkt->sbpkt.vsi_dobv15.bklt_md = 0;
 		pkt->sbpkt.vsi_dobv15.aux_md = 0;
 		pkt->sbpkt.vsi_dobv15.content_type =
-			rx.empbuff.emp_content_type;
+			rx.emp_buff.emp_content_type;
 		if (pkt->sbpkt.vsi_dobv15.content_type == 2)
 			rx.vs_info_details.dv_allm = true;
 		if (log_level & PACKET_LOG)
@@ -1446,10 +1500,10 @@ void rx_get_vsi_info(void)
 			pkt->ieee = 0;
 		num = rxpktsts.pkt_cnt_vsi;
 	}
-	rx.empbuff.emp_tagid = 0;
+	rx.emp_buff.emp_tagid = 0;
 	/* pkt->ieee = 0; */
 	/* memset(&rx_pkt.vs_info, 0, sizeof(struct pd_infoframe_s)); */
-}
+	}
 
 void rx_pkt_buffclear(enum pkt_type_e pkt_type)
 {
@@ -2138,7 +2192,7 @@ int rx_pkt_handler(enum pkt_decode_type pkt_int_src)
 			return 0;
 		memset(pd_fifo_buf, 0, PFIFO_SIZE);
 		memset(&prx->emp_info, 0, sizeof(struct pd_infoframe_s));
-		pkt_num = rx.empbuff.emppktcnt;
+		pkt_num = rx.emp_buff.emp_pkt_cnt;
 		if (log_level & 0x4000)
 			rx_pr("pkt=%d\n", pkt_num);
 		while (pkt_num) {
@@ -2162,15 +2216,15 @@ int rx_pkt_handler(enum pkt_decode_type pkt_int_src)
 			rx_pkt_fifodecode(prx, pktdata, &rxpktsts);
 			if ((pd_fifo_buf[0] & 0xff) == PKT_TYPE_EMP && !find_emp_header) {
 				find_emp_header = true;
-				rx.empbuff.ogi_id =
+				rx.emp_buff.ogi_id =
 					(pd_fifo_buf[1] >> 16) & 0xff;
 				j = (((pd_fifo_buf[2] >> 24) & 0xff) +
 					((pd_fifo_buf[3] & 0xff) << 8) +
 					(((pd_fifo_buf[3] >> 8) & 0xff) << 16));
-				rx.empbuff.emp_tagid = j;
-				rx.empbuff.data_ver =
+				rx.emp_buff.emp_tagid = j;
+				rx.emp_buff.data_ver =
 					(pd_fifo_buf[3] >> 16) & 0xff;
-				rx.empbuff.emp_content_type =
+				rx.emp_buff.emp_content_type =
 					(pd_fifo_buf[5] >> 24) & 0x0f;
 			}
 			rx.irq_flag &= ~IRQ_PACKET_FLAG;

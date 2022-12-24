@@ -333,7 +333,7 @@ unsigned int hdmirx_rd_top(unsigned int addr)
 			dev_offset = TOP_DWC_BASE_OFFSET +
 				rx_reg_maps[MAP_ADDR_MODULE_TOP].phy_addr;
 		if (addr >= TOP_EDID_ADDR_S &&
-		    addr <= (TOP_EDID_PORT3_ADDR_E)) {
+		    addr <= (TOP_EDID_PORT4_ADDR_E)) {
 			data = rd_reg_b(MAP_ADDR_MODULE_TOP,
 					dev_offset + addr);
 		} else {
@@ -382,7 +382,7 @@ void hdmirx_wr_top(unsigned int addr, unsigned int data)
 			dev_offset = TOP_DWC_BASE_OFFSET +
 				rx_reg_maps[MAP_ADDR_MODULE_TOP].phy_addr;
 		if (addr >= TOP_EDID_ADDR_S &&
-		    addr <= (TOP_EDID_PORT3_ADDR_E)) {
+		    addr <= (TOP_EDID_PORT4_ADDR_E)) {
 			wr_reg_b(MAP_ADDR_MODULE_TOP,
 				 dev_offset + addr, (unsigned char)data);
 		} else {
@@ -4860,6 +4860,17 @@ void dump_edid_reg(void)
 						    (i * 16 + j)));
 			}
 			rx_pr(" ");
+		}
+		if (rx.port_num == 4) {
+			for (i = 0; i < 16; i++) {
+				pr_info("[%2d] ", i);
+				for (j = 0; j < 16; j++) {
+					pr_info("0x%02x, ",
+						hdmirx_rd_top(TOP_EDID_PORT4_ADDR_S +
+						    (i * 16 + j)));
+				}
+				rx_pr(" ");
+			}
 		}
 	}
 }

@@ -99,7 +99,7 @@
 		ion_secure_reserved:linux,ion-secure {
 			compatible = "amlogic, ion-secure-mem";
 			no-map;
-			size = <0x0 0x5000000>;
+			size = <0x0 0x0000000>;
 			alignment = <0x0 0x400000>;
 		};
 		ion_fb_reserved:linux,ion-fb {
@@ -222,12 +222,6 @@
 			size = <0x0 0x800000>;
 			alignment = <0x0 0x400000>;
 			linux,cma-default;
-		};
-
-		restricted_dma_reserved: restricted_dma_reserved {
-			compatible = "restricted-dma-pool";
-			size = <0x0 0x4000000>;
-			alloc-ranges = <0x0 0x0 0x0 0x80000000>;
 		};
 	};
 	codec_mm {
@@ -1773,7 +1767,6 @@
 
 &pcie {
 	reset-gpio = <&gpio GPIOH_22 GPIO_ACTIVE_HIGH>;
-	memory-region = <&restricted_dma_reserved>;
 	status = "disable";
 };
 

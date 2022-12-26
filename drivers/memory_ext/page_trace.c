@@ -291,7 +291,7 @@ static int __init sym_cmp(const void *x1, const void *x2)
 	p1 = (struct alloc_caller *)x1;
 	p2 = (struct alloc_caller *)x2;
 
-	/* desending order */
+	/* descending order */
 	return p1->func_start_addr < p2->func_start_addr ? 1 : -1;
 }
 
@@ -319,7 +319,7 @@ static int __init match_common_caller(void *data, const char *name,
 				break;
 			}
 		} else if (!s->full_match) {
-			if (strstr(name, s->name)) {	/* contians */
+			if (strstr(name, s->name)) {	/* contains */
 				setup_common_caller(addr);
 				break;
 			}
@@ -443,7 +443,7 @@ static int is_common_caller(struct alloc_caller *caller, unsigned long pc)
 		if (low >= high)	/* still not match */
 			break;
 
-		if (pc < add_l)		/* caller is desending order */
+		if (pc < add_l)		/* caller is descending order */
 			low = mid + 1;
 		else
 			high = mid - 1;

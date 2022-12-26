@@ -25,7 +25,7 @@ config AMLOGIC_PAGE_TRACE
 		/proc/pagetrace
 
 config AMLOGIC_PAGE_TRACE_INLINE
-	bool "page trace ininle into page flags"
+	bool "page trace inline into page flags"
 	depends on AMLOGIC_PAGE_TRACE
 	depends on 64BIT
 	depends on !KASAN_HW_TAGS && !KASAN_SW_TAGS
@@ -92,7 +92,7 @@ config AMLOGIC_USER_FAULT
 		show more information when catch user fault. Including:
 		memory around all registers
 		maps with pc/lr
-		pfn for all virtual address of regirsters
+		pfn for all virtual address of registers
 
 config AMLOGIC_ZSTD
 	tristate "Amlogic zstd optimize"

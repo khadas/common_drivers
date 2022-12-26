@@ -225,6 +225,7 @@ int crg_host_init(struct crg *crg)
 		props[prop_idx++] = PROPERTY_ENTRY_BOOL("super_speed_support");
 
 	props[prop_idx++] = PROPERTY_ENTRY_BOOL("xhci-crg-host");
+	props[prop_idx++] = PROPERTY_ENTRY_BOOL("usb2-lpm-disable");
 
 	if (prop_idx) {
 		ret = device_create_managed_software_node(&xhci->dev, props, NULL);

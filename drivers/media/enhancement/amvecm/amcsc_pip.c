@@ -46,7 +46,7 @@ static u32 bt2020_white_point[2] = {
 	0.3127 * INORM + 0.5, 0.3290 * INORM + 0.5
 };
 
-static const char *module_str[10] = {
+static const char *module_str[11] = {
 	"UNKNOWN",
 	"VD1",
 	"VD2",
@@ -55,7 +55,8 @@ static const char *module_str[10] = {
 	"OSD2",
 	"VDIN0",
 	"VDIN1",
-	"DI",
+	"DI_HDR",
+	"DI_M2M_HDR",
 	"OSD3"
 };
 

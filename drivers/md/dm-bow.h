@@ -6,7 +6,7 @@
 #ifndef __DM_BOW_H__
 #define __DM_BOW_H__
 
-#ifdef CONFIG_DM_BOW
+#ifdef CONFIG_AMLOGIC_DM_BOW
 int bow_sysfs_create(struct dm_table *table,
 			  struct dm_ioctl *param, size_t param_size);
 #else

@@ -47,6 +47,7 @@
 #include <linux/sched/clock.h>
 #include <linux/pm_runtime.h>
 #include <linux/pm_domain.h>
+#include <linux/miscdevice.h>
 
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
@@ -54,6 +55,7 @@
 #include <linux/amlogic/media/frc/frc_common.h>
 #include <linux/amlogic/power_domain.h>
 #include <dt-bindings/power/t3-pd.h>
+#include <dt-bindings/power/t5m-pd.h>
 #include <linux/amlogic/media/video_sink/video_signal_notify.h>
 
 #include "frc_drv.h"
@@ -373,19 +375,28 @@ static const struct of_device_id frc_dts_match[] = {
 	{},
 };
 
-static int frc_attach_pd(struct frc_dev_s *devp)
+int frc_attach_pd(struct frc_dev_s *devp)
 {
-	struct platform_device *pdev = devp->pdev;
+	struct frc_data_s *frc_data;
+	enum chip_id chip;
 	struct device_link *link;
-	char *pd_name[3] = {"frc-top", "frc-me", "frc-mc"};
 	int i;
-	u32 pd_cnt = 3;
+	u32 pd_cnt;
+	char *pd_name[3] = {"frc-top", "frc-me", "frc-mc"};
+	struct platform_device *pdev = devp->pdev;
+
+	frc_data = (struct frc_data_s *)devp->data;
+	chip = frc_data->match_data->chip;
+
 
 	if (pdev->dev.pm_domain) {
 		pr_frc(0, "%s err pm domain\n", __func__);
 		return -1;
 	}
-
+	// if (chip == ID_T3)
+	pd_cnt = 3;
+	if (chip == ID_T5M)
+		pd_cnt = 1;
 	for (i = 0; i < pd_cnt; i++) {
 		devp->pd_dev = dev_pm_domain_attach_by_name(&pdev->dev, pd_name[i]);
 		if (IS_ERR(devp->pd_dev))
@@ -399,7 +410,7 @@ static int frc_attach_pd(struct frc_dev_s *devp)
 			pr_frc(0, "%s fail to add device_link idx (%d) pd\n", __func__, i);
 			return -EINVAL;
 		}
-		//pr_frc(1, "pw domain %s attach\n", pd_name[i]);
+		pr_frc(1, "pw domain %s attach\n", pd_name[i]);
 	}
 	return 0;
 }
@@ -430,7 +441,7 @@ void frc_power_domain_ctrl(struct frc_dev_s *devp, u32 onoff)
 		// devp->power_off_flag = 0;
 	}
 
-	if (chip == ID_T3 || chip == ID_T5M) {
+	if (chip == ID_T3) {
 		if (onoff) {
 #ifdef K_MEMC_CLK_DIS
 			pwr_ctrl_psci_smc(PDID_T3_FRCTOP, PWR_ON);
@@ -607,7 +618,7 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 		frc_devp->clk_frc = NULL;
 		frc_devp->clk_me = NULL;
 	}
-	frc_attach_pd(frc_devp);
+	// frc_attach_pd(frc_devp);
 	return ret;
 }
 
@@ -911,7 +922,6 @@ static int frc_probe(struct platform_device *pdev)
 	frc_dts_parse(frc_devp);
 	// if (ret < 0)  // fixed CID 139501
 	//	goto fail_dev_create;
-
 	tasklet_init(&frc_devp->input_tasklet, frc_input_tasklet_pro, (unsigned long)frc_devp);
 	tasklet_init(&frc_devp->output_tasklet, frc_output_tasklet_pro, (unsigned long)frc_devp);
 	/*register a notify*/
@@ -952,6 +962,12 @@ static int frc_probe(struct platform_device *pdev)
 
 	frc_devp->probe_ok = true;
 	frc_devp->power_off_flag = false;
+	pm_runtime_enable(&pdev->dev);
+	ret = pm_runtime_get_sync(&pdev->dev);
+	if (ret < 0) {
+		PR_ERR("pm_runtime_get_sync error\n");
+		// goto fail_dev_create;
+	}
 
 	PR_FRC("%s probe st:%d", __func__, frc_devp->probe_ok);
 	return ret;
@@ -1020,12 +1036,15 @@ static int __exit frc_remove(struct platform_device *pdev)
 static void frc_shutdown(struct platform_device *pdev)
 {
 	struct frc_dev_s *frc_devp = &frc_dev;
+	struct frc_data_s *frc_data;
+	enum chip_id chip;
 
 	if (!frc_devp || !frc_devp->probe_ok)
 		return;
-
 	PR_FRC("%s:module shutdown\n", __func__);
 	// frc_devp = platform_get_drvdata(pdev);
+	frc_data = (struct frc_data_s *)frc_devp->data;
+	chip = frc_data->match_data->chip;
 	frc_devp->power_on_flag = false;
 	tasklet_kill(&frc_devp->input_tasklet);
 	tasklet_kill(&frc_devp->output_tasklet);
@@ -1050,9 +1069,13 @@ static void frc_shutdown(struct platform_device *pdev)
 	frc_devp->data = NULL;
 	// kfree(frc_dev);
 	// frc_dev = NULL;
-	pwr_ctrl_psci_smc(PDID_T3_FRCTOP, PWR_OFF);
-	pwr_ctrl_psci_smc(PDID_T3_FRCME, PWR_OFF);
-	pwr_ctrl_psci_smc(PDID_T3_FRCMC, PWR_OFF);
+	if (chip == ID_T3) {
+		pwr_ctrl_psci_smc(PDID_T3_FRCTOP, PWR_OFF);
+		pwr_ctrl_psci_smc(PDID_T3_FRCME, PWR_OFF);
+		pwr_ctrl_psci_smc(PDID_T3_FRCMC, PWR_OFF);
+	} else if (chip == ID_T5M) {
+		pwr_ctrl_psci_smc(PDID_T5M_FRC_TOP, PWR_OFF);
+	}
 	PR_FRC("%s:module shutdown done with powerdomain\n", __func__);
 
 }

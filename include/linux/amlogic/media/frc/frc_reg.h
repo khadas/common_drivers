@@ -5,22 +5,6 @@
 #ifndef __FRC_REG_H__
 #define __FRC_REG_H__
 
-#define HME_TOP_OFFSET                 ((0x1000 - 0x1100) << 2)
-#define HME_CMV_OFFSET                 ((0x1200 - 0x1300) << 2)
-#define HME_CBV_OFFSET                 ((0x1400 - 0x1500) << 2)
-#define HME_STAT_OFFSET                ((0x1600 - 0x1700) << 2)
-#define LOSS_ENC_ME_OFFSET             ((0x0a00 - 0x0c00) << 2)
-#define LOSS_DEC_ME_OFFSET             ((0x0b00 - 0x0c00) << 2)
-#define LOSS_DEC_NR_LUMA_OFFSET        ((0x0d00 - 0x0c00) << 2)
-#define LOSS_DEC_NR_CHRM_OFFSET        ((0x0e00 - 0x0c00) << 2)
-#define LOSS_DEC_MEVP_CUR_OFFSET       ((0x2100 - 0x0c00) << 2)
-#define LOSS_DEC_MEVP_NXT_OFFSET       ((0x2200 - 0x0c00) << 2)
-#define LOSS_DEC_MEVP_PRE_OFFSET       ((0x2300 - 0x0c00) << 2)
-#define LOSS_DEC_MC_LUMA_CUR_OFFSET    ((0x3500 - 0x0c00) << 2)
-#define LOSS_DEC_MC_CHRM_CUR_OFFSET    ((0x3600 - 0x0c00) << 2)
-#define LOSS_DEC_MC_LUMA_OFFSET        ((0x3700 - 0x0c00) << 2)
-#define LOSS_DEC_MC_CHRM_OFFSET        ((0x3800 - 0x0c00) << 2)
-
 #define FRC_TOP_SW_RESET                           0x0000
 //Bit 31:30        reserved
 //Bit 29:0         reg_top_sw_resets    // unsigned ,   RW, default = 0  ,
@@ -30,17 +14,13 @@
 //Bit 15:13        reserved
 //Bit 12:0         reg_frc_probe_pt_x    // unsigned ,   RW, default = 100  reg_mc_probe_pt_x mc_probe positon registers
 #define FRC_INP_HOLD_CTRL                          0x0002
-//Bit 31      pls_inp_frm_start // unsigned ,
-//RW, default = 0,start by write high in pulse start mode
-//Bit 30:21   reserved
-//Bit 20      reg_frc_win_en        // unsigned ,
-//RW, default = 1,0:auto start mode 1:pulse start mode
-//Bit 19:17   reserved
-//Bit 16      reg_inp_frm_start_sel // unsigned ,
-//RW, default = 0,0:auto start mode 1:pulse start mode
-//Bit 15:13   reserved
-//Bit 12:0    reg_inp_hold_line     // unsigned ,
-//RW, default = 6,inp start reg_inp_hold_line after go_field in auto start mode
+//Bit 31           pls_inp_frm_start     // unsigned ,   RW, default = 0,start by write high in pluse start mode
+//Bit 30:21        reserved
+//Bit 20           reg_frc_win_en        // unsigned ,   RW, default = 1,0:auto start mode 1:pluse start mode
+//Bit 19:17        reserved
+//Bit 16           reg_inp_frm_start_sel // unsigned ,   RW, default = 0,0:auto start mode 1:pluse start mode
+//Bit 15:13        reserved
+//Bit 12:0         reg_inp_hold_line     // unsigned ,   RW, default = 6,inp start reg_inp_hold_line after go_field in auto start mode
 #define FRC_OUT_HOLD_CTRL                          0x0003
 //Bit 31           reg_mc_frm_ctrl       // unsigned ,   RW, default = 1,1:use mc_frm_rst/en by frc_top 0:generate mc_frm_rst/en before first me out
 //Bit 30:24        reg_mc_hold_regen     // unsigned ,   RW, default = 2,hold_line for  regenerate frm_rst/me
@@ -154,6 +134,9 @@
 //Bit 31:0         reserved
 #define FRC_REG_TOP_CTRL29                         0x002a
 //Bit 31:0         reserved
+#define FRC_BYP_PATH_CTRL                          0x002d
+//Bit 31:1         reserved
+//Bit 0            reg_byp_path_en           // unsigned ,   RW, default = 1  1: data bypass to display when memc prefetch data 0: data don't bypass to display when memc prefetch data
 #define FRC_REG_INP_INT_MASK                       0x0030
 //Bit 31:1         reserved
 //Bit 0            reg_inp_int_mask          // unsigned ,   RW, default = 0  reg_inp_int_mask 1:mask interupt 0:open interupt
@@ -285,6 +268,14 @@
 #define FRC_TOP_GCLK_CTRL                          0x0057
 //Bit 31:2        reserved
 //Bit 1 :0        reg_bd_reg_gclk_ctrl  // unsigned  ,   RW, default = 0 ,badedit reg gclk
+#define FRC_RO_INP_PHS                             0x0058
+//Bit 31:8         reserved
+//Bit 7 :0         ro_frc_inp_phs       // unsigned ,   RO, default = 0  ro_frc_inp_phs,[0,input_n-1] for n:m mode
+#define FRC_RO_FRM_SEC_STAT                        0x0059
+//Bit 31:17     reserved
+//Bit 16        ro_inp_sec_frm  // unsigned ,   RO,default = 0,current input  frame  is  security frame
+//Bit 15:1      reserved
+//Bit 0         ro_oup_sec_frm  // unsigned ,   RO,default = 0,current output frame  is  security frame
 #define FRC_TOP_INP_RDSEC_CTRL                     0x005a
 //Bit 31:18     reserved
 //Bit 17:16     reg_inp_rd_sec_foc_en  // unsigned ,   RW,default = 0 , bit0:mc_rd       bit1:me_c_rd
@@ -300,6 +291,9 @@
 //Bit 16        reg_mc_rd_sec_foc_en  // unsigned ,   RW,default = 0 , bit0:mc_rd
 //Bit 15:2      reserved
 //Bit 1 :0      reg_mc_rd_sec_foc     // unsigned ,   RW,default = 3 , bit0:pre_mc_rd   bit1:cur_mc_rd
+#define FRC_TOP_MC_HSC_CTRL                        0x005e
+//Bit 31:2      reserved
+//Bit 1:0       reg_mc_hsc_scale    // unsigned ,  RW, default = 0  downscale mode of x direction for me input data; 0: no downscale; 1:1/2 downscale; 2:1/4 downscale
 #define FRC_REG_TOP_RESERVE0                       0x0060
 //Bit 31:0        reg_top_reserve0  // unsigned ,   RW, default = 0 reg_top_reserve0 for fpga test
 #define FRC_REG_TOP_RESERVE1                       0x0061
@@ -710,11 +704,7 @@
 //Bit 18:16        reg_me_blksize_y          // unsigned ,    RW, default = 2  block size y(2^reg) in ME submodule under the Buf_blend data (downsampled); default = 2;
 //Bit 15:14        reg_me_mvx_div_mode       // unsigned ,    RW, default = 0  0: MVx has 2bits decimal; 1: 3bits decimal; 2: 4bits decimal @ME resolution.
 //Bit 13:12        reg_me_mvy_div_mode       // unsigned ,    RW, default = 0  0: MVy has 2bits decimal; 1: 3bits decimal; 2: 4bits decimal @ME resolution.
-//Bit 11:10        reserved
-//Bit  9: 7        reg_hme_blksize_x         // unsigned ,    RW, default = 2  block size x(2^reg) in ME submodule under the Buf_blend data (downsampled); default = 2;
-//Bit  6: 4        reg_hme_blksize_y         // unsigned ,    RW, default = 2  block size y(2^reg) in ME submodule under the Buf_blend data (downsampled); default = 2;
-//Bit  3: 2        reg_hme_mvx_div_mode      // unsigned ,    RW, default = 0  0: MVx has 2bits decimal; 1: 3bits decimal; 2: 4bits decimal @ME resolution.
-//Bit  1: 0        reg_hme_mvy_div_mode      // unsigned ,    RW, default = 0  0: MVy has 2bits decimal; 1: 3bits decimal; 2: 4bits decimal @ME resolution.
+//Bit 11: 0        reserved
 #define FRC_REG_BLK_SCALE                          0x012c
 //Bit 31:20        reserved
 //Bit 19:18        reg_osd_logo_ratio        // unsigned ,    RW, default = 1  ratio for osd to logo. 0, 1:1; 1, 1:2; 2, 1:4; 3, 1:8
@@ -723,15 +713,14 @@
 //Bit 11: 9        reg_mc_blksize_xscale     // unsigned ,    RW, default = 3  (0~4), mc block horizontal size in full pixel scale = (1x2^xscal), set to (reg_me_dsx_scale + 2) as default
 //Bit  8: 6        reg_mc_blksize_yscale     // unsigned ,    RW, default = 3  (0~4), mc block vertical size in full pixel scale = (1x2^yscal), set to (reg_me_dsy_scale + 2) as default
 //Bit  5: 4        reg_logo_mc_ratio         // unsigned ,    RW, default = 1  0, 1:1; 1, 1:2; 2, 1:4; 3, 1:8
-//Bit  3: 2        reg_osd_mc_ratio          // unsigned ,    RW, default = 0  0, 1:1; 1, 1:2
+//Bit  3: 2        reserved
 //Bit  1           reg_iplogo_osdmerge       // unsigned ,    RW, default = 0  0: do iplogo only at new original frame input. 1: do the last two stages of iplogo at every frame. work with reg_iplogo_osdbit.
 //Bit  0           reg_iplogo_osdmode        // unsigned ,    RW, default = 0  0: use separate logo fid for both input/output.1: use mc fid for logo osdmode for both input/output.
 #define FRC_REG_ME_HME_SCALE                       0x012d
 //Bit 31: 8        reserved
 //Bit  7: 6        reg_me_dsx_scale          // unsigned ,    RW, default = 1  downscale mode of x direction for me input data; 0: no downscale; 1:1/2 downscale; 2:1/4 downscale
 //Bit  5: 4        reg_me_dsy_scale          // unsigned ,    RW, default = 1  downscale mode of x direction for me input data; 0: no downscale; 1:1/2 downscale; 2:1/4 downscale
-//Bit  3: 2        reg_hme_dsx_scale         // unsigned ,    RW, default = 2  downscale mode of x direction for me input data; 0: no downscale; 1:1/2 downscale; 2:1/4 downscale
-//Bit  1: 0        reg_hme_dsy_scale         // unsigned ,    RW, default = 2  downscale mode of x direction for me input data; 0: no downscale; 1:1/2 downscale; 2:1/4 downscale
+//Bit  3: 0        reserved
 #define FRC_REG_CURSOR                             0x012e
 //Bit 31:29        reserved
 //Bit 28           reg_cursor_ipdisp_en      // unsigned ,    RW, default = 0  for ip cursor display: enable
@@ -861,9 +850,9 @@
 //Bit 20:17        reg_mc_debug_show_demowindow_mode // unsigned ,    RW, default = 0  enable of show demowindow 4321
 //Bit 16           reg_mc_debug_show_deflicker_pix_en // unsigned ,    RW, default = 0  enable of show deflicker block en
 //Bit 15           reg_mc_debug_show_pts_en  // unsigned ,    RW, default = 0  enable of show pts
-//Bit 14:12        reg_mc_debug_show_pts_mode // unsigned ,    RW, default = 0  0: p_pts_y 1: p_pts_c 2: c_pts_y 3: c_pts_c 4: p_pts_y or p_pts_c 5:c_pts_y or c_pts_c
+//Bit 14:12        reg_mc_debug_show_pts_mode // unsigned ,    RW, default = 0  0: p_pts_y 1: p_pts_c 2: c_pts_y 3: c_pts_c 4: p_pts_y and p_pts_y 5:c_pts_c and c_pts_c
 //Bit 11           reg_mc_debug_show_ptb_en  // unsigned ,    RW, default = 0  enable of show ptb
-//Bit 10: 8        reg_mc_debug_show_ptb_mode // unsigned ,    RW, default = 0  0: p_ptb_y 1: p_ptb_c 2: c_ptb_y 3: c_ptb_c 4: p_ptb_y or p_ptb_c 5:c_ptb_y or c_ptb_c
+//Bit 10: 8        reg_mc_debug_show_ptb_mode // unsigned ,    RW, default = 0  0: p_ptb_y 1: p_ptb_c 2: c_ptb_y 3: c_ptb_c 4: p_ptb_y and p_ptb_y 5:c_ptb_c and c_ptb_c
 //Bit  7           reg_mc_debug_show_ptl_en  // unsigned ,    RW, default = 0  enable of show ptl
 //Bit  6: 4        reg_mc_debug_show_ptl_mode // unsigned ,    RW, default = 0  0: p_ptl 1: c_ptl 2: p_ptl or c_ptl
 //Bit  3           reg_mc_debug_show_ptw_en  // unsigned ,    RW, default = 0  enable of show ptw
@@ -874,12 +863,12 @@
 //Bit 18           reg_logo_debug_ip_blk_logo_en // unsigned ,    RW, default = 0
 //Bit 17           reg_logo_debug_me_blk_logo_en // unsigned ,    RW, default = 0
 //Bit 16           reg_logo_debug_mc_logo_en // unsigned ,    RW, default = 0
-//Bit 15           reg_iplogo_inner_pxl_debug_en // unsigned ,    RW, default = 0  dft=0; 0: close innner debug, show ip_pxllogo result;   1: open inner debug, show inner pxl signal in iplogo
+//Bit 15           reg_iplogo_inner_pxl_debug_en // unsigned ,    RW, default = 0  dft=0; 0: close inner debug, show ip_pxllogo result;   1: open inner debug, show inner pxl signal in iplogo
 //Bit 14:10        reg_iplogo_inner_pxl_debug_mode // unsigned ,    RW, default = 0  dft=0; MUX many inner pxl signals in iplogo
 //Bit  9           reg_iplogo_pxl_fid_mode   // unsigned ,    RW, default = 0  0, pre, 1, cur
-//Bit  8           reg_iplogo_inner_blk_debug_en // unsigned ,    RW, default = 0  dft=0; 0: close innner debug, show ip_blklogo result;   1: open inner debug, show inner blk signal in iplogo
+//Bit  8           reg_iplogo_inner_blk_debug_en // unsigned ,    RW, default = 0  dft=0; 0: close inner debug, show ip_blklogo result;   1: open inner debug, show inner blk signal in iplogo
 //Bit  7: 3        reg_iplogo_inner_blk_debug_mode // unsigned ,    RW, default = 0  dft=0; MUX many inner blk signals in iplogo
-//Bit  2           reg_melogo_inner_debug_en // unsigned ,    RW, default = 0  0: close innner debug, show me_blklogo result;   1: open inner debug, show inner signal in melogo
+//Bit  2           reg_melogo_inner_debug_en // unsigned ,    RW, default = 0  0: close inner debug, show me_blklogo result;   1: open inner debug, show inner signal in melogo
 //Bit  1: 0        reg_melogo_inner_debug_mode // unsigned ,    RW, default = 0  0: show ip_blklogo;  1: show smv_clr_flag, 2: show pan_clr_flag, 3:  show disap_clr_flag;
 #define FRC_BBD_DEBUG_LINE_EN                      0x0143
 //Bit 31: 4        reserved
@@ -895,9 +884,9 @@
 //Bit  4: 0        reg_frc_fb_num            // unsigned ,    RW, default = 10  frc frame buffer number
 #define FRC_REG_DEBUG_PATH_MV                      0x0145
 //Bit 31: 4        reserved
-//Bit  3           reg_mc_debug_oct2_en      // unsigned ,    RW, default = 0  show oct2 flag
+//Bit  3            reserved
 //Bit  2           reg_mc_debug_oct1_en      // unsigned ,    RW, default = 0  show oct1 flag
-//Bit  1           reg_mc_debug_disp_pht2_en // unsigned ,    RW, default = 0  show pth mvx2 mvy2
+//Bit  1            reserved
 //Bit  0           reg_mc_debug_disp_pht1_en // unsigned ,    RW, default = 0  show pht mvx1 mvy1
 // synopsys translate_off
 // synopsys translate_on
@@ -916,8 +905,8 @@
 //Bit 27:26        reserved
 //Bit 25           ro_frc_load_frm_flag_mux  // unsigned ,    RO, default = 0  load input frame flag. set by fw
 //Bit 24           ro_frc_otb_start_mux      // unsigned ,    RO, default = 0  1, delay the mv frame buffers. prm_phase_table[index].data_lut.phase_start;set by fw from
-//Bit 23:12        reg_frc_output_phase            // unsigned ,    RW, default = 0  phase between opre and ocur frames (0~4095) 12 bits  set by fw
-//Bit 11: 0        reg_frc_output_phase_me         // unsigned ,    RW, default = 0  phase between opre and ocur frames (0~4095) 12 bits. for ME and VP.set by fw
+//Bit 23:12        reg_frc_phase            // unsigned ,    RW, default = 0  phase between opre and ocur frames (0~4095) 12 bits  set by fw
+//Bit 11: 0        reg_frc_phase_me         // unsigned ,    RW, default = 0  phase between opre and ocur frames (0~4095) 12 bits. for ME and VP.set by fw
 #define FRC_REG_FWD_FID                            0x0147
 //Bit 31:28        reg_frc_input_fid_p       // unsigned ,    RW, default = 0  input port the frame id just before latest frame in the memory.fw cal,from reg_frc_input_fid
 //Bit 27:24        reg_frc_input_fid         // unsigned ,    RW, default = 3  input port latest frame id in the memory. in fw cal
@@ -1333,7 +1322,12 @@
 #define FRC_INPUT_SIZE_ALIGN                       0x0170
 //Bit 31: 2        reserved
 //Bit  1           reg_h_size_align_mode     // unsigned ,    RW, default = 0  the alignment mode of Hsize, 0: 8 , 1: 16
-//Bit  0           reg_v_size_align_mode     // unsigned ,    RW, default = 0  the alignment mode of Vsize, 0: 8    , 1: 16
+//Bit  0           reg_v_size_align_mode     // unsigned ,    RW, default = 0  the alignment mode of Vsize, 0: 8	, 1: 16
+#define FRC_REG_FWD_PHS_GAIN                       0x0171
+//Bit 31:24        reg_frc_phase_mux_gain    // unsigned ,    RW, default = 255  mc phase gain for memc level
+//Bit 23:16        reg_frc_phase_me_mux_gain // unsigned ,    RW, default = 255  me phase gain for memc level
+//Bit 15:12        reserved
+//Bit 11: 0        ro_frc_phase_mux_raw     // unsigned ,    RO, default = 0  phase between opre and ocur frames(0-4095) 12 bits set by fw, memc level "1";
 #define FRC_BADEDIT_DBG0                           0x0181
 //Bit 31:0         ro_frc_badedit_dbg0      // unsigned ,    RO, default = 0 frc_badedit_inf0
 #define FRC_BADEDIT_DBG1                           0x0182
@@ -1659,30 +1653,15 @@
 //Bit 15: 8        reg_me_dsx_coef_3         // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of blended data, normalized to 128 as 1
 //Bit  7: 0        reg_me_dsy_coef_3         // signed ,    RW, default = 16  coef of AA filter for vertical downsampling of blended data, normalized to 128 as 1
 #define FRC_REG_HME_BLD_COEF                       0x0406
-//Bit 31            reserved
-//Bit 30           reg_hme_yc_bld_mode       // unsigned ,    RW, default = 0  yc blending mode, 0: cb/cr; 1: max(r,g,b)
-//Bit 29:24        reg_hme_bld_coef_0        // unsigned ,    RW, default = 12  blending coef of yuv to get yuv blended data for ME, normalized to 32 as 1 for Y
-//Bit 23:18        reg_hme_bld_coef_1        // unsigned ,    RW, default = 4  blending coef of yuv to get yuv blended data for ME, normalized to 32 as 1 for Y
-//Bit 17:12        reg_hme_bld_coef_2        // unsigned ,    RW, default = 4  blending coef of yuv to get yuv blended data for ME, normalized to 32 as 1 for Y
-//Bit 11: 8        reserved
-//Bit  7: 4        reg_hme_dsx_ofset         // signed ,    RW, default = 0  horizontal pixel offset for the input pixel to downsample filter
-//Bit  3: 0        reg_hme_dsy_ofset         // signed ,    RW, default = 0  vertical pixel offset for the input pixel to downsample filter
+//Bit 31: 0        reserved
 #define FRC_REG_HME_DS_COEF_0                      0x0407
-//Bit 31:16        reserved
-//Bit 15: 8        reg_hme_dsx_coef_0        // signed ,    RW, default = 24  coef of AA filter for horizontal downsampling of blended data, normalized to 128 as 1
-//Bit  7: 0        reg_hme_dsy_coef_0        // signed ,    RW, default = 24  coef of AA filter for vertical downsampling of blended data, normalized to 128 as 1
+//Bit 31: 0        reserved
 #define FRC_REG_HME_DS_COEF_1                      0x0408
-//Bit 31:16        reserved
-//Bit 15: 8        reg_hme_dsx_coef_1        // signed ,    RW, default = 20  coef of AA filter for horizontal downsampling of blended data, normalized to 128 as 1
-//Bit  7: 0        reg_hme_dsy_coef_1        // signed ,    RW, default = 20  coef of AA filter for vertical downsampling of blended data, normalized to 128 as 1
+//Bit 31: 0        reserved
 #define FRC_REG_HME_DS_COEF_2                      0x0409
-//Bit 31:16        reserved
-//Bit 15: 8        reg_hme_dsx_coef_2        // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of blended data, normalized to 128 as 1
-//Bit  7: 0        reg_hme_dsy_coef_2        // signed ,    RW, default = 16  coef of AA filter for vertical downsampling of blended data, normalized to 128 as 1
+//Bit 31: 0        reserved
 #define FRC_REG_HME_DS_COEF_3                      0x040a
-//Bit 31:16        reserved
-//Bit 15: 8        reg_hme_dsx_coef_3        // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of blended data, normalized to 128 as 1
-//Bit  7: 0        reg_hme_dsy_coef_3        // signed ,    RW, default = 16  coef of AA filter for vertical downsampling of blended data, normalized to 128 as 1
+//Bit 31: 0        reserved
 #define FRC_REG_NR_LUT_0                           0x040b
 //Bit 31: 4        reserved
 //Bit  3: 0        reg_ds_nr_lut_0           // unsigned ,    RW, default = 0  coef of NR temporal filter for ME image.
@@ -1732,14 +1711,118 @@
 //Bit 31: 4        reserved
 //Bit  3: 0        reg_ds_nr_lut_15          // unsigned ,    RW, default = 0  coef of NR temporal filter for ME image.
 #define FRC_REG_GLB_MOTION                         0x041b
-//Bit 31: 0        ro_ds_glb_motion
-// unsigned ,    RO, default = 0  global motion based on downsample data
+//Bit 31: 0        ro_ds_glb_motion          // unsigned ,    RO, default = 0  global motion based on downsample data
 // synopsys translate_off
 // synopsys translate_on
 //
 // Closing file:  ./frc_inc/frc_inp_top_reg.h
 //
 //
+// Reading file:  ./frc_inc/frc_inp_hw_reg.h
+//
+// synopsys translate_off
+// synopsys translate_on
+#define FRC_INP_UE_CLR                             0x0450
+//Bit 31:6          reserved
+//Bit 5:0           pls_inp_ue_clr          // unsigned ,   WO, default = 0 error flag clear
+#define FRC_INP_UE_DBG                             0x0451
+//Bit 31:6          reserved
+//Bit 5:0           ro_inp_ue_dbg           // unsigned ,    RO, default = 0 inp undone error flag
+#define FRC_REG_INP_HS_DBG1                        0x0452
+//Bit 31:0          ro_inp_hs_dbg1         // unsigned ,    RO, default = 0 inp handshake package
+#define FRC_REG_INP_HS_DBG2                        0x0453
+//Bit 31:0          ro_inp_hs_dbg2         // unsigned ,    RO, default = 0 inp handshake package
+#define FRC_REG_INP_HS_DBG3                        0x0454
+//Bit 31:0          ro_inp_hs_dbg3         // unsigned ,    RO, default = 0 inp handshake package
+#define FRC_REG_MIF_INT_FLAG_DBG                   0x0455
+//Bit 31:28         reserved
+//Bit 27:0          ro_mif_int_flag_dbg    // unsigned ,    RO, default = 0 inp handshake package
+#define FRC_REG_INP_CTRL1                          0x0456
+//Bit 31:28         reserved
+//Bit 27            reg_osd_pat_gen_en         // unsigned ,   RW, default = 0  reg_osd_pat_gen_en
+//Bit 26            reg_osd_pat_gen_mode       // unsigned ,   RW, default = 0  reg_osd_pat_gen_mode
+//Bit 25:13         reg_pat_gen_xyxy_v0        // unsigned ,   RW, default = 0  reg_pat_gen_xyxy_v0
+//Bit 12:0          reg_pat_gen_xyxy_h0        // unsigned ,   RW, default = 0  reg_pat_gen_xyxy_h0
+#define FRC_REG_INP_CTRL2                          0x0457
+//Bit 31:26         reserved
+//Bit 25:13         reg_pat_gen_xyxy_v1        // unsigned ,   RW, default = 0  reg_pat_gen_xyxy_v1
+//Bit 12:0          reg_pat_gen_xyxy_h1        // unsigned ,   RW, default = 0  reg_pat_gen_xyxy_h1
+#define FRC_REG_INP_GCLK_CTRL                      0x0458
+//Bit 31:22         reserved
+//Bit 21:20         reg_inp_mc_hds_gclk_ctrl   // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 19:18         reg_inp_hw_reg_gclk_ctrl   // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 17:16         reg_inp_top_reg_gclk_ctrl  // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 15:14         reg_cur_wbuf_gclk_ctrl     // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 13:12         reg_blend_gclk_ctrl        // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 11:10         reg_menr_gclk_ctrl         // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 9:8           reg_inp_reg_gclk_ctrl      // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 7:6           reg_hme_dsc_gclk_ctrl      // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 5:4           reg_me_dsc_gclk_ctrl       // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 3:2           reg_inp_osd_gclk_ctrl      // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 1:0           reg_inp_fmt_gclk_ctrl      // unsigned,   RW, default = 0 clk gating ctrl signal
+#define FRC_REG_INP_MODULE_EN                      0x0459
+//Bit 31:14         reserved
+//Bit 13            reg_fmt_en                 // unsigned,   RW, default = 1 yuv444toyuv422 convert for mc enable signal,active high
+//Bit 12:10         reg_inp_fmt422_mode        // unsigned,   RW, default = 0 input fmt yuv444 or yuv422
+//Bit 9             reg_mc_nr_en               // unsigned,   RW, default = 0 mc nr enable signal,active high
+//Bit 8             reg_inp_logo_en            // unsigned,   RW, default = 0 iplogo data path enable signal,active high
+//Bit 7             reg_inp_bbd_en             // unsigned,   RW, default = 0 bb detection enable signal,active high
+//Bit 6             reg_inp_pat_gen_en         // unsigned,   RW, default = 0 pat_gen mode enable signal,active high
+//Bit 5             reg_menr_en                // unsigned,   RW, default = 1 me nr enable signal,active high
+//Bit 4             reg_me_vdsc_en             // unsigned,   RW, default = 1 vertical downsample of blend for me enale signal,active high
+//Bit 3             reg_me_hdsc_en             // unsigned,   RW, default = 1 horizontal downsample of blend for me enale signal,active high
+//Bit 2             reg_hme_vdsc_en            // unsigned,   RW, default = 1 vertical downsample of blend for hme enale signal,active high
+//Bit 1             reg_hme_hdsc_en            // unsigned,   RW, default = 1 horizontal downsample of blend for hme enale signal,active high
+//Bit 0             reg_inp_bld_fmt422_mode    // unsigned,   RW, default = 0 input fmt of blend,0-yuv444,1-yuv422
+#define FRC_REG_INP_DBG_CTRL1                      0x045a
+//Bit 31:16         reserved
+//Bit 15:12         reg_inp_dbg_ctrl          // unsigned ,    RW, default = 0  reg_inp_dbg_ctrl
+//Bit 11: 0         reserved
+#define FRC_REG_INP_DBG_CTRL2                      0x045b
+//Bit 31:30         reserved
+//Bit 29:0          reg_inp_dbg_data          // unsigned ,    RW, default = 0  reg_inp_dbg_data
+#define FRC_REG_INP_DBG_CTRL3                      0x045c
+//Bit 31:30         reg_osd_force_en          // unsigned ,    RW, default = 0  osd debug force enable
+//Bit 29: 0         reg_osd_force_yuv         // unsigned ,    RW, default = 0  osd debug force color
+#define FRC_REG_INP_MIF_GCLK_CTRL                  0x045d
+//Bit 31:20         reserved
+//Bit 19:18         reg_hme_wrmif_gclk_ctrl    // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 17:16         reg_logo_rdmif0_gclk_ctrl  // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 15:14         reg_logo_rdmif1_gclk_ctrl  // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 13:12         reg_logo_wrmif0_gclk_ctrl  // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 11:10         reg_logo_wrmif1_gclk_ctrl  // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 9:8           reg_melogo_wrmif_gclk_ctrl // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 7:6           reg_iplogo_wrmif_gclk_ctrl // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 5:4           reg_rd_arb_gclk_ctrl       // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 3:2           reg_wr_arb_1x4_gclk_ctrl   // unsigned,   RW, default = 0 clk gating ctrl signal
+//Bit 1:0           reg_wr_arb_1x8_gclk_ctrl   // unsigned,   RW, default = 0 clk gating ctrl signal
+#define FRC_INP_LOSS_SLICE_SEC                     0x045e
+//Bit 31:1          reserved
+//Bit 0             reg_inp_loss_slice_sec    // unsigned,   RW, default = 0,1:same as lossy-body 0:non_security
+#define FRC_INP_MC_HDS_CTRL0                       0x0470
+//Bit 31:4          reserved
+//Bit 3:0           reg_inp_mc_hds_dsx_ofset // signed ,    RW, default = 0  horizontal pixel offset for the input pixel to downsample filter
+#define FRC_INP_MC_HDS_WIN_SETTING_SCP             0x0471
+//Bit 31:16        reg_inp_mc_hds_hscp0          // unsigned ,    RW, default = 0
+//Bit 15: 0        reg_inp_mc_hds_hscp1          // unsigned ,    RW, default = 0
+#define FRC_INP_MC_HDS_COEFX3                      0x0472
+//Bit 31:24         reg_inp_mc_hds_coef_3    // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of csc_out data, normalized to 128 as 1
+//Bit 23:16         reg_inp_mc_hds_coef_2    // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of csc_out data, normalized to 128 as 1
+//Bit 15:8          reg_inp_mc_hds_coef_1    // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of csc_out data, normalized to 128 as 1
+//Bit 7:0           reg_inp_mc_hds_coef_0    // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of csc_out data, normalized to 128 as 1
+#define FRC_INP_CUR_ME_ORECON_EN                   0x0473
+//Bit 31:1          reserved
+//Bit 0             reg_cur_me_orecon_en     // unsigned ,  RW, default = 1
+#define FRC_INP_PD_DIFF_MODE                       0x0474
+//Bit 31:2          reserved
+//Bit 1:0           reg_pd_diff_mode         // unsigned ,  RW, default = 0
+#define FRC_INP_HME_RAM_DLY_DEPTH                  0x0475
+//Bit 31:13         reserved
+//Bit 12:0          reg_inp_me_ram_dly_depth         // unsigned ,  RW, default = 200
+// synopsys translate_off
+// synopsys translate_on
+//
+// Closing file:  ./frc_inc/frc_inp_hw_reg.h
 // Reading file:  ./frc_inc/pat_gen_regs.h
 //
 // synopsys translate_off
@@ -1890,92 +1973,7 @@
 //
 // Closing file:  ./frc_inc/frc_inp_csc_regs.h
 //
-//
-// Reading file:  ./frc_inc/frc_inp_hw_reg.h
-//
-// synopsys translate_off
-// synopsys translate_on
-#define FRC_INP_UE_CLR                             0x04f0
-//Bit 31:6          reserved
-//Bit 5:0           reg_inp_ue_clr          // unsigned ,    RW, default = 0 error flag clear
-#define FRC_INP_UE_DBG                             0x04f1
-//Bit 31:6          reserved
-//Bit 5:0           ro_inp_ue_dbg           // unsigned ,    RO, default = 0 inp undone error flag
-#define FRC_REG_INP_HS_DBG1                        0x04f2
-//Bit 31:0          ro_inp_hs_dbg1         // unsigned ,    RO, default = 0 inp handshake package
-#define FRC_REG_INP_HS_DBG2                        0x04f3
-//Bit 31:0          ro_inp_hs_dbg2         // unsigned ,    RO, default = 0 inp handshake package
-#define FRC_REG_INP_HS_DBG3                        0x04f4
-//Bit 31:0          ro_inp_hs_dbg3         // unsigned ,    RO, default = 0 inp handshake package
-#define FRC_REG_MIF_INT_FLAG_DBG                   0x04f5
-//Bit 31:28         reserved
-//Bit 27:0          ro_mif_int_flag_dbg    // unsigned ,    RO, default = 0 inp handshake package
-#define FRC_REG_INP_CTRL1                          0x04f6
-//Bit 31:28         reserved
-//Bit 27            reg_osd_pat_gen_en         // unsigned ,   RW, default = 0  reg_osd_pat_gen_en
-//Bit 26            reg_osd_pat_gen_mode       // unsigned ,   RW, default = 0  reg_osd_pat_gen_mode
-//Bit 25:13         reg_pat_gen_xyxy_v0        // unsigned ,   RW, default = 0  reg_pat_gen_xyxy_v0
-//Bit 12:0          reg_pat_gen_xyxy_h0        // unsigned ,   RW, default = 0  reg_pat_gen_xyxy_h0
-#define FRC_REG_INP_CTRL2                          0x04f7
-//Bit 31:26         reserved
-//Bit 25:13         reg_pat_gen_xyxy_v1        // unsigned ,   RW, default = 0  reg_pat_gen_xyxy_v1
-//Bit 12:0          reg_pat_gen_xyxy_h1        // unsigned ,   RW, default = 0  reg_pat_gen_xyxy_h1
-#define FRC_REG_INP_GCLK_CTRL                      0x04f8
-//Bit 31:20         reserved
-//Bit 19:18         reg_inp_hw_reg_gclk_ctrl   // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 17:16         reg_inp_top_reg_gclk_ctrl  // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 15:14         reg_cur_wbuf_gclk_ctrl     // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 13:12         reg_blend_gclk_ctrl        // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 11:10         reg_menr_gclk_ctrl         // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 9:8           reg_inp_reg_gclk_ctrl      // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 7:6           reg_hme_dsc_gclk_ctrl      // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 5:4           reg_me_dsc_gclk_ctrl       // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 3:2           reg_inp_osd_gclk_ctrl      // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 1:0           reg_inp_fmt_gclk_ctrl      // unsigned,   RW, default = 0 clk gating ctrl signal
-#define FRC_REG_INP_MODULE_EN                      0x04f9
-//Bit 31:14         reserved
-//Bit 13            reg_fmt_en                 // unsigned,   RW, default = 1 yuv444toyuv422 convert for mc enable signal,active high
-//Bit 12:10         reg_inp_fmt422_mode        // unsigned,   RW, default = 0 input fmt yuv444 or yuv422
-//Bit 9             reg_mc_nr_en               // unsigned,   RW, default = 0 mc nr enable signal,active high
-//Bit 8             reg_inp_logo_en            // unsigned,   RW, default = 0 iplogo data path enable singal,active high
-//Bit 7             reg_inp_bbd_en             // unsigned,   RW, default = 0 bb detection enable signal,active high
-//Bit 6             reg_inp_pat_gen_en         // unsigned,   RW, default = 0 pat_gen mode enable signal,active high
-//Bit 5             reg_menr_en                // unsigned,   RW, default = 1 me nr enable signal,active high
-//Bit 4             reg_me_vdsc_en             // unsigned,   RW, default = 1 vertical dowmsample of blend for me enale signal,active high
-//Bit 3             reg_me_hdsc_en             // unsigned,   RW, default = 1 horizontal dowmsample of blend for me enale signal,active high
-//Bit 2             reg_hme_vdsc_en            // unsigned,   RW, default = 1 vertical dowmsample of blend for hme enale signal,active high
-//Bit 1             reg_hme_hdsc_en            // unsigned,   RW, default = 1 horizontal dowmsample of blend for hme enale signal,active high
-//Bit 0             reg_inp_bld_fmt422_mode    // unsigned,   RW, default = 0 input fmt of blend,0-yuv444,1-yuv422
-#define FRC_REG_INP_DBG_CTRL1                      0x04fa
-//Bit 31:16         reserved
-//Bit 15:12         reg_inp_dbg_ctrl          // unsigned ,    RW, default = 0  reg_inp_dbg_ctrl
-//Bit 11: 0         reserved
-#define FRC_REG_INP_DBG_CTRL2                      0x04fb
-//Bit 31:30         reserved
-//Bit 29:0          reg_inp_dbg_data          // unsigned ,    RW, default = 0  reg_inp_dbg_data
-#define FRC_REG_INP_DBG_CTRL3                      0x04fc
-//Bit 31:30         reg_osd_force_en          // unsigned ,    RW, default = 0  osd debug force enable
-//Bit 29: 0         reg_osd_force_yuv         // unsigned ,    RW, default = 0  osd debug force color
-#define FRC_REG_INP_MIF_GCLK_CTRL                  0x04fd
-//Bit 31:20         reserved
-//Bit 19:18         reg_hme_wrmif_gclk_ctrl    // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 17:16         reg_logo_rdmif0_gclk_ctrl  // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 15:14         reg_logo_rdmif1_gclk_ctrl  // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 13:12         reg_logo_wrmif0_gclk_ctrl  // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 11:10         reg_logo_wrmif1_gclk_ctrl  // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 9:8           reg_melogo_wrmif_gclk_ctrl // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 7:6           reg_iplogo_wrmif_gclk_ctrl // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 5:4           reg_rd_arb_gclk_ctrl       // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 3:2           reg_wr_arb_1x4_gclk_ctrl   // unsigned,   RW, default = 0 clk gating ctrl signal
-//Bit 1:0           reg_wr_arb_1x8_gclk_ctrl   // unsigned,   RW, default = 0 clk gating ctrl signal
-#define FRC_INP_LOSS_SLICE_SEC                     0x04fe
-//Bit 31:1          reserved
-//Bit 0             reg_inp_loss_slice_sec    // unsigned,   RW, default = 0,1:same as lossy-body 0:non_security
-// synopsys translate_off
-// synopsys translate_on
-//
-// Closing file:  ./frc_inc/frc_inp_hw_reg.h
-//
+
 // -----------------------------------------------
 // REG_BASE:  FRC_INP_LOGO_APB_BASE = 0x05
 // -----------------------------------------------
@@ -2018,7 +2016,7 @@
 //Bit  7           reg_iplogo_blk_logodir4_corr_clr_en // unsigned ,    RW, default = 1  dft=1;  0: blk_logodir4_corr_clr disable, 1: blk_logodir4_corr_clr enable
 //Bit  6           reg_iplogo_blk_edgedir4_corr_clr_en // unsigned ,    RW, default = 1  dft=1;  0: blk_edgedir4_corr_clr disable, 1: blk_edgedir4_corr_clr enable
 //Bit  5           reg_iplogo_blk_dir4_clr_scc_en // unsigned ,    RW, default = 0  dft=1;  0: blk dir4 ratio clr disable, 1: blk dir4 ratio clr enable
-//Bit  4           reg_iplogo_blk_disaper_clr_scc_en // unsigned ,    RW, default = 1  dft=0;  0: blk sudden disappear clr disable, 1: blk sudden disappear clr enable
+//Bit  4           reg_iplogo_blk_disappear_clr_scc_en // unsigned ,    RW, default = 1  dft=0;  0: blk sudden disappear clr disable, 1: blk sudden disappear clr enable
 //Bit  3           reg_iplogo_scc_remap_imclose_en // unsigned ,    RW, default = 1  dft=1;  0: ip pxllogo imclose disable, 1: ip pxllogo imclose enable
 //Bit  2           reg_iplogo_blk_dil_en     // unsigned ,    RW, default = 1  dft=1;  0: ip blklogo dilate disable, 1: ip blklogo dilate enable
 //Bit  1           reg_iplogo_blk_ero_en     // unsigned ,    RW, default = 1  dft=1;  0: ip blklogo erosion disable, 1: ip blklogo erosion enable
@@ -2694,39 +2692,39 @@
 //Bit  7: 0        reg_iplogo_blk_dir4_clr_blk_rate // unsigned ,    RW, default = 190  blk dir4 ratio clr method blk principal rate threshold upper limit
 #define FRC_IPLOGO_DISAPER_PXL_PARAM               0x0573
 //Bit 31:15        reserved
-//Bit 14:12        reg_iplogo_blk_disaper_edge_dif_coring // unsigned ,    RW, default = 5  blk sudden disappear clr edge dif flag coring
+//Bit 14:12        reg_iplogo_blk_disappear_edge_dif_coring // unsigned ,    RW, default = 5  blk sudden disappear clr edge dif flag coring
 //Bit 11            reserved
-//Bit 10: 8        reg_iplogo_blk_disaper_edge_coring // unsigned ,    RW, default = 5  blk sudden disappear clr edge strength coring
-//Bit  7: 0        reg_iplogo_blk_disaper_pxl_cnt_th // unsigned ,    RW, default = 3  blk sudden disappear clr pxl cnt threshold
+//Bit 10: 8        reg_iplogo_blk_disappear_edge_coring // unsigned ,    RW, default = 5  blk sudden disappear clr edge strength coring
+//Bit  7: 0        reg_iplogo_blk_disappear_pxl_cnt_th // unsigned ,    RW, default = 3  blk sudden disappear clr pxl cnt threshold
 #define FRC_IPLOGO_DISAPER_BLKCLR_PARAM            0x0574
 //Bit 31:14        reserved
-//Bit 13:12        reg_iplogo_blk_disaper_clr_masky // unsigned ,    RW, default = 2  blk sudden disappear clr method mask ysize
-//Bit 11: 8        reg_iplogo_blk_disaper_clr_maskx // unsigned ,    RW, default = 5  blk sudden disappear clr method mask xsize
-//Bit  7: 0        reg_iplogo_blk_disaper_clr_blk_cnt_th // unsigned ,    RW, default = 6  blk sudden disappear clr blk cnt threshold
+//Bit 13:12        reg_iplogo_blk_disappear_clr_masky // unsigned ,    RW, default = 2  blk sudden disappear clr method mask ysize
+//Bit 11: 8        reg_iplogo_blk_disappear_clr_maskx // unsigned ,    RW, default = 5  blk sudden disappear clr method mask xsize
+//Bit  7: 0        reg_iplogo_blk_disappear_clr_blk_cnt_th // unsigned ,    RW, default = 6  blk sudden disappear clr blk cnt threshold
 #define FRC_IPLOGO_DISAPER_DIF_TH_0                0x0575
 //Bit 31: 6        reserved
-//Bit  5: 0        reg_iplogo_blk_disaper_avg_diff_th_0 // unsigned ,    RW, default = 25  blk sudden disappear clr method avg gray dif threshold
+//Bit  5: 0        reg_iplogo_blk_disappear_avg_diff_th_0 // unsigned ,    RW, default = 25  blk sudden disappear clr method avg gray dif threshold
 #define FRC_IPLOGO_DISAPER_DIF_TH_1                0x0576
 //Bit 31: 6        reserved
-//Bit  5: 0        reg_iplogo_blk_disaper_avg_diff_th_1 // unsigned ,    RW, default = 24  blk sudden disappear clr method avg gray dif threshold
+//Bit  5: 0        reg_iplogo_blk_disappear_avg_diff_th_1 // unsigned ,    RW, default = 24  blk sudden disappear clr method avg gray dif threshold
 #define FRC_IPLOGO_DISAPER_DIF_TH_2                0x0577
 //Bit 31: 6        reserved
-//Bit  5: 0        reg_iplogo_blk_disaper_avg_diff_th_2 // unsigned ,    RW, default = 22  blk sudden disappear clr method avg gray dif threshold
+//Bit  5: 0        reg_iplogo_blk_disappear_avg_diff_th_2 // unsigned ,    RW, default = 22  blk sudden disappear clr method avg gray dif threshold
 #define FRC_IPLOGO_DISAPER_DIF_TH_3                0x0578
 //Bit 31: 6        reserved
-//Bit  5: 0        reg_iplogo_blk_disaper_avg_diff_th_3 // unsigned ,    RW, default = 20  blk sudden disappear clr method avg gray dif threshold
+//Bit  5: 0        reg_iplogo_blk_disappear_avg_diff_th_3 // unsigned ,    RW, default = 20  blk sudden disappear clr method avg gray dif threshold
 #define FRC_IPLOGO_DISAPER_DIF_TH_4                0x0579
 //Bit 31: 6        reserved
-//Bit  5: 0        reg_iplogo_blk_disaper_avg_diff_th_4 // unsigned ,    RW, default = 18  blk sudden disappear clr method avg gray dif threshold
+//Bit  5: 0        reg_iplogo_blk_disappear_avg_diff_th_4 // unsigned ,    RW, default = 18  blk sudden disappear clr method avg gray dif threshold
 #define FRC_IPLOGO_DISAPER_DIF_TH_5                0x057a
 //Bit 31: 6        reserved
-//Bit  5: 0        reg_iplogo_blk_disaper_avg_diff_th_5 // unsigned ,    RW, default = 16  blk sudden disappear clr method avg gray dif threshold
+//Bit  5: 0        reg_iplogo_blk_disappear_avg_diff_th_5 // unsigned ,    RW, default = 16  blk sudden disappear clr method avg gray dif threshold
 #define FRC_IPLOGO_DISAPER_DIF_TH_6                0x057b
 //Bit 31: 6        reserved
-//Bit  5: 0        reg_iplogo_blk_disaper_avg_diff_th_6 // unsigned ,    RW, default = 15  blk sudden disappear clr method avg gray dif threshold
+//Bit  5: 0        reg_iplogo_blk_disappear_avg_diff_th_6 // unsigned ,    RW, default = 15  blk sudden disappear clr method avg gray dif threshold
 #define FRC_IPLOGO_DISAPER_DIF_TH_7                0x057c
 //Bit 31: 6        reserved
-//Bit  5: 0        reg_iplogo_blk_disaper_avg_diff_th_7 // unsigned ,    RW, default = 0  blk sudden disappear clr method avg gray dif threshold
+//Bit  5: 0        reg_iplogo_blk_disappear_avg_diff_th_7 // unsigned ,    RW, default = 0  blk sudden disappear clr method avg gray dif threshold
 #define FRC_IPLOGO_PXLCLOSE_MSIZE                  0x057d
 //Bit 31:28        reg_iplogo_scc_remap_imclose_masksize_7 // unsigned ,    RW, default = 5  pxllogo msize erosion:  down
 //Bit 27:24        reg_iplogo_scc_remap_imclose_masksize_6 // unsigned ,    RW, default = 5  pxllogo msize erosion:  up
@@ -2867,9 +2865,9 @@
 //Bit 15            reserved
 //Bit 14:12        reg_iplogo_dir4_for_ratio_dbg_th // unsigned ,    RW, default = 0  dft = 0,  inner signal debug threshold
 //Bit 11            reserved
-//Bit 10: 8        reg_iplogo_disaper_flag_dbg_th // unsigned ,    RW, default = 0  dft = 0,  inner signal debug threshold
+//Bit 10: 8        reg_iplogo_disappear_flag_dbg_th // unsigned ,    RW, default = 0  dft = 0,  inner signal debug threshold
 //Bit  7            reserved
-//Bit  6: 4        reg_iplogo_disaper_clr_flag_dbg_th // unsigned ,    RW, default = 0  dft = 0,  inner signal debug threshold
+//Bit  6: 4        reg_iplogo_disappear_clr_flag_dbg_th // unsigned ,    RW, default = 0  dft = 0,  inner signal debug threshold
 //Bit  3            reserved
 //Bit  2: 0        reg_iplogo_blk_clr_flag_dbg_th // unsigned ,    RW, default = 0  dft = 0,  inner signal debug threshold
 #define FRC_IPLOGO_BLK_DBG_TH_1                    0x058f
@@ -3508,7 +3506,8 @@
 //Bit  5           reg_fd_reverse_en         // unsigned ,    RW, default = 0  enable for reverse (outside window is valid)
 //Bit  4           reg_fd_mute_en            // unsigned ,    RW, default = 0
 //Bit  3           reg_film_motion_hwfw_sel  // unsigned ,    RW, default = 1  0: use reg_fd_film_mot_flag;  1: use HW
-//Bit  2: 1        reserved
+//Bit  2            reserved
+//Bit  1           reg_fd_phase_err_flg_film // unsigned ,    RW, default = 0  global, phase error flag in A1A2 period
 //Bit  0           reg_fd_mot_en             // unsigned ,    RW, default = 1  enable for pixel dif  sum calculate
 #define FRC_FD_CLIP_TH                             0x0701
 //Bit 31:24        reg_fd_mot_clip_th4       // unsigned ,    RW, default = 100
@@ -3766,16 +3765,20 @@
 #define FRC_FD_DIF_COUNT_12WIND2_11                0x075d
 //Bit 31:20        reserved
 //Bit 19: 0        ro_fd_mot2_count_wind12_11 // unsigned ,    RO, default = 0  12 window ,count of difference of cur and pre
-#define FRC_FD_PD_OUT                              0x075e
+#define FRC_FD_DIF_GL_FILM_PRE                     0x075e
+//Bit 31: 0        ro_fd_glb_mot_all_film_pre // unsigned ,    RO, default = 0  pre difference of cur and pre when AB change
+#define FRC_FD_DIF_GL_AVG8                         0x075f
+//Bit 31: 0        ro_fd_glb_mot_avg8        // unsigned ,    RO, default = 0  global, average 8 of difference of cur and pre
+#define FRC_FD_PD_OUT                              0x0770
 //Bit 31:13        reserved
 //Bit 12: 8        ro_flmmod                  // unsigned ,    RO, default = 0
 //Bit 7: 5         reserved
 //Bit 4: 0         ro_phase                   // unsigned ,    RO, default = 0
-#define FRC_PD_CTRL                                0x0760
+#define FRC_PD_CTRL                                0x0771
 //Bit 31: 9        reserved
 //Bit 8            reg_pd_en         // unsigned ,    RW,    default = 1
 //Bit 7: 6         reserved
-//Bit 5: 0         reg_pd_gclk_ctrl  // unsigned ,    RW,    default = 42
+//Bit 5: 0         reg_pd_gclk_ctrl  // unsigned ,    RW,    default = 0
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -4237,7 +4240,6 @@
 // synopsys translate_off
 // synopsys translate_on
 #define CLOSS1_OFFSET             (0x40 << 2)
-
 //for RTL
 //Bit 31:20        reserved
 //Bit 19:16        reg_prefilt_alpha_0       // unsigned ,    RW, default = 0  prefilter lpf alpha on val2enc data, especially useful for high compression ratio,   0: no lpf; 8:lpf strong on: default= depends on compression ratio, higher ratio, stronger one
@@ -4748,8 +4750,7 @@
 //Bit 30           reg_me_lpf_en             // unsigned ,    RW, default = 0  lpf enable for me data
 //Bit 29            reserved
 //Bit 28:24        reg_me_max_num_cand_me    // unsigned ,    RW, default = 13  maximum number for ME candidates
-//Bit 23:21        reserved
-//Bit 20:16        reg_me_max_num_cand_hme   // unsigned ,    RW, default = 13  maximum number for ME candidates, hierarchical.
+//Bit 23:16        reserved
 //Bit 15            reserved
 //Bit 14:12        reg_me_blksize_x          // unsigned ,    RW, default = 2  block size x(2^reg) in ME sub module under the Buf_blend data (downsampled); default = 2;
 //Bit 11            reserved
@@ -4779,9 +4780,8 @@
 //Bit 15: 8        reg_me_lbuf_num_1         // unsigned ,    RW, default = 92  lbuf numbers for cur
 //Bit  7: 0        reg_me_lbuf_num_0         // unsigned ,    RW, default = 92  lbuf numbers for pre
 #define FRC_ME_DBG                                 0x1105
-//Bit 31:29        reserved
-//Bit 28           reg_me_hiermv_chk_en      // unsigned ,    RW, default = 0  enable checking if hierarchical mv is new
-//Bit 27           reg_me_stmv_chk_en        // unsigned ,    RW, default = 0  enable checking if spatial/temporal mv is new
+//Bit 31:28        reserved
+//Bit 27           reg_me_stmv_chk_en        // unsigned ,    RW, defult = 0  enable checking if spatial/temporal mv is new
 //Bit 26           reg_me_rndmv_chk_en       // unsigned ,    RW, default = 0  enable checking if random mv is new
 //Bit 25           reg_me_fsmv_chk_en        // unsigned ,    RW, default = 0  enable checking if full search mv is new
 //Bit 24           reg_me_prjmv_chk_en       // unsigned ,    RW, default = 0  enable checking if projected mv is new
@@ -4899,7 +4899,7 @@
 //Bit 31:25        reserved
 //Bit 24           reg_me_bv_group_adp_en    // unsigned ,    RW, default = 1  enable adaptive threshold of mvdiff if mvs belong to the same group (similar mvs)
 //Bit 23:18        reserved
-//Bit 17           reg_me_adp_mv_thd_mod     // unsigned ,    RW, default = 0  of adpative mv threshold
+//Bit 17           reg_me_adp_mv_thd_mod     // unsigned ,    RW, default = 0  of adaptive mv threshold
 //Bit 16           reg_me_mv_var_mod         // unsigned ,    RW, default = 0  mv(x/y) var mode of mvdiff if mvs belong to the same group (similar mvs)
 //Bit 15:12        reg_me_oob_movinside_x_ofst_th2 // unsigned ,    RW, default = 0  the threshold x ofst if current block is out of boundary or black bar.
 //Bit 11: 8        reg_me_oob_movinside_y_ofst_th2 // unsigned ,    RW, default = 0  the threshold y ofst if current block is out of boundary or black bar.
@@ -5044,36 +5044,24 @@
 //Bit  7: 0        reg_me_rpd_min_peak_th    // unsigned ,    RW, default = 0  min peak threshold for repeated pattern search
 #define FRC_ME_RPD_T1_FLAT                         0x112c
 //Bit 31:28        reserved
-//Bit 27:16        reg_me_rpd_t1_flat_th0    // unsigned ,
-//RW, default = 256  flat threshold0 cleaning false type one detection for repeated pattern search
-//Bit 15: 8        reg_me_rpd_t1_flat_th1    // unsigned ,
-//RW, default = 6  flat threshold1 cleaning false type one detection for repeated pattern search
-//Bit  7: 0        reg_me_rpd_t1_th          // unsigned ,
-//RW, default = 64  type one rp threshold for repeated pattern search
+//Bit 27:16        reg_me_rpd_t1_flat_th0    // unsigned ,    RW, default = 256  flat threshold0 cleaning false type one detection for repeated pattern search
+//Bit 15: 8        reg_me_rpd_t1_flat_th1    // unsigned ,    RW, default = 6  flat threshold1 cleaning false type one detection for repeated pattern search
+//Bit  7: 0        reg_me_rpd_t1_th          // unsigned ,    RW, default = 64  type one rp threshold for repeated pattern search
 #define FRC_ME_RPD_T2_LHL                          0x112d
-//Bit 31:24        reg_me_rpd_t2_lhl_th      // unsigned ,
-//RW, default = 12  type two lhl threshold for repeated pattern search
-//Bit 23:16        reg_me_rpd_t2_lhlhl_th    // unsigned ,
-//RW, default = 4  type two lhlhl threshold for repeated pattern search
+//Bit 31:24        reg_me_rpd_t2_lhl_th      // unsigned ,    RW, default = 12  type two lhl threshold for repeated pattern search
+//Bit 23:16        reg_me_rpd_t2_lhlhl_th    // unsigned ,    RW, default = 4  type two lhlhl threshold for repeated pattern search
 //Bit 15: 8        reserved
-//Bit  7: 0        reg_me_rpd_t2_flat_th3    // unsigned ,
-//RW, default = 8  flat threshold3 cleaning false type two detection for repeated pattern search
+//Bit  7: 0        reg_me_rpd_t2_flat_th3    // unsigned ,    RW, default = 8  flat threshold3 cleaning false type two detection for repeated pattern search
 #define FRC_ME_RPD_T2_FLAT                         0x112e
-//Bit 31:20        reg_me_rpd_t2_flat_th0    // unsigned ,
-//RW, default = 256  flat threshold0 cleaning false type two detection for repeated pattern search
-//Bit 19:12        reg_me_rpd_t2_flat_th1    // unsigned ,
-//RW, default = 6  flat threshold1 cleaning false type two detection for repeated pattern search
-//Bit 11: 0        reg_me_rpd_t2_flat_th2    // unsigned ,
-//RW, default = 128  flat threshold2 cleaning false type two detection for repeated pattern search
+//Bit 31:20        reg_me_rpd_t2_flat_th0    // unsigned ,    RW, default = 256  flat threshold0 cleaning false type two detection for repeated pattern search
+//Bit 19:12        reg_me_rpd_t2_flat_th1    // unsigned ,    RW, default = 6  flat threshold1 cleaning false type two detection for repeated pattern search
+//Bit 11: 0        reg_me_rpd_t2_flat_th2    // unsigned ,    RW, default = 128  flat threshold2 cleaning false type two detection for repeated pattern search
 #define FRC_ME_RPD_T3_FLAT                         0x112f
 //Bit 31:30        reserved
-//Bit 29:24        reg_me_rpd_t3_th          // unsigned ,
-//RW, default = 2  type three threshold for repeated pattern search, 8 is normalized as 1
-//Bit 23:16        reg_me_rpd_t3_flat_th1    // unsigned ,
-//RW, default = 6  flat threshold1 cleaning false type three detection for repeated pattern search
+//Bit 29:24        reg_me_rpd_t3_th          // unsigned ,    RW, default = 2  type three threshold for repeated pattern search, 8 is normalized as 1
+//Bit 23:16        reg_me_rpd_t3_flat_th1    // unsigned ,    RW, default = 6  flat threshold1 cleaning false type three detection for repeated pattern search
 //Bit 15:12        reserved
-//Bit 11: 0        reg_me_rpd_t3_flat_th0    // unsigned ,
-//RW, default = 256  flat threshold0 cleaning false type three detection for repeated pattern search
+//Bit 11: 0        reg_me_rpd_t3_flat_th0    // unsigned ,    RW, default = 256  flat threshold0 cleaning false type three detection for repeated pattern search
 #define FRC_ME_RPD_AUTO_FLAT                       0x1130
 //Bit 31:28        reserved
 //Bit 27:16        reg_me_rpd_auto_flat_th0  // unsigned ,    RW, default = 256  auto flat flag threshold0 for repeated pattern search
@@ -5125,8 +5113,8 @@
 #define FRC_ME_CAD_PRJ_GROUP                       0x1139
 //Bit 31:24        reg_mv_proj_group_th      // unsigned ,    RW, default = 16  threshold of mvdiff if mvs belong to the same group.quarter pixel MV presion.
 //Bit 23:16        reg_mv_proj_p2p_th        // unsigned ,    RW, default = 8  threshold of mvdiff if two mvs pointed to each other.quarter pixel MV presion.
-//Bit 15: 8        reg_mv_proj_absmvx_th     // unsigned ,    RW, default = 3  threshold of abs mvx (more than or equal) for mv porj check
-//Bit  7: 0        reg_mv_proj_absmvy_th     // unsigned ,    RW, default = 2  threshold of abs mvy (more than or equal) for mv porj check
+//Bit 15: 8        reg_mv_proj_absmvx_th     // unsigned ,    RW, default = 3  threshold of abs mvx (more than or equal) for mv proj check
+//Bit  7: 0        reg_mv_proj_absmvy_th     // unsigned ,    RW, default = 2  threshold of abs mvy (more than or equal) for mv proj check
 #define FRC_ME_CAD_PRJ_GROUP_2                     0x113a
 //Bit 31:24        reserved
 //Bit 23:16        reg_mv_proj_fs_sad_th     // unsigned ,    RW, default = 255  threshold of fs src mv sad to decide if uni mv be proj to phs
@@ -5136,6 +5124,29 @@
 //Bit 12           reg_mv_proj_gmv_invalid   // unsigned ,    RW, default = 0  gmv invalid signal for add prj mv candidate
 //Bit 11: 8        reg_mv_proj_gmv_diff_th   // unsigned ,    RW, default = 4  threshold of differ of prj mv and gmv
 //Bit  7: 0        reg_mv_proj_nofs_sad_th   // unsigned ,    RW, default = 255  threshold of no fs src mv sad to decide if uni mv be proj to phs
+#define FRC_ME_GCV2_EN                             0x113b
+//Bit 31:16        reserved
+//Bit 15           reg_me_glb_clr2_top_en    // unsigned ,    RW, default = 0  top enable signal for global clear v-buffer2
+//Bit 14           reg_me_glb_clr2_static_en // unsigned ,    RW, default = 0  control for global clear v-buffer2 static
+//Bit 13           reg_me_glb_clr2_scn_chg_en // unsigned ,    RW, default = 0  control for global clear v-buffer2 scene change
+//Bit 12           reg_me_glb_clr2_force_en  // unsigned ,    RW, default = 0  force enable clear v_buffer2
+//Bit 11: 6        reg_me_glb_clr2_static_hold_time // unsigned ,    RW, default = 4  holding time for global clear v-buffer
+//Bit  5: 0        reg_me_glb_clr2_scn_chg_hold_time // unsigned ,    RW, default = 5  holding time for global clear v-buffer
+#define FRC_ME_GCV2_TH                             0x113c
+//Bit 31: 8        reg_me_glb_clr2_static_th // unsigned ,    RW, default = 40  global motion for global clear v-buffer2
+//Bit  7: 0        reg_me_glb_clr2_scn_chg_glbmot_ratio_th // unsigned ,    RW, default = 30  global motion ratio for scene change
+#define FRC_ME_PROJ_CHK                            0x113d
+//Bit 31:24        reserved
+//Bit 23           reg_mv_en_proj_sel_0      // unsigned ,    RW, default = 1  rpd0_en_prj_candidate for rp_flg.     1 means only rp_flg==0      will be possibly to set rpd0_en_prj_candidate to be 1.
+//Bit 22           reg_mv_en_proj_sel_1      // unsigned ,    RW, default = 1  rpd0_en_prj_candidate for flat_flg.   1 means only flat_flg==0    will be possibly to set rpd0_en_prj_candidate to be 1.
+//Bit 21           reg_mv_en_proj_sel_2      // unsigned ,    RW, default = 1  rpd0_en_prj_candidate for line_flg.   1 means only line_flg==0    will be possibly to set rpd0_en_prj_candidate to be 1.
+//Bit 20           reg_mv_en_proj_sel_3      // unsigned ,    RW, default = 1  rpd0_en_prj_candidate for hard_ab_flg.1 means only hard_ab_flg==0 will be possibly to set rpd0_en_prj_candidate to be 1.
+//Bit 19:11        reserved
+//Bit 10           reg_mv_proj_chk_fs_en     // unsigned ,    RW, default = 0  enable prj when fs_en_flag = 1
+//Bit  9: 6        reserved
+//Bit  5           reg_mv_proj_chk_rpd0_en   // unsigned ,    RW, default = 1  enable prj when rpd_flg = 0
+//Bit  4: 1        reserved
+//Bit  0           reg_mv_proj_chk_fs_rpd0_en // unsigned ,    RW, default = 0  enable fs or rpd check for prj
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -5339,9 +5350,6 @@
 //
 // Closing file:  ./frc_inc/me_top_reg_hw.h
 //
-// -----------------------------------------------
-// REG_BASE:  FRC_ME_CMV0_HME_APB_BASE = 0x12
-// -----------------------------------------------
 //`include "hme_cmv_regs0.h"
 // -----------------------------------------------
 // REG_BASE:  FRC_ME_CMV0_APB_BASE = 0x13
@@ -5377,12 +5385,7 @@
 //Bit 15: 8        reg_me_rpd_penalty_gmv_cn // unsigned ,    RW, default = 12  penalty of gmv candidates for cn loop each scan if rp detected
 //Bit  7: 0        reg_me_rpd_penalty_gmv_nc // unsigned ,    RW, default = 12  penalty of gmv candidates for nc loop each scan if rp detected
 #define FRC_ME_ADD_HME_SAD                         0x1304
-//Bit 31:20        reserved
-//Bit 19:12        reg_me_add_h_mv_length_th // unsigned ,    RW, default = 12  threshold of mv length for add hierarchical mv
-//Bit 11: 4        reg_me_add_h_sad_th       // unsigned ,    RW, default = 10  threshold of sad for add hierarchical mv
-//Bit  3: 2        reserved
-//Bit  1           reg_me_add_h_chk_rp_flag_en // unsigned ,    RW, default = 0  enable for check rp flag when add hierarchical mv
-//Bit  0           reg_me_add_h_chk_sad_en   // unsigned ,    RW, default = 0  enable for check sad when add hierarchical mv
+//Bit 31: 0        reserved
 #define FRC_ME_BVSEL_GROUP_THXY                    0x1305
 //Bit 31:24        reserved
 //Bit 23:20        reg_me_mvxy_var_th0       // unsigned ,    RW, default = 12  mvxy_var threshold 0 of the curv   (change name)
@@ -5390,7 +5393,7 @@
 //Bit 15: 8        reg_me_mvxy_var_gain0     // unsigned ,    RW, default = 4  gain of mvxy_var less than or equal th0  (TBC, changed from ppt)
 //Bit  7: 0        reg_me_mvxy_var_gain1     // unsigned ,    RW, default = 16  gain of mvxy_var more than or equal th1
 #define FRC_ME_CAD_SETS_SEL_0                      0x1306
-//Bit 31:28        reg_me_add_sel_0_0        // unsigned ,    RW, default = 6  add cand sets, 0:S and T mv,10:S and T mv,1:zmv, 2: gmv, 3: rand mv, 4: prj mv, 5: fsmv, 6: hmv, 7: invalid;
+//Bit 31:28        reg_me_add_sel_0_0        // unsigned ,    RW, default = 7  add cand sets, 0:S and T mv,10:S and T mv,1:zmv, 2: gmv, 3: rand mv, 4: prj mv, 5: fsmv, 6: hmv, 7: invalid;
 //Bit 27:24        reg_me_add_sel_0_1        // unsigned ,    RW, default = 0  add cand sets,
 //Bit 23:20        reg_me_add_sel_0_2        // unsigned ,    RW, default = 10  add cand sets,
 //Bit 19:16        reg_me_add_sel_0_3        // unsigned ,    RW, default = 1  add cand sets,
@@ -5432,24 +5435,7 @@
 //Bit 15: 8        reg_me_penalty_s_t_0_8    // unsigned ,    RW, default = 0  static penalty for S and T
 //Bit  7: 0        reg_me_penalty_s_t_0_9    // unsigned ,    RW, default = 0  static penalty for S and T
 #define FRC_ME_CAD_RAD_EN_0                        0x130d
-//Bit 31           reg_me_add_h_en_0_0       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 30           reg_me_add_h_en_0_1       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 29           reg_me_add_h_en_0_2       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 28           reg_me_add_h_en_0_3       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 27           reg_me_add_h_en_0_4       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 26           reg_me_add_h_en_0_5       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 25           reg_me_add_h_en_0_6       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 24           reg_me_add_h_en_0_7       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 23           reg_me_add_h_en_0_8       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 22           reg_me_add_h_en_0_9       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 21           reg_me_add_h_en_0_10      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 20           reg_me_add_h_en_0_11      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 19           reg_me_add_h_en_0_12      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 18           reg_me_add_h_en_0_13      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 17           reg_me_add_h_en_0_14      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 16           reg_me_add_h_en_0_15      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 15: 5        reserved
-//Bit  4           reg_me_add_h_c_only_0     // unsigned ,    RW, default = 0  1 means enable current position for hie-candidate.
+//Bit 31: 4        reserved
 //Bit  3           reg_me_add_rad_en_0_0     // unsigned ,    RW, default = 1  enable to add rand candidate into candidate list, 0 do not add s0, 1 add s0
 //Bit  2           reg_me_add_rad_en_0_1     // unsigned ,    RW, default = 1  enable to add rand candidate into candidate list, 0 do not add s0, 1 add s0
 //Bit  1           reg_me_add_rad_en_0_2     // unsigned ,    RW, default = 0  enable to add rand candidate into candidate list, 0 do not add s0, 1 add s0
@@ -5504,28 +5490,16 @@
 //Bit 11: 8        reg_me_rad_y1_max_0_3     // unsigned ,    RW, default = 1  max random offset for the cmv (0~+15)
 //Bit  7: 4        reg_me_rad_x2_max_0_3     // unsigned ,    RW, default = 1  max random offset for the cmv (0~+15)
 //Bit  3: 0        reg_me_rad_y2_max_0_3     // unsigned ,    RW, default = 1  max random offset for the cmv (0~+15)
-#define FRC_ME_CAD_HIE_PEN0_0                      0x1314
-//Bit 31:24        reg_me_penalty_h_0_0      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_0_1      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_0_2      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_0_3      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-#define FRC_ME_CAD_HIE_PEN1_0                      0x1315
-//Bit 31:24        reg_me_penalty_h_0_4      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_0_5      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_0_6      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_0_7      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-#define FRC_ME_CAD_HIE_PEN2_0                      0x1316
-//Bit 31:24        reg_me_penalty_h_0_8      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_0_9      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_0_10     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_0_11     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-#define FRC_ME_CAD_HIE_PEN3_0                      0x1317
-//Bit 31:24        reg_me_penalty_h_0_12     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_0_13     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_0_14     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_0_15     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
+#define FRC_ME_CAD_HIE_PEN0_DELETE_0               0x1314
+//Bit 31: 0        reserved
+#define FRC_ME_CAD_HIE_PEN1_DELETE_0               0x1315
+//Bit 31: 0        reserved
+#define FRC_ME_CAD_HIE_PEN2_DELETE_0               0x1316
+//Bit 31: 0        reserved
+#define FRC_ME_CAD_HIE_PEN3_DELETE_0               0x1317
+//Bit 31: 0        reserved
 #define FRC_ME_CAD_SETS_SEL_1                      0x1318
-//Bit 31:28        reg_me_add_sel_1_0        // unsigned ,    RW, default = 6  add cand sets, 0:S and T mv,10:S and T mv,1:zmv, 2: gmv, 3: rand mv, 4: prj mv, 5: fsmv, 6: hmv, 7: invalid;
+//Bit 31:28        reg_me_add_sel_1_0        // unsigned ,    RW, default = 7  add cand sets, 0:S and T mv,10:S and T mv,1:zmv, 2: gmv, 3: rand mv, 4: prj mv, 5: fsmv, 6: hmv, 7: invalid;
 //Bit 27:24        reg_me_add_sel_1_1        // unsigned ,    RW, default = 0  add cand sets,
 //Bit 23:20        reg_me_add_sel_1_2        // unsigned ,    RW, default = 10  add cand sets,
 //Bit 19:16        reg_me_add_sel_1_3        // unsigned ,    RW, default = 1  add cand sets,
@@ -5567,24 +5541,7 @@
 //Bit 15: 8        reg_me_penalty_s_t_1_8    // unsigned ,    RW, default = 0  static penalty for S and T
 //Bit  7: 0        reg_me_penalty_s_t_1_9    // unsigned ,    RW, default = 0  static penalty for S and T
 #define FRC_ME_CAD_RAD_EN_1                        0x131f
-//Bit 31           reg_me_add_h_en_1_0       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 30           reg_me_add_h_en_1_1       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 29           reg_me_add_h_en_1_2       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 28           reg_me_add_h_en_1_3       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 27           reg_me_add_h_en_1_4       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 26           reg_me_add_h_en_1_5       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 25           reg_me_add_h_en_1_6       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 24           reg_me_add_h_en_1_7       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 23           reg_me_add_h_en_1_8       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 22           reg_me_add_h_en_1_9       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 21           reg_me_add_h_en_1_10      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 20           reg_me_add_h_en_1_11      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 19           reg_me_add_h_en_1_12      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 18           reg_me_add_h_en_1_13      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 17           reg_me_add_h_en_1_14      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 16           reg_me_add_h_en_1_15      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 15: 5        reserved
-//Bit  4           reg_me_add_h_c_only_1     // unsigned ,    RW, default = 0  1 means enable current position for hie-candidate.
+//Bit 31: 4        reserved
 //Bit  3           reg_me_add_rad_en_1_0     // unsigned ,    RW, default = 1  enable to add rand candidate into candidate list, 0 do not add s0, 1 add s0
 //Bit  2           reg_me_add_rad_en_1_1     // unsigned ,    RW, default = 1  enable to add rand candidate into candidate list, 0 do not add s0, 1 add s0
 //Bit  1           reg_me_add_rad_en_1_2     // unsigned ,    RW, default = 0  enable to add rand candidate into candidate list, 0 do not add s0, 1 add s0
@@ -5640,27 +5597,15 @@
 //Bit  7: 4        reg_me_rad_x2_max_1_3     // unsigned ,    RW, default = 1  max random offset for the cmv (0~+15)
 //Bit  3: 0        reg_me_rad_y2_max_1_3     // unsigned ,    RW, default = 1  max random offset for the cmv (0~+15)
 #define FRC_ME_CAD_HIE_PEN0_1                      0x1326
-//Bit 31:24        reg_me_penalty_h_1_0      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_1_1      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_1_2      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_1_3      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
+//Bit 31: 0        reserved
 #define FRC_ME_CAD_HIE_PEN1_1                      0x1327
-//Bit 31:24        reg_me_penalty_h_1_4      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_1_5      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_1_6      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_1_7      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
+//Bit 31: 0        reserved
 #define FRC_ME_CAD_HIE_PEN2_1                      0x1328
-//Bit 31:24        reg_me_penalty_h_1_8      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_1_9      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_1_10     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_1_11     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
+//Bit 31: 0        reserved
 #define FRC_ME_CAD_HIE_PEN3_1                      0x1329
-//Bit 31:24        reg_me_penalty_h_1_12     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_1_13     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_1_14     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_1_15     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
+//Bit 31: 0        reserved
 #define FRC_ME_CAD_SETS_SEL_2                      0x132a
-//Bit 31:28        reg_me_add_sel_2_0        // unsigned ,    RW, default = 6  add cand sets, 0:S and T mv,10:S and T mv,1:zmv, 2: gmv, 3: rand mv, 4: prj mv, 5: fsmv, 6: hmv, 7: invalid;
+//Bit 31:28        reg_me_add_sel_2_0        // unsigned ,    RW, default = 7  add cand sets, 0:S and T mv,10:S and T mv,1:zmv, 2: gmv, 3: rand mv, 4: prj mv, 5: fsmv, 6: hmv, 7: invalid;
 //Bit 27:24        reg_me_add_sel_2_1        // unsigned ,    RW, default = 0  add cand sets,
 //Bit 23:20        reg_me_add_sel_2_2        // unsigned ,    RW, default = 10  add cand sets,
 //Bit 19:16        reg_me_add_sel_2_3        // unsigned ,    RW, default = 1  add cand sets,
@@ -5702,24 +5647,7 @@
 //Bit 15: 8        reg_me_penalty_s_t_2_8    // unsigned ,    RW, default = 0  static penalty for S and T
 //Bit  7: 0        reg_me_penalty_s_t_2_9    // unsigned ,    RW, default = 0  static penalty for S and T
 #define FRC_ME_CAD_RAD_EN_2                        0x1331
-//Bit 31           reg_me_add_h_en_2_0       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 30           reg_me_add_h_en_2_1       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 29           reg_me_add_h_en_2_2       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 28           reg_me_add_h_en_2_3       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 27           reg_me_add_h_en_2_4       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 26           reg_me_add_h_en_2_5       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 25           reg_me_add_h_en_2_6       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 24           reg_me_add_h_en_2_7       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 23           reg_me_add_h_en_2_8       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 22           reg_me_add_h_en_2_9       // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 21           reg_me_add_h_en_2_10      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 20           reg_me_add_h_en_2_11      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 19           reg_me_add_h_en_2_12      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 18           reg_me_add_h_en_2_13      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 17           reg_me_add_h_en_2_14      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 16           reg_me_add_h_en_2_15      // unsigned ,    RW, default = 1  enable to add hierarchical candidates into candidate list, 0 do not add, 1 add
-//Bit 15: 5        reserved
-//Bit  4           reg_me_add_h_c_only_2     // unsigned ,    RW, default = 0  1 means enable current position for hie-candidate.
+//Bit 31: 4        reserved
 //Bit  3           reg_me_add_rad_en_2_0     // unsigned ,    RW, default = 1  enable to add rand candidate into candidate list, 0 do not add s0, 1 add s0
 //Bit  2           reg_me_add_rad_en_2_1     // unsigned ,    RW, default = 1  enable to add rand candidate into candidate list, 0 do not add s0, 1 add s0
 //Bit  1           reg_me_add_rad_en_2_2     // unsigned ,    RW, default = 0  enable to add rand candidate into candidate list, 0 do not add s0, 1 add s0
@@ -5775,25 +5703,13 @@
 //Bit  7: 4        reg_me_rad_x2_max_2_3     // unsigned ,    RW, default = 1  max random offset for the cmv (0~+15)
 //Bit  3: 0        reg_me_rad_y2_max_2_3     // unsigned ,    RW, default = 1  max random offset for the cmv (0~+15)
 #define FRC_ME_CAD_HIE_PEN0_2                      0x1338
-//Bit 31:24        reg_me_penalty_h_2_0      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_2_1      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_2_2      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_2_3      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
+//Bit 31: 0        reserved
 #define FRC_ME_CAD_HIE_PEN1_2                      0x1339
-//Bit 31:24        reg_me_penalty_h_2_4      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_2_5      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_2_6      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_2_7      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
+//Bit 31: 0        reserved
 #define FRC_ME_CAD_HIE_PEN2_2                      0x133a
-//Bit 31:24        reg_me_penalty_h_2_8      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_2_9      // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_2_10     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_2_11     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
+//Bit 31: 0        reserved
 #define FRC_ME_CAD_HIE_PEN3_2                      0x133b
-//Bit 31:24        reg_me_penalty_h_2_12     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 23:16        reg_me_penalty_h_2_13     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit 15: 8        reg_me_penalty_h_2_14     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
-//Bit  7: 0        reg_me_penalty_h_2_15     // unsigned ,    RW, default = 60  static penalty for hierarchical candidates
+//Bit 31: 0        reserved
 #define FRC_ME_CAD_POS0_0                          0x133c
 //Bit 31:28        reg_me_cmv_s_t_pos_x_0_0  // signed ,    RW, default = -1  for S and T candidates position X
 //Bit 27:24        reg_me_cmv_s_t_pos_y_0_0  // signed ,    RW, default = -1  for S and T candidates position Y
@@ -5941,17 +5857,13 @@
 #define FRC_ME_RAD_EDGE_0                          0x134e
 //Bit 31:26        reserved
 //Bit 25           reg_me_rad_edge_en_0      // unsigned ,    RW, default = 0  enable edge based random offst for each loop
-//Bit 24           reg_me_rad_edge_calc_mode_0 // unsigned ,    RW, default = 1  edege calc. mode used for random candidates, 0: dif calc. using top/bot row or left/right column for cost saving, 1: dif calc. using every row/column;
+//Bit 24           reg_me_rad_edge_calc_mode_0 // unsigned ,    RW, default = 1  edges calc. mode used for random candidates, 0: dif calc. using top/bot row or left/right column for cost saving, 1: dif calc. using every row/column;
 //Bit 23:20        reg_me_rad_edge_core_0    // unsigned ,    RW, default = 0  core for edge calc.
 //Bit 19:16        reg_me_rad_edge_thn_0     // unsigned ,    RW, default = 9  me_rad_edge threshold1 = th0 + 2^thn to get the th1 of the curv
 //Bit 15:10        reserved
 //Bit  9: 0        reg_me_rad_edge_th0_0     // unsigned ,    RW, default = 128  threshold 0 of the curv
 #define FRC_ME_HME_RAD_MODE_0                      0x134f
-//Bit 31: 4        reserved
-//Bit  3           reg_hme_rad_mode_0_0      // unsigned ,    RW, default = 0  hme random mode for seed0, 0: use current layer, 1: use top layer
-//Bit  2           reg_hme_rad_mode_0_1      // unsigned ,    RW, default = 0  hme random mode for seed1, 0: use current layer, 1: use top layer
-//Bit  1           reg_hme_rad_mode_0_2      // unsigned ,    RW, default = 0  hme random mode for seed2, 0: use current layer, 1: use top layer
-//Bit  0           reg_hme_rad_mode_0_3      // unsigned ,    RW, default = 0  hme random mode for seed3, 0: use current layer, 1: use top layer
+//Bit 31: 0        reserved
 #define FRC_ME_SEED0_0                             0x1350
 //Bit 31:16        reserved
 //Bit 15: 0        reg_me_rand_seed_mvx_0    // unsigned ,    RW, default = 43981  random seed for the LFSR for mvx integer part
@@ -5961,17 +5873,13 @@
 #define FRC_ME_RAD_EDGE_1                          0x1352
 //Bit 31:26        reserved
 //Bit 25           reg_me_rad_edge_en_1      // unsigned ,    RW, default = 0  enable edge based random offst for each loop
-//Bit 24           reg_me_rad_edge_calc_mode_1 // unsigned ,    RW, default = 1  edege calc. mode used for random candidates, 0: dif calc. using top/bot row or left/right column for cost saving, 1: dif calc. using every row/column;
+//Bit 24           reg_me_rad_edge_calc_mode_1 // unsigned ,    RW, default = 1  edges calc. mode used for random candidates, 0: dif calc. using top/bot row or left/right column for cost saving, 1: dif calc. using every row/column;
 //Bit 23:20        reg_me_rad_edge_core_1    // unsigned ,    RW, default = 0  core for edge calc.
 //Bit 19:16        reg_me_rad_edge_thn_1     // unsigned ,    RW, default = 9  me_rad_edge threshold1 = th0 + 2^thn to get the th1 of the curv
 //Bit 15:10        reserved
 //Bit  9: 0        reg_me_rad_edge_th0_1     // unsigned ,    RW, default = 128  threshold 0 of the curv
 #define FRC_ME_HME_RAD_MODE_1                      0x1353
-//Bit 31: 4        reserved
-//Bit  3           reg_hme_rad_mode_1_0      // unsigned ,    RW, default = 0  hme random mode for seed0, 0: use current layer, 1: use top layer
-//Bit  2           reg_hme_rad_mode_1_1      // unsigned ,    RW, default = 0  hme random mode for seed1, 0: use current layer, 1: use top layer
-//Bit  1           reg_hme_rad_mode_1_2      // unsigned ,    RW, default = 0  hme random mode for seed2, 0: use current layer, 1: use top layer
-//Bit  0           reg_hme_rad_mode_1_3      // unsigned ,    RW, default = 0  hme random mode for seed3, 0: use current layer, 1: use top layer
+//Bit 31: 0        reserved
 #define FRC_ME_SEED0_1                             0x1354
 //Bit 31:16        reserved
 //Bit 15: 0        reg_me_rand_seed_mvx_1    // unsigned ,    RW, default = 43981  random seed for the LFSR for mvx integer part
@@ -5981,17 +5889,13 @@
 #define FRC_ME_RAD_EDGE_2                          0x1356
 //Bit 31:26        reserved
 //Bit 25           reg_me_rad_edge_en_2      // unsigned ,    RW, default = 0  enable edge based random offst for each loop
-//Bit 24           reg_me_rad_edge_calc_mode_2 // unsigned ,    RW, default = 1  edege calc. mode used for random candidates, 0: dif calc. using top/bot row or left/right column for cost saving, 1: dif calc. using every row/column;
+//Bit 24           reg_me_rad_edge_calc_mode_2 // unsigned ,    RW, default = 1  edges calc. mode used for random candidates, 0: dif calc. using top/bot row or left/right column for cost saving, 1: dif calc. using every row/column;
 //Bit 23:20        reg_me_rad_edge_core_2    // unsigned ,    RW, default = 0  core for edge calc.
 //Bit 19:16        reg_me_rad_edge_thn_2     // unsigned ,    RW, default = 9  me_rad_edge threshold1 = th0 + 2^thn to get the th1 of the curv
 //Bit 15:10        reserved
 //Bit  9: 0        reg_me_rad_edge_th0_2     // unsigned ,    RW, default = 128  threshold 0 of the curv
 #define FRC_ME_HME_RAD_MODE_2                      0x1357
-//Bit 31: 4        reserved
-//Bit  3           reg_hme_rad_mode_2_0      // unsigned ,    RW, default = 0  hme random mode for seed0, 0: use current layer, 1: use top layer
-//Bit  2           reg_hme_rad_mode_2_1      // unsigned ,    RW, default = 0  hme random mode for seed1, 0: use current layer, 1: use top layer
-//Bit  1           reg_hme_rad_mode_2_2      // unsigned ,    RW, default = 0  hme random mode for seed2, 0: use current layer, 1: use top layer
-//Bit  0           reg_hme_rad_mode_2_3      // unsigned ,    RW, default = 0  hme random mode for seed3, 0: use current layer, 1: use top layer
+//Bit 31: 0        reserved
 #define FRC_ME_SEED0_2                             0x1358
 //Bit 31:16        reserved
 //Bit 15: 0        reg_me_rand_seed_mvx_2    // unsigned ,    RW, default = 43981  random seed for the LFSR for mvx integer part
@@ -6043,9 +5947,6 @@
 //
 // Closing file:  ./frc_inc/me_cmv_regs0.h
 //
-// -----------------------------------------------
-// REG_BASE:  FRC_ME_CBV0_HME_APB_BASE = 0x14
-// -----------------------------------------------
 //`include "hme_cbv_regs0.h"
 // -----------------------------------------------
 // REG_BASE:  FRC_ME_CBV0_APB_BASE = 0x15
@@ -6067,31 +5968,13 @@
 //Bit  3            reserved
 //Bit  2: 0        reg_obme_mask_mode_0      // unsigned ,    RW, default = 3  mode of obme mask mode selection, 0: 4x8 mask, 1: 8x8 mask; 2:12x8 mask, 3: 16x8 mask
 #define FRC_ME_H_MVDIFF_SMOOTH_0                   0x1501
-//Bit 31:24        reserved
-//Bit 23:20        reg_hme_mvdiff_smooth_th0_0 // unsigned ,    RW, default = 8  threshold 0 of the curv
-//Bit 19:16        reg_hme_mvdiff_smooth_thn_0 // unsigned ,    RW, default = 7  hme_mvdiff threshold1 = th0 + 2^thn to get the th1 of the curv
-//Bit 15: 8        reg_hme_mvdiff_smooth_gain0_0 // unsigned ,    RW, default = 0  gain of hme_mvdiff less than or equal th0  (TBC, changed from ppt)
-//Bit  7: 0        reg_hme_mvdiff_smooth_gain1_0 // unsigned ,    RW, default = 255  gain of hme_mvdiff more than or equal th1
+//Bit 31: 0        reserved
 #define FRC_ME_H_MVDIFF_EN_0                       0x1502
-//Bit 31:16        reserved
-//Bit 15:14        reserved
-//Bit 13           reg_add_hme_mvdiff_penalty_gmv_0 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate gmv
-//Bit 12           reg_add_hme_mvdiff_penalty_zmv_0 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate zmv
-//Bit 11           reg_add_hme_mvdiff_penalty_s_t_0 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate s and t mv
-//Bit 10           reg_add_hme_mvdiff_penalty_rand_0 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate random mv
-//Bit  9           reg_add_hme_mvdiff_penalty_proj_0 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate projection mv
-//Bit  8           reg_add_hme_mvdiff_penalty_fs_0 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate full search mv
-//Bit  7: 0        reg_hme_mvdiff_penalty_gmv_gain_0 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_gmv, norm to 16 as 1
-#define FRC_ME_H_MVDIFF_GAIN0_0                    0x1503
-//Bit 31:24        reg_hme_mvdiff_penalty_zmv_gain_0 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_zmv, norm to 16 as 1
-//Bit 23:16        reg_hme_mvdiff_penalty_s_t_gain_0 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_s_t, norm to 16 as 1
-//Bit 15: 8        reg_hme_mvdiff_penalty_rand_gain_0 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_rand, norm to 16 as 1
-//Bit  7: 0        reg_hme_mvdiff_penalty_proj_gain_0 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_proj, norm to 16 as 1
+//Bit 31: 0        reserved
+#define FRC_ME_H_MVDIFF_GAIN0_DELETE_0             0x1503
+//Bit 31: 0        reserved
 #define FRC_ME_H_MVDIFF_GAIN1_0                    0x1504
-//Bit 31:24        reg_hme_mvdiff_penalty_p2p_gain_0 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_p2p, norm to 16 as 1
-//Bit 23:16        reg_hme_mvdiff_penalty_fs_rpdb_gain_0 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_fs_rpdb, norm to 16 as 1
-//Bit 15: 8        reg_hme_mvdiff_penalty_fs_rpd0_gain_0 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_fs_rpd0, norm to 16 as 1
-//Bit  7: 0        reg_hme_mvdiff_penalty_fs_rpd1_gain_0 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_fs_rpd1, norm to 16 as 1
+//Bit 31: 0        reserved
 #define FRC_ME_SAD_ACDC_REG0_0                     0x1505
 //Bit 31:30        reserved
 //Bit 29           reg_acdc_sel_force_ac_out_0 // unsigned ,    RW, default = 0  default = 0. 1: force ac_bv to be final bv.
@@ -6121,32 +6004,14 @@
 //Bit  6: 4        reg_obme_mask_mode_min_1  // unsigned ,    RW, default = 0  min of obme mask mode selection, 0: 4x8 mask, 1: 8x8 mask; 2:12x8 mask, 3: 16x8 mask
 //Bit  3            reserved
 //Bit  2: 0        reg_obme_mask_mode_1      // unsigned ,    RW, default = 3  mode of obme mask mode selection, 0: 4x8 mask, 1: 8x8 mask; 2:12x8 mask, 3: 16x8 mask
-#define FRC_ME_H_MVDIFF_SMOOTH_1                   0x1509
-//Bit 31:24        reserved
-//Bit 23:20        reg_hme_mvdiff_smooth_th0_1 // unsigned ,    RW, default = 8  threshold 0 of the curv
-//Bit 19:16        reg_hme_mvdiff_smooth_thn_1 // unsigned ,    RW, default = 7  hme_mvdiff threshold1 = th0 + 2^thn to get the th1 of the curv
-//Bit 15: 8        reg_hme_mvdiff_smooth_gain0_1 // unsigned ,    RW, default = 0  gain of hme_mvdiff less than or equal th0  (TBC, changed from ppt)
-//Bit  7: 0        reg_hme_mvdiff_smooth_gain1_1 // unsigned ,    RW, default = 255  gain of hme_mvdiff more than or equal th1
-#define FRC_ME_H_MVDIFF_EN_1                       0x150a
-//Bit 31:16        reserved
-//Bit 15:14        reserved
-//Bit 13           reg_add_hme_mvdiff_penalty_gmv_1 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate gmv
-//Bit 12           reg_add_hme_mvdiff_penalty_zmv_1 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate zmv
-//Bit 11           reg_add_hme_mvdiff_penalty_s_t_1 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate s and t mv
-//Bit 10           reg_add_hme_mvdiff_penalty_rand_1 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate random mv
-//Bit  9           reg_add_hme_mvdiff_penalty_proj_1 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate projection mv
-//Bit  8           reg_add_hme_mvdiff_penalty_fs_1 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate full search mv
-//Bit  7: 0        reg_hme_mvdiff_penalty_gmv_gain_1 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_gmv, norm to 16 as 1
-#define FRC_ME_H_MVDIFF_GAIN0_1                    0x150b
-//Bit 31:24        reg_hme_mvdiff_penalty_zmv_gain_1 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_zmv, norm to 16 as 1
-//Bit 23:16        reg_hme_mvdiff_penalty_s_t_gain_1 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_s_t, norm to 16 as 1
-//Bit 15: 8        reg_hme_mvdiff_penalty_rand_gain_1 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_rand, norm to 16 as 1
-//Bit  7: 0        reg_hme_mvdiff_penalty_proj_gain_1 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_proj, norm to 16 as 1
-#define FRC_ME_H_MVDIFF_GAIN1_1                    0x150c
-//Bit 31:24        reg_hme_mvdiff_penalty_p2p_gain_1 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_p2p, norm to 16 as 1
-//Bit 23:16        reg_hme_mvdiff_penalty_fs_rpdb_gain_1 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_fs_rpdb, norm to 16 as 1
-//Bit 15: 8        reg_hme_mvdiff_penalty_fs_rpd0_gain_1 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_fs_rpd0, norm to 16 as 1
-//Bit  7: 0        reg_hme_mvdiff_penalty_fs_rpd1_gain_1 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_fs_rpd1, norm to 16 as 1
+#define FRC_ME_H_MVDIFF_SMOOTH_DELETE_1            0x1509
+//Bit 31: 0        reserved
+#define FRC_ME_H_MVDIFF_EN_DELETE_1                0x150a
+//Bit 31: 0        reserved
+#define FRC_ME_H_MVDIFF_GAIN0_DELETE_1             0x150b
+//Bit 31: 0        reserved
+#define FRC_ME_H_MVDIFF_GAIN1_DELETE_1             0x150c
+//Bit 31: 0        reserved
 #define FRC_ME_SAD_ACDC_REG0_1                     0x150d
 //Bit 31:30        reserved
 //Bit 29           reg_acdc_sel_force_ac_out_1 // unsigned ,    RW, default = 0  default = 0. 1: force ac_bv to be final bv.
@@ -6177,31 +6042,13 @@
 //Bit  3            reserved
 //Bit  2: 0        reg_obme_mask_mode_2      // unsigned ,    RW, default = 3  mode of obme mask mode selection, 0: 4x8 mask, 1: 8x8 mask; 2:12x8 mask, 3: 16x8 mask
 #define FRC_ME_H_MVDIFF_SMOOTH_2                   0x1511
-//Bit 31:24        reserved
-//Bit 23:20        reg_hme_mvdiff_smooth_th0_2 // unsigned ,    RW, default = 8  threshold 0 of the curv
-//Bit 19:16        reg_hme_mvdiff_smooth_thn_2 // unsigned ,    RW, default = 7  hme_mvdiff threshold1 = th0 + 2^thn to get the th1 of the curv
-//Bit 15: 8        reg_hme_mvdiff_smooth_gain0_2 // unsigned ,    RW, default = 0  gain of hme_mvdiff less than or equal th0  (TBC, changed from ppt)
-//Bit  7: 0        reg_hme_mvdiff_smooth_gain1_2 // unsigned ,    RW, default = 255  gain of hme_mvdiff more than or equal th1
+//Bit 31: 0        reserved
 #define FRC_ME_H_MVDIFF_EN_2                       0x1512
-//Bit 31:16        reserved
-//Bit 15:14        reserved
-//Bit 13           reg_add_hme_mvdiff_penalty_gmv_2 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate gmv
-//Bit 12           reg_add_hme_mvdiff_penalty_zmv_2 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate zmv
-//Bit 11           reg_add_hme_mvdiff_penalty_s_t_2 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate s and t mv
-//Bit 10           reg_add_hme_mvdiff_penalty_rand_2 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate random mv
-//Bit  9           reg_add_hme_mvdiff_penalty_proj_2 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate projection mv
-//Bit  8           reg_add_hme_mvdiff_penalty_fs_2 // unsigned ,    RW, default = 0  enable of add hme_mvdiff_penalty for candidate full search mv
-//Bit  7: 0        reg_hme_mvdiff_penalty_gmv_gain_2 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_gmv, norm to 16 as 1
-#define FRC_ME_H_MVDIFF_GAIN0_2                    0x1513
-//Bit 31:24        reg_hme_mvdiff_penalty_zmv_gain_2 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_zmv, norm to 16 as 1
-//Bit 23:16        reg_hme_mvdiff_penalty_s_t_gain_2 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_s_t, norm to 16 as 1
-//Bit 15: 8        reg_hme_mvdiff_penalty_rand_gain_2 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_rand, norm to 16 as 1
-//Bit  7: 0        reg_hme_mvdiff_penalty_proj_gain_2 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_proj, norm to 16 as 1
+//Bit 31: 0        reserved
+#define FRC_ME_H_MVDIFF_GAIN0_DELETE_2             0x1513
+//Bit 31: 0        reserved
 #define FRC_ME_H_MVDIFF_GAIN1_2                    0x1514
-//Bit 31:24        reg_hme_mvdiff_penalty_p2p_gain_2 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_p2p, norm to 16 as 1
-//Bit 23:16        reg_hme_mvdiff_penalty_fs_rpdb_gain_2 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_fs_rpdb, norm to 16 as 1
-//Bit 15: 8        reg_hme_mvdiff_penalty_fs_rpd0_gain_2 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_fs_rpd0, norm to 16 as 1
-//Bit  7: 0        reg_hme_mvdiff_penalty_fs_rpd1_gain_2 // unsigned ,    RW, default = 16  gain of hme_mvdiff_penalty_fs_rpd1, norm to 16 as 1
+//Bit 31: 0        reserved
 #define FRC_ME_SAD_ACDC_REG0_2                     0x1515
 //Bit 31:30        reserved
 //Bit 29           reg_acdc_sel_force_ac_out_2 // unsigned ,    RW, default = 0  default = 0. 1: force ac_bv to be final bv.
@@ -6221,12 +6068,7 @@
 //Bit 19:10        reg_acdc_sel_smvdiff_thrd_2 // unsigned ,    RW, default = 1023  threshold to ac_bv0.smvdiff_10b to select ac bv
 //Bit  9: 0        reg_acdc_sel_mvdiff_thrd_2 // unsigned ,    RW, default = 1023  threshold to ac_bv0.mvdiff_10b to select ac bv
 #define FRC_ME_HME_MVDIFF_SAD                      0x1518
-//Bit 31:20        reserved
-//Bit 19:12        reg_hme_mvdiff_hmvdiff_th // unsigned ,    RW, default = 30  threshold of hmvdiff for cal hme_mvdiff
-//Bit 11: 4        reg_hme_mvdiff_sad_th     // unsigned ,    RW, default = 40  threshold of sad for calculate hme_mvdiff
-//Bit  3: 2        reserved
-//Bit  1           reg_hme_mvdiff_chk_sad_en // unsigned ,    RW, default = 0  enable for check sad to cal hme mvdiff
-//Bit  0           reg_hme_mvdiff_chk_hmvdiff_en // unsigned ,    RW, default = 0  enable for check hmvdiff to cal hme mvdiff
+//Bit 31: 0        reserved
 #define FRC_ME_SAD_DC                              0x1519
 //Bit 31:30        reserved
 //Bit 29:28        reg_sad_dc_mode_sel       // unsigned ,    RW, default = 1  maxtran sel mode,0:MIN, 1:MAX, 2:AVG, default = 1
@@ -6291,9 +6133,9 @@
 //Bit  7: 0        reg_obme_mask_mode3_th    // unsigned ,    RW, default = 10  adaptive obme mask threshold for mode=3 on the mask3 texture;
 #define FRC_ME_OBME_MASK_RAT                       0x1521
 //Bit 31:20        reserved
-//Bit 19:16        reg_obme_mask_xside_rat0  // unsigned ,    RW, default = 7  adaptive obme mask current mask texture to upper mode txture ratio to decide if use this mask0, normn to 16 as 1
-//Bit 15:12        reg_obme_mask_xside_rat1  // unsigned ,    RW, default = 8  adaptive obme mask current mask texture to upper mode txture ratio to decide if use this mask1, normn to 16 as 1
-//Bit 11: 8        reg_obme_mask_xside_rat2  // unsigned ,    RW, default = 9  adaptive obme mask current mask texture to upper mode txture ratio to decide if use this mask2, normn to 16 as 1
+//Bit 19:16        reg_obme_mask_xside_rat0  // unsigned ,    RW, default = 7  adaptive obme mask current mask txture to upper mode txture ratio to decide if use this mask0, normn to 16 as 1
+//Bit 15:12        reg_obme_mask_xside_rat1  // unsigned ,    RW, default = 8  adaptive obme mask current mask txture to upper mode txture ratio to decide if use this mask1, normn to 16 as 1
+//Bit 11: 8        reg_obme_mask_xside_rat2  // unsigned ,    RW, default = 9  adaptive obme mask current mask txture to upper mode txture ratio to decide if use this mask2, normn to 16 as 1
 //Bit  7: 0        reg_obme_mask_xside_thrd  // unsigned ,    RW, default = 10  adaptive obme mask threshold side texture constraint;
 #define FRC_ME_ZGMV_PATCH_EN                       0x1522
 //Bit 31:30        reserved
@@ -6317,29 +6159,15 @@
 //Bit 30           reg_me_1p2p_nokp          // unsigned ,    RW, default = 1  for bv_select_new. by default, set to 1.
 //Bit 29           reg_me_1p2p_updt          // unsigned ,    RW, default = 0  for bv_select_new. by default, set to 0.
 //Bit 28           reg_me_2p2p_updt          // unsigned ,    RW, default = 0  for bv_select_new. by default, set to 0.
-//Bit 27:26        reserved
-//Bit 25           reg_me_bv_e2e_p2p_chk_en  // unsigned ,    RW, default = 0  enable p2p_chk for e2e
-//Bit 24           reg_me_bv_e2e_ref_en      // unsigned ,    RW, default = 0  enable bv01 e2e based refinment for phase loop
-//Bit 23           reg_me_p2p_bypass_con0    // unsigned ,    RW, default = 0  for e2e_chk inside bv01_to_final_bv.
-//Bit 22           reg_me_p2p_bypass_con1    // unsigned ,    RW, default = 0  for e2e_chk inside bv01_to_final_bv.
-//Bit 21           reg_me_p2p_bypass_con2    // unsigned ,    RW, default = 0  for e2e_chk inside bv01_to_final_bv.
-//Bit 20           reg_me_bv_e2e_sad_sel     // unsigned ,    RW, default = 0  selection bv01 e2e based sad for phase loop, 0:weighted sad, 1: pure sad
-//Bit 19:18        reg_me_bv_e2e_sad_upd_en  // unsigned ,    RW, default = 0  set to 1, enable updating bv01 e2e based sad for phase loop
-//Bit 17           reg_me_bv_e2e_sad_chk_en  // unsigned ,    RW, default = 0  copy bv0 to bv1 after swap them by reg_me_bv_e2e_sad_upd_en.
-//Bit 16           reg_me_bv_e2e_mv_chk_en   // unsigned ,    RW, default = 0  set to 0, bypass e2e MV check.
-//Bit 15: 8        reg_me_bv_diff_th         // unsigned ,    RW, default = 16  threshold of mvdiff if bvs are different
-//Bit  7: 0        reg_me_bv_sad_ratio       // unsigned ,    RW, default = 20  apl ration for bvs sad, 8% of apl. set this ratio to 0 and reg_me_p2p_bypass_con*=0 will bypass e2e MV check.
+//Bit 27: 0        reserved
 #define FRC_ME_E2E_CHK_TH                          0x1525
-//Bit 31:24        reg_me_bv_p2p_diff_th     // unsigned ,    RW, default = 16  mv diff threshold for bvs p2p check
-//Bit 23:16        reg_me_bv_p2p_diff_ratio  // unsigned ,    RW, default = 128  mv diff ratio for bvs p2p check
-//Bit 15: 8        reg_me_bv_e2e_diff_th     // unsigned ,    RW, default = 16  mv diff threshold for bvs e2e check
-//Bit  7: 0        reg_me_bv_e2e_diff_ratio  // unsigned ,    RW, default = 128  mv diff ratio for bvs e2e check
+//Bit 31: 0        reserved
 #define FRC_ME_FS_SRC_1                            0x1526
 //Bit 31:28        reserved
 //Bit 27:16        reg_me_fs_src_smooth_gain1 // unsigned ,    RW, default = 255  max of fs_src penalty
 //Bit 15: 8        reg_me_fs_src_smooth_gain0 // unsigned ,    RW, default = 10  min of fs_src penalty
 //Bit  7: 4        reg_me_fs_src_smooth_thn  // unsigned ,    RW, default = 5  thn of cmv_t0 mv_diff
-//Bit  3: 0        reg_me_fs_src_smooth_th0  // unsigned ,    RW, default = 3  th0 of cmv_t0 mv_difff
+//Bit  3: 0        reg_me_fs_src_smooth_th0  // unsigned ,    RW, default = 3  th0 of cmv_t0 mv_diff
 #define FRC_ME_FS_SRC_2                            0x1527
 //Bit 31:23        reserved
 //Bit 22           reg_me_fs_src_smooth_en_2 // unsigned ,    RW, default = 0  enable signal of add penalty for fs src to rpd for nc loop
@@ -6905,9 +6733,6 @@
 //
 // Closing file:  ./frc_inc/me_cbv_regs0.h
 //
-// -----------------------------------------------
-// REG_BASE:  FRC_ME_PAGE0_HME_APB_BASE = 0x16
-// -----------------------------------------------
 //`include "hme_stat_regs0.h"
 // -----------------------------------------------
 // REG_BASE:  FRC_ME_PAGE0_APB_BASE = 0x17
@@ -7029,31 +6854,31 @@
 //Bit 10: 0        reg_me_glb_act_lo_y_th    // unsigned ,    RW, default = 16  low activity threshold along y-direction for global activities statistic
 #define FRC_ME_STAT_POS_HI_TH_0                    0x170f
 //Bit 31:11        reserved
-//Bit 10: 0        reg_me_glb_pos_hi_y_th_0  // unsigned ,    RW, default = 0  positive high or negetive low threshold along y-direction for global activities statistic
+//Bit 10: 0        reg_me_glb_pos_hi_y_th_0  // unsigned ,    RW, default = 0  positive high or negative low threshold along y-direction for global activities statistic
 #define FRC_ME_STAT_POS_HI_TH_1                    0x1710
 //Bit 31:11        reserved
-//Bit 10: 0        reg_me_glb_pos_hi_y_th_1  // unsigned ,    RW, default = 0  positive high or negetive low threshold along y-direction for global activities statistic
+//Bit 10: 0        reg_me_glb_pos_hi_y_th_1  // unsigned ,    RW, default = 0  positive high or negative low threshold along y-direction for global activities statistic
 #define FRC_ME_STAT_POS_HI_TH_2                    0x1711
 //Bit 31:11        reserved
-//Bit 10: 0        reg_me_glb_pos_hi_y_th_2  // unsigned ,    RW, default = 0  positive high or negetive low threshold along y-direction for global activities statistic
+//Bit 10: 0        reg_me_glb_pos_hi_y_th_2  // unsigned ,    RW, default = 0  positive high or negative low threshold along y-direction for global activities statistic
 #define FRC_ME_STAT_POS_HI_TH_3                    0x1712
 //Bit 31:11        reserved
-//Bit 10: 0        reg_me_glb_pos_hi_y_th_3  // unsigned ,    RW, default = 0  positive high or negetive low threshold along y-direction for global activities statistic
+//Bit 10: 0        reg_me_glb_pos_hi_y_th_3  // unsigned ,    RW, default = 0  positive high or negative low threshold along y-direction for global activities statistic
 #define FRC_ME_STAT_POS_HI_TH_4                    0x1713
 //Bit 31:11        reserved
-//Bit 10: 0        reg_me_glb_pos_hi_y_th_4  // unsigned ,    RW, default = 0  positive high or negetive low threshold along y-direction for global activities statistic
+//Bit 10: 0        reg_me_glb_pos_hi_y_th_4  // unsigned ,    RW, default = 0  positive high or negative low threshold along y-direction for global activities statistic
 #define FRC_ME_STAT_POS_HI_TH_5                    0x1714
 //Bit 31:11        reserved
-//Bit 10: 0        reg_me_glb_pos_hi_y_th_5  // unsigned ,    RW, default = 0  positive high or negetive low threshold along y-direction for global activities statistic
+//Bit 10: 0        reg_me_glb_pos_hi_y_th_5  // unsigned ,    RW, default = 0  positive high or negative low threshold along y-direction for global activities statistic
 #define FRC_ME_STAT_POS_HI_TH_6                    0x1715
 //Bit 31:11        reserved
-//Bit 10: 0        reg_me_glb_pos_hi_y_th_6  // unsigned ,    RW, default = 0  positive high or negetive low threshold along y-direction for global activities statistic
+//Bit 10: 0        reg_me_glb_pos_hi_y_th_6  // unsigned ,    RW, default = 0  positive high or negative low threshold along y-direction for global activities statistic
 #define FRC_ME_STAT_POS_HI_TH_7                    0x1716
 //Bit 31:11        reserved
-//Bit 10: 0        reg_me_glb_pos_hi_y_th_7  // unsigned ,    RW, default = 0  positive high or negetive low threshold along y-direction for global activities statistic
+//Bit 10: 0        reg_me_glb_pos_hi_y_th_7  // unsigned ,    RW, default = 0  positive high or negative low threshold along y-direction for global activities statistic
 #define FRC_ME_STAT_POS_HI_TH_8                    0x1717
 //Bit 31:11        reserved
-//Bit 10: 0        reg_me_glb_pos_hi_y_th_8  // unsigned ,    RW, default = 0  positive high or negetive low threshold along y-direction for global activities statistic
+//Bit 10: 0        reg_me_glb_pos_hi_y_th_8  // unsigned ,    RW, default = 0  positive high or negative low threshold along y-direction for global activities statistic
 #define FRC_ME_STAT_POS_HI_TH_9                    0x1718
 //Bit 31:11        reserved
 //Bit 10: 0        reg_me_glb_pos_hi_y_th_9  // unsigned ,    RW, default = 0  positive high or negetive low threshold along y-direction for global activities statistic
@@ -7122,8 +6947,7 @@
 //Bit 31:29        reg_me_region_dtl_sel     // unsigned ,    RW, default = 0  detail selection. 0: MAX(dtl_pre,dtl_cur); 1: MIN(dtl_pre,dtl_cur); 2: arg(dtl_pre,dtl_cur); 3: dtl_pre; 4: dtl_cur.
 //Bit 28:16        reg_me_region_bad_match_sad_th // unsigned ,    RW, default = 500  bad match mv sad threshold for regional statistic
 //Bit 15           reg_me_region_sad_remove_logo_en // unsigned ,    RW, default = 1  enable logo removing for regional sad statistic
-//Bit 14            reserved
-//Bit 13           reg_me_region_sad_sel     // unsigned ,    RW, default = 0  select pure_sad or sad to calc sad_sum, 0:sad,1:pure_sad
+//Bit 14:13        reserved
 //Bit 12: 0        reg_me_region_sad_coring_th // unsigned ,    RW, default = 8  sad coring threshold for regional sad statistic
 #define FRC_ME_STAT_RGN_T_CONSIS                   0x172a
 //Bit 31:26        reserved
@@ -7138,6 +6962,21 @@
 //Bit 25:16        reg_me_region_good_match_t_consis_th // unsigned ,    RW, default = 3  good match mv temporal consistence threshold for regional statistic
 //Bit 15:10        reserved
 //Bit  9: 0        reg_me_region_good_match_s_consis_th // unsigned ,    RW, default = 3  good match mv spatial consistence threshold for regional statistic
+#define FRC_ME_POSX_TH                             0x172c
+//Bit 31:12        reserved
+//Bit 11: 0        reg_me_glb_hi_x_th        // unsigned ,    RW, default = 0  positive high or negative low threshold along x-direction for global activities statistic
+#define FRC_ME_BCHG_TH                             0x172d
+//Bit 31:12        reserved
+//Bit 11: 0        reg_me_glb_mv_bigchg_th   // unsigned ,    RW, default = 0  mv big change threshold for global activities statistic
+#define FRC_ME_RO_POSX_CNT                         0x172e
+//Bit 31:18        reserved
+//Bit 17: 0        ro_me_glb_pos_x_dtl_cnt   // unsigned ,    RO, default = 0  higher than positive threshold mvx count
+#define FRC_ME_RO_NEGX_CNT                         0x172f
+//Bit 31:18        reserved
+//Bit 17: 0        ro_me_glb_neg_x_dtl_cnt   // unsigned ,    RO, default = 0  lower than negative threshold mvx count
+#define FRC_ME_RO_MV_BCHG_CNT                      0x1730
+//Bit 31:18        reserved
+//Bit 17: 0        ro_me_glb_mv_bigchg_cnt   // unsigned ,    RO, default = 0  mv change bigger than threshold count
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -7452,198 +7291,160 @@
 //Bit 31            reserved
 //Bit 30: 0        ro_me_region_apl_sum_11   // unsigned ,    RO, default = 0  12 region apl sum for phase loop
 #define FRC_ME_RO_S_CONSIS_0                       0x186c
-//Bit 31: 0        ro_me_glb_s_consis_0      // unsigned ,
-//RO, default = 0  global spatial consistences in each loop
+//Bit 31: 0        ro_me_glb_s_consis_0      // unsigned ,    RO, default = 0  global spatial consistences in each loop
 #define FRC_ME_RO_T_CONSIS_0                       0x186d
-//Bit 31: 0        ro_me_glb_t_consis_0      // unsigned ,
-//RO, default = 0  global temporal consistences in each loop
+//Bit 31: 0        ro_me_glb_t_consis_0      // unsigned ,    RO, default = 0  global temporal consistences in each loop
 #define FRC_ME_RO_APL_0                            0x186e
 //Bit 31:24        reserved
-//Bit 23: 0        ro_me_glb_apl_sum_0       // unsigned ,
-//RO, default = 0  global apl for each loop
+//Bit 23: 0        ro_me_glb_apl_sum_0       // unsigned ,    RO, default = 0  global apl for each loop
 #define FRC_ME_RO_DTL_0                            0x186f
-//Bit 31: 0        ro_me_glb_dtl_sum_0       // unsigned ,
-//RO, default = 0  global detail for each loop
+//Bit 31: 0        ro_me_glb_dtl_sum_0       // unsigned ,    RO, default = 0  global detail for each loop
 #define FRC_ME_RO_SAD_0                            0x1870
-//Bit 31: 0        ro_me_glb_sad_sum_0       // unsigned ,
-//RO, default = 0  global sad sum in each loop
+//Bit 31: 0        ro_me_glb_sad_sum_0       // unsigned ,    RO, default = 0  global sad sum in each loop
 #define FRC_ME_RO_BLK_CNT_SAD_0                    0x1871
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_bad_sad_cnt_0   // unsigned ,
-//RO, default = 0  global bad sad count in each loop
+//Bit 17: 0        ro_me_glb_bad_sad_cnt_0   // unsigned ,    RO, default = 0  global bad sad count in each loop
 #define FRC_ME_RO_BLK_CNT_0                        0x1872
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_cnt_0           // unsigned ,
-//RO, default = 0  global valid block count each loop
-#define FRC_ME_RO_TCMV_CNT_0                       0x1873
-//Bit 31: 0        ro_me_tot_cmv_cnt_0       // unsigned ,    RO, default = 0  total cmv count
-#define FRC_ME_RO_FCMV_CNT_0                       0x1874
-//Bit 31: 0        ro_me_fin_cmv_cnt_0       // unsigned ,    RO, default = 0  fine/final cmv count
-#define FRC_ME_RO_S_CONSIS_1                       0x1875
-//Bit 31: 0        ro_me_glb_s_consis_1      // unsigned ,
-//RO, default = 0  global spatial consistences in each loop
-#define FRC_ME_RO_T_CONSIS_1                       0x1876
-//Bit 31: 0        ro_me_glb_t_consis_1      // unsigned ,
-//RO, default = 0  global temporal consistences in each loop
-#define FRC_ME_RO_APL_1                            0x1877
+//Bit 17: 0        ro_me_glb_cnt_0           // unsigned ,    RO, default = 0  global valid block count each loop
+#define FRC_ME_RO_S_CONSIS_1                       0x1873
+//Bit 31: 0        ro_me_glb_s_consis_1      // unsigned ,    RO, default = 0  global spatial consistences in each loop
+#define FRC_ME_RO_T_CONSIS_1                       0x1874
+//Bit 31: 0        ro_me_glb_t_consis_1      // unsigned ,    RO, default = 0  global temporal consistences in each loop
+#define FRC_ME_RO_APL_1                            0x1875
 //Bit 31:24        reserved
-//Bit 23: 0        ro_me_glb_apl_sum_1       // unsigned ,
-//RO, default = 0  global apl for each loop
-#define FRC_ME_RO_DTL_1                            0x1878
-//Bit 31: 0        ro_me_glb_dtl_sum_1       // unsigned ,
-//RO, default = 0  global detail for each loop
-#define FRC_ME_RO_SAD_1                            0x1879
-//Bit 31: 0        ro_me_glb_sad_sum_1       // unsigned ,
-//RO, default = 0  global sad sum in each loop
-#define FRC_ME_RO_BLK_CNT_SAD_1                    0x187a
+//Bit 23: 0        ro_me_glb_apl_sum_1       // unsigned ,    RO, default = 0  global apl for each loop
+#define FRC_ME_RO_DTL_1                            0x1876
+//Bit 31: 0        ro_me_glb_dtl_sum_1       // unsigned ,    RO, default = 0  global detail for each loop
+#define FRC_ME_RO_SAD_1                            0x1877
+//Bit 31: 0        ro_me_glb_sad_sum_1       // unsigned ,    RO, default = 0  global sad sum in each loop
+#define FRC_ME_RO_BLK_CNT_SAD_1                    0x1878
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_bad_sad_cnt_1   // unsigned ,
-//RO, default = 0  global bad sad count in each loop
-#define FRC_ME_RO_BLK_CNT_1                        0x187b
+//Bit 17: 0        ro_me_glb_bad_sad_cnt_1   // unsigned ,    RO, default = 0  global bad sad count in each loop
+#define FRC_ME_RO_BLK_CNT_1                        0x1879
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_cnt_1           // unsigned ,
-//RO, default = 0  global valid block count each loop
-#define FRC_ME_RO_TCMV_CNT_1                       0x187c
-//Bit 31: 0        ro_me_tot_cmv_cnt_1       // unsigned ,
-//RO, default = 0  total cmv count
-#define FRC_ME_RO_FCMV_CNT_1                       0x187d
-//Bit 31: 0        ro_me_fin_cmv_cnt_1       // unsigned ,
-//RO, default = 0  fine/final cmv count
-#define FRC_ME_RO_S_CONSIS_2                       0x187e
-//Bit 31: 0        ro_me_glb_s_consis_2      // unsigned ,
-//RO, default = 0  global spatial consistences in each loop
-#define FRC_ME_RO_T_CONSIS_2                       0x187f
-//Bit 31: 0        ro_me_glb_t_consis_2      // unsigned ,
-//RO, default = 0  global temporal consistences in each loop
-#define FRC_ME_RO_APL_2                            0x1880
+//Bit 17: 0        ro_me_glb_cnt_1           // unsigned ,    RO, default = 0  global valid block count each loop
+#define FRC_ME_RO_S_CONSIS_2                       0x187a
+//Bit 31: 0        ro_me_glb_s_consis_2      // unsigned ,    RO, default = 0  global spatial consistences in each loop
+#define FRC_ME_RO_T_CONSIS_2                       0x187b
+//Bit 31: 0        ro_me_glb_t_consis_2      // unsigned ,    RO, default = 0  global temporal consistences in each loop
+#define FRC_ME_RO_APL_2                            0x187c
 //Bit 31:24        reserved
-//Bit 23: 0        ro_me_glb_apl_sum_2       // unsigned ,
-//RO, default = 0  global apl for each loop
-#define FRC_ME_RO_DTL_2                            0x1881
-//Bit 31: 0        ro_me_glb_dtl_sum_2       // unsigned ,
-//RO, default = 0  global detail for each loop
-#define FRC_ME_RO_SAD_2                            0x1882
-//Bit 31: 0        ro_me_glb_sad_sum_2       // unsigned ,
-//RO, default = 0  global sad sum in each loop
-#define FRC_ME_RO_BLK_CNT_SAD_2                    0x1883
+//Bit 23: 0        ro_me_glb_apl_sum_2       // unsigned ,    RO, default = 0  global apl for each loop
+#define FRC_ME_RO_DTL_2                            0x187d
+//Bit 31: 0        ro_me_glb_dtl_sum_2       // unsigned ,    RO, default = 0  global detail for each loop
+#define FRC_ME_RO_SAD_2                            0x187e
+//Bit 31: 0        ro_me_glb_sad_sum_2       // unsigned ,    RO, default = 0  global sad sum in each loop
+#define FRC_ME_RO_BLK_CNT_SAD_2                    0x187f
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_bad_sad_cnt_2   // unsigned ,
-//RO, default = 0  global bad sad count in each loop
-#define FRC_ME_RO_BLK_CNT_2                        0x1884
+//Bit 17: 0        ro_me_glb_bad_sad_cnt_2   // unsigned ,    RO, default = 0  global bad sad count in each loop
+#define FRC_ME_RO_BLK_CNT_2                        0x1880
 //Bit 31:18        reserved
-//Bit 17: 0        ro_me_glb_cnt_2           // unsigned ,
-//RO, default = 0  global valid block count each loop
-#define FRC_ME_RO_TCMV_CNT_2                       0x1885
-//Bit 31: 0        ro_me_tot_cmv_cnt_2       // unsigned ,    RO, default = 0  total cmv count
-#define FRC_ME_RO_FCMV_CNT_2                       0x1886
-//Bit 31: 0        ro_me_fin_cmv_cnt_2       // unsigned ,    RO, default = 0  fine/final cmv count
-#define FRC_ME_RO_FCMV_CNT                         0x1887
+//Bit 17: 0        ro_me_glb_cnt_2           // unsigned ,    RO, default = 0  global valid block count each loop
+#define FRC_ME_RO_FCMV_CNT                         0x1881
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_glb_unstable_cnt    // unsigned ,    RO, default = 0  global unstable count
-#define FRC_ME_RO_GMV_ROUGH                        0x1888
+#define FRC_ME_RO_GMV_ROUGH                        0x1882
 //Bit 31:29        reserved
 //Bit 28:16        ro_me_gmv_rough_vector_0  // signed ,    RO, default = 0  mv detected by FW, [mvx, mvy] s9.2, replace the bv if reg_me_overwrite_bv_en=1, otherwise is gmv of each loop, only care about the vector, no care of the sad and so on.
 //Bit 15:13        reserved
 //Bit 12           ro_me_gmv_rough_invalid   // unsigned ,    RO, default = 1  when 1, gmv is invalid.
 //Bit 11: 0        ro_me_gmv_rough_vector_1  // signed ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_2ND                    0x1889
+#define FRC_ME_RO_GMV_ROUGH_2ND                    0x1883
 //Bit 31:29        reserved
 //Bit 28:16        ro_me_gmv_rough_2nd_vector_0 // signed ,    RO, default = 0
 //Bit 15:12        reserved
 //Bit 11: 0        ro_me_gmv_rough_2nd_vector_1 // signed ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_NCNT                   0x188a
+#define FRC_ME_RO_GMV_ROUGH_NCNT                   0x1884
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_neighbor_cnt // unsigned ,    RO, default = 0  window sum
-#define FRC_ME_RO_GMV_ROUGH_CNT                    0x188b
+#define FRC_ME_RO_GMV_ROUGH_CNT                    0x1885
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_cnt       // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_CNT_2ND                0x188c
-//Bit 31:18        reserved
+#define FRC_ME_RO_GMV_ROUGH_CNT_2ND                0x1886
 //Bit 17: 0        ro_me_gmv_rough_2nd_cnt   // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_0              0x188d
+#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_0              0x1887
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_cnt_3x3_0 // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_1              0x188e
+#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_1              0x1888
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_cnt_3x3_1 // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_2              0x188f
+#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_2              0x1889
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_cnt_3x3_2 // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_3              0x1890
+#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_3              0x188a
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_cnt_3x3_3 // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_4              0x1891
+#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_4              0x188b
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_cnt_3x3_4 // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_5              0x1892
+#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_5              0x188c
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_cnt_3x3_5 // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_6              0x1893
+#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_6              0x188d
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_cnt_3x3_6 // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_7              0x1894
+#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_7              0x188e
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_cnt_3x3_7 // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_8              0x1895
+#define FRC_ME_RO_GMV_ROUGH_CNT_3X3_8              0x188f
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_rough_cnt_3x3_8 // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV                              0x1896
+#define FRC_ME_RO_GMV                              0x1890
 //Bit 31:29        reserved
 //Bit 28:16        ro_me_gmv_vector_0        // signed ,    RO, default = 0  mv detected by FW, [mvx, mvy] s9.2, replace the bv if reg_me_overwrite_bv_en=1, otherwise is gmv of each loop, only care about the vector, no care of the sad and so on.
 //Bit 15:13        reserved
 //Bit 12           ro_me_gmv_invalid         // unsigned ,    RO, default = 1  when 1, gmv is invalid.
 //Bit 11: 0        ro_me_gmv_vector_1        // signed ,    RO, default = 0
-#define FRC_ME_RO_GMV_MUX                          0x1897
+#define FRC_ME_RO_GMV_MUX                          0x1891
 //Bit 31:29        reserved
 //Bit 28:16        ro_me_gmv_mux_vector_0    // signed ,    RO, default = 0  mv detected by FW, [mvx, mvy] s9.2, replace the bv if reg_me_overwrite_bv_en=1, otherwise is gmv of each loop, only care about the vector, no care of the sad and so on.
 //Bit 15:13        reserved
 //Bit 12           ro_me_gmv_mux_invalid     // unsigned ,    RO, default = 1
 //Bit 11: 0        ro_me_gmv_mux_vector_1    // signed ,    RO, default = 0
-#define FRC_ME_RO_GMV_2ND                          0x1898
-//Bit 31:29        reserved
+#define FRC_ME_RO_GMV_2ND                          0x1892
 //Bit 28:16        ro_me_gmv_2nd_vector_0    // signed ,    RO, default = 0
 //Bit 15:12        reserved
 //Bit 11: 0        ro_me_gmv_2nd_vector_1    // signed ,    RO, default = 0
-#define FRC_ME_RO_GMV_NCNT                         0x1899
+#define FRC_ME_RO_GMV_NCNT                         0x1893
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_neighbor_cnt    // unsigned ,    RO, default = 0  window sum
-#define FRC_ME_RO_GMV_CNT                          0x189a
+#define FRC_ME_RO_GMV_CNT                          0x1894
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_cnt             // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_CNT_2ND                      0x189b
+#define FRC_ME_RO_GMV_CNT_2ND                      0x1895
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_2nd_cnt         // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_DTL_CNT                      0x189c
+#define FRC_ME_RO_GMV_DTL_CNT                      0x1896
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_dtl_cnt         // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_ZZ_CNT                       0x189d
+#define FRC_ME_RO_GMV_ZZ_CNT                       0x1897
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_zz_cnt          // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_CNT_3X3_0                    0x189e
+#define FRC_ME_RO_GMV_CNT_3X3_0                    0x1898
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_cnt_3x3_0       // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_CNT_3X3_1                    0x189f
+#define FRC_ME_RO_GMV_CNT_3X3_1                    0x1899
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_cnt_3x3_1       // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_CNT_3X3_2                    0x18a0
+#define FRC_ME_RO_GMV_CNT_3X3_2                    0x189a
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_cnt_3x3_2       // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_CNT_3X3_3                    0x18a1
+#define FRC_ME_RO_GMV_CNT_3X3_3                    0x189b
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_cnt_3x3_3       // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_CNT_3X3_4                    0x18a2
+#define FRC_ME_RO_GMV_CNT_3X3_4                    0x189c
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_cnt_3x3_4       // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_CNT_3X3_5                    0x18a3
+#define FRC_ME_RO_GMV_CNT_3X3_5                    0x189d
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_cnt_3x3_5       // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_CNT_3X3_6                    0x18a4
+#define FRC_ME_RO_GMV_CNT_3X3_6                    0x189e
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_cnt_3x3_6       // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_CNT_3X3_7                    0x18a5
-//Bit 31:18        reserved
+#define FRC_ME_RO_GMV_CNT_3X3_7                    0x189f
 //Bit 17: 0        ro_me_gmv_cnt_3x3_7       // unsigned ,    RO, default = 0
-#define FRC_ME_RO_GMV_CNT_3X3_8                    0x18a6
+#define FRC_ME_RO_GMV_CNT_3X3_8                    0x18a0
 //Bit 31:18        reserved
 //Bit 17: 0        ro_me_gmv_cnt_3x3_8       // unsigned ,    RO, default = 0
 // synopsys translate_off
@@ -8203,6 +8004,54 @@
 #define FRC_ME_RO_REGION_RP_GMV_CNT_11             0x1988
 //Bit 31:16        ro_region_rp_gmv_neighbor_cnt_11 // unsigned ,    RO, default = 0
 //Bit 15: 0        ro_region_rp_gmv_cnt_11   // unsigned ,    RO, default = 0  region rp gmv cnt
+#define FRC_ME_RO_REGION_FB_T_0_0                  0x1989
+//Bit 31: 0        ro_me_region_fb_t_consis_0_0 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_0_1                  0x198a
+//Bit 31: 0        ro_me_region_fb_t_consis_0_1 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_0_2                  0x198b
+//Bit 31: 0        ro_me_region_fb_t_consis_0_2 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_0_3                  0x198c
+//Bit 31: 0        ro_me_region_fb_t_consis_0_3 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_0_4                  0x198d
+//Bit 31: 0        ro_me_region_fb_t_consis_0_4 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_0_5                  0x198e
+//Bit 31: 0        ro_me_region_fb_t_consis_0_5 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_1_0                  0x198f
+//Bit 31: 0        ro_me_region_fb_t_consis_1_0 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_1_1                  0x1990
+//Bit 31: 0        ro_me_region_fb_t_consis_1_1 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_1_2                  0x1991
+//Bit 31: 0        ro_me_region_fb_t_consis_1_2 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_1_3                  0x1992
+//Bit 31: 0        ro_me_region_fb_t_consis_1_3 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_1_4                  0x1993
+//Bit 31: 0        ro_me_region_fb_t_consis_1_4 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_1_5                  0x1994
+//Bit 31: 0        ro_me_region_fb_t_consis_1_5 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_2_0                  0x1995
+//Bit 31: 0        ro_me_region_fb_t_consis_2_0 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_2_1                  0x1996
+//Bit 31: 0        ro_me_region_fb_t_consis_2_1 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_2_2                  0x1997
+//Bit 31: 0        ro_me_region_fb_t_consis_2_2 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_2_3                  0x1998
+//Bit 31: 0        ro_me_region_fb_t_consis_2_3 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_2_4                  0x1999
+//Bit 31: 0        ro_me_region_fb_t_consis_2_4 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_2_5                  0x199a
+//Bit 31: 0        ro_me_region_fb_t_consis_2_5 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_3_0                  0x199b
+//Bit 31: 0        ro_me_region_fb_t_consis_3_0 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_3_1                  0x199c
+//Bit 31: 0        ro_me_region_fb_t_consis_3_1 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_3_2                  0x199d
+//Bit 31: 0        ro_me_region_fb_t_consis_3_2 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_3_3                  0x199e
+//Bit 31: 0        ro_me_region_fb_t_consis_3_3 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_3_4                  0x199f
+//Bit 31: 0        ro_me_region_fb_t_consis_3_4 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
+#define FRC_ME_RO_REGION_FB_T_3_5                  0x19a0
+//Bit 31: 0        ro_me_region_fb_t_consis_3_5 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -8211,544 +8060,7 @@
 // -----------------------------------------------
 // REG_BASE:  FRC_ME_PAGE3_APB_BASE = 0x1a
 // -----------------------------------------------
-//
-// Reading file:  ./frc_inc/me_stat_regs3.h
-//
-// synopsys translate_off
-// synopsys translate_on
-#define FRC_ME_RO_REGION_FB_T_0_0                  0x1a00
-//Bit 31: 0        ro_me_region_fb_t_consis_0_0 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_0_0                  0x1a01
-//Bit 31: 0        ro_me_region_fb_s_consis_0_0 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_0_0                0x1a02
-//Bit 31: 0        ro_me_region_fb_dtl_sum_0_0 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_0_0            0x1a03
-//Bit 31: 0        ro_me_region_fb_sad_sum_0_0 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_0_0            0x1a04
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_0_0 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_0_1                  0x1a05
-//Bit 31: 0        ro_me_region_fb_t_consis_0_1 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_0_1                  0x1a06
-//Bit 31: 0        ro_me_region_fb_s_consis_0_1 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_0_1                0x1a07
-//Bit 31: 0        ro_me_region_fb_dtl_sum_0_1 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_0_1            0x1a08
-//Bit 31: 0        ro_me_region_fb_sad_sum_0_1 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_0_1            0x1a09
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_0_1 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_0_2                  0x1a0a
-//Bit 31: 0        ro_me_region_fb_t_consis_0_2 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_0_2                  0x1a0b
-//Bit 31: 0        ro_me_region_fb_s_consis_0_2 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_0_2                0x1a0c
-//Bit 31: 0        ro_me_region_fb_dtl_sum_0_2 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_0_2            0x1a0d
-//Bit 31: 0        ro_me_region_fb_sad_sum_0_2 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_0_2            0x1a0e
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_0_2 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_0_3                  0x1a0f
-//Bit 31: 0        ro_me_region_fb_t_consis_0_3 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_0_3                  0x1a10
-//Bit 31: 0        ro_me_region_fb_s_consis_0_3 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_0_3                0x1a11
-//Bit 31: 0        ro_me_region_fb_dtl_sum_0_3 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_0_3            0x1a12
-//Bit 31: 0        ro_me_region_fb_sad_sum_0_3 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_0_3            0x1a13
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_0_3 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_0_4                  0x1a14
-//Bit 31: 0        ro_me_region_fb_t_consis_0_4 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_0_4                  0x1a15
-//Bit 31: 0        ro_me_region_fb_s_consis_0_4 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_0_4                0x1a16
-//Bit 31: 0        ro_me_region_fb_dtl_sum_0_4 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_0_4            0x1a17
-//Bit 31: 0        ro_me_region_fb_sad_sum_0_4 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_0_4            0x1a18
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_0_4 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_0_5                  0x1a19
-//Bit 31: 0        ro_me_region_fb_t_consis_0_5 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_0_5                  0x1a1a
-//Bit 31: 0        ro_me_region_fb_s_consis_0_5 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_0_5                0x1a1b
-//Bit 31: 0        ro_me_region_fb_dtl_sum_0_5 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_0_5            0x1a1c
-//Bit 31: 0        ro_me_region_fb_sad_sum_0_5 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_0_5            0x1a1d
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_0_5 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_0_6                  0x1a1e
-//Bit 31: 0        ro_me_region_fb_t_consis_0_6 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_0_6                  0x1a1f
-//Bit 31: 0        ro_me_region_fb_s_consis_0_6 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_0_6                0x1a20
-//Bit 31: 0        ro_me_region_fb_dtl_sum_0_6 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_0_6            0x1a21
-//Bit 31: 0        ro_me_region_fb_sad_sum_0_6 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_0_6            0x1a22
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_0_6 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_0_7                  0x1a23
-//Bit 31: 0        ro_me_region_fb_t_consis_0_7 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_0_7                  0x1a24
-//Bit 31: 0        ro_me_region_fb_s_consis_0_7 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_0_7                0x1a25
-//Bit 31: 0        ro_me_region_fb_dtl_sum_0_7 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_0_7            0x1a26
-//Bit 31: 0        ro_me_region_fb_sad_sum_0_7 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_0_7            0x1a27
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_0_7 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_1_0                  0x1a28
-//Bit 31: 0        ro_me_region_fb_t_consis_1_0 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_1_0                  0x1a29
-//Bit 31: 0        ro_me_region_fb_s_consis_1_0 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_1_0                0x1a2a
-//Bit 31: 0        ro_me_region_fb_dtl_sum_1_0 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_1_0            0x1a2b
-//Bit 31: 0        ro_me_region_fb_sad_sum_1_0 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_1_0            0x1a2c
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_1_0 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_1_1                  0x1a2d
-//Bit 31: 0        ro_me_region_fb_t_consis_1_1 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_1_1                  0x1a2e
-//Bit 31: 0        ro_me_region_fb_s_consis_1_1 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_1_1                0x1a2f
-//Bit 31: 0        ro_me_region_fb_dtl_sum_1_1 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_1_1            0x1a30
-//Bit 31: 0        ro_me_region_fb_sad_sum_1_1 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_1_1            0x1a31
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_1_1 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_1_2                  0x1a32
-//Bit 31: 0        ro_me_region_fb_t_consis_1_2 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_1_2                  0x1a33
-//Bit 31: 0        ro_me_region_fb_s_consis_1_2 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_1_2                0x1a34
-//Bit 31: 0        ro_me_region_fb_dtl_sum_1_2 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_1_2            0x1a35
-//Bit 31: 0        ro_me_region_fb_sad_sum_1_2 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_1_2            0x1a36
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_1_2 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_1_3                  0x1a37
-//Bit 31: 0        ro_me_region_fb_t_consis_1_3 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_1_3                  0x1a38
-//Bit 31: 0        ro_me_region_fb_s_consis_1_3 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_1_3                0x1a39
-//Bit 31: 0        ro_me_region_fb_dtl_sum_1_3 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_1_3            0x1a3a
-//Bit 31: 0        ro_me_region_fb_sad_sum_1_3 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_1_3            0x1a3b
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_1_3 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_1_4                  0x1a3c
-//Bit 31: 0        ro_me_region_fb_t_consis_1_4 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_1_4                  0x1a3d
-//Bit 31: 0        ro_me_region_fb_s_consis_1_4 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_1_4                0x1a3e
-//Bit 31: 0        ro_me_region_fb_dtl_sum_1_4 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_1_4            0x1a3f
-//Bit 31: 0        ro_me_region_fb_sad_sum_1_4 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_1_4            0x1a40
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_1_4 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_1_5                  0x1a41
-//Bit 31: 0        ro_me_region_fb_t_consis_1_5 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_1_5                  0x1a42
-//Bit 31: 0        ro_me_region_fb_s_consis_1_5 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_1_5                0x1a43
-//Bit 31: 0        ro_me_region_fb_dtl_sum_1_5 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_1_5            0x1a44
-//Bit 31: 0        ro_me_region_fb_sad_sum_1_5 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_1_5            0x1a45
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_1_5 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_1_6                  0x1a46
-//Bit 31: 0        ro_me_region_fb_t_consis_1_6 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_1_6                  0x1a47
-//Bit 31: 0        ro_me_region_fb_s_consis_1_6 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_1_6                0x1a48
-//Bit 31: 0        ro_me_region_fb_dtl_sum_1_6 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_1_6            0x1a49
-//Bit 31: 0        ro_me_region_fb_sad_sum_1_6 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_1_6            0x1a4a
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_1_6 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_1_7                  0x1a4b
-//Bit 31: 0        ro_me_region_fb_t_consis_1_7 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_1_7                  0x1a4c
-//Bit 31: 0        ro_me_region_fb_s_consis_1_7 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_1_7                0x1a4d
-//Bit 31: 0        ro_me_region_fb_dtl_sum_1_7 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_1_7            0x1a4e
-//Bit 31: 0        ro_me_region_fb_sad_sum_1_7 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_1_7            0x1a4f
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_1_7 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_2_0                  0x1a50
-//Bit 31: 0        ro_me_region_fb_t_consis_2_0 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_2_0                  0x1a51
-//Bit 31: 0        ro_me_region_fb_s_consis_2_0 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_2_0                0x1a52
-//Bit 31: 0        ro_me_region_fb_dtl_sum_2_0 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_2_0            0x1a53
-//Bit 31: 0        ro_me_region_fb_sad_sum_2_0 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_2_0            0x1a54
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_2_0 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_2_1                  0x1a55
-//Bit 31: 0        ro_me_region_fb_t_consis_2_1 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_2_1                  0x1a56
-//Bit 31: 0        ro_me_region_fb_s_consis_2_1 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_2_1                0x1a57
-//Bit 31: 0        ro_me_region_fb_dtl_sum_2_1 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_2_1            0x1a58
-//Bit 31: 0        ro_me_region_fb_sad_sum_2_1 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_2_1            0x1a59
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_2_1 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_2_2                  0x1a5a
-//Bit 31: 0        ro_me_region_fb_t_consis_2_2 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_2_2                  0x1a5b
-//Bit 31: 0        ro_me_region_fb_s_consis_2_2 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_2_2                0x1a5c
-//Bit 31: 0        ro_me_region_fb_dtl_sum_2_2 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_2_2            0x1a5d
-//Bit 31: 0        ro_me_region_fb_sad_sum_2_2 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_2_2            0x1a5e
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_2_2 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_2_3                  0x1a5f
-//Bit 31: 0        ro_me_region_fb_t_consis_2_3 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_2_3                  0x1a60
-//Bit 31: 0        ro_me_region_fb_s_consis_2_3 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_2_3                0x1a61
-//Bit 31: 0        ro_me_region_fb_dtl_sum_2_3 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_2_3            0x1a62
-//Bit 31: 0        ro_me_region_fb_sad_sum_2_3 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_2_3            0x1a63
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_2_3 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_2_4                  0x1a64
-//Bit 31: 0        ro_me_region_fb_t_consis_2_4 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_2_4                  0x1a65
-//Bit 31: 0        ro_me_region_fb_s_consis_2_4 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_2_4                0x1a66
-//Bit 31: 0        ro_me_region_fb_dtl_sum_2_4 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_2_4            0x1a67
-//Bit 31: 0        ro_me_region_fb_sad_sum_2_4 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_2_4            0x1a68
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_2_4 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_2_5                  0x1a69
-//Bit 31: 0        ro_me_region_fb_t_consis_2_5 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_2_5                  0x1a6a
-//Bit 31: 0        ro_me_region_fb_s_consis_2_5 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_2_5                0x1a6b
-//Bit 31: 0        ro_me_region_fb_dtl_sum_2_5 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_2_5            0x1a6c
-//Bit 31: 0        ro_me_region_fb_sad_sum_2_5 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_2_5            0x1a6d
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_2_5 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_2_6                  0x1a6e
-//Bit 31: 0        ro_me_region_fb_t_consis_2_6 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_2_6                  0x1a6f
-//Bit 31: 0        ro_me_region_fb_s_consis_2_6 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_2_6                0x1a70
-//Bit 31: 0        ro_me_region_fb_dtl_sum_2_6 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_2_6            0x1a71
-//Bit 31: 0        ro_me_region_fb_sad_sum_2_6 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_2_6            0x1a72
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_2_6 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_2_7                  0x1a73
-//Bit 31: 0        ro_me_region_fb_t_consis_2_7 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_2_7                  0x1a74
-//Bit 31: 0        ro_me_region_fb_s_consis_2_7 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_2_7                0x1a75
-//Bit 31: 0        ro_me_region_fb_dtl_sum_2_7 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_2_7            0x1a76
-//Bit 31: 0        ro_me_region_fb_sad_sum_2_7 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_2_7            0x1a77
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_2_7 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_3_0                  0x1a78
-//Bit 31: 0        ro_me_region_fb_t_consis_3_0 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_3_0                  0x1a79
-//Bit 31: 0        ro_me_region_fb_s_consis_3_0 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_3_0                0x1a7a
-//Bit 31: 0        ro_me_region_fb_dtl_sum_3_0 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_3_0            0x1a7b
-//Bit 31: 0        ro_me_region_fb_sad_sum_3_0 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_3_0            0x1a7c
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_3_0 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_3_1                  0x1a7d
-//Bit 31: 0        ro_me_region_fb_t_consis_3_1 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_3_1                  0x1a7e
-//Bit 31: 0        ro_me_region_fb_s_consis_3_1 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_3_1                0x1a7f
-//Bit 31: 0        ro_me_region_fb_dtl_sum_3_1 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_3_1            0x1a80
-//Bit 31: 0        ro_me_region_fb_sad_sum_3_1 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_3_1            0x1a81
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_3_1 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_3_2                  0x1a82
-//Bit 31: 0        ro_me_region_fb_t_consis_3_2 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_3_2                  0x1a83
-//Bit 31: 0        ro_me_region_fb_s_consis_3_2 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_3_2                0x1a84
-//Bit 31: 0        ro_me_region_fb_dtl_sum_3_2 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_3_2            0x1a85
-//Bit 31: 0        ro_me_region_fb_sad_sum_3_2 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_3_2            0x1a86
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_3_2 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_3_3                  0x1a87
-//Bit 31: 0        ro_me_region_fb_t_consis_3_3 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_3_3                  0x1a88
-//Bit 31: 0        ro_me_region_fb_s_consis_3_3 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_3_3                0x1a89
-//Bit 31: 0        ro_me_region_fb_dtl_sum_3_3 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_3_3            0x1a8a
-//Bit 31: 0        ro_me_region_fb_sad_sum_3_3 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_3_3            0x1a8b
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_3_3 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_3_4                  0x1a8c
-//Bit 31: 0        ro_me_region_fb_t_consis_3_4 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_3_4                  0x1a8d
-//Bit 31: 0        ro_me_region_fb_s_consis_3_4 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_3_4                0x1a8e
-//Bit 31: 0        ro_me_region_fb_dtl_sum_3_4 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_3_4            0x1a8f
-//Bit 31: 0        ro_me_region_fb_sad_sum_3_4 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_3_4            0x1a90
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_3_4 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_3_5                  0x1a91
-//Bit 31: 0        ro_me_region_fb_t_consis_3_5 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_3_5                  0x1a92
-//Bit 31: 0        ro_me_region_fb_s_consis_3_5 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_3_5                0x1a93
-//Bit 31: 0        ro_me_region_fb_dtl_sum_3_5 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_3_5            0x1a94
-//Bit 31: 0        ro_me_region_fb_sad_sum_3_5 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_3_5            0x1a95
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_3_5 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_3_6                  0x1a96
-//Bit 31: 0        ro_me_region_fb_t_consis_3_6 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_3_6                  0x1a97
-//Bit 31: 0        ro_me_region_fb_s_consis_3_6 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_3_6                0x1a98
-//Bit 31: 0        ro_me_region_fb_dtl_sum_3_6 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_3_6            0x1a99
-//Bit 31: 0        ro_me_region_fb_sad_sum_3_6 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_3_6            0x1a9a
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_3_6 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_3_7                  0x1a9b
-//Bit 31: 0        ro_me_region_fb_t_consis_3_7 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_3_7                  0x1a9c
-//Bit 31: 0        ro_me_region_fb_s_consis_3_7 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_3_7                0x1a9d
-//Bit 31: 0        ro_me_region_fb_dtl_sum_3_7 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_3_7            0x1a9e
-//Bit 31: 0        ro_me_region_fb_sad_sum_3_7 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_3_7            0x1a9f
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_3_7 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_4_0                  0x1aa0
-//Bit 31: 0        ro_me_region_fb_t_consis_4_0 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_4_0                  0x1aa1
-//Bit 31: 0        ro_me_region_fb_s_consis_4_0 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_4_0                0x1aa2
-//Bit 31: 0        ro_me_region_fb_dtl_sum_4_0 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_4_0            0x1aa3
-//Bit 31: 0        ro_me_region_fb_sad_sum_4_0 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_4_0            0x1aa4
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_4_0 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_4_1                  0x1aa5
-//Bit 31: 0        ro_me_region_fb_t_consis_4_1 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_4_1                  0x1aa6
-//Bit 31: 0        ro_me_region_fb_s_consis_4_1 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_4_1                0x1aa7
-//Bit 31: 0        ro_me_region_fb_dtl_sum_4_1 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_4_1            0x1aa8
-//Bit 31: 0        ro_me_region_fb_sad_sum_4_1 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_4_1            0x1aa9
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_4_1 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_4_2                  0x1aaa
-//Bit 31: 0        ro_me_region_fb_t_consis_4_2 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_4_2                  0x1aab
-//Bit 31: 0        ro_me_region_fb_s_consis_4_2 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_4_2                0x1aac
-//Bit 31: 0        ro_me_region_fb_dtl_sum_4_2 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_4_2            0x1aad
-//Bit 31: 0        ro_me_region_fb_sad_sum_4_2 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_4_2            0x1aae
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_4_2 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_4_3                  0x1aaf
-//Bit 31: 0        ro_me_region_fb_t_consis_4_3 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_4_3                  0x1ab0
-//Bit 31: 0        ro_me_region_fb_s_consis_4_3 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_4_3                0x1ab1
-//Bit 31: 0        ro_me_region_fb_dtl_sum_4_3 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_4_3            0x1ab2
-//Bit 31: 0        ro_me_region_fb_sad_sum_4_3 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_4_3            0x1ab3
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_4_3 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_4_4                  0x1ab4
-//Bit 31: 0        ro_me_region_fb_t_consis_4_4 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_4_4                  0x1ab5
-//Bit 31: 0        ro_me_region_fb_s_consis_4_4 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_4_4                0x1ab6
-//Bit 31: 0        ro_me_region_fb_dtl_sum_4_4 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_4_4            0x1ab7
-//Bit 31: 0        ro_me_region_fb_sad_sum_4_4 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_4_4            0x1ab8
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_4_4 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_4_5                  0x1ab9
-//Bit 31: 0        ro_me_region_fb_t_consis_4_5 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_4_5                  0x1aba
-//Bit 31: 0        ro_me_region_fb_s_consis_4_5 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_4_5                0x1abb
-//Bit 31: 0        ro_me_region_fb_dtl_sum_4_5 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_4_5            0x1abc
-//Bit 31: 0        ro_me_region_fb_sad_sum_4_5 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_4_5            0x1abd
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_4_5 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_4_6                  0x1abe
-//Bit 31: 0        ro_me_region_fb_t_consis_4_6 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_4_6                  0x1abf
-//Bit 31: 0        ro_me_region_fb_s_consis_4_6 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_4_6                0x1ac0
-//Bit 31: 0        ro_me_region_fb_dtl_sum_4_6 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_4_6            0x1ac1
-//Bit 31: 0        ro_me_region_fb_sad_sum_4_6 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_4_6            0x1ac2
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_4_6 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_4_7                  0x1ac3
-//Bit 31: 0        ro_me_region_fb_t_consis_4_7 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_4_7                  0x1ac4
-//Bit 31: 0        ro_me_region_fb_s_consis_4_7 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_4_7                0x1ac5
-//Bit 31: 0        ro_me_region_fb_dtl_sum_4_7 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_4_7            0x1ac6
-//Bit 31: 0        ro_me_region_fb_sad_sum_4_7 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_4_7            0x1ac7
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_4_7 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_5_0                  0x1ac8
-//Bit 31: 0        ro_me_region_fb_t_consis_5_0 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_5_0                  0x1ac9
-//Bit 31: 0        ro_me_region_fb_s_consis_5_0 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_5_0                0x1aca
-//Bit 31: 0        ro_me_region_fb_dtl_sum_5_0 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_5_0            0x1acb
-//Bit 31: 0        ro_me_region_fb_sad_sum_5_0 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_5_0            0x1acc
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_5_0 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_5_1                  0x1acd
-//Bit 31: 0        ro_me_region_fb_t_consis_5_1 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_5_1                  0x1ace
-//Bit 31: 0        ro_me_region_fb_s_consis_5_1 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_5_1                0x1acf
-//Bit 31: 0        ro_me_region_fb_dtl_sum_5_1 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_5_1            0x1ad0
-//Bit 31: 0        ro_me_region_fb_sad_sum_5_1 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_5_1            0x1ad1
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_5_1 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_5_2                  0x1ad2
-//Bit 31: 0        ro_me_region_fb_t_consis_5_2 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_5_2                  0x1ad3
-//Bit 31: 0        ro_me_region_fb_s_consis_5_2 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_5_2                0x1ad4
-//Bit 31: 0        ro_me_region_fb_dtl_sum_5_2 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_5_2            0x1ad5
-//Bit 31: 0        ro_me_region_fb_sad_sum_5_2 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_5_2            0x1ad6
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_5_2 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_5_3                  0x1ad7
-//Bit 31: 0        ro_me_region_fb_t_consis_5_3 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_5_3                  0x1ad8
-//Bit 31: 0        ro_me_region_fb_s_consis_5_3 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_5_3                0x1ad9
-//Bit 31: 0        ro_me_region_fb_dtl_sum_5_3 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_5_3            0x1ada
-//Bit 31: 0        ro_me_region_fb_sad_sum_5_3 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_5_3            0x1adb
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_5_3 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_5_4                  0x1adc
-//Bit 31: 0        ro_me_region_fb_t_consis_5_4 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_5_4                  0x1add
-//Bit 31: 0        ro_me_region_fb_s_consis_5_4 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_5_4                0x1ade
-//Bit 31: 0        ro_me_region_fb_dtl_sum_5_4 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_5_4            0x1adf
-//Bit 31: 0        ro_me_region_fb_sad_sum_5_4 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_5_4            0x1ae0
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_5_4 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_5_5                  0x1ae1
-//Bit 31: 0        ro_me_region_fb_t_consis_5_5 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_5_5                  0x1ae2
-//Bit 31: 0        ro_me_region_fb_s_consis_5_5 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_5_5                0x1ae3
-//Bit 31: 0        ro_me_region_fb_dtl_sum_5_5 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_5_5            0x1ae4
-//Bit 31: 0        ro_me_region_fb_sad_sum_5_5 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_5_5            0x1ae5
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_5_5 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_5_6                  0x1ae6
-//Bit 31: 0        ro_me_region_fb_t_consis_5_6 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_5_6                  0x1ae7
-//Bit 31: 0        ro_me_region_fb_s_consis_5_6 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_5_6                0x1ae8
-//Bit 31: 0        ro_me_region_fb_dtl_sum_5_6 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_5_6            0x1ae9
-//Bit 31: 0        ro_me_region_fb_sad_sum_5_6 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_5_6            0x1aea
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_5_6 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_T_5_7                  0x1aeb
-//Bit 31: 0        ro_me_region_fb_t_consis_5_7 // unsigned ,    RO, default = 0  new region temporal consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_S_5_7                  0x1aec
-//Bit 31: 0        ro_me_region_fb_s_consis_5_7 // unsigned ,    RO, default = 0  new region spatial consistences for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_DTL_5_7                0x1aed
-//Bit 31: 0        ro_me_region_fb_dtl_sum_5_7 // unsigned ,    RO, default = 0  new region high dtl sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_SUM_5_7            0x1aee
-//Bit 31: 0        ro_me_region_fb_sad_sum_5_7 // unsigned ,    RO, default = 0  new region sad sum for pf or pc_phs
-#define FRC_ME_RO_REGION_FB_SAD_CNT_5_7            0x1aef
-//Bit 31:18        reserved
-//Bit 17: 0        ro_me_region_fb_sad_cnt_5_7 // unsigned ,    RO, default = 0  new region sad cnt for pf or pc_phs
-// synopsys translate_off
-// synopsys translate_on
-//
-// Closing file:  ./frc_inc/me_stat_regs3.h
-//
+//`include "me_stat_regs3.h"
 // -----------------------------------------------
 // REG_BASE:  FRC_ME_VP_APB_BASE = 0x1e
 // -----------------------------------------------
@@ -8795,8 +8107,8 @@
 #define FRC_VP_SR                                  0x1e07
 //Bit 31:16        reserved
 //Bit 15: 8        reg_vp_hsrch_rng          // unsigned ,    RW, default = 11  vp partII (dehalo) horizontal search range
-//Bit  7: 4        reg_dehalo_vsrch_rng      // unsigned ,    RW, default = 5  vp partII (dehalo) vertical search range
-//Bit  3: 0        reg_retimer_vsrch_rng     // unsigned ,    RW, default = 7  vp partI (retimer) vertical search range
+//Bit  7: 4        reg_dehalo_vsrch_rng      // unsigned ,    RW, default = 3  vp partII (dehalo) vertical search range
+//Bit  3: 0        reg_retimer_vsrch_rng     // unsigned ,    RW, default = 5  vp partI (retimer) vertical search range
 #define FRC_VP_GMV_MUX                             0x1e08
 //Bit 31:29        reserved
 //Bit 28:16        ro_vp_gmv_mux_vector_0    // signed ,    RO, default = 0  global mv detected by FW, [mvx, mvy] s9.2, replace the bv if reg_me_overwrite_bv_en=1, otherwise is gmv of each loop, only care about the vector, no care of the sad and so on.
@@ -9153,10 +8465,8 @@
 //Bit  7: 0        reg_fg_mv_length_th       // unsigned ,    RW, default = 12  threshold to foreground mv length for bgmv check
 #define FRC_VP_DEHALO_RULE_EN                      0x1e4c
 //Bit 31:11        reserved
-//Bit 10           reg_dehalo_pht_replace    // unsigned ,
-//RW, default = 1  enable for replace mc_mv with pht, 0 disable, 1: enable
-//Bit  9           reg_dehalo_oct_replace    // unsigned ,
-//RW, default = 1  enable for replace mc_oct with oct, 0 disable, 1: enable
+//Bit 10           reg_dehalo_pht_replace    // unsigned ,    RW, default = 1  enable for replace mc_mv with pht, 0 disable, 1: enable
+//Bit  9           reg_dehalo_oct_replace    // unsigned ,    RW, default = 1  enable for replace mc_oct with oct, 0 disable, 1: enable
 //Bit  8           reg_dehalo_basic_en       // unsigned ,    RW, default = 1  enable for 2.1.1 of basic rule, 0 disable, 1: enable
 //Bit  7           reg_dehalo_track_en       // unsigned ,    RW, default = 1  enable for 2.1.2 of double fg rule, 0 disable, 1: enable
 //Bit  6           reg_dehalo_mvchk1_en      // unsigned ,    RW, default = 1  enable for 2.1.3 of mvchk1 rule, 0 disable, 1: enable
@@ -9219,26 +8529,9 @@
 //Bit  1           reg_pht_mvdiff_en         // unsigned ,    RW, default = 0  pht mvdiff with neighbor mv for occl lpf
 //Bit  0           reg_dehalo_occl_lpf_en    // unsigned ,    RW, default = 0  enable of occl lpf
 #define FRC_VP_DEHALO_OCT2_1                       0x1e54
-//Bit 31:26        reserved
-//Bit 25           reg_dehalo_oct2_rpl_phs_mv_chk_en // unsigned ,    RW, default = 0  enable signal for check type replace phs mv
-//Bit 24           reg_dehalo_vector2_use_gmv_sel // unsigned ,    RW, default = 0  selection of gmv for vector2 0: vp gmv 1: vp oct gmv
-//Bit 23:16        reg_dehalo_oct2_sad_th    // unsigned ,    RW, default = 0  threshold for oct2 sad th
-//Bit 15:12        reg_dehalo_oct2_min_th    // unsigned ,    RW, default = 1  threshold for minimum oct cnt
-//Bit 11:10        reg_dehalo_oct2_win_x_half // unsigned ,    RW, default = 2  x range of oct2 check
-//Bit  9: 8        reg_dehalo_oct2_win_y_half // unsigned ,    RW, default = 2  y range of oct2 check
-//Bit  7: 4        reg_dehalo_oct2_extend_th // unsigned ,    RW, default = 1  threshold for oct2 extend th
-//Bit  3           reg_dehalo_oct2_extend_mode // unsigned ,    RW, default = 1  enable for oct2 extend mode
-//Bit  2           reg_dehalo_vector2_use_gmv // unsigned ,    RW, default = 0  use gmv as vector2
-//Bit  1           reg_dehalo_vector2_none_occ_use_gmv // unsigned ,    RW, default = 1  use gmv as vector2 when x*y have none occ blocks
-//Bit  0           reg_dehalo_oct2_en        // unsigned ,    RW, default = 0  enable of oct2
+//Bit 31: 0        reserved
 #define FRC_VP_DEHALO_OCT2_2                       0x1e55
-//Bit 31:24        reg_dehalo_oct2_diff_v1_v2_th // unsigned ,    RW, default = 3  threshold of difference of vector1 and vector2
-//Bit 23:16        reg_dehalo_oct2_bg_mv_length_th // unsigned ,    RW, default = 16  oct2 pht mv length th
-//Bit 15: 8        reg_dehalo_oct2_fg_mv_length_th // unsigned ,    RW, default = 16  oct2 pht mv length th
-//Bit  7: 3        reserved
-//Bit  2           reg_dehalo_oct2_diff_v1_v2_chk_en // unsigned ,    RW, default = 0  enable signal of check difference of vector1 and vector2
-//Bit  1           reg_dehalo_oct2_bg_mv_length_chk_en // unsigned ,    RW, default = 0  pht mv length check enable signal
-//Bit  0           reg_dehalo_oct2_fg_mv_length_chk_en // unsigned ,    RW, default = 0  pht mv length check enable signal
+//Bit 31: 0        reserved
 #define FRC_VP_DEHALO_TURN_OFF                     0x1e56
 //Bit 31:25        reg_vp_fg_mvdiff_th       // unsigned ,    RW, default = 16  threshold of fg mvdiff to decide if mvs belong to the same group (similar mvs)
 //Bit 24           reg_vp_fg_mvdiff_en       // unsigned ,    RW, default = 1  enable to check mvdiff of fg phs mv and uni mv
@@ -9285,7 +8578,7 @@
 //Bit  3           reg_dehalo_region_en_2    // unsigned ,    RW, default = 1  enable signal for region 2 dehalo
 //Bit  2           reg_dehalo_region_en_1    // unsigned ,    RW, default = 1  enable signal for region 1 dehalo
 //Bit  1           reg_dehalo_region_en_0    // unsigned ,    RW, default = 1  enable signal for region 0 dehalo
-//Bit  0           reg_vp_pixel_dehalo_off_en // unsigned ,    RW, default = 0  enable pixel dehalo off for vp debug path ,1: pixel dehalo off, 0: pixel dehalo on
+//Bit  0            reserved
 #define FRC_VP_RO_GLOBAL_OCT_COVER_CNT             0x1e5c
 //Bit 31: 0        ro_vp_global_oct_cover_cnt // unsigned ,    RO, default = 0  all oct cover cnt
 #define FRC_VP_RO_GLOBAL_OCT_UNCOV_CNT             0x1e5d
@@ -9339,57 +8632,57 @@
 #define FRC_VP_RO_REGION_OCT_UNCOV_CNT_11          0x1e75
 //Bit 31: 0        ro_vp_region_oct_uncov_cnt_11 // unsigned ,    RO, default = 0  12 region oct uncov cnt
 #define FRC_VP_RO_GLOBAL_OCT2_COVER_CNT            0x1e76
-//Bit 31: 0        ro_vp_global_oct2_cover_cnt // unsigned ,    RO, default = 0  all oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_GLOBAL_OCT2_UNCOV_CNT            0x1e77
-//Bit 31: 0        ro_vp_global_oct2_uncov_cnt // unsigned ,    RO, default = 0  all oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_0          0x1e78
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_0 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_0          0x1e79
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_0 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_1          0x1e7a
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_1 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_1          0x1e7b
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_1 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_2          0x1e7c
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_2 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_2          0x1e7d
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_2 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_3          0x1e7e
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_3 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_3          0x1e7f
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_3 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_4          0x1e80
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_4 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_4          0x1e81
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_4 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_5          0x1e82
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_5 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_5          0x1e83
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_5 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_6          0x1e84
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_6 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_6          0x1e85
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_6 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_7          0x1e86
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_7 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_7          0x1e87
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_7 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_8          0x1e88
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_8 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_8          0x1e89
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_8 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_9          0x1e8a
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_9 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_9          0x1e8b
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_9 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_10         0x1e8c
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_10 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_10         0x1e8d
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_10 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_COVER_CNT_11         0x1e8e
-//Bit 31: 0        ro_vp_region_oct2_cover_cnt_11 // unsigned ,    RO, default = 0  12 region oct2 cover cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_REGION_OCT2_UNCOV_CNT_11         0x1e8f
-//Bit 31: 0        ro_vp_region_oct2_uncov_cnt_11 // unsigned ,    RO, default = 0  12 region oct2 uncov cnt
+//Bit 31: 0        reserved
 #define FRC_VP_RO_GLOBAL_OCT_GMVX_SUM              0x1e90
 //Bit 31: 0        ro_vp_oct_gmvx_sum        // signed ,    RO, default = 0  vp statistic oct gmvx_sum;
 #define FRC_VP_RO_GLOBAL_OCT_GMVY_SUM              0x1e91
@@ -9397,32 +8690,22 @@
 #define FRC_VP_RO_GLOBAL_OCT_GMV_DIFF              0x1e92
 //Bit 31: 0        ro_vp_oct_gmv_diff        // unsigned ,    RO, default = 0  vp statistic oct gmv_diff;
 #define FRC_VP_WEAK_DEHALO_S1                      0x1e93
-//Bit 31:24        reg_dehalo_occ_pf_ph_b_th // unsigned ,    RW, default = 9  big threshold for diff_pfr_phs
-//Bit 23:16        reg_dehalo_occ_uncover_pf_pc_s_th // unsigned ,    RW, default = 16  small threshold for diff_pfr_phs2pcr of uncover
-//Bit 15: 8        reg_dehalo_occ_uncover_pf_pb_b_th // unsigned ,    RW, default = 9  big threshold for diff_pfr_pbr of uncover
-//Bit  7: 0        reg_dehalo_occ_uncover_pf_cp_b_th // unsigned ,    RW, default = 9  big threshold for diff_pfr_phs2cpr of uncover
+//Bit 31: 0        reserved
 #define FRC_VP_WEAK_DEHALO_S2                      0x1e94
-//Bit 31:24        reg_dehalo_occ_uncover_pc_sad_th // unsigned ,    RW, default = 250  small threshold for phs2pcr sad
-//Bit 23:16        reg_dehalo_occ_pc_cp_b_th // unsigned ,    RW, default = 9  big threshold for diff_phs2pcr_phs2_cpr
-//Bit 15: 8        reg_dehalo_occ_cover_pf_pc_b_th // unsigned ,    RW, default = 9  big threshold for diff_pfr_phs2pcr of cover
-//Bit  7: 0        reg_dehalo_occ_cover_pf_pb_s_th // unsigned ,    RW, default = 16  small threshold for diff_pfr_pbr of cover
+//Bit 31: 0        reserved
 #define FRC_VP_WEAK_DEHALO_S3                      0x1e95
-//Bit 31:25        reserved
-//Bit 24           reg_weak_dehalo_en        // unsigned ,    RW, default = 0  enable for weak dehalo(G9200 method)
-//Bit 23:16        reg_dehalo_occ_cover_pf_cp_s_th // unsigned ,    RW, default = 16  small threshold for diff_pfr_phs2cpr of cover
-//Bit 15: 8        reg_dehalo_occ_cover_pf_pf_r_s_th // unsigned ,    RW, default = 16  small threshold for diff_pfr_pfrr of cover
-//Bit  7: 0        reg_dehalo_occ_cover_cp_sad_th // unsigned ,    RW, default = 250  small threshold for phs2cpr sad
+//Bit 31: 0        reserved
 #define FRC_VP_LOGO_MV_CHECK_1                     0x1e96
-//Bit 31:24        reg_logo_mvchk_p2p_th     // unsigned ,    RW, default = 40  threshold of pc_phs to mvr mvdiff
-//Bit 23:16        reg_logo_mvchk_consis_th  // unsigned ,    RW, default = 20  threshold of spatial consistency
-//Bit 15: 8        reg_logo_mvchk_length_th  // unsigned ,    RW, default = 4  threshold of mv_length
+//Bit 31:24        reserved
+//Bit 23:16        reserved
+//Bit 15: 8        reserved
 //Bit  7: 1        reserved
-//Bit  0           reg_vplogo_mvchk_en       // unsigned ,    RW, default = 1  enable for vp logo mv check
+//Bit  0            reserved
 #define FRC_VP_LOGO_MV_CHECK_2                     0x1e97
 //Bit 31:24        reserved
-//Bit 23:16        reg_logo_mvchk_p2p_th2    // unsigned ,    RW, default = 20  threshold of pc_cp to mvr mvdiff
-//Bit 15: 8        reg_logo_mvchk_sad_th2    // unsigned ,    RW, default = 75  threshold of sad for current block
-//Bit  7: 0        reg_logo_mvchk_sad_th     // unsigned ,    RW, default = 150  threshold of sad
+//Bit 23:16        reserved
+//Bit 15: 8        reserved
+//Bit  7: 0        reserved
 #define FRC_VP_OFRM_IDX                            0x1e98
 //Bit 31: 0        reg_ofrm_idx              // unsigned ,    RW, default = 0
 // synopsys translate_off
@@ -9453,36 +8736,39 @@
 //Bit 15:13         reserved
 //Bit 12:0          ro_vp_out_probe_datx         // unsigned ,   RW, default = 0    ro_vp_out_probe_datx: probe data of vp output mvy
 #define FRC_VP_TOP_HW_CTRL                         0x1ef3
-//Bit 31:4          reserved
-//Bit 3             reg_hw_fw_mode             // unsigned ,    RW, default = 0     1:hw firmware open 0:hw firmware close
+//Bit 31:3          reserved
 //Bit 2:0           reg_vp_probe_imv_mux       // unsigned ,    RW, default = 0     ro_vp_in_probe_dat choose 0:PC_PHS 1:CN 2:CP 3:NC 4:PC 5:PB
 #define FRC_VP_TOP_SYNC_CTRL                       0x1ef6
-//Bit 31:17         reserved
+//Bit 31:25         reserved
+//Bit 24            reg_vp2_top_latch_en       // unsigned ,    RW, default = 1     1:latch top_reg 0:don't latch top_reg
+//Bit 23:21         reserved
+//Bit 20            reg_vp1_top_latch_en       // unsigned ,    RW, default = 1     1:latch top_reg 0:don't latch top_reg
+//Bit 19:17         reserved
 //Bit 16            reg_top_latch_en           // unsigned ,    RW, default = 1     1:latch top_reg 0:don't latch top_reg
 //Bit 15:13         reserved
 //Bit 12            reg_ro_latch_sel           // unsigned ,    RW, default = 0     1:frm_rst latch ro 0:frm_end latch ro
 //Bit 11:9          reserved
-//Bit 8             reg_ro_fram                // unsigned ,    RW, default = 1     reg_ro_fram
-//Bit 7 :4          reg_vp2_sync_sel           // unsigned ,    RW, default = 7     vp1_reg_sync_sel
-//Bit 3 :0          reg_vp1_sync_sel           // unsigned ,    RW, default = 7     vp2_reg_sync_sel
+//Bit 8             reg_ro_fram                // unsigned ,    RW, default = 1     vp ro reg sel   ,1:ro latch  1:don't latch
+//Bit 7 :4          reg_vp2_sync_sel           // unsigned ,    RW, default = 7     vp1_reg_sync_sel,4'hf:sync   0:don't sync
+//Bit 3 :0          reg_vp1_sync_sel           // unsigned ,    RW, default = 7     vp1_reg_sync_sel,4'hf:sync   0:don't sync
 #define FRC_VP_TOP_STAT                            0x1ef7
 //Bit 31:2          reserved
 //Bit 1             ro_vp2_undone_flag         // unsigned ,    RO, default = 0     ro_vp2_undone_flag 1:vp2 undone flag
 //Bit 0             ro_vp1_undone_flag         // unsigned ,    RO, default = 0     ro_vp1_undone_flag 1:vp1 undone flag
 #define FRC_VP_TOP_CLR_STAT                        0x1ef8
 //Bit 31:2          reserved
-//Bit 1             reg_clr_vp2_flag           // unsigned ,    RO, default = 0     clr_flag of ro_vp2_undone_flag  1: clr ro_vp2_undone_flag
-//Bit 0             reg_clr_vp1_flag           // unsigned ,    RO, default = 0     clr_flag of ro_vp1_undone_flag  1: clr ro_vp1_undone_flag
+//Bit 1             pls_clr_vp2_flag           // unsigned ,    WO, default = 0     clr_flag of ro_vp2_undone_flag  1: clr ro_vp2_undone_flag
+//Bit 0             pls_clr_vp1_flag           // unsigned ,    WO, default = 0     clr_flag of ro_vp1_undone_flag  1: clr ro_vp1_undone_flag
 #define FRC_VP_TOP_GCLK_CTRL                       0x1efa
 //Bit 31:2          reserved
-//Bit 1 :0          reg_top_gclk_ctrl           // unsigned ,    RW, default = 0    reg_top_gclk_ctrl  gating clk_ctrl of vp top
+//Bit 1 :0          reg_top_gclk_ctrl           // unsigned ,   RW, default = 0    reg_top_gclk_ctrl  gating clk_ctrl of vp top
 #define FRC_VP1_GCLK_CTRL                          0x1efb
 //Bit 31:10         reserved
-//Bit 9 :0          reg_vp1_gclk_ctrl           // unsigned ,    RW, default = 0    reg_vp1_gclk_ctrl  gating clk_ctrl of vp1
+//Bit 9 :0          reg_vp1_gclk_ctrl           // unsigned ,   RW, default = 0    reg_vp1_gclk_ctrl  gating clk_ctrl of vp1
 #define FRC_VP2_GCLK_CTRL                          0x1efc
-//Bit 31:0          reg_vp2_gclk_ctrl           // unsigned ,    RW, default = 0    reg_vp2_gclk_ctrl  gating clk_ctrl of vp2
+//Bit 31:0          reg_vp2_gclk_ctrl           // unsigned ,   RW, default = 0    reg_vp2_gclk_ctrl  gating clk_ctrl of vp2
 #define FRC_VP_MEDBG_OPT                           0x1efd
-//Bit 0             reg_medbg_opt_en            // unsigned ,    RW, default = 1
+//Bit 0             reg_medbg_opt_en            // unsigned ,   RW, default = 1
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -9732,9 +9018,8 @@
 //Bit 24           reg_mc_bb_inner_en        // unsigned ,    RW, default = 0  me handle bb inner en
 //Bit 23:21        reserved
 //Bit 20           reg_mc_greedy_mode_en     // unsigned ,    RW, default = 0  mc greedy mode en
-//Bit 19:18        reg_mc_obmc_mode          // unsigned ,    RW, default = 1  obmc mode, 0 no obmc, only use cur block do mc 1 force obmc 2: adaptive obmc based on occ
-//Bit 17           reg_mc_pre_lbuf_yuv422    // unsigned ,    RW, default = 1  mc pre frame line buffer data using yuv422 for storage or not: 0: yuv444, 1 yuv422: yuyv mc data line buffer format control
-//Bit 16           reg_mc_cur_lbuf_yuv422    // unsigned ,    RW, default = 1  mc cur frame line buffer data using yuv422 for storage or not: 0: yuv444, 1 yuv422: yuyv mc data line buffer format control
+//Bit 19:18        reserved
+//Bit 17:16        reg_mc_obmc_mode          // unsigned ,    RW, default = 1  obmc mode, 0 no obmc, only use cur block do mc 1 force obmc 2: adaptive obmc based on occ
 //Bit 15:12        reserved
 //Bit 11: 8        reg_mc_mvx_scale          // unsigned ,    RW, default = 2  upscale of mvx from vector of MEandVP to get the vector under MC full scale, 0 no upscale, 1 2x upscale, 2 4xupscale, should be set to equal of reg_me_dsx_scale
 //Bit  7: 4        reserved
@@ -9791,12 +9076,8 @@
 //Bit 15: 8        reserved
 //Bit  7: 0        reg_mc_blk_yofset         // signed ,    RW, default = 0  vertical pixel offset to align with me blocks
 #define FRC_MC_LOGO_OPTION                         0x300e
-//Bit 31:28        reserved
-//Bit 27:24        reg_mc_get_pixlogo_mode   // unsigned ,    RW, default = 2  0: p_logo to p,c_logo to c; 1:p_logo to p, p_logo to c; 2:c_logo to p, c_logo to c
-//Bit 23: 9        reserved
-//Bit  8: 2        reg_mc_me_row_delay_for_meblklogo // unsigned ,    RW, default = 3  me row delay for me blk logo
-//Bit  1           reg_mc_me_row_delay_for_meblklogo_en // unsigned ,    RW, default = 0  me row delay for me blk logo en
-//Bit  0           reg_mc_melogo_bbd_sel     // unsigned ,    RW, default = 1  0:0 0 xnumblk minus 1 ynumblk minus 1; 1:melogo bb
+//Bit 31: 4        reserved
+//Bit  3: 0        reg_mc_get_pixlogo_mode   // unsigned ,    RW, default = 2  0: p_logo to p,c_logo to c; 1:p_logo to p, p_logo to c; 2:c_logo to p, c_logo to c
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -9808,14 +9089,14 @@
 // synopsys translate_off
 // synopsys translate_on
 #define FRC_NORM_SHIFT1                            0x3010
-//Bit 31:24        reg_mc_luma_norm_shift_posi_0 // unsigned ,    RW, default = 43  //26  shift
-//Bit 23:16        reg_mc_luma_norm_shift_posi_1 // unsigned ,    RW, default = 86  //52  shift
-//Bit 15: 8        reg_mc_luma_norm_shift_posi_2 // unsigned ,    RW, default = 129 //77  shift
-//Bit  7: 0        reg_mc_luma_norm_shift_posi_3 // unsigned ,    RW, default = 0   //103  shift
+//Bit 31:24        reg_mc_luma_norm_shift_posi_0 // unsigned ,    RW, default = 19  shift
+//Bit 23:16        reg_mc_luma_norm_shift_posi_1 // unsigned ,    RW, default = 40  shift
+//Bit 15: 8        reg_mc_luma_norm_shift_posi_2 // unsigned ,    RW, default = 55  shift
+//Bit  7: 0        reg_mc_luma_norm_shift_posi_3 // unsigned ,    RW, default = 74  shift
 #define FRC_NORM_SHIFT2                            0x3011
-//Bit 31:24        reg_mc_luma_norm_shift_posi_4 // unsigned ,    RW, default = 0   //129  shift
-//Bit 23:16        reg_mc_luma_norm_shift_posi_5 // unsigned ,    RW, default = 0  shift
-//Bit 15: 8        reg_mc_luma_norm_shift_posi_6 // unsigned ,    RW, default = 0  shift
+//Bit 31:24        reg_mc_luma_norm_shift_posi_4 // unsigned ,    RW, default = 92  shift
+//Bit 23:16        reg_mc_luma_norm_shift_posi_5 // unsigned ,    RW, default = 110  shift
+//Bit 15: 8        reg_mc_luma_norm_shift_posi_6 // unsigned ,    RW, default = 129  shift
 //Bit  7: 0        reg_mc_luma_norm_shift_posi_7 // unsigned ,    RW, default = 0  shift
 #define FRC_NORM_SHIFT3                            0x3012
 //Bit 31:24        reg_mc_luma_norm_shift_posi_8 // unsigned ,    RW, default = 0  shift
@@ -9830,25 +9111,25 @@
 #define FRC_NORM_SHIFT5                            0x3014
 //Bit 31:24        reg_mc_chrm_norm_shift_posi_7 // unsigned ,    RW, default = 0  shift
 //Bit 23:16        reg_mc_chrm_norm_shift_posi_8 // unsigned ,    RW, default = 0  shift
-//Bit 15: 8        reg_mc_luma_sing_shift_posi_0 // unsigned ,    RW, default = 26  //19  shift
-//Bit  7: 0        reg_mc_luma_sing_shift_posi_1 // unsigned ,    RW, default = 52  //37  shift
+//Bit 15: 8        reg_mc_luma_sing_shift_posi_0 // unsigned ,    RW, default = 24  shift
+//Bit  7: 0        reg_mc_luma_sing_shift_posi_1 // unsigned ,    RW, default = 36  shift
 #define FRC_NORM_SHIFT6                            0x3015
-//Bit 31:24        reg_mc_luma_sing_shift_posi_2 // unsigned ,    RW, default = 77  //44  shift
-//Bit 23:16        reg_mc_luma_sing_shift_posi_3 // unsigned ,    RW, default = 103 //55  shift
-//Bit 15: 8        reg_mc_luma_sing_shift_posi_4 // unsigned ,    RW, default = 129 //73  shift
-//Bit  7: 0        reg_mc_luma_sing_shift_posi_5 // unsigned ,    RW, default = 0   //86  shift
+//Bit 31:24        reg_mc_luma_sing_shift_posi_2 // unsigned ,    RW, default = 47  shift
+//Bit 23:16        reg_mc_luma_sing_shift_posi_3 // unsigned ,    RW, default = 59  shift
+//Bit 15: 8        reg_mc_luma_sing_shift_posi_4 // unsigned ,    RW, default = 70  shift
+//Bit  7: 0        reg_mc_luma_sing_shift_posi_5 // unsigned ,    RW, default = 82  shift
 #define FRC_NORM_SHIFT7                            0x3016
-//Bit 31:24        reg_mc_luma_sing_shift_posi_6 // unsigned ,    RW, default = 0   //92  shift
-//Bit 23:16        reg_mc_luma_sing_shift_posi_7 // unsigned ,    RW, default = 0   //110  shift
-//Bit 15: 8        reg_mc_luma_sing_shift_posi_8 // unsigned ,    RW, default = 0   //129  shift
-//Bit  7: 0        reg_mc_chrm_sing_shift_posi_0 // unsigned ,    RW, default = 26  //22  shift
+//Bit 31:24        reg_mc_luma_sing_shift_posi_6 // unsigned ,    RW, default = 94  shift
+//Bit 23:16        reg_mc_luma_sing_shift_posi_7 // unsigned ,    RW, default = 105  shift
+//Bit 15: 8        reg_mc_luma_sing_shift_posi_8 // unsigned ,    RW, default = 129  shift
+//Bit  7: 0        reg_mc_chrm_sing_shift_posi_0 // unsigned ,    RW, default = 26  shift
 #define FRC_NORM_SHIFT8                            0x3017
-//Bit 31:24        reg_mc_chrm_sing_shift_posi_1 // unsigned ,    RW, default = 52  //43  shift
-//Bit 23:16        reg_mc_chrm_sing_shift_posi_2 // unsigned ,    RW, default = 77  //64  shift
-//Bit 15: 8        reg_mc_chrm_sing_shift_posi_3 // unsigned ,    RW, default = 103 //86  shift
-//Bit  7: 0        reg_mc_chrm_sing_shift_posi_4 // unsigned ,    RW, default = 129 //107  shift
+//Bit 31:24        reg_mc_chrm_sing_shift_posi_1 // unsigned ,    RW, default = 52  shift
+//Bit 23:16        reg_mc_chrm_sing_shift_posi_2 // unsigned ,    RW, default = 77  shift
+//Bit 15: 8        reg_mc_chrm_sing_shift_posi_3 // unsigned ,    RW, default = 103  shift
+//Bit  7: 0        reg_mc_chrm_sing_shift_posi_4 // unsigned ,    RW, default = 129  shift
 #define FRC_NORM_SHIFT9                            0x3018
-//Bit 31:24        reg_mc_chrm_sing_shift_posi_5 // unsigned ,    RW, default = 0   //129  shift
+//Bit 31:24        reg_mc_chrm_sing_shift_posi_5 // unsigned ,    RW, default = 0  shift
 //Bit 23:16        reg_mc_chrm_sing_shift_posi_6 // unsigned ,    RW, default = 0  shift
 //Bit 15: 8        reg_mc_chrm_sing_shift_posi_7 // unsigned ,    RW, default = 0  shift
 //Bit  7: 0        reg_mc_chrm_sing_shift_posi_8 // unsigned ,    RW, default = 0  shift
@@ -9879,19 +9160,19 @@
 //Bit  7: 0        reserved
 #define FRC_MC_RANGE_NORM_LUT_0                    0x301e
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_0 // signed ,    RW, default = -8
+//Bit 24:16        reg_mc_luma_range_norm_lut_0 // signed ,    RW, default = -4
 //Bit 15: 9        reserved
-//Bit  8: 0        reg_mc_chrm_range_norm_lut_0 // signed ,    RW, default = -8
+//Bit  8: 0        reg_mc_chrm_range_norm_lut_0 // signed ,    RW, default = -4
 #define FRC_MC_RANGE_NORM_LUT_1                    0x301f
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_1 // signed ,    RW, default = 8
+//Bit 24:16        reg_mc_luma_range_norm_lut_1 // signed ,    RW, default = 4
 //Bit 15: 9        reserved
-//Bit  8: 0        reg_mc_chrm_range_norm_lut_1 // signed ,    RW, default = 8
+//Bit  8: 0        reg_mc_chrm_range_norm_lut_1 // signed ,    RW, default = 4
 #define FRC_MC_RANGE_NORM_LUT_2                    0x3020
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_2 // signed ,    RW, default = -24    //-40
+//Bit 24:16        reg_mc_luma_range_norm_lut_2 // signed ,    RW, default = -28
 //Bit 15: 9        reserved
-//Bit  8: 0        reg_mc_chrm_range_norm_lut_2 // signed ,    RW, default = -24
+//Bit  8: 0        reg_mc_chrm_range_norm_lut_2 // signed ,    RW, default = -12
 #define FRC_MC_RANGE_NORM_LUT_3                    0x3021
 //Bit 31:25        reserved
 //Bit 24:16        reg_mc_luma_range_norm_lut_3 // signed ,    RW, default = 24 //40
@@ -9899,19 +9180,19 @@
 //Bit  8: 0        reg_mc_chrm_range_norm_lut_3 // signed ,    RW, default = 24
 #define FRC_MC_RANGE_NORM_LUT_4                    0x3022
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_4 // signed ,    RW, default = -16
+//Bit 24:16        reg_mc_luma_range_norm_lut_4 // signed ,    RW, default = -8
 //Bit 15: 9        reserved
-//Bit  8: 0        reg_mc_chrm_range_norm_lut_4 // signed ,    RW, default = -16
+//Bit  8: 0        reg_mc_chrm_range_norm_lut_4 // signed ,    RW, default = -8
 #define FRC_MC_RANGE_NORM_LUT_5                    0x3023
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_5 // signed ,    RW, default = 16
+//Bit 24:16        reg_mc_luma_range_norm_lut_5 // signed ,    RW, default = 8
 //Bit 15: 9        reserved
-//Bit  8: 0        reg_mc_chrm_range_norm_lut_5 // signed ,    RW, default = 16
+//Bit  8: 0        reg_mc_chrm_range_norm_lut_5 // signed ,    RW, default = 8
 #define FRC_MC_RANGE_NORM_LUT_6                    0x3024
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_6 // signed ,    RW, default = -16    //-32
+//Bit 24:16        reg_mc_luma_range_norm_lut_6 // signed ,    RW, default = -24
 //Bit 15: 9        reserved
-//Bit  8: 0        reg_mc_chrm_range_norm_lut_6 // signed ,    RW, default = -16
+//Bit  8: 0        reg_mc_chrm_range_norm_lut_6 // signed ,    RW, default = -8
 #define FRC_MC_RANGE_NORM_LUT_7                    0x3025
 //Bit 31:25        reserved
 //Bit 24:16        reg_mc_luma_range_norm_lut_7 // signed ,    RW, default = 16 //32
@@ -9919,32 +9200,32 @@
 //Bit  8: 0        reg_mc_chrm_range_norm_lut_7 // signed ,    RW, default = 16
 #define FRC_MC_RANGE_NORM_LUT_8                    0x3026
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_8 // signed ,    RW, default = -24
+//Bit 24:16        reg_mc_luma_range_norm_lut_8 // signed ,    RW, default = -12
 //Bit 15: 9        reserved
-//Bit  8: 0        reg_mc_chrm_range_norm_lut_8 // signed ,    RW, default = -24
+//Bit  8: 0        reg_mc_chrm_range_norm_lut_8 // signed ,    RW, default = -12
 #define FRC_MC_RANGE_NORM_LUT_9                    0x3027
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_9 // signed ,    RW, default = 24
+//Bit 24:16        reg_mc_luma_range_norm_lut_9 // signed ,    RW, default = 12
 //Bit 15: 9        reserved
-//Bit  8: 0        reg_mc_chrm_range_norm_lut_9 // signed ,    RW, default = 24
+//Bit  8: 0        reg_mc_chrm_range_norm_lut_9 // signed ,    RW, default = 12
 #define FRC_MC_RANGE_NORM_LUT_10                   0x3028
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_10 // signed ,    RW, default = -8    //-24
+//Bit 24:16        reg_mc_luma_range_norm_lut_10 // signed ,    RW, default = -20
 //Bit 15: 9        reserved
-//Bit  8: 0        reg_mc_chrm_range_norm_lut_10 // signed ,    RW, default = -8
+//Bit  8: 0        reg_mc_chrm_range_norm_lut_10 // signed ,    RW, default = -4
 #define FRC_MC_RANGE_NORM_LUT_11                   0x3029
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_11 // signed ,    RW, default = 8 //24
+//Bit 24:16        reg_mc_luma_range_norm_lut_11 // signed ,    RW, default = 20
 //Bit 15: 9        reserved
-//Bit  8: 0        reg_mc_chrm_range_norm_lut_11 // signed ,    RW, default = 8
+//Bit  8: 0        reg_mc_chrm_range_norm_lut_11 // signed ,    RW, default = 4
 #define FRC_MC_RANGE_NORM_LUT_12                   0x302a
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_12 // signed ,    RW, default = 0 //-32
+//Bit 24:16        reg_mc_luma_range_norm_lut_12 // signed ,    RW, default = -16
 //Bit 15: 9        reserved
 //Bit  8: 0        reg_mc_chrm_range_norm_lut_12 // signed ,    RW, default = 0
 #define FRC_MC_RANGE_NORM_LUT_13                   0x302b
 //Bit 31:25        reserved
-//Bit 24:16        reg_mc_luma_range_norm_lut_13 // signed ,    RW, default = 0 //32
+//Bit 24:16        reg_mc_luma_range_norm_lut_13 // signed ,    RW, default = 16
 //Bit 15: 9        reserved
 //Bit  8: 0        reg_mc_chrm_range_norm_lut_13 // signed ,    RW, default = 0
 #define FRC_MC_RANGE_NORM_LUT_14                   0x302c
@@ -10543,8 +9824,8 @@
 //Bit 31: 10       reserved
 //Bit 9 : 8        reg_glk_ctrl      // unsigned ,    RW, default = 0  csc reg_glk_ctrl enable 2'b00:gating 2'b01:close 2'b1x:always open
 //Bit 7: 5         reserved
-//Bit  4           reg_sync_en       // unsigned ,    RW, default = 1  reg_csc_en sync enable
-//Bit  3           reg_csc_en        // unsigned ,    RW, default = 1  enable rgb2yuv matrix for ip pattern generation
+//Bit  4           reg_sync_en       // unsigned ,    RW, default = 0  reg_csc_en sync enable
+//Bit  3           reg_csc_en        // unsigned ,    RW, default = 1  enable rgb2yuv mtrix for ip pattern generation
 //Bit 2:0          reg_csc_rs        // unsigned ,    RW, default = 0  0: normalized to 1024 as 1; 1: norm to 2048; 2: norm to 4096; 3: norm to 8192
 #define FRC_MC_CSC_OFFSET_INP01                    0x30f5
 //Bit 31:29        reserved
@@ -10605,25 +9886,7 @@
 //Bit 10: 9        reg_mc_inside_logo_judgement_mode // unsigned ,    RW, default = 1  0:use pre inside;1:use cur inside;2:use p or c; 3:use p and c. for inside logo
 //Bit  8: 0        reserved
 #define FRC_MC_GOSD_REG                            0x3101
-//Bit 31:30        reg_mc_get_osd_mode       // unsigned ,    RW, default = 0  0: p osd to p, c osd to c; 1:p osd to p, p osd to c; 2:c_osd to p, c_osd to c
-//Bit 29:28        reg_mc_new_pre_pto_level_inside_mode // unsigned ,    RW, default = 1  for logo aggregation. 0:use corresponding pix logo;1:use oppose pix logo;2:use p or c; 3:use p and c
-//Bit 27:26        reserved
-//Bit 25:24        reg_mc_new_cur_pto_level_inside_mode // unsigned ,    RW, default = 0  for logo aggregation. 0:use corresponding pix logo;1:use oppose pix logo;2:use p or c; 3:use p and c
-//Bit 23           reg_mc_pto_rp_en          // unsigned ,    RW, default = 0  enable of replacing the interpolated pixels which point to osd
-//Bit 22           reg_mc_inside_osd_en      // unsigned ,    RW, default = 0  enable of replacing the interpolated pixels which inside logo
-//Bit 21           reg_mc_cal_pto_chrm_mode  // unsigned ,    RW, default = 0  cal pto chrm mode 0: one by one 1: step by step
-//Bit 20           reg_mc_pto_level_mode     // unsigned ,    RW, default = 0  0:max 1:min
-//Bit 19           reg_mc_vote_combine_logo_osd_mode // unsigned ,    RW, default = 0  0: logo 1: logo or osd
-//Bit 18           reg_mc_double_ptlo_mode_sel // unsigned ,    RW, default = 0  0: not using double pto   1:using double pto
-//Bit 17:16        reg_mc_inside_gosd_judgement_mode // unsigned ,    RW, default = 2  0:use pre inside; 1:use cur inside; 2:use p or c; 3:use p and c. for inside osd
-//Bit 15            reserved
-//Bit 14:12        reg_mc_zpix_inside_gosd_rp_sel // unsigned ,    RW, default = 3  0:avg 1:phase weight 2: zp 3: zc 4:mid3
-//Bit 11            reserved
-//Bit 10: 8        reg_mc_pto_num_thmax      // unsigned ,    RW, default = 0  max number of ptw points
-//Bit  7            reserved
-//Bit  6: 4        reg_mc_pto_num_thmin      // unsigned ,    RW, default = 0  min number of ptw points
-//Bit  3            reserved
-//Bit  2: 0        reg_mc_pto_valid_num      // unsigned ,    RW, default = 3  min number of valid point
+//Bit 31: 0        reserved
 #define FRC_MC_NEW_PTL_LEVEL                       0x3102
 //Bit 31:16        reserved
 //Bit 15:14        reg_mc_new_pre_ptl_level_inside_mode // unsigned ,    RW, default = 1  for logo aggregation. 0:use corresponding pix logo;1:use oppose pix logo;2:use p or c; 3:use p and c
@@ -11731,131 +10994,6 @@
 //Bit 31:26        reserved
 //Bit 25:16        reg_mc_coef4_0_3          // signed ,    RW, default = 0  used deflicker h8v4 interp
 //Bit 15: 0        reserved
-#define FRC_MC_ME_RATIO_DELETE                     0x31dc
-//Bit 31: 0        reserved
-#define FRC_MC_BLK_OFSET_DELETE                    0x31dd
-//Bit 31: 0        reserved
-#define FRC_MC_BB_HANDLE_INNER_OFST_DELETE         0x31de
-//Bit 31: 0        reserved
-#define FRC_MC_BB_HANDLE_ORG_ME_BB_XYXY_LEFT_TOP_DELETE 0x31df
-//Bit 31: 0        reserved
-#define FRC_MC_BB_HANDLE_ORG_ME_BB_XYXY_RIGHT_BOT_DELETE 0x31e0
-//Bit 31: 0        reserved
-#define FRC_MC_BB_HANDLE_ORG_ME_BLK_BB_XYXY_LFT_AND_TOP_DELETE 0x31e1
-//Bit 31: 0        reserved
-#define FRC_MC_BB_HANDLE_ORG_ME_BLK_BB_XYXY_RIT_AND_BOT_DELETE 0x31e2
-//Bit 31: 0        reserved
-#define FRC_MC_BB_HANDLE_ME_BLK_BB_XYXY_LFT_AND_TOP_DELETE 0x31e3
-//Bit 31: 0        reserved
-#define FRC_MC_BB_HANDLE_ME_BLK_BB_XYXY_RIT_AND_BOT_DELETE 0x31e4
-//Bit 31: 0        reserved
-#define FRC_MC_BLK_DEHALO_EN_AND_RP_TH_Y           0x31e5
-//Bit 31           reg_mc_pix_replace_oct_en // unsigned ,    RW, default = 1  in mc_interp_core oct: 0: oct = OCC_NONE 1:oct = mv.oct
-//Bit 30           reg_mc_blk_dehalo_protect_en // unsigned ,    RW, default = 0  blk dehalo protect en
-//Bit 29           reg_mc_blk_dehalo_edge_en // unsigned ,    RW, default = 0  blk dehalo edge en
-//Bit 28           reg_mc_blk_dehalo_oct_none_rp_en // unsigned ,    RW, default = 1  blk dehalo oct none rp en
-//Bit 27:16        reg_mc_blk_dehalo_rp_max_th_y // unsigned ,    RW, default = 300  dehalo rp max th luma
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_blk_dehalo_rp_min_th_y // unsigned ,    RW, default = 30  dehalo rp min th luma
-#define FRC_MC_BLK_DEHALO_RP_TH_UV                 0x31e6
-//Bit 31:28        reserved
-//Bit 27:16        reg_mc_blk_dehalo_rp_max_th_uv // unsigned ,    RW, default = 300  dehalo rp max th chrm
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_blk_dehalo_rp_min_th_uv // unsigned ,    RW, default = 50  dehalo rp max th chrm
-#define FRC_MC_BLK_DEHALO_CP_LEVEL_Y_MODE_TH       0x31e7
-//Bit 31:30        reserved
-//Bit 29:28        reg_mc_blk_dehalo_cp_level_y_mode // unsigned ,    RW, default = 1  blk dehalo cp level mode luma
-//Bit 27:16        reg_mc_blk_dehalo_cp_level_y_th0 // unsigned ,    RW, default = 150  dehalo cp level th0 luma
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_blk_dehalo_cp_level_y_th1 // unsigned ,    RW, default = 500  dehalo cp level th1 luma
-#define FRC_MC_BLK_DEHALO_CP_LEVEL_Y_SLOPE         0x31e8
-//Bit 31:24        reserved
-//Bit 23:16        reg_mc_blk_dehalo_cp_level_y_slope0 // unsigned ,    RW, default = 4  blk dehalo cp level slope0 luma
-//Bit 15: 8        reg_mc_blk_dehalo_cp_level_y_slope1 // unsigned ,    RW, default = 4  blk dehalo cp level slope1 luma
-//Bit  7: 0        reg_mc_blk_dehalo_cp_level_y_slope2 // unsigned ,    RW, default = 4  blk dehalo cp level slope2 luma
-#define FRC_MC_BLK_DEHALO_CP_LEVEL_UV_MODE_TH      0x31e9
-//Bit 31:30        reserved
-//Bit 29:28        reg_mc_blk_dehalo_cp_level_uv_mode // unsigned ,    RW, default = 1  blk dehalo cp level mode chrm
-//Bit 27:16        reg_mc_blk_dehalo_cp_level_uv_th0 // unsigned ,    RW, default = 150  dehalo cp level th0 chrm
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_blk_dehalo_cp_level_uv_th1 // unsigned ,    RW, default = 500  dehalo cp level th1 chrm
-#define FRC_MC_BLK_DEHALO_CP_LEVEL_UV_SLOPE        0x31ea
-//Bit 31:24        reserved
-//Bit 23:16        reg_mc_blk_dehalo_cp_level_uv_slope0 // unsigned ,    RW, default = 4  blk dehalo cp level slope0 chrm
-//Bit 15: 8        reg_mc_blk_dehalo_cp_level_uv_slope1 // unsigned ,    RW, default = 4  blk dehalo cp level slope1 chrm
-//Bit  7: 0        reg_mc_blk_dehalo_cp_level_uv_slope2 // unsigned ,    RW, default = 4  blk dehalo cp level slope2 chrm
-#define FRC_MC_BLK_DEHALO_CP_Y_GAIN_TH             0x31eb
-//Bit 31:28        reserved
-//Bit 27:16        reg_mc_blk_dehalo_cp_y_gain_th0 // unsigned ,    RW, default = 10  dehalo cp gain th0 luma
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_blk_dehalo_cp_y_gain_th1 // unsigned ,    RW, default = 300  dehalo cp gain th1 luma
-#define FRC_MC_BLK_DEHALO_CP_Y_GAIN_SLOPE_MAX_MIN  0x31ec
-//Bit 31:24        reserved
-//Bit 23:16        reg_mc_blk_dehalo_cp_y_gain_slope // unsigned ,    RW, default = 8  blk dehalo cp gain slope luma
-//Bit 15: 8        reg_mc_blk_dehalo_cp_y_gain_max // unsigned ,    RW, default = 40  blk dehalo cp gain max luma
-//Bit  7: 0        reg_mc_blk_dehalo_cp_y_gain_min // unsigned ,    RW, default = 8  blk dehalo cp gain min luma
-#define FRC_MC_BLK_DEHALO_CP_UV_GAIN_TH            0x31ed
-//Bit 31:28        reserved
-//Bit 27:16        reg_mc_blk_dehalo_cp_uv_gain_th0 // unsigned ,    RW, default = 10  dehalo cp gain th0 chrm
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_blk_dehalo_cp_uv_gain_th1 // unsigned ,    RW, default = 300  dehalo cp gain th1 chrm
-#define FRC_MC_BLK_DEHALO_CP_UV_GAIN_SLOP_MAX_MIN  0x31ee
-//Bit 31:24        reserved
-//Bit 23:16        reg_mc_blk_dehalo_cp_uv_gain_slope // unsigned ,    RW, default = 8  blk dehalo cp gain slope chrm
-//Bit 15: 8        reg_mc_blk_dehalo_cp_uv_gain_max // unsigned ,    RW, default = 48  blk dehalo cp gain max chrm
-//Bit  7: 0        reg_mc_blk_dehalo_cp_uv_gain_min // unsigned ,    RW, default = 8  blk dehalo cp gain min chrm
-#define FRC_MC_PIX_DEHALO_SETTING                  0x31ef
-//Bit 31:30        reserved
-//Bit 29           reg_mc_pix_dehalo_en      // unsigned ,    RW, default = 0  pix dehaloen
-//Bit 28           reg_mc_debug_pix_dehalo_show_do_rp // unsigned ,    RW, default = 1  pix dehalo debug show rp
-//Bit 27:16        reg_mc_pix_dehalo_rp_max_th_y // unsigned ,    RW, default = 165  dehalo rp max th luma
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_pix_dehalo_rp_min_th_y // unsigned ,    RW, default = 5  dehalo rp min th luma
-#define FRC_MC_PIX_DEHALO_CP_LEVEL_Y               0x31f0
-//Bit 31:30        reg_mc_pix_dehalo_diff_y_mode // unsigned ,    RW, default = 1  pix dehalo diff mode luma
-//Bit 29:28        reg_mc_pix_dehalo_cp_level_y_mode // unsigned ,    RW, default = 1  pix dehalo cp level mode luma
-//Bit 27:16        reg_mc_pix_dehalo_cp_level_y_th0 // unsigned ,    RW, default = 150  dehalo cp level th0 luma
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_pix_dehalo_cp_level_y_th1 // unsigned ,    RW, default = 500  dehalo cp level th1 luma
-#define FRC_MC_PIX_DEHALO_CP_LEVEL_Y_SLOPE         0x31f1
-//Bit 31:24        reserved
-//Bit 23:16        reg_mc_pix_dehalo_cp_level_y_slope0 // unsigned ,    RW, default = 2  pix dehalo cp level slope0 luma
-//Bit 15: 8        reg_mc_pix_dehalo_cp_level_y_slope1 // unsigned ,    RW, default = 4  pix dehalo cp level slope1 luma
-//Bit  7: 0        reg_mc_pix_dehalo_cp_level_y_slope2 // unsigned ,    RW, default = 6  pix dehalo cp level slope2 luma
-#define FRC_MC_PIX_DEHALO_CP_UV2Y_GAIN_TH          0x31f2
-//Bit 31:28        reserved
-//Bit 27:16        reg_mc_pix_dehalo_cp_uv2y_gain_th0 // unsigned ,    RW, default = 100  dehalo cp chrm2luma gain th0
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_pix_dehalo_cp_uv2y_gain_th1 // unsigned ,    RW, default = 200  dehalo cp chrm2luma gain th1
-#define FRC_MC_PIX_DEHALO_CP_YV2Y_GAIN             0x31f3
-//Bit 31:24        reg_mc_pix_dehalo_cp_uv2y_gain_slope // unsigned ,    RW, default = 2  pix dehalo cp chrm2luma gain slope
-//Bit 23:12        reg_mc_pix_dehalo_cp_uv2y_gain_max // unsigned ,    RW, default = 128  dehalo cp chrm2luma gain max
-//Bit 11: 0        reg_mc_pix_dehalo_cp_uv2y_gain_min // unsigned ,    RW, default = 128  dehalo cp chrm2luma gain min
-#define FRC_MC_PIX_DEHALO_RP_TH_UV_MAX_MIN         0x31f4
-//Bit 31:28        reserved
-//Bit 27:16        reg_mc_pix_dehalo_rp_max_th_uv // unsigned ,    RW, default = 200  dehalo rp max th chrm
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_pix_dehalo_rp_min_th_uv // unsigned ,    RW, default = 50  dehalo rp min th chrm
-#define FRC_MC_PIX_DEHALO_CP_LEVEL_UV              0x31f5
-//Bit 31:30        reg_mc_pix_dehalo_diff_uv_mode // unsigned ,    RW, default = 1  pix dehalo diff chrm mode
-//Bit 29:28        reg_mc_pix_dehalo_cp_level_uv_mode // unsigned ,    RW, default = 1  pix dehalo cp level chrm mode
-//Bit 27:16        reg_mc_pix_dehalo_cp_level_uv_th0 // unsigned ,    RW, default = 150  dehalo cp level chrm th0
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_pix_dehalo_cp_level_uv_th1 // unsigned ,    RW, default = 500  dehalo cp level chrm th1
-#define FRC_MC_PIX_DEHALO_CP_LEVEL_UV_SLOPE        0x31f6
-//Bit 31:24        reserved
-//Bit 23:16        reg_mc_pix_dehalo_cp_level_uv_slope0 // unsigned ,    RW, default = 6  pix dehalo cp level chrm slope0
-//Bit 15: 8        reg_mc_pix_dehalo_cp_level_uv_slope1 // unsigned ,    RW, default = 6  pix dehalo cp level chrm slope1
-//Bit  7: 0        reg_mc_pix_dehalo_cp_level_uv_slope2 // unsigned ,    RW, default = 6  pix dehalo cp level chrm slope2
-#define FRC_MC_PIX_DEHALO_CP_Y2UV_GAIN_TH          0x31f7
-//Bit 31:28        reserved
-//Bit 27:16        reg_mc_pix_dehalo_cp_y2uv_gain_th0 // unsigned ,    RW, default = 50  dehalo cp luma2chrm gain th0
-//Bit 15:12        reserved
-//Bit 11: 0        reg_mc_pix_dehalo_cp_y2uv_gain_th1 // unsigned ,    RW, default = 500  dehlao cp luma2chrm gain th1
-#define FRC_MC_PIX_DEHALO_CP_Y2UV_GIAN             0x31f8
-//Bit 31:24        reg_mc_pix_dehalo_cp_y2uv_gain_slope // unsigned ,    RW, default = 2  pix dehalo cp luma2chrm gain slope
-//Bit 23:12        reg_mc_pix_dehalo_cp_y2uv_gain_max // unsigned ,    RW, default = 128  dehalo cp luma2chrm gain max
-//Bit 11: 0        reg_mc_pix_dehalo_cp_y2uv_gain_min // unsigned ,    RW, default = 128  dehalo cp luma2chrm gain min
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -11880,9 +11018,7 @@
 //Bit 31:15        reserved
 //Bit 14           reg_mc_force_deflicker_en // unsigned ,    RW, default = 0  force deflicker
 //Bit 13           reg_mc_flicker0_mode      // unsigned ,    RW, default = 0  do-deflicker == 0 mode 0: use all bilinear(c v h c2 v2 h2); mode 1: c use h8v4, v h c2 h2 v2 use bilinear
-//Bit 12           reg_mc_flicker1_mode      // unsigned ,
-//RW, default = 0  do-deflicker == 1
-//mode 0: just c use h8v4 not do obmc; mode 1: c use h8 v4, v h c2 h2 v2 use bilinear
+//Bit 12           reg_mc_flicker1_mode      // unsigned ,    RW, default = 0  do-deflicker == 1 mode 0: just c use h8v4 not do obmc; mode 1: c use h8 v4, v h c2 h2 v2 use bilinear
 //Bit 11:10        reserved
 //Bit  9: 0        reg_mc_diff_mv_thrd       // unsigned ,    RW, default = 0  mv diff th
 #define FRC_MC_INVALID_CHECK_MODE                  0x3202
@@ -11898,7 +11034,8 @@
 //Bit 15: 8        reg_mc_blackbar_inter_ver_ofst // unsigned ,    RW, default = 4  bbd inter ofst used in ptb check
 //Bit  7: 0        reg_mc_blackbar_inter_hor_ofst // unsigned ,    RW, default = 6  bbd inter ofst used in ptb check
 #define FRC_MC_PT_EN                               0x3204
-//Bit 31:10        reserved
+//Bit 31:11        reserved
+//Bit 10           reg_mc_pix_replace_oct_en // unsigned ,    RW, default = 1  in mc_interp_core oct: 0: oct = OCC_NONE 1:oct = mv.oct
 //Bit  9           reg_mc_pts_rp_en          // unsigned ,    RW, default = 1  enable of replacing the interpolated pixels which point to out of search range
 //Bit  8           reg_mc_ptb_rp_en          // unsigned ,    RW, default = 1  enable of replacing the interpolated pixels which point to blackbar
 //Bit  7           reg_mc_ptw_rp_en          // unsigned ,    RW, default = 0  enable of replacing the interpolated pixels which point to demo-window
@@ -11924,11 +11061,7 @@
 //Bit  3           reg_mc_ptl_combine_pc_mode // unsigned ,    RW, default = 0
 //Bit  2: 0        reg_mc_ptl_pc_th          // unsigned ,    RW, default = 0
 #define FRC_MC_VAR_SCHEME                          0x3206
-//Bit 31:10        reserved
-//Bit  9: 8        reg_mc_ptb_var_valid_num  // unsigned ,    RW, default = 3
-//Bit  7: 4        reg_mc_var_dbg_th         // unsigned ,    RW, default = 0  for var scheme en
-//Bit  3: 1        reserved
-//Bit  0           reg_mc_ptb_var_ref_en     // unsigned ,    RW, default = 0  0: close ptb; 1: get ptb data into med3 and var blender
+//Bit 31: 0        reserved
 #define FRC_MC_PTS_MODE                            0x3207
 //Bit 31:12        reserved
 //Bit 11            reserved
@@ -11945,7 +11078,7 @@
 //Bit 27           reg_mc_cal_pts_chrm_mode  // unsigned ,    RW, default = 1  cal pts chrm mode 0: one by one 1: step by step
 //Bit 26           reg_mc_cal_ptw_chrm_mode  // unsigned ,    RW, default = 0  cal ptw chrm mode 0: one by one 1: step by step
 //Bit 25           reg_mc_cal_ptl_chrm_mode  // unsigned ,    RW, default = 0  cal ptl chrm mode 0: one by one 1: step by step
-//Bit 24           reg_mc_cal_ptwlo_chrm_mode // unsigned ,    RW, default = 0  cal ptwl chrm mode 0: one by one 1: step by step
+//Bit 24           reg_mc_cal_ptwl_chrm_mode // unsigned ,    RW, default = 0  cal ptwl chrm mode 0: one by one 1: step by step
 //Bit 23           reg_mc_double_ptb_spc_prcs_en // unsigned ,    RW, default = 1  0: when go org loop, zp zc, 1: use wp wc
 //Bit 22:20        reg_mc_ptb_mode           // unsigned ,    RW, default = 1  ptb mode 0 1 2 0:ofst 1:ofst+cur pix 2:ofst0-no ofst
 //Bit 19:17        reserved
@@ -11971,12 +11104,9 @@
 //Bit 14:12        reg_mc_ptw_num_thmin      // unsigned ,    RW, default = 0  min number of ptw points
 //Bit 11            reserved
 //Bit 10: 8        reg_mc_ptw_valid_num      // unsigned ,    RW, default = 3  min number of valid points
-//Bit  7: 5        reserved
-//Bit  4           reg_mc_ptl_post           // unsigned ,    RW, default = 0  ptl me blk logo invalid check mode
-//Bit  3           reg_mc_ptl_3x3_or         // unsigned ,    RW, default = 0  ptl me blk logo invalid check mode
-//Bit  2           reg_mc_ptl_3x3_n1         // unsigned ,    RW, default = 0  ptl me blk logo invalid check mode
-//Bit  1           reg_mc_ptl_3x3_n2         // unsigned ,    RW, default = 0  ptl me blk logo invalid check mode
-//Bit  0           reg_mc_ptl_3x3_n3         // unsigned ,    RW, default = 0  ptl me blk logo invalid check mode
+//Bit  7: 2        reserved
+//Bit  1           reg_mc_ptl_post           // unsigned ,    RW, default = 0  ptl me blk logo invalid check mode
+//Bit  0           reg_mc_ptl_3x3_or         // unsigned ,    RW, default = 0  ptl me blk logo invalid check mode
 #define FRC_MC_MED3                                0x320a
 //Bit 31:26        reserved
 //Bit 25           reg_mc_med_smed_sel       // unsigned ,    RW, default = 1  select special med3 mode. 0: just use luma condition for cb/cr; 1: use corresponding condition for y/cb/cr.
@@ -12275,27 +11405,25 @@
 //Bit  7: 6        reserved
 //Bit  5: 0        reg_mc_7_flag_line_width  // unsigned ,    RW, default = 4  7 flag line width
 #define FRC_MC_DBG_EN                              0x3234
-//Bit 31:16        reserved
-//Bit 15           reg_mc_dbg_print_en       // unsigned ,    RW, default = 0  for dbg print info
-//Bit 14           reg_mc_new_ptl_print_img_en // unsigned ,    RW, default = 0  debug print out logo ptl cur and pre img, img after datablur;       dft 0
-//Bit 13           reg_mc_debug_ptb_false_color // unsigned ,    RW, default = 0  reg_mc_debug_ptb_false_color
-//Bit 12           reg_mc_debug_pts_false_color // unsigned ,    RW, default = 0  reg_mc_debug_pts_false_color
-//Bit 11           reg_mc_debug_ptl_false_color // unsigned ,    RW, default = 0  reg_mc_debug_ptl_false_color
-//Bit 10           reg_mc_debug_region_fb_div_false_color_en // unsigned ,    RW, default = 0  reg_mc_debug_region_fb_div_false_color_en
-//Bit  9           reg_mc_debug_region_fb_coef_false_color_en // unsigned ,    RW, default = 0  reg_mc_debug_region_fb_coef_false_color_en
-//Bit  8           reg_mc_debug_logo_all     // unsigned ,    RW, default = 0  tmpt used for debug (logo)
-//Bit  7           reg_mc_debug_output_all   // unsigned ,    RW, default = 0  tmpt used for debug (except logo)
-//Bit  6           reg_mc_debug_logo_show_blksize_en // unsigned ,    RW, default = 0  enable of showing blksize along with logo false color
-//Bit  5           reg_mc_debug_pixlogo_false_color_en // unsigned ,    RW, default = 0  enable of showing ip pixel logo by using false color:
-//Bit  4           reg_mc_debug_blklogo_false_color_en // unsigned ,    RW, default = 0  enable of showing me block logo by using false color:
-//Bit  3           reg_mc_debug_osd_false_color_en // unsigned ,    RW, default = 0  enable of showing osd by using false color:
+//Bit 31:15        reserved
+//Bit 14           reg_mc_dbg_print_en       // unsigned ,    RW, default = 0  for dbg print info
+//Bit 13           reg_mc_new_ptl_print_img_en // unsigned ,    RW, default = 0  debug print out logo ptl cur and pre img, img after datablur;       dft 0
+//Bit 12           reg_mc_debug_ptb_false_color // unsigned ,    RW, default = 0  reg_mc_debug_ptb_false_color
+//Bit 11           reg_mc_debug_pts_false_color // unsigned ,    RW, default = 0  reg_mc_debug_pts_false_color
+//Bit 10           reg_mc_debug_ptl_false_color // unsigned ,    RW, default = 0  reg_mc_debug_ptl_false_color
+//Bit  9           reg_mc_debug_region_fb_div_false_color_en // unsigned ,    RW, default = 0  reg_mc_debug_region_fb_div_false_color_en
+//Bit  8           reg_mc_debug_region_fb_coef_false_color_en // unsigned ,    RW, default = 0  reg_mc_debug_region_fb_coef_false_color_en
+//Bit  7           reg_mc_debug_logo_all     // unsigned ,    RW, default = 0  tmpt used for debug (logo)
+//Bit  6           reg_mc_debug_output_all   // unsigned ,    RW, default = 0  tmpt used for debug (except logo)
+//Bit  5           reg_mc_debug_logo_show_blksize_en // unsigned ,    RW, default = 0  enable of showing blksize along with logo false color
+//Bit  4           reg_mc_debug_pixlogo_false_color_en // unsigned ,    RW, default = 0  enable of showing ip pixel logo by using false color:
+//Bit  3           reg_mc_debug_blklogo_false_color_en // unsigned ,    RW, default = 0  enable of showing me block logo by using false color:
 //Bit  2           reg_mc_debug_dehalo_false_color_en // unsigned ,    RW, default = 0  mode of showing cover/uncover aver by using false color: 0:no false color; 1:show mv_c
 //Bit  1           reg_mc_debug_blackbar_false_color_en // unsigned ,    RW, default = 0  enable of showing blackbar by using false color:
 //Bit  0           reg_mc_debug_variance_blend_false_color_en // unsigned ,    RW, default = 0  variance_blend_false_color_en
 #define FRC_MC_DEBUG_EN                            0x3235
-//Bit 31:21        reserved
-//Bit 20           reg_mc_debug_mv_phs_en    // unsigned ,    RW, default = 0  debug mode to display phs(before dehalo) mv on U and V channels 0:no dump 1: overlay pc_phs on uv
-//Bit 19           reg_mc_debug_mv_phs_hme_en // unsigned ,    RW, default = 0  debug mode to display phs hme mv on u and v channels
+//Bit 31:20        reserved
+//Bit 19           reg_mc_debug_mv_phs_en    // unsigned ,    RW, default = 0  debug mode to display phs(before dehalo) mv on U and V channels 0:no dump 1: overlay pc_phs on uv
 //Bit 18           reg_mc_debug_retimer_false_color_en // unsigned ,    RW, default = 0  debug mode to display retimer false color
 //Bit 17           reg_mc_debug_vp_dehalo_false_color_en // unsigned ,    RW, default = 0  debug mode to display vp dehalo false color
 //Bit 16           reg_mc_debug_mv_pht_en    // unsigned ,    RW, default = 0  debug mode to display pht(after dehalo) mv on U and V channels: 0:no dump 1 mv_c, 2 mv_h, 3, mv_v
@@ -12311,8 +11439,7 @@
 //Bit  1           reg_mc_obmc_uni_en        // unsigned ,    RW, default = 0  debug mode obmc en
 //Bit  0           reg_mc_dbg_ptb_use_zdata_en // unsigned ,    RW, default = 1  debug mode : when ptb, use zdata or not.
 #define FRC_MC_DBG_H8V4_SEL_EN                     0x3236
-//Bit 31: 1        reserved
-//Bit  0           reg_mc_h8v4_sel_mv_mode   // unsigned ,    RW, default = 0  0, do h8v4 on mvc; 1, do h8v4 on mvc and mvv;
+//Bit 31: 0        reserved
 #define FRC_MC_REG_OFRM_IDX_DELETE                 0x3237
 //Bit 31: 0        reserved
 #define FRC_MC_PRE_INSIDE_MCLOGO_CNT               0x3238
@@ -12423,7 +11550,7 @@
 //Bit 31:27       reserved
 //Bit 26:16       reg_mc_luma_phs0_sw_vsize       // unsigned ,    RW, default = 32 reg_mc_luma_phs0_sw_vsize
 //Bit 15          reserved
-//Bit 14: 4       reg_mc_chrm_phs0_sw_vsize       // unsigned ,    RW, default = 32 reg_mc_chrm_phs0_sw_vsize
+//Bit 14: 4       reg_mc_chrm_phs0_sw_vsize       // unsigned ,    RW, default = 20 reg_mc_chrm_phs0_sw_vsize
 //Bit  3: 0       reserved
 #define FRC_MC_PRB_CTRL0                           0x3988
 //Bit 31:30         reserved
@@ -12484,21 +11611,21 @@
 //Bit 7 :0          reserved
 #define FRC_RO_MC_PROBE                            0x3991
 //Bit 31:30         reserved
-//Bit 29: 0         ro_mc_probe               // unsigned ,   RW, default = 0  ro_frc_stat0, yuv422
+//Bit 29: 0         ro_mc_probe               // unsigned ,   RO, default = 0  ro_frc_stat0, yuv422
 #define FRC_RO_MC_STAT0                            0x3992
 //Bit 31:24         reserved
-//Bit 23: 0         ro_dbg_src_dat               // unsigned ,   RW, default = 0  ro_frc_stat1
+//Bit 23: 0         ro_dbg_src_dat               // unsigned ,   RO, default = 0  ro_frc_stat1
 #define FRC_RO_MC_PROBE_CSC                        0x3993
 //Bit 31:30         reserved
-//Bit 29: 0         ro_mc_probe_csc               // unsigned ,   RW, default = 0  ro_frc_stat5, rgb
+//Bit 29: 0         ro_mc_probe_csc               // unsigned ,   RO, default = 0  ro_frc_stat5, rgb
 #define FRC_RO_MC_STAT                             0x3994
 //Bit 31:29         reserved
-//Bit 28:16         ro_undone_vcnt               // unsigned ,   RW, default = 0  ro_undone_vcnt
+//Bit 28:16         ro_undone_vcnt               // unsigned ,   RO, default = 0  ro_undone_vcnt
 //Bit 15:13         reserved
-//Bit 12            ro_undone_flag               // unsigned ,   RW, default = 0  ro_undone_flag
-//Bit 11: 8         ro_logo_corr_info            // unsigned ,   RW, default = 0  ro_logo_corr_info
-//Bit  7: 4         ro_chrm_corr_info            // unsigned ,   RW, default = 0  ro_chrm_corr_info
-//Bit  3: 0         ro_luma_corr_info            // unsigned ,   RW, default = 0  ro_luma_corr_info
+//Bit 12            ro_undone_flag               // unsigned ,   RO, default = 0  ro_undone_flag
+//Bit 11: 8         ro_logo_corr_info            // unsigned ,   RO, default = 0  ro_logo_corr_info
+//Bit  7: 4         ro_chrm_corr_info            // unsigned ,   RO, default = 0  ro_chrm_corr_info
+//Bit  3: 0         ro_luma_corr_info            // unsigned ,   RO, default = 0  ro_luma_corr_info
 #define FRC_MC_LUMA_PFTH_CTRL                      0x39e0
 //Bit 31:27       reserved
 //Bit 26:16       reg_mc_luma_pfth_dlt            // unsigned ,    RW, default = 0   reg_mc_luma_pfth_dlt
@@ -12625,6 +11752,20 @@
 //Bit 20: 8       ro_mc_undone_vcnt               // unsigned ,    RO, default = 0
 //Bit  7: 3       reserved
 //Bit  1: 0       ro_vp2mc_syn_st                 // unsigned ,    RO, default = 0
+#define FRC_MC_LBUF_VOFST1_CTRL                    0x39ef
+//Bit 31          reg_mc_lbuf_vofst1_th_en          // unsigned, RW, default=0
+//Bit 30:9        reserved
+//Bit 8:0         reg_mc_lbuf_vofst1_th             // unsigned, RW, default=96
+#define FRC_MC_LBUF_VOFST1_CLIP0                   0x39f0
+//Bit 31:25         reserved
+//Bit 24:16         ro_luma_pre_vofst1_clip         //unsigned, RO, default=0
+//Bit 15:9          reserved
+//Bit 8:0           ro_luma_cur_vofst1_clip         //unsigned, RO, default=0
+#define FRC_MC_LBUF_VOFST1_CLIP1                   0x39f1
+//Bit 31:25         reserved
+//Bit 24:16         ro_chrm_pre_vofst1_clip         //unsigned, RO, default=0
+//Bit 15:9          reserved
+//Bit 8:0           ro_chrm_cur_vofst1_clip         //unsigned, RO, default=0
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -12636,135 +11777,155 @@
 // synopsys translate_off
 // synopsys translate_on
 #define FRC_MC_LUMA_GCLK_CTRL                      0x3940
-//Bit 31:24       reg_mc_gclk_luma_lbuf           // unsigned ,    RW, default = 8'h0   reg_mc_gclk_luma_lbuf
-//Bit 23:22       reserved
-//Bit 21: 0       reg_mc_gclk_luma_adpt           // unsigned ,    RW, default = 22'h0  reg_mc_gclk_luma_adpt0 to 10
+//Bit 31: 0       reg_mc_gclk_luma           // unsigned ,    RW, default = 22'h0  reg_mc_gclk_luma_adpt0 to 10
 #define FRC_MC_CHRM_GCLK_CTRL                      0x3941
-//Bit 31:24       reg_mc_gclk_chrm_lbuf           // unsigned ,    RW, default = 8'h0  reg_mc_gclk_chrm_lbuf
-//Bit 23:22       reserved
-//Bit 21: 0       reg_mc_gclk_chrm_adpt           // unsigned ,    RW, default = 22'h0  reg_mc_gclk_chrm_adpt0 to 10
+//Bit 31: 0       reg_mc_gclk_chrm           // unsigned ,    RW, default = 22'h0  reg_mc_gclk_chrm_adpt0 to 10
 #define FRC_MC_IPLOGO_GCLK_CTRL1                   0x3942
-//Bit 31: 0       reg_mc_gclk_iplg_adpt0          // unsigned ,    RW, default = 32'h0  reg_mc_gclk_iplogo_adpt0 to 15
+//Bit 31: 0       reg_mc_gclk_logo          // unsigned ,    RW, default = 32'h0  reg_mc_gclk_iplogo_adpt0 to 15
 #define FRC_MC_IPLOGO_GCLK_CTRL2                   0x3943
-//Bit 31:24       reg_mc_gclk_iplg_lbuf           // unsigned ,    RW, default = 8'h0  reg_mc_gclk_iplogo_lbuf
-//Bit 23: 4       reserved
-//Bit  3: 0       reg_mc_gclk_iplg_adpt1          // unsigned ,    RW, default = 4'h0  reg_mc_gclk_iplogo_adpt16 to 17
+//Bit 31:0        reserved
 #define FRC_MC_LBUF_TOP_GCLK                       0x3944
 //Bit 31: 4       reserved
 //Bit  3: 2       reg_mvcvt_gclk_ctrl             // unsigned ,    RW, default = 2'h0  reg_mvcvt_gclk_ctrl
 //Bit  1: 0       reg_p2l_gclk_ctrl               // unsigned ,    RW, default = 2'h0  reg_p2l_gclk_ctrl
 #define FRC_MC_LBUF_LOGO_CTRL                      0x3950
-//Bit 31:8        reserved
+//Bit 31:9        reserved
+//Bit  8          reg_mc_force_melg_en      // unsigned, RW, default=0
 //Bit  7          reg_mc_force_melg         // unsigned ,    RW, default = 0
 //Bit  6          reg_mc_force_iplogo       // unsigned ,    RW, default = 0
-//Bit  5          reg_mc_force_melg_en      // unsigned ,    RW, default = 0
-//Bit  4          reg_mc_force_iplogo_en    // unsigned ,    RW, default = 0
-//Bit  3: 1       reserved
-//Bit  0          reg_mc_melg_handshk_en    // unsigned ,    RW, default = 1  reg_mc_melg_handshk_en
+//Bit  5          reg_mc_force_iplogo_en      // unsigned ,    RW, default = 0
+//Bit  4          reg_mc_mv_dbg_mode        // unsigned ,    RW, default = 0  used for mv dbg mode, force mv_din_srdy as 1
+//Bit  3:0        reg_mc_melg_dbg_mode      // unsigned ,    RW, default = 0  used for mixlogo dbg mode
+#define FRC_MC_MELG_DBG_OUT0                       0x3951
+//Bit 31:0        ro_mc_melg_dbg_out0      //unsigned, RO, default=0
+#define FRC_MC_MELG_DBG_OUT1                       0x3952
+//Bit 31:0        ro_mc_melg_dbg_out1      //unsigned, RO, default=0
 #define FRC_RO_MC_LUMA_VOFST_SUM                   0x3960
 //Bit 31:27         reserved
-//Bit 26:16         ro_luma_cur_vofst1_mfy_sum  // unsigned ,   RW, default = 0 cur luma lbuf vofst cut lines when dynamic search range
+//Bit 26:16         ro_luma_cur_vofst1_mfy_sum  // unsigned ,   RO, default = 0 cur luma lbuf vofst cut lines when dynamic search range
 //Bit 15:11         reserved
-//Bit 10: 0         ro_luma_pre_vofst1_mfy_sum  // unsigned ,   RW, default = 0 pre luma lbuf vofst cut lines when dynamic search range
+//Bit 10: 0         ro_luma_pre_vofst1_mfy_sum  // unsigned ,   RO, default = 0 pre luma lbuf vofst cut lines when dynamic search range
 #define FRC_RO_MC_LUMA_PRE_VOFST_STAT              0x3961
 //Bit 31:27         reserved
-//Bit 26:16         ro_luma_pre_vofst1_dlt_max  // unsigned ,   RW, default = 0 cur luma lbuf vofst cut lines when dynamic search range
+//Bit 26:16         ro_luma_pre_vofst1_dlt_max  // unsigned ,   RO, default = 0 cur luma lbuf vofst cut lines when dynamic search range
 //Bit 15:11         reserved
-//Bit 10: 0         ro_luma_pre_vofst1_dlt_min  // unsigned ,  RW, default = 0 pre luma lbuf vofst cut lines when dynamic search range
+//Bit 10: 0         ro_luma_pre_vofst1_dlt_min  // unsigned ,  RO, default = 0 pre luma lbuf vofst cut lines when dynamic search range
 #define FRC_RO_MC_LUMA_CUR_VOFST_STAT              0x3962
 //Bit 31:27         reserved
-//Bit 26:16         ro_luma_cur_vofst1_dlt_max  // unsigned ,   RW, default = 0 cur luma lbuf vofst cut lines when dynamic search range
+//Bit 26:16         ro_luma_cur_vofst1_dlt_max  // unsigned ,   RO, default = 0 cur luma lbuf vofst cut lines when dynamic search range
 //Bit 15:11         reserved
-//Bit 10: 0         ro_luma_cur_vofst1_dlt_min  // unsigned ,  RW, default = 0 pre luma lbuf vofst cut lines when dynamic search range
+//Bit 10: 0         ro_luma_cur_vofst1_dlt_min  // unsigned ,  RO, default = 0 pre luma lbuf vofst cut lines when dynamic search range
 #define FRC_RO_MC_CHRM_VOFST_SUM                   0x3963
 //Bit 31:27         reserved
-//Bit 26:16         ro_chrm_cur_vofst1_mfy_sum  // unsigned ,   RW, default = 0 cur chrm lbuf vofst cut lines when dynamic search range
+//Bit 26:16         ro_chrm_cur_vofst1_mfy_sum  // unsigned ,   RO, default = 0 cur chrm lbuf vofst cut lines when dynamic search range
 //Bit 15:11         reserved
-//Bit 10: 0         ro_chrm_pre_vofst1_mfy_sum  // unsigned ,   RW, default = 0 pre chrm lbuf vofst cut lines when dynamic search range
+//Bit 10: 0         ro_chrm_pre_vofst1_mfy_sum  // unsigned ,   RO, default = 0 pre chrm lbuf vofst cut lines when dynamic search range
 #define FRC_RO_MC_CHRM_PRE_VOFST_STAT              0x3964
 //Bit 31:27         reserved
-//Bit 26:16         ro_chrm_pre_vofst1_dlt_max  // unsigned ,   RW, default = 0 cur chrm lbuf vofst cut lines when dynamic search range
+//Bit 26:16         ro_chrm_pre_vofst1_dlt_max  // unsigned ,   RO, default = 0 cur chrm lbuf vofst cut lines when dynamic search range
 //Bit 15:11         reserved
-//Bit 10: 0         ro_chrm_pre_vofst1_dlt_min  // unsigned ,  RW, default = 0 pre chrm lbuf vofst cut lines when dynamic search range
+//Bit 10: 0         ro_chrm_pre_vofst1_dlt_min  // unsigned ,  RO, default = 0 pre chrm lbuf vofst cut lines when dynamic search range
 #define FRC_RO_MC_CHRM_CUR_VOFST_STAT              0x3965
 //Bit 31:27         reserved
-//Bit 26:16         ro_chrm_cur_vofst1_dlt_max  // unsigned ,   RW, default = 0 cur chrm lbuf vofst cut lines when dynamic search range
+//Bit 26:16         ro_chrm_cur_vofst1_dlt_max  // unsigned ,   RO, default = 0 cur chrm lbuf vofst cut lines when dynamic search range
 //Bit 15:11         reserved
-//Bit 10: 0         ro_chrm_cur_vofst1_dlt_min  // unsigned ,  RW, default = 0 pre chrm lbuf vofst cut lines when dynamic search range
+//Bit 10: 0         ro_chrm_cur_vofst1_dlt_min  // unsigned ,  RO, default = 0 pre chrm lbuf vofst cut lines when dynamic search range
 #define FRC_RO_MVRD_STAT                           0x3966
-//Bit 31: 0         ro_mvrd_wt_st_sum  // unsigned ,  RW, default = 0 mc wait me total cycles
+//Bit 31: 0         ro_mvrd_wt_st_sum  // unsigned ,  RO, default = 0 mc wait me total cycles
 #define FRC_RO_MVWR_STAT                           0x3967
-//Bit 31: 0         ro_mvwr_wt_st_sum  // unsigned ,  RW, default = 0 me wait mc total cycles
+//Bit 31: 0         ro_mvwr_wt_st_sum  // unsigned ,  RO, default = 0 me wait mc total cycles
 #define FRC_RO_MC_LUMA_PRE_STAT                    0x3968
 //Bit 31:27         reserved
-//Bit 26:16         ro_luma_pre_vofst1  // signed ,   RW, default = 0 cur luma lbuf vofst
+//Bit 26:16         ro_luma_pre_vofst1  // signed ,   RO, default = 0 cur luma lbuf vofst
 //Bit 15:11         reserved
-//Bit 10: 0         ro_luma_pre_vofst0  // signed ,  RW, default = 0  cur luma lbuf vofst
+//Bit 10: 0         ro_luma_pre_vofst0  // signed ,  RO, default = 0  cur luma lbuf vofst
 #define FRC_RO_MC_LUMA_CUR_STAT                    0x3969
 //Bit 31:27         reserved
-//Bit 26:16         ro_luma_cur_vofst1  // signed ,   RW, default = 0 cur luma lbuf vofst
+//Bit 26:16         ro_luma_cur_vofst1  // signed ,   RO, default = 0 cur luma lbuf vofst
 //Bit 15:11         reserved
-//Bit 10: 0         ro_luma_cur_vofst0  // signed ,  RW, default = 0  cur luma lbuf vofst
+//Bit 10: 0         ro_luma_cur_vofst0  // signed ,  RO, default = 0  cur luma lbuf vofst
 #define FRC_RO_MC_LUMA_PRE_STAT2                   0x396a
 //Bit 31:27         reserved
-//Bit 26:16         ro_luma_pre_prewr1  // unsigned ,   RW, default = 0 pre luma lbuf prefetch size
+//Bit 26:16         ro_luma_pre_prewr1  // unsigned ,   RO, default = 0 pre luma lbuf prefetch size
 //Bit 15:11         reserved
-//Bit 10: 0         ro_luma_pre_prewr0  // unsigned ,  RW, default = 0  pre luma lbuf prefetch size
+//Bit 10: 0         ro_luma_pre_prewr0  // unsigned ,  RO, default = 0  pre luma lbuf prefetch size
 #define FRC_RO_MC_LUMA_CUR_STAT2                   0x396b
 //Bit 31:27         reserved
-//Bit 26:16         ro_luma_cur_prewr1  // unsigned ,   RW, default = 0 cur luma lbuf prefetch size
+//Bit 26:16         ro_luma_cur_prewr1  // unsigned ,   RO, default = 0 cur luma lbuf prefetch size
 //Bit 15:11         reserved
-//Bit 10: 0         ro_luma_cur_prewr0  // unsigned ,  RW, default = 0  cur luma lbuf prefetch size
+//Bit 10: 0         ro_luma_cur_prewr0  // unsigned ,  RO, default = 0  cur luma lbuf prefetch size
 #define FRC_RO_MC_LUMA_STAT3                       0x396c
 //Bit 31:28         reserved
-//Bit 27:16         ro_luma_pre_sw_vsize  // unsigned ,   RW, default = 0 pre luma lbuf size
+//Bit 27:16         ro_luma_pre_sw_vsize  // unsigned ,   RO, default = 0 pre luma lbuf size
 //Bit 15:12         reserved
-//Bit 11: 0         ro_luma_cur_sw_vsize  // unsigned ,  RW, default = 0  cur luma lbuf size
+//Bit 11: 0         ro_luma_cur_sw_vsize  // unsigned ,  RO, default = 0  cur luma lbuf size
 #define FRC_RO_MC_CHRM_PRE_STAT                    0x396d
 //Bit 31:27         reserved
-//Bit 26:16         ro_chrm_pre_vofst1  // signed ,   RW, default = 0 cur chrm lbuf vofst
+//Bit 26:16         ro_chrm_pre_vofst1  // signed ,   RO, default = 0 cur chrm lbuf vofst
 //Bit 15:11         reserved
-//Bit 10: 0         ro_chrm_pre_vofst0  // signed ,  RW, default = 0  cur chrm lbuf vofst
+//Bit 10: 0         ro_chrm_pre_vofst0  // signed ,  RO, default = 0  cur chrm lbuf vofst
 #define FRC_RO_MC_CHRM_CUR_STAT                    0x396e
 //Bit 31:27         reserved
-//Bit 26:16         ro_chrm_cur_vofst1  // signed ,   RW, default = 0 cur chrm lbuf vofst
+//Bit 26:16         ro_chrm_cur_vofst1  // signed ,   RO, default = 0 cur chrm lbuf vofst
 //Bit 15:11         reserved
-//Bit 10: 0         ro_chrm_cur_vofst0  // signed ,  RW, default = 0  cur chrm lbuf vofst
+//Bit 10: 0         ro_chrm_cur_vofst0  // signed ,  RO, default = 0  cur chrm lbuf vofst
 #define FRC_RO_MC_CHRM_PRE_STAT2                   0x396f
 //Bit 31:27         reserved
-//Bit 26:16         ro_chrm_pre_prewr1  // unsigned ,   RW, default = 0 pre chrm lbuf prefetch size
+//Bit 26:16         ro_chrm_pre_prewr1  // unsigned ,   RO, default = 0 pre chrm lbuf prefetch size
 //Bit 15:11         reserved
-//Bit 10: 0         ro_chrm_pre_prewr0  // unsigned ,  RW, default = 0  pre chrm lbuf prefetch size
+//Bit 10: 0         ro_chrm_pre_prewr0  // unsigned ,  RO, default = 0  pre chrm lbuf prefetch size
 #define FRC_RO_MC_CHRM_CUR_STAT2                   0x3970
 //Bit 31:27         reserved
-//Bit 26:16         ro_chrm_cur_prewr1  // unsigned ,   RW, default = 0 cur chrm lbuf prefetch size
+//Bit 26:16         ro_chrm_cur_prewr1  // unsigned ,   RO, default = 0 cur chrm lbuf prefetch size
 //Bit 15:11         reserved
-//Bit 10: 0         ro_chrm_cur_prewr0  // unsigned ,  RW, default = 0  cur chrm lbuf prefetch size
+//Bit 10: 0         ro_chrm_cur_prewr0  // unsigned ,  RO, default = 0  cur chrm lbuf prefetch size
 #define FRC_RO_MC_CHRM_STAT3                       0x3971
 //Bit 31:28         reserved
-//Bit 27:16         ro_chrm_pre_sw_vsize  // unsigned ,   RW, default = 0 pre chrm lbuf size
+//Bit 27:16         ro_chrm_pre_sw_vsize  // unsigned ,   RO, default = 0 pre chrm lbuf size
 //Bit 15:12         reserved
-//Bit 11: 0         ro_chrm_cur_sw_vsize  // unsigned ,  RW, default = 0  cur chrm lbuf size
+//Bit 11: 0         ro_chrm_cur_sw_vsize  // unsigned ,  RO, default = 0  cur chrm lbuf size
 #define FRC_RO_MC_IPLG_PRE_STAT                    0x3972
 //Bit 31:27         reserved
-//Bit 26:16         ro_iplg_pre_vofst1  // signed ,   RW, default = 0 cur iplg lbuf vofst
+//Bit 26:16         ro_iplg_pre_vofst1  // signed ,   RO, default = 0 cur iplg lbuf vofst
 //Bit 15:11         reserved
-//Bit 10: 0         ro_iplg_pre_vofst0  // signed ,  RW, default = 0  cur iplg lbuf vofst
+//Bit 10: 0         ro_iplg_pre_vofst0  // signed ,  RO, default = 0  cur iplg lbuf vofst
 #define FRC_RO_MC_IPLG_CUR_STAT                    0x3973
 //Bit 31:27         reserved
-//Bit 26:16         ro_iplg_cur_vofst1  // signed ,   RW, default = 0 cur iplg lbuf vofst
+//Bit 26:16         ro_iplg_cur_vofst1  // signed ,   RO, default = 0 cur iplg lbuf vofst
 //Bit 15:11         reserved
-//Bit 10: 0         ro_iplg_cur_vofst0  // signed ,  RW, default = 0  cur iplg lbuf vofst
+//Bit 10: 0         ro_iplg_cur_vofst0  // signed ,  RO, default = 0  cur iplg lbuf vofst
 #define FRC_RO_MC_IPLG_STAT2                       0x3974
 //Bit 31:27         reserved
-//Bit 26:16         ro_iplg_pre_prewr   // unsigned ,   RW, default = 0 cur iplg lbuf prefetch size
+//Bit 26:16         ro_iplg_pre_prewr   // unsigned ,   RO, default = 0 cur iplg lbuf prefetch size
 //Bit 15:11         reserved
-//Bit 10: 0         ro_iplg_cur_prewr   // unsigned ,  RW, default = 0  pre iplg lbuf prefetch size
+//Bit 10: 0         ro_iplg_cur_prewr   // unsigned ,  RO, default = 0  pre iplg lbuf prefetch size
 #define FRC_RO_MC_IPLG_STAT3                       0x3975
 //Bit 31:28         reserved
-//Bit 27:16         ro_iplg_pre_sw_vsize  // unsigned ,   RW, default = 0 pre iplg lbuf size
+//Bit 27:16         ro_iplg_pre_sw_vsize  // unsigned ,   RO, default = 0 pre iplg lbuf size
 //Bit 15:12         reserved
-//Bit 11: 0         ro_iplg_cur_sw_vsize  // unsigned ,  RW, default = 0  cur iplg lbuf size
+//Bit 11: 0         ro_iplg_cur_sw_vsize  // unsigned ,  RO, default = 0  cur iplg lbuf size
+#define FRC_MC_PREWR_BLANK                         0x3976
+//Bit 31            reg_mc_prewr_clip_en // unsigned, RW, default=0, enable prewr clip func
+//Bit 30            reg_mc_olap_fill_mode //unsigned, RW, default=0, choose overlap fill mode, 0=default, 1=reference to prewr_end
+//Bit 29:11         reserved
+//Bit 10:0          reg_mc_prewr_blank  //unsigned, RW, default=20, vblank between frm_phs_rst && first mc output
+#define FRC_MC_PREWR_PRE_LUMA_NEW                  0x3977
+//Bit 31:0          ro_luma_prewr0_vsize_new, RO, default = 0, luma clipped prewr_vsize if vblank isn't enough for original prewr_vsize to ensure mc output correctly
+#define FRC_MC_PREWR_CUR_LUMA_NEW                  0x3978
+//Bit 31:0          ro_luma_prewr1_vsize_new, RO, default = 0, luma clipped prewr_vsize if vblank isn't enough for original prewr_vsize to ensure mc output correctly
+#define FRC_MC_PREWR_LUMA_FLAG                     0x3979
+//Bit 31:1          reserved
+//Bit 0             ro_luma_prewr_clip_flag, RO, default = 0, luma clipped prewr_vsize flag
+#define FRC_MC_PREWR_PRE_CHRM_NEW                  0x397a
+//Bit 31:0          ro_chrm_prewr0_vsize_new, RO, default = 0, chrm clipped prewr_vsize if vblank isn't enough for original prewr_vsize to ensure mc output correctly
+#define FRC_MC_PREWR_CUR_CHRM_NEW                  0x397b
+//Bit 31:0          ro_chrm_prewr1_vsize_new, RO, default = 0, chrm clipped prewr_vsize if vblank isn't enough for original prewr_vsize to ensure mc output correctly
+#define FRC_MC_PREWR_CHRM_FLAG                     0x397c
+//Bit 31:1          reserved
+//Bit 0             ro_chrm_prewr_clip_flag, RO, default = 0, chrm clipped prewr_vsize flag
+#define FRC_MC_LBUF_HW_CTRL0                       0x397d
+//Bit 31            reg_mc_melg_sw_rst, W1T, default = 0, reset melogo, pulse reg
+//Bit 30:0          reserved
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -12961,7 +12122,7 @@
 //Bit 2 :0  reg_frc_intf_sw_rst    // unsigned ,    RW,default = 0,
 #define FRC_ARB_BAK_CTRL                           0x3f0b
 //Bit 31:26 reserved
-//Bit 25:4  reg_apb_prot_ctrl     // unsigned ,    RW,default = 22'h200002,
+//Bit 25:4  reg_apb_prot_ctrl     // unsigned ,    RW,default = 22'h200006,
 //Bit 3 :1  reserved
 //Bit 0     reg_arb_bak_ctrl      // unsigned ,    RW,default = 0,
 #define FRC_AXI_URG_CTRL                           0x3f0c
@@ -13000,6 +12161,9 @@
 //Bit 17:8  ro_apb_prot_stat      // unsigned ,    RO, default = 0
 //Bit 7 :1  reserved
 //Bit 0     ro_rdma_ddr_req_busy  // unsigned ,    RO, default = 0
+#define FRC_APB_CRASH_ADDR                         0x3f18
+//Bit 31:16 reserved
+//Bit 15:0  ro_apb_crash_addr      // unsigned ,    RO, default = 0
 #define FRC_MODE_OPT                               0x3f20
 //Bit 31:6  reserved
 //Bit 5:0   reg_frc_mode_opt      // unsigned ,    RW, default = 0

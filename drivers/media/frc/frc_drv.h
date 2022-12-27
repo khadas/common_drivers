@@ -84,8 +84,8 @@
 // frc_20220927 film tell alg under hdmi
 // frc_20221102 frc clean up typo err
 // frc_20221024 frc support t5m pxp
-
-#define FRC_FW_VER			"2022-1215 frc t5m bringup"
+// frc_20221215 frc t5m bringup
+#define FRC_FW_VER			"2022-1225 add powerdomain etc."
 #define FRC_KERDRV_VER                  2339
 
 #define FRC_DEVNO	1

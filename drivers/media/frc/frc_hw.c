@@ -931,7 +931,7 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	} else {
 		/*T3 revB*/
 		frc_v_porch = frc_vporch_cal;
-		pr_frc(2, "%s revB no care frc_vporch\n", __func__);
+		pr_frc(2, "%s t3b/t5m inform vlock\n", __func__);
 		gst_frc_param.frc_mcfixlines =
 			mc_frm_dly + mc_hold_line - reg_mc_out_line;
 		if (mc_frm_dly + mc_hold_line < reg_mc_out_line)
@@ -1000,7 +1000,7 @@ void frc_inp_init(void)
 	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN, 1, 8, 1);//open
 	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN, 1, 7, 1);//open  bbd en
 
-	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN, 0x21be);//aligned padding value
+	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN, 0x211e);//aligned padding value
 	regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN);
 
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL25, 0x4080200); //aligned padding value

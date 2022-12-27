@@ -35,7 +35,7 @@
 #include "frc_buf.h"
 #include "frc_rdma.h"
 
-int frc_buf_test = 1;
+int frc_buf_test;
 module_param(frc_buf_test, int, 0664);
 MODULE_PARM_DESC(frc_buf_test, "frc dynamic buf debug");
 
@@ -616,7 +616,7 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	u32 align_hsize;
 	u32 align_vsize;
 	u32 temp;
-	int log = 2;
+	int log = 0;
 	u32 ratio;
 
 	if (!devp)

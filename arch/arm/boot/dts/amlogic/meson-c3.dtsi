@@ -1307,6 +1307,14 @@
 		reg-names = "csi_phy0";
 	};
 
+	csiphy1: csiphy1@ff019400 {
+		compatible = "amlogic, csiphy1";
+		reg = <0xff019400 0x700>;
+		reg-names = "csi_phy1";
+		clocks = <&clkc CLKID_CSI_PHY0_CLK>;
+		clock-names = "mipi_phy_clk";
+	};
+
 	adapter0: adapter0@ff01b000 {
 		compatible = "amlogic, adapter";
 		reg = <0xff01b000 0x4000>;
@@ -1315,6 +1323,13 @@
 				<0 155 1>,
 				<0 144 1>,
 				<0 159 1>;
+	};
+
+	adapter1: adapter1@ff018000 {
+		compatible = "amlogic, adapter1";
+		reg = <0xff018000 0x4000>;
+		reg-names = "adapter";
+		interrupts = <0 159 1>;
 	};
 
 	isp0: isp0@ff000000 {

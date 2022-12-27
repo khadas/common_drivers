@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * S/PDIF match talbe
+ * S/PDIF match table
  *
  * Copyright (C) 2019 Amlogic, Inc. All rights reserved.
  *

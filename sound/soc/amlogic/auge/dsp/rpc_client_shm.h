@@ -20,7 +20,7 @@
 void shm_kernel_init(void *dev);
 
 /**
- *  Shared Memory hanlder
+ *  Shared Memory Handler
  */
 /* kernel want physical address as unsigned long, instead of void * */
 #define AML_MEM_HANDLE unsigned long

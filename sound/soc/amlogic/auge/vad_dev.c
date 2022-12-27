@@ -123,7 +123,7 @@ int __init vad_dev_init(void)
 
 	ret = register_chrdev(VAD_MAJOR, DRV_NAME, &vad_fops);
 	if (ret) {
-		pr_err("Can't register char devie for " DRV_NAME "\n");
+		pr_err("Can't register char device for " DRV_NAME "\n");
 		goto err0;
 	}
 

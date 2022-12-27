@@ -1552,7 +1552,7 @@ static void aml_set_spdifclk_s4(struct aml_spdif *p_spdif, int freq)
 		return;
 	}
 
-	pr_info("%s: spdifid %d, force_mpll = %d, freq = %d\n",
+	pr_info("%s: spdif_id %d, force_mpll = %d, freq = %d\n",
 		__func__, p_spdif->id, force_mpll, freq);
 	if (IS_ERR(p_spdif->clk_src_cd)) {
 		pr_err("%s: please make sure S4 DTS support 2 clk source\n", __func__);
@@ -1609,7 +1609,7 @@ static void aml_set_spdifclk_1(struct aml_spdif *p_spdif, int freq)
 		return;
 	}
 
-	pr_info("%s: spdifid %d, freq = %d\n", __func__, p_spdif->id, freq);
+	pr_info("%s: spdif_id %d, freq = %d\n", __func__, p_spdif->id, freq);
 
 	if (freq) {
 		char *clk_name = (char *)__clk_get_name(p_spdif->sysclk);
@@ -1654,7 +1654,7 @@ static void aml_set_spdifclk_2(struct aml_spdif *p_spdif, int freq)
 		return;
 	}
 
-	pr_info("%s: spdifid %d, freq = %d\n", __func__, p_spdif->id, freq);
+	pr_info("%s: spdif_id %d, freq = %d\n", __func__, p_spdif->id, freq);
 
 	if (p_spdif->standard_sysclk % 8000 == 0) {
 		ratio = MPLL_HBR_FIXED_FREQ / p_spdif->standard_sysclk;

@@ -135,7 +135,7 @@ static int eqdrc_clk_set(struct audioeffect *p_effect)
 		return -EINVAL;
 	}
 
-	/* defaule clk */
+	/* default clk */
 	clk_set_rate(p_effect->clk, 200000000);
 
 	pr_debug("%s, src pll:%lu, clk:%lu\n",

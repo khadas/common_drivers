@@ -36,6 +36,8 @@ RAMDISK_MODULES_LOAD_LIST=(
 
 VENDOR_MODULES_LOAD_FIRST_LIST=(
 	amlogic-crypto-dma
+	amlogic-wireless.ko
+	amlogic_pcie_v2_host.ko
 )
 
 VENDOR_MODULES_LOAD_LAST_LIST=(

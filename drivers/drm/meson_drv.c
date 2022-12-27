@@ -34,6 +34,7 @@
 #endif
 #include "meson_drv.h"
 #include "meson_vpu.h"
+#include "meson_async_atomic.h"
 #include "meson_vpu_pipeline.h"
 #include "meson_crtc.h"
 #include "meson_sysfs.h"
@@ -81,14 +82,14 @@ static const struct drm_mode_config_helper_funcs meson_mode_config_helpers = {
 	.atomic_commit_tail = meson_atomic_helper_commit_tail,
 };
 
-#ifdef CONFIG_DRM_MESON_USE_ION
 static const struct drm_ioctl_desc meson_ioctls[] = {
 	#ifdef CONFIG_DRM_MESON_USE_ION
 	DRM_IOCTL_DEF_DRV(MESON_GEM_CREATE, am_meson_gem_create_ioctl,
 			  DRM_UNLOCKED | DRM_AUTH | DRM_RENDER_ALLOW),
 	#endif
+	DRM_IOCTL_DEF_DRV(MESON_ASYNC_ATOMIC, meson_asyc_atomic_ioctl,
+			  DRM_UNLOCKED | DRM_AUTH | DRM_RENDER_ALLOW),
 };
-#endif
 
 DEFINE_DRM_GEM_FOPS(meson_drm_fops);
 

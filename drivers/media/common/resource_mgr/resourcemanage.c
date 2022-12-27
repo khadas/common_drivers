@@ -1687,26 +1687,26 @@ static long resman_ioctl_acquire(struct resman_session *sess,
 	struct resman_resource *resource;
 	struct resman_para __user *argp = (void __user *)para;
 	struct resman_para resman;
-	int selec_res;
+	int select_res;
 	bool preempt = false;
 	__u32 timeout = 0;
 	char *arg = NULL;
 
 	if (copy_from_user((void *)&resman, argp, sizeof(resman))) {
 		/*Compat with old userspace lib*/
-		selec_res = (int)para;
+		select_res = (int)para;
 	} else {
-		selec_res = resman.k;
+		select_res = resman.k;
 		preempt = !!resman.v.acquire.preempt;
 		timeout = resman.v.acquire.timeout;
 		arg = resman.v.acquire.arg;
 	}
 
-	resource = resman_find_resource_by_id(selec_res);
+	resource = resman_find_resource_by_id(select_res);
 	if (!resource)
 		return -EINVAL;
 	mutex_lock(&sess->lock);
-	if (resman_find_node_by_resource_id(sess, selec_res)) {
+	if (resman_find_node_by_resource_id(sess, select_res)) {
 		r = 0;
 		goto beach;
 	}
@@ -1758,7 +1758,7 @@ static int resman_codec_mm_available(int issecure)
 static long resman_ioctl_query(struct resman_session *sess, unsigned long para)
 {
 	long r = 0;
-	int selec_res = 0;
+	int select_res = 0;
 	struct resman_para __user *argp = (void __user *)para;
 	char usage[32];
 	struct resman_para resman;
@@ -1769,8 +1769,8 @@ static long resman_ioctl_query(struct resman_session *sess, unsigned long para)
 	if (copy_from_user((void *)&resman, argp, sizeof(resman))) {
 		return -EINVAL;
 	}
-	selec_res = resman.k;
-	resource = resman_find_resource_by_id(selec_res);
+	select_res = resman.k;
+	resource = resman_find_resource_by_id(select_res);
 	if (resource) {
 		memcpy(resman.v.query.name,
 			resource->name, sizeof(resman.v.query.name));
@@ -1820,19 +1820,19 @@ static long resman_ioctl_release(struct resman_session *sess,
 				 unsigned long para)
 {
 	long r = 0;
-	int selec_res = (int)para;
+	int select_res = (int)para;
 	struct resman_resource *resource;
 	struct resman_node  *node;
 	dprintk(2, "%d appname:%s, type=%d\n",
 			sess->id,
 			sess->app_name,
 			sess->app_type);
-	resource = resman_find_resource_by_id(selec_res);
+	resource = resman_find_resource_by_id(select_res);
 	if (!resource)
 		return -EINVAL;
 
 	mutex_lock(&sess->lock);
-	node = resman_find_node_by_resource_id(sess, selec_res);
+	node = resman_find_node_by_resource_id(sess, select_res);
 	if (node)
 		resman_release_resource(node);
 	mutex_unlock(&sess->lock);

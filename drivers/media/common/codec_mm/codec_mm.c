@@ -830,7 +830,7 @@ static int codec_mm_alloc_in(struct codec_mm_mgt_s *mgt, struct codec_mm_s *mem)
 		}
 		if (can_from_tvp &&
 			align_2n <= RESERVE_MM_ALIGNED_2N) {
-			/* 64k,aligend */
+			/* 64k,align */
 			int aligned_buffer_size = ALIGN(mem->buffer_size,
 					(1 << RESERVE_MM_ALIGNED_2N));
 			alloc_trace_mask |= 1 << 5;
@@ -972,7 +972,7 @@ static void codec_mm_free_in(struct codec_mm_mgt_s *mgt,
 		if (atomic_read(&mgt->tvp_user_count) == 0) {
 			if (codec_mm_tvp_pool_unprotect_and_release(&mgt->tvp_pool) == 0) {
 				mgt->tvp_enable = 0;
-				pr_info("disalbe tvp\n");
+				pr_info("disable tvp\n");
 			}
 		}
 		mutex_unlock(&mgt->tvp_protect_lock);
@@ -2510,14 +2510,14 @@ int codec_mm_disable_tvp(void)
 	if (tvp_mode == 0) {
 		ret = codec_mm_extpool_pool_release(&mgt->tvp_pool);
 		mgt->tvp_enable = 0;
-		pr_info("disalbe tvp\n");
+		pr_info("disable tvp\n");
 		mutex_unlock(&mgt->tvp_protect_lock);
 		return ret;
 	}
 	if (atomic_dec_and_test(&mgt->tvp_user_count)) {
 		if (codec_mm_tvp_pool_unprotect_and_release(&mgt->tvp_pool) == 0) {
 			mgt->tvp_enable = 0;
-			pr_info("disalbe tvp\n");
+			pr_info("disable tvp\n");
 			mutex_unlock(&mgt->tvp_protect_lock);
 			return ret;
 		}
@@ -2911,7 +2911,7 @@ static ssize_t fastplay_enable_store(struct class *class,
 	case 0:
 		ret = codec_mm_extpool_pool_release(&mgt->cma_res_pool);
 		mgt->fastplay_enable = 0;
-		pr_err("disalbe fastplay ret 0x%zx\n", ret);
+		pr_err("disable fastplay ret 0x%zx\n", ret);
 		break;
 	case 1:
 		codec_mm_extpool_pool_alloc(&mgt->cma_res_pool,

@@ -1396,6 +1396,11 @@ void earctx_enable(struct regmap *top_map,
 					 val << offset);
 		}
 
+		/* always set bit[16] = 0 from T5M for Txs*/
+		mmio_update_bits(top_map,
+				 EARCTX_ANA_CTRL1,
+				 0x1 << 16,
+				 0 << 16);
 		/* first biphase work clear, and then start */
 		mmio_update_bits(dmac_map, EARCTX_SPDIFOUT_CTRL0,
 				 0x1 << 30,

@@ -523,11 +523,9 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 	latency_info.allm_mode = 0;
 	latency_info.it_content = 0;
 	latency_info.cn_type = 0;
-	/*
-	 *#ifdef CONFIG_AMLOGIC_HDMITX
-	 *	hdmitx_update_latency_info(&latency_info);
-	 *#endif
-	 */
+#ifdef CONFIG_AMLOGIC_HDMITX
+	hdmitx_update_latency_info(&latency_info);
+#endif
 	/*del_timer_sync(&devp->timer);*/
 	hdmirx_close_port();
 	parm->info.fmt = TVIN_SIG_FMT_NULL;
@@ -1161,11 +1159,7 @@ void hdmirx_get_latency_info(struct tvin_sig_property_s *prop)
 		latency_info.allm_mode  = rx.vs_info_details.hdmi_allm;
 		latency_info.it_content = rx.cur.it_content;
 		latency_info.cn_type  = rx.cur.cn_type;
-		/*
-		 *#ifdef CONFIG_AMLOGIC_HDMITX
-		 *hdmitx_update_latency_info(&latency_info);
-		 *#endif
-		 */
+		hdmitx_update_latency_info(&latency_info);
 	}
 #endif
 }

@@ -1927,9 +1927,9 @@ static void signal_status_init(void)
 	latency_info.allm_mode = 0;
 	latency_info.it_content = 0;
 	latency_info.cn_type = 0;
-	//#ifdef CONFIG_AMLOGIC_HDMITX
-		//hdmitx_update_latency_info(&latency_info);
-	//#endif
+#ifdef CONFIG_AMLOGIC_HDMITX
+	hdmitx_update_latency_info(&latency_info);
+#endif
 }
 
 bool edid_ver_need_chg(void)

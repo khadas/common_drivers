@@ -255,10 +255,9 @@ void rx_check_repeat(void)
 		memset(&pre_topo, 0, sizeof(pre_topo));
 		memset(&hdcp_convert_topo, 0, sizeof(hdcp_convert_topo));
 		rx.hdcp.topo_updated = 0;
-		/*#ifdef CONFIG_AMLOGIC_HDMITX
-		 *	hdmitx_reauth_request(0);
-		 *#endif
-		 */
+#ifdef CONFIG_AMLOGIC_HDMITX
+		hdmitx_reauth_request(0);
+#endif
 		//rx_start_repeater_auth();
 		//rx.hdcp.rpt_reauth_event = 0;
 	}
@@ -274,10 +273,9 @@ void rx_check_repeat(void)
 		if (log_level & HDCP_LOG)
 			rx_pr("step5-%d\n", data8);
 		rx.hdcp.stream_type = data8;
-		/*#ifdef CONFIG_AMLOGIC_HDMITX
-		 *	hdmitx_reauth_request(data8 | 0x10);
-		 *#endif
-		 */
+#ifdef CONFIG_AMLOGIC_HDMITX
+		hdmitx_reauth_request(data8 | STREAMTYPE_UPDATE);
+#endif
 		rx.hdcp.stream_manage_rcvd = false;
 	}
 }

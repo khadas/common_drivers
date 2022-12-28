@@ -810,14 +810,12 @@ extern int esm_recovery_mode;
 extern u32 dbg_pkt;
 extern int disable_hdr;
 extern int rx_phy_level;
-/*
- *#ifdef CONFIG_AMLOGIC_HDMITX
- *void hdmitx_update_latency_info(struct tvin_latency_s *latency_info);
- *#endif
- */
-//void __weak hdmitx_update_latency_info(struct tvin_latency_s *latency_info)
-//{
-//}
+#ifdef CONFIG_AMLOGIC_HDMITX
+void hdmitx_update_latency_info(struct tvin_latency_s *latency_info);
+#endif
+void __weak hdmitx_update_latency_info(struct tvin_latency_s *latency_info)
+{
+}
 
 int rx_set_global_variable(const char *buf, int size);
 void rx_get_global_variable(const char *buf);

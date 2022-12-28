@@ -13,3 +13,4 @@ obj-$(CONFIG_AMLOGIC_MEM_DEBUG)         += mem_debug.o
 obj-$(CONFIG_AMLOGIC_MEMORY_EXTEND)	+= memory.o
 obj-$(CONFIG_AMLOGIC_USER_FAULT)	+= user_fault.o
 obj-$(CONFIG_AMLOGIC_PIN_LOCKED_FILE)	+= pin_file.o
+obj-$(CONFIG_AMLOGIC_FIXED_AREA_CMA)	+= aml_fixed_area_cma.o

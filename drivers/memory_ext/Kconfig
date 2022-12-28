@@ -152,3 +152,10 @@ config AMLOGIC_PIN_LOCKED_FILE_V2
 		delay mark mlocked flags for unevictable pages until
 		it has been faulted.
 
+config AMLOGIC_FIXED_AREA_CMA
+	tristate "Amlogic fixed area cma"
+	default n
+	help
+		Asymmetric memory system, provide an interface for
+		allocating memory in different areas.
+

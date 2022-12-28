@@ -3,7 +3,7 @@
 config AMLOGIC_MTD_COMMON
 	tristate "AMLOGIC MTD common api"
 	help
-		Meosn slc nand and spi nand have many public
+		Meson slc nand and spi nand have many public
 		APIS. These public APIs are unified in the
                 same Ko.
 

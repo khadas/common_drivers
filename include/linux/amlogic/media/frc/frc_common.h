@@ -74,6 +74,8 @@
 #define FRC_DS_12	1
 #define FRC_DS_14	2
 
+#define FRC_ALG_VER_SIZE     64
+
 enum dbg_level {
 	dbg_frc = 0,
 	dbg_sts = 5,
@@ -182,7 +184,9 @@ struct frc_top_type_s {
 	enum en_film_mode    film_mode;//film_mode
 	u32       film_hwfw_sel;//0:hw 1:fw
 	u32       is_me1mc4;//1: me:mc=1/4, 0 : me:mc=1/2, default 0
-	u32       memc_loss_en;//default 0
+	u8        memc_loss_en;// 01, mcloss, 02:meloss, 03:memc_loss
+	u8        chip;   // 1:T3, 2:T5M
+	u16       other_set1;
 	u8        rdma_en; //1:rdma 0:cpu interrupt access reg
 	u8        rdma_reserved1;
 	u8        rdma_reserved2;
@@ -252,7 +256,7 @@ struct frc_fw_data_s {
 					enum efrc_memc_dbg_type dbg_type, char *buf);
 	ssize_t (*frc_alg_dbg_stor)(struct frc_fw_data_s *fw_data,
 					enum efrc_memc_dbg_type dbg_type, char *buf, size_t count);
-	u8 frc_alg_ver[32];
+	u8 frc_alg_ver[FRC_ALG_VER_SIZE];
 	void (*frc_fw_reinit)(void);
 	/*below interfaces in alg which fae can to adjust it **/
 	struct frc_fw_alg_ctrl_s  frc_fw_alg_ctrl;

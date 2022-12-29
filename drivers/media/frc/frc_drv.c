@@ -392,15 +392,16 @@ int frc_attach_pd(struct frc_dev_s *devp)
 	frc_data = (struct frc_data_s *)devp->data;
 	chip = frc_data->match_data->chip;
 
+	if (chip == ID_T5M) {
+		pr_frc(0, "%s T5_domain\n", __func__);
+		return 0;
+	}
 
 	if (pdev->dev.pm_domain) {
 		pr_frc(0, "%s err pm domain\n", __func__);
 		return -1;
 	}
-	// if (chip == ID_T3)
 	pd_cnt = 3;
-	if (chip == ID_T5M)
-		pd_cnt = 1;
 	for (i = 0; i < pd_cnt; i++) {
 		devp->pd_dev = dev_pm_domain_attach_by_name(&pdev->dev, pd_name[i]);
 		if (IS_ERR(devp->pd_dev))
@@ -487,14 +488,17 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 	resource_size_t *base;
 	struct frc_data_s *frc_data;
 	struct device_node *np = pdev->dev.of_node;
+	struct frc_fw_data_s *pfw_data;
 
 	of_node = pdev->dev.of_node;
 	of_id = of_match_device(frc_dts_match, &pdev->dev);
 	if (of_id) {
 		PR_FRC("%s\n", of_id->compatible);
 		frc_data = frc_devp->data;
+		pfw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 		frc_data->match_data = of_id->data;
 		PR_FRC("chip id:%d\n", frc_data->match_data->chip);
+		pfw_data->frc_top_type.chip = (u8)frc_data->match_data->chip;
 	}
 
 	if (of_node) {
@@ -631,7 +635,7 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 		frc_devp->clk_frc = NULL;
 		frc_devp->clk_me = NULL;
 	}
-	// frc_attach_pd(frc_devp);
+	frc_attach_pd(frc_devp);
 	return ret;
 }
 
@@ -871,7 +875,7 @@ static int frc_probe(struct platform_device *pdev)
 	//	PR_ERR("%s: frc_dev kzalloc memory failed\n", __func__);
 	//	goto fail_alloc_dev;
 	// }
-	pr_frc(0, "%s, frc T5M probe start 1124-1549\n", __func__);
+	pr_frc(0, "%s, frc probe start\n", __func__);
 	memset(frc_devp, 0, (sizeof(struct frc_dev_s)));
 
 	frc_devp->data = NULL;
@@ -944,6 +948,12 @@ static int frc_probe(struct platform_device *pdev)
 	frc_drv_initial(frc_devp);
 	frc_clk_init(frc_devp);
 	frc_devp->power_on_flag = true;
+	pm_runtime_enable(&pdev->dev);
+	ret = pm_runtime_get_sync(&pdev->dev);
+	if (ret < 0) {
+		PR_ERR("pm_runtime_get_sync error\n");
+		goto fail_dev_create;
+	}
 	frc_init_config(frc_devp);
 
 	/*buffer config*/
@@ -973,12 +983,6 @@ static int frc_probe(struct platform_device *pdev)
 
 	frc_devp->probe_ok = true;
 	frc_devp->power_off_flag = false;
-	pm_runtime_enable(&pdev->dev);
-	ret = pm_runtime_get_sync(&pdev->dev);
-	if (ret < 0) {
-		PR_ERR("pm_runtime_get_sync error\n");
-		// goto fail_dev_create;
-	}
 
 	PR_FRC("%s probe st:%d", __func__, frc_devp->probe_ok);
 	return ret;

@@ -2038,13 +2038,11 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 		for (i = 0; i < T3_DRV_REG_NUM; i++)
 			WRITE_FRC_REG_BY_CPU(t3_drv_regs_table[i].addr, t3_drv_regs_table[i].value);
 		pr_frc(0, "t3_regs_table[%d] init done\n", T3_DRV_REG_NUM);
-
 	} else if (chip == ID_T5M) {
 		for (i = 0; i < T5M_REG_NUM; i++)
 			WRITE_FRC_REG_BY_CPU(t5m_regs_table[i].addr, t5m_regs_table[i].value);
 		pr_frc(0, "t5m_regs_table[%d] init done\n", T5M_REG_NUM);
 	}
-
 	frc_set_val_from_reg();
 
 	// frc_inp_init(frc_top->frc_fb_num, frc_top->film_hwfw_sel);

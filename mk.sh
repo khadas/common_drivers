@@ -236,37 +236,48 @@ if [[ -n ${MENUCONFIG} ]] || [[ -n ${BASICCONFIG} ]]; then
 	source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
 
 	orig_config=$(mktemp)
-	new_config="${OUT_DIR}/.config"
+	orig_defconfig=$(mktemp)
+	out_config="${OUT_DIR}/.config"
+	out_defconfig="${OUT_DIR}/defconfig"
 	changed_config=$(mktemp)
+	changed_defconfig=$(mktemp)
 
 	if [[ -n ${BASICCONFIG} ]]; then
 		set -x
 		defconfig_name=`basename ${GKI_BASE_CONFIG}`
 		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${defconfig_name})
-		cp ${OUT_DIR}/.config ${orig_config}
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
+		cp ${out_config} ${orig_config}
+		cp ${out_defconfig} ${orig_defconfig}
 		if [ "${BASICCONFIG}" = "m" ]; then
 			(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" menuconfig)
 		fi
-		${KERNEL_DIR}/scripts/diffconfig -m ${orig_config} ${new_config} > ${changed_config}
 		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
+		${KERNEL_DIR}/scripts/diffconfig ${orig_config} ${out_config} > ${changed_config}
+		${KERNEL_DIR}/scripts/diffconfig ${orig_defconfig} ${out_defconfig} > ${changed_defconfig}
 		if [ "${ARCH}" = "arm" ]; then
-			cp ${OUT_DIR}/defconfig ${GKI_BASE_CONFIG}
+			cp ${out_defconfig} ${GKI_BASE_CONFIG}
 		fi
 		set +x
 		echo
 		echo "========================================================"
-		echo "The differences of the modified configs are as follows:"
+		echo "==================== .config diff   ===================="
 		cat ${changed_config}
+		echo "==================== defconfig diff ===================="
+		cat ${changed_defconfig}
 		echo "========================================================"
 		echo
 	else
 		set -x
 		pre_defconfig_cmds
 		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${DEFCONFIG})
-		cp ${OUT_DIR}/.config ${orig_config}
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" menuconfig)
-		${KERNEL_DIR}/scripts/diffconfig -m ${orig_config} ${new_config} > ${changed_config}
 		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
+		cp ${out_config} ${orig_config}
+		cp ${out_defconfig} ${orig_defconfig}
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" menuconfig)
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
+		${KERNEL_DIR}/scripts/diffconfig ${orig_config} ${out_config} > ${changed_config}
+		${KERNEL_DIR}/scripts/diffconfig ${orig_defconfig} ${out_defconfig} > ${changed_defconfig}
 		post_defconfig_cmds
 		set +x
 		echo
@@ -274,13 +285,14 @@ if [[ -n ${MENUCONFIG} ]] || [[ -n ${BASICCONFIG} ]]; then
 		echo "if the config follows GKI2.0, please add it to the file amlogic_gki.fragment manually"
 		echo "if the config follows GKI1.0 optimize, please add it to the file amlogic_gki.10 manually"
 		echo "if the config follows GKI1.0 debug, please add it to the file amlogic_gki.debug manually"
-		echo
-		echo "The differences of the modified configs are as follows:"
+		echo "==================== .config diff   ===================="
 		cat ${changed_config}
+		echo "==================== defconfig diff ===================="
+		cat ${changed_defconfig}
 		echo "========================================================"
 		echo
 	fi
-	rm -f ${orig_config} ${changed_config}
+	rm -f ${orig_config} ${changed_config} ${orig_defconfig} ${changed_defconfig}
 	exit
 fi
 

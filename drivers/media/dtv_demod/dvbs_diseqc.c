@@ -182,13 +182,14 @@ u32 aml_diseqc_send_cmd(struct aml_diseqc *diseqc,
 
 	/* Send burst SA or SB */
 	if (sendburst_on && cmd->msg_len == 4 && cmd->msg[2] == 0x38 &&
-	    cmd->msg[3] >= 0xf0) {
+		cmd->msg[3] >= 0xf0) {
 		mdelay(16);
 		if ((cmd->msg[3] >= 0xf0 && cmd->msg[3] <= 0xf3) &&
-		    (cmd->msg[3] >= 0xf8 && cmd->msg[3] <= 0xfb))
+			(cmd->msg[3] >= 0xf8 && cmd->msg[3] <= 0xfb))
 			aml_diseqc_toneburst_sa();
 		else
 			aml_diseqc_toneburst_sb();
+
 		dprintk(1, "burst\n");
 	}
 

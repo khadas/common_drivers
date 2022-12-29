@@ -40,7 +40,7 @@ static u32 dvbc_get_ch_power(struct aml_dtvdemod *demod)
 	return ch_power;
 }
 
-static u32 dvbc_get_snr(struct aml_dtvdemod *demod)
+u32 dvbc_get_snr(struct aml_dtvdemod *demod)
 {
 	u32 tmp, snr;
 
@@ -827,6 +827,7 @@ unsigned int dvbc_auto_qam_process(struct aml_dtvdemod *demod)
 		idx_77 = (idx_77 * 10000) >> 2;
 
 		total_64_128_256_acc = idx_64_acc + idx_128_acc + idx_256_acc;
+
 		PR_DVBC("%s: idx_00[0x%x], idx_77[0x%x].\n",
 				__func__, idx_00, idx_77);
 		PR_DVBC("%s: idx_1_acc[0x%x], idx_2_acc[0x%x], idx_4_acc[0x%x].\n",

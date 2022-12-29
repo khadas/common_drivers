@@ -218,6 +218,7 @@ static void real_para_clear(struct aml_demod_para_real *para)
 	para->snr = 0;
 	para->plp_num = 0;
 	para->fef_info = 0;
+	para->tps_cell_id = 0;
 }
 
 //static void dtvdemod_do_8vsb_rst(void)
@@ -571,8 +572,8 @@ static int gxtv_demod_dvbc_read_status_timer
 			strength += 22;
 
 			if (strength <= -80)
-				strength = dvbc_get_power_strength(qam_read_reg(demod, 0x27)
-					& 0x7ff, strength);
+				strength = dvbc_get_power_strength(
+					qam_read_reg(demod, 0x27) & 0x7ff, strength);
 		}
 
 		if (strength < THRD_TUNER_STRENGTH_DVBC) {
@@ -686,7 +687,7 @@ static int gxtv_demod_dvbc_read_ber(struct dvb_frontend *fe, u32 *ber)
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 
 	dvbc_status(demod, &demod_sts, NULL);
-	*ber = demod_sts.ch_ber;
+	*ber = demod_sts.ch_per;
 
 	return 0;
 }
@@ -966,6 +967,9 @@ static int dvbt_read_status(struct dvb_frontend *fe, enum fe_status *status)
 			| dvbt_t2_rdb(CHC_CIR_SNR0)) * 30 / 64;
 		demod->real_para.modulation = dvbt_t2_rdb(0x2912) & 0x3;
 		demod->real_para.coderate = dvbt_t2_rdb(0x2913) & 0x7;
+		demod->real_para.tps_cell_id =
+			(dvbt_t2_rdb(0x2916) & 0xff) |
+			((dvbt_t2_rdb(0x2915) & 0xff) << 8);
 	} else {
 		if (timer_not_enough(demod, D_TIMER_DETECT)) {
 			ilock = 0;
@@ -1299,11 +1303,15 @@ static int dtvdemod_dvbs_read_ber(struct dvb_frontend *fe, u32 *ber)
 	return 0;
 }
 
-static int dtvdemod_dvbs_read_signal_strength(struct dvb_frontend *fe,
-		s16 *strength)
+static int dtvdemod_dvbs_read_signal_strength(struct dvb_frontend *fe, s16 *strength)
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 	unsigned int agc_level = 0;
+
+	if (demod->last_status != 0x1F) {
+		*strength = -100;
+		return 0;
+	}
 
 	if (tuner_find_by_name(fe, "av2018")) {
 		agc_level = dvbs_rd_byte(DVBS_AGC_LEVEL_ADDR);
@@ -1979,7 +1987,7 @@ static int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 			/* bit30: enable CCI */
 			atsc_write_reg_v4(ATSC_EQ_REG_0X92, 0x40000240);
 			//static echo
-			atsc_write_reg_v4(ATSC_EQ_REG_0X93, 0x90f01C0);
+			atsc_write_reg_v4(ATSC_EQ_REG_0X93, 0x90f01A0);
 			/* bit0~3: AGC bandwidth select */
 			atsc_write_reg_v4(ATSC_DEMOD_REG_0X58, 0x528220d);
 			/* clk recover confidence control */
@@ -2037,6 +2045,7 @@ static int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 	}
 
 	PR_DBG("atsc_mode is %d\n", demod->atsc_mode);
+
 	return 0;
 }
 
@@ -2162,6 +2171,7 @@ static void atsc_j83b_switch_qam(struct dvb_frontend *fe, enum qam_md_e qam)
 	demod_dvbc_fsm_reset(demod);
 }
 
+#define J83B_CHECK_SNR_THRESHOLD 2300
 static int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status, bool re_tune)
 {
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
@@ -2173,10 +2183,12 @@ static int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status
 	static int check_first;
 	static unsigned int time_start_qam;
 	static unsigned int timeout;
+	static bool is_signal;
 
 	if (re_tune) {
-		timeout = auto_search_std == 0 ? TIMEOUT_ATSC : TIMEOUT_ATSC / 2;
+		timeout = auto_search_std == 0 ? TIMEOUT_ATSC : TIMEOUT_ATSC_STD;
 		demod->last_lock = 0;
+		is_signal = false;
 		demod->time_start = jiffies_to_msecs(jiffies);
 		time_start_qam = 0;
 		if (c->modulation == QAM_AUTO) {
@@ -2209,12 +2221,18 @@ static int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status
 	curTime = jiffies_to_msecs(jiffies);
 	demod->time_passed = curTime - demod->time_start;
 	s = qam_read_reg(demod, 0x31) & 0xf;
-	PR_ATSC("s=%d, demod->time_passed=%u\n", s, demod->time_passed);
 
 	if (s != 5)
 		real_para_clear(&demod->real_para);
 
+	demod->real_para.snr = dvbc_get_snr(demod);
+	PR_ATSC("fsm=%d, snr=%d.%d, demod->time_passed=%u\n", s,
+		demod->real_para.snr / 100, demod->real_para.snr % 100, demod->time_passed);
+
 	if (s == 5) {
+		is_signal = true;
+		timeout = TIMEOUT_ATSC;
+
 		*status = FE_HAS_LOCK | FE_HAS_SIGNAL | FE_HAS_CARRIER |
 			FE_HAS_VITERBI | FE_HAS_SYNC;
 		demod->real_para.modulation = amdemod_qam_fe(qam);
@@ -2228,6 +2246,9 @@ static int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status
 		if (time_passed_qam < 125) {
 			*status = 0;
 		} else {
+			is_signal = false;
+			timeout = auto_search_std == 0 ? TIMEOUT_ATSC : TIMEOUT_ATSC_STD;
+
 			if (demod->last_lock == 0 && check_first > 0) {
 				*status = 0;
 				check_first--;
@@ -2244,10 +2265,28 @@ static int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status
 	} else if (s == 4 || s == 7) {
 		*status = 0;
 	} else {
-		if (demod->last_lock == 0 && demod->time_passed < timeout)
+		if (demod->real_para.snr > J83B_CHECK_SNR_THRESHOLD) {
+			is_signal = true;
+			timeout = TIMEOUT_ATSC;
+		}
+
+		if ((demod->last_lock == 0 || is_signal) && demod->time_passed < timeout) {
 			*status = 0;
-		else
+		} else if (demod->last_status == 0x1F) {
+			*status = 0;
+			PR_ATSC("retry fsm=0x%x, snr=%d\n",
+				qam_read_reg(demod, 0x31), dvbc_get_snr(demod));
+		} else {
 			*status = FE_TIMEDOUT;
+		}
+
+		if (demod->time_passed > TIMEOUT_ATSC_STD &&
+			(demod->time_passed % TIMEOUT_ATSC_STD) < 100) {
+			PR_ATSC("has signal but need reset\n");
+			demod_dvbc_fsm_reset(demod);
+			msleep(50);
+			time_start_qam = 0;
+		}
 	}
 
 	if (*status == 0) {
@@ -3245,9 +3284,9 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 				dvbc_cfg_tim_sweep_range(demod, SYM_SPEED_NORMAL);
 				demod->auto_sr_done = 1;
 				PR_DVBC("%s: auto_sr_done[%d], sr_val_hw_stable %d, cost %d ms.\n",
-					__func__, fe->dtv_property_cache.frequency,
-					demod->sr_val_hw_stable,
-					jiffies_to_msecs(jiffies) - time_start);
+						__func__, fe->dtv_property_cache.frequency,
+						demod->sr_val_hw_stable,
+						jiffies_to_msecs(jiffies) - time_start);
 				if (fsm_state != 5) {
 					demod_dvbc_fsm_reset(demod);
 					*delay = HZ / 2;//500ms
@@ -3473,10 +3512,9 @@ static unsigned int dvbc_fast_search(struct dvb_frontend *fe, unsigned int *dela
 			else
 				demod->sr_val_hw_count = 0;
 
-			PR_DVBC("%s: get sr %d, count %d",
-					__func__, demod->sr_val_hw, demod->sr_val_hw_count);
-			PR_DVBC("%s: eq_state(0x5d) 0x%x, fsm_state(0x31) 0x%x.\n",
-					__func__, eq_state, fsm_state);
+			PR_DVBC("%s: get sr %d, count %d, eq_state(0x5d) 0x%x, fsm_state(0x31) 0x%x.\n",
+					__func__, demod->sr_val_hw, demod->sr_val_hw_count,
+					eq_state, fsm_state);
 
 			demod->sr_val_hw_stable = demod->sr_val_hw;
 
@@ -4290,6 +4328,8 @@ static int dtvdemod_dvbs_read_status(struct dvb_frontend *fe, enum fe_status *st
 			timer_disable(demod, D_TIMER_DETECT);
 		}
 	}
+
+	demod->last_status = *status;
 
 	if (demod->last_lock != ilock) {
 		memset(buf, 0, 32);
@@ -6606,7 +6646,7 @@ static int aml_dtvdm_read_status(struct dvb_frontend *fe,
 	switch (delsys) {
 	case SYS_DVBS:
 	case SYS_DVBS2:
-		ret = dtvdemod_dvbs_read_status(fe, status, fe->dtv_property_cache.frequency);
+		*status = demod->last_status;
 		break;
 
 	case SYS_DVBC_ANNEX_A:
@@ -7239,9 +7279,11 @@ static int aml_dtvdm_get_property(struct dvb_frontend *fe,
 			else
 				tvp->reserved[1] = 0xFF;
 
-			PR_DVBT("[id %d] get delsys:%d,modulation:%d,code_rate:%d.\n",
+			tvp->reserved[2] = demod->real_para.tps_cell_id;
+
+			PR_DVBT("[id %d] get delsys:%d,modulation:%d,code_rate:%d,cell_id:%d.\n",
 					demod->id, tvp->u.data,
-					tvp->reserved[0], tvp->reserved[1]);
+					tvp->reserved[0], tvp->reserved[1], tvp->reserved[2]);
 		} else if ((demod->last_delsys == SYS_DVBC_ANNEX_A ||
 			demod->last_delsys == SYS_DVBC_ANNEX_C) &&
 			demod->last_status == 0x1F) {

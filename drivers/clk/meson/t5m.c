@@ -5401,7 +5401,7 @@ static struct clk_hw_onecell_data t5m_hw_onecell_data = {
 };
 
 /* Convenience table to populate regmap in .probe */
-static struct clk_regmap *const t5m_clk_regmaps[] __initconst = {
+static struct clk_regmap *const t5m_clk_regmaps[] = {
 	&t5m_rtc_32k_clkin,
 	&t5m_rtc_32k_div,
 	&t5m_rtc_32k_xtal,
@@ -5673,7 +5673,7 @@ static struct clk_regmap *const t5m_clk_regmaps[] __initconst = {
 	&t5m_sys_clk_tcon,
 };
 
-static struct clk_regmap *const t5m_cpu_clk_regmaps[] __initconst = {
+static struct clk_regmap *const t5m_cpu_clk_regmaps[] = {
 	&t5m_cpu_dyn_clk,
 	&t5m_cpu_clk,
 	&t5m_dsu_dyn_clk,
@@ -5681,7 +5681,7 @@ static struct clk_regmap *const t5m_cpu_clk_regmaps[] __initconst = {
 	&t5m_dsu_clk
 };
 
-static struct clk_regmap *const t5m_pll_clk_regmaps[] __initconst = {
+static struct clk_regmap *const t5m_pll_clk_regmaps[] = {
 	&t5m_sys_pll_dco,
 	&t5m_sys_pll,
 	&t5m_sys1_pll_dco,
@@ -5749,7 +5749,7 @@ static struct regmap *t5m_regmap_resource(struct device *dev, char *name)
 	return devm_regmap_init_mmio(dev, base, &clkc_regmap_config);
 }
 
-static int __ref meson_t5m_probe(struct platform_device *pdev)
+static int meson_t5m_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct regmap *basic_map;

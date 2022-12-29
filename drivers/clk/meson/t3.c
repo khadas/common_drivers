@@ -6544,7 +6544,7 @@ static struct clk_hw_onecell_data t3_hw_onecell_data = {
 };
 
 /* Convenience table to populate regmap in .probe */
-static struct clk_regmap *const t3_clk_regmaps[] __initconst = {
+static struct clk_regmap *const t3_clk_regmaps[] = {
 	&t3_rtc_32k_clkin,
 	&t3_rtc_32k_div,
 	&t3_rtc_32k_xtal,
@@ -6863,7 +6863,7 @@ static struct clk_regmap *const t3_clk_regmaps[] __initconst = {
 	&t3_sys_clk_tcon
 };
 
-static struct clk_regmap *const t3_cpu_clk_regmaps[] __initconst = {
+static struct clk_regmap *const t3_cpu_clk_regmaps[] = {
 	&t3_cpu_dyn_clk,
 	&t3_cpu_clk,
 	&t3_dsu_dyn_clk,
@@ -6871,7 +6871,7 @@ static struct clk_regmap *const t3_cpu_clk_regmaps[] __initconst = {
 	&t3_dsu_clk
 };
 
-static struct clk_regmap *const t3_pll_clk_regmaps[] __initconst = {
+static struct clk_regmap *const t3_pll_clk_regmaps[] = {
 	&t3_sys_pll_dco,
 	&t3_sys_pll,
 	&t3_sys1_pll_dco,

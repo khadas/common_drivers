@@ -5597,7 +5597,7 @@ static struct clk_hw_onecell_data s4d_hw_onecell_data = {
 };
 
 /* Convenience table to populate regmap in .probe */
-static struct clk_regmap *const s4_clk_regmaps[] __initconst  = {
+static struct clk_regmap *const s4_clk_regmaps[] = {
 	&s4_rtc_32k_clkin,
 	&s4_rtc_32k_div,
 	&s4_rtc_32k_xtal,
@@ -5857,12 +5857,12 @@ static struct clk_regmap *const s4_clk_regmaps[] __initconst  = {
 	&s4d_demod_32k_clk
 };
 
-static struct clk_regmap *const s4_cpu_clk_regmaps[] __initconst = {
+static struct clk_regmap *const s4_cpu_clk_regmaps[] = {
 	&s4_cpu_dyn_clk,
 	&s4_cpu_clk
 };
 
-static struct clk_regmap *const s4_pll_clk_regmaps[] __initconst = {
+static struct clk_regmap *const s4_pll_clk_regmaps[] = {
 	&s4_fixed_pll_dco,
 	&s4_fixed_pll,
 	&s4_sys_pll_dco,

@@ -5415,7 +5415,7 @@ static struct clk_hw_onecell_data sc2_hw_onecell_data = {
 };
 
 /* Convenience table to populate regmap in .probe */
-static struct clk_regmap *const sc2_clk_regmaps[] __initconst = {
+static struct clk_regmap *const sc2_clk_regmaps[] = {
 	&sc2_rtc_32k_clkin,
 	&sc2_rtc_32k_div,
 	&sc2_rtc_32k_xtal,
@@ -5688,7 +5688,7 @@ static struct clk_regmap *const sc2_clk_regmaps[] __initconst = {
 	&sc2_pwm_ij
 };
 
-static struct clk_regmap *const sc2_cpu_clk_regmaps[] __initconst = {
+static struct clk_regmap *const sc2_cpu_clk_regmaps[] = {
 	&sc2_cpu_clk_dyn,
 	&sc2_cpu_clk,
 
@@ -5697,7 +5697,7 @@ static struct clk_regmap *const sc2_cpu_clk_regmaps[] __initconst = {
 	&sc2_dsu_clk,
 };
 
-static struct clk_regmap *const sc2_pll_clk_regmaps[] __initconst = {
+static struct clk_regmap *const sc2_pll_clk_regmaps[] = {
 	&sc2_fixed_pll_dco,
 	&sc2_fixed_pll,
 	&sc2_sys_pll_dco,

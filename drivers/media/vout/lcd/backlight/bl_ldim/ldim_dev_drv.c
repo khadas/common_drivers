@@ -927,8 +927,8 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 	unsigned int *temp, val;
 	struct bl_pwm_config_s *bl_pwm;
 	struct ldim_profile_s *profile;
-	struct ldim_fw_custom_s *fw_cus_pre = aml_ldim_get_fw_cus_pre();
-	struct ldim_fw_custom_s *fw_cus_post = aml_ldim_get_fw_cus_post();
+	struct ldim_fw_s *fw = aml_ldim_get_fw();
+	struct ldim_fw_custom_s *fw_cus = aml_ldim_get_fw_cus();
 	int i, ret = 0;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
@@ -1221,42 +1221,10 @@ ldim_dev_get_config_from_dts_profile:
 		LDIMERR("ld_profile malloc failed\n");
 		goto ldim_dev_get_config_from_dts_next;
 	}
-	dev_drv->bl_profile = profile;
+	fw->profile = profile;
 	profile->mode = val;
 
-	if (profile->mode == 1) {
-		LDIMPR("load bl_profile\n");
-		ret = of_property_read_string(child, "ldim_bl_profile_path",
-					      &str);
-		if (ret == 0) {
-			strncpy(profile->file_path, str, 255);
-			goto ldim_dev_get_config_from_dts_next;
-		}
-		ret = of_property_read_u32_array(child, "ldim_lut_hdg",
-						 &temp[0], 32);
-		if (ret) {
-			LDIMERR("failed to get ldim_lut_hdg\n");
-		} else {
-			for (i = 0; i < 32; i++)
-				profile->ld_lut_hdg[i] = temp[i];
-		}
-		ret = of_property_read_u32_array(child, "ldim_lut_vdg",
-						 &temp[0], 32);
-		if (ret) {
-			LDIMERR("failed to get ldim_lut_vdg\n");
-		} else {
-			for (i = 0; i < 32; i++)
-				profile->ld_lut_vdg[i] = temp[i];
-		}
-		ret = of_property_read_u32_array(child, "ldim_lut_vhk",
-						 &temp[0], 32);
-		if (ret) {
-			LDIMERR("failed to get ldim_lut_vhk\n");
-		} else {
-			for (i = 0; i < 32; i++)
-				profile->ld_lut_vhk[i] = temp[i];
-		}
-	} else if (profile->mode == 2) {
+	if (profile->mode == 2) {
 		LDIMPR("load bl_profile\n");
 		ret = of_property_read_u32_array(child,
 			"ldim_bl_profile_k_bits", &temp[0], 2);
@@ -1289,15 +1257,10 @@ ldim_dev_get_config_from_dts_next:
 				i, i);
 			i = 32;
 		} else {
-			if (fw_cus_pre->fw_alg_frm) {
-				fw_cus_pre->param[i] = val;
+			if (fw_cus->fw_alg_frm) {
+				fw_cus->param[i] = val;
 				LDIMPR("param[%d] = %d\n",
-					i, fw_cus_pre->param[i]);
-			}
-			if (fw_cus_post->fw_alg_frm) {
-				fw_cus_post->param[i] = val;
-				LDIMPR("param[%d] = %d\n",
-					i, fw_cus_post->param[i]);
+					i, fw_cus->param[i]);
 			}
 		}
 	}
@@ -1343,8 +1306,8 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv,
 	struct bl_pwm_config_s *bl_pwm;
 	struct ldim_profile_s *profile;
 	int i, ret = 0;
-	struct ldim_fw_custom_s *fw_cus_pre = aml_ldim_get_fw_cus_pre();
-	struct ldim_fw_custom_s *fw_cus_post = aml_ldim_get_fw_cus_post();
+	struct ldim_fw_s *fw = aml_ldim_get_fw();
+	struct ldim_fw_custom_s *fw_cus = aml_ldim_get_fw_cus();
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 		LDIMPR("load ldim_dev config from unifykey\n");
@@ -1560,7 +1523,7 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv,
 	profile = kzalloc(sizeof(*profile), GFP_KERNEL);
 	if (!profile)
 		goto ldim_dev_get_config_from_ukey_next;
-	dev_drv->bl_profile = profile;
+	fw->profile = profile;
 	profile->mode = temp;
 
 	if (profile->mode == 1) {
@@ -1604,17 +1567,11 @@ ldim_dev_get_config_from_ukey_next:
 			+ 4 * i + 2)) << 16) |
 			((*(p + LCD_UKEY_LDIM_DEV_CUST_PARAM
 			+ 4 * i + 3)) << 24));
-		if (fw_cus_pre->fw_alg_frm)	{
-			fw_cus_pre->param[i] = temp_val;
-			LDIMPR("fw_cus_pre->param[%d] = %d =  0x%x\n",
-			i, fw_cus_pre->param[i],
-			fw_cus_pre->param[i]);
-		}
-		if (fw_cus_post->fw_alg_frm) {
-			fw_cus_post->param[i] = temp_val;
-			LDIMPR("fw_cus_post->param[%d] = %d =  0x%x\n",
-			i, fw_cus_post->param[i],
-			fw_cus_post->param[i]);
+		if (fw_cus->fw_alg_frm)	{
+			fw_cus->param[i] = temp_val;
+			LDIMPR("fw_cus->param[%d] = %d =  0x%x\n",
+			i, fw_cus->param[i],
+			fw_cus->param[i]);
 		}
 	}
 
@@ -2187,6 +2144,11 @@ static int __exit ldim_dev_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static void ldim_dev_shutdown(struct platform_device *pdev)
+{
+	cancel_delayed_work(&ldim_dev_probe_dly_work);
+}
+
 #ifdef CONFIG_OF
 static const struct of_device_id ldim_dev_dt_match[] = {
 	{
@@ -2206,6 +2168,7 @@ static struct platform_driver ldim_dev_platform_driver = {
 	},
 	.probe   = ldim_dev_probe,
 	.remove  = __exit_p(ldim_dev_remove),
+	.shutdown = ldim_dev_shutdown,
 };
 
 int __init ldim_dev_init(void)

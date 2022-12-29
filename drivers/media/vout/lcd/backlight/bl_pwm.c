@@ -150,7 +150,9 @@ static int bl_pwm_out_level_check(struct bl_pwm_config_s *bl_pwm)
 	int out_level = 0xff;
 	unsigned int pwm_range;
 
-	if (bl_pwm->pwm_duty_max > 100)
+	if (bl_pwm->pwm_duty_max > 255)
+		pwm_range = 4095;
+	else if (bl_pwm->pwm_duty_max > 100)
 		pwm_range = 255;
 	else
 		pwm_range = 100;
@@ -773,6 +775,7 @@ int bl_pwm_init_config_probe(struct bl_data_s *bdata)
 	case LCD_CHIP_T7:
 	case LCD_CHIP_T3:
 	case LCD_CHIP_T5W:
+	case LCD_CHIP_T5M:
 		pwm_init_cfg.pwm_vs_reg = pwm_vs_reg_t7;
 		pwm_init_cfg.pwm_vs_reg_cnt = ARRAY_SIZE(pwm_vs_reg_t7);
 		break;

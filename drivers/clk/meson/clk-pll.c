@@ -39,7 +39,7 @@
 #include <linux/arm-smccc.h>
 #endif
 
-#define FRAC_BASE	100000
+#define FIXED_FRAC_WEIGHT_PRECISION	100000
 
 static inline struct meson_clk_pll_data *
 meson_clk_pll_data(struct clk_regmap *clk)
@@ -75,14 +75,14 @@ static unsigned long __pll_params_to_rate(unsigned long parent_rate,
 	if (frac && MESON_PARM_APPLICABLE(&pll->frac)) {
 		frac_rate = (u64)parent_rate * frac;
 		if (frac & (1 << (pll->frac.width - 1))) {
-			if (pll->new_frac)
-				rate -= DIV_ROUND_UP_ULL(frac_rate, FRAC_BASE);
+			if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
+				rate -= DIV_ROUND_UP_ULL(frac_rate, FIXED_FRAC_WEIGHT_PRECISION);
 			else
 				rate -= DIV_ROUND_UP_ULL(frac_rate,
 						 (1 << (pll->frac.width - 2)));
 		} else {
-			if (pll->new_frac)
-				rate += DIV_ROUND_UP_ULL(frac_rate, FRAC_BASE);
+			if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
+				rate += DIV_ROUND_UP_ULL(frac_rate, FIXED_FRAC_WEIGHT_PRECISION);
 			else
 				rate += DIV_ROUND_UP_ULL(frac_rate,
 						 (1 << (pll->frac.width - 2)));
@@ -158,8 +158,8 @@ static unsigned int __pll_params_with_frac(unsigned long rate,
 	unsigned int frac_max;
 	u64 val = (u64)rate * n;
 
-	if (pll->new_frac)
-		frac_max = FRAC_BASE;
+	if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
+		frac_max = FIXED_FRAC_WEIGHT_PRECISION;
 	else
 		frac_max = (1 << (pll->frac.width - 2));
 	/* Bail out if we are already over the requested rate */
@@ -186,8 +186,8 @@ static unsigned int __pll_params_with_frac(unsigned long rate,
 	unsigned int frac_max;
 	u64 val = (u64)rate * n;
 
-	if (pll->new_frac)
-		frac_max = FRAC_BASE;
+	if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
+		frac_max = FIXED_FRAC_WEIGHT_PRECISION;
 	else
 		frac_max = (1 << (pll->frac.width - 2));
 	/* Bail out if we are already over the requested rate */

@@ -932,7 +932,7 @@ static struct clk_regmap t5m_hifi_pll_dco = {
 		.range = &t5m_hifi_pll_mult_range,
 		.init_regs = t5m_hifi_init_regs,
 		.init_count = ARRAY_SIZE(t5m_hifi_init_regs),
-		.new_frac = 1,
+		.flags = CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hifi_pll_dco",
@@ -1005,7 +1005,7 @@ static struct clk_regmap t5m_hifi1_pll_dco = {
 		.range = &t5m_hifi_pll_mult_range,
 		.init_regs = t5m_hifi1_init_regs,
 		.init_count = ARRAY_SIZE(t5m_hifi1_init_regs),
-		.new_frac = 1,
+		.flags = CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hifi1_pll_dco",

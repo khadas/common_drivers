@@ -46,8 +46,9 @@ struct pll_params_table {
 	}
 #endif
 
-#define CLK_MESON_PLL_ROUND_CLOSEST	BIT(0)
-#define CLK_MESON_PLL_IGNORE_INIT	BIT(1)
+#define CLK_MESON_PLL_ROUND_CLOSEST			BIT(0)
+#define CLK_MESON_PLL_IGNORE_INIT			BIT(1)
+#define CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION	BIT(2)
 
 struct meson_clk_pll_data {
 	struct parm en;
@@ -69,7 +70,6 @@ struct meson_clk_pll_data {
 	u8 flags;
 	u8 secid_disable;
 	u8 secid;
-	u8 new_frac;
 };
 
 extern const struct clk_ops meson_clk_pll_ro_ops;

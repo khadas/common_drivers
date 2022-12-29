@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
-
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/errno.h>
@@ -29,6 +28,7 @@ static void write_yuv_to_buf(void)
 	char name_buf[32];
 	int data_size;
 	u8 *data_addr;
+	mm_segment_t fs;
 	loff_t pos;
 
 	if (input_color_format == 2) {
@@ -42,12 +42,15 @@ static void write_yuv_to_buf(void)
 	}
 
 	data_addr = codec_mm_vmap(input_buffer_addr, data_size);
+
 	fp = filp_open(name_buf, O_CREAT | O_RDWR, 0644);
 	if (IS_ERR(fp) || IS_ERR_OR_NULL(data_addr)) {
 		pr_info("%s: vmap failed.\n", __func__);
 		return;
 	}
 
+	fs = get_fs();
+	set_fs(KERNEL_DS);
 	pos = fp->f_pos;
 	vfs_read(fp, data_addr, data_size, &pos);
 	fp->f_pos = pos;
@@ -56,6 +59,7 @@ static void write_yuv_to_buf(void)
 
 	codec_mm_dma_flush(data_addr, data_size, DMA_TO_DEVICE);
 	codec_mm_unmap_phyaddr(data_addr);
+	set_fs(fs);
 	filp_close(fp, NULL);
 #endif
 }
@@ -149,6 +153,7 @@ static void dump_test_yuv(int flag)
 	char name_buf[32];
 	int data_size;
 	u8 *data_addr;
+	mm_segment_t fs;
 	loff_t pos;
 
 	//use flag to distinguish src and dst vframe
@@ -186,12 +191,15 @@ static void dump_test_yuv(int flag)
 		return;
 	}
 
+	fs = get_fs();
+	set_fs(KERNEL_DS);
 	pos = fp->f_pos;
 	vfs_write(fp, data_addr, data_size, &pos);
 	fp->f_pos = pos;
 	vfs_fsync(fp, 0);
 	pr_info("%s: write %u size.\n", __func__, data_size);
 	codec_mm_unmap_phyaddr(data_addr);
+	set_fs(fs);
 	filp_close(fp, NULL);
 #endif
 }

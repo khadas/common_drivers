@@ -1,13 +1,27 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * drivers/amlogic/media/video_processor/common/vicp/vicp_process.h
+ *
+ * Copyright (C) 2017 Amlogic, Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
  */
 
 #ifndef _VICP_PROCESS_H_
 #define _VICP_PROCESS_H_
 
 #include <linux/amlogic/media/vicp/vicp.h>
-#include "vicp_process_rdma.h"
+#include "vicp_rdma.h"
+#include "vicp_hdr.h"
 
 extern u32 print_flag;
 extern u32 input_width;
@@ -28,38 +42,12 @@ extern int cgain_lut1[65];
 extern int cgain_lut0[65];
 extern u32 debug_axis_en;
 extern struct output_axis_t axis;
+extern struct vicp_hdr_s *vicp_hdr;
+extern u32 rdma_en;
+extern u32 debug_rdma_en;
 /* *********************************************************************** */
 /* ************************* enum definitions **************************.*/
 /* *********************************************************************** */
-enum hdr2_sel_e {
-	VD1_S0_HDR2 = 0,
-	VD1_S1_HDR2 = 1,
-	VD1_S2_HDR2 = 2,
-	VD1_S3_HDR2 = 3,
-	VD2_HDR2 = 4,
-	VD3_HDR2 = 5,
-	OSD1_HDR2 = 6,
-	OSD2_HDR2 = 7,
-	OSD3_HDR2 = 8,
-	OSD4_HDR2 = 9,
-	OSD_2PPC_HDR2 = 10,
-	VID_CMPR_HDR2 = 11,
-	VDIN1_HDR2 = 12,
-	DI_HDR2 = 13
-};
-
-enum f2v_vphase_type_e {
-	F2V_IT2IT = 0,
-	F2V_IB2IB,
-	F2V_IT2IB,
-	F2V_IB2IT,
-	F2V_P2IT,
-	F2V_P2IB,
-	F2V_IT2P,
-	F2V_IB2P,
-	F2V_P2P,
-	F2V_TYPE_MAX
-};   /* frame to video conversion type */
 
 /* *********************************************************************** */
 /* ************************* struct definitions **************************.*/
@@ -81,6 +69,11 @@ struct vid_cmpr_top_t {
 	u32 src_endian;
 	u32 src_block_mode;
 	u32 src_burst_len;
+	u32 src_count;
+	u32 src_num;
+	bool rdma_enable;
+	bool security_en;
+	enum vicp_skip_mode_e skip_mode;
 	// hdr
 	u32 hdr_en;//0:close 1:open
 	// afbce
@@ -120,6 +113,7 @@ struct vid_cmpr_top_t {
 	u32 rot_rev_mode;
 	u32 rot_hshrk_ratio;//0:no shrink 1:1/2 shrink 2:1/4 shrink
 	u32 rot_vshrk_ratio;//0:no shrink 1:1/2 shrink 2:1/4 shrink
+	u32 canvas_width[3];
 };
 
 struct vid_cmpr_mif_t {
@@ -143,10 +137,14 @@ struct vid_cmpr_mif_t {
 	u64 canvas0_addr0; //base addr
 	u64 canvas0_addr1; //base addr
 	u64 canvas0_addr2; //base addr
+	u32 stride_y;
+	u32 stride_cb;
+	u32 stride_cr;
 	u32 rev_x;
 	u32 rev_y;
 	u32 buf_crop_en;
 	u32 buf_hsize;
+	u32 buf_vsize;
 	u32 endian;
 	u32 block_mode;
 	u32 burst_len;
@@ -236,6 +234,7 @@ struct vid_cmpr_afbcd_t {
 };
 
 struct vid_cmpr_scaler_t {
+	u32 device_index;
 	u32 din_hsize;
 	u32 din_vsize;
 	u32 dout_hsize;
@@ -253,13 +252,15 @@ struct vid_cmpr_scaler_t {
 	u32 pps_slice;
 	u32 phase_step_en;
 	u32 phase_step;
+	u32 vphase_type_top;
+	u32 vphase_type_bot;
 };
 
 struct vid_cmpr_hdr_t {
 	u32 hdr2_en;
 	u32 hdr2_only_mat;
 	u32 hdr2_fmt_cfg;
-	u32 in_fmt;// 1:yuv in   0:rgb in
+	u32 input_fmt;// 1:yuv in   0:rgb in
 	u32 rgb_out_en;
 	u32 aicolor_sat_en;
 	u32 aicolor_lut_mod;
@@ -272,11 +273,11 @@ struct vid_cmpr_f2v_vphase_t {
 	unsigned char rpt_num; // 0~3
 	unsigned short phase;
 };
-
 /* *********************************************************************** */
 /* ************************* function definitions **************************.*/
 /* *********************************************************************** */
 irqreturn_t vicp_isr_handle(int irq, void *dev_id);
+irqreturn_t vicp_rdma_handle(int irq, void *dev_id);
 int vicp_process_config(struct vicp_data_config_t *data_config,
 	struct vid_cmpr_top_t *vid_cmpr_top);
 int vicp_process_reset(void);
@@ -285,14 +286,10 @@ int vicp_process_task(struct vid_cmpr_top_t *vid_cmpr_top);
 void set_vid_cmpr_crop(struct vid_cmpr_crop_t *crop_param);
 void set_mif_stride(struct vid_cmpr_mif_t *mif, int *stride_y, int *stride_cb, int *stride_cr);
 void set_vid_cmpr_shrink(int is_enable, int size, int mode_h, int mode_v);
-void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_t *afbce);
+void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_t *afbce, bool rdma_en);
 void set_vid_cmpr_wmif(struct vid_cmpr_mif_t *wr_mif, int wrmif_en);
 void set_vid_cmpr_rmif(struct vid_cmpr_mif_t *rd_mif, int urgent, int hold_line);
 void set_vid_cmpr_scale(int is_enable, struct vid_cmpr_scaler_t *scaler);
-void set_vid_cmpr_afbcd(int hold_line_num, struct vid_cmpr_afbcd_t *afbcd);
-void vid_cmpr_hdr2_mtrix(int only_matrix, int mat_sel, int rgb2yuv_in, int hdr2_fmt,
-	int out_matrix_fmt);
-void set_vid_cmpr_hdr2(enum hdr2_sel_e hdr2_sel, int hdr2_top_en, int hdr2_only_mat,
-	int hdr2_fmt_cfg, int in_fmt, int rgb_out_en);
-void set_vid_cmpr(struct vid_cmpr_top_t *vid_cmpr_top);
+void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_t *afbcd);
+void set_vid_cmpr_hdr(int hdr2_top_en);
 #endif //_VICP_PROCESS_H_

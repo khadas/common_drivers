@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
-
 #ifndef _VICP_H_
 #define _VICP_H_
 
@@ -19,7 +18,10 @@
 #include <linux/amlogic/media/vfm/vframe.h>
 #include <linux/amlogic/cpu_version.h>
 
-#define MAX_PLANE_MUM    4
+#define MAX_PLANE_MUM		4
+#define RDMA_CMD_BUF_LEN	1024
+#define RDMA_LOAD_BUF_LEN	(1024 * 7)
+#define MAX_INPUTSOURCE_COUNT	9
 
 /* *********************************************************************** */
 /* ************************* enum definitions ****************************.*/
@@ -39,6 +41,21 @@ enum vicp_color_format_e {
 	VICP_COLOR_FORMAT_YUV422,
 	VICP_COLOR_FORMAT_YUV420,
 	VICP_COLOR_FORMAT_MAX,
+};
+
+enum vicp_shrink_mode_e {
+	VICP_SHRINK_MODE_2X = 0,
+	VICP_SHRINK_MODE_4X,
+	VICP_SHRINK_MODE_8X,
+	VICP_SHRINK_MODE_MAX,
+};
+
+enum vicp_skip_mode_e {
+	VICP_SKIP_MODE_OFF = 0,
+	VICP_SKIP_MODE_HORZ,
+	VICP_SKIP_MODE_VERT,
+	VICP_SKIP_MODE_ALL,
+	VICP_SKIP_MODE_MAX,
 };
 
 /* *********************************************************************** */
@@ -62,6 +79,12 @@ struct data_option_t {
 	struct crop_info_t crop_info;
 	enum vicp_rotation_mode_e rotation_mode;
 	struct output_axis_t output_axis;
+	enum vicp_shrink_mode_e shrink_mode;
+	enum vicp_skip_mode_e skip_mode;
+	bool rdma_enable;
+	u32 input_source_count;
+	u32 input_source_number;
+	bool security_enable;
 };
 
 struct dma_data_config_t {
@@ -105,4 +128,5 @@ struct vicp_data_config_t {
 /* ************************* function definitions **************************.*/
 /* *********************************************************************** */
 int  vicp_process(struct vicp_data_config_t *data_config);
+
 #endif

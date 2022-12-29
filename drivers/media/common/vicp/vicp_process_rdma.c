@@ -1,6 +1,19 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * drivers/amlogic/media/video_processor/common/vicp/vicp_process_rdma.c
+ *
+ * Copyright (C) 2017 Amlogic, Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
  */
 
 #include "vicp_process_rdma.h"
@@ -30,7 +43,7 @@ void vicp_rdma_init(struct rdma_buf_type_t *rdma_buf)
 
 void vicp_rdma_trigger(void)
 {
-	/*0:link mode 1: triggle mode*/
+	/*0:link mode 1: trigger mode*/
 	vicp_reg_set_bits(VID_CMPR_DMA_MODE, 0, 0, 1);
 	vicp_reg_set_bits(VID_CMPR_DMA_START, 1, 0, 1);
 }

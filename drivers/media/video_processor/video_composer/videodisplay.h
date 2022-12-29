@@ -34,11 +34,17 @@ extern u32 vsync_pts_inc_scale_base;
 extern u32 vd_set_frame_delay[];
 extern struct vframe_s *current_display_vf;
 extern u32 vpp_drop_count;
+extern u32 vd_test_fps;
+extern u32 vd_test_fps_pip;
+extern u64 vd_test_fps_val[MAX_VD_LAYERS];
+extern u64 vd_test_vsync_val[MAX_VD_LAYERS];
+extern struct video_composer_port_s ports[];
 
 struct video_display_frame_info_t {
 	struct dma_buf *dmabuf;
 	struct dma_fence *input_fence;
 	struct dma_fence *release_fence;
+	u64 phy_addr[2];
 	u32 buffer_w;
 	u32 buffer_h;
 	u32 dst_x;

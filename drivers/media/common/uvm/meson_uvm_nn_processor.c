@@ -9,12 +9,15 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <dev_ion.h>
+#include <linux/dma-heap.h>
 
 #include <linux/amlogic/media/vfm/vframe.h>
 #include <linux/amlogic/media/video_sink/v4lvideo_ext.h>
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/utils/am_com.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
+#include <linux/amlogic/media/dmabuf_heaps/amlogic_dmabuf_heap.h>
+
 #include "meson_uvm_nn_processor.h"
 
 static int uvm_nn_debug;
@@ -402,10 +405,13 @@ int nn_mod_setinfo(void *arg, char *buf)
 	struct uvm_ai_sr_info *nn_sr_src = NULL;
 	struct vf_nn_sr_t *nn_sr_dst = NULL;
 	int nn_out_fd;
-	int ret = -1;
-	size_t len;
-	phys_addr_t addr = 0;
+	phys_addr_t *phy_addr = 0;
 	struct vframe_s *vf = NULL;
+	struct dma_buf *dbuf = NULL;
+	struct dma_heap *heap = NULL;
+	struct dma_buf_attachment *attach = NULL;
+	struct sg_table *table = NULL;
+	struct page *page = NULL;
 
 	nn_sr_src = (struct uvm_ai_sr_info *)buf;
 	nn_sr_dst = (struct vf_nn_sr_t *)arg;
@@ -415,12 +421,42 @@ int nn_mod_setinfo(void *arg, char *buf)
 		nn_sr_dst->nn_out_file = fget(nn_out_fd);
 		fput(nn_sr_dst->nn_out_file);
 		nn_sr_dst->nn_out_dma_buf = NULL;
-		ret = meson_ion_share_fd_to_phys(nn_out_fd, &addr, &len);
-		if (ret < 0) {
-			nn_print(PRINT_ERROR, "import out fd %d failed\n", nn_out_fd);
+
+		dbuf = dma_buf_get(nn_out_fd);
+		if (IS_ERR_OR_NULL(dbuf)) {
+			pr_err("%s: dbuf: dbuf=%px\n", __func__, dbuf);
 			return -EINVAL;
 		}
-		nn_sr_dst->nn_out_phy_addr = addr;
+		heap = dma_heap_find(CODECMM_HEAP_NAME);
+		if (!heap) {
+			dma_buf_put(dbuf);
+			pr_err("%s: heap is NULL\n", __func__);
+			return -EINVAL;
+		}
+		attach = dma_buf_attach(dbuf, dma_heap_get_dev(heap));
+		if (IS_ERR(attach)) {
+			dma_buf_put(dbuf);
+			pr_info("%s: attach err\n", __func__);
+			return -EINVAL;
+		}
+
+		table = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
+		if (!table) {
+			dma_buf_detach(dbuf, attach);
+			dma_buf_put(dbuf);
+			pr_err("%s: table is NULL\n", __func__);
+			return -ENOMEM;
+		}
+		page = sg_page(table->sgl);
+		phy_addr = (void *)PFN_PHYS(page_to_pfn(page));
+		dma_buf_unmap_attachment(attach, table, DMA_BIDIRECTIONAL);
+		dma_buf_detach(dbuf, attach);
+		dma_buf_put(dbuf);
+		if (!phy_addr) {
+			pr_info("%s: phy_addr is null\n", __func__);
+			return -ENOMEM;
+		}
+		nn_sr_dst->nn_out_phy_addr = (ulong)phy_addr;
 	} else {
 		nn_sr_dst->nn_out_dma_buf = NULL;
 		nn_sr_dst->nn_out_phy_addr = 0;

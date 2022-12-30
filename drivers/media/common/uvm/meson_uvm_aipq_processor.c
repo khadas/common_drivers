@@ -9,6 +9,7 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <dev_ion.h>
+#include <linux/dma-heap.h>
 
 #include <linux/amlogic/media/vfm/vframe.h>
 #include <linux/amlogic/media/video_sink/v4lvideo_ext.h>
@@ -18,8 +19,10 @@
 #include <linux/amlogic/media/ge2d/ge2d.h>
 #include <linux/amlogic/media/ge2d/ge2d_func.h>
 #include <linux/amlogic/media/video_processor/video_pp_common.h>
+#include <linux/amlogic/media/dmabuf_heaps/amlogic_dmabuf_heap.h>
 
 #include "meson_uvm_aipq_processor.h"
+
 struct dma_buf *dmabuf_last;
 
 static int uvm_aipq_debug;
@@ -558,14 +561,18 @@ int aipq_getinfo(void *arg, char *buf)
 {
 	struct uvm_aipq_info *aipq_info = NULL;
 	int ret = -1;
-	phys_addr_t addr = 0;
+	phys_addr_t *phy_addr = 0;
 	struct vframe_s *vf = NULL;
 	s32 aipq_fd;
-	size_t len = 0;
 	struct ge2d_output_t output;
 	struct timeval begin_time;
 	struct timeval end_time;
 	int cost_time;
+	struct dma_buf *dbuf = NULL;
+	struct dma_heap *heap = NULL;
+	struct dma_buf_attachment *attach = NULL;
+	struct sg_table *table = NULL;
+	struct page *page = NULL;
 
 	aipq_info = (struct uvm_aipq_info *)buf;
 
@@ -578,18 +585,45 @@ int aipq_getinfo(void *arg, char *buf)
 
 		aipq_fd = aipq_info->aipq_fd;
 		if (aipq_fd != -1) {
-			ret = meson_ion_share_fd_to_phys(aipq_fd, &addr, &len);
-			if (ret < 0) {
-				aipq_print(PRINT_ERROR,
-					"import fd %d failed\n", aipq_fd);
+			dbuf = dma_buf_get(aipq_fd);
+			if (IS_ERR_OR_NULL(dbuf)) {
+				pr_err("%s: dbuf: dbuf=%px\n", __func__, dbuf);
 				return -EINVAL;
+			}
+			heap = dma_heap_find(CODECMM_HEAP_NAME);
+			if (!heap) {
+				dma_buf_put(dbuf);
+				pr_err("%s: heap is NULL\n", __func__);
+				return -EINVAL;
+			}
+			attach = dma_buf_attach(dbuf, dma_heap_get_dev(heap));
+			if (IS_ERR(attach)) {
+				dma_buf_put(dbuf);
+				pr_err("%s: attach err\n", __func__);
+				return -EINVAL;
+			}
+			table = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
+			if (!table) {
+				dma_buf_detach(dbuf, attach);
+				dma_buf_put(dbuf);
+				pr_err("%s: table is NULL\n", __func__);
+				return -ENOMEM;
+			}
+			page = sg_page(table->sgl);
+			phy_addr = (void *)PFN_PHYS(page_to_pfn(page));
+			dma_buf_unmap_attachment(attach, table, DMA_BIDIRECTIONAL);
+			dma_buf_detach(dbuf, attach);
+			dma_buf_put(dbuf);
+			if (!phy_addr) {
+				pr_info("%s: phy_addr is null\n", __func__);
+				return -ENOMEM;
 			}
 		}
 		memset(&output, 0, sizeof(struct ge2d_output_t));
 		output.width = aipq_info->nn_input_frame_width;
 		output.height = aipq_info->nn_input_frame_height;
 		output.format = GE2D_FORMAT_S24_BGR;
-		output.addr = addr;
+		output.addr = (ulong)phy_addr;
 		do_gettimeofday(&begin_time);
 		ret = ge2d_vf_process(vf, &output);
 		if (ret < 0) {
@@ -602,7 +636,7 @@ int aipq_getinfo(void *arg, char *buf)
 		aipq_print(PRINT_OTHER, "ge2d cost: %d ms\n", cost_time);
 		if (uvm_aipq_dump) {
 			uvm_aipq_dump = 0;
-			dump_vf(vf, addr, aipq_info);
+			dump_vf(vf, (ulong)phy_addr, aipq_info);
 		}
 	}
 	return 0;

@@ -1738,7 +1738,7 @@ static int dvb_ca_en50221_io_read_condition(struct dvb_ca_private *ca,
 			dvb_ringbuffer_pkt_read(&ca->slot_info[slot].rx_buffer, idx, 0, hdr, 2);
 			if (connection_id == -1)
 				connection_id = hdr[0];
-#ifdef READ_LPDU_PKT
+#ifndef READ_LPDU_PKT
 			if (hdr[0] == connection_id) {
 #else
 			if (hdr[0] == connection_id && ((hdr[1] & 0x80) == 0)) {
@@ -2087,7 +2087,7 @@ int dvb_ca_en50221_cimcu_init(struct dvb_adapter *dvb_adapter,
 	ca->pub = pubca;
 	ca->flags = flags;
 	ca->slot_count = slot_count;
-	ca->slot_info = kcalloc(slot_count, sizeof(ca->slot_info), GFP_KERNEL);
+	ca->slot_info = kcalloc(slot_count, sizeof(*ca->slot_info), GFP_KERNEL);
 	if (!ca->slot_info) {
 		ret = -ENOMEM;
 		goto free_ca;

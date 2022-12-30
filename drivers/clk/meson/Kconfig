@@ -167,4 +167,22 @@ config AMLOGIC_COMMON_CLK_T5M
 	help
 	  Support for the clock controller on Amlogic T5M
 	  devices, aka t5m. Say Y if you want peripherals to work.
+
+config AMLOGIC_COMMON_CLK_G12A
+	tristate "G12 and SM1 SoC clock controllers support"
+	depends on ARM64
+	default y
+	select AMLOGIC_COMMON_CLK_MESON_REGMAP
+	select AMLOGIC_COMMON_CLK_MESON_DUALDIV
+	select AMLOGIC_COMMON_CLK_MESON_MPLL
+	select AMLOGIC_COMMON_CLK_MESON_PLL
+	select AMLOGIC_COMMON_CLK_MESON_AO_CLKC
+	select AMLOGIC_COMMON_CLK_MESON_EE_CLKC
+	select AMLOGIC_COMMON_CLK_MESON_CPU_DYNDIV
+	select AMLOGIC_COMMON_CLK_MESON_VID_PLL_DIV
+	select MFD_SYSCON
+	help
+	  Support for the clock controller on Amlogic S905D2, S905X2 and S905Y2
+	  devices, aka g12a. Say Y if you want peripherals to work.
+
 endmenu

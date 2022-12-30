@@ -88,3 +88,18 @@ $(T5M_MODULE_NAME)-y += t5m.o
 PR_FMT_T5M = $(subst amlogic-,,$(T5M_MODULE_NAME))
 PR_FMT_DEFINE_T5M="-Dpr_fmt(fmt)= \"[$(PR_FMT_T5M)]: \" fmt"
 CFLAGS_t5m.o += $(PR_FMT_DEFINE_T5M)
+
+G12A_MODULE_NAME = amlogic-clk-soc-g12a
+obj-$(CONFIG_AMLOGIC_COMMON_CLK_G12A) += $(G12A_MODULE_NAME).o
+$(G12A_MODULE_NAME)-y += g12a.o
+PR_FMT_G12A = $(subst amlogic-,,$(G12A_MODULE_NAME))
+PR_FMT_DEFINE_G12A="-Dpr_fmt(fmt)= \"[$(PR_FMT_G12A)]: \" fmt"
+CFLAGS_g12a.o += $(PR_FMT_DEFINE_G12A)
+
+G12A_AO_MODULE_NAME = amlogic-aoclk-g12a
+obj-$(CONFIG_AMLOGIC_COMMON_CLK_G12A) += $(G12A_AO_MODULE_NAME).o
+$(G12A_AO_MODULE_NAME)-y += g12a-aoclk.o
+PR_FMT_G12A_AO = $(subst amlogic-,,$(G12A_AO_MODULE_NAME))
+PR_FMT_DEFINE_G12A_AO="-Dpr_fmt(fmt)= \"[$(PR_FMT_G12A_AO)]: \" fmt"
+CFLAGS_g12a_ao.o += $(PR_FMT_DEFINE_G12A_AO)
+

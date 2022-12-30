@@ -9,6 +9,7 @@
 #include <linux/platform_device.h>
 #include <linux/mfd/syscon.h>
 #include <linux/regmap.h>
+#include <linux/clkdev.h>
 
 #include "clk-regmap.h"
 #include "meson-eeclk.h"
@@ -49,8 +50,20 @@ int meson_eeclkc_probe(struct platform_device *pdev)
 			dev_err(dev, "Clock registration failed\n");
 			return ret;
 		}
+
+#ifdef CONFIG_AMLOGIC_CLK_DEBUG
+		ret = devm_clk_hw_register_clkdev(dev, data->hw_onecell_data->hws[i],
+						  NULL,
+						  clk_hw_get_name(data->hw_onecell_data->hws[i]));
+		if (ret < 0) {
+			dev_err(dev, "Failed to clkdev register: %d\n", ret);
+			return ret;
+		}
+#endif
+
 	}
 
 	return devm_of_clk_add_hw_provider(dev, of_clk_hw_onecell_get,
 					   data->hw_onecell_data);
 }
+EXPORT_SYMBOL_GPL(meson_eeclkc_probe);

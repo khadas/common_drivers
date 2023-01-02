@@ -470,16 +470,16 @@ static struct sec_pm_domain_data t5w_pm_domain_data __initdata = {
 };
 
 static struct sec_pm_private_domain t5m_pm_domains[] __initdata = {
-	[PDID_T5M_DOS_HEVC] = POWER_DOMAIN(hevc, PDID_T5M_DOS_HEVC,
-					   DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_T5M_DOS_HEVC] = TOP_DOMAIN(hevc, PDID_T5M_DOS_HEVC,
+					   DOMAIN_INIT_OFF, 0, PDID_T5M_DOS_GE2D_WRAP),
 	[PDID_T5M_DOS_GE2D_WRAP] = POWER_DOMAIN(ge2d, PDID_T5M_DOS_GE2D_WRAP,
-						DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+						DOMAIN_INIT_OFF, 0),
 	[PDID_T5M_VPU_HDMI] = POWER_DOMAIN(vpu, PDID_T5M_VPU_HDMI,
-					DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+					DOMAIN_INIT_OFF, 0),
 	[PDID_T5M_DEMOD] = POWER_DOMAIN(demod, PDID_T5M_DEMOD,
-					DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+					DOMAIN_INIT_OFF, 0),
 	[PDID_T5M_FRC_TOP] = POWER_DOMAIN(frc, PDID_T5M_FRC_TOP,
-					  DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+					  DOMAIN_INIT_OFF, 0),
 };
 
 static struct sec_pm_domain_data t5m_pm_domain_data __initdata = {

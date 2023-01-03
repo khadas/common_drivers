@@ -733,8 +733,7 @@ void frc_mm_secure_set(struct frc_dev_s *devp)
 	/*data buffer set to secure mode*/
 	addr_start = devp->buf.cma_mem_paddr_start + devp->buf.lossy_mc_y_data_buf_paddr[0];
 	// data buf size: 0x9a30000
-	addr_size = devp->buf.cma_mem_size -
-		devp->buf.lossy_mc_y_data_buf_paddr[0] + devp->buf.cma_mem_size2;
+	addr_size = devp->buf.cma_mem_size - devp->buf.lossy_mc_y_data_buf_paddr[0];
 
 	/*data buffer, me/mc info and link buffer set to secure mode*/
 	//addr_start = devp->buf.cma_mem_paddr_start + devp->buf.lossy_mc_y_info_buf_paddr;
@@ -931,10 +930,7 @@ void frc_state_handle(struct frc_dev_s *devp)
 		pr_frc(log, "stat_chg(%d->%d) frm_cnt:%d\n", cur_state,
 			new_state, frame_cnt);
 	}
-	if (new_state == FRC_STATE_ENABLE && !devp->buf.buf_ctrl) {
-		devp->buf.buf_ctrl = 1;
-		schedule_work(&frc_mem_dyc_proc);
-	}
+
 	switch (cur_state) {
 	case FRC_STATE_DISABLE:
 	if (state_changed) {
@@ -1016,8 +1012,6 @@ void frc_state_handle(struct frc_dev_s *devp)
 					frc_state_ary[cur_state],
 					frc_state_ary[new_state]);
 				frc_state_change_finish(devp);
-				devp->buf.buf_ctrl = 0;
-				schedule_work(&frc_mem_dyc_proc);
 			}
 		} else if (new_state == FRC_STATE_BYPASS) {
 			//first frame set enable off
@@ -1035,8 +1029,6 @@ void frc_state_handle(struct frc_dev_s *devp)
 				       frc_state_ary[cur_state],
 				       frc_state_ary[new_state]);
 				frc_state_change_finish(devp);
-				devp->buf.buf_ctrl = 0;
-				schedule_work(&frc_mem_dyc_proc);
 			}
 		} else {
 			pr_frc(0, "err new state %d\n", new_state);
@@ -1153,10 +1145,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 		pr_frc(log, "stat_chg(%d->%d), frm_cnt:%d\n", cur_state,
 			new_state, frame_cnt);
 	}
-	if (new_state == FRC_STATE_ENABLE && !devp->buf.buf_ctrl) {
-		devp->buf.buf_ctrl = 1;
-		schedule_work(&frc_mem_dyc_proc);
-	}
+
 	switch (cur_state) {
 	case FRC_STATE_DISABLE:
 	if (state_changed) {
@@ -1264,8 +1253,6 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					frc_state_ary[cur_state],
 					frc_state_ary[new_state]);
 				frc_state_change_finish(devp);
-				devp->buf.buf_ctrl = 0;
-				schedule_work(&frc_mem_dyc_proc);
 			}
 		} else if (new_state == FRC_STATE_BYPASS) {
 			//first frame set enable off
@@ -1283,8 +1270,6 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				       frc_state_ary[cur_state],
 				       frc_state_ary[new_state]);
 				frc_state_change_finish(devp);
-				devp->buf.buf_ctrl = 0;
-				schedule_work(&frc_mem_dyc_proc);
 			}
 		} else {
 			pr_frc(0, "err new state %d\n", new_state);
@@ -1660,10 +1645,6 @@ void frc_chk_vd_sts_chg(struct frc_dev_s *devp, struct vframe_s *vf)
 	if (frc_is_tvin_s != devp->in_sts.frc_is_tvin) {
 		frc_is_tvin_s = devp->in_sts.frc_is_tvin;
 		pr_frc(1, "input change %d. (1:tvin)\n", frc_is_tvin_s);
-		if (devp->in_sts.frc_is_tvin) {
-			devp->buf.buf_ctrl = 1;
-			schedule_work(&frc_mem_dyc_proc);
-		}
 	}
 
 	if (vf->vc_private) {

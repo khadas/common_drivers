@@ -116,12 +116,9 @@ extern int frc_dbg_en;
 #define FRC_COMPRESS_RATE_ME		100
 
 #define FRC_TOTAL_BUF_NUM		16
-#define FRC_TOTAL_BUF_NUM_8     8
 #define FRC_MEMV_BUF_NUM		6
 #define FRC_MEMV2_BUF_NUM		7
 #define FRC_MEVP_BUF_NUM		2
-// release buf num (12 / 16)
-#define FRC_RE_BUF_NUM		12
 
 #define FRC_SLICER_NUM			4
 
@@ -197,16 +194,10 @@ struct vf_rate_table {
 struct st_frc_buf {
 	/*cma memory define*/
 	u32 cma_mem_size;
-	u32 cma_mem_size2;
 	u32 cma_rdma_size;
 	struct page *cma_mem_paddr_pages;
-	struct page *cma_mem_paddr_pages2;
 	phys_addr_t cma_mem_paddr_start;
-	phys_addr_t cma_mem_paddr_start2;
 	u8  cma_mem_alloced;
-	u8  cma_buf_alloc;
-	u8  cma_buf_alloc2;
-	u8  buf_ctrl;  //0: release buf, 1:alloc buf
 	u8  secured;
 	u8  otherflag;
 	u8  otherflag2;

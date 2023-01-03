@@ -20,6 +20,7 @@
 #include "meson-valhall.dtsi"
 #include <dt-bindings/mailbox/amlogic,mbox.h>
 #include <dt-bindings/thermal/thermal.h>
+#include <dt-bindings/hwspinlock/amlogic,hwspinlock.h>
 
 / {
 	cpus:cpus {
@@ -394,6 +395,13 @@
 		mbox-names = "ree2aocpu";
 		mboxes = <&mhu_fifo 3>;
 		mbox-dests = <MAILBOX_AOCPU>;
+	};
+
+	hwspinlock: hwlock {
+		status = "okay";
+		compatible = "amlogic, hwspinlock";
+		syscon = <&hwspinlock_regs 0 0x4>;
+		#hwlock-cells = <1>;
 	};
 
 	vdac: vdac {
@@ -1108,6 +1116,11 @@
 				status = "okay";
 				compatible = "amlogic,meson-gx-ao-secure", "syscon";
 				reg=<0x0 0x10220 0x0 0x140>;
+			};
+
+			hwspinlock_regs: syscon@e2c0 {
+				compatible = "syscon";
+				reg = <0x0 0xe2c0 0x0 0x20>;
 			};
 		};
 

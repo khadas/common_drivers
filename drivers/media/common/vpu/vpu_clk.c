@@ -177,7 +177,8 @@ int vpu_clk_apply_dft(unsigned int clk_level)
 		}
 
 		ret = switch_gp_pll(1);
-		return ret;
+		if (ret)
+			return ret;
 	}
 
 	if ((IS_ERR_OR_NULL(vpu_conf.vpu_clk0)) ||

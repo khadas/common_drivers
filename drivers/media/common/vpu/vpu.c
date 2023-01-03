@@ -27,7 +27,8 @@
 
 /* v20200530: initial version */
 /* v20220607: add c3 support */
-#define VPU_VERSION        "v20220607"
+/* v20230103: bypass debug print for vpu api */
+#define VPU_VERSION        "v20230103"
 
 int vpu_debug_print_flag;
 static spinlock_t vpu_mem_lock;
@@ -197,48 +198,6 @@ static int vpu_vmod_mem_pd_switch_new(unsigned int vmod, int flag)
 	return ret;
 }
 
-static int vpu_vmod_mem_pd_get(unsigned int vmod)
-{
-	unsigned int _reg, _bit, _len;
-	struct vpu_ctrl_s *table;
-	int i = 0, ret = 0, done = 0;
-
-	ret = vpu_chip_valid_check();
-	if (ret)
-		return -1;
-	if (vmod >= VPU_MOD_MAX) {
-		VPUERR("%s: invalid vpu mod: %d\n", __func__, vmod);
-		return -1;
-	}
-
-	table = vpu_conf.data->mem_pd_table;
-	if (!table)
-		return -1;
-
-	ret = 0;
-	while (i < VPU_MEM_PD_CNT_MAX) {
-		if (table[i].vmod == VPU_MOD_MAX)
-			break;
-		if (table[i].vmod == vmod) {
-			_reg = table[i].reg;
-			_bit = table[i].bit;
-			_len = table[i].len;
-			ret += vpu_clk_getb(_reg, _bit, _len);
-			done++;
-		}
-		i++;
-	}
-	if (done == 0) {
-		VPUPR("%s: unsupport vpu mod: %d\n", __func__, vmod);
-		return -1;
-	}
-
-	if (ret == 0)
-		return VPU_MEM_POWER_ON;
-	else
-		return VPU_MEM_POWER_DOWN;
-}
-
 static int vpu_vmod_mem_pd_get_new(unsigned int vmod)
 {
 	unsigned int _reg, _bit, _len;
@@ -249,7 +208,8 @@ static int vpu_vmod_mem_pd_get_new(unsigned int vmod)
 	if (ret)
 		return -1;
 	if (vmod >= VPU_MOD_MAX) {
-		VPUERR("get_vpu_mem_pd: invalid vpu mod: %d\n", vmod);
+		if (vpu_debug_print_flag)
+			VPUERR("get_vpu_mem_pd: invalid vpu mod: %d\n", vmod);
 		return -1;
 	}
 
@@ -271,7 +231,8 @@ static int vpu_vmod_mem_pd_get_new(unsigned int vmod)
 		i++;
 	}
 	if (done == 0) {
-		VPUPR("get_vpu_mem_pd: unsupport vpu mod: %d\n", vmod);
+		if (vpu_debug_print_flag)
+			VPUPR("get_vpu_mem_pd: unsupport vpu mod: %d\n", vmod);
 		return -1;
 	}
 
@@ -428,7 +389,7 @@ struct vpu_dev_s *vpu_dev_register(unsigned int vmod, char *owner_name)
 	}
 
 	if (vpu_conf.data->mempd_get)
-		ret = vpu_vmod_mem_pd_get(vmod);
+		ret = vpu_conf.data->mempd_get(vmod);
 	else
 		ret = 0;
 
@@ -647,7 +608,8 @@ void vpu_dev_mem_power_on(struct vpu_dev_s *vpu_dev)
 	}
 
 	if (vpu_dev->dev_id >= VPU_MOD_MAX) {
-		VPUERR("%s: invalid vpu mod: %d\n", __func__, vpu_dev->dev_id);
+		if (vpu_debug_print_flag)
+			VPUERR("%s: invalid vpu mod: %d\n", __func__, vpu_dev->dev_id);
 		return;
 	}
 
@@ -699,7 +661,8 @@ void vpu_dev_mem_power_down(struct vpu_dev_s *vpu_dev)
 	}
 
 	if (vpu_dev->dev_id >= VPU_MOD_MAX) {
-		VPUERR("%s: invalid vpu mod: %d\n", __func__, vpu_dev->dev_id);
+		if (vpu_debug_print_flag)
+			VPUERR("%s: invalid vpu mod: %d\n", __func__, vpu_dev->dev_id);
 		return;
 	}
 
@@ -786,15 +749,18 @@ void vpu_dev_clk_gate_on(struct vpu_dev_s *vpu_dev)
 	}
 
 	if (vpu_dev->dev_id >= VPU_MAX) {
-		VPUERR("%s: invalid vpu mod: %d\n", __func__, vpu_dev->dev_id);
+		if (vpu_debug_print_flag)
+			VPUERR("%s: invalid vpu mod: %d\n", __func__, vpu_dev->dev_id);
 		return;
 	}
 
 	spin_lock_irqsave(&vpu_clk_gate_lock, flags);
 	ret = vpu_vmod_clk_gate_switch(vpu_dev->dev_id, VPU_CLK_GATE_ON);
 	spin_unlock_irqrestore(&vpu_clk_gate_lock, flags);
-	if (ret)
-		VPUPR("%s: unsupport vpu mod: %d\n", __func__, vpu_dev->dev_id);
+	if (ret) {
+		if (vpu_debug_print_flag)
+			VPUPR("%s: unsupport vpu mod: %d\n", __func__, vpu_dev->dev_id);
+	}
 
 	if (vpu_debug_print_flag) {
 		VPUPR("%s: %s in %s\n",
@@ -831,15 +797,18 @@ void vpu_dev_clk_gate_off(struct vpu_dev_s *vpu_dev)
 	}
 
 	if (vpu_dev->dev_id >= VPU_MAX) {
-		VPUERR("%s: invalid vpu mod: %d\n", __func__, vpu_dev->dev_id);
+		if (vpu_debug_print_flag)
+			VPUERR("%s: invalid vpu mod: %d\n", __func__, vpu_dev->dev_id);
 		return;
 	}
 
 	spin_lock_irqsave(&vpu_clk_gate_lock, flags);
 	ret = vpu_vmod_clk_gate_switch(vpu_dev->dev_id, VPU_CLK_GATE_OFF);
 	spin_unlock_irqrestore(&vpu_clk_gate_lock, flags);
-	if (ret)
-		VPUPR("%s: unsupport vpu mod: %d\n", __func__, vpu_dev->dev_id);
+	if (ret) {
+		if (vpu_debug_print_flag)
+			VPUPR("%s: unsupport vpu mod: %d\n", __func__, vpu_dev->dev_id);
+	}
 
 	if (vpu_debug_print_flag) {
 		VPUPR("%s: %s in %s\n",

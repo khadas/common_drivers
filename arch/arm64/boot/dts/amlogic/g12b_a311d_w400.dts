@@ -788,7 +788,7 @@
 //};
 
 &pwm_ab {
-		status = "disable";
+		status = "okay";
 	};
 
 &pwm_ef {
@@ -796,7 +796,7 @@
 	};
 
 &pwm_AO_cd {
-		status = "disable";
+		status = "okay";
 	};
 
 &i2c0 {
@@ -1381,4 +1381,12 @@
 	status = "okay";
 	pinctrl-0 = <&remote_pins>;
 	pinctrl-names = "default";
+};
+
+&vddcpu0 {
+	status = "okay";
+};
+
+&vddcpu1 {
+	status = "okay";
 };

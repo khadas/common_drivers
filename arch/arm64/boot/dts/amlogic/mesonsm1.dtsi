@@ -1743,7 +1743,7 @@
 			<710000 95>,
 			<700000 98>,
 			<690000 100>;
-		status = "okay";
+		status = "disabled";
 	};
 
 	ddr_bandwidth {

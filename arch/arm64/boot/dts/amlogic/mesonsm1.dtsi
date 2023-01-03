@@ -974,10 +974,10 @@
 		reg = <0x0 0xffd22000 0x0 0x18>;
 		interrupts = <0 93 1>;
 		status = "disabled";
-		//clocks = <&xtal
-		//	&clkc CLKID_UART1>;
-		//clock-names = "clk_uart",
-		//	"clk_gate";
+		clocks = <&xtal
+			&clkc CLKID_UART2>;
+		clock-names = "clk_uart",
+			"clk_gate";
 		fifosize = < 64 >;
 		pinctrl-names = "default";
 		pinctrl-0 = <&c_uart_pins>;
@@ -1838,8 +1838,8 @@
 
 	ao_b_uart_pins:ao_b_uart {
 		mux {
-			groups = "uart_ao_tx_b_2",
-				"uart_ao_rx_b_3";
+			groups = "uart_ao_b_tx_2",
+				"uart_ao_b_rx_3";
 			function = "uart_ao_b";
 		};
 	};
@@ -2454,26 +2454,26 @@
 
 	a_uart_pins:a_uart {
 		mux {
-			groups = "uart_tx_a",
-				"uart_rx_a",
-				"uart_cts_a",
-				"uart_rts_a";
+			groups = "uart_a_tx",
+				"uart_a_rx",
+				"uart_a_cts",
+				"uart_a_rts";
 			function = "uart_a";
 		};
 	};
 
 	b_uart_pins:b_uart {
 		mux {
-			groups = "uart_tx_b",
-				"uart_rx_b";
+			groups = "uart_b_tx",
+				"uart_b_rx";
 			function = "uart_b";
 		};
 	};
 
 	c_uart_pins:c_uart {
 		mux {
-			groups = "uart_tx_c",
-				"uart_rx_c";
+			groups = "uart_c_tx",
+				"uart_c_rx";
 			function = "uart_c";
 		};
 	};

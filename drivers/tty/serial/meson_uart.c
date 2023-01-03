@@ -87,7 +87,7 @@
 
 static struct uart_driver meson_uart_driver;
 static int support_sysrq;
-unsigned int xtal_tick_en;
+static unsigned int xtal_tick_en;
 
 struct meson_uart_port {
 	struct uart_port	port;
@@ -770,20 +770,20 @@ static int meson_uart_probe(struct platform_device *pdev)
 
 	clk = devm_clk_get(&pdev->dev, "clk_gate");
 	if (IS_ERR(clk)) {
-		pr_debug("%s: clock gate not found\n", dev_name(&pdev->dev));
+		dev_dbg(&pdev->dev, "%s: clock gate not found\n", dev_name(&pdev->dev));
 	} else {
 		ret = clk_prepare_enable(clk);
 		if (ret) {
-			pr_debug("uart: clock failed to prepare+enable: %d\n", ret);
+			dev_dbg(&pdev->dev, "uart: clock failed to prepare+enable: %d\n", ret);
 			clk_put(clk);
 		}
 	}
 
 	clk = devm_clk_get(&pdev->dev, "clk_uart");
 	if (IS_ERR(clk)) {
-		pr_err("%s: clock source not found\n", dev_name(&pdev->dev));
-		/* return PTR_ERR(clk); */
+		dev_err(&pdev->dev, "%s: clock source not found\n", dev_name(&pdev->dev));
 	}
+
 	if (!IS_ERR(clk))
 		port->uartclk = clk_get_rate(clk);
 

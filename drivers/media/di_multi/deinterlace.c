@@ -4015,7 +4015,7 @@ void dim_pre_de_process(unsigned int channel)
 		    DIM_IS_IC(T5D)) {
 			DIM_DI_WR(0x2dff, 0x3e03c); //crc test for nr//0xbeffc
 		} else if (DIM_IS_IC_EF(SC2)) {
-			if (DIM_IS_ICS(T5W))
+			if (DIM_IS_ICS(T5W) || DIM_IS_ICS_T5M)
 				DIM_DI_WR(0x2dff, 0xbe03c); //disable the 3dnr
 			else
 				DIM_DI_WR(0x2dff, 0xbeffc);

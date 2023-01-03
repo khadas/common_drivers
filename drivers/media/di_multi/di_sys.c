@@ -1101,9 +1101,10 @@ void pre_sec_alloc(struct di_ch_s *pch, unsigned int flg)
 	struct di_dat_s *idat;
 	struct blk_flg_s flgs;
 	unsigned int idat_size;
+	unsigned int flag_cma = 0;
 	//for cma:
 	struct dim_mm_s omm;
-	bool ret;
+	bool ret = 0;
 	struct di_dev_s *de_devp = get_dim_de_devp();
 
 	idat = get_idat(pch);
@@ -1134,11 +1135,17 @@ void pre_sec_alloc(struct di_ch_s *pch, unsigned int flg)
 		return;
 	}
 	dbg_timer(pch->ch_id, EDBG_TIMER_SEC_PRE_B);
-	ret = mm_cma_alloc(NULL, idat_size, &omm);
+	if (DIM_IS_ICS_T5M)
+		flag_cma = 1;//skip allocated mm from common resource
+	else
+		flag_cma = 0;
+	if (!flag_cma)
+		ret = mm_cma_alloc(NULL, idat_size, &omm);
 	dbg_timer(pch->ch_id, EDBG_TIMER_SEC_PRE_E);
 	idat->flg_from = 1;
 	if (!ret) {
-		PR_WARN("%s:try:cma di:\n", __func__);
+		if (!flag_cma)
+			PR_WARN("%s:try:cma di:\n", __func__);
 		//use cam: buffer:
 		idat->flg_from = 2;
 		ret = mm_cma_alloc(&de_devp->pdev->dev, idat_size, &omm);
@@ -1167,9 +1174,10 @@ void pst_sec_alloc(struct di_ch_s *pch, unsigned int flg)
 	struct di_dat_s *pdat;
 	struct blk_flg_s flgs;
 	unsigned int dat_size;
+	unsigned int flag_cma = 0;
 	//for cma:
 	struct dim_mm_s omm;
-	bool ret;
+	bool ret = 0;
 	struct di_dev_s *de_devp = get_dim_de_devp();
 
 	pdat = get_pst_afbct(pch);
@@ -1203,11 +1211,17 @@ void pst_sec_alloc(struct di_ch_s *pch, unsigned int flg)
 		return;
 	}
 	dbg_timer(pch->ch_id, EDBG_TIMER_SEC_PST_B);
-	ret = mm_cma_alloc(NULL, dat_size, &omm);
+	if (DIM_IS_ICS_T5M)
+		flag_cma = 1;//skip allocated mm from common resource
+	else
+		flag_cma = 0;
+	if (!flag_cma)
+		ret = mm_cma_alloc(NULL, dat_size, &omm);
 	dbg_timer(pch->ch_id, EDBG_TIMER_SEC_PST_E);
 	pdat->flg_from = 1;
 	if (!ret) {
-		PR_WARN("%s:try:cma di:\n", __func__);
+		if (!flag_cma)
+			PR_WARN("%s:try:cma di:\n", __func__);
 		//use cam: buffer:
 		pdat->flg_from = 2;
 		ret = mm_cma_alloc(&de_devp->pdev->dev, dat_size, &omm);

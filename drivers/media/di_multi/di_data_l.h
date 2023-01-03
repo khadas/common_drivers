@@ -3360,5 +3360,6 @@ static inline void p_ref_set_buf(struct di_buf_s *buf,
 				IC_SUPPORT_##cc ? true : false)
 #define DIM_IS_ICS(T5W)		(DIM_IS_IC(T3) && \
 				cfgg(SUB_V) == 1)
-
+#define DIM_IS_ICS_T5M		(DIM_IS_IC(T3) && \
+				cfgg(SUB_V) == 2)
 #endif	/*__DI_DATA_L_H__*/

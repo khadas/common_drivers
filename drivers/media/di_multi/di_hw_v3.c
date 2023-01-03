@@ -1968,7 +1968,7 @@ static void set_di_mif_v1(struct DI_MIF_S *mif,
 		op->wr(off + RDMIFXN_LUMA_FIFO_SIZE, 0xc0);
 	}
 
-	if (DIM_IS_ICS(T5W)) {
+	if (DIM_IS_ICS(T5W) || DIM_IS_ICS_T5M) {
 		//axi bus fifo from feijun.fan for t5w
 		op->wr(DI_SC2_IF0_LUMA_FIFO_SIZE, 0x80);
 		op->wr(DI_SC2_IF2_LUMA_FIFO_SIZE, 0x80);
@@ -4652,7 +4652,7 @@ void set_di_mif_v3(struct DI_MIF_S *mif, enum DI_MIF0_ID mif_index,
 		op->wr(off + reg[MIF_LUMA_FIFO_SIZE], 0xC0);
 	}
 
-	if (DIM_IS_ICS(T5W)) {
+	if (DIM_IS_ICS(T5W) || DIM_IS_ICS_T5M) {
 		//axi bus fifo from feijun.fan for t5w
 		op->wr(DI_SC2_IF0_LUMA_FIFO_SIZE, 0x80);
 		op->wr(DI_SC2_IF2_LUMA_FIFO_SIZE, 0x80);
@@ -4941,7 +4941,7 @@ static void hw_init_v3(void)
 		op->wr(DI_SC2_IF1_LUMA_FIFO_SIZE, fifo_size_di);
 		//op->wr(DI_SC2_IF2_LUMA_FIFO_SIZE, fifo_size_di);
 
-		if (DIM_IS_ICS(T5W)) {
+		if (DIM_IS_ICS(T5W) || DIM_IS_ICS_T5M) {
 			//axi bus fifo from feijun.fan for t5w
 			op->wr(DI_SC2_IF0_LUMA_FIFO_SIZE, 0x80);
 			op->wr(DI_SC2_IF2_LUMA_FIFO_SIZE, 0x80);
@@ -5748,7 +5748,7 @@ void dim_sc2_4k_set(unsigned int mode_4k)
 	else if (mode_4k == 2)
 		op->wr(DI_TOP_CTRL1, 0x0000000c); /*default*/
 
-	if (DIM_IS_ICS(T5W))//from vlsi feijun for t5w
+	if (DIM_IS_ICS(T5W) || DIM_IS_ICS_T5M)//from vlsi feijun for t5w
 		op->bwr(DI_TOP_CTRL1, 0, 3, 1);
 }
 

@@ -1955,7 +1955,7 @@
 		alloc_sct = <1>;
 		hf = <0>;
 		dct = <2>;
-		sub_v = <1>;//sub version for t5w
+		sub_v = <2>;//sub version for t5m
 		afbce_loss_en = <0>;//t5w loss mode enable for DI output
 		/***************************************************
 		 * t5w t3 support 4k ,same with t7 ,no canvas,

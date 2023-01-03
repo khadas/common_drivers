@@ -261,7 +261,8 @@ const struct di_cfg_ctr_s di_cfg_top_ctr[K_DI_CFG_NUB] = {
 			K_DI_CFG_T_FLG_DTS},
 	[EDI_CFG_SUB_V]  = {"sub_v",
 			/* 0:major;	*/
-			/* 1:sub */
+			/* 1:sub t3 + 1 t5w*/
+			/* 2:sub t3 + 2 t5m*/
 			EDI_CFG_SUB_V,
 			0,
 			K_DI_CFG_T_FLG_DTS},

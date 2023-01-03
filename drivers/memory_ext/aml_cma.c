@@ -280,8 +280,8 @@ void aml_cma_alloc_post_hook(int *dummy, int count, struct page *page,
 
 	if (count >= (pageblock_nr_pages / 2))
 		set_user_nice(current, *dummy);
-	cma_debug(0, NULL, "return page:%lx, tick:%16lld, ret:%d\n",
-		  page ? page_to_pfn(page) : 0, sched_clock() - tick, ret);
+	cma_debug(0, NULL, "return page:%lx, tick:%16ld, ret:%d\n",
+		  page ? page_to_pfn(page) : 0, (unsigned long)sched_clock() - tick, ret);
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE
 	update_cma_page_trace(page, count);
 #endif /* CONFIG_AMLOGIC_PAGE_TRACE */
@@ -897,6 +897,7 @@ int aml_cma_alloc_range(unsigned long start, unsigned long end,
 	};
 	INIT_LIST_HEAD(&cc.migratepages);
 
+	mutex_lock(&cma_mutex);
 	cma_debug(0, NULL, " range [%lx-%lx]\n", start, end);
 	ret = start_isolate_page_range(pfn_max_align_down(start),
 				       pfn_max_align_up(end), migrate_type, 0);
@@ -905,7 +906,6 @@ int aml_cma_alloc_range(unsigned long start, unsigned long end,
 		return ret;
 	}
 
-	mutex_lock(&cma_mutex);
 	cur_alloc_start = start;
 	cur_alloc_end = end;
 	cma_isolated += (pfn_max_align_up(end) - pfn_max_align_down(start));

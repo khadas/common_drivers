@@ -595,11 +595,17 @@ static int meson_plane_atomic_get_property(struct drm_plane *plane,
 					uint64_t *val)
 {
 	struct am_osd_plane *osd_plane = to_am_osd_plane(plane);
+	struct am_meson_plane_state *plane_state;
 	int ret = 0;
+
+	plane_state = to_am_meson_plane_state(state);
 
 	if (property == osd_plane->occupied_property) {
 		*val = osd_plane->osd_occupied;
 		return 0;
+	} else if (property == osd_plane->prop_sec_en) {
+		*val = plane_state->sec_en;
+		ret = 0;
 	}
 
 	return ret;
@@ -611,11 +617,17 @@ static int meson_plane_atomic_set_property(struct drm_plane *plane,
 					 uint64_t val)
 {
 	struct am_osd_plane *osd_plane = to_am_osd_plane(plane);
+	struct am_meson_plane_state *plane_state;
 	int ret = 0;
+
+	plane_state = to_am_meson_plane_state(state);
 
 	if (property == osd_plane->occupied_property) {
 		osd_plane->osd_occupied = val;
 		return 0;
+	} else if (property == osd_plane->prop_sec_en) {
+		plane_state->sec_en = val;
+		ret = 0;
 	}
 
 	return ret;
@@ -974,6 +986,7 @@ static int meson_plane_atomic_check(struct drm_plane *plane,
 	struct am_osd_plane *osd_plane = to_am_osd_plane(plane);
 	struct meson_drm *drv = osd_plane->drv;
 	struct drm_plane_state *state;
+	struct am_meson_plane_state *plane_state;
 	int ret;
 
 	state = drm_atomic_get_new_plane_state(atomic_state, plane);
@@ -1036,6 +1049,9 @@ static int meson_plane_atomic_check(struct drm_plane *plane,
 	plane_info->enable = 1;
 	if (state->crtc)
 		plane_info->crtc_index = state->crtc->index;
+
+	plane_state = to_am_meson_plane_state(state);
+	plane_info->sec_en = plane_state->sec_en;
 
 	DRM_DEBUG("OSD PLANE index=%d, zorder=%d, premult= %d, alpha = %d, phy = %llx\n",
 		  plane_info->plane_index, plane_info->zorder,
@@ -1277,6 +1293,20 @@ static const struct drm_plane_helper_funcs am_video_helper_funcs = {
 	.atomic_async_update = meson_osd_plane_async_update,
 };
 
+static void meson_plane_create_security_en_property(struct drm_device *drm_dev,
+						  struct am_osd_plane *osd_plane)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_bool(drm_dev, 0, "SEC_EN");
+	if (prop) {
+		osd_plane->prop_sec_en = prop;
+		drm_object_attach_property(&osd_plane->base.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to SEC_EN property\n");
+	}
+}
+
 struct drm_property *
 meson_create_scaling_filter_prop(struct drm_device *dev,
 			       unsigned int supported_filters)
@@ -1491,6 +1521,7 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 	meson_plane_add_occupied_property(priv->drm, osd_plane);
 	DRM_INFO("osd plane %d create done, occupied-%d crtcmask-%d type-%d\n",
 		i, osd_plane->osd_occupied, crtc_mask, type);
+	meson_plane_create_security_en_property(priv->drm, osd_plane);
 	return osd_plane;
 }
 

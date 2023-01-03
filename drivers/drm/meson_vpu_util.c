@@ -164,7 +164,7 @@ static int meson_vpu1_write_reg(u32 addr, u32 val)
 #endif
 }
 
-static int meson_vpu1_write_reg_bits(u32 addr, u32 val, u32 start, u32 len)
+int meson_vpu1_write_reg_bits(u32 addr, u32 val, u32 start, u32 len)
 {
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	DRM_DEBUG("%s, 0x%x, 0x%x, %d, %d\n", __func__, addr, val, start, len);
@@ -194,7 +194,7 @@ static int meson_vpu2_write_reg(u32 addr, u32 val)
 #endif
 }
 
-static int meson_vpu2_write_reg_bits(u32 addr, u32 val, u32 start, u32 len)
+int meson_vpu2_write_reg_bits(u32 addr, u32 val, u32 start, u32 len)
 {
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	return rdma_write_reg_bits(drm_vsync_rdma_handle[2], addr, val, start, len);

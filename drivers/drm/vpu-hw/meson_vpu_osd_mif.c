@@ -15,6 +15,10 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT
 #include <linux/amlogic/media/amvecm/amvecm.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
+#include <linux/amlogic/media/vpu_secure/vpu_secure.h>
+#endif
+
 #include "meson_vpu_pipeline.h"
 #include "meson_crtc.h"
 #include "meson_vpu_reg.h"
@@ -117,6 +121,8 @@ static struct osd_mif_reg_s osd_mif_reg[HW_OSD_MIF_NUM] = {
 
 static unsigned int osd_canvas[3][2];
 static u32 osd_canvas_index[3] = {0, 0, 0};
+static u32 osd_secure_input_index[] = {OSD1_INPUT_SECURE,
+	OSD2_INPUT_SECURE, OSD3_INPUT_SECURE};
 
 /*
  * Internal function to query information for a given format. See
@@ -649,6 +655,7 @@ static int osd_check_state(struct meson_vpu_block *vblk,
 	mvos->global_alpha = plane_info->global_alpha;
 	mvos->crtc_index = plane_info->crtc_index;
 	mvos->read_ports = plane_info->read_ports;
+	mvos->sec_en = plane_info->sec_en;
 
 	return 0;
 }
@@ -742,6 +749,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	struct meson_vpu_osd_state *mvos, *old_mvos = NULL;
 	struct meson_vpu_pipeline *pipe;
 	struct rdma_reg_ops *reg_ops;
+	struct meson_vpu_pipeline_state *mvps;
 	int crtc_index;
 	u32 pixel_format, canvas_index, src_h, byte_stride, flush_reg;
 	struct osd_scope_s scope_src = {0, 1919, 0, 1079};
@@ -762,6 +770,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	reg_ops = state->sub->reg_ops;
 	pipe = vblk->pipeline;
 	reg = osd->reg;
+	mvps = priv_to_pipeline_state(pipe->obj.state);
 	if (!reg) {
 		DRM_DEBUG("set_state break for NULL OSD mixer reg.\n");
 		return;
@@ -829,6 +838,9 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 		osd_afbc_config_v7(vblk, reg_ops, reg, vblk->index, afbc_en);
 	else
 		osd_afbc_config(vblk, reg_ops, reg, vblk->index, afbc_en);
+
+	if (mvos->sec_en)
+		mvps->sec_src |= osd_secure_input_index[vblk->index];
 
 	osd_premult_enable(vblk, reg_ops, reg, alpha_div_en);
 	osd_global_alpha_set(vblk, reg_ops, reg, global_alpha);
@@ -937,6 +949,19 @@ static void osd_dump_register(struct meson_vpu_block *vblk,
 	seq_printf(seq, "%s_%-35s\t0x%08X\n", buff, "DIMM_CTRL:", value);
 }
 
+#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
+static void osd_secure_cb(u32 arg)
+{
+	// TODO
+}
+#endif
+
+#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
+	void *osd_secure_op[VPP_TOP_MAX] = {meson_vpu_write_reg_bits,
+					    meson_vpu1_write_reg_bits,
+					    meson_vpu2_write_reg_bits};
+#endif
+
 static void osd_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_pipeline *pipeline;
@@ -958,6 +983,11 @@ static void osd_hw_init(struct meson_vpu_block *vblk)
 
 	osd->reg = &osd_mif_reg[vblk->index];
 	osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
+
+	/* osd secure function init */
+#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
+	secure_register(OSD_MODULE, 0, osd_secure_op, osd_secure_cb);
+#endif
 
 	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
 }

@@ -14,6 +14,10 @@
 #include <linux/amlogic/media/video_sink/video.h>
 #endif
 
+#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
+#include <linux/amlogic/media/vpu_secure/vpu_secure.h>
+#endif
+
 #include "meson_crtc.h"
 #include "meson_vpu_pipeline.h"
 #include "meson_vpu_util.h"
@@ -264,6 +268,10 @@ static void postblend_set_state(struct meson_vpu_block *vblk,
 	scope.v_start = 0;
 	scope.v_end = mvps->scaler_param[0].output_height - 1;
 
+#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
+	secure_config(OSD_MODULE, mvps->sec_src, crtc_index);
+#endif
+
 	if (crtc_index == 0) {
 		vpp_osd1_blend_scope_set(vblk, reg_ops, reg, scope);
 
@@ -314,6 +322,10 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 	scope.h_end = mvps->scaler_param[0].output_width - 1;
 	scope.v_start = 0;
 	scope.v_end = mvps->scaler_param[0].output_height - 1;
+
+#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
+	secure_config(OSD_MODULE, mvps->sec_src, crtc_index);
+#endif
 
 	if (crtc_index == 0) {
 		vpp_osd1_blend_scope_set(vblk, reg_ops, reg, scope);

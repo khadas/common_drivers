@@ -3747,6 +3747,12 @@ int amdv_check_primesl(struct vframe_s *vf)
 }
 EXPORT_SYMBOL(amdv_check_primesl);
 
+int amdv_check_cuva(struct vframe_s *vf)
+{
+	return 0;
+}
+EXPORT_SYMBOL(amdv_check_cuva);
+
 void amdv_vf_put(struct vframe_s *vf)
 {
 	int i;

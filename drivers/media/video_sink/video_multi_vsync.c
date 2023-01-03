@@ -67,6 +67,9 @@ static int vsync_enter_line_max_vpp[2];
 static int vsync_exit_line_max_vpp[2];
 static bool rdma_enable_vppx_pre[2];
 
+static char old_vmode_vpp[2][32];
+static char new_vmode_vpp[2][32];
+
 static unsigned int debug_flag1;
 MODULE_PARM_DESC(debug_flag1, "\n debug_flag1\n");
 module_param(debug_flag1, uint, 0664);
@@ -132,10 +135,16 @@ int get_receiver_id(u8 layer_id)
 #ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
 static void vsync_rdma_vppx_process(u8 vpp_index)
 {
+	int ret = 0;
+
 	if (vpp_index == VPP1)
-		vsync_rdma_vpp1_config();
+		ret = vsync_rdma_vpp1_config();
 	else if (vpp_index == VPP2)
-		vsync_rdma_vpp2_config();
+		ret = vsync_rdma_vpp2_config();
+	if (ret == 1) {
+		vd_layer_vpp[0].property_changed = true;
+		vd_layer_vpp[1].property_changed = true;
+	}
 }
 
 static bool is_vsync_vppx_rdma_enable(u8 vpp_index)
@@ -335,6 +344,17 @@ irqreturn_t vsync_isr_viux(u8 vpp_index, const struct vinfo_s *info)
 		glayer_info[layer_id].zorder = vd_layer_vpp[vpp_id].dispbuf->zorder;
 	}
 
+	/* vout mode detection */
+	if (vd_layer_vpp[vpp_id].dispbuf &&
+		((vd_layer_vpp[vpp_id].dispbuf->type & VIDTYPE_NO_VIDEO_ENABLE) == 0)) {
+		if (strcmp(old_vmode_vpp[vpp_id], new_vmode_vpp[vpp_id])) {
+			vd_layer_vpp[vpp_id].property_changed = true;
+			pr_info("vpp_id(%d): detect vout mode change, %s->%s!\n",
+				vpp_id, old_vmode_vpp[vpp_id], new_vmode_vpp[vpp_id]);
+			strcpy(old_vmode_vpp[vpp_id], new_vmode_vpp[vpp_id]);
+		}
+	}
+
 	/* setting video display property in underflow mode */
 	if (!new_frame &&
 	    vd_layer_vpp[vpp_id].dispbuf &&
@@ -445,3 +465,125 @@ irqreturn_t vsync_isr_viu3(int irq, void *dev_id)
 	atomic_set(&video_inirq_flag_vpp[1], 0);
 	return ret;
 }
+
+int is_in_vsync_isr_viu2(void)
+{
+	if (atomic_read(&video_inirq_flag_vpp[0]) > 0)
+		return 1;
+	else
+		return 0;
+}
+EXPORT_SYMBOL(is_in_vsync_isr_viu2);
+
+int is_in_vsync_isr_viu3(void)
+{
+	if (atomic_read(&video_inirq_flag_vpp[1]) > 0)
+		return 1;
+	else
+		return 0;
+}
+EXPORT_SYMBOL(is_in_vsync_isr_viu3);
+
+#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
+int vout_notify_callback_viu2(struct notifier_block *block, unsigned long cmd,
+			 void *para)
+{
+	const struct vinfo_s *info;
+
+	switch (cmd) {
+	case VOUT_EVENT_MODE_CHANGE:
+		info = get_current_vinfo2();
+		if (!info || info->mode == VMODE_INVALID)
+			return 0;
+		if (info->name)
+			strncpy(new_vmode_vpp[0], info->name,
+				sizeof(new_vmode_vpp[0]) - 1);
+		vd_layer_vpp[0].property_changed = true;
+		pr_info("new_vmode_vpp[0]: %s, %s\n",
+			new_vmode_vpp[0], old_vmode_vpp[0]);
+		break;
+	case VOUT_EVENT_OSD_PREBLEND_ENABLE:
+		break;
+	case VOUT_EVENT_OSD_DISP_AXIS:
+		break;
+	}
+	return 0;
+}
+
+static struct notifier_block vout_notifier_viu2 = {
+	.notifier_call = vout_notify_callback_viu2,
+};
+#endif
+
+#ifdef CONFIG_AMLOGIC_VOUT3_SERVE
+int vout_notify_callback_viu3(struct notifier_block *block, unsigned long cmd,
+			 void *para)
+{
+	const struct vinfo_s *info;
+
+	switch (cmd) {
+	case VOUT_EVENT_MODE_CHANGE:
+		info = get_current_vinfo3();
+		if (!info || info->mode == VMODE_INVALID)
+			return 0;
+		if (info->name)
+			strncpy(new_vmode_vpp[1], info->name,
+				sizeof(new_vmode_vpp[1]) - 1);
+		vd_layer_vpp[1].property_changed = true;
+		pr_info("new_vmode_vpp[1]: %s: %s\n",
+			new_vmode_vpp[1], old_vmode_vpp[1]);
+		break;
+	case VOUT_EVENT_OSD_PREBLEND_ENABLE:
+		break;
+	case VOUT_EVENT_OSD_DISP_AXIS:
+		break;
+	}
+	return 0;
+}
+
+static struct notifier_block vout_notifier_viu3 = {
+	.notifier_call = vout_notify_callback_viu3,
+};
+#endif
+
+void viu2_hook(void)
+{
+#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
+	const struct vinfo_s *info = NULL;
+
+	vout2_register_client(&vout_notifier_viu2);
+	info = get_current_vinfo2();
+
+	if (!info || info->mode == VMODE_INVALID)
+		return;
+	if (info) {
+		if (info->name)
+			strncpy(old_vmode_vpp[0], info->name,
+				sizeof(old_vmode_vpp[0]) - 1);
+		if (info->name)
+			strncpy(new_vmode_vpp[0], info->name,
+				sizeof(new_vmode_vpp[0]) - 1);
+	}
+#endif
+}
+
+void viu3_hook(void)
+{
+#ifdef CONFIG_AMLOGIC_VOUT3_SERVE
+	const struct vinfo_s *info = NULL;
+
+	vout3_register_client(&vout_notifier_viu3);
+	info = get_current_vinfo3();
+	if (!info || info->mode == VMODE_INVALID)
+		return;
+	if (info) {
+		if (info->name)
+			strncpy(old_vmode_vpp[1], info->name,
+				sizeof(old_vmode_vpp[1]) - 1);
+		if (info->name)
+			strncpy(new_vmode_vpp[1], info->name,
+				sizeof(new_vmode_vpp[1]) - 1);
+	}
+#endif
+}
+

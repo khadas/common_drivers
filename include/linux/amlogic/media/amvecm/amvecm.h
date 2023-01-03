@@ -162,6 +162,9 @@ void amdv_set_toggle_flag(int flag);
 #define HLG_SOURCE			5
 #define SDR_SOURCE			6
 #define MVC_SOURCE           7
+#define CUVA_HDR_SOURCE      8
+#define CUVA_HLG_SOURCE      9
+#define MAX_SOURCE      10
 
 #define DNLP_PARAM_RD_UPDATE 0x1
 #define DNLP_CV_RD_UPDATE 0x2

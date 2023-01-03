@@ -65,7 +65,8 @@ enum {
 	VIDEO_WIDEOPTION_CUSTOM = 14,
 	VIDEO_WIDEOPTION_AFD = 15,
 	VIDEO_WIDEOPTION_NONLINEAR_T = 16,
-	VIDEO_WIDEOPTION_MAX = 17
+	VIDEO_WIDEOPTION_21_9 = 17,
+	VIDEO_WIDEOPTION_MAX = 18
 };
 
 /* TODO: move to register headers */
@@ -79,6 +80,7 @@ enum {
 #define VPP_VD1_END_BIT             0
 
 #define VPP_REGION_MASK             0xfff
+#define VPP_REGION_MASK_8K          0x1fff
 #define VPP_REGION1_BIT             16
 #define VPP_REGION2_BIT             0
 #define VPP_REGION3_BIT             16
@@ -352,6 +354,40 @@ static inline int amvideo_notifier_call_chain(unsigned long val, void *v)
 
 #define VIDEO_TESTPATTERN_ON  0
 #define VIDEO_TESTPATTERN_OFF 1
+
+#define POST_SLICE_NUM 4
+#define VD_SLICE_NUM   4
+struct slice_info {
+	u32 hsize;     /*slice hsize*/
+	u32 vsize;     /*slice vsize*/
+};
+
+struct vpp_post_info_t {
+	u32 slice_num;   /*valid slice num*/
+	u32 overlap_hsize;
+	u32 vpp_post_blend_hsize;   /*blend out hsize*/
+	u32 vpp_post_blend_vsize;   /*blend out vsize*/
+	struct slice_info slice[POST_SLICE_NUM];
+};
+
+struct vd_proc_info_t {
+	bool vd2_prebld_4k120_en;
+	struct slice_info slice[VD_SLICE_NUM];
+};
+
+struct vd_proc_amvecm_info_t {
+	u32 slice_num;
+	u32 vd1_in_hsize;
+	u32 vd1_in_vsize;
+	u32 vd1_dout_hsize;
+	u32 vd1_dout_vsize;
+	struct slice_info slice[VD_SLICE_NUM];
+	u32 vd2_in_hsize;
+	u32 vd2_in_vsize;
+	u32 vd2_dout_hsize;
+	u32 vd2_dout_vsize;
+};
+
 void set_video_mute(bool on);
 int get_video_mute(void);
 void set_output_mute(bool on);
@@ -371,6 +407,7 @@ u32 get_blackout_pip_policy(void);
 u32 get_blackout_pip2_policy(void);
 void set_video_angle(u32 s_value);
 u32 get_video_angle(void);
+u32 get_video_hold_state(void);
 unsigned int DI_POST_REG_RD(unsigned int addr);
 int DI_POST_WR_REG_BITS(u32 adr, u32 val, u32 start, u32 len);
 void DI_POST_UPDATE_MC(void);
@@ -383,6 +420,10 @@ int _video_set_disable(u32 val);
 int _videopip_set_disable(u32 index, u32 val);
 void video_set_global_output(u32 index, u32 val);
 u32 video_get_layer_capability(void);
+int get_video_src_max_buffer(u8 layer_id,
+	u32 *src_width, u32 *src_height);
+int get_video_src_min_buffer(u8 layer_id,
+	u32 *src_width, u32 *src_height);
 void set_video_crop_ext(int layer_index, int *p);
 void set_video_window_ext(int layer_index, int *p);
 void set_video_zorder_ext(int layer_index, int zorder);
@@ -392,6 +433,10 @@ void vpp_probe_en_set(u32 enable);
 bool is_di_hf_y_reverse(void);
 void set_post_blend_dummy_data(u32 vpp_index,
 	u32 dummy_data, u32 dummy_alpha);
+struct vpp_post_info_t *get_vpp_post_amdv_info(void);
+struct vd_proc_info_t *get_vd_proc_amdv_info(void);
+struct vd_proc_amvecm_info_t *get_vd_proc_amvecm_info(void);
+
 #ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
 int tsync_set_tunnel_mode(int mode);
 #endif
@@ -440,6 +485,7 @@ bool is_vpp2(u8 layer_id);
 int get_receiver_id(u8 layer_id);
 int proc_lowlatency_frame(u8 instance_id);
 bool check_av1_hdr10p(char *p);
+int get_output_pcrscr_info(s32 *inc, u32 *base);
 
 #ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
 #define OVER_FIELD_NORMAL 0
@@ -448,4 +494,5 @@ bool check_av1_hdr10p(char *p);
 #define OVER_FIELD_STATE_MAX 3
 void update_over_field_states(u32 new_state, bool force);
 #endif
+u32 get_slice_num(u32 layer_id);
 #endif /* VIDEO_H */

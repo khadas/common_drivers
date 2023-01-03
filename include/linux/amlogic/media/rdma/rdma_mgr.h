@@ -12,14 +12,15 @@ struct rdma_op_s {
 };
 
 #define RDMA_TRIGGER_VSYNC_INPUT 0x1
-#define RDMA_TRIGGER_LINE_INPUT  BIT(5)
+#define RDMA_TRIGGER_LINE_INPUT  BIT(8)
 #define RDMA_TRIGGER_VPP1_VSYNC_INPUT BIT(9)
 #define RDMA_TRIGGER_VPP2_VSYNC_INPUT BIT(19)
 #define RDMA_TRIGGER_PRE_VSYNC_INPUT  BIT(24)
-#define RDMA_TRIGGER_MANUAL	     0x100
-#define RDMA_TRIGGER_DEBUG1      0x101
-#define RDMA_TRIGGER_DEBUG2      0x102
+#define RDMA_TRIGGER_MANUAL      BIT(28)
+#define RDMA_TRIGGER_DEBUG1      BIT(29)
+#define RDMA_TRIGGER_DEBUG2      BIT(30)
 #define RDMA_AUTO_START_MASK     0x80000000
+#define RDMA_TRIGGER_OMIT_LOCK   0x100000
 
 /* rdma write: bit[30] = 0
  * rdma read:  bit[30] = 1
@@ -75,4 +76,7 @@ int rdma_clear(int handle);
 s32 rdma_add_read_reg(int handle, u32 adr);
 
 u32 *rdma_get_read_back_addr(int handle);
+
+int rdma_buffer_unlock(int handle);
+int rdma_buffer_lock(int handle);
 #endif

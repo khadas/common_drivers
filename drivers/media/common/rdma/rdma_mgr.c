@@ -103,6 +103,10 @@ struct rdma_instance_s {
 	unsigned char used;
 	int prev_trigger_type;
 	int prev_read_count;
+	int lock_flag;
+	int irq_count;
+	int rdma_config_count;
+	int rdma_empty_config_count;
 };
 
 #define MAX_CONFLICT 32
@@ -364,6 +368,9 @@ int rdma_register(struct rdma_op_s *rdma_op, void *op_arg, int table_size)
 		if (!info->rdma_ins[i].op &&
 		    info->rdma_ins[i].used == 0) {
 			info->rdma_ins[i].op = rdma_op;
+			info->rdma_ins[i].irq_count = 0;
+			info->rdma_ins[i].rdma_config_count = 0;
+			info->rdma_ins[i].rdma_empty_config_count = 0;
 			break;
 		}
 	}
@@ -510,8 +517,10 @@ QUERY:
 			if (debug_flag & 2)
 				pr_info("%s: process %d\r\n", __func__, i);
 
-			if (ins->op && ins->op->irq_cb)
+			if (ins->op && ins->op->irq_cb) {
 				ins->op->irq_cb(ins->op->arg);
+				ins->irq_count++;
+			}
 
 			WRITE_VCBUS_REG
 				(RDMA_CTRL,
@@ -523,8 +532,12 @@ QUERY:
 	if ((rdma_status & 0xf7000000) && retry_count < 100)
 		goto QUERY;
 #else
-	if ((rdma_status & 0xff000000) && retry_count < 100)
+	if ((rdma_status & 0xff000000) && retry_count < 100) {
+		if (retry_count >= 3)
+			pr_info("rdma_status=0x%x, retry_count=%d\n",
+				rdma_status, retry_count);
 		goto QUERY;
+	}
 #endif
 	for (i = 0; i < MAX_CONFLICT; i++) {
 		if (info->rdma_reg.adr[i]) {
@@ -557,6 +570,8 @@ int rdma_config(int handle, u32 trigger_type)
 	struct rdma_instance_s *ins = &info->rdma_ins[handle];
 	bool auto_start = false;
 	bool rdma_read = false;
+	int buffer_lock = 0;
+	int trigger_type_backup = trigger_type;
 
 	if (handle <= 0 || handle >= RDMA_NUM) {
 		pr_info
@@ -574,6 +589,9 @@ int rdma_config(int handle, u32 trigger_type)
 		return -1;
 	}
 
+	if (!(trigger_type & RDMA_TRIGGER_OMIT_LOCK))
+		buffer_lock = ins->lock_flag;
+
 	if (trigger_type & RDMA_READ_MASK)
 		rdma_read = true;
 
@@ -583,6 +601,7 @@ int rdma_config(int handle, u32 trigger_type)
 		auto_start = true;
 
 	trigger_type &= ~RDMA_AUTO_START_MASK;
+	trigger_type &= ~RDMA_TRIGGER_OMIT_LOCK;
 	if (auto_start) {
 		WRITE_VCBUS_REG_BITS
 			(ins->rdma_regadr->trigger_mask_reg,
@@ -607,23 +626,28 @@ int rdma_config(int handle, u32 trigger_type)
 			 rdma_meson_dev.trigger_mask_len);
 		ret = 1;
 		ins->rdma_write_count = 0;
-	} else if (ins->rdma_item_count <= 0 || trigger_type == 0) {
+	} else if (ins->rdma_item_count <= 0 ||
+		trigger_type == 0 ||
+		buffer_lock == 1) {
 		if (trigger_type == RDMA_TRIGGER_MANUAL)
 			WRITE_VCBUS_REG
 			(RDMA_ACCESS_MAN,
 			 READ_VCBUS_REG(RDMA_ACCESS_MAN) & (~1));
-			if (debug_flag & 2) {
-				pr_info("%s: trigger_type %d : %d\r\n",
-					__func__,
-					trigger_type,
-					ins->rdma_item_count);
-			}
+		if (debug_flag & 2) {
+			pr_info("%s: handle=%d trigger_type %d : %d buffer_lock:%d\r\n",
+				__func__,
+				handle,
+				trigger_type_backup,
+				ins->rdma_item_count,
+				buffer_lock);
+		}
 		WRITE_VCBUS_REG_BITS
 		(ins->rdma_regadr->trigger_mask_reg,
 		 0, ins->rdma_regadr->trigger_mask_reg_bitpos,
 		 rdma_meson_dev.trigger_mask_len);
 		ins->rdma_write_count = 0;
 		ins->prev_read_count = 0;
+		ins->rdma_empty_config_count++;
 		ret = 0;
 	} else {
 		memcpy(ins->rdma_table_addr, ins->reg_buf,
@@ -706,8 +730,8 @@ int rdma_config(int handle, u32 trigger_type)
 			} else {
 				/* interrupt input trigger RDMA */
 				if (debug_flag & 2)
-					pr_info("%s: case 3 : %d:\r\n",
-					__func__, ins->rdma_item_count);
+					pr_info("%s: handle=%d case 3 : %d:\r\n",
+					__func__, handle, ins->rdma_item_count);
 				WRITE_VCBUS_REG_BITS
 				(ins->rdma_regadr->trigger_mask_reg,
 				 0,
@@ -801,14 +825,15 @@ int rdma_config(int handle, u32 trigger_type)
 	}
 
 	/* don't reset rdma_item_count for read function */
-	if (handle != get_rdma_handle(VSYNC_RDMA_READ))
+	if (handle != get_rdma_handle(VSYNC_RDMA_READ) &&
+		!buffer_lock)
 		ins->rdma_item_count = 0;
 	spin_unlock_irqrestore(&rdma_lock, flags);
 
 	if (debug_flag & 2)
 		pr_info("%s: (%d 0x%x) ret %d\r\n",
-			__func__, handle, trigger_type, ret);
-
+			__func__, handle, trigger_type_backup, ret);
+	ins->rdma_config_count++;
 	return ret;
 }
 EXPORT_SYMBOL(rdma_config);
@@ -917,6 +942,50 @@ u32 rdma_read_reg(int handle, u32 adr)
 }
 EXPORT_SYMBOL(rdma_read_reg);
 
+int rdma_buffer_lock(int handle)
+{
+	int ret = 0;
+	unsigned long flags;
+	struct rdma_device_info *info = &rdma_info;
+	struct rdma_instance_s *ins = &info->rdma_ins[handle];
+
+	spin_lock_irqsave(&rdma_lock, flags);
+	if (handle <= 0 ||
+		handle >= RDMA_NUM ||
+		!ins->op) {
+		spin_unlock_irqrestore(&rdma_lock, flags);
+		pr_info("%s error, handle (%d) not register\n",
+			__func__, handle);
+		return -1;
+	}
+	ins->lock_flag = 1;
+	spin_unlock_irqrestore(&rdma_lock, flags);
+	return ret;
+}
+EXPORT_SYMBOL(rdma_buffer_lock);
+
+int rdma_buffer_unlock(int handle)
+{
+	int ret = 0;
+	unsigned long flags;
+	struct rdma_device_info *info = &rdma_info;
+	struct rdma_instance_s *ins = &info->rdma_ins[handle];
+
+	spin_lock_irqsave(&rdma_lock, flags);
+	if (handle <= 0 ||
+		handle >= RDMA_NUM ||
+		!ins->op) {
+		spin_unlock_irqrestore(&rdma_lock, flags);
+		pr_info("%s error, handle (%d) not register\n",
+			__func__, handle);
+		return -1;
+	}
+	ins->lock_flag = 0;
+	spin_unlock_irqrestore(&rdma_lock, flags);
+	return ret;
+}
+EXPORT_SYMBOL(rdma_buffer_unlock);
+
 int rdma_watchdog_setting(int flag)
 {
 	int ret = 0;
@@ -941,6 +1010,7 @@ int rdma_watchdog_setting(int flag)
 		rdma_force_reset = 0;
 		rdma_reset(1);
 		rdma_reset_trigger_flag = 1;
+		set_force_rdma_config();
 		ret = 1;
 	}
 	return ret;
@@ -1018,7 +1088,30 @@ int rdma_write_reg(int handle, u32 adr, u32 val)
 
 	if (ins->rdma_table_size == 0)
 		return -1;
+#ifdef CONFIG_AMLOGIC_BL_LDIM
+	if ((((smp_processor_id() == 0) &&
+		!is_in_vsync_isr() &&
+		!is_in_vsync_isr_viu2() &&
+		!is_in_vsync_isr_viu3() &&
+		!is_in_ldim_vsync_isr()) || (smp_processor_id() != 0)) &&
+		get_rdma_handle(VSYNC_RDMA) == handle) {
+#else
+	if ((((smp_processor_id() == 0) &&
+		!is_in_vsync_isr() &&
+		!is_in_vsync_isr_viu2() &&
+		!is_in_vsync_isr_viu3()) || (smp_processor_id() != 0)) &&
+		get_rdma_handle(VSYNC_RDMA) == handle) {
+#endif
+		dump_stack();
+		pr_info("rdma_write(%d) %d(%x)<=%x\n",
+			handle, ins->rdma_item_count, adr, val);
+	}
 
+	if (adr == 0) {
+		pr_info("rdma_write(%d) write zero addr = %x, count:%d\n",
+			handle, val, ins->rdma_item_count);
+		dump_stack();
+	}
 	if (debug_flag & 1)
 		pr_info("rdma_write(%d) %d(%x)<=%x\n",
 			handle, ins->rdma_item_count, adr, val);
@@ -1033,9 +1126,10 @@ int rdma_write_reg(int handle, u32 adr, u32 val)
 	} else {
 		int i;
 
-			pr_info("%s(%d, %x, %x ,%d) buf overflow\n",
+			pr_info("%s(%d, %x, %x ,%d) buf overflow, ins->rdma_item_count=%d\n",
 				__func__, rdma_watchdog_count,
-				handle, adr, val);
+				handle, adr, val,
+				ins->rdma_item_count);
 		for (i = 0; i < ins->rdma_item_count; i++)
 			WRITE_VCBUS_REG(ins->reg_buf[i << 1],
 					ins->reg_buf[(i << 1) + 1]);
@@ -1307,6 +1401,16 @@ void pre_vsync_rdma_register(void)
 }
 EXPORT_SYMBOL(pre_vsync_rdma_register);
 
+void ex_vsync_rdma_register(void)
+{
+	int handle;
+
+	handle = rdma_register(get_rdma_ops(EX_VSYNC_RDMA),
+			       NULL, rdma_table_size);
+	set_rdma_handle(EX_VSYNC_RDMA, handle);
+}
+EXPORT_SYMBOL(ex_vsync_rdma_register);
+
 static ssize_t show_debug_flag(struct class *class,
 			       struct class_attribute *attr,
 			       char *buf)
@@ -1513,6 +1617,51 @@ static ssize_t rdma_mgr_trace_reg_stroe(struct class *cla,
 	return count;
 }
 
+static ssize_t show_ex_vsync_rdma(struct class *class,
+			       struct class_attribute *attr,
+			       char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n",
+			get_ex_vsync_rdma_enable());
+}
+
+static ssize_t store_ex_vsync_rdma(struct class *class,
+				struct class_attribute *attr,
+				const char *buf, size_t count)
+{
+	int res = 0;
+	int ret = 0;
+
+	ret = kstrtoint(buf, 0, &res);
+	pr_info("ex_vsync_rdma_enable: %d->%d\n", get_ex_vsync_rdma_enable(), res);
+	set_ex_vsync_rdma_enable(res);
+
+	return count;
+}
+
+static ssize_t rdma_irq_count_show(struct class *cla,
+				       struct class_attribute *attr, char *buf)
+{
+	int i;
+	char str_info[1024];
+	char chan_info[128];
+	struct rdma_device_info *info = &rdma_info;
+
+	sprintf(str_info, "rdma_isr_count:%d\n", rdma_isr_count);
+	for (i = 1; i < RDMA_NUM; i++) {
+		sprintf(chan_info,
+			"rdma handle=%d, cb irq_count=%d, empty_config=%d, rdma_config_count=%d",
+			i, info->rdma_ins[i].irq_count,
+			info->rdma_ins[i].rdma_empty_config_count,
+			info->rdma_ins[i].rdma_config_count);
+		strcat(str_info, chan_info);
+		strcat(str_info, "\n");
+	}
+
+	i = snprintf(buf, PAGE_SIZE, "%s\n", str_info);
+	return i;
+}
+
 static struct class_attribute rdma_mgr_attrs[] = {
 	__ATTR(debug_flag, 0664,
 	       show_debug_flag, store_debug_flag),
@@ -1528,6 +1677,10 @@ static struct class_attribute rdma_mgr_attrs[] = {
 	       rdma_mgr_trace_enable_show, rdma_mgr_trace_enable_stroe),
 	__ATTR(trace_reg, 0664,
 	       rdma_mgr_trace_reg_show, rdma_mgr_trace_reg_stroe),
+	__ATTR(ex_vsync_rdma, 0664,
+	       show_ex_vsync_rdma, store_ex_vsync_rdma),
+	__ATTR(irq_count_stat, 0664,
+		   rdma_irq_count_show, NULL),
 };
 
 static struct class *rdma_mgr_class;
@@ -1572,6 +1725,7 @@ static int __init rdma_probe(struct platform_device *pdev)
 	int handle;
 	const void *prop;
 	struct rdma_device_info *info = &rdma_info;
+	int line_n_rdma_en = 0;
 
 	int_rdma = platform_get_irq_byname(pdev, "rdma");
 	if (int_rdma == -ENXIO) {
@@ -1609,6 +1763,14 @@ static int __init rdma_probe(struct platform_device *pdev)
 		prop = of_get_property(pdev->dev.of_node, "rdma_table_page_count", NULL);
 		if (prop)
 			rdma_table_size = of_read_ulong(prop, 1) * PAGE_SIZE;
+
+		prop = of_get_property(pdev->dev.of_node, "line_n_rdma", NULL);
+		if (prop) {
+			line_n_rdma_en = of_read_ulong(prop, 1);
+			pr_info("line_n_rdma_en = %d\n", line_n_rdma_en);
+		} else {
+			pr_info("line_n_rdma_en = %d\n", line_n_rdma_en);
+		}
 	}
 	pr_info("%s,cpu_type:%d, ver:%d, len:%d,rdma_table_size:%d\n", __func__,
 		rdma_meson_dev.cpu_type,
@@ -1645,6 +1807,7 @@ static int __init rdma_probe(struct platform_device *pdev)
 		info->rdma_ins[i].used = 0;
 		info->rdma_ins[i].prev_trigger_type = 0;
 		info->rdma_ins[i].rdma_write_count = 0;
+		info->rdma_ins[i].lock_flag = 0;
 	}
 
 	if (rdma_meson_dev.cpu_type >= CPU_SC2) {
@@ -1693,6 +1856,19 @@ static int __init rdma_probe(struct platform_device *pdev)
 				       NULL, rdma_table_size);
 		set_rdma_handle(VSYNC_RDMA_READ, handle);
 	}
+	/* T7 lack rdma channel. So do not alloc EX_VSYNC_RDMA channel for 3 vppout */
+	if (rdma_meson_dev.rdma_ver != RDMA_VER_3) {
+		handle = rdma_register(get_rdma_ops(EX_VSYNC_RDMA),
+			NULL, RDMA_TABLE_SIZE);
+		set_rdma_handle(EX_VSYNC_RDMA, handle);
+	}
+
+	if (line_n_rdma_en) {
+		handle = rdma_register(get_rdma_ops(LINE_N_INT_RDMA),
+			NULL, 2 * rdma_table_size);
+		set_rdma_handle(LINE_N_INT_RDMA, handle);
+	}
+
 	create_rdma_mgr_class();
 
 	rdma_init();

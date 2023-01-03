@@ -20,7 +20,7 @@
 #include "video_trace.h"
 #undef TRACE_INCLUDE_PATH
 #undef TRACE_INCLUDE_FILE
-#define TRACE_INCLUDE_PATH ../../drivers/media/video_sink
+#define TRACE_INCLUDE_PATH ../../common_drivers/drivers/media/video_sink
 #define TRACE_INCLUDE_FILE video_trace
 #include <trace/define_trace.h>
 

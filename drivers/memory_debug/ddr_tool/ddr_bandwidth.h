@@ -147,6 +147,7 @@ struct ddr_avg_bandwidth {
 
 struct ddr_data_extern {
 	char data_bus_width;
+	unsigned long freq;
 	unsigned int usage_stat[10];
 	struct ddr_grant dg;
 	struct ddr_bandwidth_sample cur_sample;

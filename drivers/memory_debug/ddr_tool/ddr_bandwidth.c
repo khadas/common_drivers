@@ -84,12 +84,11 @@ static void cal_ddr_usage_single(struct ddr_bandwidth *db)
 	int i, j;
 	unsigned long cnt, freq = 0;
 
-	if (db->ops && db->ops->get_freq)
-		freq = db->ops->get_freq(db);
 	cnt  = db->clock_count;
 
 	for (i = 0; i < db->dmc_number; i++) {
 		/* mbw = ((freq * 2) * 2 * (data_bus_width/8)) */
+		freq = db->data_extern[i].freq;
 		mbw = (u64)freq * db->data_extern[i].data_bus_width / 2;
 		mbw /= 1024;
 		mul  = db->data_extern[i].dg.all_grant + db->data_extern[i].dg.all_grant16;
@@ -140,7 +139,7 @@ static void cal_ddr_usage_single(struct ddr_bandwidth *db)
 
 static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 {
-	u64 mul, mbw = 0; /* avoid overflow */
+	u64 mul = 0, mul_tmp = 0, mbw = 0; /* avoid overflow */
 	unsigned long i, cnt, freq = 0, flags;
 
 	if (db->mode == MODE_AUTODETECT) { /* ignore mali bandwidth */
@@ -176,8 +175,11 @@ static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 	if (freq) {
 		/* calculate in KB */
 		if (dmc_is_asymmetry(aml_db)) {
-			for (i = 0; i < db->dmc_number; i++)
+			for (i = 0; i < db->dmc_number; i++) {
+				freq = db->data_extern[i].freq;
 				mbw += (u64)freq * db->data_extern[i].data_bus_width / 2;
+			}
+
 		} else {
 			mbw = (u64)freq * db->bytes_per_cycle * db->dmc_number;
 		}
@@ -186,8 +188,20 @@ static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 			return;
 		}
 		mbw /= 1024;	/* theoretic max bandwidth */
-		mul  = dg->all_grant + dg->all_grant16;
-		mul *= freq;
+
+		if (dmc_is_asymmetry(aml_db)) {
+			for (i = 0; i < db->dmc_number; i++) {
+				freq = db->data_extern[i].freq;
+				mul_tmp = db->data_extern[i].dg.all_grant;
+				mul_tmp += db->data_extern[i].dg.all_grant16;
+				mul_tmp *= freq;
+				mul += mul_tmp;
+			}
+
+		} else {
+			mul = dg->all_grant + dg->all_grant16;
+			mul *= freq;
+		}
 		mul /= 1024;
 		do_div(mul, cnt);
 		if (mul >= mbw) {
@@ -768,11 +782,23 @@ static CLASS_ATTR_RO(bandwidth);
 static ssize_t freq_show(struct class *cla,
 			 struct class_attribute *attr, char *buf)
 {
+	int i = 0;
+	size_t s = 0;
 	unsigned long clk = 0;
 
 	if (aml_db->ops && aml_db->ops->get_freq)
 		clk = aml_db->ops->get_freq(aml_db);
-	return sprintf(buf, "%ld MHz\n", clk / 1000000);
+
+	if (dmc_is_asymmetry(aml_db)) {
+		for (i = 0; i < aml_db->dmc_number; i++) {
+			s += sprintf(buf + s, "DMC%d: %ld MHz\n", i,
+				aml_db->data_extern[i].freq / 1000000);
+		}
+	} else {
+		s += sprintf(buf + s, "%ld MHz\n", clk / 1000000);
+	}
+
+	return s;
 }
 static CLASS_ATTR_RO(freq);
 

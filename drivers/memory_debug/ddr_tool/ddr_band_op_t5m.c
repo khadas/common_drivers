@@ -141,6 +141,12 @@ static unsigned long t5m_get_dmc_freq_quick(struct ddr_bandwidth *db)
 	freq = readl(db->pll_reg) * 1000000;
 	freq = freq >> 1;
 
+	if (db->soc_feature & DMC_ASYMMETRY) {
+		db->data_extern[0].freq = freq;
+		db->data_extern[1].freq = readl(db->freq_reg) * 1000000;
+		db->data_extern[1].freq = db->data_extern[1].freq >> 1;
+	}
+
 	return freq;
 }
 

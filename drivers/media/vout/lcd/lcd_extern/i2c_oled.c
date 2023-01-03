@@ -928,7 +928,7 @@ int lcd_extern_i2c_oled_probe(struct lcd_extern_driver_s *edrv, struct lcd_exter
 	return ret;
 }
 
-int lcd_extern_i2c_oled_revome(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev_s *edev)
+int lcd_extern_i2c_oled_remove(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev_s *edev)
 {
 	if (ext_oled) {
 		ext_oled_cdev_remove(edrv);

@@ -86,7 +86,7 @@ static struct clk_regmap g12a_fixed_pll = {
 };
 
 static const struct pll_mult_range g12a_sys_pll_mult_range = {
-	.min = 128,
+	.min = 125,
 	.max = 250,
 };
 
@@ -514,7 +514,7 @@ static struct clk_regmap g12a_cpu_clk_mux1_div = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "cpu_clk_dyn1_div",
-		.ops = &clk_regmap_divider_ro_ops,
+		.ops = &clk_regmap_divider_ops,
 		.parent_hws = (const struct clk_hw *[]) {
 			&g12a_cpu_clk_premux1.hw
 		},
@@ -698,7 +698,7 @@ static struct clk_regmap g12b_cpub_clk_mux1_div = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "cpub_clk_dyn1_div",
-		.ops = &clk_regmap_divider_ro_ops,
+		.ops = &clk_regmap_divider_ops,
 		.parent_hws = (const struct clk_hw *[]) {
 			&g12b_cpub_clk_premux1.hw
 		},
@@ -819,7 +819,7 @@ static struct clk_regmap sm1_dsu_clk_mux0_div = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "dsu_clk_dyn0_div",
-		.ops = &clk_regmap_divider_ro_ops,
+		.ops = &clk_regmap_divider_ops,
 		.parent_hws = (const struct clk_hw *[]) {
 			&sm1_dsu_clk_premux0.hw
 		},
@@ -856,7 +856,7 @@ static struct clk_regmap sm1_dsu_clk_mux1_div = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "dsu_clk_dyn1_div",
-		.ops = &clk_regmap_divider_ro_ops,
+		.ops = &clk_regmap_divider_ops,
 		.parent_hws = (const struct clk_hw *[]) {
 			&sm1_dsu_clk_premux1.hw
 		},

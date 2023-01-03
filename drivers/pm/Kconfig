@@ -36,7 +36,7 @@ config AMLOGIC_LEGACY_EARLY_SUSPEND
 	  If you want this support, you should say Y here.
 
 config AMLOGIC_GX_REBOOT
-	bool "Amlogic reboot gx"
+	tristate "Amlogic reboot gx"
 	depends on AMLOGIC_PM
 	default n
 	help

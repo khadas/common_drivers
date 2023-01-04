@@ -133,7 +133,9 @@
 #define FRC_REG_TOP_CTRL28                         0x0029
 //Bit 31:0         reserved
 #define FRC_REG_TOP_CTRL29                         0x002a
-//Bit 31:0         reserved
+//Bit 31:2         reserved
+//Bit    1         reg_memc_post_hold        // unsigned ,   RW, default = 0
+//Bit    0         reg_memc_top_hold         // unsigned ,   RW, default = 0
 #define FRC_BYP_PATH_CTRL                          0x002d
 //Bit 31:1         reserved
 //Bit 0            reg_byp_path_en           // unsigned ,   RW, default = 1  1: data bypass to display when memc prefetch data 0: data don't bypass to display when memc prefetch data
@@ -141,7 +143,9 @@
 //Bit 31:1         reserved
 //Bit 0            reg_inp_int_mask          // unsigned ,   RW, default = 0  reg_inp_int_mask 1:mask interupt 0:open interupt
 #define FRC_REG_INP_INT_FLAG                       0x0031
-//Bit 31:2         reserved
+//Bit 31:5         reserved
+//Bit 4            ro_out_of_pfth_phs        // unsigned ,   RO, default = 0
+//Bit 3 :2         reserved
 //Bit 1            ro_inp_int_24hz           // unsigned ,   RO, default = 0   inpu  interupt 24hz flag
 //Bit 0            ro_inp_int_flag           // unsigned ,   RO, default = 0   input interupt flag
 #define FRC_REG_INP_INT_CLR                        0x0032

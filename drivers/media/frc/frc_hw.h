@@ -107,5 +107,6 @@ void frc_set_urgent_cfg(u8 level);
 void frc_input_init(struct frc_dev_s *frc_devp,
 	struct frc_top_type_s *frc_top);
 void frc_set_n2m(u8 ratio_value);
+void frc_set_axi_crash_irq(struct frc_dev_s *frc_devp, u8 enable);
 
 #endif

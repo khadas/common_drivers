@@ -310,6 +310,46 @@ void frc_output_tasklet_pro(unsigned long arg)
 	}
 }
 
+irqreturn_t frc_axi_crash_isr(int irq, void *dev_id)
+{
+	struct frc_dev_s *devp = (struct frc_dev_s *)dev_id;
+	u32 tmp1, tmp2;
+
+	pr_frc(0, "%s: crash occur!", __func__);
+	if (!devp->probe_ok || !devp->power_on_flag)
+		return IRQ_HANDLED;
+	pr_frc(1, "apb_crash_addr:%X, axi_stats:0x%X,0x%X\n",
+			READ_FRC_REG(FRC_APB_CRASH_ADDR),
+			READ_FRC_REG(FRC_RDAXI0_PROT_STAT),
+			READ_FRC_REG(FRC_WRAXI0_PROT_STAT));
+	tmp1 = READ_FRC_REG(FRC_RDAXI0_PROT_CTRL);
+	WRITE_FRC_REG_BY_CPU(FRC_RDAXI0_PROT_CTRL, tmp1 & 0xFFFFFFFD);
+	WRITE_FRC_REG_BY_CPU(FRC_RDAXI0_PROT_CTRL, tmp1 | 0x02);
+
+	tmp1 = READ_FRC_REG(FRC_RDAXI1_PROT_CTRL);
+	WRITE_FRC_REG_BY_CPU(FRC_RDAXI1_PROT_CTRL, tmp1 & 0xFFFFFFFD);
+	WRITE_FRC_REG_BY_CPU(FRC_RDAXI1_PROT_CTRL, tmp1 | 0x02);
+
+	tmp1 = READ_FRC_REG(FRC_RDAXI2_PROT_CTRL);
+	WRITE_FRC_REG_BY_CPU(FRC_RDAXI2_PROT_CTRL, tmp1 & 0xFFFFFFFD);
+	WRITE_FRC_REG_BY_CPU(FRC_RDAXI2_PROT_CTRL, tmp1 | 0x02);
+
+	tmp1 = READ_FRC_REG(FRC_WRAXI0_PROT_CTRL);
+	WRITE_FRC_REG_BY_CPU(FRC_WRAXI0_PROT_CTRL, tmp1 & 0xFFFFFFFD);
+	WRITE_FRC_REG_BY_CPU(FRC_WRAXI0_PROT_CTRL, tmp1 | 0x02);
+
+	tmp1 = READ_FRC_REG(FRC_WRAXI1_PROT_CTRL);
+	WRITE_FRC_REG_BY_CPU(FRC_WRAXI1_PROT_CTRL, tmp1 & 0xFFFFFFFD);
+	WRITE_FRC_REG_BY_CPU(FRC_WRAXI1_PROT_CTRL, tmp1 | 0x02);
+
+	tmp2 = READ_FRC_REG(FRC_ARB_BAK_CTRL);
+	WRITE_FRC_REG_BY_CPU(FRC_ARB_BAK_CTRL, tmp2 & 0xFFFFFFDF);
+	WRITE_FRC_REG_BY_CPU(FRC_ARB_BAK_CTRL, tmp2 | 0x20);
+
+	pr_frc(0, "%s: try to clear!", __func__);
+	return IRQ_HANDLED;
+}
+
 void frc_change_to_state(enum frc_state_e state)
 {
 	struct frc_dev_s *devp = get_frc_devp();

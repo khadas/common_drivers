@@ -2296,3 +2296,15 @@ void frc_set_n2m(u8 ratio_value)
 	}
 }
 
+void frc_set_axi_crash_irq(struct frc_dev_s *frc_devp, u8 enable)
+{
+	if (frc_devp->axi_crash_irq <= 0)
+		return;
+
+	if (enable == 1)
+		enable_irq(frc_devp->axi_crash_irq);
+	else if (enable == 0)
+		disable_irq(frc_devp->axi_crash_irq);
+	else
+		pr_frc(1, "%s invalid param\n",  __func__);
+}

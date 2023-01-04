@@ -516,6 +516,8 @@ struct frc_dev_s {
 	char in_irq_name[20];
 	int out_irq;
 	char out_irq_name[20];
+	int axi_crash_irq;
+	char axi_crash_irq_name[20];
 	int rdma_irq;
 	char rdma_irq_name[20];
 

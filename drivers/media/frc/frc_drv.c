@@ -589,6 +589,21 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 			disable_irq(frc_devp->out_irq);
 	}
 
+	frc_devp->axi_crash_irq = of_irq_get_byname(of_node, "irq_axi_crash");
+	snprintf(frc_devp->axi_crash_irq_name,
+			sizeof(frc_devp->axi_crash_irq_name), "axi_crash_irq");
+	PR_FRC("%s=%d\n", frc_devp->axi_crash_irq_name, frc_devp->axi_crash_irq);
+	if (frc_devp->axi_crash_irq > 0) {
+		ret = request_irq(frc_devp->axi_crash_irq, frc_axi_crash_isr, IRQF_SHARED,
+				  frc_devp->axi_crash_irq_name, (void *)frc_devp);
+		if (ret)
+			PR_ERR("request axi_crash irq fail\n");
+		else
+			disable_irq(frc_devp->axi_crash_irq);
+	} else {
+		PR_ERR("axi_crash irq is not enabled\n");
+	}
+
 	frc_devp->rdma_irq = of_irq_get_byname(of_node, "irq_frc_rdma");
 	snprintf(frc_devp->rdma_irq_name, sizeof(frc_devp->rdma_irq_name), "frc_rdma_irq");
 	PR_FRC("%s=%d\n", frc_devp->rdma_irq_name, frc_devp->rdma_irq);
@@ -1156,6 +1171,9 @@ static int frc_probe(struct platform_device *pdev)
 		enable_irq(frc_devp->in_irq);
 	if (frc_devp->out_irq > 0)
 		enable_irq(frc_devp->out_irq);
+	// if (frc_devp->axi_crash_irq > 0)
+	//	enable_irq(frc_devp->axi_crash_irq);
+
 // #ifdef CONFIG_AMLOGIC_MEDIA_FRC_RDMA
 	if (frc_devp->rdma_irq > 0)
 		enable_irq(frc_devp->rdma_irq);
@@ -1218,6 +1236,8 @@ static int __exit frc_remove(struct platform_device *pdev)
 		free_irq(frc_devp->in_irq, (void *)frc_devp);
 	if (frc_devp->out_irq > 0)
 		free_irq(frc_devp->out_irq, (void *)frc_devp);
+	if (frc_devp->axi_crash_irq > 0)
+		free_irq(frc_devp->axi_crash_irq, (void *)frc_devp);
 	if (frc_devp->rdma_irq > 0)
 		free_irq(frc_devp->rdma_irq, (void *)frc_devp);
 
@@ -1262,6 +1282,8 @@ static void frc_shutdown(struct platform_device *pdev)
 		free_irq(frc_devp->in_irq, (void *)frc_devp);
 	if (frc_devp->out_irq > 0)
 		free_irq(frc_devp->out_irq, (void *)frc_devp);
+	if (frc_devp->axi_crash_irq > 0)
+		free_irq(frc_devp->axi_crash_irq, (void *)frc_devp);
 	if (frc_devp->rdma_irq > 0)
 		free_irq(frc_devp->rdma_irq, (void *)frc_devp);
 	device_destroy(frc_devp->clsp, frc_devp->devno);

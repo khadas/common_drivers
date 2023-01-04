@@ -28,6 +28,7 @@ enum vf_sts {
 
 irqreturn_t frc_input_isr(int irq, void *dev_id);
 irqreturn_t frc_output_isr(int irq, void *dev_id);
+irqreturn_t frc_axi_crash_isr(int irq, void *dev_id);
 
 void frc_input_tasklet_pro(unsigned long arg);
 void frc_output_tasklet_pro(unsigned long arg);

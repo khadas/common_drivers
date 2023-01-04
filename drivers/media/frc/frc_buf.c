@@ -583,14 +583,23 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	u32 temp;
 	int log = 0;
 	u32 ratio;
+	enum chip_id chip;
+	struct frc_data_s *frc_data;
 
 	if (!devp)
 		return -1;
 
+	frc_data = (struct frc_data_s *)devp->data;
+	chip = frc_data->match_data->chip;
+
 	if (devp->buf.memc_comprate == 0)
 		devp->buf.memc_comprate = FRC_COMPRESS_RATE;
-	if (devp->buf.me_comprate == 0)
-		devp->buf.me_comprate = FRC_COMPRESS_RATE_ME;
+	if (devp->buf.me_comprate == 0) {
+		if (chip == ID_T3)
+			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T3;
+		else if (chip == ID_T5M)
+			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T5M;
+	}
 	if (devp->buf.mc_c_comprate == 0)
 		devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
 	if (devp->buf.mc_y_comprate == 0)

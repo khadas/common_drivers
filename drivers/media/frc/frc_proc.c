@@ -63,6 +63,10 @@ int frc_re_cfg_cnt = 3;/*need bigger than frc_disable_cnt 3, 15*/
 module_param(frc_re_cfg_cnt, int, 0664);
 MODULE_PARM_DESC(frc_re_cfg_cnt, "frc reconfig counter");
 
+int sec_flag;
+module_param(sec_flag, int, 0664);
+MODULE_PARM_DESC(sec_flag, "frc debug flag");
+
 u32 secure_tee_handle;
 
 void frc_fw_initial(struct frc_dev_s *devp)
@@ -659,6 +663,9 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 		} else {
 			devp->in_sts.secure_mode = false;
 		}
+		//input security check
+		frc_check_secure_mode(vf, devp);
+
 		/*check vd status change*/
 		if (!no_input) {
 			frc_chk_vd_sts_chg(devp, vf);
@@ -689,7 +696,6 @@ void frc_state_change_finish(struct frc_dev_s *devp)
 
 void frc_test_mm_secure_set_off(struct frc_dev_s *devp)
 {
-#ifdef CONFIG_AMLOGIC_TEE
 	if (!tee_enabled()) {
 		pr_frc(0, "tee is not enable\n");
 		return;
@@ -700,12 +706,10 @@ void frc_test_mm_secure_set_off(struct frc_dev_s *devp)
 		pr_frc(0, "%s handl:%d\n", __func__, secure_tee_handle);
 		secure_tee_handle = 0;
 	}
-#endif
 }
 
 void frc_test_mm_secure_set_on(struct frc_dev_s *devp, u32 start, u32 size)
 {
-#ifdef CONFIG_AMLOGIC_TEE
 	if (!tee_enabled()) {
 		pr_frc(0, "tee is not enable\n");
 		return;
@@ -716,12 +720,10 @@ void frc_test_mm_secure_set_on(struct frc_dev_s *devp, u32 start, u32 size)
 		pr_frc(0, "%s handl:%d start:0x%x size:0x%x\n", __func__,
 			secure_tee_handle, start, size);
 	}
-#endif
 }
 
 void frc_mm_secure_set(struct frc_dev_s *devp)
 {
-#ifdef CONFIG_AMLOGIC_TEE
 	u32 addr_start;
 	u32 addr_size;
 	enum frc_state_e new_state;
@@ -777,10 +779,6 @@ void frc_mm_secure_set(struct frc_dev_s *devp)
 			}
 		}
 	}
-#else
-	if (devp->in_sts.secure_mode)
-		pr_frc(1, "err: secure no tee define!!!\n");
-#endif
 }
 
 void frc_state_handle_old(struct frc_dev_s *devp)
@@ -1706,3 +1704,42 @@ u16 frc_check_film_mode(struct frc_dev_s *frc_devp)
 	return (u16)(frc_top->film_mode);
 }
 
+void frc_check_secure_mode(struct vframe_s *vf, struct frc_dev_s *devp)
+{
+	u32 temp;
+	enum chip_id chip;
+	static int secure_mode;
+	struct frc_data_s *frc_data;
+
+	frc_data = (struct frc_data_s *)devp->data;
+	chip = frc_data->match_data->chip;
+
+	if (chip == ID_T3) {
+		if ((vf->flag & VFRAME_FLAG_VIDEO_SECURE) ==
+			VFRAME_FLAG_VIDEO_SECURE)
+			devp->in_sts.secure_mode = true;
+		else
+			devp->in_sts.secure_mode = false;
+	} else if (chip == ID_T5M) {
+		if (!sec_flag) {
+			temp = READ_FRC_REG(FRC_RO_FRM_SEC_STAT);
+			temp = (temp >> 16) & 0xf; // 1: input frame is security
+			if (temp)
+				devp->in_sts.secure_mode = true;
+			else
+				devp->in_sts.secure_mode = false;
+		} else {
+			if ((vf->flag & VFRAME_FLAG_VIDEO_SECURE) ==
+				VFRAME_FLAG_VIDEO_SECURE)
+				devp->in_sts.secure_mode = true;
+			else
+				devp->in_sts.secure_mode = false;
+		}
+	}
+
+	if (secure_mode != devp->in_sts.secure_mode) {
+		pr_frc(0, "frc secure sts:%d, sec_flag:%d, chip:%d\n",
+			devp->in_sts.secure_mode, sec_flag, chip);
+		secure_mode = devp->in_sts.secure_mode;
+	}
+}

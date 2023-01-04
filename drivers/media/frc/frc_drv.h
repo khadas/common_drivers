@@ -113,7 +113,8 @@ extern int frc_dbg_en;
 // mc-y 48%  mc-c 39%  me 60%
 #define FRC_COMPRESS_RATE_MC_Y		48
 #define FRC_COMPRESS_RATE_MC_C		39
-#define FRC_COMPRESS_RATE_ME		100
+#define FRC_COMPRESS_RATE_ME_T3     60
+#define FRC_COMPRESS_RATE_ME_T5M    100
 
 #define FRC_TOTAL_BUF_NUM		16
 #define FRC_MEMV_BUF_NUM		6

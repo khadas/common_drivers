@@ -250,7 +250,7 @@ bool is_dewarp_supported(int vc_index, struct composer_vf_para *vf_param)
 	if (vf_param->src_vf_format != NV12)
 		return false;
 
-	if (dewarp_load_flag == 1) {
+	if (dewarp_load_flag == 0) {
 		if (get_dewarp_rotation_value(vf_param->src_vf_angle) == 0)
 			return false;
 		else

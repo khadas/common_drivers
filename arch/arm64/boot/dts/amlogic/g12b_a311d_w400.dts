@@ -1338,51 +1338,77 @@
 
 &sd_emmc_c {
 	status = "okay";
-	emmc {
-		caps = "MMC_CAP_8_BIT_DATA",
-			 "MMC_CAP_MMC_HIGHSPEED",
-			 "MMC_CAP_SD_HIGHSPEED",
-			 "MMC_CAP_NONREMOVABLE",
-			/* "MMC_CAP_1_8V_DDR", */
-			 "MMC_CAP_HW_RESET",
-			 "MMC_CAP_ERASE",
-			 "MMC_CAP_CMD23";
-		caps2 = "MMC_CAP2_HS200";
-		/* "MMC_CAP2_HS400";*/
-		f_min = <400000>;
-		f_max = <200000000>;
-	};
+	pinctrl-0 = <&emmc_pins>, <&emmc_ds_pins>;
+	pinctrl-1 = <&emmc_clk_gate_pins>;
+	pinctrl-names = "default", "clk-gate";
+	bus-width = <8>;
+	cap-mmc-highspeed;
+	max-frequency = <200000000>;
+	non-removable;
+	disable-wp;
+	//mmc-ddr-1_8v;
+	//mmc-hs200-1_8v;
+	//mmc-hs400-1_8v;
+	//mmc-pwrseq = <&emmc_pwrseq>;
+	//vmmc-supply = <&vcc_3v3>;
+	//vqmmc-supply = <&vddio_boot>;
 };
 
 &sd_emmc_b {
 	//vmmc-supply = <&vddao3v3_reg>;
 	//vqmmc-supply = <&vddio_c>;
 	status = "okay";
-	sd {
-		caps = "MMC_CAP_4_BIT_DATA",
-			 "MMC_CAP_MMC_HIGHSPEED",
-			 "MMC_CAP_SD_HIGHSPEED";
-		f_min = <400000>;
-		f_max = <50000000>;
-	};
+	pinctrl-0 = <&sdcard_pins>;
+	pinctrl-1 = <&sdcard_clk_gate_pins>;
+	pinctrl-2 = <&sd_1bit_pins>;
+	//pinctrl-3 = <&sd_to_ao_uart_clr_pins
+	//	&sdcard_pins &ao_to_sd_uart_pins>;
+	//pinctrl-4 = <&sd_to_ao_uart_clr_pins
+	//	&sd_1bit_pins &ao_to_sd_uart_pins>;
+	//pinctrl-5 = <&sdcard_pins &ao_uart_pins>;
+	//pinctrl-6 = <&sd_to_ao_uart_clr_pins
+	//	&ao_to_sd_uart_pins>;
+	//pinctrl-7 = <&sdcard_pins &ao_uart_pins>;
+	//pinctrl-8 = <&sd_to_ao_uart_clr_pins
+	//	&ao_to_sd_uart_pins>;
+
+	pinctrl-names = "sd_default",
+				"clk-gate",
+				"sd_1bit_pins";
+	//			"sd_clk_cmd_uart_pins",
+	//			"sd_1bit_uart_pins",
+	//			"sd_to_ao_uart_pins",
+	//			"ao_to_sd_uart_pins",
+	//			"sd_to_ao_jtag_pins",
+	//			"ao_to_sd_jtag_pins";
+				bus-width = <4>;
+				cap-sd-highspeed;
+//      sd-uhs-sdr12;
+//      sd-uhs-sdr25;
+//      sd-uhs-sdr50;
+//      sd-uhs-sdr104;
+				max-frequency = <200000000>;
+				disable-wp;
+				dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
+				cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
+				//vmmc-supply = <&vddao_3v3>;
+				//vqmmc-supply = <&emmc_1v8>;
 };
 
 &sd_emmc_a {
 	status = "okay";
-	sdio {
-		caps = "MMC_CAP_4_BIT_DATA",
-			 "MMC_CAP_MMC_HIGHSPEED",
-			 "MMC_CAP_SD_HIGHSPEED",
-			 "MMC_CAP_NONREMOVABLE",
-			 "MMC_CAP_UHS_SDR12",
-			 "MMC_CAP_UHS_SDR25",
-			 "MMC_CAP_UHS_SDR50",
-			 "MMC_CAP_UHS_SDR104",
-			 "MMC_PM_KEEP_POWER",
-			 "MMC_CAP_SDIO_IRQ";
-		f_min = <400000>;
-		f_max = <200000000>;
-	};
+	pinctrl-0 = <&sdio_m_pins>;
+	pinctrl-1 = <&sdio_m_clk_gate_pins>;
+	pinctrl-names = "default", "clk-gate";
+	bus-width = <4>;
+	cap-sd-highspeed;
+	sd-uhs-sdr104;
+	non-removable;
+	max-frequency = <200000000>;
+	disable-wp;
+	cap-sdio-irq;
+	keep-power-in-suspend;
+	//broken-cd;
 };
 
 &mtd_nand {

@@ -524,7 +524,8 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 	latency_info.it_content = 0;
 	latency_info.cn_type = 0;
 #ifdef CONFIG_AMLOGIC_HDMITX
-	hdmitx_update_latency_info(&latency_info);
+	if (rx.chip_id == CHIP_ID_T7)
+		hdmitx_update_latency_info(&latency_info);
 #endif
 	/*del_timer_sync(&devp->timer);*/
 	hdmirx_close_port();
@@ -1152,7 +1153,7 @@ void hdmirx_get_latency_info(struct tvin_sig_property_s *prop)
 	prop->latency.it_content = rx.cur.it_content;
 	prop->latency.cn_type = rx.cur.cn_type;
 #ifdef CONFIG_AMLOGIC_HDMITX
-	if (rx.open_fg  &&
+	if (rx.open_fg  && rx.chip_id == CHIP_ID_T7 &&
 		(latency_info.allm_mode != rx.vs_info_details.hdmi_allm ||
 		latency_info.it_content != rx.cur.it_content ||
 		latency_info.cn_type != rx.cur.cn_type)) {

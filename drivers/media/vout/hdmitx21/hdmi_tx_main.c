@@ -66,6 +66,7 @@
 #define HDMI_TX_RESOURCE_NUM 4
 #define HDMI_TX_PWR_CTRL_NUM	6
 
+static u8 hdmi_allm_passthough_en;
 static unsigned int rx_hdcp2_ver;
 //static unsigned int hdcp_ctl_lvl;
 
@@ -2734,6 +2735,8 @@ void hdmitx_update_latency_info(struct tvin_latency_s *latency_info)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	if (!hdmi_allm_passthough_en)
+		return;
 	if (!latency_info)
 		return;
 	pr_info("allm_mode: %d, it_content: %d, cn_type: %d\n",

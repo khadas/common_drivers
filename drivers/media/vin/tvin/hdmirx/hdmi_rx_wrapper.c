@@ -1928,7 +1928,8 @@ static void signal_status_init(void)
 	latency_info.it_content = 0;
 	latency_info.cn_type = 0;
 #ifdef CONFIG_AMLOGIC_HDMITX
-	hdmitx_update_latency_info(&latency_info);
+	if (rx.chip_id == CHIP_ID_T7)
+		hdmitx_update_latency_info(&latency_info);
 #endif
 }
 

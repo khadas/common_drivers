@@ -601,8 +601,8 @@
 					<GIC_SPI 91 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//clocks = <&clkc CLKID_I2C>;
-				//clock-names = "clk_i2c";
+				clocks = <&clkc CLKID_I2C>;
+				clock-names = "clk_i2c";
 			};
 
 			i2c1: i2c@1e000 {
@@ -613,8 +613,8 @@
 					<GIC_SPI 92 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//clocks = <&clkc CLKID_I2C>;
-				//clock-names = "clk_i2c";
+				clocks = <&clkc CLKID_I2C>;
+				clock-names = "clk_i2c";
 			};
 
 			i2c2: i2c@1d000 {
@@ -625,8 +625,8 @@
 					<GIC_SPI 94 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//clocks = <&clkc CLKID_I2C>;
-				//clock-names = "clk_i2c";
+				clocks = <&clkc CLKID_I2C>;
+				clock-names = "clk_i2c";
 			};
 
 			i2c3: i2c@1c000 {
@@ -637,8 +637,8 @@
 					<GIC_SPI 95 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//clocks = <&clkc CLKID_I2C>;
-				//clock-names = "clk_i2c";
+				clocks = <&clkc CLKID_I2C>;
+				clock-names = "clk_i2c";
 			};
 
 			spicc0: spi@13000 {
@@ -732,8 +732,8 @@
 					<GIC_SPI 201 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//clocks = <&clkc CLKID_I2C>;
-				//clock-names = "clk_i2c";
+				clocks = <&clkc CLKID_I2C>;
+				clock-names = "clk_i2c";
 			};
 
 			i2c_AO_slave:i2c_slave@6000 {

@@ -766,7 +766,11 @@ static int effect_platform_resume(struct platform_device *pdev)
 	audiobus_update_bits(EE_AUDIO_CLK_GATE_EN1, 0x7, 0x7);
 
 	if (!IS_ERR(p_effect->clk)) {
-		clk_set_parent(p_effect->clk, NULL);
+		ret = clk_set_parent(p_effect->clk, NULL);
+		if (ret) {
+			dev_warn(&pdev->dev, "Can't set eqdrc clock parent as null\n");
+			return ret;
+		}
 		ret = clk_set_parent(p_effect->clk, p_effect->srcpll);
 		if (ret) {
 			dev_warn(&pdev->dev, "Can't set eqdrc clock parent clock\n");

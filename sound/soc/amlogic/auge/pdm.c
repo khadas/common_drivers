@@ -267,7 +267,13 @@ static void pdm_set_lowpower_mode(struct aml_pdm *p_pdm, bool islowpower, int id
 			pdm_force_dclk_to_oscin(id, p_pdm->chipinfo->vad_top);
 			pdm_set_channel_ctrl(3, id);
 		} else {
-			clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->dclk_srcpll);
+			int ret;
+
+			ret = clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->dclk_srcpll);
+			if (ret) {
+				pr_err("Can't set clk_pdm_dclk parent clock\n");
+				return;
+			}
 			clk_set_rate(p_pdm->clk_pdm_dclk, pdm_dclkidx2rate(p_pdm->dclk_idx));
 			pdm_set_channel_ctrl(pdm_get_sample_count(false, p_pdm->dclk_idx), id);
 		}

@@ -531,7 +531,9 @@ static int aml_spdif_platform_resume(struct platform_device *pdev)
 
 	if (p_spdif->chipinfo->regulator || (p_spdif->suspend_clk_off && !is_pm_s2idle_mode())) {
 		if (!IS_ERR(p_spdif->clk_spdifout)) {
-			clk_set_parent(p_spdif->clk_spdifout, NULL);
+			ret = clk_set_parent(p_spdif->clk_spdifout, NULL);
+			if (ret)
+				dev_warn(&pdev->dev, "Can't set spdif clk_spdifout parent as null\n");
 			ret = clk_set_parent(p_spdif->clk_spdifout, p_spdif->sysclk);
 			if (ret)
 				dev_warn(&pdev->dev, "Can't set spdif clk_spdifout parent\n");
@@ -539,7 +541,9 @@ static int aml_spdif_platform_resume(struct platform_device *pdev)
 		}
 
 		if (!IS_ERR(p_spdif->clk_spdifin)) {
-			clk_set_parent(p_spdif->clk_spdifin, NULL);
+			ret = clk_set_parent(p_spdif->clk_spdifin, NULL);
+			if (ret)
+				dev_warn(&pdev->dev, "Can't set spdif clk_spdifout parent as null\n");
 			ret = clk_set_parent(p_spdif->clk_spdifin, p_spdif->fixed_clk);
 			if (ret)
 				dev_warn(&pdev->dev, "Can't set spdif clk_spdifout parent\n");
@@ -718,7 +722,9 @@ int spdif_set_audio_clk(int id,
 	if (rate == 0)
 		return 0;
 
-	clk_set_parent(spdif_priv[id]->clk_spdifout, clk_src);
+	ret = clk_set_parent(spdif_priv[id]->clk_spdifout, clk_src);
+	if (ret)
+		pr_err("%s Can't set clk_spdifout parent\n", __func__);
 	clk_set_rate(spdif_priv[id]->clk_spdifout, rate);
 	ret = clk_prepare_enable(spdif_priv[id]->clk_spdifout);
 	if (ret) {

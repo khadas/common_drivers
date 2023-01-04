@@ -2430,14 +2430,18 @@ static int aml_tdm_platform_resume(struct platform_device *pdev)
 		audiobus_update_bits(EE_AUDIO_CLK_GATE_EN1, 0x7, 0x7);
 
 		if (!IS_ERR(p_tdm->mclk) && !IS_ERR(p_tdm->clk)) {
-			clk_set_parent(p_tdm->mclk, NULL);
+			ret = clk_set_parent(p_tdm->mclk, NULL);
+			if (ret)
+				dev_warn(&pdev->dev, "can't set tdm parent clock as null\n");
 			ret = clk_set_parent(p_tdm->mclk, p_tdm->clk);
 			if (ret)
 				dev_warn(&pdev->dev, "can't set tdm parent clock\n");
 		}
 
 		if (!IS_ERR(p_tdm->mclk2pad)) {
-			clk_set_parent(p_tdm->mclk2pad, NULL);
+			ret = clk_set_parent(p_tdm->mclk2pad, NULL);
+			if (ret)
+				dev_warn(&pdev->dev, "Can't set tdm mclk_pad parent as null\n");
 			ret = clk_set_parent(p_tdm->mclk2pad, p_tdm->mclk);
 			if (ret)
 				dev_warn(&pdev->dev, "Can't set tdm mclk_pad parent\n");

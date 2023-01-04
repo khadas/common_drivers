@@ -811,7 +811,9 @@ static int aml_card_dai_link_of(struct device_node *node,
 		goto dai_link_of_err;
 
 	/* sync with android audio hal, what's the link used for. */
-	of_property_read_string(node, "suffix-name", &dai_props->suffix_name);
+	ret = of_property_read_string(node, "suffix-name", &dai_props->suffix_name);
+	if (ret < 0)
+		dev_info(dev, "%s, read suffix-name failed, %d\n", __func__, ret);
 
 	if (dai_props->suffix_name)
 		ret = aml_card_set_dailink_name(dev, dai_link,

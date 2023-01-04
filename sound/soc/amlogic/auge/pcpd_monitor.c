@@ -39,17 +39,17 @@ int pcpd_monitor_check_audio_type(struct pcpd_monitor *pc_pd)
 	int pc = pcpd_monitor_get_audio_type(pc_pd);
 	int audio_type = 0;
 	int i;
-	bool is_raw = true;
 	/*need get hdmi pcm info*/
 #if (defined CONFIG_AMLOGIC_MEDIA_TVIN_HDMI ||\
 defined CONFIG_AMLOGIC_MEDIA_TVIN_HDMI_MODULE)
+	bool is_raw = true;
 	struct rx_audio_stat_s aud_sts;
 
 	rx_get_audio_status(&aud_sts);
 	is_raw = aud_sts.ch_sts[0] & IEC958_AES0_NONAUDIO;
-#endif
 	if (!is_raw)
 		return 0;
+#endif
 	for (i = 0; i < total_num; i++) {
 		if (pc == type_texts[i].pc) {
 			audio_type = type_texts[i].aud_type;

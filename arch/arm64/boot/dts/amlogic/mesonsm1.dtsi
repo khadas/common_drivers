@@ -991,7 +991,8 @@
 			0x0 0xff646000 0x0 0x2000
 			0x0 0xffd01080 0x0 0x10>;
 		reg-names = "elbi", "cfg", "config", "phy", "reset";
-		interrupts = <0 221 0>;
+		interrupts = <GIC_SPI 221 IRQ_TYPE_NONE>;
+		interrupt-names = "msi";
 		#interrupt-cells = <1>;
 		bus-range = <0x0 0xff>;
 		#address-cells = <3>;
@@ -1003,22 +1004,24 @@
 			/* downstream I/O */
 			0x82000000 0 0xfc700000 0x0 0xfc700000 0 0x1900000>;
 			/* non-prefetchable memory */
+		linux,pci-domain = <0>;
 		num-lanes = <1>;
 		pcie-num = <1>;
+		max-link-speed = <2>;
 
-		//clocks = <&clkc CLKID_PCIE_PLL
-		//	&clkc CLKID_PCIE_COMB
-		//	&clkc CLKID_PCIE_PHY
-		//	&clkc CLKID_PCIE_HCSL>;
-		//clock-names = "pcie_refpll",
-		//		"pcie",
-		//		"pcie_phy",
-		//		"pcie_hcsl";
+		clocks = <&clkc CLKID_PCIE_PLL
+			&clkc CLKID_PCIE_COMB
+			&clkc CLKID_PCIE_PHY
+			&clkc CLKID_PCIE_HCSL>;
+		clock-names = "pcie_refpll",
+				"pcie",
+				"pcie_phy",
+				"pcie_hcsl";
 		/*reset-gpio-type 0:Shared pad(no reset)1:OD pad2:Normal pad*/
 		gpio-type = <2>;
 		pcie-apb-rst-bit = <15>;
 		pcie-phy-rst-bit = <14>;
-		pcie-ctrl-a-rst-bit = <12>;
+		pcie-ctrl-rst-bit = <12>;
 		pwr-ctl = <1>;
 		status = "disabled";
 	};

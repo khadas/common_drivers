@@ -606,8 +606,12 @@ static int meson_clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 		return ret;
 
 	enabled = meson_parm_read(clk->map, &pll->en);
-	if (enabled)
+#ifdef CONFIG_AMLOGIC_MODIFY
+	/* Don't disable pll if it's just changing frac */
+	if ((meson_parm_read(clk->map, &pll->m) != m ||
+	     meson_parm_read(clk->map, &pll->n) != n) && enabled)
 		meson_clk_pll_disable(hw);
+#endif
 
 	meson_parm_write(clk->map, &pll->n, n);
 	meson_parm_write(clk->map, &pll->m, m);
@@ -781,7 +785,7 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 	unsigned long old_rate;
 	unsigned int val;
 	const struct reg_sequence *init_regs = pll->init_regs;
-	int i, ret = 0, j = 10;
+	int i, ret = 0, retry = 10;
 #if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
 	unsigned int od;
 	struct parm *pod = &pll->od;
@@ -802,12 +806,30 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 		return ret;
 
 	/* calute frac */
-	if (MESON_PARM_APPLICABLE(&pll->frac))
+	if (MESON_PARM_APPLICABLE(&pll->frac)) {
 #if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
 		frac = __pll_params_with_frac(rate, parent_rate, m, n, od, pll);
 #else
 		frac = __pll_params_with_frac(rate, parent_rate, m, n, pll);
 #endif
+		/*
+		 * Can update the register corresponding to frac directly
+		 * if just change frac and pll to enable.
+		 */
+		if (meson_parm_read(clk->map, &pll->m) == m &&
+		    meson_parm_read(clk->map, &pll->n) == n &&
+		    meson_parm_read(clk->map, &pll->en)) {
+			regmap_read(clk->map, pfrac->reg_off, &val);
+			/* Clear Frac bits and Update frac value */
+			val &= CLRPMASK(pfrac->width, pfrac->shift);
+			val |= frac << pfrac->shift;
+			regmap_write(clk->map, pfrac->reg_off, val);
+
+			if (!meson_clk_pll_wait_lock(hw))
+				return 0;
+		}
+	}
+
 	enabled = meson_parm_read(clk->map, &pll->en);
 	if (enabled)
 		meson_clk_pll_disable(hw);
@@ -843,10 +865,10 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 
 		if (!meson_clk_pll_wait_lock(hw))
 			break;
-		j--;
-	} while (j > 0);
+		retry--;
+	} while (retry > 0);
 
-	if (j == 0)
+	if (retry == 0)
 		pr_err("%s pll locked failed\n", clk_hw_get_name(hw));
 
 	return 0;

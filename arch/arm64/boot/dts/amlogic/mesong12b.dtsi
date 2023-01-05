@@ -2340,7 +2340,7 @@
 		};
 	};
 
-	pwm_a_pins: pwm_a {
+	pwm_a_pins1: pwm_a_pins1 {
 		mux {
 			groups = "pwm_a";
 			function = "pwm_a";
@@ -2654,6 +2654,13 @@
 		mux {
 			groups = "remote_out_ao9";
 			function = "remote_out_ao";
+		};
+	};
+
+	pwm_a_pins2: pwm_a_pins2 {
+		mux {
+			groups = "pwm_a_e";
+			function = "pwm_a_e";
 		};
 	};
 }; /* end of pinctrl_aobus */

@@ -2593,9 +2593,11 @@ static void video_composer_task(struct composer_dev *dev)
 				vf->canvas0_config[0].height;
 			vf->width = frame_info->buffer_w;
 			vf->height = frame_info->buffer_h;
+#ifdef CONFIG_AMLOGIC_UVM_CORE
 			if (meson_uvm_get_usage(file_vf->private_data, &usage) < 0)
 				vc_print(dev->index, PRINT_ERROR,
 					"%s:meson_uvm_get_usage fail.\n", __func__);
+#endif
 			if (frame_info->buffer_format == YUV444) {
 				vf->plane_num = 1;
 				vf->type = VIDTYPE_VIU_SINGLE_PLANE

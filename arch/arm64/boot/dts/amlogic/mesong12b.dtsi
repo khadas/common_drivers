@@ -1920,10 +1920,12 @@
 		read_cmd = <0x82000030>;
 		write_cmd = <0x82000031>;
 		get_max_cmd = <0x82000033>;
+		mem_in_base_cmd = <0x82000020>;
+		mem_out_base_cmd = <0x82000021>;
 		key = <&efusekey>;
 		//clocks = <&clkc CLKID_EFUSE>;
 		//clock-names = "efuse_clk";
-		status = "disabled";
+		status = "okay";
 	};
 
 	efusekey:efusekey{

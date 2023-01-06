@@ -53,7 +53,7 @@ static void aml_dma_common_free_remap(void *cpu_addr, size_t size)
 	vunmap(cpu_addr);
 }
 
-static int __init aml_atomic_pool_init(struct page *page, size_t atomic_pool_size, u32 area)
+static int aml_atomic_pool_init(struct page *page, size_t atomic_pool_size, u32 area)
 {
 	void *addr;
 	int ret;

@@ -245,6 +245,29 @@ static struct dwc_otg_driver_module_params dwc_otg_module_params = {
 	.eltest_flag = -1,
 };
 
+bool dwc_force_device_mode;
+#ifdef CONFIG_AMLOGIC_USB_DWC_OTG_HCD
+static char dwc_otg_mode_string[2] = "0";
+static int dwc_force_otg_mode(char *s)
+{
+	if (s)
+		sprintf(dwc_otg_mode_string, "%s", s);
+	if (strcmp(dwc_otg_mode_string, "0") == 0)
+		dwc_force_device_mode = 0;
+	else
+		dwc_force_device_mode = 1;
+	return 0;
+}
+__setup("otg_device=", dwc_force_otg_mode);
+#else
+module_param_named(dwc_otg_device, dwc_force_device_mode,
+		bool, 0644);
+#endif
+
+static inline int get_otg_mode(void)
+{
+	return dwc_force_device_mode;
+}
 
 static u64 dwc2_dmamask = DMA_BIT_MASK(32);
 

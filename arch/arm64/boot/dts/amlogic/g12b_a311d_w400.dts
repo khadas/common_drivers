@@ -1315,24 +1315,24 @@
 };
 
 &dwc3 {
-	status = "disable";
+	status = "okay";
 };
 
 &usb2_phy_v2 {
-	status = "disable";
+	status = "okay";
 	portnum = <2>;
 };
 
 &usb3_phy_v2 {
-	status = "disable";
-	portnum = <0>;
+	status = "okay";
+	portnum = <1>;
 	otg = <1>;
 	gpio-vbus-power = "GPIOH_6";
 	gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
 };
 
 &dwc2_a {
-	status = "disable";
+	status = "okay";
 	/** 0: normal, 1: otg+dwc3 host only, 2: otg+dwc3 device only*/
 	controller-type = <3>;
 };

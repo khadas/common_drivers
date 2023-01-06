@@ -152,7 +152,7 @@ static int crg_core_get_phy(struct crg *crg)
 
 int crg_host_init(struct crg *crg)
 {
-	struct property_entry	props[3];
+	struct property_entry	props[4];
 	struct platform_device	*xhci;
 	int			ret, irq;
 	struct resource		*res;

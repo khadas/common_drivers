@@ -179,7 +179,7 @@ static void crg_host_exit(struct crg_drd *crg)
 
 static int crg_host_init(struct crg_drd *crg)
 {
-	struct property_entry	props[3];
+	struct property_entry	props[4];
 	struct platform_device	*xhci;
 	int			ret, irq;
 	struct resource		*res;

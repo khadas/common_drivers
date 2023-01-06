@@ -179,11 +179,20 @@
 			linux,cma-default;
 		};
 
-		restricted_dma_reserved: restricted_dma_reserved {
-			compatible = "restricted-dma-pool";
-			size = <0x0 0x4000000>;
+		pcie_dma_ops_mm:linux,pcie_dma_ops {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x5000000>;
+			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0x80000000>;
 		};
+	};
+
+	smmu: aml_smmu {
+		compatible = "amlogic,smmu";
+		status = "okay";
+		#iommu-cells = <1>;
+		memory-region = <&pcie_dma_ops_mm>;
 	};
 
 	main_12v: fixregulator@1 {
@@ -1482,7 +1491,7 @@
 
 &pcie {
 	reset-gpio = <&gpio GPIOX_7 GPIO_ACTIVE_HIGH>;
-	memory-region = <&restricted_dma_reserved>;
+	iommu-map = <0x100 &smmu 0x5 0x10>;
 	status = "disable";
 };
 

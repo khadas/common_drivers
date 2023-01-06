@@ -1219,6 +1219,15 @@ static struct vrr_data_s vrr_data_t5w = {
 	.sw_vspin = vrr_set_venc_vspin_t5w,
 };
 
+static struct vrr_data_s vrr_data_t5m = {
+	.chip_type = VRR_CHIP_T5M,
+	.chip_name = "t5m",
+	.drv_max = 1,
+	.offset = {0x0},
+
+	.sw_vspin = vrr_set_venc_vspin,
+};
+
 static const struct of_device_id vrr_dt_match_table[] = {
 	{
 		.compatible = "amlogic, vrr-t7",
@@ -1231,6 +1240,10 @@ static const struct of_device_id vrr_dt_match_table[] = {
 	{
 		.compatible = "amlogic, vrr-t5w",
 		.data = &vrr_data_t5w,
+	},
+	{
+		.compatible = "amlogic, vrr-t5m",
+		.data = &vrr_data_t5m,
 	},
 	{}
 };

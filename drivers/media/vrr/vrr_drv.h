@@ -35,6 +35,7 @@ enum vrr_chip_e {
 	VRR_CHIP_T7 = 0,
 	VRR_CHIP_T3 = 1,
 	VRR_CHIP_T5W = 2,
+	VRR_CHIP_T5M = 3,
 	VRR_CHIP_MAX,
 };
 

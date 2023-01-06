@@ -1694,8 +1694,8 @@
 	};
 
 	vrr0: vrr0 {
-		compatible = "amlogic, vrr-t3";
-		status = "disabled";
+		compatible = "amlogic, vrr-t5m";
+		status = "okay";
 		index = <0>;
 		line_delay = <600>;
 		interrupts = <0 197 1>;

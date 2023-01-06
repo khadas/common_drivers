@@ -57,11 +57,13 @@
 		ports = <&connectors_dev>;
 		fbdev_sizes = <1920 1080 1920 2160 32>;
 		osd_ver = /bits/ 8 <OSD_V7>;
-		osd_afbc_mask = <4>;
+		/* 0:def group 1:def group + 1010102 formats */
+		osd_formats_group = <1>;
+		/* OSD1&OSD2 with afbc, OSD3 has no afbc */
+		osd_afbc_mask = <3>;
 		vfm_mode = <1>; /** 0:drm mode 1:composer mode */
 		memory-region = <&logo_reserved>;
-		primary_plane_index = <0>; /* primary plane index for crtcs */
-		crtc_masks = <1 1 1>; /*for encoder: 0:hdmi 1:lcd 2:cvbs*/
+		crtc_masks = <0 1 1>; /*for encoder: 0:hdmi 1:lcd 2:cvbs*/
 
 		vpu_topology: vpu_topology {
 			vpu_blocks {

@@ -329,7 +329,7 @@ int meson_panel_dev_bind(struct drm_device *drm,
 	}
 
 	/* Encoder */
-	encoder->possible_crtcs = priv->crtc_masks[ENCODER_LCD];
+	encoder->possible_crtcs = priv->of_conf.crtc_masks[ENCODER_LCD];
 	drm_encoder_helper_add(encoder, &meson_panel_encoder_helper_funcs);
 	ret = drm_encoder_init(drm, encoder, &meson_panel_encoder_funcs,
 			       encoder_type, "am_lcd_encoder");

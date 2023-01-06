@@ -1870,7 +1870,7 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	connector->interlace_allowed = 1;
 
 	/* Encoder */
-	encoder->possible_crtcs = priv->crtc_masks[ENCODER_HDMI];
+	encoder->possible_crtcs = priv->of_conf.crtc_masks[ENCODER_HDMI];
 	drm_encoder_helper_add(encoder, &meson_hdmitx_encoder_helper_funcs);
 	ret = drm_encoder_init(drm, encoder, &meson_hdmitx_encoder_funcs,
 			       DRM_MODE_ENCODER_TMDS, "am_hdmi_encoder");

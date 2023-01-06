@@ -184,8 +184,7 @@ static int am_meson_drm_bind(struct device *dev)
 	struct meson_drm *priv;
 	struct drm_device *drm;
 	struct platform_device *pdev = to_platform_device(dev);
-	u32 crtc_masks[ENCODER_MAX];
-	int i, vpu_dma_mask, ret = 0;
+	int ret = 0;
 
 	meson_driver.driver_features = DRIVER_HAVE_IRQ | DRIVER_GEM |
 		DRIVER_MODESET | DRIVER_ATOMIC | DRIVER_RENDER;
@@ -207,29 +206,6 @@ static int am_meson_drm_bind(struct device *dev)
 	priv->bound_data.connector_component_bind = meson_connector_dev_bind;
 	priv->bound_data.connector_component_unbind = meson_connector_dev_unbind;
 	priv->osd_occupied_index = -1;
-	/*initialize encoders crtc_masks, it will replaced by dts*/
-	for (i = 0; i < ENCODER_MAX; i++)
-		priv->crtc_masks[i] = 1;
-
-	ret = of_property_read_u32_array(dev->of_node, "crtc_masks",
-		crtc_masks, ENCODER_MAX);
-	if (ret) {
-		DRM_ERROR("crtc_masks get fail!\n");
-	} else {
-		for (i = 0; i < ENCODER_MAX; i++)
-			priv->crtc_masks[i] = crtc_masks[i];
-	}
-
-	vpu_dma_mask = 0;
-	ret = of_property_read_u32(dev->of_node, "vpu_dma_mask", &vpu_dma_mask);
-	if (!ret && vpu_dma_mask == 1) {
-		ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64));
-		if (ret)
-			ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
-
-		if (ret)
-			DRM_ERROR("drm set dma mask fail\n");
-	}
 
 	dev_set_drvdata(dev, priv);
 

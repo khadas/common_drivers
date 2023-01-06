@@ -163,6 +163,22 @@ const struct meson_drm_format_info *__meson_drm_format_info(u32 format)
 			.hw_blkmode = BLOCK_MODE_32BIT,
 			.hw_colormat = COLOR_MATRIX_BGRA8888,
 			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_RGBA1010102,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_RGBA1010102,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_ARGB2101010,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_ARGB2101010,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_ABGR2101010,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_ABGR2101010,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_BGRA1010102,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_BGRA1010102,
+			.alpha_replace = 0 },
 		{ .format = DRM_FORMAT_RGB888,
 			.hw_blkmode = BLOCK_MODE_24BIT,
 			.hw_colormat = COLOR_MATRIX_RGB888,
@@ -509,7 +525,7 @@ static void osd_afbc_config(struct meson_vpu_block *vblk,
 static void osd_afbc_config_v7(struct meson_vpu_block *vblk,
 			       struct rdma_reg_ops *reg_ops,
 			       struct osd_mif_reg_s *reg,
-			       u8 osd_index, bool afbc_en)
+			       u8 osd_index, u32 pixel_format, bool afbc_en)
 {
 	if (!afbc_en)
 		reg_ops->rdma_write_reg_bits(reg->viu_osd_ctrl_stat2, 0, 1, 1);
@@ -517,7 +533,14 @@ static void osd_afbc_config_v7(struct meson_vpu_block *vblk,
 		reg_ops->rdma_write_reg_bits(reg->viu_osd_ctrl_stat2, 1, 1, 1);
 
 	osd_mali_unpack_enable(vblk, reg_ops, reg, afbc_en);
-	osd_endian_mode(vblk, reg_ops, reg, !afbc_en);
+	if (pixel_format == DRM_FORMAT_RGBA1010102 ||
+	    pixel_format == DRM_FORMAT_ARGB2101010 ||
+	    pixel_format == DRM_FORMAT_ABGR2101010 ||
+	    pixel_format == DRM_FORMAT_BGRA1010102)
+		osd_endian_mode(vblk, reg_ops, reg, afbc_en);
+	else
+		osd_endian_mode(vblk, reg_ops, reg, !afbc_en);
+
 	osd_mem_mode(vblk, reg_ops, reg, 1);
 	osd_mali_src_en_v7(vblk, reg_ops, reg, osd_index, afbc_en);
 }
@@ -835,7 +858,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	osd_color_config(vblk, reg_ops, reg, pixel_format, mvos->pixel_blend, afbc_en);
 
 	if (pipeline->osd_version == OSD_V7)
-		osd_afbc_config_v7(vblk, reg_ops, reg, vblk->index, afbc_en);
+		osd_afbc_config_v7(vblk, reg_ops, reg, vblk->index, pixel_format, afbc_en);
 	else
 		osd_afbc_config(vblk, reg_ops, reg, vblk->index, afbc_en);
 

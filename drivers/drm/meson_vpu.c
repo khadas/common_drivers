@@ -154,19 +154,7 @@ static void am_meson_vpu_power_config(bool en)
 	meson_vpu_power_config(VPU_VIU2_OSD_ROT, en);
 }
 
-static void am_meson_vpu_get_plane_crtc_mask(struct meson_drm *priv,
-	char *name, u32 num, u32 *crtc_mask)
-{
-	struct device_node *np = priv->dev->of_node;
-	int ret;
 
-	ret = of_property_read_u32_array(np, name,
-		crtc_mask, num);
-	if (ret) {
-		DRM_DEBUG("undefined %s!\n", name);
-		return;
-	}
-}
 
 static int am_meson_vpu_bind(struct device *dev,
 			     struct device *master, void *data)
@@ -178,7 +166,6 @@ static int am_meson_vpu_bind(struct device *dev,
 	struct meson_vpu_pipeline *pipeline = private->pipeline;
 	struct am_meson_crtc *amcrtc;
 	struct meson_vpu_data *vpu_data;
-	u32 osd_occupied_index;
 	int i, ret, irq;
 
 	DRM_DEBUG("%s in[%d]\n", __func__, __LINE__);
@@ -189,26 +176,7 @@ static int am_meson_vpu_bind(struct device *dev,
 	vpu_topology_populate(pipeline);
 	meson_vpu_block_state_init(private, private->pipeline);
 
-	ret = of_property_read_u8(dev->of_node,
-				  "osd_ver", &pipeline->osd_version);
-
-	ret = of_property_read_u32(dev->of_node,
-				"osd_occupied_index", &osd_occupied_index);
-	if (!ret)
-		private->osd_occupied_index = osd_occupied_index;
-
-	am_meson_vpu_get_plane_crtc_mask(private, "crtcmask_of_osd",
-		pipeline->num_osds, private->crtcmask_osd);
-	am_meson_vpu_get_plane_crtc_mask(private, "crtcmask_of_video",
-		pipeline->num_video, private->crtcmask_video);
-	/* overwrite ctrc mask of video&osd, these should be defined in xxx.dts,
-	 * it is mainly suitable to the board with different configurations for
-	 * the same chip.
-	 */
-	am_meson_vpu_get_plane_crtc_mask(private, "overwrite_crtcmask_of_osd",
-		pipeline->num_osds, private->crtcmask_osd);
-	am_meson_vpu_get_plane_crtc_mask(private, "overwrite_crtcmask_of_video",
-		pipeline->num_video, private->crtcmask_video);
+	meson_of_init(drm_dev, private);
 
 	ret = am_meson_plane_create(private);
 	if (ret) {

@@ -51,6 +51,20 @@ enum vpu_enc_type {
 	ENCODER_MAX
 };
 
+struct meson_of_conf {
+	/*for encoder: 0:hdmi 1:lcd 2:cvbs*/
+	u32 crtc_masks[ENCODER_MAX];
+
+	u32 vfm_mode;
+
+	u32 osd_afbc_mask;
+
+	u32 crtcmask_osd[MESON_MAX_OSD];
+	u32 crtcmask_video[MESON_MAX_VIDEO];
+
+	u32 osd_formats_group;
+};
+
 struct meson_drm {
 	struct device *dev;
 
@@ -79,12 +93,8 @@ struct meson_drm {
 	u32 num_planes;
 	struct am_osd_plane *osd_planes[MESON_MAX_OSD];
 	struct am_video_plane *video_planes[MESON_MAX_VIDEO];
-	u32 crtcmask_osd[MESON_MAX_OSD];
-	u32 crtcmask_video[MESON_MAX_VIDEO];
-	u32 osd_afbc_mask;
 
-	/*for encoder: 0:hdmi 1:lcd 2:cvbs*/
-	u32 crtc_masks[ENCODER_MAX];
+	struct meson_of_conf of_conf;
 
 	/*CONFIG_AMLOGIC_DRM_EMULATE_FBDEV*/
 	struct meson_drm_fbdev_config ui_config;
@@ -109,6 +119,9 @@ int meson_atomic_commit(struct drm_device *dev,
 			     struct drm_atomic_state *state,
 			     bool nonblock);
 void meson_atomic_helper_commit_tail(struct drm_atomic_state *old_state);
+
+/*meson of parse*/
+void meson_of_init(struct drm_device *dev, struct meson_drm *priv);
 /*******************************/
 
 #ifdef CONFIG_DEBUG_FS

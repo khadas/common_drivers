@@ -209,7 +209,7 @@ int meson_cvbs_dev_bind(struct drm_device *drm,
 	connector = &am_drm_cvbs->base.connector;
 
 	/* Encoder */
-	encoder->possible_crtcs = priv->crtc_masks[ENCODER_CVBS];
+	encoder->possible_crtcs = priv->of_conf.crtc_masks[ENCODER_CVBS];
 	drm_encoder_helper_add(encoder, &am_cvbs_encoder_helper_funcs);
 
 	ret = drm_encoder_init(drm, encoder, &am_cvbs_encoder_funcs,

@@ -57,6 +57,23 @@ static const u32 supported_drm_formats[] = {
 	DRM_FORMAT_RGB565,
 };
 
+static const u32 supported_drm_formats_v2[] = {
+	DRM_FORMAT_RGBA1010102,
+	DRM_FORMAT_ARGB2101010,
+	DRM_FORMAT_ABGR2101010,
+	DRM_FORMAT_BGRA1010102,
+	DRM_FORMAT_XRGB8888,
+	DRM_FORMAT_XBGR8888,
+	DRM_FORMAT_RGBX8888,
+	DRM_FORMAT_BGRX8888,
+	DRM_FORMAT_ARGB8888,
+	DRM_FORMAT_ABGR8888,
+	DRM_FORMAT_RGBA8888,
+	DRM_FORMAT_BGRA8888,
+	DRM_FORMAT_RGB888,
+	DRM_FORMAT_RGB565,
+};
+
 static u64 video_fbc_modifier[] = {
 	DRM_FORMAT_MOD_AMLOGIC_FBC(AMLOGIC_FBC_LAYOUT_BASIC, 0),
 	DRM_FORMAT_MOD_AMLOGIC_FBC(AMLOGIC_FBC_LAYOUT_BASIC,
@@ -512,32 +529,6 @@ static int meson_video_plane_get_fb_info(struct drm_plane *plane,
 		  plane_info->fb_size[0],
 		  plane_info->fb_size[1]);
 	return 0;
-}
-
-static u32 meson_video_parse_config(struct drm_device *dev)
-{
-	u32 mode_flag = 0;
-	int ret;
-
-	ret = of_property_read_u32(dev->dev->of_node,
-				   "vfm_mode", &mode_flag);
-	if (ret)
-		DRM_INFO("%s parse vfm mode fail!\n", __func__);
-
-	return mode_flag;
-}
-
-static u32 meson_osd_parse_config(struct drm_device *dev)
-{
-	u32 osd_afbc_mask = 0;
-	int ret;
-
-	ret = of_property_read_u32(dev->dev->of_node,
-				   "osd_afbc_mask", &osd_afbc_mask);
-	if (ret)
-		DRM_INFO("%s parse osd afbc mask fail!\n", __func__);
-
-	return osd_afbc_mask;
 }
 
 static const char *am_meson_video_fence_get_driver_name(struct dma_fence *fence)
@@ -1411,7 +1402,7 @@ static void meson_plane_get_primary_plane(struct meson_drm *priv,
 
 	for (i = 0; i < MESON_MAX_CRTC; i++) {
 		for (j = 0; j < MESON_MAX_OSDS; j++) {
-			if (i == priv->crtcmask_osd[j] &&
+			if (i == priv->of_conf.crtcmask_osd[j] &&
 				priv->osd_occupied_index != j) {
 				first_plane = (first_plane != -1) ? first_plane : j;
 
@@ -1430,9 +1421,12 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 		int i, u32 crtc_mask, enum drm_plane_type type)
 {
 	struct am_osd_plane *osd_plane;
+	struct meson_of_conf *conf;
 	struct drm_plane *plane;
 	u32  zpos, min_zpos, max_zpos, osd_index;
 	char plane_name[8];
+	const u32 *formats_group;
+	int num_formats;
 	const char *const_plane_name;
 
 	osd_plane = devm_kzalloc(priv->drm->dev, sizeof(*osd_plane),
@@ -1446,6 +1440,7 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 	osd_plane->drv = priv;
 	osd_plane->plane_index = i;
 	osd_plane->plane_type = OSD_PLANE;
+	conf = &priv->of_conf;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_FB
 	get_logo_osd_reverse(&osd_index, &logo.osd_reverse);
@@ -1478,22 +1473,30 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 	else
 		osd_plane->osd_occupied = false;
 
-	if (priv->osd_afbc_mask) {
+	if (conf->osd_formats_group) {
+		formats_group = supported_drm_formats_v2;
+		num_formats = ARRAY_SIZE(supported_drm_formats_v2);
+	} else {
+		formats_group = supported_drm_formats;
+		num_formats = ARRAY_SIZE(supported_drm_formats);
+	}
+
+	if (conf->osd_afbc_mask & BIT(i)) {
+		drm_universal_plane_init(priv->drm, plane, 1 << crtc_mask,
+					 &am_osd_plane_funs,
+					 formats_group,
+					 num_formats,
+					 afbc_modifier,
+					 type, const_plane_name);
+	} else {
 		priv->drm->mode_config.allow_fb_modifiers = false;
 		drm_universal_plane_init(priv->drm, plane, 1 << crtc_mask,
 					 &am_osd_plane_funs,
-					 supported_drm_formats,
-					 ARRAY_SIZE(supported_drm_formats),
+					 formats_group,
+					 num_formats,
 					 NULL,
 					 type, const_plane_name);
 		priv->drm->mode_config.allow_fb_modifiers = true;
-	} else {
-		drm_universal_plane_init(priv->drm, plane, 1 << crtc_mask,
-					 &am_osd_plane_funs,
-					 supported_drm_formats,
-					 ARRAY_SIZE(supported_drm_formats),
-					 afbc_modifier,
-					 type, const_plane_name);
 	}
 	drm_plane_create_blend_mode_property(plane,
 				BIT(DRM_MODE_BLEND_PIXEL_NONE) |
@@ -1575,17 +1578,15 @@ int am_meson_plane_create(struct meson_drm *priv)
 	struct am_osd_plane *plane;
 	struct am_video_plane *video_plane;
 	struct meson_vpu_pipeline *pipeline = priv->pipeline;
+	struct meson_of_conf *conf = &priv->of_conf;
 	enum drm_plane_type type[MESON_MAX_OSD];
 	int i, osd_index, video_index;
-	u32 vfm_mode;
-	u32 osd_afbc_mask;
 
 	memset(priv->osd_planes, 0, sizeof(struct am_osd_plane *) * MESON_MAX_OSD);
 	memset(priv->video_planes, 0, sizeof(struct am_video_plane *) * MESON_MAX_VIDEO);
 
 	/*calculate primary plane*/
 	meson_plane_get_primary_plane(priv, type);
-	osd_afbc_mask = meson_osd_parse_config(priv->drm);
 
 	/*osd plane*/
 	for (i = 0; i < MESON_MAX_OSD; i++) {
@@ -1593,8 +1594,9 @@ int am_meson_plane_create(struct meson_drm *priv)
 			continue;
 
 		osd_index = pipeline->osds[i]->base.index;
-		priv->osd_afbc_mask = osd_afbc_mask >> i & 1;
-		plane = am_osd_plane_create(priv, osd_index, priv->crtcmask_osd[i], type[i]);
+		plane = am_osd_plane_create(priv, osd_index,
+					    conf->crtcmask_osd[i],
+					    type[i]);
 
 		if (!plane)
 			return -ENOMEM;
@@ -1605,16 +1607,16 @@ int am_meson_plane_create(struct meson_drm *priv)
 		priv->osd_planes[i] = plane;
 		priv->num_planes++;
 	}
-	vfm_mode = meson_video_parse_config(priv->drm);
 
 	/*video plane: init after osd to provide osd id at first.*/
 	for (i = 0; i < pipeline->num_video; i++) {
 		video_index = pipeline->video[i]->base.index;
-		video_plane = am_video_plane_create(priv, video_index, priv->crtcmask_video[i]);
+		video_plane = am_video_plane_create(priv, video_index,
+						    conf->crtcmask_video[i]);
 		if (!video_plane)
 			return -ENOMEM;
 
-		video_plane->vfm_mode = vfm_mode;
+		video_plane->vfm_mode = conf->vfm_mode;
 		priv->video_planes[i] = video_plane;
 		priv->num_planes++;
 	}

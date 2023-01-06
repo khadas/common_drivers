@@ -105,14 +105,14 @@ extern int frc_dbg_en;
 	} while (0)
 */
 //------------------------------------------------------- buf define start
-#define FRC_COMPRESS_RATE		100                 /*100: means no compress,60,80,50,55*/
+#define FRC_COMPRESS_RATE		60                 /*100: means no compress,60,80,50,55*/
 #define FRC_COMPRESS_RATE_60_SIZE       (212 * 1024 * 1024)    // Need 209.2MB ( 0xD60000) 4MB Align
 #define FRC_COMPRESS_RATE_80_SIZE       (276 * 1024 * 1024)    // Need 274.7MB  4MB Align
 #define FRC_COMPRESS_RATE_50_SIZE       (180 * 1024 * 1024)    // Need 176.4MB  4MB Align
 #define FRC_COMPRESS_RATE_55_SIZE       (196 * 1024 * 1024)    // Need 192.7MB  4MB Align
 // mc-y 48%  mc-c 39%  me 60%
-#define FRC_COMPRESS_RATE_MC_Y		100
-#define FRC_COMPRESS_RATE_MC_C		100
+#define FRC_COMPRESS_RATE_MC_Y		48
+#define FRC_COMPRESS_RATE_MC_C		39
 #define FRC_COMPRESS_RATE_ME		100
 
 #define FRC_TOTAL_BUF_NUM		16

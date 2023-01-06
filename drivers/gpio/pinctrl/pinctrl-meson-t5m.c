@@ -1923,9 +1923,9 @@ static struct meson_pmx_func meson_t5m_periphs_functions[] __initdata = {
 
 static struct meson_bank meson_t5m_analog_banks[] = {
 	BANK("ANALOG", CDAC_IOUT, CVBS1,   140, 142,
-	     0,  31, 0, 30, 0, 0, 0, 0, 1, 0),
+	     0,  31, 0, 30, 1, 0, 0, 30, 0, 0),
 	BANK("ANALOG", SARADC_CH0_IO, SARADC_CH4_IO,  -1, -1,
-	     0,  31, 0, 30, 0, 0, 0, 0, 1, 0)
+	     0,  29, 0, 28, 0, 27, 0, 26, 0, 25)
 };
 
 static struct meson_pmx_bank meson_t5m_analog_pmx_banks[] = {

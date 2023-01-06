@@ -298,7 +298,7 @@
 
 	gpio_keypad {
 		compatible = "amlogic, gpio_keypad";
-		status = "disable";
+		status = "okay";
 		scan_period = <20>;
 		key_num = <1>;
 		key_name = "power";
@@ -309,7 +309,7 @@
 
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
-		status = "disable";
+		status = "okay";
 		key_name = "vol-", "vol+", "enter";
 		key_num = <3>;
 		io-channels = <&saradc SARADC_CH2>;
@@ -1368,7 +1368,7 @@
 };
 
 &saradc {
-	status = "disable";
+	status = "okay";
 };
 
 &spicc1 {

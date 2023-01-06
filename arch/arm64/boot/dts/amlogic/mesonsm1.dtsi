@@ -50,16 +50,16 @@
 			reg = <0x0 0x0>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0>;
-			//clocks = <&clkc CLKID_CPU_CLK>,
-			//	<&clkc CLKID_CPU_FCLK_P>,
-			//	<&clkc CLKID_SYS_PLL>,
-			//	<&clkc CLKID_DSU_CLK>,
-			//	<&clkc CLKID_DSU_PRE_CLK>;
-			//clock-names = "core_clk",
-			//	"low_freq_clk_parent",
-			//	"high_freq_clk_parent",
-			//	"dsu_clk",
-			//	"dsu_pre_parent";
+			clocks = <&clkc CLKID_CPU_CLK>,
+				<&clkc CLKID_CPU_CLK_DYN>,
+				<&clkc CLKID_SYS_PLL>,
+				<&clkc CLKID_DSU_CLK>,
+				<&clkc CLKID_DSU_CLK_DYN>;
+			clock-names = "core_clk",
+				"low_freq_clk_parent",
+				"high_freq_clk_parent",
+				"dsu_clk",
+				"dsu_pre_parent";
 			operating-points-v2 = <&cpu_opp_table0>;
 			cpu-supply = <&vddcpu0>;
 			voltage-tolerance = <0>;

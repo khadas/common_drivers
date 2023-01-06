@@ -18,6 +18,8 @@
 #include <dt-bindings/thermal/thermal.h>
 #include <dt-bindings/reset/amlogic,meson-g12a-reset.h>
 #include <dt-bindings/input/meson_ir.h>
+#include <dt-bindings/reset/amlogic,meson-dos-reset.h>
+#include <dt-bindings/power/amlogic-sm1-power.h>
 #include "meson-ir-map.dtsi"
 
 / {
@@ -500,16 +502,184 @@
 		reg = <0x0 0xff809000 0x0 0x48>;
 	};
 
-	pwrdm: power-domains {
-		compatible = "amlogic,sm1-power-domain";
-		reg = <0x0 0xff62fc00 0x0 0xf0>,
-		      <0x0 0xff8000e8 0x0 0x10>,
-		      <0x0 0xff63c0d0 0x0 0x70>,
-		      <0x0 0xffd01080 0x0 0x20>;
-		vpu_mempd_reg3 = <0x3c>;
-		vpu_mempd_reg4 = <0x40>;
-		status = "disabled";
+	codec_dos_reset: reset-controller@ff620000 {
+		compatible = "amlogic,meson-sm1-dos-reset";
+		status = "okay";
+		reg = <0x0 0xff620000 0x0 0x10000>;
+		#reset-cells = <1>;
 	};
+
+	pwrdm: power-domains@0xff62fcc0 {
+			compatible = "amlogic,sm1-power-domain";
+			reg = <0x0 0xff62fcc0 0x0 0x40>;
+			reg-names = "dos";
+			#power-domain-cells = <1>;
+			amlogic,ao-sysctrl = <&rti>;
+			amlogic,hhi-sysctrl = <&hhi>;
+			vpu,reset = <&vpu_pd_rst>;
+			nna,reset = <&nn_pd_rst>;
+			usb,reset = <&usb_pd_rst>;
+			pcie,reset = <&pcie_pd_rst>;
+			ge2d,reset = <&ge2d_pd_rst>;
+			vdec,reset = <&vdec_pd_rst>;
+			hcodec,reset = <&hcodec_pd_rst>;
+			hevc,reset = <&hevc_pd_rst>;
+			wave420l,reset = <&wave420l_pd_rst>;
+			clocks = <&clkc CLKID_VPU>,
+				 <&clkc CLKID_VAPB>;
+			clock-names = "vpu", "vapb";
+			/*
+			 * VPU clocking is provided by two identical clock paths
+			 * VPU_0 and VPU_1 muxed to a single clock by a glitch
+			 * free mux to safely change frequency while running.
+			 * Same for VAPB but with a final gate after the glitch free mux.
+			 */
+			assigned-clocks = <&clkc CLKID_VPU_0_SEL>,
+					  <&clkc CLKID_VPU_0>,
+					  <&clkc CLKID_VPU>, /* Glitch free mux */
+					  <&clkc CLKID_VAPB_0_SEL>,
+					  <&clkc CLKID_VAPB_0>,
+					  <&clkc CLKID_VAPB_SEL>; /* Glitch free mux */
+			assigned-clock-parents = <&clkc CLKID_FCLK_DIV3>,
+						 <0>, /* Do Nothing */
+						 <&clkc CLKID_VPU_0>,
+						 <&clkc CLKID_FCLK_DIV4>,
+						 <0>, /* Do Nothing */
+						 <&clkc CLKID_VAPB_0>;
+			assigned-clock-rates = <0>, /* Do Nothing */
+						   <666666666>,
+						   <0>, /* Do Nothing */
+						   <0>, /* Do Nothing */
+						   <250000000>,
+						   <0>; /* Do Nothing */
+			status = "okay";
+	};
+
+	vpu_pd_rst: vpu_rst {
+			resets = <&reset RESET_VIU>,
+				 <&reset RESET_VENC>,
+				 <&reset RESET_VCBUS>,
+				 <&reset RESET_BT656>,
+				 <&reset RESET_RDMA>,
+				 <&reset RESET_VENCI>,
+				 <&reset RESET_VENCP>,
+				 <&reset RESET_VDAC>,
+				 <&reset RESET_VDI6>,
+				 <&reset RESET_VENCL>,
+				 <&reset RESET_VID_LOCK>;
+			reset-names = "viu", "venc", "vcbus", "bt656",
+				"rdma", "venci", "vencp", "vdac",
+				"vdi6", "vencl", "vid_lock";
+		};
+
+		nn_pd_rst: nn_rst {
+			resets = <&reset RESET_NN_PIPELINE0>,
+				<&reset RESET_NN>,
+				<&reset RESET_NN_PIPELINE1>;
+			reset-names = "nn_pipeline0", "nn",
+				"nn_pipeline1";
+		};
+
+		usb_pd_rst: usb_rst {
+			resets = <&reset RESET_USB>;
+			reset-names = "usb";
+		};
+
+		pcie_pd_rst: pcie_rst {
+			resets = <&reset RESET_PCIE_CTRL_A>,
+				<&reset RESET_PCIE_PHY>,
+				<&reset RESET_PCIE_APB>;
+			reset-names = "pcie_ctrl_a", "pcie_phy",
+				"pcie_apb";
+		};
+
+		ge2d_pd_rst: ge2d_rst {
+			resets = <&reset RESET_GE2D>;
+			reset-names = "ge2d";
+		};
+
+		vdec_pd_rst: vdec_rst {
+			resets = <&codec_dos_reset RESET0_VDEC1_MDEC_CBUS>,
+				<&codec_dos_reset RESET0_VDEC1_MDEC_VLD0>,
+				<&codec_dos_reset RESET0_VDEC1_MDEC_VLD1>,
+				<&codec_dos_reset RESET0_VDEC1_MDEC_VLD2>,
+				<&codec_dos_reset RESET0_VDEC1_MDEC_IQIDCT>,
+				<&codec_dos_reset RESET0_VDEC1_MDEC_MC>,
+				<&codec_dos_reset RESET0_VDEC1_MDEC_DBLK>,
+				<&codec_dos_reset RESET0_VDEC1_MDEC_PIC_DC>,
+				<&codec_dos_reset RESET0_VDEC1_MDEC_PSCALE>,
+				<&codec_dos_reset RESET0_VDEC1_VCPU_MCPU>,
+				<&codec_dos_reset RESET0_VDEC1_VCPU_CCPU>,
+				<&codec_dos_reset RESET0_VDEC1_MMC_PRE_ARB>,
+				<&codec_dos_reset 14>;
+			reset-names = "vdec_cbus", "vdec_vld0","vdec_vld1",
+				"vdec_vld2", "vdec_dct", "vdec_mc",
+				"vdec_dblk", "vdec_dc", "vdec_pscale",
+				"vdec_mcpu", "vdec_ccpu", "vdec_bit14";
+		};
+
+		hcodec_pd_rst: hcodec_rst {
+			resets = <&codec_dos_reset RESET1_HCODEC_HDEC_CBUS>,
+				<&codec_dos_reset RESET1_HCODEC_HDEC_VLD0>,
+				<&codec_dos_reset RESET1_HCODEC_HDEC_VLD1>,
+				<&codec_dos_reset RESET1_HCODEC_HDEC_VLD2>,
+				<&codec_dos_reset RESET1_HCODEC_HDEC_IQIDCT>,
+				<&codec_dos_reset RESET1_HCODEC_HDEC_MC>,
+				<&codec_dos_reset RESET1_HCODEC_HDEC_DBLK>,
+				<&codec_dos_reset RESET1_HCODEC_HDEC_PIC_DC>,
+				<&codec_dos_reset RESET1_HCODEC_HDEC_PSCALE>,
+				<&codec_dos_reset RESET1_HCODEC_VCPU_MCPU>,
+				<&codec_dos_reset RESET1_HCODEC_VCPU_CCPU>,
+				<&codec_dos_reset RESET1_HCODEC_MMC_PRE_ARB>,
+				<&codec_dos_reset RESET1_HCODEC_RESERVED2>,
+				<&codec_dos_reset RESET1_HCODEC_RESERVED3>,
+				<&codec_dos_reset RESET1_HCODEC_HENC_VLC>,
+				<&codec_dos_reset 49>;
+			reset-names = "hcodec_cbus", "hcodec_vld0",
+				"hcodec_vld1", "hcodec_vld2", "hcodec_dct",
+				"hcodec_mc", "hcodec_dblk", "hcodec_dc",
+				"hcodec_pscale", "hcodec_mcpu", "hcodec_ccpu",
+				"hcodec_pre", "hcodec_res2", "hcodec_res3",
+				"hcodec_vlc", "hcodec_bit17";
+		};
+
+		hevc_pd_rst: hevc_rst {
+			resets = <&codec_dos_reset RESET3_BIT2>,
+				<&codec_dos_reset RESET3_BIT3>,
+				<&codec_dos_reset RESET3_BIT4>,
+				<&codec_dos_reset RESET3_BIT5>,
+				<&codec_dos_reset RESET3_BIT6>,
+				<&codec_dos_reset RESET3_BIT7>,
+				<&codec_dos_reset RESET3_BIT8>,
+				<&codec_dos_reset RESET3_BIT9>,
+				<&codec_dos_reset RESET3_BIT10>,
+				<&codec_dos_reset RESET3_BIT11>,
+				<&codec_dos_reset RESET3_BIT12>,
+				<&codec_dos_reset RESET3_BIT13>,
+				<&codec_dos_reset RESET3_BIT14>,
+				<&codec_dos_reset RESET3_BIT15>,
+				<&codec_dos_reset RESET3_BIT16>,
+				<&codec_dos_reset RESET3_BIT17>,
+				<&codec_dos_reset RESET3_BIT18>,
+				<&codec_dos_reset RESET3_BIT19>,
+				<&codec_dos_reset RESET3_BIT24>;
+			reset-names = "hevc_bit2", "hevc_bit3", "hevc_bit4",
+				"hevc_bit5","hevc_bit6", "hevc_bit7",
+				"hevc_bit8", "hevc_bit9", "hevc_bit10",
+				"hevc_bit11", "hevc_bit12", "hevc_bit13",
+				"hevc_bit14", "hevc_bit15", "hevc_bit16",
+				"hevc_bit17", "hevc_bit18", "hevc_bit19",
+				"hevc_bit24";
+		};
+
+		wave420l_pd_rst: wave420l_rst {
+			resets = <&codec_dos_reset RESET4_BIT8>,
+				<&codec_dos_reset RESET4_BIT9>,
+				<&codec_dos_reset RESET4_BIT10>,
+				<&codec_dos_reset RESET4_BIT11>;
+			reset-names = "wave_bit8", "wave_bit9", "wave_bit10",
+				"wave_bit11";
+		};
 
 	bl40: bl40 {
 		compatible = "amlogic, bl40-bootup";

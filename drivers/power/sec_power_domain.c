@@ -669,16 +669,12 @@ static struct platform_driver sec_pd_driver = {
 	},
 };
 
-#ifdef MODULE
-module_platform_driver(sec_pd_driver);
-#else
-static int sec_pd_init(void)
+int __init sec_power_domain_init(void)
 {
 	return platform_driver_register(&sec_pd_driver);
 }
-arch_initcall_sync(sec_pd_init);
-#endif
 
-MODULE_DESCRIPTION("Amlogic power domain driver");
-MODULE_LICENSE("GPL v2");
-
+void __exit sec_power_domain_exit(void)
+{
+	platform_driver_unregister(&sec_pd_driver);
+}

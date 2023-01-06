@@ -7,4 +7,9 @@ config AMLOGIC_RESET_MESON
 	help
 	  This enables the reset driver for Amlogic Meson SoCs.
 
+config AMLOGIC_DOS_RESET_MESON
+	tristate "Meson Dos Reset Driver"
+	help
+	  This enables the reset driver for Amlogic Dos Meson SoCs.
+
 endif

@@ -171,14 +171,12 @@ static struct platform_driver meson_reset_driver = {
 	},
 };
 
-#ifdef CONFIG_AMLOGIC_MODIFY
-static int __init meson_reset_driver_init(void)
+int __init meson_reset_driver_init(void)
 {
 	return platform_driver_register(&meson_reset_driver);
 }
-core_initcall(meson_reset_driver_init);
 
-MODULE_LICENSE("GPL");
-#else
-builtin_platform_driver(meson_reset_driver);
-#endif
+void __exit meson_reset_driver_exit(void)
+{
+	platform_driver_unregister(&meson_reset_driver);
+}

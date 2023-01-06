@@ -9,10 +9,10 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-mailbox
 	amlogic-pwm
 	pwm-regulator
+	amlogic-reset
 	amlogic-power
 	amlogic-cpuinfo
 	amlogic-cpufreq
-	amlogic-reset
 	amlogic-efuse-unifykey
 	amlogic-mmc
 	amlogic-i2c.ko

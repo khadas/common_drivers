@@ -421,7 +421,7 @@ static int meson_pwm_apply(struct pwm_chip *chip, struct pwm_device *pwm,
 		if (err < 0)
 			return err;
 #ifdef CONFIG_AMLOGIC_MODIFY
-		PWM_DBG("%s, calc pwm state period: %lluns, duty: %lluns\n",
+		PWM_DBG("%s, calc pwm state period: %llu ns, duty: %llu ns\n",
 						__func__, state->period, state->duty_cycle);
 #endif
 		meson_pwm_enable(meson, pwm);

@@ -1866,9 +1866,13 @@
 			"mailbox_2",
 			"parser_b";
 		power-domains = <&pwrdm PDID_T5M_DOS_HEVC>,
-			<&pwrdm PDID_T5M_DOS_HEVC>;
+			<&pwrdm PDID_T5M_DOS_GE2D_WRAP>,
+			<&pwrdm PDID_T5M_DOS_GE2D_WRAP>,
+			<&pwrdm PDID_T5M_DOS_GE2D_WRAP>;
 		power-domain-names = "pwrc-hevc",
-			"pwrc-dummy";
+			"pwrc-hevc-b",
+			"pwrc-hcodec",
+			"pwrc-vdec";
 	};
 
 	vcodec_dec {

@@ -149,7 +149,6 @@ module_param(frc_rdma_enable, int, 0664);
 MODULE_PARM_DESC(frc_rdma_enable, "frc rdma enable ctrl");
 
 struct frc_rdma_info frc_rdma_s;
-
 struct frc_rdma_info frc_rdma_s2;
 
 struct frc_rdma_info *frc_get_rdma_info(void)
@@ -157,6 +156,12 @@ struct frc_rdma_info *frc_get_rdma_info(void)
 	return &frc_rdma_s;
 }
 EXPORT_SYMBOL(frc_get_rdma_info);
+
+struct frc_rdma_info *frc_get_rdma_info_2(void)
+{
+	return &frc_rdma_s2;
+}
+EXPORT_SYMBOL(frc_get_rdma_info_2);
 
 int is_rdma_enable(void)
 {
@@ -371,10 +376,31 @@ int frc_check_table(u32 addr)
  */
 int frc_rdma_config(int handle, u32 trigger_type)
 {
-	// int i;
+	int i, j;
 	int flag = 30;
-	// u32 temp, count = 0;
+	u32 count = 0;
+	int debug_flag = 32;
 	struct frc_rdma_info *frc_rdma = &frc_rdma_s;
+	struct frc_rdma_info *frc_rdma2 = &frc_rdma_s2;
+
+	// for debug_tool when rdma on
+	if (frc_rdma2->rdma_item_count > 0) {
+		i = frc_rdma->rdma_item_count;
+		count = frc_rdma2->rdma_item_count;
+
+		for (j = 0; j < count; j++) {
+			frc_rdma->rdma_table_addr[i * 2] =
+				frc_rdma2->rdma_table_addr[j * 2];
+			frc_rdma->rdma_table_addr[i * 2 + 1] =
+				frc_rdma2->rdma_table_addr[j * 2 + 1];
+			pr_frc(debug_flag, "addr:0x%04x, value:0x%08x\n",
+				frc_rdma->rdma_table_addr[i * 2],
+				frc_rdma->rdma_table_addr[i * 2 + 1]);
+
+			frc_rdma->rdma_item_count = ++i;
+		}
+		frc_rdma2->rdma_item_count = 0;
+	}
 
 	if (frc_rdma->rdma_item_count > 0 && handle == 0) {
 		// manual RDMA

@@ -630,10 +630,13 @@ free_buf:
 
 void frc_tool_dbg_store(struct frc_dev_s *devp, const char *buf)
 {
+	int i = 0;
 	char *buf_orig, *parm[8] = {NULL};
 	ulong val;
+	int debug_flag = 32;
 	unsigned int reg;
 	unsigned int regvalue;
+	struct frc_rdma_info *frc_rdma2 = frc_get_rdma_info_2();
 
 	buf_orig = kstrdup(buf, GFP_KERNEL);
 	if (!buf_orig)
@@ -657,7 +660,19 @@ void frc_tool_dbg_store(struct frc_dev_s *devp, const char *buf)
 		if (kstrtoul(parm[2], 16, &val) < 0)
 			goto free_buf;
 		regvalue = val;
-		WRITE_FRC_REG_BY_CPU(reg, regvalue);
+
+		if (is_rdma_enable()) {
+			// debug
+			i = frc_rdma2->rdma_item_count;
+			frc_rdma2->rdma_table_addr[i * 2] = reg;
+			frc_rdma2->rdma_table_addr[i * 2 + 1] = regvalue;
+			frc_rdma2->rdma_item_count++;
+			pr_frc(debug_flag, "addr:0x%04x, value:0x%08x\n",
+				frc_rdma2->rdma_table_addr[i * 2],
+				frc_rdma2->rdma_table_addr[i * 2 + 1]);
+		} else {
+			WRITE_FRC_REG_BY_CPU(reg, regvalue);
+		}
 	}
 
 free_buf:

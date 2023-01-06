@@ -81,6 +81,7 @@ int frc_rdma_config(int handle, u32 trigger_type);
 
 int frc_rdma_init(void);
 struct frc_rdma_info *frc_get_rdma_info(void);
+struct frc_rdma_info *frc_get_rdma_info_2(void);
 int frc_auto_test(int val, int val2);
 void frc_rdma_speed_test(int num);
 void frc_rdma_reg_list(void);

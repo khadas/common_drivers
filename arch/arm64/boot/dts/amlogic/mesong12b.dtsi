@@ -785,7 +785,7 @@
 
 			cpu_version {
 				compatible = "amlogic,meson-gx-ao-secure", "syscon";
-				reg=<0x0 0x220 0x0 0x4>;
+				reg=<0x0 0x140 0x0 0x4>;
 				amlogic,has-chip-id;
 			};
 
@@ -1870,8 +1870,8 @@
 		interrupt-names = "ddr_bandwidth";
 	};
 	dmc_monitor {
-		compatible = "amlogic, dmc_monitor";
-		status = "disabled";
+		compatible = "amlogic,dmc_monitor-g12b";
+		status = "okay";
 		reg_base = <0xff639000>;
 		interrupts = <0 51 1>;
 	};

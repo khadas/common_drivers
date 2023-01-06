@@ -1409,30 +1409,6 @@ static struct clk *meson_spicc_clk_get(struct meson_spicc_device *spicc)
 	return clk;
 }
 
-#ifdef CONFIG_PM_SLEEP
-/* The clk data rate setting is handled by clk core. We have to save/restore
- * it when system suspend/resume.
- */
-static void meson_spicc_hw_clk_save(struct meson_spicc_device *spicc)
-{
-	spicc->backup_con = readl_relaxed(spicc->base + SPICC_CONREG) &
-			    SPICC_DATARATE_MASK;
-	spicc->backup_enh0 = readl_relaxed(spicc->base + SPICC_ENH_CTL0) &
-			     (SPICC_ENH_DATARATE_MASK | SPICC_ENH_DATARATE_EN);
-	spicc->backup_test = readl_relaxed(spicc->base + SPICC_TESTREG) &
-			     SPICC_DELAY_MASK;
-}
-
-static void meson_spicc_hw_clk_restore(struct meson_spicc_device *spicc)
-{
-	writel_bits_relaxed(SPICC_DATARATE_MASK, spicc->backup_con,
-			    spicc->base + SPICC_CONREG);
-	writel_bits_relaxed(SPICC_ENH_DATARATE_MASK | SPICC_ENH_DATARATE_EN,
-			    spicc->backup_enh0, spicc->base + SPICC_ENH_CTL0);
-	writel_bits_relaxed(SPICC_DELAY_MASK, spicc->backup_test,
-			    spicc->base + SPICC_TESTREG);
-}
-#endif
 #endif
 
 static int meson_spicc_probe(struct platform_device *pdev)
@@ -1617,7 +1593,6 @@ dev_test:
 	//pm_runtime_use_autosuspend(&pdev->dev);
 	ctlr->auto_runtime_pm = false;
 	//pm_runtime_enable(&pdev->dev);
-	//meson_spicc_hw_clk_save(spicc);
 #endif
 #endif
 
@@ -1680,7 +1655,6 @@ static int meson_spicc_runtime_suspend(struct device *dev)
 {
 	struct meson_spicc_device *spicc = dev_get_drvdata(dev);
 
-	meson_spicc_hw_clk_save(spicc);
 	meson_spicc_clk_disable(spicc);
 
 	spi_controller_put(spicc->controller);
@@ -1693,7 +1667,6 @@ static int meson_spicc_runtime_resume(struct device *dev)
 	struct meson_spicc_device *spicc = dev_get_drvdata(dev);
 
 	meson_spicc_hw_init(spicc);
-	meson_spicc_hw_clk_restore(spicc);
 
 	return meson_spicc_clk_enable(spicc);
 }

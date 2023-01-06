@@ -405,11 +405,6 @@
 		#hwlock-cells = <1>;
 	};
 
-	vdac: vdac {
-		compatible = "amlogic, vdac-t3";
-		status = "disabled";
-		cdac_disable = <0>;
-	};
 
 	adc: adc {
 		compatible = "amlogic, adc-t3";
@@ -1267,9 +1262,9 @@
 
 		amaudio: amaudio {
 			compatible = "amlogic, amaudio";
-			reg = <0x0 0xff610000 0x0 0x10000>;
+			reg = <0x0 0xfe440000 0x0 0x10000>;
 			reg-names = "otp_tee_base";
-			status = "disabled";
+			status = "okay";
 		};
 
 		audiobus: audiobus@0xFE330000 {
@@ -1280,7 +1275,7 @@
 			ranges = <0x0 0x0 0x0 0xFE330000 0x0 0x3000>;
 			chip_id = <0x41>;
 			clkaudio:audio_clocks {
-				compatible = "amlogic, t3-audio-clocks";
+				compatible = "amlogic, t5m-audio-clocks";
 				#clock-cells = <1>;
 				reg = <0x0 0x0 0x0 0xb0>;
 			};
@@ -1670,9 +1665,10 @@
 		vs_meas=<0>;
 	};
 
-	vdac {
+	vdac: vdac {
 		compatible = "amlogic, vdac-t5m";
 		status = "okay";
+		cdac_disable = <0>;
 	};
 
 	adc: adc {

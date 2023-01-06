@@ -28,6 +28,41 @@ static int debug_rw;
 module_param(debug_rw, int, 0644);
 
 static void *p_hw_base;
+static void *p_sys_base;
+
+void aml_sys_write(unsigned int reg, unsigned int val)
+{
+	void *ptr = p_sys_base;
+
+	if (!ptr) {
+		dprint("%s p_sys_base is NULL\n", __func__);
+		return;
+	}
+
+	ptr += reg;
+
+	pr_dbg("write addr:%lx, value:0x%0x\n", (unsigned long)ptr, val);
+
+	writel(val, ptr);
+}
+
+int aml_sys_read(unsigned int reg)
+{
+	int ret = -1;
+	void *addr = p_sys_base;
+
+	if (!addr) {
+		dprint("%s p_sys_base is NULL\n", __func__);
+		return ret;
+	}
+
+	addr += reg;
+
+	ret = readl(addr);
+
+	pr_dbg("read addr:%lx, value:0x%0x\n", (unsigned long)addr, ret);
+	return ret;
+}
 
 void aml_write_self(unsigned int reg, unsigned int val)
 {
@@ -83,11 +118,14 @@ int init_demux_addr(struct platform_device *pdev)
 
 	p_hw_base = devm_ioremap(&pdev->dev, res->start,
 					 resource_size(res));
+
 	if (p_hw_base) {
-		if (chip_flag != 1)
+		if (chip_flag != 1) {
+			p_sys_base = p_hw_base;
 			p_hw_base += 0x440000;
-		pr_dbg("%s base addr = %lx\n", __func__,
-		       (unsigned long)p_hw_base);
+		}
+		pr_dbg("%s hw_base addr = %lx sys_base addr = %lx\n",
+			__func__, (unsigned long)p_hw_base, (unsigned long)p_sys_base);
 	} else {
 		pr_dbg("%s base addr error\n", __func__);
 	}

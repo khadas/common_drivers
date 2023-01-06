@@ -883,6 +883,19 @@ void demux_config_pipeline(int tsn_in, int tsn_out)
 	WRITE_CBUS_REG(CFG_DEMUX_ADDR, data);
 }
 
+void demod_config_tsinb_clk(u8 v)
+{
+	unsigned int data = 0;
+
+	(void)v;
+
+	data = READ_SYS_REG(TS_INB_CLK_CTRL);
+
+	data |= (0x1 << TS_INB_CLK_MUX1_OFFSET | 0x1 << TS_INB_CLK_MUX0_OFFSET);
+
+	WRITE_SYS_REG(TS_INB_CLK_CTRL, data);
+}
+
 void sc2_dump_register(void)
 {
 	int i = 0;

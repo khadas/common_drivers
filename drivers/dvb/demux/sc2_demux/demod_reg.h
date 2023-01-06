@@ -68,6 +68,13 @@
 #define TS_S_OR_P_SEL1						2
 #define FEC_S2P_3WIRE						1
 #define FEC_S2P_SEL							0
+
+#define TS_INB_CLK_MUX0_OFFSET                                  8
+#define TS_INB_CLK_MUX1_OFFSET                                  24
+
+/* TSINB clk control register (t5m new addition) */
+#define TS_INB_CLK_CTRL                                          0x230
+
 /*there are 4 path ctrol for 4 TS input s2p*/
 #define DEMOD_PATH_CTRL(i)     (DEMOD_REG_BASE + 0xa0 + 4 * (i))
 

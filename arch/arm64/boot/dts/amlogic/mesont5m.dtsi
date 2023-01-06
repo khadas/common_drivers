@@ -3352,16 +3352,16 @@
 		};
 	};
 
-dvb_p_ts2_pins: dvb_p_ts2_pins {
+	dvb_p_ts1_pins: dvb_p_ts1_pins {
 		mux {
-			groups = "tsin_b_din0",
-			"tsin_b_din1",
-			"tsin_b_din2",
-			"tsin_b_din3",
-			"tsin_b_din4",
-			"tsin_b_din5",
-			"tsin_b_din6",
-			"tsin_b_din7",
+			groups = "tsin_b_d0",
+			"tsin_b_d1",
+			"tsin_b_d2",
+			"tsin_b_d3",
+			"tsin_b_d4",
+			"tsin_b_d5",
+			"tsin_b_d6",
+			"tsin_b_d7",
 			"tsin_b_clk",
 			"tsin_b_sop",
 			"tsin_b_valid";

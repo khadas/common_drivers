@@ -22,6 +22,7 @@
 #include <linux/gpio.h>
 #include <linux/string.h>
 #include <linux/pinctrl/consumer.h>
+#include <linux/amlogic/cpu_version.h>
 #include <linux/reset.h>
 #include <linux/of_gpio.h>
 #include "../aml_dvb.h"
@@ -198,6 +199,10 @@ static void set_dvb_ts(struct platform_device *pdev,
 		advb->ts[i].mode = AM_TS_DISABLE;
 		advb->ts[i].pinctrl = NULL;
 	}
+
+	/* t5m need set this bit, open ts_inb clock */
+	if (i == 1 && get_cpu_type() >= MESON_CPU_MAJOR_ID_T5M)
+		demod_config_tsinb_clk(1);
 
 	if (IS_ERR_OR_NULL(advb->ts[i].pinctrl))
 		pr_dbg("ts%d:pinctrl:%p Fail.\n",

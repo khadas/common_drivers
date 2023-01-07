@@ -197,12 +197,32 @@ void frc_clk_init(struct frc_dev_s *frc_devp)
 	}
 }
 
-void frc_osdbit_setfalsecolor(u32 falsecolor)
+void frc_osdbit_setfalsecolor(struct frc_dev_s *devp, u32 falsecolor)
 {
-	// WRITE_FRC_BITS(FRC_LOGO_DEBUG, falsecolor, 19, 1);  //  falsecolor enable
-	frc_config_reg_value((falsecolor << 19), 0x80000, &regdata_iplogo_en_0503);
-	WRITE_FRC_REG_BY_CPU(FRC_IPLOGO_EN, regdata_iplogo_en_0503);
+	enum chip_id chip;
+	struct frc_data_s *frc_data;
+	struct frc_dev_s *frc_devp = get_frc_devp();
+	u32 tmp_reg1;
 
+	frc_data = (struct frc_data_s *)frc_devp->data;
+	chip = frc_data->match_data->chip;
+
+	if (chip == ID_T3) {
+		frc_config_reg_value((falsecolor << 19), 0x80000, &regdata_logodbg_0142);
+		WRITE_FRC_REG_BY_CPU(FRC_LOGO_DEBUG, regdata_logodbg_0142);
+	} else if (chip == ID_T5M) {
+		tmp_reg1 = READ_FRC_REG(FRC_MC_LBUF_LOGO_CTRL);
+		regdata_logodbg_0142 = READ_FRC_REG(FRC_LOGO_DEBUG);
+		if (falsecolor == 1) {
+			tmp_reg1 |= (BIT_8 + BIT_7);
+			regdata_logodbg_0142 |= BIT_6;
+		} else {
+			tmp_reg1 &= ~(BIT_8 + BIT_7);
+			regdata_logodbg_0142 &= ~BIT_6;
+		}
+		WRITE_FRC_REG_BY_CPU(FRC_MC_LBUF_LOGO_CTRL, tmp_reg1);
+		WRITE_FRC_REG_BY_CPU(FRC_LOGO_DEBUG, regdata_logodbg_0142);
+	}
 }
 
 void frc_init_config(struct frc_dev_s *devp)
@@ -944,22 +964,31 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	}
 
 	if (frc_top->out_hsize == 1920 && frc_top->out_vsize == 1080) {
-		mevp_frm_dly = 110;
-		mc_frm_dly   = 5;//inp performace issue, need frc_clk >  enc0_clk
+		// mevp_frm_dly = 110;
+		// mc_frm_dly   = 5;
+		//inp performace issue, need frc_clk > enc0_clk
+		mevp_frm_dly = frc_devp->frm_dly_set[0].mevp_frm_dly;
+		mc_frm_dly  = frc_devp->frm_dly_set[0].mc_frm_dly;
 	} else if (frc_top->out_hsize == 3840 && frc_top->out_vsize == 2160) {
-		mevp_frm_dly = 222; // reg readback  under 333MHz
-		mc_frm_dly = 28;   // reg readback (14)  under 333MHz
+		//mevp_frm_dly = 222; // reg readback  under 333MHz
+		//mc_frm_dly = 28;   // reg readback (14)  under 333MHz
 		// mevp_frm_dly = 260;   // under 400MHz
 		// mc_frm_dly = 28;      // under 400MHz
+		mevp_frm_dly = frc_devp->frm_dly_set[1].mevp_frm_dly;
+		mc_frm_dly  = frc_devp->frm_dly_set[1].mc_frm_dly;
 	} else if (frc_top->out_hsize == 3840 && frc_top->out_vsize == 1080) {
 		reg_mc_out_line = (frc_top->vfb / 2) * 1;
 		reg_me_dly_vofst = reg_mc_out_line;
-		mevp_frm_dly = 222; // reg readback  under 333MHz
-		mc_frm_dly = 20;   // reg readback (34)  under 333MHz
+		//mevp_frm_dly = 222; // reg readback  under 333MHz
+		//mc_frm_dly = 20;   // reg readback (34)  under 333MHz
+		mevp_frm_dly = frc_devp->frm_dly_set[2].mevp_frm_dly;
+		mc_frm_dly  = frc_devp->frm_dly_set[2].mc_frm_dly;
 		pr_frc(log, "4k1k_mc_frm_dly:%d\n", mc_frm_dly);
 	} else {
-		mevp_frm_dly = 140;
-		mc_frm_dly = 10;
+		//mevp_frm_dly = 140;
+		//mc_frm_dly = 10;
+		mevp_frm_dly = frc_devp->frm_dly_set[3].mevp_frm_dly;
+		mc_frm_dly  = frc_devp->frm_dly_set[3].mc_frm_dly;
 	}
 
 	//memc_frm_dly

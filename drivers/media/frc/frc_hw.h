@@ -86,7 +86,7 @@ void frc_dump_fixed_table(void);
 void frc_reset(u32 onoff);
 void frc_mc_reset(u32 onoff);
 void frc_force_secure(u32 onoff);
-void frc_osdbit_setfalsecolor(u32 falsecolor);
+void frc_osdbit_setfalsecolor(struct frc_dev_s *frc_devp, u32 falsecolor);
 u8 frc_frame_forcebuf_enable(u8 enable);
 void frc_frame_forcebuf_count(u8 forceidx);
 void inp_undone_read(struct frc_dev_s *frc_devp);

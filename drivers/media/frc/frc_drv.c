@@ -71,6 +71,20 @@
 // #ifdef CONFIG_AMLOGIC_MEDIA_FRC_RDMA
 #include "frc_rdma.h"
 // #endif
+const struct frm_dly_dat_s chip_frc_frame_dly[2][4] = {
+	{ // chip_t3  fhd,4k2k,4k1k,other
+		{130, 11},
+		{222, 28},
+		{222, 20},
+		{140, 10},
+	},
+	{ // chip_t5m  fhd,4k2k,4k1k,other
+		{110,  5},
+		{222, 28},
+		{222, 20},
+		{140, 10},
+	},
+};
 
 // static struct frc_dev_s *frc_dev; // for SWPL-53056:KASAN: use-after-free
 static struct frc_dev_s frc_dev;
@@ -812,10 +826,29 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	fw_data->holdline_parm.reg_post_dly_vofst = 0;/*fixed*/
 	fw_data->holdline_parm.reg_mc_dly_vofst0 = 1;/*fixed*/
 
+	if (fw_data->frc_top_type.chip != 0)
+		memcpy(&devp->frm_dly_set[0],
+			&chip_frc_frame_dly[fw_data->frc_top_type.chip - 1][0],
+			sizeof(struct frm_dly_dat_s) * 4);
+	else
+		memcpy(&devp->frm_dly_set[0],
+			&chip_frc_frame_dly[0][0],
+			sizeof(struct frm_dly_dat_s) * 4);
+	pr_frc(0, "frc_get_dly:%d,%d, %d,%d, %d,%d, %d,%d\n",
+					devp->frm_dly_set[0].mevp_frm_dly,
+					devp->frm_dly_set[0].mc_frm_dly,
+				devp->frm_dly_set[1].mevp_frm_dly,
+				devp->frm_dly_set[1].mc_frm_dly,
+				devp->frm_dly_set[2].mevp_frm_dly,
+				devp->frm_dly_set[2].mc_frm_dly,
+				devp->frm_dly_set[3].mevp_frm_dly,
+				devp->frm_dly_set[3].mc_frm_dly);
+
 	memset(&devp->frc_crc_data, 0, sizeof(struct frc_crc_data_s));
 	memset(&devp->ud_dbg, 0, sizeof(struct frc_ud_s));
 	/*used for force in/out size for frc process*/
 	memset(&devp->force_size, 0, sizeof(struct frc_force_size_s));
+		;
 }
 
 void get_vout_info(struct frc_dev_s *frc_devp)

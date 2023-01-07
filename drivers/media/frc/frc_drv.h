@@ -191,6 +191,11 @@ struct vf_rate_table {
 	u16 framerate;
 };
 
+struct frm_dly_dat_s {
+	u16 mevp_frm_dly;
+	u16 mc_frm_dly;
+};
+
 struct st_frc_buf {
 	/*cma memory define*/
 	u32 cma_mem_size;
@@ -543,6 +548,7 @@ struct frc_dev_s {
 	struct st_frc_out_sts out_sts;
 
 	struct st_frc_buf buf;
+	struct frm_dly_dat_s frm_dly_set[4];
 
 	struct tool_debug_s tool_dbg;
 	struct frc_crc_data_s frc_crc_data;

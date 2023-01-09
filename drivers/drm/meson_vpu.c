@@ -25,7 +25,7 @@
 #endif
 #include <drm/amlogic/meson_drm_bind.h>
 #include <vout/vout_serve/vout_func.h>
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 #include "meson_fb.h"
 #endif
 #include "meson_vpu.h"

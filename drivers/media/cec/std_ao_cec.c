@@ -2223,7 +2223,7 @@ static int aml_aocec_probe(struct platform_device *pdev)
 	int ret = 0;
 	const struct of_device_id *of_id;
 #ifdef CONFIG_CEC_NOTIFIER
-#ifdef CONFIG_DRM_MESON_HDMI
+#ifdef CONFIG_AMLOGIC_DRM_HDMI
 	struct device *hdmi_tx_dev;
 #endif
 #endif
@@ -2722,7 +2722,7 @@ static int aml_aocec_probe(struct platform_device *pdev)
 	 * if notifier register fail, continue without notifier
 	 */
 #ifdef CONFIG_CEC_NOTIFIER
-#ifdef CONFIG_DRM_MESON_HDMI
+#ifdef CONFIG_AMLOGIC_DRM_HDMI
 	hdmi_tx_dev = cec_notifier_parse_hdmi_phandle(&pdev->dev);
 	if (IS_ERR(hdmi_tx_dev)) {
 		pr_info("%s cec_notifier_parse_hdmi_phandle fail\n", __func__);
@@ -2755,7 +2755,7 @@ static int aml_aocec_probe(struct platform_device *pdev)
 	cec_dev->probe_finish = true;
 	return 0;
 #ifdef CONFIG_CEC_NOTIFIER
-#ifdef CONFIG_DRM_MESON_HDMI
+#ifdef CONFIG_AMLOGIC_DRM_HDMI
 /* register_notifier_fail: */
 	/* cec_unregister_adapter(std_ao_cec.adap); */
 #endif
@@ -2802,7 +2802,7 @@ tag_cec_devm_err:
 static int aml_aocec_remove(struct platform_device *pdev)
 {
 #ifdef CONFIG_CEC_NOTIFIER
-#ifdef CONFIG_DRM_MESON_HDMI
+#ifdef CONFIG_AMLOGIC_DRM_HDMI
 	cec_notifier_cec_adap_unregister(std_ao_cec.tx_notify);
 #endif
 #endif

@@ -6,7 +6,7 @@
 #ifndef _MESON_DRM_MAIN_H__
 #define _MESON_DRM_MAIN_H__
 
-#ifdef CONFIG_DRM_MESON_VPU
+#ifdef CONFIG_AMLOGIC_DRM_VPU
 int am_meson_vpu_init(void);
 void am_meson_vpu_exit(void);
 #else

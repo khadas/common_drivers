@@ -35,7 +35,7 @@
 #include <drm/drm_rect.h>
 #include <drm/drm_fb_helper.h>
 
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 #include "meson_gem.h"
 #include "meson_fb.h"
 #endif

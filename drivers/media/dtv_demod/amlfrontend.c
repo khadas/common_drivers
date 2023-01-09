@@ -1487,7 +1487,7 @@ static int dvbt_isdbt_set_frontend(struct dvb_frontend *fe)
 	demod->last_lock = -1;
 	demod->last_status = 0;
 
-	if (is_meson_t5w_cpu() || is_meson_t3_cpu() || is_meson_t5m_cpu() ||
+	if (is_meson_t5w_cpu() || is_meson_t3_cpu() ||
 		demod_is_t5d_cpu(devp)) {
 		dvbt_isdbt_wr_reg((0x2 << 2), 0x111021b);
 		dvbt_isdbt_wr_reg((0x2 << 2), 0x011021b);
@@ -1557,7 +1557,7 @@ static int dvbt2_set_frontend(struct dvb_frontend *fe)
 	demod->p1_peak = 0;
 	real_para_clear(&demod->real_para);
 
-	if (is_meson_t5w_cpu() || is_meson_t3_cpu() || is_meson_t5m_cpu() ||
+	if (is_meson_t5w_cpu() || is_meson_t3_cpu() ||
 		demod_is_t5d_cpu(devp)) {
 		demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x182);
 		dvbt_t2_wr_byte_bits(0x09, 1, 4, 1);
@@ -4967,6 +4967,8 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 {
 	struct dvb_frontend *fe = &demod->frontend;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
+	unsigned int abus_en_dly = 0, polling_en = 0, top_saved = 0;
+	int retry_count = 2;
 
 	if (is_meson_t3_cpu() && ldelsys == SYS_DTMB) {
 		dtmb_write_reg(0x7, 0x6ffffd);
@@ -4976,7 +4978,7 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 
 		if (is_meson_t3_cpu() && is_meson_rev_b())
 			t3_revb_set_ambus_state(true, false);
-	} else if ((is_meson_t5w_cpu() || is_meson_t3_cpu() || is_meson_t5m_cpu() ||
+	} else if ((is_meson_t5w_cpu() || is_meson_t3_cpu() ||
 		demod_is_t5d_cpu(devp)) && ldelsys == SYS_DVBT2) {
 		demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x182);
 		dvbt_t2_wr_byte_bits(0x09, 1, 4, 1);
@@ -4992,7 +4994,7 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 
 		if (is_meson_t5w_cpu())
 			t5w_write_ambus_reg(0x3c4e, 0x1, 23, 1);
-	} else if ((is_meson_t5w_cpu() || is_meson_t3_cpu() || is_meson_t5m_cpu() ||
+	} else if ((is_meson_t5w_cpu() || is_meson_t3_cpu() ||
 		demod_is_t5d_cpu(devp)) && ldelsys == SYS_ISDBT) {
 		dvbt_isdbt_wr_reg((0x2 << 2), 0x111021b);
 		dvbt_isdbt_wr_reg((0x2 << 2), 0x011021b);
@@ -5005,11 +5007,49 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 			t5w_write_ambus_reg(0x3c4e, 0x1, 23, 1);
 	}
 
+	//disable demod output AMBUS LSB signal
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M) && (ldelsys == SYS_DTMB ||
+			ldelsys == SYS_DVBT2 || ldelsys == SYS_ISDBT)) {
+		if (ldelsys == SYS_DVBT2) {
+			//set f040 = 0x0, disable t/t2 mode, stop to
+			//access t/t2 regs, so should stop demod_thread to access t/t2 status first.
+			polling_en = devp->demod_thread;
+			devp->demod_thread = 0;
+			top_saved = demod_top_read_reg(DEMOD_TOP_CFG_REG_4);
+			demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x0);
+		}
+
+		//0x38e4[29], enable abus_en delay logic
+		front_write_bits(DEMOD_FRONT_REG39, 0x1, 29, 1);
+		//0x38e4[30], set dc_arb_enable = 0
+		front_write_bits(DEMOD_FRONT_REG39, 0x0, 30, 1);
+
+		//0x38e0[31], when read abus_en_dly = 0,
+		//then continue the following flow of closing demod.
+		abus_en_dly = front_read_reg(DEMOD_FRONT_REG38) & 0x80000000;
+		PR_INFO("%s: 0x38e0 %#x, abus_en_dly %d\n", __func__,
+					front_read_reg(DEMOD_FRONT_REG38), abus_en_dly);
+		while (abus_en_dly && retry_count--) {
+			msleep(20);
+			abus_en_dly = front_read_reg(DEMOD_FRONT_REG38) & 0x80000000;
+			PR_INFO("%s: retry_count %d 0x38e0 %#x\n", __func__, retry_count,
+					front_read_reg(DEMOD_FRONT_REG38));
+		}
+		if (abus_en_dly)
+			PR_ERR("%s: abus_en_dly ERROR ERROR!\n", __func__);
+
+		if (ldelsys == SYS_DVBT2) {
+			//f040 = 0x182: host only can access top regs and t2 regs
+			demod_top_write_reg(DEMOD_TOP_CFG_REG_4, top_saved);
+			devp->demod_thread = polling_en;
+		}
+	}
+
 	if (fe->ops.tuner_ops.release &&
 		(cdelsys == SYS_UNDEFINED || cdelsys == SYS_ANALOG))
 		fe->ops.tuner_ops.release(fe);
 
-	if ((is_meson_t5w_cpu() || is_meson_t3_cpu() || is_meson_t5m_cpu() ||
+	if ((is_meson_t5w_cpu() || is_meson_t3_cpu() ||
 		demod_is_t5d_cpu(devp)) &&
 		(ldelsys == SYS_DTMB ||
 		ldelsys == SYS_DVBT2 ||

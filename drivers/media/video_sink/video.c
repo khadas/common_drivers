@@ -20376,7 +20376,8 @@ static int amvideom_probe(struct platform_device *pdev)
 		set_vpu_super_urgent_t3(VPU1_R, 0, 0);
 		set_vpu_super_urgent_t3(VPU1_W, 0, 0);
 		set_vpu_super_urgent_t3(VPU2_R, 3, 5);
-	} else if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_T5W_) {
+	} else if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_T5W_ ||
+			amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_T5M_) {
 		memcpy(&amvideo_meson_dev.dev_property, &t5w_dev_property,
 		       sizeof(struct video_device_hw_s));
 		cur_dev->power_ctrl = true;

@@ -1840,10 +1840,6 @@
 	status = "okay";
 };
 
-&meson_cooldev {
-	status = "disabled";
-};
-
 &spicc0 {
 	status = "disabled";
 	pinctrl-names = "default";

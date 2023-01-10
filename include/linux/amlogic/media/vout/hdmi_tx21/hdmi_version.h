@@ -41,6 +41,7 @@
 	"V03.00.00.00.03.03.11 [20221021] [BUG] not read EDID again if EDID already read done\n" \
 	"V03.00.00.00.03.03.12 [20221025] [COM] when set mode 4x3 and 16x9, return valid mode 1\n" \
 	"V03.00.00.00.03.04.12 [20221025] [EDID] adjust edid parsing for TV_TS\n" \
-	"V03.01.00.00.03.04.12 [20221221] [PHY] test pixel clkmsr and adjust phy reg for 70hz issue\n"
+	"V03.01.00.00.03.04.12 [20221221] [PHY] test pixel clkmsr and adjust phy for 70hz issue\n" \
+	"V03.01.00.00.03.04.13 [20230111] [NEW] add support for 480i/576i\n"
 
 #endif // __HDMI21_VERSION_H__

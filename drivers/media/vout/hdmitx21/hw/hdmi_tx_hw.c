@@ -1388,6 +1388,7 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 	int ret;
 	unsigned long adr = 0;
 	unsigned long value = 0;
+	struct vinfo_s *vinfo;
 
 	if (!buf)
 		return;
@@ -1411,15 +1412,40 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_I2C_REACTIVE, 0);
 		return;
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {
+		if (!hdev->para)
+			return;
+
+		vinfo = &hdev->para->hdmitx_vinfo;
 		if (strncmp(tmpbuf + 4, "off", 3) == 0) {
+			if (vinfo->viu_mux == VIU_MUX_ENCI) {
+				hd21_write_reg(ENCI_TST_EN, 0);
+			} else {
+				hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 1, 3, 1);
+				hd21_write_reg(VENC_VIDEO_TST_EN, 0);
+			}
 			hdev->bist_lock = 0;
-			hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 1, 3, 1);
-			hd21_write_reg(VENC_VIDEO_TST_EN, 0);
 			return;
 		}
 		hdev->bist_lock = 1;
-		if (!hdev->para)
+		/* for 480i/576i mode */
+		if (vinfo->viu_mux == VIU_MUX_ENCI) {
+			/* nearly DE_BEGIN */
+			hd21_write_reg(ENCI_TST_CLRBAR_STRT, 0x112);
+			/* 1440 / 8 = 0xb4 */
+			hd21_write_reg(ENCI_TST_CLRBAR_WIDTH, 0xb4);
+			hd21_write_reg(ENCI_TST_Y, 0x200);
+			hd21_write_reg(ENCI_TST_CB, 0x200);
+			hd21_write_reg(ENCI_TST_CR, 0x200);
+			hd21_write_reg(ENCI_TST_EN, 1);
+			if (strncmp(tmpbuf + 4, "line", 4) == 0)
+				hd21_write_reg(ENCI_TST_MDSEL, 2);
+			else if (strncmp(tmpbuf + 4, "dot", 3) == 0)
+				hd21_write_reg(ENCI_TST_MDSEL, 3);
+			else
+				hd21_write_reg(ENCI_TST_MDSEL, 1);
 			return;
+		}
+		/* for encp including 1080i */
 		hdmi_avi_infoframe_config(CONF_AVI_CS, hdev->para->cs);
 		hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 0, 3, 1);
 		hd21_write_reg(VENC_VIDEO_TST_EN, 1);

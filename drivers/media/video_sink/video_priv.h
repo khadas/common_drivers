@@ -204,6 +204,25 @@ enum VPU_MODULE_S5_e {
 	TCON_P3_S5
 };
 
+enum VPU_MODULE_T7_Qos_e {
+	VPP_ARB0_T7,
+	VPP_ARB1_T7,
+	RDMA_READ_T7,
+	LDIM_T7 = 7,
+	VDIN_AFBCE_T7,
+	VPU_DMA_T7
+};
+
+enum VPU_MODULE_T5M_Qos_e {
+	VPP_ARB0_T5M,
+	VPP_ARB1_T5M,
+	RDMA_READ_T5M,
+	VPU_SUB_READ_T5M,
+	TCON_P1_T5M,
+	DCNTR_GRID_T5M,
+	TCON_P2_T5M
+};
+
 enum display_module_e {
 	OLD_DISPLAY_MODULE,
 	T7_DISPLAY_MODULE,
@@ -866,6 +885,7 @@ bool video_is_meson_t3_cpu(void);
 bool video_is_meson_c3_cpu(void);
 bool video_is_meson_t5w_cpu(void);
 bool video_is_meson_s5_cpu(void);
+bool video_is_meson_t5m_cpu(void);
 void alpha_win_set(struct video_layer_s *layer);
 void fgrain_config(struct video_layer_s *layer,
 		   struct vpp_frame_par_s *frame_par,
@@ -911,6 +931,9 @@ void aisr_reshape_output(u32 enable);
 void pre_process_for_3d(struct vframe_s *vf);
 int get_vpu_urgent_info_t3(void);
 int set_vpu_super_urgent_t3(u32 module_id, u32 low_level, u32 high_level);
+int get_vpu_urgent_info_t5m(void);
+int set_vpu_super_urgent_t5m(u32 module_id, u32 urgent_level);
+int set_vpu_super_urgent_t7(u32 module_id, u32 urgent_level);
 #ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
 void vsync_rdma_process(void);
 #endif

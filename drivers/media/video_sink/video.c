@@ -18111,10 +18111,25 @@ static ssize_t frc_delay_show(struct class *class,
 static ssize_t vpu_module_urgent_show(struct class *cla,
 			     struct class_attribute *attr, char *buf)
 {
-	if (video_is_meson_t3_cpu())
+	if (video_is_meson_t3_cpu()) {
 		get_vpu_urgent_info_t3();
-	else if (video_is_meson_s5_cpu())
+	} else if (video_is_meson_t7_cpu()) {
+		get_vpu_urgent_info_t5m();
+		pr_info("t7 prot mapping:\n");
+		pr_info("vpp_arb0: osd1, vd1, osd3, dolby0, vd3\n");
+		pr_info("vpp_arb1: osd2, vd2, osd4, mali-afbc\n");
+	} else if (video_is_meson_s5_cpu()) {
 		get_vpu_urgent_info_s5();
+		pr_info("s5 port mapping:\n");
+		pr_info("vpp_arb0:  osd1, osd2, osd3, osd4, mali-afbc\n");
+		pr_info("vpp_arb1:  vd1 slice0-slice1, vd2\n");
+		pr_info("vpp_arb2:  vd1 slice2-slice3 aisr\n");
+	} else if (video_is_meson_t5m_cpu()) {
+		get_vpu_urgent_info_t5m();
+		pr_info("t5m prot mapping:\n");
+		pr_info("vpp_arb0: vd1, vd2, dolby0\n");
+		pr_info("vpp_arb1: osd1, osd2, osd3, mali-afbc\n");
+	}
 	return 0;
 }
 
@@ -18131,6 +18146,15 @@ static const char vpu_module_urgent_help_t3[] = "Usage:\n"
 "  VPU1_W: 8\n"
 "  VPU2_R: 9\n\n";
 
+static const char vpu_module_urgent_help_t7[] = "Usage:\n"
+"  echo module_id urgent_level(0-3) > /sys/class/video/urgent_set\n"
+"  VPP_ARB0: 0\n"
+"  VPP_ARB1: 1\n"
+"  RDMA READ: 2\n"
+"  LDIM: 7\n"
+"  VDIN_AFBCE: 8\n"
+"  VPU DMA: 9\n\n";
+
 static const char vpu_module_urgent_help_s5[] = "Usage:\n"
 "  echo module_id urgent_level(0-3) > /sys/class/video/urgent_set\n"
 "  VPP_ARB0: 0\n"
@@ -18142,6 +18166,16 @@ static const char vpu_module_urgent_help_s5[] = "Usage:\n"
 "  TCON_P2: 6\n"
 "  TCON_P3: 7\n\n";
 
+static const char vpu_module_urgent_help_t5m[] = "Usage:\n"
+"  echo module_id urgent_level(0-3) > /sys/class/video/urgent_set\n"
+"  VPP_ARB0: 0\n"
+"  VPP_ARB1: 1\n"
+"  RDMA READ: 2\n"
+"  VPU_SUB_READ: 3\n"
+"  TCON_P1: 5\n"
+"  DCNTR_GRID: 4\n"
+"  TCON_P2: 6\n\n";
+
 static ssize_t vpu_module_urgent_set(struct class *class,
 			struct class_attribute *attr,
 			const char *buf, size_t count)
@@ -18152,15 +18186,25 @@ static ssize_t vpu_module_urgent_set(struct class *class,
 	if (video_is_meson_t3_cpu()) {
 		if (likely(parse_para(buf, 3, parsed) == 3))
 			ret = set_vpu_super_urgent_t3(parsed[0], parsed[1], parsed[2]);
+	} else if (video_is_meson_t7_cpu()) {
+		if (likely(parse_para(buf, 2, parsed) == 2))
+			ret = set_vpu_super_urgent_t7(parsed[0], parsed[1]);
 	} else if (video_is_meson_s5_cpu()) {
 		if (likely(parse_para(buf, 2, parsed) == 2))
 			ret = set_vpu_super_urgent_s5(parsed[0], parsed[1]);
+	} else if (video_is_meson_t5m_cpu()) {
+		if (likely(parse_para(buf, 2, parsed) == 2))
+			ret = set_vpu_super_urgent_t5m(parsed[0], parsed[1]);
 	}
 	if (ret < 0) {
 		if (video_is_meson_t3_cpu())
 			pr_info("%s", vpu_module_urgent_help_t3);
+		else if (video_is_meson_t7_cpu())
+			pr_info("%s", vpu_module_urgent_help_t7);
 		else if (video_is_meson_s5_cpu())
 			pr_info("%s", vpu_module_urgent_help_s5);
+		else if (video_is_meson_t5m_cpu())
+			pr_info("%s", vpu_module_urgent_help_t5m);
 	}
 	return count;
 }
@@ -20174,6 +20218,15 @@ bool video_is_meson_s5_cpu(void)
 {
 	if (amvideo_meson_dev.cpu_type ==
 		MESON_CPU_MAJOR_ID_S5_)
+		return true;
+	else
+		return false;
+}
+
+bool video_is_meson_t5m_cpu(void)
+{
+	if (amvideo_meson_dev.cpu_type ==
+		MESON_CPU_MAJOR_ID_T5M_)
 		return true;
 	else
 		return false;

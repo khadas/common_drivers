@@ -10424,6 +10424,8 @@ int video_hw_init_s5(void)
 	WRITE_VCBUS_REG(S5_VPP_RDARB_MODE, 0x9a205000);
 	/* VPU_RDARB_MODE_L2C1 */
 	WRITE_VCBUS_REG(S5_VPU_RDARB_MODE_L2C1, 0x924000);
+	/* vpp_arb0, vpp_arb1 super urgent */
+	WRITE_VCBUS_REG(S5_VPU_RDARB_UGT_L2C1, 0xffffff);
 #ifdef CONFIG_AMLOGIC_MEDIA_LUT_DMA
 	int i;
 

@@ -607,5 +607,7 @@
 #define NOC_VPU_QOS_W_OFFSET_VPU1      0x1200
 #define NOC_VPU_QOS_R_OFFSET_VPU2      0x1400
 
+/* vpu Qos */
+#define VPU_RDARB_UGT_L2C1             0x27c2
 #endif
 

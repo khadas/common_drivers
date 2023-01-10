@@ -12260,6 +12260,112 @@ void di_used_vd1_afbc(bool di_used)
 		WRITE_VCBUS_REG_BITS(VD1_AFBCD0_MISC_CTRL, 0, 1, 1);
 }
 
+int get_vpu_urgent_info_t5m(void)
+{
+	u32 value;
+
+	value = READ_VCBUS_REG(VPU_RDARB_UGT_L2C1);
+	pr_info("urgent value: 0x%x\n", value);
+	return 0;
+}
+
+int set_vpu_super_urgent_t7(u32 module_id, u32 urgent_level)
+{
+	u32 value = 0, reg_value;
+
+	if (urgent_level >= 3)
+		urgent_level = 3;
+	reg_value = READ_VCBUS_REG(VPU_RDARB_UGT_L2C1);
+	switch (module_id) {
+	case VPP_ARB0_T7:
+		value = urgent_level & 0x3;
+		reg_value &= ~0x3;
+		reg_value |= value;
+		break;
+	case VPP_ARB1_T7:
+		value = (urgent_level & 0x3) << 2;
+		reg_value &= ~0xc;
+		reg_value |= value;
+		break;
+	case RDMA_READ_T7:
+		value = (urgent_level & 0x3) << 4;
+		reg_value &= ~0x30;
+		reg_value |= value;
+		break;
+	case LDIM_T7:
+		value = (urgent_level & 0x3) << 14;
+		reg_value &= ~0xC000;
+		reg_value |= value;
+		break;
+	case VDIN_AFBCE_T7:
+		value = (urgent_level & 0x3) << 16;
+		reg_value &= ~0x30000;
+		reg_value |= value;
+		break;
+	case VPU_DMA_T7:
+		value = (urgent_level & 0x3) << 18;
+		reg_value &= ~0xc0000;
+		reg_value |= value;
+		break;
+	default:
+		return -1;
+	}
+	pr_info("value=0x%x, reg_value=0x%x\n", value, reg_value);
+	WRITE_VCBUS_REG(VPU_RDARB_UGT_L2C1, reg_value);
+	return 0;
+}
+
+int set_vpu_super_urgent_t5m(u32 module_id, u32 urgent_level)
+{
+	u32 value = 0, reg_value;
+
+	if (urgent_level >= 3)
+		urgent_level = 3;
+	reg_value = READ_VCBUS_REG(VPU_RDARB_UGT_L2C1);
+	switch (module_id) {
+	case VPP_ARB0_T5M:
+		value = urgent_level & 0x3;
+		reg_value &= ~0x3;
+		reg_value |= value;
+		break;
+	case VPP_ARB1_T5M:
+		value = (urgent_level & 0x3) << 2;
+		reg_value &= ~0xc;
+		reg_value |= value;
+		break;
+	case RDMA_READ_T5M:
+		value = (urgent_level & 0x3) << 4;
+		reg_value &= ~0x30;
+		reg_value |= value;
+		break;
+	case VPU_SUB_READ_T5M:
+		value = (urgent_level & 0x3) << 6;
+		reg_value &= ~0xc0;
+		reg_value |= value;
+		break;
+	case TCON_P1_T5M:
+		value = (urgent_level & 0x3) << 8;
+		reg_value &= ~0x300;
+		reg_value |= value;
+		break;
+	case DCNTR_GRID_T5M:
+		value = (urgent_level & 0x3) << 10;
+		reg_value &= ~0xc00;
+		reg_value |= value;
+		break;
+	case TCON_P2_T5M:
+		value = (urgent_level & 0x3) << 12;
+		reg_value &= ~0x3000;
+		reg_value |= value;
+		break;
+	default:
+		return -1;
+	}
+	pr_info("value=0x%x, reg_value=0x%x\n", value, reg_value);
+	WRITE_VCBUS_REG(VPU_RDARB_UGT_L2C1, reg_value);
+	return 0;
+}
+
 int get_vpu_urgent_info_t3(void)
 {
 	int i;
@@ -12531,6 +12637,8 @@ int video_hw_init(void)
 			WRITE_DMCREG
 				(DMC_AM0_CHAN_CTRL,
 				0x8ff403cf);
+		if (video_is_meson_t5m_cpu())
+			WRITE_VCBUS_REG(VPU_RDARB_UGT_L2C1, 0xffff);
 		/* for vd1 & vd2 dummy alpha*/
 		WRITE_VCBUS_REG
 			(VPP_POST_BLEND_DUMMY_ALPHA,
@@ -12567,6 +12675,27 @@ int video_hw_init(void)
 	for (i = 0; i < MAX_VD_LAYER; i++) {
 		if (glayer_info[i].fgrain_support)
 			fgrain_init(i, FGRAIN_TBL_SIZE);
+	}
+
+	if (video_is_meson_t7_cpu()) {
+		/* vpu port map for t7 */
+		/* vpp_arb0: osd1, vd1, osd3, dolby0, vd3 */
+		/* vpp_arb1: osd2, vd2, osd4, mali-afbc */
+		/* arb rd0:  vpp_arb0, rdma read, ldim, vdin_afbce, vpu dma */
+		/* arb rd2:  vpp_arb1, */
+		/* VPU[0x3978]=0x0aa00000 */
+		/* VPU[0x279d]=0x00900000 */
+		WRITE_VCBUS_REG(VPU_RDARB_UGT_L2C1, 0xffff);
+	} else if (video_is_meson_t5m_cpu()) {
+		/* vpu port map for t5m */
+		/* vpp_arb0: vd1, vd2, dolby0 */
+		/* vpp_arb1: osd1, osd2, osd3, mali-afbc */
+		/* arb rd0: vpp_arb0, rdma read, vpu sub, dcntr, tcon p2 */
+		/* arb rd2: vpp_arb1, tcon p1 */
+		/* VPU[0x3978]=0x0b300000 */
+		/* VPU[0x279d]=0x00920000 */
+		/* vpp_arb0, vpp_arb1 super urgent */
+		WRITE_VCBUS_REG(VPU_RDARB_UGT_L2C1, 0xffff);
 	}
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	secure_register(VIDEO_MODULE, 0, video_secure_op, vpp_secure_cb);

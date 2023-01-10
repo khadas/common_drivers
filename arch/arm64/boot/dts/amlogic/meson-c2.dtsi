@@ -363,6 +363,7 @@
 			compatible = "amlogic,meson-spifc-v2";
 			status = "disabled";
 			reg = <0x0 0xfe00ac00 0x0 0x290>;
+			ahb-addr = <0xe0000000 0x0>;
 			clock-names = "spifc_gate";
 			clocks = <&clkc CLKID_SPIFC_GATE>;
 			#address-cells = <1>;

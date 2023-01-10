@@ -560,6 +560,7 @@
 		spifc: spi@fd000400 {
 			compatible = "amlogic,meson-spifc-v2";
 			reg = <0xfd000400 0x290>;
+			ahb-addr = <0xe0000000 0x0>;
 			clock-names = "spifc_gate";
 			clocks = <&clkc CLKID_SPIFC_GATE>;
 			#address-cells = <1>;

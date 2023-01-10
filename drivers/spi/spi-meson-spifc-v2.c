@@ -217,7 +217,6 @@
 	#define SPI_RESET				BIT(0)
 
 #define SPIFC_BUFFER_SIZE	512
-#define SPI_ADDR_BASE		0xf1000000
 #define convert_nbits(n)	(fls(n) - 1)
 
 /**
@@ -934,6 +933,7 @@ static int meson_spifc_probe(struct platform_device *pdev)
 	struct resource *res;
 	void __iomem *base;
 	int ret = 0;
+	u32 ahb_addr = 0;
 
 	spifc = devm_kzalloc(&pdev->dev, sizeof(*spifc), GFP_KERNEL);
 	if (!spifc)
@@ -956,9 +956,15 @@ static int meson_spifc_probe(struct platform_device *pdev)
 		goto out_err;
 	}
 
-	spifc_ahb_map_addr = ioremap(SPI_ADDR_BASE, SPIFC_AHB_BUF_CACHE_SIZE);
+#ifdef CONFIG_ENABLE_AHB_MODE
+	ret = of_property_read_u32_index(spifc->dev->of_node, "ahb-addr", 0, &ahb_addr);
+	if (ret)
+		pr_info("spifc ahb address parse failed!\n");
+
+	spifc_ahb_map_addr = ioremap(ahb_addr, SPIFC_AHB_BUF_CACHE_SIZE);
 	if (!spifc_ahb_map_addr)
 		pr_info("spifc ahb address map failed!\n");
+#endif
 
 	spifc->clk = devm_clk_get(spifc->dev, NULL);
 	if (IS_ERR(spifc->clk)) {

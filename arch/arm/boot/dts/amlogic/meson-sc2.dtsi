@@ -598,6 +598,7 @@
 			spifc: spi@56000 {
 				compatible = "amlogic,meson-spifc";
 				reg = <0x56000 0x290>;
+				ahb-addr = <0xf1000000 0x0>;
 				clock-names = "clk81";
 				clocks = <&clkc CLKID_SPIFC>;
 				#address-cells = <1>;

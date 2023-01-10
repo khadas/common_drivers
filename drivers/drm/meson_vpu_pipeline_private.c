@@ -442,7 +442,7 @@ meson_vpu_block_get_state(struct meson_vpu_block *block,
 		mvbs = priv_to_block_state(dps);
 		return mvbs;
 	} else {
-		DRM_ERROR("vpu pipeline state ERROR (%d)\n", PTR_ERR(dps));
+		DRM_ERROR("vpu pipeline state ERROR (%ld)\n", PTR_ERR(dps));
 	}
 
 	return NULL;

@@ -14,6 +14,39 @@
 #include "meson_crtc.h"
 #include "meson_lcd.h"
 
+struct meson_panel_framerate_map {
+	int lcd_frac_hint;
+	int drm_fps;
+};
+
+struct meson_panel_framerate_map framerate_map[] = {
+	{6000, 60},
+	{5994, 59},
+	{5000, 50},
+	{4800, 48},
+	{4795, 47},
+	{12000, 120},
+	{11988, 119},
+	{10000, 100},
+	{9600, 96},
+	{9590, 95}
+};
+
+static int find_frac_hint_by_fps(int fps)
+{
+	int i;
+	struct meson_panel_framerate_map *map;
+	int size = ARRAY_SIZE(framerate_map);
+
+	for (i = 0; i < size; i++) {
+		map = &framerate_map[i];
+		if (map->drm_fps == fps)
+			return map->lcd_frac_hint;
+	}
+
+	return 6000;
+}
+
 int meson_panel_get_modes(struct drm_connector *connector)
 {
 	struct meson_panel *am_lcd = connector_to_meson_panel(connector);
@@ -141,11 +174,15 @@ static const struct drm_connector_funcs meson_panel_funcs = {
 static void meson_panel_encoder_atomic_enable(struct drm_encoder *encoder,
 	struct drm_atomic_state *state)
 {
+	struct drm_crtc *crtc;
+	int drm_vrefresh, lcd_frac_hint;
 	struct am_meson_crtc_state *meson_crtc_state =
 				to_am_meson_crtc_state(encoder->crtc->state);
 	struct am_meson_crtc *amcrtc = to_am_meson_crtc(encoder->crtc);
 	struct drm_display_mode *mode = &encoder->crtc->mode;
 	enum vmode_e vmode = meson_crtc_state->vmode;
+
+	crtc = encoder->crtc;
 
 	if (vmode != VMODE_LCD) {
 		DRM_DEBUG("%s:enable fail! vmode:%d\n", __func__, vmode);
@@ -155,8 +192,20 @@ static void meson_panel_encoder_atomic_enable(struct drm_encoder *encoder,
 	if (meson_crtc_state->uboot_mode_init == 1)
 		vmode |= VMODE_INIT_BIT_MASK;
 
-	DRM_DEBUG("[%s]-[%d] called\n", __func__, __LINE__);
+	DRM_INFO("[%s]-[%d] called, %d, %d\n", __func__, __LINE__,
+		 amcrtc->prev_vrefresh, drm_mode_vrefresh(mode));
 
+	if (crtc->enabled && !crtc->state->active_changed &&
+	    amcrtc->prev_vrefresh != drm_mode_vrefresh(mode)) {
+		drm_vrefresh = drm_mode_vrefresh(mode);
+		lcd_frac_hint = find_frac_hint_by_fps(drm_vrefresh);
+		vout_func_set_vframe_rate_hint(amcrtc->vout_index, lcd_frac_hint);
+		amcrtc->prev_vrefresh = drm_mode_vrefresh(mode);
+		DRM_INFO("skip set_vmode, use set_vframe_rate_hint\n");
+		return;
+	}
+
+	amcrtc->prev_vrefresh = drm_mode_vrefresh(mode);
 	meson_vout_notify_mode_change(amcrtc->vout_index,
 		vmode, EVENT_MODE_SET_START);
 	vout_func_set_vmode(amcrtc->vout_index, vmode);

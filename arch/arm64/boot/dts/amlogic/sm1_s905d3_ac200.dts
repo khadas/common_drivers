@@ -772,6 +772,132 @@
 		//clock-names = "demux", "ahbarb0", "uparsertop";
 	};
 
+	vbat: fixedregulator@vbat {
+		compatible = "regulator-fixed";
+		regulator-name = "12V";
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc5v_reg: fixedregulator@vcc5v {
+		vin-supply = <&vbat>;
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		pinctrl-names = "default";
+		//GPIOH_8(OD) Set:
+		// Output disable= Enable VCC5V
+		//gpio = <&gpio GPIOH_8 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	usb_5v_reg: fixedregulator@usb_5v{
+		compatible = "regulator-fixed";
+		vin-supply = <&vcc5v_reg>;
+		regulator-name = "USB_PWR";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		pinctrl-names = "default";
+		//GPIOH_6(down) Set:
+		// Output L= Disable USB Power
+		// Output H= Enable USB Power
+		gpio = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddq_reg: fixedregulator@vddq {
+		compatible = "regulator-fixed";
+		vin-supply = <&vbat>;
+		regulator-name = "VDDQ";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddao3v3_reg: fixedregulator@vddao3v3 {
+		vin-supply = <&vbat>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDAO_3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc3v3_reg: fixedregulator@vcc3v3 {
+		compatible = "regulator-fixed";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-name = "VCC3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		pinctrl-names = "default";
+		//TEST_N(High) Set:
+		//Output L= Disable VCC3.3V
+		//Output H= Enable VCC3.3V
+		gpio = <&gpio_ao GPIO_TEST_N GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc1v8_reg: fixedregulator@vcc1v8 {
+		vin-supply = <&vcc3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "VCC1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	flash_1v8_reg: fixedregulator@flash_1v8 {
+		vin-supply = <&vcc3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "FLASH_1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddio_ao18_reg: fixedregulator@vddio_ao18 {
+		vin-supply = <&vddao3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDIO_AO18";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddio_c: sdcard-1v8_3v3 {
+		compatible = "regulator-gpio";
+		regulator-name = "VDDIO_C";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <3300000>;
+		// L/HiZ: 3.3V, H: 1.8V
+		gpio = <&gpio_ao GPIOAO_2 GPIO_ACTIVE_HIGH>;
+		gpios-states = <0>;
+		regulator-boot-on;
+		//regulator-always-on;
+
+		/* Based on P200 schematics, signal CARD_1.8V/3.3V_CTR */
+		states = <1800000 1
+			  3300000 0>;
+	};
+
 	cpu_opp_table0: cpu_opp_table0 {
 		compatible = "operating-points-v2";
 		opp-shared;
@@ -1746,6 +1872,8 @@
 };
 
 &sd_emmc_b {
+	//vmmc-supply = <&vddao3v3_reg>;
+	//vqmmc-supply = <&vddio_c>;
 	status = "okay";
 	sd {
 		caps = "MMC_CAP_4_BIT_DATA",

@@ -27,7 +27,8 @@
 /* 20221215: remove unnecessary tcon top reset*/
 /* 20221216: optimize lcd clk code*/
 /* 20230105: update clk ss support*/
-#define LCD_DRV_VERSION    "20230105"
+/* 20230110: optimize config probe workqueue*/
+#define LCD_DRV_VERSION    "20230110"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

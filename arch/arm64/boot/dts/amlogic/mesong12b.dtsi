@@ -388,7 +388,7 @@
 			reg-names = "mux","gpio", "ds";
 			gpio-controller;
 			#gpio-cells = <2>;
-			gpio-ranges = <&pinctrl_aobus 0 0 15>;
+			gpio-ranges = <&pinctrl_aobus 0 0 16>;
 		};
 	};
 

@@ -4,7 +4,7 @@
  */
 
 #include <linux/module.h>
-#include <dt-bindings/gpio/meson-g12a-gpio.h>
+#include "../../../include/dt-bindings/gpio/meson-g12a-gpio.h"
 #include "pinctrl-meson.h"
 #include "pinctrl-meson-axg-pmx.h"
 
@@ -112,6 +112,7 @@ static const struct pinctrl_pin_desc meson_g12a_aobus_pins[] = {
 	MESON_PIN(GPIOE_0),
 	MESON_PIN(GPIOE_1),
 	MESON_PIN(GPIOE_2),
+	MESON_PIN(GPIO_TEST_N),
 };
 
 /* emmc */
@@ -931,6 +932,7 @@ static struct meson_pmx_group meson_g12a_aobus_groups[] __initdata = {
 	GPIO_GROUP(GPIOE_0),
 	GPIO_GROUP(GPIOE_1),
 	GPIO_GROUP(GPIOE_2),
+	GPIO_GROUP(GPIO_TEST_N),
 
 	/* bank AO */
 	GROUP(uart_ao_a_tx,		1),
@@ -1249,6 +1251,7 @@ static const char * const gpio_aobus_groups[] = {
 	"GPIOAO_0", "GPIOAO_1", "GPIOAO_2", "GPIOAO_3", "GPIOAO_4",
 	"GPIOAO_5", "GPIOAO_6", "GPIOAO_7", "GPIOAO_8", "GPIOAO_9",
 	"GPIOAO_10", "GPIOAO_11", "GPIOE_0", "GPIOE_1", "GPIOE_2",
+	"GPIO_TEST_N",
 };
 
 static const char * const uart_ao_a_groups[] = {
@@ -1447,6 +1450,8 @@ static struct meson_bank meson_g12a_aobus_banks[] = {
 	/* GPIOE actually located in the AO bank */
 	BANK_DS("E", GPIOE_0, GPIOE_2, 97, 99, 3, 16, 2, 16, 0, 16, 4, 16, 1,
 		16, 1, 0),
+	BANK_DS("TESTN",  GPIO_TEST_N,  GPIO_TEST_N,  -1, -1,
+		3,  31,  2, 31,  0,  31,  4, 31,  1,  31, 1, 28),
 };
 
 static struct meson_pmx_bank meson_g12a_periphs_pmx_banks[] = {
@@ -1467,6 +1472,7 @@ static struct meson_axg_pmx_data meson_g12a_periphs_pmx_banks_data = {
 static struct meson_pmx_bank meson_g12a_aobus_pmx_banks[] = {
 	BANK_PMX("AO",  GPIOAO_0, GPIOAO_11, 0x0, 0),
 	BANK_PMX("E",   GPIOE_0,  GPIOE_2,   0x1, 16),
+	BANK_PMX("TESTN", GPIO_TEST_N, GPIO_TEST_N, 0x1, 28),
 };
 
 static struct meson_axg_pmx_data meson_g12a_aobus_pmx_banks_data = {

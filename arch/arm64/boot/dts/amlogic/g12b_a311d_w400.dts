@@ -31,6 +31,8 @@
 		i2c4 = &i2c_AO;
 		tsensor0 = &p_tsensor;
 		tsensor1 = &d_tsensor;
+		spi1 = &spicc0;
+		spi2 = &spicc1;
 	};
 
 	memory@00000000 {
@@ -1361,11 +1363,18 @@
 	status = "okay";
 };
 
+&spicc0 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spicc0_pins_x>;
+	cs-gpios = <&gpio GPIOX_10 GPIO_ACTIVE_HIGH>;
+};
+
 &spicc1 {
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc1_pins>;
-	cs-gpios = <&gpio GPIOH_6 0>;
+	cs-gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
 };
 
 &ir {

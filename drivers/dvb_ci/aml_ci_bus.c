@@ -59,8 +59,6 @@ MODULE_PARM_DESC(ci_bus_time, "set ci bus time");
 
 #define AML_MODE_NAME       "aml_dvbci_bus"
 
-static int  aml_ci_bus_mod_init(void);
-static void  aml_ci_bus_mod_exit(void);
 static  int aml_read_self(unsigned int reg);
 static void aml_write_self(unsigned int reg, unsigned int val);
 static int aml_set_gpio_out(struct gpio_desc *gpio, int val);
@@ -106,13 +104,15 @@ int init_ci_addr(struct platform_device *pdev)
 		return -1;
 	}
 
-	p_hw_base = devm_ioremap_resource(&pdev->dev, res);
+	if (!p_hw_base) {
+		p_hw_base = devm_ioremap_resource(&pdev->dev, res);
 
-	if (p_hw_base) {
-		pr_dbg("%s base addr = %lx\n", __func__,
-		       (unsigned long)p_hw_base);
-	} else {
-		pr_dbg("%s base addr error\n", __func__);
+		if (IS_ERR_OR_NULL(p_hw_base)) {
+			pr_dbg("%s base addr error\n", __func__);
+		} else {
+			pr_dbg("%s base addr = %lx\n", __func__,
+			       (unsigned long)p_hw_base);
+		}
 	}
 	return 0;
 }
@@ -1159,11 +1159,8 @@ int aml_ci_bus_init(struct platform_device *pdev, struct aml_ci *ci_dev)
 		pr_error("aml_pcmcia_init failed\n");
 		goto fail1;
 	}
-	pr_dbg("*********ci bus aml_ci_bus_mod_init---\n");
-	aml_ci_bus_mod_init();
 	return 0;
 fail1:
-	kfree(ci_bus_dev);
 	ci_bus_dev = NULL;
 	return 0;
 }
@@ -1176,7 +1173,6 @@ EXPORT_SYMBOL(aml_ci_bus_init);
  */
 int aml_ci_bus_exit(struct aml_ci *ci)
 {
-	aml_ci_bus_mod_exit();
 	/*exit pc card*/
 	aml_pcmcia_exit(&ci_bus.pc);
 	/*free gpio*/
@@ -2028,7 +2024,7 @@ static const struct file_operations rawci_fops = {
 #endif
 };
 
-static int  aml_ci_bus_mod_init(void)
+int  aml_ci_bus_mod_init(void)
 {
 	int ret;
 	struct class *clp;
@@ -2063,8 +2059,9 @@ static int  aml_ci_bus_mod_init(void)
 
 	return 0;
 }
+EXPORT_SYMBOL(aml_ci_bus_mod_init);
 
-static void  aml_ci_bus_mod_exit(void)
+void  aml_ci_bus_mod_exit(void)
 {
 	pr_dbg("Amlogic DVB CI BUS Exit\n");
 	if (ci_bus.raw_mode == 1 && rawci_major > 0)
@@ -2073,3 +2070,4 @@ static void  aml_ci_bus_mod_exit(void)
 		unregister_chrdev(rawci_major, RAWCI_DEV_NAME);
 	class_unregister(&ci_bus.cls);
 }
+EXPORT_SYMBOL(aml_ci_bus_mod_exit);

@@ -630,7 +630,7 @@ free_buf:
 
 void frc_tool_dbg_store(struct frc_dev_s *devp, const char *buf)
 {
-	int i = 0;
+	int i, count, flag = 0;
 	char *buf_orig, *parm[8] = {NULL};
 	ulong val;
 	int debug_flag = 32;
@@ -648,9 +648,29 @@ void frc_tool_dbg_store(struct frc_dev_s *devp, const char *buf)
 			goto free_buf;
 		if (kstrtoul(parm[1], 16, &val) < 0)
 			goto free_buf;
+
 		reg = val;
 		devp->tool_dbg.reg_read = reg;
-		devp->tool_dbg.reg_read_val = READ_FRC_REG(reg);
+
+		if (is_rdma_enable()) {
+			if (frc_rdma2->rdma_item_count) {
+				count = frc_rdma2->rdma_item_count;
+				for (i = 0; i < count; i++) {
+					if (frc_rdma2->rdma_table_addr[i * 2] == reg) {
+						devp->tool_dbg.reg_read_val =
+							frc_rdma2->rdma_table_addr[i * 2 + 1];
+						flag = 1;
+						break;
+					}
+				}
+				if (!flag)
+					devp->tool_dbg.reg_read_val = READ_FRC_REG(reg);
+			} else {
+				devp->tool_dbg.reg_read_val = READ_FRC_REG(reg);
+			}
+		} else {
+			devp->tool_dbg.reg_read_val = READ_FRC_REG(reg);
+		}
 	} else if (!strcmp(parm[0], "w")) {
 		if (!parm[1] || !parm[2])
 			goto free_buf;

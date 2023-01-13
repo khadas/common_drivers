@@ -28,7 +28,7 @@
 #include <drm/drm_fb_helper.h>
 
 #include "meson_fbdev.h"
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 #include "meson_gem.h"
 #include "meson_fb.h"
 #endif
@@ -54,7 +54,7 @@
 
 static void am_meson_fb_output_poll_changed(struct drm_device *dev)
 {
-#ifdef CONFIG_DRM_MESON_EMULATE_FBDEV
+#ifdef CONFIG_AMLOGIC_DRM_EMULATE_FBDEV
 	int i;
 	struct meson_drm_fbdev *fbdev;
 	struct meson_drm *priv = dev->dev_private;
@@ -71,7 +71,7 @@ static const struct drm_mode_config_funcs meson_mode_config_funcs = {
 	.output_poll_changed = am_meson_fb_output_poll_changed,
 	.atomic_check        = drm_atomic_helper_check,
 	.atomic_commit       = meson_atomic_commit,
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	.fb_create           = am_meson_fb_create,
 #else
 	.fb_create           = drm_gem_fb_create,
@@ -83,7 +83,7 @@ static const struct drm_mode_config_helper_funcs meson_mode_config_helpers = {
 };
 
 static const struct drm_ioctl_desc meson_ioctls[] = {
-	#ifdef CONFIG_DRM_MESON_USE_ION
+	#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	DRM_IOCTL_DEF_DRV(MESON_GEM_CREATE, am_meson_gem_create_ioctl,
 			  DRM_UNLOCKED | DRM_AUTH | DRM_RENDER_ALLOW),
 	#endif
@@ -99,7 +99,7 @@ static struct drm_driver meson_driver = {
 #ifdef CONFIG_DEBUG_FS
 	.debugfs_init = meson_debugfs_init,
 #endif
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	/* PRIME Ops */
 	.prime_handle_to_fd	= drm_gem_prime_handle_to_fd,
 	.prime_fd_to_handle	= drm_gem_prime_fd_to_handle,
@@ -232,7 +232,7 @@ static int am_meson_drm_bind(struct device *dev)
 
 	dev_set_drvdata(dev, priv);
 
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	ret = am_meson_gem_create(priv);
 	if (ret)
 		goto err_free2;
@@ -281,7 +281,7 @@ static int am_meson_drm_bind(struct device *dev)
 
 	am_meson_logo_init(drm);
 
-#ifdef CONFIG_DRM_MESON_EMULATE_FBDEV
+#ifdef CONFIG_AMLOGIC_DRM_EMULATE_FBDEV
 	ret = am_meson_drm_fbdev_init(drm);
 	if (ret)
 		goto err_poll_fini;
@@ -299,7 +299,7 @@ err_drm_dev_unregister:
 	drm_dev_unregister(drm);
 
 err_fbdev_fini:
-#ifdef CONFIG_DRM_MESON_EMULATE_FBDEV
+#ifdef CONFIG_AMLOGIC_DRM_EMULATE_FBDEV
 	am_meson_drm_fbdev_fini(drm);
 err_poll_fini:
 #endif
@@ -309,7 +309,7 @@ err_unbind_all:
 	component_unbind_all(dev, drm);
 err_gem:
 	drm_mode_config_cleanup(drm);
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	am_meson_gem_cleanup(drm->dev_private);
 err_free2:
 #endif
@@ -328,14 +328,14 @@ static void am_meson_drm_unbind(struct device *dev)
 
 	meson_drm_sysfs_unregister(drm);
 	drm_dev_unregister(drm);
-#ifdef CONFIG_DRM_MESON_EMULATE_FBDEV
+#ifdef CONFIG_AMLOGIC_DRM_EMULATE_FBDEV
 	am_meson_drm_fbdev_fini(drm);
 #endif
 	drm_kms_helper_poll_fini(drm);
 	priv->irq_enabled = false;
 	component_unbind_all(dev, drm);
 	drm_mode_config_cleanup(drm);
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	am_meson_gem_cleanup(drm->dev_private);
 #endif
 	drm->dev_private = NULL;
@@ -426,7 +426,7 @@ static int am_meson_drv_probe_prune(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, priv);
 
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	ret = am_meson_gem_create(priv);
 	if (ret)
 		goto err_free2;
@@ -439,7 +439,7 @@ static int am_meson_drv_probe_prune(struct platform_device *pdev)
 	return 0;
 
 err_gem:
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	am_meson_gem_cleanup(drm->dev_private);
 err_free2:
 #endif
@@ -455,7 +455,7 @@ static int am_meson_drv_remove_prune(struct platform_device *pdev)
 	struct drm_device *drm = platform_get_drvdata(pdev);
 
 	drm_dev_unregister(drm);
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	am_meson_gem_cleanup(drm->dev_private);
 #endif
 	drm->dev_private = NULL;
@@ -551,7 +551,7 @@ MODULE_DEVICE_TABLE(of, am_meson_drm_dt_match);
 #ifdef CONFIG_PM_SLEEP
 static void am_meson_drm_fb_suspend(struct drm_device *drm)
 {
-#ifdef CONFIG_DRM_MESON_EMULATE_FBDEV
+#ifdef CONFIG_AMLOGIC_DRM_EMULATE_FBDEV
 	int i;
 	struct meson_drm_fbdev *fbdev;
 	struct meson_drm *priv = drm->dev_private;
@@ -566,7 +566,7 @@ static void am_meson_drm_fb_suspend(struct drm_device *drm)
 
 static void am_meson_drm_fb_resume(struct drm_device *drm)
 {
-#ifdef CONFIG_DRM_MESON_EMULATE_FBDEV
+#ifdef CONFIG_AMLOGIC_DRM_EMULATE_FBDEV
 	int i;
 	struct meson_drm_fbdev *fbdev;
 	struct meson_drm *priv = drm->dev_private;

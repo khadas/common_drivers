@@ -11,7 +11,7 @@
 #include <linux/of.h>
 #include <drm/drmP.h>
 #include <drm/drm_writeback.h>
-/*CONFIG_DRM_MESON_EMULATE_FBDEV*/
+/*CONFIG_AMLOGIC_DRM_EMULATE_FBDEV*/
 #include <meson_fbdev.h>
 
 #include <drm/amlogic/meson_drm_bind.h>
@@ -61,7 +61,7 @@ struct meson_drm {
 	struct drm_plane *cursor_plane;
 	struct drm_property_blob *gamma_lut_blob;
 
-#ifdef CONFIG_DRM_MESON_USE_ION
+#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	struct ion_client *gem_client;
 #endif
 
@@ -86,7 +86,7 @@ struct meson_drm {
 	/*for encoder: 0:hdmi 1:lcd 2:cvbs*/
 	u32 crtc_masks[ENCODER_MAX];
 
-	/*CONFIG_DRM_MESON_EMULATE_FBDEV*/
+	/*CONFIG_AMLOGIC_DRM_EMULATE_FBDEV*/
 	struct meson_drm_fbdev_config ui_config;
 	struct meson_drm_fbdev *osd_fbdevs[MESON_MAX_OSD];
 

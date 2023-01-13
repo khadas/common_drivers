@@ -300,7 +300,7 @@ static int meson_plane_fb_check(struct drm_plane *plane,
 				struct meson_vpu_osd_layer_info *plane_info)
 {
 	struct drm_framebuffer *fb = new_state->fb;
-	#ifdef CONFIG_DRM_MESON_USE_ION
+	#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	struct am_osd_plane *osd_plane = to_am_osd_plane(plane);
 	struct meson_drm *drv = osd_plane->drv;
 	struct am_meson_fb *meson_fb;
@@ -310,7 +310,7 @@ static int meson_plane_fb_check(struct drm_plane *plane,
 	size_t fb_size = 0;
 	phys_addr_t phyaddr;
 
-	#ifdef CONFIG_DRM_MESON_USE_ION
+	#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	meson_fb = container_of(fb, struct am_meson_fb, base);
 	if (!meson_fb)
 		return -EINVAL;
@@ -353,7 +353,7 @@ static int meson_video_plane_fb_check(struct drm_plane *plane,
 				struct meson_vpu_video_layer_info *plane_info)
 {
 	struct drm_framebuffer *fb = new_state->fb;
-	#ifdef CONFIG_DRM_MESON_USE_ION
+	#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	struct am_video_plane *video_plane = to_am_video_plane(plane);
 	struct meson_drm *drv = video_plane->drv;
 	struct am_meson_fb *meson_fb;
@@ -364,7 +364,7 @@ static int meson_video_plane_fb_check(struct drm_plane *plane,
 	size_t fb_size[2] = {0};
 	phys_addr_t phyaddr, phyaddr1 = 0;
 
-	#ifdef CONFIG_DRM_MESON_USE_ION
+	#ifdef CONFIG_AMLOGIC_DRM_USE_ION
 	meson_fb = container_of(fb, struct am_meson_fb, base);
 	if (!meson_fb)
 		return -EINVAL;

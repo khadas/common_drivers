@@ -29,6 +29,7 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-adc.ko
 	amlogic-rtc-virtual.ko
 	amlogic-thermal.ko
+	amlogic-usb.ko
 	amlogic-irblaster.ko
 	amlogic-inphy.ko
 	aml_drm.ko
@@ -45,7 +46,6 @@ VENDOR_MODULES_LOAD_LAST_LIST=(
 )
 
 RECOVERY_MODULES_LOAD_LIST=(
-	amlogic-usb.ko
 )
 
 MODULES_LOAD_BLACK_LIST=(

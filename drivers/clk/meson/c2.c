@@ -894,6 +894,7 @@ static struct clk_regmap c2_sys_pll_vco = {
 		.table = c2_pll_params_table,
 		.init_regs = c2_sys_init_regs,
 		.init_count = ARRAY_SIZE(c2_sys_init_regs),
+		.flags = CLK_MESON_PLL_IGNORE_INIT,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "sys_pll_vco",

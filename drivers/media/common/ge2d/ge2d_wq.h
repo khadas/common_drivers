@@ -28,4 +28,8 @@ int ge2d_buffer_export(struct ge2d_dmabuf_exp_s *ge2d_exp_buf);
 int ge2d_set_clut_table(struct ge2d_context_s *context, unsigned long args);
 void ge2d_buffer_dma_flush(int dma_fd);
 void ge2d_buffer_cache_flush(int dma_fd);
+
+#if IS_ENABLED(CONFIG_AMLOGIC_DMC_DEV_ACCESS)
+void dmc_ge2d_test_notifier(void);
+#endif
 #endif

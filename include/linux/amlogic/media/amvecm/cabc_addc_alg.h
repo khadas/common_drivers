@@ -122,5 +122,5 @@ struct pgm_param_s {
 
 struct aad_fw_param_s *aad_fw_param_get(void);
 struct cabc_fw_param_s *cabc_fw_param_get(void);
-struct pgm_param_s *pre_gam_fw_param_get(void);
+struct pgm_param_s *pregam_fw_param_get(void);
 #endif

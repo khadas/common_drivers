@@ -1,0 +1,13 @@
+#
+# DNLP Algorithm Driver Configuration
+#
+
+config AMLOGIC_DNLP_ALGORITHM
+	bool "Amlogic DNLP Algorithm"
+	default n
+	depends on AMLOGIC_MEDIA_ENHANCEMENT_VECM
+	help
+	  Say Y here if
+	  you want to use
+	  the amlogic hold
+	  dnlp.

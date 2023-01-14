@@ -1,0 +1,25 @@
+#
+# Amlogic multimedia algorithm configuration
+#
+
+#menu "Amlogic multimedia algorithm configuration"
+
+config AMLOGIC_ALGORITHM
+	tristate "Amlogic Multimedia Algorithm Support"
+	default n
+	help
+	  algorithm devices support
+	  select y for built-in
+	  select m for ko
+	  select n for disable
+
+
+if AMLOGIC_ALGORITHM
+
+#source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/ldim/Kconfig"
+#source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/dnlp/Kconfig"
+#source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/common/Kconfig"
+#source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/frc/Kconfig"
+endif
+
+#endmenu

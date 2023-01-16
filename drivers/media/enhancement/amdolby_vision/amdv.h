@@ -680,6 +680,7 @@ extern s16 brightness_off[8][2];
 extern bool disable_aoi;
 extern int debug_disable_aoi;
 extern int debug_dma_start_line;
+extern unsigned int debug_vpotch;
 extern int copy_core1a;
 extern int core2_sel;
 extern bool force_bypass_from_prebld_to_vadj1;

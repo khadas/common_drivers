@@ -2165,13 +2165,15 @@ bool hdmi_rx_top_edid_update(void)
 				pedid[phy_addr_off1 + 1] =
 					(phy_addr[i] >> 8) & 0xFF;
 			}
-			pedid[0xff] = rx_edid_calc_cksum(pedid);
-			if (ui_port_num == 4) {
-				phy_addr_off1 = rx_get_cea_tag_offset(pedid,
+			if (rx.chip_id == CHIP_ID_T5M) {
+				if (ui_port_num == 4) {
+					phy_addr_off1 = rx_get_cea_tag_offset(pedid,
 								      VENDOR_TAG) + 4;
-				pedid[phy_addr_off1] = 0x40;
-				pedid[phy_addr_off1 + 1] = 0x0;
+					pedid[phy_addr_off1] = 0x40;
+					pedid[phy_addr_off1 + 1] = 0x0;
+				}
 			}
+			pedid[0xff] = rx_edid_calc_cksum(pedid);
 			for (j = 0; j <= 0xFF; j++) {
 				hdmirx_wr_top(edid_addr[i] + j,
 					      pedid[j]);

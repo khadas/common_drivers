@@ -953,6 +953,10 @@ static int meson_pwm_probe(struct platform_device *pdev)
 #ifdef CONFIG_AMLOGIC_MODIFY
 	if (meson->data->extern_clk) {
 		ext_clk_regs = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+		if (!ext_clk_regs) {
+			dev_err(&pdev->dev, "can't get reg resource\n");
+			return -ENODEV;
+		}
 		PWM_DBG("get clk reg start:0x%p end:0x%p\n", (void *)(ext_clk_regs->start),
 			 (void *)(ext_clk_regs->end));
 		meson->ext_clk_base = devm_ioremap(&pdev->dev, ext_clk_regs->start, 4);

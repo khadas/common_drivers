@@ -1827,6 +1827,8 @@
 
 &aml_bt {
 	status = "okay";
-	reset-gpios = <&gpio  GPIOD_13  GPIO_ACTIVE_HIGH>;
+	bt_en-gpios = <&gpio  GPIOD_11  GPIO_ACTIVE_HIGH>;
+	hostwake-gpios = <&gpio  GPIOD_13  GPIO_ACTIVE_HIGH>;
+	power_down_disable = <1>;
 };
 

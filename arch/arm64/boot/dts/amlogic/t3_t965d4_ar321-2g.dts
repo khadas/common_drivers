@@ -1876,7 +1876,8 @@
 
 &aml_bt {
 	status = "okay";
-	reset-gpios = <&gpio  GPIOC_13  GPIO_ACTIVE_HIGH>;
+	bt_en-gpios = <&gpio  GPIOC_11  GPIO_ACTIVE_HIGH>;
+	power_down_disable = <1>;
 };
 
 &spicc0 {	//for TCON

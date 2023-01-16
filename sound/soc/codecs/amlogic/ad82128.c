@@ -493,6 +493,7 @@ static const struct snd_kcontrol_new ad82128_snd_controls[] = {
 		0, 0xff, 1, chvol_tlv),
 	SOC_SINGLE_TLV("Speaker Driver Analog Gain", AD82128_ANALOG_CTRL_REG,
 		AD82128_ANALOG_GAIN_SHIFT, 3, 0, dac_analog_tlv),
+	SOC_SINGLE("Master Mute", AD82128_STATE_CTRL3_REG, 6, 1, 0),
 };
 
 static const struct snd_soc_dapm_widget ad82128_dapm_widgets[] = {

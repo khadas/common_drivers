@@ -1146,9 +1146,9 @@ void frc_inp_init(void)
 	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 5, 1);//close reg_inp_logo_en
 	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 8, 1);//open
 	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 7, 1);//open  bbd en
-
-	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN + offset, 0x211e);//aligned padding value
 	regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN + offset);
+	frc_config_reg_value(BIT_5 + BIT_7 + BIT_8, 0x000001A0, &regdata_inpmoden_04f9);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN + offset, regdata_inpmoden_04f9);
 
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL25, 0x4080200); //aligned padding value
 
@@ -1976,52 +1976,51 @@ void frc_set_val_from_reg(void)
 	regdata_loadorgframe[1] = 0;
 	regdata_loadorgframe[2] = 0;
 
-	regdata_inpholdctl_0002 = READ_FRC_REG(0x0002);
-	regdata_outholdctl_0003 = READ_FRC_REG(0x0003);
-	regdata_top_ctl_0007 = READ_FRC_REG(0x0007);
-	regdata_top_ctl_0009 = READ_FRC_REG(0x0009);
-	regdata_top_ctl_0011 =  READ_FRC_REG(0x0011);
+	regdata_inpholdctl_0002 = READ_FRC_REG(FRC_INP_HOLD_CTRL);
+	regdata_outholdctl_0003 = READ_FRC_REG(FRC_OUT_HOLD_CTRL);
+	regdata_top_ctl_0007 = READ_FRC_REG(FRC_REG_TOP_CTRL7);
+	regdata_top_ctl_0009 = READ_FRC_REG(FRC_REG_TOP_CTRL9);
+	regdata_top_ctl_0011 =  READ_FRC_REG(FRC_REG_TOP_CTRL17);
 
-	regdata_pat_pointer_0102 = READ_FRC_REG(0x0102);
+	regdata_pat_pointer_0102 = READ_FRC_REG(FRC_REG_PAT_POINTER);
 	// regdata_loadorgframe[16];		// 0x0103
 
-	regdata_phs_tab_0116 = READ_FRC_REG(0x0116);
-	regdata_blksizexy_012b = READ_FRC_REG(0x012b);
-	regdata_blkscale_012c = READ_FRC_REG(0x012c);
-	regdata_hme_scale_012d = READ_FRC_REG(0x012d);
+	regdata_phs_tab_0116 = READ_FRC_REG(FRC_REG_PHS_TABLE);
+	regdata_blksizexy_012b = READ_FRC_REG(FRC_REG_BLK_SIZE_XY);
+	regdata_blkscale_012c = READ_FRC_REG(FRC_REG_BLK_SCALE);
+	regdata_hme_scale_012d = READ_FRC_REG(FRC_REG_ME_HME_SCALE);
 
-	regdata_logodbg_0142 = READ_FRC_REG(0x0142);
-	regdata_inpmoden_04f9 = READ_FRC_REG(0x04f9);
+	regdata_logodbg_0142 = READ_FRC_REG(FRC_LOGO_DEBUG);
 
-	regdata_iplogo_en_0503 = READ_FRC_REG(0x0503);
-	regdata_bbd_t2b_0604 = READ_FRC_REG(0x0604);
-	regdata_bbd_l2r_0605 = READ_FRC_REG(0x0605);
+	regdata_iplogo_en_0503 = READ_FRC_REG(FRC_IPLOGO_EN);
+	regdata_bbd_t2b_0604 = READ_FRC_REG(FRC_BBD_DETECT_REGION_TOP2BOT);
+	regdata_bbd_l2r_0605 = READ_FRC_REG(FRC_BBD_DETECT_REGION_LFT2RIT);
 
-	regdata_me_en_1100 = READ_FRC_REG(0x1100);
-	regdata_me_bbpixed_1108 = READ_FRC_REG(0x1108);
-	regdata_me_bbblked_110a = READ_FRC_REG(0x110a);
-	regdata_me_stat12rhst_110b = READ_FRC_REG(0x110b);
-	regdata_me_stat12rh_110c = READ_FRC_REG(0x110c);
-	regdata_me_stat12rh_110d = READ_FRC_REG(0x110d);
-	regdata_me_stat12rv_110e = READ_FRC_REG(0x110e);
-	regdata_me_stat12rv_110f = READ_FRC_REG(0x110f);
+	regdata_me_en_1100 = READ_FRC_REG(FRC_ME_EN);
+	regdata_me_bbpixed_1108 = READ_FRC_REG(FRC_ME_BB_PIX_ED);
+	regdata_me_bbblked_110a = READ_FRC_REG(FRC_ME_BB_PIX_ED);
+	regdata_me_stat12rhst_110b = READ_FRC_REG(FRC_ME_BB_PIX_ED);
+	regdata_me_stat12rh_110c = READ_FRC_REG(FRC_ME_STAT_12R_H01);
+	regdata_me_stat12rh_110d = READ_FRC_REG(FRC_ME_STAT_12R_H23);
+	regdata_me_stat12rv_110e = READ_FRC_REG(FRC_ME_STAT_12R_V0);
+	regdata_me_stat12rv_110f = READ_FRC_REG(FRC_ME_STAT_12R_V1);
 
-	regdata_vpbb1_1e03 = READ_FRC_REG(0x1e03);
-	regdata_vpbb2_1e04 = READ_FRC_REG(0x1e04);
-	regdata_vpmebb1_1e05 = READ_FRC_REG(0x1e05);
-	regdata_vpmebb2_1e06 = READ_FRC_REG(0x1e06);
+	regdata_vpbb1_1e03 = READ_FRC_REG(FRC_VP_BB_1);
+	regdata_vpbb2_1e04 = READ_FRC_REG(FRC_VP_BB_2);
+	regdata_vpmebb1_1e05 = READ_FRC_REG(FRC_VP_ME_BB_1);
+	regdata_vpmebb2_1e06 = READ_FRC_REG(FRC_VP_ME_BB_2);
 
-	regdata_vp_win1_1e58 = READ_FRC_REG(0x1e58);
-	regdata_vp_win2_1e59 = READ_FRC_REG(0x1e59);
-	regdata_vp_win3_1e5a = READ_FRC_REG(0x1e5a);
-	regdata_vp_win4_1e5b = READ_FRC_REG(0x1e5b);
+	regdata_vp_win1_1e58 = READ_FRC_REG(FRC_VP_REGION_WINDOW_1);
+	regdata_vp_win2_1e59 = READ_FRC_REG(FRC_VP_REGION_WINDOW_2);
+	regdata_vp_win3_1e5a = READ_FRC_REG(FRC_VP_REGION_WINDOW_3);
+	regdata_vp_win4_1e5b = READ_FRC_REG(FRC_VP_REGION_WINDOW_4);
 
-	regdata_mcset1_3000 = READ_FRC_REG(0x3000);
-	regdata_mcset2_3001 = READ_FRC_REG(0x3001);
+	regdata_mcset1_3000 = READ_FRC_REG(FRC_MC_SETTING1);
+	regdata_mcset2_3001 = READ_FRC_REG(FRC_MC_SETTING2);
 
-	regdata_mcdemo_win_3200  = READ_FRC_REG(0x3200);
+	regdata_mcdemo_win_3200  = READ_FRC_REG(FRC_MC_DEMO_WINDOW);
 
-	regdata_topctl_3f01 = READ_FRC_REG(0x3f01);
+	regdata_topctl_3f01 = READ_FRC_REG(FRC_TOP_CTRL);
 }
 
 /* driver probe call */

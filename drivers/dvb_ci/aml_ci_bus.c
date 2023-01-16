@@ -914,7 +914,10 @@ static int aml_ci_bus_get_config_from_dts(struct aml_ci_bus *ci_bus_dev)
 		int ival;
 
 		/*get irq value*/
-		ci_bus_dev->irq_cmp = 186;
+		if (USED_IRQ)
+			ci_bus_dev->irq_cmp = 186;
+		else
+			ci_bus_dev->irq_cmp = -1;
 		memset(buf, 0, 32);
 		snprintf(buf, sizeof(buf), "%s", "irq_cmp");
 		res = platform_get_resource_byname(pdev, IORESOURCE_IRQ, buf);
@@ -922,8 +925,10 @@ static int aml_ci_bus_get_config_from_dts(struct aml_ci_bus *ci_bus_dev)
 			ci_bus_dev->irq_cmp = res->start;
 		else
 			pr_err("get irq cmp error\r\n");
-
-		ci_bus_dev->irq_timeout = 187;
+		if (USED_IRQ)
+			ci_bus_dev->irq_timeout = 187;
+		else
+			ci_bus_dev->irq_timeout = -1;
 		memset(buf, 0, 32);
 		snprintf(buf, sizeof(buf), "%s", "irq_timeout");
 		res = platform_get_resource_byname(pdev, IORESOURCE_IRQ, buf);

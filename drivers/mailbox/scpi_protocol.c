@@ -1192,6 +1192,7 @@ int scpi_send_bl40(unsigned int cmd, struct bl40_msg_buf *bl40_buf)
 			     bl40_buf->buf, sizeof(bl40_buf->buf));
 	return scpi_execute_cmd(&sdata);
 }
+EXPORT_SYMBOL(scpi_send_bl40);
 
 /* scpi send data api
  * use for send data to dsp/aocpu/secpu/cm3/cm4

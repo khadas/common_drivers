@@ -50,6 +50,12 @@ obj-$(CONFIG_AMLOGIC_ANDROID_LOGGER)	+= android/
 obj-$(CONFIG_AMLOGIC_YAFFS_FS)		+= yaffs2/
 obj-$(CONFIG_AMLOGIC_AUDIO_BRIDGE)	+= audiobridge/
 obj-$(CONFIG_AMLOGIC_MEDIA_ALGORITHM)	+= algorithm/
+obj-y        				+= dvb/
+obj-$(CONFIG_AMLOGIC_DRM)		+= drm/
+obj-y              			+= pci/
+obj-$(CONFIG_AMLOGIC_LED)		+= led/
+obj-y								+= firmware/
+
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
 all:
 	$(MAKE) -C $(KERNEL_SRC) M=$(M) modules $(GKI_EXT_KERNEL_MODULE_CONFIG)

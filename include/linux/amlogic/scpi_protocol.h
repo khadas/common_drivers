@@ -115,7 +115,7 @@ struct scpi_dvfs_info {
 
 struct bl40_msg_buf {
 	int size;
-	char buf[512];
+	char buf[256];
 } __packed;
 
 struct hifi4syslog {

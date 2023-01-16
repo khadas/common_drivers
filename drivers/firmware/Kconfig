@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# Amlogic freertos configuration
+#
+menu "AMLOGIC firmware boot"
+
+config AMLOGIC_FIRMWARE
+	tristate "firmware bootup support"
+	default n
+	help
+		support the amlogic firmware bootup;
+
+endmenu

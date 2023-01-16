@@ -11,6 +11,7 @@ config AMLOGIC_BGKI_DEBUG_MISC
 	bool "Amlogic Debug Builtin Code"
 	depends on AMLOGIC_DEBUG
 	depends on AMLOGIC_BREAK_GKI
+	depends on AMLOGIC_BREAK_GKI_20
 	default n
 	help
 	  Amlogic debug code must builtin
@@ -28,6 +29,7 @@ config AMLOGIC_DEBUG_ATRACE
 config AMLOGIC_BOOT_TIME
 	bool "AMLOGIC boot time optimi zation"
 	depends on AMLOGIC_BREAK_GKI
+	depends on AMLOGIC_BREAK_GKI_20
 	default n
 	help
 	  This option is set up for Amlogic boot time optimization,
@@ -35,6 +37,7 @@ config AMLOGIC_BOOT_TIME
 
 config AMLOGIC_DEBUG_PRINTK
 	tristate "Amlogic printk support"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on PRINTK_CALLER
 	default n
 	help
@@ -44,6 +47,7 @@ config AMLOGIC_DEBUG_PRINTK
 config AMLOGIC_BGKI_DEBUG_IOTRACE
 	bool "Amlogic ftrace pstore debug"
 	depends on AMLOGIC_BREAK_GKI
+	depends on AMLOGIC_BREAK_GKI_20
 	select PSTORE_FTRACE
 	default n
 	help

@@ -17,6 +17,7 @@ config AMLOGIC_COMMON_USB
 	bool "It is used to cover the USB modification for common dir."
 	default n
 	depends on AMLOGIC_USB
+	depends on AMLOGIC_BREAK_GKI_20
 	help
 	  DWC_OTG
 	  USB

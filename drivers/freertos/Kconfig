@@ -5,12 +5,14 @@
 
 config AMLOGIC_FREERTOS
 	bool "Amlogic Freertos Support"
+	depends on AMLOGIC_BREAK_GKI_20
 	default n
 	help
 	  Say Y here to enable freertos support.
 
 config AMLOGIC_FREERTOS_T7
 	bool "Amlogic Freertos Support with t7"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_FREERTOS
 	default n
 	help

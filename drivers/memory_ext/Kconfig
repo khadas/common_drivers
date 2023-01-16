@@ -4,6 +4,7 @@ menuconfig AMLOGIC_MEMORY_EXTEND
 	bool "AMLOGIC memory extend support"
 	depends on AMLOGIC_DRIVER
 	depends on AMLOGIC_BREAK_GKI
+	depends on AMLOGIC_BREAK_GKI_20
 	select SWIOTLB
 	select DMA_RESTRICTED_POOL
 	default n
@@ -13,6 +14,7 @@ menuconfig AMLOGIC_MEMORY_EXTEND
 
 config AMLOGIC_PAGE_TRACE
 	bool "Amlogic trace for page allocate"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	depends on KALLSYMS
 	depends on !NUMA_BALANCING
@@ -26,6 +28,7 @@ config AMLOGIC_PAGE_TRACE
 
 config AMLOGIC_PAGE_TRACE_INLINE
 	bool "page trace inline into page flags"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_PAGE_TRACE
 	depends on 64BIT
 	depends on !KASAN_HW_TAGS && !KASAN_SW_TAGS
@@ -39,6 +42,7 @@ config AMLOGIC_PAGE_TRACE_INLINE
 
 config AMLOGIC_SLAB_TRACE
 	bool "Amlogic trace for slab usage"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on SLUB
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
@@ -50,6 +54,7 @@ config AMLOGIC_SLAB_TRACE
 
 config AMLOGIC_CMA
 	bool "Amlogic CMA change"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	depends on CMA
 	default n
@@ -59,6 +64,7 @@ config AMLOGIC_CMA
 
 config AMLOGIC_MEM_DEBUG
 	bool "Amlogic debug mem"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
@@ -75,6 +81,7 @@ config AMLOGIC_STACKPROTECTOR
 
 config AMLOGIC_VMAP
 	bool "Amlogic kernel stack"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	depends on AMLOGIC_STACKPROTECTOR
 	default n
@@ -86,6 +93,7 @@ config AMLOGIC_VMAP
 
 config AMLOGIC_USER_FAULT
 	bool "Amlogic user fault helper"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
@@ -96,6 +104,7 @@ config AMLOGIC_USER_FAULT
 
 config AMLOGIC_ZSTD
 	tristate "Amlogic zstd optimize"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
@@ -105,6 +114,7 @@ config AMLOGIC_ZSTD
 
 config AMLOGIC_MEMORY_STAT
 	bool "Amlogic stat memory info"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
@@ -122,6 +132,7 @@ config AMLOGIC_CMA_DIS
 
 config AMLOGIC_MEMORY_OPT
 	bool "Amlogic memory optimization support"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
@@ -132,6 +143,7 @@ config AMLOGIC_MEMORY_OPT
 
 config AMLOGIC_PIN_LOCKED_FILE
 	bool "Amlogic pin locked file"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
@@ -143,6 +155,7 @@ config AMLOGIC_PIN_LOCKED_FILE
 
 config AMLOGIC_PIN_LOCKED_FILE_V2
 	bool "Amlogic pin locked file new version"
+	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
@@ -169,8 +182,8 @@ config AMLOGIC_PCIE_DMA_OPS
 
 config AMLOGIC_FAKE_SMMU
 	tristate "Amlogic fake smmu"
-	depends on AMLOGIC_MEMORY_EXTEND
 	depends on AMLOGIC_PCIE_DMA_OPS
+	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
 		Register a fake smmu device to replace ops for 64bit

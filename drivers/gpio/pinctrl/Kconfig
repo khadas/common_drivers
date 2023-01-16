@@ -92,4 +92,13 @@ config AMLOGIC_PINCTRL_MESON_G12A
 	  G12A pinctrl can work.
 	  otherwise G12A pinctrl can't work
 
+config AMLOGIC_PINCTRL_MESON_S5
+	tristate "Meson S5 Soc pinctrl driver"
+	default n
+	help
+	  the chip of S5 will be built
+	  when enable this config.
+	  S5 pinctrl can work.
+	  otherwise S5 pinctrl can't work
+
 endif

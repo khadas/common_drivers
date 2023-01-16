@@ -257,6 +257,10 @@ static const struct meson_gpio_irq_params c3_params = {
 static const struct meson_gpio_irq_params t5m_params = {
 	INIT_MESON_SC2_COMMON_DATA(149)
 };
+
+static const struct meson_gpio_irq_params s5_params = {
+	INIT_MESON_P1_COMMON_DATA(118)
+};
 #endif
 
 static const struct of_device_id meson_irq_gpio_matches[] = {
@@ -282,6 +286,7 @@ static const struct of_device_id meson_irq_gpio_matches[] = {
 	{ .compatible = "amlogic,meson-c2-gpio-intc", .data = &c2_params },
 	{ .compatible = "amlogic,meson-c3-gpio-intc", .data = &c3_params },
 	{ .compatible = "amlogic,meson-t5m-gpio-intc", .data = &t5m_params },
+	{ .compatible = "amlogic,meson-s5-gpio-intc", .data = &s5_params },
 #endif
 	{ }
 };

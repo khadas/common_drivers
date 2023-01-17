@@ -15,6 +15,7 @@
 #include <linux/amlogic/aml_rsv.h>
 #include <linux/amlogic/aml_mtd_nand.h>
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 
 /* protect flag inside */
 static int rsv_protect = 1;
@@ -603,12 +604,12 @@ int meson_rsv_bbt_read(u_char *dest, size_t size)
 		return 1;
 	}
 	len = rsv_handler->bbt->size;
-	temp = kzalloc(len, GFP_KERNEL);
+	temp = vzalloc(len);
 	ret = meson_rsv_read(rsv_handler->bbt, temp);
 	memcpy(dest, temp, len > size ? size : len);
 	pr_info("%s %d read 0x%zx bytes from bbt, ret %d\n",
 		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
+	vfree(temp);
 	return ret;
 }
 
@@ -630,12 +631,12 @@ int meson_rsv_key_read(u_char *dest, size_t size)
 		return 1;
 	}
 	len = rsv_handler->key->size;
-	temp = kzalloc(len, GFP_KERNEL);
+	temp = vzalloc(len);
 	ret = meson_rsv_read(rsv_handler->key, temp);
 	memcpy(dest, temp, len > size ? size : len);
 	pr_info("%s %d read 0x%zx bytes from key, ret %d\n",
 		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
+	vfree(temp);
 	return ret;
 }
 
@@ -657,12 +658,12 @@ int meson_rsv_env_read(u_char *dest, size_t size)
 		return 1;
 	}
 	len = rsv_handler->env->size;
-	temp = kzalloc(len, GFP_KERNEL);
+	temp = vzalloc(len);
 	ret = meson_rsv_read(rsv_handler->env, temp);
 	memcpy(dest, temp, len > size ? size : len);
 	pr_info("%s %d read 0x%zx bytes from env, ret %d\n",
 		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
+	vfree(temp);
 	return ret;
 }
 
@@ -684,12 +685,12 @@ int meson_rsv_dtb_read(u_char *dest, size_t size)
 		return 1;
 	}
 	len = rsv_handler->dtb->size;
-	temp = kzalloc(len, GFP_KERNEL);
+	temp = vzalloc(len);
 	ret = meson_rsv_read(rsv_handler->dtb, temp);
 	memcpy(dest, temp, len > size ? size : len);
 	pr_info("%s %d read 0x%zx bytes from dtb, ret %d\n",
 		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
+	vfree(temp);
 	return ret;
 }
 
@@ -711,12 +712,12 @@ int meson_rsv_bbt_write(u_char *source, size_t size)
 		return 1;
 	}
 	len = rsv_handler->bbt->size;
-	temp = kzalloc(len, GFP_KERNEL);
+	temp = vzalloc(len);
 	memcpy(temp, source, len > size ? size : len);
 	ret = meson_rsv_save(rsv_handler->bbt, temp);
 	pr_info("%s %d write 0x%zx bytes to bbt, ret %d\n",
 		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
+	vfree(temp);
 	return ret;
 }
 EXPORT_SYMBOL(meson_rsv_bbt_write);
@@ -739,7 +740,7 @@ int meson_rsv_key_write(u_char *source, size_t size)
 		return 1;
 	}
 	len = rsv_handler->key->size;
-	temp = kzalloc(len, GFP_KERNEL);
+	temp = vzalloc(len);
 	memcpy(temp, source, len > size ? size : len);
 	pr_debug("%s %d write size 0x%zx bytes,want len: 0x%zx to key\n",
 		 __func__, __LINE__, len, size);
@@ -747,7 +748,7 @@ int meson_rsv_key_write(u_char *source, size_t size)
 	ret = meson_rsv_save(rsv_handler->key, temp);
 	pr_info("%s %d write key, ret %d\n",
 		__func__, __LINE__, ret);
-	kfree(temp);
+	vfree(temp);
 	return ret;
 }
 
@@ -769,12 +770,12 @@ int meson_rsv_env_write(u_char *source, size_t size)
 		return 1;
 	}
 	len = rsv_handler->env->size;
-	temp = kzalloc(len, GFP_KERNEL);
+	temp = vzalloc(len);
 	memcpy(temp, source, len > size ? size : len);
 	ret = meson_rsv_save(rsv_handler->env, temp);
 	pr_info("%s %d write 0x%zx bytes to env, ret %d\n",
 		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
+	vfree(temp);
 	return ret;
 }
 
@@ -796,12 +797,12 @@ int meson_rsv_dtb_write(u_char *source, size_t size)
 		return 1;
 	}
 	len = rsv_handler->dtb->size;
-	temp = kzalloc(len, GFP_KERNEL);
+	temp = vzalloc(len);
 	memcpy(temp, source, len > size ? size : len);
 	ret = meson_rsv_save(rsv_handler->dtb, temp);
 	pr_info("%s %d write 0x%zx bytes to dtb, ret %d\n",
 		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
+	vfree(temp);
 	return ret;
 }
 

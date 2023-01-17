@@ -69,14 +69,14 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 			dmabuf = dma_heap_buffer_alloc(heap, meson_gem_obj->base.size, O_RDWR,
 				DMA_HEAP_VALID_HEAP_FLAGS);
 			if (IS_ERR_OR_NULL(dmabuf)) {
-				DRM_ERROR("%s: dma_heap_buffer_alloc fail. size is %ld\n",
+				DRM_ERROR("%s: dma_heap_buffer_alloc fail. size is %zu\n",
 					__func__, meson_gem_obj->base.size);
 				return -ENOMEM;
 			}
 		}
 		meson_gem_obj->is_dma = true;
 
-		DRM_DEBUG("%s: dmabuf(%p) alloc success. size = %ld\n",
+		DRM_DEBUG("%s: dmabuf(%p) alloc success. size = %zu\n",
 			__func__, dmabuf, meson_gem_obj->base.size);
 	} else if (flags & MESON_USE_VIDEO_PLANE) {
 		meson_gem_obj->is_uvm = true;

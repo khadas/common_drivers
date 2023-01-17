@@ -753,8 +753,8 @@ void am_meson_logo_init(struct drm_device *dev)
 			of_node_put(mem_node);
 			if (rmem) {
 				logo.size = rmem->size;
-				DRM_DEBUG("of read %s reservememsize=0x%x, base 0x%llx\n",
-					rmem->name, logo.size, rmem->base);
+				DRM_DEBUG("of read %s reservememsize=0x%x, base %pa\n",
+					rmem->name, logo.size, &rmem->base);
 			}
 		} else {
 			DRM_ERROR("no memory-region\n");

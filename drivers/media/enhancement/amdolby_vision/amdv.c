@@ -1689,7 +1689,7 @@ void amdv_init_receiver(void *pdev)
 	alloc_size = (alloc_size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 	dma_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
 		alloc_size, &dma_paddr, GFP_KERNEL);
-	pr_info("get dma_vaddr %px %llx\n", dma_vaddr, dma_paddr);
+	pr_info("get dma_vaddr %px %pad\n", dma_vaddr, &dma_paddr);
 	for (i = 0; i < 2; i++) {
 		md_buf[i] = vmalloc(MD_BUF_SIZE);
 		if (md_buf[i])

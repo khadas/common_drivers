@@ -103,3 +103,9 @@ PR_FMT_G12A_AO = $(subst amlogic-,,$(G12A_AO_MODULE_NAME))
 PR_FMT_DEFINE_G12A_AO="-Dpr_fmt(fmt)= \"[$(PR_FMT_G12A_AO)]: \" fmt"
 CFLAGS_g12a_ao.o += $(PR_FMT_DEFINE_G12A_AO)
 
+S5_MODULE_NAME = amlogic-clk-soc-s5
+obj-$(CONFIG_AMLOGIC_COMMON_CLK_S5) += $(S5_MODULE_NAME).o
+$(S5_MODULE_NAME)-y += s5.o
+PR_FMT_S5 = $(subst amlogic-,,$(S5_MODULE_NAME))
+PR_FMT_DEFINE_S5="-Dpr_fmt(fmt)= \"[$(PR_FMT_S5)]: \" fmt"
+CFLAGS_s5.o += $(PR_FMT_DEFINE_S5)

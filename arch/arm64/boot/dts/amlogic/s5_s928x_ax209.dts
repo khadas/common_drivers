@@ -234,10 +234,10 @@
 				GIC_SPI 159 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "vc9000e_irq0", "vc9000e_irq1", "vc9000e_irq1";
 		power-domains = <&pwrdm PDID_S5_VC9000E>;
-		clock-names = "vers_sys_clk", "vers_core_clk", "vers_aclk";
-		clocks = <&clkc CLKID_SYS_CLK_VC9000E>,
-				<&clkc CLKID_VC9000E_CORE>,
-				<&clkc CLKID_VC9000E_AXI>;
+		//clock-names = "vers_sys_clk", "vers_core_clk", "vers_aclk";
+		//clocks = <&clkc CLKID_SYS_CLK_VC9000E>,
+		//		<&clkc CLKID_VC9000E_CORE>,
+		//		<&clkc CLKID_VC9000E_AXI>;
 	};
 
 	encmem_rev {
@@ -1398,7 +1398,7 @@
 };
 
 &crg_udc_2 {
-	status = "okay";
+	status = "disabled";
 	controller-type = <4>;
 };
 
@@ -1879,17 +1879,17 @@
 &pwm_ab {
 	pinctrl-0 = <&pwm_a_pins1>;
 	pinctrl-names = "default";
-	status = "okay";
+	status = "disabled";
 };
 
 &pwm_cd {
-	status = "okay";
+	status = "disabled";
 };
 
 &pwm_ef {
 	pinctrl-0 = <&pwm_f_pins>;
 	pinctrl-names = "default";
-	status = "okay";
+	status = "disabled";
 };
 
 &irblaster {

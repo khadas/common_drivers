@@ -6,7 +6,7 @@
 /dts-v1/;
 
 #include "mesong12b.dtsi"
-//#include "mesong12b_skt-panel.dtsi"
+#include "mesong12b_w400-panel.dtsi"
 //#include "mesong12b_drm.dtsi"
 //#include "partition_normal_linux.dtsi"
 
@@ -916,7 +916,7 @@
 	};
 
 &pwm_ef {
-		status = "disable";
+		status = "okay";
 	};
 
 &pwm_AO_cd {
@@ -1271,15 +1271,6 @@
 			function = "pdm";
 		};
 	};
-
-	bl_pwm_off_pins:bl_pwm_off_pin {
-		mux {
-			pins = "GPIOH_5";
-			function = "gpio_periphs";
-			output-high;
-		};
-	};
-
 }; /* end of pinctrl_periphs */
 
 &pinctrl_aobus {

@@ -78,27 +78,7 @@ void vpu_module_init_config(void)
 			i++;
 		}
 	}
-
-	/* dmc_arb_config */
-	switch (vpu_conf.data->chip_type) {
-	case VPU_CHIP_SC2:
-	case VPU_CHIP_T5:
-	case VPU_CHIP_T5D:
-	case VPU_CHIP_T7:
-	case VPU_CHIP_S4:
-	case VPU_CHIP_S4D:
-	case VPU_CHIP_T3:
-	case VPU_CHIP_T5M:
-		vpu_vcbus_write(VPU_RDARB_MODE_L1C1, 0x210000);
-		vpu_vcbus_write(VPU_RDARB_MODE_L1C2, 0x10000);
-		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x900000);
-		/*from vlsi feijun*/
-		vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x170000/*0x20000*/);
-		break;
-	default:
-		break;
-	}
-
+	/*don't set dmc_arb config in kernel*/
 	if (vpu_debug_print_flag)
 		VPUPR("%s finish\n", __func__);
 }

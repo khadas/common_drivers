@@ -49,7 +49,6 @@ static int vclk_reg_table_1[] = {
 	VCLK_MAP_CLK,
 	VCLK_MAP_MAX
 };
-
 struct vclk_reg_map_s {
 	unsigned int base_addr;
 	unsigned int size;

@@ -1818,17 +1818,17 @@ static int lcd_reg_print_mipi_phy_analog(struct aml_lcd_drv_s *pdrv,
 	reg = HHI_MIPI_CNTL0;
 	len += snprintf((buf + len), n,
 		"HHI_MIPI_CNTL0   [0x%02x] = 0x%08x\n",
-		reg, lcd_ana_read(reg));
+		reg, lcd_hiu_read(reg));
 	n = lcd_debug_info_len(len + offset);
 	reg = HHI_MIPI_CNTL1;
 	len += snprintf((buf + len), n,
 		"HHI_MIPI_CNTL1   [0x%02x] = 0x%08x\n",
-		reg, lcd_ana_read(reg));
+		reg, lcd_hiu_read(reg));
 	n = lcd_debug_info_len(len + offset);
 	reg = HHI_MIPI_CNTL2;
 	len += snprintf((buf + len), n,
 		"HHI_MIPI_CNTL2   [0x%02x] = 0x%08x\n",
-		reg, lcd_ana_read(reg));
+		reg, lcd_hiu_read(reg));
 
 	return len;
 }
@@ -6519,8 +6519,8 @@ static struct lcd_debug_info_s lcd_debug_info_axg = {
 
 static struct lcd_debug_info_s lcd_debug_info_g12a_clk_path0 = {
 	.reg_pll_table = NULL,
-	.reg_clk_table = lcd_reg_dump_clk_hpll_g12a,
-	.reg_clk_hiu_table = NULL,
+	.reg_clk_table = NULL,
+	.reg_clk_hiu_table = lcd_reg_dump_clk_hpll_g12a,
 	.reg_encl_table = lcd_reg_dump_encl_dft,
 	.reg_pinmux_table = NULL,
 
@@ -6536,8 +6536,8 @@ static struct lcd_debug_info_s lcd_debug_info_g12a_clk_path0 = {
 
 static struct lcd_debug_info_s lcd_debug_info_g12a_clk_path1 = {
 	.reg_pll_table = NULL,
-	.reg_clk_table = lcd_reg_dump_clk_gp0_g12a,
-	.reg_clk_hiu_table = NULL,
+	.reg_clk_table = NULL,
+	.reg_clk_hiu_table = lcd_reg_dump_clk_gp0_g12a,
 	.reg_encl_table = lcd_reg_dump_encl_dft,
 	.reg_pinmux_table = NULL,
 
@@ -6690,6 +6690,7 @@ static struct lcd_debug_info_s lcd_debug_info_t5w = {
 static struct lcd_debug_info_s lcd_debug_info_c3 = {
 	.reg_pll_table = lcd_reg_dump_pll_c3,
 	.reg_clk_table = lcd_reg_dump_clk_c3,
+	.reg_clk_hiu_table = NULL,
 	.reg_encl_table = lcd_reg_dump_encl_c3,
 	.reg_pinmux_table = lcd_reg_dump_pinmux_c3,
 

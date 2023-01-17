@@ -7,7 +7,7 @@
 
 #include "mesonsm1.dtsi"
 //#include "mesonsm1_drm.dtsi"
-//#include "mesonsm1_skt-panel.dtsi"
+#include "mesonsm1_ac200-panel.dtsi"
 //#include "partition_normal_linux.dtsi"
 
 / {
@@ -1748,14 +1748,6 @@
 		};
 	};
 
-	bl_pwm_off_pins:bl_pwm_off_pin {
-		mux {
-			pins = "GPIOH_5";
-			function = "gpio_periphs";
-			output-high;
-		};
-	};
-
 	clk12_24_z_pins:clk12_24_z_pins {
 		mux {
 			groups = "clk12_24_z";
@@ -1799,7 +1791,7 @@
 /* Audio Related End */
 
 &pwm_ef {
-	status = "disabled";
+	status = "okay";
 };
 
 &dwc2_a {

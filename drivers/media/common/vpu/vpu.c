@@ -28,7 +28,8 @@
 /* v20200530: initial version */
 /* v20220607: add c3 support */
 /* v20230103: bypass debug print for vpu api */
-#define VPU_VERSION        "v20230103"
+/* v20230210: add g12b/sm1 support*/
+#define VPU_VERSION        "v20230210"
 
 int vpu_debug_print_flag;
 static spinlock_t vpu_mem_lock;

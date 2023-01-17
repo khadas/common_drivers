@@ -540,9 +540,10 @@
 				compatible = "amlogic,meson-v2-pwm";
 				reg = <0x54000 0x24>,
 					  <0x198   0x4>;
-				clock-frequency0 = <24000000>;
-				clock-frequency1 = <24000000>;
 				#pwm-cells = <3>;
+				clocks = <&clkc CLKID_PWM_M_SEL>,
+					 <&clkc CLKID_PWM_N_SEL>;
+				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};
 

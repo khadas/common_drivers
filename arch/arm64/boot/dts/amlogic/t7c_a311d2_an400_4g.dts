@@ -189,8 +189,8 @@
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1920x1080x4x6+3840x2160x4x3 round up 4M align */
-			size = <0x0 0x9c00000>;
+			/* 1920x1080x4x6+3840x2160x4x3+3840x2160x4x4(whiteboard)round up 4M align */
+			size = <0x0 0x12c00000>;
 			alignment = <0x0 0x400000>;
 		};
 

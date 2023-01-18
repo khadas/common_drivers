@@ -58,6 +58,7 @@ static struct sync_timeline *sync_timeline_create(const char *name)
 	kref_init(&obj->kref);
 	obj->context = dma_fence_context_alloc(1);
 	strncpy(obj->name, name, sizeof(obj->name));
+	obj->name[31] = '\0';
 	INIT_LIST_HEAD(&obj->active_list_head);
 	INIT_LIST_HEAD(&obj->pt_list);
 	spin_lock_init(&obj->lock);

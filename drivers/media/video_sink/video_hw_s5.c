@@ -4149,6 +4149,7 @@ static void vd1_proc_unit_param_set_4s4p(struct vd_proc_s *vd_proc, u32 slice)
 			pps_din_vsize = s1_din_vsize_tmp;
 		}
 		if (h_no_scale) {
+			/*coverity[dead_error_line] reserve code*/
 			hwincut_bgn = sr_h_scaleup ? overlap_hsize * 2 :
 				overlap_hsize;
 			hwincut_end = dout_hsize[slice] + hwincut_bgn - 1;

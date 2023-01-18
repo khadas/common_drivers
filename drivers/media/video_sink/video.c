@@ -15560,7 +15560,7 @@ static ssize_t hist_test_show(struct class *cla,
 #define VI_HIST_SPL_PIX_CNT (0x2e05)
 #define VI_HIST_CHROMA_SUM (0x2e06)
 	ssize_t len = 0;
-	u32 hist_result[4];
+	u32 hist_result[4] = {0};
 
 	if (hist_test_flag) {
 		if (cur_dev->display_module != S5_DISPLAY_MODULE) {

@@ -654,6 +654,7 @@ static struct vpu_dev_s *vpu_prime_dolby_ram;
 static void disable_video_layer_s5(u32 layer_id, u32 async)
 {
 	int i;
+	u32 layer_id_temp;
 	struct video_layer_s *layer = NULL;
 
 	if (!async) {
@@ -667,11 +668,12 @@ static void disable_video_layer_s5(u32 layer_id, u32 async)
 					(vd_proc_reg.vd_mif_reg[i].vd_if0_gen_reg, 0);
 			}
 		} else {
-			layer_id += SLICE_NUM - 1;
+			layer_id_temp = layer_id;
+			layer_id_temp += SLICE_NUM - 1;
 			WRITE_VCBUS_REG
-				(vd_proc_reg.vd_afbc_reg[layer_id].afbc_enable, 0);
+				(vd_proc_reg.vd_afbc_reg[layer_id_temp].afbc_enable, 0);
 			WRITE_VCBUS_REG
-				(vd_proc_reg.vd_mif_reg[layer_id].vd_if0_gen_reg, 0);
+				(vd_proc_reg.vd_mif_reg[layer_id_temp].vd_if0_gen_reg, 0);
 		}
 	}
 	switch (layer_id) {
@@ -1646,10 +1648,12 @@ void safe_switch_videolayer(u8 layer_id, bool on, bool async)
 		if (on) {
 			enable_video_layer3();
 		} else {
-			if (cur_dev->display_module == S5_DISPLAY_MODULE)
+			if (cur_dev->display_module == S5_DISPLAY_MODULE) {
+				/*coverity[overrun-call] error report*/
 				disable_video_layer_s5(layer_id, async);
-			else
+			} else {
 				disable_video_layer3(async);
+			}
 		}
 	}
 
@@ -6477,6 +6481,7 @@ static inline void vdx_test_pattern_output(u32 index, u32 on, u32 color)
 			pr_info("Y=%x, U=%x, V=%x\n", Y, U, V);
 			color = (Y << 22) | (U << 12) | V << 2; /* YUV */
 		}
+
 		if (cur_dev->display_module != S5_DISPLAY_MODULE) {
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(vdx_clip_misc0,
@@ -9030,6 +9035,7 @@ int set_layer_display_canvas_s5(struct video_layer_s *layer,
 	/* switch buffer */
 	if (!glayer_info[layer_id].need_no_compress &&
 	    (vf->type & VIDTYPE_COMPRESS)) {
+	    /*coverity[overrun-local] it can be ignored*/
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(vd_afbc_reg->afbc_head_baddr,
 			vf->compHeadAddr >> 4);

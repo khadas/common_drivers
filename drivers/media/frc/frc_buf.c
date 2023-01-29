@@ -581,7 +581,7 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	u32 align_hsize;
 	u32 align_vsize;
 	u32 temp;
-	int log = 0;
+	int log = 2;
 	u32 ratio;
 	enum chip_id chip;
 	struct frc_data_s *frc_data;
@@ -820,7 +820,7 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 	u32 i;
 	u32 real_onebuf_size;
 	u32 paddr = 0, base;
-	int log = 0;
+	int log = 2;
 
 	/*----------------- buffer alloc------------------*/
 	base = devp->buf.cma_mem_paddr_start;
@@ -1112,7 +1112,7 @@ int frc_buf_config(struct frc_dev_s *devp)
 {
 	u32 i = 0;
 	u32 base;
-	u32 log = 0;
+	u32 log = 2;
 
 	if (!devp) {
 		pr_frc(0, "%s fail<devp is null>\n", __func__);

@@ -15,6 +15,12 @@
 #define MIN_HIST2 7150000
 #define LIMIT 10
 
+/**/
+#define IN_W_SIZE_FHD_90   1728
+#define IN_H_SIZE_FHD_90   972
+#define IN_W_SIZE_UHD_90   3456
+#define IN_H_SIZE_UHD_90   1944
+
 enum vf_sts {
 	VFRAME_NO = 0,
 	VFRAME_HAVE = 1,
@@ -59,5 +65,7 @@ void frc_chk_vd_sts_chg(struct frc_dev_s *frc_devp,
 				struct vframe_s *vf);
 u16 frc_check_film_mode(struct frc_dev_s *frc_devp);
 void frc_check_secure_mode(struct vframe_s *vf, struct frc_dev_s *devp);
+void frc_input_size_align_check(struct frc_dev_s *devp);
+int get_chip_type(void);
 
 #endif

@@ -996,7 +996,10 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 				mc_frm_dly  + mc_hold_line + adj_mc_dly;
 	reg_mc_dly_vofst1 = memc_frm_dly - mc_frm_dly   - mc_hold_line ;
 	frc_vporch_cal    = memc_frm_dly - reg_mc_out_line;
-	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, frc_vporch_cal);
+
+	/*bug only for T3*/
+	if (chip == ID_T3)
+		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, frc_vporch_cal);
 
 	if (chip == ID_T3 && is_meson_rev_a()) {
 		if ((frc_top->out_hsize > 1920 && frc_top->out_vsize > 1080) ||

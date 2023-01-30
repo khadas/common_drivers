@@ -1102,7 +1102,7 @@ static struct clk_regmap s5_gp2_pll_dco = {
 		.table = s5_gp2_pll_table,
 		.init_regs = s5_gp2_init_regs,
 		.init_count = ARRAY_SIZE(s5_gp2_init_regs),
-		.flags = 1,
+		.flags = CLK_MESON_PLL_IGNORE_INIT,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "gp2_pll_dco",
@@ -1232,7 +1232,7 @@ static struct clk_regmap s5_fpll_dco = {
 		.table = s5_fpll_table,
 		.init_regs = s5_fpll_init_regs,
 		.init_count = ARRAY_SIZE(s5_fpll_init_regs),
-		.flags = 1,
+		.flags = CLK_MESON_PLL_IGNORE_INIT,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "fpll_dco",
@@ -8101,8 +8101,7 @@ static int meson_s5_probe(struct platform_device *pdev)
 
 static const struct of_device_id clkc_match_table[] = {
 	{
-		.compatible = "amlogic,s5-clkc",
-		.data = &s5_hw_onecell_data
+		.compatible = "amlogic,s5-clkc"
 	},
 	{}
 };

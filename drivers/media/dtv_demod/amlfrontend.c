@@ -610,8 +610,8 @@ static int gxtv_demod_dvbc_read_status_timer
 		demod->last_lock = ilock;
 		if (ilock == 0) {
 			demod->fast_search_finish = 0;
-			if (is_meson_t5w_cpu() && demod->auto_qam_done &&
-				fe->dtv_property_cache.modulation == QAM_AUTO) {
+			if ((is_meson_t5w_cpu() || is_meson_t5m_cpu()) && demod->auto_qam_done &&
+					fe->dtv_property_cache.modulation == QAM_AUTO) {
 				demod->auto_qam_mode = QAM_MODE_256;
 				demod_dvbc_set_qam(demod, demod->auto_qam_mode);
 				demod->auto_qam_done = 0;
@@ -3194,7 +3194,7 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 		demod->auto_qam_mode = QAM_MODE_256;
 		demod->auto_done_times = 0;
 		/* loss lock, reset 256qam, start auto qam again. */
-		if (is_meson_t5w_cpu() && demod->auto_qam_done) {
+		if ((is_meson_t5w_cpu() || is_meson_t5m_cpu()) && demod->auto_qam_done) {
 			demod_dvbc_set_qam(demod, demod->auto_qam_mode);
 			demod->auto_qam_done = 0;
 			demod->auto_times = 0;
@@ -3279,7 +3279,7 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 		}
 	}
 
-	if (is_meson_t5w_cpu()) {
+	if (is_meson_t5w_cpu() || is_meson_t5m_cpu()) {
 		if (!demod->auto_qam_done) {
 			demod->auto_done_times = 0;
 			qam_mode = dvbc_auto_qam_process(demod);
@@ -3385,8 +3385,8 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 		return 1;
 	}
 
-	if (demod->auto_times == 15 ||
-		(is_meson_t5w_cpu() && demod->auto_times == 2 && !demod->auto_qam_done)) {
+	if (demod->auto_times == 15 || ((is_meson_t5w_cpu() || is_meson_t5m_cpu()) &&
+			demod->auto_times == 2 && !demod->auto_qam_done)) {
 		demod->auto_times = 0;
 		demod->auto_no_sig_cnt = 0;
 		*delay = HZ / 4;
@@ -3396,7 +3396,7 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 
 	demod->auto_times++;
 	/* loop from 16 to 256 */
-	if (!is_meson_t5w_cpu()) {
+	if (!is_meson_t5w_cpu() && !is_meson_t5m_cpu()) {
 		demod->auto_qam_mode = dvbc_switch_qam(demod->auto_qam_mode);
 		demod_dvbc_set_qam(demod, demod->auto_qam_mode);
 
@@ -3641,8 +3641,9 @@ static int gxtv_demod_dvbc_tune(struct dvb_frontend *fe, bool re_tune,
 				real_para_clear(&demod->real_para);
 				demod->fast_search_finish = 0;
 				/* loss lock, reset 256qam, start auto qam again. */
-				if (is_meson_t5w_cpu() && demod->auto_qam_done &&
-					fe->dtv_property_cache.modulation == QAM_AUTO) {
+				if ((is_meson_t5w_cpu() || is_meson_t5m_cpu()) &&
+						demod->auto_qam_done &&
+						fe->dtv_property_cache.modulation == QAM_AUTO) {
 					demod->auto_qam_mode = QAM_MODE_256;
 					demod_dvbc_set_qam(demod, demod->auto_qam_mode);
 					demod->auto_qam_done = 0;

@@ -6,6 +6,7 @@
 #ifndef __DEBUG_MAIN_H_
 #define __DEBUG_MAIN_H_
 
+int aml_debug_init(void);
 int debug_lockup_init(void);
 int cpu_mhz_init(void);
 int aml_sched_init(void);

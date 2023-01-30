@@ -15,6 +15,7 @@ static int __init debug_main_init(void)
 	call_sub_init(printk_vendor_hook_init);
 #endif
 	call_sub_init(debug_lockup_init);
+	call_sub_init(aml_debug_init);
 	call_sub_init(cpu_mhz_init);
 	call_sub_init(meson_atrace_init);
 	call_sub_init(debug_file_init);

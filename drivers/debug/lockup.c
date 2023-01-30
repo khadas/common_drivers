@@ -683,28 +683,6 @@ static void ftrace_format_check_hook(void *data, bool *ftrace_check)
 }
 */
 
-static char sysrq;
-static int sysrq_set(const char *buffer, const struct kernel_param *kp)
-{
-	char ch = buffer[0];
-
-	pr_emerg("sysrq: %c\n", ch);
-
-	if (ch == 'x') {
-		local_irq_disable();
-		pr_emerg("trigger hardlockup\n");
-		while (1)
-			;
-	}
-
-	return 0;
-}
-
-static const struct kernel_param_ops sysrq_ops = {
-	.set    = sysrq_set,
-};
-module_param_cb(sysrq, &sysrq_ops, &sysrq, 0644);
-
 int debug_lockup_init(void)
 {
 	int cpu;
@@ -754,5 +732,72 @@ int debug_lockup_init(void)
 	irq_check_en = 1;
 #endif
 
+	return 0;
+}
+
+static ssize_t params_write_file(struct file *file, const char __user *userbuf,
+				size_t count, loff_t *ppos)
+{
+	char arg = 0;
+	char *buf;
+	ssize_t retval = -EINVAL;
+
+	buf = kmalloc(count, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	if (copy_from_user(buf, userbuf, count))
+		goto exit;
+
+	if (!strncmp(buf, "sysrq=", 5)) {	/* option for 'sysrq=' */
+		if (sscanf(buf, "sysrq=%c", &arg) < 0)
+			goto exit;
+
+		if (arg == 'x') {
+			retval = count;
+			local_irq_disable();
+			pr_emerg("trigger hardlockup\n");
+			while (1)
+				;
+		}
+		goto exit;
+	}
+
+exit:
+	kfree(buf);
+
+	return retval;
+}
+
+static int params_debug_show(struct seq_file *m, void *arg)
+{
+	return 0;
+}
+
+static int params_debug_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, params_debug_show, NULL);
+}
+
+static const struct file_operations params_debug_ops = {
+	.open		= params_debug_open,
+	.read		= seq_read,
+	.write		= params_write_file,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+int aml_debug_init(void)
+{
+	static struct dentry *debug_lockup;
+
+	debug_lockup = debugfs_create_dir("aml_debug", NULL);
+	if (IS_ERR_OR_NULL(debug_lockup)) {
+		pr_warn("failed to create aml_debug\n");
+		debug_lockup = NULL;
+		return -ENOMEM;
+	}
+	debugfs_create_file("params", S_IFREG | 0664,
+			    debug_lockup, NULL, &params_debug_ops);
 	return 0;
 }

@@ -1208,6 +1208,16 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 		band->mali_port[1] = -1;
 		break;
 #endif
+#ifdef CONFIG_AMLOGIC_DDR_BANDWIDTH_S5
+	case DMC_TYPE_S5:
+		band->ops            = &s5_ddr_bw_ops;
+		band->channels     = 8;
+		band->dmc_number   = 4;
+		band->soc_feature |= DMC_DEVICE_8BIT;
+		band->mali_port[0] = 4;
+		band->mali_port[1] = -1;
+		break;
+#endif
 	default:
 		pr_err("%s, Can't find ops for chip:%x\n", __func__, cpu);
 		return -1;
@@ -1503,6 +1513,10 @@ static const struct of_device_id aml_ddr_bandwidth_dt_match[] = {
 	{
 		.compatible = "amlogic,ddr-bandwidth-t5m",
 		.data = (void *)DMC_TYPE_T5M,
+	},
+	{
+		.compatible = "amlogic,ddr-bandwidth-s5",
+		.data = (void *)DMC_TYPE_S5,
 	},
 	{}
 };

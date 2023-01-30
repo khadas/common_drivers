@@ -1505,7 +1505,7 @@
 		status = "okay";
 	};
 	vcodec_dos_dev: vcodec_dos_dev {
-		compatible = "amlogic, cpu-major-id-s4d";
+		compatible = "amlogic, cpu-major-id-s4";
 		dev_name = "vcodec_dos_dev";
 		status = "okay";
 		reg = <0x0 0xfe320000 0x0 0x10000>,

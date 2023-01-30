@@ -1613,6 +1613,10 @@
 	uart-has-rtscts;
 };
 
+&vcodec_dos_dev {
+	compatible = "amlogic, cpu-major-id-s4-805x2";
+};
+
 &gpu {
 	tbl =  <&dvfs285_cfg
 		&dvfs400_cfg

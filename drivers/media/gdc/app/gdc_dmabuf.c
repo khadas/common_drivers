@@ -360,6 +360,7 @@ static struct dma_buf *get_dmabuf(void *buf_priv, unsigned long flags)
 	exp_info.size = buf->size;
 	exp_info.flags = flags;
 	exp_info.priv = buf;
+	exp_info.exp_name = "gdc";
 
 	if (WARN_ON(!buf->vaddr))
 		return NULL;

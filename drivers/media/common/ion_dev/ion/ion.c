@@ -461,6 +461,7 @@ struct dma_buf *ion_alloc(size_t len, unsigned int heap_id_mask, unsigned int fl
 	exp_info.size = buffer->size;
 	exp_info.flags = O_RDWR;
 	exp_info.priv = buffer;
+	exp_info.exp_name = "ion";
 
 	dmabuf = dma_buf_export(&exp_info);
 	if (IS_ERR(dmabuf)) {

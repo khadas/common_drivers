@@ -174,6 +174,7 @@ struct uvm_hook_mod_info {
 struct dma_buf *uvm_alloc_dmabuf(size_t len, size_t align, ulong flags);
 
 bool dmabuf_is_uvm(struct dma_buf *dmabuf);
+bool dmabuf_uvm_realloc(struct dma_buf *dmabuf);
 
 struct uvm_buf_obj *dmabuf_get_uvm_buf_obj(struct dma_buf *dmabuf);
 

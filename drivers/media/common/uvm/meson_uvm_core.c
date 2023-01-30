@@ -67,6 +67,7 @@ static struct sg_table
 	bool skip_realloc = false;
 
 	if (strstr(dev_name(attachment->dev), "bifrost") ||
+		strstr(dev_name(attachment->dev), "valhall") ||
 		strstr(dev_name(attachment->dev), "mali")) {
 		gpu_access = true;
 	}
@@ -75,7 +76,8 @@ static struct sg_table
 	handle = dmabuf->priv;
 	ua = handle->ua;
 
-	UVM_PRINTK(1, "%s called, %s. gpu_access:%d\n", __func__, current->comm, gpu_access);
+	UVM_PRINTK(1, "%s called, %s. name=%s gpu_access:%d\n",
+		__func__, current->comm, dev_name(attachment->dev), gpu_access);
 	if (ua->flags & BIT(UVM_SKIP_REALLOC))
 		skip_realloc = true;
 
@@ -330,7 +332,7 @@ static struct dma_buf *uvm_dmabuf_export(struct uvm_handle *handle)
 	struct dma_buf *dmabuf;
 
 	struct dma_buf_export_info exp_info = {
-		.exp_name = KBUILD_MODNAME,
+		.exp_name = "uvm",
 		.owner = THIS_MODULE,
 		.ops = &meson_uvm_dma_ops,
 		.size = handle->size,
@@ -373,6 +375,23 @@ bool dmabuf_is_uvm(struct dma_buf *dmabuf)
 	return dmabuf->ops == &meson_uvm_dma_ops;
 }
 EXPORT_SYMBOL(dmabuf_is_uvm);
+
+bool dmabuf_uvm_realloc(struct dma_buf *dmabuf)
+{
+	struct uvm_handle *handle;
+
+	if (dmabuf->ops == &meson_uvm_dma_ops)
+		handle = dmabuf->priv;
+	else
+		return false;
+
+	if ((handle->ua->flags & BIT(UVM_SKIP_REALLOC)) ||
+		(handle->ua->flags & BIT(UVM_SECURE_ALLOC)))
+		return false;
+	else
+		return true;
+}
+EXPORT_SYMBOL(dmabuf_uvm_realloc);
 
 struct uvm_buf_obj *dmabuf_get_uvm_buf_obj(struct dma_buf *dmabuf)
 {

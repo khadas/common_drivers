@@ -344,6 +344,8 @@ static struct dma_buf *get_dmabuf(struct dmabuf_manage_block *block,
 	exp_info.size = block->size;
 	exp_info.flags = flags;
 	exp_info.priv = (void *)block;
+	exp_info.exp_name = "dmabuf_manage";
+
 	dbuf = dma_buf_export(&exp_info);
 	if (IS_ERR(dbuf))
 		return NULL;

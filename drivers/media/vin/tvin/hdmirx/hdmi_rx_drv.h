@@ -45,8 +45,8 @@
 #define EDID_DATA_LOG	0x20000
 #define RP_LOG		0x40000
 
-/* reconfig phy when cable clk changed */
-#define RX_VER1 "ver.2022/11/17"
+/* add method to get 5v pin status */
+#define RX_VER1 "ver.2023/1/31"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 
@@ -160,6 +160,7 @@ struct hdmirx_dev_s {
 #define HDMI_IOC_SET_AUD_SAD	_IOW(HDMI_IOC_MAGIC, 0x0f, int)
 #define HDMI_IOC_GET_AUD_SAD	_IOR(HDMI_IOC_MAGIC, 0x10, int)
 #define HDMI_IOC_GET_SPD_SRC_INFO	_IOR(HDMI_IOC_MAGIC, 0x11, struct spd_infoframe_st)
+#define HDMI_5V_PIN_STATUS	_IOR(HDMI_IOC_MAGIC, 0x12, unsigned int)
 
 #define IOC_SPD_INFO  _BIT(0)
 #define IOC_AUD_INFO  _BIT(1)

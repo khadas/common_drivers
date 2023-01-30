@@ -1394,6 +1394,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 	//unsigned int size = sizeof(struct pd_infoframe_s);
 	struct pd_infoframe_s pkt_info;
 	struct spd_infoframe_st *spd_pkt;
+	unsigned int pin_status;
 	void *srcbuff;
 	u8 sad_data[30];
 	u8 len = 0;
@@ -1585,6 +1586,19 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		mutex_lock(&devp->rx_lock);
 		if (copy_to_user(argp, spd_pkt, sizeof(struct spd_infoframe_st))) {
 			pr_err("spd src info err\n");
+			ret = -EFAULT;
+			mutex_unlock(&devp->rx_lock);
+			break;
+		}
+		mutex_unlock(&devp->rx_lock);
+		break;
+	case HDMI_5V_PIN_STATUS:
+		pin_status = rx_get_hdmi5v_sts();
+		if (!argp)
+			return -EINVAL;
+		mutex_lock(&devp->rx_lock);
+		if (copy_to_user(argp, &pin_status, sizeof(unsigned int))) {
+			pr_err("send pin status err\n");
 			ret = -EFAULT;
 			mutex_unlock(&devp->rx_lock);
 			break;

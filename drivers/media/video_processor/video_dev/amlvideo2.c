@@ -5135,6 +5135,7 @@ static int amlvideo2_start_tvin_service(struct amlvideo2_node *node)
 	struct vdin_v4l2_ops_s *vops = &node->vops;
 	struct vdin_parm_s para;
 	const struct vinfo_s *vinfo;
+	int angle = node->qctl_regs[0];
 #endif
 	int dst_w, dst_h;
 	//int angle = node->qctl_regs[0];
@@ -5147,7 +5148,9 @@ static int amlvideo2_start_tvin_service(struct amlvideo2_node *node)
 
 	if (amlvideo2_dbg_en) {
 		pr_info("Enter %s .\n", __func__);
+#ifdef CONFIG_AMLOGIC_MEDIA_TVIN
 		pr_info("vinfo->w: %d, vinfo->h: %d.\n", vinfo->width, vinfo->height);
+#endif
 	}
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN
 	memset(&para, 0, sizeof(para));
@@ -5436,7 +5439,7 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 			}
 		}
 	}
-#endif
+
 	if (amlvideo2_dbg_en) {
 		pr_info("crop_enable = %d, node->porttype = 0x%x.\n",
 			node->crop_info.capture_crop_enable, node->porttype);
@@ -5445,6 +5448,7 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 		pr_info("vinfo->w=%d, vinfo->h=%d, vinfo->field_height=%d.\n",
 			vinfo->width, vinfo->height, vinfo->field_height);
 	}
+#endif
 
 	if (!node->start_vdin_flag || node->r_type != AML_RECEIVER_NONE)
 		goto start;

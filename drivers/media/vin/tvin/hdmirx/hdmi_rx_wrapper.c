@@ -216,7 +216,38 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.eq_fix_val = 16;
 		rx.aml_phy.cdr_fr_en = 0;
 		rx.aml_phy.force_sqo = 0;
-	} else if (rx.phy_ver >= PHY_VER_T5) {
+	} else if (rx.phy_ver >= PHY_VER_T5 && rx.phy_ver <= PHY_VER_T5W) {
+		rx.aml_phy.dfe_en = 1;
+		rx.aml_phy.ofst_en = 0;
+		rx.aml_phy.cdr_mode = 0;
+		rx.aml_phy.pre_int = 1;
+		rx.aml_phy.pre_int_en = 0;
+		rx.aml_phy.phy_bwth = 1;
+		rx.aml_phy.alirst_en = 0;
+		rx.aml_phy.tap1_byp = 1;
+		rx.aml_phy.eq_byp = 1;
+		rx.aml_phy.long_cable = 1;
+		rx.aml_phy.osc_mode = 0;
+		rx.aml_phy.pll_div = 1;
+		rx.aml_phy.sqrst_en = 0;
+		rx.aml_phy.vga_dbg = 1;
+		rx.aml_phy.vga_dbg_delay = 200;
+		rx.aml_phy.eq_fix_val = 16;
+		rx.aml_phy.cdr_fr_en = 100;
+		rx.aml_phy.force_sqo = 0;
+		/* add for t5 */
+		rx.aml_phy.os_rate = 3;
+		rx.aml_phy.cdr_mode = 1;
+		rx.aml_phy.vga_gain = 0x1000;
+		rx.aml_phy.eq_stg1 = 0x1f;
+		rx.aml_phy.eq_stg2 = 0x1f;
+		rx.aml_phy.eq_hold = 1;
+		rx.aml_phy.dfe_hold  = 0;
+		rx.aml_phy.eye_delay = 1000;
+		rx.aml_phy.eq_retry = 1;
+		rx.aml_phy.tap2_byp = 0;
+		rx.aml_phy.long_bist_en = 0;
+	} else if (rx.phy_ver >= PHY_VER_T5M) {
 		rx.aml_phy.dfe_en = 1;
 		rx.aml_phy.ofst_en = 0;
 		rx.aml_phy.cdr_mode = 0;
@@ -247,6 +278,7 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.eq_retry = 1;
 		rx.aml_phy.tap2_byp = 0;
 		rx.aml_phy.long_bist_en = 0;
+		rx.aml_phy.reset_pcs_en = 1;
 	}
 }
 
@@ -323,6 +355,36 @@ void hdmirx_fsm_var_init(void)
 		aud_sr_stb_max = 30;
 		err_dbg_cnt_max = 500;
 		clk_stable_max = 3;
+		break;
+	case CHIP_ID_T5M:
+		hbr_force_8ch = 1; //use it to enable hdr2spdif
+		sig_stable_err_max = 5;
+		sig_stable_max = 10;
+		dwc_rst_wait_cnt_max = 5; //for repeater
+		dwc_rst_wait_cnt_max = 15;
+		clk_unstable_max = 50;
+		esd_phy_rst_max = 16;
+		pll_unlock_max = 30;
+		//do not to check colorspace changes
+		//Vdin can adapt it automatically
+		stable_check_lvl = 0x7c3;
+		pll_lock_max = 2;
+		err_cnt_sum_max = 10;
+		hpd_wait_max = 40;
+		sig_unstable_max = 20;
+		sig_unready_max = 5;
+		/* decreased to 2 */
+		pow5v_max_cnt = 2;
+		/* decreased to 2 */
+		diff_pixel_th = 1;
+		/* decreased to 2 */
+		diff_line_th = 1;
+		/* (25hz-24hz)/2 = 50/100 */
+		diff_frame_th = 40;
+		aud_sr_stb_max = 30;
+		err_dbg_cnt_max = 500;
+		clk_stable_max = 3;
+		rx_phy_level = 1;
 		break;
 	case CHIP_ID_T7:
 	case CHIP_ID_T3:
@@ -1035,7 +1097,6 @@ irqreturn_t irq_handler(int irq, void *params)
 			rx.state = FSM_WAIT_CLK_STABLE;
 		irq_err_cnt = 0;
 	}
-
 	if (params == 0) {
 		rx_pr("%s: %s\n", __func__,
 		      "RX IRQ invalid parameter");
@@ -2020,9 +2081,9 @@ void rx_dwc_reset(void)
 	 * 1. hdmi swreset
 	 * 2. new AKSV is received
 	 */
-	hdmirx_wr_top(TOP_SW_RESET, 0x280);
-	udelay(1);
-	hdmirx_wr_top(TOP_SW_RESET, 0);
+	//hdmirx_wr_top(TOP_SW_RESET, 0x280);
+	//udelay(1);
+	//hdmirx_wr_top(TOP_SW_RESET, 0);
 
 	if (rx.hdcp.hdcp_version == HDCP_VER_NONE)
 	/* dishNXT box only send set_avmute, not clear_avmute
@@ -2368,6 +2429,15 @@ void rx_get_global_variable(const char *buf)
 	pr_var(phy_term_lel, i++);
 	pr_var(rx.var.force_pattern, i++);
 	pr_var(rx_phy_level, i++);
+	pr_var(tapx_value, i++);
+	pr_var(agc_enable, i++);
+	pr_var(afe_value, i++);
+	pr_var(dfe_value, i++);
+	pr_var(cdr_value, i++);
+	pr_var(eq_value, i++);
+	pr_var(misc1_value, i++);
+	pr_var(misc2_value, i++);
+	pr_var(phy_debug_en, i++);
 	/* phy var definition */
 	pr_var(rx.aml_phy.sqrst_en, i++);
 	pr_var(rx.aml_phy.vga_dbg, i++);
@@ -2401,6 +2471,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(rx.aml_phy.eq_retry, i++);
 	pr_var(rx.aml_phy.tap2_byp, i++);
 	pr_var(rx.aml_phy.long_bist_en, i++);
+	pr_var(rx.aml_phy.reset_pcs_en, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -2654,6 +2725,33 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx_phy_level),
 	    &rx_phy_level, value))
 		return pr_var(rx_phy_level, index);
+	if (set_pr_var(tmpbuf, var_to_str(tapx_value),
+	    &tapx_value, value))
+		return pr_var(tapx_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(agc_enable),
+	    &agc_enable, value))
+		return pr_var(agc_enable, index);
+	if (set_pr_var(tmpbuf, var_to_str(afe_value),
+	    &afe_value, value))
+		return pr_var(afe_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(dfe_value),
+	    &dfe_value, value))
+		return pr_var(dfe_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(cdr_value),
+	    &cdr_value, value))
+		return pr_var(cdr_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(eq_value),
+	    &eq_value, value))
+		return pr_var(eq_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(misc1_value),
+	    &misc1_value, value))
+		return pr_var(misc1_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(misc2_value),
+	    &misc2_value, value))
+		return pr_var(misc2_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(phy_debug_en),
+	    &phy_debug_en, value))
+		return pr_var(phy_debug_en, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.var.force_pattern), &rx.var.force_pattern, value))
 		return pr_var(rx.var.force_pattern, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.sqrst_en), &rx.aml_phy.sqrst_en, value))
@@ -2714,8 +2812,13 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.long_bist_en),
 		&rx.aml_phy.long_bist_en, value))
 		return pr_var(rx.aml_phy.long_bist_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.reset_pcs_en),
+		&rx.aml_phy.reset_pcs_en, value))
+		return pr_var(rx.aml_phy.reset_pcs_en, index);
 	if (set_pr_var(tmpbuf, var_to_str(phy_term_lel), &phy_term_lel, value))
 		return pr_var(phy_term_lel, index);
+	if (set_pr_var(tmpbuf, var_to_str(sig_unstable_max), &sig_unstable_max, value))
+		return pr_var(sig_unstable_max, index);
 	return 0;
 }
 
@@ -3042,6 +3145,7 @@ char *fsm_st[] = {
 	"FSM_WAIT_CLK_STABLE",
 	"FSM_EQ_START",
 	"FSM_WAIT_EQ_DONE",
+	"FSM_PCS_RESET",
 	"FSM_SIG_UNSTABLE",
 	"FSM_SIG_WAIT_STABLE",
 	"FSM_SIG_STABLE",
@@ -3179,12 +3283,23 @@ void rx_main_state_machine(void)
 			break;
 		}
 		if (rx_eq_done()) {
+			if (rx.aml_phy.reset_pcs_en) {
+				rx.state = FSM_PCS_RESET;
+				break;
+			}
 			rx.state = FSM_SIG_UNSTABLE;
 			pll_lock_cnt = 0;
 			pll_unlock_cnt = 0;
 			clk_chg_cnt = 0;
 			//esd_phy_rst_cnt = 0;
 		}
+		break;
+	case FSM_PCS_RESET:
+		reset_pcs();
+		rx.state = FSM_SIG_UNSTABLE;
+		pll_lock_cnt = 0;
+		pll_unlock_cnt = 0;
+		clk_chg_cnt = 0;
 		break;
 	case FSM_SIG_UNSTABLE:
 		if (!rx.cableclk_stb_flg) {
@@ -3243,6 +3358,7 @@ void rx_main_state_machine(void)
 		sig_unstable_cnt = 0;
 		sig_stable_err_cnt = 0;
 		clk_chg_cnt = 0;
+		reset_pcs();
 		rx_pkt_initial();
 		rx.state = FSM_SIG_STABLE;
 		break;
@@ -3324,7 +3440,10 @@ void rx_main_state_machine(void)
 			rx.var.de_stable = false;
 			if (sig_unstable_cnt < sig_unstable_max) {
 				sig_unstable_cnt++;
-				break;
+				if (rx_phy_level & 0x1)
+					reset_pcs();
+				if (log_level & PHY_LOG)
+					rx_pr("DE not stable,reset pcs\n");
 			}
 			if (rx.err_rec_mode == ERR_REC_EQ_RETRY) {
 				rx.state = FSM_WAIT_CLK_STABLE;

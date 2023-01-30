@@ -2127,7 +2127,6 @@ void rx_hdcp14_config(const struct hdmi_rx_hdcp *hdcp)
 bool rx_clr_tmds_valid(void)
 {
 	bool ret = false;
-
 	if (rx.state >= FSM_SIG_STABLE) {
 		rx.state = FSM_WAIT_CLK_STABLE;
 		hdmirx_output_en(false);
@@ -4827,6 +4826,8 @@ void dump_edid_reg(void)
 {
 	int i = 0;
 	int j = 0;
+	int k = 0;
+	unsigned char buff[512] = {0};
 
 	rx_pr("\n***********************\n");
 	rx_pr("0x1 1.4 edid\n");
@@ -4885,14 +4886,16 @@ void dump_edid_reg(void)
 		}
 		if (rx.port_num == 4) {
 			for (i = 0; i < 16; i++) {
-				pr_info("[%2d] ", i);
+				k += sprintf(buff + k, "[%2d] ", i);
 				for (j = 0; j < 16; j++) {
-					pr_info("0x%02x, ",
+					k += sprintf(buff + k, "0x%02x, ",
 						hdmirx_rd_top(TOP_EDID_PORT4_ADDR_S +
 						    (i * 16 + j)));
 				}
-				rx_pr(" ");
+				pr_info("%s", buff);
+				k = 0;
 			}
+			rx_pr(" ");
 		}
 	}
 }
@@ -5029,7 +5032,7 @@ u32 aml_cable_clk_band(u32 cableclk, u32 clkrate)
 			bw = PHY_BW_0;
 		else if (cab_clk < (72 * MHz))
 			bw = PHY_BW_1;
-		else if (cab_clk < (145 * MHz))
+		else if (cab_clk < (155 * MHz))
 			bw = PHY_BW_2;
 		else if (cab_clk < (340 * MHz))
 			bw = PHY_BW_3;
@@ -5072,7 +5075,7 @@ u32 aml_phy_pll_band(u32 cableclk, u32 clkrate)
 			bw = PLL_BW_0;
 		else if (cab_clk < (72 * MHz))
 			bw = PLL_BW_1;
-		else if (cab_clk < (145 * MHz))
+		else if (cab_clk < (155 * MHz))
 			bw = PLL_BW_2;
 		else if (cab_clk < (340 * MHz))
 			bw = PLL_BW_3;

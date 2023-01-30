@@ -22,6 +22,7 @@
 	#define T5M_OFSET_CAL_START		_BIT(27)
 	#define T5M_CDR_LKDET_EN		_BIT(14)
 	#define T5M_CDR_RSTB			_BIT(13)
+	#define T5M_CDR_EN              _BIT(12)
 	#define T5M_CDR_FR_EN				_BIT(6)
 	#define T5M_MUX_CDR_DBG_SEL		_BIT(19)
 	#define T5M_CDR_OS_RATE			MSK(2, 8)
@@ -63,6 +64,16 @@
 #define T5M_RG_RX20PLL_0		0x000
 #define T5M_RG_RX20PLL_1		0x004
 
+extern int tapx_value;
+extern int agc_enable;
+extern u32 afe_value;
+extern u32 dfe_value;
+extern u32 cdr_value;
+extern u32 eq_value;
+extern u32 misc2_value;
+extern u32 misc1_value;
+extern int phy_debug_en;
+
 /*--------------------------function declare------------------*/
 /* T5m */
 void aml_phy_init_t5m(void);
@@ -85,6 +96,7 @@ void comb_val_t5m(void (*p)(char *, unsigned int, int),
 	     char *type, unsigned int val_0, unsigned int val_1,
 		 unsigned int val_2, int len);
 void get_flag_val_t5m(char *temp, unsigned int val, int len);
+void reset_pcs(void);
 
 /*function declare end*/
 

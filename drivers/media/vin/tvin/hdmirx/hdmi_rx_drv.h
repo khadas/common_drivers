@@ -347,6 +347,7 @@ struct rx_aml_phy {
 	u32 eq_retry;
 	u32 tap2_byp;
 	u32 long_bist_en;
+	int reset_pcs_en;
 };
 
 enum scan_mode_e {

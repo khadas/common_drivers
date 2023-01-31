@@ -5500,6 +5500,10 @@ void rx_emp_field_done_irq(void)
 	/*buffer number*/
 	recv_pkt_cnt = hdmirx_rd_top(TOP_EMP_RCV_CNT_BUF);
 	recv_byte_cnt = recv_pkt_cnt * 32;
+	if (recv_byte_cnt > (EMP_BUFFER_SIZE >> 1))
+		recv_byte_cnt = EMP_BUFFER_SIZE >> 1;
+	if (log_level & PACKET_LOG)
+		rx_pr("recv_byte_cnt=0x%x\n", recv_byte_cnt);
 	recv_pagenum = (recv_byte_cnt >> PAGE_SHIFT) + 1;
 
 	if (rx.emp_buff.irq_cnt & 0x1)
@@ -5524,8 +5528,7 @@ void rx_emp_field_done_irq(void)
 					emp_pkt_cnt++;
 					/*32 bytes per emp pkt*/
 					for (k = 0; k < 32; k++) {
-						dst_addr[datacnt] =
-						src_addr[PAGE_SIZE * i + j + k];
+						dst_addr[datacnt] = src_addr[j + k];
 						datacnt++;
 					}
 				//}
@@ -5538,8 +5541,7 @@ void rx_emp_field_done_irq(void)
 					emp_pkt_cnt++;
 					/*32 bytes per emp pkt*/
 					for (k = 0; k < 32; k++) {
-						dst_addr[datacnt] =
-						src_addr[PAGE_SIZE * i + j + k];
+						dst_addr[datacnt] = src_addr[j + k];
 						datacnt++;
 					}
 				//}

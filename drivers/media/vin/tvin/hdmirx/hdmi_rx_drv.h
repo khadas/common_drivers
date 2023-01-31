@@ -56,8 +56,8 @@
 #define pr_var(str, index) rx_pr("%5d %-30s = %#x\n", (index), #str, (str))
 #define var_to_str(var) (#var)
 
-/* register edid notify callback for T7 */
-#define RX_VER2 "ver.2022/08/16"
+/* fix use-after-free in rx_emp_field_done_irq */
+#define RX_VER2 "ver.2023/02/10"
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368

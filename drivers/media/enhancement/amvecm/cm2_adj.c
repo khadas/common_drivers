@@ -21,6 +21,7 @@
 #include "arch/vpp_regs.h"
 #include "cm2_adj.h"
 #include "reg_helper.h"
+#include "amve_v2.h"
 
 #define NUM_MATRIX_PARAM 7
 #define NUM_COLOR_MAX ecm2colormode_max
@@ -280,10 +281,22 @@ static void color_adj(int inp_color, int inp_val, int lpf_en,
  */
 void cm2_curve_update_hue_by_hs(struct cm_color_md cm_color_md_hue_by_hs)
 {
-	unsigned int i, j, k, start = 0, end = 0;
+	unsigned int i, j, k, m, start = 0, end = 0;
 	unsigned int val1[5] = {0}, val2[5] = {0};
 	int temp, reg_node1, reg_node2;
 	int colormode;
+	int addr_port;
+	int data_port;
+	struct cm_port_s cm_port;
+
+	if (chip_type_id == chip_s5) {
+		cm_port = get_cm_port();
+		addr_port = cm_port.cm_addr_port[0];
+		data_port = cm_port.cm_data_port[0];
+	} else {
+		addr_port = VPP_CHROMA_ADDR_PORT;
+		data_port = VPP_CHROMA_DATA_PORT;
+	}
 
 	if (cm_color_md_hue_by_hs.color_type == cm_9_color) {
 		colormode = cm_color_md_hue_by_hs.cm_9_color_md;
@@ -319,9 +332,9 @@ void cm2_curve_update_hue_by_hs(struct cm_color_md cm_color_md_hue_by_hs)
 		if (k > 31)
 			k = k  - 32;
 		for (j = 0; j < 5; j++) {
-			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
+			WRITE_VPP_REG(addr_port,
 				      0x100 + k * 8 + j);
-			val1[j] = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
+			val1[j] = READ_VPP_REG(data_port);
 
 			if (j == reg_node1) {
 				/*curve 0,1*/
@@ -346,15 +359,15 @@ void cm2_curve_update_hue_by_hs(struct cm_color_md cm_color_md_hue_by_hs)
 		}
 
 		for (j = 0; j < 5; j++) {
-			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
+			WRITE_VPP_REG(addr_port,
 				      0x100 + k * 8 + j);
-			WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, val1[j]);
+			WRITE_VPP_REG(data_port, val1[j]);
 		}
 
 		for (j = 0; j < 5; j++) {
-			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
+			WRITE_VPP_REG(addr_port,
 				      0x100 + k * 8 + j);
-			val2[j] = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
+			val2[j] = READ_VPP_REG(data_port);
 			if (j == reg_node2) {
 				/*curve 2,3,4*/
 				val2[j] &= 0xff000000;
@@ -386,23 +399,50 @@ void cm2_curve_update_hue_by_hs(struct cm_color_md cm_color_md_hue_by_hs)
 			/*pr_info("0x%x, 0x%x\n", val1, val2);*/
 		}
 
-		for (j = 0; j < 5; j++) {
-			if (cm2_debug & CM_HUE_BY_HIS_DEBUG_FLAG)
-				pr_info("%s:val1[%d]:%d\n",
-					__func__, j, val1[j]);
-			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-				      0x100 + k * 8 + j);
-			WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, val2[j]);
+		if (chip_type_id == chip_s5) {
+			for (m = SLICE0; m < SLICE_MAX; m++) {
+				addr_port = cm_port.cm_addr_port[m];
+				data_port = cm_port.cm_data_port[m];
+				for (j = 0; j < 5; j++) {
+					if (cm2_debug & CM_HUE_BY_HIS_DEBUG_FLAG)
+						pr_info("%s:val1[%d]:%d\n",
+							__func__, j, val1[j]);
+					WRITE_VPP_REG(addr_port,
+						      0x100 + k * 8 + j);
+					WRITE_VPP_REG(data_port, val2[j]);
+				}
+			}
+		} else {
+			for (j = 0; j < 5; j++) {
+				if (cm2_debug & CM_HUE_BY_HIS_DEBUG_FLAG)
+					pr_info("%s:val1[%d]:%d\n",
+						__func__, j, val1[j]);
+				WRITE_VPP_REG(addr_port,
+					      0x100 + k * 8 + j);
+				WRITE_VPP_REG(data_port, val2[j]);
+			}
 		}
 	}
 }
 
 void cm2_curve_update_hue(struct cm_color_md cm_color_md_hue)
 {
-	unsigned int i, j, k, start = 0, end = 0;
+	unsigned int i, j, k, m, start = 0, end = 0;
 	unsigned int val1[5] = {0};
 	int temp = 0, reg_node;
 	int colormode;
+	int addr_port;
+	int data_port;
+	struct cm_port_s cm_port;
+
+	if (chip_type_id == chip_s5) {
+		cm_port = get_cm_port();
+		addr_port = cm_port.cm_addr_port[0];
+		data_port = cm_port.cm_data_port[0];
+	} else {
+		addr_port = VPP_CHROMA_ADDR_PORT;
+		data_port = VPP_CHROMA_DATA_PORT;
+	}
 
 	if (cm_color_md_hue.color_type == cm_9_color) {
 		colormode = cm_color_md_hue.cm_9_color_md;
@@ -437,9 +477,9 @@ void cm2_curve_update_hue(struct cm_color_md cm_color_md_hue)
 		if (k > 31)
 			k = k  - 32;
 		for (j = 0; j < 5; j++) {
-			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
+			WRITE_VPP_REG(addr_port,
 				      0x100 + k * 8 + j);
-			val1[j] = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
+			val1[j] = READ_VPP_REG(data_port);
 			if (j == reg_node) {
 				/*curve 0*/
 				val1[j] &= 0xffffff00;
@@ -453,13 +493,29 @@ void cm2_curve_update_hue(struct cm_color_md cm_color_md_hue)
 				continue;
 			}
 		}
-		for (j = 0; j < 5; j++) {
-			if (cm2_debug & CM_HUE_DEBUG_FLAG)
-				pr_info("%s:val1[%d]:%d\n",
-					__func__, j, val1[j]);
-			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-				      0x100 + k * 8 + j);
-			WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, val1[j]);
+
+		if (chip_type_id == chip_s5) {
+			for (m = SLICE0; m < SLICE_MAX; m++) {
+				addr_port = cm_port.cm_addr_port[m];
+				data_port = cm_port.cm_data_port[m];
+				for (j = 0; j < 5; j++) {
+					if (cm2_debug & CM_HUE_DEBUG_FLAG)
+						pr_info("%s:val1[%d]:%d\n",
+							__func__, j, val1[j]);
+					WRITE_VPP_REG(addr_port,
+						      0x100 + k * 8 + j);
+					WRITE_VPP_REG(data_port, val1[j]);
+				}
+			}
+		} else {
+			for (j = 0; j < 5; j++) {
+				if (cm2_debug & CM_HUE_DEBUG_FLAG)
+					pr_info("%s:val1[%d]:%d\n",
+						__func__, j, val1[j]);
+				WRITE_VPP_REG(addr_port,
+					      0x100 + k * 8 + j);
+				WRITE_VPP_REG(data_port, val1[j]);
+			}
 		}
 	}
 }
@@ -480,10 +536,22 @@ void cm2_curve_update_hue(struct cm_color_md cm_color_md_hue)
  */
 void cm2_curve_update_luma(struct cm_color_md cm_color_md_luma)
 {
-	unsigned int i, j, k, start = 0, end = 0;
+	unsigned int i, j, k, m, start = 0, end = 0;
 	unsigned int val1[5] = {0};
 	int temp = 0, reg_node;
 	int colormode;
+	int addr_port;
+	int data_port;
+	struct cm_port_s cm_port;
+
+	if (chip_type_id == chip_s5) {
+		cm_port = get_cm_port();
+		addr_port = cm_port.cm_addr_port[0];
+		data_port = cm_port.cm_data_port[0];
+	} else {
+		addr_port = VPP_CHROMA_ADDR_PORT;
+		data_port = VPP_CHROMA_DATA_PORT;
+	}
 
 	if (cm_color_md_luma.color_type == cm_9_color) {
 		colormode = cm_color_md_luma.cm_9_color_md;
@@ -518,9 +586,9 @@ void cm2_curve_update_luma(struct cm_color_md cm_color_md_luma)
 		if (k > 31)
 			k = k  - 32;
 		for (j = 0; j < 5; j++) {
-			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
+			WRITE_VPP_REG(addr_port,
 				      CM2_ENH_COEF0_H00 + k * 8 + j);
-			val1[j] = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
+			val1[j] = READ_VPP_REG(data_port);
 			if (j == reg_node) {
 				/*curve 0*/
 				val1[j] &= 0xffffff00;
@@ -534,13 +602,29 @@ void cm2_curve_update_luma(struct cm_color_md cm_color_md_luma)
 				continue;
 			}
 		}
-		for (j = 0; j < 5; j++) {
-			if (cm2_debug & CM_LUMA_DEBUG_FLAG)
-				pr_info("%s:val1[%d]:%d\n",
-					__func__, j, val1[j]);
-			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-				      CM2_ENH_COEF0_H00 + k * 8 + j);
-			WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, val1[j]);
+
+		if (chip_type_id == chip_s5) {
+			for (m = SLICE0; m < SLICE_MAX; m++) {
+				addr_port = cm_port.cm_addr_port[m];
+				data_port = cm_port.cm_data_port[m];
+				for (j = 0; j < 5; j++) {
+					if (cm2_debug & CM_LUMA_DEBUG_FLAG)
+						pr_info("%s:val1[%d]:%d\n",
+							__func__, j, val1[j]);
+					WRITE_VPP_REG(addr_port,
+						      CM2_ENH_COEF0_H00 + k * 8 + j);
+					WRITE_VPP_REG(data_port, val1[j]);
+				}
+			}
+		} else {
+			for (j = 0; j < 5; j++) {
+				if (cm2_debug & CM_LUMA_DEBUG_FLAG)
+					pr_info("%s:val1[%d]:%d\n",
+						__func__, j, val1[j]);
+				WRITE_VPP_REG(addr_port,
+					      CM2_ENH_COEF0_H00 + k * 8 + j);
+				WRITE_VPP_REG(data_port, val1[j]);
+			}
 		}
 	}
 }
@@ -561,10 +645,22 @@ void cm2_curve_update_luma(struct cm_color_md cm_color_md_luma)
  */
 void cm2_curve_update_sat(struct cm_color_md cm_color_md_sat)
 {
-	unsigned int i, j, k, start = 0, end = 0;
+	unsigned int i, j, k, m, start = 0, end = 0;
 	unsigned int val1[5] = {0};
 	int temp = 0, reg_node;
 	int colormode;
+	int addr_port;
+	int data_port;
+	struct cm_port_s cm_port;
+
+	if (chip_type_id == chip_s5) {
+		cm_port = get_cm_port();
+		addr_port = cm_port.cm_addr_port[0];
+		data_port = cm_port.cm_data_port[0];
+	} else {
+		addr_port = VPP_CHROMA_ADDR_PORT;
+		data_port = VPP_CHROMA_DATA_PORT;
+	}
 
 	if (cm_color_md_sat.color_type == cm_9_color) {
 		colormode = cm_color_md_sat.cm_9_color_md;
@@ -598,9 +694,9 @@ void cm2_curve_update_sat(struct cm_color_md cm_color_md_sat)
 		if (k > 31)
 			k = k  - 32;
 		for (j = 0; j < 5; j++) {
-			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
+			WRITE_VPP_REG(addr_port,
 				      CM2_ENH_COEF0_H00 + k * 8 + j);
-			val1[j] = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
+			val1[j] = READ_VPP_REG(data_port);
 			if (j == reg_node) {
 				val1[j] &= 0x000000ff;
 				/*curve 0*/
@@ -632,14 +728,31 @@ void cm2_curve_update_sat(struct cm_color_md cm_color_md_sat)
 				continue;
 			}
 		}
-		for (j = 0; j < 5; j++) {
-			if (cm2_debug & CM_SAT_DEBUG_FLAG)
-				pr_info("%s:val1[%d]:%d\n",
-					__func__, j, val1[j]);
 
-			WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-				      CM2_ENH_COEF0_H00 + k * 8 + j);
-			WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, val1[j]);
+		if (chip_type_id == chip_s5) {
+			for (m = SLICE0; m < SLICE_MAX; m++) {
+				addr_port = cm_port.cm_addr_port[m];
+				data_port = cm_port.cm_data_port[m];
+				for (j = 0; j < 5; j++) {
+					if (cm2_debug & CM_SAT_DEBUG_FLAG)
+						pr_info("%s:val1[%d]:%d\n",
+							__func__, j, val1[j]);
+
+					WRITE_VPP_REG(addr_port,
+						      CM2_ENH_COEF0_H00 + k * 8 + j);
+					WRITE_VPP_REG(data_port, val1[j]);
+				}
+			}
+		} else {
+			for (j = 0; j < 5; j++) {
+				if (cm2_debug & CM_SAT_DEBUG_FLAG)
+					pr_info("%s:val1[%d]:%d\n",
+						__func__, j, val1[j]);
+
+				WRITE_VPP_REG(addr_port,
+					      CM2_ENH_COEF0_H00 + k * 8 + j);
+				WRITE_VPP_REG(data_port, val1[j]);
+			}
 		}
 	}
 }

@@ -2431,6 +2431,7 @@ static int is_policy_changed(void)
 	return ret;
 }
 
+#define signal_cuva ((vf->signal_type >> 31) & 1)
 #define signal_color_primaries ((vf->signal_type >> 16) & 0xff)
 #define signal_transfer_characteristic ((vf->signal_type >> 8) & 0xff)
 
@@ -2438,7 +2439,7 @@ static bool vf_is_hlg(struct vframe_s *vf)
 {
 	if ((signal_transfer_characteristic == 14 ||
 	     signal_transfer_characteristic == 18) &&
-	     signal_color_primaries == 9)
+	     signal_color_primaries == 9 && !signal_cuva)
 		return true;
 	return false;
 }
@@ -2455,7 +2456,7 @@ static bool is_hlg_frame(struct vframe_s *vf)
 		(get_amdv_hdr_policy() & 2) == 0) &&
 		(signal_transfer_characteristic == 14 ||
 		signal_transfer_characteristic == 18) &&
-		signal_color_primaries == 9)
+		signal_color_primaries == 9 && !signal_cuva)
 		return true;
 
 	return false;
@@ -2493,7 +2494,7 @@ static bool vf_is_hdr10(struct vframe_s *vf)
 {
 	if (signal_transfer_characteristic == 16 &&
 	    (signal_color_primaries == 9 ||
-	    signal_color_primaries == 2))
+	    signal_color_primaries == 2) && !signal_cuva)
 		return true;
 	return false;
 }
@@ -2513,7 +2514,7 @@ static bool is_hdr10_frame(struct vframe_s *vf)
 		((!sink_support_hdr10_plus(vinfo) && !is_aml_tvmode()) ||
 		(dolby_vision_hdr10_policy & HDRP_BY_DV)))) &&
 		(signal_color_primaries == 9 ||
-		 signal_color_primaries == 2))
+		 signal_color_primaries == 2) && !signal_cuva)
 		return true;
 	return false;
 }
@@ -2541,7 +2542,14 @@ static bool is_primesl_frame(struct vframe_s *vf)
 	return false;
 }
 
-static const char *input_str[8] = {
+static bool is_cuva_frame(struct vframe_s *vf)
+{
+	if (signal_cuva)
+		return true;
+	return false;
+}
+
+static const char *input_str[10] = {
 	"NONE",
 	"HDR",
 	"HDR+",
@@ -2549,7 +2557,9 @@ static const char *input_str[8] = {
 	"PRIME",
 	"HLG",
 	"SDR",
-	"MVC"
+	"MVC",
+	"CUVA_HDR",
+	"CUVA_HLG"
 };
 
 /*update pwm control when src changed or pic mode changed*/
@@ -2592,19 +2602,27 @@ static void update_src_format_v1(enum signal_format_enum src_format, struct vfra
 		amdv_src_format = 3;
 	} else {
 		if (vf) {
-			/* need check prime_sl before hdr and sdr */
-			if (is_primesl_frame(vf))
+			if (is_cuva_frame(vf)) {
+				if ((signal_transfer_characteristic == 14 ||
+				     signal_transfer_characteristic == 18) &&
+				    signal_color_primaries == 9)
+					amdv_src_format = 9;
+				else if (signal_transfer_characteristic == 16)
+					amdv_src_format = 8;
+			} else if (is_primesl_frame(vf)) {
+				/* need check prime_sl before hdr and sdr */
 				amdv_src_format = 4;
-			else if (vf_is_hdr10_plus(vf))
+			} else if (vf_is_hdr10_plus(vf)) {
 				amdv_src_format = 2;
-			else if (vf_is_hdr10(vf))
+			} else if (vf_is_hdr10(vf)) {
 				amdv_src_format = 1;
-			else if (vf_is_hlg(vf))
+			} else if (vf_is_hlg(vf)) {
 				amdv_src_format = 5;
-			else if (is_mvc_frame(vf))
+			} else if (is_mvc_frame(vf)) {
 				amdv_src_format = 7;
-			else
+			} else {
 				amdv_src_format = 6;
+			}
 		}
 	}
 	if (cur_format != amdv_src_format) {
@@ -2637,19 +2655,27 @@ static void update_src_format_v2(enum signal_format_enum src_format, struct vfra
 		dv_inst[dv_id].amdv_src_format = 3;
 	} else {
 		if (vf) {
-			/* need check prime_sl before hdr and sdr */
-			if (is_primesl_frame(vf))
+			if (is_cuva_frame(vf)) {
+				if ((signal_transfer_characteristic == 14 ||
+				     signal_transfer_characteristic == 18) &&
+				    signal_color_primaries == 9)
+					dv_inst[dv_id].amdv_src_format = 9;
+				else if (signal_transfer_characteristic == 16)
+					dv_inst[dv_id].amdv_src_format = 8;
+			} else if (is_primesl_frame(vf)) {
+				/* need check prime_sl before hdr and sdr */
 				dv_inst[dv_id].amdv_src_format = 4;
-			else if (vf_is_hdr10_plus(vf))
+			} else if (vf_is_hdr10_plus(vf)) {
 				dv_inst[dv_id].amdv_src_format = 2;
-			else if (vf_is_hdr10(vf))
+			} else if (vf_is_hdr10(vf)) {
 				dv_inst[dv_id].amdv_src_format = 1;
-			else if (vf_is_hlg(vf))
+			} else if (vf_is_hlg(vf)) {
 				dv_inst[dv_id].amdv_src_format = 5;
-			else if (is_mvc_frame(vf))
+			} else if (is_mvc_frame(vf)) {
 				dv_inst[dv_id].amdv_src_format = 7;
-			else
+			} else {
 				dv_inst[dv_id].amdv_src_format = 6;
+			}
 		}
 	}
 	if (cur_format != dv_inst[dv_id].amdv_src_format) {
@@ -2752,6 +2778,10 @@ static enum signal_format_enum get_cur_src_format(void)
 		break;
 	case 7: /* MVC */
 		ret = FORMAT_MVC;
+		break;
+	case 8: /* CUVA_HDR */
+	case 9: /* CUVA_HLG */
+		ret = FORMAT_CUVA;
 		break;
 	default:
 		break;
@@ -2909,6 +2939,19 @@ static int amdv_policy_process_v1(int *mode,
 			if (debug_dolby & 2)
 				pr_dv_dbg
 					("prime_sl, dovi output -> BYPASS\n");
+			*mode = AMDV_OUTPUT_MODE_BYPASS;
+			mode_change = 1;
+		} else {
+			mode_change = 0;
+		}
+		return mode_change;
+	}
+	if (src_format == FORMAT_CUVA) {
+		if (dolby_vision_mode !=
+			AMDV_OUTPUT_MODE_BYPASS) {
+			if (debug_dolby & 2)
+				pr_dv_dbg
+					("cuva, dovi output -> BYPASS\n");
 			*mode = AMDV_OUTPUT_MODE_BYPASS;
 			mode_change = 1;
 		} else {
@@ -3192,7 +3235,19 @@ static int amdv_policy_process_v2_stb(int *mode,
 		}
 		return mode_change;
 	}
-
+	if (src_format == FORMAT_CUVA) {
+		if (dolby_vision_mode !=
+			AMDV_OUTPUT_MODE_BYPASS) {
+			if (debug_dolby & 2)
+				pr_dv_dbg
+					("cuva, dovi output -> BYPASS\n");
+			*mode = AMDV_OUTPUT_MODE_BYPASS;
+			mode_change = 1;
+		} else {
+			mode_change = 0;
+		}
+		return mode_change;
+	}
 	if (dolby_vision_policy == AMDV_FOLLOW_SINK) {
 		/* bypass dv_mode with efuse */
 		if (efuse_mode == 1 && !amdv_efuse_bypass)  {
@@ -3749,6 +3804,20 @@ EXPORT_SYMBOL(amdv_check_primesl);
 
 int amdv_check_cuva(struct vframe_s *vf)
 {
+	int mode;
+
+	if (is_cuva_frame(vf) && dolby_vision_on) {
+		/* cuva source, but dovi enabled, need bypass dv */
+		mode = dolby_vision_mode;
+		if (amdv_policy_process(&mode, FORMAT_CUVA)) {
+			if (mode != AMDV_OUTPUT_MODE_BYPASS &&
+			    dolby_vision_mode ==
+			    AMDV_OUTPUT_MODE_BYPASS)
+				amdv_wait_on = true;
+			amdv_target_mode = mode;
+			return 1;
+		}
+	}
 	return 0;
 }
 EXPORT_SYMBOL(amdv_check_cuva);
@@ -5911,9 +5980,10 @@ static bool send_hdmi_pkt
 				vinfo->vout_device->fresh_tx_vsif_pkt) {
 				if (vf && (is_hlg_frame(vf) ||
 					   is_hdr10plus_frame(vf) ||
+					   is_cuva_frame(vf) ||
 					   is_primesl_frame(vf))) {
 					/* TODO: double check if need add prime sl case */
-					/* HLG/HDR10+/PRIMESL case: first switch to SDR
+					/* HLG/HDR10+/CUVA/PRIMESL case: first switch to SDR
 					 * immediately.
 					 */
 					pr_dv_dbg
@@ -6752,6 +6822,9 @@ int amdv_parse_metadata_v1(struct vframe_s *vf,
 		if (src_format != FORMAT_DOVI && is_mvc_frame(vf))
 			src_format = FORMAT_MVC;
 
+		if (src_format != FORMAT_DOVI && is_cuva_frame(vf))
+			src_format = FORMAT_CUVA;
+
 		/* TODO: need 962e ? */
 		if (src_format == FORMAT_SDR &&
 		    is_amdv_stb_mode() &&
@@ -6771,8 +6844,9 @@ int amdv_parse_metadata_v1(struct vframe_s *vf,
 			 (src_format == FORMAT_DOVI ? "DOVI" :
 			 (src_format == FORMAT_HLG ? "HLG" :
 			 (src_format == FORMAT_HDR10PLUS ? "HDR10+" :
+			 (src_format == FORMAT_CUVA ? "CUVA" :
 			 (src_format == FORMAT_PRIMESL ? "PRIMESL" :
-			 (req.dv_enhance_exist ? "DOVI (el meta)" : "SDR"))))),
+			 (req.dv_enhance_exist ? "DOVI (el meta)" : "SDR")))))),
 			 req.aux_size, req.dv_enhance_exist);
 		if (src_format != FORMAT_DOVI && !req.dv_enhance_exist)
 			memset(&req, 0, sizeof(req));
@@ -8284,6 +8358,9 @@ int amdv_parse_metadata_v2_stb(struct vframe_s *vf,
 		if (src_format != FORMAT_DOVI && is_mvc_frame(vf))
 			src_format = FORMAT_MVC;
 
+		if (src_format != FORMAT_DOVI && is_cuva_frame(vf))
+			src_format = FORMAT_CUVA;
+
 		/* TODO: need 962e ? */
 		if (src_format == FORMAT_SDR &&
 		    is_amdv_stb_mode() &&
@@ -8303,8 +8380,9 @@ int amdv_parse_metadata_v2_stb(struct vframe_s *vf,
 				(src_format == FORMAT_DOVI ? "DOVI" :
 				(src_format == FORMAT_HLG ? "HLG" :
 				(src_format == FORMAT_HDR10PLUS ? "HDR10+" :
+				(src_format == FORMAT_CUVA ? "CUVA" :
 				(src_format == FORMAT_PRIMESL ? "PRIMESL" :
-				(req.dv_enhance_exist ? "DOVI (el)" : "SDR"))))),
+				(req.dv_enhance_exist ? "DOVI (el)" : "SDR")))))),
 				req.aux_size, req.dv_enhance_exist);
 		if (src_format != FORMAT_DOVI && !req.dv_enhance_exist)
 			memset(&req, 0, sizeof(req));
@@ -9631,6 +9709,8 @@ int amdv_wait_metadata_v1(struct vframe_s *vf)
 			check_format = FORMAT_HDR10PLUS;
 		} else if (is_mvc_frame(vf)) {
 			check_format = FORMAT_MVC;
+		} else if (is_cuva_frame(vf)) {
+			check_format = FORMAT_CUVA;
 		} else {
 			check_format = FORMAT_SDR;
 		}
@@ -9805,6 +9885,8 @@ int amdv_wait_metadata_v2(struct vframe_s *vf, enum vd_path_e vd_path)
 			check_format = FORMAT_HDR10PLUS;
 		} else if (is_mvc_frame(vf)) {
 			check_format = FORMAT_MVC;
+		} else if (is_cuva_frame(vf)) {
+			check_format = FORMAT_CUVA;
 		} else {
 			check_format = FORMAT_SDR;
 		}
@@ -9983,6 +10065,8 @@ int amdv_update_src_format_v1(struct vframe_s *vf, u8 toggle_mode)
 		check_format = FORMAT_HDR10PLUS;
 	} else if (is_mvc_frame(vf)) {
 		check_format = FORMAT_MVC;
+	} else if (is_cuva_frame(vf)) {
+		check_format = FORMAT_CUVA;
 	} else {
 		check_format = FORMAT_SDR;
 	}
@@ -10071,6 +10155,8 @@ int amdv_update_src_format_v2(struct vframe_s *vf, u8 toggle_mode, enum vd_path_
 		check_format = FORMAT_HDR10PLUS;
 	} else if (is_mvc_frame(vf)) {
 		check_format = FORMAT_MVC;
+	} else if (is_cuva_frame(vf)) {
+		check_format = FORMAT_CUVA;
 	} else {
 		check_format = FORMAT_SDR;
 	}
@@ -10635,6 +10721,12 @@ int amdolby_vision_process_v1(struct vframe_s *vf,
 					/* disable dv immediately */
 					pr_dv_dbg("DV bypass: HLG: Switched to SDR first\n");
 					send_hdmi_pkt(FORMAT_HLG,
+						      FORMAT_SDR, vinfo, vf);
+					enable_amdv(0);
+				} else if (vf && is_cuva_frame(vf)) {
+					/* disable dolby immediately */
+					pr_dv_dbg("Dolby bypass: cuva: Switched to SDR first\n");
+					send_hdmi_pkt(FORMAT_CUVA,
 						      FORMAT_SDR, vinfo, vf);
 					enable_amdv(0);
 				} else if (last_dst_format != FORMAT_DOVI) {
@@ -11544,6 +11636,12 @@ static int amdolby_vision_process_v2_stb
 					/* disable dv immediately */
 					pr_dv_dbg("DV bypass: HLG: Switched to SDR first\n");
 					send_hdmi_pkt(FORMAT_HLG,
+						      FORMAT_SDR, vinfo, vf);
+					enable_amdv(0);
+				} else if (vf && is_cuva_frame(vf)) {
+					/* disable dolby immediately */
+					pr_dv_dbg("Dolby bypass: cuva: Switched to SDR first\n");
+					send_hdmi_pkt(FORMAT_CUVA,
 						      FORMAT_SDR, vinfo, vf);
 					enable_amdv(0);
 				} else if (last_dst_format != FORMAT_DOVI) {

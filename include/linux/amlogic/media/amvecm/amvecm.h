@@ -107,6 +107,7 @@ void amdv_set_toggle_flag(int flag);
  *#define VPP_VADJ1_BLMINUS_EN        (1 << 1)
  *#define VPP_VADJ1_EN                (1 << 0)
  */
+#define LUT3D_UPDATE                BIT(13)
 #define GAMMA_CRC_FAIL              BIT(12)
 #define GAMMA_CRC_PASS              BIT(11)
 #define GAMMA_READ_B                BIT(10)
@@ -540,6 +541,7 @@ enum vpp_matrix_csc_e {
 	VPP_MATRIX_BT2020RGB_709RGB,
 	VPP_MATRIX_BT2020RGB_CUSRGB,
 	VPP_MATRIX_BT2020YUV_BT2020RGB_DYNAMIC = 0x50,
+	VPP_MATRIX_BT2020YUV_BT2020RGB_CUVA = 0x51,
 	VPP_MATRIX_DEFAULT_CSCTYPE = 0xffff,
 };
 
@@ -551,6 +553,8 @@ enum hdr_type_e {
 	HDRTYPE_HDR10PLUS = HDR10PLUS_SOURCE,
 	HDRTYPE_DOVI = DOVI_SOURCE,
 	HDRTYPE_MVC = MVC_SOURCE,
+	HDRTYPE_CUVA_HDR = CUVA_HDR_SOURCE,
+	HDRTYPE_CUVA_HLG = CUVA_HLG_SOURCE,
 	HDRTYPE_PRIMESL = PRIMESL_SOURCE,
 };
 
@@ -693,6 +697,13 @@ enum chip_type {
 	chip_s5
 };
 
+enum chip_cls_e {
+	OTHER_CLS = 0,
+	TV_CHIP,
+	STB_CHIP,
+	SMT_CHIP
+};
+
 enum vlock_hw_ver_e {
 	/*gxtvbb*/
 	vlock_hw_org = 0,
@@ -716,6 +727,7 @@ enum vlock_hw_ver_e {
 
 struct vecm_match_data_s {
 	enum chip_type chip_id;
+	enum chip_cls_e chip_cls;
 	enum vlk_chiptype vlk_chip;
 	u32 vlk_support;
 	u32 vlk_new_fsm;
@@ -736,17 +748,42 @@ enum vd_path_e {
 	VD_PATH_MAX = 3
 };
 
-enum vpp_index {
+enum vpp_index_e {
 	VPP_TOP0 = 0,
 	VPP_TOP1 = 1,
 	VPP_TOP2 = 2,
 	VPP_TOP_MAX_S = 3
 };
 
+enum vpp_slice_e {
+	SLICE0 = 0,
+	SLICE1,
+	SLICE2,
+	SLICE3,
+	SLICE_MAX
+};
+
+enum vadj_index_e {
+	VE_VADJ1 = 0,
+	VE_VADJ2
+};
+
+/*flag:
+ *bit 0: brigtness
+ *bit 1: contrast
+ *bit 2: saturation
+ *bit 3: hue
+ */
+struct vdj_parm_s {
+	int flag;
+	int brightness;
+	int contrast;
+	int sat_hue;
+};
+
 extern signed int vd1_brightness, vd1_contrast;
 extern bool gamma_en;
 extern unsigned int atv_source_flg;
-extern unsigned int sr_demo_flag;
 extern enum hdr_type_e hdr_source_type;
 extern unsigned int pd_detect_en;
 extern bool wb_en;
@@ -761,9 +798,11 @@ extern unsigned int vecm_latch_flag2;
 
 extern enum ecm_color_type cm_cur_work_color_md;
 extern int cm2_debug;
+extern int bs_3dlut_en;
 
 extern unsigned int ct_en;
 extern enum chip_type chip_type_id;
+extern enum chip_cls_e chip_cls_id;
 
 int amvecm_on_vs(struct vframe_s *display_vf,
 		 struct vframe_s *toggle_vf,
@@ -775,7 +814,7 @@ int amvecm_on_vs(struct vframe_s *display_vf,
 		 unsigned int cm_in_w,
 		 unsigned int cm_in_h,
 		 enum vd_path_e vd_path,
-		 enum vpp_index vpp_index);
+		 enum vpp_index_e vpp_index);
 void refresh_on_vs(struct vframe_s *vf, struct vframe_s *rpt_vf);
 void pc_mode_process(void);
 void pq_user_latch_process(void);
@@ -817,7 +856,8 @@ void enable_osd1_mtx(unsigned int en);
 void set_cur_hdr_policy(uint policy);
 bool di_api_mov_sel(unsigned int mode,
 		    unsigned int *pdate);
-enum hdr_type_e get_cur_source_type(enum vd_path_e vd_path, enum vpp_index vpp_index);
+enum hdr_type_e get_cur_source_type(enum vd_path_e vd_path,
+	enum vpp_index_e vpp_index);
 
 int amvecm_set_saturation_hue(int mab);
 void amvecm_saturation_hue_update(int offset_val);
@@ -845,9 +885,37 @@ struct single_scene_s {
 };
 extern struct single_scene_s detected_scenes[SCENE_MAX];
 extern int freerun_en;
-u32 hdr_set(u32 module_sel, u32 hdr_process_select, enum vpp_index vpp_index);
+u32 hdr_set(u32 module_sel, u32 hdr_process_select, enum vpp_index_e vpp_index);
 int vinfo_lcd_support(void);
 int dv_pq_ctl(enum dv_pq_ctl_e ctl);
+int cm_force_update_flag(void);
+int get_lum_ave(void);
+
+enum demo_module_e {
+	E_DEMO_SR = 0,/*SHARPNESS/DEJEGGAY/DNLP/LC*/
+	E_DEMO_CM,
+	E_DEMO_LC,
+	E_DEMO_MAX
+};
+
+struct demo_size_s {
+	int sr_hsize;
+	int sr_vsize;
+	int cm_hsize;
+	int cm_vsize;
+};
+
+enum enable_state_e {
+	E_DISABLE = 0,
+	E_ENABLE
+};
+
+struct demo_data_s {
+	int update_flag[E_DEMO_MAX];
+	enum demo_module_e mod[E_DEMO_MAX];
+	struct demo_size_s in_size;
+	enum enable_state_e en_st[E_DEMO_MAX];
+};
 
 struct venc_gamma_table_s {
 	u16 gamma_r[257];
@@ -865,5 +933,6 @@ struct gamma_data_s {
 };
 
 struct gamma_data_s *get_gm_data(void);
+void bs_ct_latch(void);
 #endif /* AMVECM_H */
 

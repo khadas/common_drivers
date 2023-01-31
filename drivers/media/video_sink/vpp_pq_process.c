@@ -102,6 +102,9 @@ struct ai_pq_hist_data aipq_hist_data = {
 	.cur_blue_pct = 0
 };
 
+/*scene change th: 2/3 scene diff*/
+static u32 sc_th = 682;
+
 enum iir_policy_e aipq_tiir_policy_proc(int (*prob)[2], int sc_chg,
 					int *pq_debug, int *kp_flag)
 {
@@ -426,6 +429,133 @@ void aipq_scs_proc(struct vframe_s *vf,
 	aipq_hist_data.pre_blue_pct  = pre_blue_pct;
 }
 
+int sc_det(struct vframe_s *vf, int *pq_debug)
+{
+	int i;
+	static u32 hist_diff[3];
+	u32 diff;
+	u32 sum = 0;
+	int sumshft;
+	int norm14;
+	/*ret=1: scn change*/
+	int ret = 0;
+	int luma_hist[64];
+	static int pre_luma_hist[64];
+
+	for (i = 0; i < 2; i++)
+		hist_diff[i] = hist_diff[i + 1];
+
+	hist_diff[2] = 0;
+
+	for (i = 0; i < 64; i++) {
+		luma_hist[i] = vf->prop.hist.vpp_gamma[i];
+		sum += luma_hist[i];
+		diff = (luma_hist[i] > pre_luma_hist[i]) ?
+			(luma_hist[i] - pre_luma_hist[i]) :
+			(pre_luma_hist[i] - luma_hist[i]);
+		hist_diff[2] += diff;
+		pre_luma_hist[i] = luma_hist[i];
+	}
+
+	if (sum == 0)
+		return ret;
+
+	sumshft =
+		(sum >= (1 << 24)) ? 8 :
+		(sum >= (1 << 22)) ? 6 :
+		(sum >= (1 << 20)) ? 4 :
+		(sum >= (1 << 18)) ? 2 :
+		(sum >= (1 << 16)) ? 0 :
+		(sum >= (1 << 14)) ? -2 :
+		(sum >= (1 << 12)) ? -4 :
+		(sum >= (1 << 10)) ? -6 :
+		(sum >= (1 << 8)) ? -8 :
+		(sum >= (1 << 6)) ? -10 :
+		(sum >= (1 << 4)) ? -12 : -16;
+
+	if (sumshft >= 0)
+		norm14 = (1 << 30) / (sum >> sumshft);
+	else if (sumshft > -16)
+		norm14 = (1 << (30 + sumshft)) / sum;
+	else
+		norm14 = 1 << 14;
+
+	if (sumshft >= 0) {
+		hist_diff[2] = ((hist_diff[2] >> sumshft) * norm14 +
+			(1 << 13)) >> 14;
+	} else {
+		hist_diff[2] = (((hist_diff[2] << (-sumshft)) * norm14) +
+			(1 << 13)) >> 14;
+	}
+
+	/*normalize to 10bit*/
+	hist_diff[2] >>= 6;
+	if (hist_diff[2] > sc_th)
+		ret = 1;
+
+	if (pq_debug[2] == 2)
+		pr_info("scene change ret = %d, hist_diff[2] = %d\n", ret, hist_diff[2]);
+
+	return ret;
+}
+
+void aipq_scs_proc_s5(struct vframe_s *vf,
+		   int (*cfg)[SCENES_VALUE],
+		   int (*prob)[2],
+		   int *out,
+		   int *pq_debug)
+{
+	static int pre_top_one = -1;
+	int top_one, top_one_prob;
+	int top_two, top_two_prob;
+	int top_three, top_three_prob;
+	int sc_flag = 0;
+
+	memset(out, 0, sizeof(int) * SCENES_VALUE);
+
+	top_one = prob[0][0];
+	top_one_prob = prob[0][1];
+	top_two = prob[1][0];
+	top_two_prob = prob[1][1];
+	top_three = prob[2][0];
+	top_three_prob = prob[2][1];
+
+	sc_flag = sc_det(vf, pq_debug);
+
+	if (pre_top_one == top_one) {
+		memcpy(out, cfg[pre_top_one], sizeof(int) * SCENES_VALUE);
+		scene_prob[0] = top_one;
+		scene_prob[1] = top_one_prob;
+	} else if (((pre_top_one == top_two) && (top_two_prob > 1000)) ||
+			((pre_top_one == top_three) && (top_three_prob > 1000))) {
+		memcpy(out, cfg[pre_top_one], sizeof(int) * SCENES_VALUE);
+
+		if (pre_top_one == top_two) {
+			scene_prob[0] = top_two;
+			scene_prob[1] = top_two_prob;
+		} else {
+			scene_prob[0] = top_three;
+			scene_prob[1] = top_three_prob;
+		}
+	} else if (!sc_flag) {
+		memcpy(out, cfg[pre_top_one], sizeof(int) * SCENES_VALUE);
+	} else {
+		if (pq_debug[2] == 0x8) {
+			pr_info("pre_top_one = %d, top_one = %d, top_one_prob = %d\n",
+				pre_top_one, top_one, top_one_prob);
+		}
+		memcpy(out, cfg[top_one], sizeof(int) * SCENES_VALUE);
+		pre_top_one = top_one;
+
+		scene_prob[0] = top_one;
+		scene_prob[1] = top_one_prob;
+	}
+
+	if (pq_debug[2] > 0x10)
+		pr_info("pre_top_one = %d, top_one = %d, sc_flag = %d\n",
+			pre_top_one, top_one, sc_flag);
+}
+
 void vf_pq_process(struct vframe_s *vf,
 		   struct ai_scenes_pq *vpp_scenes,
 		   int *pq_debug)
@@ -440,9 +570,19 @@ void vf_pq_process(struct vframe_s *vf,
 	int bld_ofst[SCENES_VALUE];
 #endif
 	static int en_flag;
+	int src_w, src_h;
 
-	if (vf->ai_pq_enable && !en_flag)
+	src_w = (vf->type & VIDTYPE_COMPRESS) ? vf->compWidth : vf->width;
+	src_h = (vf->type & VIDTYPE_COMPRESS) ? vf->compHeight : vf->height;
+
+	/*because s5 sr not support 4 slices, aipq only support 4k*/
+	if (src_h > 2160 || src_w > 3840) {
+		en_flag = 0;
+		if (pq_debug[2] == 0x1)
+			pr_info("over 4k not support\n");
+	} else if (vf->ai_pq_enable && !en_flag) {
 		en_flag = 1;
+	}
 
 	if (!en_flag) {
 		if (pq_debug[2] == 0x1)
@@ -465,6 +605,7 @@ void vf_pq_process(struct vframe_s *vf,
 			scene_prob[1] = 0;
 			if (pq_debug[2] == 0x1)
 				pr_info("disable nn detect\n");
+			return;
 		}
 	}
 
@@ -489,8 +630,10 @@ void vf_pq_process(struct vframe_s *vf,
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
 	aipq_set_policy = get_aipq_set_policy();
-	if (aipq_set_policy)
+	if (aipq_set_policy == 1)
 		aipq_scs_bld_proc(vpp_pq_data, prob, bld_ofst, pq_debug);
+	else if (aipq_set_policy == 2)
+		aipq_scs_proc_s5(vf, vpp_pq_data, prob, bld_ofst, pq_debug);
 	else
 		aipq_scs_proc(vf, vpp_pq_data, prob, bld_ofst, pq_debug);
 #endif

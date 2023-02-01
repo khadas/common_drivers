@@ -1794,13 +1794,17 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 	pr_frc(2, "devp->out_sts.vout_width:%d devp->out_sts.vout_height:%d\n",
 		devp->out_sts.vout_width, devp->out_sts.vout_height);
 
+	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, 0x0); // clear align mothod
+	WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,            // restore default fhd value
+			(0x438 & 0x3fff) << 16 | (0x780 & 0x3fff));
+
 	if (reg_win_en && reg_auto_align_en && !reg_inp_padding_en) {
 		if (devp->out_sts.vout_width == 1920 &&
 			devp->out_sts.vout_height == 1080) {
 			if (devp->in_sts.in_hsize > IN_W_SIZE_FHD_90 &&
 				devp->in_sts.in_hsize < devp->out_sts.vout_width)
 				in_hsize = 8 - (devp->in_sts.in_hsize % 8);
-			if (devp->in_sts.in_hsize > IN_H_SIZE_FHD_90 &&
+			if (devp->in_sts.in_vsize > IN_H_SIZE_FHD_90 &&
 				devp->in_sts.in_vsize < devp->out_sts.vout_height)
 				in_vsize = 8 - (devp->in_sts.in_vsize % 8);
 		} else if (devp->out_sts.vout_width == 3840 &&
@@ -1808,7 +1812,7 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 			if (devp->in_sts.in_hsize > IN_W_SIZE_UHD_90 &&
 				devp->in_sts.in_hsize < devp->out_sts.vout_width)
 				in_hsize = 16 - (devp->in_sts.in_hsize % 16);
-			if (devp->in_sts.in_hsize > IN_H_SIZE_UHD_90 &&
+			if (devp->in_sts.in_vsize > IN_H_SIZE_UHD_90 &&
 				devp->in_sts.in_vsize < devp->out_sts.vout_height)
 				in_vsize = 16 - (devp->in_sts.in_vsize % 16);
 		}
@@ -1820,7 +1824,7 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 			if (devp->in_sts.in_hsize > IN_W_SIZE_FHD_90 &&
 				devp->in_sts.in_hsize < devp->out_sts.vout_width)
 				in_hsize = 8 - (devp->in_sts.in_hsize % 8);
-			if (devp->in_sts.in_hsize > IN_H_SIZE_FHD_90 &&
+			if (devp->in_sts.in_vsize > IN_H_SIZE_FHD_90 &&
 				devp->in_sts.in_vsize < devp->out_sts.vout_height)
 				in_vsize = 8 - (devp->in_sts.in_vsize % 8);
 		} else if (devp->out_sts.vout_width == 3840 &&
@@ -1828,7 +1832,7 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 			if (devp->in_sts.in_hsize > IN_W_SIZE_UHD_90 &&
 				devp->in_sts.in_hsize < devp->out_sts.vout_width)
 				in_hsize = 16 - (devp->in_sts.in_hsize % 16);
-			if (devp->in_sts.in_hsize > IN_H_SIZE_UHD_90 &&
+			if (devp->in_sts.in_vsize > IN_H_SIZE_UHD_90 &&
 				devp->in_sts.in_vsize < devp->out_sts.vout_height)
 				in_vsize = 16 - (devp->in_sts.in_vsize % 16);
 		}
@@ -1838,5 +1842,5 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 			(reg_vsize_proc & 0x3fff) << 16 | (reg_hsize_proc & 0x3fff));
 	}
 
-	pr_frc(2, "in_vsize:%d in_hsize:%d\n", in_vsize, in_hsize);
+	pr_frc(2, "align_vsize:%d align_hsize:%d\n", in_vsize, in_hsize);
 }

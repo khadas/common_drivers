@@ -235,6 +235,10 @@ struct lcd_tcon_local_cfg_s *get_lcd_tcon_local_cfg(void);
  * **********************************
  */
 /* internal */
+void lcd_tcon_lut_dma_mif_set(phys_addr_t paddr, unsigned int size);
+void lcd_tcon_lut_dma_enable(struct aml_lcd_drv_s *pdrv);
+void lcd_tcon_lut_dma_disable(struct aml_lcd_drv_s *pdrv);
+
 void lcd_tcon_od_pre_disable(unsigned char *table);
 int lcd_tcon_valid_check(void);
 struct tcon_rmem_s *get_lcd_tcon_rmem(void);

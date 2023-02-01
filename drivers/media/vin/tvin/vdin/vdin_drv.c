@@ -1295,30 +1295,18 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 	/*		       VPU_MEM_POWER_ON);*/
 
 	/* screenshot stress test vdin1 hw crash addr need adjust config */
-	if (devp->index == 0) {
-		vfe = provider_vf_peek(devp->vfp);
-		if (vfe)
-			vdin_frame_write_ctrl_set(devp, vfe, 0);
-		else
-			pr_info("vdin%d:peek first vframe fail\n", devp->index);
-		vdin_set_all_regs(devp);
-		vdin_hw_enable(devp);
-		vdin_set_dv_tunnel(devp);
-		vdin_write_mif_or_afbce_init(devp);
-	} else if (devp->index == 1) {
-		vdin_set_all_regs(devp);
-		vdin_hw_enable(devp);
-		vfe = provider_vf_peek(devp->vfp);
-		if (vfe) {
-			vdin_frame_write_ctrl_set(devp, vfe, 0);
-			if (is_meson_t3_cpu() && devp->index == 1 && devp->set_canvas_manual)
-				usleep_range(16600, 18000);
-		} else {
-			pr_info("vdin%d:peek first vframe fail\n", devp->index);
-		}
-		vdin_set_dv_tunnel(devp);
-		vdin_write_mif_or_afbce_init(devp);
+	vfe = provider_vf_peek(devp->vfp);
+	if (vfe) {
+		vdin_frame_write_ctrl_set(devp, vfe, 0);
+		if (is_meson_t3_cpu() && devp->index == 1 && devp->set_canvas_manual)
+			usleep_range(16600, 18000);
+	} else {
+		pr_info("vdin%d:peek first vframe fail\n", devp->index);
 	}
+	vdin_set_all_regs(devp);
+	vdin_hw_enable(devp);
+	vdin_set_dv_tunnel(devp);
+	vdin_write_mif_or_afbce_init(devp);
 
 	sts = vdin_is_delay_vfe2rd_list(devp);
 	if (sts) {

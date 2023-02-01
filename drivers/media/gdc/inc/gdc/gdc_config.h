@@ -53,6 +53,7 @@ struct gdc_device_data_s {
 	int gamma_support; /* gamma support */
 	int core_cnt;      /* total core count */
 	int fw_version;
+	int has_pwd;
 };
 
 struct meson_gdc_dev_t {
@@ -79,6 +80,7 @@ struct meson_gdc_dev_t {
 	ktime_t time_stamp[CORE_NUM]; /* start time stamp */
 	struct gdc_queue_item_s *current_item[CORE_NUM];
 	int fw_version;
+	int has_pwd;
 };
 
 struct gdc_event_s {

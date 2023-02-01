@@ -161,13 +161,6 @@
 			size = <0x0 0x03000000>;
 			alignment = <0x0 0x400000>;
 		};
-		gdc_cma_reserved:linux,gdc_cma {
-			compatible = "shared-dma-pool";
-			reusable;
-			status = "disable";
-			size = <0x0 0x04000000>;
-			alignment = <0x0 0x400000>;
-		};
 	};
 	galcore {
 		status = "disable";
@@ -887,11 +880,6 @@
 &adapter {
 	status = "disable";
 	memory-region = <&adapt_cma_reserved>;
-};
-
-&gdc {
-	status = "disable";
-	memory-region = <&gdc_cma_reserved>;
 };
 
 &meson_fb {

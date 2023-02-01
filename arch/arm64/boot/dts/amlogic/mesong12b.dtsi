@@ -1264,15 +1264,15 @@
 	ge2d {
 		compatible = "amlogic, ge2d-g12a";
 		dev_name = "ge2d";
-		status = "disabled";
+		status = "okay";
 		interrupts = <0 146 1>;
 		interrupt-names = "ge2d";
-		//clocks = <&clkc CLKID_VAPB_MUX>,
-		//	<&clkc CLKID_G2D>,
-		//	<&clkc CLKID_GE2D_GATE>;
-		//clock-names = "clk_vapb_0",
-		//	"clk_ge2d",
-		//	"clk_ge2d_gate";
+		clocks = <&clkc CLKID_VAPB_SEL>,
+			<&clkc CLKID_GE2D>,
+			<&clkc CLKID_GE2D_GATE>;
+		clock-names = "clk_vapb_0",
+			"clk_ge2d",
+			"clk_ge2d_gate";
 		reg = <0x0 0xff940000 0x0 0x10000>;
 	};
 
@@ -1312,19 +1312,19 @@
 			"nocbus";
 	};
 
-	gdc:gdc {
+	gdc {
 		#address-cells=<2>;
 		#size-cells=<2>;
-		status = "disabled";
+		status = "okay";
 		compatible = "amlogic, g12b-gdc";
 		reg = <0 0xFF950000 0 0x0000100
 			   0 0xFF63C16C 0 0x0000004
 			   0 0xFF63C100 0 0x0000004>;
 		interrupts = <0 144 1>;
 		interrupt-names = "GDC";
-		//clocks = <&clkc CLKID_GDC_CORE_CLK_COMP
-		//		  &clkc CLKID_GDC_AXI_CLK_COMP >;
-		//clock-names = "core","axi";
+		clocks = <&clkc CLKID_GDC_CORE_CLK
+				  &clkc CLKID_GDC_AXI_CLK>;
+		clock-names = "core","axi";
 	};
 
 	mesonstream {

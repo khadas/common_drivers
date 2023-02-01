@@ -621,13 +621,15 @@ int gdc_pwr_config(bool enable, u32 dev_type, u32 core_id)
 
 	pd_dev = gdc_dev->pd[core_id].dev;
 	/* power */
-	if (enable) {
-		ret = pm_runtime_get_sync(pd_dev);
-		if (ret < 0)
-			gdc_log(LOG_ERR, "runtime get power error\n");
-	} else {
-		pm_runtime_mark_last_busy(pd_dev);
-		pm_runtime_put_autosuspend(pd_dev);
+	if (gdc_dev->has_pwd) {
+		if (enable) {
+			ret = pm_runtime_get_sync(pd_dev);
+			if (ret < 0)
+				gdc_log(LOG_ERR, "runtime get power error\n");
+		} else {
+			pm_runtime_mark_last_busy(pd_dev);
+			pm_runtime_put_autosuspend(pd_dev);
+		}
 	}
 
 	/* clk */

@@ -57,7 +57,8 @@ static struct gdc_device_data_s arm_gdc_clk2 = {
 	.dev_type = ARM_GDC,
 	.clk_type = CORE_AXI,
 	.core_cnt = 1,
-	.fw_version = ARMGDC_FW_V1
+	.fw_version = ARMGDC_FW_V1,
+	.has_pwd = 0
 };
 
 static struct gdc_device_data_s arm_gdc = {
@@ -65,7 +66,8 @@ static struct gdc_device_data_s arm_gdc = {
 	.clk_type = MUXGATE_MUXSEL_GATE,
 	.ext_msb_8g = 1,
 	.core_cnt = 1,
-	.fw_version = ARMGDC_FW_V1
+	.fw_version = ARMGDC_FW_V1,
+	.has_pwd = 1
 };
 
 static struct gdc_device_data_s aml_gdc = {
@@ -2106,6 +2108,8 @@ static int gdc_platform_probe(struct platform_device *pdev)
 	const char *drv_name = pdev->dev.driver->name;
 	char *config_out_file;
 	u32 dev_type;
+	void *pd_cntl = NULL;
+	u32 reg_value = 0;
 
 	match = of_match_node(gdc_dt_match, pdev->dev.of_node);
 	if (!match) {
@@ -2151,6 +2155,7 @@ static int gdc_platform_probe(struct platform_device *pdev)
 	gdc_dev->ext_msb_8g = gdc_data->ext_msb_8g;
 	gdc_dev->core_cnt = gdc_data->core_cnt;
 	gdc_dev->fw_version = gdc_data->fw_version;
+	gdc_dev->has_pwd = gdc_data->has_pwd;
 
 	gdc_dev->misc_dev.minor = MISC_DYNAMIC_MINOR;
 	gdc_dev->misc_dev.name = drv_name;
@@ -2192,6 +2197,18 @@ static int gdc_platform_probe(struct platform_device *pdev)
 			gdc_log(LOG_ERR, "cannot create irq func gdc\n");
 			goto free_config;
 		}
+	}
+
+	/* g12b need to set mem_pd manually
+	 * others set mem_pd in power-domain
+	 */
+	if (!gdc_data->has_pwd) {
+		pd_cntl = of_iomap(pdev->dev.of_node, 2);
+		reg_value = ioread32(pd_cntl);
+		gdc_log(LOG_DEBUG, "pd_cntl=%x\n", reg_value);
+		reg_value = reg_value & (~(3 << 18));
+		gdc_log(LOG_DEBUG, "pd_cntl=%x\n", reg_value);
+		iowrite32(reg_value, pd_cntl);
 	}
 
 	rc = of_property_read_u32(pdev->dev.of_node, "clk-rate", &clk_rate);
@@ -2304,13 +2321,15 @@ static int gdc_platform_probe(struct platform_device *pdev)
 	}
 
 	/* power domain init */
-	rc = gdc_pwr_init(&pdev->dev, gdc_dev->pd, dev_type);
-	if (rc) {
-		gdc_pwr_remove(gdc_dev->pd);
-		gdc_log(LOG_ERR,
-			"power domain init failed %d\n",
-			rc);
-		goto free_config;
+	if (gdc_data->has_pwd) {
+		rc = gdc_pwr_init(&pdev->dev, gdc_dev->pd, dev_type);
+		if (rc) {
+			gdc_pwr_remove(gdc_dev->pd);
+			gdc_log(LOG_ERR,
+				"power domain init failed %d\n",
+				rc);
+			goto free_config;
+		}
 	}
 
 	if (!kthread_created) {

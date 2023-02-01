@@ -1,5 +1,6 @@
 RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-uart
+	amlogic-hwspinlock
 	amlogic-gkitool
 	amlogic-memory-debug
 	amlogic-secmon

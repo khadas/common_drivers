@@ -1331,29 +1331,13 @@
 	mesonstream {
 		compatible = "amlogic, codec, streambuf";
 		dev_name = "mesonstream";
-		status = "disabled";
-		//clocks = <&clkc CLKID_DOS_PARSER
-		//	&clkc CLKID_DEMUX
-		//	&clkc CLKID_AHB_ARB0
-		//	&clkc CLKID_DOS
-		//	&clkc CLKID_VDEC_MUX
-		//	&clkc CLKID_HCODEC_MUX
-		//	&clkc CLKID_HEVC_MUX
-		//	&clkc CLKID_HEVCF_MUX>;
-		//clock-names = "parser_top",
-		//	"demux",
-		//	"ahbarb0",
-		//	"vdec",
-		//	"clk_vdec_mux",
-		//	"clk_hcodec_mux",
-		//	"clk_hevc_mux",
-		//	"clk_hevcb_mux";
+		status = "okay";
 	};
 
 	vdec {
 		compatible = "amlogic, vdec";
 		dev_name = "vdec.0";
-		status = "disabled";
+		status = "okay";
 		interrupts = <0 3 1
 			0 23 1
 			0 32 1
@@ -1371,7 +1355,33 @@
 	vcodec_dec {
 		compatible = "amlogic, vcodec-dec";
 		dev_name = "aml-vcodec-dec";
-		status = "disabled";
+		status = "okay";
+	};
+
+	vcodec_dos_dev: vcodec_dos_dev {
+		compatible = "amlogic, cpu-major-id-g12b-b";
+		dev_name = "vcodec_dos_dev";
+		status = "okay";
+		reg = <0x0 0xfe320000 0x0 0x10000>,
+			<0x0 0xfe036000 0x0 0x2000>;
+		reg-names = "dosbus",
+			"dmcbus";
+		clocks = <&clkc CLKID_PARSER
+			&clkc CLKID_DEMUX
+			&clkc CLKID_AHB_ARB0
+			&clkc CLKID_DOS
+			&clkc CLKID_VDEC_MUX
+			&clkc CLKID_HCODEC_MUX
+			&clkc CLKID_HEVC_MUX
+			&clkc CLKID_HEVCF_MUX>;
+		clock-names = "parser_top",
+			"demux",
+			"ahbarb0",
+			"vdec",
+			"clk_vdec_mux",
+			"clk_hcodec_mux",
+			"clk_hevc_mux",
+			"clk_hevcb_mux";
 	};
 
 	amvenc_avc{

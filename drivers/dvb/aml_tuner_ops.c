@@ -600,58 +600,6 @@ int dvb_tuner_detach(void)
 }
 EXPORT_SYMBOL(dvb_tuner_detach);
 
-int dvb_tuner_module_count(void)
-{
-	struct dvb_tuner *tuner = NULL;
-	struct tuner_ops *ops = NULL;
-	int num = 0, i = 0;
-	enum tuner_type tuner_id[8] = {0};
-
-	mutex_lock(&dvb_tuners_mutex);
-
-	tuner = get_dvb_tuners();
-
-	list_for_each_entry(ops, &tuner->list, list) {
-		for (i = 0; i < 7; i++) {
-			if (ops->cfg.id == tuner_id[i])
-				break;
-
-			if (tuner_id[i] == 0) {
-				tuner_id[i] = ops->cfg.id;
-				num++;
-				break;
-			}
-		}
-	}
-
-	mutex_unlock(&dvb_tuners_mutex);
-
-	return num;
-}
-EXPORT_SYMBOL(dvb_tuner_module_count);
-
-bool dvb_tuner_is_required(enum tuner_type type)
-{
-	struct dvb_tuner *tuner = NULL;
-	struct tuner_ops *ops = NULL;
-
-	mutex_lock(&dvb_tuners_mutex);
-
-	tuner = get_dvb_tuners();
-
-	list_for_each_entry(ops, &tuner->list, list) {
-		if (ops->cfg.id == type) {
-			mutex_unlock(&dvb_tuners_mutex);
-			return true;
-		}
-	}
-
-	mutex_unlock(&dvb_tuners_mutex);
-
-	return false;
-}
-EXPORT_SYMBOL(dvb_tuner_is_required);
-
 struct tuner_ops *dvb_tuner_ops_create(void)
 {
 	struct tuner_ops *ops = NULL;
@@ -806,6 +754,52 @@ int dvb_tuner_ops_get_index(void)
 	return index;
 }
 EXPORT_SYMBOL(dvb_tuner_ops_get_index);
+
+int tuner_attach_register_cb(const enum tuner_type type, tn_attach_cb funcb)
+{
+	struct dvb_tuner *tuner = NULL;
+	struct tuner_ops *ops = NULL;
+	enum tuner_type tuner_id[AM_TUNER_MAX] = {0};
+	int mod_num = 0;
+	bool found = false;
+
+	if (type > AM_TUNER_NONE && type < AM_TUNER_MAX)
+		aml_set_tuner_attach_cb(type, funcb);
+	else
+		return -1;
+
+	mutex_lock(&dvb_tuners_mutex);
+	tuner = get_dvb_tuners();
+
+	/* statistics needed tuner from all insmod tuner modules */
+	list_for_each_entry(ops, &tuner->list, list) {
+		if (tuner_id[ops->cfg.id] == 0) {
+			tuner_id[ops->cfg.id] = ops->cfg.id;
+			mod_num++;
+		}
+
+		if (ops->cfg.id == type) {
+			found = true;
+			break;
+		}
+	}
+
+	if (found)
+		tuner->cb_num++;
+
+	pr_info("%s: register type %d, current num %d\n",
+		__func__, type, tuner->cb_num);
+
+	if (tuner->cb_num == mod_num) {
+		mutex_unlock(&dvb_tuners_mutex);
+		aml_dvb_extern_attach();
+	} else {
+		mutex_unlock(&dvb_tuners_mutex);
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(tuner_attach_register_cb);
 
 struct dvb_tuner *get_dvb_tuners(void)
 {

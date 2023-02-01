@@ -998,19 +998,19 @@
 	};
 
 	/* use pinctrl: i2c3_master_pins3, GPIOD_4, GPIOD_5 */
-	lcd_extern_i2c1: lcd_extern_i2c@48 {
+	lcd_extern_i2c0: lcd_extern_i2c@48 {
 		compatible = "lcd_ext, i2c";
 		dev_name = "i2c_LT8912_48";
 		reg = <0x48>;
 		status = "okay";
 	};
-	lcd_extern_i2c1: lcd_extern_i2c@48 {
+	lcd_extern_i2c1: lcd_extern_i2c@49 {
 		compatible = "lcd_ext, i2c";
 		dev_name = "i2c_LT8912_49";
 		reg = <0x49>;
 		status = "okay";
 	};
-	lcd_extern_i2c0: lcd_extern_i2c@72 {
+	lcd_extern_i2c2: lcd_extern_i2c@72 {
 		compatible = "lcd_ext, i2c";
 		dev_name = "i2c_LT8616";
 		reg = <0x72>;

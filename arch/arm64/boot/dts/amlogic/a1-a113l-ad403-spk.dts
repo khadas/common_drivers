@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2023 Amlogic, Inc. All rights reserved.
  */
 
 /dts-v1/;
@@ -28,26 +28,26 @@
 	};
 	memory@0 {
 		device_type = "memory";
-		linux,usable-memory = <0x0 0x8000000>;
+		linux,usable-memory = <0x0 0x0 0x0 0x8000000>;
 	};
 
 	reserved-memory {
-		#address-cells = <1>;
-		#size-cells = <1>;
+		#address-cells = <2>;
+		#size-cells = <2>;
 		ranges;
 
 		dsp_fw_reserved:linux,dsp_fw {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x1400000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x2800000 0x1400000>;
+			size = <0x0 0x1400000>;
+			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x2800000 0x0 0x1400000>;
 		};
 
 		secos_reserved:linux,secos {
 			status = "okay";
 			compatible = "amlogic, aml_secos_memory";
-			reg = <0x03d00000 0x00300000>;
+			reg = <0x0 0x03d00000 0x0 0x00300000>;
 			no-map;
 		};
 
@@ -55,8 +55,8 @@
 		linux,cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x800000>;
-			alignment = <0x400000>;
+			size = <0x0 0x800000>;
+			alignment = <0x0 0x400000>;
 			linux,cma-default;
 		};
 	};
@@ -89,7 +89,7 @@
 		#sound-dai-cells = <0>;
 		compatible = "amlogic, a1_acodec";
 		status = "okay";
-		reg = <0xFE004800 0x20>;
+		reg = <0x0 0xFE004800 0x0 0x20>;
 		tdmout_index = <1>;
 		tdmin_index = <1>;
 		dat0_ch_sel = <0>;
@@ -293,7 +293,7 @@
 	};
 	audiobridge {
 		compatible = "amlogic, audio-bridge";
-		status = "okay";
+		status = "disable";
 		mboxes = <&mailbox_pl 1>,
 			 <&mailbox_pl 3>;
 		#mbox-cells = <1>;
@@ -772,10 +772,6 @@
 &usb3_phy_v2 {
 	status = "okay";
 	portnum = <0>;
-	otg = <2>;
-	gpio-vbus-power = "GPIOP_3";
-	gpios = <&gpio GPIOP_3 GPIO_ACTIVE_HIGH
-			&gpio GPIOP_2  GPIO_ACTIVE_LOW>;
 };
 
 &aml_bt {
@@ -810,6 +806,7 @@
 		status = "okay";
 		reg = <0x35>;
 		interrupt-parent = <&gpio_intc>;
+		//interrupts = <47 IRQ_TYPE_EDGE_RISING>;
 		pmic_irq-gpio = <&gpio GPIOF_10 GPIO_ACTIVE_HIGH>;
 		system-power-controller;
 		interrupt-controller;
@@ -944,10 +941,10 @@
 //	sd-uhs-sdr50;
 //	sd-uhs-sdr104;
 	non-removable;
+	keep-power-in-suspend;
 	max-frequency = <200000000>;
 	disable-wp;
 	cap-sdio-irq;
-	keep-power-in-suspend;
 	card_type = <3>;
 
 //	vmmc-supply = <&VCC_3_3V>;

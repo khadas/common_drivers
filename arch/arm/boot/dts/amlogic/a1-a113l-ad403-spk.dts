@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2023 Amlogic, Inc. All rights reserved.
  */
 
 /dts-v1/;
@@ -293,7 +293,7 @@
 	};
 	audiobridge {
 		compatible = "amlogic, audio-bridge";
-		status = "okay";
+		status = "disable";
 		mboxes = <&mailbox_pl 1>,
 			 <&mailbox_pl 3>;
 		#mbox-cells = <1>;

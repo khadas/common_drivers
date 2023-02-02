@@ -19441,6 +19441,7 @@ static struct amvideo_device_data_s amvideo = {
 	.max_vd_layers = 2,
 	.has_vpp1 = 0,
 	.has_vpp2 = 0,
+	.is_tv_panel = 0,
 };
 
 static struct amvideo_device_data_s amvideo_tm2_revb = {
@@ -19491,6 +19492,7 @@ static struct amvideo_device_data_s amvideo_tm2_revb = {
 	.max_vd_layers = 2,
 	.has_vpp1 = 0,
 	.has_vpp2 = 0,
+	.is_tv_panel = 1,
 };
 
 static struct amvideo_device_data_s amvideo_sc2 = {
@@ -19541,6 +19543,7 @@ static struct amvideo_device_data_s amvideo_sc2 = {
 	.max_vd_layers = 2,
 	.has_vpp1 = 0,
 	.has_vpp2 = 0,
+	.is_tv_panel = 0,
 };
 
 static struct amvideo_device_data_s amvideo_t5 = {
@@ -19591,6 +19594,7 @@ static struct amvideo_device_data_s amvideo_t5 = {
 	.max_vd_layers = 2,
 	.has_vpp1 = 0,
 	.has_vpp2 = 0,
+	.is_tv_panel = 1,
 };
 
 static struct amvideo_device_data_s amvideo_t5d = {
@@ -19641,6 +19645,7 @@ static struct amvideo_device_data_s amvideo_t5d = {
 	.max_vd_layers = 2,
 	.has_vpp1 = 0,
 	.has_vpp2 = 0,
+	.is_tv_panel = 1,
 };
 
 static struct amvideo_device_data_s amvideo_t7 = {
@@ -19694,6 +19699,7 @@ static struct amvideo_device_data_s amvideo_t7 = {
 	.max_vd_layers = 3,
 	.has_vpp1 = 1,
 	.has_vpp2 = 1,
+	.is_tv_panel = 1,
 };
 
 static struct amvideo_device_data_s amvideo_s4 = {
@@ -19744,6 +19750,7 @@ static struct amvideo_device_data_s amvideo_s4 = {
 	.mif_linear = 0,
 	.display_module = 0,
 	.max_vd_layers = 2,
+	.is_tv_panel = 0,
 };
 
 static struct amvideo_device_data_s amvideo_t5d_revb = {
@@ -19792,6 +19799,7 @@ static struct amvideo_device_data_s amvideo_t5d_revb = {
 	.mif_linear = 0,
 	.display_module = 0,
 	.max_vd_layers = 2,
+	.is_tv_panel = 1,
 };
 
 static struct amvideo_device_data_s amvideo_t3 = {
@@ -19844,6 +19852,7 @@ static struct amvideo_device_data_s amvideo_t3 = {
 	.max_vd_layers = 2,
 	.has_vpp1 = 1,
 	.has_vpp2 = 0,
+	.is_tv_panel = 1,
 };
 
 static struct amvideo_device_data_s amvideo_t5w = {
@@ -19896,6 +19905,7 @@ static struct amvideo_device_data_s amvideo_t5w = {
 	.max_vd_layers = 2,
 	.has_vpp1 = 1,
 	.has_vpp2 = 0,
+	.is_tv_panel = 1,
 };
 
 static struct amvideo_device_data_s amvideo_c3 = {
@@ -19948,6 +19958,7 @@ static struct amvideo_device_data_s amvideo_c3 = {
 	.max_vd_layers = 1,
 	.has_vpp1 = 0,
 	.has_vpp2 = 0,
+	.is_tv_panel = 1,
 };
 
 static struct amvideo_device_data_s amvideo_s5 = {
@@ -20000,6 +20011,7 @@ static struct amvideo_device_data_s amvideo_s5 = {
 	.max_vd_layers = 2,
 	.has_vpp1 = 1,
 	.has_vpp2 = 0,
+	.is_tv_panel = 0,
 };
 
 static struct amvideo_device_data_s amvideo_t5m = {
@@ -20052,6 +20064,7 @@ static struct amvideo_device_data_s amvideo_t5m = {
 	.max_vd_layers = 2,
 	.has_vpp1 = 1,
 	.has_vpp2 = 0,
+	.is_tv_panel = 1,
 };
 
 static struct video_device_hw_s legcy_dev_property = {

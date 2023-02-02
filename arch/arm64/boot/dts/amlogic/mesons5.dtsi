@@ -263,15 +263,11 @@
 	arm_pmu {
 		compatible = "arm,armv8-pmuv3";
 		private-interrupts;
-		interrupts = <GIC_SPI 231 IRQ_TYPE_LEVEL_HIGH>,
-			     <GIC_SPI 232 IRQ_TYPE_LEVEL_HIGH>,
-			     <GIC_SPI 233 IRQ_TYPE_LEVEL_HIGH>,
-			     <GIC_SPI 234 IRQ_TYPE_LEVEL_HIGH>,
-
-			     <GIC_SPI 235 IRQ_TYPE_LEVEL_HIGH>,
-			     <GIC_SPI 236 IRQ_TYPE_LEVEL_HIGH>,
-			     <GIC_SPI 237 IRQ_TYPE_LEVEL_HIGH>,
-			     <GIC_SPI 238 IRQ_TYPE_LEVEL_HIGH>;
+		interrupts = <GIC_SPI 224 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 225 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 226 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 227 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 228 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	gic: interrupt-controller@fff01000 {

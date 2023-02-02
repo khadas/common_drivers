@@ -388,8 +388,7 @@ static int meson_cma_scan(struct cma *cma, void *data)
 	const char *cma_name = cma_get_name(cma);
 
 	if (strstr(cma_name, "heap-gfx") ||
-		strstr(cma_name, "heap-fb") ||
-		strstr(cma_name, "heap-secure")) {
+		strstr(cma_name, "heap-fb")) {
 		__add_meson_cma_heap(cma, NULL);
 		pr_info("dmaheap: find %s\n", cma_name);
 	}

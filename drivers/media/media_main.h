@@ -222,6 +222,15 @@ static inline int add_meson_cma_heap(void)
 }
 #endif
 
+#ifdef CONFIG_AMLOGIC_HEAP_SECURE
+int __init amlogic_heap_secure_dma_buf_init(void);
+#else
+static int amlogic_heap_secure_dma_buf_init(void)
+{
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_AMLOGIC_UVM_CORE
 int mua_init(void);
 #else

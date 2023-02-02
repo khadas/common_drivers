@@ -445,6 +445,7 @@ int __init amlogic_system_secure_dma_buf_init(void)
 	mb(); /* make sure we only set allocate after dma_mask is set */
 	secure_heap_ops.allocate = secure_uncached_heap_allocate;
 
+	pr_info("secure dmaheap:enter %s\n", __func__);
 	return 0;
 }
 

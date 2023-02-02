@@ -111,6 +111,13 @@
 			size = <0x0 0x5800000>;
 			alignment = <0x0 0x400000>;
 		};
+		dmaheap_secure_reserved:heap-secure {
+			compatible = "amlogic, heap-secure-mem";
+			no-map;
+			/* advice heap-secure size: 208M */
+			size = <0x0 0x0>;
+			alignment = <0x0 0x400000>;
+		};
 		/*di CMA pool */
 		//di_cma_reserved:linux,di_cma {
 			//compatible = "shared-dma-pool";

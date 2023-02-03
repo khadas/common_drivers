@@ -819,12 +819,34 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 #if defined(CONFIG_AMLOGIC_USER_FAULT) && \
 	defined(CONFIG_TRACEPOINTS) && \
 	defined(CONFIG_ANDROID_VENDOR_HOOKS)
+
+static size_t str_end_char(const char *s, size_t count, int c)
+{
+	size_t len = count, offset = count;
+
+	while (count--) {
+		if (*s == (char)c)
+			offset = len - count;
+		if (*s++ == '\0') {
+			offset = len - count;
+			break;
+		}
+	}
+	return offset;
+}
+
 void serror_dump_dmc_reg_hook(void *data, struct pt_regs *regs, unsigned int esr, int *ret)
 {
-	char buf[1024] = {0};
+	int len, i = 0, offset = 0;
+	static char buf[2048] = {0};
 
-	dump_dmc_reg(buf);
-	pr_crit("%s\n", buf);
+	len = dump_dmc_reg(buf);
+	while (i < len) {
+		offset = str_end_char(buf, 512, '\n');
+		pr_crit("%.*s", offset, buf + i);
+		i += offset;
+	}
+	pr_crit("\n");
 }
 #endif
 

@@ -1714,6 +1714,16 @@
 #define VPU_VPU_PWM_V2_T7                          0x1ce2
 #define VPU_VPU_PWM_V3_T7                          0x1ce3
 #define VPU_VPU_PWM_H0_T7                          0x1ce4
+
+/********************lut dma************************/
+#define VPU_DMA_RDMIF7_CTRL   0x2757
+#define VPU_DMA_RDMIF7_BADR0  0x2774
+#define VPU_DMA_RDMIF7_BADR1  0x2775
+#define VPU_DMA_RDMIF7_BADR2  0x2776
+#define VPU_DMA_RDMIF7_BADR3  0x2777
+#define VPU_LUT_DMA_INTR_SEL  0x2717
+/***************************************************/
+
 /* ***********************************************
  * register access api
  */

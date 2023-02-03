@@ -21,6 +21,55 @@
 #include <linux/amlogic/tee.h>
 #endif
 
+void lcd_tcon_lut_dma_mif_set(phys_addr_t paddr, unsigned int size)
+{
+	unsigned int cmd_cnt = 0;
+
+	/* paddr should be 16 byte align*/
+	if (!paddr || (paddr & 0xf))
+		return;
+
+	/* size must be 128bit align*/
+	if (size & 0xf)
+		return;
+
+	/* 128 bits per cmd */
+	cmd_cnt = size >> 4;
+	lcd_vcbus_write(VPU_DMA_RDMIF7_BADR0, paddr >> 4);
+	lcd_vcbus_write(VPU_DMA_RDMIF7_BADR1, paddr >> 4);
+	lcd_vcbus_write(VPU_DMA_RDMIF7_BADR2, paddr >> 4);
+	lcd_vcbus_write(VPU_DMA_RDMIF7_BADR3, paddr >> 4);
+	//reset index to 0
+	lcd_vcbus_write(VPU_DMA_RDMIF7_CTRL,
+					0 << 27 | //lut_frm_cnt_clr
+					0 << 26 | //lut_clr_fcnt
+					1 << 24 | //lut_frm_cnt
+					2 << 16 | //sel intr from 2=encl/tcon 1=viu1
+					0 << 14 | //lut_reg_swap_64bit
+					0 << 13 | //lut_reg_little_endian
+					cmd_cnt);//lut_reg_stride
+	lcd_vcbus_write(VPU_LUT_DMA_INTR_SEL, 0);//0:sel tcon 1:sel venc2
+}
+
+void lcd_tcon_lut_dma_enable(struct aml_lcd_drv_s *pdrv)
+{
+	if (!pdrv)
+		return;
+
+	lcd_tcon_setb(pdrv, 0x367, 1, 0, 14); //  intr trig pixel
+	lcd_tcon_setb(pdrv, 0x367, 1, 16, 1); // enale tcon intr
+	lcd_tcon_setb(pdrv, 0x207, 1, 31, 1); //enable dma clk
+}
+
+void lcd_tcon_lut_dma_disable(struct aml_lcd_drv_s *pdrv)
+{
+	if (!pdrv)
+		return;
+
+	lcd_tcon_setb(pdrv, 0x367, 0, 16, 1); // disable tcon intr
+	lcd_tcon_setb(pdrv, 0x207, 0, 31, 1); //disable dma
+}
+
 void lcd_tcon_od_pre_disable(unsigned char *table)
 {
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
@@ -1441,6 +1490,7 @@ int lcd_tcon_enable_t3(struct aml_lcd_drv_s *pdrv)
 		return -1;
 	if (!tcon_conf)
 		return -1;
+
 	if (!mm_table)
 		return -1;
 	if (mm_table->init_load == 0) {
@@ -1454,6 +1504,7 @@ int lcd_tcon_enable_t3(struct aml_lcd_drv_s *pdrv)
 	lcd_tcon_top_set_t5(pdrv);
 
 	/* step 2: tcon_core_reg_update */
+
 	if (mm_table->core_reg_header) {
 		if (mm_table->core_reg_header->block_ctrl == 0) {
 			lcd_tcon_core_reg_set(pdrv, tcon_conf,
@@ -1462,6 +1513,7 @@ int lcd_tcon_enable_t3(struct aml_lcd_drv_s *pdrv)
 	}
 
 	/* step 3: tcon data set */
+
 	if (mm_table->version)
 		lcd_tcon_data_set(pdrv, mm_table);
 

@@ -79,7 +79,7 @@ struct uvm_pid_data {
 
 struct uvm_fd_data {
 	int fd;
-	int commit_display;
+	int data;
 };
 
 struct uvm_usage_data {
@@ -132,6 +132,8 @@ union uvm_ioctl_arg {
 				struct uvm_usage_data)
 #define UVM_IOC_GET_USAGE _IOWR(UVM_IOC_MAGIC, 10, \
 				struct uvm_usage_data)
+#define UVM_IOC_GET_TYPE _IOWR(UVM_IOC_MAGIC, 11, \
+				struct uvm_fd_data)
 
 size_t mua_calc_real_dmabuf_size(struct mua_buffer *buffer);
 int meson_uvm_fill_pattern(struct mua_buffer *buffer, struct dma_buf *dmabuf, void *vaddr);

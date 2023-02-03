@@ -11,3 +11,4 @@ $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_UVM_CORE)			+= common/uvm/meson_uvm_core.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_UVM_CORE)			+= common/uvm/meson_uvm_nn_processor.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_UVM_CORE)			+= common/uvm/meson_uvm_aipq_processor.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_UVM_CORE)			+= common/uvm/amlogic_fbc_hook.o
+$(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_UVM_CORE)			+= common/uvm/meson_uvm_buffer_info.o

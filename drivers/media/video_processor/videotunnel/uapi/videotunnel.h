@@ -38,7 +38,6 @@ enum vt_video_cmd_e {
 	VT_VIDEO_SET_COLOR_BLACK,
 	VT_VIDEO_SET_COLOR_BLUE,
 	VT_VIDEO_SET_COLOR_GREEN,
-	VT_VIDEO_SET_VIDEO_TYPE,
 };
 
 enum vt_video_type_e {

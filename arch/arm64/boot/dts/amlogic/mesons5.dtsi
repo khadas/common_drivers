@@ -1900,18 +1900,18 @@
 			<0x0 0xfe036000 0x0 0x2000>;
 		reg-names = "dosbus",
 			"dmcbus";
-		//clocks = <&clkc CLKID_SYS_CLK_DOS
-		//    &clkc CLKID_VDEC
-		//    &clkc CLKID_HCODEC
-		//    &clkc CLKID_HEVC>;
-		//clock-names = "vdec",
-		//    "clk_vdec_mux",
-		//    "clk_hcodec_mux",
-		//    "clk_hevc_mux";
-		//assigned-clock-parents = <&clkc CLKID_VDEC0>,
-		//    <&clkc CLKID_HEVC0>;
-		//assigned-clocks = <&clkc CLKID_VDEC>,
-		//    <&clkc CLKID_HEVC>;
+		clocks = <&clkc CLKID_SYS_CLK_DOS
+		    &clkc CLKID_VDEC
+		    &clkc CLKID_HCODEC
+		    &clkc CLKID_HEVC>;
+		clock-names = "vdec",
+		    "clk_vdec_mux",
+		    "clk_hcodec_mux",
+		    "clk_hevc_mux";
+		assigned-clock-parents = <&clkc CLKID_VDEC0>,
+		    <&clkc CLKID_HEVC0>;
+		assigned-clocks = <&clkc CLKID_VDEC>,
+		    <&clkc CLKID_HEVC>;
 	};
 
 	vdec {

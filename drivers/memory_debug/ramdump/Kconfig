@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_RAMDUMP
+	bool "Amlogic full ramdump"
+	default n
+	help
+		Amlogic ramump implementation. When kernel pain is
+		generated, the entire ddr data will be compressed and
+		copied out. Finally, use the crash tool to debug and
+		analyze on the PC side.

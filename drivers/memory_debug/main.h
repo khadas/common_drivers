@@ -62,4 +62,18 @@ static inline void ddr_tool_exit(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_RAMDUMP)
+int __init ramdump_init(void);
+void __exit ramdump_uninit(void);
+#else
+static inline int ramdump_init(void)
+{
+	return 0;
+}
+
+static inline void ramdump_uninit(void)
+{
+}
+#endif
+
 #endif /* _MEMORY_MAIN_H__ */

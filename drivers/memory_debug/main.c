@@ -15,6 +15,7 @@ static int __init memory_main_init(void)
 	call_sub_init(aml_watch_pint_init);
 	call_sub_init(aml_reg_init);
 	call_sub_init(ddr_tool_init);
+	call_sub_init(ramdump_init);
 	pr_debug("### %s() end\n", __func__);
 
 	return 0;
@@ -22,6 +23,7 @@ static int __init memory_main_init(void)
 
 static void __exit memory_main_exit(void)
 {
+	ramdump_uninit();
 	ddr_tool_exit();
 	aml_reg_exit();
 	aml_watch_point_uninit();

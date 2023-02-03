@@ -11,5 +11,6 @@ config AMLOGIC_MEMORY_DEBUG
 source "$(COMMON_DRIVERS_DIR)/drivers/memory_debug/memory_ext/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/memory_debug/reg_access/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/memory_debug/ddr_tool/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/memory_debug/ramdump/Kconfig"
 
 endmenu

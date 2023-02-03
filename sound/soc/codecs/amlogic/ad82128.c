@@ -151,22 +151,6 @@ static int ad82128_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	return 0;
 }
 
-static int ad82128_mute(struct snd_soc_dai *dai, int mute, int stream)
-{
-	struct snd_soc_component *component = dai->component;
-	int ret;
-
-	(void)stream;
-	ret = snd_soc_component_update_bits(component, AD82128_STATE_CTRL3_REG,
-		AD82128_MUTE, mute ? AD82128_MUTE : 0);
-	if (ret < 0) {
-		dev_err(component->dev, "error (un-)muting device: %d\n", ret);
-		return ret;
-	}
-
-	return 0;
-}
-
 static void ad82128_fault_check_work(struct work_struct *work)
 {
 	struct ad82128_data *ad82128 = container_of(work, struct ad82128_data,
@@ -538,7 +522,6 @@ static const struct snd_soc_component_driver soc_component_dev_ad82128 = {
 static const struct snd_soc_dai_ops ad82128_speaker_dai_ops = {
 	.hw_params = ad82128_hw_params,
 	.set_fmt = ad82128_set_dai_fmt,
-	.mute_stream = ad82128_mute,
 };
 
 /*

@@ -595,7 +595,7 @@ static ssize_t colors_store(struct device *dev, struct device_attribute *attr,
 	if (ret != 4)
 		dev_err(dev, " enter,Line:...set led colors fail ret: %d\n", ret);
 	if (ret == 4) {
-		meson_aw9523_set_colors(colors, aw9523->led_counts);
+		meson_aw9523_set_colors(colors, 4);
 		tmp_color[0] = colors[0];
 		tmp_color[1] = colors[1];
 		tmp_color[2] = colors[2];
@@ -603,7 +603,7 @@ static ssize_t colors_store(struct device *dev, struct device_attribute *attr,
 	} else if (ret == 2) {    //for android 11, param: index, color
 		if (colors[0] < aw9523->led_counts)
 			tmp_color[colors[0]] = colors[1];
-		meson_aw9523_set_colors(tmp_color, aw9523->led_counts);
+		meson_aw9523_set_colors(tmp_color, 4);
 	}
 
 	return count;

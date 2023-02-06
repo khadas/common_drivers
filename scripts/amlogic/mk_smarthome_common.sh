@@ -10,6 +10,7 @@ function show_help {
 	echo "  --common_drivers_dir    for COMMON_DRIVERS_DIR, common[default]|other dir, require parameter value"
 	echo "  --savedefconfig         for SAVEDEFCONFIG, [default]|1, not require parameter value"
 	echo "  --menuconfig            for MENUCONFIG, [default]|1, not require parameter value"
+	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
 }
 
 VA=
@@ -20,12 +21,12 @@ do
 	--kernel_dir)
 		KERNEL_DIR=$2
 		VA=1
-                shift
+		shift
 		;;
 	--common_drivers_dir)
 		COMMON_DRIVERS_DIR=$2
 		VA=1
-                shift
+		shift
 		;;
 	--savedefconfig)
 		SAVEDEFCONFIG=1
@@ -36,9 +37,13 @@ do
 		shift
 		;;
 	--dtb)
-                DTB=1
-                shift
-                ;;
+		DTB=1
+		shift
+		;;
+	--manual_insmod_module)
+		MANUAL_INSMOD_MODULE=1
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -77,7 +82,7 @@ if [[ ! -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh ]]; then
 	exit
 fi
 
-export KERNEL_DIR COMMON_DRIVERS_DIR
+export KERNEL_DIR COMMON_DRIVERS_DIR MANUAL_INSMOD_MODULE
 
 tool_args=()
 prebuilts_paths=(

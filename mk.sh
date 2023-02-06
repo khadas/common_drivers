@@ -26,6 +26,7 @@ function show_help {
 	echo "                                    so build GKI1.0 Image need with --gki_debug, default parameter --gki_debug"
 	echo "  --fast_build            for fast build"
 	echo "  --upgrade               for android upgrade builtin module optimize vendor_boot size"
+	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
 }
 
 VA=
@@ -131,6 +132,10 @@ do
 		UPGRADE_PROJECT=1
 		shift
 		;;
+	--manual_insmod_module)
+		MANUAL_INSMOD_MODULE=1
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -215,8 +220,8 @@ fi
 GKI_CONFIG=${GKI_CONFIG:-gki_debug}
 
 set -e
-export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG
-echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG}
+export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG MANUAL_INSMOD_MODULE
+echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG} MANUAL_INSMOD_MODULE=${MANUAL_INSMOD_MODULE}
 export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD
 echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT} FAST_BUILD=${FAST_BUILD}
 

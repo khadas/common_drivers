@@ -628,13 +628,18 @@ function modules_install() {
 	fi
 	create_ramdisk_vendor_recovery __install.sh.tmp __install_recovery.sh.tmp
 
-	echo "#!/bin/sh" > install.sh
-	echo "cd ramdisk" >> install.sh
-	echo "./ramdisk_install.sh" >> install.sh
-	echo "cd ../vendor" >> install.sh
-	echo "./vendor_install.sh" >> install.sh
-	echo "cd ../" >> install.sh
-	chmod 755 install.sh
+	if [[ -n ${MANUAL_INSMOD_MODULE} ]]; then
+		install_file=manual_install.sh
+	else
+		install_file=install.sh
+	fi
+	echo "#!/bin/sh" > ${install_file}
+	echo "cd ramdisk" >> ${install_file}
+	echo "./ramdisk_install.sh" >> ${install_file}
+	echo "cd ../vendor" >> ${install_file}
+	echo "./vendor_install.sh" >> ${install_file}
+	echo "cd ../" >> ${install_file}
+	chmod 755 ${install_file}
 
 	echo "/modules/: all `wc -l modules.dep | awk '{print $1}'` modules."
 	rm __install.sh __install.sh.tmp

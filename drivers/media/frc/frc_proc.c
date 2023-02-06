@@ -244,14 +244,8 @@ void frc_input_tasklet_pro(unsigned long arg)
 	devp->in_sts.vs_tsk_cnt++;
 	if (!devp->frc_fw_pause) {
 		timestamp = sched_clock();
-		if (pfw_data->scene_detect_input)
-			pfw_data->scene_detect_input(pfw_data);
-		if (pfw_data->film_detect_ctrl)
-			pfw_data->film_detect_ctrl(pfw_data);
-		if (pfw_data->bbd_ctrl)
-			pfw_data->bbd_ctrl(pfw_data);
-		if (pfw_data->iplogo_ctrl)
-			pfw_data->iplogo_ctrl(pfw_data);
+		if (pfw_data->memc_in_irq_handler)
+			pfw_data->memc_in_irq_handler(pfw_data);
 		// if (!devp->power_on_flag)
 		// devp->power_off_flag++;
 		if (devp->ud_dbg.inud_time_en)
@@ -310,16 +304,8 @@ void frc_output_tasklet_pro(unsigned long arg)
 	devp->out_sts.vs_tsk_cnt++;
 	if (!devp->frc_fw_pause) {
 		timestamp = sched_clock();
-		if (pfw_data->scene_detect_output)
-			pfw_data->scene_detect_output(pfw_data);
-		if (pfw_data->me_ctrl)
-			pfw_data->me_ctrl(pfw_data);
-		if (pfw_data->vp_ctrl)
-			pfw_data->vp_ctrl(pfw_data);
-		if (pfw_data->mc_ctrl)
-			pfw_data->mc_ctrl(pfw_data);
-		if (pfw_data->melogo_ctrl)
-			pfw_data->melogo_ctrl(pfw_data);
+		if (pfw_data->memc_out_irq_handler)
+			pfw_data->memc_out_irq_handler(pfw_data);
 		if (pfw_data->frc_fw_ctrl_if)
 			pfw_data->frc_fw_ctrl_if(pfw_data);
 		// if (!devp->power_on_flag)

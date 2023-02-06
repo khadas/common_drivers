@@ -87,8 +87,8 @@
 // frc_20221215 frc t5m bringup
 // frc_20221225 add powerdomain etc.
 
-#define FRC_FW_VER			"2023-0102 frc t5m bringup"
-#define FRC_KERDRV_VER                  2339
+#define FRC_FW_VER			"2023-0206 frc integrate function of IRQ"
+#define FRC_KERDRV_VER                  2796
 
 #define FRC_DEVNO	1
 #define FRC_NAME	"frc"

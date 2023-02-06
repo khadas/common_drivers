@@ -226,40 +226,21 @@ struct frc_fw_alg_ctrl_s {
 #define DBG_REG_BUFF	4096
 
 struct frc_fw_data_s {
-	/*scene*/
-	void (*scene_detect_input)(struct frc_fw_data_s *fw_data);
-	void (*scene_detect_output)(struct frc_fw_data_s *fw_data);
-
-	/*bbd*/
-	void (*bbd_ctrl)(struct frc_fw_data_s *fw_data);
-
-	/*logo*/
-	void (*iplogo_ctrl)(struct frc_fw_data_s *fw_data);
-	void (*melogo_ctrl)(struct frc_fw_data_s *fw_data);
-
-	/*film detect*/
-	void (*film_detect_ctrl)(struct frc_fw_data_s *fw_data);
-
-	/*me*/
-	void (*me_ctrl)(struct frc_fw_data_s *fw_data);
-
-	/*mc*/
-	void (*mc_ctrl)(struct frc_fw_data_s *fw_data);
-	void (*vp_ctrl)(struct frc_fw_data_s *fw_data);
-
 	/*frc top type config*/
+	u8 frc_alg_ver[FRC_ALG_VER_SIZE];
 	struct frc_top_type_s frc_top_type;
 	struct frc_holdline_s holdline_parm;
+	struct frc_fw_alg_ctrl_s  frc_fw_alg_ctrl;
+
 	void (*frc_input_cfg)(struct frc_fw_data_s *fw_data);
 	void (*frc_memc_level)(struct frc_fw_data_s *fw_data);
 	ssize_t (*frc_alg_dbg_show)(struct frc_fw_data_s *fw_data,
 					enum efrc_memc_dbg_type dbg_type, char *buf);
 	ssize_t (*frc_alg_dbg_stor)(struct frc_fw_data_s *fw_data,
 					enum efrc_memc_dbg_type dbg_type, char *buf, size_t count);
-	u8 frc_alg_ver[FRC_ALG_VER_SIZE];
 	void (*frc_fw_reinit)(void);
-	/*below interfaces in alg which fae can to adjust it **/
-	struct frc_fw_alg_ctrl_s  frc_fw_alg_ctrl;
+	void (*memc_in_irq_handler)(struct frc_fw_data_s *fw_data);
+	void (*memc_out_irq_handler)(struct frc_fw_data_s *fw_data);
 	void (*frc_fw_ctrl_if)(struct frc_fw_data_s *fw_data);
 };
 

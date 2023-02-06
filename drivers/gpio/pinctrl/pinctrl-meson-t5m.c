@@ -625,8 +625,8 @@ static const unsigned int s2_demod_gpio4_h_pins[]	= { GPIOH_18 };
 static const unsigned int s2_demod_gpio5_h_pins[]	= { GPIOH_19 };
 static const unsigned int s2_demod_gpio6_h_pins[]	= { GPIOH_20 };
 static const unsigned int s2_demod_gpio7_h_pins[]	= { GPIOH_21 };
-static const unsigned int tdm_fs2_h22_pins[]		= { GPIOH_22 };
-static const unsigned int tdm_sclk2_h23_pins[]		= { GPIOH_23 };
+static const unsigned int tdm_sclk2_h22_pins[]		= { GPIOH_22 };
+static const unsigned int tdm_fs2_h23_pins[]		= { GPIOH_23 };
 static const unsigned int spi0_ss1_h24_pins[]		= { GPIOH_26 };
 static const unsigned int dcon_led_h_pins[]		= { GPIOH_27 };
 
@@ -638,8 +638,8 @@ static const unsigned int spi2_ss0_p_pins[]		= { GPIOP_3 };
 static const unsigned int i2c4_sck_p_pins[]		= { GPIOP_4 };
 static const unsigned int i2c4_sda_p_pins[]		= { GPIOP_5 };
 static const unsigned int mclk_2_p_pins[]		= { GPIOP_6 };
-static const unsigned int tdm_fs2_p_pins[]		= { GPIOP_7 };
-static const unsigned int tdm_sclk2_p_pins[]		= { GPIOP_8 };
+static const unsigned int tdm_sclk2_p_pins[]		= { GPIOP_7 };
+static const unsigned int tdm_fs2_p_pins[]		= { GPIOP_8 };
 static const unsigned int tdm_d2_p_pins[]		= { GPIOP_9 };
 
 /* BANK P func2 */
@@ -1348,8 +1348,8 @@ static struct meson_pmx_group meson_t5m_periphs_groups[] __initdata = {
 	GROUP(s2_demod_gpio5_h,		6),
 	GROUP(s2_demod_gpio6_h,		6),
 	GROUP(s2_demod_gpio7_h,		6),
-	GROUP(tdm_fs2_h22,		6),
-	GROUP(tdm_sclk2_h23,		6),
+	GROUP(tdm_sclk2_h22,		6),
+	GROUP(tdm_fs2_h23,		6),
 	GROUP(spi0_ss1_h24,		6),
 	GROUP(dcon_led_h,		6),
 
@@ -1361,8 +1361,8 @@ static struct meson_pmx_group meson_t5m_periphs_groups[] __initdata = {
 	GROUP(i2c4_sck_p,		1),
 	GROUP(i2c4_sda_p,		1),
 	GROUP(mclk_2_p,			1),
-	GROUP(tdm_fs2_p,		1),
 	GROUP(tdm_sclk2_p,		1),
+	GROUP(tdm_fs2_p,		1),
 	GROUP(tdm_d2_p,			1),
 
 	/* BANK P func2 */
@@ -1618,8 +1618,8 @@ static const char * const tdm_groups[] = {
 	"tdm_d1_m", "tdm_d2_m", "tdm_d3_m", "tdm_d3_h13", "tdm_d2_h19",
 	"tdm_d3_h20", "tdm_d3_h14", "tdm_d2_h26", "tdm_d3_h27", "tdm_sclk1_c",
 	"tdm_sclk2_z", "tdm_sclk1_z", "tdm_fs1_h15", "tdm_sclk1_h",
-	"tdm_fs1_h18", "tdm_fs2_h28", "tdm_fs2_h22", "tdm_sclk2_p",
-	"tdm_sclk2_m", "tdm_sclk1_m", "tdm_sclk2_h29", "tdm_sclk2_h23",
+	"tdm_fs1_h18", "tdm_fs2_h28", "tdm_sclk2_h22", "tdm_sclk2_p",
+	"tdm_sclk2_m", "tdm_sclk1_m", "tdm_sclk2_h29", "tdm_fs2_h23",
 };
 
 static const char * const i2c0_groups[] = {

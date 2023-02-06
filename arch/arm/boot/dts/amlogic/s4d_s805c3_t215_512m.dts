@@ -43,6 +43,11 @@
 		#size-cells = <1>;
 		ranges;
 
+		ramdump_bl33z@00000000 {
+			reg = <0x0 0x1800000>; /* 0 ~ 24M */
+			status = "disabled";
+		};
+
 		/* global autoconfigured region for contiguous allocations */
 		ramoops@0x07400000 {
 			compatible = "ramoops";
@@ -50,12 +55,14 @@
 			record-size = <0x20000>;
 			console-size = <0x40000>;
 			ftrace-size = <0x80000>;
-			pmsg-size = <0x20000>;
+			pmsg-size = <0x10000>;
+			bconsole-size = <0x10000>;
 		};
 
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
-			reusable;
+			/*reusable;*/
+			no-map;
 			size = <0x400000>;
 			alignment = <0x400000>;
 			alloc-ranges = <0x05000000 0x400000>;
@@ -64,9 +71,8 @@
 		logo_reserved:linux,meson-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x400000>;
 			alignment = <0x400000>;
-			alloc-ranges = <0x1fc00000 0x400000>;
+			reg = <0x1fc00000 0x400000>;
 		};
 
 		ion_cma_reserved:linux,ion-dev {
@@ -139,6 +145,16 @@
 			/* 444 mode:1280x720x3x4=12MB */
 			size = <0x000000>;
 			alignment = <0x400000>;
+		};
+
+		/* global autoconfigured region for contiguous allocations */
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x800000>;
+			alignment = <0x400000>;
+			linux,cma-default;
+			alloc-ranges = <0x0 0x30000000>;
 		};
 	};
 	codec_mm {

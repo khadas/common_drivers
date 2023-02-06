@@ -248,11 +248,6 @@
 		reserve_mem_size = <0x03300000>;
 	};
 
-	optee {
-		compatible = "linaro,optee-tz";
-		method = "smc";
-	};
-
 	cma_shrinker: cma_shrinker {
 		compatible = "amlogic, cma-shrinker";
 		status = "okay";
@@ -972,50 +967,55 @@
 
 			pwm_ab: pwm@58000 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x58000 0x24>;
+				reg = <0x58000 0x24>,
+					  <0x180 0x4>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_A_GATE>,
-						<&clkc CLKID_PWM_B_GATE>;
+				clocks = <&clkc CLKID_PWM_A_MUX>,
+					     <&clkc CLKID_PWM_B_MUX>;
 				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};
 
 			pwm_cd: pwm@5a000 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x5a000 0x24>;
+				reg = <0x5a000 0x24>,
+					  <0x184 0x4>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_C_GATE>,
-						<&clkc CLKID_PWM_D_GATE>;
+				clocks = <&clkc CLKID_PWM_C_MUX>,
+					     <&clkc CLKID_PWM_D_MUX>;
 				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};
 
 			pwm_ef: pwm@5c000 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x5c000 0x24>;
+				reg = <0x5c000 0x24>,
+					  <0x188 0x4>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_E_GATE>,
-						<&clkc CLKID_PWM_F_GATE>;
+				clocks = <&clkc CLKID_PWM_E_MUX>,
+					     <&clkc CLKID_PWM_F_MUX>;
 				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};
 
 			pwm_gh: pwm@5e000 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x5e000 0x24>;
+				reg = <0x5e000 0x24>,
+					  <0x18c 0x4>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_G_GATE>,
-						<&clkc CLKID_PWM_H_GATE>;
+				clocks = <&clkc CLKID_PWM_G_MUX>,
+					     <&clkc CLKID_PWM_H_MUX>;
 				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};
 
 			pwm_ij: pwm@60000 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x60000 0x24>;
+				reg = <0x60000 0x24>,
+					  <0x190 0x4>;
 				#pwm-cells = <3>;
-				clocks = <&clkc CLKID_PWM_I_GATE>,
-						<&clkc CLKID_PWM_J_GATE>;
+				clocks = <&clkc CLKID_PWM_I_MUX>,
+					     <&clkc CLKID_PWM_J_MUX>;
 				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};
@@ -1325,7 +1325,7 @@
 			ranges = <0 0 0xf5600000 0x0 0x0 0x100000
 				/* downstream I/O */
 				0 0x0 0xf5700000 0 0x0 0x1900000>;
-				/* non-prefetched memory */
+				/* non-prefetchable memory */
 			num-lanes = <1>;
 			pcie-num = <1>;
 
@@ -1364,6 +1364,8 @@
 				 <&clkc CLKID_GP1_PLL>;
 			clock-names = "core", "mux0", "mux1",
 					"clkin0", "clkin1", "clkin2";
+			no-sdio;
+			no-sd;
 			card_type = <1>;
 			ignore_desc_busy;
 			mmc_debug_flag;
@@ -1389,6 +1391,8 @@
 					"clkin0", "clkin1";
 			card_type = <5>;
 			mmc_debug_flag;
+			no-mmc;
+			no-sdio;
 			//resets = <&reset RESET_SD_EMMC_B>;
 		};
 
@@ -1411,6 +1415,8 @@
 			cap-sdio-irq;
 			keep-power-in-suspend;
 			use_intf3_tuning;
+			no-mmc;
+			no-sd;
 			//resets = <&reset RESET_SD_EMMC_A>;
 		};
 
@@ -1839,6 +1845,11 @@
 		fr_policy = <2>;
 	};
 
+	vout_mux: vout_mux {
+		compatible = "amlogic, vout_mux";
+		status = "okay";
+	};
+
 	dummy_venc: dummy_venc {
 		compatible = "amlogic, dummy_venc_s4";
 		status = "okay";
@@ -2066,12 +2077,7 @@
 		status = "okay";
 		interrupts = <0 77 1>;
 		interrupt-names = "aucpu_irq";
-		#address-cells=<1>;
-		#size-cells=<1>;
-		ranges;
-		io_reg_base{
-			reg = <0xfe09e080 0x100>;
-		};
+		reg = <0xfe09e080 0x100>;
 	};
 
 	ge2d {
@@ -2097,8 +2103,8 @@
 	aml_wifi: aml_wifi {
 		compatible = "amlogic, aml-wifi";
 		status = "disabled";
-		irq_trigger_type = "GPIO_IRQ_LOW";
-		//dhd_static_buf; /* if use bcm wifi, config dhd_static_buf */
+		irq_trigger_type = "IRQF_TRIGGER_LOW";
+		wifi_static_buf = <2>;
 		//pinctrl-0 = <&pwm_e_pins>;
 		//pinctrl-names = "default";
 		pwm_config = <&wifi_pwm_conf>;

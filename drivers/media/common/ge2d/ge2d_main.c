@@ -1348,8 +1348,8 @@ static struct ge2d_device_data_s ge2d_sm1 = {
 	.hang_flag = 1,
 	.fifo = 1,
 	.has_self_pwr = 1,
-	.poweron_table = &default_poweron_table,
-	.poweroff_table = &default_poweroff_table,
+	.poweron_table = &runtime_poweron_table,
+	.poweroff_table = &runtime_poweroff_table,
 	.chip_type = MESON_CPU_MAJOR_ID_SM1,
 };
 

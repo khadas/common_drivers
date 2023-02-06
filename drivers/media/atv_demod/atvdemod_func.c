@@ -227,6 +227,7 @@ void atv_dmd_misc(void)
 		/* atv_dmd_wr_byte(APB_BLOCK_ADDR_AGC_PWM, 0x09, 0x19); */
 	} else {
 		/*zhuangwei*/
+		/* change hsync and blank filter to fix ripples. */
 		if (broad_std == AML_ATV_DEMOD_VIDEO_MODE_PROP_PAL_BG)
 			atv_dmd_wr_long(APB_BLOCK_ADDR_VDAGC, 0x3c, 0x32);
 		else
@@ -245,6 +246,9 @@ void atv_dmd_misc(void)
 	} else if (tuner_id == AM_TUNER_ATBM2040) {
 		atv_dmd_wr_long(APB_BLOCK_ADDR_DAC_UPS, 0x04, 0xc8fa0000);
 		atv_dmd_wr_long(APB_BLOCK_ADDR_DAC_UPS, 0x00, 0x704000);
+	} else if (tuner_id == AM_TUNER_ATBM253) {
+		atv_dmd_wr_long(APB_BLOCK_ADDR_DAC_UPS, 0x04, 0xc8fa0000);
+		atv_dmd_wr_long(APB_BLOCK_ADDR_DAC_UPS, 0x00, 0x604000);
 	} else {
 		/*zhuangwei 0xdafa0000*/
 		atv_dmd_wr_long(APB_BLOCK_ADDR_DAC_UPS, 0x04, 0xc8fa0000);
@@ -1734,7 +1738,7 @@ int atvdemod_clk_init(void)
 	check_communication_interface();
 	power_on_receiver();
 
-	pr_err("%s done\n", __func__);
+	pr_dbg("%s done\n", __func__);
 
 	return 0;
 }

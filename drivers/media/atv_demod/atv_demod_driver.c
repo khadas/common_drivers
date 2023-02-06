@@ -62,10 +62,12 @@
 /* 2021/12/29 --- V2.33 --- Fix unable to find symbol aml_atvdemod_attach. */
 /* 2022/06/16 --- V2.34 --- Fix audio setting and resume. */
 /* 2022/08/27 --- V2.35 --- Fix ripples. */
-/* 2022/12/15 --- V2.36 --- t5m ATVDemod/DTVDemod/Tuner bringup */
-/* 2022/12/15 --- V2.37 --- t3x bringup */
-/* 2022/12/15 --- V3.00 --- txhd2 bringup */
-#define AMLATVDEMOD_VER "V3.00"
+/* 2022/12/15 --- V2.36 --- t5m bringup */
+/* 2023/04/07 --- V2.37 --- t3x bringup */
+/* 2023/06/05 --- V3.00 --- txhd2 bringup */
+/* 2023/07/04 --- V3.01 --- add afc enable and state IO control. */
+/*                          fix nicam bg output again. */
+#define AMLATVDEMOD_VER "V3.01"
 
 struct aml_atvdemod_device *amlatvdemod_devp;
 

@@ -51,7 +51,7 @@ u32 regdata_blksizexy_012b;                     // FRC_REG_BLK_SIZE_XY_0x012b
 EXPORT_SYMBOL(regdata_blksizexy_012b);
 u32 regdata_blkscale_012c;                   // FRC_REG_BLK_SCALE  0x012c
 EXPORT_SYMBOL(regdata_blkscale_012c);
-u32 regdata_hme_scale_012d;                      // FRC_REG_ME_HME_SCALE_0x012d
+u32 regdata_hme_scale_012d;                  // FRC_REG_ME_SCALE_0x012d
 EXPORT_SYMBOL(regdata_hme_scale_012d);
 
 u32 regdata_logodbg_0142;                  // FRC_LOGO_DEBUG    0x0142

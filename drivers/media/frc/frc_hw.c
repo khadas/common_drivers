@@ -1835,11 +1835,6 @@ void enable_bbd(void)
 	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN + offset, regdata_inpmoden_04f9);
 }
 
-void set_mc_lbuf_ext(void)
-{
-	WRITE_FRC_BITS(FRC_MC_HW_CTRL1, 1, 16, 1); //reg_mc_fhd_lbuf_ext
-}
-
 void frc_cfg_memc_loss(u32 memc_loss_en)
 {
 	u32 memcloss = 0x0404000c;
@@ -1960,21 +1955,6 @@ void frc_dump_fixed_table(void)
 
 void frc_set_val_from_reg(void)
 {
-/*
-	regdata_phs_tab_0116   = 0x02050000;
-
-	regdata_blksizexy_012b = 0x0012a12a;
-	regdata_blkscale_012c  = 0x00086920;
-	regdata_hme_scale_012d  = 0xaa;
-	regdata_inpholdctl_0002 = 0x00100006;
-	regdata_outholdctl_0003 = 0x82020202;
-	regdata_inpmoden_04f9 = 0x0000203e;
-	regdata_me_stat12rhst_110b = 0x00030800;
-	regdata_me_en_1100 = 0x4d0d2222;
-
-	regdata_bbd_t2b_0604 = 0x0000086f,
-	regdata_bbd_l2r_0605 = 0x00000eff,
-*/
 	regdata_loadorgframe[0] = 0;
 	regdata_loadorgframe[1] = 0;
 	regdata_loadorgframe[2] = 0;
@@ -1991,7 +1971,7 @@ void frc_set_val_from_reg(void)
 	regdata_phs_tab_0116 = READ_FRC_REG(FRC_REG_PHS_TABLE);
 	regdata_blksizexy_012b = READ_FRC_REG(FRC_REG_BLK_SIZE_XY);
 	regdata_blkscale_012c = READ_FRC_REG(FRC_REG_BLK_SCALE);
-	regdata_hme_scale_012d = READ_FRC_REG(FRC_REG_ME_HME_SCALE);
+	regdata_hme_scale_012d = READ_FRC_REG(FRC_REG_ME_SCALE);
 
 	regdata_logodbg_0142 = READ_FRC_REG(FRC_LOGO_DEBUG);
 
@@ -2001,8 +1981,8 @@ void frc_set_val_from_reg(void)
 
 	regdata_me_en_1100 = READ_FRC_REG(FRC_ME_EN);
 	regdata_me_bbpixed_1108 = READ_FRC_REG(FRC_ME_BB_PIX_ED);
-	regdata_me_bbblked_110a = READ_FRC_REG(FRC_ME_BB_PIX_ED);
-	regdata_me_stat12rhst_110b = READ_FRC_REG(FRC_ME_BB_PIX_ED);
+	regdata_me_bbblked_110a = READ_FRC_REG(FRC_ME_BB_BLK_ED);
+	regdata_me_stat12rhst_110b = READ_FRC_REG(FRC_ME_STAT_12R_HST);
 	regdata_me_stat12rh_110c = READ_FRC_REG(FRC_ME_STAT_12R_H01);
 	regdata_me_stat12rh_110d = READ_FRC_REG(FRC_ME_STAT_12R_H23);
 	regdata_me_stat12rv_110e = READ_FRC_REG(FRC_ME_STAT_12R_V0);
@@ -2025,6 +2005,7 @@ void frc_set_val_from_reg(void)
 
 	regdata_topctl_3f01 = READ_FRC_REG(FRC_TOP_CTRL);
 }
+EXPORT_SYMBOL(frc_set_val_from_reg);
 
 /* driver probe call */
 void frc_internal_initial(struct frc_dev_s *frc_devp)

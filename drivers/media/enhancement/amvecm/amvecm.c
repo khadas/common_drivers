@@ -10842,7 +10842,7 @@ static const struct vecm_match_data_s vecm_dt_t5w = {
 
 static const struct vecm_match_data_s vecm_dt_t5m = {
 	.chip_id = chip_t5m,
-	.vlk_chip = vlock_chip_t5,
+	.vlk_chip = vlock_chip_t5m,
 	.vlk_support = true,
 	.vlk_new_fsm = 1,
 	.vlk_hwver = vlock_hw_tm2verb,

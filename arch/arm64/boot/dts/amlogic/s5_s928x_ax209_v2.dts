@@ -1442,7 +1442,7 @@
 };
 
 &crg_udc_2 {
-	status = "disabled";
+	status = "okay";
 	controller-type = <4>;
 };
 

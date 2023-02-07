@@ -1096,8 +1096,8 @@
 			usb-phy = <&crg_phy_20>, <&crg3_phy_20>;
 			cpu-type = "gxl";
 			clock-src = "usb3.0";
-			//clocks = <&clkc CLKID_SYS_CLK_USB>;
-			//clock-names = "crg_general";
+			clocks = <&clkc CLKID_SYS_CLK_USB>;
+			clock-names = "crg_general";
 		};
 
 		crg30_drd: crg2drd@fdd00000 {
@@ -1107,8 +1107,8 @@
 			usb-phy = <&usb2_m31_0_phy>, <&usb3_m31_0_phy>;
 			cpu-type = "gxl";
 			clock-src = "usb3.0";
-			//clocks = <&clkc CLKID_SYS_CLK_USB>;
-			//clock-names = "crg_general";
+			clocks = <&clkc CLKID_SYS_CLK_USB>;
+			clock-names = "crg_general";
 		};
 
 		crg31: crg@fde00000 {
@@ -1119,8 +1119,8 @@
 			usb-phy = <&usb2_m31_1_phy>, <&usb3_m31_1_phy>;
 			cpu-type = "gxl";
 			clock-src = "usb3.0";
-			//clocks = <&clkc CLKID_SYS_CLK_USB>;
-			//clock-names = "crg_general";
+			clocks = <&clkc CLKID_SYS_CLK_USB>;
+			clock-names = "crg_general";
 		};
 
 		usb2_m31_0_phy: usb2m310phy {
@@ -1185,8 +1185,8 @@
 			usb-reset-bit = <3>;
 			reset-level = <0x40>;
 			pwr-ctl = <0>;
-			//clocks = <&clkc CLKID_SYS_CLK_USB>;
-			//clock-names = "crg_general";
+			clocks = <&clkc CLKID_SYS_CLK_USB>;
+			clock-names = "crg_general";
 			phy-id = <0>;
 			usb-phy-trim-reg = <0xfe010330>;
 		};
@@ -1210,12 +1210,12 @@
 			device_name = "crg_udc_2";
 			reg = <0x0 0xfdd00000 0x0 0x100000>;
 			interrupts = <0 131 4>;
-			//clock-src = "usb0"; /** clock src */
+			clock-src = "usb0"; /** clock src */
 			port-speed = <3>; /** 0: default, high, 1: full */
 			phy-reg = <0xfe074000>;
 			phy-reg-size = <0x1000>;
-			//clocks = <&clkc CLKID_SYS_CLK_USB>;
-			//clock-names = "usb_general";
+			clocks = <&clkc CLKID_SYS_CLK_USB>;
+			clock-names = "usb_general";
 			phy-id = <2>;
 			controller-type = <4>;
 		};

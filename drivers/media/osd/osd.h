@@ -586,6 +586,7 @@ struct osd_device_hw_s {
 	u32 remove_afbc;
 	u32 remove_pps;
 	u32 prevsync_support;
+	u32 s5_display;
 };
 
 struct hw_osd_reg_s {

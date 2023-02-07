@@ -222,7 +222,7 @@ static void osd_dv_core_size_set(u32 h_size, u32 v_size)
 	meson_vpu_write_reg(DOLBY_CORE2A_SWAP_CTRL2,
 			    (tmp_h << 16) | tmp_v);
 
-	update_graphic_width_height(h_size, v_size);
+	update_graphic_width_height(h_size, v_size, 0);
 #endif
 }
 

@@ -48,6 +48,7 @@
 			status = "disabled";
 		};
 
+		/* global autoconfigured region for contiguous allocations */
 		ramoops@0x07400000 {
 			compatible = "ramoops";
 			reg = <0x0 0x07400000 0x0 0x00100000>;
@@ -103,7 +104,7 @@
 		ion_secure_reserved:linux,ion-secure {
 			compatible = "amlogic, ion-secure-mem";
 			no-map;
-			size = <0x0 0x5000000>;
+			size = <0x0 0x0000000>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
@@ -160,7 +161,7 @@
 			 * 10x4074560=40M(0x28) support 10bit
 			 */
 			//size = <0x0 0x0B000000>;
-			size = <0x0 0x0>;
+			size = <0x0 0x400000>; //for 4k's afbc
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
@@ -207,14 +208,24 @@
 			reusable;
 			/* frc:size need 4M alignment
 			 * 1080P 16 buffer:88Mhz (0x5800000)
-			 * 4k 16 buffer:348Mhz (0x15c00000)
+			 * 4k 16 buffer:348Mhz (0x15c00000) 212Mhz
 			 * 400Mhz (0x19000000)
 			 * 384Mhz (0x18000000)
 			 * 368Mhz (0x17000000)
 			 */
-			size = <0x0 0x0a400000>;
+			size = <0x0 0x0a000000>;
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
+			/*alloc-ranges = <0x0 0x0 0x0 0x3f800000>;*/
+		};
+
+		frc_rdma_reserved:linux,frc_rdma {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* frc rdma reserved*/
+			size = <0x0 0x400000>;
+			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 
@@ -761,7 +772,7 @@
 		aml-audio-card,dai-link@0 {
 			format = "i2s";
 			mclk-fs = <256>;
-			//continuous-clock;
+			continuous-clock;
 			//bitclock-inversion;
 			//frame-inversion;
 			/* master mode */
@@ -790,7 +801,7 @@
 		aml-audio-card,dai-link@1 {
 			format = "i2s";
 			mclk-fs = <256>;
-			//continuous-clock;
+			continuous-clock;
 			//bitclock-inversion;
 			//frame-inversion;
 			/* master mode */
@@ -825,7 +836,7 @@
 		aml-audio-card,dai-link@2 {
 			format = "i2s";
 			mclk-fs = <256>;
-			//continuous-clock;
+			continuous-clock;
 			//bitclock-inversion;
 			//frame-inversion;
 			/* master mode */
@@ -975,7 +986,7 @@
 				GIC_SPI 287 IRQ_TYPE_EDGE_RISING
 				GIC_SPI 271 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "irq_frc_in", "irq_frc_out", "irq_frc_rdma";
-		memory-region = <&frc_cma_reserved>;
+		memory-region = <&frc_cma_reserved>, <&frc_rdma_reserved>;
 		clocks = <&clkc CLKID_FRC>, <&clkc CLKID_ME>;
 		clock-names = "clk_frc", "clk_me";
 		power-domains = <&pwrdm PDID_T3_FRCTOP>, <&pwrdm PDID_T3_FRCME>,
@@ -1064,22 +1075,22 @@
 &thermal_zones {
 	vpu_thermal {
 		trips {
-			vpuswitch_on: trip-point@0 {
+			vpu_switch_on: trip-point@0 {
 				temperature = <85000>;
 				hysteresis = <5000>;
 				type = "passive";
 			};
-			vpucontrol: trip-point@1 {
+			vpu_control: trip-point@1 {
 				temperature = <95000>;
 				hysteresis = <5000>;
 				type = "passive";
 			};
-			ddrhot: trip-point@2 {
+			ddr_hot: trip-point@2 {
 				temperature = <90000>;
 				hysteresis = <10000>;
 				type = "hot";
 			};
-			vpucritical {
+			vpu_critical {
 				temperature = <110000>;
 				hysteresis = <1000>;
 				type = "critical";
@@ -1087,12 +1098,12 @@
 		};
 		cooling-maps {
 			ddr0_cooling_map {
-				trip = <&ddrhot>;
+				trip = <&ddr_hot>;
 				cooling-device = <&ddr_cool0 0 2>;
 				contribution = <1024>;
 			};
 			ddr1_cooling_map {
-				trip = <&ddrhot>;
+				trip = <&ddr_hot>;
 				cooling-device = <&ddr_cool1 0 2>;
 				contribution = <1024>;
 			};
@@ -1574,11 +1585,13 @@
 	 */
 	cma_size = <330>;
 	frame_buff_num = <11>;
+	v4l_support_en = <0>;
 };
 
 &vdin1 {
 	memory-region = <&vdin1_cma_reserved>;
 	status = "okay";
+	v4l_support_en = <0>;
 };
 
 /* SD wifi */
@@ -1743,6 +1756,7 @@
 	cm_en = <1>;/*1:enable ;0:disable*/
 	wb_sel = <0>;/*1:mtx ;0:gainoff*/
 	vlock_en = <1>;/*1:enable;0:disable*/
+	ct_3dlut = <0>;
 	vlock_mode = <0x8>;
 	/*vlock work mode:
 	 *bit0:auto ENC

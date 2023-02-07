@@ -47,6 +47,7 @@
 			status = "disabled";
 		};
 
+		/* global autoconfigured region for contiguous allocations */
 		ramoops@0x07400000 {
 			compatible = "ramoops";
 			reg = <0x0 0x07400000 0x0 0x00100000>;
@@ -138,7 +139,6 @@
 			size = <0x0 0x20800000>;
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
-			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 
 		/*di CMA pool */
@@ -153,7 +153,7 @@
 			 * 10x4074560=40M(0x28) support 10bit
 			 */
 			//size = <0x0 0x0B000000>;
-			size = <0x0 0x0>;
+			size = <0x0 0x400000>; //for 4k's afbc
 			alignment = <0x0 0x400000>;
 		};
 		/* codec shared reserved */
@@ -197,7 +197,7 @@
 			reusable;
 			/* frc:size need 4M alignment
 			 * 1080P 16 buffer:88Mhz (0x5800000)
-			 * 4k 16 buffer:348Mhz (0x15c00000)
+			 * 4k 16 buffer:348Mhz (0x15c00000) 212Mhz
 			 * 400Mhz (0x19000000)
 			 * 384Mhz (0x18000000)
 			 * 368Mhz (0x17000000)
@@ -1571,11 +1571,13 @@
 	 */
 	cma_size = <330>;
 	frame_buff_num = <11>;
+	v4l_support_en = <0>;
 };
 
 &vdin1 {
 	memory-region = <&vdin1_cma_reserved>;
 	status = "okay";
+	v4l_support_en = <0>;
 };
 
 /* SD wifi */
@@ -1740,6 +1742,7 @@
 	cm_en = <1>;/*1:enable ;0:disable*/
 	wb_sel = <0>;/*1:mtx ;0:gainoff*/
 	vlock_en = <1>;/*1:enable;0:disable*/
+        ct_3dlut = <0>;
 	vlock_mode = <0x8>;
 	/*vlock work mode:
 	 *bit0:auto ENC

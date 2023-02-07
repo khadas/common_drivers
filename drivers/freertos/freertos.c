@@ -93,6 +93,37 @@ static int call_freertos_notifiers(unsigned long val, void *v)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
+static int free_rtos_memory(void)
+{
+	struct device_node *rtos_reserved;
+	struct reserved_mem *rmem;
+
+	rtos_reserved = of_find_compatible_node(NULL, NULL, "amlogic, aml_rtos_memory");
+	if (!rtos_reserved) {
+		pr_err("rtos_reserved device node find error\n");
+		return 0;
+	}
+
+	rmem = of_reserved_mem_lookup(rtos_reserved);
+	if (!rmem) {
+		pr_err("%s no such reserved mem\n", (char *)rtos_reserved->name);
+		return 0;
+	}
+
+	if (!rmem->base || !rmem->size) {
+		pr_err("%s unexpected reserved memory\n", (char *)rtos_reserved->name);
+		return 0;
+	}
+
+	free_reserved_area(__va(rmem->base),
+			   __va(PAGE_ALIGN(rmem->base + rmem->size)),
+			   0,
+			   "free_mem");
+	return 0;
+}
+#endif
+
 #if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
 static unsigned long freertos_request_info(void)
 {
@@ -285,10 +316,11 @@ static void freertos_do_finish(int bootup)
 					pr_info("cpu %u already take over\n", cpu);
 				}
 				free_reserved_area(__va(res_mem.base),
-					__va(PAGE_ALIGN(res_mem.base + res_mem.size)),
+						   __va(PAGE_ALIGN(res_mem.base + res_mem.size)),
 						   0,
 						   "free_mem");
 				call_freertos_notifiers(1, NULL);
+				break;
 			}
 #else
 			if ((rtosinfo->cpumask & (1 << cpu)) &&
@@ -300,6 +332,10 @@ static void freertos_do_finish(int bootup)
 					pr_debug("cpu %u power on start\n", cpu);
 					device_online(get_cpu_device(cpu));
 					pr_info("cpu %u power on success\n", cpu);
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
+					free_rtos_memory();
+					break;
+#endif
 				}
 			}
 #endif
@@ -486,7 +522,7 @@ static int aml_rtos_logbuf_init(void)
 	size = rtosinfo->logbuf_len;
 	pr_info("logbuffer: 0x%x, 0x%x\n",
 		rtosinfo->logbuf_phy, rtosinfo->logbuf_len);
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7) || IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
 	logbuf = memremap(phy, size, MEMREMAP_WB);
 #else
 	logbuf = ioremap_cache(phy, size);
@@ -582,7 +618,7 @@ static int aml_rtos_probe(struct platform_device *pdev)
 	    (int)rtosinfo_phy == SMC_UNK)
 		return 0;
 
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7) || IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
 	rtosinfo = (struct xrtosinfo_t *)memremap(rtosinfo_phy,
 						  sizeof(struct xrtosinfo_t),
 						  MEMREMAP_WB);

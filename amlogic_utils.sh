@@ -20,7 +20,14 @@ function pre_defconfig_cmds() {
 		rm ${temp_file}
 	else
 		if [[ ${GKI_CONFIG} == gki_20 ]]; then
-			KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG}
+			if [[  -n ${CHECK_GKI_20} ]]; then
+				local temp_file=`mktemp /tmp/config.XXXXXXXXXXXX`
+				echo "CONFIG_STMMAC_ETH=n" > ${temp_file}
+				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${temp_file}
+				rm ${temp_file}
+			else
+				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG}
+			fi
 		elif [[ ${GKI_CONFIG} == gki_10 ]]; then
 			KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_GKI10}
 		elif [[ ${GKI_CONFIG} == gki_debug ]]; then

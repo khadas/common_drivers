@@ -29,6 +29,7 @@ function show_help {
 	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
 	echo "  --patch                 for only am patches"
 	echo "  -v                      for kernel version: common13-5.15 common14-5.15"
+	echo "  --check_gki_20          for gki 2.0 check kernel build"
 }
 
 VA=
@@ -153,6 +154,12 @@ do
 		VA=1
 		shift
 		;;
+	--check_gki_20)
+		CHECK_GKI_20=1
+		GKI_CONFIG=gki_20
+		LTO=none
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -199,6 +206,9 @@ if [[ -z "${ABI}" ]]; then
 fi
 if [[ -z "${LTO}" ]]; then
 	LTO=thin
+fi
+if [[ -n ${CHECK_GKI_20} && -z ${ANDROID_PROJECT} ]]; then
+	ANDROID_PROJECT=ohm
 fi
 if [[ -z "${KERNEL_DIR}" ]]; then
 	KERNEL_DIR=common
@@ -254,7 +264,7 @@ GKI_CONFIG=${GKI_CONFIG:-gki_debug}
 
 set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG MANUAL_INSMOD_MODULE
-export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD
+export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD CHECK_GKI_20
 
 if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/common/auto_patch.sh ]]; then
 	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/common/auto_patch.sh ${FULL_KERNEL_VERSION}
@@ -266,7 +276,7 @@ fi
 
 echo ROOT_DIR=$ROOT_DIR
 echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG} MANUAL_INSMOD_MODULE=${MANUAL_INSMOD_MODULE}
-echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT} FAST_BUILD=${FAST_BUILD}
+echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT} FAST_BUILD=${FAST_BUILD} CHECK_GKI_20=${CHECK_GKI_20}
 
 export CROSS_COMPILE=
 

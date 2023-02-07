@@ -22,12 +22,16 @@ enum vpu_chip_e {
 	VPU_CHIP_T5W,
 	VPU_CHIP_C3,
 	VPU_CHIP_T5M,
+	VPU_CHIP_G12B,
+	VPU_CHIP_SM1,
 	VPU_CHIP_MAX,
 };
 
 #define CLK_FPLL_FREQ           2000 /* MHz */
 #define VPU_CLK_TOLERANCE       1000000 /* Hz */
 
+#define VPU_HDMI_ISO_CNT_MAX    5
+#define VPU_RESET_CNT_MAX       10
 #define VPU_MOD_INIT_CNT_MAX    20
 #define VPU_MEM_PD_CNT_MAX      150
 #define VPU_CLK_GATE_CNT_MAX    150

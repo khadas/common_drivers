@@ -15,8 +15,17 @@
 enum vpu_map_e {
 	VPU_MAP_CLK = 0,
 	VPU_MAP_PWRCTRL,
+	VPU_MAP_CBUS,
 	VPU_MAP_AOBUS,
 	VPU_MAP_VCBUS,
+	VPU_MAP_MAX,
+};
+
+int vpu_reg_table[] = {
+	VPU_MAP_CLK,
+	VPU_MAP_VCBUS,
+	VPU_MAP_CBUS,
+	VPU_MAP_AOBUS,
 	VPU_MAP_MAX,
 };
 
@@ -132,6 +141,25 @@ static inline void __iomem *check_vpu_pwrctrl_reg(unsigned int _reg)
 	unsigned int reg_offset;
 
 	reg_bus = VPU_MAP_PWRCTRL;
+	if (check_vpu_ioremap(reg_bus))
+		return NULL;
+
+	reg_offset = (_reg << 2);
+
+	if (WARN_ON(reg_offset >= vpu_reg_map[reg_bus].size))
+		return NULL;
+
+	p = vpu_reg_map[reg_bus].p + reg_offset;
+	return p;
+}
+
+static inline void __iomem *check_vpu_cbus_reg(unsigned int _reg)
+{
+	void __iomem *p;
+	int reg_bus;
+	unsigned int reg_offset;
+
+	reg_bus = VPU_MAP_CBUS;
 	if (check_vpu_ioremap(reg_bus))
 		return NULL;
 
@@ -356,6 +384,44 @@ void vpu_vcbus_clr_mask(unsigned int _reg, unsigned int _mask)
 	spin_unlock_irqrestore(&vpu_vcbus_reg_lock, flags);
 }
 EXPORT_SYMBOL(vpu_vcbus_clr_mask);
+
+unsigned int vpu_cbus_read(unsigned int _reg)
+{
+	void __iomem *p;
+
+	p = check_vpu_cbus_reg(_reg);
+	if (p)
+		return readl(p);
+	else
+		return -1;
+};
+
+void vpu_cbus_write(unsigned int _reg, unsigned int _value)
+{
+	void __iomem *p;
+
+	p = check_vpu_cbus_reg(_reg);
+	if (p)
+		writel(_value, p);
+};
+
+void vpu_cbus_setb(unsigned int _reg, unsigned int _value,
+		   unsigned int _start, unsigned int _len)
+{
+	vpu_cbus_write(_reg, ((vpu_cbus_read(_reg) &
+			~(((1L << (_len)) - 1) << (_start))) |
+			(((_value) & ((1L << (_len)) - 1)) << (_start))));
+}
+
+void vpu_cbus_set_mask(unsigned int _reg, unsigned int _mask)
+{
+	vpu_cbus_write(_reg, (vpu_cbus_read(_reg) | (_mask)));
+}
+
+void vpu_cbus_clr_mask(unsigned int _reg, unsigned int _mask)
+{
+	vpu_cbus_write(_reg, (vpu_cbus_read(_reg) & (~(_mask))));
+}
 
 unsigned int vpu_ao_read(unsigned int _reg)
 {

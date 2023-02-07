@@ -313,22 +313,32 @@
 	vpu: vpu {
 		compatible = "amlogic, vpu-sm1";
 		dev_name = "vpu";
-		status = "disabled";
-		//clocks = <&clkc CLKID_VAPB_MUX>,
-		//	<&clkc CLKID_VPU_INTR>,
-		//	<&clkc CLKID_VPU_P0_COMP>,
-		//	<&clkc CLKID_VPU_P1_COMP>,
-		//	<&clkc CLKID_VPU_MUX>;
-		//clock-names = "vapb_clk",
-		//	"vpu_intr_gate",
-		//	"vpu_clk0",
-		//	"vpu_clk1",
-		//	"vpu_clk";
+		status = "okay";
+		reg = <0x0 0xff63c000 0x0 0x1000>,   /* clk   */
+				<0x0 0xff900000 0x0 0x100000>,   /* vcbus */
+				<0x0 0xffd00000 0x0 0x26000>, /* cbus   */
+				<0x0 0xff800000 0x0 0x100000>; /* aobus */
+		clocks = <&clkc CLKID_VAPB_SEL>,
+			<&clkc CLKID_VPU_INTR>,
+			<&clkc CLKID_VPU_0>,
+			<&clkc CLKID_VPU_1>,
+			<&clkc CLKID_VPU>;
+		clock-names = "vapb_clk",
+			"vpu_intr_gate",
+			"vpu_clk0",
+			"vpu_clk1",
+			"vpu_clk";
 		clk_level = <7>;
 		/* 0: 100.0M    1: 166.7M    2: 200.0M    3: 250.0M */
 		/* 4: 333.3M    5: 400.0M    6: 500.0M    7: 666.7M */
 	};
 
+	vclk_serve: vclk_serve {
+		compatible = "amlogic, vclk_serve";
+		status = "okay";
+		mode = <0>;
+		reg = <0x0 0xff63c000 0x0 0x4a0>; /* hiu reg */
+	};
 
 	pinctrl_aobus: pinctrl@ff800014{
 		compatible = "amlogic,meson-g12a-aobus-pinctrl";
@@ -1380,7 +1390,7 @@
 	vout {
 		compatible = "amlogic, vout";
 		dev_name = "vout";
-		status = "disabled";
+		status = "okay";
 
 		fr_policy = <0>;
 	};
@@ -1388,7 +1398,7 @@
 	vout2 {
 		compatible = "amlogic, vout2";
 		dev_name = "vout";
-		status = "disabled";
+		status = "okay";
 		//clocks = <&clkc CLKID_VPU_CLKC_P0_COMP>,
 		//	<&clkc CLKID_VPU_CLKC_MUX>;
 		//clock-names = "vpu_clkc0",
@@ -1399,23 +1409,23 @@
 
 	dummy_venc: dummy_venc {
 		compatible = "amlogic, dummy_venc";
-		status = "disabled";
-		//clocks = <&clkc CLKID_VCLK2_ENCP
-		//	&clkc CLKID_VCLK2_VENCP0
-		//	&clkc CLKID_VCLK2_VENCP1
-		//	&clkc CLKID_VCLK2_ENCI
-		//	&clkc CLKID_VCLK2_VENCI0
-		//	&clkc CLKID_VCLK2_VENCI1
-		//	&clkc CLKID_VCLK2_ENCL
-		//	&clkc CLKID_VCLK2_VENCL>;
-		//clock-names = "encp_top_gate",
-		//	"encp_int_gate0",
-		//	"encp_int_gate1",
-		//	"venci_top_gate",
-		//	"enci_int_gate0",
-		//	"enci_int_gate1",
-		//	"encl_top_gate",
-		//	"encl_int_gate";
+		status = "okay";
+		clocks = <&clkc CLKID_VCLK2_ENCP
+			&clkc CLKID_VCLK2_VENCP0
+			&clkc CLKID_VCLK2_VENCP1
+			&clkc CLKID_VCLK2_ENCI
+			&clkc CLKID_VCLK2_VENCI0
+			&clkc CLKID_VCLK2_VENCI1
+			&clkc CLKID_VCLK2_ENCL
+			&clkc CLKID_VCLK2_VENCL>;
+		clock-names = "encp_top_gate",
+			"encp_int_gate0",
+			"encp_int_gate1",
+			"venci_top_gate",
+			"enci_int_gate0",
+			"enci_int_gate1",
+			"encl_top_gate",
+			"encl_int_gate";
 	};
 
 	vdac {

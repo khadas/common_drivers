@@ -137,4 +137,7 @@ unsigned int vpu_vcbus_getb(unsigned int _reg,
 void vpu_vcbus_set_mask(unsigned int _reg, unsigned int _mask);
 void vpu_vcbus_clr_mask(unsigned int _reg, unsigned int _mask);
 
+void vpu_cbus_set_mask(unsigned int _reg, unsigned int _mask);
+void vpu_cbus_clr_mask(unsigned int _reg, unsigned int _mask);
+
 #endif

@@ -181,6 +181,47 @@ static int vpu_vmod_clk_release(unsigned int vmod)
 	return ret;
 }
 
+static int vpu_vmod_mem_pd_switch(unsigned int vmod, int flag)
+{
+	unsigned int _val, _reg, _bit, _len;
+	struct vpu_ctrl_s *table;
+	int i = 0, ret = 0, done = 0;
+
+	ret = vpu_chip_valid_check();
+	if (ret)
+		return -1;
+	if (vmod >= VPU_MOD_MAX)
+		return -1;
+
+	table = vpu_conf.data->mem_pd_table;
+	if (!table)
+		return -1;
+	while (i < VPU_MEM_PD_CNT_MAX) {
+		if (table[i].vmod == VPU_MOD_MAX)
+			break;
+		if (table[i].vmod == vmod) {
+			_reg = table[i].reg;
+			_bit = table[i].bit;
+			_len = table[i].len;
+			if (flag == VPU_MEM_POWER_ON) {
+				_val = 0x0;
+			} else {
+				if (_len == 32)
+					_val = 0xffffffff;
+				else
+					_val = (1 << _len) - 1;
+			}
+			vpu_clk_setb(_reg, _val, _bit, _len);
+			done++;
+		}
+		i++;
+	}
+
+	if (done == 0)
+		return -1;
+	return 0;
+}
+
 static int vpu_vmod_mem_pd_switch_new(unsigned int vmod, int flag)
 {
 	bool state;
@@ -1808,6 +1849,7 @@ static struct vpu_data_s vpu_data_t5m = {
 	.clk_level_max = CLK_LEVEL_MAX_G12A,
 	.fclk_div_table = fclk_div_table_g12a,
 	.clk_table = vpu_clk_table,
+
 	.reg_map_table = vpu_reg_table_new,
 	.test_reg_table = vcbus_test_reg,
 
@@ -1843,6 +1885,91 @@ static struct vpu_data_s vpu_data_t5m = {
 	.clktree_init = vpu_clktree_init_dft,
 };
 
+static struct vpu_data_s vpu_data_g12b = {
+	.chip_type = VPU_CHIP_G12B,
+	.chip_name = "g12b",
+
+	.clk_level_dft = CLK_LEVEL_DFT_G12A,
+	.clk_level_max = CLK_LEVEL_MAX_G12A,
+	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
+	.reg_map_table = vpu_reg_table,
+	.test_reg_table = vcbus_test_reg,
+
+	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
+	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
+
+	.gp_pll_valid = 0,
+	.mem_pd_reg[0] = HHI_VPU_MEM_PD_REG0,
+	.mem_pd_reg[1] = HHI_VPU_MEM_PD_REG1,
+	.mem_pd_reg[2] = HHI_VPU_MEM_PD_REG2,
+	.mem_pd_reg[3] = VPU_REG_END,
+	.mem_pd_reg[4] = VPU_REG_END,
+	.mem_pd_reg_flag = 0,
+
+	.pwrctrl_id_table = NULL,
+
+	.power_table = vpu_power_g12a,
+	.iso_table = vpu_iso_g12a,
+	.reset_table = vpu_reset_g12a,
+	.module_init_table = NULL,
+
+	.mem_pd_table = vpu_mem_pd_g12b,
+	.clk_gate_table = vpu_clk_gate_g12a,
+
+	.power_on = vpu_power_on,
+	.power_off = vpu_power_off,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
+	.mempd_switch = vpu_vmod_mem_pd_switch,
+	.mempd_get = vpu_vmod_mem_pd_get,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
+};
+
+static struct vpu_data_s vpu_data_sm1 = {
+	.chip_type = VPU_CHIP_SM1,
+	.chip_name = "sm1",
+
+	.clk_level_dft = CLK_LEVEL_DFT_G12A,
+	.clk_level_max = CLK_LEVEL_MAX_G12A,
+	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
+	.reg_map_table = vpu_reg_table,
+	.test_reg_table = vcbus_test_reg,
+
+	.vpu_clk_reg = HHI_VPU_CLK_CNTL,
+	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
+
+	.gp_pll_valid = 0,
+	.mem_pd_reg[0] = HHI_VPU_MEM_PD_REG0,
+	.mem_pd_reg[1] = HHI_VPU_MEM_PD_REG1,
+	.mem_pd_reg[2] = HHI_VPU_MEM_PD_REG2,
+	.mem_pd_reg[3] = HHI_VPU_MEM_PD_REG3_SM1,
+	.mem_pd_reg[4] = HHI_VPU_MEM_PD_REG4_SM1,
+	.mem_pd_reg_flag = 0,
+
+	.pwrctrl_id_table = NULL,
+
+	.power_table = vpu_power_g12a,
+	.iso_table = vpu_iso_sm1,
+	.reset_table = vpu_reset_g12a,
+	.module_init_table = NULL,
+
+	.mem_pd_table = vpu_mem_pd_sm1,
+	.clk_gate_table = vpu_clk_gate_g12a,
+
+	.power_on = vpu_power_on,
+	.power_off = vpu_power_off,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
+	.mempd_switch = vpu_vmod_mem_pd_switch,
+	.mempd_get = vpu_vmod_mem_pd_get,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
+};
 static const struct of_device_id vpu_of_table[] = {
 	{
 		.compatible = "amlogic, vpu-sc2",
@@ -1887,6 +2014,14 @@ static const struct of_device_id vpu_of_table[] = {
 	{
 		.compatible = "amlogic, vpu-t5m",
 		.data = &vpu_data_t5m,
+	},
+	{
+		.compatible = "amlogic, vpu-g12b",
+		.data = &vpu_data_g12b,
+	},
+	{
+		.compatible = "amlogic, vpu-sm1",
+		.data = &vpu_data_sm1,
 	},
 	{}
 };

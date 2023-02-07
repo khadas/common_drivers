@@ -19,6 +19,7 @@ obj-y					+= i2c/
 obj-$(CONFIG_SPI)			+= spi/
 obj-y					+= char/
 obj-$(CONFIG_AMLOGIC_TEE)		+= tee/
+obj-$(CONFIG_AML_TEE)			+= aml_tee/
 obj-$(CONFIG_AMLOGIC_GX_SUSPEND)	+= pm/
 obj-$(CONFIG_INPUT)			+= input/
 obj-$(CONFIG_WATCHDOG)			+= watchdog/

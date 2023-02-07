@@ -1052,16 +1052,20 @@
 	pinctrl-names = "default", "clk-gate";
 	bus-width = <4>;
 	cap-sd-highspeed;
-	sd-uhs-sdr104;
+	//sd-uhs-sdr104;
 	non-removable;
-	max-frequency = <200000000>;
+	max-frequency = <50000000>;
 	disable-wp;
 	cap-sdio-irq;
 	keep-power-in-suspend;
 };
 
+&mbd_audio {
+	/delete-property/ hp_mute-gpios;
+};
+
 &pwm_ef {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pwm_e_pins1>;
 };
@@ -1071,6 +1075,7 @@
 	interrupt-gpios = <&gpio  GPIOX_13  GPIO_ACTIVE_HIGH>;
 	power_on-gpios = <&gpio   GPIOX_6  GPIO_ACTIVE_HIGH>;
 	wifi_static_buf = <1>;
+	/delete-property/ pwm_config;
 };
 
 &aml_bt {
@@ -1079,7 +1084,7 @@
 };
 
 &fb {
-	status = "okay";
+	status = "disabled";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1000000>;
 	logo_addr = "0xe800000";
@@ -1209,7 +1214,7 @@
 };
 
 &ethmac {
-	status = "okay";
+	status = "disabled";
 	phy-handle = <&internal_ephy>;
 	phy-mode = "rmii";
 };
@@ -1223,6 +1228,10 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc1_pins1>;
 	//cs-gpios = <&gpio GPIOA_14 0>;
+};
+
+&lcd {
+	status = "disabled";
 };
 
 &freertos {

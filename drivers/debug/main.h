@@ -8,6 +8,7 @@
 
 int debug_lockup_init(void);
 int cpu_mhz_init(void);
+int aml_sched_init(void);
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 int meson_atrace_init(void);

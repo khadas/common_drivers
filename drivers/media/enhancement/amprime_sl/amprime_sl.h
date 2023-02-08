@@ -447,6 +447,6 @@ void prime_sl_close(void);
 
 void dv_mem_power_on(enum vpu_mod_e mode);
 void dv_mem_power_off(enum vpu_mod_e mode);
-u32 get_video_enabled(void);
+u32 get_video_enabled(u8 layer_id);
 
 #endif	/* __AMPRIME_SL_H__ */

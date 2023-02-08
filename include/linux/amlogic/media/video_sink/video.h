@@ -401,11 +401,9 @@ u32 get_first_pic_coming(void);
 u32 get_toggle_frame_count(void);
 
 int query_video_status(int type, int *value);
-u32 set_blackout_policy(int policy);
+u32 set_vdx_blackout_policy(u8 layer_id, int policy);
+u32 get_vdx_blackout_policy(u8 layer_id);
 u32 get_blackout_policy(void);
-u32 set_blackout_pip_policy(int policy);
-u32 get_blackout_pip_policy(void);
-u32 get_blackout_pip2_policy(void);
 void set_video_angle(u32 s_value);
 u32 get_video_angle(void);
 u32 get_video_hold_state(void);
@@ -415,7 +413,7 @@ void DI_POST_UPDATE_MC(void);
 void vsync_notify_videosync(void);
 bool get_video_reverse(void);
 /*int get_osd_reverse(void);*/
-void vsync_notify_video_composer(void);
+void vsync_notify_video_composer(u8 layer_id);
 void multi_vsync_notify_video_composer(void);
 int _video_set_disable(u32 val);
 int _videopip_set_disable(u32 index, u32 val);

@@ -21,21 +21,16 @@
 
 #include <linux/amlogic/media/vfm/vframe.h>
 
-void video_keeper_new_frame_notify(void);
-void video_pip_keeper_new_frame_notify(void);
-void video_pip2_keeper_new_frame_notify(void);
+void video_keeper_new_frame_notify(u8 layer_id);
 void try_free_keep_video(int flags);
-void try_free_keep_videopip(int flags);
-void try_free_keep_videopip2(int flags);
+void try_free_keep_vdx(int flags, u8 layer_id);
 int video_keeper_init(void);
 void video_keeper_exit(void);
 unsigned int vf_keep_current
 	(struct vframe_s *cur_dispbuf,
 	struct vframe_s *cur_dispbuf2);
-unsigned int vf_keep_pip_current_locked
-	(struct vframe_s *cur_dispbuf,
-	struct vframe_s *cur_dispbuf_el);
-unsigned int vf_keep_pip2_current_locked
-	(struct vframe_s *cur_dispbuf,
+unsigned int vf_keep_current_locked
+	(u8 layer_id,
+	struct vframe_s *cur_dispbuf,
 	struct vframe_s *cur_dispbuf_el);
 #endif

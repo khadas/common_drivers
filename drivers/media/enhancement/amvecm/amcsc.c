@@ -7108,16 +7108,10 @@ bool is_video_layer_on(enum vd_path_e vd_path)
 {
 	bool video_on;
 
-	if (vd_path == VD1_PATH)
-		video_on = get_video_enabled();
-	else if (vd_path == VD2_PATH)
-		video_on = get_videopip_enabled();
-	else if (vd_path == VD3_PATH)
-		video_on = get_videopip2_enabled();
+	if (vd_path <= VD3_PATH)
+		video_on = get_video_enabled(vd_path);
 	else
 		video_on = 0;
-	/*else if (vd_path == VD3_PATH)*/
-	/*	video_on = get_videopip2_enabled();*/
 
 	if (video_on)
 		video_layer_wait_on[vd_path] = false;

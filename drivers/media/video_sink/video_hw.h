@@ -25,5 +25,6 @@
 void vpp_secure_cb(u32 arg);
 #endif
 void int_vpu_delay_work(void);
+void vd1_set_go_field(void);
 
 #endif

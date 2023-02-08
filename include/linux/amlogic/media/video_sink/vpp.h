@@ -380,21 +380,6 @@ void vpp_disp_info_init(struct disp_info_s *info, u8 id);
 void vpp_super_scaler_support(void);
 
 void vpp_bypass_ratio_config(void);
-
-int vpp_set_super_scaler_regs
-	(int scaler_path_sel,
-	int reg_srscl0_enable,
-	int reg_srscl0_hsize,
-	int reg_srscl0_vsize,
-	int reg_srscl0_hori_ratio,
-	int reg_srscl0_vert_ratio,
-	int reg_srscl1_enable,
-	int reg_srscl1_hsize,
-	int reg_srscl1_vsize,
-	int reg_srscl1_hori_ratio,
-	int reg_srscl1_vert_ratio,
-	int vpp_postblend_out_width,
-	int vpp_postblend_out_height);
 struct sr_info_s *get_super_scaler_info(void);
 bool get_super_scaler_status(void);
 void aisr_sr1_nn_enable(u32 enable);

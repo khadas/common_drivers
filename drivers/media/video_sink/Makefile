@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VIDEO) += video_sink/video.o
+$(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VIDEO) += video_sink/video_func.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VIDEO) += video_sink/video_keeper.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VIDEO) += video_sink/vpp.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VIDEO) += video_sink/video_hw.o

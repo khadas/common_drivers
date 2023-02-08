@@ -89,7 +89,6 @@ static bool first_irq = true;
 #endif
 /* vout */
 static const struct vinfo_s *vinfo;
-static bool over_sync;
 
 u32 vsync_proc_drop;
 ulong lowlatency_vsync_count;
@@ -237,17 +236,17 @@ static int lowlatency_vsync(u8 instance_id)
 	if (gvideo_recv[0]) {
 		gvideo_recv[0]->irq_mode = false;
 		gvideo_recv[0]->func->early_proc(gvideo_recv[0],
-						 over_sync ? 1 : 0);
+						 over_field ? 1 : 0);
 	}
 	if (gvideo_recv[1]) {
 		gvideo_recv[1]->irq_mode = false;
 		gvideo_recv[1]->func->early_proc(gvideo_recv[1],
-						 over_sync ? 1 : 0);
+						 over_field ? 1 : 0);
 	}
 	if (gvideo_recv[2]) {
 		gvideo_recv[2]->irq_mode = false;
 		gvideo_recv[2]->func->early_proc(gvideo_recv[2],
-						 over_sync ? 1 : 0);
+						 over_field ? 1 : 0);
 	}
 
 	/* video_render.0 toggle frame */
@@ -279,16 +278,16 @@ static int lowlatency_vsync(u8 instance_id)
 		}
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
 		if (vd1_path_id == VFM_PATH_VIDEO_RENDER0 &&
-			cur_frame_par) {
+			cur_frame_par[0]) {
 			/*need call every vsync*/
 			if (path3_new_frame)
 				frame_lock_process(path3_new_frame,
-					cur_frame_par);
+					cur_frame_par[0]);
 			else if (vd_layer[0].dispbuf)
 				frame_lock_process(vd_layer[0].dispbuf,
-					cur_frame_par);
+					cur_frame_par[0]);
 			else
-				frame_lock_process(NULL, cur_frame_par);
+				frame_lock_process(NULL, cur_frame_par[0]);
 		}
 
 		if (vd1_path_id == gvideo_recv[0]->path_id) {
@@ -482,19 +481,19 @@ static int lowlatency_vsync(u8 instance_id)
 			path0_new_frame, path1_new_frame,
 			path2_new_frame, path3_new_frame,
 			path4_new_frame, path4_new_frame,
-			cur_dispbuf, cur_pipbuf, cur_pipbuf2,
+			cur_dispbuf[0], cur_dispbuf[1], cur_dispbuf[2],
 			gvideo_recv[0] ? gvideo_recv[0]->cur_buf : NULL,
 			gvideo_recv[1] ? gvideo_recv[1]->cur_buf : NULL,
 			gvideo_recv[2] ? gvideo_recv[2]->cur_buf : NULL);
 		pr_info("VID: \tdispbuf:%p, %p, %p; \tvf_ext:%p, %p, %p;\nVID: \tlocal:%p, %p, %p, %p, %p, %p\n",
 			vd_layer[0].dispbuf, vd_layer[1].dispbuf, vd_layer[2].dispbuf,
 			vd_layer[0].vf_ext, vd_layer[1].vf_ext, vd_layer[2].vf_ext,
-			&vf_local, &local_pip, &local_pip2,
+			&vf_local[0], &vf_local[1], &vf_local[2],
 			gvideo_recv[0] ? &gvideo_recv[0]->local_buf : NULL,
 			gvideo_recv[1] ? &gvideo_recv[1]->local_buf : NULL,
 			gvideo_recv[2] ? &gvideo_recv[2]->local_buf : NULL);
 		pr_info("VID: \tblackout:%d %d, %d force:%d;\n",
-			blackout, blackout_pip, blackout_pip2, force_blackout);
+			blackout[0], blackout[1], blackout[2], force_blackout);
 	}
 	if (debug_flag & DEBUG_FLAG_PRINT_DISBUF_PER_VSYNC)
 		pr_info("VID: path id: %d, %d, %d; new_frame:%p, %p, %p, %p, %p, %p cur:%p, %p, %p, %p, %p, %p; vd dispbuf:%p, %p, %p; vf_ext:%p, %p, %p; local:%p, %p, %p, %p, %p, %p\n",
@@ -502,34 +501,34 @@ static int lowlatency_vsync(u8 instance_id)
 			path0_new_frame, path1_new_frame,
 			path2_new_frame, path3_new_frame,
 			path4_new_frame, path5_new_frame,
-			cur_dispbuf, cur_pipbuf, cur_pipbuf2,
+			cur_dispbuf[0], cur_dispbuf[1], cur_dispbuf[2],
 			gvideo_recv[0] ? gvideo_recv[0]->cur_buf : NULL,
 			gvideo_recv[1] ? gvideo_recv[1]->cur_buf : NULL,
 			gvideo_recv[2] ? gvideo_recv[2]->cur_buf : NULL,
 			vd_layer[0].dispbuf, vd_layer[1].dispbuf, vd_layer[2].dispbuf,
 			vd_layer[0].vf_ext, vd_layer[1].vf_ext, vd_layer[2].vf_ext,
-			&vf_local, &local_pip, &local_pip2,
+			&vf_local[0], &vf_local[1], &vf_local[2],
 			gvideo_recv[0] ? &gvideo_recv[0]->local_buf : NULL,
 			gvideo_recv[1] ? &gvideo_recv[1]->local_buf : NULL,
 			gvideo_recv[2] ? &gvideo_recv[2]->local_buf : NULL);
 
-	if (vd_layer[0].dispbuf_mapping == &cur_dispbuf &&
-	    (cur_dispbuf == &vf_local ||
-	     !cur_dispbuf) &&
-	    vd_layer[0].dispbuf != cur_dispbuf)
-		vd_layer[0].dispbuf = cur_dispbuf;
+	if (vd_layer[0].dispbuf_mapping == &cur_dispbuf[0] &&
+	    (cur_dispbuf[0] == &vf_local[0] ||
+	     !cur_dispbuf[0]) &&
+	    vd_layer[0].dispbuf != cur_dispbuf[0])
+		vd_layer[0].dispbuf = cur_dispbuf[0];
 
-	if (vd_layer[0].dispbuf_mapping == &cur_pipbuf &&
-	    (cur_pipbuf == &local_pip ||
-	     !cur_pipbuf) &&
-	    vd_layer[0].dispbuf != cur_pipbuf)
-		vd_layer[0].dispbuf = cur_pipbuf;
+	if (vd_layer[0].dispbuf_mapping == &cur_dispbuf[1] &&
+	    (cur_dispbuf[1] == &vf_local[1] ||
+	     !cur_dispbuf[1]) &&
+	    vd_layer[0].dispbuf != cur_dispbuf[1])
+		vd_layer[0].dispbuf = cur_dispbuf[1];
 
-	if (vd_layer[0].dispbuf_mapping == &cur_pipbuf2 &&
-	    (cur_pipbuf2 == &local_pip2 ||
-	     !cur_pipbuf2) &&
-	    vd_layer[0].dispbuf != cur_pipbuf2)
-		vd_layer[0].dispbuf = cur_pipbuf2;
+	if (vd_layer[0].dispbuf_mapping == &cur_dispbuf[2] &&
+	    (cur_dispbuf[2] == &vf_local[2] ||
+	     !cur_dispbuf[2]) &&
+	    vd_layer[0].dispbuf != cur_dispbuf[2])
+		vd_layer[0].dispbuf = cur_dispbuf[2];
 
 	if (gvideo_recv[0] &&
 	    vd_layer[0].dispbuf_mapping == &gvideo_recv[0]->cur_buf &&
@@ -626,66 +625,66 @@ static int lowlatency_vsync(u8 instance_id)
 		/* pip2 display on VD1 */
 		new_frame = path2_new_frame;
 		if (!new_frame) {
-			if (!cur_pipbuf2) {
+			if (!cur_dispbuf[2]) {
 				/* pip2 no frame in display */
 				if (cur_vd1_path_id != vd1_path_id)
 					safe_switch_videolayer(0, false, true);
 				vd_layer[0].dispbuf = NULL;
-			} else if (cur_pipbuf2 == &local_pip2) {
+			} else if (cur_dispbuf[2] == &vf_local[2]) {
 				/* pip2 keep frame */
-				vd_layer[0].dispbuf = cur_pipbuf2;
+				vd_layer[0].dispbuf = cur_dispbuf[2];
 			} else if (vd_layer[0].dispbuf
-				!= cur_pipbuf2) {
+				!= cur_dispbuf[2]) {
 				/* pip2 has frame in display */
-				new_frame = cur_pipbuf2;
+				new_frame = cur_dispbuf[2];
 			}
 		}
-		if (new_frame || cur_pipbuf2)
-			vd_layer[0].dispbuf_mapping = &cur_pipbuf2;
-		cur_blackout = blackout_pip2 | force_blackout;
+		if (new_frame || cur_dispbuf[2])
+			vd_layer[0].dispbuf_mapping = &cur_dispbuf[2];
+		cur_blackout = blackout[2] | force_blackout;
 	} else if (vd1_path_id == VFM_PATH_PIP) {
 		/* pip display on VD1 */
 		new_frame = path1_new_frame;
 		if (!new_frame) {
-			if (!cur_pipbuf) {
+			if (!cur_dispbuf[1]) {
 				/* pip no frame in display */
 				if (cur_vd1_path_id != vd1_path_id)
 					safe_switch_videolayer(0, false, true);
 				vd_layer[0].dispbuf = NULL;
-			} else if (cur_pipbuf == &local_pip) {
+			} else if (cur_dispbuf[1] == &vf_local[1]) {
 				/* pip keep frame */
-				vd_layer[0].dispbuf = cur_pipbuf;
+				vd_layer[0].dispbuf = cur_dispbuf[1];
 			} else if (vd_layer[0].dispbuf
-				!= cur_pipbuf) {
+				!= cur_dispbuf[1]) {
 				/* pip has frame in display */
-				new_frame = cur_pipbuf;
+				new_frame = cur_dispbuf[1];
 			}
 		}
-		if (new_frame || cur_pipbuf)
-			vd_layer[0].dispbuf_mapping = &cur_pipbuf;
-		cur_blackout = blackout_pip | force_blackout;
+		if (new_frame || cur_dispbuf[1])
+			vd_layer[0].dispbuf_mapping = &cur_dispbuf[1];
+		cur_blackout = blackout[1] | force_blackout;
 	} else if ((vd1_path_id != VFM_PATH_INVALID) &&
 		   (vd1_path_id != VFM_PATH_AUTO)) {
 		/* primary display on VD1 */
 		new_frame = path0_new_frame;
 		if (!new_frame) {
-			if (!cur_dispbuf) {
+			if (!cur_dispbuf[0]) {
 				/* primary no frame in display */
 				if (cur_vd1_path_id != vd1_path_id)
 					safe_switch_videolayer(0, false, true);
 				vd_layer[0].dispbuf = NULL;
-			} else if (cur_dispbuf == &vf_local) {
+			} else if (cur_dispbuf[0] == &vf_local[0]) {
 				/* primary keep frame */
-				vd_layer[0].dispbuf = cur_dispbuf;
+				vd_layer[0].dispbuf = cur_dispbuf[0];
 			} else if (vd_layer[0].dispbuf
-				!= cur_dispbuf) {
+				!= cur_dispbuf[0]) {
 				/* primary has frame in display */
-				new_frame = cur_dispbuf;
+				new_frame = cur_dispbuf[0];
 			}
 		}
-		if (new_frame || cur_dispbuf)
-			vd_layer[0].dispbuf_mapping = &cur_dispbuf;
-		cur_blackout = blackout | force_blackout;
+		if (new_frame || cur_dispbuf[0])
+			vd_layer[0].dispbuf_mapping = &cur_dispbuf[0];
+		cur_blackout = blackout[0] | force_blackout;
 	} else if (vd1_path_id == VFM_PATH_AUTO) {
 		new_frame = path0_new_frame;
 
@@ -696,17 +695,17 @@ static int lowlatency_vsync(u8 instance_id)
 		}
 
 		if (!new_frame) {
-			if (cur_dispbuf == &vf_local)
-				vd_layer[0].dispbuf = cur_dispbuf;
+			if (cur_dispbuf[0] == &vf_local[0])
+				vd_layer[0].dispbuf = cur_dispbuf[0];
 		}
 
 		if (gvideo_recv[0]->cur_buf &&
 			gvideo_recv[0]->cur_buf->flag & VFRAME_FLAG_FAKE_FRAME)
 			vd_layer[0].dispbuf = gvideo_recv[0]->cur_buf;
 
-		if (new_frame || cur_dispbuf)
-			vd_layer[0].dispbuf_mapping = &cur_dispbuf;
-		cur_blackout = blackout | force_blackout;
+		if (new_frame || cur_dispbuf[0])
+			vd_layer[0].dispbuf_mapping = &cur_dispbuf[0];
+		cur_blackout = blackout[0] | force_blackout;
 	} else {
 		cur_blackout = 1;
 	}
@@ -847,7 +846,7 @@ static int lowlatency_vsync(u8 instance_id)
 #endif
 	}
 #if defined(CONFIG_AMLOGIC_MEDIA_FRC)
-	frc_input_handle(vd_layer[0].dispbuf, cur_frame_par);
+	frc_input_handle(vd_layer[0].dispbuf, cur_frame_par[0]);
 #endif
 	if (atomic_read(&axis_changed)) {
 		video_prop_status |= VIDEO_PROP_CHANGE_AXIS;
@@ -872,23 +871,23 @@ static int lowlatency_vsync(u8 instance_id)
 		? vd_layer[0].dispbuf : NULL,
 		new_frame,
 		new_frame ? CSC_FLAG_TOGGLE_FRAME : 0,
-		cur_frame_par ?
-		cur_frame_par->supsc1_hori_ratio :
+		cur_frame_par[0] ?
+		cur_frame_par[0]->supsc1_hori_ratio :
 		0,
-		cur_frame_par ?
-		cur_frame_par->supsc1_vert_ratio :
+		cur_frame_par[0] ?
+		cur_frame_par[0]->supsc1_vert_ratio :
 		0,
-		cur_frame_par ?
-		cur_frame_par->spsc1_w_in :
+		cur_frame_par[0] ?
+		cur_frame_par[0]->spsc1_w_in :
 		0,
-		cur_frame_par ?
-		cur_frame_par->spsc1_h_in :
+		cur_frame_par[0] ?
+		cur_frame_par[0]->spsc1_h_in :
 		0,
-		cur_frame_par ?
-		cur_frame_par->cm_input_w :
+		cur_frame_par[0] ?
+		cur_frame_par[0]->cm_input_w :
 		0,
-		cur_frame_par ?
-		cur_frame_par->cm_input_h :
+		cur_frame_par[0] ?
+		cur_frame_par[0]->cm_input_h :
 		0,
 		VD1_PATH,
 		VPP_TOP0);
@@ -950,23 +949,23 @@ static int lowlatency_vsync(u8 instance_id)
 		}
 	}
 
-	if (vd_layer[1].dispbuf_mapping == &cur_dispbuf &&
-	    (cur_dispbuf == &vf_local ||
-	     !cur_dispbuf) &&
-	    vd_layer[1].dispbuf != cur_dispbuf)
-		vd_layer[1].dispbuf = cur_dispbuf;
+	if (vd_layer[1].dispbuf_mapping == &cur_dispbuf[0] &&
+	    (cur_dispbuf[0] == &vf_local[0] ||
+	     !cur_dispbuf[0]) &&
+	    vd_layer[1].dispbuf != cur_dispbuf[0])
+		vd_layer[1].dispbuf = cur_dispbuf[0];
 
-	if (vd_layer[1].dispbuf_mapping == &cur_pipbuf &&
-	    (cur_pipbuf == &local_pip ||
-	     !cur_pipbuf) &&
-	    vd_layer[1].dispbuf != cur_pipbuf)
-		vd_layer[1].dispbuf = cur_pipbuf;
+	if (vd_layer[1].dispbuf_mapping == &cur_dispbuf[1] &&
+	    (cur_dispbuf[1] == &vf_local[1] ||
+	     !cur_dispbuf[1]) &&
+	    vd_layer[1].dispbuf != cur_dispbuf[1])
+		vd_layer[1].dispbuf = cur_dispbuf[1];
 
-	if (vd_layer[1].dispbuf_mapping == &cur_pipbuf2 &&
-	    (cur_pipbuf2 == &local_pip2 ||
-	     !cur_pipbuf2) &&
-	    vd_layer[1].dispbuf != cur_pipbuf2)
-		vd_layer[1].dispbuf = cur_pipbuf2;
+	if (vd_layer[1].dispbuf_mapping == &cur_dispbuf[2] &&
+	    (cur_dispbuf[2] == &vf_local[2] ||
+	     !cur_dispbuf[2]) &&
+	    vd_layer[1].dispbuf != cur_dispbuf[2])
+		vd_layer[1].dispbuf = cur_dispbuf[2];
 
 	if (gvideo_recv[0] &&
 	    vd_layer[1].dispbuf_mapping == &gvideo_recv[0]->cur_buf &&
@@ -1072,62 +1071,62 @@ static int lowlatency_vsync(u8 instance_id)
 		/* primary display in VD2 */
 		new_frame2 = path0_new_frame;
 		if (!new_frame2) {
-			if (!cur_dispbuf) {
+			if (!cur_dispbuf[0]) {
 				/* primary no frame in display */
 				if (cur_vd2_path_id != vd2_path_id)
 					safe_switch_videolayer(1, false, true);
 				vd_layer[1].dispbuf = NULL;
-			} else if (cur_dispbuf == &vf_local) {
+			} else if (cur_dispbuf[0] == &vf_local[0]) {
 				/* primary keep frame */
-				vd_layer[1].dispbuf = cur_dispbuf;
+				vd_layer[1].dispbuf = cur_dispbuf[0];
 			} else if (vd_layer[1].dispbuf
-				!= cur_dispbuf) {
-				new_frame2 = cur_dispbuf;
+				!= cur_dispbuf[0]) {
+				new_frame2 = cur_dispbuf[0];
 			}
 		}
-		if (new_frame2 || cur_dispbuf)
-			vd_layer[1].dispbuf_mapping = &cur_dispbuf;
-		cur_blackout = blackout | force_blackout;
+		if (new_frame2 || cur_dispbuf[0])
+			vd_layer[1].dispbuf_mapping = &cur_dispbuf[0];
+		cur_blackout = blackout[0] | force_blackout;
 	} else if (vd2_path_id == VFM_PATH_PIP2) {
 		/* pip display in VD3 */
 		new_frame2 = path2_new_frame;
 		if (!new_frame2) {
-			if (!cur_pipbuf2) {
+			if (!cur_dispbuf[2]) {
 				/* pip no display frame */
 				if (cur_vd2_path_id != vd2_path_id)
 					safe_switch_videolayer(1, false, true);
 				vd_layer[1].dispbuf = NULL;
-			} else if (cur_pipbuf2 == &local_pip2) {
+			} else if (cur_dispbuf[2] == &vf_local[2]) {
 				/* pip keep frame */
-				vd_layer[1].dispbuf = cur_pipbuf2;
+				vd_layer[1].dispbuf = cur_dispbuf[2];
 			} else if (vd_layer[1].dispbuf
-				!= cur_pipbuf2) {
-				new_frame2 = cur_pipbuf2;
+				!= cur_dispbuf[2]) {
+				new_frame2 = cur_dispbuf[2];
 			}
 		}
-		if (new_frame2 || cur_pipbuf2)
-			vd_layer[1].dispbuf_mapping = &cur_pipbuf2;
-		cur_blackout = blackout_pip2 | force_blackout;
+		if (new_frame2 || cur_dispbuf[2])
+			vd_layer[1].dispbuf_mapping = &cur_dispbuf[2];
+		cur_blackout = blackout[2] | force_blackout;
 	} else if (vd2_path_id != VFM_PATH_INVALID) {
 		/* pip display in VD2 */
 		new_frame2 = path1_new_frame;
 		if (!new_frame2) {
-			if (!cur_pipbuf) {
+			if (!cur_dispbuf[1]) {
 				/* pip no display frame */
 				if (cur_vd2_path_id != vd2_path_id)
 					safe_switch_videolayer(1, false, true);
 				vd_layer[1].dispbuf = NULL;
-			} else if (cur_pipbuf == &local_pip) {
+			} else if (cur_dispbuf[1] == &vf_local[1]) {
 				/* pip keep frame */
-				vd_layer[1].dispbuf = cur_pipbuf;
+				vd_layer[1].dispbuf = cur_dispbuf[1];
 			} else if (vd_layer[1].dispbuf
-				!= cur_pipbuf) {
-				new_frame2 = cur_pipbuf;
+				!= cur_dispbuf[1]) {
+				new_frame2 = cur_dispbuf[1];
 			}
 		}
-		if (new_frame2 || cur_pipbuf)
-			vd_layer[1].dispbuf_mapping = &cur_pipbuf;
-		cur_blackout = blackout_pip | force_blackout;
+		if (new_frame2 || cur_dispbuf[1])
+			vd_layer[1].dispbuf_mapping = &cur_dispbuf[1];
+		cur_blackout = blackout[1] | force_blackout;
 	} else {
 		cur_blackout = 1;
 	}
@@ -1181,11 +1180,11 @@ static int lowlatency_vsync(u8 instance_id)
 	    vd_layer[1].dispbuf &&
 	    (vd_layer[1].property_changed ||
 	     is_picmode_changed(1, vd_layer[1].dispbuf))) {
-		pip_swap_frame(&vd_layer[1], vd_layer[1].dispbuf, vinfo);
-		need_disable_vd2 = false;
+		pipx_swap_frame(&vd_layer[1], vd_layer[1].dispbuf, vinfo);
+		need_disable_vd[1] = false;
 	} else if (new_frame2) {
-		pip_swap_frame(&vd_layer[1], new_frame2, vinfo);
-		need_disable_vd2 = false;
+		pipx_swap_frame(&vd_layer[1], new_frame2, vinfo);
+		need_disable_vd[1] = false;
 	}
 
 	if (vd2_path_id == VFM_PATH_PIP ||
@@ -1204,29 +1203,29 @@ static int lowlatency_vsync(u8 instance_id)
 		? vd_layer[1].dispbuf : NULL,
 		new_frame2,
 		new_frame2 ? CSC_FLAG_TOGGLE_FRAME : 0,
-		curpip_frame_par ?
-		curpip_frame_par->supsc1_hori_ratio :
+		cur_frame_par[1] ?
+		cur_frame_par[1]->supsc1_hori_ratio :
 		0,
-		curpip_frame_par ?
-		curpip_frame_par->supsc1_vert_ratio :
+		cur_frame_par[1] ?
+		cur_frame_par[1]->supsc1_vert_ratio :
 		0,
-		curpip_frame_par ?
-		curpip_frame_par->spsc1_w_in :
+		cur_frame_par[1] ?
+		cur_frame_par[1]->spsc1_w_in :
 		0,
-		curpip_frame_par ?
-		curpip_frame_par->spsc1_h_in :
+		cur_frame_par[1] ?
+		cur_frame_par[1]->spsc1_h_in :
 		0,
-		curpip_frame_par ?
-		curpip_frame_par->cm_input_w :
+		cur_frame_par[1] ?
+		cur_frame_par[1]->cm_input_w :
 		0,
-		curpip_frame_par ?
-		curpip_frame_par->cm_input_h :
+		cur_frame_par[1] ?
+		cur_frame_par[1]->cm_input_h :
 		0,
 		VD2_PATH,
 		VPP_TOP0);
 #endif
 
-	if (need_disable_vd2) {
+	if (need_disable_vd[1]) {
 		safe_switch_videolayer(1, false, true);
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 		/* reset dvel statue when disable vd2 */
@@ -1235,23 +1234,23 @@ static int lowlatency_vsync(u8 instance_id)
 	}
 
 	if (cur_dev->max_vd_layers == 3) {
-		if (vd_layer[2].dispbuf_mapping == &cur_dispbuf &&
-		    (cur_dispbuf == &vf_local ||
-		     !cur_dispbuf) &&
-		    vd_layer[2].dispbuf != cur_dispbuf)
-			vd_layer[2].dispbuf = cur_dispbuf;
+		if (vd_layer[2].dispbuf_mapping == &cur_dispbuf[0] &&
+		    (cur_dispbuf[0] == &vf_local[0] ||
+		     !cur_dispbuf[0]) &&
+		    vd_layer[2].dispbuf != cur_dispbuf[0])
+			vd_layer[2].dispbuf = cur_dispbuf[0];
 
-		if (vd_layer[2].dispbuf_mapping == &cur_pipbuf &&
-		    (cur_pipbuf == &local_pip ||
-		     !cur_pipbuf) &&
-		    vd_layer[2].dispbuf != cur_pipbuf)
-			vd_layer[2].dispbuf = cur_pipbuf;
+		if (vd_layer[2].dispbuf_mapping == &cur_dispbuf[1] &&
+		    (cur_dispbuf[1] == &vf_local[1] ||
+		     !cur_dispbuf[1]) &&
+		    vd_layer[2].dispbuf != cur_dispbuf[1])
+			vd_layer[2].dispbuf = cur_dispbuf[1];
 
-		if (vd_layer[2].dispbuf_mapping == &cur_pipbuf2 &&
-		    (cur_pipbuf2 == &local_pip2 ||
-		     !cur_pipbuf2) &&
-		    vd_layer[2].dispbuf != cur_pipbuf2)
-			vd_layer[2].dispbuf = cur_pipbuf2;
+		if (vd_layer[2].dispbuf_mapping == &cur_dispbuf[2] &&
+		    (cur_dispbuf[2] == &vf_local[2] ||
+		     !cur_dispbuf[2]) &&
+		    vd_layer[2].dispbuf != cur_dispbuf[2])
+			vd_layer[2].dispbuf = cur_dispbuf[2];
 
 		if (gvideo_recv[0] &&
 		    vd_layer[2].dispbuf_mapping == &gvideo_recv[0]->cur_buf &&
@@ -1356,62 +1355,62 @@ static int lowlatency_vsync(u8 instance_id)
 			/* primary display in VD3 */
 			new_frame3 = path0_new_frame;
 			if (!new_frame3) {
-				if (!cur_dispbuf) {
+				if (!cur_dispbuf[0]) {
 					/* primary no frame in display */
 					if (cur_vd3_path_id != vd3_path_id)
 						safe_switch_videolayer(2, false, true);
 					vd_layer[2].dispbuf = NULL;
-				} else if (cur_dispbuf == &vf_local) {
+				} else if (cur_dispbuf[0] == &vf_local[0]) {
 					/* primary keep frame */
-					vd_layer[2].dispbuf = cur_dispbuf;
+					vd_layer[2].dispbuf = cur_dispbuf[0];
 				} else if (vd_layer[2].dispbuf
-					!= cur_dispbuf) {
-					new_frame3 = cur_dispbuf;
+					!= cur_dispbuf[0]) {
+					new_frame3 = cur_dispbuf[0];
 				}
 			}
-			if (new_frame3 || cur_dispbuf)
-				vd_layer[2].dispbuf_mapping = &cur_dispbuf;
-			cur_blackout = blackout | force_blackout;
+			if (new_frame3 || cur_dispbuf[0])
+				vd_layer[2].dispbuf_mapping = &cur_dispbuf[0];
+			cur_blackout = blackout[0] | force_blackout;
 		} else if (vd3_path_id == VFM_PATH_PIP) {
 			/* pip2 display in VD3 */
 			new_frame3 = path1_new_frame;
 			if (!new_frame3) {
-				if (!cur_pipbuf) {
+				if (!cur_dispbuf[1]) {
 					/* pip no display frame */
 					if (cur_vd3_path_id != vd3_path_id)
 						safe_switch_videolayer(2, false, true);
 					vd_layer[2].dispbuf = NULL;
-				} else if (cur_pipbuf == &local_pip) {
+				} else if (cur_dispbuf[1] == &vf_local[1]) {
 					/* pip keep frame */
-					vd_layer[2].dispbuf = cur_pipbuf;
+					vd_layer[2].dispbuf = cur_dispbuf[1];
 				} else if (vd_layer[2].dispbuf
-					!= cur_pipbuf) {
-					new_frame3 = cur_pipbuf;
+					!= cur_dispbuf[1]) {
+					new_frame3 = cur_dispbuf[1];
 				}
 			}
-			if (new_frame3 || cur_pipbuf)
-				vd_layer[2].dispbuf_mapping = &cur_pipbuf;
-			cur_blackout = blackout_pip | force_blackout;
+			if (new_frame3 || cur_dispbuf[1])
+				vd_layer[2].dispbuf_mapping = &cur_dispbuf[1];
+			cur_blackout = blackout[1] | force_blackout;
 		} else if (vd3_path_id != VFM_PATH_INVALID) {
 			/* pip2 display in VD3 */
 			new_frame3 = path2_new_frame;
 			if (!new_frame3) {
-				if (!cur_pipbuf2) {
+				if (!cur_dispbuf[2]) {
 					/* pip no display frame */
 					if (cur_vd3_path_id != vd3_path_id)
 						safe_switch_videolayer(2, false, true);
 					vd_layer[2].dispbuf = NULL;
-				} else if (cur_pipbuf2 == &local_pip2) {
+				} else if (cur_dispbuf[2] == &vf_local[2]) {
 					/* pip keep frame */
-					vd_layer[2].dispbuf = cur_pipbuf2;
+					vd_layer[2].dispbuf = cur_dispbuf[2];
 				} else if (vd_layer[2].dispbuf
-					!= cur_pipbuf2) {
-					new_frame3 = cur_pipbuf2;
+					!= cur_dispbuf[2]) {
+					new_frame3 = cur_dispbuf[2];
 				}
 			}
-			if (new_frame3 || cur_pipbuf2)
-				vd_layer[2].dispbuf_mapping = &cur_pipbuf2;
-			cur_blackout = blackout_pip2 | force_blackout;
+			if (new_frame3 || cur_dispbuf[2])
+				vd_layer[2].dispbuf_mapping = &cur_dispbuf[2];
+			cur_blackout = blackout[2] | force_blackout;
 		} else {
 			cur_blackout = 1;
 		}
@@ -1458,11 +1457,11 @@ static int lowlatency_vsync(u8 instance_id)
 		    vd_layer[2].dispbuf &&
 		    (vd_layer[2].property_changed ||
 		     is_picmode_changed(2, vd_layer[2].dispbuf))) {
-			pip2_swap_frame(&vd_layer[2], vd_layer[2].dispbuf, vinfo);
-			need_disable_vd3 = false;
+			pipx_swap_frame(&vd_layer[2], vd_layer[2].dispbuf, vinfo);
+			need_disable_vd[2] = false;
 		} else if (new_frame3) {
-			pip2_swap_frame(&vd_layer[2], new_frame3, vinfo);
-			need_disable_vd3 = false;
+			pipx_swap_frame(&vd_layer[2], new_frame3, vinfo);
+			need_disable_vd[2] = false;
 		}
 
 		if (vd3_path_id == VFM_PATH_PIP2 ||
@@ -1481,35 +1480,34 @@ static int lowlatency_vsync(u8 instance_id)
 		? vd_layer[2].dispbuf : NULL,
 		new_frame3,
 		new_frame3 ? CSC_FLAG_TOGGLE_FRAME : 0,
-		curpip2_frame_par ?
-		curpip2_frame_par->supsc1_hori_ratio :
+		cur_frame_par[2] ?
+		cur_frame_par[2]->supsc1_hori_ratio :
 		0,
-		curpip2_frame_par ?
-		curpip2_frame_par->supsc1_vert_ratio :
+		cur_frame_par[2] ?
+		cur_frame_par[2]->supsc1_vert_ratio :
 		0,
-		curpip2_frame_par ?
-		curpip2_frame_par->spsc1_w_in :
+		cur_frame_par[2] ?
+		cur_frame_par[2]->spsc1_w_in :
 		0,
-		curpip2_frame_par ?
-		curpip2_frame_par->spsc1_h_in :
+		cur_frame_par[2] ?
+		cur_frame_par[2]->spsc1_h_in :
 		0,
-		curpip2_frame_par ?
-		curpip2_frame_par->cm_input_w :
+		cur_frame_par[2] ?
+		cur_frame_par[2]->cm_input_w :
 		0,
-		curpip2_frame_par ?
-		curpip2_frame_par->cm_input_h :
+		cur_frame_par[2] ?
+		cur_frame_par[2]->cm_input_h :
 		0,
 		VD3_PATH,
 		VPP_TOP0);
 #endif
-		if (need_disable_vd3)
+		if (need_disable_vd[2])
 			safe_switch_videolayer(2, false, true);
 	}
 
 	/* filter setting management */
-	primary_render_frame(&vd_layer[0]);
-	pip_render_frame(&vd_layer[1], vinfo);
-	pip2_render_frame(&vd_layer[2], vinfo);
+	for (i = 0; i < MAX_VD_LAYER; i++)
+		vdx_render_frame(&vd_layer[i], vinfo);
 	video_secure_set(VPP0);
 
 	if (vd_layer[0].dispbuf &&
@@ -1563,19 +1561,19 @@ static int lowlatency_vsync(u8 instance_id)
 			path0_new_frame, path1_new_frame,
 			path2_new_frame, path3_new_frame,
 			path4_new_frame, path5_new_frame,
-			cur_dispbuf, cur_pipbuf, cur_pipbuf2,
+			cur_dispbuf[0], cur_dispbuf[1], cur_dispbuf[2],
 			gvideo_recv[0] ? gvideo_recv[0]->cur_buf : NULL,
 			gvideo_recv[1] ? gvideo_recv[1]->cur_buf : NULL,
 			gvideo_recv[2] ? gvideo_recv[2]->cur_buf : NULL);
 		pr_info("VID: \tdispbuf:%p, %p, %p; \tvf_ext:%p, %p, %p;\nVID: \tlocal:%p, %p, %p, %p, %p, %p\n",
 			vd_layer[0].dispbuf, vd_layer[1].dispbuf, vd_layer[2].dispbuf,
 			vd_layer[0].vf_ext, vd_layer[1].vf_ext, vd_layer[2].vf_ext,
-			&vf_local, &local_pip, &local_pip2,
+			&vf_local[0], &vf_local[1], &vf_local[2],
 			gvideo_recv[0] ? &gvideo_recv[0]->local_buf : NULL,
 			gvideo_recv[1] ? &gvideo_recv[1]->local_buf : NULL,
 			gvideo_recv[2] ? &gvideo_recv[2]->local_buf : NULL);
 		pr_info("VID: \tblackout:%d %d, %d force:%d;\n",
-			blackout, blackout_pip, blackout_pip2, force_blackout);
+			blackout[0], blackout[1], blackout[2], force_blackout);
 	}
 
 	if (vd_layer[0].dispbuf &&

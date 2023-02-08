@@ -19,6 +19,7 @@
 #ifndef VIDEO_HW_S5_HH
 #define VIDEO_HW_S5_HH
 #include "video_reg_s5.h"
+#include "video_priv.h"
 
 #define DEBUG_VD_PROC     BIT(0)
 #define DEBUG_VPP_POST    BIT(1)
@@ -389,7 +390,7 @@ void fgrain_uninit_s5(u8 layer_id);
 void fgrain_update_table_s5(struct video_layer_s *layer,
 			 struct vframe_s *vf);
 void vd_set_alpha_s5(struct video_layer_s *layer,
-			     u32 win_en, struct pip_alpha_scpxn_s *alpha_win);
+			struct pip_alpha_scpxn_s *alpha_win);
 void check_afbc_status(void);
 int vpp_crc_check_s5(u32 vpp_crc_en, u8 vpp_index);
 void set_vdx_probe_ctrl_s5(u8 probe_id, u32 output);

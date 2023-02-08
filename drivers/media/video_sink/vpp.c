@@ -3136,7 +3136,8 @@ void aisr_reshape_output(u32 enable)
  *[1]if sharpness is enable or vscaler is enable,must set to 1,
  *sharpness1;reg can only to be w on gxtvbb;which is fix after txl
  */
-int vpp_set_super_scaler_regs(int scaler_path_sel,
+int vpp_set_super_scaler_regs(struct video_layer_s *layer,
+			      int scaler_path_sel,
 			      int reg_srscl0_enable,
 			      int reg_srscl0_hsize,
 			      int reg_srscl0_vsize,
@@ -3158,7 +3159,9 @@ int vpp_set_super_scaler_regs(int scaler_path_sel,
 	u32 sr_reg_offt;
 	u32 sr_reg_offt2;
 	u32 sr_support;
+	u8 vpp_index;
 
+	vpp_index = layer->vpp_index;
 	sr = &sr_info;
 	sr_support = sr->sr_support;
 	if (super_scaler == 0) {
@@ -3174,52 +3177,52 @@ int vpp_set_super_scaler_regs(int scaler_path_sel,
 		sr_core0_max_width = sr->core0_v_enable_width_max;
 
 	/* top config */
-	tmp_data = VSYNC_RD_MPEG_REG(VPP_SRSHARP0_CTRL);
+	tmp_data = cur_dev->rdma_func[vpp_index].rdma_rd(VPP_SRSHARP0_CTRL);
 	if (sr0_sr1_refresh) {
 		if (reg_srscl0_hsize > sr_core0_max_width) {
 			if (((tmp_data >> 1) & 0x1) != 0)
-				VSYNC_WR_MPEG_REG_BITS(VPP_SRSHARP0_CTRL,
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_SRSHARP0_CTRL,
 						       0, 1, 1);
 			if ((tmp_data & 0x1) != 0)
-				VSYNC_WR_MPEG_REG_BITS(VPP_SRSHARP0_CTRL,
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_SRSHARP0_CTRL,
 						       0, 0, 1);
-			vpu_module_clk_disable(VPP0, SR0, 0);
+			vpu_module_clk_disable(vpp_index, SR0, 0);
 		} else {
 			if (((tmp_data >> 1) & 0x1) != 1)
-				VSYNC_WR_MPEG_REG_BITS(VPP_SRSHARP0_CTRL,
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_SRSHARP0_CTRL,
 						       1, 1, 1);
 			if ((tmp_data & 0x1) != 1)
-				vpu_module_clk_enable(VPP0, SR0, 0);
-			VSYNC_WR_MPEG_REG_BITS(VPP_SRSHARP0_CTRL, 1, 0, 1);
+				vpu_module_clk_enable(vpp_index, SR0, 0);
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_SRSHARP0_CTRL, 1, 0, 1);
 		}
 	}
-	tmp_data = VSYNC_RD_MPEG_REG(VPP_SRSHARP1_CTRL);
+	tmp_data = cur_dev->rdma_func[vpp_index].rdma_rd(VPP_SRSHARP1_CTRL);
 	if (sr0_sr1_refresh) {
 		if (((tmp_data >> 1) & 0x1) != 1)
-			VSYNC_WR_MPEG_REG_BITS(VPP_SRSHARP1_CTRL, 1, 1, 1);
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_SRSHARP1_CTRL, 1, 1, 1);
 		if ((tmp_data & 0x1) != 1)
-			VSYNC_WR_MPEG_REG_BITS(VPP_SRSHARP1_CTRL, 1, 0, 1);
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_SRSHARP1_CTRL, 1, 0, 1);
 		if (cur_dev->aisr_support)
-			VSYNC_WR_MPEG_REG_BITS(VPP_SRSHARP1_CTRL, 3, 8, 2);
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_SRSHARP1_CTRL, 3, 8, 2);
 	}
 	/* core0 config */
-	tmp_data = VSYNC_RD_MPEG_REG
+	tmp_data = cur_dev->rdma_func[vpp_index].rdma_rd
 	(SRSHARP0_SHARP_SR2_CTRL + sr_reg_offt);
 	if (sr0_sr1_refresh) {
 		if (((tmp_data >> 5) & 0x1) !=
 			(reg_srscl0_vert_ratio & 0x1))
-			VSYNC_WR_MPEG_REG_BITS
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(SRSHARP0_SHARP_SR2_CTRL + sr_reg_offt,
 		     reg_srscl0_vert_ratio & 0x1, 5, 1);
 		if (((tmp_data >> 4) & 0x1) !=
 			(reg_srscl0_hori_ratio & 0x1))
-			VSYNC_WR_MPEG_REG_BITS
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(SRSHARP0_SHARP_SR2_CTRL + sr_reg_offt,
 			reg_srscl0_hori_ratio & 0x1, 4, 1);
 
 		if (reg_srscl0_hsize > sr_core0_max_width) {
 			if (((tmp_data >> 2) & 0x1) != 0)
-				VSYNC_WR_MPEG_REG_BITS
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
 					(SRSHARP0_SHARP_SR2_CTRL + sr_reg_offt,
 					0, 2, 1);
 		} else {
@@ -3229,14 +3232,14 @@ int vpp_set_super_scaler_regs(int scaler_path_sel,
 					(SRSHARP0_SHARP_SR2_CTRL
 					+ sr_reg_offt,
 					1, 2, 1);
-				VSYNC_WR_MPEG_REG_BITS
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
 					(SRSHARP0_SHARP_SR2_CTRL + sr_reg_offt,
 					1, 2, 1);
 			}
 		}
 
 		if ((tmp_data & 0x1) == (reg_srscl0_hori_ratio & 0x1))
-			VSYNC_WR_MPEG_REG_BITS
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(SRSHARP0_SHARP_SR2_CTRL + sr_reg_offt,
 			((~(reg_srscl0_hori_ratio & 0x1)) & 0x1), 0, 1);
 	}
@@ -3247,7 +3250,7 @@ int vpp_set_super_scaler_regs(int scaler_path_sel,
 			tmp_data = sharpness1_sr2_ctrl_32d7;
 #endif
 		} else {
-			tmp_data = VSYNC_RD_MPEG_REG
+			tmp_data = cur_dev->rdma_func[vpp_index].rdma_rd
 			(SRSHARP1_SHARP_SR2_CTRL
 			+ sr_reg_offt2); /*0xc80*/
 		}
@@ -3269,7 +3272,7 @@ int vpp_set_super_scaler_regs(int scaler_path_sel,
 			tmp_data |=
 				(((~(reg_srscl1_hori_ratio & 0x1)) & 0x1) << 0);
 			if (sr0_sr1_refresh) {
-				VSYNC_WR_MPEG_REG
+				cur_dev->rdma_func[vpp_index].rdma_wr
 					(SRSHARP1_SHARP_SR2_CTRL
 					+ sr_reg_offt2, /*0xc80*/
 					tmp_data);
@@ -3281,16 +3284,16 @@ int vpp_set_super_scaler_regs(int scaler_path_sel,
 	/* size config */
 	tmp_data = ((reg_srscl0_hsize & 0x1fff) << 16) |
 		(reg_srscl0_vsize & 0x1fff);
-	tmp_data2 = VSYNC_RD_MPEG_REG
+	tmp_data2 = cur_dev->rdma_func[vpp_index].rdma_rd
 		(SRSHARP0_SHARP_HVSIZE + sr_reg_offt);
 	if (tmp_data != tmp_data2)
-		VSYNC_WR_MPEG_REG
+		cur_dev->rdma_func[vpp_index].rdma_wr
 		(SRSHARP0_SHARP_HVSIZE + sr_reg_offt,
 		tmp_data);
 	if (cur_dev->sr_in_size) {
-		tmp_data2 = VSYNC_RD_MPEG_REG(VPP_SR0_IN_SIZE);
+		tmp_data2 = cur_dev->rdma_func[vpp_index].rdma_rd(VPP_SR0_IN_SIZE);
 		if (tmp_data != tmp_data2)
-			VSYNC_WR_MPEG_REG
+			cur_dev->rdma_func[vpp_index].rdma_wr
 			(VPP_SR0_IN_SIZE, tmp_data);
 	}
 	tmp_data = ((reg_srscl1_hsize & 0x1fff) << 16) |
@@ -3298,10 +3301,10 @@ int vpp_set_super_scaler_regs(int scaler_path_sel,
 
 	if (sr_support & SUPER_CORE1_SUPPORT) {
 		if (get_cpu_type() != MESON_CPU_MAJOR_ID_GXTVBB)
-			tmp_data2 = VSYNC_RD_MPEG_REG
+			tmp_data2 = cur_dev->rdma_func[vpp_index].rdma_rd
 			(SRSHARP1_SHARP_HVSIZE + sr_reg_offt2);
 		if (is_meson_gxtvbb_cpu() || tmp_data != tmp_data2) {
-			VSYNC_WR_MPEG_REG
+			cur_dev->rdma_func[vpp_index].rdma_wr
 			(SRSHARP1_SHARP_HVSIZE + sr_reg_offt2, tmp_data);
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 			if (is_meson_gxtvbb_cpu())
@@ -3310,9 +3313,9 @@ int vpp_set_super_scaler_regs(int scaler_path_sel,
 		}
 	}
 	if (cur_dev->sr_in_size) {
-		tmp_data2 = VSYNC_RD_MPEG_REG(VPP_SR1_IN_SIZE);
+		tmp_data2 = cur_dev->rdma_func[vpp_index].rdma_rd(VPP_SR1_IN_SIZE);
 		if (tmp_data != tmp_data2)
-			VSYNC_WR_MPEG_REG
+			cur_dev->rdma_func[vpp_index].rdma_wr
 			(VPP_SR1_IN_SIZE, tmp_data);
 	}
 
@@ -3328,32 +3331,32 @@ int vpp_set_super_scaler_regs(int scaler_path_sel,
 	else
 		tmp_data = ((reg_srscl1_hsize & 0x1fff) << 16) |
 			(reg_srscl1_vsize & 0x1fff);
-	tmp_data2 = VSYNC_RD_MPEG_REG(VPP_VE_H_V_SIZE);
+	tmp_data2 = cur_dev->rdma_func[vpp_index].rdma_rd(VPP_VE_H_V_SIZE);
 	if (tmp_data != tmp_data2)
-		VSYNC_WR_MPEG_REG(VPP_VE_H_V_SIZE, tmp_data);
+		cur_dev->rdma_func[vpp_index].rdma_wr(VPP_VE_H_V_SIZE, tmp_data);
 	/*chroma blue stretch size setting*/
 	if (is_meson_txlx_cpu() || is_meson_txhd_cpu() ||
 	    (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))) {
 		tmp_data = (((vpp_postblend_out_width & 0x1fff) << 16) |
 			(vpp_postblend_out_height & 0x1fff));
-		VSYNC_WR_MPEG_REG(VPP_OUT_H_V_SIZE, tmp_data);
+		cur_dev->rdma_func[vpp_index].rdma_wr(VPP_OUT_H_V_SIZE, tmp_data);
 	} else {
 		if (scaler_path_sel == CORE0_PPS_CORE1) {
 			tmp_data = (((reg_srscl1_hsize & 0x1fff) <<
 				reg_srscl1_hori_ratio) << 16) |
 				((reg_srscl1_vsize & 0x1fff) <<
 				reg_srscl1_vert_ratio);
-			tmp_data2 = VSYNC_RD_MPEG_REG(VPP_PSR_H_V_SIZE);
+			tmp_data2 = cur_dev->rdma_func[vpp_index].rdma_rd(VPP_PSR_H_V_SIZE);
 			if (tmp_data != tmp_data2)
-				VSYNC_WR_MPEG_REG(VPP_PSR_H_V_SIZE, tmp_data);
+				cur_dev->rdma_func[vpp_index].rdma_wr(VPP_PSR_H_V_SIZE, tmp_data);
 		} else if ((scaler_path_sel == CORE0_CORE1_PPS) ||
 			(scaler_path_sel == CORE1_BEFORE_PPS) ||
 			(scaler_path_sel == CORE1_AFTER_PPS)) {
 			tmp_data = ((reg_srscl1_hsize & 0x1fff) << 16) |
 					   (reg_srscl1_vsize & 0x1fff);
-			tmp_data2 = VSYNC_RD_MPEG_REG(VPP_PSR_H_V_SIZE);
+			tmp_data2 = cur_dev->rdma_func[vpp_index].rdma_rd(VPP_PSR_H_V_SIZE);
 			if (tmp_data != tmp_data2)
-				VSYNC_WR_MPEG_REG(VPP_PSR_H_V_SIZE, tmp_data);
+				cur_dev->rdma_func[vpp_index].rdma_wr(VPP_PSR_H_V_SIZE, tmp_data);
 		}
 	}
 
@@ -3367,17 +3370,17 @@ int vpp_set_super_scaler_regs(int scaler_path_sel,
 		if (scaler_path_sel == CORE0_PPS_CORE1 ||
 			scaler_path_sel == CORE1_BEFORE_PPS ||
 			scaler_path_sel == CORE0_BEFORE_PPS) {
-			VSYNC_WR_MPEG_REG_BITS(VPP_VE_ENABLE_CTRL,
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_VE_ENABLE_CTRL,
 					       0, data_path_chose, 1);
 		} else {
-			VSYNC_WR_MPEG_REG_BITS(VPP_VE_ENABLE_CTRL,
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_VE_ENABLE_CTRL,
 					       1, data_path_chose, 1);
 		}
 #endif
 	}
 	if (super_scaler == 0) {
-		VSYNC_WR_MPEG_REG(VPP_SRSHARP0_CTRL, 0);
-		VSYNC_WR_MPEG_REG(VPP_SRSHARP1_CTRL, 0);
+		cur_dev->rdma_func[vpp_index].rdma_wr(VPP_SRSHARP0_CTRL, 0);
+		cur_dev->rdma_func[vpp_index].rdma_wr(VPP_SRSHARP1_CTRL, 0);
 	}
 
 	return 0;
@@ -4730,6 +4733,13 @@ RESTART:
 		}
 	}
 
+	/* apply line skip */
+	if (next_frame_par->hscale_skip_count) {
+		filter->vpp_hf_start_phase_step >>= 1;
+		filter->vpp_hsc_start_phase_step >>= 1;
+		next_frame_par->VPP_line_in_length_ >>= 1;
+	}
+
 	next_frame_par->video_input_h = next_frame_par->VPP_vd_end_lines_ -
 		next_frame_par->VPP_vd_start_lines_ + 1;
 	next_frame_par->video_input_h = next_frame_par->video_input_h /
@@ -4738,15 +4748,6 @@ RESTART:
 		next_frame_par->VPP_hd_start_lines_ + 1;
 	next_frame_par->video_input_w = next_frame_par->video_input_w /
 		(next_frame_par->hscale_skip_count + 1);
-
-	filter->vpp_hsc_start_phase_step = 0x1000000;
-
-	/* apply line skip */
-	if (next_frame_par->hscale_skip_count) {
-		filter->vpp_hf_start_phase_step >>= 1;
-		filter->vpp_hsc_start_phase_step >>= 1;
-		next_frame_par->VPP_line_in_length_ >>= 1;
-	}
 
 	if (next_frame_par->vscale_skip_count > 1 &&
 	    (vf->type & VIDTYPE_COMPRESS) &&

@@ -7848,7 +7848,7 @@ int amdv_parse_metadata_v1(struct vframe_s *vf,
 			pri_mode = V_PRIORITY;
 	} else {
 		/* audo mode:check video/graphics priority on the fly */
-		if (get_video_enabled() && is_graphics_output_off())
+		if (get_video_enabled(0) && is_graphics_output_off())
 			pri_mode = V_PRIORITY;
 		else
 			pri_mode = G_PRIORITY;
@@ -9280,7 +9280,7 @@ int amdv_parse_metadata_v2_stb(struct vframe_s *vf,
 			pri_mode = V_PRIORITY;
 	} else {
 		/*auto mode: check video/graphics priority on the fly */
-		if (get_video_enabled() && is_graphics_output_off())
+		if (get_video_enabled(0) && is_graphics_output_off())
 			pri_mode = V_PRIORITY;
 		else
 			pri_mode = G_PRIORITY;
@@ -10769,7 +10769,7 @@ int amdolby_vision_process_v1(struct vframe_s *vf,
 				     vf,
 				     get_hdr_module_status(VD1_PATH, VPP_TOP0)
 				     == HDR_MODULE_ON ? "on" : "off",
-				     get_video_enabled() ? "on" : "off");
+				     get_video_enabled(0) ? "on" : "off");
 		}
 	}
 
@@ -11630,7 +11630,7 @@ static int amdolby_vision_process_v2_stb
 					     vf, vf_2, toggle_mode_1, toggle_mode_2,
 					     get_hdr_module_status(VD1_PATH, VPP_TOP0)
 					     == HDR_MODULE_ON ? "on" : "off",
-					     get_video_enabled() ? "on" : "off");
+					     get_video_enabled(0) ? "on" : "off");
 		}
 	}
 

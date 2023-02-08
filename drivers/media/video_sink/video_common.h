@@ -32,4 +32,7 @@ void vframe_canvas_set(struct canvas_config_s *config,
 	u32 planes,
 	u32 *index);
 bool is_layer_aisr_supported(struct video_layer_s *layer);
+ssize_t reg_dump_store(struct class *cla,
+				 struct class_attribute *attr,
+				const char *buf, size_t count);
 #endif

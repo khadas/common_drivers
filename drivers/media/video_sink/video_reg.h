@@ -177,6 +177,13 @@ struct hw_vpp_path_size_s {
 	u32 vd3_sc_h_endp;
 	u32 vd3_sc_v_startp;
 	u32 vd3_sc_v_endp;
+	u32 schn_sc_h_startp;
+	u32 schn_sc_h_endp;
+	u32 schn_sc_v_startp;
+	u32 schn_sc_v_endp;
+	u32 sr0_in_size;
+	u32 sr1_in_size;
+	u32 aisr_post_size;
 	u32 vpp_preblend_h_size;
 	u32 preblend_vd1_h_start_end;
 	u32 preblend_vd1_v_start_end;

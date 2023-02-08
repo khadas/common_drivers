@@ -178,6 +178,8 @@ static void common_vf_unreg_provider(struct video_recv_s *ins)
 		atomic_inc(&video_unreg_flag);
 		while (atomic_read(&video_inirq_flag) > 0)
 			schedule();
+		while (atomic_read(&video_prevsync_inirq_flag) > 0)
+			schedule();
 	}
 
 	spin_lock_irqsave(&ins->lock, flags);
@@ -319,6 +321,8 @@ static void common_vf_light_unreg_provider(struct video_recv_s *ins)
 	} else { /* vpp0 */
 		atomic_inc(&video_unreg_flag);
 		while (atomic_read(&video_inirq_flag) > 0)
+			schedule();
+		while (atomic_read(&video_prevsync_inirq_flag) > 0)
 			schedule();
 	}
 

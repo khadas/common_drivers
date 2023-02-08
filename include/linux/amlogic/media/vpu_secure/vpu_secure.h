@@ -10,6 +10,7 @@ enum vpp_top_e {
 	VPP_TOP,
 	VPP_TOP_1,
 	VPP_TOP_2,
+	VPP_PRE_VSYNC,
 	VPP_TOP_MAX
 };
 

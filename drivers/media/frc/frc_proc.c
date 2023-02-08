@@ -669,7 +669,7 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return;
 
-	vd_en_flag = get_video_enabled();
+	vd_en_flag = get_video_enabled(0);
 	vd_regval = vpu_reg_read(0x1dfb);
 	if (devp->ud_dbg.res1_dbg_en == 1)
 		pr_frc(1, "get_vd_en=%2d, 0x1dfb=0x%8x\n",

@@ -73,7 +73,7 @@ static void calculate_real_fps_and_vsync(struct timeval *start, struct timeval *
 	vd_test_fps_val[i] = div64_u64((u64)100000 * 100000 * 1000, vd_test_vsync_val[i]);
 }
 
-void vsync_notify_video_composer(void)
+void vsync_notify_video_composer(u8 layer_id)
 {
 	int i;
 	int count = MAX_VIDEO_COMPOSER_INSTANCE_NUM;
@@ -1252,7 +1252,7 @@ static int video_display_uninit(int layer_index)
 	}
 	if (dev->index == 0)
 		set_video_path_select("default", 0);
-	set_blackout_policy(1);
+	set_vdx_blackout_policy(layer_index, 1);
 	vd_disable_video_layer(dev, 1);
 	video_set_global_output(dev->index, 0);
 	ret = video_display_release_path(dev);

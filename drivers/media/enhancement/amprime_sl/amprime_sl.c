@@ -1096,7 +1096,7 @@ void prime_sl_process(struct vframe_s *vf)
 		prime_sl_set_reg(&prime_sl_setting.prime_sl);
 		prime_sl_running = 1;
 	} else if (prime_sl_running &&
-			(!get_video_enabled() || !vf ||
+			(!get_video_enabled(0) || !vf ||
 			 prime_sl_output_mode == PRIME_SL_DISPLAY_BYPASS)) {
 		/* TODO: need close? */
 		prime_sl_close();

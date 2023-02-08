@@ -4700,6 +4700,7 @@ static struct osd_device_hw_s t3_dev_property = {
 	.remove_afbc = 0,
 	.remove_pps = 0,
 	.prevsync_support = 0,
+	/* not enable */
 };
 
 static struct osd_device_hw_s t5w_dev_property = {
@@ -4724,6 +4725,18 @@ static struct osd_device_hw_s c3_dev_property = {
 	.remove_afbc = 1,
 	.remove_pps = 0,
 	.prevsync_support = 0,
+};
+
+static struct osd_device_hw_s t5m_dev_property = {
+	.display_type = T7_DISPLAY,
+	.has_8G_addr = 1,
+	.multi_afbc_core = 1,
+	.has_multi_vpp = 1,
+	.new_blend_bypass = 1,
+	.path_ctrl_independ = 1,
+	.remove_afbc = 3,
+	.remove_pps = 3,
+	.prevsync_support = 1,
 };
 
 static struct osd_device_data_s osd_s4 = {
@@ -5028,12 +5041,14 @@ static int __init osd_probe(struct platform_device *pdev)
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T3)
 		memcpy(&osd_dev_hw, &t3_dev_property,
 		       sizeof(struct osd_device_hw_s));
-	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5W ||
-			osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5M)
+	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5W)
 		memcpy(&osd_dev_hw, &t5w_dev_property,
 		       sizeof(struct osd_device_hw_s));
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_C3)
 		memcpy(&osd_dev_hw, &c3_dev_property,
+		       sizeof(struct osd_device_hw_s));
+	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5M)
+		memcpy(&osd_dev_hw, &t5m_dev_property,
 		       sizeof(struct osd_device_hw_s));
 	else
 		memcpy(&osd_dev_hw, &legcy_dev_property,

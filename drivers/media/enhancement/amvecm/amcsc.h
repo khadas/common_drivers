@@ -205,11 +205,7 @@ extern struct master_display_info_s dbg_hdr_send;
 int amvecm_matrix_process(struct vframe_s *vf, struct vframe_s *vf_rpt, int flags,
 			  enum vd_path_e vd_path, enum vpp_index_e vpp_index);
 int amvecm_hdr_dbg(u32 sel);
-
-u32 get_video_enabled(void);
-u32 get_videopip_enabled(void);
-u32 get_videopip2_enabled(void);
-
+u32 get_video_enabled(u8 layer_id);
 void set_video_mute(bool on);
 int get_video_mute(void);
 

@@ -159,31 +159,24 @@ static bool is_vsync_vppx_rdma_enable(u8 vpp_index)
 }
 #endif
 
-static void pipx_render_frame(u8 vpp_index, const struct vinfo_s *vinfo)
+static void pip_render_frame(u8 vpp_index, const struct vinfo_s *vinfo)
 {
 	u8 vpp_id = 0;
 
 	vpp_id = vpp_index - VPP1;
 	if (vpp_id < VPP2) {
-		if (vpp_index == VPP1)
-			pip_render_frame(&vd_layer_vpp[vpp_id], vinfo);
-		else if (vpp_index == VPP2)
-			pip2_render_frame(&vd_layer_vpp[vpp_id], vinfo);
+		vdx_render_frame(&vd_layer_vpp[vpp_id], vinfo);
 	}
 }
 
-static void pipx_swap_frame(u8 vpp_index, struct vframe_s *vf,
+static void pip_swap_frame(u8 vpp_index, struct vframe_s *vf,
 				  const struct vinfo_s *vinfo)
 {
 	u8 vpp_id = 0;
 
 	vpp_id = vpp_index - VPP1;
-	if (vpp_id < VPP2) {
-		if (vpp_index == VPP1)
-			pip_swap_frame(&vd_layer_vpp[vpp_id], vf, vinfo);
-		else if (vpp_index == VPP2)
-			pip2_swap_frame(&vd_layer_vpp[vpp_id], vf, vinfo);
-	}
+	if (vpp_id < VPP2)
+		pipx_swap_frame(&vd_layer_vpp[vpp_id], vf, vinfo);
 }
 #define MAX_LOG_CNT 10
 
@@ -359,17 +352,17 @@ irqreturn_t vsync_isr_viux(u8 vpp_index, const struct vinfo_s *info)
 	if (!new_frame &&
 	    vd_layer_vpp[vpp_id].dispbuf &&
 	    vd_layer_vpp[vpp_id].property_changed) {
-		pipx_swap_frame(vpp_index, vd_layer_vpp[vpp_id].dispbuf, info);
+		pip_swap_frame(vpp_index, vd_layer_vpp[vpp_id].dispbuf, info);
 		if (layer_id == 1)
-			need_disable_vd2 = false;
+			need_disable_vd[1] = false;
 		else if (layer_id == 2)
-			need_disable_vd3 = false;
+			need_disable_vd[2] = false;
 	} else if (new_frame) {
-		pipx_swap_frame(vpp_index, new_frame, info);
+		pip_swap_frame(vpp_index, new_frame, info);
 		if (layer_id == 1)
-			need_disable_vd2 = false;
+			need_disable_vd[1] = false;
 		else if (layer_id == 2)
-			need_disable_vd3 = false;
+			need_disable_vd[2] = false;
 	}
 	vd_layer_vpp[vpp_id].keep_frame_id = 0xff;
 
@@ -401,11 +394,11 @@ irqreturn_t vsync_isr_viux(u8 vpp_index, const struct vinfo_s *info)
 		vpp_index);
 #endif
 
-	if (need_disable_vd2 || need_disable_vd3)
+	if (need_disable_vd[1] || need_disable_vd[2])
 		safe_switch_videolayer(layer_id, false, true);
 
 	/* filter setting management */
-	pipx_render_frame(vpp_index, info);
+	pip_render_frame(vpp_index, info);
 	video_secure_set(vpp_index);
 
 	if (vd_layer_vpp[vpp_id].dispbuf &&

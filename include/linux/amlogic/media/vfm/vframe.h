@@ -754,7 +754,7 @@ struct video_composer_private {
 	struct vframe_s mosaic_dst_vf[4];
 };
 
-int get_curren_frame_para(int *top, int *left, int *bottom, int *right);
+int get_current_frame_para(int *top, int *left, int *bottom, int *right);
 
 u8 is_vpp_postblend(void);
 

@@ -221,11 +221,13 @@ void check_afbc_status(void)
 		vd_afbc_reg = &vd_proc_reg.vd_afbc_reg[i];
 		reg_addr[i] = vd_afbc_reg->afbc_stat;
 		reg_val[i] = READ_VCBUS_REG(reg_addr[i]);
+		#ifdef test
 		if (((reg_val[i] & 0x7ffc) == 0) &&
 			((reg_val[i] & 0x30000) != 0x30000))
 			pr_info("afbc stats err: 0x%x = 0x%x\n",
 				reg_addr[i], reg_val[i]);
 		WRITE_VCBUS_REG(reg_addr[i], 1);
+		#endif
 	}
 }
 
@@ -715,6 +717,7 @@ static void dump_vd_padding_reg(void)
 	reg_val = READ_VCBUS_REG(reg_addr);
 	pr_info("[0x%x] = 0x%X [VD1_PAD_CTRL]\n",
 		   reg_addr, reg_val);
+
 }
 
 static void dump_vd_blend_reg(void)
@@ -1488,7 +1491,7 @@ static void disable_vd1_slice_blend_s5(struct video_layer_s *layer, u8 slice)
 			layer->vf_ext,
 			layer->dispbuf_mapping ?
 			*layer->dispbuf_mapping : NULL,
-			&vf_local, &local_pip,
+			&vf_local[0], &vf_local[1],
 			gvideo_recv[0] ? &gvideo_recv[0]->local_buf : NULL,
 			gvideo_recv[1] ? &gvideo_recv[1]->local_buf : NULL);
 
@@ -1544,7 +1547,7 @@ void disable_vd1_blend_s5(struct video_layer_s *layer)
 			layer->vf_ext,
 			layer->dispbuf_mapping ?
 			*layer->dispbuf_mapping : NULL,
-			&vf_local, &local_pip,
+			&vf_local[0], &vf_local[1],
 			gvideo_recv[0] ? &gvideo_recv[0]->local_buf : NULL,
 			gvideo_recv[1] ? &gvideo_recv[1]->local_buf : NULL);
 
@@ -1591,7 +1594,7 @@ void disable_vd2_blend_s5(struct video_layer_s *layer)
 			layer->vf_ext,
 			layer->dispbuf_mapping ?
 			*layer->dispbuf_mapping : NULL,
-			&vf_local, &local_pip,
+			&vf_local[0], &vf_local[1],
 			gvideo_recv[0] ? &gvideo_recv[0]->local_buf : NULL,
 			gvideo_recv[1] ? &gvideo_recv[1]->local_buf : NULL);
 	cur_dev->rdma_func[vpp_index].rdma_wr(vd_afbc_reg->afbc_enable, 0);
@@ -1612,7 +1615,7 @@ void disable_vd2_blend_s5(struct video_layer_s *layer)
 	}
 	/* FIXME: remove global variables */
 	last_el_status = 0;
-	need_disable_vd2 = false;
+	need_disable_vd[1] = false;
 	layer->new_vframe_count = 0;
 }
 
@@ -7216,27 +7219,27 @@ static void vd1_scaler_setting_s5(struct video_layer_s *layer,
 				- frame_par->VPP_hsc_startp;
 			r3 = frame_par->VPP_hsc_endp
 				- frame_par->VPP_hsc_startp;
-			if (frame_par->supscl_path ==
-			     CORE0_PPS_CORE1 ||
-			    frame_par->supscl_path ==
-			     CORE1_AFTER_PPS ||
-			    frame_par->supscl_path ==
-			     PPS_CORE0_CORE1 ||
-			    frame_par->supscl_path ==
-			     PPS_CORE0_POSTBLEND_CORE1 ||
-			    frame_par->supscl_path ==
-			     PPS_POSTBLEND_CORE1 ||
-			    frame_par->supscl_path ==
-			     PPS_CORE1_CM)
-				r3 >>= frame_par->supsc1_hori_ratio;
-			if (frame_par->supscl_path ==
-			     CORE0_AFTER_PPS ||
-			    frame_par->supscl_path ==
-			     PPS_CORE0_CORE1 ||
-			    frame_par->supscl_path ==
-			     PPS_CORE0_POSTBLEND_CORE1)
-				r3 >>= frame_par->supsc0_hori_ratio;
 		}
+		if (frame_par->supscl_path ==
+		     CORE0_PPS_CORE1 ||
+		    frame_par->supscl_path ==
+		     CORE1_AFTER_PPS ||
+		    frame_par->supscl_path ==
+		     PPS_CORE0_CORE1 ||
+		    frame_par->supscl_path ==
+		     PPS_CORE0_POSTBLEND_CORE1 ||
+		    frame_par->supscl_path ==
+		     PPS_POSTBLEND_CORE1 ||
+		    frame_par->supscl_path ==
+		     PPS_CORE1_CM)
+			r3 >>= frame_par->supsc1_hori_ratio;
+		if (frame_par->supscl_path ==
+		     CORE0_AFTER_PPS ||
+		    frame_par->supscl_path ==
+		     PPS_CORE0_CORE1 ||
+		    frame_par->supscl_path ==
+		     PPS_CORE0_POSTBLEND_CORE1)
+			r3 >>= frame_par->supsc0_hori_ratio;
 
 		if (has_pre_hscaler_ntap(0)) {
 			int ds_ratio = 1;
@@ -8198,6 +8201,7 @@ bool is_sr_phase_changed_s5(void)
 	sr0_sharp_sr2_ctrl2_pre = sr0_sharp_sr2_ctrl2;
 	sr1_sharp_sr2_ctrl2_pre = sr1_sharp_sr2_ctrl2;
 	return changed;
+
 }
 
 void vd_set_dcu_s5(u8 layer_id,
@@ -10656,7 +10660,7 @@ void fgrain_update_table_s5(struct video_layer_s *layer,
 #endif
 
 void vd_set_alpha_s5(struct video_layer_s *layer,
-			     u32 win_en, struct pip_alpha_scpxn_s *alpha_win)
+			struct pip_alpha_scpxn_s *alpha_win)
 {
 	int i;
 	u32 alph_gen_mode = 1;
@@ -10664,6 +10668,7 @@ void vd_set_alpha_s5(struct video_layer_s *layer,
 	u32 alph_gen_byps = 0;
 	u8 vpp_index, layer_id = 0;
 	struct vd_pip_alpha_reg_s *vd_pip_alpha_reg = NULL;
+	u32 win_en = alpha_win->win_en;
 
 	layer_id = layer->layer_id;
 	if (layer_id >= MAX_VD_CHAN_S5)

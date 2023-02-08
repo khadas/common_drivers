@@ -62,6 +62,9 @@
 #define VPP_POSTBLEND_OUT_PORT 18
 #define VIDEO1_PORT 19
 #define VIDEO2_PORT 20
+#define VPP2_BLOCK 21
+#define HDR3_BLOCK 22
+#define SLICE2PPC_BLOCK 23
 
 /*
  * vpu block type

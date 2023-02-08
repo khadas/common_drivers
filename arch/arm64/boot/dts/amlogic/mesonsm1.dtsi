@@ -1407,6 +1407,11 @@
 		fr_policy = <0>;
 	};
 
+	vout_mux: vout_mux {
+		compatible = "amlogic, vout_mux";
+		status = "okay";
+	};
+
 	dummy_venc: dummy_venc {
 		compatible = "amlogic, dummy_venc";
 		status = "okay";

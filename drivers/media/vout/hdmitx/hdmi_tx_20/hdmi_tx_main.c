@@ -250,7 +250,25 @@ static struct hdmitx_uevent hdmi_events[] = {
 /* indicate plugout before systemcontrol boot  */
 static bool plugout_mute_flg;
 
-static int hdmitx_set_uevent(enum hdmitx_event type, int val)
+int hdmitx_set_uevent_state(enum hdmitx_event type, int state)
+{
+	int ret = -1;
+	struct hdmitx_uevent *event;
+
+	for (event = hdmi_events; event->type != HDMITX_NONE_EVENT; event++) {
+		if (type == event->type)
+			break;
+	}
+	if (event->type == HDMITX_NONE_EVENT)
+		return ret;
+	event->state = state;
+
+	if (log_level == 0xfe)
+		pr_info("[%s] event_type: %s%d\n", __func__, event->env, state);
+	return 0;
+}
+
+int hdmitx_set_uevent(enum hdmitx_event type, int val)
 {
 	char env[MAX_UEVENT_LEN];
 	struct hdmitx_uevent *event = hdmi_events;
@@ -274,7 +292,8 @@ static int hdmitx_set_uevent(enum hdmitx_event type, int val)
 	snprintf(env, MAX_UEVENT_LEN, "%s%d", event->env, val);
 
 	ret = kobject_uevent_env(&hdev->hdtx_dev->kobj, KOBJ_CHANGE, envp);
-	/* pr_info("%s[%d] %s %d\n", __func__, __LINE__, env, ret); */
+	if (log_level == 0xfe)
+		pr_info("%s %s %d\n", __func__, env, ret);
 	return ret;
 }
 
@@ -313,7 +332,13 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	 * and must wait the resume.
 	 */
 	mutex_lock(&hdmimode_mutex);
-
+	/* under suspend, driver should not respond to mode setting,
+	 * as it may cause logic abnormal, most importantly,
+	 * it will enable hdcp and occupy DDC channel with high
+	 * priority, though there's protection in system control,
+	 * driver still need protection in case of old android version
+	 */
+	hdev->suspend_flag = true;
 	hdev->ready = 0;
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_SUSFLAG, 1);
 	usleep_range(10000, 10010);
@@ -416,6 +441,17 @@ static void hdmitx_late_resume(struct early_suspend *h)
 	if (info && drm_hdmitx_chk_mode_attr_sup(info->name,
 	    suspend_fmt_attr))
 		setup_attr(suspend_fmt_attr);
+	/* force revert state to trigger uevent send */
+	if (hdev->tx_comm.hpd_state) {
+		hdmitx_set_uevent_state(HDMITX_HPD_EVENT, 0);
+		hdmitx_set_uevent_state(HDMITX_AUDIO_EVENT, 0);
+		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 0);
+	} else {
+		hdmitx_set_uevent_state(HDMITX_HPD_EVENT, 1);
+		hdmitx_set_uevent_state(HDMITX_AUDIO_EVENT, 1);
+		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 1);
+	}
+	hdev->suspend_flag = false;
 	extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI,
 		hdev->tx_comm.hpd_state);
 	hdmitx_set_uevent(HDMITX_HPD_EVENT, hdev->tx_comm.hpd_state);
@@ -636,6 +672,15 @@ static int set_disp_mode_auto(void)
 
 	if (hdev->tx_comm.hpd_state == 0) {
 		pr_info("current hpd_state0, exit %s\n", __func__);
+		mutex_unlock(&hdmimode_mutex);
+		return -1;
+	}
+	/* some apk will do frame rate auto switch, and will switch mode
+	 * (exit auto frame rate) after enter suspend, this should be
+	 * prevented
+	 */
+	if (hdev->suspend_flag) {
+		pr_info("currently under suspend, exit %s\n", __func__);
 		mutex_unlock(&hdmimode_mutex);
 		return -1;
 	}
@@ -5617,9 +5662,20 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	hdmitx_notify_hpd(hdev->tx_comm.hpd_state,
 			  hdev->tx_comm.edid_parsing ?
 			  hdev->tx_comm.edid_ptr : NULL);
-
-	extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 1);
-	hdmitx_set_uevent(HDMITX_HPD_EVENT, 1);
+	/* under early suspend, only update uevent state, not
+	 * post to system, in case 1.old android system will
+	 * set hdmi mode, 2.audio server and audio_hal will
+	 * start run, increase power consumption
+	 */
+	if (hdev->suspend_flag) {
+		hdmitx_set_uevent_state(HDMITX_HPD_EVENT, 1);
+		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 1);
+		hdmitx_set_uevent_state(HDMITX_AUDIO_EVENT, 1);
+	} else {
+		hdmitx_set_uevent(HDMITX_HPD_EVENT, 1);
+		extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 1);
+		hdmitx_set_uevent(HDMITX_AUDIO_EVENT, 1);
+	}
 	/* audio uevent is used for android to
 	 * register hdmi audio device, it should
 	 * sync with hdmi hpd state.
@@ -5627,7 +5683,6 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	 * 2.when hotplug or suspend/resume, sync audio
 	 * uevent with hpd uevent
 	 */
-	hdmitx_set_uevent(HDMITX_AUDIO_EVENT, 1);
 	/* Should be started at end of output */
 	cancel_delayed_work(&hdev->work_cedst);
 	if (hdev->cedst_policy)
@@ -5731,9 +5786,18 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 	hdev->tx_comm.hpd_state = 0;
 	hdmitx_notify_hpd(hdev->tx_comm.hpd_state, NULL);
 
-	extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 0);
-	hdmitx_set_uevent(HDMITX_HPD_EVENT, 0);
-	hdmitx_set_uevent(HDMITX_AUDIO_EVENT, 0);
+	/* under early suspend, only update uevent state, not
+	 * post to system
+	 */
+	if (hdev->suspend_flag) {
+		hdmitx_set_uevent_state(HDMITX_HPD_EVENT, 0);
+		hdmitx_set_uevent_state(HDMITX_AUDIO_EVENT, 0);
+		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 0);
+	} else {
+		hdmitx_set_uevent(HDMITX_HPD_EVENT, 0);
+		hdmitx_set_uevent(HDMITX_AUDIO_EVENT, 0);
+		extcon_set_state_sync(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 0);
+	}
 	mutex_unlock(&hdmimode_mutex);
 	mutex_unlock(&setclk_mutex);
 
@@ -6022,6 +6086,11 @@ static int hdmitx_extcon_register(struct platform_device *pdev, struct device *d
 		pr_info("%s[%d] hdmitx_extcon_hdmi register failed\n", __func__, __LINE__);
 
 	return 0;
+}
+
+struct extcon_dev *get_hdmitx_extcon_hdmi(void)
+{
+	return hdmitx_extcon_hdmi;
 }
 
 static void hdmitx_init_parameters(struct hdmitx_info *info)

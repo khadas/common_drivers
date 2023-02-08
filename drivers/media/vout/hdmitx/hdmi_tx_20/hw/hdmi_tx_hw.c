@@ -28,6 +28,8 @@
 #include <linux/rtc.h>
 #include <linux/timekeeping.h>
 #include <linux/gpio.h>
+#include <linux/extcon.h>
+#include <linux/extcon-provider.h>
 
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/hdmi_tx/enc_clk_config.h>
@@ -3121,6 +3123,9 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 	int ret;
 	unsigned long adr = 0;
 	unsigned long value = 0;
+	struct extcon_dev *hdmitx_extcon_hdmi = get_hdmitx_extcon_hdmi();
+	struct extcon_dev *extcon_event_type;
+	static enum hdmitx_event event_type = HDMITX_NONE_EVENT;
 
 	while ((buf[i]) && (buf[i] != ',') && (buf[i] != ' ')) {
 		tmpbuf[i] = buf[i];
@@ -3369,6 +3374,30 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 		ret = kstrtoul(tmpbuf + 12, 10, &value);
 		hdev->debug_param.avmute_frame = value;
 		pr_info(HW "avmute_frame = %lu\n", value);
+	} else if (strncmp(tmpbuf, "testtype", 8) == 0) {
+		ret = kstrtoul(tmpbuf + 8, 10, &value);
+		event_type = value;
+		pr_info("test event type :%lu\n", value);
+	} else if (strncmp(tmpbuf, "testevent", 9) == 0) {
+		ret = kstrtoul(tmpbuf + 9, 10, &value);
+		hdmitx_set_uevent(event_type, value);
+	} else if (strncmp(tmpbuf, "teststate", 9) == 0) {
+		ret = kstrtoul(tmpbuf + 9, 10, &value);
+		hdmitx_set_uevent_state(event_type, value);
+	} else if (strncmp(tmpbuf, "testextconstate", 15) == 0) {
+		if (event_type) {
+			extcon_event_type = hdmitx_extcon_hdmi;
+			pr_info("test extcon event type hdmitx_extcon_hdmi\n");
+			ret = kstrtoul(tmpbuf + 15, 10, &value);
+			extcon_set_state(extcon_event_type, EXTCON_DISP_HDMI, value);
+		}
+	} else if (strncmp(tmpbuf, "testextconevent", 15) == 0) {
+		if (event_type) {
+			extcon_event_type = hdmitx_extcon_hdmi;
+			pr_info("test extcon event type hdmitx_extcon_hdmi\n");
+			ret = kstrtoul(tmpbuf + 15, 10, &value);
+			extcon_set_state(extcon_event_type, EXTCON_DISP_HDMI, value);
+		}
 	}
 }
 

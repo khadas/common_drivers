@@ -392,6 +392,7 @@ struct hdmitx_dev {
 	struct vpu_dev_s *hdmi_vpu_dev;
 #endif
 	struct st_debug_param debug_param;
+	bool suspend_flag;
 };
 
 
@@ -660,6 +661,9 @@ bool LGAVIErrorTV(struct rx_cap *prxcap);
 bool hdmitx_find_vendor_6g(struct hdmitx_dev *hdev);
 bool hdmitx_find_vendor_ratio(struct hdmitx_dev *hdev);
 bool hdmitx_find_vendor_null_pkt(struct hdmitx_dev *hdev);
+int hdmitx_set_uevent_state(enum hdmitx_event type, int state);
+int hdmitx_set_uevent(enum hdmitx_event type, int val);
+struct extcon_dev *get_hdmitx_extcon_hdmi(void);
 
 int hdmitx_uboot_already_display(int type);
 #endif

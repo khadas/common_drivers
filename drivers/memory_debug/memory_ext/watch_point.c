@@ -102,13 +102,25 @@ static int aml_get_num_wrps(void)
 {
 	u64 dfr0 = read_sanitised_ftr_reg(SYS_ID_AA64DFR0_EL1);
 #ifdef CONFIG_AMLOGIC_VMAP
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	return (1 +
+		cpuid_feature_extract_unsigned_field(dfr0,
+						ID_AA64DFR0_EL1_WRPs_SHIFT)) - 2;
+#else
 	return (1 +
 		cpuid_feature_extract_unsigned_field(dfr0,
 						ID_AA64DFR0_WRPS_SHIFT)) - 2;
+#endif
+#else
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	return 1 +
+		cpuid_feature_extract_unsigned_field(dfr0,
+						ID_AA64DFR0_EL1_WRPs_SHIFT);
 #else
 	return 1 +
 		cpuid_feature_extract_unsigned_field(dfr0,
 						ID_AA64DFR0_WRPS_SHIFT);
+#endif
 #endif
 }
 #else

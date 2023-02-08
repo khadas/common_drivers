@@ -852,7 +852,11 @@ static ssize_t tsensor_tempwrite_write(struct file *file, const char __user *use
 	if (kstrtoint(buf, 0, &temperature))
 		return -EINVAL;
 
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	for (i = 0; i < tz->num_trips; i++)
+#else
 	for (i = 0; i < tz->trips; i++)
+#endif
 		meson_handle_thermal_trip(tz, i, temperature);
 
 	return count;
@@ -914,7 +918,11 @@ static int meson_tsensor_probe(struct platform_device *pdev)
 	}
 
 	tz = data->tzd;
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	for (i = 0; i < tz->num_trips; i++) {
+#else
 	for (i = 0; i < tz->trips; i++) {
+#endif
 		tz->ops->get_trip_type(tz, i, &trip_type);
 		switch (trip_type) {
 		case THERMAL_TRIP_HOT:

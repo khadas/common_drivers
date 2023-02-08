@@ -524,11 +524,13 @@ static unsigned long pfn_max_align_down(unsigned long pfn)
 			     pageblock_nr_pages) - 1);
 }
 
+#if CONFIG_AMLOGIC_KERNEL_VERSION < 14515
 static unsigned long pfn_max_align_up(unsigned long pfn)
 {
 	return ALIGN(pfn, max_t(unsigned long, MAX_ORDER_NR_PAGES,
 				pageblock_nr_pages));
 }
+#endif
 
 static struct page *get_migrate_page(struct page *page, unsigned long private)
 {
@@ -891,6 +893,9 @@ int aml_cma_alloc_range(unsigned long start, unsigned long end,
 	int ret = 0, order;
 	int try_times = 0;
 	int boost_ok = 0;
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	unsigned long failed_pfn;
+#endif
 
 	struct compact_control cc = {
 		.nr_migratepages = 0,
@@ -906,8 +911,14 @@ int aml_cma_alloc_range(unsigned long start, unsigned long end,
 
 	mutex_lock(&cma_mutex);
 	cma_debug(0, NULL, " range [%lx-%lx]\n", start, end);
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	ret = start_isolate_page_range(pfn_max_align_down(start),
+				       pfn_max_align_up(end), migrate_type,
+				       0, &failed_pfn);
+#else
 	ret = start_isolate_page_range(pfn_max_align_down(start),
 				       pfn_max_align_up(end), migrate_type, 0);
+#endif
 	if (ret < 0) {
 		cma_debug(1, NULL, "ret:%d\n", ret);
 		return ret;

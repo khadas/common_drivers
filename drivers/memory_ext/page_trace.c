@@ -28,6 +28,7 @@
 #endif
 #include <asm/stacktrace.h>
 #include <asm/sections.h>
+#include <trace/hooks/mm.h>
 
 #ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 #define DEBUG_PAGE_TRACE	0
@@ -425,6 +426,7 @@ static void __init find_static_common_symbol(void)
 	dump_common_caller();
 }
 
+#if CONFIG_AMLOGIC_KERNEL_VERSION < 14515
 static int is_common_caller(struct alloc_caller *caller, unsigned long pc)
 {
 	int ret = 0;
@@ -456,6 +458,7 @@ static int is_common_caller(struct alloc_caller *caller, unsigned long pc)
 	}
 	return ret;
 }
+#endif
 
 unsigned long unpack_ip(struct page_trace *trace)
 {
@@ -477,6 +480,8 @@ unsigned long unpack_ip(struct page_trace *trace)
 
 unsigned long find_back_trace(void)
 {
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+#else
 	struct stackframe frame;
 	int ret, step = 0;
 
@@ -511,6 +516,7 @@ unsigned long find_back_trace(void)
 	}
 	pr_info("can't get pc\n");
 	dump_stack();
+#endif
 	return 0;
 }
 
@@ -1141,7 +1147,13 @@ void __init page_trace_mem_init(void)
 
 	find_static_common_symbol();
 #ifdef CONFIG_KASAN	/* open multi_shot for kasan */
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+#if IS_ENABLED(CONFIG_KASAN_KUNIT_TEST) || IS_ENABLED(CONFIG_KASAN_MODULE_TEST)
 	kasan_save_enable_multi_shot();
+#endif
+#else
+	kasan_save_enable_multi_shot();
+#endif
 #endif
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 	/*

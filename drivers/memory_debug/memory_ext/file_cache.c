@@ -378,10 +378,14 @@ static int filecache_show(struct seq_file *m, void *arg)
 	tick = sched_clock();
 	/* update_file_cache(&fs, fct); */
 	memset(&fs, 0, sizeof(struct filecache_stat));
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+
+#else
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
 	register_trace_android_vh_do_traversal_lruvec(get_file_cache_hook, (void *)fct);
 	do_traversal_all_lruvec();
 	unregister_trace_android_vh_do_traversal_lruvec(get_file_cache_hook, (void *)fct);
+#endif
 #endif
 
 	now  = sched_clock();

@@ -72,6 +72,9 @@ early_param("slab_trace", early_slab_trace_param);
 
 int save_obj_stack(unsigned long *stack, int depth)
 {
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+
+#else
 	struct stackframe frame;
 	int ret, step = 0;
 
@@ -104,6 +107,7 @@ int save_obj_stack(unsigned long *stack, int depth)
 			stack[step - 1] = frame.pc;
 		step++;
 	}
+#endif
 	return 0;
 }
 

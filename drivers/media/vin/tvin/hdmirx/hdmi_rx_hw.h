@@ -1459,6 +1459,9 @@
 #define PXL_FPLL_CFG_CTL0_PWD_IVCRX        0x000010bc
 #define PXL_FPLL_CFG_CTL1_PWD_IVCRX        0x000010bd
 #define PXL_BIST_CTRL_PWD_IVCRX        0x000010be
+#define BIST_CTRL_PBIST_IVCRX          0x00001c48
+#define BIST_CTRL2_PBIST_IVCRX         0x00001c65
+#define BIST_VIDEO_MODE_PBIST_IVCRX    0x00001c4d
 #define PWD0_CLK_BYP_4_PWD_IVCRX        0x000010bf
 #define PWD0_CLK_EN_5_PWD_IVCRX        0x000010c0
 #define PWD0_CLK_DIV_0_PWD_IVCRX        0x000010c1
@@ -3319,4 +3322,5 @@ int is_rx_hdcp22key_crc0_pass(void);
 int is_rx_hdcp22key_crc1_pass(void);
 void rx_hdcp_crc_check(void);
 int rx_get_hdcp_auth_sts(void);
+void rx_set_color_bar(unsigned int lvl);
 #endif

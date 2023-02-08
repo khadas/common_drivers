@@ -1583,6 +1583,7 @@ void set_scdc_cfg(int hpdlow, int pwr_provided)
 	case CHIP_ID_T7:
 	case CHIP_ID_T3:
 	case CHIP_ID_T5W:
+	case CHIP_ID_T5M:
 		hdmirx_wr_bits_cor(RX_C0_SRST2_AON_IVCRX, _BIT(5), 1);
 		udelay(1);
 		hdmirx_wr_bits_cor(RX_C0_SRST2_AON_IVCRX, _BIT(5), 0);
@@ -1779,6 +1780,8 @@ void rx_i2c_init(void)
 	int data32 = 0;
 
 	data32 |= (0xf	<< 13); /* bit[16:13] */
+	if (rx.chip_id == CHIP_ID_T5M)
+		data32 |= 1 << 12;
 	data32 |= 0	<< 11;
 	data32 |= 0	<< 10;
 	data32 |= 0	<< 9;
@@ -5028,13 +5031,13 @@ u32 aml_cable_clk_band(u32 cableclk, u32 clkrate)
 
 	/* 1:10 */
 	if (rx.chip_id == CHIP_ID_T5M) {
-		if (cab_clk < (35 * MHz))
+		if (cab_clk < (37 * MHz))
 			bw = PHY_BW_0;
-		else if (cab_clk < (72 * MHz))
+		else if (cab_clk < (75 * MHz))
 			bw = PHY_BW_1;
-		else if (cab_clk < (155 * MHz))
+		else if (cab_clk < (150 * MHz))
 			bw = PHY_BW_2;
-		else if (cab_clk < (340 * MHz))
+		else if (cab_clk < (300 * MHz))
 			bw = PHY_BW_3;
 		else if (cab_clk < (525 * MHz))
 			bw = PHY_BW_4;
@@ -5071,13 +5074,13 @@ u32 aml_phy_pll_band(u32 cableclk, u32 clkrate)
 
 	/* 1:10 */
 	if (rx.chip_id == CHIP_ID_T5M) {
-		if (cab_clk < (35 * MHz))
+		if (cab_clk < (37 * MHz))
 			bw = PLL_BW_0;
-		else if (cab_clk < (72 * MHz))
+		else if (cab_clk < (75 * MHz))
 			bw = PLL_BW_1;
-		else if (cab_clk < (155 * MHz))
+		else if (cab_clk < (150 * MHz))
 			bw = PLL_BW_2;
-		else if (cab_clk < (340 * MHz))
+		else if (cab_clk < (300 * MHz))
 			bw = PLL_BW_3;
 		else if (cab_clk < (600 * MHz))
 			bw = PLL_BW_4;
@@ -5885,6 +5888,41 @@ void rx_ddc_active_monitor(void)
 			rx_pr("port: %d, edid_status: 0x%x,\n", rx.port, temp);
 		rx.ddc_filter_en = false;
 	}
+}
+
+void rx_set_color_bar(unsigned int lvl)
+{
+	int data32;
+
+	data32 = 0;
+	data32 |= (color_bar_debug_en << 3);//reg_px1_bist2vpcout
+	data32 |= (0 << 2);//reg_px1_bist2vpcin_en
+	data32 |= (0 << 1);//reg_px1_bist_in_rpt_px1
+	data32 |= (0 << 0);//reg_px1_bist_in_vpc_sel
+	hdmirx_wr_cor(PXL_BIST_CTRL_PWD_IVCRX, data32);
+	data32 = 0;
+	data32 |= (1 << 1);//bist reset
+	hdmirx_wr_cor(BIST_CTRL_PBIST_IVCRX, data32);
+	data32 = 0;
+	data32 |= (1 << 4);//start bist
+	data32 |= (1 << 3);//run continuously
+	data32 |= (1 << 2);// stpg set
+	data32 |= (0 << 1);//bist reset
+	data32 |= (1 << 0);//bist enable
+	hdmirx_wr_cor(BIST_CTRL_PBIST_IVCRX, data32);
+	data32 = 0;
+	data32 |= (1 << 5);//stpg use external or pbist timing
+	data32 |= (0 << 4);//stpg inv vsync or not inv
+	data32 |= (0 << 3);//stpg inv hsync or not inv
+	data32 |= (0 << 2);//PGEN out or STPG out
+	data32 |= (0 << 1);//inv vsync or not inv
+	data32 |= (0 << 0);//inv hsync or not inv
+	hdmirx_wr_cor(BIST_CTRL2_PBIST_IVCRX, data32);
+	data32 = 0;
+	data32 |= (lvl << 4);//reg_stpg_sel
+	data32 |= (0 << 3);//de follow tmds_de for stpg
+	data32 |= (5 << 0);//resample mode pixel repeat
+	hdmirx_wr_cor(BIST_VIDEO_MODE_PBIST_IVCRX, data32);
 }
 
 u32 rx_get_ecc_pkt_cnt(void)

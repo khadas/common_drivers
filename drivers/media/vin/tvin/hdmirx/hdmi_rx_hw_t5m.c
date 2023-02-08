@@ -53,15 +53,15 @@ int phy_debug_en;
 static const u32 phy_misc_t5m[][2] = {
 		/*  0x18	0x1c	*/
 	{	 /* 24~35M */
-		0xffe000c0, 0x11c73001,
+		0xffe000c0, 0x11c73003,
 	},
-	{	 /* 35~72M */
-		0xffe00080, 0x11c73001,
+	{	 /* 37~75M */
+		0xffe000c0, 0x11c73003,
 	},
-	{	 /* 72~155M */
-		0xffe00080, 0x11c73001,
+	{	 /* 75~150M */
+		0xffe00080, 0x11c73002,
 	},
-	{	 /* 155~340M */
+	{	 /* 150~340M */
 		0xffe00040, 0x11c73001,
 	},
 	{	 /* 340~525M */
@@ -76,19 +76,19 @@ static const u32 phy_dcha_t5m[][2] = {
 		 /* 0x08	 0x0c*/
 		/* some bits default close,reopen when pll stable */
 	{	 /* 24~45M */
-		0x02f27ccc, 0x40100c59,
+		0x00f77ccc, 0x40100c59,
 	},
-	{	 /* 35~72M */
-		0x02f27666, 0x40100c59,
+	{	 /* 35~75M */
+		0x00f77666, 0x40100c59,
 	},
-	{	 /* 72~155M */
-		0x02f27666, 0x7ff00459,
+	{	 /* 75~150M */
+		0x00f77666, 0x40100459,
 	},
-	{	 /* 155~340M */
-		0x02b27666, 0x7ff00459,
+	{	 /* 150~340M */
+		0x00f77666, 0x7ff00459,
 	},
 	{	 /* 340~525M */
-		0x02821666, 0x7ff00459,
+		0x00f73666, 0x7ff00459,
 	},
 	{	 /* 525~600M */
 		0x02821666, 0x7ff00459,
@@ -100,22 +100,22 @@ static const u32 phy_dchd_t5m[][2] = {
 		/* some bits default close,reopen when pll stable */
 		/* 0x10:12,13,14,15;0x14:12,13,16,17 */
 	{	 /* 24~35M */
-		0x04000105, 0x30880060,
+		0x04000586, 0x30880060,
 	},
-	{	 /* 35~72M */
-		0x04000015, 0x30880060,
+	{	 /* 35~75M */
+		0x04000095, 0x30880060,
 	},
-	{	 /* 72~155M */
-		0x04000015, 0x30880069,
+	{	 /* 75~150M */
+		0x04000095, 0x30880069,
 	},
-	{	 /* 145~340M */
-		0x04080015, 0x30e00069,
+	{	 /* 140~340M */
+		0x04080095, 0x30e00069,
 	},
 	{	 /* 340~525M */
-		0x04080013, 0x30e00469,
+		0x04080093, 0x30e00469,
 	},
 	{	 /* 525~600M */
-		0x04080013, 0x30e00469,
+		0x04080093, 0x30e00469,
 	},
 };
 
@@ -135,6 +135,8 @@ struct apll_param apll_tab_t5m[] = {
 	{PLL_BW_4, 40, 1, 0x1, 2,	  0x0, 2, 0},/* 594 */
 	{PLL_BW_NULL, 40, 1, 0x3, 8,	 0x2, 8, 0},
 };
+
+u32 t5m_rlevel[] = {8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7};
 
 /*Decimal to Gray code */
 unsigned int decimaltogray_t5m(unsigned int x)
@@ -193,19 +195,19 @@ void t5m_480p_pll_cfg(void)
 
 void t5m_720p_pll_cfg(void)
 {
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05305000);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05305001);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302803);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05305003);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x41401236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05305007);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45305007);
 	usleep_range(10, 20);
 }
 
@@ -247,19 +249,36 @@ void t5m_4k30_pll_cfg(void)
 
 void t5m_4k60_pll_cfg(void)
 {
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
-	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
-	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
-	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302803);
-	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
-	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
-	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
+	if (rx.clk.cable_clk > 300 && rx.clk.cable_clk < 340) {
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302820);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302821);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302823);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x21401236);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302827);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302827);
+		usleep_range(10, 20);
+	} else {
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01481236);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302801);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302803);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x01401236);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
+		usleep_range(10, 20);
+		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
+	}
 	usleep_range(10, 20);
 }
 
@@ -866,7 +885,8 @@ void aml_eq_cfg_t5m(void)
 	/*enable HYPER_GAIN calibration for 6G to fix 2.0 cts HF2-1 issue*/
 	if (rx.phy.phy_bw >= PHY_BW_2 && agc_enable)
 		aml_agc_flow_t5m();
-	aml_hyper_gain_tuning_t5m();
+	if (rx.phy.phy_bw >= PHY_BW_1)
+		aml_hyper_gain_tuning_t5m();
 	usleep_range(200, 210);
 	/*tmds valid det*/
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_CDR_LKDET_EN, 1);
@@ -876,11 +896,17 @@ void aml_phy_get_trim_val_t5m(void)
 {
 	u32 data32;
 
-	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1);
-	/* bit [12: 15]*/
-	rterm_trim_val_t5m = (data32 >> 12) & 0xf;
-	/* bit'0*/
-	rterm_trim_flag_t5m = data32 & 0x1;
+	dts_debug_flag = (phy_term_lel >> 4) & 0x1;
+	if (dts_debug_flag == 0) {
+		data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1);
+		rterm_trim_val_t5m = (data32 >> 12) & 0xf;
+		rterm_trim_flag_t5m = data32 & 0x1;
+	} else {
+		rlevel = phy_term_lel & 0xf;
+		if (rlevel > 15)
+			rlevel = 15;
+		rterm_trim_flag_t5m = dts_debug_flag;
+	}
 	if (rterm_trim_flag_t5m)
 		rx_pr("rterm trim=0x%x\n", rterm_trim_val_t5m);
 }
@@ -918,9 +944,12 @@ void aml_phy_cfg_t5m(void)
 		data32 = phy_misc_t5m[idx][0];
 		if (phy_debug_en && misc1_value)
 			data32 = misc1_value;
-		if (rterm_trim_flag_t5m)
+		if (rterm_trim_flag_t5m) {
+			if (dts_debug_flag)
+				rterm_trim_val_t5m = t5m_rlevel[rlevel];
 			data32 = ((data32 & (~((0xf << 12) | 0x1))) |
-			(rterm_trim_val_t5m << 12) | rterm_trim_flag_t5m);
+				(rterm_trim_val_t5m << 12) | rterm_trim_flag_t5m);
+		}
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, data32);
 		usleep_range(5, 10);
 		data32 = phy_misc_t5m[idx][1];

@@ -95,8 +95,11 @@ int log_level = LOG_EN;
 u32 dbg_cs;
 u32 dbg_pkt;// = 0x81;
 u32 check_cor_irq_via_vsync;
+int color_bar_debug_en;
+int color_bar_lvl;
 /* used in other module */
 static int audio_sample_rate;
+int reset_pcs_flag = 1;
 
 static int auds_rcv_sts;
 module_param(auds_rcv_sts, int, 0664);
@@ -2438,6 +2441,8 @@ void rx_get_global_variable(const char *buf)
 	pr_var(misc1_value, i++);
 	pr_var(misc2_value, i++);
 	pr_var(phy_debug_en, i++);
+	pr_var(color_bar_debug_en, i++);
+	pr_var(color_bar_lvl, i++);
 	/* phy var definition */
 	pr_var(rx.aml_phy.sqrst_en, i++);
 	pr_var(rx.aml_phy.vga_dbg, i++);
@@ -2752,6 +2757,12 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(phy_debug_en),
 	    &phy_debug_en, value))
 		return pr_var(phy_debug_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(color_bar_debug_en),
+	    &color_bar_debug_en, value))
+		return pr_var(color_bar_debug_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(color_bar_lvl),
+	    &color_bar_lvl, value))
+		return pr_var(color_bar_lvl, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.var.force_pattern), &rx.var.force_pattern, value))
 		return pr_var(rx.var.force_pattern, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.sqrst_en), &rx.aml_phy.sqrst_en, value))
@@ -3433,17 +3444,22 @@ void rx_main_state_machine(void)
 				#endif
 				sig_stable_err_cnt = 0;
 				esd_phy_rst_cnt = 0;
+				reset_pcs_flag = 1;
 				rx.ddc_filter_en = false;
+				rx_set_color_bar(color_bar_lvl);
 			}
 		} else {
 			sig_stable_cnt = 0;
 			rx.var.de_stable = false;
 			if (sig_unstable_cnt < sig_unstable_max) {
 				sig_unstable_cnt++;
-				if (rx_phy_level & 0x1)
+				if (rx_phy_level & 0x1 && reset_pcs_flag) {
 					reset_pcs();
+					reset_pcs_flag = 0;
+				}
 				if (log_level & PHY_LOG)
 					rx_pr("DE not stable,reset pcs\n");
+				break;
 			}
 			if (rx.err_rec_mode == ERR_REC_EQ_RETRY) {
 				rx.state = FSM_WAIT_CLK_STABLE;
@@ -4154,7 +4170,10 @@ int hdmirx_debug(const char *buf, int size)
 		else
 			set_video_mute(true);
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {
-		rx_phy_short_bist();
+		if (tmpbuf[4] == '1')
+			rx_set_color_bar(tmpbuf[5] - '0');
+		else
+			rx_phy_short_bist();
 	} else if (strncmp(tmpbuf, "eye", 3) == 0) {
 		sm_pause = 1;
 		aml_eq_eye_monitor();

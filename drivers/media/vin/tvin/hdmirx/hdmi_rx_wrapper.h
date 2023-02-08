@@ -122,6 +122,7 @@ enum fps_e {
 extern u32 force_vic;
 extern u32 vpp_mute_enable;
 extern u32 dbg_cs;
+extern int color_bar_debug_en;
 
 enum tvin_sig_fmt_e hdmirx_hw_get_fmt(void);
 void rx_main_state_machine(void);

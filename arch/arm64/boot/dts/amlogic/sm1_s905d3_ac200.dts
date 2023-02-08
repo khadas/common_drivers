@@ -137,7 +137,7 @@
 	};
 
 	galcore {
-		status = "disabled";
+		status = "okay";
 	};
 	gpioleds {
 		compatible = "gpio-leds";

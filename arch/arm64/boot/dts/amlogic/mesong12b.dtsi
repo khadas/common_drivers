@@ -1122,11 +1122,11 @@
 	galcore {
 		compatible = "amlogic, galcore";
 		dev_name = "galcore";
-		status = "disabled";
-		//clocks = <&clkc CLKID_VNANOQ_AXI_CLK_COMP>,
-		//	<&clkc CLKID_VNANOQ_CORE_CLK_COMP>;
-		//clock-names = "cts_vipnanoq_axi_clk_composite",
-		//	"cts_vipnanoq_core_clk_composite";
+		status = "okay";
+		clocks = <&clkc CLKID_VIPNANOQ_AXI_GATE>,
+			<&clkc CLKID_VIPNANOQ_CORE_GATE>;
+		clock-names = "cts_vipnanoq_axi_clk_composite",
+			"cts_vipnanoq_core_clk_composite";
 		interrupts = <0 147 4>;
 		interrupt-names = "galcore";
 		reg = <0x0 0xff100000 0x0 0x800

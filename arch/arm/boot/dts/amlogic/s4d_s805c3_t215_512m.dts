@@ -1376,6 +1376,10 @@
 	fip_size = <0x200000>;
 	ship_bad_block = <1>;
 	disa_irq_flag = <1>;
+	/* default backup 4, use this flag
+	 * to mark as backup 8
+	 */
+	bl2ex_8_copies;
 	nand@bootloader {
 		reg = <0>;
 		#address-cells = <1>;

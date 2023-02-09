@@ -49,7 +49,11 @@ static int storage_get_and_parse_ssp(struct mtd_info *mtd)
 	memset(ssp, 0, sizeof(struct storage_startup_parameter));
 	sip = &ssp->sip;
 
-	ssp->boot_backups = 4;
+	if (of_property_read_bool(mtd->dev.parent->of_node, "bl2ex_8_copies"))
+		ssp->boot_backups = 8;
+	else
+		ssp->boot_backups = 4;
+
 	sip->nsp.page_size =  mtd->writesize;
 	sip->nsp.block_size =  mtd->erasesize;
 	sip->nsp.pages_per_block = mtd->erasesize /

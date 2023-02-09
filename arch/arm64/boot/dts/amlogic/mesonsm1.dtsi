@@ -54,7 +54,7 @@
 				<&clkc CLKID_CPU_CLK_DYN>,
 				<&clkc CLKID_SYS_PLL>,
 				<&clkc CLKID_DSU_CLK>,
-				<&clkc CLKID_DSU_CLK_DYN>;
+				<&clkc CLKID_DSU_CLK_FINAL>;
 			clock-names = "core_clk",
 				"low_freq_clk_parent",
 				"high_freq_clk_parent",

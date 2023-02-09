@@ -29,6 +29,7 @@
 /* v20220607: add c3 support */
 /* v20230103: bypass debug print for vpu api */
 /* v20230210: add g12b/sm1 support*/
+/* v20230209: add s5 support */
 #define VPU_VERSION        "v20230210"
 
 int vpu_debug_print_flag;
@@ -1884,6 +1885,49 @@ static struct vpu_data_s vpu_data_c3 = {
 	.clktree_init = vpu_clktree_init_c3,
 };
 
+static struct vpu_data_s vpu_data_s5 = {
+	.chip_type = VPU_CHIP_S5,
+	.chip_name = "s5",
+
+	.clk_level_dft = CLK_LEVEL_DFT_G12A,
+	.clk_level_max = CLK_LEVEL_MAX_G12A,
+	.fclk_div_table = fclk_div_table_g12a,
+	.clk_table = vpu_clk_table,
+	.reg_map_table = vpu_reg_table_new,
+	.test_reg_table = vcbus_test_reg_s5,
+
+	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
+	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
+
+	.gp_pll_valid = 0,
+	.mem_pd_reg[0] = PWRCTRL_MEM_PD5_SC2,
+	.mem_pd_reg[1] = PWRCTRL_MEM_PD6_SC2,
+	.mem_pd_reg[2] = PWRCTRL_MEM_PD7_SC2,
+	.mem_pd_reg[3] = PWRCTRL_MEM_PD8_SC2,
+	.mem_pd_reg[4] = PWRCTRL_MEM_PD9_SC2,
+	.mem_pd_reg_flag = 1,
+
+	.pwrctrl_id_table = vpu_pwrctrl_id_table_t7,
+
+	.power_table = NULL,
+	.iso_table = NULL,
+	.reset_table = NULL,
+	.module_init_table = NULL,
+
+	.mem_pd_table = vpu_mem_pd_sc2,
+	.clk_gate_table = NULL,
+
+	.power_on = vpu_power_on_new,
+	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.power_init_check = vpu_power_init_check_dft,
+	.mempd_switch = vpu_vmod_mem_pd_switch_new,
+	.mempd_get = vpu_vmod_mem_pd_get_new,
+	.clk_apply = vpu_clk_apply_dft,
+	.clktree_init = vpu_clktree_init_dft,
+};
+
 static struct vpu_data_s vpu_data_t5m = {
 	.chip_type = VPU_CHIP_T5M,
 	.chip_name = "t5m",
@@ -2065,6 +2109,10 @@ static const struct of_device_id vpu_of_table[] = {
 	{
 		.compatible = "amlogic, vpu-sm1",
 		.data = &vpu_data_sm1,
+	},
+	{
+		.compatible = "amlogic, vpu-s5",
+		.data = &vpu_data_s5,
 	},
 	{}
 };

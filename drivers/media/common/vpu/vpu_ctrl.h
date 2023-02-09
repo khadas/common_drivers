@@ -79,6 +79,12 @@ static unsigned int vcbus_test_reg_c3[VCBUS_REG_CNT_MAX] = {
 	VPU_VOUT_DTH_DATA
 };
 
+static unsigned int vcbus_test_reg_s5[VCBUS_REG_CNT_MAX] = {
+	VENC_VDAC_TST_VAL,
+	ENCP_DVI_HSO_BEGIN,
+	S5_VPU_VPU_PWM_V0
+};
+
 /* ******************************************************* */
 /*              VPU_HDMI power: before reset             */
 /* ******************************************************* */

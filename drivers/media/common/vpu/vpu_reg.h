@@ -85,6 +85,9 @@
 #define VPP_VD1_MATRIX_OFFSET0_1     0x0289
 #define VPU_VOUT_DTH_DATA            0x0103
 
+#define ENCP_DVI_HSO_BEGIN           0x1c30
+#define S5_VPU_VPU_PWM_V0            0x2730
+
 int vpu_ioremap(struct platform_device *pdev, int *reg_map_table);
 
 unsigned int vpu_clk_read(unsigned int _reg);

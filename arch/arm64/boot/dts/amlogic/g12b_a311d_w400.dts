@@ -891,6 +891,10 @@
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
+&amhdmitx {
+		status = "okay";
+};
+
 //&drm_vpu {
 //	status = "okay";
 //	compatible = "amlogic,meson-g12b-vpu";

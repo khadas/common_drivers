@@ -36,8 +36,8 @@ enum map_addr_idx_e {
 	CBUS_REG_IDX = 0,
 	VCBUS_REG_IDX,
 	HHI_REG_IDX,
-	HDMITX_REG_IDX,
-	HDMITX_SEC_REG_IDX,
+	HDMITX_REG_IDX, //DWC
+	HDMITX_SEC_REG_IDX, //TOP
 	ELP_ESM_REG_IDX,
 	/* new added in SC2 */
 	ANACTRL_REG_IDX,
@@ -46,6 +46,9 @@ enum map_addr_idx_e {
 	SYSCTRL_REG_IDX,
 	CLKCTRL_REG_IDX,
 	PADCTRL_REG_IDX,
+	/* g12a add */
+	PERIPHS_REG_IDX,
+	AOBUS_REG_IDX,
 	REG_IDX_END
 };
 

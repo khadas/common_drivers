@@ -1181,6 +1181,10 @@
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
+&amhdmitx {
+		status = "okay";
+};
+
 //&drm_vpu {
 //	status = "disabled";
 //	logo_addr = "0x7f800000";

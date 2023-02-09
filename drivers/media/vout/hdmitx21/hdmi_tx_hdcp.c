@@ -95,6 +95,12 @@ void pr_hdcp_info(const char *fmt, ...)
  * the first hdcp1.4 auth break and then restart-->
  * TE doesn't respond to this re-auth, timeout and fail.
  */
+//for built pass, when rx ready, rm there
+bool __weak get_rx_active_sts(void)
+{
+	return 0;
+}
+
 bool hdcp_need_control_by_upstream(struct hdmitx_dev *hdev)
 {
 	if (!hdev->repeater_tx)

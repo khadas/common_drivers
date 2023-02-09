@@ -11,3 +11,13 @@ config AMLOGIC_PCIE_V2_HOST
 	  and therefore the driver re-uses the DesignWare core functions to
 	  implement the driver.
 
+config AMLOGIC_PCIE_V3_HOST
+	tristate "Meson PCIE_V3 controller"
+	depends on AMLOGIC_PCI_HOST
+	depends on PCI && PCI_MSI_IRQ_DOMAIN
+	help
+	  Say Y here if you want to enable PCIE controller support on Amlogic
+	  SoCs. The PCIE controller on Amlogic is based on DesignWare hardware
+	  and therefore the driver re-uses the DesignWare core functions to
+	  implement the driver.
+

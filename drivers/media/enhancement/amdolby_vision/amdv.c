@@ -3518,8 +3518,8 @@ static int amdv_policy_process_v2_stb(int *mode,
 			/* TV support HDR, All -> HDR */
 			if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_HDR10) {
-				pr_dv_dbg("src=%d, dovi output -> AMDV_OUTPUT_MODE_HDR10\n",
-					src_format);
+				pr_dv_dbg("%d->AMDV_OUTPUT_MODE_HDR10, cap=%x\n",
+					src_format, sink_hdr_support(vinfo));
 				*mode = AMDV_OUTPUT_MODE_HDR10;
 				mode_change = 1;
 			}
@@ -3530,7 +3530,8 @@ static int amdv_policy_process_v2_stb(int *mode,
 				/* DOVI to SDR */
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_SDR8) {
-					pr_dv_dbg("dovi, dovi output -> AMDV_OUTPUT_MODE_SDR8\n");
+					pr_dv_dbg("dovi->AMDV_OUTPUT_MODE_SDR8, cap=%x\n",
+							  sink_hdr_support(vinfo));
 					*mode = AMDV_OUTPUT_MODE_SDR8;
 					mode_change = 1;
 				}
@@ -3540,7 +3541,8 @@ static int amdv_policy_process_v2_stb(int *mode,
 					if (dolby_vision_mode !=
 					AMDV_OUTPUT_MODE_SDR8) {
 						/* HDR10 to SDR */
-						pr_dv_dbg("hdr, dovi output -> AMDV_OUTPUT_MODE_SDR8\n");
+						pr_dv_dbg("hdr->AMDV_OUTPUT_MODE_SDR8, cap=%x\n",
+								  sink_hdr_support(vinfo));
 						*mode =
 						AMDV_OUTPUT_MODE_SDR8;
 						mode_change = 1;
@@ -3548,7 +3550,8 @@ static int amdv_policy_process_v2_stb(int *mode,
 				} else if (dolby_vision_mode !=
 					AMDV_OUTPUT_MODE_BYPASS) {
 					/* HDR bypass */
-					pr_dv_dbg("hdr, dovi output -> AMDV_OUTPUT_MODE_BYPASS\n");
+					pr_dv_dbg("hdr->AMDV_OUTPUT_MODE_BYPASS, cap=%x\n",
+							  sink_hdr_support(vinfo));
 					*mode = AMDV_OUTPUT_MODE_BYPASS;
 					mode_change = 1;
 				}
@@ -3558,7 +3561,8 @@ static int amdv_policy_process_v2_stb(int *mode,
 					if (dolby_vision_mode !=
 					AMDV_OUTPUT_MODE_SDR8) {
 						/* HLG to SDR */
-						pr_dv_dbg("hlg, dovi output -> AMDV_OUTPUT_MODE_SDR8\n");
+						pr_dv_dbg("hlg->AMDV_OUTPUT_MODE_SDR8, cap=%x\n",
+								  sink_hdr_support(vinfo));
 						*mode =
 						AMDV_OUTPUT_MODE_SDR8;
 						mode_change = 1;
@@ -3566,7 +3570,8 @@ static int amdv_policy_process_v2_stb(int *mode,
 				} else if (dolby_vision_mode !=
 					AMDV_OUTPUT_MODE_BYPASS) {
 					/* HLG bypass */
-					pr_dv_dbg("hlg, dovi output -> AMDV_OUTPUT_MODE_BYPASS\n");
+					pr_dv_dbg("hlg->AMDV_OUTPUT_MODE_BYPASS, cap=%x\n",
+							  sink_hdr_support(vinfo));
 					*mode = AMDV_OUTPUT_MODE_BYPASS;
 					mode_change = 1;
 				}
@@ -3576,14 +3581,16 @@ static int amdv_policy_process_v2_stb(int *mode,
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_SDR8) {
 					/* SDR to SDR */
-					pr_dv_dbg("sdr, dovi output -> AMDV_OUTPUT_MODE_SDR8\n");
+					pr_dv_dbg("sdr->AMDV_OUTPUT_MODE_SDR8, cap=%x\n",
+							  sink_hdr_support(vinfo));
 					*mode = AMDV_OUTPUT_MODE_SDR8;
 					mode_change = 1;
 				}
 			} else if (dolby_vision_mode !=
 			AMDV_OUTPUT_MODE_BYPASS) {
 				/* HDR/SDR bypass */
-				pr_dv_dbg("sdr, dovi output -> AMDV_OUTPUT_MODE_BYPASS\n");
+				pr_dv_dbg("sdr->AMDV_OUTPUT_MODE_BYPASS, cap=%x\n",
+						  sink_hdr_support(vinfo));
 				*mode = AMDV_OUTPUT_MODE_BYPASS;
 				mode_change = 1;
 			}
@@ -3607,7 +3614,7 @@ static int amdv_policy_process_v2_stb(int *mode,
 			/* bypass dolby incase VPP is not in sdr mode */
 			if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_BYPASS) {
-				pr_dv_dbg("hdr module on, dovi output -> AMDV_OUTPUT_MODE_BYPASS\n");
+				pr_dv_dbg("hdr module on, AMDV_OUTPUT_MODE_BYPASS\n");
 				*mode = AMDV_OUTPUT_MODE_BYPASS;
 				mode_change = 1;
 			}
@@ -3624,7 +3631,7 @@ static int amdv_policy_process_v2_stb(int *mode,
 					pr_dv_dbg("hdmi in sink-led but output is source-led!\n");
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_IPT_TUNNEL) {
-					pr_dv_dbg("hdmi dovi, dovi output -> AMDV_OUTPUT_MODE_IPT_TUNNEL\n");
+					pr_dv_dbg("hdmi dovi->AMDV_OUTPUT_MODE_IPT_TUNNEL\n");
 					*mode =
 					AMDV_OUTPUT_MODE_IPT_TUNNEL;
 					mode_change = 1;
@@ -3633,7 +3640,7 @@ static int amdv_policy_process_v2_stb(int *mode,
 				/* TV support HDR, DOVI -> HDR */
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_HDR10) {
-					pr_dv_dbg("hdmi dovi, dovi output -> AMDV_OUTPUT_MODE_HDR10\n");
+					pr_dv_dbg("hdmi dovi->AMDV_OUTPUT_MODE_HDR10\n");
 					*mode = AMDV_OUTPUT_MODE_HDR10;
 					mode_change = 1;
 				}
@@ -3641,7 +3648,7 @@ static int amdv_policy_process_v2_stb(int *mode,
 				/* TV not support DOVI and HDR, DOVI -> SDR */
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_SDR8) {
-					pr_dv_dbg("hdmi dovi,, dovi output -> AMDV_OUTPUT_MODE_SDR8\n");
+					pr_dv_dbg("hdmi dovi->AMDV_OUTPUT_MODE_SDR8\n");
 					*mode = AMDV_OUTPUT_MODE_SDR8;
 					mode_change = 1;
 				}
@@ -3653,7 +3660,7 @@ static int amdv_policy_process_v2_stb(int *mode,
 				/* TV support DOVI, DOVI -> DOVI */
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_IPT_TUNNEL) {
-					pr_dv_dbg("dovi, dovi output -> AMDV_OUTPUT_MODE_IPT_TUNNEL\n");
+					pr_dv_dbg("dovi->AMDV_OUTPUT_MODE_IPT_TUNNEL\n");
 					*mode =
 					AMDV_OUTPUT_MODE_IPT_TUNNEL;
 					mode_change = 1;
@@ -3662,7 +3669,8 @@ static int amdv_policy_process_v2_stb(int *mode,
 				/* TV support HDR, DOVI -> HDR */
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_HDR10) {
-					pr_dv_dbg("dovi, dovi output -> AMDV_OUTPUT_MODE_HDR10\n");
+					pr_dv_dbg("dovi->AMDV_OUTPUT_MODE_HDR10, cap=%x\n",
+							  sink_hdr_support(vinfo));
 					*mode = AMDV_OUTPUT_MODE_HDR10;
 					mode_change = 1;
 				}
@@ -3670,7 +3678,8 @@ static int amdv_policy_process_v2_stb(int *mode,
 				/* TV not support DOVI and HDR, DOVI -> SDR */
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_SDR8) {
-					pr_dv_dbg("dovi, dovi output -> AMDV_OUTPUT_MODE_SDR8\n");
+					pr_dv_dbg("dovi->AMDV_OUTPUT_MODE_SDR8, cap=%x\n",
+							  sink_hdr_support(vinfo));
 					*mode = AMDV_OUTPUT_MODE_SDR8;
 					mode_change = 1;
 				}
@@ -3681,7 +3690,7 @@ static int amdv_policy_process_v2_stb(int *mode,
 				/* TV support HDR, HDR -> HDR */
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_HDR10) {
-					pr_dv_dbg("hdr10, dovi output -> AMDV_OUTPUT_MODE_HDR10\n");
+					pr_dv_dbg("hdr10->AMDV_OUTPUT_MODE_HDR10\n");
 					*mode = AMDV_OUTPUT_MODE_HDR10;
 					mode_change = 1;
 				}
@@ -3689,7 +3698,8 @@ static int amdv_policy_process_v2_stb(int *mode,
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_SDR8) {
 					/* HDR10 to SDR */
-					pr_dv_dbg("hdr10, dovi output -> AMDV_OUTPUT_MODE_SDR8\n");
+					pr_dv_dbg("hdr10->AMDV_OUTPUT_MODE_SDR8, cap=%x\n",
+							  sink_hdr_support(vinfo));
 					*mode = AMDV_OUTPUT_MODE_SDR8;
 					mode_change = 1;
 				}
@@ -3700,7 +3710,7 @@ static int amdv_policy_process_v2_stb(int *mode,
 				/* TV support HDR, HLG -> HDR */
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_HDR10) {
-					pr_dv_dbg("hlg, dovi output -> AMDV_OUTPUT_MODE_HDR10\n");
+					pr_dv_dbg("hlg->AMDV_OUTPUT_MODE_HDR10\n");
 					*mode = AMDV_OUTPUT_MODE_HDR10;
 					mode_change = 1;
 				}
@@ -3708,7 +3718,8 @@ static int amdv_policy_process_v2_stb(int *mode,
 				if (dolby_vision_mode !=
 				AMDV_OUTPUT_MODE_SDR8) {
 					/* HLG to SDR */
-					pr_dv_dbg("hlg, dovi output -> AMDV_OUTPUT_MODE_SDR8\n");
+					pr_dv_dbg("hlg->AMDV_OUTPUT_MODE_SDR8, cap=%x\n",
+							  sink_hdr_support(vinfo));
 					*mode = AMDV_OUTPUT_MODE_SDR8;
 					mode_change = 1;
 				}
@@ -3716,13 +3727,13 @@ static int amdv_policy_process_v2_stb(int *mode,
 		} else if (dolby_vision_mode !=
 			AMDV_OUTPUT_MODE_BYPASS) {
 			/* HDR/SDR bypass */
-			pr_dv_dbg("sdr, dovi output -> AMDV_OUTPUT_MODE_BYPASS\n");
+			pr_dv_dbg("sdr->AMDV_OUTPUT_MODE_BYPASS\n");
 			*mode = AMDV_OUTPUT_MODE_BYPASS;
 			mode_change = 1;
 		}
 	} else if (dolby_vision_policy == AMDV_FORCE_OUTPUT_MODE) {
 		if (dolby_vision_mode != *mode) {
-			pr_dv_dbg("src=%d, dovi output mode change %d -> %d\n",
+			pr_dv_dbg("src=%d, output mode change %d -> %d\n",
 				src_format, dolby_vision_mode, *mode);
 			mode_change = 1;
 		}
@@ -5845,8 +5856,9 @@ static bool send_hdmi_pkt
 	bool diagnostic_enable = false;
 
 	if ((debug_dolby & 2))
-		pr_dv_dbg("[%s]src_format %d, dst %d, last %d:\n",
-			     __func__, src_format, dst_format, last_dst_format);
+		pr_dv_dbg("[%s]src_format %d,dst %d,last %d:,vf %p\n",
+			     __func__, src_format, dst_format,
+			     last_dst_format, vf);
 
 	if (dst_format == FORMAT_HDR10) {
 		sdr_transition_delay = 0;
@@ -12962,6 +12974,7 @@ int register_dv_functions(const struct dolby_vision_func_s *func)
 	if (is_aml_s5()) {
 		malloc_md_pkt();
 		core2_sel = 3;
+		copy_core1a = 1;
 	}
 	module_installed = true;
 	return ret;
@@ -13979,7 +13992,7 @@ unsigned int amdv_check_enable(void)
 
 	/*second step: check ott mode*/
 	if (is_aml_g12() || is_aml_sc2() || is_aml_tm2_stbmode() ||
-		is_aml_t7_stbmode() || is_aml_s4d()) {
+		is_aml_t7_stbmode() || is_aml_s4d() || is_aml_s5()) {
 		if (amdv_on_in_uboot) {
 			if ((READ_VPP_DV_REG(AMDV_CORE3_DIAG_CTRL)
 				& 0xff) == 0x20) {
@@ -14103,6 +14116,10 @@ unsigned int amdv_check_enable(void)
 			WRITE_VPP_DV_REG
 				(AMDV_CORE2A_CLKGATE_CTRL,
 				0x55555555);
+			if (is_aml_s5() || is_aml_t7_stbmode())
+				WRITE_VPP_DV_REG
+					(AMDV_CORE2C_CLKGATE_CTRL,
+					0x55555555);
 			/* core3 */
 			dv_mem_power_off(VPU_DOLBY_CORE3);
 			WRITE_VPP_DV_REG

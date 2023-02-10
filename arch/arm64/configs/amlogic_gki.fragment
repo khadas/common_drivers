@@ -90,6 +90,9 @@ CONFIG_AMLOGIC_COMMON_CLK_T5W=m
 # amlogic-aoclk-soc-ao-t5w.ko
 CONFIG_AMLOGIC_COMMON_AO_CLK_T5W=m
 
+# amlogic-clk-soc-t3x.ko
+CONFIG_AMLOGIC_COMMON_CLK_T3X=m
+
 # amlogic-pinctrl-soc-s4.ko
 CONFIG_AMLOGIC_PINCTRL_MESON_S4=m
 

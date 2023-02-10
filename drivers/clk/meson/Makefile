@@ -123,3 +123,10 @@ $(T5W_AO_MODULE_NAME)-y += t5w-aoclk.o
 PR_FMT_AO_T5W = $(subst amlogic-,,$(T5W_AO_MODULE_NAME))
 PR_FMT_DEFINE_AO_T5W="-Dpr_fmt(fmt)= \"[$(PR_FMT_AO_T5W)]: \" fmt"
 CFLAGS_t5w-aoclk.o += $(PR_FMT_DEFINE_AO_T5W)
+
+T3X_MODULE_NAME = amlogic-clk-soc-t3x
+obj-$(CONFIG_AMLOGIC_COMMON_CLK_T3X) += $(T3X_MODULE_NAME).o
+$(T3X_MODULE_NAME)-y += t3x.o
+PR_FMT_T3X = $(subst amlogic-,,$(T3X_MODULE_NAME))
+PR_FMT_DEFINE_T3X="-Dpr_fmt(fmt)= \"[$(PR_FMT_T3X)]: \" fmt"
+CFLAGS_t3x.o += $(PR_FMT_DEFINE_T3X)

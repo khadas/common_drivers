@@ -550,8 +550,8 @@
 		aml-audio-card,name = "AML-AUGESOUND";
 
 		/*avout mute gpio*/
-		avout_mute-gpios = <&gpio GPIOA_8 GPIO_ACTIVE_HIGH>;
-		spk_mute-gpios = <&gpio GPIOA_5 GPIO_ACTIVE_LOW>;
+		//avout_mute-gpios = <&gpio GPIOA_8 GPIO_ACTIVE_HIGH>;
+		//spk_mute-gpios = <&gpio GPIOA_5 GPIO_ACTIVE_LOW>;
 
 		interrupts = <GIC_SPI 83 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "audio_exception64";
@@ -777,8 +777,8 @@
 
 		reset_pin-gpios = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
 		detect_pin-gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
-		enable_5v3v_pin-gpios = <&gpio GPIOT_11 GPIO_ACTIVE_HIGH>;
-		enable_pin-gpios = <&gpio GPIOT_12 GPIO_ACTIVE_HIGH>;
+		//enable_5v3v_pin-gpios = <&gpio GPIOT_11 GPIO_ACTIVE_HIGH>;
+		//enable_pin-gpios = <&gpio GPIOT_12 GPIO_ACTIVE_HIGH>;
 
 		interrupts = <0 174 1>;
 		interrupt-names = "smc0_irq";
@@ -812,7 +812,7 @@
 		fe0_i2c_adap_id = <&i2c2>;
 		fe0_demod_i2c_addr = <0xD8>;
 		fe0_reset_value = <0>;
-		fe0_reset_gpio = <&gpio GPIOT_22 GPIO_ACTIVE_LOW>;
+		//fe0_reset_gpio = <&gpio GPIOT_22 GPIO_ACTIVE_LOW>;
 		fe0_reset_dir = <0>; /* 0: out, 1: in. */
 		//fe0_ant_poweron_value = <0>;
 		//fe0_ant_power_gpio = <&gpio GPIOT_18 GPIO_ACTIVE_HIGH>;
@@ -824,7 +824,7 @@
 		fe1_i2c_adap_id = <&i2c2>;
 		fe1_demod_i2c_addr = <0xCA>;
 		fe1_reset_value = <0>;
-		fe1_reset_gpio = <&gpio GPIOT_22 GPIO_ACTIVE_LOW>;
+		//fe1_reset_gpio = <&gpio GPIOT_22 GPIO_ACTIVE_LOW>;
 		fe1_reset_dir = <0>; /* 0: out, 1: in. */
 		//fe1_ant_poweron_value = <0>;
 		//fe1_ant_power_gpio = <&gpio GPIOT_18 GPIO_ACTIVE_HIGH>;
@@ -894,8 +894,8 @@
 		key_name = "bluetooth", "mute";
 		key_code = <600 SW_MUTE_DEVICE>;
 		key_type = <EV_KEY EV_SW>;
-		key-gpios = <&gpio GPIOD_2 GPIO_ACTIVE_HIGH
-			     &gpio GPIOA_7 GPIO_ACTIVE_HIGH>;
+		//key-gpios = <&gpio GPIOD_2 GPIO_ACTIVE_HIGH
+		//	     &gpio GPIOA_7 GPIO_ACTIVE_HIGH>;
 		detect_mode = <0>;/*0:polling mode, 1:irq mode*/
 	};
 
@@ -1481,7 +1481,7 @@
 };
 
 &pcie1 {
-	reset-gpio = <&gpio GPIOX_5 GPIO_ACTIVE_HIGH>;
+	//reset-gpio = <&gpio GPIOX_5 GPIO_ACTIVE_HIGH>;
 	iommu-map = <0x100 &smmu 0x5 0x10>;
 	status = "disabled";
 };
@@ -1504,7 +1504,7 @@
 		compatible = "amlogic,aw9523b_led";
 		reg = <0x5b>;
 		status = "okay";
-		reset-gpio = <&gpio GPIOA_4 GPIO_ACTIVE_HIGH>;
+		//reset-gpio = <&gpio GPIOA_4 GPIO_ACTIVE_HIGH>;
 		platform = <4>;
 
 		led1 {
@@ -1716,7 +1716,7 @@
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc0_pins_t>;
-	cs-gpios = <&gpio GPIOT_4 0>;
+	//cs-gpios = <&gpio GPIOT_4 0>;
 };
 
 &spicc1 {
@@ -1730,7 +1730,7 @@
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc2_pins_x>;
-	cs-gpios = <&gpio GPIOX_2 0>;
+	//cs-gpios = <&gpio GPIOX_2 0>;
 };
 
 &fb {
@@ -1968,13 +1968,13 @@
 
 &aml_wifi{
 	status = "disabled";
-	interrupt-gpios = <&gpio  GPIOX_7  GPIO_ACTIVE_HIGH>;
-	power_on-gpios = <&gpio   GPIOX_6  GPIO_ACTIVE_HIGH>;
+	//interrupt-gpios = <&gpio  GPIOX_7  GPIO_ACTIVE_HIGH>;
+	//power_on-gpios = <&gpio   GPIOX_6  GPIO_ACTIVE_HIGH>;
 };
 
 &aml_bt {
 	status = "disabled";
-	reset-gpios = <&gpio    GPIOX_17 GPIO_ACTIVE_HIGH>;
+	//reset-gpios = <&gpio    GPIOX_17 GPIO_ACTIVE_HIGH>;
 	/*hostwake-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;*/
 };
 

@@ -11,6 +11,7 @@ function show_help {
 	echo "  --savedefconfig         for SAVEDEFCONFIG, [default]|1, not require parameter value"
 	echo "  --menuconfig            for MENUCONFIG, [default]|1, not require parameter value"
 	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
+	echo "  --patch                 for only am patches"
 }
 
 VA=
@@ -42,6 +43,10 @@ do
 		;;
 	--manual_insmod_module)
 		MANUAL_INSMOD_MODULE=1
+		shift
+		;;
+	--patch)
+		ONLY_PATCH=1
 		shift
 		;;
 	-h|--help)
@@ -83,6 +88,11 @@ if [[ ! -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh ]]; then
 fi
 
 export KERNEL_DIR COMMON_DRIVERS_DIR MANUAL_INSMOD_MODULE
+
+if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/patches/auto_patch.sh ]]; then
+	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/patches/auto_patch.sh
+fi
+[[ ${ONLY_PATCH} -eq "1" ]] && exit
 
 tool_args=()
 prebuilts_paths=(

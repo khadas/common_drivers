@@ -27,6 +27,7 @@ function show_help {
 	echo "  --fast_build            for fast build"
 	echo "  --upgrade               for android upgrade builtin module optimize vendor_boot size"
 	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
+	echo "  --patch                 for only am patches"
 }
 
 VA=
@@ -136,6 +137,10 @@ do
 		MANUAL_INSMOD_MODULE=1
 		shift
 		;;
+	--patch)
+		ONLY_PATCH=1
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -153,6 +158,11 @@ do
 		;;
 	esac
 done
+
+if [[ ${ONLY_PATCH} -eq "1" ]]; then
+	CURRENT_DIR=`pwd`
+	cd $(readlink -f $(dirname $0))
+fi
 
 if [ "${ARCH}" = "arm" ]; then
 	ARGS+=("LOADADDR=0x108000")
@@ -198,6 +208,7 @@ if [[ -z "${BUILD_DIR}" ]]; then
 fi
 if [[ ! -f ${BUILD_DIR}/build_abi.sh ]]; then
 	echo "The directory of build does not exist";
+	exit
 fi
 
 ROOT_DIR=$(readlink -f $(dirname $0))
@@ -221,8 +232,18 @@ GKI_CONFIG=${GKI_CONFIG:-gki_debug}
 
 set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG MANUAL_INSMOD_MODULE
-echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG} MANUAL_INSMOD_MODULE=${MANUAL_INSMOD_MODULE}
 export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD
+
+if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/patches/auto_patch.sh ]]; then
+	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/patches/auto_patch.sh
+fi
+if [[ ${ONLY_PATCH} -eq "1" ]]; then
+	cd ${CURRENT_DIR}
+	exit
+fi
+
+echo ROOT_DIR=$ROOT_DIR
+echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG} MANUAL_INSMOD_MODULE=${MANUAL_INSMOD_MODULE}
 echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT} FAST_BUILD=${FAST_BUILD}
 
 export CROSS_COMPILE=

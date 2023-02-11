@@ -1,0 +1,39 @@
+From e27661b8f4f486b52ff4f66ca4d7588a06acef7c Mon Sep 17 00:00:00 2001
+From: "min.yang" <min.yang@amlogic.com>
+Date: Tue, 3 Jan 2023 13:31:05 +0800
+Subject: [PATCH 87/95] dvb: fix Blind search DUT fail [1/1]
+
+PD#SWPL-106229
+
+Problem:
+When do Blind search DUT cannot
+search channel
+
+Solution:
+fix blindscan updateprocess value.
+
+Verify:
+verified by T + S905X4.
+
+Change-Id: I06d3d9ef2c3c76180419861ca0df73db00a0d2f6
+Signed-off-by: min.yang <min.yang@amlogic.com>
+---
+ include/uapi/linux/dvb/aml_fe_ext.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/uapi/linux/dvb/aml_fe_ext.h b/include/uapi/linux/dvb/aml_fe_ext.h
+index 98eb8efa6716..d78cffb39b07 100644
+--- a/include/uapi/linux/dvb/aml_fe_ext.h
++++ b/include/uapi/linux/dvb/aml_fe_ext.h
+@@ -41,7 +41,7 @@ struct fe_blind_scan_parameters {
+ 
+ #define BLINDSCAN_NONEDO		0x80  /* not blind scan	*/
+ #define BLINDSCAN_UPDATESTARTFREQ	0x100 /* blind scan update start freq	*/
+-#define  BLINDSCAN_UPDATEPROCESS	0x20  /* blind scan update process  */
++#define BLINDSCAN_UPDATEPROCESS	0x200 /* blind scan update process  */
+ #define BLINDSCAN_UPDATERESULTFREQ	0x400 /* blind scan update result  */
+ 
+ /* Get tne TS input of the frontend */
+-- 
+2.25.1
+

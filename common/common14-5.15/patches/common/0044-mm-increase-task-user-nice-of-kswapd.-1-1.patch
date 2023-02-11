@@ -1,0 +1,39 @@
+From f6b2b9afe378bf7662e83463a536d5245638d57c Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Sat, 3 Sep 2022 15:16:26 +0800
+Subject: [PATCH 44/95] mm: increase task user nice of kswapd. [1/1]
+
+PD#SWPL-92714
+
+Problem:
+increase task nice of kswapd.
+
+Solution:
+increase task nice of kswapd.
+
+Verify:
+build pass.
+
+Change-Id: Ia3d5464483b95eccf60d8c3b0e45cc899eb9e1ce
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ mm/vmscan.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 020506e44987..ef2e66a25416 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -7086,6 +7086,9 @@ int kswapd(void *p)
+ 
+ 	WRITE_ONCE(pgdat->kswapd_order, 0);
+ 	WRITE_ONCE(pgdat->kswapd_highest_zoneidx, MAX_NR_ZONES);
++#ifdef CONFIG_AMLOGIC_CMA
++	set_user_nice(current, -5);
++#endif /* CONFIG_AMLOGIC_CMA */
+ 	for ( ; ; ) {
+ 		bool ret;
+ 
+-- 
+2.25.1
+

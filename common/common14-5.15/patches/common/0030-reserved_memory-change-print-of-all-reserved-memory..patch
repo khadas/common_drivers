@@ -1,0 +1,123 @@
+From a0b7f7bf5dee3d0b22b65650b76bb4210b340da7 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Thu, 21 Apr 2022 06:12:50 +0800
+Subject: [PATCH 30/95] reserved_memory: change print of all reserved memory.
+ [1/1]
+
+PD#SWPL-73189
+
+Problem:
+when boot, print information of all reserved memory is not
+nice for reading.
+
+Solution:
+change print format of reserved memory like:
+	08400000 - 08500000,     1024 KB, ramoops@0x07400000
+	05000000 - 08400000,    53248 KB, linux,secmon
+	7f800000 - 80000000,     8192 KB, linux,meson-fb
+	7e400000 - 7f800000,    20480 KB, linux,vdin1_cma
+	72c00000 - 78800000,    94208 KB, linux,ion-dev
+	7c000000 - 7e400000,    36864 KB, linux,ion-fb
+	57c00000 - 72c00000,   442368 KB, linux,codec_mm_cma
+
+Verify:
+s4_ap222.
+
+Change-Id: I04a8c69e20727ca728421a19a459ff27d60f0feb
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ drivers/of/fdt.c             | 10 ++++++++++
+ drivers/of/of_reserved_mem.c | 10 ++++++++++
+ kernel/dma/contiguous.c      |  4 ++++
+ 3 files changed, 24 insertions(+)
+
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 8d9f6f0771cf..28895dd1b282 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -6,7 +6,9 @@
+  * benh@kernel.crashing.org
+  */
+ 
++#ifndef CONFIG_AMLOGIC_MEMORY_EXTEND /* save print time */
+ #define pr_fmt(fmt)	"OF: fdt: " fmt
++#endif
+ 
+ #include <linux/crash_dump.h>
+ #include <linux/crc32.h>
+@@ -525,8 +527,16 @@ static int __init __reserved_mem_reserve_reg(unsigned long node,
+ 
+ 		if (size &&
+ 		    early_init_dt_reserve_memory_arch(base, size, nomap) == 0)
++		#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++			pr_emerg("\t%08lx - %08lx, %8ld KB, %s\n",
++				 (unsigned long)base,
++				 (unsigned long)(base + size),
++				 (unsigned long)(size >> 10),
++				 uname);
++		#else
+ 			pr_debug("Reserved memory: reserved region for node '%s': base %pa, size %lu MiB\n",
+ 				uname, &base, (unsigned long)(size / SZ_1M));
++		#endif
+ 		else
+ 			pr_info("Reserved memory: failed to reserve memory for node '%s': base %pa, size %lu MiB\n",
+ 				uname, &base, (unsigned long)(size / SZ_1M));
+diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
+index 1117320ea7d0..0b2797f09c6f 100644
+--- a/drivers/of/of_reserved_mem.c
++++ b/drivers/of/of_reserved_mem.c
+@@ -9,7 +9,9 @@
+  * Author: Josh Cartwright <joshc@codeaurora.org>
+  */
+ 
++#ifndef CONFIG_AMLOGIC_MEMORY_EXTEND /* save print time */
+ #define pr_fmt(fmt)	"OF: reserved mem: " fmt
++#endif
+ 
+ #include <linux/err.h>
+ #include <linux/of.h>
+@@ -190,8 +192,16 @@ static int __init __reserved_mem_init_node(struct reserved_mem *rmem)
+ 
+ 		ret = initfn(rmem);
+ 		if (ret == 0) {
++		#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++			pr_emerg("\t%08lx - %08lx, %8ld KB, %s\n",
++				 (unsigned long)rmem->base,
++				 (unsigned long)(rmem->base + rmem->size),
++				 (unsigned long)(rmem->size >> 10),
++				 rmem->name);
++		#else
+ 			pr_info("initialized node %s, compatible id %s\n",
+ 				rmem->name, compat);
++		#endif
+ 			break;
+ 		}
+ 	}
+diff --git a/kernel/dma/contiguous.c b/kernel/dma/contiguous.c
+index da70a24d1b7a..349996aa9f13 100644
+--- a/kernel/dma/contiguous.c
++++ b/kernel/dma/contiguous.c
+@@ -426,7 +426,9 @@ static int __init rmem_cma_setup(struct reserved_mem *rmem)
+ 
+ 	err = cma_init_reserved_mem(rmem->base, rmem->size, 0, rmem->name, &cma);
+ 	if (err) {
++	#ifndef CONFIG_AMLOGIC_CMA
+ 		pr_err("Reserved memory: unable to setup CMA region\n");
++	#endif
+ 		return err;
+ 	}
+ 	/* Architecture specific contiguous memory fixup. */
+@@ -438,8 +440,10 @@ static int __init rmem_cma_setup(struct reserved_mem *rmem)
+ 	rmem->ops = &rmem_cma_ops;
+ 	rmem->priv = cma;
+ 
++#ifndef CONFIG_AMLOGIC_CMA
+ 	pr_info("Reserved memory: created CMA memory pool at %pa, size %ld MiB\n",
+ 		&rmem->base, (unsigned long)rmem->size / SZ_1M);
++#endif
+ 
+ 	return 0;
+ }
+-- 
+2.25.1
+

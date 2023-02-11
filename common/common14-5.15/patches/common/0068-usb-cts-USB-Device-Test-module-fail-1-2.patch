@@ -1,0 +1,71 @@
+From 3897a9e000b5c14ebe8938ead7e4882e8b569a74 Mon Sep 17 00:00:00 2001
+From: Yue Wang <yue.wang@amlogic.com>
+Date: Fri, 4 Nov 2022 13:18:14 +0800
+Subject: [PATCH 68/95] usb: cts: USB Device Test module fail [1/2]
+
+PD#SWPL-99116
+
+Problem:
+cts: USB Device Test module fail
+
+Solution:
+Don't use IDT transmissions for CRG control
+
+Verify:
+t3
+
+Change-Id: Ic5c59615e6139382ae348e37501f665bd373c1ef
+Signed-off-by: Yue Wang <yue.wang@amlogic.com>
+---
+ drivers/usb/host/xhci-plat.c |  5 +++++
+ drivers/usb/host/xhci.h      | 11 +++++++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 972a44b2a7f1..b2c6e2e35e30 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -323,6 +323,11 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 		if (device_property_read_bool(tmpdev, "quirk-broken-port-ped"))
+ 			xhci->quirks |= XHCI_BROKEN_PORT_PED;
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
++		if (device_property_read_bool(tmpdev, "xhci-crg-host"))
++			xhci->quirks |= XHCI_DISABLE_IDT;
++#endif
++
+ 		device_property_read_u32(tmpdev, "imod-interval-ns",
+ 					 &xhci->imod_interval);
+ 	}
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 119d2541fe5e..168ef5e123ec 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1917,6 +1917,9 @@ struct xhci_hcd {
+ #define XHCI_EP_CTX_BROKEN_DCS	BIT_ULL(42)
+ #define XHCI_SUSPEND_RESUME_CLKS	BIT_ULL(43)
+ #define XHCI_RESET_TO_DEFAULT	BIT_ULL(44)
++#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
++#define XHCI_DISABLE_IDT	BIT_ULL(45)
++#endif
+ 
+ 	unsigned int		num_active_eps;
+ 	unsigned int		limit_active_eps;
+@@ -2240,6 +2243,14 @@ static inline struct xhci_ring *xhci_urb_to_transfer_ring(struct xhci_hcd *xhci,
+  */
+ static inline bool xhci_urb_suitable_for_idt(struct urb *urb)
+ {
++#if IS_ENABLED(CONFIG_AMLOGIC_COMMON_USB)
++	struct usb_hcd	*hcd = bus_to_hcd(urb->dev->bus);
++	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
++
++	if (xhci->quirks & XHCI_DISABLE_IDT)
++		return false;
++#endif
++
+ 	if (!usb_endpoint_xfer_isoc(&urb->ep->desc) && usb_urb_dir_out(urb) &&
+ 	    usb_endpoint_maxp(&urb->ep->desc) >= TRB_IDT_MAX_SIZE &&
+ 	    urb->transfer_buffer_length <= TRB_IDT_MAX_SIZE &&
+-- 
+2.25.1
+

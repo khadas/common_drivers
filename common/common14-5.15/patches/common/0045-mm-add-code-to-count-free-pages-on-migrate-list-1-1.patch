@@ -1,0 +1,174 @@
+From a712bd02d744ac5748326a0df92a03479554f1ad Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Sat, 3 Sep 2022 16:25:32 +0800
+Subject: [PATCH 45/95] mm: add code to count free pages on migrate list [1/1]
+
+PD#SWPL-92714
+
+Problem:
+There is only one way to count free pages for each
+migrate type: cat /proc/pagetypeinfo. but this method
+is too low efficient.
+
+Solution:
+Adding a new way to count free pages on each migrate list.
+
+Verify:
+sc2_ah212.
+
+Change-Id: I425fa30a4909628c8bf0c4fc831fb2b2af1f5c95
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ include/linux/mmzone.h | 11 ++++++++
+ mm/page_alloc.c        | 62 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 4563cf0626a1..60612b070b00 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -106,8 +106,19 @@ extern int page_group_by_mobility_disabled;
+ struct free_area {
+ 	struct list_head	free_list[MIGRATE_TYPES];
+ 	unsigned long		nr_free;
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	unsigned long           free_mt[MIGRATE_TYPES];
++#endif
+ };
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++void count_free_migrate(struct free_area *area, struct page *page,
++			struct list_head *list, int op);
++#define FREE_LIST_ADD	0
++#define FREE_LIST_RM	1
++#define FREE_LIST_MOVE	2
++#endif
++
+ static inline struct page *get_page_from_free_area(struct free_area *area,
+ 					    int migratetype)
+ {
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c3c662a0542d..941152e75a63 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -983,6 +983,10 @@ static inline void add_to_free_list(struct page *page, struct zone *zone,
+ 
+ 	list_add(&page->lru, &area->free_list[migratetype]);
+ 	area->nr_free++;
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	count_free_migrate(area, page,
++		&area->free_list[migratetype], FREE_LIST_ADD);
++#endif
+ }
+ 
+ /* Used for pages not on another list */
+@@ -993,6 +997,10 @@ static inline void add_to_free_list_tail(struct page *page, struct zone *zone,
+ 
+ 	list_add_tail(&page->lru, &area->free_list[migratetype]);
+ 	area->nr_free++;
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	count_free_migrate(area, page,
++		&area->free_list[migratetype], FREE_LIST_ADD);
++#endif
+ }
+ 
+ /*
+@@ -1006,6 +1014,10 @@ static inline void move_to_free_list(struct page *page, struct zone *zone,
+ 	struct free_area *area = &zone->free_area[order];
+ 
+ 	list_move_tail(&page->lru, &area->free_list[migratetype]);
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	count_free_migrate(area, page,
++		&area->free_list[migratetype], FREE_LIST_MOVE);
++#endif
+ }
+ 
+ static inline void del_page_from_free_list(struct page *page, struct zone *zone,
+@@ -1019,6 +1031,9 @@ static inline void del_page_from_free_list(struct page *page, struct zone *zone,
+ 	__ClearPageBuddy(page);
+ 	set_page_private(page, 0);
+ 	zone->free_area[order].nr_free--;
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	count_free_migrate(&zone->free_area[order], page, NULL, FREE_LIST_RM);
++#endif
+ }
+ 
+ /*
+@@ -6374,6 +6389,9 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+ 		unsigned int order;
+ 		unsigned long nr[MAX_ORDER], flags, total = 0;
+ 		unsigned char types[MAX_ORDER];
++	#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++		unsigned long free_mt[MIGRATE_TYPES] = {0};
++	#endif
+ 
+ 		if (show_mem_node_skip(filter, zone_to_nid(zone), nodemask))
+ 			continue;
+@@ -6390,6 +6408,9 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+ 
+ 			types[order] = 0;
+ 			for (type = 0; type < MIGRATE_TYPES; type++) {
++			#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++				free_mt[type] += (area->free_mt[type] << order);
++			#endif
+ 				if (!free_area_empty(area, type))
+ 					types[order] |= 1 << type;
+ 			}
+@@ -6402,6 +6423,12 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+ 				show_migration_types(types[order]);
+ 		}
+ 		printk(KERN_CONT "= %lukB\n", K(total));
++	#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++		for (order = 0; order < MIGRATE_TYPES; order++) {
++			pr_info("Free_%s:%ld\n", migratetype_names[order],
++					free_mt[order]);
++		}
++	#endif
+ 	}
+ 
+ 	hugetlb_show_meminfo();
+@@ -9845,6 +9872,41 @@ bool take_page_off_buddy(struct page *page)
+ }
+ #endif
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++void count_free_migrate(struct free_area *area, struct page *page,
++			struct list_head *list, int op)
++{
++	int page_mt = -1;
++	int list_mt = -1;
++
++	page_mt = get_pcppage_migratetype(page);
++	if (list)
++		list_mt = ((void *)list - (void *)area) / (sizeof(*list));
++
++	switch (op) {
++	case FREE_LIST_ADD:
++		WARN_ON(list_mt == -1);
++		set_pcppage_migratetype(page, list_mt);
++		area->free_mt[list_mt]++;
++		break;
++
++	case FREE_LIST_MOVE:
++		WARN_ON(list_mt == -1);
++		set_pcppage_migratetype(page, list_mt);
++		area->free_mt[list_mt]++;
++		area->free_mt[page_mt]--;
++		break;
++
++	case FREE_LIST_RM:
++		area->free_mt[page_mt]--;
++		break;
++
++	default:
++		break;
++	}
++}
++#endif /* CONFIG_AMLOGIC_MEMORY_EXTEND */
++
+ #ifdef CONFIG_ZONE_DMA
+ bool has_managed_dma(void)
+ {
+-- 
+2.25.1
+

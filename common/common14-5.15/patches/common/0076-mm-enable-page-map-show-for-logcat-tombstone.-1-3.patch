@@ -1,0 +1,61 @@
+From c3ec5115f8979d8f8b0e5c615a91043fdc2a1940 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Fri, 18 Nov 2022 14:37:47 +0800
+Subject: [PATCH 76/95] mm: enable page map show for logcat/tombstone. [1/3]
+
+PD#SWPL-96613
+
+Problem:
+No pfn informance in tombstone and logcat files.
+
+Solution:
+enable pfn information form /proc/[pid]/pagemap for user
+tasks. This feature is default enabled for userdebug/eng
+build and disabled for release build.
+Also you can manual enable it by:
+echo pagemap_en=1 > /proc/mem_dbug
+
+Verify:
+s4_aq222.
+
+Change-Id: I562fda65055d2678c017edf6133da1027e3c0b95
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ fs/proc/task_mmu.c | 5 +++++
+ include/linux/mm.h | 4 ++++
+ 2 files changed, 9 insertions(+)
+
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index de8e525440eb..4fe7837cdff5 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -1635,6 +1635,11 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+ 
+ 	/* do not disclose physical addresses: attack vector */
+ 	pm.show_pfn = file_ns_capable(file, &init_user_ns, CAP_SYS_ADMIN);
++#ifdef CONFIG_AMLOGIC_MEM_DEBUG
++	/* enable it if pagemap_enable() is true*/
++	if (!pm.show_pfn && pagemap_enabled())
++		pm.show_pfn = 1;
++#endif
+ 
+ 	pm.len = (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+ 	pm.buffer = kmalloc_array(pm.len, PM_ENTRY_BYTES, GFP_KERNEL);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f083399b4e24..745d2833b441 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -47,6 +47,10 @@ extern int sysctl_page_lock_unfairness;
+ 
+ void init_mm_internals(void);
+ 
++#ifdef CONFIG_AMLOGIC_MEM_DEBUG
++int pagemap_enabled(void);
++#endif
++
+ #ifndef CONFIG_NUMA		/* Don't use mapnrs, do it properly */
+ extern unsigned long max_mapnr;
+ 
+-- 
+2.25.1
+

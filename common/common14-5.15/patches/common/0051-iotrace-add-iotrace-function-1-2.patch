@@ -1,0 +1,363 @@
+From ef7abf144f9a41d1776f2ed79175e2ac2af64331 Mon Sep 17 00:00:00 2001
+From: "song.han" <song.han@amlogic.com>
+Date: Tue, 6 Sep 2022 13:52:20 +0800
+Subject: [PATCH 51/95] iotrace: add iotrace function [1/2]
+
+PD#SWPL-92722
+
+Problem:
+iotrace miss function
+
+Solution:
+add function in iotrace driver,like smc/sched/clk/pw
+
+Verify:
+S4D_AP222
+
+Change-Id: I904388476331c3e894318bc68d24723d7394cca8
+Signed-off-by: song.han <song.han@amlogic.com>
+---
+ drivers/base/power/domain.c | 71 ++++++++++++++++++++++++++++
+ drivers/clk/clk.c           | 92 +++++++++++++++++++++++++++++++++++++
+ include/linux/pstore.h      | 12 +++--
+ kernel/sched/core.c         | 13 ++++++
+ mm/vmalloc.c                |  8 +++-
+ 5 files changed, 192 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+index 94fe30c187ad..d85898ce8de8 100644
+--- a/drivers/base/power/domain.c
++++ b/drivers/base/power/domain.c
+@@ -39,6 +39,51 @@
+ 	__ret;							\
+ })
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++#include <linux/amlogic/debug_ftrace_ramoops.h>
++#define SKIP_PD_MAX_NUM 10
++#define SKIP_PD_MAX_NAME_LEN 16
++
++static int meson_pd_debug = 1;
++core_param(meson_pd_debug, meson_pd_debug, int, 0644);
++
++static int skip_all_pd_power_off;
++core_param(skip_all_pd_power_off, skip_all_pd_power_off, int, 0644);
++
++static int skip_pd_num;
++
++static char pd_skip_power_off_list[SKIP_PD_MAX_NUM][SKIP_PD_MAX_NAME_LEN];
++
++static int pd_skip_power_off_list_setup(const char *ptr, const struct kernel_param *kp)
++{
++	char *str_entry;
++	char *str = (char *)ptr;
++	int i = 0;
++
++	do {
++		str_entry = strsep(&str, ",");
++		if (str_entry) {
++			if (!strlen(str_entry))
++				break;
++			strscpy(pd_skip_power_off_list[i], str_entry, SKIP_PD_MAX_NAME_LEN);
++			pr_info("pd_skip_power_off_list[%d]: %s\n", i, pd_skip_power_off_list[i]);
++			i++;
++		}
++	} while (str_entry && i < SKIP_PD_MAX_NUM);
++
++	skip_pd_num = i;
++
++	return 0;
++}
++
++static const struct kernel_param_ops pd_skip_power_off_list_ops = {
++	.set = pd_skip_power_off_list_setup,
++	.get = NULL
++};
++
++core_param_cb(pd_skip_power_off_list, &pd_skip_power_off_list_ops, NULL, 0644);
++#endif
++
+ static LIST_HEAD(gpd_list);
+ static DEFINE_MUTEX(gpd_list_lock);
+ 
+@@ -509,6 +554,11 @@ static int _genpd_power_on(struct generic_pm_domain *genpd, bool timed)
+ 	if (!genpd->power_on)
+ 		goto out;
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	pstore_ftrace_pd_power_on((unsigned long)genpd->name);
++	if (ramoops_io_en && meson_pd_debug)
++		pr_info("power_on pd %s\n", genpd->name);
++#endif
+ 	if (!timed) {
+ 		ret = genpd->power_on(genpd);
+ 		if (ret)
+@@ -546,6 +596,9 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
+ 	ktime_t time_start;
+ 	s64 elapsed_ns;
+ 	int ret;
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	int i;
++#endif
+ 
+ 	/* Notify consumers that we are about to power off. */
+ 	ret = raw_notifier_call_chain_robust(&genpd->power_notifiers,
+@@ -558,6 +611,24 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
+ 	if (!genpd->power_off)
+ 		goto out;
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	for (i = 0; i < skip_pd_num; i++) {
++		if (strstr(genpd->name, pd_skip_power_off_list[i])) {
++			pr_info("%s pd in white list, skip power_off\n", genpd->name);
++			return -1;
++		}
++	}
++
++	if (skip_all_pd_power_off) {
++		pr_info("skip all pd power_off,%s pd will not power_off\n", genpd->name);
++		return -1;
++	}
++
++	pstore_ftrace_pd_power_off((unsigned long)genpd->name);
++	if (ramoops_io_en && meson_pd_debug)
++		pr_info("power_off pd %s\n", genpd->name);
++#endif
++
+ 	if (!timed) {
+ 		ret = genpd->power_off(genpd);
+ 		if (ret)
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index d7315a317cb7..f521edcd983c 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -24,6 +24,51 @@
+ 
+ #include "clk.h"
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++#include <linux/amlogic/debug_ftrace_ramoops.h>
++#define SKIP_CLK_MAX_NUM 10
++#define SKIP_CLK_MAX_NAME_LEN 16
++
++static int meson_clk_debug;
++core_param(meson_clk_debug, meson_clk_debug, int, 0644);
++
++int skip_all_clk_disable;
++core_param(skip_all_clk_disable, skip_all_clk_disable, int, 0644);
++
++static int skip_clk_num;
++
++static char clk_skip_disable_list[SKIP_CLK_MAX_NUM][SKIP_CLK_MAX_NAME_LEN];
++
++static int clk_skip_disable_list_setup(const char *ptr, const struct kernel_param *kp)
++{
++	char *str_entry;
++	char *str = (char *)ptr;
++	int i = 0;
++
++	do {
++		str_entry = strsep(&str, ",");
++		if (str_entry) {
++			if (!strlen(str_entry))
++				break;
++			strscpy(clk_skip_disable_list[i], str_entry, SKIP_CLK_MAX_NAME_LEN);
++			pr_info("clk_skip_disable_list[%d]: %s\n", i, clk_skip_disable_list[i]);
++			i++;
++		}
++	} while (str_entry && i < SKIP_CLK_MAX_NUM);
++
++	skip_clk_num = i;
++
++	return 0;
++}
++
++static const struct kernel_param_ops clk_skip_disable_list_ops = {
++	.set = clk_skip_disable_list_setup,
++	.get = NULL
++};
++
++core_param_cb(clk_skip_disable_list, &clk_skip_disable_list_ops, NULL, 0644);
++#endif
++
+ static DEFINE_SPINLOCK(enable_lock);
+ static DEFINE_MUTEX(prepare_lock);
+ 
+@@ -822,6 +867,10 @@ EXPORT_SYMBOL_GPL(clk_rate_exclusive_get);
+ 
+ static void clk_core_unprepare(struct clk_core *core)
+ {
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	int i;
++#endif
++
+ 	lockdep_assert_held(&prepare_lock);
+ 
+ 	if (!core)
+@@ -838,6 +887,16 @@ static void clk_core_unprepare(struct clk_core *core)
+ 	if (core->flags & CLK_SET_RATE_GATE)
+ 		clk_core_rate_unprotect(core);
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	for (i = 0; i < skip_clk_num; i++) {
++		if (strstr(core->name, clk_skip_disable_list[i]))
++			return;
++	}
++
++	if (skip_all_clk_disable)
++		return;
++#endif
++
+ 	if (--core->prepare_count > 0)
+ 		return;
+ 
+@@ -963,6 +1022,10 @@ EXPORT_SYMBOL_GPL(clk_prepare);
+ 
+ static void clk_core_disable(struct clk_core *core)
+ {
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	int i;
++#endif
++
+ 	lockdep_assert_held(&enable_lock);
+ 
+ 	if (!core)
+@@ -975,9 +1038,29 @@ static void clk_core_disable(struct clk_core *core)
+ 	    "Disabling critical %s\n", core->name))
+ 		return;
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	for (i = 0; i < skip_clk_num; i++) {
++		if (strstr(core->name, clk_skip_disable_list[i])) {
++			pr_info("%s clk in white list, skip disable\n", core->name);
++			return;
++		}
++	}
++
++	if (skip_all_clk_disable) {
++		pr_info("skip all clk disable, %s clk will not disable\n", core->name);
++		return;
++	}
++#endif
++
+ 	if (--core->enable_count > 0)
+ 		return;
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	pstore_ftrace_clk_disable((unsigned long)core->name);
++	if (ramoops_io_en && meson_clk_debug)
++		pr_info("disable clk %s\n", core->name);
++#endif
++
+ 	trace_clk_disable_rcuidle(core);
+ 
+ 	if (core->ops->disable)
+@@ -1039,8 +1122,17 @@ static int clk_core_enable(struct clk_core *core)
+ 
+ 		trace_clk_enable_rcuidle(core);
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++		if (core->ops->enable) {
++			ret = core->ops->enable(core->hw);
++			if (ramoops_io_en && meson_clk_debug)
++				pr_info("enable clk %s\n", core->name);
++			pstore_ftrace_clk_enable((unsigned long)core->name);
++		}
++#else
+ 		if (core->ops->enable)
+ 			ret = core->ops->enable(core->hw);
++#endif
+ 
+ 		trace_clk_enable_complete_rcuidle(core);
+ 
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 23f205c4c659..30acda43f361 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -216,13 +216,19 @@ struct pstore_ftrace_record {
+ 	u64 ts;
+ #ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+ 	int pid;
+-	unsigned long val1;
+-	unsigned long val2;
++	union {
++		char name[16];
++		struct {
++			unsigned long val1;
++			unsigned long val2;
++		};
++	};
+ 	unsigned long long time;
+ 	unsigned char comm[8];
+ 	struct {
+-		unsigned int flag:31;
++		unsigned int flag:30;
+ 		unsigned int in_irq:1;
++		unsigned int phys_addr:1;
+ 	};
+ #endif
+ };
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1e7b5f6579b8..d7640635ae10 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -31,6 +31,10 @@
+ #include <trace/hooks/dtask.h>
+ #include <trace/hooks/cgroup.h>
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++#include <linux/amlogic/debug_ftrace_ramoops.h>
++#endif
++
+ /*
+  * Export tracepoints that act as a bare tracehook (ie: have no trace event
+  * associated with them) to allow external modules to probe them.
+@@ -6496,7 +6500,16 @@ static void __sched notrace __schedule(unsigned int sched_mode)
+ 		psi_sched_switch(prev, next, !task_on_rq_queued(prev));
+ 
+ 		trace_sched_switch(sched_mode & SM_MASK_PREEMPT, prev, next);
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++		do {
++			unsigned long next_comm;
+ 
++			if (ramoops_io_en) {
++				strscpy((char *)&next_comm, next->comm, sizeof(next_comm));
++				pstore_ftrace_sched_switch(next->pid, next_comm);
++			}
++		} while (0);
++#endif
+ 		/* Also unlocks the rq: */
+ 		rq = context_switch(rq, prev, next, &rf);
+ 	} else {
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 65577e165832..865dd5f4b781 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -344,10 +344,13 @@ int ioremap_page_range(unsigned long addr, unsigned long end,
+ 	flush_cache_vmap(addr, end);
+ 
+ #ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+-	if (need_dump_iomap() && !is_normal_memory(prot))
++	if (need_dump_iomap() && !is_normal_memory(prot)) {
+ 		pr_err("io__map <va:0x%08lx-0x%08lx> pa:0x%lx,port:0x%lx\n",
+ 		       addr, end, (unsigned long)phys_addr_save,
+ 		       (unsigned long)pgprot_val(prot));
++
++		save_iomap_info(addr, (unsigned long)phys_addr_save, (unsigned int)(end - addr));
++	}
+ #endif
+ 
+ 	if (IS_ENABLED(CONFIG_ARCH_HAS_IOREMAP_PHYS_HOOKS) && !err)
+@@ -2659,6 +2662,9 @@ static void __vunmap(const void *addr, int deallocate_pages)
+ 		return;
+ 	}
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	delete_iomap_info((unsigned long)addr);
++#endif
+ 	debug_check_no_locks_freed(area->addr, get_vm_area_size(area));
+ 	debug_check_no_obj_freed(area->addr, get_vm_area_size(area));
+ 
+-- 
+2.25.1
+

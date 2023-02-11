@@ -1,0 +1,49 @@
+From 25a9ff2d5e0cde5813297fd5a6e5a4f493b84775 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Wed, 16 Feb 2022 12:31:12 +0800
+Subject: [PATCH 08/95] mm: add mem debug support. [2/2]
+
+PD#SWPL-72254
+
+Problem:
+No mem debug.
+
+Solution:
+porting it from 5.4.
+
+Verify:
+local.
+
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Change-Id: Ibdae855520510910e8f9a9dba9a469e0b46cc512
+---
+ arch/arm64/mm/init.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+index b96e61706a61..b2ce24086567 100644
+--- a/arch/arm64/mm/init.c
++++ b/arch/arm64/mm/init.c
+@@ -46,6 +46,9 @@
+ #include <asm/alternative.h>
+ #include <asm/xen/swiotlb-xen.h>
+ 
++#ifdef CONFIG_AMLOGIC_MEM_DEBUG
++#include <linux/amlogic/mem_debug.h>
++#endif
+ /*
+  * We need to be able to catch inadvertent references to memstart_addr
+  * that occur (potentially in generic code) before arm64_memblock_init()
+@@ -430,6 +433,9 @@ void __init mem_init(void)
+ 	/* this will put all unused low memory onto the freelists */
+ 	memblock_free_all();
+ 
++#ifdef CONFIG_AMLOGIC_MEM_DEBUG
++	dump_mem_layout_boot_phase();
++#endif
+ 	/*
+ 	 * Check boundaries twice: Some fundamental inconsistencies can be
+ 	 * detected at build time already.
+-- 
+2.25.1
+

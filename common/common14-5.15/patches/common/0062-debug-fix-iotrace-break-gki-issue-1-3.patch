@@ -1,0 +1,152 @@
+From 2301732e818de68f5bebe2b9f1e35343564eccf8 Mon Sep 17 00:00:00 2001
+From: Hanjie Lin <hanjie.lin@amlogic.com>
+Date: Fri, 14 Oct 2022 17:06:39 +0800
+Subject: [PATCH 62/95] debug: fix iotrace break gki issue [1/3]
+
+PD#SWPL-94447
+
+Problem:
+iotrace break gki10
+
+Solution:
+modify iotrace still builtin but not break gki10
+
+Verify:
+sc2
+
+Signed-off-by: Hanjie Lin <hanjie.lin@amlogic.com>
+Change-Id: Iabf05f13990e81f882c84a66f62d0e73ddcc5d15
+---
+ arch/arm64/include/asm/io.h    |  3 ++-
+ arch/arm64/kernel/image-vars.h |  2 +-
+ fs/pstore/Kconfig              |  1 -
+ fs/pstore/ftrace.c             |  9 +++++++--
+ kernel/tracepoint.c            | 13 +++++++++++++
+ 5 files changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index f4f8df403362..78fdd094f812 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -18,7 +18,8 @@
+ #include <asm/alternative.h>
+ #include <asm/cpufeature.h>
+ 
+-#if defined(CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE)
++/* builtin code include iotrace can cause some symbols crc changed */
++#if defined(CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE) && defined(MODULE)
+ #include <linux/amlogic/io_64.h>
+ #else
+ /*
+diff --git a/arch/arm64/kernel/image-vars.h b/arch/arm64/kernel/image-vars.h
+index d114e81d6970..e1cecaf34991 100644
+--- a/arch/arm64/kernel/image-vars.h
++++ b/arch/arm64/kernel/image-vars.h
+@@ -135,7 +135,7 @@ KVM_NVHE_ALIAS(__hyp_event_ids_end);
+ KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+ 
+ #ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+-KVM_NVHE_ALIAS(pstore_io_save);
++KVM_NVHE_ALIAS(__pstore_io_save);
+ KVM_NVHE_ALIAS(vabits_actual);
+ #endif
+ #endif /* CONFIG_KVM */
+diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
+index c49d554cc9ae..09c4227070d5 100644
+--- a/fs/pstore/Kconfig
++++ b/fs/pstore/Kconfig
+@@ -137,7 +137,6 @@ config PSTORE_PMSG
+ config PSTORE_FTRACE
+ 	bool "Persistent function tracer"
+ 	depends on PSTORE
+-	depends on FUNCTION_TRACER
+ 	depends on DEBUG_FS
+ 	help
+ 	  With this option kernel traces function calls into a persistent
+diff --git a/fs/pstore/ftrace.c b/fs/pstore/ftrace.c
+index 825233faa23f..1bd3fdfec48e 100644
+--- a/fs/pstore/ftrace.c
++++ b/fs/pstore/ftrace.c
+@@ -20,6 +20,8 @@
+ #include <asm/barrier.h>
+ #include "internal.h"
+ 
++#ifndef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++
+ /* This doesn't need to be atomic: speed is chosen over correctness here. */
+ static u64 pstore_ftrace_stamp;
+ 
+@@ -116,16 +118,16 @@ static const struct file_operations pstore_knob_fops = {
+ };
+ 
+ static struct dentry *pstore_ftrace_dir;
++#endif
+ 
+ void pstore_register_ftrace(void)
+ {
++#ifndef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+ 	/*
+ 	 * Amlogic reuse pstore ftrace for IO(register access) trace,
+ 	 * original pstore ftrace function is not so helpful, just ignore
+ 	 */
+-#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+ 	return;
+-#endif
+ 
+ 	if (!psinfo->write)
+ 		return;
+@@ -134,10 +136,12 @@ void pstore_register_ftrace(void)
+ 
+ 	debugfs_create_file("record_ftrace", 0600, pstore_ftrace_dir, NULL,
+ 			    &pstore_knob_fops);
++#endif
+ }
+ 
+ void pstore_unregister_ftrace(void)
+ {
++#ifndef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+ 	mutex_lock(&pstore_ftrace_lock);
+ 	if (pstore_ftrace_enabled) {
+ 		unregister_ftrace_function(&pstore_ftrace_ops);
+@@ -146,6 +150,7 @@ void pstore_unregister_ftrace(void)
+ 	mutex_unlock(&pstore_ftrace_lock);
+ 
+ 	debugfs_remove_recursive(pstore_ftrace_dir);
++#endif
+ }
+ 
+ ssize_t pstore_ftrace_combine_log(char **dest_log, size_t *dest_log_size,
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index 6eae80dd3fc1..080c25ee6ffc 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -525,6 +525,12 @@ typedef void (*pr_lockup_info_t)(int cpu);
+ pr_lockup_info_t pr_lockup_info_hook;
+ #endif
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++void notrace __pstore_io_save(unsigned long reg, unsigned long val,
++			      unsigned long parent, unsigned int flag,
++			      unsigned long *irq_flag);
++#endif
++
+ /**
+  * tracepoint_probe_register -  Connect a probe to a tracepoint
+  * @tp: tracepoint
+@@ -560,6 +566,13 @@ int tracepoint_probe_register(struct tracepoint *tp, void *probe, void *data)
+ 	}
+ #endif
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	if (!strcmp(tp->name, "inject_pstore_io_save")) {
++		*(unsigned long *)data = (unsigned long)__pstore_io_save;
++		pr_info("tracepoint_probe_register: inject_pstore_io_save: %ps\n", (void *)data);
++	}
++#endif
++
+ 	return tracepoint_probe_register_prio(tp, probe, data, TRACEPOINT_DEFAULT_PRIO);
+ }
+ EXPORT_SYMBOL_GPL(tracepoint_probe_register);
+-- 
+2.25.1
+

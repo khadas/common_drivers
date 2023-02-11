@@ -1,0 +1,168 @@
+From 9724d07c944d7b7dcee78620a991900afbecc0e4 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Tue, 1 Mar 2022 19:22:52 +0800
+Subject: [PATCH 24/95] mm: add user fault debug support. [1/2]
+
+PD#SWPL-73676
+
+Problem:
+need user fault debug support.
+
+Solution:
+add user fault debug support.
+
+Verify:
+local.
+
+Change-Id: I6f48a5ec1cb75b276a15f6791ec09f2a2ed5d159
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ arch/arm64/kernel/process.c | 10 ++++++++++
+ arch/arm64/kernel/traps.c   | 29 +++++++++++++++++++++++++++++
+ arch/arm64/mm/fault.c       |  9 +++++++++
+ 3 files changed, 48 insertions(+)
+
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index c592a027a330..270897c11f85 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -57,6 +57,9 @@
+ #include <asm/stacktrace.h>
+ #include <asm/switch_to.h>
+ #include <asm/system_misc.h>
++#ifdef CONFIG_AMLOGIC_USER_FAULT
++#include <linux/amlogic/user_fault.h>
++#endif
+ 
+ #if defined(CONFIG_STACKPROTECTOR) && !defined(CONFIG_STACKPROTECTOR_PER_TASK)
+ #include <linux/stackprotector.h>
+@@ -215,6 +218,10 @@ void __show_regs(struct pt_regs *regs)
+ 		top_reg = 29;
+ 	}
+ 
++#ifdef CONFIG_AMLOGIC_USER_FAULT
++	show_user_fault_info(regs, lr, sp);
++#endif /* CONFIG_AMLOGIC_USER_FAULT */
++
+ 	show_regs_print_info(KERN_DEFAULT);
+ 	print_pstate(regs);
+ 
+@@ -241,6 +248,9 @@ void __show_regs(struct pt_regs *regs)
+ 
+ 		pr_cont("\n");
+ 	}
++#ifdef CONFIG_AMLOGIC_USER_FAULT
++	show_extra_reg_data(regs);
++#endif /* CONFIG_AMLOGIC_USER_FAULT */
+ }
+ 
+ void show_regs(struct pt_regs *regs)
+diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
+index 5e57a0a26924..61b1a0fdcfcb 100644
+--- a/arch/arm64/kernel/traps.c
++++ b/arch/arm64/kernel/traps.c
+@@ -48,6 +48,10 @@
+ 
+ #include <trace/hooks/traps.h>
+ 
++#ifdef CONFIG_AMLOGIC_USER_FAULT
++#include <linux/amlogic/user_fault.h>
++#endif
++
+ static bool __kprobes __check_eq(unsigned long pstate)
+ {
+ 	return (pstate & PSR_Z_BIT) != 0;
+@@ -146,7 +150,11 @@ pstate_check_t * const aarch32_opcode_cond_checks[16] = {
+ 	__check_gt, __check_le, __check_al, __check_al
+ };
+ 
++#ifndef CONFIG_AMLOGIC_USER_FAULT
+ int show_unhandled_signals = 0;
++#else
++int show_unhandled_signals = 1;
++#endif
+ 
+ static void dump_kernel_instr(const char *lvl, struct pt_regs *regs)
+ {
+@@ -249,9 +257,16 @@ static void arm64_show_signal(int signo, const char *str)
+ 	struct pt_regs *regs = task_pt_regs(tsk);
+ 
+ 	/* Leave if the signal won't be shown */
++#ifndef CONFIG_AMLOGIC_USER_FAULT
+ 	if (!show_unhandled_signals ||
+ 	    !unhandled_signal(tsk, signo) ||
+ 	    !__ratelimit(&rs))
++#else
++	if (!show_unhandled_signals ||
++		(!unhandled_signal(tsk, signo) &&
++		!(show_unhandled_signals & 0xe)) ||
++		!__ratelimit(&rs))
++#endif
+ 		return;
+ 
+ 	pr_info("%s[%d]: unhandled exception: ", tsk->comm, task_pid_nr(tsk));
+@@ -262,6 +277,12 @@ static void arm64_show_signal(int signo, const char *str)
+ 	print_vma_addr(KERN_CONT " in ", regs->pc);
+ 	pr_cont("\n");
+ 	__show_regs(regs);
++#ifdef CONFIG_AMLOGIC_USER_FAULT
++	pr_info("signo: %d\n", signo);
++	show_all_pfn(current, regs);
++	if (regs && kexec_should_crash(current) && (show_unhandled_signals & 4))
++		crash_kexec(regs);
++#endif
+ }
+ 
+ void arm64_force_sig_fault(int signo, int code, unsigned long far,
+@@ -858,6 +879,11 @@ void bad_el0_sync(struct pt_regs *regs, int reason, unsigned long esr)
+ 	current->thread.fault_address = 0;
+ 	current->thread.fault_code = esr;
+ 
++#ifdef CONFIG_AMLOGIC_USER_FAULT
++	show_all_pfn(current, regs);
++	_dump_dmc_reg();
++#endif /* CONFIG_AMLOGIC_USER_FAULT */
++
+ 	arm64_force_sig_fault(SIGILL, ILL_ILLOPC, pc,
+ 			      "Bad EL0 synchronous exception");
+ }
+@@ -904,6 +930,9 @@ void __noreturn arm64_serror_panic(struct pt_regs *regs, unsigned long esr)
+ 	pr_crit("SError Interrupt on CPU%d, code 0x%016lx -- %s\n",
+ 		smp_processor_id(), esr, esr_get_class_string(esr));
+ 
++#ifdef CONFIG_AMLOGIC_USER_FAULT
++	_dump_dmc_reg();
++#endif
+ 	trace_android_rvh_arm64_serror_panic(regs, esr);
+ 	if (regs)
+ 		__show_regs(regs);
+diff --git a/arch/arm64/mm/fault.c b/arch/arm64/mm/fault.c
+index 0f78302f1392..4b5bc411266c 100644
+--- a/arch/arm64/mm/fault.c
++++ b/arch/arm64/mm/fault.c
+@@ -46,6 +46,10 @@
+ 
+ #include <trace/hooks/fault.h>
+ 
++#ifdef CONFIG_AMLOGIC_USER_FAULT
++#include <linux/amlogic/user_fault.h>
++#endif
++
+ struct fault_info {
+ 	int	(*fn)(unsigned long far, unsigned long esr,
+ 		      struct pt_regs *regs);
+@@ -816,6 +820,11 @@ static int do_sea(unsigned long far, unsigned long esr, struct pt_regs *regs)
+ 		 */
+ 		siaddr  = untagged_addr(far);
+ 	}
++
++#ifdef CONFIG_AMLOGIC_USER_FAULT
++	_dump_dmc_reg();
++#endif /* CONFIG_AMLOGIC_USER_FAULT */
++
+ 	trace_android_rvh_do_sea(siaddr, esr, regs);
+ 	arm64_notify_die(inf->name, regs, inf->sig, inf->code, siaddr, esr);
+ 
+-- 
+2.25.1
+

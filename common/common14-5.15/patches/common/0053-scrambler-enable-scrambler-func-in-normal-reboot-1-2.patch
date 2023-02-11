@@ -1,0 +1,103 @@
+From fafbfb9a070c6aef13c061a8e1333bde43fb1d2b Mon Sep 17 00:00:00 2001
+From: "song.han" <song.han@amlogic.com>
+Date: Mon, 26 Sep 2022 19:25:59 +0800
+Subject: [PATCH 53/95] scrambler: enable scrambler func in normal reboot [1/2]
+
+PD#SWPL-94581
+
+Problem:
+need disable ddr scrambler func for debug
+
+Solution:
+only enable scrambler func in normal reboot
+
+Verify:
+SC2_AH212
+
+Signed-off-by: song.han <song.han@amlogic.com>
+Change-Id: I680235880b797468ec44268d66b6fc5d7bba2ea6
+---
+ kernel/reboot.c | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+index 957ef52b8af4..b3561917e15f 100644
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -19,6 +19,12 @@
+ #include <linux/syscore_ops.h>
+ #include <linux/uaccess.h>
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG
++#include <linux/io.h>
++static unsigned int scramble_reg;
++core_param(scramble_reg, scramble_reg, uint, 0644);
++#endif
++
+ /*
+  * this indicates whether you can reboot with ctrl-alt-del: the default is yes
+  */
+@@ -302,6 +308,30 @@ EXPORT_SYMBOL_GPL(kernel_power_off);
+ 
+ DEFINE_MUTEX(system_transition_mutex);
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG
++/* scramble_clear_preserve() will clear scramble_reg bit0,
++ * this will cause fresh ddr data after reboot
++ */
++static void scramble_clear_preserve(void)
++{
++	void __iomem *vaddr;
++	unsigned int val;
++
++	if (scramble_reg) {
++		vaddr = ioremap(scramble_reg, 4);
++		if (!vaddr)
++			return;
++
++		val = readl(vaddr);
++		val = val & (~0x1);
++		writel(val, vaddr);
++
++		iounmap(vaddr);
++		pr_info("clear STARTUP_KEY_PRESERVE bit0, no request to preserve REE Scramble Key\n");
++	}
++}
++#endif
++
+ /*
+  * Reboot system call: for obvious reasons only root may call it,
+  * and even root needs to set up some magic numbers in the registers
+@@ -347,6 +377,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 	mutex_lock(&system_transition_mutex);
+ 	switch (cmd) {
+ 	case LINUX_REBOOT_CMD_RESTART:
++#ifdef CONFIG_AMLOGIC_DEBUG
++		scramble_clear_preserve();
++#endif
+ 		kernel_restart(NULL);
+ 		break;
+ 
+@@ -364,6 +397,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 		panic("cannot halt");
+ 
+ 	case LINUX_REBOOT_CMD_POWER_OFF:
++#ifdef CONFIG_AMLOGIC_DEBUG
++		scramble_clear_preserve();
++#endif
+ 		kernel_power_off();
+ 		do_exit(0);
+ 		break;
+@@ -376,6 +412,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 		}
+ 		buffer[sizeof(buffer) - 1] = '\0';
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG
++		scramble_clear_preserve();
++#endif
+ 		kernel_restart(buffer);
+ 		break;
+ 
+-- 
+2.25.1
+

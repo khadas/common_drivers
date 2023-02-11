@@ -1,0 +1,44 @@
+From f3d7e1eb362a7b90eb61cce9c908098e0d4be2e3 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Fri, 25 Feb 2022 16:48:45 +0800
+Subject: [PATCH 18/95] mm: reduce cache line size to 64 bytes to save memory
+ [1/1]
+
+PD#SWPL-73261
+
+Problem:
+If cacheline size is set to 128, then smallest kmalloc is 128, this will
+cause low memory usage for slab and waste lot of memory.
+
+Solution:
+For ARM64, cacheline size is hardware set to 64 bytes. Reduce to 64 bytes can improve
+usage for slab. And can help to save memory.
+
+Verify:
+local.
+
+Change-Id: I60902d97d31540d7c5a39d5aeaa1beed00f361a5
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ arch/arm64/include/asm/cache.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/include/asm/cache.h b/arch/arm64/include/asm/cache.h
+index 933facc11ee6..8f8e51109a67 100644
+--- a/arch/arm64/include/asm/cache.h
++++ b/arch/arm64/include/asm/cache.h
+@@ -23,7 +23,11 @@
+  * cache before the transfer is done, causing old data to be seen by
+  * the CPU.
+  */
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
++#else
+ #define ARCH_DMA_MINALIGN	(128)
++#endif /* CONFIG_AMLOGIC_MEMORY_EXTEND */
+ 
+ #ifdef CONFIG_KASAN_SW_TAGS
+ #define ARCH_SLAB_MINALIGN	(1ULL << KASAN_SHADOW_SCALE_SHIFT)
+-- 
+2.25.1
+

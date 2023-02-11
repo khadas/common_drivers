@@ -1,0 +1,82 @@
+From 0ecf3f8dba518e8dfcb85640f871b331636f2bcd Mon Sep 17 00:00:00 2001
+From: Zhuo Wang <zhuo.wang@amlogic.com>
+Date: Tue, 26 Apr 2022 10:07:38 +0800
+Subject: [PATCH 31/95] eth: gki bringup [1/2]
+
+PD#SWPL-77313
+
+Problem:
+bringup eth
+
+Solution:
+bringup eth
+
+Verify:
+Verified on AP222_S905Y4#005
+
+Signed-off-by: Zhuo Wang <zhuo.wang@amlogic.com>
+Change-Id: I82947be4b46c14086effc804a1681ec9c1d99ecb
+---
+ drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c | 4 ++--
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c   | 9 +++++++++
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+index 17717d60f778..5b67f312e816 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+@@ -385,7 +385,7 @@ static int meson8b_init_prg_eth(struct meson8b_dwmac *dwmac)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_AMLOGIC_ETH_PRIVE
++#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+ static int aml_custom_setting(struct platform_device *pdev, struct meson8b_dwmac *dwmac)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+@@ -501,7 +501,7 @@ static int meson8b_dwmac_probe(struct platform_device *pdev)
+ 	ret = stmmac_dvr_probe(&pdev->dev, plat_dat, &stmmac_res);
+ 	if (ret)
+ 		goto err_remove_config_dt;
+-#ifdef CONFIG_AMLOGIC_ETH_PRIVE
++#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+ 	aml_custom_setting(pdev, dwmac);
+ #endif
+ 	return 0;
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 4191502d6472..4bab55fd7d39 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -31,6 +31,9 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/prefetch.h>
+ #include <linux/pinctrl/consumer.h>
++#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
++#include <linux/amlogic/aml_phy_debug.h>
++#endif
+ #ifdef CONFIG_DEBUG_FS
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+@@ -3799,6 +3802,9 @@ static int stmmac_open(struct net_device *dev)
+ 	netif_tx_start_all_queues(priv->dev);
+ 	stmmac_enable_all_dma_irq(priv);
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
++	gmac_create_sysfs(priv->phylink->phydev, priv->ioaddr);
++#endif
+ 	return 0;
+ 
+ irq_error:
+@@ -3881,6 +3887,9 @@ static int stmmac_release(struct net_device *dev)
+ 	if (priv->dma_cap.fpesel)
+ 		stmmac_fpe_stop_wq(priv);
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
++	gmac_remove_sysfs(priv->phylink->phydev);
++#endif
+ 	return 0;
+ }
+ 
+-- 
+2.25.1
+

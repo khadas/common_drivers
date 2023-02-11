@@ -1,0 +1,47 @@
+From 0410d26dfb6eff6da993d7f62c1b8bda458d5b9e Mon Sep 17 00:00:00 2001
+From: "qinglin.li" <qinglin.li@amlogic.com>
+Date: Wed, 16 Nov 2022 16:54:47 +0800
+Subject: [PATCH 10/95] printk: use vendor_hook print cpu and irq info [1/3]
+
+PD#SWPL-101578
+
+Problem:
+use vendor_hook print cpu and irq info
+
+Solution:
+use vendor_hook print cpu and irq info
+
+Verify:
+sc2
+
+Change-Id: I34ee74ab9f85d35b56d329d733d806d073033200
+Signed-off-by: qinglin.li <qinglin.li@amlogic.com>
+---
+ include/trace/hooks/printk.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/trace/hooks/printk.h b/include/trace/hooks/printk.h
+index b3e9598386c7..57127130a288 100644
+--- a/include/trace/hooks/printk.h
++++ b/include/trace/hooks/printk.h
+@@ -13,12 +13,17 @@ DECLARE_HOOK(android_vh_printk_hotplug,
+ 	TP_PROTO(int *flag),
+ 	TP_ARGS(flag));
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_PRINTK) && \
++	(!defined(CONFIG_TRACEPOINTS) || !defined(CONFIG_ANDROID_VENDOR_HOOKS))
++#include <linux/amlogic/debug_printk.h>
++#else
+ DECLARE_HOOK(android_vh_printk_caller_id,
+ 	TP_PROTO(u32 *caller_id),
+ 	TP_ARGS(caller_id));
+ DECLARE_HOOK(android_vh_printk_caller,
+ 	TP_PROTO(char *caller, size_t size, u32 id, int *ret),
+ 	TP_ARGS(caller, size, id, ret));
++#endif
+ DECLARE_HOOK(android_vh_printk_ext_header,
+ 	TP_PROTO(char *caller, size_t size, u32 id, int *ret),
+ 	TP_ARGS(caller, size, id, ret));
+-- 
+2.25.1
+

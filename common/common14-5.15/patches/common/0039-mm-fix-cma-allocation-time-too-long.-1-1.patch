@@ -1,0 +1,78 @@
+From 5d0eb3b64e58a6fb68da98e03094907e7c123bc7 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Wed, 24 Aug 2022 18:30:17 +0800
+Subject: [PATCH 39/95] mm: fix cma allocation time too long. [1/1]
+
+PD#SWPL-92323
+
+Problem:
+cma allocate too long, set isolation flag failed.
+
+Solution:
+add delay in cma alloc.
+
+Verify:
+sc2_ah212.
+
+Change-Id: I3f4f7ed9e3544dbc211c2dee9935eb5a3a67179f
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ mm/cma.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/mm/cma.c b/mm/cma.c
+index 44a4d7fe9eb0..2072403a509f 100644
+--- a/mm/cma.c
++++ b/mm/cma.c
+@@ -43,6 +43,8 @@
+ 
+ #ifdef CONFIG_AMLOGIC_CMA
+ #include <linux/amlogic/aml_cma.h>
++#include <linux/delay.h>
++#include <linux/sched/clock.h>
+ #endif /* CONFIG_AMLOGIC_CMA */
+ 
+ #ifdef CONFIG_AMLOGIC_SEC
+@@ -471,6 +473,9 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
+ #ifdef CONFIG_AMLOGIC_CMA
+ 	int dummy;
+ 	unsigned long tick = 0;
++	unsigned long long in_tick, timeout;
++
++	in_tick = sched_clock();
+ #endif
+ 
+ 	trace_android_vh_cma_alloc_start(&ts);
+@@ -481,6 +486,13 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
+ 	pr_debug("%s(cma %p, count %lu, align %d gfp_mask 0x%x)\n", __func__,
+ 			(void *)cma, count, align, gfp_mask);
+ 
++#ifdef CONFIG_AMLOGIC_CMA
++	cma_debug(0, NULL, "(cma %p, count %lu, align %d)\n",
++		  (void *)cma, count, align);
++	in_tick = sched_clock();
++	timeout = 2ULL * 1000000 * (1 + ((count * PAGE_SIZE) >> 20));
++#endif
++
+ 	if (!count)
+ 		goto out;
+ 
+@@ -582,6 +594,15 @@ struct page *cma_alloc(struct cma *cma, unsigned long count,
+ 			/* try again with a bit different memory target */
+ 			start = bitmap_no + mask + 1;
+ 		}
++	#else
++		/*
++		 * CMA allocation time out, for example:
++		 * 1. set isolation failed.
++		 * 2. refcout and mapcount mismatch.
++		 * may blocked on some pages, relax CPU and try later.
++		 */
++		if ((sched_clock() - in_tick) >= timeout)
++			usleep_range(1000, 2000);
+ 	#endif
+ 	}
+ 
+-- 
+2.25.1
+

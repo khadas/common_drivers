@@ -1,0 +1,39 @@
+From f3f589acbe5ec62f4e9bd3bfd8b2ec26fe9a23d8 Mon Sep 17 00:00:00 2001
+From: "song.han" <song.han@amlogic.com>
+Date: Wed, 23 Feb 2022 15:47:41 +0800
+Subject: [PATCH 13/95] boottime: regulator driver init time too long [1/1]
+
+PD#SWPL-71760
+
+Problem:
+regulator driver init time too long.
+
+Solution:
+fixed regulator driver use ASYNCHRONOUS probe mode.
+
+Verify:
+C2-AF400
+
+Signed-off-by: song.han <song.han@amlogic.com>
+Change-Id: I9cf894cab3554b6c28783a8a854146281eb1c97f
+---
+ drivers/regulator/fixed.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+index 599ad201dca7..2542add8980a 100644
+--- a/drivers/regulator/fixed.c
++++ b/drivers/regulator/fixed.c
+@@ -338,6 +338,9 @@ static struct platform_driver regulator_fixed_voltage_driver = {
+ 	.driver		= {
+ 		.name		= "reg-fixed-voltage",
+ 		.of_match_table = of_match_ptr(fixed_of_match),
++#ifdef CONFIG_AMLOGIC_BOOT_TIME
++		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
++#endif
+ 	},
+ };
+ 
+-- 
+2.25.1
+

@@ -1,0 +1,45 @@
+From 7a06536ac0af82e0dbeed049637e2536f0ed8976 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Thu, 8 Sep 2022 19:38:49 +0800
+Subject: [PATCH 48/95] mm: fix crash in auto-reboot after open vmap stack
+ [1/1]
+
+PD#SWPL-92714
+
+Problem:
+llmv can't guarantee frame pointer register is saved in leaf function
+calls. But x29 is dedicated used by vmap stack function. This caused
+stack mistake and system hung.
+
+Solution:
+Add -mno-omit-leaf-frame-pointer to force x29 used as dedicated frame
+pointer
+
+Verify:
+t5d am301
+
+Change-Id: I688d61894bdbaaf8f968d1b7689f533d3d62cb88
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ Makefile | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/Makefile b/Makefile
+index a2e4f0155031..8abc9881562f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -866,6 +866,11 @@ KBUILD_CFLAGS += $(call cc-disable-warning, dangling-pointer)
+ 
+ ifdef CONFIG_FRAME_POINTER
+ KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
++ifdef CONFIG_AMLOGIC_VMAP
++ifdef CONFIG_ARM64
++KBUILD_CFLAGS	+= -mno-omit-leaf-frame-pointer
++endif
++endif
+ else
+ # Some targets (ARM with Thumb2, for example), can't be built with frame
+ # pointers.  For those, we don't have FUNCTION_TRACER automatically
+-- 
+2.25.1
+

@@ -1,0 +1,41 @@
+From 38793282bd60382a90dc04d74bb30c91503bdfe1 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <lei.zhang@amlogic.com>
+Date: Sat, 31 Jul 2021 12:14:35 +0800
+Subject: [PATCH 65/95] cpu: fix core0 cannot be offline in 32BIT kernel [1/2]
+
+PD#SWPL-98876
+
+Problem:
+fix core0 cannot be offline in 32BIT kernel
+
+Solution:
+fix core0 cannot be offline in 32BIT kernel
+
+Verify:
+on s4_aq222
+
+Signed-off-by: Lei Zhang <lei.zhang@amlogic.com>
+Change-Id: I4e25fb47dde2c6108fd6fa218d4247928af57481
+---
+ arch/arm/kernel/smp.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 9ba5d4d232f3..61bc8f52a7a3 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -243,7 +243,11 @@ int platform_can_hotplug_cpu(unsigned int cpu)
+ 	 * since this is special on a lot of platforms, e.g. because
+ 	 * of clock tick interrupts.
+ 	 */
++#if IS_ENABLED(CONFIG_AMLOGIC_HOTPLUG_ARM_CPU0)
++	return 1;
++#else
+ 	return cpu != 0;
++#endif
+ }
+ 
+ static void ipi_teardown(int cpu)
+-- 
+2.25.1
+

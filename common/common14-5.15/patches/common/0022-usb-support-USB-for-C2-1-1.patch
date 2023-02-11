@@ -1,0 +1,56 @@
+From 7fe20d0d0d9792974d745b820f09d7e87d6e9902 Mon Sep 17 00:00:00 2001
+From: "he.he" <he.he@amlogic.com>
+Date: Mon, 28 Feb 2022 18:44:17 +0800
+Subject: [PATCH 22/95] usb: support USB for C2 [1/1]
+
+PD#SWPL-71865
+
+Problem:
+support USB for C2.
+
+Solution:
+support USB for C2
+
+Verify:
+C2
+
+Change-Id: I21738fe30f420fb5ee1ab9fedb8c19cc9aa33ec6
+Signed-off-by: he.he <he.he@amlogic.com>
+---
+ include/linux/usb/phy.h | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+index fd0f13ba9e65..fd76e8492a6a 100644
+--- a/include/linux/usb/phy.h
++++ b/include/linux/usb/phy.h
+@@ -157,6 +157,10 @@ struct usb_phy {
+ 	 * manually detect the charger type.
+ 	 */
+ 	enum usb_charger_type (*charger_detect)(struct usb_phy *x);
++#if IS_ENABLED(CONFIG_AMLOGIC_USB)
++	void (*phy_trim_tuning)(struct usb_phy *x,
++		int port, int default_val);
++#endif
+ 
+ 	ANDROID_VENDOR_DATA(1);
+ 	ANDROID_KABI_RESERVE(1);
+@@ -218,6 +222,15 @@ usb_phy_vbus_off(struct usb_phy *x)
+ 	return x->set_vbus(x, false);
+ }
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_USB)
++static inline void
++usb_phy_trim_tuning(struct usb_phy *x, int port, int default_val)
++{
++	if (x && x->phy_trim_tuning)
++		x->phy_trim_tuning(x, port, default_val);
++}
++#endif
++
+ /* for usb host and peripheral controller drivers */
+ #if IS_ENABLED(CONFIG_USB_PHY)
+ extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
+-- 
+2.25.1
+

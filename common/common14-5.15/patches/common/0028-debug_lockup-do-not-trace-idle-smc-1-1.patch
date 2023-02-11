@@ -1,0 +1,42 @@
+From 9c78392b578fe9d4d6251c37ec14f0cac52c25a4 Mon Sep 17 00:00:00 2001
+From: Hanjie Lin <hanjie.lin@amlogic.com>
+Date: Fri, 11 Mar 2022 15:50:25 +0800
+Subject: [PATCH 28/95] debug_lockup: do not trace idle smc [1/1]
+
+PD#SWPL-71728
+
+Problem:
+idle smc will not return do not trace it
+
+Solution:
+idle smc will not return do not trace it
+
+Verify:
+s4
+
+Signed-off-by: Hanjie Lin <hanjie.lin@amlogic.com>
+Change-Id: I0dbe585e749cdc911251c524332d83fadc4e1b40
+---
+ drivers/firmware/psci/psci.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/firmware/psci/psci.c b/drivers/firmware/psci/psci.c
+index b41cacaaf961..3d37032fa1e0 100644
+--- a/drivers/firmware/psci/psci.c
++++ b/drivers/firmware/psci/psci.c
+@@ -130,7 +130,12 @@ static unsigned long __invoke_psci_fn_smc(unsigned long function_id,
+ {
+ 	struct arm_smccc_res res;
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++	/* idle smc will not return, do not trace it */
++	__arm_smccc_smc(function_id, arg0, arg1, arg2, 0, 0, 0, 0, &res, NULL);
++#else
+ 	arm_smccc_smc(function_id, arg0, arg1, arg2, 0, 0, 0, 0, &res);
++#endif
+ 	return res.a0;
+ }
+ 
+-- 
+2.25.1
+

@@ -1,0 +1,231 @@
+From 079a6d31a8bf979198412cc296383f2d41ffa50f Mon Sep 17 00:00:00 2001
+From: "wanwei.jiang" <wanwei.jiang@amlogic.com>
+Date: Mon, 28 Feb 2022 09:54:55 +0800
+Subject: [PATCH 20/95] freertos: add module to bring cpu1 to linux [2/2]
+
+PD#SWPL-71741
+
+Problem:
+add module to bring cpu1 to linux
+
+Solution:
+add module to bring cpu1 to linux
+
+Verify:
+C2 AF400
+
+Change-Id: Ib2b18fbcb026afa8df7654eac90355f080e9a74b
+Signed-off-by: wanwei.jiang <wanwei.jiang@amlogic.com>
+---
+ arch/arm/kernel/smp.c            | 13 ++++++++++++
+ arch/arm64/kernel/smp.c          | 13 ++++++++++++
+ drivers/irqchip/irq-gic-common.c | 36 ++++++++++++++++++++++++++++++++
+ drivers/irqchip/irq-gic.c        | 16 +++++++++++++-
+ 4 files changed, 77 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 0cdaebb28b26..fb3be9b58a1c 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -48,6 +48,10 @@
+ #include <asm/mach/arch.h>
+ #include <asm/mpu.h>
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++#include <linux/amlogic/freertos.h>
++#endif
++
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/ipi.h>
+ 
+@@ -70,6 +74,9 @@ enum ipi_msg_type {
+ 	IPI_CPU_STOP,
+ 	IPI_IRQ_WORK,
+ 	IPI_COMPLETION,
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	IPI_FREERTOS = 7,
++#endif
+ 	NR_IPI,
+ 	/*
+ 	 * CPU_BACKTRACE is special and not included in NR_IPI
+@@ -665,6 +672,12 @@ static void do_handle_IPI(int ipinr)
+ 		ipi_complete(cpu);
+ 		break;
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	case IPI_FREERTOS:
++		freertos_finish();
++		break;
++#endif
++
+ 	case IPI_CPU_BACKTRACE:
+ 		printk_deferred_enter();
+ 		nmi_cpu_backtrace(get_irq_regs());
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+index 7fec4e38e8e2..5bdcdce62f17 100644
+--- a/arch/arm64/kernel/smp.c
++++ b/arch/arm64/kernel/smp.c
+@@ -56,6 +56,10 @@
+ #undef CREATE_TRACE_POINTS
+ #include <trace/hooks/debug.h>
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++#include <linux/amlogic/freertos.h>
++#endif
++
+ DEFINE_PER_CPU_READ_MOSTLY(int, cpu_number);
+ EXPORT_PER_CPU_SYMBOL(cpu_number);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(ipi_raise);
+@@ -79,6 +83,9 @@ enum ipi_msg_type {
+ 	IPI_TIMER,
+ 	IPI_IRQ_WORK,
+ 	IPI_WAKEUP,
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	IPI_FREERTOS = 7,
++#endif
+ 	NR_IPI
+ };
+ 
+@@ -940,6 +947,12 @@ static void do_handle_IPI(int ipinr)
+ 		break;
+ #endif
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	case IPI_FREERTOS:
++		freertos_finish();
++		break;
++#endif
++
+ 	default:
+ 		pr_crit("CPU%u: Unknown IPI message 0x%x\n", cpu, ipinr);
+ 		break;
+diff --git a/drivers/irqchip/irq-gic-common.c b/drivers/irqchip/irq-gic-common.c
+index a610821c8ff2..496d591d54f2 100644
+--- a/drivers/irqchip/irq-gic-common.c
++++ b/drivers/irqchip/irq-gic-common.c
+@@ -10,6 +10,10 @@
+ 
+ #include "irq-gic-common.h"
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++#include <linux/amlogic/freertos.h>
++#endif
++
+ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+ 
+ void gic_enable_of_quirks(const struct device_node *np,
+@@ -88,30 +92,62 @@ void gic_dist_config(void __iomem *base, int gic_irqs,
+ 		     void (*sync_access)(void))
+ {
+ 	unsigned int i;
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	u32 tmp;
++#endif
+ 
+ 	/*
+ 	 * Set all global interrupts to be level triggered, active low.
+ 	 */
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	for (i = 32; i < gic_irqs; i += 16) {
++		tmp = readl_relaxed(base + GIC_DIST_CONFIG + i / 4);
++		tmp = freertos_get_irqregval
++			(GICD_INT_ACTLOW_LVLTRIG, tmp, i, 16);
++		writel_relaxed(tmp, base + GIC_DIST_CONFIG + i / 4);
++	}
++#else
+ 	for (i = 32; i < gic_irqs; i += 16)
+ 		writel_relaxed(GICD_INT_ACTLOW_LVLTRIG,
+ 					base + GIC_DIST_CONFIG + i / 4);
++#endif
+ 
+ 	/*
+ 	 * Set priority on all global interrupts.
+ 	 */
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	for (i = 32; i < gic_irqs; i += 4) {
++		tmp = readl_relaxed(base + GIC_DIST_PRI + i);
++		tmp = freertos_get_irqregval
++			(GICD_INT_DEF_PRI_X4, tmp, i, 4);
++		writel_relaxed(tmp, base + GIC_DIST_PRI + i);
++	}
++#else
+ 	for (i = 32; i < gic_irqs; i += 4)
+ 		writel_relaxed(GICD_INT_DEF_PRI_X4, base + GIC_DIST_PRI + i);
++#endif
+ 
+ 	/*
+ 	 * Deactivate and disable all SPIs. Leave the PPI and SGIs
+ 	 * alone as they are in the redistributor registers on GICv3.
+ 	 */
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	for (i = 32; i < gic_irqs; i += 32) {
++		writel_relaxed
++			(freertos_get_irqregval(GICD_INT_EN_CLR_X32, 0, i, 32),
++			 base + GIC_DIST_ACTIVE_CLEAR + i / 8);
++		writel_relaxed
++			(freertos_get_irqregval(GICD_INT_EN_CLR_X32, 0, i, 32),
++			 base + GIC_DIST_ENABLE_CLEAR + i / 8);
++	}
++#else
+ 	for (i = 32; i < gic_irqs; i += 32) {
+ 		writel_relaxed(GICD_INT_EN_CLR_X32,
+ 			       base + GIC_DIST_ACTIVE_CLEAR + i / 8);
+ 		writel_relaxed(GICD_INT_EN_CLR_X32,
+ 			       base + GIC_DIST_ENABLE_CLEAR + i / 8);
+ 	}
++#endif
+ 
+ 	if (sync_access)
+ 		sync_access();
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index a02bdad09318..1cf231bcc1e1 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -48,6 +48,10 @@
+ 
+ #include "irq-gic-common.h"
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++#include <linux/amlogic/freertos.h>
++#endif
++
+ #ifdef CONFIG_ARM64
+ #include <asm/cpufeature.h>
+ 
+@@ -466,13 +470,15 @@ static void gic_cpu_if_up(struct gic_chip_data *gic)
+ 	writel_relaxed(bypass | mode | GICC_ENABLE, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+-
+ static void gic_dist_init(struct gic_chip_data *gic)
+ {
+ 	unsigned int i;
+ 	u32 cpumask;
+ 	unsigned int gic_irqs = gic->gic_irqs;
+ 	void __iomem *base = gic_data_dist_base(gic);
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	u32 tmp;
++#endif
+ 
+ 	writel_relaxed(GICD_DISABLE, base + GIC_DIST_CTRL);
+ 
+@@ -482,8 +488,16 @@ static void gic_dist_init(struct gic_chip_data *gic)
+ 	cpumask = gic_get_cpumask(gic);
+ 	cpumask |= cpumask << 8;
+ 	cpumask |= cpumask << 16;
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	for (i = 32; i < gic_irqs; i += 4) {
++		tmp = readl_relaxed(base + GIC_DIST_TARGET + i * 4 / 4);
++		tmp = freertos_get_irqregval(cpumask, tmp, i, 4);
++		writel_relaxed(tmp, base + GIC_DIST_TARGET + i * 4 / 4);
++	}
++#else
+ 	for (i = 32; i < gic_irqs; i += 4)
+ 		writel_relaxed(cpumask, base + GIC_DIST_TARGET + i * 4 / 4);
++#endif
+ 
+ 	gic_dist_config(base, gic_irqs, NULL);
+ 
+-- 
+2.25.1
+

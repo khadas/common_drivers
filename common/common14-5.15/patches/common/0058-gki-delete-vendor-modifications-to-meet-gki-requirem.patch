@@ -1,0 +1,58 @@
+From 07cc951a8b3d946eaf8bf18a17a7dec22801bcc7 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Tue, 27 Sep 2022 11:11:52 +0800
+Subject: [PATCH 58/95] gki: delete vendor modifications to meet gki
+ requirements. [1/1]
+
+PD#SWPL-94445
+
+Problem:
+vendor modification break gki.
+
+Solution:
+delete the vendor modifications.
+
+Verify:
+sc2_ah212.
+
+Change-Id: I7f196c0cbd43582e4a887aefe45062210392da81
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ arch/arm64/include/asm/cache.h      | 4 ++--
+ drivers/dma-buf/heaps/system_heap.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/include/asm/cache.h b/arch/arm64/include/asm/cache.h
+index 8f8e51109a67..6c866a6c5177 100644
+--- a/arch/arm64/include/asm/cache.h
++++ b/arch/arm64/include/asm/cache.h
+@@ -23,11 +23,11 @@
+  * cache before the transfer is done, causing old data to be seen by
+  * the CPU.
+  */
+-#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
+ #define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
+ #else
+ #define ARCH_DMA_MINALIGN	(128)
+-#endif /* CONFIG_AMLOGIC_MEMORY_EXTEND */
++#endif
+ 
+ #ifdef CONFIG_KASAN_SW_TAGS
+ #define ARCH_SLAB_MINALIGN	(1ULL << KASAN_SHADOW_SCALE_SHIFT)
+diff --git a/drivers/dma-buf/heaps/system_heap.c b/drivers/dma-buf/heaps/system_heap.c
+index 65845c197bbe..8da2d5cbd1f4 100644
+--- a/drivers/dma-buf/heaps/system_heap.c
++++ b/drivers/dma-buf/heaps/system_heap.c
+@@ -52,7 +52,7 @@ struct dma_heap_attachment {
+ #define HIGH_ORDER_GFP  (((GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN \
+ 				| __GFP_NORETRY) & ~__GFP_RECLAIM) \
+ 				| __GFP_COMP)
+-#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
+ #define LOW_ORDER_GFP_NO_WARN (GFP_HIGHUSER | __GFP_ZERO | __GFP_COMP | __GFP_NOWARN)
+ static gfp_t order_flags[] = {HIGH_ORDER_GFP,
+ 				LOW_ORDER_GFP_NO_WARN, LOW_ORDER_GFP_NO_WARN,
+-- 
+2.25.1
+

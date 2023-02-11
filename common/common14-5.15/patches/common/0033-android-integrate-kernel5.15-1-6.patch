@@ -1,0 +1,30 @@
+From 1dd5485e377264117ed0e8da0eddd72b2a5adba1 Mon Sep 17 00:00:00 2001
+From: "wanwei.jiang" <wanwei.jiang@amlogic.com>
+Date: Thu, 16 Jun 2022 13:45:12 +0800
+Subject: [PATCH 33/95] android: integrate kernel5.15 [1/6]
+
+PD#SWPL-80766
+
+Problem:
+androidt build error
+
+Solution:
+rename Android.mk to Android_mk
+
+Verify:
+androidt build
+
+Change-Id: I5a63de9387bb179c5e269c0ee169c74b64f8cca5
+Signed-off-by: wanwei.jiang <wanwei.jiang@amlogic.com>
+---
+ drivers/staging/greybus/tools/{Android.mk => Android_mk} | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ rename drivers/staging/greybus/tools/{Android.mk => Android_mk} (100%)
+
+diff --git a/drivers/staging/greybus/tools/Android.mk b/drivers/staging/greybus/tools/Android_mk
+similarity index 100%
+rename from drivers/staging/greybus/tools/Android.mk
+rename to drivers/staging/greybus/tools/Android_mk
+-- 
+2.25.1
+

@@ -1,0 +1,165 @@
+From 52c645d3390ab918769aa24fc2619181cf77c7a6 Mon Sep 17 00:00:00 2001
+From: Zhuo Wang <zhuo.wang@amlogic.com>
+Date: Thu, 17 Feb 2022 11:44:09 +0800
+Subject: [PATCH 07/95] eth: c2 bringup [1/2]
+
+PD#SWPL-71869
+
+Problem:
+bringup c2 with 5.15
+
+Solution:
+bringup c2 with 5.15
+
+Verify:
+AF400_C305X_DEV#111
+
+Signed-off-by: Zhuo Wang <zhuo.wang@amlogic.com>
+Change-Id: I76a70d194e6c2f40d24c56547f814e775b207839
+---
+ drivers/net/ethernet/stmicro/stmmac/Kconfig   | 14 +++++-
+ .../ethernet/stmicro/stmmac/dwmac-meson8b.c   | 21 +++++++-
+ .../ethernet/stmicro/stmmac/stmmac_platform.c | 49 ++++++++++++++++++-
+ 3 files changed, 80 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/Kconfig b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+index 929cfc22cd0c..16d653d482ab 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/Kconfig
++++ b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+@@ -109,8 +109,7 @@ config DWMAC_MEDIATEK
+ 
+ config DWMAC_MESON
+ 	tristate "Amlogic Meson dwmac support"
+-	default ARCH_MESON
+-	depends on OF && COMMON_CLK && (ARCH_MESON || COMPILE_TEST)
++	depends on OF && COMMON_CLK
+ 	help
+ 	  Support for Ethernet controller on Amlogic Meson SoCs.
+ 
+@@ -118,6 +117,17 @@ config DWMAC_MESON
+ 	  the stmmac device driver. This driver is used for Meson6,
+ 	  Meson8, Meson8b and GXBB SoCs.
+ 
++config AMLOGIC_ETH_PRIVE
++	tristate "Amlogic private ethernet code"
++	default n
++	depends on OF
++	help
++	  Support for Ethernet controller on Amlogic Meson SoCs.
++
++	  This selects the Amlogic Meson SoC glue layer support for
++	  the stmmac device driver. This driver is used for amlogic
++	  private driver.
++
+ config DWMAC_OXNAS
+ 	tristate "Oxford Semiconductor OXNAS dwmac support"
+ 	default ARCH_OXNAS
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+index e8b507f88fbc..17717d60f778 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+@@ -385,6 +385,23 @@ static int meson8b_init_prg_eth(struct meson8b_dwmac *dwmac)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_AMLOGIC_ETH_PRIVE
++static int aml_custom_setting(struct platform_device *pdev, struct meson8b_dwmac *dwmac)
++{
++	struct device_node *np = pdev->dev.of_node;
++	unsigned int mc_val = 0;
++
++	pr_info("aml_cust_setting\n");
++
++	if (of_property_read_u32(np, "mc_val", &mc_val) == 0) {
++		pr_info("cover mc_val as 0x%x\n", mc_val);
++		writel(mc_val, dwmac->regs + PRG_ETH0);
++	}
++
++	return 0;
++}
++#endif
++
+ static int meson8b_dwmac_probe(struct platform_device *pdev)
+ {
+ 	struct plat_stmmacenet_data *plat_dat;
+@@ -484,7 +501,9 @@ static int meson8b_dwmac_probe(struct platform_device *pdev)
+ 	ret = stmmac_dvr_probe(&pdev->dev, plat_dat, &stmmac_res);
+ 	if (ret)
+ 		goto err_remove_config_dt;
+-
++#ifdef CONFIG_AMLOGIC_ETH_PRIVE
++	aml_custom_setting(pdev, dwmac);
++#endif
+ 	return 0;
+ 
+ err_remove_config_dt:
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index 5c234a8158c7..d92171dcd868 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -384,6 +384,51 @@ static int stmmac_of_get_mac_mode(struct device_node *np)
+ 	return -ENODEV;
+ }
+ 
++#ifdef CONFIG_AMLOGIC_ETH_PRIVE
++static int setup_aml_clk(struct platform_device *pdev)
++{
++	struct clk *pipe_clk;
++	struct clk *gp_clk;
++	struct clk *gp_clk_mux;
++	struct clk *fix_clk_50m;
++	int rtn;
++
++	pipe_clk = devm_clk_get(&pdev->dev, "ethpipe");
++	if (IS_ERR(pipe_clk)) {
++		dev_warn(&pdev->dev, "Cannot get pipe line clock\n");
++		pipe_clk = NULL;
++	}
++	clk_prepare_enable(pipe_clk);
++	/*GP_MCLK2*/
++	gp_clk_mux = devm_clk_get(&pdev->dev, "gp_mclk2_mux");
++	if (IS_ERR(gp_clk_mux)) {
++		dev_warn(&pdev->dev, "Cannot get gp clock\n");
++		gp_clk_mux = NULL;
++	}
++	fix_clk_50m = devm_clk_get(&pdev->dev, "fixpll_50m");
++	if (IS_ERR(fix_clk_50m)) {
++		dev_warn(&pdev->dev, "Cannot get gp clock\n");
++		fix_clk_50m = NULL;
++	}
++	rtn = clk_set_parent(gp_clk_mux, fix_clk_50m);
++
++	gp_clk = devm_clk_get(&pdev->dev, "gp_mclk2");
++	if (IS_ERR(gp_clk)) {
++		dev_warn(&pdev->dev, "Cannot get gp clock\n");
++		gp_clk = NULL;
++	}
++	rtn = clk_set_rate(gp_clk, 50 * 1000 * 1000);
++	if (rtn)
++		pr_info("set gpclk error\n");
++
++	rtn = clk_prepare_enable(gp_clk);
++	if (rtn)
++		pr_info("enable gpclk error\n");
++
++	return rtn;
++}
++#endif
++
+ /**
+  * stmmac_probe_config_dt - parse device-tree driver parameters
+  * @pdev: platform_device structure
+@@ -584,7 +629,9 @@ stmmac_probe_config_dt(struct platform_device *pdev, u8 *mac)
+ 		}
+ 		clk_prepare_enable(plat->stmmac_clk);
+ 	}
+-
++#ifdef CONFIG_AMLOGIC_ETH_PRIVE
++	setup_aml_clk(pdev);
++#endif
+ 	plat->pclk = devm_clk_get_optional(&pdev->dev, "pclk");
+ 	if (IS_ERR(plat->pclk)) {
+ 		ret = plat->pclk;
+-- 
+2.25.1
+

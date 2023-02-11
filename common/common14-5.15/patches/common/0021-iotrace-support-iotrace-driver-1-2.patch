@@ -1,0 +1,506 @@
+From 46c563c6eae77d4d753e5cdeb5db7a0f1f19e806 Mon Sep 17 00:00:00 2001
+From: "song.han" <song.han@amlogic.com>
+Date: Mon, 28 Feb 2022 17:27:45 +0800
+Subject: [PATCH 21/95] iotrace: support iotrace driver [1/2]
+
+PD#SWPL-71754
+
+Problem:
+support iotrace driver
+
+Solution:
+support iotrace
+
+Verify:
+on s4d_ap222 and c2_af400
+
+Change-Id: Ic46df61cc5df7fa4bee2f49c424ecfaf07dffb5d
+Signed-off-by: song.han <song.han@amlogic.com>
+---
+ arch/arm/include/asm/io.h      | 12 +++++++----
+ arch/arm64/include/asm/io.h    |  4 ++++
+ arch/arm64/kernel/image-vars.h |  4 ++++
+ arch/arm64/kernel/io.c         | 25 +++++++++++++++++++++++
+ drivers/irqchip/irq-gic.c      |  3 +++
+ fs/pstore/ftrace.c             |  8 ++++++++
+ fs/pstore/inode.c              |  4 ++++
+ fs/pstore/ram.c                | 37 +++++++++++++++++++++++++++++++---
+ fs/pstore/ram_core.c           |  4 +++-
+ include/linux/pstore.h         | 20 ++++++++++++++++++
+ kernel/module.c                | 37 ++++++++++++++++++++++++++++++++++
+ mm/vmalloc.c                   | 28 +++++++++++++++++++++++++
+ 12 files changed, 178 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
+index 79d246ac93ab..ec4004fd5a27 100644
+--- a/arch/arm/include/asm/io.h
++++ b/arch/arm/include/asm/io.h
+@@ -50,6 +50,9 @@ void __raw_readsb(const volatile void __iomem *addr, void *data, int bytelen);
+ void __raw_readsw(const volatile void __iomem *addr, void *data, int wordlen);
+ void __raw_readsl(const volatile void __iomem *addr, void *data, int longlen);
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++#include <linux/amlogic/io_32.h>
++#else
+ #if __LINUX_ARM_ARCH__ < 6
+ /*
+  * Half-word accesses are problematic with RiscPC due to limitations of
+@@ -115,7 +118,7 @@ static inline u32 __raw_readl(const volatile void __iomem *addr)
+ 		     : "Qo" (*(volatile u32 __force *)addr));
+ 	return val;
+ }
+-
++#endif /* CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE */
+ /*
+  * Architecture ioremap implementation.
+  */
+@@ -315,6 +318,7 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
+ #define writesl(p,d,l)		__raw_writesl(p,d,l)
+ 
+ #ifndef __ARMBE__
++#ifndef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+ static inline void memset_io(volatile void __iomem *dst, unsigned c,
+ 	size_t count)
+ {
+@@ -338,12 +342,12 @@ static inline void memcpy_toio(volatile void __iomem *to, const void *from,
+ 	mmiocpy((void __force *)to, from, count);
+ }
+ #define memcpy_toio(to,from,count) memcpy_toio(to,from,count)
+-
+-#else
++#endif /* CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE */
++#else /* __ARMBE__ */
+ #define memset_io(c,v,l)	_memset_io(c,(v),(l))
+ #define memcpy_fromio(a,c,l)	_memcpy_fromio((a),c,(l))
+ #define memcpy_toio(c,a,l)	_memcpy_toio(c,(a),(l))
+-#endif
++#endif /*__ARMBE__ */
+ 
+ #endif	/* readl */
+ 
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index 3995652daf81..f4f8df403362 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -18,6 +18,9 @@
+ #include <asm/alternative.h>
+ #include <asm/cpufeature.h>
+ 
++#if defined(CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE)
++#include <linux/amlogic/io_64.h>
++#else
+ /*
+  * Generic IO read/write.  These perform native-endian accesses.
+  */
+@@ -89,6 +92,7 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
+ 		     : "=r" (val) : "r" (addr));
+ 	return val;
+ }
++#endif
+ 
+ /* IO barriers */
+ #define __iormb(v)							\
+diff --git a/arch/arm64/kernel/image-vars.h b/arch/arm64/kernel/image-vars.h
+index 8ca6df922da8..d114e81d6970 100644
+--- a/arch/arm64/kernel/image-vars.h
++++ b/arch/arm64/kernel/image-vars.h
+@@ -134,6 +134,10 @@ KVM_NVHE_ALIAS(__hyp_event_ids_end);
+ /* pKVM static key */
+ KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++KVM_NVHE_ALIAS(pstore_io_save);
++KVM_NVHE_ALIAS(vabits_actual);
++#endif
+ #endif /* CONFIG_KVM */
+ 
+ #endif /* __ARM64_KERNEL_IMAGE_VARS_H */
+diff --git a/arch/arm64/kernel/io.c b/arch/arm64/kernel/io.c
+index aa7a4ec6a3ae..7e8ea7c88833 100644
+--- a/arch/arm64/kernel/io.c
++++ b/arch/arm64/kernel/io.c
+@@ -7,13 +7,22 @@
+ 
+ #include <linux/export.h>
+ #include <linux/types.h>
++#define SKIP_IO_TRACE
+ #include <linux/io.h>
++#undef SKIP_IO_TRACE
++
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++#include <linux/amlogic/debug_ftrace_ramoops.h>
++#endif
+ 
+ /*
+  * Copy data from IO memory space to "real" memory space.
+  */
+ void __memcpy_fromio(void *to, const volatile void __iomem *from, size_t count)
+ {
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	pstore_ftrace_io_copy_from((unsigned long)from, (unsigned long)count);
++#endif
+ 	while (count && !IS_ALIGNED((unsigned long)from, 8)) {
+ 		*(u8 *)to = __raw_readb(from);
+ 		from++;
+@@ -34,6 +43,9 @@ void __memcpy_fromio(void *to, const volatile void __iomem *from, size_t count)
+ 		to++;
+ 		count--;
+ 	}
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	pstore_ftrace_io_copy_from_end((unsigned long)from, (unsigned long)count);
++#endif
+ }
+ EXPORT_SYMBOL(__memcpy_fromio);
+ 
+@@ -42,6 +54,9 @@ EXPORT_SYMBOL(__memcpy_fromio);
+  */
+ void __memcpy_toio(volatile void __iomem *to, const void *from, size_t count)
+ {
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	pstore_ftrace_io_copy_to((unsigned long)to, (unsigned long)count);
++#endif
+ 	while (count && !IS_ALIGNED((unsigned long)to, 8)) {
+ 		__raw_writeb(*(u8 *)from, to);
+ 		from++;
+@@ -62,6 +77,9 @@ void __memcpy_toio(volatile void __iomem *to, const void *from, size_t count)
+ 		to++;
+ 		count--;
+ 	}
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	pstore_ftrace_io_copy_to_end((unsigned long)to, (unsigned long)count);
++#endif
+ }
+ EXPORT_SYMBOL(__memcpy_toio);
+ 
+@@ -72,6 +90,10 @@ void __memset_io(volatile void __iomem *dst, int c, size_t count)
+ {
+ 	u64 qc = (u8)c;
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	pstore_ftrace_io_memset((unsigned long)dst, (unsigned long)count);
++#endif
++
+ 	qc |= qc << 8;
+ 	qc |= qc << 16;
+ 	qc |= qc << 32;
+@@ -93,5 +115,8 @@ void __memset_io(volatile void __iomem *dst, int c, size_t count)
+ 		dst++;
+ 		count--;
+ 	}
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	pstore_ftrace_io_memset_end((unsigned long)dst, (unsigned long)count);
++#endif
+ }
+ EXPORT_SYMBOL(__memset_io);
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 1cf231bcc1e1..70417398d139 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -17,6 +17,9 @@
+  * As such, the enable set/clear, pending set/clear and active bit
+  * registers are banked per-cpu for these sources.
+  */
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++#define SKIP_IO_TRACE
++#endif
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/err.h>
+diff --git a/fs/pstore/ftrace.c b/fs/pstore/ftrace.c
+index 5939595f0115..825233faa23f 100644
+--- a/fs/pstore/ftrace.c
++++ b/fs/pstore/ftrace.c
+@@ -119,6 +119,14 @@ static struct dentry *pstore_ftrace_dir;
+ 
+ void pstore_register_ftrace(void)
+ {
++	/*
++	 * Amlogic reuse pstore ftrace for IO(register access) trace,
++	 * original pstore ftrace function is not so helpful, just ignore
++	 */
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	return;
++#endif
++
+ 	if (!psinfo->write)
+ 		return;
+ 
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 14658b009f1b..90398a4aff78 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -109,11 +109,15 @@ static int pstore_ftrace_seq_show(struct seq_file *s, void *v)
+ 
+ 	rec = (struct pstore_ftrace_record *)(ps->record->buf + data->off);
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	pstore_ftrace_dump(rec, s);
++#else
+ 	seq_printf(s, "CPU:%d ts:%llu %08lx  %08lx  %ps <- %pS\n",
+ 		   pstore_ftrace_decode_cpu(rec),
+ 		   pstore_ftrace_read_timestamp(rec),
+ 		   rec->ip, rec->parent_ip, (void *)rec->ip,
+ 		   (void *)rec->parent_ip);
++#endif
+ 
+ 	return 0;
+ }
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 80bfa26b7772..56aba0df7c32 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -24,6 +24,15 @@
+ #include <linux/of_reserved_mem.h>
+ #include "internal.h"
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++#include <linux/workqueue.h>
++
++/* ramoops_io_dump_delay_secs : iotrace dump delayed time, s */
++static int ramoops_io_dump_delay_secs = 10; /* default : 10s */
++core_param(ramoops_io_dump_delay_secs, ramoops_io_dump_delay_secs, int, 0644);
++struct delayed_work pstore_work;
++#endif
++ 
+ #define RAMOOPS_KERNMSG_HDR "===="
+ #define MIN_MEM_SIZE 4096UL
+ 
+@@ -713,6 +722,18 @@ static int ramoops_parse_dt(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++static struct ramoops_context *cxt_saved;
++static unsigned long ramoops_ftrace_size_saved;
++
++static void pstore_work_func(struct work_struct *work)
++{
++	if (ramoops_ftrace_size_saved)
++		pstore_ftrace_dump_old(cxt_saved->fprzs[0]);
++	cancel_delayed_work(&pstore_work);
++}
++#endif
++
+ static int ramoops_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -858,9 +879,19 @@ static int ramoops_probe(struct platform_device *pdev)
+ 	ramoops_pmsg_size = pdata->pmsg_size;
+ 	ramoops_ftrace_size = pdata->ftrace_size;
+ 
+-	pr_info("using 0x%lx@0x%llx, ecc: %d\n",
+-		cxt->size, (unsigned long long)cxt->phys_addr,
+-		cxt->ecc_info.ecc_size);
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	cxt_saved = cxt;
++	ramoops_ftrace_size_saved = ramoops_ftrace_size;
++	if (ramoops_ftrace_size) {
++		ramoops_ftrace_en = 1;
++		pr_info("ramoops_io_en:%d %d old:0x%lx ftrace_size:0x%lx\n",
++			ramoops_io_en, ramoops_ftrace_en,
++			cxt->fprzs[0] ? (unsigned long)persistent_ram_old_size(cxt->fprzs[0]) : 0,
++			ramoops_ftrace_size);
++	}
++	INIT_DELAYED_WORK(&pstore_work, pstore_work_func);
++	schedule_delayed_work(&pstore_work, ramoops_io_dump_delay_secs * HZ);
++#endif
+ 
+ 	return 0;
+ 
+diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+index 155c7010b1f8..ec851bdf14a6 100644
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -2,7 +2,9 @@
+ /*
+  * Copyright (C) 2012 Google, Inc.
+  */
+-
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++#define SKIP_IO_TRACE
++#endif
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/device.h>
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index e97a8188f0fd..23f205c4c659 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -43,6 +43,10 @@ enum pstore_type_id {
+ 	PSTORE_TYPE_MAX
+ };
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++#include <linux/amlogic/debug_ftrace_ramoops.h>
++#endif
++
+ const char *pstore_type_to_name(enum pstore_type_id type);
+ enum pstore_type_id pstore_name_to_type(const char *name);
+ 
+@@ -210,8 +214,24 @@ struct pstore_ftrace_record {
+ 	unsigned long ip;
+ 	unsigned long parent_ip;
+ 	u64 ts;
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	int pid;
++	unsigned long val1;
++	unsigned long val2;
++	unsigned long long time;
++	unsigned char comm[8];
++	struct {
++		unsigned int flag:31;
++		unsigned int in_irq:1;
++	};
++#endif
+ };
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++void notrace pstore_ftrace_dump(struct pstore_ftrace_record *rec,
++				struct seq_file *s);
++#endif
++
+ /*
+  * ftrace related stuff: Both backends and frontends need these so expose
+  * them here.
+diff --git a/kernel/module.c b/kernel/module.c
+index 8770b263e2e8..8691885ec76a 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -100,6 +100,11 @@ static void do_free_init(struct work_struct *w);
+ static DECLARE_WORK(init_free_wq, do_free_init);
+ static LLIST_HEAD(init_free_list);
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG
++static int module_debug;
++core_param(module_debug, module_debug, int, 0644);
++#endif
++
+ #ifdef CONFIG_MODULES_TREE_LOOKUP
+ 
+ /*
+@@ -982,6 +987,10 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
+ 	/* Store the name of the last unloaded module for diagnostic purposes */
+ 	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG
++	if (module_debug)
++		pr_info("remove module: %s\n", mod->name);
++#endif
+ 	free_module(mod);
+ 	/* someone could wait for the module in add_unformed_module() */
+ 	wake_up_all(&module_wq);
+@@ -3505,6 +3514,12 @@ static int move_module(struct module *mod, struct load_info *info)
+ 		mod->init_layout.base = NULL;
+ 
+ 	/* Transfer each section which specifies SHF_ALLOC */
++#ifdef CONFIG_AMLOGIC_DEBUG
++	if (module_debug)
++		pr_info("module:%s init_base:%px size:%#x core_base:%px size:%#x, final section addresses:\n",
++			mod->name, mod->init_layout.base, mod->init_layout.size,
++			mod->core_layout.base, mod->core_layout.size);
++#endif
+ 	pr_debug("final section addresses:\n");
+ 	for (i = 0; i < info->hdr->e_shnum; i++) {
+ 		void *dest;
+@@ -3523,6 +3538,18 @@ static int move_module(struct module *mod, struct load_info *info)
+ 			memcpy(dest, (void *)shdr->sh_addr, shdr->sh_size);
+ 		/* Update sh_addr to point to copy in image. */
+ 		shdr->sh_addr = (unsigned long)dest;
++#ifdef CONFIG_AMLOGIC_DEBUG
++		if (module_debug) {
++			if (!strcmp(info->secstrings + shdr->sh_name, ".bss") ||
++				!strcmp(info->secstrings + shdr->sh_name, ".data") ||
++				!strcmp(info->secstrings + shdr->sh_name, ".rodata") ||
++				!strcmp(info->secstrings + shdr->sh_name, ".text") ||
++				!strcmp(info->secstrings + shdr->sh_name, ".init.text") ||
++				!strcmp(info->secstrings + shdr->sh_name, ".exit.text"))
++				pr_info("\t0x%lx %s\n",
++					(long)shdr->sh_addr, info->secstrings + shdr->sh_name);
++		}
++#endif
+ 		pr_debug("\t0x%lx %s\n",
+ 			 (long)shdr->sh_addr, info->secstrings + shdr->sh_name);
+ 	}
+@@ -3843,6 +3870,15 @@ static noinline int do_init_module(struct module *mod)
+ 	/* .BTF is not SHF_ALLOC and will get removed, so sanitize pointer */
+ 	mod->btf_data = NULL;
+ #endif
++
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	/*
++	 * let free module init_mem synchronized, so module layout can keep
++	 * consistence after reboot, it's very important for ramoops iodump.
++	 */
++	module_memfree(mod->init_layout.base);
++	kfree(freeinit);
++#else
+ 	/*
+ 	 * We want to free module_init, but be aware that kallsyms may be
+ 	 * walking this with preempt disabled.  In all the failure paths, we
+@@ -3858,6 +3894,7 @@ static noinline int do_init_module(struct module *mod)
+ 	 */
+ 	if (llist_add(&freeinit->node, &init_free_list))
+ 		schedule_work(&init_free_wq);
++#endif
+ 
+ 	mutex_unlock(&module_mutex);
+ 	wake_up_all(&module_wq);
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 8d7fb80b50cf..65577e165832 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -45,6 +45,11 @@
+ #include "internal.h"
+ #include "pgalloc-track.h"
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++#include <linux/moduleparam.h>
++#include <linux/amlogic/debug_ftrace_ramoops.h>
++#endif
++
+ #ifdef CONFIG_HAVE_ARCH_HUGE_VMAP
+ static unsigned int __ro_after_init ioremap_max_page_shift = BITS_PER_LONG - 1;
+ 
+@@ -312,16 +317,39 @@ static int vmap_range_noflush(unsigned long addr, unsigned long end,
+ 	return err;
+ }
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++bool is_normal_memory(pgprot_t p)
++{
++#if defined(CONFIG_ARM)
++	return ((pgprot_val(p) & L_PTE_MT_MASK) == L_PTE_MT_WRITEALLOC);
++#elif defined(CONFIG_ARM64)
++	return (pgprot_val(p) & PTE_ATTRINDX_MASK) == PTE_ATTRINDX(MT_NORMAL);
++#else
++#error "Unuspported architecture"
++#endif
++}
++#endif
++
+ int ioremap_page_range(unsigned long addr, unsigned long end,
+ 		phys_addr_t phys_addr, pgprot_t prot)
+ {
+ 	int err;
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	phys_addr_t phys_addr_save = phys_addr;
++#endif
+ 	prot = pgprot_nx(prot);
+ 	err = vmap_range_noflush(addr, end, phys_addr, prot,
+ 				 ioremap_max_page_shift);
+ 	flush_cache_vmap(addr, end);
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
++	if (need_dump_iomap() && !is_normal_memory(prot))
++		pr_err("io__map <va:0x%08lx-0x%08lx> pa:0x%lx,port:0x%lx\n",
++		       addr, end, (unsigned long)phys_addr_save,
++		       (unsigned long)pgprot_val(prot));
++#endif
++
+ 	if (IS_ENABLED(CONFIG_ARCH_HAS_IOREMAP_PHYS_HOOKS) && !err)
+ 		ioremap_phys_range_hook(phys_addr, end - addr, prot);
+ 
+-- 
+2.25.1
+

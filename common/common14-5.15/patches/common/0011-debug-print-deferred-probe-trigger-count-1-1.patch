@@ -1,0 +1,57 @@
+From 8d230da7316589a061b7121e5edc3c6c00a22797 Mon Sep 17 00:00:00 2001
+From: "song.han" <song.han@amlogic.com>
+Date: Tue, 22 Feb 2022 20:31:15 +0800
+Subject: [PATCH 11/95] debug: print deferred probe trigger count [1/1]
+
+PD#SWPL-71731
+
+Problem:
+print deferred probe trigger count
+
+Solution:
+print deferred probe trigger count
+
+Verify:
+on c2_af400
+
+Signed-off-by: song.han <song.han@amlogic.com>
+Change-Id: Idc8491f653f6f4f662dedcd66b357085fe8b9ef2
+---
+ drivers/base/dd.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 060348125635..2e07cb3216ee 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -57,6 +57,11 @@ static LIST_HEAD(deferred_probe_active_list);
+ static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
+ static bool initcalls_done;
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++static int deferred_probe_printk;
++core_param(deferred_probe_printk, deferred_probe_printk, int, 0644);
++#endif
++
+ /* Save the async probe drivers' name from kernel cmdline */
+ #define ASYNC_DRV_NAMES_MAX_LEN	256
+ static char async_probe_drv_names[ASYNC_DRV_NAMES_MAX_LEN];
+@@ -183,6 +188,15 @@ static void driver_deferred_probe_trigger(void)
+ 	 */
+ 	mutex_lock(&deferred_probe_mutex);
+ 	atomic_inc(&deferred_trigger_count);
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++	if (deferred_probe_printk && !list_empty(&deferred_probe_pending_list)) {
++		struct device_private *p;
++
++		pr_warn("deferred probe trigger count %d\n", atomic_read(&deferred_trigger_count));
++		list_for_each_entry(p, &deferred_probe_pending_list, deferred_probe)
++			dev_info(p->device, "deferred probe pending\n");
++	}
++#endif
+ 	list_splice_tail_init(&deferred_probe_pending_list,
+ 			      &deferred_probe_active_list);
+ 	mutex_unlock(&deferred_probe_mutex);
+-- 
+2.25.1
+

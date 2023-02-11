@@ -1,0 +1,30 @@
+From 0640d9a39f030966a714eb9e6ef980f58bb1d29e Mon Sep 17 00:00:00 2001
+From: Wanwei Jiang <wanwei.jiang@amlogic.com>
+Date: Fri, 10 Feb 2023 21:36:51 +0800
+Subject: [PATCH] tool: bring up androidu with common14-5.15 [3/5]
+
+PD#SWPL-109858
+
+Problem:
+android build error
+
+Solution:
+rename bp file
+
+Verify:
+sc2
+
+Change-Id: Ibb8c20ca2adbaae45b6c8efca45c3dcde7ed617f
+Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
+---
+ Android.bp => Android_bp | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ rename Android.bp => Android_bp (100%)
+
+diff --git a/Android.bp b/Android_bp
+similarity index 100%
+rename from Android.bp
+rename to Android_bp
+-- 
+2.25.1
+

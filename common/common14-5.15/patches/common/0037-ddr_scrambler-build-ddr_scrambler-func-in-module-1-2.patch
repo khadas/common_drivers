@@ -1,0 +1,54 @@
+From 7ce9198419bc6caab96ebab150db1413681d9eac Mon Sep 17 00:00:00 2001
+From: "song.han" <song.han@amlogic.com>
+Date: Thu, 11 Aug 2022 13:36:57 +0800
+Subject: [PATCH 37/95] ddr_scrambler: build ddr_scrambler func in module [1/2]
+
+PD#SWPL-89148
+
+Problem:
+ddr scrambler key refresh that cause lastk miss
+
+Solution:
+enable ddr scrambler key preserve when pstore init
+build this function as module
+
+Verify:
+SC2_AH212
+
+Signed-off-by: song.han <song.han@amlogic.com>
+Change-Id: I09c30346c7d9d56a8bda15b3f8036347097c05fb
+---
+ fs/pstore/ram.c        | 3 ---
+ include/linux/pstore.h | 4 ----
+ 2 files changed, 7 deletions(-)
+
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 17fb6ab31821..56aba0df7c32 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -893,9 +893,6 @@ static int ramoops_probe(struct platform_device *pdev)
+ 	schedule_delayed_work(&pstore_work, ramoops_io_dump_delay_secs * HZ);
+ #endif
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG_SCRAMBLER_RAMOOPS
+-	scrambler_ramoops_init();
+-#endif
+ 	return 0;
+ 
+ fail_buf:
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index a0620d47cb1d..23f205c4c659 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -302,8 +302,4 @@ pstore_ftrace_write_timestamp(struct pstore_ftrace_record *rec, u64 val)
+ }
+ #endif
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG_SCRAMBLER_RAMOOPS
+-int scrambler_ramoops_init(void);
+-#endif
+-
+ #endif /*_LINUX_PSTORE_H*/
+-- 
+2.25.1
+

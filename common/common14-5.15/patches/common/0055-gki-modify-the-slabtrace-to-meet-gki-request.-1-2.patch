@@ -1,0 +1,39 @@
+From affc5cbd4563ce735f729e4a7b85549e8ccc7e3f Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Fri, 23 Sep 2022 10:15:23 +0800
+Subject: [PATCH 55/95] gki: modify the slabtrace to meet gki request. [1/2]
+
+PD#SWPL-94445
+
+Problem:
+slabtrace break gki.
+
+Solution:
+remove the group_trace.
+
+Verify:
+sc2_ah212.
+
+Change-Id: Id3521e8a38636aa4bc83c81597ce791b2a08bafa
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ include/linux/slub_def.h | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index b2946523b110..4c24ab681149 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -142,9 +142,6 @@ struct kmem_cache {
+ 	unsigned int useroffset;	/* Usercopy region offset */
+ 	unsigned int usersize;		/* Usercopy region size */
+ 
+-#ifdef CONFIG_AMLOGIC_SLAB_TRACE
+-	struct slab_trace_group *trace_group;
+-#endif
+ 	struct kmem_cache_node *node[MAX_NUMNODES];
+ };
+ 
+-- 
+2.25.1
+

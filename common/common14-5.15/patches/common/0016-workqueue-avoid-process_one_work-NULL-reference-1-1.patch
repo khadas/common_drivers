@@ -1,0 +1,67 @@
+From 628b680e4aeae7ca9cf235d7e74aa844827cc3c6 Mon Sep 17 00:00:00 2001
+From: "song.han" <song.han@amlogic.com>
+Date: Thu, 24 Feb 2022 16:42:09 +0800
+Subject: [PATCH 16/95] workqueue: avoid process_one_work NULL reference [1/1]
+
+PD#SWPL-71734
+
+Problem:
+avoid process_one_work NULL reference
+
+Solution:
+add WARN
+
+Verify:
+c2-AF400
+
+Change-Id: I3818d7509b8013b912624714b91c3356897b6924
+Signed-off-by: song.han <song.han@amlogic.com>
+---
+ kernel/workqueue.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 3570cf5c347e..882d43c1e52e 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2206,11 +2206,20 @@ static void process_one_work(struct worker *worker, struct work_struct *work)
+ __releases(&pool->lock)
+ __acquires(&pool->lock)
+ {
++#ifdef CONFIG_AMLOGIC_DEBUG
++	struct worker *collision;
++	bool cpu_intensive;
++	unsigned long work_data;
++	struct pool_workqueue *pwq = get_work_pwq(work);
++	struct worker_pool *pool = worker->pool;
++#else
+ 	struct pool_workqueue *pwq = get_work_pwq(work);
+ 	struct worker_pool *pool = worker->pool;
+ 	bool cpu_intensive = pwq->wq->flags & WQ_CPU_INTENSIVE;
+ 	unsigned long work_data;
+ 	struct worker *collision;
++#endif
++
+ #ifdef CONFIG_LOCKDEP
+ 	/*
+ 	 * It is permissible to free the struct work_struct from
+@@ -2222,6 +2231,16 @@ __acquires(&pool->lock)
+ 	struct lockdep_map lockdep_map;
+ 
+ 	lockdep_copy_map(&lockdep_map, &work->lockdep_map);
++#endif
++#ifdef CONFIG_AMLOGIC_DEBUG
++	if (!pwq) {
++		WARN_ONCE(1, "<%s> pwq_NULL <%lx> <%ps>, <%ps> %s\n",
++			__func__, atomic_long_read(&work->data),
++			work->func, worker->current_func, worker->desc);
++		return;
++	}
++
++	cpu_intensive = pwq->wq->flags & WQ_CPU_INTENSIVE;
+ #endif
+ 	/* ensure we're on the correct CPU */
+ 	WARN_ON_ONCE(!(pool->flags & POOL_DISASSOCIATED) &&
+-- 
+2.25.1
+

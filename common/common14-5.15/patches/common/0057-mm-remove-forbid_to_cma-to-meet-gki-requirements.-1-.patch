@@ -1,0 +1,75 @@
+From afb62eb41a63cc6beb4a4526996e22e0b14daa9c Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Tue, 27 Sep 2022 17:04:26 +0800
+Subject: [PATCH 57/95] mm: remove forbid_to_cma to meet gki requirements.
+ [1/2]
+
+PD#SWPL-94445
+
+Problem:
+add member to the struct compact_control will break gki.
+
+Solution:
+remove forbod_to_cma member.
+
+Verify:
+sc2_ah212.
+
+Change-Id: I509e66c5b27a0a5ccd4464aadbf69f643527b1f9
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ mm/compaction.c | 9 +++++----
+ mm/internal.h   | 3 ---
+ 2 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 098958130c56..e44993a32657 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -1743,7 +1743,8 @@ static void isolate_freepages(struct compact_control *cc)
+ 		migrate_type = get_pageblock_migratetype(page);
+ 		if (is_migrate_isolate(migrate_type))
+ 			continue;
+-		if (is_migrate_cma(migrate_type) && cc->forbid_to_cma)
++		if (is_migrate_cma(migrate_type) &&
++		    test_bit(FORBID_TO_CMA_BIT, &cc->total_migrate_scanned))
+ 			continue;
+ 	#endif /* CONFIG_AMLOGIC_CMA */
+ 
+@@ -2510,9 +2511,6 @@ compact_zone(struct compact_control *cc, struct capture_control *capc)
+ 	/* lru_add_drain_all could be expensive with involving other CPUs */
+ 	lru_add_drain();
+ 
+-#ifdef CONFIG_AMLOGIC_CMA
+-	cc->forbid_to_cma = false;
+-#endif
+ 	while ((ret = compact_finished(cc)) == COMPACT_CONTINUE) {
+ 		int err;
+ 		unsigned long iteration_start_pfn = cc->migrate_pfn;
+@@ -2632,6 +2630,9 @@ compact_zone(struct compact_control *cc, struct capture_control *capc)
+ 			cc->zone->compact_cached_free_pfn = free_pfn;
+ 	}
+ 
++#ifdef CONFIG_AMLOGIC_CMA
++	__clear_bit(FORBID_TO_CMA_BIT, &cc->total_migrate_scanned);
++#endif
+ 	count_compact_events(COMPACTMIGRATE_SCANNED, cc->total_migrate_scanned);
+ 	count_compact_events(COMPACTFREE_SCANNED, cc->total_free_scanned);
+ 
+diff --git a/mm/internal.h b/mm/internal.h
+index 1262237e2053..a577f752d095 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -262,9 +262,6 @@ struct compact_control {
+ 	bool contended;			/* Signal lock or sched contention */
+ 	bool rescan;			/* Rescanning the same pageblock */
+ 	bool alloc_contig;		/* alloc_contig_range allocation */
+-#ifdef CONFIG_AMLOGIC_CMA
+-	bool forbid_to_cma;             /* Forbit to migrate to cma */
+-#endif
+ };
+ 
+ /*
+-- 
+2.25.1
+

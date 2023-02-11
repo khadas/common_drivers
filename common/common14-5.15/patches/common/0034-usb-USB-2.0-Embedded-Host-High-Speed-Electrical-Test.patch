@@ -1,0 +1,532 @@
+From cbda54b8bc97103b4b8c8e2d8155047761867927 Mon Sep 17 00:00:00 2001
+From: "he.he" <he.he@amlogic.com>
+Date: Thu, 16 Jun 2022 11:09:26 +0800
+Subject: [PATCH 34/95] usb: USB 2.0 Embedded Host High Speed Electrical Test
+ [1/1]
+
+PD#SWPL-85459
+
+Problem:
+Embedded Host High Speed Electrical Test.
+
+Solution:
+support
+
+Verify:
+c3
+
+Change-Id: I4559acb7840ba0b5f815cfe5c25777872d53b590
+Signed-off-by: he.he <he.he@amlogic.com>
+---
+ drivers/usb/core/message.c  | 292 ++++++++++++++++++++++++++++++++++++
+ drivers/usb/core/usb.h      |   4 +
+ drivers/usb/host/xhci-hub.c | 116 ++++++++++++++
+ include/linux/usb.h         |   3 +
+ 4 files changed, 415 insertions(+)
+
+diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+index 4d59d927ae3e..7c2164a2415c 100644
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -31,6 +31,20 @@ struct api_context {
+ 	int			status;
+ };
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_USB)
++#define USB_EHTEST_DELAY_TEST
++
++static int usb_test_port;
++static u8 poll_status_flag;
++static int usb_host_test_vid;
++static int usb_host_test_pid;
++module_param(usb_host_test_vid, int, 0644);
++MODULE_PARM_DESC(usb_host_test_vid, "test udisk vid");
++
++module_param(usb_host_test_pid, int, 0644);
++MODULE_PARM_DESC(usb_host_test_vid, "test mode pid");
++#endif
++
+ static void usb_api_blocking_completion(struct urb *urb)
+ {
+ 	struct api_context *ctx = urb->context;
+@@ -1907,6 +1921,256 @@ static void __usb_queue_reset_device(struct work_struct *ws)
+ 	usb_put_intf(iface);	/* Undo _get_ in usb_queue_reset_device() */
+ }
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_USB)
++static void usb_eltest_poll_status(struct work_struct *ws)
++{
++	u16 portstatus = 0;
++	int ret = -1;
++	struct usb_device *dev = container_of(ws,
++		struct usb_device, portstatus_work.work);
++
++	ret = usb_get_status(dev, USB_RT_PORT, USB_STATUS_TYPE_STANDARD,
++			     usb_test_port, &portstatus);
++	if ((portstatus & 0x01) && poll_status_flag != 1) {
++		dev_info(&dev->dev,
++			 "PORT IS CONNECT portstatus=0x%04x\n",
++				portstatus);
++		poll_status_flag = 1;
++		queue_delayed_work(system_wq,
++				   &dev->portstatus_work,
++				   msecs_to_jiffies(1000));
++	} else if ((poll_status_flag == 1) && !(portstatus & 0x01)) {
++		dev_info(&dev->dev,
++			 "PORT IS disCONNECT portstatus=0x%04x\n", portstatus);
++		queue_delayed_work(system_wq,
++				   &dev->portstatus_work,
++				   msecs_to_jiffies(1000));
++
++	} else {
++		queue_delayed_work(system_wq,
++				   &dev->portstatus_work,
++				   msecs_to_jiffies(1000));
++		dev_info(&dev->dev,
++			 "status polled: portstatus=0x%04x\n", portstatus);
++	}
++}
++
++static int usb_eltest_forceenab_mode(struct usb_device *dev)
++{
++	INIT_DELAYED_WORK(&dev->portstatus_work, usb_eltest_poll_status);
++	queue_delayed_work(system_wq,
++			   &dev->portstatus_work,
++			   msecs_to_jiffies(1000));
++
++	return 0;
++}
++
++static int usb_send_host_elect_testcmd(struct usb_device *dev)
++{
++	/* Here we implement the HS Electrical Test support. The
++	 * tester uses a vendor ID of 0x1A0A to indicate we should
++	 * run a special test sequence. The product ID tells us
++	 * which sequence to run. We invoke the test sequence by
++	 * sending a non-standard SetFeature command to our root
++	 * hub port. Our xhci_hub_control routine will
++	 * recognize the command and perform the desired test
++	 * sequence.
++	 */
++
++	if (usb_host_test_vid == dev->descriptor.idVendor) {
++					/* HSOTG Electrical Test */
++		dev_warn(&dev->dev,
++			 "VID from HSOTG Electrical Test Fixture, vid=0x%04x,pid=0x%04x\n",
++			 usb_host_test_vid, usb_host_test_pid);
++
++		if (dev->bus && dev->parent) {
++			struct usb_device *hdev = dev->parent;
++			__u16 index = dev->portnum;
++			int timeout, ret = -1;
++			char *msg;
++			struct usb_device_descriptor *des;
++			unsigned int pipe = usb_sndctrlpipe(hdev, 0);
++
++			dev_warn(&dev->dev,
++				 "hdev:portnum=%u,dev:portnum=%u,Got PID 0x%x\n",
++				 hdev->portnum, dev->portnum,
++				 dev->descriptor.idProduct);
++
++			if (hdev != dev->bus->root_hub) {
++				index = dev->portnum + 1;
++				dev_warn(&dev->dev,
++					 "Test in HUB port: %d\n", index);
++			} else {
++				dev_warn(&dev->dev,
++					 "Test in RootHub %s\n", hdev->devpath);
++			}
++			switch (usb_host_test_pid) {
++			case 0x0101:	/* TEST_SE0_NAK */
++				msg = "TEST_SE0_NAK";
++				index = dev->portnum;
++				index |= 0x300;
++				timeout = HZ;
++				break;
++
++			case 0x0102:	/* TEST_J */
++				msg = "TEST_J";
++				index = dev->portnum;
++				index |= 0x100;
++				timeout = HZ;
++				break;
++
++			case 0x0103:	/* TEST_K */
++					msg = "TEST_K";
++					index = dev->portnum;
++					index |= 0x200;
++					timeout = HZ;
++					break;
++
++			case 0x0104:	/* TEST_PACKET */
++				msg = "TEST_PACKET";
++				index = dev->portnum;
++				index |= 0x400;
++				timeout = HZ;
++				break;
++
++			case 0x0105:	/* TEST_FORCE_ENABLE */
++				msg = "TEST_FORCE_ENABLE";
++				index = dev->portnum;
++				index |= 0x500;
++				timeout = HZ;
++
++				ret = usb_control_msg(hdev, pipe,
++						      USB_REQ_SET_FEATURE,
++						      USB_RT_PORT,
++						      USB_PORT_FEAT_TEST, index,
++						      NULL, 0, timeout);
++				if (ret < 0)
++					dev_warn(&dev->dev,
++						 "%s is failed\n", msg);
++				usb_test_port = dev->portnum;
++				usb_eltest_forceenab_mode(hdev);
++				break;
++
++			case 0x0106:	/* HS_HOST_PORT_SUSPEND_RESUME */
++				msg = "HS_HOST_PORT_SUSPEND_RESUME";
++				index |= 0x600;
++				timeout = 40 * HZ;
++				usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
++						USB_REQ_SET_FEATURE,
++						USB_RT_PORT,
++						USB_PORT_FEAT_TEST,
++							index | 0x600, NULL,
++							0, 40 * HZ);
++				break;
++
++	/* SINGLE_STEP_GET_DEVICE_DESCRIPTOR setup */
++			case 0x0107:
++				des = kmalloc(sizeof(*des), GFP_NOIO);
++				if (!des)
++					return -1;
++
++				msg = "SINGLE_STEP_GET_DEVICE_DESCRIPTOR setup";
++				index = 0;
++				index |= 0x700;
++				timeout = 40 * HZ;
++
++				usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
++						USB_REQ_GET_DESCRIPTOR,
++						USB_DIR_IN,
++						0x100, index, des, 18, timeout);
++				kfree(des);
++				break;
++			/* SINGLE_STEP_GET_DEVICE_DESCRIPTOR execute */
++			case 0x0108:
++				index = 0;
++				des = kmalloc(sizeof(*des), GFP_NOIO);
++				if (!des)
++					return -1;
++				msg = "SIG_STEP_GET_DEVICE_DESCRIPTOR execute";
++				index |= 0x800;
++				timeout = 40 * HZ;
++
++				usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
++						USB_REQ_GET_DESCRIPTOR,
++						USB_DIR_IN,
++						0x0100, index,
++						des, 18, timeout);
++				kfree(des);
++				break;
++			case 0x0200:	/* exit test mode */
++				msg = "exit test mode";
++				index = dev->portnum;
++				timeout = HZ;
++
++				ret = usb_control_msg(hdev, pipe,
++						      USB_REQ_CLEAR_FEATURE,
++						      USB_RT_PORT,
++						      USB_PORT_FEAT_TEST,
++						      index, NULL, 0, timeout);
++				if (ret < 0)
++					dev_warn(&dev->dev,
++						 "exit test mode failed,ret =%d\n",
++						 ret);
++				break;
++
++			default:
++				dev_warn(&dev->dev,
++					 "error PID %X, ret =%d\n",
++					 dev->descriptor.idProduct, ret);
++				return -1;
++			}
++
++			dev_warn(&dev->dev, "%s\n", msg);
++			if (usb_host_test_pid == 0x0101 ||
++			    usb_host_test_pid == 0x0102 ||
++			    usb_host_test_pid == 0x0103 ||
++			    usb_host_test_pid == 0x0104) {
++				usb_control_msg(hdev, pipe,
++						USB_REQ_SET_FEATURE,
++						USB_RT_PORT,
++						USB_PORT_FEAT_TEST,
++						index, NULL, 0, timeout);
++			}
++			return 0;
++		}
++		dev_info(&dev->dev,
++			 "the vid(0x%04x),but pid(0x%04x) is out range\n",
++			 usb_host_test_vid, usb_host_test_pid);
++		return -1;
++	}
++
++	return -1;
++}
++
++static void send_testcmd_timer_func(struct work_struct *ws)
++{
++	struct usb_device *dev = container_of(ws,
++		struct usb_device, portstatus_work.work);
++
++	usb_send_host_elect_testcmd(dev);
++}
++
++static int usb_delaysend_hsel_testcmd(struct usb_device *dev)
++{
++	if (dev->descriptor.idVendor != usb_host_test_vid ||
++	    usb_host_test_pid > 0x200 || usb_host_test_pid < 0x101) {
++		dev_warn(&dev->dev,
++			 "<%s><%u><idVendor is not test mode,>dev_vid=0x%04x,test_vid=0x%04x\n",
++			 __func__, __LINE__,
++			 dev->descriptor.idVendor, usb_host_test_vid);
++		return -1;
++	}
++
++	dev_warn(&dev->dev, "<%s><%u>\n", __func__, __LINE__);
++	INIT_DELAYED_WORK(&dev->portstatus_work, send_testcmd_timer_func);
++	queue_delayed_work(system_wq,
++			   &dev->portstatus_work,
++			   msecs_to_jiffies(5000));
++
++	return 0;
++}
++
++#endif
+ 
+ /*
+  * usb_set_configuration - Makes a particular device setting be current
+@@ -2146,6 +2410,26 @@ int usb_set_configuration(struct usb_device *dev, int configuration)
+ 	/* Enable LTM if it was turned off by usb_disable_device. */
+ 	usb_enable_ltm(dev);
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_USB)
++	if (usb_host_test_vid > 0) {
++		if (dev->descriptor.idVendor == USB_HSET_TEST_VID) {
++			usb_host_test_vid = dev->descriptor.idVendor;
++			//usb_host_test_pid = dev->descriptor.idProduct;
++			dev_info(&dev->dev,
++				 "the dev port is %d, and this is test udisk vid = 0x%04x\n",
++				 dev->portnum, usb_host_test_vid);
++		}
++#ifdef USB_EHTEST_DELAY_TEST
++		ret = usb_delaysend_hsel_testcmd(dev);
++#else
++		ret = usb_send_host_elect_testcmd(dev);
++#endif
++		if (!ret) {
++			dev_err(&dev->dev, "entr test mode\n");
++			return 0;
++		}
++	}
++#endif
+ 	/* Now that all the interfaces are set up, register them
+ 	 * to trigger binding of drivers to interfaces.  probe()
+ 	 * routines may install different altsettings and may
+@@ -2168,6 +2452,14 @@ int usb_set_configuration(struct usb_device *dev, int configuration)
+ 			intf->cur_altsetting->desc.bInterfaceNumber);
+ 		device_enable_async_suspend(&intf->dev);
+ 		ret = device_add(&intf->dev);
++#if IS_ENABLED(CONFIG_AMLOGIC_USB)
++		if (!intf->dev.driver) {
++			if (intf->cur_altsetting->desc.bInterfaceClass == 0x09)
++				dev_err(&dev->dev, "Unsupported the hub\n");
++			else
++				dev_err(&dev->dev, "Unsupported device\n");
++		}
++#endif
+ 		if (ret != 0) {
+ 			dev_err(&dev->dev, "device_add(%s) --> %d\n",
+ 				dev_name(&intf->dev), ret);
+diff --git a/drivers/usb/core/usb.h b/drivers/usb/core/usb.h
+index 82538daac8b8..32b09c1dd7b2 100644
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -6,6 +6,10 @@
+ #include <linux/pm.h>
+ #include <linux/acpi.h>
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_USB)
++#define USB_HSET_TEST_VID    0x1A0A
++#endif
++
+ struct usb_hub_descriptor;
+ struct usb_dev_state;
+ 
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index b9754784161d..02766b124b39 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -699,8 +699,10 @@ static void xhci_port_set_test_mode(struct xhci_hcd *xhci,
+ 	temp |= test_mode << PORT_TEST_MODE_SHIFT;
+ 	writel(temp, port->addr + PORTPMSC);
+ 	xhci->test_mode = test_mode;
++  #if !IS_ENABLED(CONFIG_AMLOGIC_USB)
+ 	if (test_mode == USB_TEST_FORCE_ENABLE)
+ 		xhci_start(xhci);
++  #endif
+ }
+ 
+ static int xhci_enter_test_mode(struct xhci_hcd *xhci,
+@@ -1178,6 +1180,97 @@ static u32 xhci_get_port_status(struct usb_hcd *hcd,
+ 	return status;
+ }
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_USB)
++static int xhci_test_suspend_resume(struct usb_hcd *hcd,
++				    u16 wIndex)
++{
++	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
++	unsigned long flags = 0;
++	u32 temp;
++	int slot_id;
++	//__le32 __iomem **port_array = xhci->usb2_ports;
++	struct xhci_port *port;
++
++	/* xhci only supports test mode for usb2 ports */
++	port = xhci->usb2_rhub.ports[wIndex];
++	//temp = readl(port->addr + PORTPMSC);
++
++	/* 15 second delay per the test spec */
++	xhci_err(xhci, "into suspend\n");
++	spin_lock_irqsave(&xhci->lock, flags);
++
++	/*suspend*/
++	temp = readl(port->addr);
++	if ((temp & PORT_PLS_MASK) != XDEV_U0) {
++		/* Resume the port to U0 first */
++		xhci_set_link_state(xhci, port, XDEV_U0);
++		spin_unlock_irqrestore(&xhci->lock, flags);
++		usleep_range(10000 - 1, 10000);
++		spin_lock_irqsave(&xhci->lock, flags);
++	}
++	/* In spec software should not attempt to suspend
++	 * a port unless the port reports that it is in the
++	 * enabled (PED = ‘1’,PLS < ‘3’) state.
++	 */
++	temp = readl(port->addr);
++	if ((temp & PORT_PE) == 0 || (temp & PORT_RESET) ||
++	    (temp & PORT_PLS_MASK) >= XDEV_U3) {
++		spin_unlock_irqrestore(&xhci->lock, flags);
++		xhci_warn(xhci, "USB core suspending device not in U0/U1/U2.\n");
++		return -1;
++	}
++
++	slot_id = xhci_find_slot_id_by_port(hcd, xhci,
++					    wIndex + 1);
++	if (!slot_id) {
++		spin_unlock_irqrestore(&xhci->lock, flags);
++		xhci_warn(xhci, "slot_id is zero\n");
++		return -1;
++	}
++	/* unlock to execute stop endpoint commands */
++	spin_unlock_irqrestore(&xhci->lock, flags);
++	xhci_stop_device(xhci, slot_id, 1);
++	spin_lock_irqsave(&xhci->lock, flags);
++
++	xhci_set_link_state(xhci, port, XDEV_U3);
++
++	spin_unlock_irqrestore(&xhci->lock, flags);
++	usleep_range(10000 - 1, 10000); /* wait device to enter */
++	spin_lock_irqsave(&xhci->lock, flags);
++
++	/* 15 second delay per the test spec */
++	spin_unlock_irqrestore(&xhci->lock, flags);
++	xhci_err(xhci, "wait 15s\n");
++	msleep(15000);
++	xhci_err(xhci, "into resume\n");
++	spin_lock_irqsave(&xhci->lock, flags);
++
++	temp = readl(port->addr);
++	xhci_dbg(xhci, "clear USB_PORT_FEAT_SUSPEND\n");
++	xhci_dbg(xhci, "PORTSC %04x\n", temp);
++	if (temp & PORT_RESET) {
++		spin_unlock_irqrestore(&xhci->lock, flags);
++		return -1;
++	}
++	if ((temp & PORT_PLS_MASK) == XDEV_U3) {
++		if ((temp & PORT_PE) == 0) {
++			spin_unlock_irqrestore(&xhci->lock, flags);
++			return -1;
++		}
++
++		xhci_set_link_state(xhci, port, XDEV_RESUME);
++		spin_unlock_irqrestore(&xhci->lock, flags);
++		msleep(20);
++		spin_lock_irqsave(&xhci->lock, flags);
++		xhci_set_link_state(xhci, port, XDEV_U0);
++	}
++
++	xhci_ring_device(xhci, slot_id);
++	spin_unlock_irqrestore(&xhci->lock, flags);
++	return 0;
++}
++#endif
++
+ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
+ 		u16 wIndex, char *buf, u16 wLength)
+ {
+@@ -1512,6 +1605,28 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
+ 			temp |= PORT_U2_TIMEOUT(timeout);
+ 			writel(temp, ports[wIndex]->addr + PORTPMSC);
+ 			break;
++#if IS_ENABLED(CONFIG_AMLOGIC_USB)
++		case USB_PORT_FEAT_TEST:
++			/* 4.19.6 Port Test Modes (USB2 Test Mode) */
++			if (hcd->speed != HCD_USB2)
++				goto error;
++			if (test_mode > 6 || test_mode < 1)
++				goto error;
++
++			if (test_mode >= 1 && test_mode <= 4) {
++				retval = xhci_enter_test_mode(xhci,
++								  test_mode,
++								  wIndex, &flags);
++			} else if (test_mode == 5) {
++				xhci_port_set_test_mode(xhci,
++							test_mode, wIndex);
++			} else {
++				spin_unlock_irqrestore(&xhci->lock, flags);
++				retval = xhci_test_suspend_resume(hcd, wIndex);
++				spin_lock_irqsave(&xhci->lock, flags);
++			}
++			break;
++#else
+ 		case USB_PORT_FEAT_TEST:
+ 			/* 4.19.6 Port Test Modes (USB2 Test Mode) */
+ 			if (hcd->speed != HCD_USB2)
+@@ -1522,6 +1637,7 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
+ 			retval = xhci_enter_test_mode(xhci, test_mode, wIndex,
+ 						      &flags);
+ 			break;
++#endif
+ 		default:
+ 			goto error;
+ 		}
+diff --git a/include/linux/usb.h b/include/linux/usb.h
+index 03f8339425be..0148e1787b25 100644
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -719,6 +719,9 @@ struct usb_device {
+ 	unsigned lpm_disable_count;
+ 
+ 	u16 hub_delay;
++#if IS_ENABLED(CONFIG_AMLOGIC_USB)
++	struct delayed_work		portstatus_work;
++#endif
+ 	unsigned use_generic_driver:1;
+ 
+ 	ANDROID_KABI_RESERVE(1);
+-- 
+2.25.1
+

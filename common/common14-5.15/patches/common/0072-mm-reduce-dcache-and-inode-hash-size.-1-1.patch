@@ -1,0 +1,59 @@
+From 5dc271f2cbc8d6162ac590abdef315b4c47696ba Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Thu, 10 Nov 2022 19:55:56 +0800
+Subject: [PATCH 72/95] mm: reduce dcache and inode hash size. [1/1]
+
+PD#SWPL-92714
+
+Problem:
+Dentry cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+Inode-cache hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+
+Solution:
+set dentry and inode hash to 1/4.
+
+Verify:
+s4_aq222.
+
+Change-Id: I42394f3e815827f6dfb86383bc6aa1fd0d785a03
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ fs/dcache.c | 4 ++++
+ fs/inode.c  | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 2225920518ba..f64805f194d0 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -3183,7 +3183,11 @@ void d_tmpfile(struct dentry *dentry, struct inode *inode)
+ }
+ EXPORT_SYMBOL(d_tmpfile);
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++static unsigned long dhash_entries __initdata = 65536;
++#else
+ static __initdata unsigned long dhash_entries;
++#endif
+ static int __init set_dhash_entries(char *str)
+ {
+ 	if (!str)
+diff --git a/fs/inode.c b/fs/inode.c
+index 18d16f159730..73c79ccca165 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -2063,7 +2063,11 @@ static void __wait_on_freeing_inode(struct inode *inode)
+ 	spin_lock(&inode_hash_lock);
+ }
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++static unsigned long ihash_entries __initdata = 32768;
++#else
+ static __initdata unsigned long ihash_entries;
++#endif
+ static int __init set_ihash_entries(char *str)
+ {
+ 	if (!str)
+-- 
+2.25.1
+

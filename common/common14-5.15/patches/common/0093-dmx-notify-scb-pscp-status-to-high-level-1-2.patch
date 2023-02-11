@@ -1,0 +1,49 @@
+From 4641d5d470301b05832b14593d1c86ed52494370 Mon Sep 17 00:00:00 2001
+From: chuangcheng peng <chuangcheng.peng@amlogic.com>
+Date: Mon, 13 Feb 2023 11:36:38 +0800
+Subject: [PATCH 93/95] dmx: notify scb/pscp status to high level [1/2]
+
+PD#SWPL-110726
+
+Problem:
+high level need know es status
+
+Solution:
+notify the info to high level
+
+Verify:
+not verified
+
+Change-Id: I60c9873d75fd2c8dc6399fdc79dcbcc073f7c63f
+Signed-off-by: chuangcheng peng <chuangcheng.peng@amlogic.com>
+---
+ include/uapi/linux/dvb/aml_dmx_ext.h | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/include/uapi/linux/dvb/aml_dmx_ext.h b/include/uapi/linux/dvb/aml_dmx_ext.h
+index e4690685d044..9f32428478ab 100644
+--- a/include/uapi/linux/dvb/aml_dmx_ext.h
++++ b/include/uapi/linux/dvb/aml_dmx_ext.h
+@@ -35,7 +35,8 @@ enum dmx_input_source {
+ /**
+  * struct dmx_non_sec_es_header - non-sec Elementary Stream (ES) Header
+  *
+- * @pts_dts_flag:[1:0], 01:pts valid, 10:dts valid
++ * @pts_dts_flag:[1:0], 10:pts valid, 01:dts valid
++ * @pts_dts_flag:[3:2], 10:scb is scrambled, 01:pscp invalid
+  * @pts:	pts value
+  * @dts:	dts value
+  * @len:	data len
+@@ -50,7 +51,8 @@ struct dmx_non_sec_es_header {
+ /**
+  * struct dmx_sec_es_data - sec Elementary Stream (ES)
+  *
+- * @pts_dts_flag:[1:0], 01:pts valid, 10:dts valid
++ * @pts_dts_flag:[1:0], 10:pts valid, 01:dts valid
++ * @pts_dts_flag:[3:2], 10:scb is scrambled, 01:pscp invalid
+  * @pts:	pts value
+  * @dts:	dts value
+  * @buf_start:	buf start addr
+-- 
+2.25.1
+

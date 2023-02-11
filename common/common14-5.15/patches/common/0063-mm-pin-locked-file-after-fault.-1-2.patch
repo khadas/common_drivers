@@ -1,0 +1,291 @@
+From 68bb9b0ace271a4e2134a773365a283aa77670fc Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Thu, 22 Sep 2022 17:25:35 +0800
+Subject: [PATCH 63/95] mm: pin locked file after fault. [1/2]
+
+PD#SWPL-95400
+
+Problem:
+If we pin a file in android, the whole data of this file
+will be loaded to DDR, but most of these data may not be
+used, this caused memory waste.
+
+Solution:
+delay mark mlocked flags for unevictable pages until
+it has been faulted.
+You can use following command to disable this function:
+echo 0 > /proc/sys/vm/shrink_unevictable
+
+Verify:
+sc2_ah212
+
+Change-Id: I05bb7654cc228604fe692429efbe40af713ca5c3
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ mm/gup.c     | 19 +++++++++++++++++
+ mm/memory.c  | 59 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/migrate.c |  7 +++++++
+ mm/mlock.c   |  6 ++++++
+ mm/rmap.c    | 17 ++++++++++++++-
+ mm/vmscan.c  | 10 +++++++++
+ 6 files changed, 117 insertions(+), 1 deletion(-)
+
+diff --git a/mm/gup.c b/mm/gup.c
+index b2094b55a6f0..38bfa2d48dc3 100644
+--- a/mm/gup.c
++++ b/mm/gup.c
+@@ -21,6 +21,9 @@
+ 
+ #include <asm/mmu_context.h>
+ #include <asm/tlbflush.h>
++#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++#include <linux/amlogic/pin_file.h>
++#endif
+ 
+ #include "internal.h"
+ 
+@@ -624,6 +627,21 @@ static struct page *follow_page_pte(struct vm_area_struct *vma,
+ 		 * when it attempts to reclaim the page.
+ 		 */
+ 		if (page->mapping && trylock_page(page)) {
++		#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++			struct address_space *mapping;
++
++			mapping = page_mapping(page);
++			if (mapping &&
++			    test_bit(AS_LOCK_MAPPING, &mapping->flags) &&
++			    sysctrl_shrink_unevictable) {
++				unlock_page(page);
++			} else {
++				/* same as #else */
++				lru_add_drain();
++				mlock_vma_page(page);
++				unlock_page(page);
++			}
++		#else
+ 			lru_add_drain();  /* push cached pages to LRU */
+ 			/*
+ 			 * Because we lock page here, and migration is
+@@ -633,6 +651,7 @@ static struct page *follow_page_pte(struct vm_area_struct *vma,
+ 			 */
+ 			mlock_vma_page(page);
+ 			unlock_page(page);
++		#endif
+ 		}
+ 	}
+ out:
+diff --git a/mm/memory.c b/mm/memory.c
+index 26ee674bb896..96dd89563f55 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -83,6 +83,9 @@
+ #include <linux/uaccess.h>
+ #include <asm/tlb.h>
+ #include <asm/tlbflush.h>
++#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++#include <linux/amlogic/pin_file.h>
++#endif
+ 
+ #include "pgalloc-track.h"
+ #include "internal.h"
+@@ -4842,6 +4845,48 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++static bool __restore_locked_page(struct page *page, struct vm_area_struct *vma,
++			 unsigned long addr, void *arg)
++{
++	int ret;
++	pte_t old_pte, *pte;
++	spinlock_t *ptl;	/* pte lock */
++
++	if (vma->vm_flags & (VM_LOCKED | VM_LOCKONFAULT)) {
++		if (addr < vma->vm_start || addr >= vma->vm_end)
++			return -EFAULT;
++		if (!page_count(page))
++			return -EINVAL;
++
++		pte = get_locked_pte(vma->vm_mm, addr, &ptl);
++		if (!pte)
++			return true;
++		old_pte = *pte;
++		pte_unmap_unlock(pte, ptl);
++		/* already refaulted */
++		if (pte_valid(old_pte) && pte_pfn(old_pte) == page_to_pfn(page))
++			return true;
++
++		ret = insert_page(vma, addr, page, vma->vm_page_prot);
++		pr_debug("%s, restore page:%lx for addr:%lx, vma:%px, ret:%d, old_pte:%llx\n",
++			__func__,  page_to_pfn(page), addr, vma, ret,
++			(unsigned long long)pte_val(old_pte));
++		return ret ? false : true;
++	}
++	return true; /* keep loop */
++}
++
++static void restore_locked_page(struct page *page)
++{
++	struct rmap_walk_control rwc = {
++		.rmap_one = __restore_locked_page,
++	};
++
++	rmap_walk(page, &rwc);
++}
++#endif
++
+ /*
+  * By the time we get here, we already hold the mm semaphore
+  *
+@@ -4857,6 +4902,9 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
+ 		.flags = flags,
+ 		.pgoff = linear_page_index(vma, address),
+ 		.gfp_mask = __get_fault_gfp_mask(vma),
++	#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++		.pte = NULL,
++	#endif
+ 	};
+ 	unsigned int dirty = flags & FAULT_FLAG_WRITE;
+ 	struct mm_struct *mm = vma->vm_mm;
+@@ -5079,6 +5127,17 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
+ 		}
+ 	}
+ 
++#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++	ret = handle_pte_fault(&vmf);
++	if (!ret) {
++		struct page *page = NULL;
++
++		page = aml_mlock_page_as_lock_mapping(vma, mm, &vmf, address);
++		if (page)
++			restore_locked_page(page);
++	}
++	return ret;
++#endif
+ 	return handle_pte_fault(&vmf);
+ }
+ 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index fac40524ae0f..b51037af39af 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -54,6 +54,9 @@
+ #include <linux/amlogic/aml_cma.h>
+ #include <linux/delay.h>
+ #endif
++#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++#include <linux/amlogic/pin_file.h>
++#endif
+ 
+ #include <asm/tlbflush.h>
+ 
+@@ -1294,6 +1297,10 @@ static int unmap_and_move(new_page_t get_new_page,
+ 		else
+ 			put_page(newpage);
+ 	}
++#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++	if (reason == MR_CONTIG_RANGE && rc == MIGRATEPAGE_SUCCESS)
++		aml_clear_pin_locked_file(page);
++#endif
+ 
+ 	return rc;
+ }
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 0cc7fe053755..7ff77190e4f9 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -24,6 +24,9 @@
+ #include <linux/memcontrol.h>
+ #include <linux/mm_inline.h>
+ #include <linux/secretmem.h>
++#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++#include <linux/amlogic/pin_file.h>
++#endif
+ 
+ #include "internal.h"
+ 
+@@ -587,6 +590,9 @@ static int apply_vma_lock_flags(unsigned long start, size_t len,
+ 		tmp = vma->vm_end;
+ 		if (tmp > end)
+ 			tmp = end;
++	#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++		reset_page_vma_flags(vma, flags);
++	#endif
+ 		error = mlock_fixup(vma, &prev, nstart, tmp, newflags);
+ 		if (error)
+ 			break;
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 83b1af012b5c..0e1f54c2b941 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -80,6 +80,9 @@
+ #include <trace/events/tlb.h>
+ 
+ #include <trace/hooks/mm.h>
++#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++#include <linux/amlogic/pin_file.h>
++#endif
+ 
+ #include "internal.h"
+ 
+@@ -1477,8 +1480,14 @@ static bool try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 			 * cleared).  But stop unmapping even in those cases.
+ 			 */
+ 			if (!PageTransCompound(page) || (PageHead(page) &&
+-			     !PageDoubleMap(page) && !PageAnon(page)))
++			    !PageDoubleMap(page) && !PageAnon(page)))
++			#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++				/* only keep refault pages */
++				if (aml_is_pin_locked_file(page))
++					mlock_vma_page(page);
++			#else
+ 				mlock_vma_page(page);
++			#endif
+ 			page_vma_mapped_walk_done(&pvmw);
+ 			ret = false;
+ 			break;
+@@ -2042,7 +2051,13 @@ static bool page_mlock_one(struct page *page, struct vm_area_struct *vma,
+ 			 * nor on an Anon THP (which may still be PTE-mapped
+ 			 * after DoubleMap was cleared).
+ 			 */
++		#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++			/* only keep refault pages */
++			if (aml_is_pin_locked_file(page))
++				mlock_vma_page(page);
++		#else
+ 			mlock_vma_page(page);
++		#endif
+ 			/*
+ 			 * No need to scan further once the page is marked
+ 			 * as mlocked.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index ef2e66a25416..266b6550bdd7 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -75,6 +75,9 @@
+ #ifdef CONFIG_AMLOGIC_CMA
+ #include <linux/amlogic/aml_cma.h>
+ #endif
++#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++#include <linux/amlogic/pin_file.h>
++#endif
+ 
+ EXPORT_TRACEPOINT_SYMBOL_GPL(mm_vmscan_direct_reclaim_begin);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(mm_vmscan_direct_reclaim_end);
+@@ -1650,6 +1653,13 @@ static unsigned int shrink_page_list(struct list_head *page_list,
+ 			enum ttu_flags flags = TTU_BATCH_FLUSH;
+ 			bool was_swapbacked = PageSwapBacked(page);
+ 
++#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
++			if (mapping &&
++			    test_bit(AS_LOCK_MAPPING, &mapping->flags) &&
++			    !aml_is_pin_locked_file(page) &&
++			    !PageMlocked(page))
++				flags |= TTU_IGNORE_MLOCK;
++#endif
+ 			if (unlikely(PageTransHuge(page)))
+ 				flags |= TTU_SPLIT_HUGE_PMD;
+ 
+-- 
+2.25.1
+

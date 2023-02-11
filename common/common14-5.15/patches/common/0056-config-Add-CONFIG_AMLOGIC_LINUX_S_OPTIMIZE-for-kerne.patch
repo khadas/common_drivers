@@ -1,0 +1,115 @@
+From 70e8f84eeac8aee328a7218da5c50a347f178bc1 Mon Sep 17 00:00:00 2001
+From: yao zhang1 <yao.zhang1@amlogic.com>
+Date: Wed, 28 Sep 2022 11:21:27 +0800
+Subject: [PATCH 56/95] config: Add CONFIG_AMLOGIC_LINUX_S_OPTIMIZE for kernel
+ size optimize. [1/1]
+
+PD#SWPL-95000
+
+Problem:
+Kernel size is too big
+
+Solution:
+Remove some CONFIGs
+
+Verify:
+c3 pass
+
+Signed-off-by: yao zhang1 <yao.zhang1@amlogic.com>
+Change-Id: Ie8db38f58d78066ee491e5e391b514fe5df16181
+---
+ arch/arm/Kconfig    | 16 +++++++++++-----
+ arch/arm/mm/Kconfig |  2 +-
+ kernel/watchdog.c   |  6 +++---
+ 3 files changed, 15 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 858bd83d0aa8..e4285b9e9f8f 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -127,7 +127,7 @@ config ARM
+ 	select PERF_USE_VMALLOC
+ 	select RTC_LIB
+ 	select SYS_SUPPORTS_APM_EMULATION
+-	select TRACE_IRQFLAGS_SUPPORT if !CPU_V7M
++	select TRACE_IRQFLAGS_SUPPORT if !CPU_V7M && !AMLOGIC_LINUX_S_OPTIMIZE
+ 	# Above selects are sorted alphabetically; please add new ones
+ 	# according to that.  Thanks.
+ 	help
+@@ -138,6 +138,12 @@ config ARM
+ 	  Europe.  There is an ARM Linux project with a web page at
+ 	  <http://www.arm.linux.org.uk/>.
+ 
++config AMLOGIC_LINUX_S_OPTIMIZE
++	bool "linux kernel size optimize"
++	default n
++	help
++	  Amlogic linux kernel size optimize
++
+ config ARM_HAS_SG_CHAIN
+ 	bool
+ 
+@@ -564,12 +570,12 @@ config ARCH_VIRT
+ 	depends on ARCH_MULTI_V7
+ 	select ARM_AMBA
+ 	select ARM_GIC
+-	select ARM_GIC_V2M if PCI
+-	select ARM_GIC_V3
+-	select ARM_GIC_V3_ITS if PCI
++	select ARM_GIC_V2M if PCI && !AMLOGIC_LINUX_S_OPTIMIZE
++	select ARM_GIC_V3 if !AMLOGIC_LINUX_S_OPTIMIZE
++	select ARM_GIC_V3_ITS if PCI && !AMLOGIC_LINUX_S_OPTIMIZE
+ 	select ARM_PSCI
+ 	select HAVE_ARM_ARCH_TIMER
+-	select ARCH_SUPPORTS_BIG_ENDIAN
++	select ARCH_SUPPORTS_BIG_ENDIAN if !AMLOGIC_LINUX_S_OPTIMIZE
+ 
+ #
+ # This is sorted alphabetically by mach-* pathname.  However, plat-*
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index f43cdc1cfbae..d24d71b8dcbe 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -415,7 +415,7 @@ config CPU_V7
+ 	select CPU_CP15_MPU if !MMU
+ 	select CPU_HAS_ASID if MMU
+ 	select CPU_PABRT_V7
+-	select CPU_SPECTRE if MMU
++	select CPU_SPECTRE if MMU && !AMLOGIC_LINUX_S_OPTIMIZE
+ 	select CPU_THUMB_CAPABLE
+ 	select CPU_TLB_V7 if MMU
+ 
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 4a6ab84ab307..08c75271579b 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -181,7 +181,7 @@ static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
+ static DEFINE_PER_CPU(unsigned long, watchdog_report_ts);
+ static DEFINE_PER_CPU(struct hrtimer, watchdog_hrtimer);
+ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
+-#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
+ DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+ DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
+ extern void watchdog_check_hardlockup_other_cpu(void);
+@@ -371,7 +371,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	/* kick the hardlockup detector */
+ 	watchdog_interrupt_count();
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
+ 	/* test for hardlockups on the next cpu */
+ 	watchdog_check_hardlockup_other_cpu();
+ #endif
+@@ -483,7 +483,7 @@ static void watchdog_enable(unsigned int cpu)
+ 	/* Enable the perf event */
+ 	if (watchdog_enabled & NMI_WATCHDOG_ENABLED)
+ 		watchdog_nmi_enable(cpu);
+-#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
+ 	watchdog_nmi_enable(cpu);
+ #endif
+ }
+-- 
+2.25.1
+

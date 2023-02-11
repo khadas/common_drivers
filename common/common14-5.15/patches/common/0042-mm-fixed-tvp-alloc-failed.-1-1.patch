@@ -1,0 +1,40 @@
+From 4a48d476bd63f249cd33be3fc3dff51f4b5216c5 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Thu, 1 Sep 2022 15:36:15 +0800
+Subject: [PATCH 42/95] mm: fixed tvp alloc failed. [1/1]
+
+PD#SWPL-92714
+
+Problem:
+tvp alloc failed.
+
+Solution:
+not allowed to isolate more pages for GFP_NOIO/GFP_NOFS callers.
+
+Verify:
+build pass.
+
+Change-Id: I8913551b4f68af7415cd0b21c71279c6f356dba7
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ mm/vmscan.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 02994f5aa027..020506e44987 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2127,8 +2127,10 @@ static int too_many_isolated(struct pglist_data *pgdat, int file,
+ 	 * won't get blocked by normal direct-reclaimers, forming a circular
+ 	 * deadlock.
+ 	 */
++#ifndef CONFIG_AMLOGIC_MEMORY_EXTEND
+ 	if ((sc->gfp_mask & (__GFP_IO | __GFP_FS)) == (__GFP_IO | __GFP_FS))
+ 		inactive >>= 3;
++#endif
+ 
+ #ifdef CONFIG_AMLOGIC_CMA
+ 	check_cma_isolated(&isolated, inactive, inactive);
+-- 
+2.25.1
+

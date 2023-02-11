@@ -1,0 +1,44 @@
+From e1159712b2c1c307ee3493f823ee574e6cfab896 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Wed, 2 Nov 2022 16:29:24 +0800
+Subject: [PATCH 67/95] mm: move the pagetrace init before buddy is
+ established. [1/1]
+
+PD#SWPL-99288
+
+Problem:
+after the buddy system is established, cannot use memblock,
+otherwise the memory corruption.
+
+Solution:
+move the pagetrace initialization before buddy is established.
+
+Verify:
+t3_t982.
+
+Change-Id: I49909cbc3454dbdb832be3ac099f64d893e3bbcb
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ init/main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/init/main.c b/init/main.c
+index 2ed152392a81..2c2d82b09a2b 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -850,11 +850,11 @@ static void __init mm_init(void)
+ 	kfence_alloc_pool();
+ 	report_meminit();
+ 	stack_depot_init();
+-	mem_init();
+ #ifdef CONFIG_AMLOGIC_PAGE_TRACE
+ 	/* allocate memory before first page allocated */
+ 	page_trace_mem_init();
+ #endif
++	mem_init();
+ 	mem_init_print_info();
+ 	/* page_owner must be initialized after buddy is ready */
+ 	page_ext_init_flatmem_late();
+-- 
+2.25.1
+

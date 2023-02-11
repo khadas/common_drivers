@@ -1,0 +1,54 @@
+From b7a1d0620df9a7164260eb801e6e6df0037a13c3 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Thu, 10 Nov 2022 19:25:20 +0800
+Subject: [PATCH 71/95] mm: reset page order to slab size. [1/1]
+
+PD#SWPL-92714
+
+Problem:
+slab will create order 3(8 pages) for some objects. Which caused
+low memory usage ratio if one object takes memory and not freed.
+For example: if an object size is 4KB, slab will allocate order 3
+(32KB) large object for it and remain memory can be allocate for
+further request. But if application don not used these large memory
+and an object still occupy memory, then this 32kb memory can not
+freed to buddy system.
+
+Solution:
+make order fit to their object size
+from compared pagetrace data.
+
+Verify:
+s4_aq222.
+
+Change-Id: I5b4891665aa4cd159645ebbd24ca2fe740301ddc
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ mm/slub.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 367212e94ed0..024873afd4d4 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3840,6 +3840,9 @@ static inline unsigned int slab_order(unsigned int size,
+ 
+ static inline int calculate_order(unsigned int size)
+ {
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++	return get_order(size);
++#else
+ 	unsigned int order;
+ 	unsigned int min_objects;
+ 	unsigned int max_objects;
+@@ -3901,6 +3904,7 @@ static inline int calculate_order(unsigned int size)
+ 	if (order < MAX_ORDER)
+ 		return order;
+ 	return -ENOSYS;
++#endif
+ }
+ 
+ static void
+-- 
+2.25.1
+

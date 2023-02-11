@@ -1,0 +1,175 @@
+From 733e7b92a9bc207309574b6263ee83a8cd9b0c1c Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Mon, 28 Feb 2022 16:29:38 +0800
+Subject: [PATCH 25/95] mm: save wasted memory by slab [1/2]
+
+PD#SWPL-73422
+
+Problem:
+When driver/kernel call kmalloc with large size, memory may waste
+if size is not equal to 2^n. For example, driver call kmalloc with
+size 129KB, kmalloc will allocate a 256KB memory block to caller.
+Then 127kb memory will be wasted if this caller do not free it.
+
+Solution:
+Free tail of slab memory if size is not match to 2^n. This change
+can save about 900KB memory after boot, and more than 100KB durning
+runtime.
+
+Verify:
+local.
+
+Change-Id: If0b5aa61f123c657ddd6f49b42b0a60220a25910
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ mm/kasan/common.c |  7 +++++++
+ mm/page_alloc.c   | 16 ++++++++++++++++
+ mm/slab_common.c  | 16 +++++++++++++++-
+ mm/slub.c         | 17 +++++++++++++++++
+ 4 files changed, 55 insertions(+), 1 deletion(-)
+
+diff --git a/mm/kasan/common.c b/mm/kasan/common.c
+index b37c79530923..6cae0a8a0403 100644
+--- a/mm/kasan/common.c
++++ b/mm/kasan/common.c
+@@ -26,6 +26,10 @@
+ #include <linux/string.h>
+ #include <linux/types.h>
+ #include <linux/bug.h>
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++#include "../internal.h"
++#include <linux/amlogic/memory.h>
++#endif
+ 
+ #include "kasan.h"
+ #include "../slab.h"
+@@ -405,6 +409,9 @@ void * __must_check __kasan_kmalloc_large(const void *ptr, size_t size,
+ 	redzone_start = round_up((unsigned long)(ptr + size),
+ 				KASAN_GRANULE_SIZE);
+ 	redzone_end = (unsigned long)ptr + page_size(virt_to_page(ptr));
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	adjust_redzone_end(ptr, size, &redzone_end);
++#endif
+ 	kasan_poison((void *)redzone_start, redzone_end - redzone_start,
+ 		     KASAN_PAGE_REDZONE, false);
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5831f21397ad..d8135b7e4867 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1153,7 +1153,15 @@ static inline void __free_one_page(struct page *page,
+ 	else if (is_shuffle_order(order))
+ 		to_tail = shuffle_pick_tail();
+ 	else
++	#if defined(CONFIG_AMLOGIC_MEMORY_EXTEND) && defined(CONFIG_KASAN)
++		/*
++		 * always put freed page to tail of buddy system, in order to increase
++		 *  probability of use-after-free for KASAN check.
++		 */
++		to_tail = true;
++	#else
+ 		to_tail = buddy_merge_likely(pfn, buddy_pfn, page, order);
++	#endif
+ 
+ 	if (to_tail)
+ 		add_to_free_list_tail(page, zone, order, migratetype);
+@@ -3527,7 +3535,15 @@ static void free_unref_page_commit(struct page *page, unsigned long pfn,
+ 	__count_vm_event(PGFREE);
+ 	pcp = this_cpu_ptr(zone->per_cpu_pageset);
+ 	pindex = order_to_pindex(migratetype, order);
++#if defined(CONFIG_AMLOGIC_MEMORY_EXTEND) && defined(CONFIG_KASAN)
++	/*
++	 * always put freed page to tail of buddy system, in  order to
++	 * increase probability of use-after-free for KASAN check.
++	 */
++	list_add_tail(&page->lru, &pcp->lists[pindex]);
++#else
+ 	list_add(&page->lru, &pcp->lists[pindex]);
++#endif
+ 	pcp->count += 1 << order;
+ 	high = nr_pcp_high(pcp, zone);
+ 	if (pcp->count >= high) {
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 8cf667b3065e..acf5ff9c1422 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -33,6 +33,9 @@
+ 
+ #include "slab.h"
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++#include <linux/amlogic/memory.h>
++#endif
+ enum slab_state slab_state;
+ LIST_HEAD(slab_caches);
+ DEFINE_MUTEX(slab_mutex);
+@@ -964,11 +967,22 @@ void *kmalloc_order(size_t size, gfp_t flags, unsigned int order)
+ 		flags = kmalloc_fix_flags(flags);
+ 
+ 	flags |= __GFP_COMP;
+-	page = alloc_pages(flags, order);
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	if (size < (PAGE_SIZE * (1 << order)))
++		page = aml_slub_alloc_large(size, flags, order);
++	else
++#endif
++		page = alloc_pages(flags, order);
++
+ 	if (likely(page)) {
+ 		ret = page_address(page);
++	#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++		mod_lruvec_page_state(page, NR_SLAB_UNRECLAIMABLE_B,
++				      PAGE_ALIGN(size) / PAGE_SIZE);
++	#else
+ 		mod_lruvec_page_state(page, NR_SLAB_UNRECLAIMABLE_B,
+ 				      PAGE_SIZE << order);
++	#endif
+ 	}
+ 	ret = kasan_kmalloc_large(ret, size, flags);
+ 	/* As ret might get tagged, call kmemleak hook after KASAN. */
+diff --git a/mm/slub.c b/mm/slub.c
+index fef279e92c86..367212e94ed0 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -43,6 +43,9 @@
+ 
+ #include "internal.h"
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++#include <linux/amlogic/memory.h>
++#endif
+ /*
+  * Lock order:
+  *   1. slab_mutex (Global Mutex)
+@@ -4580,6 +4583,14 @@ size_t __ksize(const void *object)
+ 
+ 	if (unlikely(!PageSlab(page))) {
+ 		WARN_ON(!PageCompound(page));
++	#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++		if (unlikely(PageOwnerPriv1(page))) {
++			pr_debug("%s, obj:%p, page:%p, index:%ld, size:%ld\n",
++				__func__, object, page_address(page),
++				page->index, PAGE_SIZE * page->index);
++			return PAGE_SIZE * page->index;
++		}
++	#endif
+ 		return page_size(page);
+ 	}
+ 
+@@ -4599,7 +4610,13 @@ void kfree(const void *x)
+ 
+ 	page = virt_to_head_page(x);
+ 	if (unlikely(!PageSlab(page))) {
++	#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++		if (aml_free_nonslab_page(page, object))
++			return;
++		__free_pages(page, compound_order(page));
++	#else
+ 		free_nonslab_page(page, object);
++	#endif /*CONFIG_AMLOGIC_MEMORY_EXTEND */
+ 		return;
+ 	}
+ 	slab_free(page->slab_cache, page, object, NULL, 1, _RET_IP_);
+-- 
+2.25.1
+

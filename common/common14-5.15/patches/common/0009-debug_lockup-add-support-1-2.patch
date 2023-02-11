@@ -1,0 +1,111 @@
+From 37d1b6927feac0840664d5474350fb7dcb5f7633 Mon Sep 17 00:00:00 2001
+From: Hanjie Lin <hanjie.lin@amlogic.com>
+Date: Thu, 17 Feb 2022 09:55:30 +0800
+Subject: [PATCH 09/95] debug_lockup: add support [1/2]
+
+PD#SWPL-71728
+
+Problem:
+add debug_lockup support
+
+Solution:
+add debug_lockup support
+
+Verify:
+s4
+
+Signed-off-by: Hanjie Lin <hanjie.lin@amlogic.com>
+Change-Id: Ib1d9d746d91f6350868b009987a0459b00ef6abf
+---
+ arch/arm/include/asm/irqflags.h   |  5 +++++
+ arch/arm64/include/asm/irqflags.h |  5 +++++
+ include/linux/arm-smccc.h         | 10 ++++++++++
+ kernel/sched/core.c               |  4 ++++
+ 4 files changed, 24 insertions(+)
+
+diff --git a/arch/arm/include/asm/irqflags.h b/arch/arm/include/asm/irqflags.h
+index aeec7f24eb75..7e0357e63247 100644
+--- a/arch/arm/include/asm/irqflags.h
++++ b/arch/arm/include/asm/irqflags.h
+@@ -6,6 +6,10 @@
+ 
+ #include <asm/ptrace.h>
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++#include <linux/amlogic/irqflags_debug_arm.h>
++#else
++
+ /*
+  * CPU interrupt mask handling.
+  */
+@@ -183,5 +187,6 @@ static inline int arch_irqs_disabled_flags(unsigned long flags)
+ 
+ #include <asm-generic/irqflags.h>
+ 
++#endif /* CONFIG_AMLOGIC_DEBUG_LOCKUP */
+ #endif /* ifdef __KERNEL__ */
+ #endif /* ifndef __ASM_ARM_IRQFLAGS_H */
+diff --git a/arch/arm64/include/asm/irqflags.h b/arch/arm64/include/asm/irqflags.h
+index b57b9b1e4344..00a888f0b55d 100644
+--- a/arch/arm64/include/asm/irqflags.h
++++ b/arch/arm64/include/asm/irqflags.h
+@@ -10,6 +10,10 @@
+ #include <asm/ptrace.h>
+ #include <asm/sysreg.h>
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++#include <linux/amlogic/irqflags_debug_arm64.h>
++#else
++
+ /*
+  * Aarch64 has flags for masking: Debug, Asynchronous (serror), Interrupts and
+  * FIQ exceptions, in the 'daif' register. We mask and unmask them in 'daif'
+@@ -129,5 +133,6 @@ static inline void arch_local_irq_restore(unsigned long flags)
+ 
+ 	pmr_sync();
+ }
++#endif /* CONFIG_AMLOGIC_DEBUG_LOCKUP */
+ 
+ #endif /* __ASM_IRQFLAGS_H */
+diff --git a/include/linux/arm-smccc.h b/include/linux/arm-smccc.h
+index b23906d0652f..e815cb7cd1d7 100644
+--- a/include/linux/arm-smccc.h
++++ b/include/linux/arm-smccc.h
+@@ -414,9 +414,19 @@ asmlinkage void __arm_smccc_hvc(unsigned long a0, unsigned long a1,
+ 			unsigned long a5, unsigned long a6, unsigned long a7,
+ 			struct arm_smccc_res *res, struct arm_smccc_quirk *quirk);
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++void __arm_smccc_smc_glue(unsigned long a0, unsigned long a1,
++			unsigned long a2, unsigned long a3, unsigned long a4,
++			unsigned long a5, unsigned long a6, unsigned long a7,
++			struct arm_smccc_res *res, struct arm_smccc_quirk *quirk);
++#define arm_smccc_smc(...) __arm_smccc_smc_glue(__VA_ARGS__, NULL)
++
++#define arm_smccc_smc_quirk(...) __arm_smccc_smc_glue(__VA_ARGS__)
++#else
+ #define arm_smccc_smc(...) __arm_smccc_smc(__VA_ARGS__, NULL)
+ 
+ #define arm_smccc_smc_quirk(...) __arm_smccc_smc(__VA_ARGS__)
++#endif
+ 
+ #define arm_smccc_hvc(...) __arm_smccc_hvc(__VA_ARGS__, NULL)
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 43bd448d62af..1e7b5f6579b8 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -11111,6 +11111,10 @@ void dump_cpu_task(int cpu)
+ 	sched_show_task(cpu_curr(cpu));
+ }
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++EXPORT_SYMBOL_GPL(dump_cpu_task);
++#endif
++
+ /*
+  * Nice levels are multiplicative, with a gentle 10% change for every
+  * nice level changed. I.e. when a CPU-bound task goes from nice 0 to
+-- 
+2.25.1
+

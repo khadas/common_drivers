@@ -1,0 +1,54 @@
+From 58ee30c24e6453bb60b71a3d69f96d0a44b192a2 Mon Sep 17 00:00:00 2001
+From: Hanjie Lin <hanjie.lin@amlogic.com>
+Date: Thu, 27 Oct 2022 22:27:21 +0800
+Subject: [PATCH 77/95] sched: enable SD_BALANCE_WAKE and disable
+ SD_WAKE_AFFINE [1/1]
+
+PD#SWPL-80958
+
+Problem:
+enable SD_BALANCE_WAKE and disable SD_WAKE_AFFINE
+
+Solution:
+enable SD_BALANCE_WAKE and disable SD_WAKE_AFFINE
+
+Verify:
+t7_an400
+
+Signed-off-by: Hanjie Lin <hanjie.lin@amlogic.com>
+Change-Id: If3868e950c8405c3f811753d726b4edec8f24d3a
+---
+ kernel/sched/topology.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/topology.c b/kernel/sched/topology.c
+index bceebda44f1f..f3967cb7d4d0 100644
+--- a/kernel/sched/topology.c
++++ b/kernel/sched/topology.c
+@@ -1370,8 +1370,12 @@ static void asym_cpu_capacity_scan(void)
+  * Initializers for schedule domains
+  * Non-inlined to reduce accumulated stack pressure in build_sched_domains()
+  */
+-
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++/* default enable SD_BALANCE_WAKE */
++static int default_relax_domain_level = 1;
++#else
+ static int default_relax_domain_level = -1;
++#endif
+ int sched_domain_level_max;
+ 
+ static int __init setup_relax_domain_level(char *str)
+@@ -1535,7 +1539,9 @@ sd_init(struct sched_domain_topology_level *tl,
+ 					| 1*SD_BALANCE_EXEC
+ 					| 1*SD_BALANCE_FORK
+ 					| 0*SD_BALANCE_WAKE
++#if !IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
+ 					| 1*SD_WAKE_AFFINE
++#endif
+ 					| 0*SD_SHARE_CPUCAPACITY
+ 					| 0*SD_SHARE_PKG_RESOURCES
+ 					| 0*SD_SERIALIZE
+-- 
+2.25.1
+

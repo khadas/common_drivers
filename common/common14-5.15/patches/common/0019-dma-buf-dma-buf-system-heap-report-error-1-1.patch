@@ -1,0 +1,52 @@
+From e2bead5d990e39421bee3cae0e81fed19bd43c7e Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Fri, 25 Feb 2022 14:22:55 +0800
+Subject: [PATCH 19/95] dma-buf: dma-buf system heap report error [1/1]
+
+PD#SWPL-73234
+
+Problem:
+dma-buf system heap report error.
+
+Solution:
+1. add alloc order to reduce allocation fragmentation
+2. add __GFP_NOWARN flag remove unnecessary print
+
+Verify:
+local.
+
+Change-Id: Iaaae279ad51c073885842741108e47bcbf39c08e
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ drivers/dma-buf/heaps/system_heap.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/dma-buf/heaps/system_heap.c b/drivers/dma-buf/heaps/system_heap.c
+index af4e6faea8d0..65845c197bbe 100644
+--- a/drivers/dma-buf/heaps/system_heap.c
++++ b/drivers/dma-buf/heaps/system_heap.c
+@@ -52,6 +52,13 @@ struct dma_heap_attachment {
+ #define HIGH_ORDER_GFP  (((GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN \
+ 				| __GFP_NORETRY) & ~__GFP_RECLAIM) \
+ 				| __GFP_COMP)
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++#define LOW_ORDER_GFP_NO_WARN (GFP_HIGHUSER | __GFP_ZERO | __GFP_COMP | __GFP_NOWARN)
++static gfp_t order_flags[] = {HIGH_ORDER_GFP,
++				LOW_ORDER_GFP_NO_WARN, LOW_ORDER_GFP_NO_WARN,
++				LOW_ORDER_GFP, LOW_ORDER_GFP};
++static const unsigned int orders[] = {8, 6, 4, 2, 0};
++#else
+ static gfp_t order_flags[] = {HIGH_ORDER_GFP, MID_ORDER_GFP, LOW_ORDER_GFP};
+ /*
+  * The selection of the orders used for allocation (1MB, 64K, 4K) is designed
+@@ -60,6 +67,7 @@ static gfp_t order_flags[] = {HIGH_ORDER_GFP, MID_ORDER_GFP, LOW_ORDER_GFP};
+  * by reducing TLB pressure and time spent updating page tables.
+  */
+ static const unsigned int orders[] = {8, 4, 0};
++#endif
+ #define NUM_ORDERS ARRAY_SIZE(orders)
+ struct dmabuf_page_pool *pools[NUM_ORDERS];
+ 
+-- 
+2.25.1
+

@@ -1,0 +1,68 @@
+From 55d668738036b464ce4b9748a6f2371ad38bb6ae Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Mon, 24 Oct 2022 16:13:25 +0800
+Subject: [PATCH 66/95] mm: modify the watchpoint to ko. [1/2]
+
+PD#SWPL-92714
+
+Problem:
+need modify the watchpoint to ko.
+
+Solution:
+modify the watchpoint to ko.
+
+Verify:
+sc2_ah212.
+
+Change-Id: I6bc6d1dd1ec253540d1ab83906205d85ac9ef60b
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ arch/arm/kernel/hw_breakpoint.c   | 4 ----
+ arch/arm64/kernel/hw_breakpoint.c | 6 ------
+ 2 files changed, 10 deletions(-)
+
+diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
+index cf5cf89d3373..b1423fb130ea 100644
+--- a/arch/arm/kernel/hw_breakpoint.c
++++ b/arch/arm/kernel/hw_breakpoint.c
+@@ -91,11 +91,7 @@ static u8 max_watchpoint_len __ro_after_init;
+ 	WRITE_WB_REG_CASE(OP2, 14, VAL);	\
+ 	WRITE_WB_REG_CASE(OP2, 15, VAL)
+ 
+-#ifdef CONFIG_AMLOGIC_WATCHPOINT
+-u32 read_wb_reg(int n)
+-#else
+ static u32 read_wb_reg(int n)
+-#endif
+ {
+ 	u32 val = 0;
+ 
+diff --git a/arch/arm64/kernel/hw_breakpoint.c b/arch/arm64/kernel/hw_breakpoint.c
+index 29f3803e4b92..977aaf743d0f 100644
+--- a/arch/arm64/kernel/hw_breakpoint.c
++++ b/arch/arm64/kernel/hw_breakpoint.c
+@@ -102,11 +102,7 @@ int hw_breakpoint_slots(int type)
+ 	WRITE_WB_REG_CASE(OFF, 14, REG, VAL);	\
+ 	WRITE_WB_REG_CASE(OFF, 15, REG, VAL)
+ 
+-#ifdef CONFIG_AMLOGIC_WATCHPOINT
+-u64 read_wb_reg(int reg, int n)
+-#else
+ static u64 read_wb_reg(int reg, int n)
+-#endif
+ {
+ 	u64 val = 0;
+ 
+@@ -122,9 +118,7 @@ static u64 read_wb_reg(int reg, int n)
+ 	return val;
+ }
+ 
+-#ifndef CONFIG_AMLOGIC_WATCHPOINT
+ NOKPROBE_SYMBOL(read_wb_reg);
+-#endif
+ 
+ static void write_wb_reg(int reg, int n, u64 val)
+ {
+-- 
+2.25.1
+

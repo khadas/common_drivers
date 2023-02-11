@@ -1,0 +1,287 @@
+From 398071d3ffbb4ee272a097b8974184bb387ed8f4 Mon Sep 17 00:00:00 2001
+From: Hanjie Lin <hanjie.lin@amlogic.com>
+Date: Sun, 9 Oct 2022 11:03:08 +0800
+Subject: [PATCH 61/95] debug: fix gki10 break issue [1/3]
+
+PD#SWPL-94447
+
+Problem:
+debug break gki10
+
+Solution:
+1, support amlogic_debug build to module, amlogic_debug module
+   includes debug_lockup, cpu_mhz and meson_atrace for now.
+2, amlogic_debug some function still build in kernel but not break
+   gki10, for example: irq_check function on builtin kernel code,
+   module_debug, workqueue debug etc.
+3, new config CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR still builtin but
+   not break gki.
+4, other functions for example iotrace still under developing
+
+Verify:
+sc2
+
+Signed-off-by: Hanjie Lin <hanjie.lin@amlogic.com>
+Change-Id: I008cbe57cd892e969470ee6ee46ef46e290314c5
+---
+ arch/arm64/include/asm/irqflags.h |  2 +-
+ include/linux/arm-smccc.h         |  3 ++-
+ init/main.c                       |  2 +-
+ kernel/module.c                   |  8 ++++----
+ kernel/reboot.c                   | 10 +++++-----
+ kernel/sched/core.c               |  4 ----
+ kernel/tracepoint.c               | 32 +++++++++++++++++++++++++++++++
+ kernel/watchdog.c                 |  6 +++---
+ kernel/workqueue.c                |  4 ++--
+ 9 files changed, 50 insertions(+), 21 deletions(-)
+
+diff --git a/arch/arm64/include/asm/irqflags.h b/arch/arm64/include/asm/irqflags.h
+index 00a888f0b55d..c5b1d0f5f4e3 100644
+--- a/arch/arm64/include/asm/irqflags.h
++++ b/arch/arm64/include/asm/irqflags.h
+@@ -10,7 +10,7 @@
+ #include <asm/ptrace.h>
+ #include <asm/sysreg.h>
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++#if defined(CONFIG_AMLOGIC_DEBUG_LOCKUP) && !defined(SKIP_LOCKUP_CHECK)
+ #include <linux/amlogic/irqflags_debug_arm64.h>
+ #else
+ 
+diff --git a/include/linux/arm-smccc.h b/include/linux/arm-smccc.h
+index e815cb7cd1d7..cd8d868f112a 100644
+--- a/include/linux/arm-smccc.h
++++ b/include/linux/arm-smccc.h
+@@ -414,7 +414,8 @@ asmlinkage void __arm_smccc_hvc(unsigned long a0, unsigned long a1,
+ 			unsigned long a5, unsigned long a6, unsigned long a7,
+ 			struct arm_smccc_res *res, struct arm_smccc_quirk *quirk);
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++#if (defined(CONFIG_AMLOGIC_DEBUG_MODULE) && defined(CONFIG_AMLOGIC_DEBUG_LOCKUP) && defined(MODULE) && !defined(SKIP_LOCKUP_CHECK)) ||\
++(defined(CONFIG_AMLOGIC_DEBUG) && defined(CONFIG_AMLOGIC_DEBUG_LOCKUP) && !defined(SKIP_LOCKUP_CHECK))
+ void __arm_smccc_smc_glue(unsigned long a0, unsigned long a1,
+ 			unsigned long a2, unsigned long a3, unsigned long a4,
+ 			unsigned long a5, unsigned long a6, unsigned long a7,
+diff --git a/init/main.c b/init/main.c
+index 2a60b3a3c480..2ed152392a81 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -1226,7 +1226,7 @@ static bool __init_or_module initcall_blacklisted(initcall_t fn)
+ 	strreplace(fn_name, ' ', '\0');
+ 
+ 	list_for_each_entry(entry, &blacklisted_initcalls, next) {
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
+ 		char *str = strstr(fn_name, entry->buf);
+ 
+ 		if (!str)
+diff --git a/kernel/module.c b/kernel/module.c
+index 8691885ec76a..3a0069d211f6 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -100,7 +100,7 @@ static void do_free_init(struct work_struct *w);
+ static DECLARE_WORK(init_free_wq, do_free_init);
+ static LLIST_HEAD(init_free_list);
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
+ static int module_debug;
+ core_param(module_debug, module_debug, int, 0644);
+ #endif
+@@ -987,7 +987,7 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
+ 	/* Store the name of the last unloaded module for diagnostic purposes */
+ 	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
+ 	if (module_debug)
+ 		pr_info("remove module: %s\n", mod->name);
+ #endif
+@@ -3514,7 +3514,7 @@ static int move_module(struct module *mod, struct load_info *info)
+ 		mod->init_layout.base = NULL;
+ 
+ 	/* Transfer each section which specifies SHF_ALLOC */
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
+ 	if (module_debug)
+ 		pr_info("module:%s init_base:%px size:%#x core_base:%px size:%#x, final section addresses:\n",
+ 			mod->name, mod->init_layout.base, mod->init_layout.size,
+@@ -3538,7 +3538,7 @@ static int move_module(struct module *mod, struct load_info *info)
+ 			memcpy(dest, (void *)shdr->sh_addr, shdr->sh_size);
+ 		/* Update sh_addr to point to copy in image. */
+ 		shdr->sh_addr = (unsigned long)dest;
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
+ 		if (module_debug) {
+ 			if (!strcmp(info->secstrings + shdr->sh_name, ".bss") ||
+ 				!strcmp(info->secstrings + shdr->sh_name, ".data") ||
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+index b3561917e15f..f849175ce5f1 100644
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -19,7 +19,7 @@
+ #include <linux/syscore_ops.h>
+ #include <linux/uaccess.h>
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_DEBUG
+ #include <linux/io.h>
+ static unsigned int scramble_reg;
+ core_param(scramble_reg, scramble_reg, uint, 0644);
+@@ -308,7 +308,7 @@ EXPORT_SYMBOL_GPL(kernel_power_off);
+ 
+ DEFINE_MUTEX(system_transition_mutex);
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_DEBUG
+ /* scramble_clear_preserve() will clear scramble_reg bit0,
+  * this will cause fresh ddr data after reboot
+  */
+@@ -377,7 +377,7 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 	mutex_lock(&system_transition_mutex);
+ 	switch (cmd) {
+ 	case LINUX_REBOOT_CMD_RESTART:
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_DEBUG
+ 		scramble_clear_preserve();
+ #endif
+ 		kernel_restart(NULL);
+@@ -397,7 +397,7 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 		panic("cannot halt");
+ 
+ 	case LINUX_REBOOT_CMD_POWER_OFF:
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_DEBUG
+ 		scramble_clear_preserve();
+ #endif
+ 		kernel_power_off();
+@@ -412,7 +412,7 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 		}
+ 		buffer[sizeof(buffer) - 1] = '\0';
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_DEBUG
+ 		scramble_clear_preserve();
+ #endif
+ 		kernel_restart(buffer);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index d7640635ae10..38b34bb2080e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -11124,10 +11124,6 @@ void dump_cpu_task(int cpu)
+ 	sched_show_task(cpu_curr(cpu));
+ }
+ 
+-#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
+-EXPORT_SYMBOL_GPL(dump_cpu_task);
+-#endif
+-
+ /*
+  * Nice levels are multiplicative, with a gentle 10% change for every
+  * nice level changed. I.e. when a CPU-bound task goes from nice 0 to
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index d05628d1936e..6eae80dd3fc1 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -514,6 +514,17 @@ int tracepoint_probe_register_prio(struct tracepoint *tp, void *probe,
+ }
+ EXPORT_SYMBOL_GPL(tracepoint_probe_register_prio);
+ 
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++#include <linux/amlogic/debug_irqflags.h>
++irq_trace_fn_t irq_trace_start_hook_gki_builtin;
++irq_trace_fn_t irq_trace_stop_hook_gki_builtin;
++#endif
++
++#if defined(CONFIG_AMLOGIC_DEBUG_LOCKUP) && defined(CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR)
++typedef void (*pr_lockup_info_t)(int cpu);
++pr_lockup_info_t pr_lockup_info_hook;
++#endif
++
+ /**
+  * tracepoint_probe_register -  Connect a probe to a tracepoint
+  * @tp: tracepoint
+@@ -528,6 +539,27 @@ EXPORT_SYMBOL_GPL(tracepoint_probe_register_prio);
+  */
+ int tracepoint_probe_register(struct tracepoint *tp, void *probe, void *data)
+ {
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
++	if (!strcmp(tp->name, "inject_irq_hooks")) {
++		irq_trace_start_hook_gki_builtin = ((irq_trace_fn_t *)data)[0];
++		irq_trace_stop_hook_gki_builtin = ((irq_trace_fn_t *)data)[1];
++		pr_info("tracepoint_probe_register: inject_irq_hooks: %ps %ps\n",
++			irq_trace_start_hook_gki_builtin, irq_trace_stop_hook_gki_builtin);
++
++		return 0;
++	}
++#endif
++
++#if defined(CONFIG_AMLOGIC_DEBUG_LOCKUP) && defined(CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR)
++	if (!strcmp(tp->name, "inject_pr_lockup_info")) {
++		pr_lockup_info_hook = (pr_lockup_info_t)data;
++		pr_info("tracepoint_probe_register: inject_pr_lockup_info: %ps\n",
++			pr_lockup_info_hook);
++
++		return 0;
++	}
++#endif
++
+ 	return tracepoint_probe_register_prio(tp, probe, data, TRACEPOINT_DEFAULT_PRIO);
+ }
+ EXPORT_SYMBOL_GPL(tracepoint_probe_register);
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 08c75271579b..f2d8f9558842 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -181,7 +181,7 @@ static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
+ static DEFINE_PER_CPU(unsigned long, watchdog_report_ts);
+ static DEFINE_PER_CPU(struct hrtimer, watchdog_hrtimer);
+ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
+-#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
++#ifdef CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR
+ DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+ DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
+ extern void watchdog_check_hardlockup_other_cpu(void);
+@@ -371,7 +371,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	/* kick the hardlockup detector */
+ 	watchdog_interrupt_count();
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
++#ifdef CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR
+ 	/* test for hardlockups on the next cpu */
+ 	watchdog_check_hardlockup_other_cpu();
+ #endif
+@@ -483,7 +483,7 @@ static void watchdog_enable(unsigned int cpu)
+ 	/* Enable the perf event */
+ 	if (watchdog_enabled & NMI_WATCHDOG_ENABLED)
+ 		watchdog_nmi_enable(cpu);
+-#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
++#ifdef CONFIG_AMLOGIC_HARDLOCKUP_DETECTOR
+ 	watchdog_nmi_enable(cpu);
+ #endif
+ }
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 882d43c1e52e..cf480c5a3a0d 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2206,7 +2206,7 @@ static void process_one_work(struct worker *worker, struct work_struct *work)
+ __releases(&pool->lock)
+ __acquires(&pool->lock)
+ {
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
+ 	struct worker *collision;
+ 	bool cpu_intensive;
+ 	unsigned long work_data;
+@@ -2232,7 +2232,7 @@ __acquires(&pool->lock)
+ 
+ 	lockdep_copy_map(&lockdep_map, &work->lockdep_map);
+ #endif
+-#ifdef CONFIG_AMLOGIC_DEBUG
++#ifdef CONFIG_AMLOGIC_DEBUG_LOCKUP
+ 	if (!pwq) {
+ 		WARN_ONCE(1, "<%s> pwq_NULL <%lx> <%ps>, <%ps> %s\n",
+ 			__func__, atomic_long_read(&work->data),
+-- 
+2.25.1
+

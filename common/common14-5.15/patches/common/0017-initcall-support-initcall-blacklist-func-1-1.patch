@@ -1,0 +1,65 @@
+From fbfd8cfe60c8e05ea63b714e0a823d249ee82021 Mon Sep 17 00:00:00 2001
+From: "song.han" <song.han@amlogic.com>
+Date: Fri, 25 Feb 2022 11:23:30 +0800
+Subject: [PATCH 17/95] initcall: support initcall blacklist func [1/1]
+
+PD#SWPL-73070
+
+Problem:
+clang cfi will change initcall name while initcall
+blacklist can not work
+
+Solution:
+support other blacklist name match method
+
+Verify:
+s4d-ap222
+
+Change-Id: Ia869e3567fa305164954963e8a8e1cc264e955a7
+Signed-off-by: song.han <song.han@amlogic.com>
+---
+ init/main.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/init/main.c b/init/main.c
+index 8c5872816eb8..2a60b3a3c480 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -1226,10 +1226,34 @@ static bool __init_or_module initcall_blacklisted(initcall_t fn)
+ 	strreplace(fn_name, ' ', '\0');
+ 
+ 	list_for_each_entry(entry, &blacklisted_initcalls, next) {
++#ifdef CONFIG_AMLOGIC_DEBUG
++		char *str = strstr(fn_name, entry->buf);
++
++		if (!str)
++			continue;
++		/*
++		 * The judgment condition before "||" is for gcc compiler
++		 * and atfer "||" for clang compiler.
++		 * clang compiler will modify kernel symbol,the first character
++		 * before the kernel symbol is always '_',and the first two
++		 * characters are always numbers. we use this format to check
++		 * blacklisted init method.
++		 *
++		 * for example:
++		 * fn_name = __initstub__kmod_amlogic_debug__289_21_debug_main_init4
++		 * entry->buf = debug_main_init
++		 */
++		if (str == fn_name ||
++		    ((str >= fn_name + 2) && *(str - 1) == '_' && isdigit(*(str - 2)))) {
++			pr_info("initcall %s blacklisted, fn_name: %s\n", entry->buf, fn_name);
++			return true;
++		}
++#else
+ 		if (!strcmp(fn_name, entry->buf)) {
+ 			pr_debug("initcall %s blacklisted\n", fn_name);
+ 			return true;
+ 		}
++#endif
+ 	}
+ 
+ 	return false;
+-- 
+2.25.1
+

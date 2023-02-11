@@ -1,0 +1,1130 @@
+From ab3334a0b478d5794a2fd44ea910cb922ccc7f23 Mon Sep 17 00:00:00 2001
+From: chuangcheng peng <chuangcheng.peng@amlogic.com>
+Date: Thu, 11 Aug 2022 19:32:43 +0800
+Subject: [PATCH 38/95] dvb-core: use origion dvb-core in kernel [1/2]
+
+PD#SWPL-89132
+
+Problem:
+use dvb-core to ko
+
+Solution:
+put aml modification to dvb-core
+
+Verify:
+not verified, compile pass
+
+Signed-off-by: chuangcheng peng <chuangcheng.peng@amlogic.com>
+Change-Id: I8e63da3d2b7a89538aef180b6e20f40c898445c6
+---
+ drivers/media/dvb-core/dmxdev.c       | 124 ++++++++++++++++-
+ drivers/media/dvb-core/dvb_frontend.c |  89 +++++++++++-
+ include/media/demux.h                 |  22 +++
+ include/media/dvb_frontend.h          |  25 +++-
+ include/uapi/linux/dvb/ca.h           | 174 +++++++++++++++++++++++-
+ include/uapi/linux/dvb/dmx.h          | 188 +++++++++++++++++++++++++-
+ include/uapi/linux/dvb/frontend.h     | 183 ++++++++++++++++++++++++-
+ 7 files changed, 790 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/media/dvb-core/dmxdev.c b/drivers/media/dvb-core/dmxdev.c
+index 8abf7f44d96b..d7d78e78c480 100644
+--- a/drivers/media/dvb-core/dmxdev.c
++++ b/drivers/media/dvb-core/dmxdev.c
+@@ -1115,6 +1115,110 @@ static int dvb_demux_do_ioctl(struct file *file,
+ 					     &((struct dmx_stc *)parg)->base);
+ 		break;
+ 
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	case DMX_SET_INPUT:
++		if (!dmxdev->demux->set_input) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = dmxdev->demux->set_input(dmxdev->demux, arg);
++		break;
++	case DMX_GET_MEM_INFO:
++		if (mutex_lock_interruptible(&dmxdevfilter->mutex)) {
++			mutex_unlock(&dmxdev->mutex);
++			return -ERESTARTSYS;
++		}
++		{
++			struct dmx_mem_info *info = parg;
++
++			info->dvb_core_total_size = dmxdevfilter->buffer.size;
++			info->dvb_core_free_size =
++			    dvb_ringbuffer_free(&dmxdevfilter->buffer);
++
++			if (dmxdevfilter->type == DMXDEV_TYPE_SEC) {
++				if (dmxdev->demux->get_sec_mem_info) {
++					struct dmx_section_feed *sec_feed =
++					    dmxdevfilter->feed.sec;
++
++					ret =
++					    dmxdev->demux->get_sec_mem_info(dmxdev->demux,
++								sec_feed, info);
++				}
++			} else if (dmxdevfilter->type == DMXDEV_TYPE_PES) {
++				if (dmxdev->demux->get_ts_mem_info) {
++					struct dmxdev_feed *feed;
++
++					list_for_each_entry(feed,
++							&dmxdevfilter->feed.ts, next) {
++						ret =
++						    dmxdev->demux->get_ts_mem_info(dmxdev->demux,
++									feed->ts,
++								    info);
++						break;
++					}
++				}
++			}
++		}
++		mutex_unlock(&dmxdevfilter->mutex);
++		break;
++	case DMX_GET_FILTER_MEM_INFO:
++		if (mutex_lock_interruptible(&dmxdevfilter->mutex)) {
++			mutex_unlock(&dmxdev->mutex);
++			return -ERESTARTSYS;
++		}
++		{
++			struct dmx_filter_mem_info *info = parg;
++
++			if (dmxdev->demux->get_dmx_mem_info)
++				ret =
++					dmxdev->demux->get_dmx_mem_info(dmxdev->demux, info);
++		}
++		mutex_unlock(&dmxdevfilter->mutex);
++		break;
++	case DMX_SET_HW_SOURCE:
++		if (!dmxdev->demux->set_hw_source) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = dmxdev->demux->set_hw_source(dmxdev->demux, arg);
++		break;
++	case DMX_GET_HW_SOURCE:
++		if (!dmxdev->demux->get_hw_source) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = dmxdev->demux->get_hw_source(dmxdev->demux, parg);
++		break;
++	case DMX_SET_SEC_MEM:
++		if (!dmxdev->demux->set_sec_mem) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = dmxdev->demux->set_sec_mem(dmxdev->demux, parg);
++		break;
++	case DMX_GET_DVR_MEM:
++		if (!dmxdev->demux->get_dvr_mem) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = dmxdev->demux->get_dvr_mem(dmxdev->demux, parg);
++		break;
++	case DMX_REMAP_PID:
++		if (!dmxdev->demux->remap_pid) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = dmxdev->demux->remap_pid(dmxdev->demux, parg);
++		break;
++	case DMX_SET_DECODE_INFO:
++		if (!dmxdev->demux->decode_info) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = dmxdev->demux->decode_info(dmxdev->demux, parg);
++		break;
++#endif
++
+ 	case DMX_ADD_PID:
+ 		if (mutex_lock_interruptible(&dmxdevfilter->mutex)) {
+ 			ret = -ERESTARTSYS;
+@@ -1305,7 +1409,22 @@ static int dvb_dvr_do_ioctl(struct file *file,
+ 	case DMX_SET_BUFFER_SIZE:
+ 		ret = dvb_dvr_set_buffer_size(dmxdev, arg);
+ 		break;
+-
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	case DMX_SET_INPUT:
++		if (!dmxdev->demux->set_input) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = dmxdev->demux->set_input(dmxdev->demux, arg);
++		break;
++	case DMX_GET_DVR_MEM:
++		if (!dmxdev->demux->get_dvr_mem) {
++			ret = -EINVAL;
++			break;
++		}
++		ret = dmxdev->demux->get_dvr_mem(dmxdev->demux, parg);
++		break;
++#endif
+ #ifdef CONFIG_DVB_MMAP
+ 	case DMX_REQBUFS:
+ 		ret = dvb_vb2_reqbufs(&dmxdev->dvr_vb2_ctx, parg);
+@@ -1405,6 +1524,9 @@ static const struct file_operations dvb_dvr_fops = {
+ #ifdef CONFIG_DVB_MMAP
+ 	.mmap = dvb_dvr_mmap,
+ #endif
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	.compat_ioctl = dvb_dvr_ioctl,
++#endif
+ };
+ 
+ static const struct dvb_device dvbdev_dvr = {
+diff --git a/drivers/media/dvb-core/dvb_frontend.c b/drivers/media/dvb-core/dvb_frontend.c
+index 09facc78d88a..bbd92d0dff33 100644
+--- a/drivers/media/dvb-core/dvb_frontend.c
++++ b/drivers/media/dvb-core/dvb_frontend.c
+@@ -234,8 +234,13 @@ static enum dvbv3_emulation_type dvbv3_type(u32 delivery_system)
+ 	}
+ }
+ 
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++void dvb_frontend_add_event(struct dvb_frontend *fe,
++			    enum fe_status status)
++#else
+ static void dvb_frontend_add_event(struct dvb_frontend *fe,
+ 				   enum fe_status status)
++#endif
+ {
+ 	struct dvb_frontend_private *fepriv = fe->frontend_priv;
+ 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+@@ -267,6 +272,10 @@ static void dvb_frontend_add_event(struct dvb_frontend *fe,
+ 	wake_up_interruptible(&events->wait_queue);
+ }
+ 
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++EXPORT_SYMBOL(dvb_frontend_add_event);
++#endif
++
+ static int dvb_frontend_test_event(struct dvb_frontend_private *fepriv,
+ 				   struct dvb_fe_events *events)
+ {
+@@ -1114,7 +1123,19 @@ static char *dtv_cmds[DTV_MAX_COMMAND + 1] = {
+ 	_DTV_CMD(DTV_DVBT2_PLP_ID_LEGACY),
+ 	_DTV_CMD(DTV_SCRAMBLING_SEQUENCE_INDEX),
+ 	_DTV_CMD(DTV_LNA),
+-
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	/*set blind scan cmd*/
++	_DTV_CMD(DTV_START_BLIND_SCAN),
++	_DTV_CMD(DTV_CANCEL_BLIND_SCAN),
++	_DTV_CMD(DTV_BLIND_SCAN_MIN_FRE),
++	_DTV_CMD(DTV_BLIND_SCAN_MAX_FRE),
++	_DTV_CMD(DTV_BLIND_SCAN_MIN_SRATE),
++	_DTV_CMD(DTV_BLIND_SCAN_MAX_SRATE),
++	_DTV_CMD(DTV_BLIND_SCAN_FRE_RANGE),
++	_DTV_CMD(DTV_BLIND_SCAN_FRE_STEP),
++	_DTV_CMD(DTV_BLIND_SCAN_TIMEOUT),
++	/*set blind scan cmd end*/
++#endif
+ 	/* Get */
+ 	_DTV_CMD(DTV_DISEQC_SLAVE_REPLY),
+ 	_DTV_CMD(DTV_API_VERSION),
+@@ -1337,6 +1358,9 @@ static int dtv_property_process_get(struct dvb_frontend *fe,
+ 				    struct file *file)
+ {
+ 	int ncaps;
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	int r = 0;
++#endif
+ 	unsigned int len = 1;
+ 
+ 	switch (tvp->cmd) {
+@@ -1571,6 +1595,12 @@ static int dtv_property_process_get(struct dvb_frontend *fe,
+ 			tvp->u.buffer.len = MAX_DTV_STATS * sizeof(u32);
+ 		len = tvp->u.buffer.len;
+ 		break;
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	case DTV_DELIVERY_SUB_SYSTEM:
++	case DTV_TS_INPUT:
++		r = 0;
++		break;
++#endif
+ 	default:
+ 		dev_dbg(fe->dvb->device,
+ 			"%s: FE property %d doesn't exist\n",
+@@ -1578,6 +1608,14 @@ static int dtv_property_process_get(struct dvb_frontend *fe,
+ 		return -EINVAL;
+ 	}
+ 
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	/* Allow the frontend to override outgoing properties */
++	if (fe->ops.get_property) {
++		r = fe->ops.get_property(fe, tvp);
++		if (r < 0)
++			return r;
++	}
++#endif
+ 	if (len < 1)
+ 		len = 1;
+ 
+@@ -1593,8 +1631,20 @@ static int dtv_set_frontend(struct dvb_frontend *fe);
+ 
+ static bool is_dvbv3_delsys(u32 delsys)
+ {
+-	return (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
+-	       (delsys == SYS_DVBS) || (delsys == SYS_ATSC);
++	bool status = false;
++
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	status = (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
++		 (delsys == SYS_DVBS) || (delsys == SYS_ATSC) ||
++		 (delsys == SYS_DTMB) || (delsys == SYS_DVBS2) ||
++		 (delsys == SYS_DVBT2) || (delsys == SYS_ISDBC) ||
++		 (delsys == SYS_ISDBT) || (delsys == SYS_ISDBS);
++#else
++	status = (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
++		 (delsys == SYS_DVBS) || (delsys == SYS_ATSC);
++#endif
++
++	return status;
+ }
+ 
+ /**
+@@ -1875,6 +1925,20 @@ static int dtv_property_process_set(struct dvb_frontend *fe,
+ 	int r = 0;
+ 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+ 
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	struct dtv_property tvp;
++
++	tvp.cmd = cmd;
++	tvp.u.data = data;
++
++	/* Allow the frontend to validate incoming properties */
++	if (fe->ops.set_property) {
++		r = fe->ops.set_property(fe, &tvp);
++		if (r < 0)
++			return r;
++	}
++#endif
++
+ 	/** Dump DTV command name and value*/
+ 	if (!cmd || cmd > DTV_MAX_COMMAND)
+ 		dev_warn(fe->dvb->device, "%s: SET cmd 0x%08x undefined\n",
+@@ -1929,6 +1993,11 @@ static int dtv_property_process_set(struct dvb_frontend *fe,
+ 	case DTV_DELIVERY_SYSTEM:
+ 		r = dvbv5_set_delivery_system(fe, data);
+ 		break;
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	case DTV_DELIVERY_SUB_SYSTEM:
++		r = 0;
++		break;
++#endif
+ 	case DTV_VOLTAGE:
+ 		c->voltage = data;
+ 		r = dvb_frontend_handle_ioctl(file, FE_SET_VOLTAGE,
+@@ -2040,7 +2109,19 @@ static int dtv_property_process_set(struct dvb_frontend *fe,
+ 		if (r < 0)
+ 			c->lna = LNA_AUTO;
+ 		break;
+-
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	case DTV_START_BLIND_SCAN:
++	case DTV_CANCEL_BLIND_SCAN:
++	case DTV_BLIND_SCAN_MIN_FRE:
++	case DTV_BLIND_SCAN_MAX_FRE:
++	case DTV_BLIND_SCAN_MIN_SRATE:
++	case DTV_BLIND_SCAN_MAX_SRATE:
++	case DTV_BLIND_SCAN_FRE_RANGE:
++	case DTV_BLIND_SCAN_FRE_STEP:
++	case DTV_BLIND_SCAN_TIMEOUT:
++		r = 0;
++		break;
++#endif
+ 	default:
+ 		return -EINVAL;
+ 	}
+diff --git a/include/media/demux.h b/include/media/demux.h
+index bf00a5a41a90..149ce6270729 100644
+--- a/include/media/demux.h
++++ b/include/media/demux.h
+@@ -595,6 +595,28 @@ struct dmx_demux {
+ 	 */
+ 	int (*get_stc)(struct dmx_demux *demux, unsigned int num,
+ 		       u64 *stc, unsigned int *base);
++
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	int (*set_input)(struct dmx_demux *demux, int source);
++	int (*get_ts_mem_info)(struct dmx_demux *demux,
++			struct dmx_ts_feed *feed,
++			struct dmx_mem_info *info);
++	int (*get_sec_mem_info)(struct dmx_demux *demux,
++			struct dmx_section_feed *feed,
++			struct dmx_mem_info *info);
++	int (*set_hw_source)(struct dmx_demux *demux, int hw_source);
++	int (*get_hw_source)(struct dmx_demux *demux, int *hw_source);
++	int (*get_dmx_mem_info)(struct dmx_demux *demux,
++			struct dmx_filter_mem_info *info);
++	int (*set_sec_mem)(struct dmx_demux *demux,
++			struct dmx_sec_mem *sec_mem);
++	int (*get_dvr_mem)(struct dmx_demux *demux,
++			struct dvr_mem_info *info);
++	int (*remap_pid)(struct dmx_demux *demux,
++			u16 pids[2]);
++	int (*decode_info)(struct dmx_demux *demux,
++		struct decoder_mem_info *info);
++#endif
+ };
+ 
+ #endif /* #ifndef __DEMUX_H */
+diff --git a/include/media/dvb_frontend.h b/include/media/dvb_frontend.h
+index 0d76fa4551b3..47379e0dcfeb 100644
+--- a/include/media/dvb_frontend.h
++++ b/include/media/dvb_frontend.h
+@@ -51,7 +51,11 @@
+  * Maximum number of Delivery systems per frontend. It
+  * should be smaller or equal to 32
+  */
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++#define MAX_DELSYS	32
++#else
+ #define MAX_DELSYS	8
++#endif
+ 
+ /* Helper definitions to be used at frontend drivers */
+ #define kHz 1000UL
+@@ -266,6 +270,10 @@ struct dvb_tuner_ops {
+ 	 */
+ 	int (*set_frequency)(struct dvb_frontend *fe, u32 frequency);
+ 	int (*set_bandwidth)(struct dvb_frontend *fe, u32 bandwidth);
++
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	int (*get_strength)(struct dvb_frontend *fe, s16 *strength);
++#endif
+ };
+ 
+ /**
+@@ -337,6 +345,11 @@ struct dtv_frontend_properties;
+  */
+ struct dvb_frontend_internal_info {
+ 	char	name[128];
++
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	enum fe_type type;
++#endif
++
+ 	u32	frequency_min_hz;
+ 	u32	frequency_max_hz;
+ 	u32	frequency_stepsize_hz;
+@@ -491,6 +504,11 @@ struct dvb_frontend_ops {
+ 
+ 	struct dvb_tuner_ops tuner_ops;
+ 	struct analog_demod_ops analog_ops;
++
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++	int (*set_property)(struct dvb_frontend *fe, struct dtv_property *tvp);
++	int (*get_property)(struct dvb_frontend *fe, struct dtv_property *tvp);
++#endif
+ };
+ 
+ #ifdef __DVB_CORE__
+@@ -821,5 +839,10 @@ void dvb_frontend_reinitialise(struct dvb_frontend *fe);
+  * calling this function directly.
+  */
+ void dvb_frontend_sleep_until(ktime_t *waketime, u32 add_usec);
+-
++#ifdef CONFIG_AMLOGIC_DVB_COMPAT
++/**
++ * dvb_frontend_add_event() - add event for the dvb frontend
++ */
++void dvb_frontend_add_event(struct dvb_frontend *fe, enum fe_status status);
++#endif
+ #endif
+diff --git a/include/uapi/linux/dvb/ca.h b/include/uapi/linux/dvb/ca.h
+index dffa59e95ebb..d084a26d102f 100644
+--- a/include/uapi/linux/dvb/ca.h
++++ b/include/uapi/linux/dvb/ca.h
+@@ -132,6 +132,172 @@ struct ca_descr {
+ 	unsigned char cw[8];
+ };
+ 
++/* amlogic define */
++/* CW type. */
++enum ca_cw_type {
++	CA_CW_DVB_CSA_EVEN,
++	CA_CW_DVB_CSA_ODD,
++	CA_CW_AES_EVEN,
++	CA_CW_AES_ODD,
++	CA_CW_AES_EVEN_IV,
++	CA_CW_AES_ODD_IV,
++	CA_CW_DES_EVEN,
++	CA_CW_DES_ODD,
++	CA_CW_SM4_EVEN,
++	CA_CW_SM4_ODD,
++	CA_CW_SM4_EVEN_IV,
++	CA_CW_SM4_ODD_IV,
++	CA_CW_TYPE_MAX
++};
++
++enum ca_dsc_mode {
++	CA_DSC_CBC = 1,
++	CA_DSC_ECB,
++	CA_DSC_IDSA
++};
++
++struct ca_descr_ex {
++	unsigned int index;
++	enum ca_cw_type type;
++	enum ca_dsc_mode mode;
++	int          flags;
++#define CA_CW_FROM_KL 1
++	unsigned char cw[16];
++};
++
++/* add for support sc2 ca*/
++enum ca_sc2_cmd_type {
++	CA_ALLOC,
++	CA_FREE,
++	CA_KEY,
++	CA_GET_STATUS,
++	CA_SET_SCB,
++	CA_SET_ALGO
++};
++
++enum ca_sc2_algo_type {
++	CA_ALGO_AES_ECB_CLR_END,
++	CA_ALGO_AES_ECB_CLR_FRONT,
++	CA_ALGO_AES_CBC_CLR_END,
++	CA_ALGO_AES_CBC_IDSA,
++	CA_ALGO_CSA2,
++	CA_ALGO_DES_SCTE41,
++	CA_ALGO_DES_SCTE52,
++	CA_ALGO_TDES_ECB_CLR_END,
++	CA_ALGO_CPCM_LSA_MDI_CBC,
++	CA_ALGO_CPCM_LSA_MDD_CBC,
++	CA_ALGO_CSA3,
++	CA_ALGO_ASA,
++	CA_ALGO_ASA_LIGHT,
++	CA_ALGO_S17_ECB_CLR_END,
++	CA_ALGO_S17_ECB_CTS,
++	CA_ALGO_UNKNOWN
++};
++
++enum ca_sc2_dsc_type {
++	CA_DSC_COMMON_TYPE,
++	CA_DSC_TSD_TYPE,	/*just support AES descramble.*/
++	CA_DSC_TSE_TYPE		/*just support AES enscramble.*/
++};
++
++/**
++ * struct ca_alloc - malloc ca slot index by params
++ *
++ * @pid:	slot use pid.
++ * @algo:	use the algorithm
++ * @dsc_type:	CA_DSC_COMMON_TYPE:support all ca_algo_type
++ *		CA_DSC_TSD_TYPE & CA_DSC_TSE_TYPE just support AES
++ * @ca_index:	return slot index.
++ * @loop:	0: just descramble once.
++ *			1: descramble twice.
++ */
++struct ca_sc2_alloc {
++	unsigned int pid;
++	enum ca_sc2_algo_type algo;
++	enum ca_sc2_dsc_type dsc_type;
++	unsigned int ca_index;
++	unsigned char loop;
++};
++
++/**
++ * struct ca_sc2_free - free slot index
++ *
++ * @ca_index:	need free slot index.
++ */
++struct ca_sc2_free {
++	unsigned int ca_index;
++};
++
++enum ca_sc2_key_type {
++	CA_KEY_EVEN_TYPE,
++	CA_KEY_EVEN_IV_TYPE,
++	CA_KEY_ODD_TYPE,
++	CA_KEY_ODD_IV_TYPE,
++	CA_KEY_00_TYPE,
++	CA_KEY_00_IV_TYPE
++};
++
++/**
++ * struct ca_sc2_key - set key slot index
++ *
++ * @ca_index:	use slot index.
++ * @parity:	key type (odd/even/key00)
++ * @key_index: key store index.
++ */
++struct ca_sc2_key {
++	unsigned int ca_index;
++	enum ca_sc2_key_type parity;
++	unsigned int key_index;
++};
++
++/**
++ * struct ca_sc2_scb - set scb
++ *
++ * @ca_index:	use slot index.
++ * @ca_scb:	ca_scb (2bit)
++ * @ca_scb_as_is:if 1, scb use original
++ *				 if 0, use ca_scb
++ */
++struct ca_sc2_scb {
++	unsigned int ca_index;
++	unsigned char ca_scb;
++	unsigned char ca_scb_as_is;
++};
++
++/**
++ * struct ca_sc2_algo - set algo
++ *
++ * @ca_index:	use slot index.
++ * @algo:	algo
++ */
++struct ca_sc2_algo {
++	unsigned int ca_index;
++	enum ca_sc2_algo_type algo;
++};
++
++/**
++ * struct ca_sc2_descr_ex - ca externd descriptor
++ *
++ * @params:	command resource params
++ */
++struct ca_sc2_descr_ex {
++	enum ca_sc2_cmd_type cmd;
++	union {
++		struct ca_sc2_alloc alloc_params;
++		struct ca_sc2_free free_params;
++		struct ca_sc2_key key_params;
++		struct ca_sc2_scb scb_params;
++		struct ca_sc2_algo algo_params;
++	} params;
++};
++
++struct ca_pid {
++	unsigned int pid;
++	int index;   /* -1 == disable*/
++};
++
++/* amlogic define end */
++
+ #define CA_RESET          _IO('o', 128)
+ #define CA_GET_CAP        _IOR('o', 129, struct ca_caps)
+ #define CA_GET_SLOT_INFO  _IOR('o', 130, struct ca_slot_info)
+@@ -139,7 +305,11 @@ struct ca_descr {
+ #define CA_GET_MSG        _IOR('o', 132, struct ca_msg)
+ #define CA_SEND_MSG       _IOW('o', 133, struct ca_msg)
+ #define CA_SET_DESCR      _IOW('o', 134, struct ca_descr)
+-
++/* amlogic define */
++#define CA_SET_PID        _IOW('o', 135, struct ca_pid)
++#define CA_SET_DESCR_EX   _IOW('o', 200, struct ca_descr_ex)
++#define CA_SC2_SET_DESCR_EX   _IOWR('o', 201, struct ca_sc2_descr_ex)
++/* amlogic define end */
+ #if !defined(__KERNEL__)
+ 
+ /* This is needed for legacy userspace support */
+@@ -150,6 +320,4 @@ typedef struct ca_msg ca_msg_t;
+ typedef struct ca_descr ca_descr_t;
+ 
+ #endif
+-
+-
+ #endif
+diff --git a/include/uapi/linux/dvb/dmx.h b/include/uapi/linux/dvb/dmx.h
+index b4112f0b6dd3..0afb88311c3d 100644
+--- a/include/uapi/linux/dvb/dmx.h
++++ b/include/uapi/linux/dvb/dmx.h
+@@ -30,7 +30,6 @@
+ #include <time.h>
+ #endif
+ 
+-
+ #define DMX_FILTER_SIZE 16
+ 
+ /**
+@@ -178,8 +177,97 @@ struct dmx_sct_filter_params {
+ #define DMX_CHECK_CRC       1
+ #define DMX_ONESHOT         2
+ #define DMX_IMMEDIATE_START 4
++/* amlogic define */
++#define DMX_USE_SWFILTER    0x100
++
++/*bit 8~15 for mem sec_level*/
++#define DMX_MEM_SEC_LEVEL1   (1 << 10)
++#define DMX_MEM_SEC_LEVEL2   (2 << 10)
++#define DMX_MEM_SEC_LEVEL3   (3 << 10)
++#define DMX_MEM_SEC_LEVEL4   (4 << 10)
++#define DMX_MEM_SEC_LEVEL5   (5 << 10)
++#define DMX_MEM_SEC_LEVEL6   (6 << 10)
++#define DMX_MEM_SEC_LEVEL7   (7 << 10)
++/* amlogic define end */
++};
++
++/*amlogic define*/
++enum dmx_input_source {
++	INPUT_DEMOD,
++	INPUT_LOCAL,
++	INPUT_LOCAL_SEC
++};
++
++/**
++ * struct dmx_non_sec_es_header - non-sec Elementary Stream (ES) Header
++ *
++ * @pts_dts_flag:[1:0], 01:pts valid, 10:dts valid
++ * @pts:	pts value
++ * @dts:	dts value
++ * @len:	data len
++ */
++struct dmx_non_sec_es_header {
++	__u8 pts_dts_flag;
++	__u64 pts;
++	__u64 dts;
++	__u32 len;
++};
++
++/**
++ * struct dmx_sec_es_data - sec Elementary Stream (ES)
++ *
++ * @pts_dts_flag:[1:0], 01:pts valid, 10:dts valid
++ * @pts:	pts value
++ * @dts:	dts value
++ * @buf_start:	buf start addr
++ * @buf_end:	buf end addr
++ * @data_start: data start addr
++ * @data_end: data end addr
++ */
++struct dmx_sec_es_data {
++	__u8 pts_dts_flag;
++	__u64 pts;
++	__u64 dts;
++	__u32 buf_start;
++	__u32 buf_end;
++	__u32 data_start;
++	__u32 data_end;
++};
++
++struct dmx_sec_ts_data {
++	__u32 buf_start;
++	__u32 buf_end;
++	__u32 data_start;
++	__u32 data_end;
++};
++
++enum dmx_audio_format {
++	AUDIO_UNKNOWN = 0,	/* unknown media */
++	AUDIO_MPX = 1,		/* mpeg audio MP2/MP3 */
++	AUDIO_AC3 = 2,		/* Dolby AC3/EAC3 */
++	AUDIO_AAC_ADTS = 3,	/* AAC-ADTS */
++	AUDIO_AAC_LOAS = 4,	/* AAC-LOAS */
++	AUDIO_DTS = 5,		/* DTS */
++	AUDIO_MAX
++};
++
++struct dmx_mem_info {
++	__u32 dmx_total_size;
++	__u32 dmx_buf_phy_start;
++	__u32 dmx_free_size;
++	__u32 dvb_core_total_size;
++	__u32 dvb_core_free_size;
++	__u32 wp_offset;
++	__u64 newest_pts;
+ };
+ 
++struct dmx_sec_mem {
++	__u32 buff;
++	__u32 size;
++};
++
++/* amlogic define end */
++
+ /**
+  * struct dmx_pes_filter_params - Specifies Packetized Elementary Stream (PES)
+  *	filter parameters.
+@@ -196,6 +284,25 @@ struct dmx_pes_filter_params {
+ 	enum dmx_output output;
+ 	enum dmx_ts_pes pes_type;
+ 	__u32           flags;
++	/*amlogic define*/
++/*bit 8~15 for mem sec_level*/
++#define DMX_MEM_SEC_LEVEL1   (1 << 10)
++#define DMX_MEM_SEC_LEVEL2   (2 << 10)
++#define DMX_MEM_SEC_LEVEL3   (3 << 10)
++#define DMX_MEM_SEC_LEVEL4   (4 << 10)
++#define DMX_MEM_SEC_LEVEL5   (5 << 10)
++#define DMX_MEM_SEC_LEVEL6   (6 << 10)
++#define DMX_MEM_SEC_LEVEL7   (7 << 10)
++
++/*bit 16~23 for output */
++#define DMX_ES_OUTPUT        (1 << 16)
++/*set raw mode, it will send the struct dmx_sec_es_data, not es data*/
++#define DMX_OUTPUT_RAW_MODE	 (1 << 17)
++
++/*24~31 one byte for audio type, dmx_audio_format_t*/
++#define DMX_AUDIO_FORMAT_BIT 24
++
++/* amlogic define end */
+ };
+ 
+ /**
+@@ -301,6 +408,72 @@ struct dmx_exportbuffer {
+ 	__s32		fd;
+ };
+ 
++/* amlogic define */
++enum {
++	DMA_0 = 0,
++	DMA_1,
++	DMA_2,
++	DMA_3,
++	DMA_4,
++	DMA_5,
++	DMA_6,
++	DMA_7,
++	FRONTEND_TS0 = 32,
++	FRONTEND_TS1,
++	FRONTEND_TS2,
++	FRONTEND_TS3,
++	FRONTEND_TS4,
++	FRONTEND_TS5,
++	FRONTEND_TS6,
++	FRONTEND_TS7,
++	DMA_0_1 = 64,
++	DMA_1_1,
++	DMA_2_1,
++	DMA_3_1,
++	DMA_4_1,
++	DMA_5_1,
++	DMA_6_1,
++	DMA_7_1,
++	FRONTEND_TS0_1 = 96,
++	FRONTEND_TS1_1,
++	FRONTEND_TS2_1,
++	FRONTEND_TS3_1,
++	FRONTEND_TS4_1,
++	FRONTEND_TS5_1,
++	FRONTEND_TS6_1,
++	FRONTEND_TS7_1,
++};
++
++/*define filter mem_info type*/
++enum {
++	DMX_VIDEO_TYPE = 0,
++	DMX_AUDIO_TYPE,
++	DMX_SUBTITLE_TYPE,
++	DMX_TELETEXT_TYPE,
++	DMX_SECTION_TYPE,
++};
++
++struct filter_mem_info {
++	__u32 type;
++	__u32 pid;
++	struct dmx_mem_info	filter_info;
++};
++
++struct dmx_filter_mem_info {
++	__u32 filter_num;
++	struct filter_mem_info info[40];
++};
++
++struct dvr_mem_info {
++	__u32 wp_offset;
++};
++
++struct decoder_mem_info {
++	__u32 rp_phy;
++};
++
++/* amlogic define end */
++
+ #define DMX_START                _IO('o', 41)
+ #define DMX_STOP                 _IO('o', 42)
+ #define DMX_SET_FILTER           _IOW('o', 43, struct dmx_sct_filter_params)
+@@ -310,7 +483,6 @@ struct dmx_exportbuffer {
+ #define DMX_GET_STC              _IOWR('o', 50, struct dmx_stc)
+ #define DMX_ADD_PID              _IOW('o', 51, __u16)
+ #define DMX_REMOVE_PID           _IOW('o', 52, __u16)
+-
+ #if !defined(__KERNEL__)
+ 
+ /* This is needed for legacy userspace support */
+@@ -327,4 +499,16 @@ typedef struct dmx_filter dmx_filter_t;
+ #define DMX_QBUF                 _IOWR('o', 63, struct dmx_buffer)
+ #define DMX_DQBUF                _IOWR('o', 64, struct dmx_buffer)
+ 
++/* amlogic define */
++#define DMX_SET_INPUT           _IO('o', 80)
++#define DMX_GET_MEM_INFO        _IOR('o', 81, struct dmx_mem_info)
++#define DMX_SET_HW_SOURCE       _IO('o', 82)
++#define DMX_GET_HW_SOURCE       _IOR('o', 83, int)
++#define DMX_GET_FILTER_MEM_INFO _IOR('o', 84, struct dmx_filter_mem_info)
++/*just for dvr sec mem, please call before DMX_SET_PES_FILTER*/
++#define DMX_SET_SEC_MEM			_IOW('o', 85, struct dmx_sec_mem)
++#define DMX_GET_DVR_MEM			_IOR('o', 86, struct dvr_mem_info)
++#define DMX_REMAP_PID			_IOR('o', 87, __u16[2])
++#define DMX_SET_DECODE_INFO     _IOW('o', 88, struct decoder_mem_info)
++/* amlogic define end */
+ #endif /* _DVBDMX_H_ */
+diff --git a/include/uapi/linux/dvb/frontend.h b/include/uapi/linux/dvb/frontend.h
+index 4f9b4551c534..ad9a75f27b01 100644
+--- a/include/uapi/linux/dvb/frontend.h
++++ b/include/uapi/linux/dvb/frontend.h
+@@ -29,6 +29,10 @@
+ 
+ #include <linux/types.h>
+ 
++/* amlogic define */
++#include <linux/videodev2.h>
++/* amlogic define end */
++
+ /**
+  * enum fe_caps - Frontend capabilities
+  *
+@@ -110,9 +114,13 @@ enum fe_type {
+ 	FE_QPSK,
+ 	FE_QAM,
+ 	FE_OFDM,
+-	FE_ATSC
++	FE_ATSC,
++	/*amlogic define*/
++	FE_ANALOG,
++	FE_DTMB,
++	FE_ISDBT
++	/*amlogic define end*/
+ };
+-
+ /**
+  * struct dvb_frontend_info - Frontend properties and capabilities
+  *
+@@ -258,6 +266,12 @@ enum fe_status {
+ 	FE_HAS_LOCK		= 0x10,
+ 	FE_TIMEDOUT		= 0x20,
+ 	FE_REINIT		= 0x40,
++	/*amlogic define*/
++	BLINDSCAN_NONEDO = 0x80, /* not blind scan  */
++	BLINDSCAN_UPDATESTARTFREQ = 0x100, /* blind scan update start freq  */
++	BLINDSCAN_UPDATEPROCESS   = 0x200, /* blind scan update process  */
++	BLINDSCAN_UPDATERESULTFREQ = 0x400/* blind scan update result  */
++	/*amlogic define end*/
+ };
+ 
+ /**
+@@ -455,6 +469,26 @@ enum fe_interleaving {
+ 	INTERLEAVING_720,
+ };
+ 
++/*amlogic define*/
++struct fe_blind_scan_parameters {
++	/* minimum tuner frequency in kHz */
++	__u32 min_frequency;
++	/* maximum tuner frequency in kHz */
++	__u32 max_frequency;
++	/* minimum symbol rate in sym/sec */
++	__u32 min_symbol_rate;
++	/* maximum symbol rate in sym/sec */
++	__u32 max_symbol_rate;
++	/* search range in kHz. freq -/+freqRange will be searched */
++	__u32 frequency_range;
++	/* tuner step frequency in kHz */
++	__u32 frequency_step;
++	/* blindscan event timeout */
++	__s32 timeout;
++};
++
++/*amlogic define end*/
++
+ /* DVBv5 property Commands */
+ 
+ #define DTV_UNDEFINED		0
+@@ -516,6 +550,9 @@ enum fe_interleaving {
+ #define DTV_DVBT2_PLP_ID_LEGACY	43
+ 
+ #define DTV_ENUM_DELSYS		44
++/*amlogic define*/
++#define DTV_DVBT2_PLP_ID    DTV_DVBT2_PLP_ID_LEGACY
++/*amlogic define end*/
+ 
+ /* ATSC-MH */
+ #define DTV_ATSCMH_FIC_VER		45
+@@ -550,8 +587,23 @@ enum fe_interleaving {
+ /* Physical layer scrambling */
+ #define DTV_SCRAMBLING_SEQUENCE_INDEX	70
+ 
+-#define DTV_MAX_COMMAND		DTV_SCRAMBLING_SEQUENCE_INDEX
+-
++/* amlogic define */
++/* Get tne TS input of the frontend */
++#define DTV_TS_INPUT                    100
++/* Blind scan */
++#define DTV_START_BLIND_SCAN            101
++#define DTV_CANCEL_BLIND_SCAN           102
++#define DTV_BLIND_SCAN_MIN_FRE          103
++#define DTV_BLIND_SCAN_MAX_FRE          104
++#define DTV_BLIND_SCAN_MIN_SRATE        105
++#define DTV_BLIND_SCAN_MAX_SRATE        106
++#define DTV_BLIND_SCAN_FRE_RANGE        107
++#define DTV_BLIND_SCAN_FRE_STEP         108
++#define DTV_BLIND_SCAN_TIMEOUT          109
++/* Blind scan end*/
++#define DTV_DELIVERY_SUB_SYSTEM			110
++#define DTV_MAX_COMMAND		DTV_DELIVERY_SUB_SYSTEM
++/* amlogic define end */
+ /**
+  * enum fe_pilot - Type of pilot tone
+  *
+@@ -645,6 +697,9 @@ enum fe_delivery_system {
+ 	SYS_DVBT2,
+ 	SYS_TURBO,
+ 	SYS_DVBC_ANNEX_C,
++	/* amlogic define */
++	SYS_ANALOG
++	/* amlogic define end */
+ };
+ 
+ /* backward compatibility definitions for delivery systems */
+@@ -957,6 +1012,14 @@ typedef enum fe_pilot fe_pilot_t;
+ typedef enum fe_rolloff fe_rolloff_t;
+ typedef enum fe_delivery_system fe_delivery_system_t;
+ 
++/* amlogic define */
++enum fe_ofdm_mode {
++	OFDM_DVBT,
++	OFDM_DVBT2,
++};
++
++/* amlogic define end */
++
+ /* DVBv3 structs */
+ 
+ struct dvb_qpsk_parameters {
+@@ -984,6 +1047,21 @@ struct dvb_ofdm_parameters {
+ 	fe_hierarchy_t      hierarchy_information;
+ };
+ 
++/* amlogic define */
++#define ANALOG_FLAG_ENABLE_AFC                 0X00000001
++#define  ANALOG_FLAG_MANUL_SCAN                0x00000011
++struct dvb_analog_parameters {
++	/*V4L2_TUNER_MODE_MONO,V4L2_TUNER_MODE_STEREO,*/
++	/*V4L2_TUNER_MODE_LANG2,V4L2_TUNER_MODE_SAP,*/
++	/*V4L2_TUNER_MODE_LANG1,V4L2_TUNER_MODE_LANG1_LANG2 */
++	unsigned int audmode;
++	unsigned int soundsys;	/*A2,BTSC,EIAJ,NICAM */
++	v4l2_std_id std;
++	unsigned int flag;
++	unsigned int afc_range;
++};
++
++/* amlogic define end */
+ struct dvb_frontend_parameters {
+ 	__u32 frequency;  /* (absolute) frequency in Hz for DVB-C/DVB-T/ATSC */
+ 			  /* intermediate frequency in kHz for DVB-S */
+@@ -1001,6 +1079,103 @@ struct dvb_frontend_event {
+ 	struct dvb_frontend_parameters parameters;
+ };
+ 
++/* amlogic define */
++/* Satellite blind scan event */
++struct dvbsx_blindscanevent {
++	enum fe_status status;
++	union {
++		/* The percentage completion of the*/
++		/*blind scan procedure. A value of*/
++		/*100 indicates that the blind scan*/
++		/*is finished. */
++		__u16 m_uiprogress;
++		/*The start scan frequency in units of kHz.*/
++		/*The minimum value depends on the tuner*/
++		/*specification.*/
++		__u32 m_uistartfreq_khz;
++		/* Blind scan channel info. */
++		struct dvb_frontend_parameters parameters;
++	} u;
++};
++
++/*for atv*/
++struct tuner_status_s {
++	unsigned int frequency;
++	unsigned int rssi;
++	unsigned char mode;/*dtv:0 or atv:1*/
++	unsigned char tuner_locked;/*notlocked:0,locked:1*/
++	union {
++		void *ressrved;
++		__u64 reserved1;
++	};
++};
++
++struct atv_status_s {
++	unsigned char atv_lock;/*notlocked:0,locked 1*/
++	v4l2_std_id	  std;
++	unsigned int  audmode;
++	int  snr;
++	int  afc;
++	union {
++		void *resrvred;
++		__u64 reserved1;
++	};
++};
++
++struct sound_status_s {
++	unsigned short sound_sys;/*A2DK/A2BG/NICAM BG/NICAM DK/BTSC/EIAJ*/
++	unsigned short sound_mode;/*SETERO/DUAL/MONO/SAP*/
++	union {
++		void *resrvred;
++		__u64 reserved1;
++	};
++};
++
++enum tuner_param_cmd_e {
++	TUNER_CMD_AUDIO_MUTE = 0x0000,
++	TUNER_CMD_AUDIO_ON,
++	TUNER_CMD_TUNER_POWER_ON,
++	TUNER_CMD_TUNER_POWER_DOWN,
++	TUNER_CMD_SET_VOLUME,
++	TUNER_CMD_SET_LEAP_SETP_SIZE,
++	TUNER_CMD_GET_MONO_MODE,
++	TUNER_CMD_SET_BEST_LOCK_RANGE,
++	TUNER_CMD_GET_BEST_LOCK_RANGE,
++	TUNER_CMD_SET_CVBS_AMP_OUT,
++	TUNER_CMD_GET_CVBS_AMP_OUT,
++	TUNER_CMD_NULL,
++};
++
++/*parameter for set param box*/
++struct tuner_param_s {
++	enum tuner_param_cmd_e cmd;
++	unsigned int      parm;
++	unsigned int	resvred;
++};
++
++// typedef struct dvb_analog_parameters dvb_analog_parameters_t;
++// typedef struct tuner_status_s tuner_status_t;
++// typedef struct atv_status_s atv_status_t;
++// typedef struct sound_status_s sound_status_t;
++// typedef enum tuner_param_cmd_e tuner_param_cmd_t;
++// typedef struct tuner_param_s tuner_param_t;
++// typedef enum fe_layer fe_layer_t;
++// typedef enum fe_ofdm_mode fe_ofdm_mode_t;
++
++/* Satellite blind scan settings */
++struct dvbsx_blindscanpara {
++	__u32 minfrequency;/* minimum tuner frequency in kHz */
++	__u32 maxfrequency;/* maximum tuner frequency in kHz */
++	__u32 minSymbolRate;/* minimum symbol rate in sym/sec */
++	__u32 maxSymbolRate;/* maximum symbol rate in sym/sec */
++	/*search range in kHz. freq -/+freqRange will be searched */
++	__u32 frequencyRange;
++	__u32 frequencyStep;/* tuner step frequency in kHz */
++	__s32 timeout;/* blindscan event timeout*/
++};
++
++/* amlogic define end */
++
+ /* DVBv3 API calls */
+ 
+ #define FE_SET_FRONTEND		   _IOW('o', 76, struct dvb_frontend_parameters)
+-- 
+2.25.1
+

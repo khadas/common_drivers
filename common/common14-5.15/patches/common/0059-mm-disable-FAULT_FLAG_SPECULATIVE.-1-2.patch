@@ -1,0 +1,68 @@
+From eb7fd093b8e4d11166661602b782eef7a590438b Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Mon, 10 Oct 2022 21:00:09 +0800
+Subject: [PATCH 59/95] mm: disable FAULT_FLAG_SPECULATIVE. [1/2]
+
+PD#SWPL-94445
+
+Problem:
+play video system crash.
+
+Solution:
+disable FAULT_FLAG_SPECULATIVE.
+
+Verify:
+sc2_ah212.
+
+Change-Id: Ib056ffe1f48e68ae8e7b848c23db8218710fbbb7
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ arch/arm64/mm/fault.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm64/mm/fault.c b/arch/arm64/mm/fault.c
+index 4b5bc411266c..9735e01cc979 100644
+--- a/arch/arm64/mm/fault.c
++++ b/arch/arm64/mm/fault.c
+@@ -551,9 +551,11 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+ 	unsigned long vm_flags;
+ 	unsigned int mm_flags = FAULT_FLAG_DEFAULT;
+ 	unsigned long addr = untagged_addr(far);
++#ifndef CONFIG_AMLOGIC_CMA
+ #ifdef CONFIG_SPECULATIVE_PAGE_FAULT
+ 	struct vm_area_struct *vma;
+ 	unsigned long seq;
++#endif
+ #endif
+ 
+ 	if (kprobe_page_fault(regs, esr))
+@@ -612,6 +614,7 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+ 
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
+ 
++#ifndef CONFIG_AMLOGIC_CMA
+ #ifdef CONFIG_SPECULATIVE_PAGE_FAULT
+ 	/*
+ 	 * No need to try speculative faults for kernel or
+@@ -664,6 +667,7 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+ no_spf:
+ 
+ #endif	/* CONFIG_SPECULATIVE_PAGE_FAULT */
++#endif
+ 
+ 	/*
+ 	 * As per x86, we may deadlock here. However, since the kernel only
+@@ -705,8 +709,10 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+ 		}
+ 	}
+ 	mmap_read_unlock(mm);
++#ifndef CONFIG_AMLOGIC_CMA
+ #ifdef CONFIG_SPECULATIVE_PAGE_FAULT
+ done:
++#endif
+ #endif
+ 
+ 	/*
+-- 
+2.25.1
+

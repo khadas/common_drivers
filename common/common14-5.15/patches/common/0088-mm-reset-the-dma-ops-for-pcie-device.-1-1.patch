@@ -1,0 +1,51 @@
+From 8cfc602c2fc7d3abf227cba4db3a18685beb20a3 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Fri, 6 Jan 2023 08:09:39 +0000
+Subject: [PATCH 88/95] mm: reset the dma ops for pcie device. [1/1]
+
+PD#SWPL-103303
+
+Problem:
+meet the pcie whitelist.
+
+Solution:
+reset the dma ops for pcie device.
+
+Verify:
+build pass.
+
+Change-Id: I70d53aa94d827c0571555778248a17bd82d0b4d9
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ arch/arm/mm/dma-mapping.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index f028deeec940..321526b6a73c 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -34,6 +34,9 @@
+ #include <asm/mach/map.h>
+ #include <asm/system_info.h>
+ #include <xen/swiotlb-xen.h>
++#ifdef CONFIG_AMLOGIC_PCIE_DMA_OPS
++#include <linux/amlogic/dma_pcie_mapping.h>
++#endif
+ 
+ #include "dma.h"
+ #include "mm.h"
+@@ -2289,6 +2292,11 @@ void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
+ 
+ 	set_dma_ops(dev, dma_ops);
+ 
++#ifdef CONFIG_AMLOGIC_PCIE_DMA_OPS
++	if (dev->bus && dev->bus->name && !strcmp(dev->bus->name, "pci"))
++		set_dma_ops(dev, &aml_pcie_dma_ops);
++#endif
++
+ #ifdef CONFIG_XEN
+ 	if (xen_initial_domain())
+ 		dev->dma_ops = &xen_swiotlb_dma_ops;
+-- 
+2.25.1
+

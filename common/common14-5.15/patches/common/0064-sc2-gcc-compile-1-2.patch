@@ -1,0 +1,52 @@
+From ccd9c3938d0b1a6caaf9969b2c948fd1b399e61e Mon Sep 17 00:00:00 2001
+From: "qinglin.li" <qinglin.li@amlogic.com>
+Date: Wed, 12 Oct 2022 17:32:39 +0800
+Subject: [PATCH 64/95] sc2: gcc compile [1/2]
+
+PD#SWPL-97112
+
+Problem:
+gcc code style check error
+
+Solution:
+fix code style when gcc compile
+
+Verify:
+sc2
+
+Signed-off-by: qinglin.li <qinglin.li@amlogic.com>
+Change-Id: I52ee0569086b696f1af51f0f667d0b51605a3e4e
+---
+ include/uapi/linux/dvb/frontend.h | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/include/uapi/linux/dvb/frontend.h b/include/uapi/linux/dvb/frontend.h
+index ad9a75f27b01..2cfb2db8dcc6 100644
+--- a/include/uapi/linux/dvb/frontend.h
++++ b/include/uapi/linux/dvb/frontend.h
+@@ -1153,14 +1153,14 @@ struct tuner_param_s {
+ 	unsigned int	resvred;
+ };
+ 
+-// typedef struct dvb_analog_parameters dvb_analog_parameters_t;
+-// typedef struct tuner_status_s tuner_status_t;
+-// typedef struct atv_status_s atv_status_t;
+-// typedef struct sound_status_s sound_status_t;
+-// typedef enum tuner_param_cmd_e tuner_param_cmd_t;
+-// typedef struct tuner_param_s tuner_param_t;
+-// typedef enum fe_layer fe_layer_t;
+-// typedef enum fe_ofdm_mode fe_ofdm_mode_t;
++/* typedef struct dvb_analog_parameters dvb_analog_parameters_t; */
++/* typedef struct tuner_status_s tuner_status_t; */
++/* typedef struct atv_status_s atv_status_t; */
++/* typedef struct sound_status_s sound_status_t; */
++/* typedef enum tuner_param_cmd_e tuner_param_cmd_t; */
++/* typedef struct tuner_param_s tuner_param_t; */
++/* typedef enum fe_layer fe_layer_t; */
++/* typedef enum fe_ofdm_mode fe_ofdm_mode_t; */
+ 
+ /* Satellite blind scan settings */
+ struct dvbsx_blindscanpara {
+-- 
+2.25.1
+

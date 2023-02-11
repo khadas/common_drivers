@@ -1,0 +1,117 @@
+From 2b994f9b21febd28c64e62af0f3f96ff379f890d Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Thu, 1 Sep 2022 09:53:25 +0800
+Subject: [PATCH 41/95] cma: sync the cma code with 5.4. [1/2]
+
+PD#SWPL-92714
+
+Problem:
+there is no cma relate changes.
+
+Solution:
+1. not increase page-ref count for cma pages under allocating.
+2. restrict shmem back pages using cma.
+
+Verify:
+sc2_ah212.
+
+Change-Id: Ieb4f7eca83194acba2c5c20bd07b6e59fc7a45f0
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ mm/ksm.c     | 11 +++++++++++
+ mm/migrate.c | 19 +++++++++++++++++++
+ mm/shmem.c   |  4 ++++
+ 3 files changed, 34 insertions(+)
+
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 255bd4888d60..f9b263775a3d 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -2125,6 +2125,17 @@ static void cmp_and_merge_page(struct page *page, struct rmap_item *rmap_item)
+ 	}
+ 	tree_rmap_item =
+ 		unstable_tree_search_insert(rmap_item, page, &tree_page);
++#ifdef CONFIG_AMLOGIC_CMA
++	/*
++	 * Now page is inserted to unstable tree, but do not
++	 * let cma page to be kpage, it can be merged with other pages
++	 */
++	if (cma_page(page)) {
++		if (tree_rmap_item)
++			put_page(tree_page);
++		return;
++	}
++#endif /* CONFIG_AMLOGIC_CMA */
+ 	if (tree_rmap_item) {
+ 		bool split;
+ 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 3621369a146f..fac40524ae0f 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -52,6 +52,7 @@
+ #include <linux/memory.h>
+ #ifdef CONFIG_AMLOGIC_CMA
+ #include <linux/amlogic/aml_cma.h>
++#include <linux/delay.h>
+ #endif
+ 
+ #include <asm/tlbflush.h>
+@@ -296,6 +297,9 @@ void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
+ 	pte_t pte;
+ 	swp_entry_t entry;
+ 	struct page *page;
++#ifdef CONFIG_AMLOGIC_CMA
++	bool need_wait = 0;
++#endif
+ 
+ 	spin_lock(ptl);
+ 	pte = *ptep;
+@@ -307,6 +311,17 @@ void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
+ 		goto out;
+ 
+ 	page = pfn_swap_entry_to_page(entry);
++#ifdef CONFIG_AMLOGIC_CMA
++	/* This page is under cma allocating, do not increase it ref */
++	if (in_cma_allocating(page)) {
++		pr_debug("%s, Page:%lx, flags:%lx, m:%d, c:%d, map:%p\n",
++			__func__, page_to_pfn(page), page->flags,
++			page_mapcount(page), page_count(page),
++			page->mapping);
++		need_wait = 1;
++		goto out;
++	}
++#endif
+ 	page = compound_head(page);
+ 
+ 	/*
+@@ -321,6 +336,10 @@ void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
+ 	return;
+ out:
+ 	pte_unmap_unlock(ptep, ptl);
++#ifdef CONFIG_AMLOGIC_CMA
++	if (need_wait)
++		usleep_range(1000, 1100);
++#endif
+ }
+ 
+ void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 53b855cbc00c..201f6073300f 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1593,7 +1593,11 @@ static struct page *shmem_alloc_page(gfp_t gfp,
+ 	struct page *page;
+ 
+ 	shmem_pseudo_vma_init(&pvma, info, index);
++#ifdef CONFIG_AMLOGIC_CMA
++	page = alloc_page_vma(gfp | __GFP_NO_CMA, &pvma, 0);
++#else
+ 	page = alloc_page_vma(gfp, &pvma, 0);
++#endif
+ 	shmem_pseudo_vma_destroy(&pvma);
+ 
+ 	return page;
+-- 
+2.25.1
+

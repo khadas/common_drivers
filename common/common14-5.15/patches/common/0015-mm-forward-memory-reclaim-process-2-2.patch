@@ -1,0 +1,53 @@
+From 4725ccc5af3dbb3bd41ed21ebdb816421a722bc1 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Thu, 24 Feb 2022 19:30:46 +0800
+Subject: [PATCH 15/95] mm: forward memory reclaim process [2/2]
+
+PD#SWPL-73189
+
+problem:
+memory reclaim process is usually do when first allocate failed from buddy.
+This will cause some process crash especially when memory is low, because
+there is not enough time to do reclaim process.
+
+Solution:
+try to wake up kswapd process to reclaim memory if free memory is less
+than high water mark. After apply this change, free memory is usually
+keeps high than high_water mark.
+
+Verify:
+local.
+
+Change-Id: I5a67b958824bc85c75fba2c9a5e726ffe4555343
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ mm/page_alloc.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index e95aaa352819..5831f21397ad 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -87,6 +87,9 @@
+ #ifdef CONFIG_AMLOGIC_CMA
+ #include <linux/amlogic/aml_cma.h>
+ #endif
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++#include <linux/amlogic/memory.h>
++#endif
+ 
+ /* Free Page Internal flags: for internal, non-pcp variants of free_pages(). */
+ typedef int __bitwise fpi_t;
+@@ -5586,6 +5589,9 @@ struct page *__alloc_pages(gfp_t gfp, unsigned int order, int preferred_nid,
+ 	 */
+ 	alloc_flags |= alloc_flags_nofragment(ac.preferred_zoneref->zone, gfp);
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	should_wakeup_kswap(gfp, order, &ac);
++#endif
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(alloc_gfp, order, alloc_flags, &ac);
+ 	if (likely(page))
+-- 
+2.25.1
+

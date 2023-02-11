@@ -1,0 +1,38 @@
+From 2bc54fe27f03633db1b3ad0ad1ace82b0c62e729 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Wed, 12 Oct 2022 20:11:18 +0800
+Subject: [PATCH 60/95] dma-buf: dma-buf system heap report warning. [1/1]
+
+PD#SWPL-94445
+
+Problem:
+dma-buf heap report alloc failure.
+
+Solution:
+enable AMLOGIC_MEMORY_OPT.
+
+Verify:
+sc2_ah212.
+
+Change-Id: I88584193006d7863dfbc99f5397d68a0566c2369
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ drivers/dma-buf/heaps/system_heap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/dma-buf/heaps/system_heap.c b/drivers/dma-buf/heaps/system_heap.c
+index 8da2d5cbd1f4..65845c197bbe 100644
+--- a/drivers/dma-buf/heaps/system_heap.c
++++ b/drivers/dma-buf/heaps/system_heap.c
+@@ -52,7 +52,7 @@ struct dma_heap_attachment {
+ #define HIGH_ORDER_GFP  (((GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN \
+ 				| __GFP_NORETRY) & ~__GFP_RECLAIM) \
+ 				| __GFP_COMP)
+-#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
+ #define LOW_ORDER_GFP_NO_WARN (GFP_HIGHUSER | __GFP_ZERO | __GFP_COMP | __GFP_NOWARN)
+ static gfp_t order_flags[] = {HIGH_ORDER_GFP,
+ 				LOW_ORDER_GFP_NO_WARN, LOW_ORDER_GFP_NO_WARN,
+-- 
+2.25.1
+

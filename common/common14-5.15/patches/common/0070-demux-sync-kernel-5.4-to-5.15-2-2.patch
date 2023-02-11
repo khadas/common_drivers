@@ -1,0 +1,51 @@
+From a77e5b914918b8b573646ab187a2d26cca587c49 Mon Sep 17 00:00:00 2001
+From: chuangcheng peng <chuangcheng.peng@amlogic.com>
+Date: Fri, 4 Nov 2022 17:36:52 +0800
+Subject: [PATCH 70/95] demux: sync kernel 5.4 to 5.15 [2/2]
+
+PD#SWPL-100311
+
+Problem:
+sync kernel 5.4 to 5.15
+
+Solution:
+sync kernel 5.4 to 5.15
+
+Verify:
+not verified
+
+Change-Id: I1280a98dc9b5d51c71a40214b4da9c863eec95c4
+Signed-off-by: chuangcheng peng <chuangcheng.peng@amlogic.com>
+---
+ include/uapi/linux/dvb/dmx.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/include/uapi/linux/dvb/dmx.h b/include/uapi/linux/dvb/dmx.h
+index 0afb88311c3d..0aa45fdb96d8 100644
+--- a/include/uapi/linux/dvb/dmx.h
++++ b/include/uapi/linux/dvb/dmx.h
+@@ -241,6 +241,13 @@ struct dmx_sec_ts_data {
+ 	__u32 data_end;
+ };
+ 
++struct dmx_temi_data {
++	__u8 pts_dts_flag;
++	__u64 pts;
++	__u64 dts;
++	__u8 temi[188];
++};
++
+ enum dmx_audio_format {
+ 	AUDIO_UNKNOWN = 0,	/* unknown media */
+ 	AUDIO_MPX = 1,		/* mpeg audio MP2/MP3 */
+@@ -298,6 +305,7 @@ struct dmx_pes_filter_params {
+ #define DMX_ES_OUTPUT        (1 << 16)
+ /*set raw mode, it will send the struct dmx_sec_es_data, not es data*/
+ #define DMX_OUTPUT_RAW_MODE	 (1 << 17)
++#define DMX_TEMI_FLAGS       (1 << 18)
+ 
+ /*24~31 one byte for audio type, dmx_audio_format_t*/
+ #define DMX_AUDIO_FORMAT_BIT 24
+-- 
+2.25.1
+

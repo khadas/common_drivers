@@ -7,7 +7,7 @@
 
 #include "mesong12b.dtsi"
 #include "mesong12b_w400-panel.dtsi"
-//#include "mesong12b_drm.dtsi"
+#include "mesong12b_drm.dtsi"
 //#include "partition_normal_linux.dtsi"
 
 / {
@@ -78,7 +78,7 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x8000000>;
+			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 			no-kernel-map;
 		};
@@ -127,6 +127,20 @@
 			size = <0x0 0x0>;
 			alignment = <0x0 0x100000>;
 			//no-map;
+		};
+
+		dmaheap_cma_reserved:heap-gfx {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x8000000>;
+			alignment = <0x0 0x400000>;
+		};
+		dmaheap_fb_reserved:heap-fb {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* 1920x1080x4x6+3840x2160x4x3 round up 4M align */
+			size = <0x0 0x1c00000>;
+			alignment = <0x0 0x400000>;
 		};
 		/*  vdin1 CMA pool */
 		vdin1_cma_reserved:linux,vdin1_cma {
@@ -895,25 +909,10 @@
 		status = "okay";
 };
 
-//&drm_vpu {
-//	status = "okay";
-//	compatible = "amlogic,meson-g12b-vpu";
-//	logo_addr = "0x7f800000";
-//	osd_ver = /bits/ 8 <OSD_V3>;
-//};
-
-//&drm_amhdmitx {
-//	status = "okay";
-//	hdcp = "disabled";
-//};
-
-//&drm_amcvbsout {
-//	status = "okay";
-//};
-
-//&drm_lcd {
-//	status = "disable";
-//};
+&drm_vpu {
+	status = "okay";
+	logo_addr = "0x7f800000";
+};
 
 &pwm_ab {
 		status = "okay";

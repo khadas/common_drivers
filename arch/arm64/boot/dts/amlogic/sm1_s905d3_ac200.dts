@@ -6,7 +6,7 @@
 /dts-v1/;
 
 #include "mesonsm1.dtsi"
-//#include "mesonsm1_drm.dtsi"
+#include "mesonsm1_drm.dtsi"
 #include "mesonsm1_ac200-panel.dtsi"
 //#include "partition_normal_linux.dtsi"
 
@@ -69,9 +69,22 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x8000000>;
+			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 			no-kernel-map;
+		};
+		dmaheap_cma_reserved:heap-gfx {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x8000000>;
+			alignment = <0x0 0x400000>;
+		};
+		dmaheap_fb_reserved:heap-fb {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* 1920x1080x4x6+3840x2160x4x3 round up 4M align */
+			size = <0x0 0x1c00000>;
+			alignment = <0x0 0x400000>;
 		};
 		//di_reserved:linux,di {
 			//compatible = "amlogic, di-mem";
@@ -1185,23 +1198,10 @@
 		status = "okay";
 };
 
-//&drm_vpu {
-//	status = "disabled";
-//	logo_addr = "0x7f800000";
-//};
-
-//&drm_amhdmitx {
-//	status = "okay";
-//	hdcp = "disabled";
-//};
-
-//&drm_amcvbsout {
-//	status = "okay";
-//};
-
-//&drm_lcd {
-//	status = "disabled";
-//};
+&drm_vpu {
+	status = "okay";
+	logo_addr = "0x7f800000";
+};
 
 &pwm_AO_cd {
 		status = "okay";

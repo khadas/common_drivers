@@ -70,6 +70,7 @@ struct audioresample {
 	struct timer_list timer;
 	bool timer_running;
 	unsigned int syssrc_clk_rate;
+	int suspend_clk_off;
 };
 
 struct audioresample *s_resample_a;
@@ -732,6 +733,44 @@ static const struct of_device_id resample_device_id[] = {
 };
 MODULE_DEVICE_TABLE(of, resample_device_id);
 
+static int resample_platform_suspend(struct platform_device *pdev,
+	pm_message_t state)
+{
+	struct audioresample *p_resample = dev_get_drvdata(&pdev->dev);
+
+	if (p_resample->suspend_clk_off) {
+		if (!IS_ERR(p_resample->clk)) {
+			while (__clk_is_enabled(p_resample->clk))
+				clk_disable_unprepare(p_resample->clk);
+		}
+	}
+	return 0;
+}
+
+static int resample_platform_resume(struct platform_device *pdev)
+{
+	struct audioresample *p_resample = dev_get_drvdata(&pdev->dev);
+	int ret = 0;
+
+	if (p_resample->suspend_clk_off) {
+		if (!IS_ERR(p_resample->sclk) && !IS_ERR(p_resample->pll)) {
+			ret = clk_set_parent(p_resample->sclk, p_resample->pll);
+			if (ret)
+				dev_err(p_resample->dev, "Can't resume set p_resample->sclk parent clock\n");
+		}
+		if (!IS_ERR(p_resample->clk) && !IS_ERR(p_resample->sclk)) {
+			ret = clk_set_parent(p_resample->clk, p_resample->sclk);
+			if (ret)
+				dev_err(p_resample->dev, "Can't resume set p_resample->clk clock\n");
+			ret = clk_prepare_enable(p_resample->clk);
+			if (ret)
+				dev_err(p_resample->dev, "Can't resume enable earc clk_tx_dmac\n");
+		}
+	}
+
+	return 0;
+}
+
 static int resample_platform_probe(struct platform_device *pdev)
 {
 	struct audioresample *p_resample;
@@ -788,6 +827,11 @@ static int resample_platform_probe(struct platform_device *pdev)
 		pr_debug("%s sys-src clk rate from dts:%d\n",
 			__func__, p_resample->syssrc_clk_rate);
 
+	ret = of_property_read_u32(dev->of_node, "suspend-clk-off",
+			&p_resample->suspend_clk_off);
+	if (ret < 0)
+		dev_err(&pdev->dev, "Can't retrieve suspend-clk-off\n");
+
 	/* config from dts */
 	p_resample->resample_module = resample_module;
 
@@ -828,14 +872,8 @@ static int resample_platform_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	ret = clk_prepare_enable(p_resample->clk);
-	if (ret) {
-		pr_err("Can't enable resample_clk clock: %d\n",
-			ret);
-		return ret;
-	}
-
 	p_resample->dev = dev;
+	dev_set_drvdata(dev, p_resample);
 
 	if (p_chipinfo && p_chipinfo->id == 1)
 		s_resample_b = p_resample;
@@ -847,6 +885,12 @@ static int resample_platform_probe(struct platform_device *pdev)
 	else if (p_chipinfo && p_chipinfo->resample_version == AXG_RESAMPLE)
 		resample_clk_set(p_resample, DEFAULT_SPK_SAMPLERATE);
 
+	ret = clk_prepare_enable(p_resample->clk);
+	if (ret) {
+		pr_err("Can't enable resample_clk clock: %d\n",
+			ret);
+		return ret;
+	}
 	aml_set_resample(p_resample->id, p_resample->enable,
 			 p_resample->resample_module);
 
@@ -864,6 +908,8 @@ static struct platform_driver resample_platform_driver = {
 		.of_match_table = of_match_ptr(resample_device_id),
 	},
 	.probe  = resample_platform_probe,
+	.suspend = resample_platform_suspend,
+	.resume  = resample_platform_resume,
 };
 
 int __init resample_drv_init(void)

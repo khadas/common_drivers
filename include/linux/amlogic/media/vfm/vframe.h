@@ -63,6 +63,7 @@
 #define VIDTYPE_FORCE_SIGN_IP_JOINT     0x400 /* add by Joy Rao */
 
 #define VIDTYPE_EXT_VDIN_SCATTER        0x1
+#define VIDTYPE_EXT_MOSAIC_22           0x2
 
 #define DISP_RATIO_FORCECONFIG          0x80000000
 #define DISP_RATIO_FORCE_NORMALWIDE     0x40000000
@@ -523,21 +524,6 @@ struct vf_aipq_t {
 	s32 aipq_value_index;
 };
 
-#define VC_FLAG_AI_SR	0x1
-#define VC_FLAG_FIRST_FRAME	0x2
-
-struct video_composer_private {
-	u32 index;
-	u32 flag; /*if  & VC_FLAG_AI_SR, and VPP will get AI_SR_out*/
-	struct vf_nn_sr_t *srout_data;
-	struct vframe_s *src_vf;
-	u32 last_disp_count; /*last frame disp vsync count*/
-	u32 vsync_index;
-	/*used to control mbp buffer*/
-	void (*lock_buffer_cb)(void *arg);
-	void (*unlock_buffer_cb)(void *arg);
-};
-
 #define VF_UD_MAX_SIZE 5120 /* 5K size */
 #define UD_MAGIC_CODE 0x55445020 /* UDP */
 #define is_ud_param_valid(ud) ((ud.magic_code) == UD_MAGIC_CODE)
@@ -745,6 +731,27 @@ struct vframe_s {
 	/* data address of userdata_param_t structure */
 	struct vf_ud_param_s vf_ud_param;
 } /*vframe_t */;
+
+#define VC_FLAG_AI_SR	0x1
+#define VC_FLAG_FIRST_FRAME	0x2
+#define VC_FLAG_DALTON	0x4
+#define VC_FLAG_MOSAIC_22	0x8
+
+struct video_composer_private {
+	u32 index;
+	u32 flag; /*if  & VC_FLAG_AI_SR, and VPP will get AI_SR_out*/
+	struct vf_nn_sr_t *srout_data;
+	struct vframe_s *src_vf;
+	u32 last_disp_count; /*last frame disp vsync count*/
+	u32 vsync_index;
+	/*used to control mbp buffer*/
+	void (*lock_buffer_cb)(void *arg);
+	void (*unlock_buffer_cb)(void *arg);
+	struct vf_dalton_t *dalton_info;
+	struct vframe_s *mosaic_vf[4];
+	struct vframe_s *mosaic_src_vf[4];
+	struct vframe_s mosaic_dst_vf[4];
+};
 
 int get_curren_frame_para(int *top, int *left, int *bottom, int *right);
 

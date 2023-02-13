@@ -25,12 +25,14 @@ static unsigned int dewarp_com_dump;
 MODULE_PARM_DESC(dewarp_com_dump, "\n dewarp_com_dump\n");
 module_param(dewarp_com_dump, uint, 0664);
 
-int get_dewarp_format(struct vframe_s *vf)
+static struct firmware_rotate_s last_fw_param;
+
+int get_dewarp_format(int vc_index, struct vframe_s *vf)
 {
 	int format = NV12;
 
 	if (IS_ERR_OR_NULL(vf)) {
-		pr_info("%s: vf is NULL.\n", __func__);
+		pr_info("vc:[%d] %s: vf is NULL.\n", vc_index, __func__);
 		return -1;
 	}
 
@@ -47,10 +49,26 @@ int get_dewarp_format(struct vframe_s *vf)
 	return format;
 }
 
-static int dump_vframe(char *path, u32 phy_adr, int size)
+static int get_dewarp_rotation_value(int vc_transform)
+{
+	int rotate_value = 0;
+
+	if (vc_transform == 4)
+		rotate_value = 90;
+	else if (vc_transform == 3)
+		rotate_value = 180;
+	else if (vc_transform == 7)
+		rotate_value = 270;
+	else
+		rotate_value = 0;
+
+	return rotate_value;
+}
+
+static int dump_dewarp_vframe(char *path, int width, int height, u32 phy_adr_y, u32 phy_adr_uv)
 {
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
-	int ret = 0;
+	int size = 0;
 	struct file *fp = NULL;
 	loff_t position = 0;
 	u8 *data;
@@ -68,126 +86,206 @@ static int dump_vframe(char *path, u32 phy_adr, int size)
 	}
 
 	/* Write buf to file */
-	data = codec_mm_vmap(phy_adr, size);
+	size = width * height;
+	data = codec_mm_vmap(phy_adr_y, size);
 	if (!data) {
 		pr_info("%s: vmap failed\n", __func__);
 		return -1;
 	}
 	/* change to KERNEL_DS address limit */
-	ret = vfs_write(fp, data, size, &position);
+	vfs_write(fp, data, size, &position);
+	codec_mm_unmap_phyaddr(data);
+
+	size = width * height / 2;
+	data = codec_mm_vmap(phy_adr_uv, size);
+	if (!data) {
+		pr_info("%s: vmap failed\n", __func__);
+		return -1;
+	}
+	/* change to KERNEL_DS address limit */
+	vfs_write(fp, data, size, &position);
 	codec_mm_unmap_phyaddr(data);
 
 	vfs_fsync(fp, 0);
 	filp_close(fp, NULL);
-
-	pr_info("%s: want write size: %d, real write size: %d.\n",
-			__func__, size, ret);
-	return ret;
 #else
 	return -1;
 #endif
 }
 
-bool is_dewarp_supported(struct dewarp_composer_para *param)
+int load_dewarp_firmware(struct dewarp_composer_para *param)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
-	struct kstat stat;
-	int ret;
+#ifdef CONFIG_AMLOGIC_MEDIA_GDC
+	int ret = 0;
 #endif
 	char file_name[64];
-	int rotate_value = 0;
-	struct composer_vf_para *composer_vf_param = NULL;
+	struct firmware_rotate_s fw_param;
+	bool is_need_load = false;
+	int frame_rotation = 0;
+
+	if (IS_ERR_OR_NULL(param)) {
+		pr_info("%s: NULL param, please check.\n", __func__);
+		return -1;
+	}
+
+	frame_rotation = get_dewarp_rotation_value(param->vf_para->src_vf_angle);
+	if (last_fw_param.in_width != param->vf_para->src_vf_width ||
+		last_fw_param.in_height != param->vf_para->src_vf_height ||
+		last_fw_param.out_width != param->vf_para->dst_vf_width ||
+		last_fw_param.out_height != param->vf_para->dst_vf_height ||
+		last_fw_param.degree != frame_rotation) {
+		last_fw_param.format = NV12;
+		last_fw_param.in_width = param->vf_para->src_vf_width;
+		last_fw_param.in_height = param->vf_para->src_vf_height;
+		last_fw_param.out_width = param->vf_para->dst_vf_width;
+		last_fw_param.out_height = param->vf_para->dst_vf_height;
+		last_fw_param.degree = frame_rotation;
+		is_need_load = true;
+	}
+
+	if (dewarp_com_dump) {
+		pr_info("vc:[%d] need load firmware: %d.\n", param->vc_index, is_need_load);
+		pr_info("vc:[%d] src_vf, w:%d, h:%d, fromat:%d, rotation:%d.\n",
+			param->vc_index,
+			param->vf_para->src_vf_width,
+			param->vf_para->src_vf_height,
+			param->vf_para->src_vf_format,
+			param->vf_para->src_vf_angle);
+		pr_info("vc:[%d] src_buf, w0:%d, w1:%d.\n", param->vc_index,
+			param->vf_para->src_buf_stride0, param->vf_para->src_buf_stride1);
+		pr_info("vc:[%d] dst_vf, w:%d, h:%d.\n", param->vc_index,
+			param->vf_para->dst_vf_width, param->vf_para->dst_vf_height);
+		pr_info("vc:[%d] dst_buf, w:%d.\n", param->vc_index,
+			param->vf_para->dst_buf_stride);
+	}
+
+	if (param->fw_load.phys_addr == 0 || is_need_load) {
+		unload_dewarp_firmware(param);
+		pr_info("vc:[%d] start load firmware.\n", param->vc_index);
+		if (dewarp_load_flag) {
+			memset(file_name, 0, 64);
+			sprintf(file_name, "%dx%d-%dx%d-%d_nv12.bin",
+				param->vf_para->src_vf_width,
+				param->vf_para->src_vf_height,
+				param->vf_para->dst_vf_width,
+				param->vf_para->dst_vf_height,
+				frame_rotation);
 #ifdef CONFIG_AMLOGIC_MEDIA_GDC
-	if (!is_aml_gdc_supported()) {
-		vc_print(param->vc_index, PRINT_DEWARP,
-			"%s: hardware not support.\n", __func__);
-		return false;
-	}
+			ret = load_firmware_by_name(file_name, &param->fw_load);
+			if (ret <= 0) {
+				pr_info("vc:[%d] %s: load firmware failed.\n", param->vc_index,
+					__func__);
+				return -1;
+			}
+#else
+			return -1;
 #endif
+		} else {
+			fw_param.format = NV12;
+			fw_param.in_width = param->vf_para->src_vf_width;
+			fw_param.in_height = param->vf_para->src_vf_height;
+			fw_param.out_width = param->vf_para->dst_vf_width;
+			fw_param.out_height = param->vf_para->dst_vf_height;
+			fw_param.degree = frame_rotation;
+#ifdef CONFIG_AMLOGIC_MEDIA_GDC
+			ret = rotation_calc_and_load_firmware(&fw_param, &param->fw_load);
+			if (ret <= 0) {
+				pr_info("vc:[%d] %s: calc and load firmware failed.\n",
+					param->vc_index, __func__);
+				return -1;
+			}
+#else
+			return -1;
+#endif
+		}
+	}
+	return 0;
+}
+
+int unload_dewarp_firmware(struct dewarp_composer_para *param)
+{
 	if (IS_ERR_OR_NULL(param)) {
-		vc_print(param->vc_index, PRINT_DEWARP,
-			"%s: NULL param, please check.\n", __func__);
-		return false;
+		pr_info("%s: NULL param, please check.\n", __func__);
+		return -1;
 	}
 
-	composer_vf_param = param->vf_para;
-	if (IS_ERR_OR_NULL(param)) {
-		vc_print(param->vc_index, PRINT_DEWARP,
-			"%s: composer_vf_param is NULL.\n", __func__);
-		return false;
+	if (param->fw_load.phys_addr != 0) {
+#ifdef CONFIG_AMLOGIC_MEDIA_GDC
+		release_config_firmware(&param->fw_load);
+#endif
+		param->fw_load.phys_addr = 0;
 	}
 
-	if (composer_vf_param->src_vf_format != NV12) {
-		vc_print(param->vc_index, PRINT_DEWARP,
-			"%s: not support format: %d.\n", __func__,
-			composer_vf_param->src_vf_format);
-		return false;
-	}
+	return 0;
+}
 
-	if (composer_vf_param->src_vf_angle == VC_TRANSFORM_ROT_90)
-		rotate_value = 90;
-	else if (composer_vf_param->src_vf_angle == VC_TRANSFORM_ROT_180)
-		rotate_value = 180;
-	else if (composer_vf_param->src_vf_angle == VC_TRANSFORM_ROT_270)
-		rotate_value = 270;
-
-	memset(file_name, 0, 64);
-	sprintf(file_name, "%s%dx%d-%dx%d-%d_nv12.bin",
-		GDC_FIRMWARE_PATH,
-		composer_vf_param->src_vf_width,
-		composer_vf_param->src_vf_height,
-		composer_vf_param->dst_vf_width,
-		composer_vf_param->dst_vf_height,
-		rotate_value);
+bool is_dewarp_supported(int vc_index, struct composer_vf_para *vf_param)
+{
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
-	ret = vfs_stat(file_name, &stat);
-	if (ret < 0) {
-		vc_print(param->vc_index, PRINT_DEWARP,
-			"%s: %s don't exist.\n", __func__, file_name);
+	int ret;
+	struct kstat stat;
+#endif
+	char file_name[64];
+#ifdef CONFIG_AMLOGIC_MEDIA_GDC
+	if (!is_aml_gdc_supported())
+		return false;
+#endif
+	if (IS_ERR_OR_NULL(vf_param)) {
+		pr_info("vc:[%d] %s: NULL param, please check.\n",
+			vc_index,
+			__func__);
 		return false;
 	}
+	if (dewarp_com_dump) {
+		pr_info("vc:[%d] %s: src:w:%d h:%d format:%d, dst:w:%d h:%d, angle:%d.\n",
+			vc_index,
+			__func__,
+			vf_param->src_vf_width,
+			vf_param->src_vf_height,
+			vf_param->src_vf_format,
+			vf_param->dst_vf_width,
+			vf_param->dst_vf_height,
+			vf_param->src_vf_angle);
+	}
+
+	if (vf_param->src_vf_format != NV12)
+		return false;
+
+	if (dewarp_load_flag == 1) {
+		if (get_dewarp_rotation_value(vf_param->src_vf_angle) == 0)
+			return false;
+		else
+			return true;
+	} else {
+		memset(file_name, 0, 64);
+		sprintf(file_name, "%s%dx%d-%dx%d-%d_nv12.bin",
+			GDC_FIRMWARE_PATH,
+			vf_param->src_vf_width,
+			vf_param->src_vf_height,
+			vf_param->dst_vf_width,
+			vf_param->dst_vf_height,
+			get_dewarp_rotation_value(vf_param->src_vf_angle));
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+		ret = vfs_stat(file_name, &stat);
+		if (ret < 0) {
+			pr_info("vc:[%d] %s: %s don't exist.\n",
+				vc_index,
+				__func__,
+				file_name);
+			return false;
+		}
+		return true;
+#else
+		return false;
 #endif
-	return true;
+	}
 }
 
 int init_dewarp_composer(struct dewarp_composer_para *param)
 {
-	int ret = 0;
-	char file_name[64];
-	int rotate_value = 0;
 	if (IS_ERR_OR_NULL(param)) {
-		vc_print(param->vc_index, PRINT_ERROR,
-			"%s: NULL param, please check.\n", __func__);
+		pr_info("%s: NULL param, please check.\n", __func__);
 		return -1;
-	}
-	if (param->fw_load.phys_addr == 0) {
-		if (param->vf_para->src_vf_angle == VC_TRANSFORM_ROT_90)
-			rotate_value = 90;
-		else if (param->vf_para->src_vf_angle == VC_TRANSFORM_ROT_180)
-			rotate_value = 180;
-		else if (param->vf_para->src_vf_angle == VC_TRANSFORM_ROT_270)
-			rotate_value = 270;
-
-		memset(file_name, 0, 64);
-		sprintf(file_name, "%dx%d-%dx%d-%d_nv12.bin",
-			param->vf_para->src_vf_width,
-			param->vf_para->src_vf_height,
-			param->vf_para->dst_vf_width,
-			param->vf_para->dst_vf_height,
-			rotate_value);
-#ifdef CONFIG_AMLOGIC_MEDIA_GDC
-		ret = load_firmware_by_name(file_name, &param->fw_load);
-#else
-		ret = -1;
-#endif
-		if (ret <= 0) {
-			vc_print(param->vc_index, PRINT_ERROR,
-				"%s: load firmware failed.\n", __func__);
-			return -1;
-		}
-	} else {
-		vc_print(param->vc_index, PRINT_DEWARP,
-			"%s: firmware already load.\n", __func__);
 	}
 
 	if (IS_ERR_OR_NULL(param->context)) {
@@ -197,20 +295,22 @@ int init_dewarp_composer(struct dewarp_composer_para *param)
 		param->context = NULL;
 #endif
 		if (IS_ERR_OR_NULL(param->context)) {
-			vc_print(param->vc_index, PRINT_DEWARP,
-				"%s: create dewrap work_queue failed.\n",
+			pr_info("vc:[%d] %s: create dewrap work_queue failed.\n",
+				param->vc_index,
 				__func__);
-			ret = -1;
+			return -1;
 		} else {
-			vc_print(param->vc_index, PRINT_DEWARP,
-				"%s: create dewrap work_queue success.\n",
+			pr_info("vc:[%d] %s: create dewrap work_queue success.\n",
+				param->vc_index,
 				__func__);
 		}
 	} else {
-		vc_print(param->vc_index, PRINT_DEWARP,
-			"%s: dewrap work queue exist.\n", __func__);
+		pr_info("vc:[%d] %s: dewrap work queue exist.\n",
+			param->vc_index,
+			__func__);
 	}
-	return ret;
+
+	return 0;
 }
 
 int uninit_dewarp_composer(struct dewarp_composer_para *param)
@@ -218,20 +318,12 @@ int uninit_dewarp_composer(struct dewarp_composer_para *param)
 	int ret = 0;
 
 	if (IS_ERR_OR_NULL(param)) {
-		vc_print(param->vc_index, PRINT_ERROR,
-			"%s: NULL param, please check.\n", __func__);
+		pr_info("%s: NULL param, please check.\n", __func__);
 		return -1;
 	}
-	if (param->fw_load.phys_addr != 0) {
-		vc_print(param->vc_index, PRINT_DEWARP,
-			"%s: release firmware.\n", __func__);
-#ifdef CONFIG_AMLOGIC_MEDIA_GDC
-		release_config_firmware(&param->fw_load);
-#endif
-	} else {
-		vc_print(param->vc_index, PRINT_DEWARP,
-			"%s: firmware don't load.\n", __func__);
-	}
+
+	unload_dewarp_firmware(param);
+
 	if (!IS_ERR_OR_NULL(param->context)) {
 #ifdef CONFIG_AMLOGIC_MEDIA_GDC
 		ret = destroy_gdc_work_queue(param->context);
@@ -239,35 +331,34 @@ int uninit_dewarp_composer(struct dewarp_composer_para *param)
 		ret = -1;
 #endif
 		if (ret != 0) {
-			vc_print(param->vc_index, PRINT_ERROR,
-				"%s: destroy dewarp work queue failed.\n",
+			pr_info("vc:[%d] %s: destroy dewarp work queue failed.\n",
+				param->vc_index,
 				__func__);
-			ret = -1;
+			return -1;
 		} else {
-			vc_print(param->vc_index, PRINT_DEWARP,
-				"%s: destroy dewarp work queue success.\n",
+			pr_info("vc:[%d] %s: destroy dewarp work queue success.\n",
+				param->vc_index,
 				__func__);
 		}
 	} else {
-		vc_print(param->vc_index, PRINT_DEWARP,
-			"%s: dewarp work queue not create.\n",
+		pr_info("vc:[%d] %s: dewarp work queue not create.\n",
+			param->vc_index,
 			__func__);
 	}
-	return ret;
+
+	param->context = NULL;
+	return 0;
 }
 
-int config_dewarp_vframe(int vc_index, int rotation,
-				struct vframe_s *src_vf,
-				struct dst_buf_t *dst_buf,
-				struct composer_vf_para *vframe_para)
+int config_dewarp_vframe(int vc_index, int rotation, struct vframe_s *src_vf,
+	struct dst_buf_t *dst_buf, struct composer_vf_para *vframe_para)
 {
 	struct vframe_s *vf = NULL;
 
 	if (IS_ERR_OR_NULL(src_vf) ||
 		IS_ERR_OR_NULL(dst_buf) ||
 		IS_ERR_OR_NULL(vframe_para)) {
-		vc_print(vc_index, PRINT_ERROR,
-			"%s: NULL param, please check.\n", __func__);
+		pr_info("vc:[%d] %s: NULL param, please check.\n", vc_index, __func__);
 		return -1;
 	}
 
@@ -276,8 +367,7 @@ int config_dewarp_vframe(int vc_index, int rotation,
 			src_vf->vf_ext) {
 			vf = src_vf->vf_ext;
 		} else {
-			vc_print(vc_index, PRINT_ERROR,
-				"%s: vf no yuv data.\n", __func__);
+			pr_info("vc:[%d] %s: vf no yuv data.\n", vc_index, __func__);
 			return -1;
 		}
 	} else {
@@ -286,10 +376,12 @@ int config_dewarp_vframe(int vc_index, int rotation,
 
 	vframe_para->src_vf_width = vf->width;
 	vframe_para->src_vf_height = vf->height;
-	vframe_para->src_vf_format = get_dewarp_format(vf);
+	vframe_para->src_vf_format = get_dewarp_format(vc_index, vf);
 	vframe_para->src_vf_plane_count = 2;
-	vframe_para->src_buf_addr = vf->canvas0_config[0].phy_addr;
-	vframe_para->src_buf_stride = vf->canvas0_config[0].width;
+	vframe_para->src_buf_addr0 = vf->canvas0_config[0].phy_addr;
+	vframe_para->src_buf_stride0 = vf->canvas0_config[0].width;
+	vframe_para->src_buf_addr1 = vf->canvas0_config[1].phy_addr;
+	vframe_para->src_buf_stride1 = vf->canvas0_config[1].width;
 
 	vframe_para->dst_vf_width = dst_buf->buf_w;
 	vframe_para->dst_vf_height = dst_buf->buf_h;
@@ -298,31 +390,33 @@ int config_dewarp_vframe(int vc_index, int rotation,
 	vframe_para->dst_buf_stride = dst_buf->buf_w;
 	vframe_para->src_vf_angle = rotation;
 
-	vc_print(vc_index, PRINT_DEWARP,
-		"src_vf, w:%d, h:%d, fromat:%d.\n",
+	if (dewarp_com_dump) {
+		pr_info("vc:[%d] src_vf, addr0:0x%x, addr1:0x%x, w:%d, h:%d, fmt:%d, angle:%d.\n",
+			vc_index,
+			vframe_para->src_buf_addr0,
+			vframe_para->src_buf_addr1,
 			vframe_para->src_vf_width,
 			vframe_para->src_vf_height,
-			vframe_para->src_vf_format);
-	vc_print(vc_index, PRINT_DEWARP,
-		"src_buf, w:%d.\n", vframe_para->src_buf_stride);
-	vc_print(vc_index, PRINT_DEWARP,
-		"dst_vf, w:%d, h:%d.\n",
-			vframe_para->dst_vf_width, vframe_para->dst_vf_height);
-	vc_print(vc_index, PRINT_DEWARP,
-		"dst_buf, w:%d.\n", vframe_para->dst_buf_stride);
+			vframe_para->src_vf_format,
+			vframe_para->src_vf_angle);
+		pr_info("vc:[%d] src_buf: stride_y: %d, stride_uv: %d.\n", vc_index,
+			vframe_para->src_buf_stride0,
+			vframe_para->src_buf_stride1);
+		pr_info("vc:[%d] dst_vf, w:%d, h:%d.\n", vc_index, vframe_para->dst_vf_width,
+			vframe_para->dst_vf_height);
+		pr_info("vc:[%d] dst_buf_stride, w:%d.\n", vc_index, vframe_para->dst_buf_stride);
+	}
 	return 0;
 }
 
 int dewarp_data_composer(struct dewarp_composer_para *param)
 {
-	int ret = 0;
+	int ret, dump_num = 1;
 	struct gdc_phy_setting gdc_config;
-	int dump_num = 0;
-	int src_vf_size, dst_vf_size;
 	char dump_name[32];
+
 	if (IS_ERR_OR_NULL(param)) {
-		vc_print(param->vc_index, PRINT_ERROR,
-			"%s: NULL param, please check.\n", __func__);
+		pr_info("%s: NULL param, please check.\n", __func__);
 		return -1;
 	}
 
@@ -331,9 +425,9 @@ int dewarp_data_composer(struct dewarp_composer_para *param)
 	gdc_config.in_width = param->vf_para->src_vf_width;
 	gdc_config.in_height = param->vf_para->src_vf_height;
 	/*16-byte alignment*/
-	gdc_config.in_y_stride = AXI_WORD_ALIGN(param->vf_para->src_buf_stride);
+	gdc_config.in_y_stride = AXI_WORD_ALIGN(param->vf_para->src_buf_stride0);
 	/*16-byte alignment*/
-	gdc_config.in_c_stride = AXI_WORD_ALIGN(param->vf_para->src_buf_stride);
+	gdc_config.in_c_stride = AXI_WORD_ALIGN(param->vf_para->src_buf_stride1);
 	gdc_config.in_plane_num = param->vf_para->src_vf_plane_count;
 	gdc_config.out_width = param->vf_para->dst_vf_width;
 	gdc_config.out_height = param->vf_para->dst_vf_height;
@@ -342,10 +436,8 @@ int dewarp_data_composer(struct dewarp_composer_para *param)
 	/*16-byte alignment*/
 	gdc_config.out_c_stride = AXI_WORD_ALIGN(param->vf_para->dst_buf_stride);
 	gdc_config.out_plane_num = param->vf_para->dst_vf_plane_count;
-	gdc_config.in_paddr[0] = param->vf_para->src_buf_addr;
-	gdc_config.in_paddr[1] = param->vf_para->src_buf_addr
-				+ AXI_WORD_ALIGN(gdc_config.in_width)
-				* AXI_WORD_ALIGN(gdc_config.in_height);
+	gdc_config.in_paddr[0] = param->vf_para->src_buf_addr0;
+	gdc_config.in_paddr[1] = param->vf_para->src_buf_addr1;
 	gdc_config.out_paddr[0] = param->vf_para->dst_buf_addr;
 	gdc_config.out_paddr[1] = param->vf_para->dst_buf_addr
 				+ AXI_WORD_ALIGN(gdc_config.out_width)
@@ -359,20 +451,23 @@ int dewarp_data_composer(struct dewarp_composer_para *param)
 	ret = -1;
 #endif
 	if (ret < 0) {
-		vc_print(param->vc_index, PRINT_ERROR,
-			"%s: dewrap process failed.\n", __func__);
+		pr_info("vc:[%d] %s: dewrap process failed.\n", param->vc_index, __func__);
 	} else {
 		if (dewarp_com_dump != dump_num) {
 			sprintf(dump_name, "/data/src_%d.yuv", dewarp_com_dump);
-			src_vf_size = param->vf_para->src_vf_width *
-				param->vf_para->src_vf_height * 3 / 2;
-			dump_vframe(dump_name, param->vf_para->src_buf_addr, src_vf_size);
+			dump_dewarp_vframe(dump_name,
+				param->vf_para->src_vf_width,
+				param->vf_para->src_vf_height,
+				param->vf_para->src_buf_addr0,
+				param->vf_para->src_buf_addr1);
 
 			sprintf(dump_name, "/data/dst_%d.yuv", dewarp_com_dump);
-			dst_vf_size = param->vf_para->dst_vf_width *
-				param->vf_para->dst_vf_height * 3 / 2;
-			dump_vframe(dump_name, param->vf_para->dst_buf_addr, dst_vf_size);
-			dump_num = dewarp_com_dump;
+			dump_dewarp_vframe(dump_name,
+				param->vf_para->dst_vf_width,
+				param->vf_para->dst_vf_height,
+				gdc_config.out_paddr[0],
+				gdc_config.out_paddr[1]);
+			dewarp_com_dump = dump_num;
 		}
 	}
 	return ret;

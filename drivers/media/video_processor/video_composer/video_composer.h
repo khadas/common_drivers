@@ -81,7 +81,6 @@
 #define PRINT_DEWARP		0X0100
 #define PRINT_VICP		0X0200
 
-
 #define SOURCE_DTV_FIX_TUNNEL		0x1
 #define SOURCE_HWC_CREAT_ION		0x2
 #define SOURCE_PIC_MODE		0x4
@@ -149,9 +148,10 @@ enum com_buffer_status {
 };
 
 enum com_dev_choice {
-	GE2D = 0,
-	DEWARP = 1,
-	VICP = 2,
+	COMPOSER_WITH_GE2D = 1,
+	COMPOSER_WITH_DEWARP,
+	COMPOSER_WITH_VICP,
+	COMPOSER_WITH_MAX,
 };
 
 struct video_composer_port_s {
@@ -220,6 +220,7 @@ struct composer_dev {
 	struct file *last_file;
 	enum com_buffer_status buffer_status;
 	struct ge2d_composer_para ge2d_para;
+	struct dewarp_composer_para dewarp_para;
 	struct task_struct *kthread;
 	struct received_frames_t received_frames[FRAMES_INFO_POOL_SIZE];
 	unsigned long long received_count;
@@ -256,7 +257,7 @@ struct composer_dev {
 	bool composer_enabled;
 	bool thread_need_stop;
 	bool is_drm_enable;
-	bool is_dewarp_support;
+	enum com_dev_choice dev_choice;
 	u32 video_render_index;
 	u32 vframe_dump_flag;
 	u32 pre_pat_trace;
@@ -269,10 +270,20 @@ struct composer_dev {
 	u32 last_vsync_index;
 	u32 last_vf_index;
 	bool enable_pulldown;
+	bool support_mosaic;
 	u32 patten_factor[PATTEN_FACTOR_MAX];
 	u32 patten_factor_index;
 	u32 next_factor;
 	u32 last_drop_cnt;
+};
+
+struct capability_info_t {
+	u32 capability;
+	u32 min_w;
+	u32 min_h;
+	u32 max_w;
+	u32 max_h;
+	u32 reserved[10];
 };
 
 #define VIDEO_COMPOSER_IOC_MAGIC  'V'
@@ -284,6 +295,8 @@ struct composer_dev {
 	_IOW(VIDEO_COMPOSER_IOC_MAGIC, 0x02, int)
 #define VIDEO_COMPOSER_IOCTL_GET_PANEL_CAPABILITY	\
 	_IOR(VIDEO_COMPOSER_IOC_MAGIC, 0x03, int)
+#define VIDEO_COMPOSER_IOCTL_GET_LAYER_CAPABILITY	\
+	_IOR(VIDEO_COMPOSER_IOC_MAGIC, 0x04, struct capability_info_t)
 
 int video_composer_set_enable(struct composer_dev *dev, u32 val);
 struct video_composer_port_s *video_composer_get_port(u32 index);

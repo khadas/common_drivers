@@ -354,9 +354,9 @@
 	};
 
 	pwrdm: power-domains {
-		compatible = "amlogic,s5-power-domain";
+		compatible = "amlogic,t3x-power-domain";
 		#power-domain-cells = <1>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	adla: adla@0xfe371000 {
@@ -374,7 +374,7 @@
 		//assigned-clocks =<&clkc CLKID_NNA>;
 		//assigned-clock-parentsd = <&clkc CLKID_FCLK_DIV2P5>;
 		//assigned-clock-rates = <800000000>;
-		power-domains=<&pwrdm PDID_S5_NNA_4T>;
+		//power-domains=<&pwrdm PDID_S5_NNA_4T>;
 		//memory-region = <&nna_cma_reserved>;
 		smmu;
 		regulator_nn;
@@ -1488,7 +1488,7 @@
 			pcie-a-rst-bit = <13>;
 			pcie-rst-bit = <4>;
 			pcie-rst-mask = <0xff>;
-			power-domains = <&pwrdm PDID_S5_PCIE1>;
+			//power-domains = <&pwrdm PDID_S5_PCIE1>;
 			status = "disabled";
 			/* iommu-map = <0x100 &smmu P1_SID_PCIE 0x10>; */
 			dma-ranges = <0x0 0x0 0x0 0x0 0x0 0x0 0xe0000000>;
@@ -1566,7 +1566,7 @@
 			pcie-a-rst-bit = <14>;
 			pcie-rst-bit = <12>;
 			pcie-rst-mask = <0xff>;
-			power-domains = <&pwrdm PDID_S5_PCIE0>;
+			//power-domains = <&pwrdm PDID_S5_PCIE0>;
 			status = "disabled";
 			/* iommu-map = <0x100 &smmu P1_SID_PCIE 0x10>; */
 			dma-ranges = <0x0 0x0 0x0 0x0 0x0 0x0 0xe0000000>;
@@ -1651,7 +1651,7 @@
 			      <0x0 0xfe024000 0x0 0x8>;
 			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq";
-			power-domains = <&pwrdm PDID_S5_ETH>;
+			//power-domains = <&pwrdm PDID_S5_ETH>;
 			//clocks = <&clkc CLKID_SYS_CLK_ETH>,
 			//	 <&clkc CLKID_FCLK_DIV2>,
 			//	 <&clkc CLKID_FCLK_CLK50M>;
@@ -1971,14 +1971,14 @@
 			"mailbox_1",
 			"mailbox_2",
 			"assist_mbox_irq_ee";
-		power-domains = <&pwrdm PDID_S5_DOS_VDEC>,
-			<&pwrdm PDID_S5_DOS_HCODEC>,
-			<&pwrdm PDID_S5_DOS_HEVC_TOP>,
-			<&pwrdm PDID_S5_DOS_HEVC_CORE1>;
-		power-domain-names = "pwrc-vdec",
-			"pwrc-hcodec",
-			"pwrc-hevc",
-			"pwrc-hevcb";
+		//power-domains = <&pwrdm PDID_S5_DOS_VDEC>,
+			//<&pwrdm PDID_S5_DOS_HCODEC>,
+			//<&pwrdm PDID_S5_DOS_HEVC_TOP>,
+			//<&pwrdm PDID_S5_DOS_HEVC_CORE1>;
+		//power-domain-names = "pwrc-vdec",
+			//"pwrc-hcodec",
+			//"pwrc-hevc",
+			//"pwrc-hevcb";
 	};
 
 	vcodec_dec {
@@ -2240,7 +2240,7 @@
 
 //		clocks = <&clkc CLKID_HCODEC_P0>;
 //		clock-names = "hcodec_p0";
-		power-domains = <&pwrdm PDID_S5_DOS_HCODEC>;
+		//power-domains = <&pwrdm PDID_S5_DOS_HCODEC>;
 		interrupts = <0 16 1 0 17 1 0 18 1>;
 		interrupt-names = "dos_mbox_slow_irq0", "dos_mbox_slow_irq1", "dos_mbox_slow_irq2";
 		//reset-names = "jpegenc_rst";
@@ -2375,7 +2375,7 @@
 		//clocks = <&clkc CLKID_TS_CLK>;
 		//clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
-		power-domains = <&pwrdm PDID_S5_MALI_TOP>;
+		//power-domains = <&pwrdm PDID_S5_MALI_TOP>;
 		reset-names = "ts_rst";
 		resets = <&reset RESET_TS_GPU>;
 	};
@@ -2424,7 +2424,7 @@
 		//clocks = <&clkc CLKID_TS_CLK>;
 		//clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
-		power-domains = <&pwrdm PDID_S5_DOS_TOP_WRAP>;
+		//power-domains = <&pwrdm PDID_S5_DOS_TOP_WRAP>;
 		reset-names = "ts_rst";
 		resets = <&reset RESET_TS_DOS>;
 	};
@@ -2441,7 +2441,7 @@
 		//clocks = <&clkc CLKID_TS_CLK>;
 		//clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
-		power-domains = <&pwrdm PDID_S5_NNA_4T>;
+		//power-domains = <&pwrdm PDID_S5_NNA_4T>;
 		reset-names = "ts_rst";
 		resets = <&reset RESET_TS_NNA>;
 	};
@@ -2833,7 +2833,7 @@
 		//clock-names = "clk_vapb_0",
 		//	"clk_ge2d_gate";
 		reg = <0x0 0xff840000 0x0 0x2000>;
-		power-domains = <&pwrdm PDID_S5_GE2D>;
+		//power-domains = <&pwrdm PDID_S5_GE2D>;
 	};
 
 	vicp {
@@ -2849,7 +2849,7 @@
 		//clock-names = "clk_vapb_0",
 		//	"clk_vicp_gate";
 		reg = <0x0 0xfe03e000 0x0 0xe34>;
-		power-domains = <&pwrdm PDID_S5_VICP>;
+		//power-domains = <&pwrdm PDID_S5_VICP>;
 	};
 
 	aml_bt: aml_bt {
@@ -3955,7 +3955,7 @@
 		     <GIC_SPI 273 IRQ_TYPE_LEVEL_HIGH>,
 		     <GIC_SPI 271 IRQ_TYPE_LEVEL_HIGH>;
 	interrupt-names = "GPU", "MMU", "JOB";
-	power-domains = <&pwrdm PDID_S5_MALI_TOP>;
+	//power-domains = <&pwrdm PDID_S5_MALI_TOP>;
 	num_of_pp = <2>;
 	system-coherency = <31>;
 	//clocks = <&clkc CLKID_MALI>;

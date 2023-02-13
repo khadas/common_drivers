@@ -51,7 +51,7 @@ int FRC_PARAM_NUM = 8;
 module_param(FRC_PARAM_NUM, int, 0664);
 MODULE_PARM_DESC(FRC_PARAM_NUM, "FRC_PARAM_NUM");
 
-const struct vf_rate_table vf_rate_table[11] = {
+const struct vf_rate_table vf_rate_table[FRAME_RATE_CNT] = {
 	{1600,  FRC_VD_FPS_60},
 	{1601,	FRC_VD_FPS_60},
 	{1920,  FRC_VD_FPS_50},
@@ -1100,8 +1100,8 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	pr_frc(log, "frc_ratio_mode = %d\n", frc_top->frc_ratio_mode);
 	pr_frc(log, "frc_fb_num = %d\n", frc_top->frc_fb_num);
 
-	regdata_outholdctl_0003 = READ_FRC_REG(0x0003);
-	regdata_inpholdctl_0002 = READ_FRC_REG(0x0002);
+	regdata_outholdctl_0003 = READ_FRC_REG(FRC_OUT_HOLD_CTRL);
+	regdata_inpholdctl_0002 = READ_FRC_REG(FRC_INP_HOLD_CTRL);
 	frc_config_reg_value(me_hold_line, 0xff, &regdata_outholdctl_0003);
 	frc_config_reg_value(mc_hold_line << 8, 0xff00, &regdata_outholdctl_0003);
 	WRITE_FRC_REG_BY_CPU(FRC_OUT_HOLD_CTRL, regdata_outholdctl_0003);
@@ -1114,8 +1114,8 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	/*protect mode, enable: memc delay 2 frame*/
 	/*disable: memc delay n frame, n depend on cadence, for debug*/
 	if (frc_top->frc_prot_mode) {
-		regdata_top_ctl_0009 = READ_FRC_REG(0x0009);
-		regdata_top_ctl_0011 = READ_FRC_REG(0x0011);
+		regdata_top_ctl_0009 = READ_FRC_REG(FRC_REG_TOP_CTRL9);
+		regdata_top_ctl_0011 = READ_FRC_REG(FRC_REG_TOP_CTRL17);
 		frc_config_reg_value(0x01000000, 0x0F000000, &regdata_top_ctl_0009);
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL9, regdata_top_ctl_0009); //dly_num =1
 		frc_config_reg_value(0x100, 0x100, &regdata_top_ctl_0011);
@@ -1867,7 +1867,8 @@ void recfg_memc_mif_base_addr(u32 base_ofst)
 
 static const struct dbg_dump_tab frc_reg_tab[] = {
 	{"FRC_TOP_CTRL->reg_frc_en_in", FRC_TOP_CTRL, 0, 1},
-	{"FRC_REG_INP_MODULE_EN", FRC_REG_INP_MODULE_EN, 0, 0},
+	{"FRC_REG_INP_MODULE_EN_T5M", FRC_REG_INP_MODULE_EN, 0, 0},
+	{"FRC_REG_INP_MODULE_EN_T3", FRC_REG_INP_MODULE_EN + 0xA0, 0, 0},
 
 	{"FRC_REG_TOP_CTRL14->post_dly_vofst", FRC_REG_TOP_CTRL14, 0, 16},
 	{"FRC_REG_TOP_CTRL14->reg_me_dly_vofst", FRC_REG_TOP_CTRL14, 16, 16},
@@ -2050,10 +2051,12 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 		for (i = 0; i < T3_DRV_REG_NUM; i++)
 			WRITE_FRC_REG_BY_CPU(t3_drv_regs_table[i].addr, t3_drv_regs_table[i].value);
 		pr_frc(0, "t3_regs_table[%d] init done\n", T3_DRV_REG_NUM);
+		regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN + 0xA0);
 	} else if (chip == ID_T5M) {
 		for (i = 0; i < T5M_REG_NUM; i++)
 			WRITE_FRC_REG_BY_CPU(t5m_regs_table[i].addr, t5m_regs_table[i].value);
 		pr_frc(0, "t5m_regs_table[%d] init done\n", T5M_REG_NUM);
+		regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN);
 	}
 	frc_set_val_from_reg();
 
@@ -2109,7 +2112,7 @@ u16 frc_check_vf_rate(u16 duration, struct frc_dev_s *frc_devp)
 	/*3840(25fps) 4000(24fps) 4004(23.976fps)*/
 	i = 0;
 	getflag = 0;
-	while (i < 8) {
+	while (i < FRAME_RATE_CNT) {
 		if (vf_rate_table[i].duration == duration) {
 			framerate = vf_rate_table[i].framerate;
 			getflag = 1;
@@ -2118,7 +2121,7 @@ u16 frc_check_vf_rate(u16 duration, struct frc_dev_s *frc_devp)
 		i++;
 	}
 	if (getflag == 1 && framerate != frc_devp->in_sts.frc_vf_rate) {
-		pr_frc(3, "input vf rate changed [%d->%d].\n",
+		pr_frc(2, "input vf rate changed [%d->%d].\n",
 			frc_devp->in_sts.frc_vf_rate, framerate);
 		frc_devp->in_sts.frc_vf_rate = framerate;
 		getflag = 0;
@@ -2250,7 +2253,7 @@ void frc_set_urgent_cfg(u8 level)
 {
 	u32 shift_1;
 
-	pr_frc(1, "%s set level %d\n", __func__, level);
+	pr_frc(0, "%s set level %d\n", __func__, level);
 	if (level == 0)
 		shift_1 = 0x000F000F;
 	else if (level == 1)
@@ -2258,7 +2261,7 @@ void frc_set_urgent_cfg(u8 level)
 	else if (level == 2)
 		shift_1 = 0x0F000F00;
 	else if (level == 3)
-		shift_1 = 0xF000F000;
+		shift_1 = 0xFFFFFFFF;
 	else
 		shift_1 = 0x00000000;
 	// WRITE_FRC_REG_BY_CPU(0x3f06, 0x00011111);

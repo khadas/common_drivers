@@ -26,6 +26,16 @@
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/codec_mm/codec_mm_scatter.h>
 #include <linux/amlogic/media/codec_mm/configs.h>
+#include <linux/page-isolation.h>
+#include <asm/pgtable.h>
+#ifdef CONFIG_ARM64
+#include <asm/mte.h>
+#endif
+#include <linux/swap.h>
+#include <linux/swapops.h>
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+#include <trace/hooks/iommu.h>
+#endif
 
 #if IS_ENABLED(CONFIG_AMLOGIC_CPU_INFO)
 #include <linux/amlogic/media/registers/cpu_version.h>
@@ -87,10 +97,133 @@ void tee_unprotect_mem(u32 handle)
 
 #if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
 /* aml_media is ko can't use cma_mmu_op() func */
+void (*aml_mte_sync_tags)(pte_t old_pte, pte_t pte);
+
+struct mm_struct *aml_init_mm;
+
+struct device *codec_dev;
+
+#ifdef CONFIG_ARM64
+static void aml_set_pte_at(struct mm_struct *mm, unsigned long addr,
+			      pte_t *ptep, pte_t pte)
+{
+	/*
+	 * if (pte_present(pte) && pte_user_exec(pte) && !pte_special(pte))
+	 *	__sync_icache_dcache(pte);
+	 */
+
+	/*
+	 * If the PTE would provide user space access to the tags associated
+	 * with it then ensure that the MTE tags are synchronised.  Although
+	 * pte_access_permitted() returns false for exec only mappings, they
+	 * don't expose tags (instruction fetches don't check tags).
+	 */
+	if (system_supports_mte() && pte_access_permitted(pte, false) &&
+	    !pte_special(pte)) {
+		pte_t old_pte = READ_ONCE(*ptep);
+		/*
+		 * We only need to synchronise if the new PTE has tags enabled
+		 * or if swapping in (in which case another mapping may have
+		 * set tags in the past even if this PTE isn't tagged).
+		 * (!pte_none() && !pte_present()) is an open coded version of
+		 * is_swap_pte()
+		 */
+		if (pte_tagged(pte) || (!pte_none(old_pte) && !pte_present(old_pte)))
+			aml_mte_sync_tags(old_pte, pte);
+	}
+
+	__check_racy_pte_update(mm, ptep, pte);
+
+	set_pte(ptep, pte);
+}
+
+static bool is_cma_page(struct page *page)
+{
+	int migrate_type = 0;
+
+	if (!page)
+		return false;
+	migrate_type = get_pageblock_migratetype(page);
+	if (is_migrate_cma(migrate_type) ||
+	    is_migrate_isolate(migrate_type)) {
+		return true;
+	}
+	return false;
+}
+
+int cma_mmu_op(struct page *page, int count, bool set)
+{
+	pgd_t *pgd;
+	p4d_t *p4d;
+	pud_t *pud;
+	pmd_t *pmd;
+	pte_t *pte;
+	unsigned long addr, end;
+	struct mm_struct *mm;
+	struct cma *cma;
+
+	if (!page || PageHighMem(page))
+		return -EINVAL;
+
+	/* TODO: owner must make sure this cma pool have called
+	 * setup_cma_full_pagemap before call this function
+	 */
+	if (!is_cma_page(page)) {
+		pr_debug("%s, page:%lx is not cma or no clear-map, cma:%px\n",
+			 __func__, page_to_pfn(page), cma);
+		return -EINVAL;
+	}
+
+	if (!aml_init_mm) {
+		pr_debug("%s, no cma mmu operation.\n", __func__);
+		return -EINVAL;
+	}
+
+	addr = (unsigned long)page_address(page);
+	end  = addr + count * PAGE_SIZE;
+	mm = aml_init_mm;
+	for (; addr < end; addr += PAGE_SIZE) {
+		pgd = pgd_offset(mm, addr);
+		if (pgd_none(*pgd) || pgd_bad(*pgd))
+			break;
+
+		p4d = p4d_offset(pgd, addr);
+		if (p4d_none(*p4d) || p4d_bad(*p4d))
+			break;
+
+		pud = pud_offset(p4d, addr);
+		if (pud_none(*pud) || pud_bad(*pud))
+			break;
+
+		pmd = pmd_offset(pud, addr);
+		if (pmd_none(*pmd))
+			break;
+
+		pte = pte_offset_map(pmd, addr);
+		if (set)
+			aml_set_pte_at(mm, addr, pte, mk_pte(page, PAGE_KERNEL));
+		else
+			pte_clear(mm, addr, pte);
+		pte_unmap(pte);
+	#ifdef CONFIG_ARM
+		pr_debug("%s, add:%lx, pgd:%p %x, pmd:%p %x, pte:%p %x\n",
+			 __func__, addr, pgd, (int)pgd_val(*pgd),
+			 pmd, (int)pmd_val(*pmd), pte, (int)pte_val(*pte));
+	#elif defined(CONFIG_ARM64)
+		pr_debug("%s, add:%lx, pgd:%p %llx, pmd:%p %llx, pte:%p %llx\n",
+			 __func__, addr, pgd, pgd_val(*pgd),
+			 pmd, pmd_val(*pmd), pte, pte_val(*pte));
+	#endif
+		page++;
+	}
+	return 0;
+}
+#else
 int cma_mmu_op(struct page *page, int count, bool set)
 {
 	return 0;
 }
+#endif
 #endif
 #include <linux/amlogic/cpu_version.h>
 
@@ -3278,6 +3411,102 @@ static struct mconfig codec_mm_trigger[] = {
 	MC_FUN("debug", codec_mm_trigger_help_fun, codec_mm_trigger_fun),
 };
 
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+#ifdef CONFIG_ARM64
+static int tvp_clear_cma_pagemap(unsigned long pfn, unsigned long count)
+{
+	pgd_t *pgd;
+	p4d_t *p4d;
+	pud_t *pud;
+	pmd_t *pmd;
+	unsigned long addr, end;
+	struct mm_struct *mm;
+
+	addr = (unsigned long)pfn_to_kaddr(pfn);
+	end  = addr + count * PAGE_SIZE;
+	mm = aml_init_mm;
+	for (; addr < end; addr += PMD_SIZE) {
+		pgd = pgd_offset(mm, addr);
+		if (pgd_none(*pgd) || pgd_bad(*pgd))
+			break;
+
+		p4d = p4d_offset(pgd, addr);
+		if (p4d_none(*p4d) || p4d_bad(*p4d))
+			break;
+
+		pud = pud_offset(p4d, addr);
+		if (pud_none(*pud) || pud_bad(*pud))
+			break;
+
+		pmd = pmd_offset(pud, addr);
+		if (pmd_none(*pmd))
+			break;
+
+		pr_debug("%s, addr:%lx, pgd:%p %llx, pmd:%p %llx\n",
+			 __func__, addr, pgd,
+			 pgd_val(*pgd), pmd, pmd_val(*pmd));
+		pmd_clear(pmd);
+	}
+
+	return 0;
+}
+#endif
+
+static int tvp_setup_cma_full_pagemap(unsigned long pfn, unsigned long count)
+{
+#ifdef CONFIG_ARM
+	/*
+	 * arm already create level 3 mmu mapping for lowmem cma.
+	 * And if high mem cma, there is no mapping. So nothing to
+	 * do for arch arm.
+	 */
+	return 0;
+#elif defined(CONFIG_ARM64)
+	struct vm_area_struct vma = {};
+	unsigned long addr, size;
+	int ret;
+
+	tvp_clear_cma_pagemap(pfn, count);
+	addr = (unsigned long)pfn_to_kaddr(pfn);
+	size = count * PAGE_SIZE;
+	vma.vm_mm    = aml_init_mm;
+	vma.vm_start = addr;
+	vma.vm_end   = addr + size;
+	vma.vm_page_prot = PAGE_KERNEL;
+	ret = remap_pfn_range(&vma, addr, pfn,
+			      size, vma.vm_page_prot);
+	if (ret < 0)
+		pr_info("%s, remap pte failed:%d, cma:%lx\n",
+			__func__, ret, pfn);
+	return 0;
+#else
+	#error "NOT supported ARCH"
+#endif
+}
+
+void get_mte_sync_tags_hook(void *data, struct iova_domain *iovad, dma_addr_t iova, size_t size)
+{
+	unsigned long flags;
+	struct cma *cma = NULL;
+
+	if (aml_init_mm)
+		return;
+
+	aml_mte_sync_tags = (void (*)(pte_t old_pte, pte_t pte))iovad;
+	aml_init_mm = (struct mm_struct *)size;
+
+	cma = dev_get_cma_area(codec_dev);
+	if (!cma) {
+		pr_err("CMA:  NO CMA region\n");
+		return;
+	}
+	pr_info("%s, %s, %lx, %lx\n", __func__, cma_get_name(cma), cma->base_pfn, cma->count);
+	spin_lock_irqsave(&cma->lock, flags);
+	tvp_setup_cma_full_pagemap(cma->base_pfn, cma->count);
+	spin_unlock_irqrestore(&cma->lock, flags);
+}
+#endif
+
 static int codec_mm_probe(struct platform_device *pdev)
 {
 	int r;
@@ -3299,6 +3528,7 @@ static int codec_mm_probe(struct platform_device *pdev)
 
 	pr_info("%s ok\n", __func__);
 
+	codec_dev = &pdev->dev;
 	codec_mm_scatter_mgt_init(&pdev->dev);
 	codec_mm_keeper_mgr_init();
 	amstream_test_init();
@@ -3307,6 +3537,9 @@ static int codec_mm_probe(struct platform_device *pdev)
 	INIT_REG_NODE_CONFIGS(CONFIG_PATH, &codec_mm_trigger_node,
 				  "trigger", codec_mm_trigger,
 				  CONFIG_FOR_RW | CONFIG_FOR_T);
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+	register_trace_android_vh_iommu_iovad_free_iova(get_mte_sync_tags_hook, NULL);
+#endif
 	return 0;
 }
 

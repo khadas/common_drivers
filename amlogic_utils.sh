@@ -384,7 +384,11 @@ function adjust_sequence_modules_loading() {
 	fi
 
 	black_modules=()
-	for module in ${MODULES_LOAD_BLACK_LIST[@]}; do
+	mkdir service_module
+	echo  MODULES_SERVICE_LOAD_LIST=${MODULES_SERVICE_LOAD_LIST[@]}
+	BLACK_AND_SERVICE_LIST=(${MODULES_LOAD_BLACK_LIST[@]} ${MODULES_SERVICE_LOAD_LIST[@]})
+	echo ${BLACK_AND_SERVICE_LIST[@]}
+	for module in ${BLACK_AND_SERVICE_LIST[@]}; do
 		modules=`ls ${module}*`
 		black_modules=(${black_modules[@]} ${modules[@]})
 	done
@@ -413,6 +417,13 @@ function adjust_sequence_modules_loading() {
 			echo "Error ${#match_count[@]} modules depend on ${module}, please modify:"
 			echo ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list:MODULES_LOAD_BLACK_LIST
 			exit
+		fi
+		if [[ -n ${ANDROID_PROJECT} ]]; then
+			for service_module_temp in ${MODULES_SERVICE_LOAD_LIST[@]}; do
+				if [[ ${module} = ${service_module_temp} ]]; then
+					mv ${module} service_module
+				fi
+			done
 		fi
 		rm -f ${module}
 	done

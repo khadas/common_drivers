@@ -40,6 +40,7 @@ struct am_meson_crtc_state {
 	u8 crtc_eotf_type;
 	/*dv core enabled, control by userspace not driver*/
 	bool crtc_dv_enable;
+	bool dv_mode;
 	/*hdr core enabled, always on if soc support hdr.*/
 	bool crtc_hdr_enable;
 	/*eotf policy update by property*/
@@ -64,12 +65,14 @@ struct am_meson_crtc {
 	unsigned int irq;
 	int crtc_index;
 	int vout_index;
+	atomic_t commit_num;
 	struct drm_pending_vblank_event *event;
 	struct meson_vpu_pipeline *pipeline;
 
 	struct drm_property *hdr_policy;
 	struct drm_property *hdmi_eotf;
 	struct drm_property *dv_enable_property;
+	struct drm_property *dv_mode_property;
 	struct drm_property *bgcolor_property;
 
 	/*debug*/

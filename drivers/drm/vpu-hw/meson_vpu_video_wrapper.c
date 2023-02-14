@@ -39,8 +39,8 @@ video_vfm_convert_to_vfminfo(struct meson_vpu_video_state *mvvs,
 	vf_info->crop_y = mvvs->src_y;
 	vf_info->crop_w = mvvs->src_w;
 	vf_info->crop_h = mvvs->src_h;
-	vf_info->buffer_w = mvvs->src_w;
-	vf_info->buffer_h = mvvs->src_h;
+	vf_info->buffer_w = mvvs->fb_w;
+	vf_info->buffer_h = mvvs->fb_h;
 	vf_info->zorder = mvvs->zorder;
 
 	DRM_DEBUG("dmabuf = %px, release_fence = %px\n",
@@ -65,7 +65,13 @@ static u32 video_type_get(u32 pixel_format)
 		break;
 	case DRM_FORMAT_YUYV:
 	case DRM_FORMAT_YVYU:
+	case DRM_FORMAT_UYVY:
+	case DRM_FORMAT_VYUY:
 		vframe_type = VIDTYPE_VIU_422 | VIDTYPE_VIU_FIELD |
+				VIDTYPE_VIU_SINGLE_PLANE;
+		break;
+	case DRM_FORMAT_VUY888:
+		vframe_type = VIDTYPE_VIU_444 | VIDTYPE_VIU_FIELD |
 				VIDTYPE_VIU_SINGLE_PLANE;
 		break;
 	default:
@@ -277,6 +283,8 @@ static int video_check_state(struct meson_vpu_block *vblk,
 	mvvs->dst_y = plane_info->dst_y;
 	mvvs->dst_w = plane_info->dst_w;
 	mvvs->dst_h = plane_info->dst_h;
+	mvvs->fb_w = plane_info->fb_w;
+	mvvs->fb_h = plane_info->fb_h;
 	mvvs->byte_stride = plane_info->byte_stride;
 	mvvs->plane_index = plane_info->plane_index;
 	mvvs->phy_addr[0] = plane_info->phy_addr[0];
@@ -413,6 +421,7 @@ static void video_set_state(struct meson_vpu_block *vblk,
 			vf_info.buffer_w = pic_w;
 			vf_info.buffer_h = pic_h;
 			vf_info.zorder = mvvs->zorder;
+			vf_info.reserved[0] = 0;
 			dma_resv_add_excl_fence(vf_info.dmabuf->resv, vf_info.release_fence);
 			DRM_DEBUG("dmabuf(%px), release_fence(%px)\n",
 				vf_info.dmabuf, vf_info.release_fence);
@@ -444,6 +453,7 @@ static void video_set_state(struct meson_vpu_block *vblk,
 			video_vfm_convert_to_vfminfo(mvvs, &vf_info);
 			vf_info.phy_addr[0] = mvvs->phy_addr[0];
 			vf_info.phy_addr[1] = mvvs->phy_addr[1];
+			vf_info.reserved[0] = video_type_get(pixel_format);
 			dma_resv_add_excl_fence(vf_info.dmabuf->resv, vf_info.release_fence);
 			video_display_setframe(vblk->index, &vf_info, 0);
 		} else {
@@ -529,6 +539,12 @@ static void video_hw_enable(struct meson_vpu_block *vblk,
 		DRM_DEBUG("enable break for NULL.\n");
 		return;
 	}
+
+	if (video->vfm_mode) {
+		DRM_DEBUG("skip, %s enable by video_composer.\n", video->base.name);
+		return;
+	}
+
 	if (!video->video_enabled) {
 		set_video_enabled(1, vblk->index);
 		video->video_enabled = 1;
@@ -547,10 +563,8 @@ static void video_hw_disable(struct meson_vpu_block *vblk,
 	}
 
 	if (video->vfm_mode) {
-		if (video->video_enabled) {
-			video_display_setenable(vblk->index, 0);
-			video->video_enabled = 0;
-		}
+		video_display_setenable(vblk->index, 0);
+		video->video_enabled = 0;
 	} else {
 		video_disable_fence(video);
 		video->fence = NULL;

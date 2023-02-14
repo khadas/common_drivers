@@ -25,6 +25,11 @@ struct am_meson_plane_state {
 	u32 sec_en;
 };
 
+enum meson_max_fb_enum {
+	FB_SIZE_1920x1080 = 0,
+	FB_SIZE_3840x2160,
+};
+
 enum meson_plane_type {
 	OSD_PLANE = 0,
 	VIDEO_PLANE,
@@ -41,6 +46,8 @@ struct am_osd_plane {
 	struct drm_property *occupied_property;
 	struct drm_property *prop_sec_en;
 	bool osd_occupied;
+	/*max fb property*/
+	struct drm_property *max_fb_property;
 
 	/*osd extend*/
 	u32 osd_reverse;
@@ -101,6 +108,5 @@ meson_create_scaling_filter_prop(struct drm_device *dev,
 
 void meson_video_set_vfmmode(struct device_node *of_node,
 	struct meson_drm *priv);
-void meson_osd_plane_async_flush(struct drm_atomic_state *state);
 
 #endif

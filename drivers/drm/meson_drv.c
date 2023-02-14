@@ -88,7 +88,7 @@ static const struct drm_ioctl_desc meson_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(MESON_GEM_CREATE, am_meson_gem_create_ioctl,
 			  DRM_UNLOCKED | DRM_AUTH | DRM_RENDER_ALLOW),
 	#endif
-	DRM_IOCTL_DEF_DRV(MESON_ASYNC_ATOMIC, meson_asyc_atomic_ioctl,
+	DRM_IOCTL_DEF_DRV(MESON_ASYNC_ATOMIC, meson_async_atomic_ioctl,
 			  DRM_UNLOCKED | DRM_AUTH | DRM_RENDER_ALLOW),
 };
 
@@ -179,12 +179,29 @@ static int meson_worker_thread_init(struct meson_drm *priv,
 	return 0;
 }
 
+static void meson_parse_max_config(struct device_node *node, u32 *max_width,
+				   u32 *max_height)
+{
+	int ret;
+	u32 sizes[2];
+
+	ret = of_property_read_u32_array(node, "max_sizes", sizes, 2);
+	if (ret) {
+		*max_width = 4096;
+		*max_height = 4096;
+	} else {
+		*max_width = sizes[0];
+		*max_height = sizes[1];
+	}
+}
+
 static int am_meson_drm_bind(struct device *dev)
 {
 	struct meson_drm *priv;
 	struct drm_device *drm;
 	struct platform_device *pdev = to_platform_device(dev);
-	int ret = 0;
+	u32 max_width, max_height;
+	int logo_skip, ret = 0;
 
 	meson_driver.driver_features = DRIVER_HAVE_IRQ | DRIVER_GEM |
 		DRIVER_MODESET | DRIVER_ATOMIC | DRIVER_RENDER;
@@ -222,8 +239,9 @@ static int am_meson_drm_bind(struct device *dev)
 	/* init meson config before bind other component,
 	 * other component may use it.
 	 */
-	drm->mode_config.max_width = 4096;
-	drm->mode_config.max_height = 4096;
+	meson_parse_max_config(dev->of_node, &max_width, &max_height);
+	drm->mode_config.max_width = max_width;
+	drm->mode_config.max_height = max_height;
 	drm->mode_config.funcs = &meson_mode_config_funcs;
 	drm->mode_config.helper_private	= &meson_mode_config_helpers;
 	drm->mode_config.allow_fb_modifiers = true;
@@ -256,7 +274,13 @@ static int am_meson_drm_bind(struct device *dev)
 
 	drm_kms_helper_poll_init(drm);
 
-	am_meson_logo_init(drm);
+	logo_skip = 0;
+	ret = of_property_read_u32(dev->of_node, "logo_skip", &logo_skip);
+	DRM_INFO("logo_skip = %d\n", logo_skip);
+	if (!ret && logo_skip == 1)
+		DRM_INFO("skip logo commit!\n");
+	else
+		am_meson_logo_init(drm);
 
 #ifdef CONFIG_AMLOGIC_DRM_EMULATE_FBDEV
 	ret = am_meson_drm_fbdev_init(drm);

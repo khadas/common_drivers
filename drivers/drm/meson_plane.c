@@ -32,10 +32,22 @@ static u64 afbc_modifier[] = {
 				AFBC_FORMAT_MOD_YTR |
 				AFBC_FORMAT_MOD_SPARSE |
 				AFBC_FORMAT_MOD_SPLIT),
+	DRM_FORMAT_MOD_ARM_AFBC(AFBC_FORMAT_MOD_BLOCK_SIZE_16x16 |
+				AFBC_FORMAT_MOD_TILED |
+				AFBC_FORMAT_MOD_SC |
+				AFBC_FORMAT_MOD_YTR |
+				AFBC_FORMAT_MOD_SPARSE |
+				AFBC_FORMAT_MOD_SPLIT),
 	DRM_FORMAT_MOD_ARM_AFBC(AFBC_FORMAT_MOD_BLOCK_SIZE_32x8 |
 				AFBC_FORMAT_MOD_SPARSE |
 				AFBC_FORMAT_MOD_SPLIT),
 	DRM_FORMAT_MOD_ARM_AFBC(AFBC_FORMAT_MOD_BLOCK_SIZE_32x8 |
+				AFBC_FORMAT_MOD_YTR |
+				AFBC_FORMAT_MOD_SPARSE |
+				AFBC_FORMAT_MOD_SPLIT),
+	DRM_FORMAT_MOD_ARM_AFBC(AFBC_FORMAT_MOD_BLOCK_SIZE_32x8 |
+				AFBC_FORMAT_MOD_TILED |
+				AFBC_FORMAT_MOD_SC |
 				AFBC_FORMAT_MOD_YTR |
 				AFBC_FORMAT_MOD_SPARSE |
 				AFBC_FORMAT_MOD_SPLIT),
@@ -88,15 +100,8 @@ static u64 video_fbc_modifier[] = {
 static const u32 video_supported_drm_formats[] = {
 	DRM_FORMAT_NV12,
 	DRM_FORMAT_NV21,
-	DRM_FORMAT_YUYV,
-	DRM_FORMAT_YVYU,
-	DRM_FORMAT_YUV444,
-	DRM_FORMAT_YUV422,
-	DRM_FORMAT_YUV420,
-	DRM_FORMAT_YUV411,
-	DRM_FORMAT_YUV410,
-	DRM_FORMAT_YUV420_8BIT,
-	DRM_FORMAT_YUV420_10BIT,
+	DRM_FORMAT_UYVY,
+	DRM_FORMAT_VUY888,
 };
 
 static void
@@ -127,12 +132,16 @@ meson_plane_position_calc(struct meson_vpu_osd_layer_info *plane_info,
 	plane_info->src_y = state->src_y >> 16;
 	plane_info->src_w = (state->src_w >> 16) & 0xffff;
 	plane_info->src_h = (state->src_h >> 16) & 0xffff;
+	DRM_DEBUG("original source: src_x=%d, src_y=%d, src_w=%d, src_h=%d\n",
+		plane_info->src_x, plane_info->src_y, plane_info->src_w, plane_info->src_h);
 
 	plane_info->dst_x = state->crtc_x;
 	plane_info->dst_y = state->crtc_y;
 	plane_info->dst_w = state->crtc_w;
 	plane_info->dst_h = state->crtc_h;
 	plane_info->rotation = state->rotation;
+	DRM_DEBUG("original destination: dst_x=%d, dst_y=%d, dst_w=%d, dst_h=%d\n",
+		plane_info->dst_x, plane_info->dst_y, plane_info->dst_w, plane_info->dst_h);
 	if (state->plane) {
 		amp = to_am_osd_plane(state->plane);
 		if (plane_info->rotation != amp->osd_reverse)
@@ -160,6 +169,7 @@ meson_plane_position_calc(struct meson_vpu_osd_layer_info *plane_info,
 		} else {
 			plane_info->enable = 0;
 		}
+		DRM_DEBUG("state->crtc_x < 0\n");
 	}
 	if (state->crtc_y < 0) {
 		dst_h = state->crtc_h + state->crtc_y;
@@ -172,6 +182,7 @@ meson_plane_position_calc(struct meson_vpu_osd_layer_info *plane_info,
 		} else {
 			plane_info->enable = 0;
 		}
+		DRM_DEBUG("state->crtc_y < 0\n");
 	}
 	/*overdisplay process*/
 	if ((plane_info->dst_x + plane_info->dst_w) > mode->hdisplay) {
@@ -185,6 +196,7 @@ meson_plane_position_calc(struct meson_vpu_osd_layer_info *plane_info,
 			plane_info->src_w =
 				(src_w * plane_info->dst_w) / dst_w;
 		}
+		DRM_DEBUG("(plane_info->dst_x + plane_info->dst_w) > mode->hdisplay\n");
 	}
 	if ((plane_info->dst_y + plane_info->dst_h) > mode->vdisplay) {
 		if (plane_info->dst_y >= mode->vdisplay) {
@@ -197,6 +209,7 @@ meson_plane_position_calc(struct meson_vpu_osd_layer_info *plane_info,
 			plane_info->src_h =
 				(src_h * plane_info->dst_h) / dst_h;
 		}
+		DRM_DEBUG("(plane_info->dst_y + plane_info->dst_h) > mode->vdisplay\n");
 	}
 	/*reverse process*/
 	if (plane_info->rotation & DRM_MODE_REFLECT_X)
@@ -205,6 +218,13 @@ meson_plane_position_calc(struct meson_vpu_osd_layer_info *plane_info,
 	if (plane_info->rotation & DRM_MODE_REFLECT_Y)
 		plane_info->dst_y = mode->vdisplay - plane_info->dst_h -
 			plane_info->dst_y;
+	DRM_DEBUG("fini source: src_x=%d, src_y=%d, src_w=%d, src_h=%d\n",
+		plane_info->src_x, plane_info->src_y,
+		plane_info->src_w, plane_info->src_h);
+	DRM_DEBUG("fini destination: dst_x=%d, dst_y=%d, dst_w=%d, dst_h=%d\n",
+		plane_info->dst_x, plane_info->dst_y,
+		plane_info->dst_w, plane_info->dst_h);
+
 }
 
 static void
@@ -516,6 +536,8 @@ static int meson_video_plane_get_fb_info(struct drm_plane *plane,
 	}
 	plane_info->pixel_format = fb->format->format;
 	plane_info->byte_stride = fb->pitches[0];
+	plane_info->fb_w = fb->width;
+	plane_info->fb_h = fb->height;
 
 	DRM_DEBUG("flags:%d pixel_format:%d,modifier=%llu\n",
 		  fb->flags, fb->format->format,
@@ -1084,6 +1106,18 @@ static int meson_video_plane_atomic_check(struct drm_plane *plane,
 	}
 
 	plane_info = &mvps->video_plane_info[video_plane->plane_index];
+	if ((plane_info->src_w != ((state->src_w >> 16) & 0xffff)) ||
+		(plane_info->src_h != ((state->src_h >> 16) & 0xffff)) ||
+		plane_info->dst_x != state->crtc_x ||
+		plane_info->dst_y != state->crtc_y ||
+		plane_info->dst_w != state->crtc_w ||
+		plane_info->dst_h != state->crtc_h ||
+		plane_info->zorder != state->zpos ||
+		!plane_info->enable)
+		plane_info->status_changed = 1;
+	else
+		plane_info->status_changed = 0;
+
 	plane_info->plane_index = video_plane->plane_index;
 	plane_info->vfm_mode = video_plane->vfm_mode;
 	plane_info->zorder = state->zpos + plane_info->plane_index;
@@ -1188,32 +1222,39 @@ int meson_osd_plane_async_check(struct drm_plane *plane,
 int meson_video_plane_async_check(struct drm_plane *plane,
 	struct drm_atomic_state *atomic_state)
 {
-	return 0;
-}
 
-void meson_osd_plane_async_flush(struct drm_atomic_state *state)
-{
-	int crtc_index;
-	struct meson_vpu_sub_pipeline *sub_pipe;
-	struct drm_crtc *crtc;
-	struct drm_crtc_state *old_crtc_state, *new_crtc_state;
-	struct am_meson_crtc *amcrtc;
-	struct meson_vpu_pipeline *pipeline;
-	int i;
+	struct meson_vpu_video_layer_info *plane_info;
+	struct meson_vpu_pipeline_state *mvps;
+	struct drm_plane_state *new_state;
+	struct am_video_plane *video_plane = to_am_video_plane(plane);
+	struct meson_drm *drv = video_plane->drv;
 
-	for_each_oldnew_crtc_in_state(state, crtc, old_crtc_state, new_crtc_state, i) {
-		amcrtc = to_am_meson_crtc(crtc);
-		pipeline = amcrtc->pipeline;
-		crtc_index = amcrtc->crtc_index;
-		sub_pipe = &pipeline->subs[crtc_index];
+	DRM_DEBUG("plane_index-%d\n", video_plane->plane_index);
 
-		DRM_DEBUG("crtc_index-%d\n", crtc_index);
-		vpu_pipeline_prepare_update(pipeline, crtc->mode.vdisplay,
-			drm_mode_vrefresh(&crtc->mode),
-			crtc_index);
-		vpu_pipeline_osd_update(sub_pipe, state);
-		vpu_pipeline_finish_update(pipeline, crtc_index);
+	new_state = drm_atomic_get_new_plane_state(atomic_state, plane);
+	if (!new_state) {
+		DRM_ERROR("atomic state is NULL!\n");
+		return -EINVAL;
 	}
+
+	mvps = meson_vpu_pipeline_get_state(drv->pipeline, atomic_state);
+	if (!mvps) {
+		DRM_ERROR("mvps is NULL.\n");
+		return -EINVAL;
+	}
+
+	plane_info = &mvps->video_plane_info[video_plane->plane_index];
+	if ((plane_info->enable && !new_state->fb) || !plane_info->enable) {
+		DRM_ERROR("plane visible state changed.\n");
+		return -EINVAL;
+	}
+
+	if (plane_info->status_changed) {
+		DRM_ERROR("video%d plane info changed\n", video_plane->plane_index);
+		return -EINVAL;
+	}
+
+	return 0;
 }
 
 void meson_osd_plane_async_update(struct drm_plane *plane,
@@ -1221,6 +1262,11 @@ void meson_osd_plane_async_update(struct drm_plane *plane,
 {
 	struct am_osd_plane *osd_plane = to_am_osd_plane(plane);
 	struct drm_plane_state *old_plane_state;
+	struct drm_plane_state *new_state;
+	struct meson_vpu_sub_pipeline *sub_pipe;
+	struct am_meson_crtc *amcrtc;
+	struct meson_vpu_pipeline *pipeline;
+	int crtc_index;
 
 	old_plane_state = drm_atomic_get_old_plane_state(state, plane);
 	if (!old_plane_state) {
@@ -1228,22 +1274,41 @@ void meson_osd_plane_async_update(struct drm_plane *plane,
 		return;
 	}
 
+	new_state = drm_atomic_get_new_plane_state(state, plane);
+	if (!new_state || !new_state->state) {
+		DRM_ERROR("atomic state is NULL!\n");
+		return;
+	}
+
+	amcrtc = to_am_meson_crtc(new_state->crtc);
+	pipeline = amcrtc->pipeline;
+	crtc_index = amcrtc->crtc_index;
+	sub_pipe = &pipeline->subs[crtc_index];
+
 	DRM_DEBUG("plane_index-%d\n", osd_plane->plane_index);
-	plane->state->fb = old_plane_state->fb;
-	plane->state->src_x = old_plane_state->src_x;
-	plane->state->src_y = old_plane_state->src_y;
-	plane->state->crtc_x = old_plane_state->crtc_x;
-	plane->state->crtc_y = old_plane_state->crtc_y;
+	plane->state->fb = new_state->fb;
+	plane->state->src_x = new_state->src_x;
+	plane->state->src_y = new_state->src_y;
+	plane->state->crtc_x = new_state->crtc_x;
+	plane->state->crtc_y = new_state->crtc_y;
+
+	vpu_pipeline_prepare_update(pipeline, new_state->crtc->mode.vdisplay,
+			drm_mode_vrefresh(&new_state->crtc->mode), crtc_index);
+	vpu_pipeline_osd_update(sub_pipe, state);
+	vpu_pipeline_finish_update(pipeline, crtc_index);
 }
 
 void meson_video_plane_async_update(struct drm_plane *plane,
 	struct drm_atomic_state *state)
 {
+	struct am_video_plane *video_plane = to_am_video_plane(plane);
 	struct meson_vpu_sub_pipeline *sub_pipe;
 	struct am_meson_crtc *amcrtc;
 	struct meson_vpu_pipeline *pipeline;
+	struct meson_vpu_video *mvv;
 	int crtc_index;
 	struct drm_plane_state *old_plane_state;
+	struct drm_plane_state *new_state;
 
 	old_plane_state = drm_atomic_get_old_plane_state(state, plane);
 	if (!old_plane_state) {
@@ -1251,18 +1316,29 @@ void meson_video_plane_async_update(struct drm_plane *plane,
 		return;
 	}
 
-	amcrtc = to_am_meson_crtc(old_plane_state->crtc);
+	new_state = drm_atomic_get_new_plane_state(state, plane);
+	if (!new_state || !new_state->state) {
+		DRM_ERROR("atomic state is NULL!\n");
+		return;
+	}
+
+	DRM_DEBUG("%s plane_index-%d, crtc-%p\n", __func__,
+		video_plane->plane_index, new_state->crtc);
+
+	amcrtc = to_am_meson_crtc(new_state->crtc);
 	pipeline = amcrtc->pipeline;
 	crtc_index = amcrtc->crtc_index;
 	sub_pipe = &pipeline->subs[crtc_index];
+	mvv = pipeline->video[video_plane->plane_index];
 
-	plane->state->fb = old_plane_state->fb;
-	plane->state->src_x = old_plane_state->src_x;
-	plane->state->src_y = old_plane_state->src_y;
-	plane->state->crtc_x = old_plane_state->crtc_x;
-	plane->state->crtc_y = old_plane_state->crtc_y;
+	plane->state->fb = new_state->fb;
+	plane->state->src_x = new_state->src_x;
+	plane->state->src_y = new_state->src_y;
+	plane->state->crtc_x = new_state->crtc_x;
+	plane->state->crtc_y = new_state->crtc_y;
 
-	vpu_pipeline_video_update(sub_pipe, old_plane_state->state);
+	meson_video_prepare_fence(plane, new_state, mvv);
+	vpu_pipeline_video_update(sub_pipe, new_state->state);
 }
 
 static const struct drm_plane_helper_funcs am_osd_helper_funcs = {
@@ -1282,7 +1358,7 @@ static const struct drm_plane_helper_funcs am_video_helper_funcs = {
 	.atomic_check	= meson_video_plane_atomic_check,
 	.atomic_disable	= meson_video_plane_atomic_disable,
 	.atomic_async_check = meson_video_plane_async_check,
-	.atomic_async_update = meson_osd_plane_async_update,
+	.atomic_async_update = meson_video_plane_async_update,
 };
 
 static void meson_plane_create_security_en_property(struct drm_device *drm_dev,
@@ -1389,6 +1465,34 @@ static void meson_plane_add_occupied_property(struct drm_device *drm_dev,
 		drm_object_attach_property(&osd_plane->base.base, prop, 0);
 	} else {
 		DRM_ERROR("Failed to occupied property\n");
+	}
+}
+
+static const u32 meson_plane_fb_size_list[] = {
+	1080 << 16 | 1920,
+	2160 << 16 | 3840,
+};
+
+static void meson_plane_add_max_fb_property(struct drm_device *drm_dev,
+					    struct am_osd_plane *osd_plane)
+{
+	int ret;
+	u32 size_index, max_fb_size;
+	struct drm_property *prop;
+
+	ret = of_property_read_u32(drm_dev->dev->of_node, "max_fb_size", &size_index);
+	if (ret)
+		max_fb_size = meson_plane_fb_size_list[0];
+	else
+		max_fb_size = meson_plane_fb_size_list[size_index];
+
+	prop = drm_property_create_range(drm_dev, DRM_MODE_PROP_IMMUTABLE,
+					"max_fb_size", 0, UINT_MAX);
+	if (prop) {
+		osd_plane->max_fb_property = prop;
+		drm_object_attach_property(&osd_plane->base.base, prop, max_fb_size);
+	} else {
+		DRM_ERROR("Failed to create max_fb property\n");
 	}
 }
 
@@ -1523,7 +1627,8 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 				BIT(DRM_SCALING_FILTER_3POINT_BSPLINE) |
 				BIT(DRM_SCALING_FILTER_REPEATE));
 	meson_plane_add_occupied_property(priv->drm, osd_plane);
-	DRM_INFO("osd plane %d create done, occupied-%d crtcmask-%d type-%d\n",
+	meson_plane_add_max_fb_property(priv->drm, osd_plane);
+	DRM_INFO("osd plane %d create done, occupied-%d crtc_mask-%d type-%d\n",
 		i, osd_plane->osd_occupied, crtc_mask, type);
 	meson_plane_create_security_en_property(priv->drm, osd_plane);
 	return osd_plane;

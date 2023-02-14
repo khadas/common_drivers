@@ -21,6 +21,7 @@ struct meson_vpu_crtc_func {
 
 struct meson_vpu_data {
 	struct meson_vpu_crtc_func *crtc_func;
+	struct meson_vpu_pipeline_ops *pipe_ops;
 	struct meson_vpu_block_ops *osd_ops;
 	struct meson_vpu_block_ops *afbc_ops;
 	struct meson_vpu_block_ops *scaler_ops;
@@ -29,6 +30,8 @@ struct meson_vpu_data {
 	struct meson_vpu_block_ops *dv_ops;
 	struct meson_vpu_block_ops *postblend_ops;
 	struct meson_vpu_block_ops *video_ops;
+	struct meson_vpu_block_ops *slice2ppc_ops;
+	int enc_method;
 };
 
 enum meson_vout_event {

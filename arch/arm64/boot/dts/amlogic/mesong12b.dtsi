@@ -943,8 +943,9 @@
 
 		ion_dev {
 			compatible = "amlogic, ion_dev";
-			status = "disabled";
-			memory-region = <&ion_cma_reserved>;
+			status = "okay";
+			memory-region = <&ion_cma_reserved
+					 &ion_fb_reserved>;
 		};/* end of ion_dev*/
 
 		audiobus: audiobus@0xff642000 {

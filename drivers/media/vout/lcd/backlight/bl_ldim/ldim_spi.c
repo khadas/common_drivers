@@ -144,7 +144,8 @@ int ldim_spi_write_async(struct spi_device *spi, unsigned char *tbuf,
 
 	if (ldim_spi_async_busy) {
 		ldim_spi_async_busy_cnt++;
-		LDIMERR("%s: spi_async_busy=%d\n", __func__, ldim_spi_async_busy);
+		if (ldim_debug_print)
+			LDIMERR("%s: spi_async_busy=%d\n", __func__, ldim_spi_async_busy);
 		return -1;
 	}
 
@@ -170,7 +171,8 @@ int ldim_spi_write(struct spi_device *spi, unsigned char *tbuf, int tlen)
 		return -1;
 	}
 	if (ldim_spi_async_busy) {
-		LDIMERR("%s: spi_async_busy=%d\n", __func__, ldim_spi_async_busy);
+		if (ldim_debug_print)
+			LDIMERR("%s: spi_async_busy=%d\n", __func__, ldim_spi_async_busy);
 		return -1;
 	}
 	ldim_spi_async_busy = 1;
@@ -206,7 +208,8 @@ int ldim_spi_read(struct spi_device *spi, unsigned char *tbuf, int tlen,
 		return -1;
 	}
 	if (ldim_spi_async_busy) {
-		LDIMERR("%s: spi_async_busy=%d\n", __func__, ldim_spi_async_busy);
+		if (ldim_debug_print)
+			LDIMERR("%s: spi_async_busy=%d\n", __func__, ldim_spi_async_busy);
 		return -1;
 	}
 	ldim_spi_async_busy = 1;
@@ -247,7 +250,8 @@ int ldim_spi_read_sync(struct spi_device *spi, unsigned char *tbuf,
 		return -1;
 	}
 	if (ldim_spi_async_busy) {
-		LDIMERR("%s: spi_async_busy=%d\n", __func__, ldim_spi_async_busy);
+		if (ldim_debug_print)
+			LDIMERR("%s: spi_async_busy=%d\n", __func__, ldim_spi_async_busy);
 		return -1;
 	}
 	ldim_spi_async_busy = 1;

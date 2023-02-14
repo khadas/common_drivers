@@ -397,10 +397,11 @@ static void meson_dsuvolt_adjust(struct meson_cpufreq_driver_data *cpufreq_data)
 
 	if (cpufreq_voltage_set_skip || !dsu_reg)
 		return;
-	old_dsu_vol = meson_regulator_get_volate(dsu_reg);
+	old_dsu_vol = cpufreq_data->dsuvolt_last_set;
 	meson_regulator_set_volate(dsu_reg,
 		cpufreq_data->clusterid, old_dsu_vol,
 		dsu_voltage_vote_result[cpufreq_data->clusterid], 0);
+	cpufreq_data->dsuvolt_last_set = dsu_voltage_vote_result[cpufreq_data->clusterid];
 }
 
 static void meson_dsu_volt_freq_vote(struct meson_cpufreq_driver_data *cpufreq_data,
@@ -455,7 +456,10 @@ static int meson_cpufreq_set_target(struct cpufreq_policy *policy,
 		}
 		volt_new = dev_pm_opp_get_voltage(opp);
 		dev_pm_opp_put(opp);
-		volt_old = meson_regulator_get_volate(cpu_reg);
+		if (cpufreq_data->reg_external_used)
+			volt_old = cpufreq_data->cpuvolt_last_set;
+		else
+			volt_old = meson_regulator_get_volate(cpu_reg);
 		volt_tol = volt_new * cpufreq_data->volt_tol / 100;
 		pr_debug("Found OPP: %lu kHz, %u, tolerance: %u\n",
 			 freq_new / 1000, volt_new, volt_tol);
@@ -519,23 +523,12 @@ static int meson_cpufreq_set_target(struct cpufreq_policy *policy,
 		if (ret) {
 			pr_err("failed to scale volt %u %u down: %d\n",
 			       volt_new, volt_tol, ret);
-			freqs.old = freq_new / 1000;
-			freqs.new = freq_old / 1000;
-			freq_new = freqs.new;
-			opp = dev_pm_opp_find_freq_ceil(cpu_dev, &freq_new);
-			volt_new = dev_pm_opp_get_voltage(opp);
-			dev_pm_opp_put(opp);
-			meson_dsu_volt_freq_vote(cpufreq_data, &freqs, volt_new);
-			meson_dsuvolt_adjust(cpufreq_data);
-
-			meson_dsufreq_adjust(cpufreq_data, &freqs, CPUFREQ_PRECHANGE);
-			meson_cpufreq_set_rate(policy, cur_cluster, freq_old / 1000);
-			meson_dsufreq_adjust(cpufreq_data, &freqs, CPUFREQ_POSTCHANGE);
-		} else {
-			meson_dsuvolt_adjust(cpufreq_data);
+			return ret;
 		}
+		meson_dsuvolt_adjust(cpufreq_data);
 	}
 
+	cpufreq_data->cpuvolt_last_set = volt_new;
 	freq_new = clk_get_rate(clk[cur_cluster]) / 1000000;
 	dsu_freq = clk_get_rate(cpufreq_data->clk_dsu) / 1000000;
 
@@ -820,6 +813,49 @@ static void show_dsu_opp_table(u32 *table, int clusterid)
 		clusterid, table[0], table[1], table[2], table[3]);
 }
 
+static void meson_set_policy_volt_range(struct meson_cpufreq_driver_data *data)
+{
+	struct device *cpu_dev = data->cpu_dev;
+	struct opp_table *opp_table = dev_pm_opp_get_opp_table(cpu_dev);
+	struct dev_pm_opp *opp;
+	unsigned long max = 0, min = -1;
+	int oldvolt_cpu, oldvolt_dsu;
+
+	if (opp_table) {
+		mutex_lock(&opp_table->lock);
+		list_for_each_entry(opp, &opp_table->opp_list, node) {
+			if (!opp->available)
+				continue;
+			if (opp->supplies[0].u_volt > max)
+				max = opp->supplies[0].u_volt;
+			if (opp->supplies[0].u_volt < min)
+				min = opp->supplies[0].u_volt;
+		}
+		dev_pm_opp_put_opp_table(opp_table);
+		mutex_unlock(&opp_table->lock);
+	}
+
+	/*set cpu regulator voltage to a valid value in init callback*/
+	oldvolt_cpu = meson_regulator_get_volate(data->reg);
+	if (oldvolt_cpu > max)
+		oldvolt_cpu = max;
+	else if (oldvolt_cpu < min)
+		oldvolt_cpu = min;
+	regulator_set_voltage_tol(data->reg, oldvolt_cpu, oldvolt_cpu);
+	data->cpuvolt_last_set = oldvolt_cpu;
+
+	if (data->reg_dsu) {
+		oldvolt_dsu = meson_regulator_get_volate(data->reg_dsu);
+		if (oldvolt_dsu > data->dsu_opp_table[3])
+			oldvolt_dsu = data->dsu_opp_table[3];
+		else if (oldvolt_dsu < min)
+			oldvolt_dsu = min;
+		/*set regulator voltage to a valid value in init callback*/
+		regulator_set_voltage_tol(data->reg_dsu, oldvolt_dsu, oldvolt_dsu);
+		data->dsuvolt_last_set = oldvolt_dsu;
+	}
+}
+
 /* CPU initialization */
 static int meson_cpufreq_init(struct cpufreq_policy *policy)
 {
@@ -944,6 +980,7 @@ static int meson_cpufreq_init(struct cpufreq_policy *policy)
 		pr_debug("%s:failed to get regulator, %ld\n", __func__,
 		       PTR_ERR(cpu_reg));
 		cpu_reg = NULL;
+		goto free_clk;
 	}
 	dsu_reg = regulator_get_optional(cpu_dev, DSU_SUPPLY);
 	if (IS_ERR(dsu_reg)) {
@@ -1028,6 +1065,7 @@ static int meson_cpufreq_init(struct cpufreq_policy *policy)
 
 	nr_opp = dev_pm_opp_get_opp_count(cpu_dev);
 	create_meson_cpufreq_proc_files(policy);
+	meson_set_policy_volt_range(cpufreq_data);
 
 	dev_dbg(cpu_dev, "%s: CPU %d initialized\n", __func__, policy->cpu);
 	return ret;

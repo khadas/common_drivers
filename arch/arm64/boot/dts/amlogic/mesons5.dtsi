@@ -52,18 +52,18 @@
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
 			#cooling-cells = <2>;
-			//clocks = <&clkc CLKID_CPU_CLK>,
-			//	<&clkc CLKID_CPU_DYN_CLK>,
-			//	<&clkc CLKID_SYS_PLL>,
-			//	<&clkc CLKID_DSU_CLK>,
-			//	<&clkc CLKID_DSU_DYN_CLK>,
-			//	<&clkc CLKID_GP1_PLL>;
-			//clock-names = "core_clk",
-			//	"low_freq_clk_parent",
-			//	"high_freq_clk_parent",
-			//	"dsu_clk",
-			//	"dsu_pre_parent",
-			//	"dsu_pre_parent2";
+			clocks = <&clkc CLKID_CPU_CLK>,
+				<&clkc CLKID_CPU_DYN_CLK>,
+				<&clkc CLKID_SYS_PLL>,
+				<&clkc CLKID_DSU_CLK>,
+				<&clkc CLKID_DSU_DYN_CLK>,
+				<&clkc CLKID_GP1_PLL>;
+			clock-names = "core_clk",
+				"low_freq_clk_parent",
+				"high_freq_clk_parent",
+				"dsu_clk",
+				"dsu_pre_parent",
+				"dsu_pre_parent2";
 			operating-points-v2 = <&a55_opp_table0>;
 			voltage-tolerance = <0>;
 			clock-latency = <50000>;
@@ -184,18 +184,18 @@
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
 			#cooling-cells = <2>;
-			//clocks = <&clkc CLKID_A76_CLK>,
-			//	<&clkc CLKID_A76_DYN_CLK>,
-			//	<&clkc CLKID_SYS1_PLL>,
-			//	<&clkc CLKID_DSU_CLK>,
-			//	<&clkc CLKID_DSU_DYN_CLK>,
-			//	<&clkc CLKID_GP1_PLL>;
-			//clock-names = "core_clk",
-			//	"low_freq_clk_parent",
-			//	"high_freq_clk_parent",
-			//	"dsu_clk",
-			//	"dsu_pre_parent",
-			//	"dsu_pre_parent2";
+			clocks = <&clkc CLKID_A76_CLK>,
+				<&clkc CLKID_A76_DYN_CLK>,
+				<&clkc CLKID_SYS1_PLL>,
+				<&clkc CLKID_DSU_CLK>,
+				<&clkc CLKID_DSU_DYN_CLK>,
+				<&clkc CLKID_GP1_PLL>;
+			clock-names = "core_clk",
+				"low_freq_clk_parent",
+				"high_freq_clk_parent",
+				"dsu_clk",
+				"dsu_pre_parent",
+				"dsu_pre_parent2";
 			operating-points-v2 = <&a76_opp_table0>;
 			voltage-tolerance = <0>;
 			cpu-supply = <&vddcpub>;

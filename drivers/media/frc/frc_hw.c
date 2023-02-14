@@ -2280,3 +2280,19 @@ void frc_set_urgent_cfg(u8 level)
 					READ_FRC_REG(FRC_AXIWR0_QLEVEL));
 }
 
+void frc_set_n2m(u8 ratio_value)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (get_chip_type() == ID_T3)
+		return;
+
+	if (ratio_value == devp->in_out_ratio)
+		return;
+	if (ratio_value <= (u8)FRC_RATIO_1_1) {
+		devp->in_out_ratio = (enum frc_ratio_mode_type)ratio_value;
+		if (devp->frc_sts.state == FRC_STATE_ENABLE)
+			devp->frc_sts.re_config = true;
+	}
+}
+

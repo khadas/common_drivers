@@ -363,6 +363,14 @@ static long frc_ioctl(struct file *file,
 		}
 		frc_set_film_support(data);
 		break;
+	case FRC_IOC_SET_MEMC_N2M:
+		if (copy_from_user(&data, argp, sizeof(u32))) {
+			ret = -EFAULT;
+			break;
+		}
+		if (devp->auto_n2m == 0)
+			frc_set_n2m(data);
+		break;
 	case FRC_IOC_GET_MEMC_VERSION:
 		strncpy(&tmpver[0], &fw_data.frc_alg_ver[0], sizeof(u8) * 32);
 		if (copy_to_user(argp, tmpver, sizeof(u8) * 32))
@@ -800,6 +808,7 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 
 	devp->dbg_in_out_ratio = FRC_RATIO_1_1;/*enum frc_ratio_mode_type frc_ratio_mode*/
 	// devp->dbg_in_out_ratio = FRC_RATIO_2_5;/*enum frc_ratio_mode_type frc_ratio_mode*/
+	// devp->dbg_in_out_ratio = FRC_RATIO_1_2;
 	devp->dbg_input_hsize = vinfo->width;
 	devp->dbg_input_vsize = vinfo->height;
 	devp->dbg_reg_monitor_i = 0;
@@ -816,6 +825,7 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 
 	devp->in_out_ratio = FRC_RATIO_1_1;
 	// devp->in_out_ratio = FRC_RATIO_2_5;
+	// devp->in_out_ratio = FRC_RATIO_1_2;
 	// devp->film_mode = EN_FILM32;
 	devp->film_mode = EN_VIDEO;
 	devp->film_mode_det = 0;
@@ -874,6 +884,12 @@ void get_vout_info(struct frc_dev_s *frc_devp)
 		frc_devp->out_sts.out_framerate = tmpframterate;
 		pfw_data->frc_top_type.frc_other_reserved =
 			frc_devp->out_sts.out_framerate;
+		if (frc_devp->auto_n2m == 1) {
+			if (frc_devp->out_sts.out_framerate > 90)
+				frc_set_n2m(FRC_RATIO_1_2);
+			else if (frc_devp->out_sts.out_framerate < 70)
+				frc_set_n2m(FRC_RATIO_1_1);
+		}
 		pr_frc(0, "vout:w-%d,h-%d,rate-%d\n",
 				frc_devp->out_sts.vout_width,
 				frc_devp->out_sts.vout_height,

@@ -336,8 +336,10 @@
 	vclk_serve: vclk_serve {
 		compatible = "amlogic, vclk_serve";
 		status = "okay";
-		mode = <0>;
-		reg = <0x0 0xff63c000 0x0 0x4a0>; /* hiu reg */
+		mode = <2>;
+		reg = <0x0 0xff63c000 0x0 0x4a0>, /* hiu reg */
+		      <0x0 0xff63c000 0x0 0x4a0>, /* ana reg */
+		      <0x0 0xff63c000 0x0 0x4a0>; /* clk reg */
 	};
 
 	pinctrl_aobus: pinctrl@ff800014{
@@ -1390,7 +1392,7 @@
 
 	/*if you want to use vdin just modify status to "ok"*/
 	vdin0: vdin0 {
-		compatible = "amlogic, vdin";
+		compatible = "amlogic, vdin-sm1";
 		dev_name = "vdin0";
 		status = "disabled";
 		reserve-iomap = "true";
@@ -1412,7 +1414,7 @@
 		vdin_id = <0>;
 	};
 	vdin1: vdin1 {
-		compatible = "amlogic, vdin";
+		compatible = "amlogic, vdin-sm1";
 		dev_name = "vdin1";
 		status = "disabled";
 		reserve-iomap = "true";
@@ -1474,7 +1476,7 @@
 
 	vdac {
 		compatible = "amlogic, vdac-sm1";
-		status = "disabled";
+		status = "okay";
 	};
 
 	canvas: canvas{

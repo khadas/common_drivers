@@ -49,6 +49,14 @@ static int vclk_reg_table_1[] = {
 	VCLK_MAP_CLK,
 	VCLK_MAP_MAX
 };
+
+static int vclk_reg_table_2[] = {
+	VCLK_MAP_HIU,
+	VCLK_MAP_ANA,
+	VCLK_MAP_CLK,
+	VCLK_MAP_MAX
+};
+
 struct vclk_reg_map_s {
 	unsigned int base_addr;
 	unsigned int size;
@@ -71,7 +79,9 @@ static int vclk_ioremap(struct platform_device *pdev)
 	if (!vclk_reg_map)
 		return -1;
 
-	if (vclk_ioremap_mode)
+	if (vclk_ioremap_mode == 2)
+		table = vclk_reg_table_2;
+	else if (vclk_ioremap_mode == 1)
 		table = vclk_reg_table_1;
 	else
 		table = vclk_reg_table_0;
@@ -119,7 +129,9 @@ static void vclk_iounmap(struct platform_device *pdev)
 	if (!vclk_reg_map)
 		return;
 
-	if (vclk_ioremap_mode)
+	if (vclk_ioremap_mode == 2)
+		table = vclk_reg_table_2;
+	else if (vclk_ioremap_mode == 1)
 		table = vclk_reg_table_1;
 	else
 		table = vclk_reg_table_0;

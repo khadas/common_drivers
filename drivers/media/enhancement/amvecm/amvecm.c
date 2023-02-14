@@ -1117,6 +1117,19 @@ void vpp_get_hist_en(void)
 
 static unsigned int vpp_luma_max;
 
+void get_dark_luma_hist(struct vframe_s *vf)
+{
+	int i;
+	int hist_idx;
+
+	if (chip_type_id == chip_t5m) {
+		hist_idx = 1 << 6;
+		WRITE_VPP_REG(VI_RO_HIST_LOW_IDX, hist_idx);
+		for (i = 0; i < 64; i++)
+			vf->prop.hist.vpp_dark_hist[i] = READ_VPP_REG(VI_RO_HIST_LOW);
+	}
+}
+
 void get_cm_hist(struct vframe_s *vf)
 {
 	int i;
@@ -1420,6 +1433,7 @@ void vpp_get_vframe_hist_info(struct vframe_s *vf)
 	}
 
 	get_cm_hist(vf);
+	get_dark_luma_hist(vf);
 
 	if (debug_game_mode_1 &&
 	    vpp_luma_max != vf->prop.hist.vpp_luma_max) {
@@ -10826,6 +10840,18 @@ static const struct vecm_match_data_s vecm_dt_t5w = {
 	.vrr_support_flag = 1,
 };
 
+static const struct vecm_match_data_s vecm_dt_t5m = {
+	.chip_id = chip_t5m,
+	.vlk_chip = vlock_chip_t5,
+	.vlk_support = true,
+	.vlk_new_fsm = 1,
+	.vlk_hwver = vlock_hw_tm2verb,
+	.vlk_phlock_en = true,
+	.vlk_pll_sel = vlock_pll_sel_tcon,
+	.vlk_ctl_for_frc = 0,
+	.vrr_support_flag = 1,
+};
+
 static const struct vecm_match_data_s vecm_dt_s5 = {
 	.chip_id = chip_s5,
 	.chip_cls = STB_CHIP,
@@ -10879,6 +10905,10 @@ static const struct of_device_id aml_vecm_dt_match[] = {
 	{
 		.compatible = "amlogic, vecm-t5w",
 		.data = &vecm_dt_t5w,
+	},
+	{
+		.compatible = "amlogic, vecm-t5m",
+		.data = &vecm_dt_t5m,
 	},
 	{
 		.compatible = "amlogic, vecm-s5",

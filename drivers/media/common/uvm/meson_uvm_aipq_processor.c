@@ -510,7 +510,7 @@ int aipq_setinfo(void *arg, char *buf)
 
 static void dump_vf(struct vframe_s *vf, phys_addr_t addr, struct uvm_aipq_info *info)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp;
 	char name_buf[32];
 	int write_size;
@@ -531,8 +531,7 @@ static void dump_vf(struct vframe_s *vf, phys_addr_t addr, struct uvm_aipq_info 
 	if (!data)
 		return;
 	pos = 0;
-	vfs_write(fp, data, write_size, &pos);
-	vfs_fsync(fp, 0);
+	kernel_write(fp, data, write_size, &pos);
 	aipq_print(PRINT_ERROR, "aipq: write %u size to addr%p\n",
 		write_size, data);
 	codec_mm_unmap_phyaddr(data);
@@ -548,8 +547,7 @@ static void dump_vf(struct vframe_s *vf, phys_addr_t addr, struct uvm_aipq_info 
 	if (!data)
 		return;
 	pos = 0;
-	vfs_write(fp, data, write_size, &pos);
-	vfs_fsync(fp, 0);
+	kernel_write(fp, data, write_size, &pos);
 	aipq_print(PRINT_ERROR, "aipq: write %u size to addr%p\n",
 		write_size, data);
 	codec_mm_unmap_phyaddr(data);

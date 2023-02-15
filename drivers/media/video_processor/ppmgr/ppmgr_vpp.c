@@ -563,7 +563,7 @@ static void decontour_print_parm(struct dcntr_mem_s *dcntr_mem)
 
 static int decontour_dump_output(u32 w, u32 h, struct dcntr_mem_s *dcntr_mem, int skip)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp;
 	loff_t pos;
 	char name_buf[32];
@@ -586,8 +586,7 @@ static int decontour_dump_output(u32 w, u32 h, struct dcntr_mem_s *dcntr_mem, in
 	if (!data)
 		return -2;
 	pos = 0;
-	vfs_write(fp, (const char *)data, write_size, &pos);
-	vfs_fsync(fp, 0);
+	kernel_write(fp, (const char *)data, write_size, &pos);
 	dc_print("decontour: write %u size to addr%p\n", write_size, data);
 	codec_mm_unmap_phyaddr(data);
 	filp_close(fp, NULL);
@@ -611,8 +610,7 @@ static int decontour_dump_output(u32 w, u32 h, struct dcntr_mem_s *dcntr_mem, in
 	if (!data)
 		return -5;
 	pos = 0;
-	vfs_write(fp, (const char *)data, write_size, &pos);
-	vfs_fsync(fp, 0);
+	kernel_write(fp, (const char *)data, write_size, &pos);
 	dc_print("decontour: write %u size to file.addr%p\n", write_size, data);
 	codec_mm_unmap_phyaddr(data);
 	pos = write_size;
@@ -622,8 +620,7 @@ static int decontour_dump_output(u32 w, u32 h, struct dcntr_mem_s *dcntr_mem, in
 	dc_print("decontour:dump_4\n");
 	if (!data)
 		return -6;
-	vfs_write(fp, (const char *)data, write_size, &pos);
-	vfs_fsync(fp, 0);
+	kernel_write(fp, (const char *)data, write_size, &pos);
 	dc_print("decontour: write %u size to file.addr%p\n", write_size, data);
 	codec_mm_unmap_phyaddr(data);
 	filp_close(fp, NULL);
@@ -2016,7 +2013,7 @@ static int process_vf_tb_detect(struct vframe_s *vf,
 #endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_CODEC_MM
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 static int copy_phybuf_to_file(ulong phys, u32 size,
 			       struct file *fp, loff_t pos)
 {
@@ -2035,7 +2032,7 @@ static int copy_phybuf_to_file(ulong phys, u32 size,
 			return -1;
 		}
 		codec_mm_dma_flush(p, span, DMA_FROM_DEVICE);
-		ret = vfs_write(fp, (char *)p, span, &pos);
+		ret = kernel_write(fp, (char *)p, span, &pos);
 		if (ret <= 0)
 			PPMGRVPP_INFO("vfs write failed!\n");
 		phys += span;
@@ -2087,7 +2084,7 @@ static void process_vf_rotate(struct vframe_s *vf,
 	int ret = 0;
 	unsigned int cur_angle = 0;
 	int interlace_mode;
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *filp_scr = NULL;
 	struct file *filp_dst = NULL;
 	char source_path[64];
@@ -2431,7 +2428,7 @@ static void process_vf_rotate(struct vframe_s *vf,
 	pp_vf->angle = cur_angle;
 	stretchblt_noalpha(context, 0, 0, vf->width, vf->height,
 			   0, 0, new_vf->width, new_vf->height);
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	if (strstr(ppmgr_device.dump_path, "scr") && dumpfirstframe == 2) {
 		count = strlen(ppmgr_device.dump_path);
 		ppmgr_device.dump_path[count] = count_scr;
@@ -2459,7 +2456,6 @@ static void process_vf_rotate(struct vframe_s *vf,
 				      vf->canvas0_config[0].height);
 			PPMGRVPP_INFO("dump source type: %d\n",
 				      get_input_format(vf));
-			vfs_fsync(filp_scr, 0);
 			filp_close(filp_scr, NULL);
 		}
 	}
@@ -2469,7 +2465,7 @@ rotate_done:
 	new_vf->source_type = VFRAME_SOURCE_TYPE_PPMGR;
 	if (dumpfirstframe != 2)
 		vfq_push(&q_ready, new_vf);
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	if (strstr(ppmgr_device.dump_path, "dst") && dumpfirstframe == 2) {
 		count = strlen(ppmgr_device.dump_path);
 		ppmgr_device.dump_path[count] = count_dst;
@@ -2494,7 +2490,6 @@ rotate_done:
 #endif
 			if (result < 0)
 				PPMGRVPP_INFO("write %s failed\n", dst_path);
-			vfs_fsync(filp_dst, 0);
 			filp_close(filp_dst, NULL);
 		}
 		if (count_dst >= ppmgr_device.ppmgr_debug)

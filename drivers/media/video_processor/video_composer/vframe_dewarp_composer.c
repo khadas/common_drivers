@@ -67,7 +67,7 @@ static int get_dewarp_rotation_value(int vc_transform)
 
 static int dump_dewarp_vframe(char *path, int width, int height, u32 phy_adr_y, u32 phy_adr_uv)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	int size = 0;
 	struct file *fp = NULL;
 	loff_t position = 0;
@@ -93,7 +93,7 @@ static int dump_dewarp_vframe(char *path, int width, int height, u32 phy_adr_y, 
 		return -1;
 	}
 	/* change to KERNEL_DS address limit */
-	vfs_write(fp, data, size, &position);
+	kernel_write(fp, data, size, &position);
 	codec_mm_unmap_phyaddr(data);
 
 	size = width * height / 2;
@@ -103,10 +103,9 @@ static int dump_dewarp_vframe(char *path, int width, int height, u32 phy_adr_y, 
 		return -1;
 	}
 	/* change to KERNEL_DS address limit */
-	vfs_write(fp, data, size, &position);
+	kernel_write(fp, data, size, &position);
 	codec_mm_unmap_phyaddr(data);
 
-	vfs_fsync(fp, 0);
 	filp_close(fp, NULL);
 #else
 	return -1;

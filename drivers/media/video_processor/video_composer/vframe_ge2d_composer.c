@@ -34,7 +34,7 @@
 #define WIDTH_8K 7680
 #define HEIGHT_8K 7680
 
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 static int dump_src_count;
 static int dump_before_dst_count;
 static int dump_dst_count;
@@ -372,7 +372,7 @@ int uninit_ge2d_composer(struct ge2d_composer_para *ge2d_comp_para)
 	return 0;
 }
 
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 static int copy_phybuf_to_file(struct canvas_config_s *config,
 			       struct file *fp, loff_t pos)
 {
@@ -396,7 +396,7 @@ static int copy_phybuf_to_file(struct canvas_config_s *config,
 			return -1;
 		}
 		codec_mm_dma_flush(p, span, DMA_FROM_DEVICE);
-		ret = vfs_write(fp, (char *)p, span, &pos);
+		ret = kernel_write(fp, (char *)p, span, &pos);
 		if (ret <= 0)
 			VIDEOCOM_ERR("vfs write failed!\n");
 		phys += span;
@@ -411,7 +411,7 @@ static int copy_phybuf_to_file(struct canvas_config_s *config,
 #endif
 static bool dump_data(struct dump_param *para, enum buffer_data type)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	bool ret = false;
 	struct file *filp_dst = NULL;
 	char dst_path[64] = {'\0'};
@@ -470,7 +470,6 @@ static bool dump_data(struct dump_param *para, enum buffer_data type)
 				goto end;
 			}
 		}
-		vfs_fsync(filp_dst, 0);
 		filp_close(filp_dst, NULL);
 		ret = true;
 	}

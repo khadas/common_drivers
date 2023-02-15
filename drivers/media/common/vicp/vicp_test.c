@@ -23,12 +23,11 @@ ulong output_buffer_addr;
 
 static void write_yuv_to_buf(void)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp = NULL;
 	char name_buf[32];
 	int data_size;
 	u8 *data_addr;
-	mm_segment_t fs;
 	loff_t pos;
 
 	if (input_color_format == 2) {
@@ -49,17 +48,13 @@ static void write_yuv_to_buf(void)
 		return;
 	}
 
-	fs = get_fs();
-	set_fs(KERNEL_DS);
 	pos = fp->f_pos;
-	vfs_read(fp, data_addr, data_size, &pos);
+	kernel_read(fp, data_addr, data_size, &pos);
 	fp->f_pos = pos;
-	vfs_fsync(fp, 0);
 	pr_info("%s: read %u size.\n", __func__, data_size);
 
 	codec_mm_dma_flush(data_addr, data_size, DMA_TO_DEVICE);
 	codec_mm_unmap_phyaddr(data_addr);
-	set_fs(fs);
 	filp_close(fp, NULL);
 #endif
 }
@@ -148,7 +143,7 @@ int vicp_test_config(struct vid_cmpr_top_t *vid_cmpr_top)
 
 static void dump_test_yuv(int flag)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp = NULL;
 	char name_buf[32];
 	int data_size;
@@ -191,15 +186,11 @@ static void dump_test_yuv(int flag)
 		return;
 	}
 
-	fs = get_fs();
-	set_fs(KERNEL_DS);
 	pos = fp->f_pos;
-	vfs_write(fp, data_addr, data_size, &pos);
+	kernel_write(fp, data_addr, data_size, &pos);
 	fp->f_pos = pos;
-	vfs_fsync(fp, 0);
 	pr_info("%s: write %u size.\n", __func__, data_size);
 	codec_mm_unmap_phyaddr(data_addr);
-	set_fs(fs);
 	filp_close(fp, NULL);
 #endif
 }

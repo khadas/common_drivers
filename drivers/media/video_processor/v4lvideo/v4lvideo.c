@@ -894,7 +894,7 @@ static int get_input_format(struct vframe_s *vf)
 static void dump_yuv_data(struct vframe_s *vf,
 			struct v4l_data_t *v4l_data)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp;
 	loff_t pos;
 	char name_buf[32];
@@ -909,7 +909,7 @@ static void dump_yuv_data(struct vframe_s *vf,
 	} else {
 		write_size = v4l_data->byte_stride *
 			v4l_data->height * 3 / 2;
-		vfs_write(fp, phys_to_virt(v4l_data->phy_addr[0]),
+		kernel_write(fp, phys_to_virt(v4l_data->phy_addr[0]),
 			  write_size, &pos);
 		pr_info("write %u size to file.\n", write_size);
 		filp_close(fp, NULL);

@@ -124,7 +124,7 @@ u32 dewarp_load_flag; /*0 dynamic load, 1 load bin file*/
 
 static void vd_dump_afbc_vf(u8 *data_y, u8 *data_uv, struct vframe_s *vf)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp = NULL;
 	char name_buf[32];
 	int data_size_y, data_size_uv;
@@ -146,15 +146,13 @@ static void vd_dump_afbc_vf(u8 *data_y, u8 *data_uv, struct vframe_s *vf)
 		return;
 	}
 	pos = fp->f_pos;
-	vfs_write(fp, data_y, data_size_y, &pos);
+	kernel_write(fp, data_y, data_size_y, &pos);
 	fp->f_pos = pos;
-	vfs_fsync(fp, 0);
 	pr_info("%s: write %u size to addr%p\n",
 		__func__, data_size_y, data_y);
 	pos = fp->f_pos;
-	vfs_write(fp, data_uv, data_size_uv, &pos);
+	kernel_write(fp, data_uv, data_size_uv, &pos);
 	fp->f_pos = pos;
-	vfs_fsync(fp, 0);
 	pr_info("%s: write %u size to addr%p\n",
 		__func__, data_size_uv, data_uv);
 	filp_close(fp, NULL);
@@ -163,7 +161,7 @@ static void vd_dump_afbc_vf(u8 *data_y, u8 *data_uv, struct vframe_s *vf)
 
 static void vd_dump_vf(struct vframe_s *vf)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp = NULL;
 	char name_buf[32];
 	int data_size_y, data_size_uv;
@@ -189,16 +187,14 @@ static void vd_dump_vf(struct vframe_s *vf)
 		return;
 	}
 	pos = fp->f_pos;
-	vfs_write(fp, data_y, data_size_y, &pos);
+	kernel_write(fp, data_y, data_size_y, &pos);
 	fp->f_pos = pos;
-	vfs_fsync(fp, 0);
 	pr_info("%s: write %u size to addr%p\n",
 		__func__, data_size_y, data_y);
 	codec_mm_unmap_phyaddr(data_y);
 	pos = fp->f_pos;
-	vfs_write(fp, data_uv, data_size_uv, &pos);
+	kernel_write(fp, data_uv, data_size_uv, &pos);
 	fp->f_pos = pos;
-	vfs_fsync(fp, 0);
 	pr_info("%s: write %u size to addr%p\n",
 		__func__, data_size_uv, data_uv);
 	codec_mm_unmap_phyaddr(data_uv);
@@ -1650,7 +1646,7 @@ static struct vframe_s *get_vf_from_file(struct composer_dev *dev,
 
 static void dump_vf(int vc_index, struct vframe_s *vf, int flag)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp = NULL;
 	char name_buf[32];
 	int data_size_y, data_size_uv;
@@ -1682,16 +1678,14 @@ static void dump_vf(int vc_index, struct vframe_s *vf, int flag)
 		return;
 	}
 	pos = fp->f_pos;
-	vfs_write(fp, data_y, data_size_y, &pos);
+	kernel_write(fp, data_y, data_size_y, &pos);
 	fp->f_pos = pos;
-	vfs_fsync(fp, 0);
 	vc_print(vc_index, PRINT_ERROR, "%s: write %u size to addr%p\n",
 		__func__, data_size_y, data_y);
 	codec_mm_unmap_phyaddr(data_y);
 	pos = fp->f_pos;
-	vfs_write(fp, data_uv, data_size_uv, &pos);
+	kernel_write(fp, data_uv, data_size_uv, &pos);
 	fp->f_pos = pos;
-	vfs_fsync(fp, 0);
 	vc_print(vc_index, PRINT_ERROR, "%s: write %u size to addr%p\n",
 		__func__, data_size_uv, data_uv);
 	codec_mm_unmap_phyaddr(data_uv);
@@ -1701,7 +1695,7 @@ static void dump_vf(int vc_index, struct vframe_s *vf, int flag)
 
 static void dump_fbc_out_data(ulong addr, u32 data_size)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp = NULL;
 	loff_t pos;
 	u8 *virt_addr = NULL;
@@ -1718,9 +1712,8 @@ static void dump_fbc_out_data(ulong addr, u32 data_size)
 	}
 
 	pos = fp->f_pos;
-	vfs_write(fp, virt_addr, data_size, &pos);
+	kernel_write(fp, virt_addr, data_size, &pos);
 	fp->f_pos = pos;
-	vfs_fsync(fp, 0);
 	pr_info("%s: read %u size from addr:%p\n", __func__, data_size, virt_addr);
 	filp_close(fp, NULL);
 #endif

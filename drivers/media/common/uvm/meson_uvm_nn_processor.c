@@ -343,7 +343,7 @@ int attach_nn_hook_mod_info(int shared_fd,
 
 static void dump_vf(struct vframe_s *vf)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp;
 	char name_buf[32];
 	int write_size;
@@ -363,8 +363,7 @@ static void dump_vf(struct vframe_s *vf)
 	if (!data)
 		return;
 	pos = 0;
-	vfs_write(fp, data, write_size, &pos);
-	vfs_fsync(fp, 0);
+	kernel_write(fp, data, write_size, &pos);
 	nn_print(PRINT_OTHER, "nn: write %u size to addr%p\n", write_size, data);
 	codec_mm_unmap_phyaddr(data);
 	filp_close(fp, NULL);
@@ -373,7 +372,7 @@ static void dump_vf(struct vframe_s *vf)
 
 int dump_hf(struct vf_nn_sr_t *nn_sr_dst)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp;
 	char name_buf[32];
 	int write_size;
@@ -389,8 +388,7 @@ int dump_hf(struct vf_nn_sr_t *nn_sr_dst)
 	if (!data)
 		return -2;
 	pos = 0;
-	vfs_write(fp, data, write_size, &pos);
-	vfs_fsync(fp, 0);
+	kernel_write(fp, data, write_size, &pos);
 	nn_print(PRINT_OTHER, "nn: write %u size to addr%p\n", write_size, data);
 	codec_mm_unmap_phyaddr(data);
 	filp_close(fp, NULL);

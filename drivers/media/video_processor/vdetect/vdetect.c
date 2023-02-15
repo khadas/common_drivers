@@ -587,7 +587,7 @@ int get_vdetect_canvas_index(struct vdetect_output *output,
 static int copy_phybuf_to_file(ulong phys, u32 size,
 			       struct file *fp, loff_t pos)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	u32 span = SZ_1M;
 	u8 *p;
 	int remain_size = 0;
@@ -603,7 +603,7 @@ static int copy_phybuf_to_file(ulong phys, u32 size,
 			return -1;
 		}
 		codec_mm_dma_flush(p, span, DMA_FROM_DEVICE);
-		ret = vfs_write(fp, (char *)p, span, &pos);
+		ret = kernel_write(fp, (char *)p, span, &pos);
 		if (ret <= 0)
 			pr_info("vdetect: vfs write failed!\n");
 		phys += span;
@@ -875,7 +875,7 @@ static int vdetect_fill_buffer(struct vdetect_dev *dev)
 
 	vdetect_print(dev->inst, PRINT_CAPTUREINFO,
 		      "%s line: %d\n", __func__, __LINE__);
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	if (detect_dump & 1) {
 		filp_scr = filp_open("/data/temp/screen_capture",
 				     O_RDWR | O_CREAT, 0666);
@@ -903,7 +903,6 @@ static int vdetect_fill_buffer(struct vdetect_dev *dev)
 				phys, width, height);
 			pr_info("dump source type: %d\n",
 				get_input_format(dev->ge2d_vf));
-			vfs_fsync(filp_scr, 0);
 			filp_close(filp_scr, NULL);
 		}
 	}

@@ -1298,12 +1298,11 @@ static void set_vid_cmpr_security(bool sec_en)
 
 static void dump_yuv(int flag, struct vframe_s *vframe)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	struct file *fp = NULL;
 	char name_buf[32];
 	int data_size;
 	u8 *data_addr;
-	mm_segment_t fs;
 	loff_t pos;
 
 	if (flag == 0) {
@@ -1322,16 +1321,11 @@ static void dump_yuv(int flag, struct vframe_s *vframe)
 		vicp_print(VICP_ERROR, "%s: vmap failed.\n", __func__);
 		return;
 	}
-
-	fs = get_fs();
-	set_fs(KERNEL_DS);
 	pos = fp->f_pos;
-	vfs_write(fp, data_addr, data_size, &pos);
+	kernel_write(fp, data_addr, data_size, &pos);
 	fp->f_pos = pos;
-	vfs_fsync(fp, 0);
 	vicp_print(VICP_INFO, "%s: write %u size.\n", __func__, data_size);
 	codec_mm_unmap_phyaddr(data_addr);
-	set_fs(fs);
 	filp_close(fp, NULL);
 #endif
 }

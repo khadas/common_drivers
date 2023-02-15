@@ -2335,8 +2335,8 @@
 		cal_coeff = <324 424 3159 9411>;
 		rtemp = <115000>;
 		interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK>;
-		//clock-names = "ts_comp";
+		clocks = <&clkc CLKID_TS_CLK>;
+		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
 		power-domains = <&pwrdm PDID_S5_MALI_TOP>;
 		reset-names = "ts_rst";
@@ -2352,8 +2352,8 @@
 		cal_coeff = <324 424 3159 9411>;
 		rtemp = <115000>;
 		interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK>;
-		//clock-names = "ts_comp";
+		clocks = <&clkc CLKID_TS_CLK>;
+		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
 		reset-names = "ts_rst";
 		resets = <&reset RESET_TS_A55>;
@@ -2368,8 +2368,8 @@
 		cal_coeff = <324 424 3159 9411>;
 		rtemp = <115000>;
 		interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK>;
-		//clock-names = "ts_comp";
+		clocks = <&clkc CLKID_TS_CLK>;
+		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
 		reset-names = "ts_rst";
 		resets = <&reset RESET_TS_VPU>;
@@ -2384,8 +2384,8 @@
 		cal_coeff = <324 424 3159 9411>;
 		rtemp = <115000>;
 		interrupts = <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK>;
-		//clock-names = "ts_comp";
+		clocks = <&clkc CLKID_TS_CLK>;
+		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
 		power-domains = <&pwrdm PDID_S5_DOS_TOP_WRAP>;
 		reset-names = "ts_rst";
@@ -2401,8 +2401,8 @@
 		cal_coeff = <324 424 3159 9411>;
 		rtemp = <115000>;
 		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK>;
-		//clock-names = "ts_comp";
+		clocks = <&clkc CLKID_TS_CLK>;
+		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
 		power-domains = <&pwrdm PDID_S5_NNA_4T>;
 		reset-names = "ts_rst";

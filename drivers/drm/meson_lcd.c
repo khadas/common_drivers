@@ -179,7 +179,7 @@ static void meson_panel_encoder_atomic_enable(struct drm_encoder *encoder,
 	struct am_meson_crtc_state *meson_crtc_state =
 				to_am_meson_crtc_state(encoder->crtc->state);
 	struct am_meson_crtc *amcrtc = to_am_meson_crtc(encoder->crtc);
-	struct drm_display_mode *mode = &encoder->crtc->mode;
+	struct drm_display_mode *mode = &meson_crtc_state->base.adjusted_mode;
 	enum vmode_e vmode = meson_crtc_state->vmode;
 
 	crtc = encoder->crtc;
@@ -193,19 +193,21 @@ static void meson_panel_encoder_atomic_enable(struct drm_encoder *encoder,
 		vmode |= VMODE_INIT_BIT_MASK;
 
 	DRM_INFO("[%s]-[%d] called, %d, %d\n", __func__, __LINE__,
-		 amcrtc->prev_vrefresh, drm_mode_vrefresh(mode));
+		 meson_crtc_state->prev_vrefresh, drm_mode_vrefresh(mode));
 
 	if (crtc->enabled && !crtc->state->active_changed &&
-	    amcrtc->prev_vrefresh != drm_mode_vrefresh(mode)) {
+	    meson_crtc_state->prev_height == mode->vdisplay &&
+	    meson_crtc_state->prev_vrefresh != drm_mode_vrefresh(mode)) {
 		drm_vrefresh = drm_mode_vrefresh(mode);
 		lcd_frac_hint = find_frac_hint_by_fps(drm_vrefresh);
 		vout_func_set_vframe_rate_hint(amcrtc->vout_index, lcd_frac_hint);
-		amcrtc->prev_vrefresh = drm_mode_vrefresh(mode);
+		meson_crtc_state->prev_vrefresh = drm_mode_vrefresh(mode);
 		DRM_INFO("skip set_vmode, use set_vframe_rate_hint\n");
 		return;
 	}
 
-	amcrtc->prev_vrefresh = drm_mode_vrefresh(mode);
+	meson_crtc_state->prev_vrefresh = drm_mode_vrefresh(mode);
+	meson_crtc_state->prev_height = mode->vdisplay;
 	meson_vout_notify_mode_change(amcrtc->vout_index,
 		vmode, EVENT_MODE_SET_START);
 	vout_func_set_vmode(amcrtc->vout_index, vmode);

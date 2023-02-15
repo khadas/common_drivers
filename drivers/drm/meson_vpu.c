@@ -314,6 +314,7 @@ static const struct meson_vpu_data vpu_s5_data = {
 	.video_ops = &video_ops,
 	.slice2ppc_ops = &slice2ppc_ops,
 	.enc_method = 1,
+	.slice_mode = 1,
 };
 
 static const struct of_device_id am_meson_vpu_driver_dt_match[] = {

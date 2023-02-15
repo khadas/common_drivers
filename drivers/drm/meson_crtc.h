@@ -54,6 +54,9 @@ struct am_meson_crtc_state {
 	u32 valid_brr;
 	/*brr mode string*/
 	char brr_mode[DRM_DISPLAY_MODE_LEN];
+
+	int prev_vrefresh;
+	int prev_height;
 };
 
 struct am_meson_crtc {
@@ -85,7 +88,6 @@ struct am_meson_crtc {
 	int vpp_crc_enable;
 	/*forced to detect crc several times after bootup.*/
 	int force_crc_chk;
-	int prev_vrefresh;
 	/*funcs*/
 	int (*get_scanout_position)(struct am_meson_crtc *crtc,
 		bool in_vblank_irq, int *vpos, int *hpos,

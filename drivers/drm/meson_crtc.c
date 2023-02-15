@@ -123,6 +123,8 @@ static struct drm_crtc_state *meson_crtc_duplicate_state(struct drm_crtc *crtc)
 	new_state->eotf_type_by_property = cur_state->eotf_type_by_property;
 	new_state->dv_mode = cur_state->dv_mode;
 	new_state->preset_vmode = VMODE_INVALID;
+	new_state->prev_vrefresh = cur_state->prev_vrefresh;
+	new_state->prev_height = cur_state->prev_height;
 
 	/*reset dynamic info.*/
 	if (amcrtc->priv->logo_show_done)
@@ -582,6 +584,7 @@ static int meson_crtc_atomic_check(struct drm_crtc *crtc,
 	struct am_meson_crtc *amcrtc = to_am_meson_crtc(crtc);
 	struct am_meson_crtc_state *cur_state =
 		to_am_meson_crtc_state(crtc->state);
+	struct meson_drm *priv = amcrtc->priv;
 	struct drm_crtc_state *crtc_state;
 	struct am_meson_crtc_state *new_state;
 	ret = 0;
@@ -600,7 +603,7 @@ static int meson_crtc_atomic_check(struct drm_crtc *crtc,
 	else
 		mvsps->more_4k = 0;
 
-	if (drm_mode_vrefresh(mode) > 60)
+	if (priv->vpu_data->slice_mode == 1 && drm_mode_vrefresh(mode) > 60)
 		mvsps->more_60 = 1;
 	else
 		mvsps->more_60 = 0;

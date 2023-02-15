@@ -32,6 +32,7 @@ struct meson_vpu_data {
 	struct meson_vpu_block_ops *video_ops;
 	struct meson_vpu_block_ops *slice2ppc_ops;
 	int enc_method;
+	int slice_mode;
 };
 
 enum meson_vout_event {

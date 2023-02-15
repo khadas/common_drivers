@@ -348,6 +348,9 @@ CONFIG_MAC80211=m
 #ntfs3.ko
 CONFIG_NTFS3_FS=m
 
+#yaffs.ko
+CONFIG_AMLOGIC_YAFFS_FS=m
+
 # amlogic-audio-utils.ko
 CONFIG_AMLOGIC_AUDIO_UTILS=m
 

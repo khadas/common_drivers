@@ -364,10 +364,9 @@ static int mixer_set_multiband_DRC_params(struct snd_kcontrol *kcontrol,
 		return 0;
 	}
 
-	/*Don't update offset and gain*/
 	p_data = &tmp_data[1];
 	p = &multiband_drc_coeff[band_id * AED_SINGLE_BAND_DRC_SIZE];
-	for (i = 0; i < (AED_SINGLE_BAND_DRC_SIZE - 2) ; i++)
+	for (i = 0; i < AED_SINGLE_BAND_DRC_SIZE; i++)
 		*p++ = *p_data++;
 
 	p = &multiband_drc_coeff[0];

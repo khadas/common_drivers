@@ -1624,16 +1624,17 @@
 			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq";
 			power-domains = <&pwrdm PDID_S5_ETH>;
-			//clocks = <&clkc CLKID_SYS_CLK_ETH>,
-			//	 <&clkc CLKID_FCLK_DIV2>,
-			//	 <&clkc CLKID_FCLK_CLK50M>;
-			//clock-names = "stmmaceth", "clkin0", "clkin1";
+			clocks = <&clkc CLKID_SYS_CLK_ETH>,
+				 <&clkc CLKID_FCLK_DIV2>,
+				 <&clkc CLKID_FCLK_CLK50M>;
+			clock-names = "stmmaceth", "clkin0", "clkin1";
 			rx-fifo-depth = <4096>;
 			tx-fifo-depth = <2048>;
 			/*1:inphy; 2:exphy;*/
 			internal_phy = <2>;
-			cali_val = <0x80000>;
+			cali_val = <0xC0000>;
 			status = "disabled";
+
 			ext_mdio: mdio {
 				#address-cells = <1>;
 				#size-cells = <0>;

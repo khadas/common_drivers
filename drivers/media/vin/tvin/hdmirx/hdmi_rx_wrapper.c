@@ -219,6 +219,7 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.eq_fix_val = 16;
 		rx.aml_phy.cdr_fr_en = 0;
 		rx.aml_phy.force_sqo = 0;
+		rx.aml_phy.reset_pcs_en = 0;
 	} else if (rx.phy_ver >= PHY_VER_T5 && rx.phy_ver <= PHY_VER_T5W) {
 		rx.aml_phy.dfe_en = 1;
 		rx.aml_phy.ofst_en = 0;
@@ -250,6 +251,7 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.eq_retry = 1;
 		rx.aml_phy.tap2_byp = 0;
 		rx.aml_phy.long_bist_en = 0;
+		rx.aml_phy.reset_pcs_en = 0;
 	} else if (rx.phy_ver >= PHY_VER_T5M) {
 		rx.aml_phy.dfe_en = 1;
 		rx.aml_phy.ofst_en = 0;
@@ -2084,9 +2086,10 @@ void rx_dwc_reset(void)
 	 * 1. hdmi swreset
 	 * 2. new AKSV is received
 	 */
-	//hdmirx_wr_top(TOP_SW_RESET, 0x280);
-	//udelay(1);
-	//hdmirx_wr_top(TOP_SW_RESET, 0);
+	if (!rx.aml_phy.reset_pcs_en) {
+		hdmirx_wr_top(TOP_SW_RESET, 0x280);
+		hdmirx_wr_top(TOP_SW_RESET, 0);
+	}
 
 	if (rx.hdcp.hdcp_version == HDCP_VER_NONE)
 	/* dishNXT box only send set_avmute, not clear_avmute

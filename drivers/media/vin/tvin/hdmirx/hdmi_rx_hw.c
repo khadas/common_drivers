@@ -1247,7 +1247,7 @@ void hdmirx_top_irq_en(int en, int lvl)
 	if (rx.chip_id >= CHIP_ID_T7) {
 		data32  = 0;
 		data32 |= (0    << 30); // [   30] aud_chg;
-		data32 |= (0    << 29); // [   29] hdmirx_sqofclk_fall;
+		data32 |= (1    << 29); // [   29] hdmirx_sqofclk_fall;
 		data32 |= (0    << 28); // [   28] hdmirx_sqofclk_rise;
 		data32 |= (((lvl == 2) ? 1 : 0) << 27); // [   27] de_rise_del_irq;
 		data32 |= (0    << 26); // [   26] last_emp_done;
@@ -2234,9 +2234,41 @@ void rx_set_term_value_t5(unsigned char port, bool value)
 	}
 }
 
+void rx_set_term_value_t5m(unsigned char port, bool value)
+{
+	u32 data32;
+
+	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2);
+	if (port < E_PORT_NUM) {
+		if (value) {
+			data32 |= (1 << (28 + port));
+		} else {
+			/* rst cdr to clr tmds_valid */
+			//data32 &= ~(MSK(3, 7));
+			data32 &= ~(1 << (28 + port));
+		}
+		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, data32);
+	} else if (port == ALL_PORTS) {
+		if (value) {
+			data32 |= 1 << 28;
+			data32 |= 1 << 29;
+			data32 |= 1 << 30;
+			data32 |= 1 << 31;
+		} else {
+			/* rst cdr to clr tmds_valid */
+			data32 &= 0xfffffff;
+			//data32 |= (MSK(3, 7));
+			/* data32 &= 0xfffffff8; */
+		}
+		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, data32);
+	}
+}
+
 void rx_set_term_value(unsigned char port, bool value)
 {
-	if (rx.chip_id >= CHIP_ID_T5)
+	if (rx.chip_id == CHIP_ID_T5M)
+		rx_set_term_value_t5m(port, value);
+	else if (rx.chip_id >= CHIP_ID_T5 && rx.chip_id <= CHIP_ID_T5W)
 		rx_set_term_value_t5(port, value);
 	else
 		rx_set_term_value_pre(port, value);

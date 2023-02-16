@@ -957,7 +957,7 @@ void aml_phy_cfg_t5m(void)
 			data32 = misc2_value;
 		/* port switch */
 		data32 &= (~(0xf << 28));
-		data32 |= ((1 << rx.port) << 28);
+		data32 |= (0xf << 28);
 		data32 &= (~(0xf << 24));
 		data32 |= ((1 << rx.port) << 24);
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, data32);
@@ -1535,12 +1535,6 @@ void aml_phy_switch_port_t5m(void)
 	data32 &= (~(0xf << 24));
 	data32 |= ((1 << rx.port) << 24);
 	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, data32);
-	data32 &= (~(1 << 26));
-	/* release reset */
-	data32 |= (1 << 26);
-	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, data32);
-	udelay(5);
-
 	hdmirx_wr_bits_top(TOP_PORT_SEL, MSK(4, 0), (1 << rx.port));
 }
 

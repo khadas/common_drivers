@@ -1927,34 +1927,35 @@
 	mesonstream {
 		compatible = "amlogic, codec, streambuf";
 		dev_name = "mesonstream";
-		status = "disabled";
+		status = "okay";
 	};
+
 	vcodec_dos_dev: vcodec_dos_dev {
-		compatible = "amlogic, cpu-major-id-s5";
+		compatible = "amlogic, cpu-major-id-t3x";
 		dev_name = "vcodec_dos_dev";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe320000 0x0 0x10000>,
 			<0x0 0xfe036000 0x0 0x2000>;
 		reg-names = "dosbus",
 			"dmcbus";
-		//clocks = <&clkc CLKID_SYS_CLK_DOS
-		//    &clkc CLKID_VDEC
-		//    &clkc CLKID_HCODEC
-		//    &clkc CLKID_HEVC>;
-		//clock-names = "vdec",
-		//    "clk_vdec_mux",
-		//    "clk_hcodec_mux",
-		//    "clk_hevc_mux";
-		//assigned-clock-parents = <&clkc CLKID_VDEC0>,
-		//    <&clkc CLKID_HEVC0>;
-		//assigned-clocks = <&clkc CLKID_VDEC>,
-		//    <&clkc CLKID_HEVC>;
+		clocks = <&clkc CLKID_SYS_CLK_DOS
+		    &clkc CLKID_VDEC
+		    &clkc CLKID_HCODEC
+		    &clkc CLKID_HEVC>;
+		clock-names = "vdec",
+		    "clk_vdec_mux",
+		    "clk_hcodec_mux",
+		    "clk_hevc_mux";
+		assigned-clock-parents = <&clkc CLKID_VDEC_0>,
+		    <&clkc CLKID_HEVC_0>;
+		assigned-clocks = <&clkc CLKID_VDEC>,
+		    <&clkc CLKID_HEVC>;
 	};
 
 	vdec {
 		compatible = "amlogic, vdec-pm-pd";
 		dev_name = "vdec.0";
-		status = "disabled";
+		status = "okay";
 		interrupts = <0 3 1
 			0 23 1
 			0 32 1
@@ -1969,14 +1970,12 @@
 			"mailbox_1",
 			"mailbox_2",
 			"assist_mbox_irq_ee";
-		//power-domains = <&pwrdm PDID_S5_DOS_VDEC>,
-			//<&pwrdm PDID_S5_DOS_HCODEC>,
-			//<&pwrdm PDID_S5_DOS_HEVC_TOP>,
-			//<&pwrdm PDID_S5_DOS_HEVC_CORE1>;
-		//power-domain-names = "pwrc-vdec",
-			//"pwrc-hcodec",
-			//"pwrc-hevc",
-			//"pwrc-hevcb";
+		power-domains = <&pwrdm PDID_T3X_DOS_VDEC>,
+			<&pwrdm PDID_T3X_DOS_HCODEC>,
+			<&pwrdm PDID_T3X_DOS_HEVC_TOP>;
+		power-domain-names = "pwrc-vdec",
+			"pwrc-hcodec",
+			"pwrc-hevc";
 	};
 
 	vcodec_dec {
@@ -2200,8 +2199,8 @@
 	};
 
 	codec_io: codec_io {
-		compatible = "amlogic, meson-s5, codec-io";
-		status = "disabled";
+		compatible = "amlogic, meson-t3x, codec-io";
+		status = "okay";
 		#address-cells=<2>;
 		#size-cells=<2>;
 		ranges;

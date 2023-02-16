@@ -65,6 +65,8 @@
 #define ISDBT_TIME_CHECK_SIGNAL 400
 #define ISDBT_FSM_CHECK_SIGNAL 7
 
+#define ATSC_AGC_TARGET_VALUE 0x28
+
 MODULE_PARM_DESC(auto_search_std, "\n\t\t atsc-c std&hrc search");
 static unsigned int auto_search_std;
 module_param(auto_search_std, int, 0644);
@@ -78,15 +80,15 @@ static unsigned int atsc_t_lock_continuous_cnt = 1;
 module_param(atsc_t_lock_continuous_cnt, int, 0644);
 
 MODULE_PARM_DESC(atsc_t_lost_continuous_cnt, "\n\t\t atsc-t lost signal continuous counting");
-static unsigned int atsc_t_lost_continuous_cnt = 1;
+static unsigned int atsc_t_lost_continuous_cnt = 15;
 module_param(atsc_t_lost_continuous_cnt, int, 0644);
 
 MODULE_PARM_DESC(atsc_check_signal_time, "\n\t\t atsc check signal time");
-static unsigned int atsc_check_signal_time = ATSC_TIME_CHECK_SIGNAL;
+static unsigned int atsc_check_signal_time;
 module_param(atsc_check_signal_time, int, 0644);
 
 MODULE_PARM_DESC(atsc_agc_target, "\n\t\t atsc agc target");
-static unsigned char atsc_agc_target = 0x28;
+static unsigned char atsc_agc_target;
 module_param(atsc_agc_target, byte, 0644);
 
 MODULE_PARM_DESC(isdbt_lock_continuous_cnt, "\n\t\t isdbt lock signal continuous counting");
@@ -1948,6 +1950,7 @@ static int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 	/*[0]: spectrum inverse(1),normal(0); [1]:if_frequency*/
 	unsigned int tuner_freq[2] = {0};
 	enum fe_delivery_system delsys = demod->last_delsys;
+	unsigned char agc_target = ATSC_AGC_TARGET_VALUE;
 
 	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d.\n",
 			__func__, demod->id, c->delivery_system, c->frequency, c->symbol_rate,
@@ -1961,6 +1964,33 @@ static int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 	demod->freq = c->frequency / 1000;
 	demod->last_lock = -1;
 	demod->atsc_mode = c->modulation;
+
+	if (c->modulation > QAM_AUTO) {
+		if (fe->ops.tuner_ops.get_if_frequency)
+			fe->ops.tuner_ops.get_if_frequency(fe, tuner_freq);
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
+			/* bit0~3: AGC bandwidth select */
+			atsc_write_reg_v4(ATSC_DEMOD_REG_0X58, 0x528220d);
+			/*bit 2: invert spectrum, for r842 tuner AGC control*/
+			if (tuner_freq[0] == 1)
+				atsc_write_reg_v4(ATSC_DEMOD_REG_0X56, 0x4);
+			else
+				atsc_write_reg_v4(ATSC_DEMOD_REG_0X56, 0x0);
+
+			if (tuner_find_by_name(fe, "r842")) {
+				/* adjust IF AGC bandwidth, default 0x40208007. */
+				/* for atsc agc speed test >= 85Hz. */
+				atsc_write_reg_v4(ATSC_AGC_REG_0X42, 0x40208003);
+
+				/* agc target */
+				if (is_meson_t5m_cpu())
+					agc_target = 0x1f; //for t5m single AGC
+				atsc_write_reg_bits_v4(ATSC_AGC_REG_0X40,
+					atsc_agc_target ? atsc_agc_target : agc_target, 0, 8);
+			}
+		}
+	}
+
 	tuner_set_params(fe);
 
 	if ((c->modulation <= QAM_AUTO) && (c->modulation != QPSK)) {
@@ -2012,8 +2042,6 @@ static int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 			qam_write_reg(demod, 0x30, 0x41f2f69);
 		}
 	} else if (c->modulation > QAM_AUTO) {
-		if (fe->ops.tuner_ops.get_if_frequency)
-			fe->ops.tuner_ops.get_if_frequency(fe, tuner_freq);
 		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
 			Val_0x6a.bits = atsc_read_reg_v4(ATSC_DEMOD_REG_0X6A);
 			Val_0x6a.b.peak_thd = 0x6;//Let CCFO Quality over 6
@@ -2023,29 +2051,10 @@ static int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 			atsc_write_reg_v4(ATSC_EQ_REG_0X92, 0x40000240);
 			//static echo
 			atsc_write_reg_v4(ATSC_EQ_REG_0X93, 0x90f01A0);
-			/* bit0~3: AGC bandwidth select */
-			atsc_write_reg_v4(ATSC_DEMOD_REG_0X58, 0x528220d);
 			/* clk recover confidence control */
 			atsc_write_reg_v4(ATSC_DEMOD_REG_0X5D, 0x14400202);
 			/* CW bin frequency */
 			atsc_write_reg_v4(ATSC_DEMOD_REG_0X61, 0x2ee);
-
-			/*bit 2: invert spectrum, for r842 tuner AGC control*/
-			if (tuner_freq[0] == 1)
-				atsc_write_reg_v4(ATSC_DEMOD_REG_0X56, 0x4);
-			else
-				atsc_write_reg_v4(ATSC_DEMOD_REG_0X56, 0x0);
-
-			if (tuner_find_by_name(fe, "r842")) {
-				/* adjust IF AGC bandwidth, default 0x40208007. */
-				/* for atsc agc speed test >= 85Hz. */
-				atsc_write_reg_v4(ATSC_AGC_REG_0X42, 0x40208003);
-
-				/* agc target */
-				if (is_meson_t5m_cpu())
-					atsc_agc_target = 0x1f; //for t5m single AGC
-				atsc_write_reg_bits_v4(ATSC_AGC_REG_0X40, atsc_agc_target, 0, 8);
-			}
 
 			if (demod->demod_status.adc_freq == ADC_CLK_24M) {
 				if (tuner_find_by_name(fe, "r842") &&
@@ -2424,6 +2433,8 @@ static void atsc_read_status(struct dvb_frontend *fe, enum fe_status *status, un
 	//Threshold value of times of continuous lock and lost
 	int lock_continuous_cnt = atsc_t_lock_continuous_cnt > 1 ? atsc_t_lock_continuous_cnt : 1;
 	int lost_continuous_cnt = atsc_t_lost_continuous_cnt > 1 ? atsc_t_lost_continuous_cnt : 1;
+	int tuner_strength_threshold = THRD_TUNER_STRENGTH_ATSC;
+	unsigned int check_signal_time = ATSC_TIME_CHECK_SIGNAL;
 
 	if (re_tune) {
 		lock_status = 0;
@@ -2443,15 +2454,17 @@ static void atsc_read_status(struct dvb_frontend *fe, enum fe_status *status, un
 		if (strength <= -80)
 			strength = atsc_get_power_strength(atsc_read_reg_v4(0x44) & 0xfff,
 					strength);
-
-		atsc_check_signal_time = 1800;
+		tuner_strength_threshold = -89;
+		check_signal_time = 1800;
 	}
 
-	if (strength < THRD_TUNER_STRENGTH_ATSC) {
+	check_signal_time = atsc_check_signal_time ? atsc_check_signal_time : check_signal_time;
+
+	if (strength < tuner_strength_threshold) {
 		*status = FE_TIMEDOUT;
 		demod->last_status = *status;
 		PR_ATSC("%s: tuner strength [%d] no signal(%d).\n",
-				__func__, strength, THRD_TUNER_STRENGTH_ATSC);
+				__func__, strength, tuner_strength_threshold);
 		return;
 	}
 
@@ -2474,7 +2487,7 @@ static void atsc_read_status(struct dvb_frontend *fe, enum fe_status *status, un
 		if (demod->time_passed >= ATSC_TIME_START_CCI)
 			atsc_check_cci(demod);
 	} else {
-		if (demod->time_passed <= atsc_check_signal_time) {
+		if (demod->time_passed <= check_signal_time) {
 			fsm_status = 0;
 		} else {
 			fsm_status = -1;

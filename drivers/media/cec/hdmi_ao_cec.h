@@ -9,7 +9,7 @@
 #include <linux/clk.h>
 #include "hdmi_tx_cec_20.h"
 
-#define CEC_DRIVER_VERSION     "2022/12/22: disable CEC detail log by default"
+#define CEC_DRIVER_VERSION     "2023/02/28: correct port number for t5m"
 
 #define CEC_DEV_NAME		"cec"
 

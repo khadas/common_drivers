@@ -2912,7 +2912,7 @@
 	};
 
 	mhu_fifo: mhu@0 {
-		status = "disabled";
+		status = "okay";
 		compatible = "amlogic, meson_mhu_fifo";
 		reg = <0x0 0xfe006000 0x0 0x1000>,  /* mhu wr fifo */
 		      <0x0 0xfe00719C 0x0 0x80>,   /* mhu set reg */
@@ -2926,19 +2926,19 @@
 		mbox-nums = <2>;
 		mbox-names = "ao_to_ap",
 			     "ap_to_ao";
-		//mboxes = <&mhu_fifo S5_AO2REE>,
-		//mhu_fifo	 <&mhu_fifo S5_REE2AO>;
+		mboxes = <&mhu_fifo T3X_AO2REE>,
+			 <&mhu_fifo T3X_REE2AO>;
 		mbox-id = <0x2 0x3>;
 		mbox-wr-rd = <1>;
 		#mbox-cells = <1>;
 	};
 
 	mbox_user: mbox-user@0 {
-		status = "disabled";
+		status = "okay";
 		compatible = "amlogic, meson-mbox-user";
 		mbox-nums = <1>;
 		mbox-names = "ree2aocpu";
-		//mboxes = <&mhu_fifo S5_REE2AO>;
+		mboxes = <&mhu_fifo T3X_REE2AO>;
 		mbox-dests = <MAILBOX_AOCPU>;
 	};
 

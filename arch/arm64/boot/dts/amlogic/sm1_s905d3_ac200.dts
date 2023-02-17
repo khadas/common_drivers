@@ -550,9 +550,9 @@
 	};//End efusekey
 
 	amlvecm {
-		compatible = "amlogic, vecm";
+		compatible = "amlogic, vecm-sm1";
 		dev_name = "aml_vecm";
-		status = "disable";
+		status = "okay";
 		gamma_en = <0>;/*1:enable ;0:disable*/
 		wb_en = <0>;/*1:enable ;0:disable*/
 		cm_en = <0>;/*1:enable ;0:disable*/

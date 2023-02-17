@@ -1761,7 +1761,11 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 			cma_area = dev->cma_area;
 		else
 			cma_area = dma_contiguous_default_area;
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+		cma_pages = cma_alloc(cma_area, buf_cfg.len >> PAGE_SHIFT, 0, GFP_KERNEL);
+#else
 		cma_pages = cma_alloc(cma_area, buf_cfg.len >> PAGE_SHIFT, 0, 0);
+#endif
 		if (cma_pages) {
 			context->mmap_type = buf_cfg.type;
 			ret = meson_gdc_set_buff(context,

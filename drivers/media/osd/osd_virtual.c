@@ -593,9 +593,15 @@ static int malloc_fb_memory(struct fb_info *info)
 		pr_info("%s, %d, fb_index=%d,fb_rmem_size=%zu\n",
 			__func__, __LINE__, fb_index,
 			fb_memsize);
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
 		fb_page = cma_alloc(cma,
-						    fb_memsize >> PAGE_SHIFT,
-						    0, 0);
+				    fb_memsize >> PAGE_SHIFT,
+				    0, GFP_KERNEL);
+#else
+		fb_page = cma_alloc(cma,
+				    fb_memsize >> PAGE_SHIFT,
+				    0, 0);
+#endif
 		if (!fb_page) {
 			pr_err("allocate buffer failed:%zu\n", fb_memsize);
 			return -ENOMEM;

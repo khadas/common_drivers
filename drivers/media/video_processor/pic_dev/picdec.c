@@ -1360,10 +1360,17 @@ int picdec_cma_buf_init(void)
 			cma_area = dma_contiguous_default_area;
 		if (picdec_device.output_format_mode) {
 			if (picdec_device.cma_mode == 0) {
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+				picdec_device.cma_pages =
+					cma_alloc(cma_area,
+						(72 * SZ_1M) >> PAGE_SHIFT,
+						0, GFP_KERNEL);
+#else
 				picdec_device.cma_pages =
 					cma_alloc(cma_area,
 						(72 * SZ_1M) >> PAGE_SHIFT,
 						0, 0);
+#endif
 				picdec_device.buffer_start = page_to_phys
 					(picdec_device.cma_pages);
 				picdec_device.buffer_size = (72 * SZ_1M);
@@ -1379,10 +1386,17 @@ int picdec_cma_buf_init(void)
 			}
 		} else {
 			if (picdec_device.cma_mode == 0) {
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+				picdec_device.cma_pages =
+					cma_alloc(cma_area,
+						(56 * SZ_1M) >> PAGE_SHIFT,
+						0, GFP_KERNEL);
+#else
 				picdec_device.cma_pages =
 					cma_alloc(cma_area,
 						(56 * SZ_1M) >> PAGE_SHIFT,
 						0, 0);
+#endif
 				picdec_device.buffer_start = page_to_phys
 					(picdec_device.cma_pages);
 				picdec_device.buffer_size = (56 * SZ_1M);

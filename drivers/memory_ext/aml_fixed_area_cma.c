@@ -37,7 +37,11 @@ void *aml_dma_alloc_contiguous(size_t size, gfp_t gfp, struct page **ret_page, u
 		size_t align = get_order(size);
 		size_t cma_align = min_t(size_t, align, CONFIG_CMA_ALIGNMENT);
 
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+		*ret_page = cma_alloc(cma, count, cma_align, gfp);
+#else
 		*ret_page = cma_alloc(cma, count, cma_align, gfp & __GFP_NOWARN);
+#endif
 	}
 	if (*ret_page)
 		vaddr = page_address(*ret_page);

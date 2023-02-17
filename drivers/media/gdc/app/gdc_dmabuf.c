@@ -154,7 +154,11 @@ static void *aml_dma_alloc(struct device *dev, unsigned long attrs,
 		cma_area = dev->cma_area;
 	else
 		cma_area = dma_contiguous_default_area;
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	cma_pages = cma_alloc(cma_area, size >> PAGE_SHIFT, 0, GFP_KERNEL);
+#else
 	cma_pages = cma_alloc(cma_area, size >> PAGE_SHIFT, 0, 0);
+#endif
 	if (cma_pages) {
 		paddr = page_to_phys(cma_pages);
 	} else {

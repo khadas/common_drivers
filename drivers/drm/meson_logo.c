@@ -762,9 +762,15 @@ void am_meson_logo_init(struct drm_device *dev)
 		cma_logo = dev_get_cma_area(&gp_dev->dev);
 		if (cma_logo) {
 			if (logo.size > 0) {
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+				logo.logo_page = cma_alloc(cma_logo,
+						ALIGN(logo.size, PAGE_SIZE) >> PAGE_SHIFT,
+						0, GFP_KERNEL);
+#else
 				logo.logo_page = cma_alloc(cma_logo,
 						ALIGN(logo.size, PAGE_SIZE) >> PAGE_SHIFT,
 						0, false);
+#endif
 
 				if (!logo.logo_page)
 					DRM_ERROR("allocate buffer failed\n");

@@ -295,7 +295,11 @@ static struct dma_buf *meson_cma_heap_allocate(struct dma_heap *heap,
 	if (align > CONFIG_CMA_ALIGNMENT)
 		align = CONFIG_CMA_ALIGNMENT;
 
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	cma_pages = cma_alloc(meson_cma_heap->cma, pagecount, align, GFP_KERNEL);
+#else
 	cma_pages = cma_alloc(meson_cma_heap->cma, pagecount, align, false);
+#endif
 	if (!cma_pages)
 		goto free_buffer;
 

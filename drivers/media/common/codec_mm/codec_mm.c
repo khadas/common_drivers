@@ -290,7 +290,14 @@ struct page *dma_alloc_from_contiguous(struct device *dev, size_t count,
 	if (align > CONFIG_CMA_ALIGNMENT)
 		align = CONFIG_CMA_ALIGNMENT;
 
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	if (no_warn)
+		return cma_alloc(dev_get_cma_area(dev), count, align, GFP_KERNEL | __GFP_NOWARN);
+	else
+		return cma_alloc(dev_get_cma_area(dev), count, align, GFP_KERNEL);
+#else
 	return cma_alloc(dev_get_cma_area(dev), count, align, no_warn);
+#endif
 }
 
 /**

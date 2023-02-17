@@ -37,7 +37,11 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
 
 	if (!(flags & ION_FLAG_EXTEND_MESON_HEAP))
 		return -ENOMEM;
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	pages = cma_alloc(cma_heap->cma, nr_pages, align, GFP_KERNEL | __GFP_NOWARN);
+#else
 	pages = cma_alloc(cma_heap->cma, nr_pages, align, true);
+#endif
 	if (!pages)
 		return -ENOMEM;
 

@@ -1130,8 +1130,13 @@ parse_cma:
 	of_node_put(mem_node);
 	if (tmp) {
 		fwmem->size = tmp->size;
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+		cma_pages = cma_alloc(dev_get_cma_area(&pdev->dev),
+		      PAGE_ALIGN(fwmem->size) >> PAGE_SHIFT, 0, GFP_KERNEL);
+#else
 		cma_pages = cma_alloc(dev_get_cma_area(&pdev->dev),
 		      PAGE_ALIGN(fwmem->size) >> PAGE_SHIFT, 0, false);
+#endif
 		if (cma_pages) {
 			fwmem->base = page_to_phys(cma_pages);
 			fwmem->priv = "ddr";

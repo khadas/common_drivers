@@ -22,7 +22,7 @@
 			0x0 0xfe002000 0x0 0xa0>;  /* reset */
 		interrupts = <0 197 1
 			0 194 1
-			0 282 1
+			0 159 1
 			0 56 1>;
 		interrupt-names = "vsync","vsync2","vbyone","tcon";
 		pinctrl-names = "vbyone","vbyone_off",

@@ -561,6 +561,7 @@ function modules_install() {
 	mkdir -p ${OUT_AMLOGIC_DIR}
 	mkdir -p ${OUT_AMLOGIC_DIR}/modules
 	mkdir -p ${OUT_AMLOGIC_DIR}/ext_modules
+	mkdir -p ${OUT_AMLOGIC_DIR}/symbols
 
 	local MODULES_ROOT_DIR=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
 	pushd ${MODULES_ROOT_DIR}
@@ -649,6 +650,12 @@ function modules_install() {
 	fi
 
 	popd
+
+	cp ${OUT_DIR}/vmlinux ${OUT_AMLOGIC_DIR}/symbols
+	find ${OUT_DIR} -type f -name "*.ko" -exec cp {} ${OUT_AMLOGIC_DIR}/symbols \;
+	for ext_module in ${EXT_MODULES}; do
+		find ${COMMON_OUT_DIR}/${ext_module} -type f -name "*.ko" -exec cp {} ${OUT_AMLOGIC_DIR}/symbols \;
+	done
 }
 export -f modules_install
 

@@ -28,6 +28,7 @@ function show_help {
 	echo "  --upgrade               for android upgrade builtin module optimize vendor_boot size"
 	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
 	echo "  --patch                 for only am patches"
+	echo "  -v                      for kernel version: common13-5.15 common14-5.15"
 }
 
 VA=
@@ -141,6 +142,17 @@ do
 		ONLY_PATCH=1
 		shift
 		;;
+	-v)
+		if [[ "$2" == "common13-5.15" ]] ||
+		   [[ "$2" == "common14-5.15" ]]; then
+			FULL_KERNEL_VERSION=$2
+		else
+			echo "The kernel version is not available"
+			exit
+		fi
+		VA=1
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -159,11 +171,6 @@ do
 	esac
 done
 
-if [[ ${ONLY_PATCH} -eq "1" ]]; then
-	CURRENT_DIR=`pwd`
-	cd $(readlink -f $(dirname $0))
-fi
-
 if [ "${ARCH}" = "arm" ]; then
 	ARGS+=("LOADADDR=0x108000")
 else
@@ -172,6 +179,21 @@ fi
 
 set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
 				# amlogic parameters default value
+if [[ ${ONLY_PATCH} -eq "1" ]]; then
+	if [[ -z ${FULL_KERNEL_VERSION} ]]; then
+		if [[ "$(basename $(dirname $0))" == "common-5.15" ]]; then
+			FULL_KERNEL_VERSION="common13-5.15"
+		elif [[ "$(basename $(dirname $0))" == "common14-5.15" ]]; then
+			FULL_KERNEL_VERSION="common14-5.15"
+		fi
+	fi
+	CURRENT_DIR=`pwd`
+	cd $(dirname $0)
+fi
+if [[ -z ${FULL_KERNEL_VERSION} ]]; then
+	FULL_KERNEL_VERSION="common13-5.15"
+fi
+
 if [[ -z "${ABI}" ]]; then
 	ABI=0
 fi
@@ -234,8 +256,8 @@ set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG MANUAL_INSMOD_MODULE
 export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD
 
-if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/patches/auto_patch.sh ]]; then
-	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/patches/auto_patch.sh
+if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/common/auto_patch.sh ]]; then
+	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/common/auto_patch.sh ${FULL_KERNEL_VERSION}
 fi
 if [[ ${ONLY_PATCH} -eq "1" ]]; then
 	cd ${CURRENT_DIR}

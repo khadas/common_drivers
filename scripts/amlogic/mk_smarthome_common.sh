@@ -12,6 +12,7 @@ function show_help {
 	echo "  --menuconfig            for MENUCONFIG, [default]|1, not require parameter value"
 	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
 	echo "  --patch                 for only am patches"
+	echo "  -v                      for kernel version: common13-5.15 common14-5.15"
 }
 
 VA=
@@ -49,6 +50,17 @@ do
 		ONLY_PATCH=1
 		shift
 		;;
+	-v)
+		if [[ "$2" == "common13-5.15" ]] ||
+		   [[ "$2" == "common14-5.15" ]]; then
+			FULL_KERNEL_VERSION=$2
+		else
+			echo "The kernel version is not available"
+			exit
+		fi
+		VA=1
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -67,6 +79,19 @@ do
 	esac
 done
 set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
+
+if [[ ${ONLY_PATCH} -eq "1" ]]; then
+	if [[ -z ${FULL_KERNEL_VERSION} ]]; then
+		if [[ "$(basename $(dirname $0))" == "common-5.15" ]]; then
+			FULL_KERNEL_VERSION="common13-5.15"
+		elif [[ "$(basename $(dirname $0))" == "common14-5.15" ]]; then
+			FULL_KERNEL_VERSION="common14-5.15"
+		fi
+	fi
+fi
+if [[ -z ${FULL_KERNEL_VERSION} ]]; then
+	FULL_KERNEL_VERSION="common13-5.15"
+fi
 
 if [[ -z "${KERNEL_DIR}" ]]; then
 	KERNEL_DIR=common
@@ -89,10 +114,12 @@ fi
 
 export KERNEL_DIR COMMON_DRIVERS_DIR MANUAL_INSMOD_MODULE
 
-if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/patches/auto_patch.sh ]]; then
-	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/patches/auto_patch.sh
+if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/common/auto_patch.sh ]]; then
+	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/common/auto_patch.sh ${FULL_KERNEL_VERSION}
 fi
-[[ ${ONLY_PATCH} -eq "1" ]] && exit
+if [[ ${ONLY_PATCH} -eq "1" ]]; then
+	exit
+fi
 
 tool_args=()
 prebuilts_paths=(

@@ -1646,6 +1646,8 @@
 					reset-deassert-us = <50000>;
 					reset-gpios = <&gpio GPIOZ_15 (GPIO_ACTIVE_LOW |
 								GPIO_OPEN_DRAIN)>;
+					realtek,clkout-disable;
+					realtek,aldps-enable;
 				};
 			};
 		};

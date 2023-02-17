@@ -52,9 +52,6 @@ struct logbuf_t {
 	char buf[0];
 };
 
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
-static struct reserved_mem res_mem;
-#endif
 static unsigned long rtosinfo_phy;
 static struct xrtosinfo_t *rtosinfo;
 static int freertos_finished;
@@ -93,7 +90,7 @@ static int call_freertos_notifiers(unsigned long val, void *v)
 }
 #endif
 
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7) || IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
 static int free_rtos_memory(void)
 {
 	struct device_node *rtos_reserved;
@@ -150,8 +147,6 @@ static unsigned long freertos_request_info(void)
 		return 0;
 	}
 	info_base = rmem->base;
-	res_mem.base = rmem->base;
-	res_mem.size = rmem->size;
 
 	freertos = of_find_compatible_node(NULL, NULL, "amlogic,freertos");
 	if (!freertos) {
@@ -277,7 +272,6 @@ static int freertos_coreup_prepare(int cpu, int bootup)
 	return 0;
 }
 
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
 static void freertos_coreup(int cpu, int bootup)
 {
 	if (bootup) {
@@ -288,7 +282,6 @@ static void freertos_coreup(int cpu, int bootup)
 			pr_err("cpu %u power on failed\n", cpu);
 	}
 }
-#endif
 
 static void freertos_do_finish(int bootup)
 {
@@ -305,40 +298,25 @@ static void freertos_do_finish(int bootup)
 		 *}
 		 */
 		for_each_present_cpu(cpu) {
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
 			if (rtosinfo->cpumask & (1 << cpu)) {
 				if (!cpu_online(cpu)) {
 					pr_info("cpu %u finish\n", cpu);
 					if (freertos_coreup_prepare(cpu, bootup) < 0)
 						continue;
+
 					freertos_coreup(cpu, bootup);
+
 				} else {
 					pr_info("cpu %u already take over\n", cpu);
 				}
-				free_reserved_area(__va(res_mem.base),
-						   __va(PAGE_ALIGN(res_mem.base + res_mem.size)),
-						   0,
-						   "free_mem");
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7) || IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
+				free_rtos_memory();
+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
 				call_freertos_notifiers(1, NULL);
+#endif
 				break;
-			}
-#else
-			if ((rtosinfo->cpumask & (1 << cpu)) &&
-			    !cpu_online(cpu)) {
-				pr_info("cpu %u finish\n", cpu);
-				if (freertos_coreup_prepare(cpu, bootup) < 0)
-					continue;
-				if (bootup) {
-					pr_debug("cpu %u power on start\n", cpu);
-					device_online(get_cpu_device(cpu));
-					pr_info("cpu %u power on success\n", cpu);
-#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_C3)
-					free_rtos_memory();
-					break;
 #endif
-				}
 			}
-#endif
 		}
 //done:
 		freertos_finished = 1;

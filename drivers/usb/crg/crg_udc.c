@@ -262,7 +262,11 @@ struct crg_udc_request {
 	struct transfer_trb_s *last_trb;
 	bool all_trbs_queued;
 	bool short_pkt;
+	bool used;
 };
+
+#define CRE_REQ_NUM 100
+struct crg_udc_request g_udc_req_ptr[CRE_REQ_NUM];
 
 struct crg_udc_ep {
 	struct usb_ep usb_ep;
@@ -2000,8 +2004,16 @@ static struct usb_request *
 crg_udc_alloc_request(struct usb_ep *_ep, gfp_t gfp_flags)
 {
 	struct crg_udc_request *udc_req_ptr = NULL;
+	int i = 0;
 
-	udc_req_ptr = kzalloc(sizeof(*udc_req_ptr), gfp_flags);
+	//udc_req_ptr = kzalloc(sizeof(*udc_req_ptr), gfp_flags);
+	for (i = 0; i < CRE_REQ_NUM; i++) {
+		if (g_udc_req_ptr[i].used == 0) {
+			g_udc_req_ptr[i].used = 1;
+			udc_req_ptr = &g_udc_req_ptr[i];
+			break;
+		}
+	}
 
 	CRG_DEBUG("udc_req_ptr = 0x%p\n", udc_req_ptr);
 
@@ -2022,7 +2034,9 @@ static void crg_udc_free_request(struct usb_ep *_ep, struct usb_request *_req)
 		return;
 
 	udc_req_ptr = container_of(_req, struct crg_udc_request, usb_req);
-	kfree(udc_req_ptr);
+
+	udc_req_ptr->used = 0;
+	//kfree(udc_req_ptr);
 }
 
 static int

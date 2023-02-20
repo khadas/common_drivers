@@ -62,6 +62,7 @@ struct wifi_clk_table wifi_clk[WIFI_CLOCK_TABLE_MAX] = {
 static struct mmc_host *sdio_host;
 static char *caps2_quirks = "none";
 
+#if CONFIG_AMLOGIC_KERNEL_VERSION == 13515
 void mmc_sd_update_cmdline_timing(void *data, struct mmc_card *card, int *err)
 {
 	/* nothing */
@@ -76,6 +77,7 @@ void mmc_sd_update_dataline_timing(void *data, struct mmc_card *card, int *err)
 
 #define SD_CMD_TIMING mmc_sd_update_cmdline_timing
 #define SD_DATA_TIMING mmc_sd_update_dataline_timing
+#endif
 
 static inline u32 aml_mv_dly1_nommc(u32 x)
 {
@@ -3917,6 +3919,7 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		schedule_delayed_work(&host->dtbkey, 50);
 	}
 
+#if CONFIG_AMLOGIC_KERNEL_VERSION == 13515
 #ifdef CONFIG_ANDROID_VENDOR_HOOKS
 	if (aml_card_type_non_sdio(host)) {
 		ret =
@@ -3930,6 +3933,7 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		if (ret)
 			pr_err("register update_dataline timing failed, err:%d\n", ret);
 	}
+#endif
 #endif
 
 	if (mmc->debugfs_root && aml_card_type_mmc(host)) {

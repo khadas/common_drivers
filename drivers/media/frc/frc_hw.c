@@ -830,7 +830,7 @@ void frc_pattern_on(u32 en)
 	}
 }
 
-static void frc_input_init(struct frc_dev_s *frc_devp,
+void frc_input_init(struct frc_dev_s *frc_devp,
 	struct frc_top_type_s *frc_top)
 {
 	if (frc_devp->frc_test_ptn) {

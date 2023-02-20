@@ -704,7 +704,8 @@ int frc_vd_notify_callback(struct notifier_block *block, unsigned long cmd, void
 	case VIDEO_INFO_CHANGED:
 		/*if frc on, need disable frc, and enable frc*/
 		if (((flags & VIDEO_SIZE_CHANGE_EVENT)
-			== VIDEO_SIZE_CHANGE_EVENT) && devp->probe_ok) {
+			== VIDEO_SIZE_CHANGE_EVENT) &&
+			devp->probe_ok && !devp->in_sts.frc_seamless_en) {
 			set_frc_enable(false);
 			set_frc_bypass(true);
 			frc_change_to_state(FRC_STATE_DISABLE);

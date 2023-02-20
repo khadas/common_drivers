@@ -67,10 +67,6 @@ int sec_flag;
 module_param(sec_flag, int, 0664);
 MODULE_PARM_DESC(sec_flag, "frc debug flag");
 
-int frc_align_dbg;
-module_param(frc_align_dbg, int, 0664);
-MODULE_PARM_DESC(frc_align_dbg, "frc align dbg");
-
 u32 secure_tee_handle;
 
 void frc_fw_initial(struct frc_dev_s *devp)
@@ -385,6 +381,23 @@ int frc_update_in_sts(struct frc_dev_s *devp, struct st_frc_in_sts *frc_in_sts,
 		!secure_tee_handle && devp->buf.cma_mem_alloced)
 		frc_mm_secure_set(devp);
 
+	if (frc_in_sts->frc_hd_start_lines != cur_video_sts->VPP_hd_start_lines_ ||
+		frc_in_sts->frc_hd_end_lines != cur_video_sts->VPP_hd_end_lines_) {
+		frc_in_sts->frc_hd_start_lines = cur_video_sts->VPP_hd_start_lines_;
+		frc_in_sts->frc_hd_end_lines = cur_video_sts->VPP_hd_end_lines_;
+	}
+	if (frc_in_sts->frc_vd_start_lines != cur_video_sts->VPP_vd_start_lines_ ||
+		frc_in_sts->frc_vd_end_lines != cur_video_sts->VPP_vd_end_lines_) {
+		frc_in_sts->frc_vd_start_lines = cur_video_sts->VPP_vd_start_lines_;
+		frc_in_sts->frc_vd_end_lines = cur_video_sts->VPP_vd_end_lines_;
+	}
+
+	if (frc_in_sts->frc_vsc_startp != cur_video_sts->VPP_vsc_startp ||
+		frc_in_sts->frc_hsc_startp != cur_video_sts->VPP_hsc_startp) {
+		frc_in_sts->frc_vsc_startp = cur_video_sts->VPP_vsc_startp;
+		frc_in_sts->frc_hsc_startp = cur_video_sts->VPP_hsc_startp;
+	}
+
 	//pr_frc(dbg_sts, "in size(%d,%d) sr_out(%d,%d) dbg(%d,%d)\n",
 	//	frc_in_sts->in_hsize, frc_in_sts->in_vsize,
 	//	cur_video_sts->nnhf_input_w, cur_video_sts->nnhf_input_h,
@@ -403,31 +416,78 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 	enum efrc_event sts_change = FRC_EVENT_NO_EVENT;
 	//enum frc_state_e cur_state = devp->frc_sts.state;
 	u32 cur_sig_in;
+	u32 tmpvalue;
+	struct frc_fw_data_s *pfw_data;
+	struct frc_top_type_s *frc_top;
 	struct vinfo_s *vinfo = get_current_vinfo();
+
+	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
+	frc_top = &pfw_data->frc_top_type;
 
 	/*back up*/
 	devp->in_sts.vf_type = cur_in_sts->vf_type;
 	devp->in_sts.duration = cur_in_sts->duration;
 	devp->in_sts.signal_type = cur_in_sts->signal_type;
 	devp->in_sts.source_type = cur_in_sts->source_type;
+
 	/* check size change */
+	devp->in_sts.size_chged = 0;
 	if (devp->in_sts.in_hsize != cur_in_sts->in_hsize) {
 		pr_frc(1, "hsize change (%d - %d)\n",
 			devp->in_sts.in_hsize, cur_in_sts->in_hsize);
-		/*need reconfig*/
-		devp->frc_sts.re_cfg_cnt = frc_re_cfg_cnt;
-		sts_change |= FRC_EVENT_VF_CHG_IN_SIZE;
 		devp->in_sts.in_hsize = cur_in_sts->in_hsize;
+		if (devp->in_sts.in_hsize == 0) {
+			/*need reconfig*/
+			devp->frc_sts.re_cfg_cnt = frc_re_cfg_cnt;
+			sts_change |= FRC_EVENT_VF_CHG_IN_SIZE;
+		} else if  (devp->frc_sts.state == FRC_STATE_ENABLE) {
+			devp->in_sts.size_chged = 1;
+		}
 	}
 
 	/* check size change */
 	if (devp->in_sts.in_vsize != cur_in_sts->in_vsize) {
 		pr_frc(1, "vsize change (%d - %d)\n",
 			devp->in_sts.in_vsize, cur_in_sts->in_vsize);
-		/*need reconfig*/
-		devp->frc_sts.re_cfg_cnt = frc_re_cfg_cnt;
-		sts_change |= FRC_EVENT_VF_CHG_IN_SIZE;
+
 		devp->in_sts.in_vsize = cur_in_sts->in_vsize;
+		if (devp->in_sts.in_vsize == 0) {
+			/*need reconfig*/
+			devp->frc_sts.re_cfg_cnt = frc_re_cfg_cnt;
+			sts_change |= FRC_EVENT_VF_CHG_IN_SIZE;
+		} else if (devp->frc_sts.state == FRC_STATE_ENABLE) {
+			devp->in_sts.size_chged = 1;
+		}
+	}
+
+	if (devp->in_sts.size_chged == 1 && devp->in_sts.frc_seamless_en) {
+		frc_input_init(devp, frc_top);
+		tmpvalue = frc_top->hsize;
+		tmpvalue |= (frc_top->vsize) << 16;
+		WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
+		frc_top->is_me1mc4 = 1;/*me:mc 1:4*/
+		WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x3);   //16*16 align
+		WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,
+			(devp->out_sts.vout_height) << 16 | (devp->out_sts.vout_width));
+		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
+			(cur_in_sts->frc_hsc_startp) << 13 |
+			(cur_in_sts->frc_vsc_startp));
+		pr_frc(1, "manual set frc size:v(x):0x%x, h(y)0x%x\n",
+			cur_in_sts->frc_hd_start_lines, cur_in_sts->frc_vd_start_lines);
+
+		if (pfw_data->frc_input_cfg)
+			pfw_data->frc_input_cfg(devp->fw_data);
+		devp->in_sts.size_chged = 0;
+		pr_frc(2, " %s size changed, frc not reopen\n", __func__);
+		return sts_change;
+	}
+
+	if (devp->in_sts.frc_seamless_en) {
+		WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,
+			(devp->out_sts.vout_height) << 16 | (devp->out_sts.vout_width));
+		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
+			(cur_in_sts->frc_hsc_startp) << 13 |
+			(cur_in_sts->frc_vsc_startp));
 	}
 
 	if (devp->frc_sts.out_put_mode_changed || devp->frc_sts.re_config) {
@@ -674,6 +734,7 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 
 	/* check input is change */
 	frc_event = frc_input_sts_check(devp, &cur_in_sts);
+
 	if (frc_event)
 		pr_frc(1, "event = 0x%08x\n", frc_event);
 }
@@ -1763,10 +1824,9 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 	u8 reg_inp_padding_en;
 	u16 in_vsize = 0;
 	u16 in_hsize = 0;
-	u16 reg_vsize_proc, reg_hsize_proc;
 
 	/*only for T5M*/
-	if (get_chip_type() == ID_T3 || frc_align_dbg)
+	if (get_chip_type() == ID_T3 || devp->in_sts.frc_seamless_en)
 		return;
 
 	reg_win_en = (READ_FRC_REG(FRC_INP_HOLD_CTRL) >> 20) & 0x1; // bit:20
@@ -1808,33 +1868,30 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 		}
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
 			(in_hsize & 0x1fff) << 13 | (in_vsize & 0x1ff));
-	} else if (reg_win_en && !reg_auto_align_en && reg_inp_padding_en) {
-		if (devp->out_sts.vout_width == 1920 &&
-			devp->out_sts.vout_height == 1080) {
-			if (devp->in_sts.in_hsize > IN_W_SIZE_FHD_90 &&
-				devp->in_sts.in_hsize < devp->out_sts.vout_width &&
-				devp->in_sts.in_hsize % 8)
-				in_hsize = 8 - (devp->in_sts.in_hsize % 8);
-			if (devp->in_sts.in_vsize > IN_H_SIZE_FHD_90 &&
-				devp->in_sts.in_vsize < devp->out_sts.vout_height &&
-				devp->in_sts.in_vsize % 8)
-				in_vsize = 8 - (devp->in_sts.in_vsize % 8);
-		} else if (devp->out_sts.vout_width == 3840 &&
-			devp->out_sts.vout_height == 2160) {
-			if (devp->in_sts.in_hsize > IN_W_SIZE_UHD_90 &&
-				devp->in_sts.in_hsize < devp->out_sts.vout_width &&
-				devp->in_sts.in_hsize % 16)
-				in_hsize = 16 - (devp->in_sts.in_hsize % 16);
-			if (devp->in_sts.in_vsize > IN_H_SIZE_UHD_90 &&
-				devp->in_sts.in_vsize < devp->out_sts.vout_height &&
-				devp->in_sts.in_vsize % 16)
-				in_vsize = 16 - (devp->in_sts.in_vsize % 16);
-		}
-		reg_hsize_proc = devp->in_sts.in_hsize + in_hsize;
-		reg_vsize_proc = devp->in_sts.in_vsize + in_vsize;
-		WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,
-			(reg_vsize_proc & 0x3fff) << 16 | (reg_hsize_proc & 0x3fff));
 	}
 
 	pr_frc(2, "align_vsize:%d align_hsize:%d\n", in_vsize, in_hsize);
+}
+
+void frc_set_seamless_proc(u32 seamless)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (get_chip_type() == ID_T3 || !devp)
+		return;
+
+	if (devp->frc_sts.state == FRC_STATE_ENABLE)
+		devp->frc_sts.re_config = true;
+
+	if (seamless) {
+		WRITE_FRC_BITS(FRC_TOP_MISC_CTRL, 0, 0, 1); //auto_align_en
+		WRITE_FRC_BITS(FRC_REG_TOP_CTRL25, 1, 31, 1); //inp_padding_en
+	} else {
+		WRITE_FRC_BITS(FRC_TOP_MISC_CTRL, 1, 0, 1);
+		WRITE_FRC_BITS(FRC_REG_TOP_CTRL25, 0, 31, 1);
+	}
+
+	devp->in_sts.frc_seamless_en = (u8)seamless;
+
+	pr_frc(2, "seamless is %d.\n", seamless);
 }

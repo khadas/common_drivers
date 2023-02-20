@@ -87,7 +87,7 @@
 // frc_20221215 frc t5m bringup
 // frc_20221225 add powerdomain etc.
 
-#define FRC_FW_VER			"2023-0206 frc integrate function of IRQ"
+#define FRC_FW_VER			"2023-0301 frc add seamless mode"
 #define FRC_KERDRV_VER                  2796
 
 #define FRC_DEVNO	1
@@ -342,6 +342,17 @@ struct st_frc_in_sts {
 	u8 frc_source_chg;
 	u16 frc_vf_rate;
 	u32 frc_last_disp_count;
+
+	u32 frc_hd_start_lines;
+	u32 frc_hd_end_lines;
+	u32 frc_vd_start_lines;
+	u32 frc_vd_end_lines;
+	u32 frc_vsc_startp;
+	u32 frc_vsc_endp;
+	u32 frc_hsc_startp;
+	u32 frc_hsc_endp;
+	u8 frc_seamless_en;
+	u8 size_chged;
 };
 
 struct st_frc_out_sts {

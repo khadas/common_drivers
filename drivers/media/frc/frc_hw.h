@@ -104,5 +104,7 @@ void frc_set_val_from_reg(void);
 void frc_set_input_pattern(u8 enpat);
 void frc_set_output_pattern(u8 enpat);
 void frc_set_urgent_cfg(u8 level);
+void frc_input_init(struct frc_dev_s *frc_devp,
+	struct frc_top_type_s *frc_top);
 
 #endif

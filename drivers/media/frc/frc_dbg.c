@@ -571,6 +571,11 @@ void frc_debug_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			frc_set_input_pattern(val1);
+	} else if (!strcmp(parm[0], "seamless")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			frc_set_seamless_proc(val1);
 	}
 exit:
 	kfree(buf_orig);

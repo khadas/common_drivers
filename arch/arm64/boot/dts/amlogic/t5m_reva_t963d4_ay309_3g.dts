@@ -5,13 +5,13 @@
 
 /dts-v1/;
 
-#include "mesont5m.dtsi"
+#include "mesont5m_reva.dtsi"
 #include "mesont5m_drm.dtsi"
-#include "mesont5m_ay301-panel.dtsi"
+#include "mesont5m_reva_ay309-panel.dtsi"
 
 / {
 	model = "Amlogic";
-	amlogic-dt-id = "t5m_revb_t963d4_ay301-2g";
+	amlogic-dt-id = "t5m-reva_t963d4_ay309-3g";
 	compatible = "amlogic, t5m";
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;
@@ -27,16 +27,11 @@
 		spi1 = &spicc0;
 		spi2 = &spicc1;
 		spi3 = &spicc2;
-		i2c0 = &i2c0;
-		i2c1 = &i2c1;
-		i2c2 = &i2c2;
-		i2c3 = &i2c3;
-		i2c4 = &i2c4;
 	};
 
 	memory@00000000 {
 		device_type = "memory";
-		linux,usable-memory = <0x0 0x000000 0x0 0x80000000>;
+		linux,usable-memory = <0x0 0x000000 0x0 0xc0000000>;
 	};
 
 	reserved-memory {
@@ -140,9 +135,9 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			/* ion_codec_mm max can alloc size 80M*/
-			size = <0x0 0x13400000>;
+			size = <0x0 0x1b000000>;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x00000000 0x0 0x40000000>;
+			alloc-ranges = <0x0 0x00000000 0x0 0x80000000>;
 			linux,contiguous-region;
 		};
 
@@ -233,20 +228,88 @@
 		pool_size = <0x0 0x400000>;
 	};
 
-	vdd4_2v5_reg: fixedregulator@vdd4_2v5 {
+	otg_vcc5v_reg: fixedregulator@otg_vcc5v{
 		compatible = "regulator-fixed";
-		vin-supply = <&vddao3v3_reg>;
-		regulator-name = "DDR4_2.5V";
-		regulator-min-microvolt = <2500000>;
-		regulator-max-microvolt = <2500000>;
+		vin-supply = <&vcc5v_reg>;
+		regulator-name = "OTG_VCC5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
 		regulator-boot-on;
 		regulator-always-on;
 	};
 
-	vddio3v3_reg: fixedregulator@vddio3v3 {
+	cam_vcc_reg: fixedregulator@cam_vcc{
+		compatible = "regulator-fixed";
+		vin-supply = <&vcc5v_reg>;
+		regulator-name = "CAM_VCC";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc_panel_lvds_reg: fixedregulator@vcc_panel_lvds{
+		compatible = "regulator-fixed";
+		vin-supply = <&vcc5v_reg>;
+		regulator-name = "VCC_PANEL_LVDS";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		pinctrl-names = "default";
+		// control by panel self driver
+		//gpio = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc_panel_vx1_reg: fixedregulator@vcc_panel_vx1{
+		compatible = "regulator-fixed";
+		vin-supply = <&vbat>;
+		regulator-name = "VCC_PANEL_VX1";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		pinctrl-names = "default";
+		// control by panel self driver
+		//gpio = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddq1_ddr_reg: fixedregulator@vddq1_ddr {
+		compatible = "regulator-fixed";
+		vin-supply = <&vbat>;
+		regulator-name = "VDDQ1_DDR";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		pinctrl-names = "default";
+		gpio = <&gpio GPIOD_4 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vdd4_2v5_reg: fixedregulator@vdd4_2v5 {
+		compatible = "regulator-fixed";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-name = "DDR4_2V5";
+		regulator-min-microvolt = <2500000>;
+		regulator-max-microvolt = <2500000>;
+		pinctrl-names = "default";
+		gpio = <&gpio GPIOD_4 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc3v3_reg: fixedregulator@vcc3v3 {
 		vin-supply = <&vddao3v3_reg>;
 		compatible = "regulator-fixed";
-		regulator-name = "VDDIO_3.3V";
+		regulator-name = "VCC_3V3";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		pinctrl-names = "default";
@@ -257,68 +320,72 @@
 		regulator-always-on;
 	};
 
-	vddio1v8_reg: fixedregulator@vddio1v8 {
+	vddao1v8_reg: fixedregulator@vddao1v8 {
 		vin-supply = <&vddao3v3_reg>;
 		compatible = "regulator-fixed";
-		regulator-name = "VDDAO_1.8V";
+		regulator-name = "VDDAO_1V8";
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
 		regulator-boot-on;
 		regulator-always-on;
 	};
 
-	vddio_m_reg: fixedregulator@vddio_m {
-		vin-supply = <&vddio3v3_reg>;
+	vdd1v8_boot_reg: fixedregulator@vdd1v8_boot {
+		vin-supply = <&vcc3v3_reg>;
 		compatible = "regulator-fixed";
-		regulator-name = "VDDIO_M";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	afe1v8_reg: fixedregulator@afe1v8 {
-		vin-supply = <&vddao3v3_reg>;
-		compatible = "regulator-fixed";
-		regulator-name = "AFE_1.8V";
+		regulator-name = "VDD18_BOOT";
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
 		regulator-boot-on;
 		regulator-always-on;
 	};
 
-	afe3v3_reg: fixedregulator@afe3v3 {
-		vin-supply = <&vddao3v3_reg>;
+	avdd1v8_reg: fixedregulator@avdd1v8 {
+		vin-supply = <&vcc3v3_reg>;
 		compatible = "regulator-fixed";
-		regulator-name = "AFE_3.3V";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		pinctrl-names = "default";
-		gpio = <&gpio GPIOD_4 GPIO_ACTIVE_HIGH>;
-		startup-delay-us = <70000>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	enet1v8_reg: fixedregulator@enet1v8 {
-		vin-supply = <&afe3v3_reg>;
-		compatible = "regulator-fixed";
-		regulator-name = "ENET1_1.8V";
+		regulator-name = "AVDD1V8";
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
 		regulator-boot-on;
 		regulator-always-on;
 	};
 
-	dmic3v3_reg: fixedregulator@dmic3v3 {
-		vin-supply = <&vddao3v3_reg>;
+	avdd0v8_reg: fixedregulator@avdd0v8 {
+		vin-supply = <&vcc3v3_reg>;
 		compatible = "regulator-fixed";
-		regulator-name = "DMIC_3.3V";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
+		regulator-name = "AVDD0V8";
+		regulator-min-microvolt = <800000>;
+		regulator-max-microvolt = <800000>;
 		regulator-boot-on;
 		regulator-always-on;
+	};
+
+	sdcard_3v3: sdcard-3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "SD_3V3";
+		vin-supply = <&vcc3v3_reg>;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		// GPIOP_4(Hiz) output L: enable SD_3V3
+		gpio = <&gpio GPIOP_4 GPIO_ACTIVE_HIGH>;
+		enable-active-high; // high: 3.3V
+		regulator-boot-on;
+		//regulator-always-on;
+	};
+
+	vddio_c: sdcard-1v8_3v3 {
+		compatible = "regulator-gpio";
+		regulator-name = "VDDIO_C_P";
+		vin-supply = <&vcc3v3_reg>;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <3300000>;
+		// GPIOP_1(Down) 3.3V IO
+		gpio = <&gpio GPIOP_1 GPIO_ACTIVE_HIGH>;
+		gpios-states = <0>;
+
+		/* Based on P200 schematics, signal CARD_1.8V/3.3V_CTR */
+		states = <1800000 1
+			  3300000 0>;
 	};
 
 	codec_mm {
@@ -700,8 +767,7 @@
 		compatible = "amlogic, auge-sound-card";
 		aml-audio-card,name = "AML-AUGESOUND";
 
-		avout_mute-gpios = <&gpio GPIOH_27 GPIO_ACTIVE_HIGH>;
-
+		avout_mute-gpios = <&gpio GPIOD_6 GPIO_ACTIVE_HIGH>;
 		/* headphone insert det */
 		aml-audio-card,hp-det-gpio = <&analog_gpio CDAC_IOUT GPIO_ACTIVE_LOW>;
 
@@ -763,7 +829,7 @@
 			};
 			tdmbcodec: codec {
 				prefix-names = "AMP";
-				sound-dai = <&ad82128 &acodec>;
+				sound-dai = <&tas5707_36 &tas5707_3a &acodec>;
 			};
 		};
 
@@ -822,6 +888,7 @@
 
 		aml-audio-card,dai-link@5 {
 			mclk-fs = <128>;
+			continuous-clock;
 			suffix-name = "alsaPORT-spdifb";
 			cpu {
 				sound-dai = <&spdifb>;
@@ -987,7 +1054,7 @@
 		status = "okay";
 
 		io_type = <4>; /* 0=iobus,1=spi,2=cimax,3=spi-t312 4:T5D,ci bus*/
-		addr_ts_mode_multiplex = <0>; /*AY301 not multi ts and addr,default 1*/
+		addr_ts_mode_multiplex = <0>; /*AY309 not multi ts and addr,default 1*/
 		le_enable_level = <0>; /*LE pin enable level*/
 		/*gpio pin define*/
 		pinctrl-names= "ci_ts_pins", "ci_addr_pins";
@@ -1006,6 +1073,42 @@
 			le_pin = <&gpio       GPIOM_29       GPIO_ACTIVE_HIGH>;
 		};
 	};
+
+    /* SMC */
+	smartcard {
+		compatible = "amlogic,smartcard-sc2";
+		dev_name = "smartcard";
+		status = "okay";
+
+		reg = <0x0 0xfe000000 0x0 0x480000>;
+		irq_trigger_type = "GPIO_IRQ_LOW";
+
+		reset_pin-gpios = <&gpio GPIOZ_3 GPIO_ACTIVE_HIGH>;
+		detect_pin-gpios = <&gpio GPIOM_27 GPIO_ACTIVE_HIGH>;
+		enable_5v3v_pin-gpios = <&gpio GPIOM_28 GPIO_ACTIVE_HIGH>;
+		enable_pin-gpios = <&gpio GPIOZ_2 GPIO_ACTIVE_HIGH>;
+
+		interrupts = <0 174 1>;
+		interrupt-names = "smc0_irq";
+		/*
+		 *Smc clock source, if change this,
+		 *you must adjust clk and divider in smartcard.c
+		 */
+		smc0_clock_source = <0>;
+		/*0: high voltage on detect pin indicates card in.*/
+		smc0_det_invert = <0>;
+		smc0_5v3v_level = <0>;
+		/*Ordinarily,smartcard controller needs a enable pin.*/
+		smc_need_enable_pin = "yes";
+		reset_level = <0>;
+		smc0_enable_level = <0>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&sd_iso7816_pins>;
+		clocks = <&clkc CLKID_SC_CLK>;
+		clock-names = "smartcard";
+	};
+
 }; /* end of / */
 
 &fb {
@@ -1056,7 +1159,11 @@
 				&clkc CLKID_HIFI_PLL
 				&clkc CLKID_HIFI1_PLL>;
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
+
+		/* enable control gain */
+		ctrl_gain = <1>;
 		src-clk-freq = <491520000>;
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1101,6 +1208,7 @@
 
 		/* pcpd_monitor*/
 		pcpd_monitor_src = <&pcpd_monitor_a>;
+		suspend-clk-off = <1>;
 		status = "okay";
 
 		/* !!!For --TV platform-- ONLY */
@@ -1122,8 +1230,11 @@
 				&clkc CLKID_HIFI_PLL
 				&clkc CLKID_HIFI1_PLL>;
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
-		tdmin-src-name = "hdmirx";
+
+		/* enable control gain */
+		ctrl_gain = <1>;
 		src-clk-freq = <491520000>;
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1144,12 +1255,11 @@
 
 		pinctrl-names = "pdm_pins";
 		pinctrl-0 = <&pdmin>;
-
+		src-clk-freq = <491520000>;
 		train_sample_count = <10>;
 
 		/* mode 0~4, defalut:1 */
 		filter_mode = <1>;
-		src-clk-freq = <491520000>;
 
 		status = "okay";
 	};
@@ -1192,6 +1302,7 @@
 		/*spdif clk tuning enable*/
 		clk_tuning_enable = <1>;
 		src-clk-freq = <491520000>;
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1206,6 +1317,7 @@
 		clock-names = "sysclk", "clk_src_cd",
 				"gate_spdifout", "clk_spdifout";
 		src-clk-freq = <491520000>;
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1266,8 +1378,9 @@
 		 *	SPDIFIN_LB, 10
 		 *	EARC_RX,    11
 		 */
+		src-clk-freq = <491520000>;
 		resample_module = <8>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1277,9 +1390,10 @@
 			&clkaudio CLKID_AUDIO_MCLK_F
 			&clkaudio CLKID_AUDIO_RESAMPLE_B>;
 		clock-names = "resample_pll", "resample_src", "resample_clk";
+		src-clk-freq = <491520000>;
 
 		/*this resample is only used for loopback_A.*/
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1376,7 +1490,7 @@
 
 		/* define loopack with pdm mic. */
 		mic-src = <&pdm>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1431,12 +1545,13 @@
 		datalb_chmask = <0x3>;
 		/* config which data pin as loopback */
 		datalb-lane-mask-in = <1 0 0 0>;
-
+		suspend-clk-off = <1>;
 		status = "disabled";
 	};
 }; /* end of audiobus */
 
 &earc {
+	suspend-clk-off = <1>;
 	status = "okay";
 };
 
@@ -1696,7 +1811,7 @@
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc0_pins_h>;
-	//cs-gpios = <&gpio GPIOH_8 GPIO_ACTIVE_HIGH>;
+	cs-gpios = <&gpio GPIOH_8 GPIO_ACTIVE_HIGH>;
 	latency = <4>;
 };
 
@@ -1767,7 +1882,7 @@
 };
 
 &dcon_led {
-	status = "okay";
+	status = "disabled";
 	led_number = <13>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&dcon_led_pins1>;
@@ -1784,12 +1899,19 @@
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins1>;
-	clock-frequency = <100000>;
-	ad82128: ad82128@34 {
-		compatible = "ESMT,ad82128";
+
+	tas5707_36: tas5707_36@1b {
+		compatible = "ti,tas5707";
 		#sound-dai-cells = <0>;
+		reg = <0x1b>;
+		status = "okay";
 		reset_pin = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
-		reg = <0x34>;
+	};
+
+	tas5707_3a: tas5707_3a@1d {
+		compatible = "ti,tas5707";
+		#sound-dai-cells = <0>;
+		reg = <0x1d>;
 		status = "okay";
 	};
 };
@@ -1847,7 +1969,5 @@
 
 &aml_bt {
 	status = "okay";
-	bt_en-gpios = <&gpio  GPIOD_11  GPIO_ACTIVE_HIGH>;
-	hostwake-gpios = <&gpio  GPIOD_13  GPIO_ACTIVE_HIGH>;
-	power_down_disable = <1>;
+	reset-gpios = <&gpio  GPIOD_13  GPIO_ACTIVE_HIGH>;
 };

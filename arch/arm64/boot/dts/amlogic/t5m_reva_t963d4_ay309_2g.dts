@@ -5,13 +5,13 @@
 
 /dts-v1/;
 
-#include "mesont5m.dtsi"
+#include "mesont5m_reva.dtsi"
 #include "mesont5m_drm.dtsi"
-#include "mesont5m_ay309-panel.dtsi"
+#include "mesont5m_reva_ay309-panel.dtsi"
 
 / {
 	model = "Amlogic";
-	amlogic-dt-id = "t5m_revb_t963d4_ay309-2g";
+	amlogic-dt-id = "t5m-reva_t963d4_ay309-2g";
 	compatible = "amlogic, t5m";
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;
@@ -893,6 +893,7 @@
 
 		aml-audio-card,dai-link@5 {
 			mclk-fs = <128>;
+			continuous-clock;
 			suffix-name = "alsaPORT-spdifb";
 			cpu {
 				sound-dai = <&spdifb>;
@@ -1166,7 +1167,7 @@
 		/* enable control gain */
 		ctrl_gain = <1>;
 		src-clk-freq = <491520000>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1211,6 +1212,7 @@
 
 		/* pcpd_monitor*/
 		pcpd_monitor_src = <&pcpd_monitor_a>;
+		suspend-clk-off = <1>;
 		status = "okay";
 
 		/* !!!For --TV platform-- ONLY */
@@ -1236,7 +1238,7 @@
 		/* enable control gain */
 		ctrl_gain = <1>;
 		src-clk-freq = <491520000>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1304,6 +1306,7 @@
 		/*spdif clk tuning enable*/
 		clk_tuning_enable = <1>;
 		src-clk-freq = <491520000>;
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1318,6 +1321,7 @@
 		clock-names = "sysclk", "clk_src_cd",
 				"gate_spdifout", "clk_spdifout";
 		src-clk-freq = <491520000>;
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1378,8 +1382,9 @@
 		 *	SPDIFIN_LB, 10
 		 *	EARC_RX,    11
 		 */
+		src-clk-freq = <491520000>;
 		resample_module = <8>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1389,9 +1394,10 @@
 			&clkaudio CLKID_AUDIO_MCLK_F
 			&clkaudio CLKID_AUDIO_RESAMPLE_B>;
 		clock-names = "resample_pll", "resample_src", "resample_clk";
+		src-clk-freq = <491520000>;
 
 		/*this resample is only used for loopback_A.*/
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1488,7 +1494,7 @@
 
 		/* define loopack with pdm mic. */
 		mic-src = <&pdm>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1543,12 +1549,13 @@
 		datalb_chmask = <0x3>;
 		/* config which data pin as loopback */
 		datalb-lane-mask-in = <1 0 0 0>;
-
+		suspend-clk-off = <1>;
 		status = "disabled";
 	};
 }; /* end of audiobus */
 
 &earc {
+	suspend-clk-off = <1>;
 	status = "okay";
 };
 

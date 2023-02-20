@@ -199,8 +199,8 @@
 		compatible = "amlogic, pm";
 		status = "okay";
 		device_name = "aml_pm";
-		debug_reg = <0xff8000a8>;
-		exit_reg = <0xff80023c>;
+		reg = <0x0 0xff8000a8 0x0 0x4>, /* Debug reg */
+			<0x0 0xff80023c 0x0 0x4>; /* Exit reg */
 	};
 
 	secmon {

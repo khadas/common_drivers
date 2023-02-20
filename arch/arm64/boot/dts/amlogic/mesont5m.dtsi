@@ -1042,7 +1042,6 @@
 				#size-cells = <0>;
 				enet_type = <5>;
 				tx_amp_src = <0xFE010330>;
-				st_mode = <3>;
 
 				ext_mdio: mdio@0 {
 					reg = <0>;

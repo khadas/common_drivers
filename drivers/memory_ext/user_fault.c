@@ -77,6 +77,22 @@
 #endif
 #endif
 
+static int show_data_valid(unsigned long reg)
+{
+	struct page *page;
+
+	if (reg < (unsigned long)PAGE_OFFSET)
+		return 0;
+	else if (reg <= (unsigned long)high_memory)
+		return 1;
+
+	page = vmalloc_to_page((const void *)reg);
+	if (page && pfn_valid(page_to_pfn(page)))
+		return 1;
+
+	return 0;
+}
+
 static void show_data(unsigned long addr, int nbytes, const char *name)
 {
 	int	i, j;
@@ -116,6 +132,8 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 
 	printk("\n%s: %#lx:\n", name, addr);
 
+	if (!show_data_valid((unsigned long)(addr + nbytes / 2)))
+		return;
 	/*
 	 * round address down to a 32 bit boundary
 	 * and always dump a multiple of 32 bytes

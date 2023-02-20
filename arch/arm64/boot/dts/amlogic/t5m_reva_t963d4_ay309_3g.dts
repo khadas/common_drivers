@@ -65,7 +65,7 @@
 			reusable;
 			size = <0x0 0x800000>;
 			alignment = <0x0 0x400000>;
-			reg = <0x0 0x7f800000 0x0 0x800000>;
+			reg = <0x0 0xbf800000 0x0 0x800000>;
 		};
 
 		lcd_tcon_reserved:linux,lcd_tcon {
@@ -1115,14 +1115,14 @@
 	status = "disabled";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1980000 0x100000 0x100000>;
-	logo_addr = "0x7f800000";
+	logo_addr = "0xbf800000";
 	mem_alloc = <0>;
 	pxp_mode = <1>; /** 0:normal mode 1:pxp mode */
 };
 
 &drm_vpu {
 	status = "okay";
-	logo_addr = "0x7f800000";
+	logo_addr = "0xbf800000";
 
 	connectors_dev: port@1 {
 		drm_to_lcd0: endpoint@2 {

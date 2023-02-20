@@ -264,9 +264,14 @@
 #define CLKID_CPU3_CLK				255
 #define CLKID_PCIE_HCSL				256
 #define CLKID_PCIE_BGP				257
+#define CLKID_25M_CLK_DIV			258
+#define CLKID_25M_CLK_GATE			259
+#define CLKID_24M_CLK_GATE			260
+#define CLKID_12M_CLK_DIV			261
+#define CLKID_12M_CLK_GATE			262
 
 /* Media clocks */
-#define MEDIA_BASE				(258 + 1)
+#define MEDIA_BASE				(263 + 1)
 #define CLKID_DSI_MEAS_MUX			(MEDIA_BASE + 0)
 #define CLKID_DSI_MEAS_DIV			(MEDIA_BASE + 1)
 #define CLKID_DSI_MEAS				(MEDIA_BASE + 2)

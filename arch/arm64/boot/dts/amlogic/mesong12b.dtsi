@@ -1429,8 +1429,8 @@
 		compatible = "amlogic, cpu-major-id-g12b-b";
 		dev_name = "vcodec_dos_dev";
 		status = "okay";
-		reg = <0x0 0xfe320000 0x0 0x10000>,
-			<0x0 0xfe036000 0x0 0x2000>;
+		reg = <0x0 0xff620000 0x0 0x10000>,
+			<0x0 0xff638000 0x0 0x2000>;
 		reg-names = "dosbus",
 			"dmcbus";
 		clocks = <&clkc CLKID_PARSER

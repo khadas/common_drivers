@@ -1208,6 +1208,7 @@ static int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	static int no_signal_cnt, unlock_cnt;
 	int snr, modu, cr, l1post, ldpc;
 	unsigned int plp_num, fef_info = 0;
+	unsigned int data_plp = 0, common_plp = 0;
 
 	if (!devp->demod_thread) {
 		real_para_clear(&demod->real_para);
@@ -1270,6 +1271,14 @@ static int dvbt2_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	snr = snr * 300 / 64;
 
 #ifdef DVBT2_DEBUG_INFO
+	if (plp_num > 0) {
+		data_plp = ((dvbt_t2_rdb(0x524) & 0xff)) | ((dvbt_t2_rdb(0x525) & 0xff) << 8);
+		common_plp = ((dvbt_t2_rdb(0x324) & 0xff)) | ((dvbt_t2_rdb(0x325) & 0xff) << 8);
+
+		PR_DVBT("data plp: %d (0x%x).\n", data_plp, data_plp);
+		PR_DVBT("common plp: %d (0x%x).\n", common_plp, common_plp);
+	}
+
 	PR_DVBT("code_rate=%d, modu=%d, ldpc=%d, snr=%d.%d, l1post=%d.\n",
 		cr, modu, ldpc, snr / 100, snr % 100, l1post);
 	if (modu < 4)

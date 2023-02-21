@@ -9,6 +9,7 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-aoclk
 	amlogic-gpio
 	amlogic-pinctrl
+	amlogic-hwspinlock
 	amlogic-mailbox
 	amlogic-pwm
 	pwm-regulator

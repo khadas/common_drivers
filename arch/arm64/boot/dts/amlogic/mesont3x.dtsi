@@ -2950,7 +2950,7 @@
 	};
 
 	aml_hwspinlock: hwlock {
-		status = "disabled";
+		status = "okay";
 		compatible = "amlogic, hwspinlock";
 		syscon = <&aml_hwspinlock_regs 0 0x4>;
 		#hwlock-cells = <1>;

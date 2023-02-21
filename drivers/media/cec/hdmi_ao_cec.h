@@ -692,12 +692,12 @@ static inline void hdmirx_wr_dwc(u16 addr, u16 data)
 {
 }
 
-unsigned int rd_reg_hhi(u32 offset)
+unsigned int __weak rd_reg_hhi(u32 offset)
 {
 	return 0;
 }
 
-void wr_reg_hhi(unsigned int offset, unsigned int val)
+void __weak wr_reg_hhi(unsigned int offset, unsigned int val)
 {
 }
 

@@ -1,0 +1,63 @@
+From 3da745591a709977b1589ec13361a54b07d3567b Mon Sep 17 00:00:00 2001
+From: Wanwei Jiang <wanwei.jiang@amlogic.com>
+Date: Tue, 21 Feb 2023 17:10:46 +0800
+Subject: [PATCH] vmap_stack: compatible with common14-5.15 [1/1]
+
+PD#SWPL-109858
+
+Problem:
+common14-5.15 build error for linux version
+
+Solution:
+disable vmap_stack
+
+Verify:
+sc2
+
+Change-Id: I98220de03a6e4a158f74abac0dede293e4dddcd4
+Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
+---
+ arch/arm/configs/amlogic_gki.debug                 | 1 -
+ arch/arm/configs/meson64_a32_smarthome_defconfig   | 1 -
+ arch/arm64/configs/meson64_a64_smarthome_defconfig | 1 -
+ 3 files changed, 3 deletions(-)
+
+diff --git a/arch/arm/configs/amlogic_gki.debug b/arch/arm/configs/amlogic_gki.debug
+index 2aae5118..dafbdde7 100644
+--- a/arch/arm/configs/amlogic_gki.debug
++++ b/arch/arm/configs/amlogic_gki.debug
+@@ -13,7 +13,6 @@ CONFIG_AMLOGIC_MEMORY_EXTEND=y
+ CONFIG_AMLOGIC_PAGE_TRACE=y
+ CONFIG_AMLOGIC_SLAB_TRACE=y
+ CONFIG_AMLOGIC_CMA=y
+-CONFIG_AMLOGIC_VMAP=y
+ CONFIG_AMLOGIC_MEM_DEBUG=y
+ CONFIG_AMLOGIC_STACKPROTECTOR=y
+ CONFIG_AMLOGIC_USER_FAULT=y
+diff --git a/arch/arm/configs/meson64_a32_smarthome_defconfig b/arch/arm/configs/meson64_a32_smarthome_defconfig
+index a3aa4b76..db605187 100644
+--- a/arch/arm/configs/meson64_a32_smarthome_defconfig
++++ b/arch/arm/configs/meson64_a32_smarthome_defconfig
+@@ -431,7 +431,6 @@ CONFIG_AMLOGIC_SLAB_TRACE=y
+ CONFIG_AMLOGIC_CMA=y
+ CONFIG_AMLOGIC_MEM_DEBUG=y
+ CONFIG_AMLOGIC_STACKPROTECTOR=y
+-CONFIG_AMLOGIC_VMAP=y
+ CONFIG_AMLOGIC_USER_FAULT=y
+ CONFIG_AMLOGIC_MEMORY_DEBUG=m
+ CONFIG_AMLOGIC_FILE_CACHE=y
+diff --git a/arch/arm64/configs/meson64_a64_smarthome_defconfig b/arch/arm64/configs/meson64_a64_smarthome_defconfig
+index 844593a3..dab7eb0d 100644
+--- a/arch/arm64/configs/meson64_a64_smarthome_defconfig
++++ b/arch/arm64/configs/meson64_a64_smarthome_defconfig
+@@ -431,7 +431,6 @@ CONFIG_AMLOGIC_SLAB_TRACE=y
+ CONFIG_AMLOGIC_CMA=y
+ CONFIG_AMLOGIC_MEM_DEBUG=y
+ CONFIG_AMLOGIC_STACKPROTECTOR=y
+-CONFIG_AMLOGIC_VMAP=y
+ CONFIG_AMLOGIC_USER_FAULT=y
+ CONFIG_AMLOGIC_MEMORY_DEBUG=m
+ CONFIG_AMLOGIC_FILE_CACHE=y
+-- 
+2.25.1
+

@@ -1181,8 +1181,8 @@ static ssize_t cma_debug_write(struct file *file, const char __user *buffer,
 		goto exit;
 	}
 
-	if (!strncmp(buf, "cma_trace=", 9)) {	/* option for 'cma_prio=' */
-		if (sscanf(buf, "cma_prio=%d", &arg) < 0)
+	if (!strncmp(buf, "cma_trace=", 9)) {	/* option for 'cma_trace=' */
+		if (sscanf(buf, "cma_trace=%d", &arg) < 0)
 			goto exit;
 
 		cma_alloc_trace = arg ? 1 : 0;

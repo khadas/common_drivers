@@ -3411,6 +3411,7 @@ static struct mconfig codec_mm_trigger[] = {
 	MC_FUN("debug", codec_mm_trigger_help_fun, codec_mm_trigger_fun),
 };
 
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
 #ifdef CONFIG_ARM64
 static int tvp_clear_cma_pagemap(unsigned long pfn, unsigned long count)
@@ -3506,6 +3507,7 @@ void get_mte_sync_tags_hook(void *data, struct iova_domain *iovad, dma_addr_t io
 	spin_unlock_irqrestore(&cma->lock, flags);
 }
 #endif
+#endif
 
 static int codec_mm_probe(struct platform_device *pdev)
 {
@@ -3528,7 +3530,9 @@ static int codec_mm_probe(struct platform_device *pdev)
 
 	pr_info("%s ok\n", __func__);
 
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
 	codec_dev = &pdev->dev;
+#endif
 	codec_mm_scatter_mgt_init(&pdev->dev);
 	codec_mm_keeper_mgr_init();
 	amstream_test_init();
@@ -3537,8 +3541,10 @@ static int codec_mm_probe(struct platform_device *pdev)
 	INIT_REG_NODE_CONFIGS(CONFIG_PATH, &codec_mm_trigger_node,
 				  "trigger", codec_mm_trigger,
 				  CONFIG_FOR_RW | CONFIG_FOR_T);
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
 	register_trace_android_vh_iommu_iovad_free_iova(get_mte_sync_tags_hook, NULL);
+#endif
 #endif
 	return 0;
 }

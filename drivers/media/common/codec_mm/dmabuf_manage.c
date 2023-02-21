@@ -28,6 +28,9 @@
 #include "dmxdev.h"
 #include "demux.h"
 
+#if IS_BUILTIN(CONFIG_AMLOGIC_MEDIA_MODULE)
+#include <linux/amlogic/aml_cma.h>
+#endif
 static int dmabuf_manage_debug = 1;
 module_param(dmabuf_manage_debug, int, 0644);
 

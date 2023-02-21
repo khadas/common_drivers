@@ -1962,22 +1962,6 @@
 	/*hostwake-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;*/
 };
 
-&pwm_ab {
-	pinctrl-0 = <&pwm_a_pins1>;
-	pinctrl-names = "default";
-	status = "disabled";
-};
-
-&pwm_cd {
-	status = "disabled";
-};
-
-&pwm_ef {
-	pinctrl-0 = <&pwm_f_pins>;
-	pinctrl-names = "default";
-	status = "disabled";
-};
-
 &irblaster {
 	status = "disabled";
 };

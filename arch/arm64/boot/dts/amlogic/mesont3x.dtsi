@@ -3658,7 +3658,7 @@
 
 	pwm_a_pins2: pwm_a_pins2 {
 		mux {
-			groups = "pwm_a_x";
+			groups = "pwm_a_d";
 			function = "pwm_a";
 			drive-strength-microamp = <3000>;
 		};
@@ -3674,7 +3674,7 @@
 
 	pwm_b_pins2: pwm_b_pins2 {
 		mux {
-			groups = "pwm_b_h";
+			groups = "pwm_b_z";
 			function = "pwm_b";
 			drive-strength-microamp = <3000>;
 		};
@@ -3682,7 +3682,7 @@
 
 	pwm_c_pins1: pwm_c_pins1 {
 		mux {
-			groups = "pwm_c_e";
+			groups = "pwm_c_d5";
 			function = "pwm_c";
 			drive-strength-microamp = <3000>;
 		};
@@ -3690,7 +3690,15 @@
 
 	pwm_c_pins2: pwm_c_pins2 {
 		mux {
-			groups = "pwm_c_c";
+			groups = "pwm_c_d7";
+			function = "pwm_c";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_c_pins3: pwm_c_pins3 {
+		mux {
+			groups = "pwm_c_d11";
 			function = "pwm_c";
 			drive-strength-microamp = <3000>;
 		};
@@ -3698,7 +3706,7 @@
 
 	pwm_d_pins1: pwm_d_pins1 {
 		mux {
-			groups = "pwm_d_d";
+			groups = "pwm_d_z";
 			function = "pwm_d";
 			drive-strength-microamp = <3000>;
 		};
@@ -3706,23 +3714,125 @@
 
 	pwm_d_pins2: pwm_d_pins2 {
 		mux {
-			groups = "pwm_d_e";
+			groups = "pwm_d_d9";
 			function = "pwm_d";
 			drive-strength-microamp = <3000>;
 		};
 	};
 
-	pwm_e_pins: pwm_e_pins {
+	pwm_d_pins3: pwm_d_pins3 {
 		mux {
-			groups = "pwm_e";
+			groups = "pwm_d_h5";
+			function = "pwm_d";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_d_pins4: pwm_d_pins4 {
+		mux {
+			groups = "pwm_d_h12";
+			function = "pwm_d";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_d_pins5: pwm_d_pins5 {
+		mux {
+			groups = "pwm_d_m1";
+			function = "pwm_d";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_d_pins6: pwm_d_pins6 {
+		mux {
+			groups = "pwm_d_m23";
+			function = "pwm_d";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_e_pins1: pwm_e_pins1 {
+		mux {
+			groups = "pwm_e_e";
+			function = "pwm_e";
+			drive-strength-microamp = <3000>;
+		};
+	};
+	pwm_e_pins2: pwm_e_pins2 {
+		mux {
+			groups = "pwm_e_z";
 			function = "pwm_e";
 			drive-strength-microamp = <3000>;
 		};
 	};
 
-	pwm_f_pins: pwm_f_pins {
+	pwm_e_pins3: pwm_e_pins3 {
 		mux {
-			groups = "pwm_f";
+			groups = "pwm_e_h";
+			function = "pwm_e";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_e_pins4: pwm_e_pins4 {
+		mux {
+			groups = "pwm_e_m";
+			function = "pwm_e";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_e_pins5: pwm_e_pins5 {
+		mux {
+			groups = "pwm_e_d10";
+			function = "pwm_e";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_e_pins6: pwm_e_pins6 {
+		mux {
+			groups = "pwm_e_p6";
+			function = "pwm_e";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_f_pins1: pwm_f_pins1 {
+		mux {
+			groups = "pwm_f_c";
+			function = "pwm_f";
+			drive-strength-microamp = <3000>;
+		};
+	};
+	pwm_f_pins2: pwm_f_pins2 {
+		mux {
+			groups = "pwm_f_d12";
+			function = "pwm_f";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_f_pins3: pwm_f_pins3 {
+		mux {
+			groups = "pwm_f_m10";
+			function = "pwm_f";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_f_pins4: pwm_f_pins4 {
+		mux {
+			groups = "pwm_f_m26";
+			function = "pwm_f";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_f_pins5: pwm_f_pins5 {
+		mux {
+			groups = "pwm_f_d6";
 			function = "pwm_f";
 			drive-strength-microamp = <3000>;
 		};
@@ -3730,7 +3840,7 @@
 
 	pwm_g_pins1: pwm_g_pins1 {
 		mux {
-			groups = "pwm_g_d";
+			groups = "pwm_g_m";
 			function = "pwm_g";
 			drive-strength-microamp = <3000>;
 		};
@@ -3738,7 +3848,31 @@
 
 	pwm_g_pins2: pwm_g_pins2 {
 		mux {
-			groups = "pwm_g_x";
+			groups = "pwm_g_z19";
+			function = "pwm_g";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_g_pins3: pwm_g_pins3 {
+		mux {
+			groups = "pwm_g_z12";
+			function = "pwm_g";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_g_pins4: pwm_g_pins4 {
+		mux {
+			groups = "pwm_g_p7";
+			function = "pwm_g";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_g_pins5: pwm_g_pins5 {
+		mux {
+			groups = "pwm_g_p1";
 			function = "pwm_g";
 			drive-strength-microamp = <3000>;
 		};
@@ -3754,7 +3888,30 @@
 
 	pwm_h_pins2: pwm_h_pins2 {
 		mux {
-			groups = "pwm_h_t";
+			groups = "pwm_h_z";
+			function = "pwm_h";
+			drive-strength-microamp = <3000>;
+		};
+	};
+	pwm_h_pins3: pwm_h_pins3 {
+		mux {
+			groups = "pwm_h_m";
+			function = "pwm_h";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_h_pins4: pwm_h_pins4 {
+		mux {
+			groups = "pwm_h_p2";
+			function = "pwm_h";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_h_pins5: pwm_h_pins5 {
+		mux {
+			groups = "pwm_h_p8";
 			function = "pwm_h";
 			drive-strength-microamp = <3000>;
 		};
@@ -3762,7 +3919,7 @@
 
 	pwm_i_pins1: pwm_i_pins1 {
 		mux {
-			groups = "pwm_i_d";
+			groups = "pwm_i_z";
 			function = "pwm_i";
 			drive-strength-microamp = <3000>;
 		};
@@ -3770,7 +3927,31 @@
 
 	pwm_i_pins2: pwm_i_pins2 {
 		mux {
-			groups = "pwm_i_t";
+			groups = "pwm_i_p";
+			function = "pwm_i";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_i_pins3: pwm_i_pins3 {
+		mux {
+			groups = "pwm_i_m";
+			function = "pwm_i";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_i_pins4: pwm_i_pins4 {
+		mux {
+			groups = "pwm_i_d11";
+			function = "pwm_i";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_i_pins5: pwm_i_pins5 {
+		mux {
+			groups = "pwm_i_d6";
 			function = "pwm_i";
 			drive-strength-microamp = <3000>;
 		};
@@ -3786,7 +3967,23 @@
 
 	pwm_j_pins2: pwm_j_pins2 {
 		mux {
-			groups = "pwm_j_t";
+			groups = "pwm_j_p";
+			function = "pwm_j";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_j_pins3: pwm_j_pins3 {
+		mux {
+			groups = "pwm_j_m";
+			function = "pwm_j";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
+	pwm_j_pins4: pwm_j_pins4 {
+		mux {
+			groups = "pwm_j_z0";
 			function = "pwm_j";
 			drive-strength-microamp = <3000>;
 		};

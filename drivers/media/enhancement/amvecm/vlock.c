@@ -941,6 +941,9 @@ void vlock_clk_config(struct device *dev)
 	if (!pvlock)
 		return;
 
+	if (!vlock_en)
+		return;
+
 	vlock_init_reg_map(dev, pvlock);
 
 	/*pr_info("%s\n", __func__);*/
@@ -2105,6 +2108,9 @@ void vlock_status_init(void)
 	struct vinfo_s *vinfo;
 
 	if (chip_type_id == chip_s5)
+		return;
+
+	if (!vlock_en)
 		return;
 
 	/*config vlock mode*/

@@ -101,4 +101,12 @@ config AMLOGIC_PINCTRL_MESON_S5
 	  S5 pinctrl can work.
 	  otherwise S5 pinctrl can't work
 
+config AMLOGIC_PINCTRL_MESON_T5W
+	tristate "Meson T5W Soc pinctrl driver"
+	default n
+	help
+	  the chip of T5W will be built
+	  when enable this config.
+	  T5M pinctrl can work.
+	  otherwise T5W pinctrl can't work
 endif

@@ -109,3 +109,10 @@ $(S5_MODULE_NAME)-y += s5.o
 PR_FMT_S5 = $(subst amlogic-,,$(S5_MODULE_NAME))
 PR_FMT_DEFINE_S5="-Dpr_fmt(fmt)= \"[$(PR_FMT_S5)]: \" fmt"
 CFLAGS_s5.o += $(PR_FMT_DEFINE_S5)
+
+T5W_MODULE_NAME = amlogic-clk-soc-t5w
+obj-$(CONFIG_AMLOGIC_COMMON_CLK_T5W) += $(T5W_MODULE_NAME).o
+$(T5W_MODULE_NAME)-y += t5w.o
+PR_FMT_T5W = $(subst amlogic-,,$(T5W_MODULE_NAME))
+PR_FMT_DEFINE_T5W="-Dpr_fmt(fmt)= \"[$(PR_FMT_T5W)]: \" fmt"
+CFLAGS_t5w.o += $(PR_FMT_DEFINE_T5W)

@@ -49,3 +49,6 @@ dtb-y += s5_s928x_ax208_v2.dtb
 dtb-y += s5_s928x_ax209_v2.dtb
 dtb-y += s5_s928x_ax201_v2.dtb
 dtb-y += s5_s928x_ax201_v2_drm.dtb
+dtb-y += t5w_t962d4_at301.dtb
+dtb-y += t5w_t962d4_at301_1g.dtb
+dtb-y += t5w_t962d4_at301_1.5g.dtb

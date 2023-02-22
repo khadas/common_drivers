@@ -224,6 +224,11 @@
 		reserve_mem_size = <0x00300000>;
 	};
 
+	optee {
+		compatible = "linaro,optee-tz";
+		method = "smc";
+	};
+
 	meson_suspend:pm {
 		compatible = "amlogic, pm";
 		status = "okay";

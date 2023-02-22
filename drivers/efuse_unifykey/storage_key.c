@@ -93,6 +93,7 @@ static s32 _amlkey_init(u8 *seed, u32 len, int encrypt_type)
 	s32	ret = 0;
 	u32	actual_size = 0;
 	struct unifykey_type *uk_type;
+	u8	*storagekey_buf = NULL;
 
 	if (storagekey_info.buffer) {
 		pr_info("already init!\n");
@@ -121,7 +122,12 @@ static s32 _amlkey_init(u8 *seed, u32 len, int encrypt_type)
 		goto _out;
 	}
 
-	ret = uk_type->ops->read(storagekey_info.buffer,
+	/* Get linear address, and read key from storage. */
+	storagekey_buf = kmalloc(storagekey_info.size, GFP_KERNEL);
+	if (!storagekey_buf)
+		return -ENOMEM;
+	memset(storagekey_buf, 0, storagekey_info.size);
+	ret = uk_type->ops->read(storagekey_buf,
 				 storagekey_info.size,
 				 &actual_size);
 	if (ret) {
@@ -137,11 +143,14 @@ static s32 _amlkey_init(u8 *seed, u32 len, int encrypt_type)
 		goto _out;
 	}
 
+	memcpy(storagekey_info.buffer, storagekey_buf, storagekey_info.size);
+
 	storagekey_info.size = min_t(int, actual_size, storagekey_info.size);
-	pr_info("buffer=%p, size = %0x!\n", storagekey_info.buffer,
+	pr_info("buffer = 0x%lx, size = 0x%0x!\n", (long)storagekey_info.buffer,
 		storagekey_info.size);
 
 _out:
+	kfree(storagekey_buf);
 	return ret;
 }
 

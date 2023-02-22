@@ -223,21 +223,21 @@
 	};
 
 	bt-dev{
-		compatible = "amlogic, bt-dev";
+		compatible = "amlogic, aml-bt";
 		dev_name = "bt-dev";
-		status = "disable";
-		gpio_reset = <&gpio GPIOX_17 GPIO_ACTIVE_HIGH>;
-		gpio_hostwake = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+		reset-gpios = <&gpio GPIOX_17 GPIO_ACTIVE_HIGH>;
+		hostwake-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;
 	};
 
 	wifi{
-		compatible = "amlogic, aml_wifi";
+		compatible = "amlogic, aml-wifi";
 		dev_name = "aml_wifi";
-		status = "disable";
-		interrupt_pin = <&gpio GPIOX_7 GPIO_ACTIVE_HIGH>;
-		irq_trigger_type = "GPIO_IRQ_LOW";
-		power_on_pin = <&gpio GPIOX_6 GPIO_ACTIVE_HIGH>;
-		dhd_static_buf;	//if use bcm wifi, config dhd_static_buf
+		status = "okay";
+		interrupt-gpios = <&gpio GPIOX_7 GPIO_ACTIVE_HIGH>;
+		irq_trigger_type = "IRQF_TRIGGER_LOW";
+		power_on-gpios = <&gpio GPIOX_6 GPIO_ACTIVE_HIGH>;
+		wifi_static_buf = <1>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pwm_e_pins>;
 		pwm_config = <&wifi_pwm_conf>;

@@ -19,7 +19,8 @@
 /*20210806: add fw support */
 /*20220815: correct ldim spi dma config */
 /*20221115: new driver architecture */
-#define LDIM_DRV_VER    "20221115"
+/*20230208: update local dimming reserved memory init method */
+#define LDIM_DRV_VER    "20230208"
 
 #define LDIM_SPI_DUTY_VSYNC_DIRECT
 

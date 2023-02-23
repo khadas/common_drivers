@@ -161,6 +161,9 @@ extern int frc_dbg_en;
 #define FRC_VD_FPS_30    30
 #define FRC_VD_FPS_25    25
 #define FRC_VD_FPS_24    24
+#define FRC_VD_FPS_120   120
+#define FRC_VD_FPS_100   100
+
 
 // frc flag define
 #define FRC_FLAG_NORM_VIDEO		0x00

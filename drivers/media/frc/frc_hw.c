@@ -52,6 +52,8 @@ module_param(FRC_PARAM_NUM, int, 0664);
 MODULE_PARM_DESC(FRC_PARAM_NUM, "FRC_PARAM_NUM");
 
 const struct vf_rate_table vf_rate_table[FRAME_RATE_CNT] = {
+	{800,   FRC_VD_FPS_120},
+	{960,	FRC_VD_FPS_100},
 	{1600,  FRC_VD_FPS_60},
 	{1601,	FRC_VD_FPS_60},
 	{1920,  FRC_VD_FPS_50},
@@ -63,6 +65,7 @@ const struct vf_rate_table vf_rate_table[FRAME_RATE_CNT] = {
 	{4001,  FRC_VD_FPS_24},
 	{4004,  FRC_VD_FPS_24},
 	{0000,	FRC_VD_FPS_00},
+
 };
 
 u32 vpu_reg_read(u32 addr)
@@ -446,7 +449,7 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 	chip = frc_data->match_data->chip;
 
 	if (chip == ID_T3)
-		offset = 0xa;
+		offset = 0xa0;
 	else if (chip == ID_T5M)
 		offset = 0x0;
 
@@ -809,7 +812,7 @@ void frc_pattern_on(u32 en)
 	chip = frc_data->match_data->chip;
 
 	if (chip == ID_T3)
-		offset = 0xa;
+		offset = 0xa0;
 	else if (chip == ID_T5M)
 		offset = 0x0;
 
@@ -1139,7 +1142,7 @@ void frc_inp_init(void)
 	chip = frc_data->match_data->chip;
 
 	if (chip == ID_T3)
-		offset = 0xa;
+		offset = 0xa0;
 	else if (chip == ID_T5M)
 		offset = 0x0;
 
@@ -1150,9 +1153,9 @@ void frc_inp_init(void)
 	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 8, 1);//open
 	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 7, 1);//open  bbd en
 	regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN + offset);
-	frc_config_reg_value(BIT_5 + BIT_7 + BIT_8, 0x000001A0, &regdata_inpmoden_04f9);
+	frc_config_reg_value((BIT_5 + BIT_7 + BIT_8), (BIT_5 + BIT_7 + BIT_8),
+						&regdata_inpmoden_04f9);
 	WRITE_FRC_REG_BY_CPU(FRC_REG_INP_MODULE_EN + offset, regdata_inpmoden_04f9);
-
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL25, 0x4080200); //aligned padding value
 
 	// WRITE_FRC_BITS(FRC_MEVP_CTRL0, 0, 0, 1);//close hme
@@ -1805,7 +1808,7 @@ void enable_nr(void)
 	chip = frc_data->match_data->chip;
 
 	if (chip == ID_T3)
-		offset = 0xa;
+		offset = 0xa0;
 	else if (chip == ID_T5M)
 		offset = 0x0;
 
@@ -1826,7 +1829,7 @@ void enable_bbd(void)
 	chip = frc_data->match_data->chip;
 
 	if (chip == ID_T3)
-		offset = 0xa;
+		offset = 0xa0;
 	else if (chip == ID_T5M)
 		offset = 0x0;
 

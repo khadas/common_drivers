@@ -3162,6 +3162,7 @@ static u32 osd_get_hw_reset_flag(u32 output_index)
 	case __MESON_CPU_MAJOR_ID_T7:
 	case __MESON_CPU_MAJOR_ID_T3:
 	case __MESON_CPU_MAJOR_ID_T5W:
+	case __MESON_CPU_MAJOR_ID_T5M:
 		{
 		int i, afbc_enable = 0;
 		u32 mali_afbc_reset;
@@ -7640,26 +7641,6 @@ static int get_viu2_src_format(void)
 {
 	return RGBA;
 }
-
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-/* -1: invalid osd index
- *  0: osd is disabled
- *  1: osd is enabled
- */
-static int get_osd_status(enum OSD_INDEX index)
-{
-	unsigned int sw_index;
-
-	if (index >= HW_OSD_COUNT)
-		return -1;
-
-	sw_index = to_osd_sw_index(index);
-	if (sw_index >= OSD_MAX)
-		return -1;
-
-	return osd_hw.enable[sw_index];
-}
-#endif
 
 static void osd_update_disp_osd_rotate(u32 index)
 {
@@ -12155,7 +12136,7 @@ static void osd_basic_update_disp_geometry(u32 index)
 						__MESON_CPU_MAJOR_ID_T7)
 						osd_hw.osd_rdma_func[output_index].osd_rdma_wr_bits
 							(osd_reg->mali_afbcd_top_ctrl,
-							 is_dolby_vision_graphic_on() ? 0 : 1,
+							 is_amdv_graphic_on() ? 0 : 1,
 							 14, 1);
 #endif
 				}
@@ -12939,7 +12920,8 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		       sizeof(struct hw_osd_reg_s) *
 		       osd_hw.osd_meson_dev.osd_count);
 	} else if (osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_T3 ||
-		   osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_T5W) {
+		   osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_T5W ||
+		   osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_T5M) {
 		/* 4 or 3 OSD, multi_afbc_core */
 		memcpy(&hw_osd_reg_array[0], &hw_osd_reg_array_t3[0],
 		       sizeof(struct hw_osd_reg_s) *
@@ -13361,9 +13343,6 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 	secure_register(OSD_MODULE, 0,
 			osd_secure_op,
 			osd_secure_cb);
-#endif
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-	register_osd_func(get_osd_status);
 #endif
 	osd_log_out = 1;
 }

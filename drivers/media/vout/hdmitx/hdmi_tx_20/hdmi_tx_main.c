@@ -4513,6 +4513,81 @@ static ssize_t hdr_mute_frame_store(struct device *dev,
 	return count;
 }
 
+static ssize_t hdr_priority_mode_show(struct device *dev,
+			  struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+	struct hdmitx_dev *hdev = get_hdmitx_device();
+
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d\r\n",
+		hdev->tx_comm.hdr_priority);
+
+	return pos;
+}
+
+/* hide or enable HDR capabilities.
+ * 0 : No HDR capabilities are hidden
+ * 1 : DV Capabilities are hidden
+ * 2 : All HDR capabilities are hidden
+ */
+static ssize_t hdr_priority_mode_store(struct device *dev,
+			   struct device_attribute *attr,
+			   const char *buf, size_t count)
+{
+	struct hdmitx_dev *hdev = get_hdmitx_device();
+	unsigned int val = 0;
+	struct vinfo_s *info = NULL;
+
+	if ((strncmp("0", buf, 1) == 0) || (strncmp("1", buf, 1) == 0) ||
+	    (strncmp("2", buf, 1) == 0)) {
+		val = buf[0] - '0';
+	}
+
+	if (val == hdev->tx_comm.hdr_priority)
+		return count;
+	info = hdmitx_get_current_vinfo(NULL);
+	if (!info)
+		return count;
+	mutex_lock(&hdmimode_mutex);
+	hdev->tx_comm.hdr_priority = val;
+	if (hdev->tx_comm.hdr_priority == 1) {
+		//clear dv support
+		memset(&hdev->tx_comm.rxcap.dv_info, 0x00, sizeof(struct dv_info));
+		hdmitx_vdev.dv_info = &dv_dummy;
+		//restore hdr support
+		memcpy(&hdev->tx_comm.rxcap.hdr_info,
+			&hdev->tx_comm.rxcap.hdr_info2, sizeof(struct hdr_info));
+		//restore BT2020 support
+		hdev->tx_comm.rxcap.colorimetry_data = hdev->tx_comm.rxcap.colorimetry_data2;
+		hdrinfo_to_vinfo(&info->hdr_info, hdev);
+	} else if (hdev->tx_comm.hdr_priority == 2) {
+		//clear dv support
+		memset(&hdev->tx_comm.rxcap.dv_info, 0x00, sizeof(struct dv_info));
+		hdmitx_vdev.dv_info = &dv_dummy;
+		//clear hdr support
+		memset(&hdev->tx_comm.rxcap.hdr_info, 0x00, sizeof(struct hdr_info));
+		//clear BT2020 support
+		hdev->tx_comm.rxcap.colorimetry_data = hdev->tx_comm.rxcap.colorimetry_data2 & 0x1F;
+		memset(&info->hdr_info, 0, sizeof(struct hdr_info));
+	} else {
+		//restore dv support
+		memcpy(&hdev->tx_comm.rxcap.dv_info,
+			&hdev->tx_comm.rxcap.dv_info2, sizeof(struct dv_info));
+		//restore hdr support
+		memcpy(&hdev->tx_comm.rxcap.hdr_info, &hdev->tx_comm.rxcap.hdr_info2,
+			sizeof(struct hdr_info));
+		//restore BT2020 support
+		hdev->tx_comm.rxcap.colorimetry_data = hdev->tx_comm.rxcap.colorimetry_data2;
+		edidinfo_attach_to_vinfo(hdev);
+	}
+	/* force trigger plugin event
+	 * hdmitx_set_uevent_state(HDMITX_HPD_EVENT, 0);
+	 * hdmitx_set_uevent(HDMITX_HPD_EVENT, 1);
+	 */
+	mutex_unlock(&hdmimode_mutex);
+	return count;
+}
+
 static ssize_t log_level_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -5492,6 +5567,7 @@ static DEVICE_ATTR_RO(hdmitx_basic_config);
 static DEVICE_ATTR_RO(hdmi_config_info);
 static DEVICE_ATTR_RO(hdmitx_pkt_dump);
 static DEVICE_ATTR_RO(dump_debug_reg);
+static DEVICE_ATTR_RW(hdr_priority_mode);
 
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
 static struct vinfo_s *hdmitx_get_current_vinfo(void *data)
@@ -7013,6 +7089,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_hdmi_config_info);
 	ret = device_create_file(dev, &dev_attr_hdmitx_pkt_dump);
 	ret = device_create_file(dev, &dev_attr_dump_debug_reg);
+	ret = device_create_file(dev, &dev_attr_hdr_priority_mode);
 
 #ifdef CONFIG_AMLOGIC_VPU
 	hdmitx_device.encp_vpu_dev = vpu_dev_register(VPU_VENCP, DEVICE_NAME);
@@ -7202,6 +7279,7 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_hdmi_config_info);
 	device_remove_file(dev, &dev_attr_hdmitx_pkt_dump);
 	device_remove_file(dev, &dev_attr_dump_debug_reg);
+	device_remove_file(dev, &dev_attr_hdr_priority_mode);
 
 	cdev_del(&hdmitx_device.cdev);
 

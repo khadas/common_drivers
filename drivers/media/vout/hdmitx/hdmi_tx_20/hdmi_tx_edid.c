@@ -1406,6 +1406,8 @@ static int hdmitx_edid_cta_block_parse(struct hdmitx_dev *hdev,
 				case EXTENSION_COLORMETRY_TAG:
 					prxcap->colorimetry_data =
 						block_buf[offset + 2];
+					prxcap->colorimetry_data2 =
+						block_buf[offset + 2];
 					break;
 				case EXTENSION_DRM_STATIC_TAG:
 					edid_parsedrmsb(prxcap,

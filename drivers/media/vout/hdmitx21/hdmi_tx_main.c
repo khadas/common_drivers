@@ -4298,6 +4298,7 @@ static ssize_t hdr_priority_mode_store(struct device *dev,
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmitx_common *tx_comm = &hdev->tx_comm;
 	unsigned int val = 0;
+	struct vinfo_s *info = NULL;
 
 	if ((strncmp("0", buf, 1) == 0) || (strncmp("1", buf, 1) == 0) ||
 	    (strncmp("2", buf, 1) == 0)) {
@@ -4306,27 +4307,46 @@ static ssize_t hdr_priority_mode_store(struct device *dev,
 
 	if (val == tx_comm->hdr_priority)
 		return count;
+	info = hdmitx_get_current_vinfo(NULL);
+	if (!info)
+		return count;
+	mutex_lock(&hdev->hdmimode_mutex);
 	tx_comm->hdr_priority = val;
-	if (tx_comm->hdr_priority) {
+	if (tx_comm->hdr_priority == 1) {
 		//clear dv support
 		memset(&tx_comm->rxcap.dv_info, 0x00, sizeof(struct dv_info));
-		//clear hdr support
-		if (tx_comm->hdr_priority == 2) {
-			memset(&tx_comm->rxcap.hdr_info, 0x00, sizeof(struct hdr_info));
-			//clear BT2020 support
-			tx_comm->rxcap.colorimetry_data = tx_comm->rxcap.colorimetry_data2 & 0x1F;
-		}
-	} else {
-		//restore dv support
-		memcpy(&tx_comm->rxcap.dv_info, &tx_comm->rxcap.dv_info2,
-			sizeof(struct dv_info));
+		hdmitx_vdev.dv_info = &dv_dummy;
 		//restore hdr support
 		memcpy(&tx_comm->rxcap.hdr_info, &tx_comm->rxcap.hdr_info2,
 			sizeof(struct hdr_info));
 		//restore BT2020 support
 		tx_comm->rxcap.colorimetry_data = tx_comm->rxcap.colorimetry_data2;
+		hdrinfo_to_vinfo(&info->hdr_info, hdev);
+	} else if (tx_comm->hdr_priority == 2) {
+		//clear dv support
+		memset(&tx_comm->rxcap.dv_info, 0x00, sizeof(struct dv_info));
+		hdmitx_vdev.dv_info = &dv_dummy;
+		//clear hdr support
+		memset(&tx_comm->rxcap.hdr_info, 0x00, sizeof(struct hdr_info));
+		//clear BT2020 support
+		tx_comm->rxcap.colorimetry_data = tx_comm->rxcap.colorimetry_data2 & 0x1F;
+		memset(&info->hdr_info, 0, sizeof(struct hdr_info));
+	} else {
+		//restore dv support
+		memcpy(&tx_comm->rxcap.dv_info, &tx_comm->rxcap.dv_info2, sizeof(struct dv_info));
+		//restore hdr support
+		memcpy(&tx_comm->rxcap.hdr_info, &tx_comm->rxcap.hdr_info2,
+			sizeof(struct hdr_info));
+		//restore BT2020 support
+		tx_comm->rxcap.colorimetry_data = tx_comm->rxcap.colorimetry_data2;
+		edidinfo_attach_to_vinfo(hdev);
 	}
 	/* hdmitx21_event_notify(HDMITX_HDR_PRIORITY, &hdev->hdr_priority); */
+	/* force trigger plugin event
+	 * hdmitx21_set_uevent_state(HDMITX_HPD_EVENT, 0);
+	 * hdmitx21_set_uevent(HDMITX_HPD_EVENT, 1);
+	 */
+	mutex_unlock(&hdev->hdmimode_mutex);
 	return count;
 }
 

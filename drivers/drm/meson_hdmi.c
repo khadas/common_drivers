@@ -682,6 +682,9 @@ static int am_hdmitx_connector_atomic_get_property
 	} else if (property == am_hdmi->hdr_output_cap_property) {
 		*val = get_hdr_conversion_cap();
 		return 0;
+	} else if (property == am_hdmi->contenttype_cap_prop) {
+		*val = am_hdmi_info.hdmitx_dev->get_content_types();
+		return 0;
 	}
 
 	return -EINVAL;
@@ -1805,6 +1808,22 @@ static void meson_hdmitx_init_avmute_property(struct drm_device *drm_dev,
 	}
 }
 
+static void meson_hdmitx_init_contenttype_cap_property(struct drm_device *drm_dev,
+						  struct am_hdmi_tx *am_hdmi)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(drm_dev, 0,
+			"contenttype_cap", 0, 1023);
+
+	if (prop) {
+		am_hdmi->contenttype_cap_prop = prop;
+		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to contenttype_cap property\n");
+	}
+}
+
 static void meson_hdmitx_hpd_cb(void *data)
 {
 	struct am_hdmi_tx *am_hdmi = (struct am_hdmi_tx *)data;
@@ -1952,6 +1971,7 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	meson_hdmitx_init_hdr_ctl_property(drm, am_hdmi);
 	/*The cap to convert HDR modes to each other*/
 	meson_hdmitx_init_hdr_output_cap_property(drm, am_hdmi);
+	meson_hdmitx_init_contenttype_cap_property(drm, am_hdmi);
 
 	/*TODO:update compat_mode for drm driver, remove later.*/
 	priv->compat_mode = am_hdmi_info.android_path;

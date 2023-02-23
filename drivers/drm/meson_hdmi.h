@@ -62,6 +62,7 @@ struct am_hdmi_tx {
 	struct drm_property *hdcp_mode_property;
 	struct drm_property *hdr_ctl_property;
 	struct drm_property *hdr_output_cap_property;
+	struct drm_property *contenttype_cap_prop;
 
 #ifdef CONFIG_CEC_NOTIFIER
 	struct cec_notifier	*cec_notifier;

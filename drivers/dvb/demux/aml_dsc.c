@@ -111,7 +111,7 @@ static struct dsc_pid_table *_get_dsc_pid_table(int index, int dsc_type)
 {
 	struct dsc_pid_table *table;
 
-	if (index >= MAX_DSC_PID_TABLE_NUM)
+	if (index >= MAX_DSC_PID_TABLE_NUM || index < 0)
 		return NULL;
 
 	if (dsc_type == CA_DSC_COMMON_TYPE)
@@ -461,7 +461,7 @@ static int _dsc_chan_set_sid(struct dsc_channel *ch,
 	if (ptmp->valid)
 		dsc_config_pid_table(ptmp, ch->dsc_type);
 
-	if (ch->index00) {
+	if (ch->index00 != -1) {
 		ptmp = _get_dsc_pid_table(ch->index00, ch->dsc_type);
 		if (!ptmp) {
 			dprint("%s _get_dsc_pid_table fail\n", __func__);
@@ -824,7 +824,6 @@ int dsc_set_sid(int id, int source, int sid)
 			chans = chans->next;
 		}
 	}
-
 	return 0;
 }
 

@@ -37,6 +37,7 @@
 		ranges;
 
 		dsp_fw_reserved:linux,dsp_fw {
+			status = "disabled";
 			compatible = "shared-dma-pool";
 			reusable;
 			size = <0x0 0x1400000>;
@@ -49,15 +50,6 @@
 			compatible = "amlogic, aml_secos_memory";
 			reg = <0x0 0x03d00000 0x0 0x00300000>;
 			no-map;
-		};
-
-		/* global autoconfigured region for contiguous allocations */
-		linux,cma {
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x0 0x800000>;
-			alignment = <0x0 0x400000>;
-			linux,cma-default;
 		};
 	};
 
@@ -293,7 +285,7 @@
 	};
 	audiobridge {
 		compatible = "amlogic, audio-bridge";
-		status = "disable";
+		status = "disabled";
 		mboxes = <&mailbox_pl 1>,
 			 <&mailbox_pl 3>;
 		#mbox-cells = <1>;

@@ -119,6 +119,7 @@ struct meson_hdmitx_dev {
 	int (*get_aspect_ratio)(void);
 	void (*set_frac)(int val);
 	int (*get_frac)(void);
+	void (*drm_set_allm_mode)(int mode);
 
 	/*hdcp apis*/
 	void (*hdcp_init)(void);

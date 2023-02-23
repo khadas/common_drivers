@@ -3207,6 +3207,34 @@ static void hdmi_tx_enable_ll_mode(bool enable)
 	}
 }
 
+static void drm_set_allm_mode(int mode)
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_common *tx_comm = &hdev->tx_comm;
+
+	if (mode == 0) {
+		// disable ALLM
+		tx_comm->allm_mode = 0;
+		hdmitx21_construct_vsif(hdev, VT_ALLM, 0, NULL);
+		if (_is_hdmi14_4k(tx_comm->cur_VIC) &&
+			!hdmitx21_dv_en() &&
+			!hdmitx21_hdr10p_en())
+			hdmitx21_construct_vsif(hdev, VT_HDMI14_4K, 1, NULL);
+	}
+	if (mode == 1) {
+		tx_comm->allm_mode = 1;
+		hdmitx21_construct_vsif(hdev, VT_ALLM, 1, NULL);
+		tx_comm->ct_mode = 0;
+		hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE, SET_CT_OFF);
+	}
+	if (mode == 2) {
+		if (tx_comm->allm_mode == 1) {
+			tx_comm->allm_mode = 0;
+			hdmi_vend_infoframe2_rawset(NULL, NULL);
+		}
+	}
+}
+
 /* for decoder/hwc or sysctl to control the low latency mode,
  * as they don't care if sink support ALLM OR HDMI1.X game mode
  * so need hdmitx driver to device to send ALLM OR HDMI1.X game
@@ -6835,6 +6863,7 @@ static struct meson_hdmitx_dev drm_hdmitx_instance = {
 	.get_aspect_ratio = hdmitx21_get_aspect_ratio_value,
 	.set_frac = set_frac_rate_policy,
 	.get_frac = get_frac_rate_policy,
+	.drm_set_allm_mode = drm_set_allm_mode,
 
 	/*hdcp apis*/
 	.hdcp_init = drm_hdmitx_hdcp_init,

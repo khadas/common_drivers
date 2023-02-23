@@ -629,6 +629,9 @@ static int am_hdmitx_connector_atomic_set_property
 	} else if (property == am_hdmi->hdr_ctl_property) {
 		hdmitx_state->hdr_ctl = val;
 		return 0;
+	} else if (property == am_hdmi->allm_prop) {
+		hdmitx_state->allm_mode = val;
+		return 0;
 	}
 
 	return -EINVAL;
@@ -684,6 +687,9 @@ static int am_hdmitx_connector_atomic_get_property
 		return 0;
 	} else if (property == am_hdmi->contenttype_cap_prop) {
 		*val = am_hdmi_info.hdmitx_dev->get_content_types();
+		return 0;
+	} else if (property == am_hdmi->allm_prop) {
+		*val = hdmitx_state->allm_mode;
 		return 0;
 	}
 
@@ -840,6 +846,7 @@ struct drm_connector_state *meson_hdmitx_atomic_duplicate_state
 	new_state->color_attr_para.bitdepth = COLORDEPTH_RESERVED;
 	new_state->pref_hdr_policy = cur_state->pref_hdr_policy;
 	new_state->hdr_ctl = cur_state->hdr_ctl;
+	new_state->allm_mode = cur_state->allm_mode;
 
 	return &new_state->base;
 }
@@ -1081,6 +1088,9 @@ void meson_hdmitx_update(struct drm_connector_state *new_state,
 			am_hdmi_info.hdmitx_dev->avmute(new_hdmitx_state->avmute);
 		}
 	}
+
+	if (new_hdmitx_state->allm_mode != old_hdmitx_state->allm_mode)
+		am_hdmi_info.hdmitx_dev->drm_set_allm_mode(new_hdmitx_state->allm_mode);
 
 	if (am_hdmi_info.android_path)
 		return;
@@ -1824,6 +1834,22 @@ static void meson_hdmitx_init_contenttype_cap_property(struct drm_device *drm_de
 	}
 }
 
+static void meson_hdmitx_init_allm_property(struct drm_device *drm_dev,
+						  struct am_hdmi_tx *am_hdmi)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(drm_dev, 0,
+			"allm", 0, 3);
+
+	if (prop) {
+		am_hdmi->allm_prop = prop;
+		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to allm property\n");
+	}
+}
+
 static void meson_hdmitx_hpd_cb(void *data)
 {
 	struct am_hdmi_tx *am_hdmi = (struct am_hdmi_tx *)data;
@@ -1972,6 +1998,7 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	/*The cap to convert HDR modes to each other*/
 	meson_hdmitx_init_hdr_output_cap_property(drm, am_hdmi);
 	meson_hdmitx_init_contenttype_cap_property(drm, am_hdmi);
+	meson_hdmitx_init_allm_property(drm, am_hdmi);
 
 	/*TODO:update compat_mode for drm driver, remove later.*/
 	priv->compat_mode = am_hdmi_info.android_path;

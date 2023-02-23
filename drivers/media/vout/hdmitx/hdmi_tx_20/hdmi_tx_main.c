@@ -3591,6 +3591,28 @@ static ssize_t allm_mode_store(struct device *dev,
 	return count;
 }
 
+static void drm_set_allm_mode(int mode)
+{
+	struct hdmitx_dev *hdev = &hdmitx_device;
+
+	if (mode == 0) {
+		hdev->tx_comm.allm_mode = 0;
+		hdmitx_construct_vsif(&hdev->tx_comm, VT_ALLM, 0, NULL);
+		hdmitx_construct_vsif(&hdev->tx_comm, VT_HDMI14_4K, 1, NULL);
+	}
+	if (mode == 1) {
+		hdev->tx_comm.allm_mode = 1;
+		hdmitx_construct_vsif(&hdev->tx_comm, VT_ALLM, 1, NULL);
+		hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CT_MODE, SET_CT_OFF);
+	}
+	if (mode == 2) {
+		if (hdev->tx_comm.allm_mode == 1) {
+			hdev->tx_comm.allm_mode = 0;
+			hdev->hwop.disablepacket(HDMI_PACKET_VEND);
+		}
+	}
+}
+
 bool dv_support(void)
 {
 	int ret;
@@ -7860,6 +7882,7 @@ static struct meson_hdmitx_dev drm_hdmitx_instance = {
 	.test_attr = drm_hdmitx_chk_mode_attr_sup,
 	.get_hdmi_hdr_status = hdmi_hdr_status_to_drm,
 	.get_timing_para_by_vic = drm_hdmitx_get_timing_para,
+	.drm_set_allm_mode = drm_set_allm_mode,
 
 	/*hdcp apis*/
 	.hdcp_init = meson_hdcp_init,

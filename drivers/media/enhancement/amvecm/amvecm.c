@@ -11216,10 +11216,7 @@ static int aml_vecm_probe(struct platform_device *pdev)
 	/* register vdin vrr en client*/
 	frame_lock_vrr_off_done_init();
 	aml_vrr_atomic_notifier_register(&flock_vdin_vrr_en_notifier_nb);
-
-	init_pattern_detect();
 	/* #endif */
-	vpp_get_hist_en();
 
 	if (is_meson_txlx_cpu()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD

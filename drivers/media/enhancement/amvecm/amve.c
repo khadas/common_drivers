@@ -2627,6 +2627,7 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 		if (chip_type_id == chip_s5) {
 			ve_vadj_ctl(md, VE_VADJ1, pq_cfg.vadj1_en);
+			ve_vadj_ctl(md, VE_VADJ2, pq_cfg.vadj2_en);
 			ve_bs_ctl(md, 0);
 			ve_ble_ctl(md, pq_cfg.black_ext_en);
 			ve_cc_ctl(md, pq_cfg.chroma_cor_en);

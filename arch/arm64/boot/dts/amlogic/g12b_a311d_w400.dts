@@ -8,7 +8,7 @@
 #include "mesong12b.dtsi"
 #include "mesong12b_w400-panel.dtsi"
 #include "mesong12b_drm.dtsi"
-//#include "partition_normal_linux.dtsi"
+#include "partition_normal_linux.dtsi"
 
 / {
 	model = "Amlogic";

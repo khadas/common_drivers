@@ -8,7 +8,7 @@
 #include "mesonsm1.dtsi"
 #include "mesonsm1_drm.dtsi"
 #include "mesonsm1_ac200-panel.dtsi"
-//#include "partition_normal_linux.dtsi"
+#include "partition_normal_linux.dtsi"
 
 / {
 	model = "Amlogic";

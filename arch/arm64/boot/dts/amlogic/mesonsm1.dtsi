@@ -439,7 +439,7 @@
 		phy-reg-size = <0x2000>;
 		usb2-phy-reg = <0xffe09000>;
 		usb2-phy-reg-size = <0x80>;
-		clocks = <&clkc CLKID_PCIE_PLL>;//maybe should not mod.
+		clocks = <&clkc CLKID_PCIE_PLL>;
 		clock-names = "pcie_refpll";
 		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
 	};

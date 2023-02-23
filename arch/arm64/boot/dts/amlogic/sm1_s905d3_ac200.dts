@@ -841,23 +841,6 @@
 		regulator-always-on;
 	};
 
-	usb_5v_reg: fixedregulator@usb_5v{
-		compatible = "regulator-fixed";
-		vin-supply = <&vcc5v_reg>;
-		regulator-name = "USB_PWR";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		pinctrl-names = "default";
-		//GPIOH_6(down) Set:
-		// Output L= Disable USB Power
-		// Output H= Enable USB Power
-		gpio = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
-		startup-delay-us = <70000>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
 	vddq_reg: fixedregulator@vddq {
 		compatible = "regulator-fixed";
 		vin-supply = <&vbat>;

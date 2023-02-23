@@ -1788,18 +1788,22 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 		if (devp->out_sts.vout_width == 1920 &&
 			devp->out_sts.vout_height == 1080) {
 			if (devp->in_sts.in_hsize > IN_W_SIZE_FHD_90 &&
-				devp->in_sts.in_hsize < devp->out_sts.vout_width)
+				devp->in_sts.in_hsize < devp->out_sts.vout_width &&
+				devp->in_sts.in_hsize % 8)
 				in_hsize = 8 - (devp->in_sts.in_hsize % 8);
 			if (devp->in_sts.in_vsize > IN_H_SIZE_FHD_90 &&
-				devp->in_sts.in_vsize < devp->out_sts.vout_height)
+				devp->in_sts.in_vsize < devp->out_sts.vout_height &&
+				devp->in_sts.in_vsize % 8)
 				in_vsize = 8 - (devp->in_sts.in_vsize % 8);
 		} else if (devp->out_sts.vout_width == 3840 &&
 			devp->out_sts.vout_height == 2160) {
 			if (devp->in_sts.in_hsize > IN_W_SIZE_UHD_90 &&
-				devp->in_sts.in_hsize < devp->out_sts.vout_width)
+				devp->in_sts.in_hsize < devp->out_sts.vout_width &&
+				devp->in_sts.in_hsize % 16)
 				in_hsize = 16 - (devp->in_sts.in_hsize % 16);
 			if (devp->in_sts.in_vsize > IN_H_SIZE_UHD_90 &&
-				devp->in_sts.in_vsize < devp->out_sts.vout_height)
+				devp->in_sts.in_vsize < devp->out_sts.vout_height &&
+				devp->in_sts.in_vsize % 16)
 				in_vsize = 16 - (devp->in_sts.in_vsize % 16);
 		}
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
@@ -1808,18 +1812,22 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 		if (devp->out_sts.vout_width == 1920 &&
 			devp->out_sts.vout_height == 1080) {
 			if (devp->in_sts.in_hsize > IN_W_SIZE_FHD_90 &&
-				devp->in_sts.in_hsize < devp->out_sts.vout_width)
+				devp->in_sts.in_hsize < devp->out_sts.vout_width &&
+				devp->in_sts.in_hsize % 8)
 				in_hsize = 8 - (devp->in_sts.in_hsize % 8);
 			if (devp->in_sts.in_vsize > IN_H_SIZE_FHD_90 &&
-				devp->in_sts.in_vsize < devp->out_sts.vout_height)
+				devp->in_sts.in_vsize < devp->out_sts.vout_height &&
+				devp->in_sts.in_vsize % 8)
 				in_vsize = 8 - (devp->in_sts.in_vsize % 8);
 		} else if (devp->out_sts.vout_width == 3840 &&
 			devp->out_sts.vout_height == 2160) {
 			if (devp->in_sts.in_hsize > IN_W_SIZE_UHD_90 &&
-				devp->in_sts.in_hsize < devp->out_sts.vout_width)
+				devp->in_sts.in_hsize < devp->out_sts.vout_width &&
+				devp->in_sts.in_hsize % 16)
 				in_hsize = 16 - (devp->in_sts.in_hsize % 16);
 			if (devp->in_sts.in_vsize > IN_H_SIZE_UHD_90 &&
-				devp->in_sts.in_vsize < devp->out_sts.vout_height)
+				devp->in_sts.in_vsize < devp->out_sts.vout_height &&
+				devp->in_sts.in_vsize % 16)
 				in_vsize = 16 - (devp->in_sts.in_vsize % 16);
 		}
 		reg_hsize_proc = devp->in_sts.in_hsize + in_hsize;

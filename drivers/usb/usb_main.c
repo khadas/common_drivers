@@ -38,6 +38,7 @@ int get_otg_mode(void)
 {
 	return force_device_mode;
 }
+EXPORT_SYMBOL(get_otg_mode);
 
 static int __init usb_main_init(void)
 {
@@ -54,7 +55,7 @@ static int __init usb_main_init(void)
 	call_sub_init(amlogic_usb3_m31_drv_init);	//crgdrdphy/
 	call_sub_init(amlogic_crg_init);		//crg/amlogic_usb_crg.ko
 	call_sub_init(amlogic_new_otg_driver_init);	//usbotg/amlogic_usb_otg.ko
-	call_sub_init(dwc_otg_init);			//dwc_otg/310/dwc_otg.ko
+	//call_sub_init(dwc_otg_init);			//dwc_otg/310/dwc_otg.ko
 	call_sub_init(amlogic_crg_drd_usb2_drv_init);	//crgdrdphy/amlogic_usb2_crg_drd_phy.ko
 	call_sub_init(amlogic_crg_drd_usb3_drv_init);	//crgdrdphy/amlogic_usb3_crg_drd_phy.ko
 	call_sub_init(amlogic_crg_host_driver_init);	//crg/amlogic_usb_crg_drd.ko

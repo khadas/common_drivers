@@ -4,7 +4,8 @@
 # Makefile for DWC_otg Highspeed USB controller driver
 #
 
-#MODULE_NAME	= dwc_otg
+MODULE_NAME	= dwc_otg
+obj-$(CONFIG_AMLOGIC_USB_DWC_OTG_HCD) += $(MODULE_NAME).o
 
 COMMON_PORT	= common_port
 BUS_INTERFACE = -DLM_INTERFACE
@@ -21,14 +22,14 @@ KBUILD_CPPFLAGS		+= $(BUS_INTERFACE)
 #KBUILD_CPPFLAGS	+= -DDWC_DEV_SRPCAP
 
 
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_USB_DWC_OTG_HCD)	+= dwc_otg/310/dwc_otg_driver.o dwc_otg/310/dwc_otg_attr.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_USB_DWC_OTG_HCD)	+= dwc_otg/310/dwc_otg_cil.o dwc_otg/310/dwc_otg_cil_intr.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_USB_DWC_OTG_HCD)	+= dwc_otg/310/dwc_otg_pcd_linux.o dwc_otg/310/dwc_otg_pcd.o dwc_otg/310/dwc_otg_pcd_intr.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_USB_DWC_OTG_HCD)	+= dwc_otg/310/dwc_otg_hcd.o dwc_otg/310/dwc_otg_hcd_linux.o dwc_otg/310/dwc_otg_hcd_intr.o dwc_otg/310/dwc_otg_hcd_queue.o dwc_otg/310/dwc_otg_hcd_ddma.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_USB_DWC_OTG_HCD)	+= dwc_otg/310/dwc_otg_adp.o
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_USB_DWC_OTG_HCD)	+= dwc_otg/310/usbphy.o
+$(MODULE_NAME)-y	+= dwc_otg/310/dwc_otg_driver.o dwc_otg/310/dwc_otg_attr.o
+$(MODULE_NAME)-y	+= dwc_otg/310/dwc_otg_cil.o dwc_otg/310/dwc_otg_cil_intr.o
+$(MODULE_NAME)-y	+= dwc_otg/310/dwc_otg_pcd_linux.o dwc_otg/310/dwc_otg_pcd.o dwc_otg/310/dwc_otg_pcd_intr.o
+$(MODULE_NAME)-y	+= dwc_otg/310/dwc_otg_hcd.o dwc_otg/310/dwc_otg_hcd_linux.o dwc_otg/310/dwc_otg_hcd_intr.o dwc_otg/310/dwc_otg_hcd_queue.o dwc_otg/310/dwc_otg_hcd_ddma.o
+$(MODULE_NAME)-y	+= dwc_otg/310/dwc_otg_adp.o
+$(MODULE_NAME)-y	+= dwc_otg/310/usbphy.o
 ifneq ($(CFI),)
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_USB_DWC_OTG_HCD)	+= dwc_otg/310/dwc_otg_cfi.o
+$(MODULE_NAME)-y	+= dwc_otg/310/dwc_otg_cfi.o
 endif
-$(MODULE_NAME)-$(CONFIG_AMLOGIC_USB_DWC_OTG_HCD)	+= dwc_otg/310/$(COMMON_PORT)/dwc_common_linux.o
+$(MODULE_NAME)-y	+= dwc_otg/310/$(COMMON_PORT)/dwc_common_linux.o
 

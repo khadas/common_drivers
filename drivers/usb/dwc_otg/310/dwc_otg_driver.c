@@ -80,9 +80,9 @@
 #ifdef CONFIG_AMLOGIC_USBPHY
 #include <linux/amlogic/usb-v2.h>
 #endif
-#include "../../usb_main.h"
+#include <linux/amlogic/gki_module.h>
 
-//#include <linux/amlogic/gki_module.h>
+#include "../../usb_main.h"
 
 #define DWC_DRIVER_VERSION	"3.10a 12-MAY-2014"
 #define DWC_DRIVER_DESC		"HS OTG USB Controller driver"
@@ -1567,9 +1567,7 @@ int __init dwc_otg_init(void)
 	return platform_driver_register(&dwc_otg_driver);
 }
 
-#if 0
 late_initcall(dwc_otg_init);
-#endif
 
 MODULE_DESCRIPTION(DWC_DRIVER_DESC);
 MODULE_AUTHOR("Synopsys Inc.");

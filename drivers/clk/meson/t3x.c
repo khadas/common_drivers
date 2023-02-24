@@ -3417,7 +3417,7 @@ static struct clk_regmap t3x_hevc_0_div = {
 static struct clk_regmap t3x_hevc_0 = {
 	.data = &(struct clk_regmap_gate_data){
 		.offset = CLKCTRL_VDEC2_CLK_CTRL,
-		.bit_idx = 24,
+		.bit_idx = 8,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hevc_0",
@@ -3464,7 +3464,7 @@ static struct clk_regmap t3x_hevc_1_div = {
 static struct clk_regmap t3x_hevc_1 = {
 	.data = &(struct clk_regmap_gate_data){
 		.offset = CLKCTRL_VDEC4_CLK_CTRL,
-		.bit_idx = 24,
+		.bit_idx = 8,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "hevc_1",
@@ -3481,7 +3481,7 @@ static struct clk_regmap t3x_hevc = {
 	.data = &(struct clk_regmap_mux_data){
 		.offset = CLKCTRL_VDEC4_CLK_CTRL,
 		.mask = 0x1,
-		.shift = 31,
+		.shift = 15,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hevc",

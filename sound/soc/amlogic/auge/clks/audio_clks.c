@@ -21,8 +21,12 @@ DEFINE_SPINLOCK(aclk_lock);
 
 static const struct of_device_id audio_clocks_of_match[] = {
 	{
+		.compatible = "amlogic, g12a-audio-clocks",
+		.data       = &g12a_audio_clks_init,
+	},
+	{
 		.compatible = "amlogic, sm1-audio-clocks",
-		.data		= &sm1_audio_clks_init,
+		.data       = &sm1_audio_clks_init,
 	},
 	{
 		.compatible = "amlogic, tm2-audio-clocks",
@@ -50,11 +54,11 @@ static const struct of_device_id audio_clocks_of_match[] = {
 	},
 	{
 		.compatible = "amlogic, a5-audio-clocks",
-		.data           = &a5_audio_clks_init,
+		.data       = &a5_audio_clks_init,
 	},
 	{
 		.compatible = "amlogic, axg-audio-clocks",
-		.data           = &axg_audio_clks_init,
+		.data       = &axg_audio_clks_init,
 	},
 	{
 		.compatible = "amlogic, a1-audio-clocks",

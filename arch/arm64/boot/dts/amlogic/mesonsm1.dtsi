@@ -385,7 +385,7 @@
 	audio_data: audio_data {
 		compatible = "amlogic, audio_data";
 		query_licence_cmd = <0x82000050>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	dwc3: dwc3@ff500000 {
@@ -1004,7 +1004,7 @@
 
 		audiobus: audiobus@0xFF660000 {
 			compatible = "amlogic, audio-controller", "simple-bus";
-			status = "disabled";
+			status = "okay";
 			reg = <0x0 0xFF660000 0x0 0x3000>;
 			#address-cells = <2>;
 			#size-cells = <2>;
@@ -1014,6 +1014,9 @@
 				compatible = "amlogic, sm1-audio-clocks";
 				#clock-cells = <1>;
 				reg = <0x0 0x0 0x0 0xb0>;
+			};
+			pinctrl_audio: pinctrl {
+				compatible = "amlogic, sm1-audio-pinctrl";
 			};
 			ddr_manager {
 				compatible = "amlogic, sm1-audio-ddr-manager";
@@ -1039,7 +1042,7 @@
 		audio_earc: bus@ff663000 {
 			compatible = "simple-bus";
 			reg = <0x0 0xff663000 0x0 0x1000>;
-			status = "disabled";
+			status = "okay";
 			#address-cells = <2>;
 			#size-cells = <2>;
 			ranges = <0x0 0x0 0x0 0xff663000 0x0 0x1000>;
@@ -1048,7 +1051,7 @@
 				compatible = "amlogic, sm1-snd-earc";
 				#sound-dai-cells = <0>;
 
-				status = "disabled";
+				status = "okay";
 
 				reg =
 					<0x0 0x800 0x0 0x400>,
@@ -1059,20 +1062,20 @@
 					"rx_dmac",
 					"rx_top";
 
-				//clocks = < &clkaudio CLKID_EARCRX_CMDC
-				//	&clkaudio CLKID_EARCRX_DMAC
-				//	&clkc CLKID_FCLK_DIV4
-				//	&clkc CLKID_FCLK_DIV4
-				//	&clkaudio CLKID_EARCTX_CMDC
-				//	&clkaudio CLKID_EARCTX_DMAC
-				//	&clkc CLKID_FCLK_DIV4
-				//	&clkc CLKID_MPLL1
-				//	>;
-				//clock-names =
-				//	"rx_cmdc",
-				//	"rx_dmac",
-				//	"rx_cmdc_srcpll",
-				//	"rx_dmac_srcpll";
+				clocks = < &clkaudio CLKID_EARCRX_CMDC
+					&clkaudio CLKID_EARCRX_DMAC
+					&clkc CLKID_FCLK_DIV4
+					&clkc CLKID_FCLK_DIV4
+					&clkaudio CLKID_EARCTX_CMDC
+					&clkaudio CLKID_EARCTX_DMAC
+					&clkc CLKID_FCLK_DIV4
+					&clkc CLKID_MPLL1
+					>;
+				clock-names =
+					"rx_cmdc",
+					"rx_dmac",
+					"rx_cmdc_srcpll",
+					"rx_dmac_srcpll";
 
 				interrupts = <
 					GIC_SPI 87 IRQ_TYPE_LEVEL_HIGH>;
@@ -1083,7 +1086,7 @@
 		/* Sound iomap */
 		aml_snd_iomap {
 			compatible = "amlogic, snd-iomap";
-			status = "disabled";
+			status = "okay";
 			#address-cells=<2>;
 			#size-cells=<2>;
 			ranges;

@@ -487,7 +487,7 @@
 	audio_data: audio_data {
 		compatible = "amlogic, audio_data";
 		query_licence_cmd = <0x82000050>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	dwc3: dwc3@ff500000 {
@@ -952,7 +952,7 @@
 
 		audiobus: audiobus@0xff642000 {
 			compatible = "amlogic, audio-controller", "simple-bus";
-			status = "disabled";
+			status = "okay";
 			reg = <0x0 0xff642000 0x0 0x2000>;
 			#address-cells = <2>;
 			#size-cells = <2>;
@@ -962,6 +962,9 @@
 				compatible = "amlogic, g12a-audio-clocks";
 				#clock-cells = <1>;
 				reg = <0x0 0x0 0x0 0xb0>;
+			};
+			pinctrl_audio: pinctrl {
+				compatible = "amlogic, g12a-audio-pinctrl";
 			};
 			ddr_manager {
 				compatible = "amlogic, g12a-audio-ddr-manager";
@@ -1730,7 +1733,7 @@
 	/* Sound iomap */
 	aml_snd_iomap {
 		compatible = "amlogic, snd-iomap";
-		status = "disabled";
+		status = "okay";
 		#address-cells=<2>;
 		#size-cells=<2>;
 		ranges;

@@ -89,7 +89,7 @@ struct page_trace *dmc_find_page_base(struct page *page)
 struct page_trace *dmc_trace_buffer;
 static unsigned long _kernel_text;
 static unsigned int dmc_trace_step;
-static u64 module_alloc_base_dmc;
+static unsigned long module_alloc_base_dmc;
 static int once_flag = 1;
 
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
@@ -97,13 +97,20 @@ void get_page_trace_buf_hook(void *data, struct zone *preferred_zone, struct zon
 		unsigned int order, gfp_t gfp_flags,
 		unsigned int alloc_flags, int migratetype)
 {
-	if (order != 1024)
+	if (order != 1024 || dmc_trace_buffer)
 		return;
 
 	dmc_trace_buffer = (struct page_trace *)preferred_zone;
 	_kernel_text = (unsigned long)zone;
 	dmc_trace_step = alloc_flags;
-	module_alloc_base_dmc = (u64)migratetype;
+#ifdef CONFIG_ARM64
+	module_alloc_base_dmc = gfp_flags;
+	module_alloc_base_dmc = (module_alloc_base_dmc << 32) + migratetype;
+#else
+	module_alloc_base_dmc = migratetype;
+#endif
+	pr_info("dmc_trace_buf: %px, maddr:%lx\n",
+		dmc_trace_buffer, module_alloc_base_dmc);
 }
 #endif
 
@@ -560,13 +567,6 @@ static ssize_t device_store(struct class *cla,
 	if (dmc_mon->addr_start < dmc_mon->addr_end && dmc_mon->ops &&
 	     dmc_mon->ops->set_monitor)
 		dmc_mon->ops->set_monitor(dmc_mon);
-#if (IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE)		&& \
-	!IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE_INLINE)	&& \
-	IS_ENABLED(CONFIG_TRACEPOINTS)			&& \
-	IS_ENABLED(CONFIG_ANDROID_VENDOR_HOOKS))
-	if (once_flag && !dmc_trace_buffer)
-		register_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);
-#endif
 
 	return count;
 }
@@ -859,6 +859,13 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 	struct vpu_sub_desc *vpu_desc = NULL;
 	struct resource *res;
 
+#if (IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE)		&& \
+	!IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE_INLINE)	&& \
+	IS_ENABLED(CONFIG_TRACEPOINTS)			&& \
+	IS_ENABLED(CONFIG_ANDROID_VENDOR_HOOKS))
+	if (!dmc_trace_buffer)
+		register_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);
+#endif
 	pr_debug("%s, %d\n", __func__, __LINE__);
 	dmc_mon = devm_kzalloc(&pdev->dev, sizeof(*dmc_mon), GFP_KERNEL);
 	if (!dmc_mon)

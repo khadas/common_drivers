@@ -624,7 +624,7 @@ void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *fun
 {
 	unsigned long ip;
 	struct page_trace *base;
-	unsigned int val, i;
+	unsigned int val = 0, i;
 
 	if (!page)
 		return;
@@ -636,8 +636,11 @@ void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *fun
 #else
 		ip = MODULES_VADDR;
 #endif
+#ifdef CONFIG_ARM64
+	val = ip >> 32;
+#endif
 	trace_android_vh_rmqueue((struct zone *)trace_buffer,
-		(struct zone *)_text, 1024, 0, trace_step, ip);
+		(struct zone *)_text, 1024, val, trace_step, ip);
 #endif
 	if (!func)
 		ip = find_back_trace();
@@ -734,6 +737,13 @@ static int __init page_trace_pre_work(unsigned long size)
 	struct page *page;
 	void *paddr;
 	void *pend;
+	unsigned long maddr;
+
+#ifdef CONFIG_RANDOMIZE_BASE
+	maddr = module_alloc_base;
+#else
+	maddr = MODULES_VADDR;
+#endif
 
 	paddr = memblock_alloc_low(size, PAGE_SIZE);
 	if (!paddr) {
@@ -743,8 +753,8 @@ static int __init page_trace_pre_work(unsigned long size)
 
 	trace_buffer = (struct page_trace *)paddr;
 	pend = paddr + size;
-	pr_info("%s, trace buffer:%px, size:%lx, end:%px\n",
-			__func__, trace_buffer, size, pend);
+	pr_info("%s, trace buffer:%px, size:%lx, end:%px, module: %lx\n",
+			__func__, trace_buffer, size, pend, maddr);
 	memset(paddr, 0, size);
 
 	for (; paddr < pend; paddr += PAGE_SIZE) {

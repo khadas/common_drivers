@@ -73,6 +73,7 @@
 /*  V1.1.79  fix diseqc init state and add isdbt tmcc */
 /*  V1.1.80  fix ATSC-T agc_target and lock signal timeout on r842 */
 /*  V1.1.81  fix demod AMBUS issue on t5m */
+/*  V1.1.82  revert optimize 8VSB CN to 15dB */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -89,8 +90,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.81"
-#define DTVDEMOD_VER	"2023/2/16: fix demod AMBUS issue on t5m"
+#define AMLDTVDEMOD_VER "V1.1.82"
+#define DTVDEMOD_VER	"2023/2/24: revert optimize 8VSB CN to 15dB"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

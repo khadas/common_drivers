@@ -52,6 +52,46 @@ module_param(sched_rt_nice_prio, int, 0644);
 static unsigned long sched_rt_nice_gran = 4000000; //4ms
 module_param(sched_rt_nice_gran, ulong, 0644);
 
+static int sched_check_preempt_wakeup_enable = 1;
+module_param(sched_check_preempt_wakeup_enable, int, 0644);
+
+static int sched_check_preempt_wakeup_debug;
+module_param(sched_check_preempt_wakeup_debug, int, 0644);
+
+/* default 3ms, same with wakeup_granularity_ns(4*core smp) */
+static unsigned long sched_check_preempt_wakeup_gran = 3000000;
+module_param(sched_check_preempt_wakeup_gran, ulong, 0644);
+
+static int sched_pick_next_task_enable = 1;
+module_param(sched_pick_next_task_enable, int, 0644);
+
+static int sched_pick_next_task_debug;
+module_param(sched_pick_next_task_debug, int, 0644);
+
+static int sched_pick_next_task_wait_socre = 10; //1ms+
+module_param(sched_pick_next_task_wait_socre, int, 0644);
+
+static int sched_pick_next_task_util_score = 80; //load.util_avg <= 200
+module_param(sched_pick_next_task_util_score, int, 0644);
+
+static int sched_pick_next_task_ignore_wait_prio = 120;
+module_param(sched_pick_next_task_ignore_wait_prio, int, 0644);
+
+static int sched_place_entity_enable = 1;
+module_param(sched_place_entity_enable, int, 0644);
+
+static int sched_place_entity_debug;
+module_param(sched_place_entity_debug, int, 0644);
+
+static int sched_place_entity_factor = 3;
+module_param(sched_place_entity_factor, int, 0644);
+
+static int sched_check_preempt_tick_enable = 1;
+module_param(sched_check_preempt_tick_enable, int, 0644);
+
+static int sched_check_preempt_tick_debug;
+module_param(sched_check_preempt_tick_debug, int, 0644);
+
 #ifdef CONFIG_SMP
 static inline bool should_honor_rt_sync(struct rq *rq, struct task_struct *p,
 					bool sync)
@@ -179,15 +219,6 @@ out_unlock:
 	rcu_read_unlock();
 }
 
-static int sched_check_preempt_wakeup_enable = 1;
-module_param(sched_check_preempt_wakeup_enable, int, 0644);
-
-static int sched_check_preempt_wakeup_debug;
-module_param(sched_check_preempt_wakeup_debug, int, 0644);
-
-static unsigned long sched_check_preempt_wakeup_gran = 3000000; //default 3ms, same with wakeup_granularity_ns(4*core smp)
-module_param(sched_check_preempt_wakeup_gran, ulong, 0644);
-
 static void aml_check_preempt_wakeup(void *data, struct rq *rq, struct task_struct *p, bool *preempt, bool *nopreempt,
 				     int wake_flags, struct sched_entity *se, struct sched_entity *pse,
 				     int next_buddy_marked, unsigned int granularity)
@@ -253,21 +284,6 @@ static void aml_check_preempt_wakeup(void *data, struct rq *rq, struct task_stru
 
 void set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se);
 
-static int sched_pick_next_task_enable = 1;
-module_param(sched_pick_next_task_enable, int, 0644);
-
-static int sched_pick_next_task_debug;
-module_param(sched_pick_next_task_debug, int, 0644);
-
-static int sched_pick_next_task_wait_socre = 10; //1ms+
-module_param(sched_pick_next_task_wait_socre, int, 0644);
-
-static int sched_pick_next_task_util_score = 80; //load.util_avg <= 200
-module_param(sched_pick_next_task_util_score, int, 0644);
-
-static int sched_pick_next_task_ignore_wait_prio = 120;
-module_param(sched_pick_next_task_ignore_wait_prio, int, 0644);
-
 #define __node_2_se(node) \
 	rb_entry((node), struct sched_entity, run_node)
 
@@ -314,10 +330,8 @@ static int task_interactive_score(struct task_struct *p, unsigned long weight, i
 
 	prio_score = (sched_task_high_prio - p->prio) * 10;
 
-	if (!ignore_wait || !p->android_kabi_reserved1) {
-		//consider task sum wait time from last wakeup
+	if (!ignore_wait && sched_place_entity_enable) {
 		delta = rq_clock(rq_of(p->se.cfs_rq)) - p->android_kabi_reserved1;
-		delta -= p->android_kabi_reserved2;
 		delta = delta >> 20;
 		wait_score = delta * 10; //wait 1ms = 10, 10ms = 100, 20ms = 200;
 
@@ -329,9 +343,9 @@ static int task_interactive_score(struct task_struct *p, unsigned long weight, i
 
 	score = weight_score + prio_score + wait_score + util_score;
 	if (sched_pick_next_task_debug)
-		aml_trace_printk("interactive_task: %s/%d score:%d/%d,%d,%d,%d, wait:%llu,%llu util=%lu\n",
+		aml_trace_printk("interactive_task: %s/%d score:%d/%d,%d,%d,%d, wait:%llu util=%lu\n",
 			     p->comm, p->pid, score, weight_score, prio_score, wait_score, util_score,
-			     p->android_kabi_reserved1, p->android_kabi_reserved2, p->se.avg.util_avg);
+			     p->android_kabi_reserved1, p->se.avg.util_avg);
 
 	return score;
 }
@@ -443,15 +457,6 @@ static void aml_pick_next_task(void *data, struct rq *rq, struct task_struct **p
 	}
 }
 
-static int sched_place_entity_enable = 1;
-module_param(sched_place_entity_enable, int, 0644);
-
-static int sched_place_entity_debug;
-module_param(sched_place_entity_debug, int, 0644);
-
-static int sched_place_entity_factor = 3;
-module_param(sched_place_entity_factor, int, 0644);
-
 static inline u64 max_vruntime(u64 max_vruntime, u64 vruntime)
 {
 	s64 delta = (s64)(vruntime - max_vruntime);
@@ -486,37 +491,12 @@ static void aml_place_entity(void *data, struct cfs_rq *cfs_rq, struct sched_ent
 				      task_of(se)->comm, task_of(se)->pid,
 				      task_of(se)->sched_task_group->css.cgroup->kn->name,
 				      se->vruntime, cfs_rq->min_vruntime, vruntime_new);
-
-		//task_struct.android_kabi_reserved1: last wakeup time
-		//task_struct.android_kabi_reserved2: sum runtime from last wakeup time
-		if (entity_is_task(se)) {
-			task_of(se)->android_kabi_reserved1 = rq_clock(rq_of(cfs_rq));
-			task_of(se)->android_kabi_reserved2 = 0;
-		}
 	}
-}
-
-static void aml_sched_stat_runtime(void *data, struct task_struct *curr, u64 delta_exec, u64 vruntime)
-{
-	if (!sched_place_entity_enable)
-		return;
 
 	//task_struct.android_kabi_reserved1: last wakeup time
-	//task_struct.android_kabi_reserved2: sum runtime from last wakeup time
-	curr->android_kabi_reserved2 += delta_exec;
-
-	if (sched_place_entity_debug)
-		aml_trace_printk("task:%s/%d(%s) vrutime:%llu sum_runtime:%llu\n",
-			     curr->comm, curr->pid,
-			     curr->sched_task_group->css.cgroup->kn->name, vruntime,
-			     curr->android_kabi_reserved2);
+	if (entity_is_task(se))
+		task_of(se)->android_kabi_reserved1 = rq_clock(rq_of(cfs_rq));
 }
-
-static int sched_check_preempt_tick_enable = 1;
-module_param(sched_check_preempt_tick_enable, int, 0644);
-
-static int sched_check_preempt_tick_debug;
-module_param(sched_check_preempt_tick_debug, int, 0644);
 
 static void aml_check_preempt_tick(void *data, struct task_struct *p, unsigned long *ideal_runtime,
 				   bool *skip_preempt, unsigned long delta_exec, struct cfs_rq *cfs_rq,
@@ -581,7 +561,6 @@ int aml_sched_init(void)
 	register_trace_android_rvh_check_preempt_wakeup(aml_check_preempt_wakeup, NULL);
 	register_trace_android_rvh_replace_next_task_fair(aml_pick_next_task, NULL);
 	register_trace_android_rvh_place_entity(aml_place_entity, NULL);
-	register_trace_sched_stat_runtime(aml_sched_stat_runtime, NULL);
 	register_trace_android_rvh_check_preempt_tick(aml_check_preempt_tick, NULL);
 	return 0;
 }

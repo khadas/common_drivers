@@ -1,0 +1,174 @@
+From a2231b36ce7b6441b53aa29e610b1de50c6d01ff Mon Sep 17 00:00:00 2001
+From: "qinglin.li" <qinglin.li@amlogic.com>
+Date: Mon, 16 Jan 2023 19:11:30 +0800
+Subject: [PATCH] gki_20: fix break gki_20 modify [1/1]
+
+PD#SWPL-111114
+
+Problem:
+fix break gki_20 modify
+
+Solution:
+fix break gki_20 modify
+
+Verify:
+local
+
+Change-Id: I239758e356ccaf5eed2027fe10cbeeba6b0143b9
+Signed-off-by: qinglin.li <qinglin.li@amlogic.com>
+---
+ arch/arm64/include/asm/irqflags.h     |  2 +-
+ arch/arm64/kernel/io.c                |  5 +++--
+ drivers/Kconfig                       |  9 +++++++++
+ drivers/media/dvb-core/dvb_frontend.c | 12 +++++-------
+ drivers/tty/sysrq.c                   |  1 +
+ fs/pstore/Kconfig                     |  1 +
+ fs/pstore/ftrace.c                    |  4 ++--
+ fs/pstore/ram.c                       |  4 ++++
+ 8 files changed, 26 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm64/include/asm/irqflags.h b/arch/arm64/include/asm/irqflags.h
+index bf5a43fc2f0a..5bcdba73e906 100644
+--- a/arch/arm64/include/asm/irqflags.h
++++ b/arch/arm64/include/asm/irqflags.h
+@@ -10,7 +10,7 @@
+ #include <asm/ptrace.h>
+ #include <asm/sysreg.h>
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG) && !defined(SKIP_LOCKUP_CHECK)
++#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG) && !defined(SKIP_LOCKUP_CHECK) && (IS_ENABLED(CONFIG_AMLOGIC_BREAK_GKI_20) || defined(MODULE))
+ #include <linux/amlogic/irqflags_debug_arm64.h>
+ #else
+ 
+diff --git a/arch/arm64/kernel/io.c b/arch/arm64/kernel/io.c
+index 85d430b41610..a7569c19c8af 100644
+--- a/arch/arm64/kernel/io.c
++++ b/arch/arm64/kernel/io.c
+@@ -7,12 +7,13 @@
+ 
+ #include <linux/export.h>
+ #include <linux/types.h>
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+ #define SKIP_IO_TRACE
+ #include <linux/io.h>
+ #undef SKIP_IO_TRACE
+-
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+ #include <linux/amlogic/debug_ftrace_ramoops.h>
++#else
++#include <linux/io.h>
+ #endif
+ 
+ /*
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 09c9fcfb9236..ab7c3cfea329 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -249,6 +249,15 @@ config AMLOGIC_DRIVER
+ 	  Note: All amlogic driver should be placed in
+ 	  directory $(COMMON_DRIVERS_DIR)/drivers/
+ 
++config AMLOGIC_BREAK_GKI_20
++	bool "Amlogic Break GKI 2.0"
++	depends on AMLOGIC_BREAK_GKI
++	default n
++	help
++	  this option is provide for control Break GKI 2.0,
++	  if you want to break gki2.0 rule, should enable it,
++	  all break gki2.0 modify should be depends on this option
++
+ if AMLOGIC_DRIVER
+ config AMLOGIC_BREAK_GKI
+ 	bool "Amlogic Break GKI"
+diff --git a/drivers/media/dvb-core/dvb_frontend.c b/drivers/media/dvb-core/dvb_frontend.c
+index 468d5ae8d3c9..5ded9b6378fe 100644
+--- a/drivers/media/dvb-core/dvb_frontend.c
++++ b/drivers/media/dvb-core/dvb_frontend.c
+@@ -1675,20 +1675,18 @@ static int dtv_set_frontend(struct dvb_frontend *fe);
+ 
+ static bool is_dvbv3_delsys(u32 delsys)
+ {
+-	bool status = false;
+-
+ #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+-	status = (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
++	return (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
+ 		 (delsys == SYS_DVBS) || (delsys == SYS_ATSC) ||
+ 		 (delsys == SYS_DTMB) || (delsys == SYS_DVBS2) ||
+ 		 (delsys == SYS_DVBT2) || (delsys == SYS_ISDBC) ||
+ 		 (delsys == SYS_ISDBT) || (delsys == SYS_ISDBS);
++
+ #else
+-	status = (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
+-		 (delsys == SYS_DVBS) || (delsys == SYS_ATSC);
+-#endif
++	return (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
++	       (delsys == SYS_DVBS) || (delsys == SYS_ATSC);
+ 
+-	return status;
++#endif
+ }
+ 
+ /**
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index dea9bd39e212..07c33c20f62a 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -504,6 +504,7 @@ static const struct sysrq_key_op *sysrq_key_table[62] = {
+ 	/* x: May be registered on mips for TLB dump */
+ 	/* x: May be registered on ppc/powerpc for xmon */
+ 	/* x: May be registered on sparc64 for global PMU dump */
++	NULL,				/* x */
+ 	/* y: May be registered on sparc64 for global register dump */
+ 	NULL,				/* y */
+ 	&sysrq_ftrace_dump_op,		/* z */
+diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
+index 09c4227070d5..b555e302e2b8 100644
+--- a/fs/pstore/Kconfig
++++ b/fs/pstore/Kconfig
+@@ -137,6 +137,7 @@ config PSTORE_PMSG
+ config PSTORE_FTRACE
+ 	bool "Persistent function tracer"
+ 	depends on PSTORE
++	depends on FUNCTION_TRACER || AMLOGIC_BGKI_DEBUG_IOTRACE
+ 	depends on DEBUG_FS
+ 	help
+ 	  With this option kernel traces function calls into a persistent
+diff --git a/fs/pstore/ftrace.c b/fs/pstore/ftrace.c
+index 3694ae574bee..f566ffefe297 100644
+--- a/fs/pstore/ftrace.c
++++ b/fs/pstore/ftrace.c
+@@ -122,13 +122,13 @@ static struct dentry *pstore_ftrace_dir;
+ 
+ void pstore_register_ftrace(void)
+ {
+-#if !IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+ 	/*
+ 	 * Amlogic reuse pstore ftrace for IO(register access) trace,
+ 	 * original pstore ftrace function is not so helpful, just ignore
+ 	 */
+ 	return;
+-
++#else
+ 	if (!psinfo->write)
+ 		return;
+ 
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 3bba5e39ca90..3190c24401a3 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -879,6 +879,10 @@ static int ramoops_probe(struct platform_device *pdev)
+ 	ramoops_pmsg_size = pdata->pmsg_size;
+ 	ramoops_ftrace_size = pdata->ftrace_size;
+ 
++	pr_info("using 0x%lx@0x%llx, ecc: %d\n",
++		cxt->size, (unsigned long long)cxt->phys_addr,
++		cxt->ecc_info.ecc_size);
++
+ #if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+ 	cxt_saved = cxt;
+ 	ramoops_ftrace_size_saved = ramoops_ftrace_size;
+-- 
+2.25.1
+

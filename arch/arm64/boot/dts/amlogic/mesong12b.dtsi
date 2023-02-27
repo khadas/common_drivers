@@ -1883,42 +1883,42 @@
 
 	isp_sc: isp-sc@ff655400 {
 		compatible = "amlogic, isp-sc";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xff655400 0x0 0x00001000>;
 		reg-names = "isp_sc";
-		interrupts = <0 17 0>;
+		interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "isp_sc";
 	};
 
 	isp: isp@ff140000 {
 		compatible = "arm, isp";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xff140000 0x0 0x00040000>;
 		reg-names = "ISP";
 		isp-efuse = <0xff630038 0x4000>;
-		interrupts = <0 142 4>;
+		interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "ISP";
 		temper-buf-size = <24>;
-		//clocks = <&clkc CLKID_MIPI_ISP_CLK_COMP>,
-		//	<&clkc CLKID_MIPI_CSI_PHY_CLK0_COMP>;
-		//clock-names = "cts_mipi_isp_clk_composite",
-		//	"cts_mipi_csi_phy_clk0_composite";
+		clocks = <&clkc CLKID_MIPI_ISP_CLK>,
+			<&clkc CLKID_MIPI_CSI_PHY_CLK0>;
+		clock-names = "cts_mipi_isp_clk",
+			"cts_mipi_csi_phy_clk0";
 		link-device = <&isp_sc>;
 	};
 
 	adapter: isp-adapter@ff650000 {
 		compatible = "amlogic, isp-adapter";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xff650000 0x0 0x00006000>;
 		reg-names = "adapter";
-		interrupts = <0 179 0>;
+		interrupts = <GIC_SPI 179 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "adapter-irq";
 		mem_alloc = <48>;
 	};
 
 	phycsi: phy-csi@ff650000 {
 		compatible = "amlogic, phy-csi";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xff650000 0x0 0x00002000>,
 				<0x0 0xff652000 0x0 0x00002000>,
 				<0x0 0xff63c300 0x0 0x00000100>,
@@ -1926,12 +1926,12 @@
 				<0x0 0xff654400 0x0 0x00000100>;
 		reg-names = "csi2_phy0", "csi2_phy1", "aphy_reg",
 					"csi0_host", "csi1_host";
-		interrupts = <0 41 0>,
-					<0 42 0>,
-					<0 72 0>,
-					<0 74 0>,
-					<0 87 0>,
-					<0 88 0>;
+		interrupts = <GIC_SPI 41 IRQ_TYPE_LEVEL_HIGH>,
+					<GIC_SPI 42 IRQ_TYPE_LEVEL_HIGH>,
+					<GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>,
+					<GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>,
+					<GIC_SPI 87 IRQ_TYPE_LEVEL_HIGH>,
+					<GIC_SPI 88 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "phy0-irq",
 					"phy1-irq",
 					"csi-host0-intr2",

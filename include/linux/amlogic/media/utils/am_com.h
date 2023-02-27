@@ -8,6 +8,20 @@
 #include <linux/time.h>
 #include <uapi/linux/time.h>
 
+int flashlight_init(void);
+
+int vm_init_module(void);
+
+int gc2145_i2c_driver_init(void);
+
+int gc2145_mipi_i2c_driver_init(void);
+
+int ov5640_i2c_driver_init(void);
+
+void flashlight_exit(void);
+
+void vm_remove_module(void);
+
 struct timeval {
 	__kernel_old_time_t	tv_sec;		/* seconds */
 	__kernel_suseconds_t	tv_usec;	/* microseconds */

@@ -26,6 +26,7 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-watchdog.ko
 	aml-dvb.ko
 	aml_media.ko
+	amlogic-camera.ko
 	amlogic-adc.ko
 	amlogic-rtc-virtual.ko
 	amlogic-thermal.ko

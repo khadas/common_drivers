@@ -624,7 +624,7 @@ struct cam_window_s {
 #define CAP_PARM_NUM			8
 struct xml_capture_s {
 	unsigned int ae_try_max_cnt;
-	unsigned int sigle_count;
+	unsigned int single_count;
 	unsigned int skip_step;
 	unsigned int multi_capture_num;
 	enum cam_scanmode_e af_mode;

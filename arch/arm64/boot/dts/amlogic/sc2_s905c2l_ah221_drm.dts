@@ -1477,6 +1477,10 @@
 	controller-type = <3>;
 };
 
+&dwc3 {
+	status = "okay";
+};
+
 &usb2_phy_v2 {
 	status = "okay";
 	portnum = <2>;

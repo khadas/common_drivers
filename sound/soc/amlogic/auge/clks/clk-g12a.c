@@ -180,25 +180,14 @@ CLOCK_COM_GATE(locker_in, AUD_ADDR_OFFSET(EE_AUDIO_CLK_LOCKER_CTRL), 15);
 CLOCK_COM_MUX(resample, AUD_ADDR_OFFSET(EE_AUDIO_CLK_RESAMPLEA_CTRL), 0xf, 24);
 CLOCK_COM_DIV(resample, AUD_ADDR_OFFSET(EE_AUDIO_CLK_RESAMPLEA_CTRL), 0, 8);
 CLOCK_COM_GATE(resample, AUD_ADDR_OFFSET(EE_AUDIO_CLK_RESAMPLEA_CTRL), 31);
-
-static int mclk_pad_init(struct clk **clks, void __iomem *iobase)
-{
-	clks[CLKID_AUDIO_MCLK_PAD0] = clk_register_mux(NULL, "mclk_pad0",
-		mclk_pad_parent_names, ARRAY_SIZE(mclk_pad_parent_names),
-		CLK_SET_RATE_NO_REPARENT | CLK_SET_RATE_PARENT,
-		iobase + AUD_ADDR_OFFSET(EE_AUDIO_MST_PAD_CTRL0(0)),
-		0, 0x7, 0, &aclk_lock);
-	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_MCLK_PAD0]));
-
-	clks[CLKID_AUDIO_MCLK_PAD1] = clk_register_mux(NULL, "mclk_pad1",
-		mclk_pad_parent_names, ARRAY_SIZE(mclk_pad_parent_names),
-		CLK_SET_RATE_NO_REPARENT | CLK_SET_RATE_PARENT,
-		iobase + AUD_ADDR_OFFSET(EE_AUDIO_MST_PAD_CTRL0(0)),
-		4, 0x7, 0, &aclk_lock);
-	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_MCLK_PAD1]));
-
-	return 0;
-}
+/* mclk_pad0 */
+CLOCK_COM_MUX(mclk_pad0, AUD_ADDR_OFFSET(EE_AUDIO_MST_PAD_CTRL0(0)), 0x7, 0);
+CLOCK_COM_DIV(mclk_pad0, AUD_ADDR_OFFSET(EE_AUDIO_MST_PAD_CTRL0(0)), 16, 1);
+CLOCK_COM_GATE(mclk_pad0, AUD_ADDR_OFFSET(EE_AUDIO_MST_PAD_CTRL0(0)), 31);
+/* mclk_pad1 */
+CLOCK_COM_MUX(mclk_pad1, AUD_ADDR_OFFSET(EE_AUDIO_MST_PAD_CTRL0(0)), 0x7, 4);
+CLOCK_COM_DIV(mclk_pad1, AUD_ADDR_OFFSET(EE_AUDIO_MST_PAD_CTRL0(0)), 16, 1);
+CLOCK_COM_GATE(mclk_pad1, AUD_ADDR_OFFSET(EE_AUDIO_MST_PAD_CTRL0(0)), 31);
 
 static int g12a_clks_init(struct clk **clks, void __iomem *iobase)
 {
@@ -258,7 +247,15 @@ static int g12a_clks_init(struct clk **clks, void __iomem *iobase)
 	clks[CLKID_AUDIO_RESAMPLE_CTRL] = REGISTER_AUDIOCLK_COM(resample);
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_RESAMPLE_CTRL]));
 
-	mclk_pad_init(clks, iobase);
+	IOMAP_COM_CLK(mclk_pad0, iobase);
+	clks[CLKID_AUDIO_MCLK_PAD0] =
+			REGISTER_CLK_COM_PARENTS(mclk_pad0, mclk_pad);
+	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_MCLK_PAD0]));
+
+	IOMAP_COM_CLK(mclk_pad1, iobase);
+	clks[CLKID_AUDIO_MCLK_PAD1] =
+			REGISTER_CLK_COM_PARENTS(mclk_pad1, mclk_pad);
+	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_MCLK_PAD1]));
 
 	return 0;
 }

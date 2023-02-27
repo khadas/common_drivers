@@ -6500,7 +6500,7 @@ s32 primary_render_frame(struct video_layer_s *layer)
 			frame_par, dispbuf);
 
 		/* because 3d and dv process, vd2 need no scale. */
-		/* so don't call the vd2 proc_vd1_vsc_phase_per_vsync */
+		/* so don't call the vd2 proc_vd_vsc_phase_per_vsync */
 
 		/* Do 3D process if enabled */
 		switch_3d_view_per_vsync(layer);

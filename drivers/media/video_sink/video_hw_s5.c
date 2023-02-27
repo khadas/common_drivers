@@ -3612,7 +3612,7 @@ static void set_vd_proc_info_mosaic(struct video_layer_s *layer, u32 frm_idx)
 			h_start = cur_frame_par->VPP_hsc_startp;
 			v_start = cur_frame_par->VPP_vsc_startp;
 
-			/* get scaler info(include prehscaler, pps, sr)*/
+			/* get scaler info(include pre_scaler, pps, sr)*/
 			horz_phase_step =
 				cur_frame_par->vpp_filter.vpp_hsc_start_phase_step;
 			vert_phase_step =
@@ -9131,10 +9131,12 @@ static void _vd_mif_setting_s5(struct video_layer_s *layer,
 	}
 }
 
-void proc_vd_vsc_phase_per_vsync_s5(struct video_layer_s *layer,
-				 struct vpp_frame_par_s *frame_par,
-				 struct vframe_s *vf)
+void save_pps_data(int slice, u32 vd_vsc_phase_ctrl_val)
 {
+	struct vd_pps_val_s *vd_pps_val_save = NULL;
+
+	vd_pps_val_save = &vd_pps_val[slice];
+	vd_pps_val_save->vd_vsc_phase_ctrl_val = vd_vsc_phase_ctrl_val;
 }
 
 void switch_3d_view_per_vsync_s5(struct video_layer_s *layer)

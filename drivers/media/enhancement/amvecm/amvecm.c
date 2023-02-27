@@ -11014,13 +11014,13 @@ static void aml_vecm_dt_parse(struct platform_device *pdev)
 			wb_en = val;
 		ret = of_property_read_u32(node, "lut3d_en", &val);
 		if (ret)
-			pr_info("Can't find  lut3d_en.\n");
+			pr_amvecm_dbg("Can't find  lut3d_en.\n");
 		else
 			lut3d_en = val;
 
 		ret = of_property_read_u32(node, "ct_3dlut", &val);
 		if (ret)
-			pr_info("Can't find  ct_3dlut.\n");
+			pr_amvecm_dbg("Can't find  ct_3dlut.\n");
 		else
 			ct_en = val;
 

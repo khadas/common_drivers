@@ -44,6 +44,7 @@
 #include <linux/vmalloc.h>
 #include <asm/system_misc.h>
 #include <asm/pgtable.h>
+#include <linux/page_pinner.h>
 #include <trace/events/page_isolation.h>
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
 #include <trace/hooks/iommu.h>
@@ -534,8 +535,18 @@ static unsigned long pfn_max_align_up(unsigned long pfn)
 
 static struct page *get_migrate_page(struct page *page, unsigned long private)
 {
-	gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE | __GFP_NO_CMA;
-	struct page *new = NULL;
+	struct migration_target_control *mtc;
+	gfp_t gfp_mask;
+	unsigned int order = 0;
+	struct page *new_page = NULL;
+	int nid;
+	int zidx;
+
+	mtc = (struct migration_target_control *)private;
+	gfp_mask = mtc->gfp_mask | __GFP_NO_CMA;
+	nid = mtc->nid;
+	if (nid == NUMA_NO_NODE)
+		nid = page_to_nid(page);
 
 	/*
 	 * TODO: allocate a destination hugepage from a nearest neighbor node,
@@ -546,26 +557,61 @@ static struct page *get_migrate_page(struct page *page, unsigned long private)
 		struct hstate *h = page_hstate(compound_head(page));
 
 		gfp_mask |= htlb_modify_alloc_mask(h, gfp_mask);
-		new = alloc_huge_page_nodemask(h,
+		new_page = alloc_huge_page_nodemask(h,
 					       page_to_nid(page),
 					       0, gfp_mask);
 	#ifdef CONFIG_AMLOGIC_PAGE_TRACE
 	#ifdef CONFIG_HUGETLB_PAGE
-		replace_page_trace(new, page);
+		replace_page_trace(new_page, page);
 	#endif
 	#endif
-		return new;
+		return new_page;
 	}
 
-	if (PageHighMem(page))
+	if (PageTransHuge(page)) {
+		/*
+		 * clear __GFP_RECLAIM to make the migration callback
+		 * consistent with regular THP allocations.
+		 */
+		gfp_mask &= ~__GFP_RECLAIM;
+		gfp_mask |= GFP_TRANSHUGE;
+		order = HPAGE_PMD_ORDER;
+	}
+	zidx = zone_idx(page_zone(page));
+	if (is_highmem_idx(zidx) || zidx == ZONE_MOVABLE)
 		gfp_mask |= __GFP_HIGHMEM;
 
-	new = alloc_page(gfp_mask);
+	new_page = __alloc_pages(gfp_mask, order, nid, mtc->nmask);
+
+	if (new_page && PageTransHuge(new_page))
+		prep_transhuge_page(new_page);
+
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE
-	replace_page_trace(new, page);
+	replace_page_trace(new_page, page);
 #endif
-	return new;
+	return new_page;
 }
+
+#if defined(CONFIG_DYNAMIC_DEBUG) || \
+	(defined(CONFIG_DYNAMIC_DEBUG_CORE) && defined(DYNAMIC_DEBUG_MODULE))
+/* Usage: See admin-guide/dynamic-debug-howto.rst */
+static void alloc_contig_dump_pages(struct list_head *page_list)
+{
+	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, "migrate failure");
+
+	if (DYNAMIC_DEBUG_BRANCH(descriptor)) {
+		struct page *page;
+
+		dump_stack();
+		list_for_each_entry(page, page_list, lru)
+			dump_page(page, "migration failure");
+	}
+}
+#else
+static inline void alloc_contig_dump_pages(struct list_head *page_list)
+{
+}
+#endif
 
 /* [start, end) must belong to a single zone. */
 static int aml_alloc_contig_migrate_range(struct compact_control *cc,
@@ -578,6 +624,10 @@ static int aml_alloc_contig_migrate_range(struct compact_control *cc,
 	unsigned long pfn = start;
 	unsigned int tries = 0;
 	int ret = 0;
+	struct migration_target_control mtc = {
+		.nid = zone_to_nid(cc->zone),
+		.gfp_mask = GFP_USER | __GFP_MOVABLE | __GFP_RETRY_MAYFAIL,
+	};
 
 	lru_cache_disable();
 	while (pfn < end || !list_empty(&cc->migratepages)) {
@@ -606,7 +656,8 @@ static int aml_alloc_contig_migrate_range(struct compact_control *cc,
 		cc->nr_migratepages -= nr_reclaimed;
 
 		ret = migrate_pages(&cc->migratepages, get_migrate_page,
-				    NULL, 0, cc->mode, MR_CONTIG_RANGE, NULL);
+			NULL, (unsigned long)&mtc, cc->mode, MR_CONTIG_RANGE, NULL);
+
 		/*
 		 * On -ENOMEM, migrate_pages() bails out right away. It is pointless
 		 * to retry again over this error, so do the same here.
@@ -617,6 +668,17 @@ static int aml_alloc_contig_migrate_range(struct compact_control *cc,
 
 	lru_cache_enable();
 	if (ret < 0) {
+		if (ret == -EBUSY) {
+			struct page *page;
+
+			alloc_contig_dump_pages(&cc->migratepages);
+			list_for_each_entry(page, &cc->migratepages, lru) {
+				/* The page will be freed by putback_movable_pages soon */
+				if (page_count(page) == 1)
+					continue;
+				page_pinner_failure_detect(page);
+			}
+		}
 		putback_movable_pages(&cc->migratepages);
 		return ret;
 	}
@@ -845,6 +907,7 @@ int aml_check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
 	unsigned long pfn, flags;
 	struct page *page;
 	struct zone *zone;
+	int ret;
 
 	/*
 	 * Note: pageblock_nr_pages != MAX_ORDER. Then, chunks of free pages
@@ -853,21 +916,28 @@ int aml_check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
 	 */
 	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
 		page = check_page_valid(pfn, pageblock_nr_pages);
-		if (page && get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
+		if (page && !is_migrate_isolate_page(page))
 			break;
 	}
 	page = check_page_valid(start_pfn, end_pfn - start_pfn);
-	if (pfn < end_pfn || !page)
-		return -EBUSY;
+	if (pfn < end_pfn || !page) {
+		ret = -EBUSY;
+		goto out;
+	}
 	/* Check all pages are free or marked as ISOLATED */
 	zone = page_zone(page);
 	spin_lock_irqsave(&zone->lock, flags);
 	pfn = __aml_check_pageblock_isolate(start_pfn, end_pfn, isol_flags);
 	spin_unlock_irqrestore(&zone->lock, flags);
 
-	trace_test_pages_isolated(start_pfn, end_pfn, pfn);
+	ret = pfn < end_pfn ? -EBUSY : 0;
 
-	return pfn < end_pfn ? -EBUSY : 0;
+out:
+	trace_test_pages_isolated(start_pfn, end_pfn, pfn);
+	if (pfn < end_pfn)
+		page_pinner_failure_detect(pfn_to_page(pfn));
+
+	return ret;
 }
 
 static unsigned long cur_alloc_start;

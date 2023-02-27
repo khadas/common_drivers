@@ -73,11 +73,12 @@ extern u32 eq_value;
 extern u32 misc2_value;
 extern u32 misc1_value;
 extern int phy_debug_en;
-
+extern int enhance_dfe_en;
+extern int eye_height;
 /*--------------------------function declare------------------*/
 /* T5m */
 void aml_phy_init_t5m(void);
-void aml_eq_eye_monitor_t5m(void);
+u32 aml_eq_eye_monitor_t5m(void);
 void dump_reg_phy_t5m(void);
 void dump_aml_phy_sts_t5m(void);
 void aml_phy_short_bist_t5m(void);
@@ -97,6 +98,9 @@ void comb_val_t5m(void (*p)(char *, unsigned int, int),
 		 unsigned int val_2, int len);
 void get_flag_val_t5m(char *temp, unsigned int val, int len);
 void reset_pcs(void);
+void get_eq_val_t5m(void);
+void bubble_sort(u32 *sort_array);
+
 
 /*function declare end*/
 

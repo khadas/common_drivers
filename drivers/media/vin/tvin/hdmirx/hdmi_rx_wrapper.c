@@ -277,9 +277,9 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.vga_gain = 0x1000;
 		rx.aml_phy.eq_stg1 = 0x1f;
 		rx.aml_phy.eq_stg2 = 0x1f;
-		rx.aml_phy.eq_hold = 1;
+		rx.aml_phy.eq_hold = 0;
 		rx.aml_phy.dfe_hold  = 0;
-		rx.aml_phy.eye_delay = 1000;
+		rx.aml_phy.eye_delay = 50;
 		rx.aml_phy.eq_retry = 1;
 		rx.aml_phy.tap2_byp = 0;
 		rx.aml_phy.long_bist_en = 0;
@@ -2446,6 +2446,8 @@ void rx_get_global_variable(const char *buf)
 	pr_var(phy_debug_en, i++);
 	pr_var(color_bar_debug_en, i++);
 	pr_var(color_bar_lvl, i++);
+	pr_var(enhance_dfe_en, i++);
+	pr_var(eye_height, i++);
 	/* phy var definition */
 	pr_var(rx.aml_phy.sqrst_en, i++);
 	pr_var(rx.aml_phy.vga_dbg, i++);
@@ -2766,6 +2768,12 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(color_bar_lvl),
 	    &color_bar_lvl, value))
 		return pr_var(color_bar_lvl, index);
+	if (set_pr_var(tmpbuf, var_to_str(enhance_dfe_en),
+	    &enhance_dfe_en, value))
+		return pr_var(enhance_dfe_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(eye_height),
+	    &eye_height, value))
+		return pr_var(eye_height, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.var.force_pattern), &rx.var.force_pattern, value))
 		return pr_var(rx.var.force_pattern, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.sqrst_en), &rx.aml_phy.sqrst_en, value))
@@ -2903,7 +2911,7 @@ void hdmirx_open_port(enum tvin_port_e port)
 		if (rx.state >= FSM_SIG_STABLE)
 			rx.state = FSM_SIG_STABLE;
 		else
-			rx.state = FSM_HPD_HIGH;
+			rx.state = FSM_WAIT_CLK_STABLE;
 	}
 	edid_update_flag = 0;
 	rx_pkt_initial();
@@ -3456,12 +3464,14 @@ void rx_main_state_machine(void)
 			rx.var.de_stable = false;
 			if (sig_unstable_cnt < sig_unstable_max) {
 				sig_unstable_cnt++;
+				if (log_level & PHY_LOG)
+					rx_pr("DE not stable\n");
 				if (rx_phy_level & 0x1 && reset_pcs_flag) {
 					reset_pcs();
 					reset_pcs_flag = 0;
+					if (log_level & PHY_LOG)
+						rx_pr("reset pcs\n");
 				}
-				if (log_level & PHY_LOG)
-					rx_pr("DE not stable,reset pcs\n");
 				break;
 			}
 			if (rx.err_rec_mode == ERR_REC_EQ_RETRY) {
@@ -4222,6 +4232,13 @@ void rx_ext_state_monitor(void)
 	if (rx.fsm_ext_state != FSM_NULL) {
 		rx.state = rx.fsm_ext_state;
 		rx.fsm_ext_state = FSM_NULL;
+		if (rx.state != rx.pre_state) {
+			if (log_level & LOG_EN)
+				rx_pr("fsm (%s) to (%s)\n",
+				fsm_st[rx.pre_state],
+				fsm_st[rx.state]);
+			rx.pre_state = rx.state;
+		}
 	}
 }
 

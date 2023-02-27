@@ -553,7 +553,7 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
 
-	if (!rx.var.force_pattern && rx.chip_id < CHIP_ID_T7) {
+	if (!rx.var.force_pattern) {
 		/*prevent spurious pops or noise when pw down*/
 		if (rx.state == FSM_SIG_READY) {
 			avmuteflag = rx_get_avmute_sts();

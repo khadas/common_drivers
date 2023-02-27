@@ -21,3 +21,5 @@ dtb-y += s4_s905y4_ap222_drm_1g.dtb
 dtb-y += s4_s905y4_ap222_drm.dtb
 dtb-y += s4d_s805c3_aq2432_512m.dtb
 dtb-y += s4d_s805c3_t215_512m.dtb
+dtb-y += s4d_s805c3_aq2432_256m.dtb
+dtb-y += s4d_s805c3_t215_256m.dtb

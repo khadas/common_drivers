@@ -163,6 +163,8 @@ int video_vsync = -ENXIO;
 int video_vsync_viu2 = -ENXIO;
 int video_vsync_viu3 = -ENXIO;
 int video_pre_vsync = -ENXIO;
+/* mosaic mode */
+int mosaic_frame_done = -ENXIO;
 u64 vsync_cnt[VPP_MAX] = {0, 0, 0};
 
 module_param(osd_vpp1_bld_ctrl, uint, 0444);
@@ -4815,7 +4817,7 @@ static void dmc_adjust_for_mali_vpu(unsigned int width,
 	if (width >= 2000 && height >= 1400 &&
 	    ((dmc_config_state != 1 && toggle_same_count < 30) ||
 		force_adjust)) {
-		if (0) {/* if (is_dolby_vision_enable()) { */
+		if (0) {/* if (is_amdv_enable()) { */
 			/* vpu dmc */
 			WRITE_DMCREG
 				(DMC_AM0_CHAN_CTRL,
@@ -6376,7 +6378,6 @@ s32 primary_render_frame(struct video_layer_s *layer)
 {
 	struct vpp_frame_par_s *frame_par;
 	bool force_setting = false;
-	u32 zoom_start_y, zoom_end_y, blank = 0;
 	struct scaler_setting_s local_vd2_pps = {0};
 	struct blend_setting_s local_vd2_blend = {0};
 	struct mif_pos_s local_vd2_mif = {0};
@@ -6392,6 +6393,20 @@ s32 primary_render_frame(struct video_layer_s *layer)
 	if (layer->new_vpp_setting) {
 		layer->cur_frame_par = layer->next_frame_par;
 		cur_frame_par = layer->cur_frame_par;
+		if (layer->mosaic_mode) {
+			int i;
+			struct mosaic_frame_s *mosaic_frame;
+			struct video_layer_s *virtual_layer;
+
+			for (i = 0; i < SLICE_NUM; i++) {
+				mosaic_frame = get_mosaic_vframe_info(i);
+				virtual_layer = &mosaic_frame->virtual_layer;
+				if (!virtual_layer)
+					return -1;
+				virtual_layer->cur_frame_par =
+					virtual_layer->next_frame_par;
+			}
+		}
 	}
 	if (glayer_info[layer->layer_id].fgrain_force_update) {
 		force_setting = true;
@@ -6513,29 +6528,7 @@ s32 primary_render_frame(struct video_layer_s *layer)
 	}
 	/* VPP one time settings */
 	if (dispbuf) {
-		/* progressive or decode interlace case height 1:1 */
-		/* vdin afbc and interlace case height 1:1 */
-		zoom_start_y = frame_par->VPP_vd_start_lines_;
-		zoom_end_y = frame_par->VPP_vd_end_lines_;
-		if ((dispbuf->type & VIDTYPE_INTERLACE) &&
-		    (dispbuf->type & VIDTYPE_VIU_FIELD)) {
-			/* vdin interlace non afbc frame case height/2 */
-			zoom_start_y /= 2;
-			zoom_end_y = ((zoom_end_y + 1) >> 1) - 1;
-		} else if (dispbuf->type & VIDTYPE_MVC) {
-			/* mvc case, (height - blank)/2 */
-			if (framepacking_support)
-				blank = framepacking_blank;
-			else
-				blank = 0;
-			zoom_start_y /= 2;
-			zoom_end_y = ((zoom_end_y - blank + 1) >> 1) - 1;
-		}
-
-		layer->start_x_lines = frame_par->VPP_hd_start_lines_;
-		layer->end_x_lines = frame_par->VPP_hd_end_lines_;
-		layer->start_y_lines = zoom_start_y;
-		layer->end_y_lines = zoom_end_y;
+		config_vd_param(layer, dispbuf);
 		config_vd_position
 			(layer, &layer->mif_setting);
 		config_aisr_position(layer, &layer->aisr_mif_setting);
@@ -6584,6 +6577,7 @@ s32 primary_render_frame(struct video_layer_s *layer)
 #endif
 	/* aisr pps config */
 	config_aisr_pps(layer, &layer->aisr_sc_setting);
+
 	config_vd_pps
 		(layer, &layer->sc_setting, vinfo);
 	config_vd_blend
@@ -9971,6 +9965,27 @@ static irqreturn_t vsync_pre_vsync_isr(int irq, void *dev_id)
 {
 	return IRQ_HANDLED;
 }
+
+static int printk_frame_done;
+MODULE_PARM_DESC(printk_frame_done, "\n printk_frame_done\n");
+module_param(printk_frame_done, int, 0664);
+
+static irqreturn_t mosaic_frame_done_isr(int irq, void *dev_id)
+{
+	u32 val1, val2;
+
+	if (printk_frame_done) {
+		set_frm_idx(VPP0, 1);
+		val1 = READ_VCBUS_REG(0x321e);
+		val2 = READ_VCBUS_REG(0x3218);
+		pr_info("0x321e=0x%x, 0x3218=0x%x\n", val1, val2);
+		dump_mosaic_pps();
+		set_frm_idx(VPP0, 0);
+		printk_frame_done = 0;
+	}
+	return IRQ_HANDLED;
+}
+
 /*********************************************************
  * FIQ Routines
  *********************************************************/
@@ -9983,6 +9998,10 @@ static void vsync_fiq_up(void)
 
 	r = request_irq(video_vsync, &vsync_isr,
 		IRQF_SHARED, "vsync", (void *)video_dev_id);
+	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_S5_)
+		r = request_irq(mosaic_frame_done, &mosaic_frame_done_isr,
+			IRQF_SHARED, "frame_done", (void *)video_dev_id);
+
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_SC2_ ||
 	    amvideo_meson_dev.has_vpp1)
 		r = request_irq(video_vsync_viu2, &vsync_isr_viu2,
@@ -10012,6 +10031,8 @@ static void vsync_fiq_down(void)
 	free_fiq(INT_VIU_VSYNC, &vsync_fisr);
 #else
 	free_irq(video_vsync, (void *)video_dev_id);
+	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_S5_)
+		free_irq(mosaic_frame_done, (void *)video_dev_id);
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_SC2_ ||
 	   amvideo_meson_dev.has_vpp1)
 		free_irq(video_vsync_viu2, (void *)video_dev_id);
@@ -18489,6 +18510,33 @@ static ssize_t post_matrix_data_store(struct class *cla,
 	return 0;
 }
 
+static ssize_t mosaic_axis_pic_show(struct class *cla,
+		struct class_attribute *attr,
+		char *buf)
+{
+	if (cur_dev->display_module == S5_DISPLAY_MODULE)
+		get_mosaic_axis();
+	return 0;
+}
+
+static ssize_t mosaic_axis_pic_store(struct class *cla,
+		struct class_attribute *attr,
+		const char *buf, size_t count)
+{
+	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
+		int parsed[5];
+		int pic_index  = 0;
+
+		if (likely(parse_para(buf, 5, parsed) == 5)) {
+			pic_index = parsed[0];
+			set_mosaic_axis(pic_index, parsed[1], parsed[2],
+				parsed[3], parsed[4]);
+		} else {
+			pr_info("%s: err\n", __func__);
+		}
+	}
+	return strnlen(buf, count);
+}
 static struct class_attribute amvideo_class_attrs[] = {
 	__ATTR(axis,
 	       0664,
@@ -19027,6 +19075,9 @@ static struct class_attribute amvideo_class_attrs[] = {
 	__ATTR(matrix_data, 0644,
 		post_matrix_data_show,
 		post_matrix_data_store),
+	__ATTR(mosaic_axis_pic, 0644,
+		mosaic_axis_pic_show,
+		mosaic_axis_pic_store),
 };
 
 static struct class_attribute amvideo_poll_class_attrs[] = {
@@ -20106,6 +20157,7 @@ static struct video_device_hw_s s5_dev_property = {
 	/* aisr reverse workaround for t3*/
 	.di_hf_y_reverse = 1,
 	.sr_in_size = 1,
+	.mosaic_support = 1,
 };
 
 static const struct of_device_id amlogic_amvideom_dt_match[] = {
@@ -20380,6 +20432,7 @@ static void video_cap_set(struct amvideo_device_data_s *p_amvideo)
 		layer_cap |= ((u32)vd_layer[0].vpp_index << LAYER0_VPP |
 			(u32)vd_layer[1].vpp_index << LAYER1_VPP |
 			(u32)vd_layer[2].vpp_index << LAYER2_VPP);
+		layer_cap |= MOSAIC_MODE;
 	}
 	pr_debug("%s cap:%x, ptype:%d\n", __func__, layer_cap, p_amvideo->cpu_type);
 }
@@ -20549,6 +20602,14 @@ static int amvideom_probe(struct platform_device *pdev)
 	}
 
 	pr_info("amvideom vsync irq: %d\n", video_vsync);
+	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_S5_) {
+		mosaic_frame_done = platform_get_irq_byname(pdev, "frame_done");
+		if (mosaic_frame_done  == -ENXIO) {
+			pr_info("cannot get amvideom frame_done irq resource\n");
+			//return mosaic_frame_done;
+		}
+		pr_info("amvideom frame_done irq: %d\n", mosaic_frame_done);
+	}
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_SC2_ ||
 	    amvideo_meson_dev.has_vpp1) {
 		/* get interrupt resource */

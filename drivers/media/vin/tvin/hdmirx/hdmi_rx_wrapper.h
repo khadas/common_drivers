@@ -162,12 +162,4 @@ int __weak get_video_mute(void)
 {
 	return 0;
 }
-
-#ifdef CONFIG_AMLOGIC_HDMITX
-u8 hdmitx_reauth_request(u8 hdcp_version);
-#endif
-u8 __weak hdmitx_reauth_request(u8 hdcp_version)
-{
-	return 0;
-}
 #endif

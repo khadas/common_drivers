@@ -1654,7 +1654,7 @@ void rx_edid_update_overlay(u_int *phy_addr_offset,
 
 /* @func: seek dd+ atmos bit
  * @param:get audio type info by cec message:
- *	request short sudio descriptor
+ *	request short audio descriptor
  */
 unsigned char rx_parse_arc_aud_type(const unsigned char *buff)
 {
@@ -1957,8 +1957,10 @@ static void rx_edid_update_vsvdb(u_char *pedid,
 	/* if len = 0xFF, revert to original edid, no change */
 	if (!pedid || !add_data || len == 0xFF)
 		return;
+
 	if (hdmirx_repeat_support())
 		return;
+
 	/* if len = 0, means disable.
 	 * now only consider VSVDB of DV, not HDR10+
 	 */
@@ -3207,7 +3209,7 @@ static void get_edid_dv_data(unsigned char *buff,
 			buff[start + 4] & 0x1;
 		edid_info->dv_vsvdb.target_min_lum =
 			(buff[start + 5] >> 1) & 0x7F;
-		edid_info->dv_vsvdb.colormetry =
+		edid_info->dv_vsvdb.colorimetry =
 			buff[start + 5] & 0x1;
 		edid_info->dv_vsvdb.Rx = buff[start + 7];
 		edid_info->dv_vsvdb.Ry = buff[start + 8];
@@ -3996,8 +3998,8 @@ void rx_parse_print_vsvdb(struct dv_vsvdb_s *dv_vsvdb)
 		      dv_vsvdb->target_max_lum);
 		rx_pr("target_min_lum: 0x%x\n",
 		      dv_vsvdb->target_min_lum);
-		rx_pr("colormetry: 0x%x\n",
-		      dv_vsvdb->colormetry);
+		rx_pr("colorimetry: 0x%x\n",
+		      dv_vsvdb->colorimetry);
 	}
 }
 
@@ -4428,7 +4430,7 @@ void earc_cap_ds_index_print(struct earc_cap_ds *cap_info)
 
 	if (!cap_info)
 		return;
-	rx_pr("****eARC Cap Data Sturct Index****\n");
+	rx_pr("****eARC Cap Data Struct Index****\n");
 	rx_pr("cap_ds_len: %d\n", cap_info->cap_ds_len);
 	rx_pr("cap_ds_ver: %d\n", cap_info->cap_ds_ver);
 	if (cap_info->cap_ds_len > 1)
@@ -4788,7 +4790,7 @@ void splice_tag_db_to_edid(u8 *p_edid, u8 *add_buf,
 	splice_data_blk_to_edid(p_edid, tag_data_blk, 0xFF);
 }
 
-/* romove cta data blk which tag = tagid */
+/* remove cta data blk which tag = tagid */
 void edid_rm_db_by_tag(u8 *p_edid, u16 tagid)
 {
 	int tag_offset;

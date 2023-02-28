@@ -903,11 +903,17 @@ void aml_phy_get_trim_val_t7(void)
 {
 	u32 data32;
 
-	data32 = hdmirx_rd_amlphy(T7_HHI_RX_PHY_MISC_CNTL1);
-	/* bit [12: 15]*/
-	rterm_trim_val_t7 = (data32 >> 12) & 0xf;
-	/* bit'0*/
-	rterm_trim_flag_t7 = data32 & 0x1;
+	dts_debug_flag = (phy_term_lel >> 4) & 0x1;
+	if (dts_debug_flag == 0) {
+		data32 = hdmirx_rd_amlphy(T7_HHI_RX_PHY_MISC_CNTL1);
+		rterm_trim_val_t7 = (data32 >> 12) & 0xf;
+		rterm_trim_flag_t7 = data32 & 0x1;
+	} else {
+		rlevel = phy_term_lel & 0xf;
+		if (rlevel > 15)
+			rlevel = 15;
+		rterm_trim_flag_t7 = dts_debug_flag;
+	}
 	if (rterm_trim_flag_t7)
 		rx_pr("rterm trim=0x%x\n", rterm_trim_val_t7);
 }
@@ -1973,16 +1979,20 @@ void rx_set_irq_t7(bool en)
 
 	if (en) {
 		data8 = 0;
+#ifndef MULTI_VSIF_EXPORT_TO_EMP
 		data8 |= 1 << 4; /* intr_new_unrec en */
 		data8 |= 1 << 2; /* intr_new_aud */
+#endif
 		data8 |= 1 << 1; /* intr_spd */
 		hdmirx_wr_cor(RX_DEPACK_INTR2_MASK_DP2_IVCRX, data8);
 
+#ifndef MULTI_VSIF_EXPORT_TO_EMP
 		data8 = 0;
 		data8 |= 1 << 4; /* intr_cea_repeat_hf_vsi en */
 		data8 |= 1 << 3; /* intr_cea_new_hf_vsi en */
 		data8 |= 1 << 2; /* intr_cea_new_vsi */
 		hdmirx_wr_cor(RX_DEPACK_INTR3_MASK_DP2_IVCRX, data8);
+#endif
 
 		hdmirx_wr_cor(RX_GRP_INTR1_MASK_PWD_IVCRX, 0x25);
 		hdmirx_wr_cor(RX_INTR1_MASK_PWD_IVCRX, 0x03);//register_address: 0x1050
@@ -2358,10 +2368,4 @@ u8 rx_get_stream_manage_info(void)
 	rx_pr("[%s] k: %d, stream_type_hi: %d, stream_type_low: %d\n",
 		__func__, k, stream_type_hi, stream_type_low);
 	return stream_type_low;
-}
-
-/*t7 version*/
-int is_t7_former(void)
-{
-	return (is_meson_t7_cpu() && (is_meson_rev_a() || is_meson_rev_b()));
 }

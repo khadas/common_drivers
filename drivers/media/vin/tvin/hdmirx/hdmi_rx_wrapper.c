@@ -470,7 +470,7 @@ int cec_set_dev_info(u8 dev_idx)
 	if (dev_idx == 1)
 		hdcp_enc_mode = 1;
 	if (dev_idx == 2 && cec_dev_en)
-		dev_is_appletv_v2 = 1;
+		dev_is_apple_tv_v2 = 1;
 	rx_pr("cec special dev = %x", dev_idx);
 	return 0;
 }
@@ -1102,6 +1102,7 @@ irqreturn_t irq_handler(int irq, void *params)
 			rx.state = FSM_WAIT_CLK_STABLE;
 		irq_err_cnt = 0;
 	}
+
 	if (params == 0) {
 		rx_pr("%s: %s\n", __func__,
 		      "RX IRQ invalid parameter");
@@ -1163,10 +1164,12 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT);
 			#endif
 			if (rx.state == FSM_SIG_READY) {
 				rx.vsync_cnt++;
+#ifndef MULTI_VSIF_EXPORT_TO_EMP
 				if (rx_vsif_type) {
 					rx_pkt_handler(PKT_BUFF_SET_VSI);
 					rx_vsif_type = 0;
 				}
+#endif
 				if (rx_spd_type) {
 					rx_pkt_handler(PKT_BUFF_SET_SPD);
 					rx_spd_type = 0;
@@ -1177,8 +1180,8 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT);
 				} else {
 					rx.vrr_en = false;
 				}
-				if (rx.chip_id >= CHIP_ID_T7)
-					rx_check_ecc_error();
+				//if (rx.chip_id >= CHIP_ID_T7)
+					//rx_check_ecc_error();
 				rx_update_sig_info();
 			}
 			if (log_level & 0x400)
@@ -1375,27 +1378,23 @@ static bool fmt_vic_abnormal(void)
 	 */
 	if (rx.pre.sw_vic == HDMI_UNKNOWN ||
 	    rx.pre.sw_vic == HDMI_UNSUPPORT) {
-		if (log_level & VIDEO_LOG)
-			rx_pr("unsupport fmt!\n");
+		rx_pr("unsupport fmt!\n");
 		return true;
 	} else if (rx.pre.sw_vic >= HDMI_VESA_OFFSET &&
 		   rx.pre.sw_vic < HDMI_UNSUPPORT &&
 		   rx.pre.repeat != 0) {
 		/* no pixel repetition for VESA mode */
-		if (log_level & VIDEO_LOG)
 			rx_pr("repetition abnormal for vesa\n");
 		return true;
 	} else if ((rx.pre.sw_vic == HDMI_1080p_ALTERNATIVE) &&
 			   (rx.pre.sw_dvi ||
 			    rx.pre.colorspace == E_COLOR_YUV420 ||
 			    rx.vs_info_details._3d_structure == 0)) {
-		if (log_level & VIDEO_LOG)
-			rx_pr("avi abnormal for 3dmode\n");
+		rx_pr("avi abnormal for 3dmode\n");
 		return true;
 	} else if ((rx.cur.hdcp22_state & 1) &&
 			   rx.cur.hdcp14_state == 3) {
-		if (log_level & VIDEO_LOG)
-			rx_pr("hdcp sts err\n");
+		rx_pr("hdcp sts err\n");
 		return false;
 	}
 	return false;
@@ -2105,7 +2104,7 @@ void rx_dwc_reset(void)
 	rx_sw_reset(rst_lvl);
 	//rx_irq_en(true);
 	/* for hdcp1.4 interact very early cases, don't do
-	 * esm reset to avoid interaction be interferenced.
+	 * esm reset to avoid interaction be interference.
 	 */
 	rx_esm_reset(3);
 }
@@ -2200,7 +2199,7 @@ bool is_unnormal_format(u8 wait_cnt)
 	 */
 	if (rx.hdcp.hdcp_version == HDCP_VER_NONE) {
 		ret = true;
-		if (dev_is_appletv_v2) {
+		if (dev_is_apple_tv_v2) {
 			if (wait_cnt == hdcp_none_wait_max * 30)
 				ret = false;
 		} else if (rx.hdcp.hdcp_pre_ver != HDCP_VER_14) {
@@ -3456,7 +3455,7 @@ void rx_main_state_machine(void)
 					/*sizeof(struct aud_info_s));*/
 				/*rx_set_eq_run_state(E_EQ_PASS);*/
 				hdmirx_config_video();
-				rx_get_audinfo(&rx.aud_info);
+				rx_get_aud_info(&rx.aud_info);
 				hdmirx_config_audio();
 				rx_aud_pll_ctl(1);
 				rx_afifo_store_all_subpkt(false);
@@ -3617,7 +3616,7 @@ void rx_main_state_machine(void)
 		hdcp_sts_update();
 		pre_auds_ch_alloc = rx.aud_info.auds_ch_alloc;
 		pre_auds_hbr = rx.aud_info.aud_hbr_rcv;
-		rx_get_audinfo(&rx.aud_info);
+		rx_get_aud_info(&rx.aud_info);
 
 		if (check_real_sr_change())
 			rx_audio_pll_sw_update();
@@ -3885,6 +3884,7 @@ static void dump_video_status(void)
 	rx_pr("cnt_type = %d\n", rx.cur.cn_type);
 	rx_pr("dolby_vision = %d\n", rx.vs_info_details.dolby_vision_flag);
 	rx_pr("dv ll = %d\n", rx.vs_info_details.low_latency);
+	rx_pr("cuva hdr = %d\n", rx.vs_info_details.cuva_hdr);
 	//rx_pr("VTEM = %d\n", rx.vrr_en);
 	rx_pr("DRM = %d\n", rx_pkt_chk_attach_drm());
 	rx_pr("freesync = %d\n-bit0 supported,bit1:enabled.bit2:active", rx.free_sync_sts);
@@ -3900,7 +3900,7 @@ static void dump_audio_status(void)
 	static struct aud_info_s a;
 	u32 val0, val1;
 
-	rx_get_audinfo(&a);
+	rx_get_aud_info(&a);
 	rx_pr("[AudioInfo]\n");
 	rx_pr(" CT=%u CC=%u", a.coding_type,
 	      a.channel_count);
@@ -4313,7 +4313,7 @@ void hdmirx_timer_handler(struct timer_list *t)
 		rx_check_repeat();
 		if (!(rpt_only_mode && !rx.hdcp.repeat)) {
 			if (!sm_pause) {
-				rx_clkrate_monitor();
+				rx_clk_rate_monitor();
 				rx_afifo_monitor();
 				rx_ddc_active_monitor();
 				rx_hdcp_monitor();

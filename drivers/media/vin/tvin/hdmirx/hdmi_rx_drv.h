@@ -48,6 +48,14 @@
 /* fix conflict between two delay work */
 #define RX_VER1 "ver.2023/3/2"
 
+/*
+ * Currently, a total of 5 VSIF packages are supported,
+ * DV/HDR10+/CUVA/HDMI2.1/HDMI1.4, but only the last one can be parsed
+ * each time. The purpose of MULTI_VSIF_EXPORT_TO_EMP is to transfer the
+ * optimal VSIF packet to VDIN when multiple VSIF packets are received.
+ */
+#define MULTI_VSIF_EXPORT_TO_EMP
+
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 
 #define TIME_1MS 1000000
@@ -61,6 +69,9 @@
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368
+
+/* sizeof(emp_buf) / sizeof(sizeof(struct pd_infoframe_s) + 1) = 1024/32 */
+#define EMP_DSF_CNT_MAX 32
 
 //#define SPECIAL_FUNC_EN
 #ifdef SPECIAL_FUNC_EN
@@ -477,7 +488,7 @@ struct hdmi_rx_hdcp {
 	 * @note 0: high order, 1: low order
 	 */
 	u32 keys[HDCP_KEYS_SIZE];
-	struct extcon_dev *rx_excton_auth;
+	struct extcon_dev *rx_extcon_auth;
 	enum hdcp_version_e hdcp_version;/* 0 no hdcp;1 hdcp14;2 hdcp22 */
 	/* add for dv cts */
 	enum hdcp_version_e hdcp_pre_ver;
@@ -503,13 +514,17 @@ struct vsi_info_s {
 	bool dv_allm;
 	bool hdmi_allm;
 	bool hdr10plus;
+	bool cuva_hdr;
 	u8 ccbpc;
-	u8 vsi_state;
+	u8 vsi_state; // bit0-5: 4K3D/VSI21/HDR10+/DV10/DV15/CUVA
 	u8 emp_pkt_cnt;
 	u8 timeout;
 	u8 max_frl_rate;
+	u8 sys_start_code;
+	u8 cuva_version_code;
 };
 
+//===============emp start
 struct vtem_info_s {
 	u8 vrr_en;
 	u8 m_const;
@@ -518,18 +533,36 @@ struct vtem_info_s {
 	u8 base_vfront;
 	u8 rb;
 	u16 base_framerate;
-	//real structure
-	//u8 vrr_en:1;
-	//u8 m_const:1;
-	//u8 qms_en;
-	//u8 rsvd0:1;
-	//u8 fva_factor_m1:4;
-	//u8 base_vfront;
-	//u8 base_fr_high:2;
-	//u8 rb:1;
-	//u8 rsvd1:5;
-	//u8 base_fr_low;
 };
+
+struct sbtm_info_s {
+	u8 flag;
+	u8 sbtm_ver;
+	u8 sbtm_mode;
+	u8 sbtm_type;
+	u8 grdm_min;
+	u8 grdm_lum;
+	u16 frm_pb_limit_int;
+};
+
+struct cuva_emds_s {
+	bool flag;
+	unsigned char *emds_addr;
+	u8 cuva_emds_size;
+};
+
+struct dv_info_s {
+	bool flag;
+	unsigned char *dv_addr;
+	u8 dv_size;
+};
+
+struct emp_dsf_st {
+	int pkt_cnt;
+	u8 *pkt_addr;
+};
+
+//================emp end
 
 #define CHANNEL_STATUS_SIZE   24
 
@@ -608,6 +641,7 @@ struct emp_buff {
 	void __iomem *ready;
 	unsigned long irq_cnt;
 	unsigned int emp_pkt_cnt;
+	unsigned int pre_emp_pkt_cnt;
 	unsigned int tmds_pkt_cnt;
 	bool end;
 	u8 ogi_id;
@@ -641,7 +675,7 @@ int hdmirx_set_uevent(enum hdmirx_event type, int val);
 struct rx_s {
 	enum chip_id_e chip_id;
 	enum phy_ver_e phy_ver;
-	struct hdmirx_dev_s *hdmirxdev;
+	struct hdmirx_dev_s *hdmirx_dev;
 	/** HDMI RX received signal changed */
 	u32 skip;
 	/*avmute*/
@@ -660,12 +694,11 @@ struct rx_s {
 	bool open_fg;
 	bool cableclk_stb_flg;
 	u8 irq_flag;
-	bool firm_change;/*hdcp2.2 rp/rx switch time*/
 	/** HDMI RX controller HDCP configuration */
 	struct hdmi_rx_hdcp hdcp;
 	/*report hpd status to app*/
-	struct extcon_dev *rx_excton_rx22;
-	struct extcon_dev *rx_excton_open;
+	struct extcon_dev *rx_extcon_rx22;
+	struct extcon_dev *rx_extcon_open;
 
 	/* wrapper */
 	unsigned int state;
@@ -692,6 +725,13 @@ struct rx_s {
 	struct vsi_info_s vs_info_details;
 	struct tvin_hdr_info_s hdr_info;
 	struct vtem_info_s vtem_info;
+	struct sbtm_info_s sbtm_info;
+	struct cuva_emds_s emp_cuva_info;
+	struct dv_info_s emp_dv_info;
+	u8 emp_dsf_cnt;
+	bool emp_pkt_rev;
+	bool new_emp_pkt;
+	struct emp_dsf_st emp_dsf_info[EMP_DSF_CNT_MAX];
 	unsigned char edid_mix_buf[EDID_MIX_MAX_SIZE];
 	unsigned int pwr_sts;
 	/* for debug */
@@ -709,6 +749,7 @@ struct rx_s {
 	u8 free_sync_sts;
 	u8 afifo_sts;
 	u32 ecc_err;
+	u32 ecc_pkt_cnt;
 	u32 ecc_err_frames_cnt;
 	bool ddc_filter_en;
 	unsigned char port_num;
@@ -743,8 +784,8 @@ extern struct workqueue_struct	*eq_wq;
 extern struct delayed_work	esm_dwork;
 extern struct workqueue_struct	*esm_wq;
 extern struct delayed_work	repeater_dwork;
-extern struct work_struct	amlphy_dwork;
-extern struct workqueue_struct	*amlphy_wq;
+extern struct work_struct	aml_phy_dwork;
+extern struct workqueue_struct	*aml_phy_wq;
 extern struct work_struct     clkmsr_dwork;
 extern struct workqueue_struct *clkmsr_wq;
 extern struct work_struct     earc_hpd_dwork;
@@ -784,7 +825,7 @@ extern int rgb_quant_range;
 extern int yuv_quant_range;
 extern int en_4k_timing;
 extern int cec_dev_en;
-extern bool dev_is_appletv_v2;
+extern bool dev_is_apple_tv_v2;
 extern u32 en_4096_2_3840;
 extern int en_4k_2_2k;
 extern bool hdmi_cec_en;

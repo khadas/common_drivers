@@ -91,8 +91,8 @@ struct delayed_work	esm_dwork;
 struct workqueue_struct	*esm_wq;
 struct delayed_work	repeater_dwork;
 struct workqueue_struct	*repeater_wq;
-struct work_struct     amlphy_dwork;
-struct workqueue_struct *amlphy_wq;
+struct work_struct     aml_phy_dwork;
+struct workqueue_struct *aml_phy_wq;
 struct work_struct     clkmsr_dwork;
 struct workqueue_struct *clkmsr_wq;
 struct work_struct     earc_hpd_dwork;
@@ -135,13 +135,13 @@ u32 en_4096_2_3840;
 int en_4k_2_2k;
 int en_4k_timing = 1;
 int cec_dev_en;
-bool dev_is_appletv_v2;
+bool dev_is_apple_tv_v2;
 bool hdmi_cec_en;
 static bool tv_auto_power_on;
 int vdin_drop_frame_cnt = 1;
 /* suspend_pddq_sel:
  * 0: keep phy on when suspend(don't need phy init when
- *   resume), it doesn't work now because phy VDDIO_3.3V
+ *   resume), it doesn't work now because phy VDD_IO_3.3V
  *   will power off when suspend, and tmds clk will be low;
  * 1&2: when CEC off there's no SDA low issue for MTK box,
  *   these workaround are not needed
@@ -386,12 +386,12 @@ static unsigned int first_bit_set(u32 data)
  */
 unsigned int rx_get_bits(unsigned int data, unsigned int mask)
 {
-	unsigned int fstbs_rtn;
+	unsigned int fst_bs_rtn;
 	unsigned int rtn_val;
 
-	fstbs_rtn = first_bit_set(mask);
-	if (fstbs_rtn < 32)
-		rtn_val = (data & mask) >> fstbs_rtn;
+	fst_bs_rtn = first_bit_set(mask);
+	if (fst_bs_rtn < 32)
+		rtn_val = (data & mask) >> fst_bs_rtn;
 	else
 		rtn_val = 0;
 	return rtn_val;
@@ -401,12 +401,12 @@ unsigned int rx_set_bits(unsigned int data,
 			 unsigned int mask,
 			 unsigned int value)
 {
-	unsigned int fstbs_rtn;
+	unsigned int fst_bs_rtn;
 	unsigned int rtn_val;
 
-	fstbs_rtn = first_bit_set(mask);
-	if (fstbs_rtn < 32)
-		rtn_val = ((value << fstbs_rtn) & mask) | (data & ~mask);
+	fst_bs_rtn = first_bit_set(mask);
+	if (fst_bs_rtn < 32)
+		rtn_val = ((value << fst_bs_rtn) & mask) | (data & ~mask);
 	else
 		rtn_val = 0;
 	return rtn_val;
@@ -507,7 +507,7 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 
 	/*
 	 * txl:should disable the adc ref signal for audio pll
-	 * txlx:dont disable the adc ref signal for audio pll(not
+	 * txlx:don't disable the adc ref signal for audio pll(not
 	 *	reset the vdac) to avoid noise issue
 	 */
 	/* For txl,also need to keep bandgap always on:SWPL-1224 */
@@ -548,7 +548,7 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 {
 	struct hdmirx_dev_s *devp;
 	struct tvin_parm_s *parm;
-	u32 avmuteflag;
+	u32 avmute_flag;
 
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
@@ -556,8 +556,8 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 	if (!rx.var.force_pattern) {
 		/*prevent spurious pops or noise when pw down*/
 		if (rx.state == FSM_SIG_READY) {
-			avmuteflag = rx_get_avmute_sts();
-			if (avmuteflag == 1) {
+			avmute_flag = rx_get_avmute_sts();
+			if (avmute_flag == 1) {
 				rx.avmute_skip += 1;
 				hdmirx_set_video_mute(1);
 				skip_frame(2);
@@ -1052,10 +1052,53 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop)
 		prop->trans_fmt = TVIN_TFMT_2D;
 		prop->dolby_vision = DV_NULL;
 		prop->hdr10p_info.hdr10p_on = false;
+		prop->cuva_info.cuva_on = false;
 		last_vsi_state = rx.vs_info_details.vsi_state;
 	}
 	if (rx.pre.colorspace != E_COLOR_YUV420)
 		prop->dolby_vision = rx.vs_info_details.dolby_vision_flag;
+#ifdef MULTI_VSIF_EXPORT_TO_EMP
+	if (log_level & PACKET_LOG && rx.new_emp_pkt)
+		rx_pr("vsi_state:0x%x\n", rx.vs_info_details.vsi_state);
+
+	if (rx.vs_info_details.vsi_state & E_VSI_DV10 || rx.vs_info_details.vsi_state & E_VSI_DV15)
+		rx.vs_info_details.vsi_state = E_VSI_DV15;
+	else if (rx.vs_info_details.vsi_state & E_VSI_HDR10PLUS)
+		rx.vs_info_details.vsi_state = E_VSI_HDR10PLUS;
+	else if (rx.vs_info_details.vsi_state & E_VSI_CUVAHDR)
+		rx.vs_info_details.vsi_state = E_VSI_CUVAHDR;
+	else if (rx.vs_info_details.vsi_state & E_VSI_4K3D)
+		rx.vs_info_details.vsi_state = E_VSI_4K3D;
+	else
+		rx.vs_info_details.vsi_state = E_VSI_VSI21;
+
+	switch (rx.vs_info_details.vsi_state) {
+	case E_VSI_DV10:
+	case E_VSI_DV15:
+		prop->low_latency = rx.vs_info_details.low_latency;
+		if (rx.vs_info_details.dolby_vision_flag == DV_VSIF) {
+			memcpy(&prop->dv_vsif_raw,
+			       &rx_pkt.multi_vs_info[DV15], 3);
+			memcpy((char *)(&prop->dv_vsif_raw) + 3,
+			       &rx_pkt.multi_vs_info[DV15].PB0,
+			       sizeof(struct tvin_dv_vsif_raw_s) - 4);
+		}
+		break;
+	case E_VSI_HDR10PLUS:
+		prop->hdr10p_info.hdr10p_on = rx.vs_info_details.hdr10plus;
+		memcpy(&prop->hdr10p_info.hdr10p_data, &rx_pkt.multi_vs_info[HDR10PLUS],
+			sizeof(struct tvin_hdr10p_data_s));
+		break;
+	case E_VSI_CUVAHDR:
+		prop->cuva_info.cuva_on = true;
+		if (rx.vs_info_details.cuva_hdr) {
+			memset(&prop->cuva_info.cuva_data, 0,
+				sizeof(struct tvin_cuva_data_s));
+			memcpy(&prop->cuva_info.cuva_data,
+			       &rx_pkt.multi_vs_info[CUVAHDR], sizeof(struct tvin_cuva_data_s));
+		}
+		break;
+#else
 	switch (rx.vs_info_details.vsi_state) {
 	case E_VSI_HDR10PLUS:
 		prop->hdr10p_info.hdr10p_on = rx.vs_info_details.hdr10plus;
@@ -1073,6 +1116,7 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop)
 			       sizeof(struct tvin_dv_vsif_raw_s) - 4);
 		}
 		break;
+#endif
 	case E_VSI_4K3D:
 		if (hdmirx_hw_get_3d_structure() == 1) {
 			if (rx.vs_info_details._3d_structure == 0x1) {
@@ -1153,7 +1197,7 @@ void hdmirx_get_latency_info(struct tvin_sig_property_s *prop)
 	prop->latency.it_content = rx.cur.it_content;
 	prop->latency.cn_type = rx.cur.cn_type;
 #ifdef CONFIG_AMLOGIC_HDMITX
-	if (rx.open_fg  && rx.chip_id == CHIP_ID_T7 &&
+	if (rx.open_fg  &&
 		(latency_info.allm_mode != rx.vs_info_details.hdmi_allm ||
 		latency_info.it_content != rx.cur.it_content ||
 		latency_info.cn_type != rx.cur.cn_type)) {
@@ -1166,7 +1210,7 @@ void hdmirx_get_latency_info(struct tvin_sig_property_s *prop)
 }
 
 static u32 emp_irq_cnt;
-void hdmirx_get_emp_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_emp_dv_info(struct tvin_sig_property_s *prop)
 {
 	//emp buffer not only stores DV_EMP packet, but also other packets.
 	//only DV_EMP is needed here
@@ -1174,9 +1218,9 @@ void hdmirx_get_emp_info(struct tvin_sig_property_s *prop)
 		return;
 
 	prop->emp_data.size = rx.vs_info_details.emp_pkt_cnt;
-	if (rx.vs_info_details.emp_pkt_cnt)
+	if (rx.emp_dv_info.dv_size)
 		memcpy(&prop->emp_data.empbuf,
-		       emp_buf, rx.vs_info_details.emp_pkt_cnt * 32);
+		       rx.emp_dv_info.dv_addr, rx.emp_dv_info.dv_size * 32);
 #ifndef HDMIRX_SEND_INFO_TO_VDIN
 	if (emp_irq_cnt == rx.emp_buff.irq_cnt)
 		rx.vs_info_details.emp_pkt_cnt = 0;
@@ -1192,6 +1236,24 @@ void hdmirx_get_vtem_info(struct tvin_sig_property_s *prop)
 			   &rx.vtem_info, sizeof(struct vtem_info_s));
 }
 
+void hdmirx_get_sbtm_info(struct tvin_sig_property_s *prop)
+{
+	memset(&prop->sbtm_data, 0, sizeof(struct tvin_sbtm_data_s));
+	if (rx.sbtm_info.flag)
+		memcpy(&prop->sbtm_data,
+			   &rx.sbtm_info, sizeof(struct sbtm_info_s));
+}
+
+void hdmirx_get_cuva_emds_info(struct tvin_sig_property_s *prop)
+{
+	if (rx.emp_cuva_info.cuva_emds_size > sizeof(prop->cuva_emds_data))
+		rx_pr("cuva emds size exceeds 96 bytes\n");
+	memset(&prop->cuva_emds_data, 0, sizeof(prop->cuva_emds_data));
+	if (rx.emp_cuva_info.flag)
+		memcpy(&prop->cuva_emds_data, rx.emp_cuva_info.emds_addr,
+			sizeof(prop->cuva_emds_data));
+}
+
 void rx_set_sig_info(void)
 {
 	struct tvin_frontend_s *fe = tvin_get_frontend(TVIN_PORT_HDMI0,
@@ -1205,14 +1267,10 @@ void rx_set_sig_info(void)
 
 void rx_update_sig_info(void)
 {
-	//if ((rx_vdin_level & 0x1) == 1)
-		rx_get_vsi_info();
-	//if (((rx_vdin_level >> 1) & 0x1) == 1)
-		rx_get_vtem_info();
-	//if (((rx_vdin_level >> 2) & 0x1) == 1)
-		rx_get_aif_info();
-	//if (((rx_vdin_level >> 3) & 0x1) == 1)
-		rx_set_sig_info();
+	rx_get_vsi_info();
+	rx_get_em_info();
+	rx_get_aif_info();
+	rx_set_sig_info();
 }
 
 /*
@@ -1220,12 +1278,12 @@ void rx_update_sig_info(void)
  */
 void hdmirx_get_hdr_info(struct tvin_sig_property_s *prop)
 {
-	struct drm_infoframe_st *drmpkt;
+	struct drm_infoframe_st *drm_pkt;
 
 	/*check drm packet is attach every VS*/
 	u32 drm_attach = rx_pkt_chk_attach_drm();
 
-	drmpkt = (struct drm_infoframe_st *)&rx_pkt.drm_info;
+	drm_pkt = (struct drm_infoframe_st *)&rx_pkt.drm_info;
 
 	if (drm_attach) {
 		rx.hdr_info.hdr_state = HDR_STATE_SET;
@@ -1250,39 +1308,39 @@ void hdmirx_get_hdr_info(struct tvin_sig_property_s *prop)
 			if (rx_pkt_chk_busy_drm())
 				break;
 
-			prop->hdr_info.hdr_data.length = drmpkt->length;
-			prop->hdr_info.hdr_data.eotf = drmpkt->des_u.tp1.eotf;
+			prop->hdr_info.hdr_data.length = drm_pkt->length;
+			prop->hdr_info.hdr_data.eotf = drm_pkt->des_u.tp1.eotf;
 			prop->hdr_info.hdr_data.metadata_id =
-				drmpkt->des_u.tp1.meta_des_id;
+				drm_pkt->des_u.tp1.meta_des_id;
 			prop->hdr_info.hdr_data.primaries[0].x =
-				drmpkt->des_u.tp1.dis_pri_x0;
+				drm_pkt->des_u.tp1.dis_pri_x0;
 			prop->hdr_info.hdr_data.primaries[0].y =
-				drmpkt->des_u.tp1.dis_pri_y0;
+				drm_pkt->des_u.tp1.dis_pri_y0;
 			prop->hdr_info.hdr_data.primaries[1].x =
-				drmpkt->des_u.tp1.dis_pri_x1;
+				drm_pkt->des_u.tp1.dis_pri_x1;
 			prop->hdr_info.hdr_data.primaries[1].y =
-				drmpkt->des_u.tp1.dis_pri_y1;
+				drm_pkt->des_u.tp1.dis_pri_y1;
 			prop->hdr_info.hdr_data.primaries[2].x =
-				drmpkt->des_u.tp1.dis_pri_x2;
+				drm_pkt->des_u.tp1.dis_pri_x2;
 			prop->hdr_info.hdr_data.primaries[2].y =
-				drmpkt->des_u.tp1.dis_pri_y2;
+				drm_pkt->des_u.tp1.dis_pri_y2;
 			prop->hdr_info.hdr_data.white_points.x =
-				drmpkt->des_u.tp1.white_points_x;
+				drm_pkt->des_u.tp1.white_points_x;
 			prop->hdr_info.hdr_data.white_points.y =
-				drmpkt->des_u.tp1.white_points_y;
+				drm_pkt->des_u.tp1.white_points_y;
 			prop->hdr_info.hdr_data.master_lum.x =
-				drmpkt->des_u.tp1.max_dislum;
+				drm_pkt->des_u.tp1.max_dislum;
 			prop->hdr_info.hdr_data.master_lum.y =
-				drmpkt->des_u.tp1.min_dislum;
+				drm_pkt->des_u.tp1.min_dislum;
 			prop->hdr_info.hdr_data.mcll =
-				drmpkt->des_u.tp1.max_light_lvl;
+				drm_pkt->des_u.tp1.max_light_lvl;
 			prop->hdr_info.hdr_data.mfall =
-				drmpkt->des_u.tp1.max_fa_light_lvl;
+				drm_pkt->des_u.tp1.max_fa_light_lvl;
 			prop->hdr_info.hdr_data.rawdata[0] = 0x87;
 			prop->hdr_info.hdr_data.rawdata[1] = 0x1;
-			prop->hdr_info.hdr_data.rawdata[2] = drmpkt->length;
+			prop->hdr_info.hdr_data.rawdata[2] = drm_pkt->length;
 			memcpy(&prop->hdr_info.hdr_data.rawdata[3],
-				   &drmpkt->des_u.payload, 28);
+				   &drm_pkt->des_u.payload, 28);
 			/* vdin can read current hdr data */
 			prop->hdr_info.hdr_state = HDR_STATE_GET;
 		}
@@ -1313,8 +1371,10 @@ void hdmirx_get_sig_property(struct tvin_frontend_s *fe,
 	hdmirx_get_vsi_info(prop);
 	hdmirx_get_spd_info(prop);
 	hdmirx_get_latency_info(prop);
-	hdmirx_get_emp_info(prop);
+	hdmirx_get_emp_dv_info(prop);
 	hdmirx_get_vtem_info(prop);
+	hdmirx_get_sbtm_info(prop);
+	hdmirx_get_cuva_emds_info(prop);
 	hdmirx_get_active_aspect_ratio(prop);
 	hdmirx_get_hdcp_sts(prop);
 	hdmirx_get_hw_vic(prop);
@@ -1395,7 +1455,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 	struct pd_infoframe_s pkt_info;
 	struct spd_infoframe_st *spd_pkt;
 	unsigned int pin_status;
-	void *srcbuff;
+	void *src_buff;
 	u8 sad_data[30];
 	u8 len = 0;
 	u8 i = 0;
@@ -1404,7 +1464,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		pr_err("%s invalid command: %u\n", __func__, cmd);
 		return -EINVAL;
 	}
-	srcbuff = &pkt_info;
+	src_buff = &pkt_info;
 	devp = file->private_data;
 	switch (cmd) {
 	case HDMI_IOC_HDCP_GET_KSV:{
@@ -1515,13 +1575,13 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 			//break;
 	//	}
 		//memset(&pkt_info, 0, sizeof(pkt_info));
-		//srcbuff = &pkt_info;
+		//src_buff = &pkt_info;
 		//size = sizeof(struct pd_infoframe_s);
 		//rx_get_pd_fifo_param(param, &pkt_info);
 
 		/*return pkt info*/
 		//if (size > 0 && !argp) {
-			//if (copy_to_user(argp, srcbuff, size)) {
+			//if (copy_to_user(argp, src_buff, size)) {
 				//pr_err("get pd fifo param err\n");
 				//ret = -EFAULT;
 			//}
@@ -2368,7 +2428,6 @@ static DEVICE_ATTR_RW(reset22);
 static DEVICE_ATTR_RW(hdcp_version);
 static DEVICE_ATTR_RW(hw_info);
 //static DEVICE_ATTR_RW(edid_dw);
-//static DEVICE_ATTR_RW(ksvlist);
 static DEVICE_ATTR_RW(earc_cap_ds);
 static DEVICE_ATTR_RW(edid_select);
 static DEVICE_ATTR_RW(audio_blk);
@@ -2405,7 +2464,7 @@ static struct device *hdmirx_create_device(struct device *parent, int id)
 			TVHDMI_DEVICE_NAME);
 	/* @to do this after Middleware API modified */
 	/*return device_create(hdmirx_clsp, parent, devno, NULL, "%s",*/
-	  /*TVHDMI_DEVICE_NAME); */
+	  /*TV_HDMI_DEVICE_NAME); */
 }
 
 static void hdmirx_delete_device(int minor)
@@ -2543,7 +2602,7 @@ void rx_emp_resource_allocate(struct device *dev)
 			//page_address
 			rx_pr("buff_a paddr=0x%p\n",
 			      (void *)rx.emp_buff.p_addr_a);
-			rx_pr("buffb paddr=0x%p\n",
+			rx_pr("buff_b paddr=0x%p\n",
 			      (void *)rx.emp_buff.p_addr_b);
 		} else {
 			rx_pr("emp buff err-1\n");
@@ -2759,7 +2818,7 @@ static int rx_vrr_notify_handler(struct notifier_block *nb,
 		memcpy(&vdata, p, sizeof(struct vrr_notifier_data_s));
 		rx.vrr_min = vdata.dev_vfreq_min;
 		rx.vrr_max = vdata.dev_vfreq_max;
-		rx_pr("%s: vrrmin=%d, vrrmax=%d\n", __func__, rx.vrr_min, rx.vrr_max);
+		rx_pr("%s: vrr_min=%d, vrr_max=%d\n", __func__, rx.vrr_min, rx.vrr_max);
 		break;
 	default:
 		ret = -EINVAL;
@@ -2819,7 +2878,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 	/*get compatible matched device, to get chip related data*/
 	of_id = of_match_device(hdmirx_dt_match, &pdev->dev);
 	if (!of_id) {
-		rx_pr("t5m unable to get matched device\n");
+		rx_pr("unable to get matched device\n");
 		return -1;
 	}
 	/* allocate memory for the per-device structure */
@@ -2831,14 +2890,14 @@ static int hdmirx_probe(struct platform_device *pdev)
 	}
 	memset(hdevp, 0, sizeof(struct hdmirx_dev_s));
 	hdevp->data = of_id->data;
-	rx.hdmirxdev = hdevp;
+	rx.hdmirx_dev = hdevp;
 
 	if (hdevp->data) {
 		rx.chip_id = hdevp->data->chip_id;
 		rx.phy_ver = hdevp->data->phy_ver;
 		rx.port_num = hdevp->data->port_num;
 		rx_pr("chip id:%d\n", rx.chip_id);
-		rx_pr("phy ver:%d\n", rx.hdmirxdev->data->phy_ver);
+		rx_pr("phy ver:%d\n", rx.hdmirx_dev->data->phy_ver);
 	} else {
 		/*txlx chip for default*/
 		rx.chip_id = CHIP_ID_TXLX;
@@ -2943,11 +3002,6 @@ static int hdmirx_probe(struct platform_device *pdev)
 		//rx_pr("hdmirx: fail to create edid_dw file\n");
 		//goto fail_create_edid_dw;
 	//}
-	//ret = device_create_file(hdevp->dev, &dev_attr_ksvlist);
-	//if (ret < 0) {
-	//	rx_pr("hdmirx: fail to create ksvlist file\n");
-	//	goto fail_create_ksvlist;
-	//}
 	ret = device_create_file(hdevp->dev, &dev_attr_earc_cap_ds);
 	if (ret < 0) {
 		rx_pr("hdmirx: fail to create earc_cap_ds file\n");
@@ -2985,10 +3039,6 @@ static int hdmirx_probe(struct platform_device *pdev)
 	}
 	ret = device_create_file(hdevp->dev, &dev_attr_mode);
 	if (ret < 0) {
-		rx_pr("hdmirx: fail to create hdcp_auth_sts file\n");
-		goto fail_create_hdcp_auth_sts;
-	}
-	if (ret < 0) {
 		rx_pr("hdmirx: fail to create mode file\n");
 		goto fail_create_mode;
 	}
@@ -3012,6 +3062,11 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_pr("hdmirx: fail to create hdmi_hdr_status file\n");
 		goto fail_create_hdmi_hdr_status;
 	}
+	ret = device_create_file(hdevp->dev, &dev_attr_hdcp_auth_sts);
+	if (ret < 0) {
+		rx_pr("hdmirx: fail to create hdcp_auth_sts file\n");
+		goto fail_create_hdcp_auth_sts;
+	}
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (!res) {
 		rx_pr("%s: can't get irq resource\n", __func__);
@@ -3021,7 +3076,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 	hdevp->irq = res->start;
 	snprintf(hdevp->irq_name, sizeof(hdevp->irq_name),
 		 "hdmirx%d-irq", hdevp->index);
-	rx_pr("hdevpd irq: %d, %d\n", hdevp->index,
+	rx_pr("hdevp irq: %d, %d\n", hdevp->index,
 	      hdevp->irq);
 	if (request_irq(hdevp->irq,
 			&irq_handler,
@@ -3211,8 +3266,8 @@ static int hdmirx_probe(struct platform_device *pdev)
 		/* queue_delayed_work(eq_wq, &eq_dwork, msecs_to_jiffies(5)); */
 	}
 	/* create for aml phy init */
-	amlphy_wq = create_workqueue(hdevp->frontend.name);
-	INIT_WORK(&amlphy_dwork, aml_phy_init_handler);
+	aml_phy_wq = create_workqueue(hdevp->frontend.name);
+	INIT_WORK(&aml_phy_dwork, aml_phy_init_handler);
 
 	/* create for clk msr */
 	clkmsr_wq = create_workqueue(hdevp->frontend.name);
@@ -3231,7 +3286,6 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_pr("en_4k_2_2k not found.\n");
 		en_4k_2_2k = 0;
 	}
-
 	ret = of_property_read_u32(pdev->dev.of_node,
 				   "en_4k_timing", &en_4k_timing);
 	if (ret)
@@ -3289,8 +3343,8 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_pr("not find rpt_only_mode, soundbar by default\n");
 	}
 	ret = of_property_read_u32(pdev->dev.of_node,
-				"disable_hdr",
-				&disable_hdr);
+				   "disable_hdr",
+				   &disable_hdr);
 	if (ret) {
 		disable_hdr = 0;
 		rx_pr("not find disable_hdr, hdr enable by default\n");
@@ -3358,6 +3412,7 @@ fail_kmalloc_pd_fifo:
 	return ret;
 fail_get_resource_irq:
 	return ret;
+
 fail_create_hdcp_auth_sts:
 	device_remove_file(hdevp->dev, &dev_attr_hdcp_auth_sts);
 fail_create_hdmi_hdr_status:
@@ -3384,10 +3439,8 @@ fail_create_vrr_func_ctrl:
 	device_remove_file(hdevp->dev, &dev_attr_vrr_func_ctrl);
 fail_create_earc_cap_ds:
 	device_remove_file(hdevp->dev, &dev_attr_earc_cap_ds);
-//fail_create_ksvlist:
-	//device_remove_file(hdevp->dev, &dev_attr_ksvlist);
 //fail_create_edid_dw:
-	//device_remove_file(hdevp->dev, &dev_attr_edid_dw);
+//	device_remove_file(hdevp->dev, &dev_attr_edid_dw);
 fail_create_hw_info:
 	device_remove_file(hdevp->dev, &dev_attr_hw_info);
 fail_create_hdcp_version:
@@ -3440,8 +3493,8 @@ static int hdmirx_remove(struct platform_device *pdev)
 	cancel_delayed_work_sync(&esm_dwork);
 	destroy_workqueue(esm_wq);
 
-	cancel_work_sync(&amlphy_dwork);
-	destroy_workqueue(amlphy_wq);
+	cancel_work_sync(&aml_phy_dwork);
+	destroy_workqueue(aml_phy_wq);
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	unregister_early_suspend(&hdmirx_early_suspend_handler);
 #endif
@@ -3468,7 +3521,6 @@ static int hdmirx_remove(struct platform_device *pdev)
 	device_remove_file(hdevp->dev, &dev_attr_info);
 	device_remove_file(hdevp->dev, &dev_attr_arc_aud_type);
 	device_remove_file(hdevp->dev, &dev_attr_earc_cap_ds);
-	//device_remove_file(hdevp->dev, &dev_attr_ksvlist);
 	//device_remove_file(hdevp->dev, &dev_attr_edid_dw);
 	device_remove_file(hdevp->dev, &dev_attr_hw_info);
 	device_remove_file(hdevp->dev, &dev_attr_hdcp_version);

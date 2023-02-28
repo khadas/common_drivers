@@ -76,7 +76,14 @@ extern u8 ksvlist[10];
 
 int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 				     unsigned long value, void *p);
-
+#ifdef CONFIG_AMLOGIC_HDMITX
+u8 hdmitx_reauth_request(u8 hdcp_version);
+#else
+u8 __weak hdmitx_reauth_request(u8 hdcp_version)
+{
+	return 0;
+}
+#endif
 void rx_set_repeater_support(bool enable);
 bool get_rx_active_sts(void);
 //int rx_set_receiver_edid(const char *data, int len);

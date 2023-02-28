@@ -462,16 +462,63 @@ struct tvin_vtem_data_s {
 	u8 base_v_front;
 	u8 rb;
 	u16 base_framerate;
-	//real structure
-	//u8 vrr_en:1;
-	//u8 m_const:1;
-	//u8 qms:2;
-	//u8 fva_factor_m1:4;
-	//u8 base_vfront;
-	//u8 base_fr_high:2;
-	//u8 rb:1;
-	//u8 rsvd1:5;
-	//u8 base_fr_low;
+};
+
+struct tvin_cuva_emds_data_s {
+	/* Sequence_Index:0 */
+	u8 pkt_type_0;
+	u8 hb1_0;
+	u8 sequence_index_0;
+	u8 pb0;
+	u16 organization_id;
+	u16 data_tag;
+	u16 data_length;
+	u32 ieee:24;
+	u32 system_start_code:8;
+	u16 min_maxrgb_pq;
+	u16 avg_maxrgb_pq;
+	u16 var_maxrgb_pq;
+	u16 max_maxrgb_pq;
+	u16 targeted_max_lum_pq;
+	u16 base_param_m_p;
+	u8 base_param_m_m;
+	u16 base_param_m_a;
+	u16 base_param_m_b;
+	/* Sequence_Index:1 */
+	u8 pkt_type_1;
+	u8 hb1_1;
+	u8 sequence_index_1;
+	u8 base_param_m_n;
+	u8 base_param_k;
+	u8 base_param_delta_enable_mode;
+	u8 base_param_enable_delta;
+	struct {
+		u8 th_enable_mode;
+		u8 th_enable_mb;
+		u16 th_enable;
+		u16 th_enable_delta[2];
+		u8 enable_strength;
+	} _3spline_data[2];
+	u8 color_saturation_num;
+	u8 color_saturation_gain0[5];
+	/* Sequence_Index:2 */
+	u8 pkt_type_2;
+	u8 hb1_2;
+	u8 sequence_index_2;
+	u8 color_saturation_gain1[3];
+	u8 graphic_src_display_value;
+	u8 rvd;
+	u16 max_display_mastering_lum;
+	u8 rvd1[21];
+};
+
+struct tvin_sbtm_data_s {
+	u8 sbtm_ver;
+	u8 sbtm_mode;
+	u8 sbtm_type;
+	u8 grdm_min;
+	u8 grdm_lum;
+	u16 frm_pb_limit_int;
 };
 
 struct tvin_spd_data_s {
@@ -488,6 +535,27 @@ struct tvin_spd_data_s {
 struct tvin_hdr10plus_info_s {
 	bool hdr10p_on;
 	struct tvin_hdr10p_data_s hdr10p_data;
+};
+
+struct tvin_cuva_data_s {
+	u8 vsif_type;		//hb0
+	u8 visf_version;	//hb1
+	u8 payload_length;	//hb2
+	u8 check_sum;		//pb0
+	u32 ieee:24;		//pb1-3
+	u8 sys_start_code;	//pb4
+	/* pb5 */
+	u8 rsvd:2;
+	u8 transfer_char:1;
+	u8 monitor_mode_enable:1;
+	u8 version_code:4;
+	/* pb6-pb27 */
+	u8 reserved[22];
+};
+
+struct tvin_cuva_vsif_s {
+	bool cuva_on;
+	struct tvin_cuva_data_s cuva_data;
 };
 
 enum tvin_cn_type_e {
@@ -527,6 +595,7 @@ struct tvin_sig_property_s {
 	enum tvin_color_fmt_range_e color_fmt_range;
 	struct tvin_hdr_info_s hdr_info;
 	struct tvin_dv_vsif_s dv_vsif;/*dolby vsi info*/
+	struct tvin_cuva_vsif_s cuva_info; /* cuva hdr info */
 	struct tvin_dv_vsif_raw_s dv_vsif_raw;
 	u8 dolby_vision;/*is signal dolby version 1:vsif 2:emp */
 	bool low_latency;/*is low latency dolby mode*/
@@ -536,6 +605,8 @@ struct tvin_sig_property_s {
 	struct tvin_hdr10plus_info_s hdr10p_info;
 	struct tvin_emp_data_s emp_data;
 	struct tvin_vtem_data_s vtem_data;
+	struct tvin_sbtm_data_s sbtm_data;
+	struct tvin_cuva_emds_data_s cuva_emds_data;
 	struct tvin_spd_data_s spd_data;
 	unsigned int cnt;
 	unsigned int hw_vic;

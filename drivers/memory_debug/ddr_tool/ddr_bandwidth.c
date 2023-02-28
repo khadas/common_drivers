@@ -22,6 +22,11 @@
 #include "ddr_bandwidth.h"
 #include "dmc.h"
 
+#define PXP_DEBUG	0
+#if PXP_DEBUG
+static unsigned long pxp_debug_freq;
+#endif
+
 // #define DEBUG
 #define T_BUF_SIZE	(1024 * 1024 * 50)
 
@@ -168,8 +173,17 @@ static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 		}
 		return;
 	}
+#if PXP_DEBUG
+	if (pxp_debug_freq) {
+		freq = pxp_debug_freq;
+	} else {
+		if (db->ops && db->ops->get_freq)
+			freq = db->ops->get_freq(db);
+	}
+#else
 	if (db->ops && db->ops->get_freq)
 		freq = db->ops->get_freq(db);
+#endif
 	cnt  = db->clock_count;
 
 	if (freq) {
@@ -786,6 +800,34 @@ static ssize_t bandwidth_show(struct class *cla,
 }
 static CLASS_ATTR_RO(bandwidth);
 
+#if PXP_DEBUG
+static ssize_t freq_store(struct class *cla,
+				struct class_attribute *attr,
+				const char *buf, size_t count)
+{
+	unsigned int freq = 0;
+
+	if (kstrtoint(buf, 10, &freq))
+		return count;
+	pxp_debug_freq = freq;
+	return count;
+}
+
+static ssize_t freq_show(struct class *cla,
+			 struct class_attribute *attr, char *buf)
+{
+	unsigned long clk = 0;
+
+	if (pxp_debug_freq) {
+		clk = pxp_debug_freq;
+	} else {
+		if (aml_db->ops && aml_db->ops->get_freq)
+			clk = aml_db->ops->get_freq(aml_db);
+	}
+	return sprintf(buf, "%ld MHz\n", clk / 1000000);
+}
+static CLASS_ATTR_RW(freq);
+#else
 static ssize_t freq_show(struct class *cla,
 			 struct class_attribute *attr, char *buf)
 {
@@ -808,6 +850,7 @@ static ssize_t freq_show(struct class *cla,
 	return s;
 }
 static CLASS_ATTR_RO(freq);
+#endif
 
 void dmc_set_urgent(unsigned int port, unsigned int type)
 {
@@ -1161,6 +1204,7 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 #ifdef CONFIG_AMLOGIC_DDR_BANDWIDTH_T7
 	case DMC_TYPE_T7:
 	case DMC_TYPE_T3:
+	case DMC_TYPE_T3X:
 		band->ops            = &t7_ddr_bw_ops;
 		band->channels     = 8;
 		band->dmc_number   = 2;
@@ -1531,6 +1575,10 @@ static const struct of_device_id aml_ddr_bandwidth_dt_match[] = {
 	{
 		.compatible = "amlogic,ddr-bandwidth-s5",
 		.data = (void *)DMC_TYPE_S5,
+	},
+	{
+		.compatible = "amlogic,ddr-bandwidth-t3x",
+		.data = (void *)DMC_TYPE_T3X,
 	},
 #endif
 	{}

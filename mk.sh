@@ -287,7 +287,7 @@ else
 fi
 
 echo MENUCONFIG=${MENUCONFIG} BASICCONFIG=${BASICCONFIG} IMAGE=${IMAGE} MODULES=${MODULES} DTB_BUILD=${DTB_BUILD}
-if [[ -n ${MENUCONFIG} ]] || [[ -n ${BASICCONFIG} ]]; then
+if [[ -n ${MENUCONFIG} ]] || [[ -n ${BASICCONFIG} ]] || [[ ${CHECK_DEFCONFIG} -eq "1" ]]; then
 	# ${ROOT_DIR}/${BUILD_DIR}/config.sh menuconfig
 	HERMETIC_TOOLCHAIN=0
 	source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
@@ -325,6 +325,14 @@ if [[ -n ${MENUCONFIG} ]] || [[ -n ${BASICCONFIG} ]]; then
 		cat ${changed_defconfig}
 		echo "========================================================"
 		echo
+	elif [[ ${CHECK_DEFCONFIG} -eq "1" ]]; then
+		set -x
+		pre_defconfig_cmds
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${DEFCONFIG})
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
+		diff -u ${ROOT_DIR}/${GKI_BASE_CONFIG} ${OUT_DIR}/defconfig
+		post_defconfig_cmds
+		set +x
 	else
 		set -x
 		pre_defconfig_cmds

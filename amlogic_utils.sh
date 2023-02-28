@@ -42,9 +42,6 @@ function pre_defconfig_cmds() {
 export -f pre_defconfig_cmds
 
 function post_defconfig_cmds() {
-	if [[ ${CHECK_DEFCONFIG} -eq "1" ]]; then
-		check_defconfig
-	fi
 	rm ${ROOT_DIR}/${KCONFIG_DEFCONFIG}
 }
 export -f post_defconfig_cmds

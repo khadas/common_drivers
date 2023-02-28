@@ -1,0 +1,38 @@
+From b28807c72cfc83dec0813badbf7afee12bfcfb8b Mon Sep 17 00:00:00 2001
+From: "qinglin.li" <qinglin.li@amlogic.com>
+Date: Tue, 28 Feb 2023 19:06:35 +0800
+Subject: [PATCH] ZSTD: tmp not use aml zstd [1/1]
+
+PD#SWPL-113446
+
+Problem:
+arm 32 build failed due to zstd
+
+Solution:
+tmp not use aml zstd
+
+Verify:
+local
+
+Change-Id: I3f9df36b7ca398d6619f457d60c600223a4f3dc2
+Signed-off-by: qinglin.li <qinglin.li@amlogic.com>
+---
+ arch/arm/configs/amlogic_gki.debug | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/amlogic_gki.debug b/arch/arm/configs/amlogic_gki.debug
+index dafbdde7..39229955 100644
+--- a/arch/arm/configs/amlogic_gki.debug
++++ b/arch/arm/configs/amlogic_gki.debug
+@@ -16,7 +16,7 @@ CONFIG_AMLOGIC_CMA=y
+ CONFIG_AMLOGIC_MEM_DEBUG=y
+ CONFIG_AMLOGIC_STACKPROTECTOR=y
+ CONFIG_AMLOGIC_USER_FAULT=y
+-CONFIG_AMLOGIC_ZSTD=y
++CONFIG_AMLOGIC_ZSTD=n
+ CONFIG_AMLOGIC_MEMORY_OPT=y
+ CONFIG_AMLOGIC_MEMORY_STAT=y
+ CONFIG_CRYPTO_ZSTD=y
+-- 
+2.25.1
+

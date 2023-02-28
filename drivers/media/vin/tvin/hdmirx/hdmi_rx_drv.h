@@ -65,6 +65,14 @@
  */
 #define MULTI_VSIF_EXPORT_TO_EMP
 
+/*
+ * Currently, a total of 5 VSIF packages are supported,
+ * DV/HDR10+/CUVA/HDMI2.1/HDMI1.4, but only the last one can be parsed
+ * each time. The purpose of MULTI_VSIF_EXPORT_TO_EMP is to transfer the
+ * optimal VSIF packet to VDIN when multiple VSIF packets are received.
+ */
+#define MULTI_VSIF_EXPORT_TO_EMP
+
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 
 #define TIME_1MS 1000000

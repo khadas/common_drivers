@@ -2292,6 +2292,8 @@ int rx_pkt_handler(enum pkt_decode_type pkt_int_src)
 	/*u32 t1, t2;*/
 	rxpktsts.dv_pkt_num = 0;
 	rxpktsts.fifo_pkt_num = 0;
+	if (log_level & PACKET_LOG)
+		rx_pr("pkt_int_src:0x%x\n", pkt_int_src);
 	if (pkt_int_src == PKT_BUFF_SET_FIFO) {
 		/*from pkt fifo*/
 		if (!pd_fifo_buf)

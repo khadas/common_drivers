@@ -2323,20 +2323,30 @@ int rx_set_port_hpd(u8 port_id, bool val)
 				hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, 0x1);
 			hdmirx_wr_bits_top(TOP_HPD_PWR5V, _BIT(port_id), 1);
 			rx_i2c_edid_cfg_with_port(0xf, true);
+			if (port_id == rx.port)
+				hdmirx_wr_bits_top(TOP_PORT_SEL, _BIT(port_id), 1);
+			hdmirx_wr_bits_top(TOP_PORT_SEL, _BIT(4), 1);
 			rx_set_term_value(port_id, 1);
 		} else {
 			if (rx.chip_id >= CHIP_ID_T7)
 				hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, 0x0);
 			rx_i2c_edid_cfg_with_port(port_id, false);
 			hdmirx_wr_bits_top(TOP_HPD_PWR5V, _BIT(port_id), 0);
+			hdmirx_wr_bits_top(TOP_PORT_SEL, _BIT(4), 0);
+			if (port_id == rx.port)
+				hdmirx_wr_bits_top(TOP_PORT_SEL, _BIT(port_id), 0);
 			rx_set_term_value(port_id, 0);
 		}
 	} else if (port_id == ALL_PORTS) {
 		if (val) {
 			hdmirx_wr_bits_top(TOP_HPD_PWR5V, MSK(4, 0), 0xF);
+			if (port_id == rx.port)
+				hdmirx_wr_bits_top(TOP_PORT_SEL, _BIT(port_id), 1);
+			hdmirx_wr_bits_top(TOP_PORT_SEL, _BIT(4), 1);
 			rx_set_term_value(port_id, 1);
 		} else {
 			hdmirx_wr_bits_top(TOP_HPD_PWR5V, MSK(4, 0), 0x0);
+			hdmirx_wr_top(TOP_PORT_SEL, 0);
 			rx_set_term_value(port_id, 0);
 		}
 	} else {
@@ -3595,8 +3605,8 @@ void cor_init(void)
 	// audio I2S config
 	//------------------
 	data8 = 0;
-	data8 |= (5 << 4);//reg_vres_xclk_diff
-	data8 |= (0 << 0);//reg_vid_xlckpclk_en
+	data8 |= (5 << 4);//reg_vres_x_clk_diff
+	data8 |= (0 << 0);//reg_vid_xlckp_clk_en
 	hdmirx_wr_cor(VID_XPCLK_EN_AUD_IVCRX, data8);//register address: 0x1468 (0x50)
 
 	data8 = 0xc; //[5:0] reg_post_val_sw

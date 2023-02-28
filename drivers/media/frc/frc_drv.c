@@ -93,6 +93,7 @@ int frc_dbg_en;
 EXPORT_SYMBOL(frc_dbg_en);
 module_param(frc_dbg_en, int, 0664);
 MODULE_PARM_DESC(frc_dbg_en, "frc debug level");
+struct platform_device *runtime_frc_dev;
 
 struct frc_dev_s *get_frc_devp(void)
 {
@@ -256,12 +257,12 @@ static long frc_ioctl(struct file *file,
 			ret = -EFAULT;
 		break;
 
-	case FRC_IOC_SET_FRC_CADENCE:
+	case FRC_IOC_SET_FRC_CANDENCE:
 		if (copy_from_user(&data, argp, sizeof(u32))) {
 			ret = -EFAULT;
 			break;
 		}
-		pr_frc(1, "SET_FRC_CADENCE:%d\n", data);
+		pr_frc(1, "SET_FRC_CANDENCE:%d\n", data);
 		break;
 
 	case FRC_IOC_GET_VIDEO_LATENCY:
@@ -494,6 +495,28 @@ void frc_power_domain_ctrl(struct frc_dev_s *devp, u32 onoff)
 #endif
 		}
 		pr_frc(0, "t3 power domain power %d\n", onoff);
+	} else if (chip == ID_T5M) {
+		if (onoff) {
+#ifdef K_MEMC_CLK_DIS
+			pwr_ctrl_psci_smc(PDID_T5M_FRC_TOP, PWR_ON);
+#endif
+			if (!devp->buf.cma_mem_alloced)
+				frc_buf_alloc(devp);
+			devp->power_on_flag = true;
+			frc_init_config(devp);
+			frc_buf_config(devp);
+			frc_internal_initial(devp);
+			frc_hw_initial(devp);
+			if (pfw_data->frc_fw_reinit)
+				pfw_data->frc_fw_reinit();
+		} else {
+#ifdef K_MEMC_CLK_DIS
+			pwr_ctrl_psci_smc(PDID_T5M_FRC_TOP, PWR_OFF);
+
+#endif
+		}
+		pr_frc(0, "t5m power domain power %d\n", onoff);
+
 	}
 	// if (onoff)
 	//	devp->power_on_flag = true;
@@ -752,6 +775,29 @@ static const struct file_operations frc_fops = {
 #endif
 };
 
+static int runtimepm_frc_open(struct inode *inode, struct file *file)
+{
+	pm_runtime_get_sync(&runtime_frc_dev->dev);
+	return 0;
+}
+
+static int runtimepm_frc_release(struct inode *inode, struct file *file)
+{
+	pm_runtime_put_sync(&runtime_frc_dev->dev);
+	return 0;
+}
+
+static const struct file_operations runtimepm_frc_fops = {
+	.owner = THIS_MODULE,
+	.open = runtimepm_frc_open,
+	.release = runtimepm_frc_release,
+};
+
+static struct miscdevice frc_misc = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name = "runtime_frc",
+	.fops = &runtimepm_frc_fops,
+};
 static void frc_clock_workaround(struct work_struct *work)
 {
 	struct frc_dev_s *devp = container_of(work,
@@ -859,7 +905,6 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	memset(&devp->ud_dbg, 0, sizeof(struct frc_ud_s));
 	/*used for force in/out size for frc process*/
 	memset(&devp->force_size, 0, sizeof(struct frc_force_size_s));
-		;
 }
 
 void get_vout_info(struct frc_dev_s *frc_devp)
@@ -1033,6 +1078,9 @@ static int frc_probe(struct platform_device *pdev)
 
 	frc_devp->probe_ok = true;
 	frc_devp->power_off_flag = false;
+	ret = misc_register(&frc_misc);
+	runtime_frc_dev = pdev;
+	pm_runtime_forbid(&pdev->dev);
 
 	PR_FRC("%s probe st:%d", __func__, frc_devp->probe_ok);
 	return ret;
@@ -1174,7 +1222,81 @@ static int frc_resume(struct platform_device *pdev)
 
 	return 0;
 }
+
+static int frc_pm_suspend(struct device *dev)
+{
+	struct frc_dev_s *devp = NULL;
+
+	devp = get_frc_devp();
+	if (!devp)
+		return -1;
+	PR_FRC("call %s ...\n", __func__);
+	frc_power_domain_ctrl(devp, 0);
+	if (devp->power_on_flag)
+		devp->power_on_flag = false;
+
+	return 0;
+}
+
+static int frc_pm_resume(struct device *dev)
+{
+	struct frc_dev_s *devp = NULL;
+
+	devp = get_frc_devp();
+	if (!devp)
+		return -1;
+	PR_FRC("call %s ...\n", __func__);
+	frc_power_domain_ctrl(devp, 1);
+	if (!devp->power_on_flag)
+		devp->power_on_flag = true;
+
+	set_frc_bypass(ON);
+	devp->frc_sts.auto_ctrl = true;
+	devp->frc_sts.re_config = true;
+
+	return 0;
+}
+
+static int frc_runtime_suspend(struct device *dev)
+{
+	struct frc_dev_s *devp = NULL;
+
+	devp = get_frc_devp();
+	if (!devp)
+		return -1;
+	devp->frc_sts.auto_ctrl = false;
+	PR_FRC("call %s\n", __func__);
+	frc_power_domain_ctrl(devp, 0);
+	if (devp->power_on_flag)
+		devp->power_on_flag = false;
+
+	return 0;
+}
+
+static int frc_runtime_resume(struct device *dev)
+{
+	struct frc_dev_s *devp = NULL;
+
+	devp = get_frc_devp();
+	if (!devp)
+		return -1;
+	PR_FRC("call %s\n", __func__);
+	frc_power_domain_ctrl(devp, 1);
+	if (!devp->power_on_flag)
+		devp->power_on_flag = true;
+	set_frc_bypass(ON);
+	devp->frc_sts.auto_ctrl = true;
+	devp->frc_sts.re_config = true;
+
+	return 0;
+}
 #endif
+
+static const struct dev_pm_ops frc_dev_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(frc_pm_suspend, frc_pm_resume)
+	SET_RUNTIME_PM_OPS(frc_runtime_suspend, frc_runtime_resume,
+			NULL)
+};
 
 static struct platform_driver frc_driver = {
 	.probe = frc_probe,
@@ -1188,6 +1310,9 @@ static struct platform_driver frc_driver = {
 		.name = "aml_frc",
 		.owner = THIS_MODULE,
 		.of_match_table = frc_dts_match,
+		#ifdef CONFIG_PM
+		.pm = &frc_dev_pm_ops,
+		#endif
 	},
 };
 

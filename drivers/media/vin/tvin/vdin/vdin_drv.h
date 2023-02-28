@@ -364,6 +364,7 @@ enum vdin_vf_put_md {
 #define VDIN_ISR_MONITOR_AFBCE_STA	BIT(12)
 #define VDIN_ISR_MONITOR_WRITE_DONE	BIT(13)
 #define VDIN_ISR_MONITOR_HDR_SEI_DATA	BIT(14)
+#define VDIN_ISR_MONITOR_SCATTER_MEM	BIT(15)
 #define DBG_RX_UPDATE_VDIN_PROP		BIT(20)
 
 #define VDIN_DBG_CNTL_IOCTL	BIT(10)
@@ -489,12 +490,18 @@ struct vdin_vf_info {
 	long long ready_clock[3];/* ns */
 };
 
+/* debug control bits for scatter memory */
+#define DBG_SCT_CTL_DIS			(BIT(0)) /* disable sct memory */
+#define DBG_SCT_CTL_NO_FREE_TAIL	(BIT(1)) /* do not free tail */
+#define DBG_SCT_CTL_NO_FREE_WR_LIST	(BIT(2)) /* do not free vf mem in wr list */
+
 /*******for debug **********/
 struct vdin_debug_s {
 	struct tvin_cutwin_s cutwin;
 	unsigned int vdin_recycle_num;/* debug for vdin recycle frame by self */
 	unsigned int dbg_print_cntl;/* debug for vdin print control */
 	unsigned int dbg_pattern;
+	unsigned int dbg_sct_ctl;
 	unsigned short scaling4h;/* for vertical scaling */
 	unsigned short scaling4w;/* for horizontal scaling */
 	unsigned short dest_cfmt;/* for color fmt conversion */
@@ -548,6 +555,7 @@ struct vdin_afbce_s {
 	unsigned long fm_table_paddr[VDIN_CANVAS_MAX_CNT];
 	/*every body head addr*/
 	unsigned long fm_body_paddr[VDIN_CANVAS_MAX_CNT];
+	void *fm_table_vir_paddr[VDIN_CANVAS_MAX_CNT];
 };
 
 struct vdin_event_info {
@@ -615,6 +623,51 @@ struct vdin_vrr_s {
 	/* vrr_en in frame_lock_policy */
 	bool frame_lock_vrr_en;
 };
+
+/* scatter start */
+enum vdin_mem_type_e {
+	VDIN_MEM_TYPE_CONTINUOUS = 0,
+	VDIN_MEM_TYPE_SCT,
+	VDIN_MEM_TYPE_MAX
+};
+
+struct vdin_msc_stat_s {
+	unsigned int cur_page_cnt;
+
+	unsigned int curr_tt_size;
+	unsigned int max_size; /* max for one frame */
+//	unsigned int sum_max_tt_size;
+	unsigned int max_tt_size2;
+	unsigned char curr_nub;
+	unsigned char max_nub;
+	unsigned char mts_pst_ready;
+	unsigned char mts_pst_display;
+	unsigned char mts_pst_back;
+	unsigned char mts_pst_free;
+	unsigned char mts_sct_rcc;
+	unsigned char mts_sct_ready;
+	unsigned char mts_sct_used;
+};
+
+/* vdin scatter memory */
+struct vdin_msct_top_s {
+	void *box;
+	unsigned int max_buf_num;
+	unsigned int mmu_4k_number; /* mmu 4k number in full size */
+	unsigned int buffer_size_nub; /* 4k number per frame */
+	unsigned int tail_cnt;
+	bool	 sct_pause_dec; /* pause dec flag on sct mem */
+	/* statistics info*/
+	unsigned int que_work_cnt;
+	unsigned int worker_run_cnt;
+
+	struct mutex lock_ready; /* for sct ready */
+	struct vdin_msc_stat_s sct_stat[VDIN_CANVAS_MAX_CNT];
+	u64 sc_start_time;
+	struct vf_entry *vfe;
+};
+
+/* scatter end */
 
 struct vdin_dev_s {
 	struct cdev cdev;
@@ -684,7 +737,7 @@ struct vdin_dev_s {
 	unsigned int frame_size;
 	unsigned int vf_mem_max_cnt;/*real buffer number*/
 	unsigned int frame_buff_num;/*dts config data*/
-
+	unsigned int frame_buff_num_bak;/* backup */
 	unsigned int h_active;
 	unsigned int v_active;
 	unsigned int h_shrink_out;/* double write use */
@@ -881,8 +934,8 @@ struct vdin_dev_s {
 	struct v4l2_format v4l2_fmt;
 
 	struct mutex lock;/*v4l lock*/
-	struct mutex ioctrl_lock;/*vl2 ioctl lock*/
-	spinlock_t list_head_lock;  /*v4l2 list lock*/
+	//struct mutex ioctl_lock;/*vl2 io control lock*/
+	spinlock_t list_head_lock; /*v4l2 list lock*/
 	struct list_head buf_list;	/* buffer list head */
 	struct vdin_vb_buff *cur_buff;	/* vdin video frame buffer */
 	/*struct v4l2_fh fh;*/
@@ -908,6 +961,12 @@ struct vdin_dev_s {
 	struct v4l2_ext_capture_plane_prop ext_cap_plane_prop;
 	/*v4l interface ---- end*/
 
+	/* scatter start */
+	enum vdin_mem_type_e mem_type;
+	struct work_struct	sct_work;
+	struct workqueue_struct	*wq;
+	struct vdin_msct_top_s	msct_top;
+	/* scatter end */
 	unsigned int tx_fmt;
 	unsigned int vd1_fmt;
 	unsigned int dbg_force_stop_frame_num;

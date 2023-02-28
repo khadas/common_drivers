@@ -55,4 +55,3 @@ char *vb2_memory_sts_to_str(uint32_t memory);
 int vdin_v4l2_start_tvin(struct vdin_dev_s *devp);
 int vdin_v4l2_stop_tvin(struct vdin_dev_s *devp);
 #endif
-

@@ -1070,12 +1070,10 @@
 #define LFIFO_BUF_CNT_BIT               3
 #define LFIFO_BUF_CNT_WID               10   /* wren + read - */
 #define DIRECT_DONE_STATUS_BIT          2
-
-/* direct_done_clr_bit & reg_w_pluse */
+/* direct_done_clr_bit & reg_w_pulse */
 #define DIRECT_DONE_STATUS_WID          1
 #define NR_DONE_STATUS_BIT              1
-
- /* nr_done_clr_bit & reg_w_pluse */
+ /* nr_done_clr_bit & reg_w_pulse */
 #define NR_DONE_STATUS_WID              1
 #define VDIN_FLD_EVEN_BIT               0
 #define VDIN_FLD_EVEN_WID               1

@@ -194,10 +194,6 @@ static unsigned int vpu_reg_27af = 0x3;
 #define VDIN_PIXEL_CLK_4K_60HZ		530841600 //4096x2160
 #define VDIN_PIXEL_CLK_8K_60HZ		1990656000UL
 
-/*ndef VDIN_DEBUG*/
-/*#undef pr_info*/
-/*#define pr_info(fmt, ...)*/
-
 u8 *vdin_vmap(ulong addr, u32 size)
 {
 	u8 *vaddr = NULL;
@@ -2271,7 +2267,7 @@ static inline void vdin_set_wr_ctrl(struct vdin_dev_s *devp,
 	/*only for vdin0*/
 	if (devp->dts_config.urgent_en && devp->index == 0)
 		vdin_urgent_patch(offset, v, h);
-	/* dis ctrl reg w_pulse */
+	/* dis ctrl reg w pulse */
 	/*if (is_meson_g9tv_cpu() || is_meson_m8_cpu() ||
 	 *	is_meson_m8m2_cpu() || is_meson_gxbb_cpu() ||
 	 *	is_meson_m8b_cpu())
@@ -2576,6 +2572,8 @@ void vdin_set_frame_mif_write_addr(struct vdin_dev_s *devp,
 				       stride_chroma);
 		}
 	} else {
+		pr_info("%s,phy_addr_luma:%#x,stride_luma:%d\n",
+			__func__, phy_addr_luma, stride_luma);
 		wr(devp->addr_offset, VDIN_WR_BADDR_LUMA, phy_addr_luma >> 4);
 		wr(devp->addr_offset, VDIN_WR_STRIDE_LUMA, stride_luma);
 
@@ -2636,7 +2634,7 @@ void vdin_set_canvas_id(struct vdin_dev_s *devp, unsigned int rdma_enable,
 				    VDIN_WR_CTRL + devp->addr_offset,
 				    canvas_id, WR_CANVAS_BIT, WR_CANVAS_WID);
 
-		if (devp->pause_dec)
+		if (devp->pause_dec || devp->msct_top.sct_pause_dec)
 			rdma_write_reg_bits(devp->rdma_handle, VDIN_WR_CTRL + devp->addr_offset,
 					    0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
 		else
@@ -2647,7 +2645,7 @@ void vdin_set_canvas_id(struct vdin_dev_s *devp, unsigned int rdma_enable,
 		wr_bits(devp->addr_offset, VDIN_WR_CTRL, canvas_id,
 			WR_CANVAS_BIT, WR_CANVAS_WID);
 
-		if (devp->pause_dec)
+		if (devp->pause_dec || devp->msct_top.sct_pause_dec)
 			wr_bits(devp->addr_offset, VDIN_WR_CTRL, 0,
 				WR_REQ_EN_BIT, WR_REQ_EN_WID);
 		else

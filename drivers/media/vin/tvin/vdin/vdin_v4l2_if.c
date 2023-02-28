@@ -514,16 +514,10 @@ static int vdin_vidioc_querybuf(struct file *file, void *priv,
 	unsigned int ret = 0;
 	struct vb2_buffer *vb2buf = NULL;
 
-	//struct v4l2_plane *planes = NULL;
-	//dma_addr_t dma_addr = 0;
-	//unsigned int i = 0;
-
-	/*struct vb2_buffer *dst_buf = NULL;*/
-
 	if (IS_ERR_OR_NULL(devp))
 		return -EFAULT;
 
-	/*pr_ioctl("%s idx:%d\n", __func__, v4lbuf->index);*/
+	dprintk(1, "%s idx:%d\n", __func__, v4lbuf->index);
 
 	vb_que = &devp->vb_queue;
 	vb2buf = vb_que->bufs[v4lbuf->index];
@@ -594,7 +588,6 @@ static int vdin_vidioc_dqbuf(struct file *file, void *priv,
 	struct vb2_v4l2_buffer *vb = NULL;
 	struct vdin_vb_buff *vdin_buf = NULL;
 
-	/*pr_ioctl("%s\n", __func__);*/
 	ret = vb2_ioctl_dqbuf(file, priv, p);
 	if (ret) {
 		dprintk(0, "DQ error,ret=%d,%#x\n", ret, file->f_flags);
@@ -644,6 +637,8 @@ static int vdin_vidioc_streamon(struct file *file, void *priv,
 {
 	struct vdin_dev_s *devp = video_drvdata(file);
 	unsigned int ret = 0;
+
+	dprintk(2, "%s\n", __func__);
 
 	if (IS_ERR_OR_NULL(devp))
 		return -EFAULT;
@@ -822,8 +817,6 @@ static int vdin_vidioc_s_divide_fr(struct vdin_dev_s *devp,
 	devp->vdin_v4l2.divide = ctrl->value;
 	dprintk(2, "%s set divide value to %d\n",
 		__func__, devp->vdin_v4l2.divide);
-
-	/*queue io_control*/
 
 	return 0;
 }
@@ -1782,8 +1775,8 @@ static const struct v4l2_file_operations vdin_v4l2_fops = {
 	.write = vdin_v4l2_write,
 	.release = vdin_v4l2_release, /*release files resource*/
 	.poll = vdin_v4l2_poll, /*files poll interface*/
-	.mmap = vdin_v4l2_mmap, /*files memory mapp*/
-	.unlocked_ioctl = vdin_v4l2_ioctl, /*io_control op interface*/
+	.mmap = vdin_v4l2_mmap, /*files memory mmap*/
+	.unlocked_ioctl = vdin_v4l2_ioctl, /*io control op interface*/
 };
 
 static int vdin_v4l2_queue_init(struct vdin_dev_s *devp,

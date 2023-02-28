@@ -90,12 +90,12 @@
 #define CTL_DEBUG_EVENT_DISP_MODE	(BIT(5))
 #define CTL_DEBUG_EVENT_NO_COMP		(BIT(6))
 #define CTL_DEBUG_LUMA_MAX		(BIT(8))
+/* cma_config_flag */
+#define MEM_ALLOC_CODEC_SCT		(BIT(16))
+#define MEM_ALLOC_DISCRETE		(BIT(8))
+#define MEM_ALLOC_FROM_CODEC		(BIT(0))
 
 #define VDIN_ADDRESS_DBG		BIT(0)
-
-#define MEM_ALLOC_DISCRETE	(BIT(8))
-#define MEM_ALLOC_FROM_CODEC	(BIT(0))
-
 #define VDIN_DBG_PRINT_CNT		20
 
 /* 8 is filter the abnormal frame rate diff */
@@ -241,7 +241,6 @@ void vdin_set_cm2(unsigned int offset, unsigned int w,
 		  unsigned int h, unsigned int *data);
 void vdin_bypass_isp(unsigned int offset);
 void vdin_set_mpegin(struct vdin_dev_s *devp);
-
 void vdin_force_go_filed(struct vdin_dev_s *devp);
 void vdin_adjust_tvafe_snow_brightness(void);
 void vdin_set_config(struct vdin_dev_s *devp);
@@ -351,3 +350,4 @@ void vdin_sw_reset(struct vdin_dev_s *devp);
 void vdin_bist(struct vdin_dev_s *devp, unsigned int mode);
 unsigned int vdin_calculate_common_divisor(unsigned int x, unsigned int y);
 #endif
+

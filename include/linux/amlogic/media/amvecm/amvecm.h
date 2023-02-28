@@ -267,7 +267,7 @@ void amdv_set_toggle_flag(int flag);
 #define AMVECM_IOC_S_GAMUT_CONV_EN		_IOW(_VE_CM, 0x7f, enum gamut_conv_enable_e)
 
 struct tcon_gamma_table_s {
-	u16 data[256];
+	u16 data[257];
 } /*tcon_gamma_table_t */;
 
 struct tcon_rgb_ogo_s {
@@ -895,7 +895,7 @@ int cm_force_update_flag(void);
 int get_lum_ave(void);
 
 enum demo_module_e {
-	E_DEMO_SR = 0,/*SHARPNESS/DEJEGGAY/DNLP/LC*/
+	E_DEMO_SR = 0,/*SHARPNESS/DEJAGGY/DNLP/LC*/
 	E_DEMO_CM,
 	E_DEMO_LC,
 	E_DEMO_MAX

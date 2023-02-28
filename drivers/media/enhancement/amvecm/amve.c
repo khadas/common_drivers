@@ -539,24 +539,31 @@ void vpp_get_lcd_gamma_table(u32 rgb_mask)
 	if (cpu_after_eq_t7()) {
 		if (chip_type_id == chip_t5m) {
 			p_gm = get_gm_data();
-			lcd_gamma_api(gamma_index, p_gm->dbg_gm_tbl.gamma_r,
-				p_gm->dbg_gm_tbl.gamma_g, p_gm->dbg_gm_tbl.gamma_b,
+			lcd_gamma_api(gamma_index,
+				p_gm->dbg_gm_tbl.gamma_r,
+				p_gm->dbg_gm_tbl.gamma_g,
+				p_gm->dbg_gm_tbl.gamma_b,
 				WR_VCB, RD_MOD);
 		} else {
-			lcd_gamma_api(gamma_index, gamma_data_r,
-				gamma_data_g, gamma_data_b, WR_VCB, RD_MOD);
+			lcd_gamma_api(gamma_index,
+				gamma_data_r,
+				gamma_data_g,
+				gamma_data_b,
+				WR_VCB, RD_MOD);
 		}
 		return;
 	}
 
 	if (!(READ_VPP_REG(ENCL_VIDEO_EN) & 0x1))
 		return;
+
 	pr_info("read gamma begin\n");
 	while (!(READ_VPP_REG(L_GAMMA_CNTL_PORT) & (0x1 << ADR_RDY))) {
 		udelay(10);
 		if (cnt++ > GAMMA_RETRY)
 			break;
 	}
+
 	cnt = 0;
 	for (i = 0; i < 256; i++) {
 		cnt = 0;
@@ -587,6 +594,7 @@ void vpp_get_lcd_gamma_table(u32 rgb_mask)
 		else if (rgb_mask == H_SEL_B)
 			gamma_data_b[i] = READ_VPP_REG(L_GAMMA_DATA_PORT);
 	}
+
 	WRITE_VPP_REG(L_GAMMA_ADDR_PORT, (0x1 << H_AUTO_INC) |
 				    (0x1 << rgb_mask)   |
 				    (0x23 << HADR));
@@ -1094,6 +1102,15 @@ void ve_lcd_gamma_process(void)
 		if (cpu_after_eq_t7()) {
 			if (chip_type_id == chip_t5m) {
 				p_gm = get_gm_data();
+				memcpy(p_gm->gm_tbl.gamma_r,
+					video_gamma_table_r.data,
+					sizeof(u16) * p_gm->max_idx);
+				memcpy(p_gm->gm_tbl.gamma_g,
+					video_gamma_table_g.data,
+					sizeof(u16) * p_gm->max_idx);
+				memcpy(p_gm->gm_tbl.gamma_b,
+					video_gamma_table_b.data,
+					sizeof(u16) * p_gm->max_idx);
 				lcd_gamma_api(gamma_index, p_gm->gm_tbl.gamma_r,
 						p_gm->gm_tbl.gamma_g,
 						p_gm->gm_tbl.gamma_b,

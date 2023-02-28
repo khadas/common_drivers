@@ -14286,10 +14286,8 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 	if (osd_dev_hw.display_type == C3_DISPLAY)
 		irq_clr_c3();
 
-	if (osd_hw.osd_meson_dev.has_rdma) {
-		osd_flag_regs_init();
-		recovery_regs_init();
-	}
+	osd_flag_regs_init();
+	recovery_regs_init();
 
 	/* set osd vpp rdma func */
 	set_rdma_func_handler();

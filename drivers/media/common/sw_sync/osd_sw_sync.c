@@ -310,4 +310,3 @@ int aml_sync_fence_status(struct dma_fence *fence)
 {
 	return dma_fence_get_status(fence);
 }
-

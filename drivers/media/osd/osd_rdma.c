@@ -378,13 +378,13 @@ static int get_rdma_stat(struct rdma_warn_array *warn_array,
 
 int get_rdma_recovery_stat(u32 vpp_index)
 {
-	pr_info("%s:\n", __func__);
+	pr_info("%s %d:\n", __func__, __LINE__);
 	return get_rdma_stat(recovery_table, vpp_index);
 }
 
 int get_rdma_not_hit_recovery_stat(u32 vpp_index)
 {
-	pr_info("%s:\n", __func__);
+	pr_info("%s: %d\n", __func__, __LINE__);
 	return get_rdma_stat(recovery_not_hit_table, vpp_index);
 }
 

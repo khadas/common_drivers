@@ -1592,6 +1592,8 @@
 					"clkin0", "clkin1";
 			card_type = <5>;
 			use_intf3_tuning;
+			ignore_desc_busy;
+			sdr_core_phase = <1>;
 			mmc_debug_flag;
 			no-mmc;
 			no-sdio;

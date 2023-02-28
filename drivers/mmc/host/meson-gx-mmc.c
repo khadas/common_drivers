@@ -125,6 +125,15 @@ int amlogic_of_parse(struct mmc_host *host)
 	if (device_property_read_u32(dev, "src_clk_rate",
 			&mmc->src_clk_rate) < 0)
 		mmc->src_clk_rate = 1000000000;
+	if (device_property_read_u32(dev, "sdr_tx_delay",
+			&mmc->sd_mmc.sdr.tx_delay) < 0)
+		mmc->sd_mmc.sdr.tx_delay = 0;
+	if (device_property_read_u32(dev, "sdr_core_phase",
+			&mmc->sd_mmc.sdr.core_phase) < 0)
+		mmc->sd_mmc.sdr.core_phase = 2;
+	if (device_property_read_u32(dev, "sdr_tx_phase",
+			&mmc->sd_mmc.sdr.tx_phase) < 0)
+		mmc->sd_mmc.sdr.tx_phase = 0;
 
 	if (device_property_read_bool(dev, "ignore_desc_busy"))
 		mmc->ignore_desc_busy = true;
@@ -1338,9 +1347,13 @@ static void meson_mmc_check_resampling(struct meson_host *host,
 		writel(val, host->regs + SD_EMMC_V3_ADJUST);
 		mmc_phase_set = &host->sd_mmc.init;
 		break;
+	case MMC_TIMING_UHS_SDR12:
+	case MMC_TIMING_UHS_SDR25:
+	case MMC_TIMING_UHS_SDR50:
 	case MMC_TIMING_UHS_SDR104:
-		sdio_get_device();
-		mmc_phase_set = &host->sd_mmc.init;
+		if (aml_card_type_sdio(host))
+			sdio_get_device();
+		mmc_phase_set = &host->sd_mmc.sdr;
 		break;
 	default:
 		mmc_phase_set = &host->sd_mmc.init;

@@ -61,7 +61,10 @@ static unsigned int get_fclk_div_freq(unsigned int mux_id)
 		fclk_div = vpu_conf.data->fclk_div_table + i;
 		if (fclk_div->fclk_id == mux_id) {
 			div = fclk_div->fclk_div;
-			clk_source = fclk / div;
+			if (div >= 10)
+				clk_source = fclk * 10 / div;
+			else
+				clk_source = fclk / div;
 			break;
 		}
 		if (fclk_div->fclk_id == FCLK_DIV_MAX)
@@ -111,6 +114,7 @@ unsigned int vpu_clk_get(void)
 		case FCLK_DIV3:
 		case FCLK_DIV5:
 		case FCLK_DIV7:
+		case FCLK_DIV2P5:
 			clk_source = get_fclk_div_freq(mux_id);
 			break;
 		case GPLL_CLK:

@@ -2819,7 +2819,7 @@ static struct clk_regmap t3x_vpu = {
 			&t3x_vpu_1.hw
 		},
 		.num_parents = 2,
-		.flags = CLK_SET_RATE_NO_REPARENT,
+		.flags = CLK_SET_RATE_NO_REPARENT | CLK_IGNORE_UNUSED,
 	},
 };
 

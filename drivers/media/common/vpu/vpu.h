@@ -25,6 +25,7 @@ enum vpu_chip_e {
 	VPU_CHIP_G12B,
 	VPU_CHIP_SM1,
 	VPU_CHIP_S5,
+	VPU_CHIP_T3X,
 	VPU_CHIP_MAX,
 };
 
@@ -50,11 +51,17 @@ enum vpu_chip_e {
 #define PM_VI_CLK2_T3           11
 #define PM_NOC_VPU_T3           21
 
+#define PM_VI_CLK1_T3X          10
+#define PM_VI_CLK2_T3X          11
+#define PM_VPU_DOLBY_T3X        12
+#define PM_VPU_HDMI_T3X         13
+
 enum vpu_mux_e {
 	FCLK_DIV4 = 0,
 	FCLK_DIV3,
 	FCLK_DIV5,
 	FCLK_DIV7,
+	FCLK_DIV2P5,
 	MPLL_CLK1,
 	VID_PLL_CLK,
 	VID2_PLL_CLK,

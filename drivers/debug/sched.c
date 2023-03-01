@@ -133,6 +133,7 @@ static void aml_select_rt_nice(void *data, struct task_struct *p,
 
 	rcu_read_lock();
 	rq = cpu_rq(prev_cpu);
+	/* coverity[overrun-local] prev_cpu is safe */
 	curr = READ_ONCE(rq->curr);
 	this_cpu = smp_processor_id();
 	this_cpu_rq = cpu_rq(this_cpu);
@@ -173,6 +174,7 @@ static void aml_select_rt_nice(void *data, struct task_struct *p,
 		goto out_unlock;
 
 	for_each_cpu(tmp_cpu, p->cpus_ptr) {
+		/* coverity[overrun-local] for_each_cpu() is safe */
 		struct task_struct *task = READ_ONCE(cpu_rq(tmp_cpu)->curr);
 
 		if (task && task->pid == 0) {
@@ -187,7 +189,7 @@ static void aml_select_rt_nice(void *data, struct task_struct *p,
 		}
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
-		if (task->se.depth == 1 &&
+		if (task && task->se.depth == 1 &&
 		    task->se.parent->my_q->tg->shares < sched_big_weight * NICE_0_LOAD) {
 			if (sched_rt_nice_debug)
 				aml_trace_printk("wake:%s/%d curr:%s/%d prio=%d util=%lu rtime=%lu low_share_group_cpu:%d\n",
@@ -287,7 +289,7 @@ void set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se);
 #define __node_2_se(node) \
 	rb_entry((node), struct sched_entity, run_node)
 
-struct sched_entity *__pick_first_entity(struct cfs_rq *cfs_rq)
+static struct sched_entity *___pick_first_entity(struct cfs_rq *cfs_rq)
 {
 	struct rb_node *left = rb_first_cached(&cfs_rq->tasks_timeline);
 
@@ -359,7 +361,7 @@ static struct sched_entity *__aml_pick_next_task(struct cfs_rq *cfs_rq, unsigned
 	*score = 0;
 	ret = NULL;
 
-	se = __pick_first_entity(cfs_rq);
+	se = ___pick_first_entity(cfs_rq);
 
 	while (se) {
 		if (!entity_is_task(se))
@@ -413,7 +415,7 @@ static void aml_pick_next_task(void *data, struct rq *rq, struct task_struct **p
 			ignore_wait = 1;
 	}
 
-	se = __pick_first_entity(&rq->cfs);
+	se = ___pick_first_entity(&rq->cfs);
 
 	while (se) {
 		if (!entity_is_task(se) && se->my_q->tg->shares >= sched_big_weight * NICE_0_LOAD) {
@@ -535,7 +537,7 @@ static void aml_check_preempt_tick(void *data, struct task_struct *p, unsigned l
 	}
 
 	//if any long_wait big group task exsit
-	se = __pick_first_entity(cfs_rq);
+	se = ___pick_first_entity(cfs_rq);
 
 	while (se) {
 		if (!entity_is_task(se) && se->my_q->tg->shares >= sched_big_weight * NICE_0_LOAD) {

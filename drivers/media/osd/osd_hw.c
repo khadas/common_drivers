@@ -1839,6 +1839,20 @@ static void osd_vpu_power_on_viu2(void)
 #endif
 }
 
+u32 to_osd_hw_index(u32 osd_index)
+{
+	u32 index = osd_index;
+
+	/* for s5_display, only OSD1 + OSD3.
+	 * osd_index 0 -> HW OSD1
+	 * osd_index 1 -> HW OSD3
+	 */
+	if (osd_dev_hw.s5_display && osd_index == 1)
+		index = OSD3;
+
+	return index;
+}
+
 /* validate if osdx is routed to vpp_topx */
 static int validate_osd(u32 osd_index, u32 viu_index)
 {

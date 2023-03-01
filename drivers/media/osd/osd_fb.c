@@ -4062,6 +4062,7 @@ static int osd_pm_resume(struct device *dev)
 }
 #endif
 
+#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
 #ifdef CONFIG_64BIT
 static void free_reserved_highmem(unsigned long start, unsigned long end)
 {
@@ -4106,6 +4107,7 @@ static void free_reserved_mem(unsigned long start, unsigned long size)
 		}
 	}
 }
+#endif
 
 static void mem_free_work(struct work_struct *work)
 {

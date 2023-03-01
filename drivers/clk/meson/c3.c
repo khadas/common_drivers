@@ -846,7 +846,6 @@ static const struct reg_sequence c3_mclk_init_regs[] = {
 	{ .reg = ANACTRL_MPLL_CTRL1,	.def = 0x1420500f },
 	{ .reg = ANACTRL_MPLL_CTRL2,	.def = 0x00023041 },
 	{ .reg = ANACTRL_MPLL_CTRL3,	.def = 0x18180000 },
-	{ .reg = ANACTRL_MPLL_CTRL4,	.def = 0x00101206 },
 	{ .reg = ANACTRL_MPLL_CTRL0,	.def = 0x10011063 },
 	{ .reg = ANACTRL_MPLL_CTRL2,	.def = 0x00023001 },
 };
@@ -910,7 +909,8 @@ static struct clk_regmap c3_mclk_pll = {
 		.offset = ANACTRL_MPLL_CTRL0,
 		.shift = 12,
 		.width = 3,
-		.flags = CLK_DIVIDER_POWER_OF_TWO | CLK_DIVIDER_ROUND_CLOSEST,
+		.flags = CLK_DIVIDER_POWER_OF_TWO | CLK_DIVIDER_ROUND_CLOSEST |
+			 CLK_DIVIDER_ALLOW_ZERO,
 	},
 #endif  /* CONFIG_ARM */
 	.hw.init = &(struct clk_init_data){
@@ -933,7 +933,8 @@ static struct clk_regmap c3_mclk_pll_clk = {
 		.offset = ANACTRL_MPLL_CTRL4,
 		.shift = 16,
 		.width = 5,
-		.flags = CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ROUND_CLOSEST,
+		.flags = CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ROUND_CLOSEST |
+			 CLK_DIVIDER_ALLOW_ZERO,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "mclk_pll_clk",
@@ -963,7 +964,7 @@ static struct clk_regmap c3_mclk_0_sel = {
 		.ops = &clk_regmap_mux_ops,
 		.parent_data = mclk_clk_parent_names,
 		.num_parents = ARRAY_SIZE(mclk_clk_parent_names),
-		.flags = CLK_GET_RATE_NOCACHE,
+		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -1028,7 +1029,7 @@ static struct clk_regmap c3_mclk_1_sel = {
 		.ops = &clk_regmap_mux_ops,
 		.parent_data = mclk_clk_parent_names,
 		.num_parents = ARRAY_SIZE(mclk_clk_parent_names),
-		.flags = CLK_GET_RATE_NOCACHE,
+		.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
 	},
 };
 

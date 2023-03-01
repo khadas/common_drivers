@@ -32,6 +32,7 @@ enum rdma_ver_e {
 	RDMA_VER_2,
 	RDMA_VER_3,
 	RDMA_VER_4,
+	RDMA_VER_5
 };
 
 enum cpu_ver_e {
@@ -47,6 +48,7 @@ struct rdma_device_data_s {
 	enum cpu_ver_e cpu_type;
 	enum rdma_ver_e rdma_ver;
 	u32 trigger_mask_len;
+	u32 channel_num;
 };
 
 u32 is_meson_g12b_revb(void);
@@ -79,4 +81,13 @@ u32 *rdma_get_read_back_addr(int handle);
 
 int rdma_buffer_unlock(int handle);
 int rdma_buffer_lock(int handle);
+
+int rdma_start_addr(int handle);
+
+int rdma_start_addr_msb(int handle);
+
+int rdma_end_addr(int handle);
+
+int rdma_end_addr_msb(int handle);
+
 #endif

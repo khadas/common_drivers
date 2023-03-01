@@ -2281,8 +2281,8 @@
 	};
 
 	rdma{
-		compatible = "amlogic, meson-t3, rdma";
-		status = "disabled";
+		compatible = "amlogic, meson-t3x, rdma";
+		status = "okay";
 		interrupts = <GIC_SPI 102 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "rdma";
 		/* after sc2 */

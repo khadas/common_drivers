@@ -63,7 +63,7 @@ static int reset_count;
 static int rdma_watchdog_count;
 static int rdma_force_reset = -1;
 
-#define RDMA_NUM        8
+#define RDMA_NUM        16
 #define RDMA_TABLE_SIZE (8 * (PAGE_SIZE))
 #define MAX_TRACE_NUM  16
 #define RDMA_MGR_CLASS_NAME  "rdma_mgr"
@@ -71,6 +71,12 @@ static int rdma_trace_num;
 static int rdma_trace_enable;
 static u32 rdma_trace_reg[MAX_TRACE_NUM];
 static int rdma_table_size = RDMA_TABLE_SIZE;
+
+struct rdma_irq_reg_s {
+	u32 reg;
+	u32 start;
+	u32 len;
+};
 
 struct rdma_regadr_s {
 	u32 rdma_ahb_start_addr;
@@ -123,6 +129,10 @@ struct rdma_device_info {
 };
 
 static struct rdma_device_data_s rdma_meson_dev;
+static struct rdma_irq_reg_s irq_status;
+static int rdma_ctrl;
+static int rdma_access_man;
+int rdma_status_reg;
 static int support_64bit_addr;
 static DEFINE_SPINLOCK(rdma_lock);
 
@@ -130,7 +140,7 @@ static struct rdma_device_info rdma_info;
 #ifdef CONFIG_AMLOGIC_VPU
 static struct vpu_dev_s *rdma_vpu_dev;
 #endif
-static struct rdma_regadr_s rdma_regadr[RDMA_NUM] = {
+static struct rdma_regadr_s rdma_regadr[] = {
 	{RDMA_AHB_START_ADDR_MAN,
 		0,
 		RDMA_AHB_END_ADDR_MAN,
@@ -205,7 +215,7 @@ static struct rdma_regadr_s rdma_regadr[RDMA_NUM] = {
 	}
 };
 
-static struct rdma_regadr_s rdma_regadr_tl1[RDMA_NUM] = {
+static struct rdma_regadr_s rdma_regadr_tl1[] = {
 	{RDMA_AHB_START_ADDR_MAN,
 		0,
 		RDMA_AHB_END_ADDR_MAN,
@@ -280,7 +290,7 @@ static struct rdma_regadr_s rdma_regadr_tl1[RDMA_NUM] = {
 	}
 };
 
-static struct rdma_regadr_s rdma_regadr_t7[RDMA_NUM] = {
+static struct rdma_regadr_s rdma_regadr_t7[] = {
 	{RDMA_AHB_START_ADDR_MAN,
 		RDMA_AHB_START_ADDR_MAN_MSB,
 		RDMA_AHB_END_ADDR_MAN,
@@ -355,6 +365,153 @@ static struct rdma_regadr_s rdma_regadr_t7[RDMA_NUM] = {
 	}
 };
 
+static struct rdma_regadr_s rdma_regadr_t3x[] = {
+	{T3X_RDMA_AHB_START_ADDR_MAN,
+		T3X_RDMA_AHB_START_ADDR_MAN_MSB,
+		T3X_RDMA_AHB_END_ADDR_MAN,
+		T3X_RDMA_AHB_END_ADDR_MAN_MSB,
+		0, 0,
+		T3X_RDMA_ACCESS_MAN, 1,
+		T3X_RDMA_ACCESS_MAN, 2,
+		16, 4
+	},
+	{T3X_RDMA_AHB_START_ADDR_1,
+		T3X_RDMA_AHB_START_ADDR_1_MSB,
+		T3X_RDMA_AHB_END_ADDR_1,
+		T3X_RDMA_AHB_END_ADDR_1_MSB,
+		T3X_RDMA_AUTO_SRC1_SEL,  0,
+		T3X_RDMA_ACCESS_AUTO,  1,
+		T3X_RDMA_ACCESS_AUTO,  5,
+		17, 5
+	},
+	{T3X_RDMA_AHB_START_ADDR_2,
+		T3X_RDMA_AHB_START_ADDR_2_MSB,
+		T3X_RDMA_AHB_END_ADDR_2,
+		T3X_RDMA_AHB_END_ADDR_2_MSB,
+		T3X_RDMA_AUTO_SRC2_SEL,  0,
+		T3X_RDMA_ACCESS_AUTO,  2,
+		T3X_RDMA_ACCESS_AUTO,  6,
+		18, 6
+	},
+	{T3X_RDMA_AHB_START_ADDR_3,
+		T3X_RDMA_AHB_START_ADDR_3_MSB,
+		T3X_RDMA_AHB_END_ADDR_3,
+		T3X_RDMA_AHB_END_ADDR_3_MSB,
+		T3X_RDMA_AUTO_SRC3_SEL,  0,
+		T3X_RDMA_ACCESS_AUTO,  3,
+		T3X_RDMA_ACCESS_AUTO,  7,
+		19, 7
+	},
+	{T3X_RDMA_AHB_START_ADDR_4,
+		T3X_RDMA_AHB_START_ADDR_4_MSB,
+		T3X_RDMA_AHB_END_ADDR_4,
+		T3X_RDMA_AHB_END_ADDR_4_MSB,
+		T3X_RDMA_AUTO_SRC4_SEL, 0,
+		T3X_RDMA_ACCESS_AUTO2, 0,
+		T3X_RDMA_ACCESS_AUTO2, 4,
+		20, 8
+	},
+	{T3X_RDMA_AHB_START_ADDR_5,
+		T3X_RDMA_AHB_START_ADDR_5_MSB,
+		T3X_RDMA_AHB_END_ADDR_5,
+		T3X_RDMA_AHB_END_ADDR_5_MSB,
+		T3X_RDMA_AUTO_SRC5_SEL, 0,
+		T3X_RDMA_ACCESS_AUTO2, 1,
+		T3X_RDMA_ACCESS_AUTO2, 5,
+		21, 9
+	},
+	{T3X_RDMA_AHB_START_ADDR_6,
+		T3X_RDMA_AHB_START_ADDR_6_MSB,
+		T3X_RDMA_AHB_END_ADDR_6,
+		T3X_RDMA_AHB_END_ADDR_6_MSB,
+		T3X_RDMA_AUTO_SRC6_SEL, 0,
+		T3X_RDMA_ACCESS_AUTO2, 2,
+		T3X_RDMA_ACCESS_AUTO2, 6,
+		22, 10
+	},
+	{T3X_RDMA_AHB_START_ADDR_7,
+		T3X_RDMA_AHB_START_ADDR_7_MSB,
+		T3X_RDMA_AHB_END_ADDR_7,
+		T3X_RDMA_AHB_END_ADDR_7_MSB,
+		T3X_RDMA_AUTO_SRC7_SEL, 0,
+		T3X_RDMA_ACCESS_AUTO2, 3,
+		T3X_RDMA_ACCESS_AUTO2, 7,
+		23, 11
+	},
+	{T3X_RDMA_AHB_START_ADDR_8,
+		T3X_RDMA_AHB_START_ADDR_8_MSB,
+		T3X_RDMA_AHB_END_ADDR_8,
+		T3X_RDMA_AHB_END_ADDR_8_MSB,
+		T3X_RDMA_AUTO_SRC8_SEL, 0,
+		T3X_RDMA_ACCESS_AUTO3, 0,
+		T3X_RDMA_ACCESS_AUTO3, 8,
+		24, 12
+	},
+	{T3X_RDMA_AHB_START_ADDR_9,
+		T3X_RDMA_AHB_START_ADDR_9_MSB,
+		T3X_RDMA_AHB_END_ADDR_9,
+		T3X_RDMA_AHB_END_ADDR_9_MSB,
+		T3X_RDMA_AUTO_SRC9_SEL,  0,
+		T3X_RDMA_ACCESS_AUTO3,  1,
+		T3X_RDMA_ACCESS_AUTO3,  9,
+		25, 13
+	},
+	{T3X_RDMA_AHB_START_ADDR_10,
+		T3X_RDMA_AHB_START_ADDR_10_MSB,
+		T3X_RDMA_AHB_END_ADDR_10,
+		T3X_RDMA_AHB_END_ADDR_10_MSB,
+		T3X_RDMA_AUTO_SRC10_SEL,  0,
+		T3X_RDMA_ACCESS_AUTO3,  2,
+		T3X_RDMA_ACCESS_AUTO3,  10,
+		26, 14
+	},
+	{T3X_RDMA_AHB_START_ADDR_11,
+		T3X_RDMA_AHB_START_ADDR_11_MSB,
+		T3X_RDMA_AHB_END_ADDR_11,
+		T3X_RDMA_AHB_END_ADDR_11_MSB,
+		T3X_RDMA_AUTO_SRC11_SEL,  0,
+		T3X_RDMA_ACCESS_AUTO3,  3,
+		T3X_RDMA_ACCESS_AUTO3,  11,
+		27, 15
+	},
+	{T3X_RDMA_AHB_START_ADDR_12,
+		T3X_RDMA_AHB_START_ADDR_12_MSB,
+		T3X_RDMA_AHB_END_ADDR_12,
+		T3X_RDMA_AHB_END_ADDR_12_MSB,
+		T3X_RDMA_AUTO_SRC12_SEL, 0,
+		T3X_RDMA_ACCESS_AUTO3, 4,
+		T3X_RDMA_ACCESS_AUTO3, 12,
+		28, 16
+	},
+	{T3X_RDMA_AHB_START_ADDR_13,
+		T3X_RDMA_AHB_START_ADDR_13_MSB,
+		T3X_RDMA_AHB_END_ADDR_13,
+		T3X_RDMA_AHB_END_ADDR_13_MSB,
+		T3X_RDMA_AUTO_SRC13_SEL, 0,
+		T3X_RDMA_ACCESS_AUTO3, 5,
+		T3X_RDMA_ACCESS_AUTO3, 13,
+		29, 17
+	},
+	{T3X_RDMA_AHB_START_ADDR_14,
+		T3X_RDMA_AHB_START_ADDR_14_MSB,
+		T3X_RDMA_AHB_END_ADDR_14,
+		T3X_RDMA_AHB_END_ADDR_14_MSB,
+		T3X_RDMA_AUTO_SRC14_SEL, 0,
+		T3X_RDMA_ACCESS_AUTO3, 6,
+		T3X_RDMA_ACCESS_AUTO3, 14,
+		30, 18
+	},
+	{T3X_RDMA_AHB_START_ADDR_15,
+		T3X_RDMA_AHB_START_ADDR_15_MSB,
+		T3X_RDMA_AHB_END_ADDR_15,
+		T3X_RDMA_AHB_END_ADDR_15_MSB,
+		T3X_RDMA_AUTO_SRC15_SEL, 0,
+		T3X_RDMA_ACCESS_AUTO3, 7,
+		T3X_RDMA_ACCESS_AUTO3, 15,
+		31, 19
+	}
+};
+
 int rdma_register(struct rdma_op_s *rdma_op, void *op_arg, int table_size)
 {
 	int i;
@@ -363,7 +520,7 @@ int rdma_register(struct rdma_op_s *rdma_op, void *op_arg, int table_size)
 	dma_addr_t dma_handle;
 
 	spin_lock_irqsave(&rdma_lock, flags);
-	for (i = 1; i < RDMA_NUM; i++) {
+	for (i = 1; i < rdma_meson_dev.channel_num; i++) {
 		/* 0 is reserved for RDMA MANUAL */
 		if (!info->rdma_ins[i].op &&
 		    info->rdma_ins[i].used == 0) {
@@ -375,7 +532,7 @@ int rdma_register(struct rdma_op_s *rdma_op, void *op_arg, int table_size)
 		}
 	}
 	spin_unlock_irqrestore(&rdma_lock, flags);
-	if (i < RDMA_NUM) {
+	if (i < rdma_meson_dev.channel_num) {
 		info->rdma_ins[i].not_process = 0;
 		info->rdma_ins[i].op_arg = op_arg;
 		info->rdma_ins[i].rdma_item_count = 0;
@@ -436,7 +593,7 @@ void rdma_unregister(int i)
 	struct rdma_device_info *info = &rdma_info;
 
 	pr_info("%s(%d)\r\n", __func__, i);
-	if (i > 0 && i < RDMA_NUM && info->rdma_ins[i].op) {
+	if (i > 0 && i < rdma_meson_dev.channel_num && info->rdma_ins[i].op) {
 		/*rdma_clear(i);*/
 		info->rdma_ins[i].op_arg = NULL;
 		if (!info->rdma_ins[i].keep_buf) {
@@ -473,10 +630,10 @@ static void rdma_reset(unsigned char external_reset)
 				(RESET4_REGISTER,
 				(1 << 5));
 	} else {
-		WRITE_VCBUS_REG(RDMA_CTRL, (0x1 << 1));
-		WRITE_VCBUS_REG(RDMA_CTRL, (0x1 << 1));
+		WRITE_VCBUS_REG(rdma_ctrl, (0x1 << 1));
+		WRITE_VCBUS_REG(rdma_ctrl, (0x1 << 1));
 		WRITE_VCBUS_REG
-		(RDMA_CTRL,
+		(rdma_ctrl,
 		 (ctrl_ahb_wr_burst_size << 4) |
 		 (ctrl_ahb_rd_burst_size << 2) |
 		 (0x0 << 1));
@@ -489,7 +646,7 @@ irqreturn_t rdma_mgr_isr(int irq, void *dev_id)
 {
 	struct rdma_device_info *info = &rdma_info;
 	int retry_count = 0;
-	u32 rdma_status;
+	u32 rdma_status, mask;
 	int i;
 	u32 read_val;
 
@@ -498,15 +655,15 @@ irqreturn_t rdma_mgr_isr(int irq, void *dev_id)
 	rdma_isr_count++;
 QUERY:
 	retry_count++;
-	rdma_status = READ_VCBUS_REG(RDMA_STATUS);
+	rdma_status = READ_VCBUS_REG(irq_status.reg);
 	if ((debug_flag & 4) && ((rdma_isr_count % 30) == 0))
 		pr_info("%s: %x\r\n", __func__, rdma_status);
-	for (i = 0; i < RDMA_NUM; i++) {
+	for (i = 0; i < rdma_meson_dev.channel_num; i++) {
 		struct rdma_instance_s *ins = &info->rdma_ins[i];
 
 		if (ins->not_process)
 			continue;
-		if (!(rdma_status & (1 << (i + 24))))
+		if (!(rdma_status & (1 << (i + irq_status.start))))
 			continue;
 		/*bypass osd rdma done case */
 #ifdef SKIP_OSD_CHANNEL
@@ -523,16 +680,17 @@ QUERY:
 			}
 
 			WRITE_VCBUS_REG
-				(RDMA_CTRL,
+				(rdma_ctrl,
 				(1 << ins->rdma_regadr->clear_irq_bitpos));
 		}
 	}
-	rdma_status = READ_VCBUS_REG(RDMA_STATUS);
+	rdma_status = READ_VCBUS_REG(irq_status.reg);
 #ifdef SKIP_OSD_CHANNEL
 	if ((rdma_status & 0xf7000000) && retry_count < 100)
 		goto QUERY;
 #else
-	if ((rdma_status & 0xff000000) && retry_count < 100) {
+	mask = ((1L << irq_status.len) - 1) << irq_status.start;
+	if ((rdma_status & mask) && retry_count < 100) {
 		if (retry_count >= 3)
 			pr_info("rdma_status=0x%x, retry_count=%d\n",
 				rdma_status, retry_count);
@@ -573,7 +731,7 @@ int rdma_config(int handle, u32 trigger_type)
 	int buffer_lock = 0;
 	int trigger_type_backup = trigger_type;
 
-	if (handle <= 0 || handle >= RDMA_NUM) {
+	if (handle <= 0 || handle >= rdma_meson_dev.channel_num) {
 		pr_info
 		("%s error, (handle == %d) not allowed\n",
 		 __func__, handle);
@@ -631,8 +789,8 @@ int rdma_config(int handle, u32 trigger_type)
 		buffer_lock == 1) {
 		if (trigger_type == RDMA_TRIGGER_MANUAL)
 			WRITE_VCBUS_REG
-			(RDMA_ACCESS_MAN,
-			 READ_VCBUS_REG(RDMA_ACCESS_MAN) & (~1));
+			(rdma_access_man,
+			 READ_VCBUS_REG(rdma_access_man) & (~1));
 		if (debug_flag & 2) {
 			pr_info("%s: handle=%d trigger_type %d : %d buffer_lock:%d\r\n",
 				__func__,
@@ -665,8 +823,8 @@ int rdma_config(int handle, u32 trigger_type)
 					&info->rdma_ins[0];
 
 				WRITE_VCBUS_REG
-				(RDMA_ACCESS_MAN,
-				 READ_VCBUS_REG(RDMA_ACCESS_MAN) & (~1));
+				(rdma_access_man,
+				 READ_VCBUS_REG(rdma_access_man) & (~1));
 				if (support_64bit_addr) {
 					#ifdef CONFIG_ARM64
 					WRITE_VCBUS_REG
@@ -721,8 +879,8 @@ int rdma_config(int handle, u32 trigger_type)
 				 1);
 				/* Manual-start RDMA*/
 				WRITE_VCBUS_REG
-				(RDMA_ACCESS_MAN,
-				 READ_VCBUS_REG(RDMA_ACCESS_MAN) | 1);
+				(rdma_access_man,
+				 READ_VCBUS_REG(rdma_access_man) | 1);
 
 				if (debug_flag & 2)
 					pr_info("%s: manual config %d:\r\n",
@@ -847,7 +1005,7 @@ int rdma_clear(int handle)
 
 	spin_lock_irqsave(&rdma_lock, flags);
 	if (handle <= 0 ||
-	    handle >= RDMA_NUM ||
+	    handle >= rdma_meson_dev.channel_num ||
 	    !ins->op) {
 		spin_unlock_irqrestore(&rdma_lock, flags);
 		pr_info("%s error, handle (%d) not register\n",
@@ -951,7 +1109,7 @@ int rdma_buffer_lock(int handle)
 
 	spin_lock_irqsave(&rdma_lock, flags);
 	if (handle <= 0 ||
-		handle >= RDMA_NUM ||
+		handle >= rdma_meson_dev.channel_num ||
 		!ins->op) {
 		spin_unlock_irqrestore(&rdma_lock, flags);
 		pr_info("%s error, handle (%d) not register\n",
@@ -973,7 +1131,7 @@ int rdma_buffer_unlock(int handle)
 
 	spin_lock_irqsave(&rdma_lock, flags);
 	if (handle <= 0 ||
-		handle >= RDMA_NUM ||
+		handle >= rdma_meson_dev.channel_num ||
 		!ins->op) {
 		spin_unlock_irqrestore(&rdma_lock, flags);
 		pr_info("%s error, handle (%d) not register\n",
@@ -1030,7 +1188,7 @@ static bool rdma_check_conflict(int handle, u32 adr, u32 *read_val)
 		}
 	}
 
-	for (i = 0; i < RDMA_NUM; i++) {
+	for (i = 0; i < rdma_meson_dev.channel_num; i++) {
 		oth_ins = &rdma_info.rdma_ins[i];
 		if (!oth_ins->rdma_table_size ||
 		    !oth_ins->rdma_item_count ||
@@ -1255,7 +1413,7 @@ s32 rdma_add_read_reg(int handle, u32 adr)
 	struct rdma_device_info *info = &rdma_info;
 	struct rdma_instance_s *ins = NULL;
 
-	if (handle > 0 && handle < RDMA_NUM) {
+	if (handle > 0 && handle < rdma_meson_dev.channel_num) {
 		ins = &info->rdma_ins[handle];
 		if (((ins->rdma_item_count + 1) << 1) <
 			(ins->rdma_table_size / sizeof(u32))) {
@@ -1277,7 +1435,7 @@ u32 *rdma_get_read_back_addr(int handle)
 	struct rdma_instance_s *ins = NULL;
 	u32 *table;
 
-	if (handle > 0 && handle < RDMA_NUM) {
+	if (handle > 0 && handle < rdma_meson_dev.channel_num) {
 		ins = &info->rdma_ins[handle];
 		table = ins->rdma_table_addr;
 		if (debug_flag & 2)
@@ -1295,42 +1453,56 @@ static struct rdma_device_data_s rdma_meson = {
 	.cpu_type = CPU_NORMAL,
 	.rdma_ver = RDMA_VER_1,
 	.trigger_mask_len = 8,
+	.channel_num = 8
 };
 
 static struct rdma_device_data_s rdma_g12b_reva = {
 	.cpu_type = CPU_G12B_REVA,
 	.rdma_ver = RDMA_VER_1,
 	.trigger_mask_len = 8,
+	.channel_num = 8
 };
 
 static struct rdma_device_data_s rdma_g12b_revb = {
 	.cpu_type = CPU_G12B_REVB,
 	.rdma_ver = RDMA_VER_1,
 	.trigger_mask_len = 8,
+	.channel_num = 8
 };
 
 static struct rdma_device_data_s rdma_tl1 = {
 	.cpu_type = CPU_TL1,
 	.rdma_ver = RDMA_VER_2,
 	.trigger_mask_len = 16,
+	.channel_num = 8
 };
 
 static struct rdma_device_data_s rdma_sc2 = {
 	.cpu_type = CPU_SC2,
 	.rdma_ver = RDMA_VER_2,
 	.trigger_mask_len = 16,
+	.channel_num = 8
 };
 
 static struct rdma_device_data_s rdma_t7 = {
 	.cpu_type = CPU_T7,
 	.rdma_ver = RDMA_VER_3,
 	.trigger_mask_len = 24,
+	.channel_num = 8
 };
 
 static struct rdma_device_data_s rdma_t3 = {
 	.cpu_type = CPU_T7,
 	.rdma_ver = RDMA_VER_4,
 	.trigger_mask_len = 25,
+	.channel_num = 8
+};
+
+static struct rdma_device_data_s rdma_t3x = {
+	.cpu_type = CPU_T7,
+	.rdma_ver = RDMA_VER_5,
+	.trigger_mask_len = 25,
+	.channel_num = 16
 };
 
 static const struct of_device_id rdma_dt_match[] = {
@@ -1361,6 +1533,10 @@ static const struct of_device_id rdma_dt_match[] = {
 	{
 		.compatible = "amlogic, meson-t3, rdma",
 		.data = &rdma_t3,
+	},
+	{
+		.compatible = "amlogic, meson-t3x, rdma",
+		.data = &rdma_t3x,
 	},
 	{},
 };
@@ -1412,6 +1588,62 @@ void ex_vsync_rdma_register(void)
 	set_rdma_handle(EX_VSYNC_RDMA, handle);
 }
 EXPORT_SYMBOL(ex_vsync_rdma_register);
+
+int rdma_start_addr(int handle)
+{
+	struct rdma_regadr_s *rdma_regadr;
+
+	if (handle >= rdma_meson_dev.channel_num) {
+		handle = 0;
+		pr_err("%s, wrong handle:%d\n", __func__, handle);
+	}
+	rdma_regadr = rdma_info.rdma_ins[handle].rdma_regadr;
+
+	return rdma_regadr->rdma_ahb_start_addr;
+}
+EXPORT_SYMBOL(rdma_start_addr);
+
+int rdma_start_addr_msb(int handle)
+{
+	struct rdma_regadr_s *rdma_regadr;
+
+	if (handle >= rdma_meson_dev.channel_num) {
+		handle = 0;
+		pr_err("%s, wrong handle:%d\n", __func__, handle);
+	}
+	rdma_regadr = rdma_info.rdma_ins[handle].rdma_regadr;
+
+	return rdma_regadr->rdma_ahb_start_addr_msb;
+}
+EXPORT_SYMBOL(rdma_start_addr_msb);
+
+int rdma_end_addr(int handle)
+{
+	struct rdma_regadr_s *rdma_regadr;
+
+	if (handle >= rdma_meson_dev.channel_num) {
+		handle = 0;
+		pr_err("%s, wrong handle:%d\n", __func__, handle);
+	}
+	rdma_regadr = rdma_info.rdma_ins[handle].rdma_regadr;
+
+	return rdma_regadr->rdma_ahb_end_addr;
+}
+EXPORT_SYMBOL(rdma_end_addr);
+
+int rdma_end_addr_msb(int handle)
+{
+	struct rdma_regadr_s *rdma_regadr;
+
+	if (handle >= rdma_meson_dev.channel_num) {
+		handle = 0;
+		pr_err("%s, wrong handle:%d\n", __func__, handle);
+	}
+	rdma_regadr = rdma_info.rdma_ins[handle].rdma_regadr;
+
+	return rdma_regadr->rdma_ahb_end_addr_msb;
+}
+EXPORT_SYMBOL(rdma_end_addr_msb);
 
 static ssize_t show_debug_flag(struct class *class,
 			       struct class_attribute *attr,
@@ -1650,7 +1882,7 @@ static ssize_t rdma_irq_count_show(struct class *cla,
 	struct rdma_device_info *info = &rdma_info;
 
 	sprintf(str_info, "rdma_isr_count:%d\n", rdma_isr_count);
-	for (i = 1; i < RDMA_NUM; i++) {
+	for (i = 1; i < rdma_meson_dev.channel_num; i++) {
 		sprintf(chan_info,
 			"rdma handle=%d, cb irq_count=%d, empty_config=%d, rdma_config_count=%d",
 			i, info->rdma_ins[i].irq_count,
@@ -1787,7 +2019,7 @@ static int __init rdma_probe(struct platform_device *pdev)
 	rdma_mgr_irq_request = 0;
 
 	memset((void *)&info->rdma_reg, 0, sizeof(struct rdma_conflict_regs_s));
-	for (i = 0; i < RDMA_NUM; i++) {
+	for (i = 0; i < rdma_meson_dev.channel_num; i++) {
 		info->rdma_ins[i].rdma_table_size = 0;
 		if (rdma_meson_dev.rdma_ver == RDMA_VER_1) {
 			info->rdma_ins[i].rdma_regadr = &rdma_regadr[i];
@@ -1797,8 +2029,12 @@ static int __init rdma_probe(struct platform_device *pdev)
 			info->rdma_ins[i].rdma_regadr = &rdma_regadr_t7[i];
 			support_64bit_addr = 1;
 			has_multi_vpp = 1;
-		}  else if (rdma_meson_dev.rdma_ver == RDMA_VER_4) {
+		} else if (rdma_meson_dev.rdma_ver == RDMA_VER_4) {
 			info->rdma_ins[i].rdma_regadr = &rdma_regadr_t7[i];
+			support_64bit_addr = 1;
+			has_multi_vpp = 1;
+		} else if (rdma_meson_dev.rdma_ver == RDMA_VER_5) {
+			info->rdma_ins[i].rdma_regadr = &rdma_regadr_t3x[i];
 			support_64bit_addr = 1;
 			has_multi_vpp = 1;
 		} else {
@@ -1810,6 +2046,22 @@ static int __init rdma_probe(struct platform_device *pdev)
 		info->rdma_ins[i].prev_trigger_type = 0;
 		info->rdma_ins[i].rdma_write_count = 0;
 		info->rdma_ins[i].lock_flag = 0;
+	}
+
+	if (rdma_meson_dev.rdma_ver == RDMA_VER_5) {
+		irq_status.reg = T3X_RDMA_STATUS1;
+		irq_status.start = 4;
+		irq_status.len = 16;
+		rdma_ctrl = T3X_RDMA_CTRL;
+		rdma_access_man = T3X_RDMA_ACCESS_MAN;
+		rdma_status_reg = T3X_RDMA_STATUS;
+	} else {
+		irq_status.reg = RDMA_STATUS;
+		irq_status.start = 24;
+		irq_status.len = 8;
+		rdma_ctrl = RDMA_CTRL;
+		rdma_access_man = RDMA_ACCESS_MAN;
+		rdma_status_reg = RDMA_STATUS;
 	}
 
 	if (rdma_meson_dev.cpu_type >= CPU_SC2) {
@@ -1841,7 +2093,7 @@ static int __init rdma_probe(struct platform_device *pdev)
 	data32 |= ctrl_ahb_rd_burst_size << 2;
 	data32 |= 0 << 1;
 	data32 |= 0 << 0;
-	WRITE_VCBUS_REG(RDMA_CTRL, data32);
+	WRITE_VCBUS_REG(rdma_ctrl, data32);
 
 	info->rdma_dev = pdev;
 	if (is_meson_t5m_cpu()) {

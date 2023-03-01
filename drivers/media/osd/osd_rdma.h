@@ -14,6 +14,7 @@ extern int rdma_reset_trigger_flag;
 extern int rdma_mgr_irq_request;
 extern u32 osd_rdma_flag_reg[];
 extern u32 rdma_detect_reg;
+extern int rdma_status_reg;
 
 struct rdma_table_item {
 	u32 addr;
@@ -36,35 +37,10 @@ enum {
 #define WARN_TABLE       64
 #define TABLE_SIZE	     PAGE_SIZE
 #define MAX_TABLE_ITEM	 (TABLE_SIZE / sizeof(struct rdma_table_item_t))
-#define OSD_RDMA_CHANNEL_INDEX	osd_rdma_handle[0]
-#define START_ADDR	\
-	(RDMA_AHB_START_ADDR_MAN + (OSD_RDMA_CHANNEL_INDEX << 1))
-#define START_ADDR_MSB	\
-		(RDMA_AHB_START_ADDR_MAN_MSB + (OSD_RDMA_CHANNEL_INDEX << 1))
-#define END_ADDR	\
-	(RDMA_AHB_END_ADDR_MAN + (OSD_RDMA_CHANNEL_INDEX << 1))
-#define END_ADDR_MSB	\
-	(RDMA_AHB_END_ADDR_MAN_MSB + (OSD_RDMA_CHANNEL_INDEX << 1))
 
-#define OSD_RDMA_CHANNEL_INDEX_VPP1	osd_rdma_handle[1]
-#define START_ADDR_VPP1	\
-	(RDMA_AHB_START_ADDR_MAN + (OSD_RDMA_CHANNEL_INDEX_VPP1 << 1))
-#define START_ADDR_MSB_VPP1	\
-		(RDMA_AHB_START_ADDR_MAN_MSB + (OSD_RDMA_CHANNEL_INDEX_VPP1 << 1))
-#define END_ADDR_VPP1	\
-	(RDMA_AHB_END_ADDR_MAN + (OSD_RDMA_CHANNEL_INDEX_VPP1 << 1))
-#define END_ADDR_MSB_VPP1	\
-	(RDMA_AHB_END_ADDR_MAN_MSB + (OSD_RDMA_CHANNEL_INDEX_VPP1 << 1))
-
-#define OSD_RDMA_CHANNEL_INDEX_VPP2	osd_rdma_handle[2]
-#define START_ADDR_VPP2	\
-	(RDMA_AHB_START_ADDR_MAN + (OSD_RDMA_CHANNEL_INDEX_VPP2 << 1))
-#define START_ADDR_MSB_VPP2	\
-		(RDMA_AHB_START_ADDR_MAN_MSB + (OSD_RDMA_CHANNEL_INDEX_VPP2 << 1))
-#define END_ADDR_VPP2	\
-	(RDMA_AHB_END_ADDR_MAN + (OSD_RDMA_CHANNEL_INDEX_VPP2 << 1))
-#define END_ADDR_MSB_VPP2	\
-	(RDMA_AHB_END_ADDR_MAN_MSB + (OSD_RDMA_CHANNEL_INDEX_VPP2 << 1))
+#define OSD_RDMA_CHANNEL_INDEX        osd_rdma_handle[0]
+#define OSD_RDMA_CHANNEL_INDEX_VPP1   osd_rdma_handle[1]
+#define OSD_RDMA_CHANNEL_INDEX_VPP2   osd_rdma_handle[2]
 
 #define OSD_RDMA_FLAG_REG           (osd_rdma_flag_reg[VPP0])
 #define OSD_RDMA_FLAG_REG_VPP1      (osd_rdma_flag_reg[VPP1])

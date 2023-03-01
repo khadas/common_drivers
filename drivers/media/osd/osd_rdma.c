@@ -28,17 +28,17 @@
 #include "osd.h"
 #include "osd_io.h"
 #include "osd_reg.h"
-#include "osd_rdma.h"
-#include "osd_hw.h"
-#include "osd_backup.h"
-#include "osd_log.h"
-#include <linux/amlogic/media/registers/register_map.h>
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 #include <linux/amlogic/media/rdma/rdma_mgr.h>
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
 #include <linux/amlogic/media/amvecm/ve.h>
 #endif
 #endif
+#include "osd_rdma.h"
+#include "osd_hw.h"
+#include "osd_backup.h"
+#include "osd_log.h"
+#include <linux/amlogic/media/registers/register_map.h>
 
 #define RDMA_TABLE_INTERNAL_COUNT 512
 #define RDMA_TEMP_TBL_SIZE        (8 * RDMA_TABLE_INTERNAL_COUNT)
@@ -67,6 +67,13 @@ static unsigned int rdma_recovery_count[VPP_NUM];
 static unsigned int second_rdma_irq;
 #endif
 static unsigned int vsync_irq_count[VPP_NUM];
+
+static int reg_start_addr, reg_start_addr_msb;
+static int reg_end_addr, reg_end_addr_msb;
+static int reg_start_addr_vpp1, reg_start_addr_msb_vpp1;
+static int reg_end_addr_vpp1, reg_end_addr_msb_vpp1;
+static int reg_start_addr_vpp2, reg_start_addr_msb_vpp2;
+static int reg_end_addr_vpp2, reg_end_addr_msb_vpp2;
 
 static bool osd_rdma_done[VPP_NUM];
 static int osd_rdma_handle[VPP_NUM] = {-1, -1, -1};
@@ -119,22 +126,22 @@ static void rdma_start_end_addr_update(u32 vpp_index, ulong table_paddr)
 
 	switch (vpp_index) {
 	case VPU_VPP0:
-		start_addr = START_ADDR;
-		start_addr_msb = START_ADDR_MSB;
-		end_addr = END_ADDR;
-		end_addr_msb = END_ADDR_MSB;
+		start_addr = reg_start_addr;
+		start_addr_msb = reg_start_addr_msb;
+		end_addr = reg_end_addr;
+		end_addr_msb = reg_end_addr_msb;
 		break;
 	case VPU_VPP1:
-		start_addr = START_ADDR_VPP1;
-		start_addr_msb = START_ADDR_MSB_VPP1;
-		end_addr = END_ADDR_VPP1;
-		end_addr_msb = END_ADDR_MSB_VPP1;
+		start_addr = reg_start_addr_vpp1;
+		start_addr_msb = reg_start_addr_msb_vpp1;
+		end_addr = reg_end_addr_vpp1;
+		end_addr_msb = reg_end_addr_msb_vpp1;
 		break;
 	case VPU_VPP2:
-		start_addr = START_ADDR_VPP2;
-		start_addr_msb = START_ADDR_MSB_VPP2;
-		end_addr = END_ADDR_VPP2;
-		end_addr_msb = END_ADDR_MSB_VPP2;
+		start_addr = reg_start_addr_vpp2;
+		start_addr_msb = reg_start_addr_msb_vpp2;
+		end_addr = reg_end_addr_vpp2;
+		end_addr_msb = reg_end_addr_msb_vpp2;
 		break;
 	}
 	if (support_64bit_addr) {
@@ -171,16 +178,16 @@ static void rdma_end_addr_update(u32 vpp_index, ulong table_paddr, u32 count)
 
 	switch (vpp_index) {
 	case VPU_VPP0:
-		end_addr = END_ADDR;
-		end_addr_msb = END_ADDR_MSB;
+		end_addr = reg_end_addr;
+		end_addr_msb = reg_end_addr_msb;
 		break;
 	case VPU_VPP1:
-		end_addr = END_ADDR_VPP1;
-		end_addr_msb = END_ADDR_MSB_VPP1;
+		end_addr = reg_end_addr_vpp1;
+		end_addr_msb = reg_end_addr_msb_vpp1;
 		break;
 	case VPU_VPP2:
-		end_addr = END_ADDR_VPP2;
-		end_addr_msb = END_ADDR_MSB_VPP2;
+		end_addr = reg_end_addr_vpp2;
+		end_addr_msb = reg_end_addr_msb_vpp2;
 		break;
 	}
 	if (support_64bit_addr) {
@@ -211,16 +218,16 @@ static ulong rdma_end_addr_get(u32 vpp_index)
 
 	switch (vpp_index) {
 	case VPU_VPP0:
-		end_addr = END_ADDR;
-		end_addr_msb = END_ADDR_MSB;
+		end_addr = reg_end_addr;
+		end_addr_msb = reg_end_addr_msb;
 		break;
 	case VPU_VPP1:
-		end_addr = END_ADDR_VPP1;
-		end_addr_msb = END_ADDR_MSB_VPP1;
+		end_addr = reg_end_addr_vpp1;
+		end_addr_msb = reg_end_addr_msb_vpp1;
 		break;
 	case VPU_VPP2:
-		end_addr = END_ADDR_VPP2;
-		end_addr_msb = END_ADDR_MSB_VPP2;
+		end_addr = reg_end_addr_vpp2;
+		end_addr_msb = reg_end_addr_msb_vpp2;
 		break;
 	}
 
@@ -647,7 +654,7 @@ static int update_table_item(u32 vpp_index, u32 addr, u32 val, u8 irq_mode)
 retry:
 	if (0 == (retry_count--)) {
 		pr_debug("OSD RDMA stuck: 0x%x = 0x%x, status: 0x%x\n",
-			 addr, val, osd_reg_read(RDMA_STATUS));
+			 addr, val, osd_reg_read(rdma_status_reg));
 		pr_debug("::retry count: %d-%d, count: %d, flag: 0x%x\n",
 			 reject1, reject2, item_count[vpp_index],
 			 osd_reg_read(osd_rdma_flag_reg[vpp_index]));
@@ -689,7 +696,7 @@ retry:
 		pr_debug("retry count:%d (%d), flag: 0x%x, status: 0x%x\n",
 			 retry_count, reject1,
 			 osd_reg_read(osd_rdma_flag_reg[vpp_index]),
-			 osd_reg_read(RDMA_STATUS));
+			 osd_reg_read(rdma_status_reg));
 		goto retry;
 	}
 
@@ -714,7 +721,7 @@ retry:
 		pr_debug("retry count:%d (%d), flag: 0x%x, status: 0x%x\n",
 			 retry_count, reject2,
 			 osd_reg_read(osd_rdma_flag_reg[vpp_index]),
-			 osd_reg_read(RDMA_STATUS));
+			 osd_reg_read(rdma_status_reg));
 		item_count[vpp_index]--;
 		spin_unlock_irqrestore_vpp(vpp_index, flags);
 		goto retry;
@@ -1567,7 +1574,7 @@ static void osd_rdma_irq(void *arg)
 		return;
 	rdma_done_line[VIU1] = get_encp_line(VIU1);
 
-	rdma_status = osd_reg_read(RDMA_STATUS);
+	rdma_status = osd_reg_read(rdma_status_reg);
 	debug_rdma_status[VIU1] = rdma_status;
 	OSD_RDMA_STATUS_CLEAR_REJECT;
 	osd_update_vsync_hit();
@@ -1590,7 +1597,7 @@ static void osd_rdma_vpp1_irq(void *arg)
 	if (osd_rdma_handle[1] == -1)
 		return;
 
-	rdma_status = osd_reg_read(RDMA_STATUS);
+	rdma_status = osd_reg_read(rdma_status_reg);
 	debug_rdma_status[VIU2] = rdma_status;
 	OSD_RDMA_VPP1_STATUS_CLEAR_REJECT;
 	osd_update_vsync_hit_viu2();
@@ -1611,7 +1618,7 @@ static void osd_rdma_vpp2_irq(void *arg)
 
 	if (osd_rdma_handle[2] == -1)
 		return;
-	rdma_status = osd_reg_read(RDMA_STATUS);
+	rdma_status = osd_reg_read(rdma_status_reg);
 	debug_rdma_status[VIU3] = rdma_status;
 	OSD_RDMA_VPP2_STATUS_CLEAR_REJECT;
 	osd_update_vsync_hit_viu3();
@@ -1767,27 +1774,27 @@ void enable_line_n_rdma(void)
 	OSD_RDMA_STATUS_CLEAR_REJECT;
 	if (support_64bit_addr) {
 		#ifdef CONFIG_ARM64
-		osd_reg_write(START_ADDR,
+		osd_reg_write(reg_start_addr,
 			      table_paddr[0] & 0xffffffff);
-		osd_reg_write(START_ADDR_MSB,
+		osd_reg_write(reg_start_addr_msb,
 			      (table_paddr[0] >> 32) & 0xffffffff);
 
-		osd_reg_write(END_ADDR,
+		osd_reg_write(reg_end_addr,
 			      (table_paddr[0] - 1) & 0xffffffff);
-		osd_reg_write(END_ADDR_MSB,
+		osd_reg_write(reg_end_addr_msb,
 			      ((table_paddr[0] - 1) >> 32) & 0xffffffff);
 		#else
-		osd_reg_write(START_ADDR,
+		osd_reg_write(reg_start_addr,
 			      table_paddr[0] & 0xffffffff);
-		osd_reg_write(START_ADDR_MSB, 0);
-		osd_reg_write(END_ADDR,
+		osd_reg_write(reg_start_addr_msb, 0);
+		osd_reg_write(reg_end_addr,
 			      (table_paddr[0] - 1) & 0xffffffff);
-		osd_reg_write(END_ADDR_MSB, 0);
+		osd_reg_write(reg_end_addr_msb, 0);
 		#endif
 	} else {
-		osd_reg_write(START_ADDR,
+		osd_reg_write(reg_start_addr,
 			      table_paddr[0] & 0xffffffff);
-		osd_reg_write(END_ADDR,
+		osd_reg_write(reg_end_addr,
 			      (table_paddr[0] - 1) & 0xffffffff);
 	}
 	item_count[0] = 0;
@@ -1812,27 +1819,27 @@ void enable_vsync_rdma(u32 vpp_index)
 	OSD_RDMA_STATUS_CLEAR_REJECT;
 	if (support_64bit_addr) {
 		#ifdef CONFIG_ARM64
-		osd_reg_write(START_ADDR,
+		osd_reg_write(reg_start_addr,
 			      table_paddr[vpp_index] & 0xffffffff);
-		osd_reg_write(START_ADDR_MSB,
+		osd_reg_write(reg_start_addr_msb,
 			      (table_paddr[vpp_index] >> 32) & 0xffffffff);
 
-		osd_reg_write(END_ADDR,
+		osd_reg_write(reg_end_addr,
 			      (table_paddr[vpp_index] - 1) & 0xffffffff);
-		osd_reg_write(END_ADDR_MSB,
+		osd_reg_write(reg_end_addr_msb,
 			      ((table_paddr[vpp_index] - 1) >> 32) & 0xffffffff);
 		#else
-		osd_reg_write(START_ADDR,
+		osd_reg_write(reg_start_addr,
 			      table_paddr[vpp_index] & 0xffffffff);
-		osd_reg_write(START_ADDR_MSB, 0);
-		osd_reg_write(END_ADDR,
+		osd_reg_write(reg_start_addr_msb, 0);
+		osd_reg_write(reg_end_addr,
 			      (table_paddr[vpp_index] - 1) & 0xffffffff);
-		osd_reg_write(END_ADDR_MSB, 0);
+		osd_reg_write(reg_end_addr_msb, 0);
 		#endif
 	} else {
-		osd_reg_write(START_ADDR,
+		osd_reg_write(reg_start_addr,
 			      table_paddr[vpp_index] & 0xffffffff);
-		osd_reg_write(END_ADDR,
+		osd_reg_write(reg_end_addr,
 			      (table_paddr[vpp_index] - 1) & 0xffffffff);
 	}
 	item_count[vpp_index] = 0;
@@ -1860,7 +1867,7 @@ void osd_rdma_interrupt_done_clear(u32 vpp_index)
 		u32 rdma_status;
 
 		rdma_status =
-			osd_reg_read(RDMA_STATUS);
+			osd_reg_read(rdma_status_reg);
 		pr_info("osd rdma restart! 0x%x\n",
 			rdma_status);
 		osd_rdma_enable(vpp_index, 0);
@@ -2174,6 +2181,30 @@ static irqreturn_t osd_rdma_isr(int irq, void *dev_id)
 }
 #endif
 
+static void record_rdma_addr_reg(int vpp_index, int channel)
+{
+	switch (vpp_index) {
+	case VPP0:
+		reg_start_addr     = rdma_start_addr(channel);
+		reg_start_addr_msb = rdma_start_addr_msb(channel);
+		reg_end_addr       = rdma_end_addr(channel);
+		reg_end_addr_msb   = rdma_end_addr_msb(channel);
+		break;
+	case VPP1:
+		reg_start_addr_vpp1     = rdma_start_addr(channel);
+		reg_start_addr_msb_vpp1 = rdma_start_addr_msb(channel);
+		reg_end_addr_vpp1       = rdma_end_addr(channel);
+		reg_end_addr_msb_vpp1   = rdma_end_addr_msb(channel);
+		break;
+	case VPP2:
+		reg_start_addr_vpp2     = rdma_start_addr(channel);
+		reg_start_addr_msb_vpp2 = rdma_start_addr_msb(channel);
+		reg_end_addr_vpp2       = rdma_end_addr(channel);
+		reg_end_addr_msb_vpp2   = rdma_end_addr_msb(channel);
+		break;
+	}
+}
+
 static int osd_rdma_init(void)
 {
 	int ret = -1, i;
@@ -2260,6 +2291,8 @@ static int osd_rdma_init(void)
 					NULL, PAGE_SIZE);
 	pr_info("%s:osd rdma handle[0] = %d.\n", __func__,
 		osd_rdma_handle[0]);
+	record_rdma_addr_reg(VPP0, osd_rdma_handle[0]);
+
 	if (osd_hw.osd_meson_dev.has_vpp1 &&
 	   osd_hw.display_dev_cnt == 2) {
 		/* vpp1 used then register rdma channel */
@@ -2267,6 +2300,7 @@ static int osd_rdma_init(void)
 						NULL, PAGE_SIZE);
 		pr_info("%s:osd rdma handle[1] = %d.\n", __func__,
 			osd_rdma_handle[1]);
+		record_rdma_addr_reg(VPP1, osd_rdma_handle[1]);
 	}
 	if (osd_hw.osd_meson_dev.has_vpp2 &&
 	   osd_hw.display_dev_cnt == 3) {
@@ -2275,6 +2309,7 @@ static int osd_rdma_init(void)
 						NULL, PAGE_SIZE);
 		pr_info("%s:osd rdma handle[2] = %d.\n", __func__,
 			osd_rdma_handle[2]);
+		record_rdma_addr_reg(VPP2, osd_rdma_handle[2]);
 	}
 
 #else

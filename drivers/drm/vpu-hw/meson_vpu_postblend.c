@@ -706,6 +706,7 @@ static void s5_postblend_hw_init(struct meson_vpu_block *vblk)
 	/*reg_ops->rdma_write_reg_bits(OSD_DOLBY_BYPASS_EN, 0x0, 7, 1);*/
 
 	reg_ops->rdma_write_reg_bits(VPP_INTF_OSD3_CTRL, 0, 1, 1);
+	reg_ops->rdma_write_reg(VPP_MISC_T3X, 0);
 }
 #endif
 

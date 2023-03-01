@@ -94,6 +94,7 @@
 #define VPP_POSTBLND_CTRL_S5                          0x1d02
 
 #define VPP_INTF_OSD3_CTRL             0x4107
+#define VPP_MISC_T3X		       0x2509
 
 /* vpp crc */
 #define VPP_RO_CRCSUM           0x1db2

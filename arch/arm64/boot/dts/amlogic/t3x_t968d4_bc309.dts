@@ -87,7 +87,8 @@
 		/*};*/
 
 		logo_reserved:linux,meson-fb {
-			compatible = "amlogic, meson-fb";
+			compatible = "shared-dma-pool";
+			reusable;
 			size = <0x0 0x800000>;
 			alignment = <0x0 0x400000>;
 			reg = <0x0 0x3e800000 0x0 0x800000>;
@@ -166,6 +167,21 @@
 			size = <0x0 0x0>;
 			alignment = <0x0 0x100000>;
 			//no-map;
+		};
+
+		dmaheap_cma_reserved:heap-gfx {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x10000000>;
+			alignment = <0x0 0x400000>;
+		};
+
+		dmaheap_fb_reserved:heap-fb {
+			compatible = "shared-dma-pool";
+			/* 1920x1080x4x6 round up 4M align */
+			size = <0x0 0x3400000>;
+			alignment = <0x0 0x400000>;
+			//alloc-ranges = <0x0 0x20000000 0x0 0x03400000>;
 		};
 
 		/*  vdin0 CMA pool */
@@ -1722,7 +1738,7 @@
 };
 
 &fb {
-	status = "okay";
+	status = "disabled";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1980000 0x100000>;
 	logo_addr = "0x3e800000";
@@ -1731,8 +1747,28 @@
 };
 
 &drm_vpu {
-	status = "disabled";
+	status = "okay";
 	logo_addr = "0x3e800000";
+
+	connectors_dev: port@1 {
+		drm_to_lcd0: endpoint@0 {
+			reg = <0>;
+			remote-endpoint = <&lcd0_to_drm>;
+		};
+	};
+};
+
+&lcd {
+	ports {
+		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			lcd0_to_drm: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&drm_to_lcd0>;
+			};
+		};
+	};
 };
 
 &amhdmitx {

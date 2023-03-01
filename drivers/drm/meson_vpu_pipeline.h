@@ -695,6 +695,8 @@ extern struct meson_vpu_block_ops s5_scaler_ops;
 extern struct meson_vpu_block_ops s5_osdblend_ops;
 extern struct meson_vpu_block_ops s5_postblend_ops;
 extern struct meson_vpu_block_ops slice2ppc_ops;
+extern struct meson_vpu_block_ops t3x_osdblend_ops;
+extern struct meson_vpu_block_ops t3x_afbc_ops;
 
 extern struct meson_vpu_pipeline_ops g12a_vpu_pipeline_ops;
 extern struct meson_vpu_pipeline_ops t7_vpu_pipeline_ops;

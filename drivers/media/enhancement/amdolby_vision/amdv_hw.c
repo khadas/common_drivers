@@ -3288,28 +3288,7 @@ void dolby_core3_meta_reg_set(u32 slice_num,
 		pr_dv_error("core3 metadata size %d > %d !\n", md_size, MAX_CORE3_METADATA);
 		md_size = MAX_CORE3_METADATA;
 	}
-	if (slice_num == 1) {
-		VSYNC_WR_DV_REG(SLICE0_META_CTRL0, hsize << 16 | 0x1);
-		VSYNC_WR_DV_REG(SLICE0_META_CTRL1, (hsize - 1) << 16 | 0);
-	} else if (slice_num == 2) {
-		VSYNC_WR_DV_REG(SLICE0_META_CTRL0, hsize << 16 | 0x3);
-		VSYNC_WR_DV_REG(SLICE0_META_CTRL1, (hsize / 2 + overlap_size - 1) << 16 | 0);
-		VSYNC_WR_DV_REG(SLICE0_META_CTRL2, (hsize - 1) << 16 |
-						(hsize / 2 - overlap_size));
-	} else {
-		VSYNC_WR_DV_REG(SLICE0_META_CTRL0,
-						hsize << 16 | 0xf);
-		VSYNC_WR_DV_REG(SLICE0_META_CTRL1,
-						(hsize / 4 + overlap_size - 1) << 16 | 0);
-		VSYNC_WR_DV_REG(SLICE0_META_CTRL2,
-						(hsize * 2 / 4 + overlap_size - 1) << 16 |
-						(hsize / 4 - overlap_size));
-		VSYNC_WR_DV_REG(SLICE0_META_CTRL3,
-						(hsize * 3 / 4 + overlap_size - 1) << 16 |
-						(hsize * 2 / 4 - overlap_size));
-		VSYNC_WR_DV_REG(SLICE0_META_CTRL4,
-						(hsize - 1) << 16 | (hsize * 3 / 4 - overlap_size));
-	}
+
 	data_len = (raw_metadata[0] & 0xffff00) >> 8;/*raw_metadata[0] bit 23:8 =>size*/
 
 	j = 0;
@@ -3332,6 +3311,33 @@ void dolby_core3_meta_reg_set(u32 slice_num,
 	VSYNC_WR_DV_REG(SLICE0_META_CRC2, crc_val[2]);
 	VSYNC_WR_DV_REG(SLICE0_META_CRC3, crc_val[3]);
 	VSYNC_WR_DV_REG(SLICE0_META_CRC4, crc_val[4]);
+
+	if (slice_num == 1) {
+		/*manual update scramble bit5*/
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL0, hsize << 16 | 1 << 5 | 0x1);
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL0, hsize << 16 | 0 << 5 | 0x1);
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL1, (hsize - 1) << 16 | 0);
+	} else if (slice_num == 2) {
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL0, hsize << 16 | 1 << 5 | 0x3);
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL0, hsize << 16 | 0 << 5 | 0x3);
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL1, (hsize / 2 + overlap_size - 1) << 16 | 0);
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL2, (hsize - 1) << 16 |
+						(hsize / 2 - overlap_size));
+	} else {
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL0, hsize << 16 | 1 << 5 | 0xf);
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL0, hsize << 16 | 0 << 5 | 0xf);
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL1,
+						(hsize / 4 + overlap_size - 1) << 16 | 0);
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL2,
+						(hsize * 2 / 4 + overlap_size - 1) << 16 |
+						(hsize / 4 - overlap_size));
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL3,
+						(hsize * 3 / 4 + overlap_size - 1) << 16 |
+						(hsize * 2 / 4 - overlap_size));
+		VSYNC_WR_DV_REG(SLICE0_META_CTRL4,
+						(hsize - 1) << 16 | (hsize * 3 / 4 - overlap_size));
+	}
+
 }
 
 void apply_stb_core_settings(dma_addr_t dma_paddr,

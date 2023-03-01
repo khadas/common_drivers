@@ -11557,6 +11557,7 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	cur_dev->sr_in_size = p_amvideo->dev_property.sr_in_size;
 	if (cur_dev->aisr_support)
 		cur_dev->pps_auto_calc = 1;
+	cur_dev->prevsync_support = p_amvideo->dev_property.prevsync_support;
 
 	for (i = 0; i < cur_dev->max_vd_layers; i++) {
 		vd_layer[i].layer_id = i;

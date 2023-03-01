@@ -13846,6 +13846,59 @@ static struct amvideo_device_data_s amvideo_t5m = {
 	.has_vpp2 = 0,
 	.is_tv_panel = 1,
 };
+
+static struct amvideo_device_data_s amvideo_t3x = {
+	.cpu_type = MESON_CPU_MAJOR_ID_T3X_,
+	.sr_reg_offt = 0x1e00,
+	.sr_reg_offt2 = 0x1f80,
+	.layer_support[0] = 1,
+	.layer_support[1] = 1,
+	.layer_support[2] = 0,
+	.afbc_support[0] = 1,
+	.afbc_support[1] = 1,
+	.afbc_support[2] = 0,
+	.pps_support[0] = 1,
+	.pps_support[1] = 1,
+	.pps_support[2] = 0,
+	.alpha_support[0] = 1,
+	.alpha_support[1] = 1,
+	.alpha_support[2] = 0,
+	.dv_support = 1,
+	.sr0_support = 1,
+	.sr1_support = 1,
+	.core_v_disable_width_max[0] = 2048,
+	.core_v_disable_width_max[1] = 4096,
+	.core_v_enable_width_max[0] = 1024,
+	.core_v_enable_width_max[1] = 2048,
+	.supscl_path = CORE0_PPS_CORE1,
+	.fgrain_support[0] = 1,
+	.fgrain_support[1] = 1,
+	.fgrain_support[2] = 0,
+	.has_hscaler_8tap[0] = 1,
+	.has_hscaler_8tap[1] = 1,
+	.has_hscaler_8tap[2] = 0,
+	.has_pre_hscaler_ntap[0] = 2,
+	.has_pre_hscaler_ntap[1] = 2,
+	.has_pre_hscaler_ntap[2] = 0,
+	.has_pre_vscaler_ntap[0] = 1,
+	.has_pre_vscaler_ntap[1] = 1,
+	.has_pre_vscaler_ntap[2] = 0,
+	.src_width_max[0] = 8192,
+	.src_width_max[1] = 8192,
+	.src_width_max[2] = 4096,
+	.src_height_max[0] = 4320,
+	.src_height_max[1] = 4320,
+	.src_height_max[2] = 2160,
+	.ofifo_size = 0x800,
+	.afbc_conv_lbuf_len[0] = 0x100,
+	.afbc_conv_lbuf_len[1] = 0x100,
+	.mif_linear = 1,
+	.display_module = S5_DISPLAY_MODULE,
+	.max_vd_layers = 2,
+	.has_vpp1 = 1,
+	.has_vpp2 = 0,
+	.is_tv_panel = 0,
+};
 #endif
 
 static struct video_device_hw_s legcy_dev_property = {
@@ -13898,7 +13951,18 @@ static struct video_device_hw_s t5m_dev_property = {
 	.di_hf_y_reverse = 0,
 	.sr_in_size = 1,
 };
+
+static struct video_device_hw_s t3x_dev_property = {
+	.vd2_independ_blend_ctrl = 1,
+	.aisr_support = 1,
+	.prevsync_support = 1,
+	/* aisr reverse workaround for t3x*/
+	.di_hf_y_reverse = 1,
+	.sr_in_size = 1,
+	.mosaic_support = 0,
+};
 #endif
+
 static const struct of_device_id amlogic_amvideom_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
@@ -13954,6 +14018,10 @@ static const struct of_device_id amlogic_amvideom_dt_match[] = {
 	{
 		.compatible = "amlogic, amvideom-t5m",
 		.data = &amvideo_t5m,
+	},
+	{
+		.compatible = "amlogic, amvideom-t3x",
+		.data = &amvideo_t3x,
 	},
 #endif
 	{}
@@ -14053,6 +14121,15 @@ bool video_is_meson_t5m_cpu(void)
 {
 	if (amvideo_meson_dev.cpu_type ==
 		MESON_CPU_MAJOR_ID_T5M_)
+		return true;
+	else
+		return false;
+}
+
+bool video_is_meson_t3x_cpu(void)
+{
+	if (amvideo_meson_dev.cpu_type ==
+		MESON_CPU_MAJOR_ID_T3X_)
 		return true;
 	else
 		return false;
@@ -14276,6 +14353,10 @@ static int amvideom_probe(struct platform_device *pdev)
 	}  else if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_T5M_) {
 		memcpy(&amvideo_meson_dev.dev_property, &t5m_dev_property,
 		       sizeof(struct video_device_hw_s));
+	} else if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_T3X_) {
+		memcpy(&amvideo_meson_dev.dev_property, &t3x_dev_property,
+		       sizeof(struct video_device_hw_s));
+		aisr_en = 1;
 		cur_dev->power_ctrl = true;
 	} else
 #endif

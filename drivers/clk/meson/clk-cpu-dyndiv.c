@@ -79,7 +79,7 @@ const struct clk_ops meson_clk_cpu_dyndiv_ops = {
 };
 EXPORT_SYMBOL_GPL(meson_clk_cpu_dyndiv_ops);
 
-static unsigned long meson_sec_cpu_dyn_recalc_rate(struct clk_hw *hw,
+static unsigned long meson_clk_cpu_dyn_recalc_rate_v2(struct clk_hw *hw,
 						   unsigned long prate)
 {
 	struct clk_regmap *clk = to_clk_regmap(hw);
@@ -89,9 +89,13 @@ static unsigned long meson_sec_cpu_dyn_recalc_rate(struct clk_hw *hw,
 	struct arm_smccc_res res;
 
 	/* get cpu register value */
-	arm_smccc_smc(SECURE_CPU_CLK, data->secid_dyn_rd,
-		      0, 0, 0, 0, 0, 0, &res);
-	val = res.a0;
+	if (data->offset) {
+		regmap_read(clk->map, data->offset, &val);
+	} else {
+		arm_smccc_smc(SECURE_CPU_CLK, data->secid_dyn_rd,
+			      0, 0, 0, 0, 0, 0, &res);
+		val = res.a0;
+	}
 
 	/* Confirm Now cpu is on final0 or final1 , bit10 = 0 or 1 */
 	if (val & CPU_DYN_SEL_MASK) {
@@ -119,7 +123,7 @@ static unsigned long meson_sec_cpu_dyn_recalc_rate(struct clk_hw *hw,
 }
 
 /* find the best rate near to target rate */
-static long meson_sec_cpu_dyn_round_rate(struct clk_hw *hw,
+static long meson_clk_cpu_dyn_round_rate_v2(struct clk_hw *hw,
 					 unsigned long rate,
 					 unsigned long *prate)
 {
@@ -146,7 +150,49 @@ static long meson_sec_cpu_dyn_round_rate(struct clk_hw *hw,
 	return min;
 }
 
-static int meson_sec_cpu_dyn_set_rate(struct clk_hw *hw, unsigned long rate,
+static int meson_cpu_dyn_set(struct clk_hw *hw, u16 dyn_pre_mux, u16 dyn_post_mux, u16 dyn_div)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_sec_cpu_dyn_data *data = meson_sec_cpu_dyn_data(clk);
+	unsigned int control;
+	unsigned int cnt = 0;
+
+	// Make sure not busy from last setting and we currently match the last setting
+	do {
+		regmap_read(clk->map, data->offset, &control);
+		udelay(1);
+		cnt++;
+		if (cnt > 100) {
+			pr_err("cpu fsm is busy, offset=0x%x\n", data->offset);
+			break;
+		}
+	} while ((control & (1 << 28)));
+
+	control = control | (1 << 26);// Enable
+
+	if (control & (1 << 10)) {     // if using Dyn mux1, set dyn mux 0
+		// Toggle bit[10] indicating a dynamic mux change
+		control = (control & (~((1 << 10) | (0x3f << 4)  | (1 << 2)  | (0x3 << 0))))
+			  | ((0 << 10)
+			  | (dyn_div << 4)
+			  | (dyn_post_mux << 2)
+			  | (dyn_pre_mux << 0));
+	} else {
+		// Toggle bit[10] indicating a dynamic mux change
+		control = (control & (~((1 << 10) | (0x3f << 20) | (1 << 18) | (0x3 << 16))))
+			  | ((1 << 10)
+			  | (dyn_div << 20)
+			  | (dyn_post_mux << 18)
+			  | (dyn_pre_mux << 16));
+	}
+	/* Do not touch bit 11, it belongs to the CPU mux clk */
+
+	regmap_write(clk->map, data->offset, control);
+
+	return 0;
+}
+
+static int meson_clk_cpu_dyn_set_rate_v2(struct clk_hw *hw, unsigned long rate,
 				      unsigned long parent_rate)
 {
 	struct clk_regmap *clk = to_clk_regmap(hw);
@@ -167,28 +213,39 @@ static int meson_sec_cpu_dyn_set_rate(struct clk_hw *hw, unsigned long rate,
 	if (!strcmp(clk_hw_get_name(hw), "dsu_dyn_clk") && nrate > 1000000000) {
 		if (clk_get_rate(hw->clk) > 1000000000) {
 			/* switch dsu to fix div2 */
-			arm_smccc_smc(SECURE_CPU_CLK, data->secid_dyn,
+			if (data->offset)
+				meson_cpu_dyn_set(hw, 1, 0, 0);
+			else
+				arm_smccc_smc(SECURE_CPU_CLK, data->secid_dyn,
 				      1, 0, 0, 0, 0, 0, &res);
 			/* udelay(50); */
 		}
 		clk_set_rate(clk_hw_get_parent_by_index(hw, 3)->clk, nrate);
 	}
-	arm_smccc_smc(SECURE_CPU_CLK, data->secid_dyn,
+
+	if (data->offset)
+		meson_cpu_dyn_set(hw, table->dyn_pre_mux, table->dyn_post_mux, table->dyn_div);
+	else
+		arm_smccc_smc(SECURE_CPU_CLK, data->secid_dyn,
 		      table->dyn_pre_mux, table->dyn_post_mux, table->dyn_div,
 		      0, 0, 0, &res);
 	return 0;
 }
 
-static u8 meson_sec_cpu_dyn_get_parent(struct clk_hw *hw)
+static u8 meson_clk_cpu_dyn_get_parent_v2(struct clk_hw *hw)
 {
 	struct clk_regmap *clk = to_clk_regmap(hw);
 	struct meson_sec_cpu_dyn_data *data = meson_sec_cpu_dyn_data(clk);
 	u32 pre_shift, val;
 	struct arm_smccc_res res;
 
-	arm_smccc_smc(SECURE_CPU_CLK, data->secid_dyn_rd,
-		      0, 0, 0, 0, 0, 0, &res);
-	val = res.a0;
+	if (data->offset) {
+		regmap_read(clk->map, data->offset, &val);
+	} else {
+		arm_smccc_smc(SECURE_CPU_CLK, data->secid_dyn_rd,
+			      0, 0, 0, 0, 0, 0, &res);
+		val = res.a0;
+	}
 
 	if (val & CPU_DYN_SEL_MASK)
 		pre_shift = 16;
@@ -203,14 +260,13 @@ static u8 meson_sec_cpu_dyn_get_parent(struct clk_hw *hw)
 	return val;
 }
 
-/*recalc the rate in kernel, And set the cpu fixed clk as one level clk
- * due to everything is doing in bl31
- */
+/* set the cpu fixed clk as one level clk */
+/* rename to meson_clk_cpu_dyn_ops_v2 if bringup branch t3x/t5w/g12b is back */
 const struct clk_ops meson_sec_cpu_dyn_ops = {
-	.recalc_rate = meson_sec_cpu_dyn_recalc_rate,
-	.round_rate = meson_sec_cpu_dyn_round_rate,
-	.set_rate = meson_sec_cpu_dyn_set_rate,
-	.get_parent = meson_sec_cpu_dyn_get_parent
+	.recalc_rate = meson_clk_cpu_dyn_recalc_rate_v2,
+	.round_rate = meson_clk_cpu_dyn_round_rate_v2,
+	.set_rate = meson_clk_cpu_dyn_set_rate_v2,
+	.get_parent = meson_clk_cpu_dyn_get_parent_v2
 };
 EXPORT_SYMBOL_GPL(meson_sec_cpu_dyn_ops);
 
@@ -269,8 +325,8 @@ static unsigned long meson_sec_sys_clk_recalc_rate(struct clk_hw *hw,
 
 const struct clk_ops meson_sec_sys_clk_ops = {
 	.recalc_rate = meson_sec_sys_clk_recalc_rate,
-	.round_rate = meson_sec_cpu_dyn_round_rate,
-	.set_rate = meson_sec_cpu_dyn_set_rate,
+	.round_rate = meson_clk_cpu_dyn_round_rate_v2,
+	.set_rate = meson_clk_cpu_dyn_set_rate_v2,
 	.get_parent = meson_sec_sys_clk_get_parent
 };
 EXPORT_SYMBOL_GPL(meson_sec_sys_clk_ops);

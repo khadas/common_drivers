@@ -22,8 +22,10 @@ struct cpu_dyn_table {
 	u16	dyn_div;
 };
 
+/* rename as meson_clk_cpu_dyn_data if bringup branch(t3x/t5w/sm1) is back */
 struct meson_sec_cpu_dyn_data {
 	const struct cpu_dyn_table *table;
+	unsigned int offset;
 	u8 table_cnt;
 	u8 secid_dyn_rd;
 	u8 secid_dyn;

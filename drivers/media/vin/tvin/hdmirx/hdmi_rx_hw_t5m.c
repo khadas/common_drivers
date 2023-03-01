@@ -37,7 +37,7 @@
 bool rterm_trim_flag_t5m;
 /* FT trim value 4 bits */
 u32 rterm_trim_val_t5m;
-int value;
+int eq_en = 1;
 int tapx_value = 50;
 int agc_enable;
 u32 afe_value;
@@ -47,9 +47,11 @@ u32 eq_value;
 u32 misc2_value;
 u32 misc1_value;
 int phy_debug_en;
-int enhance_dfe_en = 1;
+int enhance_dfe_en_old;
+int enhance_dfe_en_new = 1;
 int eye_height = 5;
-
+int enhance_eq;
+int eq_level;
 /* for T5m */
 static const u32 phy_misc_t5m[][2] = {
 		/*  0x18	0x1c	*/
@@ -110,13 +112,13 @@ static const u32 phy_dchd_t5m[][2] = {
 		0x04000095, 0x30880069,
 	},
 	{	 /* 140~340M */
-		0x04080095, 0x30e00069,
+		0x04080093, 0x30e00069,
 	},
 	{	 /* 340~525M */
-		0x04080093, 0x30e00469,
+		0x04080091, 0x30e00469,
 	},
 	{	 /* 525~600M */
-		0x04080093, 0x30e00469,
+		0x04080091, 0x30e0046f,
 	},
 };
 
@@ -535,11 +537,11 @@ void aml_hyper_gain_tuning_t5m(void)
 	tap1 = (data32 >> 8) & 0xff;
 	tap2 = (data32 >> 16) & 0xff;
 
-	if (eq_boost0 < 3 || tap0 < 0x12)
+	if ((eq_en && eq_boost0 < 3) || tap0 < 0x12)
 		hyper_gain_0 = 1;
-	if (eq_boost1 < 3 || tap1 < 0x12)
+	if ((eq_en && eq_boost1 < 3) || tap1 < 0x12)
 		hyper_gain_1 = 1;
-	if (eq_boost2 < 3 || tap2 < 0x12)
+	if ((eq_en && eq_boost2 < 3) || tap2 < 0x12)
 		hyper_gain_2 = 1;
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_AFE,
 					  T5M_LEQ_HYPER_GAIN_CH0,
@@ -550,6 +552,17 @@ void aml_hyper_gain_tuning_t5m(void)
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_AFE,
 					  T5M_LEQ_HYPER_GAIN_CH2,
 					  hyper_gain_2);
+}
+
+int max_offset(int a, int b, int c)
+{
+	if (a >= b && a >= c)
+		return 0;
+	if (b >= a && b >= c)
+		return 1;
+	if (c >= a && c >= b)
+		return 2;
+	return -1;
 }
 
 void aml_eq_retry_t5m(void)
@@ -930,7 +943,7 @@ void bubble_sort(u32 *sort_array)
 	//return sort_array;
 }
 
-void aml_enhance_dfe(void)
+void aml_enhance_dfe_old(void)
 {
 	u32 wst_ch;
 	int i, j;
@@ -953,6 +966,94 @@ void aml_enhance_dfe(void)
 	}
 	if (pos_avg_eye_height < eye_height * 5)
 		dfe_tap0_pol_polling(pos_min_eye_height, pos_avg_eye_height, wst_ch);
+}
+
+void aml_enhance_dfe_new(void)
+{
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, MSK(2, 20), 0x0);
+}
+
+void eq_max_offset(int eq_boost0, int eq_boost1, int eq_boost2)
+{
+	int offset_eq0, offset_eq1, offset_eq2;
+	int ch = -1;
+	int eq_initial;
+
+	offset_eq0 = abs(2 * eq_boost0 - eq_boost1 - eq_boost2);
+	offset_eq1 = abs(2 * eq_boost1 - eq_boost0 - eq_boost2);
+	offset_eq2 = abs(2 * eq_boost2 - eq_boost0 - eq_boost1);
+	ch = max_offset(offset_eq0, offset_eq1, offset_eq2);
+	if (ch == 0)
+		eq_initial = (eq_boost1 + eq_boost2) / 2;
+	if (ch == 1)
+		eq_initial = (eq_boost0 + eq_boost2) / 2;
+	if (ch == 2)
+		eq_initial = (eq_boost0 + eq_boost1) / 2;
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_EQ_RSTB, 0x0);
+	if (eq_level & 0x2) {
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, MSK(5, 0), eq_initial);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, _BIT(5), 0x1);
+	}
+	if (eq_level & 0x4) {
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, MSK(5, 0), eq_initial);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, _BIT(5), 0x0);
+	}
+	if (eq_level & 0x8) {
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, MSK(5, 0), 15);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, _BIT(5), 0x1);
+	}
+	if (eq_level & 0x10) {
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, MSK(5, 0), 15);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, _BIT(5), 0x0);
+	}
+	if (eq_level & 0x20) {
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, MSK(5, 0), 15);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(13), 0);
+		usleep_range(10, 20);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(13), 1);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, _BIT(13), 0);
+		usleep_range(100, 110);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, _BIT(13), 1);
+	}
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_EQ_RSTB, 0x1);
+	usleep_range(100, 110);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, _BIT(5), 0x0);
+	usleep_range(100, 110);
+}
+
+void aml_enhance_eq_t5m(void)
+{
+	int eq_boost0, eq_boost1, eq_boost2;
+	int data32;
+	int offset_eq0, offset_eq1, offset_eq2;
+
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_EHM_DBG_SEL, 0x0);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_STATUS_MUX_SEL, 0x3);
+	usleep_range(100, 110);
+	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
+	eq_boost0 = data32 & 0x1f;
+	eq_boost1 = (data32 >> 8)  & 0x1f;
+	eq_boost2 = (data32 >> 16)	& 0x1f;
+	eq_boost0 = (eq_boost0 >= 23) ? 23 : eq_boost0;
+	eq_boost1 = (eq_boost1 >= 23) ? 23 : eq_boost1;
+	eq_boost2 = (eq_boost2 >= 23) ? 23 : eq_boost2;
+	offset_eq0 = abs(2 * eq_boost0 - eq_boost1 - eq_boost2);
+	offset_eq1 = abs(2 * eq_boost1 - eq_boost0 - eq_boost2);
+	offset_eq2 = abs(2 * eq_boost2 - eq_boost0 - eq_boost1);
+	if (offset_eq0 > 15 || offset_eq1 > 15 || offset_eq2 > 15) {
+		eq_max_offset(eq_boost0, eq_boost1, eq_boost2);
+	/* read eq value after eq retry */
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_EHM_DBG_SEL, 0x0);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_STATUS_MUX_SEL, 0x3);
+		usleep_range(100, 110);
+		data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
+		eq_boost0 = data32 & 0x1f;
+		eq_boost1 = (data32 >> 8)  & 0x1f;
+		eq_boost2 = (data32 >> 16)	& 0x1f;
+		rx_pr("after enhance eq:%d-%d-%d\n", eq_boost0, eq_boost1, eq_boost2);
+	} else {
+		rx_pr("no enhance eq\n");
+	}
 }
 
 void aml_eq_cfg_t5m(void)
@@ -1024,13 +1125,32 @@ void aml_eq_cfg_t5m(void)
 	/*enable HYPER_GAIN calibration for 6G to fix 2.0 cts HF2-1 issue*/
 	if (rx.phy.phy_bw >= PHY_BW_2 && agc_enable)
 		aml_agc_flow_t5m();
+	//eq <= 3 will trigger the new hyper gain function
+	// if an inappropriate eq value,it happened to
+	//trigger hyper gain when eq <= 3,there is no chance to convergence to
+	// a proper eq value any more.auto eq failed.
+	//the only way to exit this wrong state is back to phy_init entrance.
+	//enhance_eq insert before hyper gain function is try to get a proper/
+	//right value.
+	//this enhance_eq should auto convergence,never to be forced in this
+	//stage,or hyper gain fail.
+	//can do enhance_eq one more time after enhance_dfe finished.
+	if (rx.phy.phy_bw >= PHY_BW_2 && enhance_eq)
+		aml_enhance_eq_t5m();
 	if (rx.phy.phy_bw >= PHY_BW_1)
 		aml_hyper_gain_tuning_t5m();
 	usleep_range(200, 210);
 	/*tmds valid det*/
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_CDR_LKDET_EN, 1);
-	if (rx.phy.phy_bw >= PHY_BW_5 && enhance_dfe_en)
-		aml_enhance_dfe();
+	if (rx.phy.phy_bw >= PHY_BW_5 && enhance_dfe_en_old)
+		aml_enhance_dfe_old();
+	if (rx.phy.phy_bw >= PHY_BW_5 && enhance_dfe_en_new)
+		aml_enhance_dfe_new();
+	if (rx.phy.phy_bw >= PHY_BW_2 && enhance_eq)
+		aml_enhance_eq_t5m();
+	rx_pr("%s,%s,%s\n", enhance_dfe_en_new ? "new dfe" : "old dfe",
+	enhance_eq ? "eq en" : "no eq",
+	eq_en ? "eq triger" : "eq no triger");
 	if (log_level & PHY_LOG)
 		rx_pr("phy end\n");
 }
@@ -1124,6 +1244,10 @@ void aml_phy_cfg_t5m(void)
  /* For t5m */
 void aml_phy_init_t5m(void)
 {
+	if (rx.state == FSM_WAIT_CLK_STABLE && !rx.cableclk_stb_flg) {
+		aml_phy_cfg_t5m();
+		return;
+	}
 	aml_phy_cfg_t5m();
 	usleep_range(10, 20);
 	aml_pll_bw_cfg_t5m();

@@ -45,8 +45,8 @@
 #define EDID_DATA_LOG	0x20000
 #define RP_LOG		0x40000
 
-/* dfe enhance */
-#define RX_VER1 "ver.2023/2/24"
+/* fix conflict between two delay work */
+#define RX_VER1 "ver.2023/3/2"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

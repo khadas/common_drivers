@@ -73,8 +73,12 @@ extern u32 eq_value;
 extern u32 misc2_value;
 extern u32 misc1_value;
 extern int phy_debug_en;
-extern int enhance_dfe_en;
+extern int enhance_dfe_en_old;
+extern int enhance_dfe_en_new;
 extern int eye_height;
+extern int enhance_eq;
+extern int eq_en;
+extern int eq_level;
 /*--------------------------function declare------------------*/
 /* T5m */
 void aml_phy_init_t5m(void);

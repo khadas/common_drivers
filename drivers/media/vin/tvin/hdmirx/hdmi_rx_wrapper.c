@@ -269,7 +269,7 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.vga_dbg = 1;
 		rx.aml_phy.vga_dbg_delay = 200;
 		rx.aml_phy.eq_fix_val = 16;
-		rx.aml_phy.cdr_fr_en = 1;
+		rx.aml_phy.cdr_fr_en = 100;
 		rx.aml_phy.force_sqo = 0;
 		/* add for t5 */
 		rx.aml_phy.os_rate = 3;
@@ -280,7 +280,7 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.eq_hold = 0;
 		rx.aml_phy.dfe_hold  = 0;
 		rx.aml_phy.eye_delay = 50;
-		rx.aml_phy.eq_retry = 1;
+		rx.aml_phy.eq_retry = 0;
 		rx.aml_phy.tap2_byp = 0;
 		rx.aml_phy.long_bist_en = 0;
 		rx.aml_phy.reset_pcs_en = 1;
@@ -2446,8 +2446,11 @@ void rx_get_global_variable(const char *buf)
 	pr_var(phy_debug_en, i++);
 	pr_var(color_bar_debug_en, i++);
 	pr_var(color_bar_lvl, i++);
-	pr_var(enhance_dfe_en, i++);
+	pr_var(enhance_dfe_en_old, i++);
 	pr_var(eye_height, i++);
+	pr_var(enhance_eq, i++);
+	pr_var(eq_en, i++);
+	pr_var(eq_level, i++);
 	/* phy var definition */
 	pr_var(rx.aml_phy.sqrst_en, i++);
 	pr_var(rx.aml_phy.vga_dbg, i++);
@@ -2768,12 +2771,24 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(color_bar_lvl),
 	    &color_bar_lvl, value))
 		return pr_var(color_bar_lvl, index);
-	if (set_pr_var(tmpbuf, var_to_str(enhance_dfe_en),
-	    &enhance_dfe_en, value))
-		return pr_var(enhance_dfe_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(enhance_dfe_en_old),
+	    &enhance_dfe_en_old, value))
+		return pr_var(enhance_dfe_en_old, index);
+	if (set_pr_var(tmpbuf, var_to_str(enhance_dfe_en_new),
+	    &enhance_dfe_en_new, value))
+		return pr_var(enhance_dfe_en_new, index);
 	if (set_pr_var(tmpbuf, var_to_str(eye_height),
 	    &eye_height, value))
 		return pr_var(eye_height, index);
+	if (set_pr_var(tmpbuf, var_to_str(enhance_eq),
+	    &enhance_eq, value))
+		return pr_var(enhance_eq, index);
+	if (set_pr_var(tmpbuf, var_to_str(eq_en),
+	    &eq_en, value))
+		return pr_var(eq_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(eq_level),
+	    &eq_level, value))
+		return pr_var(eq_level, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.var.force_pattern), &rx.var.force_pattern, value))
 		return pr_var(rx.var.force_pattern, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.sqrst_en), &rx.aml_phy.sqrst_en, value))

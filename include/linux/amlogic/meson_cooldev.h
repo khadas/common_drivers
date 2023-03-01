@@ -29,5 +29,6 @@ int meson_gcooldev_min_update(struct thermal_cooling_device *cdev)
 	return 0;
 }
 #endif
+extern struct platform_driver meson_cooldev_platdrv;
 #endif
 

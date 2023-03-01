@@ -18,11 +18,11 @@
 #include <linux/pm_domain.h>
 #include <linux/arm-smccc.h>
 #include <linux/amlogic/secmon.h>
+#include <linux/amlogic/ddr_cooling.h>
 #include <linux/debugfs.h>
 #include "thermal_core.h"
 #include "thermal_hwmon.h"
 #include "cpucore_cooling.h"
-#include "meson_cooldev.h"
 #include <linux/reset.h>
 
 /*r1p1 thermal sensor version*/
@@ -736,8 +736,8 @@ static void meson_thermal_hot_callback(struct thermal_zone_device *tz)
 {
 	struct thermal_instance *instance;
 	struct thermal_cooling_device *cdev;
+	struct ddr_cooling_device *ddr_cdev;
 	u32 state_set;
-	static u32 last_state_set;
 	unsigned long state_get;
 
 	if (tz->temperature < 0)
@@ -746,14 +746,15 @@ static void meson_thermal_hot_callback(struct thermal_zone_device *tz)
 	mutex_lock(&tz->lock);
 	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
 		cdev = instance->cdev;
+		ddr_cdev = cdev->devdata;
 		if (cdev->ops && cdev->ops->set_cur_state && instance->trip == THERMAL_TRIP_HOT) {
 			cdev->ops->get_requested_power(cdev, &state_set);
-			if (state_set != last_state_set) {
+			if (state_set != ddr_cdev->last_state) {
 				cdev->ops->set_cur_state(cdev, (unsigned long)state_set);
-				last_state_set = state_set;
+				ddr_cdev->last_state = state_set;
 				cdev->ops->get_cur_state(cdev, &state_get);
-				pr_info("[%s %d]temp:%d, ddrset:0x%x, get:0x%lx\n", __func__,
-						__LINE__, tz->temperature, state_set, state_get);
+				pr_info("[%s]temp:%d, set:0x%x, get:0x%lx\n", cdev->type,
+						tz->temperature, state_set, state_get);
 			}
 		}
 	}

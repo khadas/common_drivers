@@ -11,7 +11,6 @@
 #include <linux/amlogic/meson_cooldev.h>
 #include <linux/io.h>
 #include "thermal_core.h"
-#include "meson_cooldev.h"
 
 static int ddrfreqcd_id;
 static DEFINE_MUTEX(cooling_ddr_lock);
@@ -102,7 +101,7 @@ static unsigned long cdev_calc_next_state_by_temp(struct thermal_instance *insta
 	struct thermal_zone_device *tz;
 	struct thermal_cooling_device *cdev;
 	struct ddr_cooling_device *ddr_device;
-	int i, hyst = 0, trip_temp;
+	int i, hyst = 0, trip_temp, max;
 
 	if (!ins)
 		return -EINVAL;
@@ -114,16 +113,17 @@ static unsigned long cdev_calc_next_state_by_temp(struct thermal_instance *insta
 		return -EINVAL;
 
 	ddr_device = cdev->devdata;
+	max = ddr_device->ddr_status - 1;
 
 	tz->ops->get_trip_hyst(tz, instance->trip, &hyst);
 	tz->ops->get_trip_temp(tz, instance->trip, &trip_temp);
 
-	for (i = ddr_device->ddr_status - 1; i > 0; i--) {
-		if (temperature >= (trip_temp + i * hyst))
+	for (i = 0; i < ddr_device->ddr_status; i++) {
+		if (temperature < (trip_temp + (i + 1) * hyst))
 			break;
 	}
 
-	return i;
+	return i > max ? max : i;
 }
 
 static int ddr_get_requested_power(struct thermal_cooling_device *cdev,

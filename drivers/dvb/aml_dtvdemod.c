@@ -369,6 +369,18 @@ static const struct demod_module demod_modules[] = {
 		.detect = aml_demod_detect,
 		.register_frontend = aml_dvb_register_frontend,
 		.unregister_frontend = aml_dvb_unregister_frontend
+	},
+	{
+		.name = "cxd2878",
+		.id = AM_DTV_DEMOD_CXD2878,
+		.type = { FE_QPSK, FE_QAM, FE_OFDM, FE_ATSC, FE_ISDBT, AML_FE_UNDEFINED },
+		.attach_symbol = NULL,
+		.attach = aml_demod_attach,
+		.detach = aml_demod_detach,
+		.match = aml_demod_match,
+		.detect = aml_demod_detect,
+		.register_frontend = aml_dvb_register_frontend,
+		.unregister_frontend = aml_dvb_unregister_frontend
 	}
 };
 

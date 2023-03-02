@@ -29,6 +29,7 @@
 #include <linux/workqueue.h>
 #include <linux/amlogic/iomap.h>
 #include <linux/clk-provider.h>
+#include <linux/amlogic/cpu_version.h>
 
 #include <linux/amlogic/media/sound/hdmi_earc.h>
 #include "resample.h"
@@ -111,6 +112,9 @@ struct earc {
 	struct clk *clk_tx_cmdc_srcpll;
 	struct clk *clk_tx_dmac_srcpll;
 
+	/* for 44100hz samplerate */
+	struct clk *clk_src_cd;
+
 	struct regmap *tx_cmdc_map;
 	struct regmap *tx_dmac_map;
 	struct regmap *tx_top_map;
@@ -189,6 +193,9 @@ struct earc {
 	int earctx_port;
 	/* get from hdmirx */
 	int earctx_5v;
+	/* Standardization value by normal setting */
+	unsigned int standard_tx_dmac;
+	unsigned int standard_tx_freq;
 	int suspend_clk_off;
 };
 
@@ -942,9 +949,21 @@ static int earc_dai_prepare(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static void earctx_set_dmac_freq(struct earc *p_earc, unsigned int freq)
+#define MPLL_HBR_FIXED_FREQ   (491520000)
+#define MPLL_CD_FIXED_FREQ    (451584000)
+
+/* normal 1 audio clk src both for 44.1k and 48k */
+static void earctx_set_dmac_freq_normal_1(struct earc *p_earc, unsigned int freq,  bool tune)
 {
-	unsigned int mpll_freq = freq *
+	unsigned int mpll_freq = 0;
+	char *clk_name = (char *)__clk_get_name(p_earc->clk_tx_dmac_srcpll);
+
+	if (freq == 0) {
+		dev_err(p_earc->dev, "%s(), clk 0 err\n", __func__);
+		return;
+	}
+
+	mpll_freq = freq *
 		mpll2dmac_clk_ratio_by_type(p_earc->tx_audio_coding_type);
 
 	/* make sure mpll_freq doesn't exceed MPLL max freq */
@@ -952,12 +971,13 @@ static void earctx_set_dmac_freq(struct earc *p_earc, unsigned int freq)
 		mpll_freq = mpll_freq >> 1;
 
 	dev_info(p_earc->dev,
-		"%s, set freq:%d, get freq:%lu, set src freq:%d, get src freq:%lu\n",
+		"%s, set freq:%d, get freq:%lu, set src freq:%d, get src freq:%lu clk_name %s\n",
 		__func__,
 		freq,
 		clk_get_rate(p_earc->clk_tx_dmac),
 		mpll_freq,
-		clk_get_rate(p_earc->clk_tx_dmac_srcpll));
+		clk_get_rate(p_earc->clk_tx_dmac_srcpll),
+		clk_name);
 
 	if (freq == p_earc->tx_dmac_freq)
 		return;
@@ -966,6 +986,82 @@ static void earctx_set_dmac_freq(struct earc *p_earc, unsigned int freq)
 	clk_set_rate(p_earc->clk_tx_dmac_srcpll, mpll_freq);
 	p_earc->tx_dmac_freq = freq;
 	clk_set_rate(p_earc->clk_tx_dmac, freq);
+}
+
+/* 2 audio clk src each for 44.1k and 48k */
+static void earctx_set_dmac_freq_normal_2(struct earc *p_earc, unsigned int freq,  bool tune)
+{
+	unsigned int mpll_freq = 0;
+	int ret = 0;
+	char *clk_name = (char *)__clk_get_name(p_earc->clk_tx_dmac_srcpll);
+
+	if (freq == 0) {
+		dev_err(p_earc->dev, "%s(), clk 0 err\n", __func__);
+		return;
+	}
+
+	mpll_freq = freq *
+		mpll2dmac_clk_ratio_by_type(p_earc->tx_audio_coding_type);
+
+	/* make sure mpll_freq doesn't exceed MPLL max freq */
+	while (mpll_freq > AML_MPLL_FREQ_MAX)
+		mpll_freq = mpll_freq >> 1;
+
+	if (p_earc->standard_tx_freq % 8000 == 0) {
+		/* same with tdm mpll */
+		clk_set_rate(p_earc->clk_tx_dmac_srcpll, mpll_freq);
+		ret = clk_set_parent(p_earc->clk_tx_dmac, p_earc->clk_tx_dmac_srcpll);
+		if (ret)
+			dev_warn(p_earc->dev, "can't set clk_tx_dmac parent srcpll clock\n");
+	} else if (p_earc->standard_tx_freq % 11025 == 0) {
+		/* same with tdm mpll */
+		clk_set_rate(p_earc->clk_src_cd, mpll_freq);
+		ret = clk_set_parent(p_earc->clk_tx_dmac, p_earc->clk_src_cd);
+		if (ret)
+			dev_warn(p_earc->dev, "can't set clk_tx_dmac parent cd clock\n");
+		if (!IS_ERR(p_earc->clk_src_cd)) {
+			char *clk_name = (char *)__clk_get_name(p_earc->clk_src_cd);
+
+			ret = clk_prepare_enable(p_earc->clk_src_cd);
+			if (ret) {
+				dev_err(s_earc->dev, "Can't s_earc earc clk_src_cd:%d clk_name: %s rate: %lu\n",
+					ret, clk_name, clk_get_rate(p_earc->clk_src_cd));
+			}
+		}
+	} else {
+		dev_warn(p_earc->dev, "unsupport clock rate %d\n",
+			p_earc->standard_tx_freq);
+	}
+
+	dev_info(p_earc->dev,
+		"%s, set freq:%d, get freq:%lu, set src freq:%d, get src freq:%lu, clk_name %s, standard_tx_dmac %d\n",
+		__func__,
+		freq,
+		clk_get_rate(p_earc->clk_tx_dmac),
+		mpll_freq,
+		clk_get_rate(p_earc->clk_tx_dmac_srcpll),
+		clk_name,
+		p_earc->standard_tx_dmac);
+
+	if (freq == p_earc->tx_dmac_freq)
+		return;
+
+	/* same with tdm mpll */
+	p_earc->tx_dmac_freq = freq;
+	clk_set_rate(p_earc->clk_tx_dmac, freq);
+}
+
+static void earctx_set_dmac_freq_normal(struct earc *p_earc, unsigned int freq,  bool tune)
+{
+	if (IS_ERR(p_earc->clk_src_cd))
+		earctx_set_dmac_freq_normal_1(p_earc, freq, tune);
+	else
+		earctx_set_dmac_freq_normal_2(p_earc, freq, tune);
+}
+
+static void earctx_set_dmac_freq(struct earc *p_earc, unsigned int freq,  bool tune)
+{
+	earctx_set_dmac_freq_normal(p_earc, freq, tune);
 }
 
 static void earctx_update_clk(struct earc *p_earc,
@@ -977,7 +1073,10 @@ static void earctx_update_clk(struct earc *p_earc,
 
 	dev_info(p_earc->dev, "rate %d, set %dX normal dmac clk, p_earc->tx_dmac_freq:%d\n",
 		rate, multi, p_earc->tx_dmac_freq);
-	earctx_set_dmac_freq(p_earc, freq);
+
+	p_earc->standard_tx_dmac = freq;
+	p_earc->standard_tx_freq = rate;
+	earctx_set_dmac_freq(p_earc, freq, false);
 }
 
 int spdif_codec_to_earc_codec[][2] = {
@@ -2120,7 +2219,7 @@ static int earctx_clk_put(struct snd_kcontrol *kcontrol,
 	value = value - 1000000;
 	freq += value;
 
-	earctx_set_dmac_freq(p_earc, freq);
+	earctx_set_dmac_freq(p_earc, freq, true);
 	return 0;
 }
 
@@ -2624,6 +2723,10 @@ static int earc_platform_probe(struct platform_device *pdev)
 	if (ret < 0)
 		dev_err(&pdev->dev, "Can't retrieve suspend-clk-off\n");
 
+	p_earc->clk_src_cd = devm_clk_get(&pdev->dev, "clk_src_cd");
+	if (IS_ERR(p_earc->clk_src_cd))
+		dev_info(&pdev->dev, "no clk_src_cd clock for 44k case\n");
+
 	/* RX */
 	if (p_earc->chipinfo->rx_enable) {
 		spin_lock_init(&p_earc->rx_lock);
@@ -2699,6 +2802,13 @@ static int earc_platform_probe(struct platform_device *pdev)
 			if (ret) {
 				dev_err(dev, "Can't set clk_tx_dmac parent clock\n");
 				return ret;
+			}
+			if (!IS_ERR(p_earc->clk_src_cd)) {
+				ret = clk_set_rate(p_earc->clk_src_cd, MPLL_CD_FIXED_FREQ);
+				if (ret) {
+					dev_err(dev, "Can't set clk_src_cd  clock\n");
+					return ret;
+				}
 			}
 		}
 

@@ -927,6 +927,8 @@ void get_vout_info(struct frc_dev_s *frc_devp)
 	(vinfo->sync_duration_num * 100 / vinfo->sync_duration_den) / 100;
 	if (frc_devp->out_sts.out_framerate != tmpframterate) {
 		frc_devp->out_sts.out_framerate = tmpframterate;
+		pfw_data->frc_top_type.frc_out_frm_rate =
+			frc_devp->out_sts.out_framerate;
 		pfw_data->frc_top_type.frc_other_reserved =
 			frc_devp->out_sts.out_framerate;
 		if (frc_devp->auto_n2m == 1) {
@@ -939,6 +941,7 @@ void get_vout_info(struct frc_dev_s *frc_devp)
 				frc_devp->out_sts.vout_width,
 				frc_devp->out_sts.vout_height,
 				frc_devp->out_sts.out_framerate);
+
 	}
 }
 

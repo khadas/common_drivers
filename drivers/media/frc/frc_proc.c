@@ -212,7 +212,6 @@ irqreturn_t frc_input_isr(int irq, void *dev_id)
 
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return IRQ_HANDLED;
-
 	inp_undone_read(devp);
 	if (devp->dbg_reg_monitor_i)
 		frc_in_reg_monitor(devp);
@@ -349,17 +348,30 @@ const char * const frc_state_ary[] = {
 int frc_update_in_sts(struct frc_dev_s *devp, struct st_frc_in_sts *frc_in_sts,
 				struct vframe_s *vf, struct vpp_frame_par_s *cur_video_sts)
 {
+	struct frc_fw_data_s *pfw_data;
+
 	if (!vf || !cur_video_sts) {
 		frc_in_sts->in_hsize = 0;
 		frc_in_sts->in_vsize = 0;
 		return -1;
 	}
+	if (!devp) {
+		PR_ERR("%s: frc_devp is null\n", __func__);
+		return -1;
+	}
+	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
 	frc_in_sts->vf_type = vf->type;
 	frc_in_sts->duration = vf->duration;
 	frc_in_sts->signal_type = vf->signal_type;
 	frc_in_sts->source_type = vf->source_type;
 	frc_in_sts->vf = vf;
-
+	if (frc_in_sts->duration > 0 && devp->in_out_ratio != FRC_RATIO_1_1) {
+		pfw_data->frc_top_type.frc_in_frm_rate =
+			(1000000 / devp->in_sts.vs_duration);
+		pfw_data->frc_top_type.video_duration = (u16)(frc_in_sts->duration);
+	} else {
+		pfw_data->frc_top_type.frc_in_frm_rate = 0;
+	}
 	if (!frc_in_sts->vf_sts) {
 		frc_in_sts->in_hsize = 0;
 		frc_in_sts->in_vsize = 0;
@@ -375,6 +387,7 @@ int frc_update_in_sts(struct frc_dev_s *devp, struct st_frc_in_sts *frc_in_sts,
 			frc_in_sts->in_hsize = cur_video_sts->nnhf_input_w;
 			frc_in_sts->in_vsize = cur_video_sts->nnhf_input_h;
 		}
+
 	}
 	/*secure mode*/
 	if (devp->in_sts.secure_mode &&

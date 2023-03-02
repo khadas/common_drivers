@@ -158,15 +158,14 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x5000000>;
+			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 		};
 
 		ion_fb_reserved:linux,ion-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 3840x2160x4x4 round up 4M align */
-			size = <0x0 0x8000000>;
+			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
@@ -184,6 +183,21 @@
 			size = <0x0 0x0>;
 			alignment = <0x0 0x100000>;
 			//no-map;
+		};
+
+		dmaheap_cma_reserved:heap-gfx {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* 4k STB androidT size 4M */
+			size = <0x0 0x400000>;
+			alignment = <0x0 0x400000>;
+		};
+		dmaheap_fb_reserved:heap-fb {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* 4k STB androidT size 212M */
+			size = <0x0 0xd400000>;
+			alignment = <0x0 0x400000>;
 		};
 
 		/*  vdin0 CMA pool */

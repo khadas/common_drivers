@@ -1230,8 +1230,8 @@
 			#sound-dai-cells = <0>;
 			compatible = "amlogic, s4_codec_T9015";
 			reg = <0x0 0xFE01A000 0x0 0x2000>;
-			tocodec_inout = <2>;
-			tdmout_index = <2>;
+			tocodec_inout = <1>;
+			tdmout_index = <1>;
 			ch0_sel = <0>;
 			ch1_sel = <1>;
 
@@ -1324,7 +1324,7 @@
 				compatible = "amlogic, s5-snd-earc";
 				#sound-dai-cells = <0>;
 
-				status = "disabled";
+				status = "okay";
 
 				reg =
 					<0x0 0x800 0x0 0x400>,
@@ -1335,20 +1335,20 @@
 					"rx_dmac",
 					"rx_top";
 
-				//clocks = < &clkaudio CLKID_EARCRX_CMDC
-				//	&clkaudio CLKID_EARCRX_DMAC
-				//	&clkc CLKID_FCLK_DIV4
-				//	&clkc CLKID_FCLK_DIV4
-				//	&clkaudio CLKID_EARCTX_CMDC
-				//	&clkaudio CLKID_EARCTX_DMAC
-				//	&clkc CLKID_FCLK_DIV4
-				//	&clkc CLKID_HIFI_PLL
-				//	>;
-				//clock-names =
-				//	"rx_cmdc",
-				//	"rx_dmac",
-				//	"rx_cmdc_srcpll",
-				//	"rx_dmac_srcpll";
+				clocks = < &clkaudio CLKID_EARCRX_CMDC
+					&clkaudio CLKID_EARCRX_DMAC
+					&clkc CLKID_FCLK_DIV4
+					&clkc CLKID_FCLK_DIV4
+					&clkaudio CLKID_EARCTX_CMDC
+					&clkaudio CLKID_EARCTX_DMAC
+					&clkc CLKID_FCLK_DIV4
+					&clkc CLKID_HIFI_PLL
+					>;
+				clock-names =
+					"rx_cmdc",
+					"rx_dmac",
+					"rx_cmdc_srcpll",
+					"rx_dmac_srcpll";
 
 				interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
 				interrupt-names = "earc_rx";

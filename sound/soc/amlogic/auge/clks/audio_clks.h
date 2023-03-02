@@ -103,6 +103,7 @@ extern struct audio_clk_init axg_audio_clks_init;
 extern struct audio_clk_init c3_audio_clks_init;
 extern struct audio_clk_init t5m_audio_clks_init;
 extern struct audio_clk_init g12a_audio_clks_init;
+extern struct audio_clk_init s5_audio_clks_init;
 
 extern spinlock_t aclk_lock;
 

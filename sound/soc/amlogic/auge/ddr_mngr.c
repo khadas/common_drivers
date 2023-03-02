@@ -2307,6 +2307,23 @@ static struct ddr_chipinfo c3_ddr_chipinfo = {
 	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v2[0],
 };
 
+static struct ddr_chipinfo s5_ddr_chipinfo = {
+	.same_src_fn           = true,
+	.ugt                   = true,
+	.src_sel_ctrl          = true,
+	.asrc_src_sel_ctrl     = true,
+	.wakeup                = 2,
+	.toddr_num             = 4,
+	.frddr_num             = 4,
+	.fifo_depth            = FIFO_DEPTH_1K,
+	.chnum_sync            = true,
+	.burst_finished_flag   = true,
+	.to_srcs               = &toddr_srcs_v3[0],
+	.use_arb               = false,
+	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v2[0],
+	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v2[0],
+};
+
 static const struct of_device_id aml_ddr_mngr_device_id[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -2353,6 +2370,10 @@ static const struct of_device_id aml_ddr_mngr_device_id[] = {
 	{
 		.compatible = "amlogic, c3-audio-ddr-manager",
 		.data       = &c3_ddr_chipinfo,
+	},
+	{
+		.compatible = "amlogic, s5-audio-ddr-manager",
+		.data       = &s5_ddr_chipinfo,
 	},
 	{},
 };

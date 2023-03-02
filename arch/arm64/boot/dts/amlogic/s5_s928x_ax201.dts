@@ -70,7 +70,7 @@
 			/*reusable;*/
 			no-map;
 			alignment = <0x0 0x400000>;
-			reg = <0x0 0x05000000 0x0 0x400000>;
+			reg = <0x0 0x05000000 0x0 0x3400000>;
 		};
 
 		dsp_fw_reserved:linux,dsp_fw {

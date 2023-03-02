@@ -9,7 +9,7 @@ KERNEL_DIR=${KERNEL_DIR:-common}
 COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR:-common_drivers}
 T=$(pwd)
 ROOT_DIR=${ROOT_DIR:-${T}}
-PATCHES_PATH=${ROOT_DIR}/$(dirname $0)/${FULL_KERNEL_VERSION}/patches
+PATCHES_PATH=${ROOT_DIR}/$(dirname $0)/${FULL_KERNEL_VERSION}
 
 if [[ ! -d ${PATCHES_PATH} ]]; then
 	echo "None patch to am, ${PATCHES_PATH}/${FULL_KERNEL_VERSION}/patches does not exist!!!"

@@ -512,6 +512,10 @@ create_ramdisk_vendor_recovery() {
 
 	if [[ -n ${ANDROID_PROJECT} ]]; then
 		recovery_module_i=${#RECOVERY_MODULES_LOAD_LIST[@]}
+		#when RECOVERY_MODULES_LOAD_LIST is NULL
+		if [ ${#RECOVERY_MODULES_LOAD_LIST[@]}  -eq  0 ]; then
+			last_recovery_module=${last_ramdisk_module}
+		fi
 		while [ ${recovery_module_i} -gt 0 ]; do
 			let recovery_module_i--
 			echo recovery_module_i=$recovery_module_i ${RECOVERY_MODULES_LOAD_LIST[${recovery_module_i}]}
@@ -530,8 +534,9 @@ create_ramdisk_vendor_recovery() {
 		sed -i "1d" recovery_install.sh
 		mkdir recovery
 		cat recovery_install.sh | cut -d ' ' -f 2 > recovery/recovery_modules.order
-		cat recovery_install.sh | cut -d ' ' -f 2 | xargs cp -t recovery/
-
+		if [ ${#RECOVERY_MODULES_LOAD_LIST[@]} -ne 0 ]; then
+			cat recovery_install.sh | cut -d ' ' -f 2 | xargs cp -t recovery/
+		fi
 		sed -i '1s/^/#!\/bin\/sh\n\nset -x\n/' recovery_install.sh
 		echo "echo Install recovery modules success!" >> recovery_install.sh
 		chmod 755 recovery_install.sh

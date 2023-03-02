@@ -58,7 +58,6 @@ static struct sync_timeline *sync_timeline_create(const char *name)
 	kref_init(&obj->kref);
 	obj->context = dma_fence_context_alloc(1);
 	strncpy(obj->name, name, sizeof(obj->name));
-	obj->name[31] = '\0';
 	INIT_LIST_HEAD(&obj->active_list_head);
 	INIT_LIST_HEAD(&obj->pt_list);
 	spin_lock_init(&obj->lock);
@@ -298,3 +297,17 @@ void aml_sync_put_fence(struct dma_fence *fence)
 {
 	dma_fence_put(fence);
 }
+
+/**
+ * dma_fence_get_status_locked - returns the status upon completion
+ * @fence: the dma_fence to query
+ *
+ * Returns 0 if the fence has not yet been signaled, 1 if the fence has
+ * been signaled without an error condition, or a negative error code
+ * if the fence has been completed in err.
+ */
+int aml_sync_fence_status(struct dma_fence *fence)
+{
+	return dma_fence_get_status(fence);
+}
+

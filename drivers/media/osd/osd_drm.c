@@ -837,9 +837,7 @@ EXPORT_SYMBOL(osd_drm_debugfs_exit);
 void osd_drm_vsync_isr_handler(void)
 {
 	if (!osd_hw.hw_rdma_en) {
-#ifdef CONFIG_AMLOGIC_VOUT
 		osd_update_vsync_timestamp();
-#endif
 		osd_update_scan_mode();
 		/* go through update list */
 		walk_through_update_list();
@@ -849,14 +847,10 @@ void osd_drm_vsync_isr_handler(void)
 		osd_hw_reset(VIU1);
 	} else {
 		if (osd_hw.osd_meson_dev.cpu_id != __MESON_CPU_MAJOR_ID_AXG) {
-#ifdef CONFIG_AMLOGIC_VOUT
 			osd_update_vsync_timestamp();
-#endif
 			osd_rdma_interrupt_done_clear(VPU_VPP0);
 		} else {
-#ifdef CONFIG_AMLOGIC_VOUT
 			osd_update_vsync_timestamp();
-#endif
 			osd_update_scan_mode();
 			/* go through update list */
 			walk_through_update_list();

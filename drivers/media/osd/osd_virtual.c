@@ -28,18 +28,21 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/uaccess.h>
 #include <linux/amlogic/ion.h>
+#include <linux/dma-mapping.h>
+#include <linux/dma-map-ops.h>
+#include <linux/dma-buf.h>
+//#include <linux/ion.h>
 #include <dev_ion.h>
 #include <linux/fs.h>
 #include <linux/cma.h>
-#include <linux/dma-map-ops.h>
-#include <linux/dma-mapping.h>
+//#include <linux/dma-contiguous.h>
 #include <linux/delay.h>
+#include "../common/ion_dev/dev_ion.h"
+//#include <linux/meson_ion.h>
 
 /* Amlogic Headers */
-#ifdef CONFIG_AMLOGIC_VOUT
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
-#endif
 
 /* Local Headers */
 #ifdef CONFIG_AMLOGIC_LCD_SPI
@@ -573,8 +576,8 @@ static int malloc_fb_memory(struct fb_info *info)
 
 	cma = dev_get_cma_area(info->device);
 	if (cma) {
-		base = PFN_PHYS(cma->base_pfn);
-		size = cma->count << PAGE_SHIFT;
+		base = cma_get_base(cma);
+		size = cma_get_size(cma);
 		pr_info("%s, cma:%p\n", __func__, cma);
 	}
 
@@ -593,15 +596,9 @@ static int malloc_fb_memory(struct fb_info *info)
 		pr_info("%s, %d, fb_index=%d,fb_rmem_size=%zu\n",
 			__func__, __LINE__, fb_index,
 			fb_memsize);
-#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
-		fb_page = cma_alloc(cma,
-				    fb_memsize >> PAGE_SHIFT,
-				    0, GFP_KERNEL);
-#else
-		fb_page = cma_alloc(cma,
-				    fb_memsize >> PAGE_SHIFT,
-				    0, 0);
-#endif
+		fb_page = dma_alloc_from_contiguous(info->device,
+						    fb_memsize >> PAGE_SHIFT,
+						    0, 0);
 		if (!fb_page) {
 			pr_err("allocate buffer failed:%zu\n", fb_memsize);
 			return -ENOMEM;
@@ -611,6 +608,36 @@ static int malloc_fb_memory(struct fb_info *info)
 			aml_map_phyaddr_to_virt(fb_rmem_paddr, fb_memsize);
 		osd_log_dbg(MODULE_BASE, "fb_index=%d dma_alloc=0x%zx\n",
 			    fb_index, fb_memsize);
+	} else {
+#ifdef CONFIG_AMLOGIC_ION
+		int ion_fd = -1;
+		struct dma_buf *dmabuf = NULL;
+
+		pr_info("use ion buffer for fb memory, fb_index=%d\n",
+			fb_index);
+		dmabuf = ion_alloc(fb_memsize,
+				   (1 << ION_HEAP_TYPE_DMA),
+				   ION_FLAG_EXTEND_MESON_HEAP);
+		ion_fd = dma_buf_fd(dmabuf, O_CLOEXEC);
+		if (ion_fd < 0) {
+			osd_log_err("%s: size=0x%zx, FAILED.\n",
+				    __func__, fb_memsize);
+			return -ENOMEM;
+		}
+		if (meson_ion_share_fd_to_phys(ion_fd, &fb_rmem_paddr,
+					       &fb_memsize_total))
+			osd_log_err("fd_to_phys failed\n");
+		fb_rmem_vaddr = aml_map_phyaddr_to_virt(fb_rmem_paddr,
+							fb_memsize_total);
+		dev_notice(&pdev->dev,
+			   "fd=%d\n", ion_fd);
+		dev_notice(&pdev->dev,
+			   "ion memory(%d): created fb at 0x%p, size %ld MiB\n",
+			   fb_index,
+			   (void *)fb_rmem_paddr,
+			   (unsigned long)
+			   fb_memsize / SZ_1M);
+#endif
 	}
 	fbdev->fb_len = fb_memsize;
 	fbdev->fb_mem_paddr = fb_rmem_paddr;

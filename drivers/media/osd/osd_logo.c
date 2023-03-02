@@ -45,18 +45,14 @@ static struct para_pair_s logo_args[] = {
 
 struct logo_info_s {
 	int index;
-#ifdef CONFIG_AMLOGIC_VOUT
 	u32 vmode;
-#endif
 	u32 debug;
 	u32 loaded;
 	u32 fb_width;
 	u32 fb_height;
 } logo_info = {
 	.index = -1,
-#ifdef CONFIG_AMLOGIC_VOUT
 	.vmode = VMODE_MAX,
-#endif
 	.debug = 0,
 	.loaded = 0,
 	.fb_width = 1920,
@@ -145,9 +141,8 @@ static int logo_setup(char *str)
 	logo_info.index = -1;
 	logo_info.debug = 0;
 	logo_info.loaded = 0;
-#ifdef CONFIG_AMLOGIC_VOUT
 	logo_info.vmode = VMODE_MAX;
-#endif
+
 	sep[0] = *ptr;
 	sep[1] = '\0';
 	while ((count--) && (option = strsep(&str, sep))) {
@@ -207,9 +202,7 @@ EXPORT_SYMBOL(get_logo_display_bpp);
 
 int set_osd_logo_freescaler(void)
 {
-#ifdef CONFIG_AMLOGIC_VOUT
 	const struct vinfo_s *vinfo = NULL;
-#endif
 	u32 index = logo_info.index;
 	s32 src_x_start = 0, src_x_end = 0;
 	s32 src_y_start = 0, src_y_end = 0;
@@ -247,7 +240,6 @@ int set_osd_logo_freescaler(void)
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
 	vinfo = get_current_vinfo();
 #endif
-#ifdef CONFIG_AMLOGIC_VOUT
 	if (vinfo) {
 		target_x_end = vinfo->width - 1;
 		target_y_end = vinfo->height - 1;
@@ -255,7 +247,6 @@ int set_osd_logo_freescaler(void)
 		target_x_end = 1919;
 		target_y_end = 1079;
 	}
-#endif
 	if (src_x_start == 0 &&
 	    (src_x_end == (logo_info.fb_width - 1)) &&
 	    src_y_start == 0 &&
@@ -266,7 +257,6 @@ int set_osd_logo_freescaler(void)
 	    dst_y_end == target_y_end)
 		return 0;
 
-#ifdef CONFIG_AMLOGIC_VOUT
 	if (vinfo)
 		pr_info("outputmode changed to %s, reset osd%d, (%d, %d, %d, %d) -> (%d, %d, %d, %d)\n",
 			vinfo->name, index,
@@ -277,7 +267,7 @@ int set_osd_logo_freescaler(void)
 			index,
 			dst_x_start, dst_y_start, dst_x_end, dst_y_end,
 			0, 0, target_x_end, target_y_end);
-#endif
+
 	osd_set_free_scale_mode_hw(index, 1);
 	osd_set_free_scale_enable_hw(index, 0);
 	osd_set_free_scale_axis_hw(index, 0, 0,

@@ -6,9 +6,7 @@
 #ifndef _OSD_HW_H_
 #define _OSD_HW_H_
 
-#ifdef CONFIG_AMLOGIC_VOUT
 #include <linux/amlogic/media/vout/vinfo.h>
-#endif
 #include "osd.h"
 #include "osd_sync.h"
 #include "osd_drm.h"
@@ -30,6 +28,7 @@ extern int int_viu3_vsync;
 extern struct hw_para_s osd_hw;
 extern struct osd_device_hw_s osd_dev_hw;
 extern int enable_vd_zorder;
+extern struct hw_osd_slice2ppc_reg_s hw_osd_reg_slice2ppc;
 
 #ifdef CONFIG_HIBERNATION
 void osd_freeze_hw(void);
@@ -87,6 +86,9 @@ void osd_get_window_axis_hw(u32 index, s32 *x0, s32 *y0,
 			    s32 *x1, s32 *y1);
 void osd_set_window_axis_hw(u32 index, s32 x0, s32 y0, s32 x1, s32 y1);
 void osd_set_scale_axis_hw(u32 index, s32 x0, s32 y0, s32 x1, s32 y1);
+void osd_set_src_position_from_reg(u32 index,
+	s32 src_x_start, s32 src_x_end,
+	s32 src_y_start, s32 src_y_end);
 s32 osd_get_position_from_reg(u32 index,
 			      s32 *src_x_start, s32 *src_x_end,
 			      s32 *src_y_start, s32 *src_y_end,
@@ -102,9 +104,7 @@ void osd_set_2x_scale_hw(u32 index, u16 h_scale_enable,
 void osd_get_flush_rate_hw(u32 index, u32 *break_rate);
 void osd_set_reverse_hw(u32 index, u32 reverse, u32 update);
 void osd_get_reverse_hw(u32 index, u32 *reverse);
-#ifdef CONFIG_AMLOGIC_VOUT
 void osd_set_antiflicker_hw(u32 index, struct vinfo_s *vinfo, u32 yres);
-#endif
 void osd_get_antiflicker_hw(u32 index, u32 *on_off);
 void osd_get_angle_hw(u32 index, u32 *angle);
 void osd_set_angle_hw(u32 index, u32 angle, u32  virtual_osd1_yres,
@@ -176,18 +176,14 @@ void osd_update_3d_mode(void);
 void osd_update_vsync_hit(void);
 void osd_update_vsync_hit_viu2(void);
 void osd_update_vsync_hit_viu3(void);
-#ifdef CONFIG_AMLOGIC_VOUT
 void osd_update_vsync_timestamp(void);
-#endif
 void osd_hw_reset(u32 output_index);
 void osd_mali_afbc_start(u32 output_index);
 int logo_work_init(void);
 int get_logo_loaded(void);
 void set_logo_loaded(void);
 int set_osd_logo_freescaler(void);
-#ifdef CONFIG_AMLOGIC_VOUT
 int is_interlaced(struct vinfo_s *vinfo);
-#endif
 void osd_get_display_debug(u32 index, u32 *osd_display_debug_enable);
 void osd_set_display_debug(u32 index, u32 osd_display_debug_enable);
 void osd_get_background_size(u32 index, struct display_flip_info_s *disp_info);
@@ -227,6 +223,7 @@ void osd_set_dimm_info(u32 index, u32 osd_dimm_layer, u32 osd_dimm_color);
 u32 osd_get_line_n_rdma(void);
 void  osd_set_line_n_rdma(u32 line_n_rdma);
 u32 get_output_device_id(u32 index);
+u32 to_osd_hw_index(u32 osd_index);
 void osd_set_hold_line(u32 index, int hold_line);
 u32 osd_get_hold_line(u32 index);
 void osd_set_blend_bypass(int index, u32 blend_bypass);
@@ -244,4 +241,6 @@ void osd_set_display_fb(u32 index, u32 osd_display_fb);
 void osd_get_sc_depend(u32 *osd_sc_depend);
 void osd_set_sc_depend(u32 osd_sc_depend);
 void osd_get_fence_count(u32 index, u32 *fence_cnt, u32 *timeline_cnt);
+int get_encp_line(u32 viu_type);
+u32 get_cur_begin_line(u32 output_index);
 #endif

@@ -30,9 +30,7 @@ struct osd_fb_dev_s {
 	void __iomem *fb_mem_afbc_vaddr[OSD_MAX_BUF_NUM];
 	ulong fb_afbc_len[OSD_MAX_BUF_NUM];
 	const struct color_bit_define_s *color;
-#ifdef CONFIG_AMLOGIC_VOUT
 	enum vmode_e vmode;
-#endif
 	struct osd_ctl_s osd_ctl;
 	u32 order;
 	u32 scale;
@@ -58,6 +56,7 @@ struct fb_dmabuf_export {
 
 void *aml_mm_vmap(phys_addr_t phys, unsigned long size);
 void *aml_map_phyaddr_to_virt(dma_addr_t phys, unsigned long size);
+void aml_unmap_phyaddr(u8 *vaddr);
 phys_addr_t get_fb_rmem_paddr(int index);
 void __iomem *get_fb_rmem_vaddr(int index);
 size_t get_fb_rmem_size(int index);
@@ -66,4 +65,7 @@ const struct color_bit_define_s *
 	_find_color_format(struct fb_var_screeninfo *var);
 extern struct osd_fb_dev_s *gp_fbdev_list[];
 extern const struct color_bit_define_s default_color_format_array[];
+extern unsigned int osd_game_mode[];
+extern unsigned int osd_pi_debug, osd_pi_enable;
+extern unsigned int osd_slice2ppc_debug, osd_slice2ppc_enable;
 #endif

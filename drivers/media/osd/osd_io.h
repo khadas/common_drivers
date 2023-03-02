@@ -8,7 +8,7 @@
 
 int osd_io_remap(int iomap);
 u32 osd_cbus_read(u32 reg);
-void osd_cbus_write(u32 reg, const u32 val);
+void osd_cbus_write(u32 reg, u32 val);
 u32 osd_reg_read(u32 reg);
 int osd_reg_write(u32 reg, u32 val);
 int osd_reg_set_mask(u32 reg, u32 mask);

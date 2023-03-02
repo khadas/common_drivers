@@ -108,7 +108,7 @@ int osd_reg_write(u32 reg, u32 val)
 	}
 	update_backup_reg(reg, val);
 	osd_log_dbg3(MODULE_BASE, "%s(0x%x, 0x%x)\n", __func__, reg, val);
-	return 0;
+	return  0;
 }
 
 int osd_reg_set_mask(u32 reg, u32 mask)

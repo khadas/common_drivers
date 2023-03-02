@@ -12,10 +12,19 @@
 
 extern int rdma_reset_trigger_flag;
 extern int rdma_mgr_irq_request;
+extern u32 osd_rdma_flag_reg[];
+extern u32 rdma_detect_reg;
 
 struct rdma_table_item {
 	u32 addr;
 	u32 val;
+};
+
+struct rdma_warn_array {
+	u32 addr;
+	u32 count;
+	u32 cur_line;
+	u32 cur_begin_line;
 };
 
 enum {
@@ -24,6 +33,7 @@ enum {
 	VPP2,
 };
 
+#define WARN_TABLE       64
 #define TABLE_SIZE	     PAGE_SIZE
 #define MAX_TABLE_ITEM	 (TABLE_SIZE / sizeof(struct rdma_table_item_t))
 #define OSD_RDMA_CHANNEL_INDEX	osd_rdma_handle[0]
@@ -56,9 +66,10 @@ enum {
 #define END_ADDR_MSB_VPP2	\
 	(RDMA_AHB_END_ADDR_MAN_MSB + (OSD_RDMA_CHANNEL_INDEX_VPP2 << 1))
 
-#define OSD_RDMA_FLAG_REG	    VIU_OSD2_TCOLOR_AG3
-#define OSD_RDMA_FLAG_REG_VPP1	    VIU_OSD2_TCOLOR_AG2
-#define OSD_RDMA_FLAG_REG_VPP2	    VIU_OSD2_TCOLOR_AG1
+#define OSD_RDMA_FLAG_REG           (osd_rdma_flag_reg[VPP0])
+#define OSD_RDMA_FLAG_REG_VPP1      (osd_rdma_flag_reg[VPP1])
+#define OSD_RDMA_FLAG_REG_VPP2      (osd_rdma_flag_reg[VPP2])
+#define RDMA_DETECT_REG             rdma_detect_reg
 
 #define OSD_RDMA_FLAG_REJECT	(0x99 << 0)
 /* hw rdma own this flag, change it to zero when start rdma,
@@ -121,4 +132,8 @@ int osd_rdma_uninit(void);
 void set_reset_rdma_trigger_line(void);
 void enable_line_n_rdma(void);
 void enable_vsync_rdma(u32 vpp_index);
+int get_rdma_recovery_stat(u32 vpp_index);
+int get_rdma_not_hit_recovery_stat(u32 vpp_index);
+int get_rdma_irq_done_line(u32 vpp_index);
+void osd_rdma_flag_init(void);
 #endif

@@ -15,9 +15,7 @@
 #include <linux/sched.h>
 
 /* Amlogic Headers */
-#ifdef CONFIG_AMLOGIC_VOUT
 #include <linux/amlogic/media/vout/vout_notify.h>
-#endif
 #ifdef CONFIG_AMLOGIC_MEDIA_CANVAS
 #include <linux/amlogic/media/canvas/canvas.h>
 #include <linux/amlogic/media/canvas/canvas_mgr.h>

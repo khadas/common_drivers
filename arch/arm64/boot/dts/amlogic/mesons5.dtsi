@@ -2303,13 +2303,13 @@
 	vout_mux: vout_mux {
 		compatible = "amlogic, vout_mux-s5";
 		status = "okay";
-		//clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VIN_MEAS>;
-		//clock-names = "fclk_div5", "vdin_meas_clk";
+		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VIN_MEAS>;
+		clock-names = "fclk_div5", "vdin_meas_clk";
 	};
 
 	vout: vout {
 		compatible = "amlogic, vout";
-		status = "disabled";
+		status = "okay";
 	};
 
 	dummy_venc: dummy_venc {

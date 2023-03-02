@@ -32,31 +32,101 @@
 
 #include "hdmi_tx.h"
 
+/* now this interface should be not used, otherwise need
+ * adjust as hdmi_vend_infoframe_rawset fistly
+ */
 void hdmi_vend_infoframe_set(struct hdmi_vendor_infoframe *info)
 {
 	u8 body[31] = {0};
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	if (!info) {
-		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, NULL);
+		if (hdev->tx_comm.rxcap.ifdb_present)
+			hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, NULL);
+		else
+			hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR2, NULL);
 		return;
 	}
 
 	hdmi_vendor_infoframe_pack(info, body, sizeof(body));
-	hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, body);
+	if (hdev->tx_comm.rxcap.ifdb_present)
+		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, body);
+	else
+		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR2, body);
 }
 
+/* refer to DV Consumer Decoder for Source Devices
+ * System Development Guide Kit version chapter 4.4.8 Game
+ * content signaling:
+ * 1.if DV sink device that supports ALLM with
+ * InfoFrame Data Block (IFDB), HF-VSIF with ALLM_Mode = 1
+ * should comes after Dolby VSIF with L11_MD_Present = 1 and
+ * Content_Type[3:0] = 0x2(case B1)
+ * 2.DV sink device that supports ALLM without
+ * InfoFrame Data Block (IFDB), Dolby VSIF with L11_MD_Present
+ * = 1 and Content_Type[3:0] = 0x2 should comes after HF-VSIF
+ * with  ALLM_Mode = 1(case B2), or should only send Dolby VSIF,
+ * not send HF-VSIF(case A)
+ */
+/* only used for DV_VSIF / HDMI1.4b_VSIF / HDR10+ VSIF */
 void hdmi_vend_infoframe_rawset(u8 *hb, u8 *pb)
 {
 	u8 body[31] = {0};
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	if (!hb || !pb) {
-		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, NULL);
+		if (!hdev->tx_comm.rxcap.ifdb_present)
+			hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR2, NULL);
+		else
+			hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, NULL);
 		return;
 	}
 
 	memcpy(body, hb, 3);
 	memcpy(&body[3], pb, 28);
-	hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, body);
+	if (hdev->tx_comm.rxcap.ifdb_present &&
+		hdev->tx_comm.rxcap.additional_vsif_num >= 1) {
+		/* dolby cts case93 B1 */
+		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, body);
+	} else if (!hdev->tx_comm.rxcap.ifdb_present) {
+		/* dolby cts case92 B2 */
+		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR2, body);
+	} else {
+		/* case89 ifdb_present but no additional_vsif, should not send HF-VSIF */
+		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR2, NULL);
+		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, body);
+	}
+}
+
+/* only used for HF-VSIF */
+void hdmi_vend_infoframe2_rawset(u8 *hb, u8 *pb)
+{
+	u8 body[31] = {0};
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	if (!hb || !pb) {
+		if (!hdev->tx_comm.rxcap.ifdb_present)
+			hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, NULL);
+		else
+			hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR2, NULL);
+		return;
+	}
+
+	memcpy(body, hb, 3);
+	memcpy(&body[3], pb, 28);
+	if (hdev->tx_comm.rxcap.ifdb_present &&
+		hdev->tx_comm.rxcap.additional_vsif_num >= 1) {
+		/* dolby cts case93 B1 */
+		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR2, body);
+	} else if (!hdev->tx_comm.rxcap.ifdb_present) {
+		/* dolby cts case92 B2 */
+		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR, body);
+	} else {
+		/* case89 ifdb_present but no additional_vsif, currently
+		 * no DV-VSIF enabled, then send HF-VSIF
+		 */
+		hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_VENDOR2, body);
+	}
 }
 
 void hdmi_avi_infoframe_set(struct hdmi_avi_infoframe *info)
@@ -86,7 +156,7 @@ void hdmi_avi_infoframe_rawset(u8 *hb, u8 *pb)
 	hdmitx_infoframe_send(HDMI_INFOFRAME_TYPE_AVI, body);
 }
 
-void hdmi_avi_infoframe_config(u32 conf, u8 val)
+void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmi_avi_infoframe *info = &hdev->infoframes.avi.avi;
@@ -130,8 +200,8 @@ void hdmi_avi_infoframe_config(u32 conf, u8 val)
 		info->picture_aspect = val;
 		break;
 	case CONF_AVI_CT_TYPE:
-		/*ITC is 1 when CN0/CN1 set.*/
-		info->itc = (val == SET_CT_OFF) ? 0 : 1;
+		info->itc = (val >> 4) & 0x1;
+		val = val & 0xf;
 		if (val == SET_CT_OFF)
 			info->content_type = 0;
 		else if (val == SET_CT_GRAPHICS)

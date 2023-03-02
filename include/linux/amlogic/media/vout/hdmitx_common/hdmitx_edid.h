@@ -23,6 +23,65 @@
 #define VESA_MAX_TIMING 64
 #define Y420_VIC_MAX_NUM 6 /* only 6 4k mode for y420 */
 
+enum frl_rate_enum {
+	FRL_NONE = 0,
+	FRL_3G3L = 1,
+	FRL_6G3L = 2,
+	FRL_6G4L = 3,
+	FRL_8G4L = 4,
+	FRL_10G4L = 5,
+	FRL_12G4L = 6,
+	FRL_INVALID = 7,
+};
+
+enum flt_tx_states {
+	FLT_TX_LTS_L,	/* legacy mode */
+	FLT_TX_LTS_1,	/* read edid */
+	FLT_TX_LTS_2,	/* prepare for frl */
+	FLT_TX_LTS_3,	/* training in progress */
+	FLT_TX_LTS_4,	/* update frl_rate */
+	/* frl training passed, start frl w/o video */
+	FLT_TX_LTS_P1,
+	/* start frl w/ video */
+	FLT_TX_LTS_P2,
+	/* maintain frl video */
+	FLT_TX_LTS_P3,
+};
+
+enum ffe_levels {
+	FFE_LEVEL0 = 0,
+	FFE_LEVEL1 = 1,
+	FFE_LEVEL2 = 2,
+	FFE_LEVEL3 = 3,
+};
+
+enum ltp_patterns {
+	/* No Link Training Pattern requested */
+	LTP_PATTERN_NO_LTP = 0,
+	/* All 1's pattern */
+	LTP_PATTERN_LTP1 = 1,
+	/* All 0's pattern */
+	LTP_PATTERN_LTP2 = 2,
+	/* Nyquist clock pattern */
+	LTP_PATTERN_LTP3 = 3,
+	/* Source TxFFE Compliance Test Pattern */
+	LTP_PATTERN_LTP4 = 4,
+	/* LFSR 0 */
+	LTP_PATTERN_LTP5 = 5,
+	/* LFSR 1 */
+	LTP_PATTERN_LTP6 = 6,
+	/* LFSR 2 */
+	LTP_PATTERN_LTP7 = 7,
+	/* LFSR 3 */
+	LTP_PATTERN_LTP8 = 8,
+	/* reserved 9 ~ 0xd */
+	LTP_PATTERN_RSVD = 9,
+	/* Sink requests Source to update FFE */
+	LTP_PATTERN_UPDATE_FFE = 0xE,
+	/* Sink requests Source to change link mode(rate) to a lower value */
+	LTP_PATTERN_CHG_LINK_MODE = 0x0F,
+};
+
 struct raw_block {
 	int len;
 	char raw[MAX_RAW_LEN];
@@ -93,6 +152,7 @@ struct rx_cap {
 	u32 Max_TMDS_Clock2; /* HDMI2.0 TMDS_CLK */
 	/* CEA861-F, Table 56, Colorimetry Data Block */
 	u32 colorimetry_data;
+	u32 colorimetry_data2;
 	u32 scdc_present:1;
 	u32 scdc_rr_capable:1; /* SCDC read request */
 	u32 lte_340mcsc_scramble:1;
@@ -103,7 +163,7 @@ struct rx_cap {
 	u32 dc_30bit_420:1;
 	u32 dc_36bit_420:1;
 	u32 dc_48bit_420:1;
-	u32 max_frl_rate:4;
+	enum frl_rate_enum max_frl_rate:4;
 	u32 cnc0:1; /* Graphics */
 	u32 cnc1:1; /* Photo */
 	u32 cnc2:1; /* Cinema */
@@ -117,7 +177,7 @@ struct rx_cap {
 	u32 allm:1;
 	u32 fapa_start_loc:1;
 	u32 fapa_end_extended:1;
-	u32 cinema_vrr:1;
+	u32 cinemavrr:1;
 	u32 vrr_max;
 	u32 vrr_min;
 	struct hdr_info hdr_info;
@@ -165,6 +225,10 @@ struct rx_cap {
 	u8 number_of_dtd;
 	struct raw_block asd;
 	struct raw_block vsd;
+	/* for DV cts */
+	bool ifdb_present;
+	/* IFDB, currently only use below node */
+	u8 additional_vsif_num;
 	/*blk0 check sum*/
 	u8 blk0_chksum;
 	u8 chksum[10];

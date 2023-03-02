@@ -10,13 +10,30 @@
 #include <linux/spinlock.h>
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 
-#define HDCP_STAGE1_RETRY_TIMER 2000//400 /* unit: ms */
+/* L_0 will always be printed, set log level to L_1/2/3 for detail */
+#define L_0 0
+#define L_1 1
+#define L_2 2
+#define L_3 3
+
+#define HDCP_STAGE1_RETRY_TIMER 2000 /* unit: ms */
 #define HDCP_BSKV_CHECK_TIMER 100
 #define HDCP_FAILED_RETRY_TIMER 200
 #define HDCP_DS_KSVLIST_RETRY_TIMER 5000//200
 #define HDCP_RCVIDLIST_CHECK_TIMER 3000//200
 #define HDMI_INFOFRAME_TYPE_EMP 0x7f
 #define DEFAULT_STREAM_TYPE 0
+#define VIDEO_MUTE_PATH_1 0x8000000 //mute by vid_mute sysfs node
+#define VIDEO_MUTE_PATH_2 0x4000000 //mute by stream type 1
+#define VIDEO_MUTE_PATH_3 0x2000000 //mute by rx request auth
+
+#define AUDIO_MUTE_PATH_1 0x8000000 //mute by audio module
+#define AUDIO_MUTE_PATH_2 0x4000000 //mute by aud_mote sysfs node
+#define AUDIO_MUTE_PATH_3 0x2000000 //mute by stream type 1
+#define AUDIO_MUTE_PATH_4 0x1000000 //mute by rx request auth
+
+#define AVMUTE_PATH_1 0x80 //mute by avmute sysfs node
+#define AVMUTE_PATH_2 0x40 //mute by upstream side request re-auth
 
 struct emp_packet_st;
 enum vrr_component_conf;
@@ -39,6 +56,7 @@ enum hdcptx_oprcmd {
 	HDCP22_SET_TOPO,
 	HDCP22_GET_TOPO,
 	CONF_ENC_IDX, /* 0: get idx; 1: set idx */
+	HDMITX_GET_RTERM, /* get the rterm value */
 };
 
 /* DDC bus error codes */
@@ -63,7 +81,7 @@ int hdmitx21_init_reg_map(struct platform_device *pdev);
 void hdmitx21_set_audioclk(u8 hdmitx_aud_clk_div);
 void hdmitx21_disable_clk(struct hdmitx_dev *hdev);
 u32 hdcp21_rd_hdcp22_ver(void);
-void hdmitx_infoframe_send(u8 info_type, u8 *body);
+void hdmitx_infoframe_send(u16 info_type, u8 *body);
 
 /* there are 2 ways to send out infoframes
  * xxx_infoframe_set() will take use of struct xxx_infoframe_set
@@ -72,6 +90,7 @@ void hdmitx_infoframe_send(u8 info_type, u8 *body);
  */
 void hdmi_vend_infoframe_set(struct hdmi_vendor_infoframe *info);
 void hdmi_vend_infoframe_rawset(u8 *hb, u8 *pb);
+void hdmi_vend_infoframe2_rawset(u8 *hb, u8 *pb);
 void hdmi_avi_infoframe_set(struct hdmi_avi_infoframe *info);
 void hdmi_avi_infoframe_rawset(u8 *hb, u8 *pb);
 void hdmi_spd_infoframe_set(struct hdmi_spd_infoframe *info);
@@ -133,7 +152,7 @@ struct vrr_conf_para {
 	u8 fapa_end_extended:1;
 	u8 qms_sup:1;
 	u8 mdelta_bit:1;
-	u8 cinema_vrr_bit:1;
+	u8 cinemavrr_bit:1;
 	u8 neg_mvrr_bit:1;
 	u8 fva_sup:1;
 	u8 fapa_start_loc:1;
@@ -241,9 +260,21 @@ enum vrr_component_conf {
 	CONF_BASE_REFRESH_RATE,
 };
 
+/* CONF_AVI_BT2020 */
+#define CLR_AVI_BT2020	0x0
+#define SET_AVI_BT2020	0x1
+/* CONF_AVI_Q01 */
+#define RGB_RANGE_DEFAULT	0
+#define RGB_RANGE_LIM		1
+#define RGB_RANGE_FUL		2
+#define RGB_RANGE_RSVD		3
+/* CONF_AVI_YQ01 */
+#define YCC_RANGE_LIM		0
+#define YCC_RANGE_FUL		1
+#define YCC_RANGE_RSVD		2
 void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val);
 
-int hdmitx_infoframe_rawget(u8 info_type, u8 *body);
+int hdmitx_infoframe_rawget(u16 info_type, u8 *body);
 
 void hdmi_gcppkt_manual_set(bool en);
 
@@ -316,6 +347,26 @@ struct hdcp_t {
 	struct hdcp_work timer_update_csm;
 	struct delayed_work ksv_notify_wk;
 	struct delayed_work req_reauth_wk;
+	struct delayed_work stream_mute_wk;
+	struct delayed_work stream_type_wk;
+	/* audio/video mute if upstream type = 1 */
+	bool stream_mute;
+	/* hdmirx side request flag, see hdmi_rx_repeater.h
+	 * STREAMTYPE_UPDATE 0x10
+	 * UPSTREAM_INACTIVE 0x20
+	 * UPSTREAM_ACTIVE 0x40
+	 * 0: notify reauth
+	 */
+	u8 rx_update_flag;
+	/* the stream type notified by upstream side
+	 * bit4: if 1, upstream may send stream type before
+	 * hdmitx start hdcp(passthrough enabled), need
+	 * to save it, and cover the stream type with bit3:0
+	 * when hdmitx hdcp propagate stream type. else
+	 * hdmitx is the active source and should decide
+	 * the stream type itself
+	 */
+	u8 saved_upstream_type;
 	/* 0: auto hdcp version, 1: hdcp1.4, 2: hdcp2.3 */
 	u8 req_reauth_ver;
 	u8 cont_smng_method;
@@ -324,6 +375,7 @@ struct hdcp_t {
 	bool hdcp14_second_part_pass;
 };
 
+extern unsigned int rx_hdcp2_ver;
 bool get_hdcp1_lstore(void);
 bool get_hdcp2_lstore(void);
 bool get_hdcp1_result(void);
@@ -369,8 +421,16 @@ void hdcptx1_query_aksv(struct hdcp_ksv_t *p_val);
 void hdmitx_top_intr_handler(struct work_struct *work);
 void hdmitx_setupirqs(struct hdmitx_dev *phdev);
 void ddc_toggle_sw_tpi(void);
-bool hdmitx_ddcm_read(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 *p_buf, uint16_t len);
+bool hdmitx_ddcm_read(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 *p_buf, u16 len);
+bool hdmitx_ddcm_write(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 data);
 bool is_cur_mode_hdmi(void);
+
+extern unsigned long hdcp_reauth_dbg;
+extern unsigned long streamtype_dbg;
+extern unsigned long en_fake_rcv_id;
+
+void set_hdcp2_topo(u32 topo_type);
+bool get_hdcp2_topo(void);
 
 /* VRR parts */
 irqreturn_t hdmitx_vrr_vsync_handler(struct hdmitx_dev *hdev);
@@ -387,17 +447,92 @@ int hdmitx_dump_vrr_status(struct seq_file *s, void *p);
 void hdmitx_vrr_enable(void);
 void hdmitx_vrr_disable(void);
 u8 hdmitx_reauth_request(u8 hdcp_version);
+bool is_current_4k_format(void);
 void hdmitx21_enable_hdcp(struct hdmitx_dev *hdev);
+void hdmitx21_disable_hdcp(struct hdmitx_dev *hdev);
 void hdmitx21_rst_stream_type(struct hdcp_t *hdcp);
 bool hdcp_need_control_by_upstream(struct hdmitx_dev *hdev);
+int likely_frac_rate_mode(const char *m);
+u32 hdmitx21_get_hdcp_mode(void);
+extern unsigned long avmute_ms;
+extern unsigned long vid_mute_ms;
+bool hdmitx21_edid_only_support_sd(struct hdmitx_dev *hdev);
+bool is_4k_sink(struct hdmitx_dev *hdev);
+void hdmitx21_av_mute_op(u32 flag, unsigned int path);
 
-extern unsigned long hdcp_reauth_dbg;
-extern unsigned long streamtype_dbg;
-extern unsigned long en_fake_rcv_id;
+/* FRL */
+struct frl_work {
+	u32 delay_ms;
+	u32 period_ms;
+	const char *name;
+	struct delayed_work dwork;
+};
 
-void pr_hdcp_info(const char *fmt, ...);
-void set_hdcp2_topo(u32 topo_type);
-bool get_hdcp2_topo(void);
+struct frl_train_t {
+	struct workqueue_struct *frl_wq;
+	struct frl_work timer_frl_flt;
+	u8 src_test_cfg;
+	u8 lane_count;
+	u8 update_flags;
+	enum flt_tx_states flt_tx_state;
+	enum flt_tx_states last_state;
+	enum frl_rate_enum max_frl_rate;
+	enum frl_rate_enum max_edid_frl_rate;
+	enum frl_rate_enum user_max_frl_rate;
+	enum frl_rate_enum min_frl_rate;
+	enum frl_rate_enum frl_rate;
+	enum ffe_levels max_ffe_level;
+	enum ffe_levels ffe_level[4];
+	bool ds_frl_support;
+	bool req_legacy_mode;
+	bool frl_rate_no_change;
+	bool req_frl_mode;
+	bool txffe_pre_shoot_only;
+	bool txffe_de_emphasis_only;
+	bool txffe_no_ffe;
+	bool flt_no_timeout;
+	bool flt_timeout;
+	bool auto_ffe_update;
+	bool auto_pattern_update;
+	bool flt_running; /* if flt_running is false, return */
+};
+
+#define LT_TX_CMD_TXFFE_UPDATE 0x02
+#define LT_TX_CMD_LTP_UPDATE   0x03
+void scdc_bus_stall_set(bool en);
+u16 scdc_tx_ltp0123_get(void);
+bool scdc_tx_frl_cfg1_set(u8 cfg1);
+u8 scdc_tx_update_flags_get(void);
+bool scdc_tx_update_flags_set(u8 update_flags);
+u8 scdc_tx_flt_ready_status_get(void);
+u8 scdc_tx_sink_version_get(void);
+void scdc_tx_source_version_set(u8 src_ver);
+u8 scdc_tx_source_test_cfg_get(void);
+bool flt_tx_cmd_execute(u8 lt_cmd);
+void flt_tx_ltp_req_write(u8 ltp01, u8 ltp23);
+void flt_tx_update_set(void);
+void frl_tx_start_mod(bool start);
+bool flt_tx_update_cleared_wait(void);
+bool frl_tx_rate_written(void);
+u8 flt_tx_cfg1_get(void);
+u8 frl_tx_tx_get_rate(void);
+void frl_tx_tx_enable(bool enable);
+void frl_tx_av_enable(bool enable);
+void frl_tx_sb_enable(bool enable, enum frl_rate_enum frl_rate);
+bool frl_tx_pattern_init(u16 patterns);
+void frl_tx_pattern_stop(void);
+void frl_tx_pin_swap_set(bool en);
+bool frl_tx_pattern_set(enum ltp_patterns frl_pat, u8 lane);
+bool frl_tx_ffe_set(enum ffe_levels ffe_level, u8 lane);
+bool frl_tx_tx_phy_init(bool disable_ffe);
+void frl_tx_tx_init(void);
+void frl_tx_tx_phy_set(void);
+void tmds_tx_phy_set(void);
+
+enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
+		enum hdmi_colorspace cs, enum hdmi_color_depth cd);
+void frl_tx_training_handler(struct hdmitx_dev *hdev);
+void frl_tx_stop(struct hdmitx_dev *hdev);
 
 #endif /* __HDMI_TX_H__ */
 

@@ -25,10 +25,6 @@
 
 #include "common.h"
 
-// TODO
-#define HDMITX_TOP_OFFSET 0xfe300000
-#define HDMITX_COR_OFFSET 0xfe380000
-
 static int hdmi_dbg;
 
 struct reg_map reg21_maps[REG_IDX_END] = {0};
@@ -66,18 +62,18 @@ static void sec_wr(u32 addr, u32 data)
 {
 	struct arm_smccc_res res;
 
-	arm_smccc_smc(0x82000019, (unsigned long)addr, data, 32, 0, 0, 0, 0, &res);
 	if (hdmi_dbg)
 		pr_info("sec_wr32[0x%08x] 0x%08x\n", addr, data);
+	arm_smccc_smc(0x82000019, (unsigned long)addr, data, 32, 0, 0, 0, 0, &res);
 }
 
 static void sec_wr8(u32 addr, u8 data)
 {
 	struct arm_smccc_res res;
 
-	arm_smccc_smc(0x82000019, (unsigned long)addr, data & 0xff, 8, 0, 0, 0, 0, &res);
 	if (hdmi_dbg)
-		pr_info("[0x%08x] 0x%02x\n", addr, data);
+		pr_info("sec_wr8[0x%08x] 0x%02x\n", addr, data);
+	arm_smccc_smc(0x82000019, (unsigned long)addr, data & 0xff, 8, 0, 0, 0, 0, &res);
 }
 
 static u32 sec_rd(u32 addr)
@@ -85,6 +81,8 @@ static u32 sec_rd(u32 addr)
 	u32 data;
 	struct arm_smccc_res res;
 
+	if (hdmi_dbg)
+		pr_info("sec_rd32[0x%08x]\n", addr);
 	arm_smccc_smc(0x82000018, (unsigned long)addr, 32, 0, 0, 0, 0, 0, &res);
 	data = (unsigned int)((res.a0) & 0xffffffff);
 
@@ -98,6 +96,8 @@ static u8 sec_rd8(u32 addr)
 	u32 data;
 	struct arm_smccc_res res;
 
+	if (hdmi_dbg)
+		pr_info("%s[0x%08x]\n", __func__, addr);
 	arm_smccc_smc(0x82000018, (unsigned long)addr, 8, 0, 0, 0, 0, 0, &res);
 	data = (unsigned int)((res.a0) & 0xffffffff);
 
@@ -188,7 +188,7 @@ static u32 hdmitx_rd_top(u32 addr)
 	u32 base_offset;
 	u32 data;
 
-	base_offset = HDMITX_TOP_OFFSET;
+	base_offset = reg21_maps[2].phy_addr;
 
 	data = sec_rd(base_offset + addr);
 	return data;
@@ -199,7 +199,7 @@ static u8 hdmitx_rd_cor(u32 addr)
 	u32 base_offset;
 	u8 data;
 
-	base_offset = HDMITX_COR_OFFSET;
+	base_offset = reg21_maps[1].phy_addr;
 	data = sec_rd8(base_offset + addr);
 	return data;
 } /* hdmitx_rd_cor */
@@ -208,7 +208,7 @@ static void hdmitx_wr_top(u32 addr, u32 data)
 {
 	u32 base_offset;
 
-	base_offset = HDMITX_TOP_OFFSET;
+	base_offset = reg21_maps[2].phy_addr;
 	sec_wr(base_offset + addr, data);
 } /* hdmitx_wr_top */
 
@@ -216,33 +216,52 @@ static void hdmitx_wr_cor(u32 addr, u8 data)
 {
 	u32 base_offset;
 
-	base_offset = HDMITX_COR_OFFSET;
+	base_offset = reg21_maps[1].phy_addr;
 	sec_wr8(base_offset + addr, data);
 } /* hdmitx_wr_cor */
 
+static DEFINE_SPINLOCK(reg_lock);
+
 u32 hdmitx21_rd_reg(u32 addr)
 {
-	u32 offset = (addr & TOP_OFFSET_MASK) >> 24;
+	u32 offset;
 	u32 data;
+	unsigned long flags;
+
+	spin_lock_irqsave(&reg_lock, flags);
+	offset = (addr & TOP_OFFSET_MASK) >> 24;
 
 	addr = addr & 0xffff;
 	if (offset)
 		data = hdmitx_rd_top(addr);
 	else
 		data = hdmitx_rd_cor(addr);
+	spin_unlock_irqrestore(&reg_lock, flags);
 
 	return data;
 }
 
 void hdmitx21_wr_reg(u32 addr, u32 val)
 {
-	u32 offset = (addr & TOP_OFFSET_MASK) >> 24;
+	unsigned long flags;
+	u32 offset;
+
+	spin_lock_irqsave(&reg_lock, flags);
+	offset = (addr & TOP_OFFSET_MASK) >> 24;
 
 	addr = addr & 0xffff;
-	if (offset)
+	if (offset) {
 		hdmitx_wr_top(addr, val);
-	else
-		hdmitx_wr_cor(addr, val);
+	} else {
+		/* don't clear hdcp2.2 interrupt if hdcp22 core is under reset */
+		if ((addr != CP2TX_INTR0_IVCTX &&
+			addr != CP2TX_INTR1_IVCTX &&
+			addr != CP2TX_INTR2_IVCTX &&
+			addr != CP2TX_INTR3_IVCTX) ||
+			!(hdmitx_rd_cor(HDCP2X_TX_SRST_IVCTX) & 0x30))
+			hdmitx_wr_cor(addr, val);
+	}
+	spin_unlock_irqrestore(&reg_lock, flags);
 }
 
 bool hdmitx21_get_bit(u32 addr, u32 bit_nr)
@@ -311,45 +330,12 @@ u32 hdmitx21_rd_check_reg(u32 addr, u32 exp_data,
 }
 EXPORT_SYMBOL(hdmitx21_rd_check_reg);
 
-struct mask_reg_val_t {
-	u16 reg;
-	u8 val;
-};
-
-static struct mask_reg_val_t addrs[] = {
-	{INTR1_IVCTX, 0x00,},
-	{TPI_INTR_ST0_IVCTX, 0x00,},
-	{CP2TX_INTR0_IVCTX, 0x00,},
-	{CP2TX_INTR1_IVCTX, 0x00,},
-	{CP2TX_INTR2_IVCTX, 0x00,},
-	{CP2TX_INTR3_IVCTX, 0x00,},
-	{CP2TX_INTR3_IVCTX, 0x01,},
-	{DDC_STATUS_IVCTX, 0x04,},
-	{DDC_STATUS_IVCTX, 0x14,},
-	{DDC_STATUS_IVCTX, 0x15,},
-	{DDC_STATUS_IVCTX, 0x00,},
-	{TPI_KSV_FIFO_STAT_IVCTX, 0x00},
-	{0xffff, 0xff},
-};
-
-static bool mask_printf(u16 add, u8 val)
-{
-	int i;
-
-	for (i = 0; addrs[i].reg != 0xffff; i++)
-		if (add == addrs[i].reg && val == addrs[i].val)
-			return 1;
-	return 0;
-}
-
 void hdmitx21_seq_rd_reg(u16 offset, u8 *buf, u16 cnt)
 {
 	int i = 0;
 
 	while (cnt--) {
 		buf[i] = hdmitx21_rd_reg(offset + i);
-		if (!mask_printf(offset + i, buf[i]))
-			pr_info("rd[0x%04x] 0x%02x\n", offset + i, buf[i]);
 		i++;
 	}
 }
@@ -361,12 +347,8 @@ void hdmitx21_fifo_read(u16 offset, u8 *buf, u16 cnt)
 
 	if (!buf)
 		return;
-	for (i = 0; i < cnt; i++) {
+	for (i = 0; i < cnt; i++)
 		buf[i] = hdmitx21_rd_reg(offset);
-		i++;
-		usleep_range(5000, 5000 + 10);
-		pr_info("%02x\n", buf[i]);
-	}
 }
 EXPORT_SYMBOL(hdmitx21_fifo_read);
 

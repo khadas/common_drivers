@@ -32,6 +32,48 @@ enum hdmi_hdr_status {
 	SDR,
 };
 
+/* CEA TIMING STRUCT DEFINITION */
+struct hdmi_timing {
+	unsigned int vic;
+	unsigned char *name;
+	unsigned char *sname;
+	unsigned short pi_mode; /* 1: progressive  0: interlaced */
+	unsigned int h_freq; /* in Hz */
+	unsigned int v_freq; /* in 0.001 Hz */
+	unsigned int pixel_freq; /* Unit: 1000 */
+	unsigned short h_total;
+	unsigned short h_blank;
+	unsigned short h_front;
+	unsigned short h_sync;
+	unsigned short h_back;
+	unsigned short h_active;
+	unsigned short v_total;
+	unsigned short v_blank;
+	unsigned short v_front;
+	unsigned short v_sync;
+	unsigned short v_back;
+	unsigned short v_active;
+	unsigned short v_sync_ln;
+
+	unsigned short h_pol;
+	unsigned short v_pol;
+	unsigned short h_pict;
+	unsigned short v_pict;
+	unsigned short h_pixel;
+	unsigned short v_pixel;
+	unsigned int pixel_repetition_factor;
+};
+
+u32 calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
+	enum hdmi_color_depth cd);
+u32 calc_tmds_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
+	enum hdmi_color_depth cd);
+
+struct parse_cd {
+	enum hdmi_color_depth cd;
+	const char *name;
+};
+
 enum hdmi_tf_type {
 	HDMI_NONE = 0,
 	/* HDMI_HDR_TYPE, HDMI_DV_TYPE, and HDMI_HDR10P_TYPE
@@ -239,6 +281,23 @@ enum hdmi_vic {
 	HDMI_VIC_END,
 };
 
+struct hdmi_format_para {
+	enum hdmi_vic vic;
+	unsigned char *name;
+	unsigned char *sname;
+	char ext_name[32];
+	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
+	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */
+	enum hdmi_quantization_range cr; /* limit, full */
+	unsigned int pixel_repetition_factor;
+	unsigned int progress_mode:1;
+	u32 scrambler_en:1;
+	u32 tmds_clk_div40:1;
+	u32 tmds_clk; /* Unit: 1000 */
+	struct hdmi_timing timing;
+	struct vinfo_s hdmitx_vinfo;
+};
+
 enum hdmi_phy_para {
 	HDMI_PHYPARA_6G = 1, /* 2160p60hz 444 8bit */
 	HDMI_PHYPARA_4p5G, /* 2160p50hz 420 12bit */
@@ -251,38 +310,6 @@ enum hdmi_phy_para {
 
 enum hdmi_audio_fs;
 struct dtd;
-
-/* CEA TIMING STRUCT DEFINITION */
-struct hdmi_timing {
-	unsigned int vic;
-	unsigned char *name;
-	unsigned char *sname;
-	unsigned short pi_mode; /* 1: progressive  0: interlaced */
-	unsigned int h_freq; /* in Hz */
-	unsigned int v_freq; /* in 0.001 Hz */
-	unsigned int pixel_freq; /* Unit: 1000 */
-	unsigned short h_total;
-	unsigned short h_blank;
-	unsigned short h_front;
-	unsigned short h_sync;
-	unsigned short h_back;
-	unsigned short h_active;
-	unsigned short v_total;
-	unsigned short v_blank;
-	unsigned short v_front;
-	unsigned short v_sync;
-	unsigned short v_back;
-	unsigned short v_active;
-	unsigned short v_sync_ln;
-
-	unsigned short h_pol;
-	unsigned short v_pol;
-	unsigned short h_pict;
-	unsigned short v_pict;
-	unsigned short h_pixel;
-	unsigned short v_pixel;
-	unsigned int pixel_repetition_factor;
-};
 
 enum hdmi_3d_type {
 	T3D_FRAME_PACKING = 0,
@@ -300,17 +327,6 @@ enum hdmi_3d_type {
 /* get hdmi cea timing */
 /* t: struct hdmi_cea_timing * */
 #define GET_TIMING(name)      (t->(name))
-
-struct hdmi_format_para {
-	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
-	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */
-	enum hdmi_quantization_range cr; /* limit, full */
-	u32 scrambler_en:1;
-	u32 tmds_clk_div40:1;
-	u32 tmds_clk; /* Unit: 1000 */
-	struct hdmi_timing timing;
-	struct vinfo_s hdmitx_vinfo;
-};
 
 struct hdmi_csc_coef_table {
 	u8 input_format;
@@ -348,11 +364,11 @@ const struct hdmi_timing *hdmitx21_gettiming_from_vic(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_gettiming_from_name(const char *name);
 struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 	const char *attr);
-
-void check21_detail_fmt(void);
 u32 hdmi21_get_aud_n_paras(enum hdmi_audio_fs fs,
 				  enum hdmi_color_depth cd,
 				  u32 tmds_clk);
+
+void check21_detail_fmt(void);
 
 struct size_map {
 	u32 sample_bits;
@@ -469,11 +485,6 @@ struct hdmi_audio_fs_ncts {
 		u32 cts_48bit;
 	} array[AUDIO_PARA_MAX_NUM];
 	u32 def_n;
-};
-
-struct parse_cd {
-	enum hdmi_color_depth cd;
-	const char *name;
 };
 
 struct parse_cs {

@@ -13,6 +13,8 @@
 #include <drm/amlogic/meson_connector_dev.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 
+#define HDMI_INFOFRAME_TYPE_VENDOR2 (0x81 | 0x100)
+
 enum hdmi_color_depth {
 	COLORDEPTH_24B = 4,
 	COLORDEPTH_30B = 5,

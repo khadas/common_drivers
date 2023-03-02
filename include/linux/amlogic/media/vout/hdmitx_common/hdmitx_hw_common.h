@@ -143,6 +143,12 @@ enum {
 	SET_CT_CINEMA = 4,
 };
 
+enum hdmi_ll_mode {
+	HDMI_LL_MODE_AUTO = 0,
+	HDMI_LL_MODE_DISABLE,
+	HDMI_LL_MODE_ENABLE,
+};
+
 /*set packet cmd*/
 #define HDMI_SOURCE_DESCRIPTION 0
 #define HDMI_PACKET_VEND        1

@@ -168,7 +168,7 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 		dat_top = pint->st_data;
 		pint->st_data = 0;
 		/* check HPD status */
-		if ((dat_top & (1 << 1)) && (dat_top & (1 << 2))) {
+		if (!hdev->pxp_mode && ((dat_top & (1 << 1)) && (dat_top & (1 << 2)))) {
 			if (hdmitx21_hpd_hw_op(HPD_READ_HPD_GPIO))
 				dat_top &= ~(1 << 2);
 			else
@@ -187,7 +187,8 @@ void hdmitx_top_intr_handler(struct work_struct *work)
 			if (earc_hdmitx_hpdst)
 				earc_hdmitx_hpdst(true);
 			queue_delayed_work(hdev->hdmi_wq,
-					   &hdev->work_hpd_plugin, HZ / 2);
+				&hdev->work_hpd_plugin,
+				hdev->pxp_mode ? 0 : HZ / 2);
 		}
 		/* HPD falling */
 		if (dat_top & (1 << 2)) {
@@ -229,13 +230,27 @@ static void intr_status_save_and_clear(void)
 
 static irqreturn_t intr_handler(int irq, void *dev)
 {
+	unsigned int top_intr_state;
 	struct hdmitx_dev *hdev = (struct hdmitx_dev *)dev;
 
+RE_ISR:
 	intr_status_save_and_clear();
+	top_intr_state = hdmitx21_rd_reg(HDMITX_TOP_INTR_STAT);
 
 	/* for hdcp cts test, need handle ASAP w/o any delay */
 	queue_delayed_work(hdev->hdmi_wq, &hdev->work_internal_intr, 0);
 
+	/* if TX Controller interrupt shadowing is true,
+	 * it means there's interrupt not cleared/handled
+	 * so need to handle it before exit interrupt handler
+	 */
+	if (top_intr_state & BIT(31) ||
+		top_intr_state & BIT(2) ||
+		top_intr_state & BIT(1) ||
+		top_intr_state & BIT(0)) {
+		pr_info("interrupt not cleared, re-handle intr\n");
+		goto RE_ISR;
+	}
 	return IRQ_HANDLED;
 }
 
@@ -248,6 +263,7 @@ void hdmitx_setupirqs(struct hdmitx_dev *phdev)
 {
 	int r;
 
+	pr_info("%s%d\n", __func__, __LINE__);
 	hdmitx21_wr_reg(HDMITX_TOP_INTR_STAT_CLR, 0x7);
 	r = request_irq(phdev->irq_hpd, &intr_handler,
 			IRQF_SHARED, "hdmitx",

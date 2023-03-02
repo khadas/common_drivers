@@ -7,6 +7,9 @@
 #include <linux/amlogic/media/vout/hdmi_tx21/hdmi_tx_module.h>
 #include <linux/string.h>
 #include "hdmi_param.h"
+//#include <linux/amlogic/media/vout/hdmi_tx21/hdmi_common.h>
+
+struct hdmi_format_para *para;
 
 inline const struct hdmi_timing *hdmitx21_get_timing_para0(void)
 {
@@ -338,12 +341,10 @@ struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 	tx_vinfo->name = timing->sname ? timing->sname : timing->name;
 	tx_vinfo->mode = VMODE_HDMI;
 	tx_vinfo->frac = 0; /* TODO */
-
 	if (timing->pixel_repetition_factor)
 		tx_vinfo->width = timing->h_active >> 1;
 	else
 		tx_vinfo->width = timing->h_active;
-
 	tx_vinfo->height = timing->v_active;
 	tx_vinfo->field_height = timing->pi_mode ?
 		timing->v_active : timing->v_active / 2;
@@ -773,7 +774,9 @@ u32 hdmi21_get_aud_n_paras(enum hdmi_audio_fs fs,
 		break;
 	}
 	for (i = 0; i < AUDIO_PARA_MAX_NUM; i++) {
-		if (tmds_clk == p->array[i].tmds_clk)
+		if (tmds_clk == p->array[i].tmds_clk ||
+		    (tmds_clk + 1) == p->array[i].tmds_clk ||
+		    (tmds_clk - 1) == p->array[i].tmds_clk)
 			break;
 	}
 
@@ -837,7 +840,6 @@ bool _is_hdmi14_4k(enum hdmi_vic vic)
 
 bool _is_y420_vic(enum hdmi_vic vic)
 {
-	bool ret = 0;
 	int i;
 	enum hdmi_vic y420_vic[] = {
 		HDMI_96_3840x2160p50_16x9,
@@ -847,13 +849,23 @@ bool _is_y420_vic(enum hdmi_vic vic)
 		HDMI_106_3840x2160p50_64x27,
 		HDMI_107_3840x2160p60_64x27,
 	};
+	const struct hdmi_timing *timing;
 
 	for (i = 0; i < ARRAY_SIZE(y420_vic); i++) {
 		if (vic == y420_vic[i]) {
-			ret = 1;
-			break;
+			return 1;
 		}
 	}
 
-	return ret;
+	/* In Spec2.1 Table 7-34, greater than 2160p30hz will support y420 */
+	timing = hdmitx21_gettiming_from_vic(vic);
+	if (!timing)
+		return 0;
+
+	if (timing->v_active >= 2160 && timing->v_freq > 30000)
+		return 1;
+	if (timing->v_active >= 4320)
+		return 1;
+
+	return 0;
 }

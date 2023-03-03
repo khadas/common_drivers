@@ -260,15 +260,37 @@ static const struct proc_ops mdebug_ops = {
 	.proc_release	= single_release,
 };
 
+static size_t str_end_char(const char *s, size_t count, char c)
+{
+	size_t len = count, offset = count;
+
+	while (count--) {
+		if (*s == c || *s++ == '\0') {
+			offset = len - count;
+			break;
+		}
+	}
+
+	return offset;
+}
+
 void dump_mem_layout_boot_phase(void)
 {
 	char *buf = (void *)__get_free_page(GFP_KERNEL);
+	int i = 0, len = 0, offset = 0;
 
 	if (!buf) {
 		pr_err("%s alloc buffer failed\n", __func__);
 	} else {
 		dump_mem_layout(buf);
-		pr_notice("%s\n", buf);
+		len = strlen(buf);
+
+		while (i < len) {
+			offset = str_end_char(buf + i, 512, '\n');
+			pr_crit("%.*s", offset, buf + i);
+			i += offset;
+		}
+
 		free_page((unsigned long)buf);
 	}
 }

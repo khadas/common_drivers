@@ -250,20 +250,20 @@ static int lcd_set_vframe_rate_hint(int duration, void *data)
 		return -1;
 
 	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0) {
-		LCDPR("%s: lcd is disabled, exit\n", __func__);
+		LCDPR("[%d]: %s: lcd is disabled, exit\n", pdrv->index, __func__);
 		return -1;
 	}
 
 	if (lcd_fr_is_fixed(pdrv)) {
-		LCDPR("%s: fixed timing, exit\n", __func__);
+		LCDPR("[%d]: %s: fixed timing, exit\n", pdrv->index, __func__);
 		return -1;
 	}
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("fr_auto_policy = %d\n", pdrv->fr_auto_policy);
+		LCDPR("[%d]: fr_auto_flag = 0x%x\n", pdrv->index, pdrv->config.fr_auto_flag);
 
 	info = &pdrv->vinfo;
-	switch (pdrv->fr_auto_policy) {
+	switch (pdrv->config.fr_auto_flag) {
 	case 1:
 		vtable = lcd_vframe_match_table_1;
 		n = ARRAY_SIZE(lcd_vframe_match_table_1);
@@ -273,18 +273,19 @@ static int lcd_set_vframe_rate_hint(int duration, void *data)
 		n = ARRAY_SIZE(lcd_vframe_match_table_2);
 		break;
 	default:
-		LCDPR("%s: fr_auto_policy = %d, disabled\n",
-		      __func__, pdrv->fr_auto_policy);
+		LCDPR("[%d]: %s: fr_auto_flag = 0x%x, disabled\n",
+		      pdrv->index, __func__, pdrv->config.fr_auto_flag);
 		return 0;
 	}
 
 	if (duration == 0) { /* end hint */
-		LCDPR("%s: return mode = %s, policy = %d\n", __func__,
-			info->name, pdrv->fr_auto_policy);
+		LCDPR("[%d]: %s: return mode = %s, fr_auto_flag = 0x%x\n",
+			pdrv->index, __func__,
+			info->name, pdrv->config.fr_auto_flag);
 
 		pdrv->fr_duration = 0;
 		if (pdrv->fr_mode == 0) {
-			LCDPR("%s: fr_mode is invalid, exit\n", __func__);
+			LCDPR("[%d]: %s: fr_mode is invalid, exit\n", pdrv->index, __func__);
 			return 0;
 		}
 
@@ -305,21 +306,21 @@ static int lcd_set_vframe_rate_hint(int duration, void *data)
 			}
 		}
 		if (find == 0) {
-			LCDERR("%s: can't support duration %d\n, exit\n",
-			       __func__, duration);
+			LCDERR("[%d]: %s: can't support duration %d\n, exit\n",
+			       pdrv->index, __func__, duration);
 			return -1;
 		}
 
-		LCDPR("%s: policy = %d, duration = %d, frame_rate = %d\n",
-		      __func__, pdrv->fr_auto_policy,
+		LCDPR("[%d]: %s: fr_auto_flag = 0x%x, duration = %d, frame_rate = %d\n",
+		      pdrv->index, __func__, pdrv->config.fr_auto_flag,
 		      duration, frame_rate);
 
 		pdrv->fr_duration = duration;
 		/* if the sync_duration is same as current */
 		if (duration_num == pdrv->config.timing.sync_duration_num &&
 		    duration_den == pdrv->config.timing.sync_duration_den) {
-			LCDPR("%s: sync_duration is the same, exit\n",
-			      __func__);
+			LCDPR("[%d]: %s: sync_duration is the same, exit\n",
+			      pdrv->index, __func__);
 			return 0;
 		}
 

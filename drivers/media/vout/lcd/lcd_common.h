@@ -29,7 +29,8 @@
 /* 20230105: update clk ss support*/
 /* 20230110: optimize config probe workqueue*/
 /* 20230222: update tcon tee memory debug info*/
-#define LCD_DRV_VERSION    "20230222"
+/* 20230303: fix hdmi mode 47hz & 95hz timing*/
+#define LCD_DRV_VERSION    "20230303"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

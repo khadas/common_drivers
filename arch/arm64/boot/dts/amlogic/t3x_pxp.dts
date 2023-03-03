@@ -81,17 +81,6 @@
 			alloc-ranges = <0x0 0x3f000000 0x0 0x1000000>;
 		};
 
-		vc9000e_reserved: linux,vc9000e {
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x0 0x0>;
-			//size = <0x0 0x2000000>;
-			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
-			linux,contiguous-region;
-			clear-map;
-		};
-
 		/*dsp_shm_reserved:linux,dsp_shm {      */
 		/*	compatible = "dspshmem";            */
 		/*	reg = <0x0 0x40820000 0x0 0x80000>; */
@@ -236,22 +225,6 @@
 		memory-region = <&codec_mm_cma &codec_mm_reserved>;
 		dev_name = "codec_mm";
 		status = "okay";
-	};
-
-	vc9000e_rev {
-		compatible = "vc9000e_rev";
-		memory-region = <&vc9000e_reserved>;
-		dev_name = "vc9000e";
-		status = "disabled";
-		interrupts = <GIC_SPI 157 IRQ_TYPE_EDGE_RISING
-				GIC_SPI 158 IRQ_TYPE_EDGE_RISING
-				GIC_SPI 159 IRQ_TYPE_EDGE_RISING>;
-		interrupt-names = "vc9000e_irq0", "vc9000e_irq1", "vc9000e_irq1";
-		//power-domains = <&pwrdm PDID_S5_VC9000E>;
-		//clock-names = "vers_sys_clk", "vers_core_clk", "vers_aclk";
-		//clocks = <&clkc CLKID_SYS_CLK_VC9000E>,
-		//		<&clkc CLKID_VC9000E_CORE>,
-		//		<&clkc CLKID_VC9000E_AXI>;
 	};
 
 	cvbsout {

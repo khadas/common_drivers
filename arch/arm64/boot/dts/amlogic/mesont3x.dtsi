@@ -2216,51 +2216,26 @@
 	jpegenc{
 		compatible = "amlogic, jpegenc";
 		dev_name = "jpegenc";
-		status = "disabled";
-
-		//clocks = <&clkc CLKID_SYS_CLK_DOS
-//			&clkc CLKID_VAPB
-		//	&clkc CLKID_HCODEC>;
-
-		//clock-names =
-		//	"clk_dos",
-//			"clk_apb_dos",
-		//	"clk_jpeg_enc";
-
-//		clocks = <&clkc CLKID_HCODEC_P0>;
-//		clock-names = "hcodec_p0";
-		//power-domains = <&pwrdm PDID_S5_DOS_HCODEC>;
-		interrupts = <0 16 1 0 17 1 0 18 1>;
-		interrupt-names = "dos_mbox_slow_irq0", "dos_mbox_slow_irq1", "dos_mbox_slow_irq2";
+		status = "okay";
+		clocks = <&clkc CLKID_HCODEC>;
+		clock-names = "clk_jpeg_enc";
+		power-domains = <&pwrdm PDID_T3X_DOS_HCODEC>;
+		interrupts = <0 18 1>;
+		interrupt-names = "mailbox_2";
 		//reset-names = "jpegenc_rst";
 		//resets = <&reset RESET_BRG_HCODEC_PIPL0>;
 	};
-	aml_enc {
-		compatible = "cnm, MultiEnc";
-		dev_name = "amvenc_multi";
-		status = "disabled";
-		config_mm_sz_mb = <200>;
-//		clocks = <&clkc CLKID_DOS
-//			&clkc CLKID_VAPB
-//			&clkc CLKID_WAVE_A_GATE
-//			&clkc CLKID_WAVE_B_GATE
-//			&clkc CLKID_WAVE_C_GATE>;
-//		clock-names =
-//			"clk_dos",
-//			"clk_apb_dos",
-//			"clk_MultiEnc_A",
-//			"clk_MultiEnc_B",
-//			"clk_MultiEnc_C";
-		interrupts = <0 94 1 0 95 1>;
-		interrupt-names = "multienc_irq", "multienc_idle_irq";
-		#address-cells=<2>;
-		#size-cells=<2>;
-		pwr-ctl = <0>;
-		//power-domains = <&pwrdm PDID_T7_DOS_WAVE>;
-		ranges;
-		io_reg_base {
-			reg = <0x0 0xfe310000 0x0 0x10000>;
-		};
+
+	amvenc_avc{
+		compatible = "amlogic, amvenc_avc";
+		dev_name = "amvenc_avc";
+		status = "okay";
+		clocks = <&clkc CLKID_HCODEC>;
+		clock-names = "cts_hcodec_aclk";
+		interrupts = <0 18 1>;
+		interrupt-names = "mailbox_2";
+		reset-names = "hcodec_rst";
+		power-domains = <&pwrdm PDID_T3X_DOS_HCODEC>;
 	};
 
 	vpu: vpu {

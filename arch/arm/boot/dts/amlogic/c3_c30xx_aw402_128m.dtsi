@@ -80,8 +80,17 @@
 		autocap_reserved:linux,autocap_reserved {
 			compatible = "amlogic, aml_autocap_memory";
 			status = "okay";
-			size = <0x2000000>;
-			alloc-ranges = <0x3000000 0x2000000>;
+			size = <0x1000000>;
+			alloc-ranges = <0x3000000 0x1000000>;
+		};
+
+		pmz_cma_a2_reserved:anonymous_ext{
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x1000000>;
+			alignment = <0x400000>;
+			status = "okay";
+			alloc-ranges = <0x4000000 0x1000000>;
 		};
 
 		rtos_reserved:linux,rtos_reserved {
@@ -125,15 +134,6 @@
 			size = <0x02400000>;
 			alignment = <0x400000>;
 			alloc-ranges = <0x5000000 0x2400000>;
-		};
-
-		pmz_cma_a2_reserved:anonymous_ext{
-			compatible = "shared-dma-pool";
-			reusable;
-			size = <0x1000000>;
-			alignment = <0x400000>;
-			status = "disabled";
-			//alloc-ranges = <0x0 0x7B00000>;
 		};
 
 		codec_mm_cma:linux,codec_mm_cma {
@@ -193,15 +193,15 @@
 			  3300000 0>;
 	};
 
-	pmz_a1_dev {
-		compatible = "amlogic, pmz_dev";
-		memory-region = <&pmz_cma_a1_reserved>;
-	};
-
 	pmz_a2_dev {
 		compatible = "amlogic, pmz_dev";
 		memory-region = <&pmz_cma_a2_reserved>;
-		status = "disabled";
+		//status = "disabled";
+	};
+
+	pmz_a1_dev {
+		compatible = "amlogic, pmz_dev";
+		memory-region = <&pmz_cma_a1_reserved>;
 	};
 
 	hantro {

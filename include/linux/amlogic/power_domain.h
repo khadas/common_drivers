@@ -11,6 +11,14 @@
 #define DOMAIN_INIT_OFF   1
 #define POWER_CTRL_IRQ_SET     0x82000094
 
+/*
+ *GENPD_FLAG_IGNORE_UNUSED
+ *
+ *Do not power off when unused
+ *Continuous flag to control the behaviour of a genpd in framework
+ */
+#define GENPD_FLAG_IGNORE_UNUSED BIT(7)
+
 int get_max_id(void);
 unsigned long pwr_ctrl_psci_smc(int power_domain, bool power_control);
 unsigned long pwr_ctrl_status_psci_smc(int power_domain);

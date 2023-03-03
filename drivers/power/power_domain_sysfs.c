@@ -8,6 +8,7 @@
 #include <linux/pm_domain.h>
 #include <linux/platform_device.h>
 #include <linux/amlogic/power_domain.h>
+#include <linux/pm_runtime.h>
 
 static unsigned int power_domain;
 struct generic_pm_domain **power_domains;
@@ -83,6 +84,22 @@ static ssize_t power_status_store(struct device *_dev,
 }
 static DEVICE_ATTR_RW(power_status);
 
+static ssize_t power_unused_show(struct device *_dev,
+				 struct device_attribute *attr, char *buf)
+{
+	int i;
+
+	for (i = 0 ; i < pdid_max ; i++) {
+		if (!power_domains[i] || power_domains[i]->flags & GENPD_FLAG_IGNORE_UNUSED)
+			continue;
+
+		queue_work(pm_wq, &power_domains[i]->power_off_work);
+	}
+
+	return 0;
+}
+static DEVICE_ATTR_RO(power_unused);
+
 void pd_dev_create_file(struct device *dev, int cnt_start, int cnt_end,
 			struct generic_pm_domain **domains)
 {
@@ -93,6 +110,7 @@ void pd_dev_create_file(struct device *dev, int cnt_start, int cnt_end,
 	WARN_ON(device_create_file(dev, &dev_attr_power_status));
 	WARN_ON(device_create_file(dev, &dev_attr_power_on));
 	WARN_ON(device_create_file(dev, &dev_attr_power_off));
+	WARN_ON(device_create_file(dev, &dev_attr_power_unused));
 }
 
 void pd_dev_remove_file(struct device *dev)
@@ -100,4 +118,5 @@ void pd_dev_remove_file(struct device *dev)
 	device_remove_file(dev, &dev_attr_power_status);
 	device_remove_file(dev, &dev_attr_power_on);
 	device_remove_file(dev, &dev_attr_power_off);
+	device_remove_file(dev, &dev_attr_power_unused);
 }

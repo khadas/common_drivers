@@ -2299,25 +2299,28 @@
 
 	vclk_serve: vclk_serve {
 		compatible = "amlogic, vclk_serve";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe008000 0x0 0x300    /* ana reg */
 			0x0 0xfe000000 0x0 0xc00>; /* clk reg */
 	};
 
 	vout_mux: vout_mux {
-		compatible = "amlogic, vout_mux-s5";
-		status = "disabled";
+		compatible = "amlogic, vout_mux-t3x";
+		status = "okay";
 		//clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VIN_MEAS>;
 		//clock-names = "fclk_div5", "vdin_meas_clk";
 	};
 
 	vout: vout {
 		compatible = "amlogic, vout";
-		status = "disabled";
+		status = "okay";
+		interrupts = <GIC_SPI 115 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "vsync";
+		vs_meas=<0>;
 	};
 
 	dummy_venc: dummy_venc {
-		compatible = "amlogic, dummy_venc_s5";
+		compatible = "amlogic, dummy_venc_t5m";
 		status = "okay";
 	};
 

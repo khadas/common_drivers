@@ -6719,6 +6719,40 @@ static struct lcd_debug_info_s lcd_debug_info_t3_1 = {
 	.debug_if = NULL,
 };
 
+static struct lcd_debug_info_s lcd_debug_info_t3x_0 = {
+	.reg_pll_table = lcd_reg_dump_pll_t3_0,
+	.reg_clk_table = lcd_reg_dump_clk_t7_0,
+	.reg_clk_hiu_table = NULL,
+	.reg_encl_table = lcd_reg_dump_encl_t3x_0,
+	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
+
+	.debug_if_rgb = NULL,
+	.debug_if_lvds = NULL,//&lcd_debug_info_if_lvds_t3,
+	.debug_if_vbyone = NULL,//&lcd_debug_info_if_vbyone_t3,
+	.debug_if_mlvds = NULL,//&lcd_debug_info_if_mlvds_t3,
+	.debug_if_p2p = NULL,//&lcd_debug_info_if_p2p_t3,
+	.debug_if_mipi = NULL,
+	.debug_if_edp = NULL,
+	.debug_if = NULL,
+};
+
+static struct lcd_debug_info_s lcd_debug_info_t3x_1 = {
+	.reg_pll_table = lcd_reg_dump_pll_t3_0,
+	.reg_clk_table = lcd_reg_dump_clk_t7_1,
+	.reg_clk_hiu_table = NULL,
+	.reg_encl_table = lcd_reg_dump_encl_t3x_1,
+	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
+
+	.debug_if_rgb = NULL,
+	.debug_if_lvds = NULL,
+	.debug_if_vbyone = NULL,//&lcd_debug_info_if_vbyone_t3,
+	.debug_if_mlvds = NULL,
+	.debug_if_p2p = NULL,
+	.debug_if_mipi = NULL,
+	.debug_if_edp = NULL,
+	.debug_if = NULL,
+};
+
 static struct lcd_debug_info_s lcd_debug_info_t5w = {
 	.reg_pll_table = lcd_reg_dump_pll_t5,
 	.reg_clk_table = lcd_reg_dump_clk_t5w,
@@ -6795,6 +6829,16 @@ int lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 			break;
 		default:
 			lcd_debug_info = &lcd_debug_info_t3_0;
+			break;
+		}
+		break;
+	case LCD_CHIP_T3X:
+		switch (pdrv->index) {
+		case 1:
+			lcd_debug_info = &lcd_debug_info_t3x_1;
+			break;
+		default:
+			lcd_debug_info = &lcd_debug_info_t3x_0;
 			break;
 		}
 		break;

@@ -103,6 +103,7 @@ enum lcd_chip_e {
 	LCD_CHIP_T5W,	/* 11 */
 	LCD_CHIP_C3,	/* 12 */
 	LCD_CHIP_T5M,	/* 13 */
+	LCD_CHIP_T3X,	/* 14 */
 	LCD_CHIP_MAX,
 };
 
@@ -166,6 +167,7 @@ struct lcd_timing_s {
 	unsigned int sync_duration_den;
 	unsigned int frac;
 	unsigned int frame_rate;
+	unsigned int ppc;
 
 	unsigned int hstart;
 	unsigned int hend;

@@ -2750,6 +2750,7 @@ void lcd_basic_timing_range_init(struct aml_lcd_drv_s *pdrv)
 	pconf->timing.lcd_clk_dft = pconf->timing.lcd_clk;
 	pconf->timing.h_period_dft = pconf->basic.h_period;
 	pconf->timing.v_period_dft = pconf->basic.v_period;
+	pconf->timing.ppc = 1;
 }
 
 void lcd_timing_init_config(struct aml_lcd_drv_s *pdrv)

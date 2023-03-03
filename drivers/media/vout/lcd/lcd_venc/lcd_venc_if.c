@@ -173,6 +173,7 @@ unsigned int lcd_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
 	cnt = lcd_venc_op.get_encl_line_cnt(pdrv);
+
 	return cnt;
 }
 EXPORT_SYMBOL(lcd_get_encl_line_cnt);
@@ -188,6 +189,7 @@ unsigned int lcd_get_encl_frm_cnt(struct aml_lcd_drv_s *pdrv)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
 	cnt = lcd_venc_op.get_encl_frm_cnt(pdrv);
+
 	return cnt;
 }
 EXPORT_SYMBOL(lcd_get_encl_frm_cnt);
@@ -219,6 +221,9 @@ int lcd_venc_probe(struct aml_lcd_drv_s *pdrv)
 		break;
 	case LCD_CHIP_C3:
 		ret = lcd_venc_op_init_c3(pdrv, &lcd_venc_op);
+		break;
+	case LCD_CHIP_T3X:
+		ret = lcd_venc_op_init_t3x(pdrv, &lcd_venc_op);
 		break;
 	default:
 		ret = lcd_venc_op_init_dft(pdrv, &lcd_venc_op);

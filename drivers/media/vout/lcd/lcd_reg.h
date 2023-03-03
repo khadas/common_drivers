@@ -10,6 +10,7 @@
 #define __LCD_REG_H__
 #include <linux/amlogic/media/vout/lcd/lcd_vout.h>
 #include "edp_tx_reg.h"
+#include "lcd_reg_t3x.h"
 
 /* register offset address define */
 /* base & offset */

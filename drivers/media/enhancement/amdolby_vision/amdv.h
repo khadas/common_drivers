@@ -99,6 +99,7 @@ enum core_type {
 	AMDV_CORE2A,
 	AMDV_CORE2B,
 	AMDV_CORE2C,
+	AMDV_HW5,
 };
 
 enum input_mode_enum {
@@ -630,7 +631,41 @@ enum cpu_id_e {
 	_CPU_MAJOR_ID_T5W,
 	_CPU_MAJOR_ID_T5M,
 	_CPU_MAJOR_ID_S5,
+	_CPU_MAJOR_ID_T3X,
 	_CPU_MAJOR_ID_UNKNOWN,
+};
+
+enum phy_level {
+	SIX_LEVEL = 0,
+	SEVEN_LEVEL = 1,
+	NO_LEVEL  = 2
+};
+
+enum top2_source {
+	FROM_VDIN0 = 0,
+	FROM_VD1 = 1,
+	FROM_DI  = 2,
+	FROM_VDIN1 = 3
+};
+
+struct top1_pyramid_addr {
+	u32 top1_py0;
+	u32 top1_py1;
+	u32 top1_py2;
+	u32 top1_py3;
+	u32 top1_py4;
+	u32 top1_py5;
+	u32 top1_py6;
+};
+
+struct ovlp_win_para {
+	u32 ovlp_win_en;
+	u32 ovlp_win_hsize;
+	u32 ovlp_win_vsize;
+	u32 ovlp_win_hbgn;
+	u32 ovlp_win_hend;
+	u32 ovlp_win_vbgn;
+	u32 ovlp_win_vend;
 };
 
 struct dv_device_data_s {
@@ -692,6 +727,16 @@ extern struct hdr10_parameter hdr10_param;
 extern int cur_valid_video_num;
 extern struct vpp_post_info_t core3_slice_info;
 //extern int (*get_osd_status)(enum OSD_INDEX index);
+extern struct top1_pyramid_addr top1_py_addr;
+extern void *top1_reg_buf;
+extern void *top1_lut_buf;
+extern void *top2_reg_buf;
+extern void *top2_lut_buf;
+extern u32 top1_reg_num;
+extern u32 top1b_reg_num;
+extern u32 top1_lut_num;
+extern u32 top2_reg_num;
+extern u32 top2_lut_num;
 /************/
 
 #define pr_dv_dbg(fmt, args...)\
@@ -838,6 +883,7 @@ bool is_aml_t5w(void);
 bool is_aml_t5m(void);
 bool is_amdv_stb_mode(void);
 bool is_aml_s5(void);
+bool is_aml_t3x(void);
 
 u32 VSYNC_RD_DV_REG(u32 adr);
 int VSYNC_WR_DV_REG(u32 adr, u32 val);
@@ -901,5 +947,20 @@ int layer_id_to_dv_id(enum vd_path_e vd_path);
 bool layerid_valid(int layerid);
 bool dv_inst_valid(int id);
 struct device *get_amdv_device(void);
+void bypass_pps_sr_gamma_gainoff(int flag);
+void amdv_core_reset(enum core_type type);
+void enable_amdv_hw5(int enable);
+int tv_top2_set(u64 *reg_data,
+			     int hsize,
+			     int vsize,
+			     int bl_enable,
+			     int el_enable,
+			     int el_41_mode,
+			     int src_chroma_format,
+			     bool hdmi,
+			     bool hdr10,
+			     bool reset);
+int load_reg_and_lut_file(char *fw_name, void **dst_buf);
+void read_txt_to_buf(char *reg_txt, void *reg_buf, int reg_num, bool is_reg);
 
 #endif

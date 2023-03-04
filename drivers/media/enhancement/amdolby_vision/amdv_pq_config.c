@@ -2116,6 +2116,163 @@ void set_load_config_status(bool flag)
 	load_bin_config = flag;
 }
 
+int load_reg_and_lut_file(char *fw_name, void **dst_buf)
+{
+	int ret = 0;
+	const struct firmware *fw = NULL;
+	char name[MAX_PATH_LEN] = {0};
+	char amdv_name[MAX_PATH_LEN] = {0};
+	char *tmp = NULL;
+	struct device *dev = NULL;
+
+	dev = get_amdv_device();
+
+	if (!fw_name || !dev) {
+		pr_dv_dbg("NULL param, %s (%d)\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+
+	/*remove directory, only need file name*/
+	tmp = strrchr(fw_name, '/');
+	if (tmp)
+		strncpy(name, tmp + 1, MAX_PATH_LEN - 1);
+	else
+		strncpy(name, fw_name, MAX_PATH_LEN - 1);
+
+	snprintf(amdv_name, (MAX_PATH_LEN - 1), "%s/%s",
+		 FIRMWARE_DIR, name);
+
+	if (debug_dolby & 0x200)
+		pr_dv_dbg("Try to load %s, filename: %s\n", fw_name, amdv_name);
+
+	ret = request_firmware(&fw, amdv_name, dev);
+	if (ret < 0) {
+		pr_dv_dbg("Error : %d can't load the %s.\n", ret, amdv_name);
+		return -ENOENT;
+	}
+
+	if (fw->size <= 0) {
+		pr_dv_dbg("size error, wrong firmware or no enough mem.\n");
+		ret = -ENOMEM;
+		goto release;
+	}
+
+	*dst_buf = vmalloc(fw->size + 2);
+	if (!(*dst_buf)) {
+		ret = -ENOMEM;
+		goto release;
+	}
+	memset(*dst_buf, 0, fw->size + 2);
+	memcpy(*dst_buf, (char *)fw->data, fw->size);
+
+	pr_info("load file size: %zd, name: %s.\n",
+		fw->size, name);
+
+release:
+	release_firmware(fw);
+	return ret;
+}
+
+static bool read_one_line(char **text_buf, char *line_buf)
+{
+	char *line_end;
+	size_t line_len = 0;
+	bool eof_flag = false;
+
+	if (!text_buf || !(*text_buf) || !line_buf) {
+		pr_info("line_buf %p, text_buf %p\n", line_buf, text_buf);
+		return true;
+	}
+
+	line_buf[0] = '\0';
+	while (*line_buf == '\0') {
+		if (debug_dolby & 0x2)
+			pr_info("*text_buf: %s\n", *text_buf);
+		line_end = strnchr(*text_buf, 128, '\n');
+		if (debug_dolby & 0x2)
+			pr_info("line_end: %s\n", line_end);
+		if (!line_end) {
+			line_len = strlen(*text_buf);
+			eof_flag = true;
+		} else {
+			line_len = (size_t)(line_end - *text_buf);
+		}
+		memcpy(line_buf, *text_buf, line_len);
+		line_buf[line_len] = '\0';
+		if (line_len > 0 && line_buf[line_len - 1] == '\r')
+			line_buf[line_len - 1] = '\0';
+
+		*text_buf = *text_buf + line_len + 1;
+		while (isspace(*line_buf))
+			line_buf++;
+
+		if (**text_buf == '\0')
+			eof_flag = true;
+
+		if (eof_flag)
+			break;
+	}
+
+	return eof_flag;
+}
+
+/*is_reg: true: reg; false: lut*/
+void read_txt_to_buf(char *reg_txt, void *reg_buf, int reg_num, bool is_reg)
+{
+	char *ptr_line;
+	int reg_count = 0;
+	int ret = 0;
+	bool eof_flag = false;
+	u32 *p_buf = (u32 *)reg_buf;
+	u32 addr;
+	u32 value;
+	u32 value2;
+	u32 value3;
+	u32 value4;
+
+	if (!reg_txt || !reg_buf)
+		return;
+
+	while (!eof_flag) {
+		eof_flag = read_one_line(&reg_txt, (char *)&cur_line);
+		ptr_line = cur_line;
+		if (debug_dolby & 0x200)
+			pr_dv_dbg("eof_flag %d, ptr_line: %s\n", eof_flag, ptr_line);
+		if (eof_flag && (strlen(cur_line) == 0))
+			break;
+
+		if (is_reg) {
+			ret = sscanf(ptr_line, "%08x%08x", &addr, &value);
+			if (ret == 2) {
+				p_buf[reg_count * 2] = value;
+				p_buf[reg_count * 2 + 1] = addr;
+				++reg_count;
+				if (debug_dolby & 0x200)
+					pr_dv_dbg("reg_count %d: addr %x,value %x\n",
+							  reg_count, addr, value);
+				if (reg_count >= reg_num)
+					break;
+			}
+		} else {/*lut*/
+			ret = sscanf(ptr_line, "%08x%08x%08x%08x",
+						 &value, &value2, &value3, &value4);
+			if (ret == 4) {
+				p_buf[reg_count * 4] = value4;
+				p_buf[reg_count * 4 + 1] = value3;
+				p_buf[reg_count * 4 + 2] = value2;
+				p_buf[reg_count * 4 + 3] = value;
+				++reg_count;
+				if (debug_dolby & 0x200)
+					pr_dv_dbg("value %x %x %x %x\n",
+							  value, value2, value3, value4);
+				if (reg_count >= reg_num)
+					break;
+			}
+		}
+	}
+	pr_info("read file, count: %d\n", reg_count);
+}
+
 module_param(panel_max_lumin, uint, 0664);
 MODULE_PARM_DESC(panel_max_lumin, "\n panel_max_lumin\n");
 

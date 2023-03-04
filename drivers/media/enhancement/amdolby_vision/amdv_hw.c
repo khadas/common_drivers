@@ -28,6 +28,7 @@
 #include <linux/amlogic/iomap.h>
 #include "amdv.h"
 #include "amdv_regs_s5.h"
+#include "amdv_regs_hw5.h"
 #include "md_config.h"
 
 #include <linux/of.h>
@@ -298,7 +299,8 @@ void adjust_vpotch_tv(void)
 	const struct vinfo_s *vinfo = get_current_vinfo();
 
 	if (is_aml_tm2() || is_aml_t7() ||
-	    is_aml_t3() || is_aml_t5w() || is_aml_t5m()) {
+	    is_aml_t3() || is_aml_t5w() ||
+	    is_aml_t5m() || is_aml_t3x()) {
 		if (debug_dma_start_line) {
 			dma_start_line = debug_dma_start_line;
 		} else if (vinfo) {
@@ -320,7 +322,7 @@ void adjust_vpotch_tv(void)
 	}
 }
 
-static void amdv_core_reset(enum core_type type)
+void amdv_core_reset(enum core_type type)
 {
 	switch (type) {
 	case AMDV_TVCORE:
@@ -397,6 +399,12 @@ static void amdv_core_reset(enum core_type type)
 		} else if (is_aml_s5()) {
 			VSYNC_WR_DV_REG(AMDV_CORE2C_SWAP_CTRL0, 1 << 26);
 			VSYNC_WR_DV_REG(AMDV_CORE2C_SWAP_CTRL0, 0 << 26);
+		}
+		break;
+	case AMDV_HW5:
+		if (is_aml_t3x()) {
+			VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_GCLK, 1, 16, 1);
+			VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_GCLK, 0, 16, 1);
 		}
 		break;
 	default:
@@ -3941,7 +3949,7 @@ void set_force_reset_core2(bool flag)
 /*flag bit0: bypass from preblend to VADJ1, skip sr/pps/cm2*/
 /*flag bit1: skip OE/EO*/
 /*flag bit2: bypass from dolby3 to vkeystone, skip vajd2/post/mtx/gainoff*/
-static void bypass_pps_sr_gamma_gainoff(int flag)
+void bypass_pps_sr_gamma_gainoff(int flag)
 {
 	pr_dv_dbg("%s: %d\n", __func__, flag);
 
@@ -3953,6 +3961,11 @@ static void bypass_pps_sr_gamma_gainoff(int flag)
 			VSYNC_WR_DV_REG_BITS(VD_PROC_BYPASS_CTRL, 1, 1, 1);
 		if (flag & 4)
 			VSYNC_WR_DV_REG_BITS(S5_VPP_DOLBY_CTRL, 1, 2, 1);
+	} else if (is_aml_t3x()) {
+		if (flag & 1)
+			VSYNC_WR_DV_REG_BITS(T3X_VD_PROC_BYPASS_CTRL, 1, 1, 1);
+		if (flag & 4)
+			VSYNC_WR_DV_REG_BITS(T3X_VPP_DOLBY_CTRL, 1, 2, 1);
 	} else {
 		if (flag & 1) {
 			if (is_aml_t3() || is_aml_t5w()) {
@@ -6299,6 +6312,8 @@ void enable_amdv(int enable)
 			enable_amdv_v1(enable);
 		else
 			enable_amdv_v2_stb(enable);
+	} else if (is_aml_t3x()) {
+		enable_amdv_hw5(enable);
 	} else {
 		enable_amdv_v1(enable);
 	}

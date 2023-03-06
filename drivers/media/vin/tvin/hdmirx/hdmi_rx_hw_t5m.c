@@ -47,8 +47,8 @@ u32 eq_value;
 u32 misc2_value;
 u32 misc1_value;
 int phy_debug_en;
-int enhance_dfe_en_old;
-int enhance_dfe_en_new = 1;
+int enhance_dfe_en_old = 1;
+int enhance_dfe_en_new;
 int eye_height = 5;
 int enhance_eq;
 int eq_level;
@@ -120,23 +120,6 @@ static const u32 phy_dchd_t5m[][2] = {
 	{	 /* 525~600M */
 		0x04080091, 0x30e0046f,
 	},
-};
-
-struct apll_param apll_tab_t5m[] = {
-	/*od for tmds: 2/4/8/16/32*/
-	/*od2 for audio: 1/2/4/8/16*/
-	/* bw M, N, od, od_div, od2, od2_div, aud_div */
-	/* {PLL_BW_0, 160, 1, 0x5, 32,0x2, 8, 2}, */
-	{PLL_BW_0, 160, 1, 0x5, 32, 0x1, 8, 3},/* 16 x 27 */
-	/* {PLL_BW_1, 80, 1, 0x4,	 16, 0x2, 8, 1}, */
-	{PLL_BW_1, 80, 1, 0x4, 16, 0x0, 8, 3},/* 8 x 74 */
-	/* {PLL_BW_2, 40, 1, 0x3, 8,	 0x2, 8, 0}, */
-	{PLL_BW_2, 40, 1, 0x3, 8,	  0x0, 8, 2}, /* 4 x 148 */
-	/* {PLL_BW_3, 40, 2, 0x2, 4,	 0x1, 4, 0}, */
-	{PLL_BW_3, 40, 2, 0x2, 4,	  0x0, 4, 1},/* 2 x 297 */
-	/* {PLL_BW_4, 40, 1, 0x1, 2,	 0x0, 2, 0}, */
-	{PLL_BW_4, 40, 1, 0x1, 2,	  0x0, 2, 0},/* 594 */
-	{PLL_BW_NULL, 40, 1, 0x3, 8,	 0x2, 8, 0},
 };
 
 u32 t5m_rlevel[] = {8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7};
@@ -537,21 +520,30 @@ void aml_hyper_gain_tuning_t5m(void)
 	tap1 = (data32 >> 8) & 0xff;
 	tap2 = (data32 >> 16) & 0xff;
 
-	if ((eq_en && eq_boost0 < 3) || tap0 < 0x12)
+	if ((eq_en && eq_boost0 < 3) || tap0 < 0x12) {
 		hyper_gain_0 = 1;
-	if ((eq_en && eq_boost1 < 3) || tap1 < 0x12)
-		hyper_gain_1 = 1;
-	if ((eq_en && eq_boost2 < 3) || tap2 < 0x12)
-		hyper_gain_2 = 1;
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_AFE,
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_AFE,
 					  T5M_LEQ_HYPER_GAIN_CH0,
 					  hyper_gain_0);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_AFE,
+		if (log_level & PHY_LOG)
+			rx_pr("ch0 hyper gain triger\n");
+	}
+	if ((eq_en && eq_boost1 < 3) || tap1 < 0x12) {
+		hyper_gain_1 = 1;
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_AFE,
 					  T5M_LEQ_HYPER_GAIN_CH1,
 					  hyper_gain_1);
-	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_AFE,
+		if (log_level & PHY_LOG)
+			rx_pr("ch1 hyper gain triger\n");
+	}
+	if ((eq_en && eq_boost2 < 3) || tap2 < 0x12) {
+		hyper_gain_2 = 1;
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHA_AFE,
 					  T5M_LEQ_HYPER_GAIN_CH2,
 					  hyper_gain_2);
+		if (log_level & PHY_LOG)
+			rx_pr("ch2 hyper gain triger\n");
+	}
 }
 
 int max_offset(int a, int b, int c)
@@ -865,6 +857,35 @@ u32 eq_eye_height(u32 wst_ch)
 	return positive_eye_height;
 }
 
+void dump_cdr_info(void)
+{
+	u32 cdr0_lock, cdr1_lock, cdr2_lock;
+	u32 cdr0_int, cdr1_int, cdr2_int;
+	u32 cdr0_code, cdr1_code, cdr2_code;
+	u32 data32;
+
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_EHM_DBG_SEL, 0x0);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_STATUS_MUX_SEL, 0x22);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_MUX_CDR_DBG_SEL, 0x0);
+	usleep_range(10, 20);
+	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
+	cdr0_code = data32 & 0x7f;
+	cdr0_lock = (data32 >> 7) & 0x1;
+	cdr1_code = (data32 >> 8) & 0x7f;
+	cdr1_lock = (data32 >> 15) & 0x1;
+	cdr2_code = (data32 >> 16) & 0x7f;
+	cdr2_lock = (data32 >> 23) & 0x1;
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_MUX_CDR_DBG_SEL, 0x1);
+	usleep_range(10, 20);
+	data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
+	cdr0_int = data32 & 0x7f;
+	cdr1_int = (data32 >> 8) & 0x7f;
+	cdr2_int = (data32 >> 16) & 0x7f;
+	rx_pr("cdr_code=[%d,%d,%d]\n", cdr0_code, cdr1_code, cdr2_code);
+	rx_pr("cdr_lock=[%d,%d,%d]\n", cdr0_lock, cdr1_lock, cdr2_lock);
+	comb_val_t5m(get_val_t5m, "cdr_int", cdr0_int, cdr1_int, cdr2_int, 7);
+}
+
 void dfe_tap0_pol_polling(u32 pos_min_eh, u32 pos_avg_eh, u32 wst_ch)
 {
 	u32 int_eye_height_sum = 0;
@@ -919,6 +940,23 @@ void dfe_tap0_pol_polling(u32 pos_min_eh, u32 pos_avg_eh, u32 wst_ch)
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, MSK(2, 20), 0x2);
 	usleep_range(100, 200);
 	rx_pr("select pos eq\n");
+	if (rx_phy_level & 0x4) {
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(6), 0);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_EQ_RSTB, 0x0);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_DFE_RSTB, 0x0);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_CDR_RSTB, 0x0);
+		usleep_range(10, 20);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_CDR_RSTB, 0x1);
+		usleep_range(100, 200);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_EQ_RSTB, 0x1);
+		usleep_range(100, 200);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_DFE_RSTB, 0x1);
+		usleep_range(100, 200);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(6), 1);
+		usleep_range(500, 600);
+		if (log_level & PHY_LOG)
+			dump_cdr_info();
+	}
 }
 
 //dfe tap polarity was set positive in initial setting matrix
@@ -952,6 +990,8 @@ void aml_enhance_dfe_old(void)
 	u32 pos_eye_height[20];
 	u32 pos_avg_eye_height;
 
+	if (log_level & PHY_LOG)
+		dump_cdr_info();
 	wst_ch = aml_eq_eye_monitor_t5m();
 	for (i = 0; i < 20; i++)
 		pos_eye_height[i] = eq_eye_height(wst_ch);

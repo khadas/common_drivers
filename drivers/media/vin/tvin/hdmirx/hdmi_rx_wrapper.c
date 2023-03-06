@@ -269,7 +269,7 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.vga_dbg = 1;
 		rx.aml_phy.vga_dbg_delay = 200;
 		rx.aml_phy.eq_fix_val = 16;
-		rx.aml_phy.cdr_fr_en = 100;
+		rx.aml_phy.cdr_fr_en = 500;
 		rx.aml_phy.force_sqo = 0;
 		/* add for t5 */
 		rx.aml_phy.os_rate = 3;
@@ -389,7 +389,7 @@ void hdmirx_fsm_var_init(void)
 		aud_sr_stb_max = 30;
 		err_dbg_cnt_max = 500;
 		clk_stable_max = 3;
-		rx_phy_level = 1;
+		rx_phy_level = 5;
 		break;
 	case CHIP_ID_T7:
 	case CHIP_ID_T3:

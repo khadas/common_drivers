@@ -45,8 +45,8 @@
 #define EDID_DATA_LOG	0x20000
 #define RP_LOG		0x40000
 
-/* fix conflict between two delay work */
-#define RX_VER1 "ver.2023/3/2"
+/* select old eye height */
+#define RX_VER1 "ver.2023/3/8"
 
 /*
  * Currently, a total of 5 VSIF packages are supported,

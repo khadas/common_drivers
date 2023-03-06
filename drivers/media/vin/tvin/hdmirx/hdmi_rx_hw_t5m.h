@@ -101,6 +101,7 @@ void comb_val_t5m(void (*p)(char *, unsigned int, int),
 	     char *type, unsigned int val_0, unsigned int val_1,
 		 unsigned int val_2, int len);
 void get_flag_val_t5m(char *temp, unsigned int val, int len);
+void get_val_t5m(char *temp, unsigned int val, int len);
 void reset_pcs(void);
 void get_eq_val_t5m(void);
 void bubble_sort(u32 *sort_array);

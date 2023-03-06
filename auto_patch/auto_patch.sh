@@ -45,7 +45,7 @@ function am_patch()
 function auto_patch()
 {
 	local patch_dir=$1
-	# echo patch_dir=$patch_dir
+	echo patch_dir=$patch_dir
 
 	for file in `ls $patch_dir/*.patch`; do
 		local file_name=${file%.*};           #echo file_name $file_name
@@ -61,8 +61,13 @@ function auto_patch()
 function traverse_patch_dir()
 {
 	# git am common and common_driver patches
-	for patch in `ls ${PATCHES_PATH}/common/*.patch`; do
-		am_patch ${patch} ${KERNEL_DIR}
+	for file in `ls ${PATCHES_PATH}/common`; do
+		# echo file=$file
+		if [ -d ${PATCHES_PATH}/common/${file} ]; then
+			for patch in `ls ${PATCHES_PATH}/common/${file}/*.patch`; do
+				am_patch ${patch} ${KERNEL_DIR}
+			done
+		fi
 	done
 
 	if [[ -d ${PATCHES_PATH}/common_drivers ]]; then
@@ -71,12 +76,12 @@ function traverse_patch_dir()
 		done
 	fi
 
-	for file in `ls $PATCHES_PATH`; do
-		[[ "$file" =~ ".md" || "$file" =~ ".sh" || "$file" == "common" || "$file" == "common_drivers" ]] && continue
+	for file in `ls ${PATCHES_PATH}`; do
+		[[ "${file}" == "common" || "${file}" == "common_drivers" ]] && continue
 
-		if [ -d $PATCHES_PATH/$file ]; then
-			local dest_dir=$PATCHES_PATH/$file
-			auto_patch $dest_dir
+		if [ -d ${PATCHES_PATH}/${file} ]; then
+			local dest_dir=${PATCHES_PATH}/${file}
+			auto_patch ${dest_dir}
 		fi
 	done
 

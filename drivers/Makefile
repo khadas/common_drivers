@@ -45,7 +45,6 @@ obj-$(CONFIG_AMLOGIC_MTD_NAND)		+= mtd/nand/
 obj-$(CONFIG_AMLOGIC_FREERTOS)		+= freertos/
 obj-$(CONFIG_AMLOGIC_JTAG_MESON)	+= jtag/
 obj-$(CONFIG_AMLOGIC_MEMORY_EXTEND)	+= memory_ext/
-obj-$(CONFIG_DM_BOW)			+= md/
 obj-$(CONFIG_AMLOGIC_HWSPINLOCK)	+= hwspinlock/
 obj-$(CONFIG_AMLOGIC_ALGORITHM)	        += algorithm/
 obj-$(CONFIG_AMLOGIC_ANDROID_LOGGER)	+= android/

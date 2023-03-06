@@ -220,6 +220,16 @@
 			alloc-ranges = <0x0 0x0 0x0 0x40000000>;
 		};
 
+		/* global autoconfigured region for contiguous allocations */
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x800000>;
+			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0x80000000>;
+			linux,cma-default;
+		};
+
 		fixed_area_one:linux,area_one {
 			compatible = "shared-dma-pool";
 			reusable;

@@ -95,7 +95,12 @@ struct wifi_plat_info {
 #define WIFI_POWER_MODULE_NAME	"wifi_power"
 #define WIFI_POWER_DRIVER_NAME	"wifi_power"
 #define WIFI_POWER_DEVICE_NAME	"wifi_power"
-#define WIFI_POWER_CLASS_NAME		"wifi_power"
+#define WIFI_POWER_CLASS_NAME	"wifi_power"
+
+#define WIFI_MAC_MODULE_NAME	"wifi_mac"
+#define WIFI_MAC_DRIVER_NAME	"wifi_mac"
+#define WIFI_MAC_DEVICE_NAME	"wifi_mac"
+#define WIFI_MAC_CLASS_NAME	"wifi_mac"
 
 #define USB_POWER_UP    _IO('m', 1)
 #define USB_POWER_DOWN  _IO('m', 2)
@@ -108,6 +113,10 @@ static dev_t wifi_power_devno;
 static struct cdev *wifi_power_cdev;
 static struct device *devp;
 struct wifi_power_platform_data *pdata;
+
+static dev_t wifi_mac_devno;
+static struct cdev *wifi_mac_cdev;
+static struct device *wifi_mac_devp;
 
 static int usb_power;
 #define BT_BIT	0
@@ -491,11 +500,24 @@ static ssize_t power_store(struct class *cls,
 }
 static CLASS_ATTR_RW(power);
 
+static int wifi_mac_open(struct inode *inode, struct file *file)
+{
+	return 0;
+}
+
+static ssize_t wifi_mac_write(struct file *file, const char __user *buf,
+				size_t count, loff_t *ppos);
+
 static const struct file_operations wifi_power_fops = {
 	.unlocked_ioctl = wifi_power_ioctl,
 	.compat_ioctl = wifi_power_ioctl,
 	.open	= wifi_power_open,
 	.release	= wifi_power_release,
+};
+
+static const struct file_operations wifi_mac_fops = {
+	.open = wifi_mac_open,
+	.write = wifi_mac_write,
 };
 
 static struct class wifi_power_class = {
@@ -906,8 +928,28 @@ static int wifi_dev_probe(struct platform_device *pdev)
 
 	wifi_dt_class = class_create(THIS_MODULE, "aml_wifi");
 	ret = class_create_file(wifi_dt_class, &class_attr_power);
+	/********wifi rand mac***********/
+	ret = alloc_chrdev_region(&wifi_mac_devno, 0, 1, WIFI_MAC_DEVICE_NAME);
+	if (ret < 0)
+		goto error3;
+	wifi_mac_cdev = cdev_alloc();
+	if (!wifi_mac_cdev)
+		goto error3;
+	cdev_init(wifi_mac_cdev, &wifi_mac_fops);
+	wifi_mac_cdev->owner = THIS_MODULE;
+	ret = cdev_add(wifi_mac_cdev, wifi_mac_devno, 1);
+	if (ret)
+		goto error4;
+	wifi_mac_devp = device_create(wifi_dt_class, NULL,
+					wifi_mac_devno, NULL, WIFI_MAC_DEVICE_NAME);
+	if (IS_ERR(wifi_mac_devp)) {
+		ret = PTR_ERR(wifi_mac_devp);
+		goto error4;
+	}
 
 	return 0;
+error4:
+	cdev_del(wifi_mac_cdev);
 error3:
 	cdev_del(wifi_power_cdev);
 error2:
@@ -1011,6 +1053,24 @@ MODULE_PARM_DESC(mac_addr, "mac addr");
 #else
 __setup("mac_wifi=", mac_addr_set);
 #endif
+
+static ssize_t wifi_mac_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
+{
+	int ret;
+	char mac[18];
+
+	if (WIFI_MAC[0] != 0xff)
+		return 0;
+
+	ret = copy_from_user(mac, buf, count);
+	if (ret < 0) {
+		WIFI_INFO("wifi mac write failed\n");
+		return -EFAULT;
+	}
+	mac_addr_set(mac);
+
+	return 0;
+}
 
 u8 *wifi_get_mac(void)
 {

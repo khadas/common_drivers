@@ -85,21 +85,21 @@
 		ion_fb_reserved:linux,ion-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1920x1080x4x4 round up 4M align */
 			size = <0x0>;
 			alignment = <0x400000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1920x1080x4x6 round up 4M align */
-			size = <0x3400000>;
+			/* 1080p STB androidT size 56M */
+			size = <0x3800000>;
 			alignment = <0x400000>;
 		};
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x5c00000>;
+			/* 1080p STB androidT size 88M */
+			size = <0x5800000>;
 			alignment = <0x400000>;
 		};
 		/*di CMA pool */

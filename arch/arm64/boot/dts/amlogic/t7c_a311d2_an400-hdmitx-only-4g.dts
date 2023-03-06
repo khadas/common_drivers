@@ -182,14 +182,15 @@
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x9800000>;
+			/* 1080p+4K TV androidT size 4M, no direct render */
+			size = <0x0 0x400000>;
 			alignment = <0x0 0x400000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1920x1080x4x6+3840x2160x4x3 round up 4M align */
-			size = <0x0 0x9c00000>;
+			/* 1080p+4K TV androidT size 160M */
+			size = <0x0 0xa000000>;
 			alignment = <0x0 0x400000>;
 		};
 

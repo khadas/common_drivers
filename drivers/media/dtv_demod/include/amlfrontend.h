@@ -78,6 +78,7 @@
 /*  V1.1.84  rebuild isdbt to improve signal locking performance */
 /*  V1.1.85  change the calculation method of ber */
 /*  V1.1.86  remove S/S2 ber config */
+/*  V1.1.87  fix t5m dvbc 128qam unlock */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -94,8 +95,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.86"
-#define DTVDEMOD_VER	"2023/3/8: remove S/S2 ber config"
+#define AMLDTVDEMOD_VER "V1.1.87"
+#define DTVDEMOD_VER	"2023/3/13: fix t5m dvbc 128qam unlock"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

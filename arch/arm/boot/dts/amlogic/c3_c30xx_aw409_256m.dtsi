@@ -531,9 +531,10 @@
 	sensor0 {
 		compatible = "amlogic, sensor0";
 		status = "okay";
-		clocks = <&clkc CLKID_MCLK_0>;
-		clock-names = "mclk";
-		clock-frequency = <37125000>;
+		clocks = <&clkc CLKID_MCLK_PLL_CLK
+				&clkc CLKID_MCLK_0>;
+		clock-names = "mclk_pll", "mclk";
+		clock-frequency = <74250000>;
 		devices-type = <0>;
 		reset-gpios = <&gpio GPIOE_4 GPIO_ACTIVE_HIGH>;
 	};

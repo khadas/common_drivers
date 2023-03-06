@@ -115,6 +115,13 @@
 
 #define WAIT_LINKUP_TIMEOUT         180000
 
+#define LTSSM_L0		0x10
+#define LTSSM_L1_IDLE		0x13
+#define LTSSM_LPBK_ACTIVE	0x18
+
+#define PCIE_LINK_STATE_CHECK(val, state) \
+	(((((val) >> 18)) & GENMASK(4, 0)) == (state))
+
 enum pcie_data_rate {
 	PCIE_GEN1,
 	PCIE_GEN2,
@@ -192,6 +199,7 @@ struct amlogic_pcie {
 
 	u8 lanes_map;
 	u32 link_gen;
+	u32 link_times;
 	int offset;
 	struct resource	*mem_res;
 };

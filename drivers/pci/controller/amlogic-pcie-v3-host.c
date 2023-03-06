@@ -42,6 +42,10 @@ static int link_speed;
 module_param(link_speed, int, 0444);
 MODULE_PARM_DESC(link_speed, "select pcie link speed ");
 
+static int link_times = WAIT_LINKUP_TIMEOUT - 10;
+module_param(link_times, int, 0644);
+MODULE_PARM_DESC(link_times, "select pcie link speed ");
+
 /* MSI information */
 struct amlogic_msi {
 	DECLARE_BITMAP(used, INT_PCI_MSI_NR);
@@ -336,6 +340,9 @@ static int amlogic_pcie_parse_host_dt(struct amlogic_pcie_rc *rc)
 	if (link_speed)
 		amlogic->link_gen = link_speed;
 
+	if (link_times)
+		amlogic->link_times = link_times;
+
 	ret = amlogic_pcie_parse_dt(amlogic);
 	if (ret)
 		return ret;
@@ -493,6 +500,16 @@ static void amlogic_pcie_cfg_atr(struct amlogic_pcie *amlogic)
 static int __maybe_unused amlogic_pcie_suspend_noirq(struct device *dev)
 {
 	struct amlogic_pcie *amlogic = dev_get_drvdata(dev);
+	int err;
+	u32 value;
+
+	err = readl_poll_timeout(amlogic->pcictrl_base + PCIE_A_CTRL5, value,
+				 PCIE_LINK_STATE_CHECK(value, LTSSM_L1_IDLE), 20,
+				 jiffies_to_msecs(10 * HZ));
+	if (err) {
+		dev_err(amlogic->dev, "PCIe link enter L1 timeout!\n");
+		return err;
+	}
 
 	amlogic_pcie_deinit_phys(amlogic);
 

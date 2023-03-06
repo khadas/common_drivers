@@ -32,6 +32,7 @@
 #include "ddr_port.h"
 #include <linux/amlogic/gki_module.h>
 #include <trace/hooks/mm.h>
+#include <trace/hooks/fault.h>
 #include <asm/module.h>
 #include <linux/mmzone.h>
 #include <trace/hooks/traps.h>
@@ -835,7 +836,7 @@ static size_t str_end_char(const char *s, size_t count, int c)
 	return offset;
 }
 
-void serror_dump_dmc_reg_hook(void *data, struct pt_regs *regs, unsigned int esr, int *ret)
+static void serror_dump_dmc_reg(void)
 {
 	int len, i = 0, offset = 0;
 	static char buf[2048] = {0};
@@ -848,6 +849,25 @@ void serror_dump_dmc_reg_hook(void *data, struct pt_regs *regs, unsigned int esr
 	}
 	pr_crit("\n");
 }
+
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+/* Asynchronous Serror*/
+void arm64_serror_panic(void *data, struct pt_regs *regs, unsigned int esr)
+{
+	serror_dump_dmc_reg();
+}
+
+/* Synchronous Serror*/
+void do_sea(void *data, unsigned long addr, unsigned int esr, struct pt_regs *regs)
+{
+	serror_dump_dmc_reg();
+}
+#else
+void do_serror(void *data, struct pt_regs *regs, unsigned int esr, int *ret)
+{
+	serror_dump_dmc_reg();
+}
+#endif
 #endif
 
 static int __init dmc_monitor_probe(struct platform_device *pdev)
@@ -986,7 +1006,12 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 #if defined(CONFIG_AMLOGIC_USER_FAULT) && \
 	defined(CONFIG_TRACEPOINTS) && \
 	defined(CONFIG_ANDROID_VENDOR_HOOKS)
-	register_trace_android_rvh_do_serror(serror_dump_dmc_reg_hook, NULL);
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	register_trace_android_rvh_arm64_serror_panic(arm64_serror_panic, NULL);
+	register_trace_android_rvh_do_sea(do_sea, NULL);
+#else
+	register_trace_android_rvh_do_serror(do_serror, NULL);
+#endif
 #endif
 	return 0;
 }

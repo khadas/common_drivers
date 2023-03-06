@@ -32,19 +32,12 @@ module_param(hardlockup_panic, int, 0644);
 
 static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
 static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
-
+static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_lock_cnt);
 static DEFINE_PER_CPU(struct hrtimer, watchdog_hrtimer);
 
 static void set_sample_period(void)
 {
-	/*
-	 * convert watchdog_thresh from seconds to ns
-	 * the divide by 5 is to give hrtimer several chances (two
-	 * or three with the current relation between the soft
-	 * and hard thresholds) to increment before the
-	 * hardlockup detector generates a warning
-	 */
-	sample_period = hardlockup_thresh * 2 * ((u64)NSEC_PER_SEC / 5);
+	sample_period = 1 * (u64)NSEC_PER_SEC;
 }
 
 static unsigned int watchdog_next_cpu(unsigned int cpu)
@@ -65,9 +58,15 @@ static unsigned int watchdog_next_cpu(unsigned int cpu)
 static int is_hardlockup_other_cpu(unsigned int cpu)
 {
 	unsigned long hrint = per_cpu(hrtimer_interrupts, cpu);
+	unsigned long lock_cnt = per_cpu(hrtimer_interrupts_lock_cnt, cpu);
 
-	if (per_cpu(hrtimer_interrupts_saved, cpu) == hrint)
-		return 1;
+	if (hrint ==  per_cpu(hrtimer_interrupts_saved, cpu)) {
+		per_cpu(hrtimer_interrupts_lock_cnt, cpu) = ++lock_cnt;
+		if (lock_cnt > hardlockup_thresh)
+			return 1;
+	} else {
+		per_cpu(hrtimer_interrupts_lock_cnt, cpu) = 0;
+	}
 
 	per_cpu(hrtimer_interrupts_saved, cpu) = hrint;
 	return 0;
@@ -76,14 +75,6 @@ static int is_hardlockup_other_cpu(unsigned int cpu)
 static void watchdog_check_hardlockup_other_cpu(void)
 {
 	unsigned int next_cpu;
-
-	/*
-	 * Test for hardlockups every 3 samples.  The sample period is
-	 *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly over
-	 *  watchdog_thresh (over by 20%).
-	 */
-	if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
-		return;
 
 	/* check for a hardlockup on the next cpu */
 	next_cpu = watchdog_next_cpu(smp_processor_id());

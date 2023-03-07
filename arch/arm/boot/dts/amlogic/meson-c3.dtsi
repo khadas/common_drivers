@@ -255,6 +255,15 @@
 		regulator-always-on;
 	};
 
+	meson_suspend:pm {
+		compatible = "amlogic, pm";
+		status = "okay";
+		device_name = "aml_pm";
+		extend_resume_reason;
+		reg = <0xfe010288 0x4>, /*SYSCTRL_STATUS_REG2*/
+			<0xfe0102dc 0x4>; /*SYSCTRL_STICKY_REG7*/
+	};
+
 	soc {
 		compatible = "simple-bus";
 		#address-cells = <1>;

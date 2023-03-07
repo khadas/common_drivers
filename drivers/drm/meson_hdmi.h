@@ -60,6 +60,8 @@ struct am_hdmi_tx {
 	struct drm_property *dv_cap_property;
 	struct drm_property *hdcp_ver_prop;
 	struct drm_property *hdcp_mode_property;
+	struct drm_property *hdr_ctl_property;
+	struct drm_property *hdr_output_cap_property;
 
 #ifdef CONFIG_CEC_NOTIFIER
 	struct cec_notifier	*cec_notifier;
@@ -77,6 +79,7 @@ struct am_hdmitx_connector_state {
 	struct hdmitx_color_attr color_attr_para;
 	/*HDR Priority: dv,hdr,sdr*/
 	int pref_hdr_policy;
+	int hdr_ctl;
 
 	bool update : 1;
 	bool color_force : 1;

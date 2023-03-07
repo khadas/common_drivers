@@ -1927,22 +1927,29 @@
 &spicc0 {
 	status = "disabled";
 	pinctrl-names = "default";
-	pinctrl-0 = <&spicc0_pins_t>;
-	cs-gpios = <&gpio GPIOT_4 0>;
+	pinctrl-0 = <&spicc0_pins_t &spicc0_cs_pins_t>;
+	// pinctrl-0 = <&spicc0_pins_t>;
+	//cs-gpios = <&gpio GPIOT_4 GPIO_ACTIVE_HIGH>;
+	//assigned-clocks =<&clkc CLKID_SPICC0>;
+	//assigned-clock-rates = <200000000>;
+	parent_clk_fixed;
 };
 
 &spicc1 {
 	status = "disabled";
 	pinctrl-names = "default";
-	pinctrl-0 = <&spicc1_pins>;
-	cs-gpios = <&gpio GPIOH_6 0>;
+	pinctrl-0 = <&spicc1_pins &spicc1_cs_pins>;
+	//cs-gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
 };
 
 &spicc2 {
 	status = "disabled";
 	pinctrl-names = "default";
-	pinctrl-0 = <&spicc2_pins_x>;
-	cs-gpios = <&gpio GPIOX_2 0>;
+	pinctrl-0 = <&spicc2_pins_x &spicc2_cs_pins_x>;
+	//cs-gpios = <&gpio GPIOX_2 GPIO_ACTIVE_HIGH>;
+	//assigned-clocks =<&clkc CLKID_SPICC2>;
+	//assigned-clock-rates = <500000000>;
+	slave;
 };
 
 &fb {

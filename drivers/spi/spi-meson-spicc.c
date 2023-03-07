@@ -1075,6 +1075,7 @@ static int meson_spicc_hw_init(struct meson_spicc_device *spicc)
 			       spicc->base + SPICC_CONREG);
 		if (spicc->data->has_oen)
 			writel_relaxed(0xf020000, spicc->base + SPICC_ENH_CTL0);
+		spicc->bits_per_word = 0;
 	} else {
 		writel_relaxed(SPICC_ENABLE, spicc->base + SPICC_CONREG);
 		writel_relaxed((spicc->latency > 0) ? 0 :
@@ -1240,7 +1241,6 @@ static ssize_t test_store(struct device *dev, struct device_attribute *attr,
 	t.len = num;
 	spi_message_add_tail(&t, &m);
 	ret = spi_sync(m.spi, &m);
-
 	if (!ret && (mode & (SPI_LOOP | (1 << 16)))) {
 		ret = 0;
 		for (i = 0; i < num; i++) {
@@ -1409,6 +1409,30 @@ static struct clk *meson_spicc_clk_get(struct meson_spicc_device *spicc)
 	return clk;
 }
 
+#ifdef CONFIG_PM_SLEEP
+/* The clk data rate setting is handled by clk core. We have to save/restore
+ * it when system suspend/resume.
+ */
+static void meson_spicc_hw_clk_save(struct meson_spicc_device *spicc)
+{
+	spicc->backup_con = readl_relaxed(spicc->base + SPICC_CONREG) &
+			    SPICC_DATARATE_MASK;
+	spicc->backup_enh0 = readl_relaxed(spicc->base + SPICC_ENH_CTL0) &
+			     (SPICC_ENH_DATARATE_MASK | SPICC_ENH_DATARATE_EN);
+	spicc->backup_test = readl_relaxed(spicc->base + SPICC_TESTREG) &
+			     SPICC_DELAY_MASK;
+}
+
+static void meson_spicc_hw_clk_restore(struct meson_spicc_device *spicc)
+{
+	writel_bits_relaxed(SPICC_DATARATE_MASK, spicc->backup_con,
+			    spicc->base + SPICC_CONREG);
+	writel_bits_relaxed(SPICC_ENH_DATARATE_MASK | SPICC_ENH_DATARATE_EN,
+			    spicc->backup_enh0, spicc->base + SPICC_ENH_CTL0);
+	writel_bits_relaxed(SPICC_DELAY_MASK, spicc->backup_test,
+			    spicc->base + SPICC_TESTREG);
+}
+#endif
 #endif
 
 static int meson_spicc_probe(struct platform_device *pdev)
@@ -1640,6 +1664,8 @@ static int meson_spicc_remove(struct platform_device *pdev)
 static int meson_spicc_suspend(struct device *dev)
 {
 	struct meson_spicc_device *spicc = dev_get_drvdata(dev);
+	meson_spicc_hw_clk_save(spicc);
+	meson_spicc_clk_disable(spicc);
 
 	return spi_controller_suspend(spicc->controller);
 }
@@ -1647,6 +1673,9 @@ static int meson_spicc_suspend(struct device *dev)
 static int meson_spicc_resume(struct device *dev)
 {
 	struct meson_spicc_device *spicc = dev_get_drvdata(dev);
+	meson_spicc_hw_init(spicc);
+	meson_spicc_hw_clk_restore(spicc);
+	meson_spicc_clk_enable(spicc);
 
 	return spi_controller_resume(spicc->controller);
 }
@@ -1655,7 +1684,7 @@ static int meson_spicc_resume(struct device *dev)
 static int meson_spicc_runtime_suspend(struct device *dev)
 {
 	struct meson_spicc_device *spicc = dev_get_drvdata(dev);
-
+	meson_spicc_hw_clk_save(spicc);
 	meson_spicc_clk_disable(spicc);
 
 	spi_controller_put(spicc->controller);
@@ -1668,6 +1697,7 @@ static int meson_spicc_runtime_resume(struct device *dev)
 	struct meson_spicc_device *spicc = dev_get_drvdata(dev);
 
 	meson_spicc_hw_init(spicc);
+	meson_spicc_hw_clk_restore(spicc);
 
 	return meson_spicc_clk_enable(spicc);
 }
@@ -1703,6 +1733,18 @@ static struct meson_spicc_data meson_spicc_g12_data __initdata = {
 	.has_enh_intr = true,
 	.support_dma_burst_len_1 = true,
 };
+
+static struct meson_spicc_data meson_spicc_s5_data __initdata = {
+	.max_speed_hz = 124000000,
+	.has_linear_div = true,
+	.has_oen = true,
+	.has_async_clk = true,
+	.is_div_parent_async_clk = true,
+	.has_word_mode_ctrl = true,
+	.has_endian_ctrl = true,
+	.has_enh_intr = true,
+	.support_dma_burst_len_1 = true,
+};
 #endif
 
 static const struct of_device_id meson_spicc_of_match[] = {
@@ -1721,6 +1763,10 @@ static const struct of_device_id meson_spicc_of_match[] = {
 		.compatible = "amlogic,meson-g12-spicc",
 		.data = &meson_spicc_g12_data,
 	},
+	{
+		.compatible = "amlogic,meson-s5-spicc",
+		.data = &meson_spicc_s5_data,
+	},
 #else
 	.compatible = "amlogic,meson-gx-spicc",
 	.compatible = "amlogic,meson-axg-spicc"
@@ -1736,7 +1782,7 @@ struct platform_driver meson_spicc_driver = {
 		.name = "meson-spicc",
 		.of_match_table = of_match_ptr(meson_spicc_of_match),
 #ifdef CONFIG_AMLOGIC_MODIFY
-		//.pm = &meson_spicc_pm_ops,
+		.pm = &meson_spicc_pm_ops,
 #endif
 	},
 };

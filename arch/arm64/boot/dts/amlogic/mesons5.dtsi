@@ -865,12 +865,11 @@
 				compatible = "amlogic,meson-s5-spicc";
 				reg = <0x0 0x50000 0x0 0x44>;
 				interrupts = <GIC_SPI 183 IRQ_TYPE_EDGE_RISING>;
-				//clocks = <&clkc CLKID_SYS_CLK_SPICC0>,
-				//	 <&clkc CLKID_SPICC0>;
-				//clock-names = "core", "async";
+				clocks = <&clkc CLKID_SYS_CLK_SPICC0>,
+					 <&clkc CLKID_SPICC0>;
+				clock-names = "core", "async";
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_T7_SPICC0>;
 				status = "disabled";
 			};
 
@@ -878,12 +877,11 @@
 				compatible = "amlogic,meson-s5-spicc";
 				reg = <0x0 0x52000 0x0 0x44>;
 				interrupts = <GIC_SPI 184 IRQ_TYPE_EDGE_RISING>;
-				//clocks = <&clkc CLKID_SYS_CLK_SPICC1>,
-				//	 <&clkc CLKID_SPICC1>;
-				//clock-names = "core", "async";
+				clocks = <&clkc CLKID_SYS_CLK_SPICC1>,
+					 <&clkc CLKID_SPICC1>;
+				clock-names = "core", "async";
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_T7_SPICC1>;
 				status = "disabled";
 			};
 
@@ -891,12 +889,11 @@
 				compatible = "amlogic,meson-s5-spicc";
 				reg = <0x0 0x54000 0x0 0x44>;
 				interrupts = <GIC_SPI 167 IRQ_TYPE_EDGE_RISING>;
-				//clocks = <&clkc CLKID_SYS_CLK_SPICC2>,
-				//	 <&clkc CLKID_SPICC2>;
-				//clock-names = "core", "async";
+				clocks = <&clkc CLKID_SYS_CLK_SPICC2>,
+					 <&clkc CLKID_SPICC2>;
+				clock-names = "core", "async";
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_T7_SPICC2>;
 				status = "disabled";
 			};
 

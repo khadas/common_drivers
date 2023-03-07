@@ -181,6 +181,7 @@ enum chip_id {
 	ID_NULL = 0,
 	ID_T3,
 	ID_T5M,
+	ID_T3X,
 };
 
 struct dts_match_data {
@@ -239,33 +240,51 @@ struct st_frc_buf {
 	u32 lossy_mc_c_info_buf_size;
 	u32 lossy_mc_v_info_buf_size;
 	u32 lossy_me_x_info_buf_size;
+	/*info buffer for t3x*/
+	u32 lossy_mcdw_y_info_buf_size;
+	u32 lossy_mcdw_c_info_buf_size;
 
 	u32 lossy_mc_y_info_buf_paddr;
 	u32 lossy_mc_c_info_buf_paddr;
 	u32 lossy_mc_v_info_buf_paddr;
 	u32 lossy_me_x_info_buf_paddr;
+	/*info buffer for t3x*/
+	u32 lossy_mcdw_y_info_buf_paddr;
+	u32 lossy_mcdw_c_info_buf_paddr;
 
 	/*data buffer*/
 	u32 lossy_mc_y_data_buf_size[FRC_TOTAL_BUF_NUM];
 	u32 lossy_mc_c_data_buf_size[FRC_TOTAL_BUF_NUM];
 	u32 lossy_mc_v_data_buf_size[FRC_TOTAL_BUF_NUM];/*444 mode use*/
 	u32 lossy_me_data_buf_size[FRC_TOTAL_BUF_NUM];
+	/*data buffer for t3x*/
+	u32 lossy_mcdw_y_data_buf_size[FRC_TOTAL_BUF_NUM];
+	u32 lossy_mcdw_c_data_buf_size[FRC_TOTAL_BUF_NUM];
 
 	u32 lossy_mc_y_data_buf_paddr[FRC_TOTAL_BUF_NUM];
 	u32 lossy_mc_c_data_buf_paddr[FRC_TOTAL_BUF_NUM];
 	u32 lossy_mc_v_data_buf_paddr[FRC_TOTAL_BUF_NUM];
 	u32 lossy_me_data_buf_paddr[FRC_TOTAL_BUF_NUM];
+	/*data buffer for t3x*/
+	u32 lossy_mcdw_y_data_buf_paddr[FRC_TOTAL_BUF_NUM];
+	u32 lossy_mcdw_c_data_buf_paddr[FRC_TOTAL_BUF_NUM];
 
 	/*link buffer*/
 	u32 lossy_mc_y_link_buf_size[FRC_TOTAL_BUF_NUM];
 	u32 lossy_mc_c_link_buf_size[FRC_TOTAL_BUF_NUM];
 	u32 lossy_mc_v_link_buf_size[FRC_TOTAL_BUF_NUM];/*444 mode use*/
 	u32 lossy_me_link_buf_size[FRC_TOTAL_BUF_NUM];
+	/*link buffer size for t3x*/
+	u32 lossy_mcdw_y_link_buf_size[FRC_TOTAL_BUF_NUM];
+	u32 lossy_mcdw_c_link_buf_size[FRC_TOTAL_BUF_NUM];
 
 	u32 lossy_mc_y_link_buf_paddr[FRC_TOTAL_BUF_NUM];
 	u32 lossy_mc_c_link_buf_paddr[FRC_TOTAL_BUF_NUM];
 	u32 lossy_mc_v_link_buf_paddr[FRC_TOTAL_BUF_NUM];
 	u32 lossy_me_link_buf_paddr[FRC_TOTAL_BUF_NUM];
+	/*link buffer addr for t3x*/
+	u32 lossy_mcdw_y_link_buf_paddr[FRC_TOTAL_BUF_NUM];
+	u32 lossy_mcdw_c_link_buf_paddr[FRC_TOTAL_BUF_NUM];
 
 	/*norm buffer*/
 	u32 norm_hme_data_buf_size[FRC_TOTAL_BUF_NUM];

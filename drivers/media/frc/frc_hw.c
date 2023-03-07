@@ -1848,6 +1848,18 @@ void frc_cfg_memc_loss(u32 memc_loss_en)
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL11, memcloss);
 }
 
+void frc_cfg_mcdw_loss(u32 mcdw_loss_en)
+{
+	u32 temp = 0;
+
+	temp = READ_FRC_REG(FRC_INP_MCDW_CTRL);
+	if (mcdw_loss_en == 1)
+		temp |= 0x10;
+	else if (mcdw_loss_en == 0)
+		temp &= 0xFFFFFFFEF;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, temp);
+}
+
 void frc_force_secure(u32 onoff)
 {
 	if (onoff)
@@ -2318,4 +2330,27 @@ void frc_set_axi_crash_irq(struct frc_dev_s *frc_devp, u8 enable)
 		disable_irq(frc_devp->axi_crash_irq);
 	else
 		pr_frc(1, "%s invalid param\n",  __func__);
+}
+
+/* frc chip type
+ * return chip ID
+ */
+int get_chip_type(void)
+{
+	enum chip_id chip;
+	struct frc_dev_s *devp;
+	struct frc_data_s *frc_data;
+
+	devp = get_frc_devp();
+	frc_data = (struct frc_data_s *)devp->data;
+	chip = frc_data->match_data->chip;
+
+	if (chip == ID_T3)
+		return ID_T3;
+	else if (chip == ID_T5M)
+		return ID_T5M;
+	else if (chip == ID_T3X)
+		return ID_T3X;
+	else
+		return ID_NULL;
 }

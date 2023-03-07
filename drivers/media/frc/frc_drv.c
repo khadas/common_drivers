@@ -393,6 +393,10 @@ static const struct dts_match_data dts_match_t5m = {
 	.chip = ID_T5M,
 };
 
+static const struct dts_match_data dts_match_t3x = {
+	.chip = ID_T3X,
+};
+
 static const struct of_device_id frc_dts_match[] = {
 	{
 		.compatible = "amlogic, t3_frc",
@@ -401,6 +405,10 @@ static const struct of_device_id frc_dts_match[] = {
 	{
 		.compatible = "amlogic, t5m_frc",
 		.data = &dts_match_t5m,
+	},
+	{
+		.compatible = "amlogic, t3x_frc",
+		.data = &dts_match_t3x,
 	},
 	{},
 };

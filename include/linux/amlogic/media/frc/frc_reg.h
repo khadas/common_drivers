@@ -1245,18 +1245,88 @@
 // Closing file:  ./frc_inc/frc_badedit_regs.h
 //
 // Reading file:  ./frc_inc/frc_buff_addr_regs.h
+#define FRC_REG_MCDW_YBUF_ADDRX_0                  0x0220
+//Bit 31:0 reg_mcdw_ybuf_addrx_0          // unsigned ,   RW, default = 32'h00700000
+#define FRC_REG_MCDW_YBUF_ADDRX_1                  0x0221
+//Bit 31:0 reg_mcdw_ybuf_addrx_1          // unsigned ,   RW, default = 32'h00703000
+#define FRC_REG_MCDW_YBUF_ADDRX_2                  0x0222
+//Bit 31:0 reg_mcdw_ybuf_addrx_2          // unsigned ,   RW, default = 32'h00706000
+#define FRC_REG_MCDW_YBUF_ADDRX_3                  0x0223
+//Bit 31:0 reg_mcdw_ybuf_addrx_3          // unsigned ,   RW, default = 32'h00709000
+#define FRC_REG_MCDW_YBUF_ADDRX_4                  0x0224
+//Bit 31:0 reg_mcdw_ybuf_addrx_4          // unsigned ,   RW, default = 32'h0070c000
+#define FRC_REG_MCDW_YBUF_ADDRX_5                  0x0225
+//Bit 31:0 reg_mcdw_ybuf_addrx_5          // unsigned ,   RW, default = 32'h0070f000
+#define FRC_REG_MCDW_YBUF_ADDRX_6                  0x0226
+//Bit 31:0 reg_mcdw_ybuf_addrx_6          // unsigned ,   RW, default = 32'h00712000
+#define FRC_REG_MCDW_YBUF_ADDRX_7                  0x0227
+//Bit 31:0 reg_mcdw_ybuf_addrx_7          // unsigned ,   RW, default = 32'h00715000
+#define FRC_REG_MCDW_YBUF_ADDRX_8                  0x0228
+//Bit 31:0 reg_mcdw_ybuf_addrx_8          // unsigned ,   RW, default = 32'h00718000
+#define FRC_REG_MCDW_YBUF_ADDRX_9                  0x0229
+//Bit 31:0 reg_mcdw_ybuf_addrx_9          // unsigned ,   RW, default = 32'h0071b000
+#define FRC_REG_MCDW_YBUF_ADDRX_10                 0x022a
+//Bit 31:0 reg_mcdw_ybuf_addrx_10         // unsigned ,   RW, default = 32'h0071e000
+#define FRC_REG_MCDW_YBUF_ADDRX_11                 0x022b
+//Bit 31:0 reg_mcdw_ybuf_addrx_11         // unsigned ,   RW, default = 32'h00721000
+#define FRC_REG_MCDW_YBUF_ADDRX_12                 0x022c
+//Bit 31:0 reg_mcdw_ybuf_addrx_12         // unsigned ,   RW, default = 32'h00724000
+#define FRC_REG_MCDW_YBUF_ADDRX_13                 0x022d
+//Bit 31:0 reg_mcdw_ybuf_addrx_13         // unsigned ,   RW, default = 32'h00727000
+#define FRC_REG_MCDW_YBUF_ADDRX_14                 0x022e
+//Bit 31:0 reg_mcdw_ybuf_addrx_14         // unsigned ,   RW, default = 32'h0072a000
+#define FRC_REG_MCDW_YBUF_ADDRX_15                 0x022f
+//Bit 31:0 reg_mcdw_ybuf_addrx_15          // unsigned ,  RW, default = 32'h0072d000
+#define FRC_REG_MCDW_CBUF_ADDRX_0                  0x0230
+//Bit 31:0 reg_mcdw_cbuf_addrx_0          // unsigned ,   RW, default = 32'h00730000
+#define FRC_REG_MCDW_CBUF_ADDRX_1                  0x0231
+//Bit 31:0 reg_mcdw_cbuf_addrx_1          // unsigned ,   RW, default = 32'h00733000
+#define FRC_REG_MCDW_CBUF_ADDRX_2                  0x0232
+//Bit 31:0 reg_mcdw_cbuf_addrx_2          // unsigned ,   RW, default = 32'h00736000
+#define FRC_REG_MCDW_CBUF_ADDRX_3                  0x0233
+//Bit 31:0 reg_mcdw_cbuf_addrx_3          // unsigned ,   RW, default = 32'h00739000
+#define FRC_REG_MCDW_CBUF_ADDRX_4                  0x0234
+//Bit 31:0 reg_mcdw_cbuf_addrx_4          // unsigned ,   RW, default = 32'h0073c000
+#define FRC_REG_MCDW_CBUF_ADDRX_5                  0x0235
+//Bit 31:0 reg_mcdw_cbuf_addrx_5          // unsigned ,   RW, default = 32'h0073f000
+#define FRC_REG_MCDW_CBUF_ADDRX_6                  0x0236
+//Bit 31:0 reg_mcdw_cbuf_addrx_6          // unsigned ,   RW, default = 32'h00742000
+#define FRC_REG_MCDW_CBUF_ADDRX_7                  0x0237
+//Bit 31:0 reg_mcdw_cbuf_addrx_7          // unsigned ,   RW, default = 32'h00745000
+#define FRC_REG_MCDW_CBUF_ADDRX_8                  0x0238
+//Bit 31:0 reg_mcdw_cbuf_addrx_8          // unsigned ,   RW, default = 32'h00748000
+#define FRC_REG_MCDW_CBUF_ADDRX_9                  0x0239
+//Bit 31:0 reg_mcdw_cbuf_addrx_9          // unsigned ,   RW, default = 32'h0074b000
+#define FRC_REG_MCDW_CBUF_ADDRX_10                 0x023a
+//Bit 31:0 reg_mcdw_cbuf_addrx_10         // unsigned ,   RW, default = 32'h0074e000
+#define FRC_REG_MCDW_CBUF_ADDRX_11                 0x023b
+//Bit 31:0 reg_mcdw_cbuf_addrx_11         // unsigned ,   RW, default = 32'h00751000
+#define FRC_REG_MCDW_CBUF_ADDRX_12                 0x023c
+//Bit 31:0 reg_mcdw_cbuf_addrx_12         // unsigned ,   RW, default = 32'h00754000
+#define FRC_REG_MCDW_CBUF_ADDRX_13                 0x023d
+//Bit 31:0 reg_mcdw_cbuf_addrx_13         // unsigned ,   RW, default = 32'h00757000
+#define FRC_REG_MCDW_CBUF_ADDRX_14                 0x023e
+//Bit 31:0 reg_mcdw_cbuf_addrx_14         // unsigned ,   RW, default = 32'h075a000
+#define FRC_REG_MCDW_CBUF_ADDRX_15                 0x023f
+//Bit 31:0 reg_mcdw_cbuf_addrx_15         // unsigned ,   RW, default = 32'h0075d000
 #define FRC_REG_MC_YINFO_BADDR                     0x0271
-//Bit 31:0 reg_mc_yinfo_baddr        // unsigned ,    RW, default = 32'h00510000  reg_mc_yinfo_baddr
+//Bit 31:0 reg_mc_yinfo_baddr        // unsigned ,    RW, default = 32'h00510000
 #define FRC_REG_MC_CINFO_BADDR                     0x0272
-//Bit 31:0 reg_mc_cinfo_baddr        // unsigned ,    RW, default = 32'h00512000  reg_mc_cinfo_baddr
+//Bit 31:0 reg_mc_cinfo_baddr        // unsigned ,    RW, default = 32'h00512000
 #define FRC_REG_MC_VINFO_BADDR                     0x0273
-//Bit 31:0 reg_mc_vinfo_baddr        // unsigned ,    RW, default = 32'h00514000  reg_mc_vinfo_baddr
+//Bit 31:0 reg_mc_vinfo_baddr        // unsigned ,    RW, default = 32'h00514000
 #define FRC_REG_ME_XINFO_BADDR                     0x0274
-//Bit 31:0 reg_me_xinfo_baddr        // unsigned ,    RW, default = 32'h00516000  reg_me_xinfo_baddr
+//Bit 31:0 reg_me_xinfo_baddr        // unsigned ,    RW, default = 32'h00516000
+#define FRC_REG_MCDW_YINFO_BADDR                   0x0275
+//Bit 31:0 reg_mcdw_yinfo_baddr      // unsigned ,    RW, default = 32'h00518000
+#define FRC_REG_MCDW_CINFO_BADDR                   0x0276
+//Bit 31:0 reg_mcdw_cinfo_baddr      // unsigned ,    RW, default = 32'h0051a000
 #define FRC_REG_VP_MC_MV_ADDRX_0                   0x027c
-//Bit 31:0 reg_vp_mc_mv_addrx_0      // unsigned ,    RW, default = 32'h01800000 reg_vp_mc_mv_addrx_0,must be burst4 align
+//Bit 31:0 reg_vp_mc_mv_addrx_0      // unsigned ,    RW, default = 32'h01800000 ,
+// must be burst4 align
 #define FRC_REG_VP_MC_MV_ADDRX_1                   0x027d
-//Bit 31:0 reg_vp_mc_mv_addrx_1      // unsigned ,    RW, default = 32'h01900000 reg_vp_mc_mv_addrx_1,must be burst4 align
+//Bit 31:0 reg_vp_mc_mv_addrx_1      // unsigned ,    RW, default = 32'h01900000 ,
+// must be burst4 align
 #define FRC_REG_MC_YBUF_ADDRX_0                    0x0280
 //Bit 31:0 reg_mc_ybuf_addrx_0        // unsigned ,   RW, default = 32'h00600000  mif_addr
 #define FRC_REG_MC_YBUF_ADDRX_1                    0x0281
@@ -1629,7 +1699,22 @@
 //Bit 31:1          reserved
 //Bit 0             reg_inp_loss_slice_sec    // unsigned,   RW, default = 0,1:same as lossy-body 0:non_security
 // Closing file:  ./frc_inc/frc_inp_hw_reg.h
-
+#define FRC_INP_MCDW_CTRL                         0x047a
+//Bit 31:29         reserved
+//Bit 28            reg_mcdw_lpf_mode
+// unsigned , RW, default = 0
+//Bit 27:26         reserved
+//Bit 25:24         reg_mcdw_ds_mode_hv
+// unsigned , RW, default = 3   0:h/2   1:v/2
+//Bit 23:18         reserved
+//Bit 17:8          reg_mcdw_loss_slice_num
+// unsigned , RW, default = 4
+//Bit 7:5           reserved
+//Bit 4             reg_mcdw_loss_en
+// unsigned , RW, default = 0
+//Bit 3:1           reserved
+//Bit 0             reg_mcdw_path_en
+// unsigned , RW, default = 0,1:open mc double write path
 // Reading file:  ./frc_inc/frc_inp_csc_regs.h
 #define FRC_INP_CSC_CTRL                           0x04e0
 //Bit 31: 10       reserved

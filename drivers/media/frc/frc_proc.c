@@ -1861,27 +1861,6 @@ void frc_check_secure_mode(struct vframe_s *vf, struct frc_dev_s *devp)
 	}
 }
 
-/* frc chip type
- * return chip ID
- */
-int get_chip_type(void)
-{
-	enum chip_id chip;
-	struct frc_dev_s *devp;
-	struct frc_data_s *frc_data;
-
-	devp = get_frc_devp();
-	frc_data = (struct frc_data_s *)devp->data;
-	chip = frc_data->match_data->chip;
-
-	if (chip == ID_T3)
-		return ID_T3;
-	else if (chip == ID_T5M)
-		return ID_T5M;
-	else
-		return ID_NULL;
-}
-
 void frc_input_size_align_check(struct frc_dev_s *devp)
 {
 	u8 reg_win_en;

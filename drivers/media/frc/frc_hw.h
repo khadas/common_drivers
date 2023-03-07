@@ -75,6 +75,7 @@ void config_loss_out(u32 fmt422);
 void enable_nr(void);
 void set_mc_lbuf_ext(void);
 void frc_cfg_memc_loss(u32 memc_loss_en);
+void frc_cfg_mcdw_loss(u32 mcdw_loss_en);
 void recfg_memc_mif_base_addr(u32 base_ofst);
 void frc_internal_initial(struct frc_dev_s *frc_devp);
 void frc_dump_reg_tab(void);
@@ -108,5 +109,6 @@ void frc_input_init(struct frc_dev_s *frc_devp,
 	struct frc_top_type_s *frc_top);
 void frc_set_n2m(u8 ratio_value);
 void frc_set_axi_crash_irq(struct frc_dev_s *frc_devp, u8 enable);
+int get_chip_type(void);
 
 #endif

@@ -16,6 +16,7 @@
 #include <crypto/hash.h>
 #include <crypto/sha1.h>
 #include "tee_private.h"
+#include "tee_data_pipe.h"
 
 #define TEE_NUM_DEVICES	32
 
@@ -838,6 +839,18 @@ static long tee_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		return tee_ioctl_supp_recv(ctx, uarg);
 	case TEE_IOC_SUPPL_SEND:
 		return tee_ioctl_supp_send(ctx, uarg);
+	case TEE_IOC_OPEN_DATA_PIPE:
+		return tee_ioctl_open_data_pipe(ctx, uarg);
+	case TEE_IOC_CLOSE_DATA_PIPE:
+		return tee_ioctl_close_data_pipe(ctx, uarg);
+	case TEE_IOC_WRITE_PIPE_DATA:
+		return tee_ioctl_write_pipe_data(ctx, uarg);
+	case TEE_IOC_READ_PIPE_DATA:
+		return tee_ioctl_read_pipe_data(ctx, uarg);
+	case TEE_IOC_LISTEN_DATA_PIPE:
+		return tee_ioctl_listen_data_pipe(ctx, uarg);
+	case TEE_IOC_ACCEPT_DATA_PIPE:
+		return tee_ioctl_accept_data_pipe(ctx, uarg);
 	default:
 		return -EINVAL;
 	}
@@ -1243,6 +1256,8 @@ static int __init tee_init(void)
 		goto out_unreg_chrdev;
 	}
 
+	init_data_pipe_set();
+
 	return 0;
 
 out_unreg_chrdev:
@@ -1256,6 +1271,7 @@ out_unreg_class:
 
 static void __exit tee_exit(void)
 {
+	destroy_data_pipe_set();
 	bus_unregister(&tee_bus_type);
 	unregister_chrdev_region(tee_devt, TEE_NUM_DEVICES);
 	class_destroy(tee_class);

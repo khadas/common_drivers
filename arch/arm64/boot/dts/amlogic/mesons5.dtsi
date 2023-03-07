@@ -2962,6 +2962,9 @@
 	};
 	efuse: efuse{
 		compatible = "amlogic, efuse";
+		reg=<0x0 0xfe440040 0x0 0x4>;
+		secureboot_mask = <0x00000c00>;
+		mem_size = <0x100000>;
 		read_cmd = <0x82000030>;
 		write_cmd = <0x82000031>;
 		get_max_cmd = <0x82000033>;
@@ -2971,7 +2974,7 @@
 		efuse_obj_cmd_status = <0x1>;
 		key = <&efusekey>;
 		clock-names = "efuse_clk";
-		status = "disabled";
+		status = "okay";
 	};
 
 	efusekey:efusekey{

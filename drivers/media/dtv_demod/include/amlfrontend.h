@@ -76,6 +76,7 @@
 /*  V1.1.82  revert optimize 8VSB CN to 15dB */
 /*  V1.1.83  fix diseqc 22k on and off after tune */
 /*  V1.1.84  rebuild isdbt to improve signal locking performance */
+/*  V1.1.85  change the calculation method of ber */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -92,8 +93,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.84"
-#define DTVDEMOD_VER	"2023/3/7: rebuild isdbt to improve signal locking performance"
+#define AMLDTVDEMOD_VER "V1.1.85"
+#define DTVDEMOD_VER	"2023/3/7: change the calculation method of ber"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
@@ -251,6 +252,7 @@ struct aml_demod_para_real {
 	u32_t plp_num;
 	u32_t fef_info;
 	u32_t tps_cell_id;
+	u32_t ber;
 };
 
 #define CAP_NAME_LEN	100

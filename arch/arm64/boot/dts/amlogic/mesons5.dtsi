@@ -370,11 +370,11 @@
 		reg-names = "adla_reg\0adla_sram";
 		interrupt-names = "adla";
 		interrupts = <0 148 1>;
-		//clocks = <&clkc CLKID_NNA>;
-		//clock-names = "adla_core_clk";
-		//assigned-clocks =<&clkc CLKID_NNA>;
-		//assigned-clock-parentsd = <&clkc CLKID_FCLK_DIV2P5>;
-		//assigned-clock-rates = <800000000>;
+		clocks = <&clkc CLKID_NNA>;
+		clock-names = "adla_core_clk";
+		assigned-clocks =<&clkc CLKID_NNA>;
+		assigned-clock-parentsd = <&clkc CLKID_FCLK_DIV2P5>;
+		assigned-clock-rates = <800000000>;
 		power-domains=<&pwrdm PDID_S5_NNA_4T>;
 		//memory-region = <&nna_cma_reserved>;
 		smmu;

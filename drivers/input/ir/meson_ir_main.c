@@ -247,10 +247,12 @@ static u32 meson_ir_getkeycode(struct meson_ir_dev *dev, u32 scancode)
 	/*save IR remote-control work mode*/
 	if (!dev->keypressed &&
 	    scancode == ct->tab.cursor_code.fn_key_scancode) {
-		if (ct->ir_dev_mode == NORMAL_MODE)
+		if (ct->ir_dev_mode == NORMAL_MODE) {
 			ct->ir_dev_mode = MOUSE_MODE;
-		else
+			meson_ir_input_mouse_configure(dev);
+		} else {
 			ct->ir_dev_mode = NORMAL_MODE;
+		}
 		dev_info(chip->dev, "IR remote control[ID: 0x%x] switch to %s\n",
 			 ct->tab.custom_code, ct->ir_dev_mode ?
 			 "mouse mode" : "normal mode");

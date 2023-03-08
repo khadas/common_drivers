@@ -179,10 +179,6 @@ void meson_ir_input_ots_configure(struct meson_ir_dev *dev, int cnt0)
 
 	for (i = BTN_MOUSE; i < BTN_SIDE; i++)
 		input_set_capability(dev->input_device_ots[cnt0], EV_KEY, i);
-
-	input_set_capability(dev->input_device_ots[cnt0], EV_REL, REL_X);
-	input_set_capability(dev->input_device_ots[cnt0], EV_REL, REL_Y);
-	input_set_capability(dev->input_device_ots[cnt0], EV_REL, REL_WHEEL);
 }
 EXPORT_SYMBOL(meson_ir_input_ots_configure);
 
@@ -198,9 +194,22 @@ void meson_ir_input_configure(struct meson_ir_dev *dev)
 
 	for (i = BTN_MOUSE; i < BTN_SIDE; i++)
 		input_set_capability(dev->input_device, EV_KEY, i);
+}
+EXPORT_SYMBOL(meson_ir_input_configure);
+
+void meson_ir_input_mouse_configure(struct meson_ir_dev *dev)
+{
+	int cnt;
+	struct meson_ir_chip *chip = (struct meson_ir_chip *)dev->platform_data;
+
+	for (cnt = 0; cnt <= chip->input_cnt; cnt++) {
+		input_set_capability(dev->input_device_ots[cnt], EV_REL, REL_X);
+		input_set_capability(dev->input_device_ots[cnt], EV_REL, REL_Y);
+		input_set_capability(dev->input_device_ots[cnt], EV_REL, REL_WHEEL);
+	}
 
 	input_set_capability(dev->input_device, EV_REL, REL_X);
 	input_set_capability(dev->input_device, EV_REL, REL_Y);
 	input_set_capability(dev->input_device, EV_REL, REL_WHEEL);
 }
-EXPORT_SYMBOL(meson_ir_input_configure);
+EXPORT_SYMBOL(meson_ir_input_mouse_configure);

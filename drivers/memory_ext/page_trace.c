@@ -58,6 +58,9 @@ static unsigned long ptrace_size;
 static unsigned int trace_step = 1;
 static bool page_trace_disable __initdata;
 #endif
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+struct pagetrace_vendor_param trace_param;
+#endif
 
 struct alloc_caller {
 	unsigned long func_start_addr;
@@ -715,11 +718,13 @@ void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *fun
 #else
 		ip = MODULES_VADDR;
 #endif
-#ifdef CONFIG_ARM64
-	val = ip >> 32;
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+	trace_param.trace_buf = trace_buffer;
+	trace_param.text = (unsigned long)_text;
+	trace_param.trace_step = trace_step;
+	trace_param.ip = ip;
+	trace_android_vh_cma_drain_all_pages_bypass(1024, (bool *)&trace_param);
 #endif
-	trace_android_vh_rmqueue((struct zone *)trace_buffer,
-		(struct zone *)_text, 1024, val, trace_step, ip);
 #endif
 	if (!func)
 		ip = find_back_trace();

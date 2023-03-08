@@ -55,6 +55,15 @@ struct page_trace {
 	};
 };
 
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+struct pagetrace_vendor_param {
+	struct page_trace *trace_buf;
+	unsigned int trace_step;
+	unsigned long text;
+	unsigned long ip;
+};
+#endif
+
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE
 u64 get_iow_time(u64 *cpu);
 unsigned long unpack_ip(struct page_trace *trace);

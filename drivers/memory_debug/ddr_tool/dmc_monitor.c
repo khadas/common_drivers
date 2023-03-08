@@ -94,22 +94,19 @@ static unsigned long module_alloc_base_dmc;
 static int once_flag = 1;
 
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
-void get_page_trace_buf_hook(void *data, struct zone *preferred_zone, struct zone *zone,
-		unsigned int order, gfp_t gfp_flags,
-		unsigned int alloc_flags, int migratetype)
+void get_page_trace_buf_hook(void *data, unsigned int migratetype,
+		bool *bypass)
 {
-	if (order != 1024 || dmc_trace_buffer)
+	struct pagetrace_vendor_param *param;
+
+	if (migratetype != 1024 || dmc_trace_buffer)
 		return;
 
-	dmc_trace_buffer = (struct page_trace *)preferred_zone;
-	_kernel_text = (unsigned long)zone;
-	dmc_trace_step = alloc_flags;
-#ifdef CONFIG_ARM64
-	module_alloc_base_dmc = gfp_flags;
-	module_alloc_base_dmc = (module_alloc_base_dmc << 32) + migratetype;
-#else
-	module_alloc_base_dmc = migratetype;
-#endif
+	param = (struct pagetrace_vendor_param *)bypass;
+	dmc_trace_buffer = param->trace_buf;
+	_kernel_text = param->text;
+	dmc_trace_step = param->trace_step;
+	module_alloc_base_dmc = param->ip;
 	pr_info("dmc_trace_buf: %px, maddr:%lx\n",
 		dmc_trace_buffer, module_alloc_base_dmc);
 }
@@ -604,7 +601,8 @@ static ssize_t dump_show(struct class *cla,
 	IS_ENABLED(CONFIG_ANDROID_VENDOR_HOOKS))
 	if (once_flag && dmc_trace_buffer) {
 		pr_info("%s, %d: got pagetrace buffer.\n", __func__, __LINE__);
-		unregister_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);
+		unregister_trace_android_vh_cma_drain_all_pages_bypass(get_page_trace_buf_hook,
+				NULL);
 		once_flag = 0;
 	}
 #endif
@@ -884,7 +882,7 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 	IS_ENABLED(CONFIG_TRACEPOINTS)			&& \
 	IS_ENABLED(CONFIG_ANDROID_VENDOR_HOOKS))
 	if (!dmc_trace_buffer)
-		register_trace_android_vh_rmqueue(get_page_trace_buf_hook, NULL);
+		register_trace_android_vh_cma_drain_all_pages_bypass(get_page_trace_buf_hook, NULL);
 #endif
 	pr_debug("%s, %d\n", __func__, __LINE__);
 	dmc_mon = devm_kzalloc(&pdev->dev, sizeof(*dmc_mon), GFP_KERNEL);

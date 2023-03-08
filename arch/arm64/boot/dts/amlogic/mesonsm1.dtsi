@@ -14,7 +14,7 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
 //#include <dt-bindings/phy/phy-amlogic-pcie.h>
-//#include "mesong12a-bifrost.dtsi"
+#include "mesong12a-bifrost.dtsi"
 #include <dt-bindings/thermal/thermal.h>
 #include <dt-bindings/reset/amlogic,meson-g12a-reset.h>
 #include <dt-bindings/input/meson_ir.h>
@@ -2772,6 +2772,27 @@
 			function = "jtag_b";
 		};
 	};
+};
+
+&gpu{
+	clocks = <&clkc CLKID_MALI>;
+	clock-names = "gpu_mux";
+
+	/*
+	 * Mali clocking is provided by two identical clock paths
+	 * MALI_0 and MALI_1 muxed to a single clock by a glitch
+	 * free mux to safely change frequency while running.
+	 */
+	assigned-clocks = <&clkc CLKID_MALI_0_SEL>,
+			  <&clkc CLKID_MALI_0>,
+			  <&clkc CLKID_MALI>; /* Glitch free mux */
+	assigned-clock-parents = <&clkc CLKID_FCLK_DIV4>,
+				 <0>, /* Do Nothing */
+				 <&clkc CLKID_MALI_0>;
+	assigned-clock-rates = <0>, /* Do Nothing */
+				   <500000000>,
+				   <0>; /* Do Nothing */
+
 };
 
 &pinctrl_aobus {

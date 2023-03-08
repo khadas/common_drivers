@@ -1001,7 +1001,7 @@ static void vdin_vf_init(struct vdin_dev_s *devp)
 }
 
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
-static void vdin_rdma_irq(void *arg)
+__maybe_unused static void vdin_rdma_irq(void *arg)
 {
 	struct vdin_dev_s *devp = arg;
 	int ret;
@@ -1018,7 +1018,7 @@ static void vdin_rdma_irq(void *arg)
 	return;
 }
 
-static struct rdma_op_s vdin_rdma_op[VDIN_MAX_DEVS];
+__maybe_unused static struct rdma_op_s vdin_rdma_op[VDIN_MAX_DEVS];
 #endif
 
 static void vdin_double_write_confirm(struct vdin_dev_s *devp)
@@ -5416,6 +5416,15 @@ static const struct match_data_s vdin_dt_t5m = {
 	.vdin0_line_buff_size = 0x1000,  .vdin1_line_buff_size = 0x780,
 					.vdin1_set_hdr = false,
 };
+
+static const struct match_data_s vdin_dt_t3x = {
+	.name = "vdin-t3x",
+	.hw_ver = VDIN_HW_T3X,
+	.vdin0_en = 1, .vdin1_en = 1,   .vdin2_en = 1,
+	.de_tunnel_tunnel = 0, /*0,1*/  .ipt444_to_422_12bit = 0, /*0,1*/
+	.vdin0_line_buff_size = 0x1000, .vdin1_line_buff_size = 0x780,
+	.vdin2_line_buff_size = 0x1000, .vdin1_set_hdr = false,
+};
 #endif
 
 static const struct of_device_id vdin_dt_match[] = {
@@ -5487,6 +5496,10 @@ static const struct of_device_id vdin_dt_match[] = {
 	{
 		.compatible = "amlogic, vdin-t5m",
 		.data = &vdin_dt_t5m,
+	},
+	{
+		.compatible = "amlogic, vdin-t3x",
+		.data = &vdin_dt_t3x,
 	},
 #endif
 	/* DO NOT remove to avoid scan error of KASAN */
@@ -5730,7 +5743,7 @@ static int vdin_drv_probe(struct platform_device *pdev)
 	vdin_devp[devp->index] = devp;
 
 	/* t7 three screen display RDMA not enough remove vdin1 rdma */
-	devp->rdma_not_register = of_property_read_bool(pdev->dev.of_node,
+/* devp->rdma_not_register = of_property_read_bool(pdev->dev.of_node,
 					"rdma_not_register");
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	vdin_rdma_op[devp->index].irq_cb = vdin_rdma_irq;
@@ -5741,6 +5754,7 @@ static int vdin_drv_probe(struct platform_device *pdev)
 	else
 		pr_info("vdin%d: rdma not register\n", devp->index);
 #endif
+*/
 
 	/* create cdev and register with sysfs */
 	ret = vdin_add_cdev(&devp->cdev, &vdin_fops, devp->index);
@@ -6012,8 +6026,9 @@ static int vdin_drv_probe(struct platform_device *pdev)
 	/*disable vdin hardware*/
 	if (devp->index == 1 && is_meson_t3_cpu())
 		wr_bits(0, VDIN_WRARB_REQEN_SLV, 0x0, 1, 1);
+#ifndef T3X_PXP_BRINGUP
 	vdin_enable_module(devp, false);
-
+#endif
 	/*enable auto cut window for atv*/
 	if (devp->index == 0) {
 		devp->auto_cut_window_en = 1;
@@ -6041,8 +6056,9 @@ static int vdin_drv_probe(struct platform_device *pdev)
 	/*vdin_extcon_register(pdev, devp);*/
 	/*init queue*/
 	init_waitqueue_head(&devp->queue);
-
+#ifndef T3X_PXP_BRINGUP
 	vdin_mif_config_init(devp); /* 2019-0425 add, ensure mif/afbc bit */
+#endif
 	vdin_debugfs_init(devp);/*2018-07-18 add debugfs*/
 	if (devp->index)
 		vd_signal_register_client(&vdin_signal_notifier);
@@ -6262,6 +6278,7 @@ int __init vdin_drv_init(void)
 	pr_info("%s: major %d ver:%s\n", __func__, MAJOR(vdin_devno), VDIN_VER);
 
 	vdin_class = class_create(THIS_MODULE, VDIN_CLS_NAME);
+	pr_info("%s: ,p = %p\n", __func__, vdin_class);
 	if (IS_ERR_OR_NULL(vdin_class)) {
 		ret = PTR_ERR(vdin_class);
 		pr_err("%s: failed to create class or ret=NULL\n", __func__);

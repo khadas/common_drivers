@@ -2638,7 +2638,7 @@
 
 	/*if you want to use vdin just modify status to "ok"*/
 	vdin0: vdin0 {/*common define*/
-		compatible = "amlogic, vdin-s5";
+		compatible = "amlogic, vdin-t3x";
 		dev_name = "vdin0";
 		status = "disabled";
 		/*memory-region = <&vdin0_cma_reserved>;*/
@@ -2707,7 +2707,7 @@
 	};
 
 	vdin1: vdin1 {/*common define*/
-		compatible = "amlogic, vdin-s5";
+		compatible = "amlogic, vdin-t3x";
 		dev_name = "vdin1";
 		status = "disabled";
 		reserve-iomap = "true";

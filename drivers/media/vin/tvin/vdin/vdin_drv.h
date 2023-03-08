@@ -142,6 +142,7 @@
 /* 20230504: keystone interlace update dest value */
 #define VDIN_VER "20230504"
 
+#define T3X_PXP_BRINGUP
 //#define VDIN_BRINGUP_NO_VF
 //#define VDIN_BRINGUP_NO_VLOCK
 //#define VDIN_BRINGUP_NO_AML_VECM
@@ -190,6 +191,7 @@ enum vdin_hw_ver_e {
 	VDIN_HW_T5W,
 	VDIN_HW_S5,
 	VDIN_HW_T5M,
+	VDIN_HW_T3X,
 };
 
 enum vdin_irq_flg_e {
@@ -222,8 +224,10 @@ struct match_data_s {
 	bool vdin1_set_hdr;
 	u32 vdin0_en;
 	u32 vdin1_en;
+	u32 vdin2_en;
 	u32 vdin0_line_buff_size;
 	u32 vdin1_line_buff_size;
+	u32 vdin2_line_buff_size;
 	/* default is 4k */
 	u32 vdin0_max_w_h;
 };

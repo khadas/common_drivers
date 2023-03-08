@@ -3044,8 +3044,8 @@
 			opp-hz = /bits/ 64 <666666666>;
 			opp-microvolt = <1150>;
 		};
-		opp-830 {
-			opp-hz = /bits/ 64 <830000000>;
+		opp-852 {
+			opp-hz = /bits/ 64 <852000000>;
 			opp-microvolt = <1150>;
 		};
 	};
@@ -4297,7 +4297,7 @@
 };
 
 &gpu{
-	status = "disabled";
+	status = "okay";
 	operating-points-v2 = <&gpu_opp_table>;
 	reg =   <0 0xFE400000 0 0x04000>, /*mali APB bus base address*/
 		<0 0xFE002000 0 0x01000>; /*reset register*/
@@ -4309,30 +4309,30 @@
 	//power-domains = <&pwrdm PDID_S5_MALI_TOP>;
 	num_of_pp = <2>;
 	system-coherency = <31>;
-	//clocks = <&clkc CLKID_MALI>;
-	//clock-names = "gpu_mux";
+	clocks = <&clkc CLKID_MALI>;
+	clock-names = "gpu_mux";
 
 	/*
 	 * Mali clocking is provided by two identical clock paths
 	 * MALI_0 and MALI_1 muxed to a single clock by a glitch
 	 * free mux to safely change frequency while running.
 	 */
-	//assigned-clocks = <&clkc CLKID_MALI0_SEL>,
-	//		  <&clkc CLKID_MALI0>,
-	//		  <&clkc CLKID_MALI>; /* Glitch free mux */
-	//assigned-clock-parents = <&clkc CLKID_SYS2_PLL>,
-	//			 <0>, /* Do Nothing */
-	//			 <&clkc CLKID_MALI0>;
-	//assigned-clock-rates = <0>, /* Do Nothing */
-	//		       <800000000>,
-	//		       <0>; /* Do Nothing */
+	assigned-clocks = <&clkc CLKID_MALI_0_SEL>,
+			  <&clkc CLKID_MALI_0>,
+			  <&clkc CLKID_MALI>; /* Glitch free mux */
+	assigned-clock-parents = <&clkc CLKID_FCLK_DIV4>,
+				 <0>, /* Do Nothing */
+				 <&clkc CLKID_MALI_0>;
+	assigned-clock-rates = <0>, /* Do Nothing */
+			       <500000000>,
+			       <0>; /* Do Nothing */
 
 	tbl =  <&dvfs250_cfg
 		&dvfs400_cfg
 		&dvfs500_cfg
 		&dvfs666_cfg
-		&dvfs800_cfg
-		&dvfs800_cfg>;
+		&dvfs852_cfg
+		&dvfs852_cfg>;
 
 //	reset_cfg:reset_cfg {
 //		reg_level = <0x16>;

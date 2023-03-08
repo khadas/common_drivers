@@ -968,16 +968,18 @@ void dimh_enable_di_pre_aml(struct DI_MIF_S *di_inp_mif,
 			    unsigned char madi_en,
 			    unsigned char pre_field_num,
 			    unsigned char pre_vdin_link,
-			    void *pre)
+			    void *pre, unsigned int channel)
 {
 	bool mem_bypass = false, chan2_disable = false;
 	unsigned short nrwr_hsize = 0, nrwr_vsize = 0;
 	unsigned short chan2_hsize = 0, chan2_vsize = 0;
 	unsigned short mem_hsize = 0, mem_vsize = 0;
 	unsigned int sc2_tfbf = 0; /* DI_PRE_CTRL bit [12:11] */
+	unsigned int pd32_infor = 0; /* DI_PRE_CTRL bit [2:3] */
 	struct di_pre_stru_s *ppre = (struct di_pre_stru_s *)pre;
 	static bool last_bypass; //dbg only
 	static bool last_disable_chan2; //dbg only
+	struct di_ch_s *pch;
 
 	if (DIM_IS_IC(T5) || DIM_IS_IC(T5DB)) {
 		mem_bypass = (pre_vdin_link & 0xf0) ? true : false;
@@ -985,6 +987,8 @@ void dimh_enable_di_pre_aml(struct DI_MIF_S *di_inp_mif,
 	}
 
 	pre_vdin_link &= 0xf;
+
+	pch = get_chdata(channel);
 
 	if (DIM_IS_IC_EF(SC2)) {
 		di_inp_mif->urgent	= dimp_get(edi_mp_pre_urgent);
@@ -1068,19 +1072,28 @@ void dimh_enable_di_pre_aml(struct DI_MIF_S *di_inp_mif,
 		DIM_RDMA_WR_BITS(DI_MTN_1_CTRL1, madi_en ? 5 : 0, 29, 3);
 	}
 
-	if (DIM_IS_IC_EF(SC2))
-		sc2_tfbf = 2;
-	else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
+	if (DIM_IS_IC_EF(SC2)) {
+		if (pch->en_tb)
+			sc2_tfbf = 3;
+		else
+			sc2_tfbf = 2;
+	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
 		sc2_tfbf = 1;
-	else
+	} else {
 		sc2_tfbf = 0;
+	}
 
 	/*
 	 * the bit define is not same with before ,
 	 * from sc2 DI_PRE_CTRL 0x1700,
 	 * bit5/6/8/9/10/11/12
 	 * bit21/22 chan2 t/b reverse,check with vlsi feijun
+	 * bit2/3 enable pd32 check for i/p from vlsi feijun
 	 */
+	if (DIM_IS_IC_EF(T3) || DIM_IS_IC(T5DB))
+		pd32_infor = 0x1;
+	else
+		pd32_infor = madi_en;
 
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
 		if (madi_en) {
@@ -1110,9 +1123,9 @@ void dimh_enable_di_pre_aml(struct DI_MIF_S *di_inp_mif,
 				DIM_RDMA_WR(DI_PRE_CTRL,
 					    1 | /* nr wr en */
 					    (madi_en << 1) | /* mtn en */
-					    (madi_en << 2) |
+					    (pd32_infor << 2) |
 					    /*check3:2pulldown*/
-					    (madi_en << 3) |
+					    (pd32_infor << 3) |
 					    /*check2:2pulldown*/
 					    (1 << 4)	 |
 					    (madi_en << 5) |
@@ -1135,8 +1148,8 @@ void dimh_enable_di_pre_aml(struct DI_MIF_S *di_inp_mif,
 				DIM_RDMA_WR(DI_PRE_CTRL,
 					    1			| /* nr wr en */
 					    (madi_en << 1)	| /* mtn en */
-					    (madi_en << 2)	| /* check3:2pulldown*/
-					    (madi_en << 3)	| /* check2:2pulldown*/
+					    (pd32_infor << 2)	| /* check3:2pulldown*/
+					    (pd32_infor << 3)	| /* check2:2pulldown*/
 					    (1 << 4)		|
 					    (madi_en << 5)	| /*hist check enable*/
 					/* hist check  use chan2. */
@@ -1253,7 +1266,7 @@ void dimh_enable_mc_di_pre(struct DI_MC_MIF_s *di_mcinford_mif,
 	if (is_meson_gxlx_cpu() || is_meson_txhd_cpu())
 		me_auto_en = false;
 #endif
-
+	/*coverity[dead_error_line] False judgment, not dead code*/
 	ctrl_mode = (me_auto_en ? 0x1bfff7ff : 0x1bfe37ff);
 	DIM_RDMA_WR(MCDI_CTRL_MODE, (mcdi_en ? ctrl_mode : 0));
 	DIM_RDMA_WR_BITS(MCDI_MOTINEN, (mcdi_en ? 3 : 0), 0, 2);
@@ -4126,12 +4139,17 @@ void dim_rst_protect(bool on)/*2019-01-22 by VLSI feng.wang*/
 #define PRE_ID_MASK_TL1	(0x14500)
 
 #define PRE_ID_MASK_T5	(0x28a00) //add decontour and shift 1bit
+#define PRE_ID_MASK_S5	(0x50a00)	//add ai color
 
 static bool di_pre_idle(void)
 {
 	bool ret = false;
 
-	if (DIM_IS_IC_EF(T3) || DIM_IS_IC(T5D) || DIM_IS_IC(T5DB) ||
+	if (DIM_IS_IC_EF(S5)) {
+		if ((DIM_RDMA_RD(DI_ARB_DBG_STAT_L1C1) &
+			PRE_ID_MASK_S5) == PRE_ID_MASK_S5)
+			ret = true;
+	} else if (DIM_IS_IC_EF(T3) || DIM_IS_IC(T5D) || DIM_IS_IC(T5DB) ||
 	    DIM_IS_IC(T5)) {
 		if ((DIM_RDMA_RD(DI_ARB_DBG_STAT_L1C1) &
 			PRE_ID_MASK_T5) == PRE_ID_MASK_T5)
@@ -4575,7 +4593,9 @@ static void di_pre_data_mif_ctrl(bool enable)
 			if (dim_afds())
 				dim_afds()->inp_sw(false);
 		}
-
+		//test for bus-crash
+		//disable afbcd:
+		disable_afbcd_t5dvb();
 	}
 }
 
@@ -4785,19 +4805,19 @@ void dimh_load_regs(struct di_pq_parm_s *di_pq_ptr)
 	if (dimp_get(edi_mp_pq_load_dbg) == 1)
 		return;
 	if (dimp_get(edi_mp_pq_load_dbg) == 2)
-		pr_info("[DI]%s hw load 0x%x pq table len %u.\n",
-			__func__, di_pq_ptr->pq_parm.table_name,
+		PR_INF("pq h: 0x%x len %u.\n",
+			di_pq_ptr->pq_parm.table_name,
 			di_pq_ptr->pq_parm.table_len);
 	if (PTR_ERR_OR_ZERO(di_pq_ptr->regs)) {
 		PR_ERR("[DI] table ptr error.\n");
 		return;
 	}
-	PR_INF("load 0x%x pq table len %u.\n",
+	PR_INF("pq h: 0x%x %u.\n",
 	       di_pq_ptr->pq_parm.table_name,
 	       di_pq_ptr->pq_parm.table_len);
 	/* check len for coverity */
 	if (di_pq_ptr->pq_parm.table_len  >= DIMTABLE_LEN_MAX) {
-		PR_WARN("%s:len overflow:%d\n", __func__,
+		PR_WARN("%s:overflow:%d\n", "pq h",
 			di_pq_ptr->pq_parm.table_len);
 		return;
 	}
@@ -4811,7 +4831,7 @@ void dimh_load_regs(struct di_pq_parm_s *di_pq_ptr)
 		value = regs_p->val;
 		mask = regs_p->mask;
 		if (dimp_get(edi_mp_pq_load_dbg) == 2)
-			pr_info("[%u][0x%x] = [0x%x]&[0x%x]\n",
+			PR_INF("[%u][0x%x] = [0x%x]&[0x%x]\n",
 				i, addr, value, mask);
 
 		for (j = 0; j < SKIP_CTRE_NUM; j++) {
@@ -4826,7 +4846,7 @@ void dimh_load_regs(struct di_pq_parm_s *di_pq_ptr)
 		regs_p++;
 		if (j < SKIP_CTRE_NUM) {
 			if (dimp_get(edi_mp_pq_load_dbg) == 3)
-				pr_info("%s skip [0x%x]=[0x%x].\n",
+				PR_INF("%s skip [0x%x]=[0x%x].\n",
 					__func__, addr, value);
 			continue;
 		}
@@ -4839,7 +4859,7 @@ void dimh_load_regs(struct di_pq_parm_s *di_pq_ptr)
 		if (!ctrl_reg_flag && !save_db)
 			DIM_DI_WR(addr, value);
 		if (dimp_get(edi_mp_pq_load_dbg) == 2)
-			pr_info("[%u][0x%x] = [0x%x] %s\n", i, addr,
+			PR_INF("[%u][0x%x] = [0x%x] %s\n", i, addr,
 				value, RD(addr) != value ? "fail" : "success");
 	}
 }

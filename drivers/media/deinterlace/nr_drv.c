@@ -52,6 +52,9 @@ module_param_named(nr2_en, nr2_en, uint, 0644);
 static bool dynamic_dm_chk = true;
 module_param_named(dynamic_dm_chk, dynamic_dm_chk, bool, 0644);
 
+static unsigned int autonr_en = 0x1;
+module_param_named(autonr_en, autonr_en, uint, 0644);
+
 static bool nr4ne_en;
 module_param_named(nr4ne_en, nr4ne_en, bool, 0644);
 
@@ -136,6 +139,10 @@ int global_bs_calc_sw(int *pGbsVldCnt,
 		*pGbsVldFlg = 1;
 	else
 		*pGbsVldFlg = 0;
+	if (dnr_pr)
+		pr_info("reg:nCurGbs=%d,pGbs=%d, LR/LL/RR=[%d,%d,%d],dif=%d\n",
+				nCurGbs, *pGbs, nGbsStatLR, nGbsStatLL, nGbsStatRR, nDif);
+
 
 	*pGbs = nCurGbs;
 
@@ -180,6 +187,9 @@ int hor_blk_ofst_calc_sw(int *pHbOfVldCnt,
 		} else if (nHbOfStatCnt[i] > nMax2) {
 			nMax2 = nHbOfStatCnt[i];
 		}
+	if (dnr_pr)
+		pr_info("nHbOfStatCnt[i]= %d\n", nHbOfStatCnt[i]);
+
 	} /* i */
 
 	/* decide if offset valid */
@@ -208,9 +218,9 @@ int hor_blk_ofst_calc_sw(int *pHbOfVldCnt,
 	 * }
 	 */
 	if (dnr_pr) {
-		pr_dbg("Max1 = %5d, Max2 = %5d, MaxIdx = %5d, Rat0 = %5d,Rat1 = %5d.\n",
+		pr_info("Max1 = %5d, Max2 = %5d, MaxIdx = %5d, Rat0 = %5d,Rat1 = %5d.\n",
 				nMax1, nMax2, nMaxIdx, nRat0, nRat1);
-		pr_dbg("CurHbOfst = %5d, HbOfVldFlg = %d, HbOfVldCnt = %d.\n",
+		pr_info("CurHbOfst = %5d, HbOfVldFlg = %d, HbOfVldCnt = %d.\n",
 				nCurHbOfst, *pHbOfVldFlg, *pHbOfVldCnt);
 	}
 
@@ -324,8 +334,7 @@ static u32 check_dnr_dm_ctrl(u32 org_val, unsigned short width,
 }
 
 static void dnr_config_op(struct DNR_PARM_s *dnr_parm_p,
-		unsigned short width, unsigned short height,
-		const struct reg_acc *op)
+		const struct reg_acc *op, struct nr_cfg_s *cfg)
 {
 	unsigned short border_offset = dnr_parm_p->dnr_stat_coef;
 
@@ -334,14 +343,15 @@ static void dnr_config_op(struct DNR_PARM_s *dnr_parm_p,
 		return;
 	}
 
-	op->wr(DNR_HVSIZE, (width << 16) | height);
+	op->wr(DNR_HVSIZE, (cfg->width << 16) | cfg->height);
 	op->wr(DNR_STAT_X_START_END,
 	       (((border_offset << 3) & 0x3fff) << 16) |
-	       ((width - ((border_offset << 3) + 1)) & 0x3fff));
+	       ((cfg->width - ((border_offset << 3) + 1)) & 0x3fff));
 	op->wr(DNR_STAT_Y_START_END,
 	       (((border_offset << 3) & 0x3fff) << 16) |
-	       ((height - ((border_offset << 3) + 1)) & 0x3fff));
+	       ((cfg->height - ((border_offset << 3) + 1)) & 0x3fff));
 	op->wr(DNR_DM_CTRL, op->rd(DNR_DM_CTRL) | (1 << 11));
+	op->bwr(DNR_CTRL, cfg->linkflag ? 1 : 0, 17, 1);
 	op->bwr(DNR_CTRL, dnr_en ? 1 : 0, 16, 1);
 	/* dm for sd, hd will slower */
 	if (is_meson_tl1_cpu() || is_meson_tm2_cpu() ||
@@ -358,11 +368,11 @@ static void dnr_config_op(struct DNR_PARM_s *dnr_parm_p,
 	    IS_IC(dil_get_cpuver_flag(), T5D)	||
 	    IS_IC(dil_get_cpuver_flag(), T5DB)  ||
 	    (cpu_after_eq(MESON_CPU_MAJOR_ID_SC2))) {
-		if (width > 1280)
+		if (cfg->width > 1280)
 			op->bwr(DNR_DM_CTRL, 0, 8, 1);
 		else
 			op->bwr(DNR_DM_CTRL, 1, 8, 1);
-		if (width > 1920 || !dnr_dm_en)
+		if (cfg->width > 1920 || !dnr_dm_en)
 			op->bwr(DNR_DM_CTRL, 0, 9, 1);
 		else
 			op->bwr(DNR_DM_CTRL, 1, 9, 1);
@@ -373,7 +383,7 @@ static void dnr_config_op(struct DNR_PARM_s *dnr_parm_p,
 		op->wr(DNR_CTRL, 0x1dd00);
 	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TXLX) || is_meson_gxl_cpu()) {
 		/*disable */
-		if (width > 1280) {
+		if (cfg->width > 1280) {
 			op->bwr(DNR_DM_CTRL, 0, 8, 1);
 			/* disable dm for 1080 which will cause pre timeout*/
 			op->bwr(DNR_DM_CTRL, 0, 9, 1);
@@ -382,7 +392,7 @@ static void dnr_config_op(struct DNR_PARM_s *dnr_parm_p,
 			op->bwr(DNR_DM_CTRL, dnr_dm_en, 9, 1);
 		}
 	} else {
-		if (width >= 1920)
+		if (cfg->width >= 1920)
 			op->bwr(DNR_DM_CTRL, 0, 9, 1);
 		else
 			op->bwr(DNR_DM_CTRL, dnr_dm_en, 9, 1);
@@ -543,16 +553,15 @@ static void cue_config_op(struct CUE_PARM_s *pcue_parm, unsigned short field_typ
 	}
 }
 
-static void nr_all_config_op(unsigned short width, unsigned short height,
-	unsigned short field_type,
-		const struct reg_acc *op)
+static void nr_all_config_op(unsigned short field_type,
+		const struct reg_acc *op, struct nr_cfg_s *cfg)
 {
-	nr_param.width = width;
-	nr_param.height = height;
+	nr_param.width = cfg->width;
+	nr_param.height = cfg->height;
 	nr_param.frame_count = 0;
 	nr_param.prog_flag = field_type?false:true;
-	nr2_config_op(width, height, op);
-	dnr_config_op(nr_param.pdnr_parm, width, height, op);
+	nr2_config_op(cfg->width, cfg->height, op);
+	dnr_config_op(nr_param.pdnr_parm, op, cfg);
 
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_GXLX))
 		cue_config_op(nr_param.pcue_parm, field_type, op);
@@ -563,11 +572,11 @@ static void nr_all_config_op(unsigned short width, unsigned short height,
 		IS_IC(dil_get_cpuver_flag(), T5D)	||
 		IS_IC(dil_get_cpuver_flag(), T5DB)	||
 		cpu_after_eq(MESON_CPU_MAJOR_ID_SC2)) {
-		linebuffer_config_op(width, op);
-		nr4_config_op(nr_param.pnr4_parm, width, height, op);
+		linebuffer_config_op(cfg->width, op);
+		nr4_config_op(nr_param.pnr4_parm, cfg->width, cfg->height, op);
 	}
 	if (is_meson_txhd_cpu())
-		linebuffer_config_op(width, op);
+		linebuffer_config_op(cfg->width, op);
 }
 
 bool secam_cfr_en = true;
@@ -805,6 +814,100 @@ static void noise_meter_process_op(struct NR4_PARM_s *nr4_param_p,
 	/***********************/
 	nr4_param_p->sw_nr4_field_sad[0] = nr4_param_p->sw_nr4_field_sad[1];
 	nr4_param_p->sw_nr4_field_sad[1] = field_sad;
+}
+
+//auto global tnr
+//function : update reg_MATNR_mtn_lp/hp_Ygain,
+//           reg_MATNR_mtn_lp/hp_Cgain by motion_info and apl
+//input : diff_sum, apl
+//output : mtn_lp/hp_Ygain, mtn_lp/hp_Cgain
+static void autonr_process_op(struct AUTONR_PARM_S *autonr_param_p,
+		unsigned short input_width,
+		unsigned short input_height,
+		const struct reg_acc *op)
+{
+	unsigned int idx;
+	u64 motion_sum;
+	int apl_idx; //3bit
+	u64 diff_sum;
+
+	diff_sum = op->rd(DIPD_RO_COMB_0);
+
+	//diff_sum norm
+	/*coverity[SIGN_EXTENSION] misjudgment*/
+	motion_sum = div64_u64(diff_sum * (1920 * 1080),
+			       (input_height * input_width));
+	if (autonr_en & 0x10)
+		pr_info("%s start#### diff_sum=0x%llx,motion_sum=0x%llx\n", __func__,
+			diff_sum, motion_sum);
+
+	motion_sum = motion_sum >> 12;
+	if (autonr_en & 0x10)
+		pr_info("%s motion_sum=0x%llx\n", __func__, motion_sum);
+
+	//get mtn gain
+	apl_idx = get_lum_ave();
+	if (autonr_en & 0x10)
+		pr_info("%s lum_ave=%d\n", __func__, apl_idx);
+
+	if (apl_idx <= 0) {
+		apl_idx = 0;
+	} else {
+		apl_idx = apl_idx >> 5;
+		if (apl_idx >= 7)
+			apl_idx = 7;
+	}
+	if (autonr_en & 0x10)
+		pr_info("%s apl_idx=%d\n", __func__, apl_idx);
+	//apl control
+	motion_sum = (motion_sum * autonr_param_p->apl_gain[apl_idx] + 16) >> 5;
+	if (autonr_en & 0x10)
+		pr_info("%s end#### motion_sum=0x%llx\n", __func__, motion_sum);
+
+	if (motion_sum <= autonr_param_p->motion_th[0])
+		idx = 0;
+	else if (motion_sum <= autonr_param_p->motion_th[1])
+		idx = 1;
+	else if (motion_sum <= autonr_param_p->motion_th[2])
+		idx = 2;
+	else if (motion_sum <= autonr_param_p->motion_th[3])
+		idx = 3;
+	else if (motion_sum <= autonr_param_p->motion_th[4])
+		idx = 4;
+	else if (motion_sum <= autonr_param_p->motion_th[5])
+		idx = 5;
+	else if (motion_sum <= autonr_param_p->motion_th[6])
+		idx = 6;
+	else if (motion_sum <= autonr_param_p->motion_th[7])
+		idx = 7;
+	else if (motion_sum <= autonr_param_p->motion_th[8])
+		idx = 8;
+	else if (motion_sum <= autonr_param_p->motion_th[9])
+		idx = 9;
+	else if (motion_sum <= autonr_param_p->motion_th[10])
+		idx = 10;
+	else if (motion_sum <= autonr_param_p->motion_th[11])
+		idx = 11;
+	else if (motion_sum <= autonr_param_p->motion_th[12])
+		idx = 12;
+	else if (motion_sum <= autonr_param_p->motion_th[13])
+		idx = 13;
+	else if (motion_sum <= autonr_param_p->motion_th[14])
+		idx = 14;
+	else
+		idx = 15;
+
+	op->bwr(NR2_MATNR_MTN_GAIN,
+		autonr_param_p->motion_lp_ygain[idx], 0, 8);
+	op->bwr(NR2_MATNR_MTN_GAIN,
+		autonr_param_p->motion_lp_cgain[idx], 8, 8);
+	op->bwr(NR2_MATNR_MTN_GAIN,
+		autonr_param_p->motion_hp_ygain[idx], 16, 8);
+	op->bwr(NR2_MATNR_MTN_GAIN,
+		autonr_param_p->motion_hp_cgain[idx], 24, 8);
+	if (autonr_en & 0x10)
+		pr_info("%s idx=%d.h=%d,GAIN=%d\n", __func__,
+			idx, input_height, op->rd(NR2_MATNR_MTN_GAIN));
 }
 
 //sort from largest to smallest
@@ -1086,7 +1189,9 @@ static void luma_enhancement_process_op(struct NR4_PARM_s *nr4_param_p,
 }
 
 static void dnr_process_op(struct DNR_PARM_s *pdnrprm,
-			   const struct reg_acc *op)
+			   const struct reg_acc *op,
+			unsigned short nexsizein,
+			unsigned short neysizein)
 {
 	static int ro_gbs_stat_lr = 0, ro_gbs_stat_ll = 0, ro_gbs_stat_rr = 0,
 	ro_gbs_stat_dif = 0, ro_gbs_stat_cnt = 0;
@@ -1095,6 +1200,7 @@ static void dnr_process_op(struct DNR_PARM_s *pdnrprm,
 	 */
 #ifdef DNR_HV_SHIFT
 	int ro_hbof_stat_cnt[32], ro_vbof_stat_cnt[32], i = 0;
+	int nCol, nRow;
 #endif
 	int ll, lr;
 
@@ -1103,10 +1209,7 @@ static void dnr_process_op(struct DNR_PARM_s *pdnrprm,
 		return;
 	}
 
-	if (is_meson_tl1_cpu() || is_meson_tm2_cpu() ||
-	    IS_IC(dil_get_cpuver_flag(), T5)	||
-	    IS_IC(dil_get_cpuver_flag(), T5D)	||
-	    IS_IC(dil_get_cpuver_flag(), T5DB)) {
+	if (is_meson_tl1_cpu()) {
 		ll = op->rd(DNR_RO_GBS_STAT_LR);
 		lr = op->rd(DNR_RO_GBS_STAT_LL);
 	} else {
@@ -1145,22 +1248,25 @@ static void dnr_process_op(struct DNR_PARM_s *pdnrprm,
 			  pdnrprm->prm_gbs_bsdifthd,
 			  pdnrprm->prm_gbs_calcmod);
 #ifdef DNR_HV_SHIFT
+	nCol = nexsizein;
+	nRow = neysizein;
+
 	for (i = 0; i < 32; i++)
 		ro_hbof_stat_cnt[i] = op->rd(DNR_RO_HBOF_STAT_CNT_0 + i);
 	for (i = 0; i < 32; i++)
 		ro_vbof_stat_cnt[i] = op->rd(DNR_RO_VBOF_STAT_CNT_0 + i);
-		hor_blk_ofst_calc_sw(&pdnrprm->sw_hbof_vld_cnt,
-			 &pdnrprm->sw_hbof_vld_flg,
-			 &pdnrprm->sw_hbof,
-			 ro_hbof_stat_cnt,
-			 0,
-			 nCol-1,
-			 pdnrprm->prm_hbof_minthd,
-			 pdnrprm->prm_hbof_ratthd0,
-			 pdnrprm->prm_hbof_ratthd1,
-			 pdnrprm->prm_hbof_vldcntthd,
-			 nRow,
-			 nCol);
+	hor_blk_ofst_calc_sw(&pdnrprm->sw_hbof_vld_cnt,
+		 &pdnrprm->sw_hbof_vld_flg,
+		 &pdnrprm->sw_hbof,
+		 ro_hbof_stat_cnt,
+		 0,
+		 nCol - 1,
+		 pdnrprm->prm_hbof_minthd,
+		 pdnrprm->prm_hbof_ratthd0,
+		 pdnrprm->prm_hbof_ratthd1,
+		 pdnrprm->prm_hbof_vldcntthd,
+		 nRow,
+		 nCol);
 
 	ver_blk_ofst_calc_sw(&pdnrprm->sw_vbof_vld_cnt,
 			 &pdnrprm->sw_vbof_vld_flg,
@@ -1193,7 +1299,7 @@ static void dnr_process_op(struct DNR_PARM_s *pdnrprm,
 		op->wr(DNR_GBS,
 		       (pdnrprm->sw_vbof_vld_flg == 1 &&
 			pdnrprm->sw_gbs_vld_flg == 1) ? pdnrprm->sw_gbs : 0);
-	} else if (pdnrprm->prm_sw_gbs_ctrl == 1) {
+	} else if (pdnrprm->prm_sw_gbs_ctrl == 3) {
 		op->bwr(DNR_BLK_OFFST,
 			pdnrprm->sw_hbof_vld_flg == 1 ?
 			pdnrprm->sw_hbof : 0, 4, 3);
@@ -1205,6 +1311,10 @@ static void dnr_process_op(struct DNR_PARM_s *pdnrprm,
 		       pdnrprm->sw_vbof_vld_flg == 1	&&
 		       pdnrprm->sw_gbs_vld_flg == 1) ? pdnrprm->sw_gbs : 0);
 	}
+	if (dnr_pr)
+		pr_info("reg:nCurGbs=%d,hbof/vld=[%d,%d],sw_gbs_ctrl=%d\n",
+			pdnrprm->sw_gbs, pdnrprm->sw_hbof_vld_flg,
+			pdnrprm->sw_gbs_vld_flg, pdnrprm->prm_sw_gbs_ctrl);
 }
 
 static bool invert_cue_phase;
@@ -1289,7 +1399,7 @@ void cue_int_op(struct vframe_s *vf, const struct reg_acc *op)
 			cue_en = false;
 	}
 	if (cue_en_last != cue_en) {
-		di_pr_info("cue:chg1:%d->%d\n", cue_en_last, cue_en);
+		di_print("cue:chg1:%d->%d\n", cue_en_last, cue_en);
 		cue_en_last = cue_en;
 	}
 	/*close cue when cue disable*/
@@ -1384,8 +1494,8 @@ void adaptive_cue_adjust_op(unsigned int frame_diff, unsigned int field_diff,
 			cue_en = false;
 
 		if (cue_en != cue_en_last) {
-			di_pr_info("cue_en:chg2:%d->%d\n", cue_en_last, cue_en);
-			di_pr_info("\t%d,%d,%d\n",
+			di_print("cue_en:chg2:%d->%d\n", cue_en_last, cue_en);
+			di_print("\t%d,%d,%d\n",
 					pcue_parm->frame_count,
 					pcue_parm->field_count1,
 					pcue_parm->glb_mot_fieldnum);
@@ -1475,7 +1585,8 @@ static void nr_process_in_irq_op(const struct reg_acc *op)
 	    cue_glb_mot_check_en)
 		cue_process_irq_op(op);
 	if (dnr_en)
-		dnr_process_op(&dnr_param, op);
+		dnr_process_op(&dnr_param, op, nr_param.width,
+				     nr_param.height);
 	if (is_meson_txlx_cpu() || is_meson_g12a_cpu()
 		|| is_meson_g12a_cpu() || is_meson_tl1_cpu() ||
 		is_meson_sm1_cpu() || is_meson_tm2_cpu() ||
@@ -1490,6 +1601,10 @@ static void nr_process_in_irq_op(const struct reg_acc *op)
 	if (IS_IC(dil_get_cpuver_flag(), T3) && nr4ne_en)
 		noise_meter2_process(nr_param.pnr4_neparm, nr_param.width,
 				     nr_param.height);
+	if (((IS_IC_EF(dil_get_cpuver_flag(), T3)) ||
+	     IS_IC(dil_get_cpuver_flag(), T5DB)) && autonr_en)
+		autonr_process_op(nr_param.pautonr_parm,
+				  nr_param.width, nr_param.height, op);
 }
 
 static dnr_param_t dnr_params[] = {
@@ -1711,6 +1826,386 @@ static void nr4_param_init(struct NR4_PARM_s *nr4_parm_p)
 	nr4_parm_p->sw_dm_scene_change_en = 0;
 }
 
+static autonr_param_t autonr_params[AUTONR_PARAMS_NUM];
+static void autonr_params_init_th(struct AUTONR_PARM_S *autonr_parm_p)
+{
+	autonr_params[0].name = "motion_th[0]";
+	autonr_params[0].addr = &autonr_parm_p->motion_th[0];
+	autonr_params[1].name = "motion_th[1]";
+	autonr_params[1].addr = &autonr_parm_p->motion_th[1];
+	autonr_params[2].name = "motion_th[2]";
+	autonr_params[2].addr = &autonr_parm_p->motion_th[2];
+	autonr_params[3].name = "motion_th[3]";
+	autonr_params[3].addr = &autonr_parm_p->motion_th[3];
+	autonr_params[4].name = "motion_th[4]";
+	autonr_params[4].addr = &autonr_parm_p->motion_th[4];
+	autonr_params[5].name = "motion_th[5]";
+	autonr_params[5].addr = &autonr_parm_p->motion_th[5];
+	autonr_params[6].name = "motion_th[6]";
+	autonr_params[6].addr = &autonr_parm_p->motion_th[6];
+	autonr_params[7].name = "motion_th[7]";
+	autonr_params[7].addr = &autonr_parm_p->motion_th[7];
+	autonr_params[8].name = "motion_th[8]";
+	autonr_params[8].addr = &autonr_parm_p->motion_th[8];
+	autonr_params[9].name = "motion_th[9]";
+	autonr_params[9].addr = &autonr_parm_p->motion_th[9];
+	autonr_params[10].name = "motion_th[10]";
+	autonr_params[10].addr = &autonr_parm_p->motion_th[10];
+	autonr_params[11].name = "motion_th[11]";
+	autonr_params[11].addr = &autonr_parm_p->motion_th[11];
+	autonr_params[12].name = "motion_th[12]";
+	autonr_params[12].addr = &autonr_parm_p->motion_th[12];
+	autonr_params[13].name = "motion_th[13]";
+	autonr_params[13].addr = &autonr_parm_p->motion_th[13];
+	autonr_params[14].name = "motion_th[14]";
+	autonr_params[14].addr = &autonr_parm_p->motion_th[14];
+};
+
+static void autonr_params_init_lp_ygain(struct AUTONR_PARM_S *autonr_parm_p)
+{
+	autonr_params[15].name = "motion_lp_ygain[0]";
+	autonr_params[15].addr = &autonr_parm_p->motion_lp_ygain[0];
+	autonr_params[16].name = "motion_lp_ygain[1]";
+	autonr_params[16].addr = &autonr_parm_p->motion_lp_ygain[1];
+	autonr_params[17].name = "motion_lp_ygain[2]";
+	autonr_params[17].addr = &autonr_parm_p->motion_lp_ygain[2];
+	autonr_params[18].name = "motion_lp_ygain[3]";
+	autonr_params[18].addr = &autonr_parm_p->motion_lp_ygain[3];
+	autonr_params[19].name = "motion_lp_ygain[4]";
+	autonr_params[19].addr = &autonr_parm_p->motion_lp_ygain[4];
+	autonr_params[20].name = "motion_lp_ygain[5]";
+	autonr_params[20].addr = &autonr_parm_p->motion_lp_ygain[5];
+	autonr_params[21].name = "motion_lp_ygain[6]";
+	autonr_params[21].addr = &autonr_parm_p->motion_lp_ygain[6];
+	autonr_params[22].name = "motion_lp_ygain[7]";
+	autonr_params[22].addr = &autonr_parm_p->motion_lp_ygain[7];
+	autonr_params[23].name = "motion_lp_ygain[8]";
+	autonr_params[23].addr = &autonr_parm_p->motion_lp_ygain[8];
+	autonr_params[24].name = "motion_lp_ygain[9]";
+	autonr_params[24].addr = &autonr_parm_p->motion_lp_ygain[9];
+	autonr_params[25].name = "motion_lp_ygain[10]";
+	autonr_params[25].addr = &autonr_parm_p->motion_lp_ygain[10];
+	autonr_params[26].name = "motion_lp_ygain[11]";
+	autonr_params[26].addr = &autonr_parm_p->motion_lp_ygain[11];
+	autonr_params[27].name = "motion_lp_ygain[12]";
+	autonr_params[27].addr = &autonr_parm_p->motion_lp_ygain[12];
+	autonr_params[28].name = "motion_lp_ygain[13]";
+	autonr_params[28].addr = &autonr_parm_p->motion_lp_ygain[13];
+	autonr_params[29].name = "motion_lp_ygain[14]";
+	autonr_params[29].addr = &autonr_parm_p->motion_lp_ygain[14];
+	autonr_params[30].name = "motion_lp_ygain[15]";
+	autonr_params[30].addr = &autonr_parm_p->motion_lp_ygain[15];
+};
+
+static void autonr_params_init_hp_ygain(struct AUTONR_PARM_S *autonr_parm_p)
+{
+	autonr_params[31].name = "motion_hp_ygain[0]";
+	autonr_params[31].addr = &autonr_parm_p->motion_hp_ygain[0];
+	autonr_params[32].name = "motion_hp_ygain[1]";
+	autonr_params[32].addr = &autonr_parm_p->motion_hp_ygain[1];
+	autonr_params[33].name = "motion_hp_ygain[2]";
+	autonr_params[33].addr = &autonr_parm_p->motion_hp_ygain[2];
+	autonr_params[34].name = "motion_hp_ygain[3]";
+	autonr_params[34].addr = &autonr_parm_p->motion_hp_ygain[3];
+	autonr_params[35].name = "motion_hp_ygain[4]";
+	autonr_params[35].addr = &autonr_parm_p->motion_hp_ygain[4];
+	autonr_params[36].name = "motion_hp_ygain[5]";
+	autonr_params[36].addr = &autonr_parm_p->motion_hp_ygain[5];
+	autonr_params[37].name = "motion_hp_ygain[6]";
+	autonr_params[37].addr = &autonr_parm_p->motion_hp_ygain[6];
+	autonr_params[38].name = "motion_hp_ygain[7]";
+	autonr_params[38].addr = &autonr_parm_p->motion_hp_ygain[7];
+	autonr_params[39].name = "motion_hp_ygain[8]";
+	autonr_params[39].addr = &autonr_parm_p->motion_hp_ygain[8];
+	autonr_params[40].name = "motion_hp_ygain[9]";
+	autonr_params[40].addr = &autonr_parm_p->motion_hp_ygain[9];
+	autonr_params[41].name = "motion_hp_ygain[10]";
+	autonr_params[41].addr = &autonr_parm_p->motion_hp_ygain[10];
+	autonr_params[42].name = "motion_hp_ygain[11]";
+	autonr_params[42].addr = &autonr_parm_p->motion_hp_ygain[11];
+	autonr_params[43].name = "motion_hp_ygain[12]";
+	autonr_params[43].addr = &autonr_parm_p->motion_hp_ygain[12];
+	autonr_params[44].name = "motion_hp_ygain[13]";
+	autonr_params[44].addr = &autonr_parm_p->motion_hp_ygain[13];
+	autonr_params[45].name = "motion_hp_ygain[14]";
+	autonr_params[45].addr = &autonr_parm_p->motion_hp_ygain[14];
+	autonr_params[46].name = "motion_hp_ygain[15]";
+	autonr_params[46].addr = &autonr_parm_p->motion_hp_ygain[15];
+};
+
+static void autonr_params_init_lp_cgain(struct AUTONR_PARM_S *autonr_parm_p)
+{
+	autonr_params[47].name = "motion_lp_cgain[0]";
+	autonr_params[47].addr = &autonr_parm_p->motion_lp_cgain[0];
+	autonr_params[48].name = "motion_lp_cgain[1]";
+	autonr_params[48].addr = &autonr_parm_p->motion_lp_cgain[1];
+	autonr_params[49].name = "motion_lp_cgain[2]";
+	autonr_params[49].addr = &autonr_parm_p->motion_lp_cgain[2];
+	autonr_params[50].name = "motion_lp_cgain[3]";
+	autonr_params[50].addr = &autonr_parm_p->motion_lp_cgain[3];
+	autonr_params[51].name = "motion_lp_cgain[4]";
+	autonr_params[51].addr = &autonr_parm_p->motion_lp_cgain[4];
+	autonr_params[52].name = "motion_lp_cgain[5]";
+	autonr_params[52].addr = &autonr_parm_p->motion_lp_cgain[5];
+	autonr_params[53].name = "motion_lp_cgain[6]";
+	autonr_params[53].addr = &autonr_parm_p->motion_lp_cgain[6];
+	autonr_params[54].name = "motion_lp_cgain[7]";
+	autonr_params[54].addr = &autonr_parm_p->motion_lp_cgain[7];
+	autonr_params[55].name = "motion_lp_cgain[8]";
+	autonr_params[55].addr = &autonr_parm_p->motion_lp_cgain[8];
+	autonr_params[56].name = "motion_lp_cgain[9]";
+	autonr_params[56].addr = &autonr_parm_p->motion_lp_cgain[9];
+	autonr_params[57].name = "motion_lp_cgain[10]";
+	autonr_params[57].addr = &autonr_parm_p->motion_lp_cgain[10];
+	autonr_params[58].name = "motion_lp_cgain[11]";
+	autonr_params[58].addr = &autonr_parm_p->motion_lp_cgain[11];
+	autonr_params[59].name = "motion_lp_cgain[12]";
+	autonr_params[59].addr = &autonr_parm_p->motion_lp_cgain[12];
+	autonr_params[60].name = "motion_lp_cgain[13]";
+	autonr_params[60].addr = &autonr_parm_p->motion_lp_cgain[13];
+	autonr_params[61].name = "motion_lp_cgain[14]";
+	autonr_params[61].addr = &autonr_parm_p->motion_lp_cgain[14];
+	autonr_params[62].name = "motion_lp_cgain[15]";
+	autonr_params[62].addr = &autonr_parm_p->motion_lp_cgain[15];
+};
+
+static void autonr_params_init_hp_cgain(struct AUTONR_PARM_S *autonr_parm_p)
+{
+	autonr_params[63].name = "motion_hp_cgain[0]";
+	autonr_params[63].addr = &autonr_parm_p->motion_hp_cgain[0];
+	autonr_params[64].name = "motion_hp_cgain[1]";
+	autonr_params[64].addr = &autonr_parm_p->motion_hp_cgain[1];
+	autonr_params[65].name = "motion_hp_cgain[2]";
+	autonr_params[65].addr = &autonr_parm_p->motion_hp_cgain[2];
+	autonr_params[66].name = "motion_hp_cgain[3]";
+	autonr_params[66].addr = &autonr_parm_p->motion_hp_cgain[3];
+	autonr_params[67].name = "motion_hp_cgain[4]";
+	autonr_params[67].addr = &autonr_parm_p->motion_hp_cgain[4];
+	autonr_params[68].name = "motion_hp_cgain[5]";
+	autonr_params[68].addr = &autonr_parm_p->motion_hp_cgain[5];
+	autonr_params[69].name = "motion_hp_cgain[6]";
+	autonr_params[69].addr = &autonr_parm_p->motion_hp_cgain[6];
+	autonr_params[70].name = "motion_hp_cgain[7]";
+	autonr_params[70].addr = &autonr_parm_p->motion_hp_cgain[7];
+	autonr_params[71].name = "motion_hp_cgain[8]";
+	autonr_params[71].addr = &autonr_parm_p->motion_hp_cgain[8];
+	autonr_params[72].name = "motion_hp_cgain[9]";
+	autonr_params[72].addr = &autonr_parm_p->motion_hp_cgain[9];
+	autonr_params[73].name = "motion_hp_cgain[10]";
+	autonr_params[73].addr = &autonr_parm_p->motion_hp_cgain[10];
+	autonr_params[74].name = "motion_hp_cgain[11]";
+	autonr_params[74].addr = &autonr_parm_p->motion_hp_cgain[11];
+	autonr_params[75].name = "motion_hp_cgain[12]";
+	autonr_params[75].addr = &autonr_parm_p->motion_hp_cgain[12];
+	autonr_params[76].name = "motion_hp_cgain[13]";
+	autonr_params[76].addr = &autonr_parm_p->motion_hp_cgain[13];
+	autonr_params[77].name = "motion_hp_cgain[14]";
+	autonr_params[77].addr = &autonr_parm_p->motion_hp_cgain[14];
+	autonr_params[78].name = "motion_hp_cgain[15]";
+	autonr_params[78].addr = &autonr_parm_p->motion_hp_cgain[15];
+};
+
+static void autonr_params_init_apl(struct AUTONR_PARM_S *autonr_parm_p)
+{
+	autonr_params[79].name = "apl_gain[0]";
+	autonr_params[79].addr = &autonr_parm_p->apl_gain[0];
+	autonr_params[80].name = "apl_gain[1]";
+	autonr_params[80].addr = &autonr_parm_p->apl_gain[1];
+	autonr_params[81].name = "apl_gain[2]";
+	autonr_params[81].addr = &autonr_parm_p->apl_gain[2];
+	autonr_params[82].name = "apl_gain[3]";
+	autonr_params[82].addr = &autonr_parm_p->apl_gain[3];
+	autonr_params[83].name = "apl_gain[4]";
+	autonr_params[83].addr = &autonr_parm_p->apl_gain[4];
+	autonr_params[84].name = "apl_gain[5]";
+	autonr_params[84].addr = &autonr_parm_p->apl_gain[5];
+	autonr_params[85].name = "apl_gain[6]";
+	autonr_params[85].addr = &autonr_parm_p->apl_gain[6];
+	autonr_params[86].name = "apl_gain[7]";
+	autonr_params[86].addr = &autonr_parm_p->apl_gain[7];
+};
+
+static ssize_t autonr_param_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buff, size_t count)
+{
+	long i = 0, value = 0;
+	char *parm[17] = {NULL}, *buf_orig;
+
+	buf_orig = kstrdup(buff, GFP_KERNEL);
+	parse_cmd_params(buf_orig, (char **)(&parm));
+
+	if (!strcmp(parm[0], "motion_th")) {
+		for (i = 0; i < 15; i++) {
+			if (parm[i + 1]) {
+				if (kstrtol(parm[i + 1], 10, &value) < 0)
+					pr_err("DI: input value error.\n");
+				*autonr_params[i].addr = value;
+			}
+			if (autonr_en & 0x20)
+				pr_info("%lx ,%x\n", i, *autonr_params[i].addr);
+		}
+	} else if (!strcmp(parm[0], "motion_lp_ygain")) {
+		for (i = 0; i < 16; i++) {
+			if (parm[i + 1]) {
+				if (kstrtol(parm[i + 1], 10, &value) < 0)
+					pr_err("DI: input value error.\n");
+				*autonr_params[i + 15].addr = value;
+			}
+			if (autonr_en & 0x20)
+				pr_info("%lx,%x\n", i + 15,
+					*autonr_params[i + 15].addr);
+		}
+	} else if (!strcmp(parm[0], "motion_hp_ygain")) {
+		for (i = 0; i < 16; i++) {
+			if (parm[i + 1]) {
+				if (kstrtol(parm[i + 1], 10, &value) < 0)
+					pr_err("DI: input value error.\n");
+				*autonr_params[i + 31].addr = value;
+			}
+			if (autonr_en & 0x20)
+				pr_info("%lx,%x\n", i + 31,
+					*autonr_params[i + 31].addr);
+		}
+	} else if (!strcmp(parm[0], "motion_lp_cgain")) {
+		for (i = 0; i < 16; i++) {
+			if (parm[i + 1]) {
+				if (kstrtol(parm[i + 1], 10, &value) < 0)
+					pr_err("DI: input value error.\n");
+				*autonr_params[i + 47].addr = value;
+			}
+			if (autonr_en & 0x20)
+				pr_info("%lx,%x\n", i + 47,
+					*autonr_params[i + 47].addr);
+		}
+	} else if (!strcmp(parm[0], "motion_hp_cgain")) {
+		for (i = 0; i < 16; i++) {
+			if (parm[i + 1]) {
+				if (kstrtol(parm[i + 1], 10, &value) < 0)
+					pr_err("DI: input value error.\n");
+				*autonr_params[i + 63].addr = value;
+			}
+			if (autonr_en & 0x20)
+				pr_info("%lx,%x\n", i + 63,
+					*autonr_params[i + 63].addr);
+		}
+	} else if (!strcmp(parm[0], "apl_gain")) {
+		for (i = 0; i < 8; i++) {
+			if (parm[i + 1]) {
+				if (kstrtol(parm[i + 1], 10, &value) < 0)
+					pr_err("DI: input value error.\n");
+				*autonr_params[i + 79].addr = value;
+			}
+			if (autonr_en & 0x20)
+				pr_info("%lx,%x\n", i + 79,
+					*autonr_params[i + 79].addr);
+		}
+	} else {
+		pr_info(" null\n");
+	}
+
+	kfree(buf_orig);
+	return count;
+}
+
+static ssize_t autonr_param_show(struct device *dev,
+				struct device_attribute *attr,
+				char *buff)
+{
+	ssize_t len = 0;
+	int i = 0;
+
+	len += sprintf(buff + len, "%s=%d", "motion_th",
+			*autonr_params[0].addr);
+	for (i = 1; i < 15; i++) {
+		if (IS_ERR_OR_NULL(autonr_params[i].name) ||
+		    IS_ERR_OR_NULL(autonr_params[i].addr))
+			continue;
+		len += sprintf(buff + len, ",%d", *autonr_params[i].addr);
+	}
+
+	len += sprintf(buff + len, "\n%s=%d", "motion_lp_ygain",
+			*autonr_params[15].addr);
+	for (i = 16; i < 31; i++) {
+		if (IS_ERR_OR_NULL(autonr_params[i].name) ||
+		    IS_ERR_OR_NULL(autonr_params[i].addr))
+			continue;
+		len += sprintf(buff + len, ",%d", *autonr_params[i].addr);
+	}
+
+	len += sprintf(buff + len, "\n%s=%d", "motion_hp_ygain",
+			*autonr_params[31].addr);
+	for (i = 32; i < 47; i++) {
+		if (IS_ERR_OR_NULL(autonr_params[i].name) ||
+		    IS_ERR_OR_NULL(autonr_params[i].addr))
+			continue;
+		len += sprintf(buff + len, ",%d", *autonr_params[i].addr);
+	}
+
+	len += sprintf(buff + len, "\n%s=%d", "motion_lp_cgain",
+			*autonr_params[47].addr);
+	for (i = 48; i < 63; i++) {
+		if (IS_ERR_OR_NULL(autonr_params[i].name) ||
+		    IS_ERR_OR_NULL(autonr_params[i].addr))
+			continue;
+		len += sprintf(buff + len, ",%d", *autonr_params[i].addr);
+	}
+
+	len += sprintf(buff + len, "\n%s=%d", "motion_hp_cgain",
+			*autonr_params[63].addr);
+	for (i = 64; i < 79; i++) {
+		if (IS_ERR_OR_NULL(autonr_params[i].name) ||
+		    IS_ERR_OR_NULL(autonr_params[i].addr))
+			continue;
+		len += sprintf(buff + len, ",%d", *autonr_params[i].addr);
+	}
+
+	len += sprintf(buff + len, "\n%s=%d", "apl_gain",
+			*autonr_params[79].addr);
+	for (i = 80; i < 87; i++) {
+		if (IS_ERR_OR_NULL(autonr_params[i].name) ||
+		    IS_ERR_OR_NULL(autonr_params[i].addr))
+			continue;
+		len += sprintf(buff + len, ",%d", *autonr_params[i].addr);
+	}
+	len += sprintf(buff + len, "\n");
+	return len;
+}
+
+static DEVICE_ATTR(autonr_param, 0664, autonr_param_show, autonr_param_store);
+
+static void autonr_param_init(struct AUTONR_PARM_S *autonr_parm_p)
+{
+	int k = 0;
+
+	for (k = 0; k < 16; k++)
+		autonr_parm_p->motion_lp_ygain[k] = 64;
+	for (k = 0; k < 16; k++)
+		autonr_parm_p->motion_hp_ygain[k] = 64;
+	for (k = 0; k < 16; k++)
+		autonr_parm_p->motion_lp_cgain[k] = 64;
+	for (k = 0; k < 16; k++)
+		autonr_parm_p->motion_hp_cgain[k] = 64;
+	for (k = 0; k < 8; k++)
+		autonr_parm_p->apl_gain[k] = 32;
+
+	autonr_parm_p->motion_th[0] = 0;
+	autonr_parm_p->motion_th[1] = 1;
+	autonr_parm_p->motion_th[2] = 2;
+	autonr_parm_p->motion_th[3] = 4;
+	autonr_parm_p->motion_th[4] = 6;
+	autonr_parm_p->motion_th[5] = 8;
+	autonr_parm_p->motion_th[6] = 9;
+	autonr_parm_p->motion_th[7] = 10;
+	autonr_parm_p->motion_th[8] = 12;
+	autonr_parm_p->motion_th[9] = 14;
+	autonr_parm_p->motion_th[10] = 16;
+	autonr_parm_p->motion_th[11] = 18;
+	autonr_parm_p->motion_th[12] = 20;
+	autonr_parm_p->motion_th[13] = 34;
+	autonr_parm_p->motion_th[14] = 30;
+}
+
 static void nr4_neparam_init(struct NR4_NEPARM_S *nr4_neparm_p)
 {
 	int k = 0;
@@ -1749,7 +2244,7 @@ static void cue_param_init(struct CUE_PARM_s *cue_parm_p)
 }
 static int dnr_prm_init(DNR_PRM_t *pPrm)
 {
-	pPrm->prm_sw_gbs_ctrl = 0;
+	pPrm->prm_sw_gbs_ctrl = 1;
 	/*
 	 * 0: update gbs, 1: update hoffst & gbs,
 	 * 2: update voffst & gbs, 3: update all (hoffst & voffst & gbs).
@@ -1764,7 +2259,7 @@ static int dnr_prm_init(DNR_PRM_t *pPrm)
 	pPrm->prm_gbs_difthd[0]  = 25;
 	pPrm->prm_gbs_difthd[1]  = 75;
 	pPrm->prm_gbs_difthd[2]  = 125;
-	pPrm->prm_gbs_bsdifthd	 = 1;
+	pPrm->prm_gbs_bsdifthd	 = 2;
 	pPrm->prm_gbs_calcmod	 = 1; /* 0:dif0, 1:dif1, 2: dif2 */
 
 	pPrm->sw_gbs = 0;
@@ -1991,11 +2486,15 @@ void nr_drv_uninit(struct device *dev)
 		vfree(nr_param.pnr4_neparm);
 		nr_param.pnr4_neparm = NULL;
 	}
-
+	if (nr_param.pautonr_parm) {
+		vfree(nr_param.pautonr_parm);
+		nr_param.pautonr_parm = NULL;
+	}
 	device_remove_file(dev, &dev_attr_nr4_param);
 	device_remove_file(dev, &dev_attr_dnr_param);
 	device_remove_file(dev, &dev_attr_nr_debug);
 	device_remove_file(dev, &dev_attr_secam);
+	device_remove_file(dev, &dev_attr_autonr_param);
 }
 void nr_drv_init(struct device *dev)
 {
@@ -2029,7 +2528,22 @@ void nr_drv_init(struct device *dev)
 		else
 			nr4_neparam_init(nr_param.pnr4_neparm);
 	}
-
+	if (((IS_IC_EF(dil_get_cpuver_flag(), T3)) ||
+	     IS_IC(dil_get_cpuver_flag(), T5DB)) && autonr_en) {
+		nr_param.pautonr_parm = vmalloc(sizeof(*nr_param.pautonr_parm));
+		if (IS_ERR(nr_param.pautonr_parm)) {
+			pr_err("%s allocate autonr parm error.\n", __func__);
+		} else {
+			autonr_params_init_th(nr_param.pautonr_parm);
+			autonr_params_init_lp_ygain(nr_param.pautonr_parm);
+			autonr_params_init_hp_ygain(nr_param.pautonr_parm);
+			autonr_params_init_lp_cgain(nr_param.pautonr_parm);
+			autonr_params_init_hp_cgain(nr_param.pautonr_parm);
+			autonr_params_init_apl(nr_param.pautonr_parm);
+			autonr_param_init(nr_param.pautonr_parm);
+			device_create_file(dev, &dev_attr_autonr_param);
+		}
+	}
 	dnr_prm_init(&dnr_param);
 	nr_param.pdnr_parm = &dnr_param;
 	device_create_file(dev, &dev_attr_dnr_param);
@@ -2056,10 +2570,9 @@ static void nr_process_in_irq(void)
 	nr_process_in_irq_op(&dio_pre_regset);
 }
 
-static void nr_all_config(unsigned short ncol, unsigned short nrow,
-		      unsigned short type)
+static void nr_all_config(unsigned short type, struct nr_cfg_s *cfg)
 {
-	nr_all_config_op(ncol, nrow, type, &dio_pre_regset);
+	nr_all_config_op(type, &dio_pre_regset, cfg);
 }
 
 static void cue_int(struct vframe_s *vf)

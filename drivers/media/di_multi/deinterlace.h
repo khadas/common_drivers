@@ -38,7 +38,7 @@
  ***********************************************/
 #define DIM_OUT_NV21	(1)
 //#define TEST_PIP	(1)
-
+//#define DBG_POST_SETTING	(1)
 /************************************************
  * vframe use ud meta data
  ************************************************/
@@ -50,9 +50,17 @@
 #define DIM_HAVE_HDR	(1)
 
 /************************************************
+ * function:decontour use detect border
+ *	char aml_ldim_get_bbd_state(void) in
+ *	include/linux/amlogic/media/vout/lcd/aml_ldim.h
+ ************************************************/
+//#define DIM_DCT_BORDER_DETECT	(1)
+#define	DIM_DCT_BORDER_DBG	(1)
+//#define DIM_DCT_BORDER_SIMULATION	(1)
+/************************************************
  * pre-vpp link
  ************************************************/
-#define VPP_LINK_USED_FUNC	(1)
+//#define VPP_LINK_USED_FUNC	(1)
 
 /************************************************
  * game mode
@@ -65,6 +73,7 @@
  ************************************************/
 //#define DIM_EXT_NO_HF	(1)
 
+//#define DIM_TB_DETECT
 /*trigger_pre_di_process param*/
 #define TRIGGER_PRE_BY_PUT			'p'
 #define TRIGGER_PRE_BY_DE_IRQ			'i'
@@ -466,8 +475,11 @@ struct di_dev_s {
 	unsigned long clkb_max_rate;
 	unsigned long clkb_min_rate;
 	struct list_head   pq_table_list;
+#ifdef HIS_CODE
 	atomic_t	       pq_flag; /* 1: idle; 0: busy */
 	atomic_t	       pq_io; /* 1: idle; 0: busy */
+#endif
+	struct mutex lock_pq; /* for pq load */
 	unsigned char	   di_event;
 	unsigned int	   pre_irq;
 	unsigned int	   post_irq;
@@ -481,7 +493,7 @@ struct di_dev_s {
 	unsigned int	   nr10bit_support;
 	/* is DI support post wr to mem for OMX */
 	unsigned int       post_wr_support;
-	unsigned int nrds_enable;
+	//unsigned int nrds_enable;
 	unsigned int pps_enable;
 	unsigned int h_sc_down_en;/*sm1, tm2 ...*/
 	/*struct	mutex      cma_mutex;*/
@@ -501,6 +513,13 @@ struct di_dev_s {
 	struct vpu_dev_s *dim_vpu_pd_vd1;
 	struct vpu_dev_s *dim_vpu_pd_post;
 	bool is_crc_ic;
+#ifdef DIM_TB_DETECT
+	//unsigned int tb_detect;
+	unsigned int tb_detect_period;
+	unsigned int tb_detect_buf_len;
+	unsigned int tb_detect_init_mute;
+	unsigned int tb_flag_int;
+#endif
 };
 
 struct di_pre_stru_s {
@@ -949,6 +968,7 @@ void dpre_vdoing(unsigned int ch);
 //#define DBG_CLEAR_MEM	(1)
 #define DBG_BUFFER_EXT	(1)
 #define DBG_VFM_CVS	(1)
+//#define TMP_EN_PLINK	(1)
 //#define DBG_EXTBUFFER_ONLY_ADDR	(1)
 //#define S4D_OLD_SETTING_KEEP (1)
 //#define S4D_OLD_PQ_KEEP (1)

@@ -562,6 +562,23 @@ static void di_mif1_linear_wr_cfg(struct DI_SIM_MIF_S *mif,
 	dbg_ic("\treg[0x%x] = 0x%x\n", BADDR, op->rd(BADDR));
 }
 
+void di_mif1_linear_wr_cfgds(unsigned long addr, unsigned int STRIDE,
+			   unsigned int BADDR)
+{
+	unsigned int stride;
+	const struct reg_acc *op = &di_pre_regset;
+
+	//pr_info("%s:\n", __func__);
+	//di_mif1_stride(mif, &stride);
+	di_mif1_stride2(8, 128, &stride);
+	op->wr(STRIDE, (0 << 31) | stride);//stride
+	op->wr(BADDR, addr >> 4);//base_addr
+	//pr_info("\tstride[%d]\n", stride);
+	//pr_info("\taddr[0x%lx]\n", addr);
+	//pr_info("\treg[0x%x] = 0x%x\n", STRIDE, op->rd(STRIDE));
+	//pr_info("\treg[0x%x] = 0x%x\n", BADDR, op->rd(BADDR));
+}
+
 void di_mcmif_linear_rd_cfg(struct DI_MC_MIF_s *mif,
 			unsigned int CTRL1,
 			unsigned int CTRL2,
@@ -4370,6 +4387,7 @@ void set_di_memcpy_rot(struct mem_cpy_s *cfg)
 
 	if ((DIM_IS_IC_EF(T7) || DIM_IS_IC(S4)) &&
 	    (!IS_ERR_OR_NULL(in_afbcd))) {
+		/*coverity[var_deref_op] in_afbcd has been judged*/
 		if (in_afbcd->index == EAFBC_DEC_IF0) {
 			//op->bwr(AFBCDM_IF0_CTRL0,cfg->b.is_if0_4k,14,1);
 			//reg_use_4kram
@@ -4531,6 +4549,11 @@ void set_di_memcpy(struct mem_cpy_s *cfg)
 		(1		<< 30));
 	if ((DIM_IS_IC_EF(T7) || DIM_IS_IC(S4)) &&
 	    (!IS_ERR_OR_NULL(in_afbcd))) {
+		/*
+		 * IIS_ERR_OR_NULL() is a function to determine
+		 * whether it is empty or not, but script doesn't recognize it.
+		 */
+		/* coverity[var_deref_op:SUPPRESS] */
 		if (in_afbcd->index == EAFBC_DEC_IF0) {
 			//op->bwr(AFBCDM_IF0_CTRL0,cfg->b.is_if0_4k,14,1);
 			//reg_use_4kram
@@ -5777,6 +5800,13 @@ void dim_secure_pre_en(unsigned char ch)
 			tee_config_device_state(16, 1);
 		#endif
 		}
+		if (DIM_IS_IC(S5)) {
+		#ifdef CONFIG_AMLOGIC_TEE
+			tee_write_reg_bits
+				(((DI_VIUB_SECURE_REG << 2) + 0xff800000),
+				 1, 8, 1);// HF secure Polarity
+		#endif
+		}
 		get_datal()->is_secure_pre = 2;
 		//dbg_mem2("%s:tvp3 pre SECURE:%d\n", __func__, ch);
 	} else {
@@ -5785,6 +5815,13 @@ void dim_secure_pre_en(unsigned char ch)
 		} else {
 		#ifdef CONFIG_AMLOGIC_TEE
 			tee_config_device_state(16, 0);
+		#endif
+		}
+		if (DIM_IS_IC(S5)) {
+		#ifdef CONFIG_AMLOGIC_TEE
+			tee_write_reg_bits
+				(((DI_VIUB_SECURE_REG << 2) + 0xff800000),
+				 0, 8, 1);// HF secure Polarity
 		#endif
 		}
 		get_datal()->is_secure_pre = 1;

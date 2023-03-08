@@ -2964,6 +2964,7 @@ static void di_uninit_buf(unsigned int disable_mirror)
 		pr_dbg("%s keep cur di_buf %d (",
 			__func__, keep_buf->index);
 		for (i = 0; i < USED_LOCAL_BUF_MAX; i++) {
+			/*coverity[var_deref_op] null pointer has been judged*/
 			if (!IS_ERR_OR_NULL(keep_buf->di_buf_dup_p[i]))
 				pr_dbg("%d\t",
 					keep_buf->di_buf_dup_p[i]->index);
@@ -3837,6 +3838,7 @@ static void pre_de_done_buf_config(void)
 
 			if (di_pre_stru.source_change_flag) {
 				/* add dummy buf, will not be displayed */
+				/*coverity[var_deref_model] post_wr_buf has been judged*/
 				add_dummy_vframe_type_pre(post_wr_buf);
 			}
 			di_pre_stru.di_wr_buf->seq =
@@ -3999,6 +4001,7 @@ static struct di_buf_s *get_free_linked_buf(int idx)
 				queue_out(di_buf_linked);
 			}
 		}
+		/*coverity[FORWARD_NULL] di_buf has been judged empty*/
 		if (IS_ERR_OR_NULL(di_buf))
 			return NULL;
 		di_buf->di_wr_linked_buf = di_buf_linked;
@@ -6930,8 +6933,13 @@ static void di_pre_size_change(unsigned short width,
 {
 	unsigned int blkhsize = 0;
 	int pps_w = 0, pps_h = 0;
+	struct nr_cfg_s cfg_data;
+	struct nr_cfg_s *cfg = &cfg_data;
 
-	di_nr_opl()->nr_all_config(width, height, vf_type);
+	cfg->width = width;
+	cfg->height = height;
+	cfg->linkflag = 0;
+	di_nr_opl()->nr_all_config(vf_type, cfg);
 	#ifdef DET3D
 	det3d_config(det3d_en ? 1 : 0);
 	#endif
@@ -8296,6 +8304,7 @@ static long di_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case AMDI_IOC_SET_PQ_PARM:
 		mm_size = sizeof(struct am_pq_parm_s);
+	/*coverity[TAINTED_SCALAR] not a tainted data*/
 		if (copy_from_user(&tmp_pq_s, argp, mm_size)) {
 			pr_err("[DI] set pq parm errors\n");
 			return -EFAULT;

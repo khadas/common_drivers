@@ -545,7 +545,7 @@ static void s4dw_reg_variable(struct di_ch_s *pch, struct vframe_s *vframe)
 
 		ppre->bypass_flag = false;
 
-		de_devp->nrds_enable = 0; //??
+		//de_devp->nrds_enable = 0; //??
 		//de_devp->pps_enable = dimp_get(edi_mp_pps_en); // ??
 		/*di pre h scaling down: sm1 tm2*/
 		de_devp->h_sc_down_en = 0; //??
@@ -661,7 +661,7 @@ static bool s4dw_bypass_2_ready_bynins(struct di_ch_s *pch,
 {
 	void *in_ori;
 //	struct dim_nins_s	*nins =NULL;
-	struct di_buffer *buffer, *buffer_o;
+	struct di_buffer *buffer = NULL, *buffer_o;
 	struct di_buf_s *buf_pst;
 
 	if (!nins) {
@@ -683,7 +683,7 @@ static bool s4dw_bypass_2_ready_bynins(struct di_ch_s *pch,
 	if (dip_itf_is_ins_exbuf(pch)) {
 		/* get out buffer */
 		buf_pst = di_que_out_to_di_buf(pch->ch_id, QUE_POST_FREE);
-		if (!buf_pst) {
+		if (!buf_pst || !buffer) {
 			PR_ERR("%s:no post free\n", __func__);
 			return true;
 		}
@@ -2081,7 +2081,7 @@ static void s4dw_pre_set(unsigned int channel)
 			       chan2_field_num,
 			       ppre->vdin2nr |
 			       (ppre->is_bypass_mem << 4),
-			       ppre);
+			       ppre, channel);
 
 	//no need for s4dw dcntr_set();
 

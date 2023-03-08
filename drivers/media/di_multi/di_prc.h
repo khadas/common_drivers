@@ -229,6 +229,7 @@ struct dim_nins_s *nins_peek_pre(struct di_ch_s *pch);
 struct dim_nins_s *nins_get(struct di_ch_s *pch);
 struct vframe_s *nins_peekvfm(struct di_ch_s *pch);
 struct vframe_s *nins_peekvfm_pre(struct di_ch_s *pch);
+struct vframe_s *nins_peekvfm_ori(struct di_ch_s *pch);
 bool nins_out_some(struct di_ch_s *pch,
 		   struct dim_nins_s *ins,
 		   unsigned int q);
@@ -350,6 +351,8 @@ void dcntr_pq_tune(struct dim_rpt_s *rpt);
 struct dim_rpt_s *dim_api_getrpt(struct vframe_s *vfm);
 void dim_pqrpt_init(struct dim_rpt_s *rpt);
 
+void dim_tb_prob(void);
+void dim_tb_t_release(struct di_ch_s *pch);
 void di_pq_db_setting(enum DIM_DB_SV idx);
 
 int  dbg_dct_mif_show(struct seq_file *s, void *v);
@@ -585,6 +588,7 @@ int dim_pre_vpp_link_display(struct vframe_s *vfm,
 			  struct pvpp_dis_para_in_s *in_para, void *out_para);
 enum DI_ERRORTYPE dpvpp_fill_output_buffer(int index, struct di_buffer *buffer);
 enum DI_ERRORTYPE dpvpp_empty_input_buffer(int index, struct di_buffer *buffer);
+void dpvpp_patch_first_buffer(int index, struct di_ch_s *pch);
 int dpvpp_destroy_instance(int index);
 int dpvpp_create_instance(struct di_init_parm *parm);
 int dpvpp_check_vf(struct vframe_s *vfm);
@@ -609,4 +613,7 @@ bool dim_is_creat_p_vpp_link(void);
 void dvpp_dbg_trig_sw(unsigned int cmd);
 int di_ls_bypass_ch(int index, bool on);
 bool dim_dbg_post_crash_check(unsigned int bit_mask);
+
+/* for secure mode hf,from vlsi feijun*/
+void di_probe_vpub_en_set(u32 enable);
 #endif	/*__DI_PRC_H__*/

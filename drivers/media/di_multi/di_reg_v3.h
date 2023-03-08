@@ -2401,6 +2401,7 @@
 //Bit 3:0    reg_arb_weight_ch0
 //unsigned , RW,default = 10
 //only pip mode use those bits,usually don't need configure
+
 #define DI_CRC_CHK0		((0x17c3)) /* << 2) + 0xd0100000) */
 #define DI_RO_CRC_NRWR		((0x17c0)) /* << 2) + 0xd0100000) */
 #define DI_RO_CRC_DEINT		((0x17c1)) /* << 2) + 0xd0100000) */
@@ -2414,6 +2415,8 @@
 #define DI_PRE_SEC_IN				0x2010
 #define DI_POST_SEC_IN				0x2011
 #define DI_VIU_DATA_SEC				0x1A50
+#define DI_VIUB_SECURE_REG			0x200F
+//for s5 from vlsi feijun HF secure Polarity
 
 //t7
 #define CONTRD_BADDR                               0x3729

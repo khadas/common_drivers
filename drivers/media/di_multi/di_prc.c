@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/err.h>
 #include <linux/seq_file.h>
+#include <linux/arm-smccc.h>
 
 #include <linux/amlogic/media/vfm/vframe.h>
 #include "deinterlace.h"
@@ -53,6 +54,7 @@ bool dim_dbg_is_force_later(void)
 {
 	return di_forc_pq_load_later;
 }
+
 unsigned int di_dbg = DBG_M_EVENT/*|DBG_M_IC|DBG_M_MEM2|DBG_M_RESET_PRE*/;
 module_param(di_dbg, uint, 0664);
 MODULE_PARM_DESC(di_dbg, "debug print");
@@ -283,6 +285,12 @@ const struct di_cfg_ctr_s di_cfg_top_ctr[K_DI_CFG_NUB] = {
 				EDI_CFG_AFBCE_LOSS_EN,
 				0,
 				K_DI_CFG_T_FLG_DTS},
+	[EDI_CFG_TB]  = {"tb",
+			/* 0:not en;	*/
+			/* 1:1channel;		*/
+			EDI_CFG_TB,
+			0,
+			K_DI_CFG_T_FLG_DTS},
 	[EDI_CFG_END]  = {"cfg top end ", EDI_CFG_END, 0,
 			K_DI_CFG_T_FLG_NONE},
 
@@ -448,6 +456,13 @@ void di_cfg_top_dts(void)
 
 	if (cfgg(EN_PRE_LINK) && !IS_IC_SUPPORT(PRE_VPP_LINK))
 		PR_WARN("not support pre_vpp link?\n");
+
+	/* tb */
+	if (cfgg(TB) && !IS_IC_SUPPORT(TB)) {
+		PR_WARN("TB not support\n");
+		cfgs(TB, 0);
+	}
+
 }
 
 static void di_cfgt_show_item_one(struct seq_file *s, unsigned int index)
@@ -692,7 +707,7 @@ const struct di_mp_uit_s di_mp_ui_top[] = {
 			edi_mp_pre_enable_mask, 3},
 	[edi_mp_post_refresh]  = {"post_refresh:bool",
 			edi_mp_post_refresh, 0},
-	[edi_mp_nrds_en]  = {"nrds_en:bool",
+	[edi_mp_nrds_en]  = {"nrds_en:uint",
 			edi_mp_nrds_en, 0},
 	[edi_mp_bypass_3d]  = {"bypass_3d:int:def:1",
 			edi_mp_bypass_3d, 1},
@@ -883,6 +898,11 @@ const struct di_mp_uit_s di_mp_ui_top[] = {
 	 ********************/
 	[edi_mp_shr_cfg]  = {"shr_mode_w:uint:0:disable;0",
 				edi_mp_shr_cfg, 0x0},
+	[edi_mp_blend_mode]  = {"edi_mp_blend_mode:uint:0~7coef0,8~15coef1",
+				edi_mp_blend_mode, 0xf2504040},
+	//0~7coef0,8~15coef1,16~23coef2,24~27haa,28~31blendmode
+	[edi_mp_tb_dump]  = {"edi_mp_tb_dump:uint:1",
+				edi_mp_tb_dump, 0},//1400
 	[EDI_MP_SUB_DI_E]  = {"di end-------",
 				EDI_MP_SUB_DI_E, 0},
 	/**************************************/
@@ -2079,7 +2099,8 @@ static void dip_process_reg_after(struct di_ch_s *pch)
 				/*first channel reg*/
 				dpre_init();
 				dpost_init();
-				get_dim_de_devp()->nrds_enable = 0; //nrds cause pre-vpp link crash
+				//get_dim_de_devp()->nrds_enable = 0;
+				//nrds cause pre-vpp link crash
 				di_reg_setting(ch, vframe);
 				get_datal()->pre_vpp_set = false;
 			}
@@ -3589,6 +3610,30 @@ struct dim_nins_s *nins_peek_pre(struct di_ch_s *pch)
 	ins = (struct dim_nins_s *)q_buf.qbc;
 
 	return ins;
+}
+
+struct vframe_s *nins_peekvfm_ori(struct di_ch_s *pch)
+{
+	struct buf_que_s *pbufq;
+	union q_buf_u q_buf;
+	struct dim_nins_s *ins;
+	struct vframe_s *vfm;
+	bool ret;
+
+	if (!pch || !dip_itf_is_vfm(pch)) {
+		PR_ERR("%s:\n", __func__);
+		return NULL;
+	}
+
+	pbufq = &pch->nin_qb;
+	//qbuf_peek_s(pbufq, QBF_INS_Q_IN, q_buf);
+	ret = qbufp_peek(pbufq, QBF_NINS_Q_CHECK, &q_buf);
+	if (!ret || !q_buf.qbc)
+		return NULL;
+	ins = (struct dim_nins_s *)q_buf.qbc;
+	vfm = (struct vframe_s *)ins->c.ori;
+
+	return vfm;
 }
 
 struct vframe_s *nins_peekvfm(struct di_ch_s *pch)
@@ -6599,7 +6644,6 @@ unsigned int di_buf_mem_get_nub(struct di_ch_s *pch)
 	len = kfifo_len(&pch->fifo32[EDIM_QID_LMEM]);
 	return len;
 }
-
 bool dim_check_exit_process(void)
 {
 	unsigned int ch;
@@ -7058,6 +7102,31 @@ dim_mng_hf_err:
 }
 
 /*mng for hf buffer end */
+
+/* for secure mode hf,from vlsi feijun*/
+static noinline int __invoke_psci_fn_vpub_smc(u64 function_id, u64 arg0,
+						u64 arg1, u64 arg2)
+{
+	struct arm_smccc_res res;
+
+	arm_smccc_smc((unsigned long)function_id,
+		      (unsigned long)arg0,
+		      (unsigned long)arg1,
+		      (unsigned long)arg2,
+		      0, 0, 0, 0, &res);
+	return res.a0;
+}
+
+void di_probe_vpub_en_set(u32 enable)
+{
+	if (DIM_IS_IC(S5) && cfgg(HF)) {
+		if (enable)
+			__invoke_psci_fn_vpub_smc(0x82000080, 1, 0, 0);
+		else
+			__invoke_psci_fn_vpub_smc(0x82000080, 0, 0, 0);
+	}
+}
+
 /*************************************************/
 #ifdef TEST_PIP
 

@@ -417,9 +417,9 @@ static struct pd_param_s pd_params[] = {
 	  &(pd_param.flm22_comlev)  },
 	{ "flm22_comlev1",
 	  &(pd_param.flm22_comlev1) },
-	{ "flm22_com_num",
+	{ "flm22_comnum",
 	  &pd_param.flm22_comnum  },
-	{ "flm22_com_th",
+	{ "flm22_comth",
 	  &pd_param.flm22_comth  },
 	{ "flm22_dif01_avgth",
 	  &(pd_param.flm22_dif01_avgth)  },
@@ -449,6 +449,16 @@ static struct pd_param_s pd_params[] = {
 	  &pd_param.flm22_mcdi_min_th   },
 	{ "flm22_max_th",
 	  &pd_param.flm22_max_th   },
+	{ "flm22_glb_ratio",
+	  &pd_param.flm22_glb_ratio   },
+	{ "flm22_mcdi_dcnt_th",
+	  &pd_param.flm22_mcdi_dcnt_th   },
+	{ "flm22_diff02_add_th",
+	  &pd_param.flm22_diff02_add_th   },
+	{ "flm22_pd12chk_mode",
+	  &pd_param.flm22_pd12chk_mode   },
+	{ "flm22_diff01_ratio",
+	  &pd_param.flm22_diff01_ratio   },
 	{ "",		  NULL          }
 };
 

@@ -60,6 +60,7 @@
 #include "di_dbg.h"
 #include "di_vframe.h"
 #include "di_task.h"
+#include "tb_task.h"
 #include "di_prc.h"
 #include "di_sys.h"
 #include "di_api.h"
@@ -75,10 +76,12 @@ struct di_dev_s *get_dim_de_devp(void)
 	return di_pdev;
 }
 
+#ifdef MARK_TB
 unsigned int di_get_dts_nrds_en(void)
 {
 	return get_dim_de_devp()->nrds_enable;
 }
+#endif
 
 u8 *dim_vmap(ulong addr, u32 size, bool *bflg)
 {
@@ -323,8 +326,6 @@ unsigned int dim_cma_alloc_total(struct di_dev_s *de_devp)
 		return 0;
 	mmt->mem_start = omm.addr;
 	mmt->total_pages = omm.ppage;
-	if (cfgnq(MEM_FLAG, EDI_MEM_M_REV) && de_devp->nrds_enable)
-		dim_nr_ds_buf_init(cfgg(MEM_FLAG), 0, &de_devp->pdev->dev, 0);
 	return 1;
 }
 
@@ -3060,6 +3061,8 @@ bool qiat_all_back2_ready(struct di_ch_s *pch)
 	unsigned int len;
 	struct buf_que_s *pbufq;
 	int i;
+	bool ret;
+	bool err = false;
 	unsigned int index;
 	union q_buf_u q_buf;
 
@@ -3067,13 +3070,19 @@ bool qiat_all_back2_ready(struct di_ch_s *pch)
 
 	len = qbufp_count(pbufq, QBF_IAT_Q_IN_USED);
 	for (i = 0; i < len; i++) {
-		qbuf_out(pbufq, QBF_IAT_Q_IN_USED, &index);
+		ret = qbuf_out(pbufq, QBF_IAT_Q_IN_USED, &index);
+		if (!ret) {
+			PR_ERR("%s:%d\n", __func__, i);
+			err = true;
+			break;
+		}
 		q_buf = pbufq->pbuf[index];
 		qbuf_in(pbufq, QBF_IAT_Q_READY, index);
 	}
 	len = qbufp_count(pbufq, QBF_IAT_Q_READY);
 	dbg_reg("%s:len[%d]\n", __func__, len);
-
+	if (err)
+		return false;
 	return true;
 }
 
@@ -3724,7 +3733,8 @@ static const struct di_meson_data  data_s5 = {
 	.name = "dim_s5",
 	.ic_id	= DI_IC_ID_S5,
 	.support = IC_SUPPORT_HDR	|
-		   IC_SUPPORT_DW
+		   IC_SUPPORT_DW	|
+		   IC_SUPPORT_TB
 };
 
 /* #ifdef CONFIG_USE_OF */
@@ -3861,8 +3871,8 @@ static int dim_probe(struct platform_device *pdev)
 
 	/* move to dim_mem_prob dim_rev_mem(di_devp);*/
 
-	ret = of_property_read_u32(pdev->dev.of_node,
-				   "nrds-enable", &di_devp->nrds_enable);
+	//ret = of_property_read_u32(pdev->dev.of_node,
+				//"nrds-enable", &di_devp->nrds_enable);
 	ret = of_property_read_u32(pdev->dev.of_node,
 				   "pps-enable", &di_devp->pps_enable);
 
@@ -3879,10 +3889,11 @@ static int dim_probe(struct platform_device *pdev)
 
 	/* mutex_init(&di_devp->cma_mutex); */
 	INIT_LIST_HEAD(&di_devp->pq_table_list);
-
+#ifdef HIS_CODE
 	atomic_set(&di_devp->pq_flag, 1); /* idle */
 	atomic_set(&di_devp->pq_io, 1); /* idle */
-
+#endif
+	mutex_init(&di_devp->lock_pq);
 	di_devp->pre_irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
 	dbg_mem("pre_irq:%d\n", di_devp->pre_irq);
 	di_devp->post_irq = irq_of_parse_and_map(pdev->dev.of_node, 1);
@@ -3998,6 +4009,7 @@ static int dim_probe(struct platform_device *pdev)
 		     dimp_get(edi_mp_mcpre_en));
 
 	dim_set_di_flag();
+	di_probe_vpub_en_set(1);
 	dim_polic_prob();
 	dct_pre_prob(pdev);
 	dcntr_prob();
@@ -4005,9 +4017,11 @@ static int dim_probe(struct platform_device *pdev)
 	dip_prob_ch();
 	dim_hdr_prob();
 	dim_mng_hf_prob();
+	dim_tb_prob();
 
 	task_start();
 	mtask_start();
+	tb_task_start();
 	if (DIM_IS_IC_EF(SC2))
 		opl1()->pst_mif_sw(false, DI_MIF0_SEL_PST_ALL);
 	else
@@ -4070,6 +4084,7 @@ static int dim_remove(struct platform_device *pdev)
 
 	task_stop();
 	mtask_stop();
+	tb_task_stop();
 
 	dim_rdma_exit();
 

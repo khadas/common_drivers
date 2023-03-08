@@ -1,4 +1,4 @@
-From 96473319f0209013395fa4823dc033112ca3a369 Mon Sep 17 00:00:00 2001
+From b61f9f4d5aac18c37715aa99c0664d3f8afdf032 Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Wed, 8 Mar 2023 14:13:32 +0800
 Subject: [PATCH] module: disable module sign [1/1]
@@ -17,18 +17,17 @@ sc2
 Change-Id: I1d6277d436cb374a5ff7cf946c9e87ceead8dc81
 Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
 ---
- arch/arm64/configs/gki_defconfig | 2 --
- 1 file changed, 2 deletions(-)
+ arch/arm64/configs/gki_defconfig | 1 -
+ 1 file changed, 1 deletion(-)
 
 diff --git a/arch/arm64/configs/gki_defconfig b/arch/arm64/configs/gki_defconfig
-index c2fff4bc35b2..28303c19ca06 100644
+index c2fff4bc35b2..f34ae3688323 100644
 --- a/arch/arm64/configs/gki_defconfig
 +++ b/arch/arm64/configs/gki_defconfig
-@@ -98,8 +98,6 @@ CONFIG_MODULES=y
- CONFIG_MODULE_UNLOAD=y
+@@ -99,7 +99,6 @@ CONFIG_MODULE_UNLOAD=y
  CONFIG_MODVERSIONS=y
  CONFIG_MODULE_SCMVERSION=y
--CONFIG_MODULE_SIG=y
+ CONFIG_MODULE_SIG=y
 -CONFIG_MODULE_SIG_PROTECT=y
  CONFIG_BLK_DEV_ZONED=y
  CONFIG_BLK_CGROUP_IOCOST=y

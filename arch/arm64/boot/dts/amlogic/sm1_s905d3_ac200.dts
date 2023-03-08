@@ -362,7 +362,7 @@
 		compatible = "amlogic, vm";
 		memory-region = <&vm0_cma_reserved>;
 		dev_name = "vm0";
-		status = "disabled";
+		status = "okay";
 		vm_id = <0>;
 	};
 
@@ -370,7 +370,7 @@
 		/*bt656 gpio conflict with i2c0*/
 		compatible = "amlogic, amvdec_656in";
 		dev_name = "amvdec_656in";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xffe02000 0x0 0x7c>;
 		//clocks = <&clkc CLKID_BT656_COMP>,
 		//      <&clkc CLKID_BT656>;
@@ -379,17 +379,17 @@
 		/* bt656in1, bt656in2 */
 		bt656in1 {
 		bt656_id = <1>;
-		status = "disabled";
+		status = "okay";
 		};
 	};
 
 	aml_cams {
 		compatible = "amlogic, cams_prober";
-		status = "disabled";
+		status = "okay";
 		pinctrl-names="default";
-		pinctrl-0=<&gen_clk_ee_z>;
-		//clocks = <&clkc CLKID_GEN_CLK>;
-		//clock-names = "g12a_24m";
+		pinctrl-0=<&clk12_24_z_pins>;
+		clocks = <&clkc CLKID_24M_CLK_GATE>;
+		clock-names = "g12a_24m";
 		cam_0{
 			cam_name = "ov5640";
 			front_back = <0>;
@@ -1263,10 +1263,16 @@
 };
 
 &i2c2 {
-	status = "disabled";
+	status = "okay";
 	pinctrl-names="default";
 	pinctrl-0=<&i2c2_master_pins3>;
 	clock-frequency = <100000>;
+	ov5640@3c {
+		compatible = "ov5640";
+		reg = <0x3c>;
+		//reg = <0x6c>;
+		status = "okay";
+	};
 };
 
 &i2c3 {

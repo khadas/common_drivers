@@ -1814,6 +1814,7 @@ int __init aml_cams_prober_init(void)
 	#ifdef CONFIG_AMLOGIC_VIDEO_CAPTURE_OV5640
 	ov5640_i2c_driver_init();
 	#endif
+
 	return 0;
 }
 

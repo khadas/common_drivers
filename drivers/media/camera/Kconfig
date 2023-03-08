@@ -173,7 +173,6 @@ config AMLOGIC_VIDEO_CAPTURE_GC2155
 
 config AMLOGIC_VIDEO_CAPTURE_GC2145
 	tristate "Amlogic Platform Capture Driver for GC2145"
-	depends on AMLOGIC_VIDEO_CAPTURE
 	select VIDEOBUF_VMALLOC
 	select AMLOGIC_VIDEOIN_MANAGER
 	select TVIN
@@ -198,7 +197,6 @@ config AMLOGIC_VIDEO_CAPTURE_GC2145_MIPI
 
 config AMLOGIC_VIDEO_CAPTURE_OV5640
 	tristate "Amlogic Platform Capture Driver for OV5640"
-	depends on AMLOGIC_VIDEO_CAPTURE
 	select VIDEOBUF_VMALLOC
 	select AMLOGIC_VIDEOIN_MANAGER
 	select TVIN

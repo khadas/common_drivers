@@ -3254,7 +3254,7 @@ static const struct v4l2_subdev_ops ov5640_ops = {
 static int ov5640_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
 {
-	struct aml_cam_info_s *plat_dat;
+//	struct aml_cam_info_s *plat_dat;
 	int err;
 	int ret;
 	struct ov5640_device *t;
@@ -3296,7 +3296,7 @@ static int ov5640_probe(struct i2c_client *client,
 #ifdef CONFIG_HAS_WAKELOCK
 	wake_lock_init(&t->wake_lock, WAKE_LOCK_SUSPEND, "ov5640");
 #endif
-
+/*
 	plat_dat = (struct aml_cam_info_s *)client->dev.platform_data;
 	if (plat_dat) {
 		memcpy(&t->cam_info, plat_dat, sizeof(struct aml_cam_info_s));
@@ -3309,10 +3309,13 @@ static int ov5640_probe(struct i2c_client *client,
 		kfree(t);
 		return -1;
 	}
-
+*/
 	t->cam_info.version = OV5640_DRIVER_VERSION;
 	if (aml_cam_info_reg(&t->cam_info) < 0)
 		pr_err("reg caminfo error\n");
+
+	t->vdev->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING
+				| V4L2_CAP_READWRITE;
 
 	pr_info("t->vdev = %p, video_nr = %d\n", t->vdev, video_nr);
 	err = video_register_device(t->vdev, VFL_TYPE_VIDEO, video_nr);

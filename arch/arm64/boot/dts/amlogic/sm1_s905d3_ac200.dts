@@ -1520,7 +1520,7 @@
 		 *	LOOPBACK, 7
 		 */
 		resample_module = <4>;
-		status = "okay";
+		status = "disabled";
 	};
 
 	vad:vad {

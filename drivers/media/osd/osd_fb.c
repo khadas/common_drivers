@@ -34,6 +34,7 @@
 #include <linux/fs.h>
 #include <linux/cma.h>
 #include <linux/dma-map-ops.h>
+#include <linux/dma-buf.h>
 #include <linux/clk.h>
 /* media module used media/registers/cpu_version.h since kernel 5.4 */
 #include <linux/amlogic/media/registers/cpu_version.h>
@@ -1219,9 +1220,43 @@ void *aml_map_phyaddr_to_virt(dma_addr_t phys, unsigned long size)
 	return vaddr;
 }
 
+static void *map_virt_from_phys(phys_addr_t phys, unsigned long total_size)
+{
+	u32 offset, npages;
+	struct page **pages = NULL;
+	pgprot_t pgprot;
+	void *vaddr;
+	int i;
+
+	npages = PAGE_ALIGN(total_size) / PAGE_SIZE;
+	offset = phys & (~PAGE_MASK);
+	if (offset)
+		npages++;
+	pages = vmalloc(sizeof(struct page *) * npages);
+	if (!pages)
+		return NULL;
+	for (i = 0; i < npages; i++) {
+		pages[i] = phys_to_page(phys);
+		phys += PAGE_SIZE;
+	}
+	/*cache*/
+	pgprot = pgprot_writecombine(PAGE_KERNEL);
+
+	vaddr = vmap(pages, npages, VM_MAP, pgprot);
+	if (!vaddr) {
+		pr_err("vmaped fail, size: %d\n",
+		       npages << PAGE_SHIFT);
+		vfree(pages);
+		return NULL;
+	}
+	vfree(pages);
+	return vaddr;
+}
+
 static int malloc_osd_memory(struct fb_info *info)
 {
 	int j = 0;
+	int ret = 0;
 	u32 fb_index;
 	int logo_index = -1;
 	struct osd_fb_dev_s *fbdev;
@@ -1231,6 +1266,11 @@ static int malloc_osd_memory(struct fb_info *info)
 	phys_addr_t base = 0;
 	unsigned long size = 0;
 	unsigned long fb_memsize_total  = 0;
+
+#ifdef CONFIG_AMLOGIC_ION
+	struct dma_buf *dmabuf = NULL;
+	size_t len;
+#endif
 
 #ifdef CONFIG_CMA
 	struct cma *cma = NULL;
@@ -1337,6 +1377,7 @@ static int malloc_osd_memory(struct fb_info *info)
 				if (!fb_rmem_vaddr[fb_index])
 					osd_log_err("fb[%d] vaddr error",
 						    fb_index);
+
 				if (osd_meson_dev.afbc_type &&
 				   osd_get_afbc(fb_index)) {
 					fb_rmem_afbc_size[fb_index][0] =
@@ -1362,6 +1403,121 @@ static int malloc_osd_memory(struct fb_info *info)
 			osd_log_dbg(MODULE_BASE, "fb_index=%d dma_alloc=%zu\n",
 				    fb_index, fb_rmem_size[fb_index]);
 		}
+	} else {
+#ifdef CONFIG_AMLOGIC_ION
+		pr_info("use ion buffer for fb memory, fb_index=%d\n",
+			fb_index);
+		if (osd_meson_dev.afbc_type && osd_get_afbc(fb_index)) {
+			pr_info("OSD%d as afbcd mode,afbc_type=%d\n",
+				fb_index, osd_meson_dev.afbc_type);
+			for (j = 0; j < OSD_MAX_BUF_NUM; j++) {
+				len = PAGE_ALIGN(fb_memsize[fb_index + 1] /
+						 OSD_MAX_BUF_NUM);
+				if (meson_ion_cma_heap_id_get())
+					dmabuf = ion_alloc(len,
+					  (1 << meson_ion_cma_heap_id_get()),
+					  ION_FLAG_EXTEND_MESON_HEAP);
+				if (IS_ERR_OR_NULL(dmabuf) &&
+					meson_ion_fb_heap_id_get()) {
+					dmabuf = ion_alloc(len,
+					(1 << meson_ion_fb_heap_id_get()),
+					ION_FLAG_EXTEND_MESON_HEAP);
+				}
+				if (IS_ERR(dmabuf)) {
+					osd_log_err("%s: size=%x, FAILED\n",
+						    __func__,
+						    fb_memsize[fb_index + 1]);
+					return -ENOMEM;
+				}
+
+				ion_fd[fb_index][j] = dma_buf_fd(dmabuf, O_CLOEXEC);
+				if (ion_fd[fb_index][j] < 0) {
+					osd_log_err("%s: size=%x, FAILED.\n",
+						    __func__,
+						    fb_memsize[fb_index + 1]);
+					return -ENOMEM;
+				}
+				ret = meson_ion_share_fd_to_phys
+					(ion_fd[fb_index][j],
+					(phys_addr_t *)
+					&fb_rmem_afbc_paddr[fb_index][j],
+					(size_t *)
+					&fb_rmem_afbc_size[fb_index][j]);
+				/* ion map*/
+				fb_rmem_afbc_vaddr[fb_index][j] =
+					map_virt_from_phys
+					(fb_rmem_afbc_paddr[fb_index][j],
+					 fb_rmem_afbc_size[fb_index][j]);
+				dev_alert(&pdev->dev,
+					  "ion memory(%d): created fb at 0x%px, size %lu MiB\n",
+					  fb_index,
+					  (void *)fb_rmem_afbc_paddr
+					  [fb_index][j],
+					  (unsigned long)fb_rmem_afbc_size
+					  [fb_index][j] / SZ_1M);
+				fbdev->fb_afbc_len[j] =
+					fb_rmem_afbc_size[fb_index][j];
+				fbdev->fb_mem_afbc_paddr[j] =
+					fb_rmem_afbc_paddr[fb_index][j];
+				fbdev->fb_mem_afbc_vaddr[j] =
+					fb_rmem_afbc_vaddr[fb_index][j];
+				if (!fbdev->fb_mem_afbc_vaddr[j]) {
+					osd_log_err("failed to ioremap afbc frame buffer\n");
+					return -1;
+				}
+				osd_log_info(" %d, phy: 0x%px, vir:0x%px, size=%ldK\n\n",
+					     fb_index,
+					     (void *)
+					     fbdev->fb_mem_afbc_paddr[j],
+					     fbdev->fb_mem_afbc_vaddr[j],
+					     fbdev->fb_afbc_len[j] >> 10);
+			}
+			fb_rmem_paddr[fb_index] =
+				fb_rmem_afbc_paddr[fb_index][0];
+			fb_rmem_vaddr[fb_index] =
+				fb_rmem_afbc_vaddr[fb_index][0];
+			fb_rmem_size[fb_index] =
+				fb_rmem_afbc_size[fb_index][0];
+		} else {
+			if (meson_ion_cma_heap_id_get())
+				dmabuf = ion_alloc(fb_memsize[fb_index + 1],
+					(1 << meson_ion_cma_heap_id_get()),
+					ION_FLAG_EXTEND_MESON_HEAP);
+			if (IS_ERR_OR_NULL(dmabuf) &&
+				meson_ion_fb_heap_id_get()) {
+				dmabuf = ion_alloc(fb_memsize[fb_index + 1],
+					(1 << meson_ion_fb_heap_id_get()),
+					ION_FLAG_EXTEND_MESON_HEAP);
+			}
+			if (IS_ERR(dmabuf)) {
+				osd_log_err("%s: size=%x, FAILED\n",
+						__func__,
+						fb_memsize[fb_index + 1]);
+				return -ENOMEM;
+			}
+			ion_fd[fb_index][0] = dma_buf_fd(dmabuf
+					  , O_CLOEXEC);
+			if (ion_fd[fb_index][0] < 0) {
+				osd_log_err("%s: size=%x, FAILED.\n",
+					    __func__, fb_memsize[fb_index + 1]);
+				return -ENOMEM;
+			}
+			ret = meson_ion_share_fd_to_phys
+				(ion_fd[fb_index][0],
+				 &fb_rmem_paddr[fb_index],
+				 (size_t *)&fb_rmem_size[fb_index]);
+			/* ion map*/
+			fb_rmem_vaddr[fb_index] =
+				map_virt_from_phys(fb_rmem_paddr[fb_index],
+						   fb_rmem_size[fb_index]);
+			dev_notice(&pdev->dev,
+				   "ion memory(%d): created fb at 0x%lx, size %ld MiB\n",
+				   fb_index,
+				   (unsigned long)fb_rmem_paddr[fb_index],
+				   (unsigned long)
+				   fb_rmem_size[fb_index] / SZ_1M);
+		}
+#endif
 	}
 	fbdev->fb_len = fb_rmem_size[fb_index];
 	fbdev->fb_mem_paddr = fb_rmem_paddr[fb_index];

@@ -24,6 +24,9 @@
 static unsigned int dewarp_com_dump;
 MODULE_PARM_DESC(dewarp_com_dump, "\n dewarp_com_dump\n");
 module_param(dewarp_com_dump, uint, 0664);
+static unsigned int dewarp_print;
+MODULE_PARM_DESC(dewarp_print, "\n dewarp_print\n");
+module_param(dewarp_print, uint, 0664);
 
 static struct firmware_rotate_s last_fw_param;
 
@@ -54,11 +57,11 @@ static int get_dewarp_rotation_value(int vc_transform)
 	int rotate_value = 0;
 
 	if (vc_transform == 4)
-		rotate_value = 90;
+		rotate_value = 270;
 	else if (vc_transform == 3)
 		rotate_value = 180;
 	else if (vc_transform == 7)
-		rotate_value = 270;
+		rotate_value = 90;
 	else
 		rotate_value = 0;
 
@@ -142,7 +145,7 @@ int load_dewarp_firmware(struct dewarp_composer_para *param)
 		is_need_load = true;
 	}
 
-	if (dewarp_com_dump) {
+	if (dewarp_print) {
 		pr_info("vc:[%d] need load firmware: %d.\n", param->vc_index, is_need_load);
 		pr_info("vc:[%d] src_vf, w:%d, h:%d, fromat:%d, rotation:%d.\n",
 			param->vc_index,
@@ -235,7 +238,7 @@ bool is_dewarp_supported(int vc_index, struct composer_vf_para *vf_param)
 			__func__);
 		return false;
 	}
-	if (dewarp_com_dump) {
+	if (dewarp_print) {
 		pr_info("vc:[%d] %s: src:w:%d h:%d format:%d, dst:w:%d h:%d, angle:%d.\n",
 			vc_index,
 			__func__,
@@ -389,7 +392,7 @@ int config_dewarp_vframe(int vc_index, int rotation, struct vframe_s *src_vf,
 	vframe_para->dst_buf_stride = dst_buf->buf_w;
 	vframe_para->src_vf_angle = rotation;
 
-	if (dewarp_com_dump) {
+	if (dewarp_print) {
 		pr_info("vc:[%d] src_vf, addr0:0x%x, addr1:0x%x, w:%d, h:%d, fmt:%d, angle:%d.\n",
 			vc_index,
 			vframe_para->src_buf_addr0,

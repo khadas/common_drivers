@@ -1146,7 +1146,7 @@ static void tvafe_cutwindow_update(struct tvafe_info_s *tvafe,
 				prop->he = hs_adj_val;
 			} else {
 				prop->hs = hs_adj_val;
-				prop->he = 0;
+				prop->he = hs_adj_val;
 			}
 		} else {
 			prop->hs = 0;

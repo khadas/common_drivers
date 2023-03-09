@@ -522,6 +522,7 @@ static void tvafe_cvd2_write_mode_reg(struct tvafe_cvd2_s *cvd2,
 	cvd_reg87_pal = R_APB_REG(CVD2_REG_87);
 	acd_vde_config = R_APB_REG(ACD_REG_2E);
 	acd_166 = R_APB_REG(ACD_REG_66);
+	cvd2->cvd_chroma_saturation = R_APB_REG(CVD2_CHROMA_SATURATION_ADJUSTMENT);
 
 	/* enable CVD2 */
 	W_APB_BIT(CVD2_RESET_REGISTER, 0, SOFT_RST_BIT, SOFT_RST_WID);
@@ -2532,6 +2533,8 @@ inline void tvafe_cvd2_adj_hs(struct tvafe_cvd2_s *cvd2,
 					temp = (acd_2d_adjust - 0x88) *
 						(cvd2->info.hs_adj_level + 1);
 					delta = temp / 4;
+					if (cvd2->info.hs_adj_level >= 3)
+						temp = temp * 2;
 				}
 				temp = delta << 16;
 				temp = temp | delta;
@@ -2572,6 +2575,8 @@ inline void tvafe_cvd2_adj_hs(struct tvafe_cvd2_s *cvd2,
 				}
 				/*0x12d, 0x94 is test result, 0x88 is default*/
 				temp = (acd_2d_adjust - 0x88) * (cvd2->info.hs_adj_level + 1);
+				if (cvd2->info.hs_adj_level >= 3)
+					temp = temp * 2;
 				delta = temp / 4;
 				temp = delta << 16;
 				temp = temp | delta;
@@ -2587,6 +2592,18 @@ inline void tvafe_cvd2_adj_hs(struct tvafe_cvd2_s *cvd2,
 					((1 << CVD2_AUTO_HS_ADJ_EN) |
 					(0 << CVD2_AUTO_HS_ADJ_DIR) |
 					(temp));
+
+				if (cvd2->config_fmt == TVIN_SIG_FMT_CVBS_PAL_I) {
+					if (cvd2->info.hs_adj_level == 4)
+						// Red stripes appear on black and white squares
+						// Reduce the color saturation to
+						// reduce the effect of red stripes
+						W_APB_BIT(CVD2_CHROMA_SATURATION_ADJUSTMENT,
+							  cvd2->cvd_chroma_saturation - 0x26, 0, 8);
+					else
+						W_APB_BIT(CVD2_CHROMA_SATURATION_ADJUSTMENT,
+							  cvd2->cvd_chroma_saturation, 0, 8);
+				}
 
 				if (tvafe_dbg_print & TVAFE_DBG_AUTO_HS) {
 					tvafe_pr_info("%s:hs_adj_dir:%d,lev:%x,h_dy:%x,0x12d:%x,0x128:%x,0x166:%x\n",
@@ -2649,6 +2666,9 @@ inline void tvafe_cvd2_adj_hs(struct tvafe_cvd2_s *cvd2,
 		W_APB_BIT(CVD2_ACTIVE_VIDEO_HSTART, cvd_2e,
 					HACTIVE_START_BIT, HACTIVE_START_WID);
 		W_APB_BIT(ACD_REG_28, acd_128, 16, 5);
+		if (cvd2->config_fmt == TVIN_SIG_FMT_CVBS_PAL_I)
+			W_APB_BIT(CVD2_CHROMA_SATURATION_ADJUSTMENT,
+				  cvd2->cvd_chroma_saturation, 0, 8);
 		cvd2->info.hs_adj_en = 0;
 		cvd2->info.hs_adj_level = 0;
 		acd_h = acd_h_back;

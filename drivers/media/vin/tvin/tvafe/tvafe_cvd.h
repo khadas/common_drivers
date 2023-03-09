@@ -176,6 +176,7 @@ struct tvafe_cvd2_s {
 	const unsigned int *acd_table;
 	struct tvafe_reg_table_s *pq_conf;
 	unsigned int fmt_loop_cnt;
+	unsigned int cvd_chroma_saturation;
 	unsigned char hw_data_cur;
 	enum tvin_port_e vd_port;
 	enum tvin_sig_fmt_e config_fmt;

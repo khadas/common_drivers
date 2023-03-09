@@ -897,6 +897,9 @@ static ssize_t reg_store(struct device *dev,
 				else
 					break;
 				W_APB_REG(addr << 2, value);
+				if (addr << 2 == CVD2_CHROMA_SATURATION_ADJUSTMENT &&
+				    devp->tvafe.cvd2.config_fmt == TVIN_SIG_FMT_CVBS_PAL_I)
+					devp->tvafe.cvd2.cvd_chroma_saturation = value;
 				tvafe_pr_info("Write APB[0x%04x]=0x%08x\n",
 					addr, R_APB_REG(addr << 2));
 			}

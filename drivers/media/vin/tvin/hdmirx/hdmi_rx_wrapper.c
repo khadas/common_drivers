@@ -2450,6 +2450,8 @@ void rx_get_global_variable(const char *buf)
 	pr_var(enhance_eq, i++);
 	pr_var(eq_en, i++);
 	pr_var(eq_level, i++);
+	pr_var(cdr_retry_en, i++);
+	pr_var(cdr_retry_max, i++);
 	/* phy var definition */
 	pr_var(rx.aml_phy.sqrst_en, i++);
 	pr_var(rx.aml_phy.vga_dbg, i++);
@@ -2788,6 +2790,15 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(eq_level),
 	    &eq_level, value))
 		return pr_var(eq_level, index);
+	if (set_pr_var(tmpbuf, var_to_str(cdr_retry_en),
+	    &cdr_retry_en, value))
+		return pr_var(cdr_retry_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(cdr_retry_max),
+	    &cdr_retry_max, value))
+		return pr_var(cdr_retry_max, index);
+	if (set_pr_var(tmpbuf, var_to_str(cdr_fr_en_auto),
+	    &cdr_fr_en_auto, value))
+		return pr_var(cdr_fr_en_auto, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.var.force_pattern), &rx.var.force_pattern, value))
 		return pr_var(rx.var.force_pattern, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.sqrst_en), &rx.aml_phy.sqrst_en, value))

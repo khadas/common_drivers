@@ -79,6 +79,10 @@ extern int eye_height;
 extern int enhance_eq;
 extern int eq_en;
 extern int eq_level;
+extern int cdr_retry_en;
+extern int cdr_retry_max;
+extern int cdr_fr_en_auto;
+
 /*--------------------------function declare------------------*/
 /* T5m */
 void aml_phy_init_t5m(void);

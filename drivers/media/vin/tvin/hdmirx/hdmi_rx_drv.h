@@ -45,8 +45,8 @@
 #define EDID_DATA_LOG	0x20000
 #define RP_LOG		0x40000
 
-/* select old eye height */
-#define RX_VER1 "ver.2023/3/8"
+/* do cdr retry when cdr unlock */
+#define RX_VER1 "ver.2023/3/9"
 
 /*
  * Currently, a total of 5 VSIF packages are supported,

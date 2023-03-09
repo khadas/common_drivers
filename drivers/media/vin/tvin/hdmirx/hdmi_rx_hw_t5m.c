@@ -52,6 +52,9 @@ int enhance_dfe_en_new;
 int eye_height = 5;
 int enhance_eq;
 int eq_level;
+int cdr_retry_en = 1;
+int cdr_retry_max = 3;
+int cdr_fr_en_auto;
 /* for T5m */
 static const u32 phy_misc_t5m[][2] = {
 		/*  0x18	0x1c	*/
@@ -886,6 +889,25 @@ void dump_cdr_info(void)
 	comb_val_t5m(get_val_t5m, "cdr_int", cdr0_int, cdr1_int, cdr2_int, 7);
 }
 
+void cdr_retry(void)
+{
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(6), 0);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_EQ_RSTB, 0x0);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_DFE_RSTB, 0x0);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_CDR_RSTB, 0x0);
+	usleep_range(10, 20);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_CDR_RSTB, 0x1);
+	usleep_range(100, 200);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_EQ_RSTB, 0x1);
+	usleep_range(100, 200);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_DFE_RSTB, 0x1);
+	usleep_range(500, 600);
+	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(6), 1);
+	usleep_range(100, 200);
+	if (log_level & PHY_LOG)
+		dump_cdr_info();
+}
+
 void dfe_tap0_pol_polling(u32 pos_min_eh, u32 pos_avg_eh, u32 wst_ch)
 {
 	u32 int_eye_height_sum = 0;
@@ -940,23 +962,6 @@ void dfe_tap0_pol_polling(u32 pos_min_eh, u32 pos_avg_eh, u32 wst_ch)
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, MSK(2, 20), 0x2);
 	usleep_range(100, 200);
 	rx_pr("select pos eq\n");
-	if (rx_phy_level & 0x4) {
-		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(6), 0);
-		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_EQ_RSTB, 0x0);
-		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_DFE_RSTB, 0x0);
-		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_CDR_RSTB, 0x0);
-		usleep_range(10, 20);
-		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_CDR_RSTB, 0x1);
-		usleep_range(100, 200);
-		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_EQ_RSTB, 0x1);
-		usleep_range(100, 200);
-		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_DFE_RSTB, 0x1);
-		usleep_range(100, 200);
-		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(6), 1);
-		usleep_range(500, 600);
-		if (log_level & PHY_LOG)
-			dump_cdr_info();
-	}
 }
 
 //dfe tap polarity was set positive in initial setting matrix
@@ -990,8 +995,6 @@ void aml_enhance_dfe_old(void)
 	u32 pos_eye_height[20];
 	u32 pos_avg_eye_height;
 
-	if (log_level & PHY_LOG)
-		dump_cdr_info();
 	wst_ch = aml_eq_eye_monitor_t5m();
 	for (i = 0; i < 20; i++)
 		pos_eye_height[i] = eq_eye_height(wst_ch);
@@ -1099,6 +1102,9 @@ void aml_enhance_eq_t5m(void)
 void aml_eq_cfg_t5m(void)
 {
 	u32 idx = rx.phy.phy_bw;
+	u32 cdr0_int, cdr1_int, cdr2_int;
+	u32 data32;
+	int i = 0;
 	/* dont need to run eq if no sqo_clk or pll not lock */
 	if (!aml_phy_pll_lock() || !is_clk_stable())
 		return;
@@ -1182,6 +1188,34 @@ void aml_eq_cfg_t5m(void)
 	usleep_range(200, 210);
 	/*tmds valid det*/
 	hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_CDR_LKDET_EN, 1);
+	if (log_level & PHY_LOG)
+		dump_cdr_info();
+	for (i = 0; i < cdr_retry_max && cdr_retry_en; i++) {
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_EHM_DBG_SEL, 0x0);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, T5M_STATUS_MUX_SEL, 0x22);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_MUX_CDR_DBG_SEL, 0x0);
+		hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, T5M_MUX_CDR_DBG_SEL, 0x1);
+		usleep_range(10, 20);
+		data32 = hdmirx_rd_amlphy(T5M_HDMIRX20PHY_DCHD_STAT);
+		cdr0_int = data32 & 0x7f;
+		cdr1_int = (data32 >> 8) & 0x7f;
+		cdr2_int = (data32 >> 16) & 0x7f;
+		if (cdr0_int || cdr1_int || cdr2_int)
+			cdr_retry();
+		else
+			break;
+	}
+	if (log_level & PHY_LOG)
+		rx_pr("cdr retry times:%d!!!\n", i);
+	if (i == cdr_retry_max && cdr_fr_en_auto) {
+		if ((cdr0_int == 0 && cdr1_int == 0) ||
+			(cdr0_int == 0 && cdr2_int == 0) ||
+			(cdr1_int == 0 && cdr2_int == 0)) {
+			hdmirx_wr_bits_amlphy(T5M_HDMIRX20PHY_DCHD_CDR, _BIT(6), 0);
+			if (log_level & PHY_LOG)
+				rx_pr("cdr_fr_en force 0!!!\n");
+		}
+	}
 	if (rx.phy.phy_bw >= PHY_BW_5 && enhance_dfe_en_old)
 		aml_enhance_dfe_old();
 	if (rx.phy.phy_bw >= PHY_BW_5 && enhance_dfe_en_new)
@@ -1250,6 +1284,7 @@ void aml_phy_cfg_t5m(void)
 		hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, data32);
 		usleep_range(5, 10);
 		data32 = phy_misc_t5m[idx][0];
+		aml_phy_get_trim_val_t5m();
 		if (phy_debug_en && misc1_value)
 			data32 = misc1_value;
 		if (rterm_trim_flag_t5m) {

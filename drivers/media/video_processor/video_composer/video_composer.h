@@ -148,7 +148,8 @@ enum com_buffer_status {
 };
 
 enum com_dev_choice {
-	COMPOSER_WITH_GE2D = 1,
+	COMPOSER_WITH_UNINITIAL = 0,
+	COMPOSER_WITH_GE2D,
 	COMPOSER_WITH_DEWARP,
 	COMPOSER_WITH_VICP,
 	COMPOSER_WITH_MAX,
@@ -275,6 +276,7 @@ struct composer_dev {
 	u32 patten_factor_index;
 	u32 next_factor;
 	u32 last_drop_cnt;
+	u64 output_duration;
 };
 
 struct capability_info_t {

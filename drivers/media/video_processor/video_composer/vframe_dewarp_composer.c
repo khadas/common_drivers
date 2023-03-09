@@ -18,6 +18,7 @@
 #include "vc_util.h"
 #include "vframe_dewarp_composer.h"
 #include <api/gdc_api.h>
+#include "video_composer.h"
 
 #define GDC_FIRMWARE_PATH    "/vendor/lib/firmware/gdc/"
 
@@ -352,45 +353,79 @@ int uninit_dewarp_composer(struct dewarp_composer_para *param)
 	return 0;
 }
 
-int config_dewarp_vframe(int vc_index, int rotation, struct vframe_s *src_vf,
-	struct dst_buf_t *dst_buf, struct composer_vf_para *vframe_para)
+int config_dewarp_vframe(int vc_index, struct vframe_s *src_vf, int transform,
+		struct dst_buf_t *dst_buf, struct composer_vf_para *vframe_para,
+		unsigned long addr, u32 buf_w, u32 buf_h, u32 data_w, int buf_format)
 {
 	struct vframe_s *vf = NULL;
 
-	if (IS_ERR_OR_NULL(src_vf) ||
-		IS_ERR_OR_NULL(dst_buf) ||
+	if (IS_ERR_OR_NULL(dst_buf) ||
 		IS_ERR_OR_NULL(vframe_para)) {
 		pr_info("vc:[%d] %s: NULL param, please check.\n", vc_index, __func__);
 		return -1;
 	}
 
-	if (src_vf->canvas0_config[0].phy_addr == 0) {
-		if ((src_vf->flag &  VFRAME_FLAG_DOUBLE_FRAM) &&
-			src_vf->vf_ext) {
-			vf = src_vf->vf_ext;
+	if (src_vf) {
+		if (src_vf->canvas0_config[0].phy_addr == 0) {
+			if ((src_vf->flag &  VFRAME_FLAG_DOUBLE_FRAM) &&
+				src_vf->vf_ext) {
+				vf = src_vf->vf_ext;
+			} else {
+				pr_info("vc:[%d] %s: vf no yuv data.\n", vc_index, __func__);
+				return -1;
+			}
 		} else {
-			pr_info("vc:[%d] %s: vf no yuv data.\n", vc_index, __func__);
-			return -1;
+			vf = src_vf;
 		}
+
+		vframe_para->src_vf_width = vf->width;
+		vframe_para->src_vf_height = vf->height;
+		vframe_para->src_vf_format = get_dewarp_format(vc_index, vf);
+		vframe_para->src_vf_plane_count = 2;
+		vframe_para->src_buf_addr0 = vf->canvas0_config[0].phy_addr;
+		vframe_para->src_buf_stride0 = vf->canvas0_config[0].width;
+		vframe_para->src_buf_addr1 = vf->canvas0_config[1].phy_addr;
+		vframe_para->src_buf_stride1 = vf->canvas0_config[1].width;
+		vframe_para->src_vf_angle = transform;
+
+		vframe_para->dst_vf_width = dst_buf->buf_w;
+		vframe_para->dst_vf_height = dst_buf->buf_h;
+		vframe_para->dst_vf_plane_count = 2;
+		vframe_para->dst_buf_addr = dst_buf->phy_addr;
+		vframe_para->dst_buf_stride = dst_buf->buf_w;
 	} else {
-		vf = src_vf;
+		if (buf_format == YUV444)
+			vframe_para->src_vf_format = YUV444_P;
+		else
+			vframe_para->src_vf_format = NV12;
+
+		if (buf_w > data_w) {
+			if (buf_format == YUV444)
+				vframe_para->src_buf_stride0 = buf_w * 3;
+			else
+				vframe_para->src_buf_stride0 = buf_w;
+		} else {
+			if (buf_format == YUV444)
+				vframe_para->src_buf_stride0 = data_w * 3;
+			else
+				vframe_para->src_buf_stride0 = data_w;
+		}
+
+		vframe_para->src_vf_width = buf_w;
+		vframe_para->src_vf_height = buf_h;
+		vframe_para->src_vf_plane_count = 2;
+		vframe_para->src_buf_addr0 = addr;
+		vframe_para->src_buf_addr1 = addr
+			+ vframe_para->src_buf_stride0 * buf_h;
+		vframe_para->src_buf_stride1 = vframe_para->src_buf_stride0;
+		vframe_para->src_vf_angle = transform;
+
+		vframe_para->dst_vf_width = dst_buf->buf_w;
+		vframe_para->dst_vf_height = dst_buf->buf_h;
+		vframe_para->dst_vf_plane_count = 2;
+		vframe_para->dst_buf_addr = dst_buf->phy_addr;
+		vframe_para->dst_buf_stride = dst_buf->buf_w;
 	}
-
-	vframe_para->src_vf_width = vf->width;
-	vframe_para->src_vf_height = vf->height;
-	vframe_para->src_vf_format = get_dewarp_format(vc_index, vf);
-	vframe_para->src_vf_plane_count = 2;
-	vframe_para->src_buf_addr0 = vf->canvas0_config[0].phy_addr;
-	vframe_para->src_buf_stride0 = vf->canvas0_config[0].width;
-	vframe_para->src_buf_addr1 = vf->canvas0_config[1].phy_addr;
-	vframe_para->src_buf_stride1 = vf->canvas0_config[1].width;
-
-	vframe_para->dst_vf_width = dst_buf->buf_w;
-	vframe_para->dst_vf_height = dst_buf->buf_h;
-	vframe_para->dst_vf_plane_count = 2;
-	vframe_para->dst_buf_addr = dst_buf->phy_addr;
-	vframe_para->dst_buf_stride = dst_buf->buf_w;
-	vframe_para->src_vf_angle = rotation;
 
 	if (dewarp_print) {
 		pr_info("vc:[%d] src_vf, addr0:0x%x, addr1:0x%x, w:%d, h:%d, fmt:%d, angle:%d.\n",

@@ -19,10 +19,17 @@ enum videocom_source_type {
 	VDIN_10BIT_NORMAL,
 };
 
+enum com_buffer_used {
+	USED_UNINITIAL = 0,
+	USED_BY_GE2D,
+	USED_BY_DEWARP,
+};
+
 struct dst_buf_t {
 	int index;
 	struct vframe_s frame;
 	struct composer_info_t componser_info;
+	enum com_buffer_used buf_used;
 	bool dirty;
 	u32 phy_addr;
 	u32 buf_w;

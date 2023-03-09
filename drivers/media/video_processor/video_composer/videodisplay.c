@@ -67,7 +67,7 @@ static void calculate_real_fps_and_vsync(struct timeval *start, struct timeval *
 {
 	u64 diff_time = 0;
 
-	diff_time = (1000000 * (end->tv_sec - start->tv_sec) +
+	diff_time = (1000000L * (end->tv_sec - start->tv_sec) +
 		(end->tv_usec - start->tv_usec));
 	vd_test_vsync_val[i] = div64_u64(100 * diff_time, (*end_count - *start_count));
 	vd_test_fps_val[i] = div64_u64((u64)100000 * 100000 * 1000, vd_test_vsync_val[i]);

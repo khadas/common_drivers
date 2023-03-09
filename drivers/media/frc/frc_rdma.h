@@ -16,7 +16,7 @@ struct rdma_op_s {
 	void *arg;
 };
 
-/*RDMA total memory size is 1M, phy:0x7cf90000~0x7d090000*/
+/*RDMA total memory size is 1M*/
 #define FRC_RDMA_SIZE (256 * (PAGE_SIZE))
 
 struct reg_test {

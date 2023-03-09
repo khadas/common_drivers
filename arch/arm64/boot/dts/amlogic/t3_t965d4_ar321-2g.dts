@@ -202,18 +202,10 @@
 			 * 384Mhz (0x18000000)
 			 * 368Mhz (0x17000000)
 			 */
-			size = <0x0 0x0a000000>;
+			size = <0x0 0x0a400000>;
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
 			/*alloc-ranges = <0x0 0x0 0x0 0x3f800000>;*/
-		};
-
-		frc_rdma_reserved:linux,frc_rdma {
-			compatible = "shared-dma-pool";
-			reusable;
-			/* frc rdma reserved*/
-			size = <0x0 0x400000>;
-			alignment = <0x0 0x400000>;
 		};
 
 		ldc_mem_reserved:linux,ldc_mem {
@@ -972,7 +964,7 @@
 				GIC_SPI 287 IRQ_TYPE_EDGE_RISING
 				GIC_SPI 271 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "irq_frc_in", "irq_frc_out", "irq_frc_rdma";
-		memory-region = <&frc_cma_reserved>, <&frc_rdma_reserved>;
+		memory-region = <&frc_cma_reserved>;
 		clocks = <&clkc CLKID_FRC>, <&clkc CLKID_ME>;
 		clock-names = "clk_frc", "clk_me";
 		power-domains = <&pwrdm PDID_T3_FRCTOP>, <&pwrdm PDID_T3_FRCME>,

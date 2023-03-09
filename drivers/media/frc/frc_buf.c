@@ -528,18 +528,13 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 		return -1;
 	}
 
-	/* The total memory size is 0xa000000 160M
-	 * buffer 8+8 release memory size: 0x4ee0000 78M
-	 * buffer 12+4 release memory size: 0x2770000 39M
-	 * buffer 14+2 release memory size: 0x13b8000 19M
-	 */
-	/* no compress cma_mem_size2 = 0x5800000*/
 	devp->buf.cma_mem_size = dma_get_cma_size_int_byte(&devp->pdev->dev);
+	devp->buf.cma_mem_size = devp->buf.cma_mem_size - FRC_RDMA_SIZE; // reserved 1M for RDMA
 	devp->buf.cma_mem_paddr_pages = dma_alloc_from_contiguous(&devp->pdev->dev,
 		devp->buf.cma_mem_size >> PAGE_SHIFT, 0, 0);
 	if (!devp->buf.cma_mem_paddr_pages) {
 		devp->buf.cma_mem_size = 0;
-		pr_frc(0, "cma_alloc buffer1 fail\n");
+		pr_frc(0, "cma_alloc buffer fail\n");
 		return -1;
 	}
 	devp->buf.cma_mem_paddr_start = page_to_phys(devp->buf.cma_mem_paddr_pages);

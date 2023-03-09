@@ -400,6 +400,7 @@
 		usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;
 		clocks = <&clkc CLKID_USB>;
 		clock-names = "usb_general";
+		power-domains = <&pwrdm PWRC_SM1_USB_ID>;
 		/*usb5v-supply = <&ao_5v>;*/
 		/*usb3v3-supply = <&vddao_3v3>;*/
 		/*usb1v8-supply = <&vddio_ao1v8>;*/
@@ -422,7 +423,7 @@
 		pll-setting-7 = <0xe0004>;
 		pll-setting-8 = <0xe000c>;
 		version = <2>;
-		//power-domains = <&pwrdm PDID_SC2_USB_COMB>;
+		power-domains = <&pwrdm PWRC_SM1_USB_ID>;
 		phy20-reset-level-bit = <16>;
 		phy21-reset-level-bit = <17>;
 		usb-reset-bit = <2>;
@@ -442,6 +443,7 @@
 		clocks = <&clkc CLKID_PCIE_PLL>;
 		clock-names = "pcie_refpll";
 		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
+		power-domains = <&pwrdm PWRC_SM1_PCIE_ID>;
 	};
 
 	dwc2_a: dwc2_a@ff400000 {
@@ -469,6 +471,7 @@
 					&clkc CLKID_USB1_DDR_BRIDGE>;
 		clock-names = "usb_general",
 					"usb1";
+		power-domains = <&pwrdm PWRC_SM1_USB_ID>;
 	};
 
 	wdt: watchdog@0xffd0f0d0 {

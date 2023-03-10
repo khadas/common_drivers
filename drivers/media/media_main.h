@@ -538,6 +538,15 @@ static int amvdec_656in_init_module(void)
 }
 #endif
 
+#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_CSI
+int amvdec_csi_init_module(void);
+#else
+static int amvdec_csi_init_module(void)
+{
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 int vpu_security_init(void);
 #else

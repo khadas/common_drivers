@@ -1,0 +1,2 @@
+$(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_TVIN_CSI) += vin/tvin/csi/csi.o
+$(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_TVIN_CSI) += vin/tvin/csi/mipi_hw.o

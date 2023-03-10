@@ -3743,6 +3743,14 @@ static const struct di_meson_data  data_s5 = {
 };
 #endif
 
+static const struct di_meson_data  data_t3x = {
+	.name = "dim_t3x",
+	.ic_id	= DI_IC_ID_T3X,
+	.support = IC_SUPPORT_DECONTOUR	|
+		   IC_SUPPORT_HDR	|
+		   IC_SUPPORT_DW
+};
+
 /* #ifdef CONFIG_USE_OF */
 static const struct of_device_id amlogic_deinterlace_dt_match[] = {
 	/*{ .compatible = "amlogic, deinterlace", },*/
@@ -3774,6 +3782,8 @@ static const struct of_device_id amlogic_deinterlace_dt_match[] = {
 		.data = &data_t3,
 	}, {	.compatible = "amlogic, dim-s5",
 		.data = &data_s5,
+	}, {	.compatible = "amlogic, dim-t3x",
+		.data = &data_t3x,
 #endif
 	}, {}
 };

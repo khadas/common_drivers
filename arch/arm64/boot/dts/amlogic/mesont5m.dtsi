@@ -1375,7 +1375,7 @@
 			/*status = "disabled";*/
 			reserve-iomap = "true";
 			/*memory-region = <&vdin1_cma_reserved>;*/
-			flag_cma = <0>;/*1:share with codec_mm;0:cma alone*/
+			flag_cma = <0x101>;/*1:share with codec_mm;0:cma alone*/
 			interrupts = <0 212 1>;
 			interrupt-names = "vsync_int"/*, "vpu_crash_int",*/
 					/*"write_done_int"*/;

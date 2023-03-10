@@ -1,0 +1,191 @@
+From f7604b1be6911827eb257051bcfe92ff4db11ec3 Mon Sep 17 00:00:00 2001
+From: Zhuo Wang <zhuo.wang@amlogic.com>
+Date: Fri, 10 Mar 2023 09:10:40 +0000
+Subject: [PATCH] eth: restart eth0 when resume [1/1]
+
+PD#SWPL-114869
+
+Problem:
+phy not work atfer resume sometimes
+
+Solution:
+restart ethernet after resume
+
+Verify:
+QA_verify with oppen
+
+Change-Id: I88bac8f0c24f0e2890b24a1508e05e74ed667b5c
+Signed-off-by: Zhuo Wang <zhuo.wang@amlogic.com>
+---
+ .../ethernet/stmicro/stmmac/dwmac-meson8b.c   | 33 ++++++++++++++-----
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h  |  3 ++
+ .../net/ethernet/stmicro/stmmac/stmmac_main.c | 10 ++++++
+ drivers/net/phy/phy.c                         |  5 +--
+ 4 files changed, 40 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+index 491b57fe0626..e161c387dc9f 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+@@ -420,6 +420,7 @@ static void set_wol_notify_bl30(u32 enable_bl30)
+ 	scpi_set_ethernet_wol(enable_bl30);
+ }
+ #endif
++unsigned int internal_phy;
+ static int aml_custom_setting(struct platform_device *pdev, struct meson8b_dwmac *dwmac)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+@@ -433,6 +434,9 @@ static int aml_custom_setting(struct platform_device *pdev, struct meson8b_dwmac
+ 		writel(mc_val, dwmac->regs + PRG_ETH0);
+ 	}
+ 
++	if (of_property_read_u32(np, "internal_phy", &internal_phy) != 0)
++		pr_info("use default internal_phy as 0\n");
++
+ 	ndev->wol_enabled = true;
+ 	return 0;
+ }
+@@ -594,8 +598,10 @@ static void meson8b_dwmac_shutdown(struct platform_device *pdev)
+ 
+ 	pr_info("aml_eth_shutdown\n");
+ 	ret = stmmac_suspend(priv->device);
+-	if (dwmac->data->suspend)
+-		ret = dwmac->data->suspend(dwmac);
++	if (internal_phy != 2) {
++		if (dwmac->data->suspend)
++			ret = dwmac->data->suspend(dwmac);
++	}
+ }
+ 
+ static int dwmac_suspend(struct meson8b_dwmac *dwmac)
+@@ -620,6 +626,7 @@ static void dwmac_resume(struct meson8b_dwmac *dwmac)
+ }
+ 
+ int backup_adv;
++int without_reset;
+ static int meson8b_suspend(struct device *dev)
+ {
+ 	struct net_device *ndev = dev_get_drvdata(dev);
+@@ -629,8 +636,8 @@ static int meson8b_suspend(struct device *dev)
+ 
+ 	int ret;
+ 
+-	/*open wol*/
+-	if (wol_switch_from_user) {
++	/*open wol, shutdown phy when not link*/
++	if ((wol_switch_from_user) && phydev->link) {
+ 		set_wol_notify_bl31(true);
+ 		set_wol_notify_bl30(true);
+ 		device_init_wakeup(dev, true);
+@@ -643,14 +650,18 @@ static int meson8b_suspend(struct device *dev)
+ 		genphy_restart_aneg(phydev);
+ 		msleep(3000);
+ 		ret = stmmac_suspend(dev);
++		without_reset = 1;
+ 	} else {
+ 		set_wol_notify_bl31(false);
+ 		set_wol_notify_bl30(false);
+ 		device_init_wakeup(dev, false);
+ 
+ 		ret = stmmac_suspend(dev);
+-		if (dwmac->data->suspend)
+-			ret = dwmac->data->suspend(dwmac);
++		if (internal_phy != 2) {
++			if (dwmac->data->suspend)
++				ret = dwmac->data->suspend(dwmac);
++		}
++		without_reset = 0;
+ 	}
+ 
+ 	return ret;
+@@ -666,7 +677,7 @@ static int meson8b_resume(struct device *dev)
+ 
+ 	priv->wolopts = 0;
+ 
+-	if (wol_switch_from_user) {
++	if ((wol_switch_from_user) && (without_reset)) {
+ 		ret = stmmac_resume(dev);
+ 
+ 		if (get_resume_method() == ETH_PHY_WAKEUP) {
+@@ -683,9 +694,13 @@ static int meson8b_resume(struct device *dev)
+ 		mii_lpa_to_linkmode_lpa_t(phydev->advertising, backup_adv);
+ 		genphy_restart_aneg(phydev);
+ 	} else {
+-		if (dwmac->data->resume)
+-			dwmac->data->resume(dwmac);
++		if (internal_phy != 2) {
++			if (dwmac->data->resume)
++				dwmac->data->resume(dwmac);
++		}
+ 		ret = stmmac_resume(dev);
++		pr_info("wzh %s\n", __func__);
++		stmmac_global_err(priv);
+ 	}
+ 	return ret;
+ }
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+index 05b5371ca036..e1da8daa136a 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+@@ -393,4 +393,7 @@ static inline int stmmac_selftest_get_count(struct stmmac_priv *priv)
+ }
+ #endif /* CONFIG_STMMAC_SELFTESTS */
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
++void stmmac_global_err(struct stmmac_priv *priv);
++#endif
+ #endif /* __STMMAC_H__ */
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 4bab55fd7d39..ad2d126a1963 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -276,6 +276,15 @@ static void stmmac_service_event_schedule(struct stmmac_priv *priv)
+ 		queue_work(priv->wq, &priv->service_task);
+ }
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
++void stmmac_global_err(struct stmmac_priv *priv)
++{
++	netif_carrier_off(priv->dev);
++	set_bit(STMMAC_RESET_REQUESTED, &priv->state);
++	stmmac_service_event_schedule(priv);
++}
++EXPORT_SYMBOL_GPL(stmmac_global_err);
++#else
+ static void stmmac_global_err(struct stmmac_priv *priv)
+ {
+ 	netif_carrier_off(priv->dev);
+@@ -283,6 +292,7 @@ static void stmmac_global_err(struct stmmac_priv *priv)
+ 	stmmac_service_event_schedule(priv);
+ }
+ 
++#endif
+ /**
+  * stmmac_clk_csr_set - dynamically set the MDC clock
+  * @priv: driver private structure
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index 2fc851082e7b..3aee6c2da4a5 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -972,7 +972,8 @@ static irqreturn_t phy_interrupt(int irq, void *phy_dat)
+ 	struct phy_device *phydev = phy_dat;
+ 	struct phy_driver *drv = phydev->drv;
+ 	irqreturn_t ret;
+-
++#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
++#else
+ 	/* Wakeup interrupts may occur during a system sleep transition.
+ 	 * Postpone handling until the PHY has resumed.
+ 	 */
+@@ -994,7 +995,7 @@ static irqreturn_t phy_interrupt(int irq, void *phy_dat)
+ 		disable_irq_nosync(irq);
+ 		return IRQ_HANDLED;
+ 	}
+-
++#endif
+ 	mutex_lock(&phydev->lock);
+ 	ret = drv->handle_interrupt(phydev);
+ 	mutex_unlock(&phydev->lock);
+-- 
+2.25.1
+

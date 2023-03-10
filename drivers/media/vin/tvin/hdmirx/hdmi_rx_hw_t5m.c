@@ -174,12 +174,13 @@ void t5m_480p_pll_cfg(void)
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0530a003);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x81401236);
+	hdmirx_wr_amlphy(T5M_RG_RX20PLL_1, 0x21401236);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x0530a007);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x4530a007);
 	usleep_range(10, 20);
+	rx.phy.aud_div = 3;
 }
 
 void t5m_720p_pll_cfg(void)
@@ -198,6 +199,7 @@ void t5m_720p_pll_cfg(void)
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45305007);
 	usleep_range(10, 20);
+	rx.phy.aud_div = 0;
 }
 
 void t5m_1080p_pll_cfg(void)
@@ -216,6 +218,7 @@ void t5m_1080p_pll_cfg(void)
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
 	usleep_range(10, 20);
+	rx.phy.aud_div = 0;
 }
 
 void t5m_4k30_pll_cfg(void)
@@ -234,6 +237,7 @@ void t5m_4k30_pll_cfg(void)
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302817);
 	usleep_range(10, 20);
+	rx.phy.aud_div = 0;
 }
 
 void t5m_4k60_pll_cfg(void)
@@ -253,6 +257,7 @@ void t5m_4k60_pll_cfg(void)
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302827);
 		usleep_range(10, 20);
+		rx.phy.aud_div = 0;
 	} else {
 		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302800);
 		usleep_range(10, 20);
@@ -267,6 +272,7 @@ void t5m_4k60_pll_cfg(void)
 		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x05302807);
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(T5M_RG_RX20PLL_0, 0x45302807);
+		rx.phy.aud_div = 0;
 	}
 	usleep_range(10, 20);
 }

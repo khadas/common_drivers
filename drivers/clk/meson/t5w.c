@@ -1971,7 +1971,7 @@ static struct clk_regmap t5w_sd_emmc_c_div = {
 			&t5w_sd_emmc_c_sel.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT
+		.flags = CLK_GET_RATE_NOCACHE//| CLK_SET_RATE_PARENT
 	},
 };
 
@@ -1987,7 +1987,7 @@ static struct clk_regmap t5w_sd_emmc_c = {
 			&t5w_sd_emmc_c_div.hw
 		},
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_PARENT
+		.flags = CLK_GET_RATE_NOCACHE// | CLK_SET_RATE_PARENT
 	},
 };
 

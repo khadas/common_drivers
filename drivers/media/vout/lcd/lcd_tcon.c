@@ -3163,7 +3163,7 @@ static struct lcd_tcon_config_s tcon_data_t5 = {
 	/*rsv_mem(12M)    axi_mem(10M)   bin_path(10K) secure_cfg(64byte)
 	 *             |----------------|-------------|-------------|
 	 */
-	.rsv_mem_size    = 0x00c00000,
+	.rsv_mem_size    = 0x00a02840,
 	.axi_mem_size    = 0x00a00000,
 	.bin_path_size   = 0x00002800,
 	.secure_cfg_size = 0x00000040,
@@ -3205,7 +3205,7 @@ static struct lcd_tcon_config_s tcon_data_t5d = {
 
 	.axi_bank = LCD_TCON_AXI_BANK_T5D,
 
-	.rsv_mem_size    = 0x00800000, /* 8M */
+	.rsv_mem_size    = 0x00502840, /* 8M */
 	.axi_mem_size    = 0x00500000, /* 5M */
 	.bin_path_size   = 0x00002800, /* 10K */
 	.secure_cfg_size = 0x00000040,
@@ -3251,7 +3251,7 @@ static struct lcd_tcon_config_s tcon_data_t3 = {
 	/*rsv_mem(12M)    axi_mem(10M)   bin_path(10K) secure_cfg(64byte)
 	 *             |----------------|-------------|-------------|
 	 */
-	.rsv_mem_size    = 0x00c00000,
+	.rsv_mem_size    = 0x00a02840,
 	.axi_mem_size    = 0x00a00000,
 	.bin_path_size   = 0x00002800,
 	.secure_cfg_size = 0x00000040,
@@ -3297,7 +3297,7 @@ static struct lcd_tcon_config_s tcon_data_t5w = {
 	/*rsv_mem(12M)    axi_mem(10M)   bin_path(10K)
 	 *             |----------------|-------------|
 	 */
-	.rsv_mem_size    = 0x00c00000,
+	.rsv_mem_size    = 0x00a02840,
 	.axi_mem_size    = 0x00a00000,
 	.bin_path_size   = 0x00002800,
 	.secure_cfg_size = 0x00000040,

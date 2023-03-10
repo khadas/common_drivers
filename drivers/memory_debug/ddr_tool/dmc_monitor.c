@@ -852,18 +852,18 @@ static void serror_dump_dmc_reg(void)
 
 #if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
 /* Asynchronous Serror*/
-void arm64_serror_panic(void *data, struct pt_regs *regs, unsigned int esr)
+static void arm64_serror_panic(void *data, struct pt_regs *regs, unsigned int esr)
 {
 	serror_dump_dmc_reg();
 }
 
 /* Synchronous Serror*/
-void do_sea(void *data, unsigned long addr, unsigned int esr, struct pt_regs *regs)
+static void do_sea(void *data, unsigned long addr, unsigned int esr, struct pt_regs *regs)
 {
 	serror_dump_dmc_reg();
 }
 #else
-void do_serror(void *data, struct pt_regs *regs, unsigned int esr, int *ret)
+static void do_serror(void *data, struct pt_regs *regs, unsigned int esr, int *ret)
 {
 	serror_dump_dmc_reg();
 }

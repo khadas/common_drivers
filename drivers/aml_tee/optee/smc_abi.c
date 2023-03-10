@@ -1357,6 +1357,9 @@ static void optee_shutdown(struct platform_device *pdev)
 {
 	struct optee *optee = platform_get_drvdata(pdev);
 
+	optee_timer_destroy(&optee->timer);
+	optee_log_uninit();
+
 	if (!optee->rpc_param_count)
 		optee_disable_shm_cache(optee);
 }

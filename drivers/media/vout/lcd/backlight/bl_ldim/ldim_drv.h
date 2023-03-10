@@ -38,8 +38,8 @@ extern unsigned int ldc_dither_lut[32][16];
 
 /*ldim mem*/
 void aml_ldim_rmem_unmap(unsigned char *vaddr, unsigned int flag);
-unsigned char *aml_ldim_rmem_map(unsigned long paddr, unsigned int mem_size,
-					unsigned int *flag);
+unsigned char *aml_ldim_rmem_map(unsigned long paddr, unsigned int mem_size, unsigned int *flag);
+void aml_ldim_rmem_info(void);
 
 void ldc_mem_dump(unsigned char *vaddr, unsigned int size);
 void ldc_mem_save(char *path, unsigned long mem_paddr, unsigned int mem_size);

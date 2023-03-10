@@ -962,6 +962,16 @@ void aml_ldim_rmem_unmap(unsigned char *vaddr, unsigned int flag)
 }
 EXPORT_SYMBOL(aml_ldim_rmem_unmap);
 
+void aml_ldim_rmem_info(void)
+{
+	pr_info("reserved mem info:\n"
+		"mem_paddr = 0x%lx\n"
+		"mem_size  = 0x%x\n"
+		"mem_flag  = %d\n\n",
+		(unsigned long)ldim_rmem.rsv_mem_paddr,
+		ldim_rmem.rsv_mem_size, ldim_rmem.flag);
+}
+
 static int aml_ldim_dma_alloc(struct device *dev, struct ldim_rmem_s *rmem)
 {
 	unsigned int mem_size;

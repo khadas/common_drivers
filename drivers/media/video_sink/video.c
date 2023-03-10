@@ -13897,7 +13897,7 @@ static struct amvideo_device_data_s amvideo_t3x = {
 	.max_vd_layers = 2,
 	.has_vpp1 = 1,
 	.has_vpp2 = 0,
-	.is_tv_panel = 0,
+	.is_tv_panel = 1,
 };
 #endif
 

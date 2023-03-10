@@ -11670,9 +11670,14 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 			   sizeof(struct vd_pps_reg_s));
 
 	for (i = 0; i < SLICE_NUM; i++) {
-		memcpy(&vd_proc_reg.vd_proc_slice_reg[i],
-		   &vd_proc_slice_reg_s5[i],
-		   sizeof(struct vd_proc_slice_reg_s));
+		if (is_meson_s5_cpu())
+			memcpy(&vd_proc_reg.vd_proc_slice_reg[i],
+			   &vd_proc_slice_reg_s5[i],
+			   sizeof(struct vd_proc_slice_reg_s));
+		else
+			memcpy(&vd_proc_reg.vd_proc_slice_reg[i],
+			   &vd_proc_slice_reg_t3x[i],
+			   sizeof(struct vd_proc_slice_reg_s));
 		memcpy(&vd_proc_reg.vd1_slice_pad_size0_reg[i],
 		   &vd1_slice_pad_size0_reg_s5[i],
 		   sizeof(struct vd1_slice_pad_reg_s));
@@ -11681,10 +11686,16 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 		   sizeof(struct vd1_slice_pad_reg_s));
 	}
 
-	for (i = 0; i < MAX_VD_CHAN_S5; i++)
-		memcpy(&vd_proc_reg.vd_pip_alpha_reg[i],
-		   &vd_pip_alpha_reg_s5[i],
-		   sizeof(struct vd_pip_alpha_reg_s));
+	for (i = 0; i < MAX_VD_CHAN_S5; i++) {
+		if (is_meson_s5_cpu())
+			memcpy(&vd_proc_reg.vd_pip_alpha_reg[i],
+			   &vd_pip_alpha_reg_s5[i],
+			   sizeof(struct vd_pip_alpha_reg_s));
+		else
+			memcpy(&vd_proc_reg.vd_pip_alpha_reg[i],
+			   &vd_pip_alpha_reg_t3x[i],
+			   sizeof(struct vd_pip_alpha_reg_s));
+	}
 
 	memcpy(&vd_proc_reg.vd_proc_sr_reg,
 	   &vd_proc_sr_reg_s5,
@@ -11708,13 +11719,21 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	   &vd2_proc_misc_reg_s5,
 	   sizeof(struct vd2_proc_misc_reg_s));
 
-	memcpy(&vpp_post_reg.vpp_post_blend_reg,
-	   &vpp_post_blend_reg_s5,
-	   sizeof(struct vpp_post_blend_reg_s));
-	memcpy(&vpp_post_reg.vpp_post_misc_reg,
-	   &vpp_post_misc_reg_s5,
-	   sizeof(struct vpp_post_misc_reg_s));
-
+	if (is_meson_s5_cpu()) {
+		memcpy(&vpp_post_reg.vpp_post_blend_reg,
+		   &vpp_post_blend_reg_s5,
+		   sizeof(struct vpp_post_blend_reg_s));
+		memcpy(&vpp_post_reg.vpp_post_misc_reg,
+		   &vpp_post_misc_reg_s5,
+		   sizeof(struct vpp_post_misc_reg_s));
+	} else {
+		memcpy(&vpp_post_reg.vpp_post_blend_reg,
+		   &vpp_post_blend_reg_t3x,
+		   sizeof(struct vpp_post_blend_reg_s));
+		memcpy(&vpp_post_reg.vpp_post_misc_reg,
+		   &vpp_post_misc_reg_t3x,
+		   sizeof(struct vpp_post_misc_reg_s));
+	}
 	vd_layer[0].layer_alpha = 0x100;
 
 	/* g12a has no alpha overflow check in hardware */

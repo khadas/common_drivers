@@ -293,12 +293,15 @@ struct vpp_post_misc_reg_s {
 
 extern struct vpp_post_reg_s vpp_post_reg;
 extern struct vpp_post_blend_reg_s vpp_post_blend_reg_s5;
+extern struct vpp_post_blend_reg_s vpp_post_blend_reg_t3x;
 extern struct vpp_post_misc_reg_s vpp_post_misc_reg_s5;
+extern struct vpp_post_misc_reg_s vpp_post_misc_reg_t3x;
 
 extern struct vd_proc_reg_s vd_proc_reg;
 extern struct vd_pps_reg_s pps_reg_s5_array[MAX_VD_LAYER_S5 + 1];
 extern struct vd_proc_sr_reg_s vd_proc_sr_reg_s5;
 extern struct vd_proc_slice_reg_s vd_proc_slice_reg_s5[SLICE_NUM];
+extern struct vd_proc_slice_reg_s vd_proc_slice_reg_t3x[SLICE_NUM];
 extern struct vd_proc_pi_reg_s vd_proc_pi_reg_s5;
 extern struct vd_proc_misc_reg_s vd_proc_misc_reg_s5;
 extern struct vd_proc_blend_reg_s vd_proc_blend_reg_s5;
@@ -312,4 +315,5 @@ extern struct vd_mif_reg_s vd_mif_reg_s5_array[MAX_VD_LAYER_S5];
 extern struct vd_mif_linear_reg_s vd_mif_linear_reg_s5_array[MAX_VD_LAYER_S5];
 extern struct vd_afbc_reg_s vd_afbc_reg_s5_array[MAX_VD_LAYER_S5];
 extern struct vd_pip_alpha_reg_s vd_pip_alpha_reg_s5[MAX_VD_CHAN_S5];
+extern struct vd_pip_alpha_reg_s vd_pip_alpha_reg_t3x[MAX_VD_CHAN_S5];
 #endif

@@ -60,47 +60,47 @@
 // Reading file:  ./vpp_vd_proc_reg.h
 //
 #define VD_PROC_SR0_CTRL                           0x2800
-//Bit 31    sr0_pps_dpsel                         //unsigned, RW, default = 0, 0:SR0 after PPS 1:SR0 before PPS
-//Bit 30    vd1_sr0_dpsel                         //unsigned, RW, default = 0, 0:SR0 in vd1 slice0 1:SR0 in vd1 slice1
-//Bit 29:0  reg_sr0_ctrl                          //unsigned, RW, default = 0, use for hsvsharp
+//Bit 31    vds0_sr0_pps_dpsel        //unsigned, RW, default = 0, 0:SR0 after PPS 1:SR0 before PPS
+//Bit 30    vd1_sr0_dpsel      //unsigned, RW, default = 0, 0:SR0 in vd1 slice0 1:SR0 in vd1 slice1
+//Bit 29:0  reg_s0_sr0_ctrl                       //unsigned, RW, default = 0, use for hsvsharp
 #define VD_PROC_SR1_CTRL                           0x2801
 //Bit 31:30 reserved
-//Bit 29:0  reg_sr1_ctrl                          //unsigned, RW, default = 0, use for hsvsharp
+//Bit 29:0  reg_s0_sr1_ctrl                       //unsigned, RW, default = 0, use for hsvsharp
 #define VD_PROC_S0_IN_SIZE                         0x2802
 //Bit 31:29 reserved
-//Bit 28:16 vd_proc_s0_in_hsize                   //unsigned, RW, default = 0
+//Bit 28:16 vd_proc_s0_in_hsize                   //unsigned, RW, default = 1920
 //Bit 15:13 reserved
-//Bit 12:0  vd_proc_s0_in_vsize                   //unsigned, RW, default = 0
+//Bit 12:0  vd_proc_s0_in_vsize                   //unsigned, RW, default = 1080
 #define VD_PROC_S0_OUT_SIZE                        0x2803
 //Bit 31:29 reserved
-//Bit 28:16 vd_proc_s0_out_hsize                  //unsigned, RW, default = 0
+//Bit 28:16 vd_proc_s0_out_hsize                  //unsigned, RW, default = 1920
 //Bit 15:13 reserved
-//Bit 12:0  vd_proc_s0_out_vsize                  //unsigned, RW, default = 0
+//Bit 12:0  vd_proc_s0_out_vsize                  //unsigned, RW, default = 1080
 #define VD_PROC_S0_PPS_IN_SIZE                     0x2804
 //Bit 31:29 reserved
-//Bit 28:16 vd_proc_s0_pps_in_hsize               //unsigned, RW, default = 0
+//Bit 28:16 vd_proc_s0_pps_in_hsize               //unsigned, RW, default = 1920
 //Bit 15:13 reserved
-//Bit 12:0  vd_proc_s0_pps_in_vsize               //unsigned, RW, default = 0
+//Bit 12:0  vd_proc_s0_pps_in_vsize               //unsigned, RW, default = 1080
 #define VD_PROC_S0_SR0_IN_SIZE                     0x2805
 //Bit 31:29 reserved
-//Bit 28:16 vd_proc_s0_sr0_in_hsize               //unsigned, RW, default = 0
+//Bit 28:16 vd_proc_s0_sr0_in_hsize               //unsigned, RW, default = 1920
 //Bit 15:13 reserved
-//Bit 12:0  vd_proc_s0_sr0_in_vsize               //unsigned, RW, default = 0
+//Bit 12:0  vd_proc_s0_sr0_in_vsize               //unsigned, RW, default = 1080
 #define VD_PROC_S0_SR1_IN_SIZE                     0x2806
 //Bit 31:29 reserved
-//Bit 28:16 vd_proc_s0_sr1_in_hsize               //unsigned, RW, default = 0
+//Bit 28:16 vd_proc_s0_sr1_in_hsize               //unsigned, RW, default = 1920
 //Bit 15:13 reserved
-//Bit 12:0  vd_proc_s0_sr1_in_vsize               //unsigned, RW, default = 0
+//Bit 12:0  vd_proc_s0_sr1_in_vsize               //unsigned, RW, default = 1080
 #define VD_PROC_S1_IN_SIZE                         0x2807
 //Bit 31:29 reserved
-//Bit 28:16 vd_proc_s1_in_hsize                   //unsigned, RW, default = 0
+//Bit 28:16 vd_proc_s1_in_hsize                   //unsigned, RW, default = 1920
 //Bit 15:13 reserved
-//Bit 12:0  vd_proc_s1_in_vsize                   //unsigned, RW, default = 0
+//Bit 12:0  vd_proc_s1_in_vsize                   //unsigned, RW, default = 1080
 #define VD_PROC_S1_OUT_SIZE                        0x2808
 //Bit 31:29 reserved
-//Bit 28:16 vd_proc_s1_out_hsize                  //unsigned, RW, default = 0
+//Bit 28:16 vd_proc_s1_out_hsize                  //unsigned, RW, default = 1920
 //Bit 15:13 reserved
-//Bit 12:0  vd_proc_s1_out_vsize                  //unsigned, RW, default = 0
+//Bit 12:0  vd_proc_s1_out_vsize                  //unsigned, RW, default = 1080
 #define VD_PROC_S1_SR0_IN_SIZE                     0x2809
 //Bit 31:29 reserved
 //Bit 28:16 vd_proc_s1_sr0_in_hsize               //unsigned, RW, default = 0
@@ -136,33 +136,33 @@
 //Bit 1     reg_gclk_ctrl_h                       //unsigned, RW, default = 0
 //Bit 0     reserved
 #define VD_PROC_BYPASS_CTRL                        0x280f
-//Bit 5      reg_bypass_prebld1                   //unsigned, RW, default = 1, 0:use vd prebld 1:bypass vd prebld
+//Bit 5      reg_bypass_prebld1     //unsigned, RW, default = 1, 0:use vd prebld 1:bypass vd prebld
 //Bit 4      vd_s3_bypass_ve                      //unsigned, RW, default = 1, 0:use ve 1:bypass ve
 //Bit 3      vd_s2_bypass_ve                      //unsigned, RW, default = 1, 0:use ve 1:bypass ve
 //Bit 2      vd_s1_bypass_ve                      //unsigned, RW, default = 1, 0:use ve 1:bypass ve
 //Bit 1      vd_s0_bypass_ve                      //unsigned, RW, default = 1, 0:use ve 1:bypass ve
-//Bit 0      reg_bypass_prebld0                   //unsigned, RW, default = 1, 0:use vd prebld 1:bypass vd prebld
+//Bit 0      reg_bypass_prebld0     //unsigned, RW, default = 1, 0:use vd prebld 1:bypass vd prebld
 #define VD_S0_HWIN_CUT                             0x2810
 //Bit 31:30  reserved
-//Bit 29     vd_s0_hwin_en                        //unsigned, RW, default = 0, win_en, cut the overlap size
+//Bit 29     vd_s0_hwin_en                //unsigned, RW, default = 0, win_en, cut the overlap size
 //Bit 28:16  vd_s0_hwin_bgn                       //unsigned, RW, default = 240
 //Bit 15:13 reserved
 //Bit 12:0   vd_s0_hwin_end                       //unsigned, RW, default = 320
 #define VD_S1_HWIN_CUT                             0x2811
 //Bit 31:30  reserved
-//Bit 29     vd_s1_hwin_en                        //unsigned, RW, default = 0, win_en, cut the overlap size
+//Bit 29     vd_s1_hwin_en                //unsigned, RW, default = 0, win_en, cut the overlap size
 //Bit 28:16  vd_s1_hwin_bgn                       //unsigned, RW, default = 240
 //Bit 15:13 reserved
 //Bit 12:0   vd_s1_hwin_end                       //unsigned, RW, default = 320
 #define VD_S2_HWIN_CUT                             0x2812
 //Bit 31:30  reserved
-//Bit 29     vd_s2_hwin_en                        //unsigned, RW, default = 0, win_en, cut the overlap size
+//Bit 29     vd_s2_hwin_en                //unsigned, RW, default = 0, win_en, cut the overlap size
 //Bit 28:16  vd_s2_hwin_bgn                       //unsigned, RW, default = 240
 //Bit 15:13 reserved
 //Bit 12:0   vd_s2_hwin_end                       //unsigned, RW, default = 320
 #define VD_S3_HWIN_CUT                             0x2813
 //Bit 31:30  reserved
-//Bit 29     vd_s3_hwin_en                        //unsigned, RW, default = 0, win_en, cut the overlap size
+//Bit 29     vd_s3_hwin_en                //unsigned, RW, default = 0, win_en, cut the overlap size
 //Bit 28:16  vd_s3_hwin_bgn                       //unsigned, RW, default = 240
 //Bit 15:13 reserved
 //Bit 12:0   vd_s3_hwin_end                       //unsigned, RW, default = 320
@@ -231,6 +231,150 @@
 //Bit 31:2   reserved
 //Bit 1      vd1_s3_dv_ext_mode                   //unsigned, RW, default = 0
 //Bit 0      vd1_s3_dv_en                         //unsigned, RW, default = 0
+
+// T3X_PROC_REGS
+#define T3X_VD_PROC_S1_PPS_IN_SIZE                     0x2809
+//Bit 31:29 reserved
+//Bit 28:16 vd_proc_s1_pps_in_hsize               //unsigned, RW, default = 1920
+//Bit 15:13 reserved
+//Bit 12:0  vd_proc_s1_pps_in_vsize               //unsigned, RW, default = 1080
+#define T3X_VD_PROC_S1_SR0_IN_SIZE                     0x280a
+//Bit 31:29 reserved
+//Bit 28:16 vd_proc_s1_sr0_in_hsize               //unsigned, RW, default = 1920
+//Bit 15:13 reserved
+//Bit 12:0  vd_proc_s1_sr0_in_vsize               //unsigned, RW, default = 1080
+#define T3X_VD_PROC_S1_SR1_IN_SIZE                     0x280b
+//Bit 31:29 reserved
+//Bit 28:16 vd_proc_s1_sr1_in_hsize               //unsigned, RW, default = 1920
+//Bit 15:13 reserved
+//Bit 12:0  vd_proc_s1_sr1_in_vsize               //unsigned, RW, default = 1080
+#define T3X_VD_PROC_S2_IN_SIZE                         0x280c
+//Bit 31:29 reserved
+//Bit 28:16 vd_proc_s2_in_hsize                   //unsigned, RW, default = 1920
+//Bit 15:13 reserved
+//Bit 12:0  vd_proc_s2_in_vsize                   //unsigned, RW, default = 1080
+#define T3X_VD_PROC_S2_OUT_SIZE                        0x280d
+//Bit 31:29 reserved
+//Bit 28:16 vd_proc_s2_out_hsize                  //unsigned, RW, default = 1920
+//Bit 15:13 reserved
+//Bit 12:0  vd_proc_s2_out_vsize                  //unsigned, RW, default = 1080
+#define T3X_VD_PROC_S3_IN_SIZE                         0x280e
+//Bit 31:29 reserved
+//Bit 28:16 vd_proc_s3_in_hsize                   //unsigned, RW, default = 1920
+//Bit 15:13 reserved
+//Bit 12:0  vd_proc_s3_in_vsize                   //unsigned, RW, default = 1080
+#define T3X_VD_PROC_S3_OUT_SIZE                        0x280f
+//Bit 31:29 reserved
+//Bit 28:16 vd_proc_s3_out_hsize                  //unsigned, RW, default = 1920
+//Bit 15:13 reserved
+//Bit 12:0  vd_proc_s3_out_vsize                  //unsigned, RW, default = 1080
+#define T3X_VD_PROC_GCLK_CTRL                          0x2810
+//Bit 31:28 reserved
+//Bit 27:26 lc_stts_gclk_ctrl                     //unsigned, RW, default = 0
+//Bit 25:18 vds0_sr1_gclk_ctrl                    //unsigned, RW, default = 0
+//Bit 17:10 vds0_sr0_gclk_ctrl                    //unsigned, RW, default = 0
+//Bit 9:8   vd_s3_top_gclk_ctrl                   //unsigned, RW, default = 0
+//Bit 7:6   vd_s2_top_gclk_ctrl                   //unsigned, RW, default = 0
+//Bit 5:4   vd_s1_top_gclk_ctrl                   //unsigned, RW, default = 0
+//Bit 3:2   vd_s0_top_gclk_ctrl                   //unsigned, RW, default = 0
+//Bit 1     reg_gclk_ctrl_h                       //unsigned, RW, default = 0
+//Bit 0     reserved
+#define T3X_VD_PROC_BYPASS_CTRL                        0x2811
+//Bit 5      reg_bypass_prebld1     //unsigned, RW, default = 1, 0:use vd prebld 1:bypass vd prebld
+//Bit 4      vd_s3_prebld_ve_link        //unsigned, RW, default = 0, 1:link prebld and ve directly
+//Bit 3      vd_s2_prebld_ve_link        //unsigned, RW, default = 0, 1:link prebld and ve directly
+//Bit 2      vd_s1_prebld_ve_link        //unsigned, RW, default = 0, 1:link prebld and ve directly
+//Bit 1      vd_s0_prebld_ve_link        //unsigned, RW, default = 0, 1:link prebld and ve directly
+//Bit 0      reg_bypass_prebld0     //unsigned, RW, default = 1, 0:use vd prebld 1:bypass vd prebld
+#define T3X_VD_S0_HWIN_CUT                             0x2812
+//Bit 31:30  reserved
+//Bit 29     vd_s0_hwin_en                //unsigned, RW, default = 0, win_en, cut the overlap size
+//Bit 28:16  vd_s0_hwin_bgn                       //unsigned, RW, default = 0
+//Bit 15:13 reserved
+//Bit 12:0   vd_s0_hwin_end                       //unsigned, RW, default = 1919
+#define T3X_VD_S1_HWIN_CUT                             0x2813
+//Bit 31:30  reserved
+//Bit 29     vd_s1_hwin_en                //unsigned, RW, default = 0, win_en, cut the overlap size
+//Bit 28:16  vd_s1_hwin_bgn                       //unsigned, RW, default = 0
+//Bit 15:13 reserved
+//Bit 12:0   vd_s1_hwin_end                       //unsigned, RW, default = 1919
+#define T3X_VD_S2_HWIN_CUT                             0x2814
+//Bit 31:30  reserved
+//Bit 29     vd_s2_hwin_en                //unsigned, RW, default = 0, win_en, cut the overlap size
+//Bit 28:16  vd_s2_hwin_bgn                       //unsigned, RW, default = 0
+//Bit 15:13 reserved
+//Bit 12:0   vd_s2_hwin_end                       //unsigned, RW, default = 1919
+#define T3X_VD_S3_HWIN_CUT                             0x2815
+//Bit 31:30  reserved
+//Bit 29     vd_s3_hwin_en                //unsigned, RW, default = 0, win_en, cut the overlap size
+//Bit 28:16  vd_s3_hwin_bgn                       //unsigned, RW, default = 0
+//Bit 15:13 reserved
+//Bit 12:0   vd_s3_hwin_end                       //unsigned, RW, default = 1919
+#define T3X_VD1_S0_CLIP_MISC0                          0x2816
+//Bit 31:30  reserved
+//Bit 29:0   reg_vd1_s0_clip_misc0                //unsigned, RW, default = 30'h3fff_ffff
+#define T3X_VD1_S0_CLIP_MISC1                          0x2817
+//Bit 31:30  reserved
+//Bit 29:0   reg_vd1_s0_clip_misc1                //unsigned, RW, default = 0
+#define T3X_VD1_S1_CLIP_MISC0                          0x2818
+//Bit 31:30  reserved
+//Bit 29:0   reg_vd1_s1_clip_misc0                //unsigned, RW, default = 30'h3fff_ffff
+#define T3X_VD1_S1_CLIP_MISC1                          0x2819
+//Bit 31:30  reserved
+//Bit 29:0   reg_vd1_s1_clip_misc1                //unsigned, RW, default = 0
+#define T3X_VD1_S2_CLIP_MISC0                          0x281a
+//Bit 31:30  reserved
+//Bit 29:0   reg_vd1_s2_clip_misc0                //unsigned, RW, default = 30'h3fff_ffff
+#define T3X_VD1_S2_CLIP_MISC1                          0x281b
+//Bit 31:30  reserved
+//Bit 29:0   reg_vd1_s2_clip_misc1                //unsigned, RW, default = 0
+#define T3X_VD1_S3_CLIP_MISC0                          0x281c
+//Bit 31:30  reserved
+//Bit 29:0   reg_vd1_s3_clip_misc0                //unsigned, RW, default = 30'h3fff_ffff
+#define T3X_VD1_S3_CLIP_MISC1                          0x281d
+//Bit 31:30  reserved
+//Bit 29:0   reg_vd1_s3_clip_misc1                //unsigned, RW, default = 0
+#define T3X_VD1_CLIP_EXT_MODE                          0x281e
+//Bit 3      reg_vd1_s3_ext_mode                  //unsigned, RW, default = 0
+//Bit 2      reg_vd1_s2_ext_mode                  //unsigned, RW, default = 0
+//Bit 1      reg_vd1_s1_ext_mode                  //unsigned, RW, default = 0
+//Bit 0      reg_vd1_s0_ext_mode                  //unsigned, RW, default = 0
+#define T3X_VD1_S0_PPS_DUMMY_DATA                      0x281f
+//Bit 31:24  reserved
+//Bit 23:0   vd1_s0_pps_dummy_data                //unsigned, RW, default = 0
+#define T3X_VD1_S1_PPS_DUMMY_DATA                      0x2820
+//Bit 31:24  reserved
+//Bit 23:0   vd1_s1_pps_dummy_data                //unsigned, RW, default = 0
+#define T3X_VD1_S2_PPS_DUMMY_DATA                      0x2821
+//Bit 31:24  reserved
+//Bit 23:0   vd1_s2_pps_dummy_data                //unsigned, RW, default = 0
+#define T3X_VD1_S3_PPS_DUMMY_DATA                      0x2822
+//Bit 31:24  reserved
+//Bit 23:0   vd1_s3_pps_dummy_data                //unsigned, RW, default = 0
+#define T3X_VD1_S0_DETUNL_CTRL                         0x2823
+//Bit 31:0   vd1_s0_dtunl_ctrl                    //unsigned, RW, default = 4
+#define T3X_VD1_S0_DV_BYPASS_CTRL                      0x2824
+//Bit 31:2   reserved
+//Bit 1      vd1_s0_dv_ext_mode                   //unsigned, RW, default = 0
+//Bit 0      vd1_s0_dv_en                         //unsigned, RW, default = 0
+#define T3X_VD1_S1_DETUNL_CTRL                         0x2825
+//Bit 31:0   vd1_s1_dtunl_ctrl                    //unsigned, RW, default = 4
+#define T3X_VD1_S1_DV_BYPASS_CTRL                      0x2826
+//Bit 31:2   reserved
+//Bit 1      vd1_s1_dv_ext_mode                   //unsigned, RW, default = 0
+//Bit 0      vd1_s1_dv_en                         //unsigned, RW, default = 0
+#define T3X_VD1_S2_DETUNL_CTRL                         0x2827
+//Bit 31:0   vd1_s2_dtunl_ctrl                    //unsigned, RW, default = 4
+#define T3X_VD1_S2_DV_BYPASS_CTRL                      0x2828
+//Bit 31:2   reserved
+//Bit 1      vd1_s2_dv_ext_mode                   //unsigned, RW, default = 0
+//Bit 0      vd1_s2_dv_en                         //unsigned, RW, default = 0
+#define T3X_VD1_S3_DETUNL_CTRL                         0x2829
+//Bit 31:0   vd1_s3_dtunl_ctrl                    //unsigned, RW, default = 4
+#define T3X_VD1_S3_DV_BYPASS_CTRL                      0x282a
+//Bit 31:2   reserved
+//Bit 1      vd1_s3_dv_ext_mode                   //unsigned, RW, default = 0
+//Bit 0      vd1_s3_dv_en                         //unsigned, RW, default = 0
 //
 // Closing file:  ./vpp_vd_proc_reg.h
 //
@@ -260,12 +404,13 @@
 //Bit 31:30  reserved
 //Bit 29:0   reg_vd2_clip_misc1                 //unsigned, RW, default = 0
 #define VD2_CLIP_EXT_MODE                          0x3885
+//Bit 31:1  reserved
 //Bit 0      reg_vd2_ext_mode                   //unsigned, RW, default = 0
 #define VD2_PPS_DUMMY_DATA                         0x3886
 //Bit 31:24  reserved
 //Bit 23:0   vd2_pps_dummy_data                 //unsigned, RW, default = 0
 #define VD2_DETUNL_CTRL                            0x3887
-//Bit 31:0   vd2_dtunl_ctrl                    //unsigned, RW, default = 0
+//Bit 31:0   vd2_dtunl_ctrl                    //unsigned, RW, default = 4
 #define VD2_DV_BYPASS_CTRL                         0x3888
 //Bit 31:2   reserved
 //Bit 1      vd2_dv_ext_mode                    //unsigned, RW, default = 0
@@ -480,6 +625,59 @@
 //Bit 15:8   reg_osd_flag_premult_mask        //unsigned ,RW, default = 8'h01
 //Bit 7 :5   reserved
 //Bit 4 :0   reg_default_osd_flag             //unsigned ,RW, default = 5'h18
+
+// T3X_VPP_POST_REGS
+#define T3X_VPP_POST_HOLD_CTRL                         0x1d19
+//Bit 31     reg_hold_en                      //unsigned ,RW, default = 0
+//Bit 30     reg_hold_mode                    //unsigned ,RW, default = 1
+//Bit 29     reserved
+//Bit 28:16  hold_hsizem1                     //unsigned ,RW, default = 13'h77f
+//Bit 15:14  reserved
+//Bit 13:8   hold_vsizem1                     //unsigned ,RW, default = 6'h3
+//Bit 7 :4   reg_pass_num                     //unsigned ,RW, default = 4'h1
+//Bit 3 :0   reg_hold_num                     //unsigned ,RW, default = 4'h3
+#define T3X_VPP_POST_VD1_WIN_CUT_CTRL                  0x1d21
+//Bit 31     reg_vd1_win_en                   //unsigned, RW, default = 0
+//Bit 30:13  reserved
+//Bit 12:0   reg_vd1_win_hsize                //unsigned, RW, default = 0
+#define T3X_VPP_POST_PAD_CTRL                          0x1d26
+//Bit 31     reg_pad_enable                   //unsigned, RW, default = 0
+//Bit 30     reg_pad_rpt_lcol                 //unsigned, RW, default = 0
+//Bit 29:28  reg_pad_gc_ctrl                  //unsigned, RW, default = 0
+//Bit 27:24  reserved
+//Bit 23:0   reg_pad_dummy                    //unsigned, RW, default = 0
+#define T3X_VPP_POST_PAD_HSIZE                         0x1d27
+//Bit 31:14  reserved
+//Bit 13:0   reg_pad_hsize                    //unsigned, RW, default = 0
+//====================postblend====================
+#define T3X_VPP_POST_BLEND_CTRL                        0x1d40
+//Bit 31:28  reserved
+//Bit 27:20  hold_lines                        //unsigned ,RW, default = 4
+//Bit 19:2   reserved
+//Bit 1 :0   gclk_ctrl                         //unsigned ,RW, default = 0
+#define T3X_VPP_POST_BLEND_BLEND_DUMMY_DATA            0x1d41
+//Bit 31:24  reserved
+//Bit 23:16  blend0_dummy_data_y               //unsigned ,RW, default = 8'h00
+//Bit 15:8   blend0_dummy_data_cb              //unsigned ,RW, default = 8'h80
+//Bit 7 :0   blend0_dummy_data_cr              //unsigned ,RW, default = 8'h80
+#define T3X_VPP_POST_BLEND_DUMMY_ALPHA                 0x1d42
+//Bit 31:25  reserved
+//Bit 24:16  blend1_dummy_alpha                //unsigned ,RW, default = 9'h0
+//Bit 15:9   reserved
+//Bit 8 :0   blend0_dummy_alpha                //unsigned ,RW, default = 9'h0
+#define T3X_VPP_POST_BLEND_RO_CURRENT_XY               0x1d43
+//Bit 31:0   ro_blend_current_xy               //unsigned ,RO, default = 32'h0
+#define T3X_VPP_POST_BLEND_DUMMY_ALPHA1                0x1d44
+//Bit 31:25  reserved
+//Bit 24:16  blend3_dummy_alpha                //unsigned ,RW, default = 9'h0
+//Bit 15:9   reserved
+//Bit 8 :0   blend2_dummy_alpha                //unsigned ,RW, default = 9'h0
+#define T3X_VPP_POST_BLEND_OSD_FLAG_CTRL               0x1d45
+//Bit 31:23  reg_osd_flag_thd
+//Bit 22:16  reserved                         //unsigned ,RW, default = 9'h80
+//Bit 15:8   reg_osd_flag_premult_mask        //unsigned ,RW, default = 8'h01
+//Bit 7 :5   reserved
+//Bit 4 :0   reg_default_osd_flag             //unsigned ,RW, default = 5'h18
 //
 // Closing file:  ./vpp_post_reg.h
 //
@@ -488,6 +686,7 @@
 //
 //
 // Reading file:  ./vd1_pip_alph_gen_regs.h
+
 #define S5_VD1_PIP_ALPH_CTRL                          0x1d20
 #define S5_VD1_PIP_ALPH_SCP_H_0                       0x1d21
 #define S5_VD1_PIP_ALPH_SCP_H_1                       0x1d22
@@ -555,6 +754,75 @@
 #define S5_VD2_PIP_ALPH_SCP_V_13                      0x1d5f
 #define S5_VD2_PIP_ALPH_SCP_V_14                      0x1d60
 #define S5_VD2_PIP_ALPH_SCP_V_15                      0x1d61
+
+// T3X_PIP_REGS
+#define T3X_VD1_PIP_ALPH_CTRL                          0x1d60
+#define T3X_VD1_PIP_ALPH_SCP_H_0                       0x1d61
+#define T3X_VD1_PIP_ALPH_SCP_H_1                       0x1d62
+#define T3X_VD1_PIP_ALPH_SCP_H_2                       0x1d63
+#define T3X_VD1_PIP_ALPH_SCP_H_3                       0x1d64
+#define T3X_VD1_PIP_ALPH_SCP_H_4                       0x1d65
+#define T3X_VD1_PIP_ALPH_SCP_H_5                       0x1d66
+#define T3X_VD1_PIP_ALPH_SCP_H_6                       0x1d67
+#define T3X_VD1_PIP_ALPH_SCP_H_7                       0x1d68
+#define T3X_VD1_PIP_ALPH_SCP_H_8                       0x1d69
+#define T3X_VD1_PIP_ALPH_SCP_H_9                       0x1d6a
+#define T3X_VD1_PIP_ALPH_SCP_H_10                      0x1d6b
+#define T3X_VD1_PIP_ALPH_SCP_H_11                      0x1d6c
+#define T3X_VD1_PIP_ALPH_SCP_H_12                      0x1d6d
+#define T3X_VD1_PIP_ALPH_SCP_H_13                      0x1d6e
+#define T3X_VD1_PIP_ALPH_SCP_H_14                      0x1d6f
+#define T3X_VD1_PIP_ALPH_SCP_H_15                      0x1d70
+#define T3X_VD1_PIP_ALPH_SCP_V_0                       0x1d71
+#define T3X_VD1_PIP_ALPH_SCP_V_1                       0x1d72
+#define T3X_VD1_PIP_ALPH_SCP_V_2                       0x1d73
+#define T3X_VD1_PIP_ALPH_SCP_V_3                       0x1d74
+#define T3X_VD1_PIP_ALPH_SCP_V_4                       0x1d75
+#define T3X_VD1_PIP_ALPH_SCP_V_5                       0x1d76
+#define T3X_VD1_PIP_ALPH_SCP_V_6                       0x1d77
+#define T3X_VD1_PIP_ALPH_SCP_V_7                       0x1d78
+#define T3X_VD1_PIP_ALPH_SCP_V_8                       0x1d79
+#define T3X_VD1_PIP_ALPH_SCP_V_9                       0x1d7a
+#define T3X_VD1_PIP_ALPH_SCP_V_10                      0x1d7b
+#define T3X_VD1_PIP_ALPH_SCP_V_11                      0x1d7c
+#define T3X_VD1_PIP_ALPH_SCP_V_12                      0x1d7d
+#define T3X_VD1_PIP_ALPH_SCP_V_13                      0x1d7e
+#define T3X_VD1_PIP_ALPH_SCP_V_14                      0x1d7f
+#define T3X_VD1_PIP_ALPH_SCP_V_15                      0x1d80
+
+#define T3X_VD2_PIP_ALPH_CTRL                          0x1d81
+#define T3X_VD2_PIP_ALPH_SCP_H_0                       0x1d82
+#define T3X_VD2_PIP_ALPH_SCP_H_1                       0x1d83
+#define T3X_VD2_PIP_ALPH_SCP_H_2                       0x1d84
+#define T3X_VD2_PIP_ALPH_SCP_H_3                       0x1d85
+#define T3X_VD2_PIP_ALPH_SCP_H_4                       0x1d86
+#define T3X_VD2_PIP_ALPH_SCP_H_5                       0x1d87
+#define T3X_VD2_PIP_ALPH_SCP_H_6                       0x1d88
+#define T3X_VD2_PIP_ALPH_SCP_H_7                       0x1d89
+#define T3X_VD2_PIP_ALPH_SCP_H_8                       0x1d8a
+#define T3X_VD2_PIP_ALPH_SCP_H_9                       0x1d8b
+#define T3X_VD2_PIP_ALPH_SCP_H_10                      0x1d8c
+#define T3X_VD2_PIP_ALPH_SCP_H_11                      0x1d8d
+#define T3X_VD2_PIP_ALPH_SCP_H_12                      0x1d8e
+#define T3X_VD2_PIP_ALPH_SCP_H_13                      0x1d8f
+#define T3X_VD2_PIP_ALPH_SCP_H_14                      0x1d90
+#define T3X_VD2_PIP_ALPH_SCP_H_15                      0x1d91
+#define T3X_VD2_PIP_ALPH_SCP_V_0                       0x1d92
+#define T3X_VD2_PIP_ALPH_SCP_V_1                       0x1d93
+#define T3X_VD2_PIP_ALPH_SCP_V_2                       0x1d94
+#define T3X_VD2_PIP_ALPH_SCP_V_3                       0x1d95
+#define T3X_VD2_PIP_ALPH_SCP_V_4                       0x1d96
+#define T3X_VD2_PIP_ALPH_SCP_V_5                       0x1d97
+#define T3X_VD2_PIP_ALPH_SCP_V_6                       0x1d98
+#define T3X_VD2_PIP_ALPH_SCP_V_7                       0x1d99
+#define T3X_VD2_PIP_ALPH_SCP_V_8                       0x1d9a
+#define T3X_VD2_PIP_ALPH_SCP_V_9                       0x1d9b
+#define T3X_VD2_PIP_ALPH_SCP_V_10                      0x1d9c
+#define T3X_VD2_PIP_ALPH_SCP_V_11                      0x1d9d
+#define T3X_VD2_PIP_ALPH_SCP_V_12                      0x1d9e
+#define T3X_VD2_PIP_ALPH_SCP_V_13                      0x1d9f
+#define T3X_VD2_PIP_ALPH_SCP_V_14                      0x1da0
+#define T3X_VD2_PIP_ALPH_SCP_V_15                      0x1da1
 
 // synopsys translate_off
 // synopsys translate_on
@@ -2817,10 +3085,39 @@
 #define VPP_VD1_PRE_SCALE_CTRL                     0x1dbb
 #define VPP_VD1_PREVSC_COEF                        0x1dbc
 #define VPP_VD1_PREHSC_COEF1                       0x1dbd
-//
-// Closing file:  ./vpp_vd1_scale_regs.h
-// Reading file:  ./vpp_vd1_scale1_regs.h
-//
+
+// T3X_VD1_SCALE_REGS
+#define T3X_VPP_VD1_SCALE_COEF_IDX                     0x2ea0
+#define T3X_VPP_VD1_SCALE_COEF                         0x2ea1
+#define T3X_VPP_VD1_VSC_REGION12_STARTP                0x2ea2
+#define T3X_VPP_VD1_VSC_REGION34_STARTP                0x2ea3
+#define T3X_VPP_VD1_VSC_REGION4_ENDP                   0x2ea4
+#define T3X_VPP_VD1_VSC_START_PHASE_STEP               0x2ea5
+#define T3X_VPP_VD1_VSC_REGION0_PHASE_SLOPE            0x2ea6
+#define T3X_VPP_VD1_VSC_REGION1_PHASE_SLOPE            0x2ea7
+#define T3X_VPP_VD1_VSC_REGION3_PHASE_SLOPE            0x2ea8
+#define T3X_VPP_VD1_VSC_REGION4_PHASE_SLOPE            0x2ea9
+#define T3X_VPP_VD1_VSC_PHASE_CTRL                     0x2eaa
+#define T3X_VPP_VD1_VSC_INI_PHASE                      0x2eab
+#define T3X_VPP_VD1_HSC_REGION12_STARTP                0x2eac
+#define T3X_VPP_VD1_HSC_REGION34_STARTP                0x2ead
+#define T3X_VPP_VD1_HSC_REGION4_ENDP                   0x2eae
+#define T3X_VPP_VD1_HSC_START_PHASE_STEP               0x2eaf
+#define T3X_VPP_VD1_HSC_REGION0_PHASE_SLOPE            0x2eb0
+#define T3X_VPP_VD1_HSC_REGION1_PHASE_SLOPE            0x2eb1
+#define T3X_VPP_VD1_HSC_REGION3_PHASE_SLOPE            0x2eb2
+#define T3X_VPP_VD1_HSC_REGION4_PHASE_SLOPE            0x2eb3
+#define T3X_VPP_VD1_HSC_PHASE_CTRL                     0x2eb4
+#define T3X_VPP_VD1_SC_MISC                            0x2eb5
+#define T3X_VPP_VD1_SCO_FIFO_CTRL                      0x2eb6
+#define T3X_VPP_VD1_HSC_PHASE_CTRL1                    0x2eb7
+#define T3X_VPP_VD1_HSC_INI_PAT_CTRL                   0x2eb8
+#define T3X_VPP_VD1_SC_GCLK_CTRL                       0x2eb9
+#define T3X_VPP_VD1_PREHSC_COEF                        0x2eba
+#define T3X_VPP_VD1_PREVSC_COEF                        0x2ebc
+#define T3X_VPP_VD1_PRE_SCALE_CTRL                     0x2ebb
+#define T3X_VPP_VD1_PREHSC_COEF1                       0x2ebd
+
 #define VPP_SLICE1_VD1_SCALE_COEF_IDX              0x28b0
 #define VPP_SLICE1_VD1_SCALE_COEF                  0x28b1
 #define VPP_SLICE1_VD1_VSC_REGION12_STARTP         0x28b2
@@ -3269,6 +3566,11 @@
 #define VPP_SLICE2_DNLP_CTRL_01                       0x2965
 #define VPP_SLICE3_DNLP_CTRL_01                       0x2a65
 
+// T3X_VPP_SLICE_REGS
+#define T3X_VPP_SLICE1_DNLP_CTRL_01                   0x2867
+#define T3X_VPP_SLICE2_DNLP_CTRL_01                   0x2967
+#define T3X_VPP_SLICE3_DNLP_CTRL_01                   0x2a67
+
 #define S5_VPP_PROBE_CTRL                             0x606b
 #define S5_VPP_PROBE_POS                              0x606c
 #define S5_VPP_HL_COLOR                               0x606d
@@ -3279,6 +3581,10 @@
 #define S5_VPU_VENCI_STAT                             0x1ceb
 #define S5_VPU_VENCL_STAT                             0x1cec
 #define S5_VPU_VENCP_STAT                             0x1ced
+
+// T3X_VENC_REGS
+#define T3X_VPU_VENCL_STAT                            0x1ced
+#define T3X_VPU_VENCP_STAT                            0x1cec
 #define S5_VPU_VENC_CTRL                              0x1cef
 #define S5_VPU_VIU_VENC_MUX_CTRL                      0x271a
 

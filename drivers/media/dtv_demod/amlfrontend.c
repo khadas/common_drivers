@@ -4100,7 +4100,7 @@ static int dtvdemod_dvbs_unicable_change_channel(struct dvb_frontend *fe)
 	}
 
 	ret = aml_diseqc_send_cmd(&devp->diseqc, &cmd);
-	if (ret <= 0) {
+	if (ret < 0) {
 		PR_ERR("%s: aml_diseqc_send_cmd failed %d\n", __func__, ret);
 		return ret;
 	}
@@ -6205,6 +6205,9 @@ static void dvbs_blind_scan_new_work(struct work_struct *work)
 					dvb_frontend_add_event(fe, status);
 			} else {
 				freq_offset = dvbs_get_freq_offset(&polarity) / 1000;
+
+				if (demod->demod_status.is_singlecable)
+					polarity = polarity ? 0 : 1;
 
 				if (polarity)
 					cur_freq = cur_freq + freq_offset * 1000;

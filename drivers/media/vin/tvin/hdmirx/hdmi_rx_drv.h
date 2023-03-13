@@ -71,7 +71,8 @@
 /* hdmirx fix audio no sound */
 /* clear scdc with RX_HPD_C_CTRL_AON_IVCRX */
 /* collate t5m code */
-#define RX_VER2 "ver.2023/03/17"
+/* add aspect 4:3 */
+#define RX_VER2 "ver.2023/03/18"
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368

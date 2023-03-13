@@ -10870,10 +10870,17 @@ static unsigned int dim_bypass_check(struct vframe_s *vf)
 	} else if (VFMT_IS_P(vf->type)) {
 		reason = 8;
 #endif//temp bypass p
-	/*true bypass for 720p above*/
+
+#ifdef P_NOT_SUPPORT_GAME_MODE
+	/*case 1: bypass all source p in game mode*/
+	} else if (VFMT_IS_P(vf->type) && (vf->flag & VFRAME_FLAG_GAME_MODE)) {
+		reason = 0xc;
+#else
+	/*case 2 : true bypass for 720p above*/
 	} else if ((vf->flag & VFRAME_FLAG_GAME_MODE) &&
 		   (x > 720)) {
 		reason = 7;
+#endif
 	} else if (vf->flag & VFRAME_FLAG_HIGH_BANDWIDTH) {
 		reason = 0xa;
 	} else if (vf->type & VIDTYPE_COMPRESS) {

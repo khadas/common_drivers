@@ -21,6 +21,12 @@
 struct emp_packet_st;
 enum vrr_component_conf;
 
+struct hdmi_packet_t {
+	u8 hb[3];
+	u8 pb[28];
+	u8 no_used; /* padding to 32 bytes */
+};
+
 #define HDCPTX_IOOPR		0x820000ab
 enum hdcptx_oprcmd {
 	HDCP_DEFAULT,
@@ -76,6 +82,7 @@ void hdmi_drm_infoframe_rawset(u8 *hb, u8 *pb);
 void hdmi_emp_infoframe_set(struct emp_packet_st *info);
 void hdmi_emp_frame_set_member(struct emp_packet_st *info,
 	enum vrr_component_conf conf, u32 val);
+void hdmitx_dhdr_send(u8 *body, int max_size);
 
 enum vrr_type {
 	T_VRR_NONE,

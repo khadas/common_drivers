@@ -185,7 +185,7 @@ struct meson_host {
 	struct aml_tuning_para para;
 	int run_pxp_flag;
 	int nwr_cnt;
-	bool first_init_flag;
+	bool auto_clk;
 	bool ignore_desc_busy;
 	bool use_intf3_tuning;
 	bool src_clk_cfg_done;

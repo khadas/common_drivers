@@ -165,6 +165,11 @@ int amlogic_of_parse(struct mmc_host *host)
 	else
 		mmc->run_pxp_flag = 0;
 
+	if (device_property_read_bool(dev, "auto-clock-sdio"))
+		mmc->auto_clk = true;
+	else
+		mmc->auto_clk = false;
+
 	return 0;
 }
 
@@ -521,8 +526,8 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 		}
 		src_clk = host->clk[1];
 		cfg |= CFG_AUTO_CLK;
-	/* sdio sdr104 set clk always on default */
-		if (aml_card_type_sdio(host))
+	/* sdio set clk always on default */
+		if (aml_card_type_sdio(host) && !host->auto_clk)
 			cfg &= ~CFG_AUTO_CLK;
 		break;
 	case MMC_TIMING_LEGACY:

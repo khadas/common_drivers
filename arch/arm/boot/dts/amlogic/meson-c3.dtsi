@@ -352,6 +352,7 @@
 				clock-names = "core", "mux0", "mux1",
 						"clkin0", "clkin1";
 			mmc_debug_flag;
+			auto-clock-sdio;
 			resets = <&reset RESET_SD_EMMC_A>;
 		};
 

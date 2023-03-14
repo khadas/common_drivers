@@ -1826,10 +1826,8 @@ void frc_check_secure_mode(struct vframe_s *vf, struct frc_dev_s *devp)
 	u32 temp;
 	enum chip_id chip;
 	static int secure_mode;
-	struct frc_data_s *frc_data;
 
-	frc_data = (struct frc_data_s *)devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	if (chip == ID_T3) {
 		if ((vf->flag & VFRAME_FLAG_VIDEO_SECURE) ==
@@ -1837,7 +1835,7 @@ void frc_check_secure_mode(struct vframe_s *vf, struct frc_dev_s *devp)
 			devp->in_sts.secure_mode = true;
 		else
 			devp->in_sts.secure_mode = false;
-	} else if (chip == ID_T5M) {
+	} else if (chip == ID_T5M || chip == ID_T3X) {
 		if (!sec_flag) {
 			temp = READ_FRC_REG(FRC_RO_FRM_SEC_STAT);
 			temp = (temp >> 16) & 0xf; // 1: input frame is security

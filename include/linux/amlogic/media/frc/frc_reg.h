@@ -1698,23 +1698,45 @@
 #define FRC_INP_LOSS_SLICE_SEC                     0x045e
 //Bit 31:1          reserved
 //Bit 0             reg_inp_loss_slice_sec    // unsigned,   RW, default = 0,1:same as lossy-body 0:non_security
-// Closing file:  ./frc_inc/frc_inp_hw_reg.h
-#define FRC_INP_MCDW_CTRL                         0x047a
+#define FRC_INP_MC_HDS_CTRL0                       0x0470
+//Bit 31:4          reserved
+//Bit 3:0           reg_inp_mc_hds_dsx_ofset   // signed ,    RW, default = 0  horizontal pixel offset for the input pixel to downsample filter
+#define FRC_INP_MC_HDS_WIN_SETTING_SCP             0x0471
+//Bit 31:16         reg_inp_mc_hds_hscp0       // unsigned ,    RW, default = 0
+//Bit 15: 0         reg_inp_mc_hds_hscp1       // unsigned ,    RW, default = 0
+#define FRC_INP_MC_HDS_COEFX3                      0x0472
+//Bit 31:24         reg_inp_mc_hds_coef_3      // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of csc_out data, normalized to 128 as 1
+//Bit 23:16         reg_inp_mc_hds_coef_2      // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of csc_out data, normalized to 128 as 1
+//Bit 15:8          reg_inp_mc_hds_coef_1      // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of csc_out data, normalized to 128 as 1
+//Bit 7:0           reg_inp_mc_hds_coef_0      // signed ,    RW, default = 16  coef of AA filter for horizontal downsampling of csc_out data, normalized to 128 as 1
+#define FRC_INP_CUR_ME_ORECON_EN                   0x0473
+//Bit 31:1          reserved
+//Bit 0             reg_cur_me_orecon_en       // unsigned ,  RW, default = 1
+#define FRC_INP_PD_DIFF_MODE                       0x0474
+//Bit 31:2          reserved
+//Bit 1:0           reg_pd_diff_mode           // unsigned ,  RW, default = 0
+#define FRC_INP_HME_RAM_DLY_DEPTH                  0x0475
+//Bit 31:13         reserved
+//Bit 12:0          reg_inp_me_ram_dly_depth   // unsigned ,  RW, default = 200
+#define FRC_INP_MCDW_CTRL                          0x047a
 //Bit 31:29         reserved
-//Bit 28            reg_mcdw_lpf_mode
-// unsigned , RW, default = 0
+//Bit 28            reg_mcdw_lpf_mode          // unsigned , RW, default = 0
 //Bit 27:26         reserved
-//Bit 25:24         reg_mcdw_ds_mode_hv
-// unsigned , RW, default = 3   0:h/2   1:v/2
+//Bit 25:24         reg_mcdw_ds_mode_hv        // unsigned , RW, default = 3   0:h/2   1:v/2
 //Bit 23:18         reserved
-//Bit 17:8          reg_mcdw_loss_slice_num
-// unsigned , RW, default = 4
+//Bit 17:8          reg_mcdw_loss_slice_num    // unsigned , RW, default = 4
 //Bit 7:5           reserved
-//Bit 4             reg_mcdw_loss_en
-// unsigned , RW, default = 0
+//Bit 4             reg_mcdw_loss_en           // unsigned , RW, default = 0
 //Bit 3:1           reserved
-//Bit 0             reg_mcdw_path_en
-// unsigned , RW, default = 0,1:open mc double write path
+//Bit 0             reg_mcdw_path_en           // unsigned , RW, default = 0,1:open mc double write path
+#define FRC_INP_PATH_OPT                           0x047c
+//Bit 31:5          reserved
+//Bit 4             reg_inp_mc_nr_opt          // unsigned , RW, default = 0
+//Bit 3             reg_inp_bbd_opt            // unsigned , RW, default = 0
+//Bit 2             reg_frc_me_loss_opt        // unsigned , RW, default = 0
+//Bit 1             reg_frc_mc_loss_opt        // unsigned , RW, default = 0
+//Bit 0             reg_mcwr_path_opt          // unsigned , RW, default = 0
+// Closing file:  ./frc_inc/frc_inp_hw_reg.h
 // Reading file:  ./frc_inc/frc_inp_csc_regs.h
 #define FRC_INP_CSC_CTRL                           0x04e0
 //Bit 31: 10       reserved
@@ -2321,6 +2343,322 @@
 //
 // Closing file:  ./frc_inc/frc_rdma_regs.h
 //
+//
+// Reading file:  ./frc_inc/frc_rdma_regs.h  for T3X
+//
+//===========================================================================
+// FRC_RDMA registers 0x00 - 0xff
+//===========================================================================
+//==========================================ctrl regs==========================================
+#define FRC_RDMA_CTRL_T3X                              0x3b00
+//Bit 31:16     ctrl_clr_rdma_done_int                  //unsigned, WO, default = 0, clear int. Write 1 to reset rdma_int level to 0. No need to clear this bit.
+//Bit 15        ctrl_clr_err                            //unsigned, WO, default = 0, clear rdma err
+//Bit 11:10     ctrl_ram_wr_burst_size                  //unsigned, RW, default = 0
+//Bit 9:8       ctrl_ram_rd_burst_size                  //unsigned, RW, default = 0
+//Bit 7         ctrl_ddr_wr_urgent                      //unsigned, RW, default = 0
+//Bit 6         ctrl_ddr_rd_urgent                      //unsigned, RW, default = 0,
+//Bit 5:4       ctrl_ahb_wr_burst_size                  //unsigned, RW, default = 0, ABH write request burst size, 0:16 1:24: 2:32 3:48
+//Bit 3:2       ctrl_ahb_rd_burst_size                  //unsigned, RW, default = 0, ABH read request burst size, 0:16 1:24: 2:32 3:48
+//Bit 1         ctrl_sw_reset                           //unsigned, RW, default = 0, 1=Reset RDMA logic except register
+//Bit 0         ctrl_free_clk_enable                    //unsigned, RW, default = 0, Enable clock gating. 1=No clock gating, enable free clock
+#define FRC_RDMA_SRAM_CNTL_T3X                         0x3b01
+//Bit 31:18     reserved
+//Bit 17        ram_incr_mode                           //unsigned, RW, default = 0, increase mode, 0=SRAM address increment after RDMA_SRAM_REGDATA; 1=SRAM address increment after RDMA_SRAM_REGADDR
+//Bit 16        ram_wr_int                              //unsigned, RW, default = 0, rd/wr mode, 0=Write; 1=Read
+//Bit 15:10     reserved
+//Bit 9:0       ram_addr_int                            //unsigned, RW, default = 0, init sram addr
+#define FRC_RDMA_SRAM_REGADDR_T3X                      0x3b02
+//Bit 31:16     reserved
+//Bit 15:0      ram_regaddr                             //unsigned, RW, default = 0, reg addr which write to sram or read from sram
+#define FRC_RDMA_SRAM_REGDATA_T3X                       0x3b03
+//Bit 31:0      ram_regdata                             //unsigned, RW, default = 0, reg data which write to sram or read from sram
+#define FRC_RDMA_STATUS_T3X                             0x3b04
+//Bit 31:30     reserved
+//Bit 29:28     axi_w_st                                //unsigned, RO, default = 0
+//Bit 27:26     axi_aw_st                               //unsigned, RO, default = 0
+//Bit 25:24     axi_ar_st                               //unsigned, RO, default = 0
+//Bit 23:20     rdma_id_axi                             //unsigned, RO, default = 0, axi rdma channel id
+//Bit 19:16     rdma_id_pipe                            //unsigned, RO, default = 0, sram rdma channel id
+//Bit 15:0      req_latch                               //unsigned, RO, default = 0, req_latch. Requests that are yet to be serviced. E.g. 0000=No request; 0001=Req 0 waiting; 1100=Req 2 and 3 waiting.
+#define FRC_RDMA_STATUS1_T3X                            0x3b05
+//Bit 31:20     reserved
+//Bit 19:4      rdma_done_flag                          //unsigned, RO, default = 0
+//Bit 3         reserved
+//Bit 2         err_axi_wrfifo_underflow                //unsigned, RO, default = 0
+//Bit 1         err_axi_wrfifo_overflow                  //unsigned, RO, default = 0
+//Bit 0         err_axi_rdfifo_overflow                  //unsigned, RO, default = 0
+#define FRC_RDMA_STATUS2_T3X                            0x3b06
+//Bit 31:30     reserved
+//Bit 29:24     shr_wrfifo_cnt                          //unsigned, RO, default = 0
+//Bit 23:22     reserved
+//Bit 21:16     shr_rdfifo_cnt                          //unsigned, RO, default = 0
+//Bit 15:14     reserved
+//Bit 13:8      axi_wrfifo_room                         //unsigned, RO, default = 0
+//Bit 7:6       reserved
+//Bit 5:0       axi_rdfifo_room                         //unsigned, RO, default = 0
+#define FRC_RDMA_STATUS3_T3X                            0x3b07
+//Bit 31:30     reserved
+//Bit 29:28     ram_req_st                              //unsigned, RO, default = 0
+//Bit 27:24     rdma_id_ram                             //unsigned, RO, default = 0
+//Bit 23:8      axi_b_pending                           //unsigned, RO, default = 0
+//Bit 7:0       axi_aw_pending                          //unsigned, RO, default = 0
+//==========================================man regs==========================================
+#define FRC_RDMA_ACCESS_MAN_T3X                         0x3b10
+//Bit 31:4      reserved
+//Bit 3         ctrl_buf_sel_man                        //unsigned, RW, default = 0, 0:select ddr 1:select sram
+//Bit 2         ctrl_cbus_write_man                     //unsigned, RW, default = 0, Register read/write mode for manual-start. 1=Register write; 0=Register read
+//Bit 1         ctrl_cbus_addr_incr_man                 //unsigned, RW, default = 0, 1=Incremental register access for manual-start; 0=Non-incremental (individual) register access
+//Bit 0         ctrl_start_man                          //unsigned, WO, default = 0, Write 1 to this bit to manual-start DMA. This bit always read back 0
+#define FRC_RDMA_AHB_START_ADDR_MAN_MSB_T3X             0x3b11
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for manual start DMA
+#define FRC_RDMA_AHB_START_ADDR_MAN_T3X                 0x3b12
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for manual start DMA
+#define FRC_RDMA_AHB_END_ADDR_MAN_MSB_T3X               0x3b13
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for manual start DMA
+#define FRC_RDMA_AHB_END_ADDR_MAN_T3X                   0x3b14
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for manual start DMA
+//==========================================auto regs==========================================
+#define FRC_RDMA_ACCESS_AUTO_T3X                        0x3b20
+//Bit 24:8      reserved
+//Bit    7      ctrl_cbus_write_3                       //unsigned, RW, default = 0, Register read/write mode for auto-start 3. 1=Register write; 0=Register read
+//Bit    6      ctrl_cbus_write_2                       //unsigned, RW, default = 0, Register read/write mode for auto-start 2. 1=Register write; 0=Register read
+//Bit    5      ctrl_cbus_write_1                       //unsigned, RW, default = 0, Register read/write mode for auto-start 1. 1=Register write; 0=Register read
+//Bit    4      reserved
+//Bit    3      ctrl_cbus_addr_incr_3                   //unsigned, RW, default = 0, 1=Incremental register access for auto-start 3; 0=Non-incremental (individual) register access
+//Bit    2      ctrl_cbus_addr_incr_2                   //unsigned, RW, default = 0, 1=Incremental register access for auto-start 2; 0=Non-incremental (individual) register access
+//Bit    1      ctrl_cbus_addr_incr_1                   //unsigned, RW, default = 0, 1=Incremental register access for auto-start 1; 0=Non-incremental (individual) register access
+//Bit    0      reserved
+#define FRC_RDMA_ACCESS_AUTO2_T3X                       0x3b21
+//Bit 31:8      reserved
+//Bit    7      ctrl_cbus_write_7                       //unsigned, RW, default = 0, Register read/write mode for auto-start 7. 1=Register write; 0=Register read
+//Bit    6      ctrl_cbus_write_6                       //unsigned, RW, default = 0, Register read/write mode for auto-start 6. 1=Register write; 0=Register read
+//Bit    5      ctrl_cbus_write_5                       //unsigned, RW, default = 0, Register read/write mode for auto-start 5. 1=Register write; 0=Register read
+//Bit    4      ctrl_cbus_write_4                       //unsigned, RW, default = 0, Register read/write mode for auto-start 4. 1=Register write; 0=Register read
+//Bit    3      ctrl_cbus_addr_incr_7                   //unsigned, RW, default = 0, 1=Incremental register access for auto-start 7; 0=Non-incremental (individual) register access
+//Bit    2      ctrl_cbus_addr_incr_6                   //unsigned, RW, default = 0, 1=Incremental register access for auto-start 6; 0=Non-incremental (individual) register access
+//Bit    1      ctrl_cbus_addr_incr_5                   //unsigned, RW, default = 0, 1=Incremental register access for auto-start 5; 0=Non-incremental (individual) register access
+//Bit    0      ctrl_cbus_addr_incr_4                   //unsigned, RW, default = 0, 1=Incremental register access for auto-start 4; 0=Non-incremental (individual) register access
+#define FRC_RDMA_ACCESS_AUTO3_T3X                       0x3b22
+//Bit   31:16   reserved
+//Bit   15      ctrl_cbus_write_15                      //unsigned, RW, default = 0, Register read/write mode for auto-start 15. 1=Register write; 0=Register read
+//Bit   14      ctrl_cbus_write_14                      //unsigned, RW, default = 0, Register read/write mode for auto-start 14. 1=Register write; 0=Register read
+//Bit   13      ctrl_cbus_write_13                      //unsigned, RW, default = 0, Register read/write mode for auto-start 13. 1=Register write; 0=Register read
+//Bit   12      ctrl_cbus_write_12                      //unsigned, RW, default = 0, Register read/write mode for auto-start 12. 1=Register write; 0=Register read
+//Bit   11      ctrl_cbus_write_11                      //unsigned, RW, default = 0, Register read/write mode for auto-start 11. 1=Register write; 0=Register read
+//Bit   10      ctrl_cbus_write_10                      //unsigned, RW, default = 0, Register read/write mode for auto-start 10. 1=Register write; 0=Register read
+//Bit    9      ctrl_cbus_write_9                       //unsigned, RW, default = 0, Register read/write mode for auto-start 9. 1=Register write; 0=Register read
+//Bit    8      ctrl_cbus_write_8                       //unsigned, RW, default = 0, Register read/write mode for auto-start 8. 1=Register write; 0=Register read
+//Bit    7      ctrl_cbus_addr_incr_15                  //unsigned, RW, default = 0, 1=Incremental register access for auto-start 15; 0=Non-incremental (individual) register access
+//Bit    6      ctrl_cbus_addr_incr_14                  //unsigned, RW, default = 0, 1=Incremental register access for auto-start 14; 0=Non-incremental (individual) register access
+//Bit    5      ctrl_cbus_addr_incr_13                  //unsigned, RW, default = 0, 1=Incremental register access for auto-start 13; 0=Non-incremental (individual) register access
+//Bit    4      ctrl_cbus_addr_incr_12                  //unsigned, RW, default = 0, 1=Incremental register access for auto-start 12; 0=Non-incremental (individual) register access
+//Bit    3      ctrl_cbus_addr_incr_11                  //unsigned, RW, default = 0, 1=Incremental register access for auto-start 11; 0=Non-incremental (individual) register access
+//Bit    2      ctrl_cbus_addr_incr_10                  //unsigned, RW, default = 0, 1=Incremental register access for auto-start 10; 0=Non-incremental (individual) register access
+//Bit    1      ctrl_cbus_addr_incr_9                   //unsigned, RW, default = 0, 1=Incremental register access for auto-start 9; 0=Non-incremental (individual) register access
+//Bit    0      ctrl_cbus_addr_incr_8                   //unsigned, RW, default = 0, 1=Incremental register access for auto-start 8; 0=Non-incremental (individual) register access
+#define FRC_RDMA_ACCESS_AUTO4_T3X                       0x3b23
+//Bit 31:16  reserved
+//Bit 15     ctrl_buf_sel_15                     //unsigned, RW, default = 0
+//Bit 14     ctrl_buf_sel_14                     //unsigned, RW, default = 0
+//Bit 13     ctrl_buf_sel_13                     //unsigned, RW, default = 0
+//Bit 12     ctrl_buf_sel_12                     //unsigned, RW, default = 0
+//Bit 11     ctrl_buf_sel_11                     //unsigned, RW, default = 0
+//Bit 10     ctrl_buf_sel_10                     //unsigned, RW, default = 0
+//Bit 9      ctrl_buf_sel_9                      //unsigned, RW, default = 0
+//Bit 8      ctrl_buf_sel_8                      //unsigned, RW, default = 0
+//Bit 7      ctrl_buf_sel_7                      //unsigned, RW, default = 0
+//Bit 6      ctrl_buf_sel_6                      //unsigned, RW, default = 0
+//Bit 5      ctrl_buf_sel_5                      //unsigned, RW, default = 0
+//Bit 4      ctrl_buf_sel_4                      //unsigned, RW, default = 0
+//Bit 3      ctrl_buf_sel_3                      //unsigned, RW, default = 0
+//Bit 2      ctrl_buf_sel_2                      //unsigned, RW, default = 0
+//Bit 1      ctrl_buf_sel_1                      //unsigned, RW, default = 0
+//Bit 0      reserved
+#define FRC_RDMA_AUTO_SRC1_SEL_T3X                      0x3b24
+//Bit 31:0      ctrl_enable_int_1                       //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_1_MSB_T3X               0x3b25
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 1
+#define FRC_RDMA_AHB_START_ADDR_1_T3X                   0x3b26
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 1
+#define FRC_RDMA_AHB_END_ADDR_1_MSB_T3X                 0x3b27
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 1
+#define FRC_RDMA_AHB_END_ADDR_1_T3X                     0x3b28
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 1
+#define FRC_RDMA_AUTO_SRC2_SEL_T3X                      0x3b29
+//Bit 31:0      ctrl_enable_int_2                       //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_2_MSB_T3X               0x3b2a
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 2
+#define FRC_RDMA_AHB_START_ADDR_2_T3X                   0x3b2b
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 2
+#define FRC_RDMA_AHB_END_ADDR_2_MSB_T3X                 0x3b2c
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 2
+#define FRC_RDMA_AHB_END_ADDR_2_T3X                     0x3b2d
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 2
+#define FRC_RDMA_AUTO_SRC3_SEL_T3X                      0x3b2e
+//Bit 31:0      ctrl_enable_int_3                       //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_3_MSB_T3X               0x3b2f
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 3
+#define FRC_RDMA_AHB_START_ADDR_3_T3X                   0x3b30
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 3
+#define FRC_RDMA_AHB_END_ADDR_3_MSB_T3X                 0x3b31
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 3
+#define FRC_RDMA_AHB_END_ADDR_3_T3X                     0x3b32
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 3
+#define FRC_RDMA_AUTO_SRC4_SEL_T3X                      0x3b33
+//Bit 31:0      ctrl_enable_int_4                       //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_4_MSB_T3X               0x3b34
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 4
+#define FRC_RDMA_AHB_START_ADDR_4_T3X                   0x3b35
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 4
+#define FRC_RDMA_AHB_END_ADDR_4_MSB_T3X                 0x3b36
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 4
+#define FRC_RDMA_AHB_END_ADDR_4_T3X                     0x3b37
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 4
+#define FRC_RDMA_AUTO_SRC5_SEL_T3X                      0x3b38
+//Bit 31:0      ctrl_enable_int_5                       //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_5_MSB_T3X               0x3b39
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 5
+#define FRC_RDMA_AHB_START_ADDR_5_T3X                   0x3b3a
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 5
+#define FRC_RDMA_AHB_END_ADDR_5_MSB_T3X                 0x3b3b
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 5
+#define FRC_RDMA_AHB_END_ADDR_5_T3X                     0x3b3c
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 5
+#define FRC_RDMA_AUTO_SRC6_SEL_T3X                      0x3b3d
+//Bit 31:0      ctrl_enable_int_6                       //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_6_MSB_T3X               0x3b3e
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 6
+#define FRC_RDMA_AHB_START_ADDR_6_T3X                   0x3b3f
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 6
+#define FRC_RDMA_AHB_END_ADDR_6_MSB_T3X                 0x3b40
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 6
+#define FRC_RDMA_AHB_END_ADDR_6_T3X                     0x3b41
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 6
+#define FRC_RDMA_AUTO_SRC7_SEL_T3X                      0x3b42
+//Bit 31:0      ctrl_enable_int_7                       //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_7_MSB_T3X               0x3b43
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 7
+#define FRC_RDMA_AHB_START_ADDR_7_T3X                   0x3b44
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 7
+#define FRC_RDMA_AHB_END_ADDR_7_MSB_T3X                 0x3b45
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 7
+#define FRC_RDMA_AHB_END_ADDR_7_T3X                     0x3b46
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 7
+#define FRC_RDMA_AUTO_SRC8_SEL_T3X                      0x3b47
+//Bit 31:0      ctrl_enable_int_8                       //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_8_MSB_T3X               0x3b48
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 8
+#define FRC_RDMA_AHB_START_ADDR_8_T3X                   0x3b49
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 8
+#define FRC_RDMA_AHB_END_ADDR_8_MSB_T3X                 0x3b4a
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 8
+#define FRC_RDMA_AHB_END_ADDR_8_T3X                     0x3b4b
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 8
+#define FRC_RDMA_AUTO_SRC9_SEL_T3X                      0x3b4c
+//Bit 31:0      ctrl_enable_int_9                       //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_9_MSB_T3X               0x3b4d
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 9
+#define FRC_RDMA_AHB_START_ADDR_9_T3X                   0x3b4e
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 9
+#define FRC_RDMA_AHB_END_ADDR_9_MSB_T3X                 0x3b4f
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 9
+#define FRC_RDMA_AHB_END_ADDR_9_T3X                     0x3b50
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 9
+#define FRC_RDMA_AUTO_SRC10_SEL_T3X                     0x3b51
+//Bit 31:0      ctrl_enable_int_10                      //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_10_MSB_T3X              0x3b52
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 10
+#define FRC_RDMA_AHB_START_ADDR_10_T3X                  0x3b53
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 10
+#define FRC_RDMA_AHB_END_ADDR_10_MSB_T3X                0x3b54
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 10
+#define FRC_RDMA_AHB_END_ADDR_10_T3X                    0x3b55
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 10
+#define FRC_RDMA_AUTO_SRC11_SEL_T3X                     0x3b56
+//Bit 31:0      ctrl_enable_int_11                      //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_11_MSB_T3X              0x3b57
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 11
+#define FRC_RDMA_AHB_START_ADDR_11_T3X                  0x3b58
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 11
+#define FRC_RDMA_AHB_END_ADDR_11_MSB_T3X                0x3b59
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 11
+#define FRC_RDMA_AHB_END_ADDR_11_T3X                    0x3b5a
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 11
+#define FRC_RDMA_AUTO_SRC12_SEL_T3X                     0x3b5b
+//Bit 31:0      ctrl_enable_int_12                      //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_12_MSB_T3X              0x3b5c
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 12
+#define FRC_RDMA_AHB_START_ADDR_12_T3X                  0x3b5d
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 12
+#define FRC_RDMA_AHB_END_ADDR_12_MSB_T3X                0x3b5e
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 12
+#define FRC_RDMA_AHB_END_ADDR_12_T3X                    0x3b5f
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 12
+#define FRC_RDMA_AUTO_SRC13_SEL_T3X                     0x3b60
+//Bit 31:0      ctrl_enable_int_13                      //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_13_MSB_T3X              0x3b61
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 13
+#define FRC_RDMA_AHB_START_ADDR_13_T3X                  0x3b62
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 13
+#define FRC_RDMA_AHB_END_ADDR_13_MSB_T3X                0x3b63
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 13
+#define FRC_RDMA_AHB_END_ADDR_13_T3X                    0x3b64
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 13
+#define FRC_RDMA_AUTO_SRC14_SEL_T3X                     0x3b65
+//Bit 31:0      ctrl_enable_int_14                      //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_14_MSB_T3X              0x3b66
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 14
+#define FRC_RDMA_AHB_START_ADDR_14_T3X                  0x3b67
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 14
+#define FRC_RDMA_AHB_END_ADDR_14_MSB_T3X                0x3b68
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 14
+#define FRC_RDMA_AHB_END_ADDR_14_T3X                    0x3b69
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 14
+#define FRC_RDMA_AUTO_SRC15_SEL_T3X                     0x3b6a
+//Bit 31:0      ctrl_enable_int_15                      //unsigned, RW, default = 0
+#define FRC_RDMA_AHB_START_ADDR_15_MSB_T3X              0x3b6b
+//Bit 31:2      reserved
+//Bit  1:0      AHB start address_high                  //unsigned, RW, default = 0, AHB start address[33:32] for  auto start source 15
+#define FRC_RDMA_AHB_START_ADDR_15_T3X                  0x3b6c
+//Bit 31:0      AHB start address_low                   //unsigned, RW, default = 0, AHB start address[31:0] for auto start source 15
+#define FRC_RDMA_AHB_END_ADDR_15_MSB_T3X                0x3b6d
+//Bit 31:2      reserved
+//Bit  1:0      AHB end address_high                    //unsigned, RW, default = 0, AHB end address[33:32] for  auto start source 15
+#define FRC_RDMA_AHB_END_ADDR_15_T3X                    0x3b6e
+//Bit 31:0      AHB end address_low                     //unsigned, RW, default = 0, AHB end address[31:0] for auto start source 15
+//
+// Closing file:  ./frc_inc/frc_rdma_regs.h
+//
 // -----------------------------------------------
 // REG_BASE:  FRC_WRAP_APB_BASE = 0x3f
 // -----------------------------------------------
@@ -2487,6 +2825,7 @@
 
 /*vpu top ctl base addr: 0xff000000*/
 #define VPU_FRC_TOP_CTRL                 0x278d
+#define VIU_FRC_MISC                     0x1a1c
 
 #define ENCL_SYNC_LINE_LENGTH            0x1c4c
 #define ENCL_SYNC_PIXEL_EN               0x1c4d

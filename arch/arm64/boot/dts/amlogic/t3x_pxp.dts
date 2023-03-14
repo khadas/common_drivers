@@ -211,6 +211,22 @@
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
+
+		frc_cma_reserved:linux,frc_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* frc:size need 4M alignment
+			 * 1080P 16 buffer:88Mhz (0x5800000)
+			 * 4k 16 buffer:348Mhz (0x15c00000)
+			 * 400Mhz (0x19000000)
+			 * 384Mhz (0x18000000)
+			 * 368Mhz (0x17000000)
+			 */
+			size = <0x0 0xd400000>; // reserved 212M
+			alignment = <0x0 0x400000>;
+			linux,contiguous-region;
+			/*alloc-ranges = <0x0 0x0 0x0 0x3f800000>;*/
+		};
 	};
 
 	smmu: aml_smmu {
@@ -735,6 +751,27 @@
 		status = "disabled";
 		tv_mode = <0>;/*1:enable ;0:disable*/
 		multi_core1 = <1>;
+	};
+
+	aml_frc {
+		compatible = "amlogic, t5m_frc";
+		dev_name = "aml_frc";
+		status = "okay";
+		frc_en = <1>;/*1:enable ;0:disable*/
+		frc_hw_pos = <0>;/*0:before postblend; 1:after postblend*/
+		interrupts = <GIC_SPI 221 IRQ_TYPE_EDGE_RISING
+				GIC_SPI 222 IRQ_TYPE_EDGE_RISING
+				GIC_SPI 128 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "irq_frc_in", "irq_frc_out", "irq_frc_rdma";
+		memory-region = <&frc_cma_reserved>;
+		clocks = <&clkc CLKID_FRC>, <&clkc CLKID_ME>;
+		clock-names = "clk_frc", "clk_me";
+		power-domains = <&pwrdm PDID_T3X_FRC_TOP>;
+		power-domain-names = "frc-top";
+		reg = <0x0 0xFF850000 0x0 0x30000 /*frc reg*/
+		       0x0 0xFE000000 0x0 0x300
+		       0x0 0xFF000000 0x0 0x10000>; /*frc clk reg*/
+		reg-names = "frc_reg","frc_clk_reg","vpu_reg";
 	};
 
     /* SMC */

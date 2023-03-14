@@ -203,17 +203,14 @@ void frc_clk_init(struct frc_dev_s *frc_devp)
 void frc_osdbit_setfalsecolor(struct frc_dev_s *devp, u32 falsecolor)
 {
 	enum chip_id chip;
-	struct frc_data_s *frc_data;
-	struct frc_dev_s *frc_devp = get_frc_devp();
 	u32 tmp_reg1;
 
-	frc_data = (struct frc_data_s *)frc_devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	if (chip == ID_T3) {
 		frc_config_reg_value((falsecolor << 19), 0x80000, &regdata_logodbg_0142);
 		WRITE_FRC_REG_BY_CPU(FRC_LOGO_DEBUG, regdata_logodbg_0142);
-	} else if (chip == ID_T5M) {
+	} else if (chip == ID_T5M || chip == ID_T3X) {
 		tmp_reg1 = READ_FRC_REG(FRC_MC_LBUF_LOGO_CTRL);
 		regdata_logodbg_0142 = READ_FRC_REG(FRC_LOGO_DEBUG);
 		if (falsecolor == 1) {
@@ -432,7 +429,6 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 {
 	u32 offset = 0x0;
 	enum chip_id chip;
-	struct frc_data_s *frc_data;
 	u32 inp_ud_flag, readval, timeout;
 
 	if (!frc_devp)
@@ -445,12 +441,11 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 		frc_devp->frc_sts.new_state != FRC_STATE_ENABLE)
 		return;
 
-	frc_data = (struct frc_data_s *)frc_devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	if (chip == ID_T3)
 		offset = 0xa0;
-	else if (chip == ID_T5M)
+	else if (chip == ID_T5M || chip == ID_T3X)
 		offset = 0x0;
 
 	inp_ud_flag = READ_FRC_REG(FRC_INP_UE_DBG + offset) & 0x3f;
@@ -805,15 +800,12 @@ void frc_pattern_on(u32 en)
 {
 	u32 offset = 0x0;
 	enum chip_id chip;
-	struct frc_data_s *frc_data;
-	struct frc_dev_s *frc_devp = get_frc_devp();
 
-	frc_data = (struct frc_data_s *)frc_devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	if (chip == ID_T3)
 		offset = 0xa0;
-	else if (chip == ID_T5M)
+	else if (chip == ID_T5M || chip == ID_T3X)
 		offset = 0x0;
 
 	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN, en, 6, 1);
@@ -901,11 +893,9 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	u32 adj_mc_dly;
 	enum chip_id chip;
 
-	struct frc_data_s *frc_data;
 	struct frc_fw_data_s *fw_data;
 	struct frc_top_type_s *frc_top;
 
-	frc_data = (struct frc_data_s *)frc_devp->data;
 	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
 
@@ -914,7 +904,7 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	inp_hold_line = fw_data->holdline_parm.inp_hold_line;
 	reg_post_dly_vofst = fw_data->holdline_parm.reg_post_dly_vofst;
 	reg_mc_dly_vofst0 = fw_data->holdline_parm.reg_mc_dly_vofst0;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	tmpvalue = READ_FRC_REG(FRC_REG_TOP_RESERVE0);
 	if ((tmpvalue & 0xFF) == 0)
@@ -977,8 +967,13 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 		//mc_frm_dly = 28;   // reg readback (14)  under 333MHz
 		// mevp_frm_dly = 260;   // under 400MHz
 		// mc_frm_dly = 28;      // under 400MHz
-		mevp_frm_dly = frc_devp->frm_dly_set[1].mevp_frm_dly;
-		mc_frm_dly  = frc_devp->frm_dly_set[1].mc_frm_dly;
+		if (frc_devp->out_sts.out_framerate > 80) { // 4k2k-120Hz
+			mevp_frm_dly = frc_devp->frm_dly_set[3].mevp_frm_dly;
+			mc_frm_dly  = frc_devp->frm_dly_set[3].mc_frm_dly;
+		} else {
+			mevp_frm_dly = frc_devp->frm_dly_set[1].mevp_frm_dly;
+			mc_frm_dly  = frc_devp->frm_dly_set[1].mc_frm_dly;
+		}
 	} else if (frc_top->out_hsize == 3840 && frc_top->out_vsize == 1080) {
 		reg_mc_out_line = (frc_top->vfb / 2) * 1;
 		reg_me_dly_vofst = reg_mc_out_line;
@@ -1135,15 +1130,12 @@ void frc_inp_init(void)
 {
 	u32 offset = 0x0;
 	enum chip_id chip;
-	struct frc_data_s *frc_data;
-	struct frc_dev_s *frc_devp = get_frc_devp();
 
-	frc_data = (struct frc_data_s *)frc_devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	if (chip == ID_T3)
 		offset = 0xa0;
-	else if (chip == ID_T5M)
+	else if (chip == ID_T5M || chip == ID_T3X)
 		offset = 0x0;
 
 	WRITE_FRC_REG_BY_CPU(FRC_FRAME_BUFFER_NUM, 16 << 8 | 16);
@@ -1801,15 +1793,12 @@ void enable_nr(void)
 	u32  reg_nr_misc_data;
 	u32 offset = 0x0;
 	enum chip_id chip;
-	struct frc_data_s *frc_data;
-	struct frc_dev_s *frc_devp = get_frc_devp();
 
-	frc_data = (struct frc_data_s *)frc_devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	if (chip == ID_T3)
 		offset = 0xa0;
-	else if (chip == ID_T5M)
+	else if (chip == ID_T5M || chip == ID_T3X)
 		offset = 0x0;
 
 	WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 9, 1); //reg_mc_nr_en
@@ -1822,15 +1811,12 @@ void enable_bbd(void)
 {
 	u32 offset = 0x0;
 	enum chip_id chip;
-	struct frc_data_s *frc_data;
-	struct frc_dev_s *frc_devp = get_frc_devp();
 
-	frc_data = (struct frc_data_s *)frc_devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	if (chip == ID_T3)
 		offset = 0xa0;
-	else if (chip == ID_T5M)
+	else if (chip == ID_T5M || chip == ID_T3X)
 		offset = 0x0;
 
 	// WRITE_FRC_BITS(FRC_REG_INP_MODULE_EN + offset, 1, 7, 1); //reg_inp_bbd_en
@@ -1949,12 +1935,9 @@ void frc_dump_fixed_table(void)
 {
 	int i = 0;
 	unsigned int value = 0;
-	struct frc_data_s *frc_data;
 	enum chip_id chip;
-	struct frc_dev_s *frc_devp = get_frc_devp();
 
-	frc_data = (struct frc_data_s *)frc_devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	if (chip == ID_T3) {
 		for (i = 0; i < T3_DRV_REG_NUM; i++) {
@@ -1965,6 +1948,11 @@ void frc_dump_fixed_table(void)
 		for (i = 0; i < T5M_REG_NUM; i++) {
 			value = READ_FRC_REG(t5m_regs_table[i].addr);
 			pr_frc(0, "0x%04x, 0x%08x\n", t5m_regs_table[i].addr, value);
+		}
+	} else if (chip == ID_T3X) {
+		for (i = 0; i < T3X_DRV_REG_NUM; i++) {
+			value = READ_FRC_REG(t3x_drv_regs_table[i].addr);
+			pr_frc(0, "0x%04x, 0x%08x\n", t3x_drv_regs_table[i].addr, value);
 		}
 	}
 }
@@ -2027,7 +2015,6 @@ EXPORT_SYMBOL(frc_set_val_from_reg);
 void frc_internal_initial(struct frc_dev_s *frc_devp)
 {
 	int i;
-	struct frc_data_s *frc_data;
 	enum chip_id chip;
 
 	if (!frc_devp)
@@ -2056,9 +2043,7 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 
 	struct frc_fw_data_s *fw_data;
 	struct frc_top_type_s *frc_top;
-
-	frc_data = (struct frc_data_s *)frc_devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
 
@@ -2072,6 +2057,11 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 			WRITE_FRC_REG_BY_CPU(t5m_regs_table[i].addr, t5m_regs_table[i].value);
 		pr_frc(0, "t5m_regs_table[%d] init done\n", T5M_REG_NUM);
 		regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN);
+	} else if (chip == ID_T3X) {
+		for (i = 0; i < T3X_DRV_REG_NUM; i++)
+			WRITE_FRC_REG_BY_CPU(t3x_drv_regs_table[i].addr,
+				t3x_drv_regs_table[i].value);
+		pr_frc(0, "t3x_regs_table[%d] init done\n", T3X_DRV_REG_NUM);
 	}
 	frc_set_val_from_reg();
 

@@ -35,7 +35,7 @@
 #include "frc_drv.h"
 #include "frc_buf.h"
 #include "frc_rdma.h"
-
+#include "frc_hw.h"
 
 void frc_dump_mm_data(void *addr, u32 size)
 {
@@ -637,13 +637,11 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	int log = 2;
 	u32 ratio;
 	enum chip_id chip;
-	struct frc_data_s *frc_data;
 
 	if (!devp)
 		return -1;
 
-	frc_data = (struct frc_data_s *)devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	if (devp->buf.memc_comprate == 0)
 		devp->buf.memc_comprate = FRC_COMPRESS_RATE;

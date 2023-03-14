@@ -74,7 +74,7 @@
 // #ifdef CONFIG_AMLOGIC_MEDIA_FRC_RDMA
 #include "frc_rdma.h"
 // #endif
-const struct frm_dly_dat_s chip_frc_frame_dly[2][4] = {
+const struct frm_dly_dat_s chip_frc_frame_dly[3][4] = {
 	{ // chip_t3  fhd,4k2k,4k1k,other
 		{130, 11},
 		{222, 28},
@@ -86,6 +86,12 @@ const struct frm_dly_dat_s chip_frc_frame_dly[2][4] = {
 		{222, 28},
 		{222, 20},
 		{140, 10},
+	},
+	{ // chip_t3x  fhd,4k2k,4k1k,4K2K-120Hz
+		{130, 11},
+		{222, 28},
+		{233, 14},
+		{266, 28},
 	},
 };
 
@@ -415,7 +421,6 @@ static const struct of_device_id frc_dts_match[] = {
 
 int frc_attach_pd(struct frc_dev_s *devp)
 {
-	struct frc_data_s *frc_data;
 	enum chip_id chip;
 	struct device_link *link;
 	int i;
@@ -423,8 +428,7 @@ int frc_attach_pd(struct frc_dev_s *devp)
 	char *pd_name[3] = {"frc-top", "frc-me", "frc-mc"};
 	struct platform_device *pdev = devp->pdev;
 
-	frc_data = (struct frc_data_s *)devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 
 	if (chip == ID_T5M) {
 		pr_frc(0, "%s T5_domain\n", __func__);
@@ -1272,15 +1276,13 @@ static int __exit frc_remove(struct platform_device *pdev)
 static void frc_shutdown(struct platform_device *pdev)
 {
 	struct frc_dev_s *frc_devp = &frc_dev;
-	struct frc_data_s *frc_data;
 	enum chip_id chip;
 
 	if (!frc_devp || !frc_devp->probe_ok)
 		return;
 	PR_FRC("%s:module shutdown\n", __func__);
 	// frc_devp = platform_get_drvdata(pdev);
-	frc_data = (struct frc_data_s *)frc_devp->data;
-	chip = frc_data->match_data->chip;
+	chip = get_chip_type();
 	frc_devp->power_on_flag = false;
 	tasklet_kill(&frc_devp->input_tasklet);
 	tasklet_kill(&frc_devp->output_tasklet);

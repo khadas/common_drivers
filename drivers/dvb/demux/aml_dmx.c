@@ -468,7 +468,7 @@ static int _dmx_ts_feed_set(struct dmx_ts_feed *ts_feed, u16 pid, int ts_type,
 
 	pr_dbg("%s pid:0x%0x\n", __func__, pid);
 
-	if (pid >= SWDMX_MAX_PID && pid != 0x2000)
+	if (pid > SWDMX_MAX_PID && pid != 0x2000)
 		return -EINVAL;
 
 	if (mutex_lock_interruptible(demux->pmutex))

@@ -120,7 +120,7 @@ struct vpp_post_info_t core3_slice_info;
  *  0: osd is disabled
  *  1: osd is enabled
  */
-int (*get_osd_status)(enum OSD_INDEX index);
+static int (*get_osd_status)(enum OSD_INDEX index);
 
 static bool get_core2_enable_info(enum OSD_INDEX index)
 {

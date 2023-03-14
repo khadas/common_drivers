@@ -8275,7 +8275,6 @@ static int get_viu2_src_format(void)
  *  0: osd is disabled
  *  1: osd is enabled
  */
- #ifdef S5_bringup_before_dobly
 static int get_osd_status(enum OSD_INDEX index)
 {
 	unsigned int sw_index;
@@ -8289,7 +8288,6 @@ static int get_osd_status(enum OSD_INDEX index)
 
 	return osd_hw.enable[sw_index];
 }
-#endif
 #endif
 
 static void osd_update_disp_osd_rotate(u32 index)
@@ -12071,11 +12069,9 @@ static void set_osd_blend_reg(struct osd_blend_reg_s *osd_blend_reg)
 					VSYNCOSD_WR_MPEG_REG(S5_AMDV_CORE2A_SWAP_CTRL2,
 							 (tmp_h << 16) |
 							 (tmp_v + 0));
-#ifdef S5_bringup_before_dobly
 					update_graphic_width_height
 						(dv_core2_hsize, dv_core2_vsize,
 						 to_osd_hw_index(i));
-#endif
 				}
 			}
 		} else {
@@ -12089,9 +12085,7 @@ static void set_osd_blend_reg(struct osd_blend_reg_s *osd_blend_reg)
 			VSYNCOSD_WR_MPEG_REG(AMDV_CORE2A_SWAP_CTRL2,
 					     (tmp_h << 16) |
 					     (tmp_v + 0));
-#ifdef S5_bringup_before_dobly
 			update_graphic_width_height(dv_core2_hsize, dv_core2_vsize, OSD1_INDEX);
-#endif
 		}
 		if (!update_to_dv) {
 			update_graphic_status();
@@ -13616,10 +13610,8 @@ static void osd1_basic_update_disp_geometry(void)
 			VSYNCOSD_WR_MPEG_REG(AMDV_CORE2A_SWAP_CTRL2,
 						(buffer_w << 16) | (buffer_h + 0));
 		}
-#ifdef S5_bringup_before_dobly
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 		update_graphic_width_height(buffer_w, buffer_h, 0);
-#endif
 #endif
 	}
 	if (osd_hw.osd_afbcd[OSD1].enable &&
@@ -14748,10 +14740,8 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 			osd_secure_op,
 			osd_secure_cb);
 #endif
-#ifdef S5_bringup_before_dobly
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	register_osd_func(get_osd_status);
-#endif
 #endif
 	osd_log_out = 1;
 }

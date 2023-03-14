@@ -5291,6 +5291,7 @@ static int __init osd_probe(struct platform_device *pdev)
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T3)
 		memcpy(&osd_dev_hw, &t3_dev_property,
 		       sizeof(struct osd_device_hw_s));
+
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5W)
 		memcpy(&osd_dev_hw, &t5w_dev_property,
 		       sizeof(struct osd_device_hw_s));

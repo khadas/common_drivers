@@ -6312,6 +6312,7 @@ int register_osd_func(int (*get_osd_enable_status)(enum OSD_INDEX index))
 {
 	pr_info("register osd enable status func\n");
 	get_osd_status = get_osd_enable_status;
+	pr_info("%s %d\n", __func__, __LINE__);
 	return 0;
 }
 EXPORT_SYMBOL(register_osd_func);

@@ -580,7 +580,7 @@
 
 		aml-audio-card,dai-link@0 {
 			format = "dsp_a";
-			mclk-fs = <512>;
+			mclk-fs = <64>;
 			//continuous-clock;
 			//bitclock-inversion;
 			//frame-inversion;
@@ -600,7 +600,7 @@
 				dai-tdm-slot-rx-mask = <1>;
 				dai-tdm-slot-num = <2>;
 				dai-tdm-slot-width = <16>;
-				system-clock-frequency = <256000>;
+				system-clock-frequency = <512000>;
 			};
 			tdmacodec: codec {
 				sound-dai = <&dummy_codec>;
@@ -1408,6 +1408,7 @@
 			&clkaudio CLKID_AUDIO_MCLK_B
 			&clkaudio CLKID_AUDIO_RESAMPLE_A>;
 		clock-names = "resample_pll", "resample_src", "resample_clk";
+		src-clk-freq = <491520000>;
 
 		/*same with toddr_src
 		 *	TDMIN_A,    0
@@ -1435,6 +1436,7 @@
 			&clkaudio CLKID_AUDIO_MCLK_F
 			&clkaudio CLKID_AUDIO_RESAMPLE_B>;
 		clock-names = "resample_pll", "resample_src", "resample_clk";
+		src-clk-freq = <491520000>;
 
 		/*this resample is only used for loopback_A.*/
 		capture_sample_rate = <16000>;

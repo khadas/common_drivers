@@ -70,7 +70,8 @@
 
 /* hdmirx fix audio no sound */
 /* clear scdc with RX_HPD_C_CTRL_AON_IVCRX */
-#define RX_VER2 "ver.2023/03/15"
+/* collate t5m code */
+#define RX_VER2 "ver.2023/03/17"
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368
@@ -364,6 +365,25 @@ struct rx_aml_phy {
 	u32 tap2_byp;
 	u32 long_bist_en;
 	int reset_pcs_en;
+	/* add for t5m */
+	int eq_en;
+	int tapx_value;
+	int agc_enable;
+	u32 afe_value;
+	u32 dfe_value;
+	u32 cdr_value;
+	u32 eq_value;
+	u32 misc2_value;
+	u32 misc1_value;
+	int phy_debug_en;
+	int enhance_dfe_en_old;
+	int enhance_dfe_en_new;
+	int eye_height;
+	int enhance_eq;
+	int eq_level;
+	int cdr_retry_en;
+	int cdr_retry_max;
+	int cdr_fr_en_auto;
 };
 
 enum scan_mode_e {

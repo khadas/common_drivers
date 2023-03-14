@@ -64,25 +64,6 @@
 #define T5M_RG_RX20PLL_0		0x000
 #define T5M_RG_RX20PLL_1		0x004
 
-extern int tapx_value;
-extern int agc_enable;
-extern u32 afe_value;
-extern u32 dfe_value;
-extern u32 cdr_value;
-extern u32 eq_value;
-extern u32 misc2_value;
-extern u32 misc1_value;
-extern int phy_debug_en;
-extern int enhance_dfe_en_old;
-extern int enhance_dfe_en_new;
-extern int eye_height;
-extern int enhance_eq;
-extern int eq_en;
-extern int eq_level;
-extern int cdr_retry_en;
-extern int cdr_retry_max;
-extern int cdr_fr_en_auto;
-
 /*--------------------------function declare------------------*/
 /* T5m */
 void aml_phy_init_t5m(void);
@@ -109,6 +90,7 @@ void get_val_t5m(char *temp, unsigned int val, int len);
 void reset_pcs(void);
 void get_eq_val_t5m(void);
 void bubble_sort(u32 *sort_array);
+void quick_sort2(int arr[], int l, int r);
 
 
 /*function declare end*/

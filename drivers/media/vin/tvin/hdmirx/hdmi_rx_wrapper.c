@@ -290,7 +290,26 @@ void hdmirx_phy_var_init(void)
 		rx.aml_phy.eq_retry = 0;
 		rx.aml_phy.tap2_byp = 0;
 		rx.aml_phy.long_bist_en = 0;
+		/* add for t5m */
 		rx.aml_phy.reset_pcs_en = 1;
+		rx.aml_phy.eq_en = 1;
+		rx.aml_phy.tapx_value = 50;
+		rx.aml_phy.agc_enable = 0;
+		rx.aml_phy.afe_value = 0;
+		rx.aml_phy.dfe_value = 0;
+		rx.aml_phy.cdr_value = 0;
+		rx.aml_phy.eq_value = 0;
+		rx.aml_phy.misc2_value = 0;
+		rx.aml_phy.misc1_value = 0;
+		rx.aml_phy.phy_debug_en = 0;
+		rx.aml_phy.enhance_dfe_en_old = 1;
+		rx.aml_phy.enhance_dfe_en_new = 0;
+		rx.aml_phy.eye_height = 5;
+		rx.aml_phy.enhance_eq = 0;
+		rx.aml_phy.eq_level = 0;
+		rx.aml_phy.cdr_retry_en = 1;
+		rx.aml_phy.cdr_retry_max = 3;
+		rx.aml_phy.cdr_fr_en_auto = 0;
 	}
 }
 
@@ -2423,24 +2442,24 @@ void rx_get_global_variable(const char *buf)
 	pr_var(phy_term_lel, i++);
 	pr_var(rx.var.force_pattern, i++);
 	pr_var(rx_phy_level, i++);
-	pr_var(tapx_value, i++);
-	pr_var(agc_enable, i++);
-	pr_var(afe_value, i++);
-	pr_var(dfe_value, i++);
-	pr_var(cdr_value, i++);
-	pr_var(eq_value, i++);
-	pr_var(misc1_value, i++);
-	pr_var(misc2_value, i++);
-	pr_var(phy_debug_en, i++);
+	pr_var(rx.aml_phy.tapx_value, i++);
+	pr_var(rx.aml_phy.agc_enable, i++);
+	pr_var(rx.aml_phy.afe_value, i++);
+	pr_var(rx.aml_phy.dfe_value, i++);
+	pr_var(rx.aml_phy.cdr_value, i++);
+	pr_var(rx.aml_phy.eq_value, i++);
+	pr_var(rx.aml_phy.misc1_value, i++);
+	pr_var(rx.aml_phy.misc2_value, i++);
+	pr_var(rx.aml_phy.phy_debug_en, i++);
 	pr_var(color_bar_debug_en, i++);
 	pr_var(color_bar_lvl, i++);
-	pr_var(enhance_dfe_en_old, i++);
-	pr_var(eye_height, i++);
-	pr_var(enhance_eq, i++);
-	pr_var(eq_en, i++);
-	pr_var(eq_level, i++);
-	pr_var(cdr_retry_en, i++);
-	pr_var(cdr_retry_max, i++);
+	pr_var(rx.aml_phy.enhance_dfe_en_old, i++);
+	pr_var(rx.aml_phy.eye_height, i++);
+	pr_var(rx.aml_phy.enhance_eq, i++);
+	pr_var(rx.aml_phy.eq_en, i++);
+	pr_var(rx.aml_phy.eq_level, i++);
+	pr_var(rx.aml_phy.cdr_retry_en, i++);
+	pr_var(rx.aml_phy.cdr_retry_max, i++);
 	pr_var(reset_pcs_flag, i++);
 	pr_var(reset_pcs_cnt, i++);
 	/* phy var definition */
@@ -2730,66 +2749,66 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx_phy_level),
 	    &rx_phy_level, value))
 		return pr_var(rx_phy_level, index);
-	if (set_pr_var(tmpbuf, var_to_str(tapx_value),
-	    &tapx_value, value))
-		return pr_var(tapx_value, index);
-	if (set_pr_var(tmpbuf, var_to_str(agc_enable),
-	    &agc_enable, value))
-		return pr_var(agc_enable, index);
-	if (set_pr_var(tmpbuf, var_to_str(afe_value),
-	    &afe_value, value))
-		return pr_var(afe_value, index);
-	if (set_pr_var(tmpbuf, var_to_str(dfe_value),
-	    &dfe_value, value))
-		return pr_var(dfe_value, index);
-	if (set_pr_var(tmpbuf, var_to_str(cdr_value),
-	    &cdr_value, value))
-		return pr_var(cdr_value, index);
-	if (set_pr_var(tmpbuf, var_to_str(eq_value),
-	    &eq_value, value))
-		return pr_var(eq_value, index);
-	if (set_pr_var(tmpbuf, var_to_str(misc1_value),
-	    &misc1_value, value))
-		return pr_var(misc1_value, index);
-	if (set_pr_var(tmpbuf, var_to_str(misc2_value),
-	    &misc2_value, value))
-		return pr_var(misc2_value, index);
-	if (set_pr_var(tmpbuf, var_to_str(phy_debug_en),
-	    &phy_debug_en, value))
-		return pr_var(phy_debug_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.tapx_value),
+	    &rx.aml_phy.tapx_value, value))
+		return pr_var(rx.aml_phy.tapx_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.agc_enable),
+	    &rx.aml_phy.agc_enable, value))
+		return pr_var(rx.aml_phy.agc_enable, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.afe_value),
+	    &rx.aml_phy.afe_value, value))
+		return pr_var(rx.aml_phy.afe_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.dfe_value),
+	    &rx.aml_phy.dfe_value, value))
+		return pr_var(rx.aml_phy.dfe_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.cdr_value),
+	    &rx.aml_phy.cdr_value, value))
+		return pr_var(rx.aml_phy.cdr_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.eq_value),
+	    &rx.aml_phy.eq_value, value))
+		return pr_var(rx.aml_phy.eq_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.misc1_value),
+	    &rx.aml_phy.misc1_value, value))
+		return pr_var(rx.aml_phy.misc1_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.misc2_value),
+	    &rx.aml_phy.misc2_value, value))
+		return pr_var(rx.aml_phy.misc2_value, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.phy_debug_en),
+	    &rx.aml_phy.phy_debug_en, value))
+		return pr_var(rx.aml_phy.phy_debug_en, index);
 	if (set_pr_var(tmpbuf, var_to_str(color_bar_debug_en),
 	    &color_bar_debug_en, value))
 		return pr_var(color_bar_debug_en, index);
 	if (set_pr_var(tmpbuf, var_to_str(color_bar_lvl),
 	    &color_bar_lvl, value))
 		return pr_var(color_bar_lvl, index);
-	if (set_pr_var(tmpbuf, var_to_str(enhance_dfe_en_old),
-	    &enhance_dfe_en_old, value))
-		return pr_var(enhance_dfe_en_old, index);
-	if (set_pr_var(tmpbuf, var_to_str(enhance_dfe_en_new),
-	    &enhance_dfe_en_new, value))
-		return pr_var(enhance_dfe_en_new, index);
-	if (set_pr_var(tmpbuf, var_to_str(eye_height),
-	    &eye_height, value))
-		return pr_var(eye_height, index);
-	if (set_pr_var(tmpbuf, var_to_str(enhance_eq),
-	    &enhance_eq, value))
-		return pr_var(enhance_eq, index);
-	if (set_pr_var(tmpbuf, var_to_str(eq_en),
-	    &eq_en, value))
-		return pr_var(eq_en, index);
-	if (set_pr_var(tmpbuf, var_to_str(eq_level),
-	    &eq_level, value))
-		return pr_var(eq_level, index);
-	if (set_pr_var(tmpbuf, var_to_str(cdr_retry_en),
-	    &cdr_retry_en, value))
-		return pr_var(cdr_retry_en, index);
-	if (set_pr_var(tmpbuf, var_to_str(cdr_retry_max),
-	    &cdr_retry_max, value))
-		return pr_var(cdr_retry_max, index);
-	if (set_pr_var(tmpbuf, var_to_str(cdr_fr_en_auto),
-	    &cdr_fr_en_auto, value))
-		return pr_var(cdr_fr_en_auto, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.enhance_dfe_en_old),
+	    &rx.aml_phy.enhance_dfe_en_old, value))
+		return pr_var(rx.aml_phy.enhance_dfe_en_old, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.enhance_dfe_en_new),
+	    &rx.aml_phy.enhance_dfe_en_new, value))
+		return pr_var(rx.aml_phy.enhance_dfe_en_new, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.eye_height),
+	    &rx.aml_phy.eye_height, value))
+		return pr_var(rx.aml_phy.eye_height, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.enhance_eq),
+	    &rx.aml_phy.enhance_eq, value))
+		return pr_var(rx.aml_phy.enhance_eq, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.eq_en),
+	    &rx.aml_phy.eq_en, value))
+		return pr_var(rx.aml_phy.eq_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.eq_level),
+	    &rx.aml_phy.eq_level, value))
+		return pr_var(rx.aml_phy.eq_level, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.cdr_retry_en),
+	    &rx.aml_phy.cdr_retry_en, value))
+		return pr_var(rx.aml_phy.cdr_retry_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.cdr_retry_max),
+	    &rx.aml_phy.cdr_retry_max, value))
+		return pr_var(rx.aml_phy.cdr_retry_max, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx.aml_phy.cdr_fr_en_auto),
+	    &rx.aml_phy.cdr_fr_en_auto, value))
+		return pr_var(rx.aml_phy.cdr_fr_en_auto, index);
 	if (set_pr_var(tmpbuf, var_to_str(reset_pcs_flag),
 	    &reset_pcs_flag, value))
 		return pr_var(reset_pcs_flag, index);

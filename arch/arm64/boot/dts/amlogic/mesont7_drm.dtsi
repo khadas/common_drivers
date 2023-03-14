@@ -69,6 +69,7 @@
 	drm_subsystem: drm-subsystem {
 		status = "okay";
 		compatible = "amlogic, drm-subsystem";
+		vpu_dma_mask = <1>; /* 0: <= 4G, 1: > 4G */
 		ports = <&connectors_dev>;
 		fbdev_sizes = <1920 1080 1920 2160 32>;
 		osd_ver = /bits/ 8 <OSD_V7>;

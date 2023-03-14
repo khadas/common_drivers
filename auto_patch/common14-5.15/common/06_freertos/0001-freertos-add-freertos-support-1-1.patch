@@ -1,30 +1,30 @@
-From 079a6d31a8bf979198412cc296383f2d41ffa50f Mon Sep 17 00:00:00 2001
+From 4ff747f526bdd8f2c5ce5a53f5bc23a12410a15b Mon Sep 17 00:00:00 2001
 From: "wanwei.jiang" <wanwei.jiang@amlogic.com>
 Date: Mon, 28 Feb 2022 09:54:55 +0800
-Subject: [PATCH 20/95] freertos: add module to bring cpu1 to linux [2/2]
+Subject: [PATCH] freertos: add freertos support [1/1]
 
 PD#SWPL-71741
 
 Problem:
-add module to bring cpu1 to linux
+add freertos support
 
 Solution:
-add module to bring cpu1 to linux
+add freertos support
 
 Verify:
-C2 AF400
+C2 T7
 
 Change-Id: Ib2b18fbcb026afa8df7654eac90355f080e9a74b
 Signed-off-by: wanwei.jiang <wanwei.jiang@amlogic.com>
 ---
- arch/arm/kernel/smp.c            | 13 ++++++++++++
- arch/arm64/kernel/smp.c          | 13 ++++++++++++
+ arch/arm/kernel/smp.c            | 11 ++++++++++
+ arch/arm64/kernel/smp.c          | 23 ++++++++++++++++++++
  drivers/irqchip/irq-gic-common.c | 36 ++++++++++++++++++++++++++++++++
  drivers/irqchip/irq-gic.c        | 16 +++++++++++++-
- 4 files changed, 77 insertions(+), 1 deletion(-)
+ 4 files changed, 85 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 0cdaebb28b26..fb3be9b58a1c 100644
+index 083662ead0a8..61bc8f52a7a3 100644
 --- a/arch/arm/kernel/smp.c
 +++ b/arch/arm/kernel/smp.c
 @@ -48,6 +48,10 @@
@@ -38,31 +38,29 @@ index 0cdaebb28b26..fb3be9b58a1c 100644
  #define CREATE_TRACE_POINTS
  #include <trace/events/ipi.h>
  
-@@ -70,6 +74,9 @@ enum ipi_msg_type {
- 	IPI_CPU_STOP,
+@@ -71,6 +75,9 @@ enum ipi_msg_type {
  	IPI_IRQ_WORK,
  	IPI_COMPLETION,
-+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
-+	IPI_FREERTOS = 7,
-+#endif
  	NR_IPI,
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	IPI_FREERTOS = NR_IPI,
++#endif
  	/*
  	 * CPU_BACKTRACE is special and not included in NR_IPI
-@@ -665,6 +672,12 @@ static void do_handle_IPI(int ipinr)
- 		ipi_complete(cpu);
+ 	 * or tracable with trace_ipi_*
+@@ -670,6 +677,10 @@ static void do_handle_IPI(int ipinr)
  		break;
  
-+#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
-+	case IPI_FREERTOS:
-+		freertos_finish();
-+		break;
-+#endif
-+
  	case IPI_CPU_BACKTRACE:
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++		if (!freertos_finish())
++			break;
++#endif
  		printk_deferred_enter();
  		nmi_cpu_backtrace(get_irq_regs());
+ 		printk_deferred_exit();
 diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-index 7fec4e38e8e2..5bdcdce62f17 100644
+index 7fec4e38e8e2..764511be78e7 100644
 --- a/arch/arm64/kernel/smp.c
 +++ b/arch/arm64/kernel/smp.c
 @@ -56,6 +56,10 @@
@@ -86,7 +84,31 @@ index 7fec4e38e8e2..5bdcdce62f17 100644
  	NR_IPI
  };
  
-@@ -940,6 +947,12 @@ static void do_handle_IPI(int ipinr)
+@@ -801,6 +808,9 @@ static const char *ipi_types[NR_IPI] __tracepoint_string = {
+ 	[IPI_TIMER]		= "Timer broadcast interrupts",
+ 	[IPI_IRQ_WORK]		= "IRQ work interrupts",
+ 	[IPI_WAKEUP]		= "CPU wake-up interrupts",
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	[IPI_FREERTOS]		= "CPU freertos interrupts",
++#endif
+ };
+ 
+ static void smp_cross_call(const struct cpumask *target, unsigned int ipinr);
+@@ -847,6 +857,13 @@ void arch_irq_work_raise(void)
+ }
+ #endif
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS_T7)
++void arch_send_ipi_rtos(int cpu)
++{
++	smp_cross_call(cpumask_of(cpu), IPI_FREERTOS);
++}
++#endif
++
+ static void local_cpu_stop(void)
+ {
+ 	set_cpu_online(smp_processor_id(), false);
+@@ -940,6 +957,12 @@ static void do_handle_IPI(int ipinr)
  		break;
  #endif
  
@@ -178,10 +200,10 @@ index a610821c8ff2..496d591d54f2 100644
  	if (sync_access)
  		sync_access();
 diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index a02bdad09318..1cf231bcc1e1 100644
+index 13039ec336b1..70417398d139 100644
 --- a/drivers/irqchip/irq-gic.c
 +++ b/drivers/irqchip/irq-gic.c
-@@ -48,6 +48,10 @@
+@@ -51,6 +51,10 @@
  
  #include "irq-gic-common.h"
  
@@ -192,7 +214,7 @@ index a02bdad09318..1cf231bcc1e1 100644
  #ifdef CONFIG_ARM64
  #include <asm/cpufeature.h>
  
-@@ -466,13 +470,15 @@ static void gic_cpu_if_up(struct gic_chip_data *gic)
+@@ -469,13 +473,15 @@ static void gic_cpu_if_up(struct gic_chip_data *gic)
  	writel_relaxed(bypass | mode | GICC_ENABLE, cpu_base + GIC_CPU_CTRL);
  }
  
@@ -209,7 +231,7 @@ index a02bdad09318..1cf231bcc1e1 100644
  
  	writel_relaxed(GICD_DISABLE, base + GIC_DIST_CTRL);
  
-@@ -482,8 +488,16 @@ static void gic_dist_init(struct gic_chip_data *gic)
+@@ -485,8 +491,16 @@ static void gic_dist_init(struct gic_chip_data *gic)
  	cpumask = gic_get_cpumask(gic);
  	cpumask |= cpumask << 8;
  	cpumask |= cpumask << 16;

@@ -810,6 +810,7 @@ int meson_rsv_init(struct mtd_info *mtd,
 		   struct meson_rsv_handler_t *handler)
 {
 	int i, ret = 0;
+	unsigned int env_size = 0;
 	u32 pages_per_blk_shift, start, vernier;
 
 	pages_per_blk_shift = mtd->erasesize_shift - mtd->writesize_shift;
@@ -877,7 +878,10 @@ int meson_rsv_init(struct mtd_info *mtd,
 	handler->env->end_block =
 		vernier + NAND_ENV_BLOCK_NUM;
 	handler->env->valid_node->phy_blk_addr = -1;
-	handler->env->size = CONFIG_ENV_SIZE;
+	if (!of_property_read_u32(mtd_get_of_node(mtd), "env_size", &env_size))
+		handler->env->size = env_size;
+	else
+		handler->env->size = CONFIG_ENV_SIZE;
 	handler->env->handler = handler;
 	handler->env->read = meson_rsv_env_read;
 	handler->env->write = meson_rsv_env_write;

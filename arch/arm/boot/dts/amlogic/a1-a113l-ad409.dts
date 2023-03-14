@@ -661,6 +661,7 @@
 		spi-max-frequency = <96000000>;
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
+		env_size = <8192>;
 		bl_mode = <1>;
 		fip_copies = <4>;
 		fip_size = <0x200000>;

@@ -279,7 +279,7 @@ static int f50l1g41lb_ooblayout_free(struct mtd_info *mtd, int section,
 			return -ERANGE;
 
 		/* Reserve 2 bytes for the BBM. */
-		region->offset = (14 * section) + 1;
+		region->offset = (14 * section) + 2;
 		region->length = 6;
 
 		return 0;

@@ -36,16 +36,17 @@
 #define DMC_DEV_ID_DI_POST                                 17
 #define DMC_DEV_ID_GDC                                     18
 
-/* TEE error codes */
-#define TEEC_SUCCESS                                       0x00000000
-
 bool tee_enabled(void);
-
 int is_secload_get(void);
-
 int tee_load_video_fw(u32 index, u32 vdec);
-
 int tee_load_video_fw_swap(u32 index, u32 vdec, bool is_swap);
+u32 tee_protect_tvp_mem(u32 start, u32 size,
+			u32 *handle);
+void tee_unprotect_tvp_mem(u32 handle);
+u32 tee_protect_mem_by_type(u32 type,
+		u32 start, u32 size,
+		u32 *handle);
+void tee_unprotect_mem(u32 handle);
 
 int tee_config_device_state(int dev_id, int secure);
 
@@ -60,8 +61,6 @@ int tee_write_reg_bits(u32 reg, u32 val, u32 offset, u32 length);
 u32 tee_protect_mem(u32 type, u32 level,
 		u32 start, u32 size, u32 *handle);
 
-void tee_unprotect_mem(u32 handle);
-
 int tee_check_in_mem(u32 pa, u32 size);
 
 int tee_check_out_mem(u32 pa, u32 size);
@@ -72,16 +71,6 @@ int tee_vp9_prob_process(u32 cur_frame_type, u32 prev_frame_type,
 int tee_vp9_prob_malloc(u32 *prob_addr);
 
 int tee_vp9_prob_free(u32 prob_addr);
-
-/* All of the following apis will be deprecated */
-u32 tee_protect_tvp_mem(u32 start, u32 size,
-			u32 *handle);
-
-void tee_unprotect_tvp_mem(u32 handle);
-
-u32 tee_protect_mem_by_type(u32 type,
-		u32 start, u32 size,
-		u32 *handle);
 
 #endif /* __TEE_H__ */
 

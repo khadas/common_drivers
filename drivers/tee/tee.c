@@ -23,7 +23,6 @@
 
 #include <linux/amlogic/tee.h>
 #include <asm/cputype.h>
-#include <linux/tee_drv.h>
 
 #define DRIVER_NAME "tee_info"
 #define DRIVER_DESC "Amlogic tee driver"
@@ -129,18 +128,6 @@ static int disable_flag;
 #define TEE_SMC_VP9_PROB_FREE \
 	TEE_SMC_FAST_CALL_VAL(TEE_SMC_FUNCID_VP9_PROB_FREE)
 
-/* tee param number */
-#define TEE_PARAM_NUM                   4
-
-/* tvp memory command */
-#define TVP_CMD_PROTECT_MEM             0
-#define TVP_CMD_UNPROTECT_MEM           1
-#define TVP_CMD_CHECK_IN_MEM            2
-#define TVP_CMD_CHECK_OUT_MEM           3
-
-#define PTA_TVP_UUID UUID_INIT(0x1a658fe8, 0x894e, 0x4403, \
-			0xae, 0xa6, 0x5a, 0xe6, 0x91, 0xe8, 0xa3, 0x5f)
-
 static struct class *tee_sys_class;
 
 struct tee_smc_calls_revision_result {
@@ -149,53 +136,6 @@ struct tee_smc_calls_revision_result {
 	unsigned long reserved0;
 	unsigned long reserved1;
 };
-
-static int optee_ctx_match(struct tee_ioctl_version_data *ver, const void *data)
-{
-	return (ver->impl_id == TEE_IMPL_ID_OPTEE);
-}
-
-static int tee_pta_invoke_cmd(uuid_t uuid, u32 cmd, struct tee_param *param)
-{
-	int ret = 0;
-	struct tee_ioctl_open_session_arg sess_arg = { 0 };
-	struct tee_ioctl_invoke_arg inv_arg = { 0 };
-	struct tee_context *ctx = NULL;
-
-	/* Open context with TEE driver */
-	ctx = tee_client_open_context(NULL, optee_ctx_match, NULL, NULL);
-	if (IS_ERR(ctx)) {
-		pr_err("%s open context failed, cmd = %u\n", __func__, cmd);
-		return -ENODEV;
-	}
-
-	/* Open session */
-	memcpy(sess_arg.uuid, uuid.b, TEE_IOCTL_UUID_LEN);
-	sess_arg.clnt_login = TEE_IOCTL_LOGIN_PUBLIC;
-	sess_arg.num_params = 0;
-	ret = tee_client_open_session(ctx, &sess_arg, NULL);
-	if (ret < 0 || sess_arg.ret != TEEC_SUCCESS) {
-		pr_err("%s open session failed, cmd = %u, ret = %d, res = 0x%x, origin = 0x%x\n",
-				__func__, cmd, ret, sess_arg.ret, sess_arg.ret_origin);
-		goto out_ctx;
-	}
-
-	/* Invoke function */
-	inv_arg.func = cmd;
-	inv_arg.session = sess_arg.session;
-	inv_arg.num_params = TEE_PARAM_NUM;
-	ret = tee_client_invoke_func(ctx, &inv_arg, param);
-	if (ret < 0 || inv_arg.ret != TEEC_SUCCESS) {
-		pr_err("%s invoke func failed, cmd = %u, ret= %d, res = 0x%x, origin = 0x%x\n",
-				__func__, cmd, ret, inv_arg.ret, inv_arg.ret_origin);
-	}
-
-	tee_client_close_session(ctx, sess_arg.session);
-out_ctx:
-	tee_client_close_context(ctx);
-
-	return ret;
-}
 
 static int tee_msg_os_revision(u32 *major, u32 *minor)
 {
@@ -441,87 +381,94 @@ bool tee_enabled(void)
 }
 EXPORT_SYMBOL(tee_enabled);
 
-/* This function will be deprecated */
 u32 tee_protect_tvp_mem(u32 start, u32 size, u32 *handle)
 {
-	return tee_protect_mem(TEE_MEM_TYPE_STREAM_OUTPUT, 0, start, size, handle);
+	struct arm_smccc_res res;
+
+	if (!handle)
+		return 0xFFFF0006;
+
+	arm_smccc_smc(TEE_SMC_PROTECT_TVP_MEM,
+		      start, size, 0, 0, 0, 0, 0, &res);
+
+	*handle = res.a1;
+
+	return res.a0;
 }
 EXPORT_SYMBOL(tee_protect_tvp_mem);
 
-/* This function will be deprecated */
 void tee_unprotect_tvp_mem(u32 handle)
 {
-	tee_unprotect_mem(handle);
+	struct arm_smccc_res res;
+
+	arm_smccc_smc(TEE_SMC_UNPROTECT_TVP_MEM,
+		      handle, 0, 0, 0, 0, 0, 0, &res);
 }
 EXPORT_SYMBOL(tee_unprotect_tvp_mem);
 
-/* This function will be deprecated */
 u32 tee_protect_mem_by_type(u32 type,
 		u32 start, u32 size,
 		u32 *handle)
 {
-	return tee_protect_mem(type, 0, start, size, handle);
+	struct arm_smccc_res res;
+
+	if (!handle)
+		return 0xFFFF0006;
+
+	arm_smccc_smc(TEE_SMC_PROTECT_MEM_BY_TYPE,
+			type, start, size, 0, 0, 0, 0, &res);
+
+	*handle = res.a1;
+
+	return res.a0;
 }
 EXPORT_SYMBOL(tee_protect_mem_by_type);
 
 u32 tee_protect_mem(u32 type, u32 level,
 		u32 start, u32 size, u32 *handle)
 {
-	int ret = 0;
-	uuid_t uuid = PTA_TVP_UUID;
-	struct tee_param param[TEE_PARAM_NUM] = { 0 };
+	struct arm_smccc_res res;
 
 	if (!handle)
-		return -EINVAL;
+		return 0xFFFF0006;
 
-	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
-	param[0].u.value.a = (u64)type;
-	param[0].u.value.b = (u64)level;
-	param[1].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
-	param[1].u.value.a = (u64)start;
-	param[1].u.value.b = (u64)size;
-	param[2].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT;
+	arm_smccc_smc(TEE_SMC_PROTECT_MEM_BY_TYPE,
+			type, start, size, level, 0, 0, 0, &res);
 
-	ret = tee_pta_invoke_cmd(uuid, TVP_CMD_PROTECT_MEM, param);
-	if (!ret)
-		*handle = (u32)param[2].u.value.a;
+	*handle = res.a1;
 
-	return ret;
+	return res.a0;
 }
 EXPORT_SYMBOL(tee_protect_mem);
 
 void tee_unprotect_mem(u32 handle)
 {
-	uuid_t uuid = PTA_TVP_UUID;
-	struct tee_param param[TEE_PARAM_NUM] = { 0 };
+	struct arm_smccc_res res;
 
-	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
-	param[0].u.value.a = (u64)handle;
-	tee_pta_invoke_cmd(uuid, TVP_CMD_UNPROTECT_MEM, param);
+	arm_smccc_smc(TEE_SMC_UNPROTECT_MEM,
+			handle, 0, 0, 0, 0, 0, 0, &res);
 }
 EXPORT_SYMBOL(tee_unprotect_mem);
 
 int tee_check_in_mem(u32 pa, u32 size)
 {
-	uuid_t uuid = PTA_TVP_UUID;
-	struct tee_param param[TEE_PARAM_NUM] = { 0 };
+	struct arm_smccc_res res;
 
-	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
-	param[0].u.value.a = (u64)pa;
-	param[0].u.value.b = (u64)size;
-	return tee_pta_invoke_cmd(uuid, TVP_CMD_CHECK_IN_MEM, param);
+	arm_smccc_smc(TEE_SMC_CHECK_IN_MEM,
+			pa, size, 0, 0, 0, 0, 0, &res);
+
+	return res.a0;
 }
 EXPORT_SYMBOL(tee_check_in_mem);
 
 int tee_check_out_mem(u32 pa, u32 size)
 {
-	uuid_t uuid = PTA_TVP_UUID;
-	struct tee_param param[TEE_PARAM_NUM] = { 0 };
+	struct arm_smccc_res res;
 
-	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
-	param[0].u.value.a = (u64)pa;
-	param[0].u.value.b = (u64)size;
-	return tee_pta_invoke_cmd(uuid, TVP_CMD_CHECK_OUT_MEM, param);
+	arm_smccc_smc(TEE_SMC_CHECK_OUT_MEM,
+			pa, size, 0, 0, 0, 0, 0, &res);
+
+	return res.a0;
 }
 EXPORT_SYMBOL(tee_check_out_mem);
 

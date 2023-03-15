@@ -413,7 +413,8 @@ void DI_POST_UPDATE_MC(void);
 void vsync_notify_videosync(void);
 bool get_video_reverse(void);
 /*int get_osd_reverse(void);*/
-void vsync_notify_video_composer(u8 layer_id);
+void vsync_notify_video_composer(u8 layer_id,
+	u32 vsync_pts_inc_scale, u32 vsync_pts_inc_scale_base);
 void multi_vsync_notify_video_composer(void);
 int _video_set_disable(u32 val);
 int _videopip_set_disable(u32 index, u32 val);
@@ -447,7 +448,8 @@ void vsync_notify_videosync(void);
 #endif
 
 #ifdef CONFIG_AMLOGIC_VIDEOQUEUE
-void vsync_notify_videoqueue(void);
+void vsync_notify_videoqueue(u8 layer_id,
+	u32 vsync_pts_inc_scale, u32 vsync_pts_inc_scale_base);
 void videoqueue_pcrscr_update(s32 inc, u32 base);
 #endif
 

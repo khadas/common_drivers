@@ -73,7 +73,8 @@ static void calculate_real_fps_and_vsync(struct timeval *start, struct timeval *
 	vd_test_fps_val[i] = div64_u64((u64)100000 * 100000 * 1000, vd_test_vsync_val[i]);
 }
 
-void vsync_notify_video_composer(u8 layer_id)
+void vsync_notify_video_composer(u8 layer_id,
+	u32 vsync_pts_inc_scale, u32 vsync_pts_inc_scale_base)
 {
 	int i;
 	int count = MAX_VIDEO_COMPOSER_INSTANCE_NUM;
@@ -113,6 +114,7 @@ void vsync_notify_video_composer(u8 layer_id)
 	}
 }
 
+#ifdef REMOVE_CODE
 void multi_vsync_notify_video_composer(void)
 {
 	int i;
@@ -152,6 +154,7 @@ void multi_vsync_notify_video_composer(void)
 		break;
 	}
 }
+#endif
 
 static bool vd_vf_is_tvin(struct vframe_s *vf)
 {

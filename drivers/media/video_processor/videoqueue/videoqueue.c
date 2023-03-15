@@ -164,7 +164,8 @@ static int wakeup;
 //used for 29.976 59.94 119.88fps
 static bool is_special_fps;
 
-void vsync_notify_videoqueue(void)
+void vsync_notify_videoqueue(u8 layer_id,
+	u32 vsync_pts_inc_scale, u32 vsync_pts_inc_scale_base)
 {
 	time_cur = ktime_to_us(ktime_get());
 }

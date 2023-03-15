@@ -2779,9 +2779,53 @@ static int vdx_misc_early_proc(u8 layer_id,
 				      bool rdma_enable,
 				      bool rdma_enable_pre)
 {
+	bool pre_vsync_notify = false;
+	bool post_vsync_notify = false;
+
+	/* prevsync + postvsync case */
+	if (cur_dev->pre_vsync_enable) {
+		if (layer_id == 0) {
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
-	vsync_notify_video_composer(layer_id);
+			vsync_notify_video_composer(layer_id,
+				vsync_pts_inc_scale,
+				vsync_pts_inc_scale_base);
 #endif
+#ifdef CONFIG_AMLOGIC_VIDEOQUEUE
+			vsync_notify_videoqueue(layer_id,
+				vsync_pts_inc_scale,
+				vsync_pts_inc_scale_base);
+#endif
+			pre_vsync_notify = true;
+		}
+		if (layer_id != 0 && !post_vsync_notify) {
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
+			vsync_notify_video_composer(layer_id,
+				vsync_pts_inc_scale,
+				vsync_pts_inc_scale_base);
+#endif
+#ifdef CONFIG_AMLOGIC_VIDEOQUEUE
+			vsync_notify_videoqueue(layer_id,
+				vsync_pts_inc_scale,
+				vsync_pts_inc_scale_base);
+#endif
+			post_vsync_notify = true;
+		}
+	} else {
+		/* postvsync case, only notify once per vsync*/
+		if (!post_vsync_notify) {
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
+			vsync_notify_video_composer(layer_id,
+				vsync_pts_inc_scale,
+				vsync_pts_inc_scale_base);
+#endif
+#ifdef CONFIG_AMLOGIC_VIDEOQUEUE
+			vsync_notify_videoqueue(layer_id,
+				vsync_pts_inc_scale,
+				vsync_pts_inc_scale_base);
+#endif
+			post_vsync_notify = true;
+		}
+	}
 
 #ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
 	if (rdma_enable) {
@@ -3527,7 +3571,7 @@ static void do_vd1_swap_frame(u8 layer_id,
 			new_src_fmt =
 				(int)get_cur_source_type(VD1_PATH, VPP_TOP0);
 #endif
-		/*coverity[deadcode-call] error report*/
+		/*coverity[dead_error_line] error report*/
 		if (new_src_fmt > 0 && new_src_fmt < MAX_SOURCE)
 			fmt = (enum vframe_signal_fmt_e)src_map[new_src_fmt];
 		else
@@ -3542,9 +3586,10 @@ static void do_vd1_swap_frame(u8 layer_id,
 					atomic_read(&cur_primary_src_fmt);
 				if (old_fmt != VFRAME_SIGNAL_FMT_INVALID)
 					old_str = (char *)src_fmt_str[old_fmt];
-				/*coverity[deadcode-call] error report*/
-				if (fmt != VFRAME_SIGNAL_FMT_INVALID)
+				if (fmt != VFRAME_SIGNAL_FMT_INVALID) {
+					/*coverity[dead_error_line] error report*/
 					new_str = (char *)src_fmt_str[fmt];
+				}
 				pr_info("VD1 src fmt changed: %s->%s. vf: %p, signal_type:0x%x\n",
 					old_str ? old_str : "invalid",
 					new_str ? new_str : "invalid",
@@ -3674,10 +3719,6 @@ static int misc_early_proc(void)
 		vd_layer[i].global_debug = debug_flag;
 		vd_layer[i].vout_type = vout_type;
 	}
-
-#ifdef CONFIG_AMLOGIC_VIDEOQUEUE
-	vsync_notify_videoqueue();
-#endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	set_dv_provide_name();

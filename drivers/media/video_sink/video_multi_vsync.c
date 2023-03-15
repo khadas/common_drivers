@@ -229,7 +229,10 @@ irqreturn_t vsync_isr_viux(u8 vpp_index, const struct vinfo_s *info)
 		vsync_enter_line_max_vpp[vpp_id] = enc_line;
 
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
-	multi_vsync_notify_video_composer();
+	if (gvideo_recv_vpp[recv_id])
+		vsync_notify_video_composer(layer_id,
+			info->sync_duration_den,
+			info->sync_duration_num);
 #endif
 
 	if (atomic_read(&video_unreg_flag_vpp[vpp_id]))

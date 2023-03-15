@@ -30,6 +30,7 @@ function show_help {
 	echo "  --patch                 for only am patches"
 	echo "  -v                      for kernel version: common13-5.15 common14-5.15"
 	echo "  --check_gki_20          for gki 2.0 check kernel build"
+	echo "  --dev_config            for use the config specified by oem instead of amlogic like ./mk.sh --dev_config a_config+b_config+c_config"
 }
 
 VA=
@@ -160,6 +161,12 @@ do
 		LTO=none
 		shift
 		;;
+	--dev_config)
+		DEV_CONFIG=1
+		CONFIG_GROUP=$2
+		VA=1
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -263,8 +270,8 @@ fi
 GKI_CONFIG=${GKI_CONFIG:-gki_debug}
 
 set -e
-export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG MANUAL_INSMOD_MODULE
-export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD CHECK_GKI_20
+export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG MANUAL_INSMOD_MODULE ARCH
+export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD CHECK_GKI_20 DEV_CONFIG CONFIG_GROUP
 
 if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
 	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ${FULL_KERNEL_VERSION}

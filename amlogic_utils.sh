@@ -38,6 +38,21 @@ function pre_defconfig_cmds() {
 	if [[ -n ${UPGRADE_PROJECT} ]]; then
 		KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE}
 	fi
+
+	if [[ -n ${DEV_CONFIG} ]]; then
+		config_list=$(echo ${CONFIG_GROUP}|sed 's/+/ /g')
+		#verify the extra config is in the right path and merge the config
+		CONFIG_DIR=arch/${ARCH}/configs
+		for config_name in ${config_list[@]}
+		do
+			if [[ ! -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/${CONFIG_DIR}/${config_name} ]]; then
+				echo "ERROR: config file ${config_name} is not in the right path!!"
+				exit
+			else
+				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/${CONFIG_DIR}/${config_name}
+			fi
+		done
+	fi
 }
 export -f pre_defconfig_cmds
 

@@ -43,6 +43,7 @@
 	"V03.00.00.00.03.04.12 [20221025] [EDID] adjust edid parsing for TV_TS\n" \
 	"V03.01.00.00.03.04.12 [20221221] [PHY] test pixel clkmsr and adjust phy for 70hz issue\n" \
 	"V03.01.00.00.03.04.13 [20230111] [NEW] add support for 480i/576i\n" \
-	"V03.01.00.00.03.04.14 [20230308] [BUG]  fix y422 deep color check"
+	"V03.01.00.00.03.04.14 [20230308] [BUG]  fix y422 deep color check" \
+	"V03.01.00.00.03.04.15 [20230316] [BUG] 480p&576p colorimetry should be 601"
 
 #endif // __HDMI21_VERSION_H__

@@ -50,7 +50,6 @@ source "$(COMMON_DRIVERS_DIR)/drivers/pci/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/led/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/dvb_ci/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/hwspinlock/Kconfig"
-source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/android/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/yaffs2/Kconfig"
 endmenu

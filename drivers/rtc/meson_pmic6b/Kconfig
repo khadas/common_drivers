@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# AMLOGIC_RTC_PMIC6B configuration
+#
+
+menu  "RTC_PMIC6B SUPPORT"
+
+config AMLOGIC_RTC_PMIC6B
+	bool "Amlogic RTC PMIC6B"
+	depends on AMLOGIC_MFD
+	depends on AMLOGIC_MFD_PMIC6B
+	depends on RTC_CLASS
+	default n
+	help
+	  Say yes here to add support for the Amlogic RTC PMIC.
+	  Say no here to don't add support for the Amlogic RTC PMIC.
+	  Default is yes, and add support for the Amlogic RTC PMIC.
+
+endmenu

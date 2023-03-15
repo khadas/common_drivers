@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# AMLOGIC_GPIO_PMIC drivers configuration
+#
+
+menuconfig AMLOGIC_GPIO_PMIC
+	bool "Amlogic GPIO Support"
+	default n
+	help
+	  This enables GPIO support through the generic GPIO library.
+	  You only need to enable this, if you also want to enable
+	  one or more of the GPIO drivers below.
+
+	  If unsure, say no.
+
+if AMLOGIC_GPIO_PMIC
+
+config AMLOGIC_GPIO_PMIC6B
+	bool "Amlogic RTC PMIC6B"
+	depends on REGMAP_I2C
+	depends on AMLOGIC_MFD
+	depends on AMLOGIC_MFD_PMIC6B
+	default n
+	help
+	  Say yes here to add support for the Amlogic GPIO PMIC6B.
+
+endif

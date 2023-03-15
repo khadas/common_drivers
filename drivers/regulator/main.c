@@ -8,24 +8,20 @@
 #include <linux/amlogic/module_merge.h>
 #include "main.h"
 
-static int __init gpio_main_init(void)
+static int __init regulator_main_init(void)
 {
 	pr_debug("### %s() start\n", __func__);
-	call_sub_init(gpiolib_module_init);
-	call_sub_init(meson_gpio_irq_init);
-	call_sub_init(meson_pmic6b_gpio_init);
+	call_sub_init(meson_pmic6b_regulator_init);
 	pr_debug("### %s() end\n", __func__);
 	return 0;
 }
 
-static void __exit gpio_main_exit(void)
+static void __exit regulator_main_exit(void)
 {
-	meson_gpio_irq_exit();
-	gpiolib_module_exit();
-	meson_pmic6b_gpio_exit();
+	meson_pmic6b_regulator_exit();
 }
 
-module_init(gpio_main_init);
-module_exit(gpio_main_exit);
+module_init(regulator_main_init);
+module_exit(regulator_main_exit);
 
 MODULE_LICENSE("GPL v2");

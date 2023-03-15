@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# AMLOGIC_REGULATOR drivers configuration
+#
+
+menuconfig AMLOGIC_PMIC_REGULATOR
+	bool "Amlogic Voltage and Current Regulator Support"
+	default n
+	help
+	  Generic Voltage and Current Regulator support.
+
+	  This framework is designed to provide a generic interface to voltage
+	  and current regulators within the Linux kernel. It's intended to
+	  provide voltage and current control to client or consumer drivers and
+	  also provide status information to user space applications through a
+	  sysfs interface.
+
+	  The intention is to allow systems to dynamically control regulator
+	  output in order to save power and prolong battery life. This applies
+	  to both voltage regulators (where voltage output is controllable) and
+	  current sinks (where current output is controllable).
+
+	  This framework safely compiles out if not selected so that client
+	  drivers can still be used in systems with no software controllable
+	  regulators.
+
+	  If unsure, say no.
+
+
+if AMLOGIC_PMIC_REGULATOR
+
+config AMLOGIC_REGULATOR_PMIC6B
+	bool "Amlogic REGULATOR PMIC6B"
+	depends on AMLOGIC_MFD
+	depends on AMLOGIC_MFD_PMIC6B
+	depends on REGULATOR
+	select REGMAP_I2C
+	default n
+	help
+	  This driver is for amlogic pmic6b, it is different from pmic6.
+	  Say yes here to add support for the Amlogic REGULATOR PMIC.
+	  Say no here to not add support for the Amlogic REGULATOR PMIC.
+	  default here is not supporting for the Amlogic REGULATOR PMIC.
+
+endif

@@ -34,4 +34,18 @@ static inline void gpiolib_module_exit(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_GPIO_PMIC6B)
+int meson_pmic6b_gpio_init(void);
+void meson_pmic6b_gpio_exit(void);
+#else
+static inline int meson_pmic6b_gpio_init(void)
+{
+	return 0;
+}
+
+static inline void meson_pmic6b_gpio_exit(void)
+{
+}
+#endif
+
 #endif /*__GPIO_MAIN_H_*/

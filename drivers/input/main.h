@@ -48,4 +48,18 @@ static inline void meson_ir_driver_exit(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_PWRKEY_PMIC6B)
+int meson_pmic6b_pwrkey_init(void);
+void meson_pmic6b_pwrkey_exit(void);
+#else
+static inline int meson_pmic6b_pwrkey_init(void)
+{
+	return 0;
+}
+
+static inline void meson_pmic6b_pwrkey_exit(void)
+{
+}
+#endif
+
 #endif /*_INPUT_MAIN_H__*/

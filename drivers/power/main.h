@@ -34,4 +34,18 @@ static inline void power_ee_domain_exit(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_BATTERY_PMIC6B)
+int meson_pmic6b_bat_init(void);
+void meson_pmic6b_bat_exit(void);
+#else
+static inline int meson_pmic6b_bat_init(void)
+{
+	return 0;
+}
+
+static inline void meson_pmic6b_bat_exit(void)
+{
+}
+#endif
+
 #endif /* _DOMAIN_MAIN_H__ */

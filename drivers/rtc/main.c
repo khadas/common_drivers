@@ -13,6 +13,7 @@ static int __init rtc_main_init(void)
 	pr_debug("### %s() start\n", __func__);
 	call_sub_init(vrtc_init);
 	call_sub_init(rtc_init);
+	call_sub_init(meson_pmic6b_rtc_init);
 	pr_debug("### %s() end\n", __func__);
 	return 0;
 }
@@ -21,6 +22,7 @@ static void __exit rtc_main_exit(void)
 {
 	vrtc_exit();
 	rtc_exit();
+	meson_pmic6b_rtc_exit();
 }
 
 module_init(rtc_main_init);

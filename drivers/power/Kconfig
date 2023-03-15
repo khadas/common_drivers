@@ -8,3 +8,6 @@ config AMLOGIC_POWER
 	  this config enables to use amlogic power management driver
 	  Say y here if you want power related driver(pmu/dvfs) support
 	  The use of select here is due to the PM_GENERIC_DOMAINS set by gki's QCOM walk
+
+source "$(COMMON_DRIVERS_DIR)/drivers/power/meson_pmic6b/Kconfig"
+

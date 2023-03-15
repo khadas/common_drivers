@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# Multifunction miscellaneous devices
+#
+
+menuconfig AMLOGIC_MFD
+	tristate "Amlogic mfd devices"
+	default n
+	help
+	  Say Y here, and a list of multifunction drivers will be displayed.
+	  Everything that didn't fit into the other categories is here. This option
+	  doesn't affect the kernel.
+
+	  If unsure, say Y.
+
+if AMLOGIC_MFD
+
+config AMLOGIC_MFD_PMIC6B
+	bool "Amlogic MFD PMIC6B"
+	depends on I2C
+	select MFD_CORE
+	select REGMAP_I2C
+	select REGMAP_IRQ
+	default n
+	help
+	  Say yes here to add support for the Amlogic MFD PMIC.
+	  This driver provides common support for accessing the device,
+	  additional drivers must be enabled in order to use the
+	  functionality of the device.
+
+endif

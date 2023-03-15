@@ -10,3 +10,5 @@ obj-$(CONFIG_AMLOGIC_RTC) = $(MODULE_NAME).o
 $(MODULE_NAME)-y = main.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_RTC_DRV_MESON_VRTC) += rtc-meson-vrtc.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_MESON_RTC) += meson-rtc.o
+
+include $(COMMON_DRIVERS_DIR)/drivers/rtc/meson_pmic6b/Makefile

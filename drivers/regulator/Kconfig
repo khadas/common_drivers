@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_REGULATOR
+	tristate "Amlogic regulator devices support"
+	default n
+	help
+	  regulator devices support
+	  select y for built-in
+	  select m for ko
+	  select n for disable
+
+if AMLOGIC_REGULATOR
+source "$(COMMON_DRIVERS_DIR)/drivers/regulator/meson_pmic6b/Kconfig"
+endif

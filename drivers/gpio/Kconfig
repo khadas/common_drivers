@@ -22,5 +22,6 @@ config AMLOGIC_GPIOLIB
 
 source "$(COMMON_DRIVERS_DIR)/drivers/gpio/irqchip/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/gpio/pinctrl/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/gpio/meson_pmic6b/Kconfig"
 
 endif # AMLOGIC_GPIO

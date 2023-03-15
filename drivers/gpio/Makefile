@@ -14,3 +14,4 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_GPIOLIB) += gpiolib.o
 
 include $(COMMON_DRIVERS_DIR)/drivers/gpio/irqchip/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/gpio/pinctrl/Makefile
+include $(COMMON_DRIVERS_DIR)/drivers/gpio/meson_pmic6b/Makefile

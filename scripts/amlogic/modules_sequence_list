@@ -24,6 +24,7 @@ RAMDISK_MODULES_LOAD_LIST=(
 	dvb-core.ko
 	amlogic-pm.ko
 	amlogic-input.ko
+	amlogic-regulator.ko
 	amlogic-watchdog.ko
 	aml-dvb.ko
 	aml_media.ko

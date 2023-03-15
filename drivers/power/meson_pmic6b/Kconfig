@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# AMLOGIC_POWER_PMIC drivers configuration
+#
+
+menuconfig AMLOGIC_POWER_PMIC
+	bool "Amlogic power supply class support"
+	default n
+	help
+	  Say Y here to enable power supply class support. This allows
+	  power supply (batteries, AC, USB) monitoring by userspace
+	  via sysfs and uevent (if available) and/or APM kernel interface
+	  (if selected below).
+	  If unsure, say no.
+
+if AMLOGIC_POWER_PMIC
+
+config AMLOGIC_BATTERY_PMIC6B
+	bool "Amlogic PMIC6B Fuel Gauge Support"
+	depends on REGMAP_I2C
+	depends on AMLOGIC_MFD
+	depends on AMLOGIC_MFD_PMIC6B
+	default n
+	help
+          Say Y here to enable support for the power management unit
+	  provided by the Fuel Gauge driver for the Amlogic PMIC6B.
+	  If unsure, say no.
+	  This driver can also be built as a module. If so, the module will be
+	  called pmic6b-battery.
+
+endif

@@ -14,6 +14,7 @@ static int __init input_main_init(void)
 	call_sub_init(meson_gpio_kp_init);
 	call_sub_init(meson_adc_kp_init);
 	call_sub_init(meson_ir_driver_init);
+	call_sub_init(meson_pmic6b_pwrkey_init);
 	pr_debug("### %s() end\n", __func__);
 	return 0;
 }
@@ -23,6 +24,7 @@ static void __exit input_main_exit(void)
 	meson_ir_driver_exit();
 	meson_adc_kp_exit();
 	meson_gpio_kp_exit();
+	meson_pmic6b_pwrkey_exit();
 }
 
 module_init(input_main_init);

@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# AMLOGIC_INPUT_PMIC drivers configuration
+#
+
+menuconfig AMLOGIC_INPUT_PMIC
+	bool "Amlogic misc devices"
+	default n
+	help
+	  Say Y here, and a list of miscellaneous input drivers will be displayed.
+	  Everything that didn't fit into the other categories is here. This option
+	  doesn't affect the kernel.
+
+	  If unsure, say Y.
+
+if AMLOGIC_INPUT_PMIC
+
+config AMLOGIC_PWRKEY_PMIC6B
+	bool "Amlogic PWRKEY PMIC6B"
+	depends on REGMAP_I2C
+	depends on AMLOGIC_MFD
+	depends on AMLOGIC_MFD_PMIC6B
+	default n
+	help
+	  Say yes here to add support for the Amlogic PWRKEY PMIC6B.
+	  Say no here to don't add support for the Amlogic PWRKEY PMIC6B.
+	  Default is yes, what means add support for the Amlogic PWRKEY PMIC6B.
+
+endif

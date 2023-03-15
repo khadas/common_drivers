@@ -13,6 +13,7 @@ static int __init domain_main_init(void)
 	pr_debug("### %s() start\n", __func__);
 	call_sub_init(sec_power_domain_init);
 	call_sub_init(power_ee_domain_init);
+	call_sub_init(meson_pmic6b_bat_init);
 	pr_debug("### %s() end\n", __func__);
 
 	return 0;
@@ -22,6 +23,7 @@ static void __exit domain_main_exit(void)
 {
 	sec_power_domain_exit();
 	power_ee_domain_exit();
+	meson_pmic6b_bat_exit();
 }
 
 module_init(domain_main_init);

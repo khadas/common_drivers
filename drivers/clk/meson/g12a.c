@@ -6726,6 +6726,9 @@ static struct clk_hw_onecell_data sm1_hw_onecell_data = {
 		[CLKID_24M_CLK_GATE]		= &g12a_24m_gate.hw,
 		[CLKID_12M_CLK_DIV]		= &g12a_12m_div.hw,
 		[CLKID_12M_CLK_GATE]		= &g12a_12m_gate.hw,
+		[CLKID_MIPI_CSI_PHY_CLK0_MUX]	= &g12b_mipi_csi_phy_clk0_mux.hw,
+		[CLKID_MIPI_CSI_PHY_CLK0_DIV]	= &g12b_mipi_csi_phy_clk0_div.hw,
+		[CLKID_MIPI_CSI_PHY_CLK0]	= &g12b_mipi_csi_phy_clk0_gate.hw,
 #endif
 		[NR_CLKS]			= NULL,
 	},

@@ -50,6 +50,7 @@
 #define RP_LOG		0x40000
 
 /* correct phy trim value config method */
+/* merge project modifications back to trunk */
 #define RX_VER1 "ver.2023/3/16"
 
 /*

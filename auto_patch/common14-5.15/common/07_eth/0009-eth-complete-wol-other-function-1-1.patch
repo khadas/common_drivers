@@ -1,0 +1,161 @@
+From f8b8a1b99b473879d2989791a3e41a0e8117c352 Mon Sep 17 00:00:00 2001
+From: Zhuo Wang <zhuo.wang@amlogic.com>
+Date: Thu, 16 Mar 2023 05:49:04 +0000
+Subject: [PATCH] eth: complete wol other function [1/1]
+
+PD#SWPL-114869
+
+Problem:
+wol may not work normally in some special case.
+
+Solution:
+complete 2 wol patch
+1.come from https://scgit.amlogic.com/#/c/293893/
+2.hold sometimes after resume
+
+Verify:
+QA_verify with oppen
+PD#SWPL-114869
+
+Change-Id: I7557b4946e8b3ac455f2c28e88a6c1563a0cb4ae
+Signed-off-by: Zhuo Wang <zhuo.wang@amlogic.com>
+---
+ .../ethernet/stmicro/stmmac/dwmac-meson8b.c   | 54 +++++++++++++++----
+ .../net/ethernet/stmicro/stmmac/stmmac_main.c |  7 +++
+ 2 files changed, 50 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+index 401923926257..c6be1ac009dd 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+@@ -409,6 +409,7 @@ static int meson8b_init_prg_eth(struct meson8b_dwmac *dwmac)
+ 
+ #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+ #ifdef CONFIG_PM_SLEEP
++static bool mac_wol_enable;
+ void set_wol_notify_bl31(u32 enable_bl31)
+ {
+ 	struct arm_smccc_res res;
+@@ -421,6 +422,15 @@ static void set_wol_notify_bl30(u32 enable_bl30)
+ {
+ 	scpi_set_ethernet_wol(enable_bl30);
+ }
++
++void set_device_init_flag(struct device *pdev, bool enable)
++{
++	if (enable == mac_wol_enable)
++		return;
++
++	device_init_wakeup(pdev, enable);
++	mac_wol_enable = enable;
++}
+ #endif
+ unsigned int internal_phy;
+ static int aml_custom_setting(struct platform_device *pdev, struct meson8b_dwmac *dwmac)
+@@ -440,6 +450,11 @@ static int aml_custom_setting(struct platform_device *pdev, struct meson8b_dwmac
+ 		pr_info("use default internal_phy as 0\n");
+ 
+ 	ndev->wol_enabled = true;
++#ifdef CONFIG_PM_SLEEP
++	if (of_property_read_u32(np, "mac_wol", &wol_switch_from_user) == 0)
++		pr_info("feature mac_wol\n");
++#endif
++
+ 	return 0;
+ }
+ #endif
+@@ -551,6 +566,9 @@ static int meson8b_dwmac_probe(struct platform_device *pdev)
+ #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+ 	aml_custom_setting(pdev, dwmac);
+ #ifdef CONFIG_PM_SLEEP
++	device_init_wakeup(&pdev->dev, wol_switch_from_user);
++	mac_wol_enable = wol_switch_from_user;
++
+ 	/*input device to send virtual pwr key for android*/
+ 	input_dev = input_allocate_device();
+ 	if (!input_dev) {
+@@ -598,6 +616,12 @@ static void meson8b_dwmac_shutdown(struct platform_device *pdev)
+ 	struct meson8b_dwmac *dwmac = get_stmmac_bsp_priv(&pdev->dev);
+ 	int ret;
+ 
++	if (wol_switch_from_user) {
++		set_wol_notify_bl31(0);
++		set_wol_notify_bl30(0);
++		set_device_init_flag(&pdev->dev, 0);
++	}
++
+ 	pr_info("aml_eth_shutdown\n");
+ 	ret = stmmac_suspend(priv->device);
+ 	if (internal_phy != 2) {
+@@ -642,21 +666,23 @@ static int meson8b_suspend(struct device *dev)
+ 	if ((wol_switch_from_user) && phydev->link) {
+ 		set_wol_notify_bl31(true);
+ 		set_wol_notify_bl30(true);
+-		device_init_wakeup(dev, true);
++		set_device_init_flag(dev, true);
+ 		priv->wolopts = 0x1 << 5;
+ 		/*phy is 100M, change to 10M*/
+-		pr_info("link 100M -> 10M\n");
+-		backup_adv = phy_read(phydev, MII_ADVERTISE);
+-		phy_write(phydev, MII_ADVERTISE, 0x61);
+-		mii_lpa_to_linkmode_lpa_t(phydev->advertising, 0x61);
+-		genphy_restart_aneg(phydev);
+-		msleep(3000);
++		if (phydev->speed != 10) {
++			pr_info("link 100M -> 10M\n");
++			backup_adv = phy_read(phydev, MII_ADVERTISE);
++			phy_write(phydev, MII_ADVERTISE, 0x61);
++			mii_lpa_to_linkmode_lpa_t(phydev->advertising, 0x61);
++			genphy_restart_aneg(phydev);
++			msleep(3000);
++		}
+ 		ret = stmmac_suspend(dev);
+ 		without_reset = 1;
+ 	} else {
+ 		set_wol_notify_bl31(false);
+ 		set_wol_notify_bl30(false);
+-		device_init_wakeup(dev, false);
++		set_device_init_flag(dev, false);
+ 
+ 		ret = stmmac_suspend(dev);
+ 		if (internal_phy != 2) {
+@@ -692,9 +718,15 @@ static int meson8b_resume(struct device *dev)
+ 			input_sync(dwmac->input_dev);
+ 		}
+ 
+-		phy_write(phydev, MII_ADVERTISE, backup_adv);
+-		mii_lpa_to_linkmode_lpa_t(phydev->advertising, backup_adv);
+-		genphy_restart_aneg(phydev);
++		if (backup_adv != 0) {
++			phy_write(phydev, MII_ADVERTISE, backup_adv);
++			mii_lpa_to_linkmode_lpa_t(phydev->advertising, backup_adv);
++			genphy_restart_aneg(phydev);
++			backup_adv = 0;
++		}
++		/*RTC wait linkup*/
++		pr_info("eth hold wakelock 5s\n");
++		pm_wakeup_event(dev, 5000);
+ 	} else {
+ 		if (internal_phy != 2) {
+ 			if (dwmac->data->resume)
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index a46a218ee8f0..172a0ba971cc 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -1178,6 +1178,13 @@ static void stmmac_mac_link_up(struct phylink_config *config,
+ 		writel(ctrl, priv->ioaddr + MAC_CTRL_REG);
+ 
+ 	stmmac_mac_set(priv, priv->ioaddr, true);
++#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
++#ifdef CONFIG_PM_SLEEP
++	if (device_may_wakeup(priv->device)) {
++		pm_relax(priv->device);
++	}
++#endif
++#endif
+ 	if (phy && priv->dma_cap.eee) {
+ 		priv->eee_active = phy_init_eee(phy, 1) >= 0;
+ 		priv->eee_enabled = stmmac_eee_init(priv);
+-- 
+2.25.1
+

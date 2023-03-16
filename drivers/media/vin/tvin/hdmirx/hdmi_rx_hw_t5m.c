@@ -613,6 +613,8 @@ void aml_dfe_en_t5m(void)
 /* phy offset calibration based on different chip and board */
 void aml_phy_offset_cal_t5m(void)
 {
+	u32 data32;
+
 	/* PHY */
 	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHD_EQ, 0x70080050);
 	usleep_range(10, 20);
@@ -624,7 +626,12 @@ void aml_phy_offset_cal_t5m(void)
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC2, 0x11c73220);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, 0xffe00100);
+	data32 = 0xffe00100;
+	if (rterm_trim_flag_t5m) {
+		data32 = ((data32 & (~((0xf << 12) | 0x1))) |
+			(rterm_trim_val_t5m << 12) | rterm_trim_flag_t5m);
+	}
+	hdmirx_wr_amlphy(T5M_HDMIRX20PHY_DCHA_MISC1, data32);
 	usleep_range(10, 20);
 
 	/* PLL */

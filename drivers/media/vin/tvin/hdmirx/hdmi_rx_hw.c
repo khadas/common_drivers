@@ -5231,7 +5231,7 @@ void aml_phy_get_trim_val(void)
 	else if (rx.chip_id >= CHIP_ID_T5 &&
 		rx.chip_id <= CHIP_ID_T5D)
 		aml_phy_get_trim_val_t5();
-	else if (rx.chip_id >= CHIP_ID_T7)
+	else if (rx.chip_id >= CHIP_ID_T7 && rx.chip_id <= CHIP_ID_T5W)
 		aml_phy_get_trim_val_t7();
 	else if (rx.chip_id == CHIP_ID_T5M)
 		aml_phy_get_trim_val_t5m();

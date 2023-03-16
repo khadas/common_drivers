@@ -3384,6 +3384,11 @@ static void lcd_debug_reg_write(struct aml_lcd_drv_s *pdrv, unsigned int reg,
 		pr_info("write rst [0x%04x] = 0x%08x, readback 0x%08x\n",
 			reg, data, lcd_reset_read(pdrv, reg));
 		break;
+	case LCD_REG_DBG_HHI_BUS:
+		lcd_hiu_write(reg, data);
+		pr_info("write hiu [0x%04x] = 0x%08x, readback 0x%08x\n",
+			reg, data, lcd_hiu_read(reg));
+		break;
 	default:
 		break;
 	}
@@ -3441,6 +3446,10 @@ static void lcd_debug_reg_read(struct aml_lcd_drv_s *pdrv,
 	case LCD_REG_DBG_RST_BUS:
 		pr_info("read rst [0x%04x] = 0x%08x\n",
 			reg, lcd_reset_read(pdrv, reg));
+		break;
+	case LCD_REG_DBG_HHI_BUS:
+		pr_info("read hiu [0x%04x] = 0x%08x\n",
+			reg, lcd_hiu_read(reg));
 		break;
 	default:
 		break;
@@ -3538,6 +3547,13 @@ static void lcd_debug_reg_dump(struct aml_lcd_drv_s *pdrv, unsigned int reg,
 				(reg + i), lcd_reset_read(pdrv, reg + i));
 		}
 		break;
+	case LCD_REG_DBG_HHI_BUS:
+		pr_info("dump hiu regs:\n");
+		for (i = 0; i < num; i++) {
+			pr_info("[0x%04x] = 0x%08x\n",
+				(reg + i), lcd_hiu_read(reg + i));
+		}
+		break;
 	default:
 		break;
 	}
@@ -3559,6 +3575,9 @@ static ssize_t lcd_debug_reg_store(struct device *dev, struct device_attribute *
 		} else if (buf[1] == 'a') { /* ana */
 			ret = sscanf(buf, "wa %x %x", &reg32, &data32);
 			bus = LCD_REG_DBG_ANA_BUS;
+		} else if (buf[1] == 'h') { /* hiu */
+			ret = sscanf(buf, "wh %x %x", &reg32, &data32);
+			bus = LCD_REG_DBG_HHI_BUS;
 		} else if (buf[1] == 'c') { /* clk */
 			ret = sscanf(buf, "wc %x %x", &reg32, &data32);
 			bus = LCD_REG_DBG_CLK_BUS;
@@ -3605,6 +3624,9 @@ static ssize_t lcd_debug_reg_store(struct device *dev, struct device_attribute *
 		} else if (buf[1] == 'a') { /* ana */
 			ret = sscanf(buf, "ra %x", &reg32);
 			bus = LCD_REG_DBG_ANA_BUS;
+		} else if (buf[1] == 'h') { /* hiu */
+			ret = sscanf(buf, "rh %x", &reg32);
+			bus = LCD_REG_DBG_HHI_BUS;
 		} else if (buf[1] == 'c') { /* clk */
 			ret = sscanf(buf, "rc %x", &reg32);
 			bus = LCD_REG_DBG_CLK_BUS;
@@ -3651,6 +3673,9 @@ static ssize_t lcd_debug_reg_store(struct device *dev, struct device_attribute *
 		} else if (buf[1] == 'a') { /* ana */
 			ret = sscanf(buf, "da %x %d", &reg32, &data32);
 			bus = LCD_REG_DBG_ANA_BUS;
+		} else if (buf[1] == 'h') { /* hiu */
+			ret = sscanf(buf, "dh %x %d", &reg32, &data32);
+			bus = LCD_REG_DBG_HHI_BUS;
 		} else if (buf[1] == 'c') { /* clk */
 			ret = sscanf(buf, "dc %x %d", &reg32, &data32);
 			bus = LCD_REG_DBG_CLK_BUS;

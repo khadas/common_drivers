@@ -24,6 +24,7 @@
 #define LCD_REG_DBG_EDPDPCD_BUS     8
 #define LCD_REG_DBG_COMBOPHY_BUS    9
 #define LCD_REG_DBG_RST_BUS         10
+#define LCD_REG_DBG_HHI_BUS         11
 #define LCD_REG_DBG_MAX_BUS         0xff
 
 /*tcon adb port use */

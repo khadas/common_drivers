@@ -2134,6 +2134,16 @@
 };
 
 &pinctrl_periphs {
+
+	bl_pwm_off_pins:bl_pwm_off_pin {
+		mux {
+			groups = "GPIOH_5";
+			function = "gpio_periphs";
+			bias-pull-up;
+			drive-strength-microamp = <4000>;
+		};
+	};
+
 	emmc_pins: emmc_pins {
 		mux-0 {
 			groups = "emmc_nand_d0",

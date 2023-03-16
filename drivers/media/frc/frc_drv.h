@@ -204,7 +204,6 @@ struct frm_dly_dat_s {
 struct st_frc_buf {
 	/*cma memory define*/
 	u32 cma_mem_size;
-	u32 cma_rdma_size;
 	struct page *cma_mem_paddr_pages;
 	phys_addr_t cma_mem_paddr_start;
 	u8  cma_mem_alloced;

@@ -664,15 +664,6 @@ static int frc_dts_parse(struct frc_dev_s *frc_devp)
 	frc_devp->buf.cma_mem_size = dma_get_cma_size_int_byte(&pdev->dev);
 	pr_frc(0, "cma_mem_size=0x%x\n", frc_devp->buf.cma_mem_size);
 
-	// frc rdma reserved
-	ret = of_reserved_mem_device_init_by_idx(&pdev->dev, np, 1);
-	if (ret) {
-		pr_frc(0, "rdma resource undefined !\n");
-		frc_devp->buf.cma_rdma_size = 0;
-	}
-	frc_devp->buf.cma_rdma_size = dma_get_cma_size_int_byte(&pdev->dev);
-	pr_frc(0, "cma_rdma_size=0x%x\n", frc_devp->buf.cma_rdma_size);
-
 	frc_devp->clk_frc = clk_get(&pdev->dev, "clk_frc");
 	frc_devp->clk_me = clk_get(&pdev->dev, "clk_me");
 	if (IS_ERR(frc_devp->clk_me) || IS_ERR(frc_devp->clk_frc)) {

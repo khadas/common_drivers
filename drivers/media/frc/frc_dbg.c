@@ -184,7 +184,7 @@ ssize_t frc_debug_if_help(struct frc_dev_s *devp, char *buf)
 	len += sprintf(buf + len, "powerdown : power down memc\n");
 	len += sprintf(buf + len, "poweron : power on memc\n");
 	len += sprintf(buf + len, "memc_level : memc_dejudder\n");
-
+	len += sprintf(buf + len, "seamless : 0/1 0:disable 1:enable\n");
 	return len;
 }
 

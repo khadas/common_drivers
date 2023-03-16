@@ -433,6 +433,7 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 	struct frc_fw_data_s *pfw_data;
 	struct frc_top_type_s *frc_top;
 	struct vinfo_s *vinfo = get_current_vinfo();
+	static u16 seamless_cnt;
 
 	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
 	frc_top = &pfw_data->frc_top_type;
@@ -473,7 +474,7 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 		}
 	}
 
-	if (devp->in_sts.size_chged == 1 && devp->in_sts.frc_seamless_en) {
+	if (seamless_cnt) {
 		frc_input_init(devp, frc_top);
 		tmpvalue = frc_top->hsize;
 		tmpvalue |= (frc_top->vsize) << 16;
@@ -485,6 +486,10 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
 			(cur_in_sts->frc_hsc_startp) << 13 |
 			(cur_in_sts->frc_vsc_startp));
+
+		WRITE_FRC_BITS(0x1119, 1, 0, 1);
+		WRITE_FRC_BITS(0x1119, 1, 16, 1);
+		pr_frc(2, "clear vbuffer start.!!!!\n");
 		pr_frc(1, "manual set frc size:v(x):0x%x, h(y)0x%x\n",
 			cur_in_sts->frc_hd_start_lines, cur_in_sts->frc_vd_start_lines);
 
@@ -492,15 +497,21 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 			pfw_data->frc_input_cfg(devp->fw_data);
 		devp->in_sts.size_chged = 0;
 		pr_frc(2, " %s size changed, frc not reopen\n", __func__);
+
+		seamless_cnt = 0;
 		return sts_change;
 	}
 
-	if (devp->in_sts.frc_seamless_en) {
+	if (devp->in_sts.size_chged && devp->in_sts.frc_seamless_en) {
+		seamless_cnt++;
+	} else if (devp->in_sts.frc_seamless_en && !devp->in_sts.size_chged) {
 		WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,
 			(devp->out_sts.vout_height) << 16 | (devp->out_sts.vout_width));
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
 			(cur_in_sts->frc_hsc_startp) << 13 |
 			(cur_in_sts->frc_vsc_startp));
+		WRITE_FRC_BITS(0x1119, 0, 0, 1);
+		WRITE_FRC_BITS(0x1119, 0, 16, 1);
 	}
 
 	if (devp->frc_sts.out_put_mode_changed || devp->frc_sts.re_config) {

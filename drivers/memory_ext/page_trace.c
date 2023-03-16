@@ -426,7 +426,6 @@ static void __init find_static_common_symbol(void)
 	dump_common_caller();
 }
 
-#if CONFIG_AMLOGIC_KERNEL_VERSION < 14515
 static int is_common_caller(struct alloc_caller *caller, unsigned long pc)
 {
 	int ret = 0;
@@ -458,7 +457,6 @@ static int is_common_caller(struct alloc_caller *caller, unsigned long pc)
 	}
 	return ret;
 }
-#endif
 
 unsigned long unpack_ip(struct page_trace *trace)
 {
@@ -478,22 +476,100 @@ unsigned long unpack_ip(struct page_trace *trace)
 	return text + ((trace->ret_ip) << 2);
 }
 
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515 && defined(CONFIG_ARM64)
+/*
+ * We can only safely access per-cpu stacks from current in a non-preemptible
+ * context.
+ */
+static bool on_accessible_stack(const struct task_struct *tsk,
+				unsigned long sp, unsigned long size,
+				struct stack_info *info)
+{
+	if (info)
+		info->type = STACK_TYPE_UNKNOWN;
+
+	if (on_task_stack(tsk, sp, size, info))
+		return true;
+	if (tsk != current || preemptible())
+		return false;
+	if (on_irq_stack(sp, size, info))
+		return true;
+	if (on_overflow_stack(sp, size, info))
+		return true;
+	if (on_sdei_stack(sp, size, info))
+		return true;
+
+	return false;
+}
+
+/*
+ * Unwind from one frame record (A) to the next frame record (B).
+ *
+ * We terminate early if the location of B indicates a malformed chain of frame
+ * records (e.g. a cycle), determined based on the location and fp value of A
+ * and the location (but not the fp value) of B.
+ */
+static int notrace unwind_next(struct unwind_state *state)
+{
+	struct task_struct *tsk = state->task;
+	unsigned long fp = state->fp;
+	struct stack_info info;
+	int err;
+
+	/* Final frame; nothing to unwind */
+	if (fp == (unsigned long)task_pt_regs(tsk)->stackframe)
+		return -ENOENT;
+
+	err = unwind_next_common(state, &info, on_accessible_stack, NULL);
+	if (err)
+		return err;
+
+	state->pc = ptrauth_strip_insn_pac(state->pc);
+
+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+	if (tsk->ret_stack &&
+		(state->pc == (unsigned long)return_to_handler)) {
+		unsigned long orig_pc;
+		/*
+		 * This is a case where function graph tracer has
+		 * modified a return address (LR) in a stack frame
+		 * to hook a function return.
+		 * So replace it to an original value.
+		 */
+		orig_pc = ftrace_graph_ret_addr(tsk, NULL, state->pc,
+						(void *)state->fp);
+		if (WARN_ON_ONCE(state->pc == orig_pc))
+			return -EINVAL;
+		state->pc = orig_pc;
+	}
+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+
+	return 0;
+}
+#endif
+
 unsigned long find_back_trace(void)
 {
-#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+#if (CONFIG_AMLOGIC_KERNEL_VERSION >= 14515) && defined(CONFIG_ARM64)
+	struct unwind_state frame;
 #else
 	struct stackframe frame;
+#endif
 	int ret, step = 0;
 
 #ifdef CONFIG_ARM64
 	frame.fp = (unsigned long)__builtin_frame_address(0);
 	frame.pc = _RET_IP_;
-#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-	frame.graph = 0;
-#endif
 	bitmap_zero(frame.stacks_done, __NR_STACK_TYPES);
 	frame.prev_fp = 0;
 	frame.prev_type = STACK_TYPE_UNKNOWN;
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	frame.task = current;
+#else
+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+	frame.graph = 0;
+#endif
+#endif
 #else
 	frame.fp = (unsigned long)__builtin_frame_address(0);
 	frame.sp = current_stack_pointer;
@@ -502,7 +578,11 @@ unsigned long find_back_trace(void)
 #endif
 	while (1) {
 	#ifdef CONFIG_ARM64
+	#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+		ret = unwind_next(&frame);
+	#else
 		ret = unwind_frame(current, &frame);
+	#endif
 	#elif defined(CONFIG_ARM)
 		ret = unwind_frame(&frame);
 	#else	/* not supported */
@@ -516,7 +596,6 @@ unsigned long find_back_trace(void)
 	}
 	pr_info("can't get pc\n");
 	dump_stack();
-#endif
 	return 0;
 }
 

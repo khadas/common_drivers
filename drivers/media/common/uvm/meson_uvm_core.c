@@ -78,7 +78,8 @@ static struct sg_table
 
 	UVM_PRINTK(1, "%s called, %s. name=%s gpu_access:%d\n",
 		__func__, current->comm, dev_name(attachment->dev), gpu_access);
-	if (ua->flags & BIT(UVM_SKIP_REALLOC))
+	if ((ua->flags & BIT(UVM_SKIP_REALLOC)) ||
+		(ua->flags & BIT(UVM_SECURE_ALLOC)))
 		skip_realloc = true;
 
 	if (ua->flags & BIT(UVM_DELAY_ALLOC) && gpu_access)

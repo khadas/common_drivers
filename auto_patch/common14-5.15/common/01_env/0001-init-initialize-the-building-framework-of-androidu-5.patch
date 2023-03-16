@@ -1,8 +1,8 @@
-From 479cdd6fd1ac34347508067908d8257b8887e39f Mon Sep 17 00:00:00 2001
+From cfbdbf7ab09df5fb7c88ebe7d63ab0ebb64f135d Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Thu, 2 Feb 2023 15:49:10 +0800
-Subject: [PATCH 01/95] init: initialize the building framework of
- androidu-5.15 for amlogic [1/1]
+Subject: [PATCH] init: initialize the building framework of androidu-5.15 for
+ amlogic [1/1]
 
 PD#SWPL-109858
 
@@ -18,17 +18,19 @@ sc2
 Change-Id: Icfbc29709af1545b802ed7794808a2ab560ed08a
 Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
 ---
- .gitignore                                |   3 +
- Makefile                                  |  35 ++
- drivers/Kconfig                           |  52 +++
- scripts/amlogic/licence_check.pl          | 153 ++++++++
- scripts/amlogic/licence_pre.pl            |  53 +++
- scripts/amlogic/merge_pre_check.pl        | 429 ++++++++++++++++++++++
- scripts/amlogic/pre-commit                |  24 ++
- scripts/amlogic/pre-commit-common_drivers |  24 ++
- scripts/checkpatch.pl                     | 158 ++++----
- scripts/kconfig/Makefile                  |   9 +-
- 10 files changed, 860 insertions(+), 80 deletions(-)
+ .gitignore                                    |   3 +
+ Makefile                                      |  35 ++
+ drivers/Kconfig                               |  52 +++
+ .../greybus/tools/{Android.mk => Android_mk}  |   0
+ scripts/amlogic/licence_check.pl              | 153 +++++++
+ scripts/amlogic/licence_pre.pl                |  53 +++
+ scripts/amlogic/merge_pre_check.pl            | 429 ++++++++++++++++++
+ scripts/amlogic/pre-commit                    |  24 +
+ scripts/amlogic/pre-commit-common_drivers     |  24 +
+ scripts/checkpatch.pl                         | 158 +++----
+ scripts/kconfig/Makefile                      |   9 +-
+ 11 files changed, 860 insertions(+), 80 deletions(-)
+ rename drivers/staging/greybus/tools/{Android.mk => Android_mk} (100%)
  create mode 100755 scripts/amlogic/licence_check.pl
  create mode 100755 scripts/amlogic/licence_pre.pl
  create mode 100755 scripts/amlogic/merge_pre_check.pl
@@ -180,6 +182,10 @@ index 67f44716797e..09c9fcfb9236 100644
 +endif
 +endif
  endmenu
+diff --git a/drivers/staging/greybus/tools/Android.mk b/drivers/staging/greybus/tools/Android_mk
+similarity index 100%
+rename from drivers/staging/greybus/tools/Android.mk
+rename to drivers/staging/greybus/tools/Android_mk
 diff --git a/scripts/amlogic/licence_check.pl b/scripts/amlogic/licence_check.pl
 new file mode 100755
 index 000000000000..2163ce102ab6

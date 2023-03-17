@@ -22,8 +22,12 @@
 #include "hdmi_rx_edid.h"
 #include "hdmi_rx_drv_ext.h"
 
-/* repeater */
-#define RX_VER0 "ver.2022/09/06"
+//2023.03.01
+//added interlaced mode protection
+//2023.03.01
+//optimize the judgment condition of unnormal timing
+//fix emp pkt parse err
+#define RX_VER0 "ver.2023/03/17"
 
 /*print type*/
 #define	LOG_EN		0x01

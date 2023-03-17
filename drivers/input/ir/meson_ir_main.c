@@ -29,6 +29,8 @@
 #include "meson_ir_main.h"
 #include <linux/amlogic/gki_module.h>
 
+static void meson_ir_input_device_init(struct input_dev *dev,
+				       struct device *parent, const char *name);
 static void meson_ir_tasklet(struct tasklet_struct *t);
 DECLARE_TASKLET_DISABLED(tasklet, meson_ir_tasklet);
 
@@ -635,6 +637,22 @@ static int meson_ir_get_devtree_pdata(struct platform_device *pdev)
 
 	chip->r_dev->max_frame_time = value;
 
+	ret = of_property_read_u32(pdev->dev.of_node, "vendor", &chip->vendor);
+	if (ret)
+		chip->vendor = 0x0001;
+
+	ret = of_property_read_u32(pdev->dev.of_node, "product", &chip->product);
+	if (ret)
+		chip->product = 0x0001;
+
+	meson_ir_input_device_init(chip->r_dev->input_device,
+				   &pdev->dev, "ir_keypad");
+	meson_ir_input_configure(chip->r_dev);
+
+	ret = input_register_device(chip->r_dev->input_device);
+	if (ret < 0)
+		return ret;
+
 	/*create map table */
 	ret = meson_ir_get_custom_tables(pdev->dev.of_node, chip);
 	if (ret < 0)
@@ -678,12 +696,14 @@ static int meson_ir_hardware_init(struct platform_device *pdev)
 static void meson_ir_input_device_init(struct input_dev *dev,
 				       struct device *parent, const char *name)
 {
+	struct meson_ir_chip *chip = dev_get_drvdata(parent);
+
 	dev->name = name;
 	dev->phys = "keypad/input0";
 	dev->dev.parent = parent;
 	dev->id.bustype = BUS_ISA;
-	dev->id.vendor  = 0x0001;
-	dev->id.product = 0x0001;
+	dev->id.vendor  = chip->vendor;
+	dev->id.product = chip->product;
 	dev->id.version = 0x0100;
 	dev->rep[REP_DELAY] = 0xffffffff;  /*close input repeat*/
 	dev->rep[REP_PERIOD] = 0xffffffff; /*close input repeat*/
@@ -747,13 +767,6 @@ static int meson_ir_probe(struct platform_device *pdev)
 	chip->r_dev->max_learned_pulse = MAX_LEARNED_PULSE;
 	chip->set_register_config = meson_ir_register_default_config;
 	platform_set_drvdata(pdev, chip);
-
-	meson_ir_input_device_init(dev->input_device, &pdev->dev, "ir_keypad");
-	meson_ir_input_configure(dev);
-
-	ret = input_register_device(dev->input_device);
-	if (ret < 0)
-		return ret;
 
 	ret = meson_ir_hardware_init(pdev);
 	if (ret < 0)

@@ -31,6 +31,7 @@ function show_help {
 	echo "  -v                      for kernel version: common13-5.15 common14-5.15"
 	echo "  --check_gki_20          for gki 2.0 check kernel build"
 	echo "  --dev_config            for use the config specified by oem instead of amlogic like ./mk.sh --dev_config a_config+b_config+c_config"
+	echo "  --bazel                 for choose bazel tool to build"
 }
 
 VA=
@@ -167,6 +168,10 @@ do
 		VA=1
 		shift
 		;;
+	--bazel)
+		BAZEL=1
+		shift
+		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -269,10 +274,23 @@ fi
 
 GKI_CONFIG=${GKI_CONFIG:-gki_debug}
 
+export CROSS_COMPILE=
+
+if [ "${ABI}" -eq "1" ]; then
+	export OUT_DIR_SUFFIX="_abi"
+else
+	OUT_DIR_SUFFIX=
+fi
+
 set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG MANUAL_INSMOD_MODULE ARCH
 export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD CHECK_GKI_20 DEV_CONFIG CONFIG_GROUP
-export FULL_KERNEL_VERSION
+export FULL_KERNEL_VERSION BAZEL
+
+echo ROOT_DIR=$ROOT_DIR
+echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG} MANUAL_INSMOD_MODULE=${MANUAL_INSMOD_MODULE}
+echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT} FAST_BUILD=${FAST_BUILD} CHECK_GKI_20=${CHECK_GKI_20}
+echo FULL_KERNEL_VERSION=${FULL_KERNEL_VERSION} BAZEL=${BAZEL}
 
 if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
 	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ${FULL_KERNEL_VERSION}
@@ -280,19 +298,6 @@ fi
 if [[ ${ONLY_PATCH} -eq "1" ]]; then
 	cd ${CURRENT_DIR}
 	exit
-fi
-
-echo ROOT_DIR=$ROOT_DIR
-echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG} MANUAL_INSMOD_MODULE=${MANUAL_INSMOD_MODULE}
-echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT} FAST_BUILD=${FAST_BUILD} CHECK_GKI_20=${CHECK_GKI_20}
-echo FULL_KERNEL_VERSION=${FULL_KERNEL_VERSION}
-
-export CROSS_COMPILE=
-
-if [ "${ABI}" -eq "1" ]; then
-	export OUT_DIR_SUFFIX="_abi"
-else
-	OUT_DIR_SUFFIX=
 fi
 
 echo MENUCONFIG=${MENUCONFIG} BASICCONFIG=${BASICCONFIG} IMAGE=${IMAGE} MODULES=${MODULES} DTB_BUILD=${DTB_BUILD}
@@ -479,33 +484,100 @@ if [ "${ABI}" -eq "1" ]; then
 	${ROOT_DIR}/${BUILD_DIR}/build_abi.sh "$@"
 else
 	if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" ]]; then
-		if [[ -z ${EXT_MODULES} ]]; then
+		if [[ ${BAZEL} == 1 ]]; then
+			args="$@ --lto=${LTO}"
+			PROJECT_DIR=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/project
+			[[ -d ${PROJECT_DIR} ]] || mkdir -p ${PROJECT_DIR}
+
+			if [[ ! -f ${PROJECT_DIR}/build.config.project ]]; then
+				touch ${PROJECT_DIR}/build.config.project
+				echo "# SPDX-License-Identifier: GPL-2.0" 	>  ${PROJECT_DIR}/build.config.project
+				echo 						>> ${PROJECT_DIR}/build.config.project
+			fi
+
+			[[ -f ${PROJECT_DIR}/build.config.gki10 ]] || touch ${PROJECT_DIR}/build.config.gki10
+			echo "# SPDX-License-Identifier: GPL-2.0" 	>  ${PROJECT_DIR}/build.config.gki10
+			echo 						>> ${PROJECT_DIR}/build.config.gki10
+			echo "GKI_CONFIG=${GKI_CONFIG}"			>> ${PROJECT_DIR}/build.config.gki10
+			echo "ANDROID_PROJECT=${ANDROID_PROJECT}"	>> ${PROJECT_DIR}/build.config.gki10
+			echo "GKI_BUILD_CONFIG_FRAGMENT=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic.fragment.bazel" >> ${PROJECT_DIR}/build.config.gki10
+			echo "COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR}" >> ${PROJECT_DIR}/build.config.gki10
+
+			if [[ ${GKI_CONFIG} == gki_20 ]]; then
+				[[ -n ${ANDROID_PROJECT} ]] && sed -i "/GKI_BUILD_CONFIG_FRAGMENT/d" ${PROJECT_DIR}/build.config.gki10
+			else
+				args="${args} --allow_undeclared_modules"
+			fi
+
+			if [[ ! -f ${PROJECT_DIR}/project.bzl ]]; then
+				touch ${PROJECT_DIR}/project.bzl
+				echo "# SPDX-License-Identifier: GPL-2.0" 	>  ${PROJECT_DIR}/project.bzl
+				echo 						>> ${PROJECT_DIR}/project.bzl
+
+				echo "AMLOGIC_MODULES_ANDROID = [" 		>> ${PROJECT_DIR}/project.bzl
+				echo "    \"common_drivers/drivers/tty/serial/amlogic-uart.ko\","	>> ${PROJECT_DIR}/project.bzl
+				echo "]" 					>> ${PROJECT_DIR}/project.bzl
+
+				echo 						>> ${PROJECT_DIR}/project.bzl
+				echo "EXT_MODULES_ANDROID = [" 			>> ${PROJECT_DIR}/project.bzl
+				echo "]" 					>> ${PROJECT_DIR}/project.bzl
+			fi
+
+			if [[ -z ${ANDROID_PROJECT} ]]; then
+				sed -i "/amlogic-uart.ko/d" ${PROJECT_DIR}/project.bzl
+			else
+				echo 						>> ${PROJECT_DIR}/project.bzl
+				echo "ANDROID_PROJECT = \"${ANDROID_PROJECT}\"" >> ${PROJECT_DIR}/project.bzl
+			fi
+
+			[[ -f ${PROJECT_DIR}/dtb.bzl ]] || touch ${PROJECT_DIR}/dtb.bzl
+			echo "# SPDX-License-Identifier: GPL-2.0" 	>  ${PROJECT_DIR}/dtb.bzl
+			echo 						>> ${PROJECT_DIR}/dtb.bzl
+
+			echo "AMLOGIC_DTBS = ["				>> ${PROJECT_DIR}/dtb.bzl
+			cat  ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/boot/dts/amlogic/Makefile | grep -n "dtb" | cut -d "=" -f 2 | sed 's/[[:space:]][[:space:]]*/ /g' | sed 's/^[ ]*//' | sed 's/[ ]*$//' | sed '/^#/d;/^$/d' | sed 's/^/    "/' | sed 's/$/",/' >> ${PROJECT_DIR}/dtb.bzl
+			echo "]"					>> ${PROJECT_DIR}/dtb.bzl
+
+			echo args=${args}
+			tools/bazel run //common:amlogic_dist --sandbox_debug --verbose_failures ${args}
+
+			sed -i "/GKI_BUILD_CONFIG_FRAGMENT/d" ${PROJECT_DIR}/build.config.gki10
+
+			source ${KERNEL_DIR}/build.config.constants
+			export COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
+			export DIST_DIR=$(readlink -m ${DIST_DIR:-${COMMON_OUT_DIR}/dist})
+			source ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
+
+			bazel_extra_cmds
+		else
+			if [[ -z ${EXT_MODULES} ]]; then
+				echo
+				echo
+				echo "========================================================"
+				echo " Build GKI boot image and GKI modules"
+				echo
+				source ${KERNEL_DIR}/build.config.constants
+				export OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}_gki})
+				COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
+				export DIST_GKI_DIR=$(readlink -m ${DIST_DIR:-${COMMON_OUT_DIR}/dist})
+
+				if [[ "${GKI_CONFIG}" == "gki_20" ]]; then
+					BUILD_CONFIG=${KERNEL_DIR}/build.config.gki.aarch64 ${ROOT_DIR}/${BUILD_DIR}/build.sh
+				else
+					export IN_BUILD_GKI_10=1
+					${ROOT_DIR}/${BUILD_DIR}/build.sh
+					unset IN_BUILD_GKI_10
+				fi
+				unset OUT_DIR
+			fi
+
 			echo
 			echo
 			echo "========================================================"
-			echo " Build GKI boot image and GKI modules"
+			echo " Build Vendor modules"
 			echo
-			source ${KERNEL_DIR}/build.config.constants
-			export OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}_gki})
-			COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
-			export DIST_GKI_DIR=$(readlink -m ${DIST_DIR:-${COMMON_OUT_DIR}/dist})
-
-			if [[ "${GKI_CONFIG}" == "gki_20" ]]; then
-				BUILD_CONFIG=${KERNEL_DIR}/build.config.gki.aarch64 ${ROOT_DIR}/${BUILD_DIR}/build.sh
-			else
-				export IN_BUILD_GKI_10=1
-				${ROOT_DIR}/${BUILD_DIR}/build.sh
-				unset IN_BUILD_GKI_10
-			fi
-			unset OUT_DIR
+			${ROOT_DIR}/${BUILD_DIR}/build.sh "$@"
 		fi
-
-		echo
-		echo
-		echo "========================================================"
-		echo " Build Vendor modules"
-		echo
-		${ROOT_DIR}/${BUILD_DIR}/build.sh "$@"
 	else
 		${ROOT_DIR}/${BUILD_DIR}/build.sh "$@"
 	fi
@@ -517,6 +589,8 @@ source ${KERNEL_BUILD_VAR_FILE}
 if [[ -n ${RM_KERNEL_BUILD_VAR_FILE} ]]; then
 	rm -f ${KERNEL_BUILD_VAR_FILE}
 fi
+
+rename_external_module_name
 
 echo "========================================================"
 if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then

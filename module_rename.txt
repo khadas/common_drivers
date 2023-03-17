@@ -1,0 +1,2 @@
+# support out tree(external module) module rename
+mali.ko: mali_kbase.ko

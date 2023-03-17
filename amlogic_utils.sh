@@ -282,6 +282,38 @@ function extra_cmds() {
 
 export -f extra_cmds
 
+function bazel_extra_cmds() {
+	modules_install
+
+	if [[ -f ${KERNEL_BUILD_VAR_FILE} ]]; then
+		: > ${KERNEL_BUILD_VAR_FILE}
+		echo "KERNEL_DIR=${KERNEL_DIR}" >>  ${KERNEL_BUILD_VAR_FILE}
+		echo "COMMON_OUT_DIR=${COMMON_OUT_DIR}" >>  ${KERNEL_BUILD_VAR_FILE}
+		echo "DIST_DIR=${DIST_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "OUT_AMLOGIC_DIR=${OUT_AMLOGIC_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+	fi
+
+	if [[ ${GKI_CONFIG} != gki_20 ]]; then
+		[[ -f ${DIST_DIR}/system_dlkm_staging_archive_back.tar.gz ]] && rm -f ${DIST_DIR}/system_dlkm_staging_archive_back.tar.gz
+		mv ${DIST_DIR}/system_dlkm_staging_archive.tar.gz ${DIST_DIR}/system_dlkm_staging_archive_back.tar.gz
+		[[ -d ${DIST_DIR}/system_dlkm_gki10 ]] && rm -rf ${DIST_DIR}/system_dlkm_gki10
+		mkdir ${DIST_DIR}/system_dlkm_gki10
+		pushd ${DIST_DIR}/system_dlkm_gki10
+		tar zxf ${DIST_DIR}/system_dlkm_staging_archive_back.tar.gz
+		find -name "*.ko" | while read module; do
+			module_name=`echo ${module} | rev | cut -d '/' -f 1 | rev`
+			if [[ ! `grep "/${module_name}" ${DIST_DIR}/system_dlkm.modules.load` ]]; then
+				rm -f ${module}
+			fi
+		done
+		tar czf ${DIST_DIR}/system_dlkm_staging_archive.tar.gz lib
+		popd
+		rm -rf ${DIST_DIR}/system_dlkm_gki10
+	fi
+}
+
+export -f bazel_extra_cmds
+
 function mod_probe() {
 	local ko=$1
 	local loop
@@ -601,35 +633,65 @@ create_ramdisk_vendor_recovery() {
 function modules_install() {
 	arg1=$1
 
+	export OUT_AMLOGIC_DIR=${OUT_AMLOGIC_DIR:-$(readlink -m ${COMMON_OUT_DIR}/amlogic)}
+	echo $OUT_AMLOGIC_DIR
 	rm -rf ${OUT_AMLOGIC_DIR}
 	mkdir -p ${OUT_AMLOGIC_DIR}
 	mkdir -p ${OUT_AMLOGIC_DIR}/modules
 	mkdir -p ${OUT_AMLOGIC_DIR}/ext_modules
 	mkdir -p ${OUT_AMLOGIC_DIR}/symbols
 
-	local MODULES_ROOT_DIR=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
-	pushd ${MODULES_ROOT_DIR}
-	local common_drivers=${COMMON_DRIVERS_DIR##*/}
-	local modules_list=$(find -type f -name "*.ko")
-	for module in ${modules_list}; do
-		if [[ -n ${ANDROID_PROJECT} ]]; then			# copy internal build modules
-			if [[ `echo ${module} | grep -E "\.\/kernel\/|\/${common_drivers}\/"` ]]; then
-				cp ${module} ${OUT_AMLOGIC_DIR}/modules/
-			else
-				cp ${module} ${OUT_AMLOGIC_DIR}/ext_modules/
+	if [[ ${BAZEL} == "1" ]]; then
+		local output="out/bazel/output_user_root"
+		for dir in `ls ${output}`; do
+			if [[ ${dir} =~ ^[0-9A-Fa-f]*$ ]]; then
+				digit_output=${output}/${dir}
+				break
 			fi
-		else							# copy all modules, include external modules
-			cp ${module} ${OUT_AMLOGIC_DIR}/modules/
+		done
+
+		for module in `find ${DIST_DIR} -type f -name "*.ko"`; do
+			module_name=`echo ${module} | rev | cut -d '/' -f 1 | rev`
+			if [[ `grep ${module_name} ${DIST_DIR}/modules.load` ]]; then
+				cp ${module} ${OUT_AMLOGIC_DIR}/modules
+			else
+				cp ${module} ${OUT_AMLOGIC_DIR}/ext_modules
+			fi
+		done
+
+		dep_file=`find ${digit_output}/execroot/ -name *.dep | grep "amlogic"`
+		cp ${dep_file} ${OUT_AMLOGIC_DIR}/modules/full_modules.dep
+		grep -E "^kernel\/|^${common_drivers}\/" ${dep_file} > ${OUT_AMLOGIC_DIR}/modules/modules.dep
+		touch ${module} ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
+		for order_file in `find ${digit_output}/execroot/ -name "modules.order.*" | grep "amlogic"`; do
+			echo "# ${order_file}" >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
+			cat ${order_file} >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
+			echo >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
+		done
+	else
+		local MODULES_ROOT_DIR=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
+		pushd ${MODULES_ROOT_DIR}
+		local common_drivers=${COMMON_DRIVERS_DIR##*/}
+		local modules_list=$(find -type f -name "*.ko")
+		for module in ${modules_list}; do
+			if [[ -n ${ANDROID_PROJECT} ]]; then			# copy internal build modules
+				if [[ `echo ${module} | grep -E "\.\/kernel\/|\/${common_drivers}\/"` ]]; then
+					cp ${module} ${OUT_AMLOGIC_DIR}/modules/
+				else
+					cp ${module} ${OUT_AMLOGIC_DIR}/ext_modules/
+				fi
+			else							# copy all modules, include external modules
+				cp ${module} ${OUT_AMLOGIC_DIR}/modules/
+			fi
+		done
+
+		if [[ -n ${ANDROID_PROJECT} ]]; then				# internal build modules
+			grep -E "^kernel\/|^${common_drivers}\/" modules.dep > ${OUT_AMLOGIC_DIR}/modules/modules.dep
+		else								# all modules, include external modules
+			cp modules.dep ${OUT_AMLOGIC_DIR}/modules
 		fi
-	done
-
-	if [[ -n ${ANDROID_PROJECT} ]]; then				# internal build modules
-		grep -E "^kernel\/|^${common_drivers}\/" modules.dep > ${OUT_AMLOGIC_DIR}/modules/modules.dep
-	else								# all modules, include external modules
-		cp modules.dep ${OUT_AMLOGIC_DIR}/modules
+		popd
 	fi
-	popd
-
 	pushd ${OUT_AMLOGIC_DIR}/modules
 	sed -i 's#[^ ]*/##g' modules.dep
 
@@ -695,15 +757,66 @@ function modules_install() {
 
 	popd
 
-	cp ${OUT_DIR}/vmlinux ${OUT_AMLOGIC_DIR}/symbols
-	find ${OUT_DIR} -type f -name "*.ko" -exec cp {} ${OUT_AMLOGIC_DIR}/symbols \;
-	for ext_module in ${EXT_MODULES}; do
-		find ${COMMON_OUT_DIR}/${ext_module} -type f -name "*.ko" -exec cp {} ${OUT_AMLOGIC_DIR}/symbols \;
-	done
+	if [[ ${BAZEL} == "1" ]]; then
+		cp ${DIST_DIR}/vmlinux ${OUT_AMLOGIC_DIR}/symbols
+
+		find ${digit_output}/execroot -name *.ko | grep "unstripped" | while read module; do
+		        cp ${module} ${OUT_AMLOGIC_DIR}/symbols
+			chmod +w ${OUT_AMLOGIC_DIR}/symbols/$(basename ${module})
+		done
+		chmod -w ${OUT_AMLOGIC_DIR}/symbols/*.ko
+	else
+		cp ${OUT_DIR}/vmlinux ${OUT_AMLOGIC_DIR}/symbols
+		find ${OUT_DIR} -type f -name "*.ko" -exec cp {} ${OUT_AMLOGIC_DIR}/symbols \;
+		for ext_module in ${EXT_MODULES}; do
+			find ${COMMON_OUT_DIR}/${ext_module} -type f -name "*.ko" -exec cp {} ${OUT_AMLOGIC_DIR}/symbols \;
+		done
+	fi
 }
 export -f modules_install
 
+function rename_external_module_name() {
+	local external_coppied
+	local vendor_coppied
+	sed 's/^[\t ]*\|[\t ]*$//g' ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/module_rename.txt | sed '/^#/d;/^$/d' | sed 's/[[:space:]][[:space:]]*/ /g' | while read module_line; do
+		target_module_name=`echo ${module_line%%:*} | sed '/^#/d;/^$/d'`
+		modules_name=`echo ${module_line##:*} | sed '/^#/d;/^$/d'`
+		[[ -f ${OUT_AMLOGIC_DIR}/ext_modules/${target_module_name} ]] && external_coppied=1
+		[[ -f ${OUT_AMLOGIC_DIR}/modules/vendor/${target_module_name} ]] && vendor_coppied=1
+		echo target_module_name=$target_module_name modules_name=$modules_name external_coppied=$external_coppied vendor_coppied=$vendor_coppied
+		for module in ${modules_name}; do
+			echo module=$module
+			if [[ -f ${OUT_AMLOGIC_DIR}/ext_modules/${module} ]]; then
+				if [[ -z ${external_coppied} ]]; then
+					cp ${OUT_AMLOGIC_DIR}/ext_modules/${module} ${OUT_AMLOGIC_DIR}/ext_modules/${target_module_name}
+					external_coppied=1
+				fi
+				rm -f ${OUT_AMLOGIC_DIR}/ext_modules/${module}
+			fi
+			if [[ -f ${OUT_AMLOGIC_DIR}/modules/vendor/${module} ]]; then
+				if [[ -z ${vendor_coppied} ]]; then
+					cp ${OUT_AMLOGIC_DIR}/modules/vendor/${module} ${OUT_AMLOGIC_DIR}/modules/vendor/${target_module_name}
+					vendor_coppied=1
+				fi
+				rm -f ${OUT_AMLOGIC_DIR}/modules/vendor/${module}
+			fi
+		done
+		external_coppied=
+		vendor_coppied=
+	done
+}
+export -f rename_external_module_name
+
 function rebuild_rootfs() {
+	echo
+        echo "========================================================"
+	if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
+		echo "Rebuild rootfs in order to install modules!"
+	else
+		echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
+		return
+	fi
+
 	pushd ${OUT_AMLOGIC_DIR}
 
 	local ARCH=arm64
@@ -713,7 +826,7 @@ function rebuild_rootfs() {
 
 	rm rootfs -rf
 	mkdir rootfs
-	cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot	rootfs
+	cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot rootfs
 	cd rootfs
 	dd if=rootfs_base.cpio.gz.uboot of=rootfs_base.cpio.gz bs=64 skip=1
 	gunzip rootfs_base.cpio.gz
@@ -737,6 +850,13 @@ function rebuild_rootfs() {
 export -f rebuild_rootfs
 
 function check_undefined_symbol() {
+	if [[ ${MODULES_DEPEND} != "1" ]]; then
+		return
+	fi
+
+	echo "========================================================"
+	echo "print modules depend"
+
 	pushd ${OUT_AMLOGIC_DIR}/modules
 	echo
 	echo "========================================================"

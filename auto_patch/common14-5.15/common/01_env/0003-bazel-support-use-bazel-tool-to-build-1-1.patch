@@ -1,0 +1,56 @@
+From 2e4bf0bafed611b3341b708241aeea235b9aba31 Mon Sep 17 00:00:00 2001
+From: Wanwei Jiang <wanwei.jiang@amlogic.com>
+Date: Fri, 17 Mar 2023 17:35:31 +0800
+Subject: [PATCH] bazel: support use bazel tool to build [1/1]
+
+PD#SWPL-112151
+
+Problem:
+support use bazel tool to build
+
+Solution:
+support use bazel tool to build
+
+Verify:
+sc2
+
+Change-Id: I96e80b97ed481f32239955748ffa52e7d40a85aa
+Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
+---
+ BUILD.bazel | 3 +++
+ Makefile    | 8 +++++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/BUILD.bazel b/BUILD.bazel
+index 484c2d6c7f79..3071beae8d3f 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -564,3 +564,6 @@ ddk_headers(
+     ],
+     visibility = ["//visibility:private"],
+ )
++
++load("//common:common_drivers/amlogic.bzl", "define_amlogic")
++define_amlogic()
+diff --git a/Makefile b/Makefile
+index a130600c45f8..af6ae91e736d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -691,7 +691,13 @@ include include/config/auto.conf
+ endif
+ 
+ ifdef CONFIG_AMLOGIC_DRIVER
+-include $(srctree)/$(COMMON_DRIVERS_DIR)/header_include.mk
++USERINCLUDE 	+= \
++		 -I$(srctree)/$(COMMON_DRIVERS_DIR)/include \
++		 -I$(srctree)/$(COMMON_DRIVERS_DIR)/include/uapi
++
++LINUXINCLUDE	+= \
++		 -I$(srctree)/$(COMMON_DRIVERS_DIR)/include \
++		 -I$(srctree)/$(COMMON_DRIVERS_DIR)/include/uapi
+ KBUILD_CFLAGS += -Werror
+ endif
+ 
+-- 
+2.25.1
+

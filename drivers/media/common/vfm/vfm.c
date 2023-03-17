@@ -47,9 +47,10 @@ static DEFINE_SPINLOCK(lock);
 #define DEV_NAME    "vfm"
 #define BUS_NAME    "vfm"
 #define CLS_NAME    "vfm"
-#define VFM_NAME_LEN    100
+#define VFM_NAME_LEN    32
 #define VFM_MAP_SIZE    10
 #define VFM_MAP_COUNT   40
+#define DUMP_BUFFER_SIZE 4096
 static struct device *vfm_dev;
 struct vfm_map_s {
 	char id[VFM_NAME_LEN];
@@ -64,6 +65,7 @@ static int vfm_map_num;
 int vfm_debug_flag;		/* 1; */
 int vfm_trace_enable;	/* 1; */
 int vfm_trace_num = 40;		/*  */
+static char *local_dump_buf;
 
 void vf_update_active_map(void)
 {
@@ -201,7 +203,7 @@ int vfm_map_add(char *id, char *name_chain)
 			       VFM_NAME_LEN - 1);
 			p->name[p->vfm_map_size][VFM_NAME_LEN - 1] = '\0';
 		} else {
-			memcpy(p->name[p->vfm_map_size], token, strlen(token));
+			memcpy(p->name[p->vfm_map_size], token, strlen(token) + 1);
 		}
 		p->vfm_map_size++;
 	} while (token && cnt--);
@@ -459,17 +461,25 @@ static void vfm_init(void)
 	vfm_map_add(def_dvel_id2, def_dvel_chain2);
 #endif
 	vfm_map_add(def_dvhdmiin_id, def_dvhdmiin_chain);
+	local_dump_buf = kzalloc(DUMP_BUFFER_SIZE, GFP_KERNEL);
 }
 
 /*
  * cat /sys/class/vfm/map
  */
-static ssize_t map_show(struct class *class,
-			struct class_attribute *attr, char *buf)
+int dump_vfm_state(char *buf)
 {
 	int i, j;
 	int len = 0;
+	bool print_flag = false;
 
+	if (!buf && local_dump_buf) {
+		buf = local_dump_buf;
+		memset(local_dump_buf, 0, DUMP_BUFFER_SIZE * sizeof(char));
+		print_flag = true;
+	}
+	if (!buf)
+		return 0;
 	for (i = 0; i < vfm_map_num; i++) {
 		if (vfm_map[i] && vfm_map[i]->valid) {
 			len += sprintf(buf + len, "[%02d]  %s { ",
@@ -490,7 +500,15 @@ static ssize_t map_show(struct class *class,
 	}
 	len += provider_list(buf + len);
 	len += receiver_list(buf + len);
+	if (print_flag)
+		pr_info("%s\n", local_dump_buf);
 	return len;
+}
+
+static ssize_t map_show(struct class *class,
+			struct class_attribute *attr, char *buf)
+{
+	return (ssize_t)dump_vfm_state(buf);
 }
 
 static int vfm_vf_get_states(struct vframe_provider_s *vfp,
@@ -1033,6 +1051,8 @@ int __init vfm_class_init(void)
 	vfm_init();
 	error = class_register(&vfm_class);
 	if (error) {
+		kfree(local_dump_buf);
+		local_dump_buf = NULL;
 		pr_err("%s: class_register failed\n", __func__);
 		return error;
 	}
@@ -1043,6 +1063,8 @@ int __init vfm_class_init(void)
 	/* create vfm device */
 	error = register_chrdev(VFM_MAJOR, "vfm", &vfm_fops);
 	if (error < 0) {
+		kfree(local_dump_buf);
+		local_dump_buf = NULL;
 		pr_err("Can't register major for vfm device\n");
 		return error;
 	}
@@ -1054,6 +1076,8 @@ int __init vfm_class_init(void)
 
 void __exit vfm_class_exit(void)
 {
+	kfree(local_dump_buf);
+	local_dump_buf = NULL;
 	class_unregister(&vfm_class);
 	unregister_chrdev(VFM_MAJOR, DEV_NAME);
 }

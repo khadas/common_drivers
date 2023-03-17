@@ -726,6 +726,9 @@ void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *fun
 	trace_android_vh_cma_drain_all_pages_bypass(1024, (bool *)&trace_param);
 #endif
 #endif
+#ifdef CONFIG_MEMCG
+	trace_android_vh_mem_cgroup_alloc(root_mem_cgroup);
+#endif
 	if (!func)
 		ip = find_back_trace();
 	else

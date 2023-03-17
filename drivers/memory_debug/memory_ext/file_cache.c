@@ -29,7 +29,7 @@
 static int file_cache_filter = 64; /* not print size < file_cache_filter, kb */
 
 static struct proc_dir_entry *d_filecache;
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+
 static int record_fct(struct page *page, struct file_cache_trace *fct,
 		      int *used, struct rb_root *root, int mc,
 		      int active)
@@ -79,15 +79,12 @@ static int record_fct(struct page *page, struct file_cache_trace *fct,
 	rb_insert_color(&tmp->entry, root);
 	return 0;
 }
-#endif
 
 struct filecache_stat {
 	unsigned int total;
 	unsigned int nomap[3];		/* include active/inactive */
 	unsigned int files;
 };
-
-static struct filecache_stat fs;
 
 static inline unsigned long vma_start_pgoff(struct vm_area_struct *v)
 {
@@ -179,15 +176,130 @@ aml_vma_iter_first(struct rb_root_cached *root,
 	return aml_vma_subtree_search(node, start, last);
 }
 
+#ifdef CONFIG_MEMCG
+struct mem_cgroup *aml_root_mem_cgroup;
+
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
-void get_file_cache_hook(void *data, struct lruvec *lruvec)
+void get_root_memcg_hook(void *data, struct mem_cgroup *memcg)
 {
-	struct page *page, *next;
-	struct list_head *list;
-	struct rb_root fct_root = RB_ROOT;
+	if (!aml_root_mem_cgroup)
+		aml_root_mem_cgroup = memcg;
+}
+#endif
+
+static struct mem_cgroup *aml_mem_cgroup_iter(struct mem_cgroup *root,
+				   struct mem_cgroup *prev,
+				   struct mem_cgroup_reclaim_cookie *reclaim)
+{
+	struct cgroup_subsys_state *css = NULL;
+	struct mem_cgroup *memcg = NULL;
+	struct mem_cgroup *pos = NULL;
+
+	if (mem_cgroup_disabled())
+		return NULL;
+
+	if (!root)
+		root = aml_root_mem_cgroup;
+
+	if (prev && !reclaim)
+		pos = prev;
+
+	rcu_read_lock();
+
+	if (pos)
+		css = &pos->css;
+
+	for (;;) {
+		css = css_next_descendant_pre(css, &root->css);
+		if (!css) {
+			/*
+			 * Reclaimers share the hierarchy walk, and a
+			 * new one might jump in right at the end of
+			 * the hierarchy - make sure they see at least
+			 * one group and restart from the beginning.
+			 */
+			if (!prev)
+				continue;
+			break;
+		}
+
+		/*
+		 * Verify the css and acquire a reference.  The root
+		 * is provided by the caller, so we know it's alive
+		 * and kicking, and don't take an extra reference.
+		 */
+		memcg = mem_cgroup_from_css(css);
+
+		if (css == &root->css)
+			break;
+
+		if (css_tryget(css))
+			break;
+
+		memcg = NULL;
+	}
+
+	rcu_read_unlock();
+	if (prev && prev != root)
+		css_put(&prev->css);
+
+	return memcg;
+}
+
+static inline struct lruvec *aml_mem_cgroup_lruvec(struct mem_cgroup *memcg,
+					       struct pglist_data *pgdat)
+{
+	struct mem_cgroup_per_node *mz;
+	struct lruvec *lruvec;
+
+	if (mem_cgroup_disabled()) {
+		lruvec = &pgdat->__lruvec;
+		goto out;
+	}
+
+	if (!memcg)
+		memcg = aml_root_mem_cgroup;
+
+	mz = memcg->nodeinfo[pgdat->node_id];
+	lruvec = &mz->lruvec;
+out:
+	/*
+	 * Since a node can be onlined after the mem_cgroup was created,
+	 * we have to be prepared to initialize lruvec->pgdat here;
+	 * and if offlined then back onlined, we need to reinitialize it.
+	 */
+	if (unlikely(lruvec->pgdat != pgdat))
+		lruvec->pgdat = pgdat;
+	return lruvec;
+}
+#endif
+
+struct pglist_data *aml_first_online_pgdat(void)
+{
+	return NODE_DATA(first_online_node);
+}
+
+struct pglist_data *aml_next_online_pgdat(struct pglist_data *pgdat)
+{
+	int nid = next_online_node(pgdat->node_id);
+
+	/*
+	 * this code copy from next_online_pgdat().
+	 */
+	// coverity[DEADCODE]
+	if (nid == MAX_NUMNODES)
+		return NULL;
+	return NODE_DATA(nid);
+}
+
+static void statistic_filecache_info(struct filecache_stat *fs,
+		struct file_cache_trace *fct, struct lruvec *lruvec)
+{
 	unsigned int t = 0, in = 0, an = 0;
 	int r, mc, lru = 0, a = 0;
-	struct file_cache_trace *fct = (struct file_cache_trace *)data;
+	struct list_head *list;
+	struct page *page, *next;
+	struct rb_root fct_root = RB_ROOT;
 
 	for_each_lru(lru) {
 		/* only count for filecache */
@@ -216,7 +328,7 @@ void get_file_cache_hook(void *data, struct lruvec *lruvec)
 					in++;
 				continue;
 			}
-			r = record_fct(page, fct, &fs.files,
+			r = record_fct(page, fct, &fs->files,
 					&fct_root, mc, a);
 			/* some data may lost */
 			if (r == -ERANGE) {
@@ -233,12 +345,44 @@ void get_file_cache_hook(void *data, struct lruvec *lruvec)
 		spin_unlock_irq(&lruvec->lru_lock);
 	}
 out:	/* update final statistics */
-	fs.total    += t;
-	fs.nomap[0] += an + in;
-	fs.nomap[1] += in;
-	fs.nomap[2] += an;
+	fs->total    += t;
+	fs->nomap[0] += an + in;
+	fs->nomap[1] += in;
+	fs->nomap[2] += an;
 }
+
+static void update_file_cache(struct filecache_stat *fs,
+		struct file_cache_trace *fct)
+{
+	struct lruvec *lruvec;
+	pg_data_t *pgdat, *tmp;
+	struct mem_cgroup *root = NULL, *memcg;
+
+	/* for_each_online_pgdat(pgdat) { */
+	for (pgdat = aml_first_online_pgdat(); pgdat; pgdat = aml_next_online_pgdat(pgdat)) {
+#ifdef CONFIG_MEMCG
+		if (!aml_root_mem_cgroup)
+			return;
+		memcg = aml_mem_cgroup_iter(root, NULL, NULL);
+#else
+		memcg = mem_cgroup_iter(root, NULL, NULL);
 #endif
+		do {
+#ifdef CONFIG_MEMCG
+			lruvec = aml_mem_cgroup_lruvec(memcg, pgdat);
+#else
+			lruvec = mem_cgroup_lruvec(memcg, pgdat);
+#endif
+			tmp = lruvec_pgdat(lruvec);
+
+			statistic_filecache_info(fs, fct, lruvec);
+#ifdef CONFIG_MEMCG
+		} while ((memcg =  aml_mem_cgroup_iter(root, memcg, NULL)));
+#else
+		} while ((memcg =  mem_cgroup_iter(root, memcg, NULL)));
+#endif
+	}
+}
 
 static int fcmp(const void *x1, const void *x2)
 {
@@ -368,6 +512,7 @@ static int filecache_show(struct seq_file *m, void *arg)
 	u64 iow = 0, cputime = 0;
 	char fname[256];
 	struct file_cache_trace *fct;
+	struct filecache_stat fs = {0};
 	unsigned int small_files = 0, small_fcache = 0;
 	unsigned int small_active = 0, small_inactive = 0;
 
@@ -376,17 +521,7 @@ static int filecache_show(struct seq_file *m, void *arg)
 		return -ENOMEM;
 
 	tick = sched_clock();
-	/* update_file_cache(&fs, fct); */
-	memset(&fs, 0, sizeof(struct filecache_stat));
-#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
-
-#else
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
-	register_trace_android_vh_do_traversal_lruvec(get_file_cache_hook, (void *)fct);
-	do_traversal_all_lruvec();
-	unregister_trace_android_vh_do_traversal_lruvec(get_file_cache_hook, (void *)fct);
-#endif
-#endif
+	update_file_cache(&fs, fct);
 
 	now  = sched_clock();
 	tick = now - tick;
@@ -445,6 +580,9 @@ int __init filecache_module_init(void)
 		return -1;
 	}
 
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS) && defined(CONFIG_MEMCG)
+	register_trace_android_vh_mem_cgroup_alloc(get_root_memcg_hook, NULL);
+#endif
 	return 0;
 }
 
@@ -452,4 +590,8 @@ void __exit filecache_module_exit(void)
 {
 	if (d_filecache)
 		proc_remove(d_filecache);
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS) && defined(CONFIG_MEMCG)
+	unregister_trace_android_vh_mem_cgroup_alloc(get_root_memcg_hook, NULL);
+#endif
 }
+

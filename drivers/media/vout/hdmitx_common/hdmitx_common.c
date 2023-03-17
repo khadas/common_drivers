@@ -20,6 +20,7 @@ int hdmitx_common_init(struct hdmitx_common *tx_common)
 
 	tx_common->frac_rate_policy = boot_param->fraction_refreshrate;
 	tx_common->backup_frac_rate_policy = boot_param->fraction_refreshrate;
+	tx_common->config_csc_en = boot_param->config_csc;
 
 	/*mutex init*/
 	mutex_init(&tx_common->setclk_mutex);

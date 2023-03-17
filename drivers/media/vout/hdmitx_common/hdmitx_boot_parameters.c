@@ -187,3 +187,15 @@ static int parse_hdmitx_checksum(char *str)
 }
 __setup("hdmichecksum=", parse_hdmitx_checksum);
 
+static int hdmitx_config_csc_en(char *str)
+{
+	if (strncmp("1", str, 1) == 0)
+		tx_params.config_csc = true;
+	else
+		tx_params.config_csc = false;
+	pr_debug("config_csc_en:[config_csc_en]=[%d]\n", tx_params.config_csc);
+	return 0;
+}
+
+__setup("config_csc_en=", hdmitx_config_csc_en);
+

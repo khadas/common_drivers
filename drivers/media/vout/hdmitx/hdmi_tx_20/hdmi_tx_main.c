@@ -1547,6 +1547,31 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 			schedule_work(&hdev->work_hdr);
 			DRM_DB[0] = 0;
 		}
+		/* back to previous cs */
+		/* currently output y444,8bit or rgb,8bit, if exit playing,
+		 * then switch back to 8bit mode
+		 */
+		if (hdev->para->cs == HDMI_COLORSPACE_YUV444 &&
+			hdev->para->cd == COLORDEPTH_24B) {
+			/* hdev->hwop.cntlconfig(hdev, */
+					/* CONF_AVI_RGBYCC_INDIC, */
+					/* COLORSPACE_YUV444); */
+			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONFIG_CSC,
+				CSC_Y444_8BIT | CSC_UPDATE_AVI_CS);
+			pr_info("%s: switch back to cs:%d, cd:%d\n",
+				__func__, hdev->para->cs, hdev->para->cd);
+		} else if (hdev->para->cs == HDMI_COLORSPACE_RGB &&
+			hdev->para->cd == COLORDEPTH_24B) {
+			/* hdev->hwop.cntlconfig(hdev, */
+					/* CONF_AVI_RGBYCC_INDIC, */
+					/* COLORSPACE_RGB444); */
+			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONFIG_CSC,
+				CSC_RGB_8BIT | CSC_UPDATE_AVI_CS);
+			pr_info("%s: switch back to cs:%d, cd:%d\n",
+				__func__, hdev->para->cs, hdev->para->cd);
+		} else {
+			pr_info("%s: no need switch back to 8bit mode\n", __func__);
+		}
 		spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
 		return;
 	}
@@ -1662,6 +1687,25 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 		if (hdr_mute_frame)
 			hdmitx_video_mute_op(0);
 		schedule_work(&hdev->work_hdr);
+	}
+
+	if (hdev->hdmi_current_hdr_mode == 1 ||
+		hdev->hdmi_current_hdr_mode == 2 ||
+		hdev->hdmi_current_hdr_mode == 3) {
+		/* currently output y444,8bit or rgb,8bit, and EDID
+		 * support Y422, then switch to y422,12bit mode
+		 */
+		if ((hdev->para->cs == HDMI_COLORSPACE_YUV444 ||
+			hdev->para->cs == HDMI_COLORSPACE_RGB) &&
+			hdev->para->cd == COLORDEPTH_24B &&
+			(hdev->tx_comm.rxcap.native_Mode & (1 << 4))) {
+			/* hdev->hwop.cntlconfig(hdev,*/
+					/* CONF_AVI_RGBYCC_INDIC, */
+					/* COLORSPACE_YUV422);*/
+			hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONFIG_CSC,
+				CSC_Y422_12BIT | CSC_UPDATE_AVI_CS);
+			pr_info("%s: switch to 422,12bit\n", __func__);
+		}
 	}
 	spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
 }
@@ -1834,6 +1878,11 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 					HDMI_COLORSPACE_RGB);
 				hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_AVI_Q01,
 					RGB_RANGE_FUL);
+				/* to test, if needed */
+				/* hdev->hwop.cntlconfig(hdev, CONFIG_CSC, CSC_Y444_8BIT); */
+				/* if (log_level == 0xfd) */
+					/* pr_info("hdmitx: Dolby H14b VSIF, */
+					/* switch to y444 csc\n"); */
 			} else {
 				hdev->tx_hw.cntlconfig(&hdev->tx_hw,
 					CONF_AVI_RGBYCC_INDIC,
@@ -1940,6 +1989,10 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 					HDMI_COLORSPACE_RGB);
 				hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_AVI_Q01,
 					RGB_RANGE_FUL);
+				/* to test, if needed */
+				/* hdev->hwop.cntlconfig(hdev, CONFIG_CSC, CSC_Y444_8BIT); */
+				/* if (log_level == 0xfd) */
+					/* pr_info("hdmitx: Dolby STD, switch to y444 csc\n"); */
 			} else {/*YUV422*/
 				hdev->tx_hw.cntlconfig(&hdev->tx_hw,
 					CONF_AVI_RGBYCC_INDIC,
@@ -4379,6 +4432,40 @@ static ssize_t log_level_store(struct device *dev,
 	return count;
 }
 
+/* 0: no change
+ * 1: force switch color space converter to 444,8bit
+ * 2: force switch color space converter to 422,12bit
+ * 3: force switch color space converter to rgb,8bit
+ */
+static ssize_t csc_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	u8 val = 0;
+
+	if (isdigit(buf[0])) {
+		val = buf[0] - '0';
+		if (val != 0 && val != 1 && val != 2 && val != 3) {
+			pr_info("set csc in 0 ~ 3\n");
+			return count;
+		}
+		pr_info("set csc_en as %d\n", val);
+	}
+
+	hdmitx_device.tx_hw.cntlconfig(&hdmitx_device.tx_hw, CONFIG_CSC, val | CSC_UPDATE_AVI_CS);
+	return count;
+}
+
+static ssize_t config_csc_en_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	if (strncmp(buf, "0", 1) == 0)
+		hdmitx_device.tx_comm.config_csc_en = false;
+	if (strncmp(buf, "1", 1) == 0)
+		hdmitx_device.tx_comm.config_csc_en = true;
+	pr_info("set config_csc_en %d\n", hdmitx_device.tx_comm.config_csc_en);
+	return count;
+}
+
 void print_drm_config_data(void)
 {
 	enum hdmi_hdr_transfer hdr_transfer_feature;
@@ -5052,6 +5139,8 @@ static DEVICE_ATTR_RW(hdcp_ctl_lvl);
 static DEVICE_ATTR_RO(hdmitx_drm_flag);
 static DEVICE_ATTR_RW(hdr_mute_frame);
 static DEVICE_ATTR_RW(log_level);
+static DEVICE_ATTR_WO(csc);
+static DEVICE_ATTR_WO(config_csc_en);
 
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
 static struct vinfo_s *hdmitx_get_current_vinfo(void *data)
@@ -6566,6 +6655,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_hdmitx_drm_flag);
 	ret = device_create_file(dev, &dev_attr_hdr_mute_frame);
 	ret = device_create_file(dev, &dev_attr_log_level);
+	ret = device_create_file(dev, &dev_attr_csc);
+	ret = device_create_file(dev, &dev_attr_config_csc_en);
 
 #ifdef CONFIG_AMLOGIC_VPU
 	hdmitx_device.encp_vpu_dev = vpu_dev_register(VPU_VENCP, DEVICE_NAME);
@@ -6749,6 +6840,8 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_hdmitx_drm_flag);
 	device_remove_file(dev, &dev_attr_hdr_mute_frame);
 	device_remove_file(dev, &dev_attr_log_level);
+	device_remove_file(dev, &dev_attr_csc);
+	device_remove_file(dev, &dev_attr_config_csc_en);
 
 	cdev_del(&hdmitx_device.cdev);
 

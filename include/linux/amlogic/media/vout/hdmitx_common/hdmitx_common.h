@@ -74,6 +74,8 @@ struct hdmitx_common {
 	/*DRM related*/
 	struct connector_hpd_cb drm_hpd_cb;
 //	struct connector_hdcp_cb drm_hdcp_cb;
+	/*for color space conversion*/
+	bool config_csc_en;
 };
 
 int hdmitx_common_init(struct hdmitx_common *tx_common);

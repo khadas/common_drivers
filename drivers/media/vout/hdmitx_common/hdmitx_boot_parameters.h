@@ -17,6 +17,7 @@ struct hdmitx_boot_param {
 	u32		fraction_refreshrate;
 	u32		hdr_mask;
 	u8		init_state;
+	bool	config_csc;
 };
 
 struct hdmitx_boot_param *get_hdmitx_boot_params(void);

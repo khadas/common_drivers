@@ -78,6 +78,13 @@
 #define FLAG_RX_EMP_VSEM		0x20000000
 #define FLAG_TOGGLE_FRAME		0x80000000
 
+#define DMA_BUF_CNT 2
+#define TOP1_REG_NUM 210
+#define TOP1B_REG_NUM 12
+#define TOP2_REG_NUM 616
+#define TOP1_LUT_NUM 149
+#define TOP2_LUT_NUM 424
+
 enum core1_switch_type {
 	NO_SWITCH = 0,
 	SWITCH_BEFORE_DVCORE_1,
@@ -679,6 +686,15 @@ struct amdolby_vision_port_t {
 	void *runtime;
 };
 
+struct lut_dma_info_s {
+	u32 dma_total_size;
+	u32 dma_top2_size;
+	dma_addr_t dma_paddr;
+	dma_addr_t dma_paddr_top2;
+	void *dma_vaddr;
+	void *dma_vaddr_top2;
+};
+
 /***extern****/
 extern const struct dolby_vision_func_s *p_funcs_stb;
 extern const struct dolby_vision_func_s *p_funcs_tv;
@@ -737,6 +753,11 @@ extern u32 top1b_reg_num;
 extern u32 top1_lut_num;
 extern u32 top2_reg_num;
 extern u32 top2_lut_num;
+extern struct lut_dma_info_s lut_dma_info[DMA_BUF_CNT];
+extern bool lut_dma_support;
+extern int cur_dmabuf_id;
+extern bool enable_top1;//todo
+extern bool top1_done;
 /************/
 
 #define pr_dv_dbg(fmt, args...)\
@@ -788,6 +809,40 @@ int tv_control_path
 	 int set_no_el,
 	 struct hdr10_parameter *hdr10_param,
 	 struct tv_dovi_setting_s *output,
+	 char *vsem_if, int vsem_if_size,
+	 struct ambient_cfg_s *ambient_cfg,
+	 struct tv_input_info_s *input_info);
+
+struct tv_hw5_setting_s {
+	u64 top1_reg[TOP1_REG_NUM];
+	u64 top1b_reg[TOP1B_REG_NUM];
+	u64 top2_reg[TOP2_REG_NUM];
+	u64 top1_lut[TOP1_LUT_NUM * 2];
+	u64 top2_lut[TOP2_LUT_NUM * 2];
+	/* current process */
+	enum signal_format_enum src_format;
+	enum signal_format_enum dst_format;
+	/* enhanced layer */
+	bool el_flag;
+	bool el_halfsize_flag;
+	/* frame width & height */
+	u32 video_width;
+	u32 video_height;
+	enum input_mode_enum input_mode;
+	u16 backlight;
+};
+
+int tv_hw5_control_path
+	(enum signal_format_enum in_format,
+	 enum input_mode_enum in_mode,
+	 char *in_comp, int in_comp_size,
+	 char *in_md, int in_md_size,
+	 int set_bit_depth, int set_chroma_format, int set_yuv_range,
+	 struct pq_config *pq_config,
+	 struct ui_menu_params *menu_param,
+	 int set_no_el,
+	 struct hdr10_parameter *hdr10_param,
+	 struct tv_hw5_setting_s *output,
 	 char *vsem_if, int vsem_if_size,
 	 struct ambient_cfg_s *ambient_cfg,
 	 struct tv_input_info_s *input_info);
@@ -962,5 +1017,8 @@ int tv_top2_set(u64 *reg_data,
 			     bool reset);
 int load_reg_and_lut_file(char *fw_name, void **dst_buf);
 void read_txt_to_buf(char *reg_txt, void *reg_buf, int reg_num, bool is_reg);
-
+int dma_lut_init(void);
+void dma_lut_uninit(void);
+int dma_lut_write(void);
+irqreturn_t amdv_isr(int irq, void *dev_id);
 #endif

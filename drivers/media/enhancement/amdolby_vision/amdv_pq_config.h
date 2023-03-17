@@ -9,6 +9,7 @@
 #include <linux/types.h>
 
 #define BACKLIGHT_LUT_SIZE  4096
+#define BLU_LUT_SIZE 5
 #define AMBIENT_LUT_SIZE    8
 #define TUNING_LUT_SIZE     14
 #define DM4_TUNING_LUT_SIZE 7
@@ -153,6 +154,125 @@ struct target_config {
 struct pq_config {
 	unsigned char backlight_lut[BACKLIGHT_LUT_SIZE];
 	struct target_config tdc;
+};
+
+# pragma pack(push, 1)
+struct gd_cfg_dvp {
+	u8   reserved1[1];
+	u8   globalDimming;
+	u16  gdDelayMilliSec_hdmi;
+	u16  gdDelayMilliSec_ott;
+	u16  gdDelayMilliSec_ll;
+	u32  gdLowestTmax;
+	u16  gdRiseWeight;
+	u16  gdFallWeight;
+	u32  reserved2[3];
+};
+
+#pragma pack(pop)
+
+# pragma pack(push, 1)
+struct ambient_cfg_dvp {
+	u8   ambient;
+	u8   dark_detail;
+	u8   reserved1[2];
+	u32  dark_detail_complum;
+	u16  t_screen_reflection;
+	u16  t_surround_reflection;
+	u32  t_front_lux;
+	u32  t_front_lux_scale;
+	u32  t_rear_lum;
+	u32  t_rear_lum_scale;
+	u32  ambient_front_lux[AMBIENT_LUT_SIZE];
+	u32  ambient_comp_level[AMBIENT_LUT_SIZE];
+	u16  al_delay;
+	u16  al_rise;
+	u16  al_fall;
+	u16  ac_delay;
+	u16  ac_rise;
+	u16  ac_fall;
+	u16  t_whitexy[2];
+	u32  reserved2[3];
+};
+
+#pragma pack(pop)
+
+# pragma pack(push, 1)
+struct pr_cfg_dvp {
+	u8   reserved1[3];
+	u8   supports_precision_rendering;
+	u16  precision_rendering_strength;
+	u16  pyramid_pad_value;
+	u16  pyramid_weights[7];
+	u16  pyramid_alpha[7];
+	u16  local_mapping29_scalar;
+	u16  reserved2;
+	u32  reserved3[2];
+};
+
+#pragma pack(pop)
+
+# pragma pack(push, 1)
+struct ana_cfg_dvp {
+	s32   analyzer_delay;
+	s32   L1MidSensitivity;
+	s32   L1MidSlope;
+	s32   L1MinMaxSlope;
+	s32   L1MidBotRoll;
+	s32   L1MidTopRoll;
+	s32   L1MidBotBeta;
+	s32   L1MidTopBeta;
+	s32   L4BaseAlpha;
+	u8    enableL1L4gen;
+	u8    reserved1[3];
+	s32   reserved2[3];
+};
+
+#pragma pack(pop)
+
+# pragma pack(push, 1)
+struct target_config_dvp {
+	u32 gamma;
+	u32 max;
+	u32 min;
+	u32 t_primaries[8];
+	s32 rgb_to_ycc[3][3];
+	s32 rgb_to_ycc_off[3];
+	u8  rgb_to_ycc_scale;
+	u8  range_spec;
+	u8  eotf;
+	u8  total_viewing_modes_num;
+	u8  mode_valid;
+	u8  vsvdb[7];
+	s16 user_brightness_ui_lut[DM4_TUNING_LUT_SIZE];
+	u16 tuning_mode;
+	u16 d_brightness;
+	s32 d_contrast;
+	s32 d_color_shift;
+	s32 d_saturation;
+	u16 d_backlight;
+	u16 d_local_contrast;
+	s16 dbg_exec_params_print_period;
+	s16 dbg_dm_md_print_period;
+	s16 dbg_dm_cfg_print_period;
+	u16 d_brightness_pr_on;
+	struct gd_cfg_dvp gd_config;
+	struct ambient_cfg_dvp ambient_config;
+	struct pr_cfg_dvp pr_config;
+	s16 blu_pwm[BLU_LUT_SIZE];
+	s16 blu_light[BLU_LUT_SIZE];
+	u32 l11_wp_response_rise_fall;
+	u8  apply_l11_wp;
+	u8  ref_mode_dark_id;
+	struct ana_cfg_dvp anaConfig;
+	u16  reserved2[110];
+};
+
+#pragma pack(pop)
+
+struct pq_config_dvp {
+	unsigned char backlight_lut[BACKLIGHT_LUT_SIZE];
+	struct target_config_dvp tdc;
 };
 
 struct dv_cfg_info_s {

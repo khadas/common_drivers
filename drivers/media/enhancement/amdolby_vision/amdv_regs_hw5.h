@@ -653,17 +653,70 @@
 #define VDIN1_CORE_CTRL             0x0400
 
 #define DOLBY5_CORE1_REG_BASE       0x0b00
-#define DOLBY5_CORE1b_REG_BASE      0x0bd1
+#define DOLBY5_CORE1B_REG_BASE      0x0bd1
 #define DOLBY5_CORE2_REG_BASE0      0x0d00
 #define DOLBY5_CORE2_REG_BASE1      0x0e00
 #define DOLBY5_CORE2_REG_BASE2      0x0f00
 
+#define DOLBY5_CORE1_CRC_CNTRL      0x0bc7 /*top1 CRC control*/
+//Bit 1      crc_rst      //RW, default = 0
+//Bit 0      CRC enable   //RW, default = 0
+#define DOLBY5_CORE1_CRC_IN_FRM     0x0bc8 /*Input frame CRC*/
+#define DOLBY5_CORE1_CRC_OUT_COMP   0x0bc9 /*Composer output frame CRC*/
+#define DOLBY5_CORE1_CRC_OUT_FRM    0x0bca /*Output frame CRC*/
+#define DOLBY5_CORE1_CRC_ICSC     0x0bcb /*Input CSC LUT CRC*/
+#define DOLBY5_CORE1_L1_MINMAX      0x0bcc
+#define DOLBY5_CORE1_L1_MID_L4      0x0bcd
+
+#define DOLBY5_CORE1B_CRC_CNTRL     0x0bda /*top1b CRC control*/
+//Bit 1      crc_rst      //RW, default = 0
+//Bit 0      CRC enable   //RW, default = 0
+#define DOLBY5_CORE1B_CRC_IN_FRM    0x0bdb /*Input frame CRC*/
+
+#define DOLBY5_CORE2_CRC_CNTRL      0x0d3d /*top2 CRC control*/
+//Bit 1      crc_rst      //RW, default = 0
+//Bit 0      CRC enable   //RW, default = 0
+#define DOLBY5_CORE2_CRC_IN_FRM     0x0d3e /*Input frame CRC*/
+#define DOLBY5_CORE2_CRC_OUT_COMP   0x0d3f /*Composer output frame CRC*/
+#define DOLBY5_CORE2_CRC_OUT_FRM    0x0d40 /*Output frame CRC*/
+#define DOLBY5_CORE2_CRC_UPSCL_OUT_FRM   0x0d41 /*Upscaler Output frame CRC*/
+#define DOLBY5_CORE2_CRC_ICSC       0x0d42 /*iCSC LUT CRC*/
+#define DOLBY5_CORE2_CRC_OCSC       0x0d43 /*OCSC LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_TAILUT       0x0d44 /*CVM TAI LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_SMILUT       0x0d45 /*CVM SMI LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_TAILUT  0x0d46 /*CVM Lite TAI LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_SMILUT  0x0d47 /*CVM Lite SMI LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_TMSLUT  0x0d48 /*CVM Lite TMS LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_SMSLUT  0x0d49 /*CVM Lite SMS LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_TMI2LUT  0x0d4a /*CVM Lite TMI2 LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_SMI2LUT  0x0d4b /*CVM Lite SMI2 LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_TMS2LUT  0x0d4c /*CVM Lite TMS2 LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_SMS2LUT  0x0d4d /*CVM Lite SMS2 LUT CRC*/
+
 #define T3X_VD_PROC_BYPASS_CTRL     0x2811
+//Bit 5      reg_bypass_prebld1     //RW, default = 1, 0:use vd prebld 1:bypass vd prebld
+//Bit 4      vd_s3_prebld_ve_link   //RW, default = 0, 1:link prebld and ve directly
+//Bit 3      vd_s2_prebld_ve_link   //RW, default = 0, 1:link prebld and ve directly
+//Bit 2      vd_s1_prebld_ve_link   //RW, default = 0, 1:link prebld and ve directly
+//Bit 1      vd_s0_prebld_ve_link   //RW, default = 0, 1:link prebld and ve directly
+//Bit 0      reg_bypass_prebld0     //RW, default = 1, 0:use vd prebld 1:bypass vd prebld
+
 #define T3X_VPP_DOLBY_CTRL          0x2501
+//Bit 31:11  reserved
+//Bit 10     vpp_clip_ext_mode                  //unsigned, RW, default = 0
+//Bit 9:4    reserved
+//Bit 3      vpp_dolby3_en                      //unsigned, RW, default = 0
+//Bit 2      vpp_dpath_sel                      //unsigned, RW, default = 0
+//Bit 1:0    reserved
 
 #define T3X_VD1_S0_DV_BYPASS_CTRL   0x2824
+//Bit 31:2   reserved
+//Bit 1      vd1_s0_dv_ext_mode                   //unsigned, RW, default = 0
+//Bit 0      vd1_s0_dv_en                         //unsigned, RW, default = 0
 #define T3X_VD1_S1_DV_BYPASS_CTRL   0x2826
-
+//Bit 31:2   reserved
+//Bit 1      vd1_s1_dv_ext_mode                   //unsigned, RW, default = 0
+//Bit 0      vd1_s1_dv_en                         //unsigned, RW, default = 0
 #define VIUB_MISC_CTRL0             0x2006
 #define DI_TOP_CTRL1                0x17d3
 #define DI_TOP_POST_CTRL            0x17c6

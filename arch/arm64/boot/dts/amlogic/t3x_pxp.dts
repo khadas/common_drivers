@@ -745,11 +745,13 @@
 	};
 
 	amdolby_vision {
-		compatible = "amlogic, dolby_vision_s5";
+		compatible = "amlogic, dolby_vision_t3x";
 		dev_name = "aml_amdolby_vision_driver";
 		status = "disabled";
-		tv_mode = <0>;/*1:enable ;0:disable*/
-		multi_core1 = <1>;
+		tv_mode = <1>;/*1:enable ;0:disable*/
+		multi_core1 = <0>;
+		interrupts = <GIC_SPI 107 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "viu1_dolby_int";
 	};
 
 	aml_frc {

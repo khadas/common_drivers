@@ -300,7 +300,7 @@ void adjust_vpotch_tv(void)
 
 	if (is_aml_tm2() || is_aml_t7() ||
 	    is_aml_t3() || is_aml_t5w() ||
-	    is_aml_t5m() || is_aml_t3x()) {
+	    is_aml_t5m()) {
 		if (debug_dma_start_line) {
 			dma_start_line = debug_dma_start_line;
 		} else if (vinfo) {

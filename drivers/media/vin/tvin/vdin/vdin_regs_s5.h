@@ -19,7 +19,7 @@ enum vdin_vdi_x_e {
 	VDIN_VDI0_MPEG		= 0,	/* mpeg in */
 	VDIN_VDI1_BT656		= 1,	/* first bt656 input */
 	VDIN_VDI2_RESERVED	= 2,	/* reserved */
-	VDIN_VDI3_TV_DECODE_IN		= 3,	/* tv decode input */
+	VDIN_VDI3_TV_DECODE_IN	= 3,	/* tv decode input */
 	VDIN_VDI4_HDMIRX	= 4,	/* hdmi rx dual pixel input */
 	VDIN_VDI5_DVI		= 5,	/* digital video input */
 	VDIN_VDI6_LOOPBACK_1	= 6,	/* first internal loopback input */

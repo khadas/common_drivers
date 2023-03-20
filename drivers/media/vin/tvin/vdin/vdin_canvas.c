@@ -66,12 +66,16 @@ module_param(dolby_size_byte, uint, 0664);
 MODULE_PARM_DESC(dolby_size_byte, "dolby_size_byte.\n");
 #endif
 
-const unsigned int vdin_canvas_ids[2][VDIN_CANVAS_MAX_CNT] = {
+const unsigned int vdin_canvas_ids[VDIN_MAX_DEVS][VDIN_CANVAS_MAX_CNT] = {
 	{
 		0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b,
 		0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31
 	},
 	{
+		0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+		0x38, 0x39,
+	},
+	{	/* fake canvas ids for vdin2 on t3x */
 		0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
 		0x38, 0x39,
 	},
@@ -385,8 +389,9 @@ void vdin_canvas_auto_config(struct vdin_dev_s *devp)
 	devp->vf_mem_max_cnt = min(devp->vf_mem_max_cnt, devp->canvas_max_num);
 
 #ifdef VDIN_DEBUG
-	pr_info("vdin%d canvas auto configuration table:\n",
-		devp->index);
+	pr_info("vdin%d canvas auto configuration table:%d %d %d %d\n",
+		devp->index, devp->format_convert, devp->source_bitdepth,
+		devp->double_wr, devp->full_pack);
 #endif
 	for (i = 0; i < devp->canvas_max_num; i++) {
 		devp->vf_mem_start[i] =

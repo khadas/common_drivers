@@ -1799,6 +1799,24 @@
 };
 
 &vdin1 {
+	/*memory-region = <&vdin0_cma_reserved>;*/
+	status = "okay";
+	/*MByte, if 10bit disable: 64M(YUV422),
+	 *if 10bit enable: 64*1.5 = 96M(YUV422)
+	 *if support 4K2K-YUV444-10bit-WR:3840*2160*4*4 ~= 128M
+	 *if support 4K2K-YUV422-10bit-wr:3840*2160*3*4 ~= 96M
+	 *if support 4K2K-YUV422-8BIT-WR:3840*2160*2*4 ~= 64M
+	 *if support 1080p-YUV422-8BIT-WR:1920*1080*2*4 ~= 16M
+	 * onebuffer:
+	 * worst case:(4096*2160*3 + 2M(afbce issue)) = 27.5M
+	 * dw:960x540x3 = 1.5M
+	 * total size:(27.5+1.5)x buffernumber
+	 */
+	cma_size = <300>;
+	frame_buff_num = <10>;
+};
+
+&vdin2 {
 	memory-region = <&vdin1_cma_reserved>;
 	status = "okay";
 };

@@ -19,6 +19,7 @@
 #define VDIN_V4L_CARD_NAME	"meson_t3"
 #define VDIN0_V4L_BUS_INFO	"vdin0 v4l2"
 #define VDIN1_V4L_BUS_INFO	"vdin1 v4l2"
+#define VDIN2_V4L_BUS_INFO	"vdin2 v4l2"
 
 #define VDIN_VD_NUMBER		(70)
 #define VDIN_DEVICE_CAPS \

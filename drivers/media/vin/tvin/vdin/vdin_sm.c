@@ -276,7 +276,7 @@ static enum tvin_sg_chg_flg vdin_hdmirx_fmt_chg_detect(struct vdin_dev_s *devp)
 	sm_ops = devp->frontend->sm_ops;
 	port = devp->parm.port;
 
-	if (port < TVIN_PORT_HDMI0 || port > TVIN_PORT_HDMI7)
+	if (!IS_HDMI_SRC(port))
 		return signal_chg;
 
 	if (sm_ops->get_sig_property) {
@@ -897,8 +897,7 @@ void tvin_smr(struct vdin_dev_s *devp)
 					unstable_in = sm_p->atv_unstable_out_cnt;
 				else if (IS_TVAFE_ATV_SRC(port) && manual_flag)
 					unstable_in = manual_unstable_out_cnt;
-				else if (port >= TVIN_PORT_HDMI0 &&
-					 port <= TVIN_PORT_HDMI7)
+				else if (IS_HDMI_SRC(port))
 					unstable_in = sm_p->hdmi_unstable_out_cnt;
 				else
 					unstable_in = other_unstable_out_cnt;
@@ -1027,7 +1026,8 @@ void tvin_smr(struct vdin_dev_s *devp)
 				}
 			}
 			if (IS_HDMI_SRC(port)) {
-				if (!(devp->flags & VDIN_FLAG_DEC_STARTED) &&
+				/* for tvstart, do not judge VDIN_FLAG_DEC_STARTED */
+				if (/*!(devp->flags & VDIN_FLAG_DEC_STARTED) &&*/
 				    !mutex_is_locked(&devp->fe_lock)) {
 					sm_p->state = TVIN_SM_STATUS_STABLE;
 					info->status = TVIN_SIG_STATUS_STABLE;
@@ -1111,8 +1111,7 @@ void tvin_smr(struct vdin_dev_s *devp)
 			if (IS_TVAFE_ATV_SRC(port) &&
 			    (devp->flags & VDIN_FLAG_SNOW_FLAG))
 				stable_out_cnt = sm_p->atv_stable_out_cnt;
-			else if ((port >= TVIN_PORT_HDMI0) &&
-				 (port <= TVIN_PORT_HDMI7))
+			else if (IS_HDMI_SRC(port))
 				stable_out_cnt = hdmi_stable_out_cnt;
 			else
 				stable_out_cnt = other_stable_out_cnt;

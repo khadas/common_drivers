@@ -20,6 +20,7 @@
 #define __VDIN_AFBCE_H__
 #include "vdin_drv.h"
 #include "vdin_ctl.h"
+#include "vdin_afbce_t3x.h"
 
 #define AFBCE_ENABLE  0x41a0
 /* 0 = auto, triggered by vsync, 1 = pulse, triggered manually */
@@ -318,8 +319,8 @@ void vdin_afbce_maptable_init(struct vdin_dev_s *devp);
 void vdin_afbce_set_next_frame(struct vdin_dev_s *devp,
 			       unsigned int rdma_enable, struct vf_entry *vfe);
 void vdin_afbce_clear_write_down_flag(struct vdin_dev_s *devp);
-int vdin_afbce_read_write_down_flag(void);
-void vdin_afbce_soft_reset(void);
+int vdin_afbce_read_write_down_flag(struct vdin_dev_s *devp);
+void vdin_afbce_soft_reset(struct vdin_dev_s *devp);
 void vdin_afbce_mode_init(struct vdin_dev_s *devp);
 void vdin_afbce_mode_update(struct vdin_dev_s *devp);
 bool vdin_chk_is_comb_mode(struct vdin_dev_s *devp);

@@ -128,6 +128,11 @@ static struct v4l2_capability g_vdin_v4l2_cap[VDIN_MAX_DEVS] = {
 	 .bus_info = VDIN1_V4L_BUS_INFO, .version = VDIN_DEV_VER,
 	 .capabilities = VDIN_DEVICE_CAPS | V4L2_CAP_DEVICE_CAPS,
 	 .device_caps = VDIN_DEVICE_CAPS},
+
+	{.driver = VDIN_V4L_DRV_NAME,	 .card = VDIN_V4L_CARD_NAME,
+	 .bus_info = VDIN2_V4L_BUS_INFO, .version = VDIN_DEV_VER,
+	 .capabilities = VDIN_DEVICE_CAPS | V4L2_CAP_DEVICE_CAPS,
+	 .device_caps = VDIN_DEVICE_CAPS},
 };
 
 int vdin_v4l2_if_isr(struct vdin_dev_s *devp, struct vframe_s *vfp)

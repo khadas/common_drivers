@@ -84,6 +84,14 @@ void vdin_mif_config_init(struct vdin_dev_s *devp)
 			//W_VCBUS_BIT(VDIN_TOP_MISC0,
 			//		1, VDIN_TOP_MISC1, 1);
 		}
+	} else if (is_meson_t3x_cpu()) {
+//		/* reg_dwpath_en */
+//		W_VCBUS_BIT(VDIN0_CORE_CTRL + devp->addr_offset, 1, 6, 1);
+//		/* reg_afbcepath_en */
+//		W_VCBUS_BIT(VDIN0_CORE_CTRL + devp->addr_offset, 0, 8, 1);
+//		/* reg_fix_disable */
+//		W_VCBUS_BIT(VDIN0_DW_CTRL + devp->addr_offset, 0, 30, 2);
+//		W_VCBUS_BIT(VDIN0_AFBCE_ENABLE, 0, AFBCE_EN_BIT, AFBCE_EN_WID);
 	} else
 #endif
 	{
@@ -109,6 +117,9 @@ void vdin_mif_config_init(struct vdin_dev_s *devp)
 void vdin_write_mif_or_afbce_init(struct vdin_dev_s *devp)
 {
 	enum vdin_output_mif_e sel;
+
+	if (is_meson_t3x_cpu())
+		return;
 
 	if (((devp->afbce_flag & VDIN_AFBCE_EN) == 0) || devp->index == 1 ||
 	    devp->double_wr)
@@ -167,6 +178,9 @@ void vdin_write_mif_or_afbce_init(struct vdin_dev_s *devp)
 void vdin_write_mif_or_afbce(struct vdin_dev_s *devp,
 			     enum vdin_output_mif_e sel)
 {
+	if (is_meson_t3x_cpu())
+		return;
+
 	if (((devp->afbce_flag & VDIN_AFBCE_EN) == 0) || devp->double_wr)
 		return;
 
@@ -260,6 +274,11 @@ void vdin_afbce_update(struct vdin_dev_s *devp)
 	int uncompress_bits;
 	int uncompress_size;
 
+	if (is_meson_t3x_cpu()) {
+		vdin_afbce_update_t3x(devp);
+		return;
+	}
+
 	if (!devp->afbce_info)
 		return;
 
@@ -340,6 +359,10 @@ void vdin_afbce_config(struct vdin_dev_s *devp)
 	enum vdin_format_convert_e vdin_out_fmt;
 	unsigned int bit_mode_shift = 0;
 
+	if (is_meson_t3x_cpu()) {
+		vdin_afbce_config_t3x(devp);
+		return;
+	}
 	if (!devp->afbce_info)
 		return;
 
@@ -474,7 +497,7 @@ void vdin_afbce_config(struct vdin_dev_s *devp)
 		(((def_color_1 << bit_mode_shift) & 0xfff) << 0));
 	if (devp->dtdata->hw_ver >= VDIN_HW_T7)
 		W_VCBUS_BIT(AFBCE_MMU_RMIF_CTRL4,
-			    devp->afbce_info->table_paddr >> 4, 0, 32);
+			    devp->afbce_info->table_paddr >> 4, 0, 32);//table_paddr?
 	else
 		W_VCBUS_BIT(AFBCE_MMU_RMIF_CTRL4,
 			    devp->afbce_info->table_paddr, 0, 32);
@@ -587,6 +610,10 @@ void vdin_afbce_set_next_frame(struct vdin_dev_s *devp,
 	if (!devp->afbce_info)
 		return;
 
+	if (is_meson_t3x_cpu()) {
+		vdin_afbce_set_next_frame_t3x(devp, rdma_enable, vfe);
+		return;
+	}
 	i = vfe->af_num;
 	vfe->vf.compHeadAddr = devp->afbce_info->fm_head_paddr[i];
 	vfe->vf.compBodyAddr = devp->afbce_info->fm_body_paddr[i];
@@ -632,6 +659,11 @@ void vdin_afbce_set_next_frame(struct vdin_dev_s *devp,
 
 void vdin_pause_afbce_write(struct vdin_dev_s *devp, unsigned int rdma_enable)
 {
+	if (is_meson_t3x_cpu()) {
+		vdin_pause_afbce_write_t3x(devp, rdma_enable);
+		return;
+	}
+
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	if (rdma_enable)
 		rdma_write_reg_bits(devp->rdma_handle, AFBCE_ENABLE, 0,
@@ -643,14 +675,22 @@ void vdin_pause_afbce_write(struct vdin_dev_s *devp, unsigned int rdma_enable)
 /* frm_end will not pull up if using rdma IF to clear afbce flag */
 void vdin_afbce_clear_write_down_flag(struct vdin_dev_s *devp)
 {
+	if (is_meson_t3x_cpu()) {
+		vdin_afbce_clear_write_down_flag_t3x(devp);
+		return;
+	}
+
 	/* bit0:frm_end_clr;bit1:enc_error_clr */
 	W_VCBUS_BIT(AFBCE_CLR_FLAG, 3, 0, 2);
 }
 
 /* return 1: write down */
-int vdin_afbce_read_write_down_flag(void)
+int vdin_afbce_read_write_down_flag(struct vdin_dev_s *devp)
 {
 	int frm_end = -1, wr_abort = -1;
+
+	if (is_meson_t3x_cpu())
+		return vdin_afbce_read_write_down_flag_t3x(devp);
 
 	frm_end = rd_bits(0, AFBCE_STA_FLAG, 0, 1);
 	//frm_end = rd_bits(0, AFBCE_STAT1, 31, 1);
@@ -666,10 +706,14 @@ int vdin_afbce_read_write_down_flag(void)
 		return 0;
 }
 
-void vdin_afbce_soft_reset(void)
+void vdin_afbce_soft_reset(struct vdin_dev_s *devp)
 {
 	if (is_meson_s5_cpu())
 		return; //TODO
+	else if (is_meson_t3x_cpu()) {
+		vdin_afbce_soft_reset_t3x(devp);
+		return;
+	}
 
 	W_VCBUS_BIT(AFBCE_ENABLE, 0, AFBCE_EN_BIT, AFBCE_EN_WID);
 	W_VCBUS_BIT(AFBCE_MODE, 0, 30, 1);
@@ -679,6 +723,10 @@ void vdin_afbce_soft_reset(void)
 
 void vdin_afbce_mode_init(struct vdin_dev_s *devp)
 {
+	if (is_meson_t3x_cpu()) {
+		vdin_afbce_mode_init_t3x(devp);
+		return;
+	}
 	/* afbce_valid means can switch into afbce mode */
 	devp->afbce_valid = 0;
 	if (devp->afbce_flag & VDIN_AFBCE_EN) {
@@ -723,6 +771,11 @@ void vdin_afbce_mode_init(struct vdin_dev_s *devp)
 
 void vdin_afbce_mode_update(struct vdin_dev_s *devp)
 {
+	if (is_meson_t3x_cpu()) {
+		vdin_afbce_mode_update_t3x(devp);
+		return;
+	}
+
 	/* vdin mif/afbce mode update */
 	if (devp->afbce_mode)
 		vdin_write_mif_or_afbce(devp, VDIN_OUTPUT_TO_AFBCE);

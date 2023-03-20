@@ -25,6 +25,7 @@
 #include <linux/dma-map-ops.h>
 #include "vdin_drv.h"
 #include "vdin_ctl_s5.h"
+#include "vdin_ctl_t3x.h"
 
 #define BIT0		0x00000001
 #define BIT1		0x00000002

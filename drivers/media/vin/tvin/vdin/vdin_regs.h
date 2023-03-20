@@ -20,6 +20,7 @@
 #define __VDIN_REGS_H
 
 #include "vdin_regs_s5.h"
+#include "vdin_regs_t3x.h"
 
 /* mmc */
 #define VPU_VDIN_ASYNC_HOLD_CTRL 0x2743

@@ -2558,6 +2558,50 @@ static void vdin_write_back_reg(struct vdin_dev_s *devp)
 		rd(devp->addr_offset, VDIN_ASFIFO_CTRL3));
 }
 
+void vdin_dump_regs_t3x(struct vdin_dev_s *devp, u32 size)
+{
+	unsigned int reg;
+	unsigned int offset = devp->addr_offset;
+
+	pr_info("t3x:vdin%d TOP regs start----\n", devp->index);
+	for (reg = VDIN_REG_TOP_START_T3X; reg <= VDIN_REG_TOP_END_T3X; reg++)
+		pr_info("0x%04x = 0x%08x\n", (reg + 0), rd(0, reg));
+	pr_info("vdin%d TOP regs end----\n\n", devp->index);
+
+	pr_info("vdin%d regs bank0 start----\n", devp->index);
+	for (reg = VDIN_REG_BANK0_START_T3X; reg <= VDIN_REG_BANK0_END_T3X; reg++)
+		pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+	pr_info("vdin%d regs bank0 end----\n\n", devp->index);
+
+	pr_info("vdin%d regs bank1 start----\n", devp->index);
+	for (reg = VDIN_REG_BANK1_START_T3X; reg <= VDIN_REG_BANK1_END_T3X; reg++)
+		pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+	pr_info("vdin%d regs bank1 end----\n\n", devp->index);
+
+	pr_info("t3x:vdin%d preproc regs start----\n", devp->index);
+	for (reg = VPU_VDIN_HDMI0_CTRL0; reg <= VPU_VDIN_HDMI1_TUNNEL; reg++)
+		pr_info("0x%04x = 0x%08x\n", (reg + 0), rd(0, reg));
+	pr_info("vdin%d TOP preproc end----\n\n", devp->index);
+
+	pr_info("vdin%d regs loopback start----\n", devp->index);
+	reg = VIU_WR_BAK_CTRL;
+	pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+	reg = VPU_VIU2VDIN_HDN_CTRL;
+	pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+	reg = VPU_VIU_VDIN_IF_MUX_CTRL;
+	pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+	reg = S5_VPP_POST_HOLD_CTRL;
+	pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+
+//	for (reg = 0x2700; reg <= 0x2800; reg++)
+//	pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+//	reg = VPP1_WR_BAK_CTRL;
+//	pr_info("VPP1,0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+//	reg = VPP2_WR_BAK_CTRL;
+//	pr_info("VPP2,0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+//	pr_info("vdin%d regs loopback end----\n\n", devp->index);
+}
+
 void vdin_dump_regs_s5(struct vdin_dev_s *devp, u32 size)
 {
 	unsigned int reg;
@@ -2599,6 +2643,9 @@ static void vdin_dump_regs(struct vdin_dev_s *devp, u32 size)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_dump_regs_s5(devp, size);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_dump_regs_t3x(devp, size);
 		return;
 	}
 #endif
@@ -2956,6 +3003,9 @@ static ssize_t attr_store(struct device *dev,
 			break;
 		case 2:/* HDMI2 */
 			port = TVIN_PORT_HDMI2;
+			break;
+		case 3:/* HDMI3 */
+			port = TVIN_PORT_HDMI3;
 			break;
 		case 5:/* CVBS0 */
 			port = TVIN_PORT_CVBS0;
@@ -3892,6 +3942,8 @@ start_chk:
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (is_meson_s5_cpu())
 			pr_info("s5 vf crc:0x%x\n", rd(devp->addr_offset, VDIN_TOP_CRC1_OUT));
+		else if (is_meson_t3x_cpu())
+			pr_info("t3x vf crc:0x%x\n", rd(devp->addr_offset, VDIN0_PP_CRC_OUT));
 		else
 #endif
 			pr_info("vf crc:0x%x\n", rd(devp->addr_offset, VDIN_RO_CRC));
@@ -3963,6 +4015,12 @@ start_chk:
 	} else if (!strcmp(parm[0], "rv")) {
 		if (parm[1] && (kstrtouint(parm[1], 16, &temp) == 0))
 			pr_info("addr:0x%x val:0x%x\n", temp, R_VCBUS(temp));
+	} else if (!strcmp(parm[0], "wr")) {
+		if (parm[1] && (kstrtouint(parm[1], 16, &temp) == 0) &&
+			(kstrtouint(parm[2], 16, &val_tmp) == 0)) {
+			W_VCBUS(temp, val_tmp);
+			pr_info("write addr:0x%x val:0x%x\n", temp, val_tmp);
+		}
 	} else if (!strcmp(parm[0], "game_mode_chg")) {
 		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0)) {
 			pr_info("set new game mode to: 0x%x,pre:%#x\n", temp, game_mode);
@@ -4013,6 +4071,11 @@ start_chk:
 		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0)) {
 			devp->debug.dbg_print_cntl = temp;
 			pr_info("dbg_print_cntl:%#x\n", devp->debug.dbg_print_cntl);
+		}
+	} else if (!strcmp(parm[0], "dbg_de_interlanced_ctl")) {
+		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0)) {
+			devp->debug.dbg_de_interlanced_ctl = temp;
+			pr_info("dbg_deinterlance_ctl:%#x\n", devp->debug.dbg_de_interlanced_ctl);
 		}
 	} else if (!strcmp(parm[0], "pattern")) {
 		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0)) {

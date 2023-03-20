@@ -1104,6 +1104,9 @@ void vdin_set_top(struct vdin_dev_s *devp, unsigned int offset,
 	if (is_meson_s5_cpu()) {
 		vdin_set_top_s5(devp, port, input_cfmt, bt_path);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_top_t3x(devp, port, input_cfmt, bt_path);
+		return;
 	}
 #endif
 
@@ -1297,6 +1300,9 @@ void vdin_set_decimation(struct vdin_dev_s *devp)
 	if (is_meson_s5_cpu()) {
 		vdin_set_decimation_s5(devp);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_decimation_t3x(devp);
+		return;
 	}
 #endif
 
@@ -1352,6 +1358,9 @@ void vdin_fix_nonstd_vsync(struct vdin_dev_s *devp)
 	if (is_meson_s5_cpu()) {
 		//vdin_fix_nonstd_vsync_s5(devp);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		//vdin_fix_nonstd_vsync_t3x(devp);
+		return;
 	}
 #endif
 
@@ -1391,6 +1400,9 @@ void vdin_set_cutwin(struct vdin_dev_s *devp)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_cutwin_s5(devp);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_cutwin_t3x(devp);
 		return;
 	}
 #endif
@@ -1633,7 +1645,7 @@ vdin_set_color_matrix(enum vdin_matrix_sel_e matrix_sel, unsigned int offset,
 	case VDIN_FORMAT_CONVERT_RGB_YUV422:
 	case VDIN_FORMAT_CONVERT_RGB_NV12:
 	case VDIN_FORMAT_CONVERT_RGB_NV21:
-		if (port >= TVIN_PORT_HDMI0 && port <= TVIN_PORT_HDMI7) {
+		if (IS_HDMI_SRC(port)) {
 			if (color_range_mode == 1) {
 				if (color_fmt_range == TVIN_RGB_FULL) {
 					matrix_csc = VDIN_MATRIX_RGB_YUV709F;
@@ -1673,7 +1685,7 @@ vdin_set_color_matrix(enum vdin_matrix_sel_e matrix_sel, unsigned int offset,
 		matrix_csc = VDIN_MATRIX_BRG_YUV601;
 		break;
 	case VDIN_FORMAT_CONVERT_RGB_YUV444:
-		if (port >= TVIN_PORT_HDMI0 && port <= TVIN_PORT_HDMI7) {
+		if (IS_HDMI_SRC(port)) {
 			if (color_range_mode == 1) {
 				if (color_fmt_range == TVIN_RGB_FULL) {
 					matrix_csc = VDIN_MATRIX_RGB_YUV709F;
@@ -1881,6 +1893,9 @@ void vdin_set_matrix(struct vdin_dev_s *devp)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_matrix_s5(devp);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_matrix_t3x(devp);
 		return;
 	}
 #endif
@@ -2122,6 +2137,10 @@ static inline void vdin_set_hist_mux(struct vdin_dev_s *devp)
 static void vdin_urgent_patch(unsigned int offset, unsigned int v,
 			      unsigned int h)
 {
+	if (is_meson_t3x_cpu()) {
+		vdin_urgent_patch_t3x(offset, v, h);
+		return;
+	}
 	if (h >= 1920 && v >= 1080) {
 		wr_bits(offset, VDIN_LFIFO_URG_CTRL, 1,
 			VDIN_LFIFO_URG_CTRL_EN_BIT, VDIN_LFIFO_URG_CTRL_EN_WID);
@@ -2145,8 +2164,12 @@ static void vdin_urgent_patch(unsigned int offset, unsigned int v,
 void vdin_urgent_patch_resume(unsigned int offset)
 {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-	if (is_meson_s5_cpu())
+	if (is_meson_s5_cpu()) {
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_urgent_patch_resume_t3x(offset);
+		return;
+	}
 #endif
 
 	/* urgent ctr config */
@@ -2354,6 +2377,11 @@ void vdin_set_wr_ctrl_vsync(struct vdin_dev_s *devp,
 	unsigned int swap_cbcr = 0;
 	unsigned int hconv_mode = 2, vconv_mode;
 
+	if (is_meson_t3x_cpu()) {
+		vdin_set_wr_ctrl_vsync_t3x(devp, offset, format_convert,
+			full_pack, source_bitdepth, rdma_enable);
+		return;
+	}
 	switch (format_convert)	{
 	case VDIN_FORMAT_CONVERT_YUV_YUV422:
 	case VDIN_FORMAT_CONVERT_RGB_YUV422:
@@ -2491,9 +2519,11 @@ void vdin_set_mif_on_off(struct vdin_dev_s *devp, unsigned int rdma_enable)
 	if (is_meson_s5_cpu()) {
 		vdin_set_mif_on_off_s5(devp, rdma_enable);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_mif_on_off_t3x(devp, rdma_enable);
+		return;
 	}
 #endif
-
 	if (devp->vframe_wr_en_pre == devp->vframe_wr_en)
 		return;
 
@@ -2523,6 +2553,8 @@ unsigned int vdin_get_meas_v_stamp(unsigned int offset)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return 0;//rd(offset, VDIN_MEAS_VS_COUNT_LO);
+	else if (is_meson_t3x_cpu())
+		return 0;//rd(offset, VDIN_MEAS_VS_COUNT_LO);
 	else
 #endif
 		return rd(offset, VDIN_MEAS_VS_COUNT_LO);
@@ -2533,6 +2565,8 @@ unsigned int vdin_get_active_h(unsigned int offset)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return vdin_get_active_h_s5(offset);
+	else if (is_meson_t3x_cpu())
+		return vdin_get_active_h_t3x(offset);
 #endif
 
 	return rd_bits(offset, VDIN_ACTIVE_MAX_PIX_CNT_STATUS,
@@ -2544,6 +2578,8 @@ unsigned int vdin_get_active_v(unsigned int offset)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return vdin_get_active_v_s5(offset);
+	else if (is_meson_t3x_cpu())
+		return vdin_get_active_v_t3x(offset);
 #endif
 
 	return rd_bits(offset, VDIN_LCNT_SHADOW_STATUS,
@@ -2555,6 +2591,8 @@ unsigned int vdin_get_total_v(unsigned int offset)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return vdin_get_total_v_s5(offset);
+	else if (is_meson_t3x_cpu())
+		return vdin_get_total_v_t3x(offset);
 #endif
 
 	return rd_bits(offset, VDIN_LCNT_SHADOW_STATUS,
@@ -2572,6 +2610,10 @@ void vdin_set_frame_mif_write_addr(struct vdin_dev_s *devp,
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_frame_mif_write_addr_s5(devp,
+			devp->flags & VDIN_FLAG_RDMA_ENABLE, vfe);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_frame_mif_write_addr_t3x(devp,
 			devp->flags & VDIN_FLAG_RDMA_ENABLE, vfe);
 		return;
 	}
@@ -2653,8 +2695,12 @@ void vdin_set_canvas_id(struct vdin_dev_s *devp, unsigned int rdma_enable,
 	if (is_meson_s5_cpu()) {
 		//vdin_set_canvas_id_s5(devp, rdma_enable, vfe);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		//vdin_set_canvas_id_t3x(devp, rdma_enable, vfe);
+		return;
 	}
 #endif
+
 	if (vfe) {
 		if (vfe->vf.canvas0Addr != (u32)-1)
 			canvas_id = vfe->vf.canvas0Addr;
@@ -2705,6 +2751,10 @@ void vdin_set_canvas_id(struct vdin_dev_s *devp, unsigned int rdma_enable,
 
 void vdin_pause_mif_write(struct vdin_dev_s *devp, unsigned int rdma_enable)
 {
+	if (is_meson_t3x_cpu()) {
+		vdin_pause_mif_write_t3x(devp, rdma_enable);
+		return;
+	}
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	if (rdma_enable)
 		rdma_write_reg_bits(devp->rdma_handle, VDIN_WR_CTRL + devp->addr_offset,
@@ -2728,6 +2778,9 @@ void vdin_set_chroma_canvas_id(struct vdin_dev_s *devp, unsigned int rdma_enable
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		//vdin_set_chroma_canvas_id_s5(devp, rdma_enable, vfe);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		//vdin_set_chroma_canvas_id_t3x(devp, rdma_enable, vfe);
 		return;
 	}
 #endif
@@ -2765,6 +2818,9 @@ void vdin_set_crc_pulse(struct vdin_dev_s *devp)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_crc_pulse_s5(devp);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_crc_pulse_t3x(devp);
 		return;
 	}
 #endif
@@ -2945,6 +3001,9 @@ void vdin_set_vframe_prop_info(struct vframe_s *vf,
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_vframe_prop_info_s5(vf, devp);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_vframe_prop_info_t3x(vf, devp);
 		return;
 	}
 #endif
@@ -3224,6 +3283,10 @@ void vdin_get_crc_val(struct vframe_s *vf, struct vdin_dev_s *devp)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return;
+	else if (is_meson_t3x_cpu()) {
+		vdin_get_crc_val_t3x(vf, devp);
+		return;
+	}
 #endif
 
 	vf->crc = rd(devp->addr_offset, VDIN_RO_CRC);
@@ -3242,6 +3305,9 @@ void vdin_set_all_regs(struct vdin_dev_s *devp)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_all_regs_s5(devp);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_all_regs_t3x(devp);
 		return;
 	}
 #endif
@@ -3299,6 +3365,8 @@ void vdin_set_dv_tunnel(struct vdin_dev_s *devp)
 		vdin_set_dv_tunnel_s5(devp);
 		return;
 	}
+	if (is_meson_s5_cpu())
+		return;
 #endif
 
 	/* avoid null pointer oops */
@@ -3317,13 +3385,20 @@ void vdin_set_dv_tunnel(struct vdin_dev_s *devp)
 		/*&& (devp->dv.low_latency)*/
 	    devp->prop.color_format == TVIN_YUV422) {
 		offset = devp->addr_offset;
-		/*channel map*/
-		wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_0,
-			COMP0_OUT_SWT_BIT, COMP0_OUT_SWT_WID);
-		wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_1,
-			COMP1_OUT_SWT_BIT, COMP1_OUT_SWT_WID);
-		wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_2,
-			COMP2_OUT_SWT_BIT, COMP2_OUT_SWT_WID);
+		if ((is_meson_t3x_cpu())) {
+			/*channel map*/
+			wr_bits(offset, VDIN0_CUTWIN_CTRL, vdin_data_bus_0, 0, 2);
+			wr_bits(offset, VDIN0_CUTWIN_CTRL, vdin_data_bus_1, 2, 2);
+			wr_bits(offset, VDIN0_CUTWIN_CTRL, vdin_data_bus_2, 4, 2);
+		} else {
+			/*channel map*/
+			wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_0,
+				COMP0_OUT_SWT_BIT, COMP0_OUT_SWT_WID);
+			wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_1,
+				COMP1_OUT_SWT_BIT, COMP1_OUT_SWT_WID);
+			wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_2,
+				COMP2_OUT_SWT_BIT, COMP2_OUT_SWT_WID);
+		}
 		/*hdmi rx call back, 422 tunnel to 444*/
 		sm_ops->hdmi_dv_config(true, devp->frontend);
 		pr_info("dv rx tunnel mode\n");
@@ -3357,6 +3432,9 @@ void vdin_set_double_write_regs(struct vdin_dev_s *devp)
 	if (is_meson_s5_cpu()) {
 		vdin_set_double_write_regs_s5(devp);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_double_write_regs_t3x(devp);
+		return;
 	}
 #endif
 
@@ -3384,6 +3462,9 @@ void vdin_set_default_regmap(struct vdin_dev_s *devp)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_default_regmap_s5(devp);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_default_regmap_t3x(devp);
 		return;
 	}
 #endif
@@ -3708,6 +3789,9 @@ void vdin_hw_enable(struct vdin_dev_s *devp)
 	if (is_meson_s5_cpu()) {
 		vdin_hw_enable_s5(devp);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_hw_enable_t3x(devp);
+		return;
 	}
 #endif
 
@@ -3857,6 +3941,8 @@ inline int vdin_vsync_reset_mif(int index)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return 0;
+	else if (is_meson_t3x_cpu())
+		return vdin_vsync_reset_mif_t3x(index);
 #endif
 
 	start_line = aml_read_vcbus(VDIN_LCNT_STATUS) & 0xfff;
@@ -3944,6 +4030,9 @@ void vdin_enable_module(struct vdin_dev_s *devp, bool enable)
 	if (is_meson_s5_cpu()) {
 		vdin_enable_module_s5(devp, enable);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_enable_module_t3x(devp, enable);
+		return;
 	}
 #endif
 
@@ -3974,6 +4063,8 @@ bool vdin_write_done_check(unsigned int offset, struct vdin_dev_s *devp)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return vdin_write_done_check_s5(offset, devp);
+	else if (is_meson_t3x_cpu())
+		return vdin_write_done_check_t3x(offset, devp);
 #endif
 
 	/*clear int status*/
@@ -4003,7 +4094,7 @@ bool vdin_write_done_check(unsigned int offset, struct vdin_dev_s *devp)
 	}
 
 	if (devp->afbce_valid && devp->double_wr) { /* afbce */
-		if (vdin_afbce_read_write_down_flag()) {
+		if (vdin_afbce_read_write_down_flag(devp)) {
 			devp->stats.afbce_normal_cnt++;
 			ret = true;
 		} else {
@@ -4097,7 +4188,7 @@ void vdin_calculate_duration(struct vdin_dev_s *devp)
 			(devp->cycle + cycle_phase / 2) / cycle_phase;
 #else
 		if (devp->use_frame_rate == 1 &&
-		    (port >= TVIN_PORT_HDMI0 && port <= TVIN_PORT_HDMI7)) {
+		    IS_HDMI_SRC(port)) {
 			curr_wr_vf->duration =
 				(devp->cycle + cycle_phase / 2) / cycle_phase;
 		} else {
@@ -4440,6 +4531,9 @@ void vdin_set_hv_scale(struct vdin_dev_s *devp)
 	if (is_meson_s5_cpu()) {
 		vdin_set_hv_scale_s5(devp);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_hv_scale_t3x(devp);
+		return;
 	}
 #endif
 
@@ -4529,6 +4623,9 @@ void vdin_set_bitdepth(struct vdin_dev_s *devp)
 	if (is_meson_s5_cpu()) {
 		vdin_set_bitdepth_s5(devp);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_bitdepth_t3x(devp);
+		return;
 	}
 #endif
 
@@ -4583,7 +4680,7 @@ void vdin_set_bitdepth(struct vdin_dev_s *devp)
 			/* hdmi YUV422, 8 or 10 bit valid is unknown*/
 			/* so need vdin 10bit to frame buffer*/
 			port = devp->parm.port;
-			if (port >= TVIN_PORT_HDMI0 && port <= TVIN_PORT_HDMI7) {
+			if (IS_HDMI_SRC(port)) {
 				convert_fmt = devp->format_convert;
 				if ((vdin_is_convert_to_422(convert_fmt) &&
 				     (devp->color_depth_support &
@@ -4667,7 +4764,7 @@ static void vdin_get_video_format(struct vdin_dev_s *devp)
 
 void vdin_set_to_vpp_parm(struct vdin_dev_s *devp)
 {
-	if (devp->index)
+	if (devp->index) //lht todo
 		return;
 
 	devp->vdin2vpp_info.is_dv = devp->dv.dv_flag;
@@ -4694,6 +4791,9 @@ void vdin_wr_reverse(unsigned int offset, bool h_reverse, bool v_reverse)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_wr_reverse_s5(offset, h_reverse, v_reverse);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_wr_reverse_t3x(offset, h_reverse, v_reverse);
 		return;
 	}
 #endif
@@ -5451,9 +5551,11 @@ void vdin_dolby_config(struct vdin_dev_s *devp)
 	if (is_meson_s5_cpu()) {
 		vdin_dolby_config_s5(devp);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_dolby_config_t3x(devp);
+		return;
 	}
 #endif
-
 	devp->dv.dv_config = 1;
 	devp->dv.dv_path_idx = devp->index;
 	devp->vfp->low_latency = devp->dv.low_latency;
@@ -5492,6 +5594,9 @@ void vdin_dolby_mdata_write_en(unsigned int offset, unsigned int en)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_dolby_mdata_write_en_s5(offset, en);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_dolby_mdata_write_en_t3x(offset, en);
 		return;
 	}
 #endif
@@ -5629,6 +5734,9 @@ void vdin_dv_tunnel_set(struct vdin_dev_s *devp)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_dv_tunnel_set_s5(devp);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_dv_tunnel_set_t3x(devp);
 		return;
 	}
 #endif
@@ -6122,12 +6230,16 @@ void vdin_check_hdmi_hdr(struct vdin_dev_s *devp)
 
 	port = devp->parm.port;
 
-	if (port < TVIN_PORT_HDMI0 || port > TVIN_PORT_HDMI7)
+	if (!IS_HDMI_SRC(port))
 		return;
-
+	if (!devp->frontend) {
+		pr_info("%s,vdin%d frontend == NULL!\n",
+			__func__, devp->index);
+		return;
+	}
 	prop = &devp->prop;
 	sm_ops = devp->frontend->sm_ops;
-	if (sm_ops->get_sig_property) {
+	if (sm_ops && sm_ops->get_sig_property) {
 		/* don't need get again, already got from start dec */
 		/* sm_ops->get_sig_property(devp->frontend, prop); */
 		pr_info("vdin%d hdmi hdr eotf:0x%x, state:%d\n",
@@ -6259,14 +6371,14 @@ inline void vdin_set_source_type(struct vdin_dev_s *devp,
 	case TVIN_PORT_CVBS2:
 		vf->source_type = VFRAME_SOURCE_TYPE_CVBS;
 		break;
-	case TVIN_PORT_HDMI0:
-	case TVIN_PORT_HDMI1:
-	case TVIN_PORT_HDMI2:
-	case TVIN_PORT_HDMI3:
-	case TVIN_PORT_HDMI4:
-	case TVIN_PORT_HDMI5:
-	case TVIN_PORT_HDMI6:
-	case TVIN_PORT_HDMI7:
+	case TVIN_PORT_HDMI0 ... TVIN_PORT_HDMI_MAX:
+//	case TVIN_PORT_HDMI1:
+//	case TVIN_PORT_HDMI2:
+//	case TVIN_PORT_HDMI3:
+//	case TVIN_PORT_HDMI4:
+//	case TVIN_PORT_HDMI5:
+//	case TVIN_PORT_HDMI6:
+//	case TVIN_PORT_HDMI7:
 	case TVIN_PORT_DVIN0:/* external hdmiin used default */
 		vf->source_type = VFRAME_SOURCE_TYPE_HDMI;
 		break;
@@ -6593,6 +6705,9 @@ void vdin_clk_on_off(struct vdin_dev_s *devp, bool on_off)
 	if (is_meson_s5_cpu()) {
 		vdin_clk_on_off_s5(devp, on_off);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_clk_on_off_t3x(devp, on_off);
+		return;
 	}
 #endif
 
@@ -6711,6 +6826,8 @@ void vdin_sw_reset(struct vdin_dev_s *devp)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		vdin_sw_reset_s5(devp);
+	else if (is_meson_t3x_cpu())
+		vdin_sw_reset_t3x(devp);
 #endif
 }
 

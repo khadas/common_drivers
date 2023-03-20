@@ -142,7 +142,7 @@
 /* 20230504: keystone interlace update dest value */
 #define VDIN_VER "20230504"
 
-#define T3X_PXP_BRINGUP
+//#define T3X_PXP_BRINGUP
 //#define VDIN_BRINGUP_NO_VF
 //#define VDIN_BRINGUP_NO_VLOCK
 //#define VDIN_BRINGUP_NO_AML_VECM
@@ -157,7 +157,7 @@ enum vdin_work_mode_e {
 };
 
 /*the counter of vdin*/
-#define VDIN_MAX_DEVS			2
+#define VDIN_MAX_DEVS		3
 
 enum vdin_hw_ver_e {
 	VDIN_HW_ORG = 0,
@@ -212,6 +212,16 @@ enum vdin_irq_flg_e {
 	VDIN_IRQ_FLG_NO_NEXT_FE, /* 15 */
 	VDIN_IRQ_FLG_SECURE_MD,
 	VDIN_IRQ_FLG_VRR_CHG,
+};
+
+/*
+ * t3x,vdin0/vdin1:normal core;vdin2:lite core
+ * before t3x,vdin0:normal core;vdin1:lite core
+ */
+enum vdin_hw_core_type_e {
+	VDIN_HW_CORE_NORMAL = 0,
+	VDIN_HW_CORE_LITE = 1,
+	VDIN_HW_CORE_MAX = 2,
 };
 
 /* for config hw function support */
@@ -313,7 +323,7 @@ struct match_data_s {
 #define IS_HDMI_SRC(src)	\
 		({typeof(src) src_ = src; \
 		 (((src_) >= TVIN_PORT_HDMI0) && \
-		 ((src_) <= TVIN_PORT_HDMI7)); })
+		 ((src_) < TVIN_PORT_HDMI_MAX)); })
 
 #define IS_CVBS_SRC(src)	\
 		({typeof(src) src_ = src; \
@@ -513,6 +523,7 @@ struct vdin_debug_s {
 	unsigned int dbg_print_cntl;/* debug for vdin print control */
 	unsigned int dbg_pattern;
 	unsigned int dbg_sct_ctl;
+	unsigned int dbg_de_interlanced_ctl;
 	unsigned short scaling4h;/* for vertical scaling */
 	unsigned short scaling4w;/* for horizontal scaling */
 	unsigned short dest_cfmt;/* for color fmt conversion */
@@ -726,6 +737,10 @@ struct vdin_dev_s {
 	unsigned int flags;
 	unsigned int flags_isr;
 	unsigned int index;
+	unsigned int index_export;
+	enum vdin_hw_core_type_e hw_core;
+	struct vpu_dev_s *vpu_dev_clk_gate;
+
 	unsigned int vdin_max_pixel_clk;
 
 	unsigned long mem_start;

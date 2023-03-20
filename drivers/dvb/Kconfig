@@ -38,5 +38,6 @@ endif
 #
 config AMLOGIC_DVB_DMX
 	tristate "AMLOGIC DVB DMX"
+	depends on AMLOGIC_TEE
 	help
 		support dmx/dsc driver.

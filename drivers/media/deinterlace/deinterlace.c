@@ -7053,16 +7053,11 @@ static bool need_bypass(struct vframe_s *vf)
 	if ((vf->width > default_width) ||
 			(vf->height > (default_height + 8)))
 		return true;
-#ifdef P_NOT_SUPPORT_GAME_MODE
-	/*case 1: bypass all source p in game mode*/
-	if (VFMT_IS_P(vf->type) && (vf->flag & VFRAME_FLAG_GAME_MODE))
+
+	/*true bypass for game mode*/
+	if (vf->flag & VFRAME_FLAG_GAME_MODE)
 		return true;
-#else
-	/*case 2 : true bypass for 720p above*/
-	if ((vf->flag & VFRAME_FLAG_GAME_MODE) &&
-		   x > 720)
-		return true;
-#endif
+
 	needbypass_flag = false;
 	return false;
 }

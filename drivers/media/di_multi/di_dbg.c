@@ -2020,11 +2020,6 @@ static int cfgtop_show(struct seq_file *s, void *what)
 #ifdef DIM_EXT_NO_HF
 	seq_printf(s, "%s:no\n", "is_di_hf_y_reverse");
 #endif
-#ifdef P_NOT_SUPPORT_GAME_MODE
-	seq_printf(s, "game mode:%s\n", "bypass source p");
-#else
-	seq_printf(s, "game mode:%s\n", "bypass source width>720 ");
-#endif
 	seq_printf(s, "%s\n", splt);
 
 	return 0;

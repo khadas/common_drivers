@@ -6190,6 +6190,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	tee_comm_dev_reg(hdev);
 	pr_info("%s end\n", __func__);
 
+	/*everything is ready, create sysfs here.*/
+	hdmitx_sysfs_common_create(dev, &hdev->tx_comm, &hdev->tx_hw);
 	return r;
 }
 
@@ -6197,6 +6199,9 @@ static int amhdmitx_remove(struct platform_device *pdev)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct device *dev = hdev->hdtx_dev;
+
+	/*remove sysfs before uninit/*/
+		hdmitx_sysfs_common_destroy(dev);
 
 	tee_comm_dev_unreg(hdev);
 	/*unbind from drm.*/

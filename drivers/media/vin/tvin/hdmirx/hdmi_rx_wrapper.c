@@ -3465,7 +3465,7 @@ void rx_main_state_machine(void)
 					is_ddc_filter_en() &&
 				    rx.hdcp.hdcp_version == HDCP_VER_NONE) {
 					rx.state = FSM_HPD_LOW;
-					rx_i2c_init();
+					rx_i2c_div_init();
 					dvi_check_en = false;
 					break;
 				}
@@ -3551,7 +3551,7 @@ void rx_main_state_machine(void)
 			skip_frame(skip_frame_cnt);
 			rx.unready_timestamp = rx.timestamp;
 			rx.err_code = ERR_TIMECHANGE;
-			rx_i2c_init();
+			rx_i2c_div_init();
 			dump_unnormal_info();
 			rx_pr("tmds_invalid-->unready\n");
 			rx.var.de_stable = false;
@@ -3581,7 +3581,7 @@ void rx_main_state_machine(void)
 				/*sig_lost_lock_cnt = 0;*/
 				rx.unready_timestamp = rx.timestamp;
 				rx.err_code = ERR_TIMECHANGE;
-				rx_i2c_init();
+				rx_i2c_div_init();
 				dump_unnormal_info();
 				rx_pr("timing unstable-->unready\n");
 				rx.var.de_stable = false;
@@ -3613,7 +3613,7 @@ void rx_main_state_machine(void)
 				/*sig_lost_lock_cnt = 0;*/
 				rx.unready_timestamp = rx.timestamp;
 				rx.err_code = ERR_TIMECHANGE;
-				rx_i2c_init();
+				rx_i2c_div_init();
 				rx_pr("colorspace changes from %d to %d\n",
 					  rx.pre.colorspace, rx.cur.colorspace);
 				rx.var.de_stable = false;

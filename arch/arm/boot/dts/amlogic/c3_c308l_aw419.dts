@@ -61,8 +61,7 @@
 		};
 
 		logo_reserved:linux,meson-fb {
-			compatible = "shared-dma-pool";
-			reusable;
+			compatible = "amlogic, meson-fb";
 			/* keep sync with fb */
 			/* fox example:logo_addr = "0x3f800000"*/
 			size = <0x1800000>;

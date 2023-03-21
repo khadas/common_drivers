@@ -15,6 +15,7 @@
 
 struct am_meson_logo {
 	struct page *logo_page;
+	void *vaddr;
 	phys_addr_t start;
 	int panel_index;
 	int vpp_index;

@@ -20,6 +20,7 @@
 #include <linux/notifier.h>
 #include <linux/clk.h>
 #include <linux/cma.h>
+#include <linux/of_address.h>
 
 #include <drm/drmP.h>
 #include <drm/drm_atomic.h>
@@ -52,6 +53,7 @@
 #endif
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/gki_module.h>
+#include <linux/amlogic/aml_free_reserved.h>
 
 #ifdef CONFIG_CMA
 struct cma *cma_logo;
@@ -61,6 +63,8 @@ static char *strmode;
 struct am_meson_logo logo;
 static struct platform_device *gp_dev;
 static unsigned long gem_mem_start, gem_mem_size;
+static struct resource osd_mem_res;
+static bool is_cma;
 
 #ifdef MODULE
 MODULE_PARM_DESC(outputmode, "outputmode");
@@ -266,24 +270,82 @@ struct para_pair_s {
 	int value;
 };
 
+#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
+#ifdef CONFIG_64BIT
+static void free_reserved_highmem(unsigned long start, unsigned long end)
+{
+}
+#else
+static void free_reserved_highmem(unsigned long start, unsigned long end)
+{
+	for (; start < end; ) {
+		free_highmem_page(phys_to_page(start));
+	start += PAGE_SIZE;
+	}
+}
+#endif
+
+static void free_reserved_mem(unsigned long start, unsigned long size)
+{
+	unsigned long end = PAGE_ALIGN(start + size);
+	struct page *page, *epage;
+
+	pr_info("%s %d logo start_addr=%lx, end=%lx\n", __func__, __LINE__, start, end);
+	page = phys_to_page(start);
+	if (PageHighMem(page)) {
+		free_reserved_highmem(start, end);
+	} else {
+		epage = phys_to_page(end);
+		if (!PageHighMem(epage)) {
+			aml_free_reserved_area(__va(start),
+					   __va(end), 0, "fb-memory");
+		} else {
+			/* reserved area cross zone */
+			struct zone *zone;
+			unsigned long bound;
+
+			zone  = page_zone(page);
+			bound = zone_end_pfn(zone);
+			aml_free_reserved_area(__va(start),
+					   __va(bound << PAGE_SHIFT),
+					   0, "fb-memory");
+			zone  = page_zone(epage);
+			bound = zone->zone_start_pfn;
+			free_reserved_highmem(bound << PAGE_SHIFT, end);
+		}
+	}
+}
+#endif
+
 void am_meson_free_logo_memory(void)
 {
-	phys_addr_t logo_addr = page_to_phys(logo.logo_page);
+	if (is_cma) {
+		phys_addr_t logo_addr = page_to_phys(logo.logo_page);
 
-	if (logo.size > 0 && logo.alloc_flag) {
+		if (logo.size > 0 && logo.alloc_flag) {
 #ifdef CONFIG_CMA
-		DRM_INFO("%s, free memory: addr:0x%pa,size:0x%x\n",
-			 __func__, &logo_addr, logo.size);
+			DRM_INFO("%s, free cma memory: addr:0x%pa,size:0x%x\n",
+				 __func__, &logo_addr, logo.size);
 
-		cma_release(cma_logo, logo.logo_page, logo.size >> PAGE_SHIFT);
+			cma_release(cma_logo, logo.logo_page, logo.size >> PAGE_SHIFT);
+#endif
+		}
+	} else {
+#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
+		free_reserved_mem(logo.start, logo.size);
+		DRM_INFO("%s, free none_cma memory: addr:0x%pa,size:0x%x\n",
+				 __func__, &logo.start, logo.size);
 #endif
 	}
+
 	logo.alloc_flag = 0;
 }
 
 static int am_meson_logo_info_update(struct meson_drm *priv)
 {
-	logo.start = page_to_phys(logo.logo_page);
+	if (is_cma)
+		logo.start = page_to_phys(logo.logo_page);
+
 	logo.alloc_flag = 1;
 	/*config 1080p logo as default*/
 	if (!logo.width || !logo.height) {
@@ -337,6 +399,8 @@ static int am_meson_logo_init_fb(struct drm_device *dev,
 	}
 
 	slogo->logo_page = logo.logo_page;
+	slogo->vaddr = logo.vaddr;
+	slogo->start = logo.start;
 	slogo->panel_index = priv->primary_plane_index[idx];
 	slogo->vpp_index = idx;
 
@@ -649,7 +713,7 @@ static void am_meson_load_logo(struct drm_device *dev,
 	DRM_DEBUG("%s idx[%d]\n", __func__, idx);
 
 	if (!logo.alloc_flag) {
-		DRM_INFO("%s: logo memory is not cma alloc\n", __func__);
+		DRM_INFO("%s: logo memory is not alloc\n", __func__);
 		return;
 	}
 
@@ -724,6 +788,17 @@ static void am_meson_load_logo(struct drm_device *dev,
 	kfree(connector_set);
 }
 
+static int parse_reserve_mem_resource(struct device_node *np,
+				       struct resource *res)
+{
+	int ret;
+
+	ret = of_address_to_resource(np, 0, res);
+	of_node_put(np);
+
+	return ret;
+}
+
 void am_meson_logo_init(struct drm_device *dev)
 {
 	struct drm_mode_fb_cmd2 mode_cmd;
@@ -736,62 +811,102 @@ void am_meson_logo_init(struct drm_device *dev)
 #endif
 	u32 reverse_type, osd_index;
 	int i, ret;
+	const char *compatible;
+	const int *reusable;
 
 	DRM_DEBUG("%s in[%d]\n", __func__, __LINE__);
 
 	gp_dev = pdev;
-	/* init reserved memory */
-	ret = of_reserved_mem_device_init(&gp_dev->dev);
-	if (ret != 0) {
-		DRM_ERROR("failed to init reserved memory\n");
-	} else {
-#ifdef CONFIG_CMA
-		np = gp_dev->dev.of_node;
-		mem_node = of_parse_phandle(np, "memory-region", 0);
-		if (mem_node) {
-			rmem = of_reserved_mem_lookup(mem_node);
-			of_node_put(mem_node);
-			if (rmem) {
-				logo.size = rmem->size;
-				DRM_DEBUG("of read %s reservememsize=0x%x, base %pa\n",
-					rmem->name, logo.size, &rmem->base);
-			}
-		} else {
-			DRM_ERROR("no memory-region\n");
-		}
-		cma_logo = dev_get_cma_area(&gp_dev->dev);
-		if (cma_logo) {
-			if (logo.size > 0) {
-#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
-				logo.logo_page = cma_alloc(cma_logo,
-						ALIGN(logo.size, PAGE_SIZE) >> PAGE_SHIFT,
-						0, GFP_KERNEL);
-#else
-				logo.logo_page = cma_alloc(cma_logo,
-						ALIGN(logo.size, PAGE_SIZE) >> PAGE_SHIFT,
-						0, false);
-#endif
+	np = gp_dev->dev.of_node;
+	mem_node = of_parse_phandle(np, "memory-region", 0);
+	compatible = of_get_property(mem_node, "compatible", NULL);
+	reusable = of_get_property(mem_node, "reusable", NULL);
 
-				if (!logo.logo_page)
+	if (!strcmp(compatible, "shared-dma-pool") && reusable)
+		is_cma = true;
+	else
+		is_cma = false;
+
+	if (is_cma) {
+		DRM_INFO("allocate cmd mem\n");
+		ret = of_reserved_mem_device_init(&gp_dev->dev);
+		if (ret != 0) {
+			DRM_ERROR("failed to init reserved memory\n");
+		} else {
+#ifdef CONFIG_CMA
+			if (mem_node) {
+				rmem = of_reserved_mem_lookup(mem_node);
+				of_node_put(mem_node);
+				if (rmem) {
+					logo.size = rmem->size;
+					DRM_DEBUG("of read %s reservememsize=0x%x, base %pa\n",
+						rmem->name, logo.size, &rmem->base);
+				}
+			} else {
+				DRM_ERROR("no memory-region\n");
+			}
+
+			cma_logo = dev_get_cma_area(&gp_dev->dev);
+
+			if (cma_logo) {
+				if (logo.size > 0) {
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+					logo.logo_page = cma_alloc(cma_logo,
+							ALIGN(logo.size, PAGE_SIZE) >> PAGE_SHIFT,
+							0, GFP_KERNEL);
+#else
+					logo.logo_page = cma_alloc(cma_logo,
+							ALIGN(logo.size, PAGE_SIZE) >> PAGE_SHIFT,
+							0, false);
+#endif
+					if (!logo.logo_page)
+						DRM_ERROR("allocate buffer failed\n");
+					else
+						am_meson_logo_info_update(private);
+
+					DRM_INFO(" cma_alloc from %s start page %px-%px size %x\n",
+						cma_get_name(cma_logo),
+						logo.logo_page,
+						(void *)logo.start,
+						logo.size);
+				}
+			}
+#endif
+			if (gem_mem_start) {
+				dma_declare_coherent_memory(dev->dev,
+								gem_mem_start,
+								gem_mem_start,
+								gem_mem_size);
+				DRM_INFO("meson drm mem_start = 0x%x, size = 0x%x\n",
+					(u32)gem_mem_start, (u32)gem_mem_size);
+			}
+		}
+	} else {
+		DRM_INFO("allocate reserved mem\n");
+		if (mem_node) {
+			ret = parse_reserve_mem_resource(mem_node, &osd_mem_res);
+
+			if (ret != 0) {
+				DRM_ERROR("failed to init none_cma memory\n");
+			} else {
+				logo.size = resource_size(&osd_mem_res);
+				logo.start = osd_mem_res.start;
+				DRM_INFO("of read reservememsize=0x%x--0x%x\n",
+						logo.size, (u32)logo.start);
+			}
+
+			if (logo.size > 0) {
+				logo.vaddr = memremap(logo.start, logo.size,
+						MEMREMAP_WB);
+
+				if (!logo.vaddr)
 					DRM_ERROR("allocate buffer failed\n");
 				else
 					am_meson_logo_info_update(private);
-
-				DRM_DEBUG(" cma_alloc from %s start page %px-%px size %x\n",
-					cma_get_name(cma_logo),
-					logo.logo_page,
-					(void *)logo.start,
-					logo.size);
 			}
-		}
-#endif
-		if (gem_mem_start) {
-			dma_declare_coherent_memory(dev->dev,
-							gem_mem_start,
-							gem_mem_start,
-							gem_mem_size);
-			DRM_INFO("meson drm mem_start = 0x%x, size = 0x%x\n",
-				(u32)gem_mem_start, (u32)gem_mem_size);
+
+		} else {
+			DRM_ERROR("no memory-region\n");
 		}
 	}
 

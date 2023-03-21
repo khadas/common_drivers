@@ -739,7 +739,7 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 			devp->in_sts.secure_mode = false;
 		}
 		//input security check
-		frc_check_secure_mode(vf, devp);
+		// frc_check_secure_mode(vf, devp); /*get secure mode will delay 10 frames*/
 
 		/*check vd status change*/
 		if (!no_input) {
@@ -811,7 +811,8 @@ void frc_mm_secure_set(struct frc_dev_s *devp)
 	/*data buffer set to secure mode*/
 	addr_start = devp->buf.cma_mem_paddr_start + devp->buf.lossy_mc_y_data_buf_paddr[0];
 	// data buf size: 0x9a30000
-	addr_size = devp->buf.cma_mem_size - devp->buf.lossy_mc_y_data_buf_paddr[0];
+	addr_size = devp->buf.cma_mem_size -
+		devp->buf.lossy_mc_y_data_buf_paddr[0] - FRC_RDMA_SIZE;
 
 	/*data buffer, me/mc info and link buffer set to secure mode*/
 	//addr_start = devp->buf.cma_mem_paddr_start + devp->buf.lossy_mc_y_info_buf_paddr;

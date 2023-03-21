@@ -519,6 +519,7 @@ void frc_dump_buf_reg(void)
 int frc_buf_alloc(struct frc_dev_s *devp)
 {
 	int ret;
+	u32 frc_buf_size;
 	struct device_node *np = devp->pdev->dev.of_node;
 
 	ret = of_reserved_mem_device_init_by_idx(&devp->pdev->dev, np, 0);
@@ -529,9 +530,9 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 	}
 
 	devp->buf.cma_mem_size = dma_get_cma_size_int_byte(&devp->pdev->dev);
-	devp->buf.cma_mem_size = devp->buf.cma_mem_size - FRC_RDMA_SIZE; // reserved 1M for RDMA
+	frc_buf_size = devp->buf.cma_mem_size - FRC_RDMA_SIZE; // reserved 1M for RDMA
 	devp->buf.cma_mem_paddr_pages = dma_alloc_from_contiguous(&devp->pdev->dev,
-		devp->buf.cma_mem_size >> PAGE_SHIFT, 0, 0);
+		frc_buf_size >> PAGE_SHIFT, 0, 0);
 	if (!devp->buf.cma_mem_paddr_pages) {
 		devp->buf.cma_mem_size = 0;
 		pr_frc(0, "cma_alloc buffer fail\n");
@@ -547,13 +548,13 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 
 int frc_buf_release(struct frc_dev_s *devp)
 {
-	int ret;
-	struct device_node *np = devp->pdev->dev.of_node;
+	u32 frc_buf_size;
+
+	frc_buf_size = devp->buf.cma_mem_size - FRC_RDMA_SIZE; // reserved 1M for RDMA
 
 	if (devp->buf.cma_mem_size && devp->buf.cma_mem_paddr_pages) {
-		ret = of_reserved_mem_device_init_by_idx(&devp->pdev->dev, np, 0);
 		dma_release_from_contiguous(&devp->pdev->dev,
-			devp->buf.cma_mem_paddr_pages, devp->buf.cma_mem_size >> PAGE_SHIFT);
+			devp->buf.cma_mem_paddr_pages, frc_buf_size >> PAGE_SHIFT);
 		devp->buf.cma_mem_paddr_pages = NULL;
 		devp->buf.cma_mem_paddr_start = 0;
 		devp->buf.cma_mem_alloced = 0;

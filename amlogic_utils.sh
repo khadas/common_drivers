@@ -53,6 +53,13 @@ function pre_defconfig_cmds() {
 			fi
 		done
 	fi
+
+	if [[ ${IN_BUILD_GKI_10} == 1 ]]; then
+		local temp_file=`mktemp /tmp/config.XXXXXXXXXXXX`
+		echo "CONFIG_MODULE_SIG_ALL=y" >> ${temp_file}
+		KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${temp_file}
+		rm ${temp_file}
+	fi
 }
 export -f pre_defconfig_cmds
 
@@ -236,12 +243,12 @@ function extra_cmds() {
 	echo EXT_MODULES=${EXT_MODULES}
 	export EXT_MODULES
 
-	head -n ${ramdisk_last_line} modules.order > system_dlkm_modules
+	head -n ${ramdisk_last_line} modules.order > vendor_boot_modules
 	file_last_line=`sed -n "$=" modules.order`
 	let line=${file_last_line}-${ramdisk_last_line}
 	tail -n ${line} modules.order > vendor_dlkm_modules
-	export MODULES_LIST=${src_dir}/system_dlkm_modules
-	if [ "${ARCH}" = "arm64" -a -z ${FAST_BUILD} ]; then
+	export MODULES_LIST=${src_dir}/vendor_boot_modules
+	if [[ "${ARCH}" = "arm64" && -z ${FAST_BUILD} ]]; then
 		export VENDOR_DLKM_MODULES_LIST=${src_dir}/vendor_dlkm_modules
 	fi
 
@@ -264,6 +271,8 @@ function extra_cmds() {
 		echo "SYSTEM_DLKM_STAGING_DIR=${SYSTEM_DLKM_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "VENDOR_DLKM_STAGING_DIR=${VENDOR_DLKM_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "MKBOOTIMG_STAGING_DIR=${MKBOOTIMG_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "DIST_GKI_DIR=${DIST_GKI_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "FULL_KERNEL_VERSION=${FULL_KERNEL_VERSION}" >> ${KERNEL_BUILD_VAR_FILE}
 	fi
 
 	for module_path in ${PREBUILT_MODULES_PATH}; do

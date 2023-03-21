@@ -8,6 +8,7 @@ DO_NOT_STRIP_MODULES=		#strip modules
 BUILD_INITRAMFS=${BUILD_INITRAMFS:-1}
 # LZ4_RAMDISK=${BUILD_INITRAMFS:-1}
 BUILD_SYSTEM_DLKM=
+SYSTEM_DLKM_MODULES_LIST=${ROOT_DIR}/${KERNEL_DIR}/android/gki_system_dlkm_modules
 
 MODULES_ORDER=
 # COMPRESS_MODULES=1		# Package the unstripped modules for debugging
@@ -73,6 +74,9 @@ FILES="
 	android_overlay_dt.dtbo
 	${FILES_ANDROID}
 "
+if [[ -z ${KERNEL_DEVICETREE} ]]; then
+	KERNEL_DEVICETREE="sc2_s905x4_ah212_drm"
+fi
 for device_tree in ${KERNEL_DEVICETREE}; do
 MAKE_GOALS="
 	${MAKE_GOALS}
@@ -123,8 +127,12 @@ if [[ `grep "CONFIG_AMLOGIC_IN_KERNEL_MODULES=n" ${ROOT_DIR}/${FRAGMENT_CONFIG}`
 	"
 fi
 
-POST_KERNEL_BUILD_CMDS="prepare_module_build"
-EXTRA_CMDS="extra_cmds"
+if [[ ${IN_BUILD_GKI_10} == 1 ]]; then
+	EXT_MODULES=
+else
+	POST_KERNEL_BUILD_CMDS="prepare_module_build"
+	EXTRA_CMDS="extra_cmds"
+fi
 
 if [[ ${GKI_CONFIG} == gki_20 ]]; then
 	ADDITIONAL_KMI_SYMBOL_LISTS="

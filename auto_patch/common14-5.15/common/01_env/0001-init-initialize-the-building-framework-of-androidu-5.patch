@@ -1,4 +1,4 @@
-From cfbdbf7ab09df5fb7c88ebe7d63ab0ebb64f135d Mon Sep 17 00:00:00 2001
+From d591aa78a349cc0fa562485a3ce2870bc6488dbd Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Thu, 2 Feb 2023 15:49:10 +0800
 Subject: [PATCH] init: initialize the building framework of androidu-5.15 for
@@ -22,6 +22,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  Makefile                                      |  35 ++
  drivers/Kconfig                               |  52 +++
  .../greybus/tools/{Android.mk => Android_mk}  |   0
+ kernel/Makefile                               |   6 +
  scripts/amlogic/licence_check.pl              | 153 +++++++
  scripts/amlogic/licence_pre.pl                |  53 +++
  scripts/amlogic/merge_pre_check.pl            | 429 ++++++++++++++++++
@@ -29,7 +30,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  scripts/amlogic/pre-commit-common_drivers     |  24 +
  scripts/checkpatch.pl                         | 158 +++----
  scripts/kconfig/Makefile                      |   9 +-
- 11 files changed, 860 insertions(+), 80 deletions(-)
+ 12 files changed, 866 insertions(+), 80 deletions(-)
  rename drivers/staging/greybus/tools/{Android.mk => Android_mk} (100%)
  create mode 100755 scripts/amlogic/licence_check.pl
  create mode 100755 scripts/amlogic/licence_pre.pl
@@ -186,6 +187,25 @@ diff --git a/drivers/staging/greybus/tools/Android.mk b/drivers/staging/greybus/
 similarity index 100%
 rename from drivers/staging/greybus/tools/Android.mk
 rename to drivers/staging/greybus/tools/Android_mk
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 9dc7e32828ca..733242a0a15c 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -175,8 +175,14 @@ $(obj)/gki_module_unprotected.h: $(ALL_KMI_SYMBOLS) \
+ 	$(ALL_KMI_SYMBOLS)
+ 
+ # Generate symbol list with union of all symbol list for arm64; empty for others
++# boot.img need to use once build with gki, not CONFIG_AMLOGIC_DRIVER when once build.
++ifndef CONFIG_AMLOGIC_DRIVER
++$(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_*, $(srctree)/$(COMMON_DRIVERS_DIR)/android/abi_gki_aarch64_*),)
++	$(if $(strip $^),cat $^ > $(ALL_KMI_SYMBOLS), echo "" > $(ALL_KMI_SYMBOLS))
++else
+ $(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_*),)
+ 	$(if $(strip $^),cat $^ > $(ALL_KMI_SYMBOLS), echo "" > $(ALL_KMI_SYMBOLS))
++endif
+ 
+ $(obj)/gki_module_protected_exports.h: $(srctree)/android/abi_gki_protected_exports \
+ 				$(srctree)/scripts/gen_gki_modules_headers.sh
 diff --git a/scripts/amlogic/licence_check.pl b/scripts/amlogic/licence_check.pl
 new file mode 100755
 index 000000000000..2163ce102ab6

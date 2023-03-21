@@ -272,6 +272,7 @@ GKI_CONFIG=${GKI_CONFIG:-gki_debug}
 set -e
 export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG MANUAL_INSMOD_MODULE ARCH
 export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD CHECK_GKI_20 DEV_CONFIG CONFIG_GROUP
+export FULL_KERNEL_VERSION
 
 if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
 	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ${FULL_KERNEL_VERSION}
@@ -284,6 +285,7 @@ fi
 echo ROOT_DIR=$ROOT_DIR
 echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG} MANUAL_INSMOD_MODULE=${MANUAL_INSMOD_MODULE}
 echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT} FAST_BUILD=${FAST_BUILD} CHECK_GKI_20=${CHECK_GKI_20}
+echo FULL_KERNEL_VERSION=${FULL_KERNEL_VERSION}
 
 export CROSS_COMPILE=
 
@@ -476,7 +478,37 @@ fi
 if [ "${ABI}" -eq "1" ]; then
 	${ROOT_DIR}/${BUILD_DIR}/build_abi.sh "$@"
 else
-	${ROOT_DIR}/${BUILD_DIR}/build.sh "$@"
+	if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" ]]; then
+		if [[ -z ${EXT_MODULES} ]]; then
+			echo
+			echo
+			echo "========================================================"
+			echo " Build GKI boot image and GKI modules"
+			echo
+			source ${KERNEL_DIR}/build.config.constants
+			export OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}_gki})
+			COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
+			export DIST_GKI_DIR=$(readlink -m ${DIST_DIR:-${COMMON_OUT_DIR}/dist})
+
+			if [[ "${GKI_CONFIG}" == "gki_20" ]]; then
+				BUILD_CONFIG=${KERNEL_DIR}/build.config.gki.aarch64 ${ROOT_DIR}/${BUILD_DIR}/build.sh
+			else
+				export IN_BUILD_GKI_10=1
+				${ROOT_DIR}/${BUILD_DIR}/build.sh
+				unset IN_BUILD_GKI_10
+			fi
+			unset OUT_DIR
+		fi
+
+		echo
+		echo
+		echo "========================================================"
+		echo " Build Vendor modules"
+		echo
+		${ROOT_DIR}/${BUILD_DIR}/build.sh "$@"
+	else
+		${ROOT_DIR}/${BUILD_DIR}/build.sh "$@"
+	fi
 fi
 
 source ${ROOT_DIR}/${BUILD_CONFIG}

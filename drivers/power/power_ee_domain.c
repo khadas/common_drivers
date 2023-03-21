@@ -104,10 +104,11 @@ static struct meson_ee_pwrc_top_domain sm1_pwrc_nna = SM1_EE_PD(16, 16);
 static struct meson_ee_pwrc_top_domain sm1_pwrc_usb = SM1_EE_PD(17, 17);
 static struct meson_ee_pwrc_top_domain sm1_pwrc_pci = SM1_EE_PD(18, 18);
 static struct meson_ee_pwrc_top_domain sm1_pwrc_ge2d = SM1_EE_PD(19, 19);
-static struct meson_ee_pwrc_top_domain sm1_pwrc_vdec = SM1_EE_PD(19, 19);
+static struct meson_ee_pwrc_top_domain sm1_pwrc_vdec = SM1_EE_PD(1, 1);
 static struct meson_ee_pwrc_top_domain sm1_pwrc_hcodec = SM1_EE_PD(0, 0);
 static struct meson_ee_pwrc_top_domain sm1_pwrc_hevc = SM1_EE_PD(2, 2);
 static struct meson_ee_pwrc_top_domain sm1_pwrc_wave420l = SM1_EE_PD(3, 3);
+static struct meson_ee_pwrc_top_domain sm1_pwrc_csi = SM1_EE_PD(6, 6);
 
 #define TM2_EE_PD(__bit, __set)					\
 	{							\
@@ -282,6 +283,10 @@ static struct meson_ee_pwrc_mem_domain sm1_pwrc_mem_vpu[] = {
 static struct meson_ee_pwrc_mem_domain sm1_pwrc_mem_nna[] = {
 	{ HHI_NANOQ_MEM_PD_REG0, 0xffffffff },
 	{ HHI_NANOQ_MEM_PD_REG1, 0xffffffff },
+};
+
+static struct meson_ee_pwrc_mem_domain sm1_pwrc_mem_csi[] = {
+	{ HHI_MEM_PD_REG0, GENMASK(7, 6) },
 };
 
 static struct meson_ee_pwrc_mem_domain sm1_pwrc_mem_usb[] = {
@@ -559,6 +564,8 @@ static struct meson_ee_pwrc_domain_desc sm1_pwrc_domains[] = {
 	[PWRC_SM1_WAVE420L_ID] = TOP_PD("WAVE420L", &sm1_pwrc_wave420l,
 				sm1_pwrc_mem_wave420l, pwrc_ee_get_power,
 				4, PWRC_SM1_WAVE420L_ID, 0, sm1_pwrc_mem_wave420l),
+	[PWRC_SM1_CSI_ID] = TOP_PD("csi", &sm1_pwrc_csi, sm1_pwrc_mem_csi,
+				pwrc_ee_get_power, 0, PWRC_SM1_CSI_ID, 0, sm1_pwrc_mem_csi),
 };
 
 static struct meson_ee_pwrc_domain_desc tm2_pwrc_domains[] = {
@@ -633,6 +640,7 @@ struct meson_ee_pwrc_domain {
 	int num_clks;
 	struct reset_control *rstc;
 	int num_rstc;
+	atomic_t pwron_count;
 };
 
 struct meson_ee_pwrc {
@@ -671,9 +679,14 @@ static int meson_ee_pwrc_off(struct generic_pm_domain *domain)
 		if (ret)
 			return ret;
 	} else {
-		ret = reset_control_deassert(pwrc_domain->rstc);
-		if (ret)
-			return ret;
+		if (atomic_read(&pwrc_domain->pwron_count) == 0) {
+			ret = reset_control_deassert(pwrc_domain->rstc);
+				if (ret)
+					return ret;
+		} else {
+			atomic_dec(&pwrc_domain->pwron_count);
+		}
+
 		ret = reset_control_assert(pwrc_domain->rstc);
 		if (ret)
 			return ret;
@@ -769,6 +782,7 @@ static int meson_ee_pwrc_on(struct generic_pm_domain *domain)
 	if (ret)
 		return ret;
 
+	atomic_inc(&pwrc_domain->pwron_count);
 	return clk_bulk_prepare_enable(pwrc_domain->num_clks,
 				       pwrc_domain->clks);
 }

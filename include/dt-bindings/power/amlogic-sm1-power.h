@@ -17,5 +17,5 @@
 #define PWRC_SM1_HCODEC_ID		8
 #define PWRC_SM1_HEVC_ID		9
 #define PWRC_SM1_WAVE420L_ID		10
-
+#define PWRC_SM1_CSI_ID		11
 #endif

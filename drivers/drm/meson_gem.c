@@ -26,6 +26,35 @@
 #define uvm_to_gem_obj(x) container_of(x, struct am_meson_gem_object, ubo)
 #define MESON_GEM_NAME "meson_gem"
 
+static void zap_dma_buf_range(struct page *dma_page, unsigned long len)
+{
+	struct page *page;
+	void *vaddr;
+	int num_pages = len / PAGE_SIZE;
+
+	if (PageHighMem(dma_page)) {
+		page = dma_page;
+
+		while (num_pages > 0) {
+			vaddr = kmap_atomic(page);
+			memset(vaddr, 0, PAGE_SIZE);
+			kunmap_atomic(vaddr);
+
+			/*
+			 *Avoid wasting time zeroing memory if the process
+			 *has been killed by SIGKILL
+			 */
+			if (fatal_signal_pending(current))
+				return;
+
+			page++;
+			num_pages--;
+		}
+	} else {
+		memset(page_address(dma_page), 0, PAGE_ALIGN(len));
+	}
+}
+
 static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 				       meson_gem_obj, int flags)
 {
@@ -38,7 +67,7 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 	struct dma_buf_attachment *attachment = NULL;
 	struct sg_table *sg_table = NULL;
 	struct page *page;
-	bool from_heap_gfx = false;
+	bool from_heap_codecmm = false;
 
 	if (!meson_gem_obj)
 		return -EINVAL;
@@ -55,15 +84,18 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 		if (!IS_ERR_OR_NULL(heap)) {
 			dmabuf = dma_heap_buffer_alloc(heap, meson_gem_obj->base.size, O_RDWR,
 				DMA_HEAP_VALID_HEAP_FLAGS);
-			if (!IS_ERR_OR_NULL(dmabuf))
-				from_heap_gfx = true;
 		}
 
-		if (!from_heap_gfx) {
+		if (IS_ERR_OR_NULL(dmabuf)) {
 			heap = dma_heap_find("heap-gfx");
 			if (IS_ERR_OR_NULL(heap)) {
-				DRM_ERROR("%s: dma_heap_find fail.\n", __func__);
-				return -ENOMEM;
+				DRM_DEBUG("%s: heap-gfx find fail.\n", __func__);
+				heap = dma_heap_find("heap-codecmm");
+				if (IS_ERR_OR_NULL(heap)) {
+					DRM_ERROR("%s: heap-codecmm find fail.\n", __func__);
+					return -ENOMEM;
+				}
+				from_heap_codecmm = true;
 			}
 
 			dmabuf = dma_heap_buffer_alloc(heap, meson_gem_obj->base.size, O_RDWR,
@@ -115,12 +147,15 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 		meson_gem_obj->attachment = attachment;
 
 		sg_dma_address(sg_table->sgl) = sg_phys(sg_table->sgl);
+		page = sg_page(sg_table->sgl);
+
+		if (from_heap_codecmm)
+			zap_dma_buf_range(page, meson_gem_obj->base.size);
+
 		dma_sync_sg_for_device(meson_gem_obj->base.dev->dev,
 					   sg_table->sgl,
 					   sg_table->nents,
 					   DMA_TO_DEVICE);
-
-		page = sg_page(sg_table->sgl);
 		meson_gem_obj->addr = PFN_PHYS(page_to_pfn(page));
 	} else {
 		buffer = (struct ion_buffer *)dmabuf->priv;
@@ -155,6 +190,12 @@ static void am_meson_gem_free_ion_buf(struct drm_device *dev,
 		dma_buf_put(meson_gem_obj->dmabuf);
 		meson_gem_obj->ionbuffer = NULL;
 		meson_gem_obj->dmabuf = NULL;
+	} else if (meson_gem_obj->is_dma) {
+		DRM_DEBUG("dma_heap_buffer_free %px\n", meson_gem_obj->dmabuf);
+		dma_buf_unmap_attachment(meson_gem_obj->attachment,
+					 meson_gem_obj->sg, DMA_BIDIRECTIONAL);
+		dma_buf_detach(meson_gem_obj->dmabuf, meson_gem_obj->attachment);
+		dma_heap_buffer_free(meson_gem_obj->dmabuf);
 	} else {
 		DRM_ERROR("meson_gem_obj buffer is null\n");
 	}

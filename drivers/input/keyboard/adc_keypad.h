@@ -43,7 +43,6 @@ struct meson_adc_kp {
 	unsigned int report_code;
 	unsigned int prev_code;
 	unsigned int poll_period; /*key scan period*/
-	unsigned int pwrkey_code;
 	struct mutex kp_lock;
 	struct class kp_class;
 	struct list_head adckey_head;

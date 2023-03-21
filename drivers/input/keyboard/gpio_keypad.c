@@ -349,7 +349,7 @@ static int meson_gpio_kp_resume(struct platform_device *dev)
 	if (get_resume_method() == POWER_KEY_WAKEUP) {
 		for (i = 0; i < pdata->key_size; i++) {
 			if (pdata->key[i].code == KEY_POWER) {
-				dev_dbg(&dev->dev, "powerkey wakeup\n");
+				dev_dbg(&dev->dev, "gpio keypad wakeup\n");
 				input_report_key(pdata->input_dev,
 						 KEY_POWER,  1);
 				input_sync(pdata->input_dev);

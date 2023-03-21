@@ -20,26 +20,15 @@
 #ifdef CONFIG_AMLOGIC_GX_SUSPEND
 #include <linux/amlogic/pm.h>
 #endif
-#include <linux/pm_wakeup.h>
 #include "adc_keypad.h"
 
 #define POLL_INTERVAL_DEFAULT 25
 #define KEY_JITTER_COUNT  1
 #define TMP_BUF_MAX 128
-#define ADC_PWRKEY_NAME "power"
 
 static char adc_key_mode_name[MAX_NAME_LEN] = "abcdef";
 static char kernelkey_en_name[MAX_NAME_LEN] = "abcdef";
 static bool keypad_enable_flag = true;
-static bool has_adc_power_key;
-
-#ifdef CONFIG_AMLOGIC_GX_SUSPEND
-bool meson_adc_is_alive_freeze(void)
-{
-	return has_adc_power_key && is_pm_s2idle_mode();
-}
-EXPORT_SYMBOL(meson_adc_is_alive_freeze);
-#endif
 
 static int meson_adc_kp_search_key(struct meson_adc_kp *kp)
 {
@@ -93,7 +82,7 @@ static void meson_adc_kp_poll(struct work_struct *pwork)
 					 "key %d down\n", code);
 				input_report_key(kp->input, code, 1);
 				input_sync(kp->input);
-				if (code == kp->pwrkey_code)
+				if (code == KEY_POWER)
 					pm_wakeup_hard_event(kp->input->dev.parent);
 
 				kp->report_code = code;
@@ -142,7 +131,6 @@ static void meson_adc_kp_get_valid_chan(struct meson_adc_kp *kp)
 {
 	unsigned char incr;
 	struct adc_key *key;
-	bool pwrkey_update_flg = false;
 
 	mutex_lock(&kp->kp_lock);
 	kp->chan_num = 0; /*recalculate*/
@@ -157,18 +145,7 @@ static void meson_adc_kp_get_valid_chan(struct meson_adc_kp *kp)
 					kp->chan[kp->chan_num++] = key->chan;
 			}
 		}
-		if (!strcmp(key->name, ADC_PWRKEY_NAME)) {
-			kp->pwrkey_code = key->code;
-			has_adc_power_key = true;
-			pwrkey_update_flg = true;
-		}
 	}
-
-	if (!pwrkey_update_flg) {
-		kp->pwrkey_code = KEY_RESERVED;
-		has_adc_power_key = false;
-	}
-
 	mutex_unlock(&kp->kp_lock);
 }
 
@@ -608,39 +585,29 @@ static int meson_adc_kp_remove(struct platform_device *pdev)
 static int meson_adc_kp_suspend(struct platform_device *pdev,
 				pm_message_t state)
 {
-	struct meson_adc_kp *kp = platform_get_drvdata(pdev);
-
-	if (meson_adc_is_alive_freeze())
-		return 0;
-
-	cancel_delayed_work(&kp->work);
-
 	return 0;
 }
 
 static int meson_adc_kp_resume(struct platform_device *pdev)
 {
+	struct adc_key *key;
 	struct meson_adc_kp *kp = platform_get_drvdata(pdev);
 
-	if (meson_adc_is_alive_freeze())
-		return 0;
-
-	mod_delayed_work(system_wq, &kp->work,
-			 msecs_to_jiffies(kp->poll_period));
-
 	if (get_resume_method() == POWER_KEY_WAKEUP) {
-		if (kp->pwrkey_code != KEY_RESERVED) {
-			dev_info(&pdev->dev, "adc keypad wakeup\n");
+		list_for_each_entry(key, &kp->adckey_head, list) {
+			if (key->code == KEY_POWER) {
+				dev_info(&pdev->dev, "adc keypad wakeup\n");
 
-			input_report_key(kp->input,
-					 kp->pwrkey_code,  1);
-			input_sync(kp->input);
-			input_report_key(kp->input,
-					 kp->pwrkey_code,  0);
-			input_sync(kp->input);
+				input_report_key(kp->input, KEY_POWER, 1);
+				input_sync(kp->input);
+				input_report_key(kp->input, KEY_POWER, 0);
+				input_sync(kp->input);
 
-			if (scpi_clr_wakeup_reason())
-				pr_debug("clr adc wakeup reason fail.\n");
+				if (scpi_clr_wakeup_reason())
+					pr_debug("clr adc wakeup reason fail.\n");
+
+				break;
+			}
 		}
 	}
 

@@ -293,7 +293,7 @@
 	};
 	audiobridge {
 		compatible = "amlogic, audio-bridge";
-		status = "disabled";
+		status = "okay";
 		mboxes = <&mailbox_pl 1>,
 			 <&mailbox_pl 3>;
 		#mbox-cells = <1>;

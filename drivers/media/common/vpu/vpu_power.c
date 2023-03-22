@@ -9,9 +9,7 @@
 #include <linux/slab.h>
 #include <linux/err.h>
 #include <linux/delay.h>
-#ifdef CONFIG_AMLOGIC_POWER
 #include <linux/amlogic/power_domain.h>
-#endif
 #include <linux/amlogic/media/vpu/vpu.h>
 #include "vpu_reg.h"
 #include "vpu.h"
@@ -252,7 +250,6 @@ void vpu_power_off(void)
 
 void vpu_power_on_new(void)
 {
-#ifdef CONFIG_AMLOGIC_POWER
 	unsigned int pwr_id;
 	int i = 0;
 
@@ -271,9 +268,6 @@ void vpu_power_on_new(void)
 		i++;
 	}
 	VPUPR("%s\n", __func__);
-#else
-	VPUERR("%s: no CONFIG_AMLOGIC_POWER\n", __func__);
-#endif
 
 	if (vpu_debug_print_flag)
 		VPUPR("%s finish\n", __func__);
@@ -281,7 +275,6 @@ void vpu_power_on_new(void)
 
 void vpu_power_off_new(void)
 {
-#ifdef CONFIG_AMLOGIC_POWER
 	unsigned int pwr_id;
 	int i = 0;
 
@@ -301,9 +294,6 @@ void vpu_power_off_new(void)
 		}
 		i++;
 	}
-#else
-	VPUERR("%s: no CONFIG_AMLOGIC_POWER\n", __func__);
-#endif
 
 	if (vpu_debug_print_flag)
 		VPUPR("%s finish\n", __func__);

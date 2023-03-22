@@ -16,9 +16,7 @@
 #include <linux/delay.h>
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
-#if IS_ENABLED(CONFIG_AMLOGIC_POWER)
 #include <linux/amlogic/power_domain.h>
-#endif
 #include <linux/amlogic/media/vpu/vpu.h>
 #include "vpu_reg.h"
 #include "vpu.h"
@@ -232,9 +230,7 @@ static int vpu_vmod_mem_pd_switch_new(unsigned int vmod, int flag)
 	unsigned int ret = -1;
 
 	state = (flag == VPU_MEM_POWER_ON) ? PWR_ON : PWR_OFF;
-#ifdef CONFIG_AMLOGIC_POWER
 	ret = vpu_mempd_psci_smc(vmod, state);
-#endif
 	if (ret) {
 		if (vpu_debug_print_flag)
 			VPUPR("switch_vpu_mem_pd: unsupport vpu mod: %d\n", vmod);

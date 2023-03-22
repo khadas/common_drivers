@@ -1360,8 +1360,8 @@ static void optee_shutdown(struct platform_device *pdev)
 	optee_timer_destroy(&optee->timer);
 	optee_log_uninit();
 
-	if (!optee->rpc_param_count)
-		optee_disable_shm_cache(optee);
+//	if (!optee->rpc_param_count)
+//		optee_disable_shm_cache(optee);
 }
 
 static int optee_probe(struct platform_device *pdev)

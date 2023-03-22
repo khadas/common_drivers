@@ -288,8 +288,10 @@ void cm2_curve_update_hue_by_hs(struct cm_color_md cm_color_md_hue_by_hs)
 	int addr_port;
 	int data_port;
 	struct cm_port_s cm_port;
+	int slice_max;
 
-	if (chip_type_id == chip_s5) {
+	if (chip_type_id == chip_s5 ||
+		chip_type_id == chip_t3x) {
 		cm_port = get_cm_port();
 		addr_port = cm_port.cm_addr_port[0];
 		data_port = cm_port.cm_data_port[0];
@@ -399,8 +401,10 @@ void cm2_curve_update_hue_by_hs(struct cm_color_md cm_color_md_hue_by_hs)
 			/*pr_info("0x%x, 0x%x\n", val1, val2);*/
 		}
 
-		if (chip_type_id == chip_s5) {
-			for (m = SLICE0; m < SLICE_MAX; m++) {
+		if (chip_type_id == chip_s5 ||
+			chip_type_id == chip_t3x) {
+			slice_max = get_slice_max();
+			for (m = SLICE0; m < slice_max; m++) {
 				addr_port = cm_port.cm_addr_port[m];
 				data_port = cm_port.cm_data_port[m];
 				for (j = 0; j < 5; j++) {
@@ -434,8 +438,10 @@ void cm2_curve_update_hue(struct cm_color_md cm_color_md_hue)
 	int addr_port;
 	int data_port;
 	struct cm_port_s cm_port;
+	int slice_max;
 
-	if (chip_type_id == chip_s5) {
+	if (chip_type_id == chip_s5 ||
+		chip_type_id == chip_t3x) {
 		cm_port = get_cm_port();
 		addr_port = cm_port.cm_addr_port[0];
 		data_port = cm_port.cm_data_port[0];
@@ -494,8 +500,10 @@ void cm2_curve_update_hue(struct cm_color_md cm_color_md_hue)
 			}
 		}
 
-		if (chip_type_id == chip_s5) {
-			for (m = SLICE0; m < SLICE_MAX; m++) {
+		if (chip_type_id == chip_s5 ||
+			chip_type_id == chip_t3x) {
+			slice_max = get_slice_max();
+			for (m = SLICE0; m < slice_max; m++) {
 				addr_port = cm_port.cm_addr_port[m];
 				data_port = cm_port.cm_data_port[m];
 				for (j = 0; j < 5; j++) {
@@ -543,8 +551,10 @@ void cm2_curve_update_luma(struct cm_color_md cm_color_md_luma)
 	int addr_port;
 	int data_port;
 	struct cm_port_s cm_port;
+	int slice_max;
 
-	if (chip_type_id == chip_s5) {
+	if (chip_type_id == chip_s5 ||
+		chip_type_id == chip_t3x) {
 		cm_port = get_cm_port();
 		addr_port = cm_port.cm_addr_port[0];
 		data_port = cm_port.cm_data_port[0];
@@ -603,8 +613,10 @@ void cm2_curve_update_luma(struct cm_color_md cm_color_md_luma)
 			}
 		}
 
-		if (chip_type_id == chip_s5) {
-			for (m = SLICE0; m < SLICE_MAX; m++) {
+		if (chip_type_id == chip_s5 ||
+			chip_type_id == chip_t3x) {
+			slice_max = get_slice_max();
+			for (m = SLICE0; m < slice_max; m++) {
 				addr_port = cm_port.cm_addr_port[m];
 				data_port = cm_port.cm_data_port[m];
 				for (j = 0; j < 5; j++) {
@@ -652,8 +664,10 @@ void cm2_curve_update_sat(struct cm_color_md cm_color_md_sat)
 	int addr_port;
 	int data_port;
 	struct cm_port_s cm_port;
+	int slice_max;
 
-	if (chip_type_id == chip_s5) {
+	if (chip_type_id == chip_s5 ||
+		chip_type_id == chip_t3x) {
 		cm_port = get_cm_port();
 		addr_port = cm_port.cm_addr_port[0];
 		data_port = cm_port.cm_data_port[0];
@@ -729,8 +743,10 @@ void cm2_curve_update_sat(struct cm_color_md cm_color_md_sat)
 			}
 		}
 
-		if (chip_type_id == chip_s5) {
-			for (m = SLICE0; m < SLICE_MAX; m++) {
+		if (chip_type_id == chip_s5 ||
+			chip_type_id == chip_t3x) {
+			slice_max = get_slice_max();
+			for (m = SLICE0; m < slice_max; m++) {
 				addr_port = cm_port.cm_addr_port[m];
 				data_port = cm_port.cm_data_port[m];
 				for (j = 0; j < 5; j++) {

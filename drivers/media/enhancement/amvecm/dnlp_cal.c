@@ -32,6 +32,7 @@
 #include <linux/amlogic/media/amvecm/amvecm.h>
 #include "ai_pq/ai_pq.h"
 #include "reg_helper.h"
+#include "amve_v2.h"
 
 bool ve_en;
 unsigned int ve_dnlp_rt;
@@ -257,8 +258,13 @@ void ble_whe_param_init(void)
 
 void dnlp_alg_param_init(void)
 {
-	if (!dnlp_alg_function)
+	if (!dnlp_alg_function) {
+		if (dnlp_dbg_print & 0x3)
+			pr_info("%s: alg is NULL and return.\n",
+				__func__);
 		return;
+	}
+
 	dnlp_alg_param.dnlp_alg_enable = 0;
 	dnlp_alg_param.dnlp_respond = 0;
 	dnlp_alg_param.dnlp_sel = 2;
@@ -362,11 +368,15 @@ static void ve_dnlp_add_cm(unsigned int value)
 {
 	unsigned int reg_value;
 
-	VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x207);
-	reg_value = VSYNC_READ_VPP_REG(VPP_CHROMA_DATA_PORT);
-	reg_value = (reg_value & 0xf000ffff) | (value << 16);
-	VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x207);
-	VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, reg_value);
+	if (chip_type_id != chip_t3x) {
+		VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x207);
+		reg_value = VSYNC_READ_VPP_REG(VPP_CHROMA_DATA_PORT);
+		reg_value = (reg_value & 0xf000ffff) | (value << 16);
+		VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x207);
+		VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, reg_value);
+	} else {
+		ve_dnlp_sat_set(value);
+	}
 }
 
 /*in: vf (hist), h_sel

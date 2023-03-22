@@ -2073,10 +2073,7 @@ void vlock_status_init(void)
 	u32 offset_enc;
 	struct vinfo_s *vinfo;
 
-	if (chip_type_id == chip_s5)
-		return;
-
-	if (!vlock_en)
+	if (chip_type_id == chip_s5 || chip_type_id == chip_t3x)
 		return;
 
 	/*config vlock mode*/

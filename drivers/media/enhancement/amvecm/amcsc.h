@@ -313,7 +313,7 @@ uint32_t sink_hdr_support(const struct vinfo_s *vinfo);
 
 extern uint gamut_conv_enable;
 void force_toggle(void);
-int get_s5_silce_mode(void);
+int get_s5_slice_mode(void);
 
 #define VD1_1SLICE							1
 #define VD1_2SLICE							2

@@ -566,9 +566,10 @@ void s5_set_hdr_matrix(enum hdr_module_sel module_sel,
 
 	/* need change clock gate as freerun when mtx on directly, not rdma op */
 	/* Now only operate osd1/vd1/vd2 hdr core */
-	if ((get_cpu_type() <= MESON_CPU_MAJOR_ID_S5) &&
+	if ((get_cpu_type() <= MESON_CPU_MAJOR_ID_T3X) &&
 		(get_cpu_type() != MESON_CPU_MAJOR_ID_T3) &&
-		(get_cpu_type() != MESON_CPU_MAJOR_ID_T5W)) {
+		(get_cpu_type() != MESON_CPU_MAJOR_ID_T5W) &&
+		(get_cpu_type() != MESON_CPU_MAJOR_ID_T5M)) {
 		if (hdr_clk_gate != 0) {
 			cur_hdr_ctrl =
 				VSYNC_READ_VPP_REG_VPP_SEL(hdr_ctrl, vpp_sel);
@@ -581,13 +582,16 @@ void s5_set_hdr_matrix(enum hdr_module_sel module_sel,
 	}
 
 	VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(hdr_ctrl,
-		 hdr_mtx_param->mtx_on, 13, 1, vpp_sel);
+		hdr_mtx_param->mtx_on, 13, 1, vpp_sel);
+	pr_csc(64, "hdr: mtx_param addr = %x, on = %d, vsel = %d, msel= %d\n",
+		hdr_ctrl, hdr_mtx_param->mtx_on, vpp_sel, module_sel);
 
 	/* recover the clock gate as auto gate by rdma op when mtx off */
 	/* Now only operate osd1/vd1/vd2 hdr core */
-	if ((get_cpu_type() <= MESON_CPU_MAJOR_ID_S5) &&
+	if ((get_cpu_type() <= MESON_CPU_MAJOR_ID_T3X) &&
 		(get_cpu_type() != MESON_CPU_MAJOR_ID_T3) &&
-		(get_cpu_type() != MESON_CPU_MAJOR_ID_T5W)) {
+		(get_cpu_type() != MESON_CPU_MAJOR_ID_T5W) &&
+		(get_cpu_type() != MESON_CPU_MAJOR_ID_T5M)) {
 		if (hdr_clk_gate != 0 && !hdr_mtx_param->mtx_on)
 			VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(hdr_clk_gate,
 				0, 0, 12, vpp_sel);
@@ -616,16 +620,16 @@ void s5_set_hdr_matrix(enum hdr_module_sel module_sel,
 			(hdr_mtx_param->mtxi_pos_offset[1] & 0xFFF));
 //#endif
 		if (hdr_mtx_param->mtx_only == MTX_ONLY &&
-		    !hdr_mtx_param->mtx_on)
+			!hdr_mtx_param->mtx_on)
 			VSYNC_WRITE_VPP_REG_VPP_SEL(MATRIXI_EN_CTRL, 1, vpp_sel);
 		else
 			VSYNC_WRITE_VPP_REG_VPP_SEL(MATRIXI_EN_CTRL,
 				hdr_mtx_param->mtx_on, vpp_sel);
+
 		VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(hdr_ctrl,
 			hdr_mtx_param->mtx_on, 4, 1, vpp_sel);
 		VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(hdr_ctrl,
-			hdr_mtx_param->mtx_only,
-			16, 1, vpp_sel);
+			hdr_mtx_param->mtx_only, 16, 1, vpp_sel);
 		/*bit14-15 is ai color for s5*/
 		/*VSYNC_WRITE_VPP_REG_BITS_VPP_SEL(hdr_ctrl, 1, 14, 1, vpp_sel);*/
 
@@ -1472,6 +1476,25 @@ void s5_hdr_hist_config(enum hdr_module_sel module_sel,
 		VSYNC_WRITE_VPP_REG_VPP_SEL(hist_hs_he, 0x10000, vpp_sel);
 		VSYNC_WRITE_VPP_REG_VPP_SEL(hist_vs_ve, 0x0, vpp_sel);
 	}
+}
+
+void s5_hdr_hist_config_int(void)
+{
+	WRITE_VPP_REG(S5_VD1_HDR2_HIST_CTRL, 0x5510);
+	WRITE_VPP_REG(S5_VD1_HDR2_HIST_H_START_END, 0x10000);
+	WRITE_VPP_REG(S5_VD1_HDR2_HIST_V_START_END, 0x0);
+
+	WRITE_VPP_REG(S5_VD1_SLICE1_HDR2_HIST_CTRL, 0x5510);
+	WRITE_VPP_REG(S5_VD1_SLICE1_HDR2_HIST_H_START_END, 0x10000);
+	WRITE_VPP_REG(S5_VD1_SLICE1_HDR2_HIST_V_START_END, 0x0);
+
+	WRITE_VPP_REG(S5_VD2_HDR2_HIST_CTRL, 0x5510);
+	WRITE_VPP_REG(S5_VD2_HDR2_HIST_H_START_END, 0x10000);
+	WRITE_VPP_REG(S5_VD2_HDR2_HIST_V_START_END, 0x0);
+
+	WRITE_VPP_REG(S5_OSD1_HDR2_HIST_CTRL, 0x5510);
+	WRITE_VPP_REG(S5_OSD1_HDR2_HIST_H_START_END, 0x10000);
+	WRITE_VPP_REG(S5_OSD1_HDR2_HIST_V_START_END, 0x0);
 }
 
 void s5_clip_func_after_ootf(int mtx_gamut_mode,

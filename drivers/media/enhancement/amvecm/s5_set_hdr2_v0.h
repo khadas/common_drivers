@@ -33,6 +33,8 @@ void s5_set_c_gain(enum hdr_module_sel module_sel,
 void s5_hdr_hist_config(enum hdr_module_sel module_sel,
 		     struct hdr_proc_lut_param_s *hdr_lut_param,
 		     enum vpp_index_e vpp_index);
+void s5_hdr_hist_config_int(void);
+
 void set_vpu_lut_dma_mif(struct VPU_LUT_DMA_t      *vpu_lut_dma);
 void vpu_lut_dma(enum hdr_module_sel module_sel,
 	struct hdr_proc_lut_param_s *hdr_lut_param, enum LUT_DMA_ID_e dma_id);

@@ -104,12 +104,15 @@ void cm_wr_api(unsigned int addr, unsigned int data,
 	int data_port;
 	struct cm_port_s cm_port;
 	int i;
+	int slice_max;
 
-	if (chip_type_id == chip_s5) {
+	if (chip_type_id == chip_s5 ||
+		chip_type_id == chip_t3x) {
+		slice_max = get_slice_max();
 		cm_port = get_cm_port();
 		switch (md) {
 		case WR_VCB:
-			for (i = 0; i < 4; i++) {
+			for (i = 0; i < slice_max; i++) {
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
 				if (mask == 0xffffffff) {
@@ -126,7 +129,7 @@ void cm_wr_api(unsigned int addr, unsigned int data,
 			}
 			break;
 		case WR_DMA:
-			for (i = 0; i < 4; i++) {
+			for (i = 0; i < slice_max; i++) {
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
 				if (mask == 0xffffffff) {
@@ -407,12 +410,15 @@ void amcm_disable(enum wr_md_e md)
 	int data_port;
 	struct cm_port_s cm_port;
 	int i;
+	int slice_max;
 
-	if (chip_type_id == chip_s5) {
+	if (chip_type_id == chip_s5 ||
+		chip_type_id == chip_t3x) {
+		slice_max = get_slice_max();
 		cm_port = get_cm_port();
 		switch (md) {
 		case WR_VCB:
-			for (i = 0; i < 4; i++) {
+			for (i = 0; i < slice_max; i++) {
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
 				WRITE_VPP_REG(addr_port, 0x208);
@@ -423,7 +429,7 @@ void amcm_disable(enum wr_md_e md)
 			}
 			break;
 		case WR_DMA:
-			for (i = 0; i < 4; i++) {
+			for (i = 0; i < slice_max; i++) {
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
 				WRITE_VPP_REG(addr_port, 0x208);
@@ -500,12 +506,15 @@ void amcm_enable(enum wr_md_e md)
 	int data_port;
 	struct cm_port_s cm_port;
 	int i;
+	int slice_max;
 
-	if (chip_type_id == chip_s5) {
+	if (chip_type_id == chip_s5 ||
+		chip_type_id == chip_t3x) {
+		slice_max = get_slice_max();
 		cm_port = get_cm_port();
 		switch (md) {
 		case WR_VCB:
-			for (i = 0; i < 4; i++) {
+			for (i = 0; i < slice_max; i++) {
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
 				WRITE_VPP_REG(addr_port, 0x208);
@@ -515,7 +524,7 @@ void amcm_enable(enum wr_md_e md)
 			}
 			break;
 		case WR_DMA:
-			for (i = 0; i < 4; i++) {
+			for (i = 0; i < slice_max; i++) {
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
 				WRITE_VPP_REG(addr_port, 0x208);
@@ -608,14 +617,15 @@ void pd_combing_fix_patch(enum pd_comb_fix_lvl_e level)
 	/* p212 g12a and so on no related register lead to crash*/
 	/* so skip the function */
 	if (!(is_meson_tl1_cpu() || is_meson_txlx_cpu() ||
-	      is_meson_tm2_cpu() || is_meson_txl_cpu() ||
-	      is_meson_txhd_cpu() ||
-	      get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	      get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
-	      get_cpu_type() == MESON_CPU_MAJOR_ID_T7 ||
-	      get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-	      get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
-	      chip_type_id == chip_t5m))
+		is_meson_tm2_cpu() || is_meson_txl_cpu() ||
+		is_meson_txhd_cpu() ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T7 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+		chip_type_id == chip_t5m ||
+		chip_type_id == chip_t3x))
 		return;
 
 	pr_amcm_dbg("\n[amcm..] pd fix lvl = %d\n", level);
@@ -728,6 +738,7 @@ void cm_frame_size_s5(struct vframe_s *vf)
 	static int en_flag = 1;
 	int i;
 	int changed_flag;
+	int slice_max;
 
 #if CONFIG_AMLOGIC_MEDIA_VIDEO
 	vd_size_info = get_vd_proc_amvecm_info();
@@ -739,10 +750,12 @@ void cm_frame_size_s5(struct vframe_s *vf)
 	else if ((!cm_en_flag) && (!cm_dis_flag))
 		amcm_enable(WR_DMA);
 
+	slice_max = get_slice_max();
+
 	/*because size from vpp will delay, need reconfig for cm*/
 	cm_force_flag = 0;
 	if (en_flag && !vf) {
-		for (i = SLICE0; i < SLICE_MAX; i++) {
+		for (i = SLICE0; i < slice_max; i++) {
 			/*default 4k size*/
 			width = 0xf00;
 			height = 0x870;
@@ -803,7 +816,8 @@ void cm2_frame_size_patch(struct vframe_s *vf,
 
 #if CONFIG_AMLOGIC_MEDIA_VIDEO
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-	if (chip_type_id == chip_s5) {
+	if (chip_type_id == chip_s5 ||
+		chip_type_id == chip_t3x) {
 		cm_frame_size_s5(vf);
 		return;
 	}
@@ -846,7 +860,8 @@ void cm2_frame_switch_patch(void)
 	int data_port;
 	struct cm_port_s cm_port;
 
-	if (chip_type_id == chip_s5) {
+	if (chip_type_id == chip_s5 ||
+		chip_type_id == chip_t3x) {
 		cm_port = get_cm_port();
 		addr_port = cm_port.cm_addr_port[SLICE0];
 		data_port = cm_port.cm_data_port[SLICE0];

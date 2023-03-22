@@ -30,6 +30,7 @@
 #include "set_hdr2_v0.h"
 #include "hdr/am_hdr10_plus.h"
 #include "hdr/gamut_convert.h"
+#include "amve_v2.h"
 
 static enum output_format_e target_format[VD_PATH_MAX];
 static enum hdr_type_e cur_source_format[VD_PATH_MAX];
@@ -2124,9 +2125,12 @@ void video_post_process_t7(struct vframe_s *vf,
 }
 #endif
 
-int get_s5_silce_mode(void)
+int get_s5_slice_mode(void)
 {
 	int slice_number = 1;
+
+	if (is_meson_t3x_cpu())
+		return get_slice_num(0);
 
 	if (!is_meson_s5_cpu())
 		return 1;
@@ -2155,7 +2159,7 @@ void video_post_process(struct vframe_s *vf,
 	/*eo clip select: 0->23bit eo; 1->32 bit eo*/
 	unsigned int eo_sel = 0;
 	enum mtx_csc_e mtx_csc = MATRIX_NULL;
-	int s5_silce_mode = get_s5_silce_mode();
+	int s5_silce_mode = get_s5_slice_mode();
 	struct matrix_s m = {
 		{0, 0, 0},
 		{
@@ -2597,7 +2601,8 @@ void video_post_process(struct vframe_s *vf,
 	}
 
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A &&
-		chip_type_id != chip_s5) {
+		chip_type_id != chip_s5 &&
+		chip_type_id != chip_t3x) {
 		if (!(vinfo->mode == VMODE_LCD ||
 			vinfo->mode == VMODE_DUMMY_ENCP)) {
 			pr_csc(12, "%s: vpp_index = %d mode = %d [%d]\n",

@@ -125,34 +125,36 @@ void hdr_vd1_off(enum vpp_index_e vpp_index)
 
 	if (is_meson_s5_cpu())
 		silce_mode = 4;/*bypass 4 vd1 slice no matter vd1 slice num*/
+	else if (is_meson_t3x_cpu())
+		silce_mode = 2;
 
 	if (silce_mode == VD1_1SLICE) {
 		cur_hdr_process =
 			hdr_func(VD1_HDR, HDR_BYPASS,
-				 NULL, NULL, vpp_index);
-	//} else if (silce_mode == VD1_2SLICE) {
-	//	cur_hdr_process =
-	//		hdr_func(VD1_HDR, HDR_BYPASS,
-	//			 NULL, NULL, vpp_index);
-	//	cur_hdr_process =
-	//		hdr_func(S5_VD1_SLICE1, HDR_BYPASS,
-	//			 NULL, NULL, vpp_index);
+				NULL, NULL, vpp_index);
+	} else if (silce_mode == VD1_2SLICE) {
+		cur_hdr_process =
+			hdr_func(VD1_HDR, HDR_BYPASS,
+				NULL, NULL, vpp_index);
+		cur_hdr_process =
+			hdr_func(S5_VD1_SLICE1, HDR_BYPASS,
+				NULL, NULL, vpp_index);
 	} else if (silce_mode == VD1_4SLICE) {
 		cur_hdr_process =
 			hdr_func(VD1_HDR, HDR_BYPASS,
-				 NULL, NULL, vpp_index);
+				NULL, NULL, vpp_index);
 		cur_hdr_process =
 			hdr_func(S5_VD1_SLICE1, HDR_BYPASS,
-				 NULL, NULL, vpp_index);
+				NULL, NULL, vpp_index);
 		cur_hdr_process =
 			hdr_func(S5_VD1_SLICE2, HDR_BYPASS,
-				 NULL, NULL, vpp_index);
+				NULL, NULL, vpp_index);
 		cur_hdr_process =
 			hdr_func(S5_VD1_SLICE3, HDR_BYPASS,
-				 NULL, NULL, vpp_index);
+				NULL, NULL, vpp_index);
 	}
 	pr_csc(8, "am_vecm: module=VD1_HDR, process=HDR_BYPASS(%d, %d)\n",
-	       HDR_BYPASS, cur_hdr_process);
+		HDR_BYPASS, cur_hdr_process);
 }
 
 void hdr_vd2_off(enum vpp_index_e vpp_index)
@@ -180,7 +182,7 @@ void hdr_vd3_off(enum vpp_index_e vpp_index)
 void hdr_vd1_iptmap(enum vpp_index_e vpp_index)
 {
 	enum hdr_process_sel cur_hdr_process;
-	int s5_silce_mode = get_s5_silce_mode();
+	int s5_silce_mode = get_s5_slice_mode();
 
 	if (s5_silce_mode == VD1_1SLICE) {
 		cur_hdr_process =
@@ -5034,7 +5036,7 @@ static int hdr_process(enum vpp_matrix_csc_e csc_type,
 {
 	int need_adjust_contrast_saturation = 0;
 	int max_lumin = 10000;
-	int s5_silce_mode = get_s5_silce_mode();
+	int s5_silce_mode = get_s5_slice_mode();
 	struct matrix_s m = {
 		{0, 0, 0},
 		{
@@ -5328,7 +5330,7 @@ static int hdr10p_process(enum vpp_matrix_csc_e csc_type,
 		{0, 0, 0},
 		1
 	};
-	int s5_silce_mode = get_s5_silce_mode();
+	int s5_silce_mode = get_s5_slice_mode();
 
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		gamut_convert_process(vinfo, source_type, vd_path, &m, 8);
@@ -5423,7 +5425,7 @@ static int hlg_process(enum vpp_matrix_csc_e csc_type,
 		EOTF_COEFF_RIGHTSHIFT
 	};
 	int i, j;
-	int s5_silce_mode = get_s5_silce_mode();
+	int s5_silce_mode = get_s5_slice_mode();
 
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		gamut_convert_process(vinfo, source_type, vd_path, &m, 8);
@@ -5674,7 +5676,7 @@ static void bypass_hdr_process(enum vpp_matrix_csc_e csc_type,
 	int i, j, p_sel;
 	unsigned int *ptable;
 	int *pmatrix;
-	int s5_silce_mode = get_s5_silce_mode();
+	int s5_silce_mode = get_s5_slice_mode();
 
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		if (gamut_conv_enable)
@@ -6470,7 +6472,7 @@ static void hlg_hdr_process(enum vpp_matrix_csc_e csc_type,
 	int *pmatrix;
 	u32 (*p_prim)[3][2];
 	u32 (*p_wp)[2];
-	int s5_silce_mode = get_s5_silce_mode();
+	int s5_silce_mode = get_s5_slice_mode();
 
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		if (vd_path == VD1_PATH) {
@@ -6747,7 +6749,7 @@ static void sdr_hdr_process(enum vpp_matrix_csc_e csc_type,
 			    enum hdr_type_e *source_type,
 			    enum vpp_index_e vpp_index)
 {
-	int s5_silce_mode = get_s5_silce_mode();
+	int s5_silce_mode = get_s5_slice_mode();
 
 	if (!vinfo_lcd_support()) {
 		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
@@ -7273,7 +7275,7 @@ void hdr10_plus_process_update(int force_source_lumin,
 {
 	int panel_lumin;
 	struct vinfo_s *vinfo;
-	int silce_mode = get_s5_silce_mode();
+	int silce_mode = get_s5_slice_mode();
 
 	if (vpp_index == VPP_TOP1)
 		vinfo = get_current_vinfo2();
@@ -7347,7 +7349,7 @@ EXPORT_SYMBOL(hdr10_plus_process_update);
 static void hdr10_tm_process_update(struct vframe_master_display_colour_s *p,
 				    enum vd_path_e vd_path, enum vpp_index_e vpp_index)
 {
-	int silce_mode = get_s5_silce_mode();
+	int silce_mode = get_s5_slice_mode();
 
 	hdr10_tm_dynamic_proc(p);
 	if (vd_path == VD1_PATH) {
@@ -7376,7 +7378,7 @@ static void cuva_hdr_process_update(enum hdr_type_e src_type,
 {
 	int proc_flag = 0;
 	struct aml_cuva_data_s *cuva_data = get_cuva_data();
-	int silce_mode = get_s5_silce_mode();
+	int silce_mode = get_s5_slice_mode();
 
 	if (src_type == CUVA_HDR_SOURCE) {
 		if (proc_mode == PROC_CUVA_TO_SDR) {
@@ -8825,7 +8827,7 @@ int amvecm_matrix_process(struct vframe_s *vf,
 	bool send_fake_frame = false;
 	struct vframe_master_display_colour_s *pa;
 	static bool amdv_enable;
-	int s5_silce_mode = get_s5_silce_mode();
+	int s5_silce_mode = get_s5_slice_mode();
 
 	if (vpp_index == VPP_TOP1)
 		vinfo = get_current_vinfo2();

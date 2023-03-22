@@ -951,7 +951,7 @@
 			   0x0 0xfe002000 0x0 0x2000>;	//reset
 
 		spectrum = <1>;
-		cma_mem_size = <40>; // MB
+		cma_mem_size = <16>; // MB
 	};
 
 	dvb-extern {

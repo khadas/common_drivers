@@ -614,7 +614,7 @@ static void (*pstore_io_save_hook)(unsigned long reg, unsigned long val,
 				    unsigned long parent, unsigned int flag,
 				    unsigned long *irq_flag);
 
-void notrace pstore_io_save(unsigned long reg, unsigned long val,
+void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val,
 			    unsigned long parent, unsigned int flag,
 			    unsigned long *irq_flag)
 {

@@ -29,7 +29,7 @@ extern unsigned int dump_iomap;
 #define PSTORE_FLAG_PD_POWER_OFF 0XE
 #define PSTORE_FLAG_MASK	0xF
 
-void notrace pstore_io_save(unsigned long reg, unsigned long val,
+void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val,
 			    unsigned long parant, unsigned int flag,
 			    unsigned long *irq_flag);
 

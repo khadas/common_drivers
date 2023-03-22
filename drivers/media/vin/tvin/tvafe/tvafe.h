@@ -32,7 +32,8 @@
 /* 20230106: av format switch flower screen */
 /* 20230304: ntsc 50HZ will crash */
 /* 20230310: adjust electrical value */
-#define TVAFE_VER "20230310"
+/* 20230322: memset vbi memory */
+#define TVAFE_VER "20230322: memset vbi memory"
 
 /* used to set the flag of tvafe_dev_s */
 #define TVAFE_FLAG_DEV_OPENED 0x00000010

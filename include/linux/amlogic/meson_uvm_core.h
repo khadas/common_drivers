@@ -33,6 +33,16 @@ enum uvm_alloc_flag {
 	UVM_DETACH_FLAG = 30
 };
 
+enum uvm_debug_mask {
+	UVM_DEBUG_LEVEL_ERROR,
+	UVM_DEBUG_LEVEL_INFO,
+	UVM_DEBUG_LEVEL_DBG
+};
+
+#define UVM_ERROR       BIT(UVM_DEBUG_LEVEL_ERROR)
+#define UVM_INFO        BIT(UVM_DEBUG_LEVEL_INFO)
+#define UVM_DBG         BIT(UVM_DEBUG_LEVEL_DBG)
+
 /**
  * struct uvm_handle - video dmabuffer wrap vframe
  *

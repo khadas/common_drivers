@@ -58,6 +58,7 @@ static void zap_dma_buf_range(struct page *dma_page, unsigned long len)
 static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 				       meson_gem_obj, int flags)
 {
+	int i;
 	size_t len;
 	u32 bscatter = 0;
 	struct dma_buf *dmabuf = NULL;
@@ -68,61 +69,92 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 	struct sg_table *sg_table = NULL;
 	struct page *page;
 	bool from_heap_codecmm = false;
+	char DMAHEAP[][20] = {"heap-fb", "heap-gfx", "heap-codecmm"};
 
 	if (!meson_gem_obj)
 		return -EINVAL;
 
-	id = meson_ion_cma_heap_id_get();
-	DRM_DEBUG("ion heap id=%d,size=0x%x,flags=0x%x\n",
-		  id, (u32)meson_gem_obj->base.size, flags);
 	/*
 	 *check flags to set different ion heap type.
 	 *if flags is set to 0, need to use ion dma buffer.
 	 */
 	if (((flags & (MESON_USE_SCANOUT | MESON_USE_CURSOR)) != 0) || flags == 0) {
-		heap = dma_heap_find("heap-fb");
-		if (!IS_ERR_OR_NULL(heap)) {
-			dmabuf = dma_heap_buffer_alloc(heap, meson_gem_obj->base.size, O_RDWR,
-				DMA_HEAP_VALID_HEAP_FLAGS);
+		for (i = 0; i < 3; i++) {
+			heap = dma_heap_find(DMAHEAP[i]);
+			if (!IS_ERR_OR_NULL(heap)) {
+				dmabuf = dma_heap_buffer_alloc(heap, meson_gem_obj->base.size,
+					O_RDWR, DMA_HEAP_VALID_HEAP_FLAGS);
+				if (!IS_ERR_OR_NULL(dmabuf)) {
+					DRM_DEBUG("%s alloc success.\n", DMAHEAP[i]);
+					if (i == 2)
+						from_heap_codecmm = true;
+					meson_gem_obj->is_dma = true;
+					break;
+				}
+				if (IS_ERR_OR_NULL(dmabuf) && i == 2)
+					DRM_ERROR("%s: dma_heap_alloc fail.\n", __func__);
+			} else {
+				DRM_DEBUG("%s: dma_heap_find %s fail.\n", __func__, DMAHEAP[i]);
+				if (i == 2)
+					DRM_ERROR("%s: dma_heap_find fail.\n", __func__);
+			}
 		}
 
-		if (IS_ERR_OR_NULL(dmabuf)) {
-			heap = dma_heap_find("heap-gfx");
-			if (IS_ERR_OR_NULL(heap)) {
-				DRM_DEBUG("%s: heap-gfx find fail.\n", __func__);
-				heap = dma_heap_find("heap-codecmm");
-				if (IS_ERR_OR_NULL(heap)) {
-					DRM_ERROR("%s: heap-codecmm find fail.\n", __func__);
+		if (!meson_gem_obj->is_dma) {
+			id = meson_ion_fb_heap_id_get();
+			if (id) {
+				dmabuf = ion_alloc(meson_gem_obj->base.size, (1 << id),
+					ION_FLAG_EXTEND_MESON_HEAP);
+			} else {
+				id = meson_ion_cma_heap_id_get();
+				if (id) {
+					dmabuf = ion_alloc(meson_gem_obj->base.size, (1 << id),
+						ION_FLAG_EXTEND_MESON_HEAP);
+					if (IS_ERR_OR_NULL(dmabuf)) {
+						DRM_ERROR("%s: ion_alloc fail.\n", __func__);
+						return -ENOMEM;
+					}
+				} else {
+					DRM_ERROR("%s: ion_heap_id_get fail.\n", __func__);
 					return -ENOMEM;
 				}
-				from_heap_codecmm = true;
-			}
-
-			dmabuf = dma_heap_buffer_alloc(heap, meson_gem_obj->base.size, O_RDWR,
-				DMA_HEAP_VALID_HEAP_FLAGS);
-			if (IS_ERR_OR_NULL(dmabuf)) {
-				DRM_ERROR("%s: dma_heap_buffer_alloc fail. size is %zu\n",
-					__func__, meson_gem_obj->base.size);
-				return -ENOMEM;
 			}
 		}
-		meson_gem_obj->is_dma = true;
 
 		DRM_DEBUG("%s: dmabuf(%p) alloc success. size = %zu\n",
 			__func__, dmabuf, meson_gem_obj->base.size);
 	} else if (flags & MESON_USE_VIDEO_PLANE) {
 		meson_gem_obj->is_uvm = true;
-		id = meson_ion_codecmm_heap_id_get();
-		if (id)
-			dmabuf = ion_alloc(meson_gem_obj->base.size, (1 << id),
-						   ION_FLAG_EXTEND_MESON_HEAP);
+		heap = dma_heap_find("heap-codecmm");
+		if (!IS_ERR_OR_NULL(heap)) {
+			dmabuf = dma_heap_buffer_alloc(heap, meson_gem_obj->base.size, O_RDWR,
+				DMA_HEAP_VALID_HEAP_FLAGS);
+			meson_gem_obj->is_dma = true;
+		} else {
+			id = meson_ion_codecmm_heap_id_get();
+			if (id)
+				dmabuf = ion_alloc(meson_gem_obj->base.size, (1 << id),
+							   ION_FLAG_EXTEND_MESON_HEAP);
+		}
 	} else if (flags & MESON_USE_VIDEO_AFBC) {
 		meson_gem_obj->is_uvm = true;
 		meson_gem_obj->is_afbc = true;
-		dmabuf = ion_alloc(UVM_FAKE_SIZE, ION_HEAP_SYSTEM, 0);
+		heap = dma_heap_find("system");
+		if (!IS_ERR_OR_NULL(heap)) {
+			dmabuf = dma_heap_buffer_alloc(heap, UVM_FAKE_SIZE, O_RDWR, 0);
+			meson_gem_obj->is_dma = true;
+		} else {
+			dmabuf = ion_alloc(UVM_FAKE_SIZE, ION_HEAP_SYSTEM, 0);
+		}
 	} else {
-		dmabuf = ion_alloc(meson_gem_obj->base.size,
-				   ION_HEAP_SYSTEM, 0);
+		heap = dma_heap_find("system");
+		if (!IS_ERR_OR_NULL(heap)) {
+			dmabuf = dma_heap_buffer_alloc(heap, meson_gem_obj->base.size, O_RDWR, 0);
+			meson_gem_obj->is_dma = true;
+		} else {
+			dmabuf = ion_alloc(meson_gem_obj->base.size,
+					   ION_HEAP_SYSTEM, 0);
+		}
 		bscatter = 1;
 	}
 
@@ -191,11 +223,13 @@ static void am_meson_gem_free_ion_buf(struct drm_device *dev,
 		meson_gem_obj->ionbuffer = NULL;
 		meson_gem_obj->dmabuf = NULL;
 	} else if (meson_gem_obj->is_dma) {
-		DRM_DEBUG("dma_heap_buffer_free %px\n", meson_gem_obj->dmabuf);
+		DRM_DEBUG("%s dma_heap_buffer_free  (0x%px).\n", __func__,
+			  meson_gem_obj->dmabuf);
 		dma_buf_unmap_attachment(meson_gem_obj->attachment,
 					 meson_gem_obj->sg, DMA_BIDIRECTIONAL);
 		dma_buf_detach(meson_gem_obj->dmabuf, meson_gem_obj->attachment);
-		dma_heap_buffer_free(meson_gem_obj->dmabuf);
+		dma_buf_put(meson_gem_obj->dmabuf);
+		meson_gem_obj->dmabuf = NULL;
 	} else {
 		DRM_ERROR("meson_gem_obj buffer is null\n");
 	}
@@ -297,27 +331,31 @@ static struct sg_table *am_meson_gem_create_sg_table(struct drm_gem_object *obj)
 
 		return dst_table;
 	} else if (meson_gem_obj->is_afbc) {
-		src_table = meson_gem_obj->ionbuffer->sg_table;
-		dst_table = kmalloc(sizeof(*dst_table), GFP_KERNEL);
-		if (!dst_table) {
-			ret = -ENOMEM;
-			return ERR_PTR(ret);
+		if (meson_gem_obj->is_dma) {
+			return meson_gem_obj->sg;
+		} else if (meson_gem_obj->ionbuffer) {
+			src_table = meson_gem_obj->ionbuffer->sg_table;
+			dst_table = kmalloc(sizeof(*dst_table), GFP_KERNEL);
+			if (!dst_table) {
+				ret = -ENOMEM;
+				return ERR_PTR(ret);
+			}
+
+			ret = sg_alloc_table(dst_table, 1, GFP_KERNEL);
+			if (ret) {
+				kfree(dst_table);
+				return ERR_PTR(ret);
+			}
+
+			dst_sg = dst_table->sgl;
+			src_sg = src_table->sgl;
+
+			sg_set_page(dst_sg, sg_page(src_sg), obj->size, 0);
+			sg_dma_address(dst_sg) = sg_phys(src_sg);
+			sg_dma_len(dst_sg) = obj->size;
+
+			return dst_table;
 		}
-
-		ret = sg_alloc_table(dst_table, 1, GFP_KERNEL);
-		if (ret) {
-			kfree(dst_table);
-			return ERR_PTR(ret);
-		}
-
-		dst_sg = dst_table->sgl;
-		src_sg = src_table->sgl;
-
-		sg_set_page(dst_sg, sg_page(src_sg), obj->size, 0);
-		sg_dma_address(dst_sg) = sg_phys(src_sg);
-		sg_dma_len(dst_sg) = obj->size;
-
-		return dst_table;
 	}
 	DRM_ERROR("Not support import buffer from other driver.\n");
 	return NULL;
@@ -336,12 +374,17 @@ static struct dma_buf *meson_gem_prime_export(struct drm_gem_object *obj,
 	if (meson_gem_obj->is_uvm) {
 		dmabuf = uvm_alloc_dmabuf(obj->size, 0, 0);
 		if (dmabuf) {
-			if (meson_gem_obj->is_afbc || meson_gem_obj->is_secure)
+			if (meson_gem_obj->is_afbc || meson_gem_obj->is_secure) {
 				info.sgt =
 				am_meson_gem_create_sg_table(obj);
-			else
-				info.sgt =
-				meson_gem_obj->ionbuffer->sg_table;
+			} else {
+				if (meson_gem_obj->is_dma)
+					info.sgt =
+					meson_gem_obj->sg;
+				else
+					info.sgt =
+					meson_gem_obj->ionbuffer->sg_table;
+			}
 
 			if (meson_gem_obj->is_afbc)
 				info.flags |= BIT(UVM_FAKE_ALLOC);

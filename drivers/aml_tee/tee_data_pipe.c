@@ -30,7 +30,7 @@
 #include <linux/vmalloc.h>
 #include <linux/uaccess.h>
 #include <linux/wait.h>
-#include <tee_data_pipe.h>
+#include "tee_data_pipe.h"
 
 #define DATA_PIPE_DEBUG                   (0)
 #define PIPE_INFO_DEBUG                   (0)

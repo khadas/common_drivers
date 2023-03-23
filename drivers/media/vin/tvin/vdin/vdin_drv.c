@@ -5261,6 +5261,14 @@ const struct match_data_s vdin_dt_tl1 = {
 };
 #endif
 
+const struct match_data_s vdin_dt_g12b = {
+	.name = "vdin",
+	.hw_ver = VDIN_HW_ORG,
+	.vdin0_en = 1,			.vdin1_en = 1,
+	.de_tunnel_tunnel = 0,		.ipt444_to_422_12bit = 0,
+	.vdin0_line_buff_size = 0x780,	.vdin1_line_buff_size = 0x780,
+};
+
 const struct match_data_s vdin_dt_sm1 = {
 	.name = "vdin",
 	.hw_ver = VDIN_HW_ORG,
@@ -5389,6 +5397,10 @@ static const struct of_device_id vdin_dt_match[] = {
 		.data = &vdin_dt_tl1,
 	},
 #endif
+	{
+		.compatible = "amlogic, vdin-g12b",
+		.data = &vdin_dt_g12b,
+	},
 	{
 		.compatible = "amlogic, vdin-sm1",
 		.data = &vdin_dt_sm1,

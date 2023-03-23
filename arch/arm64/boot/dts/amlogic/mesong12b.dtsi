@@ -1235,7 +1235,7 @@
 
 	/*if you want to use vdin just modify status to "ok"*/
 	vdin0: vdin0 {
-		compatible = "amlogic, vdin";
+		compatible = "amlogic, vdin-g12b";
 		dev_name = "vdin0";
 		status = "disabled";
 		reserve-iomap = "true";
@@ -1257,7 +1257,7 @@
 		vdin_id = <0>;
 	};
 	vdin1: vdin1 {
-		compatible = "amlogic, vdin";
+		compatible = "amlogic, vdin-g12b";
 		dev_name = "vdin1";
 		status = "disabled";
 		reserve-iomap = "true";

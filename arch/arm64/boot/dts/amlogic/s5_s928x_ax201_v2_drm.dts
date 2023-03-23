@@ -777,7 +777,7 @@
 	smartcard {
 		compatible = "amlogic,smartcard-sc2";
 		dev_name = "smartcard";
-		status = "disabled";
+		status = "okay";
 
 		reg = <0x0 0xfe000000 0x0 0x480000>;
 		irq_trigger_type = "GPIO_IRQ_LOW";

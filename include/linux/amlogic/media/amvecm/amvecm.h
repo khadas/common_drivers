@@ -699,6 +699,7 @@ enum vlk_chiptype {
 
 enum chip_type {
 	chip_other = 0,
+	chip_t7,
 	chip_t3,
 	chip_t5w,
 	chip_t5m,
@@ -944,5 +945,6 @@ struct gamma_data_s {
 
 struct gamma_data_s *get_gm_data(void);
 void bs_ct_latch(void);
+int pkt_adv_chip(void);
 #endif /* AMVECM_H */
 

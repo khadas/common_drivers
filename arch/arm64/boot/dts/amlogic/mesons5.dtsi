@@ -2114,8 +2114,8 @@
 		pinctrl-0=<&cec_b>;
 		pinctrl-1=<&cec_b>;
 		pinctrl-2=<&cec_b>;
-		//clocks = <&clkc CLKID_CECB_32K_CLKOUT>;
-		//clock-names = "cecb_clk";
+		clocks = <&clkc CLKID_CECB_32K_CLKOUT>;
+		clock-names = "cecb_clk";
 		reg = <0x0 0xfe028000 0x0 0x2000
 		       0x0 0xfe010000 0x0 0x2000
 		       0x0 0xfe000000 0x0 0x2000

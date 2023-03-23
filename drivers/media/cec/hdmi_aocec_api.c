@@ -2482,11 +2482,11 @@ inline unsigned int get_pin_status(void)
 		reg = read_pad_reg(PADCTRL_GPIOH_I);
 		reg = (reg >> 3) & 0x1;
 		break;
-	/* case CEC_CHIP_S5: */
+	case CEC_CHIP_S5:
 		/* GPIOH_3 */
-		/* reg = read_pad_reg(PADCTRL_GPIOH_I_S5); */
-		/* reg = (reg >> 3) & 0x1; */
-		/* break; */
+		reg = read_pad_reg(PADCTRL_GPIOH_I_S5);
+		reg = (reg >> 3) & 0x1;
+		break;
 	case CEC_CHIP_T7:
 		/* GPIOW_12 CEC_A */
 	case CEC_CHIP_T3:

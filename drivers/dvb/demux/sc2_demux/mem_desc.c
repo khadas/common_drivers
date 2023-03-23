@@ -1332,7 +1332,7 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 			if (dump_input_cb) {
 				mem = (unsigned long)
 					phys_to_virt(ts_data.buf_start);
-				dump_input_cb(pchan->id, -1, DMX_DUMP_INPUT_TYPE, (char *)mem,
+				dump_input_cb(dmx_id, -1, DMX_DUMP_INPUT_TYPE, (char *)mem,
 					pchan->memdescs->bits.byte_length, &dump_input_head);
 			}
 
@@ -1371,6 +1371,10 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 				return -EFAULT;
 			}
 
+			if (dump_input_cb)
+				dump_input_cb(dmx_id, -1, DMX_DUMP_INPUT_TYPE,
+						p_mem, len, &dump_input_head);
+
 			if (check_ts_alignm) {
 				p_total += len;
 				total = check_data_pack_align((void *)pchan->mem, p_total, pdmx);
@@ -1378,9 +1382,6 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 				total = len;
 			}
 
-			if (dump_input_cb)
-				dump_input_cb(pchan->id, -1, DMX_DUMP_INPUT_TYPE,
-					(char *)pchan->mem, len, &dump_input_head);
 			dma_sync_single_for_device(aml_get_device(),
 				pchan->mem_phy, pchan->mem_size, DMA_TO_DEVICE);
 

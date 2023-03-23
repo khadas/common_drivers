@@ -308,6 +308,9 @@ struct st_frc_buf {
 	u32 norm_logo_scc_buf_paddr;
 	u32 norm_melogo_buf_paddr[FRC_TOTAL_BUF_NUM];
 
+	s32 link_tab_size;
+	u32 secure_start;
+	s32 secure_size;
 	u32 total_size;
 	u32 real_total_size;
 };

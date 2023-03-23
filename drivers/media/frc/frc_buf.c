@@ -1102,12 +1102,30 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 	paddr = roundup(paddr, ALIGN_4K * 16);
 
 	devp->buf.real_total_size = paddr;
-	if (devp->buf.real_total_size > devp->buf.cma_mem_size)
-		pr_frc(0, "buf err: need %d, cur size:%d\n", paddr, devp->buf.cma_mem_size);
-	else
-		pr_frc(0, "%s base:0x%x  real_total_size:0x%x(%d)\n",
-			__func__, base, paddr, paddr);
+	devp->buf.link_tab_size = devp->buf.norm_hme_data_buf_paddr[0] -
+				devp->buf.lossy_mc_y_link_buf_paddr[0];
+	/*data  secure buffer */
+	devp->buf.secure_start = devp->buf.cma_mem_paddr_start +
+					devp->buf.lossy_mc_y_data_buf_paddr[0];
+	devp->buf.secure_size = devp->buf.lossy_mc_y_link_buf_paddr[0] -
+				devp->buf.lossy_mc_y_data_buf_paddr[0];
 
+	if (devp->buf.link_tab_size <= 0) {
+		pr_frc(0, "buf err: link buffer size %d\n", devp->buf.link_tab_size);
+		return -1;
+	}
+	if (devp->buf.secure_size <= 0) {
+		pr_frc(0, "buf err: secure buffer size %d\n", devp->buf.secure_size);
+		return -1;
+	}
+
+	if (devp->buf.real_total_size > devp->buf.cma_mem_size) {
+		pr_frc(0, "buf err: need %d, cur size:%d\n", paddr,
+					devp->buf.cma_mem_size);
+		return -1;
+	}
+	pr_frc(0, "%s base:0x%x  real_total_size:0x%x(%d)\n",
+			__func__, base, paddr, paddr);
 	return 0;
 }
 
@@ -1124,7 +1142,7 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 	u32 *linktab_vaddr = NULL;
 	u8 *p = NULL;
 	u32 data_buf_addr, data_buf_size;
-	u32 link_tab_all_size;
+	s32 link_tab_all_size;
 	u32 log = 2;
 	//u32 *init_start_addr;
 	enum chip_id chip;
@@ -1136,11 +1154,10 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 	chip = frc_data->match_data->chip;
 
 	cma_paddr = devp->buf.cma_mem_paddr_start;
-	link_tab_all_size =
-		devp->buf.lossy_mc_y_data_buf_paddr[0] - devp->buf.lossy_mc_y_link_buf_paddr[0];
+	link_tab_all_size = devp->buf.link_tab_size;
 	pr_frc(log, "paddr start:0x%lx, link start=0x%08x - 0x%08x, size:0x%x\n",
 	       (ulong)devp->buf.cma_mem_paddr_start,
-	       devp->buf.lossy_mc_y_link_buf_paddr[0], devp->buf.lossy_mc_y_data_buf_paddr[0],
+	       devp->buf.lossy_mc_y_link_buf_paddr[0], devp->buf.norm_hme_data_buf_paddr[0],
 	       link_tab_all_size);
 
 	if (link_tab_all_size <= 0) {
@@ -1149,7 +1166,7 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 	}
 
 	vmap_offset_start = devp->buf.lossy_mc_y_link_buf_paddr[0];
-	vmap_offset_end = devp->buf.lossy_mc_y_data_buf_paddr[0];
+	vmap_offset_end = devp->buf.norm_hme_data_buf_paddr[0];
 	cma_vaddr = frc_buf_vmap(cma_paddr, vmap_offset_end);
 	pr_frc(0, "map: paddr=0x%lx, vaddr=0x%lx, link tab size=0x%x (%d)\n",
 		(ulong)cma_paddr, (ulong)cma_vaddr, link_tab_all_size, link_tab_all_size);

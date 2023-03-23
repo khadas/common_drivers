@@ -8288,7 +8288,7 @@ static int osd_setting_blending_scope(u32 index)
 		return -1;
 	}
 
-	if (index == OSD1) {
+	if (index == OSD1 && !osd_hw.osd_meson_dev.osd0_sc_independ) {
 		bld_osd_h_start =
 			osd_hw.free_src_data[index].x_start;
 		bld_osd_h_end =
@@ -11505,10 +11505,13 @@ static void osd_setting_default_hwc(void)
 			     0x0  << 20 |
 			     0x0  << 11 |
 			     0x0);
-
-	blend_hsize = osd_hw.disp_info[VIU1].background_w;
-	blend_vsize = osd_hw.disp_info[VIU1].background_h;
-
+	if (osd_hw.osd_meson_dev.osd0_sc_independ) {
+		blend_hsize = osd_hw.dst_data[OSD1].w;
+		blend_vsize = osd_hw.dst_data[OSD1].h;
+	} else {
+		blend_hsize = osd_hw.disp_info[VIU1].background_w;
+		blend_vsize = osd_hw.disp_info[VIU1].background_h;
+	}
 	VSYNCOSD_WR_MPEG_REG(VIU_OSD_BLEND_BLEND0_SIZE,
 			     blend_vsize  << 16 |
 			     blend_hsize);

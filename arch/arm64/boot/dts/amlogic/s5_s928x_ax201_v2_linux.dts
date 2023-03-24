@@ -254,13 +254,6 @@
 		status = "okay";
 	};
 
-	vc9000e_rev {
-		compatible = "vc9000e_rev";
-		memory-region = <&vc9000e_reserved>;
-		dev_name = "vc9000e";
-		status = "okay";
-	};
-
 	encmem_rev {
 		compatible = "encmem_rev";
 		memory-region = <&encmem_reserved>;

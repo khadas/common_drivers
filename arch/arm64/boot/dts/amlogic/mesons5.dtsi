@@ -2209,14 +2209,14 @@
 		dev_name = "jpegenc";
 		status = "okay";
 
-		//clocks = <&clkc CLKID_SYS_CLK_DOS
+		clocks = <&clkc CLKID_SYS_CLK_DOS
 //			&clkc CLKID_VAPB
-		//	&clkc CLKID_HCODEC>;
+			&clkc CLKID_HCODEC>;
 
-		//clock-names =
-		//	"clk_dos",
+		clock-names =
+			"clk_dos",
 //			"clk_apb_dos",
-		//	"clk_jpeg_enc";
+			"clk_jpeg_enc";
 
 //		clocks = <&clkc CLKID_HCODEC_P0>;
 //		clock-names = "hcodec_p0";
@@ -2226,32 +2226,20 @@
 		//reset-names = "jpegenc_rst";
 		//resets = <&reset RESET_BRG_HCODEC_PIPL0>;
 	};
-	aml_enc {
-		compatible = "cnm, MultiEnc";
-		dev_name = "amvenc_multi";
-		status = "disabled";
-		config_mm_sz_mb = <200>;
-//		clocks = <&clkc CLKID_DOS
-//			&clkc CLKID_VAPB
-//			&clkc CLKID_WAVE_A_GATE
-//			&clkc CLKID_WAVE_B_GATE
-//			&clkc CLKID_WAVE_C_GATE>;
-//		clock-names =
-//			"clk_dos",
-//			"clk_apb_dos",
-//			"clk_MultiEnc_A",
-//			"clk_MultiEnc_B",
-//			"clk_MultiEnc_C";
-		interrupts = <0 94 1 0 95 1>;
-		interrupt-names = "multienc_irq", "multienc_idle_irq";
-		#address-cells=<2>;
-		#size-cells=<2>;
-		pwr-ctl = <0>;
-		//power-domains = <&pwrdm PDID_T7_DOS_WAVE>;
-		ranges;
-		io_reg_base {
-			reg = <0x0 0xfe310000 0x0 0x10000>;
-		};
+	vc9000e_rev {
+		compatible = "vc9000e_rev";
+		memory-region = <&vc9000e_reserved>;
+		dev_name = "vc9000e";
+		status = "okay";
+		interrupts = <GIC_SPI 157 IRQ_TYPE_EDGE_RISING
+				GIC_SPI 158 IRQ_TYPE_EDGE_RISING
+				GIC_SPI 159 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "vc9000e_irq0", "vc9000e_irq1", "vc9000e_irq1";
+		power-domains = <&pwrdm PDID_S5_VC9000E>;
+		clock-names = "vers_sys_clk", "vers_core_clk", "vers_aclk";
+		clocks = <&clkc CLKID_SYS_CLK_VC9000E>,
+				<&clkc CLKID_VC9000E_CORE>,
+				<&clkc CLKID_VC9000E_AXI>;
 	};
 
 	vpu: vpu {

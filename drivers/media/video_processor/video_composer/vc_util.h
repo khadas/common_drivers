@@ -63,4 +63,31 @@ struct composer_vf_para {
 	int dst_buf_stride;
 };
 
+struct pic_struct_t {
+	int format;
+	u32 width;
+	u32 height;
+	int addr[2];
+	u32 align_w;
+	u32 align_h;
+	int plane_count;
+	bool is_tvp;
+};
+
+struct composer_input_para {
+	int call_index;
+	struct vframe_s *vframe;
+	struct pic_struct_t pic_info;
+	int transform;
+};
+
+struct composer_output_para {
+	struct pic_struct_t pic_info;
+};
+
+struct composer_common_para {
+	struct composer_input_para input_para;
+	struct composer_output_para output_para;
+};
+
 #endif

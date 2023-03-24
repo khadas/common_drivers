@@ -17,6 +17,7 @@ struct dewarp_composer_para {
 	struct gdc_context_s *context;
 	struct firmware_load_s fw_load;
 	struct composer_vf_para *vf_para;
+	struct firmware_rotate_s last_fw_param;
 };
 
 extern u32 dewarp_load_flag;
@@ -26,9 +27,8 @@ int unload_dewarp_firmware(struct dewarp_composer_para *param);
 bool is_dewarp_supported(int vc_index, struct composer_vf_para *vf_param);
 int init_dewarp_composer(struct dewarp_composer_para *param);
 int uninit_dewarp_composer(struct dewarp_composer_para *param);
-int config_dewarp_vframe(int vc_index, struct vframe_s *src_vf, int transform,
-		struct dst_buf_t *dst_buf, struct composer_vf_para *vframe_para,
-		unsigned long addr, u32 buf_w, u32 buf_h, u32 data_w, int buf_format);
+int config_dewarp_vframe(struct composer_vf_para *vframe_para,
+struct composer_common_para *common_para);
 int dewarp_data_composer(struct dewarp_composer_para *param);
 
 #endif

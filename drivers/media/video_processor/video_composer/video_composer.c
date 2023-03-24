@@ -2086,6 +2086,7 @@ static void vframe_composer(struct composer_dev *dev)
 	enum vicp_skip_mode_e skip_mode[MXA_LAYER_COUNT] = {VICP_SKIP_MODE_OFF};
 	struct file *temp_file = NULL;
 	struct frame_info_t *vframe_info_cur = NULL;
+	struct composer_common_para common_para;
 
 	if (IS_ERR_OR_NULL(dev)) {
 		vc_print(dev->index, PRINT_ERROR, "%s: invalid param.\n", __func__);
@@ -2224,8 +2225,7 @@ static void vframe_composer(struct composer_dev *dev)
 			is_fixtunnel = true;
 
 		if (is_dec_vf || is_v4l_vf) {
-			vc_print(dev->index, PRINT_OTHER,
-				 "%s dma buffer is vf\n", __func__);
+			vc_print(dev->index, PRINT_OTHER, "%s dma buffer is vf\n", __func__);
 			scr_vf = get_vf_from_file(dev, file_vf, need_dw);
 			if (!scr_vf) {
 				vc_print(dev->index, PRINT_ERROR, "get vf NULL\n");
@@ -2235,6 +2235,7 @@ static void vframe_composer(struct composer_dev *dev)
 				vc_print(dev->index, PRINT_ERROR, "eos vf\n");
 				continue;
 			}
+			common_para.input_para.vframe = scr_vf;
 		} else {
 			addr = received_frames->phy_addr[vf_dev[i]];
 			vc_print(dev->index, PRINT_OTHER,
@@ -2264,18 +2265,25 @@ static void vframe_composer(struct composer_dev *dev)
 		if (max_bottom < (dst_axis.top + dst_axis.height))
 			max_bottom = dst_axis.top + dst_axis.height;
 
+		common_para.input_para.call_index = dev->index;
+		common_para.input_para.transform = vframe_info_cur->transform;
+		common_para.input_para.pic_info.format = vframe_info_cur->buffer_format;
+		common_para.input_para.pic_info.width = vframe_info_cur->buffer_w;
+		common_para.input_para.pic_info.height = vframe_info_cur->buffer_h;
+		common_para.input_para.pic_info.addr[0] = addr;
+		common_para.input_para.pic_info.align_w = vframe_info_cur->buffer_w;
+		common_para.input_para.pic_info.align_h = vframe_info_cur->buffer_h;
+
+		common_para.output_para.pic_info.align_w =
+			(vframe_info_cur->dst_w * dst_buf->buf_w / dev->vinfo_w + 0xf) & ~0xf;
+		common_para.output_para.pic_info.align_h =
+			(vframe_info_cur->dst_h * dst_buf->buf_h / dev->vinfo_h + 0xf) & ~0xf;
+		common_para.output_para.pic_info.addr[0] = dst_buf->phy_addr;
+
 		if (dev->dev_choice == COMPOSER_WITH_DEWARP) {
 			vc_print(dev->index, PRINT_OTHER, "use dewarp composer.\n");
 			memset(&vframe_para, 0, sizeof(vframe_para));
-			ret = config_dewarp_vframe(dev->index, scr_vf,
-				vframe_info_cur->transform,
-				dst_buf,
-				&vframe_para,
-				addr,
-				vframe_info_cur->buffer_w,
-				vframe_info_cur->buffer_h,
-				vframe_info_cur->reserved[0],
-				vframe_info_cur->buffer_format);
+			ret = config_dewarp_vframe(&vframe_para, &common_para);
 			if (ret < 0)
 				vc_print(dev->index, PRINT_ERROR, "dewarp config err.\n");
 			dev->dewarp_para.vf_para = &vframe_para;
@@ -2496,6 +2504,9 @@ static void vframe_composer(struct composer_dev *dev)
 			dst_vf->width = dst_buf->buf_w >> (1 + vicp_shrink_mode);
 			dst_vf->height = dst_buf->buf_h >> (1 + vicp_shrink_mode);
 		}
+	} else if (dev->dev_choice == COMPOSER_WITH_DEWARP) {
+		dst_vf->width = common_para.output_para.pic_info.align_w;
+		dst_vf->height = common_para.output_para.pic_info.align_h;
 	} else {
 		dst_vf->width = dst_buf->buf_w;
 		dst_vf->height = dst_buf->buf_h;
@@ -2508,6 +2519,11 @@ static void vframe_composer(struct composer_dev *dev)
 		dst_vf->canvas0_config[0].height = dst_vf->height;
 		dst_vf->canvas0_config[0].block_mode = 0;
 		dst_vf->plane_num = 1;
+
+		if (dev->dev_choice == COMPOSER_WITH_DEWARP) {
+			dst_vf->canvas0_config[0].width = common_para.output_para.pic_info.align_w;
+			dst_vf->canvas0_config[0].height = common_para.output_para.pic_info.align_h;
+		}
 	} else {
 		dst_vf->canvas0_config[0].phy_addr = dst_buf->phy_addr;
 		dst_vf->canvas0_config[0].width = dst_vf->width;
@@ -2520,6 +2536,15 @@ static void vframe_composer(struct composer_dev *dev)
 		dst_vf->canvas0_config[1].height = dst_vf->height >> 1;
 		dst_vf->canvas0_config[1].block_mode = 0;
 		dst_vf->plane_num = 2;
+
+		if (dev->dev_choice == COMPOSER_WITH_DEWARP) {
+			dst_vf->canvas0_config[0].width = common_para.output_para.pic_info.align_w;
+			dst_vf->canvas0_config[0].height = common_para.output_para.pic_info.align_h;
+			dst_vf->canvas0_config[1].phy_addr = dst_buf->phy_addr +
+				dst_vf->canvas0_config[0].width * dst_vf->canvas0_config[0].height;
+			dst_vf->canvas0_config[1].width = dst_vf->canvas0_config[0].width;
+			dst_vf->canvas0_config[1].height = dst_vf->canvas0_config[0].height >> 1;
+		}
 	}
 	vc_print(dev->index, PRINT_DEWARP,
 		"canvas0_addr: 0x%lx, canvas0_w: %d, canvas0_h: %d.\n",

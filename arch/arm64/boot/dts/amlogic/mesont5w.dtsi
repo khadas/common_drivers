@@ -1157,12 +1157,12 @@
 					<&clkc CLKID_SD_EMMC_C>,
 					<&xtal>,
 					<&clkc CLKID_FCLK_DIV2>,
-					<&clkc CLKID_FCLK_DIV2>;
+					<&clkc CLKID_FCLK_DIV5>;
 
 			clock-names = "core", "mux0", "mux1",
 						"clkin0", "clkin1", "clkin2";
 			card_type = <1>;
-			//tx_delay = <20>;
+			tx_delay = <20>;
 			save_para = <0>;
 			src_clk_rate = <1152000000>;
 			nwr_cnt = <12>;

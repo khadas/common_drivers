@@ -1129,9 +1129,10 @@
 	status = "disabled";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1980000 0x100000 0x100000>;
+	display_device_cnt = <2>;
 	logo_addr = "0xbf800000";
 	mem_alloc = <0>;
-	pxp_mode = <1>; /** 0:normal mode 1:pxp mode */
+	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
 &drm_vpu {

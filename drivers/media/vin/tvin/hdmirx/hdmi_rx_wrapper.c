@@ -2942,7 +2942,7 @@ void hdmirx_open_port(enum tvin_port_e port)
 		if (rx.state > FSM_HPD_LOW)
 			rx.state = FSM_HPD_LOW;
 		wait_ddc_idle();
-		rx_i2c_init();
+		rx_i2c_div_init();
 		rx_set_cur_hpd(0, 0);
 		/* need reset the whole module when switch port */
 		if (need_update_edid())

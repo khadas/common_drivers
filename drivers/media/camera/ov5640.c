@@ -3026,7 +3026,7 @@ static int ov5640_open(struct file *file)
 	dev->vminfo.bt_path_count = dev->cam_info.bt_path_count;
 
 #ifdef CONFIG_CMA
-	retval = vm_init_resource(24 * SZ_1M, &dev->vminfo);
+	retval = vm_init_resource(32 * SZ_1M, &dev->vminfo);
 	if (retval < 0) {
 		pr_err("error: no cma memory\n");
 		return -1;

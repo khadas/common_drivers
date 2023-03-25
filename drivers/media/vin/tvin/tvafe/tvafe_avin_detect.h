@@ -96,6 +96,10 @@
 #define IRQCTRL_CVBS_IRQ0_COUNTER	0x92
 #define IRQCTRL_CVBS_IRQ1_COUNTER	0x93
 
+/* add t3x */
+#define PADCTRL_ANALOG_I		0xf3
+#define PADCTRL_ANALOG_EN		0xf4
+
 enum tvafe_avin_status_e {
 	TVAFE_AVIN_STATUS_IN = 0,
 	TVAFE_AVIN_STATUS_OUT = 1,
@@ -142,6 +146,7 @@ enum avin_cpu_type {
 	AVIN_CPU_TYPE_T3   = 7,
 	AVIN_CPU_TYPE_T5W   = 8,
 	AVIN_CPU_TYPE_T5M   = 9,
+	AVIN_CPU_TYPE_T3X   = 10,
 	AVIN_CPU_TYPE_MAX,
 };
 

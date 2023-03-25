@@ -1680,6 +1680,7 @@ static struct meson_tvafe_data meson_t5_tvafe_data = {
 
 	.cvbs_pq_conf = NULL,
 	.rf_pq_conf = NULL,
+	.atv_dmd_sys_clk = HHI_ANA_CLK_BASE,
 };
 
 static struct meson_tvafe_data meson_t5d_tvafe_data = {
@@ -1688,6 +1689,7 @@ static struct meson_tvafe_data meson_t5d_tvafe_data = {
 
 	.cvbs_pq_conf = NULL,
 	.rf_pq_conf = NULL,
+	.atv_dmd_sys_clk = HHI_ANA_CLK_BASE,
 };
 
 static struct meson_tvafe_data meson_t3_tvafe_data = {
@@ -1696,6 +1698,7 @@ static struct meson_tvafe_data meson_t3_tvafe_data = {
 
 	.cvbs_pq_conf = NULL,
 	.rf_pq_conf = NULL,
+	.atv_dmd_sys_clk = ATV_DMD_SYS_CLK_CNTL,
 };
 
 static struct meson_tvafe_data meson_t5w_tvafe_data = {
@@ -1704,6 +1707,7 @@ static struct meson_tvafe_data meson_t5w_tvafe_data = {
 
 	.cvbs_pq_conf = NULL,
 	.rf_pq_conf = NULL,
+	.atv_dmd_sys_clk = HHI_ANA_CLK_BASE,
 };
 
 static struct meson_tvafe_data meson_t5m_tvafe_data = {
@@ -1712,6 +1716,16 @@ static struct meson_tvafe_data meson_t5m_tvafe_data = {
 
 	.cvbs_pq_conf = NULL,
 	.rf_pq_conf = NULL,
+	.atv_dmd_sys_clk = ATV_DMD_SYS_CLK_CNTL,
+};
+
+static struct meson_tvafe_data meson_t3x_tvafe_data = {
+	.cpu_id = TVAFE_CPU_TYPE_T3X,
+	.name = "meson-t3x-tvafe",
+
+	.cvbs_pq_conf = NULL,
+	.rf_pq_conf = NULL,
+	.atv_dmd_sys_clk = T3X_ATV_DMD_SYS_CLK_CNTL,
 };
 
 static const struct of_device_id meson_tvafe_dt_match[] = {
@@ -1742,6 +1756,9 @@ static const struct of_device_id meson_tvafe_dt_match[] = {
 	}, {
 		.compatible = "amlogic, tvafe-t5m",
 		.data		= &meson_t5m_tvafe_data,
+	}, {
+		.compatible = "amlogic, tvafe-t3x",
+		.data		= &meson_t3x_tvafe_data,
 	},
 	{}
 };
@@ -1934,6 +1951,8 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 	else if (tvafe_cpu_type() == TVAFE_CPU_TYPE_T3 ||
 		 tvafe_cpu_type() == TVAFE_CPU_TYPE_T5M)
 		sys_clk_reg_base = ATV_DMD_SYS_CLK_CNTL;
+	else
+		sys_clk_reg_base = s_tvafe_data->atv_dmd_sys_clk;
 	ana_addr = ioremap(sys_clk_reg_base, 0x5);
 	if (!ana_addr) {
 		tvafe_pr_err("ana ioremap failure\n");

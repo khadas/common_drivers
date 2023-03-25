@@ -226,20 +226,13 @@ int tvafe_pq_config_probe(struct meson_tvafe_data *tvafe_data)
 		return -1;
 	}
 
-	switch (tvafe_data->cpu_id) {
-	case TVAFE_CPU_TYPE_TL1:
-	case TVAFE_CPU_TYPE_TM2:
-	case TVAFE_CPU_TYPE_TM2_B:
-	case TVAFE_CPU_TYPE_T5:
-	case TVAFE_CPU_TYPE_T5D:
-	case TVAFE_CPU_TYPE_T3:
-	case TVAFE_CPU_TYPE_T5W:
-	case TVAFE_CPU_TYPE_T5M:
+	if (tvafe_data->cpu_id >= TVAFE_CPU_TYPE_TL1 &&
+	    tvafe_data->cpu_id < TVAFE_CPU_TYPE_MAX) {
 		tvafe_data->cvbs_pq_conf = cvbs_pq_config_tl1;
 		tvafe_data->rf_pq_conf = rf_pq_config_tl1;
-		break;
-	default:
-		break;
+	} else {
+		tvafe_pr_err("%s: not support cpu_id(%d)\n",
+				__func__, tvafe_data->cpu_id);
 	}
 
 	return 0;

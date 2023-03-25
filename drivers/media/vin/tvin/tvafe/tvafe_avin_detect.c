@@ -1427,6 +1427,17 @@ struct meson_avin_data t5m_data = {
 	.irq1_cnt  = IRQCTRL_CVBS_IRQ1_COUNTER,
 };
 
+struct meson_avin_data t3x_data = {
+	.cpu_id = AVIN_CPU_TYPE_T3X,
+	.name = "meson-t3x-avin-detect",
+
+	.detect_cntl = ANACTRL_CVBS_DETECT_CNTL,
+	.irq0_cntl = PADCTRL_ANALOG_EN,
+	.irq1_cntl = PADCTRL_ANALOG_EN,
+	.irq0_cnt  = PADCTRL_ANALOG_I,
+	.irq1_cnt  = PADCTRL_ANALOG_I,
+};
+
 static const struct of_device_id tvafe_avin_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{	.compatible = "amlogic, tvafe_avin_detect",
@@ -1452,6 +1463,9 @@ static const struct of_device_id tvafe_avin_dt_match[] = {
 	},
 	{	.compatible = "amlogic, t5m_tvafe_avin_detect",
 		.data = &t5m_data,
+	},
+	{	.compatible = "amlogic, t3x_tvafe_avin_detect",
+		.data = &t3x_data,
 	},
 	{},
 };

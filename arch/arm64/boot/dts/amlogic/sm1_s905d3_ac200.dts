@@ -421,8 +421,8 @@
 		clock-names = "cts_csi_adapt_clk_composite",
 		      "cts_csi_phy_clk_composite";
 		power-domains = <&pwrdm PWRC_SM1_CSI_ID>;
-		interrupts = <0 1 0>;
-		interrupt-names = "csi_phy";
+		/* interrupts = <0 1 0>; */
+		/* interrupt-names = "csi_phy"; */
 	};
 
 	gpio_keypad{

@@ -138,13 +138,15 @@ void adc_set_ddemod_default(enum fe_delivery_system delsys)
 		case ADC_CHIP_T3:
 		case ADC_CHIP_T5W:
 		case ADC_CHIP_T5M:
+		case ADC_CHIP_T3X:
 			switch (delsys) {
 			case SYS_DVBT:
 			case SYS_DVBT2:
 				adc_wr_afe(AFE_VAFE_CTRL0, 0x00050710);
 				adc_wr_afe(AFE_VAFE_CTRL1, 0x3000);
 				adc_wr_afe(AFE_VAFE_CTRL2, 0x1fe09e31);
-				if (devp->plat_data->chip_id == ADC_CHIP_T5M)
+				if (devp->plat_data->chip_id == ADC_CHIP_T5M ||
+				    devp->plat_data->chip_id == ADC_CHIP_T3X)
 					adc_wr_hiu(adc_addr->dadc_cntl, 0x0030307c);
 				else
 					adc_wr_hiu(adc_addr->dadc_cntl, 0x0030303c);
@@ -164,7 +166,8 @@ void adc_set_ddemod_default(enum fe_delivery_system delsys)
 				adc_wr_afe(AFE_VAFE_CTRL0, 0x00050710);
 				adc_wr_afe(AFE_VAFE_CTRL1, 0x3000);
 				adc_wr_afe(AFE_VAFE_CTRL2, 0x1fe09e31);
-				if (devp->plat_data->chip_id == ADC_CHIP_T5M)
+				if (devp->plat_data->chip_id == ADC_CHIP_T5M ||
+				    devp->plat_data->chip_id == ADC_CHIP_T3X)
 					adc_wr_hiu(adc_addr->dadc_cntl, 0x0030307c);
 				else
 					adc_wr_hiu(adc_addr->dadc_cntl, 0x0030303c);
@@ -187,7 +190,8 @@ void adc_set_ddemod_default(enum fe_delivery_system delsys)
 				adc_wr_afe(AFE_VAFE_CTRL0, 0x000d0710);
 				adc_wr_afe(AFE_VAFE_CTRL1, 0x3000);
 				adc_wr_afe(AFE_VAFE_CTRL2, 0x1fe09e31);
-				if (devp->plat_data->chip_id == ADC_CHIP_T5M)
+				if (devp->plat_data->chip_id == ADC_CHIP_T5M ||
+				    devp->plat_data->chip_id == ADC_CHIP_T3X)
 					adc_wr_hiu(adc_addr->dadc_cntl, 0x0030307c);
 				else
 					adc_wr_hiu(adc_addr->dadc_cntl, 0x00303044);
@@ -353,7 +357,8 @@ static void adc_set_dtvdemod_pll_by_clk(struct tvin_adc_dev *devp,
 
 	switch (p_dtv_para->adc_clk) {
 	case ADC_CLK_24M:
-		if (chip == ADC_CHIP_T5M) {
+		if (chip == ADC_CHIP_T5M ||
+		    chip == ADC_CHIP_T3X) {
 			adc_wr_hiu(pll_addr->adc_pll_cntl_0, 0x11ee410e);
 			adc_wr_hiu(pll_addr->adc_pll_cntl_1, 0x021a8605);
 			adc_wr_hiu(pll_addr->adc_pll_cntl_2, 0x00000080);
@@ -396,7 +401,8 @@ static void adc_set_dtvdemod_pll_by_clk(struct tvin_adc_dev *devp,
 			//if (chip >= ADC_CHIP_T5D)
 			//adc_wr_hiu_bits(pll_addr->adc_pll_cntl_5 + reg_offset, 1, 0, 16);
 			//else
-			if (chip == ADC_CHIP_T5W || chip == ADC_CHIP_T5M)
+			if (chip == ADC_CHIP_T5W || chip == ADC_CHIP_T5M ||
+			    chip == ADC_CHIP_T3X)
 				adc_wr_hiu(pll_addr->adc_pll_cntl_5, 0x3927a00a);
 			else
 				adc_wr_hiu(pll_addr->adc_pll_cntl_5, 0x3927a000);
@@ -435,7 +441,8 @@ static void adc_set_dtvdemod_pll_by_delsys(struct tvin_adc_dev *devp,
 	switch (p_dtv_para->delsys) {
 	case SYS_DVBT:
 	case SYS_DVBT2:
-		if (chip == ADC_CHIP_T5M) {
+		if (chip == ADC_CHIP_T5M ||
+		    chip == ADC_CHIP_T3X) {
 			adc_wr_hiu(pll_addr->adc_pll_cntl_0, 0x112a5168);
 			adc_wr_hiu(pll_addr->adc_pll_cntl_1, 0x021a8605);
 			adc_wr_hiu(pll_addr->adc_pll_cntl_2, 0x80);
@@ -459,7 +466,8 @@ static void adc_set_dtvdemod_pll_by_delsys(struct tvin_adc_dev *devp,
 
 	case SYS_DVBS:
 	case SYS_DVBS2:
-		if (chip == ADC_CHIP_T5M) {
+		if (chip == ADC_CHIP_T5M ||
+		    chip == ADC_CHIP_T3X) {
 			adc_wr_hiu(pll_addr->adc_pll_cntl_0, 0x112e410e);
 			adc_wr_hiu(pll_addr->adc_pll_cntl_1, 0x021a8605);
 			adc_wr_hiu(pll_addr->adc_pll_cntl_2, 0x80);
@@ -609,7 +617,8 @@ int adc_set_pll_cntl(bool on, enum adc_sel module_sel, void *p_para)
 #endif
 				}
 				/** DADC CNTL for LIF signal input **/
-				if (devp->plat_data->chip_id == ADC_CHIP_T5M)
+				if (devp->plat_data->chip_id == ADC_CHIP_T5M ||
+				    devp->plat_data->chip_id == ADC_CHIP_T3X)
 					adc_wr_hiu(adc_addr->dadc_cntl, 0x0030307c);
 				else
 					adc_wr_hiu(adc_addr->dadc_cntl, 0x00303044);
@@ -621,7 +630,8 @@ int adc_set_pll_cntl(bool on, enum adc_sel module_sel, void *p_para)
 				adc_wr_hiu(adc_addr->dadc_cntl_3, 0x08300b83);
 				usleep_range(100, 101);
 				adc_pll_lock_cnt++;
-				if (devp->plat_data->chip_id == ADC_CHIP_T5M)
+				if (devp->plat_data->chip_id == ADC_CHIP_T5M ||
+				    devp->plat_data->chip_id == ADC_CHIP_T3X)
 					adc_pll_sts = adc_rd_hiu_bits(ANACTRL_ADC_PLL_STS, 31, 1);
 				else if (devp->plat_data->chip_id == ADC_CHIP_T3)
 					adc_pll_sts = adc_rd_hiu_bits(pll_addr->adc_pll_cntl_7, 31, 1);
@@ -731,14 +741,16 @@ int adc_set_pll_cntl(bool on, enum adc_sel module_sel, void *p_para)
 
 				usleep_range(100, 101);
 				adc_pll_lock_cnt++;
-				if (devp->plat_data->chip_id == ADC_CHIP_T5M)
+				if (devp->plat_data->chip_id == ADC_CHIP_T5M ||
+				    devp->plat_data->chip_id == ADC_CHIP_T3X)
 					adc_pll_sts = adc_rd_hiu_bits(ANACTRL_ADC_PLL_STS, 31, 1);
 				else if (devp->plat_data->chip_id == ADC_CHIP_T3)
 					adc_pll_sts = adc_rd_hiu_bits(pll_addr->adc_pll_cntl_7, 31, 1);
 				else
 					adc_pll_sts = adc_rd_hiu_bits(pll_addr->adc_pll_cntl_0, 31, 1);
 			} while (!adc_pll_sts && (adc_pll_lock_cnt < 10));
-			if (devp->plat_data->chip_id == ADC_CHIP_T5M)
+			if (devp->plat_data->chip_id == ADC_CHIP_T5M ||
+			    devp->plat_data->chip_id == ADC_CHIP_T3X)
 				adc_wr_hiu(adc_addr->dadc_cntl, 0x0030307c);
 			else
 				adc_wr_hiu(adc_addr->dadc_cntl, 0x00303044);
@@ -813,6 +825,7 @@ int adc_set_pll_cntl(bool on, enum adc_sel module_sel, void *p_para)
 				case ADC_CHIP_S4D:
 				case ADC_CHIP_T5W:
 				case ADC_CHIP_T5M:
+				case ADC_CHIP_T3X:
 					adc_set_dtvdemod_pll_by_delsys(devp, p_dtv_para);
 					break;
 
@@ -823,7 +836,8 @@ int adc_set_pll_cntl(bool on, enum adc_sel module_sel, void *p_para)
 
 				usleep_range(100, 101);
 				adc_pll_lock_cnt++;
-				if (devp->plat_data->chip_id == ADC_CHIP_T5M)
+				if (devp->plat_data->chip_id == ADC_CHIP_T5M ||
+				    devp->plat_data->chip_id == ADC_CHIP_T3X)
 					adc_pll_sts = adc_rd_hiu_bits(ANACTRL_ADC_PLL_STS, 31, 1);
 				else if (devp->plat_data->chip_id == ADC_CHIP_T3) {
 					adc_pll_sts = adc_rd_hiu_bits(pll_addr->adc_pll_cntl_7, 31, 1);
@@ -1471,6 +1485,13 @@ static const struct adc_platform_data_s adc_data_t5m = {
 	.chip_id = ADC_CHIP_T5M,
 	.is_tv_chip = true,
 };
+
+static const struct adc_platform_data_s adc_data_t3x = {
+	ADC_ADDR_T3,
+	ADC_PLL_ADDR_T3,
+	.chip_id = ADC_CHIP_T3X,
+	.is_tv_chip = true,
+};
 #endif
 
 static const struct of_device_id adc_dt_match[] = {
@@ -1526,6 +1547,10 @@ static const struct of_device_id adc_dt_match[] = {
 	{
 		.compatible = "amlogic, adc-t5m",
 		.data = &adc_data_t5m,
+	},
+	{
+		.compatible = "amlogic, adc-t3x",
+		.data = &adc_data_t3x,
 	},
 #endif
 	{}

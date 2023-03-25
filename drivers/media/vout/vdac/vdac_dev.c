@@ -386,8 +386,10 @@ static void vdac_enable_avout_av(bool on)
 
 	if (on) {
 		if (s_vdac_data->cpu_id >= VDAC_CPU_T5M) {
-			if (!s_vdac_data->cdac_disable)
+			if (!s_vdac_data->cdac_disable) {
 				vdac_ana_reg_write(reg_cntl0, s_vdac_data->bypass_cfg_cntl0);
+				vdac_ctrl_table_config(1);
+			}
 		} else if (s_vdac_data->cpu_id >= VDAC_CPU_T5 &&
 		    s_vdac_data->cpu_id < VDAC_CPU_MAX) {
 			vdac_enable_dac_bypass(reg_cntl0);
@@ -772,7 +774,8 @@ static ssize_t vdac_info_show(struct class *class,
 		"reg_cntl0:                0x%02x=0x%08x\n"
 		"reg_cntl1:                0x%02x=0x%08x\n"
 		"vdac_sel0:		   0x%02x=0x%08x\n"
-		"debug_print:              %d\n",
+		"debug_print:              %d\n"
+		"VDAC_VER:                 %s\n",
 		s_vdac_data->name, s_vdac_data->cpu_id, pri_flag,
 		s_vdac_data->cdac_disable, s_vdac_data->reg_cntl0,
 		vdac_ana_reg_read(s_vdac_data->reg_cntl0),
@@ -780,7 +783,8 @@ static ssize_t vdac_info_show(struct class *class,
 		vdac_ana_reg_read(s_vdac_data->reg_cntl1),
 		VENC_VDAC_DACSEL0,
 		vdac_vcbus_reg_read(VENC_VDAC_DACSEL0),
-		vdac_debug_print);
+		vdac_debug_print,
+		VDAC_VER);
 
 	return len;
 }

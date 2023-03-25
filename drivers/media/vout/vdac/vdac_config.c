@@ -211,7 +211,21 @@ static struct meson_vdac_data meson_t5m_vdac_data = {
 	.ctrl_table = vdac_ctrl_enable_t5m,
 	.cdac_disable = 1,
 	.bypass_cfg_cntl0 = 0x00416901, //vlsi suggestion value
-	.cvbsout_cfg_cntl0 = 0x00416a01, //vlsi suggestion value
+	.cvbsout_cfg_cntl0 = 0x00410a01, //vlsi suggestion value
+};
+
+static struct meson_vdac_data meson_t3x_vdac_data = {
+	.cpu_id = VDAC_CPU_T3X,
+	.name = "meson-t3x-vdac",
+
+	.reg_cntl0 = ANACTRL_VDAC_CTRL0,
+	.reg_cntl1 = ANACTRL_VDAC_CTRL1,
+	.reg_vid_clk_ctrl2 = CLKCTRL_VID_CLK_CTRL2,
+	.reg_vid2_clk_div = CLKCTRL_VIID_CLK_DIV,
+	.ctrl_table = vdac_ctrl_enable_t5m,
+	.cdac_disable = 1,
+	.bypass_cfg_cntl0 = 0x00416901, //vlsi suggestion value
+	.cvbsout_cfg_cntl0 = 0x00410a01, //vlsi suggestion value
 };
 
 const struct of_device_id meson_vdac_dt_match[] = {
@@ -253,11 +267,14 @@ const struct of_device_id meson_vdac_dt_match[] = {
 		.compatible = "amlogic, vdac-s4d",
 		.data		= &meson_s4d_vdac_data,
 	}, {
-		.compatible = "amlogic, vdac-T5w",
+		.compatible = "amlogic, vdac-t5w",
 		.data		= &meson_t5w_vdac_data,
 	}, {
-		.compatible = "amlogic, vdac-T5m",
+		.compatible = "amlogic, vdac-t5m",
 		.data		= &meson_t5m_vdac_data,
+	}, {
+		.compatible = "amlogic, vdac-t3x",
+		.data		= &meson_t3x_vdac_data,
 	},
 	{}
 };

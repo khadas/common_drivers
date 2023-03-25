@@ -122,6 +122,7 @@ enum adc_chip_ver {
 	ADC_CHIP_S4D,
 	ADC_CHIP_T5W,
 	ADC_CHIP_T5M,
+	ADC_CHIP_T3X,
 };
 
 struct adc_reg_phy {

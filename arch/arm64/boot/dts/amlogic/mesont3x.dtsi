@@ -2287,6 +2287,20 @@
 		status = "disabled";
 	};
 
+	vdac: vdac {
+		compatible = "amlogic, vdac-t3x";
+		status = "okay";
+		cdac_disable = <0>;
+	};
+
+	adc: adc {
+		compatible = "amlogic, adc-t3x";
+		status = "okay";
+		reg = <0x0 0xfe092000 0x0 0x2000/* afe reg base */
+			0x0 0xfe008000 0x0 0x2000/* ana base */
+		>;
+	};
+
 	rdma{
 		compatible = "amlogic, meson-t3x, rdma";
 		status = "okay";

@@ -45,6 +45,8 @@
 /* 20220419:adjust cvbsout clk delay */
 /* 20230426:add vdac control node */
 #define VDIN_VER "20230426:add vdac control node"
+/* 20230325:t3x bringup */
+#define VDAC_VER "20230325:t3x bringup"
 
 enum vdac_cpu_type {
 	VDAC_CPU_G12AB = 0,
@@ -59,6 +61,7 @@ enum vdac_cpu_type {
 	VDAC_CPU_S4D   = 9,
 	VDAC_CPU_T5W   = 10,
 	VDAC_CPU_T5M   = 11,
+	VDAC_CPU_T3X   = 12,
 	VDAC_CPU_MAX,
 };
 
@@ -75,8 +78,8 @@ struct meson_vdac_data {
 	unsigned int reg_vid2_clk_div;
 	struct meson_vdac_ctrl_s *ctrl_table;
 	unsigned int cdac_disable; //tv chip cvbsout use headset detection control
-	unsigned int bypass_cfg_cntl0; //av cvbsout bypass config
-	unsigned int cvbsout_cfg_cntl0; //atv bypass/cvbsout/dtv demod bypass config
+	unsigned int bypass_cfg_cntl0; //av bypass config
+	unsigned int cvbsout_cfg_cntl0; //cvbsout/atv bypass/dtv demod bypass config
 };
 
 struct meson_vdac_ctrl_s {

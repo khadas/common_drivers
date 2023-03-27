@@ -1367,6 +1367,8 @@ void pipx_swap_frame(struct video_layer_s *layer, struct vframe_s *vf,
 			mirror = V_MIRROR;
 		_set_video_mirror(layer_info, mirror);
 		layer_info->zorder = vf->zorder;
+	} else {
+		_set_video_mirror(layer_info, 0);
 	}
 
 	layer_swap_frame(vf, layer, false, vinfo, 0);
@@ -1445,6 +1447,8 @@ void primary_swap_frame(struct video_layer_s *layer,
 			mirror = V_MIRROR;
 		_set_video_mirror(&glayer_info[0], mirror);
 		glayer_info[0].zorder = vf->zorder;
+	} else {
+		_set_video_mirror(&glayer_info[0], 0);
 	}
 
 	if (layer->layer_id == 0 &&
@@ -3418,6 +3422,8 @@ static struct vframe_s *vdx_swap_frame(u8 layer_id,
 		_set_video_mirror(&glayer_info[layer_id], mirror);
 		set_alpha_scpxn(&vd_layer[layer_id], vd_layer[layer_id].dispbuf->composer_info);
 		glayer_info[layer_id].zorder = vd_layer[layer_id].dispbuf->zorder;
+	} else {
+		_set_video_mirror(&glayer_info[layer_id], 0);
 	}
 
 	return new_frame;

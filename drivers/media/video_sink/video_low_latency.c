@@ -796,6 +796,8 @@ static int lowlatency_vsync(u8 instance_id)
 		_set_video_mirror(&glayer_info[0], mirror);
 		set_alpha_scpxn(&vd_layer[0], vd_layer[0].dispbuf->composer_info);
 		glayer_info[0].zorder = vd_layer[0].dispbuf->zorder;
+	} else {
+		_set_video_mirror(&glayer_info[0], 0);
 	}
 
 	/* setting video display property in underflow mode */
@@ -1173,6 +1175,8 @@ static int lowlatency_vsync(u8 instance_id)
 		_set_video_mirror(&glayer_info[1], mirror);
 		set_alpha_scpxn(&vd_layer[1], vd_layer[1].dispbuf->composer_info);
 		glayer_info[1].zorder = vd_layer[1].dispbuf->zorder;
+	} else {
+		_set_video_mirror(&glayer_info[1], 0);
 	}
 
 	/* setting video display property in underflow mode */

@@ -60,3 +60,5 @@ dtb-y += t5w_t962d4_at301_R.dtb
 dtb-y += t5w_t962d4_at301_1g_R.dtb
 dtb-y += t5w_t962d4_at301_1.5g_R.dtb
 dtb-y += t3x_pxp.dtb
+dtb-y += t3x_t968d4_bc309.dtb
+dtb-y += t3x_t968d4_bc302.dtb

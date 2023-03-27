@@ -949,7 +949,6 @@
 
 &saradc {
 	status = "okay";
-	vref-supply = <&VCC_1_8V>;
 };
 
 &spicc0 {

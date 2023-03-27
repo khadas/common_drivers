@@ -53,4 +53,5 @@ source "$(COMMON_DRIVERS_DIR)/drivers/hwspinlock/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/android/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/yaffs2/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/audiobridge/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/Kconfig"
 endmenu

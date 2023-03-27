@@ -151,14 +151,14 @@
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 4k STB androidT size 84M */
-			size = <0x5400000>;
+			/* 1080p TV androidT size 88M */
+			size = <0x5800000>;
 			alignment = <0x400000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 4k STB androidT size 36M */
+			/* 1080p TV androidT size 36M */
 			size = <0x2400000>;
 			alignment = <0x400000>;
 		};
@@ -166,14 +166,7 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* device/amlogic/xxx/BoardConfig.mk
-			 *        |HWC_PRIMARY_FRAMEBUFFER_WIDTH := 1920
-			 *        |HWC_PRIMARY_FRAMEBUFFER_HEIGHT := 1080
-			 *        |NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
-			 * size = 1920 * 1080 * 3 * 4
-			 * (RGBA: 4 bytes/pixel) + 4M(10% * afbc)
-			 */
-			size = <0x00000>;
+			size = <0x0>;
 			alignment = <0x400000>;
 			alloc-ranges = <0x00000000 0x30000000>;
 		};
@@ -181,8 +174,7 @@
 		ion_fb_reserved:linux,ion-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1920x1080x4x3 round up 4M align */
-			size = <0x00000>;
+			size = <0x0>;
 			alignment = <0x400000>;
 			alloc-ranges = <0x00000000 0x30000000>;
 		};

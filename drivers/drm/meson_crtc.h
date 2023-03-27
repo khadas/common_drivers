@@ -26,6 +26,20 @@ enum {
 	HDMI_EOTF_MESON_DOLBYVISION_LL,
 };
 
+enum {
+	RGBA_8888 = 0,
+	RGBX_8888,
+	RGB_888,
+	RGB_565,
+	BGRA_8888,
+};
+
+enum {
+	YCBCR_422_SP = 0,
+	YCBCR_422_I,
+	YCRCB_420_SP,
+};
+
 struct am_meson_crtc_state {
 	struct drm_crtc_state base;
 
@@ -77,6 +91,8 @@ struct am_meson_crtc {
 	struct drm_property *dv_enable_property;
 	struct drm_property *dv_mode_property;
 	struct drm_property *bgcolor_property;
+	struct drm_property *video_pixelformat_property;
+	struct drm_property *osd_pixelformat_property;
 
 	/*debug*/
 	int dump_enable;

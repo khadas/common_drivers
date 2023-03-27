@@ -171,6 +171,21 @@ static void meson_crtc_reset(struct drm_crtc *crtc)
 	meson_crtc_init_hdr_preference(meson_crtc_state);
 }
 
+static int get_osd_pixelformat(void)
+{
+	int ret = 0;
+
+	ret = BIT(RGBA_8888) | BIT(RGBX_8888) | BIT(RGB_888) | BIT(RGB_565) | BIT(BGRA_8888);
+	return ret;
+}
+
+static int get_video_pixelformat(void)
+{
+	int ret = 0;
+
+	ret = BIT(YCBCR_422_SP) | BIT(YCBCR_422_I);
+	return ret;
+}
 static int meson_crtc_atomic_get_property(struct drm_crtc *crtc,
 	const struct drm_crtc_state *state,
 	struct drm_property *property,
@@ -198,6 +213,12 @@ static int meson_crtc_atomic_get_property(struct drm_crtc *crtc,
 		return 0;
 	} else if (property == meson_crtc->dv_mode_property) {
 		*val = crtc_state->dv_mode;
+		return 0;
+	}  else if (property == meson_crtc->osd_pixelformat_property) {
+		*val = get_osd_pixelformat();
+		return 0;
+	}  else if (property == meson_crtc->video_pixelformat_property) {
+		*val = get_video_pixelformat();
 		return 0;
 	}
 
@@ -867,6 +888,36 @@ static void meson_crtc_add_bgcolor_property(struct drm_device *drm_dev,
 	}
 }
 
+static void meson_crtc_init_video_pixelformat_property(struct drm_device *drm_dev,
+						struct am_meson_crtc *amcrtc)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(drm_dev, 0, "video_pixelformat",
+					0, 65535);
+	if (prop) {
+		amcrtc->video_pixelformat_property = prop;
+		drm_object_attach_property(&amcrtc->base.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to video pixelformatcolor property\n");
+	}
+}
+
+static void meson_crtc_init_osd_pixelformat_property(struct drm_device *drm_dev,
+						struct am_meson_crtc *amcrtc)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(drm_dev, 0, "osd_pixelformat",
+					0, 65535);
+	if (prop) {
+		amcrtc->osd_pixelformat_property = prop;
+		drm_object_attach_property(&amcrtc->base.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to osd pixelformatcolor property\n");
+	}
+}
+
 struct am_meson_crtc *meson_crtc_bind(struct meson_drm *priv, int idx)
 {
 	struct am_meson_crtc *amcrtc;
@@ -925,6 +976,8 @@ struct am_meson_crtc *meson_crtc_bind(struct meson_drm *priv, int idx)
 	meson_crtc_init_dv_enable_property(priv->drm, amcrtc);
 	meson_crtc_init_dv_mode_property(priv->drm, amcrtc);
 	meson_crtc_add_bgcolor_property(priv->drm, amcrtc);
+	meson_crtc_init_osd_pixelformat_property(priv->drm, amcrtc);
+	meson_crtc_init_video_pixelformat_property(priv->drm, amcrtc);
 	amcrtc->pipeline = pipeline;
 	strcpy(amcrtc->osddump_path, OSD_DUMP_PATH);
 	priv->crtcs[priv->num_crtcs++] = amcrtc;

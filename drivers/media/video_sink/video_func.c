@@ -2704,7 +2704,7 @@ static int pipx_early_proc(u8 path_index)
 #endif
 	if (atomic_read(&video_unreg_flag))
 		return -1;
-	check_src_fmt_change();
+	//check_src_fmt_change();
 	return 0;
 }
 

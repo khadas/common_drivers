@@ -932,7 +932,7 @@ static bool has_receive_dummy_vframe(void)
 
 	if (vf && vf->flag & VFRAME_FLAG_EMPTY_FRAME_V4L) {
 		/* get dummy vf. */
-		vf = amvideo_vf_peek();
+		vf = amvideo_vf_get();
 
 #ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA /* recycle vframe. */
 		for (i = 0; i < DISPBUF_TO_PUT_MAX; i++) {
@@ -2635,7 +2635,7 @@ static void hdmi_in_drop_frame(void)
 	struct vframe_s *vf;
 
 	while (hdmin_need_drop_count > 0) {
-		vf = amvideo_vf_peek();
+		vf = amvideo_vf_get();
 		if (!vf) { /*no video frame, drop done*/
 			/*hdmi_need_drop_count = 0;*/
 			break;
@@ -2889,7 +2889,7 @@ static int dolby_vision_drop_frame(void)
 			pr_info("drop frame need wait!\n");
 		return 1;
 	}
-	vf = amvideo_vf_peek();
+	vf = amvideo_vf_get();
 	if (!vf)
 		return 1;
 
@@ -3038,7 +3038,7 @@ void frame_drop_process(void)
 			if (!vf)
 				break;
 			if (omx_need_drop_frame_num >= vf->omx_index) {
-				vf = amvideo_vf_peek();
+				vf = amvideo_vf_get();
 				if (amvideo_vf_put(vf) < 0)
 					check_dispbuf(0, vf, true);
 				video_drop_vf_cnt[0]++;
@@ -3770,7 +3770,7 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 			if (performance_debug & DEBUG_FLAG_VSYNC_PROCESS_TIME)
 				do_gettimeofday(&cur_line_info->end2);
 
-			vf = amvideo_vf_peek();
+			vf = amvideo_vf_get();
 			if (!vf) {
 				ATRACE_COUNTER(MODULE_NAME,  __LINE__);
 				break;
@@ -3929,7 +3929,7 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 					if (iret1 == 1 || iret2 == 1 || iret3 == 1)
 						break;
 #endif
-					vf = amvideo_vf_peek();
+					vf = amvideo_vf_get();
 					if (!vf) {
 						ATRACE_COUNTER(MODULE_NAME,
 							       __LINE__);

@@ -16,3 +16,14 @@ config AMLOGIC_MTD_RESV
 		blocks base on different usage, such as bbt,
 		key. it is efficiently for power lost and
 		backups and others.
+
+config AMLOGIC_NAND
+	bool "Amlogic NAND modification"
+	default n
+	depends on MTD_BLOCK
+	depends on AMLOGIC_BREAK_GKI_20
+	help
+		Add bad block handling for mtd block. some
+		filesystems or users don't care the bad blocks
+		on raw NAND, so if you want to handle bad blocks
+		in mtd block layer, say Y here.

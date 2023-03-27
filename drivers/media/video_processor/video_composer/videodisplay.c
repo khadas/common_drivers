@@ -37,6 +37,8 @@ static struct timeval start_time[MAX_VD_LAYERS];
 static struct timeval end_time[MAX_VD_LAYERS];
 static int start_vsync_count[MAX_VD_LAYERS];
 static int end_vsync_count[MAX_VD_LAYERS];
+static u32 vsync_pts_inc_scale[MAX_VD_LAYERS];
+static u32 vsync_pts_inc_scale_base[MAX_VD_LAYERS];
 
 #define PATTERN_32_DETECT_RANGE 7
 #define PATTERN_22_DETECT_RANGE 7
@@ -74,87 +76,41 @@ static void calculate_real_fps_and_vsync(struct timeval *start, struct timeval *
 }
 
 void vsync_notify_video_composer(u8 layer_id,
-	u32 vsync_pts_inc_scale, u32 vsync_pts_inc_scale_base)
+	u32 vpp_vsync_pts_inc_scale, u32 vpp_vsync_pts_inc_scale_base)
 {
-	int i;
-	int count = MAX_VIDEO_COMPOSER_INSTANCE_NUM;
+	vsync_count[layer_id]++;
+	get_count[layer_id] = 0;
+	continue_vsync_count[layer_id]++;
+	patten_trace[layer_id]++;
 
-	for (i = 0; i < count; i++) {
-		if (ports[i].index == 1 && ports[i].video_render_index == 5)
-			continue;
-		if (get_count[i] > 0)
-			vpp_drop_count += (get_count[i] - 1);
-		vsync_count[i]++;
-		get_count[i] = 0;
-		continue_vsync_count[i]++;
-		patten_trace[i]++;
+	vsync_pts_inc_scale[layer_id] = vpp_vsync_pts_inc_scale;
+	vsync_pts_inc_scale_base[layer_id] = vpp_vsync_pts_inc_scale_base;
+	do_gettimeofday(&vsync_time[layer_id]);
 
-		do_gettimeofday(&vsync_time[i]);
-	}
+	if (layer_id == 0 && get_count[0] > 0)
+		vpp_drop_count += (get_count[0] - 1);
 
-	switch (vd_test_fps) {
+	switch (vd_test_fps[layer_id]) {
 	case 0:
 		break;
 	case 1: {
-		start_time[0] = vsync_time[0];
-		start_vsync_count[0] = vsync_count[0];
-		vd_test_fps = 0;
+		start_time[layer_id] = vsync_time[layer_id];
+		start_vsync_count[layer_id] = vsync_count[layer_id];
+		vd_test_fps[layer_id] = 0;
 		break;
 	}
 	case 2: {
-		end_time[0] = vsync_time[0];
-		end_vsync_count[0] = vsync_count[0];
-		calculate_real_fps_and_vsync(&start_time[0], &end_time[0],
-			&start_vsync_count[0], &end_vsync_count[0], 0);
-		vd_test_fps = 0;
+		end_time[layer_id] = vsync_time[layer_id];
+		end_vsync_count[layer_id] = vsync_count[layer_id];
+		calculate_real_fps_and_vsync(&start_time[layer_id], &end_time[layer_id],
+			&start_vsync_count[layer_id], &end_vsync_count[layer_id], layer_id);
+		vd_test_fps[layer_id] = 0;
 		break;
 	}
 	default:
 		break;
 	}
 }
-
-#ifdef REMOVE_CODE
-void multi_vsync_notify_video_composer(void)
-{
-	int i;
-	int count = MAX_VIDEO_COMPOSER_INSTANCE_NUM;
-
-	for (i = 0; i < count; i++) {
-		if (ports[i].index != 1 && ports[i].video_render_index != 5)
-			continue;
-		if (get_count[i] > 0)
-			vpp_drop_count += (get_count[i] - 1);
-		vsync_count[i]++;
-		get_count[i] = 0;
-		continue_vsync_count[i]++;
-		patten_trace[i]++;
-
-		do_gettimeofday(&vsync_time[i]);
-	}
-
-	switch (vd_test_fps_pip) {
-	case 0:
-		break;
-	case 1: {
-		start_time[1] = vsync_time[1];
-		start_vsync_count[1] = vsync_count[1];
-		vd_test_fps_pip = 0;
-		break;
-	}
-	case 2: {
-		end_time[1] = vsync_time[1];
-		end_vsync_count[1] = vsync_count[1];
-		calculate_real_fps_and_vsync(&start_time[1], &end_time[1],
-			&start_vsync_count[1], &end_vsync_count[1], 1);
-		vd_test_fps_pip = 0;
-		break;
-	}
-	default:
-		break;
-	}
-}
-#endif
 
 static bool vd_vf_is_tvin(struct vframe_s *vf)
 {
@@ -400,7 +356,8 @@ static void vd_vsync_video_pattern_22323(struct composer_dev *dev, struct vframe
 	int index_4;
 	int index_5;
 	int cur_factor_index = dev->patten_factor_index;
-	int vsync_pts_inc = 16 * 90000 * vsync_pts_inc_scale / vsync_pts_inc_scale_base;
+	int vsync_pts_inc = 16 * 90000 *
+		vsync_pts_inc_scale[dev->index] / vsync_pts_inc_scale_base[dev->index];
 	int vframe_duration = vf->duration * 15;
 
 	if (vsync_pts_inc * 12 != vframe_duration * 5)
@@ -577,27 +534,30 @@ static inline int vd_perform_pulldown(struct composer_dev *dev,
 	return 0;
 }
 
-bool pulldown_support_vf(u32 duration)
+static bool pulldown_support_vf(struct composer_dev *dev, u32 duration)
 {
 	bool support = false;
 
 	/*duration: 800(120fps) 801(119.88fps) 960(100fps) 1600(60fps) 1920(50fps)*/
 	/*3200(30fps) 3203(29.97) 3840(25fps) 4000(24fps) 4004(23.976fps)*/
 
-	if (vsync_pts_inc_scale == 1 && vsync_pts_inc_scale_base == 48) {
+	if (vsync_pts_inc_scale[dev->index] == 1 &&
+		vsync_pts_inc_scale_base[dev->index] == 48) {
 		/*48hz for 24fps 23.976fps*/
 		if (duration == 4004 || duration == 4000)
 			support = true;
-	} else if (vsync_pts_inc_scale == 1 && vsync_pts_inc_scale_base == 50) {
+	} else if (vsync_pts_inc_scale[dev->index] == 1 &&
+		vsync_pts_inc_scale_base[dev->index] == 50) {
 		/*50hz for 25fps*/
 		if (duration == 3840)
 			support = true;
-	} else if (vsync_pts_inc_scale == 1001 && vsync_pts_inc_scale_base == 60000) {
+	} else if (vsync_pts_inc_scale[dev->index] == 1001 &&
+		vsync_pts_inc_scale_base[dev->index] == 60000) {
 		/*59.94hz for 23.976, 29.97*/
-		if (duration == 4004 ||
-			duration == 3203)
+		if (duration == 4004 || duration == 3203)
 			support = true;
-	} else if (vsync_pts_inc_scale == 1 && vsync_pts_inc_scale_base == 60) {
+	} else if (vsync_pts_inc_scale[dev->index] == 1 &&
+		vsync_pts_inc_scale_base[dev->index] == 60) {
 		/*60hz for 23.976, 24, 25, 29.97, 30*/
 		if (duration == 4004 ||
 			duration == 4000 ||
@@ -605,17 +565,20 @@ bool pulldown_support_vf(u32 duration)
 			duration == 3203 ||
 			duration == 3200)
 			support = true;
-	} else if (vsync_pts_inc_scale == 1 && vsync_pts_inc_scale_base == 100) {
+	} else if (vsync_pts_inc_scale[dev->index] == 1 &&
+		vsync_pts_inc_scale_base[dev->index] == 100) {
 		/*100hz for 25fps, 50fps*/
 		if (duration == 3840 || duration == 1920)
 			support = true;
-	} else if (vsync_pts_inc_scale == 1001 && vsync_pts_inc_scale_base == 120000) {
+	} else if (vsync_pts_inc_scale[dev->index] == 1001 &&
+		vsync_pts_inc_scale_base[dev->index] == 120000) {
 		/*119.88hz for 23.976,29.97,59.94*/
 		if (duration == 4004 ||
 			duration == 3203 ||
 			duration == 1601)
 			support = true;
-	} else if (vsync_pts_inc_scale == 1 && vsync_pts_inc_scale_base == 120) {
+	} else if (vsync_pts_inc_scale[dev->index] == 1 &&
+		vsync_pts_inc_scale_base[dev->index] == 120) {
 		/*120hz for 23.976, 24, 29.97, 30, 59.94, 60*/
 		if (duration == 4004 ||
 			duration == 4000 ||
@@ -728,7 +691,7 @@ static struct vframe_s *vc_vf_peek(void *op_arg)
 			}
 		}
 
-		if (dev->enable_pulldown && pulldown_support_vf(vf->duration)) {
+		if (dev->enable_pulldown && pulldown_support_vf(dev, vf->duration)) {
 			open_pulldown = true;
 			ready_len = kfifo_len(&dev->ready_q);
 			if ((ready_len > 1 && vd_pulldown_level == 1) ||

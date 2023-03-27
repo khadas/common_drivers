@@ -914,6 +914,7 @@ void frc_dmc_un_notifier(void)
 /****************************************************************************/
 static void frc_clock_workaround(struct work_struct *work)
 {
+	int mc_clk_min, mc_clk_max;
 	struct frc_dev_s *devp = container_of(work,
 		struct frc_dev_s, frc_clk_work);
 
@@ -925,12 +926,20 @@ static void frc_clock_workaround(struct work_struct *work)
 		return;
 	if (!devp->power_on_flag)
 		return;
+
+	if (get_chip_type() == ID_T3X) {
+		mc_clk_min = FRC_CLOCK_RATE_333;
+		mc_clk_max = FRC_CLOCK_RATE_800;
+	} else {
+		mc_clk_min = FRC_CLOCK_RATE_333;
+		mc_clk_max = FRC_CLOCK_RATE_667;
+	}
 	// pr_frc(1, "%s, clk_state:%d\n", __func__, devp->clk_state);
 	if (devp->clk_state == FRC_CLOCK_2MIN) {
-		clk_set_rate(devp->clk_frc, 333333333);
+		clk_set_rate(devp->clk_frc, mc_clk_min);
 		devp->clk_state = FRC_CLOCK_MIN;
 	} else if (devp->clk_state == FRC_CLOCK_2NOR) {
-		clk_set_rate(devp->clk_frc, 667000000);
+		clk_set_rate(devp->clk_frc, mc_clk_max);
 		devp->clk_state = FRC_CLOCK_NOR;
 	}
 	pr_frc(1, "%s, clk_new state:%d\n", __func__, devp->clk_state);

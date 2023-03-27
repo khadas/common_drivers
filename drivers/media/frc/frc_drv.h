@@ -153,6 +153,10 @@ extern int frc_dbg_en;
 #define FRC_CLOCK_MAX                6
 #define FRC_CLOCK_2OFF               7
 
+#define FRC_CLOCK_RATE_333                333333333
+#define FRC_CLOCK_RATE_667                667000000
+#define FRC_CLOCK_RATE_800                800000000
+
 //------------------------------------------------------- clock defined end
 // vd fps
 #define FRC_VD_FPS_00    0

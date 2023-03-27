@@ -2335,50 +2335,49 @@
 		max_frame_time = <200>;
 	};
 
-	gpu_tsensor: gpu_tsensor@fe094000 {
+	cpu_tsensor: cpu_tsensor@fe022000 {
 		compatible = "amlogic, r1p1-tsensor";
-		status = "disabled";
-		reg = <0x0 0xfe094000 0x0 0x50>;
-		tsensor_id = <2>;
-		cal_type = <0x11>;
-		cal_coeff = <324 424 3159 9411>;
-		rtemp = <115000>;
-		interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK>;
-		//clock-names = "ts_comp";
-		#thermal-sensor-cells = <1>;
-		//power-domains = <&pwrdm PDID_S5_MALI_TOP>;
-		reset-names = "ts_rst";
-		resets = <&reset RESET_TS_GPU>;
-	};
-
-	a55_tsensor: a55_tsensor@fe022000 {
-		compatible = "amlogic, r1p1-tsensor";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe022000 0x0 0x50>;
 		tsensor_id = <1>;
 		cal_type = <0x11>;
 		cal_coeff = <324 424 3159 9411>;
 		rtemp = <115000>;
 		interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK>;
-		//clock-names = "ts_comp";
+		clocks = <&clkc CLKID_TS_CLK>;
+		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
 		reset-names = "ts_rst";
 		resets = <&reset RESET_TS_A55>;
 	};
 
+	gpu_tsensor: gpu_tsensor@fe094000 {
+		compatible = "amlogic, r1p1-tsensor";
+		status = "okay";
+		reg = <0x0 0xfe094000 0x0 0x50>;
+		tsensor_id = <2>;
+		cal_type = <0x11>;
+		cal_coeff = <324 424 3159 9411>;
+		rtemp = <115000>;
+		interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clkc CLKID_TS_CLK>;
+		clock-names = "ts_comp";
+		#thermal-sensor-cells = <1>;
+		reset-names = "ts_rst";
+		resets = <&reset RESET_TS_GPU>;
+	};
+
 	vpu_tsensor: vpu_tsensor@fe0a2000 {
 		compatible = "amlogic, r1p1-tsensor";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe0a2000 0x0 0x50>;
 		tsensor_id = <3>;
 		cal_type = <0x11>;
 		cal_coeff = <324 424 3159 9411>;
 		rtemp = <115000>;
 		interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK>;
-		//clock-names = "ts_comp";
+		clocks = <&clkc CLKID_TS_CLK>;
+		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
 		reset-names = "ts_rst";
 		resets = <&reset RESET_TS_VPU>;
@@ -2386,34 +2385,32 @@
 
 	dos_tsensor: dos_tsensor@fe0a4000 {
 		compatible = "amlogic, r1p1-tsensor";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe0a4000 0x0 0x50>;
 		tsensor_id = <4>;
 		cal_type = <0x11>;
 		cal_coeff = <324 424 3159 9411>;
 		rtemp = <115000>;
 		interrupts = <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK>;
-		//clock-names = "ts_comp";
+		clocks = <&clkc CLKID_TS_CLK>;
+		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
-		//power-domains = <&pwrdm PDID_S5_DOS_TOP_WRAP>;
 		reset-names = "ts_rst";
 		resets = <&reset RESET_TS_DOS>;
 	};
 
 	nna_tsensor: nna_tsensor@fe096000 {
 		compatible = "amlogic, r1p1-tsensor";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe096000 0x0 0x50>;
 		tsensor_id = <5>;
 		cal_type = <0x11>;
 		cal_coeff = <324 424 3159 9411>;
 		rtemp = <115000>;
 		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK>;
-		//clock-names = "ts_comp";
+		clocks = <&clkc CLKID_TS_CLK>;
+		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
-		//power-domains = <&pwrdm PDID_S5_NNA_4T>;
 		reset-names = "ts_rst";
 		resets = <&reset RESET_TS_NNA>;
 	};
@@ -2455,7 +2452,7 @@
 
 	thermal-zones {
 		gpu_thermal: gpu_thermal {
-			status = "disabled";
+			status = "okay";
 			polling-delay = <2000>;
 			polling-delay-passive = <500>;
 			sustainable-power = <5160>;
@@ -2477,20 +2474,20 @@
 					type = "critical";
 				};
 			};
-			cooling-maps {
-				gpufreq_cooling_map {
-					trip = <&gpucontrol>;
-					cooling-device = <&gpu 0 3>;
-					contribution = <1024>;
-				};
-			};
+//			cooling-maps {
+//				gpufreq_cooling_map {
+//					trip = <&gpucontrol>;
+//					cooling-device = <&gpu 0 3>;
+//					contribution = <1024>;
+//				};
+//			};
 		};
 		soc_thermal: soc_thermal {
-			status = "disabled";
+			status = "okay";
 			polling-delay = <2000>;
 			polling-delay-passive = <1000>;
 			sustainable-power = <960>;
-			thermal-sensors = <&a55_tsensor 0>;
+			thermal-sensors = <&cpu_tsensor 0>;
 			trips {
 				a55switch_on: trip-point@0 {
 					temperature = <80000>;
@@ -2513,26 +2510,26 @@
 					type = "critical";
 				};
 			};
-			cooling-maps {
-				cpucore_cooling_map {
-					trip = <&a55hot>;
-					cooling-device = <&cpucore_cool0 0 2>;
-					contribution = <1024>;
-				};
-				cpufreq_cooling_map1 {
-					trip = <&a55control>;
-					cooling-device = <&CPU0 0 8>;
-					contribution = <1024>;
-				};
-				cpufreq_cooling_map2 {
-					trip = <&a55control>;
-					cooling-device = <&CPU4 0 8>;
-					contribution = <1024>;
-				};
-			};
+//			cooling-maps {
+//				cpucore_cooling_map {
+//					trip = <&a55hot>;
+//					cooling-device = <&cpucore_cool0 0 2>;
+//					contribution = <1024>;
+//				};
+//				cpufreq_cooling_map1 {
+//					trip = <&a55control>;
+//					cooling-device = <&CPU0 0 8>;
+//					contribution = <1024>;
+//				};
+//				cpufreq_cooling_map2 {
+//					trip = <&a55control>;
+//					cooling-device = <&CPU4 0 8>;
+//					contribution = <1024>;
+//				};
+//			};
 		};
 		vpu_thermal: vpu_thermal {
-			status = "disabled";
+			status = "okay";
 			polling-delay = <2000>;
 			polling-delay-passive = <1000>;
 			sustainable-power = <400>;
@@ -2556,7 +2553,7 @@
 			};
 		};
 		dos_thermal: dos_thermal {
-			status = "disabled";
+			status = "okay";
 			polling-delay = <2000>;
 			polling-delay-passive = <1000>;
 			sustainable-power = <400>;
@@ -2580,7 +2577,7 @@
 			};
 		};
 		nna_thermal: nna_thermal {
-			status = "disabled";
+			status = "okay";
 			polling-delay = <2000>;
 			polling-delay-passive = <1000>;
 			sustainable-power = <3550>;

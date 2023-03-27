@@ -35,7 +35,7 @@
 		spi1 = &spicc0;
 		spi2 = &spicc1;
 		spi3 = &spicc2;
-		tsensor0 = &a55_tsensor;
+		tsensor0 = &cpu_tsensor;
 		tsensor1 = &gpu_tsensor;
 		tsensor2 = &vpu_tsensor;
 		tsensor3 = &dos_tsensor;

@@ -2089,6 +2089,7 @@
 			clock-names = "clk_uart";
 			xtal_tick_en = <2>;
 			fifosize = < 64 >;
+			support-sysrq = <1>;  /* 0 not support*/
 		};
 
 		uart_C: serial@fe07c000 {

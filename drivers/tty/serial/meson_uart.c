@@ -816,13 +816,17 @@ static int meson_uart_probe(struct platform_device *pdev)
 		/* if (!mup->p) */
 		/* return -1; */
 	}
+
+	prop = of_get_property(pdev->dev.of_node, "support-sysrq", NULL);
+	if (prop) {
+		support_sysrq = of_read_ulong(prop, 1);
+		if (support_sysrq)
+			port->has_sysrq = 1;
+	}
+
 	ret = uart_add_one_port(&meson_uart_driver, port);
 	if (ret)
 		meson_ports[pdev->id] = NULL;
-
-	prop = of_get_property(pdev->dev.of_node, "support-sysrq", NULL);
-	if (prop)
-		support_sysrq = of_read_ulong(prop, 1);
 
 	return ret;
 }

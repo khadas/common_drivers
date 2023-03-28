@@ -2513,6 +2513,7 @@ static void vframe_composer(struct composer_dev *dev)
 					dst_buf->buf_w,
 					dst_buf->buf_w,
 					dst_buf->buf_h,
+					1,
 					VICP_COLOR_FORMAT_YUV420,
 					8,
 					&data_config.input_data);
@@ -2552,6 +2553,7 @@ static void vframe_composer(struct composer_dev *dev)
 				dst_buf->buf_w,
 				dst_buf->buf_w,
 				dst_buf->buf_h,
+				1,
 				VICP_COLOR_FORMAT_YUV420,
 				8,
 				VICP_COLOR_FORMAT_YUV420,

@@ -109,6 +109,7 @@ static int dump_dewarp_vframe(char *path, int width, int height, u32 phy_adr_y, 
 	codec_mm_unmap_phyaddr(data);
 
 	filp_close(fp, NULL);
+	return 0;
 #else
 	return -1;
 #endif

@@ -74,6 +74,7 @@ struct vid_cmpr_top_t {
 	bool rdma_enable;
 	bool security_en;
 	enum vicp_skip_mode_e skip_mode;
+	u32 src_need_swap_cbcr;
 	// hdr
 	u32 hdr_en;//0:close 1:open
 	// afbce
@@ -99,6 +100,8 @@ struct vid_cmpr_top_t {
 	u32 wrmif_en;
 	u32 wrmif_set_separate_en;// 00 : one canvas 01 : 3 canvas(old 4:2:0).10: 2 canvas. (NV21).
 	u32 wrmif_fmt_mode;// 00: 4:2:0; 01: 4:2:2; 10: 4:4:4
+	u32 out_endian;
+	u32 out_need_swap_cbcr;
 	// 0:8 bits  1:10 bits 422(old mode,12bit) 2: 10bit 444 3:10bit 422(full pack) or 444
 	u32 wrmif_bits_mode;
 	u64 wrmif_canvas0_addr0;//base addr
@@ -134,6 +137,7 @@ struct vid_cmpr_mif_t {
 	u32 burst_size_y : 2;
 	u32 burst_size_cb : 2;
 	u32 burst_size_cr : 2;
+	u32 swap_cbcr;
 	u64 canvas0_addr0; //base addr
 	u64 canvas0_addr1; //base addr
 	u64 canvas0_addr2; //base addr

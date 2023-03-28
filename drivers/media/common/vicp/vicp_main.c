@@ -34,6 +34,9 @@
 #include <linux/reset.h>
 #include <linux/clk.h>
 #include <linux/pm_runtime.h>
+#include <linux/dma-mapping.h>
+#include <linux/dma-buf.h>
+#include <linux/dma-heap.h>
 
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
@@ -76,6 +79,17 @@ u32 debug_rdma_en;
 
 struct mutex vicp_mutex; /*used to avoid user space call at the same time*/
 struct vicp_hdr_s *vicp_hdr;
+
+struct vicp_device_s {
+	char name[20];
+	atomic_t open_count;
+	int major;
+	unsigned int dbg_enable;
+	struct class *cla;
+	struct device *dev;
+};
+
+static struct vicp_device_s vicp_device;
 
 static ssize_t print_flag_show(struct class *class,
 		struct class_attribute *attr, char *buf)
@@ -729,24 +743,134 @@ static struct class vicp_class = {
 	.class_groups = vicp_class_groups,
 };
 
+static unsigned long get_buf_phy_addr(u32 buf_fd)
+{
+	struct dma_buf *dbuf = NULL;
+	unsigned long phy_addr = 0;
+	struct sg_table *table = NULL;
+	struct page *page = NULL;
+	struct dma_buf_attachment *attach = NULL;
+
+	dbuf = dma_buf_get(buf_fd);
+	if (IS_ERR_OR_NULL(dbuf)) {
+		pr_err("%s: get phyaddr failed: fd is %d.\n", __func__, buf_fd);
+		return -EINVAL;
+	}
+
+	attach = dma_buf_attach(dbuf, vicp_device.dev);
+	if (IS_ERR_OR_NULL(attach)) {
+		dma_buf_put(dbuf);
+		pr_err("%s: attach err\n", __func__);
+		return -EINVAL;
+	}
+
+	table = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
+	if (IS_ERR_OR_NULL(table)) {
+		pr_err("%s: get table failed.\n", __func__);
+		dma_buf_detach(dbuf, attach);
+		return -EINVAL;
+	}
+
+	page = sg_page(table->sgl);
+	phy_addr = PFN_PHYS(page_to_pfn(page));
+	dma_buf_unmap_attachment(attach, table, DMA_BIDIRECTIONAL);
+	dma_buf_detach(dbuf, attach);
+	dma_buf_put(dbuf);
+
+	return phy_addr;
+}
+
+static int config_vicp_param(struct vicp_data_info_t *vicp_data_info,
+	struct vicp_data_config_t *data_config)
+{
+	struct dma_data_config_t data_dma;
+
+	if (IS_ERR_OR_NULL(vicp_data_info) || IS_ERR_OR_NULL(data_config)) {
+		pr_err("%s: NULL param, please check.\n", __func__);
+		return -1;
+	}
+
+	data_config->input_data.is_vframe = false;
+	memset(&data_dma, 0, sizeof(struct dma_data_config_t));
+	data_dma.buf_addr = get_buf_phy_addr(vicp_data_info->src_buf_fd);
+	data_dma.buf_stride_w = vicp_data_info->src_buf_alisg_w;
+	data_dma.buf_stride_h = vicp_data_info->src_buf_alisg_h;
+	data_dma.color_format = vicp_data_info->src_color_fmt;
+	data_dma.color_depth = vicp_data_info->src_color_depth;
+	data_dma.data_width = vicp_data_info->src_data_w;
+	data_dma.data_height = vicp_data_info->src_data_h;
+	data_dma.plane_count = 2;
+	data_dma.endian = vicp_data_info->src_endian;
+	data_dma.need_swap_cbcr = vicp_data_info->src_swap_cbcr;
+	data_config->input_data.data_dma = &data_dma;
+
+	data_config->output_data.fbc_out_en = false;
+	data_config->output_data.mif_out_en = true;
+	data_config->output_data.mif_color_fmt = vicp_data_info->dst_color_fmt;
+	data_config->output_data.mif_color_dep = vicp_data_info->dst_color_depth;
+	data_config->output_data.phy_addr[0] = get_buf_phy_addr(vicp_data_info->dst_buf_fd);
+	data_config->output_data.stride[0] = vicp_data_info->dst_buf_w;
+	data_config->output_data.width = vicp_data_info->dst_buf_w;
+	data_config->output_data.height = vicp_data_info->dst_buf_h;
+	data_config->output_data.endian = vicp_data_info->dst_endian;
+	data_config->output_data.need_swap_cbcr = vicp_data_info->dst_swap_cbcr;
+
+	data_config->data_option.crop_info.left = vicp_data_info->crop_x;
+	data_config->data_option.crop_info.top = vicp_data_info->crop_y;
+	data_config->data_option.crop_info.width = vicp_data_info->crop_w;
+	data_config->data_option.crop_info.height = vicp_data_info->crop_h;
+	data_config->data_option.output_axis.left = vicp_data_info->output_x;
+	data_config->data_option.output_axis.top = vicp_data_info->output_y;
+	data_config->data_option.output_axis.width = vicp_data_info->output_w;
+	data_config->data_option.output_axis.height = vicp_data_info->output_h;
+	data_config->data_option.rotation_mode = vicp_data_info->rotation_mode;
+	data_config->data_option.rdma_enable = vicp_data_info->rdma_enable;
+	data_config->data_option.security_enable = vicp_data_info->security_enable;
+	data_config->data_option.shrink_mode = vicp_data_info->shrink_mode;
+	data_config->data_option.skip_mode = vicp_data_info->skip_mode;
+	data_config->data_option.input_source_count = vicp_data_info->input_source_count;
+	data_config->data_option.input_source_number = vicp_data_info->input_source_number;
+
+	return 0;
+}
+
 static int vicp_open(struct inode *inode, struct file *file)
 {
 	return 0;
 }
 
-static long vicp_ioctl(struct file *filp, unsigned int cmd, unsigned long args)
+static long vicp_ioctl(struct file *file, unsigned int cmd, unsigned long args)
 {
-	return 0;
+	long ret = 0;
+	void __user *argp = (void __user *)args;
+	struct vicp_data_info_t vicp_data_info;
+	struct vicp_data_config_t vicp_data_config;
+
+	switch (cmd) {
+	case VICP_PROCESS:
+		memset(&vicp_data_info, 0, sizeof(struct vicp_data_info_t));
+		memset(&vicp_data_config, 0, sizeof(struct vicp_data_config_t));
+		if (copy_from_user(&vicp_data_info, argp, sizeof(struct vicp_data_info_t)) == 0) {
+			config_vicp_param(&vicp_data_info, &vicp_data_config);
+			ret = vicp_process(&vicp_data_config);
+		} else {
+			ret = -EFAULT;
+		}
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return ret;
 }
 
 #ifdef CONFIG_COMPAT
-static long vicp_compat_ioctl(struct file *filp,
-			      unsigned int cmd, unsigned long args)
+static long vicp_compat_ioctl(struct file *file, unsigned int cmd, unsigned long args)
 {
 	unsigned long ret;
 
 	args = (unsigned long)compat_ptr(args);
-	ret = vicp_ioctl(filp, cmd, args);
+	ret = vicp_ioctl(file, cmd, args);
 
 	return ret;
 }
@@ -754,7 +878,7 @@ static long vicp_compat_ioctl(struct file *filp,
 
 static int vicp_release(struct inode *inode, struct file *file)
 {
-	return -1;
+	return 0;
 }
 
 static const struct file_operations vicp_fops = {
@@ -767,15 +891,80 @@ static const struct file_operations vicp_fops = {
 	.release = vicp_release,
 };
 
+static struct vicp_device_data_s vicp_s5 = {
+	.rate = 667000000,
+	.cpu_type = MESON_CPU_MAJOR_ID_S5,
+};
+
+static struct vicp_device_data_s vicp_t3x = {
+	.rate = 800000000,
+	.cpu_type = MESON_CPU_MAJOR_ID_T3X,
+};
+
 static const struct of_device_id vicp_dt_match[] = {
-	{.compatible = "amlogic, vicp",
+	{
+		.compatible = "amlogic, vicp",
+		.data = &vicp_s5,
+	},
+	{
+		.compatible = "amlogic, vicp-t3x",
+		.data = &vicp_t3x,
 	},
 	{},
 };
 
-static void vicp_param_init(void)
+static int init_vicp_device(void)
+{
+	int  ret = 0;
+
+	strcpy(vicp_device.name, VICP_DEVICE_NAME);
+	ret = register_chrdev(0, vicp_device.name, &vicp_fops);
+	if (ret <= 0) {
+		pr_err("register vicp device error\n");
+		return  ret;
+	}
+	vicp_device.major = ret;
+	vicp_device.dbg_enable = 0;
+	ret = class_register(&vicp_class);
+	if (ret < 0) {
+		pr_err("error create vicp class\n");
+		return ret;
+	}
+	vicp_device.cla = &vicp_class;
+	vicp_device.dev = device_create(vicp_device.cla,
+					NULL,
+					MKDEV(vicp_device.major, 0),
+					NULL,
+					vicp_device.name);
+	if (IS_ERR_OR_NULL(vicp_device.dev)) {
+		pr_err("create vicp device error\n");
+		class_unregister(vicp_device.cla);
+		return -1;
+	}
+
+	vicp_device.dev->coherent_dma_mask = DMA_BIT_MASK(64);
+	vicp_device.dev->dma_mask = &vicp_device.dev->coherent_dma_mask;
+
+	return ret;
+}
+
+static int uninit_vicp_device(void)
+{
+	if (!vicp_device.cla)
+		return 0;
+
+	if (vicp_device.dev)
+		device_destroy(vicp_device.cla, MKDEV(vicp_device.major, 0));
+	class_unregister(vicp_device.cla);
+	unregister_chrdev(vicp_device.major, vicp_device.name);
+
+	return  0;
+}
+
+static void vicp_param_init(struct vicp_device_data_s *device_data)
 {
 	mutex_init(&vicp_mutex);
+	init_vicp_module_reg(device_data->cpu_type);
 	memset(&axis, 0, sizeof(struct output_axis_t));
 
 	vicp_hdr = vicp_hdr_prob();
@@ -792,35 +981,30 @@ static int vicp_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	int irq = 0;
-	struct device *dev;
 	struct resource res;
 	int clk_cnt = 0;
 	struct clk *clk_gate;
 	struct clk *clk_vapb0;
 	struct clk *clk;
+	struct vicp_device_data_s *vicp_meson;
 
-	ret = class_register(&vicp_class);
-	if (ret < 0) {
-		pr_err("create vicp class error.\n");
-		return ret;
+	if (pdev->dev.of_node) {
+		const struct of_device_id *match;
+
+		match = of_match_node(vicp_dt_match, pdev->dev.of_node);
+		if (match) {
+			vicp_meson = (struct vicp_device_data_s *)match->data;
+			if (!vicp_meson) {
+				pr_err("%s data NOT match\n", __func__);
+				return -ENODEV;
+			}
+		} else {
+			pr_err("%s NOT match\n", __func__);
+			return -ENODEV;
+		}
 	}
 
-	ret = register_chrdev(VICP_MAJOR, VICP_DEVICE_NAME, &vicp_fops);
-	if (ret < 0) {
-		pr_err("register vicp device error.\n");
-		goto error;
-	}
-
-	dev = device_create(&vicp_class,
-			NULL,
-			MKDEV(VICP_MAJOR, 0),
-			NULL,
-			VICP_DEVICE_NAME);
-	if (IS_ERR_OR_NULL(dev)) {
-		pr_err("create vicp  device error.\n");
-		ret = PTR_ERR(dev);
-		return ret;
-	}
+	init_vicp_device();
 
 	/* get interrupt resource */
 	irq = platform_get_irq_byname(pdev, "vicp_proc");
@@ -870,7 +1054,7 @@ static int vicp_probe(struct platform_device *pdev)
 		}
 		pr_info("clock source clk_vicp_gate %p.\n", clk_gate);
 		if (clk_cnt == 2) {
-			clk_set_rate(clk_gate, 666666666);
+			clk_set_rate(clk_gate, vicp_meson->rate);
 			pr_info("vicp gate clock is %lu MHZ.\n", clk_get_rate(clk_gate) / 1000000);
 		}
 		clk_prepare_enable(clk_gate);
@@ -893,8 +1077,8 @@ static int vicp_probe(struct platform_device *pdev)
 
 			if (!IS_ERR_OR_NULL(clk_vapb0)) {
 				pr_info("clock source clk_vapb_0 %p.\n", clk_vapb0);
-				vpu_rate = 666666666;
-				vapb_rate = 666666666;
+				vpu_rate = vicp_meson->rate;
+				vapb_rate = vicp_meson->rate;
 
 				pr_info("vicp init clock is %d HZ, VPU clock is %d HZ.\n",
 					vapb_rate, vpu_rate);
@@ -908,7 +1092,7 @@ static int vicp_probe(struct platform_device *pdev)
 		pr_info("vicp only one clock.\n");
 		clk_gate = devm_clk_get(&pdev->dev, "clk_vicp");
 			if (!IS_ERR_OR_NULL(clk_gate)) {
-				int clk_rate = 666666666;
+				int clk_rate = vicp_meson->rate;
 
 				clk_set_rate(clk_gate, clk_rate);
 				clk_prepare_enable(clk_gate);
@@ -953,7 +1137,7 @@ static int vicp_probe(struct platform_device *pdev)
 		pr_err("runtime get power error.\n");
 
 	//clk_disable_unprepare(clk_gate);
-	vicp_param_init();
+	vicp_param_init(vicp_meson);
 	return 0;
 error:
 	unregister_chrdev(VICP_MAJOR, VICP_DEVICE_NAME);
@@ -965,9 +1149,8 @@ static int vicp_remove(struct platform_device *pdev)
 {
 	vicp_param_uninit();
 	pm_runtime_put_sync(&pdev->dev);
-	device_destroy(&vicp_class, MKDEV(VICP_MAJOR, 0));
-	unregister_chrdev(VICP_MAJOR, VICP_DEVICE_NAME);
-	class_unregister(&vicp_class);
+	uninit_vicp_device();
+
 	return 0;
 }
 

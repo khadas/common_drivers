@@ -22,6 +22,7 @@
 #include <linux/amlogic/usbtype.h>
 //#include <linux/amlogic/power_ctrl.h>
 #include "../phy/phy-aml-new-usb-v2.h"
+#include <linux/amlogic/aml_gpio_consumer.h>
 
 #define	phy_to_m31usb(x)	container_of((x), struct amlogic_usb_m31, phy)
 
@@ -141,6 +142,19 @@ static int amlogic_usb3_m31_probe(struct platform_device *pdev)
 	u32 temp;
 	int m31_utmi_reset_level_flag = 0;
 	int u3_combx0_reset_flag = 0;
+	const char *gpio_name = NULL;
+	int gpio_vbus_power_pin = -1;
+	struct gpio_desc *usb_gd = NULL;
+
+	gpio_name = of_get_property(dev->of_node, "gpio-vbus-power", NULL);
+	if (gpio_name) {
+		gpio_vbus_power_pin = 1;
+		usb_gd = devm_gpiod_get_index
+			(&pdev->dev, NULL, 0, GPIOD_OUT_LOW);
+		if (IS_ERR(usb_gd))
+			return -1;
+		gpiod_direction_output(usb_gd, 1);
+	}
 
 	prop = of_get_property(dev->of_node, "portnum", NULL);
 	if (prop)

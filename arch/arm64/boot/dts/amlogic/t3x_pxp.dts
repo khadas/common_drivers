@@ -1437,8 +1437,8 @@
 &crg21_otg {
 	status = "disabled";
 	controller-type = <1>;
-	gpio-vbus-power = "GPIOH_6";
-	gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
+	gpio-vbus-power = "GPIOM_21";
+	gpios = <&gpio GPIOM_21 GPIO_ACTIVE_HIGH>;
 };
 
 &crg20 {
@@ -1477,6 +1477,8 @@
 &crg_phy_20 {
 	status = "disabled";
 	portnum = <1>;
+	gpio-vbus-power = "GPIOM_22";
+	gpios = <&gpio GPIOM_22 GPIO_ACTIVE_HIGH>;
 };
 
 &crg3_phy_20 {

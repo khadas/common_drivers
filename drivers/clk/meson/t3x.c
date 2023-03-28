@@ -2237,6 +2237,58 @@ static struct clk_regmap t3x_adc_extclk = {
 	},
 };
 
+static u32 t3x_vafe_mux_table[] = { 1 };
+
+static struct clk_regmap t3x_vafe_sel = {
+	.data = &(struct clk_regmap_mux_data){
+		.offset = CLKCTRL_ATV_DMD_SYS_CLK_CNTL,
+		.mask = 0x3,
+		.shift = 24,
+		.table = t3x_vafe_mux_table
+	},
+	.hw.init = &(struct clk_init_data) {
+		.name = "vafe_sel",
+		.ops = &clk_regmap_mux_ops,
+		.parent_data = &(const struct clk_parent_data) {
+			.fw_name = "xtal",
+		},
+		.num_parents = 1,
+	},
+};
+
+static struct clk_regmap t3x_vafe_div = {
+	.data = &(struct clk_regmap_div_data){
+		.offset = CLKCTRL_ATV_DMD_SYS_CLK_CNTL,
+		.shift = 16,
+		.width = 7,
+	},
+	.hw.init = &(struct clk_init_data) {
+		.name = "vafe_div",
+		.ops = &clk_regmap_divider_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&t3x_vafe_sel.hw
+		},
+		.num_parents = 1,
+		.flags = CLK_SET_RATE_PARENT,
+	},
+};
+
+static struct clk_regmap t3x_vafe = {
+	.data = &(struct clk_regmap_gate_data){
+		.offset = CLKCTRL_ATV_DMD_SYS_CLK_CNTL,
+		.bit_idx = 23,
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "vafe",
+		.ops = &clk_regmap_gate_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&t3x_vafe_div.hw
+		},
+		.num_parents = 1,
+		.flags = CLK_SET_RATE_PARENT,
+	},
+};
+
 static u32 t3x_demod_core_mux_table[] = { 0, 1, 2 };
 
 static const struct clk_parent_data t3x_cts_demod_core_parent_data[] = {
@@ -3585,7 +3637,7 @@ static const struct clk_parent_data t3x_adla_0_1_parent_data[] = {
 
 static struct clk_regmap t3x_adla_0_sel = {
 	.data = &(struct clk_regmap_mux_data){
-		.offset = CLKCTRL_NNA_CLK_CNTL,
+		.offset = CLKCTRL_NNA_CLK_CTRL0,
 		.mask = 0x7,
 		.shift = 9,
 		.table = mux_table_adla,
@@ -3600,7 +3652,7 @@ static struct clk_regmap t3x_adla_0_sel = {
 
 static struct clk_regmap t3x_adla_0_div = {
 	.data = &(struct clk_regmap_div_data){
-		.offset = CLKCTRL_NNA_CLK_CNTL,
+		.offset = CLKCTRL_NNA_CLK_CTRL0,
 		.shift = 0,
 		.width = 7,
 	},
@@ -3617,7 +3669,7 @@ static struct clk_regmap t3x_adla_0_div = {
 
 static struct clk_regmap t3x_adla_0 = {
 	.data = &(struct clk_regmap_gate_data){
-		.offset = CLKCTRL_NNA_CLK_CNTL,
+		.offset = CLKCTRL_NNA_CLK_CTRL0,
 		.bit_idx = 8,
 	},
 	.hw.init = &(struct clk_init_data){
@@ -3633,7 +3685,7 @@ static struct clk_regmap t3x_adla_0 = {
 
 static struct clk_regmap t3x_adla_1_sel = {
 	.data = &(struct clk_regmap_mux_data){
-		.offset = CLKCTRL_NNA_CLK_CNTL,
+		.offset = CLKCTRL_NNA_CLK_CTRL0,
 		.mask = 0x7,
 		.shift = 25,
 		.table = mux_table_adla,
@@ -3648,7 +3700,7 @@ static struct clk_regmap t3x_adla_1_sel = {
 
 static struct clk_regmap t3x_adla_1_div = {
 	.data = &(struct clk_regmap_div_data){
-		.offset = CLKCTRL_NNA_CLK_CNTL,
+		.offset = CLKCTRL_NNA_CLK_CTRL0,
 		.shift = 16,
 		.width = 7,
 	},
@@ -3665,7 +3717,7 @@ static struct clk_regmap t3x_adla_1_div = {
 
 static struct clk_regmap t3x_adla_1 = {
 	.data = &(struct clk_regmap_gate_data){
-		.offset = CLKCTRL_NNA_CLK_CNTL,
+		.offset = CLKCTRL_NNA_CLK_CTRL0,
 		.bit_idx = 24,
 	},
 	.hw.init = &(struct clk_init_data){
@@ -3681,7 +3733,7 @@ static struct clk_regmap t3x_adla_1 = {
 
 static struct clk_regmap t3x_adla = {
 	.data = &(struct clk_regmap_mux_data){
-		.offset = CLKCTRL_NNA_CLK_CNTL,
+		.offset = CLKCTRL_NNA_CLK_CTRL0,
 		.mask = 1,
 		.shift = 31,
 	},
@@ -6509,6 +6561,9 @@ static struct clk_hw_onecell_data t3x_hw_onecell_data = {
 		[CLKID_TSIN_1]				= &t3x_tsin_1.hw,
 		[CLKID_TSIN_SEL]			= &t3x_tsin_sel.hw,
 		[CLKID_TSIN]				= &t3x_tsin.hw,
+		[CLKID_VAFE_SEL]			= &t3x_vafe_sel.hw,
+		[CLKID_VAFE_DIV]			= &t3x_vafe_div.hw,
+		[CLKID_VAFE]				= &t3x_vafe.hw,
 		[CLKID_SYS_CLK_DDR]			= &t3x_sys_clk_ddr.hw,
 		[CLKID_SYS_CLK_ETHPHY]			= &t3x_sys_clk_ethphy.hw,
 		[CLKID_SYS_CLK_MALI]			= &t3x_sys_clk_mali.hw,
@@ -6850,6 +6905,9 @@ static struct clk_regmap *const t3x_clk_regmaps[] = {
 	&t3x_tsin_1,
 	&t3x_tsin_sel,
 	&t3x_tsin,
+	&t3x_vafe_sel,
+	&t3x_vafe_div,
+	&t3x_vafe,
 	&t3x_sys_clk_ddr,
 	&t3x_sys_clk_ethphy,
 	&t3x_sys_clk_mali,

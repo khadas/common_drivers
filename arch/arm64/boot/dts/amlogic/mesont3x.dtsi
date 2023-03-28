@@ -533,10 +533,10 @@
 		status = "disabled";
 	};
 
-	vddcpua: pwm_cd-regulator {
+	vddcpua: pwm_ab-regulator {
 		compatible = "pwm-regulator";
-		pwms = <&pwm_cd MESON_PWM_1 1500 0>;
-		regulator-name = "vddcpua";
+		pwms = <&pwm_ab MESON_PWM_1 1500 0>;
+		regulator-name = "VDDCPU_A55";
 		regulator-min-microvolt = <689000>;
 		regulator-max-microvolt = <1049000>;
 		regulator-always-on;
@@ -582,99 +582,53 @@
 		status = "disabled";
 	};
 
-	vddcpub: pwm_ab-regulator {
-		compatible = "pwm-regulator";
-		pwms = <&pwm_ab MESON_PWM_0 1500 0>;
-		regulator-name = "vddcpub";
-		regulator-min-microvolt = <689000>;
-		regulator-max-microvolt = <1049000>;
-		regulator-always-on;
-		max-duty-cycle = <1500>;
-		/* Voltage Duty-Cycle */
-		voltage-table = <1049000 0>,
-				<1039000 3>,
-				<1029000 6>,
-				<1019000 9>,
-				<1009000 12>,
-				<999000 14>,
-				<989000 17>,
-				<979000 20>,
-				<969000 23>,
-				<959000 26>,
-				<949000 29>,
-				<939000 31>,
-				<929000 34>,
-				<919000 37>,
-				<909000 40>,
-				<899000 43>,
-				<889000 45>,
-				<879000 48>,
-				<869000 51>,
-				<859000 54>,
-				<849000 56>,
-				<839000 59>,
-				<829000 62>,
-				<819000 65>,
-				<809000 68>,
-				<799000 70>,
-				<789000 73>,
-				<779000 76>,
-				<769000 79>,
-				<759000 81>,
-				<749000 84>,
-				<739000 87>,
-				<729000 89>,
-				<719000 92>,
-				<709000 95>,
-				<699000 98>,
-				<689000 100>;
-		status = "disabled";
-	};
-
-	vddnpu: pwm_ef-regulator {
+	vddcpub: pwm_ef-regulator {
 		compatible = "pwm-regulator";
 		pwms = <&pwm_ef MESON_PWM_0 1500 0>;
-		regulator-name = "vddnpu";
-		regulator-min-microvolt = <720000>;
-		regulator-max-microvolt = <900000>;
-		//regulator-always-on;
+		regulator-name = "VDDCPU_A76";
+		regulator-min-microvolt = <689000>;
+		regulator-max-microvolt = <1049000>;
+		regulator-always-on;
 		max-duty-cycle = <1500>;
 		/* Voltage Duty-Cycle */
-		voltage-table =
-				<900000 0>,
-				<890000 5>,
-				<880000 11>,
-				<870000 17>,
-				<860000 21>,
-				<850000 28>,
-				<840000 33>,
-				<830000 39>,
-				<820000 44>,
-				<810000 50>,
-				<800000 56>,
-				<790000 61>,
-				<780000 67>,
-				<770000 72>,
-				<760000 78>,
-				<750000 83>,
-				<740000 89>,
-				<730000 95>,
-				<720000 100>;
+		voltage-table = <1049000 0>,
+				<1039000 3>,
+				<1029000 6>,
+				<1019000 9>,
+				<1009000 12>,
+				<999000 14>,
+				<989000 17>,
+				<979000 20>,
+				<969000 23>,
+				<959000 26>,
+				<949000 29>,
+				<939000 31>,
+				<929000 34>,
+				<919000 37>,
+				<909000 40>,
+				<899000 43>,
+				<889000 45>,
+				<879000 48>,
+				<869000 51>,
+				<859000 54>,
+				<849000 56>,
+				<839000 59>,
+				<829000 62>,
+				<819000 65>,
+				<809000 68>,
+				<799000 70>,
+				<789000 73>,
+				<779000 76>,
+				<769000 79>,
+				<759000 81>,
+				<749000 84>,
+				<739000 87>,
+				<729000 89>,
+				<719000 92>,
+				<709000 95>,
+				<699000 98>,
+				<689000 100>;
 		status = "disabled";
-	};
-
-	vdd_npu: fixedregulator@vdd_npu {
-		compatible = "regulator-fixed";
-		vin-supply = <&vbat>;
-		regulator-name = "vdd_npu";
-		regulator-min-microvolt = <910000>;
-		regulator-max-microvolt = <910000>;
-		pinctrl-names = "default";
-		//gpio = <&gpio GPIOE_4 GPIO_ACTIVE_LOW>;
-		startup-delay-us = <70000>;
-		enable-active-low;
-		regulator-boot-on;
-		//regulator-always-on;
 	};
 
 	a76_opp_table0: a76_opp_table0 {
@@ -797,7 +751,7 @@
 		reg = <0x00 0xfe026000 0x00 0x48>;
 	};
 
-	vbat: fixedregulator@vbat {
+	v_12v: fixed@v_12v {
 		compatible = "regulator-fixed";
 		regulator-name = "12V";
 		regulator-min-microvolt = <12000000>;
@@ -806,15 +760,30 @@
 		regulator-always-on;
 	};
 
-	vcc5v_reg: fixedregulator@vcc5v {
-		vin-supply = <&vbat>;
+	vcc5v_reg: fixed@vcc5v {
+		vin-supply = <&v_12v>;
 		compatible = "regulator-fixed";
 		regulator-name = "VCC5V";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 		pinctrl-names = "default";
-		// GPIOC_7 is OD mode
-		//gpio = <&gpio GPIOC_7 GPIO_ACTIVE_HIGH>;
+		// TEST_N(Up) Set
+		gpio = <&gpio GPIO_TEST_N GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddq_reg: fixed@vddq_reg {
+		compatible = "regulator-fixed";
+		vin-supply = <&v_12v>;
+		regulator-name = "VDDQ";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		pinctrl-names = "default";
+		//STR_VAD_EN: GPIOD_4(High)
+		gpio = <&gpio GPIOD_4 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <70000>;
 		enable-active-high;
 		regulator-boot-on;
@@ -969,7 +938,7 @@
 				clocks = <&clkc CLKID_PWM_A_SEL>,
 					     <&clkc CLKID_PWM_B_SEL>;
 				clock-names = "clkin0", "clkin1";
-				status = "disabled";
+				status = "okay";
 			};
 
 			pwm_cd: pwm@5a000 {
@@ -991,7 +960,7 @@
 				clocks = <&clkc CLKID_PWM_E_SEL>,
 					 <&clkc CLKID_PWM_F_SEL>;
 				clock-names = "clkin0", "clkin1";
-				status = "disabled";
+				status = "okay";
 			};
 
 			pwm_gh: pwm@5e000 {

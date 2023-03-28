@@ -919,56 +919,8 @@
 		key_tolerance = <40 40 40>;
 	};
 
-	vddq_reg: fixedregulator@vddq {
-		compatible = "regulator-fixed";
-		vin-supply = <&vbat>;
-		regulator-name = "VDDQ_1V1";
-		regulator-min-microvolt = <1100000>;
-		regulator-max-microvolt = <1100000>;
-		pinctrl-names = "default";
-		gpio = <&gpio GPIOD_8 GPIO_ACTIVE_HIGH>;
-		startup-delay-us = <70000>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vdd_ddr_reg: fixedregulator@vdd_ddr {
-		compatible = "regulator-fixed";
-		vin-supply = <&vbat>;
-		regulator-name = "VDD_DDR";
-		regulator-min-microvolt = <823000>;
-		regulator-max-microvolt = <823000>;
-		pinctrl-names = "default";
-		gpio = <&gpio GPIOD_8 GPIO_ACTIVE_HIGH>;
-		startup-delay-us = <70000>;
-		enable-active-high;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vddao3v3_p_reg: fixedregulator@vddao3v3_p {
-		vin-supply = <&vbat>;
-		compatible = "regulator-fixed";
-		regulator-name = "VDDAO_3.3V_P";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vddao1v8_reg: fixedregulator@vddao1v8 {
-		compatible = "regulator-fixed";
-		vin-supply = <&vddao3v3_p_reg>;
-		regulator-name = "VDDIO_AO18";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	vddao3v3_reg: fixedregulator@vddao3v3 {
-		vin-supply = <&vddao3v3_p_reg>;
+	vddao3v3_reg: fixed@vddao3v3_reg {
+		vin-supply = <&v_12v>;
 		compatible = "regulator-fixed";
 		regulator-name = "VDDAO_3.3V";
 		regulator-min-microvolt = <3300000>;
@@ -977,10 +929,20 @@
 		regulator-always-on;
 	};
 
-	vcc3v3_reg: fixedregulator@vcc3v3 {
+	vddao1v8_reg: fixed@vddao1v8_reg {
+		compatible = "regulator-fixed";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-name = "VDDAO_1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vccio3v3_reg: fixed@vccio3v3_reg {
 		vin-supply = <&vddao3v3_reg>;
 		compatible = "regulator-fixed";
-		regulator-name = "VCC3.3V";
+		regulator-name = "VDDIO_3.3V";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		pinctrl-names = "default";
@@ -991,55 +953,21 @@
 		regulator-always-on;
 	};
 
-	vcc1v8_reg: fixedregulator@vcc1v8 {
-		vin-supply = <&vcc3v3_reg>;
+	vddio_b_reg: fixed@vddio_b_reg {
+		vin-supply = <&vddao3v3_reg>;
 		compatible = "regulator-fixed";
-		regulator-name = "VCC1.8V";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	emmc1v8_reg: fixedregulator@emmc1v8 {
-		vin-supply = <&vcc3v3_reg>;
-		compatible = "regulator-fixed";
-		regulator-name = "EMMC_1V8";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-
-	sdcard_3v3: sdcard-3v3 {
-		compatible = "regulator-fixed";
-		regulator-name = "SD_3V3";
-		vin-supply = <&vcc3v3_reg>;
+		regulator-name = "VDDIO_B";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		// GPIOH_7(Down) Output L= Enable SD_3V3
-		gpio = <&gpio GPIOH_7 GPIO_ACTIVE_LOW>;
-		// (GPIOH_7 |sdcard-3v3) out lo ACTIVE LOW
-		enable-active-low; //3.3V , high: 0V
+		pinctrl-names = "default";
+		gpio = <&gpio GPIOD_14 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
 		regulator-boot-on;
 		regulator-always-on;
 	};
 
-	vddio_c: sdcard-1v8_3v3 {
-		compatible = "regulator-gpio";
-		regulator-name = "VDDIO_C";
-		vin-supply = <&vcc3v3_reg>;
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <3300000>;
-		// GPIOH_8(DOWN) H: 1.8V, L: 3.3V
-		gpio = <&gpio GPIOH_8 GPIO_ACTIVE_HIGH>;
-		// (GPIOH_8 |VDDIO_C) out lo : 3300mV, 3.3V
-		gpios-states = <0>;
 
-		/* Based on P200 schematics, signal CARD_1.8V/3.3V_CTR */
-		states = <1800000 1
-			  3300000 0>;
-	};
 };
 
 &audiobus {
@@ -1980,9 +1908,5 @@
 };
 
 &vddcpub {
-	status = "okay";
-};
-
-&vddnpu {
 	status = "okay";
 };

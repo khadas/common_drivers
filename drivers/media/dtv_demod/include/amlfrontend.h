@@ -81,6 +81,7 @@
 /*  V1.1.87  fix t5m dvbc 128qam unlock */
 /*  V1.1.88  fix dvb-s unicable blind scan failed */
 /*  V1.1.89  fix T5D/T3 switch to T2 unlock */
+/*  V1.1.90  fix dvb-s blind scan failed */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -97,8 +98,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.89"
-#define DTVDEMOD_VER	"2023/3/27: fix T5D/T3 switch to T2 unlock"
+#define AMLDTVDEMOD_VER "V1.1.90"
+#define DTVDEMOD_VER	"2023/3/28: fix dvb-s blind scan failed"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

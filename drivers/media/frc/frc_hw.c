@@ -2063,7 +2063,10 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	}
 	frc_set_val_from_reg();
 
-	frc_set_urgent_cfg(3);
+	frc_set_urgent_cfg(0, 0);
+	frc_set_urgent_cfg(1, 3);
+	frc_set_urgent_cfg(2, 0);
+
 	// frc_inp_init(frc_top->frc_fb_num, frc_top->film_hwfw_sel);
 	frc_inp_init();
 	// config_phs_lut(frc_top->frc_ratio_mode, frc_top->film_mode);
@@ -2252,26 +2255,34 @@ void frc_set_input_pattern(u8 enpat)
 	}
 }
 
-void frc_set_urgent_cfg(u8 level)
+void frc_set_urgent_cfg(u8 ch, u8 level)
 {
 	u32 shift_1;
 
 	pr_frc(0, "%s set level %d\n", __func__, level);
-	if (level == 0)
-		shift_1 = 0x000F000F;
-	else if (level == 1)
-		shift_1 = 0x00F000F0;
+	if (level == 1)
+		shift_1 = 0xF000F000;
 	else if (level == 2)
-		shift_1 = 0x0F000F00;
+		shift_1 = 0xFF00FF00;
 	else if (level == 3)
+		shift_1 = 0xFFF0FFF0;
+	else if (level == 4)
 		shift_1 = 0xFFFFFFFF;
 	else
 		shift_1 = 0x00000000;
-	// WRITE_FRC_REG_BY_CPU(0x3f06, 0x00011111);
 
-	WRITE_FRC_REG_BY_CPU(FRC_AXIRD0_QLEVEL, shift_1);
-	WRITE_FRC_REG_BY_CPU(FRC_AXIRD1_QLEVEL, shift_1);
-	WRITE_FRC_REG_BY_CPU(FRC_AXIWR0_QLEVEL, shift_1);
+	if (ch == 0) {
+		WRITE_FRC_REG_BY_CPU(FRC_AXIRD0_QLEVEL, shift_1);
+	} else if (ch == 1) {
+		WRITE_FRC_REG_BY_CPU(FRC_AXIRD1_QLEVEL, shift_1);
+	} else if (ch == 2) {
+		WRITE_FRC_REG_BY_CPU(FRC_AXIWR0_QLEVEL, shift_1);
+	} else if (ch == 3) {
+		WRITE_FRC_REG_BY_CPU(FRC_AXIRD0_QLEVEL, shift_1);
+		WRITE_FRC_REG_BY_CPU(FRC_AXIRD1_QLEVEL, shift_1);
+		WRITE_FRC_REG_BY_CPU(FRC_AXIWR0_QLEVEL, shift_1);
+	}
+
 	pr_frc(1, "FRC_AXIRD0_QLEVEL=0x%x\n",
 					READ_FRC_REG(FRC_AXIWR0_QLEVEL));
 	pr_frc(1, "FRC_AXIRD1_QLEVEL=0x%x\n",

@@ -591,6 +591,13 @@ void frc_debug_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			frc_set_axi_crash_irq(devp, val1);
+	} else if (!strcmp(parm[0], "set_urgent")) {
+		if (!parm[1] || !parm[2])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0) {
+			if (kstrtoint(parm[2], 16, &val2) == 0)
+				frc_set_urgent_cfg(val1, val2);
+		}
 	}
 exit:
 	kfree(buf_orig);

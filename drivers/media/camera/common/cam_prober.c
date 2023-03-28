@@ -369,8 +369,10 @@ int ov5640_v4l2_probe(struct i2c_adapter *adapter)
 
 	reg[0] = aml_i2c_get_byte(adapter, 0x3c, 0x300a);
 	reg[1] = aml_i2c_get_byte(adapter, 0x3c, 0x300b);
-	if (reg[0] == 0x56 && reg[1] == 0x40)
+	if (reg[0] == 0x56 && reg[1] == 0x40) {
 		ret = 1;
+		ov5640_i2c_driver_init();
+	}
 	return ret;
 }
 #endif
@@ -1804,16 +1806,6 @@ int __init aml_cams_prober_init(void)
 	}
 	flashlight_init();
 	vm_init_module();
-
-	#ifdef CONFIG_AMLOGIC_VIDEO_CAPTURE_GC2145
-	gc2145_i2c_driver_init();
-	#endif
-	#ifdef CONFIG_AMLOGIC_VIDEO_CAPTURE_GC2145_MIPI
-	gc2145_mipi_i2c_driver_init();
-	#endif
-	#ifdef CONFIG_AMLOGIC_VIDEO_CAPTURE_OV5640
-	ov5640_i2c_driver_init();
-	#endif
 
 	return 0;
 }

@@ -3360,7 +3360,7 @@ static struct i2c_driver ov5640_i2c_driver = {
 };
 
 //module_i2c_driver(ov5640_i2c_driver);
-int __init ov5640_i2c_driver_init(void)
+int ov5640_i2c_driver_init(void)
 {
 	return i2c_add_driver(&ov5640_i2c_driver);
 }

@@ -80,7 +80,6 @@ int hdmitx_get_hdrinfo(struct hdmitx_common *tx_comm, struct hdr_info *hdrinfo)
 
 	memcpy(hdrinfo, &prxcap->hdr_info, sizeof(struct hdr_info));
 	hdrinfo->colorimetry_support = prxcap->colorimetry_data;
-	pr_info("update rx hdr info %x\n", hdrinfo->hdr_support);
 
 	return 0;
 }

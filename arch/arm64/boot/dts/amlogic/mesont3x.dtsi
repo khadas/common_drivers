@@ -1142,14 +1142,14 @@
 			};
 		};
 
-		crg21_otg: crg21otg@fe384000 {
+		crg21_otg: crg21otg@fe3b4000 {
 			compatible = "amlogic, amlogic-crg-otg";
 			status = "disabled";
-			usb2-phy-reg = <0xfe38408c>;
+			usb2-phy-reg = <0xfe3b408c>;
 			usb2-phy-reg-size = <0x80>;
 			m31-phy-reg = <0xfe3bc000>;
 			m31-phy-reg-size = <0x80>;
-			usb3-phy-reg = <0xfe384080>;
+			usb3-phy-reg = <0xfe3b4080>;
 			usb3-phy-reg-size = <0x20>;
 			interrupts = <0 128 IRQ_TYPE_EDGE_RISING>;
 			udc-name = "fe3b0000.crgudc2";

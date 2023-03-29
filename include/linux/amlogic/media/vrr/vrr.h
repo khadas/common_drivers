@@ -127,5 +127,6 @@ static inline int aml_vrr_atomic_notifier_call_chain(unsigned long event,
 	return 0;
 }
 #endif
+bool frame_lock_type_vrr_lock(void);
 
 #endif

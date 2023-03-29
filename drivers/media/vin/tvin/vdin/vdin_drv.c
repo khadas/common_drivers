@@ -3167,7 +3167,7 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 	}
 
 	/* hdmi in signal is VRR or Freesync,and game mode 2 */
-	if (((devp->game_mode & VDIN_GAME_MODE_2) && devp->vrr_data.vrr_mode) &&
+	if (((devp->game_mode & VDIN_GAME_MODE_2) && frame_lock_type_vrr_lock()) &&
 		 devp->dbg_force_one_buffer) {
 		next_wr_vfe = devp->curr_wr_vfe;
 	} else {

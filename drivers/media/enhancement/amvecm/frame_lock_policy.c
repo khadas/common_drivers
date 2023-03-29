@@ -626,6 +626,17 @@ void frame_lock_process(struct vframe_s *vf,
 	frame_sts.vrr_policy_pre = frame_sts.vrr_policy;
 }
 
+/* vrr/freesync signel and game mode vrr instead vlock low latency */
+bool frame_lock_type_vrr_lock(void)
+{
+	bool ret = false;
+
+	if (frame_sts.vrr_frame_lock_type == FRAMELOCK_VRRLOCK)
+		ret = true;
+
+	return ret;
+}
+
 ssize_t frame_lock_debug_store(struct class *cla,
 			  struct class_attribute *attr,
 		const char *buf, size_t count)

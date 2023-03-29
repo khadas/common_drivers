@@ -1223,7 +1223,7 @@ static bool optee_msg_exchange_capabilities(optee_invoke_fn *invoke_fn,
 }
 
 static struct tee_shm_pool *
-optee_config_shm_memremap(optee_invoke_fn *invoke_fn, void **memremaped_shm)
+optee_config_shm_memremap(optee_invoke_fn *invoke_fn, void **memremaped_shm, void **log_va)
 {
 	union {
 		struct arm_smccc_res smccc;
@@ -1267,9 +1267,7 @@ optee_config_shm_memremap(optee_invoke_fn *invoke_fn, void **memremaped_shm)
 	else
 		*memremaped_shm = va;
 
-	optee_log_init(va + size - DEF_LOGGER_SHM_SIZE,
-			end - DEF_LOGGER_SHM_SIZE,
-			DEF_LOGGER_SHM_SIZE);
+	*log_va = va + size - DEF_LOGGER_SHM_SIZE;
 
 	return rc;
 }
@@ -1370,6 +1368,7 @@ static int optee_probe(struct platform_device *pdev)
 	struct tee_shm_pool *pool = ERR_PTR(-EINVAL);
 	struct optee *optee = NULL;
 	void *memremaped_shm = NULL;
+	void *shm_log_va = NULL;
 	unsigned int rpc_param_count;
 	struct tee_device *teedev;
 	struct tee_context *ctx;
@@ -1445,11 +1444,13 @@ static int optee_probe(struct platform_device *pdev)
 		 */
 		arg_cache_flags = OPTEE_SHM_ARG_SHARED |
 				  OPTEE_SHM_ARG_ALLOC_PRIV;
-		pool = optee_config_shm_memremap(invoke_fn, &memremaped_shm);
+		pool = optee_config_shm_memremap(invoke_fn, &memremaped_shm, &shm_log_va);
 	}
 
 	if (IS_ERR(pool))
 		return PTR_ERR(pool);
+
+	optee_log_init(shm_log_va);
 
 	optee = kzalloc(sizeof(*optee), GFP_KERNEL);
 	if (!optee) {

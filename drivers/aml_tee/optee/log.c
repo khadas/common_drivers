@@ -16,9 +16,11 @@
 #include <linux/string.h>
 #include <linux/types.h>
 #include <linux/workqueue.h>
+#include <linux/io.h>
 
 #include "optee_smc.h"
 #include "log.h"
+#include "optee_private.h"
 
 #define LOGGER_LOOPBUFFER_MAGIC       0xAA00AA00
 #define LOGGER_LOOPBUFFER_OFFSET      0x00000080
@@ -136,21 +138,49 @@ static void do_log_timer(struct work_struct *work)
 		pr_err("%s:%d Failed to join the workqueue\n", __func__, __LINE__);
 }
 
-int optee_log_init(void *va, phys_addr_t pa, size_t size)
+int optee_log_init(void *va)
 {
 	int rc = 0;
-	struct arm_smccc_res smccc;
+	size_t size = 0;
+	phys_addr_t begin = 0;
+	phys_addr_t end = 0;
+	struct arm_smccc_res smccc = { 0 };
 	struct loopbuffer_ctl_s *log_ctl = NULL;
 
 	arm_smccc_smc(OPTEE_SMC_ENABLE_LOGGER, 1, 0, 0, 0, 0, 0, 0,
 			&smccc);
 
-	log_buf_va = va;
-	log_ctl = (struct loopbuffer_ctl_s *)va;
+	if (smccc.a0 != TEEC_SUCCESS) {
+		pr_err("smc enable logger failed, res = 0x%lx\n", smccc.a0);
+		rc = -EACCES;
+		goto err;
+	}
+
+	if (smccc.a1 == LOGGER_SHM_ADDR_MAGIC) {
+		/*
+		 * for new logger solution
+		 * a1: logger get flags
+		 * a2: logger start address
+		 * a3: logger size
+		 */
+		begin = roundup(smccc.a2, PAGE_SIZE);
+		end = rounddown(smccc.a2 + smccc.a3, PAGE_SIZE);
+		size = end - begin;
+		log_buf_va = memremap(begin, size, MEMREMAP_WB);
+	} else {
+		/* for previous logger solution */
+		log_buf_va = va;
+	}
+
+	if (!log_buf_va) {
+		pr_err("shared memory logger ioremap failed\n");
+		return -ENOMEM;
+	}
+
+	log_ctl = (struct loopbuffer_ctl_s *)log_buf_va;
 	if (log_ctl->magic != LOGGER_LOOPBUFFER_MAGIC || log_ctl->inited != 1) {
 		pr_err("tee log buffer init failed\n");
-		rc = -1;
-
+		rc = -EINVAL;
 		goto err;
 	}
 
@@ -159,8 +189,7 @@ int optee_log_init(void *va, phys_addr_t pa, size_t size)
 	INIT_DELAYED_WORK(&log_work, do_log_timer);
 	if (queue_delayed_work(log_workqueue, &log_work, OPTEE_LOG_TIMER_INTERVAL * HZ) == 0) {
 		pr_err("%s:%d failed to join the workqueue.\n", __func__, __LINE__);
-		rc = -1;
-
+		rc = -EBUSY;
 		goto err;
 	}
 

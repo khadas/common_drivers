@@ -11,7 +11,7 @@
 
 / {
 	model = "Amlogic";
-	amlogic-dt-id = "s4d_s805c3_aq2432-256m";
+	amlogic-dt-id = "s4d_s805c3_aq2432-512m";
 	compatible = "amlogic, s4d";
 	interrupt-parent = <&gic>;
 	#address-cells = <1>;
@@ -1409,6 +1409,7 @@
 	fip_size = <0x200000>;
 	ship_bad_block = <1>;
 	disa_irq_flag = <1>;
+	bl2ex_8_copies;
 	nand@bootloader {
 		reg = <0>;
 		#address-cells = <1>;
@@ -1520,14 +1521,14 @@
 	status = "disabled";
 	display_size_default = <1280 720 1280 2160 32>;
 	mem_size = <0x00400000 0x00b00000 0x100000>;
-	logo_addr = "0x1fc00000";
+	logo_addr = "0x0fc00000";
 	mem_alloc = <0>;
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
 &drm_vpu {
 	status = "okay";
-	logo_addr = "0x1fc00000";
+	logo_addr = "0x0fc00000";
 
 };
 

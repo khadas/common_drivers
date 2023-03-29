@@ -2918,12 +2918,16 @@
 		mbox-irqmax = <64>;
 		mbox-irqctlr = <2>;
 		mbox-irqclr = <1>;
-		mbox-nums = <2>;
-		mbox-names = "ao_to_ap",
-			     "ap_to_ao";
-		mboxes = <&mhu_fifo T3X_AO2REE>,
+		mbox-nums = <4>;
+		mbox-names = "dspa_to_ap",
+				"ap_to_dspa",
+				"ao_to_ap",
+				"ap_to_ao";
+		mboxes = <&mhu_fifo T3X_DSPA2REE>,
+			 <&mhu_fifo T3X_REE2DSPA>,
+			 <&mhu_fifo T3X_AO2REE>,
 			 <&mhu_fifo T3X_REE2AO>;
-		mbox-id = <0x2 0x3>;
+		mbox-id = <0x0 0x1 0x2 0x3>;
 		mbox-wr-rd = <1>;
 		#mbox-cells = <1>;
 	};
@@ -2931,10 +2935,16 @@
 	mbox_user: mbox-user@0 {
 		status = "okay";
 		compatible = "amlogic, meson-mbox-user";
-		mbox-nums = <1>;
-		mbox-names = "ree2aocpu";
-		mboxes = <&mhu_fifo T3X_REE2AO>;
-		mbox-dests = <MAILBOX_AOCPU>;
+		mbox-nums = <3>;
+		mbox-names = "ree2aocpu",
+				"dsp_dev",
+				"dspa2ree";
+		mboxes = <&mhu_fifo T3X_REE2AO>,
+			   <&mhu_fifo T3X_REE2DSPA>,
+			   <&mhu_fifo T3X_DSPA2REE>;
+		mbox-dests = <MAILBOX_AOCPU>,
+				<MAILBOX_DSP>,
+				<MAILBOX_DSP>;
 	};
 
 	aml_hwspinlock: hwlock {

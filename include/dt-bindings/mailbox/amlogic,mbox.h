@@ -28,6 +28,8 @@
 #define S5_REE2AO       1
 
 // T3X MAILBOX DEST
-#define T3X_AO2REE       0
-#define T3X_REE2AO       1
+#define T3X_DSPA2REE     0
+#define T3X_REE2DSPA     1
+#define T3X_AO2REE       2
+#define T3X_REE2AO       3
 #endif /* __AMLOGIC_MBOX_H__ */

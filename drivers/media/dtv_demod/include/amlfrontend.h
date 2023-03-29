@@ -82,6 +82,7 @@
 /*  V1.1.88  fix dvb-s unicable blind scan failed */
 /*  V1.1.89  fix T5D/T3 switch to T2 unlock */
 /*  V1.1.90  fix dvb-s blind scan failed */
+/*  V1.1.91  fix t2 agc target config for r842 */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -98,8 +99,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.90"
-#define DTVDEMOD_VER	"2023/3/28: fix dvb-s blind scan failed"
+#define AMLDTVDEMOD_VER "V1.1.91"
+#define DTVDEMOD_VER	"2023/04/06: fix t2 agc target config for r842"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

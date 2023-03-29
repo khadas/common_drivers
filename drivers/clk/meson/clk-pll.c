@@ -512,6 +512,7 @@ static int meson_clk_pcie_pll_enable(struct clk_hw *hw)
 	do {
 		meson_clk_pll_init(hw);
 		if (!meson_clk_pll_wait_lock(hw)) {
+			/* what means here ? */
 			if (!MESON_PARM_APPLICABLE(&pll->pcie_hcsl))
 				return 0;
 			break;
@@ -521,6 +522,9 @@ static int meson_clk_pcie_pll_enable(struct clk_hw *hw)
 
 	if (retry <= 0)
 		return -EIO;
+
+	if (!MESON_PARM_APPLICABLE(&pll->pcie_hcsl))
+		return 0;
 
 	/*pcie pll clk share use for usb phy, so add this operation from ASIC*/
 	do {

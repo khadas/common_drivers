@@ -29,48 +29,34 @@ static const struct clk_ops meson_pll_clk_no_ops = {};
 
 #ifdef CONFIG_ARM
 static const struct pll_params_table t3x_sys_pll_params_table[] = {
-	PLL_PARAMS(100, 1, 1), /*DCO=2400M OD=DCO/2=1200M*/
-	PLL_PARAMS(117, 1, 1), /*DCO=2808M OD=DCO/2=1404M*/
-	PLL_PARAMS(125, 1, 1), /*DCO=3000M OD=DCO/2=1500M*/
-	PLL_PARAMS(67, 1, 0),  /*DCO=1608M OD=DCO/1=1608M*/
-	PLL_PARAMS(71, 1, 0),  /*DCO=1704M OD=DCO/1=1704M*/
-	PLL_PARAMS(75, 1, 0),  /*DCO=1800M OD=DCO/1=1800M*/
-	PLL_PARAMS(80, 1, 0),  /*DCO=1920M OD=DCO/1=1920M*/
-	PLL_PARAMS(84, 1, 0),  /*DCO=2016M OD=DCO/1=2016M*/
+	PLL_PARAMS(100, 1, 1), /*DCO=2400M OD=1200M*/
+	PLL_PARAMS(116, 1, 1), /*DCO=2784M OD=1392M*/
+	PLL_PARAMS(126, 1, 1), /*DCO=3024M OD=1512M*/
+	PLL_PARAMS(67, 1, 0), /*DCO=1608M OD=1608MM*/
+	PLL_PARAMS(71, 1, 0), /*DCO=1704MM OD=1704M*/
+	PLL_PARAMS(75, 1, 0), /*DCO=1800M OD=1800M*/
+	PLL_PARAMS(79, 1, 0), /*DCO=1896M OD=1896M*/
+	PLL_PARAMS(84, 1, 0), /*DCO=2016M OD=2016M*/
 	{ /* sentinel */ }
 };
 #else
 static const struct pll_params_table t3x_sys_pll_params_table[] = {
 	/*
-	 *  The DCO range of syspll sys1pll on T5M is 1.6G-3.2G
+	 *  The DCO range of syspll sys1pll on T3X is 1.6G-3.2G
 	 *  OD=0 div=1  1.6G - 3.2G
 	 *  OD=1 div=2  800M - 1.6G
 	 *  OD=2 div=4  400M - 800M
 	 *  OD=3 div=8  200M - 400M
 	 *  OD=4 div=16 100M - 200M
 	 */
-	PLL_PARAMS(100, 1), /*DCO=2400M OD=DCO/2=1200M*/
-	PLL_PARAMS(117, 1), /*DCO=2808M OD=DCO/2=1404M*/
-	PLL_PARAMS(125, 1), /*DCO=3000M OD=DCO/2=1500M*/
-	PLL_PARAMS(67, 1),  /*DCO=1608M OD=DCO/1=1608M*/
-	PLL_PARAMS(71, 1),  /*DCO=1704M OD=DCO/1=1704M*/
-	PLL_PARAMS(75, 1),  /*DCO=1800M OD=DCO/1=1800M*/
-	PLL_PARAMS(80, 1),  /*DCO=1920M OD=DCO/1=1920M*/
-	PLL_PARAMS(84, 1),  /*DCO=2016M OD=DCO/1=2016M*/
-	{ /* sentinel */ }
-};
-#endif
-
-#ifdef CONFIG_ARM
-static const struct pll_params_table t3x_sys1_pll_params_table[] = {
-	PLL_PARAMS(100, 1, 1), /*DCO=2400M OD=DCO/2=1200M*/
-	PLL_PARAMS(125, 1, 1), /*DCO=3000M OD=DCO/2=1500M*/
-	{ /* sentinel */ }
-};
-#else
-static const struct pll_params_table t3x_sys1_pll_params_table[] = {
-	PLL_PARAMS(100, 1), /*DCO=2400M OD=DCO/2=1200M*/
-	PLL_PARAMS(125, 1), /*DCO=3000M OD=DCO/2=1500M*/
+	PLL_PARAMS(100, 1), /*DCO=2400M OD=1200M*/
+	PLL_PARAMS(116, 1), /*DCO=2784 OD=1392M*/
+	PLL_PARAMS(126, 1), /*DCO=3024 OD=1512M*/
+	PLL_PARAMS(67, 1), /*DCO=1608M OD=1608MM*/
+	PLL_PARAMS(71, 1), /*DCO=1704MM OD=1704M*/
+	PLL_PARAMS(75, 1), /*DCO=1800M OD=1800M*/
+	PLL_PARAMS(79, 1), /*DCO=1896M OD=1896M*/
+	PLL_PARAMS(84, 1), /*DCO=2016M OD=2016M*/
 	{ /* sentinel */ }
 };
 #endif
@@ -154,7 +140,7 @@ static struct clk_regmap t3x_sys1_pll_dco = {
 			.shift	 = 12,
 			.width	 = 3,
 		},
-		.table = t3x_sys1_pll_params_table,
+		.table = t3x_sys_pll_params_table,
 		.l = {
 			.reg_off = CLKCTRL_SYS1PLL_CTRL0,
 			.shift   = 31,
@@ -207,7 +193,7 @@ static struct clk_regmap t3x_sys2_pll_dco = {
 			.shift	 = 12,
 			.width	 = 3,
 		},
-		.table = t3x_sys1_pll_params_table,
+		.table = t3x_sys_pll_params_table,
 		.l = {
 			.reg_off = CLKCTRL_SYS2PLL_CTRL0,
 			.shift   = 31,
@@ -236,6 +222,20 @@ static struct clk_regmap t3x_sys2_pll_dco = {
 	},
 };
 
+#ifdef CONFIG_ARM
+static const struct pll_params_table t3x_sys3_pll_params_table[] = {
+	PLL_PARAMS(100, 1, 1), /*DCO=2400M OD=DCO/2=1200M*/
+	PLL_PARAMS(125, 1, 1), /*DCO=3000M OD=DCO/2=1500M*/
+	{ /* sentinel */ }
+};
+#else
+static const struct pll_params_table t3x_sys3_pll_params_table[] = {
+	PLL_PARAMS(100, 1), /*DCO=2400M OD=DCO/2=1200M*/
+	PLL_PARAMS(125, 1), /*DCO=3000M OD=DCO/2=1500M*/
+	{ /* sentinel */ }
+};
+#endif
+
 static struct clk_regmap t3x_sys3_pll_dco = {
 	.data = &(struct meson_clk_pll_data){
 		.en = {
@@ -260,7 +260,7 @@ static struct clk_regmap t3x_sys3_pll_dco = {
 			.shift	 = 12,
 			.width	 = 3,
 		},
-		.table = t3x_sys1_pll_params_table,
+		.table = t3x_sys3_pll_params_table,
 		.l = {
 			.reg_off = CLKCTRL_SYS3PLL_CTRL0,
 			.shift   = 31,
@@ -835,6 +835,50 @@ static struct clk_regmap t3x_gp0_pll = {
 };
 #endif
 
+static const struct reg_sequence t3x_pcie_pll_init_regs[] = {
+	{ .reg = CLKCTRL_PCIEPLL_CTRL0,	.def = 0x000f7d06,},
+	{ .reg = CLKCTRL_PCIEPLL_CTRL1,	.def = 0xf0002dd3,},
+	{ .reg = CLKCTRL_PCIEPLL_CTRL2,	.def = 0x55813041, .delay_us = 20 },
+	{ .reg = CLKCTRL_PCIEPLL_CTRL0,	.def = 0x000f7d07, .delay_us = 20 },
+	{ .reg = CLKCTRL_PCIEPLL_CTRL0,	.def = 0x000f7d01, .delay_us = 20 },
+	{ .reg = CLKCTRL_PCIEPLL_CTRL3,	.def = 0x000300e1,}
+};
+
+static struct clk_regmap t3x_pcie_pll = {
+	.data = &(struct meson_clk_pll_data){
+		.l = {
+			.reg_off = CLKCTRL_PCIEPLL_CTRL0,
+			.shift   = 31,
+			.width   = 1,
+		},
+		.init_regs = t3x_pcie_pll_init_regs,
+		.init_count = ARRAY_SIZE(t3x_pcie_pll_init_regs),
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "pcie_pll",
+		.ops = &meson_clk_pcie_pll_ops,
+		.parent_data = &(const struct clk_parent_data) {
+			.fw_name = "xtal",
+		},
+		.num_parents = 1,
+	},
+};
+
+static struct clk_regmap t3x_pcie_hcsl = {
+	.data = &(struct clk_regmap_gate_data){
+		.offset = CLKCTRL_PCIEPLL_CTRL3,
+		.bit_idx = 17,
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "pcie_hcsl",
+		.ops = &clk_regmap_gate_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&t3x_pcie_pll.hw
+		},
+		.num_parents = 1,
+	},
+};
+
 /* a55 cpu_clk, get the table from ucode */
 static const struct cpu_dyn_table t3x_cpu_dyn_table[] = {
 	CPU_LOW_PARAMS(100000000, 1, 1, 9),
@@ -892,60 +936,60 @@ static struct clk_regmap t3x_cpu_clk = {
 	},
 };
 
-/* a55 usd_clk, get the table from ucode */
-static const struct cpu_dyn_table t3x_dsu_dyn_table[] = {
-	/* For dsu, his parent should always be on fiv_div2 or sys1 pll */
-	CPU_LOW_PARAMS(1000000000, 1, 0, 0),
-	CPU_LOW_PARAMS(1200000000, 3, 0, 0),
-	CPU_LOW_PARAMS(1500000000, 3, 0, 0),
-};
-
-static const struct clk_parent_data t3x_dsu_dyn_clk_sel[] = {
-	{ .fw_name = "xtal", },
-	{ .hw = &t3x_fclk_div2.hw },
-	{ .hw = &t3x_fclk_div3.hw },
-	{ .hw = &t3x_sys1_pll.hw },
-};
-
-static struct clk_regmap t3x_dsu_dyn_clk = {
+static struct clk_regmap t3x_a76_dyn_clk = {
 	.data = &(struct meson_sec_cpu_dyn_data){
-		.table = t3x_dsu_dyn_table,
-		.table_cnt = ARRAY_SIZE(t3x_dsu_dyn_table),
-		.secid_dyn_rd = SECID_DSU_PRE_CLK_RD,
-		.secid_dyn = SECID_DSU_PRE_CLK_DYN,
+		.table = t3x_cpu_dyn_table,
+		.table_cnt = ARRAY_SIZE(t3x_cpu_dyn_table),
+		.secid_dyn_rd = SECID_A76_CLK_RD,
+		.secid_dyn = SECID_A76_CLK_DYN,
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "dsu_dyn_clk",
+		.name = "a76_dyn_clk",
 		.ops = &meson_sec_cpu_dyn_ops,
-		.parent_data = t3x_dsu_dyn_clk_sel,
-		.num_parents = ARRAY_SIZE(t3x_dsu_dyn_clk_sel),
+		.parent_data = t3x_cpu_dyn_clk_sel,
+		.num_parents = 4,
 	},
 };
 
-static struct clk_regmap t3x_dsu_pre_clk = {
+static struct clk_regmap t3x_a76_clk = {
 	.data = &(struct clk_regmap_mux_data){
 		.mask = 0x1,
 		.shift = 11,
 		.smc_id = SECURE_CPU_CLK,
-		.secid_rd = SECID_DSU_PRE_CLK_RD,
+		.secid = SECID_A76_CLK_SEL,
+		.secid_rd = SECID_A76_CLK_RD
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "dsu_pre_clk",
-		/* dsu must mux in t3x_dsu_dyn_clk */
-		.ops = &clk_regmap_mux_ro_ops,
+		.name = "a76_clk",
+		.ops = &clk_regmap_mux_ops,
 		.parent_hws = (const struct clk_hw *[]) {
-			&t3x_dsu_dyn_clk.hw,
-			&t3x_sys_pll.hw,
+			&t3x_a76_dyn_clk.hw,
+			&t3x_sys1_pll.hw,
 		},
 		.num_parents = 2,
-		.flags = CLK_SET_RATE_PARENT,
+		.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
+	},
+};
+
+static struct clk_regmap t3x_dsu_dyn_clk = {
+	.data = &(struct meson_sec_cpu_dyn_data){
+		.table = t3x_cpu_dyn_table,
+		.table_cnt = ARRAY_SIZE(t3x_cpu_dyn_table),
+		.secid_dyn_rd = SECID_DSU_CLK_RD,
+		.secid_dyn = SECID_DSU_CLK_DYN,
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "dsu_dyn_clk",
+		.ops = &meson_sec_cpu_dyn_ops,
+		.parent_data = t3x_cpu_dyn_clk_sel,
+		.num_parents = 4,
 	},
 };
 
 static struct clk_regmap t3x_dsu_clk = {
 	.data = &(struct clk_regmap_mux_data){
 		.mask = 0x1,
-		.shift = 31,
+		.shift = 11,
 		.smc_id = SECURE_CPU_CLK,
 		.secid = SECID_DSU_CLK_SEL,
 		.secid_rd = SECID_DSU_CLK_RD,
@@ -954,10 +998,31 @@ static struct clk_regmap t3x_dsu_clk = {
 		.name = "dsu_clk",
 		.ops = &clk_regmap_mux_ops,
 		.parent_hws = (const struct clk_hw *[]) {
-			&t3x_cpu_clk.hw,
-			&t3x_dsu_pre_clk.hw,
+			&t3x_dsu_dyn_clk.hw,
+			&t3x_sys3_pll.hw,
 		},
 		.num_parents = 2,
+		.flags = CLK_SET_RATE_PARENT,
+	},
+};
+
+static struct clk_regmap t3x_dsu_final_clk = {
+	.data = &(struct clk_regmap_mux_data){
+		.mask = 0x1,
+		.shift = 31,
+		.smc_id = SECURE_CPU_CLK,
+		.secid = SECID_DSU_FINAL_CLK_SEL,
+		.secid_rd = SECID_DSU_FINAL_CLK_RD,
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "dsu_final_clk",
+		.ops = &clk_regmap_mux_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&t3x_cpu_clk.hw,
+			&t3x_dsu_clk.hw,
+		},
+		.num_parents = 2,
+		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -1038,6 +1103,20 @@ static struct t3x_sys_pll_nb_data t3x_sys_pll_nb_data = {
 	.sys_pll = &t3x_sys_pll.hw,
 	.cpu_clk = &t3x_cpu_clk.hw,
 	.cpu_dyn_clk = &t3x_cpu_dyn_clk.hw,
+	.nb.notifier_call = t3x_sys_pll_notifier_cb,
+};
+
+static struct t3x_sys_pll_nb_data t3x_sys1_pll_nb_data = {
+	.sys_pll = &t3x_sys1_pll.hw,
+	.cpu_clk = &t3x_a76_clk.hw,
+	.cpu_dyn_clk = &t3x_a76_dyn_clk.hw,
+	.nb.notifier_call = t3x_sys_pll_notifier_cb,
+};
+
+static struct t3x_sys_pll_nb_data t3x_sys3_pll_nb_data = {
+	.sys_pll = &t3x_sys3_pll.hw,
+	.cpu_clk = &t3x_dsu_clk.hw,
+	.cpu_dyn_clk = &t3x_dsu_dyn_clk.hw,
 	.nb.notifier_call = t3x_sys_pll_notifier_cb,
 };
 
@@ -6140,13 +6219,17 @@ static struct clk_hw_onecell_data t3x_hw_onecell_data = {
 		[CLKID_GP0_PLL]				= &t3x_gp0_pll.hw,
 		[CLKID_CPU_DYN_CLK]			= &t3x_cpu_dyn_clk.hw,
 		[CLKID_CPU_CLK]				= &t3x_cpu_clk.hw,
+		[CLKID_A76_DYN_CLK]			= &t3x_a76_dyn_clk.hw,
+		[CLKID_A76_CLK]				= &t3x_a76_clk.hw,
 		[CLKID_DSU_DYN_CLK]			= &t3x_dsu_dyn_clk.hw,
-		[CLKID_DSU_PRE_CLK]			= &t3x_dsu_pre_clk.hw,
 		[CLKID_DSU_CLK]				= &t3x_dsu_clk.hw,
+		[CLKID_DSU_FINAL_CLK]			= &t3x_dsu_final_clk.hw,
 		[CLKID_HIFI_PLL_DCO]			= &t3x_hifi_pll_dco.hw,
 		[CLKID_HIFI_PLL]			= &t3x_hifi_pll.hw,
 		[CLKID_HIFI1_PLL_DCO]			= &t3x_hifi1_pll_dco.hw,
 		[CLKID_HIFI1_PLL]			= &t3x_hifi1_pll.hw,
+		[CLKID_PCIE_PLL]			= &t3x_pcie_pll.hw,
+		[CLKID_PCIE_HCSL]			= &t3x_pcie_hcsl.hw,
 		[CLKID_MPLL_50M_DIV]			= &t3x_mpll_50m_div.hw,
 		[CLKID_MPLL_50M]			= &t3x_mpll_50m.hw,
 		[CLKID_RTC_32K_CLKIN]			= &t3x_rtc_32k_clkin.hw,
@@ -6860,12 +6943,16 @@ static struct clk_regmap *const t3x_clk_regmaps[] = {
 static struct clk_regmap *const t3x_cpu_clk_regmaps[] = {
 	&t3x_cpu_dyn_clk,
 	&t3x_cpu_clk,
+	&t3x_a76_dyn_clk,
+	&t3x_a76_clk,
 	&t3x_dsu_dyn_clk,
-	&t3x_dsu_pre_clk,
-	&t3x_dsu_clk
+	&t3x_dsu_clk,
+	&t3x_dsu_final_clk,
 };
 
 static struct clk_regmap *const t3x_pll_clk_regmaps[] = {
+	&t3x_pcie_pll,
+	&t3x_pcie_hcsl,
 };
 
 static int meson_t3x_dvfs_setup(struct platform_device *pdev)
@@ -6877,6 +6964,20 @@ static int meson_t3x_dvfs_setup(struct platform_device *pdev)
 				    &t3x_sys_pll_nb_data.nb);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register sys_pll notifier\n");
+		return ret;
+	}
+	/* Setup cluster 1 clock notifier for sys1_pll */
+	ret = clk_notifier_register(t3x_sys1_pll.hw.clk,
+				    &t3x_sys1_pll_nb_data.nb);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to register sys1_pll notifier\n");
+		return ret;
+	}
+	/* Setup DSU clock notifier for sys3_pll */
+	ret = clk_notifier_register(t3x_sys3_pll.hw.clk,
+				    &t3x_sys3_pll_nb_data.nb);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to register sys3_pll notifier\n");
 		return ret;
 	}
 

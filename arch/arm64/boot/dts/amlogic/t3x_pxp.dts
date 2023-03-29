@@ -737,13 +737,6 @@
 		status = "okay";
 	};
 
-	ppmgr {
-		compatible = "amlogic, ppmgr";
-		memory-region = <&ppmgr_reserved>;
-		dev_name = "ppmgr";
-		status = "disabled";
-	};
-
 	amdolby_vision {
 		compatible = "amlogic, dolby_vision_t3x";
 		dev_name = "aml_amdolby_vision_driver";
@@ -873,16 +866,29 @@
 		pinctrl-1 = <&dvb_s_ts1_pins>;
 	};
 
+	ppmgr {
+		compatible = "amlogic, ppmgr";
+		memory-region = <&ppmgr_reserved>;
+		dev_name = "ppmgr";
+		status = "okay";
+	};
+
+	video_queue {
+		compatible = "amlogic, video_queue";
+		dev_name = "videoqueue";
+		status = "okay";
+	};
+
 	ionvideo {
 		compatible = "amlogic, ionvideo";
 		dev_name = "ionvideo";
-		status = "disabled";
+		status = "okay";
 	};
 
 	amlvideo2_0 {
 		compatible = "amlogic, amlvideo2";
 		dev_name = "amlvideo2";
-		status = "disabled";
+		status = "okay";
 		amlvideo2_id = <0>;
 		cma_mode = <1>;
 	};
@@ -890,7 +896,7 @@
 	amlvideo2_1 {
 		compatible = "amlogic, amlvideo2";
 		dev_name = "amlvideo2";
-		status = "disabled";
+		status = "okay";
 		amlvideo2_id = <1>;
 		cma_mode = <1>;
 	};

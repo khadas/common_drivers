@@ -1571,6 +1571,12 @@ static int lcd_config_load_from_dts(struct aml_lcd_drv_s *pdrv)
 	pconf->timing.vsync_bp = (unsigned short)(para[4]);
 	pconf->timing.vsync_pol = (unsigned short)(para[5]);
 
+	ret = of_property_read_u32(child, "ppc_mode", &val);
+	if (ret)
+		pconf->timing.ppc = 1;
+	else
+		pconf->timing.ppc = val;
+
 	ret = of_property_read_u32_array(child, "clk_attr", &para[0], 4);
 	if (ret) {
 		LCDERR("[%d]: failed to get clk_attr\n", pdrv->index);
@@ -1689,7 +1695,7 @@ static int lcd_config_load_from_dts(struct aml_lcd_drv_s *pdrv)
 				      pctrl->lvds_cfg.phy_preem);
 			}
 		}
-		phy_cfg->lane_num = 12;
+		phy_cfg->lane_num = 16;
 		phy_cfg->vswing_level = pctrl->lvds_cfg.phy_vswing & 0xf;
 		phy_cfg->ext_pullup = (pctrl->lvds_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->vswing = lcd_phy_vswing_level_to_value(pdrv, phy_cfg->vswing_level);
@@ -1734,7 +1740,7 @@ static int lcd_config_load_from_dts(struct aml_lcd_drv_s *pdrv)
 				      pctrl->vbyone_cfg.phy_preem);
 			}
 		}
-		phy_cfg->lane_num = 8;
+		phy_cfg->lane_num = 16;
 		phy_cfg->vswing_level = pctrl->vbyone_cfg.phy_vswing & 0xf;
 		phy_cfg->ext_pullup = (pctrl->vbyone_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->vswing = lcd_phy_vswing_level_to_value(pdrv, phy_cfg->vswing_level);
@@ -2160,6 +2166,10 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv, char *key_s
 	pconf->timing.fr_adjust_type = *(p + LCD_UKEY_FR_ADJ_TYPE);
 	pconf->timing.ss_level = *(p + LCD_UKEY_SS_LEVEL);
 	pconf->timing.clk_auto = *(p + LCD_UKEY_CLK_AUTO_GEN);
+	pconf->timing.ppc = (pconf->timing.clk_auto >> 4) & 0xf;
+	pconf->timing.clk_auto &= ~(0xf << 4);
+	if (pconf->timing.ppc == 0)
+		pconf->timing.ppc = 1;
 	pconf->timing.lcd_clk = (*(p + LCD_UKEY_PCLK) |
 		((*(p + LCD_UKEY_PCLK + 1)) << 8) |
 		((*(p + LCD_UKEY_PCLK + 2)) << 16) |
@@ -2209,7 +2219,7 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv, char *key_s
 		pctrl->lvds_cfg.lane_reverse = *(p + LCD_UKEY_IF_ATTR_8) |
 			((*(p + LCD_UKEY_IF_ATTR_8 + 1)) << 8);
 
-		phy_cfg->lane_num = 12;
+		phy_cfg->lane_num = 16;
 		phy_cfg->vswing_level = pctrl->lvds_cfg.phy_vswing & 0xf;
 		phy_cfg->ext_pullup = (pctrl->lvds_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->vswing = lcd_phy_vswing_level_to_value(pdrv, phy_cfg->vswing_level);
@@ -2244,7 +2254,7 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv, char *key_s
 		pctrl->vbyone_cfg.hpd_data_delay = VX1_HPD_DATA_DELAY_DFT;
 		pctrl->vbyone_cfg.cdr_training_hold = VX1_CDR_TRAINING_HOLD_DFT;
 
-		phy_cfg->lane_num = 8;
+		phy_cfg->lane_num = 16;
 		phy_cfg->vswing_level = pctrl->vbyone_cfg.phy_vswing & 0xf;
 		phy_cfg->ext_pullup = (pctrl->vbyone_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->vswing = lcd_phy_vswing_level_to_value(pdrv, phy_cfg->vswing_level);

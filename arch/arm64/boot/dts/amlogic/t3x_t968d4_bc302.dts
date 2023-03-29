@@ -8,7 +8,7 @@
 #include "mesont3x.dtsi"
 #include "partition_mbox_ab.dtsi"
 #include "mesont3x_drm.dtsi"
-#include "mesont3x_pxp-panel.dtsi"
+#include "mesont3x_bc302-panel.dtsi"
 #include <dt-bindings/input/input.h>
 
 / {
@@ -785,7 +785,7 @@
 		reg = <0x0 0xfe000000 0x0 0x480000>;
 		irq_trigger_type = "GPIO_IRQ_LOW";
 
-		reset_pin-gpios = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
+		//reset_pin-gpios = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
 		detect_pin-gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
 		//enable_5v3v_pin-gpios = <&gpio GPIOT_11 GPIO_ACTIVE_HIGH>;
 		//enable_pin-gpios = <&gpio GPIOT_12 GPIO_ACTIVE_HIGH>;
@@ -1746,6 +1746,58 @@
 				   "tsin_b_clk",
 				   "tsin_b_din0";
 			function = "tsin_b";
+		};
+	};
+	/*backlight*/
+	bl_pwm_vs_on_pins:bl_pwm_vs_on_pin {
+		mux {
+			groups = "pwm_vs_h12";
+			function = "pwm_vs";
+		};
+	};
+	bl_pwm_off_pins:bl_pwm_off_pin {
+		mux {
+			groups = "GPIOH_12";
+			function = "gpio_periphs";
+			output-low;
+		};
+	};
+	ST6451D06_3_pins: ST6451D06_3_pin {
+		mux {
+			groups = "tcon_1","tcon_2","tcon_3",
+				"tcon_4","tcon_5","tcon_6",
+				"tcon_9","tcon_10","tcon_11",
+				"tcon_14", "tcon_lock";
+			function = "tcon";
+		};
+	};
+	ST6451D06_3_off_pins: ST6451D06_3_off_pin {
+		mux {
+			groups = "GPIOH_1","GPIOH_2","GPIOH_3",
+				"GPIOH_4","GPIOH_5","GPIOH_6",
+				"GPIOH_9","GPIOH_10","GPIOH_11",
+				"GPIOH_14", "GPIOH_0";
+				function = "gpio_periphs";
+			input-enable;
+		};
+	};
+	ST5461D18_2_pins: ST5461D18_2_pin {
+		mux {
+			groups = "tcon_1","tcon_2","tcon_3",
+				"tcon_4","tcon_5","tcon_6",
+				"tcon_9","tcon_10","tcon_11",
+				"tcon_14","tcon_lock";
+			function = "tcon";
+		};
+	};
+	ST5461D18_2_off_pins: ST5461D18_2_off_pin {
+		mux {
+			groups = "GPIOH_1","GPIOH_2","GPIOH_3",
+				"GPIOH_4","GPIOH_5","GPIOH_6",
+				"GPIOH_9","GPIOH_10","GPIOH_11",
+				"GPIOH_14","GPIOH_0";
+				function = "gpio_periphs";
+			input-enable;
 		};
 	};
 };

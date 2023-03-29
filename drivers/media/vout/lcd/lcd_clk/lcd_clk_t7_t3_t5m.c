@@ -1217,6 +1217,12 @@ static void lcd_clk_set_t3(struct aml_lcd_drv_s *pdrv)
 	lcd_set_vid_pll_div_t3(pdrv);
 }
 
+static void lcd_clk_set_t3x(struct aml_lcd_drv_s *pdrv)
+{
+	lcd_set_pll_t7(pdrv);
+	lcd_set_vid_pll_div_t7(pdrv);
+}
+
 static void lcd_clktree_probe_t3(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
@@ -1675,7 +1681,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3x = {
 	.set_ss_level = lcd_set_pll_ss_level,
 	.set_ss_advance = lcd_set_pll_ss_advance,
 	.clk_ss_enable = lcd_pll_ss_enable,
-	.clk_set = lcd_clk_set_t3,
+	.clk_set = lcd_clk_set_t3x,
 	.vclk_crt_set = lcd_set_vclk_crt,
 	.clk_disable = lcd_clk_disable,
 	.clk_gate_switch = lcd_clk_gate_switch_t7,

@@ -110,7 +110,11 @@ unsigned int lcd_phy_preem_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned i
 void lcd_vbyone_enable_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_vbyone_disable_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_vbyone_enable_t7(struct aml_lcd_drv_s *pdrv);
+void lcd_vbyone_enable_t3x(struct aml_lcd_drv_s *pdrv);
+
 void lcd_vbyone_disable_t7(struct aml_lcd_drv_s *pdrv);
+void lcd_vbyone_disable_t3x(struct aml_lcd_drv_s *pdrv);
+
 void lcd_vbyone_link_maintain_clear(void);
 void lcd_vbyone_wait_timing_stable(struct aml_lcd_drv_s *pdrv);
 void lcd_vbyone_cdr_training_hold(struct aml_lcd_drv_s *pdrv, int flag);

@@ -195,9 +195,11 @@
 
 #define HHI_DSI_LVDS_EDP_CNTL0                     0xd1
 #define HHI_DSI_LVDS_EDP_CNTL1                     0xd2
+#define HHI_DIF_CSI_PHY_CNTL0                      0xd8
 #define HHI_DIF_CSI_PHY_CNTL1                      0xd9
 #define HHI_DIF_CSI_PHY_CNTL2                      0xda
 #define HHI_DIF_CSI_PHY_CNTL3                      0xdb
+#define HHI_DIF_CSI_PHY_CNTL5                      0xdd
 #define HHI_LVDS_TX_PHY_CNTL0                      0x9a
 #define HHI_LVDS_TX_PHY_CNTL1                      0x9b
 #define HHI_VID2_PLL_CNTL                          0xe0
@@ -1078,6 +1080,42 @@
 #define VBO_INSGN_CTRL_T7                          0x19fa
 #define VBO_INFILTER_CTRL_H_T7                     0x1977
 
+/* t3x */
+#define VBO_CTRL_T3X                                   0x1960
+#define VBO_SOFT_RST_T3X                               0x1961
+#define VBO_LANES_T3X                                  0x1962
+#define VBO_VIN_CTRL_T3X                               0x1963
+#define VBO_ACT_VSIZE_T3X                              0x1964
+#define VBO_REGION_00_T3X                              0x1965
+#define VBO_REGION_01_T3X                              0x1966
+#define VBO_REGION_02_T3X                              0x1967
+#define VBO_REGION_03_T3X                              0x1968
+#define VBO_VBK_CTRL_T3X                               0x1969
+#define VBO_HBK_CTRL_T3X                               0x196a
+#define VBO_PXL_CTRL_T3X                               0x196b
+#define VBO_LANE_SKEW_L_T3X                            0x196c
+#define VBO_LANE_SKEW_H_T3X                            0x196d
+#define VBO_GCLK_LANE_T3X                              0x196e
+#define VBO_GCLK_MAIN_T3X                              0x196f
+#define VBO_STATUS_L_T3X                               0x1970
+#define VBO_STATUS_H_T3X                               0x1971
+#define VBO_LANE_OUTPUT_T3X                            0x1972
+#define LCD_PORT_SWAP_T3X                              0x1973
+#define VBO_TMCHK_THRD_T3X                             0x1974
+#define VBO_FSM_HOLDER_T3X                             0x1975
+#define VBO_INTR_STATE_CTRL_T3X                        0x1976
+#define VBO_INTR_UNMASK_T3X                            0x1977
+#define VBO_TMCHK_HSYNC_STATE_T3X                      0x1978
+#define VBO_TMCHK_VSYNC_STATE_T3X                      0x1979
+#define VBO_TMCHK_VDE_STATE_T3X                        0x197a
+#define VBO_INTR_STATE_T3X                             0x197b
+#define VBO_INFILTER_CTRL_T3X                          0x197c
+#define VBO_INSGN_CTRL_T3X                             0x197d
+#define VBO_INFILTER_CTRL_H_T3X                        0x197e
+#define VBO_SLICE_CTRL_T3X                             0x1980
+#define VBO_RGN_CTRL_T3X                               0x1981
+#define VBO_RGN_HSIZE_T3X                              0x1982
+
 /* ********************************
  * Video Interface:  VENC_VCBUS_BASE = 0x1b
  */
@@ -1733,6 +1771,7 @@ extern int lcd_reg_tl1[];
 extern int lcd_reg_t5[];
 extern int lcd_reg_t7[];
 extern int lcd_reg_c3[];
+extern int lcd_reg_t3x[];
 
 int lcd_ioremap(struct aml_lcd_drv_s *pdrv, struct platform_device *pdev);
 unsigned int lcd_vcbus_read(unsigned int reg);

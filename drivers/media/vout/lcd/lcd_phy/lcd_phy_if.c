@@ -126,6 +126,9 @@ int lcd_phy_config_init(struct aml_lcd_drv_s *pdrv)
 	case LCD_CHIP_C3:
 		lcd_phy_ctrl = lcd_phy_config_init_c3(pdrv);
 		break;
+	case LCD_CHIP_T3X:
+		lcd_phy_ctrl = lcd_phy_config_init_t3x(pdrv);
+		break;
 	default:
 		break;
 	}

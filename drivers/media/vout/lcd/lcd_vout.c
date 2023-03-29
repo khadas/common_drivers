@@ -90,18 +90,21 @@ static struct lcd_boot_ctrl_s lcd_boot_ctrl_config[LCD_MAX_DRV] = {
 		.lcd_bits = 0,
 		.advanced_flag = 0,
 		.init_level = 0,
+		.ppc = 1,
 	},
 	{
 		.lcd_type = LCD_TYPE_MAX,
 		.lcd_bits = 0,
 		.advanced_flag = 0,
 		.init_level = 0,
+		.ppc = 1,
 	},
 	{
 		.lcd_type = LCD_TYPE_MAX,
 		.lcd_bits = 0,
 		.advanced_flag = 0,
 		.init_level = 0,
+		.ppc = 1,
 	}
 };
 
@@ -1926,6 +1929,7 @@ static int lcd_config_probe(struct aml_lcd_drv_s *pdrv, struct platform_device *
 	pdrv->viu_sel = LCD_VIU_SEL_NONE;
 	pdrv->vsync_none_timer_flag = 0;
 	pdrv->module_reset = lcd_module_reset;
+	pdrv->config.timing.ppc = lcd_boot_ctrl_config[pdrv->index].ppc;
 	lcd_clk_config_probe(pdrv);
 	lcd_phy_config_init(pdrv);
 	lcd_venc_probe(pdrv);
@@ -2110,7 +2114,7 @@ static struct lcd_data_s lcd_data_t5m = {
 static struct lcd_data_s lcd_data_t3x = {
 	.chip_type = LCD_CHIP_T3X,
 	.chip_name = "t3x",
-	.reg_map_table = &lcd_reg_t5[0],
+	.reg_map_table = &lcd_reg_t3x[0],
 	.drv_max = 2,
 	.offset_venc = {0x0, 0x100},
 	.offset_venc_if = {0x0, 0x500},
@@ -2467,6 +2471,9 @@ static int lcd_boot_ctrl_setup(char *str)
 	boot_ctrl->advanced_flag = (data32 >> 8) & 0xff;
 	boot_ctrl->custom_pinmux = (data32 >> 16) & 0x1;
 	boot_ctrl->init_level = (data32 >> 18) & 0x3;
+	boot_ctrl->ppc = (data32 >> 24) & 0x3;
+	if (boot_ctrl->ppc & (boot_ctrl->ppc - 1))
+		boot_ctrl->ppc = 1;
 	return 0;
 }
 
@@ -2491,6 +2498,9 @@ static int lcd1_boot_ctrl_setup(char *str)
 	boot_ctrl->advanced_flag = (data32 >> 8) & 0xff;
 	boot_ctrl->custom_pinmux = (data32 >> 16) & 0x1;
 	boot_ctrl->init_level = (data32 >> 18) & 0x3;
+	boot_ctrl->ppc = (data32 >> 24) & 0x3;
+	if (boot_ctrl->ppc & (boot_ctrl->ppc - 1))
+		boot_ctrl->ppc = 1;
 	return 0;
 }
 
@@ -2515,6 +2525,9 @@ static int lcd2_boot_ctrl_setup(char *str)
 	boot_ctrl->advanced_flag = (data32 >> 8) & 0xff;
 	boot_ctrl->custom_pinmux = (data32 >> 16) & 0x1;
 	boot_ctrl->init_level = (data32 >> 18) & 0x3;
+	boot_ctrl->ppc = (data32 >> 24) & 0xf;
+	if (boot_ctrl->ppc & (boot_ctrl->ppc - 1))
+		boot_ctrl->ppc = 1;
 	return 0;
 }
 

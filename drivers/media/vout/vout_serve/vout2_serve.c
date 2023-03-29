@@ -82,6 +82,7 @@ static struct vinfo_s nulldisp_vinfo[] = {
 		.viu_color_fmt     = COLOR_FMT_RGB444,
 		.viu_mux           = ((3 << 4) | VIU_MUX_MAX),
 		.vout_device       = NULL,
+		.cur_enc_ppc       = 1,
 	},
 	{
 		.name              = "invalid",
@@ -101,6 +102,7 @@ static struct vinfo_s nulldisp_vinfo[] = {
 		.viu_color_fmt     = COLOR_FMT_RGB444,
 		.viu_mux           = ((3 << 4) | VIU_MUX_MAX),
 		.vout_device       = NULL,
+		.cur_enc_ppc       = 1,
 	}
 };
 

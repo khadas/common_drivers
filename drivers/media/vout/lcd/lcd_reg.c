@@ -63,6 +63,14 @@ int lcd_reg_c3[] = {
 	LCD_MAP_MAX
 };
 
+int lcd_reg_t3x[] = {
+	LCD_MAP_TCON,
+	LCD_MAP_PERIPHS,
+	LCD_MAP_RST,
+	LCD_MAP_COMBO_DPHY,
+	LCD_MAP_MAX,
+};
+
 /* for lcd reg access */
 spinlock_t lcd_reg_spinlock;
 

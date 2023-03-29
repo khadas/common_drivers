@@ -88,6 +88,7 @@ static struct vinfo_s invalid_vinfo = {
 	.viu_color_fmt     = COLOR_FMT_RGB444,
 	.viu_mux           = ((3 << 4) | VIU_MUX_MAX),
 	.vout_device       = NULL,
+	.cur_enc_ppc       = 1,
 };
 
 struct vinfo_s *get_invalid_vinfo(int index, unsigned int flag)

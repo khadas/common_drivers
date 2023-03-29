@@ -1152,6 +1152,7 @@ static void lcd_vinfo_update_default(struct aml_lcd_drv_s *pdrv)
 	pdrv->vinfo.htotal = pconf->basic.h_period;
 	pdrv->vinfo.vtotal = pconf->basic.v_period;
 	pdrv->vinfo.fr_adj_type = VOUT_FR_ADJ_NONE;
+	pdrv->vinfo.cur_enc_ppc = pconf->timing.ppc;
 
 	kfree(mode);
 }

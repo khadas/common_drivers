@@ -304,4 +304,9 @@
 //Bit 13    reg_inbuf_sel_vpp_go_field          // unsigned, RW, default = 0,
 //Bit 12: 0 reg_inbuf_line_lenm1                // unsigned, RW, default = 13'heff
 
+#define VBO_CTRL                                   0x1960
+#define VBO_SLICE_CTRL                             0x1980
+#define VBO_RGN_CTRL                               0x1981
+#define VBO_RGN_HSIZE                              0x1982
+
 #endif

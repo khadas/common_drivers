@@ -264,11 +264,6 @@ module_param_named(dwc_otg_device, dwc_force_device_mode,
 		bool, 0644);
 #endif
 
-static inline int get_otg_mode(void)
-{
-	return dwc_force_device_mode;
-}
-
 static u64 dwc2_dmamask = DMA_BIT_MASK(32);
 
 /**

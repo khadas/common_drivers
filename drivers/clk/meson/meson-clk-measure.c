@@ -2158,6 +2158,7 @@ static struct meson_msr_id clk_msr_t5m[] __initdata = {
 	CLK_MSR_ID(226, "sar_adc_clk_o"),
 	CLK_MSR_ID(227, "jtag_tck_i_pad"),
 	CLK_MSR_ID(228, "dac_ck0"),
+};
 
 static struct meson_msr_id clk_msr_g12b[] __initdata = {
 	CLK_MSR_ID(0, "am_ring_osc_clk_out_ee[0]"),

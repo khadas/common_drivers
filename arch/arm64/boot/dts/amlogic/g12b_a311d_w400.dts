@@ -1019,13 +1019,6 @@
 		differential_pair = <1>;
 		status = "disabled";
 	};
-
-	bl_extern_i2c {
-		compatible = "bl_extern, i2c";
-		dev_name = "lp8556";
-		reg = <0x2c>;
-		status = "disabled";
-	};
 };
 
 &audiobus {

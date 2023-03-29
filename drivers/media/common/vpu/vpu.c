@@ -240,6 +240,48 @@ static int vpu_vmod_mem_pd_switch_new(unsigned int vmod, int flag)
 	return ret;
 }
 
+static int vpu_vmod_mem_pd_get(unsigned int vmod)
+{
+	unsigned int _reg, _bit, _len;
+	struct vpu_ctrl_s *table;
+	int i = 0, ret = 0, done = 0;
+
+	ret = vpu_chip_valid_check();
+	if (ret)
+		return -1;
+	if (vmod >= VPU_MOD_MAX) {
+		VPUERR("%s: invalid vpu mod: %d\n", __func__, vmod);
+		return -1;
+	}
+
+	table = vpu_conf.data->mem_pd_table;
+	if (!table)
+		return -1;
+
+	ret = 0;
+	while (i < VPU_MEM_PD_CNT_MAX) {
+		if (table[i].vmod == VPU_MOD_MAX)
+			break;
+		if (table[i].vmod == vmod) {
+			_reg = table[i].reg;
+			_bit = table[i].bit;
+			_len = table[i].len;
+			ret += vpu_clk_getb(_reg, _bit, _len);
+			done++;
+		}
+		i++;
+	}
+	if (done == 0) {
+		VPUPR("%s: unsupport vpu mod: %d\n", __func__, vmod);
+		return -1;
+	}
+
+	if (ret == 0)
+		return VPU_MEM_POWER_ON;
+	else
+		return VPU_MEM_POWER_DOWN;
+}
+
 static int vpu_vmod_mem_pd_get_new(unsigned int vmod)
 {
 	unsigned int _reg, _bit, _len;

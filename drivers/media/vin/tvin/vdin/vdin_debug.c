@@ -1510,7 +1510,6 @@ static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 	pr_info("%s done,write buffer %2d\n", __func__, buf_num);
 #endif
 #endif
-#endif
 }
 
 static void dump_other_mem(struct vdin_dev_s *devp, char *path,

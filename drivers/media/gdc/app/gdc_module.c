@@ -74,7 +74,8 @@ static struct gdc_device_data_s aml_gdc = {
 	.dev_type = AML_GDC,
 	.clk_type = MUXGATE_MUXSEL_GATE,
 	.core_cnt = 1,
-	.fw_version = AMLGDC_FW_V1
+	.fw_version = AMLGDC_FW_V1,
+	.has_pwd = 1
 };
 
 static struct gdc_device_data_s aml_gdc_v2 = {
@@ -83,7 +84,8 @@ static struct gdc_device_data_s aml_gdc_v2 = {
 	.bit_width_ext = 1,
 	.gamma_support = 1,
 	.core_cnt = 3,
-	.fw_version = AMLGDC_FW_V1
+	.fw_version = AMLGDC_FW_V1,
+	.has_pwd = 1
 };
 
 static struct gdc_device_data_s aml_gdc_v3 = {
@@ -92,7 +94,8 @@ static struct gdc_device_data_s aml_gdc_v3 = {
 	.bit_width_ext = 1,
 	.gamma_support = 0,
 	.core_cnt = 1,
-	.fw_version = AMLGDC_FW_V2
+	.fw_version = AMLGDC_FW_V2,
+	.has_pwd = 1
 };
 
 static struct gdc_device_data_s aml_gdc_v4 = {
@@ -101,7 +104,8 @@ static struct gdc_device_data_s aml_gdc_v4 = {
 	.bit_width_ext = 1,
 	.gamma_support = 0,
 	.core_cnt = 1,
-	.fw_version = AMLGDC_FW_V2
+	.fw_version = AMLGDC_FW_V2,
+	.has_pwd = 1
 };
 
 static const struct of_device_id gdc_dt_match[] = {

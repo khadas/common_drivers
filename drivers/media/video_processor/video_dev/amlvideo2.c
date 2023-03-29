@@ -5135,7 +5135,6 @@ static int amlvideo2_start_tvin_service(struct amlvideo2_node *node)
 	struct vdin_v4l2_ops_s *vops = &node->vops;
 	struct vdin_parm_s para;
 	const struct vinfo_s *vinfo;
-	int angle = node->qctl_regs[0];
 #endif
 	int dst_w, dst_h;
 	//int angle = node->qctl_regs[0];

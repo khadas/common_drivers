@@ -52,18 +52,18 @@
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
 			#cooling-cells = <2>;
-			//clocks = <&clkc CLKID_CPU_CLK>,
-			//	<&clkc CLKID_CPU_DYN_CLK>,
-			//	<&clkc CLKID_SYS_PLL>,
-			//	<&clkc CLKID_DSU_CLK>,
-			//	<&clkc CLKID_DSU_DYN_CLK>,
-			//	<&clkc CLKID_GP1_PLL>;
-			//clock-names = "core_clk",
-			//	"low_freq_clk_parent",
-			//	"high_freq_clk_parent",
-			//	"dsu_clk",
-			//	"dsu_pre_parent",
-			//	"dsu_pre_parent2";
+			clocks = <&clkc CLKID_CPU_CLK>,
+				<&clkc CLKID_CPU_DYN_CLK>,
+				<&clkc CLKID_SYS_PLL>,
+				<&clkc CLKID_DSU_CLK>,
+				<&clkc CLKID_DSU_DYN_CLK>,
+				<&clkc CLKID_SYS3_PLL>;
+			clock-names = "core_clk",
+				"low_freq_clk_parent",
+				"high_freq_clk_parent",
+				"dsu_clk",
+				"dsu_pre_parent",
+				"dsu_pre_parent2";
 			operating-points-v2 = <&a55_opp_table0>;
 			voltage-tolerance = <0>;
 			clock-latency = <50000>;
@@ -74,8 +74,8 @@
 			dsu-opp-table = <1200000 879000 1500000 939000>;
 			dsu_clock_shared;
 			dsu-low-rate = <1000000>;
-			dvfs_sibling_core_num = <4>;
-			dvfs_sibling_cores = <0 1 2 3>;
+			dvfs_sibling_core_num = <3>;
+			dvfs_sibling_cores = <0 1 2>;
 		};
 
 		CPU1:cpu@1 {
@@ -151,30 +151,30 @@
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
 			#cooling-cells = <2>;
-			//clocks = <&clkc CLKID_CPU_CLK>,
-			//	<&clkc CLKID_CPU_DYN_CLK>,
-			//	<&clkc CLKID_SYS_PLL>,
-			//	<&clkc CLKID_DSU_CLK>,
-			//	<&clkc CLKID_DSU_DYN_CLK>,
-			//	<&clkc CLKID_GP1_PLL>;
-			//clock-names = "core_clk",
-			//	"low_freq_clk_parent",
-			//	"high_freq_clk_parent",
-			//	"dsu_clk",
-			//	"dsu_pre_parent",
-			//	"dsu_pre_parent2";
+			clocks = <&clkc CLKID_A76_CLK>,
+				<&clkc CLKID_A76_DYN_CLK>,
+				<&clkc CLKID_SYS1_PLL>,
+				<&clkc CLKID_DSU_CLK>,
+				<&clkc CLKID_DSU_DYN_CLK>,
+				<&clkc CLKID_SYS3_PLL>;
+			clock-names = "core_clk",
+				"low_freq_clk_parent",
+				"high_freq_clk_parent",
+				"dsu_clk",
+				"dsu_pre_parent",
+				"dsu_pre_parent2";
 			operating-points-v2 = <&a76_opp_table0>;
 			voltage-tolerance = <0>;
 			clock-latency = <50000>;
-			capacity-dmips-mhz = <512>;
+			capacity-dmips-mhz = <1024>;
 			dynamic-power-coefficient = <1024>;
-			cpu-supply = <&vddcpua>;
-			cpu_supply_external_used;
+			cpu-supply = <&vddcpub>;
+			dsu-supply = <&vddcpua>;
 			dsu-opp-table = <1200000 879000 1500000 939000>;
 			dsu_clock_shared;
 			dsu-low-rate = <1000000>;
-			dvfs_sibling_core_num = <4>;
-			dvfs_sibling_cores = <0 1 2 3>;
+			dvfs_sibling_core_num = <2>;
+			dvfs_sibling_cores = <3 4>;
 		};
 
 		CPU4:cpu@4 {
@@ -734,7 +734,7 @@
 
 	cpufreq-meson {
 		compatible = "amlogic, cpufreq-meson";
-		status = "disabled";
+		status = "okay";
 	};
 
 	saradc: saradc@fe026000 {

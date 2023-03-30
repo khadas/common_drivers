@@ -1566,6 +1566,7 @@ dev_test:
 	ctlr->flags = (SPI_CONTROLLER_MUST_RX | SPI_CONTROLLER_MUST_TX);
 #endif
 	ctlr->min_speed_hz = rate >> 9;
+	ctlr->flags = (SPI_CONTROLLER_MUST_RX | SPI_CONTROLLER_MUST_TX);
 	ctlr->setup = meson_spicc_setup;
 	ctlr->cleanup = meson_spicc_cleanup;
 	ctlr->prepare_message = meson_spicc_prepare_message;

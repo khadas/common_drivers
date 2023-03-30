@@ -1784,6 +1784,7 @@ static struct platform_driver hifi4dsp_platform_driver = {
 };
 module_platform_driver(hifi4dsp_platform_driver);
 EXPORT_SYMBOL(hifi4dsp_p);
+
 MODULE_AUTHOR("Amlogic");
 MODULE_DESCRIPTION("HiFi DSP Module Driver");
 MODULE_LICENSE("GPL v2");

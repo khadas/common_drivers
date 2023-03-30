@@ -347,6 +347,7 @@ void aml_tdm_set_format(struct aml_audio_controller *actrl,
 	unsigned int capture_active,
 	unsigned int playback_active,
 	bool tdmin_src_hdmirx,
+	bool tdmin_src_hdmirxb,
 	bool use_vadtop)
 {
 	unsigned int binv, finv, id;
@@ -386,11 +387,14 @@ void aml_tdm_set_format(struct aml_audio_controller *actrl,
 	 * the clock is slave and from hdmirx
 	 * slv_sclk_f  = HDMIRX_I2S_SCLK
 	 */
+
 	if (tdmin_src_hdmirx)
 		aml_clk_set_tdmin_by_id(actrl, id, 11, 11, use_vadtop);
+	else if (tdmin_src_hdmirxb)
+		/*hdmi rx b use slv_sclk_i*/
+		aml_clk_set_tdmin_by_id(actrl, id, 14, 14, use_vadtop);
 	else
 		aml_clk_set_tdmin_by_id(actrl, id, valb, valf, use_vadtop);
-
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
 		if (p_config->sclk_ws_inv) {

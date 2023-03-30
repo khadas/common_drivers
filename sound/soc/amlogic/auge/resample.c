@@ -83,11 +83,26 @@ struct audioresample *s_resample_a;
 struct audioresample *s_resample_b;
 
 #define to_aml_src(x)   container_of(x, struct audioresample, clk_nb)
+struct audioresample *s_resample_c;
+
 struct audioresample *get_audioresample(enum resample_idx id)
 {
-	struct audioresample *p_resample;
+	struct audioresample *p_resample = NULL;
 
-	p_resample = ((id == RESAMPLE_A) ? s_resample_a : s_resample_b);
+	switch (id) {
+	case RESAMPLE_A:
+		p_resample = s_resample_a;
+		break;
+	case RESAMPLE_B:
+		p_resample = s_resample_b;
+		break;
+	case RESAMPLE_C:
+		p_resample = s_resample_c;
+		break;
+	default:
+		pr_info("unknown resample id:%d\n", id);
+		break;
+	}
 
 	if (!p_resample)
 		return NULL;
@@ -113,7 +128,7 @@ int get_resample_version_id(enum resample_idx id)
 {
 	struct audioresample *p_resample;
 
-	p_resample = ((id == RESAMPLE_A) ? s_resample_a : s_resample_b);
+	p_resample = get_audioresample(id);
 
 	if (!p_resample || !p_resample->chipinfo) {
 		pr_debug("Not init audio resample\n");
@@ -127,7 +142,7 @@ bool get_resample_enable(enum resample_idx id)
 {
 	struct audioresample *p_resample;
 
-	p_resample = ((id == RESAMPLE_A) ? s_resample_a : s_resample_b);
+	p_resample = get_audioresample(id);
 
 	if (!p_resample) {
 		pr_debug("Not init audio resample\n");
@@ -141,7 +156,7 @@ bool get_resample_enable_chnum_sync(enum resample_idx id)
 {
 	struct audioresample *p_resample;
 
-	p_resample = ((id == RESAMPLE_A) ? s_resample_a : s_resample_b);
+	p_resample = get_audioresample(id);
 
 	if (!p_resample || !p_resample->chipinfo) {
 		pr_debug("Not init audio resample\n");
@@ -155,7 +170,7 @@ int get_resample_source(enum resample_idx id)
 {
 	struct audioresample *p_resample;
 
-	p_resample = ((id == RESAMPLE_A) ? s_resample_a : s_resample_b);
+	p_resample = get_audioresample(id);
 
 	if (!p_resample) {
 		pr_err("%s Not init audio resample\n", __func__);
@@ -328,9 +343,9 @@ int resample_set(enum resample_idx id, enum samplerate_index index)
 	}
 
 
-	pr_debug("%s resample_%c to %s, last %s\n",
+	pr_debug("%s resample_%d to %s, last %s\n",
 		 __func__,
-		 (id == RESAMPLE_A) ? 'a' : 'b',
+		 id,
 		 auge_resample_texts[index],
 		 auge_resample_texts[p_resample->asrc_in_sr_idx]);
 
@@ -551,6 +566,17 @@ static const struct snd_kcontrol_new rsamp_a_controls[] = {
 		     resample_module_set_enum),
 };
 
+static const struct snd_kcontrol_new rsamp_c_controls[] = {
+	SOC_ENUM_EXT("Hardware resample c enable",
+		     auge_resample_enum,
+		     resample_get_enum,
+		     resample_set_enum),
+	SOC_ENUM_EXT("Hw resample c module",
+		     auge_resample_module_enum,
+		     resample_module_get_enum,
+		     resample_module_set_enum),
+};
+
 int card_add_resample_kcontrols(struct snd_soc_card *card)
 {
 	unsigned int idx;
@@ -585,7 +611,13 @@ int card_add_resample_kcontrols(struct snd_soc_card *card)
 				return err;
 		}
 	}
-
+	if (s_resample_c && s_resample_c->chipinfo) {
+		for (idx = 0; idx < ARRAY_SIZE(rsamp_c_controls);
+			idx++) {
+			err = snd_ctl_add(card->snd_card,
+			snd_ctl_new1(&rsamp_c_controls[idx], s_resample_c));
+		}
+	}
 	return 0;
 }
 
@@ -594,8 +626,8 @@ static int new_resample_init(struct audioresample *p_resample)
 	if (!p_resample)
 		return -ENOMEM;
 
-	pr_info("%s: Start init new resample %s parameters!\n",
-		__func__, (p_resample->id == RESAMPLE_A) ? "A" : "B");
+	pr_info("%s: Start init new resample %d parameters!\n",
+		__func__, p_resample->id);
 
 	p_resample->enable = 1;
 	new_resample_init_param(p_resample->id);
@@ -606,7 +638,7 @@ static int new_resample_init(struct audioresample *p_resample)
 		new_resample_enable_watchdog(p_resample->id, true);
 	}
 
-	if (p_resample->id == RESAMPLE_A) {
+	if (p_resample->id == RESAMPLE_A || p_resample->id == RESAMPLE_C) {
 		/* default resample A for tv input source */
 		new_resample_set_ratio(p_resample->id,
 				       DEFAULT_SPK_SAMPLERATE,
@@ -684,6 +716,36 @@ static struct resample_chipinfo tm2_revb_resample_b_chipinfo = {
 	.chnum_sync = true,
 	.watchdog  = true,
 };
+
+static struct resample_chipinfo t3x_resample_a_chipinfo = {
+	.num        = 3,
+	.id         = RESAMPLE_A,
+	.dividor_fn = true,
+	.resample_version = T5_RESAMPLE,
+	.chnum_sync = true,
+	.watchdog  = true,
+	//.src_conf  = &resample_srcs_v2[0],
+};
+
+static struct resample_chipinfo t3x_resample_b_chipinfo = {
+	.num        = 3,
+	.id         = RESAMPLE_B,
+	.dividor_fn = true,
+	.resample_version = T5_RESAMPLE,
+	.chnum_sync = true,
+	.watchdog  = true,
+	//.src_conf  = &resample_srcs_v2[0],
+};
+
+static struct resample_chipinfo t3x_resample_c_chipinfo = {
+	.num        = 3,
+	.id         = RESAMPLE_C,
+	.dividor_fn = true,
+	.resample_version = T5_RESAMPLE,
+	.chnum_sync = true,
+	.watchdog  = true,
+	//.src_conf  = &resample_srcs_v2[0],
+};
 #endif
 
 static struct resample_chipinfo t5_resample_a_chipinfo = {
@@ -740,6 +802,18 @@ static const struct of_device_id resample_device_id[] = {
 		.compatible = "amlogic, tm2-revb-resample-b",
 		.data = &tm2_revb_resample_b_chipinfo,
 	},
+	{
+		.compatible = "amlogic, t3x-resample-a",
+		.data = &t3x_resample_a_chipinfo,
+	},
+	{
+		.compatible = "amlogic, t3x-resample-b",
+		.data = &t3x_resample_b_chipinfo,
+	},
+	{
+		.compatible = "amlogic, t3x-resample-c",
+		.data = &t3x_resample_c_chipinfo,
+	},
 #endif
 	{
 		.compatible = "amlogic, t5-resample-a",
@@ -749,6 +823,7 @@ static const struct of_device_id resample_device_id[] = {
 		.compatible = "amlogic, t5-resample-b",
 		.data = &t5_resample_b_chipinfo,
 	},
+
 	{}
 };
 MODULE_DEVICE_TABLE(of, resample_device_id);
@@ -942,11 +1017,12 @@ static int resample_platform_probe(struct platform_device *pdev)
 
 	p_resample->dev = dev;
 	dev_set_drvdata(dev, p_resample);
-
-	if (p_chipinfo && p_chipinfo->id == 1)
-		s_resample_b = p_resample;
-	else
+	if (p_chipinfo && p_chipinfo->id == 0)
 		s_resample_a = p_resample;
+	else if (p_chipinfo && p_chipinfo->id == 1)
+		s_resample_b = p_resample;
+	else if (p_chipinfo && p_chipinfo->id == 2)
+		s_resample_c = p_resample;
 
 	if (p_chipinfo && p_chipinfo->resample_version >= SM1_RESAMPLE)
 		new_resample_init(p_resample);

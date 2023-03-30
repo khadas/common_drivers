@@ -229,11 +229,13 @@ unsigned int new_resample_read(enum resample_idx id, unsigned int reg)
 
 	if (id == RESAMPLE_A)
 		val = readl((aml_snd_reg_map[IO_RESAMPLEA] +
-			    (reg << 2)));
+			(reg << 2)));
 	else if (id == RESAMPLE_B)
 		val = readl((aml_snd_reg_map[IO_RESAMPLEB] +
-			    (reg << 2)));
-
+			(reg << 2)));
+	else if (id == RESAMPLE_C)
+		val = readl((aml_snd_reg_map[IO_RESAMPLEC] +
+			(reg << 2)));
 	return val;
 }
 
@@ -244,6 +246,8 @@ void new_resample_write(enum resample_idx id, unsigned int reg,
 		writel(val, (aml_snd_reg_map[IO_RESAMPLEA] + (reg << 2)));
 	else if (id == RESAMPLE_B)
 		writel(val, (aml_snd_reg_map[IO_RESAMPLEB] + (reg << 2)));
+	else if (id == RESAMPLE_C)
+		writel(val, (aml_snd_reg_map[IO_RESAMPLEC] + (reg << 2)));
 }
 
 void new_resample_update_bits(enum resample_idx id, unsigned int reg,

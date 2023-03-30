@@ -19,6 +19,7 @@ enum{
 	IO_PDM_BUS_B,
 	IO_TOP_VAD,
 	IO_CLK_MUX,
+	IO_RESAMPLEC,
 	IO_MAX,
 };
 
@@ -32,7 +33,8 @@ static const char * const iomap_name[] = {
 	"resampleB_base",
 	"pdm_bus_b",
 	"vad_top_base",
-	"clk_mux_base"
+	"clk_mux_base",
+	"resampleC_base"
 };
 
 int aml_pdm_read(int id, unsigned int reg);

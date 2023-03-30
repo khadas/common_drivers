@@ -69,7 +69,9 @@ struct src_enum_table toddr_src_table[TODDR_SRC_MAX] = {
 	{VAD,          "vad"},
 	{PDMIN_B,      "pdmin_b"},
 	{TDMINB_LB,    "tdminb_lb"},
-	{TDMIN_D,      "tdmin_d"}
+	{TDMIN_D,      "tdmin_d"},
+	{FRHDMIRX_B,   "fdhdmirx_b"},
+	{RESAMPLEC,    "resample_c"},
 };
 
 struct frddr_enum_table frddr_src_table[FRDDR_MAX] = {
@@ -82,9 +84,11 @@ struct frddr_enum_table frddr_src_table[FRDDR_MAX] = {
 	{EARCTX_DMAC,   "earctx"},
 
 };
+
+#define RESAMPLE_MAX_NUM 3
 /* resample */
-static struct toddr_attach attach_resample_a;
-static struct toddr_attach attach_resample_b;
+static struct toddr_attach attach_resample[RESAMPLE_MAX_NUM];
+
 static void aml_check_resample(struct toddr *to, bool enable);
 
 /* power detect */
@@ -916,7 +920,7 @@ static void aml_resample_enable(struct toddr *to, struct toddr_attach *p_attach_
 	}
 
 	if (p_attach_resample->resample_version >= SM1_RESAMPLE) {
-		if (p_attach_resample->id == RESAMPLE_A)
+		if (p_attach_resample->id == RESAMPLE_A || p_attach_resample->id == RESAMPLE_C)
 			new_resampleA_set_format(p_attach_resample->id, to->fmt.ch_num, bitwidth);
 
 		if (p_attach_resample->resample_version == SM1_RESAMPLE) {
@@ -944,9 +948,13 @@ static void aml_resample_enable(struct toddr *to, struct toddr_attach *p_attach_
 	}
 
 	enable = get_resample_enable(p_attach_resample->id);
-	if (p_attach_resample->resample_version >= T5_RESAMPLE &&
-	    p_attach_resample->id == RESAMPLE_A) {
-		aml_toddr_select_src(to, RESAMPLEA);
+
+	/*note: resampleb use loopback*/
+	if (p_attach_resample->resample_version >= T5_RESAMPLE) {
+		if (p_attach_resample->id == RESAMPLE_A)
+			aml_toddr_select_src(to, RESAMPLEA);
+		else if (p_attach_resample->id == RESAMPLE_C)
+			aml_toddr_select_src(to, RESAMPLEC);
 	} else {
 		/* select reample data */
 		if (to->chipinfo && to->chipinfo->asrc_src_sel_ctrl)
@@ -954,17 +962,16 @@ static void aml_resample_enable(struct toddr *to, struct toddr_attach *p_attach_
 		else
 			aml_toddr_set_resample(to, enable);
 	}
-
 	/* resample enable or disable */
 	if (p_attach_resample->resample_version >= SM1_RESAMPLE)
 		new_resample_enable(p_attach_resample->id, enable, to->fmt.ch_num);
 	else if (p_attach_resample->resample_version == AXG_RESAMPLE)
 		resample_enable(p_attach_resample->id, enable);
 	mutex_unlock(&p_attach_resample->lock);
-	pr_debug("toddr %d selects data to %s resample_%c for module:%s\n",
+	pr_debug("toddr %d selects data to %s resample_%d for module:%s\n",
 		to->fifo_id,
 		enable ? "enable" : "disable",
-		(p_attach_resample->id == RESAMPLE_A) ? 'a' : 'b',
+		p_attach_resample->id,
 		toddr_src_get_str(p_attach_resample->attach_module)
 		);
 }
@@ -976,22 +983,21 @@ void aml_set_resample(enum resample_idx id,
 	struct toddr *to;
 	enum toddr_src tosrc = resample_module;
 
-	if (id == RESAMPLE_A)
-		p_attach_resample = &attach_resample_a;
-	else
-		p_attach_resample = &attach_resample_b;
-
+	p_attach_resample = &attach_resample[id];
 	p_attach_resample->enable        = enable;
 	p_attach_resample->id            = id;
 	p_attach_resample->attach_module = resample_module;
 	p_attach_resample->resample_version = get_resample_version_id(id);
 
 	mutex_lock(&ddr_mutex);
-	/* toddr src to resample after T5 */
-	if (p_attach_resample->resample_version >= T5_RESAMPLE &&
-	    id == RESAMPLE_A)
-		tosrc = RESAMPLEA;
-
+	if (p_attach_resample->resample_version >= T5_RESAMPLE) {
+		if (id == RESAMPLE_A)
+			tosrc = RESAMPLEA;
+		else if (id == RESAMPLE_C)
+			tosrc = RESAMPLEC;
+		else if (id == RESAMPLE_B)
+			tosrc = LOOPBACK_A;
+	}
 	to = fetch_toddr_by_src(tosrc);
 	if (!to) {
 		pr_debug("%s(), toddr NULL\n", __func__);
@@ -1013,10 +1019,8 @@ static void aml_check_resample(struct toddr *to, bool enable)
 {
 	struct toddr_attach *p_attach_resample;
 	int i;
-
-	p_attach_resample = &attach_resample_a;
-
 	for (i = 0; i < get_resample_module_num(); i++) {
+		p_attach_resample = &attach_resample[i];
 		if (to->src == p_attach_resample->attach_module) {
 			/* save toddr status */
 			if (enable)
@@ -1024,14 +1028,14 @@ static void aml_check_resample(struct toddr *to, bool enable)
 			else
 				p_attach_resample->status = DISABLED;
 
-			if (p_attach_resample->resample_version >= T5_RESAMPLE &&
-			    p_attach_resample->id == RESAMPLE_A) {
-				aml_toddr_select_src(to, RESAMPLEA);
+			if (p_attach_resample->resample_version >= T5_RESAMPLE) {
+				if (p_attach_resample->id == RESAMPLE_A)
+					aml_toddr_select_src(to, RESAMPLEA);
+				else if (p_attach_resample->id == RESAMPLE_C)
+					aml_toddr_select_src(to, RESAMPLEC);
 			}
-
 			aml_resample_enable(to, p_attach_resample);
 		}
-		p_attach_resample = &attach_resample_b;
 	}
 }
 
@@ -2100,6 +2104,8 @@ struct toddr_src_conf toddr_srcs_v3[] = {
 	TODDR_SRC_CONFIG("pdmin_b", 16, EE_AUDIO_TODDR_A_CTRL1, 26, 0x1f),
 	TODDR_SRC_CONFIG("tdminb_lb", 17, EE_AUDIO_TODDR_A_CTRL1, 26, 0x1f),
 	TODDR_SRC_CONFIG("tdmin_d", 18, EE_AUDIO_TODDR_A_CTRL1, 26, 0x1f),
+	TODDR_SRC_CONFIG("fdhdmirx_b", 19, EE_AUDIO_TODDR_A_CTRL1, 26, 0x1f),
+	TODDR_SRC_CONFIG("resample_c", 20, EE_AUDIO_TODDR_A_CTRL1, 26, 0x1f),
 	{ /* sentinel */ }
 };
 
@@ -2311,6 +2317,23 @@ static struct ddr_chipinfo c3_ddr_chipinfo = {
 };
 
 static struct ddr_chipinfo s5_ddr_chipinfo = {
+	.same_src_fn		= true,
+	.ugt			= true,
+	.src_sel_ctrl		= true,
+	.asrc_src_sel_ctrl	= true,
+	.wakeup			= 2,
+	.toddr_num		= 4,
+	.frddr_num		= 4,
+	.fifo_depth		= FIFO_DEPTH_1K,
+	.chnum_sync		= true,
+	.burst_finished_flag	= true,
+	.to_srcs		= &toddr_srcs_v3[0],
+	.use_arb		= false,
+	.fr_reset_reg_offset	= &fr_reset_reg_offset_array_v2[0],
+	.fr_reset_reg_shift	= &fr_reset_reg_shift_array_v2[0],
+};
+
+static struct ddr_chipinfo t3x_ddr_chipinfo = {
 	.same_src_fn           = true,
 	.ugt                   = true,
 	.src_sel_ctrl          = true,
@@ -2382,7 +2405,12 @@ static const struct of_device_id aml_ddr_mngr_device_id[] = {
 		.compatible = "amlogic, s5-audio-ddr-manager",
 		.data       = &s5_ddr_chipinfo,
 	},
+	{
+		.compatible = "amlogic, t3x-audio-ddr-manager",
+		.data       = &t3x_ddr_chipinfo,
+	},
 #endif
+
 	{},
 };
 MODULE_DEVICE_TABLE(of, aml_ddr_mngr_device_id);
@@ -2510,9 +2538,8 @@ static int aml_ddr_mngr_platform_probe(struct platform_device *pdev)
 			return -ENXIO;
 		}
 	}
-
-	mutex_init(&attach_resample_a.lock);
-	mutex_init(&attach_resample_b.lock);
+	for (i = 0; i < get_resample_module_num(); i++)
+		mutex_init(&attach_resample[i].lock);
 
 	ret = register_pm_notifier(&ddr_pm_notifier_block);
 	if (ret)

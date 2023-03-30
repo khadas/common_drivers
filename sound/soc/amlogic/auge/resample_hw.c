@@ -121,7 +121,7 @@ void new_resample_init_param(enum resample_idx id)
 	/* resample clk free run, doesn't gate */
 	new_resample_update_bits(id, AUDIO_RSAMP_CTRL1, 0x3f << 18, 0x2a << 18);
 
-	if (id == RESAMPLE_A) {
+	if (id == RESAMPLE_A || id == RESAMPLE_C) {
 		/*write resample A filter in ram*/
 		new_resample_set_ram_coeff_sinc(id, SINC8_FILTER_COEF_SIZE,
 						&sinc8_coef[0]);

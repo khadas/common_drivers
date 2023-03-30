@@ -88,5 +88,7 @@
 
 #define CLKID_AUDIO_PDMBIN0                      (MCLK_BASE + 26)
 #define CLKID_AUDIO_PDMBIN1                      (MCLK_BASE + 27)
-#define NUM_AUDIO_CLKS                          (MCLK_BASE + 28)
+#define CLKID_AUDIO_RESAMPLE_C                  (MCLK_BASE + 28)
+
+#define NUM_AUDIO_CLKS                          (MCLK_BASE + 29)
 #endif /* __S5_AUDIO_CLK_H__ */

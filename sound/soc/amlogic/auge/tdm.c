@@ -142,6 +142,7 @@ struct aml_tdm {
 	struct regulator *regulator_vcc3v3;
 	struct regulator *regulator_vcc5v;
 	int suspend_clk_off;
+	int tdm_in_src;
 };
 
 #define to_aml_tdm(x)   container_of(x, struct aml_tdm, clk_nb)
@@ -552,7 +553,7 @@ static int aml_set_tdm_mclk(struct aml_tdm *p_tdm, unsigned int freq, bool tune)
 static int aml_tdm_set_fmt(struct aml_tdm *p_tdm, unsigned int fmt, bool capture_active)
 {
 	bool tdmin_src_hdmirx = false;
-
+	bool tdmin_src_hdmirxb = false;
 	if (!p_tdm)
 		return -EINVAL;
 
@@ -583,9 +584,13 @@ static int aml_tdm_set_fmt(struct aml_tdm *p_tdm, unsigned int fmt, bool capture
 	if (strncmp(p_tdm->tdmin_src_name, SRC_HDMIRX,
 		    strlen(SRC_HDMIRX)) == 0)
 		tdmin_src_hdmirx = true;
+	else if (strncmp(p_tdm->tdmin_src_name, SRC_HDMIRXB,
+		    strlen(SRC_HDMIRXB)) == 0)
+		tdmin_src_hdmirxb = true;
 	aml_tdm_set_format(p_tdm->actrl, &p_tdm->setting,
 			   p_tdm->clk_sel, p_tdm->id, fmt, 1, 1,
 			   tdmin_src_hdmirx,
+			   tdmin_src_hdmirxb,
 			   p_tdm->chipinfo->use_vadtop);
 	if (p_tdm->contns_clk && !IS_ERR(p_tdm->mclk)) {
 		int ret = clk_prepare_enable(p_tdm->mclk);
@@ -845,9 +850,9 @@ static const struct snd_kcontrol_new snd_tdm_a_controls[] = {
 };
 
 static const char * const tdmin_source_text[] = {
-	"tdmin_a", "tdmin_b", "tdmin_c", "NULL", "NULL",
-	"NULL", "hdmirx", "acodec_adc",	"NULL",	"NULL",
-	"NULL", "NULL", "tdmout_a", "tdmout_b", "tdmout_c"
+	"tdmin_a", "tdmin_b", "tdmin_c", "tdmin_d", "NULL",
+	"hdmirx_b", "hdmirx", "acodec_adc",	"NULL",	"NULL",
+	"NULL", "NULL", "tdmout_a", "tdmout_b", "tdmout_c", "tdmout_d"
 };
 
 static const struct soc_enum tdmin_source_enum =
@@ -859,13 +864,7 @@ static int tdmin_src_enum_get(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_dai *cpu_dai = snd_kcontrol_chip(kcontrol);
 	struct aml_tdm *p_tdm = snd_soc_dai_get_drvdata(cpu_dai);
-	int value = 0;
-
-	if (p_tdm->chipinfo->tdmin_srcs)
-		value = get_tdmin_src(p_tdm->chipinfo->tdmin_srcs,
-					p_tdm->tdmin_src_name);
-
-	ucontrol->value.enumerated.item[0] = value;
+	ucontrol->value.enumerated.item[0] = p_tdm->tdm_in_src;
 
 	return 0;
 }
@@ -878,6 +877,7 @@ static int tdmin_src_enum_put(struct snd_kcontrol *kcontrol,
 	int value = ucontrol->value.enumerated.item[0];
 	char *p = (char *)p_tdm->tdmin_src_name;
 
+	p_tdm->tdm_in_src = value;
 	if (value >= ARRAY_SIZE(tdmin_source_text))
 		return -EINVAL;
 

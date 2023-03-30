@@ -71,12 +71,15 @@ enum toddr_src {
 	PDMIN_B = 16,
 	TDMINB_LB = 17,
 	TDMIN_D = 18,
-	TODDR_SRC_MAX = 19
+	FRHDMIRX_B = 19,
+	RESAMPLEC = 20,
+	TODDR_SRC_MAX = 21
 };
 
 enum resample_idx {
 	RESAMPLE_A,
-	RESAMPLE_B
+	RESAMPLE_B,
+	RESAMPLE_C
 };
 
 enum resample_src {

@@ -107,6 +107,7 @@ struct register_table {
 #define EE_AUDIO_EARCTX_DMAC_CLK_CTRL      0x033
 #define EE_AUDIO_EARCRX_CMDC_CLK_CTRL      0x034
 #define EE_AUDIO_EARCRX_DMAC_CLK_CTRL      0x035
+#define EE_AUDIO_CLK_RESAMPLEC_CTRL        0x03c
 
 /*
  *	AUDIO TODDR
@@ -1395,6 +1396,16 @@ struct register_table {
 #define EE_AUDIO_RSAMP_B_CHNUM_ID6         0x366
 #define EE_AUDIO_RSAMP_B_CHNUM_ID7         0x367
 #define EE_AUDIO_RSAMP_B_CHSYNC_CTRL       0x36F
+
+#define EE_AUDIO_RSAMP_C_CHNUM_ID0         0x370
+#define EE_AUDIO_RSAMP_C_CHNUM_ID1         0x371
+#define EE_AUDIO_RSAMP_C_CHNUM_ID2         0x372
+#define EE_AUDIO_RSAMP_C_CHNUM_ID3         0x373
+#define EE_AUDIO_RSAMP_C_CHNUM_ID4         0x374
+#define EE_AUDIO_RSAMP_C_CHNUM_ID5         0x375
+#define EE_AUDIO_RSAMP_C_CHNUM_ID6         0x376
+#define EE_AUDIO_RSAMP_C_CHNUM_ID7         0x377
+#define EE_AUDIO_RSAMP_C_CHSYNC_CTRL       0x37F
 
 /* AUDIO_TOP_VAD */
 #define EE_AUDIO2_CLK81_CTRL               0x000

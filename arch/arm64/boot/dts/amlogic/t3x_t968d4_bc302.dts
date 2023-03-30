@@ -354,7 +354,7 @@
 	unifykey{
 		compatible = "amlogic,unifykey";
 		status = "okay";
-		unifykey-num = <19>;
+		unifykey-num = <24>;
 		unifykey-index-0 = <&keysn_0>;
 		unifykey-index-1 = <&keysn_1>;
 		unifykey-index-2 = <&keysn_2>;
@@ -377,6 +377,9 @@
 		unifykey-index-19= <&keysn_19>;
 		unifykey-index-20= <&keysn_20>;
 		unifykey-index-21= <&keysn_21>;
+		unifykey-index-22= <&keysn_22>;
+		unifykey-index-23= <&keysn_23>;
+		unifykey-index-24= <&keysn_24>;
 
 		keysn_0: key_0{
 			key-name = "usid";
@@ -488,6 +491,21 @@
 		};
 		keysn_21:key_21{
 			key-name = "backlight";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_22:key_22{
+			key-name = "lcd_tcon";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_23:key_23{
+			key-name = "lcd_tcon_spi";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_24:key_24{
+			key-name = "ldim_dev";
 			key-device = "normal";
 			key-permit = "read","write","del";
 		};
@@ -1705,6 +1723,34 @@
 //	mmc-pwrseq = <&emmc_pwrseq>;
 //	vmmc-supply = <&sdcard_3v3>;
 //	vqmmc-supply = <&vddio_c>;
+};
+
+&i2c2 {
+	status = "okay";
+	clock-frequency = <100000>;
+	pinctrl-names="default";
+	pinctrl-0=<&i2c2_pins2>;
+
+	lcd_extern_i2c0: lcd_extern_i2c@29 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_HV650LS";
+		reg = <0x29>;
+		status = "okay";
+	};
+
+	lcd_extern_i2c1: lcd_extern_i2c@33 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_CS602";
+		reg = <0x33>;
+		status = "okay";
+	};
+
+	lcd_extern_i2c2: lcd_extern_i2c@20 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_CS901";
+		reg = <0x20>;
+		status = "okay";
+	};
 };
 
 &saradc {

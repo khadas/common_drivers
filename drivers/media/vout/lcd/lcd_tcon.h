@@ -223,6 +223,10 @@ struct lcd_tcon_local_cfg_s *get_lcd_tcon_local_cfg(void);
 #define CTRL_TIMING_OFFSET_T5D            12
 #define CTRL_TIMING_CNT_T5D               0
 
+/* T3X */
+#define LCD_TCON_TABLE_LEN_T3X            0x1478 /* 0x51e*4 */
+#define LCD_TCON_AXI_BANK_T3X             3
+
 /* **********************************
  * tcon api
  * **********************************

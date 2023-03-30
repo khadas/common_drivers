@@ -2629,6 +2629,7 @@ void lcd_p2p_config_set(struct aml_lcd_drv_s *pdrv)
 	p2p_type = pconf->control.p2p_cfg.p2p_type & 0x1f;
 	switch (p2p_type) {
 	case P2P_CEDS:
+	case P2P_EPI:
 		if (pclk >= 600000)
 			bit_rate = pclk * 3 * lcd_bits / lane_num;
 		else
@@ -2636,6 +2637,14 @@ void lcd_p2p_config_set(struct aml_lcd_drv_s *pdrv)
 		break;
 	case P2P_CHPI: /* 8/10 coding */
 		bit_rate = (pclk * 3 * lcd_bits * 10 / 8) / lane_num;
+		break;
+	case P2P_CSPI:
+	case P2P_ISP:
+	case P2P_CMPI:
+		if (pclk >= 600000)
+			bit_rate = pclk * 3 * lcd_bits / lane_num;
+		else  /* 8/9 coding */
+			bit_rate = (pclk * 3 * lcd_bits * 9 / 8) / lane_num;
 		break;
 	default:
 		bit_rate = pclk * 3 * lcd_bits / lane_num;

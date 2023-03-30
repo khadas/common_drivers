@@ -1223,12 +1223,6 @@ static void lcd_clk_set_t3(struct aml_lcd_drv_s *pdrv)
 	lcd_set_vid_pll_div_t3(pdrv);
 }
 
-static void lcd_clk_set_t3x(struct aml_lcd_drv_s *pdrv)
-{
-	lcd_set_pll_t7(pdrv);
-	lcd_set_vid_pll_div_t7(pdrv);
-}
-
 static void lcd_clktree_probe_t3(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
@@ -1655,51 +1649,6 @@ static struct lcd_clk_data_s lcd_clk_data_t3 = {
 	.prbs_test = lcd_clk_prbs_test_t3,
 };
 
-static struct lcd_clk_data_s lcd_clk_data_t3x = {
-	.pll_od_fb = PLL_OD_FB_TL1,
-	.pll_m_max = PLL_M_MAX,
-	.pll_m_min = PLL_M_MIN,
-	.pll_n_max = PLL_N_MAX,
-	.pll_n_min = PLL_N_MIN,
-	.pll_frac_range = PLL_FRAC_RANGE_TL1,
-	.pll_frac_sign_bit = PLL_FRAC_SIGN_BIT_TL1,
-	.pll_od_sel_max = PLL_OD_SEL_MAX_TL1,
-	.pll_ref_fmax = PLL_FREF_MAX,
-	.pll_ref_fmin = PLL_FREF_MIN,
-	.pll_vco_fmax = PLL_VCO_MAX_TM2,
-	.pll_vco_fmin = PLL_VCO_MIN_TM2,
-	.pll_out_fmax = 3700 * 1000,
-	.pll_out_fmin = PLL_VCO_MIN_TL1 / 16,
-	.div_in_fmax = 3700 * 1000,
-	.div_out_fmax = 720 * 1000,
-	.xd_out_fmax = ENCL_CLK_IN_MAX_TL1,
-
-	.vclk_sel = 0,
-	.enc_clk_msr_id = 222,
-	.fifo_clk_msr_id = LCD_CLK_MSR_INVALID,
-	.tcon_clk_msr_id = 119,
-	.pll_ctrl_table = pll_ctrl_table_t7,
-
-	.ss_support = 2,
-
-	.clk_generate_parameter = lcd_clk_generate_dft,
-	.pll_frac_generate = lcd_pll_frac_generate_dft,
-	.set_ss_level = lcd_set_pll_ss_level,
-	.set_ss_advance = lcd_set_pll_ss_advance,
-	.clk_ss_enable = lcd_pll_ss_enable,
-	.clk_set = lcd_clk_set_t3x,
-	.vclk_crt_set = lcd_set_vclk_crt,
-	.clk_disable = lcd_clk_disable,
-	.clk_gate_switch = lcd_clk_gate_switch_t7,
-	.clk_gate_optional_switch = lcd_clk_gate_optional_switch_dft,
-	.clktree_set = lcd_set_tcon_clk_t3,
-	.clktree_probe = lcd_clktree_probe_t3,
-	.clktree_remove = lcd_clktree_remove_t3,
-	.clk_config_init_print = lcd_clk_config_init_print_dft,
-	.clk_config_print = lcd_clk_config_print_dft,
-	.prbs_test = lcd_clk_prbs_test_t3,
-};
-
 void lcd_clk_config_chip_init_t7(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf)
 {
 	cconf->data = &lcd_clk_data_t7;
@@ -1745,21 +1694,3 @@ void lcd_clk_config_chip_init_t3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 	cconf->data->enc_clk_msr_id = -1;
 }
 
-void lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf)
-{
-	cconf->data = &lcd_clk_data_t3x;
-	cconf->pll_od_fb = lcd_clk_data_t3x.pll_od_fb;
-	cconf->clk_path_change = NULL;
-	switch (pdrv->index) {
-	case 1:
-		cconf->data->enc_clk_msr_id = 221;
-		cconf->pll_id = 1;
-		break;
-	case 0:
-	default:
-		cconf->data->enc_clk_msr_id = 222;
-		cconf->pll_id = 0;
-		break;
-	}
-	cconf->data->enc_clk_msr_id = -1;
-}

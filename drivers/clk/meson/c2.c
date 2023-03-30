@@ -2191,128 +2191,37 @@ static struct clk_regmap c2_rtc_clk = {
 	},
 };
 
-/* cpu clock */
-static u32 cpu_fixed_source_sel_table[]	= { 0, 1, 2 };
-
-static const char * const cpu_fixed_source_sel_parent_names[] = {
-	"xtal", "fclk_div2", "fclk_div3"
+static const struct cpu_dyn_table c2_cpu_dyn_table[] = {
+	CPU_LOW_PARAMS(100000000, 1, 1, 9),
+	CPU_LOW_PARAMS(250000000, 1, 1, 3),
+	CPU_LOW_PARAMS(333333333, 2, 1, 1),
+	CPU_LOW_PARAMS(500000000, 1, 1, 1),
+	CPU_LOW_PARAMS(666666666, 2, 0, 0),
+	CPU_LOW_PARAMS(1000000000, 1, 0, 0)
 };
 
-/* cpu_fixed_sel0 */
-static struct clk_regmap c2_cpu_fixed_source_sel0 = {
-	.data = &(struct clk_regmap_mux_data){
+static const struct clk_parent_data c2_cpu_dyn_clk_sel[] = {
+	{ .fw_name = "xtal", },
+	{ .hw = &c2_fclk_div2.hw },
+	{ .hw = &c2_fclk_div3.hw }
+};
+
+static struct clk_regmap c2_cpu_dyn_clk = {
+	.data = &(struct meson_clk_cpu_dyn_data){
+		.table = c2_cpu_dyn_table,
+		.table_cnt = ARRAY_SIZE(c2_cpu_dyn_table),
 		.offset = CPUCTRL_CLK_CTRL0,
-		.mask = 0x3,
-		.shift = 0,
-		.table = cpu_fixed_source_sel_table,
 	},
 	.hw.init = &(struct clk_init_data){
-		.name = "cpu_fixed_source_sel0",
-		.ops = &clk_regmap_mux_ops,
-		.parent_names = cpu_fixed_source_sel_parent_names,
-		.num_parents = ARRAY_SIZE(cpu_fixed_source_sel_parent_names),
-		.flags = CLK_SET_RATE_PARENT,
-	},
-};
-
-static struct clk_regmap c2_cpu_fixed_source_div0 = {
-	.data = &(struct clk_regmap_div_data){
-		.offset = CPUCTRL_CLK_CTRL0,
-		.shift = 4,
-		.width = 6,
-	},
-	.hw.init = &(struct clk_init_data) {
-		.name = "cpu_fixed_source_div0",
-		.ops = &clk_regmap_divider_ops,
-		.parent_names = (const char *[]){ "cpu_fixed_source_sel0" },
-		.num_parents = 1,
-		.flags = CLK_SET_RATE_PARENT,
-	},
-};
-
-static struct clk_regmap c2_cpu_fixed_sel0 = {
-	.data = &(struct clk_regmap_mux_data){
-		.offset = CPUCTRL_CLK_CTRL0,
-		.mask = 0x1,
-		.shift = 2,
-	},
-	.hw.init = &(struct clk_init_data){
-		.name = "cpu_fixed_sel0",
-		.ops = &clk_regmap_mux_ops,
-		.parent_names = (const char *[]){ "cpu_fixed_source_sel0",
-						"cpu_fixed_source_div0" },
-		.num_parents = 2,
-		.flags = CLK_SET_RATE_PARENT,
-	},
-};
-
-/* cpu_fixed_sel1 */
-static struct clk_regmap c2_cpu_fixed_source_sel1 = {
-	.data = &(struct clk_regmap_mux_data){
-		.offset = CPUCTRL_CLK_CTRL0,
-		.mask = 0x3,
-		.shift = 16,
-		.table = cpu_fixed_source_sel_table,
-	},
-	.hw.init = &(struct clk_init_data){
-		.name = "cpu_fixed_source_sel1",
-		.ops = &clk_regmap_mux_ops,
-		.parent_names = cpu_fixed_source_sel_parent_names,
-		.num_parents = ARRAY_SIZE(cpu_fixed_source_sel_parent_names),
-		.flags = CLK_SET_RATE_PARENT,
-	},
-};
-
-static struct clk_regmap c2_cpu_fixed_source_div1 = {
-	.data = &(struct clk_regmap_div_data){
-		.offset = CPUCTRL_CLK_CTRL0,
-		.shift = 20,
-		.width = 6,
-	},
-	.hw.init = &(struct clk_init_data) {
-		.name = "cpu_fixed_source_div1",
-		.ops = &clk_regmap_divider_ops,
-		.parent_names = (const char *[]){ "cpu_fixed_source_sel1" },
-		.num_parents = 1,
-		.flags = CLK_SET_RATE_PARENT,
-	},
-};
-
-static struct clk_regmap c2_cpu_fixed_sel1 = {
-	.data = &(struct clk_regmap_mux_data){
-		.offset = CPUCTRL_CLK_CTRL0,
-		.mask = 0x1,
-		.shift = 18,
-	},
-	.hw.init = &(struct clk_init_data){
-		.name = "cpu_fixed_sel1",
-		.ops = &clk_regmap_mux_ops,
-		.parent_names = (const char *[]){ "cpu_fixed_source_sel1",
-						"cpu_fixed_source_div1" },
-		.num_parents = 2,
-		.flags = CLK_SET_RATE_PARENT,
-	},
-};
-
-/* cpu_fixed_clk */
-static struct clk_regmap c2_cpu_fixed_clk = {
-	.data = &(struct clk_regmap_mux_data){
-		.offset = CPUCTRL_CLK_CTRL0,
-		.mask = 0x1,
-		.shift = 10,
-	},
-	.hw.init = &(struct clk_init_data){
-		.name = "cpu_fixed_clk",
-		.ops = &clk_regmap_mux_ops,
-		.parent_names = (const char *[]){ "cpu_fixed_sel0",
-						"cpu_fixed_sel1" },
-		.num_parents = 2,
-		.flags = CLK_SET_RATE_PARENT,
+		.name = "cpu_dyn_clk",
+		.ops = &meson_clk_cpu_dyn_ops,
+		.parent_data = c2_cpu_dyn_clk_sel,
+		.num_parents = ARRAY_SIZE(c2_cpu_dyn_clk_sel),
 	},
 };
 
 /* cpu clocks */
-/* cpu_fixed_clk |\
+/* cpu_dyn_clk |\
  *---------------| \     cts_cpu_clk
  *  sys_pll      |  |--------
  *---------------| /
@@ -2328,7 +2237,7 @@ static struct clk_regmap c2_cpu_clk = {
 	.hw.init = &(struct clk_init_data){
 		.name = "cpu_clk",
 		.ops = &clk_regmap_mux_ops,
-		.parent_names = (const char *[]){ "cpu_fixed_clk", "sys_pll" },
+		.parent_names = (const char *[]){ "cpu_dyn_clk", "sys_pll" },
 		.num_parents = 2,
 		.flags = CLK_SET_RATE_PARENT,
 	},
@@ -3239,13 +3148,7 @@ static struct clk_hw_onecell_data c2_hw_onecell_data = {
 		[CLKID_AXI_A_DIV]		= &axi_a_div.hw,
 		[CLKID_AXI_A]			= &axi_a.hw,
 		[CLKID_AXI_CLK]			= &axi_clk.hw,
-		[CLKID_CPU_FSOURCE_SEL0]	= &c2_cpu_fixed_source_sel0.hw,
-		[CLKID_CPU_FSOURCE_DIV0]	= &c2_cpu_fixed_source_div0.hw,
-		[CLKID_CPU_FSEL0]		= &c2_cpu_fixed_sel0.hw,
-		[CLKID_CPU_FSOURCE_SEL1]	= &c2_cpu_fixed_source_sel1.hw,
-		[CLKID_CPU_FSOURCE_DIV1]	= &c2_cpu_fixed_source_div1.hw,
-		[CLKID_CPU_FSEL1]		= &c2_cpu_fixed_sel1.hw,
-		[CLKID_CPU_FCLK]		= &c2_cpu_fixed_clk.hw,
+		[CLKID_CPU_DYN_CLK]		= &c2_cpu_dyn_clk.hw,
 		[CLKID_CPU_CLK]			= &c2_cpu_clk.hw,
 		[CLKID_AXI_CLK_FRCPU_DIV]	= &c2_axi_clk_frcpu_div.hw,
 		[CLKID_CTS_PCLK_DIV]		= &c2_cts_pclk_div.hw,
@@ -3716,13 +3619,7 @@ static struct clk_regmap *const c2_clk_regmaps[] = {
  * the clk_regmap init alone
  */
 static struct clk_regmap *const c2_cpu_clk_regmaps[] = {
-	&c2_cpu_fixed_source_sel0,
-	&c2_cpu_fixed_source_div0,
-	&c2_cpu_fixed_sel0,
-	&c2_cpu_fixed_source_sel1,
-	&c2_cpu_fixed_source_div1,
-	&c2_cpu_fixed_sel1,
-	&c2_cpu_fixed_clk,
+	&c2_cpu_dyn_clk,
 	&c2_cpu_clk,
 	&c2_axi_clk_frcpu_div,
 	&c2_cts_pclk_div,
@@ -3835,47 +3732,8 @@ static int c2_sys_pll_notifier_cb(struct notifier_block *nb, unsigned long event
 static struct c2_sys_pll_nb_data c2_sys_pll_nb_data = {
 	.sys_pll = &c2_sys_pll.hw,
 	.cpu_clk = &c2_cpu_clk.hw,
-	.cpu_dyn_clk = &c2_cpu_fixed_clk.hw,
+	.cpu_dyn_clk = &c2_cpu_dyn_clk.hw,
 	.nb.notifier_call = c2_sys_pll_notifier_cb,
-};
-
-struct c2_nb_data {
-	struct notifier_block nb;
-	struct clk_hw_onecell_data *onecell_data;
-};
-
-static int c2_cpu_fixed_clk_notifier_cb(struct notifier_block *nb,
-					unsigned long event, void *data)
-{
-	struct clk_notifier_data *ndata = data;
-	struct clk *cpu_fixed_clk, *parent_clk;
-	int ret;
-
-	switch (event) {
-	case PRE_RATE_CHANGE:
-	parent_clk = c2_cpu_fixed_sel1.hw.clk;
-	ret = clk_set_rate(parent_clk, ndata->new_rate);
-	if (ret)
-		pr_err("set fixed sel1 to new rate failed\n");
-		break;
-	case POST_RATE_CHANGE:
-	parent_clk = c2_cpu_fixed_sel0.hw.clk;
-		break;
-	default:
-		return NOTIFY_DONE;
-	}
-
-	cpu_fixed_clk = c2_cpu_fixed_clk.hw.clk;
-	ret = clk_set_parent(cpu_fixed_clk, parent_clk);
-	if (ret)
-		return notifier_from_errno(ret);
-
-	return NOTIFY_OK;
-}
-
-static struct c2_nb_data c2_cpu_fixed_nb_data = {
-	.nb.notifier_call = c2_cpu_fixed_clk_notifier_cb,
-	.onecell_data = &c2_hw_onecell_data,
 };
 
 static const struct of_device_id clkc_match_table[] = {
@@ -4008,23 +3866,6 @@ static int c2_clkc_probe(struct platform_device *pdev)
 	ret = clk_notifier_register(c2_sys_pll.hw.clk, &c2_sys_pll_nb_data.nb);
 	if (ret) {
 		pr_err("%s: failed to register sys pll notifier\n", __func__);
-		return ret;
-	}
-
-	ret = clk_notifier_register(c2_cpu_fixed_sel0.hw.clk,
-				    &c2_cpu_fixed_nb_data.nb);
-	if (ret) {
-		pr_err("%s: failed to register the CPU Fixed clock:fsel0 notifier\n",
-		       __func__);
-		return ret;
-	}
-	/*
-	 * keep cpu_fixed_clk's parent as cpu_fixed_sel0 clock
-	 */
-	ret = clk_set_parent(c2_cpu_fixed_clk.hw.clk, c2_cpu_fixed_sel0.hw.clk);
-	if (ret) {
-		pr_err("%s: failed to set cpu_fixed_sel1 as cpu fixed clk's parent\n",
-		       __func__);
 		return ret;
 	}
 

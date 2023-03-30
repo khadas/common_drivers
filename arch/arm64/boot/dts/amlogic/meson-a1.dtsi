@@ -36,7 +36,7 @@
 			/*cpu-idle-states = <&CPU_SLEEP_0>;*/
 			next-level-cache = <&l2>;
 			clocks = <&clkc CLKID_CPU_CLK>,
-				<&clkc CLKID_CPU_FCLK>,
+				<&clkc CLKID_CPU_DYN_CLK>,
 				<&clkc CLKID_SYS_PLL>;
 			clock-names = "core_clk",
 					"low_freq_clk_parent",
@@ -59,7 +59,7 @@
 			/*cpu-idle-states = <&CPU_SLEEP_0>;*/
 			next-level-cache = <&l2>;
 			clocks = <&clkc CLKID_CPU_CLK>,
-				<&clkc CLKID_CPU_FCLK>,
+				<&clkc CLKID_CPU_DYN_CLK>,
 				<&clkc CLKID_SYS_PLL>;
 			clock-names = "core_clk",
 					"low_freq_clk_parent",

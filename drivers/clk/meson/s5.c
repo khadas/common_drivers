@@ -1760,26 +1760,27 @@ static const struct cpu_dyn_table s5_cpu_dyn_table[] = {
 	CPU_LOW_PARAMS(333333333, 2, 1, 1),
 	CPU_LOW_PARAMS(500000000, 1, 1, 1),
 	CPU_LOW_PARAMS(666666666, 2, 0, 0),
-	CPU_LOW_PARAMS(1000000000, 1, 0, 0),
+	CPU_LOW_PARAMS(1000000000, 1, 0, 0)
 };
 
 static const struct clk_parent_data s5_dyn_clk_sel[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &s5_fclk_div2.hw },
 	{ .hw = &s5_fclk_div3.hw },
-	{ .hw = &s5_fclk_div2p5.hw },
+	{ .hw = &s5_fclk_div2p5.hw }
 };
 
 static struct clk_regmap s5_cpu_dyn_clk = {
-	.data = &(struct meson_sec_cpu_dyn_data){
+	.data = &(struct meson_clk_cpu_dyn_data){
 		.table = s5_cpu_dyn_table,
 		.table_cnt = ARRAY_SIZE(s5_cpu_dyn_table),
+		.smc_id = SECURE_CPU_CLK,
 		.secid_dyn_rd = SECID_CPU_CLK_RD,
 		.secid_dyn = SECID_CPU_CLK_DYN,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "cpu_dyn_clk",
-		.ops = &meson_sec_cpu_dyn_ops,
+		.ops = &meson_clk_cpu_dyn_ops,
 		.parent_data = s5_dyn_clk_sel,
 		.num_parents = 4,
 	},
@@ -1810,15 +1811,16 @@ static struct clk_regmap s5_cpu_clk = {
 };
 
 static struct clk_regmap s5_a76_dyn_clk = {
-	.data = &(struct meson_sec_cpu_dyn_data){
+	.data = &(struct meson_clk_cpu_dyn_data){
 		.table = s5_cpu_dyn_table,
 		.table_cnt = ARRAY_SIZE(s5_cpu_dyn_table),
+		.smc_id = SECURE_CPU_CLK,
 		.secid_dyn_rd = SECID_A76_CLK_RD,
 		.secid_dyn = SECID_A76_CLK_DYN,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "a76_dyn_clk",
-		.ops = &meson_sec_cpu_dyn_ops,
+		.ops = &meson_clk_cpu_dyn_ops,
 		.parent_data = s5_dyn_clk_sel,
 		.num_parents = 4,
 	},
@@ -1845,15 +1847,16 @@ static struct clk_regmap s5_a76_clk = {
 };
 
 static struct clk_regmap s5_dsu_dyn_clk = {
-	.data = &(struct meson_sec_cpu_dyn_data){
+	.data = &(struct meson_clk_cpu_dyn_data){
 		.table = s5_cpu_dyn_table,
 		.table_cnt = ARRAY_SIZE(s5_cpu_dyn_table),
+		.smc_id = SECURE_CPU_CLK,
 		.secid_dyn_rd = SECID_DSU_CLK_RD,
 		.secid_dyn = SECID_DSU_CLK_DYN,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "dsu_dyn_clk",
-		.ops = &meson_sec_cpu_dyn_ops,
+		.ops = &meson_clk_cpu_dyn_ops,
 		.parent_data = s5_dyn_clk_sel,
 		.num_parents = 4,
 	},

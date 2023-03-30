@@ -788,27 +788,28 @@ static const struct cpu_dyn_table t3_cpu_dyn_table[] = {
 	CPU_LOW_PARAMS(250000000, 1, 1, 3),
 	CPU_LOW_PARAMS(333333333, 2, 1, 1),
 	CPU_LOW_PARAMS(500000000, 1, 1, 1),
-	CPU_LOW_PARAMS(667000000, 2, 0, 0),
-	CPU_LOW_PARAMS(1000000000, 1, 0, 0),
+	CPU_LOW_PARAMS(666666666, 2, 0, 0),
+	CPU_LOW_PARAMS(1000000000, 1, 0, 0)
 };
 
 static const struct clk_parent_data t3_cpu_dyn_clk_sel[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &t3_fclk_div2.hw },
 	{ .hw = &t3_fclk_div3.hw },
-	{ .hw = &t3_fclk_div2p5.hw },
+	{ .hw = &t3_fclk_div2p5.hw }
 };
 
 static struct clk_regmap t3_cpu_dyn_clk = {
-	.data = &(struct meson_sec_cpu_dyn_data){
+	.data = &(struct meson_clk_cpu_dyn_data){
 		.table = t3_cpu_dyn_table,
 		.table_cnt = ARRAY_SIZE(t3_cpu_dyn_table),
+		.smc_id = SECURE_CPU_CLK,
 		.secid_dyn_rd = SECID_CPU_CLK_RD,
 		.secid_dyn = SECID_CPU_CLK_DYN,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "cpu_dyn_clk",
-		.ops = &meson_sec_cpu_dyn_ops,
+		.ops = &meson_clk_cpu_dyn_ops,
 		.parent_data = t3_cpu_dyn_clk_sel,
 		.num_parents = ARRAY_SIZE(t3_cpu_dyn_clk_sel),
 	},
@@ -844,26 +845,27 @@ static const struct cpu_dyn_table t3_dsu_dyn_table[] = {
 	/* For dsu, his parent should always be on fiv_div2 or gp1 pll */
 	CPU_LOW_PARAMS(1000000000, 1, 0, 0),
 	CPU_LOW_PARAMS(1200000000, 3, 0, 0),
-	CPU_LOW_PARAMS(1500000000, 3, 0, 0),
+	CPU_LOW_PARAMS(1500000000, 3, 0, 0)
 };
 
 static const struct clk_parent_data t3_dsu_dyn_clk_sel[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &t3_fclk_div2.hw },
 	{ .hw = &t3_fclk_div3.hw },
-	{ .hw = &t3_gp1_pll.hw },
+	{ .hw = &t3_gp1_pll.hw }
 };
 
 static struct clk_regmap t3_dsu_dyn_clk = {
-	.data = &(struct meson_sec_cpu_dyn_data){
+	.data = &(struct meson_clk_cpu_dyn_data){
 		.table = t3_dsu_dyn_table,
 		.table_cnt = ARRAY_SIZE(t3_dsu_dyn_table),
+		.smc_id = SECURE_CPU_CLK,
 		.secid_dyn_rd = SECID_DSU_PRE_CLK_RD,
 		.secid_dyn = SECID_DSU_PRE_CLK_DYN,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "dsu_dyn_clk",
-		.ops = &meson_sec_cpu_dyn_ops,
+		.ops = &meson_clk_cpu_dyn_ops,
 		.parent_data = t3_dsu_dyn_clk_sel,
 		.num_parents = ARRAY_SIZE(t3_dsu_dyn_clk_sel),
 	},
@@ -1724,20 +1726,21 @@ static struct clk_regmap t3_rtc_clk = {
 static const struct cpu_dyn_table t3_sys_clk_table[] = {
 	/* sys clk no need dyn_post_mux */
 	CPU_LOW_PARAMS(24000000, 0, 0, 0),
-	CPU_LOW_PARAMS(166666666, 3, 1, 2),
+	CPU_LOW_PARAMS(166666666, 3, 1, 2)
 };
 
 static const struct clk_parent_data t3_sys_clk_sel[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &t3_fclk_div2.hw },
 	{ .hw = &t3_fclk_div3.hw },
-	{ .hw = &t3_fclk_div4.hw },
+	{ .hw = &t3_fclk_div4.hw }
 };
 
 static struct clk_regmap t3_sys_clk = {
-	.data = &(struct meson_sec_cpu_dyn_data){
+	.data = &(struct meson_clk_cpu_dyn_data){
 		.table = t3_sys_clk_table,
 		.table_cnt = ARRAY_SIZE(t3_sys_clk_table),
+		.smc_id = SECURE_CPU_CLK,
 		.secid_dyn_rd = SECID_SYS_CLK_RD,
 		.secid_dyn = SECID_SYS_CLK_DYN,
 	},
@@ -1754,7 +1757,7 @@ static const struct cpu_dyn_table t3_axi_clk_table[] = {
 	CPU_LOW_PARAMS(24000000, 0, 0, 0),
 	/* switching 200M, cpu frequency needs switched to 1.2G first */
 	CPU_LOW_PARAMS(200000000, 5, 0, 1),
-	CPU_LOW_PARAMS(500000000, 3, 0, 0),
+	CPU_LOW_PARAMS(500000000, 3, 0, 0)
 };
 
 static const struct clk_parent_data t3_axi_clk_sel[] = {
@@ -1763,13 +1766,14 @@ static const struct clk_parent_data t3_axi_clk_sel[] = {
 	{ .hw = &t3_fclk_div3.hw },
 	{ .hw = &t3_fclk_div4.hw },
 	{ .hw = &t3_fclk_div5.hw },
-	{ .hw = &t3_dsu_clk.hw },
+	{ .hw = &t3_dsu_clk.hw }
 };
 
 static struct clk_regmap t3_axi_clk = {
-	.data = &(struct meson_sec_cpu_dyn_data){
+	.data = &(struct meson_clk_cpu_dyn_data){
 		.table = t3_axi_clk_table,
 		.table_cnt = ARRAY_SIZE(t3_axi_clk_table),
+		.smc_id = SECURE_CPU_CLK,
 		.secid_dyn_rd = SECID_AXI_CLK_RD,
 		.secid_dyn = SECID_AXI_CLK_DYN,
 	},

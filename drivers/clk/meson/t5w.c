@@ -1106,25 +1106,25 @@ static const struct cpu_dyn_table t5w_cpu_dyn_table[] = {
 	CPU_LOW_PARAMS(250000000, 1, 1, 3),
 	CPU_LOW_PARAMS(333333333, 2, 1, 1),
 	CPU_LOW_PARAMS(500000000, 1, 1, 1),
-	CPU_LOW_PARAMS(667000000, 2, 0, 0),
-	CPU_LOW_PARAMS(1000000000, 1, 0, 0),
+	CPU_LOW_PARAMS(666666666, 2, 0, 0),
+	CPU_LOW_PARAMS(1000000000, 1, 0, 0)
 };
 
 static const struct clk_parent_data t5w_cpu_dyn_clk_sel[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &t5w_fclk_div2.hw },
-	{ .hw = &t5w_fclk_div3.hw },
+	{ .hw = &t5w_fclk_div3.hw }
 };
 
 static struct clk_regmap t5w_cpu_dyn_clk = {
-	.data = &(struct meson_sec_cpu_dyn_data){
+	.data = &(struct meson_clk_cpu_dyn_data){
 		.table = t5w_cpu_dyn_table,
 		.table_cnt = ARRAY_SIZE(t5w_cpu_dyn_table),
 		.offset = HHI_SYS_CPU_CLK_CNTL,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "cpu_dyn_clk",
-		.ops = &meson_sec_cpu_dyn_ops,
+		.ops = &meson_clk_cpu_dyn_ops,
 		.parent_data = t5w_cpu_dyn_clk_sel,
 		.num_parents = ARRAY_SIZE(t5w_cpu_dyn_clk_sel),
 	},
@@ -1133,25 +1133,25 @@ static struct clk_regmap t5w_cpu_dyn_clk = {
 static const struct cpu_dyn_table t5w_dsu_dyn_table[] = {
 	CPU_LOW_PARAMS(1000000000, 1, 0, 0),
 	CPU_LOW_PARAMS(1200000000, 3, 0, 0),
-	CPU_LOW_PARAMS(1500000000, 3, 0, 0),
+	CPU_LOW_PARAMS(1500000000, 3, 0, 0)
 };
 
 static const struct clk_parent_data t5w_dsu_dyn_clk_sel[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &t5w_fclk_div2.hw },
 	{ .hw = &t5w_fclk_div3.hw },
-	{ .hw = &t5w_gp1_pll.hw },
+	{ .hw = &t5w_gp1_pll.hw }
 };
 
 static struct clk_regmap t5w_dsu_dyn_clk = {
-	.data = &(struct meson_sec_cpu_dyn_data) {
+	.data = &(struct meson_clk_cpu_dyn_data) {
 		.table = t5w_dsu_dyn_table,
 		.table_cnt = ARRAY_SIZE(t5w_dsu_dyn_table),
 		.offset = HHI_SYS_CPU_CLK_CNTL5,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "dsu_dyn_clk",
-		.ops = &meson_sec_cpu_dyn_ops,
+		.ops = &meson_clk_cpu_dyn_ops,
 		.parent_data = t5w_dsu_dyn_clk_sel,
 		.num_parents = ARRAY_SIZE(t5w_dsu_dyn_clk_sel),
 	},

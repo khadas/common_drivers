@@ -105,19 +105,21 @@
 
 		pmz_cma_a1_reserved:anonymous {
 			compatible = "shared-dma-pool";
-			reusable;
+			//reusable;
 			size = <0x8000000>;
 			alignment = <0x400000>;
 			alloc-ranges = <0x8000000 0x10000000>;
+			no-map;
 			status = "okay";
 		};
 
 		pmz_cma_a2_reserved:anonymous_ext{
 			compatible = "shared-dma-pool";
-			reusable;
+			//reusable;
 			size = <0x1000000>;
 			alignment = <0x400000>;
-			status = "disabled";
+			no-map;
+			//status = "disabled";
 		};
 
 		linux,cma {
@@ -188,12 +190,14 @@
 	pmz_a1_dev {
 		compatible = "amlogic, pmz_dev";
 		memory-region = <&pmz_cma_a1_reserved>;
+		pmz-allocator = "priv";
 	};
 
 	pmz_a2_dev {
 		compatible = "amlogic, pmz_dev";
 		memory-region = <&pmz_cma_a2_reserved>;
-		status = "okay";
+		pmz-allocator = "priv";
+		//status = "disabled";
 	};
 
         hantro {

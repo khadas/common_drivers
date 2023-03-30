@@ -438,7 +438,7 @@
 //Bit 7:5   reserved
 //Bit 4     reg_rdmif_arsec  //unsigned, RW, default=0, pyrdmif arsec
 //Bit 3:2   reserved
-//Bit 1:0   reg_src_sel     // unsigned, RW, default=0, 0=vdin,1=vpp,2=di
+//Bit 1:0   reg_src_sel     // unsigned, RW, default=0, control pyramid rdmif done
 
 #define DOLBY_TOP2_RO_0 0x0c15
 //Bit 31:0  ro_dbg0         //unsigned, RO, default=0
@@ -465,6 +465,7 @@
 #define VPU_DOLBY_WRAP_GCLK                           0X0900
 //Bit 31:24         reserved                          // unsigned
 //Bit 23:16         reg_sw_rst                        // unsigned ,    RW, default = 0
+//Bit 19            reg_sw_rst  for ovlp              // unsigned ,    RW, default = 0
 //Bit 15:0          reg_gclk_ctrl                     // unsigned ,    RW, default = 0
 
 #define VPU_DOLBY_WRAP_CTRL                           0X0901
@@ -664,7 +665,7 @@
 #define DOLBY5_CORE1_CRC_IN_FRM     0x0bc8 /*Input frame CRC*/
 #define DOLBY5_CORE1_CRC_OUT_COMP   0x0bc9 /*Composer output frame CRC*/
 #define DOLBY5_CORE1_CRC_OUT_FRM    0x0bca /*Output frame CRC*/
-#define DOLBY5_CORE1_CRC_ICSC     0x0bcb /*Input CSC LUT CRC*/
+#define DOLBY5_CORE1_CRC_ICSC       0x0bcb /*Input CSC LUT CRC*/
 #define DOLBY5_CORE1_L1_MINMAX      0x0bcc
 #define DOLBY5_CORE1_L1_MID_L4      0x0bcd
 
@@ -692,6 +693,18 @@
 #define DOLBY5_CORE2_CRC_CVM_LITE_SMI2LUT  0x0d4b /*CVM Lite SMI2 LUT CRC*/
 #define DOLBY5_CORE2_CRC_CVM_LITE_TMS2LUT  0x0d4c /*CVM Lite TMS2 LUT CRC*/
 #define DOLBY5_CORE2_CRC_CVM_LITE_SMS2LUT  0x0d4d /*CVM Lite SMS2 LUT CRC*/
+
+#define DOLBY5_CORE2_INP_FRM_ST        0x0f39/*input frame v-count and h-count*/
+#define DOLBY5_CORE2_OP_FRM_ST         0x0f3a/*output frame v-count and h-count*/
+#define DOLBY5_CORE2_DEBUG_LUT_CNTRL   0x0f4e/*lut debug control*/
+#define DOLBY5_CORE2_CVM_TAILUT_RDADDR 0x0f4f/*addr for lut*/
+#define DOLBY5_CORE2_CVM_SMILUT_RDADDR 0x0f50/*addr for lut*/
+#define DOLBY5_CORE2_ICSCLUT_RDADDR    0x0f51/*addr for lut*/
+#define DOLBY5_CORE2_OCSCLUT_RDADDR    0x0f52/*addr for lut*/
+#define DOLBY5_CORE2_CVM_TAILUT_RDDATA 0x0f5b/*data for lut*/
+#define DOLBY5_CORE2_CVM_SMILUT_RDDATA 0x0f5c/*data for lut*/
+#define DOLBY5_CORE2_ICSCLUT_RDDATA    0x0f5d/*data for lut*/
+#define DOLBY5_CORE2_OCSCLUT_RDDATA    0x0f5e/*data for lut*/
 
 #define T3X_VD_PROC_BYPASS_CTRL     0x2811
 //Bit 5      reg_bypass_prebld1     //RW, default = 1, 0:use vd prebld 1:bypass vd prebld
@@ -732,5 +745,7 @@
 //Bit 12: 7        reg_meas1_pol_ctrl                   // unsigned ,    RW, default = 0
 //Bit  6: 2        reg_reset                            // unsigned ,    RW, default = 0
 //Bit  1: 0        reg_line_int_sel                     // unsigned ,    RW, default = 0
+
+#define VPU_TOP_MISC               0x2709
 
 #endif

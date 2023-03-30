@@ -6,7 +6,8 @@
 #ifndef _MMU_CONFIG_H_
 #define _MMU_CONFIG_H_
 
-#define L6_MMU_NUM 567
+/*567+padding 0*/
+#define L6_MMU_NUM 568
 #define L7_MMU_NUM 1144
 
 u8 pyrd_seq_lvl6[L6_MMU_NUM] = {
@@ -45,7 +46,7 @@ u8 pyrd_seq_lvl6[L6_MMU_NUM] = {
 	3, 2, 1, 1, 2, 1, 1, 3, 2, 1, 1, 2, 1, 1, 3, 2,
 	1, 1, 2, 1, 1, 3, 2, 1, 1, 2, 1, 1, 3, 2, 1, 1,
 	2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2,
-	1, 1, 1, 1, 1, 1, 1
+	1, 1, 1, 1, 1, 1, 1, 0
 };
 
 u8 pyrd_seq_lvl7[L7_MMU_NUM] = {

@@ -426,6 +426,8 @@ static int lut_dma_enable(u32 dma_dir, u32 channel)
 	int mode = 0, channel_sel = 0;
 	u32 channel_index = 0;
 	struct lut_dma_device_info *info = &lut_dma_info;
+	static int last_channel_sel;
+	bool reset = false;
 
 	if (lutdma_meson_dev.lut_dma_ver == 2) {
 		if (channel >= 8)
@@ -435,6 +437,14 @@ static int lut_dma_enable(u32 dma_dir, u32 channel)
 		lut_dma_reg_set_bits(VPU_DMA_RDMIF_SEL,
 			channel_sel, 0, 1);
 	}
+	/*channel 0,8->lut0;channel 1,9->lut1;channel 2,10->lut2*/
+	if (last_channel_sel != channel_sel) {
+		reset = true;
+		pr_dbg("channel_sel changed: %d->%d\n",
+			last_channel_sel, channel_sel);
+		last_channel_sel = channel_sel;
+	}
+
 	if (dma_dir == LUT_DMA_RD) {
 		/* manul wr dma mode */
 		channel = LUT_DMA_RD_CHAN_NUM + channel;
@@ -445,7 +455,7 @@ static int lut_dma_enable(u32 dma_dir, u32 channel)
 	} else if (dma_dir == LUT_DMA_WR) {
 		if (channel < LUT_DMA_WR_CHANNEL &&
 		    info->ins[channel].registered &&
-			!info->ins[channel].enable) {
+			(!info->ins[channel].enable || reset)) {
 			mode = info->ins[channel].mode;
 			if (channel >= 8)
 				channel_index = channel - 8;
@@ -460,11 +470,18 @@ static int lut_dma_enable(u32 dma_dir, u32 channel)
 						     channel_index,
 						     1, 26, 1);
 			}
+			pr_dbg("info->ins[channel].trigger_irq_type 0x%x %d\n",
+					info->ins[channel].trigger_irq_type, channel);
 			lut_dma_reg_set_bits
 				(VPU_DMA_RDMIF0_CTRL + channel_index,
 				 info->ins[channel].trigger_irq_type,
 				 16, 8);
-
+			/*dolby: trigger by reg*/
+			if (info->ins[channel].trigger_irq_type ==
+				(1 << REG_TRIGGER) && channel == DV_CHAN)
+				lut_dma_reg_set_bits(VPU_INTF_CTRL, 3, 24, 2);
+			else /*other: default value*/
+				lut_dma_reg_set_bits(VPU_INTF_CTRL, 0, 24, 2);
 			lut_dma_reg_set_bits
 				(VPU_DMA_RDMIF0_CTRL + channel_index,
 				 bit_format,
@@ -524,14 +541,20 @@ int lut_dma_write_phy_addr(u32 channel, ulong phy_addr, u32 size)
 			else
 				index++;
 		}
-		pr_dbg("%s:mode=%d, index=%d\n", __func__, mode, index);
+		pr_dbg("%s:mode=%d,index=%d,size=%d\n", __func__, mode, index, size);
 		info->ins[channel].wr_size[index] = size;
 		if (mode == LUT_DMA_MANUAL) {
+			if (pre_size != size) {
+				lut_dma_disable(dma_dir, channel);
+				pr_dbg("size changed: pre_size=%d, size=%d\n",
+				       pre_size, size);
+			}
+			/*should set VPU_DMA_RDMIF_SEL before VPU_DMA_RDMIF*/
+			lut_dma_enable(dma_dir, channel);
 			set_lut_dma_phyaddr_wrcfg_manual(channel,
 							 index,
 							 phy_addr,
 							 size);
-			lut_dma_enable(dma_dir, channel);
 		} else if (mode == LUT_DMA_AUTO) {
 			if (pre_size != size) {
 				/* if size changed, disable then enable */
@@ -840,7 +863,7 @@ int lut_dma_register(struct lut_dma_set_t *lut_dma_set)
 		mutex_unlock(lock);
 		return channel;
 	} else if (dma_dir == LUT_DMA_WR) {
-		/* total 8 channel */
+		/* total 11 channel */
 		irq_source = lut_dma_set->irq_source;
 		if (channel < LUT_DMA_WR_CHANNEL) {
 			if (info->ins[channel].registered) {

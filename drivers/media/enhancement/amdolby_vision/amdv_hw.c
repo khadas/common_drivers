@@ -87,7 +87,7 @@ static bool update_core2_reg;/*only set core2 reg*/
 /*bit0:reset core1a reg; bit1:reset core2 reg;bit2:reset core3 reg*/
 /*bit3: reset core1a lut; bit4: reset core2 lut*/
 /*bit5: reset core1b reg; bit6: reset core1b lut*/
-static unsigned int force_update_reg;
+u32 force_update_reg;
 
 #define CP_FLAG_CHANGE_CFG		0x000001
 #define CP_FLAG_CHANGE_MDS		0x000002
@@ -404,8 +404,9 @@ void amdv_core_reset(enum core_type type)
 		break;
 	case AMDV_HW5:
 		if (is_aml_t3x()) {
-			VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_GCLK, 1, 16, 1);
-			VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_GCLK, 0, 16, 1);
+			/*VPU_DOLBY_WRAP_GCLK bit16 reset core, bit19 need always=1 for overlap*/
+			VSYNC_WR_DV_REG(VPU_DOLBY_WRAP_GCLK, 1 << 16 | 1 << 19);
+			VSYNC_WR_DV_REG(VPU_DOLBY_WRAP_GCLK, 1 << 19);
 		}
 		break;
 	default:
@@ -6339,7 +6340,7 @@ void enable_amdv(int enable)
 			enable_amdv_v1(enable);
 		else
 			enable_amdv_v2_stb(enable);
-	} else if (is_aml_t3x()) {
+	} else if (is_aml_hw5()) {
 		enable_amdv_hw5(enable);
 	} else {
 		enable_amdv_v1(enable);

@@ -762,7 +762,8 @@ static void amdolby_vision_proc
 			 toggle_mode_1, toggle_mode_2, pps_state);
 
 		/*update setting according to vd1*/
-		amdv_update_setting(disp_vf_1);
+		if (!is_aml_hw5())
+			amdv_update_setting(disp_vf_1);
 	}
 }
 #endif
@@ -4594,6 +4595,11 @@ void post_vsync_process(void)
 	bool path_switch = false;
 	u32 path_frame_index;
 	struct path_id_s path_id;
+
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+	if (is_amdv_on())
+		print_dv_ro();
+#endif
 
 	set_cur_line_info();
 

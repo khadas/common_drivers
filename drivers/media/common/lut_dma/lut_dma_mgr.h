@@ -74,6 +74,8 @@
 #define VPU_DMA_RDMIF_CTRL2   0x27cb
 #define VPU_DMA_RDMIF_RO_STAT 0x27d0
 
+#define VPU_INTF_CTRL         0x270a
+
 #define DMA_BUF_NUM   4
 
 struct lut_dma_ins {

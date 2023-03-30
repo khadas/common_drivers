@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "2023000518"
+#define DRIVER_VER "2023000522"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"
@@ -78,12 +78,17 @@
 #define FLAG_RX_EMP_VSEM		0x20000000
 #define FLAG_TOGGLE_FRAME		0x80000000
 
+#define VSEM_IF_BUF_SIZE 4096
+#define VSEM_PKT_SIZE 31
+
 #define DMA_BUF_CNT 2
-#define TOP1_REG_NUM 210
-#define TOP1B_REG_NUM 12
-#define TOP2_REG_NUM 616
+#define TOP1_REG_NUM 210 /*real reg 209, repeat 0xc*/
+#define TOP1B_REG_NUM 12 /*real reg 11, repeat 0xc*/
+#define TOP2_REG_NUM 616 /*real reg 615, repeat 0xc*/
 #define TOP1_LUT_NUM 149
 #define TOP2_LUT_NUM 424
+
+#define PYRAMID_SW_RST 1 /*NO need set pylevel before vsync*/
 
 enum core1_switch_type {
 	NO_SWITCH = 0,
@@ -406,6 +411,7 @@ struct dovi_setting_s {
 #define NUM_IPCORE2 1
 #define IPCORE2_ID NUM_IPCORE1
 #define OUTPUT_CONTROL_DATA_SIZE 0x1000
+#define TOP2_NUM_MAX 1
 
 struct dovi_setting_video_s {
 	struct composer_reg_ipcore comp_reg;
@@ -538,9 +544,9 @@ struct m_dovi_setting_s {
 struct dv_inst_s {
 	char *md_buf[2];
 	char *comp_buf[2];
+	int md_size[2];/*for top1+top2*/
+	int comp_size[2];/*for top1+top2*/
 	int current_id;/*metadata id*/
-	int backup_comp_size;
-	int backup_md_size;
 	u32 last_total_md_size;
 	u32 last_total_comp_size;
 	bool last_mel_mode;
@@ -585,12 +591,35 @@ struct dv_core1_inst_s {
 	u32 core1_disp_vsize;
 };
 
+struct top2_inst_s {
+	bool top2_on;
+	bool amdv_setting_video_flag;
+	u32 top2_on_cnt;
+	u32 run_mode_count;
+	u32 top2_disp_hsize;
+	u32 top2_disp_vsize;
+};
+
 struct tv_input_info_s {
 	s16 brightness_off[8][2];
 	s32 content_fps;
 	s32 gd_rf_adjust;
 	s32 tid;
 	s32 debug_buf[497];
+};
+
+/* top1 output L1/L4*/
+struct l1l4_stats {
+	u16 l1_min;
+	u16 l1_max;
+	u16 l1_mid;
+	u16 l1_std;
+};
+
+/* top1 output L1/L4 and Histogram */
+struct top1_stats_info {
+	struct l1l4_stats top1_l1l4;
+	u16 hist[128];
 };
 
 #define PREFIX_SEI_NUT_NAL 39
@@ -719,10 +748,22 @@ extern struct m_dovi_setting_s new_m_dovi_setting;
 extern struct m_dovi_setting_s invalid_m_dovi_setting;
 extern bool multi_dv_mode;
 extern u32 dolby_vision_mode;
+extern u32 dolby_vision_status;
+extern u32 amdv_reset;
+extern u32 amdv_target_mode;
+extern u32 dolby_vision_request_mode;
+extern u32 dolby_vision_policy;
 extern u32 dolby_vision_ll_policy;
 extern u32 last_dolby_vision_ll_policy;
 extern bool amdv_setting_video_flag;
+extern u32 bl_delay_cnt;
+extern u32 tv_backlight;
+extern bool tv_backlight_changed;
+extern bool tv_backlight_force_update;
+extern u32 crc_count;
+extern u32 setting_update_count;
 extern void *pq_config_fake;
+extern void *pq_config_dvp_fake;
 extern struct dv_inst_s dv_inst[NUM_INST];
 extern int hdmi_path_id;
 extern u32 dv_cert_graphic_width;
@@ -743,8 +784,39 @@ extern struct hdr10_parameter hdr10_param;
 extern int cur_valid_video_num;
 extern struct vpp_post_info_t core3_slice_info;
 //extern int (*get_osd_status)(enum OSD_INDEX index);
+extern char *vsem_if_buf;
+extern char *vsem_md_buf;
+extern int enable_vf_check;
+extern int force_hdmin_fmt;
+extern char dv_provider[2][32];
+extern unsigned int force_mel;
+extern int force_hdmin_fmt;
+extern bool amdv_el_disable;
+extern bool amdv_wait_on;
+extern bool force_runmode;
+extern struct tv_input_info_s *tv_input_info;
+extern u32 amdv_tuning_mode;
+extern bool ambient_update;
+extern struct ambient_cfg_s ambient_config_new;
+extern u32 ambient_test_mode;
+extern int gd_rf_adjust;
+extern bool pq_config_set_flag;
+extern bool best_pq_config_set_flag;
+extern u32 force_best_pq;
+extern bool tv_dovi_setting_change_flag;
+extern bool dovi_setting_update_flag;
+extern struct ui_menu_params menu_param;
+extern struct ambient_cfg_s ambient_darkdetail;
+extern u32 hdmi_frame_count;
+extern u32 sdr_ref_mode;
+extern bool need_update_cfg;
+extern u32 debug_ko;
+extern int debug_cp_res;
+extern u32 force_update_reg;
+extern const char *input_str[10];
 extern struct top1_pyramid_addr top1_py_addr;
 extern void *top1_reg_buf;
+extern void *top1b_reg_buf;
 extern void *top1_lut_buf;
 extern void *top2_reg_buf;
 extern void *top2_lut_buf;
@@ -758,6 +830,11 @@ extern bool lut_dma_support;
 extern int cur_dmabuf_id;
 extern bool enable_top1;//todo
 extern bool top1_done;
+extern struct top2_inst_s top2_info;
+extern bool top1_on;
+extern struct tv_hw5_setting_s *tv_hw5_setting;
+extern struct tv_hw5_setting_s *invalid_hw5_setting;
+extern u32 hw5_reg_from_file;
 /************/
 
 #define pr_dv_dbg(fmt, args...)\
@@ -813,39 +890,58 @@ int tv_control_path
 	 struct ambient_cfg_s *ambient_cfg,
 	 struct tv_input_info_s *input_info);
 
+struct video_info_s {
+	int valid; /*1: input is valid; 0: input is invalid*/
+	/* frame width & height */
+	u32 video_width;
+	u32 video_height;
+	enum signal_format_enum src_format;
+	enum input_mode_enum input_mode;
+	char *in_comp;
+	int in_comp_size;
+	char *in_md;
+	int in_md_size;
+	int set_bit_depth;
+	int set_chroma_format;
+	int set_yuv_range;
+	struct hdr10_parameter *hdr10_param;
+	char *vsem_if;
+	int vsem_if_size;
+	/* enhanced layer */
+	bool el_flag;
+};
+
 struct tv_hw5_setting_s {
+	/*input to dv lib*/
+	int num_input;
+	int num_video;
+	int pri_input;
+	int enable_multi_top2;
+	int enable_debug;
+	int analyzer;/*for top1*/
+	/*input video private info*/
+	struct video_info_s input;
+	/*input shared info*/
+	struct pq_config_dvp *pq_config;
+	struct ui_menu_params *menu_param;
+	struct ambient_cfg_s *ambient_cfg;
+	struct tv_input_info_s *input_info;
+	/*top1 l1l4 and histogram*/
+	struct top1_stats_info top1_stats;
+
+	/*output*/
 	u64 top1_reg[TOP1_REG_NUM];
 	u64 top1b_reg[TOP1B_REG_NUM];
 	u64 top2_reg[TOP2_REG_NUM];
 	u64 top1_lut[TOP1_LUT_NUM * 2];
 	u64 top2_lut[TOP2_LUT_NUM * 2];
-	/* current process */
-	enum signal_format_enum src_format;
-	enum signal_format_enum dst_format;
-	/* enhanced layer */
-	bool el_flag;
-	bool el_halfsize_flag;
-	/* frame width & height */
-	u32 video_width;
-	u32 video_height;
-	enum input_mode_enum input_mode;
 	u16 backlight;
+
+	/*reserved*/
+	u32 reserved[128];
 };
 
-int tv_hw5_control_path
-	(enum signal_format_enum in_format,
-	 enum input_mode_enum in_mode,
-	 char *in_comp, int in_comp_size,
-	 char *in_md, int in_md_size,
-	 int set_bit_depth, int set_chroma_format, int set_yuv_range,
-	 struct pq_config *pq_config,
-	 struct ui_menu_params *menu_param,
-	 int set_no_el,
-	 struct hdr10_parameter *hdr10_param,
-	 struct tv_hw5_setting_s *output,
-	 char *vsem_if, int vsem_if_size,
-	 struct ambient_cfg_s *ambient_cfg,
-	 struct tv_input_info_s *input_info);
+int tv_hw5_control_path(struct tv_hw5_setting_s *cp_para);
 
 struct dolby_vision_func_s {
 	const char *version_info;
@@ -896,6 +992,7 @@ struct dolby_vision_func_s {
 				char *dst_md, int *md_len, bool src_eos,
 				enum dv_type_enum input_format);
 	void (*multi_mp_release)(void **ctx_arg);
+	int (*tv_hw5_control_path)(struct tv_hw5_setting_s *cp_para);
 };
 
 int register_dv_functions(const struct dolby_vision_func_s *func);
@@ -939,12 +1036,14 @@ bool is_aml_t5m(void);
 bool is_amdv_stb_mode(void);
 bool is_aml_s5(void);
 bool is_aml_t3x(void);
+bool is_aml_hw5(void);
 
 u32 VSYNC_RD_DV_REG(u32 adr);
 int VSYNC_WR_DV_REG(u32 adr, u32 val);
 int VSYNC_WR_DV_REG_BITS(u32 adr, u32 val, u32 start, u32 len);
 u32 READ_VPP_DV_REG(u32 adr);
 int WRITE_VPP_DV_REG(u32 adr, const u32 val);
+int WRITE_VPP_DV_REG_BITS(u32 adr, const u32 val, u32 start, u32 len);
 
 int tv_dv_core1_set(u64 *dma_data,
 			     dma_addr_t dma_paddr,
@@ -997,28 +1096,90 @@ int get_dv_vpu_mem_power_status(enum vpu_mod_e mode);
 void calculate_panel_max_pq
 	(enum signal_format_enum src_format,
 	 const struct vinfo_s *vinfo,
-	 struct target_config *config);
+	 void *config);
 int layer_id_to_dv_id(enum vd_path_e vd_path);
 bool layerid_valid(int layerid);
 bool dv_inst_valid(int id);
 struct device *get_amdv_device(void);
 void bypass_pps_sr_gamma_gainoff(int flag);
 void amdv_core_reset(enum core_type type);
+bool check_vf_changed(struct vframe_s *vf);
+int vsem_check(unsigned char *control_data, unsigned char *vsem_payload);
+void amdv_clear_buf(u8 dv_id);
+bool single_step_enable_v2(int inst_id, u8 layer_id);
+bool dump_enable_f(int inst_id);
+bool check_atsc_dvb(char *p);
+void amdvdolby_vision_vf_add(struct vframe_s *vf, struct vframe_s *el_vf);
+void prepare_hdr10_param(struct vframe_master_display_colour_s *p_mdc,
+			 struct hdr10_parameter *p_hdr10_param);
+bool is_hlg_frame(struct vframe_s *vf);
+bool is_hdr10_frame(struct vframe_s *vf);
+bool is_mvc_frame(struct vframe_s *vf);
+bool is_primesl_frame(struct vframe_s *vf);
+bool is_cuva_frame(struct vframe_s *vf);
+bool is_hdr10plus_frame(struct vframe_s *vf);
+bool vf_is_hlg(struct vframe_s *vf);
+bool vf_is_hdr10_plus(struct vframe_s *vf);
+bool vf_is_hdr10(struct vframe_s *vf);
+bool is_dv_standard_es(int dvel, int mflag, int width);
+void calculate_crc(void);
+int is_policy_changed(void);
+void update_src_format(enum signal_format_enum src_format, struct vframe_s *vf);
+int amdv_policy_process(struct vframe_s *vf, int *mode, enum signal_format_enum src_format);
+int is_graphics_output_off(void);
+void update_aoi_flag(struct vframe_s *vf, u32 display_size);
+void dump_tv_setting
+	(void *p_setting,
+	 int frame_cnt, int debug_flag);
+int amdv_vf_check(struct vframe_s *vf);
+bool is_hdr10_src_primary_changed(void);
+void update_amdv_status(enum signal_format_enum src_format);
+int parse_sei_and_meta(struct vframe_s *vf,
+				      void *frame_req,
+				      int *total_comp_size,
+				      int *total_md_size,
+				      enum signal_format_enum *src_format,
+				      int *ret_flags, bool drop_flag, u32 inst_id);
+
 void enable_amdv_hw5(int enable);
-int tv_top2_set(u64 *reg_data,
+int tv_top_set(u64 *top1_reg,
+				 u64 *top1b_reg,
+				 u64 *top2_reg,
 			     int hsize,
 			     int vsize,
 			     int bl_enable,
-			     int el_enable,
-			     int el_41_mode,
 			     int src_chroma_format,
 			     bool hdmi,
 			     bool hdr10,
-			     bool reset);
+			     bool reset,
+			     bool toggle);
 int load_reg_and_lut_file(char *fw_name, void **dst_buf);
 void read_txt_to_buf(char *reg_txt, void *reg_buf, int reg_num, bool is_reg);
 int dma_lut_init(void);
 void dma_lut_uninit(void);
 int dma_lut_write(void);
 irqreturn_t amdv_isr(int irq, void *dev_id);
+void update_l1l4_hist_setting(void);
+void update_src_format_hw5(enum signal_format_enum src_format, struct vframe_s *vf);
+int amdv_update_src_format_hw5(struct vframe_s *vf, u8 toggle_mode);
+int amdv_wait_metadata_hw5(struct vframe_s *vf);
+int amdolby_vision_process_hw5(struct vframe_s *vf,
+			 u32 display_size,
+			 u8 toggle_mode, u8 pps_state);
+int amdv_parse_metadata_hw5(struct vframe_s *vf,
+					      u8 toggle_mode,
+					      bool bypass_release,
+					      bool drop_flag);
+int parse_sei_and_meta_ext_hw5(struct vframe_s *vf,
+					 char *aux_buf,
+					 int aux_size,
+					 int *total_comp_size,
+					 int *total_md_size,
+					 void *fmt,
+					 int *ret_flags,
+					 char *md_buf,
+					 char *comp_buf);
+void update_top1_status(struct vframe_s *vf);
+bool get_top1_status(void);
+
 #endif

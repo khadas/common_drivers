@@ -303,6 +303,8 @@ void dv_inst_unmap(int inst);
 bool is_hdmi_ll_as_hdr10(void);
 bool is_multi_dv_mode(void);
 bool support_multi_core1(void);
+bool is_aml_hw5(void);
+void print_dv_ro(void);
 
 #define AMDV_UPDATE_OSD_MODE 0x00000001
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION

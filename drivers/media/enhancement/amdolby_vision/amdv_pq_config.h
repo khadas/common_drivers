@@ -159,13 +159,13 @@ struct pq_config {
 # pragma pack(push, 1)
 struct gd_cfg_dvp {
 	u8   reserved1[1];
-	u8   globalDimming;
-	u16  gdDelayMilliSec_hdmi;
-	u16  gdDelayMilliSec_ott;
-	u16  gdDelayMilliSec_ll;
-	u32  gdLowestTmax;
-	u16  gdRiseWeight;
-	u16  gdFallWeight;
+	u8   global_dimming;
+	u16  gd_delay_msec_hdmi;
+	u16  gd_delay_msec_ott;
+	u16  gd_delay_msec_ll;
+	u32  gd_lowest_tmax;
+	u16  gd_rise_weight;
+	u16  gd_fall_weight;
 	u32  reserved2[3];
 };
 
@@ -215,15 +215,15 @@ struct pr_cfg_dvp {
 # pragma pack(push, 1)
 struct ana_cfg_dvp {
 	s32   analyzer_delay;
-	s32   L1MidSensitivity;
-	s32   L1MidSlope;
-	s32   L1MinMaxSlope;
-	s32   L1MidBotRoll;
-	s32   L1MidTopRoll;
-	s32   L1MidBotBeta;
-	s32   L1MidTopBeta;
-	s32   L4BaseAlpha;
-	u8    enableL1L4gen;
+	s32   l1_mid_sensitivity;
+	s32   l1_mid_slope;
+	s32   l1_min_max_slope;
+	s32   l1_mid_bot_roll;
+	s32   l1_mid_top_roll;
+	s32   l1_mid_bot_beta;
+	s32   l1_mid_top_beta;
+	s32   l4_base_alpha;
+	u8    enalbe_l1l4_gen;
 	u8    reserved1[3];
 	s32   reserved2[3];
 };
@@ -264,7 +264,7 @@ struct target_config_dvp {
 	u32 l11_wp_response_rise_fall;
 	u8  apply_l11_wp;
 	u8  ref_mode_dark_id;
-	struct ana_cfg_dvp anaConfig;
+	struct ana_cfg_dvp ana_config;
 	u16  reserved2[110];
 };
 
@@ -299,6 +299,7 @@ struct dv_pq_range_s {
 };
 
 extern struct pq_config *bin_to_cfg;
+extern struct pq_config_dvp *bin_to_cfg_dvp;
 extern struct dv_cfg_info_s cfg_info[MAX_DV_PICTUREMODES];
 extern const char *pq_item_str[];
 extern struct target_config def_tgt_display_cfg_bestpq;
@@ -332,5 +333,6 @@ int get_inter_pq_flag(void);
 void set_inter_pq_flag(int flag);
 void set_cfg_id(uint id);
 void update_cp_cfg(void);
+void get_dv_bin_config_hw5(void);
 
 #endif

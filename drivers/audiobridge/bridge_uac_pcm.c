@@ -97,12 +97,12 @@ static ssize_t bridge_capture_volume_ctr_store(struct kobject *kobj,
 		pr_err("%s err!", __func__);
 		return len;
 	}
-#ifdef CONFIG_USB_CONFIGFS_F_HID
-	ret = f_hidg_internal_write(&bufer, sizeof(bufer));
+#if IS_ENABLED(CONFIG_USB_CONFIGFS_F_HID) && IS_ENABLED(CONFIG_AMLOGIC_BRIDGE_HID)
+	ret = f_hidg_internal_write(&bufer, sizeof(bufer), 0);
 	if (ret < 0)
 		pr_err("%s err!", __func__);
 	bufer = 0;
-	ret = f_hidg_internal_write(&bufer, sizeof(bufer));
+	ret = f_hidg_internal_write(&bufer, sizeof(bufer), 0);
 	if (ret < 0)
 		pr_err("%s err!", __func__);
 #else

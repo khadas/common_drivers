@@ -4,6 +4,7 @@
 
 config AMLOGIC_AUDIO_BRIDGE
 	tristate "audio bridge support"
+	depends on AMLOGIC_BREAK_GKI_20
 	default n
 	help
 		This is the Amlogic.
@@ -20,6 +21,14 @@ config AMLOGIC_BRIDGE_UAC
 		add uac audio on bridge.
 		kernel bridge uac driver.
 		support the amlogic uac bridge.
+
+config AMLOGIC_BRIDGE_HID
+	bool "support the HID control"
+	depends on AMLOGIC_AUDIO_BRIDGE && AMLOGIC_BRIDGE_UAC
+	default n
+	help
+		This is the Amlogic.
+		support the HID control.
 
 config AMLOGIC_BRIDGE_DSP
 	bool "audio DSP bridge support"

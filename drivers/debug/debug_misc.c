@@ -13,7 +13,7 @@
 
 #include "lockup.h"
 
-void irq_trace_start_gki_builtin(unsigned long flags)
+void notrace irq_trace_start_gki_builtin(unsigned long flags)
 {
 	trace_android_rvh_gic_v3_set_affinity((void *)DEBUG_HOOK_MAGIC,
 					      (void *)DEBUG_HOOK_IRQ_START,
@@ -21,7 +21,7 @@ void irq_trace_start_gki_builtin(unsigned long flags)
 					      0, 0, 0, 0);
 }
 
-void irq_trace_stop_gki_builtin(unsigned long flags)
+void notrace irq_trace_stop_gki_builtin(unsigned long flags)
 {
 	trace_android_rvh_gic_v3_set_affinity((void *)DEBUG_HOOK_MAGIC,
 					      (void *)DEBUG_HOOK_IRQ_STOP,

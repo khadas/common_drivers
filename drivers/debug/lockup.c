@@ -694,7 +694,9 @@ int debug_lockup_init(void)
 	irq_trace_start_hook = irq_trace_start;
 	irq_trace_stop_hook = irq_trace_stop;
 
+#ifndef CONFIG_FUNCTION_GRAPH_TRACER
 	register_trace_android_rvh_gic_v3_set_affinity(debug_hook_func, NULL);
+#endif
 
 	/* CONFIG_IRQSOFF_TRACER is not enabled, can't use below function */
 	//register_trace_android_rvh_irqs_disable(irq_trace_start, NULL);

@@ -315,7 +315,7 @@
 	dolby_fw: dolby_fw {
 		compatible = "amlogic, dolby_fw";
 		mem_size = <0x100000>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	secmon {

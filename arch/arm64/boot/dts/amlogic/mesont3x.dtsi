@@ -368,19 +368,19 @@
 	adla: adla@0xfe371000 {
 		compatible = "amlogic,adla";
 		dev_name = "adla";
-		status = "disabled";
+		status = "okay";
 		reg = <0x0 0xfe371000 0x0 0x2000
-			0x0 0xf7038000 0x0 0x40000
+			0x0 0xf7040000 0x0 0x40000
 			>;
 		reg-names = "adla_reg\0adla_sram";
 		interrupt-names = "adla";
 		interrupts = <0 148 1>;
-		//clocks = <&clkc CLKID_NNA>;
-		//clock-names = "adla_core_clk";
-		//assigned-clocks =<&clkc CLKID_NNA>;
+		clocks = <&clkc CLKID_ADLA>;
+		clock-names = "adla_core_clk";
+		//assigned-clocks =<&clkc CLKID_ADLA>;
 		//assigned-clock-parentsd = <&clkc CLKID_FCLK_DIV2P5>;
 		//assigned-clock-rates = <800000000>;
-		//power-domains=<&pwrdm PDID_S5_NNA_4T>;
+		power-domains=<&pwrdm PDID_T3X_NNA_4T>;
 		//memory-region = <&nna_cma_reserved>;
 		smmu;
 		regulator_nn;

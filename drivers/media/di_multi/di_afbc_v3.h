@@ -48,7 +48,7 @@ enum EAFBC_REG {
 	EAFBC_VD_CFMT_H,
 };
 
-#define DIM_AFBCE_NUB	(44)//for sc2 add 5 register (39)
+#define DIM_AFBCE_NUB	(46)//for sc2 add 5 register (39),T3X add 2(44)
 #define DIM_AFBCE_UP_NUB	(21)
 
 /* afbce bytes index */
@@ -102,6 +102,9 @@ enum EAFBCE_INDEX {
 	EAFBCE_DIMM_CTRL,
 	EAFBCE_BND_DEC_MISC,
 	EAFBCE_RD_ARB_MISC,
+	/* from t3x */
+	EAFBCE_LOSS_CTRL,
+	EAFBCE_LOSS_BURST_NUM,
 };
 
 enum AFBC_WK_MODE {

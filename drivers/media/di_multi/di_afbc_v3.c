@@ -807,6 +807,121 @@ static const unsigned int reg_afbc_e[AFBC_ENC_NUB_V5][DIM_AFBCE_NUB] = {
 	},
 };
 
+static const unsigned int reg_afbc_t3x_e[AFBC_ENC_NUB_V5][DIM_AFBCE_NUB] = {
+	{
+		DI_T3X_AFBCE_ENABLE,		/*  0 */
+		DI_T3X_AFBCE_MODE,			/*  1 */
+		DI_T3X_AFBCE_SIZE_IN,		/*  2 */
+		DI_T3X_AFBCE_BLK_SIZE_IN,		/*  3 */
+		DI_T3X_AFBCE_HEAD_BADDR,		/*  4 */
+
+		DI_T3X_AFBCE_MIF_SIZE,		/*  5 */
+		DI_T3X_AFBCE_PIXEL_IN_HOR_SCOPE,	/*  6 */
+		DI_T3X_AFBCE_PIXEL_IN_VER_SCOPE,	/*  7 */
+		DI_T3X_AFBCE_CONV_CTRL,		/*  8 */
+		DI_T3X_AFBCE_MIF_HOR_SCOPE,		/*  9 */
+		DI_T3X_AFBCE_MIF_VER_SCOPE,		/* 10 */
+		/**/
+		DI_T3X_AFBCE_FORMAT,		/* 11 */
+		/**/
+		DI_T3X_AFBCE_DEFCOLOR_1,		/* 12 */
+		DI_T3X_AFBCE_DEFCOLOR_2,		/* 13 */
+		DI_T3X_AFBCE_QUANT_ENABLE,		/* 14 */
+		//unsigned int mmu_num,
+		DI_T3X_AFBCE_MMU_RMIF_CTRL1,	/* 15 */
+		DI_T3X_AFBCE_MMU_RMIF_CTRL2,	/* 16 */
+		DI_T3X_AFBCE_MMU_RMIF_CTRL3,	/* 17 */
+		DI_T3X_AFBCE_MMU_RMIF_CTRL4,	/* 18 */
+		DI_T3X_AFBCE_MMU_RMIF_SCOPE_X,	/* 19 */
+		DI_T3X_AFBCE_MMU_RMIF_SCOPE_Y,	/* 20 */
+
+		/**********************/
+		DI_T3X_AFBCE_MODE_EN,
+		DI_T3X_AFBCE_DWSCALAR,
+		DI_T3X_AFBCE_IQUANT_LUT_1,
+		DI_T3X_AFBCE_IQUANT_LUT_2,
+		DI_T3X_AFBCE_IQUANT_LUT_3,
+		DI_T3X_AFBCE_IQUANT_LUT_4,
+		DI_T3X_AFBCE_RQUANT_LUT_1,
+		DI_T3X_AFBCE_RQUANT_LUT_2,
+		DI_T3X_AFBCE_RQUANT_LUT_3,
+		DI_T3X_AFBCE_RQUANT_LUT_4,
+		DI_T3X_AFBCE_YUV_FORMAT_CONV_MODE,
+		DI_T3X_AFBCE_DUMMY_DATA,
+		DI_T3X_AFBCE_CLR_FLAG,
+		DI_T3X_AFBCE_STA_FLAGT,
+		DI_T3X_AFBCE_MMU_NUM,
+		DI_T3X_AFBCE_STAT1,		/*read only*/
+		DI_T3X_AFBCE_STAT2,
+		DI_T3X_AFBCE_MMU_RMIF_RO_STAT,
+		/*add for sc2*/
+		DI_T3X_AFBCE_PIP_CTRL,
+		DI_T3X_AFBCE_ROT_CTRL,
+		DI_T3X_AFBCE_DIMM_CTRL,
+		DI_T3X_AFBCE_BND_DEC_MISC,
+		DI_T3X_AFBCE_RD_ARB_MISC,
+		/*from t3x*/
+		DI_T3X_AFBCE_LOSS_CTRL,
+		DI_T3X_AFBCE_LOSS_BURST_NUM,
+	},
+	{
+		DI_T3X_AFBCE1_ENABLE,		/*  0 */
+		DI_T3X_AFBCE1_MODE,			/*  1 */
+		DI_T3X_AFBCE1_SIZE_IN,		/*  2 */
+		DI_T3X_AFBCE1_BLK_SIZE_IN,		/*  3 */
+		DI_T3X_AFBCE1_HEAD_BADDR,		/*  4 */
+
+		DI_T3X_AFBCE1_MIF_SIZE,		/*  5 */
+		DI_T3X_AFBCE1_PIXEL_IN_HOR_SCOPE,	/*  6 */
+		DI_T3X_AFBCE1_PIXEL_IN_VER_SCOPE,	/*  7 */
+		DI_T3X_AFBCE1_CONV_CTRL,		/*  8 */
+		DI_T3X_AFBCE1_MIF_HOR_SCOPE,		/*  9 */
+		DI_T3X_AFBCE1_MIF_VER_SCOPE,		/* 10 */
+		/**/
+		DI_T3X_AFBCE1_FORMAT,		/* 11 */
+		/**/
+		DI_T3X_AFBCE1_DEFCOLOR_1,		/* 12 */
+		DI_T3X_AFBCE1_DEFCOLOR_2,		/* 13 */
+		DI_T3X_AFBCE1_QUANT_ENABLE,		/* 14 */
+		//unsigned int mmu_num,
+		DI_T3X_AFBCE1_MMU_RMIF_CTRL1,	/* 15 */
+		DI_T3X_AFBCE1_MMU_RMIF_CTRL2,	/* 16 */
+		DI_T3X_AFBCE1_MMU_RMIF_CTRL3,	/* 17 */
+		DI_T3X_AFBCE1_MMU_RMIF_CTRL4,	/* 18 */
+		DI_T3X_AFBCE1_MMU_RMIF_SCOPE_X,	/* 19 */
+		DI_T3X_AFBCE1_MMU_RMIF_SCOPE_Y,	/* 20 */
+
+		/**********************/
+		DI_T3X_AFBCE1_MODE_EN,
+		DI_T3X_AFBCE1_DWSCALAR,
+		DI_T3X_AFBCE1_IQUANT_LUT_1,
+		DI_T3X_AFBCE1_IQUANT_LUT_2,
+		DI_T3X_AFBCE1_IQUANT_LUT_3,
+		DI_T3X_AFBCE1_IQUANT_LUT_4,
+		DI_T3X_AFBCE1_RQUANT_LUT_1,
+		DI_T3X_AFBCE1_RQUANT_LUT_2,
+		DI_T3X_AFBCE1_RQUANT_LUT_3,
+		DI_T3X_AFBCE1_RQUANT_LUT_4,
+		DI_T3X_AFBCE1_YUV_FORMAT_CONV_MODE,
+		DI_T3X_AFBCE1_DUMMY_DATA,
+		DI_T3X_AFBCE1_CLR_FLAG,
+		DI_T3X_AFBCE1_STA_FLAGT,
+		DI_T3X_AFBCE1_MMU_NUM,
+		DI_T3X_AFBCE1_STAT1,		/*read only*/
+		DI_T3X_AFBCE1_STAT2,
+		DI_T3X_AFBCE1_MMU_RMIF_RO_STAT,
+		/*from sc2*/
+		DI_T3X_AFBCE1_PIP_CTRL,
+		DI_T3X_AFBCE1_ROT_CTRL,
+		DI_T3X_AFBCE1_DIMM_CTRL,
+		DI_T3X_AFBCE1_BND_DEC_MISC,
+		DI_T3X_AFBCE1_RD_ARB_MISC,
+		/*from t3x*/
+		DI_T3X_AFBCE1_LOSS_CTRL,
+		DI_T3X_AFBCE1_LOSS_BURST_NUM,
+	},
+};
+
 static const unsigned int *afbc_get_addrp(enum EAFBC_DEC eidx)
 {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -839,7 +954,10 @@ static void afbcd_reg_bwr(enum EAFBC_DEC eidx, enum EAFBC_REG adr_idx,
 
 static const unsigned int *afbce_get_addrp(enum EAFBC_ENC eidx)
 {
-	return &reg_afbc_e[eidx][0];
+	if (DIM_IS_IC(T3X))
+		return &reg_afbc_t3x_e[eidx][0];
+	else
+		return &reg_afbc_e[eidx][0];
 }
 
 static void dump_afbcd_reg(void)
@@ -3641,7 +3759,10 @@ void dbg_afe_reg_v3(struct seq_file *s, enum EAFBC_ENC eidx)
 	}
 
 	for (i = 0; i < DIM_AFBCE_NUB; i++) {
-		addr = reg_afbc_e[eidx][i];
+		if (DIM_IS_IC(T3X))
+			addr = reg_afbc_t3x_e[eidx][i];
+		else
+			addr = reg_afbc_e[eidx][i];
 		seq_printf(s, "reg[0x%x]=0x%x.\n", addr, reg_rd(addr));
 	}
 }
@@ -4527,7 +4648,10 @@ static void afbce_update_level1_dvfm(struct dvfm_s *vf,
 	}
 	#endif
 #endif /* HIS_CODE */
-	reg = &reg_afbc_e[enc][0];
+	if (DIM_IS_IC(T3X))
+		reg = &reg_afbc_t3x_e[enc][0];
+	else
+		reg = &reg_afbc_e[enc][0];
 	dim_print("afbce:up:%d\n", enc);
 
 	#ifdef MARK_SC2
@@ -5029,8 +5153,10 @@ static void ori_afbce_cfg(struct enc_cfg_s *cfg,
 	vblksize_out	= (vsize_buf + 3) >> 2;
 
 	/***********************/
-
-	reg = &reg_afbc_e[enc][0];
+	if (DIM_IS_IC(T3X))
+		reg = &reg_afbc_t3x_e[enc][0];
+	else
+		reg = &reg_afbc_e[enc][0];
 
 #ifdef MARK_SC2
 	/*yuv444 can only support 8bit,and must use comb_mode*/
@@ -5223,8 +5349,10 @@ static void afbce_sw(enum EAFBC_ENC enc, bool on, const struct reg_acc *op)
 		PR_ERR("%s:no op\n", __func__);
 		return;
 	}
-
-	reg = &reg_afbc_e[enc][0];
+	if (DIM_IS_IC(T3X))
+		reg = &reg_afbc_t3x_e[enc][0];
+	else
+		reg = &reg_afbc_e[enc][0];
 
 	if (on) {
 		op->bwr(reg[EAFBCE_ENABLE], 1, 8, 1);//enable afbce
@@ -5241,7 +5369,10 @@ unsigned int afbce_read_used(enum EAFBC_ENC enc)
 	const struct reg_acc *op = &di_normal_regset;
 	unsigned int nub;
 
-	reg = &reg_afbc_e[enc][0];
+	if (DIM_IS_IC(T3X))
+		reg = &reg_afbc_t3x_e[enc][0];
+	else
+		reg = &reg_afbc_e[enc][0];
 
 	nub = op->rd(reg[EAFBCE_MMU_NUM]);
 	return nub;
@@ -5419,7 +5550,10 @@ static void afbce_update_level1(struct vframe_s *vf,
 		       di_buf->afbc_adr, di_buf->afbct_adr, vf->type);
 	}
 	#endif
-	reg = &reg_afbc_e[enc][0];
+	if (DIM_IS_IC(T3X))
+		reg = &reg_afbc_t3x_e[enc][0];
+	else
+		reg = &reg_afbc_e[enc][0];
 	dim_print("afbce:up:%d\n", enc);
 
 	#ifdef MARK_SC2

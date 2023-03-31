@@ -5462,7 +5462,9 @@ void dip_init_pq_ops(void)
 
 	/* hw l1 ops*/
 	if (IS_IC_EF(ic_id, SC2)) {
-		if (IS_IC_EF(ic_id, T7))
+		if (DIM_IS_IC(T3X))
+			get_datal()->hop_l1 = &dim_ops_l1_v5;
+		else if (IS_IC_EF(ic_id, T7))
 			get_datal()->hop_l1 = &dim_ops_l1_v4;
 		else
 			get_datal()->hop_l1 = &dim_ops_l1_v3;

@@ -2301,7 +2301,7 @@
 		tsensor_id = <1>;
 		cal_type = <0x11>;
 		cal_coeff = <324 424 3159 9411>;
-		rtemp = <115000>;
+		rtemp = <120000>;
 		interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&clkc CLKID_TS_CLK>;
 		clock-names = "ts_comp";
@@ -2317,7 +2317,7 @@
 		tsensor_id = <2>;
 		cal_type = <0x11>;
 		cal_coeff = <324 424 3159 9411>;
-		rtemp = <115000>;
+		rtemp = <120000>;
 		interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&clkc CLKID_TS_CLK>;
 		clock-names = "ts_comp";
@@ -2333,7 +2333,7 @@
 		tsensor_id = <3>;
 		cal_type = <0x11>;
 		cal_coeff = <324 424 3159 9411>;
-		rtemp = <115000>;
+		rtemp = <120000>;
 		interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&clkc CLKID_TS_CLK>;
 		clock-names = "ts_comp";
@@ -2349,7 +2349,7 @@
 		tsensor_id = <4>;
 		cal_type = <0x11>;
 		cal_coeff = <324 424 3159 9411>;
-		rtemp = <115000>;
+		rtemp = <120000>;
 		interrupts = <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&clkc CLKID_TS_CLK>;
 		clock-names = "ts_comp";
@@ -2365,7 +2365,7 @@
 		tsensor_id = <5>;
 		cal_type = <0x11>;
 		cal_coeff = <324 424 3159 9411>;
-		rtemp = <115000>;
+		rtemp = <120000>;
 		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&clkc CLKID_TS_CLK>;
 		clock-names = "ts_comp";
@@ -2375,7 +2375,7 @@
 	};
 
 	meson_cooldev: meson-cooldev@0 {
-		status = "disabled";
+		status = "okay";
 		compatible = "amlogic, meson-cooldev";
 		cooling_devices {
 			cpucore_cool_cluster0 {
@@ -2397,6 +2397,22 @@
 				node_name = "gpucore_cooldev";
 				device_type = "gpucore";
 			};
+			ddr0_cool {
+				ddr_reg = <0xfe032648>;
+				ddr_status = <3>;
+				ddr_bits = <1 3>;
+				ddr_data = <0x0 0x1 0x2>;
+				node_name = "ddr_cool0";
+				device_type = "ddr";
+			};
+			ddr1_cool {
+				ddr_reg = <0xfe036648>;
+				ddr_status = <3>;
+				ddr_bits = <1 3>;
+				ddr_data = <0x0 0x1 0x2>;
+				node_name = "ddr_cool1";
+				device_type = "ddr";
+			};
 		};
 		cpucore_cool0:cpucore_cool0 {
 			#cooling-cells = <2>;
@@ -2405,6 +2421,12 @@
 			#cooling-cells = <2>;
 		};
 		gpucore_cooldev:gpucore_cooldev {
+			#cooling-cells = <2>;
+		};
+		ddr_cool0:ddr_cool0 {
+			#cooling-cells = <2>;
+		};
+		ddr_cool1:ddr_cool1 {
 			#cooling-cells = <2>;
 		};
 	};/*meson cooling devices end*/
@@ -2418,28 +2440,28 @@
 			thermal-sensors = <&gpu_tsensor 1>;
 			trips {
 				gpuswitch_on: trip-point@0 {
-					temperature = <80000>;
+					temperature = <95000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
 				gpucontrol: trip-point@1 {
-					temperature = <90000>;
+					temperature = <105000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
 				gpucritical: trip-point@3 {
-					temperature = <110000>;
+					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";
 				};
 			};
-//			cooling-maps {
-//				gpufreq_cooling_map {
-//					trip = <&gpucontrol>;
-//					cooling-device = <&gpu 0 3>;
-//					contribution = <1024>;
-//				};
-//			};
+			cooling-maps {
+				gpufreq_cooling_map {
+					trip = <&gpucontrol>;
+					cooling-device = <&gpu 0 3>;
+					contribution = <1024>;
+				};
+			};
 		};
 		soc_thermal: soc_thermal {
 			status = "okay";
@@ -2448,44 +2470,39 @@
 			sustainable-power = <960>;
 			thermal-sensors = <&cpu_tsensor 0>;
 			trips {
-				a55switch_on: trip-point@0 {
-					temperature = <80000>;
+				cpu_switch_on: trip-point@0 {
+					temperature = <95000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				a55control: trip-point@1 {
+				cpu_control: trip-point@1 {
+					temperature = <105000>;
+					hysteresis = <5000>;
+					type = "passive";
+				};
+				cpu_hot: trip-point@2 {
 					temperature = <90000>;
-					hysteresis = <5000>;
-					type = "passive";
-				};
-				a55hot: trip-point@2 {
-					temperature = <100000>;
-					hysteresis = <5000>;
+					hysteresis = <10000>;
 					type = "hot";
 				};
-				a55critical: trip-point@3 {
-					temperature = <110000>;
+				cpu_critical: trip-point@3 {
+					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";
 				};
 			};
-//			cooling-maps {
-//				cpucore_cooling_map {
-//					trip = <&a55hot>;
-//					cooling-device = <&cpucore_cool0 0 2>;
-//					contribution = <1024>;
-//				};
-//				cpufreq_cooling_map1 {
-//					trip = <&a55control>;
-//					cooling-device = <&CPU0 0 8>;
-//					contribution = <1024>;
-//				};
-//				cpufreq_cooling_map2 {
-//					trip = <&a55control>;
-//					cooling-device = <&CPU4 0 8>;
-//					contribution = <1024>;
-//				};
-//			};
+			cooling-maps {
+				cpufreq_cooling_map1 {
+					trip = <&cpu_control>;
+					cooling-device = <&CPU0 0 8>;
+					contribution = <1024>;
+				};
+				cpufreq_cooling_map2 {
+					trip = <&cpu_control>;
+					cooling-device = <&CPU3 0 8>;
+					contribution = <1024>;
+				};
+			};
 		};
 		vpu_thermal: vpu_thermal {
 			status = "okay";
@@ -2505,7 +2522,7 @@
 					type = "passive";
 				};
 				vpucritical: trip-point@2 {
-					temperature = <110000>;
+					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";
 				};
@@ -2529,7 +2546,7 @@
 					type = "passive";
 				};
 				doscritical: trip-point@2 {
-					temperature = <110000>;
+					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";
 				};
@@ -2553,7 +2570,7 @@
 					type = "passive";
 				};
 				nnacritical: trip-point@2 {
-					temperature = <110000>;
+					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";
 				};

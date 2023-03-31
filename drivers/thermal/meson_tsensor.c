@@ -799,10 +799,6 @@ static void meson_handle_thermal_trip(struct thermal_zone_device *tz, int trip, 
 	}
 }
 
-static void meson_thermal_critical_callback(struct thermal_zone_device *tz)
-{
-}
-
 static struct thermal_zone_of_device_ops meson_sensor_ops = {
 	.get_temp = meson_get_temp,
 
@@ -934,9 +930,6 @@ static int meson_tsensor_probe(struct platform_device *pdev)
 		switch (trip_type) {
 		case THERMAL_TRIP_HOT:
 			tz->ops->hot = meson_thermal_hot_callback;
-			break;
-		case THERMAL_TRIP_CRITICAL:
-			tz->ops->critical = meson_thermal_critical_callback;
 			break;
 		default:
 			break;

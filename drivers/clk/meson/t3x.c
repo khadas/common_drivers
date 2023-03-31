@@ -61,6 +61,11 @@ static const struct pll_params_table t3x_sys_pll_params_table[] = {
 };
 #endif
 
+static const struct pll_mult_range t3x_pll_mult_range = {
+	.min = 67,
+	.max = 125,
+};
+
 static struct clk_regmap t3x_sys_pll_dco = {
 	.data = &(struct meson_clk_pll_data){
 		.en = {
@@ -184,7 +189,7 @@ static struct clk_regmap t3x_sys2_pll_dco = {
 		.n = {
 			.reg_off = CLKCTRL_SYS2PLL_CTRL0,
 			.shift   = 16,
-			.width   = 5,
+			.width   = 1, /* keep n = 1 */
 		},
 		/* od for 32bit */
 		/* set m, n, od in enable callback when set the same rate */
@@ -193,7 +198,7 @@ static struct clk_regmap t3x_sys2_pll_dco = {
 			.shift	 = 12,
 			.width	 = 3,
 		},
-		.table = t3x_sys_pll_params_table,
+		.range = &t3x_pll_mult_range,
 		.l = {
 			.reg_off = CLKCTRL_SYS2PLL_CTRL0,
 			.shift   = 31,
@@ -1126,11 +1131,6 @@ static const struct reg_sequence t3x_hifi_init_regs[] = {
 	{ .reg = CLKCTRL_HIFIPLL_CTRL3,	.def = 0x090da200 },
 };
 
-static const struct pll_mult_range t3x_hifi_pll_mult_range = {
-	.min = 67,
-	.max = 125,
-};
-
 static struct clk_regmap t3x_hifi_pll_dco = {
 	.data = &(struct meson_clk_pll_data){
 		.en = {
@@ -1163,7 +1163,7 @@ static struct clk_regmap t3x_hifi_pll_dco = {
 			.shift   = 29,
 			.width   = 1,
 		},
-		.range = &t3x_hifi_pll_mult_range,
+		.range = &t3x_pll_mult_range,
 		.init_regs = t3x_hifi_init_regs,
 		.init_count = ARRAY_SIZE(t3x_hifi_init_regs),
 		.flags = CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION,
@@ -1236,7 +1236,7 @@ static struct clk_regmap t3x_hifi1_pll_dco = {
 			.shift   = 29,
 			.width   = 1,
 		},
-		.range = &t3x_hifi_pll_mult_range,
+		.range = &t3x_pll_mult_range,
 		.init_regs = t3x_hifi1_init_regs,
 		.init_count = ARRAY_SIZE(t3x_hifi1_init_regs),
 		.flags = CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION,
@@ -2847,7 +2847,7 @@ static const struct clk_hw *t3x_vpu_parent_hws[] = {
 	&t3x_fclk_div3.hw,
 	&t3x_fclk_div4.hw,
 	&t3x_fclk_div5.hw,
-	&t3x_fclk_div7.hw
+	&t3x_fclk_div2p5.hw
 };
 
 static struct clk_regmap t3x_vpu_0_sel = {
@@ -2958,7 +2958,7 @@ static const struct clk_hw *vpu_clkb_tmp_parent_hws[] = {
 	&t3x_vpu.hw,
 	&t3x_fclk_div4.hw,
 	&t3x_fclk_div5.hw,
-	&t3x_fclk_div7.hw
+	&t3x_fclk_div3.hw
 };
 
 static struct clk_regmap t3x_vpu_clkb_tmp_sel = {
@@ -3143,10 +3143,11 @@ static struct clk_regmap t3x_cmpr = {
 	},
 };
 
-static u32 mux_table_mali[] = { 0, 3, 4, 5, 6};
+static u32 mux_table_mali[] = { 0, 1, 3, 4, 5, 6};
 
 static const struct clk_parent_data t3x_mali_0_1_parent_data[] = {
 	{ .fw_name = "xtal", },
+	{ .hw = &t3x_sys2_pll.hw },
 	{ .hw = &t3x_fclk_div2p5.hw },
 	{ .hw = &t3x_fclk_div3.hw },
 	{ .hw = &t3x_fclk_div4.hw },

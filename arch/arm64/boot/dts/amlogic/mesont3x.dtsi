@@ -4087,6 +4087,12 @@
 		};
 	};
 
+	spdifin_m29_pins: spdifin_a {
+		mux { /* GPIOM_29 */
+			groups = "spdif_in_m";
+			function = "spdif_in";
+		};
+	};
 	mclk_0_pins: mclk_0_pin {
 		mux { /* GPIOT_14 */
 			groups = "mclk_0";

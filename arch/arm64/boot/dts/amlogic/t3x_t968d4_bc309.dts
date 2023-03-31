@@ -536,9 +536,7 @@
 		aml-audio-card,name = "AML-AUGESOUND";
 
 		/*avout mute gpio*/
-		//avout_mute-gpios = <&gpio GPIOA_8 GPIO_ACTIVE_HIGH>;
-		//spk_mute-gpios = <&gpio GPIOA_5 GPIO_ACTIVE_LOW>;
-
+		avout_mute-gpios = <&gpio GPIOD_6 GPIO_ACTIVE_HIGH>;
 		interrupts = <GIC_SPI 83 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "audio_exception64";
 
@@ -624,7 +622,7 @@
 			//bitclock-master = <&tdmccodec>;
 			//frame-master = <&tdmccodec>;
 			/* suffix-name, sync with android audio hal used for */
-			suffix-name = "alsaPORT-i2s";
+			suffix-name = "alsaPORT-i2s4parser";
 			cpu {
 				sound-dai = <&tdmc>;
 				dai-tdm-slot-tx-mask = <1 1>;
@@ -634,7 +632,7 @@
 				system-clock-frequency = <12288000>;
 			};
 			tdmccodec: codec {
-				sound-dai = <&amlogic_codec>;
+				sound-dai = <&dummy_codec>;
 			};
 		};
 		aml-audio-card,dai-link@3 {
@@ -658,7 +656,7 @@
 				system-clock-frequency = <12288000>;
 			};
 			tdmd_codec: codec {
-				sound-dai = <&amlogic_codec>;
+				sound-dai = <&dummy_codec>;
 			};
 		};
 		aml-audio-card,dai-link@4 {
@@ -1047,7 +1045,7 @@
 
 &audiobus {
 	tdma:tdm@0 {
-		compatible = "amlogic, t7-snd-tdma";
+		compatible = "amlogic, t3x-snd-tdma";
 		#sound-dai-cells = <0>;
 
 		dai-tdm-lane-slot-mask-in = <1 0>;
@@ -1065,7 +1063,7 @@
 	};
 
 	tdmb:tdm@1 {
-		compatible = "amlogic, t7-snd-tdmb";
+		compatible = "amlogic, t3x-snd-tdmb";
 		#sound-dai-cells = <0>;
 
 		dai-tdm-lane-slot-mask-in = <1 1 1 1>;
@@ -1116,7 +1114,7 @@
 	};
 
 	tdmc:tdm@2 {
-		compatible = "amlogic, t7-snd-tdmc";
+		compatible = "amlogic, t3x-snd-tdmc";
 		#sound-dai-cells = <0>;
 
 		dai-tdm-lane-slot-mask-in = <1 1 1 1>;
@@ -1129,12 +1127,13 @@
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
 
 		/* enable control gain */
+		tdmin-src-name = "hdmirx";
 		ctrl_gain = <1>;
 		status = "okay";
 	};
 
 	tdmd:tdm@3 {
-		compatible = "amlogic, p1-snd-tdmd";
+		compatible = "amlogic, t3x-snd-tdmd";
 		#sound-dai-cells = <0>;
 
 		dai-tdm-lane-slot-mask-in = <1 0 0 0>;
@@ -1166,10 +1165,8 @@
 			"dclk_srcpll",
 			"pdm_dclk",
 			"pdm_sysclk";
-#if 0
 		pinctrl-names = "pdm_pins";
 		pinctrl-0 = <&pdmin>;
-#endif
 		src-clk-freq = <491520000>;
 		train_sample_count = <10>;
 
@@ -1196,13 +1193,10 @@
 		interrupts =
 				<GIC_SPI 35 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "irq_spdifin";
-#if 0
 		pinctrl-names = "spdif_pins",
 			"spdif_pins_mute";
-		pinctrl-0 = <&spdif_out_a_z19_pins
-					&spdifin_m29_pins>;
-		pinctrl-1 = <&spdifout_z19_mute>;
-#endif
+		pinctrl-0 = <&spdif_out_a_z19_pins>;
+		pinctrl-1 = <&spdifout_a_mute_pins>;
 		/*
 		 * 0: tdmout_a;
 		 * 1: tdmout_b;
@@ -1244,7 +1238,7 @@
 				<GIC_SPI 42 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "irq_frhdmirx";
 
-		status = "disabled";
+		status = "okay";
 	};
 
 	aed:effect {
@@ -1385,7 +1379,7 @@
 
 		/* calc mclk for datalb */
 		mclk-fs = <256>;
-
+		src-clk-freq = <491520000>;
 		/* tdmin_lb src
 		 * 0: tdmoutA
 		 * 1: tdmoutB
@@ -1544,7 +1538,7 @@
 };
 
 &i2c1 {
-	status = "disabled";
+	status = "okay";
 	pinctrl-names="default";
 	pinctrl-0=<&i2c1_pins1>;
 };
@@ -1766,78 +1760,28 @@
 
 &periphs_pinctrl {
 	pdmin: pdmin {
-		mux { /* GPIOA_3, GPIOA_2 */
-			groups = "pdm_din0_a";
+		mux { /* GPIOH_19, GPIOH_18,GPIOH_14*/
+			groups = "pdm_dclk_h19",
+					"pdm_din0_h18",
+					"pdm_din1_h14";
 			function = "pdm";
-		};
-		mux1 {
-			groups = "pdm_dclk_a";
-			function = "pdm";
-			drive-strength-microamp = <3000>;
-		};
-	};
-	tdm_a_pins: tdm_a_pin {
-		mux { /* GPIOX_11, GPIOX_10, GPIOX_8, GPIOX_9 */
-			groups = "tdm_sclk0",
-				"tdm_fs0",
-				"tdm_d0",
-				"tdm_d1";
-			function = "tdm";
 		};
 	};
 	tdm_b_pins: tdm_b_pin {
-		mux { /* GPIOA_7, GPIOA_8, GPIOA_1 */
-			groups = "tdm_sclk2_a",
-				"tdm_fs2_a",
-				"tdm_d5_a";
+		mux { /* GPIOH15, GPIOH_16, GPIOH_17 */
+			groups = "tdm_fs1_h15",
+				"tdm_sclk1_h",
+				"tdm_d0_h";
 			function = "tdm";
 		};
 	};
-
-	spdifout: spdifout {
-		mux { /* GPIOH_4 */
-			groups = "spdif_out_h";
-			function = "spdif_out";
-		};
-	};
-
-	spdifout_a_mute: spdifout_a_mute {
-		mux { /* GPIOH_4 */
-			groups = "GPIOH_4";
+	tdmout_a_gpio: tdmout_a_gpio {
+		mux { /* GPIOH_15, GPIOH_16, GPIOH_17 */
+			groups ="GPIOH_15",
+				"GPIOH_16",
+				"GPIOH_17";
 			function = "gpio_periphs";
 			output-low;
-		};
-	};
-
-	spdifin: spdifin {
-		mux { /* GPIOH_5 */
-			groups = "spdif_in_h";
-			function = "spdif_in";
-		};
-	};
-
-	spdifin_a_mute: spdifin_a_mute {
-		mux { /* GPIOH_5 */
-			groups = "GPIOH_5";
-			function = "gpio_periphs";
-			output-low;
-		};
-	};
-	tdm_c_pins: tdm_c_pin {
-		mux { /* GPIOK_9, GPIOK_10, GPIOK_11, GPIOK_12 */
-			groups = "tdm_sclk2",
-				"tdm_fs2",
-				"tdm_d4",
-				"tdm_d5";
-			function = "tdm";
-		};
-	};
-	tdm_d_pins: tdm_d_pin {
-		mux { /* GPIOT_18, GPIOT_19, GPIOT_20 */
-			groups = "tdm_sclk1_t",
-				"tdm_fs1_t",
-				"tdm_d2_t";
-			function = "tdm";
 		};
 	};
 	dvb_s_ts0_pins: dvb_s_ts0_pins {
@@ -1917,71 +1861,13 @@
 	tdm_d0_pins: tdm_d0_pin {
 		mux {
 			groups = "tdm_d0";
-			function = "tdmouta_lane1";
-		};
-	};
-	tdm_d1_pins: tdm_d1_pin {
-		mux {
-			groups = "tdm_d1";
-			function = "tdmina_lane0";
-		};
-	};
-	tdm_d5_a_pins: tdm_d5_a_pin {
-		mux {
-			groups = "tdm_d5";
 			function = "tdmoutb_lane0";
-		};
-	};
-	tdm_d2_t_pins: tdm_d2_t_pin {
-		mux {
-			groups = "tdm_d2_t";
-			function = "tdmind_lane0";
-		};
-	};
-	tdm_d4_pins: tdm_d4_pin {
-		mux {
-			groups = "tdm_d4";
-			function = "tdmoutc_lane0";
-		};
-	};
-
-	tdm_d5_pins: tdm_d5_pin {
-		mux {
-			groups = "tdm_d5";
-			function = "tdminc_lane0";
-		};
-	};
-	tdm_d6_pins: tdm_d6_pin {
-		mux {
-			groups = "tdm_d6";
-			function = "tdmoutd_lane1";
-		};
-	};
-
-	tdm_d7_pins: tdm_d7_pin {
-		mux {
-			groups = "tdm_d7";
-			function = "tdmoutd_lane0";
-		};
-	};
-	tdma_clk_pins: tdma_clk_pin {
-		mux {
-			groups = "tdm_sclk0", "tdm_lrclk0";
-			function = "tdm_clk_outa";
 		};
 	};
 	tdmb_clk_pins: tdmb_clk_pin {
 		mux {
-			groups = "tdm_sclk2", "tdm_lrclk2";
+			groups = "tdm_sclk0", "tdm_lrclk0";
 			function = "tdm_clk_outb";
-		};
-	};
-
-	tdmd_clk_pins: tdmd_clk_pin {
-		mux {
-			groups = "tdm_sclk1", "tdm_lrclk1";
-			//function = "tdm_clk_in";
-			function = "tdm_clk_outd";
 		};
 	};
 };

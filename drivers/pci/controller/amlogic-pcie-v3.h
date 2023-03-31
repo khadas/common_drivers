@@ -1,9 +1,6 @@
 /* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
 /*
- * Amlogic AXI PCIe controller driver
- *
- * Copyright (c) 2018 Amlogic, Inc.
- *
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
 #ifndef _PCIE_AMLOGIC_V3_H

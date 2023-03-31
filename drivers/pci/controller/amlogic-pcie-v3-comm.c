@@ -1,9 +1,6 @@
-// SPDX-License-Identifier: GPL-2.0+
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Amlogic AXI PCIe controller driver
- *
- * Copyright (c) 2016 Amlogic, Inc.
- *
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
 #include <linux/clk.h>
@@ -1122,8 +1119,8 @@ static int amlogic_pcie_init_port_for_m31_combphy(struct amlogic_pcie *amlogic)
 
 	/* phy init */
 	val = readl(amlogic->phy_base);
-	val &= ~(BIT(0) | BIT(22));
-	val |= BIT(17) | BIT(25);
+	val &= ~(BIT(0) | BIT(10) | BIT(22));
+	val |= BIT(2) | BIT(12) | BIT(17) | BIT(23) | BIT(25);
 	writel(val, amlogic->phy_base);
 	val = readl(amlogic->phy_base + 0x4);
 

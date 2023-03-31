@@ -1,8 +1,6 @@
-// SPDX-License-Identifier: GPL-2.0+
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Amlogic AXI PCIe host controller driver
- *
- * Copyright (c) 2021 Amlogic, Inc.
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
 #include <linux/bitrev.h>
@@ -336,6 +334,10 @@ static int amlogic_pcie_parse_host_dt(struct amlogic_pcie_rc *rc)
 	if (ret)
 		amlogic->phy_type = M31_PHY;
 	dev_dbg(amlogic->dev, "PCIE phy type is %d\n", amlogic->phy_type);
+
+	if (of_property_read_bool(node, "max-link-speed"))
+		of_property_read_u32(node, "max-link-speed",
+				     &amlogic->link_gen);
 
 	if (link_speed)
 		amlogic->link_gen = link_speed;

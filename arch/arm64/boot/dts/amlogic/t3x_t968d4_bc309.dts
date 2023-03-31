@@ -1986,7 +1986,7 @@
 };
 
 &amlvecm {
-	status = "disabled";
+	status = "okay";
 	gamma_en = <0>;/*1:enable ;0:disable*/
 	wb_en = <0>;/*1:enable ;0:disable*/
 	cm_en = <0>;/*1:enable ;0:disable*/
@@ -2003,6 +2003,8 @@
 	 */
 	 vlock_pll_m_limit = <1>;
 	 vlock_line_limit = <2>;
+	 interrupts = <0 103 1>;
+	 interrupt-names = "lc_curve";
 };
 
 &aml_wifi{

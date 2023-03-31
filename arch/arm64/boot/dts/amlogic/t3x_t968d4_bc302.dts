@@ -172,14 +172,16 @@
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x10000000>;
+			/* 4k TV androidT size 4M */
+			size = <0x0 0x400000>;
 			alignment = <0x0 0x400000>;
 		};
 
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
-			/* 1920x1080x4x6 round up 4M align */
-			size = <0x0 0x3400000>;
+			reusable;
+			/* 4k TV androidT size 140M */
+			size = <0x0 0x8c00000>;
 			alignment = <0x0 0x400000>;
 			//alloc-ranges = <0x0 0x20000000 0x0 0x03400000>;
 		};
@@ -1690,8 +1692,9 @@
 
 &fb {
 	status = "disabled";
-	display_size_default = <1920 1080 1920 2160 32>;
-	mem_size = <0x00800000 0x1980000 0x100000>;
+	display_size_default = <3840 2160 3840 4320 32>;
+	mem_size = <0x00800000 0x4000000 0x100000>;
+	4k2k_fb = <1>;
 	logo_addr = "0x3e800000";
 	mem_alloc = <0>;
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */

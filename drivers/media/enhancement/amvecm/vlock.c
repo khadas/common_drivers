@@ -3205,7 +3205,7 @@ void vlock_process(struct vframe_s *vf,
 			pvlock->org_enc_line_num,
 			pvlock->pre_enc_max_line);
 
-	/* todo:vlock processs only for tv chip */
+	/* todo:vlock process only for tv chip */
 	if (pvlock->dtdata->vlk_new_fsm)
 		vlock_fsm_monitor(vf, pvlock);
 }

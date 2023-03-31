@@ -615,6 +615,7 @@ static dma_addr_t event_trb_virt_to_dma
 static void req_done(struct crg_udc_ep *udc_ep,
 			struct crg_udc_request *udc_req, int status)
 {
+	unsigned long flags = 0;
 	struct crg_gadget_dev *crg_udc = udc_ep->crg_udc;
 
 	if (likely(udc_req->usb_req.status == -EINPROGRESS))
@@ -634,9 +635,9 @@ static void req_done(struct crg_udc_ep *udc_ep,
 	}
 
 	if (udc_req->usb_req.complete) {
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		udc_req->usb_req.complete(&udc_ep->usb_ep, &udc_req->usb_req);
-		spin_lock(&crg_udc->udc_lock);
+		spin_lock_irqsave(&crg_udc->udc_lock, flags);
 	}
 }
 
@@ -1095,9 +1096,9 @@ int crg_udc_queue_trbs(struct crg_udc_ep *udc_ep_ptr,
 					 * so consider zlp
 					 */
 					u8 AZP = 0;
-
+#if (!IS_ENABLED(CONFIG_AMLOGIC_USB))
 					AZP = (need_zlp ? 1 : 0);
-
+#endif
 					setup_trb(crg_udc, enq_pt, usb_req,
 						buff_len_temp, trb_buf_addr,
 						td_size - 1, pcs,
@@ -1145,6 +1146,32 @@ int crg_udc_queue_trbs(struct crg_udc_ep *udc_ep_ptr,
 		else
 			udc_req_ptr->last_trb = udc_ep_ptr->enq_pt - 1;
 	}
+
+#if IS_ENABLED(CONFIG_AMLOGIC_USB)
+	if (need_zlp) {
+		struct transfer_trb_s *enq_pt = udc_ep_ptr->enq_pt;
+
+		setup_trb(crg_udc, enq_pt, NULL,
+						0, 0,
+						0, udc_ep_ptr->pcs,
+						TRB_TYPE_XFER_NORMAL, 0,
+						0, 0,
+						0, 0, 0, 0, 0, 0, 0);
+		enq_pt++;
+		if (GETF(TRB_TYPE, enq_pt->dw3) == TRB_TYPE_LINK) {
+			if (GETF(TRB_LINK_TOGGLE_CYCLE,
+					enq_pt->dw3)) {
+				enq_pt->dw3 = SETF_VAR(TRB_CYCLE_BIT,
+					enq_pt->dw3, udc_ep_ptr->pcs);
+				udc_ep_ptr->pcs ^= 0x1;
+				/* wmb */
+				wmb();
+				enq_pt = udc_ep_ptr->first_trb;
+			}
+		}
+		udc_ep_ptr->enq_pt = enq_pt;
+	}
+#endif
 
 	return 0;
 }
@@ -1513,7 +1540,6 @@ int crg_udc_build_td(struct crg_udc_ep *udc_ep_ptr,
 			/* hold the doorbell if stream_rejected is set */
 			CRG_ERROR("%s, WANT TO have bulk stream\n", __func__);
 		}
-
 		knock_doorbell(crg_udc, udc_ep_ptr->DCI);
 	} else {
 		/* CRG_DEBUG("crg_udc_queue_trbs int\n"); */
@@ -1787,17 +1813,20 @@ static int crg_udc_ep_disable(struct usb_ep *ep)
 	struct ep_cx_s *p_ep_cx;
 	int ep_state;
 	struct crg_uccr *uccr;
+	unsigned long flags = 0;
 
 	if (!ep)
 		return -EINVAL;
 
 	udc_ep = container_of(ep, struct crg_udc_ep, usb_ep);
 	crg_udc = udc_ep->crg_udc;
+	if (!crg_udc)
+		return -EINVAL;
 
 	if (udc_ep->DCI == 0)
 		return 0;
 
-	spin_lock(&crg_udc->udc_lock);
+	spin_lock_irqsave(&crg_udc->udc_lock, flags);
 
 	uccr = crg_udc->uccr;
 	p_ep_cx = (struct ep_cx_s *)crg_udc->p_epcx + udc_ep->DCI - 2;
@@ -1805,7 +1834,7 @@ static int crg_udc_ep_disable(struct usb_ep *ep)
 	ep_state = get_ep_state(crg_udc, udc_ep->DCI);
 	if (ep_state == EP_STATE_DISABLED) {
 		/* get here if ep is already disabled */
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		return -EINVAL;
 	}
 
@@ -1848,7 +1877,7 @@ static int crg_udc_ep_disable(struct usb_ep *ep)
 
 	udc_ep->ep_state = EP_STATE_DISABLED;
 
-	spin_unlock(&crg_udc->udc_lock);
+	spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 
 	return 0;
 }
@@ -1859,6 +1888,7 @@ static int crg_udc_ep_enable(struct usb_ep *ep,
 	struct crg_udc_ep *udc_ep;
 	struct crg_gadget_dev *crg_udc;
 	u32 param0;
+	unsigned long flags = 0;
 	struct ep_cx_s *epcx;
 	struct crg_uccr *uccr;
 
@@ -1874,19 +1904,21 @@ static int crg_udc_ep_enable(struct usb_ep *ep,
 		return 0;
 
 	crg_udc = udc_ep->crg_udc;
+	if (!crg_udc)
+		return -EINVAL;
 	uccr = crg_udc->uccr;
 
 	if (!crg_udc->gadget_driver)
 		return -ESHUTDOWN;
 
-	spin_lock(&crg_udc->udc_lock);
+	spin_lock_irqsave(&crg_udc->udc_lock, flags);
 
 	/*crg ep context start from ep1*/
 	if (get_ep_state(crg_udc, udc_ep->DCI) != EP_STATE_DISABLED) {
 		CRG_DEBUG("%s disable first\n", __func__);
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		crg_udc_ep_disable(ep);
-		spin_lock(&crg_udc->udc_lock);
+		spin_lock_irqsave(&crg_udc->udc_lock, flags);
 	}
 
 	udc_ep->desc = desc;
@@ -1913,14 +1945,14 @@ static int crg_udc_ep_enable(struct usb_ep *ep,
 			else if (usb_endpoint_xfer_int(desc))
 				ring_size = CRGUDC_INT_EP_TD_RING_SIZE;
 			len = ring_size * sizeof(struct transfer_trb_s);
-			spin_unlock(&crg_udc->udc_lock);
+			spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 			vaddr = dma_alloc_coherent(crg_udc->dev, len,
 					&dma, GFP_ATOMIC);
 			if (!vaddr) {
 				CRG_ERROR("failed to allocate trb ring\n");
 				return -ENOMEM;
 			}
-			spin_lock(&crg_udc->udc_lock);
+			spin_lock_irqsave(&crg_udc->udc_lock, flags);
 
 			udc_ep->tran_ring_info.vaddr = vaddr;
 			udc_ep->tran_ring_info.dma = dma;
@@ -1956,7 +1988,7 @@ static int crg_udc_ep_enable(struct usb_ep *ep,
 	udc_ep->wedge = 0;
 	udc_ep->ep_state = EP_STATE_RUNNING;
 
-	spin_unlock(&crg_udc->udc_lock);
+	spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 
 	return 0;
 }
@@ -1998,6 +2030,7 @@ crg_udc_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
 	struct crg_udc_ep *udc_ep_ptr;
 	struct crg_gadget_dev *crg_udc;
 	int status;
+	unsigned long flags = 0;
 	int dma_data_dir = 0;
 
 	if (!_req || !_ep)
@@ -2015,7 +2048,7 @@ crg_udc_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
 	if (!crg_udc)
 		return -EINVAL;
 
-	spin_lock(&crg_udc->udc_lock);
+	spin_lock_irqsave(&crg_udc->udc_lock, flags);
 
 	if (!udc_ep_ptr->first_trb ||
 		!udc_req_ptr->usb_req.complete ||
@@ -2034,7 +2067,7 @@ crg_udc_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
 		if (!list_empty(&udc_req_ptr->queue))
 			CRG_DEBUG("%s, list not empty\n", __func__);
 
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		return -EINVAL;
 	}
 	xdebug("enqueue EPDCI = 0x%x\n", udc_ep_ptr->DCI);
@@ -2042,7 +2075,7 @@ crg_udc_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
 
 	if (!udc_ep_ptr->desc) {
 		CRG_DEBUG("udc_ep_ptr->Desc is null\n");
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		return -EINVAL;
 	}
 	/* wmb */
@@ -2060,7 +2093,7 @@ crg_udc_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
 		build_ep0_status(&crg_udc->udc_ep[0], false, status,
 			udc_req_ptr, 0, 0);
 		CRG_DEBUG("act status request for control endpoint\n");
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		return 0;
 	}
 
@@ -2108,7 +2141,7 @@ crg_udc_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
 	if (!status)
 		list_add_tail(&udc_req_ptr->queue, &udc_ep_ptr->queue);
 
-	spin_unlock(&crg_udc->udc_lock);
+	spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 
 	return status;
 }
@@ -2127,6 +2160,7 @@ crg_udc_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 	u32 deq_pt_lo, deq_pt_hi;
 	u64 dq_pt_addr;
 	u8 DCI;
+	unsigned long flags = 0;
 
 	if (!_ep || !_req)
 		return -EINVAL;
@@ -2136,7 +2170,7 @@ crg_udc_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 	uccr = crg_udc->uccr;
 	DCI = udc_ep_ptr->DCI;
 
-	spin_lock(&crg_udc->udc_lock);
+	spin_lock_irqsave(&crg_udc->udc_lock, flags);
 
 	CRG_DEBUG("%s EPDCI = 0x%x\n", __func__, DCI);
 	old_ep_state = get_ep_state(crg_udc, DCI);
@@ -2160,7 +2194,7 @@ crg_udc_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 
 	if (&udc_req->usb_req != _req) {
 		CRG_DEBUG("did not find the request in request queue\n");
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		return -EINVAL;
 	}
 	/* Request hasn't been queued to transfer ring yet
@@ -2168,7 +2202,7 @@ crg_udc_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 	 */
 	if (!udc_req->first_trb) {
 		req_done(udc_ep_ptr, udc_req, -ECONNRESET);
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		return 0;
 	}
 
@@ -2176,7 +2210,7 @@ crg_udc_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 	 * transfer ring, it cannot be dequeued
 	 */
 	if (DCI == 0) {
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		return -EINVAL;
 	}
 
@@ -2208,7 +2242,7 @@ crg_udc_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 		 */
 		CRG_DEBUG(" Request has been complete by HW, reject request\n");
 		req_done(udc_ep_ptr, udc_req, -ECONNRESET);
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		return -EINVAL;
 
 	} else {
@@ -2257,7 +2291,7 @@ crg_udc_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 		udc_ep_ptr->ep_state = EP_STATE_RUNNING;
 	}
 
-	spin_unlock(&crg_udc->udc_lock);
+	spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 
 	return 0;
 }
@@ -2266,6 +2300,7 @@ static int crg_udc_ep_set_halt(struct usb_ep *_ep, int value)
 {
 	struct crg_udc_ep *udc_ep_ptr;
 	int status;
+	unsigned long flags = 0;
 	struct crg_gadget_dev *crg_udc;
 
 	if (!_ep)
@@ -2274,18 +2309,18 @@ static int crg_udc_ep_set_halt(struct usb_ep *_ep, int value)
 	udc_ep_ptr = container_of(_ep, struct crg_udc_ep, usb_ep);
 	crg_udc = udc_ep_ptr->crg_udc;
 
-	spin_lock(&crg_udc->udc_lock);
+	spin_lock_irqsave(&crg_udc->udc_lock, flags);
 
 	if (value && usb_endpoint_dir_in(udc_ep_ptr->desc) &&
 			!list_empty(&udc_ep_ptr->queue)) {
 		CRG_ERROR("set_halt: list not empty\n");
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		return -EAGAIN;
 	}
 
 	status = ep_halt(udc_ep_ptr, value, 1);
 
-	spin_unlock(&crg_udc->udc_lock);
+	spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 
 	return status;
 }
@@ -2294,6 +2329,7 @@ static int crg_udc_ep_set_wedge(struct usb_ep *_ep)
 {
 	struct crg_udc_ep *udc_ep_ptr;
 	int status;
+	unsigned long flags = 0;
 	struct crg_gadget_dev *crg_udc;
 
 	if (!_ep)
@@ -2302,13 +2338,13 @@ static int crg_udc_ep_set_wedge(struct usb_ep *_ep)
 	udc_ep_ptr = container_of(_ep, struct crg_udc_ep, usb_ep);
 	crg_udc = udc_ep_ptr->crg_udc;
 
-	spin_lock(&crg_udc->udc_lock);
+	spin_lock_irqsave(&crg_udc->udc_lock, flags);
 
 	udc_ep_ptr->wedge = 1;
 
 	status = ep_halt(udc_ep_ptr, 1, 1);
 
-	spin_unlock(&crg_udc->udc_lock);
+	spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 
 	return status;
 }
@@ -2734,9 +2770,9 @@ static int init_ep0(struct crg_gadget_dev *crg_udc)
 
 static int EP0_Start(struct crg_gadget_dev *crg_udc)
 {
-	spin_lock(&crg_udc->udc_lock);
+	//spin_lock(&crg_udc->udc_lock);
 	crg_udc->udc_ep[0].desc = &crg_udc_ep0_desc;
-	spin_unlock(&crg_udc->udc_lock);
+//	spin_unlock(&crg_udc->udc_lock);
 	return 0;
 }
 
@@ -2809,6 +2845,7 @@ void crg_udc_reinit(struct crg_gadget_dev *crg_udc)
 {
 	struct crg_uccr *uccr = crg_udc->uccr;
 	u32 i, tmp;
+	unsigned long flags = 0;
 	struct crg_udc_ep *udc_ep_ptr;
 
 	crg_udc->setup_status = WAIT_FOR_SETUP;
@@ -2857,9 +2894,9 @@ void crg_udc_reinit(struct crg_gadget_dev *crg_udc)
 
 	if (crg_udc->gadget_driver) {
 		CRG_DEBUG("calling disconnect\n");
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 		crg_udc->gadget_driver->disconnect(&crg_udc->gadget);
-		spin_lock(&crg_udc->udc_lock);
+		spin_lock_irqsave(&crg_udc->udc_lock, flags);
 	}
 }
 
@@ -2998,13 +3035,14 @@ static void crg_reg_dump(struct crg_gadget_dev *crg_udc)
 static int crg_gadget_stop(struct usb_gadget *g)
 {
 	struct crg_gadget_dev *crg_udc;
+	unsigned long flags = 0;
 
 	crg_udc = gadget_to_udc(g);
 
 	crg_udc->device_state = USB_STATE_ATTACHED;
 	crg_vbus_detect(crg_udc, 0);
 
-	spin_lock(&crg_udc->udc_lock);
+	spin_lock_irqsave(&crg_udc->udc_lock, flags);
 
 	crg_reg_dump(crg_udc);
 
@@ -3017,7 +3055,7 @@ static int crg_gadget_stop(struct usb_gadget *g)
 
 	init_ep0(crg_udc);
 
-	spin_unlock(&crg_udc->udc_lock);
+	spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 
 	return 0;
 }
@@ -3558,6 +3596,7 @@ void crg_handle_setup_pkt(struct crg_gadget_dev *crg_udc,
 	u16 wIndex = setup_pkt->wIndex;
 	u16 wLength = setup_pkt->wLength;
 	u64 wData = 0;
+	unsigned long flags = 0;
 
 	CRG_DEBUG("bRequest=0x%x, wValue=0x%.4x, wIndex=0x%x, wLength=%d\n",
 			setup_pkt->bRequest, wValue, wIndex, wLength);
@@ -3668,13 +3707,13 @@ void crg_handle_setup_pkt(struct crg_gadget_dev *crg_udc,
 			(setup_pkt->bRequestType & USB_DIR_IN) ?
 			DATA_STAGE_XFER :  DATA_STAGE_RECV;
 	}
-	spin_unlock(&crg_udc->udc_lock);
+	spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 	if (crg_udc->gadget_driver->setup(&crg_udc->gadget, setup_pkt) < 0) {
-		spin_lock(&crg_udc->udc_lock);
+		spin_lock_irqsave(&crg_udc->udc_lock, flags);
 		set_ep0_halt(crg_udc);
 		return;
 	}
-	spin_lock(&crg_udc->udc_lock);
+	spin_lock_irqsave(&crg_udc->udc_lock, flags);
 }
 
 int crg_handle_xfer_event(struct crg_gadget_dev *crg_udc,
@@ -3934,6 +3973,7 @@ int crg_handle_port_status(struct crg_gadget_dev *crg_udc)
 	u32 portsc_val;
 	u32 tmp;
 	u32 speed;
+	unsigned long flags = 0;
 
 	/* handle Port Reset */
 	portsc_val = reg_read(&uccr->portsc);
@@ -4083,10 +4123,10 @@ int crg_handle_port_status(struct crg_gadget_dev *crg_udc)
 					crg_udc_reset(crg_udc);
 
 					if (crg_udc->gadget_driver->disconnect) {
-						spin_unlock(&crg_udc->udc_lock);
+						spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 						crg_udc->gadget_driver->disconnect
 							(&crg_udc->gadget);
-						spin_lock(&crg_udc->udc_lock);
+						spin_lock_irqsave(&crg_udc->udc_lock, flags);
 					}
 					reset_data_struct(crg_udc);
 					crg_udc->connected = 0;
@@ -4099,9 +4139,9 @@ int crg_handle_port_status(struct crg_gadget_dev *crg_udc)
 
 				crg_udc_reset(crg_udc);
 				if (crg_udc->gadget_driver->disconnect) {
-					spin_unlock(&crg_udc->udc_lock);
+					spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 					crg_udc->gadget_driver->disconnect(&crg_udc->gadget);
-					spin_lock(&crg_udc->udc_lock);
+					spin_lock_irqsave(&crg_udc->udc_lock, flags);
 				}
 
 				reset_data_struct(crg_udc);
@@ -4126,11 +4166,11 @@ int crg_handle_port_status(struct crg_gadget_dev *crg_udc)
 			CRG_DEBUG("pls to 0, write portsc 0x%x\n", tmp);
 		}  else if (CRG_U3DC_PORTSC_PLS_GET(tmp) == 0x3) {
 			if (crg_udc->gadget_driver->disconnect) {
-				spin_unlock(&crg_udc->udc_lock);
+				spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 				if (crg_udc->crg_gadget_lock.wakesrc)
 					crg_gadget_drop(&crg_udc->crg_gadget_lock);
 				crg_udc->gadget_driver->disconnect(&crg_udc->gadget);
-				spin_lock(&crg_udc->udc_lock);
+				spin_lock_irqsave(&crg_udc->udc_lock, flags);
 			}
 		}
 	}
@@ -4161,7 +4201,6 @@ int crg_udc_handle_event(struct crg_gadget_dev *crg_udc,
 				crg_udc->device_state);
 			break;
 		}
-
 		crg_handle_xfer_event(crg_udc, event);
 		break;
 	case TRB_TYPE_EVT_SETUP_PKT:
@@ -4265,11 +4304,11 @@ int crg_gadget_handle_interrupt(struct crg_gadget_dev *crg_udc)
 {
 	struct crg_uccr *uccr = crg_udc->uccr;
 	u32 tmp_status;
+	unsigned long flags = 0;
 
-	spin_lock(&crg_udc->udc_lock);
+	spin_lock_irqsave(&crg_udc->udc_lock, flags);
 
 	/******************************/
-
 	tmp_status = reg_read(&uccr->status);
 
 	if (tmp_status & CRG_U3DC_STATUS_SYS_ERR) {
@@ -4301,7 +4340,7 @@ int crg_gadget_handle_interrupt(struct crg_gadget_dev *crg_udc)
 		prepare_for_setup(crg_udc);
 	}
 
-	spin_unlock(&crg_udc->udc_lock);
+	spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 
 	return 0;
 }
@@ -4311,7 +4350,6 @@ static irqreturn_t crg_udc_common_irq(int irq, void *dev)
 	int retval = 0;
 
 	retval = crg_gadget_handle_interrupt(dev);
-
 	return IRQ_HANDLED;
 }
 
@@ -4383,6 +4421,7 @@ static DEVICE_ATTR_RW(udc_debug);
 static int crg_vbus_detect_thread(void *data)
 {
 	struct crg_gadget_dev *crg_udc = &crg_udc_dev;
+	unsigned long flags = 0;
 	int cable_connected = 0;
 
 	while (1) {
@@ -4392,11 +4431,11 @@ static int crg_vbus_detect_thread(void *data)
 		CRG_DEBUG("crg_udc->device_state is %d\n",
 					crg_udc->device_state);
 
-		spin_lock(&crg_udc->udc_lock);
+		spin_lock_irqsave(&crg_udc->udc_lock, flags);
 
 		cable_connected = g_dnl_board_usb_cable_connected();
 
-		spin_unlock(&crg_udc->udc_lock);
+		spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
 
 		if (cable_connected) {
 			wait_event_interruptible

@@ -3287,7 +3287,7 @@ static struct i2c_driver gc2145_i2c_driver = {
 };
 
 //module_i2c_driver(gc2145_i2c_driver);
-int __init gc2145_mipi_i2c_driver_init(void)
+int gc2145_mipi_i2c_driver_init(void)
 {
 	return i2c_add_driver(&gc2145_i2c_driver);
 }

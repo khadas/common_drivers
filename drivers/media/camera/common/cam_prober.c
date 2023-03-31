@@ -622,8 +622,10 @@ int __init gc2145_mipi_v4l2_probe(struct i2c_adapter *adapter)
 	reg[0] = aml_i2c_get_byte_add8(adapter, 0x3c, 0xf0);
 	reg[1] = aml_i2c_get_byte_add8(adapter, 0x3c, 0xf1);
 	/*datasheet chip id is error*/
-	if (reg[0] == 0x21 && reg[1] == 0x45)
+	if (reg[0] == 0x21 && reg[1] == 0x45) {
 		ret = 1;
+		gc2145_mipi_i2c_driver_init();
+	}
 	pr_info("%s, ret = %d\n", __func__, ret);
 	return ret;
 }

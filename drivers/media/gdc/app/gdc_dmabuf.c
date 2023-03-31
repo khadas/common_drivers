@@ -104,9 +104,12 @@ static void aml_dma_put(void *buf_priv)
 	void *vaddr = (void *)(PAGE_MASK & (ulong)buf->vaddr);
 
 	if (!atomic_dec_and_test(&buf->refcount)) {
-		gdc_log(LOG_DEBUG, "%s, refcont=%d\n",
-			__func__, atomic_read(&buf->refcount));
+		gdc_log(LOG_DEBUG, "%s, aml_dma_buf=0x%p, refcount=%d\n",
+			__func__, buf, atomic_read(&buf->refcount));
 		return;
+	} else {
+		gdc_log(LOG_DEBUG, "%s, aml_dma_buf=0x%p, refcount=%d\n",
+			__func__, buf, atomic_read(&buf->refcount));
 	}
 	cma_pages = phys_to_page(buf->dma_addr);
 	if (_is_vmalloc_or_module_addr(vaddr))
@@ -172,7 +175,7 @@ static void *aml_dma_alloc(struct device *dev, unsigned long attrs,
 	buf->dma_dir = dma_dir;
 	buf->dma_addr = paddr;
 	atomic_inc(&buf->refcount);
-	gdc_log(LOG_DEBUG, "aml_dma_buf=0x%p, refcont=%d\n",
+	gdc_log(LOG_DEBUG, "aml_dma_buf=0x%p, refcount=%d\n",
 		buf, atomic_read(&buf->refcount));
 
 	return buf;
@@ -321,8 +324,7 @@ static void aml_dmabuf_ops_unmap(struct dma_buf_attachment *db_attach,
 
 static void aml_dmabuf_ops_release(struct dma_buf *dbuf)
 {
-	/* drop reference obtained in vb2_dc_get_dmabuf */
-	aml_dma_put(dbuf->priv);
+	/* nothing to be done here */
 }
 
 static int aml_dmabuf_ops_vmap(struct dma_buf *dbuf, struct dma_buf_map *map)
@@ -371,8 +373,8 @@ static struct dma_buf *get_dmabuf(void *buf_priv, unsigned long flags)
 
 	/* dmabuf keeps reference to vb2 buffer */
 	atomic_inc(&buf->refcount);
-	gdc_log(LOG_DEBUG, "%s, refcount=%d\n",
-		__func__, atomic_read(&buf->refcount));
+	gdc_log(LOG_DEBUG, "%s, aml_dma_buf=0x%p, refcount=%d\n",
+		__func__, buf, atomic_read(&buf->refcount));
 
 	return dbuf;
 }
@@ -529,8 +531,9 @@ int gdc_dma_buffer_export(struct aml_dma_buffer *buffer,
 		dma_buf_put(dbuf);
 		return ret;
 	}
-	gdc_log(LOG_DEBUG, "buffer %d,exported as %d descriptor\n",
-		index, ret);
+	gdc_log(LOG_DEBUG,
+		"buffer %d,exported as %d descriptor, aml_dma_buf(buf)=0x%p, dmabuf=0x%p\n",
+		index, ret, buf, dbuf);
 	buffer->gd_buffer[index].fd = ret;
 	buffer->gd_buffer[index].dbuf = dbuf;
 	gdc_exp_buf->fd = ret;

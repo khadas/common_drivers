@@ -32,13 +32,14 @@
 #include "ddr_mngr.h"
 #include "vad.h"
 #include "pdm_hw_coeff.h"
+#include "audio_controller.h"
 
 #define DRV_NAME "snd_pdm"
 #define DRV_NAME_B "snd_pdm_b"
 #define PDM_BUFFER_BYTES (512 * 1024)
 
 //#define DEBUG
-
+#define to_aml_pdm(x)   container_of(x, struct aml_pdm, clk_nb)
 static struct snd_pcm_hardware aml_pdm_hardware = {
 	.info			=
 					SNDRV_PCM_INFO_MMAP |
@@ -857,11 +858,21 @@ static int aml_pdm_dai_set_sysclk(struct snd_soc_dai *cpu_dai,
 
 	clk_name = (char *)__clk_get_name(p_pdm->dclk_srcpll);
 	if (!strcmp(clk_name, "hifi_pll") || !strcmp(clk_name, "t5_hifi_pll")) {
-		pr_info("%s:set hifi pll\n", __func__);
-		if (p_pdm->syssrc_clk_rate)
-			clk_set_rate(p_pdm->dclk_srcpll, p_pdm->syssrc_clk_rate);
-		else
-			clk_set_rate(p_pdm->dclk_srcpll, 1806336 * 1000);
+		if (!(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+			pr_err("%s:set hifi pll\n", __func__);
+			if (p_pdm->syssrc_clk_rate)
+				clk_set_rate(p_pdm->dclk_srcpll, p_pdm->syssrc_clk_rate);
+			else
+				clk_set_rate(p_pdm->dclk_srcpll, 1806336 * 1000);
+		} else if (!strcmp(__clk_get_name(clk_get_parent(p_pdm->clk_pdm_dclk)),
+			clk_name)) {
+			/* T5M use clock notify, if parent changed to hifi1, no need set */
+			if (p_pdm->syssrc_clk_rate)
+				clk_set_rate(p_pdm->dclk_srcpll,
+								p_pdm->syssrc_clk_rate);
+			else
+				clk_set_rate(p_pdm->dclk_srcpll, 1806336 * 1000);
+		}
 	} else {
 		if (dclk_srcpll_freq == 0)
 			clk_set_rate(p_pdm->dclk_srcpll, 24576000 * 20);
@@ -1059,6 +1070,53 @@ static void aml_pdm_train_debug_work(struct work_struct *debug)
 	p_pdm->pdm_train_debug = 0;
 }
 
+static int aml_pdm_clock_notifier(struct notifier_block *nb,
+		unsigned long event, void *data)
+{
+	struct clk_notifier_data *ndata = data;
+	struct aml_pdm *p_pdm = to_aml_pdm(nb);
+	int ret = 0;
+
+	switch (event) {
+	case PRE_RATE_CHANGE:
+		/* always use 48k domain whenever use hifi0 or hifi1 default
+		 * or changed by the other modules
+		 */
+		if (abs(ndata->old_rate - ndata->new_rate) < THRESHOLD_HIFI1)
+			break;
+		pr_info("%s() PRE_RATE_CHANGE clk rate %lu->%lu\n",
+			__func__, ndata->old_rate, ndata->new_rate);
+		if ((abs(ndata->old_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1) &&
+				(abs(ndata->new_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0)) {
+			if (!IS_ERR(p_pdm->dclk_srcpll)) {
+				ret = clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->dclk_srcpll);
+				if (ret) {
+					pr_err("can't set tdm parent cd clock\n");
+					break;
+				}
+				clk_set_rate(p_pdm->clk_pdm_dclk,
+							pdm_dclkidx2rate(p_pdm->dclk_idx));
+			}
+		} else if ((abs(ndata->old_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0) &&
+				(abs(ndata->new_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1)) {
+			if (!IS_ERR(p_pdm->clk_src_cd)) {
+				ret = clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->clk_src_cd);
+				if (ret) {
+					pr_err("can't set tdm parent cd clock\n");
+					break;
+				}
+				clk_set_rate(p_pdm->clk_pdm_dclk,
+							pdm_dclkidx2rate(p_pdm->dclk_idx));
+			}
+		}
+		break;
+	case POST_RATE_CHANGE:
+	default:
+		break;
+	}
+	return NOTIFY_DONE;
+}
+
 static int aml_pdm_platform_probe(struct platform_device *pdev)
 {
 	struct aml_pdm *p_pdm;
@@ -1170,6 +1228,16 @@ static int aml_pdm_platform_probe(struct platform_device *pdev)
 		goto err;
 	}
 
+	if ((!IS_ERR(p_pdm->dclk_srcpll)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+		p_pdm->clk_nb.notifier_call = aml_pdm_clock_notifier;
+		ret = clk_notifier_register(p_pdm->dclk_srcpll, &p_pdm->clk_nb);
+		if (ret)
+			dev_err(&pdev->dev, "unable to register clock notifier\n");
+	}
+
+	p_pdm->clk_src_cd = devm_clk_get(&pdev->dev, "clk_src_cd");
+	if (IS_ERR(p_pdm->clk_src_cd))
+		dev_warn(&pdev->dev, "no clk_src_cd clock for 44k case\n");
 	ret = snd_soc_of_get_slot_mask(node, "lane-mask-in",
 				       &p_pdm->lane_mask_in);
 	if (!ret) {
@@ -1338,6 +1406,7 @@ static void pdm_platform_shutdown(struct platform_device *pdev)
 {
 	struct aml_pdm *p_pdm = dev_get_drvdata(&pdev->dev);
 	int id = p_pdm->chipinfo->id;
+	int ret = 0;
 
 	pr_info("pdm shutdown entry\n");
 	/* whether in freeze */
@@ -1349,6 +1418,12 @@ static void pdm_platform_shutdown(struct platform_device *pdev)
 		pr_debug("%s, PDM suspend in lowpower mode by force:%d\n",
 			__func__,
 			p_pdm->force_lowpower);
+	}
+
+	if ((!IS_ERR(p_pdm->dclk_srcpll)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+		ret = clk_notifier_unregister(p_pdm->dclk_srcpll, &p_pdm->clk_nb);
+		if (ret)
+			return;
 	}
 }
 

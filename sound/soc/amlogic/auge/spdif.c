@@ -42,6 +42,7 @@
 #include "iec_info.h"
 #include "audio_utils.h"
 #include "card.h"
+#include "audio_controller.h"
 
 #define DRV_NAME "snd_spdif"
 
@@ -69,6 +70,7 @@ struct aml_spdif {
 	struct clk *gate_spdifin;
 	struct clk *gate_spdifout;
 	struct clk *sysclk;
+	struct notifier_block clk_nb;
 	/* for 44100hz samplerate */
 	struct clk *clk_src_cd;
 	struct clk *fixed_clk;
@@ -118,6 +120,7 @@ unsigned int get_spdif_source_l_config(int id)
 	return spdif_priv[id]->l_src;
 }
 
+#define to_aml_spdif(x)   container_of(x, struct aml_spdif, clk_nb)
 #define SPDIF_BUFFER_BYTES (512 * 1024 * 2)
 static const struct snd_pcm_hardware aml_spdif_hardware = {
 	.info =
@@ -581,6 +584,7 @@ static void aml_spdif_platform_shutdown(struct platform_device *pdev)
 	struct aml_spdif *p_spdif = dev_get_drvdata(&pdev->dev);
 	struct pinctrl_state *pstate = NULL;
 	int stream = SNDRV_PCM_STREAM_PLAYBACK;
+	int ret = 0;
 
 	if (!IS_ERR_OR_NULL(p_spdif->pin_ctl)) {
 		pstate = pinctrl_lookup_state
@@ -594,6 +598,11 @@ static void aml_spdif_platform_shutdown(struct platform_device *pdev)
 		regulator_disable(p_spdif->regulator_vcc5v);
 	if (!IS_ERR_OR_NULL(p_spdif->regulator_vcc3v3))
 		regulator_disable(p_spdif->regulator_vcc3v3);
+	if ((!IS_ERR(p_spdif->sysclk)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+		ret = clk_notifier_unregister(p_spdif->sysclk, &p_spdif->clk_nb);
+		if (ret)
+			return;
+	}
 
 	pr_debug("%s is mute\n", __func__);
 }
@@ -1290,6 +1299,16 @@ static void aml_dai_spdif_shutdown(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *cpu_dai)
 {
 	struct aml_spdif *p_spdif = snd_soc_dai_get_drvdata(cpu_dai);
+	char *clk_name = (char *)__clk_get_name(p_spdif->sysclk);
+
+	if (p_spdif->standard_sysclk % 11025 == 0) {
+		if (!strcmp(__clk_get_name(clk_get_parent(p_spdif->clk_spdifout)),
+				__clk_get_name(p_spdif->sysclk))) {
+			if (!strcmp(clk_name, "hifi_pll")) {
+				clk_set_rate(p_spdif->sysclk, MPLL_HBR_FIXED_FREQ);
+			}
+		}
+	}
 
 	/* disable clock and gate */
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
@@ -1550,9 +1569,6 @@ static int aml_dai_spdif_hw_free(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-#define MPLL_HBR_FIXED_FREQ   (491520000)
-#define MPLL_CD_FIXED_FREQ    (451584000)
-
 static void aml_set_spdifclk_s4(struct aml_spdif *p_spdif,
 		int freq, bool tune)
 {
@@ -1631,7 +1647,9 @@ static void aml_set_spdifclk_1(struct aml_spdif *p_spdif, int freq, bool tune)
 		while (mpll_freq > AML_MPLL_FREQ_MAX)
 			mpll_freq = mpll_freq >> 1;
 
-		if (!strcmp(clk_name, "hifi_pll") || !strcmp(clk_name, "t5_hifi_pll")) {
+		if (!strcmp(__clk_get_name(clk_get_parent(p_spdif->clk_spdifout)), clk_name) &&
+			(!strcmp(clk_name, "hifi_pll") || !strcmp(clk_name, "t5_hifi_pll"))
+			) {
 			if (p_spdif->syssrc_clk_rate)
 				clk_set_rate(p_spdif->sysclk,
 					p_spdif->syssrc_clk_rate);
@@ -1659,29 +1677,47 @@ static void aml_set_spdifclk_1(struct aml_spdif *p_spdif, int freq, bool tune)
 static void aml_set_spdifclk_2(struct aml_spdif *p_spdif, int freq, bool tune)
 {
 	int ratio = 0;
+	char *clk_name = (char *)__clk_get_name(p_spdif->sysclk);
 
 	if (freq == 0) {
 		dev_err(p_spdif->dev, "%s(), clk 0 err\n", __func__);
 		return;
 	}
 
-	pr_info("%s: spdif_id %d, freq = %d, tune = %d\n",
-			__func__, p_spdif->id, freq, tune);
-
 	if (p_spdif->standard_sysclk % 8000 == 0) {
-		ratio = MPLL_HBR_FIXED_FREQ / p_spdif->standard_sysclk;
-		clk_set_rate(p_spdif->sysclk, freq * ratio);
-
-		spdif_set_audio_clk(p_spdif->id,
-			p_spdif->sysclk,
-			freq, 0, tune);
+		if (!(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+			ratio = MPLL_HBR_FIXED_FREQ / p_spdif->standard_sysclk;
+			clk_set_rate(p_spdif->sysclk, freq * ratio);
+			spdif_set_audio_clk(p_spdif->id,
+				p_spdif->sysclk,
+				freq, 0, tune);
+		} else if (!strcmp(__clk_get_name(clk_get_parent(p_spdif->clk_spdifout)),
+			clk_name) &&
+			!strcmp(clk_name, "hifi_pll")) {
+			ratio = MPLL_HBR_FIXED_FREQ / p_spdif->standard_sysclk;
+			clk_set_rate(p_spdif->sysclk, freq * ratio);
+			spdif_set_audio_clk(p_spdif->id,
+				p_spdif->sysclk,
+				freq, 0, tune);
+		}
 	} else if (p_spdif->standard_sysclk % 11025 == 0) {
 		ratio = MPLL_CD_FIXED_FREQ / p_spdif->standard_sysclk;
-		clk_set_rate(p_spdif->clk_src_cd, freq * ratio);
-
-		spdif_set_audio_clk(p_spdif->id,
-			p_spdif->clk_src_cd,
-			freq, 0, tune);
+		/* 1. when 44.1k with hifi notify first, do not set clk ,or it will change cd value
+		 * 2. dd ddp 44.1k sequence, only set the freq, hifi value has been changed before
+		 */
+		if (!strcmp(__clk_get_name(clk_get_parent(p_spdif->clk_spdifout)), clk_name) &&
+			!strcmp(clk_name, "hifi_pll") &&
+			(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+			clk_set_rate(p_spdif->sysclk, freq * ratio);
+			spdif_set_audio_clk(p_spdif->id,
+				p_spdif->sysclk,
+				freq, 0, tune);
+		} else {
+			clk_set_rate(p_spdif->clk_src_cd, freq * ratio);
+			spdif_set_audio_clk(p_spdif->id,
+				p_spdif->clk_src_cd,
+				freq, 0, tune);
+		}
 	} else {
 		dev_warn(p_spdif->dev, "unsupport clock rate %d\n", p_spdif->standard_sysclk);
 	}
@@ -1807,6 +1843,40 @@ static const struct snd_soc_component_driver aml_spdif_component[] = {
 	}
 };
 
+static int aml_spdif_clock_notifier(struct notifier_block *nb,
+		unsigned long event, void *data)
+{
+	struct clk_notifier_data *ndata = data;
+	struct aml_spdif *p_spdif = to_aml_spdif(nb);
+	int ret = 0;
+
+	switch (event) {
+	case PRE_RATE_CHANGE:
+		/* must not set rate, because the sysclk maybe 49152+-change
+		 * clk_set_rate(p_spdif->sysclk, MPLL_CD_FIXED_FREQ);
+		 * need exchange the same as earc with hifi 44.1k domain,
+		 * while change back to 48k domain ,no need setting
+		 */
+		if (abs(ndata->old_rate - ndata->new_rate) < THRESHOLD_HIFI1)
+			break;
+		pr_info("%s() PRE_RATE_CHANGE clk rate %lu->%lu\n",
+			__func__, ndata->old_rate, ndata->new_rate);
+		if (p_spdif->standard_sysclk &&
+			(p_spdif->standard_sysclk % 11025 == 0)) {
+			ret = clk_set_parent(p_spdif->clk_spdifout, p_spdif->sysclk);
+			if (ret) {
+				dev_warn(p_spdif->dev, "can't set p_spdif parent cd clock\n");
+				break;
+			}
+		}
+		break;
+	case POST_RATE_CHANGE:
+	default:
+		break;
+	}
+	return NOTIFY_DONE;
+}
+
 static int aml_spdif_parse_of(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -1908,6 +1978,13 @@ static int aml_spdif_parse_of(struct platform_device *pdev)
 	if (IS_ERR(p_spdif->clk_spdifout)) {
 		dev_err(dev, "Can't retrieve spdifout clock\n");
 		return PTR_ERR(p_spdif->clk_spdifout);
+	}
+
+	if ((!IS_ERR(p_spdif->sysclk)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+		p_spdif->clk_nb.notifier_call = aml_spdif_clock_notifier;
+		ret = clk_notifier_register(p_spdif->sysclk, &p_spdif->clk_nb);
+		if (ret)
+			dev_err(&pdev->dev, "unable to register clock notifier\n");
 	}
 
 	p_spdif->clk_src_cd = devm_clk_get(&pdev->dev, "clk_src_cd");

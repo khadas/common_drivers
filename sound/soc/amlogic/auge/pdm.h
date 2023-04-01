@@ -57,6 +57,9 @@ struct aml_pdm {
 	struct aml_audio_controller *actrl;
 	struct pinctrl *pdm_pins;
 	struct clk *clk_gate;
+	struct notifier_block clk_nb;
+	/* for 44100hz samplerate */
+	struct clk *clk_src_cd;
 	/* sel: fclk_div3(666M) */
 	struct clk *sysclk_srcpll;
 	/* consider same source with tdm, 48k(24576000) */

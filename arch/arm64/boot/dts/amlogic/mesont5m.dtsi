@@ -1444,12 +1444,14 @@
 						&clkaudio CLKID_EARCTX_DMAC
 						&clkc CLKID_FCLK_DIV4
 						&clkc CLKID_HIFI_PLL
+						&clkc CLKID_HIFI_PLL
 						>;
 				clock-names =
 						"tx_cmdc",
 						"tx_dmac",
 						"tx_cmdc_srcpll",
-						"tx_dmac_srcpll";
+						"tx_dmac_srcpll",
+						"clk_src_cd";
 
 				interrupts = <
 						GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;

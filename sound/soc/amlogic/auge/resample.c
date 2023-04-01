@@ -25,6 +25,7 @@
 #include "resample_hw.h"
 #include "frhdmirx_hw.h"
 #include "loopback.h"
+#include "audio_controller.h"
 
 #define DRV_NAME "audioresample"
 
@@ -50,6 +51,10 @@ struct audioresample {
 	struct clk *sclk;
 	/* resample clk */
 	struct clk *clk;
+	/* for hifi1 pll */
+	struct clk *clk_src_cd;
+
+	struct notifier_block clk_nb;
 
 	struct resample_chipinfo *chipinfo;
 
@@ -77,6 +82,7 @@ struct audioresample *s_resample_a;
 
 struct audioresample *s_resample_b;
 
+#define to_aml_src(x)   container_of(x, struct audioresample, clk_nb)
 struct audioresample *get_audioresample(enum resample_idx id)
 {
 	struct audioresample *p_resample;
@@ -183,12 +189,22 @@ static int resample_clk_set(struct audioresample *p_resample, int output_sr)
 
 	clk_name = (char *)__clk_get_name(p_resample->pll);
 	if (!strcmp(clk_name, "hifi_pll") || !strcmp(clk_name, "t5_hifi_pll")) {
-		pr_info("%s:set hifi pll\n", __func__);
-		if (p_resample->syssrc_clk_rate)
-			clk_set_rate(p_resample->pll,
-				p_resample->syssrc_clk_rate);
-		else
-			clk_set_rate(p_resample->pll, 1806336 * 1000);
+		if (!(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+			pr_info("%s:set hifi pll\n", __func__);
+			if (p_resample->syssrc_clk_rate)
+				clk_set_rate(p_resample->pll,
+					p_resample->syssrc_clk_rate);
+			else
+				clk_set_rate(p_resample->pll, 1806336 * 1000);
+		} else if (!strcmp(__clk_get_name(clk_get_parent(p_resample->sclk)),
+			clk_name)) {
+			/* T5M use clock notify, if parent changed to hifi1, no need set */
+			if (p_resample->syssrc_clk_rate)
+				clk_set_rate(p_resample->pll,
+					p_resample->syssrc_clk_rate);
+			else
+				clk_set_rate(p_resample->pll, 1806336 * 1000);
+		}
 	} else {
 		/* default tdm out mclk to resample clk */
 		/* for same with earctx, so need *5 */
@@ -771,6 +787,45 @@ static int resample_platform_resume(struct platform_device *pdev)
 	return 0;
 }
 
+static int aml_resample_clock_notifier(struct notifier_block *nb,
+		unsigned long event, void *data)
+{
+	struct clk_notifier_data *ndata = data;
+	struct audioresample *p_resample = to_aml_src(nb);
+	int ret = 0;
+
+	switch (event) {
+	case PRE_RATE_CHANGE:
+		/* resample always use 48k domain */
+		if (abs(ndata->old_rate - ndata->new_rate) < THRESHOLD_HIFI1)
+			break;
+		pr_info("%s() PRE_RATE_CHANGE clk rate %lu->%lu\n",
+			__func__, ndata->old_rate, ndata->new_rate);
+		if (!IS_ERR(p_resample->pll) && !IS_ERR(p_resample->clk_src_cd)) {
+			if ((abs(ndata->old_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1) &&
+				(abs(ndata->new_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0)) {
+				ret = clk_set_parent(p_resample->sclk, p_resample->pll);
+				if (ret) {
+					pr_err("can't set resample parent cd clock\n");
+					break;
+				}
+			} else if ((abs(ndata->old_rate - MPLL_HBR_FIXED_FREQ) < THRESHOLD_HIFI0) &&
+				(abs(ndata->new_rate - MPLL_CD_FIXED_FREQ) < THRESHOLD_HIFI1)) {
+				ret = clk_set_parent(p_resample->sclk, p_resample->clk_src_cd);
+				if (ret) {
+					pr_err("can't set resample parent cd clock\n");
+					break;
+				}
+			}
+		}
+		break;
+	case POST_RATE_CHANGE:
+	default:
+		break;
+	}
+	return NOTIFY_DONE;
+}
+
 static int resample_platform_probe(struct platform_device *pdev)
 {
 	struct audioresample *p_resample;
@@ -871,6 +926,15 @@ static int resample_platform_probe(struct platform_device *pdev)
 		ret = PTR_ERR(p_resample->clk);
 		return ret;
 	}
+	if ((!IS_ERR(p_resample->pll)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+		p_resample->clk_nb.notifier_call = aml_resample_clock_notifier;
+		ret = clk_notifier_register(p_resample->pll, &p_resample->clk_nb);
+		if (ret)
+			dev_err(&pdev->dev, "unable to register clock notifier\n");
+	}
+	p_resample->clk_src_cd = devm_clk_get(&pdev->dev, "clk_src_cd");
+	if (IS_ERR(p_resample->clk_src_cd))
+		dev_warn(&pdev->dev, "no clk_src_cd clock for hifi1 case\n");
 
 	p_resample->dev = dev;
 	dev_set_drvdata(dev, p_resample);
@@ -901,6 +965,18 @@ static int resample_platform_probe(struct platform_device *pdev)
 	return 0;
 }
 
+static void resample_platform_shutdown(struct platform_device *pdev)
+{
+	struct audioresample *p_resample = dev_get_drvdata(&pdev->dev);
+	int ret = 0;
+
+	if (!IS_ERR(p_resample->pll) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+		ret = clk_notifier_unregister(p_resample->pll, &p_resample->clk_nb);
+		if (ret)
+			return;
+	}
+}
+
 static struct platform_driver resample_platform_driver = {
 	.driver = {
 		.name  = DRV_NAME,
@@ -910,6 +986,7 @@ static struct platform_driver resample_platform_driver = {
 	.probe  = resample_platform_probe,
 	.suspend = resample_platform_suspend,
 	.resume  = resample_platform_resume,
+	.shutdown = resample_platform_shutdown,
 };
 
 int __init resample_drv_init(void)

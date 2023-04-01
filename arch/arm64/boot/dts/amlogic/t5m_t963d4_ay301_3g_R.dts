@@ -1155,11 +1155,13 @@
 		clocks = <&clkaudio CLKID_AUDIO_GATE_PDM
 			&clkc CLKID_FCLK_DIV3
 			&clkc CLKID_HIFI_PLL
+			&clkc CLKID_HIFI1_PLL
 			&clkaudio CLKID_AUDIO_PDMIN0
 			&clkaudio CLKID_AUDIO_PDMIN1>;
 		clock-names = "gate",
 			"sysclk_srcpll",
 			"dclk_srcpll",
+			"clk_src_cd",
 			"pdm_dclk",
 			"pdm_sysclk";
 
@@ -1271,9 +1273,10 @@
 	asrca: resample@0 {
 		compatible = "amlogic, t5-resample-a";
 		clocks = <&clkc CLKID_HIFI_PLL
+			&clkc CLKID_HIFI1_PLL
 			&clkaudio CLKID_AUDIO_MCLK_B
 			&clkaudio CLKID_AUDIO_RESAMPLE_A>;
-		clock-names = "resample_pll", "resample_src", "resample_clk";
+		clock-names = "resample_pll", "clk_src_cd", "resample_src", "resample_clk";
 
 		/*same with toddr_src
 		 *	TDMIN_A,    0
@@ -1299,9 +1302,10 @@
 	asrcb: resample@1 {
 		compatible = "amlogic, t5-resample-b";
 		clocks = <&clkc CLKID_HIFI_PLL
+			&clkc CLKID_HIFI1_PLL
 			&clkaudio CLKID_AUDIO_MCLK_F
 			&clkaudio CLKID_AUDIO_RESAMPLE_B>;
-		clock-names = "resample_pll", "resample_src", "resample_clk";
+		clock-names = "resample_pll", "clk_src_cd", "resample_src", "resample_clk";
 		src-clk-freq = <491520000>;
 
 		/*this resample is only used for loopback_A.*/
@@ -1399,7 +1403,7 @@
 		datalb_chmask = <0x3>;
 		/* config which data pin as loopback */
 		datalb-lane-mask-in = <1 0 0 0>;
-
+		src-clk-freq = <491520000>;
 		/* define loopack with pdm mic. */
 		mic-src = <&pdm>;
 		suspend-clk-off = <1>;

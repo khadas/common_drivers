@@ -28,6 +28,7 @@
 #include "vad.h"
 #include "pdm.h"
 #include "tdm.h"
+#include "audio_controller.h"
 
 #define DRV_NAME "loopback"
 
@@ -971,11 +972,23 @@ static void datain_pdm_set_clk(struct loopback *p_loopback)
 
 	clk_name = (char *)__clk_get_name(p_loopback->pdm_dclk_srcpll);
 	if (!strcmp(clk_name, "hifi_pll") || !strcmp(clk_name, "t5_hifi_pll")) {
-		pr_info("hifipll set 1806336*1000\n");
-		if (p_loopback->syssrc_clk_rate)
-			clk_set_rate(p_loopback->pdm_dclk_srcpll, p_loopback->syssrc_clk_rate);
-		else
-			clk_set_rate(p_loopback->pdm_dclk_srcpll, 1806336 * 1000);
+		if (!(aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
+			pr_info("hifipll set 1806336*1000\n");
+			if (p_loopback->syssrc_clk_rate)
+				clk_set_rate(p_loopback->pdm_dclk_srcpll,
+						p_loopback->syssrc_clk_rate);
+			else
+				clk_set_rate(p_loopback->pdm_dclk_srcpll, 1806336 * 1000);
+		} else if (!strcmp(__clk_get_name(clk_get_parent(p_loopback->pdm_dclk)),
+			clk_name)) {
+			/* T5M use clock notify, if parent changed to hifi1, no need set */
+			if (p_loopback->syssrc_clk_rate)
+				clk_set_rate(p_loopback->pdm_dclk_srcpll,
+						p_loopback->syssrc_clk_rate);
+			else
+				clk_set_rate(p_loopback->pdm_dclk_srcpll,
+								1806336 * 1000);
+		}
 	} else {
 		if (pdm_dclk_srcpll_freq == 0)
 			clk_set_rate(p_loopback->pdm_dclk_srcpll, 24576000 * 20);

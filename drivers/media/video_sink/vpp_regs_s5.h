@@ -375,6 +375,15 @@
 //Bit 31:2   reserved
 //Bit 1      vd1_s3_dv_ext_mode                   //unsigned, RW, default = 0
 //Bit 0      vd1_s3_dv_en                         //unsigned, RW, default = 0
+#define T3X_VD_PROC_SR0_CTRL1                          0x282c
+//Bit 31    vds1_sr0_pps_dpsel                    //unsigned, RW, default = 0, 0
+//SR0 after PPS 1:SR0 before PPS
+//Bit 30    reserved
+//Bit 29:0  reg_s1_sr0_ctrl                       //unsigned, RW, default = 0, use for hsvsharp
+#define T3X_VD_PROC_SR1_CTRL1                          0x282d
+//Bit 31:30 reserved
+//Bit 29:0  reg_s1_sr1_ctrl                       //unsigned, RW, default = 0, use for hsvsharp
+
 //
 // Closing file:  ./vpp_vd_proc_reg.h
 //
@@ -423,6 +432,7 @@
 //
 #define  SRSHARP0_OFFSET   (0x000)
 #define  SRSHARP1_OFFSET   (0x200)
+#define  SLICE1_SR_GEG_OFSET 0x2500
 
 #define SHARP_SR2_CTRL                             0x5057
 #define SHARP_SR2_CTRL2                            0x5164
@@ -452,6 +462,12 @@
 #define S5_SRSHARP1_SHARP_SYNC_CTRL                   (SRSHARP1_OFFSET + SHARP_SYNC_CTRL)
 #define S5_SRSHARP1_NN_POST_TOP                       (SRSHARP1_OFFSET + NN_POST_TOP) // 0x82  //
 
+#define T3X_SRSHARP0_SHARP_SR2_CTRL    (SRSHARP0_OFFSET + SHARP_SR2_CTRL + SLICE1_SR_GEG_OFSET)
+#define T3X_SRSHARP1_SHARP_SR2_CTRL    (SRSHARP1_OFFSET + SHARP_SR2_CTRL + SLICE1_SR_GEG_OFSET)
+#define T3X_SRSHARP0_SHARP_SR2_CTRL2   (SRSHARP0_OFFSET + SHARP_SR2_CTRL2 + SLICE1_SR_GEG_OFSET)
+#define T3X_SRSHARP1_SHARP_SR2_CTRL2   (SRSHARP1_OFFSET + SHARP_SR2_CTRL2 + SLICE1_SR_GEG_OFSET)
+#define T3X_SRSHARP0_SHARP_SYNC_CTRL   (SRSHARP0_OFFSET + SHARP_SYNC_CTRL + SLICE1_SR_GEG_OFSET)
+#define T3X_SRSHARP1_SHARP_SYNC_CTRL   (SRSHARP1_OFFSET + SHARP_SYNC_CTRL + SLICE1_SR_GEG_OFSET)
 //===========================================================================
 // -----------------------------------------------
 // REG_BASE:  VPP_VCBUS_BASE = 0x1d

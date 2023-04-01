@@ -86,6 +86,8 @@ struct vd1_hwin_s {
 	u32 vd1_hwin_in_hsize;
 	/* hwin cut out before to blend */
 	u32 vd1_hwin_out_hsize;
+	u32 vd1_win_vsize;
+	u32 slice_num;
 };
 
 struct vpp_post_pad_s {
@@ -149,6 +151,7 @@ struct vpp_post_input_s {
 	u32 vd1_padding_en;
 	u32 vd1_size_before_padding;
 	u32 vd1_size_after_padding;
+	u32 vd1_proc_slice;
 };
 
 struct vpp_post_reg_s {

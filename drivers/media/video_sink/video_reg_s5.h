@@ -24,6 +24,7 @@
 #define SLICE_NUM 4
 #define MAX_VD_LAYER_S5 5
 #define MAX_VD_CHAN_S5 2
+#define MAX_SR01_NUM   2
 #define AISR_SCHN     (MAX_VD_LAYER_S5)
 
 struct vd_mif_reg_s {
@@ -126,9 +127,8 @@ struct vd_pps_reg_s {
 	u32 vd_prehsc_coef1;
 };
 
-struct vd_proc_sr_reg_s {
+struct vd_proc_sr_slice_reg_s {
 	u32 vd_proc_s0_sr0_in_size;
-	u32 vd_proc_s1_sr0_in_size;
 	u32 vd_proc_s0_sr1_in_size;
 	u32 vd_proc_sr0_ctrl;
 	u32 vd_proc_sr1_ctrl;
@@ -136,6 +136,11 @@ struct vd_proc_sr_reg_s {
 	u32 srsharp1_sharp_sr2_ctrl;
 	u32 srsharp0_sharp_sr2_ctrl2;
 	u32 srsharp1_sharp_sr2_ctrl2;
+};
+
+struct vd_proc_sr_reg_s {
+	struct vd_proc_sr_slice_reg_s sr_slice_reg[MAX_SR01_NUM];
+	u32 vd_proc_s1_sr0_in_size;
 	u32 srsharp1_nn_post_top;
 	u32 srsharp1_demo_mode_window_ctrl0;
 	u32 srsharp1_demo_mode_window_ctrl1;
@@ -301,6 +306,7 @@ extern struct vd_proc_reg_s vd_proc_reg;
 extern struct vd_pps_reg_s pps_reg_s5_array[MAX_VD_LAYER_S5 + 1];
 extern struct vd_pps_reg_s pps_reg_t3x_array[MAX_VD_LAYER_S5 + 1];
 extern struct vd_proc_sr_reg_s vd_proc_sr_reg_s5;
+extern struct vd_proc_sr_reg_s vd_proc_sr_reg_t3x;
 extern struct vd_proc_slice_reg_s vd_proc_slice_reg_s5[SLICE_NUM];
 extern struct vd_proc_slice_reg_s vd_proc_slice_reg_t3x[SLICE_NUM];
 extern struct vd_proc_pi_reg_s vd_proc_pi_reg_s5;

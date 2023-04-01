@@ -13906,6 +13906,7 @@ static struct video_device_hw_s legcy_dev_property = {
 	.aisr_support = 0,
 	.prevsync_support = 0,
 	.sr_in_size = 0,
+	.sr01_num = 1,
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -13916,6 +13917,7 @@ static struct video_device_hw_s t3_dev_property = {
 	/* aisr reverse workaround for t3*/
 	.di_hf_y_reverse = 1,
 	.sr_in_size = 1,
+	.sr01_num = 1,
 };
 
 static struct video_device_hw_s t5w_dev_property = {
@@ -13924,6 +13926,7 @@ static struct video_device_hw_s t5w_dev_property = {
 	.prevsync_support = 0,
 	.di_hf_y_reverse = 0,
 	.sr_in_size = 1,
+	.sr01_num = 1,
 };
 
 static struct video_device_hw_s c3_dev_property = {
@@ -13932,6 +13935,7 @@ static struct video_device_hw_s c3_dev_property = {
 	.prevsync_support = 0,
 	.di_hf_y_reverse = 0,
 	.sr_in_size = 0,
+	.sr01_num = 1,
 };
 
 static struct video_device_hw_s s5_dev_property = {
@@ -13942,6 +13946,7 @@ static struct video_device_hw_s s5_dev_property = {
 	.di_hf_y_reverse = 1,
 	.sr_in_size = 1,
 	.mosaic_support = 1,
+	.sr01_num = 1,
 };
 
 static struct video_device_hw_s t5m_dev_property = {
@@ -13960,6 +13965,7 @@ static struct video_device_hw_s t3x_dev_property = {
 	.di_hf_y_reverse = 1,
 	.sr_in_size = 1,
 	.mosaic_support = 0,
+	.sr01_num = 2,
 };
 #endif
 

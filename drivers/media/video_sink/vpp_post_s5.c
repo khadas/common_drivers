@@ -479,18 +479,21 @@ static void vpp_vd1_hwin_set(u32 vpp_index,
 {
 	rdma_wr_op rdma_wr = cur_dev->rdma_func[vpp_index].rdma_wr;
 	struct vpp_post_misc_reg_s *vpp_reg = &vpp_post_reg.vpp_post_misc_reg;
-	u32 vd1_win_in_hsize = 0;
+	u32 vd1_win_in_hsize = 0, vd1_slice_num = 0;
 
 	if (vpp_post->vd1_hwin.vd1_hwin_en) {
+		vd1_slice_num = vpp_post->vd1_hwin.slice_num;
 		vd1_win_in_hsize = (vpp_post->vd1_hwin.vd1_hwin_in_hsize +
-			SLICE_NUM - 1) / SLICE_NUM;
-
+			vd1_slice_num - 1) / vd1_slice_num;
+		/* update v size for t3x */
 		rdma_wr(vpp_reg->vpp_post_vd1_win_cut_ctrl,
 			 vpp_post->vd1_hwin.vd1_hwin_en << 31  |
+			 vpp_post->vd1_hwin.vd1_win_vsize << 16 |
 			 vd1_win_in_hsize);
 		if (debug_flag_s5 & DEBUG_VPP_POST)
-			pr_info("%s: vpp_post_vd1_win_cut_ctrl:vd1_win_in_hsize=%d\n",
-				__func__, vd1_win_in_hsize);
+			pr_info("%s: vpp_post_vd1_win_cut_ctrl:vd1_win_in_hsize=%d, vd1_win_vsize=%d\n",
+				__func__, vd1_win_in_hsize,
+				vpp_post->vd1_hwin.vd1_win_vsize);
 	} else {
 		rdma_wr(vpp_reg->vpp_post_vd1_win_cut_ctrl, 0);
 	}
@@ -605,7 +608,8 @@ static int vpp_post_hwincut_param_set(struct vpp_post_input_s *vpp_input,
 			vpp_input->vd1_size_after_padding;
 		vpp_post->vd1_hwin.vd1_hwin_out_hsize =
 			vpp_input->vd1_size_before_padding;
-
+		vpp_post->vd1_hwin.vd1_win_vsize = vpp_input->din_vsize[0];
+		vpp_post->vd1_hwin.slice_num = vpp_input->vd1_proc_slice;
 		vpp_input->din_hsize[0] = vpp_post->vd1_hwin.vd1_hwin_out_hsize;
 	} else {
 		vpp_post->vd1_hwin.vd1_hwin_en = 0;
@@ -1004,6 +1008,7 @@ int update_vpp_input_info(const struct vinfo_s *info)
 	vpp_input.overlap_hsize = g_post_overlap_size;
 	vpp_input.bld_out_hsize = info->width;
 	vpp_input.bld_out_vsize = info->field_height;
+	vpp_input.vd1_proc_slice = 1;
 	/* need set vdx and osd input size */
 	/* for hard code test */
 	/* vd1 vd2 vd3 osd1 osd2 */
@@ -1060,11 +1065,22 @@ int update_vpp_input_info(const struct vinfo_s *info)
 	if (vd_proc_vd1_info->vd1_slices_dout_dpsel == VD1_SLICES_DOUT_4S4P ||
 		vd_proc_vd1_info->vd1_slices_dout_dpsel == VD1_SLICES_DOUT_2S4P) {
 		vpp_input.vd1_padding_en = 1;
+
 		if (vd_proc_vd1_info->vd1_work_mode == VD1_2_2SLICES_MODE)
 			vpp_input.vd1_size_before_padding = vd_proc_vd1_info->vd1_whole_hsize;
 		else
 			vpp_input.vd1_size_before_padding = vd_proc_vd1_info->vd1_dout_hsize[0];
 		vpp_input.vd1_size_after_padding = vpp_input.din_hsize[0];
+		if (vd_proc_vd1_info->vd1_slices_dout_dpsel == VD1_SLICES_DOUT_4S4P)
+			vpp_input.vd1_proc_slice = 4;
+		else if (vd_proc_vd1_info->vd1_slices_dout_dpsel == VD1_SLICES_DOUT_2S4P) {
+			vpp_input.vd1_proc_slice = 2;
+			/* 2 slice most case not need padding */
+			if (vpp_input.vd1_size_before_padding !=
+				vpp_input.vd1_size_after_padding)
+				vpp_input.vd1_padding_en = 0;
+			/* todo for t3x designed for oled */
+		}
 	} else {
 		vpp_input.vd1_padding_en = 0;
 		vpp_input.vd1_size_before_padding = vpp_input.din_hsize[0];

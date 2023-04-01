@@ -3497,13 +3497,16 @@ static void vpp_set_super_scaler
 	core0_v_disable_width_max = sr->core0_v_disable_width_max;
 	core1_v_enable_width_max = sr->core1_v_enable_width_max;
 	core1_v_disable_width_max = sr->core1_v_disable_width_max;
-	/* if 2 slice mode, sr0 in slice1, sr1 in slice 0 */
 	if (slice_num == 2) {
 		u32 overlap_size = 32;
-		/* 2slice case: sr after pps, sr1 limit used sr0 */
-		sr_support &= ~SUPER_CORE0_SUPPORT;
-		core1_v_enable_width_max = core0_v_enable_width_max;
-		core1_v_disable_width_max = core0_v_disable_width_max;
+
+		if (cur_dev->sr01_num == 1) {
+			/* if 2 slice mode, sr0 in slice1, sr1 in slice 0 */
+			/* 2slice case: sr after pps, sr1 limit used sr0 */
+			sr_support &= ~SUPER_CORE0_SUPPORT;
+			core1_v_enable_width_max = core0_v_enable_width_max;
+			core1_v_disable_width_max = core0_v_disable_width_max;
+		}
 		src_width_limit = src_width / 2 + overlap_size;
 		width_out_limit = width_out / 2;
 	}
@@ -3797,7 +3800,7 @@ static void vpp_set_super_scaler
 		height_out++;
 	}
 	if (input->layer_id == 0) {
-		if (slice_num == 2) {
+		if (slice_num == 2 && cur_dev->sr01_num == 1) {
 			/* if both sr0 and sr1 enable, just enable sr0 */
 			if (next_frame_par->supsc1_enable &&
 				next_frame_par->supsc0_enable) {

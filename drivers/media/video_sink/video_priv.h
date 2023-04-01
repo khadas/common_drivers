@@ -275,9 +275,10 @@ struct video_dev_s {
 	struct rdma_fun_s rdma_func[RDMA_INTERFACE_NUM];
 	u32 sr_in_size;
 	u8 is_tv_panel;
-	int prevsync_support;
-	int pre_vsync_enable;
-	int secure_src;
+	u8 prevsync_support;
+	u8 pre_vsync_enable;
+	u8 secure_src;
+	u8 sr01_num;
 };
 
 struct video_layer_s;
@@ -618,6 +619,7 @@ struct video_device_hw_s {
 	u32 di_hf_y_reverse;
 	u32 sr_in_size;
 	u32 mosaic_support;
+	u32 sr01_num;
 };
 
 struct amvideo_device_data_s {

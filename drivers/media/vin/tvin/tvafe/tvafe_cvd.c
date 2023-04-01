@@ -2059,7 +2059,7 @@ static void tvafe_cvd2_search_video_mode(struct tvafe_cvd2_s *cvd2,
 			if (!cvd2->hw.chroma_lock && cvd2->hw.no_color_burst &&
 			    !cvd2->hw.h_lock && !cvd2->hw.no_sig)
 				W_APB_BIT(TVFE_CLAMP_INTF, 0x0,
-					  CLAMP_EN_BIT, CLAMP_EN_WID);
+					CLAMP_EN_BIT, CLAMP_EN_WID);
 		}
 		/* manual mode => go directly to the manual format */
 		try_format_cnt = 0;

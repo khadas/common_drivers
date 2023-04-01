@@ -30,6 +30,13 @@
 /* Local Headers */
 #include "../tvin_frontend.h"
 #include "../tvin_format_table.h"
+#include "../tvafe/tvafe.h"
+#include "../tvafe/tvafe_regs.h"
+
+#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_AVDETECT
+#include "tvafe_avin_detect.h"
+#endif
+
 #include "vdin_sm.h"
 #include "vdin_ctl.h"
 #include "vdin_drv.h"
@@ -54,7 +61,7 @@
 #define EXIT_PRESTABLE_MAX_CNT 50
 static struct tvin_sm_s sm_dev[VDIN_MAX_DEVS];
 
-static int sm_print_nosig;
+int sm_print_nosig;
 static int sm_print_notsup;
 static int sm_print_fmt_nosig;
 static int sm_print_fmt_chg;
@@ -919,6 +926,15 @@ void tvin_smr(struct vdin_dev_s *devp)
 						devp->index);
 					sm_print_nosig = 1;
 				}
+#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_AVDETECT
+				if (devp->dtdata->hw_ver == VDIN_HW_T3X &&
+					R_APB_BIT(TVFE_CLAMP_INTF,
+						CLAMP_EN_BIT, CLAMP_EN_WID) &&
+					av1_plugin_state == 0 &&
+					IS_TVAFE_SRC(port))
+					W_APB_BIT(TVFE_CLAMP_INTF, 0,
+						CLAMP_EN_BIT, CLAMP_EN_WID);
+#endif
 			}
 		} else {
 			if (IS_TVAFE_SRC(port))

@@ -10,6 +10,13 @@
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
 
+/* avin debug control start */
+#define AVIN_NORMAL_DBG				BIT(0)
+#define AVIN_SIGNAL_DBG				BIT(1)
+#define AVIN_DETECT_STATUS_DBG		BIT(2)
+#define AVIN_DETECT_T3X_DBG			BIT(3)
+/* avin debug control end */
+
 #define ANACTRL_CVBS_DETECT_CNTL 0x9f
 #define HHI_CVBS_DETECT_CNTL	0x2e
 #define AFE_DETECT_RSV3_BIT		31
@@ -90,6 +97,9 @@
 #define CVBS_IRQ0_COUNTER		0x3c26
 #define CVBS_IRQ1_COUNTER		0x3c27
 
+#define DETECTED_IRQ_VERSION		0x0
+#define DETECTED_GPIO_VERSION		0x1
+
 /* add t3 */
 #define IRQCTRL_CVBS_IRQ0_CNTL		0x90
 #define IRQCTRL_CVBS_IRQ1_CNTL		0x91
@@ -99,6 +109,20 @@
 /* add t3x */
 #define PADCTRL_ANALOG_I		0xf3
 #define PADCTRL_ANALOG_EN		0xf4
+
+#define CVBS0_EN_DIG_FUNC_BIT		1
+#define CVBS0_EN_DIG_FUNC_WIDTH		1
+#define CVBS0_EN_DIG_FUNC_MASK		1
+#define CVBS1_EN_DIG_FUNC_BIT		2
+#define CVBS1_EN_DIG_FUNC_WIDTH		1
+#define CVBS1_EN_DIG_FUNC_MASK		1
+
+#define CVBS0_AFE_DIG_OUT_BIT		1
+#define CVBS0_AFE_DIG_OUT_WIDTH		1
+#define CVBS1_AFE_DIG_OUT_BIT		2
+#define CVBS1_AFE_DIG_OUT_WIDTH		1
+
+#define AVIN_GPIO_DETECTED_DATA		1
 
 enum tvafe_avin_status_e {
 	TVAFE_AVIN_STATUS_IN = 0,
@@ -124,6 +148,15 @@ struct tvafe_dts_const_param_s {
 	unsigned int irq[2];
 };
 
+struct avin_detect_param_s {
+	unsigned int avin_in_count_times;
+	unsigned int avin_out_count_times;
+	unsigned int s_irq_in_counter0_time;
+	unsigned int s_irq_out_counter0_time;
+	unsigned int s_irq_in_counter1_time;
+	unsigned int s_irq_out_counter1_time;
+};
+
 struct tvafe_avin_det_s {
 	char config_name[20];
 	dev_t  avin_devno;
@@ -133,11 +166,16 @@ struct tvafe_avin_det_s {
 	struct tvafe_dts_const_param_s dts_param;
 	struct tvafe_report_data_s report_data_s[2];
 	struct work_struct work_struct_update;
+	struct avin_detect_param_s avin_detect_param;
 	unsigned int irq_counter[2];
 	unsigned int device_num;
 	unsigned int function_select;
 };
 
+struct avin_detect_state_s {
+	unsigned int black_cnt;
+	unsigned int state;
+};
 enum avin_cpu_type {
 	AVIN_CPU_TYPE_TL1   = 3,
 	AVIN_CPU_TYPE_TM2   = 4,
@@ -156,6 +194,7 @@ struct meson_avin_data {
 	const char *name;
 	void __iomem *irq_reg_base;
 
+	unsigned int detect_version;
 	unsigned int detect_cntl;
 	unsigned int irq0_cntl;
 	unsigned int irq1_cntl;
@@ -176,6 +215,7 @@ void tvafe_cha1_detect_restart_config(void);
 void tvafe_cha2_detect_restart_config(void);
 void tvafe_avin_detect_ch1_anlog_enable(bool enable);
 void tvafe_avin_detect_ch2_anlog_enable(bool enable);
+unsigned int avin_read_analog_i(void);
 
 /*opened port,1:av1, 2:av2, 0:none av*/
 extern unsigned int avport_opened;
@@ -183,6 +223,6 @@ extern unsigned int avport_opened;
 extern unsigned int av1_plugin_state;
 extern unsigned int av2_plugin_state;
 extern bool tvafe_clk_status;
-
+extern bool detect_start;
 #endif /* TVAFE_AVIN_DETECT_H_ */
 

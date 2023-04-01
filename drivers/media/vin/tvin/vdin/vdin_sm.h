@@ -71,6 +71,7 @@ struct tvin_sm_s {
 
 extern bool manual_flag;
 extern unsigned int vdin_get_prop_in_sm_en;
+extern int sm_print_nosig;
 
 void tvin_smr(struct vdin_dev_s *pdev);
 void tvin_smr_init(int index);

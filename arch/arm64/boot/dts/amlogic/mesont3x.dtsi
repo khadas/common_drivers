@@ -1930,7 +1930,7 @@
 	vcodec_dec {
 		compatible = "amlogic, vcodec-dec";
 		dev_name = "aml-vcodec-dec";
-		status = "disabled";
+		status = "okay";
 	};
 
 	di_local {
@@ -2211,12 +2211,12 @@
 
 	meson_uvm{
 		compatible = "amlogic, meson_uvm";
-		status = "disabled";
+		status = "okay";
 	};
 
 	meson_videotunnel{
 		compatible = "amlogic, meson_videotunnel";
-		status = "disabled";
+		status = "okay";
 	};
 
 	video_composer {
@@ -2566,7 +2566,7 @@
 		memory-region = <&ion_cma_reserved
 				 &ion_fb_reserved
 				 &ion_secure_reserved>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	fb: fb {

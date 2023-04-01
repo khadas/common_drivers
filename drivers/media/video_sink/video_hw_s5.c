@@ -11664,10 +11664,16 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 			   &fg_reg_s5_array[i],
 			   sizeof(struct vd_fg_reg_s));
 	}
-	for (i = 0; i < MAX_VD_LAYER_S5 + 1; i++)
-		memcpy(&vd_proc_reg.vd_pps_reg[i],
-			   &pps_reg_s5_array[i],
-			   sizeof(struct vd_pps_reg_s));
+	for (i = 0; i < MAX_VD_LAYER_S5 + 1; i++) {
+		if (is_meson_s5_cpu())
+			memcpy(&vd_proc_reg.vd_pps_reg[i],
+				   &pps_reg_s5_array[i],
+				   sizeof(struct vd_pps_reg_s));
+		else
+			memcpy(&vd_proc_reg.vd_pps_reg[i],
+				   &pps_reg_t3x_array[i],
+				   sizeof(struct vd_pps_reg_s));
+	}
 
 	for (i = 0; i < SLICE_NUM; i++) {
 		if (is_meson_s5_cpu())
@@ -11706,9 +11712,6 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	memcpy(&vd_proc_reg.vd_proc_pi_reg,
 	   &vd_proc_pi_reg_s5,
 	   sizeof(struct vd_proc_pi_reg_s));
-	memcpy(&vd_proc_reg.vd_proc_misc_reg,
-	   &vd_proc_misc_reg_s5,
-	   sizeof(struct vd_proc_misc_reg_s));
 	memcpy(&vd_proc_reg.aisr_reshape_reg,
 	   &aisr_reshape_reg_s5,
 	   sizeof(struct vd_aisr_reshape_reg_s));
@@ -11720,6 +11723,9 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	   sizeof(struct vd2_proc_misc_reg_s));
 
 	if (is_meson_s5_cpu()) {
+		memcpy(&vd_proc_reg.vd_proc_misc_reg,
+		   &vd_proc_misc_reg_s5,
+		   sizeof(struct vd_proc_misc_reg_s));
 		memcpy(&vpp_post_reg.vpp_post_blend_reg,
 		   &vpp_post_blend_reg_s5,
 		   sizeof(struct vpp_post_blend_reg_s));
@@ -11727,6 +11733,9 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 		   &vpp_post_misc_reg_s5,
 		   sizeof(struct vpp_post_misc_reg_s));
 	} else {
+		memcpy(&vd_proc_reg.vd_proc_misc_reg,
+		   &vd_proc_misc_reg_t3x,
+		   sizeof(struct vd_proc_misc_reg_s));
 		memcpy(&vpp_post_reg.vpp_post_blend_reg,
 		   &vpp_post_blend_reg_t3x,
 		   sizeof(struct vpp_post_blend_reg_s));

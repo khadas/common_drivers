@@ -3083,8 +3083,8 @@
 
 	i2c0_pins1:i2c0_pins1 {
 		mux {
-			groups = "i2c0_scl_d",
-				"i2c0_sda_d";
+			groups = "i2c0_sck",
+				"i2c0_sda";
 			function = "i2c0";
 			drive-strength-microamp = <3000>;
 			bias-disable;

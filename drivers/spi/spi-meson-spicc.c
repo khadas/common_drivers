@@ -1741,7 +1741,9 @@ struct platform_driver meson_spicc_driver = {
 	},
 };
 
-//module_platform_driver(meson_spicc_driver);
+#ifndef MODULE
+module_platform_driver(meson_spicc_driver);
+#endif
 
 MODULE_DESCRIPTION("Meson SPI Communication Controller driver");
 MODULE_AUTHOR("Neil Armstrong <narmstrong@baylibre.com>");

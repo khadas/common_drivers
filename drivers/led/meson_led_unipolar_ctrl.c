@@ -114,13 +114,23 @@ static void meson_unipolar_ctrl_init(struct meson_unipolar_ctrl *dcon_led)
 		CTRL_LED_DATA_FORMAT_MSK, FORMAT_24BIT << CTRL_LED_DATA_FORMAT_SHIFT);
 
 	/* pwm ratio set
-	 * use default reg value
-	 * output 1---->h:0.833 l:0.416
-	 * output 0---->h:0.416 l:0.833
+	 *
+	 * output 1---->h:0.9 l:0.3
+	 * output 0---->h:0.3 l:0.9
 	 */
-	/*set reset duration 0x50*1.25 = 100 us*/
+
+	/*set led cycle 1/24*29 = 1.2us*/
 	meson_unipolar_ctrl_set_mask(dcon_led, LED_CYCLE_RATIO_RES,
-		RATIO_RESET_DURATION_MSK, 0x50 << RATIO_RESET_DURATION_SHIFT);
+		RATIO_CYCLE_MSK, 0x1d << RATIO_CYCLE_SHIFT);
+	/*set high duty 1/24*22 = 0.9us*/
+	meson_unipolar_ctrl_set_mask(dcon_led, LED_CYCLE_RATIO_RES,
+		RATIO_HIGH_CODE_SET_MSK, 0x16 << RATIO_HIGH_CODE_SET_SHIFT);
+	/*set low duty 1/24*7 = 0.3us*/
+	meson_unipolar_ctrl_set_mask(dcon_led, LED_CYCLE_RATIO_RES,
+		RATIO_LOW_CODE_SET_MSK, 0x7 << RATIO_LOW_CODE_SET_SHIFT);
+	/*set reset duration 0x240*1.25 = 300 us*/
+	meson_unipolar_ctrl_set_mask(dcon_led, LED_CYCLE_RATIO_RES,
+		RATIO_RESET_DURATION_MSK, 0xF0 << RATIO_RESET_DURATION_SHIFT);
 
 	/*send data with out reset*/
 	// meson_unipolar_ctrl_set_mask(dcon_led,LED_CYCLE_RATIO_RES,

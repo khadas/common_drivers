@@ -2543,6 +2543,11 @@ inline unsigned int get_pin_status(void)
 		reg = read_pad_reg(PADCTRL_GPIOW_I_T5M);
 		reg = (reg >> 16) & 0x1;
 		break;
+	case CEC_CHIP_T3X:
+		/* GPIOW_16 */
+		reg = read_pad_reg(PADCTRL_GPIOW_I_T3X);
+		reg = (reg >> 28) & 0x1;
+		break;
 #endif
 	default:
 		/* means not implemented */

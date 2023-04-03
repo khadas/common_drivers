@@ -2226,7 +2226,21 @@ static const struct cec_platform_data_s cec_s5_data = {
 	.share_io = true,
 	.reg_tab_group = cec_reg_group_a1,
 };
+
+/* based on t3, only has CEC_B */
+static const struct cec_platform_data_s cec_t3x_data = {
+	.chip_id = CEC_CHIP_T3X,
+	.line_reg = 0xff,/*don't check*/
+	.line_bit = 0,
+	.ee_to_ao = 1,
+	.ceca_sts_reg = 0,
+	.ceca_ver = CECA_NONE,
+	.cecb_ver = CECB_VER_3,
+	.share_io = false,
+	.reg_tab_group = cec_reg_group_a1,
+};
 #endif
+
 static const struct of_device_id aml_cec_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -2305,6 +2319,10 @@ static const struct of_device_id aml_cec_dt_match[] = {
 	{
 		.compatible = "amlogic, aocec-s5",
 		.data = &cec_s5_data,
+	},
+	{
+		.compatible = "amlogic, aocec-t3x",
+		.data = &cec_t3x_data,
 	},
 #endif
 	{}

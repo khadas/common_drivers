@@ -53,7 +53,7 @@
 
 		defendkey_reserved:linux,defendkey {
 			compatible = "amlogic, defendkey";
-			reusable;
+			no-map;
 			size = <0x0 0x100000>;
 			alignment = <0x0 0x100000>;
 			alloc-ranges = <0x0 0x04F00000 0x0 0x100000>;

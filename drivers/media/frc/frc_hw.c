@@ -182,7 +182,7 @@ void frc_clk_init(struct frc_dev_s *frc_devp)
 
 	if (get_chip_type() == ID_T3X) {
 		me_clk = FRC_CLOCK_RATE_667;
-		mc_clk = FRC_CLOCK_RATE_800;
+		mc_clk = FRC_CLOCK_RATE_667;
 	} else {
 		me_clk = FRC_CLOCK_RATE_333;
 		mc_clk = FRC_CLOCK_RATE_667;
@@ -236,15 +236,24 @@ void frc_osdbit_setfalsecolor(struct frc_dev_s *devp, u32 falsecolor)
 
 void frc_init_config(struct frc_dev_s *devp)
 {
+	enum chip_id chip;
+
+	chip = get_chip_type();
 	/*1: before postblend, 0: after postblend*/
 	if (devp->frc_hw_pos == FRC_POS_AFTER_POSTBLEND) {
-		vpu_reg_write_bits(VPU_FRC_TOP_CTRL, 0, 4, 1);
+		if (chip == ID_T3X)
+			vpu_reg_write_bits(VIU_FRC_MISC, 0, 4, 1);
+		else
+			vpu_reg_write_bits(VPU_FRC_TOP_CTRL, 0, 4, 1);
 		frc_config_reg_value(0x02, 0x02, &regdata_blkscale_012c);
 		WRITE_FRC_REG_BY_CPU(FRC_REG_BLK_SCALE, regdata_blkscale_012c);
 		frc_config_reg_value(0x800000, 0xF00000, &regdata_iplogo_en_0503);
 		WRITE_FRC_REG_BY_CPU(FRC_IPLOGO_EN, regdata_iplogo_en_0503);
 	} else {
-		vpu_reg_write_bits(VPU_FRC_TOP_CTRL, 1, 4, 1);
+		if (chip == ID_T3X)
+			vpu_reg_write_bits(VIU_FRC_MISC, 1, 4, 1);
+		else
+			vpu_reg_write_bits(VPU_FRC_TOP_CTRL, 1, 4, 1);
 		frc_config_reg_value(0x0, 0x02, &regdata_blkscale_012c);
 		WRITE_FRC_REG_BY_CPU(FRC_REG_BLK_SCALE, regdata_blkscale_012c);
 		frc_config_reg_value(0x0, 0xF00000, &regdata_iplogo_en_0503);
@@ -281,11 +290,12 @@ void set_frc_enable(u32 en)
 {
 	// struct frc_dev_s *devp = get_frc_devp();
 	// WRITE_FRC_BITS(FRC_TOP_CTRL, 0, 8, 1);
+	pr_frc(2, "%s set  %d\n", __func__, en);
 	frc_config_reg_value(en, 0x1, &regdata_topctl_3f01);
 	WRITE_FRC_REG_BY_CPU(FRC_TOP_CTRL, regdata_topctl_3f01);
 	if (en == 1) {
-		frc_mc_reset(1);
-		frc_mc_reset(0);
+		//frc_mc_reset(1);
+		//frc_mc_reset(0);
 		WRITE_FRC_REG_BY_CPU(FRC_TOP_SW_RESET, 0xFFFF);
 		WRITE_FRC_REG_BY_CPU(FRC_TOP_SW_RESET, 0x0);
 	} else {
@@ -296,11 +306,16 @@ void set_frc_enable(u32 en)
 		else
 			pr_frc(1, "frc_off_set maxlnct success!!!\n");
 	}
+	pr_frc(2, "%s ok\n", __func__);
+
 }
 
 void set_frc_bypass(u32 en)
 {
-	vpu_reg_write_bits(VPU_FRC_TOP_CTRL, en, 0, 1);
+	if (get_chip_type() == ID_T3X)
+		vpu_reg_write_bits(VIU_FRC_MISC, en, 0, 1);
+	else
+		vpu_reg_write_bits(VPU_FRC_TOP_CTRL, en, 0, 1);
 }
 
 void frc_crc_enable(struct frc_dev_s *frc_devp)
@@ -792,14 +807,22 @@ static void set_vd1_out_size(struct frc_dev_s *frc_devp)
 {
 	unsigned int hsize = 0;
 	unsigned int vsize = 0;
+	enum chip_id chip;
 
+	chip = get_chip_type();
 	if (frc_devp->frc_hw_pos == FRC_POS_BEFORE_POSTBLEND) {
 		if (frc_devp->force_size.force_en) {
 			hsize = frc_devp->force_size.force_hsize - 1;
 			vsize = frc_devp->force_size.force_vsize - 1;
-			vpu_reg_write_bits(VD1_BLEND_SRC_CTRL, 1, 8, 4);
-			vpu_reg_write_bits(VPP_POSTBLEND_VD1_H_START_END, hsize, 0, 13);
-			vpu_reg_write_bits(VPP_POSTBLEND_VD1_V_START_END, vsize, 0, 13);
+			if (chip == ID_T3) {
+				vpu_reg_write_bits(VD1_BLEND_SRC_CTRL_T3X, 1, 8, 4);
+				vpu_reg_write_bits(VPP_POSTBLEND_VD1_H_START_END_T3X, hsize, 0, 13);
+				vpu_reg_write_bits(VPP_POSTBLEND_VD1_V_START_END_T3X, vsize, 0, 13);
+			} else {
+				vpu_reg_write_bits(VD1_BLEND_SRC_CTRL, 1, 8, 4);
+				vpu_reg_write_bits(VPP_POSTBLEND_VD1_H_START_END, hsize, 0, 13);
+				vpu_reg_write_bits(VPP_POSTBLEND_VD1_V_START_END, vsize, 0, 13);
+			}
 		}
 	}
 	pr_frc(1, "hsize = %d, vsize = %d\n", hsize, vsize);
@@ -927,7 +950,11 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	tmpvalue |= (frc_top->vsize) << 16;
 	WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
 	/*!!!!!!!!!  vpu register*/
-	frc_top->vfb = vpu_reg_read(ENCL_VIDEO_VAVON_BLINE);
+	if (chip == ID_T3X)
+		frc_top->vfb =
+			(vpu_reg_read(ENCL_VIDEO_VAVON_BLINE_T3X) >> 16) & 0xffff;
+	else
+		frc_top->vfb = vpu_reg_read(ENCL_VIDEO_VAVON_BLINE);
 	pr_frc(log, "ENCL_VIDEO_VAVON_BLINE:%d\n", frc_top->vfb);
 	//(frc_top->vfb / 4) * 3; 3/4 point of front vblank, default
 	reg_mc_out_line = frc_init_out_line();
@@ -1073,9 +1100,9 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 		tmpvalue2 |= (reg_mc_dly_vofst1 + frc_porch_delta) << 16;
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL15, tmpvalue2);
 	} else {
-		/*T3 revB*/
+		/*T3 revB,t5m,t3x*/
 		frc_v_porch = frc_vporch_cal;
-		pr_frc(2, "%s t3b/t5m inform vlock\n", __func__);
+		pr_frc(2, "%s t3b/t5m/t3x inform vlock\n", __func__);
 		gst_frc_param.frc_mcfixlines =
 			mc_frm_dly + mc_hold_line - reg_mc_out_line;
 		if (mc_frm_dly + mc_hold_line < reg_mc_out_line)
@@ -1085,7 +1112,11 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 			PR_ERR("frc_infrom vlock fail, check vlock st!\n");
 		else
 			pr_frc(0, "frc_infrom vlock success!!!\n");
-		vpu_reg_write_bits(ENCL_FRC_CTRL, memc_frm_dly - reg_mc_out_line, 0, 16);
+		if (chip == ID_T3X)
+			vpu_reg_write_bits(ENCL_FRC_CTRL_T3X,
+				memc_frm_dly - reg_mc_out_line, 0, 16);
+		else
+			vpu_reg_write_bits(ENCL_FRC_CTRL, memc_frm_dly - reg_mc_out_line, 0, 16);
 		// WRITE_FRC_BITS(FRC_REG_TOP_CTRL14, reg_post_dly_vofst, 0, 16);
 		// WRITE_FRC_BITS(FRC_REG_TOP_CTRL14, reg_me_dly_vofst, 16, 16);
 		// WRITE_FRC_BITS(FRC_REG_TOP_CTRL15, reg_mc_dly_vofst0, 0, 16);
@@ -1908,9 +1939,25 @@ static const struct dbg_dump_tab frc_reg_tab[] = {
 void frc_dump_reg_tab(void)
 {
 	u32 i = 0;
+	enum chip_id chip;
 
-	pr_frc(0, "VPU_FRC_TOP_CTRL (0x%x)->bypass val:0x%x (1:bypass)\n",
-		VPU_FRC_TOP_CTRL, vpu_reg_read(VPU_FRC_TOP_CTRL) & 0x1);
+	chip = get_chip_type();
+	if (chip == ID_T3X) {
+		pr_frc(0, "VIU_FRC_MISC (0x%x)->bypass val:0x%x (1:bypass)\n",
+			VIU_FRC_MISC, vpu_reg_read(VIU_FRC_MISC) & 0x1);
+
+		pr_frc(0, "VIU_FRC_MISC (0x%x)->pos_sel val:0x%x (0:after blend)\n",
+			VIU_FRC_MISC, (vpu_reg_read(VIU_FRC_MISC) >> 4) & 0x1);
+
+		pr_frc(0, "ENCL_FRC_CTRL (0x%x)->val:0x%x\n",
+			ENCL_FRC_CTRL_T3X, vpu_reg_read(ENCL_FRC_CTRL_T3X) & 0xffff);
+
+		pr_frc(0, "ENCL_VIDEO_VAVON_BLINE:0x%x->val: 0x%x\n",
+			ENCL_VIDEO_VAVON_BLINE_T3X,
+			(vpu_reg_read(ENCL_VIDEO_VAVON_BLINE_T3X) >> 16) & 0xffff);
+	} else if (chip == ID_T5M || chip == ID_T3) {
+		pr_frc(0, "VPU_FRC_TOP_CTRL (0x%x)->bypass val:0x%x (1:bypass)\n",
+			VPU_FRC_TOP_CTRL, vpu_reg_read(VPU_FRC_TOP_CTRL) & 0x1);
 
 	pr_frc(0, "VPU_FRC_TOP_CTRL (0x%x)->pos_sel val:0x%x (0:after blend)\n",
 		VPU_FRC_TOP_CTRL, (vpu_reg_read(VPU_FRC_TOP_CTRL) >> 4) & 0x1);
@@ -1918,9 +1965,10 @@ void frc_dump_reg_tab(void)
 	pr_frc(0, "ENCL_FRC_CTRL (0x%x)->val:0x%x\n",
 		ENCL_FRC_CTRL, vpu_reg_read(ENCL_FRC_CTRL) & 0xffff);
 
-	pr_frc(0, "ENCL_VIDEO_VAVON_BLINE:0x%x->val: 0x%x\n",
-		ENCL_VIDEO_VAVON_BLINE, vpu_reg_read(ENCL_VIDEO_VAVON_BLINE) & 0xffff);
-
+		pr_frc(0, "ENCL_VIDEO_VAVON_BLINE:0x%x->val: 0x%x\n",
+			ENCL_VIDEO_VAVON_BLINE,
+				vpu_reg_read(ENCL_VIDEO_VAVON_BLINE) & 0xffff);
+	}
 	while (frc_reg_tab[i].addr < 0x3fff) {
 		if (frc_reg_tab[i].addr == 0xffffffff)
 			break;
@@ -2350,6 +2398,8 @@ int get_chip_type(void)
 		return ID_T5M;
 	else if (chip == ID_T3X)
 		return ID_T3X;
+	else if (chip == ID_TMAX)
+		return ID_TMAX;
 	else
 		return ID_NULL;
 }

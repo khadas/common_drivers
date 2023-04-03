@@ -89,9 +89,9 @@ const struct frm_dly_dat_s chip_frc_frame_dly[3][4] = {
 	},
 	{ // chip_t3x  fhd,4k2k,4k1k,4K2K-120Hz
 		{130, 11},
-		{222, 28},
-		{233, 14},
+		{120, 14},
 		{266, 28},
+		{240, 15},
 	},
 };
 
@@ -914,7 +914,6 @@ void frc_dmc_un_notifier(void)
 /****************************************************************************/
 static void frc_clock_workaround(struct work_struct *work)
 {
-	int mc_clk_min, mc_clk_max;
 	struct frc_dev_s *devp = container_of(work,
 		struct frc_dev_s, frc_clk_work);
 
@@ -926,20 +925,12 @@ static void frc_clock_workaround(struct work_struct *work)
 		return;
 	if (!devp->power_on_flag)
 		return;
-
-	if (get_chip_type() == ID_T3X) {
-		mc_clk_min = FRC_CLOCK_RATE_333;
-		mc_clk_max = FRC_CLOCK_RATE_800;
-	} else {
-		mc_clk_min = FRC_CLOCK_RATE_333;
-		mc_clk_max = FRC_CLOCK_RATE_667;
-	}
 	// pr_frc(1, "%s, clk_state:%d\n", __func__, devp->clk_state);
 	if (devp->clk_state == FRC_CLOCK_2MIN) {
-		clk_set_rate(devp->clk_frc, mc_clk_min);
+		clk_set_rate(devp->clk_frc, 333333333);
 		devp->clk_state = FRC_CLOCK_MIN;
 	} else if (devp->clk_state == FRC_CLOCK_2NOR) {
-		clk_set_rate(devp->clk_frc, mc_clk_max);
+		clk_set_rate(devp->clk_frc, 667000000);
 		devp->clk_state = FRC_CLOCK_NOR;
 	}
 	pr_frc(1, "%s, clk_new state:%d\n", __func__, devp->clk_state);
@@ -1080,7 +1071,7 @@ int frc_buf_set(struct frc_dev_s *frc_devp)
 		return -1;
 	if (frc_buf_distribute(frc_devp) != 0)
 		return -1;
-	frc_rdma_alloc_buf();
+	// frc_rdma_alloc_buf();
 	if (frc_buf_config(frc_devp) != 0)
 		return -1;
 	else
@@ -1119,7 +1110,6 @@ static int frc_probe(struct platform_device *pdev)
 	}
 	PR_FRC("%s fw_data st size:%d", __func__, sizeof_frc_fw_data_struct());
 
-	frc_devp->out_line = frc_init_out_line();
 	ret = alloc_chrdev_region(&frc_devp->devno, 0, FRC_DEVNO, FRC_NAME);
 	if (ret < 0) {
 		PR_ERR("%s: alloc region fail\n", __func__);
@@ -1187,6 +1177,7 @@ static int frc_probe(struct platform_device *pdev)
 		goto fail_dev_create;
 
 	frc_internal_initial(frc_devp);
+	frc_devp->out_line = frc_init_out_line();
 	frc_hw_initial(frc_devp);
 	/*enable irq*/
 	if (frc_devp->in_irq > 0)

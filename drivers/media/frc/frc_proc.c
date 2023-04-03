@@ -660,7 +660,7 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 					struct vpp_frame_par_s *cur_video_sts)
 {
 	struct st_frc_in_sts cur_in_sts;
-	u32 no_input = false, vd_en_flag, vd_regval;
+	u32 no_input = false, vd_en_flag;// vd_regval;
 	enum efrc_event frc_event;
 
 	if (!devp)
@@ -670,17 +670,16 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 		return;
 
 	vd_en_flag = get_video_enabled(0);
-	vd_regval = vpu_reg_read(0x1dfb);
+	// vd_regval = vpu_reg_read(0x1dfb);
 	if (devp->ud_dbg.res1_dbg_en == 1)
-		pr_frc(1, "get_vd_en=%2d, 0x1dfb=0x%8x\n",
-			vd_en_flag, vd_regval);
+		pr_frc(1, "get_vd_en=%2d\n", vd_en_flag);
 	if (!vf || !cur_video_sts || vd_en_flag == 0) {
 		devp->in_sts.vf_null_cnt++;
 		no_input = true;
-	} else if ((vd_regval & (BIT_0 | BIT_8)) == 0) {
-		devp->in_sts.vf_null_cnt++;
-		no_input = true;
-	}
+	} //else if ((vd_regval & (BIT_0 | BIT_8)) == 0) {
+		//devp->in_sts.vf_null_cnt++;
+		//no_input = true;
+	//}
 
 	if (vf) {
 		if ((vf->flag & VFRAME_FLAG_GAME_MODE)  ==
@@ -1590,10 +1589,21 @@ int frc_memc_set_demo(u8 setdemo)
 int frc_init_out_line(void)
 {
 	u32 vfb = 0;
+	enum chip_id chip;
 
-	vfb = aml_read_vcbus_s(ENCL_VIDEO_VAVON_BLINE);
-	if (vfb)
+	chip = get_chip_type();
+	if (chip == ID_T3X)
+		vfb = (vpu_reg_read(ENCL_VIDEO_VAVON_BLINE_T3X) >> 16) & 0xffff;
+	else
+		vfb = vpu_reg_read(ENCL_VIDEO_VAVON_BLINE);
+
+	if (vfb > 0 && vfb < 120) {   // need more check 500 is correct or not
 		vfb = (vfb / 4) * 3;  // 3/4 point of front vblank, default
+	} else {
+		vfb = 51;
+		PR_ERR("%s read back vfb:%d\n", __func__, vfb);
+	}
+
 	return vfb;
 }
 

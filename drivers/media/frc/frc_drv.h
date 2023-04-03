@@ -88,7 +88,7 @@
 // frc_20221225 add powerdomain etc.
 // frc_20230301 frc add seamless mode
 
-#define FRC_FW_VER			"2023-0303 frc add n2m switch"
+#define FRC_FW_VER			"2023-0404 frc t3x probe"
 #define FRC_KERDRV_VER                  2796
 
 #define FRC_DEVNO	1
@@ -155,7 +155,7 @@ extern int frc_dbg_en;
 
 #define FRC_CLOCK_RATE_333                333333333
 #define FRC_CLOCK_RATE_667                667000000
-#define FRC_CLOCK_RATE_800                800000000
+#define FRC_CLOCK_RATE_800                667000000
 
 //------------------------------------------------------- clock defined end
 // vd fps
@@ -186,6 +186,7 @@ enum chip_id {
 	ID_T3,
 	ID_T5M,
 	ID_T3X,
+	ID_TMAX,
 };
 
 struct dts_match_data {

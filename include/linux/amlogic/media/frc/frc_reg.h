@@ -2840,6 +2840,12 @@
 #define VPP_POSTBLEND_VD1_H_START_END    0x1d1c
 #define VPP_POSTBLEND_VD1_V_START_END    0x1d1d
 
+#define ENCL_FRC_CTRL_T3X                    0x14D9
+#define ENCL_VIDEO_VAVON_BLINE_T3X           0x14CA
+#define VD1_BLEND_SRC_CTRL_T3X               0x1d0d
+#define VPP_POSTBLEND_VD1_H_START_END_T3X    0x1d03
+#define VPP_POSTBLEND_VD1_V_START_END_T3X    0x1d04
+
 extern void __iomem *frc_base;
 
 /******************************************************************************/

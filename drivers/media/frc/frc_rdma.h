@@ -5,6 +5,7 @@
 #include <linux/amlogic/media/frc/frc_reg.h>
 
 #define RDMA_NUM        8
+#define RDMA_NUM_T3X    16
 #define REG_TEST_NUM 32
 
 #ifndef PAGE_SIZE

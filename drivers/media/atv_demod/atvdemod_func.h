@@ -13,6 +13,7 @@ struct atv_demod_priv;
 
 #define HHI_ATV_DMD_SYS_CLK_CNTL		0x10f3
 #define HHI_ATV_DMD_SYS_CLK_CNTL_T3		0x1086
+#define HHI_ATV_DMD_SYS_CLK_CNTL_T3X	0x1091
 
 extern unsigned int reg_23cf; /* IIR filter */
 extern int broad_std_except_pal_m;
@@ -23,6 +24,7 @@ extern bool aud_reinit;
 extern bool aud_mono_only;
 extern bool atv_audio_overmodulated_en;
 extern unsigned int non_std_en;
+extern unsigned int atvdemod_agc_new;
 
 enum broadcast_standard_e {
 	ATVDEMOD_STD_NTSC = 0,

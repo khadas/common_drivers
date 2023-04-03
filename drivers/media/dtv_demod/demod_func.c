@@ -575,6 +575,9 @@ void demod_set_mode_ts(enum fe_delivery_system delsys)
 		break;
 	}
 
+	PR_INFO("%s: top wrW 0x%x=0x%x\n",
+		__func__, DEMOD_TOP_REG0, cfg0.d32);
+
 	demod_top_write_reg(DEMOD_TOP_REG0, cfg0.d32);
 	demod_top_write_reg(DEMOD_TOP_REGC, dvbt_mode);
 }
@@ -608,6 +611,8 @@ int clocks_set_sys_defaults(struct aml_dtvdemod *demod, unsigned int adc_clk)
 
 		return sts_pll;
 	}
+
+	PR_INFO("%s: 1111111\n", __func__);
 
 	demod_set_mode_ts(demod->demod_status.delsys);
 	cfg2.b.biasgen_en = 1;

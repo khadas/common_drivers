@@ -76,7 +76,7 @@ unsigned int atvdemod_debug_en;
 
 /*1:gpio mode output low;2:pwm mode*/
 unsigned int atvdemod_agc_pinmux = 2;
-unsigned int atvdemod_agc_new = 1;
+unsigned int atvdemod_agc_new;
 unsigned int atvdemod_afc_range = 5;
 unsigned int atvdemod_afc_offset = 500;
 
@@ -191,7 +191,7 @@ void atv_dmd_misc(void)
 		return;
 	}
 
-	if (!atvdemod_agc_new || !is_meson_t5m_cpu())
+	if (!atvdemod_agc_new)
 		atv_dmd_wr_byte(APB_BLOCK_ADDR_AGC_PWM, 0x08, 0x38); /*zhuangwei*/
 	/*cpu.write_byte(8'h1A,8'h0E,8'h06);//zhuangwei*/
 	/*cpu.write_byte(8'h19,8'h01,8'h7f);//zhuangwei*/
@@ -206,7 +206,7 @@ void atv_dmd_misc(void)
 			atv_dmd_wr_long(APB_BLOCK_ADDR_VDAGC, 0x3c, reg_23cf);
 		/*guanzhong@20150804a*/
 		atv_dmd_wr_byte(APB_BLOCK_ADDR_SIF_STG_2, 0x00, 0x1);
-		if (!atvdemod_agc_new || !is_meson_t5m_cpu()) {
+		if (!atvdemod_agc_new) {
 			if (is_meson_txhd_cpu()) {
 				atv_dmd_wr_long(APB_BLOCK_ADDR_AGC_PWM,
 						0x10, 0x00011020);
@@ -232,7 +232,7 @@ void atv_dmd_misc(void)
 		else
 			atv_dmd_wr_long(APB_BLOCK_ADDR_VDAGC, 0x3c, 0x88188832);
 
-		if (!atvdemod_agc_new || !is_meson_t5m_cpu())
+		if (!atvdemod_agc_new)
 			atv_dmd_wr_long(APB_BLOCK_ADDR_AGC_PWM, 0x08, 0x46170200);
 	}
 
@@ -1361,7 +1361,7 @@ void configure_receiver(int Broadcast_Standard, unsigned int Tuner_IF_Frequency,
 	/*26 dB dynamic range*/
 	atv_dmd_wr_byte(APB_BLOCK_ADDR_AGC_PWM, 0x09, 0xa);
 	if (tuner_id == AM_TUNER_R840 || tuner_id == AM_TUNER_R842) {
-		if (atvdemod_agc_new && is_meson_t5m_cpu()) {
+		if (atvdemod_agc_new) {
 			atv_dmd_wr_long(APB_BLOCK_ADDR_AGC_PWM, 0x10, 0x11020);
 			/* target: 0x20, kp: 8. */
 			atv_dmd_wr_long(APB_BLOCK_ADDR_AGC_PWM, 0x08, 0x46080200);
@@ -1715,6 +1715,8 @@ int atvdemod_clk_init(void)
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
 		if (is_meson_t3_cpu() || is_meson_t5m_cpu())
 			W_HIU_REG(HHI_ATV_DMD_SYS_CLK_CNTL_T3, 0x1800080);
+		else if (is_meson_t3x_cpu())
+			W_HIU_REG(HHI_ATV_DMD_SYS_CLK_CNTL_T3X, 0x1800080);
 		else
 			W_HIU_REG(HHI_ATV_DMD_SYS_CLK_CNTL, 0x1800080);
 	} else {

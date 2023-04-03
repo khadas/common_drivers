@@ -136,8 +136,7 @@ void qam_auto_scan(struct aml_dtvdemod *demod, int auto_qam_enable)
 		/* j83b */
 		if (demod->atsc_mode == QAM_64 || demod->atsc_mode == QAM_256 ||
 			demod->atsc_mode == QAM_AUTO ||
-			(!is_meson_t5d_cpu() && !is_meson_s4d_cpu() && !is_meson_s4_cpu() &&
-				!is_meson_t3_cpu() && !is_meson_t5w_cpu() && !is_meson_t5m_cpu())) {
+			!cpu_after_eq(MESON_CPU_MAJOR_ID_T5D)) {
 			dvbc_cfg_tim_sweep_range(demod, SYM_SPEED_NORMAL);
 		} else {
 			if (demod->auto_sr)
@@ -492,8 +491,7 @@ void dvbc_reg_initial(struct aml_dtvdemod *demod, struct dvb_frontend *fe)
 		/* j83b */
 		if (demod->atsc_mode == QAM_64 || demod->atsc_mode == QAM_256 ||
 			demod->atsc_mode == QAM_AUTO ||
-			(!is_meson_t5d_cpu() && !is_meson_s4d_cpu() && !is_meson_s4_cpu() &&
-				!is_meson_t3_cpu() && !is_meson_t5w_cpu() && !is_meson_t5m_cpu()))
+			!cpu_after_eq(MESON_CPU_MAJOR_ID_T5D))
 			qam_write_reg(demod, SR_SCAN_SPEED, 0x245cf450);
 		else
 			qam_write_reg(demod, SR_SCAN_SPEED, 0x235cf459);
@@ -799,7 +797,7 @@ unsigned int dvbc_auto_qam_process(struct aml_dtvdemod *demod)
 	}
 
 	// 2. get QAM constellation map accumulated value.
-	if (!is_meson_t5m_cpu()) {
+	if (is_meson_t5w_cpu()) {
 		be = qam_read_reg(demod, 0xbe);
 		bf = qam_read_reg(demod, 0xbf);
 		c0 = qam_read_reg(demod, 0xc0);
@@ -807,13 +805,13 @@ unsigned int dvbc_auto_qam_process(struct aml_dtvdemod *demod)
 
 	if (eq_state > 0x01) {
 		// 3. get QAM probability distribution.
-		if (!is_meson_t5m_cpu()) {
+		if (is_meson_t5w_cpu()) {
 			d4 = qam_read_reg(demod, 0xd4);
 			d5 = qam_read_reg(demod, 0xd5);
 			d3 = qam_read_reg(demod, 0xd3);
 		}
 
-		if (is_meson_t5m_cpu()) {
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M)) {
 			be = qam_read_reg(demod, 0xbe);
 			bf = qam_read_reg(demod, 0xbf);
 			c0 = qam_read_reg(demod, 0xc0);
@@ -845,7 +843,7 @@ unsigned int dvbc_auto_qam_process(struct aml_dtvdemod *demod)
 		PR_DVBC("%s: 0xd3[0x%x], 0xd4[0x%x], 0xd5[0x%x].\n",
 				__func__, d3, d4, d5);
 
-		if (is_meson_t5m_cpu()) {
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M)) {
 			idx[0] = be & 0x1ff;
 			idx[1] = (be >> 10) & 0x1ff;
 			idx[2] = (be >> 20) & 0x1ff;
@@ -932,7 +930,7 @@ unsigned int dvbc_auto_qam_process(struct aml_dtvdemod *demod)
 		idx_128_acc = (d5 & 0x7f0000) >> 16;
 		idx_256_acc = (d5 & 0x7f000000) >> 24;
 
-		if (is_meson_t5m_cpu()) {
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M)) {
 			idx_1_acc = (d3 & 0x3f000000) >> 24;
 			idx_77 = (d3 & 0x7ff000) >> 12;
 		} else {
@@ -954,7 +952,7 @@ unsigned int dvbc_auto_qam_process(struct aml_dtvdemod *demod)
 		PR_DVBC("%s: total_64_128_256_acc[0x%x].\n",
 				__func__, total_64_128_256_acc);
 
-		if (is_meson_t5m_cpu()) {
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M)) {
 			for (i = 0; i < 64; ++i)
 				idx_all += idx[i];
 
@@ -998,7 +996,7 @@ unsigned int dvbc_auto_qam_process(struct aml_dtvdemod *demod)
 				__func__, lock_flag, aa, bb);
 
 		// 5. get qam.
-		if (is_meson_t5m_cpu()) {
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M)) {
 			if (bb >= 60 && total_64_128_256_acc > 4) {
 				if (lock_flag == 1 || idx_77 > 5000)
 					find_qam = QAM_MODE_256;

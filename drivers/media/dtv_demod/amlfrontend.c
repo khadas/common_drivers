@@ -637,8 +637,9 @@ static int gxtv_demod_dvbc_read_status_timer
 		demod->last_lock = ilock;
 		if (ilock == 0) {
 			demod->fast_search_finish = 0;
-			if ((is_meson_t5w_cpu() || is_meson_t5m_cpu()) && demod->auto_qam_done &&
-					fe->dtv_property_cache.modulation == QAM_AUTO) {
+			if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5W) &&
+				demod->auto_qam_done &&
+				fe->dtv_property_cache.modulation == QAM_AUTO) {
 				demod->auto_qam_mode = QAM_MODE_256;
 				demod_dvbc_set_qam(demod, demod->auto_qam_mode);
 				demod->auto_qam_done = 0;
@@ -3353,7 +3354,8 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 		demod->auto_qam_mode = QAM_MODE_256;
 		demod->auto_done_times = 0;
 		/* loss lock, reset 256qam, start auto qam again. */
-		if ((is_meson_t5w_cpu() || is_meson_t5m_cpu()) && demod->auto_qam_done) {
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5W) &&
+			demod->auto_qam_done) {
 			demod_dvbc_set_qam(demod, demod->auto_qam_mode);
 			demod->auto_qam_done = 0;
 			demod->auto_times = 0;
@@ -3438,7 +3440,7 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 		}
 	}
 
-	if (is_meson_t5w_cpu() || is_meson_t5m_cpu()) {
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5W)) {
 		if (!demod->auto_qam_done) {
 			demod->auto_done_times = 0;
 			qam_mode = dvbc_auto_qam_process(demod);
@@ -3544,7 +3546,7 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 		return 1;
 	}
 
-	if (demod->auto_times == 15 || ((is_meson_t5w_cpu() || is_meson_t5m_cpu()) &&
+	if (demod->auto_times == 15 || (cpu_after_eq(MESON_CPU_MAJOR_ID_T5W) &&
 			demod->auto_times == 2 && !demod->auto_qam_done)) {
 		demod->auto_times = 0;
 		demod->auto_no_sig_cnt = 0;
@@ -3555,7 +3557,7 @@ unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool r
 
 	demod->auto_times++;
 	/* loop from 16 to 256 */
-	if (!is_meson_t5w_cpu() && !is_meson_t5m_cpu()) {
+	if (!cpu_after_eq(MESON_CPU_MAJOR_ID_T5W)) {
 		demod->auto_qam_mode = dvbc_switch_qam(demod->auto_qam_mode);
 		demod_dvbc_set_qam(demod, demod->auto_qam_mode);
 
@@ -3805,9 +3807,9 @@ static int gxtv_demod_dvbc_tune(struct dvb_frontend *fe, bool re_tune,
 				real_para_clear(&demod->real_para);
 				demod->fast_search_finish = 0;
 				/* loss lock, reset 256qam, start auto qam again. */
-				if ((is_meson_t5w_cpu() || is_meson_t5m_cpu()) &&
-						demod->auto_qam_done &&
-						fe->dtv_property_cache.modulation == QAM_AUTO) {
+				if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5W) &&
+					demod->auto_qam_done &&
+					fe->dtv_property_cache.modulation == QAM_AUTO) {
 					demod->auto_qam_mode = QAM_MODE_256;
 					demod_dvbc_set_qam(demod, demod->auto_qam_mode);
 					demod->auto_qam_done = 0;
@@ -5105,7 +5107,8 @@ static void demod_32k_ctrl(unsigned int onoff)
 
 	if (devp->data->hw_ver != DTVDEMOD_HW_T3 &&
 		devp->data->hw_ver != DTVDEMOD_HW_T5M &&
-		devp->data->hw_ver != DTVDEMOD_HW_T5W)
+		devp->data->hw_ver != DTVDEMOD_HW_T5W &&
+		devp->data->hw_ver != DTVDEMOD_HW_T3X)
 		return;
 
 	if (onoff) {
@@ -5702,6 +5705,25 @@ const struct meson_ddemod_data  data_t5m = {
 	.hw_ver = DTVDEMOD_HW_T5M,
 };
 
+const struct meson_ddemod_data data_t3x = {
+	.dig_clk = {
+		.demod_clk_ctl = 0x8d,
+		.demod_clk_ctl_1 = 0x8e,
+	},
+	.regoff = {
+		.off_demod_top = 0xf000,
+		.off_dvbc = 0x1000,
+		.off_dtmb = 0x0000,
+		.off_atsc = 0x0c00,
+		.off_isdbt = 0x800,
+		.off_front = 0x3800,
+		.off_dvbs = 0x2000,
+		.off_dvbt_isdbt = 0x800,
+		.off_dvbt_t2 = 0x0000,
+	},
+	.hw_ver = DTVDEMOD_HW_T3X,
+};
+
 static const struct of_device_id meson_ddemod_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -5751,6 +5773,9 @@ static const struct of_device_id meson_ddemod_match[] = {
 	}, {
 		.compatible = "amlogic, ddemod-t5m",
 		.data		= &data_t5m,
+	}, {
+		.compatible = "amlogic, ddemod-t3x",
+		.data		= &data_t3x,
 	},
 	/* DO NOT remove, to avoid scan err of KASAN */
 	{}
@@ -5809,6 +5834,7 @@ static int dds_init_reg_map(struct platform_device *pdev)
 
 	case DTVDEMOD_HW_T5W:
 	case DTVDEMOD_HW_T5M:
+	case DTVDEMOD_HW_T3X:
 		break;
 
 	default:
@@ -8126,6 +8152,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			strcpy(aml_dtvdm_ops.info.name,
 					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT ddemod t5w");
 			break;
+
 		case DTVDEMOD_HW_T5M:
 			/* max delsys is 8, index: 0~7 */
 			aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
@@ -8142,6 +8169,24 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 #endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT/DTMB ddemod t5m");
+			break;
+
+		case DTVDEMOD_HW_T3X:
+			/* max delsys is 8, index: 0~7 */
+			aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
+			aml_dtvdm_ops.delsys[1] = SYS_ATSC;
+			aml_dtvdm_ops.delsys[2] = SYS_DVBS2;
+			aml_dtvdm_ops.delsys[3] = SYS_ISDBT;
+			aml_dtvdm_ops.delsys[4] = SYS_DVBS;
+			aml_dtvdm_ops.delsys[5] = SYS_DVBT2;
+			aml_dtvdm_ops.delsys[6] = SYS_DVBT;
+			aml_dtvdm_ops.delsys[7] = SYS_DVBC_ANNEX_B;
+			aml_dtvdm_ops.delsys[8] = SYS_DTMB;
+#ifdef CONFIG_AMLOGIC_DVB_COMPAT
+			aml_dtvdm_ops.delsys[9] = SYS_ANALOG;
+#endif
+			strcpy(aml_dtvdm_ops.info.name,
+					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT/DTMB ddemod t3x");
 			break;
 
 		default:

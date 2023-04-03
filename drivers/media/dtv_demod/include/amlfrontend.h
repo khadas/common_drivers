@@ -93,6 +93,8 @@
 /*  V1.1.99  fix init flow */
 /*  V1.1.100  bring up dump ADC data feature */
 /*  V3.1.101  fix dvb-s unicable blind scan miss TP */
+/*  V1.2.0  bring up dump ADC data feature */
+/*  V1.2.00  t3x bringup */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -216,6 +218,7 @@ enum dtv_demod_hw_ver_e {
 	DTVDEMOD_HW_S4D,
 	DTVDEMOD_HW_T5W,
 	DTVDEMOD_HW_T5M,
+	DTVDEMOD_HW_T3X
 };
 
 struct ddemod_dig_clk_addr {

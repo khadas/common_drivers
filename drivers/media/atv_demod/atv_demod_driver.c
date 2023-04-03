@@ -63,7 +63,8 @@
 /* 2022/06/16 --- V2.34 --- Fix audio setting and resume. */
 /* 2022/08/27 --- V2.35 --- Fix ripples. */
 /* 2022/12/15 --- V2.36 --- t5m ATVDemod/DTVDemod/Tuner bringup */
-#define AMLATVDEMOD_VER "V2.36"
+/* 2022/12/15 --- V2.37 --- t3x bringup */
+#define AMLATVDEMOD_VER "V2.37"
 
 struct aml_atvdemod_device *amlatvdemod_devp;
 
@@ -543,11 +544,14 @@ static void aml_atvdemod_dt_parse(struct aml_atvdemod_device *pdev)
 		return;
 	}
 
-	ret = of_property_read_u32(node, "reg_23cf", &val);
-	if (ret)
-		pr_err("can't find reg_23cf.\n");
-	else
-		pdev->reg_23cf = val;
+	/* use DTV agc pin and rc */
+	ret = of_property_read_u32(node, "common_agc", &val);
+	if (ret) {
+		atvdemod_agc_new = 0;
+		pr_err("can't find common_agc.\n");
+	} else {
+		atvdemod_agc_new = val;
+	}
 
 	ret = of_property_read_u32(node, "audio_gain_val", &val);
 	if (ret)
@@ -754,9 +758,10 @@ static int aml_atvdemod_probe(struct platform_device *pdev)
 		dev->audio_reg_base = ioremap(round_down(0xffd0d340, 0x3), 4);
 
 		pr_info("audio_reg_base = 0x%p.\n", dev->audio_reg_base);
-	} else
+	}
 #endif
-	if (is_meson_t3_cpu() || is_meson_t5m_cpu()) {
+	if (is_meson_t3_cpu() || is_meson_t5m_cpu() ||
+		is_meson_t3x_cpu()) {
 		dev->audio_reg_base = ioremap(round_down(0xfe33074c, 0x3), 4);
 
 		pr_info("audio_reg_base = 0x%p.\n", dev->audio_reg_base);

@@ -38,6 +38,7 @@ enum vt_video_cmd_e {
 	VT_VIDEO_SET_COLOR_BLACK,
 	VT_VIDEO_SET_COLOR_BLUE,
 	VT_VIDEO_SET_COLOR_GREEN,
+	VT_VIDEO_SET_DISPLAY_FRAME,
 };
 
 enum vt_video_type_e {
@@ -62,7 +63,7 @@ struct vt_ctrl_data {
 	enum vt_video_cmd_e video_cmd;
 	int video_cmd_data;
 	int client_id;
-	struct vt_krect source_crop;
+	struct vt_krect rect;
 };
 
 /**

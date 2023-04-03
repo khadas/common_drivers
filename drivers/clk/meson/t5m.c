@@ -889,7 +889,7 @@ static struct t5m_sys_pll_nb_data t5m_sys_pll_nb_data = {
 static const struct reg_sequence t5m_hifi_init_regs[] = {
 	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x03a00000 },
 	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00040000 },
-	{ .reg = ANACTRL_HIFIPLL_CTRL3,	.def = 0x090da200 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL3,	.def = 0x0b0da200 },
 };
 
 static const struct pll_mult_range t5m_hifi_pll_mult_range = {

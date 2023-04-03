@@ -1466,6 +1466,12 @@
 	status = "disabled";
 };
 
+&dcon_led {
+	pinctrl-names = "default";
+	led_number = <13>;
+	pinctrl-0 = <&dcon_led_pins3>;
+	status = "disabled";
+};
 &i2c4 {
 	clock-frequency = <400000>;
 	pinctrl-names = "default";

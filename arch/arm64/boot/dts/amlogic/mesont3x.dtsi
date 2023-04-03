@@ -2946,7 +2946,7 @@
 
 	lut_dma:lut_dma {
 		compatible = "amlogic, meson-s5, lut_dma";
-		status = "disabled";
+		status = "okay";
 	};
 
 	state_led:state_led {

@@ -269,6 +269,16 @@ void amdv_set_toggle_flag(int flag);
 #define AMVECM_IOC_S_COLOR_MATRIX_DATA		_IOW(_VE_CM, 0x81, struct video_color_matrix)
 #define AMVECM_IOC_G_COLOR_MATRIX_DATA		_IOR(_VE_CM, 0x82, struct video_color_matrix)
 
+/*hdr output mode*/
+#define HDR_OUTPUT_MODE_DOLBY_VISION			0
+#define HDR_OUTPUT_MODE_HDR10					1
+#define HDR_OUTPUT_MODE_HLG						2
+#define HDR_OUTPUT_MODE_HDR10PLUS				3
+#define HDR_OUTPUT_MODE_CUVA_HDR				4
+#define HDR_OUTPUT_MODE_CUVA_HLG				5
+#define HDR_OUTPUT_MODE_SDR						6
+#define HDR_OUTPUT_MODE_BYPASS					7
+
 struct tcon_gamma_table_s {
 	u16 data[257];
 } /*tcon_gamma_table_t */;
@@ -815,6 +825,8 @@ void bs_ct_latch(void);
 extern enum chip_type chip_type_id;
 extern enum chip_cls_e chip_cls_id;
 
+extern enum output_format_e output_format;
+
 int amvecm_on_vs(struct vframe_s *display_vf,
 		 struct vframe_s *toggle_vf,
 		 int flags,
@@ -862,6 +874,10 @@ int amvecm_drm_gamma_enable(u32 index);
 int amvecm_drm_gamma_disable(u32 index);
 int am_meson_ctm_set(u32 index, struct drm_color_ctm *ctm);
 int am_meson_ctm_disable(void);
+
+int get_hdr_cur_output(void);
+int get_hdr_conversion_cap(void);
+void set_hdr_output(int out);
 
 void enable_osd1_mtx(unsigned int en);
 void set_cur_hdr_policy(uint policy);

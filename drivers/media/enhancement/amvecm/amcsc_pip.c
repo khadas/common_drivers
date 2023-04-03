@@ -33,7 +33,7 @@
 
 static enum output_format_e target_format[VD_PATH_MAX];
 static enum hdr_type_e cur_source_format[VD_PATH_MAX];
-static enum output_format_e output_format;
+enum output_format_e output_format;
 
 /*bit4: force mode; bit 0-3 slice num */
 static uint slice_set = 0x14;

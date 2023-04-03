@@ -334,6 +334,10 @@ unsigned int ai_color_enable;
 module_param(ai_color_enable, uint, 0664);
 MODULE_PARM_DESC(ai_color_enable, "\n ai_color_enable\n");
 
+unsigned int hdr_output_mode;
+module_param(hdr_output_mode, uint, 0664);
+MODULE_PARM_DESC(hdr_output_mode, "\n hdr_output_mode\n");
+
 unsigned int pq_user_value;
 enum hdr_type_e hdr_source_type = HDRTYPE_NONE;
 
@@ -349,6 +353,28 @@ unsigned int gmv_th = 17;
 int pre_fmeter_level = 0, cur_fmeter_level = 0, fmeter_flag = 0;
 int cur_sr_level = 5;
 int sat_hue_offset_val;
+
+/* bit0: SDR->HDR10 */
+/* bit1: SDR->HLG */
+/* bit2: HDR10->SDR */
+/* bit3: HDR10->HLG */
+/* bit4: HLG->SDR */
+/* bit5: HLG->HDR10 */
+/* bit6: HDR10_PLUS->HDR10 */
+/* bit7: HDR10_PLUS->SDR */
+/* bit8: HDR10_PLUS->HLG */
+/* bit9: CUVA_HDR->SDR */
+/* bit10: CUVA_HDR->HDR10 */
+/* bit11: CUVA_HDR->HLG */
+/* bit12: CUVA_HLG->SDR */
+/* bit13: CUVA_HLG->HDR10 */
+/* bit14: CUVA_HLG->HLG */
+/* bit15: DOLBY_VISION->SDR */
+/* bit16: SDR->DOLBY_VISION */
+/* bit17: DOLBY_VISION->HDR10*/
+/* bit18: HDR10->DOLBY_VISION */
+/* bit19: HLG->DOLBY_VISION */
+int hdr_cap;
 
 static int wb_init_bypass_coef[24] = {
 	0, 0, 0, /* pre offset */
@@ -413,6 +439,32 @@ struct eye_protect_s eye_protect;
 static int hist_chl;
 
 static unsigned int cm_slice_idx;
+
+bool is_hdr_stb_mode(void)
+{
+	if ((is_meson_txlx_cpu() && !vinfo_lcd_support()) ||
+		(is_meson_tm2_cpu() && !vinfo_lcd_support()) ||
+		(is_meson_t7_cpu() && !vinfo_lcd_support()) ||
+		is_meson_gxm_cpu() || is_meson_g12a_cpu() ||
+		is_meson_g12b_cpu() || is_meson_sm1_cpu() ||
+		is_meson_sc2_cpu() || is_meson_s4d_cpu() ||
+		is_meson_s5_cpu())
+		return true;
+	else
+		return false;
+}
+
+bool is_hdr_tv_mode(void)
+{
+	if ((is_meson_txlx_cpu() && vinfo_lcd_support()) ||
+		(is_meson_tm2_cpu() && vinfo_lcd_support()) ||
+		(is_meson_t7_cpu() && vinfo_lcd_support()) ||
+		is_meson_t3_cpu() || is_meson_t5w_cpu() ||
+		is_meson_t5m_cpu() || is_meson_t5d_cpu())
+		return true;
+	else
+		return false;
+}
 
 static void str_sapr_to_d(char *s, int *d, int n)
 {
@@ -11232,6 +11284,95 @@ static int aml_vecm_lc_curve_irq_init(void)
 
 	return 0;
 }
+
+int get_hdr_conversion_cap(void)
+{
+	if (is_hdr_stb_mode()) {
+		hdr_cap = 0x7fff;
+		if (is_amdv_enable() && is_amdv_on()) {
+			hdr_cap = 0xfffff;
+			};
+	} else if (is_hdr_tv_mode()) {
+		hdr_cap = (1 << 3) | (1 << 5) | (1 << 8) | (1 << 10) | (1 << 13);
+		if (is_amdv_enable() && is_amdv_on()) {
+			hdr_cap |= 1 << 16;
+		};
+	}
+	return hdr_cap;
+}
+EXPORT_SYMBOL(get_hdr_conversion_cap);
+
+int get_hdr_cur_output(void)
+{
+	int mode = 0;
+
+	if (is_amdv_on() && is_amdv_enable()) {
+		mode = get_amdv_mode();
+		if (mode == AMDV_OUTPUT_MODE_IPT ||
+			mode == AMDV_OUTPUT_MODE_IPT_TUNNEL)
+			hdr_output_mode = HDR_OUTPUT_MODE_DOLBY_VISION;
+		else if (mode == AMDV_OUTPUT_MODE_HDR10)
+			hdr_output_mode = HDR_OUTPUT_MODE_HDR10;
+		else if (mode == AMDV_OUTPUT_MODE_SDR8 ||
+			mode == AMDV_OUTPUT_MODE_SDR10)
+			hdr_output_mode = HDR_OUTPUT_MODE_SDR;
+		else
+			mode = output_format;
+		if (mode == BT709 || mode == BT_BYPASS)
+			hdr_output_mode = HDR_OUTPUT_MODE_SDR;
+		else if (mode == BT2020 || mode == BT2020_PQ)
+			hdr_output_mode = HDR_OUTPUT_MODE_HDR10;
+		else if (mode == BT2020_HLG)
+			hdr_output_mode = HDR_OUTPUT_MODE_HLG;
+		else if (mode == BT2020_PQ_DYNAMIC)
+			hdr_output_mode = HDR_OUTPUT_MODE_HDR10PLUS;
+		else if (mode == BT2020YUV_BT2020RGB_CUVA)
+			hdr_output_mode = HDR_OUTPUT_MODE_CUVA_HDR;
+	} else {
+		mode = output_format;
+		if (mode == BT709 || mode == BT_BYPASS)
+			hdr_output_mode = HDR_OUTPUT_MODE_SDR;
+		else if (mode == BT2020 || mode == BT2020_PQ)
+			hdr_output_mode = HDR_OUTPUT_MODE_HDR10;
+		else if (mode == BT2020_HLG)
+			hdr_output_mode = HDR_OUTPUT_MODE_HLG;
+		else if (mode == BT2020_PQ_DYNAMIC)
+			hdr_output_mode = HDR_OUTPUT_MODE_HDR10PLUS;
+		else if (mode == BT2020YUV_BT2020RGB_CUVA)
+			hdr_output_mode = HDR_OUTPUT_MODE_CUVA_HDR;
+	}
+
+	return hdr_output_mode;
+}
+EXPORT_SYMBOL(get_hdr_cur_output);
+
+void set_hdr_output(int out)
+{
+	int mode = 0;
+
+	if (is_amdv_on() && is_amdv_enable()) {
+		if (out == HDR_OUTPUT_MODE_DOLBY_VISION)
+			mode = AMDV_OUTPUT_MODE_IPT_TUNNEL;
+		else if (out == HDR_OUTPUT_MODE_HDR10)
+			mode = AMDV_OUTPUT_MODE_HDR10;
+		else if (out == HDR_OUTPUT_MODE_SDR)
+			mode = AMDV_OUTPUT_MODE_SDR8;
+		else
+			pr_info("not support amdv output mode %d\n", mode);
+		set_amdv_mode(mode);
+	} else {
+		if (out == HDR_OUTPUT_MODE_HDR10)
+			mode = BT2020_PQ;
+		else if (out == HDR_OUTPUT_MODE_HLG)
+			mode = BT2020_HLG;
+		else if (out == HDR_OUTPUT_MODE_SDR)
+			mode = BT709;
+		else
+			pr_info("not support hdr output mode %d\n", mode);
+		set_force_output(mode);
+	}
+}
+EXPORT_SYMBOL(set_hdr_output);
 
 static int aml_vecm_probe(struct platform_device *pdev)
 {

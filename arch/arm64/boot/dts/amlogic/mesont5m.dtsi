@@ -2413,6 +2413,13 @@
 		};
 	};
 
+	mclk_1_h_pins: mclk_1_h_pin {
+		mux { /* GPIOH_14 */
+			groups = "mclk_1_h";
+			function = "mclk";
+		};
+	};
+
 	spdifin_m29_pins: spdifin {
 		mux { /* GPIOM_29 */
 			groups = "spdif_in_m";
@@ -2950,7 +2957,7 @@
 	i2c2_pins2:i2c2_pins2 {
 		mux {
 			groups = "i2c2_sda_h21",
-				"i2c2_sck_h20";
+				"i2c2_sck_h21";
 			function = "i2c2";
 			drive-strength-microamp = <3000>;
 			bias-disable;

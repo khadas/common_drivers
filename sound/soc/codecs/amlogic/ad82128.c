@@ -390,6 +390,11 @@ static int ad82128_suspend(struct snd_soc_component *component)
 	if (ret < 0)
 		dev_err(component->dev, "failed to disable supplies: %d\n", ret);
 
+	if (ad82128->reset_pin >= 0) {
+		gpio_direction_output(ad82128->reset_pin, 0);
+		msleep(20);
+	}
+
 	return ret;
 }
 
@@ -403,6 +408,12 @@ static int ad82128_resume(struct snd_soc_component *component)
 	if (ret < 0) {
 		dev_err(component->dev, "failed to enable supplies: %d\n", ret);
 		return ret;
+	}
+
+	if (ad82128->reset_pin >= 0) {
+		gpio_direction_output(ad82128->reset_pin, 0);
+		msleep(20);
+		gpio_direction_output(ad82128->reset_pin, 1);
 	}
 
 	regcache_cache_only(ad82128->regmap, false);
@@ -632,6 +643,17 @@ static int ad82128_probe(struct i2c_client *client,
 	return 0;
 }
 
+static void ad82128_i2c_shutdown(struct i2c_client *client)
+{
+	struct ad82128_data *data = i2c_get_clientdata(client);
+
+	if (!data)
+		return;
+
+	if (data->reset_pin)
+		gpio_direction_output(data->reset_pin, GPIOF_OUT_INIT_LOW);
+}
+
 static const struct i2c_device_id ad82128_id[] = {
 	{ "ad82128", AD82128 },
 	{}
@@ -655,6 +677,7 @@ static struct i2c_driver ad82128_i2c_driver = {
 		.of_match_table = of_match_ptr(ad82128_of_match),
 	},
 	.probe = ad82128_probe,
+	.shutdown = ad82128_i2c_shutdown,
 	.id_table = ad82128_id,
 };
 

@@ -5476,7 +5476,7 @@ void aml_phy_power_off(void)
 	} else if (rx.phy_ver == PHY_VER_T5) {
 		/* pll power down */
 		aml_phy_power_off_t5();
-	} else if (rx.phy_ver >= PHY_VER_T7) {
+	} else if (rx.phy_ver >= PHY_VER_T7 && rx.phy_ver <= PHY_VER_T5W) {
 		/* pll power down */
 		aml_phy_power_off_t7();
 	} else if (rx.phy_ver == PHY_VER_T5M) {

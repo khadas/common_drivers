@@ -2894,6 +2894,9 @@ static int earc_platform_resume(struct platform_device *pdev)
 	struct earc *p_earc = dev_get_drvdata(&pdev->dev);
 	int ret = 0;
 
+	/* restore the power */
+	aml_earctx_enable_d2a(true);
+
 	/* earc device, and the state is arc, need recovery earc */
 	if (!IS_ERR(p_earc->tx_cmdc_map) &&
 	    p_earc->tx_earc_mode &&
@@ -2981,6 +2984,9 @@ static int earc_platform_suspend(struct platform_device *pdev,
 			}
 		}
 	}
+
+	/* shutdown the power */
+	aml_earctx_enable_d2a(false);
 
 	return 0;
 }

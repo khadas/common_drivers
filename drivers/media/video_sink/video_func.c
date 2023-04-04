@@ -1810,7 +1810,8 @@ s32 primary_render_frame(struct video_layer_s *layer,
 	vd_s5_hw_set(layer, dispbuf, frame_par);
 	vd_scaler_setting(layer, &layer->sc_setting);
 	aisr_scaler_setting(layer, &layer->aisr_sc_setting);
-			/* update alpha win */
+	aisr_demo_axis_set();
+	/* update alpha win */
 	if (!cur_dev->pre_vsync_enable)
 		alpha_win_set(layer);
 	vd_blend_setting(layer, &layer->bld_setting);

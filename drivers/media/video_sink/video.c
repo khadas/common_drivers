@@ -11498,7 +11498,6 @@ static ssize_t aisr_demo_en_store(struct class *cla,
 	}
 	if (res != cur_dev->aisr_demo_en) {
 		cur_dev->aisr_demo_en = res;
-		aisr_demo_enable();
 	}
 	return count;
 }
@@ -11528,7 +11527,6 @@ static ssize_t aisr_demo_axis_store(struct class *cla,
 			cur_dev->aisr_demo_ystart = parsed[1];
 			cur_dev->aisr_demo_xend = parsed[2];
 			cur_dev->aisr_demo_yend = parsed[3];
-			aisr_demo_axis_set();
 		}
 	}
 	return count;

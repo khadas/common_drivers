@@ -42,8 +42,8 @@ static int lcd_init_on_flag;
  * lcd mode function
  * **************************************************
  */
-#define ACTIVE_FRAME_RATE_CNT     3
-#define LCD_STD_FRAME_RATE_MAX    5
+#define ACTIVE_FRAME_RATE_CNT     11
+#define LCD_STD_FRAME_RATE_MAX    11
 static struct lcd_duration_s lcd_std_fr[] = {
 	{60,  60,     1,    0},
 	{59,  60000,  1001, 1},
@@ -54,12 +54,28 @@ static struct lcd_duration_s lcd_std_fr[] = {
 };
 
 static struct lcd_duration_s lcd_std_fr_high[] = {
+	{144, 144,    1,    0},
 	{120, 120,    1,    0},
 	{119, 120000, 1001, 1},
 	{100, 100,    1,    0},
 	{96,  96,     1,    0},
 	{95,  96000,  1001, 1},
 	{120, 120,    1,    0}
+};
+
+static struct lcd_duration_s lcd_std_fr_all[] = {
+	{144, 144,    1,    0},
+	{120, 120,    1,    0},
+	{119, 120000, 1001, 1},
+	{100, 100,    1,    0},
+	{96,  96,     1,    0},
+	{95,  96000,  1001, 1},
+	{60,  60,     1,    0},
+	{59,  60000,  1001, 1},
+	{50,  50,     1,    0},
+	{48,  48,     1,    0},
+	{47,  48000,  1001, 1},
+	{60,  60,     1,    0}
 };
 
 struct lcd_vmode_info_s {
@@ -124,7 +140,7 @@ static struct lcd_vmode_info_s lcd_vmode_info[] = {
 		.height            = 2160,
 		.frame_rate        = 60,
 		.frac              = 0,
-		.duration          = lcd_std_fr,
+		.duration          = lcd_std_fr_all,
 	},
 	{
 		.name              = "3840x1080p",
@@ -822,6 +838,7 @@ static struct lcd_vframe_match_s lcd_vframe_match_table_1[] = {
 	{5994, 59},
 	{5000, 50},
 	{12000, 120},
+	{14400, 144},
 	{11988, 119},
 	{10000, 100}
 };
@@ -832,6 +849,7 @@ static struct lcd_vframe_match_s lcd_vframe_match_table_2[] = {
 	{5000, 50},
 	{4800, 48},
 	{4795, 47},
+	{14400, 144},
 	{12000, 120},
 	{11988, 119},
 	{10000, 100},

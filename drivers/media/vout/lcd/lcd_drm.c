@@ -140,6 +140,10 @@ static struct drm_display_mode tv_lcd_mode_ref[] = {
 };
 
 static unsigned int lcd_std_frame_rate[] = {
+	144,
+	120,
+	119,
+	100,
 	60,
 	59,
 	50,
@@ -148,6 +152,7 @@ static unsigned int lcd_std_frame_rate[] = {
 };
 
 static unsigned int lcd_std_frame_rate_high[] = {
+	144,
 	120,
 	119,
 	100

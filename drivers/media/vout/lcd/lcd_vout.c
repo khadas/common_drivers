@@ -1931,6 +1931,7 @@ static int lcd_config_probe(struct aml_lcd_drv_s *pdrv, struct platform_device *
 	pdrv->module_reset = lcd_module_reset;
 	pdrv->config.timing.ppc = lcd_boot_ctrl_config[pdrv->index].ppc;
 	lcd_clk_config_probe(pdrv);
+	LCDPR("%s ppc=%d\n", __func__, pdrv->config.timing.ppc);
 	lcd_phy_config_init(pdrv);
 	lcd_venc_probe(pdrv);
 	lcd_config_default(pdrv);

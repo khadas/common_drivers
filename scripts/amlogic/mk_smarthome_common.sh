@@ -114,8 +114,8 @@ fi
 
 export KERNEL_DIR COMMON_DRIVERS_DIR MANUAL_INSMOD_MODULE
 
-if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/common/auto_patch.sh ]]; then
-	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/common/auto_patch.sh ${FULL_KERNEL_VERSION}
+if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
+	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ${FULL_KERNEL_VERSION}
 fi
 if [[ ${ONLY_PATCH} -eq "1" ]]; then
 	exit

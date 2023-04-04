@@ -31,6 +31,7 @@ function am_patch()
 		if [ $? -ne 0 ]; then
 			# echo "###patch ${patch##*/}###      "
 			git am -q $patch 1>/dev/null 2>&1;
+			echo -n .
 			if [ $? != 0 ]; then
 				git am --abort
 				cd $ROOT_DIR
@@ -45,9 +46,9 @@ function am_patch()
 function auto_patch()
 {
 	local patch_dir=$1
-	echo patch_dir=$patch_dir
+	#echo patch_dir=$patch_dir
 
-	for file in `ls $patch_dir/*.patch`; do
+	for file in `find ${patch_dir} -name "*.patch" | sort`; do
 		local file_name=${file%.*};           #echo file_name $file_name
 		local resFile=`basename $file_name`;  #echo resFile $resFile
 		local dir_name1=${resFile//#/\/};     #echo dir_name $dir_name
@@ -61,17 +62,18 @@ function auto_patch()
 function traverse_patch_dir()
 {
 	# git am common and common_driver patches
+	echo "Auto Patch Start"
 	for file in `ls ${PATCHES_PATH}/common`; do
 		# echo file=$file
 		if [ -d ${PATCHES_PATH}/common/${file} ]; then
-			for patch in `ls ${PATCHES_PATH}/common/${file}/*.patch`; do
+			for patch in `find ${PATCHES_PATH}/common/${file} -name "*.patch" | sort`; do
 				am_patch ${patch} ${KERNEL_DIR}
 			done
 		fi
 	done
 
 	if [[ -d ${PATCHES_PATH}/common_drivers ]]; then
-		for patch in `ls ${PATCHES_PATH}/common_drivers/*.patch`; do
+		for patch in `find ${PATCHES_PATH}/common_drivers -name "*.patch" | sort`; do
 			am_patch ${patch} ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}
 		done
 	fi
@@ -85,6 +87,7 @@ function traverse_patch_dir()
 		fi
 	done
 
+	echo
 	echo "Patch Finish: ${ROOT_DIR}"
 }
 

@@ -66,7 +66,6 @@ config AMLOGIC_VIDEO_CAPTURE_GC2145_MIPI
 
 config AMLOGIC_VIDEO_CAPTURE_OV5640
 	tristate "Amlogic Platform Capture Driver for OV5640"
-	select VIDEOBUF_VMALLOC
 	depends on AMLOGIC_MEDIA_TVIN
 	depends on AMLOGIC_MEDIA_TVIN_BT656
 	depends on AMLOGIC_MEDIA_VDIN

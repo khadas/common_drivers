@@ -2804,7 +2804,7 @@ static struct clk_regmap t3x_hdmirx_axi_sel = {
 	.data = &(struct clk_regmap_mux_data){
 		.offset = CLKCTRL_HRX_CLK_CTRL4,
 		.mask = 0x3,
-		.shift = 25,
+		.shift = 9,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "hdmirx_axi_sel",
@@ -2817,7 +2817,7 @@ static struct clk_regmap t3x_hdmirx_axi_sel = {
 static struct clk_regmap t3x_hdmirx_axi_div = {
 	.data = &(struct clk_regmap_div_data){
 		.offset = CLKCTRL_HRX_CLK_CTRL4,
-		.shift = 16,
+		.shift = 0,
 		.width = 7,
 	},
 	.hw.init = &(struct clk_init_data){
@@ -2832,7 +2832,7 @@ static struct clk_regmap t3x_hdmirx_axi_div = {
 static struct clk_regmap t3x_hdmirx_axi = {
 	.data = &(struct clk_regmap_gate_data){
 		.offset = CLKCTRL_HRX_CLK_CTRL4,
-		.bit_idx = 24,
+		.bit_idx = 8,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hdmirx_axi",

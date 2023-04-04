@@ -552,6 +552,15 @@
 		key_tolerance = <40 40 40 40 40 40 40>;
 	};
 
+	provisionkey {
+		compatible = "amlogic, provisionkey";
+		status = "disabled";
+		key-permit-default = "write";
+		//new key not need add dts if started with KEY_PROVISION_
+		KEY_PROVISION_XXX { };
+		//test_my_added_keyname { };
+	};//End provisionkey
+
 	unifykey {
 		compatible = "amlogic,unifykey";
 		status = "okay";
@@ -956,8 +965,9 @@
 		frc_hw_pos = <0>;/*0:before postblend; 1:after postblend*/
 		interrupts = <GIC_SPI 221 IRQ_TYPE_EDGE_RISING
 				GIC_SPI 222 IRQ_TYPE_EDGE_RISING
+				GIC_SPI 218 IRQ_TYPE_EDGE_RISING
 				GIC_SPI 128 IRQ_TYPE_EDGE_RISING>;
-		interrupt-names = "irq_frc_in", "irq_frc_out", "irq_frc_rdma";
+		interrupt-names = "irq_frc_in", "irq_frc_out", "irq_axi_crash", "irq_frc_rdma";
 		memory-region = <&frc_cma_reserved>;
 		clocks = <&clkc CLKID_FRC>, <&clkc CLKID_ME>;
 		clock-names = "clk_frc", "clk_me";

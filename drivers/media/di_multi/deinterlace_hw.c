@@ -218,6 +218,30 @@ void dimh_set_crc_init(int count)
 	}
 }
 
+/************************************************
+ * 0x5500 pre2_mif_en,BIT0, 1/2 frame 0,after 1
+ * 0x1700 chan2_en BIT8 1/2 frame 0,after 1
+ * 0x2D60 reg_dnr_dm_fedgeflg_cl BIT11 1/2 frame 1,after 0
+ * 0x2F03 reg_mcdi_motionrefen BIT1 1/2 frame 0
+ * from vlsi jinsen.yang and dandan.lv
+ ***********************************************/
+void dimh_set_crc_init_update(int count)
+{
+	if (DIM_IS_IC_BF(T7))
+		return;
+	if (count < 2) {
+		DIM_RDMA_WR_BITS(DNR_DM_CTRL, 1, 11, 1);
+		DIM_RDMA_WR_BITS(DI_SC2_MEM_GEN_REG, 0, 0, 1);
+		DIM_RDMA_WR_BITS(DI_PRE_CTRL, 0, 8, 1);
+		DIM_RDMA_WR_BITS(MCDI_MOTINEN, 0, 1, 1);
+	} else {
+		DIM_RDMA_WR_BITS(DNR_DM_CTRL, 0, 11, 1);
+		DIM_RDMA_WR_BITS(DI_SC2_MEM_GEN_REG, 1, 0, 1);
+		DIM_RDMA_WR_BITS(DI_PRE_CTRL, 1, 8, 1);
+		//DIM_RDMA_WR_BITS(MCDI_MOTINEN, 1, 1, 1);
+	}
+}
+
 static void crc_init(void)//debug crc init
 {
 	if (DIM_IS_IC_BF(T5))

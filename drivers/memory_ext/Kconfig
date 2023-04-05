@@ -5,8 +5,8 @@ menuconfig AMLOGIC_MEMORY_EXTEND
 	depends on AMLOGIC_DRIVER
 	depends on AMLOGIC_BREAK_GKI
 	depends on AMLOGIC_BREAK_GKI_20
-	select SWIOTLB
-	select DMA_RESTRICTED_POOL
+	select SWIOTLB if !AMLOGIC_MEMORY_OPT
+	select DMA_RESTRICTED_POOL if !AMLOGIC_MEMORY_OPT
 	default n
 	help
 		Amlogic memory extend is drivers which extend for memory management

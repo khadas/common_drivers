@@ -90,10 +90,11 @@ struct page_trace *dmc_find_page_base(struct page *page)
 struct page_trace *dmc_trace_buffer;
 static unsigned long _kernel_text;
 static unsigned int dmc_trace_step;
+
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
 static unsigned long module_alloc_base_dmc;
 static int once_flag = 1;
 
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
 void get_page_trace_buf_hook(void *data, unsigned int migratetype,
 		bool *bypass)
 {

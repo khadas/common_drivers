@@ -206,9 +206,7 @@
 				 VFRAME_FLAG_DI_PW_N_EXT |	\
 				 VFRAME_FLAG_HF	|		\
 				 VFRAME_FLAG_DI_DW	|	\
-				 VFRAME_FLAG_VIDEO_LINEAR	|	\
-				 VFRAME_FLAG_DI_PVPPLINK	|	\
-				 VFRAME_FLAG_DI_BYPASS)
+				 VFRAME_FLAG_VIDEO_LINEAR)
 
 enum process_fun_index_e {
 	PROCESS_FUN_NULL = 0,
@@ -776,7 +774,7 @@ void dim_rdma_exit(void);
 
 void dim_set_di_flag(void);
 void dim_get_vpu_clkb(struct device *dev, struct di_dev_s *pdev);
-
+unsigned int dim_get_vpu_clk_ext(void);
 void dim_log_buffer_state(unsigned char *tag, unsigned int channel);
 
 unsigned char dim_pre_de_buf_config(unsigned int channel);
@@ -788,7 +786,7 @@ void di_reg_setting(unsigned int channel, struct vframe_s *vframe);
 void di_reg_variable(unsigned int channel, struct vframe_s *vframe);
 
 void di_unreg_variable(unsigned int channel);
-void di_unreg_setting(void);
+void di_unreg_setting(bool plink);
 
 void dim_uninit_buf(unsigned int disable_mirror, unsigned int channel);
 

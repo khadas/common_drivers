@@ -379,8 +379,8 @@ union AFBCE_FORMAT_BITS {
 union AFBCE_DEFCOLOR_1_BITS {
 	unsigned int d32;
 	struct {
-		unsigned int enc_defalut_color_0:12,	/* bit[11:0] */
-		enc_defalut_color_3:12,	/* bit[23:12] */
+		unsigned int enc_default_color_0:12,	/* bit[11:0] */
+		enc_default_color_3:12,	/* bit[23:12] */
 		reserved1:8;
 	} b;
 };
@@ -388,8 +388,8 @@ union AFBCE_DEFCOLOR_1_BITS {
 union AFBCE_DEFCOLOR_2_BITS {
 	unsigned int d32;
 	struct {
-		unsigned int enc_defalut_color_1:12,	/* bit[11:0] */
-		enc_defalut_color_2:12,	/* bit[23:12] */
+		unsigned int enc_default_color_1:12,	/* bit[11:0] */
+		enc_default_color_2:12,	/* bit[23:12] */
 		reserved1:8;
 	} b;
 };

@@ -60,6 +60,9 @@ struct combing_status_s {
 	unsigned int cur_level;
 };
 #endif
+
+#define DI_NEW_PQ_V1	//for pq fine tune from roku 2k221208 (vlsi yanling)
+
 /**************************
  * pulldown
  *************************/
@@ -153,8 +156,10 @@ struct mtn_op_s {
 		struct combing_status_s *cmb_status,
 		unsigned int field_diff, unsigned int frame_diff,
 		int bit_mode);
+#ifdef DI_NEW_PQ_V1
 	void (*adaptive_combing_new)(unsigned int field_diff,
 				unsigned int frame_diff);
+#endif
 	/*adpative_combing_config*/
 	struct combing_status_s *
 		(*adpative_combing_config)(unsigned int width,
@@ -458,6 +463,7 @@ struct afbcd_ctr_s {
 	unsigned int pst_in_h;
 	unsigned int pst_in_w;
 	unsigned int pst_in_bitdepth;
+	bool en_ponly_afbcd; //this is used for T5D VB only P-ONLY mode used AFBCD
 	//unsigned int pst_o_h;
 	//unsigned int pst_o_w;
 };
@@ -550,7 +556,10 @@ struct afd_ops_s {
 	unsigned char (*cnt_sgn_mode)(unsigned int sgn);
 	void (*cfg_mode_set)(unsigned int mode, union afbc_blk_s *en_cfg);
 	/* for pvpp_link */
+	bool (*is_supported_plink)(void);
 	void (*reg_sw_op)(bool on, const struct reg_acc *op);
+	void (*inp_sw_op)(bool on, const struct reg_acc *op);
+	void (*pvpp_reg_val)(void *pch); //new for afbcd
 	void (*pvpp_sw_setting_op)(bool on, const struct reg_acc *op);
 	void (*pvpp_pre_check_dvfm)(void *ds_in, void *vfm);
 	u32 (*pvpp_en_pre_set)(void *ds_in, void *vfm, const struct reg_acc *op);

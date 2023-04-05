@@ -181,7 +181,8 @@ void dim_mcinfo_v_release_idat(struct dim_iat_s *idat)
  *******************************************/
 #ifdef CONFIG_CMA
 #define TVP_MEM_PAGES	0xffff
-static bool mm_codec_alloc(const char *owner, size_t count,
+//static
+bool mm_codec_alloc(const char *owner, size_t count,
 			   int cma_mode,
 			   struct dim_mm_s *o,
 			   bool tvp_flg)
@@ -3726,6 +3727,7 @@ static const struct di_meson_data  data_t3 = {
 	.ic_id	= DI_IC_ID_T3,
 	.support = IC_SUPPORT_DECONTOUR	|
 		   IC_SUPPORT_HDR	|
+		   IC_SUPPORT_PRE_VPP_LINK	|
 		   IC_SUPPORT_DW
 };
 
@@ -3979,6 +3981,7 @@ static int dim_probe(struct platform_device *pdev)
 		ret = -EEXIST;
 		return ret;
 	}
+	dpvpp_prob();
 
 	for (i = 0; i < DI_CHANNEL_NUB; i++) {
 		set_init_flag(i, false);
@@ -4235,7 +4238,7 @@ int __init dim_module_init(void)
 {
 	int ret = 0;
 
-	PR_INF("%s\n", __func__);
+	PR_INF("dim:%s\n", __func__);
 
 	ret = platform_driver_register(&di_driver);
 	if (ret != 0) {
@@ -4243,7 +4246,7 @@ int __init dim_module_init(void)
 		/*goto fail_pdrv_register;*/
 		return -ENODEV;
 	}
-	PR_INF("%s finish\n", __func__);
+	PR_INF("%s finish\n", "init");
 	return 0;
 }
 

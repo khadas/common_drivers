@@ -27,6 +27,8 @@
  ************************************************/
 void dil_set_diff_ver_flag(unsigned int para);
 
+unsigned int dim_get_vpuclkb_ext(void);
+
 struct reg_acc {
 	void (*wr)(unsigned int adr, unsigned int val);
 	unsigned int (*rd)(unsigned int adr);
@@ -85,9 +87,11 @@ struct dim_rpt_s {
 
 enum DIM_DB_SV {
 	DIM_DB_SV_DCT_BL2, /* DCTR_BLENDING2 */
+	DIM_DB_SV_DCT_PQ1,
+	DIM_DB_SV_DCT_PQ2
 };
 
-#define DIM_DB_SAVE_NUB		1
+#define DIM_DB_SAVE_NUB		3//1
 
 /**************************************************
  * function:

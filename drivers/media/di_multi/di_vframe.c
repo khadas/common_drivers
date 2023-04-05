@@ -151,6 +151,12 @@ static bool nins_m_in_vf(struct di_ch_s *pch)
 		vf = pw_vf_get(ch);
 		if (!vf)
 			break;
+#ifdef DBG_TEST_CREATE
+		if (!(vf->type & VIDTYPE_V4L_EOS) && dbg_crt_r_is_sv_in()) {
+			dbg_crt_set_vf(vf);
+			dbg_crt_do_save_vf(vf);
+		}
+#endif
 
 		/* get ins */
 		flg_q = qbuf_out(pbufq, QBF_NINS_Q_IDLE, &index);
@@ -938,6 +944,8 @@ static int di_receiver_event_fun(int type, void *data, void *arg)
 		pch->sum_reg_cnt++;
 		dbg_reg("reg:%s[%d]\n", provider_name, pch->sum_reg_cnt);
 		atomic_set(&pch->vf_get_idle, 1);
+		pch->ponly_set = false;
+		pch->plink_dct = false;
 		dim_api_reg(DIME_REG_MODE_VFM, pch);
 
 		dev_vframe_reg(&pch->itf);
@@ -1189,7 +1197,7 @@ static struct vframe_s *di_vf_peek(void *arg)
 	if (di_is_pause(ch))
 		return NULL;
 	if (pch->itf.pre_vpp_link && dpvpp_vf_ops())
-		return dpvpp_vf_ops()->peek(NULL);
+		return dpvpp_vf_ops()->peek(pch->itf.p_itf);
 	if (is_bypss2_complete(ch)) {
 		vfm = dim_nbypass_peek(pch);
 		if (vfm)
@@ -1217,7 +1225,7 @@ static struct vframe_s *di_vf_get(void *arg)
 
 	di_pause_step_done(ch);
 	if (pch->itf.pre_vpp_link && dpvpp_vf_ops())
-		return dpvpp_vf_ops()->get(NULL);
+		return dpvpp_vf_ops()->get(pch->itf.p_itf);
 
 	/*pvfm = get_dev_vframe(ch);*/
 
@@ -1259,7 +1267,7 @@ static void di_vf_put(struct vframe_s *vf, void *arg)
 	}
 
 	if (pch->itf.pre_vpp_link && dpvpp_vf_ops()) {
-		dpvpp_vf_ops()->put(vf, NULL);
+		dpvpp_vf_ops()->put(vf, pch->itf.p_itf);
 		return;
 	}
 	if (is_bypss2_complete(ch)) {
@@ -1293,7 +1301,7 @@ static int di_vf_states(struct vframe_states *states, void *arg)
 		return -1;
 	pch = get_chdata(ch);
 	if (pch->itf.pre_vpp_link && dpvpp_vf_ops()) {
-		dpvpp_vf_ops()->vf_states(states, NULL);
+		dpvpp_vf_ops()->vf_states(states, pch->itf.p_itf);
 		return 0;
 	}
 

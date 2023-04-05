@@ -1996,8 +1996,8 @@ static void s4dw_pre_set(unsigned int channel)
 		sc2_pre_cfg = &get_hw_pre()->pre_top_cfg;
 		if (sc2_pre_cfg->d32 != ppre->pre_top_cfg.d32) {
 			sc2_pre_cfg->d32 = ppre->pre_top_cfg.d32;
-			dim_sc2_contr_pre(sc2_pre_cfg);
-			dim_sc2_4k_set(sc2_pre_cfg->b.mode_4k);
+			dim_sc2_contr_pre(sc2_pre_cfg, NULL);
+			dim_sc2_4k_set(sc2_pre_cfg->b.mode_4k, NULL);
 		}
 	}
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
@@ -2260,7 +2260,7 @@ static void s4dw_done_config(unsigned int channel, bool flg_timeout)
 			/* set flag */
 			vfmt = ppre->di_wr_buf->vframe;
 			/* flag clear */
-			vfmt->flag &= VFMT_FLG_CHG_MASK;
+			vfmt->flag &= (~VFMT_FLG_CHG_MASK);
 
 			if (!dip_itf_is_o_linear(pch))
 				vfmt->flag &= (~VFRAME_FLAG_VIDEO_LINEAR);

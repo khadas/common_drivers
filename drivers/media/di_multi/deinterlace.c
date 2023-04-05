@@ -176,7 +176,7 @@ static unsigned int hold_video;
 
 DEFINE_SPINLOCK(plist_lock);
 
-static const char version_s[] = "2022-05-23a";
+static const char version_s[] = "2023-01-04a";
 
 /*1:enable bypass pre,ei only;
  * 2:debug force bypass pre,ei for post
@@ -1046,6 +1046,7 @@ store_dump_mem(struct device *dev, struct device_attribute *attr,
 	unsigned int sh, sv;
 	struct canvas_config_s	*pcvs;
 	struct vframe_s *vf;
+	struct dimn_itf_s *itf;
 
 	/*************************/
 	pch = get_chdata(channel);
@@ -1093,23 +1094,35 @@ store_dump_mem(struct device *dev, struct device_attribute *attr,
 		di_buf = &pbuf_post[index];
 	} else if (strcmp(parm[0], "c_pvpp") == 0) {
 		/*ary add 2021-10-02 for pre vpp buffer */
-		/* use channel for buf index */
+		/* ch */
 		if (kstrtouint(parm[2], 0, &channel)) {
 			PR_ERR("c_pvpp:ch is not number\n");
 			kfree(buf_orig);
 			return 0;
 		}
-		if (channel >= 2)
-			channel = 0;
-		PR_INF("c_pvpp:index[%d]\n", channel);
-		if (!get_datal()->dvs_prevpp.ds) {
-			PR_ERR("c_pvpp:no ds do nothing\n");
+		if (kstrtouint(parm[3], 0, &index)) {
+			PR_ERR("c_pvpp:ch is not number\n");
 			kfree(buf_orig);
 			return 0;
 		}
-		mm = &get_datal()->dvs_prevpp.ds->mm;
+		if (channel >= DI_CHANNEL_MAX) {
+			PR_INF("c_pvpp:ch chg[%d:0]\n", channel);
+			channel = 0;
+		}
+		if (index >= 2)
+			index = 0;
+		if (pch->itf.pre_vpp_link && pch->itf.p_itf &&
+		    pch->itf.p_itf->ds) {
+			itf = pch->itf.p_itf;
+		} else {
+			PR_ERR("c_pvpp:ch has not pre-vpp link\n");
+			kfree(buf_orig);
+			return 0;
+		}
+		PR_INF("c_pvpp:ch[%d:%d]:index[%d]\n", channel, itf->id, index);
 
-		pcvs = &get_datal()->dvs_prevpp.ds->dbuf_wr[channel][0];
+		mm = &itf->ds->mm;
+		pcvs = dpvpp_get_mem_cvs(index);
 		dump_adr = pcvs->phy_addr;
 
 		nr_size = (unsigned long)pcvs->width *
@@ -1122,24 +1135,37 @@ store_dump_mem(struct device *dev, struct device_attribute *attr,
 			pcvs->height);
 	} else if (strcmp(parm[0], "plink_in_buf") == 0) {
 		/*ary add 2021-12-23 for pre vpp's input buffer */
-		/* use channel for ndvfm nub */
 		if (kstrtouint(parm[2], 0, &channel)) {
-			PR_ERR("c_pvpp:ch is not number\n");
+			PR_ERR("plink_in_buf:ch is not number\n");
 			kfree(buf_orig);
 			return 0;
 		}
-		if (channel >= DIM_LKIN_NUB)
+		if (kstrtouint(parm[3], 0, &index)) {
+			PR_ERR("plink_in_buf:ch is not number\n");
+			kfree(buf_orig);
+			return 0;
+		}
+		if (channel >= DI_CHANNEL_MAX) {
+			PR_INF("plink_in_buf:ch chg[%d:0]\n", channel);
 			channel = 0;
-		PR_INF("c_pvpp:index[%d]\n", channel);
-		if (!get_datal()->dvs_prevpp.ds) {
-			PR_ERR("c_vfm_buf:no ds do nothing\n");
+		}
+
+		if (pch->itf.pre_vpp_link && pch->itf.p_itf &&
+		    pch->itf.p_itf->ds) {
+			itf = pch->itf.p_itf;
+		} else {
+			PR_ERR("plink_in_buf:ch has not pre-vpp link\n");
 			kfree(buf_orig);
 			return 0;
 		}
+		if (index >= DIM_LKIN_NUB)
+			index = 0;
+		PR_INF("plink_in_buf:ch[%d:%d]:index[%d]\n", channel, itf->id, index);
+
 		//mm = &get_datal()->dvs_prevpp.ds->mm;
 
 		//pcvs = &get_datal()->dvs_prevpp.ds->dbuf_wr[channel][0];
-		pcvs = &get_datal()->dvs_prevpp.ds->lk_in_bf[channel].c.ori_vf->canvas0_config[0];
+		pcvs = &itf->ds->lk_in_bf[index].c.ori_vf->canvas0_config[0];
 
 		dump_adr = pcvs->phy_addr;
 
@@ -1288,8 +1314,6 @@ store_dump_mem(struct device *dev, struct device_attribute *attr,
 		} else {
 			pr_info("war:can't peek post buf\n");
 		}
-	} else if (strcmp(parm[0], "capture_nrds") == 0) {
-		dim_get_nr_ds_buf(&dump_adr, &nr_size);
 	} else {
 		PR_ERR("wrong dump cmd\n");
 		kfree(buf_orig);
@@ -2830,7 +2854,7 @@ static int di_init_buf_new(struct di_ch_s *pch, struct vframe_s *vframe)
 	ch = pch->ch_id;
 	mm = dim_mm_get(ch);
 
-//	check_tvp_state(pch);
+	//check_tvp_state(pch);
 	di_cnt_i_buf(pch, 1920, 1088);
 	//di_cnt_i_buf(pch, 1920, 2160);
 	di_cnt_pst_afbct(pch);
@@ -2895,7 +2919,6 @@ static int di_init_buf_new(struct di_ch_s *pch, struct vframe_s *vframe)
 			//move all to wait:
 			di_buf_no2wait(pch, mm->cfg.num_post);
 		}
-
 		mm->sts.flg_alloced = true;
 		mm->cfg.num_rebuild_keep = 0;
 	} else {
@@ -3884,8 +3907,8 @@ void dim_pre_de_process(unsigned int channel)
 		sc2_pre_cfg = &get_hw_pre()->pre_top_cfg;
 		if (sc2_pre_cfg->d32 != ppre->pre_top_cfg.d32) {
 			sc2_pre_cfg->d32 = ppre->pre_top_cfg.d32;
-			dim_sc2_contr_pre(sc2_pre_cfg);
-			dim_sc2_4k_set(sc2_pre_cfg->b.mode_4k);
+			dim_sc2_contr_pre(sc2_pre_cfg, NULL);
+			dim_sc2_4k_set(sc2_pre_cfg->b.mode_4k, NULL);
 		}
 	}
 	/*
@@ -3972,7 +3995,7 @@ void dim_pre_de_process(unsigned int channel)
 
 	//dimh_enable_afbc_input(ppre->di_inp_buf->vframe);
 
-	dcntr_set();
+	dcntr_set(NULL);
 
 	if (dim_afds()) {
 		if (ppre->di_mem_buf_dup_p && ppre->di_mem_buf_dup_p->vframe)
@@ -4199,7 +4222,7 @@ void dim_pre_de_done_buf_config(unsigned int channel, bool flg_timeout)
 		}
 		dim_pqrpt_init(&ppre->di_wr_buf->pq_rpt);
 		if (!flg_timeout)
-			dcntr_pq_tune(&ppre->di_wr_buf->pq_rpt);
+			dcntr_pq_tune(&ppre->di_wr_buf->pq_rpt, NULL);
 		dim_tr_ops.pre_ready(ppre->di_wr_buf->vframe->index_disp);
 		ATRACE_COUNTER("dim_pre_ready", 0);
 		ATRACE_COUNTER("dim_post_ready", 1);
@@ -4288,13 +4311,15 @@ void dim_pre_de_done_buf_config(unsigned int channel, bool flg_timeout)
 				}
 				post_wr_buf->vframe->di_pulldown |= 0x08;
 
-			post_wr_buf->vframe->di_gmv = frame_motnum;
-			post_wr_buf->vframe->di_cm_cnt = dim_rd_mcdi_fldcnt();
+				post_wr_buf->vframe->di_gmv = frame_motnum;
+				post_wr_buf->vframe->di_cm_cnt = dim_rd_mcdi_fldcnt();
 
 				/*if (combing_fix_en)*/
 				/*from T3 /t5db adaptive_combing_new from vlsi yanling*/
 				if (ppre->combing_fix_en) {
-					if ((DIM_IS_IC(T5DB) || DIM_IS_IC_EF(T3)) &&
+					#ifdef DI_NEW_PQ_V1
+					if (((DIM_IS_IC_EF(T3) &&
+						 !DIM_IS_IC(S5))) &&
 					    ppre->di_inp_buf->vframe->width == 1920 &&
 					    ppre->di_inp_buf->vframe->height == 1080) {
 						get_ops_mtn()->adaptive_combing_new
@@ -4309,6 +4334,15 @@ void dim_pre_de_done_buf_config(unsigned int channel, bool flg_timeout)
 							 dimp_get(edi_mp_di_force_bit_mode));
 						dimp_set(edi_mp_cur_lev, tmp_cur_lev);
 					}
+					#else
+					tmp_cur_lev = /*cur_lev*/
+					get_ops_mtn()->adaptive_combing_fixing
+						(ppre->mtn_status,
+						 field_motnum,
+						 frame_motnum,
+						 dimp_get(edi_mp_di_force_bit_mode));
+					dimp_set(edi_mp_cur_lev, tmp_cur_lev);
+					#endif
 				}
 				if (cpu_after_eq(MESON_CPU_MAJOR_ID_GXLX))
 					get_ops_nr()->adaptive_cue_adjust(frame_motnum,
@@ -4642,6 +4676,10 @@ static void add_dummy_vframe_type_pre(struct di_buf_s *src_buf,
 {
 	struct di_buf_s *di_buf_tmp = NULL;
 
+	if (!src_buf) {
+		PR_ERR("%s:no src_buf\n", __func__);
+		return;
+	}
 	if (!di_que_is_empty(channel, QUE_PRE_NO_BUF)) {
 		di_buf_tmp = di_que_out_to_di_buf(channel, QUE_PRE_NO_BUF);
 		if (di_buf_tmp) {
@@ -5030,7 +5068,10 @@ static struct di_buf_s *pp_pst_2_local(struct di_ch_s *pch)
 	di_buf = di_que_out_to_di_buf(ch, QUE_PRE_NO_BUF);
 //ary 2020-12-09	di_lock_irqfiq_save(irq_flag2);
 	buf_pst = di_que_out_to_di_buf(ch, QUE_POST_FREE);
-
+	if (!di_buf) {
+		PR_ERR("%s:no buf\n", __func__);
+		return NULL;
+	}
 	pp_buf_cp(di_buf, buf_pst);
 	pp_buf_clear(buf_pst);
 	memcpy(&di_buf->hf, &buf_pst->hf, sizeof(di_buf->hf));
@@ -10437,7 +10478,7 @@ VFRAME_EVENT_PROVIDER_VFRAME_READY, NULL);
  * di task
  */
 
-void di_unreg_setting(void)
+void di_unreg_setting(bool plink)
 {
 	/*unsigned int mirror_disable = get_blackout_policy();*/
 #ifdef MARK_DEADCODE_HIS /* */
@@ -10454,7 +10495,7 @@ void di_unreg_setting(void)
 	sc2_dbg_set(0);
 	/*set flg*/
 	set_hw_reg_flg(false);
-	if (get_datal()->dct_op)
+	if (get_datal()->dct_op && !plink)
 		get_datal()->dct_op->unreg_all();
 	if (dim_hdr_ops())
 		dim_hdr_ops()->unreg_setting();
@@ -11112,7 +11153,8 @@ void di_reg_setting_working(struct di_ch_s *pch,
 {
 	/****************************/
 	if (DIM_IS_IC(T5DB))
-		afbcd_enable_only_t5dvb();//dim_afds()->reg_sw(true);
+		afbcd_enable_only_t5dvb(&di_pre_regset, false);
+	//dim_afds()->reg_sw(true);
 }
 
 unsigned int get_intr_mode(void)
@@ -11690,6 +11732,11 @@ void dim_get_vpu_clkb(struct device *dev, struct di_dev_s *pdev)
 	if (IS_ERR(pdev->vpu_clkb))
 		PR_ERR("%s: get vpu clkb gate error.\n", __func__);
 	#endif
+}
+
+unsigned int dim_get_vpu_clk_ext(void)
+{
+	return get_dim_de_devp()->clkb_max_rate;
 }
 
 module_param_named(invert_top_bot, invert_top_bot, int, 0664);

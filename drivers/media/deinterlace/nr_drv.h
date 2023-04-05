@@ -156,6 +156,7 @@ struct NR_PARM_s {
 	struct CUE_PARM_s *pcue_parm;
 	struct NR_CTRL_REGS_s *pnr_regs;
 };
+
 #ifndef SGN2
 #define SGN2(x) ((x) > 0 ? 1 : ((x) < 0 ? -1 : 0))
 #endif

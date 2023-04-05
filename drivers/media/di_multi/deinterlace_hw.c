@@ -35,6 +35,8 @@
 #include "di_data_l.h"
 
 #include "deinterlace_hw.h"
+#include "reg_decontour.h"
+#include "reg_decontour_t3.h"
 #include "register.h"
 #include "di_reg_v2.h"
 #include "di_reg_v3.h"
@@ -4568,61 +4570,53 @@ static void ma_pre_mif_ctrl(bool enable)
 /*
  * enable/disable inp&chan2&mem&nrwr mif
  */
-static void di_pre_data_mif_ctrl(bool enable)
+//static
+void di_pre_data_mif_ctrl(bool enable, const struct reg_acc *op_in,
+			  bool en_link)
 {
 	if (enable) {
 		/*****************************************/
-		if (dim_afds() && dim_afds()->is_used())
-			dim_afds()->inp_sw(true);
+		if (dim_afds() && dim_afds()->is_used()) {
+			if (en_link)
+				dim_afds()->inp_sw_op(true, op_in);
+			else
+				dim_afds()->inp_sw(true);
+		}
 		if (dim_afds() && !dim_afds()->is_used_chan2())
-			wr_reg_bits(DI_CHAN2_GEN_REG, 1, 0, 1);
+			op_in->bwr(DI_CHAN2_GEN_REG, 1, 0, 1);
 
 		if (dim_afds() && !dim_afds()->is_used_mem())
-			wr_reg_bits(DI_MEM_GEN_REG, 1, 0, 1);
+			op_in->bwr(DI_MEM_GEN_REG, 1, 0, 1);
 
 		if (dim_afds() && !dim_afds()->is_used_inp())
-			wr_reg_bits(DI_INP_GEN_REG, 1, 0, 1);
+			op_in->bwr(DI_INP_GEN_REG, 1, 0, 1);
 
 		/*****************************************/
-		#ifdef MARK_SC2
-		/* enable input mif*/
-		DIM_DI_WR(DI_CHAN2_GEN_REG, RD(DI_CHAN2_GEN_REG) | 0x1);
-		DIM_DI_WR(DI_MEM_GEN_REG, RD(DI_MEM_GEN_REG) | 0x1);
-
-		if (dim_afds() && dim_afds()->is_used()) {
-			DIM_DI_WR(DI_INP_GEN_REG, RD(DI_INP_GEN_REG) & ~0x1);
-			//afbc_input_sw(true);
-			if (dim_afds())
-				dim_afds()->inp_sw(true);
-		} else {
-			DIM_DI_WR(DI_INP_GEN_REG, RD(DI_INP_GEN_REG) | 0x1);
-			//afbc_input_sw(false);
-			if (dim_afds())
-				dim_afds()->inp_sw(false);
-		}
-		#endif
 		/* nrwr no clk gate en=0 */
 		/*DIM_RDMA_WR_BITS(DI_NRWR_CTRL, 0, 24, 1);*/
 	} else {
 		/* nrwr no clk gate en=1 */
 		/*DIM_RDMA_WR_BITS(DI_NRWR_CTRL, 1, 24, 1);*/
 		/* nr wr req en =0 */
-		DIM_RDMA_WR_BITS(DI_PRE_CTRL, 0, 0, 1);
+		op_in->bwr(DI_PRE_CTRL, 0, 0, 1);
 		/* disable input mif*/
-		DIM_DI_WR(DI_CHAN2_GEN_REG, RD(DI_CHAN2_GEN_REG) & ~0x1);
-		DIM_DI_WR(DI_MEM_GEN_REG, RD(DI_MEM_GEN_REG) & ~0x1);
-		DIM_DI_WR(DI_INP_GEN_REG, RD(DI_INP_GEN_REG) & ~0x1);
+		op_in->bwr(DI_CHAN2_GEN_REG, 0, 0, 1);
+		op_in->bwr(DI_MEM_GEN_REG, 0, 0, 1);
+		op_in->bwr(DI_INP_GEN_REG, 0, 0, 1);
 
 		/* disable AFBC input */
 		//if (afbc_is_used()) {
 		if (dim_afds() && dim_afds()->is_used()) {
 			//afbc_input_sw(false);
-			if (dim_afds())
+			if (en_link)
+				dim_afds()->inp_sw_op(false, op_in);
+			else
 				dim_afds()->inp_sw(false);
 		}
 		//test for bus-crash
 		//disable afbcd:
-		disable_afbcd_t5dvb();
+		if (!en_link)
+			disable_afbcd_t5dvb();
 	}
 }
 
@@ -4645,10 +4639,8 @@ void dimh_enable_di_pre_mif(bool en, bool mc_enable)
 			mc_pre_mif_ctrl(en);
 		ma_pre_mif_ctrl(en);
 	}
-	if (DIM_IS_IC_EF(SC2))
-		opl1()->pre_mif_sw(en, NULL);
-	else
-		di_pre_data_mif_ctrl(en);
+
+	opl1()->pre_mif_sw(en, &di_pre_regset, false);
 	atomic_set(&mif_flag, 0);
 }
 
@@ -4801,6 +4793,7 @@ static bool pq_save_db(unsigned int addr, unsigned int val, unsigned int mask)
 	bool ret = false;
 	int i;
 	struct db_save_s *p;
+	bool dct_flg = false;
 
 	for (i = 0; i < DIM_DB_SAVE_NUB; i++) {
 		p = &get_datal()->db_save[i];
@@ -4813,6 +4806,16 @@ static bool pq_save_db(unsigned int addr, unsigned int val, unsigned int mask)
 			p->mask		= mask;
 			p->en_db	= true;
 			ret	= true;
+			if (DIM_IS_IC(T5) && addr == DCNTR_DIVR_RMIF_CTRL2)
+				dct_flg = true;
+			else if (DIM_IS_IC_EF(T3) &&
+				 addr == DCNTR_T3_DIVR_RMIF_CTRL2)
+				dct_flg = true;
+			if (dct_flg) {
+				dim_pq_db_sel(DIM_DB_SV_DCT_PQ1, 0, NULL);
+				dim_pq_db_sel(DIM_DB_SV_DCT_PQ2, 0, NULL);
+			}
+
 			dbg_pq("%s:reg:0x%x,val:0x%x,mask:0x%x\n",
 				__func__, p->addr, p->val_db, p->mask);
 			break;

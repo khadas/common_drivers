@@ -26,6 +26,7 @@ void get_pre_vscaler_para(u8 layer_id, int *ds_ratio, int *flt_num);
 void get_pre_hscaler_coef(u8 layer_id, int *pre_hscaler_table);
 void get_pre_vscaler_coef(u8 layer_id, int *pre_hscaler_table);
 u32 viu_line_stride(u32 buffr_width);
+u32 viu_line_stride_ex(u32 buffr_width, u8 plane_bits);
 void init_layer_canvas(struct video_layer_s *layer,
 			      u32 start_canvas);
 void vframe_canvas_set(struct canvas_config_s *config,

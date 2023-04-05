@@ -5845,7 +5845,7 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 	static const u32 vpat[MAX_VSKIP_COUNT + 1] = {
 		0, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf};
 	u32 u, v;
-	u32 type, bit_mode = 0, canvas_w;
+	u32 type, bit_mode = 0, bit16_mode = 0, canvas_w;
 	bool is_mvc = false;
 	u8 burst_len = 1;
 	struct vd_mif_reg_s *vd_mif_reg = NULL;
@@ -6012,11 +6012,14 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 
 	/* vd mif burst len is 2 as default */
 	burst_len = 2;
-	if (vf->canvas0Addr != (u32)-1)
+	if (vf->canvas0Addr != (u32)-1) {
 		canvas_w = canvas_get_width
 			(vf->canvas0Addr & 0xff);
-	else
+	} else {
 		canvas_w = vf->canvas0_config[0].width;
+		/* 8bit yuv 0, p010 mode*/
+		bit16_mode = vf->canvas0_config[0].bit_depth & P010_MODE;
+	}
 
 	if (canvas_w % 32)
 		burst_len = 0;
@@ -6039,7 +6042,9 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 	} else {
 		bit_mode = 0;
 	}
-
+	/* for 10bit yuv p010 mode */
+	if (bit16_mode)
+		bit_mode = 1;
 	cur_dev->rdma_func[vpp_index].rdma_wr_bits
 		(vd_mif_reg->vd_if0_gen_reg3,
 		(bit_mode & 0x3), 8, 2);
@@ -6054,6 +6059,11 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 		cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(vd_mif_reg->vd_if0_gen_reg3,
 			1, 0, 1);
+	/* set bit16 mode for p010 */
+	cur_dev->rdma_func[vpp_index].rdma_wr_bits
+		(vd_mif_reg->vd_if0_gen_reg3,
+		bit16_mode, 7, 1);
+
 	vd_set_blk_mode_s5(layer, layer->mif_setting.block_mode);
 	if (is_mvc) {
 		cur_dev->rdma_func[vpp_index].rdma_wr_bits
@@ -6780,7 +6790,7 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 	static const u32 vpat[MAX_VSKIP_COUNT + 1] = {
 		0, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf};
 	u32 u, v;
-	u32 type, bit_mode = 0, canvas_w;
+	u32 type, bit_mode = 0, bit16_mode = 0, canvas_w;
 	bool is_mvc = false;
 	u8 burst_len = 1;
 	struct vd_mif_reg_s *vd_mif_reg = NULL;
@@ -6942,11 +6952,13 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 
 	/* vd mif burst len is 2 as default */
 	burst_len = 2;
-	if (vf->canvas0Addr != (u32)-1)
+	if (vf->canvas0Addr != (u32)-1) {
 		canvas_w = canvas_get_width
 			(vf->canvas0Addr & 0xff);
-	else
+	} else {
 		canvas_w = vf->canvas0_config[0].width;
+		bit16_mode = vf->canvas0_config[0].bit_depth & P010_MODE;
+	}
 
 	if (canvas_w % 32)
 		burst_len = 0;
@@ -6970,7 +6982,9 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 	} else {
 		bit_mode = 0;
 	}
-
+	/* for 10bit yuv p010 mode */
+	if (bit16_mode)
+		bit_mode = 1;
 	vdx_path_select_s5(layer, false, false);
 	cur_dev->rdma_func[vpp_index].rdma_wr_bits
 		(vd_mif_reg->vd_if0_gen_reg3,
@@ -6986,6 +7000,10 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 		cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(vd_mif_reg->vd_if0_gen_reg3,
 			1, 0, 1);
+	/* set bit16 mode for p010 */
+	cur_dev->rdma_func[vpp_index].rdma_wr_bits
+		(vd_mif_reg->vd_if0_gen_reg3,
+		bit16_mode, 7, 1);
 	vd_set_blk_mode_s5(layer, layer->mif_setting.block_mode);
 
 	cur_dev->rdma_func[vpp_index].rdma_wr
@@ -8957,6 +8975,7 @@ static void set_vd_mif_slice_linear_s5(struct video_layer_s *layer,
 	u8 vpp_index;
 	u32 vd_if_baddr_y, vd_if_baddr_cb, vd_if_baddr_cr;
 	u32 vd_if_stride_0, vd_if_stride_1;
+	u8 plane_bits_y = 0, plane_bits_c = 0;
 
 	if (layer->layer_id != 0 || slice > SLICE_NUM)
 		return;
@@ -8996,12 +9015,14 @@ static void set_vd_mif_slice_linear_s5(struct video_layer_s *layer,
 	case 2:
 		baddr_y = cfg->phy_addr;
 		y_buffer_width = cfg->width;
+		plane_bits_y = (cfg->bit_depth & P010_MODE) ? 16 : 8;
 		cfg++;
 		baddr_cb = cfg->phy_addr;
 		c_buffer_width = cfg->width;
+		plane_bits_c = (cfg->bit_depth & P010_MODE) ? 16 : 8;
 		baddr_cr = 0;
-		y_line_stride = viu_line_stride(y_buffer_width);
-		c_line_stride = viu_line_stride(c_buffer_width);
+		y_line_stride = viu_line_stride_ex(y_buffer_width, plane_bits_y);
+		c_line_stride = viu_line_stride_ex(c_buffer_width, plane_bits_c);
 		cur_dev->rdma_func[vpp_index].rdma_wr(vd_if_baddr_y,
 			baddr_y >> 4);
 		cur_dev->rdma_func[vpp_index].rdma_wr(vd_if_baddr_cb,
@@ -9055,6 +9076,7 @@ void set_vd_mif_linear_s5(struct video_layer_s *layer,
 	u8 vpp_index, layer_index;
 	u32 vd_if_baddr_y, vd_if_baddr_cb, vd_if_baddr_cr;
 	u32 vd_if_stride_0, vd_if_stride_1;
+	u8 plane_bits_y = 0, plane_bits_c = 0;
 
 	if (layer->layer_id != 0)
 		layer_index = layer->layer_id + SLICE_NUM - 1;
@@ -9096,12 +9118,14 @@ void set_vd_mif_linear_s5(struct video_layer_s *layer,
 	case 2:
 		baddr_y = cfg->phy_addr;
 		y_buffer_width = cfg->width;
+		plane_bits_y = (cfg->bit_depth & P010_MODE) ? 16 : 8;
 		cfg++;
 		baddr_cb = cfg->phy_addr;
 		c_buffer_width = cfg->width;
+		plane_bits_c = (cfg->bit_depth & P010_MODE) ? 16 : 8;
 		baddr_cr = 0;
-		y_line_stride = viu_line_stride(y_buffer_width);
-		c_line_stride = viu_line_stride(c_buffer_width);
+		y_line_stride = viu_line_stride_ex(y_buffer_width, plane_bits_y);
+		c_line_stride = viu_line_stride_ex(c_buffer_width, plane_bits_c);
 		cur_dev->rdma_func[vpp_index].rdma_wr(vd_if_baddr_y,
 			baddr_y >> 4);
 		cur_dev->rdma_func[vpp_index].rdma_wr(vd_if_baddr_cb,

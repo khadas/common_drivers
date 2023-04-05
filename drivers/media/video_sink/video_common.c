@@ -209,6 +209,16 @@ u32 viu_line_stride(u32 buffr_width)
 	return line_stride;
 }
 
+u32 viu_line_stride_ex(u32 buffr_width, u8 plane_bits)
+{
+	u32 line_stride;
+
+	/* input: buffer width not hsize */
+	/* 1 stride = 16 byte */
+	line_stride = (((buffr_width * plane_bits + 127) / 128 + 3) >> 2) << 2;
+	return line_stride;
+}
+
 void init_layer_canvas(struct video_layer_s *layer,
 			      u32 start_canvas)
 {

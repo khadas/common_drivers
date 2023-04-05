@@ -28,8 +28,11 @@ struct canvas_config_s {
 	u32 height;
 	u32 block_mode;
 	u32 endian;
-	u32 bit_depth;   //8bit/p010 format
+	/* 8bit yuv 0, p010 mode*/
+	u32 bit_depth;
 };
+
+#define P010_MODE               1
 
 #define CANVAS_ADDR_NOWRAP      0x00
 #define CANVAS_ADDR_WRAPX       0x01

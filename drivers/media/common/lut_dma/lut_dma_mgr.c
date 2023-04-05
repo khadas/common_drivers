@@ -107,33 +107,6 @@ static const struct of_device_id lut_dma_dt_match[] = {
 	{}
 };
 
-static bool lutdma_is_meson_sc2_cpu(void)
-{
-	if (lutdma_meson_dev.cpu_type ==
-		MESON_CPU_MAJOR_ID_SC2_)
-		return true;
-	else
-		return false;
-}
-
-static bool lutdma_is_meson_t7_cpu(void)
-{
-	if (lutdma_meson_dev.cpu_type ==
-		MESON_CPU_MAJOR_ID_T7_)
-		return true;
-	else
-		return false;
-}
-
-static bool lutdma_is_meson_s5_cpu(void)
-{
-	if (lutdma_meson_dev.cpu_type ==
-		MESON_CPU_MAJOR_ID_S5_)
-		return true;
-	else
-		return false;
-}
-
 static u32 get_cur_rd_frame_index(void)
 {
 	u32 data, frame_index;
@@ -1207,9 +1180,7 @@ static int lut_dma_probe(struct platform_device *pdev)
 	for (i = 0; i < LUT_DMA_CHANNEL; i++)
 		mutex_init(&info->ins[i].lut_dma_lock);
 	lut_dma_probed = 1;
-	if (lutdma_is_meson_sc2_cpu() ||
-	    lutdma_is_meson_t7_cpu() ||
-	    lutdma_is_meson_s5_cpu())
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_SC2))
 		lut_dma_reg_set_bits(VPU_DMA_RDMIF_CTRL2,
 				     1, 29, 1);
 	return 0;

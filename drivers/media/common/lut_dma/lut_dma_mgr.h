@@ -6,7 +6,7 @@
 #ifndef LUT_DMA_MGR_H_
 #define LUT_DMA_MGR_H_
 
-#define LUT_DMA_WR_CHANNEL     10
+#define LUT_DMA_WR_CHANNEL     11
 #define LUT_DMA_RD_CHANNEL     1
 #define LUT_DMA_CHANNEL        (LUT_DMA_WR_CHANNEL + LUT_DMA_RD_CHANNEL)
 #define LUT_DMA_RD_CHAN_NUM    10

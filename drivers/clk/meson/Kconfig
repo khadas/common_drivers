@@ -227,4 +227,25 @@ config AMLOGIC_COMMON_CLK_T3X
 	help
 	  Support for the clock controller on Amlogic T3X
 	  devices, aka t3x. Say Y if you want peripherals to work.
+config AMLOGIC_COMMON_CLK_TXHD2
+	tristate "Meson TXHD2 clock controller"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+	depends on AMLOGIC_COMMON_CLK_MESON_DUALDIV
+	depends on AMLOGIC_COMMON_CLK_MESON_PLL
+	depends on AMLOGIC_COMMON_CLK_MESON_CPU_DYNDIV
+	depends on AMLOGIC_COMMON_CLK_MESON_VID_PLL_DIV
+	depends on MFD_SYSCON
+	help
+	  Support for the clock controller on Amlogic TXHD2
+	  devices, aka TXHD2. Say Y if you want peripherals to work.
+
+config AMLOGIC_COMMON_AO_CLK_TXHD2
+	tristate "Meson TXHD2 ao clock controller"
+	depends on AMLOGIC_COMMON_CLK_MESON_REGMAP
+	depends on AMLOGIC_COMMON_CLK_MESON_DUALDIV
+	depends on MFD_SYSCON
+	help
+	  Support for the ao clock controller on Amlogic TXHD2
+	  devices, aka ao TXHD2. Say Y if you want peripherals to work.
+
 endmenu

@@ -6,6 +6,8 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/power/txhd2-pd.h>
+#include <dt-bindings/clock/txhd2-clkc.h>
+#include <dt-bindings/clock/txhd2-aoclkc.h>
 / {
 	cpus:cpus {
 		#address-cells = <1>;
@@ -169,6 +171,11 @@
 				status = "disabled";
 			};
 
+			meson_clk_msr@18000 {
+				compatible = "amlogic,meson-txhd2-clk-measure";
+				reg = <0x18000 0x1c>;
+				status = "okay";
+			};
 		}; /* end of cbus */
 
 		aobus: aobus@ff800000 {
@@ -196,6 +203,23 @@
 				/* 0 not support; 1 support */
 				support-sysrq = <0>;
 			};
+
+			rti: sys-ctrl@0 {
+				compatible = "amlogic,meson-gx-ao-sysctrl",
+						"simple-mfd", "syscon";
+				reg = <0x0 0x300>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges = <0x0 0x0 0x300>;
+
+				clkc_AO: clock-controller@2 {
+					compatible = "amlogic,txhd2-aoclkc";
+					#clock-cells = <1>;
+					clocks = <&xtal>;
+					clock-names = "xtal";
+					status = "okay";
+				};
+			};
 		};/* end of aobus */
 
 		periphs: periphs@ff634000 {
@@ -218,13 +242,18 @@
 			#address-cells = <1>;
 			#size-cells = <1>;
 			ranges = <0x0 0xff63c000 0x2000>;
-
-			clkc: clock-controller@0 {
-				compatible = "amlogic,txhd-clkc";
-				#clock-cells = <1>;
-				reg = <0x0 0x3fc>;
-			};
 		};/* end of hiubus*/
+
+		clkc: clock-controller {
+			compatible = "amlogic,txhd2-clkc";
+			reg = <0xff646000 0x3e0>,
+			      <0xff63c000 0x3fc>;
+			reg-names = "basic", "cpu";
+			#clock-cells = <1>;
+			clocks = <&xtal>;
+			clock-names = "xtal";
+			status = "okay";
+		};
 	}; /* end of soc*/
 
 	pwrdm: power-domains {

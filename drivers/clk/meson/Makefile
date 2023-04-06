@@ -130,3 +130,17 @@ $(T3X_MODULE_NAME)-y += t3x.o
 PR_FMT_T3X = $(subst amlogic-,,$(T3X_MODULE_NAME))
 PR_FMT_DEFINE_T3X="-Dpr_fmt(fmt)= \"[$(PR_FMT_T3X)]: \" fmt"
 CFLAGS_t3x.o += $(PR_FMT_DEFINE_T3X)
+
+TXHD2_MODULE_NAME = amlogic-clk-soc-txhd2
+obj-$(CONFIG_AMLOGIC_COMMON_CLK_TXHD2) += $(TXHD2_MODULE_NAME).o
+$(TXHD2_MODULE_NAME)-y += txhd2.o
+PR_FMT_TXHD2 = $(subst amlogic-,,$(TXHD2_MODULE_NAME))
+PR_FMT_DEFINE_TXHD2="-Dpr_fmt(fmt)= \"[$(PR_FMT_TXHD2)]: \" fmt"
+CFLAGS_txhd2.o += $(PR_FMT_DEFINE_TXHD2)
+
+TXHD2_AO_MODULE_NAME = amlogic-aoclk-soc-txhd2
+obj-$(CONFIG_AMLOGIC_COMMON_AO_CLK_TXHD2) += $(TXHD2_AO_MODULE_NAME).o
+$(TXHD2_AO_MODULE_NAME)-y += txhd2-aoclk.o
+PR_FMT_AO_TXHD2 = $(subst amlogic-,,$(TXHD2_AO_MODULE_NAME))
+PR_FMT_DEFINE_AO_TXHD2="-Dpr_fmt(fmt)= \"[$(PR_FMT_AO_TXHD2)]: \" fmt"
+CFLAGS_txhd2-aoclk.o += $(PR_FMT_DEFINE_AO_TXHD2)

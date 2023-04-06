@@ -34,6 +34,7 @@ dtb-y += t5m_t963d4_ay301_2g.dtb
 dtb-y += t5m_t963d4_ay301_3g.dtb
 dtb-y += t5m_t963d4_ay309_2g.dtb
 dtb-y += t5m_t963d4_ay309_3g.dtb
+dtb-y += t5m_t963d4_ay301_4g.dtb
 dtb-y += t5m_reva_t963d4_ay301_2g.dtb
 dtb-y += t5m_reva_t963d4_ay301_3g.dtb
 dtb-y += t5m_reva_t963d4_ay309_2g.dtb

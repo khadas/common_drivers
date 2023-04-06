@@ -11,7 +11,7 @@
 
 / {
 	model = "Amlogic";
-	amlogic-dt-id = "t5m_t963d4_ay301-3g";
+	amlogic-dt-id = "t5m_t963d4_ay301-4g";
 	compatible = "amlogic, t5m";
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;
@@ -36,7 +36,8 @@
 
 	memory@00000000 {
 		device_type = "memory";
-		linux,usable-memory = <0x0 0x000000 0x0 0xc0000000>;
+		linux,usable-memory = <0x0 0x000000 0x0 0xe0000000
+				       0x1 0x000000 0x0 0x20000000>;
 	};
 
 	reserved-memory {
@@ -57,6 +58,14 @@
 			console-size = <0x40000>;
 			ftrace-size = <0x80000>;
 			pmsg-size = <0x20000>;
+		};
+
+		linux,above_4g_mem {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x20000000>;
+			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x1 0x0000000 0x0 0x20000000>;
 		};
 
 		secmon_reserved:linux,secmon {
@@ -208,7 +217,7 @@
 		 *	reusable;
 		 *	size = <0x0 0x400000>;
 		 *	alignment = <0x0 0x400000>;
-		 *	alloc-ranges = <0x0 0x0 0x0 0x80000000>;
+		 *	alloc-ranges = <0x0 0x0 0x0 0x40000000>;
 		 *};
 		 */
 
@@ -491,7 +500,7 @@
 		compatible = "amlogic,unifykey";
 		status = "okay";
 
-		unifykey-num = <24>;
+		unifykey-num = <26>;
 		unifykey-index-0 = <&keysn_0>;
 		unifykey-index-1 = <&keysn_1>;
 		unifykey-index-2 = <&keysn_2>;
@@ -517,6 +526,8 @@
 		unifykey-index-22 = <&keysn_22>;
 		unifykey-index-23 = <&keysn_23>;
 		unifykey-index-24 = <&keysn_24>;
+		unifykey-index-25 = <&keysn_25>;
+		unifykey-index-26 = <&keysn_26>;
 
 		keysn_0: key_0{
 			key-name = "usid";
@@ -645,6 +656,16 @@
 		};
 		keysn_24:key_24{
 			key-name = "ldim_dev";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_25:key_25{
+			key-name = "panel_ini_path";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_26:key_26{
+			key-name = "panel_tcon_bin_path";
 			key-device = "normal";
 			key-permit = "read","write","del";
 		};

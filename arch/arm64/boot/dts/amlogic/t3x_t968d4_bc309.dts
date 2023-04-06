@@ -1955,14 +1955,14 @@
 };
 
 &aml_wifi{
-	status = "disabled";
+	status = "okay";
 	//interrupt-gpios = <&gpio  GPIOX_7  GPIO_ACTIVE_HIGH>;
-	//power_on-gpios = <&gpio   GPIOX_6  GPIO_ACTIVE_HIGH>;
+	power_on-gpios = <&gpio   GPIOD_11  GPIO_ACTIVE_HIGH>;
 };
 
 &aml_bt {
-	status = "disabled";
-	//reset-gpios = <&gpio    GPIOX_17 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+	reset-gpios = <&gpio    GPIOD_13 GPIO_ACTIVE_HIGH>;
 	/*hostwake-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;*/
 };
 

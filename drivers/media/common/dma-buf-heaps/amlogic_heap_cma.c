@@ -95,6 +95,7 @@ static struct sg_table *meson_cma_heap_map_dma_buf(struct dma_buf_attachment *at
 	int attrs = attachment->dma_map_attrs;
 	int ret;
 
+	attrs |= DMA_ATTR_SKIP_CPU_SYNC;
 	ret = dma_map_sgtable(attachment->dev, table, direction, attrs);
 	if (ret)
 		return ERR_PTR(-ENOMEM);
@@ -109,6 +110,7 @@ static void meson_cma_heap_unmap_dma_buf(struct dma_buf_attachment *attachment,
 	struct meson_dma_heap_attachment *a = attachment->priv;
 	int attrs = attachment->dma_map_attrs;
 
+	attrs |= DMA_ATTR_SKIP_CPU_SYNC;
 	a->mapped = false;
 	dma_unmap_sgtable(attachment->dev, table, direction, attrs);
 }
@@ -117,18 +119,12 @@ static int meson_cma_heap_dma_buf_begin_cpu_access(struct dma_buf *dmabuf,
 					     enum dma_data_direction direction)
 {
 	struct meson_cma_heap_buffer *buffer = dmabuf->priv;
-	struct meson_dma_heap_attachment *a;
 
 	mutex_lock(&buffer->lock);
 
 	if (buffer->vmap_cnt)
 		invalidate_kernel_vmap_range(buffer->vaddr, buffer->len);
 
-	list_for_each_entry(a, &buffer->attachments, list) {
-		if (!a->mapped)
-			continue;
-		dma_sync_sgtable_for_cpu(a->dev, &a->table, direction);
-	}
 	mutex_unlock(&buffer->lock);
 
 	return 0;
@@ -138,18 +134,12 @@ static int meson_cma_heap_dma_buf_end_cpu_access(struct dma_buf *dmabuf,
 					   enum dma_data_direction direction)
 {
 	struct meson_cma_heap_buffer *buffer = dmabuf->priv;
-	struct meson_dma_heap_attachment *a;
 
 	mutex_lock(&buffer->lock);
 
 	if (buffer->vmap_cnt)
 		flush_kernel_vmap_range(buffer->vaddr, buffer->len);
 
-	list_for_each_entry(a, &buffer->attachments, list) {
-		if (!a->mapped)
-			continue;
-		dma_sync_sgtable_for_device(a->dev, &a->table, direction);
-	}
 	mutex_unlock(&buffer->lock);
 
 	return 0;
@@ -180,6 +170,7 @@ static int meson_cma_heap_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vm
 	if ((vma->vm_flags & (VM_SHARED | VM_MAYSHARE)) == 0)
 		return -EINVAL;
 
+	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
 	vma->vm_ops = &dma_heap_vm_ops;
 	vma->vm_private_data = buffer;
 
@@ -189,8 +180,9 @@ static int meson_cma_heap_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vm
 static void *meson_cma_heap_do_vmap(struct meson_cma_heap_buffer *buffer)
 {
 	void *vaddr;
+	pgprot_t pgprot = pgprot_writecombine(PAGE_KERNEL);
 
-	vaddr = vmap(buffer->pages, buffer->pagecount, VM_MAP, PAGE_KERNEL);
+	vaddr = vmap(buffer->pages, buffer->pagecount, VM_MAP, pgprot);
 	if (!vaddr)
 		return ERR_PTR(-ENOMEM);
 

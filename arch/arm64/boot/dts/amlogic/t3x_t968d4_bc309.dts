@@ -900,7 +900,7 @@
 	dvb-demux {
 		compatible = "amlogic sc2, dvb-demux";
 		dev_name = "dvb-demux";
-		status = "disabled";
+		status = "okay";
 
 		reg = <0x0 0xfe000000 0x0 0x480000>;
 
@@ -909,19 +909,25 @@
 		tsn_from = "demod";
 
 		/*single demod setting */
-		ts0_sid = <0x20>;
-		ts0 = "serial-4wire"; /* tsinA: serial-4wire, serial-3wire */
-		ts0_control = <0x0>;
-		ts0_invert = <0>;
-
 		ts1_sid = <0x21>;
-		ts1 = "serial-4wire";
+		ts1 = "parallel";
 		ts1_control = <0x0>;
 		ts1_invert = <0>;
 
-		pinctrl-names = "s_ts0", "s_ts1";
-		pinctrl-0 = <&dvb_s_ts0_pins>;
-		pinctrl-1 = <&dvb_s_ts1_pins>;
+		ts2_sid = <0x22>;
+		ts2 = "parallel";
+		ts2_control = <0x0>;
+		ts2_invert = <0>;
+
+		pinctrl-names = "p_ts1", "p_ts2";
+		pinctrl-0 = <&dvb_p_ts1_pins>;
+		pinctrl-1 = <&dvb_p_ts2_pins>;
+
+		ts3_sid = <0x23>;
+		ts3 = "parallel"; /* tsind: parallel */
+		ts3_control = <0x0>;
+		ts3_invert = <0>;
+
 	};
 
 	ppmgr {
@@ -1649,7 +1655,7 @@
 
 /* SD card */
 &sd_emmc_b {
-	status = "okay";
+	status = "disable";
 	pinctrl-0 = <&sdcard_pins>;
 	pinctrl-1 = <&sdcard_clk_gate_pins>;
 	pinctrl-2 = <&sd_1bit_pins>;
@@ -1866,7 +1872,8 @@
 	};
 	dvb_s_ts0_pins: dvb_s_ts0_pins {
 		tsin_a {
-			groups = "tsin_a_sop",
+			groups =   "tsin_aclk_z",
+				   "tsin_a_sop_z",
 				   "tsin_a_valid",
 				   "tsin_a_clk",
 				   "tsin_a_din0";
@@ -1874,15 +1881,33 @@
 		};
 	};
 
-	dvb_s_ts1_pins: dvb_s_ts1_pins {
+	dvb_p_ts1_pins: dvb_p_ts1_pins {
 		tsin_b {
 			groups = "tsin_b_sop",
 				   "tsin_b_valid",
 				   "tsin_b_clk",
-				   "tsin_b_din0";
+				   "tsin_b_d0",
+				   "tsin_b_d1",
+				   "tsin_b_d2",
+				   "tsin_b_d3",
+				   "tsin_b_d4",
+				   "tsin_b_d5",
+				   "tsin_b_d6",
+				   "tsin_b_d7";
 			function = "tsin_b";
 		};
 	};
+
+	dvb_p_ts2_pins: dvb_p_ts2_pins {
+		tsin_c {
+			groups =   "tsin_c_sop_c",
+				   "tsin_c_valid_c",
+				   "tsin_c_clk_c",
+				   "tsin_c_d0_c";
+			function = "tsin_c";
+		};
+	};
+
 	/*backlight*/
 	bl_pwm_vs_on_pins:bl_pwm_vs_on_pin {
 		mux {

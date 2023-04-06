@@ -1,0 +1,369 @@
+From bf017e63d0e6ba5d0c4a5d34d96711efd257c630 Mon Sep 17 00:00:00 2001
+From: "wenlong.zhu" <wenlong.zhu@amlogic.com>
+Date: Fri, 24 Mar 2023 15:08:35 +0800
+Subject: [PATCH] UAC: uac related files update to kernel 5.15 [1/1]
+
+PD#SWPL-114902
+
+Problem:
+1. AudioBridge module needs to be added to kernel 5.15.
+
+Solution:
+1. Adjust the uac related files that AudioBridge depends on.
+
+Verify:
+A113L AD403 Board
+
+Change-Id: Ibd32c020c4feea085c65fb6c781467ff87c83b67
+Signed-off-by: wenlong.zhu <wenlong.zhu@amlogic.com>
+---
+ drivers/usb/gadget/function/f_hid.c   | 103 ++++++++++++++++++++++++++
+ drivers/usb/gadget/function/f_uac2.c  |  14 ++++
+ drivers/usb/gadget/function/u_audio.c |  88 ++++++++++++++++++++++
+ include/linux/usb/g_hid.h             |   3 +
+ 4 files changed, 208 insertions(+)
+
+diff --git a/drivers/usb/gadget/function/f_hid.c b/drivers/usb/gadget/function/f_hid.c
+index 8b8bbeaa27cb8..8e635d6eb2934 100644
+--- a/drivers/usb/gadget/function/f_hid.c
++++ b/drivers/usb/gadget/function/f_hid.c
+@@ -79,6 +79,10 @@ struct f_hidg {
+ 	struct usb_ep			*out_ep;
+ };
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_HID
++struct f_hidg *hid_h;
++#endif
++
+ static inline struct f_hidg *func_to_hidg(struct usb_function *f)
+ {
+ 	return container_of(f, struct f_hidg, func);
+@@ -519,6 +523,97 @@ static ssize_t f_hidg_write(struct file *file, const char __user *buffer,
+ 	return status;
+ }
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_HID
++ssize_t f_hidg_internal_write(char *buffer, size_t count, int nonblock)
++{
++	struct f_hidg *hidg  = hid_h;
++	struct usb_request *req;
++	unsigned long flags;
++	ssize_t status = -ENOMEM;
++
++	if (!hidg)
++		return status;
++
++	spin_lock_irqsave(&hidg->write_spinlock, flags);
++
++	if (!hidg->req) {
++		spin_unlock_irqrestore(&hidg->write_spinlock, flags);
++		return -ESHUTDOWN;
++	}
++
++#define WRITE_COND (!hidg->write_pending)
++try_again:
++	/* write queue */
++	while (!WRITE_COND) {
++		spin_unlock_irqrestore(&hidg->write_spinlock, flags);
++		if (nonblock & O_NONBLOCK)
++			return -EAGAIN;
++
++		if (wait_event_interruptible_exclusive(hidg->write_queue, WRITE_COND))
++			return -ERESTARTSYS;
++
++		spin_lock_irqsave(&hidg->write_spinlock, flags);
++	}
++
++	hidg->write_pending = 1;
++	req = hidg->req;
++	count  = min_t(unsigned int, count, hidg->report_length);
++
++	spin_unlock_irqrestore(&hidg->write_spinlock, flags);
++
++	if (!req) {
++		ERROR(hidg->func.config->cdev, "hidg->req is NULL\n");
++		status = -ESHUTDOWN;
++		goto release_write_pending;
++	}
++
++	memcpy(req->buf, buffer, count);
++
++	spin_lock_irqsave(&hidg->write_spinlock, flags);
++
++	/* when our function has been disabled by host */
++	if (!hidg->req) {
++		free_ep_req(hidg->in_ep, req);
++		/*
++		 * TODO
++		 * Should we fail with error here?
++		 */
++		goto try_again;
++	}
++
++	req->status   = 0;
++	req->zero     = 0;
++	req->length   = count;
++	req->complete = f_hidg_req_complete;
++	req->context  = hidg;
++
++	spin_unlock_irqrestore(&hidg->write_spinlock, flags);
++
++	if (!hidg->in_ep->enabled) {
++		ERROR(hidg->func.config->cdev, "in_ep is disabled\n");
++		status = -ESHUTDOWN;
++		goto release_write_pending;
++	}
++
++	status = usb_ep_queue(hidg->in_ep, req, GFP_ATOMIC);
++	if (status < 0)
++		goto release_write_pending;
++	else
++		status = count;
++
++	return status;
++release_write_pending:
++	spin_lock_irqsave(&hidg->write_spinlock, flags);
++	hidg->write_pending = 0;
++	spin_unlock_irqrestore(&hidg->write_spinlock, flags);
++
++	wake_up(&hidg->write_queue);
++
++	return status;
++}
++EXPORT_SYMBOL(f_hidg_internal_write);
++#endif
++
+ static __poll_t f_hidg_poll(struct file *file, poll_table *wait)
+ {
+ 	struct f_hidg	*hidg  = file->private_data;
+@@ -1009,6 +1104,10 @@ static int hidg_bind(struct usb_configuration *c, struct usb_function *f)
+ 	if (status)
+ 		goto fail_free_descs;
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_HID
++	hid_h = hidg;
++#endif
++
+ 	return 0;
+ fail_free_descs:
+ 	usb_free_all_descriptors(f);
+@@ -1250,6 +1349,10 @@ static void hidg_unbind(struct usb_configuration *c, struct usb_function *f)
+ {
+ 	struct f_hidg *hidg = func_to_hidg(f);
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_HID
++	hid_h = NULL;
++#endif
++
+ 	cdev_device_del(&hidg->cdev, &hidg->dev);
+
+ 	usb_free_all_descriptors(f);
+diff --git a/drivers/usb/gadget/function/f_uac2.c b/drivers/usb/gadget/function/f_uac2.c
+index 885a7f593d85e..7f0d33e9489af 100644
+--- a/drivers/usb/gadget/function/f_uac2.c
++++ b/drivers/usb/gadget/function/f_uac2.c
+@@ -13,6 +13,9 @@
+ #include <linux/usb/audio.h>
+ #include <linux/usb/audio-v2.h>
+ #include <linux/module.h>
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++#include <linux/amlogic/bridge_uac_ext.h>
++#endif
+
+ #include "u_audio.h"
+ #include "u_uac2.h"
+@@ -967,6 +970,17 @@ afunc_bind(struct usb_configuration *cfg, struct usb_function *fn)
+ 	struct usb_string *us;
+ 	int ret;
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++	if (bridge_uac_f.setup_capture && bridge_uac_f.get_capture_status) {
++		bridge_uac_f.get_capture_hw(&uac2_opts->c_chmask,
++			&uac2_opts->c_srate, &uac2_opts->c_ssize);
++	}
++
++	if (bridge_uac_f.setup_playback && bridge_uac_f.get_playback_status)
++		bridge_uac_f.get_playback_hw(&uac2_opts->p_chmask,
++			&uac2_opts->p_srate, &uac2_opts->p_ssize);
++#endif
++
+ 	ret = afunc_validate_opts(agdev, dev);
+ 	if (ret)
+ 		return ret;
+diff --git a/drivers/usb/gadget/function/u_audio.c b/drivers/usb/gadget/function/u_audio.c
+index d22ac23c94b0f..ae01fe58a9b0c 100644
+--- a/drivers/usb/gadget/function/u_audio.c
++++ b/drivers/usb/gadget/function/u_audio.c
+@@ -17,6 +17,9 @@
+ #include <sound/core.h>
+ #include <sound/pcm.h>
+ #include <sound/pcm_params.h>
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++#include <linux/amlogic/bridge_uac_ext.h>
++#endif
+ #include <sound/control.h>
+ #include <sound/tlv.h>
+ #include <linux/usb/audio.h>
+@@ -27,6 +30,16 @@
+ #define PRD_SIZE_MAX	PAGE_SIZE
+ #define MIN_PERIODS	4
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++struct bridge_uac_function bridge_uac_f = {0};
++
++void *get_uac_function_p(void)
++{
++	return &bridge_uac_f;
++}
++EXPORT_SYMBOL(get_uac_function_p);
++#endif
++
+ enum {
+ 	UAC_FBACK_CTRL,
+ 	UAC_MUTE_CTRL,
+@@ -171,6 +184,41 @@ static void u_audio_iso_complete(struct usb_ep *ep, struct usb_request *req)
+ 		pr_debug("%s: iso_complete status(%d) %d/%d\n",
+ 			__func__, status, req->actual, req->length);
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++	if (prm == &uac->p_prm) {
++		if (bridge_uac_f.setup_playback && bridge_uac_f.get_playback_status()) {
++			/*
++			 * For each IN packet, take the quotient of the current data
++			 * rate and the endpoint's interval as the base packet size.
++			 * If there is a residue from this division, add it to the
++			 * residue accumulator.
++			 */
++			req->length = uac->p_pktsize;
++			uac->p_residue += uac->p_pktsize_residue;
++
++			/*
++			 * Whenever there are more bytes in the accumulator than we
++			 * need to add one more sample frame, increase this packet's
++			 * size and decrease the accumulator.
++			 */
++			if (uac->p_residue / uac->p_interval >= uac->p_framesize) {
++				req->length += uac->p_framesize;
++				uac->p_residue -= uac->p_framesize *
++						   uac->p_interval;
++			}
++
++			req->actual = req->length;
++			if (req->actual)
++				bridge_uac_f.read_data(req->buf, req->actual);
++		}
++	} else {
++		if (bridge_uac_f.setup_capture && bridge_uac_f.get_capture_status()) {
++			if (req->actual)
++				bridge_uac_f.write_data(req->buf, req->actual);
++		}
++	}
++#endif
++
+ 	substream = prm->ss;
+
+ 	/* Do nothing if ALSA isn't active */
+@@ -540,6 +588,10 @@ int u_audio_start_capture(struct g_audio *audio_dev)
+ 	if (usb_ep_queue(ep_fback, req_fback, GFP_ATOMIC))
+ 		dev_err(dev, "%s:%d Error!\n", __func__, __LINE__);
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++	if (bridge_uac_f.setup_capture && bridge_uac_f.get_capture_status())
++		bridge_uac_f.start_capture();
++#endif
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(u_audio_start_capture);
+@@ -550,6 +602,10 @@ void u_audio_stop_capture(struct g_audio *audio_dev)
+
+ 	if (audio_dev->in_ep_fback)
+ 		free_ep_fback(&uac->c_prm, audio_dev->in_ep_fback);
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++	if (bridge_uac_f.setup_capture && bridge_uac_f.get_capture_status())
++		bridge_uac_f.stop_capture();
++#endif
+ 	free_ep(&uac->c_prm, audio_dev->out_ep);
+ }
+ EXPORT_SYMBOL_GPL(u_audio_stop_capture);
+@@ -619,6 +675,11 @@ int u_audio_start_playback(struct g_audio *audio_dev)
+ 			dev_err(dev, "%s:%d Error!\n", __func__, __LINE__);
+ 	}
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++	if (bridge_uac_f.setup_playback && bridge_uac_f.get_playback_status())
++		bridge_uac_f.start_playback();
++#endif
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(u_audio_start_playback);
+@@ -627,6 +688,11 @@ void u_audio_stop_playback(struct g_audio *audio_dev)
+ {
+ 	struct snd_uac_chip *uac = audio_dev->uac;
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++	if (bridge_uac_f.setup_playback && bridge_uac_f.get_playback_status())
++		bridge_uac_f.stop_playback();
++#endif
++
+ 	free_ep(&uac->p_prm, audio_dev->in_ep);
+ }
+ EXPORT_SYMBOL_GPL(u_audio_stop_playback);
+@@ -666,6 +732,12 @@ int u_audio_set_volume(struct g_audio *audio_dev, int playback, s16 val)
+ 	val = clamp(val, prm->volume_min, prm->volume_max);
+ 	if (prm->volume != val) {
+ 		prm->volume = val;
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++		if (bridge_uac_f.setup_playback && playback)
++			bridge_uac_f.ctl_playback(0, prm->volume);
++		else if (bridge_uac_f.setup_capture && !playback)
++			bridge_uac_f.ctl_capture(0, prm->volume);
++#endif
+ 		change = 1;
+ 	}
+ 	spin_unlock_irqrestore(&prm->lock, flags);
+@@ -716,6 +788,12 @@ int u_audio_set_mute(struct g_audio *audio_dev, int playback, int val)
+ 	if (prm->mute != mute) {
+ 		prm->mute = mute;
+ 		change = 1;
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++		if (bridge_uac_f.setup_playback && playback)
++			bridge_uac_f.ctl_playback(0, prm->mute);
++		else if (bridge_uac_f.setup_capture && !playback)
++			bridge_uac_f.ctl_capture(0, prm->mute);
++#endif
+ 	}
+ 	spin_unlock_irqrestore(&prm->lock, flags);
+
+@@ -1135,6 +1213,16 @@ int g_audio_setup(struct g_audio *g_audio, const char *pcm_name,
+ 			prm->volume_max = fu->volume_max;
+ 			prm->volume_min = fu->volume_min;
+ 			prm->volume_res = fu->volume_res;
++
++#ifdef CONFIG_AMLOGIC_BRIDGE_UAC
++			if (i == SNDRV_PCM_STREAM_CAPTURE && bridge_uac_f.setup_capture) {
++				prm->volume = bridge_uac_f.get_default_volume_capture();
++				bridge_uac_f.ctl_capture(0, prm->volume);
++			} else if (i == SNDRV_PCM_STREAM_PLAYBACK && bridge_uac_f.setup_playback) {
++				prm->volume = bridge_uac_f.get_default_volume_playback();
++				bridge_uac_f.ctl_playback(0, prm->volume);
++			}
++#endif
+ 		}
+ 	}
+
+diff --git a/include/linux/usb/g_hid.h b/include/linux/usb/g_hid.h
+index 7581e488c237d..5615c335da5b8 100644
+--- a/include/linux/usb/g_hid.h
++++ b/include/linux/usb/g_hid.h
+@@ -30,4 +30,7 @@ struct hidg_func_descriptor {
+ 	unsigned char		report_desc[];
+ };
+
++#ifdef CONFIG_AMLOGIC_BRIDGE_HID
++ssize_t f_hidg_internal_write(char *buffer, size_t count, int nonblock);
++#endif
+ #endif /* __LINUX_USB_G_HID_H */
+--
+2.25.1
+

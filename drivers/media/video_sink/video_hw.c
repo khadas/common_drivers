@@ -6744,7 +6744,15 @@ static inline void postblend_test_pattern_output(u32 on, u32 color)
 			color = (Y << 20) | (U << 10) | V << 2; /* YUV */
 		}
 
-		if (cur_dev->display_module != C3_DISPLAY_MODULE) {
+		if (cur_dev->display_module == C3_DISPLAY_MODULE) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+			blend_din_en_save = READ_VCBUS_REG(VPU_VOUT_BLEND_CTRL);
+			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, color);
+			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL, 0x7);
+#endif
+		} else if (cur_dev->display_module == S5_DISPLAY_MODULE) {
+			vpp_clip_setting_s5(on, color);
+		} else {
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(VPP_CLIP_MISC0,
 				color);
@@ -6753,15 +6761,17 @@ static inline void postblend_test_pattern_output(u32 on, u32 color)
 				color);
 			WRITE_VCBUS_REG(VPP_CLIP_MISC0, color);
 			WRITE_VCBUS_REG(VPP_CLIP_MISC1, color);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-		} else {
-			blend_din_en_save = READ_VCBUS_REG(VPU_VOUT_BLEND_CTRL);
-			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, color);
-			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL, 0x7);
-#endif
 		}
 	} else {
-		if (cur_dev->display_module != C3_DISPLAY_MODULE) {
+		if (cur_dev->display_module == C3_DISPLAY_MODULE) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, 0x0);
+			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL,
+				blend_din_en_save);
+#endif
+		} else if (cur_dev->display_module == S5_DISPLAY_MODULE) {
+			vpp_clip_setting_s5(on, 0);
+		} else {
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(VPP_CLIP_MISC0,
 				(0x3ff << 20) |
@@ -6771,12 +6781,6 @@ static inline void postblend_test_pattern_output(u32 on, u32 color)
 				(VPP_CLIP_MISC1,
 				(0x0 << 20) |
 				(0x0 << 10) | 0x0);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-		} else {
-			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, 0x0);
-			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL,
-				blend_din_en_save);
-#endif
 		}
 	}
 }

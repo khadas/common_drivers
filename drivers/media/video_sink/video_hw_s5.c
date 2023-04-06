@@ -11855,6 +11855,7 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	cur_dev->aisr_support = p_amvideo->dev_property.aisr_support;
 	cur_dev->di_hf_y_reverse = p_amvideo->dev_property.di_hf_y_reverse;
 	cur_dev->sr_in_size = p_amvideo->dev_property.sr_in_size;
+	cur_dev->is_tv_panel = p_amvideo->is_tv_panel;
 	cur_dev->sr01_num = p_amvideo->dev_property.sr01_num;
 	if (cur_dev->aisr_support)
 		cur_dev->pps_auto_calc = 1;

@@ -303,6 +303,18 @@ static void wr_slice_vpost(int reg_addr, int val, int slice_idx)
 	rdma_wr(reg_addr_tmp, val);
 };
 
+static void wr_slice_vpost_vcbus(int reg_addr, int val, int slice_idx)
+{
+	u32 reg_offset;
+	u32 reg_addr_tmp;
+
+	reg_offset = slice_idx == 0 ? 0 :
+		slice_idx == 1 ? 0x100 :
+		slice_idx == 2 ? 0x700 : 0x1900;
+	reg_addr_tmp = reg_addr + reg_offset;
+	WRITE_VCBUS_REG(reg_addr_tmp, val);
+};
+
 static void wr_reg_bits_slice_vpost(int reg_addr, int val, int start, int len, int slice_idx)
 {
 	rdma_wr_bits_op rdma_wr_bits = cur_dev->rdma_func[VPP0].rdma_wr_bits;
@@ -1090,3 +1102,33 @@ int update_vpp_input_info(const struct vinfo_s *info)
 	return update;
 }
 
+void vpp_clip_setting_s5(u32 on, u32 color)
+{
+	u32 slice_num = 0;
+	struct vpp_post_misc_reg_s *vpp_misc_reg = &vpp_post_reg.vpp_post_misc_reg;
+	const struct vinfo_s *info;
+	int i;
+
+	info = get_current_vinfo();
+	slice_num = get_vpp_slice_num(info);
+	if (on) {
+		for (i = 0; i < slice_num; i++) {
+			wr_slice_vpost(vpp_misc_reg->vpp_clip_misc0,
+				color, i);
+			wr_slice_vpost(vpp_misc_reg->vpp_clip_misc1,
+				color, i);
+			wr_slice_vpost_vcbus(vpp_misc_reg->vpp_clip_misc0, color, i);
+			wr_slice_vpost_vcbus(vpp_misc_reg->vpp_clip_misc1, color, i);
+		}
+	} else {
+		for (i = 0; i < slice_num; i++) {
+			wr_slice_vpost(vpp_misc_reg->vpp_clip_misc0,
+				(0x3ff << 20) |
+				(0x3ff << 10) |
+				0x3ff, i);
+			wr_slice_vpost(vpp_misc_reg->vpp_clip_misc1,
+				(0x0 << 20) |
+				(0x0 << 10) | 0x0, i);
+		}
+	}
+}

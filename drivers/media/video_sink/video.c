@@ -12152,15 +12152,24 @@ static ssize_t post_matrix_data_show(struct class *cla,
 					    struct class_attribute *attr,
 					    char *buf)
 {
-	int len = 0;
-	int val1 = 0, val2 = 0;
+	int len = 0, val1 = 0, val2 = 0;
+	u8 bit_depth = 10;
 
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
+		if (video_is_meson_s5_cpu())
+			bit_depth = 12;
 		get_probe_data_s5(&val1, &val2, probe_id);
-		len += sprintf(buf + len,
-		"VPP_MATRIX_PROBE_COLOR %d, %d, %d\n",
-		((val2 & 0xf) << 8) | ((val1 >> 24) & 0xff),
-		(val1 >> 12) & 0xfff, val1 & 0xfff);
+		if (bit_depth == 10)
+			len += sprintf(buf + len,
+			"VPP_MATRIX_PROBE_COLOR %d, %d, %d\n",
+			(val1 >> 20) & 0x3ff,
+			(val1 >> 10) & 0x3ff,
+			(val1 >> 0) & 0x3ff);
+		else
+			len += sprintf(buf + len,
+			"VPP_MATRIX_PROBE_COLOR %d, %d, %d\n",
+			((val2 & 0xf) << 8) | ((val1 >> 24) & 0xff),
+			(val1 >> 12) & 0xfff, val1 & 0xfff);
 	}
 	return len;
 }

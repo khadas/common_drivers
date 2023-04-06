@@ -294,6 +294,8 @@ struct vpp_post_misc_reg_s {
 	u32 vpp_slc_deal_ctrl;
 	u32 vpp_hwin_size;
 	u32 vpp_align_fifo_size;
+	u32 vpp_clip_misc0;
+	u32 vpp_clip_misc1;
 };
 
 extern struct vpp_post_reg_s vpp_post_reg;

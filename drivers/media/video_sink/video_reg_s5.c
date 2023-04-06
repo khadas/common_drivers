@@ -921,6 +921,8 @@ struct vpp_post_misc_reg_s vpp_post_misc_reg_s5 = {
 	S5_VPP_SLC_DEAL_CTRL,
 	S5_VPP_HWIN_SIZE,
 	S5_VPP_ALIGN_FIFO_SIZE,
+	S5_VPP_CLIP_MISC0,
+	S5_VPP_CLIP_MISC1
 };
 
 struct vpp_post_misc_reg_s vpp_post_misc_reg_t3x = {
@@ -938,6 +940,8 @@ struct vpp_post_misc_reg_s vpp_post_misc_reg_t3x = {
 	S5_VPP_SLC_DEAL_CTRL,
 	S5_VPP_HWIN_SIZE,
 	S5_VPP_ALIGN_FIFO_SIZE,
+	S5_VPP_CLIP_MISC0,
+	S5_VPP_CLIP_MISC1
 };
 
 struct vd_proc_blend_reg_s vd_proc_blend_reg_s5 = {

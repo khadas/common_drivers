@@ -1619,6 +1619,7 @@
 
 &vdec_cpu_ver {
 	compatible = "amlogic, cpu-major-id-s4-805x2";
+	ucode_format = <0x0 0x4C00002>;
 };
 
 &gpu {

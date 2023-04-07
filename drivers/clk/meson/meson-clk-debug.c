@@ -223,6 +223,9 @@ static ssize_t clk_write(struct file *file, const char __user *buffer,
 		pr_info("success get %s clock, its rate = %lu, its parent is %s\n",
 			clk_name, clk_get_rate(clk), __clk_get_name(clk_get_parent(clk)));
 		/* store the clk pointer */
+		if (debug_clk)
+			clk_put(debug_clk);
+
 		debug_clk = clk;
 	} else {
 		pr_err("Can't find the clock, have a look in /sys/kernel/debug/clk.\n");

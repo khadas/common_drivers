@@ -68,13 +68,6 @@ int get_source_type(struct vframe_s *vf)
 	return ret;
 }
 
-#ifndef CONFIG_AMLOGIC_ION_DEV
-static int meson_ion_share_fd_to_phys(int fd, phys_addr_t *addr, size_t *len)
-{
-	return 0;
-}
-#endif
-
 int get_ge2d_input_format(struct vframe_s *vf)
 {
 	int format = GE2D_FORMAT_M24_YUV420;

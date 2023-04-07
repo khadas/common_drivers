@@ -910,7 +910,12 @@ static unsigned int set_afbcd_mult_simple(int index,
 	u32 rot_hshrk	= inp_afbcd->rot_hshrk; //rot_hshrk
 	u32 rot_hbgn	= inp_afbcd->rot_hbgn; //5 bits
 	u32 rot_vbgn	= inp_afbcd->rot_vbgn; //2 bits
-	u32 rot_en		= inp_afbcd->rot_en;	       //1 bits
+	u32 rot_en		= inp_afbcd->rot_en;//1 bits
+	//add from t3x
+	u32 fix_cr_en	= inp_afbcd->fix_cr_en         ;// 1 bits
+	u32 brst_len_add_en	= inp_afbcd->brst_len_add_en;// 1 bits
+	u32 brst_len_add_value	= inp_afbcd->brst_len_add_value;// 3 bits
+	u32 ofset_brst4_en	= inp_afbcd->ofset_brst4_en;// 1 bits
 
 /*input end *****************************************************/
 	u32 compbits_yuv;
@@ -1227,7 +1232,17 @@ static unsigned int set_afbcd_mult_simple(int index,
 		((rot_vbgn     & 0x3) << 8) | //rot_wrbgn_v
 		((rot_hbgn     & 0x1f) << 0)  //rot_wrbgn_h
 		);
-
+	if (DIM_IS_IC(T3X)) {
+		// set new feature
+		op->bwr((regs_ofst + AFBCDM_LOSS_CTRL), fix_cr_en, 4, 1);
+		//fix_cr_en
+		op->wr((regs_ofst + AFBCDM_BURST_CTRL),
+			(ofset_brst4_en	<< 4) | //reg_ofset_burst4_en
+			(brst_len_add_en	<< 3) |
+			//reg_burst_length_add_en
+			(brst_len_add_value << 0));
+			//reg_burst_length_add_value
+	}
 	//todo
 	//Wr_reg_bits(VD1_AFBCD0_MISC_CTRL, 1, 22, 1);  // select afbc mem
 	//Wr_reg_bits(VD1_AFBCD0_MISC_CTRL, 1, 10, 1);  //
@@ -1534,7 +1549,7 @@ static unsigned int set_afbce_cfg_v1(int index,
 	//output blk scope
 	int blk_out_bgn_v = afbce->enc_win_bgn_v      >> 2;
 	//output blk scope
-
+	int mmu_page_size = afbce->mmu_page_size == 0 ? 4096 : 8192;
 	int        lossy_luma_en;
 	int        lossy_chrm_en;
 	int        reg_fmt444_comb;//calculate
@@ -1696,7 +1711,33 @@ static unsigned int set_afbce_cfg_v1(int index,
 	op->bwr(reg[AFBCEX_PIP_CTRL], afbce->reg_pip_mode, 0, 1);
 
 	op->bwr(reg[AFBCEX_ROT_CTRL], afbce->rot_en, 4, 1);
+	if (DIM_IS_IC(T3X)) {
+		//set fix_cr_en
+		op->bwr(reg[AFBCEX_LOSS_CTRL], afbce->fix_cr_en, 31, 1);
+		//reg_fix_cr_en
+		op->bwr(reg[AFBCEX_LOSS_CTRL], afbce->rc_en, 30, 1);
+		//reg_rc_en
 
+		//set brst_len
+		op->bwr(reg[AFBCEX_FORMAT], afbce->brst_len_add_en, 10, 1);
+		//reg_fix_cr_en
+		op->bwr(reg[AFBCEX_FORMAT], afbce->ofset_brst4_en, 11, 1);
+		//reg_fix_cr_en
+		op->bwr(reg[AFBCEX_FORMAT], afbce->brst_len_add_value, 12, 3);
+		//reg_fix_cr_en
+		if (afbce->fix_cr_en == 1) {
+			op->bwr(reg[AFBCEX_LOSS_BURST_NUM], 7, 0, 5);
+			//reg_block_burst_num_3
+			op->bwr(reg[AFBCEX_LOSS_BURST_NUM], 8, 8, 5);
+			//reg_block_burst_num_2
+			op->bwr(reg[AFBCEX_LOSS_BURST_NUM], 7, 16, 5);
+			//reg_block_burst_num_1
+			op->bwr(reg[AFBCEX_LOSS_BURST_NUM], 8, 24, 5);
+			//reg_block_burst_num_0
+		}
+		//set mmu_page_size
+		op->bwr(reg[AFBCEX_MIF_SIZE], mmu_page_size, 0, 16);
+	}
 	op->bwr(reg[AFBCEX_ENABLE], 0, 12, 1);//go_line_cnt start
 	op->bwr(reg[AFBCEX_ENABLE], enable, 8, 1);//enable afbce
 	op->bwr(reg[AFBCEX_ENABLE], enable, 0, 1);//enable afbce
@@ -1705,6 +1746,7 @@ static unsigned int set_afbce_cfg_v1(int index,
 } /* set_afbce_cfg_v1 */
 
 /* for double write function */
+/* for t3x comb mode shrk0/ram1 from VLSI weipeng.xia*/
 static void set_shrk_ch(struct SHRK_S *srkcfg, const struct reg_acc *opin)
 {
 	const struct reg_acc *op;
@@ -1713,24 +1755,46 @@ static void set_shrk_ch(struct SHRK_S *srkcfg, const struct reg_acc *opin)
 		op = &di_pre_regset;
 	else
 		op = opin;
+	if (DIM_IS_IC(T3X)) {
+		if (!srkcfg->shrk_en) {
+			op->bwr(DI_T3X_DIWR_SHRK_CTRL, 0, 0, 1);
+			return;
+		}
+		/* pre / post select: 1: pre; 0; post */
+		op->bwr(DI_TOP_CTRL1, srkcfg->pre_post, 27, 1);
+		op->wr(DI_T3X_NRWR_SHRK_CTRL,
+		       ((srkcfg->h_shrk_mode & 0x3) << 8)  |
+		       ((srkcfg->v_shrk_mode & 0x3) << 6)  |
+		       ((srkcfg->shrk_en & 0x1)     << 0));
 
-	if (!srkcfg->shrk_en) {
-		op->bwr(DI_DIWR_SHRK_CTRL, 0, 0, 1);
-		return;
+		op->wr(DI_T3X_NRWR_SHRK_SIZE,
+		       ((srkcfg->hsize_in & 0x1fff) << 13) |	// reg_frm_hsize
+		       ((srkcfg->vsize_in & 0x1fff) << 0));	// reg_frm_vsize
+
+		op->bwr(DI_T3X_NRWR_SHRK_CTRL, srkcfg->frm_rst, 1, 1);
+
+	} else {
+		if (!srkcfg->shrk_en) {
+			op->bwr(DI_DIWR_SHRK_CTRL, 0, 0, 1);
+			return;
+		}
+		/* pre / post select: 1: pre; 0; post */
+		op->bwr(DI_TOP_CTRL1, srkcfg->pre_post, 27, 1);
+
+		op->wr(DI_DIWR_SHRK_CTRL,
+		       ((srkcfg->h_shrk_mode & 0x3) << 8)  |
+		       ((srkcfg->v_shrk_mode & 0x3) << 6)  |
+		       ((srkcfg->shrk_en & 0x1)     << 0));
+
+		op->wr(DI_DIWR_SHRK_SIZE,
+		       ((srkcfg->hsize_in & 0x1fff) << 13) |	// reg_frm_hsize
+		       ((srkcfg->vsize_in & 0x1fff) << 0));	// reg_frm_vsize
+
+		op->bwr(DI_DIWR_SHRK_CTRL, srkcfg->frm_rst, 1, 1);
 	}
-	/* pre / post select: 1: pre; 0; post */
-	op->bwr(DI_TOP_CTRL1, srkcfg->pre_post, 27, 1);
-
-	op->wr(DI_DIWR_SHRK_CTRL,
-	       ((srkcfg->h_shrk_mode & 0x3) << 8)  |
-	       ((srkcfg->v_shrk_mode & 0x3) << 6)  |
-	       ((srkcfg->shrk_en & 0x1)     << 0));
-
-	op->wr(DI_DIWR_SHRK_SIZE,
-	       ((srkcfg->hsize_in & 0x1fff) << 13) |	// reg_frm_hsize
-	       ((srkcfg->vsize_in & 0x1fff) << 0));	// reg_frm_vsize
-
-	op->bwr(DI_DIWR_SHRK_CTRL, srkcfg->frm_rst, 1, 1);
+	//default: In comb_mode, use shrink0 addr,
+	//shrink0 ram store addr 0-511, shrink1 ram store addr 511-1023
+	//exchange the shrink position, use shrink1 addr.
 }
 
 static void set_shrk_disable(const struct reg_acc *opin)
@@ -1741,7 +1805,10 @@ static void set_shrk_disable(const struct reg_acc *opin)
 		op = &di_pre_regset;
 	else
 		op = opin;
-	op->bwr(DI_DIWR_SHRK_CTRL, 0, 0, 1);
+	if (DIM_IS_IC(T3X))
+		op->bwr(DI_T3X_NRWR_SHRK_CTRL, 0, 0, 1);
+	else
+		op->bwr(DI_DIWR_SHRK_CTRL, 0, 0, 1);
 }
 
 static void set_mcdi_mif(struct DI_SIM_MIF_S *di_inf_default,

@@ -785,6 +785,16 @@
 //Bit  2: 0        reg_iquant_yclut_1_0
 // unsigned ,    RW, default = 0
 //quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
+//add for t3x
+#define AFBCDM_BURST_CTRL                       0x5457//32'hff81515c
+//Bit 31:5     reserved
+//Bit 4        reg_ofset_burst4_en              //unsigned RW  default = 0
+//Bit 3        reg_burst_length_add_en          //unsigned RW  default = 0
+//Bit 2:0      reg_burst_length_add_value       //unsigned RW  default = 2
+#define AFBCDM_LOSS_CTRL                        0x5458//32'hff815160
+//Bit 31:5     reserved
+//Bit 4        reg_fix_cr_en                    //unsigned ,RW  default = 0
+//Bit 3:0      reg_quant_diff_root_leave        //unsigned ,RW  default = 2
 #define AFBCDM_ROT_CTRL                            0x5460
 //Bit   31:30   reg_rot_ohds2_mode
 //unsigned, RW, default = 0 ,

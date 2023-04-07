@@ -58,6 +58,7 @@
 #endif
 #include <dt-bindings/power/t3-pd.h>
 #include <dt-bindings/power/t5m-pd.h>
+#include <dt-bindings/power/t3x-pd.h>
 #include <linux/amlogic/media/video_sink/video_signal_notify.h>
 #include <linux/io.h>
 #include <linux/of_address.h>
@@ -430,10 +431,8 @@ int frc_attach_pd(struct frc_dev_s *devp)
 
 	chip = get_chip_type();
 
-	if (chip == ID_T5M) {
-		pr_frc(0, "%s T5_domain\n", __func__);
+	if (chip == ID_T5M || chip == ID_T3X)
 		return 0;
-	}
 
 	if (pdev->dev.pm_domain) {
 		pr_frc(0, "%s err pm domain\n", __func__);
@@ -509,7 +508,7 @@ void frc_power_domain_ctrl(struct frc_dev_s *devp, u32 onoff)
 			pwr_ctrl_psci_smc(PDID_T3_FRCMC, PWR_OFF);
 #endif
 		}
-		pr_frc(0, "t3 power domain power %d\n", onoff);
+		pr_frc(2, "t3 power domain power %d\n", onoff);
 	} else if (chip == ID_T5M) {
 		if (onoff) {
 #ifdef K_MEMC_CLK_DIS
@@ -530,7 +529,29 @@ void frc_power_domain_ctrl(struct frc_dev_s *devp, u32 onoff)
 
 #endif
 		}
-		pr_frc(0, "t5m power domain power %d\n", onoff);
+		pr_frc(2, "t5m power domain power %d\n", onoff);
+
+	} else if (chip == ID_T3X) {
+		if (onoff) {
+#ifdef K_MEMC_CLK_DIS
+			pwr_ctrl_psci_smc(PDID_T3X_FRC_TOP, PWR_ON);
+#endif
+			if (!devp->buf.cma_mem_alloced)
+				frc_buf_alloc(devp);
+			devp->power_on_flag = true;
+			frc_init_config(devp);
+			frc_buf_config(devp);
+			frc_internal_initial(devp);
+			frc_hw_initial(devp);
+			if (pfw_data->frc_fw_reinit)
+				pfw_data->frc_fw_reinit();
+		} else {
+#ifdef K_MEMC_CLK_DIS
+			pwr_ctrl_psci_smc(PDID_T3X_FRC_TOP, PWR_OFF);
+
+#endif
+		}
+		pr_frc(2, "t3x power domain power %d\n", onoff);
 
 	}
 	// if (onoff)

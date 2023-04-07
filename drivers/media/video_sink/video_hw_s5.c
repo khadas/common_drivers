@@ -3061,7 +3061,10 @@ static void set_vd_proc_info(struct video_layer_s *layer)
 				/* whole vd1 output size */
 				vd_proc_vd1_info->vd1_dout_hsize[0] = dst_w;
 				vd_proc_vd1_info->vd1_dout_vsize[0] = dst_h;
-				vd_proc_vd1_info->vd1_overlap_hsize = 32;
+				if (cur_dev->amdv_tvcore && is_amdv_enable())
+					vd_proc_vd1_info->vd1_overlap_hsize = 96;
+				else
+					vd_proc_vd1_info->vd1_overlap_hsize = 32;
 				break;
 			case VD1_SLICES_DOUT_PI:
 				/* 4 pic */
@@ -5582,11 +5585,21 @@ static void update_vd_proc_amdv_info(struct vd_proc_s *vd_proc)
 
 	vd_proc_amdv.vd2_prebld_4k120_en =
 		vd_proc->vd_proc_preblend_info.vd1s1_vd2_prebld_en;
+	vd_proc_amdv.slice_num = vd_proc->vd_proc_vd1_info.slice_num;
+	vd_proc_amdv.overlap_size = vd_proc->vd_proc_vd1_info.vd1_overlap_hsize;
 	for (i = 0; i < vd_proc->vd_proc_vd1_info.slice_num; i++) {
+		/* slice input */
 		vd_proc_amdv.slice[i].hsize =
 			vd_proc->vd_proc_slice_info.vd1_slice_din_hsize[i];
 		vd_proc_amdv.slice[i].vsize =
 			vd_proc->vd_proc_slice_info.vd1_slice_din_vsize[i];
+		/* dv out = scaler input */
+		if (vd_proc->vd_proc_unit[i].vd_proc_sr0.sr_en)
+			vd_proc_amdv.slice[i].scaler_in_hsize =
+			vd_proc->vd_proc_unit[i].vd_proc_sr0.din_hsize;
+		else
+			vd_proc_amdv.slice[i].scaler_in_hsize =
+			vd_proc->vd_proc_unit[i].vd_proc_pps.din_hsize;
 	}
 }
 
@@ -5639,23 +5652,38 @@ static void update_vd_proc_amvecm_info(struct vd_proc_s *vd_proc)
 		vd_proc_pps = &vd_proc_unit->vd_proc_pps;
 		vd_proc_sr1 = &vd_proc_unit->vd_proc_sr1;
 		vd_proc_sr0 = &vd_proc_unit->vd_proc_sr0;
-		if (vd_proc_sr1->sr_en && i == 0) {
-			vd_proc_amvecm.slice[i].hsize =
-				vd_proc_sr1->dout_hsize;
-			vd_proc_amvecm.slice[i].vsize =
-				vd_proc_sr1->dout_vsize;
-		} else if (vd_proc_unit->sr0_dpath_sel == SR0_IN_SLICE1 &&
-			vd_proc_sr0->sr_en &&
-			i == 1) {
-			vd_proc_amvecm.slice[i].hsize =
-				vd_proc_sr0->dout_hsize;
-			vd_proc_amvecm.slice[i].vsize =
-				vd_proc_sr0->dout_vsize;
+		/* set slice size for cm input */
+		if (cur_dev->sr01_num == 1) {
+			if (vd_proc_sr1->sr_en && i == 0) {
+				vd_proc_amvecm.slice[i].hsize =
+					vd_proc_sr1->dout_hsize;
+				vd_proc_amvecm.slice[i].vsize =
+					vd_proc_sr1->dout_vsize;
+			} else if (vd_proc_unit->sr0_dpath_sel == SR0_IN_SLICE1 &&
+				vd_proc_sr0->sr_en &&
+				i == 1) {
+				vd_proc_amvecm.slice[i].hsize =
+					vd_proc_sr0->dout_hsize;
+				vd_proc_amvecm.slice[i].vsize =
+					vd_proc_sr0->dout_vsize;
+			} else {
+				vd_proc_amvecm.slice[i].hsize =
+					vd_proc_pps->dout_hsize;
+				vd_proc_amvecm.slice[i].vsize =
+					vd_proc_pps->dout_vsize;
+			}
 		} else {
-			vd_proc_amvecm.slice[i].hsize =
-				vd_proc_pps->dout_hsize;
-			vd_proc_amvecm.slice[i].vsize =
-				vd_proc_pps->dout_vsize;
+			if (vd_proc_sr1->sr_en) {
+				vd_proc_amvecm.slice[i].hsize =
+					vd_proc_sr1->dout_hsize;
+				vd_proc_amvecm.slice[i].vsize =
+					vd_proc_sr1->dout_vsize;
+			} else {
+				vd_proc_amvecm.slice[i].hsize =
+					vd_proc_pps->dout_hsize;
+				vd_proc_amvecm.slice[i].vsize =
+					vd_proc_pps->dout_vsize;
+			}
 		}
 	}
 	vd_proc_amvecm.vd2_in_hsize = vd_proc_vd2_info->vd2_din_hsize;
@@ -12029,6 +12057,7 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	cur_dev->sr01_num = p_amvideo->dev_property.sr01_num;
 	cur_dev->mosaic_support = p_amvideo->dev_property.mosaic_support;
 	cur_dev->cr_loss = p_amvideo->dev_property.cr_loss;
+	cur_dev->amdv_tvcore = p_amvideo->dev_property.amdv_tvcore;
 	if (cur_dev->aisr_support)
 		cur_dev->pps_auto_calc = 1;
 	cur_dev->prevsync_support = p_amvideo->dev_property.prevsync_support;

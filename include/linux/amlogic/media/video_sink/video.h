@@ -361,6 +361,7 @@ static inline int amvideo_notifier_call_chain(unsigned long val, void *v)
 struct slice_info {
 	u32 hsize;     /*slice hsize*/
 	u32 vsize;     /*slice vsize*/
+	u32 scaler_in_hsize;
 };
 
 struct vpp_post_info_t {
@@ -373,6 +374,8 @@ struct vpp_post_info_t {
 
 struct vd_proc_info_t {
 	bool vd2_prebld_4k120_en;
+	u8 slice_num;
+	u32 overlap_size;
 	struct slice_info slice[VD_SLICE_NUM];
 };
 

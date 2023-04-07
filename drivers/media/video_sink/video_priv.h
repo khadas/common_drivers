@@ -281,6 +281,7 @@ struct video_dev_s {
 	u8 sr01_num;
 	u8 mosaic_support;
 	u8 cr_loss;
+	u8 amdv_tvcore;
 };
 
 struct video_layer_s;
@@ -623,6 +624,7 @@ struct video_device_hw_s {
 	u8 mosaic_support;
 	u8 sr01_num;
 	u8 cr_loss;
+	u8 amdv_tvcore;
 };
 
 struct amvideo_device_data_s {

@@ -588,6 +588,7 @@ struct osd_device_hw_s {
 	u32 display_type;
 	u32 has_8G_addr;
 	u32 multi_afbc_core;
+	u32 share_afbc_core; /* OSD1&OSD2 share one AFBC core */
 	u32 has_multi_vpp;
 	u32 new_blend_bypass;
 	u32 path_ctrl_independ;

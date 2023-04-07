@@ -2076,7 +2076,8 @@ int osd_rdma_reset_and_flush(u32 output_index, u32 reset_bit)
 			/* for osd_dev_hw.multi_afbc_core,
 			 * OSD1+OSD2 uses afbc, OSD3 uses afbc1, OSD4 uses afbc2.
 			 */
-			if (hw_index == OSD2 && afbc0_started)
+			if (osd_dev_hw.share_afbc_core &&
+			    hw_index == OSD2 && afbc0_started)
 				continue;
 
 			osd_reg = &hw_osd_reg_array[i];

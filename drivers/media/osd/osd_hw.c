@@ -1018,7 +1018,7 @@ struct hw_osd_reg_s hw_osd_reg_array_t3[HW_OSD_COUNT] = {
 	},
 };
 
-/* OSD1 + OSD3 */
+/* S5:OSD1 + OSD3 */
 struct hw_osd_reg_s hw_osd_reg_array_s5[HW_OSD_COUNT] = {
 	{
 		S5_VIU_OSD1_CTRL_STAT,
@@ -1141,6 +1141,198 @@ struct hw_osd_reg_s hw_osd_reg_array_s5[HW_OSD_COUNT] = {
 		VPU_MAFBC1_COMMAND,
 		VPU_MAFBC1_IRQ_RAW_STATUS,
 		VPU_MAFBC1_IRQ_CLEAR,
+
+		OSD_REG_UNSUPPORT, /* VPP_OSD3_SCALE_CTRL */
+		OSD3_PROC_IN_SIZE,
+		OSD3_PROC_OUT_SIZE,
+	},
+};
+
+struct hw_osd_reg_s hw_osd_reg_array_t3x[HW_OSD_COUNT] = {
+	{
+		S5_VIU_OSD1_CTRL_STAT,
+		S5_VIU_OSD1_CTRL_STAT2,
+		S5_VIU_OSD1_COLOR_ADDR,
+		S5_VIU_OSD1_COLOR,
+		S5_VIU_OSD1_TCOLOR_AG0,
+		S5_VIU_OSD1_TCOLOR_AG1,
+		S5_VIU_OSD1_TCOLOR_AG2,
+		S5_VIU_OSD1_TCOLOR_AG3,
+		S5_VIU_OSD1_BLK0_CFG_W0,
+		S5_VIU_OSD1_BLK0_CFG_W1,
+		S5_VIU_OSD1_BLK0_CFG_W2,
+		S5_VIU_OSD1_BLK0_CFG_W3,
+		S5_VIU_OSD1_BLK0_CFG_W4,
+		S5_VIU_OSD1_BLK1_CFG_W4,
+		S5_VIU_OSD1_BLK2_CFG_W4,
+		S5_VIU_OSD1_FIFO_CTRL_STAT,
+		S5_VIU_OSD1_TEST_RDDATA,
+		S5_VIU_OSD1_PROT_CTRL,
+		S5_VIU_OSD1_MALI_UNPACK_CTRL,
+		S5_VIU_OSD1_DIMM_CTRL,
+		OSD_REG_UNSUPPORT, /* VPP_WRAP_OSD1_MATRIX_EN_CTRL */
+
+		OSD1_PROC_SCALE_COEF_IDX,
+		OSD1_PROC_SCALE_COEF,
+		OSD1_PROC_VSC_PHASE_STEP,
+		OSD1_PROC_VSC_INI_PHASE,
+		OSD1_PROC_VSC_CTRL0,
+		OSD1_PROC_HSC_PHASE_STEP,
+		OSD1_PROC_HSC_INI_PHASE,
+		OSD1_PROC_HSC_CTRL0,
+		OSD1_PROC_HSC_INI_PAT_CTRL,
+		OSD1_PROC_SC_DUMMY_DATA,
+		OSD1_PROC_SC_CTRL0,
+		OSD1_PROC_SCI_WH_M1,
+		OSD1_PROC_SCO_H_START_END,
+		OSD1_PROC_SCO_V_START_END,
+		OSD1_PROC_DB_FLT_CTRL,
+		VPU_MAFBC_HEADER_BUF_ADDR_LOW_S0,
+		VPU_MAFBC_HEADER_BUF_ADDR_HIGH_S0,
+		VPU_MAFBC_FORMAT_SPECIFIER_S0,
+		VPU_MAFBC_BUFFER_WIDTH_S0,
+		VPU_MAFBC_BUFFER_HEIGHT_S0,
+		VPU_MAFBC_BOUNDING_BOX_X_START_S0,
+		VPU_MAFBC_BOUNDING_BOX_X_END_S0,
+		VPU_MAFBC_BOUNDING_BOX_Y_START_S0,
+		VPU_MAFBC_BOUNDING_BOX_Y_END_S0,
+		VPU_MAFBC_OUTPUT_BUF_ADDR_LOW_S0,
+		VPU_MAFBC_OUTPUT_BUF_ADDR_HIGH_S0,
+		VPU_MAFBC_OUTPUT_BUF_STRIDE_S0,
+		VPU_MAFBC_PREFETCH_CFG_S0,
+
+		VPP_INTF_OSD1_CTRL, /* MALI_AFBCD_TOP_CTRL */
+		VPU_MAFBC_IRQ_MASK,
+		VPU_MAFBC_SURFACE_CFG,
+		VPU_MAFBC_COMMAND,
+		VPU_MAFBC_IRQ_RAW_STATUS,
+		VPU_MAFBC_IRQ_CLEAR,
+
+		OSD_REG_UNSUPPORT, /* VPP_OSD1_SCALE_CTRL */
+		OSD1_PROC_IN_SIZE,
+		OSD1_PROC_OUT_SIZE,
+	},
+	{
+		S5_VIU_OSD2_CTRL_STAT,
+		S5_VIU_OSD2_CTRL_STAT2,
+		S5_VIU_OSD2_COLOR_ADDR,
+		S5_VIU_OSD2_COLOR,
+		S5_VIU_OSD2_TCOLOR_AG0,
+		S5_VIU_OSD2_TCOLOR_AG1,
+		S5_VIU_OSD2_TCOLOR_AG2,
+		S5_VIU_OSD2_TCOLOR_AG3,
+		S5_VIU_OSD2_BLK0_CFG_W0,
+		S5_VIU_OSD2_BLK0_CFG_W1,
+		S5_VIU_OSD2_BLK0_CFG_W2,
+		S5_VIU_OSD2_BLK0_CFG_W3,
+		S5_VIU_OSD2_BLK0_CFG_W4,
+		S5_VIU_OSD2_BLK1_CFG_W4,
+		S5_VIU_OSD2_BLK2_CFG_W4,
+		S5_VIU_OSD2_FIFO_CTRL_STAT,
+		S5_VIU_OSD2_TEST_RDDATA,
+		S5_VIU_OSD2_PROT_CTRL,
+		S5_VIU_OSD2_MALI_UNPACK_CTRL,
+		S5_VIU_OSD2_DIMM_CTRL,
+		OSD_REG_UNSUPPORT, /* VPP_WRAP_OSD2_MATRIX_EN_CTRL */
+
+		OSD2_PROC_SCALE_COEF_IDX,
+		OSD2_PROC_SCALE_COEF,
+		OSD2_PROC_VSC_PHASE_STEP,
+		OSD2_PROC_VSC_INI_PHASE,
+		OSD2_PROC_VSC_CTRL0,
+		OSD2_PROC_HSC_PHASE_STEP,
+		OSD2_PROC_HSC_INI_PHASE,
+		OSD2_PROC_HSC_CTRL0,
+		OSD2_PROC_HSC_INI_PAT_CTRL,
+		OSD2_PROC_SC_DUMMY_DATA,
+		OSD2_PROC_SC_CTRL0,
+		OSD2_PROC_SCI_WH_M1,
+		OSD2_PROC_SCO_H_START_END,
+		OSD2_PROC_SCO_V_START_END,
+		OSD2_PROC_DB_FLT_CTRL,
+		VPU_MAFBC1_HEADER_BUF_ADDR_LOW_S1,
+		VPU_MAFBC1_HEADER_BUF_ADDR_HIGH_S1,
+		VPU_MAFBC1_FORMAT_SPECIFIER_S1,
+		VPU_MAFBC1_BUFFER_WIDTH_S1,
+		VPU_MAFBC1_BUFFER_HEIGHT_S1,
+		VPU_MAFBC1_BOUNDING_BOX_X_START_S1,
+		VPU_MAFBC1_BOUNDING_BOX_X_END_S1,
+		VPU_MAFBC1_BOUNDING_BOX_Y_START_S1,
+		VPU_MAFBC1_BOUNDING_BOX_Y_END_S1,
+		VPU_MAFBC1_OUTPUT_BUF_ADDR_LOW_S1,
+		VPU_MAFBC1_OUTPUT_BUF_ADDR_HIGH_S1,
+		VPU_MAFBC1_OUTPUT_BUF_STRIDE_S1,
+		VPU_MAFBC1_PREFETCH_CFG_S1,
+
+		VPP_INTF_OSD2_CTRL, /* MALI_AFBCD1_TOP_CTRL */
+		VPU_MAFBC1_IRQ_MASK,
+		VPU_MAFBC1_SURFACE_CFG,
+		VPU_MAFBC1_COMMAND,
+		VPU_MAFBC1_IRQ_RAW_STATUS,
+		VPU_MAFBC1_IRQ_CLEAR,
+
+		OSD_REG_UNSUPPORT, /* VPP_OSD2_SCALE_CTRL */
+		OSD2_PROC_IN_SIZE,
+		OSD2_PROC_OUT_SIZE,
+	},
+	{
+		S5_VIU_OSD3_CTRL_STAT,
+		S5_VIU_OSD3_CTRL_STAT2,
+		S5_VIU_OSD3_COLOR_ADDR,
+		S5_VIU_OSD3_COLOR,
+		S5_VIU_OSD3_TCOLOR_AG0,
+		S5_VIU_OSD3_TCOLOR_AG1,
+		S5_VIU_OSD3_TCOLOR_AG2,
+		S5_VIU_OSD3_TCOLOR_AG3,
+		S5_VIU_OSD3_BLK0_CFG_W0,
+		S5_VIU_OSD3_BLK0_CFG_W1,
+		S5_VIU_OSD3_BLK0_CFG_W2,
+		S5_VIU_OSD3_BLK0_CFG_W3,
+		S5_VIU_OSD3_BLK0_CFG_W4,
+		S5_VIU_OSD3_BLK1_CFG_W4,
+		S5_VIU_OSD3_BLK2_CFG_W4,
+		S5_VIU_OSD3_FIFO_CTRL_STAT,
+		S5_VIU_OSD3_TEST_RDDATA,
+		S5_VIU_OSD3_PROT_CTRL,
+		S5_VIU_OSD3_MALI_UNPACK_CTRL,
+		S5_VIU_OSD3_DIMM_CTRL,
+		OSD_REG_UNSUPPORT, /* VPP_WRAP_OSD3_MATRIX_EN_CTRL */
+
+		OSD3_PROC_SCALE_COEF_IDX,
+		OSD3_PROC_SCALE_COEF,
+		OSD3_PROC_VSC_PHASE_STEP,
+		OSD3_PROC_VSC_INI_PHASE,
+		OSD3_PROC_VSC_CTRL0,
+		OSD3_PROC_HSC_PHASE_STEP,
+		OSD3_PROC_HSC_INI_PHASE,
+		OSD3_PROC_HSC_CTRL0,
+		OSD3_PROC_HSC_INI_PAT_CTRL,
+		OSD3_PROC_SC_DUMMY_DATA,
+		OSD3_PROC_SC_CTRL0,
+		OSD3_PROC_SCI_WH_M1,
+		OSD3_PROC_SCO_H_START_END,
+		OSD3_PROC_SCO_V_START_END,
+		OSD3_PROC_DB_FLT_CTRL,
+		VPU_MAFBC2_HEADER_BUF_ADDR_LOW_S2,
+		VPU_MAFBC2_HEADER_BUF_ADDR_HIGH_S2,
+		VPU_MAFBC2_FORMAT_SPECIFIER_S2,
+		VPU_MAFBC2_BUFFER_WIDTH_S2,
+		VPU_MAFBC2_BUFFER_HEIGHT_S2,
+		VPU_MAFBC2_BOUNDING_BOX_X_START_S2,
+		VPU_MAFBC2_BOUNDING_BOX_X_END_S2,
+		VPU_MAFBC2_BOUNDING_BOX_Y_START_S2,
+		VPU_MAFBC2_BOUNDING_BOX_Y_END_S2,
+		VPU_MAFBC2_OUTPUT_BUF_ADDR_LOW_S2,
+		VPU_MAFBC2_OUTPUT_BUF_ADDR_HIGH_S2,
+		VPU_MAFBC2_OUTPUT_BUF_STRIDE_S2,
+		VPU_MAFBC2_PREFETCH_CFG_S2,
+
+		VPP_INTF_OSD3_CTRL, /* MALI_AFBCD1_TOP_CTRL */
+		VPU_MAFBC2_IRQ_MASK,
+		VPU_MAFBC2_SURFACE_CFG,
+		VPU_MAFBC2_COMMAND,
+		VPU_MAFBC2_IRQ_RAW_STATUS,
+		VPU_MAFBC2_IRQ_CLEAR,
 
 		OSD_REG_UNSUPPORT, /* VPP_OSD3_SCALE_CTRL */
 		OSD3_PROC_IN_SIZE,
@@ -2100,7 +2292,9 @@ u32 to_osd_hw_index(u32 osd_index)
 	 * osd_index 0 -> HW OSD1
 	 * osd_index 1 -> HW OSD3
 	 */
-	if (osd_dev_hw.s5_display && osd_index == 1)
+	if (osd_dev_hw.s5_display &&
+	    osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_S5 &&
+	    osd_index == 1)
 		index = OSD3;
 
 	return index;
@@ -2114,7 +2308,8 @@ static u32 to_osd_sw_index(u32 osd_index)
 	 * HW OSD1 -> osd_index 0
 	 * HW OSD3 -> osd_index 1
 	 */
-	if (osd_dev_hw.s5_display) {
+	if (osd_dev_hw.s5_display &&
+	    osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_S5) {
 		switch (osd_index) {
 		case OSD1:
 			index = 0;
@@ -11080,7 +11275,7 @@ static void dup_param_for_osd_hw(u32 dst_index, u32 src_index)
 	u32 src = src_index, dst = dst_index;
 
 	osd_hw.enable[dst] = osd_hw.enable[src];
-	osd_hw.osd_afbcd[dst_index].enable = osd_hw.osd_afbcd[src].enable;
+	osd_hw.osd_afbcd[dst].enable = osd_hw.osd_afbcd[src].enable;
 
 	osd_hw.gbl_alpha[dst] = osd_hw.gbl_alpha[src];
 	osd_hw.dim_layer[dst] = osd_hw.dim_layer[src];
@@ -11115,17 +11310,28 @@ static void osd_2slice_param_init(u32 index_orin)
 	u32 slice_pad_en = 0;
 	u32 slice_pad_h_bgn = 0, slice_pad_h_end = 0;
 	u32 slice_pad_v_bgn = 0, slice_pad_v_end = 0;
-	u32 xoffset, yoffset;
+	u32 xoffset, yoffset, left, right;
 	u32 osd_in_hsize_real, osd_out_hsize_real;
 	u32 osd_in_vsize_real, osd_out_vsize_real;
 	u32 i, count  = osd_hw.osd_meson_dev.viu1_osd_count;
 	u64 t;
 
 	if (osd_dev_hw.s5_display) {
-		osd_slice2ppc.slice_pos[OSD1] = SLICE_LEFT;
-		osd_slice2ppc.slice_pos[OSD2] = SLICE_RIGHT;
-		osd_slice2ppc.slice_pos[OSD3] = SLICE_NONE;
-		osd_slice2ppc.slice_pos[OSD4] = SLICE_NONE;
+		if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_S5) {
+			osd_slice2ppc.slice_pos[OSD1] = SLICE_LEFT;
+			osd_slice2ppc.slice_pos[OSD2] = SLICE_RIGHT;
+			osd_slice2ppc.slice_pos[OSD3] = SLICE_NONE;
+			osd_slice2ppc.slice_pos[OSD4] = SLICE_NONE;
+			left = OSD1;
+			right = OSD2;
+		} else {
+			osd_slice2ppc.slice_pos[OSD1] = SLICE_LEFT;
+			osd_slice2ppc.slice_pos[OSD2] = SLICE_NONE;
+			osd_slice2ppc.slice_pos[OSD3] = SLICE_RIGHT;
+			osd_slice2ppc.slice_pos[OSD4] = SLICE_NONE;
+			left = OSD1;
+			right = OSD3;
+		}
 	}
 
 	for (i = 0; i < count; i++) {
@@ -11266,26 +11472,28 @@ static void osd_2slice_param_init(u32 index_orin)
 	osd_slice2ppc.out_hsize_total = osd_out_hsize_real;
 	osd_slice2ppc.out_vsize_total = osd_out_vsize_real;
 
-	for (i = 0; i < SLICE_NUM; i++) {
+	for (i = 0; i < count; i++) {
+		if (osd_slice2ppc.slice_pos[i] == SLICE_NONE)
+			continue;
 		osd_slice2ppc.scaler_in_hsize[i] = osd_pps_din_hsize[i];
 		osd_slice2ppc.scaler_in_vsize[i] = osd_in_vsize_real;
 		osd_slice2ppc.scaler_out_hsize[i] = osd_pps_dout_hsize[i];
 		osd_slice2ppc.scaler_out_vsize[i] = osd_out_vsize_real;
 	}
-	osd_slice2ppc.slice_in_x_start[SLICE_LEFT]  = xoffset;
-	osd_slice2ppc.slice_in_x_end[SLICE_LEFT]    = xoffset +
+	osd_slice2ppc.slice_in_x_start[left]  = xoffset;
+	osd_slice2ppc.slice_in_x_end[left]    = xoffset +
 						osd_pps_din_hsize[0] - 1;
-	osd_slice2ppc.slice_in_x_start[SLICE_RIGHT] = xoffset +
+	osd_slice2ppc.slice_in_x_start[right] = xoffset +
 						osd_pps_din_hsize[0] -
 						SCALER_OVERLAP * 2;
-	osd_slice2ppc.slice_in_x_end[SLICE_RIGHT]   = xoffset +
+	osd_slice2ppc.slice_in_x_end[right]   = xoffset +
 						osd_in_hsize_real - 1;
 
-	osd_slice2ppc.slice_in_y_start[SLICE_LEFT]  = yoffset;
-	osd_slice2ppc.slice_in_y_end[SLICE_LEFT]    = yoffset +
+	osd_slice2ppc.slice_in_y_start[left]  = yoffset;
+	osd_slice2ppc.slice_in_y_end[left]    = yoffset +
 						osd_in_vsize_real - 1;
-	osd_slice2ppc.slice_in_y_start[SLICE_RIGHT] = yoffset;
-	osd_slice2ppc.slice_in_y_end[SLICE_RIGHT]   = yoffset +
+	osd_slice2ppc.slice_in_y_start[right] = yoffset;
+	osd_slice2ppc.slice_in_y_end[right]   = yoffset +
 						osd_in_vsize_real - 1;
 
 	osd_log_dbg2(MODULE_2SLICE, "in_hsize_total:%d in_vsize_total:%d\n",
@@ -11314,6 +11522,8 @@ static void osd_2slice_param_init(u32 index_orin)
 		     osd_slice2ppc.pad_v_bgn, osd_slice2ppc.pad_v_end);
 
 	for (i = 0; i < count; i++) {
+		if (osd_slice2ppc.slice_pos[i] == SLICE_NONE)
+			continue;
 		osd_log_dbg2(MODULE_2SLICE, "slice %d, osd%d ---\n",
 			     osd_slice2ppc.slice_pos[i], i);
 
@@ -12035,7 +12245,7 @@ static void set_osd_blend_reg(struct osd_blend_reg_s *osd_blend_reg)
 			data32 |= 1 << 6 | 3 << 10;
 		} else {
 			/* 1mux3, OSD1 & OSD3 -> blend */
-			data32 = 2 << 0 | 2 << 4;
+			data32 = 2 << 0 | 2 << 2 | 2 << 4;
 		}
 		VSYNCOSD_WR_MPEG_REG(OSD_PROC_1MUX3_SEL, data32);
 
@@ -13251,7 +13461,8 @@ void osd_mali_afbc_start(u32 output_index)
 				/* for osd_dev_hw.multi_afbc_core,
 				 * OSD1+OSD2 uses afbc, OSD3 uses afbc1, OSD4 uses afbc2.
 				 */
-				if (hw_index == OSD2 && afbc0_start)
+				if (osd_dev_hw.share_afbc_core &&
+				    hw_index == OSD2 && afbc0_start)
 					continue;
 
 				rdma_wr(osd_reg->vpu_mafbc_command,
@@ -14030,7 +14241,7 @@ static void s5_default_path_settings(void)
 	osd_reg_set_bits(VPP_INTF_OSD3_CTRL, 0, 1, 1);
 
 	/* 1mux3, OSD1 & OSD3 -> osd_blend */
-	osd_reg_write(OSD_PROC_1MUX3_SEL, 2 << 0 | 2 << 4);
+	osd_reg_write(OSD_PROC_1MUX3_SEL, 2 << 0 | 2 << 2 | 2 << 4);
 
 	/* disable PI */
 	osd_reg_set_bits(OSD_PI_BYPASS_EN, 1, 0, 1);
@@ -14211,7 +14422,8 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		osd_hw.vpp_num++;
 	osd_vpu_power_on();
 
-	if (osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_S5)
+	if (osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_S5 ||
+	    osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_T3X)
 		memcpy(&hw_osd_reg_blend, &hw_osd_blend_reg_s5,
 		       sizeof(struct hw_osd_blend_reg_s));
 	else
@@ -14246,8 +14458,13 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 			   sizeof(struct hw_osd_reg_s) *
 			   osd_hw.osd_meson_dev.osd_count);
 	} else if (osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_S5) {
-		/* 4 or 3 OSD, multi_afbc_core */
+		/* 2 OSD (OSD1 + OSD3), multi_afbc_core */
 		memcpy(&hw_osd_reg_array[0], &hw_osd_reg_array_s5[0],
+		       sizeof(struct hw_osd_reg_s) *
+			   osd_hw.osd_meson_dev.osd_count);
+	} else if (osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_T3X) {
+		/* 3 OSD, multi_afbc_core */
+		memcpy(&hw_osd_reg_array[0], &hw_osd_reg_array_t3x[0],
 		       sizeof(struct hw_osd_reg_s) *
 		       osd_hw.osd_meson_dev.osd_count);
 	} else {

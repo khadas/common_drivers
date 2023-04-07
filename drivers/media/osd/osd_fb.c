@@ -4921,6 +4921,7 @@ static struct osd_device_hw_s legcy_dev_property = {
 	.display_type = NORMAL_DISPLAY,
 	.has_8G_addr = 0,
 	.multi_afbc_core = 0,
+	.share_afbc_core = 0,
 	.has_multi_vpp = 0,
 	.new_blend_bypass = 0,
 	.path_ctrl_independ = 0,
@@ -4933,6 +4934,7 @@ static struct osd_device_hw_s t7_dev_property = {
 	.display_type = T7_DISPLAY,
 	.has_8G_addr = 1,
 	.multi_afbc_core = 1,
+	.share_afbc_core = 1,
 	.has_multi_vpp = 1,
 	.new_blend_bypass = 1,
 	.path_ctrl_independ = 0,
@@ -4945,6 +4947,7 @@ static struct osd_device_hw_s t3_dev_property = {
 	.display_type = T7_DISPLAY,
 	.has_8G_addr = 1,
 	.multi_afbc_core = 1,
+	.share_afbc_core = 1,
 	.has_multi_vpp = 1,
 	.new_blend_bypass = 1,
 	.path_ctrl_independ = 1,
@@ -4958,6 +4961,7 @@ static struct osd_device_hw_s t5w_dev_property = {
 	.display_type = T7_DISPLAY,
 	.has_8G_addr = 1,
 	.multi_afbc_core = 1,
+	.share_afbc_core = 1,
 	.has_multi_vpp = 1,
 	.new_blend_bypass = 1,
 	.path_ctrl_independ = 1,
@@ -4970,6 +4974,7 @@ static struct osd_device_hw_s c3_dev_property = {
 	.display_type = C3_DISPLAY,
 	.has_8G_addr = 1,
 	.multi_afbc_core = 0,
+	.share_afbc_core = 0,
 	.has_multi_vpp = 0,
 	.new_blend_bypass = 0,
 	.path_ctrl_independ = 0,
@@ -5107,7 +5112,7 @@ static struct osd_device_data_s osd_t3x = {
 	.cpu_id = __MESON_CPU_MAJOR_ID_T3X,
 	.osd_ver = OSD_HIGH_ONE,
 	.afbc_type = MALI_AFBC,
-	.osd_count = 1,
+	.osd_count = 3,
 	.has_deband = 1,
 	.has_lut = 1,
 	.has_rdma = 1,
@@ -5118,9 +5123,9 @@ static struct osd_device_data_s osd_t3x = {
 	.has_viu2 = 0,
 	.osd0_sc_independ = 1,
 	.mif_linear = 1,
-	.has_vpp1 = 0,
+	.has_vpp1 = 1,
 	.has_vpp2 = 0,
-	.has_pi = 1,
+	.has_pi = 0,
 	.has_slice2ppc = 1,
 };
 
@@ -5128,6 +5133,21 @@ static struct osd_device_hw_s s5_dev_property = {
 	.display_type = S5_DISPLAY,
 	.has_8G_addr = 1,
 	.multi_afbc_core = 1,
+	.share_afbc_core = 1,
+	.has_multi_vpp = 0,
+	.new_blend_bypass = 0,
+	.path_ctrl_independ = 0,
+	.remove_afbc = 0,
+	.remove_pps = 0,
+	.prevsync_support = 0,
+	.s5_display = 1,
+};
+
+static struct osd_device_hw_s t3x_dev_property = {
+	.display_type = S5_DISPLAY,
+	.has_8G_addr = 1,
+	.multi_afbc_core = 1,
+	.share_afbc_core = 0,
 	.has_multi_vpp = 0,
 	.new_blend_bypass = 0,
 	.path_ctrl_independ = 0,
@@ -5362,9 +5382,11 @@ static int __init osd_probe(struct platform_device *pdev)
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5M)
 		memcpy(&osd_dev_hw, &t5m_dev_property,
 		       sizeof(struct osd_device_hw_s));
-	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_S5 ||
-			osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T3X)
+	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_S5)
 		memcpy(&osd_dev_hw, &s5_dev_property,
+		       sizeof(struct osd_device_hw_s));
+	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T3X)
+		memcpy(&osd_dev_hw, &t3x_dev_property,
 		       sizeof(struct osd_device_hw_s));
 	else
 		memcpy(&osd_dev_hw, &legcy_dev_property,

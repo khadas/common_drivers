@@ -49,6 +49,7 @@
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/dma-map-ops.h>
 #include <linux/amlogic/media/utils/am_com.h>
+#include <linux/amlogic/media/registers/cpu_version.h>
 #include "amlvideo2.h"
 
 /* #if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON6 */
@@ -5797,6 +5798,8 @@ static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
 	node->start_vdin_flag = (i >> 28);
 	/*bit 24 : vdin device num : 0 or 1 */
 	node->vdin_device_num = (i >> 24) & 1;
+	if (node->vdin_device_num == 1 && is_meson_t3x_cpu())
+		node->vdin_device_num = 2;
 	node->ge2d_multi_process_flag = (i >> 16) & 1;
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN
 	/* 0: vpp0 video only; 1: vpp0(osd+video); 2: vpp1 video only; 3: vpp1(osd+video)

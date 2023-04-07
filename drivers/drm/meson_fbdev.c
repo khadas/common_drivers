@@ -75,6 +75,7 @@ static int am_meson_fbdev_alloc_fb_gem(struct fb_info *info)
 						meson_gem->ionbuffer);
 		}
 		info->screen_base = (char __iomem *)vaddr;
+		info->fix.smem_start = meson_gem->addr;
 
 		DRM_DEBUG("alloc memory %d done\n", (u32)size);
 	} else {
@@ -689,6 +690,7 @@ struct meson_drm_fbdev *am_meson_create_drm_fbdev(struct drm_device *dev,
 				continue;
 			}
 		}
+		fbinfo->flags &= ~FBINFO_HIDE_SMEM_START;
 	}
 
 	fbdev->blank = false;

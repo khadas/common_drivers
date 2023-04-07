@@ -140,7 +140,7 @@ void dmc_monitor_exit(void)
 }
 #endif
 
-#if defined(CONFIG_AMLOGIC_PAGE_TRACE)
+#if IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE)
 struct page_trace *dmc_find_page_base(struct page *page);
 unsigned long dmc_get_page_trace(struct page *page);
 #else

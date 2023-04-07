@@ -77,7 +77,7 @@ static int early_dmc_param(char *buf)
 }
 __setup("dmc_monitor=", early_dmc_param);
 
-#if IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE)
+#if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 struct page_trace *dmc_find_page_base(struct page *page)
 {
@@ -198,6 +198,16 @@ unsigned long dmc_get_page_trace(struct page *page)
 		return dmc_unpack_ip(trace);
 
 	return 0;
+}
+#elif IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+struct page_trace *dmc_find_page_base(struct page *page)
+{
+	return find_page_base(page);
+}
+
+unsigned long dmc_get_page_trace(struct page *page)
+{
+	return get_page_trace(page);
 }
 #endif
 
@@ -596,7 +606,7 @@ static CLASS_ATTR_RW(device);
 static ssize_t dump_show(struct class *cla,
 			 struct class_attribute *attr, char *buf)
 {
-#if (IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE)		&& \
+#if (IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)		&& \
 	!IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE_INLINE)	&& \
 	IS_ENABLED(CONFIG_TRACEPOINTS)			&& \
 	IS_ENABLED(CONFIG_ANDROID_VENDOR_HOOKS))
@@ -878,7 +888,7 @@ static int __init dmc_monitor_probe(struct platform_device *pdev)
 	struct vpu_sub_desc *vpu_desc = NULL;
 	struct resource *res;
 
-#if (IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE)		&& \
+#if (IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)		&& \
 	!IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE_INLINE)	&& \
 	IS_ENABLED(CONFIG_TRACEPOINTS)			&& \
 	IS_ENABLED(CONFIG_ANDROID_VENDOR_HOOKS))

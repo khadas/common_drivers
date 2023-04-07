@@ -29,6 +29,9 @@
 #include <asm/stacktrace.h>
 #include <asm/sections.h>
 #include <trace/hooks/mm.h>
+#ifdef CONFIG_RANDOMIZE_BASE
+#include <asm/module.h>
+#endif
 
 #ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 #define DEBUG_PAGE_TRACE	0
@@ -36,10 +39,40 @@
 #define DEBUG_PAGE_TRACE	0
 #endif
 
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+#include <linux/nodemask.h>
+#include <linux/kernel.h>
+#include <linux/kprobes.h>
+#endif
+
 #ifdef CONFIG_NUMA
 #define COMMON_CALLER_SIZE	64	/* more function names if NUMA */
 #else
 #define COMMON_CALLER_SIZE	64
+#endif
+
+static const char * const aml_migratetype_names[MIGRATE_TYPES] = {
+	"Unmovable",
+	"Movable",
+	"Reclaimable",
+#ifdef CONFIG_CMA
+	"CMA",
+#endif
+	"HighAtomic",
+#ifdef CONFIG_MEMORY_ISOLATION
+	"Isolate",
+#endif
+};
+
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+unsigned long *free_pages_bitmap;
+unsigned long aml_text;
+#else
+unsigned long aml_text = (unsigned long)_text;
+#endif
+
+#ifdef CONFIG_RANDOMIZE_BASE
+unsigned long aml_module_alloc_base;
 #endif
 
 /*
@@ -58,7 +91,9 @@ static unsigned long ptrace_size;
 static unsigned int trace_step = 1;
 static bool page_trace_disable __initdata;
 #endif
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+#if defined(CONFIG_TRACEPOINTS) && \
+	defined(CONFIG_ANDROID_VENDOR_HOOKS) && \
+	IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 struct pagetrace_vendor_param trace_param;
 #endif
 
@@ -115,6 +150,16 @@ static struct fun_symbol common_func[] __initdata = {
 	{"kmalloc_order",		1, 0},
 	{"kmalloc_order_trace",		1, 0},
 	{"aml_slub_alloc_large",	1, 0},
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+	{"alloc_pages_ret_handler",	1, 0},
+	{"comp_alloc_ret_handler",	1, 0},
+	{"cma_alloc_ret_handler",	1, 0},
+	{"__kretprobe_trampoline_handler", 1, 0},
+	{"trampoline_probe_handler",	1, 0},
+	{"kretprobe_trampoline",	1, 0},
+#endif
+	{"module_alloc",		1, 0},
+	{"load_module",			1, 0},
 #ifdef CONFIG_NUMA
 	{"alloc_pages_current",		1, 0},
 	{"alloc_page_interleave",	1, 0},
@@ -124,18 +169,246 @@ static struct fun_symbol common_func[] __initdata = {
 #endif
 #ifdef CONFIG_SLUB	/* for some static symbols not exported in headfile */
 	{"new_slab",			0, 0},
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+	{"slab_alloc",			0, 0},
+	{"___slab_alloc",		0, 0},
+#endif
 	{"__slab_alloc",		0, 0},
 	{"allocate_slab",		0, 0},
 #endif
 	{}		/* tail */
 };
 
+/* ----------------------------------- */
+
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+#define MAX_SYMBOL_LEN	64
+static char sym_lookup_off[MAX_SYMBOL_LEN] = "kallsyms_lookup_size_offset";
+int (*aml_kallsyms_lookup_size_offset)(unsigned long addr,
+					unsigned long *symbolsize,
+					unsigned long *offset);
+
+/* For each probe you need to allocate a kprobe structure */
+static struct kprobe kp_lookup_off = {
+	.symbol_name	= sym_lookup_off,
+};
+
+static char sym_lookup_name[MAX_SYMBOL_LEN] = "kallsyms_lookup_name";
+unsigned long (*aml_kallsyms_lookup_name)(const char *name);
+
+/* For each probe you need to allocate a kprobe structure */
+static struct kprobe kp_lookup_name = {
+	.symbol_name	= sym_lookup_name,
+};
+
+/* ----------------------------------- */
+
+static char func_comp_alloc[NAME_MAX] = "compaction_alloc";
+static char func_alloc_pages[NAME_MAX] = "__alloc_pages";
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+static char func_free_prep[NAME_MAX] = "free_unref_page_prepare";
+#else
+static char func_free_prep[NAME_MAX] = "free_pcp_prepare";
+#endif
+static char func_free_ok[NAME_MAX] = "__free_pages_ok";
+static char func_cma_alloc[NAME_MAX] = "cma_alloc";
+
+/* per-instance private data */
+struct kretp_data {
+	struct page *page;
+	gfp_t gfp;
+	unsigned int order;
+	unsigned long count;
+};
+
+/* Here we use the entry_handler to timestamp function entry */
+static int comp_alloc_entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct kretp_data *data;
+
+	data = (struct kretp_data *)ri->data;
+	data->page = (struct page *)regs->regs[0];
+	return 0;
+}
+
+NOKPROBE_SYMBOL(comp_alloc_entry_handler);
+
+static int alloc_pages_entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct kretp_data *data;
+
+	data = (struct kretp_data *)ri->data;
+	data->gfp = (gfp_t)regs->regs[0];
+	data->order = (unsigned int)regs->regs[1];
+	return 0;
+}
+
+NOKPROBE_SYMBOL(alloc_pages_entry_handler);
+
+static int free_prep_entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct kretp_data *data;
+
+	data = (struct kretp_data *)ri->data;
+	data->page = (struct page *)regs->regs[0];
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	data->order = (unsigned int)regs->regs[2];
+#else
+	data->order = (unsigned int)regs->regs[1];
+#endif
+	return 0;
+}
+
+NOKPROBE_SYMBOL(free_prep_entry_handler);
+
+static int free_ok_entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct kretp_data *data;
+
+	data = (struct kretp_data *)ri->data;
+	data->page = (struct page *)regs->regs[0];
+	data->order = (unsigned int)regs->regs[1];
+	return 0;
+}
+
+NOKPROBE_SYMBOL(free_ok_entry_handler);
+
+static int cma_alloc_entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct kretp_data *data;
+
+	data = (struct kretp_data *)ri->data;
+	data->count = (unsigned int)regs->regs[1];
+	return 0;
+}
+
+NOKPROBE_SYMBOL(cma_alloc_entry_handler);
+
+/*
+ * Return-probe handler: Log the return value and duration. Duration may turn
+ * out to be zero consistently, depending upon the granularity of time
+ * accounting on the platform.
+ */
+static int comp_alloc_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+//	unsigned long retval = regs_return_value(regs);
+	struct page *ret_page = (struct page *)regs_return_value(regs);
+	struct kretp_data *data = (struct kretp_data *)ri->data;
+
+	replace_page_trace(ret_page, data->page);
+
+	return 0;
+}
+
+NOKPROBE_SYMBOL(comp_alloc_ret_handler);
+
+static int alloc_pages_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+//	unsigned long retval = regs_return_value(regs);
+	struct page *ret_page = (struct page *)regs_return_value(regs);
+	struct kretp_data *data = (struct kretp_data *)ri->data;
+
+	set_page_trace(ret_page, data->order, data->gfp, NULL);
+
+	return 0;
+}
+
+NOKPROBE_SYMBOL(alloc_pages_ret_handler);
+
+static int free_prep_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	bool retval = (bool)regs_return_value(regs);
+	struct kretp_data *data = (struct kretp_data *)ri->data;
+
+	if (retval)
+		reset_page_trace(data->page, data->order);
+
+	return 0;
+}
+
+NOKPROBE_SYMBOL(free_prep_ret_handler);
+
+static int free_ok_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct kretp_data *data = (struct kretp_data *)ri->data;
+
+	if (PageBuddy(data->page))
+		reset_page_trace(data->page, data->order);
+
+	return 0;
+}
+
+NOKPROBE_SYMBOL(free_ok_ret_handler);
+
+static int cma_alloc_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct page *ret_page = (struct page *)regs_return_value(regs);
+	struct kretp_data *data = (struct kretp_data *)ri->data;
+	long i;
+
+	if (!ret_page)
+		return 0;
+
+	for (i = 0; i < data->count; i++) {
+		//set_page_trace(ret_page, 0, __GFP_NO_CMA, (void *)fun);
+		set_page_trace(ret_page, 0, 0x1c, NULL);
+		ret_page++;
+	}
+
+	return 0;
+}
+
+NOKPROBE_SYMBOL(cma_alloc_ret_handler);
+
+static struct kretprobe comp_alloc_kretprobe = {
+	.handler		= comp_alloc_ret_handler,
+	.entry_handler		= comp_alloc_entry_handler,
+	.data_size		= sizeof(struct kretp_data),
+	/* Probe up to 20 instances concurrently. */
+	.maxactive		= 20,
+};
+
+static struct kretprobe alloc_pages_kretprobe = {
+	.handler		= alloc_pages_ret_handler,
+	.entry_handler		= alloc_pages_entry_handler,
+	.data_size		= sizeof(struct kretp_data),
+	/* Probe up to 20 instances concurrently. */
+	.maxactive		= 20,
+};
+
+static struct kretprobe free_prep_kretprobe = {
+	.handler		= free_prep_ret_handler,
+	.entry_handler		= free_prep_entry_handler,
+	.data_size		= sizeof(struct kretp_data),
+	/* Probe up to 20 instances concurrently. */
+	.maxactive		= 20,
+};
+
+static struct kretprobe free_ok_kretprobe = {
+	.handler		= free_ok_ret_handler,
+	.entry_handler		= free_ok_entry_handler,
+	.data_size		= sizeof(struct kretp_data),
+	/* Probe up to 20 instances concurrently. */
+	.maxactive		= 20,
+};
+
+static struct kretprobe cma_alloc_kretprobe = {
+	.handler		= cma_alloc_ret_handler,
+	.entry_handler		= cma_alloc_entry_handler,
+	.data_size		= sizeof(struct kretp_data),
+	/* Probe up to 20 instances concurrently. */
+	.maxactive		= 20,
+};
+#endif
+
+/* ----------------------------------- */
+
 static inline bool page_trace_invalid(struct page_trace *trace)
 {
 	return trace->order == IP_INVALID;
 }
 
-#ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
+#if !defined(CONFIG_AMLOGIC_PAGE_TRACE_INLINE) && IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 static int __init early_page_trace_param(char *buf)
 {
 	if (!buf)
@@ -177,7 +450,7 @@ static inline bool range_ok(struct page_trace *trace)
 		if (offset >= MODULES_END)
 			return false;
 	} else {
-		if (offset >= ((unsigned long)_end - (unsigned long)_text))
+		if (offset >= ((unsigned long)_end - aml_text))
 			return false;
 	}
 	return true;
@@ -232,9 +505,9 @@ static void push_ip(struct page_trace *base, struct page_trace *ip)
 static inline int is_module_addr(unsigned long ip)
 {
 #ifdef CONFIG_RANDOMIZE_BASE
-	u64 module_alloc_end = module_alloc_base + MODULES_VSIZE;
+	u64 module_alloc_end = aml_module_alloc_base + MODULES_VSIZE;
 
-	if (ip >= module_alloc_base && ip < module_alloc_end)
+	if (ip >= aml_module_alloc_base && ip < module_alloc_end)
 #else
 	if (ip >= MODULES_VADDR && ip < MODULES_END)
 #endif
@@ -245,7 +518,7 @@ static inline int is_module_addr(unsigned long ip)
 /*
  * set up information for common caller in memory allocate API
  */
-static int __init setup_common_caller(unsigned long kaddr)
+static int __init __nocfi setup_common_caller(unsigned long kaddr)
 {
 	unsigned long size, offset;
 	int i = 0, ret;
@@ -260,7 +533,11 @@ static int __init setup_common_caller(unsigned long kaddr)
 		return -1;
 	}
 
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+	ret = aml_kallsyms_lookup_size_offset(kaddr, &size, &offset);
+#else
 	ret = kallsyms_lookup_size_offset(kaddr, &size, &offset);
+#endif
 	if (ret) {
 		common_caller[i].func_start_addr = kaddr;
 		common_caller[i].size = size;
@@ -299,6 +576,7 @@ static int __init sym_cmp(const void *x1, const void *x2)
 	return p1->func_start_addr < p2->func_start_addr ? 1 : -1;
 }
 
+#if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 static int __init match_common_caller(void *data, const char *name,
 				       struct module *module,
 				       unsigned long addr)
@@ -419,11 +697,33 @@ static int __init kallsyms_for_each_symbol(int (*fn)(void *, const char *,
 	}
 	return 0;
 }
+#else
+static int __nocfi match_common_caller(void)
+{
+	int i;
+	struct fun_symbol *s;
+	unsigned long addr;
+
+	for (i = 0; i < ARRAY_SIZE(common_func); i++) {
+		s = &common_func[i];
+		if (!s->name)
+			break;		/* end */
+		addr = aml_kallsyms_lookup_name(s->name);
+		if (addr)
+			setup_common_caller(addr);
+	}
+	return 0;
+}
+#endif
 
 static void __init find_static_common_symbol(void)
 {
 	memset(common_caller, 0, sizeof(common_caller));
+#if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 	kallsyms_for_each_symbol(match_common_caller, NULL);
+#else
+	match_common_caller();
+#endif
 	sort(common_caller, COMMON_CALLER_SIZE, sizeof(struct alloc_caller),
 		sym_cmp, NULL);
 	dump_common_caller();
@@ -470,21 +770,21 @@ unsigned long unpack_ip(struct page_trace *trace)
 
 	if (trace->module_flag)
 #ifdef CONFIG_RANDOMIZE_BASE
-		text = module_alloc_base;
+		text = aml_module_alloc_base;
 #else
 		text = MODULES_VADDR;
 #endif
 	else
-		text = (unsigned long)_text;
+		text = aml_text;
 	return text + ((trace->ret_ip) << 2);
 }
 
-#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515 && defined(CONFIG_ARM64)
+#ifdef CONFIG_ARM64
 /*
  * We can only safely access per-cpu stacks from current in a non-preemptible
  * context.
  */
-static bool on_accessible_stack(const struct task_struct *tsk,
+static bool aml_on_accessible_stack(const struct task_struct *tsk,
 				unsigned long sp, unsigned long size,
 				struct stack_info *info)
 {
@@ -495,16 +795,19 @@ static bool on_accessible_stack(const struct task_struct *tsk,
 		return true;
 	if (tsk != current || preemptible())
 		return false;
+#if !IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
 	if (on_irq_stack(sp, size, info))
 		return true;
 	if (on_overflow_stack(sp, size, info))
 		return true;
+#endif
 	if (on_sdei_stack(sp, size, info))
 		return true;
 
 	return false;
 }
 
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
 /*
  * Unwind from one frame record (A) to the next frame record (B).
  *
@@ -523,7 +826,7 @@ static int notrace unwind_next(struct unwind_state *state)
 	if (fp == (unsigned long)task_pt_regs(tsk)->stackframe)
 		return -ENOENT;
 
-	err = unwind_next_common(state, &info, on_accessible_stack, NULL);
+	err = unwind_next_common(state, &info, aml_on_accessible_stack, NULL);
 	if (err)
 		return err;
 
@@ -549,6 +852,86 @@ static int notrace unwind_next(struct unwind_state *state)
 
 	return 0;
 }
+#else
+/*
+ * Unwind from one frame record (A) to the next frame record (B).
+ *
+ * We terminate early if the location of B indicates a malformed chain of frame
+ * records (e.g. a cycle), determined based on the location and fp value of A
+ * and the location (but not the fp value) of B.
+ */
+static int notrace aml_unwind_frame(struct task_struct *tsk, struct stackframe *frame)
+{
+	unsigned long fp = frame->fp;
+	struct stack_info info;
+
+	if (!tsk)
+		tsk = current;
+
+	/* Final frame; nothing to unwind */
+	if (fp == (unsigned long)task_pt_regs(tsk)->stackframe)
+		return -ENOENT;
+
+	if (fp & 0x7)
+		return -EINVAL;
+
+	if (!aml_on_accessible_stack(tsk, fp, 16, &info))
+		return -EINVAL;
+
+	if (test_bit(info.type, frame->stacks_done))
+		return -EINVAL;
+
+	/*
+	 * As stacks grow downward, any valid record on the same stack must be
+	 * at a strictly higher address than the prior record.
+	 *
+	 * Stacks can nest in several valid orders, e.g.
+	 *
+	 * TASK -> IRQ -> OVERFLOW -> SDEI_NORMAL
+	 * TASK -> SDEI_NORMAL -> SDEI_CRITICAL -> OVERFLOW
+	 *
+	 * ... but the nesting itself is strict. Once we transition from one
+	 * stack to another, it's never valid to unwind back to that first
+	 * stack.
+	 */
+	if (info.type == frame->prev_type) {
+		if (fp <= frame->prev_fp)
+			return -EINVAL;
+	} else {
+		set_bit(frame->prev_type, frame->stacks_done);
+	}
+
+	/*
+	 * Record this frame record's values and location. The prev_fp and
+	 * prev_type are only meaningful to the next unwind_frame() invocation.
+	 */
+	frame->fp = READ_ONCE_NOCHECK(*(unsigned long *)(fp));
+	frame->pc = READ_ONCE_NOCHECK(*(unsigned long *)(fp + 8));
+	frame->prev_fp = fp;
+	frame->prev_type = info.type;
+
+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+	if (tsk->ret_stack &&
+		(ptrauth_strip_insn_pac(frame->pc) == (unsigned long)return_to_handler)) {
+		struct ftrace_ret_stack *ret_stack;
+		/*
+		 * This is a case where function graph tracer has
+		 * modified a return address (LR) in a stack frame
+		 * to hook a function return.
+		 * So replace it to an original value.
+		 */
+		ret_stack = ftrace_graph_get_ret_stack(tsk, frame->graph++);
+		if (WARN_ON_ONCE(!ret_stack))
+			return -EINVAL;
+		frame->pc = ret_stack->ret;
+	}
+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+
+	frame->pc = ptrauth_strip_insn_pac(frame->pc);
+
+	return 0;
+}
+#endif
 #endif
 
 unsigned long find_back_trace(void)
@@ -584,7 +967,7 @@ unsigned long find_back_trace(void)
 	#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
 		ret = unwind_next(&frame);
 	#else
-		ret = unwind_frame(current, &frame);
+		ret = aml_unwind_frame(current, &frame);
 	#endif
 	#elif defined(CONFIG_ARM)
 		ret = unwind_frame(&frame);
@@ -601,6 +984,47 @@ unsigned long find_back_trace(void)
 	dump_stack();
 	return 0;
 }
+
+static struct pglist_data *aml_first_online_pgdat(void)
+{
+	return NODE_DATA(first_online_node);
+}
+
+static struct pglist_data *aml_next_online_pgdat(struct pglist_data *pgdat)
+{
+	int nid = next_online_node(pgdat->node_id);
+
+	if (nid == MAX_NUMNODES)
+		return NULL;
+	return NODE_DATA(nid);
+}
+
+/*
+ * next_zone - helper magic for for_each_zone()
+ */
+static struct zone *aml_next_zone(struct zone *zone)
+{
+	pg_data_t *pgdat = zone->zone_pgdat;
+
+	if (zone < pgdat->node_zones + MAX_NR_ZONES - 1) {
+		zone++;
+	} else {
+		pgdat = aml_next_online_pgdat(pgdat);
+		if (pgdat)
+			zone = pgdat->node_zones;
+		else
+			zone = NULL;
+	}
+	return zone;
+}
+
+#define aml_for_each_populated_zone(zone)			\
+	for (zone = (aml_first_online_pgdat())->node_zones;	\
+	     zone;						\
+	     zone = aml_next_zone(zone))			\
+		if (!populated_zone(zone))			\
+			; /* do nothing */			\
+		else
 
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 struct page_trace *find_page_base(struct page *page)
@@ -621,7 +1045,7 @@ struct page_trace *find_page_base(struct page *page)
 		return NULL;
 
 	pfn = page_to_pfn(page);
-	for_each_populated_zone(zone) {
+	aml_for_each_populated_zone(zone) {
 		/* pfn is in this zone */
 		if (pfn <= zone_end_pfn(zone) &&
 		    pfn >= zone->zone_start_pfn) {
@@ -634,6 +1058,10 @@ struct page_trace *find_page_base(struct page *page)
 	}
 	return NULL;
 }
+
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+EXPORT_SYMBOL(find_page_base);
+#endif
 #endif
 
 unsigned long get_page_trace(struct page *page)
@@ -647,18 +1075,37 @@ unsigned long get_page_trace(struct page *page)
 	return 0;
 }
 
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+EXPORT_SYMBOL(get_page_trace);
+#endif
+
+/* Convert GFP flags to their corresponding migrate type */
+#define AML_GFP_MOVABLE_MASK (__GFP_RECLAIMABLE | __GFP_MOVABLE)
+#define AML_GFP_MOVABLE_SHIFT 3
+
+static int aml_gfp_migratetype(const gfp_t gfp_flags)
+{
+	VM_WARN_ON((gfp_flags & AML_GFP_MOVABLE_MASK) == AML_GFP_MOVABLE_MASK);
+	BUILD_BUG_ON((1UL << AML_GFP_MOVABLE_SHIFT) != ___GFP_MOVABLE);
+	BUILD_BUG_ON((___GFP_MOVABLE >> AML_GFP_MOVABLE_SHIFT) != MIGRATE_MOVABLE);
+
+	/* Group based on mobility */
+	return (gfp_flags & AML_GFP_MOVABLE_MASK) >> AML_GFP_MOVABLE_SHIFT;
+}
+
 #ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 static void __init set_init_page_trace(struct page *page, unsigned int order, gfp_t flag)
 {
-	unsigned long text, ip;
+	unsigned long text;
+	unsigned long ip;
 	struct page_trace trace = {}, *base;
 
 	if (page && trace_buffer) {
 		ip = (unsigned long)set_page_trace;
-		text = (unsigned long)_text;
+		text = aml_text;
 
 		trace.ret_ip = (ip - text) >> 2;
-		trace.migrate_type = gfp_migratetype(flag);
+		trace.migrate_type = aml_gfp_migratetype(flag);
 		trace.order = order;
 		base = find_page_base(page);
 		push_ip(base, &trace);
@@ -671,12 +1118,12 @@ unsigned int pack_ip(unsigned long ip, unsigned int order, gfp_t flag)
 	unsigned long text;
 	struct page_trace trace = {};
 
-	text = (unsigned long)_text;
-	if (ip >= (unsigned long)_text) {
-		text = (unsigned long)_text;
+	text = aml_text;
+	if (ip >= aml_text) {
+		text = aml_text;
 	} else if (is_module_addr(ip)) {
 #ifdef CONFIG_RANDOMIZE_BASE
-		text = module_alloc_base;
+		text = aml_module_alloc_base;
 #else
 		text = MODULES_VADDR;
 #endif
@@ -688,9 +1135,9 @@ unsigned int pack_ip(unsigned long ip, unsigned int order, gfp_t flag)
 	if (flag == __GFP_NO_CMA)
 		trace.migrate_type = MIGRATE_CMA;
 	else
-		trace.migrate_type = gfp_migratetype(flag);
+		trace.migrate_type = aml_gfp_migratetype(flag);
 #else
-	trace.migrate_type = gfp_migratetype(flag);
+	trace.migrate_type = aml_gfp_migratetype(flag);
 #endif /* CONFIG_AMLOGIC_CMA */
 	trace.order = order;
 #if DEBUG_PAGE_TRACE
@@ -714,11 +1161,13 @@ void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *fun
 	if (!trace_buffer)
 		return;
 #ifdef CONFIG_RANDOMIZE_BASE
-		ip = module_alloc_base;
+		ip = aml_module_alloc_base;
 #else
 		ip = MODULES_VADDR;
 #endif
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+#if defined(CONFIG_TRACEPOINTS) && \
+	defined(CONFIG_ANDROID_VENDOR_HOOKS) && \
+	IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 	trace_param.trace_buf = trace_buffer;
 	trace_param.text = (unsigned long)_text;
 	trace_param.trace_step = trace_step;
@@ -726,7 +1175,7 @@ void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *fun
 	trace_android_vh_cma_drain_all_pages_bypass(1024, (bool *)&trace_param);
 #endif
 #endif
-#ifdef CONFIG_MEMCG
+#if defined(CONFIG_MEMCG) && IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 	trace_android_vh_mem_cgroup_alloc(root_mem_cgroup);
 #endif
 	if (!func)
@@ -827,16 +1276,22 @@ static int __init page_trace_pre_work(unsigned long size)
 	unsigned long maddr;
 
 #ifdef CONFIG_RANDOMIZE_BASE
-	maddr = module_alloc_base;
+	maddr = aml_module_alloc_base;
 #else
 	maddr = MODULES_VADDR;
 #endif
 
+#if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 	paddr = memblock_alloc_low(size, PAGE_SIZE);
 	if (!paddr) {
 		panic("%s: Failed to allocate %lu bytes.\n", __func__, size);
 		return -ENOMEM;
 	}
+#else
+	paddr = vzalloc(size);
+	if (!paddr)
+		return -ENOMEM;
+#endif
 
 	trace_buffer = (struct page_trace *)paddr;
 	pend = paddr + size;
@@ -845,7 +1300,11 @@ static int __init page_trace_pre_work(unsigned long size)
 	memset(paddr, 0, size);
 
 	for (; paddr < pend; paddr += PAGE_SIZE) {
+#if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 		page = virt_to_page(paddr);
+#else
+		page = vmalloc_to_page(paddr);
+#endif
 		set_init_page_trace(page, 0, GFP_KERNEL);
 	#if DEBUG_PAGE_TRACE
 		pr_info("%s, trace page:%p, %lx\n",
@@ -893,12 +1352,16 @@ struct pagetrace_summary {
 	int filter_slab[MIGRATE_TYPES];
 };
 
-static unsigned long find_ip_base(unsigned long ip)
+static unsigned long __nocfi find_ip_base(unsigned long ip)
 {
 	unsigned long size, offset;
 	int ret;
 
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+	ret = aml_kallsyms_lookup_size_offset(ip, &size, &offset);
+#else
 	ret = kallsyms_lookup_size_offset(ip, &size, &offset);
+#endif
 	if (ret)	/* find */
 		return ip - offset;
 	else		/* not find */
@@ -986,7 +1449,7 @@ static void show_page_trace(struct seq_file *m, struct zone *zone,
 			continue;
 		seq_puts(m, "------------------------------\n");
 		seq_printf(m, "total pages:%6ld, %9ld kB, type:%s\n",
-			   total_mt, K(total_mt), migratetype_names[j]);
+			   total_mt, K(total_mt), aml_migratetype_names[j]);
 		if (page_trace_filter_slab)
 			seq_printf(m, "filter_slab pages:%6d, %9ld kB\n",
 				pt_sum->filter_slab[j], K(pt_sum->filter_slab[j]));
@@ -1121,7 +1584,7 @@ static int pagetrace_show(struct seq_file *m, void *arg)
 	/* update only once */
 	seq_puts(m, "==============================\n");
 	sum->ticks = sched_clock();
-	for_each_populated_zone(zone) {
+	aml_for_each_populated_zone(zone) {
 		memset(sum->sum, 0, size);
 		memset(sum->mt_cnt, 0, sizeof(int) * MIGRATE_TYPES);
 		ret = update_page_trace(m, zone, sum);
@@ -1206,6 +1669,10 @@ static const struct proc_ops pagetrace_proc_ops = {
 
 static int __init page_trace_module_init(void)
 {
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+	int ret;
+#endif
+
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 	d_pagetrace = proc_create("pagetrace", 0444,
 				  NULL, &pagetrace_proc_ops);
@@ -1219,9 +1686,88 @@ static int __init page_trace_module_init(void)
 		return -1;
 	}
 
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+	ret = register_kprobe(&kp_lookup_off);
+	if (ret < 0) {
+		pr_err("register_kprobe failed, returned %d\n", ret);
+		return ret;
+	}
+	pr_debug("kprobe lookup offset at %px\n", kp_lookup_off.addr);
+
+	aml_kallsyms_lookup_size_offset = (int (*)(unsigned long addr,
+				unsigned long *symbolsize,
+				unsigned long *offset))kp_lookup_off.addr;
+
+	ret = register_kprobe(&kp_lookup_name);
+	if (ret < 0) {
+		pr_err("register_kprobe failed, returned %d\n", ret);
+		return ret;
+	}
+	pr_debug("kprobe lookup offset at %px\n", kp_lookup_name.addr);
+
+	aml_kallsyms_lookup_name = (unsigned long (*)(const char *name))kp_lookup_name.addr;
+
+#ifdef CONFIG_RANDOMIZE_BASE
+	aml_module_alloc_base = aml_kallsyms_lookup_name("module_alloc_base");
+#endif
+	aml_text = aml_kallsyms_lookup_name("_text");
+	page_trace_mem_init();
+#endif
+
+#if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE) && defined(CONFIG_RANDOMIZE_BASE)
+	aml_module_alloc_base = module_alloc_base;
+#endif
+
 #ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 	if (!trace_buffer)
 		return -ENOMEM;
+#endif
+
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+	comp_alloc_kretprobe.kp.symbol_name = func_comp_alloc;
+	ret = register_kretprobe(&comp_alloc_kretprobe);
+	if (ret < 0) {
+		pr_err("register_kretprobe failed, returned %d\n", ret);
+		return ret;
+	}
+	pr_debug("Planted return probe at %s: %px\n",
+			comp_alloc_kretprobe.kp.symbol_name, comp_alloc_kretprobe.kp.addr);
+
+	alloc_pages_kretprobe.kp.symbol_name = func_alloc_pages;
+	ret = register_kretprobe(&alloc_pages_kretprobe);
+	if (ret < 0) {
+		pr_err("register_kretprobe failed, returned %d\n", ret);
+		return ret;
+	}
+	pr_debug("Planted return probe at %s: %px\n",
+			alloc_pages_kretprobe.kp.symbol_name, alloc_pages_kretprobe.kp.addr);
+
+	free_prep_kretprobe.kp.symbol_name = func_free_prep;
+	ret = register_kretprobe(&free_prep_kretprobe);
+	if (ret < 0) {
+		pr_err("register_kretprobe failed, returned %d\n", ret);
+		return ret;
+	}
+	pr_debug("Planted return probe at %s: %px\n",
+			free_prep_kretprobe.kp.symbol_name, free_prep_kretprobe.kp.addr);
+
+	free_ok_kretprobe.kp.symbol_name = func_free_ok;
+	ret = register_kretprobe(&free_ok_kretprobe);
+	if (ret < 0) {
+		pr_err("register_kretprobe failed, returned %d\n", ret);
+		return ret;
+	}
+	pr_debug("Planted return probe at %s: %px\n",
+			free_ok_kretprobe.kp.symbol_name, free_ok_kretprobe.kp.addr);
+
+	cma_alloc_kretprobe.kp.symbol_name = func_cma_alloc;
+	ret = register_kretprobe(&cma_alloc_kretprobe);
+	if (ret < 0) {
+		pr_err("register_kretprobe failed, returned %d\n", ret);
+		return ret;
+	}
+	pr_debug("Planted return probe at %s: %px\n",
+			cma_alloc_kretprobe.kp.symbol_name, cma_alloc_kretprobe.kp.addr);
 #endif
 
 	return 0;
@@ -1231,10 +1777,36 @@ static void __exit page_trace_module_exit(void)
 {
 	if (d_pagetrace)
 		proc_remove(d_pagetrace);
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+	unregister_kprobe(&kp_lookup_off);
+	pr_debug("kprobe at %p unregistered\n", kp_lookup_off.addr);
+
+	unregister_kprobe(&kp_lookup_name);
+	pr_debug("kprobe at %p unregistered\n", kp_lookup_name.addr);
+
+	unregister_kretprobe(&comp_alloc_kretprobe);
+	pr_debug("kretprobe at %p unregistered\n", comp_alloc_kretprobe.kp.addr);
+
+	unregister_kretprobe(&alloc_pages_kretprobe);
+	pr_debug("kretprobe at %p unregistered\n", alloc_pages_kretprobe.kp.addr);
+
+	unregister_kretprobe(&free_prep_kretprobe);
+	pr_debug("kretprobe at %p unregistered\n", free_prep_kretprobe.kp.addr);
+
+	unregister_kretprobe(&free_ok_kretprobe);
+	pr_debug("kretprobe at %p unregistered\n", free_ok_kretprobe.kp.addr);
+
+	unregister_kretprobe(&cma_alloc_kretprobe);
+	pr_debug("kretprobe at %p unregistered\n", cma_alloc_kretprobe.kp.addr);
+
+	if (!trace_buffer)
+		vfree(trace_buffer);
+#endif
 }
 module_init(page_trace_module_init);
 module_exit(page_trace_module_exit);
 
+#if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 void __init page_trace_mem_init(void)
 {
 #ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
@@ -1265,7 +1837,7 @@ void __init page_trace_mem_init(void)
 	if (page_trace_disable)
 		return;
 
-	for_each_populated_zone(zone) {
+	aml_for_each_populated_zone(zone) {
 		total_page += zone->spanned_pages;
 		pr_info("zone:%s, spaned pages:%ld, total:%ld\n",
 			zone->name, zone->spanned_pages, total_page);
@@ -1280,6 +1852,97 @@ void __init page_trace_mem_init(void)
 	}
 #endif
 }
+#else
+static void mark_free_pages(struct zone *zone)
+{
+	unsigned long pfn;
+	unsigned long flags;
+	unsigned int order, t;
+	struct page *page;
+	unsigned int count = 0;
+
+	if (zone_is_empty(zone))
+		return;
+
+	spin_lock_irqsave(&zone->lock, flags);
+	for_each_migratetype_order(order, t) {
+		list_for_each_entry(page,
+				&zone->free_area[order].free_list[t], lru) {
+			pfn = page_to_pfn(page);
+			bitmap_set(free_pages_bitmap, pfn, (1UL << order));
+			count += (1UL << order);
+		}
+	}
+	spin_unlock_irqrestore(&zone->lock, flags);
+	pr_info("free pages: %dkb\n", count * 4);
+}
+
+static int statistic_before_insmod_mem(void)
+{
+	struct zone *zone;
+	struct page *page;
+	unsigned long start_pfn, end_pfn, pfn;
+	unsigned int count = 0;
+
+	aml_for_each_populated_zone(zone) {
+		mark_free_pages(zone);
+
+		start_pfn = zone->zone_start_pfn;
+		end_pfn = start_pfn + zone->present_pages;
+		for (pfn = start_pfn; pfn < end_pfn; pfn++) {
+#ifdef CONFIG_ARM64
+			if (!pfn_is_map_memory(pfn))
+#else
+			if (!pfn_valid(pfn))
+#endif
+				continue;
+
+			page = pfn_to_page(pfn);
+			if (!test_bit(pfn, free_pages_bitmap)) {
+				set_init_page_trace(page, 0, GFP_KERNEL);
+				count++;
+			}
+		}
+	}
+	pr_info("before insmod pagetrace used size: %dKb\n", count * 4);
+
+	kfree(free_pages_bitmap);
+
+	return 0;
+}
+
+void __init page_trace_mem_init(void)
+{
+	struct zone *zone;
+	unsigned long total_page = 0;
+
+	find_static_common_symbol();
+
+	if (page_trace_disable)
+		return;
+
+	aml_for_each_populated_zone(zone) {
+		total_page += zone->spanned_pages;
+		pr_info("zone:%s, spaned pages:%ld, total:%ld\n",
+			zone->name, zone->spanned_pages, total_page);
+	}
+	ptrace_size = total_page * sizeof(struct page_trace) * trace_step;
+	ptrace_size = PAGE_ALIGN(ptrace_size);
+	if (page_trace_pre_work(ptrace_size)) {
+		trace_buffer = NULL;
+		ptrace_size = 0;
+		pr_err("%s reserve memory failed\n", __func__);
+		return;
+	}
+
+	free_pages_bitmap = kzalloc(total_page / 8, GFP_KERNEL);
+	if (!free_pages_bitmap) {
+		vfree(trace_buffer);
+		return;
+	}
+	statistic_before_insmod_mem();
+}
+#endif
 
 MODULE_AUTHOR("Amlogic pagetrace owner");
 MODULE_DESCRIPTION("Amlogic page trace driver for memory debug");

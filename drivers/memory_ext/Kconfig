@@ -13,8 +13,7 @@ menuconfig AMLOGIC_MEMORY_EXTEND
 		functions, can be used for memory debug or other features.
 
 config AMLOGIC_PAGE_TRACE
-	bool "Amlogic trace for page allocate"
-	depends on AMLOGIC_BREAK_GKI_20
+	tristate "Amlogic trace for page allocate"
 	depends on AMLOGIC_MEMORY_EXTEND
 	depends on KALLSYMS
 	depends on !NUMA_BALANCING

@@ -87,6 +87,7 @@
 // frc_20221215 frc t5m bringup
 // frc_20221225 add powerdomain etc.
 // frc_20230301 frc add seamless mode
+// frc_20230411 frc add enable double buffer mc
 
 #define FRC_FW_VER			"2023-0404 frc t3x probe"
 #define FRC_KERDRV_VER                  2796
@@ -169,6 +170,11 @@ extern int frc_dbg_en;
 #define FRC_VD_FPS_120   120
 #define FRC_VD_FPS_100   100
 
+// ddr shift bits
+#define DDR_SHFT_0_BITS   0
+#define DDR_SHFT_2_BITS   2
+#define DDR_SHFT_4_BITS   4
+
 
 // frc flag define
 #define FRC_FLAG_NORM_VIDEO		0x00
@@ -180,6 +186,14 @@ extern int frc_dbg_en;
 #define FRC_FLAG_VLOCK_ST		0x20
 #define FRC_FLAG_INSIZE_ERR		0x40
 #define FRC_FLAG_OTHER			0x80
+
+#define FRC_BUF_MC_Y_IDX	0
+#define FRC_BUF_MC_C_IDX	1
+#define FRC_BUF_MC_V_IDX	2
+#define FRC_BUF_ME_IDX		3
+#define FRC_BUF_MCDW_Y_IDX	4
+#define FRC_BUF_MCDW_C_IDX	5
+#define FRC_BUF_MAX_IDX		6
 
 enum chip_id {
 	ID_NULL = 0,
@@ -214,7 +228,7 @@ struct st_frc_buf {
 	phys_addr_t cma_mem_paddr_start;
 	u8  cma_mem_alloced;
 	u8  secured;
-	u8  otherflag;
+	u8  addr_shft_bits;
 	u8  otherflag2;
 
 	u8  me_comprate;

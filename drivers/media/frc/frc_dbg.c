@@ -133,7 +133,7 @@ void frc_status(struct frc_dev_s *devp)
 			devp->out_sts.vout_width, devp->out_sts.vout_height);
 	// pr_frc(0, "frc out_hsize = %d\n", fw_data->frc_top_type.out_hsize);
 	// pr_frc(0, "frc out_vsize = %d\n", fw_data->frc_top_type.out_vsize);
-	pr_frc(0, "vfb(0x1cb4) = %d\n", fw_data->frc_top_type.vfb);
+	pr_frc(0, "vfb(0x1cb4/0x14ca) = %d\n", fw_data->frc_top_type.vfb);
 
 	//pr_frc(0, "film_mode = %d\n", fw_data->frc_top_type.film_mode);
 	//pr_frc(0, "film_hwfw_sel = %d\n", fw_data->frc_top_type.film_hwfw_sel);
@@ -222,7 +222,7 @@ void frc_debug_if(struct frc_dev_s *devp, const char *buf, size_t count)
 		if (!parm[1])
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0) {
-			if (val1 < 4)
+			if (val1 < FRC_BUF_MAX_IDX)
 				frc_buf_dump_link_tab(devp, (u32)val1);
 		}
 	} else if (!strcmp(parm[0], "dbg_mode")) {
@@ -603,6 +603,11 @@ void frc_debug_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			frc_cfg_mcdw_loss(val1);
+	} else if (!strcmp(parm[0], "force_h2v2")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			frc_set_h2v2(val1);
 	}
 exit:
 	kfree(buf_orig);

@@ -137,8 +137,12 @@
 //Bit    1         reg_memc_post_hold        // unsigned ,   RW, default = 0
 //Bit    0         reg_memc_top_hold         // unsigned ,   RW, default = 0
 #define FRC_BYP_PATH_CTRL                          0x002d
-//Bit 31:1         reserved
-//Bit 0            reg_byp_path_en           // unsigned ,   RW, default = 1  1: data bypass to display when memc prefetch data 0: data don't bypass to display when memc prefetch data
+//Bit 31:5         reserved
+//Bit 4            reg_path_ds_en  default = 0  use down sample data in prefetch period
+//Bit 3:1          reserved
+//Bit 0            reg_path_byp_en default = 1
+//                 1: data bypass to display when memc prefetch data
+//                 0: data don't bypass to display when memc prefetch data
 #define FRC_REG_INP_INT_MASK                       0x0030
 //Bit 31:1         reserved
 //Bit 0            reg_inp_int_mask          // unsigned ,   RW, default = 0  reg_inp_int_mask 1:mask interupt 0:open interupt
@@ -1997,6 +2001,22 @@
 //Bit 28:16         reg_mc_probe_pt_y         // unsigned ,    RW, default = 100  reg_mc_probe_pt_y
 //Bit 15:13         reserved
 //Bit 12:0          reg_mc_probe_pt_x         // unsigned ,    RW, default = 100  reg_mc_probe_pt_x
+#define FRC_MC_H2V2_SETTING                        0x3098
+//Bit 31           reg_mc_get_lbuf_wrap_lpf_mode get lbuf warp lpf mode: 0, [0 4 0],  1, [1 2 1];
+//Bit 30           reg_mc_srch_rng_luma_scale_en // unsigned , RW, default = 1  h2v2 luma en
+//Bit 29           reg_mc_srch_rng_luma_scale_force_en  RW, default = 0  h2v2 luma force setting
+//Bit 28           reg_mc_srch_rng_luma_abv_xscale // unsigned ,    RW, default = 0  h2v2 abv x en
+//Bit 27           reg_mc_srch_rng_luma_abv_yscale // unsigned ,    RW, default = 0  h2v2 abv y en
+//Bit 26           reg_mc_srch_rng_luma_blw_xscale // unsigned ,    RW, default = 0  h2v2 blw x en
+//Bit 25           reg_mc_srch_rng_luma_blw_yscale // unsigned ,    RW, default = 0  h2v2 blw y en
+//Bit 24           reg_mc_srch_rng_chrm_scale_en // unsigned ,    RW, default = 1  h2v2 chrm en
+//Bit 23           reg_mc_srch_rng_chrm_scale_force_en  RW, default = 0  h2v2 chrm force setting
+//Bit 22           reg_mc_srch_rng_chrm_abv_xscale // unsigned ,    RW, default = 0  h2v2 abv x en
+//Bit 21           reg_mc_srch_rng_chrm_abv_yscale // unsigned ,    RW, default = 0  h2v2 abv y en
+//Bit 20           reg_mc_srch_rng_chrm_blw_xscale // unsigned ,    RW, default = 0  h2v2 blw x en
+//Bit 19           reg_mc_srch_rng_chrm_blw_yscale // unsigned ,    RW, default = 0  h2v2 blw y en
+//Bit 18:13        reg_mc_srch_rng_ofst     RW, default = 8  even and h2v2 ofst setting
+//Bit 12: 0        reserved
 
 // Reading file:  ./frc_inc/frc_mc_csc_regs.h
 #define FRC_MC_CSC_CTRL                            0x30f0
@@ -2205,7 +2225,12 @@
  //Bit 20: 8	   ro_mc_undone_vcnt		   // unsigned ,    RO, default = 0
  //Bit	7: 3	   reserved
  //Bit	1: 0	   ro_vp2mc_syn_st		   // unsigned ,    RO, default = 0
-
+#define FRC_MCDW_PATH_CTRL                         0x39fd
+//Bit 31:5          reserved
+//Bit 4             reg_frc_mcdw_path_en          //unsigned, RW, default=0
+//Bit 3:2           reserved
+//Bit 1             reg_frc_mcdw_v2_en            //unsigned, RW, default=0
+//Bit 0             reg_frc_mcdw_h2_en            //unsigned, RW, default=0
 // -----------------------------------------------
 // REG_BASE:  FRC_RDMA_APB_BASE = 0x3b
 // -----------------------------------------------

@@ -183,7 +183,7 @@ void frc_buf_dump_memory_addr_info(struct frc_dev_s *devp)
 	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
 		pr_frc(0, "lossy_mcdw_y_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
 		       base + devp->buf.lossy_mcdw_y_data_buf_paddr[i],
-		       devp->buf.lossy_mc_y_data_buf_size[i]);
+		       devp->buf.lossy_mcdw_y_data_buf_size[i]);
 
 	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
 		pr_frc(0, "lossy_mcdw_c_data_buf_paddr[%d]:0x%lx size:0x%x\n", i,
@@ -217,7 +217,7 @@ void frc_buf_dump_memory_addr_info(struct frc_dev_s *devp)
 		       devp->buf.lossy_mcdw_y_link_buf_size[i]);
 
 	for (i = 0; i < FRC_TOTAL_BUF_NUM; i++)
-		pr_frc(0, "lossy_mc_c_link_buf_paddr[%d]:0x%lx size:0x%x\n", i,
+		pr_frc(0, "lossy_mcdw_c_link_buf_paddr[%d]:0x%lx size:0x%x\n", i,
 		       base + devp->buf.lossy_mcdw_c_link_buf_paddr[i],
 		       devp->buf.lossy_mcdw_c_link_buf_size[i]);
 
@@ -377,7 +377,7 @@ void frc_buf_dump_link_tab(struct frc_dev_s *devp, u32 mode)
 	u32 i;
 
 	pr_frc(0, "%s md:%d\n", __func__, mode);
-	if (mode == 0) {
+	if (mode == FRC_BUF_MC_Y_IDX) {
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
 			cma_addr =
 			(devp->buf.cma_mem_paddr_start + devp->buf.lossy_mc_y_link_buf_paddr[i]);
@@ -390,7 +390,7 @@ void frc_buf_dump_link_tab(struct frc_dev_s *devp, u32 mode)
 			frc_dump_mm_data(vaddr, map_size);
 			frc_buf_unmap(vaddr_start);
 		}
-	} else if (mode == 1) {
+	} else if (mode == FRC_BUF_MC_C_IDX) {
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
 			cma_addr =
 			devp->buf.cma_mem_paddr_start + devp->buf.lossy_mc_c_link_buf_paddr[i];
@@ -403,7 +403,7 @@ void frc_buf_dump_link_tab(struct frc_dev_s *devp, u32 mode)
 			frc_dump_mm_data(vaddr, map_size);
 			frc_buf_unmap(vaddr_start);
 		}
-	} else if (mode == 2) {
+	} else if (mode == FRC_BUF_MC_V_IDX) {
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
 			cma_addr =
 			devp->buf.cma_mem_paddr_start + devp->buf.lossy_mc_v_link_buf_paddr[i];
@@ -416,11 +416,37 @@ void frc_buf_dump_link_tab(struct frc_dev_s *devp, u32 mode)
 			frc_dump_mm_data(vaddr, map_size);
 			frc_buf_unmap(vaddr_start);
 		}
-	} else if (mode == 3) {
+	} else if (mode == FRC_BUF_ME_IDX) {
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
 			cma_addr =
 			devp->buf.cma_mem_paddr_start + devp->buf.lossy_me_link_buf_paddr[i];
 			map_size = roundup(devp->buf.lossy_me_link_buf_size[i], ALIGN_64);
+			if (map_size == 0)
+				break;
+			pr_frc(0, "dump :0x%lx size:0x%x\n", (ulong)cma_addr, map_size);
+			vaddr = (u32 *)frc_buf_vmap(cma_addr, map_size);
+			vaddr_start = vaddr;
+			frc_dump_mm_data(vaddr, map_size);
+			frc_buf_unmap(vaddr_start);
+		}
+	} else if (mode == FRC_BUF_MCDW_Y_IDX) {
+		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+			cma_addr =
+			(devp->buf.cma_mem_paddr_start + devp->buf.lossy_mcdw_y_link_buf_paddr[i]);
+			map_size = roundup(devp->buf.lossy_mcdw_y_link_buf_size[i], ALIGN_64);
+			if (map_size == 0)
+				break;
+			pr_frc(0, "dump buf %d:0x%lx size:0x%x\n", i, (ulong)cma_addr, map_size);
+			vaddr = (u32 *)frc_buf_vmap(cma_addr, map_size);
+			vaddr_start = vaddr;
+			frc_dump_mm_data(vaddr, map_size);
+			frc_buf_unmap(vaddr_start);
+		}
+	} else if (mode == FRC_BUF_MCDW_C_IDX) {
+		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
+			cma_addr =
+			devp->buf.cma_mem_paddr_start + devp->buf.lossy_mcdw_c_link_buf_paddr[i];
+			map_size = roundup(devp->buf.lossy_mcdw_c_link_buf_size[i], ALIGN_64);
 			if (map_size == 0)
 				break;
 			pr_frc(0, "dump :0x%lx size:0x%x\n", (ulong)cma_addr, map_size);
@@ -599,13 +625,13 @@ int frc_buf_alloc(struct frc_dev_s *devp)
 	devp->buf.cma_mem_alloced = 1;
 	if (devp->buf.cma_mem_paddr_start > 0x300000000) {
 		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x3333);
-		pr_frc(0, "frc run on 16G-dram board\n\n");
+		pr_frc(0, "frc run on 16G-dram board\n");
 	} else if (devp->buf.cma_mem_paddr_start > 0x200000000) {
 		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x2222);
-		pr_frc(0, "frc run on 12G-dram board\n\n");
+		pr_frc(0, "frc run on 12G-dram board\n");
 	} else if (devp->buf.cma_mem_paddr_start > 0x100000000) {
 		WRITE_FRC_REG(FRC_AXI_ADDR_EXT_CTRL, 0x1111);
-		pr_frc(0, "frc run on 8G-dram board\n\n");
+		pr_frc(0, "frc run on 8G-dram board\n");
 	}
 
 	pr_frc(0, "cma paddr_start=0x%lx size:0x%x\n",
@@ -666,6 +692,14 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 		devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
 	if (devp->buf.mc_y_comprate == 0)
 		devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
+
+	if (chip == ID_T3X)
+		devp->buf.addr_shft_bits = DDR_SHFT_4_BITS;
+	else if (chip == ID_T3 || chip == ID_T5M)
+		devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
+	else
+		devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
+	pr_frc(log, "buffer address shfit :%d", devp->buf.addr_shft_bits);
 
 	/*size initial, alloc max support size accordint to vout*/
 	devp->buf.in_hsize = devp->out_sts.vout_width;
@@ -747,7 +781,7 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	       devp->buf.lossy_me_x_info_buf_size * 1);
 
 	// only t3x mc y/c info buffer, address 64 bytes align
-	if (chip == ID_TMAX) {
+	if (chip == ID_T3X) {
 		devp->buf.lossy_mcdw_y_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
 		devp->buf.lossy_mcdw_c_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
 		devp->buf.total_size += devp->buf.lossy_mcdw_y_info_buf_size;
@@ -791,7 +825,7 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	       devp->buf.lossy_me_data_buf_size[0] * FRC_TOTAL_BUF_NUM);
 
 	/*t3x lossy mcdw data buffer*/
-	if (chip == ID_TMAX) {
+	if (chip == ID_T3X) {
 		temp = (align_hsize / 2 * FRC_MC_BITS_NUM + 511) / 8;
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
 			devp->buf.lossy_mcdw_y_data_buf_size[i] = ALIGN_4K * ratio +
@@ -837,7 +871,7 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	       devp->buf.lossy_me_link_buf_size[0] * FRC_TOTAL_BUF_NUM);
 
 	/*t3x mcdw link buffer*/
-	if (chip == ID_TMAX) {
+	if (chip == ID_T3X) {
 		temp = (roundup(devp->buf.lossy_mcdw_y_data_buf_size[0], ALIGN_4K) / ALIGN_4K) * 4;
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
 			devp->buf.lossy_mcdw_y_link_buf_size[i] = temp * 1;
@@ -941,7 +975,7 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 	u32 i;
 	u32 real_onebuf_size;
 	ulong paddr = 0, base;
-	int log = 0;
+	int log = 2;
 	enum chip_id chip;
 
 	if (!devp)
@@ -964,7 +998,7 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 	pr_frc(log, "lossy_me_x_info_buf_paddr:0x%lx", paddr);
 	paddr += roundup(devp->buf.lossy_me_x_info_buf_size, ALIGN_4K);
 	/* t3x */
-	if (chip == ID_TMAX) {
+	if (chip == ID_T3X) {
 		devp->buf.lossy_mcdw_y_info_buf_paddr = paddr;
 		pr_frc(log, "lossy_mcdw_y_info_buf_paddr:0x%lx", paddr);
 		paddr += roundup(devp->buf.lossy_mcdw_y_info_buf_size, ALIGN_4K);
@@ -1004,7 +1038,7 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 		paddr += real_onebuf_size;
 	}
 	/*t3x lossy lossy_mcdw data buffer*/
-	if (chip == ID_TMAX) {
+	if (chip == ID_T3X) {
 		/*t3x lossy lossy_mcdw_c data buffer*/
 		real_onebuf_size = roundup(devp->buf.lossy_mcdw_y_data_buf_size[0], ALIGN_4K);
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
@@ -1051,7 +1085,7 @@ int frc_buf_distribute(struct frc_dev_s *devp)
 		paddr += real_onebuf_size;
 	}
 	/*t3x link buffer*/
-	if (chip == ID_TMAX) {
+	if (chip == ID_T3X) {
 		real_onebuf_size = roundup(devp->buf.lossy_mcdw_y_link_buf_size[0], ALIGN_4K);
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
 			devp->buf.lossy_mcdw_y_link_buf_paddr[i] = paddr;
@@ -1171,14 +1205,16 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 	u8 *p = NULL;
 	ulong data_buf_addr;
 	s32 link_tab_all_size, data_buf_size;
-	u32 log = 0;
+	u32 log = 2;
+	u32 shft_bits;
 	//u32 *init_start_addr;
 	enum chip_id chip;
 
 	if (!devp)
 		return -1;
 	chip = get_chip_type();
-
+	shft_bits = devp->buf.addr_shft_bits;
+	pr_frc(log, "%s get ddr shift bits:0x%x\n", __func__, shft_bits);
 	cma_paddr = devp->buf.cma_mem_paddr_start;
 	link_tab_all_size = devp->buf.link_tab_size;
 	pr_frc(log, "paddr start:0x%lx, link start=0x%lx - 0x%lx, size:0x%x\n",
@@ -1214,7 +1250,7 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 			(cma_paddr + devp->buf.lossy_mc_y_data_buf_paddr[i]) & 0xfffffffff;
 			// k = 0;
 			for (j = 0; j < data_buf_size; j += ALIGN_4K) {
-				*linktab_vaddr = (data_buf_addr + j) >> 4;
+				*linktab_vaddr = (data_buf_addr + j) >> shft_bits;
 				linktab_vaddr++;
 				// k += 4;
 			}
@@ -1235,7 +1271,7 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 			(cma_paddr + devp->buf.lossy_mc_c_data_buf_paddr[i]) & 0xfffffffff;
 			// k = 0;
 			for (j = 0; j < data_buf_size; j += ALIGN_4K) {
-				*linktab_vaddr = (data_buf_addr + j) >> 4;
+				*linktab_vaddr = (data_buf_addr + j) >> shft_bits;
 				linktab_vaddr++;
 				// k += 4;
 			}
@@ -1256,7 +1292,7 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 			(cma_paddr + devp->buf.lossy_mc_v_data_buf_paddr[i]) & 0xfffffffff;
 			// k = 0;
 			for (j = 0; j < data_buf_size; j += ALIGN_4K) {
-				*linktab_vaddr = (data_buf_addr + j) >> 4;
+				*linktab_vaddr = (data_buf_addr + j) >> shft_bits;
 				linktab_vaddr++;
 				// k += 4;
 			}
@@ -1276,7 +1312,7 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 			(cma_paddr + devp->buf.lossy_me_data_buf_paddr[i]) & 0xfffffffff;
 			// k = 0;
 			for (j = 0; j < data_buf_size; j += ALIGN_4K) {
-				*linktab_vaddr = (data_buf_addr + j) >> 4;
+				*linktab_vaddr = (data_buf_addr + j) >> shft_bits;
 				linktab_vaddr++;
 				// k += 4;
 			}
@@ -1286,7 +1322,7 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 		}
 	}
 	/*split data buffer and fill to link mcdw buffer: mcdw y*/
-	if (chip == ID_TMAX) {
+	if (chip == ID_T3X) {
 		data_buf_size = roundup(devp->buf.lossy_mcdw_y_data_buf_size[0], ALIGN_4K);
 		if (data_buf_size > 0) {
 			pr_frc(log, "lossy_mcdw_y_data_buf_size:0x%x (%d)\n",
@@ -1300,7 +1336,7 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 				data_buf_addr &= 0xfffffffff;
 				// k = 0;
 				for (j = 0; j < data_buf_size; j += ALIGN_4K) {
-					*linktab_vaddr = (data_buf_addr + j) >> 4;
+					*linktab_vaddr = (data_buf_addr + j) >> shft_bits;
 					linktab_vaddr++;
 					// k += 4;
 				}
@@ -1322,7 +1358,7 @@ int frc_buf_mapping_tab_init(struct frc_dev_s *devp)
 				data_buf_addr &= 0xfffffffff;
 				// k = 0;
 				for (j = 0; j < data_buf_size; j += ALIGN_4K) {
-					*linktab_vaddr = (data_buf_addr + j) >> 4;
+					*linktab_vaddr = (data_buf_addr + j) >> shft_bits;
 					linktab_vaddr++;
 					// k += 4;
 				}
@@ -1344,7 +1380,8 @@ int frc_buf_config(struct frc_dev_s *devp)
 {
 	u32 i = 0;
 	ulong base;
-	u32 log = 0;
+	u32 log = 2;
+	u32 shft_bits = 0;
 	enum chip_id chip;
 
 	if (!devp) {
@@ -1359,22 +1396,23 @@ int frc_buf_config(struct frc_dev_s *devp)
 	}
 	chip = get_chip_type();
 	base = devp->buf.cma_mem_paddr_start;
-	pr_frc(log, "%s cma base:0x%lx\n", __func__, base);
+	shft_bits = devp->buf.addr_shft_bits;
+	pr_frc(log, "%s cma base:0x%lx, shift_bits:%d\n", __func__, base, shft_bits);
 	/*mc info buffer*/
 	WRITE_FRC_REG_BY_CPU(FRC_REG_MC_YINFO_BADDR,
-		(base + devp->buf.lossy_mc_y_info_buf_paddr) >> 4);
+			(base + devp->buf.lossy_mc_y_info_buf_paddr) >> shft_bits);
 	WRITE_FRC_REG_BY_CPU(FRC_REG_MC_CINFO_BADDR,
-		(base + devp->buf.lossy_mc_c_info_buf_paddr) >> 4);
+			(base + devp->buf.lossy_mc_c_info_buf_paddr) >> shft_bits);
 	WRITE_FRC_REG_BY_CPU(FRC_REG_MC_VINFO_BADDR,
-		(base + devp->buf.lossy_mc_v_info_buf_paddr) >> 4);
+			(base + devp->buf.lossy_mc_v_info_buf_paddr) >> shft_bits);
 	WRITE_FRC_REG_BY_CPU(FRC_REG_ME_XINFO_BADDR,
-		(base + devp->buf.lossy_me_x_info_buf_paddr) >> 4);
+			(base + devp->buf.lossy_me_x_info_buf_paddr) >> shft_bits);
 	/*mcdw info buffer*/
-	if (chip == ID_TMAX) {
+	if (chip == ID_T3X) {
 		WRITE_FRC_REG_BY_CPU(FRC_REG_MCDW_YINFO_BADDR,
-			(base + devp->buf.lossy_mcdw_y_info_buf_paddr) >> 4);
+			(base + devp->buf.lossy_mcdw_y_info_buf_paddr) >> shft_bits);
 		WRITE_FRC_REG_BY_CPU(FRC_REG_MCDW_CINFO_BADDR,
-			(base + devp->buf.lossy_mcdw_c_info_buf_paddr) >> 4);
+			(base + devp->buf.lossy_mcdw_c_info_buf_paddr) >> shft_bits);
 	}
 	/*lossy mc y,c,v data buffer, data buffer needn't config*/
 	/*lossy me data buffer, data buffer needn't config*/
@@ -1382,69 +1420,65 @@ int frc_buf_config(struct frc_dev_s *devp)
 	/*lossy mc link buffer*/
 	for (i = FRC_REG_MC_YBUF_ADDRX_0; i <= FRC_REG_MC_YBUF_ADDRX_15; i++) {
 		WRITE_FRC_REG_BY_CPU(i,
-		(base + devp->buf.lossy_mc_y_link_buf_paddr[i - FRC_REG_MC_YBUF_ADDRX_0]) >> 4);
+	(base + devp->buf.lossy_mc_y_link_buf_paddr[i - FRC_REG_MC_YBUF_ADDRX_0]) >> shft_bits);
 	}
 	for (i = FRC_REG_MC_CBUF_ADDRX_0; i <= FRC_REG_MC_CBUF_ADDRX_15; i++)
 		WRITE_FRC_REG_BY_CPU(i,
-		(base + devp->buf.lossy_mc_c_link_buf_paddr[i - FRC_REG_MC_CBUF_ADDRX_0]) >> 4);
+	(base + devp->buf.lossy_mc_c_link_buf_paddr[i - FRC_REG_MC_CBUF_ADDRX_0]) >> shft_bits);
 
 	for (i = FRC_REG_MC_VBUF_ADDRX_0; i <= FRC_REG_MC_VBUF_ADDRX_15; i++)
 		WRITE_FRC_REG_BY_CPU(i,
-		(base + devp->buf.lossy_mc_v_link_buf_paddr[i - FRC_REG_MC_VBUF_ADDRX_0]) >> 4);
-
+	(base + devp->buf.lossy_mc_v_link_buf_paddr[i - FRC_REG_MC_VBUF_ADDRX_0]) >> shft_bits);
 	/*lossy me link buffer*/
 	for (i = FRC_REG_ME_BUF_ADDRX_0; i <= FRC_REG_ME_BUF_ADDRX_15; i++)
 		WRITE_FRC_REG_BY_CPU(i,
-		(base + devp->buf.lossy_me_link_buf_paddr[i - FRC_REG_ME_BUF_ADDRX_0]) >> 4);
+	(base + devp->buf.lossy_me_link_buf_paddr[i - FRC_REG_ME_BUF_ADDRX_0]) >> shft_bits);
 
 	/*lossy mcdw link buffer*/
-	if (chip == ID_TMAX) {
+	if (chip == ID_T3X) {
 		for (i = FRC_REG_MCDW_YBUF_ADDRX_0; i <= FRC_REG_MCDW_YBUF_ADDRX_15; i++) {
 			WRITE_FRC_REG_BY_CPU(i, (base +
-			devp->buf.lossy_mcdw_y_link_buf_paddr[i - FRC_REG_MCDW_YBUF_ADDRX_0]) >> 4);
+		devp->buf.lossy_mcdw_y_link_buf_paddr[i - FRC_REG_MCDW_YBUF_ADDRX_0]) >> shft_bits);
 		}
 		for (i = FRC_REG_MCDW_CBUF_ADDRX_0; i <= FRC_REG_MCDW_CBUF_ADDRX_15; i++)
 			WRITE_FRC_REG_BY_CPU(i, (base +
-			devp->buf.lossy_mcdw_c_link_buf_paddr[i - FRC_REG_MCDW_CBUF_ADDRX_0]) >> 4);
+		devp->buf.lossy_mcdw_c_link_buf_paddr[i - FRC_REG_MCDW_CBUF_ADDRX_0]) >> shft_bits);
 	}
 	/*norm hme data buffer*/
 	for (i = FRC_REG_HME_BUF_ADDRX_0; i <= FRC_REG_HME_BUF_ADDRX_15; i++)
 		WRITE_FRC_REG_BY_CPU(i,
-		(base + devp->buf.norm_hme_data_buf_paddr[i - FRC_REG_HME_BUF_ADDRX_0]) >> 4);
-
+	(base + devp->buf.norm_hme_data_buf_paddr[i - FRC_REG_HME_BUF_ADDRX_0]) >> shft_bits);
 	/*norm memv buffer*/
 	for (i = FRC_REG_ME_NC_UNI_MV_ADDRX_0; i <= FRC_REG_ME_PC_PHS_MV_ADDR; i++)
 		WRITE_FRC_REG_BY_CPU(i,
-		(base + devp->buf.norm_memv_buf_paddr[i - FRC_REG_ME_NC_UNI_MV_ADDRX_0]) >> 4);
-
+	(base + devp->buf.norm_memv_buf_paddr[i - FRC_REG_ME_NC_UNI_MV_ADDRX_0]) >> shft_bits);
 	/*norm hmemv buffer*/
 	for (i = FRC_REG_HME_NC_UNI_MV_ADDRX_0; i <= FRC_REG_VP_PF_UNI_MV_ADDR; i++)
 		WRITE_FRC_REG_BY_CPU(i,
-		(base + devp->buf.norm_hmemv_buf_paddr[i - FRC_REG_HME_NC_UNI_MV_ADDRX_0]) >> 4);
+	(base + devp->buf.norm_hmemv_buf_paddr[i - FRC_REG_HME_NC_UNI_MV_ADDRX_0]) >> shft_bits);
 
 	/*norm mevp buffer*/
 	for (i = FRC_REG_VP_MC_MV_ADDRX_0; i <= FRC_REG_VP_MC_MV_ADDRX_1; i++)
 		WRITE_FRC_REG_BY_CPU(i,
-		(base + devp->buf.norm_mevp_out_buf_paddr[i - FRC_REG_VP_MC_MV_ADDRX_0]) >> 4);
+	(base + devp->buf.norm_mevp_out_buf_paddr[i - FRC_REG_VP_MC_MV_ADDRX_0]) >> shft_bits);
 
 	/*norm iplogo buffer*/
 	for (i = FRC_REG_IP_LOGO_ADDRX_0; i <= FRC_REG_IP_LOGO_ADDRX_15; i++)
 		WRITE_FRC_REG_BY_CPU(i,
-		(base + devp->buf.norm_iplogo_buf_paddr[i - FRC_REG_IP_LOGO_ADDRX_0]) >> 4);
+		(base + devp->buf.norm_iplogo_buf_paddr[i - FRC_REG_IP_LOGO_ADDRX_0]) >> shft_bits);
 
 	/*norm logo irr buffer*/
 	WRITE_FRC_REG_BY_CPU(FRC_REG_LOGO_IIR_BUF_ADDR,
-		(base + devp->buf.norm_logo_irr_buf_paddr) >> 4);
+		(base + devp->buf.norm_logo_irr_buf_paddr) >> shft_bits);
 
 	/*norm logo scc buffer*/
 	WRITE_FRC_REG_BY_CPU(FRC_REG_LOGO_SCC_BUF_ADDR,
-		(base + devp->buf.norm_logo_scc_buf_paddr) >> 4);
+		(base + devp->buf.norm_logo_scc_buf_paddr) >> shft_bits);
 
 	/*norm iplogo buffer*/
 	for (i = FRC_REG_ME_LOGO_ADDRX_0; i <= FRC_REG_ME_LOGO_ADDRX_15; i++)
 		WRITE_FRC_REG_BY_CPU(i,
-		(base + devp->buf.norm_melogo_buf_paddr[i - FRC_REG_ME_LOGO_ADDRX_0]) >> 4);
-
+		(base + devp->buf.norm_melogo_buf_paddr[i - FRC_REG_ME_LOGO_ADDRX_0]) >> shft_bits);
 	frc_buf_mapping_tab_init(devp);
 
 	//pr_frc(0, "%s success!\n", __func__);

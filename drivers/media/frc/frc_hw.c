@@ -298,6 +298,11 @@ void set_frc_enable(u32 en)
 		//frc_mc_reset(0);
 		WRITE_FRC_REG_BY_CPU(FRC_TOP_SW_RESET, 0xFFFF);
 		WRITE_FRC_REG_BY_CPU(FRC_TOP_SW_RESET, 0x0);
+		WRITE_FRC_REG_BY_CPU(FRC_AUTO_RST_SEL, 0x3c);
+		WRITE_FRC_REG_BY_CPU(FRC_SYNC_SW_RESETS, 0x3c);
+		WRITE_FRC_REG_BY_CPU(FRC_SYNC_SW_RESETS, 0);
+		WRITE_FRC_REG_BY_CPU(FRC_AUTO_RST_SEL, 0);
+
 	} else {
 		gst_frc_param.s2l_en = 0;
 		gst_frc_param.frc_mcfixlines = 0;
@@ -555,7 +560,7 @@ void mc_undone_read(struct frc_dev_s *frc_devp)
 			frc_devp->ud_dbg.mc_undone_err = 1;
 			WRITE_FRC_BITS(FRC_MC_HW_CTRL0, 1, 21, 1);
 			WRITE_FRC_BITS(FRC_MC_HW_CTRL0, 0, 21, 1);
-			if (frc_devp->frc_sts.me_undone_cnt >= MAX_MC_UNDONE_CNT)
+			if (frc_devp->frc_sts.mc_undone_cnt >= MAX_MC_UNDONE_CNT)
 				pr_frc(0, "outvs_cnt = %d, mc_ud_err cnt= %d\n",
 					frc_devp->out_sts.vs_cnt,
 					frc_devp->frc_sts.mc_undone_cnt);
@@ -1884,6 +1889,9 @@ void frc_cfg_mcdw_loss(u32 mcdw_loss_en)
 	else if (mcdw_loss_en == 0)
 		temp &= 0xFFFFFFFEF;
 	WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, temp);
+	pr_frc(0, "%s FRC_INP_MCDW_CTRL=0x%x\n", __func__,
+				READ_FRC_REG(FRC_INP_MCDW_CTRL));
+
 }
 
 void frc_force_secure(u32 onoff)
@@ -1945,13 +1953,10 @@ void frc_dump_reg_tab(void)
 	if (chip == ID_T3X) {
 		pr_frc(0, "VIU_FRC_MISC (0x%x)->bypass val:0x%x (1:bypass)\n",
 			VIU_FRC_MISC, vpu_reg_read(VIU_FRC_MISC) & 0x1);
-
 		pr_frc(0, "VIU_FRC_MISC (0x%x)->pos_sel val:0x%x (0:after blend)\n",
 			VIU_FRC_MISC, (vpu_reg_read(VIU_FRC_MISC) >> 4) & 0x1);
-
 		pr_frc(0, "ENCL_FRC_CTRL (0x%x)->val:0x%x\n",
 			ENCL_FRC_CTRL_T3X, vpu_reg_read(ENCL_FRC_CTRL_T3X) & 0xffff);
-
 		pr_frc(0, "ENCL_VIDEO_VAVON_BLINE:0x%x->val: 0x%x\n",
 			ENCL_VIDEO_VAVON_BLINE_T3X,
 			(vpu_reg_read(ENCL_VIDEO_VAVON_BLINE_T3X) >> 16) & 0xffff);
@@ -2133,6 +2138,8 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	config_me_top_hw_reg();
 	frc_top->memc_loss_en = 0x03;
 	frc_cfg_memc_loss(frc_top->memc_loss_en);
+	frc_cfg_mcdw_loss(0);
+	frc_set_h2v2(0);
 	/*protect mode, enable: memc delay 2 frame*/
 	/*disable: memc delay n frame, n depend on cadence, for debug*/
 	pr_frc(0, "%s\n", __func__);
@@ -2403,3 +2410,97 @@ int get_chip_type(void)
 	else
 		return ID_NULL;
 }
+
+static void frc_force_h2v2(u32 mcdw_path_en,  u32 h2v2_mode, u32 mcdw_loss_en)
+{
+	u32  tmp = 0;
+
+	tmp = READ_FRC_REG(FRC_MC_H2V2_SETTING);
+	tmp |= ((h2v2_mode >> 1) & 0x1) << 30;
+	tmp |= (h2v2_mode & 0x1) << 24;
+	WRITE_FRC_REG_BY_CPU(FRC_MC_H2V2_SETTING, tmp);
+
+	tmp = READ_FRC_REG(FRC_INP_MCDW_CTRL);
+	tmp |= (h2v2_mode & 0x3) << 24;
+	tmp |= (mcdw_path_en & 0x1);
+	tmp |= (mcdw_loss_en & 0x1) << 4;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, tmp);
+
+	tmp = READ_FRC_REG(FRC_MCDW_PATH_CTRL);
+	tmp |= h2v2_mode & 0x3;
+	tmp |= (mcdw_path_en & 0x1) << 4;
+	WRITE_FRC_REG_BY_CPU(FRC_MCDW_PATH_CTRL, tmp);
+
+	tmp = READ_FRC_REG(FRC_BYP_PATH_CTRL);
+	tmp |= BIT_4;
+	WRITE_FRC_REG_BY_CPU(FRC_BYP_PATH_CTRL, tmp);
+
+	tmp = READ_FRC_REG(FRC_INP_PATH_OPT);
+	tmp |= 0x01E;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_PATH_OPT, tmp);
+
+	pr_frc(1, "%s set\n", __func__);
+	pr_frc(1, "FRC_MC_H2V2_SETTING=0x%x\n",
+				READ_FRC_REG(FRC_MC_H2V2_SETTING));
+	pr_frc(1, "FRC_INP_MCDW_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_INP_MCDW_CTRL));
+	pr_frc(1, "FRC_MCDW_PATH_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_MCDW_PATH_CTRL));
+	pr_frc(1, "FRC_BYP_PATH_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_BYP_PATH_CTRL));
+	pr_frc(1, "FRC_INP_PATH_OPT=0x%x\n",
+				READ_FRC_REG(FRC_INP_PATH_OPT));
+}
+
+static void frc_disable_h2v2(void)
+{
+	u32  tmp = 0;
+
+	tmp = READ_FRC_REG(FRC_MC_H2V2_SETTING);
+	tmp &= 0xBEFFFFFF; // clear bit24,30
+	WRITE_FRC_REG_BY_CPU(FRC_MC_H2V2_SETTING, tmp);
+
+	tmp = READ_FRC_REG(FRC_INP_MCDW_CTRL);
+	tmp &= 0xFCFFFFEE  ; // clear bit24/25,0,4
+	WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, tmp);
+
+	tmp = READ_FRC_REG(FRC_MCDW_PATH_CTRL);
+	tmp &= 0xFFFFFFEC; // clear bit4, 0/1
+	WRITE_FRC_REG_BY_CPU(FRC_MCDW_PATH_CTRL, tmp);
+
+	tmp = READ_FRC_REG(FRC_BYP_PATH_CTRL);
+	tmp &= 0xFFFFFFEF; // clear bit4
+	WRITE_FRC_REG_BY_CPU(FRC_BYP_PATH_CTRL, tmp);
+
+	tmp = READ_FRC_REG(FRC_INP_PATH_OPT);
+	tmp &= 0xFFFFFFE1;  // clear bit 4,3,2,1
+	WRITE_FRC_REG_BY_CPU(FRC_INP_PATH_OPT, tmp);
+
+	pr_frc(1, "%s clear\n", __func__);
+	pr_frc(1, "FRC_MC_H2V2_SETTING=0x%x\n",
+				READ_FRC_REG(FRC_MC_H2V2_SETTING));
+	pr_frc(1, "FRC_INP_MCDW_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_INP_MCDW_CTRL));
+	pr_frc(1, "FRC_MCDW_PATH_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_MCDW_PATH_CTRL));
+	pr_frc(1, "FRC_BYP_PATH_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_BYP_PATH_CTRL));
+	pr_frc(1, "FRC_INP_PATH_OPT=0x%x\n",
+				READ_FRC_REG(FRC_INP_PATH_OPT));
+}
+
+void frc_set_h2v2(u32 enable)
+{
+	enum chip_id chip;
+
+	chip = get_chip_type();
+	if (chip < ID_T3X) {
+		pr_frc(0, "%s is not supported\n", __func__);
+		return;
+	}
+	if (enable == 1)
+		frc_force_h2v2(1, 3, 1);
+	else
+		frc_disable_h2v2();
+}
+

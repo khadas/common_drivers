@@ -959,30 +959,20 @@
 		cma_mode = <1>;
 	};
 
-	gpio_keypad{
-		compatible = "amlogic, gpio_keypad";
-		status = "disabled";
-		scan_period = <20>;
-		key_num = <2>;
-		key_name = "bluetooth", "mute";
-		key_code = <600 SW_MUTE_DEVICE>;
-		key_type = <EV_KEY EV_SW>;
-		//key-gpios = <&gpio GPIOD_2 GPIO_ACTIVE_HIGH
-		//	     &gpio GPIOA_7 GPIO_ACTIVE_HIGH>;
-		detect_mode = <0>;/*0:polling mode, 1:irq mode*/
-	};
-
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
-		status = "disabled";
-		key_name = "key_a", "key_b", "key_c";
-		key_num = <3>;
-		io-channels = <&saradc 0>;
-		io-channel-names = "key-chan-0";
-		key_chan = <0 0 0>;
-		key_code = <141 114 115>;
-		key_val = <900 511 0>; //val=voltage/1800mV*1023
-		key_tolerance = <40 40 40>;
+		status = "okay";
+		key_name = "power", "vol-", "vol+", "ok", "menu", "source", "exit";
+		key_num = <7>;
+		io-channels = <&saradc SARADC_CH1>, <&saradc SARADC_CH2>;
+		io-channel-names = "key-chan-1", "key-chan-2";
+		key_chan = <SARADC_CH1 SARADC_CH1 SARADC_CH1 SARADC_CH1
+			    SARADC_CH2 SARADC_CH2 SARADC_CH2>;
+		key_code = <KEY_POWER KEY_VOLUMEDOWN KEY_VOLUMEUP KEY_ENTER
+			    KEY_MENU KEY_FN_F1 KEY_EXIT>;
+		/* key_val = voltage / 1800mV * 1023 */
+		key_val = <0 143 266 389 0 143 266>;
+		key_tolerance = <40 40 40 40 40 40 40>;
 	};
 
 	vdd4_2v5_reg: fixedregulator@vdd4_2v5_reg {
@@ -1719,7 +1709,7 @@
 };
 
 &saradc {
-	status = "disabled";
+	status = "okay";
 };
 
 &ethmac {

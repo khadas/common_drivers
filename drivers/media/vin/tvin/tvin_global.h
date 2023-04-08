@@ -338,6 +338,20 @@ enum tvin_buffer_ctl_e {
 	TVIN_BUF_RECYCLE_TMP,
 };
 
+//T3X
+enum vpp_wrbak_src_e {
+	T3X_WRBACK_VPP_POST_VD1		= 1,
+	T3X_WRBACK_VPP_POST_VD2		= 2,
+	T3X_WRBACK_VPP_POST_VD3		= 3,
+	T3X_WRBACK_VPP_POST_OSD1	= 4,
+	T3X_WRBACK_VPP_POST_OSD2	= 5,
+	T3X_WRBACK_VPP_POST_OSD3	= 7,//attention,it's 7
+	T3X_WRBACK_VPP0_POST_BLD_OUT	= 6,
+	T3X_WRBACK_VPP1_POST_BLD_OUT	= 8,
+	T3X_WRBACK_VPP_POST_OUT		= 9,
+	T3X_WRBACK_VPP_POST_VD1_BEFORE	= 10,
+};
+
 /* ************************************************************************* */
 /* *** structure definitions ********************************************* */
 /* ************************************************************************* */

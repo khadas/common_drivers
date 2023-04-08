@@ -3813,6 +3813,9 @@ void vdin_hw_disable(struct vdin_dev_s *devp)
 	if (is_meson_s5_cpu()) {
 		vdin_hw_disable_s5(devp);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_hw_disable_t3x(devp);
+		return;
 	}
 #endif
 

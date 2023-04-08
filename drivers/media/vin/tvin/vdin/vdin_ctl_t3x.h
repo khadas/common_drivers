@@ -15,6 +15,62 @@
 #define CLKCTRL_DSC_CLK_CTRL	0xfe000100
 #define DSC_CLK_CTRL_OFFSET	0x0100
 
+struct vdin_blkbar_s {
+	unsigned int gclk_ctrl;
+	unsigned int soft_rst;
+	unsigned int conv_num;
+	unsigned int hwidth;
+	unsigned int vwidth;
+	unsigned int row_top;
+	unsigned int row_bot;
+	unsigned int top_bot_hstart;
+	unsigned int top_bot_hend;
+	unsigned int top_vstart;
+	unsigned int bot_vend;
+	unsigned int left_hstart;
+	unsigned int right_hend;
+	unsigned int lef_rig_vstart;
+	unsigned int lef_rig_vend;
+	unsigned int black_level;
+	unsigned int blk_col_th;
+	unsigned int white_level;
+	unsigned int top_pos;
+	unsigned int bot_pos;
+	unsigned int left_pos;
+	unsigned int right_pos;
+	unsigned int debug_top_cnt;
+	unsigned int debug_bot_cnt;
+	unsigned int debug_lef_cnt;
+	unsigned int debug_rig_cnt;
+
+	unsigned int pat_gclk_ctrl;
+	unsigned int pat_bw_flag;
+	unsigned int blk_wht_th;
+	unsigned int black_th;
+	unsigned int white_th;
+	unsigned int win_en;
+	unsigned int h_bgn;
+	unsigned int h_end;
+	unsigned int v_bgn;
+	unsigned int v_end;
+};
+
+struct vdin_pre_hsc_s {
+	u32 phsc_gclk_ctrl;
+	u32 prehsc_mode;
+	u32 prehsc_pattern;
+	u32 prehsc_flt_num;
+	u32 prehsc_rate;
+	u32 prehsc_pat_star;
+	u32 prehsc_pat_end;
+	u32 preh_hb_num;
+	u32 preh_vb_num;
+	u32 prehsc_coef_0;
+	u32 prehsc_coef_1;
+	u32 prehsc_coef_2;
+	u32 prehsc_coef_3;
+};
+
 extern int vsync_reset_mask;
 extern int vdin_ctl_dbg;
 extern unsigned int game_mode;

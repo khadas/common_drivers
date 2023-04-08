@@ -2585,13 +2585,17 @@ void vdin_dump_regs_t3x(struct vdin_dev_s *devp, u32 size)
 
 	pr_info("vdin%d regs loopback start----\n", devp->index);
 	reg = VIU_WR_BAK_CTRL;
-	pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+	pr_info("0x%04x = 0x%08x\n", (reg + 0), rd(0, reg));
+	reg = VPP_POST_HOLD_CTRL_T3X;
+	pr_info("0x%04x = 0x%08x\n", (reg + 0), rd(0, reg));
 	reg = VPU_VIU2VDIN_HDN_CTRL;
-	pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+	pr_info("0x%04x = 0x%08x\n", (reg + 0), rd(0, reg));
 	reg = VPU_VIU_VDIN_IF_MUX_CTRL;
-	pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
-	reg = S5_VPP_POST_HOLD_CTRL;
-	pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
+	pr_info("0x%04x = 0x%08x\n", (reg + 0), rd(0, reg));
+	reg = VPU_VIU2VDIN0_BUF_SIZE_T3X;
+	pr_info("0x%04x = 0x%08x\n", (reg + 0), rd(0, reg));
+	//reg = S5_VPP_POST_HOLD_CTRL;
+	//pr_info("0x%04x = 0x%08x\n", (reg + 0), rd(0, reg));
 
 //	for (reg = 0x2700; reg <= 0x2800; reg++)
 //	pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));

@@ -14,6 +14,9 @@
 #define VDIN_REG_BANK1_START_T3X     0x0300
 #define VDIN_REG_BANK1_END_T3X       0x03fd
 
+#define VPP_POST_HOLD_CTRL_T3X		0x1d19
+#define VPU_VIU2VDIN0_BUF_SIZE_T3X	0x2784
+
 enum vdin_vdi_x_t3x_e {
 	VDIN_VDI0_MPEG_T3X		= 0,	/* mpeg in */
 	VDIN_VDI1_BT656_T3X		= 1,	/* first bt656 input */

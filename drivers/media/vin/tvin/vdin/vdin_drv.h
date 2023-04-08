@@ -392,6 +392,9 @@ enum vdin_vf_put_md {
 #define VDIN_ISR_MONITOR_WRITE_DONE	BIT(13)
 #define VDIN_ISR_MONITOR_HDR_SEI_DATA	BIT(14)
 #define VDIN_ISR_MONITOR_SCATTER_MEM	BIT(15)
+#define VDIN_ISR_MONITOR_BLACK_BAR	BIT(16)
+#define VDIN_ISR_MONITOR_HIST_INFO	BIT(17)
+
 #define DBG_RX_UPDATE_VDIN_PROP		BIT(20)
 
 #define VDIN_DBG_CNTL_IOCTL	BIT(10)
@@ -599,6 +602,17 @@ struct vdin_dts_config_s {
 struct vdin_s5_s {
 	unsigned short h_scale_out;
 	unsigned short v_scale_out;
+};
+
+struct vdin_t3x_s {
+	unsigned short src_in_h_size;
+	unsigned short src_in_v_size;
+	unsigned short win_cut_out_h_size;
+	unsigned short win_cut_out_v_size;
+	unsigned short pp_out_h_size;
+	unsigned short pp_out_v_size;
+	unsigned short wr_mif_h_size;
+	unsigned short wr_mif_v_size;
 };
 
 struct vdin_v4l2_stat_s {

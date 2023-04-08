@@ -291,9 +291,13 @@ void vdin_afbce_config_t3x(struct vdin_dev_s *devp)
 
 	if (devp->double_wr) {
 		//W_VCBUS_BIT(offset + VDIN0_AFBCE_ENABLE, 1, AFBCE_EN_BIT, AFBCE_EN_WID);
-		W_VCBUS_BIT(offset + VDIN0_AFBCE_ENABLE, 1, 0, 1);
-		W_VCBUS_BIT(offset + VDIN0_CORE_CTRL, 1, 7, 1);/* reg_dithpath_en */
+		//W_VCBUS_BIT(offset + VDIN0_AFBCE_ENABLE, 1,
+		//	AFBCE_START_PULSE_BIT, AFBCE_START_PULSE_WID);
+		W_VCBUS_BIT(offset + VDIN0_CORE_CTRL, 0, 8, 1);/* reg_afbce_path_en */
+		W_VCBUS_BIT(offset + VDIN0_CORE_CTRL, 1, 7, 1);/* reg_dith_path_en */
 	} else {
+		W_VCBUS_BIT(offset + VDIN0_CORE_CTRL, 0, 8, 1);/* reg_afbce_path_en */
+		W_VCBUS_BIT(offset + VDIN0_CORE_CTRL, 0, 7, 1);/* reg_dith_path_en */
 		//W_VCBUS_BIT(offset + VDIN0_AFBCE_ENABLE, 0, AFBCE_EN_BIT, AFBCE_EN_WID);
 	}
 }
@@ -389,14 +393,21 @@ void vdin_afbce_set_next_frame_t3x(struct vdin_dev_s *devp,
 		rdma_write_reg_bits(devp->rdma_handle,
 				    VDIN0_AFBCE_ENABLE + devp->addr_offset, 1,
 				    AFBCE_START_PULSE_BIT, AFBCE_START_PULSE_WID);
-		if (devp->pause_dec)
+		if (devp->pause_dec) {
+			rdma_write_reg_bits(devp->rdma_handle,
+					    VDIN0_CORE_CTRL + devp->addr_offset, 0,
+					    AFBCE_EN_BIT, AFBCE_EN_WID);
 			rdma_write_reg_bits(devp->rdma_handle,
 					    VDIN0_AFBCE_ENABLE + devp->addr_offset, 0,
 					    AFBCE_EN_BIT, AFBCE_EN_WID);
-		else
+		} else {
+			rdma_write_reg_bits(devp->rdma_handle,
+					    VDIN0_CORE_CTRL + devp->addr_offset, 1,
+					    AFBCE_EN_BIT, AFBCE_EN_WID);
 			rdma_write_reg_bits(devp->rdma_handle,
 					    VDIN0_AFBCE_ENABLE + devp->addr_offset, 1,
 					    AFBCE_EN_BIT, AFBCE_EN_WID);
+		}
 	} else {
 		W_VCBUS(VDIN0_AFBCE_HEAD_BADDR + devp->addr_offset,
 			devp->afbce_info->fm_head_paddr[i] >> 4);
@@ -406,6 +417,8 @@ void vdin_afbce_set_next_frame_t3x(struct vdin_dev_s *devp,
 			AFBCE_START_PULSE_BIT, AFBCE_START_PULSE_WID);
 		W_VCBUS_BIT(VDIN0_AFBCE_ENABLE + devp->addr_offset, 0,
 			AFBCE_EN_BIT, AFBCE_EN_WID);
+		W_VCBUS_BIT(VDIN0_CORE_CTRL + devp->addr_offset, 0,
+			AFBCE_EN_BIT, AFBCE_EN_WID);
 	}
 #endif
 	vdin_afbce_clear_write_down_flag(devp);
@@ -414,9 +427,13 @@ void vdin_afbce_set_next_frame_t3x(struct vdin_dev_s *devp,
 void vdin_pause_afbce_write_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable)
 {
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
-	if (rdma_enable)
+	if (rdma_enable) {
+		/* reg_afbce_path_en */
+		rdma_write_reg_bits(devp->rdma_handle, devp->addr_offset + VDIN0_CORE_CTRL, 0,
+				    AFBCE_EN_BIT, AFBCE_EN_WID);
 		rdma_write_reg_bits(devp->rdma_handle, devp->addr_offset + VDIN0_AFBCE_ENABLE, 0,
 				    AFBCE_EN_BIT, AFBCE_EN_WID);
+	}
 #endif
 	vdin_afbce_clear_write_down_flag_t3x(devp);
 }
@@ -448,55 +465,14 @@ int vdin_afbce_read_write_down_flag_t3x(struct vdin_dev_s *devp)
 
 void vdin_afbce_soft_reset_t3x(struct vdin_dev_s *devp)
 {
+	/* reg_afbce_path_en */
+	W_VCBUS_BIT(devp->addr_offset + VDIN0_CORE_CTRL, 0, 8, 1);
 	/* reg_enc_enable */
-	W_VCBUS_BIT(devp->addr_offset + VDIN0_AFBCE_ENABLE, 0, 8, 1);
+	W_VCBUS_BIT(devp->addr_offset + VDIN0_AFBCE_ENABLE, 0,
+		AFBCE_EN_BIT, AFBCE_EN_WID);
 	W_VCBUS_BIT(devp->addr_offset + VDIN0_AFBCE_MODE, 0, 30, 1);
 	W_VCBUS_BIT(devp->addr_offset + VDIN0_AFBCE_MODE, 1, 30, 1);
 	W_VCBUS_BIT(devp->addr_offset + VDIN0_AFBCE_MODE, 0, 30, 1);
-}
-
-void vdin_afbce_mode_init_t3x(struct vdin_dev_s *devp)
-{
-	/* afbce_valid means can switch into afbce mode */
-	devp->afbce_valid = 0;
-	if (devp->afbce_flag & VDIN_AFBCE_EN) {
-		if (devp->h_active > 1920 && devp->v_active > 1080) {
-			if (devp->afbce_flag & VDIN_AFBCE_EN_4K)
-				devp->afbce_valid = 1;
-		} else if (devp->h_active > 1280 && devp->v_active > 720) {
-			if (devp->afbce_flag & VDIN_AFBCE_EN_1080P)
-				devp->afbce_valid = 1;
-		} else if (devp->h_active > 720 && devp->v_active > 576) {
-			if (devp->afbce_flag & VDIN_AFBCE_EN_720P)
-				devp->afbce_valid = 1;
-		} else {
-			if (devp->afbce_flag & VDIN_AFBCE_EN_SMALL)
-				devp->afbce_valid = 1;
-		}
-		/*afbc up to 4k 444*/
-		/* if is hdr mode, not enable afbc mode*/
-		/* if (devp->prop.hdr_info.hdr_state == HDR_STATE_GET) {
-		 *	if ((devp->prop.hdr_info.hdr_data.eotf ==
-		 *			EOTF_HDR) ||
-		 *		(devp->prop.hdr_info.hdr_data.eotf ==
-		 *			EOTF_SMPTE_ST_2048) ||
-		 *		(devp->prop.hdr_info.hdr_data.eotf ==
-		 *			EOTF_HLG))
-		 *	devp->afbce_valid = false;
-		 *}
-		 *
-		 *if (devp->prop.hdr10p_info.hdr10p_on)
-		 *	devp->afbce_valid = false;
-		 */
-	}
-
-	/* default non-afbce mode
-	 * switch to afbce_mode if need by vpp notify
-	 */
-	devp->afbce_mode = 0;
-	devp->afbce_mode_pre = devp->afbce_mode;
-	if (vdin_dbg_en)
-		pr_info("vdin%d init afbce_mode: %d\n", devp->index, devp->afbce_mode);
 }
 
 void vdin_afbce_mode_update_t3x(struct vdin_dev_s *devp)

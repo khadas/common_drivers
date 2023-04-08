@@ -1715,7 +1715,7 @@ int start_tvin_service(int no, struct vdin_parm_s  *para)
 	pr_info("v_active:%d;scan_mode:%d,fmt:%#x**\n",
 		para->v_active, para->scan_mode, fmt);
 
-	if (devp->index == 1) {
+	if (devp->hw_core == VDIN_HW_CORE_LITE) {
 		devp->parm.reserved |= para->reserved;
 
 		/* for screen cap with panel reverse, vdin output non-reverse data */
@@ -1747,7 +1747,7 @@ int start_tvin_service(int no, struct vdin_parm_s  *para)
 		       devp->index, __func__, para->port, devp->flags);
 		if ((devp->parm.reserved & PARAM_STATE_SCREEN_CAP) &&
 			(devp->parm.reserved & PARAM_STATE_HISTGRAM) &&
-			devp->index == 1) {
+			devp->hw_core == VDIN_HW_CORE_LITE) {
 			mutex_unlock(&devp->fe_lock);
 			return 0;
 		} else {
@@ -1948,7 +1948,7 @@ int stop_tvin_service(int no)
 
 	if ((devp->parm.reserved & PARAM_STATE_HISTGRAM) &&
 	    (devp->parm.reserved & PARAM_STATE_SCREEN_CAP) &&
-	    devp->index == 1) {
+	    devp->hw_core == VDIN_HW_CORE_LITE) {
 		pr_info("stop vdin v4l2 screencap.\n");
 		devp->parm.reserved &= ~PARAM_STATE_SCREEN_CAP;
 		mutex_unlock(&devp->fe_lock);
@@ -2027,13 +2027,15 @@ int stop_tvin_service(int no)
 int start_tvin_capture_ex(int dev_num, enum port_vpp_e port, struct vdin_parm_s  *para)
 {
 	unsigned int loop_port;
-	unsigned int vdin_dev;
 
 	if (!para) {
 		pr_err("%s vdin%d port=0x%x,para == NULL!\n", __func__, dev_num, port);
 		return -1;
 	}
-
+	if (dev_num >= VDIN_MAX_DEVS) {
+		pr_err("%s error.vdin%d >= %d\n", __func__, dev_num, VDIN_MAX_DEVS);
+		return -1;
+	}
 	if (vdin_dbg_en)
 		pr_err("%s vdin%d port=0x%x,0x%x!\n", __func__, dev_num, port, para->port);
 
@@ -2062,11 +2064,7 @@ int start_tvin_capture_ex(int dev_num, enum port_vpp_e port, struct vdin_parm_s 
 		//loop_port = TVIN_PORT_VIU1_WB0_VD1;
 	para->port = loop_port;
 
-	if (dev_num == 0)
-		vdin_dev = 0;
-	else
-		vdin_dev = 1;
-	return start_tvin_service(vdin_dev, para);
+	return start_tvin_service(dev_num, para);
 }
 
 void get_tvin_canvas_info(int *start, int *num)

@@ -723,10 +723,6 @@ void vdin_afbce_soft_reset(struct vdin_dev_s *devp)
 
 void vdin_afbce_mode_init(struct vdin_dev_s *devp)
 {
-	if (is_meson_t3x_cpu()) {
-		vdin_afbce_mode_init_t3x(devp);
-		return;
-	}
 	/* afbce_valid means can switch into afbce mode */
 	devp->afbce_valid = 0;
 	if (devp->afbce_flag & VDIN_AFBCE_EN) {

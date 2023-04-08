@@ -547,6 +547,8 @@ static int sc2_smc_addr(struct platform_device *pdev)
 		if (cpu_type == MESON_CPU_MAJOR_ID_S5)
 			sys_addr_offset = 0x40000;
 
+		if (cpu_type == MESON_CPU_MAJOR_ID_T3X)
+			sys_addr_offset = 0x40000;
 		p_smc_hw_base += sys_addr_offset;
 		pr_error("sc2 smartcard\n");
 	} else {
@@ -1115,7 +1117,7 @@ static void smc_mp0_clk_set(int clk)
 	data = sc2_read_sys(SMARTCARD_CLK_CTRL);
 
 	/*for new chip, such as s5/t5m*/
-	if (cpu_type == MESON_CPU_MAJOR_ID_S5) {
+	if (cpu_type == MESON_CPU_MAJOR_ID_S5 || cpu_type == MESON_CPU_MAJOR_ID_T3X) {
 		data &= 0xFFF00000;
 		if (clk == 4500)
 			data |= 0x50124;
@@ -3160,7 +3162,8 @@ static int smc_probe(struct platform_device *pdev)
 	 * for CLKCTRL_SC_CLK_CTRL, it extend to support 4.5M/6.75M/13.5M
 	 * it force to control register.
 	 */
-	if (cpu_type == MESON_CPU_MAJOR_ID_S5 || cpu_type == MESON_CPU_MAJOR_ID_T5M)
+	if (cpu_type == MESON_CPU_MAJOR_ID_S5 || cpu_type == MESON_CPU_MAJOR_ID_T5M ||
+		cpu_type == MESON_CPU_MAJOR_ID_T3X)
 		smartcard_mpll0 = 1;
 	if (smc) {
 		smc->init = 1;

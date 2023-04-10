@@ -2287,7 +2287,11 @@ static void vframe_composer(struct composer_dev *dev)
 			if (ret < 0)
 				vc_print(dev->index, PRINT_ERROR, "dewarp config err.\n");
 			dev->dewarp_para.vf_para = &vframe_para;
-			load_dewarp_firmware(&dev->dewarp_para);
+			ret = load_dewarp_firmware(&dev->dewarp_para);
+			if (ret != 0) {
+				vc_print(dev->index, PRINT_ERROR, "load firmware failed.\n");
+				break;
+			}
 			ret = dewarp_data_composer(&dev->dewarp_para);
 			if (ret < 0)
 				vc_print(dev->index, PRINT_ERROR, "dewarp data composer failed.\n");

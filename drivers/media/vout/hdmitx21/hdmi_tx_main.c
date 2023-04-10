@@ -6511,7 +6511,7 @@ static int hdmitx21_boot_hdr_priority(char *str)
 
 __setup("hdr_priority=", hdmitx21_boot_hdr_priority);
 
-static int __init get_hdmi21_checksum(char *str)
+static int get_hdmi21_checksum(char *str)
 {
 	snprintf(hdmichecksum, sizeof(hdmichecksum), "%s", str);
 

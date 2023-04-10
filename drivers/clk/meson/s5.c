@@ -1763,7 +1763,7 @@ static const struct cpu_dyn_table s5_cpu_dyn_table[] = {
 	CPU_LOW_PARAMS(1000000000, 1, 0, 0),
 };
 
-static const struct clk_parent_data s5_dyn_clk_sel[] __initconst = {
+static const struct clk_parent_data s5_dyn_clk_sel[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &s5_fclk_div2.hw },
 	{ .hw = &s5_fclk_div3.hw },

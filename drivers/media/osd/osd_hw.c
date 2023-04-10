@@ -2103,8 +2103,6 @@ u32 to_osd_hw_index(u32 osd_index)
 	return index;
 }
 
-<<<<<<< HEAD
-=======
 static u32 to_osd_sw_index(u32 osd_index)
 {
 	u32 index = osd_index;
@@ -2178,7 +2176,6 @@ static u32 to_din_scope_osd_index(u32 din_index)
 	return osd_index;
 }
 
->>>>>>> osd: add osd support [1/1]
 /* validate if osdx is routed to vpp_topx */
 static int validate_osd(u32 osd_index, u32 viu_index)
 {
@@ -8928,11 +8925,8 @@ static int osd_setting_blending_scope(u32 index)
 		return -1;
 	}
 
-<<<<<<< HEAD
-	if (index == OSD1 && !osd_hw.osd_meson_dev.osd0_sc_independ) {
-=======
-	if (index == OSD1 && !osd_dev_hw.s5_display) {
->>>>>>> osd: add osd support [1/1]
+	if (index == OSD1 && !osd_dev_hw.s5_display &&
+		 !osd_hw.osd_meson_dev.osd0_sc_independ) {
 		bld_osd_h_start =
 			osd_hw.free_src_data[index].x_start;
 		bld_osd_h_end =
@@ -12676,26 +12670,21 @@ static void osd_setting_default_hwc(void)
 			     0x0  << 20 |
 			     0x0  << 11 |
 			     0x0);
-<<<<<<< HEAD
+
 	if (osd_hw.osd_meson_dev.osd0_sc_independ) {
 		blend_hsize = osd_hw.dst_data[OSD1].w;
 		blend_vsize = osd_hw.dst_data[OSD1].h;
-=======
-
-	if (osd_dev_hw.s5_display) {
-		blend_hsize = osd_hw.disp_info[VIU1].position_w;
-		blend_vsize = osd_hw.disp_info[VIU1].position_h;
->>>>>>> osd: add osd support [1/1]
 	} else {
-		blend_hsize = osd_hw.disp_info[VIU1].background_w;
-		blend_vsize = osd_hw.disp_info[VIU1].background_h;
+		if (osd_dev_hw.s5_display) {
+			blend_hsize = osd_hw.disp_info[VIU1].position_w;
+			blend_vsize = osd_hw.disp_info[VIU1].position_h;
+		} else {
+			blend_hsize = osd_hw.disp_info[VIU1].background_w;
+			blend_vsize = osd_hw.disp_info[VIU1].background_h;
+		}
 	}
-<<<<<<< HEAD
-	VSYNCOSD_WR_MPEG_REG(VIU_OSD_BLEND_BLEND0_SIZE,
-=======
 
 	VSYNCOSD_WR_MPEG_REG(hw_osd_reg_blend.osd_blend_blend0_size,
->>>>>>> osd: add osd support [1/1]
 			     blend_vsize  << 16 |
 			     blend_hsize);
 
@@ -14495,13 +14484,6 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		osd_set_basic_urgent(true);
 		osd_set_two_ports(true);
 		if (osd_dev_hw.prevsync_support) {
-<<<<<<< HEAD
-			u32 vpp0_post_go_field = 3;
-			/* for t5m 0: vpp0_pre_go_field, 3: vpp0_post_go_field */
-			osd_set_vpp_path_default(VPP_OSD1, vpp0_post_go_field);
-			osd_set_vpp_path_default(VPP_OSD2, vpp0_post_go_field);
-			osd_set_vpp_path_default(VPP_OSD3, vpp0_post_go_field);
-=======
 			u32 vpp0_pre_go_field = 0;
 			u32 vpp0_post_go_field = 3;
 			u32 output_index;
@@ -14550,7 +14532,6 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 							output_index);
 				}
 			}
->>>>>>> osd: add osd support [1/1]
 		} else {
 			/* for t7 0: vpp0_post_go_field, no pre go field */
 			if (osd_hw.osd_meson_dev.osd_count > OSD3)

@@ -1255,6 +1255,8 @@ static void *map_virt_from_phys(phys_addr_t phys, unsigned long total_size)
 	}
 	vfree(pages);
 	return vaddr;
+}
+
 void aml_unmap_phyaddr(u8 *vaddr)
 {
 	void *addr = (void *)(PAGE_MASK & (ulong)vaddr);
@@ -1704,39 +1706,6 @@ static int osd_mmap(struct fb_info *info, struct vm_area_struct *vma)
 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
 	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
 	return vm_iomap_memory(vma, start, len);
-}
-
-static void *map_virt_from_phys(phys_addr_t phys, unsigned long total_size)
-{
-	u32 offset, npages;
-	struct page **pages = NULL;
-	pgprot_t pgprot;
-	void *vaddr;
-	int i;
-
-	npages = PAGE_ALIGN(total_size) / PAGE_SIZE;
-	offset = phys & (~PAGE_MASK);
-	if (offset)
-		npages++;
-	pages = vmalloc(sizeof(struct page *) * npages);
-	if (!pages)
-		return NULL;
-	for (i = 0; i < npages; i++) {
-		pages[i] = phys_to_page(phys);
-		phys += PAGE_SIZE;
-	}
-	/*cache*/
-	pgprot = pgprot_writecombine(PAGE_KERNEL);
-
-	vaddr = vmap(pages, npages, VM_MAP, pgprot);
-	if (!vaddr) {
-		pr_err("vmaped fail, size: %d\n",
-		       npages << PAGE_SHIFT);
-		vfree(pages);
-		return NULL;
-	}
-	vfree(pages);
-	return vaddr;
 }
 
 static int is_new_page(unsigned long addr, unsigned long pos)
@@ -5338,8 +5307,7 @@ static int __init osd_probe(struct platform_device *pdev)
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T3)
 		memcpy(&osd_dev_hw, &t3_dev_property,
 		       sizeof(struct osd_device_hw_s));
-	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5W ||
-				osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5M)
+	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5W)
 		memcpy(&osd_dev_hw, &t5w_dev_property,
 		       sizeof(struct osd_device_hw_s));
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_C3)
@@ -5347,6 +5315,7 @@ static int __init osd_probe(struct platform_device *pdev)
 		       sizeof(struct osd_device_hw_s));
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_T5M)
 		memcpy(&osd_dev_hw, &t5m_dev_property,
+		       sizeof(struct osd_device_hw_s));
 	else if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_S5)
 		memcpy(&osd_dev_hw, &s5_dev_property,
 		       sizeof(struct osd_device_hw_s));

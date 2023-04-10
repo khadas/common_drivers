@@ -421,22 +421,40 @@ void amcm_disable(enum wr_md_e md)
 			for (i = 0; i < slice_max; i++) {
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
+
+				if (chip_type_id == chip_t3x) {
+					WRITE_VPP_REG(addr_port, STA_CFG_REG);
+					temp = READ_VPP_REG(data_port);
+					temp = (temp & (~0xc0000000)) | (0 << 30);
+					WRITE_VPP_REG(addr_port, STA_CFG_REG);
+					WRITE_VPP_REG(data_port, temp);
+				}
+
 				WRITE_VPP_REG(addr_port, 0x208);
 				temp = READ_VPP_REG(data_port);
 				WRITE_VPP_REG(addr_port, 0x208);
 				WRITE_VPP_REG(data_port,
-							temp & 0xfffffffe);
+					temp & 0xfffffffe);
 			}
 			break;
 		case WR_DMA:
 			for (i = 0; i < slice_max; i++) {
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
+
+				if (chip_type_id == chip_t3x) {
+					WRITE_VPP_REG(addr_port, STA_CFG_REG);
+					temp = READ_VPP_REG(data_port);
+					temp = (temp & (~0xc0000000)) | (0 << 30);
+					WRITE_VPP_REG(addr_port, STA_CFG_REG);
+					WRITE_VPP_REG(data_port, temp);
+				}
+
 				WRITE_VPP_REG(addr_port, 0x208);
 				temp = READ_VPP_REG(data_port);
 				VSYNC_WRITE_VPP_REG(addr_port, 0x208);
 				VSYNC_WRITE_VPP_REG(data_port,
-							temp & 0xfffffffe);
+					temp & 0xfffffffe);
 			}
 			break;
 		default:
@@ -457,17 +475,17 @@ void amcm_disable(enum wr_md_e md)
 			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 				if (temp & 0x1) {
 					WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-							    0x208);
+						0x208);
 					WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
-							    temp & 0xfffffffe);
+						temp & 0xfffffffe);
 				}
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			} else {
 				if (temp & 0x2) {
 					WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-							    0x208);
+						0x208);
 					WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
-							    temp & 0xfffffffd);
+						temp & 0xfffffffd);
 				}
 #endif
 			}
@@ -476,17 +494,17 @@ void amcm_disable(enum wr_md_e md)
 			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 				if (temp & 0x1) {
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-							    0x208);
+						0x208);
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
-							    temp & 0xfffffffe);
+						temp & 0xfffffffe);
 				}
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			} else {
 				if (temp & 0x2) {
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-							    0x208);
+						0x208);
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
-							    temp & 0xfffffffd);
+						temp & 0xfffffffd);
 				}
 #endif
 			}
@@ -517,20 +535,64 @@ void amcm_enable(enum wr_md_e md)
 			for (i = 0; i < slice_max; i++) {
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
+
 				WRITE_VPP_REG(addr_port, 0x208);
 				temp = READ_VPP_REG(data_port);
 				WRITE_VPP_REG(addr_port, 0x208);
 				WRITE_VPP_REG(data_port, temp | 0x1);
+
+				if (chip_type_id == chip_t3x) {
+					WRITE_VPP_REG(addr_port, STA_CFG_REG);
+					temp = READ_VPP_REG(data_port);
+					temp = (temp & (~0xc0000000)) | (1 << 30);
+					temp = (temp & (~0xff0000)) | (24 << 16);
+					WRITE_VPP_REG(addr_port, STA_CFG_REG);
+					WRITE_VPP_REG(data_port, temp);
+
+					WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+					temp = READ_VPP_REG(data_port);
+					temp = (temp & (~(0x1fff0000))) | (0 << 16);
+					WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+					WRITE_VPP_REG(data_port, temp);
+
+					WRITE_VPP_REG(addr_port, STA_SAT_HIST0_REG);
+					WRITE_VPP_REG(data_port, 0 | (1 << 24));
+
+					WRITE_VPP_REG(addr_port, STA_SAT_HIST1_REG);
+					WRITE_VPP_REG(data_port, 0);
+				}
 			}
 			break;
 		case WR_DMA:
 			for (i = 0; i < slice_max; i++) {
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
+
 				WRITE_VPP_REG(addr_port, 0x208);
 				temp = READ_VPP_REG(data_port);
 				VSYNC_WRITE_VPP_REG(addr_port, 0x208);
 				VSYNC_WRITE_VPP_REG(data_port, temp | 0x1);
+
+				if (chip_type_id == chip_t3x) {
+					WRITE_VPP_REG(addr_port, STA_CFG_REG);
+					temp = READ_VPP_REG(data_port);
+					temp = (temp & (~0xc0000000)) | (1 << 30);
+					temp = (temp & (~0xff0000)) | (24 << 16);
+					WRITE_VPP_REG(addr_port, STA_CFG_REG);
+					WRITE_VPP_REG(data_port, temp);
+
+					WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+					temp = READ_VPP_REG(data_port);
+					temp = (temp & (~(0x1fff0000))) | (0 << 16);
+					WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+					WRITE_VPP_REG(data_port, temp);
+
+					WRITE_VPP_REG(addr_port, STA_SAT_HIST0_REG);
+					WRITE_VPP_REG(data_port, 0 | (1 << 24));
+
+					WRITE_VPP_REG(addr_port, STA_SAT_HIST1_REG);
+					WRITE_VPP_REG(data_port, 0);
+				}
 			}
 			break;
 		default:
@@ -539,6 +601,7 @@ void amcm_enable(enum wr_md_e md)
 	} else {
 		if (!(READ_VPP_REG(VPP_MISC) & (0x1 << 28)))
 			WRITE_VPP_REG_BITS(VPP_MISC, 1, 28, 1);
+
 		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x208);
 		temp = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
 
@@ -547,17 +610,17 @@ void amcm_enable(enum wr_md_e md)
 			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 				if (!(temp & 0x1)) {
 					WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-							    0x208);
+						0x208);
 					WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
-							    temp | 0x1);
+						temp | 0x1);
 				}
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			} else {
 				if (!(temp & 0x2)) {
 					WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-							    0x208);
+						0x208);
 					WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
-							    temp | 0x2);
+						temp | 0x2);
 				}
 #endif
 			}
@@ -566,17 +629,17 @@ void amcm_enable(enum wr_md_e md)
 			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 				if (!(temp & 0x1)) {
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-								0x208);
+						0x208);
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
-								temp | 0x1);
+						temp | 0x1);
 				}
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			} else {
 				if (!(temp & 0x2)) {
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
-								0x208);
+						0x208);
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
-								temp | 0x2);
+						temp | 0x2);
 				}
 #endif
 			}
@@ -661,12 +724,14 @@ void amcm_level_sel(unsigned int cm_level)
 		am_set_regmap(&cmreg_enhancement);
 	else
 		am_set_regmap(&cmreg_optimize);
+
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	if (!is_amdv_enable())
 #endif
 	{
 		if (!(READ_VPP_REG(VPP_MISC) & (0x1 << 28)))
 			WRITE_VPP_REG_BITS(VPP_MISC, 1, 28, 1);
+
 		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x208);
 		temp = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
 		if (!(temp & 0x2)) {
@@ -747,28 +812,43 @@ void cm_frame_size_s5(struct vframe_s *vf)
 
 	if (!cm_en)
 		return;
-	else if ((!cm_en_flag) && (!cm_dis_flag))
+
+	if (!cm_en_flag && !cm_dis_flag)
 		amcm_enable(WR_DMA);
 
 	slice_max = get_slice_max();
 
+	cm_port = get_cm_port();
+
 	/*because size from vpp will delay, need reconfig for cm*/
 	cm_force_flag = 0;
+
 	if (en_flag && !vf) {
+		/*default 4k size*/
+		width = 0xf00;
+		height = 0x870;
+		vpp_size = width | (height << 16);
+
 		for (i = SLICE0; i < slice_max; i++) {
-			/*default 4k size*/
-			width = 0xf00;
-			height = 0x870;
-			vpp_size = width | (height << 16);
-			cm_port = get_cm_port();
 			addr_port = cm_port.cm_addr_port[i];
 			data_port = cm_port.cm_data_port[i];
-			WRITE_VPP_REG(addr_port, 0x205);
-			WRITE_VPP_REG(data_port, vpp_size);
-			WRITE_VPP_REG(addr_port, 0x209);
-			WRITE_VPP_REG(data_port, width << 16);
-			WRITE_VPP_REG(addr_port, 0x20a);
-			WRITE_VPP_REG(data_port, height << 16);
+
+			VSYNC_WRITE_VPP_REG(addr_port, 0x205);
+			VSYNC_WRITE_VPP_REG(data_port, vpp_size);
+
+			if (chip_type_id == chip_s5) {
+				VSYNC_WRITE_VPP_REG(addr_port, 0x209);
+				VSYNC_WRITE_VPP_REG(data_port, width << 16);
+				VSYNC_WRITE_VPP_REG(addr_port, 0x20a);
+				VSYNC_WRITE_VPP_REG(data_port, height << 16);
+			}
+
+			if (chip_type_id == chip_t3x) {
+				VSYNC_WRITE_VPP_REG(addr_port, STA_WIN_XYXY0_REG);
+				VSYNC_WRITE_VPP_REG(data_port, 0 | (width << 16));
+				VSYNC_WRITE_VPP_REG(addr_port, STA_WIN_XYXY1_REG);
+				VSYNC_WRITE_VPP_REG(data_port, 0 | (height << 16));
+			}
 		}
 		en_flag = 0;
 #if CONFIG_AMLOGIC_MEDIA_VIDEO
@@ -780,6 +860,7 @@ void cm_frame_size_s5(struct vframe_s *vf)
 		changed_flag = size_changed_state(vf);
 		if (slice_num && changed_flag) {
 			cm_force_flag = 1;
+
 			for (i = SLICE0; i < slice_num; i++) {
 #if CONFIG_AMLOGIC_MEDIA_VIDEO
 				width = vd_size_info->slice[i].hsize;
@@ -789,15 +870,26 @@ void cm_frame_size_s5(struct vframe_s *vf)
 				height = 0x870;
 #endif
 				vpp_size = width | (height << 16);
-				cm_port = get_cm_port();
+
 				addr_port = cm_port.cm_addr_port[i];
 				data_port = cm_port.cm_data_port[i];
-				WRITE_VPP_REG(addr_port, 0x205);
-				WRITE_VPP_REG(data_port, vpp_size);
-				WRITE_VPP_REG(addr_port, 0x209);
-				WRITE_VPP_REG(data_port, width << 16);
-				WRITE_VPP_REG(addr_port, 0x20a);
-				WRITE_VPP_REG(data_port, height << 16);
+
+				VSYNC_WRITE_VPP_REG(addr_port, 0x205);
+				VSYNC_WRITE_VPP_REG(data_port, vpp_size);
+
+				if (chip_type_id == chip_s5) {
+					VSYNC_WRITE_VPP_REG(addr_port, 0x209);
+					VSYNC_WRITE_VPP_REG(data_port, width << 16);
+					VSYNC_WRITE_VPP_REG(addr_port, 0x20a);
+					VSYNC_WRITE_VPP_REG(data_port, height << 16);
+				}
+
+				if (chip_type_id == chip_t3x) {
+					VSYNC_WRITE_VPP_REG(addr_port, STA_WIN_XYXY0_REG);
+					VSYNC_WRITE_VPP_REG(data_port, 0 | (width << 16));
+					VSYNC_WRITE_VPP_REG(addr_port, STA_WIN_XYXY1_REG);
+					VSYNC_WRITE_VPP_REG(data_port, 0 | (height << 16));
+				}
 				pr_amcm_dbg("\n[amcm..] s5: cm size : %x, slice_num = %d, cm_fc_flag = %d\n",
 					vpp_size, slice_num, cm_force_flag);
 			}

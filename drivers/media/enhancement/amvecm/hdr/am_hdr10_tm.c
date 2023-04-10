@@ -26,6 +26,7 @@
 #include <linux/amlogic/media/amvecm/hdr10_tmo_alg.h>
 #include "am_hdr10_tm.h"
 #include "../set_hdr2_v0.h"
+#include "../s5_set_hdr2_v0.h"
 #include "am_hdr10_tmo_fw.h"
 
 unsigned int hdr10_tm_dbg;
@@ -97,10 +98,17 @@ int time_iir(u32 *maxl)
 	max_lum[2] = *maxl;
 
 	for (i = 0; i < 128; i++) {
-		sum += hdr_hist[15][i];
-		diff = (hdr_hist[15][i] > hdr_hist[14][i]) ?
-			(hdr_hist[15][i] - hdr_hist[14][i]) :
-			(hdr_hist[14][i] - hdr_hist[15][i]);
+		if (chip_type_id == chip_t3x) {
+			sum += s5_hdr_hist[15][i];
+			diff = (s5_hdr_hist[15][i] > s5_hdr_hist[14][i]) ?
+				(s5_hdr_hist[15][i] - s5_hdr_hist[14][i]) :
+				(s5_hdr_hist[14][i] - s5_hdr_hist[15][i]);
+		} else {
+			sum += hdr_hist[15][i];
+			diff = (hdr_hist[15][i] > hdr_hist[14][i]) ?
+				(hdr_hist[15][i] - hdr_hist[14][i]) :
+				(hdr_hist[14][i] - hdr_hist[15][i]);
+		}
 		hist_diff[2] += diff;
 	}
 
@@ -427,6 +435,7 @@ int dynamic_hdr_sdr_ootf(u32 maxl, u32 panell, u64 sx, u64 sy, u64 *anchor)
 int hdr10_tm_dynamic_proc(struct vframe_master_display_colour_s *p)
 {
 	int i;
+	u32 tmp;
 	u32 maxl;
 	u32 primary_maxl;
 	u32 panel_luma;
@@ -447,9 +456,14 @@ int hdr10_tm_dynamic_proc(struct vframe_master_display_colour_s *p)
 	primary_maxl = p->luminance[0];
 
 	/*use 95% maxl because of high percert flicker*/
-	maxl = (percentile[8] > primary_maxl) ? primary_maxl : percentile[8];
+	if (chip_type_id == chip_t3x)
+		tmp = s5_percentile[8];
+	else
+		tmp = percentile[8];
+
+	maxl = (tmp > primary_maxl) ? primary_maxl : tmp;
 	pr_hdr_tm("maxl = %d, percentile[8] = %d, primary_maxl =%d\n",
-		  maxl, percentile[8], primary_maxl);
+		maxl, tmp, primary_maxl);
 
 	if (hdr_tm_iir)
 		scn_chang_flag = time_iir(&maxl);

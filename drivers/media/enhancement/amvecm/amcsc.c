@@ -43,6 +43,8 @@
 #include "amcsc.h"
 #include "amcsc_pip.h"
 #include "set_hdr2_v0.h"
+#include "s5_set_hdr2_v0.h"
+
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
 #endif
@@ -8629,9 +8631,11 @@ static int vpp_matrix_update(struct vframe_s *vf,
 			&hdmitx_edms_params[vd_path]);
 
 		if (csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB_DYNAMIC ||
-		    csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB ||
-		    csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB_CUVA) {
-			if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
+			csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB ||
+			csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB_CUVA) {
+			if (cpu_after_eq(MESON_CPU_MAJOR_ID_T3X))
+				s5_get_hist(vd_path, HIST_E_RGBMAX);
+			else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
 				get_hist(vd_path, HIST_E_RGBMAX);
 			else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
 				get_hist(vd_path, HIST_E_RGBMAX);

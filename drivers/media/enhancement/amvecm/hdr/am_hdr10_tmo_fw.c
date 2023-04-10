@@ -16,6 +16,7 @@
 #include "am_hdr10_tm.h"
 #include "am_hdr10_tmo_fw.h"
 #include "../set_hdr2_v0.h"
+#include "../s5_set_hdr2_v0.h"
 
 static int pr_tmo_en;
 module_param(pr_tmo_en, int, 0664);
@@ -384,10 +385,14 @@ void hdr10_tmo_gen(u32 *oo_gain)
 	struct aml_tmo_reg_sw *pre_tmo_reg;
 
 	pre_tmo_reg = tmo_fw_param_get();
-	if (!pre_tmo_reg->pre_hdr10_tmo_alg)
+	if (!pre_tmo_reg->pre_hdr10_tmo_alg) {
 		pr_tmo_dbg("%s: hdr10_tmo alg func is NULL\n", __func__);
-	else
-		tmo_reg.pre_hdr10_tmo_alg(pre_tmo_reg, oo_gain, hdr_hist[15]);
+	} else {
+		if (chip_type_id == chip_t3x)
+			tmo_reg.pre_hdr10_tmo_alg(pre_tmo_reg, oo_gain, s5_hdr_hist[15]);
+		else
+			tmo_reg.pre_hdr10_tmo_alg(pre_tmo_reg, oo_gain, hdr_hist[15]);
+	}
 }
 
 void hdr10_tmo_parm_show(void)

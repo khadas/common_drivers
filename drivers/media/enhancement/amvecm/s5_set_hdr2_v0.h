@@ -12,6 +12,9 @@
 //#include "amcsc.h"
 #include "set_hdr2_v0.h"
 
+extern u32 s5_hdr_hist[NUM_HDR_HIST][128];
+extern u32 s5_percentile[9];
+
 void s5_set_hdr_matrix(enum hdr_module_sel module_sel,
 		    enum hdr_matrix_sel mtx_sel,
 		    struct hdr_proc_mtx_param_s *hdr_mtx_param,
@@ -34,6 +37,7 @@ void s5_hdr_hist_config(enum hdr_module_sel module_sel,
 		     struct hdr_proc_lut_param_s *hdr_lut_param,
 		     enum vpp_index_e vpp_index);
 void s5_hdr_hist_config_int(void);
+void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel);
 
 void set_vpu_lut_dma_mif(struct VPU_LUT_DMA_t      *vpu_lut_dma);
 void vpu_lut_dma(enum hdr_module_sel module_sel,

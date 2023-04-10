@@ -2043,9 +2043,9 @@ static unsigned int max_3dlut_count = 3;
 /*bfromkey == 1 data from unifykey */
 /*bfromkey == 2 data from bin file */
 int vpp_set_lut3d(int bfromkey,
-		  int keyindex,
-		  unsigned int p3dlut_in[][3],
-		  int blut3dcheck)
+	int keyindex,
+	unsigned int p3dlut_in[][3],
+	int blut3dcheck)
 {
 #ifdef CONFIG_AMLOGIC_LCD
 	int i, key_len, key_count, ret, offset = 0;
@@ -2088,8 +2088,8 @@ int vpp_set_lut3d(int bfromkey,
 #ifdef CONFIG_AMLOGIC_LCD
 			ret =
 			lcd_unifykey_get_no_header("lcd_3dlut",
-						   (unsigned char *)pkeylutall,
-						   &key_len);
+				(unsigned char *)pkeylutall,
+				&key_len);
 			if (ret < 0) {
 				kfree(pkeylutall);
 				kfree(pkeylut);
@@ -2186,64 +2186,69 @@ int vpp_set_lut3d(int bfromkey,
 		}
 	}
 
-	ctltemp  = READ_VPP_REG(VPP_LUT3D_CTRL);
-	WRITE_VPP_REG(VPP_LUT3D_CTRL, ctltemp & 0xFFFFFFFE);
-	usleep_range(16000, 16001);
+	if (chip_type_id == chip_t3x) {
+		post_lut3d_set(plut3d);
+	} else {
+		ctltemp  = READ_VPP_REG(VPP_LUT3D_CTRL);
+		WRITE_VPP_REG(VPP_LUT3D_CTRL, ctltemp & 0xFFFFFFFE);
+		usleep_range(16000, 16001);
 
-	WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 1);
-	WRITE_VPP_REG(VPP_LUT3D_RAM_ADDR, 0 | (0 << 31));
-	for (i = 0; i < 17 * 17 * 17; i++) {
-		//{comp0, comp1, comp2}
-		WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
-			      ((plut3d[i * 3 + 1] & 0xfff) << 16) |
-			      (plut3d[i * 3 + 2] & 0xfff));
-		WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
-			      (plut3d[i * 3 + 0] & 0xfff)); /*MSB*/
-		if (lut3d_debug == 1 && (i < 17 * 17))
-			pr_info("%d: %03x %03x %03x\n",
-				i,
-				plut3d[i * 3 + 0],
-				plut3d[i * 3 + 1],
-				plut3d[i * 3 + 2]);
-	}
-
-	if (blut3dcheck) {
 		WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 1);
-		WRITE_VPP_REG(VPP_LUT3D_RAM_ADDR, 0 | (1 << 31));
+		WRITE_VPP_REG(VPP_LUT3D_RAM_ADDR, 0 | (0 << 31));
 		for (i = 0; i < 17 * 17 * 17; i++) {
-			dwtemp  = READ_VPP_REG(VPP_LUT3D_RAM_DATA);
-			wrgb[2] = dwtemp & 0xfff;
-			wrgb[1] = (dwtemp >> 16) & 0xfff;
-			dwtemp  = READ_VPP_REG(VPP_LUT3D_RAM_DATA);
-			wrgb[0] = dwtemp & 0xfff;
-			if (i < 97) {
-				P3dlut_regtab[i * 3 + 2] = wrgb[2];
-				P3dlut_regtab[i * 3 + 1] = wrgb[1];
-				P3dlut_regtab[i * 3 + 0] = wrgb[0];
-			}
-			if (wrgb[0] != plut3d[i * 3 + 0]) {
-				pr_info("%s:Error: Lut3d check error at R[%d]\n",
-					__func__, i);
-				WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
-				return 1;
-			}
-			if (wrgb[1] != plut3d[i * 3 + 1]) {
-				pr_info("%s:Error: Lut3d check error at G[%d]\n",
-					__func__, i);
-				WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
-				return 1;
-			}
-			if (wrgb[2] != plut3d[i * 3 + 2]) {
-				pr_info("%s:\n", __func__);
-				WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
-				return 1;
-			}
+			//{comp0, comp1, comp2}
+			WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
+				((plut3d[i * 3 + 1] & 0xfff) << 16) |
+				(plut3d[i * 3 + 2] & 0xfff));
+			WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
+				(plut3d[i * 3 + 0] & 0xfff)); /*MSB*/
+			if (lut3d_debug == 1 && (i < 17 * 17))
+				pr_info("%d: %03x %03x %03x\n",
+					i,
+					plut3d[i * 3 + 0],
+					plut3d[i * 3 + 1],
+					plut3d[i * 3 + 2]);
 		}
-		pr_info("%s: Lut3d check ok!!\n", __func__);
-	}
 
-	WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
-	WRITE_VPP_REG(VPP_LUT3D_CTRL, ctltemp);
+		if (blut3dcheck) {
+			WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 1);
+			WRITE_VPP_REG(VPP_LUT3D_RAM_ADDR, 0 | (1 << 31));
+			for (i = 0; i < 17 * 17 * 17; i++) {
+				dwtemp  = READ_VPP_REG(VPP_LUT3D_RAM_DATA);
+				wrgb[2] = dwtemp & 0xfff;
+				wrgb[1] = (dwtemp >> 16) & 0xfff;
+				dwtemp  = READ_VPP_REG(VPP_LUT3D_RAM_DATA);
+				wrgb[0] = dwtemp & 0xfff;
+				if (i < 97) {
+					P3dlut_regtab[i * 3 + 2] = wrgb[2];
+					P3dlut_regtab[i * 3 + 1] = wrgb[1];
+					P3dlut_regtab[i * 3 + 0] = wrgb[0];
+				}
+				if (wrgb[0] != plut3d[i * 3 + 0]) {
+					pr_info("%s:Error: Lut3d check error at R[%d]\n",
+						__func__, i);
+					WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
+					return 1;
+				}
+				if (wrgb[1] != plut3d[i * 3 + 1]) {
+					pr_info("%s:Error: Lut3d check error at G[%d]\n",
+						__func__, i);
+					WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
+					return 1;
+				}
+				if (wrgb[2] != plut3d[i * 3 + 2]) {
+					pr_info("%s:Error: Lut3d check error at B[%d]\n",
+						__func__, i);
+					WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
+					return 1;
+				}
+			}
+			pr_info("%s: Lut3d check ok!!\n", __func__);
+		}
+
+		WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
+		WRITE_VPP_REG(VPP_LUT3D_CTRL, ctltemp);
+	}
 
 	mutex_unlock(&vpp_lut3d_lock);
 
@@ -2271,28 +2276,33 @@ void lut3d_update(unsigned int p3dlut_in[][3])
 		}
 	}
 
-	VSYNC_WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 1);
-	VSYNC_WRITE_VPP_REG(VPP_LUT3D_RAM_ADDR, 0 | (0 << 31));
-	for (i = 0; i < 17 * 17 * 17; i++) {
-		//{comp0, comp1, comp2}
-		VSYNC_WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
-			      ((plut3d[i * 3 + 1] & 0xfff) << 16) |
-			      (plut3d[i * 3 + 2] & 0xfff));
-		VSYNC_WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
-			      (plut3d[i * 3 + 0] & 0xfff)); /*MSB*/
-		if (lut3d_debug == 1 && (i < 17 * 17))
-			pr_info("%d: %03x %03x %03x\n",
-				i,
-				plut3d[i * 3 + 0],
-				plut3d[i * 3 + 1],
-				plut3d[i * 3 + 2]);
-	}
+	if (chip_type_id == chip_t3x) {
+		post_lut3d_update(plut3d);
+	} else {
+		VSYNC_WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 1);
+		VSYNC_WRITE_VPP_REG(VPP_LUT3D_RAM_ADDR, 0 | (0 << 31));
 
-	VSYNC_WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
+		for (i = 0; i < 17 * 17 * 17; i++) {
+			//{comp0, comp1, comp2}
+			VSYNC_WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
+				((plut3d[i * 3 + 1] & 0xfff) << 16) |
+				(plut3d[i * 3 + 2] & 0xfff));
+			VSYNC_WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
+				(plut3d[i * 3 + 0] & 0xfff)); /*MSB*/
+			if (lut3d_debug == 1 && (i < 17 * 17))
+				pr_info("%d: %03x %03x %03x\n",
+					i,
+					plut3d[i * 3 + 0],
+					plut3d[i * 3 + 1],
+					plut3d[i * 3 + 2]);
+		}
+
+		VSYNC_WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
+	}
 }
 
 int vpp_write_lut3d_section(int index, int section_len,
-			    unsigned int *p3dlut_section_in)
+	unsigned int *p3dlut_section_in)
 {
 	int i;
 	int r_offset, g_offset;
@@ -2301,35 +2311,41 @@ int vpp_write_lut3d_section(int index, int section_len,
 	if (!lut3d_en)
 		return 1;
 
-	index = index * section_len / 17;
+	if (chip_type_id == chip_t3x) {
+		post_lut3d_section_write(index, section_len,
+			p3dlut_section_in);
+	} else {
+		index = index * section_len / 17;
 
-	g_offset = index % 17;
-	r_offset = index / 17;
+		g_offset = index % 17;
+		r_offset = index / 17;
 
-	ctltemp  = READ_VPP_REG(VPP_LUT3D_CTRL);
-	WRITE_VPP_REG(VPP_LUT3D_CTRL, ctltemp & 0xFFFFFFFE);
-	usleep_range(16000, 16001);
+		ctltemp  = READ_VPP_REG(VPP_LUT3D_CTRL);
+		WRITE_VPP_REG(VPP_LUT3D_CTRL, ctltemp & 0xFFFFFFFE);
+		usleep_range(16000, 16001);
 
-	WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 1);
-	/* LUT3D_RAM_ADDR  bit20:16 R, bit12:8 G, bit4:0 B */
-	WRITE_VPP_REG(VPP_LUT3D_RAM_ADDR,
-		      (r_offset << 16) | (g_offset << 8) | (0 << 31));
-	for (i = 0; i < section_len; i++) {
-		//{comp0, comp1, comp2}
-		WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
-			      ((p3dlut_section_in[i * 3 + 1] & 0xfff) << 16) |
-			      (p3dlut_section_in[i * 3 + 2] & 0xfff));
-		WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
-			      (p3dlut_section_in[i * 3 + 0] & 0xfff)); /*MSB*/
+		WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 1);
+		/* LUT3D_RAM_ADDR  bit20:16 R, bit12:8 G, bit4:0 B */
+		WRITE_VPP_REG(VPP_LUT3D_RAM_ADDR,
+			(r_offset << 16) | (g_offset << 8) | (0 << 31));
+		for (i = 0; i < section_len; i++) {
+			//{comp0, comp1, comp2}
+			WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
+				((p3dlut_section_in[i * 3 + 1] & 0xfff) << 16) |
+				(p3dlut_section_in[i * 3 + 2] & 0xfff));
+			WRITE_VPP_REG(VPP_LUT3D_RAM_DATA,
+				(p3dlut_section_in[i * 3 + 0] & 0xfff)); /*MSB*/
+		}
+
+		WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
+		WRITE_VPP_REG(VPP_LUT3D_CTRL, ctltemp);
 	}
 
-	WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
-	WRITE_VPP_REG(VPP_LUT3D_CTRL, ctltemp);
 	return 0;
 }
 
 int vpp_read_lut3d_section(int index, int section_len,
-			   unsigned int *p3dlut_section_out)
+	unsigned int *p3dlut_section_out)
 {
 	int i;
 	int r_offset, g_offset;
@@ -2338,24 +2354,30 @@ int vpp_read_lut3d_section(int index, int section_len,
 	if (!lut3d_en)
 		return 1;
 
-	index = index * section_len / 17;
+	if (chip_type_id == chip_t3x) {
+		post_lut3d_section_read(index, section_len,
+			p3dlut_section_out);
+	} else {
+		index = index * section_len / 17;
 
-	g_offset = index % 17;
-	r_offset = index / 17;
+		g_offset = index % 17;
+		r_offset = index / 17;
 
-	WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 1);
-	/* LUT3D_RAM_ADDR  bit20:16 R, bit12:8 G, bit4:0 B */
-	WRITE_VPP_REG(VPP_LUT3D_RAM_ADDR,
-		      (r_offset << 16) | (g_offset << 8) | (1 << 31));
-	for (i = 0; i < section_len; i++) {
-		dwtemp  = READ_VPP_REG(VPP_LUT3D_RAM_DATA);
-		p3dlut_section_out[i * 3 + 2] = dwtemp & 0xfff;
-		p3dlut_section_out[i * 3 + 1] = (dwtemp >> 16) & 0xfff;
-		dwtemp  = READ_VPP_REG(VPP_LUT3D_RAM_DATA);
-		p3dlut_section_out[i * 3 + 0] = dwtemp & 0xfff;
+		WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 1);
+		/* LUT3D_RAM_ADDR  bit20:16 R, bit12:8 G, bit4:0 B */
+		WRITE_VPP_REG(VPP_LUT3D_RAM_ADDR,
+			(r_offset << 16) | (g_offset << 8) | (1 << 31));
+		for (i = 0; i < section_len; i++) {
+			dwtemp  = READ_VPP_REG(VPP_LUT3D_RAM_DATA);
+			p3dlut_section_out[i * 3 + 2] = dwtemp & 0xfff;
+			p3dlut_section_out[i * 3 + 1] = (dwtemp >> 16) & 0xfff;
+			dwtemp  = READ_VPP_REG(VPP_LUT3D_RAM_DATA);
+			p3dlut_section_out[i * 3 + 0] = dwtemp & 0xfff;
+		}
+
+		WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
 	}
 
-	WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
 	return 0;
 }
 
@@ -2363,13 +2385,17 @@ int vpp_enable_lut3d(int enable)
 {
 	u32 temp;
 
-	WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
+	if (chip_type_id == chip_t3x) {
+		post_lut3d_ctl(WR_VCB, enable);
+	} else {
+		WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL, 0);
 
-	temp  = READ_VPP_REG(VPP_LUT3D_CTRL);
-	temp = (temp & 0xFFFFFF8E) | (enable & 0x1) | (0x7 << 4);
-	/*reg_lut3d_extend_en[6:4]*/
-	/*reg_lut3d_en*/
-	WRITE_VPP_REG(VPP_LUT3D_CTRL, temp);
+		temp  = READ_VPP_REG(VPP_LUT3D_CTRL);
+		temp = (temp & 0xFFFFFF8E) | (enable & 0x1) | (0x7 << 4);
+		/*reg_lut3d_extend_en[6:4]*/
+		/*reg_lut3d_en*/
+		WRITE_VPP_REG(VPP_LUT3D_CTRL, temp);
+	}
 	return 0;
 }
 
@@ -2721,6 +2747,8 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 			post_wb_ctl(md, pq_cfg.wb_en);
 
 			if (chip_type_id == chip_t3x) {
+				wb_en = pq_cfg.wb_en;
+
 				gamma_en = pq_cfg.gamma_en;
 				if (gamma_en)
 					vpp_enable_lcd_gamma_table(0, 0);

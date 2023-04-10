@@ -200,6 +200,7 @@
 #define S5_VD1_HDR2_HIST_CTRL                 0x25dd
 #define S5_VD1_HDR2_HIST_H_START_END          0x25de
 #define S5_VD1_HDR2_HIST_V_START_END          0x25df
+#define S5_VD1_HDR2_HIST_RD                   0x25e0
 
 // s5 vd1 slice1 hdr
 #define S5_VD1_SLICE1_HDR2_CTRL                      0x26a0
@@ -265,6 +266,7 @@
 #define S5_VD1_SLICE1_HDR2_HIST_CTRL                 0x26dd
 #define S5_VD1_SLICE1_HDR2_HIST_H_START_END          0x26de
 #define S5_VD1_SLICE1_HDR2_HIST_V_START_END          0x26df
+#define S5_VD1_SLICE1_HDR2_HIST_RD                   0x26e0
 
 // s5 vd1 slice2 hdr
 #define S5_VD1_SLICE2_HDR2_CTRL                       0x2ca0
@@ -461,6 +463,9 @@
 #define S5_VD2_HDR2_HIST_CTRL                 0x383d
 #define S5_VD2_HDR2_HIST_H_START_END          0x383e
 #define S5_VD2_HDR2_HIST_V_START_END          0x383f
+#define S5_VD2_HDR2_HIST_RD                   0x3840
+
+#define S5_VPP_VD_PREBLND_H_V_SIZE            0x3201
 
 // s5 vdin1 hdr2
 #define VDIN_PP_HDR2_CTRL                                      0x0291 // RW

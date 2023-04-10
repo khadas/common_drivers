@@ -32,6 +32,7 @@
 #include "am_hdr10_plus.h"
 #include "am_hdr10_plus_ootf.h"
 #include "../set_hdr2_v0.h"
+#include "../s5_set_hdr2_v0.h"
 
 unsigned int hdr10_plus_printk;
 module_param(hdr10_plus_printk, uint, 0664);
@@ -877,8 +878,12 @@ void vframe_hdr_sei_s_init(struct hdr10_plus_sei_s *hdr10_plus_sei,
 		0, 10000, 90, 2000, 4000, 8000, 10000, 10001, 10002
 	};
 
-	for (i = 0; i < 9; i++)
-		percentilevalue_init[i] = percentile[i];
+	for (i = 0; i < 9; i++) {
+		if (chip_type_id == chip_t3x)
+			percentilevalue_init[i] = s5_percentile[i];
+		else
+			percentilevalue_init[i] = percentile[i];
+	}
 
 	if (hdr10_plus_printk & 8) {
 		for (i = 0; i < 9; i++) {

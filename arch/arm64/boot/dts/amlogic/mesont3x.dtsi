@@ -2798,7 +2798,7 @@
 
 	amlvecm: amlvecm {
 		compatible = "amlogic, vecm-t3x";
-		status = "okay";
+		status = "disabled";
 		dev_name = "aml_vecm";
 		/*status = "okay";*/
 		/*gamma_en = <1>;*/ /*1:enable ;0:disable*/

@@ -1244,7 +1244,7 @@ void s5_set_c_gain(enum hdr_module_sel module_sel,
 	}
 }
 
-static u32 s5_hdr_hist[NUM_HDR_HIST][128];
+u32 s5_hdr_hist[NUM_HDR_HIST][128];
 static u32 hdr_max_rgb;
 static u8 percentile_percent[9] = {
 	1, 5, 10, 25, 50, 75, 90, 95, 99
@@ -1285,21 +1285,29 @@ void disable_ai_color(void)
 }
 
 void s5_set_hist(enum hdr_module_sel module_sel, int enable,
-	      enum hdr_hist_sel hist_sel,
+	enum hdr_hist_sel hist_sel,
 	unsigned int hist_width, unsigned int hist_height)
 {
 	unsigned int hist_ctrl_port = 0;
+	unsigned int hist_hs_he;
+	unsigned int hist_vs_ve;
+	unsigned int tmp;
 
-	if (module_sel == VD1_HDR)
+	if (module_sel == VD1_HDR) {
 		hist_ctrl_port = S5_VD1_HDR2_HIST_CTRL;
-	else
+		hist_hs_he = S5_VD1_HDR2_HIST_H_START_END;
+		hist_vs_ve = S5_VD1_HDR2_HIST_V_START_END;
+	} else {
 		return;
+	}
 
 	if (enable) {
-		WRITE_VPP_REG_S5(hist_ctrl_port + 1, hist_width - 1);
-		WRITE_VPP_REG_S5(hist_ctrl_port + 2, hist_height - 1);
+		WRITE_VPP_REG_S5(hist_hs_he, hist_width - 1);
+		WRITE_VPP_REG_S5(hist_vs_ve, hist_height - 1);
+
+		tmp = READ_VPP_REG_S5(hist_ctrl_port);
 		WRITE_VPP_REG_S5(hist_ctrl_port,
-			(1 << 4) | (hist_sel << 0));
+			tmp | (1 << 4) | (hist_sel << 0));
 	} else if (READ_VPP_REG_BITS(hist_ctrl_port, 4, 1)) {
 		WRITE_VPP_REG_BITS_S5(hist_ctrl_port, 0, 4, 1);
 		hdr_max_rgb = 0;
@@ -1326,18 +1334,22 @@ void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 
 	if (module_sel == VD1_HDR) {
 		hist_ctrl_port = S5_VD1_HDR2_HIST_CTRL;
-		hdr2_hist_rd = S5_VD1_HDR2_HIST_CTRL + 3;
+		hdr2_hist_rd = S5_VD1_HDR2_HIST_RD;
 	} else if (module_sel == VD2_HDR) {
 		hist_ctrl_port = S5_VD2_HDR2_HIST_CTRL;
-		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
-			hdr2_hist_rd = VD2_HDR2_HIST_RD_2;
-		else
-			hdr2_hist_rd = S5_VD2_HDR2_HIST_CTRL + 3;
+		hdr2_hist_rd = S5_VD2_HDR2_HIST_RD;
 	}
 
 	if (module_sel == VD1_HDR) {
-		hist_width = READ_VPP_REG_BITS(VPP_PREBLEND_H_SIZE, 0, 13);
-		hist_height = READ_VPP_REG_BITS(VPP_PREBLEND_H_SIZE, 16, 13);
+		if (chip_type_id == chip_t3x) {
+			hist_width = READ_VPP_REG_BITS(S5_VPP_VD_PREBLND_H_V_SIZE,
+				0, 14);
+			hist_height = READ_VPP_REG_BITS(S5_VPP_VD_PREBLND_H_V_SIZE,
+				16, 14);
+		} else {
+			hist_width = READ_VPP_REG_BITS(VPP_PREBLEND_H_SIZE, 0, 13);
+			hist_height = READ_VPP_REG_BITS(VPP_PREBLEND_H_SIZE, 16, 13);
+		}
 	} else if (module_sel == VD2_HDR) {
 		hist_width = READ_VPP_REG_BITS(VPP_VD2_HDR_IN_SIZE, 0, 13);
 		hist_height = READ_VPP_REG_BITS(VPP_VD2_HDR_IN_SIZE, 16, 13);
@@ -1347,22 +1359,34 @@ void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 		return;
 
 	if ((hist_height != READ_VPP_REG(hist_ctrl_port + 2) + 1) ||
-	    (hist_width != READ_VPP_REG(hist_ctrl_port + 1) + 1) ||
-	    /*(READ_VPP_REG_BITS(hist_ctrl_port, 4, 1) == 0) ||*/
-	    (READ_VPP_REG_BITS(hist_ctrl_port, 0, 3) != hist_sel)) {
+		(hist_width != READ_VPP_REG(hist_ctrl_port + 1) + 1) ||
+		/*(READ_VPP_REG_BITS(hist_ctrl_port, 4, 1) == 0) ||*/
+		(READ_VPP_REG_BITS(hist_ctrl_port, 0, 3) != hist_sel)) {
 		s5_set_hist(module_sel, 1, hist_sel, hist_width, hist_height);
+		pr_csc(96, "%s: module_sel = %d, hist_sel = %d, hist_w = %d, hist_h= %d\n",
+			__func__, module_sel, hist_sel, hist_width, hist_height);
 		return;
 	}
 
 	for (i = 0; i < NUM_HDR_HIST - 1; i++)
 		memcpy(s5_hdr_hist[i], s5_hdr_hist[i + 1], 128 * sizeof(u32));
+
 	memset(s5_percentile, 0, 9 * sizeof(u32));
 	total_pixel = 0;
+
+	pr_csc(96, "%s: hist_ctrl_port = %x, hdr2_hist_rd = %x\n",
+		__func__, hist_ctrl_port, hdr2_hist_rd);
+
 	for (i = 0; i < 128; i++) {
-		WRITE_VPP_REG_BITS_S5(hist_ctrl_port, i, 16, 8);
+		if (chip_type_id == chip_t3x)
+			WRITE_VPP_REG_BITS_S5(hist_ctrl_port, i, 17, 8);
+		else
+			WRITE_VPP_REG_BITS_S5(hist_ctrl_port, i, 16, 8);
 		num_pixel = READ_VPP_REG(hdr2_hist_rd);
 		total_pixel += num_pixel;
 		s5_hdr_hist[NUM_HDR_HIST - 1][i] = num_pixel;
+		pr_csc(96, "%s: num_pixel[%d] = %d\n",
+			__func__, i, num_pixel);
 	}
 	num_pixel = 0;
 
@@ -1386,8 +1410,10 @@ void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 			if (s5_percentile[8] != 0)
 				break;
 		}
+
 		if (s5_percentile[0] == 0)
 			s5_percentile[0] = 1;
+
 		for (i = 1; i < 9; i++) {
 			if (s5_percentile[i] == 0)
 				s5_percentile[i] = s5_percentile[i - 1] + 1;
@@ -1419,13 +1445,14 @@ void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 }
 
 void s5_hdr_hist_config(enum hdr_module_sel module_sel,
-		     struct hdr_proc_lut_param_s *hdr_lut_param,
-		     enum vpp_index_e vpp_index)
+	struct hdr_proc_lut_param_s *hdr_lut_param,
+	enum vpp_index_e vpp_index)
 {
 	unsigned int hist_ctrl;
 	unsigned int hist_hs_he;
 	unsigned int hist_vs_ve;
 	int vpp_sel = 0;/*0xfe;*/
+	unsigned int tmp;
 
 	if (module_sel == VD1_HDR) {
 		hist_ctrl = S5_VD1_HDR2_HIST_CTRL;
@@ -1468,7 +1495,11 @@ void s5_hdr_hist_config(enum hdr_module_sel module_sel,
 		return;
 
 	if (hdr_lut_param->hist_en) {
-		VSYNC_WRITE_VPP_REG_VPP_SEL(hist_ctrl, 0, vpp_sel);
+		if (chip_type_id == chip_t3x)
+			tmp = 0x10000;
+		else
+			tmp = 0x0;
+		VSYNC_WRITE_VPP_REG_VPP_SEL(hist_ctrl, tmp, vpp_sel);
 		VSYNC_WRITE_VPP_REG_VPP_SEL(hist_hs_he, 0xeff, vpp_sel);
 		VSYNC_WRITE_VPP_REG_VPP_SEL(hist_vs_ve, 0x86f, vpp_sel);
 	} else {

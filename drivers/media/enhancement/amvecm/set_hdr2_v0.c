@@ -2987,7 +2987,8 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 			get_cpu_type() != MESON_CPU_MAJOR_ID_T7 &&
 			get_cpu_type() != MESON_CPU_MAJOR_ID_T5W &&
 			get_cpu_type() != MESON_CPU_MAJOR_ID_S5 &&
-			chip_type_id != chip_t5m)
+			chip_type_id != chip_t5m &&
+			chip_type_id != chip_t3x)
 			return hdr_process_select;
 		break;
 	case VD3_HDR:

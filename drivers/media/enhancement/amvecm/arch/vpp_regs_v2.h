@@ -833,6 +833,11 @@
 #define VPP_LC_STTS_BLACK_INFO2                   0x5aee
 #define VPP_LC_STTS_DMA_ERROR_RO                  0x5aef
 
+#define VPP_LUT3D_CTRL                            0x2540
+#define VPP_LUT3D_CBUS2RAM_CTRL                   0x2541
+#define VPP_LUT3D_RAM_ADDR                        0x2542
+#define VPP_LUT3D_RAM_DATA                        0x2543
+
 /* #define VDIN_HIST_MAX_MIN                        */
 #define VI_HIST_MAX_BIT                    8
 #define VI_HIST_MAX_WID                    8

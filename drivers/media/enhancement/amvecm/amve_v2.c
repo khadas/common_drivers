@@ -32,6 +32,10 @@ static int multi_slice_case;
 module_param(multi_slice_case, int, 0644);
 MODULE_PARM_DESC(multi_slice_case, "multi_slice_case after t3x");
 
+static int hist_dma_case;
+module_param(hist_dma_case, int, 0644);
+MODULE_PARM_DESC(hist_dma_case, "hist_dma_case after t3x");
+
 static int vev2_dbg;
 module_param(vev2_dbg, int, 0644);
 MODULE_PARM_DESC(vev2_dbg, "ve dbg after s5");
@@ -41,6 +45,9 @@ MODULE_PARM_DESC(vev2_dbg, "ve dbg after s5");
 		if (vev2_dbg & 0x1)\
 			pr_info("AMVE: " fmt, ## args);\
 	} while (0)\
+
+/*ve module slice0 offset*/
+unsigned int ve_addr_offset = 0x600;
 
 /*ve module slice1~slice3 offset*/
 unsigned int ve_reg_ofst[3] = {
@@ -59,11 +66,6 @@ unsigned int sr_sharp_reg_ofst[2] = {
 /*lc curve module slice0~slice1 offset*/
 unsigned int lc_reg_ofst[2] = {
 	0x0, 0x40
-};
-
-/*cm module slice0~slice1 offset*/
-unsigned int cm_reg_ofst[2] = {
-	0x0, 0xb00
 };
 
 int get_slice_max(void)
@@ -90,7 +92,10 @@ static void ve_brightness_cfg(int val,
 	switch (vadj_idx) {
 	case VE_VADJ1:
 		if (slice == SLICE0)
-			reg = VPP_VADJ1_Y;
+			if (chip_type_id == chip_t3x)
+				reg = VPP_SLICE1_VADJ1_Y + ve_addr_offset;
+			else
+				reg = VPP_VADJ1_Y;
 		else
 			reg = VPP_SLICE1_VADJ1_Y + ve_reg_ofst[slice - 1];
 		break;
@@ -106,7 +111,8 @@ static void ve_brightness_cfg(int val,
 	else if (mode == WR_DMA)
 		VSYNC_WRITE_VPP_REG_BITS(reg, val, 8, 11);
 
-	pr_amve_v2("brigtness: val = %d, slice = %d", val, slice);
+	pr_amve_v2("brigtness: val = %d, slice = %d\n", val, slice);
+	pr_amve_v2("brigtness: addr = %x\n", reg);
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -125,7 +131,10 @@ static void ve_contrast_cfg(int val,
 	switch (vadj_idx) {
 	case VE_VADJ1:
 		if (slice == SLICE0)
-			reg = VPP_VADJ1_Y;
+			if (chip_type_id == chip_t3x)
+				reg = VPP_SLICE1_VADJ1_Y + ve_addr_offset;
+			else
+				reg = VPP_VADJ1_Y;
 		else
 			reg = VPP_SLICE1_VADJ1_Y + ve_reg_ofst[slice - 1];
 		break;
@@ -141,7 +150,8 @@ static void ve_contrast_cfg(int val,
 	else if (mode == WR_DMA)
 		VSYNC_WRITE_VPP_REG_BITS(reg, val, 0, 8);
 
-	pr_amve_v2("contrast: val = %d, slice = %d", val, slice);
+	pr_amve_v2("contrast: val = %d, slice = %d\n", val, slice);
+	pr_amve_v2("contrast: addr = %x\n", reg);
 }
 #endif
 
@@ -150,7 +160,6 @@ static void ve_sat_hue_mab_cfg(int mab,
 	enum vpp_slice_e slice)
 {
 	int reg_mab;
-	//int reg_mcd;
 	int slice_max;
 
 	slice_max = get_slice_max();
@@ -161,16 +170,16 @@ static void ve_sat_hue_mab_cfg(int mab,
 	switch (vadj_idx) {
 	case VE_VADJ1:
 		if (slice == SLICE0) {
-			reg_mab = VPP_VADJ1_MA_MB;
-			//reg_mcd = VPP_VADJ1_MC_MD;
+			if (chip_type_id == chip_t3x)
+				reg_mab = VPP_SLICE1_VADJ1_MA_MB + ve_addr_offset;
+			else
+				reg_mab = VPP_VADJ1_MA_MB;
 		} else {
 			reg_mab = VPP_SLICE1_VADJ1_MA_MB + ve_reg_ofst[slice - 1];
-			//reg_mcd = VPP_SLICE1_VADJ1_MC_MD + ve_reg_ofst[slice - 1];
 		}
 		break;
 	case VE_VADJ2:
 		reg_mab = VPP_VADJ2_MA_MB + pst_reg_ofst[slice];
-		//reg_mcd = VPP_VADJ2_MC_MD + pst_reg_ofst[slice];
 		break;
 	default:
 		break;
@@ -181,14 +190,14 @@ static void ve_sat_hue_mab_cfg(int mab,
 	else if (mode == WR_DMA)
 		VSYNC_WRITE_VPP_REG(reg_mab, mab);
 
-	pr_amve_v2("sat_hue: mab = %d, slice = %d", mab, slice);
+	pr_amve_v2("sat_hue: mab = %d, slice = %d\n", mab, slice);
+	pr_amve_v2("sat_hue: addr = %x\n", reg_mab);
 }
 
 static void ve_sat_hue_mcd_cfg(int mcd,
 	enum wr_md_e mode, enum vadj_index_e vadj_idx,
 	enum vpp_slice_e slice)
 {
-	//int reg_mab;
 	int reg_mcd;
 	int slice_max;
 
@@ -200,15 +209,15 @@ static void ve_sat_hue_mcd_cfg(int mcd,
 	switch (vadj_idx) {
 	case VE_VADJ1:
 		if (slice == SLICE0) {
-			//reg_mab = VPP_VADJ1_MA_MB;
-			reg_mcd = VPP_VADJ1_MC_MD;
+			if (chip_type_id == chip_t3x)
+				reg_mcd = VPP_SLICE1_VADJ1_MC_MD + ve_addr_offset;
+			else
+				reg_mcd = VPP_VADJ1_MC_MD;
 		} else {
-			//reg_mab = VPP_SLICE1_VADJ1_MA_MB + ve_reg_ofst[slice - 1];
 			reg_mcd = VPP_SLICE1_VADJ1_MC_MD + ve_reg_ofst[slice - 1];
 		}
 		break;
 	case VE_VADJ2:
-		//reg_mab = VPP_VADJ2_MA_MB + pst_reg_ofst[slice];
 		reg_mcd = VPP_VADJ2_MC_MD + pst_reg_ofst[slice];
 		break;
 	default:
@@ -220,7 +229,8 @@ static void ve_sat_hue_mcd_cfg(int mcd,
 	else if (mode == WR_DMA)
 		VSYNC_WRITE_VPP_REG(reg_mcd, mcd);
 
-	pr_amve_v2("sat_hue: mcd = %d, slice = %d", mcd, slice);
+	pr_amve_v2("sat_hue: mcd = %d, slice = %d\n", mcd, slice);
+	pr_amve_v2("sat_hue: addr = %x\n", reg_mcd);
 }
 
 void ve_brigtness_set(int val,
@@ -274,18 +284,24 @@ void ve_color_mcd_set(int mcd,
 	slice_max = get_slice_max();
 
 	for (i = SLICE0; i < slice_max; i++)
-
 		ve_sat_hue_mcd_cfg(mcd, mode, vadj_idx, i);
 }
 
 int ve_brightness_contrast_get(enum vadj_index_e vadj_idx)
 {
 	int val = 0;
+	unsigned int reg = VPP_VADJ1_Y;
 
 	if (vadj_idx == VE_VADJ1)
-		val = READ_VPP_REG(VPP_VADJ1_Y);
+		if (chip_type_id == chip_t3x)
+			reg = VPP_SLICE1_VADJ1_Y + ve_addr_offset;
+		else
+			reg = VPP_VADJ1_Y;
 	else if (vadj_idx == VE_VADJ2)
-		val = READ_VPP_REG(VPP_VADJ2_Y);
+		reg = VPP_VADJ2_Y;
+
+	val = READ_VPP_REG(reg);
+	pr_amve_v2("get vadj_y: addr = %x\n", reg);
 	return val;
 }
 
@@ -313,18 +329,41 @@ void vpp_mtx_config_v2(struct matrix_coef_s *coef,
 	switch (slice) {
 	case SLICE0:
 		if (mtx_sel == VD1_MTX) {
-			reg_pre_offset0_1 = VPP_VD1_MATRIX_COEF00_01;
-			reg_pre_offset2 = VPP_VD1_MATRIX_PRE_OFFSET2;
-			reg_coef00_01 = VPP_VD1_MATRIX_COEF00_01;
-			reg_coef02_10 = VPP_VD1_MATRIX_COEF02_10;
-			reg_coef11_12 = VPP_VD1_MATRIX_COEF11_12;
-			reg_coef20_21 = VPP_VD1_MATRIX_COEF20_21;
-			reg_coef22 = VPP_VD1_MATRIX_COEF22;
-			reg_offset0_1 = VPP_VD1_MATRIX_OFFSET0_1;
-			reg_offset2 = VPP_VD1_MATRIX_OFFSET2;
-			reg_en_ctl = VPP_VD1_MATRIX_EN_CTRL;
+			if (chip_type_id == chip_t3x) {
+				reg_pre_offset0_1 = VPP_SLICE1_VD1_MATRIX_PRE_OFFSET0_1 +
+					ve_addr_offset;
+				reg_pre_offset2 = VPP_SLICE1_VD1_MATRIX_PRE_OFFSET2 +
+					ve_addr_offset;
+				reg_coef00_01 = VPP_SLICE1_VD1_MATRIX_COEF00_01 +
+					ve_addr_offset;
+				reg_coef02_10 = VPP_SLICE1_VD1_MATRIX_COEF02_10 +
+					ve_addr_offset;
+				reg_coef11_12 = VPP_SLICE1_VD1_MATRIX_COEF11_12 +
+					ve_addr_offset;
+				reg_coef20_21 = VPP_SLICE1_VD1_MATRIX_COEF20_21 +
+					ve_addr_offset;
+				reg_coef22 = VPP_SLICE1_VD1_MATRIX_COEF22 +
+					ve_addr_offset;
+				reg_offset0_1 = VPP_SLICE1_VD1_MATRIX_OFFSET0_1 +
+					ve_addr_offset;
+				reg_offset2 = VPP_SLICE1_VD1_MATRIX_OFFSET2 +
+					ve_addr_offset;
+				reg_en_ctl = VPP_SLICE1_VD1_MATRIX_EN_CTRL +
+					ve_addr_offset;
+			} else {
+				reg_pre_offset0_1 = VPP_VD1_MATRIX_PRE_OFFSET0_1;
+				reg_pre_offset2 = VPP_VD1_MATRIX_PRE_OFFSET2;
+				reg_coef00_01 = VPP_VD1_MATRIX_COEF00_01;
+				reg_coef02_10 = VPP_VD1_MATRIX_COEF02_10;
+				reg_coef11_12 = VPP_VD1_MATRIX_COEF11_12;
+				reg_coef20_21 = VPP_VD1_MATRIX_COEF20_21;
+				reg_coef22 = VPP_VD1_MATRIX_COEF22;
+				reg_offset0_1 = VPP_VD1_MATRIX_OFFSET0_1;
+				reg_offset2 = VPP_VD1_MATRIX_OFFSET2;
+				reg_en_ctl = VPP_VD1_MATRIX_EN_CTRL;
+			}
 		} else if (mtx_sel == POST2_MTX) {
-			reg_pre_offset0_1 = VPP_POST2_MATRIX_COEF00_01;
+			reg_pre_offset0_1 = VPP_POST2_MATRIX_PRE_OFFSET0_1;
 			reg_pre_offset2 = VPP_POST2_MATRIX_PRE_OFFSET2;
 			reg_coef00_01 = VPP_POST2_MATRIX_COEF00_01;
 			reg_coef02_10 = VPP_POST2_MATRIX_COEF02_10;
@@ -335,7 +374,7 @@ void vpp_mtx_config_v2(struct matrix_coef_s *coef,
 			reg_offset2 = VPP_POST2_MATRIX_OFFSET2;
 			reg_en_ctl = VPP_POST2_MATRIX_EN_CTRL;
 		} else if (mtx_sel == POST_MTX) {
-			reg_pre_offset0_1 = VPP_POST_MATRIX_COEF00_01;
+			reg_pre_offset0_1 = VPP_POST_MATRIX_PRE_OFFSET0_1;
 			reg_pre_offset2 = VPP_POST_MATRIX_PRE_OFFSET2;
 			reg_coef00_01 = VPP_POST_MATRIX_COEF00_01;
 			reg_coef02_10 = VPP_POST_MATRIX_COEF02_10;
@@ -372,7 +411,7 @@ void vpp_mtx_config_v2(struct matrix_coef_s *coef,
 			reg_en_ctl = VPP_SLICE1_VD1_MATRIX_EN_CTRL +
 				ve_reg_ofst[slice - 1];
 		} else if (mtx_sel == POST2_MTX) {
-			reg_pre_offset0_1 = VPP_POST2_MATRIX_COEF00_01 +
+			reg_pre_offset0_1 = VPP_POST2_MATRIX_PRE_OFFSET0_1 +
 				pst_reg_ofst[slice];
 			reg_pre_offset2 = VPP_POST2_MATRIX_PRE_OFFSET2 +
 				pst_reg_ofst[slice];
@@ -393,7 +432,7 @@ void vpp_mtx_config_v2(struct matrix_coef_s *coef,
 			reg_en_ctl = VPP_POST2_MATRIX_EN_CTRL +
 				pst_reg_ofst[slice];
 		} else if (mtx_sel == POST_MTX) {
-			reg_pre_offset0_1 = VPP_POST_MATRIX_COEF00_01 +
+			reg_pre_offset0_1 = VPP_POST_MATRIX_PRE_OFFSET0_1 +
 				pst_reg_ofst[slice];
 			reg_pre_offset2 = VPP_POST_MATRIX_PRE_OFFSET2 +
 				pst_reg_ofst[slice];
@@ -426,13 +465,13 @@ void vpp_mtx_config_v2(struct matrix_coef_s *coef,
 		WRITE_VPP_REG(reg_pre_offset2, coef->pre_offset[2]);
 		WRITE_VPP_REG(reg_coef00_01,
 			(coef->matrix_coef[0][0] << 16) | coef->matrix_coef[0][1]);
-		WRITE_VPP_REG(reg_coef00_01,
+		WRITE_VPP_REG(reg_coef02_10,
 			(coef->matrix_coef[0][2] << 16) | coef->matrix_coef[1][0]);
-		WRITE_VPP_REG(reg_coef00_01,
+		WRITE_VPP_REG(reg_coef11_12,
 			(coef->matrix_coef[1][1] << 16) | coef->matrix_coef[1][2]);
-		WRITE_VPP_REG(reg_coef00_01,
+		WRITE_VPP_REG(reg_coef20_21,
 			(coef->matrix_coef[2][0] << 16) | coef->matrix_coef[2][1]);
-		WRITE_VPP_REG(reg_coef00_01, coef->matrix_coef[2][2]);
+		WRITE_VPP_REG(reg_coef22, coef->matrix_coef[2][2]);
 		WRITE_VPP_REG(reg_offset0_1,
 			(coef->post_offset[0] << 16) | coef->post_offset[1]);
 		WRITE_VPP_REG(reg_offset2, coef->post_offset[2]);
@@ -444,13 +483,13 @@ void vpp_mtx_config_v2(struct matrix_coef_s *coef,
 		VSYNC_WRITE_VPP_REG(reg_pre_offset2, coef->pre_offset[2]);
 		VSYNC_WRITE_VPP_REG(reg_coef00_01,
 			(coef->matrix_coef[0][0] << 16) | coef->matrix_coef[0][1]);
-		VSYNC_WRITE_VPP_REG(reg_coef00_01,
+		VSYNC_WRITE_VPP_REG(reg_coef02_10,
 			(coef->matrix_coef[0][2] << 16) | coef->matrix_coef[1][0]);
-		VSYNC_WRITE_VPP_REG(reg_coef00_01,
+		VSYNC_WRITE_VPP_REG(reg_coef11_12,
 			(coef->matrix_coef[1][1] << 16) | coef->matrix_coef[1][2]);
-		VSYNC_WRITE_VPP_REG(reg_coef00_01,
+		VSYNC_WRITE_VPP_REG(reg_coef20_21,
 			(coef->matrix_coef[2][0] << 16) | coef->matrix_coef[2][1]);
-		VSYNC_WRITE_VPP_REG(reg_coef00_01, coef->matrix_coef[2][2]);
+		VSYNC_WRITE_VPP_REG(reg_coef22, coef->matrix_coef[2][2]);
 		VSYNC_WRITE_VPP_REG(reg_offset0_1,
 			(coef->post_offset[0] << 16) | coef->post_offset[1]);
 		VSYNC_WRITE_VPP_REG(reg_offset2, coef->post_offset[2]);
@@ -465,18 +504,22 @@ void cm_top_ctl(enum wr_md_e mode, int en)
 {
 	int i;
 	int slice_max;
+	unsigned int reg = VPP_VE_ENABLE_CTRL;
+
+	if (chip_type_id == chip_t3x)
+		reg = VPP_SLICE1_VE_ENABLE_CTRL + ve_addr_offset;
 
 	slice_max = get_slice_max();
 
 	switch (mode) {
 	case WR_VCB:
-		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, en, 4, 1);
+		WRITE_VPP_REG_BITS(reg, en, 4, 1);
 		for (i = SLICE1; i < slice_max; i++)
 			WRITE_VPP_REG_BITS(VPP_SLICE1_VE_ENABLE_CTRL + i - SLICE1,
 				en, 4, 1);
 		break;
 	case WR_DMA:
-		VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, en, 4, 1);
+		VSYNC_WRITE_VPP_REG_BITS(reg, en, 4, 1);
 		for (i = SLICE1; i < slice_max; i++)
 			VSYNC_WRITE_VPP_REG_BITS(VPP_SLICE1_VE_ENABLE_CTRL + i - SLICE1,
 				en, 4, 1);
@@ -490,8 +533,16 @@ struct cm_port_s get_cm_port(void)
 {
 	struct cm_port_s port;
 
-	port.cm_addr_port[0] = VPP_CHROMA_ADDR_PORT;
-	port.cm_data_port[0] = VPP_CHROMA_DATA_PORT;
+	if (chip_type_id == chip_t3x) {
+		port.cm_addr_port[0] = VPP_SLICE1_CHROMA_ADDR_PORT +
+			ve_addr_offset;
+		port.cm_data_port[0] = VPP_SLICE1_CHROMA_DATA_PORT +
+			ve_addr_offset;
+	} else {
+		port.cm_addr_port[0] = VPP_CHROMA_ADDR_PORT;
+		port.cm_data_port[0] = VPP_CHROMA_DATA_PORT;
+	}
+
 	port.cm_addr_port[1] = VPP_SLICE1_CHROMA_ADDR_PORT;
 	port.cm_data_port[1] = VPP_SLICE1_CHROMA_DATA_PORT;
 	port.cm_addr_port[2] = VPP_SLICE2_CHROMA_ADDR_PORT;
@@ -500,6 +551,80 @@ struct cm_port_s get_cm_port(void)
 	port.cm_data_port[3] = VPP_SLICE3_CHROMA_DATA_PORT;
 
 	return port;
+}
+
+void cm_hist_get(struct vframe_s *vf,
+	unsigned int hue_bin0, unsigned int sat_bin0)
+{
+	int i;
+	struct cm_port_s port;
+
+	if (!vf || !hue_bin0 || !sat_bin0)
+		return;
+
+	if (hist_dma_case) {
+		if (multi_slice_case) {
+			am_dma_get_blend_cm2_hist_hue(vf->prop.hist.vpp_hue_gamma,
+				32);
+			am_dma_get_blend_cm2_hist_sat(vf->prop.hist.vpp_sat_gamma,
+				32);
+		} else {
+			am_dma_get_mif_data_cm2_hist_hue(0,
+				vf->prop.hist.vpp_hue_gamma, 32);
+			am_dma_get_mif_data_cm2_hist_sat(0,
+				vf->prop.hist.vpp_sat_gamma, 32);
+		}
+	} else {
+		port = get_cm_port();
+
+		for (i = 0; i < 32; i++) {
+			WRITE_VPP_REG(port.cm_addr_port[0],
+				hue_bin0 + i);
+			vf->prop.hist.vpp_hue_gamma[i] =
+				READ_VPP_REG(port.cm_data_port[0]);
+		}
+
+		for (i = 0; i < 32; i++) {
+			WRITE_VPP_REG(port.cm_addr_port[0],
+				sat_bin0 + i);
+			vf->prop.hist.vpp_sat_gamma[i] =
+				READ_VPP_REG(port.cm_data_port[0]);
+		}
+	}
+}
+
+void cm_hist_by_type_get(enum cm_hist_e hist_sel,
+	unsigned int *data, unsigned int length,
+	unsigned int addr_bin0)
+{
+	int i;
+	struct cm_port_s port;
+
+	if (!data || !length || !addr_bin0)
+		return;
+
+	if (hist_dma_case) {
+		if (multi_slice_case) {
+			if (hist_sel == CM_HUE_HIST)
+				am_dma_get_blend_cm2_hist_hue(data, length);
+			else
+				am_dma_get_blend_cm2_hist_sat(data, length);
+		} else {
+			if (hist_sel == CM_HUE_HIST)
+				am_dma_get_mif_data_cm2_hist_hue(0, data, length);
+			else
+				am_dma_get_mif_data_cm2_hist_sat(0, data, length);
+		}
+	} else {
+		port = get_cm_port();
+
+		for (i = 0; i < length; i++) {
+			WRITE_VPP_REG(port.cm_addr_port[0],
+				addr_bin0 + i);
+			data[i] =
+				READ_VPP_REG(port.cm_data_port[0]);
+		}
+	}
 }
 
 /*modules after post matrix*/
@@ -552,13 +677,13 @@ void post_gainoff_cfg(struct tcon_rgb_ogo_s *p,
 			((p->b_pre_offset  <<  0) & 0x00001fff));
 	}
 
-	pr_amve_v2("go_en: %d, slice = %d",
+	pr_amve_v2("go_en: %d, slice = %d\n",
 		p->en, slice);
-	pr_amve_v2("go_gain: %d, %d, %d",
+	pr_amve_v2("go_gain: %d, %d, %d\n",
 		p->r_gain, p->g_gain, p->b_gain);
-	pr_amve_v2("go_pre_offset: %d, %d, %d",
+	pr_amve_v2("go_pre_offset: %d, %d, %d\n",
 		p->r_pre_offset, p->g_pre_offset, p->b_pre_offset);
-	pr_amve_v2("go_post_offset: %d, %d, %d",
+	pr_amve_v2("go_post_offset: %d, %d, %d\n",
 		p->r_post_offset, p->g_post_offset, p->b_post_offset);
 }
 
@@ -610,13 +735,17 @@ void ve_vadj_ctl(enum wr_md_e mode, enum vadj_index_e vadj_idx, int en)
 {
 	int i;
 	int slice_max;
+	unsigned int reg = VPP_VADJ1_MISC;
+
+	if (chip_type_id == chip_t3x)
+		reg = VPP_SLICE1_VADJ1_MISC + ve_addr_offset;
 
 	slice_max = get_slice_max();
 
 	switch (mode) {
 	case WR_VCB:
 		if (vadj_idx == VE_VADJ1) {
-			WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, en, 0, 1);
+			WRITE_VPP_REG_BITS(reg, en, 0, 1);
 			for (i = SLICE1; i < slice_max; i++)
 				WRITE_VPP_REG_BITS(VPP_SLICE1_VADJ1_MISC + ve_reg_ofst[i - 1],
 					en, 0, 1);
@@ -628,7 +757,7 @@ void ve_vadj_ctl(enum wr_md_e mode, enum vadj_index_e vadj_idx, int en)
 		break;
 	case WR_DMA:
 		if (vadj_idx == VE_VADJ1) {
-			VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, en, 0, 1);
+			VSYNC_WRITE_VPP_REG_BITS(reg, en, 0, 1);
 			for (i = SLICE1; i < slice_max; i++)
 				VSYNC_WRITE_VPP_REG_BITS(VPP_SLICE1_VADJ1_MISC +
 					ve_reg_ofst[i - 1], en, 0, 1);
@@ -642,7 +771,7 @@ void ve_vadj_ctl(enum wr_md_e mode, enum vadj_index_e vadj_idx, int en)
 		break;
 	}
 
-	pr_amve_v2("vadj_ctl: en = %d, vadj_idx = %d", en, vadj_idx);
+	pr_amve_v2("vadj_ctl: en = %d, vadj_idx = %d\n", en, vadj_idx);
 }
 
 /*blue stretch can only use on slice0 on s5*/
@@ -654,8 +783,8 @@ void ve_bs_ctl(enum wr_md_e mode, int en)
 	unsigned int reg_bs_0_slice1 = VPP_SLICE1_BLUE_STRETCH_1;
 
 	if (chip_type_id == chip_t3x) {
-		reg_bs_0 = 0x1d78;
 		reg_bs_0_slice1 = 0x2878;
+		reg_bs_0 = reg_bs_0_slice1 + ve_addr_offset;
 	}
 
 	slice_max = get_slice_max();
@@ -675,46 +804,60 @@ void ve_bs_ctl(enum wr_md_e mode, int en)
 					ve_reg_ofst[i - 1], en, 31, 1);
 		}
 	}
+
+	pr_amve_v2("bs_ctl: en = %d\n", en);
 }
 
 void ve_ble_ctl(enum wr_md_e mode, int en)
 {
 	int i;
 	int slice_max;
+	unsigned int reg = VPP_VE_ENABLE_CTRL;
+
+	if (chip_type_id == chip_t3x)
+		reg = VPP_SLICE1_VE_ENABLE_CTRL + ve_addr_offset;
 
 	slice_max = get_slice_max();
 
 	if (mode == WR_VCB) {
-		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, en, 3, 1);
+		WRITE_VPP_REG_BITS(reg, en, 3, 1);
 		for (i = SLICE1; i < slice_max; i++)
 			WRITE_VPP_REG_BITS(VPP_SLICE1_VE_ENABLE_CTRL +
 				ve_reg_ofst[i - 1], en, 3, 1);
 	} else if (mode == WR_DMA) {
-		VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, en, 3, 1);
+		VSYNC_WRITE_VPP_REG_BITS(reg, en, 3, 1);
 		for (i = SLICE1; i < slice_max; i++)
 			VSYNC_WRITE_VPP_REG_BITS(VPP_SLICE1_VE_ENABLE_CTRL +
 				ve_reg_ofst[i - 1], en, 3, 1);
 	}
+
+	pr_amve_v2("ble_ctl: en = %d\n", en);
 }
 
 void ve_cc_ctl(enum wr_md_e mode, int en)
 {
 	int i;
 	int slice_max;
+	unsigned int reg = VPP_VE_ENABLE_CTRL;
+
+	if (chip_type_id == chip_t3x)
+		reg = VPP_SLICE1_VE_ENABLE_CTRL + ve_addr_offset;
 
 	slice_max = get_slice_max();
 
 	if (mode == WR_VCB) {
-		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, en, 1, 1);
+		WRITE_VPP_REG_BITS(reg, en, 1, 1);
 		for (i = SLICE1; i < slice_max; i++)
 			WRITE_VPP_REG_BITS(VPP_SLICE1_VE_ENABLE_CTRL +
 				ve_reg_ofst[i - 1], en, 1, 1);
 	} else if (mode == WR_DMA) {
-		VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, en, 1, 1);
+		VSYNC_WRITE_VPP_REG_BITS(reg, en, 1, 1);
 		for (i = SLICE1; i < slice_max; i++)
 			VSYNC_WRITE_VPP_REG_BITS(VPP_SLICE1_VE_ENABLE_CTRL +
 				ve_reg_ofst[i - 1], en, 1, 1);
 	}
+
+	pr_amve_v2("cc_ctl: en = %d\n", en);
 }
 
 void post_wb_ctl(enum wr_md_e mode, int en)
@@ -733,6 +876,8 @@ void post_wb_ctl(enum wr_md_e mode, int en)
 			VSYNC_WRITE_VPP_REG_BITS(VPP_GAINOFF_CTRL0 +
 				pst_reg_ofst[i], en, 31, 1);
 	}
+
+	pr_amve_v2("wb_ctl: en = %d\n", en);
 }
 
 void post_pre_gamma_ctl(enum wr_md_e mode, int en)
@@ -751,24 +896,31 @@ void post_pre_gamma_ctl(enum wr_md_e mode, int en)
 			VSYNC_WRITE_VPP_REG_BITS(VPP_GAMMA_CTRL +
 				pst_reg_ofst[i], en, 0, 1);
 	}
+
+	pr_amve_v2("pre_gamma_ctl: en = %d\n", en);
 }
 
 void vpp_luma_hist_init(void)
 {
 	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 2, 5, 3);
-	/*select slice0,  all selection: vpp post, slc0~slc3,vd2, osd1,osd2,vd1 post*/
+	/*select slice0*/
+	/*all selection: vpp post, slc0~slc3, vd2, osd1, osd2, vd1 post*/
 	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 1, 11, 3);
 	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0, 2, 1);
-	/*full picture*/
+	/*0:full picture, 1:window*/
 	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0, 1, 1);
 	/*enable*/
 	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 1, 0, 1);
+
+	if (chip_type_id == chip_t3x)
+		WRITE_VPP_REG(VI_HIST_GCLK_CTRL, 0xffffffff);
 }
 
 void get_luma_hist(struct vframe_s *vf)
 {
 	static int pre_w, pre_h;
 	int width, height;
+	int i;
 
 	width = vf->width;
 	height = vf->height;
@@ -782,18 +934,41 @@ void get_luma_hist(struct vframe_s *vf)
 	vf->prop.hist.vpp_luma_sum = READ_VPP_REG(VI_HIST_SPL_VAL);
 	vf->prop.hist.vpp_pixel_sum = READ_VPP_REG(VI_HIST_SPL_PIX_CNT);
 	vf->prop.hist.vpp_chroma_sum = READ_VPP_REG(VI_HIST_CHROMA_SUM);
-	vf->prop.hist.vpp_height     =
-	READ_VPP_REG_BITS(VI_HIST_PIC_SIZE,
-			  VI_HIST_PIC_HEIGHT_BIT, VI_HIST_PIC_HEIGHT_WID);
-	vf->prop.hist.vpp_width      =
-	READ_VPP_REG_BITS(VI_HIST_PIC_SIZE,
-			  VI_HIST_PIC_WIDTH_BIT, VI_HIST_PIC_WIDTH_WID);
-	vf->prop.hist.vpp_luma_max   =
-	READ_VPP_REG_BITS(VI_HIST_MAX_MIN,
-			  VI_HIST_MAX_BIT, VI_HIST_MAX_WID);
-	vf->prop.hist.vpp_luma_min   =
-	READ_VPP_REG_BITS(VI_HIST_MAX_MIN,
-			  VI_HIST_MIN_BIT, VI_HIST_MIN_WID);
+	vf->prop.hist.vpp_height =
+		READ_VPP_REG_BITS(VI_HIST_PIC_SIZE,
+			VI_HIST_PIC_HEIGHT_BIT, VI_HIST_PIC_HEIGHT_WID);
+	vf->prop.hist.vpp_width =
+		READ_VPP_REG_BITS(VI_HIST_PIC_SIZE,
+			VI_HIST_PIC_WIDTH_BIT, VI_HIST_PIC_WIDTH_WID);
+	vf->prop.hist.vpp_luma_max =
+		READ_VPP_REG_BITS(VI_HIST_MAX_MIN,
+			VI_HIST_MAX_BIT, VI_HIST_MAX_WID);
+	vf->prop.hist.vpp_luma_min =
+		READ_VPP_REG_BITS(VI_HIST_MAX_MIN,
+			VI_HIST_MIN_BIT, VI_HIST_MIN_WID);
+
+	if (chip_type_id == chip_t3x) {
+		if (hist_dma_case) {
+			if (multi_slice_case) {
+				am_dma_get_blend_vi_hist(vf->prop.hist.vpp_gamma,
+					64);
+				am_dma_get_blend_vi_hist_low(NULL,
+					64);
+			} else {
+				am_dma_get_mif_data_vi_hist(0,
+					vf->prop.hist.vpp_gamma, 64);
+				am_dma_get_mif_data_vi_hist_low(0,
+					NULL, 64);
+			}
+
+			return;
+		}
+
+		WRITE_VPP_REG(VI_RO_HIST_LOW_IDX, 1 << 6);
+		for (i = 0; i < 64; i++)
+			vf->prop.hist.vpp_dark_hist[i] = READ_VPP_REG(VI_RO_HIST_LOW);
+	}
+
 	vf->prop.hist.vpp_gamma[0]   =
 	READ_VPP_REG_BITS(VI_DNLP_HIST00,
 			  VI_HIST_ON_BIN_00_BIT, VI_HIST_ON_BIN_00_WID);
@@ -1012,10 +1187,15 @@ void ve_vadj_misc_set(int val,
 
 	switch (vadj_idx) {
 	case VE_VADJ1:
-		if (slice == SLICE0)
-			reg = VPP_VADJ1_MISC;
-		else
+		if (slice == SLICE0) {
+			if (chip_type_id == chip_t3x)
+				reg = VPP_SLICE1_VADJ1_MISC +
+					ve_addr_offset;
+			else
+				reg = VPP_VADJ1_MISC;
+		} else {
 			reg = VPP_SLICE1_VADJ1_MISC + ve_reg_ofst[slice - 1];
+		}
 		break;
 	case VE_VADJ2:
 		reg = VPP_VADJ2_MISC + pst_reg_ofst[slice];
@@ -1042,10 +1222,15 @@ int ve_vadj_misc_get(enum vadj_index_e vadj_idx,
 
 	switch (vadj_idx) {
 	case VE_VADJ1:
-		if (slice == SLICE0)
-			reg = VPP_VADJ1_MISC;
-		else
+		if (slice == SLICE0) {
+			if (chip_type_id == chip_t3x)
+				reg = VPP_SLICE1_VADJ1_MISC +
+					ve_addr_offset;
+			else
+				reg = VPP_VADJ1_MISC;
+		} else {
 			reg = VPP_SLICE1_VADJ1_MISC + ve_reg_ofst[slice - 1];
+		}
 		break;
 	case VE_VADJ2:
 		reg = VPP_VADJ2_MISC + pst_reg_ofst[slice];
@@ -1078,20 +1263,34 @@ void ve_mtrx_setting(enum vpp_matrix_e mtx_sel,
 	int offset = 0x100;
 
 	if (mtx_sel == VD1_MTX) {
-		matrix_coef00_01 = VPP_VD1_MATRIX_COEF00_01;
-		matrix_coef02_10 = VPP_VD1_MATRIX_COEF02_10;
-		matrix_coef11_12 = VPP_VD1_MATRIX_COEF11_12;
-		matrix_coef20_21 = VPP_VD1_MATRIX_COEF20_21;
-		matrix_coef22 = VPP_VD1_MATRIX_COEF22;
-		matrix_coef13_14 = VPP_VD1_MATRIX_COEF13_14;
-		matrix_coef23_24 = VPP_VD1_MATRIX_COEF23_24;
-		matrix_coef15_25 = VPP_VD1_MATRIX_COEF15_25;
-		matrix_clip = VPP_VD1_MATRIX_CLIP;
-		matrix_offset0_1 = VPP_VD1_MATRIX_OFFSET0_1;
-		matrix_offset2 = VPP_VD1_MATRIX_OFFSET2;
-		matrix_pre_offset0_1 = VPP_VD1_MATRIX_PRE_OFFSET0_1;
-		matrix_pre_offset2 = VPP_VD1_MATRIX_PRE_OFFSET2;
-		matrix_en_ctrl = VPP_VD1_MATRIX_EN_CTRL;
+		matrix_coef00_01 = VPP_SLICE1_VD1_MATRIX_COEF00_01 +
+			ve_addr_offset;
+		matrix_coef02_10 = VPP_SLICE1_VD1_MATRIX_COEF02_10 +
+			ve_addr_offset;
+		matrix_coef11_12 = VPP_SLICE1_VD1_MATRIX_COEF11_12 +
+			ve_addr_offset;
+		matrix_coef20_21 = VPP_SLICE1_VD1_MATRIX_COEF20_21 +
+			ve_addr_offset;
+		matrix_coef22 = VPP_SLICE1_VD1_MATRIX_COEF22 +
+			ve_addr_offset;
+		matrix_coef13_14 = VPP_SLICE1_VD1_MATRIX_COEF13_14 +
+			ve_addr_offset;
+		matrix_coef23_24 = VPP_SLICE1_VD1_MATRIX_COEF23_24 +
+			ve_addr_offset;
+		matrix_coef15_25 = VPP_SLICE1_VD1_MATRIX_COEF15_25 +
+			ve_addr_offset;
+		matrix_clip = VPP_SLICE1_VD1_MATRIX_CLIP +
+			ve_addr_offset;
+		matrix_offset0_1 = VPP_SLICE1_VD1_MATRIX_OFFSET0_1 +
+			ve_addr_offset;
+		matrix_offset2 = VPP_SLICE1_VD1_MATRIX_OFFSET2 +
+			ve_addr_offset;
+		matrix_pre_offset0_1 = VPP_SLICE1_VD1_MATRIX_PRE_OFFSET0_1 +
+			ve_addr_offset;
+		matrix_pre_offset2 = VPP_SLICE1_VD1_MATRIX_PRE_OFFSET2 +
+			ve_addr_offset;
+		matrix_en_ctrl = VPP_SLICE1_VD1_MATRIX_EN_CTRL +
+			ve_addr_offset;
 	} else if (mtx_sel == POST2_MTX) {
 		matrix_coef00_01 = VPP_POST2_MATRIX_COEF00_01;
 		matrix_coef02_10 = VPP_POST2_MATRIX_COEF02_10;
@@ -1244,18 +1443,21 @@ void ve_dnlp_sat_set(unsigned int value)
 {
 	int i;
 	int slice_max;
-	int addr_reg = VPP_CHROMA_ADDR_PORT;
-	int data_reg = VPP_CHROMA_DATA_PORT;
 	unsigned int reg_value;
+	struct cm_port_s cm_port;
+	int addr_reg;
+	int data_reg;
 
 	if (multi_slice_case)
 		slice_max = get_slice_max();
 	else
 		slice_max = 1;
 
+	cm_port = get_cm_port();
+
 	for (i = SLICE0; i < slice_max; i++) {
-		addr_reg += cm_reg_ofst[i];
-		data_reg += cm_reg_ofst[i];
+		addr_reg = cm_port.cm_addr_port[i];
+		data_reg = cm_port.cm_data_port[i];
 
 		VSYNC_WRITE_VPP_REG(addr_reg, 0x207);
 		reg_value = VSYNC_READ_VPP_REG(data_reg);
@@ -1386,32 +1588,22 @@ static void _lc_mtrx_set(enum lc_mtx_sel_e mtrx_sel,
 		break;
 	case LC_MTX_YUV601L_RGB:
 		if (mtrx_sel & (INP_MTX | OUTP_MTX)) {
+			WRITE_VPP_REG_S5(mtrx_coef00_01,
+				0x04a80000);
+			WRITE_VPP_REG_S5(mtrx_coef02_10,
+				0x066204a8);
+			WRITE_VPP_REG_S5(mtrx_coef11_12,
+				0x1e701cbf);
+			WRITE_VPP_REG_S5(mtrx_coef20_21,
+				0x04a80812);
+			WRITE_VPP_REG_S5(mtrx_coef22,
+				0x00000000);
 			if (bitdepth == 10) {
-				WRITE_VPP_REG_S5(mtrx_coef00_01,
-					0x012a0000);
-				WRITE_VPP_REG_S5(mtrx_coef02_10,
-					0x0198012a);
-				WRITE_VPP_REG_S5(mtrx_coef11_12,
-					0x0f9c0f30);
-				WRITE_VPP_REG_S5(mtrx_coef20_21,
-					0x012a0204);
-				WRITE_VPP_REG_S5(mtrx_coef22,
-					0x00000000);
 				WRITE_VPP_REG_S5(mtrx_pre_offset0_1,
 					0x00400200);
 				WRITE_VPP_REG_S5(mtrx_clip,
 					0x000003ff);
 			} else {
-				WRITE_VPP_REG_S5(mtrx_coef00_01,
-					0x04A80000);
-				WRITE_VPP_REG_S5(mtrx_coef02_10,
-					0x066204a8);
-				WRITE_VPP_REG_S5(mtrx_coef11_12,
-					0x1e701cbf);
-				WRITE_VPP_REG_S5(mtrx_coef20_21,
-					0x04a80812);
-				WRITE_VPP_REG_S5(mtrx_coef22,
-					0x00000000);
 				WRITE_VPP_REG_S5(mtrx_pre_offset0_1,
 					0x01000800);
 				WRITE_VPP_REG_S5(mtrx_clip,
@@ -1484,32 +1676,22 @@ static void _lc_mtrx_set(enum lc_mtx_sel_e mtrx_sel,
 		break;
 	case LC_MTX_YUV709L_RGB:
 		if (mtrx_sel & (INP_MTX | OUTP_MTX)) {
+			WRITE_VPP_REG_S5(mtrx_coef00_01,
+				0x04a80000);
+			WRITE_VPP_REG_S5(mtrx_coef02_10,
+				0x072c04a8);
+			WRITE_VPP_REG_S5(mtrx_coef11_12,
+				0x1f261ddd);
+			WRITE_VPP_REG_S5(mtrx_coef20_21,
+				0x04a80876);
+			WRITE_VPP_REG_S5(mtrx_coef22,
+				0x00000000);
 			if (bitdepth == 10) {
-				WRITE_VPP_REG_S5(mtrx_coef00_01,
-					0x012a0000);
-				WRITE_VPP_REG_S5(mtrx_coef02_10,
-					0x01cb012a);
-				WRITE_VPP_REG_S5(mtrx_coef11_12,
-					0x1fc90f77);
-				WRITE_VPP_REG_S5(mtrx_coef20_21,
-					0x012a021d);
-				WRITE_VPP_REG_S5(mtrx_coef22,
-					0x00000000);
 				WRITE_VPP_REG_S5(mtrx_pre_offset0_1,
 					0x00400200);
 				WRITE_VPP_REG_S5(mtrx_clip,
 					0x000003ff);
 			} else {
-				WRITE_VPP_REG_S5(mtrx_coef00_01,
-					0x04a80000);
-				WRITE_VPP_REG_S5(mtrx_coef02_10,
-					0x072c04a8);
-				WRITE_VPP_REG_S5(mtrx_coef11_12,
-					0x1f261ddd);
-				WRITE_VPP_REG_S5(mtrx_coef20_21,
-					0x04a80876);
-				WRITE_VPP_REG_S5(mtrx_coef22,
-					0x00000000);
 				WRITE_VPP_REG_S5(mtrx_pre_offset0_1,
 					0x01000800);
 				WRITE_VPP_REG_S5(mtrx_clip,
@@ -1582,32 +1764,22 @@ static void _lc_mtrx_set(enum lc_mtx_sel_e mtrx_sel,
 		break;
 	case LC_MTX_YUV709_RGB:
 		if (mtrx_sel & (INP_MTX | OUTP_MTX)) {
+			WRITE_VPP_REG_S5(mtrx_coef00_01,
+				0x04000000);
+			WRITE_VPP_REG_S5(mtrx_coef02_10,
+				0x064d0400);
+			WRITE_VPP_REG_S5(mtrx_coef11_12,
+				0x1f411e21);
+			WRITE_VPP_REG_S5(mtrx_coef20_21,
+				0x0400076d);
+			WRITE_VPP_REG_S5(mtrx_coef22,
+				0x00000000);
 			if (bitdepth == 10) {
-				WRITE_VPP_REG_S5(mtrx_coef00_01,
-					0x01000000);
-				WRITE_VPP_REG_S5(mtrx_coef02_10,
-					0x01930100);
-				WRITE_VPP_REG_S5(mtrx_coef11_12,
-					0x1fd01f88);
-				WRITE_VPP_REG_S5(mtrx_coef20_21,
-					0x010001db);
-				WRITE_VPP_REG_S5(mtrx_coef22,
-					0x00000000);
 				WRITE_VPP_REG_S5(mtrx_pre_offset0_1,
 					0x00000200);
 				WRITE_VPP_REG_S5(mtrx_clip,
 					0x000003ff);
 			} else {
-				WRITE_VPP_REG_S5(mtrx_coef00_01,
-					0x04000000);
-				WRITE_VPP_REG_S5(mtrx_coef02_10,
-					0x064d0400);
-				WRITE_VPP_REG_S5(mtrx_coef11_12,
-					0x1f411e21);
-				WRITE_VPP_REG_S5(mtrx_coef20_21,
-					0x0400076d);
-				WRITE_VPP_REG_S5(mtrx_coef22,
-					0x00000000);
 				WRITE_VPP_REG_S5(mtrx_pre_offset0_1,
 					0x00000800);
 				WRITE_VPP_REG_S5(mtrx_clip,
@@ -2500,5 +2672,203 @@ void ve_lc_region_read(int blk_vnum, int blk_hnum,
 
 	/*part2: get lc hist*/
 	am_dma_get_mif_data_lc_stts(slice, hist_data, length);
+}
+
+void post_lut3d_ctl(enum wr_md_e mode, int en)
+{
+	int i;
+	int slice_max;
+	unsigned int tmp;
+
+	slice_max = get_slice_max();
+
+	if (mode == WR_VCB) {
+		for (i = SLICE0; i < slice_max; i++) {
+			WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL +
+				pst_reg_ofst[i], 0);
+			tmp = READ_VPP_REG(VPP_LUT3D_CTRL +
+				pst_reg_ofst[i]);
+			tmp = (tmp & 0xffffff8e) | (en & 0x1) | (0x7 << 4);
+			WRITE_VPP_REG(VPP_LUT3D_CTRL +
+				pst_reg_ofst[i], tmp);
+		}
+	} else if (mode == WR_DMA) {
+		for (i = SLICE0; i < slice_max; i++) {
+			WRITE_VPP_REG(VPP_LUT3D_CBUS2RAM_CTRL +
+				pst_reg_ofst[i], 0);
+			tmp = READ_VPP_REG(VPP_LUT3D_CTRL +
+				pst_reg_ofst[i]);
+			tmp = (tmp & 0xffffff8e) | (en & 0x1) | (0x7 << 4);
+			VSYNC_WRITE_VPP_REG(VPP_LUT3D_CTRL +
+				pst_reg_ofst[i], tmp);
+		}
+	}
+
+	pr_amve_v2("lut3d_ctl: en = %d\n", en);
+}
+
+void post_lut3d_update(unsigned int *lut3d_data)
+{
+	int i;
+	int j;
+	int slice_max;
+	unsigned int reg_ram_ctrl;
+	unsigned int reg_addr;
+	unsigned int reg_data;
+
+	slice_max = get_slice_max();
+
+	for (i = SLICE0; i < slice_max; i++) {
+		reg_ram_ctrl = VPP_LUT3D_CBUS2RAM_CTRL + pst_reg_ofst[i];
+		reg_addr = VPP_LUT3D_RAM_ADDR + pst_reg_ofst[i];
+		reg_data = VPP_LUT3D_RAM_DATA + pst_reg_ofst[i];
+
+		VSYNC_WRITE_VPP_REG(reg_ram_ctrl, 1);
+		VSYNC_WRITE_VPP_REG(reg_addr, 0 | (0 << 31));
+
+		for (j = 0; j < 17 * 17 * 17; j++) {
+			VSYNC_WRITE_VPP_REG(reg_data,
+				((lut3d_data[j * 3 + 1] & 0xfff) << 16) |
+				(lut3d_data[j * 3 + 2] & 0xfff));
+			VSYNC_WRITE_VPP_REG(reg_data,
+				(lut3d_data[j * 3 + 0] & 0xfff)); /*MSB*/
+			if (vev2_dbg == 17 && (j < 17 * 17))
+				pr_info("%d: %03x %03x %03x\n",
+					j,
+					lut3d_data[i * 3 + 0],
+					lut3d_data[i * 3 + 1],
+					lut3d_data[i * 3 + 2]);
+		}
+
+		VSYNC_WRITE_VPP_REG(reg_ram_ctrl, 0);
+	}
+}
+
+void post_lut3d_set(unsigned int *lut3d_data)
+{
+	int i;
+	int j;
+	int slice_max;
+	unsigned int reg_ctrl;
+	unsigned int reg_ram_ctrl;
+	unsigned int reg_addr;
+	unsigned int reg_data;
+	unsigned int tmp;
+
+	slice_max = get_slice_max();
+
+	for (i = SLICE0; i < slice_max; i++) {
+		reg_ctrl = VPP_LUT3D_CTRL + pst_reg_ofst[i];
+		reg_ram_ctrl = VPP_LUT3D_CBUS2RAM_CTRL + pst_reg_ofst[i];
+		reg_addr = VPP_LUT3D_RAM_ADDR + pst_reg_ofst[i];
+		reg_data = VPP_LUT3D_RAM_DATA + pst_reg_ofst[i];
+
+		tmp = READ_VPP_REG(reg_ctrl);
+		WRITE_VPP_REG(reg_ctrl, tmp & 0xfffffffe);
+		usleep_range(16000, 16001);
+
+		WRITE_VPP_REG(reg_ram_ctrl, 1);
+		WRITE_VPP_REG(reg_addr, 0 | (0 << 31));
+
+		for (j = 0; j < 17 * 17 * 17; j++) {
+			WRITE_VPP_REG(reg_data,
+				((lut3d_data[j * 3 + 1] & 0xfff) << 16) |
+				(lut3d_data[j * 3 + 2] & 0xfff));
+			WRITE_VPP_REG(reg_data,
+				(lut3d_data[j * 3 + 0] & 0xfff)); /*MSB*/
+			if (vev2_dbg == 17 && (j < 17 * 17))
+				pr_info("%d: %03x %03x %03x\n",
+					j,
+					lut3d_data[i * 3 + 0],
+					lut3d_data[i * 3 + 1],
+					lut3d_data[i * 3 + 2]);
+		}
+
+		WRITE_VPP_REG(reg_ram_ctrl, 0);
+		WRITE_VPP_REG(reg_ctrl, tmp);
+	}
+}
+
+void post_lut3d_section_write(int index, int section_len,
+	unsigned int *lut3d_data_in)
+{
+	int i;
+	int j;
+	int slice_max;
+	unsigned int reg_ctrl;
+	unsigned int reg_ram_ctrl;
+	unsigned int reg_addr;
+	unsigned int reg_data;
+	unsigned int tmp;
+	int r_offset, g_offset;
+
+	index = index * section_len / 17;
+
+	g_offset = index % 17;
+	r_offset = index / 17;
+
+	slice_max = get_slice_max();
+
+	for (i = SLICE0; i < slice_max; i++) {
+		reg_ctrl = VPP_LUT3D_CTRL + pst_reg_ofst[i];
+		reg_ram_ctrl = VPP_LUT3D_CBUS2RAM_CTRL + pst_reg_ofst[i];
+		reg_addr = VPP_LUT3D_RAM_ADDR + pst_reg_ofst[i];
+		reg_data = VPP_LUT3D_RAM_DATA + pst_reg_ofst[i];
+
+		tmp = READ_VPP_REG(reg_ctrl);
+		WRITE_VPP_REG(reg_ctrl, tmp & 0xfffffffe);
+		usleep_range(16000, 16001);
+
+		WRITE_VPP_REG(reg_ram_ctrl, 1);
+		/*bit20:16 R, bit12:8 G, bit4:0 B*/
+		WRITE_VPP_REG(reg_addr,
+			(r_offset << 16) | (g_offset << 8) | (0 << 31));
+
+		for (j = 0; j < section_len; j++) {
+			WRITE_VPP_REG(reg_data,
+				((lut3d_data_in[j * 3 + 1] & 0xfff) << 16) |
+				(lut3d_data_in[j * 3 + 2] & 0xfff));
+			WRITE_VPP_REG(reg_data,
+				(lut3d_data_in[j * 3 + 0] & 0xfff)); /*MSB*/
+		}
+
+		WRITE_VPP_REG(reg_ram_ctrl, 0);
+		WRITE_VPP_REG(reg_ctrl, tmp);
+	}
+}
+
+void post_lut3d_section_read(int index, int section_len,
+	unsigned int *lut3d_data_out)
+{
+	int i;
+	unsigned int reg_ram_ctrl;
+	unsigned int reg_addr;
+	unsigned int reg_data;
+	unsigned int tmp;
+	int r_offset, g_offset;
+
+	index = index * section_len / 17;
+
+	g_offset = index % 17;
+	r_offset = index / 17;
+
+	reg_ram_ctrl = VPP_LUT3D_CBUS2RAM_CTRL;
+	reg_addr = VPP_LUT3D_RAM_ADDR;
+	reg_data = VPP_LUT3D_RAM_DATA;
+
+	WRITE_VPP_REG(reg_ram_ctrl, 1);
+	/*bit20:16 R, bit12:8 G, bit4:0 B*/
+	WRITE_VPP_REG(reg_addr,
+		(r_offset << 16) | (g_offset << 8) | (1 << 31));
+
+	for (i = 0; i < section_len; i++) {
+		tmp = READ_VPP_REG(reg_data);
+		lut3d_data_out[i * 3 + 2] = tmp & 0xfff;
+		lut3d_data_out[i * 3 + 1] = (tmp >> 16) & 0xfff;
+		tmp = READ_VPP_REG(reg_data);
+		lut3d_data_out[i * 3 + 0] = tmp & 0xfff;
+	}
+
+	WRITE_VPP_REG(reg_ram_ctrl, 0);
 }
 

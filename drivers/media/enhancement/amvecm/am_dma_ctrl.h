@@ -32,7 +32,7 @@ void am_dma_set_mif_wr(enum lut_dma_wr_id_e dma_wr_id,
 void am_dma_get_mif_data_lc_stts(int index,
 	unsigned int *data, unsigned int length);
 void am_dma_get_mif_data_vi_hist(int index,
-	unsigned int *data, unsigned int length);
+	unsigned short *data, unsigned int length);
 void am_dma_get_mif_data_vi_hist_low(int index,
 	unsigned int *data, unsigned int length);
 void am_dma_get_mif_data_cm2_hist_hue(int index,
@@ -41,7 +41,17 @@ void am_dma_get_mif_data_cm2_hist_sat(int index,
 	unsigned int *data, unsigned int length);
 void am_dma_get_mif_data_hdr2_hist(int index,
 	unsigned int *data, unsigned int length);
-void am_dma_get_blend_vi_hist(unsigned int *data,
+void am_dma_get_blend_vi_hist(unsigned short *data,
+	unsigned int length);
+void am_dma_get_blend_vi_hist_low(unsigned int *data,
+	unsigned int length);
+void am_dma_get_blend_cm2_hist_hue(unsigned int *data,
+	unsigned int length);
+void am_dma_get_blend_cm2_hist_sat(unsigned int *data,
 	unsigned int length);
 
+void am_dma_lut3d_buffer_malloc(struct platform_device *pdev);
+void am_dma_lut3d_buffer_free(struct platform_device *pdev);
+void am_dma_lut3d_set_data(int *data, int length);
+void am_dma_lut3d_get_data(int *data, int length);
 #endif

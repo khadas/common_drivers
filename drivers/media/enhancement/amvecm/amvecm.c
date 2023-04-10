@@ -90,6 +90,7 @@
 #include "amve_v2.h"
 #include "color/ai_color.h"
 #include "am_lut3d.h"
+#include "am_dma_ctrl.h"
 
 #define pr_amvecm_dbg(fmt, args...)\
 	do {\
@@ -1135,12 +1136,20 @@ static void vpp_backup_histgram(struct vframe_s *vf)
 	vpp_hist_param.vpp_hist_pow = vf->prop.hist.hist_pow;
 	vpp_hist_param.vpp_luma_sum = vf->prop.hist.vpp_luma_sum;
 	vpp_hist_param.vpp_pixel_sum = vf->prop.hist.vpp_pixel_sum;
+
 	for (i = 0; i < 64; i++)
 		vpp_hist_param.vpp_histgram[i] = vf->prop.hist.vpp_gamma[i];
-	for (i = 0; i < 128; i++)
-		vpp_hist_param.hdr_histgram[i] = hdr_hist[NUM_HDR_HIST - 1][i];
+
+	for (i = 0; i < 128; i++) {
+		if (chip_type_id == chip_t3x)
+			vpp_hist_param.hdr_histgram[i] = s5_hdr_hist[NUM_HDR_HIST - 1][i];
+		else
+			vpp_hist_param.hdr_histgram[i] = hdr_hist[NUM_HDR_HIST - 1][i];
+	}
+
 	for (i = 0; i < 32; i++)
 		vpp_hist_param.hue_histgram[i] = vf->prop.hist.vpp_hue_gamma[i];
+
 	for (i = 0; i < 32; i++)
 		vpp_hist_param.sat_histgram[i] = vf->prop.hist.vpp_sat_gamma[i];
 
@@ -1170,18 +1179,9 @@ static void vpp_backup_histgram(struct vframe_s *vf)
 static void vpp_dump_histgram(void)
 {
 	uint i;
+	unsigned int tmp;
 
 	pr_info("%s:\n", __func__);
-	if (hdr_source_type == HDRTYPE_HDR10) {
-		pr_info("\t dump_hdr_hist begin\n");
-		for (i = 0; i < 128; i++) {
-			pr_info("[%d]0x%-8x\t", i,
-				hdr_hist[NUM_HDR_HIST - 1][i]);
-			if ((i + 1) % 8 == 0)
-				pr_info("\n");
-		}
-		pr_info("\t dump_hdr_hist done\n");
-	}
 
 	pr_info("\n\t dump_dnlp_hist begin\n");
 	for (i = 0; i < 64; i++) {
@@ -1189,6 +1189,7 @@ static void vpp_dump_histgram(void)
 		if ((i + 1) % 8 == 0)
 			pr_info("\n");
 	}
+	pr_info("\t dump_dnlp_hist done\n");
 
 	pr_info("\n\t dump vpp dark hist\n");
 	for (i = 0; i < 64; i++) {
@@ -1197,6 +1198,18 @@ static void vpp_dump_histgram(void)
 			pr_info("\n");
 	}
 	pr_info("\n\t dump_dnlp_hist done\n");
+
+	pr_info("\t dump_hdr_hist begin\n");
+	for (i = 0; i < 128; i++) {
+		if (chip_type_id == chip_t3x)
+			tmp = s5_hdr_hist[NUM_HDR_HIST - 1][i];
+		else
+			tmp = hdr_hist[NUM_HDR_HIST - 1][i];
+		pr_info("[%d]0x%-8x\t", i, tmp);
+		if ((i + 1) % 8 == 0)
+			pr_info("\n");
+	}
+	pr_info("\t dump_hdr_hist done\n");
 }
 
 void vpp_get_hist_en(void)
@@ -1213,6 +1226,7 @@ void vpp_get_hist_en(void)
 		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0x2, 11, 3);
 	else
 		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0x1, 11, 3);
+
 	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0x1, 0, 1);
 	WRITE_VPP_REG(VI_HIST_GCLK_CTRL, 0xffffffff);
 	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 2, VI_HIST_POW_BIT, VI_HIST_POW_WID);
@@ -1245,21 +1259,27 @@ void get_cm_hist(struct vframe_s *vf)
 	if (chip_type_id == chip_s5)
 		return;
 
-	addr_port = VPP_CHROMA_ADDR_PORT;
-	data_port = VPP_CHROMA_DATA_PORT;
-
 	if (enable_pattern_detect == 1) {
-		for (i = 0; i < 32; i++) {
-			WRITE_VPP_REG(addr_port,
-				      RO_CM_HUE_HIST_BIN0 + i);
-			vf->prop.hist.vpp_hue_gamma[i] =
-				READ_VPP_REG(data_port);
-		}
-		for (i = 0; i < 32; i++) {
-			WRITE_VPP_REG(addr_port,
-				      RO_CM_SAT_HIST_BIN0 + i);
-			vf->prop.hist.vpp_sat_gamma[i] =
-				READ_VPP_REG(data_port);
+		if (chip_type_id != chip_t3x) {
+			addr_port = VPP_CHROMA_ADDR_PORT;
+			data_port = VPP_CHROMA_DATA_PORT;
+
+			for (i = 0; i < 32; i++) {
+				WRITE_VPP_REG(addr_port,
+					RO_CM_HUE_HIST_BIN0 + i);
+				vf->prop.hist.vpp_hue_gamma[i] =
+					READ_VPP_REG(data_port);
+			}
+
+			for (i = 0; i < 32; i++) {
+				WRITE_VPP_REG(addr_port,
+					RO_CM_SAT_HIST_BIN0 + i);
+				vf->prop.hist.vpp_sat_gamma[i] =
+					READ_VPP_REG(data_port);
+			}
+		} else {
+			cm_hist_get(vf, RO_CM_HUE_HIST_BIN0,
+				RO_CM_SAT_HIST_BIN0);
 		}
 	}
 }
@@ -7439,6 +7459,8 @@ static void dump_vpp_size_info(void)
 		postblend_hsize,
 		ve_hsize, ve_vsize, psr_hsize, psr_vsize,
 		cm_hsize, cm_vsize;
+	struct cm_port_s cm_port;
+
 	vpp_input_h = READ_VPP_REG_BITS(VPP_IN_H_V_SIZE, 16, 13);
 	vpp_input_v = READ_VPP_REG_BITS(VPP_IN_H_V_SIZE, 0, 13);
 	pps_input_length = READ_VPP_REG_BITS(VPP_LINE_IN_LENGTH, 0, 13);
@@ -7473,10 +7495,19 @@ static void dump_vpp_size_info(void)
 	ve_vsize = READ_VPP_REG_BITS(VPP_VE_H_V_SIZE, 0, 13);
 	psr_hsize = READ_VPP_REG_BITS(VPP_PSR_H_V_SIZE, 16, 13);
 	psr_vsize = READ_VPP_REG_BITS(VPP_PSR_H_V_SIZE, 0, 13);
-	WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x205);
-	cm_hsize = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
+
+	if (chip_type_id == chip_t3x) {
+		cm_port = get_cm_port();
+		WRITE_VPP_REG(cm_port.cm_addr_port[0], 0x205);
+		cm_hsize = READ_VPP_REG(cm_port.cm_data_port[0]);
+	} else {
+		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x205);
+		cm_hsize = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
+	}
+
 	cm_vsize = (cm_hsize >> 16) & 0xffff;
 	cm_hsize = cm_hsize & 0xffff;
+
 	pr_info("\n vpp size info:\n");
 	pr_info("vpp_input_h:%d, vpp_input_v:%d\n"
 		"pps_input_length:%d, pps_input_height:%d\n"
@@ -7681,15 +7712,27 @@ static void amvecm_pq_enable(int enable)
 {
 	if (enable) {
 		lc_en = 1;
-		/* black_ext_en */
-		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 1, 3, 1);
-		/* chroma_coring */
-		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 1, 4, 1);
+		if (chip_type_id == chip_t3x) {
+			ve_vadj_ctl(WR_VCB, VE_VADJ1, 1);
+			ve_ble_ctl(WR_VCB, 1);
+			ve_cc_ctl(WR_VCB, 1);
+		} else {
+			/* black_ext_en */
+			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 1, 3, 1);
+			/* chroma_coring */
+			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 1, 4, 1);
+
+			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
+				WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+			else
+				WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 1, 0, 1);
+		}
 		ve_enable_dnlp();
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 		if (!is_amdv_enable())
 #endif
 			amcm_enable(WR_VCB);
+
 		WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
 				   1, 1, 1);
 		WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
@@ -7800,16 +7843,24 @@ static void amvecm_pq_enable(int enable)
 		white_balance_adjust(0, 1);
 
 		vecm_latch_flag |= FLAG_GAMMA_TABLE_EN;
-		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
-			WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
-		else
-			WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 1, 0, 1);
 	} else {
 		lc_en = 0;
-		/* black_ext_en */
-		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 0, 3, 1);
-		/* chroma_coring */
-		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 0, 4, 1);
+		if (chip_type_id == chip_t3x) {
+			ve_vadj_ctl(WR_VCB, VE_VADJ1, 0);
+			ve_ble_ctl(WR_VCB, 0);
+			ve_cc_ctl(WR_VCB, 0);
+		} else {
+			/* black_ext_en */
+			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 0, 3, 1);
+			/* chroma_coring */
+			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 0, 4, 1);
+
+			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
+				WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 0, 0, 1);
+			else
+				WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 0, 0, 1);
+		}
+
 		ve_disable_dnlp();
 
 		amcm_disable(WR_VCB);
@@ -7924,11 +7975,6 @@ static void amvecm_pq_enable(int enable)
 		white_balance_adjust(0, 0);
 
 		vecm_latch_flag |= FLAG_GAMMA_TABLE_DIS;
-
-		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
-			WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 0, 0, 1);
-		else
-			WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 0, 0, 1);
 	}
 }
 
@@ -8496,74 +8542,169 @@ kfree_buf:
 }
 
 static void cm_hist_config(unsigned int en, unsigned int mode,
-			   unsigned int wd0, unsigned int wd1,
-			   unsigned int wd2, unsigned int wd3)
+	unsigned int wd0, unsigned int wd1,
+	unsigned int wd2, unsigned int wd3)
 {
 	unsigned int value;
+	struct cm_port_s port;
+	unsigned int addr_port = VPP_CHROMA_ADDR_PORT;
+	unsigned int data_port = VPP_CHROMA_DATA_PORT;
+	int slice_max = 0;
+	int i;
 
-	WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, STA_CFG_REG);
-	value = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
-	value = (value & (~0xc0000000)) | (en << 30);
-	WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, STA_CFG_REG);
-	WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, value);
+	if (chip_type_id == chip_t3x) {
+		slice_max = get_slice_max();
+		port = get_cm_port();
+		for (i = SLICE0; i < slice_max; i++) {
+			addr_port = port.cm_addr_port[i];
+			data_port = port.cm_data_port[i];
 
-	WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, LUMA_ADJ1_REG);
-	value = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
-	value = (value & (~(0x1fff0000))) | (mode << 16);
-	WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, LUMA_ADJ1_REG);
-	WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, value);
+			WRITE_VPP_REG(addr_port, STA_CFG_REG);
+			value = READ_VPP_REG(data_port);
+			value = (value & (~0xc0000000)) | (en << 30);
+			WRITE_VPP_REG(addr_port, STA_CFG_REG);
+			WRITE_VPP_REG(data_port, value);
 
-	WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, STA_WIN_XYXY0_REG);
-	WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, wd0 | (wd1 << 16));
+			WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+			value = READ_VPP_REG(data_port);
+			value = (value & (~(0x1fff0000))) | (mode << 16);
+			WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+			WRITE_VPP_REG(data_port, value);
 
-	WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, STA_WIN_XYXY1_REG);
-	WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, wd2 | (wd3 << 16));
+			WRITE_VPP_REG(addr_port, STA_WIN_XYXY0_REG);
+			WRITE_VPP_REG(data_port, wd0 | (wd1 << 16));
+
+			WRITE_VPP_REG(addr_port, STA_WIN_XYXY1_REG);
+			WRITE_VPP_REG(data_port, wd2 | (wd3 << 16));
+		}
+	} else {
+		WRITE_VPP_REG(addr_port, STA_CFG_REG);
+		value = READ_VPP_REG(data_port);
+		value = (value & (~0xc0000000)) | (en << 30);
+		WRITE_VPP_REG(addr_port, STA_CFG_REG);
+		WRITE_VPP_REG(data_port, value);
+
+		WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+		value = READ_VPP_REG(data_port);
+		value = (value & (~(0x1fff0000))) | (mode << 16);
+		WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+		WRITE_VPP_REG(data_port, value);
+
+		WRITE_VPP_REG(addr_port, STA_WIN_XYXY0_REG);
+		WRITE_VPP_REG(data_port, wd0 | (wd1 << 16));
+
+		WRITE_VPP_REG(addr_port, STA_WIN_XYXY1_REG);
+		WRITE_VPP_REG(data_port, wd2 | (wd3 << 16));
+	}
 }
 
 static void cm_sta_hist_range_thrd(int r, int ro_frame,
-				   int thrd0, int thrd1)
+	int thrd0, int thrd1)
 {
 	unsigned int value0, value1;
+	struct cm_port_s port;
+	unsigned int addr_port = VPP_CHROMA_ADDR_PORT;
+	unsigned int data_port = VPP_CHROMA_DATA_PORT;
+	int slice_max = 0;
+	int i;
 
-	if (r) {
-		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, STA_SAT_HIST0_REG);
-		value0 = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
-		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, STA_SAT_HIST1_REG);
-		value1 = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
-		pr_info("HIST0_REG = 0x%x, HIST1_REG = 0x%x\n", value0, value1);
+	if (chip_type_id == chip_t3x) {
+		slice_max = get_slice_max();
+		port = get_cm_port();
+		for (i = SLICE0; i < slice_max; i++) {
+			addr_port = port.cm_addr_port[i];
+			data_port = port.cm_data_port[i];
+
+			if (r) {
+				WRITE_VPP_REG(addr_port, STA_SAT_HIST0_REG);
+				value0 = READ_VPP_REG(data_port);
+				WRITE_VPP_REG(addr_port, STA_SAT_HIST1_REG);
+				value1 = READ_VPP_REG(data_port);
+				pr_info("HIST0_REG = 0x%x, HIST1_REG = 0x%x\n", value0, value1);
+			} else {
+				WRITE_VPP_REG(addr_port, STA_SAT_HIST0_REG);
+				WRITE_VPP_REG(data_port, thrd0 | (ro_frame << 24));
+
+				WRITE_VPP_REG(addr_port, STA_SAT_HIST1_REG);
+				WRITE_VPP_REG(data_port, thrd1);
+			}
+		}
 	} else {
-		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, STA_SAT_HIST0_REG);
-		WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, thrd0 | (ro_frame << 24));
+		if (r) {
+			WRITE_VPP_REG(addr_port, STA_SAT_HIST0_REG);
+			value0 = READ_VPP_REG(data_port);
+			WRITE_VPP_REG(addr_port, STA_SAT_HIST1_REG);
+			value1 = READ_VPP_REG(data_port);
+			pr_info("HIST0_REG = 0x%x, HIST1_REG = 0x%x\n", value0, value1);
+		} else {
+			WRITE_VPP_REG(addr_port, STA_SAT_HIST0_REG);
+			WRITE_VPP_REG(data_port, thrd0 | (ro_frame << 24));
 
-		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, STA_SAT_HIST1_REG);
-		WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, thrd1);
+			WRITE_VPP_REG(addr_port, STA_SAT_HIST1_REG);
+			WRITE_VPP_REG(data_port, thrd1);
+		}
 	}
 }
 
 static void cm_luma_bri_con(int r, int brightness, int contrast,
-			    int blk_lel)
+	int blk_lel)
 {
 	int value;
+	struct cm_port_s port;
+	unsigned int addr_port = VPP_CHROMA_ADDR_PORT;
+	unsigned int data_port = VPP_CHROMA_DATA_PORT;
+	int slice_max = 0;
+	int i;
 
-	if (r) {
-		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, LUMA_ADJ0_REG);
-		value = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
-		pr_info("contrast = 0x%x, blklel = 0x%x\n",
-			value & 0xfff, (value >> 12) & 0x3ff);
-		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, LUMA_ADJ1_REG);
-		value = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
-		pr_info("bright = 0x%x, hist_mode = 0x%x\n",
-			value & 0x1fff, (value >> 16) & 0x1fff);
+	if (chip_type_id == chip_t3x) {
+		slice_max = get_slice_max();
+		port = get_cm_port();
+		for (i = SLICE0; i < slice_max; i++) {
+			addr_port = port.cm_addr_port[i];
+			data_port = port.cm_data_port[i];
+
+			if (r) {
+				WRITE_VPP_REG(addr_port, LUMA_ADJ0_REG);
+				value = READ_VPP_REG(data_port);
+				pr_info("contrast = 0x%x, blklel = 0x%x\n",
+					value & 0xfff, (value >> 12) & 0x3ff);
+				WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+				value = READ_VPP_REG(data_port);
+				pr_info("bright = 0x%x, hist_mode = 0x%x\n",
+					value & 0x1fff, (value >> 16) & 0x1fff);
+			} else {
+				WRITE_VPP_REG(addr_port, LUMA_ADJ0_REG);
+				WRITE_VPP_REG(data_port,
+					(blk_lel << 12) | contrast);
+
+				WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+				value = READ_VPP_REG(data_port);
+				WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+				WRITE_VPP_REG(data_port,
+					(value & (~(0x1fff))) | brightness);
+			}
+		}
 	} else {
-		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, LUMA_ADJ0_REG);
-		WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
-			      (blk_lel << 12) | contrast);
+		if (r) {
+			WRITE_VPP_REG(addr_port, LUMA_ADJ0_REG);
+			value = READ_VPP_REG(data_port);
+			pr_info("contrast = 0x%x, blklel = 0x%x\n",
+				value & 0xfff, (value >> 12) & 0x3ff);
+			WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+			value = READ_VPP_REG(data_port);
+			pr_info("bright = 0x%x, hist_mode = 0x%x\n",
+				value & 0x1fff, (value >> 16) & 0x1fff);
+		} else {
+			WRITE_VPP_REG(addr_port, LUMA_ADJ0_REG);
+			WRITE_VPP_REG(data_port,
+				(blk_lel << 12) | contrast);
 
-		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, LUMA_ADJ1_REG);
-		value = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
-		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, LUMA_ADJ1_REG);
-		WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
-			      (value & (~(0x1fff))) | brightness);
+			WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+			value = READ_VPP_REG(data_port);
+			WRITE_VPP_REG(addr_port, LUMA_ADJ1_REG);
+			WRITE_VPP_REG(data_port,
+				(value & (~(0x1fff))) | brightness);
+		}
 	}
 }
 
@@ -8573,38 +8714,47 @@ static void pr_cm_hist(enum cm_hist_e hist_sel)
 	int i;
 	int addr_port;
 	int data_port;
-	//struct cm_port_s cm_port;
 
-	if (chip_type_id == chip_s5 ||
-		chip_type_id == chip_t3x) {
-		/*s5 not support color hist*/
-		//cm_port = get_cm_port();
-		//addr_port = cm_port.cm_addr_port[SLICE0];
-		//data_port = cm_port.cm_data_port[SLICE0];
+	if (chip_type_id == chip_s5) {
 		pr_info("not support\n");
-	} else {
-		addr_port = VPP_CHROMA_ADDR_PORT;
-		data_port = VPP_CHROMA_DATA_PORT;
+		return;
 	}
+
+	addr_port = VPP_CHROMA_ADDR_PORT;
+	data_port = VPP_CHROMA_DATA_PORT;
 
 	hist = kmalloc(32 * sizeof(unsigned int), GFP_KERNEL);
 	memset(hist, 0, 32 * sizeof(unsigned int));
 
 	switch (hist_sel) {
 	case CM_HUE_HIST:
-		for (i = 0; i < 32; i++) {
-			WRITE_VPP_REG(addr_port,
-				      RO_CM_HUE_HIST_BIN0 + i);
-			hist[i] = READ_VPP_REG(data_port);
-			pr_info("hist[%d] = 0x%8x\n", i, hist[i]);
+		if (chip_type_id != chip_t3x) {
+			for (i = 0; i < 32; i++) {
+				WRITE_VPP_REG(addr_port,
+					RO_CM_HUE_HIST_BIN0 + i);
+				hist[i] = READ_VPP_REG(data_port);
+				pr_info("hue_hist[%d] = 0x%8x\n", i, hist[i]);
+			}
+		} else {
+			cm_hist_by_type_get(hist_sel, hist, 32,
+				RO_CM_HUE_HIST_BIN0);
+			for (i = 0; i < 32; i++)
+				pr_info("hue_hist[%d] = 0x%8x\n", i, hist[i]);
 		}
 		break;
 	case CM_SAT_HIST:
-		for (i = 0; i < 32; i++) {
-			WRITE_VPP_REG(addr_port,
-				      RO_CM_SAT_HIST_BIN0 + i);
-			hist[i] = READ_VPP_REG(data_port);
-			pr_info("hist[%d] = 0x%8x\n", i, hist[i]);
+		if (chip_type_id != chip_t3x) {
+			for (i = 0; i < 32; i++) {
+				WRITE_VPP_REG(addr_port,
+					RO_CM_SAT_HIST_BIN0 + i);
+				hist[i] = READ_VPP_REG(data_port);
+				pr_info("sat_hist[%d] = 0x%8x\n", i, hist[i]);
+			}
+		} else {
+			cm_hist_by_type_get(hist_sel, hist, 32,
+				RO_CM_SAT_HIST_BIN0);
+			for (i = 0; i < 32; i++)
+				pr_info("sat_hist[%d] = 0x%8x\n", i, hist[i]);
 		}
 		break;
 	default:
@@ -8638,14 +8788,26 @@ static void cm_init_config(int bitdepth)
 			addr_port = cm_port.cm_addr_port[m];
 			data_port = cm_port.cm_data_port[m];
 
-			WRITE_VPP_REG(addr_port, XVYCC_YSCP_REG);
-			WRITE_VPP_REG(data_port, 0xfff0000);
-			WRITE_VPP_REG(addr_port, XVYCC_USCP_REG);
-			WRITE_VPP_REG(data_port, 0xfff0000);
-			WRITE_VPP_REG(addr_port, XVYCC_VSCP_REG);
-			WRITE_VPP_REG(data_port, 0xfff0000);
-			WRITE_VPP_REG(addr_port, LUMA_ADJ0_REG);
-			WRITE_VPP_REG(data_port, 0x100400);
+			if (bitdepth == 12) {
+				WRITE_VPP_REG(addr_port, XVYCC_YSCP_REG);
+				WRITE_VPP_REG(data_port, 0xfff0000);
+				WRITE_VPP_REG(addr_port, XVYCC_USCP_REG);
+				WRITE_VPP_REG(data_port, 0xfff0000);
+				WRITE_VPP_REG(addr_port, XVYCC_VSCP_REG);
+				WRITE_VPP_REG(data_port, 0xfff0000);
+				WRITE_VPP_REG(addr_port, LUMA_ADJ0_REG);
+				WRITE_VPP_REG(data_port, 0x100400);
+			} else {
+				WRITE_VPP_REG(addr_port, XVYCC_YSCP_REG);
+				WRITE_VPP_REG(data_port, 0x3ff0000);
+				WRITE_VPP_REG(addr_port, XVYCC_USCP_REG);
+				WRITE_VPP_REG(data_port, 0x3ff0000);
+				WRITE_VPP_REG(addr_port, XVYCC_VSCP_REG);
+				WRITE_VPP_REG(data_port, 0x3ff0000);
+				WRITE_VPP_REG(addr_port, LUMA_ADJ0_REG);
+				WRITE_VPP_REG(data_port, 0x40400);
+			}
+
 			for (i = 0; i < 32; i++) {
 				for (j = 0; j < 5; j++) {
 					reg = CM2_ENH_COEF0_H00 + i * 8 + j;
@@ -8700,7 +8862,7 @@ static void cm_init_config(int bitdepth)
 static void dnlp_init_config(void)
 {
 	memcpy(&dnlp_curve_param_load, &dnlp_default,
-	       sizeof(struct ve_dnlp_curve_param_s));
+		sizeof(struct ve_dnlp_curve_param_s));
 	ve_new_dnlp_param_update();
 }
 
@@ -8790,6 +8952,7 @@ static const char *amvecm_debug_usage_str = {
 	"echo datapath_config param1(D) param2(D) > /sys/class/amvecm/debug; config data path\n"
 	"echo datapath_status > /sys/class/amvecm/debug; data path status\n"
 	"echo clip_config 0/1/2/.. 0/1/... 0/1 > /sys/class/amvecm/debug; config clip\n"
+	"echo vpp_mtrx_test sel csc on slice > /sys/class/amvecm/debug;\n"
 };
 
 static ssize_t amvecm_debug_show(struct class *cla,
@@ -8806,6 +8969,11 @@ static ssize_t amvecm_debug_store(struct class *cla,
 {
 	char *buf_orig, *parm[8] = {NULL};
 	long val = 0;
+	long tmp_val[4] = {0};
+	enum vpp_matrix_e mtx_sel;
+	int mtx_csc;
+	int mtx_on;
+	enum vpp_slice_e slice;
 	unsigned int mode_sel, color, color_mode, i;
 	struct vinfo_s *vinfo = get_current_vinfo();
 
@@ -8866,6 +9034,14 @@ static ssize_t amvecm_debug_store(struct class *cla,
 		} else if (!strncmp(parm[1], "disable", 7)) {
 			amvecm_wb_enable(0);
 			pr_info("disable wb\n");
+		}
+	} else if (!strncmp(parm[0], "pre_gamma", 2)) {
+		if (!strncmp(parm[1], "enable", 6)) {
+			post_pre_gamma_ctl(WR_VCB, 1);
+			pr_info("enable pre_gamma\n");
+		} else if (!strncmp(parm[1], "disable", 7)) {
+			post_pre_gamma_ctl(WR_VCB, 0);
+			pr_info("disable pre_gamma\n");
 		}
 	} else if (!strncmp(parm[0], "gamma", 5)) {
 		if (!strncmp(parm[1], "enable", 6)) {
@@ -9274,7 +9450,7 @@ static ssize_t amvecm_debug_store(struct class *cla,
 			if (lut3d_long_sec_en)
 				section_len = 17 * 17 * 17;
 			section_in = kmalloc(sizeof(unsigned int) * section_len * 3,
-					     GFP_KERNEL);
+				GFP_KERNEL);
 			if (!section_in)
 				goto free_buf;
 
@@ -9722,6 +9898,50 @@ static ssize_t amvecm_debug_store(struct class *cla,
 		} else {
 			pr_info("unsupport cmd\n");
 		}
+	} else if (!strcmp(parm[0], "vpp_mtrx_test")) {
+		if (chip_type_id != chip_t3x)
+			goto free_buf;
+
+		if (parm[1]) {
+			if (kstrtoul(parm[1], 10, &tmp_val[0]) < 0)
+				goto free_buf;
+		}
+
+		if (tmp_val[0] == 0)
+			mtx_sel = VD1_MTX;
+		else if (tmp_val[0] == 1)
+			mtx_sel = POST2_MTX;
+		else
+			mtx_sel = POST_MTX;
+
+		if (parm[2]) {
+			if (kstrtoul(parm[2], 10, &tmp_val[1]) < 0)
+				goto free_buf;
+		}
+		mtx_csc = (int)tmp_val[1];
+
+		if (parm[3]) {
+			if (kstrtoul(parm[3], 10, &tmp_val[2]) < 0)
+				goto free_buf;
+		}
+
+		if (tmp_val[2] > 0)
+			mtx_on = 1;
+		else
+			mtx_on = 0;
+
+		if (parm[4]) {
+			if (kstrtoul(parm[4], 10, &tmp_val[3]) < 0)
+				goto free_buf;
+		}
+
+		if (tmp_val[3] > 0)
+			slice = SLICE1;
+		else
+			slice = SLICE0;
+		ve_mtrx_setting(mtx_sel, mtx_csc, mtx_on, slice);
+		pr_info("ve_mtrx: %d %d %d %d\n",
+			mtx_sel, mtx_csc, mtx_on, slice);
 	} else {
 		pr_info("unsupport cmd\n");
 	}
@@ -10921,6 +11141,12 @@ tvchip_pq_setting:
 	dnlp_alg_param_init();
 	vpp_pq_ctrl_config(pq_cfg, WR_VCB);
 
+	/*am_dma_ctrl init*/
+	if (chip_type_id == chip_t3x) {
+		am_dma_set_mif_wr_status(1);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_MAX, 1);
+	}
+
 	pq_reg_wr_rdma = 1;
 }
 
@@ -11650,7 +11876,6 @@ static void aml_vecm_dt_parse(struct amvecm_dev_s *devp, struct platform_device 
 	} else {
 		amcm_disable(WR_VCB);
 	}
-	/* WRITE_VPP_REG_BITS(VPP_MISC, cm_en, 28, 1); */
 	pr_info("cm_init done.\n");
 
 	res_viu2_vsync_irq =
@@ -11842,7 +12067,10 @@ static int aml_vecm_probe(struct platform_device *pdev)
 
 	memset(devp, 0, (sizeof(struct amvecm_dev_s)));
 	pr_info("\n VECM probe start\n");
+
 	hdr_lut_buffer_malloc(pdev);
+	am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_MAX);
+
 	ret = alloc_chrdev_region(&devp->devno, 0, 1, AMVECM_NAME);
 	if (ret < 0)
 		goto fail_alloc_region;
@@ -11974,7 +12202,9 @@ static int __exit aml_vecm_remove(struct platform_device *pdev)
 		free_irq(res_viu2_vsync_irq->start,
 			 (void *)"amvecm_vsync2");
 	}
+
 	hdr_lut_buffer_free(pdev);
+	am_dma_buffer_free(pdev, EN_DMA_WR_ID_MAX);
 
 	hdr_exit();
 	device_destroy(devp->clsp, devp->devno);

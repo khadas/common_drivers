@@ -2062,7 +2062,7 @@
 		compatible = "amlogic,aml_p1_dma";
 		reg = <0x0 0xfe440400 0x0 0x48>;
 		interrupts = <0 24 1>;
-		status = "disabled";
+		status = "okay";
 
 		aml_aes {
 			compatible = "amlogic,aes_g12a_dma";
@@ -2083,15 +2083,8 @@
 			status = "okay";
 		};
 
-		aml_sm4 {
-			compatible = "amlogic,sm4_dma";
-			dev_name = "aml_sm4_dma";
-			status = "okay";
-			iv_swap = /bits/ 8 <0x0>;
-		};
-
 		crypto {
-			compatible = "amlogic,crypto_s5";
+			compatible = "amlogic,crypto_sc2";
 			dev_name = "aml_crypto_dev";
 			status = "okay";
 			thread = /bits/ 8 <0x5>;

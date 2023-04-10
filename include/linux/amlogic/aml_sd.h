@@ -189,6 +189,9 @@ struct meson_host {
 	bool auto_clk;
 	bool ignore_desc_busy;
 	bool use_intf3_tuning;
+	bool enable_hwcq;
+	int flags;
+	spinlock_t lock; /* lock for claim and bus ops */
 	bool src_clk_cfg_done;
 	struct dentry *debugfs_root;
 };
@@ -344,6 +347,7 @@ void aml_host_bus_fsm_show(struct mmc_host *mmc, int status);
 #define SD_EMMC_SRAM_DATA_BUF_OFF 0x400
 #define SD_EMMC_MAX_SEGS 256
 #define SD_EMMC_MAX_REQ_SIZE (128 * 1024)
+#define SD_EMMC_MAX_SEG_SIZE (64 * 1024)
 
 #define SD_EMMC_CFG_BLK_SIZE 512 /* internal buffer max: 512 bytes */
 #define SD_EMMC_CFG_RESP_TIMEOUT 256 /* in clock cycles */
@@ -431,6 +435,9 @@ void aml_host_bus_fsm_show(struct mmc_host *mmc, int status);
 #define RESULT_FAIL                     1
 #define RESULT_UNSUP_HOST               2
 #define RESULT_UNSUP_CARD               3
+
+/* Host attributes */
+#define AML_USE_64BIT_DMA        BIT(0)
 
 #endif /*__AML_SD_H__*/
 

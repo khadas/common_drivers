@@ -1,0 +1,135 @@
+From 939519fa1e1a8683fb14f177944ca1b4893b2d78 Mon Sep 17 00:00:00 2001
+From: Long <long.yu@amlogic.com>
+Date: Thu, 23 Feb 2023 15:58:10 +0800
+Subject: [PATCH] eMMC: support CQE [2/2]
+
+PD#SWPL-119703
+
+Problem:
+support CQE
+
+Solution:
+support CQE
+
+Verify:
+T5m
+
+Change-Id: Ifa79b3365259d4423f526fef902f3dc60eeed62f
+Signed-off-by: Long <long.yu@amlogic.com>
+---
+
+diff --git a/drivers/mmc/host/cqhci-core.c b/drivers/mmc/host/cqhci-core.c
+index 7f25cca..f933946 100644
+--- a/drivers/mmc/host/cqhci-core.c
++++ b/drivers/mmc/host/cqhci-core.c
+@@ -20,6 +20,10 @@
+ #include "cqhci.h"
+ #include "cqhci-crypto.h"
+
++#if IS_ENABLED(CONFIG_AMLOGIC_MMC_CQHCI)
++#include <linux/amlogic/aml_sd.h>
++#endif
++
+ #define DCMD_SLOT 31
+ #define NUM_SLOTS 32
+
+@@ -169,6 +173,10 @@
+ static int cqhci_host_alloc_tdl(struct cqhci_host *cq_host)
+ {
+ 	int i = 0;
++#if IS_ENABLED(CONFIG_AMLOGIC_MMC_CQHCI)
++	struct mmc_host *mmc = cq_host->mmc;
++	struct meson_host *host = mmc_priv(mmc);
++#endif
+
+ 	/* task descriptor can be 64/128 bit irrespective of arch */
+ 	if (cq_host->caps & CQHCI_TASK_DESC_SZ_128) {
+@@ -212,21 +220,30 @@
+ 	 * setup each link-desc memory offset per slot-number to
+ 	 * the descriptor table.
+ 	 */
++#if !IS_ENABLED(CONFIG_AMLOGIC_MMC_CQHCI)
+ 	cq_host->desc_base = dmam_alloc_coherent(mmc_dev(cq_host->mmc),
+ 						 cq_host->desc_size,
+ 						 &cq_host->desc_dma_base,
+ 						 GFP_KERNEL);
+ 	if (!cq_host->desc_base)
+ 		return -ENOMEM;
++#else
++	cq_host->desc_base = host->regs + SD_EMMC_SRAM_DESC_BUF_OFF;
++	cq_host->desc_dma_base = host->res[0]->start +
++		SD_EMMC_SRAM_DESC_BUF_OFF;
++
++#endif
+
+ 	cq_host->trans_desc_base = dmam_alloc_coherent(mmc_dev(cq_host->mmc),
+ 					      cq_host->data_size,
+ 					      &cq_host->trans_desc_dma_base,
+ 					      GFP_KERNEL);
+ 	if (!cq_host->trans_desc_base) {
++#if !IS_ENABLED(CONFIG_AMLOGIC_MMC_CQHCI)
+ 		dmam_free_coherent(mmc_dev(cq_host->mmc), cq_host->desc_size,
+ 				   cq_host->desc_base,
+ 				   cq_host->desc_dma_base);
++#endif
+ 		cq_host->desc_base = NULL;
+ 		cq_host->desc_dma_base = 0;
+ 		return -ENOMEM;
+@@ -408,10 +425,11 @@
+ 	dmam_free_coherent(mmc_dev(mmc), cq_host->data_size,
+ 			   cq_host->trans_desc_base,
+ 			   cq_host->trans_desc_dma_base);
+-
++#if !IS_ENABLED(CONFIG_AMLOGIC_MMC_CQHCI)
+ 	dmam_free_coherent(mmc_dev(mmc), cq_host->desc_size,
+ 			   cq_host->desc_base,
+ 			   cq_host->desc_dma_base);
++#endif
+
+ 	cq_host->trans_desc_base = NULL;
+ 	cq_host->desc_base = NULL;
+@@ -536,7 +554,9 @@
+ 	u64 data = 0;
+ 	u8 resp_type;
+ 	u8 *desc;
++#if !IS_ENABLED(CONFIG_AMLOGIC_MMC_CQHCI)
+ 	__le64 *dataddr;
++#endif
+ 	struct cqhci_host *cq_host = mmc->cqe_private;
+ 	u8 timing;
+
+@@ -568,8 +588,20 @@
+ 	desc = (u8 *)task_desc;
+ 	pr_debug("%s: cqhci: dcmd: cmd: %d timing: %d resp: %d\n",
+ 		 mmc_hostname(mmc), mrq->cmd->opcode, timing, resp_type);
++#if !IS_ENABLED(CONFIG_AMLOGIC_MMC_CQHCI)
+ 	dataddr = (__le64 __force *)(desc + 4);
+ 	dataddr[0] = cpu_to_le64((u64)mrq->cmd->arg);
++#else
++	if (cq_host->dma64) {
++		__le64 *dataddr = (__le64 __force *)(desc + 4);
++
++		dataddr[0] = cpu_to_le64((u64)mrq->cmd->arg);
++	} else {
++		__le32 *dataddr = (__le32 __force *)(desc + 4);
++
++		dataddr[0] = cpu_to_le32(mrq->cmd->arg);
++	}
++#endif
+
+ }
+
+diff --git a/drivers/mmc/host/cqhci.h b/drivers/mmc/host/cqhci.h
+index ba9387e..9f02ea8 100644
+--- a/drivers/mmc/host/cqhci.h
++++ b/drivers/mmc/host/cqhci.h
+@@ -90,6 +90,9 @@
+ /* send status config 1 */
+ #define CQHCI_SSC1			0x40
+ #define CQHCI_SSC1_CBC_MASK		GENMASK(19, 16)
++#define CQHCI_SSC1_CIT_MASK		GENMASK(15, 0)
++#define CQHCI_SSC1_CBC(x)		(((x) & 0xF) << 16)
++#define CQHCI_SSC1_CIT(x)		((x) & 0xFFFF)
+
+ /* send status config 2 */
+ #define CQHCI_SSC2			0x44

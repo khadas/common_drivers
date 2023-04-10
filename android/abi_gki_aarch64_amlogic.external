@@ -11,3 +11,7 @@
   __tracepoint_android_vh_mem_cgroup_alloc
   css_next_descendant_pre
   memory_cgrp_subsys_enabled_key
+  mmc_cmdq_enable
+  mmc_cmdq_disable
+  devm_blk_crypto_profile_init
+  mmc_cqe_request_done

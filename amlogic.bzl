@@ -98,6 +98,7 @@ _AMLOGIC_MODULES = [
     "drivers/media/v4l2-core/v4l2-fwnode.ko",
     "drivers/media/v4l2-core/videobuf-core.ko",
     "drivers/media/v4l2-core/videobuf-vmalloc.ko",
+    "drivers/mmc/host/cqhci.ko",
     "drivers/net/ethernet/stmicro/stmmac/dwmac-dwc-qos-eth.ko",
     "drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.ko",
     "drivers/net/ethernet/stmicro/stmmac/dwmac-meson.ko",

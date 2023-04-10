@@ -25,6 +25,9 @@ void mmc_prepare_mrq(struct mmc_card *card,
 
 int get_reserve_partition_off_from_tbl(void);
 
+int aml_disable_mmc_cqe(struct mmc_card *card);
+
+int aml_enable_mmc_cqe(struct mmc_card *card);
 
 #endif
 

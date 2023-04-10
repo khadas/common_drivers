@@ -252,6 +252,7 @@ ssize_t mmc_dtb_read(struct file *file, char __user *buf,
 		return -ENOMEM;
 
 	mmc_claim_host(card_dtb->host);
+	aml_disable_mmc_cqe(card_dtb);
 	ret = amlmmc_dtb_read(card_dtb, (unsigned char *)dtb_ptr, CONFIG_DTB_SIZE);
 	if (ret) {
 		pr_err("%s: read failed:%d", __func__, ret);
@@ -266,6 +267,7 @@ ssize_t mmc_dtb_read(struct file *file, char __user *buf,
 	*ppos += read_size;
 
 exit:
+	aml_enable_mmc_cqe(card_dtb);
 	mmc_release_host(card_dtb->host);
 	return read_size;
 }
@@ -288,6 +290,7 @@ ssize_t mmc_dtb_write(struct file *file,
 		return -ENOMEM;
 
 	mmc_claim_host(card_dtb->host);
+	aml_disable_mmc_cqe(card_dtb);
 
 	if ((*ppos + count) > CONFIG_DTB_SIZE)
 		write_size = CONFIG_DTB_SIZE - *ppos;
@@ -306,6 +309,7 @@ ssize_t mmc_dtb_write(struct file *file,
 
 	*ppos += write_size;
 exit:
+	aml_enable_mmc_cqe(card_dtb);
 	mmc_release_host(card_dtb->host);
 	return write_size;
 }
@@ -336,6 +340,7 @@ static int _dtb_read(struct mmc_card *mmc, int blk, unsigned char *buf)
 
 	dst = (unsigned char *)buf;
 	mmc_claim_host(mmc->host);
+	aml_disable_mmc_cqe(mmc);
 	do {
 		ret = mmc_read_internal(mmc, blk, MAX_TRANS_BLK, dst);
 		if (ret) {
@@ -347,6 +352,7 @@ static int _dtb_read(struct mmc_card *mmc, int blk, unsigned char *buf)
 		cnt -= MAX_TRANS_BLK;
 		dst = (unsigned char *)buf + MAX_TRANS_SIZE;
 	} while (cnt != 0);
+	aml_enable_mmc_cqe(mmc);
 	mmc_release_host(mmc->host);
 	return ret;
 }

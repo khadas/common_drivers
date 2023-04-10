@@ -44,6 +44,8 @@
 #include <linux/moduleparam.h>
 #include <linux/amlogic/gki_module.h>
 
+#include "meson-cqhci.h"
+
 struct mmc_gpio {
 	struct gpio_desc *ro_gpio;
 	struct gpio_desc *cd_gpio;
@@ -173,6 +175,14 @@ int amlogic_of_parse(struct mmc_host *host)
 		mmc->run_pxp_flag = 1;
 	else
 		mmc->run_pxp_flag = 0;
+
+	if (device_property_read_bool(dev, "supports-cqe"))
+		mmc->enable_hwcq = true;
+	else
+		mmc->enable_hwcq = false;
+
+	if (device_property_read_bool(dev, "use-64bit-dma"))
+		mmc->flags |= AML_USE_64BIT_DMA;
 
 	if (device_property_read_bool(dev, "auto-clock-sdio"))
 		mmc->auto_clk = true;
@@ -315,6 +325,32 @@ static int mmc_transfer(struct mmc_card *card, unsigned int dev_addr,
 		card->ext_csd.part_config = original_part_config;
 	}
 
+	return ret;
+}
+
+int aml_disable_mmc_cqe(struct mmc_card *card)
+{
+	int ret = 0;
+
+	if (card->reenable_cmdq && card->ext_csd.cmdq_en) {
+		pr_debug("[%s] [%d]\n", __func__, __LINE__);
+		ret = mmc_cmdq_disable(card);
+		if (ret)
+			pr_err("[%s] disable cqe mode failed\n", __func__);
+	}
+	return ret;
+}
+
+int aml_enable_mmc_cqe(struct mmc_card *card)
+{
+	int ret = 0;
+
+	if (card->reenable_cmdq && !card->ext_csd.cmdq_en) {
+		pr_debug("[%s] [%d]\n", __func__, __LINE__);
+		ret = mmc_cmdq_enable(card);
+		if (ret)
+			pr_err("[%s] reenable cqe mode failed\n", __func__);
+	}
 	return ret;
 }
 
@@ -2728,6 +2764,18 @@ static irqreturn_t meson_mmc_irq(int irq, void *dev_id)
 			aml_card_type_non_sdio(host))) {
 		pr_debug("ignore irq.[%s]status:0x%x\n",
 			__func__, readl(host->regs + SD_EMMC_STATUS));
+#if IS_ENABLED(CONFIG_AMLOGIC_MMC_CQHCI)
+		if (host->mmc->cqe_on) {
+			pr_debug("[%s]Enter cqe irq\n", __func__);
+			aml_cqhci_irq(host);
+		}
+		/*
+		 * clear invalid irq,When emmc reports an error,
+		 * error_bit and end_of_chain will not be level triggered at the same
+		 * time and many invalid interrupts will be generated
+		 */
+		writel(0x7fff, host->regs + SD_EMMC_STATUS);
+#endif
 		return IRQ_HANDLED;
 	}
 
@@ -2881,6 +2929,8 @@ static irqreturn_t meson_mmc_irq_thread(int irq, void *dev_id)
 	if (cmd->error) {
 		meson_mmc_wait_desc_stop(host);
 		meson_mmc_request_done(host->mmc, cmd->mrq);
+		writel(0x7fff, host->regs + SD_EMMC_STATUS);
+		//pr_info("thread irq:0x%x\n", readl(host->regs + SD_EMMC_STATUS));
 
 		return IRQ_HANDLED;
 	}
@@ -3847,9 +3897,16 @@ static int meson_mmc_probe(struct platform_device *pdev)
 	writel(IRQ_CRC_ERR | IRQ_TIMEOUTS | IRQ_END_OF_CHAIN,
 	       host->regs + SD_EMMC_IRQ_EN);
 
-	ret = request_threaded_irq(host->irq, meson_mmc_irq,
+	if (host->enable_hwcq) {
+		irq_set_affinity_hint(host->irq, cpumask_of(1));
+		ret = request_threaded_irq(host->irq, meson_mmc_irq,
+				   meson_mmc_irq_thread, IRQF_ONESHOT | IRQF_TRIGGER_HIGH,
+				   dev_name(&pdev->dev), host);
+	} else {
+		ret = request_threaded_irq(host->irq, meson_mmc_irq,
 				   meson_mmc_irq_thread, IRQF_ONESHOT,
 				   dev_name(&pdev->dev), host);
+	}
 	if (ret)
 		goto err_init_clk;
 	if (aml_card_type_mmc(host))
@@ -3926,7 +3983,11 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		host->pins_default = pinctrl_lookup_state(host->pinctrl, "sd_default");
 
 	mmc->ops = &meson_mmc_ops;
+#if IS_ENABLED(CONFIG_AMLOGIC_MMC_CQHCI)
+	amlogic_add_host(host);
+#else
 	mmc_add_host(mmc);
+#endif
 
 	if (aml_card_type_sdio(host)) {/* if sdio_wifi */
 		sdio_host = mmc;

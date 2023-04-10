@@ -8,3 +8,12 @@ config AMLOGIC_MMC_MESON_GX
            found on the S905/GX*/AXG family of SoCs.  This controller is
            MMC 5.1 compliant and supports SD, eMMC and SDIO interfaces.
            If you have a controller with this interface, say Y here.
+
+config AMLOGIC_MMC_CQHCI
+         tristate "Amlogic MMC CQHCI Host Controller support"
+         depends on MMC_CQHCI
+         help
+           This selects support for the Amlogic MMC CQHCI Host Controller
+           found on the P1/A5/T5M/*/ family of SoCs.  This controller is
+           MMC 5.1 compliant and supports SD, eMMC and SDIO interfaces.
+           If you have a controller with this interface, say Y here.

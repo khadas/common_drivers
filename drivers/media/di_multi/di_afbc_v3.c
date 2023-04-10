@@ -121,6 +121,8 @@ struct enc_cfg_s {
 	u32 force_444_comb;
 	u32 rot_en;
 	u32 din_swt;
+	int mmu_page_size;
+	u32 ofset_brst4_en;
 };
 
 static void afbce_sw(enum EAFBC_ENC enc, bool on, const struct reg_acc *op);//tmp
@@ -1891,6 +1893,10 @@ struct AFBCD_CFG_S {
 	unsigned int rot_en; //1 bits
 
 	unsigned int reg_lossy_en;	/* def 0*/
+	unsigned int ofset_brst4_en;
+	unsigned int brst_len_add_en;
+	unsigned int brst_len_add_value;
+	unsigned int quant_diff_root_leave;
 };
 
 static unsigned int afbcd_v5_get_offset(enum EAFBC_DEC dec)
@@ -2310,15 +2316,27 @@ static u32 enable_afbc_input_local(struct vframe_s *vf, enum EAFBC_DEC dec,
 		//pafd_ctr->fb.ver,reg_rd(0X1812));
 	if (pafd_ctr->fb.ver >= AFBCD_V5 && cfg) {
 		regs_ofst = afbcd_v5_get_offset(dec);
-		reg_wrb((regs_ofst + AFBCDM_IQUANT_ENABLE),
-			cfg->reg_lossy_en, 0, 1);//lossy_luma_en
-		reg_wrb((regs_ofst + AFBCDM_IQUANT_ENABLE),
-			cfg->reg_lossy_en, 4, 1);//lossy_chrm_en
-		reg_wrb((regs_ofst + AFBCDM_IQUANT_ENABLE),
-			cfg->reg_lossy_en, 10, 1);//lossy_luma_en extern
-		reg_wrb((regs_ofst + AFBCDM_IQUANT_ENABLE),
-			cfg->reg_lossy_en, 11, 1);//lossy_chrm_en extern
-
+		if (DIM_IS_IC(T3X) && vf->vf_lossycomp_param.lossy_mode) {
+			// set new feature
+			reg_wrb((regs_ofst + AFBCDM_LOSS_CTRL), cfg->reg_lossy_en, 4, 1);
+			reg_wrb((regs_ofst + AFBCDM_LOSS_CTRL), cfg->quant_diff_root_leave, 0, 4);
+			//fix_cr_en
+			reg_wr((regs_ofst + AFBCDM_BURST_CTRL),
+				(cfg->ofset_brst4_en	<< 4) | //reg_ofset_burst4_en
+				(cfg->brst_len_add_en	<< 3) |
+				//reg_burst_length_add_en
+				(cfg->brst_len_add_value << 0));
+				//reg_burst_length_add_value
+		} else {
+			reg_wrb((regs_ofst + AFBCDM_IQUANT_ENABLE),
+				cfg->reg_lossy_en, 0, 1);//lossy_luma_en
+			reg_wrb((regs_ofst + AFBCDM_IQUANT_ENABLE),
+				cfg->reg_lossy_en, 4, 1);//lossy_chrm_en
+			reg_wrb((regs_ofst + AFBCDM_IQUANT_ENABLE),
+				cfg->reg_lossy_en, 10, 1);//lossy_luma_en extern
+			reg_wrb((regs_ofst + AFBCDM_IQUANT_ENABLE),
+				cfg->reg_lossy_en, 11, 1);//lossy_chrm_en extern
+		}
 		reg_wr((regs_ofst + AFBCDM_ROT_CTRL),
 		       ((cfg->pip_src_mode  & 0x1) << 27) |
 		       //pip_src_mode
@@ -2491,8 +2509,20 @@ static u32 enable_afbc_input(struct vframe_s *inp_vf,
 		}
 		/*inp*/
 		if (pafd_ctr->en_set.b.inp) {
-			if (inp_vf2->type & VIDTYPE_COMPRESS_LOSS)
+			if (inp_vf2->type & VIDTYPE_COMPRESS_LOSS) {
 				cfg.reg_lossy_en = 1;
+				if (inp_vf2->vf_lossycomp_param.lossy_mode &&
+					cfgg(AFBCE_LOSS_EN) == 2) {
+					cfg.ofset_brst4_en =
+						inp_vf2->vf_lossycomp_param.ofset_burst4_en;
+					cfg.brst_len_add_en =
+						inp_vf2->vf_lossycomp_param.burst_length_add_en;
+					cfg.brst_len_add_value =
+						inp_vf2->vf_lossycomp_param.burst_length_add_value;
+					cfg.quant_diff_root_leave =
+						inp_vf2->vf_lossycomp_param.quant_diff_root_leave;
+				}
+			}
 			enable_afbc_input_local(inp_vf2,
 						pafd_ctr->fb.pre_dec, pcfg);
 		}
@@ -2507,6 +2537,17 @@ static u32 enable_afbc_input(struct vframe_s *inp_vf,
 			     cfgg(AFBCE_LOSS_EN) == 2)) {//di loss
 				cfg.reg_lossy_en = 1;
 				nr_vf->type |= VIDTYPE_COMPRESS_LOSS;
+				if (mem_vf2->vf_lossycomp_param.lossy_mode &&
+					cfgg(AFBCE_LOSS_EN) == 2) {
+					cfg.ofset_brst4_en =
+						mem_vf2->vf_lossycomp_param.ofset_burst4_en;
+					cfg.brst_len_add_en =
+						mem_vf2->vf_lossycomp_param.burst_length_add_en;
+					cfg.brst_len_add_value =
+						mem_vf2->vf_lossycomp_param.burst_length_add_value;
+					cfg.quant_diff_root_leave =
+						mem_vf2->vf_lossycomp_param.quant_diff_root_leave;
+				}
 			} else {
 				cfg.reg_lossy_en = 0;
 				nr_vf->type &= ~VIDTYPE_COMPRESS_LOSS;
@@ -2589,8 +2630,11 @@ static u32 enable_afbc_input(struct vframe_s *inp_vf,
 		/*nr*/
 		if (cfgg(AFBCE_LOSS_EN) == 1 ||
 		    ((mem_vf2->type & VIDTYPE_COMPRESS_LOSS) &&
-		     cfgg(AFBCE_LOSS_EN) == 2))
+		     cfgg(AFBCE_LOSS_EN) == 2)) {
 			nr_vf->type |= VIDTYPE_COMPRESS_LOSS;
+			if (cfgg(AFBCE_LOSS_EN) == 1 && DIM_IS_IC(T3X))
+				nr_vf->vf_lossycomp_param.lossy_mode = 1;
+		}
 		else
 			nr_vf->type &= ~VIDTYPE_COMPRESS_LOSS;
 
@@ -5070,7 +5114,11 @@ static void vf_set_for_com(struct di_buf_s *di_buf)
 	vf->compHeight = vf->height;
 	vf->compWidth  = vf->width;
 	vf->bitdepth |= (BITDEPTH_U10 | BITDEPTH_V10);
-
+	if (cfgg(AFBCE_LOSS_EN) == 1 && DIM_IS_IC(T3X)) {
+		vf->vf_lossycomp_param.quant_diff_root_leave = 2;
+		vf->vf_lossycomp_param.lossy_mode = 1;
+		vf->vf_lossycomp_param.ofset_burst4_en = 0;
+	}
 	if (di_buf->afbce_out_yuv420_10) {
 		vf->type &= ~VFMT_COLOR_MSK;
 		vf->type |= VIDTYPE_VIU_FIELD;
@@ -5122,6 +5170,8 @@ static void ori_afbce_cfg(struct enc_cfg_s *cfg,
 	bool flg_v5 = false;
 	unsigned int	   hsize_buf;
 	unsigned int	   vsize_buf;
+	unsigned int	   fix_cr_en, rc_en;
+	int mmu_page_size = cfg->mmu_page_size == 0 ? 4096 : 8192;
 
 	/* sc2 */
 	if (pafd_ctr->fb.ver >= AFBCD_V5)
@@ -5195,6 +5245,11 @@ static void ori_afbce_cfg(struct enc_cfg_s *cfg,
 	} else if (cfg->loosy_mode == 3) {
 		lossy_luma_en = 1;
 		lossy_chrm_en = 1;
+	} else if (cfg->loosy_mode == 4) {
+		lossy_luma_en = 0;
+		lossy_chrm_en = 0;
+		fix_cr_en = 1;
+		rc_en = 1;
 	} else {
 		lossy_luma_en = 0;
 		lossy_chrm_en = 0;
@@ -5212,6 +5267,32 @@ static void ori_afbce_cfg(struct enc_cfg_s *cfg,
 	op->bwr(reg[EAFBCE_QUANT_ENABLE], lossy_chrm_en, 4, 1);
 	op->bwr(reg[EAFBCE_QUANT_ENABLE], lossy_luma_en, 10, 1);
 	op->bwr(reg[EAFBCE_QUANT_ENABLE], lossy_chrm_en, 11, 1);
+
+	if (DIM_IS_IC(T3X)) {
+		op->bwr(reg[EAFBCE_LOSS_CTRL], fix_cr_en, 31, 1);
+		//reg_fix_cr_en
+		op->bwr(reg[EAFBCE_LOSS_CTRL], rc_en, 30, 1);
+		//reg_rc_en
+		//set brst_len
+		//op->bwr(reg[EAFBCE_FORMAT], cfg->brst_len_add_en, 10, 1);
+		//reg_fix_cr_en
+		op->bwr(reg[EAFBCE_FORMAT], cfg->ofset_brst4_en, 11, 1);
+		//reg_fix_cr_en
+		//op->bwr(reg[EAFBCE_FORMAT], cfg->brst_len_add_value, 12, 3);
+		//reg_fix_cr_en
+		if (fix_cr_en == 1) {
+			op->bwr(reg[EAFBCE_LOSS_BURST_NUM], 7, 0, 5);
+			//reg_block_burst_num_3
+			op->bwr(reg[EAFBCE_LOSS_BURST_NUM], 8, 8, 5);
+			//reg_block_burst_num_2
+			op->bwr(reg[EAFBCE_LOSS_BURST_NUM], 7, 16, 5);
+			//reg_block_burst_num_1
+			op->bwr(reg[EAFBCE_LOSS_BURST_NUM], 8, 24, 5);
+			//reg_block_burst_num_0
+		}
+		//set mmu_page_size
+		op->bwr(reg[AFBCEX_MIF_SIZE], mmu_page_size, 0, 16);
+	}
 
 	/* hsize_in of afbc input*/
 	/* vsize_in of afbc input*/
@@ -5425,8 +5506,22 @@ static void afbce_set(struct vframe_s *vf, enum EAFBC_ENC enc)
 	vf_set_for_com(di_buf);
 	if (cfgg(AFBCE_LOSS_EN) == 1 ||
 	    ((di_buf->vframe->type & VIDTYPE_COMPRESS_LOSS) &&
-	     cfgg(AFBCE_LOSS_EN) == 2))
-		cfg->loosy_mode = 0x3;
+	     cfgg(AFBCE_LOSS_EN) == 2)) {
+		if (cfgg(AFBCE_LOSS_EN) == 1) {
+			if (DIM_IS_IC(T3X))
+				cfg->loosy_mode = 0x4;
+			else
+				cfg->loosy_mode = 0x3;
+		} else if (cfgg(AFBCE_LOSS_EN) == 2) {
+			if (di_buf->vframe->vf_lossycomp_param.lossy_mode == 1) {
+				cfg->loosy_mode = 0x4;
+				cfg->ofset_brst4_en =
+				di_buf->vframe->vf_lossycomp_param.ofset_burst4_en;
+				}
+			else
+				cfg->loosy_mode = 0x3;
+		}
+	}
 #ifdef AFBCP
 	di_print("%s:buf[%d],head[0x%lx],info[0x%lx]\n",
 		 __func__,
@@ -5521,7 +5616,7 @@ static void afbce_set(struct vframe_s *vf, enum EAFBC_ENC enc)
 	cfg->force_444_comb = 0;
 	//cfg->rot_en	    = 0;
 	cfg->din_swt	    = 0;
-
+	cfg->mmu_page_size  = 0;
 	ori_afbce_cfg(cfg, &di_normal_regset, enc);
 }
 

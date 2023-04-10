@@ -59,7 +59,7 @@ static void write_yuv_to_buf(void)
 #endif
 }
 
-int vicp_test_config(struct vid_cmpr_top_t *vid_cmpr_top)
+int vicp_test_config(struct vid_cmpr_top_s *vid_cmpr_top)
 {
 	int buffer_size = 0;
 	u8 *temp_addr;
@@ -198,9 +198,9 @@ static void dump_test_yuv(int flag)
 int vicp_test(void)
 {
 	int ret = 0;
-	struct vid_cmpr_top_t vid_cmpr_top;
+	struct vid_cmpr_top_s vid_cmpr_top;
 
-	memset(&vid_cmpr_top, 0, sizeof(struct vid_cmpr_top_t));
+	memset(&vid_cmpr_top, 0, sizeof(struct vid_cmpr_top_s));
 	ret = vicp_test_config(&vid_cmpr_top);
 	if (ret < 0) {
 		vicp_print(VICP_ERROR, "test config failed.\n");

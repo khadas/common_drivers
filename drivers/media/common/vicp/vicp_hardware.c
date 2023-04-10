@@ -112,7 +112,7 @@ static int pps_lut_tap4_s11[33][4] =  {{0, 512, 0, 0},
 			{-37, 293, 293, -37}};
 
 static struct vicp_afbce_reg_s afbce_reg;
-static struct vicp_loss_reg_s fgrain_reg;
+static struct vicp_lossy_compress_reg_s lossy_compress_reg;
 
 void init_vicp_module_reg(enum meson_cpuid_type_e cpuid)
 {
@@ -120,7 +120,8 @@ void init_vicp_module_reg(enum meson_cpuid_type_e cpuid)
 		vicp_reg_array_init(VICP_SUPPORT_CHIP_S5, VICP_MODULE_AFBCE, &afbce_reg);
 	} else if (cpuid == MESON_CPU_MAJOR_ID_T3X) {
 		vicp_reg_array_init(VICP_SUPPORT_CHIP_t3X, VICP_MODULE_AFBCE, &afbce_reg);
-		vicp_reg_array_init(VICP_SUPPORT_CHIP_t3X, VICP_MODULE_FGRAIN, &fgrain_reg);
+		vicp_reg_array_init(VICP_SUPPORT_CHIP_t3X, VICP_MODULE_LOSSY_COMPRESS,
+			&lossy_compress_reg);
 	} else {
 		vicp_print(VICP_ERROR, "this chip don't support vicp.\n", __func__);
 	}
@@ -205,7 +206,7 @@ void set_afbcd_default_color(u32 def_color_y, u32 def_color_u, u32 def_color_v)
 	return write_vicp_reg(VID_CMPR_AFBCDM_DEC_DEF_COLOR, value);
 }
 
-void set_afbcd_mode(struct vicp_afbcd_mode_reg_t afbcd_mode)
+void set_afbcd_mode(struct vicp_afbcd_mode_reg_s afbcd_mode)
 {
 	u32 value = 0;
 
@@ -279,7 +280,7 @@ void set_afbcd_pixel_scope(u32 v_h_flag, u32 scope_begin, u32 scope_end)
 	return write_vicp_reg(reg, scope_value);
 }
 
-void set_afbcd_general(struct vicp_afbcd_general_reg_t reg)
+void set_afbcd_general(struct vicp_afbcd_general_reg_s reg)
 {
 	u32 value = 0;
 
@@ -298,7 +299,7 @@ void set_afbcd_general(struct vicp_afbcd_general_reg_t reg)
 	return write_vicp_reg(VID_CMPR_AFBCDM_ENABLE, value);
 }
 
-void set_afbcd_colorformat_control(struct vicp_afbcd_cfmt_control_reg_t cfmt_control)
+void set_afbcd_colorformat_control(struct vicp_afbcd_cfmt_control_reg_s cfmt_control)
 {
 	u32 value;
 
@@ -335,7 +336,7 @@ void set_afbcd_colorformat_size(u32 w_or_h, u32 fmt_size_h, u32 fmt_size_v)
 	return write_vicp_reg(reg, value);
 }
 
-void set_afbcd_quant_control(struct vicp_afbcd_quant_control_reg_t quant_control)
+void set_afbcd_quant_control(struct vicp_afbcd_quant_control_reg_s quant_control)
 {
 	u32 value = 0;
 
@@ -347,7 +348,7 @@ void set_afbcd_quant_control(struct vicp_afbcd_quant_control_reg_t quant_control
 	return write_vicp_reg(VID_CMPR_AFBCDM_IQUANT_ENABLE, value);
 }
 
-void set_afbcd_rotate_control(struct vicp_afbcd_rotate_control_reg_t rotate_control)
+void set_afbcd_rotate_control(struct vicp_afbcd_rotate_control_reg_s rotate_control)
 {
 	u32 value = 0;
 
@@ -368,7 +369,7 @@ void set_afbcd_rotate_control(struct vicp_afbcd_rotate_control_reg_t rotate_cont
 	return write_vicp_reg(VID_CMPR_AFBCDM_ROT_CTRL, value);
 }
 
-void set_afbcd_rotate_scope(struct vicp_afbcd_rotate_scope_reg_t rotate_scope)
+void set_afbcd_rotate_scope(struct vicp_afbcd_rotate_scope_reg_s rotate_scope)
 {
 	u32 value = 0;
 
@@ -385,6 +386,25 @@ void set_afbcd_rotate_scope(struct vicp_afbcd_rotate_scope_reg_t rotate_scope)
 	return write_vicp_reg(VID_CMPR_AFBCDM_ROT_SCOPE, value);
 }
 
+void set_afbcd_loss_control(u32 fix_cr_en, u32 quant_diff)
+{
+	u32 value = 0;
+
+	value = ((fix_cr_en & 0x1) << 4) | ((quant_diff & 0xf) << 0);
+	return write_vicp_reg(VID_CMPR_AFBCD_LOSS_CTRL, value);
+}
+
+void set_afbcd_burst_control(struct vicp_afbcd_burst_ctrl_reg_s burst_ctrl_reg)
+{
+	u32 value = 0;
+
+	value = ((burst_ctrl_reg.ofset_burst4_en & 0x1) << 4) |
+		((burst_ctrl_reg.burst_length_add_en & 0x1) << 3) |
+		((burst_ctrl_reg.burst_length_add_value & 0x7) << 0);
+
+	return write_vicp_reg(VID_CMPR_AFBCD_BURST_CTRL, value);
+}
+
 void set_afbce_lossy_luma_enable(u32 enable)
 {
 	return write_vicp_reg_bits(afbce_reg.afbce_quant_enable, (enable & 0x1), 0, 1);
@@ -393,6 +413,49 @@ void set_afbce_lossy_luma_enable(u32 enable)
 void set_afbce_lossy_chrm_enable(u32 enable)
 {
 	return write_vicp_reg_bits(afbce_reg.afbce_quant_enable, (enable & 0x1), 4, 1);
+}
+
+void set_afbce_lossy_control(struct vicp_afbce_loss_ctrl_reg_s loss_ctrl_reg)
+{
+	u32 value = 0;
+
+	value = ((loss_ctrl_reg.fix_cr_en & 0x1) << 31) |
+		((loss_ctrl_reg.rc_en & 0x1) << 30) |
+		((loss_ctrl_reg.write_qlevel_mode & 0x1) << 29) |
+		((loss_ctrl_reg.debug_qlevel_en & 0x1) << 28) |
+		((loss_ctrl_reg.cal_bit_early_mode & 0x3) << 16) |
+		((loss_ctrl_reg.quant_diff_root_leave & 0xf) << 12) |
+		((loss_ctrl_reg.debug_qlevel_value & 0xf) << 8) |
+		((loss_ctrl_reg.debug_qlevel_max_0 & 0xf) << 4) |
+		((loss_ctrl_reg.debug_qlevel_max_1 & 0xf) << 0);
+
+	return write_vicp_reg(lossy_compress_reg.loss_ctrl, value);
+}
+
+void set_afbce_lossy_brust_num(u32 num0, u32 num1, u32 num2, u32 num3)
+{
+	u32 value = 0;
+
+	value = ((num3 & 0x1f) << 24) |
+		((num2 & 0x1f) << 16) |
+		((num1 & 0x1f) << 8) |
+		((num0 & 0x1f) << 0);
+
+	return write_vicp_reg(lossy_compress_reg.loss_burst_num, value);
+}
+
+void set_afbce_format(struct vicp_afbce_format_reg_s format_reg)
+{
+	u32 value = 0;
+
+	value = ((format_reg.burst_length_add_value & 0x7) << 12) |
+		((format_reg.ofset_burst4_en & 0x1) << 11) |
+		((format_reg.burst_length_add_en & 0x1) << 10) |
+		((format_reg.format_mode & 0x3) << 8) |
+		((format_reg.compbits_c & 0xf) << 4) |
+		((format_reg.compbits_y & 0xf) << 0);
+
+	return write_vicp_reg(afbce_reg.afbce_format, value);
 }
 
 void set_afbce_input_size(u32 size_h, u32 size_v)
@@ -421,7 +484,7 @@ void set_rdmif_luma_fifo_size(u32 size)
 	return write_vicp_reg(VID_CMPR_RDMIFXN_LUMA_FIFO_SIZE, size);
 }
 
-void set_rdmif_general_reg(struct vicp_rdmif_general_reg_t reg)
+void set_rdmif_general_reg(struct vicp_rdmif_general_reg_s reg)
 {
 	u32 value = 0;
 
@@ -449,7 +512,7 @@ void set_rdmif_general_reg(struct vicp_rdmif_general_reg_t reg)
 	return write_vicp_reg(VID_CMPR_RDMIFXN_GEN_REG, value);
 }
 
-void set_rdmif_general_reg2(struct vicp_rdmif_general_reg2_t reg)
+void set_rdmif_general_reg2(struct vicp_rdmif_general_reg2_s reg)
 {
 	u32 value = 0;
 
@@ -468,7 +531,7 @@ void set_rdmif_general_reg2(struct vicp_rdmif_general_reg2_t reg)
 	return write_vicp_reg(VID_CMPR_RDMIFXN_GEN_REG2, value);
 }
 
-void set_rdmif_general_reg3(struct vicp_rdmif_general_reg3_t reg)
+void set_rdmif_general_reg3(struct vicp_rdmif_general_reg3_s reg)
 {
 	u32 value = 0;
 
@@ -572,7 +635,7 @@ void set_rdmif_chroma_position(u32 index, u32 is_x, u32 start, u32 end)
 	return write_vicp_reg(reg, value);
 }
 
-void set_rdmif_rpt_loop(struct vicp_rdmif_rpt_loop_t rpt_loop)
+void set_rdmif_rpt_loop(struct vicp_rdmif_rpt_loop_s rpt_loop)
 {
 	u32 value = 0;
 
@@ -609,7 +672,7 @@ void set_rdmif_dummy_pixel(u32 value)
 	return write_vicp_reg(VID_CMPR_RDMIFXN_DUMMY_PIXEL, value);
 }
 
-void set_rdmif_color_format_control(struct vicp_rdmif_color_format_t color_format)
+void set_rdmif_color_format_control(struct vicp_rdmif_color_format_s color_format)
 {
 	u32 value = 0;
 
@@ -640,9 +703,16 @@ void set_rdmif_color_format_width(u32 cfmt_width_h, u32 cfmt_width_v)
 	return write_vicp_reg(VID_CMPR_RDMIFXN_CFMT_W, value);
 }
 
-void set_afbce_mif_size(u32 decompress_size)
+void set_afbce_mif_size(struct vicp_afbce_mif_size_reg_s mif_size_reg)
 {
-	return write_vicp_reg_bits(afbce_reg.afbce_mif_size, (decompress_size & 0x1fff), 16, 5);
+	u32 value = 0;
+
+	value  = ((mif_size_reg.ddr_blk_size & 0x3) << 28) |
+		((mif_size_reg.cmd_blk_size & 0x7) << 24) |
+		((mif_size_reg.uncmp_size & 0xff) << 16) |
+		((mif_size_reg.mmu_page_size & 0xffff) << 0);
+
+	return write_vicp_reg(afbce_reg.afbce_mif_size, value);
 }
 
 void set_afbce_mix_scope(u32 h_or_v, u32 begin, u32 end)
@@ -681,7 +751,7 @@ void set_afbce_conv_control(u32 fmt_ybuf_depth, u32 lbuf_depth)
 	return write_vicp_reg(afbce_reg.afbce_conv_ctrl, value);
 }
 
-void set_afbce_mode(struct vicp_afbce_mode_reg_t afbce_mode_reg)
+void set_afbce_mode(struct vicp_afbce_mode_reg_s afbce_mode_reg)
 {
 	u32 value = 0;
 
@@ -695,7 +765,7 @@ void set_afbce_mode(struct vicp_afbce_mode_reg_t afbce_mode_reg)
 	return write_vicp_reg(afbce_reg.afbce_mode, value);
 }
 
-void set_afbce_colorfmt(struct vicp_afbce_color_format_reg_t color_format_reg)
+void set_afbce_colorfmt(struct vicp_afbce_color_format_reg_s color_format_reg)
 {
 	u32 value = 0;
 
@@ -736,7 +806,7 @@ void set_afbce_mmu_rmif_scope(u32 x_or_y, u32 start, u32 end)
 	return write_vicp_reg(reg, value);
 }
 
-void set_afbce_mmu_rmif_control1(struct vicp_afbce_mmu_rmif_control1_reg_t rmif_control1)
+void set_afbce_mmu_rmif_control1(struct vicp_afbce_mmu_rmif_control1_reg_s rmif_control1)
 {
 	u32 value = 0;
 
@@ -753,7 +823,7 @@ void set_afbce_mmu_rmif_control1(struct vicp_afbce_mmu_rmif_control1_reg_t rmif_
 	return write_vicp_reg(afbce_reg.afbce_mmu_rmif_ctrl1, value);
 }
 
-void set_afbce_mmu_rmif_control2(struct vicp_afbce_mmu_rmif_control2_reg_t rmif_control2)
+void set_afbce_mmu_rmif_control2(struct vicp_afbce_mmu_rmif_control2_reg_s rmif_control2)
 {
 	u32 value = 0;
 
@@ -764,7 +834,7 @@ void set_afbce_mmu_rmif_control2(struct vicp_afbce_mmu_rmif_control2_reg_t rmif_
 	return write_vicp_reg(afbce_reg.afbce_mmu_rmif_ctrl2, value);
 }
 
-void set_afbce_mmu_rmif_control3(struct vicp_afbce_mmu_rmif_control3_reg_t rmif_control3)
+void set_afbce_mmu_rmif_control3(struct vicp_afbce_mmu_rmif_control3_reg_s rmif_control3)
 {
 	u32 value = 0;
 
@@ -779,7 +849,7 @@ void set_afbce_mmu_rmif_control4(u64 baddr)
 	return write_vicp_reg(afbce_reg.afbce_mmu_rmif_ctrl4, (baddr >> 4));
 }
 
-void set_afbce_pip_control(struct vicp_afbce_pip_control_reg_t pip_control)
+void set_afbce_pip_control(struct vicp_afbce_pip_control_reg_s pip_control)
 {
 	u32 value = 0;
 
@@ -797,7 +867,7 @@ void set_afbce_rotation_control(u32 rotation_en, u32 step_v)
 	return write_vicp_reg(afbce_reg.afbce_rot_ctrl, value);
 }
 
-void set_afbce_enable(struct vicp_afbce_enable_reg_t enable_reg)
+void set_afbce_enable(struct vicp_afbce_enable_reg_s enable_reg)
 {
 	u32 value = 0;
 
@@ -859,7 +929,7 @@ void set_wrmif_range(u32 is_x, u32 rev, u32 start, u32 end)
 	return write_vicp_reg(reg, value);
 }
 
-void set_wrmif_control(struct vicp_wrmif_control_t wrmif_control)
+void set_wrmif_control(struct vicp_wrmif_control_s wrmif_control)
 {
 	u32 value = 0;
 
@@ -937,7 +1007,7 @@ void set_top_holdline(void)
 	write_vicp_reg_bits(VID_CMPR_HOLD_LINE, 0x5, 0, 16);
 }
 
-void set_pre_scaler_control(struct vicp_pre_scaler_ctrl_reg_t pre_scaler_ctrl_reg)
+void set_pre_scaler_control(struct vicp_pre_scaler_ctrl_reg_s pre_scaler_ctrl_reg)
 {
 	u32 value = 0;
 
@@ -1053,7 +1123,7 @@ void set_vsc_region_phase_slope(u32 region_num, u32 slop_val)
 		return write_vicp_reg(VID_CMPR_VSC_REGION4_PHASE_SLOPE, slop_val);
 }
 
-void set_vsc_phase_control(struct vicp_vsc_phase_ctrl_reg_t vsc_phase_ctrl_reg)
+void set_vsc_phase_control(struct vicp_vsc_phase_ctrl_reg_s vsc_phase_ctrl_reg)
 {
 	u32 value = 0;
 
@@ -1117,7 +1187,7 @@ void set_hsc_region_phase_slope(u32 region_num, u32 slop_val)
 		return write_vicp_reg(VID_CMPR_HSC_REGION4_PHASE_SLOPE, slop_val);
 }
 
-void set_hsc_phase_control(struct vicp_hsc_phase_ctrl_reg_t hsc_phase_ctrl_reg)
+void set_hsc_phase_control(struct vicp_hsc_phase_ctrl_reg_s hsc_phase_ctrl_reg)
 {
 	u32 value = 0;
 
@@ -1129,7 +1199,7 @@ void set_hsc_phase_control(struct vicp_hsc_phase_ctrl_reg_t hsc_phase_ctrl_reg)
 	return write_vicp_reg(VID_CMPR_HSC_PHASE_CTRL, value);
 }
 
-void set_scaler_misc(struct vicp_scaler_misc_reg_t scaler_misc_reg)
+void set_scaler_misc(struct vicp_scaler_misc_reg_s scaler_misc_reg)
 {
 	u32 value = 0;
 
@@ -1166,6 +1236,66 @@ void set_security_enable(u32 dma_en, u32 mmu_en, u32 input_en)
 	return write_vicp_reg(VID_CMPR_SEC_CTRL, value);
 }
 
+void set_fgrain_control(struct vicp_fgrain_ctrl_reg_s fgrain_ctrl_reg)
+{
+	u32 value = 0;
+
+	value = ((fgrain_ctrl_reg.sync_ctrl & 0x3) << 24) |
+		((fgrain_ctrl_reg.dma_st_clr & 0x1) << 22) |
+		((fgrain_ctrl_reg.hold4dma_scale & 0x1) << 21) |
+		((fgrain_ctrl_reg.hold4dma_tbl & 0x1) << 20) |
+		((fgrain_ctrl_reg.cin_uv_swap & 0x1) << 19) |
+		((fgrain_ctrl_reg.cin_rev & 0x1) << 18) |
+		((fgrain_ctrl_reg.yin_rev & 0x1) << 17) |
+		((fgrain_ctrl_reg.fgrain_ext_imode & 0x1) << 16) |
+		((fgrain_ctrl_reg.use_par_apply_fgrain & 0x1) << 15) |
+		((fgrain_ctrl_reg.fgrain_last_ln_mode & 0x1) << 14) |
+		((fgrain_ctrl_reg.fgrain_use_sat4bp & 0x1) << 13) |
+		((fgrain_ctrl_reg.apply_c_mode & 0x1) << 12) |
+		((fgrain_ctrl_reg.fgrain_tbl_sign_mode & 0x1) << 11) |
+		((fgrain_ctrl_reg.fgrain_tbl_ext_mode & 0x1) << 10) |
+		((fgrain_ctrl_reg.fmt_mode & 0x3) << 8) |
+		((fgrain_ctrl_reg.comp_bits & 0x3) << 6) |
+		((fgrain_ctrl_reg.rev_mode & 0x3) << 4) |
+		((fgrain_ctrl_reg.block_mode & 0x1) << 2) |
+		((fgrain_ctrl_reg.fgrain_loc_en & 0x1) << 1) |
+		((fgrain_ctrl_reg.fgrain_glb_en & 0x1) << 0);
+
+	return write_vicp_reg(VID_CMPR_AFBCDM_FGRAIN_CTRL, value);
+}
+
+void set_fgrain_window_h(u32 begain, u32 end)
+{
+	u32 value = 0;
+
+	value = ((end & 0xffff) << 16) | ((begain & 0xffff) << 0);
+
+	return write_vicp_reg(VID_CMPR_AFBCDM_FGRAIN_WIN_H, value);
+}
+
+void set_fgrain_window_v(u32 begain, u32 end)
+{
+	u32 value = 0;
+
+	value = ((end & 0xffff) << 16) | ((begain & 0xffff) << 0);
+
+	return write_vicp_reg(VID_CMPR_AFBCDM_FGRAIN_WIN_V, value);
+}
+
+void set_fgrain_slice_window_h(u32 begain, u32 end)
+{
+	u32 value = 0;
+
+	value = ((end & 0xffff) << 16) | ((begain & 0xffff) << 0);
+
+	return write_vicp_reg(VID_CMPR_AFBCDM_FGRAIN_SLICE_WIN_H, value);
+}
+
+void set_fgrain_lut_data(u32 val)
+{
+	return write_vicp_reg(VID_CMPR_FGRAIN_LUT_DATA, val);
+}
+
 int read_vicp_reg(u32 reg)
 {
 	return vicp_reg_read(reg);
@@ -1173,7 +1303,7 @@ int read_vicp_reg(u32 reg)
 
 void write_vicp_reg(u32 reg, u32 val)
 {
-	struct rdma_buf_type_t *buf = NULL;
+	struct rdma_buf_type_s *buf = NULL;
 
 	if (rdma_enable_flag) {
 		buf = get_current_vicp_rdma_buf();
@@ -1186,7 +1316,7 @@ void write_vicp_reg(u32 reg, u32 val)
 
 void write_vicp_reg_bits(u32 reg, const u32 value, const u32 start, const u32 len)
 {
-	struct rdma_buf_type_t *buf = NULL;
+	struct rdma_buf_type_s *buf = NULL;
 
 	if (rdma_enable_flag) {
 		buf = get_current_vicp_rdma_buf();

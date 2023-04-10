@@ -49,32 +49,23 @@ enum vicp_rotation_mode_e map_rotationmode_from_vc_to_vicp(int rotation_vc)
 }
 
 int config_vicp_input_data(struct vframe_s *vf, ulong addr, int stride, int width, int height,
-	int endian, int color_fmt, int color_depth, struct input_data_param_t *input_data)
+	int endian, int color_fmt, int color_depth, struct input_data_param_s *input_data)
 {
-	struct dma_data_config_t dma_data;
+	struct dma_data_config_s dma_data;
 
 	if (IS_ERR_OR_NULL(input_data)) {
 		pr_info("%s: NULL param, please check.\n", __func__);
 		return -1;
 	}
 
-	memset(input_data, 0, sizeof(struct input_data_param_t));
+	memset(input_data, 0, sizeof(struct input_data_param_s));
 	if (vf) {
 		input_data->is_vframe = true;
-		if (vf->canvas0_config[0].phy_addr == 0) {
-			if ((vf->flag &  VFRAME_FLAG_DOUBLE_FRAM) && vf->vf_ext) {
-				input_data->data_vf = vf->vf_ext;
-			} else {
-				pr_info("%s: vf no yuv data, composer fail\n", __func__);
-				return -1;
-			}
-		} else {
-			input_data->data_vf = vf;
-		}
+		input_data->data_vf = vf;
 	} else {
 		input_data->is_vframe = false;
 
-		memset(&dma_data, 0, sizeof(struct dma_data_config_t));
+		memset(&dma_data, 0, sizeof(struct dma_data_config_s));
 		dma_data.buf_addr = addr;
 		dma_data.buf_stride_w = stride;
 		dma_data.buf_stride_h = stride;
@@ -95,13 +86,13 @@ int config_vicp_input_data(struct vframe_s *vf, ulong addr, int stride, int widt
 int config_vicp_output_data(int fbc_out_en, int mif_out_en, ulong *phy_addr, int stride,
 	int width, int height, int endian, enum vicp_color_format_e cfmt_mif, int cdep_mif,
 	enum vicp_color_format_e cfmt_fbc, int cdep_fbc, int init_ctrl, int pip_mode,
-	struct output_data_param_t *output_data)
+	struct output_data_param_s *output_data)
 {
 	if (IS_ERR_OR_NULL(output_data)) {
 		pr_info("%s: NULL param, please check.\n", __func__);
 		return -1;
 	}
-	memset(output_data, 0, sizeof(struct output_data_param_t));
+	memset(output_data, 0, sizeof(struct output_data_param_s));
 	output_data->width = width;
 	output_data->height = height;
 	output_data->phy_addr[0] = phy_addr[0];
@@ -127,7 +118,7 @@ int config_vicp_output_data(int fbc_out_en, int mif_out_en, ulong *phy_addr, int
 	return 0;
 }
 
-int vicp_data_composer(struct vicp_data_config_t *data_config)
+int vicp_data_composer(struct vicp_data_config_s *data_config)
 {
 	int ret = 0;
 

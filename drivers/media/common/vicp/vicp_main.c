@@ -72,8 +72,9 @@ u32 scaler_en = 1;
 u32 hdr_en = 1;
 u32 crop_en = 1;
 u32 shrink_en = 1;
+u32 fgrain_en = 1;
 u32 debug_axis_en;
-struct output_axis_t axis;
+struct output_axis_s axis;
 u32 rdma_en;
 u32 debug_rdma_en;
 
@@ -568,6 +569,30 @@ static ssize_t shrink_en_store(struct class *class,
 	return count;
 }
 
+static ssize_t fgrain_en_show(struct class *class, struct class_attribute *attr, char *buf)
+{
+	return sprintf(buf, "current fgrain_en is %d.\n", fgrain_en);
+}
+
+static ssize_t fgrain_en_store(struct class *class,
+		struct class_attribute *attr, const char *buf, size_t count)
+{
+	int val;
+	ssize_t ret;
+
+	ret = kstrtoint(buf, 0, &val);
+	if (ret < 0)
+		return -EINVAL;
+
+	if (val > 0)
+		fgrain_en = val;
+	else
+		fgrain_en = 0;
+
+	pr_info("set fgrain_en to %d.\n", fgrain_en);
+	return count;
+}
+
 static ssize_t debug_axis_en_show(struct class *class,
 		struct class_attribute *attr, char *buf)
 {
@@ -708,6 +733,7 @@ static CLASS_ATTR_RW(scaler_en);
 static CLASS_ATTR_RW(hdr_en);
 static CLASS_ATTR_RW(crop_en);
 static CLASS_ATTR_RW(shrink_en);
+static CLASS_ATTR_RW(fgrain_en);
 static CLASS_ATTR_RW(debug_axis_en);
 static CLASS_ATTR_RW(axis);
 static CLASS_ATTR_RW(rdma_en);
@@ -730,6 +756,7 @@ static struct attribute *vicp_class_attrs[] = {
 	&class_attr_hdr_en.attr,
 	&class_attr_crop_en.attr,
 	&class_attr_shrink_en.attr,
+	&class_attr_fgrain_en.attr,
 	&class_attr_debug_axis_en.attr,
 	&class_attr_axis.attr,
 	&class_attr_rdma_en.attr,
@@ -780,10 +807,10 @@ static unsigned long get_buf_phy_addr(u32 buf_fd)
 	return phy_addr;
 }
 
-static int config_vicp_param(struct vicp_data_info_t *vicp_data_info,
-	struct vicp_data_config_t *data_config)
+static int config_vicp_param(struct vicp_data_info_s *vicp_data_info,
+	struct vicp_data_config_s *data_config)
 {
-	struct dma_data_config_t data_dma;
+	struct dma_data_config_s data_dma;
 
 	if (IS_ERR_OR_NULL(vicp_data_info) || IS_ERR_OR_NULL(data_config)) {
 		pr_err("%s: NULL param, please check.\n", __func__);
@@ -791,7 +818,7 @@ static int config_vicp_param(struct vicp_data_info_t *vicp_data_info,
 	}
 
 	data_config->input_data.is_vframe = false;
-	memset(&data_dma, 0, sizeof(struct dma_data_config_t));
+	memset(&data_dma, 0, sizeof(struct dma_data_config_s));
 	data_dma.buf_addr = get_buf_phy_addr(vicp_data_info->src_buf_fd);
 	data_dma.buf_stride_w = vicp_data_info->src_buf_alisg_w;
 	data_dma.buf_stride_h = vicp_data_info->src_buf_alisg_h;
@@ -843,14 +870,14 @@ static long vicp_ioctl(struct file *file, unsigned int cmd, unsigned long args)
 {
 	long ret = 0;
 	void __user *argp = (void __user *)args;
-	struct vicp_data_info_t vicp_data_info;
-	struct vicp_data_config_t vicp_data_config;
+	struct vicp_data_info_s vicp_data_info;
+	struct vicp_data_config_s vicp_data_config;
 
 	switch (cmd) {
 	case VICP_PROCESS:
-		memset(&vicp_data_info, 0, sizeof(struct vicp_data_info_t));
-		memset(&vicp_data_config, 0, sizeof(struct vicp_data_config_t));
-		if (copy_from_user(&vicp_data_info, argp, sizeof(struct vicp_data_info_t)) == 0) {
+		memset(&vicp_data_info, 0, sizeof(struct vicp_data_info_s));
+		memset(&vicp_data_config, 0, sizeof(struct vicp_data_config_s));
+		if (copy_from_user(&vicp_data_info, argp, sizeof(struct vicp_data_info_s)) == 0) {
 			config_vicp_param(&vicp_data_info, &vicp_data_config);
 			ret = vicp_process(&vicp_data_config);
 		} else {
@@ -965,7 +992,7 @@ static void vicp_param_init(struct vicp_device_data_s *device_data)
 {
 	mutex_init(&vicp_mutex);
 	init_vicp_module_reg(device_data->cpu_type);
-	memset(&axis, 0, sizeof(struct output_axis_t));
+	memset(&axis, 0, sizeof(struct output_axis_s));
 
 	vicp_hdr = vicp_hdr_prob();
 	if (IS_ERR_OR_NULL(vicp_hdr))

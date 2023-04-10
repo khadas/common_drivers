@@ -41,18 +41,25 @@ extern struct mutex vicp_mutex;
 extern int cgain_lut1[65];
 extern int cgain_lut0[65];
 extern u32 debug_axis_en;
-extern struct output_axis_t axis;
+extern struct output_axis_s axis;
 extern struct vicp_hdr_s *vicp_hdr;
 extern u32 rdma_en;
 extern u32 debug_rdma_en;
+extern u32 fgrain_en;
 /* *********************************************************************** */
 /* ************************* enum definitions **************************.*/
 /* *********************************************************************** */
-
+enum vicp_lossy_compress_mode_e {
+	VICP_LOSSY_COMPRESS_MODE_OFF,
+	VICP_LOSSY_COMPRESS_MODE_LUMA,
+	VICP_LOSSY_COMPRESS_MODE_CHRMA,
+	VICP_LOSSY_COMPRESS_MODE_ALL,
+	VICP_LOSSY_COMPRESS_MODE_MAX,
+};
 /* *********************************************************************** */
 /* ************************* struct definitions **************************.*/
 /* *********************************************************************** */
-struct vid_cmpr_top_t {
+struct vid_cmpr_top_s {
 	u32 src_compress;
 	u32 src_hsize;//input size
 	u32 src_vsize;
@@ -117,9 +124,23 @@ struct vid_cmpr_top_t {
 	u32 rot_hshrk_ratio;//0:no shrink 1:1/2 shrink 2:1/4 shrink
 	u32 rot_vshrk_ratio;//0:no shrink 1:1/2 shrink 2:1/4 shrink
 	u32 canvas_width[3];
+	// film_grain
+	u32 film_grain_en;
+	u64 film_lut_addr;
+	// lossy
+	u32 src_lossy_en; //0:no lossy  1:new lossy fix_cr_en=1  3:old lossy luma&chroma all on
+	//0:brst_len_add_en=0&brst_len_add_value=2  2:en=1&value=2 3:en=1&value=3
+	u32 src_brst_len_add_value;
+	u32 src_ofset_brst4_en;
+	u32 out_lossy_en;
+	u32 out_rc_en;
+	u32 out_brst_len_add_value;
+	u32 out_ofset_brst4_en;
+	// afbce mmu_page_size
+	u32 src_mmu_page_size_mode; //0:mmu_page_size=4096  1:mmu_page_size=8192
 };
 
-struct vid_cmpr_mif_t {
+struct vid_cmpr_mif_s {
 	u32 luma_x_start0;
 	u32 luma_x_end0;
 	u32 luma_y_start0;
@@ -154,7 +175,7 @@ struct vid_cmpr_mif_t {
 	u32 burst_len;
 };
 
-struct vid_cmpr_crop_t {
+struct vid_cmpr_crop_s {
 	u32 enable;
 	u32 hold_line;
 	u32 dimm_layer_en;
@@ -167,7 +188,17 @@ struct vid_cmpr_crop_t {
 	u32 win_end_v;
 };
 
-struct vid_cmpr_afbce_t {
+struct vid_cmpr_lossy_compress_s {
+	u32 lossy_mode; //0:close 1:luma loosy 2:chrma loosy 3: luma & chrma loosy
+	u32 rc_en;
+	u32 fix_cr_en;
+	u32 brst_len_add_en;
+	//0:brst_len_add_en=0&brst_len_add_value=2  2:en=1&value=2 3:en=1&value=3
+	u32 brst_len_add_value;
+	u32 ofset_brst4_en;
+};
+
+struct vid_cmpr_afbce_s {
 	u64 head_baddr;//head_addr of afbce
 	u64 table_baddr;//mmu_linear_addr
 	u32 reg_init_ctrl;//pip init frame flag
@@ -184,7 +215,6 @@ struct vid_cmpr_afbce_t {
 	u32 enc_win_end_h;//scope in background buffer
 	u32 enc_win_bgn_v;//scope in background buffer
 	u32 enc_win_end_v;//scope in background buffer
-	u32 loosy_mode;//0:close 1:luma loosy 2:chrma loosy 3: luma & chrma loosy
 	u32 rev_mode;//0:normal mode
 	u32 def_color_0;//def_color
 	u32 def_color_1;//def_color
@@ -193,9 +223,11 @@ struct vid_cmpr_afbce_t {
 	u32 force_444_comb;//def_color
 	u32 rot_en;
 	u32 din_swt;
+	struct vid_cmpr_lossy_compress_s lossy_compress;
+	u32 mmu_page_size;
 };
 
-struct vid_cmpr_afbcd_t {
+struct vid_cmpr_afbcd_s {
 	u32 blk_mem_mode;// 1 bits 1-12x128bit/blk32x4, 0-16x128bit/blk32x4
 	u32 index;//3bit: 0-5 for di_m0/m5, 6:vd1 7:vd2
 	u32 hsize;//input size
@@ -214,7 +246,6 @@ struct vid_cmpr_afbcd_t {
 	u32 h_skip_uv;
 	u32 v_skip_uv;
 	u32 rev_mode;
-	u32 lossy_en;
 	u32 def_color_y;
 	u32 def_color_u;
 	u32 def_color_v;
@@ -235,9 +266,10 @@ struct vid_cmpr_afbcd_t {
 	u32 rot_ofmt_mode;
 	u32 rot_ocompbit;
 	u32 pip_src_mode;
+	struct vid_cmpr_lossy_compress_s lossy_compress;
 };
 
-struct vid_cmpr_scaler_t {
+struct vid_cmpr_scaler_s {
 	u32 device_index;
 	u32 din_hsize;
 	u32 din_vsize;
@@ -260,7 +292,7 @@ struct vid_cmpr_scaler_t {
 	u32 vphase_type_bot;
 };
 
-struct vid_cmpr_hdr_t {
+struct vid_cmpr_hdr_s {
 	u32 hdr2_en;
 	u32 hdr2_only_mat;
 	u32 hdr2_fmt_cfg;
@@ -272,28 +304,42 @@ struct vid_cmpr_hdr_t {
 	u32 aicolor_lg_en;
 };
 
-struct vid_cmpr_f2v_vphase_t {
+struct vid_cmpr_f2v_vphase_s {
 	unsigned char rcv_num; //0~15
 	unsigned char rpt_num; // 0~3
 	unsigned short phase;
 };
+
+struct vid_cmpr_fgrain_s {
+	bool enable;
+	u32 is_afbc;
+	u32 start_x;
+	u32 end_x;
+	u32 start_y;
+	u32 end_y;
+	u32 color_fmt;
+	u32 color_depth;
+	u64 fgs_table_adr;
+};
+
 /* *********************************************************************** */
 /* ************************* function definitions **************************.*/
 /* *********************************************************************** */
 irqreturn_t vicp_isr_handle(int irq, void *dev_id);
 irqreturn_t vicp_rdma_handle(int irq, void *dev_id);
-int vicp_process_config(struct vicp_data_config_t *data_config,
-	struct vid_cmpr_top_t *vid_cmpr_top);
+int vicp_process_config(struct vicp_data_config_s *data_config,
+	struct vid_cmpr_top_s *vid_cmpr_top);
 int vicp_process_reset(void);
-int vicp_process_task(struct vid_cmpr_top_t *vid_cmpr_top);
+int vicp_process_task(struct vid_cmpr_top_s *vid_cmpr_top);
 
-void set_vid_cmpr_crop(struct vid_cmpr_crop_t *crop_param);
-void set_mif_stride(struct vid_cmpr_mif_t *mif, int *stride_y, int *stride_cb, int *stride_cr);
+void set_vid_cmpr_crop(struct vid_cmpr_crop_s *crop_param);
+void set_mif_stride(struct vid_cmpr_mif_s *mif, int *stride_y, int *stride_cb, int *stride_cr);
 void set_vid_cmpr_shrink(int is_enable, int size, int mode_h, int mode_v);
-void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_t *afbce, bool rdma_en);
-void set_vid_cmpr_wmif(struct vid_cmpr_mif_t *wr_mif, int wrmif_en);
-void set_vid_cmpr_rmif(struct vid_cmpr_mif_t *rd_mif, int urgent, int hold_line);
-void set_vid_cmpr_scale(int is_enable, struct vid_cmpr_scaler_t *scaler);
-void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_t *afbcd);
+void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_s *afbce, bool rdma_en);
+void set_vid_cmpr_wmif(struct vid_cmpr_mif_s *wr_mif, int wrmif_en);
+void set_vid_cmpr_rmif(struct vid_cmpr_mif_s *rd_mif, int urgent, int hold_line);
+void set_vid_cmpr_scale(int is_enable, struct vid_cmpr_scaler_s *scaler);
+void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_s *afbcd);
 void set_vid_cmpr_hdr(int hdr2_top_en);
+void set_vid_cmpr_fgrain(struct vid_cmpr_fgrain_s fgrain);
 #endif //_VICP_PROCESS_H_

@@ -32,6 +32,7 @@
 #define VICP_WRMIF		    0X80
 #define VICP_AFBCE		    0X100
 #define VICP_RDMA		    0X200
+#define VICP_FGRAIN		    0X400
 
 int vicp_print(int debug_flag, const char *fmt, ...);
 #endif

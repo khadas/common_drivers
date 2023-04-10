@@ -481,7 +481,7 @@ enum vicp_module_e {
 	VICP_MODULE_SHRINK,
 	VICP_MODULE_RDMIF,
 	VICP_MODULE_AFBCE,
-	VICP_MODULE_FGRAIN,
+	VICP_MODULE_LOSSY_COMPRESS,
 	VICP_MODULE_MAX,
 };
 
@@ -535,7 +535,7 @@ struct vicp_afbce_reg_s {
 	u32 afbce_mmu_rmif_ro_stat; /* AFBCE_MMU_RMIF_RO_STAT */
 };
 
-struct vicp_loss_reg_s {
+struct vicp_lossy_compress_reg_s {
 	u32 loss_ctrl; /* AFBCE_LOSS_CTRL */
 	u32 loss_burst_num; /* AFBCE_LOSS_BURST_NUM */
 	u32 loss_rc; /* AFBCE_LOSS_RC */

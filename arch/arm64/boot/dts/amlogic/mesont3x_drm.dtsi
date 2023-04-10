@@ -63,7 +63,7 @@
 					block_name = "osd2_block";
 					num_in_links = /bits/ 8  <0x0>;
 					num_out_links = /bits/ 8  <0x1>;
-					out_links = <0 &afbc3_block>;
+					out_links = <0 &afbc2_block>;
 				};
 				osd3_block: block@1 {
 					id = /bits/ 8  <OSD3_BLOCK>;
@@ -72,7 +72,7 @@
 					block_name = "osd3_block";
 					num_in_links = /bits/ 8  <0x0>;
 					num_out_links = /bits/ 8  <0x1>;
-					out_links = <0 &afbc2_block>;
+					out_links = <0 &afbc3_block>;
 				};
 				afbc1_block: block@2 {
 					id = /bits/ 8  <AFBC1_BLOCK>;
@@ -84,8 +84,8 @@
 					num_out_links = /bits/ 8  <0x1>;
 					out_links = <0 &scaler1_block>;
 				};
-				afbc2_block: block@3 {
-					id = /bits/ 8  <AFBC2_BLOCK>;
+				afbc3_block: block@3 {
+					id = /bits/ 8  <AFBC3_BLOCK>;
 					index = /bits/ 8  <2>;
 					type = /bits/ 8  <1>;
 					block_name = "afbc2_block";
@@ -94,11 +94,11 @@
 					num_out_links = /bits/ 8  <0x1>;
 					out_links = <0 &scaler3_block>;
 				};
-				afbc3_block: block@14 {
-					id = /bits/ 8  <AFBC3_BLOCK>;
+				afbc2_block: block@14 {
+					id = /bits/ 8  <AFBC2_BLOCK>;
 					index = /bits/ 8  <1>;
 					type = /bits/ 8  <1>;
-					block_name = "afbc3_block";
+					block_name = "afbc2_block";
 					num_in_links = /bits/ 8  <0x1>;
 					in_links = <0 &osd2_block>;
 					num_out_links = /bits/ 8  <0x1>;
@@ -120,7 +120,7 @@
 					type = /bits/ 8  <2>;
 					block_name = "scaler2_block";
 					num_in_links = /bits/ 8  <0x1>;
-					in_links = <0 &afbc3_block>;
+					in_links = <0 &afbc2_block>;
 					num_out_links = /bits/ 8  <0x1>;
 					out_links = <0 &hdr2_block>;
 				};
@@ -130,7 +130,7 @@
 					type = /bits/ 8  <2>;
 					block_name = "scaler3_block";
 					num_in_links = /bits/ 8  <0x1>;
-					in_links = <0 &afbc2_block>;
+					in_links = <0 &afbc3_block>;
 					num_out_links = /bits/ 8  <0x1>;
 					out_links = <0 &hdr3_block>;
 				};
@@ -142,9 +142,9 @@
 					num_in_links = /bits/ 8  <0x1>;
 					in_links = <0 &scaler1_block>;
 					num_out_links = /bits/ 8  <0x3>;
-					out_links = <1 &osd_blend_block>,
-						    <0 &slice2ppc_block>,
-						    <3 &vpp_postblend_block>;
+					out_links = <0 &slice2ppc_block>,
+						    <1 &osd_blend_block>,
+						    <0 &vpp_postblend_block>;
 				};
 				hdr2_block: block@16 {
 					id = /bits/ 8  <HDR2_BLOCK>;
@@ -155,7 +155,7 @@
 					in_links = <0 &scaler2_block>;
 					num_out_links = /bits/ 8  <0x3>;
 					out_links = <2 &osd_blend_block>,
-						    <4 &vpp_postblend_block>;
+						    <0 &vpp_postblend_block>;
 				};
 				hdr3_block: block@7 {
 					id = /bits/ 8  <HDR3_BLOCK>;
@@ -165,9 +165,9 @@
 					num_in_links = /bits/ 8  <0x1>;
 					in_links = <0 &scaler3_block>;
 					num_out_links = /bits/ 8  <0x3>;
-					out_links = <3 &osd_blend_block>,
-						    <2 &slice2ppc_block>,
-						    <5 &vpp_postblend_block>;
+					out_links = <1 &slice2ppc_block>,
+						    <3 &osd_blend_block>,
+						    <0 &vpp_postblend_block>;
 				};
 				slice2ppc_block: block@8 {
 					id = /bits/ 8 <SLICE2PPC_BLOCK>;
@@ -190,7 +190,7 @@
 						<0 &hdr2_block>,
 						<0 &hdr3_block>;
 					num_out_links = /bits/ 8  <0x1>;
-					out_links = <1 &vpp_postblend_block>;
+					out_links = <0 &vpp_postblend_block>;
 				};
 				vpp_postblend_block: block@10 {
 					id = /bits/ 8  <VPP_POSTBLEND_BLOCK>;
@@ -199,9 +199,9 @@
 					type = /bits/ 8  <6>;
 					num_in_links = /bits/ 8  <0x4>;
 					in_links = <0 &osd_blend_block>,
-						   <2 &hdr1_block>,
-						   <2 &hdr2_block>,
-						   <2 &hdr3_block>;
+						   <0 &hdr1_block>,
+						   <0 &hdr2_block>,
+						   <0 &hdr3_block>;
 					num_out_links = <0x0>;
 				};
 				video1_block: block@11 {

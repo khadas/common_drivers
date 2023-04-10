@@ -142,6 +142,13 @@ static unsigned long t7_get_dmc_freq_quick(struct ddr_bandwidth *db)
 	unsigned long freq = 0;
 
 	val = readl(db->pll_reg);
+
+	if (db->cpu_type == DMC_TYPE_T3X) {
+		freq = val * 1000000;
+		freq = freq >> 1;
+
+		return freq;
+	}
 	val = val & 0xfffff;
 	if (db->cpu_type == DMC_TYPE_P1) {
 		switch ((val >> 16) & 7) {

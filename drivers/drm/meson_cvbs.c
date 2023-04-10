@@ -102,9 +102,6 @@ enum drm_mode_status am_cvbs_tx_check_mode(struct drm_connector *connector,
 		    cvbs_mode[i].vdisplay == mode->vdisplay &&
 		    (drm_mode_vrefresh(&cvbs_mode[i]) == checked_vrefresh))
 			return MODE_OK;
-
-		DRM_INFO("hdisplay = %d,vdisplay = %d,vrefresh = %d\n", mode->hdisplay,
-			 mode->vdisplay, checked_vrefresh);
 	}
 
 	return MODE_NOMODE;

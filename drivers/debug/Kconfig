@@ -110,3 +110,9 @@ config AMLOGIC_REMOVE_OLD
 	default n
 	help
 	  remove more for zapper
+
+config AMLOGIC_DEBUG_IOTRACE
+	tristate "amlogic debug iotrace config"
+	default n
+	help
+	  support io/sched/irq/smc/misc trace

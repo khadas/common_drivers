@@ -1,0 +1,787 @@
+From 5335fad81e77aa4a13411c66beb3f8933cbfac09 Mon Sep 17 00:00:00 2001
+From: "song.han" <song.han@amlogic.com>
+Date: Wed, 19 Apr 2023 10:58:17 +0800
+Subject: [PATCH] debug: iotrace driver follow gki 2.0 [1/2]
+
+PD#SWPL-109963
+
+Problem:
+iotrace driver need follow gki 2.0
+
+Solution:
+iotrace driver build to ko
+
+Verify:
+sc2_ah212
+
+Change-Id: I9157975ce45659433bffbe4431c13b4282021d99
+Signed-off-by: song.han <song.han@amlogic.com>
+---
+ arch/arm/include/asm/io.h       |  8 +--
+ arch/arm/include/asm/irqflags.h |  2 +-
+ arch/arm64/include/asm/io.h     |  4 +-
+ arch/arm64/kernel/image-vars.h  |  5 +-
+ arch/arm64/kernel/io.c          | 22 +-------
+ drivers/base/power/domain.c     | 71 -------------------------
+ drivers/clk/clk.c               | 92 ---------------------------------
+ drivers/irqchip/irq-gic.c       |  2 +-
+ fs/pstore/ftrace.c              | 13 -----
+ fs/pstore/inode.c               |  4 --
+ fs/pstore/ram.c                 | 35 -------------
+ fs/pstore/ram_core.c            |  6 +--
+ include/linux/pstore.h          | 26 ----------
+ kernel/module.c                 |  9 ----
+ kernel/sched/core.c             | 14 -----
+ mm/vmalloc.c                    | 34 ------------
+ 16 files changed, 16 insertions(+), 331 deletions(-)
+
+diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
+index eeb676c6380c..b38c3d5f5b39 100644
+--- a/arch/arm/include/asm/io.h
++++ b/arch/arm/include/asm/io.h
+@@ -50,7 +50,9 @@ void __raw_readsb(const volatile void __iomem *addr, void *data, int bytelen);
+ void __raw_readsw(const volatile void __iomem *addr, void *data, int wordlen);
+ void __raw_readsl(const volatile void __iomem *addr, void *data, int longlen);
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
++#include <linux/amlogic/io_32.h>
++#elif IS_MODULE(CONFIG_AMLOGIC_DEBUG_IOTRACE) && defined(MODULE)
+ #include <linux/amlogic/io_32.h>
+ #else
+ #if __LINUX_ARM_ARCH__ < 6
+@@ -118,7 +120,7 @@ static inline u32 __raw_readl(const volatile void __iomem *addr)
+ 		     : "Qo" (*(volatile u32 __force *)addr));
+ 	return val;
+ }
+-#endif /* CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE */
++#endif /* CONFIG_AMLOGIC_DEBUG_IOTRACE */
+ /*
+  * Architecture ioremap implementation.
+  */
+@@ -318,7 +320,6 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
+ #define writesl(p,d,l)		__raw_writesl(p,d,l)
+ 
+ #ifndef __ARMBE__
+-#if !IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+ static inline void memset_io(volatile void __iomem *dst, unsigned c,
+ 	size_t count)
+ {
+@@ -342,7 +343,6 @@ static inline void memcpy_toio(volatile void __iomem *to, const void *from,
+ 	mmiocpy((void __force *)to, from, count);
+ }
+ #define memcpy_toio(to,from,count) memcpy_toio(to,from,count)
+-#endif /* CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE */
+ #else /* __ARMBE__ */
+ #define memset_io(c,v,l)	_memset_io(c,(v),(l))
+ #define memcpy_fromio(a,c,l)	_memcpy_fromio((a),c,(l))
+diff --git a/arch/arm/include/asm/irqflags.h b/arch/arm/include/asm/irqflags.h
+index 567dff5b716a..8cf7832721bf 100644
+--- a/arch/arm/include/asm/irqflags.h
++++ b/arch/arm/include/asm/irqflags.h
+@@ -6,7 +6,7 @@
+ 
+ #include <asm/ptrace.h>
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
++#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG) && !defined(SKIP_LOCKUP_CHECK) && (IS_ENABLED(CONFIG_AMLOGIC_BREAK_GKI_20) || defined(MODULE))
+ #include <linux/amlogic/irqflags_debug_arm.h>
+ #else
+ 
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index f4af32daf24d..aff15597d672 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -19,7 +19,9 @@
+ #include <asm/cpufeature.h>
+ 
+ /* builtin code include iotrace can cause some symbols crc changed */
+-#if (IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)) && defined(MODULE)
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
++#include <linux/amlogic/io_64.h>
++#elif (IS_MODULE(CONFIG_AMLOGIC_DEBUG_IOTRACE)) && defined(MODULE)
+ #include <linux/amlogic/io_64.h>
+ #else
+ /*
+diff --git a/arch/arm64/kernel/image-vars.h b/arch/arm64/kernel/image-vars.h
+index 415b81a941ab..28385ed627cb 100644
+--- a/arch/arm64/kernel/image-vars.h
++++ b/arch/arm64/kernel/image-vars.h
+@@ -134,10 +134,11 @@ KVM_NVHE_ALIAS(__hyp_event_ids_end);
+ /* pKVM static key */
+ KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-KVM_NVHE_ALIAS(__pstore_io_save);
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
++KVM_NVHE_ALIAS(pstore_io_save);
+ KVM_NVHE_ALIAS(vabits_actual);
+ #endif
++
+ #endif /* CONFIG_KVM */
+ 
+ #endif /* __ARM64_KERNEL_IMAGE_VARS_H */
+diff --git a/arch/arm64/kernel/io.c b/arch/arm64/kernel/io.c
+index a7569c19c8af..9186cd23516d 100644
+--- a/arch/arm64/kernel/io.c
++++ b/arch/arm64/kernel/io.c
+@@ -7,11 +7,10 @@
+ 
+ #include <linux/export.h>
+ #include <linux/types.h>
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+ #define SKIP_IO_TRACE
+ #include <linux/io.h>
+ #undef SKIP_IO_TRACE
+-#include <linux/amlogic/debug_ftrace_ramoops.h>
+ #else
+ #include <linux/io.h>
+ #endif
+@@ -21,9 +20,6 @@
+  */
+ void __memcpy_fromio(void *to, const volatile void __iomem *from, size_t count)
+ {
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	pstore_ftrace_io_copy_from((unsigned long)from, (unsigned long)count);
+-#endif
+ 	while (count && !IS_ALIGNED((unsigned long)from, 8)) {
+ 		*(u8 *)to = __raw_readb(from);
+ 		from++;
+@@ -44,9 +40,6 @@ void __memcpy_fromio(void *to, const volatile void __iomem *from, size_t count)
+ 		to++;
+ 		count--;
+ 	}
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	pstore_ftrace_io_copy_from_end((unsigned long)from, (unsigned long)count);
+-#endif
+ }
+ EXPORT_SYMBOL(__memcpy_fromio);
+ 
+@@ -55,9 +48,6 @@ EXPORT_SYMBOL(__memcpy_fromio);
+  */
+ void __memcpy_toio(volatile void __iomem *to, const void *from, size_t count)
+ {
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	pstore_ftrace_io_copy_to((unsigned long)to, (unsigned long)count);
+-#endif
+ 	while (count && !IS_ALIGNED((unsigned long)to, 8)) {
+ 		__raw_writeb(*(u8 *)from, to);
+ 		from++;
+@@ -78,9 +68,6 @@ void __memcpy_toio(volatile void __iomem *to, const void *from, size_t count)
+ 		to++;
+ 		count--;
+ 	}
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	pstore_ftrace_io_copy_to_end((unsigned long)to, (unsigned long)count);
+-#endif
+ }
+ EXPORT_SYMBOL(__memcpy_toio);
+ 
+@@ -91,10 +78,6 @@ void __memset_io(volatile void __iomem *dst, int c, size_t count)
+ {
+ 	u64 qc = (u8)c;
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	pstore_ftrace_io_memset((unsigned long)dst, (unsigned long)count);
+-#endif
+-
+ 	qc |= qc << 8;
+ 	qc |= qc << 16;
+ 	qc |= qc << 32;
+@@ -116,8 +99,5 @@ void __memset_io(volatile void __iomem *dst, int c, size_t count)
+ 		dst++;
+ 		count--;
+ 	}
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	pstore_ftrace_io_memset_end((unsigned long)dst, (unsigned long)count);
+-#endif
+ }
+ EXPORT_SYMBOL(__memset_io);
+diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+index 61663ed63f3b..94fe30c187ad 100644
+--- a/drivers/base/power/domain.c
++++ b/drivers/base/power/domain.c
+@@ -39,51 +39,6 @@
+ 	__ret;							\
+ })
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-#include <linux/amlogic/debug_ftrace_ramoops.h>
+-#define SKIP_PD_MAX_NUM 10
+-#define SKIP_PD_MAX_NAME_LEN 16
+-
+-static int meson_pd_debug = 1;
+-core_param(meson_pd_debug, meson_pd_debug, int, 0644);
+-
+-static int skip_all_pd_power_off;
+-core_param(skip_all_pd_power_off, skip_all_pd_power_off, int, 0644);
+-
+-static int skip_pd_num;
+-
+-static char pd_skip_power_off_list[SKIP_PD_MAX_NUM][SKIP_PD_MAX_NAME_LEN];
+-
+-static int pd_skip_power_off_list_setup(const char *ptr, const struct kernel_param *kp)
+-{
+-	char *str_entry;
+-	char *str = (char *)ptr;
+-	int i = 0;
+-
+-	do {
+-		str_entry = strsep(&str, ",");
+-		if (str_entry) {
+-			if (!strlen(str_entry))
+-				break;
+-			strscpy(pd_skip_power_off_list[i], str_entry, SKIP_PD_MAX_NAME_LEN);
+-			pr_info("pd_skip_power_off_list[%d]: %s\n", i, pd_skip_power_off_list[i]);
+-			i++;
+-		}
+-	} while (str_entry && i < SKIP_PD_MAX_NUM);
+-
+-	skip_pd_num = i;
+-
+-	return 0;
+-}
+-
+-static const struct kernel_param_ops pd_skip_power_off_list_ops = {
+-	.set = pd_skip_power_off_list_setup,
+-	.get = NULL
+-};
+-
+-core_param_cb(pd_skip_power_off_list, &pd_skip_power_off_list_ops, NULL, 0644);
+-#endif
+-
+ static LIST_HEAD(gpd_list);
+ static DEFINE_MUTEX(gpd_list_lock);
+ 
+@@ -554,11 +509,6 @@ static int _genpd_power_on(struct generic_pm_domain *genpd, bool timed)
+ 	if (!genpd->power_on)
+ 		goto out;
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	pstore_ftrace_pd_power_on((unsigned long)genpd->name);
+-	if (ramoops_io_en && meson_pd_debug)
+-		pr_info("power_on pd %s\n", genpd->name);
+-#endif
+ 	if (!timed) {
+ 		ret = genpd->power_on(genpd);
+ 		if (ret)
+@@ -596,9 +546,6 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
+ 	ktime_t time_start;
+ 	s64 elapsed_ns;
+ 	int ret;
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	int i;
+-#endif
+ 
+ 	/* Notify consumers that we are about to power off. */
+ 	ret = raw_notifier_call_chain_robust(&genpd->power_notifiers,
+@@ -611,24 +558,6 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
+ 	if (!genpd->power_off)
+ 		goto out;
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	for (i = 0; i < skip_pd_num; i++) {
+-		if (strstr(genpd->name, pd_skip_power_off_list[i])) {
+-			pr_info("%s pd in white list, skip power_off\n", genpd->name);
+-			return -1;
+-		}
+-	}
+-
+-	if (skip_all_pd_power_off) {
+-		pr_info("skip all pd power_off,%s pd will not power_off\n", genpd->name);
+-		return -1;
+-	}
+-
+-	pstore_ftrace_pd_power_off((unsigned long)genpd->name);
+-	if (ramoops_io_en && meson_pd_debug)
+-		pr_info("power_off pd %s\n", genpd->name);
+-#endif
+-
+ 	if (!timed) {
+ 		ret = genpd->power_off(genpd);
+ 		if (ret)
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 47cbb8d61005..d7315a317cb7 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -24,51 +24,6 @@
+ 
+ #include "clk.h"
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-#include <linux/amlogic/debug_ftrace_ramoops.h>
+-#define SKIP_CLK_MAX_NUM 10
+-#define SKIP_CLK_MAX_NAME_LEN 16
+-
+-static int meson_clk_debug;
+-core_param(meson_clk_debug, meson_clk_debug, int, 0644);
+-
+-int skip_all_clk_disable;
+-core_param(skip_all_clk_disable, skip_all_clk_disable, int, 0644);
+-
+-static int skip_clk_num;
+-
+-static char clk_skip_disable_list[SKIP_CLK_MAX_NUM][SKIP_CLK_MAX_NAME_LEN];
+-
+-static int clk_skip_disable_list_setup(const char *ptr, const struct kernel_param *kp)
+-{
+-	char *str_entry;
+-	char *str = (char *)ptr;
+-	int i = 0;
+-
+-	do {
+-		str_entry = strsep(&str, ",");
+-		if (str_entry) {
+-			if (!strlen(str_entry))
+-				break;
+-			strscpy(clk_skip_disable_list[i], str_entry, SKIP_CLK_MAX_NAME_LEN);
+-			pr_info("clk_skip_disable_list[%d]: %s\n", i, clk_skip_disable_list[i]);
+-			i++;
+-		}
+-	} while (str_entry && i < SKIP_CLK_MAX_NUM);
+-
+-	skip_clk_num = i;
+-
+-	return 0;
+-}
+-
+-static const struct kernel_param_ops clk_skip_disable_list_ops = {
+-	.set = clk_skip_disable_list_setup,
+-	.get = NULL
+-};
+-
+-core_param_cb(clk_skip_disable_list, &clk_skip_disable_list_ops, NULL, 0644);
+-#endif
+-
+ static DEFINE_SPINLOCK(enable_lock);
+ static DEFINE_MUTEX(prepare_lock);
+ 
+@@ -867,10 +822,6 @@ EXPORT_SYMBOL_GPL(clk_rate_exclusive_get);
+ 
+ static void clk_core_unprepare(struct clk_core *core)
+ {
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	int i;
+-#endif
+-
+ 	lockdep_assert_held(&prepare_lock);
+ 
+ 	if (!core)
+@@ -887,16 +838,6 @@ static void clk_core_unprepare(struct clk_core *core)
+ 	if (core->flags & CLK_SET_RATE_GATE)
+ 		clk_core_rate_unprotect(core);
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	for (i = 0; i < skip_clk_num; i++) {
+-		if (strstr(core->name, clk_skip_disable_list[i]))
+-			return;
+-	}
+-
+-	if (skip_all_clk_disable)
+-		return;
+-#endif
+-
+ 	if (--core->prepare_count > 0)
+ 		return;
+ 
+@@ -1022,10 +963,6 @@ EXPORT_SYMBOL_GPL(clk_prepare);
+ 
+ static void clk_core_disable(struct clk_core *core)
+ {
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	int i;
+-#endif
+-
+ 	lockdep_assert_held(&enable_lock);
+ 
+ 	if (!core)
+@@ -1038,29 +975,9 @@ static void clk_core_disable(struct clk_core *core)
+ 	    "Disabling critical %s\n", core->name))
+ 		return;
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	for (i = 0; i < skip_clk_num; i++) {
+-		if (strstr(core->name, clk_skip_disable_list[i])) {
+-			pr_info("%s clk in white list, skip disable\n", core->name);
+-			return;
+-		}
+-	}
+-
+-	if (skip_all_clk_disable) {
+-		pr_info("skip all clk disable, %s clk will not disable\n", core->name);
+-		return;
+-	}
+-#endif
+-
+ 	if (--core->enable_count > 0)
+ 		return;
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	pstore_ftrace_clk_disable((unsigned long)core->name);
+-	if (ramoops_io_en && meson_clk_debug)
+-		pr_info("disable clk %s\n", core->name);
+-#endif
+-
+ 	trace_clk_disable_rcuidle(core);
+ 
+ 	if (core->ops->disable)
+@@ -1122,17 +1039,8 @@ static int clk_core_enable(struct clk_core *core)
+ 
+ 		trace_clk_enable_rcuidle(core);
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-		if (core->ops->enable) {
+-			ret = core->ops->enable(core->hw);
+-			if (ramoops_io_en && meson_clk_debug)
+-				pr_info("enable clk %s\n", core->name);
+-			pstore_ftrace_clk_enable((unsigned long)core->name);
+-		}
+-#else
+ 		if (core->ops->enable)
+ 			ret = core->ops->enable(core->hw);
+-#endif
+ 
+ 		trace_clk_enable_complete_rcuidle(core);
+ 
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 44ba4849f78c..dc79211fc2ad 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -17,7 +17,7 @@
+  * As such, the enable set/clear, pending set/clear and active bit
+  * registers are banked per-cpu for these sources.
+  */
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+ #define SKIP_IO_TRACE
+ #endif
+ #include <linux/init.h>
+diff --git a/fs/pstore/ftrace.c b/fs/pstore/ftrace.c
+index f566ffefe297..5939595f0115 100644
+--- a/fs/pstore/ftrace.c
++++ b/fs/pstore/ftrace.c
+@@ -20,8 +20,6 @@
+ #include <asm/barrier.h>
+ #include "internal.h"
+ 
+-#if !IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-
+ /* This doesn't need to be atomic: speed is chosen over correctness here. */
+ static u64 pstore_ftrace_stamp;
+ 
+@@ -118,17 +116,9 @@ static const struct file_operations pstore_knob_fops = {
+ };
+ 
+ static struct dentry *pstore_ftrace_dir;
+-#endif
+ 
+ void pstore_register_ftrace(void)
+ {
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	/*
+-	 * Amlogic reuse pstore ftrace for IO(register access) trace,
+-	 * original pstore ftrace function is not so helpful, just ignore
+-	 */
+-	return;
+-#else
+ 	if (!psinfo->write)
+ 		return;
+ 
+@@ -136,12 +126,10 @@ void pstore_register_ftrace(void)
+ 
+ 	debugfs_create_file("record_ftrace", 0600, pstore_ftrace_dir, NULL,
+ 			    &pstore_knob_fops);
+-#endif
+ }
+ 
+ void pstore_unregister_ftrace(void)
+ {
+-#if !IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+ 	mutex_lock(&pstore_ftrace_lock);
+ 	if (pstore_ftrace_enabled) {
+ 		unregister_ftrace_function(&pstore_ftrace_ops);
+@@ -150,7 +138,6 @@ void pstore_unregister_ftrace(void)
+ 	mutex_unlock(&pstore_ftrace_lock);
+ 
+ 	debugfs_remove_recursive(pstore_ftrace_dir);
+-#endif
+ }
+ 
+ ssize_t pstore_ftrace_combine_log(char **dest_log, size_t *dest_log_size,
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index e7d011e133b9..14658b009f1b 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -109,15 +109,11 @@ static int pstore_ftrace_seq_show(struct seq_file *s, void *v)
+ 
+ 	rec = (struct pstore_ftrace_record *)(ps->record->buf + data->off);
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	pstore_ftrace_dump(rec, s);
+-#else
+ 	seq_printf(s, "CPU:%d ts:%llu %08lx  %08lx  %ps <- %pS\n",
+ 		   pstore_ftrace_decode_cpu(rec),
+ 		   pstore_ftrace_read_timestamp(rec),
+ 		   rec->ip, rec->parent_ip, (void *)rec->ip,
+ 		   (void *)rec->parent_ip);
+-#endif
+ 
+ 	return 0;
+ }
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 3190c24401a3..80bfa26b7772 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -24,15 +24,6 @@
+ #include <linux/of_reserved_mem.h>
+ #include "internal.h"
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-#include <linux/workqueue.h>
+-
+-/* ramoops_io_dump_delay_secs : iotrace dump delayed time, s */
+-static int ramoops_io_dump_delay_secs = 10; /* default : 10s */
+-core_param(ramoops_io_dump_delay_secs, ramoops_io_dump_delay_secs, int, 0644);
+-struct delayed_work pstore_work;
+-#endif
+- 
+ #define RAMOOPS_KERNMSG_HDR "===="
+ #define MIN_MEM_SIZE 4096UL
+ 
+@@ -722,18 +713,6 @@ static int ramoops_parse_dt(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-static struct ramoops_context *cxt_saved;
+-static unsigned long ramoops_ftrace_size_saved;
+-
+-static void pstore_work_func(struct work_struct *work)
+-{
+-	if (ramoops_ftrace_size_saved)
+-		pstore_ftrace_dump_old(cxt_saved->fprzs[0]);
+-	cancel_delayed_work(&pstore_work);
+-}
+-#endif
+-
+ static int ramoops_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -883,20 +862,6 @@ static int ramoops_probe(struct platform_device *pdev)
+ 		cxt->size, (unsigned long long)cxt->phys_addr,
+ 		cxt->ecc_info.ecc_size);
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	cxt_saved = cxt;
+-	ramoops_ftrace_size_saved = ramoops_ftrace_size;
+-	if (ramoops_ftrace_size) {
+-		ramoops_ftrace_en = 1;
+-		pr_info("ramoops_io_en:%d %d old:0x%lx ftrace_size:0x%lx\n",
+-			ramoops_io_en, ramoops_ftrace_en,
+-			cxt->fprzs[0] ? (unsigned long)persistent_ram_old_size(cxt->fprzs[0]) : 0,
+-			ramoops_ftrace_size);
+-	}
+-	INIT_DELAYED_WORK(&pstore_work, pstore_work_func);
+-	schedule_delayed_work(&pstore_work, ramoops_io_dump_delay_secs * HZ);
+-#endif
+-
+ 	return 0;
+ 
+ fail_buf:
+diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+index 5fbaa795cf57..1974def1cc9c 100644
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -2,11 +2,11 @@
+ /*
+  * Copyright (C) 2012 Google, Inc.
+  */
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-#define SKIP_IO_TRACE
+-#endif
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
++#define SKIP_IO_TRACE
++#endif
+ #include <linux/device.h>
+ #include <linux/err.h>
+ #include <linux/errno.h>
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index b7441a1cc6e5..e97a8188f0fd 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -43,10 +43,6 @@ enum pstore_type_id {
+ 	PSTORE_TYPE_MAX
+ };
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-#include <linux/amlogic/debug_ftrace_ramoops.h>
+-#endif
+-
+ const char *pstore_type_to_name(enum pstore_type_id type);
+ enum pstore_type_id pstore_name_to_type(const char *name);
+ 
+@@ -214,30 +210,8 @@ struct pstore_ftrace_record {
+ 	unsigned long ip;
+ 	unsigned long parent_ip;
+ 	u64 ts;
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	int pid;
+-	union {
+-		char name[16];
+-		struct {
+-			unsigned long val1;
+-			unsigned long val2;
+-		};
+-	};
+-	unsigned long long time;
+-	unsigned char comm[8];
+-	struct {
+-		unsigned int flag:30;
+-		unsigned int in_irq:1;
+-		unsigned int phys_addr:1;
+-	};
+-#endif
+ };
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-void notrace pstore_ftrace_dump(struct pstore_ftrace_record *rec,
+-				struct seq_file *s);
+-#endif
+-
+ /*
+  * ftrace related stuff: Both backends and frontends need these so expose
+  * them here.
+diff --git a/kernel/module.c b/kernel/module.c
+index 19ea8e6aa7e2..2ce06c79b4bb 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3883,14 +3883,6 @@ static noinline int do_init_module(struct module *mod)
+ 	mod->btf_data = NULL;
+ #endif
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	/*
+-	 * let free module init_mem synchronized, so module layout can keep
+-	 * consistence after reboot, it's very important for ramoops iodump.
+-	 */
+-	module_memfree(mod->init_layout.base);
+-	kfree(freeinit);
+-#else
+ 	/*
+ 	 * We want to free module_init, but be aware that kallsyms may be
+ 	 * walking this with preempt disabled.  In all the failure paths, we
+@@ -3906,7 +3898,6 @@ static noinline int do_init_module(struct module *mod)
+ 	 */
+ 	if (llist_add(&freeinit->node, &init_free_list))
+ 		schedule_work(&init_free_wq);
+-#endif
+ 
+ 	mutex_unlock(&module_mutex);
+ 	wake_up_all(&module_wq);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 64201f145f1a..80838191f650 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -31,10 +31,6 @@
+ #include <trace/hooks/dtask.h>
+ #include <trace/hooks/cgroup.h>
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-#include <linux/amlogic/debug_ftrace_ramoops.h>
+-#endif
+-
+ /*
+  * Export tracepoints that act as a bare tracehook (ie: have no trace event
+  * associated with them) to allow external modules to probe them.
+@@ -6500,16 +6496,6 @@ static void __sched notrace __schedule(unsigned int sched_mode)
+ 		psi_sched_switch(prev, next, !task_on_rq_queued(prev));
+ 
+ 		trace_sched_switch(sched_mode & SM_MASK_PREEMPT, prev, next);
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-		do {
+-			unsigned long next_comm;
+-
+-			if (ramoops_io_en) {
+-				strscpy((char *)&next_comm, next->comm, sizeof(next_comm));
+-				pstore_ftrace_sched_switch(next->pid, next_comm);
+-			}
+-		} while (0);
+-#endif
+ 		/* Also unlocks the rq: */
+ 		rq = context_switch(rq, prev, next, &rf);
+ 	} else {
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index c1b6fa3ed578..4d385ddfacc9 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -45,11 +45,6 @@
+ #include "internal.h"
+ #include "pgalloc-track.h"
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-#include <linux/moduleparam.h>
+-#include <linux/amlogic/debug_ftrace_ramoops.h>
+-#endif
+-
+ #ifdef CONFIG_HAVE_ARCH_HUGE_VMAP
+ static unsigned int __ro_after_init ioremap_max_page_shift = BITS_PER_LONG - 1;
+ 
+@@ -317,42 +312,16 @@ static int vmap_range_noflush(unsigned long addr, unsigned long end,
+ 	return err;
+ }
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-bool is_normal_memory(pgprot_t p)
+-{
+-#if defined(CONFIG_ARM)
+-	return ((pgprot_val(p) & L_PTE_MT_MASK) == L_PTE_MT_WRITEALLOC);
+-#elif defined(CONFIG_ARM64)
+-	return (pgprot_val(p) & PTE_ATTRINDX_MASK) == PTE_ATTRINDX(MT_NORMAL);
+-#else
+-#error "Unuspported architecture"
+-#endif
+-}
+-#endif
+-
+ int ioremap_page_range(unsigned long addr, unsigned long end,
+ 		phys_addr_t phys_addr, pgprot_t prot)
+ {
+ 	int err;
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	phys_addr_t phys_addr_save = phys_addr;
+-#endif
+ 	prot = pgprot_nx(prot);
+ 	err = vmap_range_noflush(addr, end, phys_addr, prot,
+ 				 ioremap_max_page_shift);
+ 	flush_cache_vmap(addr, end);
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	if (need_dump_iomap() && !is_normal_memory(prot)) {
+-		pr_err("io__map <va:0x%08lx-0x%08lx> pa:0x%lx,port:0x%lx\n",
+-		       addr, end, (unsigned long)phys_addr_save,
+-		       (unsigned long)pgprot_val(prot));
+-
+-		save_iomap_info(addr, (unsigned long)phys_addr_save, (unsigned int)(end - addr));
+-	}
+-#endif
+-
+ 	if (IS_ENABLED(CONFIG_ARCH_HAS_IOREMAP_PHYS_HOOKS) && !err)
+ 		ioremap_phys_range_hook(phys_addr, end - addr, prot);
+ 
+@@ -2669,9 +2638,6 @@ static void __vunmap(const void *addr, int deallocate_pages)
+ 		return;
+ 	}
+ 
+-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+-	delete_iomap_info((unsigned long)addr);
+-#endif
+ 	debug_check_no_locks_freed(area->addr, get_vm_area_size(area));
+ 	debug_check_no_obj_freed(area->addr, get_vm_area_size(area));
+ 
+-- 
+2.25.1
+

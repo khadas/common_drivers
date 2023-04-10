@@ -22,14 +22,15 @@ else
 	obj-$(CONFIG_AMLOGIC_DEBUG_PRINTK) += printk.o
 endif
 
+MODULE_NAME_IOTRACE = amlogic-debug-iotrace
+obj-$(CONFIG_AMLOGIC_DEBUG_IOTRACE) += $(MODULE_NAME_IOTRACE).o
+$(MODULE_NAME_IOTRACE)-y = aml_iotrace.o ftrace_ramoops.o module_debug.o
+
 # builtin
 obj-$(CONFIG_AMLOGIC_BGKI_DEBUG_MISC) += debug_misc.o
-obj-$(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE) += ftrace_ramoops.o
 
 # debug test ko
 obj-$(CONFIG_AMLOGIC_DEBUG_TEST) += debug_test.o
-
-
 AUDIO_UTILS_MODULE_NAME = amlogic-audio-utils
 
 AUDIO_UTILS_PR_FMT = $(subst amlogic-,,$(AUDIO_UTILS_MODULE_NAME))

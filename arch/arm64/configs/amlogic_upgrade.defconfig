@@ -9,6 +9,9 @@ CONFIG_AMLOGIC_GKI_TOOL=y
 # amlogic-debug
 CONFIG_AMLOGIC_DEBUG=y
 
+# amlogic-debug-iotrace
+CONFIG_AMLOGIC_DEBUG_IOTRACE=y
+
 # amlogic-memory-debug
 CONFIG_AMLOGIC_MEMORY_DEBUG=y
 CONFIG_AMLOGIC_PAGE_TRACE=y

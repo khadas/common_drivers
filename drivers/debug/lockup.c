@@ -32,6 +32,9 @@
 #include <trace/hooks/ftrace_dump.h>
 #include <linux/time.h>
 #include <linux/delay.h>
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+#include <linux/amlogic/aml_iotrace.h>
+#endif
 #include <sched.h>
 
 #include "lockup.h"
@@ -140,9 +143,20 @@ static void __maybe_unused isr_in_hook(void *data, int irq, struct irqaction *ac
 	struct isr_check_info *isr_info;
 	int cpu;
 	unsigned long long now;
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+	char buf[20];
+#endif
 
 	if (irq >= IRQ_CNT || !isr_check_en)
 		return;
+
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+	if (aml_iotrace_en) {
+		memset(buf, 0, sizeof(buf));
+		snprintf(buf, 20, "isr-in irq:%d", irq);
+		aml_pstore_write(AML_PSTORE_TYPE_IRQ, buf, 0);
+	}
+#endif
 
 	cpu = smp_processor_id();
 
@@ -167,6 +181,9 @@ static void __maybe_unused isr_out_hook(void *data, int irq, struct irqaction *a
 	struct isr_check_info *isr_info;
 	int cpu;
 	unsigned long long now, delta, this_period_time;
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+	char buf[20];
+#endif
 
 	if (irq >= IRQ_CNT || !isr_check_en)
 		return;
@@ -179,6 +196,14 @@ static void __maybe_unused isr_out_hook(void *data, int irq, struct irqaction *a
 	isr_info = &info->isr_infos[irq];
 	if (!isr_info->exec_start_time)
 		return;
+
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+	if (aml_iotrace_en) {
+		memset(buf, 0, sizeof(buf));
+		snprintf(buf, 20, "isr-out irq:%d", irq);
+		aml_pstore_write(AML_PSTORE_TYPE_IRQ, buf, 0);
+	}
+#endif
 
 	now = sched_clock();
 	delta = now - isr_info->exec_start_time;
@@ -326,6 +351,15 @@ static void smc_in_hook(unsigned long smcid, unsigned long val, bool noret)
 {
 	int cpu;
 	struct lockup_info *info;
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+	char buf[50];
+
+	if (aml_iotrace_en) {
+		memset(buf, 0, sizeof(buf));
+		snprintf(buf, 50, "smc-in smcid:%lx, val:%lx, noret:%d", smcid, val, noret);
+		aml_pstore_write(AML_PSTORE_TYPE_SMC, buf, 0);
+	}
+#endif
 
 	if (noret)
 		return;
@@ -352,6 +386,15 @@ static void smc_out_hook(unsigned long smcid, unsigned long val)
 {
 	int cpu;
 	struct lockup_info *info;
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+	char buf[50];
+
+	if (aml_iotrace_en) {
+		memset(buf, 0, sizeof(buf));
+		snprintf(buf, 50, "smc-out smcid:%lx, val:%lx", smcid, val);
+		aml_pstore_write(AML_PSTORE_TYPE_SMC, buf, 0);
+	}
+#endif
 
 	if (!initialized || !smc_check_en)
 		return;
@@ -609,21 +652,6 @@ rt_throttle_func(void *data, int cpu, u64 clock, ktime_t rt_period, u64 rt_runti
 		rq->curr->prio, exec_runtime);
 }
 
-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
-static void (*pstore_io_save_hook)(unsigned long reg, unsigned long val,
-				    unsigned long parent, unsigned int flag,
-				    unsigned long *irq_flag);
-
-void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val,
-			    unsigned long parent, unsigned int flag,
-			    unsigned long *irq_flag)
-{
-	if (pstore_io_save_hook)
-		pstore_io_save_hook(reg, val, parent, flag, irq_flag);
-}
-EXPORT_SYMBOL(pstore_io_save);
-#endif
-
 static void __maybe_unused
 debug_hook_func(void *data, struct irq_data *magic, const struct cpumask *arg1,
 			    u64 *arg2, bool force, void __iomem *base,
@@ -639,13 +667,6 @@ debug_hook_func(void *data, struct irq_data *magic, const struct cpumask *arg1,
 	case DEBUG_HOOK_IRQ_STOP:
 		irq_trace_stop((unsigned long)arg2);
 		break;
-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
-	case DEBUG_HOOK_PSTORE_ATTACH:
-		*(unsigned long *)&pstore_io_save_hook = ((unsigned long *)arg2)[0];
-		((unsigned long *)arg2)[1] = 1;
-		pr_info("DEBUG_HOOK_PSTORE_ATTACH: %ps\n", pstore_io_save_hook);
-		break;
-#endif
 	default:
 		pr_err("bad debug_hook_type:%d\n", (enum debug_hook_type)arg1);
 		break;

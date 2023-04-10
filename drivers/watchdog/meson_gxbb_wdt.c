@@ -18,8 +18,8 @@
 #include <watchdog_core.h>
 #endif
 
-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
-#include <linux/amlogic/debug_ftrace_ramoops.h>
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+#include <linux/amlogic/aml_iotrace.h>
 #endif
 
 #ifdef CONFIG_AMLOGIC_MODIFY
@@ -52,7 +52,7 @@ struct meson_gxbb_wdt {
 #endif
 };
 
-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 static int wdt_debug;
 module_param(wdt_debug, int, 0644);
 #endif
@@ -61,7 +61,7 @@ static int meson_gxbb_wdt_start(struct watchdog_device *wdt_dev)
 {
 	struct meson_gxbb_wdt *data = watchdog_get_drvdata(wdt_dev);
 
-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 	pr_info("meson gxbb wdt start\n");
 #endif
 	writel(readl(data->reg_base + GXBB_WDT_CTRL_REG) | GXBB_WDT_CTRL_EN,
@@ -74,7 +74,7 @@ static int meson_gxbb_wdt_stop(struct watchdog_device *wdt_dev)
 {
 	struct meson_gxbb_wdt *data = watchdog_get_drvdata(wdt_dev);
 
-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 	pr_info("meson gxbb wdt stop\n");
 #endif
 	writel(readl(data->reg_base + GXBB_WDT_CTRL_REG) & ~GXBB_WDT_CTRL_EN,
@@ -87,7 +87,7 @@ static int meson_gxbb_wdt_ping(struct watchdog_device *wdt_dev)
 {
 	struct meson_gxbb_wdt *data = watchdog_get_drvdata(wdt_dev);
 
-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 	if (wdt_debug)
 		pr_info("meson gxbb wdt ping\n");
 #endif
@@ -102,7 +102,7 @@ static int meson_gxbb_wdt_set_timeout(struct watchdog_device *wdt_dev,
 	struct meson_gxbb_wdt *data = watchdog_get_drvdata(wdt_dev);
 	unsigned long tcnt = timeout * 1000;
 
-#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 	pr_info("%s() timeout=%u\n", __func__, timeout);
 #endif
 	if (tcnt > GXBB_WDT_TCNT_SETUP_MASK)

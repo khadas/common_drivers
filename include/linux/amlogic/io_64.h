@@ -6,7 +6,7 @@
 #ifndef __AMLOGIC_ASM_IO_64_H
 #define __AMLOGIC_ASM_IO_64_H
 
-#include <linux/amlogic/debug_ftrace_ramoops.h>
+#include <linux/amlogic/aml_iotrace.h>
 /*
  * Generic IO read/write.  These perform native-endian accesses.
  */

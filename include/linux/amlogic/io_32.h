@@ -6,7 +6,7 @@
 #ifndef __AMLOGIC_ASM_IO_32_H
 #define __AMLOGIC_ASM_IO_32_H
 
-#include <linux/amlogic/debug_ftrace_ramoops.h>
+#include <linux/amlogic/aml_iotrace.h>
 
 #define __raw_writew __raw_writew
 static inline void __raw_writew(u16 val, volatile void __iomem *addr)
@@ -73,37 +73,4 @@ static inline u32 __raw_readl(const volatile void __iomem *addr)
 	pstore_ftrace_io_rd_end((unsigned long)addr);
 	return val;
 }
-
-static inline void memset_io(volatile void __iomem *dst, unsigned c,
-	size_t count)
-{
-	extern void mmioset(void *, unsigned int, size_t);
-	pstore_ftrace_io_memset((unsigned long)dst, (unsigned long)count);
-	mmioset((void __force *)dst, c, count);
-	pstore_ftrace_io_memset_end((unsigned long)dst, (unsigned long)count);
-}
-
-#define memset_io(dst, c, count) memset_io(dst, c, count)
-
-static inline void memcpy_fromio(void *to, const volatile void __iomem *from,
-	size_t count)
-{
-	extern void mmiocpy(void *, const void *, size_t);
-	pstore_ftrace_io_copy_from((unsigned long)to, (unsigned long)count);
-	mmiocpy(to, (const void __force *)from, count);
-	pstore_ftrace_io_copy_from_end((unsigned long)to, (unsigned long)count);
-}
-
-#define memcpy_fromio(to, from, count) memcpy_fromio(to, from, count)
-
-static inline void memcpy_toio(volatile void __iomem *to, const void *from,
-	size_t count)
-{
-	extern void mmiocpy(void *, const void *, size_t);
-	pstore_ftrace_io_copy_to((unsigned long)to, (unsigned long)count);
-	mmiocpy((void __force *)to, from, count);
-	pstore_ftrace_io_copy_to_end((unsigned long)to, (unsigned long)count);
-}
-
-#define memcpy_toio(to, from, count) memcpy_toio(to, from, count)
 #endif /* __AMLOGIC_ASM_IO_32_H */

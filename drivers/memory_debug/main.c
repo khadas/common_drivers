@@ -56,6 +56,28 @@ unsigned long aml_free_reserved_area(void *start, void *end, int poison, const c
 }
 EXPORT_SYMBOL(aml_free_reserved_area);
 
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+/*
+ * help iotrace driver free reserved-memory
+ * set ramoops_io_skip
+ * avoid interdependence between ko
+ */
+#include <linux/amlogic/aml_iotrace.h>
+static int ramoops_io_skip_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &ramoops_io_skip)) {
+		pr_err("ramoops_io_skip error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("ramoops_io_skip=", ramoops_io_skip_setup);
+#endif
+
 static int __init memory_main_init(void)
 {
 	pr_debug("### %s() start\n", __func__);

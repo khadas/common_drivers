@@ -169,6 +169,7 @@ static int cpu_type;
 #define REG_READ 0
 #define REG_WRITE 1
 
+static int sys_addr_offset = 0x38000;
 
 #ifdef MEM_DEBUG
 static void debug_write(const char __user *buf, size_t count)
@@ -499,7 +500,7 @@ static int sc2_read_smc(unsigned int reg)
 
 static void sc2_write_sys(unsigned int reg, unsigned int val)
 {
-	void *ptr = (void *)(p_smc_hw_base - 0x38000 + reg);
+	void *ptr = (void *)(p_smc_hw_base - sys_addr_offset + reg);
 
 	if (t5w_smartcard)
 		return;
@@ -511,7 +512,7 @@ static void sc2_write_sys(unsigned int reg, unsigned int val)
 
 static int sc2_read_sys(unsigned int reg)
 {
-	void *addr = p_smc_hw_base - 0x38000 + reg;
+	void *addr = p_smc_hw_base - sys_addr_offset + reg;
 	int ret = 0;
 
 	if (t5w_smartcard)
@@ -542,9 +543,12 @@ static int sc2_smc_addr(struct platform_device *pdev)
 	pr_error("%s addr:0x%x\n", __func__, (unsigned int)res->start);
 
 	if (res->start == 0xfe000000) {
-		p_smc_hw_base += 0x38000;
-		pr_error("sc2 smartcard\n");
 		cpu_type = get_cpu_type();
+		if (cpu_type == MESON_CPU_MAJOR_ID_S5)
+			sys_addr_offset = 0x40000;
+
+		p_smc_hw_base += sys_addr_offset;
+		pr_error("sc2 smartcard\n");
 	} else {
 		pr_error("t5w smartcard\n");
 		t5w_smartcard = 1;

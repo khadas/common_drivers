@@ -772,7 +772,7 @@
 		multi_core1 = <1>;
 	};
 
-    /* SMC */
+	/* SMC */
 	smartcard {
 		compatible = "amlogic,smartcard-sc2";
 		dev_name = "smartcard";
@@ -781,12 +781,12 @@
 		reg = <0x0 0xfe000000 0x0 0x480000>;
 		irq_trigger_type = "GPIO_IRQ_LOW";
 
-		reset_pin-gpios = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
-		detect_pin-gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
-		enable_5v3v_pin-gpios = <&gpio GPIOT_11 GPIO_ACTIVE_HIGH>;
-		enable_pin-gpios = <&gpio GPIOT_12 GPIO_ACTIVE_HIGH>;
+		reset_pin-gpios = <&gpio GPIOT_19 GPIO_ACTIVE_HIGH>;
+		detect_pin-gpios = <&gpio GPIOT_23 GPIO_ACTIVE_HIGH>;
+		enable_5v3v_pin-gpios = <&gpio GPIOT_22 GPIO_ACTIVE_HIGH>;
+		enable_pin-gpios = <&gpio GPIOT_18 GPIO_ACTIVE_HIGH>;
 
-		interrupts = <0 174 1>;
+		interrupts = <0 81 1>;
 		interrupt-names = "smc0_irq";
 		/*
 		 *Smc clock source, if change this,
@@ -803,8 +803,8 @@
 
 		pinctrl-names = "default";
 		pinctrl-0 = <&sd_iso7816_pins>;
-//		clocks = <&clkc CLKID_SC_CLK_GATE>;
-//		clock-names = "smartcard";
+		clocks = <&clkc CLKID_SYS_CLK_SMART_CARD>;
+		clock-names = "smartcard";
 	};
 
 	dvb-extern {

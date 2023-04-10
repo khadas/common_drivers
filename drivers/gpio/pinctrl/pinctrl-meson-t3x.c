@@ -358,6 +358,7 @@ static const unsigned int spi2_clk_c_pins[]		= { GPIOC_2 };
 static const unsigned int spi2_ss0_c_pins[]		= { GPIOC_3 };
 static const unsigned int spi2_ss1_c_pins[]		= { GPIOC_4 };
 static const unsigned int spi2_ss2_c_pins[]		= { GPIOC_5 };
+static const unsigned int pwm_j_c_pins[]		= { GPIOC_10 };
 
 /* BANK C func3 */
 static const unsigned int cicam_a2_c_pins[]		= { GPIOC_0 };
@@ -370,6 +371,7 @@ static const unsigned int cicam_a8_c_pins[]		= { GPIOC_6 };
 static const unsigned int cicam_a9_c_pins[]		= { GPIOC_7 };
 static const unsigned int cicam_a10_c_pins[]		= { GPIOC_8 };
 static const unsigned int cicam_a11_c_pins[]		= { GPIOC_9 };
+static const unsigned int cicam_a12_c_pins[]		= { GPIOC_10 };
 
 /* BANK C func4 */
 static const unsigned int tsin_c_clk_c_pins[]		= { GPIOC_0 };
@@ -380,6 +382,7 @@ static const unsigned int spi2_dq2_c_pins[]		= { GPIOC_4 };
 static const unsigned int spi2_dq3_c_pins[]		= { GPIOC_5 };
 static const unsigned int demod_uart_tx_c_pins[]	= { GPIOC_6 };
 static const unsigned int demod_uart_rx_c_pins[]	= { GPIOC_7 };
+static const unsigned int pwm_vs_c_pins[]		= { GPIOC_10 };
 
 /* BANK C func5 */
 static const unsigned int spi1_ss1_c_pins[]		= { GPIOC_0 };
@@ -391,6 +394,7 @@ static const unsigned int tdm_fs1_c_pins[]		= { GPIOC_6 };
 static const unsigned int tdm_sclk1_c_pins[]		= { GPIOC_7 };
 static const unsigned int tdm_d4_c_pins[]		= { GPIOC_8 };
 static const unsigned int tdm_d5_c_pins[]		= { GPIOC_9 };
+static const unsigned int spi5_miso_c_pins[]		= { GPIOC_10 };
 
 /* BANK C func6 */
 static const unsigned int spi3_miso_c_pins[]		= { GPIOC_0 };
@@ -403,6 +407,10 @@ static const unsigned int spi4_ss0_c_pins[]		= { GPIOC_6 };
 static const unsigned int spi5_mosi_c_pins[]		= { GPIOC_7 };
 static const unsigned int spi5_clk_c_pins[]		= { GPIOC_8 };
 static const unsigned int spi5_ss0_c_pins[]		= { GPIOC_9 };
+static const unsigned int pcieck_reqn_c_pins[]		= { GPIOC_10 };
+
+/* BANK C func7 */
+static const unsigned int dcon_led_c_pins[]		= { GPIOC_10 };
 
 /* BANK Z func1 */
 static const unsigned int tdm_fs2_z_pins[]		= { GPIOZ_0 };
@@ -427,7 +435,7 @@ static const unsigned int dcon_led_z18_pins[]		= { GPIOZ_18 };
 static const unsigned int spdif_out_a_z19_pins[]	= { GPIOZ_19 };
 
 /* BANK Z func2 */
-static const unsigned int pwm_j_z0_pins[]		= { GPIOZ_0 };
+static const unsigned int tsin_a_clk_z_pins[]		= { GPIOZ_0 };
 static const unsigned int tsin_a_sop_z_pins[]		= { GPIOZ_1 };
 static const unsigned int tsin_a_valid_z_pins[]		= { GPIOZ_2 };
 static const unsigned int tsin_a_d0_z_pins[]		= { GPIOZ_3 };
@@ -446,7 +454,7 @@ static const unsigned int dtv_rf_agc_z18_pins[]		= { GPIOZ_18 };
 static const unsigned int spdif_in_z_pins[]		= { GPIOZ_19 };
 
 /* BANK Z func3 */
-static const unsigned int cicam_a12_z_pins[]		= { GPIOZ_0 };
+static const unsigned int iso7816_clk_z_pins[]		= { GPIOZ_0 };
 static const unsigned int iso7816_data_z_pins[]		= { GPIOZ_1 };
 static const unsigned int cicam_a13_pins[]		= { GPIOZ_2 };
 static const unsigned int cicam_a14_pins[]		= { GPIOZ_3 };
@@ -457,7 +465,7 @@ static const unsigned int atv_if_agc_z18_pins[]		= { GPIOZ_18 };
 static const unsigned int spdif_out_b_z_pins[]		= { GPIOZ_19 };
 
 /* BANK Z func4 */
-static const unsigned int pwm_vs_z0_pins[]		= { GPIOZ_0 };
+static const unsigned int spi1_miso_z0_pins[]		= { GPIOZ_0 };
 static const unsigned int spi1_mosi_z_pins[]		= { GPIOZ_1 };
 static const unsigned int spi1_clk_z_pins[]		= { GPIOZ_2 };
 static const unsigned int spi1_ss0_z_pins[]		= { GPIOZ_3 };
@@ -468,7 +476,7 @@ static const unsigned int dtv_if_agc_z18_pins[]		= { GPIOZ_18 };
 static const unsigned int pwm_g_z19_pins[]		= { GPIOZ_19 };
 
 /* BANK Z func5 */
-static const unsigned int spi5_miso_z_pins[]		= { GPIOZ_0 };
+static const unsigned int uart_a_tx_z_pins[]		= { GPIOZ_0 };
 static const unsigned int uart_a_rx_z_pins[]		= { GPIOZ_1 };
 static const unsigned int uart_a_cts_z_pins[]		= { GPIOZ_2 };
 static const unsigned int uart_a_rts_z_pins[]		= { GPIOZ_3 };
@@ -482,10 +490,10 @@ static const unsigned int pwm_h_z_pins[]		= { GPIOZ_13 };
 static const unsigned int pwm_i_z_pins[]		= { GPIOZ_14 };
 static const unsigned int pwm_j_z15_pins[]		= { GPIOZ_15 };
 static const unsigned int spi0_ss1_z_pins[]		= { GPIOZ_18 };
-static const unsigned int spi1_miso_z_pins[]		= { GPIOZ_19 };
+static const unsigned int spi1_miso_z19_pins[]		= { GPIOZ_19 };
 
 /* BANK Z func6 */
-static const unsigned int pcieck_reqn_z_pins[]		= { GPIOZ_0 };
+static const unsigned int cicam_a12_z_pins[]		= { GPIOZ_0 };
 static const unsigned int pdm_din2_z_pins[]		= { GPIOZ_1 };
 static const unsigned int pdm_dclk_z_pins[]		= { GPIOZ_2 };
 static const unsigned int pdm_din0_z_pins[]		= { GPIOZ_3 };
@@ -498,7 +506,7 @@ static const unsigned int pwm_vs_z18_pins[]		= { GPIOZ_18 };
 static const unsigned int diseqc_out_z19_pins[]		= { GPIOZ_19 };
 
 /* BANK Z func7 */
-static const unsigned int dcon_led_z0_pins[]		= { GPIOZ_0 };
+static const unsigned int diseqc_out_z0_pins[]		= { GPIOZ_0 };
 static const unsigned int s2_demod_gpio0_z_pins[]	= { GPIOZ_1 };
 static const unsigned int spdif_out_a_z2_pins[]		= { GPIOZ_2 };
 static const unsigned int spi0_ss1_z3_pins[]		= { GPIOZ_3 };
@@ -1148,6 +1156,7 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(spi2_ss0_c,		2),
 	GROUP(spi2_ss1_c,		2),
 	GROUP(spi2_ss2_c,		2),
+	GROUP(pwm_j_c,			2),
 
 	/* BANK C func3 */
 	GROUP(cicam_a2_c,		3),
@@ -1160,6 +1169,7 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(cicam_a9_c,		3),
 	GROUP(cicam_a10_c,		3),
 	GROUP(cicam_a11_c,		3),
+	GROUP(cicam_a12_c,		3),
 
 	/* BANK C func4 */
 	GROUP(tsin_c_clk_c,		4),
@@ -1170,6 +1180,7 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(spi2_dq3_c,		4),
 	GROUP(demod_uart_tx_c,		4),
 	GROUP(demod_uart_rx_c,		4),
+	GROUP(pwm_vs_c,			4),
 
 	/* BANK C func5 */
 	GROUP(spi1_ss1_c,		5),
@@ -1181,6 +1192,7 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(tdm_sclk1_c,		5),
 	GROUP(tdm_d4_c,			5),
 	GROUP(tdm_d5_c,			5),
+	GROUP(spi5_miso_c,		5),
 
 	/* BANK C func6 */
 	GROUP(spi3_miso_c,		6),
@@ -1193,6 +1205,10 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(spi5_mosi_c,		6),
 	GROUP(spi5_clk_c,		6),
 	GROUP(spi5_ss0_c,		6),
+	GROUP(pcieck_reqn_c,		6),
+
+	/* BANK C func7 */
+	GROUP(dcon_led_c,		7),
 
 	/* BANK Z func1 */
 	GROUP(tdm_fs2_z,		1),
@@ -1217,7 +1233,7 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(spdif_out_a_z19,		1),
 
 	/* BANK Z func2 */
-	GROUP(pwm_j_z0,			2),
+	GROUP(tsin_a_clk_z,		2),
 	GROUP(tsin_a_sop_z,		2),
 	GROUP(tsin_a_valid_z,		2),
 	GROUP(tsin_a_d0_z,		2),
@@ -1236,7 +1252,7 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(spdif_in_z,		2),
 
 	/* BANK Z func3 */
-	GROUP(cicam_a12_z,		3),
+	GROUP(iso7816_clk_z,		3),
 	GROUP(iso7816_data_z,		3),
 	GROUP(cicam_a13,		3),
 	GROUP(cicam_a14,		3),
@@ -1247,8 +1263,8 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(spdif_out_b_z,		3),
 
 	/* BANK Z func4 */
-	GROUP(pwm_vs_z0,		4),
-	GROUP(spi1_miso_z,		4),
+	GROUP(spi1_miso_z0,		4),
+	GROUP(spi1_mosi_z,		4),
 	GROUP(spi1_mosi_z,		4),
 	GROUP(spi1_clk_z,		4),
 	GROUP(spi1_ss0_z,		4),
@@ -1259,7 +1275,7 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(pwm_g_z19,		4),
 
 	/* BANK Z func5 */
-	GROUP(spi5_miso_z,		5),
+	GROUP(uart_a_tx_z,		5),
 	GROUP(uart_a_rx_z,		5),
 	GROUP(uart_a_cts_z,		5),
 	GROUP(uart_a_rts_z,		5),
@@ -1273,10 +1289,10 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(pwm_i_z,			5),
 	GROUP(pwm_j_z15,		5),
 	GROUP(spi0_ss1_z,		5),
-	GROUP(spi1_miso_z,		5),
+	GROUP(spi1_miso_z19,		5),
 
 	/* BANK Z func6 */
-	GROUP(pcieck_reqn_z,		6),
+	GROUP(cicam_a12_z,		6),
 	GROUP(pdm_din2_z,		6),
 	GROUP(pdm_dclk_z,		6),
 	GROUP(pdm_din0_z,		6),
@@ -1289,7 +1305,7 @@ static struct meson_pmx_group meson_t3x_periphs_groups[] = {
 	GROUP(diseqc_out_z19,		6),
 
 	/* BANK Z func7 */
-	GROUP(dcon_led_z0,		7),
+	GROUP(diseqc_out_z0,		7),
 	GROUP(s2_demod_gpio0_z,		7),
 	GROUP(spdif_out_a_z2,		7),
 	GROUP(spi0_ss1_z3,		7),
@@ -1704,7 +1720,7 @@ static const char * const cec_groups[] = {
 };
 
 static const char * const uart_a_groups[] = {
-	"uart_a_tx_c", "uart_a_rx_c", "uart_a_rx_z",
+	"uart_a_tx_c", "uart_a_rx_c", "uart_a_rx_z", "uart_a_tx_z",
 	"uart_a_tx_m", "uart_a_rx_m", "uart_a_cts_c",
 	"uart_a_rts_c", "uart_a_cts_z", "uart_a_rts_z",
 	"uart_a_cts_m", "uart_a_rts_m"
@@ -1835,7 +1851,7 @@ static const char * const pwm_i_groups[] = {
 };
 
 static const char * const pwm_j_groups[] = {
-	"pwm_j_d", "pwm_j_p", "pwm_j_m", "pwm_j_z0", "pwm_j_z15"
+	"pwm_j_d", "pwm_j_p", "pwm_j_m", "pwm_j_c", "pwm_j_z15"
 };
 
 static const char * const pwm_c_hiz_groups[] = {
@@ -1847,7 +1863,7 @@ static const char * const pwm_d_hiz_groups[] = {
 };
 
 static const char * const pwm_vs_groups[] = {
-	"pwm_vs_d", "pwm_vs_z0", "pwm_vs_z18", "pwm_vs_h12", "pwm_vs_h13"
+	"pwm_vs_d", "pwm_vs_c", "pwm_vs_z18", "pwm_vs_h12", "pwm_vs_h13"
 };
 
 static const char * const pdm_groups[] = {
@@ -1889,7 +1905,8 @@ static const char * const spi0_groups[] = {
 static const char * const spi1_groups[] = {
 	"spi1_ss1_c", "spi1_clk_z", "spi1_ss0_z", "spi1_dq2_z", "spi1_dq3_z",
 	"spi1_ss0_h", "spi1_clk_h", "spi1_ss1_p", "spi1_miso_z", "spi1_mosi_z",
-	"spi1_miso_z", "spi1_miso_h", "spi1_mosi_h", "spi1_dq2_h", "spi1_dq3_h"
+	"spi1_miso_z0", "spi1_miso_h", "spi1_mosi_h", "spi1_dq2_h", "spi1_dq3_h",
+	"spi1_miso_z19"
 };
 
 static const char * const spi2_groups[] = {
@@ -1911,7 +1928,7 @@ static const char * const spi4_groups[] = {
 
 static const char * const spi5_groups[] = {
 	"spi5_clk_c", "spi5_ss0_c", "spi5_clk_p", "spi5_ss0_p",
-	"spi5_mosi_c", "spi5_miso_z", "spi5_mosi_p"
+	"spi5_mosi_c", "spi5_miso_c", "spi5_mosi_p"
 };
 
 static const char * const mclk_groups[] = {
@@ -1957,11 +1974,11 @@ static const char * const cicam_groups[] = {
 	"cicam_a11_z", "cicam_a12_z", "cicam_data0", "cicam_data1",
 	"cicam_data2", "cicam_data3", "cicam_data4", "cicam_data5",
 	"cicam_data6", "cicam_data7", "cicam_iordn", "cicam_iowrn",
-	"cicam_reset", "cicam_waitn_d", "cicam_waitn_m"
+	"cicam_reset", "cicam_waitn_d", "cicam_waitn_m", "cicam_a12_c",
 };
 
 static const char * const iso7816_groups[] = {
-	"iso7816_data_z", "iso7816_clk_m", "iso7816_data_m"
+	"iso7816_clk_z", "iso7816_data_z", "iso7816_clk_m", "iso7816_data_m"
 };
 
 static const char * const tsout_groups[] = {
@@ -2021,7 +2038,7 @@ static const char * const clk12_24M_groups[] = {
 
 static const char * const dcon_led_groups[] = {
 	"dcon_led_h", "dcon_led_p", "dcon_led_d7", "dcon_led_d8",
-	"dcon_led_d9", "dcon_led_z0", "dcon_led_z18",
+	"dcon_led_d9", "dcon_led_c", "dcon_led_z18",
 };
 
 static const char * const pcieck_groups[] = {

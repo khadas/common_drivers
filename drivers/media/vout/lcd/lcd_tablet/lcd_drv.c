@@ -924,12 +924,9 @@ int lcd_tablet_driver_init(struct aml_lcd_drv_s *pdrv)
 		lcd_rgb_pinmux_set(pdrv, 1);
 		break;
 	case LCD_BT656:
-		lcd_bt_control_set(pdrv);
-		lcd_bt656_pinmux_set(pdrv, 1);
-		break;
 	case LCD_BT1120:
 		lcd_bt_control_set(pdrv);
-		lcd_bt1120_pinmux_set(pdrv, 1);
+		lcd_bt_pinmux_set(pdrv, 1);
 		break;
 	case LCD_LVDS:
 		lcd_lvds_control_set(pdrv);
@@ -974,10 +971,8 @@ void lcd_tablet_driver_disable(struct aml_lcd_drv_s *pdrv)
 		lcd_rgb_pinmux_set(pdrv, 0);
 		break;
 	case LCD_BT656:
-		lcd_bt656_pinmux_set(pdrv, 0);
-		break;
 	case LCD_BT1120:
-		lcd_bt1120_pinmux_set(pdrv, 0);
+		lcd_bt_pinmux_set(pdrv, 0);
 		break;
 	case LCD_LVDS:
 		lcd_phy_set(pdrv, LCD_PHY_OFF);

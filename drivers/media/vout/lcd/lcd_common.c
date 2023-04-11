@@ -415,8 +415,7 @@ static char *lcd_rgb_pinmux_str[] = {
 	"rgb_sync_on",      /* 0 */
 	"rgb_de_on",        /* 1 */
 	"rgb_sync_de_on",   /* 2 */
-	"rgb_off",          /* 3 */
-	"invalid"
+	"rgb_off"          /* 3 */
 };
 
 void lcd_rgb_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
@@ -429,43 +428,36 @@ void lcd_rgb_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
 
 	pconf = &pdrv->config;
 	if (status) {
-		if (pconf->control.rgb_cfg.sync_valid) {
-			if (pconf->control.rgb_cfg.de_valid)
-				index = 2;
-			else
-				index = 0;
+		if (pconf->control.rgb_cfg.sync_valid || pconf->control.rgb_cfg.de_valid) {
+			index = 2;
+		} else if (pconf->control.rgb_cfg.de_valid) {
+			index = 1;
+		} else if (pconf->control.rgb_cfg.sync_valid) {
+			index = 0;
 		} else {
-			if (pconf->control.rgb_cfg.de_valid)
-				index = 1;
-			else
-				index = 4;
+			LCDERR("[%d]: rgb pinmux error\n", pdrv->index);
+			return;
 		}
 	} else {
 		index = 3;
 	}
-	if (index == 4) {
-		LCDERR("[%d]: rgb pinmux %s error\n",
-		       pdrv->index, lcd_rgb_pinmux_str[index]);
-		return;
-	}
 
 	if (pconf->pinmux_flag == index) {
 		LCDPR("[%d]: pinmux %s is already selected\n",
-		      pdrv->index, lcd_rgb_pinmux_str[index]);
+				pdrv->index, lcd_rgb_pinmux_str[index]);
 		return;
 	}
 
 	/* request pinmux */
 	pconf->pin = devm_pinctrl_get_select(pdrv->dev, lcd_rgb_pinmux_str[index]);
 	if (IS_ERR(pconf->pin)) {
-		LCDERR("[%d]: set rgb pinmux %s error\n",
-		       pdrv->index, lcd_rgb_pinmux_str[index]);
-	} else {
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-			LCDPR("[%d]: set rgb pinmux %s: 0x%px\n",
-			      pdrv->index, lcd_rgb_pinmux_str[index],
-			      pconf->pin);
-		}
+		LCDERR("[%d]: set rgb pinmux %s error\n", pdrv->index, lcd_rgb_pinmux_str[index]);
+		return;
+	}
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("[%d]: set rgb pinmux %s: 0x%px\n",
+			pdrv->index, lcd_rgb_pinmux_str[index], pconf->pin);
 	}
 	pconf->pinmux_flag = index;
 }
@@ -477,7 +469,7 @@ static char *lcd_bt_pinmux_str[] = {
 	"bt1120_off",  /* 3 */
 };
 
-void lcd_bt656_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
+void lcd_bt_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	struct lcd_config_s *pconf;
 	unsigned int index;
@@ -487,46 +479,17 @@ void lcd_bt656_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
 
 	pconf = &pdrv->config;
 
-	if (status)
+	if (pdrv->config.basic.lcd_type == LCD_BT656) {
 		index = 0;
-	else
-		index = 1;
-
-	if (pconf->pinmux_flag == index) {
-		LCDPR("[%d]: pinmux %s is already selected\n",
-		      pdrv->index, lcd_bt_pinmux_str[index]);
-		return;
-	}
-
-	/* request pinmux */
-	pconf->pin = devm_pinctrl_get_select(pdrv->dev, lcd_bt_pinmux_str[index]);
-	if (IS_ERR(pconf->pin)) {
-		LCDERR("[%d]: set bt pinmux %s error\n",
-		       pdrv->index, lcd_bt_pinmux_str[index]);
-	} else {
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-			LCDPR("[%d]: set bt pinmux %s: 0x%px\n",
-			      pdrv->index, lcd_bt_pinmux_str[index],
-			      pconf->pin);
-		}
-	}
-	pconf->pinmux_flag = index;
-}
-
-void lcd_bt1120_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
-{
-	struct lcd_config_s *pconf;
-	unsigned int index;
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("[%d]: %s: %d\n", pdrv->index, __func__, status);
-
-	pconf = &pdrv->config;
-
-	if (status)
+	} else if (pdrv->config.basic.lcd_type == LCD_BT1120) {
 		index = 2;
-	else
-		index = 3;
+	} else {
+		LCDERR("[%d]: bt pinmux invalid\n", pdrv->index);
+		return;
+	}
+
+	if (status == 0)
+		index++;
 
 	if (pconf->pinmux_flag == index) {
 		LCDPR("[%d]: pinmux %s is already selected\n",
@@ -537,14 +500,13 @@ void lcd_bt1120_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
 	/* request pinmux */
 	pconf->pin = devm_pinctrl_get_select(pdrv->dev, lcd_bt_pinmux_str[index]);
 	if (IS_ERR(pconf->pin)) {
-		LCDERR("[%d]: set bt pinmux %s error\n",
-		       pdrv->index, lcd_bt_pinmux_str[index]);
-	} else {
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-			LCDPR("[%d]: set bt pinmux %s: 0x%px\n",
-			      pdrv->index, lcd_bt_pinmux_str[index],
-			      pconf->pin);
-		}
+		LCDERR("[%d]: set bt pinmux %s error\n", pdrv->index, lcd_bt_pinmux_str[index]);
+		return;
+	}
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("[%d]: set bt pinmux %s: 0x%px\n",
+				pdrv->index, lcd_bt_pinmux_str[index], pconf->pin);
 	}
 	pconf->pinmux_flag = index;
 }
@@ -2414,10 +2376,8 @@ static int lcd_config_load_init(struct aml_lcd_drv_s *pdrv)
 			lcd_rgb_pinmux_set(pdrv, 1);
 			break;
 		case LCD_BT656:
-			lcd_bt656_pinmux_set(pdrv, 1);
-			break;
 		case LCD_BT1120:
-			lcd_bt1120_pinmux_set(pdrv, 1);
+			lcd_bt_pinmux_set(pdrv, 1);
 			break;
 		case LCD_VBYONE:
 			lcd_vbyone_pinmux_set(pdrv, 1);

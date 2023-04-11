@@ -2671,7 +2671,7 @@ static ssize_t lcd_debug_change_store(struct device *dev, struct device_attribut
 			}
 		}
 		break;
-	case 't':
+	case 'r':
 		ret = sscanf(buf, "rgb %d %d %d %d %d %d",
 			     &val[0], &val[1], &val[2], &val[3], &val[4], &val[5]);
 		if (ret == 5) {

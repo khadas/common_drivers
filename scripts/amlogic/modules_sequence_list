@@ -19,6 +19,8 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-i2c.ko
 	amlogic-spi.ko
 	amlogic-rng.ko
+	tee.ko
+	optee.ko
 	amlogic-tee.ko
 	videobuf-core.ko
 	dvb-core.ko

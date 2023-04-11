@@ -532,3 +532,5 @@ if [[ ${MODULES_DEPEND} -eq "1" ]]; then
 	echo "print modules depend"
 	check_undefined_symbol
 fi
+
+abi_symbol_list_detect # detect symbol information that should be submitted

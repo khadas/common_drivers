@@ -796,3 +796,37 @@ function check_undefined_symbol() {
 	popd
 }
 export -f check_undefined_symbol
+
+function reorganized_abi_symbol_list_file() { # delete the extra information but symbol
+	cat $@ | sed '/^$/d' >> ${symbol_tmp} # remove blank lines
+	sed -i '/^\[/d' ${symbol_tmp} # remove the title
+	sed -i '/^\#/d' ${symbol_tmp} # remove the comment
+}
+export -f reorganized_abi_symbol_list_file
+
+function abi_symbol_list_detect () { # detect symbol information that should be submitted or fix
+	symbol_file1=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic
+	symbol_file2=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.10
+	symbol_file3=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.debug
+	symbol_file4=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.illegal
+
+	file_list=("${symbol_file1} ${symbol_file2} ${symbol_file3} ${symbol_file4}")
+	for file in ${file_list}
+	do
+		local symbol_tmp=`mktemp tmp.XXXXXXXXXXXX`
+		reorganized_abi_symbol_list_file "${file}"
+
+		if [[ -s ${symbol_tmp} ]]; then
+			if [[ ${file} =~ abi_gki_aarch64_amlogic.illegal ]]; then
+				echo "WARNING: The symbols in ${file} are illegal, please deal with them as soon as possible!!!"
+			else
+				echo "WARNING: The symbols in ${file} should be submit to google!!!"
+			fi
+			cat ${symbol_tmp}
+			echo -e "\n------------------------------------------------------------"
+		fi
+		rm ${symbol_tmp}
+	done
+}
+export -f abi_symbol_list_detect
+

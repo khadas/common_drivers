@@ -561,7 +561,7 @@ void demod_set_mode_ts(enum fe_delivery_system delsys)
 
 		/* fix T and T2 channel switch unlock. */
 		if (demod_is_t5d_cpu(devp) || is_meson_t3_cpu() ||
-			is_meson_t5w_cpu() || is_meson_t5m_cpu())
+		is_meson_t5w_cpu() || is_meson_t5m_cpu() || is_meson_t3x_cpu())
 			cfg0.b.adc_regout = 0;
 
 		break;

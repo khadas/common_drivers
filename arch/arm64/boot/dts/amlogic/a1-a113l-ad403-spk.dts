@@ -8,8 +8,8 @@
 #include "meson-a1.dtsi"
 
 / {
-	compatible = "amlogic,a1";
-	model = "Amlogic Meson a1 Development Board";
+	amlogic-dt-id = "a1-a113l-ad403-spk";
+	compatible = "a1-a113l-ad403-spk";
 
 	aliases {
 		serial0 = &uart_B;

@@ -10,9 +10,8 @@
 #include "mesont5m_ay309-panel.dtsi"
 
 / {
-	model = "Amlogic";
 	amlogic-dt-id = "t5m_t963d4_ay309-3g";
-	compatible = "amlogic, t5m";
+	compatible = "t5m_t963d4_ay309-3g";
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;
 	#size-cells = <2>;

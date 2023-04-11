@@ -9,8 +9,8 @@
 #include "partition_normal_linux.dtsi"
 
 / {
-	compatible = "amlogic,c2";
-	model = "Amlogic Meson C2-C305X-AF400";
+	amlogic-dt-id = "c2_c305x_af400";
+	compatible = "c2_c305x_af400";
 
 	aliases {
 		serial0 = &uart_B;

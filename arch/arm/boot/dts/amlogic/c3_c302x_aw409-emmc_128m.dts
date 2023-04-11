@@ -7,9 +7,8 @@
 
 #include "c3_c30xx_aw409_128m.dtsi"
 / {
-		model = "Amlogic";
-		amlogic-dt-id = "c3_c302x_aw409-128m";
-		compatible = "amlogic, c3";
+	amlogic-dt-id = "c3_c302x_aw409-128m";
+	compatible = "c3_c302x_aw409-128m";
 };
 
 &sd_emmc_c

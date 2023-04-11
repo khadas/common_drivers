@@ -7,7 +7,6 @@
 
 #include "c3_c30xx_aw409_256m.dtsi"
 / {
-		model = "Amlogic";
-		amlogic-dt-id = "c3_c308l_aw429-256m";
-		compatible = "amlogic, c3";
+	amlogic-dt-id = "c3_c308l_aw429-256m";
+	compatible = "c3_c308l_aw429-256m";
 };

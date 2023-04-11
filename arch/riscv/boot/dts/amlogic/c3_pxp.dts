@@ -10,8 +10,8 @@
 #define TIMERCLK_FREQ       900000000
 
 / {
-	compatible = "amlogic, c3";
-	model = "Amlogic";
+	amlogic-dt-id = "c3_pxp";
+	compatible = "c3_pxp";
 
 	aliases {
 		serial0 = &uart_B;

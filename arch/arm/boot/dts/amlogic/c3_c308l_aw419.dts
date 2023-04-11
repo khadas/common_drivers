@@ -9,9 +9,8 @@
 #include "meson-c3_skt-panel.dtsi"
 
 / {
-	model = "Amlogic";
 	amlogic-dt-id = "c3_c308l_aw419";
-	compatible = "amlogic, c3";
+	compatible = "c3_c308l_aw419";
 
 	aliases {
 		serial0 = &uart_B;

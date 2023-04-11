@@ -247,6 +247,70 @@ static irqreturn_t meson_gxl_handle_interrupt(struct phy_device *phydev)
 
 #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
 /*tx_amp*/
+
+unsigned int voltage_phy;
+EXPORT_SYMBOL_GPL(voltage_phy);
+static unsigned int return_write_val(struct phy_device *phy_dev, int rd_addr)
+{
+	int rd_data;
+	int rd_data_hi;
+
+	phy_write(phy_dev, 20,
+		((1 << 15) | (1 << 10) | ((rd_addr & 0x1f) << 5)));
+	rd_data = phy_read(phy_dev, 21);
+	rd_data_hi = phy_read(phy_dev, 22);
+	rd_data = ((rd_data_hi & 0xffff) << 16) | rd_data;
+
+	return rd_data;
+}
+
+static unsigned int phy_tst_write(struct phy_device *phy_dev, unsigned int wr_addr,
+					unsigned int wr_data)
+{	/*init*/
+	phy_write(phy_dev, 20, 0x0000);
+	phy_write(phy_dev, 20, 0x0400);
+	phy_write(phy_dev, 20, 0x0000);
+	phy_write(phy_dev, 20, 0x0400);
+
+	if (wr_addr <= 31) {
+		phy_write(phy_dev, 23, (wr_data & 0xffff));
+
+		phy_write(phy_dev, 20,
+			((1 << 14) | (1 << 10) | ((wr_addr << 0) & 0x1f)));
+
+		pr_info("write phy tstcntl [reg_%d] 0x%x, 0x%x\n",
+			wr_addr, wr_data, return_write_val(phy_dev, wr_addr));
+	} else {
+		pr_info("Invalid parameter\n");
+	}
+	return 0;
+}
+
+static unsigned int phy_tst_read(struct phy_device *phy_dev, unsigned int rd_addr)
+{
+	unsigned int rd_data_hi;
+	unsigned int rd_data = 0;
+
+	/*init*/
+	phy_write(phy_dev, 20, 0x0000);
+	phy_write(phy_dev, 20, 0x0400);
+	phy_write(phy_dev, 20, 0x0000);
+	phy_write(phy_dev, 20, 0x0400);
+
+	if (rd_addr <= 31) {
+		phy_write(phy_dev, 20,
+			((1 << 15) | (1 << 10) | ((rd_addr & 0x1f) << 5)));
+
+		rd_data = phy_read(phy_dev, 21);
+		rd_data_hi = phy_read(phy_dev, 22);
+		rd_data = ((rd_data_hi & 0xffff) << 16) | rd_data;
+		pr_info("read tstcntl phy [reg_%d] 0x%x\n", rd_addr, rd_data);
+	} else {
+		pr_info("Invalid parameter\n");
+	}
+
+	return rd_data;
+}
 unsigned int tx_amp_bl2;
 EXPORT_SYMBOL_GPL(tx_amp_bl2);
 static int custom_internal_config(struct phy_device *phydev)
@@ -272,6 +336,15 @@ static int custom_internal_config(struct phy_device *phydev)
 		/*env not set, efuse not valid return*/
 		pr_info("env not set, efuse also invalid\n");
 	}
+
+	/*voltage phy*/
+	if (voltage_phy) {
+	//	phy_tst_write(phydev, 0x18, 0x8);
+		/*set A4 bit[12:14] as 0, all the setting from mail 2023-4-7 title:T3X Ethernet */
+		phy_tst_write(phydev, 0x15, phy_tst_read(phydev, 0x15) & 0x8fff);
+		pr_info("setup voltage phy %x\n", phy_tst_read(phydev, 0x15));
+	}
+
 	return 0;
 }
 

@@ -165,6 +165,8 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 	struct device_node *np = priv->dev->of_node;
 	unsigned int tx_amp_addr = 0;
 	unsigned int st_mode = 0;
+	unsigned int phy_mode = 0;
+	unsigned int rx_R = 0;
 
 	if (of_property_read_u32(np, "tx_amp_src", &tx_amp_addr) != 0)
 		pr_info("no amp setting\n");
@@ -173,8 +175,35 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 		pr_info("tx_amp_addr %x\n", tx_amp_addr);
 		tx_amp_src = devm_ioremap(priv->dev,
 				(resource_size_t)tx_amp_addr, sizeof(resource_size_t));
-		tx_amp_bl2 = (readl(tx_amp_src) & 0x3f);
+
 		pr_info("txamp 0x%x\n", readl(tx_amp_src));
+		if (((readl(tx_amp_src) & 0x3f) >> 4) & 0x3)
+			tx_amp_bl2 = (readl(tx_amp_src) & 0x3f);
+		else /*efuse not set use default*/
+			tx_amp_bl2 = (0x180018 & 0x3f);
+
+		/*default 0, 1 means voltage phy*/
+		if (of_property_read_u32(np, "phy_mode", &phy_mode) == 0) {
+			pr_info("phy_mode %d\n", phy_mode);
+			voltage_phy = phy_mode;
+			if (phy_mode) {
+				/*bit[20:16] bit20 valid, bit[19:16] rx value*/
+				rx_R = (readl(tx_amp_src) & 0x1f0000);
+		//		rx_R = (0x180018 & 0x1f0000);
+				if (rx_R >> 0x14) { /*bit20 is valid*/
+					pr_info("ETH_RES_CTL %x\n", (((rx_R & 0xf0000) << 8)
+							| 0xe0fe0000
+							| (readl(priv->regs + ETH_PLL_CTL3)
+								& 0xffff)));
+					writel((((rx_R & 0xf0000) << 8) | 0xe0fe0000)
+						| (readl(priv->regs + ETH_PLL_CTL3) & 0xffff),
+						priv->regs + ETH_PLL_CTL3);
+				} else { /*efuse not set use default value*/
+					pr_info("no efuse setting use default\n");
+					writel(0xe8fe0000, priv->regs + ETH_PLL_CTL3);
+				}
+			}
+		}
 	}
 
 	if (of_property_read_u32(np, "st_mode", &st_mode) != 0) {

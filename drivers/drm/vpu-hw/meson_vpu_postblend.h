@@ -96,6 +96,14 @@
 #define VPP_INTF_OSD3_CTRL             0x4107
 #define VPP_MISC_T3X		       0x2509
 
+#define VIU_MODE_CTRL                              0x1a2a
+#define VPP1_OSD3_BLD_H_SCOPE                      0x1d1c
+#define VPP1_OSD3_BLD_V_SCOPE                      0x1d1d
+#define VPP1_BLD_CTRL_T3X                          0x1d1b
+#define VIU_OSD3_MISC				   0x1a17
+#define OSD_PROC_1MUX3_SEL			   0x6072
+#define OSD_SYS_5MUX4_SEL			   0x6078
+
 /* vpp crc */
 #define VPP_RO_CRCSUM           0x1db2
 #define VPP_CRC_CHK             0x1db3

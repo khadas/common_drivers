@@ -869,7 +869,8 @@ static void t3x_osdblend_set_state(struct meson_vpu_block *vblk,
 			sizeof(struct osd_scope_s));
 		}
 
-		if (mvps->plane_info[2].enable) {
+		if (mvps->plane_info[2].enable &&
+			mvps->plane_info[2].crtc_index == 0) {
 			if (mvps->plane_info[2].zorder < mvps->plane_info[0].zorder) {
 				mvobs->din_channel_mux[DIN0] = OSD_CHANNEL4;
 				mvobs->din_channel_mux[DIN3] = OSD_CHANNEL2;
@@ -953,7 +954,8 @@ static void t3x_osdblend_set_state(struct meson_vpu_block *vblk,
 				    mvsps->scaler_dout_hsize[1]);
 	}
 
-	if (mvps->plane_info[2].enable) {
+	if (mvps->plane_info[2].enable &&
+	    mvps->plane_info[2].crtc_index == 0) {
 		reg_ops->rdma_write_reg(OSD3_PROC_IN_SIZE,
 				    (mvsps->scaler_din_vsize[2] << 16) |
 				    mvsps->scaler_din_hsize[2]);
@@ -977,18 +979,21 @@ static void t3x_osdblend_set_state(struct meson_vpu_block *vblk,
 	}
 
 	//osd 2
-		reg_ops->rdma_write_reg_bits(OSD_PROC_1MUX3_SEL, 2, 2, 2);
+	reg_ops->rdma_write_reg_bits(OSD_PROC_1MUX3_SEL, 2, 2, 2);
 
 	//osd 3
-	if (mvsps->more_60) {
-		reg_ops->rdma_write_reg_bits(OSD_PROC_1MUX3_SEL, 1, 4, 2);
-		reg_ops->rdma_write_reg_bits(OSD_PROC_1MUX3_SEL, 3, 10, 4);
-	} else {
-		// bypass slice and go blend
-		reg_ops->rdma_write_reg_bits(OSD_PROC_1MUX3_SEL, 2, 4, 2);
+	if (mvps->plane_info[2].crtc_index == 0) {
+		if (mvsps->more_60) {
+			reg_ops->rdma_write_reg_bits(OSD_PROC_1MUX3_SEL, 1, 4, 2);
+			reg_ops->rdma_write_reg_bits(OSD_PROC_1MUX3_SEL, 3, 10, 4);
+		} else {
+			// bypass slice and go blend
+			reg_ops->rdma_write_reg_bits(OSD_PROC_1MUX3_SEL, 2, 4, 2);
+		}
 	}
 
-	reg_ops->rdma_write_reg_bits(OSD_SYS_5MUX4_SEL, 0x1, 0, 20);
+	reg_ops->rdma_write_reg_bits(OSD_SYS_5MUX4_SEL, 0x1, 0, 4);
+
 	if (mvps->plane_info[0].enable) {
 		reg_ops->rdma_write_reg_bits(VIU_OSD1_MISC, 1, 17, 1);
 		osd_enable[OSD1_INDEX] = 1;

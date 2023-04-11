@@ -978,7 +978,7 @@ int combine_layer_path(int *path_num_array, int num_planes,
 		i++;
 		combination[index] = i;
 
-		for (j = index; j >= 0; j--) {
+		for (j = index; j >= 0 && mvps->plane_info[j].enable; j--) {
 			if (combination[j] >= path_num_array[j]) {
 				combination[j] = 0;
 				i = 0;

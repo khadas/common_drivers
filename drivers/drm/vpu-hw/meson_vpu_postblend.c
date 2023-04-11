@@ -510,6 +510,77 @@ static void s5_postblend_set_state(struct meson_vpu_block *vblk,
 	DRM_DEBUG("scope h/v start/end [%d,%d,%d,%d].\n",
 		  scope.h_start, scope.h_end, scope.v_start, scope.v_end);
 }
+
+static void t3x_postblend_set_state(struct meson_vpu_block *vblk,
+				struct meson_vpu_block_state *state,
+				struct meson_vpu_block_state *old_state)
+{
+	int crtc_index, vpp_osd1_mux;
+	struct am_meson_crtc *amc;
+	struct am_meson_crtc_state *meson_crtc_state;
+	struct meson_vpu_pipeline_state *mvps;
+	struct meson_vpu_sub_pipeline_state *mvsps;
+
+	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
+	struct osd_scope_s scope = {0, 1919, 0, 1079};
+	struct meson_vpu_pipeline *pipeline = postblend->base.pipeline;
+	struct postblend_reg_s *reg = postblend->reg;
+	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
+
+	crtc_index = vblk->index;
+	amc = vblk->pipeline->priv->crtcs[crtc_index];
+	meson_crtc_state = to_am_meson_crtc_state(amc->base.state);
+
+	DRM_DEBUG("%s set_state called.\n", postblend->base.name);
+	mvps = priv_to_pipeline_state(pipeline->obj.state);
+	mvsps = &mvps->sub_states[0];
+	if (crtc_index == 0) {
+		scope.h_start = 0;
+		scope.v_start = 0;
+		if (mvsps->more_4k) {
+			scope.h_end = mvsps->blend_dout_hsize[0] * 2 - 1;
+			scope.v_end = mvsps->blend_dout_vsize[0] * 2 - 1;
+		} else {
+			scope.h_end = mvsps->blend_dout_hsize[0] - 1;
+			scope.v_end = mvsps->blend_dout_vsize[0] - 1;
+		}
+
+		vpp_osd1_blend_scope_set(vblk, reg_ops, reg, scope);
+
+		if (amc->blank_enable) {
+			vpp_osd1_postblend_5mux_set(vblk, reg_ops, reg, VPP_NULL);
+		} else {
+			vpp_osd1_mux = VPP_5MUX_OSD1;
+			vpp_osd1_postblend_5mux_set(vblk, reg_ops, reg, vpp_osd1_mux);
+		}
+
+		osd1_blend_premult_set(vblk, reg_ops, reg);
+		reg_ops->rdma_write_reg_bits(VPP_POSTBLND_CTRL_S5, 1, 8, 1);
+
+		DRM_DEBUG("scope h/v start/end [%d,%d,%d,%d].\n",
+			scope.h_start, scope.h_end, scope.v_start, scope.v_end);
+	}
+	if (crtc_index == 1) {
+		/* 1:vd1-din0, 2:osd1-din1*/
+		scope.h_start = mvps->plane_info[2].dst_x;
+		scope.h_end = scope.h_start + mvps->scaler_param[2].output_width - 1;
+		scope.v_start = mvps->plane_info[2].dst_y;
+		scope.v_end = scope.v_start + mvps->scaler_param[2].output_height - 1;
+		reg_ops->rdma_write_reg_bits(VIU_MODE_CTRL, 1, 1, 1);
+		reg_ops->rdma_write_reg(VPP1_OSD3_BLD_H_SCOPE,
+					(scope.h_start << 16) | scope.h_end);
+		reg_ops->rdma_write_reg(VPP1_OSD3_BLD_V_SCOPE,
+					(scope.v_start << 16) | scope.v_end);
+		reg_ops->rdma_write_reg(VPP1_BLD_CTRL_T3X,
+		(reg_ops->rdma_read_reg(VPP1_BLD_CTRL_T3X) & (3 << 29)) |
+		1 << 31 | 2 << 4 | 1 << 29);
+		//osd3 link vsync2
+		reg_ops->rdma_write_reg_bits(VIU_OSD3_MISC, 1, 0, 1);
+		reg_ops->rdma_write_reg_bits(OSD_PROC_1MUX3_SEL, 0, 4, 2);
+		reg_ops->rdma_write_reg_bits(OSD_SYS_5MUX4_SEL, 5, 8, 4);
+	}
+}
+
 #endif
 
 static void postblend_hw_enable(struct meson_vpu_block *vblk,
@@ -780,4 +851,14 @@ struct meson_vpu_block_ops s5_postblend_ops = {
 	.dump_register = postblend_dump_register,
 	.init = s5_postblend_hw_init,
 };
+
+struct meson_vpu_block_ops t3x_postblend_ops = {
+	.check_state = postblend_check_state,
+	.update_state = t3x_postblend_set_state,
+	.enable = postblend_hw_enable,
+	.disable = s5_postblend_hw_disable,
+	.dump_register = postblend_dump_register,
+	.init = s5_postblend_hw_init,
+};
+
 #endif

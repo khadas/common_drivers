@@ -19,6 +19,7 @@
 #include "meson-ir-map.dtsi"
 #include <dt-bindings/thermal/thermal.h>
 #include <dt-bindings/hwspinlock/amlogic,hwspinlock.h>
+#include <dt-bindings/reset/amlogic,meson-txhd2-reset.h>
 / {
 	cpus:cpus {
 		#address-cells = <1>;
@@ -442,6 +443,11 @@
 				status = "disabled";
 			};
 
+			reset: reset-controller@1004 {
+				compatible = "amlogic,meson-t5-reset";
+				reg = <0x1004 0x9C>;
+				#reset-cells = <1>;
+			};
 		}; /* end of cbus */
 
 		aobus: aobus@ff800000 {

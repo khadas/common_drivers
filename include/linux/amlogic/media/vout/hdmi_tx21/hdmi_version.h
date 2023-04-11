@@ -48,6 +48,7 @@
 	"V03.01.00.00.03.04.16 [20230317] [NEW] tx21 send emds pkt for cuva" \
 	"V03.01.00.00.03.04.17 [20230419] [COMP] sync 5.4 code to 5.15\n" \
 	"V03.01.00.00.03.04.18 [20230428] [COMP] disable frl work when reboot\n" \
-	"V03.01.00.00.03.04.19 [20230509] [COM] add hdr_priority_mode node hide or enable HDR\n"
+	"V03.01.00.00.03.04.19 [20230509] [COM] add hdr_priority_mode node hide or enable HDR\n" \
+	"V03.01.00.00.03.04.20 [20230511] [COM] send scdc commands under scdc_present available\n"
 
 #endif // __HDMI21_VERSION_H__

@@ -232,6 +232,8 @@ struct rx_cap {
 	/*blk0 check sum*/
 	u8 blk0_chksum;
 	u8 chksum[10];
+	u8 head_err;
+	u8 chksum_err;
 };
 
 /* VSIF: Vendor Specific InfoFrame

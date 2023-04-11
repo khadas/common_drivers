@@ -85,6 +85,7 @@
 /*  V1.1.91  fix t2 agc target config for r842 */
 /*  V1.1.92  fix diseqc2.0 rx */
 /*  V1.1.93  add t5m dvbt2 mplp config */
+/*  V1.1.94  fix j83b's status false alarm */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -101,8 +102,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.93"
-#define DTVDEMOD_VER	"2023/04/12: add t5m dvbt2 mplp config"
+#define AMLDTVDEMOD_VER "V1.1.94"
+#define DTVDEMOD_VER	"2023/04/13: fix j83b's status false alarm"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

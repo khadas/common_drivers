@@ -2245,6 +2245,7 @@ static int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status
 		}
 
 		*status = 0;
+		demod->last_status = 0;
 
 		return 0;
 	}
@@ -2258,6 +2259,7 @@ static int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status
 		PR_ATSC("%s: tuner strength [%d] no signal(%d).\n",
 				__func__, str, THRD_TUNER_STRENGTH_J83);
 		*status = FE_TIMEDOUT;
+		demod->last_status = *status;
 		real_para_clear(&demod->real_para);
 		time_start_qam = 0;
 
@@ -2334,6 +2336,8 @@ static int atsc_j83b_read_status(struct dvb_frontend *fe, enum fe_status *status
 			time_start_qam = 0;
 		}
 	}
+
+	demod->last_status = *status;
 
 	if (*status == 0) {
 		PR_ATSC("!! >> wait << !!\n");

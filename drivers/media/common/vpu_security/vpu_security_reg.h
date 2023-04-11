@@ -17,4 +17,3 @@
 #define S5_VIU_OSD4_MISC                              0x1a18
 
 #endif
-

@@ -376,7 +376,6 @@ u32 set_vpu_module_security(struct vpu_secure_ins *ins,
 					value &= ~VPP2_OUTPUT_SECURE;
 			}
 		}
-
 		/* debug value setting */
 		if (debug_value)
 			value = debug_value;

@@ -2834,7 +2834,7 @@
 	vpu_security {
 		compatible = "amlogic, meson-s5, vpu_security";
 		dev_name = "amlogic-vpu-security";
-		status = "disabled";
+		status = "okay";
 		interrupts = <GIC_SPI 124 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "vpu_security";
 	};

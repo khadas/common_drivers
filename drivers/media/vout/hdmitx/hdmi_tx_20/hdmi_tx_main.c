@@ -7147,10 +7147,48 @@ bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr)
 	return valid;
 }
 
+static int drm_hdmitx_get_timing_para(int vic, struct drm_hdmitx_timing_para *para)
+{
+	struct hdmi_format_para *hdmi_para;
+	struct hdmi_cea_timing *timing;
+
+	hdmi_para = hdmi_get_fmt_paras(vic);
+	if (hdmi_para->vic == HDMI_UNKNOWN)
+		return -1;
+
+	timing = &hdmi_para->timing;
+
+	strncpy(para->name, hdmi_para->hdmitx_vinfo.name, DRM_DISPLAY_MODE_LEN);
+	para->sync_dura_num = hdmi_para->hdmitx_vinfo.sync_duration_num;
+	para->sync_dura_den = hdmi_para->hdmitx_vinfo.sync_duration_den;
+	if (hdmi_para->hdmitx_vinfo.field_height !=
+		hdmi_para->hdmitx_vinfo.height)
+		para->pi_mode = 0;
+	else
+		para->pi_mode = 1;
+
+	para->pix_repeat_factor = hdmi_para->pixel_repetition_factor;
+	para->h_pol = timing->hsync_polarity;
+	para->v_pol = timing->vsync_polarity;
+	para->pixel_freq = timing->pixel_freq;
+
+	para->h_active = timing->h_active;
+	para->h_front = timing->h_front;
+	para->h_sync = timing->h_sync;
+	para->h_total = timing->h_total;
+	para->v_active = timing->v_active;
+	para->v_front = timing->v_front;
+	para->v_sync = timing->v_sync;
+	para->v_total = timing->v_total;
+
+	return 0;
+}
+
 static struct meson_hdmitx_dev drm_hdmitx_instance = {
 	.get_vic_list = drm_hdmitx_get_vic_list,
 	.test_attr = drm_hdmitx_chk_mode_attr_sup,
 	.get_hdmi_hdr_status = hdmi_hdr_status_to_drm,
+	.get_timing_para_by_vic = drm_hdmitx_get_timing_para,
 
 	/*hdcp apis*/
 	.hdcp_init = meson_hdcp_init,

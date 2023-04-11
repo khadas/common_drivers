@@ -1861,7 +1861,7 @@ static void vframe_do_mosaic_22(struct composer_dev *dev)
 			vc_print(dev->index, PRINT_ERROR, "%s dma buffer not vf\n", __func__);
 		}
 		if (!scr_vf) {
-			vc_print(dev->index, PRINT_ERROR, "%s：no vf\n", __func__);
+			vc_print(dev->index, PRINT_ERROR, "%s:no vf\n", __func__);
 			return;
 		}
 		vc_private->mosaic_src_vf[i] = scr_vf;
@@ -2431,6 +2431,11 @@ static void vframe_composer(struct composer_dev *dev)
 	if (is_fixtunnel)
 		dst_vf->flag |= VFRAME_FLAG_FIX_TUNNEL;
 
+	if (vframe_info_cur->transform == VC_TRANSFORM_FLIP_H_ROT_90)
+		dst_vf->flag |= VFRAME_FLAG_MIRROR_H;
+	if (vframe_info_cur->transform == VC_TRANSFORM_FLIP_V_ROT_90)
+		dst_vf->flag |= VFRAME_FLAG_MIRROR_V;
+
 	if (debug_axis_pip) {
 		dst_vf->axis[0] = 0;
 		dst_vf->axis[1] = 0;
@@ -2822,7 +2827,9 @@ static void video_composer_task(struct composer_dev *dev)
 			received_frames->frames_info.frame_info[0].transform;
 		if (frame_transform == VC_TRANSFORM_ROT_90 ||
 			frame_transform == VC_TRANSFORM_ROT_180 ||
-			frame_transform == VC_TRANSFORM_ROT_270) {
+			frame_transform == VC_TRANSFORM_ROT_270 ||
+			frame_transform == VC_TRANSFORM_FLIP_H_ROT_90 ||
+			frame_transform == VC_TRANSFORM_FLIP_V_ROT_90) {
 			need_composer = true;
 			dev->need_rotate = true;
 		}
@@ -3420,7 +3427,6 @@ static void set_frames_info(struct composer_dev *dev,
 	struct timeval time1;
 	struct timeval time2;
 	u64 time_us64;
-	u64 time_vsync = 0;
 	int axis[4];
 	int ready_len = 0;
 	bool current_is_sideband = false;
@@ -3564,14 +3570,14 @@ static void set_frames_info(struct composer_dev *dev,
 	dev->received_frames[i].time_us64 = time_us64;
 
 	vc_print(dev->index, PRINT_PERFORMANCE,
-		 "len =%d,frame_count=%d,i=%d,z=%d,time_us64=%lld,fd=%d, time_vsync=%lld\n",
+		 "len =%d,frame_count=%d,i=%d,z=%d,time_us64=%lld,fd=%d, transform=%d\n",
 		 kfifo_len(&dev->receive_q),
 		 frames_info->frame_count,
 		 i,
 		 frames_info->disp_zorder,
 		 time_us64,
 		 fence_fd,
-		 time_vsync);
+		 frames_info->frame_info[0].transform);
 
 	for (j = 0; j < frames_info->frame_count; j++) {
 		frames_info->frame_info[j].composer_fen_fd = fence_fd;

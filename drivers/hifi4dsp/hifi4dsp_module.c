@@ -1339,7 +1339,7 @@ static ssize_t suspend_store(struct device *dev,
 	struct hifi4dsp_dsp *dsp = NULL;
 	int dspid;
 
-	strcpy(message, "SCPI_CMD_HIFI4RESUME");
+	strcpy(message, "SCPI_CMD_HIFI4SUSPEND");
 
 	if (!strncmp(buf, "hifi4a", 6)) {
 		dspid = 0;

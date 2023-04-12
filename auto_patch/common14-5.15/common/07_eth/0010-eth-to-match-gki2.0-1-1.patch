@@ -1,0 +1,72 @@
+From 2d4e233bd8dbfd760aeb979089683d5d810e176b Mon Sep 17 00:00:00 2001
+From: Zhuo Wang <zhuo.wang@amlogic.com>
+Date: Wed, 12 Apr 2023 13:47:29 +0800
+Subject: [PATCH] eth: to match gki2.0 [1/1]
+
+PD#SWPL-117003
+
+Problem:
+skip the new flow in common14
+
+Solution:
+common14 add new flow for ethernet,
+which our phy not support yet.
+
+Verify:
+verify with T3
+
+Change-Id: I297f6b83523d95410f3333c3e216d9dbadc644bb
+Signed-off-by: Zhuo Wang <zhuo.wang@amlogic.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c | 4 ++++
+ drivers/net/phy/phy.c                               | 5 ++---
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+index 9b64e712da7f..94d0e4703860 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+@@ -666,6 +666,8 @@ static int meson8b_suspend(struct device *dev)
+ 		set_wol_notify_bl30(true);
+ 		set_device_init_flag(dev, true);
+ 		priv->wolopts = 0x1 << 5;
++		/*our phy not support wol by now*/
++		phydev->irq_suspended = 0;
+ 		/*phy is 100M, change to 10M*/
+ 		if (phydev->speed != 10) {
+ 			pr_info("link 100M -> 10M\n");
+@@ -730,6 +732,8 @@ static int meson8b_resume(struct device *dev)
+ 			if (dwmac->data->resume)
+ 				dwmac->data->resume(dwmac);
+ 		}
++		/*our phy not support wol by now*/
++		phydev->irq_suspended = 0;
+ 		ret = stmmac_resume(dev);
+ 		pr_info("wzh %s\n", __func__);
+ 		stmmac_global_err(priv);
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index 3aee6c2da4a5..2fc851082e7b 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -972,8 +972,7 @@ static irqreturn_t phy_interrupt(int irq, void *phy_dat)
+ 	struct phy_device *phydev = phy_dat;
+ 	struct phy_driver *drv = phydev->drv;
+ 	irqreturn_t ret;
+-#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+-#else
++
+ 	/* Wakeup interrupts may occur during a system sleep transition.
+ 	 * Postpone handling until the PHY has resumed.
+ 	 */
+@@ -995,7 +994,7 @@ static irqreturn_t phy_interrupt(int irq, void *phy_dat)
+ 		disable_irq_nosync(irq);
+ 		return IRQ_HANDLED;
+ 	}
+-#endif
++
+ 	mutex_lock(&phydev->lock);
+ 	ret = drv->handle_interrupt(phydev);
+ 	mutex_unlock(&phydev->lock);
+-- 
+2.25.1
+

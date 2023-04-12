@@ -4454,7 +4454,7 @@
 
 	diseqc_out: diseqc_out {
 		mux {
-			groups = "diseqc_out_z19";
+			groups = "diseqc_out_z0";
 			function = "diseqc_out";
 			bias-pull-down;
 		};

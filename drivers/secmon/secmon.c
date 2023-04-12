@@ -289,6 +289,23 @@ int __init meson_secmon_init(void)
 	return ret;
 }
 
+static int __init secmon_buf_device_init(struct reserved_mem *rmem, struct device *dev)
+{
+	return 0;
+}
+
+static const struct reserved_mem_ops secmon_buf_ops = {
+	.device_init = secmon_buf_device_init,
+};
+
+static int __init secmon_mem_setup(struct reserved_mem *rmem)
+{
+	rmem->ops = &secmon_buf_ops;
+	return 0;
+}
+
+RESERVEDMEM_OF_DECLARE(buf, "amlogic, aml_secmon_memory", secmon_mem_setup);
+
 void meson_sm_mutex_lock(void)
 {
 	mutex_lock(&sharemem_mutex);

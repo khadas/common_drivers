@@ -27,6 +27,8 @@
 #include <linux/amlogic/usbtype.h>
 #include <linux/clk.h>
 #include <linux/phy/phy.h>
+#include "xhci.h"
+#include "xhci-plat.h"
 
 #define CRG_DEFAULT_AUTOSUSPEND_DELAY	5000 /* ms */
 #define CRG_XHCI_RESOURCES_NUM	2
@@ -51,6 +53,10 @@ struct crg {
 
 	unsigned		super_speed_support:1;
 	struct clk		*general_clk;
+};
+
+static const struct xhci_plat_priv crg_xhci_plat_priv = {
+	.quirks = XHCI_NO_64BIT_SUPPORT | XHCI_RESET_ON_RESUME,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -234,6 +240,11 @@ int crg_host_init(struct crg *crg)
 			goto err1;
 		}
 	}
+
+	ret = platform_device_add_data(xhci, &crg_xhci_plat_priv,
+								sizeof(crg_xhci_plat_priv));
+	if (ret)
+		goto err1;
 
 	ret = platform_device_add(xhci);
 	if (ret) {

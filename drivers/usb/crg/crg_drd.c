@@ -31,6 +31,11 @@
 #include <linux/kthread.h>
 
 #include "xhci.h"
+#include "xhci-plat.h"
+
+static const struct xhci_plat_priv crg_xhci_plat_priv = {
+	.quirks = XHCI_NO_64BIT_SUPPORT | XHCI_RESET_ON_RESUME,
+};
 
 #define CRG_DEFAULT_AUTOSUSPEND_DELAY	5000 /* ms */
 #define CRG_XHCI_RESOURCES_NUM	2
@@ -261,6 +266,11 @@ static int crg_host_init(struct crg_drd *crg)
 			goto err1;
 		}
 	}
+
+	ret = platform_device_add_data(xhci, &crg_xhci_plat_priv,
+								sizeof(crg_xhci_plat_priv));
+	if (ret)
+		goto err1;
 
 	ret = platform_device_add(xhci);
 	if (ret) {

@@ -5,6 +5,7 @@
 
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/power/txhd2-pd.h>
 / {
 	cpus:cpus {
 		#address-cells = <1>;
@@ -225,5 +226,11 @@
 			};
 		};/* end of hiubus*/
 	}; /* end of soc*/
+
+	pwrdm: power-domains {
+		compatible = "amlogic,txhd2-power-domain";
+		#power-domain-cells = <1>;
+		status = "okay";
+	};
 };
 

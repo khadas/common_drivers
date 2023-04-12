@@ -21,6 +21,7 @@
 #include <dt-bindings/power/t5m-pd.h>
 #include <dt-bindings/power/s5-pd.h>
 #include <dt-bindings/power/t3x-pd.h>
+#include <dt-bindings/power/txhd2-pd.h>
 #include <linux/kallsyms.h>
 
 struct sec_pm_private_domain {
@@ -663,6 +664,21 @@ static struct sec_pm_domain_data t3x_pm_domain_data = {
 	.domains = t3x_pm_domains,
 	.domains_count = ARRAY_SIZE(t3x_pm_domains),
 };
+
+static struct sec_pm_private_domain txhd2_pm_domains[] __initdata = {
+	[PDID_VPU] = POWER_DOMAIN(vpu, PDID_VPU, DOMAIN_INIT_ON,
+					GENPD_FLAG_ALWAYS_ON),
+	[PDID_DOS_HEVC] = POWER_DOMAIN(hevc, PDID_DOS_HEVC, DOMAIN_INIT_ON,
+				       GENPD_FLAG_ALWAYS_ON),
+	[PDID_DEMOD] = POWER_DOMAIN(demod, PDID_DEMOD, DOMAIN_INIT_ON,
+					  GENPD_FLAG_ALWAYS_ON),
+};
+
+static struct sec_pm_domain_data txhd2_pm_domain_data __initdata = {
+	.domains = txhd2_pm_domains,
+	.domains_count = ARRAY_SIZE(txhd2_pm_domains),
+};
+
 #endif
 
 static int sec_pd_probe(struct platform_device *pdev)
@@ -815,6 +831,10 @@ static const struct of_device_id pd_match_table[] = {
 	{
 		.compatible = "amlogic,t3x-power-domain",
 		.data = &t3x_pm_domain_data,
+	},
+	{
+		.compatible = "amlogic,txhd2-power-domain",
+		.data = &txhd2_pm_domain_data,
 	},
 #endif
 	{}

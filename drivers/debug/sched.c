@@ -557,13 +557,41 @@ static void aml_check_preempt_tick(void *data, struct task_struct *p, unsigned l
 	}
 }
 
+static int cpupri_check_rt_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	//overwrite function check_rt_ret() return value
+	regs->regs[0] = 0;
+
+	return 0;
+}
+
+NOKPROBE_SYMBOL(cpupri_check_rt_ret_handler);
+
+static struct kretprobe cpupri_check_rt_kretprobe = {
+	.handler		= cpupri_check_rt_ret_handler,
+	/* Probe up to 20 instances concurrently. */
+	.maxactive		= 20,
+};
+
 int aml_sched_init(void)
 {
+	int ret;
+
 	register_trace_android_rvh_select_task_rq_rt(aml_select_rt_nice, NULL);
 	register_trace_android_rvh_check_preempt_wakeup(aml_check_preempt_wakeup, NULL);
 	register_trace_android_rvh_replace_next_task_fair(aml_pick_next_task, NULL);
 	register_trace_android_rvh_place_entity(aml_place_entity, NULL);
 	register_trace_android_rvh_check_preempt_tick(aml_check_preempt_tick, NULL);
+
+	cpupri_check_rt_kretprobe.kp.symbol_name = "cpupri_check_rt";
+	ret = register_kretprobe(&cpupri_check_rt_kretprobe);
+
+	if (ret < 0)
+		pr_err("register_kretprobe failed, returned %d\n", ret);
+
+	pr_debug("Planted return probe at %s: %px\n",
+		cpupri_check_rt_kretprobe.kp.symbol_name, cpupri_check_rt_kretprobe.kp.addr);
+
 	return 0;
 }
 #else

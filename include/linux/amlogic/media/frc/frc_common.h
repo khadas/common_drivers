@@ -184,7 +184,7 @@ struct frc_top_type_s {
 	enum en_film_mode    film_mode;//film_mode
 	u32       film_hwfw_sel;//0:hw 1:fw
 	u32       is_me1mc4;//1: me:mc=1/4, 0 : me:mc=1/2, default 0
-	u8        memc_loss_en;// 01, mcloss, 02:meloss, 03:memc_loss
+	u8        memc_loss_en;// bit0, mcloss, bit1:meloss, bit4:mcdw_loss
 	u8        chip;   // 1:T3, 2:T5M
 	u16       other_set1;
 	u8        rdma_en; //1:rdma 0:cpu interrupt access reg

@@ -83,10 +83,12 @@ void frc_status(struct frc_dev_s *devp)
 				devp->in_sts.secure_mode, devp->buf.secured);
 	pr_frc(0, "frc_get_vd_flag=0x%X(game:0/pc:1/pic:2/hbw:3/limsz:4/vlock:5/in_size_err:6)\n",
 				devp->in_sts.st_flag);
-	pr_frc(0, "dc_rate:(me:%d,mc_y:%d,mc_c:%d), real total size:%d\n",
+	pr_frc(0, "dc_rate:(me:%d,mc_y:%d,mc_c:%d,mcdw_y:%d,mcdw_c:%d), real total size:%d\n",
 		devp->buf.me_comprate, devp->buf.mc_y_comprate,
-		devp->buf.mc_c_comprate, devp->buf.real_total_size);
-	pr_frc(0, "memc_loss_en = %d\n", fw_data->frc_top_type.memc_loss_en);
+		devp->buf.mc_c_comprate, devp->buf.mcdw_y_comprate,
+		devp->buf.mcdw_c_comprate, devp->buf.real_total_size);
+	pr_frc(0, "memc(mcdw)_loss_en = 0x%x\n",
+			fw_data->frc_top_type.memc_loss_en);
 	pr_frc(0, "loss_ratio = %d\n", devp->loss_ratio);
 	pr_frc(0, "frc_prot_mode = %d\n", devp->prot_mode);
 	pr_frc(0, "high_freq_flash = %d\n", devp->in_sts.high_freq_flash);
@@ -122,7 +124,7 @@ void frc_status(struct frc_dev_s *devp)
 	pr_frc(0, "film_mode = %d\n", frc_check_film_mode(devp));
 	pr_frc(0, "mc_fb = %d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u8mcfb);
 	pr_frc(0, "frc_fb_num = %d\n", fw_data->frc_top_type.frc_fb_num);
-	pr_frc(0, "frc_ratio_mode = %d\n", fw_data->frc_top_type.frc_ratio_mode);
+	pr_frc(0, "frc_ratio_mode = %d\n", devp->in_out_ratio);
 	pr_frc(0, "frc_rdma_en:%d\n", fw_data->frc_top_type.rdma_en);
 
 	pr_frc(0, "frc_in hsize=%d vsize=%d\n",
@@ -513,6 +515,15 @@ void frc_debug_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			devp->buf.mc_y_comprate = val1;
 		if (kstrtoint(parm[3], 10, &val1) == 0)
 			devp->buf.mc_c_comprate = val1;
+	} else if (!strcmp(parm[0], "dc_mcdw_set")) { //(me:mc_y:mc_c)
+		if (!parm[2]) {
+			pr_frc(0, "err:input mcdw_y mcdw_c\n");
+			goto exit;
+		}
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			devp->buf.mcdw_y_comprate = val1;
+		if (kstrtoint(parm[2], 10, &val1) == 0)
+			devp->buf.mcdw_c_comprate = val1;
 	} else if (!strcmp(parm[0], "dc_apply")) {
 		if (devp->frc_sts.state == FRC_STATE_BYPASS) {
 			frc_buf_release(devp);
@@ -608,6 +619,11 @@ void frc_debug_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			frc_set_h2v2(val1);
+	} else if (!strcmp(parm[0], "mcdw_ratio")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			frc_set_mcdw_buffer_ratio(val1);
 	}
 exit:
 	kfree(buf_orig);

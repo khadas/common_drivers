@@ -236,7 +236,7 @@
 			 * 384Mhz (0x18000000)
 			 * 368Mhz (0x17000000)
 			 */
-			size = <0x0 0xd400000>; // reserved 212M
+			size = <0x0 0x15c00000>; // reserved 212M
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
 			/*alloc-ranges = <0x0 0x0 0x0 0x3f800000>;*/

@@ -111,5 +111,7 @@ void frc_set_n2m(u8 ratio_value);
 void frc_set_axi_crash_irq(struct frc_dev_s *frc_devp, u8 enable);
 int get_chip_type(void);
 void frc_set_h2v2(u32 enable);
+void frc_set_mcdw_buffer_ratio(u32 ratio);
+void frc_memc_120hz_patch(struct frc_dev_s *frc_devp);
 
 #endif

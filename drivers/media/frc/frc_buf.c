@@ -668,11 +668,11 @@ int frc_buf_release(struct frc_dev_s *devp)
 int frc_buf_calculate(struct frc_dev_s *devp)
 {
 	u32 i;
-	u32 align_hsize;
-	u32 align_vsize;
+	u32 align_hsize, align_vsize;
 	u32 temp;
 	int log = 2;
 	u32 ratio;
+	u32 mcdw_h_ratio, mcdw_v_ratio;
 	enum chip_id chip;
 
 	if (!devp)
@@ -680,26 +680,40 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 
 	chip = get_chip_type();
 
+	// // first init setting
 	if (devp->buf.memc_comprate == 0)
 		devp->buf.memc_comprate = FRC_COMPRESS_RATE;
-	if (devp->buf.me_comprate == 0) {
-		if (chip == ID_T3 || chip == ID_T3X)
+	if (devp->buf.total_size == 0) {
+		if (chip == ID_T3) {
 			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T3;
-		else if (chip == ID_T5M)
-			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T5M;
-	}
-	if (devp->buf.mc_c_comprate == 0)
-		devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
-	if (devp->buf.mc_y_comprate == 0)
-		devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
+			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
+			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
+			devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
 
-	if (chip == ID_T3X)
-		devp->buf.addr_shft_bits = DDR_SHFT_4_BITS;
-	else if (chip == ID_T3 || chip == ID_T5M)
-		devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
-	else
-		devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
-	pr_frc(log, "buffer address shfit :%d", devp->buf.addr_shft_bits);
+		} else if (chip == ID_T5M) {
+			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T5M;
+			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
+			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
+			devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
+
+		} else if (chip == ID_T3X) {
+			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T3;
+			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y_T3X;
+			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C_T3X;
+			devp->buf.addr_shft_bits = DDR_SHFT_4_BITS;
+		} else {
+			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T3;
+			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
+			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
+			devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
+		}
+		devp->buf.mcdw_c_comprate = FRC_COMPRESS_RATE_MCDW_C;
+		devp->buf.mcdw_y_comprate = FRC_COMPRESS_RATE_MCDW_Y;
+		devp->buf.mcdw_size_rate = FRC_MCDW_H_SIZE_RATE << 4;
+		devp->buf.mcdw_size_rate += FRC_MCDW_V_SIZE_RATE;
+	}
+
+	pr_frc(log, "buf addr shfit :%d", devp->buf.addr_shft_bits);
 
 	/*size initial, alloc max support size accordint to vout*/
 	devp->buf.in_hsize = devp->out_sts.vout_width;
@@ -710,6 +724,8 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	devp->buf.in_align_vsize = roundup(devp->buf.in_vsize, FRC_HVSIZE_ALIGN_SIZE);
 	align_hsize = devp->buf.in_align_hsize;
 	align_vsize = devp->buf.in_align_vsize;
+	mcdw_h_ratio = (devp->buf.mcdw_size_rate >> 4) & 0xF;
+	mcdw_v_ratio =	devp->buf.mcdw_size_rate & 0xF;
 
 	if (devp->out_sts.vout_width > 1920 && devp->out_sts.vout_height > 1080) {
 		devp->buf.me_hsize =
@@ -757,10 +773,14 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	       devp->buf.hme_blk_vsize);
 
 	/* ------------ cal buffer start -----------------*/
-	pr_frc(0, "dc_rate:(me:%d,mc_y:%d,mc_c:%d)\n",
+	pr_frc(0, "dc_rate:(me:%d,mc_y:%d,mc_c:%d,mcdw_y:%d,mcdw_c:%d)\n",
 		devp->buf.me_comprate, devp->buf.mc_y_comprate,
-		devp->buf.mc_c_comprate);
-
+		devp->buf.mc_c_comprate, devp->buf.mcdw_y_comprate,
+		devp->buf.mcdw_c_comprate);
+	pr_frc(0, "mcdw_rate(h:%d,v:%d) mcdw_size(h:%d,v:%d)\n",
+		mcdw_h_ratio, mcdw_v_ratio, align_hsize / mcdw_h_ratio,
+		align_vsize / mcdw_v_ratio);
+	devp->buf.total_size = 0;
 	/*mc y/c/v info buffer, address 64 bytes align*/
 	devp->buf.lossy_mc_y_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
 	devp->buf.lossy_mc_c_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
@@ -826,12 +846,12 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 
 	/*t3x lossy mcdw data buffer*/
 	if (chip == ID_T3X) {
-		temp = (align_hsize / 2 * FRC_MC_BITS_NUM + 511) / 8;
+		temp = (align_hsize / mcdw_h_ratio * FRC_MC_BITS_NUM + 511) / 8;
 		for (i = 0; i < FRC_TOTAL_BUF_NUM; i++) {
 			devp->buf.lossy_mcdw_y_data_buf_size[i] = ALIGN_4K * ratio +
-			(temp * align_vsize / 2 * devp->buf.mc_y_comprate) / 100;
+			(temp * align_vsize / mcdw_v_ratio * devp->buf.mcdw_y_comprate) / 100;
 			devp->buf.lossy_mcdw_c_data_buf_size[i] = ALIGN_4K * ratio +
-			(temp * align_vsize / 2 * devp->buf.mc_c_comprate) / 100;
+			(temp * align_vsize / mcdw_v_ratio * devp->buf.mcdw_c_comprate) / 100;
 			devp->buf.total_size += devp->buf.lossy_mcdw_y_data_buf_size[i];
 			devp->buf.total_size += devp->buf.lossy_mcdw_c_data_buf_size[i];
 		}

@@ -1303,13 +1303,22 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					set_frc_enable(ON);
 					pr_frc(log, "frc_bypass_cnt:%d,freeze_cnt:%d\n",
 							bypasscnt, freezecnt);
+					pr_frc(log, "start frm:%d, bufidx:0x%X\n",
+							devp->frc_sts.frame_cnt,
+							READ_FRC_REG(FRC_REG_PAT_POINTER));
 					devp->frc_sts.frame_cnt++;
 				}
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt < bypasscnt + 1) {
+				pr_frc(log, "start frm:%d, bufidx:0x%X\n",
+						devp->frc_sts.frame_cnt,
+						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == bypasscnt + 1) {
+				pr_frc(log, "frm:%d, bufidx:0x%X, will force\n",
+					devp->frc_sts.frame_cnt,
+					READ_FRC_REG(FRC_REG_PAT_POINTER));
 				forceidx = frc_frame_forcebuf_enable(1);
 				frc_frame_forcebuf_count(forceidx);
 				pr_frc(log, "d-e_freeze idx:%d, frm:%d\n",
@@ -1319,6 +1328,9 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 			} else if (devp->frc_sts.frame_cnt > bypasscnt + 1 &&
 						devp->frc_sts.frame_cnt <
 						freezecnt + bypasscnt + 1) {
+				pr_frc(log, "frm:%d, bufidx:0x%X\n",
+					devp->frc_sts.frame_cnt,
+					READ_FRC_REG(FRC_REG_PAT_POINTER));
 				frc_frame_forcebuf_count(forceidx);
 				frc_input_fid =
 				READ_FRC_REG(FRC_REG_PAT_POINTER) >> 4 & 0xF;
@@ -1328,6 +1340,9 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt ==
 						freezecnt + bypasscnt + 1) {
+				pr_frc(log, "frm:%d, bufidx:0x%X\n",
+					devp->frc_sts.frame_cnt,
+					READ_FRC_REG(FRC_REG_PAT_POINTER));
 				frc_frame_forcebuf_enable(0);
 				pr_frc(log, "d-e_freezed to open, frm:%d\n",
 					devp->frc_sts.frame_cnt);
@@ -1348,6 +1363,9 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				pr_frc(log, "d-e_detecting film[%d], frm: %d\n",
 						frc_check_film_mode(devp),
 						devp->frc_sts.frame_cnt);
+				pr_frc(log, "frm:%d, bufidx:0x%X\n",
+					devp->frc_sts.frame_cnt,
+					READ_FRC_REG(FRC_REG_PAT_POINTER));
 				off2on_cnt++;
 				devp->frc_sts.frame_cnt++;
 			}
@@ -1446,14 +1464,23 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				set_frc_enable(ON);
 				pr_frc(log, "frc_bypass_cnt:%d,freeze_cnt:%d",
 						bypasscnt, freezecnt);
+				pr_frc(log, "start frm:%d, bufidx:0x%X\n",
+						devp->frc_sts.frame_cnt,
+						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt < bypasscnt + 2) {
 				pr_frc(log, "b-e_bypassing frm:%d\n",
 					devp->frc_sts.frame_cnt);
+				pr_frc(log, "frm:%d, chk bufidx:0x%X\n",
+						devp->frc_sts.frame_cnt,
+						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == bypasscnt + 2) {
+				pr_frc(log, "frm:%d, chk bufidx:0x%X\n",
+						devp->frc_sts.frame_cnt,
+						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				forceidx = frc_frame_forcebuf_enable(1);
 				frc_frame_forcebuf_count(forceidx);
 				pr_frc(log, "b-e_freeze start, rd_idx:%d, frm:%d\n",
@@ -1463,6 +1490,9 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 			} else if (devp->frc_sts.frame_cnt > bypasscnt + 2 &&
 					devp->frc_sts.frame_cnt <
 					 bypasscnt + freezecnt + 2) {
+				pr_frc(log, "frm:%d, chk bufidx:0x%X\n",
+						devp->frc_sts.frame_cnt,
+						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				frc_frame_forcebuf_count(forceidx);
 				frc_input_fid =
 				READ_FRC_REG(FRC_REG_PAT_POINTER) >> 4 & 0xF;
@@ -1472,6 +1502,9 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt ==
 					bypasscnt + freezecnt + 2) {
+				pr_frc(log, "frm:%d, chk bufidx:0x%X\n",
+						devp->frc_sts.frame_cnt,
+						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				frc_frame_forcebuf_enable(0);
 				pr_frc(log, "b-e_freezed to open, frm:%d\n",
 					devp->frc_sts.frame_cnt);
@@ -1489,6 +1522,9 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				off2on_cnt = 0;
 			} else if (devp->frc_sts.frame_cnt > bypasscnt + freezecnt + 2 &&
 					  (frc_check_film_mode(devp) == 0)) {
+				pr_frc(log, "frm:%d, chk bufidx:0x%X\n",
+						devp->frc_sts.frame_cnt,
+						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				pr_frc(log, "b-e_detecting film[%d], frm: %d\n",
 						frc_check_film_mode(devp),
 						devp->frc_sts.frame_cnt);

@@ -115,8 +115,14 @@ extern int frc_dbg_en;
 // mc-y 48%  mc-c 39%  me 60%
 #define FRC_COMPRESS_RATE_MC_Y		48
 #define FRC_COMPRESS_RATE_MC_C		39
-#define FRC_COMPRESS_RATE_ME_T3     60
-#define FRC_COMPRESS_RATE_ME_T5M    100
+#define FRC_COMPRESS_RATE_MC_Y_T3X	100
+#define FRC_COMPRESS_RATE_MC_C_T3X	0
+
+#define FRC_COMPRESS_RATE_ME_T3		60
+#define FRC_COMPRESS_RATE_ME_T5M	100
+
+#define FRC_COMPRESS_RATE_MCDW_Y	48
+#define FRC_COMPRESS_RATE_MCDW_C	39
 
 #define FRC_TOTAL_BUF_NUM		16
 #define FRC_MEMV_BUF_NUM		6
@@ -124,6 +130,10 @@ extern int frc_dbg_en;
 #define FRC_MEVP_BUF_NUM		2
 
 #define FRC_SLICER_NUM			4
+
+/* mcdw setting */
+#define FRC_MCDW_H_SIZE_RATE		1
+#define FRC_MCDW_V_SIZE_RATE		2
 
 /*down scaler config*/
 #define FRC_ME_SD_RATE_HD		2
@@ -229,12 +239,14 @@ struct st_frc_buf {
 	u8  cma_mem_alloced;
 	u8  secured;
 	u8  addr_shft_bits;
-	u8  otherflag2;
+	u8  mcdw_size_rate;
 
 	u8  me_comprate;
 	u8  mc_y_comprate;
 	u8  mc_c_comprate;
 	u8  memc_comprate;
+	u8  mcdw_y_comprate;
+	u8  mcdw_c_comprate;
 
 	/*frame size*/
 	u32 in_hsize;

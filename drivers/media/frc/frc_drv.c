@@ -982,6 +982,7 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	devp->frc_sts.re_config = false;
 	devp->in_sts.vf_sts = 0;/*initial to no*/
 	devp->dbg_force_en = 0;
+	devp->auto_n2m = 1;
 
 	/*input sts initial*/
 	devp->in_sts.have_vf_cnt = 0;
@@ -1147,7 +1148,7 @@ static int frc_probe(struct platform_device *pdev)
 		if (class_create_file(frc_devp->clsp, &frc_class_attrs[i]) < 0)
 			goto fail_class_create_file;
 	}
-	get_vout_info(frc_devp);
+	// get_vout_info(frc_devp);
 
 	cdev_init(&frc_devp->cdev, &frc_fops);
 	frc_devp->cdev.owner = THIS_MODULE;
@@ -1180,6 +1181,7 @@ static int frc_probe(struct platform_device *pdev)
 	/*driver internal data initial*/
 	frc_drv_initial(frc_devp);
 	frc_clk_init(frc_devp);
+	get_vout_info(frc_devp);
 	frc_devp->power_on_flag = true;
 	pm_runtime_enable(&pdev->dev);
 	ret = pm_runtime_get_sync(&pdev->dev);

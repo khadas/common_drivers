@@ -95,3 +95,10 @@ config AMLOGIC_GKI_CONFIG
 	default n
 	help
 	  support GKI config enable or not
+
+config AMLOGIC_ENV_DEBUG
+	bool "AMLOGIC env debug"
+	depends on AMLOGIC_DEBUG
+	default n
+	help
+	  support amlogic env debug function

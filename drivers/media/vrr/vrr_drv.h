@@ -11,7 +11,8 @@
 /* ver:20220718: basic function for freesync */
 /* ver:20220816: support fps policy */
 /* ver:20220927: support multi drv for t7 */
-#define VRR_DRV_VERSION  "20220927"
+/* ver:20230410: vrr bringup for t3x */
+#define VRR_DRV_VERSION  "20230410"
 
 #define VRRPR(fmt, args...)      pr_info("vrr: " fmt "", ## args)
 #define VRRERR(fmt, args...)     pr_err("vrr error: " fmt "", ## args)
@@ -36,6 +37,7 @@ enum vrr_chip_e {
 	VRR_CHIP_T3 = 1,
 	VRR_CHIP_T5W = 2,
 	VRR_CHIP_T5M = 3,
+	VRR_CHIP_T3X = 4,
 	VRR_CHIP_MAX,
 };
 

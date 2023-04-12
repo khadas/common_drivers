@@ -11637,12 +11637,13 @@ static const struct vecm_match_data_s vecm_dt_s5 = {
 static const struct vecm_match_data_s vecm_dt_t3x = {
 	.chip_id = chip_t3x,
 	.chip_cls = TV_CHIP,
-	.vlk_chip = vlock_chip_t5,
-	.vlk_support = false,
+	.vlk_chip = vlock_chip_t3x,
+	.vlk_support = true,
 	.vlk_new_fsm = 1,
 	.vlk_hwver = vlock_hw_tm2verb,
-	.vlk_phlock_en = false,
+	.vlk_phlock_en = true,
 	.vlk_pll_sel = vlock_pll_sel_tcon,
+	.vrr_support_flag = 1,
 };
 #endif
 

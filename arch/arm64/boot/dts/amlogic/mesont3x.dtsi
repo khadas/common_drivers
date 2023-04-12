@@ -2286,6 +2286,15 @@
 		status = "okay";
 	};
 
+	vrr0: vrr0 {
+		compatible = "amlogic, vrr-t3x";
+		status = "okay";
+		index = <0>;
+		line_delay = <600>;
+		interrupts = <0 197 1>;
+		interrupt-names = "vsync";
+	};
+
 	ir: ir@8000 {
 		compatible = "amlogic, meson-ir";
 		reg = <0x0 0xfe084040 0x0 0x44>,
@@ -2852,8 +2861,8 @@
 		 */
 		/* vlock_pll_m_limit = <1>;*/
 		/* vlock_line_limit = <2>;*/
-//		clocks = <&clkc CLKID_VID_LOCK>;
-//		clock-names = "cts_vid_lock_clk";
+		clocks = <&clkc CLKID_VID_LOCK>;
+		clock-names = "cts_vid_lock_clk";
 	};
 
 	meson-amvideom {

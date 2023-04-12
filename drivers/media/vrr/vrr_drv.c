@@ -207,16 +207,31 @@ static void vrr_lcd_enable(struct aml_vrr_drv_s *vdrv, unsigned int mode)
 	vdrv->state &= ~VRR_STATE_RESET;
 
 	//vrr setting
-	vrr_reg_write((VENC_VRR_CTRL + offset),
-			(line_dly << 8) | //cfg_vsp_dly_num number
-			(1 << 4) |  //cfg_vrr_frm_ths frame delay number
-			//cfg_vrr_vsp_en  bit[2]=hdmi_in, bit[3]=gpu_in
-			(vsp_in << 2) |
-			(1 << 1) |      //cfg_vrr_mode    0:normal      1:vrr
-			(vsp_sel << 0)); //cfg_vrr_vsp_sel 1:hdmi in  0:gpu in
-	vrr_reg_write((VENC_VRR_ADJ_LMT + offset),
-			(v_min << 16) | //cfg_vrr_min_vnum <= am_spdat[31:16]
-			(v_max << 0));  //cfg_vrr_max_vnum <= am_spdat[15:0]
+	if (vdrv->data->chip_type == VRR_CHIP_T3X) {
+		vrr_reg_write((VENC_VRR_CTRL_T3X + offset),
+				(line_dly << 16) | //cfg_vsp_dly_num number
+				(0x0) |	//RFU
+				(0x1) | // vsp_rst_num
+				(1 << 4) |	//cfg_vrr_frm_ths frame delay number
+				//cfg_vrr_vsp_en  bit[2]=hdmi_in, bit[3]=gpu_in
+				(vsp_in << 2) |
+				(1 << 1) |	//cfg_vrr_mode 0:normal 1:vrr
+				(vsp_sel << 0)); //cfg_vrr_vsp_sel 1:hdmi in  0:gpu in
+		vrr_reg_write((VENC_VRR_ADJ_LMT_T3X + offset),
+				(v_min << 16) | //cfg_vrr_min_vnum <= am_spdat[31:16]
+				(v_max << 0));	//cfg_vrr_max_vnum <= am_spdat[15:0]
+	} else {
+		vrr_reg_write((VENC_VRR_CTRL + offset),
+				(line_dly << 8) | //cfg_vsp_dly_num number
+				(1 << 4) |  //cfg_vrr_frm_ths frame delay number
+				//cfg_vrr_vsp_en  bit[2]=hdmi_in, bit[3]=gpu_in
+				(vsp_in << 2) |
+				(1 << 1) |      //cfg_vrr_mode    0:normal      1:vrr
+				(vsp_sel << 0)); //cfg_vrr_vsp_sel 1:hdmi in  0:gpu in
+		vrr_reg_write((VENC_VRR_ADJ_LMT + offset),
+				(v_min << 16) | //cfg_vrr_min_vnum <= am_spdat[31:16]
+				(v_max << 0));  //cfg_vrr_max_vnum <= am_spdat[15:0]
+	}
 
 	vdrv->state |= (VRR_STATE_ENCL | VRR_STATE_EN);
 	spin_unlock_irqrestore(&vdrv->vrr_isr_lock, flags);
@@ -227,7 +242,8 @@ static void vrr_lcd_enable(struct aml_vrr_drv_s *vdrv, unsigned int mode)
 		VRRPR("VENC_VRR_ADJ_LMT = 0x%x\n",
 		      vrr_reg_read(VENC_VRR_ADJ_LMT + offset));
 	}
-	VRRPR("[%d]: %s: state = 0x%x\n", vdrv->index, __func__, vdrv->state);
+	VRRPR("[%d]: %s: state = 0x%x chip_type:%d\n",
+			vdrv->index, __func__, vdrv->state, vdrv->data->chip_type);
 }
 
 static void vrr_hdmi_enable(struct aml_vrr_drv_s *vdrv, unsigned int mode)
@@ -698,10 +714,17 @@ static ssize_t vrr_status_show(struct device *dev,
 	len += sprintf(buf + len, "enable:          %d\n\n", vdrv->enable);
 
 	/** vrr reg info **/
-	len += sprintf(buf + len, "VENC_VRR_CTRL: 0x%x\n",
-			vrr_reg_read(VENC_VRR_CTRL + offset));
-	len += sprintf(buf + len, "VENC_VRR_ADJ_LMT: 0x%x\n",
-			vrr_reg_read(VENC_VRR_ADJ_LMT + offset));
+	if (vdrv->data->chip_type == VRR_CHIP_T3X) {
+		len += sprintf(buf + len, "VENC_VRR_CTRL_T3X: 0x%x\n",
+				vrr_reg_read(VENC_VRR_CTRL_T3X + offset));
+		len += sprintf(buf + len, "VENC_VRR_ADJ_LMT_T3X: 0x%x\n",
+				vrr_reg_read(VENC_VRR_ADJ_LMT_T3X + offset));
+	} else {
+		len += sprintf(buf + len, "VENC_VRR_CTRL: 0x%x\n",
+				vrr_reg_read(VENC_VRR_CTRL + offset));
+		len += sprintf(buf + len, "VENC_VRR_ADJ_LMT: 0x%x\n",
+				vrr_reg_read(VENC_VRR_ADJ_LMT + offset));
+	}
 	len += sprintf(buf + len, "VENC_VRR_CTRL1: 0x%x\n",
 			vrr_reg_read(VENC_VRR_CTRL1 + offset));
 	len += sprintf(buf + len, "VENP_VRR_CTRL: 0x%x\n",
@@ -1228,6 +1251,15 @@ static struct vrr_data_s vrr_data_t5m = {
 	.sw_vspin = vrr_set_venc_vspin,
 };
 
+static struct vrr_data_s vrr_data_t3x = {
+	.chip_type = VRR_CHIP_T3X,
+	.chip_name = "t3x",
+	.drv_max = 1,
+	.offset = {0x0},
+
+	.sw_vspin = vrr_set_venc_vspin,
+};
+
 static const struct of_device_id vrr_dt_match_table[] = {
 	{
 		.compatible = "amlogic, vrr-t7",
@@ -1244,6 +1276,10 @@ static const struct of_device_id vrr_dt_match_table[] = {
 	{
 		.compatible = "amlogic, vrr-t5m",
 		.data = &vrr_data_t5m,
+	},
+	{
+		.compatible = "amlogic, vrr-t3x",
+		.data = &vrr_data_t3x,
 	},
 	{}
 };

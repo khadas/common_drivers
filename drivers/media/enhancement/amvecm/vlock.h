@@ -24,7 +24,7 @@
 #include <linux/amlogic/media/vfm/vframe.h>
 #include "linux/amlogic/media/amvecm/ve.h"
 
-#define VLOCK_VER "Ref.2023/0208: for t5m vlock pll mode bringup"
+#define VLOCK_VER "Ref.2023/0410: for t5x vlock bringup"
 
 #define VLOCK_REG_NUM					33
 #define VLOCK_ALL_LOCK_CNT				400
@@ -314,6 +314,8 @@ enum vlock_pll_sel {
 #define ENCL_SYNC_PIXEL_EN			0x1c4d
 #define ENCL_SYNC_TO_LINE_EN			0x1c4e
 #define ENCL_FRC_CTRL				0x1cdd
+
+#define ENCL_FRC_CTRL_T3X                    0x14D9
 
 /* 0:enc;1:pll;2:manual pll */
 extern unsigned int vlock_mode;

@@ -628,10 +628,17 @@ static void vlock_tune_sync(struct stvlock_sig_sts *pvlock)
 			WRITE_VPP_REG(ENCL_SYNC_PIXEL_EN, (1 << 15) | (max_pxcnt - 1));
 			WRITE_VPP_REG(ENCL_SYNC_LINE_LENGTH, max_lncnt - frc_v_porch - 1);
 
-			pvlock->enc_frc_max_line =
-				READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
-			pvlock->enc_frc_max_pixel =
-				READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc);
+			if (chip_type_id == chip_t3x) {
+				pvlock->enc_frc_max_line =
+					READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) & 0x0000ffff;
+				pvlock->enc_frc_max_pixel =
+					(READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) >> 16) & 0x00001fff;
+			} else {
+				pvlock->enc_frc_max_line =
+					READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
+				pvlock->enc_frc_max_pixel =
+					READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc);
+			}
 			pvlock->enc_frc_v_porch =
 				READ_VPP_REG(pvlock->enc_frc_v_porch_addr + offset_enc);
 			if ((vlock_debug & VLOCK_DEBUG_FLASH))
@@ -967,12 +974,24 @@ static void vlock_setting(struct vframe_s *vf, struct stvlock_sig_sts *pvlock)
 			VLOCK_MODE_MANUAL_SOFT_ENC))) {
 			/*auto vlock off*/
 			WRITE_VPP_REG_BITS(pvlock->enc_max_line_switch_addr + offset_enc, 0, 13, 1);
-			WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc, 1, 14, 1);
+
+			if (chip_type_id == chip_t3x)
+				WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc,
+					1, 19, 1);
+			else
+				WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc,
+					1, 14, 1);
+
 			WRITE_VPP_REG_BITS(pvlock->enc_max_line_switch_addr + offset_enc,
 					   pvlock->pre_enc_max_pixel, 0, 13);
 		} else {
 			WRITE_VPP_REG_BITS(pvlock->enc_max_line_switch_addr + offset_enc, 1, 13, 1);
-			WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc, 0, 14, 1);
+			if (chip_type_id == chip_t3x)
+				WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc,
+					0, 19, 1);
+			else
+				WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc,
+					0, 14, 1);
 		}
 		/* enable to adjust enc */
 		WRITE_VPP_REG_BITS(VPU_VLOCK_CTRL + offset_vlck, 1, 30, 1);
@@ -1028,7 +1047,14 @@ static void vlock_setting(struct vframe_s *vf, struct stvlock_sig_sts *pvlock)
 		} else {
 			WRITE_VPP_REG_BITS(VPU_VLOCK_MISC_CTRL + offset_vlck, input_hz, 16, 8);
 		}
-		temp_value = READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
+
+		if (chip_type_id == chip_t3x) {
+			temp_value = READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) & 0x0000ffff;
+			pr_info("vlock t3x dbg: enc_max_line %d\n", temp_value);
+		} else {
+			temp_value = READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
+		}
+
 		if (!temp_value)
 			pr_info("vlock err: enc_max_line %d\n", temp_value);
 		WRITE_VPP_REG_BITS(VPU_VLOCK_OROW_OCOL_MAX  + offset_vlck, temp_value + 1, 0, 14);
@@ -1228,10 +1254,18 @@ void vlock_vmode_check(struct stvlock_sig_sts *pvlock)
 		    (VLOCK_MODE_MANUAL_ENC |
 		     VLOCK_MODE_AUTO_ENC |
 		     VLOCK_MODE_MANUAL_SOFT_ENC)) {
-			pvlock->pre_enc_max_line =
-				READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
-			pvlock->pre_enc_max_pixel =
-				READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc);
+			if (chip_type_id == chip_t3x) {
+				pvlock->enc_frc_max_line =
+					READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) & 0x0000ffff;
+				pvlock->enc_frc_max_pixel =
+					(READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) >> 16) & 0x00001fff;
+			} else {
+				pvlock->pre_enc_max_line =
+					READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
+				pvlock->pre_enc_max_pixel =
+					READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc);
+			}
+
 			if (!pvlock->pre_enc_max_line || !pvlock->pre_enc_max_pixel)
 				pr_info("vlock chk err: maxLine %d,maxPixel %d\n",
 					pvlock->pre_enc_max_line, pvlock->pre_enc_max_pixel);
@@ -1322,14 +1356,33 @@ static void vlock_disable_step1(struct stvlock_sig_sts *pvlock)
 	}
 	if (IS_ENC_MODE(vlock_mode)) {
 		pvlock->err_accum = 0;
-		WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc, 0, 14, 1);
-		WRITE_VPP_REG_BITS(pvlock->enc_video_mode_addr + offset_enc, 0, 15, 1);
+		if (chip_type_id == chip_t3x) {
+			WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc, 0, 19, 1);
+			WRITE_VPP_REG_BITS(pvlock->enc_video_mode_addr + offset_enc, 0, 15, 1);
+		} else {
+			WRITE_VPP_REG_BITS(pvlock->enc_video_mode_adv_addr + offset_enc, 0, 14, 1);
+			WRITE_VPP_REG_BITS(pvlock->enc_video_mode_addr + offset_enc, 0, 15, 1);
+		}
 		/*restore h,v total*/
 		WRITE_VPP_REG_BITS(pvlock->enc_max_line_switch_addr + offset_enc, 0x1fff, 0, 13);
-		WRITE_VPP_REG(pvlock->enc_max_line_addr + offset_enc,
-			pvlock->org_enc_line_num);
-		WRITE_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc,
-			pvlock->org_enc_pixel_num);
+
+		if (chip_type_id == chip_t3x) {
+			if (vlock_debug & VLOCK_DEBUG_INFO)
+				pr_info("vlock t3x dbg max cnt:0x%x\n",
+				(pvlock->org_enc_pixel_num << 13) | pvlock->org_enc_line_num);
+			WRITE_VPP_REG_BITS(ENCL_VIDEO_MAX_CNT_T3X,
+				pvlock->org_enc_line_num, 0, 16);
+			WRITE_VPP_REG_BITS(ENCL_VIDEO_MAX_CNT_T3X,
+				pvlock->org_enc_pixel_num, 16, 13);
+			if (vlock_debug & VLOCK_DEBUG_INFO)
+				pr_info("vlock t3x dbg max cnt:0x%x\n",
+					READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X));
+		} else {
+			WRITE_VPP_REG(pvlock->enc_max_line_addr + offset_enc,
+				pvlock->org_enc_line_num);
+			WRITE_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc,
+				pvlock->org_enc_pixel_num);
+		}
 		if (vlock_debug & VLOCK_DEBUG_INFO)
 			pr_info("restore hv total:%d %d\n", pvlock->org_enc_line_num,
 				pvlock->org_enc_pixel_num);
@@ -1572,9 +1625,13 @@ static void vlock_enable_step3_enc(struct stvlock_sig_sts *pvlock)
 		line_num = READ_VPP_REG_BITS(VPU_VLOCK_RO_LINE_PIX_ADJ + offset_vlck, 16, 14);
 
 		if ((vlock_debug & VLOCK_DEBUG_INFO)) {
-			READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
-			pr_info("vlock: enc_max_line_num = %d\n",
-				READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc));
+			if (chip_type_id == chip_t3x) {
+				pr_info("vlock: enc_max_line_num = %d\n",
+					READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) & 0x0000ffff);
+			} else {
+				pr_info("vlock: enc_max_line_num = %d\n",
+					READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc));
+			}
 		}
 
 		if (polity_line_num) {
@@ -1589,16 +1646,20 @@ static void vlock_enable_step3_enc(struct stvlock_sig_sts *pvlock)
 		}
 		if (enc_max_pixel > 0x1fff)
 			enc_max_line += 1;
-		if (enc_max_line >= vlock_protect_min)
-			WRITE_VPP_REG(pvlock->enc_max_line_addr + offset_enc, enc_max_line);
-		else if ((vlock_debug & VLOCK_DEBUG_FLASH))
+
+		if (enc_max_line >= vlock_protect_min) {
+			if (chip_type_id == chip_t3x)
+				WRITE_VPP_REG_BITS(ENCL_VIDEO_MAX_CNT_T3X, enc_max_line, 0, 16);
+			else
+				WRITE_VPP_REG(pvlock->enc_max_line_addr + offset_enc, enc_max_line);
+		} else if ((vlock_debug & VLOCK_DEBUG_FLASH)) {
 			pr_info("vlock:WARNING... enc_max_line:%d is limited by prt_min:%d cannot adj continue\n",
 				enc_max_line, vlock_protect_min);
+		}
+
 		if ((vlock_debug & VLOCK_DEBUG_FLASH)) {
 			pr_info("polity_line_num=%d line_num=%d, org_line=%d\n",
 				polity_line_num, line_num, pvlock->org_enc_line_num);
-			pr_info("\t wr addr:0x%x, %d\n",
-				pvlock->enc_max_line_addr + offset_enc, enc_max_line);
 		}
 
 		vlock_tune_sync(pvlock);
@@ -1721,10 +1782,18 @@ static void vlock_enable_step3_soft_enc(struct stvlock_sig_sts *pvlock)
 
 	if (vlock_enc_stable_flag++ > VLOCK_ENC_STABLE_CNT)
 		vlock_enc_stable_flag = VLOCK_ENC_STABLE_CNT;
+
 	if (vlock_enc_stable_flag < VLOCK_ENC_STABLE_CNT &&
-	    (!(vlock_debug & VLOCK_DEBUG_ENC_LINE_ADJ_DIS)))
-		WRITE_VPP_REG(pvlock->enc_max_line_addr + offset_enc,
+	    (!(vlock_debug & VLOCK_DEBUG_ENC_LINE_ADJ_DIS))) {
+		if (chip_type_id == chip_t3x) {
+			WRITE_VPP_REG_BITS(ENCL_VIDEO_MAX_CNT_T3X,
+				pvlock->pre_enc_max_line + line_adj, 0, 16);
+		} else {
+			WRITE_VPP_REG(pvlock->enc_max_line_addr + offset_enc,
 			      pvlock->pre_enc_max_line + line_adj);
+		}
+	}
+
 	if (!(vlock_debug & VLOCK_DEBUG_ENC_PIXEL_ADJ_DIS))
 		WRITE_VPP_REG(pvlock->enc_max_line_switch_addr + offset_enc,
 			      pvlock->pre_enc_max_pixel + pixel_adj);
@@ -2073,7 +2142,7 @@ void vlock_status_init(void)
 	u32 offset_enc;
 	struct vinfo_s *vinfo;
 
-	if (chip_type_id == chip_s5 || chip_type_id == chip_t3x)
+	if (chip_type_id == chip_s5)
 		return;
 
 	/*config vlock mode*/
@@ -2118,12 +2187,21 @@ void vlock_status_init(void)
 		/*initial enc register address*/
 		switch (VLOCK_OUT_ENCL/*READ_VPP_REG_BITS(VPU_VIU_VENC_MUX_CTRL, 0, 2)*/) {/* ?? */
 		case 0:
-			pvlock->enc_max_line_addr = ENCL_VIDEO_MAX_LNCNT;
-			pvlock->enc_max_pixel_addr = ENCL_VIDEO_MAX_PXCNT;
-			pvlock->enc_video_mode_addr = ENCL_VIDEO_MODE;
-			pvlock->enc_video_mode_adv_addr = ENCL_VIDEO_MODE_ADV;
-			pvlock->enc_max_line_switch_addr = ENCL_MAX_LINE_SWITCH_POINT;
-			pvlock->enc_frc_v_porch_addr  = ENCL_FRC_CTRL;
+			if (chip_type_id == chip_t3x) {
+				pvlock->enc_max_line_addr = ENCL_VIDEO_MAX_CNT_T3X;
+				pvlock->enc_max_pixel_addr = ENCL_VIDEO_MAX_CNT_T3X;
+				pvlock->enc_video_mode_addr = ENCL_VIDEO_MODE_T3X;
+				pvlock->enc_video_mode_adv_addr = ENCL_VIDEO_MODE_T3X;
+				pvlock->enc_max_line_switch_addr = ENCL_MAX_LINE_SWITCH_POINT_T3X;
+				pvlock->enc_frc_v_porch_addr  = ENCL_FRC_CTRL_T3X;
+			} else {
+				pvlock->enc_max_line_addr = ENCL_VIDEO_MAX_LNCNT;
+				pvlock->enc_max_pixel_addr = ENCL_VIDEO_MAX_PXCNT;
+				pvlock->enc_video_mode_addr = ENCL_VIDEO_MODE;
+				pvlock->enc_video_mode_adv_addr = ENCL_VIDEO_MODE_ADV;
+				pvlock->enc_max_line_switch_addr = ENCL_MAX_LINE_SWITCH_POINT;
+				pvlock->enc_frc_v_porch_addr  = ENCL_FRC_CTRL;
+			}
 			break;
 		/*enc mode not adapt to ENCP and ENCT*/
 		default:
@@ -2140,10 +2218,26 @@ void vlock_status_init(void)
 		pvlock->val_m = vlock_get_panel_pll_m(pvlock);
 		pvlock->val_frac = vlock_get_panel_pll_frac(pvlock);
 		/*enc mode initial val*/
-		pvlock->org_enc_line_num = READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
-		pvlock->org_enc_pixel_num = READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc);
-		pvlock->pre_enc_max_line = READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
-		pvlock->pre_enc_max_pixel = READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc);
+		if (chip_type_id == chip_t3x) {
+			pvlock->org_enc_line_num =
+				READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) & 0x0000ffff;
+			pvlock->org_enc_pixel_num =
+				(READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) >> 16) & 0x00001fff;
+			pvlock->pre_enc_max_line =
+				READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) & 0x0000ffff;
+			pvlock->pre_enc_max_pixel =
+				(READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) >> 16) & 0x00001fff;
+		} else {
+			pvlock->org_enc_line_num =
+				READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
+			pvlock->org_enc_pixel_num =
+				READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc);
+			pvlock->pre_enc_max_line =
+				READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
+			pvlock->pre_enc_max_pixel =
+				READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc);
+		}
+
 		if (pvlock->dtdata->vlk_chip == vlock_chip_t3 && pvlock->idx == VLOCK_ENC0) {
 			pvlock->enc_frc_v_porch =
 				READ_VPP_REG_BITS(pvlock->enc_frc_v_porch_addr + offset_enc, 0, 16);
@@ -2622,8 +2716,17 @@ u32 vlock_fsm_to_en_func(struct stvlock_sig_sts *pvlock,
 		pvlock->val_m = vlock_get_panel_pll_m(pvlock);
 		pvlock->val_frac = vlock_get_panel_pll_frac(pvlock);
 
-		pvlock->org_enc_line_num = READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
-		pvlock->org_enc_pixel_num = READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc);
+		if (chip_type_id == chip_t3x) {
+			pvlock->org_enc_line_num =
+				READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) & 0x0000ffff;
+			pvlock->org_enc_pixel_num =
+				(READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) >> 16) & 0x00001fff;
+		} else {
+			pvlock->org_enc_line_num =
+				READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc);
+			pvlock->org_enc_pixel_num =
+				READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc);
+		}
 		pvlock->pre_enc_max_line = pvlock->org_enc_line_num;
 		pvlock->pre_enc_max_pixel = pvlock->org_enc_pixel_num;
 
@@ -3334,10 +3437,17 @@ void vlock_reg_dump(struct stvlock_sig_sts *pvlock)
 	//pr_info("[0x1cb3]=0x%08x\n", READ_VPP_REG(0x1cb3));
 	//pr_info("[0x1cb4]=0x%08x\n", READ_VPP_REG(0x1cb4));
 	//pr_info("[0x1cc8]=0x%08x\n", READ_VPP_REG(0x1cc8));
-	pr_info("[0x%04x]=0x%08x line_addr\n", pvlock->enc_max_line_addr + offset_enc,
-		READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc));
-	pr_info("[0x%04x]=0x%08x pixel_addr\n", pvlock->enc_max_pixel_addr + offset_enc,
-		READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc));
+	if (chip_type_id == chip_t3x) {
+		pr_info("[0x%04x]=0x%08x line_addr\n", pvlock->enc_max_line_addr + offset_enc,
+			READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) & 0x0000ffff);
+		pr_info("[0x%04x]=0x%08x pixel_addr\n", pvlock->enc_max_pixel_addr + offset_enc,
+			(READ_VPP_REG(ENCL_VIDEO_MAX_CNT_T3X) >> 16) & 0x00001fff);
+	} else {
+		pr_info("[0x%04x]=0x%08x line_addr\n", pvlock->enc_max_line_addr + offset_enc,
+			READ_VPP_REG(pvlock->enc_max_line_addr + offset_enc));
+		pr_info("[0x%04x]=0x%08x pixel_addr\n", pvlock->enc_max_pixel_addr + offset_enc,
+			READ_VPP_REG(pvlock->enc_max_pixel_addr + offset_enc));
+	}
 	pr_info("[0x%04x]=0x%08x mode_addr\n", pvlock->enc_video_mode_addr + offset_enc,
 		READ_VPP_REG(pvlock->enc_video_mode_addr + offset_enc));
 	pr_info("[0x%04x]=0x%08x mode_adv_addr\n", pvlock->enc_video_mode_adv_addr + offset_enc,

@@ -717,6 +717,7 @@ enum vlk_chiptype {
 	vlock_chip_t7,
 	vlock_chip_t3,
 	vlock_chip_t5m,
+	vlock_chip_t3x,
 };
 
 enum chip_type {

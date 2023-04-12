@@ -53,6 +53,18 @@
 #define ENCL_VIDEO_MAX_LNCNT                       0x1cbb
 #define ENCP_VIDEO_MAX_LNCNT                       0x1bae
 
+#define VENC_VRR_CTRL_T3X                              0x14d6
+//Bit 31:16   vsp_dly_num      // R/W, unsigned, default 0
+//Bit 15:12   RFU		// R/O, unsigned, default 0
+//Bit 11:8    vsp_rst_num      // R/W, unsigned, default 0x1
+//Bit  7:4    cfg_vrr_frm_ths  // R/W, unsigned, default 0
+//Bit  3:2    cfg_vrr_vsp_en   // R/W, unsigned, default 0
+//Bit    1    cfg_vrr_mode     // R/W, unsigned, default 0   0:normal   1:vrr
+//Bit    0    cfg_vrr_vsp_sel  // R/W, unsigned, default 0   1:hdmi in  0:gpu in
+#define VENC_VRR_ADJ_LMT_T3X                           0x14d7
+//Bit 31:16  cfg_vrr_min_vnum  //R/W, unsigned,
+//Bit 15:0   cfg_vrr_max_vnum  //R/W, unsigned,
+
 static inline unsigned int vrr_reg_read(unsigned int _reg)
 {
 	unsigned int ret = 0;

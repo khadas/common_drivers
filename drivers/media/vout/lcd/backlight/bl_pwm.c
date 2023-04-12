@@ -26,6 +26,7 @@
 #include <linux/amlogic/media/vout/lcd/lcd_vout.h>
 #include "lcd_bl.h"
 #include "../lcd_reg.h"
+#include "../lcd_common.h"
 
 struct bl_pwm_init_config_s {
 	unsigned int *pwm_vs_reg;
@@ -190,6 +191,11 @@ static void bl_set_pwm_vs(struct bl_pwm_config_s *bl_pwm,
 	unsigned int reg[5], vs[8], ve[8];
 	int i;
 
+	if (bl_pwm->pwm_cnt == 0) {
+		BLERR("%s: pwm_cnt is 0\n", __func__);
+		return;
+	}
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_ADV) {
 		BLPR("%s: pwm_duty=%d, out_level=%d\n",
 		     __func__, bl_pwm->pwm_duty, out_level);
@@ -280,6 +286,10 @@ static void bl_set_pwm_normal(struct bl_pwm_config_s *bl_pwm,
 {
 	if (IS_ERR_OR_NULL(bl_pwm->pwm_data.pwm)) {
 		BLERR("%s: invalid bl_pwm_ch\n", __func__);
+		return;
+	}
+	if (bl_pwm->pwm_cnt == 0) {
+		BLERR("%s: pwm_cnt is 0\n", __func__);
 		return;
 	}
 
@@ -388,14 +398,8 @@ void bl_pwm_ctrl(struct bl_pwm_config_s *bl_pwm, int status)
 			}
 
 			pwm_get_state(bl_pwm->pwm_data.pwm, &pstate);
-			pwm_constant_enable(bl_pwm->pwm_data.meson,
-					    bl_pwm->pwm_data.meson_index);
-			if (bl_pwm->pwm_method)
-				pstate.polarity = 0;
-			else
-				pstate.polarity = 1;
 			pstate.duty_cycle = 0;
-			pstate.enabled = 1;
+			pstate.enabled = 0;
 			pstate.period = bl_pwm->pwm_data.state.period;
 			if (lcd_debug_print_flag & LCD_DBG_PR_BL_ADV)
 				bl_pwm_normal_state_print(&pstate);
@@ -432,6 +436,10 @@ void bl_pwm_set_duty(struct aml_bl_drv_s *bdrv, struct bl_pwm_config_s *bl_pwm)
 
 	if (bdrv->pwm_bypass)
 		return;
+	if (bl_pwm->pwm_cnt == 0) {
+		BLERR("%s: pwm_cnt is 0\n", __func__);
+		return;
+	}
 
 	if (bdrv->pwm_duty_free) {
 		if (bl_pwm->pwm_duty_max > 255) {
@@ -611,6 +619,10 @@ void bl_pwm_set_level(struct aml_bl_drv_s *bdrv,
 
 	if (bdrv->pwm_bypass)
 		return;
+	if (bl_pwm->pwm_cnt == 0) {
+		BLERR("%s: pwm_cnt is 0\n", __func__);
+		return;
+	}
 
 	level = bl_level_mapping(bdrv, level);
 	level = bl_pwm_set_mapping(bl_pwm, level);
@@ -658,7 +670,7 @@ void bl_pwm_set_level(struct aml_bl_drv_s *bdrv,
 
 void bl_pwm_config_init(struct bl_pwm_config_s *bl_pwm)
 {
-	unsigned int cnt;
+	struct aml_lcd_drv_s *pdrv;
 	unsigned long long temp;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
@@ -668,8 +680,8 @@ void bl_pwm_config_init(struct bl_pwm_config_s *bl_pwm)
 
 	switch (bl_pwm->pwm_port) {
 	case BL_PWM_VS:
-		cnt = lcd_vcbus_read(ENCL_VIDEO_MAX_LNCNT) + 1;
-		bl_pwm->pwm_cnt = cnt;
+		pdrv = aml_lcd_get_driver(bl_pwm->drv_index);
+		bl_pwm->pwm_cnt = lcd_get_max_line_cnt(pdrv);
 		break;
 	default:
 		/* for pwm api: pwm_period */
@@ -776,6 +788,7 @@ int bl_pwm_init_config_probe(struct bl_data_s *bdata)
 	case LCD_CHIP_T3:
 	case LCD_CHIP_T5W:
 	case LCD_CHIP_T5M:
+	case LCD_CHIP_T3X:
 		pwm_init_cfg.pwm_vs_reg = pwm_vs_reg_t7;
 		pwm_init_cfg.pwm_vs_reg_cnt = ARRAY_SIZE(pwm_vs_reg_t7);
 		break;

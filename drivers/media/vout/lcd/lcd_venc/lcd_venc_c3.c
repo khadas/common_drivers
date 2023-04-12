@@ -159,6 +159,7 @@ int lcd_venc_op_init_c3(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_o
 		return -1;
 
 	venc_op->wait_vsync = NULL;
+	venc_op->get_max_lcnt = NULL;
 	venc_op->gamma_test_en = NULL;
 	venc_op->venc_debug_test = NULL;
 	venc_op->venc_set_timing = NULL;

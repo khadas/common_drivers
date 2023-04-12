@@ -181,6 +181,7 @@ void aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int
 /* lcd venc */
 unsigned int lcd_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv);
 unsigned int lcd_get_encl_frm_cnt(struct aml_lcd_drv_s *pdrv);
+unsigned int lcd_get_max_line_cnt(struct aml_lcd_drv_s *pdrv);
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv);
 
 void lcd_gamma_debug_test_en(struct aml_lcd_drv_s *pdrv, int flag);

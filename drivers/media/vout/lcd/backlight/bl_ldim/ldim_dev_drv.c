@@ -1041,6 +1041,7 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 
 	/* ldim pwm config */
 	bl_pwm = &dev_drv->ldim_pwm_config;
+	bl_pwm->drv_index = 0; /* only venc0 support ldim */
 	ret = of_property_read_string(child, "ldim_pwm_port", &str);
 	if (ret) {
 		LDIMERR("failed to get ldim_pwm_port\n");
@@ -1077,6 +1078,7 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 
 	/* analog pwm config */
 	bl_pwm = &dev_drv->analog_pwm_config;
+	bl_pwm->drv_index = 0; /* only venc0 support ldim */
 	ret = of_property_read_string(child, "analog_pwm_port", &str);
 	if (ret)
 		bl_pwm->pwm_port = BL_PWM_MAX;
@@ -1397,6 +1399,7 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv,
 
 	/* pwm (48Byte) */
 	bl_pwm = &dev_drv->ldim_pwm_config;
+	bl_pwm->drv_index = 0; /* only venc0 support ldim */
 	bl_pwm->pwm_port = *(p + LCD_UKEY_LDIM_DEV_PWM_VS_PORT);
 	if (bl_pwm->pwm_port < BL_PWM_MAX) {
 		bl_pwm->pwm_method = *(p + LCD_UKEY_LDIM_DEV_PWM_VS_POL);
@@ -1418,6 +1421,7 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv,
 	}
 
 	bl_pwm = &dev_drv->analog_pwm_config;
+	bl_pwm->drv_index = 0; /* only venc0 support ldim */
 	bl_pwm->pwm_port = *(p + LCD_UKEY_LDIM_DEV_PWM_ADJ_PORT);
 	if (bl_pwm->pwm_port < BL_PWM_VS) {
 		bl_pwm->pwm_method = *(p + LCD_UKEY_LDIM_DEV_PWM_ADJ_POL);

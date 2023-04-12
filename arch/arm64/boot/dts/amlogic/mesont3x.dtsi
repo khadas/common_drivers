@@ -4432,6 +4432,14 @@
 		};
 	};
 
+	lcd_vbyone_b_off_pins: lcd_vbyone_b_off_pin {
+		mux {
+			groups = "GPIOH_2","GPIOH_3";
+			function = "gpio_periphs";
+			input-enable;
+		};
+	};
+
 	lcd_tcon_p2p_pins: lcd_tcon_p2p_pin {
 		mux {
 			groups = "tcon_1","tcon_2","tcon_3",
@@ -4457,36 +4465,6 @@
 				"GPIOH_0";
 				function = "gpio_periphs";
 			input-enable;
-		};
-	};
-
-	lcd_tcon_mlvds_pins: lcd_tcon_mlvds_pin {
-		mux {
-			groups = "tcon_0","tcon_1","tcon_2","tcon_3",
-				"tcon_4","tcon_5","tcon_6";
-			function = "tcon";
-		};
-	};
-
-	lcd_tcon_mlvds_off_pins: lcd_tcon_mlvds_off_pin {
-		mux {
-			groups = "GPIOH_0","GPIOH_1","GPIOH_2","GPIOH_3",
-				"GPIOH_4","GPIOH_5","GPIOH_6";
-			function = "gpio_periphs";
-			input-enable;
-		};
-	};
-	lcd_edp_a_pins: lcd_edp_a_pin {
-		mux {
-			groups = "edp_a_hpd";
-			function = "edp_a";
-		};
-	};
-
-	lcd_edp_b_pins: lcd_edp_b_pin {
-		mux {
-			groups = "edp_b_hpd";
-			function = "edp_b";
 		};
 	};
 

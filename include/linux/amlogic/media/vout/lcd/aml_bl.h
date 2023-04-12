@@ -114,6 +114,7 @@ struct pwm_data_s {
 
 struct bl_pwm_config_s {
 	unsigned int index;
+	unsigned int drv_index;
 	struct pwm_data_s pwm_data;
 	enum bl_pwm_method_e pwm_method;
 	enum bl_pwm_port_e pwm_port;

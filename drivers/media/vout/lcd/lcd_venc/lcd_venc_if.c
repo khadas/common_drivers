@@ -21,6 +21,7 @@
 static struct lcd_venc_op_s lcd_venc_op = {
 	.init_flag = 0,
 	.wait_vsync = NULL,
+	.get_max_lcnt = NULL,
 	.gamma_test_en = NULL,
 	.venc_debug_test = NULL,
 	.venc_set_timing = NULL,
@@ -42,6 +43,39 @@ void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv)
 		return;
 
 	lcd_venc_op.wait_vsync(pdrv);
+}
+
+unsigned int lcd_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
+{
+	unsigned int lcnt;
+
+	if (!lcd_venc_op.get_encl_line_cnt)
+		return 0;
+	if (!pdrv)
+		return 0;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s\n", pdrv->index, __func__);
+
+	lcnt = lcd_venc_op.get_encl_line_cnt(pdrv);
+	return lcnt;
+}
+EXPORT_SYMBOL(lcd_get_encl_line_cnt);
+
+unsigned int lcd_get_max_line_cnt(struct aml_lcd_drv_s *pdrv)
+{
+	unsigned int max_lcnt;
+
+	if (!lcd_venc_op.get_max_lcnt)
+		return 0;
+	if (!pdrv)
+		return 0;
+
+	max_lcnt = lcd_venc_op.get_max_lcnt(pdrv);
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s: %d\n", pdrv->index, __func__, max_lcnt);
+
+	return max_lcnt;
 }
 
 void lcd_gamma_debug_test_en(struct aml_lcd_drv_s *pdrv, int flag)
@@ -161,22 +195,6 @@ int lcd_get_venc_init_config(struct aml_lcd_drv_s *pdrv)
 	ret = lcd_venc_op.get_venc_init_config(pdrv);
 	return ret;
 }
-
-unsigned int lcd_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
-{
-	unsigned int cnt = 0;
-
-	if (!lcd_venc_op.get_encl_line_cnt)
-		return 0;
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_ISR)
-		LCDPR("[%d]: %s\n", pdrv->index, __func__);
-
-	cnt = lcd_venc_op.get_encl_line_cnt(pdrv);
-
-	return cnt;
-}
-EXPORT_SYMBOL(lcd_get_encl_line_cnt);
 
 unsigned int lcd_get_encl_frm_cnt(struct aml_lcd_drv_s *pdrv)
 {

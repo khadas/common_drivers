@@ -41,6 +41,16 @@ static void lcd_venc_wait_vsync(struct aml_lcd_drv_s *pdrv)
 	 */
 }
 
+static unsigned int lcd_venc_get_max_lint_cnt(struct aml_lcd_drv_s *pdrv)
+{
+	unsigned int line_cnt;
+
+	line_cnt = lcd_vcbus_read(ENCL_VIDEO_MAX_LNCNT) + 1;
+	/*LCDPR("[%d]: %s: line_cnt=%d", pdrv->index, __func__, line_cnt); */
+
+	return line_cnt;
+}
+
 static void lcd_venc_gamma_check_en(struct aml_lcd_drv_s *pdrv)
 {
 	if (lcd_vcbus_getb(L_GAMMA_CNTL_PORT, 0, 1))
@@ -409,6 +419,7 @@ int lcd_venc_op_init_dft(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_
 		return -1;
 
 	venc_op->wait_vsync = lcd_venc_wait_vsync;
+	venc_op->get_max_lcnt = lcd_venc_get_max_lint_cnt;
 	venc_op->gamma_test_en = lcd_venc_gamma_debug_test_en;
 	venc_op->venc_debug_test = lcd_venc_debug_test;
 	venc_op->venc_set_timing = lcd_venc_set_timing;

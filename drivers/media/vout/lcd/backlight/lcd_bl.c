@@ -1121,6 +1121,7 @@ static int bl_config_load_from_dts(struct aml_bl_drv_s *bdrv)
 
 		bl_pwm = bconf->bl_pwm;
 		bl_pwm->index = 0;
+		bl_pwm->drv_index = bdrv->index;
 
 		bl_pwm->level_max = bconf->level_max;
 		bl_pwm->level_min = bconf->level_min;
@@ -1190,6 +1191,8 @@ static int bl_config_load_from_dts(struct aml_bl_drv_s *bdrv)
 
 		pwm_combo0->index = 0;
 		pwm_combo1->index = 1;
+		pwm_combo0->drv_index = bdrv->index;
+		pwm_combo1->drv_index = bdrv->index;
 
 		ret = of_property_read_string_index(child, "bl_pwm_combo_port", 0, &str);
 		if (ret) {
@@ -1465,6 +1468,7 @@ static int bl_config_load_from_unifykey(struct aml_bl_drv_s *bdrv, char *key_nam
 		}
 		bl_pwm = bconf->bl_pwm;
 		bl_pwm->index = 0;
+		bl_pwm->drv_index = bdrv->index;
 
 		bl_pwm->level_max = bconf->level_max;
 		bl_pwm->level_min = bconf->level_min;
@@ -1509,6 +1513,8 @@ static int bl_config_load_from_unifykey(struct aml_bl_drv_s *bdrv, char *key_nam
 		pwm_combo1 = bconf->bl_pwm_combo1;
 		pwm_combo0->index = 0;
 		pwm_combo1->index = 1;
+		pwm_combo0->drv_index = bdrv->index;
+		pwm_combo1->drv_index = bdrv->index;
 
 		bconf->pwm_on_delay = (*(p + LCD_UKEY_BL_PWM_ON_DELAY) |
 			((*(p + LCD_UKEY_BL_PWM_ON_DELAY + 1)) << 8));
@@ -3836,6 +3842,13 @@ static struct bl_data_s bl_data_t5m = {
 	.chip_name = "t5m",
 	.pwm_vs_flag = 1,
 };
+
+static struct bl_data_s bl_data_t3x = {
+	.chip_type = LCD_CHIP_T3X,
+	.chip_name = "t3x",
+	.pwm_vs_flag = 1,
+};
+
 static const struct of_device_id bl_dt_match_table[] = {
 	{
 		.compatible = "amlogic, backlight-axg",
@@ -3894,6 +3907,10 @@ static const struct of_device_id bl_dt_match_table[] = {
 	{
 		.compatible = "amlogic, backlight-t5m",
 		.data = &bl_data_t5m,
+	},
+	{
+		.compatible = "amlogic, backlight-t3x",
+		.data = &bl_data_t3x,
 	},
 	{}
 };

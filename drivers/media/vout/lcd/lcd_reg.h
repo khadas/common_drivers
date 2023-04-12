@@ -1754,6 +1754,13 @@
 #define VPU_VPU_PWM_V3_T7                          0x1ce3
 #define VPU_VPU_PWM_H0_T7                          0x1ce4
 
+#define VPU1_VPU_PWM_V0                            0x22e0
+#define VPU1_VPU_PWM_V1                            0x22e1
+#define VPU1_VPU_PWM_V2                            0x22e2
+#define VPU1_VPU_PWM_V3                            0x22e3
+#define VPU1_VPU_PWM_H0                            0x22e4
+#define VPU1_VPU_PWM_H1                            0x22e5
+
 /********************lut dma************************/
 #define VPU_DMA_RDMIF7_CTRL   0x2757
 #define VPU_DMA_RDMIF7_BADR0  0x2774

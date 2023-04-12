@@ -2067,3 +2067,7 @@
 &vddcpub {
 	status = "okay";
 };
+
+&pwm_cd {
+	status = "okay";
+};

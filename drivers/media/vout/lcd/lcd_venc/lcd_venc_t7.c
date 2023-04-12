@@ -47,6 +47,19 @@ static void lcd_venc_wait_vsync(struct aml_lcd_drv_s *pdrv)
 	 */
 }
 
+static unsigned int lcd_venc_get_max_lint_cnt(struct aml_lcd_drv_s *pdrv)
+{
+	unsigned int offset, reg, line_cnt;
+
+	offset = pdrv->data->offset_venc[pdrv->index];
+	reg = ENCL_VIDEO_MAX_LNCNT + offset;
+
+	line_cnt = lcd_vcbus_read(reg) + 1;
+	/*LCDPR("[%d]: %s: line_cnt=%d", pdrv->index, __func__, line_cnt); */
+
+	return line_cnt;
+}
+
 static void lcd_venc_gamma_check_en(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int reg, offset;
@@ -358,7 +371,7 @@ static void lcd_venc_set(struct aml_lcd_drv_s *pdrv)
 	lcd_vcbus_write(ENCL_VIDEO_MODE_ADV + offset, 0x0418); /* Sampling rate: 1 */
 	lcd_vcbus_write(ENCL_VIDEO_FILT_CTRL + offset, 0x1000); /* bypass filter */
 
-	lcd_set_venc_timing(pdrv);
+	lcd_venc_set_timing(pdrv);
 
 	lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL + offset, 3);
 	//restore test pattern
@@ -424,7 +437,7 @@ static void lcd_venc_change_timing(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->vmode_update) {
 		lcd_timing_init_config(pdrv);
-		lcd_set_venc_timing(pdrv);
+		lcd_venc_set_timing(pdrv);
 	} else {
 		htotal = lcd_vcbus_read(ENCL_VIDEO_MAX_PXCNT + offset) + 1;
 		vtotal = lcd_vcbus_read(ENCL_VIDEO_MAX_LNCNT + offset) + 1;
@@ -545,6 +558,7 @@ int lcd_venc_op_init_t7(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_o
 		return -1;
 
 	venc_op->wait_vsync = lcd_venc_wait_vsync;
+	venc_op->get_max_lcnt = lcd_venc_get_max_lint_cnt;
 	venc_op->gamma_test_en = lcd_venc_gamma_debug_test_en;
 	venc_op->venc_debug_test = lcd_venc_debug_test;
 	venc_op->venc_set_timing = lcd_venc_set_timing;

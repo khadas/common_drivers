@@ -1972,7 +1972,7 @@
 		nr10bit-support = <1>;
 		nrds-enable = <1>;
 		pps-enable = <1>;
-		dct = <2>;//decontour disable
+		dct = <0>;//decontour disable
 		hf	= <2>; //enable aisr
 		en_4k = <1>;
 		alloc_sct = <1>;

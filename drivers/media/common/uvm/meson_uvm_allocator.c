@@ -152,12 +152,13 @@ static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
 	struct sg_table *src_sgt = NULL;
 	struct scatterlist *sg = NULL;
 	size_t pre_size = 0;
+	size_t new_size = 0;
 	struct dma_heap *heap;
 	struct dma_buf_attachment *attachment = NULL;
 
 	buffer = container_of(obj, struct mua_buffer, base);
-	MUA_PRINTK(MUA_INFO, "%s. buf_scalar=%d WxH: %dx%d\n",
-				__func__, scalar, buffer->width, buffer->height);
+	MUA_PRINTK(MUA_INFO, "%s.dmabuf(%px) buf_scalar=%d WxH: %dx%d\n",
+		__func__, dmabuf, scalar, buffer->width, buffer->height);
 	memset(&info, 0, sizeof(info));
 
 	MUA_PRINTK(MUA_INFO, "%s, current->tgid:%d mdev->pid:%d buffer->commit_display:%d.\n",
@@ -169,13 +170,15 @@ static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
 		skip_fill_buf = true;
 	}
 
-	pre_size = dmabuf->size;
-	if (!skip_fill_buf)
-		dmabuf->size = buffer->size * scalar * scalar;
+	if (buffer->idmabuf[1])
+		pre_size = buffer->idmabuf[1]->size;
 	else
-		dmabuf->size = mua_calc_real_dmabuf_size(buffer);
-	MUA_PRINTK(MUA_INFO, "buffer(0x%p)->size:%zu realloc dmabuf->size=%zu\n",
-			buffer, buffer->size, dmabuf->size);
+		pre_size = dmabuf->size;
+	new_size = mua_calc_real_dmabuf_size(buffer);
+	MUA_PRINTK(MUA_INFO, "buffer(0x%p)->size:%zu realloc new_size=%zu, pre_size = %zu\n",
+			buffer, buffer->size, new_size, pre_size);
+	if (new_size < pre_size)
+		new_size = pre_size;
 	heap = dma_heap_find(CODECMM_HEAP_NAME);
 	if (!heap) {
 		MUA_PRINTK(MUA_ERROR, "%s: dma_heap_find fail. heap name is %s\n",
@@ -183,19 +186,19 @@ static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
 		return -ENOMEM;
 	}
 
-	if (pre_size != dmabuf->size && buffer->idmabuf[1]) {
+	if (pre_size != new_size && buffer->idmabuf[1]) {
 		dma_buf_put(buffer->idmabuf[1]);
 		buffer->idmabuf[1] = NULL;
 	}
 
 	if (!buffer->idmabuf[1]) {
-		idmabuf = dma_heap_buffer_alloc(heap, dmabuf->size,
+		idmabuf = dma_heap_buffer_alloc(heap, new_size,
 			O_RDWR, DMA_HEAP_VALID_HEAP_FLAGS);
 		if (IS_ERR(idmabuf)) {
 			MUA_PRINTK(MUA_ERROR, "%s: dma_heap_buffer_alloc fail.\n", __func__);
 			return -ENOMEM;
 		}
-		MUA_PRINTK(MUA_INFO, "%s: idmabuf(%p) alloc success.\n", __func__, idmabuf);
+		MUA_PRINTK(MUA_INFO, "%s: idmabuf(%px) alloc success.\n", __func__, idmabuf);
 
 		ibuffer = idmabuf->priv;
 		if (ibuffer) {
@@ -225,6 +228,8 @@ static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
 		}
 	} else {
 		idmabuf = buffer->idmabuf[1];
+		MUA_PRINTK(MUA_INFO, "%s: idmabuf(%px) don't do realloc.\n",
+			__func__, idmabuf);
 		attachment = dma_buf_attach(idmabuf, dma_heap_get_dev(heap));
 		if (!attachment) {
 			MUA_PRINTK(MUA_ERROR, "%s(%d): Failed to set dma attach",
@@ -255,7 +260,7 @@ static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
 		return -ENODEV;
 	}
 	src_sgt = buffer->sg_table;
-	num_pages = PAGE_ALIGN(dmabuf->size) / PAGE_SIZE;
+	num_pages = PAGE_ALIGN(new_size) / PAGE_SIZE;
 	tmp = vmalloc(sizeof(struct page *) * num_pages);
 	page_array = tmp;
 
@@ -287,7 +292,7 @@ static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
 
 	//start to filldata
 	if (skip_fill_buf) {
-		size_t buf_size = dmabuf->size * 2 / 3;
+		size_t buf_size = new_size * 2 / 3;
 
 		MUA_PRINTK(MUA_INFO, "%s buf size=%zu\n", __func__, buf_size);
 		memset(vaddr, 0x15, buf_size);
@@ -628,7 +633,7 @@ static int mua_attach(int fd, int type, char *buf)
 		break;
 
 	default:
-		MUA_PRINTK(MUA_ERROR, "mod_type is not valid.\n");
+		MUA_PRINTK(MUA_DBG, "mod_type is not valid.\n");
 	}
 	if (ret) {
 		MUA_PRINTK(MUA_ERROR, "get hook_mod_info failed\n");

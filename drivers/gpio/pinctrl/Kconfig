@@ -118,4 +118,14 @@ config AMLOGIC_PINCTRL_MESON_T3X
 	  when enable this config.
 	  T3X pinctrl can work.
 	  otherwise T3X pinctrl can't work
+
+config AMLOGIC_PINCTRL_MESON_TXHD2
+	tristate "Meson TXHD2 Soc pinctrl driver"
+	default n
+	help
+	  the chip of TXHD2 will be built
+	  when enable this config.
+	  TXHD2 pinctrl can work.
+	  otherwise TXHD2 pinctrl can't work
+
 endif

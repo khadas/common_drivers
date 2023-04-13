@@ -88,3 +88,10 @@ $(T3X_MODULE_NAME)-y += pinctrl/pinctrl-meson-t3x.o
 PR_FMT_T3X = $(subst amlogic-,,$(T3X_MODULE_NAME))
 PR_FMT_DEFINE_T3X="-Dpr_fmt(fmt)= \"[$(PR_FMT_T3X)]: \" fmt"
 CFLAGS_pinctrl-meson-t3x.o += $(PR_FMT_DEFINE_T3X)
+
+TXHD2_MODULE_NAME = amlogic-pinctrl-soc-txhd2
+obj-$(CONFIG_AMLOGIC_PINCTRL_MESON_TXHD2) += $(TXHD2_MODULE_NAME).o
+$(TXHD2_MODULE_NAME)-y += pinctrl/pinctrl-meson-txhd2.o
+PR_FMT_TXHD2 = $(subst amlogic-,,$(TXHD2_MODULE_NAME))
+PR_FMT_DEFINE_TXHD2="-Dpr_fmt(fmt)= \"[$(PR_FMT_TXHD2)]: \" fmt"
+CFLAGS_pinctrl-meson-txhd2.o += $(PR_FMT_DEFINE_TXHD2)

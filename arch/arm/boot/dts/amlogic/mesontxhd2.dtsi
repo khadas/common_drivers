@@ -232,5 +232,39 @@
 		#power-domain-cells = <1>;
 		status = "okay";
 	};
+
+	pinctrl_aobus: pinctrl@ff800014{
+		compatible = "amlogic,meson-txhd2-aobus-pinctrl";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		gpio_ao: ao-bank@ff800014{
+			reg = <0xff800014 0x008>,
+			      <0xff800024 0x014>;
+			reg-names = "mux","gpio";
+			gpio-controller;
+			#gpio-cells = <2>;
+			gpio-ranges = <&pinctrl_aobus 0 0 14>;
+		};
+	};
+
+	pinctrl_periphs: pinctrl@ff6346c0{
+		compatible = "amlogic,meson-txhd2-periphs-pinctrl";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		gpio: banks@ff6346c0{
+			reg = <0xff6346c0 0x040>,
+			      <0xff6344e8 0x018>,
+			      <0xff634520 0x018>,
+			      <0xff634440 0x04c>;
+			reg-names = "mux", "pull", "pull-enable", "gpio";
+			gpio-controller;
+			#gpio-cells = <2>;
+			gpio-ranges = <&pinctrl_periphs 0 0 66>;
+		};
+	};
 };
 

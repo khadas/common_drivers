@@ -2445,6 +2445,9 @@ int lcd_get_config(struct aml_lcd_drv_s *pdrv)
 	}
 	if (ret)
 		return -1;
+	if (pdrv->index)
+		pdrv->config.timing.ppc = 1;
+
 	lcd_config_load_init(pdrv);
 	lcd_config_load_print(pdrv);
 

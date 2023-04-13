@@ -523,7 +523,13 @@ int edp_div_check(struct lcd_clk_config_s *cconf, unsigned int bit_rate)
 int lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv, char *buf, int offset)
 {
 	struct lcd_clk_config_s *cconf;
-	int n, len = 0;
+	int n, len = 0, ppc;
+
+	if (!pdrv)
+		return -1;
+	ppc = pdrv->config.timing.ppc;
+	if (ppc == 0)
+		ppc = 1;
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf)
@@ -565,7 +571,7 @@ int lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv, char *buf, int offset)
 		cconf->edp_div0, cconf->edp_div1,
 		lcd_clk_div_sel_table[cconf->div_sel],
 		cconf->div_sel, cconf->xd,
-		cconf->fout, cconf->ss_level,
+		cconf->fout / ppc, cconf->ss_level,
 		cconf->ss_freq, cconf->ss_mode, cconf->ss_en);
 
 	return len;

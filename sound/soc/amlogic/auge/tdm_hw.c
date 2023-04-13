@@ -510,7 +510,6 @@ void aml_tdm_set_format(struct aml_audio_controller *actrl,
 			aml_audiobus_update_bits(actrl, reg_out, 0x3f, clkctl);
 		}
 	}
-
 	pr_debug("master_mode(%d), bclk inv(%d), fclk inv(%d) out_skew(%d), in_skew(%d)\n",
 			master_mode, binv, finv, bclkout_skew, bclkin_skew);
 
@@ -563,7 +562,10 @@ void aml_tdm_set_format(struct aml_audio_controller *actrl,
 				aml_audiobus_update_bits(actrl, reg_in,
 					0x1 << 29, binv << 29);
 			}
-
+			if (is_meson_t3x_cpu() && (tdmin_src_hdmirx ||
+				tdmin_src_hdmirxb || !master_mode))
+				aml_audiobus_update_bits(actrl, reg_in,
+					0x1 << 29, 0 << 29);
 			if (id == 3) {
 				reg_in = EE_AUDIO_TDMIN_D_CTRL;
 			} else if (id < 3) {

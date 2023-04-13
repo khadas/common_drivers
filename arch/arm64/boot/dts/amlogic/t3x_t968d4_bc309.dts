@@ -1243,7 +1243,8 @@
 		interrupt-names = "irq_spdifin";
 		pinctrl-names = "spdif_pins",
 			"spdif_pins_mute";
-		pinctrl-0 = <&spdif_out_a_z19_pins>;
+		pinctrl-0 = <&spdif_out_a_z19_pins
+					&spdifin_m29_pins>;
 		pinctrl-1 = <&spdifout_a_mute_pins>;
 		/*
 		 * 0: tdmout_a;
@@ -1315,7 +1316,7 @@
 	};
 
 	asrca: resample@0 {
-		compatible = "amlogic, t5-resample-a";
+		compatible = "amlogic, t3x-resample-a";
 		clocks = <&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_MCLK_B
 			&clkaudio CLKID_AUDIO_RESAMPLE_A>;
@@ -1342,7 +1343,7 @@
 	};
 
 	asrcb: resample@1 {
-		compatible = "amlogic, t5-resample-b";
+		compatible = "amlogic, t3x-resample-b";
 		clocks = <&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_MCLK_F
 			&clkaudio CLKID_AUDIO_RESAMPLE_B>;
@@ -1354,6 +1355,32 @@
 		status = "okay";
 	};
 
+	asrcc: resample@2 {
+		compatible = "amlogic, t3x-resample-c";
+		clocks = <&clkc CLKID_HIFI_PLL
+			&clkaudio CLKID_AUDIO_MCLK_B
+			&clkaudio CLKID_AUDIO_RESAMPLE_C>;
+		clock-names = "resample_pll", "resample_src", "resample_clk";
+
+		/*same with toddr_src
+		 *	TDMIN_A,    0
+		 *	TDMIN_B,    1
+		 *	TDMIN_C,    2
+		 *	SPDIFIN,    3
+		 *	PDMIN,      4
+		 *	FRATV,      5
+		 *	TDMIN_LB,   6
+		 *	LOOPBACK_A, 7
+		 *	FRHDMIRX,   8
+		 *	LOOPBACK_B, 9
+		 *	SPDIFIN_LB, 10
+		 *	EARC_RX,    11
+		 */
+		src-clk-freq = <491520000>;
+		resample_module = <8>;
+		suspend-clk-off = <1>;
+		status = "okay";
+	};
 	vad:vad {
 		compatible = "amlogic, snd-vad";
 		#sound-dai-cells = <0>;

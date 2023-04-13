@@ -581,11 +581,9 @@ static int aml_tdm_set_fmt(struct aml_tdm *p_tdm, unsigned int fmt, bool capture
 
 	p_tdm->setting.sclk_ws_inv = p_tdm->chipinfo->sclk_ws_inv;
 
-	if (strncmp(p_tdm->tdmin_src_name, SRC_HDMIRX,
-		    strlen(SRC_HDMIRX)) == 0)
+	if (!strcmp(p_tdm->tdmin_src_name, SRC_HDMIRX))
 		tdmin_src_hdmirx = true;
-	else if (strncmp(p_tdm->tdmin_src_name, SRC_HDMIRXB,
-		    strlen(SRC_HDMIRXB)) == 0)
+	else if (!strcmp(p_tdm->tdmin_src_name, SRC_HDMIRXB))
 		tdmin_src_hdmirxb = true;
 	aml_tdm_set_format(p_tdm->actrl, &p_tdm->setting,
 			   p_tdm->clk_sel, p_tdm->id, fmt, 1, 1,
@@ -2193,6 +2191,7 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 	struct device_node *np_src = NULL;
 	struct platform_device *dev_src = NULL;
 	int ret = 0;
+	int i = 0;
 
 	p_tdm = devm_kzalloc(dev, sizeof(struct aml_tdm), GFP_KERNEL);
 	if (!p_tdm)
@@ -2280,8 +2279,13 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 		if (!ret)
 			pr_info("TDM id %d supports %s\n",
 				p_tdm->id, p_tdm->tdmin_src_name);
+		for (i = 0; i < ARRAY_SIZE(tdmin_source_text); i++) {
+			if (!strcmp(p_tdm->tdmin_src_name, tdmin_source_text[i])) {
+				p_tdm->tdm_in_src = i;
+				break;
+			}
+		}
 	}
-
 	ret = of_property_read_u32(node, "i2s2hdmi", &p_tdm->i2s2hdmitx);
 	if (ret < 0)
 		p_tdm->i2s2hdmitx = 0;

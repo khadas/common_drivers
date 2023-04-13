@@ -277,6 +277,7 @@ struct composer_dev {
 	u32 next_factor;
 	u32 last_drop_cnt;
 	u64 output_duration;
+	u32 nn_mode_flag;
 };
 
 struct capability_info_t {

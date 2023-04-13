@@ -24,6 +24,10 @@
 #include <linux/amlogic/media/amvecm/amvecm.h>
 #include "video_reg_s5.h"
 
+#ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
+#define ENABLE_PRE_LINK
+#endif
+
 #define VIDEO_ENABLE_STATE_IDLE       0
 #define VIDEO_ENABLE_STATE_ON_REQ     1
 #define VIDEO_ENABLE_STATE_ON_PENDING 2
@@ -572,8 +576,10 @@ struct video_layer_s {
 	struct pip_alpha_scpxn_s alpha_win;
 	bool pre_link_en;
 	bool need_disable_prelink;
+	bool prelink_bypass_check;
 	bool mosaic_frame;
 	u8 prelink_skip_cnt;
+	s32 last_di_instance;
 	u32 slice_num;
 	u32 pi_enable;
 	u32 vd1s1_vd2_prebld_en;

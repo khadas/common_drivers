@@ -55,6 +55,7 @@
 #include <trace/events/meson_atrace.h>
 #ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
 #include <linux/amlogic/media/di/di.h>
+#include <linux/amlogic/media/di/di_interface.h>
 #endif
 #include "vpp_pq.h"
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
@@ -75,6 +76,7 @@
 /* local var */
 static u32 blend_conflict_cnt;
 static u32 stop_update;
+static u32 stop_force_dmc;
 
 /* 3d related */
 static unsigned int last_process_3d_type;
@@ -1403,7 +1405,9 @@ void primary_swap_frame(struct video_layer_s *layer,
 
 	vf = vf1;
 	layer_info = &glayer_info[0];
-	if (layer->need_switch_vf && IS_DI_POST(vf->type)) {
+#ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
+	if (layer->need_switch_vf && IS_DI_POST(vf->type) &&
+	    dil_get_diff_ver_flag() == DI_DRV_DEINTERLACE) {
 		if ((vf1->flag & VFRAME_FLAG_DOUBLE_FRAM) &&
 		    is_di_post_mode(vf1)) {
 #ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
@@ -1420,7 +1424,7 @@ void primary_swap_frame(struct video_layer_s *layer,
 			layer->need_switch_vf = false;
 		}
 	}
-
+#endif
 	if ((vf->flag & (VFRAME_FLAG_VIDEO_COMPOSER |
 	    VFRAME_FLAG_VIDEO_DRM)) &&
 	    !(vf->flag & VFRAME_FLAG_FAKE_FRAME) &&
@@ -1633,6 +1637,10 @@ s32 primary_render_frame(struct video_layer_s *layer,
 			di_in_p.dmode = EPVPP_DISPLAY_MODE_NR;
 			di_in_p.unreg_bypass = 0;
 			iret = pvpp_display(dispbuf, &di_in_p, NULL);
+			if (iret <= 0) {
+				vd_layer[0].property_changed = true;
+				vd_layer[0].prelink_bypass_check = true;
+			}
 			if (layer->global_debug & DEBUG_FLAG_PRELINK_MORE)
 				pr_info("do di callback iret:%d\n", iret);
 		} else {
@@ -1651,6 +1659,7 @@ s32 primary_render_frame(struct video_layer_s *layer,
 		if (layer->global_debug & DEBUG_FLAG_PRELINK)
 			pr_info("%s: unreg_bypass pre-link mode ret %d\n", __func__, iret);
 		layer->pre_link_en = false;
+		layer->prelink_bypass_check = false;
 		layer->prelink_skip_cnt = 0;
 		iret = pvpp_sw(false);
 		if (layer->global_debug & DEBUG_FLAG_PRELINK)
@@ -2053,6 +2062,7 @@ int update_video_recycle_buffer(u8 path_index)
 	}
 	for (i = 0; i < DISPBUF_TO_PUT_MAX; i++)
 		if (dispbuf_to_put[j][i] &&
+		    (dispbuf_to_put[j][i]->flag & VFRAME_FLAG_DI_PW_VFM) &&
 		    IS_DI_POSTWRTIE(dispbuf_to_put[j][i]->type))
 			to_put_buf[put_cnt++] = dispbuf_to_put[j][i];
 #endif
@@ -2061,7 +2071,8 @@ int update_video_recycle_buffer(u8 path_index)
 		rdma_buf = cur_dispbuf[j];
 
 	if (rdma_buf &&
-	    !IS_DI_POSTWRTIE(rdma_buf->type))
+	    (!(rdma_buf->flag & VFRAME_FLAG_DI_PW_VFM) ||
+	     !IS_DI_POSTWRTIE(rdma_buf->type)))
 		rdma_buf = NULL;
 
 	if (recycle_cnt[j] &&
@@ -2761,21 +2772,16 @@ static int video_early_proc(u8 layer_id, u8 fake_layer_id)
 		func_id = vd_layer[layer_id].func_path_id;
 	switch (func_id) {
 	case AMVIDEO:
-		amvideo_early_proc(AMVIDEO);
-		break;
+		return amvideo_early_proc(AMVIDEO);
 	case PIP1:
 	case PIP2:
 		path_index = func_id - AMVIDEO;
-		if (path_index < MAX_VD_LAYER)
-			pipx_early_proc(path_index);
-		break;
+		return pipx_early_proc(path_index);
 	case RENDER0:
 	case RENDER1:
 	case RENDER2:
 		path_index = func_id - RENDER0;
-		if (path_index < MAX_VD_LAYER)
-			recvx_early_proc(path_index);
-		break;
+		return recvx_early_proc(path_index);
 	default:
 		break;
 	}
@@ -3141,12 +3147,19 @@ static struct vframe_s *vdx_swap_frame(u8 layer_id,
 	}
 
 	if (vd_layer[layer_id].switch_vf &&
-	    vd_layer[layer_id].dispbuf &&
-	    vd_layer[layer_id].dispbuf->vf_ext)
-		vd_layer[layer_id].vf_ext =
-			(struct vframe_s *)vd_layer[layer_id].dispbuf->vf_ext;
-	else
+		vd_layer[layer_id].dispbuf &&
+		(vd_layer[layer_id].dispbuf->vf_ext ||
+		 vd_layer[layer_id].dispbuf->uvm_vf)) {
+		/* select uvm_vf first */
+		if (vd_layer[layer_id].dispbuf->uvm_vf)
+			vd_layer[layer_id].vf_ext =
+				vd_layer[layer_id].dispbuf->uvm_vf;
+		else
+			vd_layer[layer_id].vf_ext =
+				(struct vframe_s *)vd_layer[layer_id].dispbuf->vf_ext;
+	} else {
 		vd_layer[layer_id].vf_ext = NULL;
+	}
 
 	/* vdx config */
 	if (gvideo_recv[0] &&
@@ -4753,8 +4766,8 @@ void release_di_buffer(int inst)
 
 	for (i = 0; i < recycle_cnt[inst]; i++) {
 		if (recycle_buf[inst][i] &&
-		    IS_DI_POSTWRTIE(recycle_buf[inst][i]->type) &&
-		    (recycle_buf[inst][i]->flag & VFRAME_FLAG_DI_PW_VFM)) {
+		    recycle_buf[inst][i]->flag & VFRAME_FLAG_DI_PW_VFM &&
+		    IS_DI_POSTWRTIE(recycle_buf[inst][i]->type)) {
 			di_release_count++;
 #ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
 			dim_post_keep_cmd_release2(recycle_buf[inst][i]);
@@ -4881,7 +4894,9 @@ struct vframe_s *get_dispbuf(u8 layer_id)
 	}
 
 	layer = get_layer_by_layer_id(layer_id);
-	if (layer && layer->switch_vf && layer->vf_ext)
+	if (layer && dispbuf &&
+	    !is_local_vf(dispbuf) &&
+	    layer->switch_vf && layer->vf_ext)
 		dispbuf = layer->vf_ext;
 	return dispbuf;
 }
@@ -4928,17 +4943,71 @@ static void pipx_vf_unreg_provider(u8 path_index)
 	if (cur_dispbuf[path_index]) {
 		if (cur_dispbuf[path_index]->vf_ext &&
 		    IS_DI_POSTWRTIE(cur_dispbuf[path_index]->type)) {
-			struct vframe_s *tmp =
-				(struct vframe_s *)cur_dispbuf[path_index]->vf_ext;
+			struct vframe_s *tmp;
 
+			if (cur_dispbuf[path_index]->uvm_vf)
+				tmp = cur_dispbuf[path_index]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[path_index]->vf_ext;
 			memcpy(&tmp->pic_mode, &cur_dispbuf[path_index]->pic_mode,
 				sizeof(struct vframe_pic_mode_s));
 			vf_local_ext[path_index] = *tmp;
 			vf_local[path_index] = *cur_dispbuf[path_index];
 			vf_local[path_index].vf_ext = (void *)&vf_local_ext[path_index];
+			vf_local[path_index].uvm_vf = NULL;
 			vf_local_ext[path_index].ratio_control = vf_local[path_index].ratio_control;
+		} else if (cur_dispbuf[path_index]->vf_ext &&
+			is_pre_link_source(cur_dispbuf[path_index])) {
+			u32 tmp_rc;
+			struct vframe_s *tmp;
+
+			if (cur_dispbuf[path_index]->uvm_vf)
+				tmp = cur_dispbuf[path_index]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[path_index]->vf_ext;
+			if (debug_flag & DEBUG_FLAG_PRELINK)
+				pr_info("%s %d: prelink: cur_dispbuf:%px vf_ext:%px uvm_vf:%px flag:%x\n",
+					__func__, path_index,
+					cur_dispbuf[path_index],
+					cur_dispbuf[path_index]->vf_ext,
+					cur_dispbuf[path_index]->uvm_vf,
+					cur_dispbuf[path_index]->flag);
+			tmp_rc = cur_dispbuf[path_index]->ratio_control;
+			memcpy(&tmp->pic_mode, &cur_dispbuf[path_index]->pic_mode,
+				sizeof(struct vframe_pic_mode_s));
+			vf_local[path_index] = *tmp;
+			vf_local[path_index].ratio_control = tmp_rc;
+			vf_local[path_index].vf_ext = NULL;
+			vf_local[path_index].uvm_vf = NULL;
+		} else if (IS_DI_POST(cur_dispbuf[path_index]->type) &&
+			(cur_dispbuf[path_index]->vf_ext || cur_dispbuf[path_index]->uvm_vf)) {
+			u32 tmp_rc;
+			struct vframe_s *tmp;
+
+			if (cur_dispbuf[path_index]->uvm_vf)
+				tmp = cur_dispbuf[path_index]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[path_index]->vf_ext;
+			if (debug_flag & DEBUG_FLAG_PRELINK)
+				pr_info("%s %d: pre/post link: cur_dispbuf:%px vf_ext:%px uvm_vf:%px flag:%x\n",
+					__func__, path_index,
+					cur_dispbuf[path_index],
+					cur_dispbuf[path_index]->vf_ext,
+					cur_dispbuf[path_index]->uvm_vf,
+					cur_dispbuf[path_index]->flag);
+			tmp_rc = cur_dispbuf[path_index]->ratio_control;
+			memcpy(&tmp->pic_mode, &cur_dispbuf[path_index]->pic_mode,
+				sizeof(struct vframe_pic_mode_s));
+			vf_local[path_index] = *tmp;
+			vf_local[path_index].ratio_control = tmp_rc;
+			vf_local[path_index].vf_ext = NULL;
+			vf_local[path_index].uvm_vf = NULL;
+
 		} else {
 			vf_local[path_index] = *cur_dispbuf[path_index];
+			vf_local[path_index].vf_ext = NULL;
+			vf_local[path_index].uvm_vf = NULL;
+
 		}
 		cur_dispbuf[path_index] = &vf_local[path_index];
 		cur_dispbuf[path_index]->video_angle = 0;
@@ -5052,18 +5121,71 @@ static void pipx_vf_light_unreg_provider(u8 path_index, int need_keep_frame)
 	if (cur_dispbuf[path_index]) {
 		if (cur_dispbuf[path_index]->vf_ext &&
 		    IS_DI_POSTWRTIE(cur_dispbuf[path_index]->type)) {
-			struct vframe_s *tmp =
-				(struct vframe_s *)cur_dispbuf[path_index]->vf_ext;
+			struct vframe_s *tmp;
 
+			if (cur_dispbuf[path_index]->uvm_vf)
+				tmp = cur_dispbuf[path_index]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[path_index]->vf_ext;
 			memcpy(&tmp->pic_mode, &cur_dispbuf[path_index]->pic_mode,
 				sizeof(struct vframe_pic_mode_s));
 			vf_local_ext[path_index] = *tmp;
 			vf_local[path_index] = *cur_dispbuf[path_index];
-			vf_local[path_index] .vf_ext = (void *)&vf_local_ext[path_index];
-			vf_local_ext[path_index].ratio_control =
-				vf_local[path_index] .ratio_control;
+			vf_local[path_index].vf_ext = (void *)&vf_local_ext[path_index];
+			vf_local[path_index].uvm_vf = NULL;
+			vf_local_ext[path_index].ratio_control = vf_local[path_index].ratio_control;
+		} else if (cur_dispbuf[path_index]->vf_ext &&
+			is_pre_link_source(cur_dispbuf[path_index])) {
+			u32 tmp_rc;
+			struct vframe_s *tmp;
+
+			if (cur_dispbuf[path_index]->uvm_vf)
+				tmp = cur_dispbuf[path_index]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[path_index]->vf_ext;
+			if (debug_flag & DEBUG_FLAG_PRELINK)
+				pr_info("%s %d: prelink: cur_dispbuf:%px vf_ext:%px uvm_vf:%px flag:%x\n",
+					__func__, path_index,
+					cur_dispbuf[path_index],
+					cur_dispbuf[path_index]->vf_ext,
+					cur_dispbuf[path_index]->uvm_vf,
+					cur_dispbuf[path_index]->flag);
+			tmp_rc = cur_dispbuf[path_index]->ratio_control;
+			memcpy(&tmp->pic_mode, &cur_dispbuf[path_index]->pic_mode,
+				sizeof(struct vframe_pic_mode_s));
+			vf_local[path_index] = *tmp;
+			vf_local[path_index].ratio_control = tmp_rc;
+			vf_local[path_index].vf_ext = NULL;
+			vf_local[path_index].uvm_vf = NULL;
+		} else if (IS_DI_POST(cur_dispbuf[path_index]->type) &&
+			(cur_dispbuf[path_index]->vf_ext || cur_dispbuf[path_index]->uvm_vf)) {
+			u32 tmp_rc;
+			struct vframe_s *tmp;
+
+			if (cur_dispbuf[path_index]->uvm_vf)
+				tmp = cur_dispbuf[path_index]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[path_index]->vf_ext;
+			if (debug_flag & DEBUG_FLAG_PRELINK)
+				pr_info("%s %d: pre/post link: cur_dispbuf:%px vf_ext:%px uvm_vf:%px flag:%x\n",
+					__func__, path_index,
+					cur_dispbuf[path_index],
+					cur_dispbuf[path_index]->vf_ext,
+					cur_dispbuf[path_index]->uvm_vf,
+					cur_dispbuf[path_index]->flag);
+			tmp_rc = cur_dispbuf[path_index]->ratio_control;
+			memcpy(&tmp->pic_mode, &cur_dispbuf[path_index]->pic_mode,
+				sizeof(struct vframe_pic_mode_s));
+			vf_local[path_index] = *tmp;
+			vf_local[path_index].ratio_control = tmp_rc;
+			vf_local[path_index].vf_ext = NULL;
+			vf_local[path_index].uvm_vf = NULL;
+
 		} else {
-			vf_local[path_index]  = *cur_dispbuf[path_index];
+			vf_local[path_index] = *cur_dispbuf[path_index];
+			vf_local[path_index].vf_ext = NULL;
+			vf_local[path_index].uvm_vf = NULL;
+
 		}
 		cur_dispbuf[path_index] = &vf_local[path_index];
 	}
@@ -5255,6 +5377,68 @@ void di_prelink_state_changed_notify(void)
 	vd_layer[0].property_changed = true;
 }
 EXPORT_SYMBOL(di_prelink_state_changed_notify);
+
+void di_prelink_force_dmc_priority(bool urgent, bool wait)
+{
+#define DI_READ_DMC_AM1_CHAN_CTRL 0x0064
+#define DI_WRTIE_DMC_AM4_CHAN_CTRL 0x0070
+
+	bool valid = false;
+
+	if (stop_force_dmc)
+		return;
+
+	/* check priority adjustment function valid or not */
+	if (!legacy_vpp) {
+		if (cur_dev->display_module == OLD_DISPLAY_MODULE ||
+			video_is_meson_t5w_cpu())
+			valid = true;
+	}
+	if (!legacy_vpp) {
+		u32 sleep_time = 40;
+
+		if (!valid)
+			wait = false;
+
+		while (atomic_read(&video_inirq_flag) > 0 && wait)
+			schedule();
+
+		if (vinfo && wait) {
+			sleep_time = vinfo->sync_duration_den * 1000;
+			if (vinfo->sync_duration_num) {
+				sleep_time /= vinfo->sync_duration_num;
+				/* need two vsync */
+				sleep_time = (sleep_time + 1) * 2;
+			} else {
+				sleep_time = 40;
+			}
+		}
+		if (wait)
+			msleep(sleep_time);
+		else
+			sleep_time = 0;
+
+		if (cur_dev->display_module == OLD_DISPLAY_MODULE ||
+			video_is_meson_t5w_cpu()) {
+			WRITE_DMCREG
+				(DI_READ_DMC_AM1_CHAN_CTRL,
+				 urgent ? 0xCFF403C4 : 0xCFF203C4);
+			WRITE_DMCREG
+				(DI_READ_DMC_AM1_CHAN_CTRL,
+				 urgent ? 0xCFF403C4 : 0xCFF203C4);
+			if (debug_flag & DEBUG_FLAG_PRELINK)
+				pr_info("%s: port:0x%x 0x%x to 0x%x (%s) wait:%s time %dms\n",
+					__func__,
+					DI_READ_DMC_AM1_CHAN_CTRL,
+					DI_WRTIE_DMC_AM4_CHAN_CTRL,
+					urgent ? 0xCFF403C4 : 0xCFF203C4,
+					urgent ? "super urgent" : "not urgent",
+					wait ? "true" : "false",
+					sleep_time);
+		}
+	}
+}
+EXPORT_SYMBOL(di_prelink_force_dmc_priority);
 
 u32 get_playback_delay_duration(void)
 {
@@ -5534,4 +5718,7 @@ module_param(stop_update, uint, 0664);
 
 MODULE_PARM_DESC(pre_vsync_count, "\n pre_vsync_count\n");
 module_param(pre_vsync_count, uint, 0664);
+
+MODULE_PARM_DESC(stop_force_dmc, "\n stop_force_dmc\n");
+module_param(stop_force_dmc, uint, 0664);
 

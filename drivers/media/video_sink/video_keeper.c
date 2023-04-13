@@ -1130,7 +1130,8 @@ unsigned int vf_keep_current_locked(u8 layer_id,
 
 	if (IS_DI_PROCESSED(cur_buf->type)) {
 		ret = 2;
-		if (cur_buf->flag & VFRAME_FLAG_DOUBLE_FRAM) {
+		if (cur_buf->vf_ext &&
+		    (cur_buf->flag & VFRAME_FLAG_DOUBLE_FRAM)) {
 			ret = video_keeper_frame_keep_locked
 				(layer_id, (struct vframe_s *)cur_buf->vf_ext,
 				cur_buf_el);

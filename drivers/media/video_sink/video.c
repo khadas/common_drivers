@@ -1053,34 +1053,63 @@ static void video_vf_unreg_provider(void)
 	if (cur_dispbuf[0]) {
 		if (cur_dispbuf[0]->vf_ext &&
 		    IS_DI_POSTWRTIE(cur_dispbuf[0]->type)) {
-			struct vframe_s *tmp =
-				(struct vframe_s *)cur_dispbuf[0]->vf_ext;
+			struct vframe_s *tmp;
 
+			if (cur_dispbuf[0]->uvm_vf)
+				tmp = cur_dispbuf[0]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[0]->vf_ext;
 			memcpy(&tmp->pic_mode, &cur_dispbuf[0]->pic_mode,
 				sizeof(struct vframe_pic_mode_s));
 			vf_local_ext[0] = *tmp;
 			vf_local[0] = *cur_dispbuf[0];
 			vf_local[0].vf_ext = (void *)&vf_local_ext[0];
+			vf_local[0].uvm_vf = NULL;
 			vf_local_ext[0].ratio_control = vf_local[0].ratio_control;
 		} else if (cur_dispbuf[0]->vf_ext &&
 			is_pre_link_source(cur_dispbuf[0])) {
 			u32 tmp_rc;
-			struct vframe_s *tmp =
-				(struct vframe_s *)cur_dispbuf[0]->vf_ext;
+			struct vframe_s *tmp;
 
+			if (cur_dispbuf[0]->uvm_vf)
+				tmp = cur_dispbuf[0]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[0]->vf_ext;
 			if (debug_flag & DEBUG_FLAG_PRELINK)
-				pr_info("video_unreg: prelink: cur_dispbuf:%p, vf->ext:%p, flag:%x\n",
+				pr_info("video_unreg: prelink: cur_dispbuf:%px vf_ext:%px uvm_vf:%px flag:%x\n",
 					cur_dispbuf[0], cur_dispbuf[0]->vf_ext,
-					cur_dispbuf[0]->flag);
+					cur_dispbuf[0]->uvm_vf, cur_dispbuf[0]->flag);
 			tmp_rc = cur_dispbuf[0]->ratio_control;
 			memcpy(&tmp->pic_mode, &cur_dispbuf[0]->pic_mode,
 				sizeof(struct vframe_pic_mode_s));
 			vf_local[0] = *tmp;
 			vf_local[0].ratio_control = tmp_rc;
 			vf_local[0].vf_ext = NULL;
+			vf_local[0].uvm_vf = NULL;
+		} else if (IS_DI_POST(cur_dispbuf[0]->type) &&
+			(cur_dispbuf[0]->vf_ext || cur_dispbuf[0]->uvm_vf)) {
+			u32 tmp_rc;
+			struct vframe_s *tmp;
+
+			if (cur_dispbuf[0]->uvm_vf)
+				tmp = cur_dispbuf[0]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[0]->vf_ext;
+			if (debug_flag & DEBUG_FLAG_PRELINK)
+				pr_info("video_unreg: pre/post link: cur_dispbuf:%px vf_ext:%px uvm_vf:%px flag:%x\n",
+					cur_dispbuf[0], cur_dispbuf[0]->vf_ext,
+					cur_dispbuf[0]->uvm_vf, cur_dispbuf[0]->flag);
+			tmp_rc = cur_dispbuf[0]->ratio_control;
+			memcpy(&tmp->pic_mode, &cur_dispbuf[0]->pic_mode,
+				sizeof(struct vframe_pic_mode_s));
+			vf_local[0] = *tmp;
+			vf_local[0].ratio_control = tmp_rc;
+			vf_local[0].vf_ext = NULL;
+			vf_local[0].uvm_vf = NULL;
 		} else {
 			vf_local[0] = *cur_dispbuf[0];
 			vf_local[0].vf_ext = NULL;
+			vf_local[0].uvm_vf = NULL;
 		}
 		cur_dispbuf[0] = &vf_local[0];
 		cur_dispbuf[0]->video_angle = 0;
@@ -1283,35 +1312,65 @@ static void video_vf_light_unreg_provider(int need_keep_frame)
 	if (cur_dispbuf[0]) {
 		if (cur_dispbuf[0]->vf_ext &&
 		    IS_DI_POSTWRTIE(cur_dispbuf[0]->type)) {
-			struct vframe_s *tmp =
-				(struct vframe_s *)cur_dispbuf[0]->vf_ext;
+			struct vframe_s *tmp;
 
+			if (cur_dispbuf[0]->uvm_vf)
+				tmp = cur_dispbuf[0]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[0]->vf_ext;
 			memcpy(&tmp->pic_mode, &cur_dispbuf[0]->pic_mode,
 				sizeof(struct vframe_pic_mode_s));
 			vf_local_ext[0] = *tmp;
 			vf_local[0] = *cur_dispbuf[0];
 			vf_local[0].vf_ext = (void *)&vf_local_ext[0];
+			vf_local[0].uvm_vf = NULL;
 			vf_local_ext[0].ratio_control = vf_local[0].ratio_control;
 		} else if (cur_dispbuf[0]->vf_ext &&
 			is_pre_link_source(cur_dispbuf[0])) {
 			u32 tmp_rc;
-			struct vframe_s *tmp =
-				(struct vframe_s *)cur_dispbuf[0]->vf_ext;
+			struct vframe_s *tmp;
 
+			if (cur_dispbuf[0]->uvm_vf)
+				tmp = cur_dispbuf[0]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[0]->vf_ext;
 			if (debug_flag & DEBUG_FLAG_PRELINK)
-				pr_info("%s: prelink: cur_dispbuf:%p, vf->ext:%p, flag:%x\n",
+				pr_info("%s: prelink: cur_dispbuf:%px vf_ext:%px uvm_vf:%px flag:%x\n",
 					__func__,
 					cur_dispbuf[0], cur_dispbuf[0]->vf_ext,
-					cur_dispbuf[0]->flag);
+					cur_dispbuf[0]->uvm_vf, cur_dispbuf[0]->flag);
 			tmp_rc = cur_dispbuf[0]->ratio_control;
 			memcpy(&tmp->pic_mode, &cur_dispbuf[0]->pic_mode,
 				sizeof(struct vframe_pic_mode_s));
 			vf_local[0] = *tmp;
 			vf_local[0].ratio_control = tmp_rc;
 			vf_local[0].vf_ext = NULL;
+			vf_local[0].uvm_vf = NULL;
+		} else if (IS_DI_POST(cur_dispbuf[0]->type) &&
+			(cur_dispbuf[0]->vf_ext || cur_dispbuf[0]->uvm_vf)) {
+			u32 tmp_rc;
+			struct vframe_s *tmp;
+
+			if (cur_dispbuf[0]->uvm_vf)
+				tmp = cur_dispbuf[0]->uvm_vf;
+			else
+				tmp = (struct vframe_s *)cur_dispbuf[0]->vf_ext;
+			if (debug_flag & DEBUG_FLAG_PRELINK)
+				pr_info("%s: pre/post link: cur_dispbuf:%px vf_ext:%px uvm_vf:%px flag:%x\n",
+					__func__,
+					cur_dispbuf[0], cur_dispbuf[0]->vf_ext,
+					cur_dispbuf[0]->uvm_vf, cur_dispbuf[0]->flag);
+			tmp_rc = cur_dispbuf[0]->ratio_control;
+			memcpy(&tmp->pic_mode, &cur_dispbuf[0]->pic_mode,
+				sizeof(struct vframe_pic_mode_s));
+			vf_local[0] = *tmp;
+			vf_local[0].ratio_control = tmp_rc;
+			vf_local[0].vf_ext = NULL;
+			vf_local[0].uvm_vf = NULL;
 		} else {
 			vf_local[0] = *cur_dispbuf[0];
 			vf_local[0].vf_ext = NULL;
+			vf_local[0].uvm_vf = NULL;
 		}
 		cur_dispbuf[0] = &vf_local[0];
 	}
@@ -8359,6 +8418,10 @@ static ssize_t vframe_states_show(struct class *cla,
 				ret += sprintf(buf + ret,
 					"vf_ext=%p\n",
 					vf->vf_ext);
+			if (vf->uvm_vf)
+				ret += sprintf(buf + ret,
+					"uvm_vf=%p\n",
+					vf->uvm_vf);
 		}
 		spin_unlock_irqrestore(&lock, flags);
 
@@ -8418,6 +8481,10 @@ static ssize_t vframe_states_show(struct class *cla,
 				ret += sprintf(buf + ret,
 					"vf_ext=%p\n",
 					vf->vf_ext);
+			if (vf->uvm_vf)
+				ret += sprintf(buf + ret,
+					"uvm_vf=%p\n",
+					vf->uvm_vf);
 		} else {
 			ret += sprintf(buf + ret, "vframe no states\n");
 		}

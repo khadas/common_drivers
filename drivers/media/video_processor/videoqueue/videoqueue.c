@@ -706,8 +706,10 @@ static int do_file_thread(struct video_queue_dev *dev)
 			if (vf->type & VIDTYPE_DI_PW)
 				dim_post_keep_cmd_release2(vf);
 		}
+		mutex_lock(&dev->mutex_file);
 		if (!kfifo_put(&dev->file_q, ready_file))
 			pr_err("queue error but file_q is full\n");
+		mutex_unlock(&dev->mutex_file);
 		return -1;
 	}
 
@@ -846,8 +848,10 @@ static void do_fence_thread(struct video_queue_dev *dev)
 	} else {
 		pr_err("private_data null");
 	}
+	mutex_lock(&dev->mutex_file);
 	if (!kfifo_put(&dev->file_q, free_file))
 		pr_err("queue error but file_q is full\n");
+	mutex_unlock(&dev->mutex_file);
 }
 
 static int vq_file_thread(void *data)

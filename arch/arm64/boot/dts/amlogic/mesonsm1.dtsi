@@ -212,6 +212,11 @@
 		reserve_mem_size = <0x00300000>;
 	};
 
+	optee {
+		compatible = "linaro,optee-tz";
+		method = "smc";
+	};
+
 	dolby_fw: dolby_fw {
 		compatible = "amlogic, dolby_fw";
 		mem_size = <0x100000>;

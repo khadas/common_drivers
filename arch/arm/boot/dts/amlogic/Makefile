@@ -26,3 +26,6 @@ dtb-y += s4d_s805c3_t215_256m.dtb
 dtb-y += t5w_t962d4_at301.dtb
 dtb-y += t5w_t962d4_at301_1g.dtb
 dtb-y += t5w_t962d4_at301_1.5g.dtb
+dtb-y += t5w_t962d4_at301_R.dtb
+dtb-y += t5w_t962d4_at301_1g_R.dtb
+dtb-y += t5w_t962d4_at301_1.5g_R.dtb

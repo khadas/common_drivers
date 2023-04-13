@@ -129,6 +129,9 @@ fi
 
 if [[ ${IN_BUILD_GKI_10} == 1 ]]; then
 	EXT_MODULES=
+	BUILD_BOOT_IMG=
+	BUILD_VENDOR_BOOT_IMG=
+	BUILD_VENDOR_KERNEL_BOOT=
 else
 	POST_KERNEL_BUILD_CMDS="prepare_module_build"
 	EXTRA_CMDS="extra_cmds"

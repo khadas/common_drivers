@@ -1986,3 +1986,144 @@ void frc_set_seamless_proc(u32 seamless)
 
 	pr_frc(2, "seamless is %d.\n", seamless);
 }
+
+/* Test whether demo window works properly for t3x
+ * input: dome window num (1/2/3/4)
+ * output: number of demo window
+ */
+void set_frc_demo_window(u8 demo_num)
+{
+	u32 tmpstart, tmpend;
+	static u8 demo_style;
+	struct frc_dev_s *devp = get_frc_devp();
+	struct frc_fw_data_s *pfw_data;
+
+	if (!devp)
+		return;
+	if (!devp->probe_ok)
+		return;
+	if (!devp->fw_data)
+		return;
+	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
+
+	if (get_chip_type() == ID_T3X) {
+		if (demo_num == 0) {
+			WRITE_FRC_BITS(FRC_MC_DEMO_WINDOW, 0, 0, 5);
+			WRITE_FRC_BITS(FRC_REG_MC_DEBUG1, 0, 17, 4);
+			demo_style = 0;
+		} else if (demo_num == 1) {
+			if (!demo_style) {
+				tmpstart = (pfw_data->frc_top_type.hsize / 2) << 16;
+				tmpend = (pfw_data->frc_top_type.hsize) << 16 |
+					pfw_data->frc_top_type.vsize;
+			} else if (demo_style == 1) {
+				tmpstart = 0;
+				tmpend = (pfw_data->frc_top_type.hsize / 2) << 16 |
+					pfw_data->frc_top_type.vsize;
+			} else {
+				tmpstart = (pfw_data->frc_top_type.hsize / 4) << 16 |
+					pfw_data->frc_top_type.vsize / 4;
+				tmpend = (pfw_data->frc_top_type.hsize / 4) * 3 << 16 |
+					pfw_data->frc_top_type.vsize / 4 * 3;
+			}
+			demo_style++;
+			if (demo_style > 2)
+				demo_style = 0;
+			// set demo window-1 position
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW1_XYXY_ST, tmpstart);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW1_XYXY_ED, tmpend);
+			// enable demo window1
+			WRITE_FRC_BITS(FRC_REG_MC_DEBUG1, 0x1, 17, 1);
+			WRITE_FRC_BITS(FRC_MC_DEMO_WINDOW, 0x1, 3, 1);
+		} else if (demo_num == 2) {
+			if (!demo_style) {
+				tmpstart = 0;
+				tmpend = (pfw_data->frc_top_type.hsize / 2) << 16 |
+					pfw_data->frc_top_type.vsize / 2;
+			} else {
+				tmpstart = (pfw_data->frc_top_type.hsize / 2) << 16;
+				tmpend = (pfw_data->frc_top_type.hsize) << 16 |
+					pfw_data->frc_top_type.vsize / 2;
+			}
+			// set demo window position
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW1_XYXY_ST, tmpstart);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW1_XYXY_ED, tmpend);
+			if (!demo_style) {
+				tmpstart = (pfw_data->frc_top_type.hsize / 2) << 16 |
+					pfw_data->frc_top_type.vsize / 2;
+				tmpend = pfw_data->frc_top_type.hsize << 16 |
+					pfw_data->frc_top_type.vsize;
+			} else {
+				tmpstart = pfw_data->frc_top_type.vsize / 2;
+				tmpend = (pfw_data->frc_top_type.hsize / 2) << 16 |
+					pfw_data->frc_top_type.vsize;
+			}
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW2_XYXY_ST, tmpstart);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW2_XYXY_ED, tmpend);
+
+			demo_style++;
+			if (demo_style > 1)
+				demo_style = 0;
+			// enable demo window
+			WRITE_FRC_BITS(FRC_REG_MC_DEBUG1, 0x3, 17, 2);
+			WRITE_FRC_BITS(FRC_MC_DEMO_WINDOW, 0x3, 2, 2);
+		} else if (demo_num == 3) {
+			tmpstart = 0;
+			tmpend = (pfw_data->frc_top_type.hsize / 10) * 3 << 16 |
+				pfw_data->frc_top_type.vsize;
+			// set demo window1 position
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW1_XYXY_ST, tmpstart);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW1_XYXY_ED, tmpend);
+			tmpstart = (pfw_data->frc_top_type.hsize / 10) * 3 << 16;
+			tmpend = (pfw_data->frc_top_type.hsize / 10) * 7 << 16 |
+				pfw_data->frc_top_type.vsize;
+			// set demo window2 position
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW2_XYXY_ST, tmpstart);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW2_XYXY_ED, tmpend);
+			tmpstart = (pfw_data->frc_top_type.hsize / 10) * 7 << 16;
+			tmpend = (pfw_data->frc_top_type.hsize) << 16 |
+				pfw_data->frc_top_type.vsize;
+			// set demo window3 position
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW3_XYXY_ST, tmpstart);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW3_XYXY_ED, tmpend);
+
+			// enable demo window
+			WRITE_FRC_BITS(FRC_REG_MC_DEBUG1, 0x7, 17, 3);
+			WRITE_FRC_BITS(FRC_MC_DEMO_WINDOW, 0x7, 1, 3);
+		} else if (demo_num == 4) {
+			tmpstart = (pfw_data->frc_top_type.hsize / 10) << 16 |
+				pfw_data->frc_top_type.vsize / 10;
+			tmpend = (pfw_data->frc_top_type.hsize / 10) * 4 << 16 |
+				(pfw_data->frc_top_type.vsize / 10) * 4;
+			// set demo window1 position
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW1_XYXY_ST, tmpstart);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW1_XYXY_ED, tmpend);
+			tmpstart = (pfw_data->frc_top_type.hsize / 10) * 6 << 16 |
+				(pfw_data->frc_top_type.vsize / 10);
+			tmpend = (pfw_data->frc_top_type.hsize / 10) * 9 << 16 |
+				(pfw_data->frc_top_type.vsize / 10) * 4;
+			// set demo window2 position
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW2_XYXY_ST, tmpstart);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW2_XYXY_ED, tmpend);
+
+			tmpstart = (pfw_data->frc_top_type.hsize / 10) << 16 |
+				(pfw_data->frc_top_type.vsize / 10) * 6;
+			tmpend = (pfw_data->frc_top_type.hsize / 10) * 4 << 16 |
+				(pfw_data->frc_top_type.vsize / 10) * 9;
+			// set demo window3 position
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW3_XYXY_ST, tmpstart);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW3_XYXY_ED, tmpend);
+			tmpstart = (pfw_data->frc_top_type.hsize / 10) * 6 << 16 |
+				(pfw_data->frc_top_type.vsize / 10) * 6;
+			tmpend = (pfw_data->frc_top_type.hsize / 10) * 9 << 16 |
+				(pfw_data->frc_top_type.vsize / 10) * 9;
+			// set demo window4 position
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW4_XYXY_ST, tmpstart);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW4_XYXY_ED, tmpend);
+
+			// enable demo window
+			WRITE_FRC_BITS(FRC_REG_MC_DEBUG1, 0xf, 17, 4);
+			WRITE_FRC_BITS(FRC_MC_DEMO_WINDOW, 0xf, 0, 4);
+		}
+	}
+}

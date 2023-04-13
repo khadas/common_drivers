@@ -224,10 +224,10 @@ void frc_osdbit_setfalsecolor(struct frc_dev_s *devp, u32 falsecolor)
 		regdata_logodbg_0142 = READ_FRC_REG(FRC_LOGO_DEBUG);
 		if (falsecolor == 1) {
 			tmp_reg1 |= (BIT_8 + BIT_7);
-			regdata_logodbg_0142 |= BIT_6;
+			regdata_logodbg_0142 |= BIT_19;
 		} else {
 			tmp_reg1 &= ~(BIT_8 + BIT_7);
-			regdata_logodbg_0142 &= ~BIT_6;
+			regdata_logodbg_0142 &= ~BIT_19;
 		}
 		WRITE_FRC_REG_BY_CPU(FRC_MC_LBUF_LOGO_CTRL, tmp_reg1);
 		WRITE_FRC_REG_BY_CPU(FRC_LOGO_DEBUG, regdata_logodbg_0142);

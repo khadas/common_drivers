@@ -69,5 +69,6 @@ void frc_check_secure_mode(struct vframe_s *vf, struct frc_dev_s *devp);
 void frc_input_size_align_check(struct frc_dev_s *devp);
 int get_chip_type(void);
 void frc_set_seamless_proc(u32 seamless);
+void set_frc_demo_window(u8 demo_num);
 
 #endif

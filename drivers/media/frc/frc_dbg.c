@@ -456,6 +456,12 @@ void frc_debug_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			frc_memc_set_demo((u8)val1);
+	} else if (!strcmp(parm[0], "demo_win")) {
+		/*Test whether demo window works properly for t3x*/
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			set_frc_demo_window((u8)val1);
 	} else if (!strcmp(parm[0], "out_line")) {
 		if (!parm[1])
 			goto exit;

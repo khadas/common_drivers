@@ -136,6 +136,8 @@ struct vd_proc_sr_slice_reg_s {
 	u32 srsharp1_sharp_sr2_ctrl;
 	u32 srsharp0_sharp_sr2_ctrl2;
 	u32 srsharp1_sharp_sr2_ctrl2;
+	u32 srsharp0_sharp_sync_ctrl;
+	u32 srsharp1_sharp_sync_ctrl;
 };
 
 struct vd_proc_sr_reg_s {

@@ -505,6 +505,14 @@ static void dump_sr_reg(void)
 		reg_val = READ_VCBUS_REG(reg_addr);
 		pr_info("[0x%x] = 0x%X [srsharp1_sharp_sr2_ctrl]\n",
 		   reg_addr, reg_val);
+		reg_addr = vd_sr_slice_reg->srsharp0_sharp_sync_ctrl;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("[0x%x] = 0x%X [srsharp0_sharp_sync_ctrl]\n",
+		   reg_addr, reg_val);
+		reg_addr = vd_sr_slice_reg->srsharp1_sharp_sync_ctrl;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("[0x%x] = 0x%X [srsharp1_sharp_sync_ctrl]\n",
+		   reg_addr, reg_val);
 	}
 	reg_addr = vd_sr_reg->srsharp1_nn_post_top;
 	reg_val = READ_VCBUS_REG(reg_addr);
@@ -1718,16 +1726,21 @@ static inline void vd_proc_bypass_ve(u32 vpp_index,
 	u32 slice_index, bool bypass)
 {
 	rdma_wr_bits_op rdma_wr_bits = cur_dev->rdma_func[vpp_index].rdma_wr_bits;
+	struct vd_proc_misc_reg_s *vd_proc_misc_reg = NULL;
 
+	vd_proc_misc_reg = &vd_proc_reg.vd_proc_misc_reg;
 	if (bypass)
-		rdma_wr_bits(VD_PROC_BYPASS_CTRL, bypass, 1 + slice_index, 1);
+		rdma_wr_bits(vd_proc_misc_reg->vd_proc_bypass_ctrl,
+			bypass, 1 + slice_index, 1);
 }
 
 static inline void vd_proc_bypass_preblend(u32 vpp_index,
 	struct vd_proc_s *vd_proc)
 {
 	rdma_wr_bits_op rdma_wr_bits = cur_dev->rdma_func[vpp_index].rdma_wr_bits;
+	struct vd_proc_misc_reg_s *vd_proc_misc_reg = NULL;
 
+	vd_proc_misc_reg = &vd_proc_reg.vd_proc_misc_reg;
 	/* Bit 5: reg_bypass_prebld1 0:use vd prebld 1:bypass vd prebld */
 	/* Bit 0: reg_bypass_prebld0 0:use vd prebld 1:bypass vd prebld */
 	if (debug_flag_s5 & DEBUG_VD_PROC)
@@ -1736,9 +1749,9 @@ static inline void vd_proc_bypass_preblend(u32 vpp_index,
 			vd_proc->vd_proc_unit[0].reg_bypass_prebld,
 			vd_proc->vd_proc_unit[1].reg_bypass_prebld);
 
-	rdma_wr_bits(VD_PROC_BYPASS_CTRL,
+	rdma_wr_bits(vd_proc_misc_reg->vd_proc_bypass_ctrl,
 		vd_proc->vd_proc_unit[0].reg_bypass_prebld, 0, 1);
-	rdma_wr_bits(VD_PROC_BYPASS_CTRL,
+	rdma_wr_bits(vd_proc_misc_reg->vd_proc_bypass_ctrl,
 		vd_proc->vd_proc_unit[1].reg_bypass_prebld, 5, 1);
 }
 
@@ -2780,6 +2793,24 @@ static void vd_preblend_param_set(struct vd_proc_s *vd_proc,
 	vd_proc_preblend->bld_din1_v_end =
 		vd_proc->vd_proc_unit[1].dout_y_start +
 		vd_proc->vd_proc_unit[1].dout_vsize - 1;
+	if (debug_flag_s5 & DEBUG_VD2_PROC) {
+		pr_info("%s: bld_din0_h_start=%d, bld_din0_h_end=%d, v: %d, %d\n",
+			__func__,
+			vd_proc_preblend->bld_din0_h_start,
+			vd_proc_preblend->bld_din0_h_end,
+			vd_proc_preblend->bld_din0_v_start,
+			vd_proc_preblend->bld_din0_v_end);
+		pr_info("%s: bld_din1_h_start=%d, bld_din1_h_end=%d, v: %d, %d\n",
+			__func__,
+			vd_proc_preblend->bld_din1_h_start,
+			vd_proc_preblend->bld_din1_h_end,
+			vd_proc_preblend->bld_din1_v_start,
+			vd_proc_preblend->bld_din1_v_end);
+		pr_info("%s: bld_out_w=%d, bld_out_h=%d\n",
+			__func__,
+			vd_proc_preblend->bld_out_w,
+			vd_proc_preblend->bld_out_h);
+	}
 }
 
 /* o_din_hsize: slice proc unit input hsize */
@@ -5487,6 +5518,9 @@ static void vd_proc_param_set(struct vd_proc_s *vd_proc, u32 frm_idx)
 			vd_proc->vd_proc_vd2_info.vd2_dout_hsize;
 		vd_proc->vd_proc_unit[1].dout_vsize =
 			vd_proc->vd_proc_vd2_info.vd2_dout_vsize;
+		/* for vd1s1_vd2_prebld not need calc vd2 x/y start */
+		vd_proc->vd_proc_unit[1].dout_x_start = 0;
+		vd_proc->vd_proc_unit[1].dout_y_start = 0;
 		vd_preblend_param_set(vd_proc,
 			&vd_proc->vd_proc_preblend,
 			vd_proc->vd_proc_unit[1].prebld_hsize,
@@ -11726,60 +11760,75 @@ static void save_vd_pps_reg(void)
 
 int video_hw_init_s5(void)
 {
+	struct vd_proc_misc_reg_s *vd_proc_misc_reg = NULL;
+	struct vpp_post_blend_reg_s *vpp_post_blend_reg = NULL;
+	struct vpp_post_misc_reg_s *vpp_post_misc_reg = NULL;
+	struct vd_proc_blend_reg_s *vd_proc_blend_reg = NULL;
+	struct vd2_pre_blend_reg_s *vd2_pre_blend_reg = NULL;
+	struct vd_proc_sr_reg_s *vd_proc_sr_reg = NULL;
+
+	vd_proc_misc_reg = &vd_proc_reg.vd_proc_misc_reg;
+	vpp_post_blend_reg = &vpp_post_reg.vpp_post_blend_reg;
+	vpp_post_misc_reg = &vpp_post_reg.vpp_post_misc_reg;
+	vd_proc_blend_reg = &vd_proc_reg.vd_proc_blend_reg;
+	vd2_pre_blend_reg = &vd_proc_reg.vd2_pre_blend_reg;
+	vd_proc_sr_reg = &vd_proc_reg.vd_proc_sr_reg;
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	void *video_secure_op[VPP_TOP_MAX] = {VSYNC_WR_MPEG_REG_BITS,
 					       VSYNC_WR_MPEG_REG_BITS_VPP1,
 					       VSYNC_WR_MPEG_REG_BITS_VPP2};
 #endif
+
 	WRITE_VCBUS_REG_BITS
-		(S5_VPP_OFIFO_SIZE, vpp_ofifo_size_s5,
+		(vpp_post_misc_reg->vpp_ofifo_size,
+		vpp_ofifo_size_s5,
 		VPP_OFIFO_SIZE_BIT, VPP_OFIFO_SIZE_WID);
 
 	/* postblend: VPP_POST_BLEND_BLEND_DUMMY_DATA */
 	/* vd_blend : VPP_VD_BLEND_DUMMY_ALPHA */
 	/* vd_preblend: VPP_VD_PRE_BLEND_DUMMY_ALPHA */
 	/* black 8bit */
-	WRITE_VCBUS_REG(S5_VPP_POST_BLEND_BLEND_DUMMY_DATA, 0x8080);
-	WRITE_VCBUS_REG(VPP_VD_BLEND_DUMMY_ALPHA, 0x100);
-	WRITE_VCBUS_REG(VPP_VD_PRE_BLEND_DUMMY_ALPHA, 0x100);
+	WRITE_VCBUS_REG(vpp_post_blend_reg->vpp_post_blend_blend_dummy_data, 0x8080);
+	WRITE_VCBUS_REG(vd_proc_blend_reg->vpp_vd_blend_dummy_alpha, 0x100);
+	WRITE_VCBUS_REG(vd2_pre_blend_reg->vpp_vd_pre_blend_dummy_alpha, 0x100);
 
 	/*disable sr default when power up*/
-	WRITE_VCBUS_REG(VD_PROC_SR0_CTRL, 0);
-	WRITE_VCBUS_REG(VD_PROC_SR1_CTRL, 0);
+	WRITE_VCBUS_REG(vd_proc_sr_reg->sr_slice_reg[0].vd_proc_sr0_ctrl, 0);
+	WRITE_VCBUS_REG(vd_proc_sr_reg->sr_slice_reg[0].vd_proc_sr1_ctrl, 0);
 	/* disable latch for sr core0/1 scaler */
 	WRITE_VCBUS_REG_BITS
-		(S5_SRSHARP0_SHARP_SYNC_CTRL,
+		(vd_proc_sr_reg->sr_slice_reg[0].srsharp0_sharp_sync_ctrl,
 		1, 0, 1);
 	WRITE_VCBUS_REG_BITS
-		(S5_SRSHARP0_SHARP_SYNC_CTRL,
+		(vd_proc_sr_reg->sr_slice_reg[0].srsharp0_sharp_sync_ctrl,
 		1, 8, 1);
 	WRITE_VCBUS_REG_BITS
-		(S5_SRSHARP1_SHARP_SYNC_CTRL,
+		(vd_proc_sr_reg->sr_slice_reg[0].srsharp1_sharp_sync_ctrl,
 		1, 0, 1);
 	WRITE_VCBUS_REG_BITS
-		(S5_SRSHARP1_SHARP_SYNC_CTRL,
+		(vd_proc_sr_reg->sr_slice_reg[0].srsharp1_sharp_sync_ctrl,
 		1, 8, 1);
 	if (cur_dev->sr01_num == 2) {
 		/*disable slice1 sr default when power up*/
-		WRITE_VCBUS_REG(T3X_VD_PROC_SR0_CTRL1, 0);
-		WRITE_VCBUS_REG(T3X_VD_PROC_SR1_CTRL1, 0);
+		WRITE_VCBUS_REG(vd_proc_sr_reg->sr_slice_reg[1].vd_proc_sr0_ctrl, 0);
+		WRITE_VCBUS_REG(vd_proc_sr_reg->sr_slice_reg[1].vd_proc_sr1_ctrl, 0);
 		/* disable latch for slice1 sr core0/1 scaler */
 		WRITE_VCBUS_REG_BITS
-			(T3X_SRSHARP0_SHARP_SYNC_CTRL,
+			(vd_proc_sr_reg->sr_slice_reg[1].srsharp0_sharp_sync_ctrl,
 			1, 0, 1);
 		WRITE_VCBUS_REG_BITS
-			(T3X_SRSHARP0_SHARP_SYNC_CTRL,
+			(vd_proc_sr_reg->sr_slice_reg[1].srsharp0_sharp_sync_ctrl,
 			1, 8, 1);
 		WRITE_VCBUS_REG_BITS
-			(T3X_SRSHARP1_SHARP_SYNC_CTRL,
+			(vd_proc_sr_reg->sr_slice_reg[1].srsharp1_sharp_sync_ctrl,
 			1, 0, 1);
 		WRITE_VCBUS_REG_BITS
-			(T3X_SRSHARP1_SHARP_SYNC_CTRL,
+			(vd_proc_sr_reg->sr_slice_reg[1].srsharp1_sharp_sync_ctrl,
 			1, 8, 1);
 	}
 	if (cur_dev->aisr_support)
 		WRITE_VCBUS_REG_BITS
-		(S5_SRSHARP1_SHARP_SYNC_CTRL,
+		(vd_proc_sr_reg->sr_slice_reg[0].srsharp1_sharp_sync_ctrl,
 		1, 17, 1);
 	/* disable aisr_sr1_nn func */
 	if (cur_dev->aisr_support)
@@ -11787,16 +11836,22 @@ int video_hw_init_s5(void)
 	/* VD_PROC_BYPASS_CTRL default setting */
 	/* should not bypass ve, it means connect preblend and ve */
 	/* default bypass preblend */
-	WRITE_VCBUS_REG(VD_PROC_BYPASS_CTRL, 0x01);
-	set_frm_idx(VPP0, 1);
-	WRITE_VCBUS_REG(VD_PROC_BYPASS_CTRL, 0x21);
-	set_frm_idx(VPP0, 0);
-	enable_mosaic_mode(VPP0, 0);
+	WRITE_VCBUS_REG(vd_proc_misc_reg->vd_proc_bypass_ctrl, 0x01);
+	if (cur_dev->mosaic_support) {
+		set_frm_idx(VPP0, 1);
+		WRITE_VCBUS_REG(vd_proc_misc_reg->vd_proc_bypass_ctrl, 0x21);
+		set_frm_idx(VPP0, 0);
+		enable_mosaic_mode(VPP0, 0);
+		/* for mosaic mode, set holdline for sur_id = 1 */
+		WRITE_VCBUS_REG(S5_VIU_VD1_MISC, 0x100);
+	}
 	/* hold line setting: todo */
-	/* pre vscaler default set, conflict with ve */
-	WRITE_VCBUS_REG(VPP_SLICE1_DNLP_CTRL_01, 0x1fff00);
-	WRITE_VCBUS_REG(VPP_SLICE2_DNLP_CTRL_01, 0x1fff00);
-	WRITE_VCBUS_REG(VPP_SLICE3_DNLP_CTRL_01, 0x1fff00);
+	if (video_is_meson_s5_cpu()) {
+		/* pre vscaler default set, conflict with ve */
+		WRITE_VCBUS_REG(VPP_SLICE1_DNLP_CTRL_01, 0x1fff00);
+		WRITE_VCBUS_REG(VPP_SLICE2_DNLP_CTRL_01, 0x1fff00);
+		WRITE_VCBUS_REG(VPP_SLICE3_DNLP_CTRL_01, 0x1fff00);
+	}
 	/* vpu port map */
 	/* default 0x4120=0x96105000, 0x279d=0x00900000 */
 	/* VPP_RDARB_MODE */
@@ -11806,8 +11861,6 @@ int video_hw_init_s5(void)
 	WRITE_VCBUS_REG(S5_VPP_RDARB_MODE, 0x9a205000);
 	/* VPU_RDARB_MODE_L2C1 */
 	WRITE_VCBUS_REG(S5_VPU_RDARB_MODE_L2C1, 0x924000);
-	/* for mosaic mode, set holdline for sur_id = 1 */
-	WRITE_VCBUS_REG(S5_VIU_VD1_MISC, 0x100);
 	save_vd_pps_reg();
 #ifdef CONFIG_AMLOGIC_MEDIA_LUT_DMA
 	int i;
@@ -11881,6 +11934,7 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	cur_dev->sr_in_size = p_amvideo->dev_property.sr_in_size;
 	cur_dev->is_tv_panel = p_amvideo->is_tv_panel;
 	cur_dev->sr01_num = p_amvideo->dev_property.sr01_num;
+	cur_dev->mosaic_support = p_amvideo->dev_property.mosaic_support;
 	if (cur_dev->aisr_support)
 		cur_dev->pps_auto_calc = 1;
 	cur_dev->prevsync_support = p_amvideo->dev_property.prevsync_support;

@@ -279,6 +279,7 @@ struct video_dev_s {
 	u8 pre_vsync_enable;
 	u8 secure_src;
 	u8 sr01_num;
+	u8 mosaic_support;
 };
 
 struct video_layer_s;

@@ -766,6 +766,8 @@
 #define VI_RO_HIST_LOW_IDX                        0x1a6b
 #define VI_RO_HIST_LOW                            0x1a6c
 
+#define VI_SLICE1_HIST_CTRL                       0x1a70
+
 #define VPP_SRSHARP1_DNLP_EN                      0x5245
 #define VPP_SRSHARP1_DNLP_00                      0x5290
 #define VPP_SRSHARP1_LC_INPUT_MUX                 0x52b1
@@ -809,6 +811,7 @@
 #define VPP_LC1_CURVE_RAM_ADDR                    0x5a71
 #define VPP_LC1_CURVE_RAM_DATA                    0x5a72
 
+#define VPP_LC_STTS_CTRL                          0x282e
 #define VPP_LC_STTS_GCLK_CTRL0                    0x5ad6
 #define VPP_LC_STTS_CTRL0                         0x5ad7
 #define VPP_LC_STTS_CTRL1                         0x5ad8

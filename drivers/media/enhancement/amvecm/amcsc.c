@@ -8633,12 +8633,14 @@ static int vpp_matrix_update(struct vframe_s *vf,
 		if (csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB_DYNAMIC ||
 			csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB ||
 			csc_type == VPP_MATRIX_BT2020YUV_BT2020RGB_CUVA) {
-			if (cpu_after_eq(MESON_CPU_MAJOR_ID_T3X))
-				s5_get_hist(vd_path, HIST_E_RGBMAX);
-			else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
+			if (cpu_after_eq(MESON_CPU_MAJOR_ID_S5)) {
+				if (chip_type_id == chip_s5 || chip_type_id == chip_t3x)
+					s5_get_hist(vd_path, HIST_E_RGBMAX);
+			} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2)) {
 				get_hist(vd_path, HIST_E_RGBMAX);
-			else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
+			} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
 				get_hist(vd_path, HIST_E_RGBMAX);
+			}
 		}
 	}
 

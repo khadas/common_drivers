@@ -1137,8 +1137,13 @@ static void vpp_backup_histgram(struct vframe_s *vf)
 	vpp_hist_param.vpp_luma_sum = vf->prop.hist.vpp_luma_sum;
 	vpp_hist_param.vpp_pixel_sum = vf->prop.hist.vpp_pixel_sum;
 
-	for (i = 0; i < 64; i++)
+	for (i = 0; i < 64; i++) {
 		vpp_hist_param.vpp_histgram[i] = vf->prop.hist.vpp_gamma[i];
+		if (chip_type_id == chip_t5m ||
+			chip_type_id == chip_t3x)
+			vpp_hist_param.vpp_dark_hist[i] =
+				vf->prop.hist.vpp_dark_hist[i];
+	}
 
 	for (i = 0; i < 128; i++) {
 		if (chip_type_id == chip_t3x)
@@ -1191,13 +1196,17 @@ static void vpp_dump_histgram(void)
 	}
 	pr_info("\t dump_dnlp_hist done\n");
 
-	pr_info("\n\t dump vpp dark hist\n");
-	for (i = 0; i < 64; i++) {
-		pr_info("[%d]0x%-8x\t", i, vpp_hist_param.vpp_dark_hist[i]);
-		if ((i + 1) % 8 == 0)
-			pr_info("\n");
+	if (chip_type_id == chip_t5m ||
+		chip_type_id == chip_t3x) {
+		pr_info("\n\t dump vpp dark hist\n");
+		for (i = 0; i < 64; i++) {
+			pr_info("[%d]0x%-8x\t", i,
+				vpp_hist_param.vpp_dark_hist[i]);
+			if ((i + 1) % 8 == 0)
+				pr_info("\n");
+		}
+		pr_info("\n\t dump vpp dark hist done\n");
 	}
-	pr_info("\n\t dump_dnlp_hist done\n");
 
 	pr_info("\t dump_hdr_hist begin\n");
 	for (i = 0; i < 128; i++) {
@@ -1281,6 +1290,14 @@ void get_cm_hist(struct vframe_s *vf)
 			cm_hist_get(vf, RO_CM_HUE_HIST_BIN0,
 				RO_CM_SAT_HIST_BIN0);
 		}
+	}
+}
+
+void refresh_hist_info(struct vframe_s *vf)
+{
+	if (chip_type_id == chip_t3x) {
+		get_luma_hist(vf);
+		s5_get_hist(VD1_PATH, HIST_E_RGBMAX);
 	}
 }
 
@@ -2527,8 +2544,15 @@ static irqreturn_t amvecm_viu2_vsync_isr(int irq, void *dev_id)
 
 static irqreturn_t amvecm_lc_curve_isr(int irq, void *dev_id)
 {
-	if (use_lc_curve_isr)
-		lc_read_region(8, 12, 0);
+	if (use_lc_curve_isr) {
+		if (ve_multi_slice_case_get()) {
+			lc_read_region(8, 6, 0);
+			lc_read_region(8, 6, 1);
+		} else {
+			lc_read_region(8, 12, 0);
+		}
+	}
+
 	return IRQ_HANDLED;
 }
 
@@ -8870,6 +8894,11 @@ static void sr_init_config(void)
 {
 	am_set_regmap(&sr0_default);
 	am_set_regmap(&sr1_default);
+
+	if (chip_type_id == chip_t3x) {
+		am_set_regmap(&s1_sr0_default);
+		am_set_regmap(&s1_sr1_default);
+	}
 }
 
 void vlock_clk_config(struct amvecm_dev_s *devp, struct device *dev)
@@ -11144,7 +11173,12 @@ tvchip_pq_setting:
 	/*am_dma_ctrl init*/
 	if (chip_type_id == chip_t3x) {
 		am_dma_set_mif_wr_status(1);
-		am_dma_set_mif_wr(EN_DMA_WR_ID_MAX, 1);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_0, 0);
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_1, 0);*/
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_0, 1);*/
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_1, 0);*/
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_0, 0);*/
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_1, 0);*/
 	}
 
 	pq_reg_wr_rdma = 1;
@@ -12070,7 +12104,6 @@ static int aml_vecm_probe(struct platform_device *pdev)
 	pr_info("\n VECM probe start\n");
 
 	hdr_lut_buffer_malloc(pdev);
-	am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_MAX);
 
 	ret = alloc_chrdev_region(&devp->devno, 0, 1, AMVECM_NAME);
 	if (ret < 0)
@@ -12145,9 +12178,22 @@ static int aml_vecm_probe(struct platform_device *pdev)
 	hdr_init(&amvecm_dev.hdr_d);
 	aml_vecm_dt_parse(devp, pdev);
 
+	if (chip_type_id == chip_t3x) {
+		/*am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_LC_STTS_0);*/
+		/*am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_LC_STTS_1);*/
+		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VI_HIST_SPL_0);
+		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VI_HIST_SPL_1);
+		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_CM2_HIST_0);
+		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_CM2_HIST_1);
+		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VD1_HDR_0);
+		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VD1_HDR_1);
+		am_dma_init();
+	}
+
 	init_pattern_detect();
 	vpp_get_hist_en();
 	init_pq_setting();
+
 	aml_vecm_viu2_vsync_irq_init();
 	lc_curve_isr_defined = 0;
 	aml_vecm_lc_curve_irq_init();
@@ -12205,7 +12251,18 @@ static int __exit aml_vecm_remove(struct platform_device *pdev)
 	}
 
 	hdr_lut_buffer_free(pdev);
-	am_dma_buffer_free(pdev, EN_DMA_WR_ID_MAX);
+
+	if (chip_type_id == chip_t3x) {
+		am_dma_set_mif_wr_status(0);
+		/*am_dma_buffer_free(pdev, EN_DMA_WR_ID_LC_STTS_0);*/
+		/*am_dma_buffer_free(pdev, EN_DMA_WR_ID_LC_STTS_1);*/
+		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VI_HIST_SPL_0);
+		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VI_HIST_SPL_1);
+		am_dma_buffer_free(pdev, EN_DMA_WR_ID_CM2_HIST_0);
+		am_dma_buffer_free(pdev, EN_DMA_WR_ID_CM2_HIST_1);
+		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VD1_HDR_0);
+		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VD1_HDR_1);
+	}
 
 	hdr_exit();
 	device_destroy(devp->clsp, devp->devno);

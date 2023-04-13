@@ -28,11 +28,11 @@
 #include "am_dma_ctrl.h"
 #include "set_hdr2_v0.h"
 
-static int multi_slice_case;
+int multi_slice_case;
 module_param(multi_slice_case, int, 0644);
 MODULE_PARM_DESC(multi_slice_case, "multi_slice_case after t3x");
 
-static int hist_dma_case;
+int hist_dma_case;
 module_param(hist_dma_case, int, 0644);
 MODULE_PARM_DESC(hist_dma_case, "hist_dma_case after t3x");
 
@@ -562,7 +562,7 @@ void cm_hist_get(struct vframe_s *vf,
 	if (!vf || !hue_bin0 || !sat_bin0)
 		return;
 
-	if (hist_dma_case) {
+	if (hist_dma_case && chip_type_id > chip_t3x) {
 		if (multi_slice_case) {
 			am_dma_get_blend_cm2_hist_hue(vf->prop.hist.vpp_hue_gamma,
 				32);
@@ -902,18 +902,45 @@ void post_pre_gamma_ctl(enum wr_md_e mode, int en)
 
 void vpp_luma_hist_init(void)
 {
+	if (chip_type_id == chip_t3x) {
+		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0, 1, 1);
+		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 1, 2, 1);
+		/*0:vpp_dout/post_vd1(2ppc) 1:vd1_slice0_din*/
+		/*2:vd1_slice1_din 3:vd1_slice2_din 4:vd1_slice_din*/
+		/*5:vd2_din 6:osd1_din 7:osd2_din*/
+		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 1, 11, 3);
+		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 3, 18, 2);
+		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 1, 24, 8);
+		/*WRITE_VPP_REG(VI_HIST_GCLK_CTRL, 0xffffffff);*/
+		WRITE_VPP_REG(VI_HIST_H_START_END, 0x2d0);
+		WRITE_VPP_REG(VI_HIST_V_START_END, 0x1e0);
+		WRITE_VPP_REG(VI_HIST_PIC_SIZE,
+			0x2d0 | (0x1e0 << 16));
+
+		/*slice1*/
+		/*WRITE_VPP_REG(VI_HIST_GCLK_CTRL + 0x30, 0xffffffff);*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 1, 24, 8);*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 2, 5, 3);*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 2, 11, 3);*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 0, 2, 1);*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 0, 1, 1);*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 1, 0, 1);*/
+	} else {
+		/*13:11 hist_din_sel, 0: from vdin0 dout, 1: vdin1, 2: nr dout,*/
+		/*3: di output, 4: vpp output, 5: vd1_din, 6: vd2_din, 7:osd1_dout*/
+		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 1, 11, 3);
+		/*3:2 hist_din_sel the source used for hist statistics.*/
+		/*00: from matrix0 dout, 01: vsc_dout, 10: matrix1 dout, 11: matrix1 din*/
+		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0, 2, 1);
+		/*0:full picture, 1:window*/
+		WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0, 1, 1);
+	}
+
+	/*7:5 hist_dnlp_low the real pixels in each bins got*/
+	/*by VI_DNLP_HISTXX should multiple with 2^(dnlp_low+3)*/
 	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 2, 5, 3);
-	/*select slice0*/
-	/*all selection: vpp post, slc0~slc3, vd2, osd1, osd2, vd1 post*/
-	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 1, 11, 3);
-	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0, 2, 1);
-	/*0:full picture, 1:window*/
-	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 0, 1, 1);
 	/*enable*/
 	WRITE_VPP_REG_BITS(VI_HIST_CTRL, 1, 0, 1);
-
-	if (chip_type_id == chip_t3x)
-		WRITE_VPP_REG(VI_HIST_GCLK_CTRL, 0xffffffff);
 }
 
 void get_luma_hist(struct vframe_s *vf)
@@ -922,11 +949,28 @@ void get_luma_hist(struct vframe_s *vf)
 	int width, height;
 	int i;
 
+	if (!vf)
+		return;
+
 	width = vf->width;
 	height = vf->height;
 
 	if (pre_w != width || pre_h != height) {
-		WRITE_VPP_REG(VI_HIST_PIC_SIZE, width | (height << 16));
+		WRITE_VPP_REG(VI_HIST_PIC_SIZE,
+			width | (height << 16));
+
+		WRITE_VPP_REG(VI_HIST_H_START_END, width);
+		WRITE_VPP_REG(VI_HIST_V_START_END, height);
+
+		if (chip_type_id == chip_t3x &&
+			multi_slice_case) {
+			WRITE_VPP_REG(VI_HIST_PIC_SIZE + 0x30,
+				width | (height << 16));
+
+			WRITE_VPP_REG(VI_HIST_H_START_END + 0x30, width);
+			WRITE_VPP_REG(VI_HIST_V_START_END + 0x30, height);
+		}
+
 		pre_w = width;
 		pre_h = height;
 	}
@@ -952,13 +996,13 @@ void get_luma_hist(struct vframe_s *vf)
 			if (multi_slice_case) {
 				am_dma_get_blend_vi_hist(vf->prop.hist.vpp_gamma,
 					64);
-				am_dma_get_blend_vi_hist_low(NULL,
+				am_dma_get_blend_vi_hist_low(vf->prop.hist.vpp_dark_hist,
 					64);
 			} else {
 				am_dma_get_mif_data_vi_hist(0,
 					vf->prop.hist.vpp_gamma, 64);
 				am_dma_get_mif_data_vi_hist_low(0,
-					NULL, 64);
+					vf->prop.hist.vpp_dark_hist, 64);
 			}
 
 			return;
@@ -2035,7 +2079,7 @@ void ve_lc_stts_en(int enable,
 	}
 
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL0, din_sel, 3, 3);
-	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL1, din_sel, 3, 3);
+	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL1, 1, 3, 3);
 	/*lc input probe enable*/
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL0, 1, 10, 1);
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL1, 1, 10, 1);
@@ -2046,6 +2090,7 @@ void ve_lc_stts_en(int enable,
 		thd_black, 0, 8);
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_BLACK_INFO2,
 		thd_black, 0, 8);
+	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL, enable, 0, 1);
 }
 
 void ve_lc_blk_num_get(int *h_num, int *v_num,

@@ -24,7 +24,7 @@ MODULE_PARM_DESC(am_dma_ctrl_dbg, "am_dma_ctrl_dbg after t3x");
 	} while (0)\
 
 #define ADDR_PARAM(page, reg)  (((page) << 8) | (reg))
-#define UNIT_SIZE 128
+#define UNIT_SIZE (16) /*128/8*/
 
 struct vpu_lut_dma_wr_s {
 	enum lut_dma_wr_id_e dma_wr_id;
@@ -40,6 +40,7 @@ struct _dma_reg_cfg_s {
 	unsigned char reg_wrmif_ctrl;
 	unsigned char reg_wrmif0_ctrl;
 	unsigned char reg_wrmif0_badr0;
+	unsigned char reg_wrmif0_badr1;
 	unsigned char reg_wrmif_sel;
 };
 
@@ -54,6 +55,7 @@ static struct _dma_reg_cfg_s dma_reg_cfg = {
 	0xd5,
 	0xd6,
 	0xde,
+	0xdf,
 	0xee,
 };
 
@@ -71,7 +73,7 @@ static struct vpu_lut_dma_wr_s lut_dma_wr[EN_DMA_WR_ID_MAX];
 static unsigned int dma_count[EN_DMA_WR_ID_MAX] = {
 	12 * 8 * 4, 12 * 8 * 4,
 	22, 22,
-	12, 12,
+	16, 16,
 	26, 26, 26,
 	8 * 80,
 };
@@ -84,12 +86,21 @@ static void _set_vpu_lut_dma_mif_wr_unit(int enable,
 	int wr_sel;
 	int offset;
 
-	if (!cfg_data)
+	if (!cfg_data) {
+		pr_info("%s: cfg data is NULL.\n", __func__);
 		return;
+	}
 
-	wr_sel = cfg_data->dma_wr_id < 8 ? 0 : 1;
-	offset = wr_sel ?
-		((cfg_data->dma_wr_id - 8) << 2) : (cfg_data->dma_wr_id << 2);
+	if (cfg_data->dma_wr_id < 8) {
+		wr_sel = 0;
+		offset = cfg_data->dma_wr_id;
+	} else {
+		wr_sel = 1;
+		offset = cfg_data->dma_wr_id - 8;
+	}
+
+	pr_info("%s: wr_sel = %d, offset = %d\n",
+		__func__, wr_sel, offset);
 
 	/*
 	 * Bit 31 ro_lut_wr_hs_r unsigned, RO, default = 0
@@ -106,14 +117,16 @@ static void _set_vpu_lut_dma_mif_wr_unit(int enable,
 	 */
 	addr = ADDR_PARAM(dma_reg_cfg.page,
 		dma_reg_cfg.reg_wrmif_sel);
-	val = READ_VPP_REG_S5(addr);
-	val |= wr_sel;
+	val = 0xff0 + wr_sel;
 	WRITE_VPP_REG_S5(addr, val);
+	pr_info("%s: addr = %x, val = %x\n",
+		__func__, addr, val);
 
 	/*
 	 * Bit 31 reserved
 	 * Bit 30 reg_wr0_clr_fcnt unsigned, RW, default = 0
 	 * Bit 29:28 reg_wr0_addr_mode unsigned, RW, default = 0
+	 *           3 = only addr0, 0 = addr0/1 alternate
 	 * Bit 27 reg_wr0_frm_set unsigned, RW, default = 0
 	 * Bit 26 reg_wr0_frm_force unsigned, RW, default = 0
 	 * Bit 25:18 reg_wr0_rpt_num unsigned, RW, default = 0
@@ -127,23 +140,76 @@ static void _set_vpu_lut_dma_mif_wr_unit(int enable,
 	addr = ADDR_PARAM(dma_reg_cfg.page,
 		dma_reg_cfg.reg_wrmif0_ctrl) + offset;
 	val = READ_VPP_REG_S5(addr);
-	val |= (cfg_data->addr_mode & 0x3) << 28 |
-		(cfg_data->rpt_num & 0xff) << 18 |
-		(enable & 0x1) << 16 |
+	val |= ((cfg_data->addr_mode & 0x3) << 28) |
+		((cfg_data->rpt_num & 0xff) << 18) |
+		((enable & 0x1) << 16) |
 		(cfg_data->stride & 0x1fff);
 	WRITE_VPP_REG_S5(addr, val);
+	pr_info("%s: addr = %x, val = %x\n",
+		__func__, addr, val);
 
 	addr = ADDR_PARAM(dma_reg_cfg.page,
 		dma_reg_cfg.reg_wrmif0_badr0) + (offset << 1);
-	val = READ_VPP_REG_S5(addr);
-	val |= cfg_data->baddr0;
-	WRITE_VPP_REG_S5(addr, val);
-
+	WRITE_VPP_REG_S5(addr, cfg_data->baddr0);
 	addr = ADDR_PARAM(dma_reg_cfg.page,
-		dma_reg_cfg.reg_wrmif0_badr0) + 1 + (offset << 1);
-	val = READ_VPP_REG_S5(addr);
-	val |= cfg_data->baddr1;
-	WRITE_VPP_REG_S5(addr, val);
+		dma_reg_cfg.reg_wrmif0_badr1) + (offset << 1);
+	WRITE_VPP_REG_S5(addr, cfg_data->baddr1);
+	pr_info("%s: addr = %x, val = %x, %x\n",
+		__func__, addr, cfg_data->baddr0, cfg_data->baddr1);
+}
+
+void am_dma_init(void)
+{
+	/*lut_dma_wr initial*/
+	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].stride = 12;
+	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].addr_mode = 1;
+	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].rpt_num = 32;
+
+	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].stride = 12;
+	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].addr_mode = 1;
+	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].rpt_num = 32;
+
+	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_0].stride = 22;
+	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_0].addr_mode = 3;
+	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_0].rpt_num = 0;
+
+	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_1].stride = 22;
+	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_1].addr_mode = 3;
+	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_1].rpt_num = 0;
+
+	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_0].stride = 12;
+	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_0].addr_mode = 3;
+	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_0].rpt_num = 0;
+
+	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_1].stride = 12;
+	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_1].addr_mode = 3;
+	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_1].rpt_num = 0;
+
+	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_0].stride = 26;
+	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_0].addr_mode = 3;
+	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_0].rpt_num = 0;
+
+	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_1].stride = 26;
+	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_1].addr_mode = 3;
+	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_1].rpt_num = 0;
+
+	lut_dma_wr[EN_DMA_WR_ID_VD2_HDR].stride = 26;
+	lut_dma_wr[EN_DMA_WR_ID_VD2_HDR].addr_mode = 3;
+	lut_dma_wr[EN_DMA_WR_ID_VD2_HDR].rpt_num = 0;
+}
+
+void am_dma_set_wr_cfg(enum lut_dma_wr_id_e dma_wr_id, int enable,
+	unsigned int stride, unsigned int addr_mode, unsigned int rpt_num)
+{
+	if (dma_wr_id != EN_DMA_WR_ID_MAX) {
+		lut_dma_wr[dma_wr_id].stride = stride;
+		lut_dma_wr[dma_wr_id].addr_mode = addr_mode;
+		lut_dma_wr[dma_wr_id].rpt_num = rpt_num;
+
+		if (dma_vaddr[dma_wr_id])
+			_set_vpu_lut_dma_mif_wr_unit(enable,
+				&lut_dma_wr[dma_wr_id]);
+	}
 }
 
 void am_dma_buffer_malloc(struct platform_device *pdev,
@@ -162,55 +228,20 @@ void am_dma_buffer_malloc(struct platform_device *pdev,
 				i, dma_vaddr[i], &dma_paddr[i]);
 			lut_dma_wr[i].dma_wr_id = i;
 			if (dma_vaddr[i])
-				lut_dma_wr[i].baddr0 = dma_paddr[i];
+				lut_dma_wr[i].baddr0 =
+					(u32)(dma_paddr[i]) >> 4;
 		}
 	} else {
 		alloc_size[dma_wr_id] = dma_count[dma_wr_id] * UNIT_SIZE;
 		dma_vaddr[dma_wr_id] = dma_alloc_coherent(&vecm_dev,
 			alloc_size[dma_wr_id], &dma_paddr[dma_wr_id], GFP_KERNEL);
 		pr_info("%s get dma_vaddr[%d] %px %pad\n", __func__,
-				dma_wr_id, dma_vaddr[dma_wr_id], &dma_paddr[dma_wr_id]);
+			dma_wr_id, dma_vaddr[dma_wr_id], &dma_paddr[dma_wr_id]);
 		lut_dma_wr[dma_wr_id].dma_wr_id = dma_wr_id;
 		if (dma_vaddr[dma_wr_id])
-			lut_dma_wr[dma_wr_id].baddr0 = dma_paddr[dma_wr_id];
+			lut_dma_wr[dma_wr_id].baddr0 =
+				(u32)(dma_paddr[dma_wr_id]) >> 4;
 	}
-
-	/*lut_dma_wr initial*/
-	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].stride = 12;
-	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].addr_mode = 1;
-	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_0].rpt_num = 32;
-
-	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].stride = 12;
-	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].addr_mode = 1;
-	lut_dma_wr[EN_DMA_WR_ID_LC_STTS_1].rpt_num = 32;
-
-	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_0].stride = 22;
-	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_0].addr_mode = 0;
-	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_0].rpt_num = 0;
-
-	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_1].stride = 22;
-	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_1].addr_mode = 0;
-	lut_dma_wr[EN_DMA_WR_ID_VI_HIST_SPL_1].rpt_num = 0;
-
-	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_0].stride = 12;
-	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_0].addr_mode = 0;
-	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_0].rpt_num = 0;
-
-	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_1].stride = 12;
-	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_1].addr_mode = 0;
-	lut_dma_wr[EN_DMA_WR_ID_CM2_HIST_1].rpt_num = 0;
-
-	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_0].stride = 26;
-	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_0].addr_mode = 0;
-	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_0].rpt_num = 0;
-
-	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_1].stride = 26;
-	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_1].addr_mode = 0;
-	lut_dma_wr[EN_DMA_WR_ID_VD1_HDR_1].rpt_num = 0;
-
-	lut_dma_wr[EN_DMA_WR_ID_VD2_HDR].stride = 26;
-	lut_dma_wr[EN_DMA_WR_ID_VD2_HDR].addr_mode = 0;
-	lut_dma_wr[EN_DMA_WR_ID_VD2_HDR].rpt_num = 0;
 }
 
 void am_dma_buffer_free(struct platform_device *pdev,
@@ -237,6 +268,8 @@ void am_dma_set_mif_wr_status(int enable)
 	addr = ADDR_PARAM(dma_reg_cfg.page,
 		dma_reg_cfg.reg_wrmif_ctrl);
 	WRITE_VPP_REG_BITS_S5(addr, enable, 13, 1);
+	pr_info("%s: addr = %x, enable = %d\n",
+		__func__, addr, enable);
 }
 
 void am_dma_set_mif_wr(enum lut_dma_wr_id_e dma_wr_id,
@@ -254,6 +287,8 @@ void am_dma_set_mif_wr(enum lut_dma_wr_id_e dma_wr_id,
 		if (dma_vaddr[dma_wr_id])
 			_set_vpu_lut_dma_mif_wr_unit(enable,
 				&lut_dma_wr[dma_wr_id]);
+		pr_info("%s: dma_vaddr[%d] %px %pad\n", __func__,
+			dma_wr_id, dma_vaddr[dma_wr_id], &lut_dma_wr[dma_wr_id].baddr0);
 	}
 }
 
@@ -267,8 +302,11 @@ void am_dma_get_mif_data_lc_stts(int index,
 	unsigned int size = length;
 	unsigned int *val;
 
-	if (!data || length == 0)
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
 		return;
+	}
 
 	if (index > 1)
 		index = 1;
@@ -276,8 +314,11 @@ void am_dma_get_mif_data_lc_stts(int index,
 	if (size > 12 * 8 * 17)
 		size = 1632;
 
-	if (!dma_vaddr[EN_DMA_WR_ID_LC_STTS_0 + index])
+	if (!dma_vaddr[EN_DMA_WR_ID_LC_STTS_0 + index]) {
+		pr_am_dma("%s: dma_vaddr %d is NULL.\n",
+			__func__, index);
 		return;
+	}
 
 	val = (unsigned int *)dma_vaddr[EN_DMA_WR_ID_LC_STTS_0 + index];
 
@@ -307,8 +348,11 @@ void am_dma_get_mif_data_vi_hist(int index,
 	unsigned int size = length;
 	unsigned short *val;
 
-	if (!data || length == 0)
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
 		return;
+	}
 
 	if (index > 1)
 		index = 1;
@@ -316,25 +360,37 @@ void am_dma_get_mif_data_vi_hist(int index,
 	if (size > 64)
 		size = 64;
 
-	if (!dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0 + index])
+	if (!dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0 + index]) {
+		pr_am_dma("%s: dma_vaddr %d is NULL.\n",
+			__func__, index);
 		return;
+	}
 
 	val = (unsigned short *)dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0 + index];
 
-	for (i = 0; i < size; i++)
+	for (i = 0; i < size; i++) {
 		data[i] = val[i];
+		pr_am_dma("%s: val[%d] is %d.\n",
+			__func__, i, val[i]);
+	}
 }
 
 void am_dma_get_mif_data_vi_hist_low(int index,
-	unsigned int *data, unsigned int length)
+	unsigned short *data, unsigned int length)
 {
 	int i = 0;
-	unsigned int tmp = 0;
+	int j = 0;
+	int k = 0;
+	int offset = 0;
+	unsigned short tmp = 0;
 	unsigned int size = length;
 	unsigned char *val;
 
-	if (!data || length == 0)
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
 		return;
+	}
 
 	if (index > 1)
 		index = 1;
@@ -342,20 +398,30 @@ void am_dma_get_mif_data_vi_hist_low(int index,
 	if (size > 64)
 		size = 64;
 
-	if (!dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0 + index])
+	if (!dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0 + index]) {
+		pr_am_dma("%s: dma_vaddr %d is NULL.\n",
+			__func__, index);
 		return;
+	}
 
 	val = (unsigned char *)dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0 + index] +
 		144;
 
-	for (i = 0; i < size; i++) {
-		data[i] = val[3 * i];
-		tmp = val[3 * i + 1];
-		tmp = tmp << 8;
-		data[i] |= tmp;
-		tmp = val[3 * i + 2];
-		tmp = tmp << 16;
-		data[i] |= tmp;
+	for (i = 0; i < 13; i++) {
+		offset = 16 * i;
+		for (j = 0; j < 5; j++) {
+			data[k] = val[offset + 3 * j];
+			tmp = val[offset + 3 * j + 1];
+			tmp = tmp << 8;
+			data[k] |= tmp;
+			/*tmp = val[offset + 3 * j + 2];*/
+			/*tmp = tmp << 16;*/
+			/*data[k] |= tmp;*/
+			k++;
+
+			if (k == size)
+				break;
+		}
 	}
 }
 
@@ -363,12 +429,14 @@ void am_dma_get_mif_data_cm2_hist_hue(int index,
 	unsigned int *data, unsigned int length)
 {
 	int i = 0;
-	unsigned int tmp = 0;
 	unsigned int size = length;
-	unsigned char *val;
+	unsigned int *val;
 
-	if (!data || length == 0)
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
 		return;
+	}
 
 	if (index > 1)
 		index = 1;
@@ -376,32 +444,30 @@ void am_dma_get_mif_data_cm2_hist_hue(int index,
 	if (size > 32)
 		size = 32;
 
-	if (!dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0 + index])
+	if (!dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0 + index]) {
+		pr_am_dma("%s: dma_vaddr %d is NULL.\n",
+			__func__, index);
 		return;
-
-	val = (unsigned char *)dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0 + index];
-
-	for (i = 0; i < size; i++) {
-		data[i] = val[3 * i];
-		tmp = val[3 * i + 1];
-		tmp = tmp << 8;
-		data[i] |= tmp;
-		tmp = val[3 * i + 2];
-		tmp = tmp << 16;
-		data[i] |= tmp;
 	}
+
+	val = (unsigned int *)dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0 + index];
+
+	for (i = 0; i < size; i++)
+		data[i] = val[i];
 }
 
 void am_dma_get_mif_data_cm2_hist_sat(int index,
 	unsigned int *data, unsigned int length)
 {
 	int i = 0;
-	unsigned int tmp = 0;
 	unsigned int size = length;
-	unsigned char *val;
+	unsigned int *val;
 
-	if (!data || length == 0)
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
 		return;
+	}
 
 	if (index > 1)
 		index = 1;
@@ -409,21 +475,17 @@ void am_dma_get_mif_data_cm2_hist_sat(int index,
 	if (size > 32)
 		size = 32;
 
-	if (!dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0 + index])
+	if (!dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0 + index]) {
+		pr_am_dma("%s: dma_vaddr %d is NULL.\n",
+			__func__, index);
 		return;
-
-	val = (unsigned char *)dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0 + index] +
-		96;
-
-	for (i = 0; i < size; i++) {
-		data[i] = val[3 * i];
-		tmp = val[3 * i + 1];
-		tmp = tmp << 8;
-		data[i] |= tmp;
-		tmp = val[3 * i + 2];
-		tmp = tmp << 16;
-		data[i] |= tmp;
 	}
+
+	val = (unsigned int *)dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0 + index] +
+		32;
+
+	for (i = 0; i < size; i++)
+		data[i] = val[i];
 }
 
 void am_dma_get_mif_data_hdr2_hist(int index,
@@ -437,8 +499,11 @@ void am_dma_get_mif_data_hdr2_hist(int index,
 	unsigned int size = length;
 	unsigned char *val;
 
-	if (!data || length == 0)
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
 		return;
+	}
 
 	if (index > 2)
 		index = 2;
@@ -446,8 +511,11 @@ void am_dma_get_mif_data_hdr2_hist(int index,
 	if (size > 128)
 		size = 128;
 
-	if (!dma_vaddr[EN_DMA_WR_ID_VD1_HDR_0 + index])
+	if (!dma_vaddr[EN_DMA_WR_ID_VD1_HDR_0 + index]) {
+		pr_am_dma("%s: dma_vaddr %d is NULL.\n",
+			__func__, index);
 		return;
+	}
 
 	val = (unsigned char *)dma_vaddr[EN_DMA_WR_ID_VD1_HDR_0 + index];
 
@@ -476,48 +544,56 @@ void am_dma_get_blend_vi_hist(unsigned short *data,
 	unsigned int size = length;
 	unsigned short *val_0;
 	unsigned short *val_1;
-	unsigned short blend_val;
 
-	if (!data || length == 0)
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
 		return;
+	}
 
 	if (size > 64)
 		size = 64;
 
 	if (!dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0] ||
-		!dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_1])
+		!dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_1]) {
+		pr_am_dma("%s: dma_vaddr is NULL.\n",
+			__func__);
 		return;
+	}
 
 	val_0 = (unsigned short *)dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0];
 	val_1 = (unsigned short *)dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_1];
 
-	for (i = 0; i < size; i++) {
-		blend_val = val_0[i] + val_1[i];
-		data[i] = blend_val >> 1;
-	}
+	for (i = 0; i < size; i++)
+		data[i] = (val_0[i] + val_1[i]) >> 1;
 }
 
-void am_dma_get_blend_vi_hist_low(unsigned int *data,
+void am_dma_get_blend_vi_hist_low(unsigned short *data,
 	unsigned int length)
 {
 	int i = 0;
 	unsigned int size = length;
 	unsigned char *val_0;
 	unsigned char *val_1;
-	unsigned int blend_val;
-	unsigned int tmp = 0;
-	unsigned int tmp_0 = 0;
-	unsigned int tmp_1 = 0;
+	unsigned short tmp = 0;
+	unsigned short tmp_0 = 0;
+	unsigned short tmp_1 = 0;
 
-	if (!data || length == 0)
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
 		return;
+	}
 
 	if (size > 64)
 		size = 64;
 
 	if (!dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0] ||
-		!dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_1])
+		!dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_1]) {
+		pr_am_dma("%s: dma_vaddr is NULL.\n",
+			__func__);
 		return;
+	}
 
 	val_0 = (unsigned char *)dma_vaddr[EN_DMA_WR_ID_VI_HIST_SPL_0] +
 		144;
@@ -529,20 +605,19 @@ void am_dma_get_blend_vi_hist_low(unsigned int *data,
 		tmp = val_0[3 * i + 1];
 		tmp = tmp << 8;
 		tmp_0 |= tmp;
-		tmp = val_0[3 * i + 2];
-		tmp = tmp << 16;
-		tmp_0 |= tmp;
+		/*tmp = val_0[3 * i + 2];*/
+		/*tmp = tmp << 16;*/
+		/*tmp_0 |= tmp;*/
 
 		tmp_1 = val_1[3 * i];
 		tmp = val_1[3 * i + 1];
 		tmp = tmp << 8;
 		tmp_1 |= tmp;
-		tmp = val_1[3 * i + 2];
-		tmp = tmp << 16;
-		tmp_1 |= tmp;
+		/*tmp = val_1[3 * i + 2];*/
+		/*tmp = tmp << 16;*/
+		/*tmp_1 |= tmp;*/
 
-		blend_val = tmp_0 + tmp_1;
-		data[i] = blend_val >> 1;
+		data[i] = (tmp_0 + tmp_1) >> 1;
 	}
 }
 
@@ -553,20 +628,25 @@ void am_dma_get_blend_cm2_hist_hue(unsigned int *data,
 	unsigned int size = length;
 	unsigned char *val_0;
 	unsigned char *val_1;
-	unsigned int blend_val;
 	unsigned int tmp = 0;
 	unsigned int tmp_0 = 0;
 	unsigned int tmp_1 = 0;
 
-	if (!data || length == 0)
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
 		return;
+	}
 
 	if (size > 32)
 		size = 32;
 
 	if (!dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0] ||
-		!dma_vaddr[EN_DMA_WR_ID_CM2_HIST_1])
+		!dma_vaddr[EN_DMA_WR_ID_CM2_HIST_1]) {
+		pr_am_dma("%s: dma_vaddr is NULL.\n",
+			__func__);
 		return;
+	}
 
 	val_0 = (unsigned char *)dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0];
 	val_1 = (unsigned char *)dma_vaddr[EN_DMA_WR_ID_CM2_HIST_1];
@@ -588,8 +668,7 @@ void am_dma_get_blend_cm2_hist_hue(unsigned int *data,
 		tmp = tmp << 16;
 		tmp_1 |= tmp;
 
-		blend_val = tmp_0 + tmp_1;
-		data[i] = blend_val >> 1;
+		data[i] = (tmp_0 + tmp_1) >> 1;
 	}
 }
 
@@ -600,20 +679,25 @@ void am_dma_get_blend_cm2_hist_sat(unsigned int *data,
 	unsigned int size = length;
 	unsigned char *val_0;
 	unsigned char *val_1;
-	unsigned int blend_val;
 	unsigned int tmp = 0;
 	unsigned int tmp_0 = 0;
 	unsigned int tmp_1 = 0;
 
-	if (!data || length == 0)
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
 		return;
+	}
 
 	if (size > 32)
 		size = 32;
 
 	if (!dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0] ||
-		!dma_vaddr[EN_DMA_WR_ID_CM2_HIST_1])
+		!dma_vaddr[EN_DMA_WR_ID_CM2_HIST_1]) {
+		pr_am_dma("%s: dma_vaddr is NULL.\n",
+			__func__);
 		return;
+	}
 
 	val_0 = (unsigned char *)dma_vaddr[EN_DMA_WR_ID_CM2_HIST_0] +
 		96;
@@ -637,8 +721,68 @@ void am_dma_get_blend_cm2_hist_sat(unsigned int *data,
 		tmp = tmp << 16;
 		tmp_1 |= tmp;
 
-		blend_val = tmp_0 + tmp_1;
-		data[i] = blend_val >> 1;
+		data[i] = (tmp_0 + tmp_1) >> 1;
+	}
+}
+
+void am_dma_get_blend_hdr2_hist(unsigned int *data,
+	unsigned int length)
+{
+	int i = 0;
+	int j = 0;
+	int k = 0;
+	int offset = 0;
+	unsigned int size = length;
+	unsigned char *val_0;
+	unsigned char *val_1;
+	unsigned int tmp = 0;
+	unsigned int tmp_0 = 0;
+	unsigned int tmp_1 = 0;
+
+	if (!data || length == 0) {
+		pr_am_dma("%s: data or length not fit.\n",
+			__func__);
+		return;
+	}
+
+	if (size > 128)
+		size = 128;
+
+	if (!dma_vaddr[EN_DMA_WR_ID_VD1_HDR_0] ||
+		!dma_vaddr[EN_DMA_WR_ID_VD1_HDR_1]) {
+		pr_am_dma("%s: dma_vaddr is NULL.\n",
+			__func__);
+		return;
+	}
+
+	val_0 = (unsigned char *)dma_vaddr[EN_DMA_WR_ID_VD1_HDR_0];
+	val_1 = (unsigned char *)dma_vaddr[EN_DMA_WR_ID_VD1_HDR_1];
+
+	for (i = 0; i < 26; i++) {
+		offset = 16 * i;
+		for (j = 0; j < 5; j++) {
+			tmp_0 = val_0[offset + 3 * j];
+			tmp = val_0[offset + 3 * j + 1];
+			tmp = tmp << 8;
+			tmp_0 |= tmp;
+			tmp = val_0[offset + 3 * j + 2];
+			tmp = tmp << 16;
+			tmp_0 |= tmp;
+
+			tmp_1 = val_1[offset + 3 * j];
+			tmp = val_1[offset + 3 * j + 1];
+			tmp = tmp << 8;
+			tmp_1 |= tmp;
+			tmp = val_1[offset + 3 * j + 2];
+			tmp = tmp << 16;
+			tmp_1 |= tmp;
+
+			data[k] = (tmp_0 + tmp_1) >> 1;
+			k++;
+
+			if (k == size)
+				break;
+		}
 	}
 }
 

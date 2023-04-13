@@ -6,6 +6,9 @@
 #ifndef AMVE_V2_H
 #define AMVE_V2_H
 
+extern int multi_slice_case;
+extern int hist_dma_case;
+
 struct cm_port_s {
 	int cm_addr_port[4];
 	int cm_data_port[4];

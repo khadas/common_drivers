@@ -29,6 +29,6 @@ int init_dewarp_composer(struct dewarp_composer_para *param);
 int uninit_dewarp_composer(struct dewarp_composer_para *param);
 int config_dewarp_vframe(struct composer_vf_para *vframe_para,
 struct composer_common_para *common_para);
-int dewarp_data_composer(struct dewarp_composer_para *param);
+int dewarp_data_composer(struct dewarp_composer_para *param, bool is_tvp);
 
 #endif

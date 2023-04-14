@@ -387,12 +387,15 @@ int config_dewarp_vframe(struct composer_vf_para *vframe_para,
 		vframe_para->src_buf_addr1 = vf->canvas0_config[1].phy_addr;
 		vframe_para->src_buf_stride1 = vf->canvas0_config[1].width;
 		vframe_para->src_vf_angle = common_para->input_para.transform;
+		vframe_para->src_endian = vf->canvas0_config[0].endian;
 
 		vframe_para->dst_vf_width = pic_info_out->align_w;
 		vframe_para->dst_vf_height = pic_info_out->align_h;
 		vframe_para->dst_vf_plane_count = 2;
 		vframe_para->dst_buf_addr = pic_info_out->addr[0];
 		vframe_para->dst_buf_stride = pic_info_out->align_w;
+		vframe_para->dst_endian = 0;
+		vframe_para->is_tvp = pic_info_in->is_tvp;
 	} else {
 		if (pic_info_in->format == YUV444) {
 			vframe_para->src_vf_format = YUV444_P;
@@ -410,12 +413,15 @@ int config_dewarp_vframe(struct composer_vf_para *vframe_para,
 			+ vframe_para->src_buf_stride0 * pic_info_in->align_h;
 		vframe_para->src_buf_stride1 = vframe_para->src_buf_stride0;
 		vframe_para->src_vf_angle = common_para->input_para.transform;
+		vframe_para->src_endian = 0;
 
 		vframe_para->dst_vf_width = pic_info_out->align_w;
 		vframe_para->dst_vf_height = pic_info_out->align_h;
 		vframe_para->dst_vf_plane_count = 2;
 		vframe_para->dst_buf_addr = pic_info_out->addr[0];
 		vframe_para->dst_buf_stride = pic_info_out->align_w;
+		vframe_para->dst_endian = 0;
+		vframe_para->is_tvp = pic_info_in->is_tvp;
 	}
 
 	if (dewarp_print) {
@@ -439,7 +445,7 @@ int config_dewarp_vframe(struct composer_vf_para *vframe_para,
 	return 0;
 }
 
-int dewarp_data_composer(struct dewarp_composer_para *param)
+int dewarp_data_composer(struct dewarp_composer_para *param, bool is_tvp)
 {
 	int ret, dump_num = 1;
 	struct gdc_phy_setting gdc_config;
@@ -474,7 +480,20 @@ int dewarp_data_composer(struct dewarp_composer_para *param)
 				* AXI_WORD_ALIGN(gdc_config.out_height);
 	gdc_config.config_paddr = param->fw_load.phys_addr;
 	gdc_config.config_size = param->fw_load.size_32bit; /* in 32bit */
-	gdc_config.use_sec_mem = 0; /* secure mem access */
+	if (param->vf_para->is_tvp)
+		gdc_config.use_sec_mem = 1; /* secure mem access */
+	else
+		gdc_config.use_sec_mem = 0;
+
+	if (param->vf_para->src_endian != 0)
+		gdc_config.in_endian = GDC_ENDIAN_BIG_8BYTES;
+	else
+		gdc_config.in_endian = GDC_ENDIAN_LITTLE;
+
+	if (param->vf_para->dst_endian != 0)
+		gdc_config.out_endian = GDC_ENDIAN_BIG_8BYTES;
+	else
+		gdc_config.out_endian = GDC_ENDIAN_LITTLE;
 #ifdef CONFIG_AMLOGIC_MEDIA_GDC
 	ret = gdc_process_phys(param->context, &gdc_config);
 #else
@@ -497,7 +516,7 @@ int dewarp_data_composer(struct dewarp_composer_para *param)
 				param->vf_para->dst_vf_height,
 				gdc_config.out_paddr[0],
 				gdc_config.out_paddr[1]);
-			dewarp_com_dump = dump_num;
+			dump_num = dewarp_com_dump;
 		}
 	}
 	return ret;

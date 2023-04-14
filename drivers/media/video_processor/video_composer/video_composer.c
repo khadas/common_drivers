@@ -2279,6 +2279,7 @@ static void vframe_composer(struct composer_dev *dev)
 		common_para.output_para.pic_info.align_h =
 			(vframe_info_cur->dst_h * dst_buf->buf_h / dev->vinfo_h + 0xf) & ~0xf;
 		common_para.output_para.pic_info.addr[0] = dst_buf->phy_addr;
+		common_para.input_para.pic_info.is_tvp = is_tvp;
 
 		if (dev->dev_choice == COMPOSER_WITH_DEWARP) {
 			vc_print(dev->index, PRINT_OTHER, "use dewarp composer.\n");
@@ -2292,7 +2293,7 @@ static void vframe_composer(struct composer_dev *dev)
 				vc_print(dev->index, PRINT_ERROR, "load firmware failed.\n");
 				break;
 			}
-			ret = dewarp_data_composer(&dev->dewarp_para);
+			ret = dewarp_data_composer(&dev->dewarp_para, is_tvp);
 			if (ret < 0)
 				vc_print(dev->index, PRINT_ERROR, "dewarp data composer failed.\n");
 		} else if (dev->dev_choice == COMPOSER_WITH_VICP) {

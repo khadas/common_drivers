@@ -1,4 +1,4 @@
-From d591aa78a349cc0fa562485a3ce2870bc6488dbd Mon Sep 17 00:00:00 2001
+From 87803d40290ef744c27bd40597881eaacf407921 Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Thu, 2 Feb 2023 15:49:10 +0800
 Subject: [PATCH] init: initialize the building framework of androidu-5.15 for
@@ -188,7 +188,7 @@ similarity index 100%
 rename from drivers/staging/greybus/tools/Android.mk
 rename to drivers/staging/greybus/tools/Android_mk
 diff --git a/kernel/Makefile b/kernel/Makefile
-index 9dc7e32828ca..733242a0a15c 100644
+index 9dc7e32828ca..36c0c11ade5c 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
 @@ -175,8 +175,14 @@ $(obj)/gki_module_unprotected.h: $(ALL_KMI_SYMBOLS) \
@@ -197,7 +197,7 @@ index 9dc7e32828ca..733242a0a15c 100644
  # Generate symbol list with union of all symbol list for arm64; empty for others
 +# boot.img need to use once build with gki, not CONFIG_AMLOGIC_DRIVER when once build.
 +ifndef CONFIG_AMLOGIC_DRIVER
-+$(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_*, $(srctree)/$(COMMON_DRIVERS_DIR)/android/abi_gki_aarch64_*),)
++$(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_* $(srctree)/$(COMMON_DRIVERS_DIR)/android/abi_gki_aarch64_*),)
 +	$(if $(strip $^),cat $^ > $(ALL_KMI_SYMBOLS), echo "" > $(ALL_KMI_SYMBOLS))
 +else
  $(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_*),)

@@ -116,3 +116,4 @@
   cfg80211_rx_mgmt_ext
   cfg80211_mgmt_tx_status_ext
   regulatory_set_wiphy_regd_sync
+  cfg80211_ch_switch_started_notify

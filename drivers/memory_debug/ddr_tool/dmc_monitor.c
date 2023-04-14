@@ -779,7 +779,6 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 #ifdef CONFIG_AMLOGIC_DMC_MONITOR_T7
 	case DMC_TYPE_T7:
 	case DMC_TYPE_T3:
-	case DMC_TYPE_T3X:
 		mon->ops = &t7_dmc_mon_ops;
 		mon->configs |= POLICY_INCLUDE;
 		mon->configs |= DMC_DEVICE_8BIT;
@@ -819,6 +818,12 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 		mon->configs |= POLICY_INCLUDE;
 		mon->configs |= DMC_DEVICE_8BIT;
 		mon->mon_number = 4;
+		break;
+	case DMC_TYPE_T3X:
+		mon->ops = &s5_dmc_mon_ops;
+		mon->configs |= POLICY_INCLUDE;
+		mon->configs |= DMC_DEVICE_8BIT;
+		mon->mon_number = 2;
 		break;
 #endif
 	default:

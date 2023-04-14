@@ -1204,7 +1204,6 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 #ifdef CONFIG_AMLOGIC_DDR_BANDWIDTH_T7
 	case DMC_TYPE_T7:
 	case DMC_TYPE_T3:
-	case DMC_TYPE_T3X:
 		band->ops            = &t7_ddr_bw_ops;
 		band->channels     = 8;
 		band->dmc_number   = 2;
@@ -1266,6 +1265,14 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 		band->dmc_number   = 4;
 		band->soc_feature |= DMC_DEVICE_8BIT;
 		band->mali_port[0] = 4;
+		band->mali_port[1] = -1;
+		break;
+	case DMC_TYPE_T3X:
+		band->ops            = &s5_ddr_bw_ops;
+		band->channels     = 8;
+		band->dmc_number   = 2;
+		band->soc_feature |= DMC_DEVICE_8BIT;
+		band->mali_port[0] = 4; /* port3: mali */
 		band->mali_port[1] = -1;
 		break;
 #endif

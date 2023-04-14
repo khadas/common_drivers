@@ -68,7 +68,10 @@ static size_t s5_dmc_dump_reg(char *buf)
 			break;
 		case 1:
 			io = dmc_mon->io_mem2;
-			base = 0xfe034000;
+			if (dmc_mon->chip == DMC_TYPE_T3X)
+				base = 0xfe032000;
+			else
+				base = 0xfe034000;
 			break;
 		case 2:
 			io = dmc_mon->io_mem3;

@@ -1555,6 +1555,15 @@
 //Bit  6: 4        reg_iquant_yclut_1_1      // unsigned ,    RW, default = 1  quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
 //Bit  3           reserved
 //Bit  2: 0        reg_iquant_yclut_1_0      // unsigned ,    RW, default = 0  quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
+#define VD1_AFBCDM_BURST_CTRL                             0x4357
+//Bit 31:5     reserved
+//Bit 4        reg_ofset_burst4_en              //unsigned ,    RW  default = 0
+//Bit 3        reg_burst_length_add_en          //unsigned ,    RW  default = 0
+//Bit 2:0      reg_burst_length_add_value       //unsigned ,    RW  default = 2
+#define VD1_AFBCDM_LOSS_CTRL                              0x4358
+//Bit 31:5     reserved
+//Bit 4        reg_fix_cr_en                    //unsigned ,    RW  default = 0
+//Bit 3:0      reg_quant_diff_root_leave        //unsigned ,    RW  default = 2
 #define S5_VD1_AFBCDM_ROT_CTRL                            0x4360
 //Bit   31:30   reg_rot_ohds2_mode                  //unsigned, RW, default = 0 , rot output format down hor drop mode,0:average 1:use 0 2:use 1
 //Bit   29:28   reg_rot_ovds2_mode                  //unsigned, RW, default = 0 , rot output format down ver drop mode,0:average 1:use 0 2:use 1
@@ -1898,6 +1907,15 @@
 //Bit  6: 4        reg_iquant_yclut_1_1      // unsigned ,    RW, default = 1  quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
 //Bit  3           reserved
 //Bit  2: 0        reg_iquant_yclut_1_0      // unsigned ,    RW, default = 0  quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
+#define VD2_AFBCDM_BURST_CTRL                             0x43d7
+//Bit 31:5     reserved
+//Bit 4        reg_ofset_burst4_en              //unsigned ,    RW  default = 0
+//Bit 3        reg_burst_length_add_en          //unsigned ,    RW  default = 0
+//Bit 2:0      reg_burst_length_add_value       //unsigned ,    RW  default = 2
+#define VD2_AFBCDM_LOSS_CTRL                              0x43d8
+//Bit 31:5     reserved
+//Bit 4        reg_fix_cr_en                    //unsigned ,    RW  default = 0
+//Bit 3:0      reg_quant_diff_root_leave        //unsigned ,    RW  default = 2
 #define S5_VD2_AFBCDM_ROT_CTRL                            0x43e0
 //Bit   31:30   reg_rot_ohds2_mode                  //unsigned, RW, default = 0 , rot output format down hor drop mode,0:average 1:use 0 2:use 1
 //Bit   29:28   reg_rot_ovds2_mode                  //unsigned, RW, default = 0 , rot output format down ver drop mode,0:average 1:use 0 2:use 1
@@ -2263,6 +2281,15 @@
 //Bit  6: 4        reg_iquant_yclut_1_1      // unsigned ,    RW, default = 1  quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
 //Bit  3           reserved
 //Bit  2: 0        reg_iquant_yclut_1_0      // unsigned ,    RW, default = 0  quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
+#define VD3_AFBCDM_BURST_CTRL                             0x4457
+//Bit 31:5     reserved
+//Bit 4        reg_ofset_burst4_en              //unsigned ,    RW  default = 0
+//Bit 3        reg_burst_length_add_en          //unsigned ,    RW  default = 0
+//Bit 2:0      reg_burst_length_add_value       //unsigned ,    RW  default = 2
+#define VD3_AFBCDM_LOSS_CTRL                              0x4458
+//Bit 31:5     reserved
+//Bit 4        reg_fix_cr_en                    //unsigned ,    RW  default = 0
+//Bit 3:0      reg_quant_diff_root_leave        //unsigned ,    RW  default = 2
 #define S5_VD3_AFBCDM_ROT_CTRL                            0x4460
 //Bit   31:30   reg_rot_ohds2_mode                  //unsigned, RW, default = 0 , rot output format down hor drop mode,0:average 1:use 0 2:use 1
 //Bit   29:28   reg_rot_ovds2_mode                  //unsigned, RW, default = 0 , rot output format down ver drop mode,0:average 1:use 0 2:use 1
@@ -2601,6 +2628,15 @@
 //Bit  6: 4        reg_iquant_yclut_1_1      // unsigned ,    RW, default = 1  quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
 //Bit  3           reserved
 //Bit  2: 0        reg_iquant_yclut_1_0      // unsigned ,    RW, default = 0  quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
+#define VD4_AFBCDM_BURST_CTRL                             0x44d7
+//Bit 31:5     reserved
+//Bit 4        reg_ofset_burst4_en              //unsigned ,    RW  default = 0
+//Bit 3        reg_burst_length_add_en          //unsigned ,    RW  default = 0
+//Bit 2:0      reg_burst_length_add_value       //unsigned ,    RW  default = 2
+#define VD4_AFBCDM_LOSS_CTRL                              0x44d8
+//Bit 31:5     reserved
+//Bit 4        reg_fix_cr_en                    //unsigned ,    RW  default = 0
+//Bit 3:0      reg_quant_diff_root_leave        //unsigned ,    RW  default = 2
 #define S5_VD4_AFBCDM_ROT_CTRL                            0x44e0
 //Bit   31:30   reg_rot_ohds2_mode                  //unsigned, RW, default = 0 , rot output format down hor drop mode,0:average 1:use 0 2:use 1
 //Bit   29:28   reg_rot_ovds2_mode                  //unsigned, RW, default = 0 , rot output format down ver drop mode,0:average 1:use 0 2:use 1
@@ -2961,6 +2997,15 @@
 //Bit  6: 4        reg_iquant_yclut_1_1      // unsigned ,    RW, default = 1  quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
 //Bit  3           reserved
 //Bit  2: 0        reg_iquant_yclut_1_0      // unsigned ,    RW, default = 0  quantization lut for mintree leavs, iquant=2^lut(bc_leav_q+1)
+#define VD5_AFBCDM_BURST_CTRL                             0x4557
+//Bit 31:5     reserved
+//Bit 4        reg_ofset_burst4_en              //unsigned ,    RW  default = 0
+//Bit 3        reg_burst_length_add_en          //unsigned ,    RW  default = 0
+//Bit 2:0      reg_burst_length_add_value       //unsigned ,    RW  default = 2
+#define VD5_AFBCDM_LOSS_CTRL                              0x4558
+//Bit 31:5     reserved
+//Bit 4        reg_fix_cr_en                    //unsigned ,    RW  default = 0
+//Bit 3:0      reg_quant_diff_root_leave        //unsigned ,    RW  default = 2
 #define S5_VD5_AFBCDM_ROT_CTRL                            0x4560
 //Bit   31:30   reg_rot_ohds2_mode                  //unsigned, RW, default = 0 , rot output format down hor drop mode,0:average 1:use 0 2:use 1
 //Bit   29:28   reg_rot_ovds2_mode                  //unsigned, RW, default = 0 , rot output format down ver drop mode,0:average 1:use 0 2:use 1

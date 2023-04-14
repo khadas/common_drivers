@@ -280,6 +280,7 @@ struct video_dev_s {
 	u8 secure_src;
 	u8 sr01_num;
 	u8 mosaic_support;
+	u8 cr_loss;
 };
 
 struct video_layer_s;
@@ -614,13 +615,14 @@ enum cpu_type_e {
 };
 
 struct video_device_hw_s {
-	u32 vd2_independ_blend_ctrl;
-	u32 aisr_support;
-	u32 prevsync_support;
-	u32 di_hf_y_reverse;
-	u32 sr_in_size;
-	u32 mosaic_support;
-	u32 sr01_num;
+	u8 vd2_independ_blend_ctrl;
+	u8 aisr_support;
+	u8 prevsync_support;
+	u8 di_hf_y_reverse;
+	u8 sr_in_size;
+	u8 mosaic_support;
+	u8 sr01_num;
+	u8 cr_loss;
 };
 
 struct amvideo_device_data_s {

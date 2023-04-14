@@ -92,6 +92,8 @@ struct vd_afbc_reg_s {
 	u32 afbcdec_iquant_lut_3; /* AFBCDEC_IQUANT_LUT_3 */
 	u32 afbcdec_iquant_lut_4; /* AFBCDEC_IQUANT_LUT_4 */
 	u32 afbc_top_ctrl;
+	u32 afbcd_burst_ctrl;
+	u32 afbcd_loss_ctrl;
 };
 
 struct vd_fg_reg_s {

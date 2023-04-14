@@ -13956,6 +13956,7 @@ static struct video_device_hw_s s5_dev_property = {
 	.sr_in_size = 1,
 	.mosaic_support = 1,
 	.sr01_num = 1,
+	.cr_loss = 0,
 };
 
 static struct video_device_hw_s t5m_dev_property = {
@@ -13975,6 +13976,7 @@ static struct video_device_hw_s t3x_dev_property = {
 	.sr_in_size = 1,
 	.mosaic_support = 0,
 	.sr01_num = 2,
+	.cr_loss = 1,
 };
 #endif
 

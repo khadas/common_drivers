@@ -6009,17 +6009,47 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 
 		cur_dev->rdma_func[vpp_index].rdma_wr(vd_afbc_reg->afbc_vd_cfmt_ctrl, r);
 
-		if (type & VIDTYPE_COMPRESS_LOSS)
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(vd_afbc_reg->afbcdec_iquant_enable,
-				((1 << 11) |
-				(1 << 10) |
-				(1 << 4) |
-				(1 << 0)));
-		else
+		if (type & VIDTYPE_COMPRESS_LOSS) {
+			/* 1:cr_loosy  0:quan_loosy */
+			if (vf->vf_lossycomp_param.lossy_mode == 1 &&
+				cur_dev->cr_loss) {
+				/* cr_lossy */
+				u32 fix_cr_en, quant_diff_root_leave;
+				u32 ofset_brst4_en, brst_len_add_value, brst_len_add_en;
+
+				fix_cr_en = 1;
+				quant_diff_root_leave =
+					vf->vf_lossycomp_param.quant_diff_root_leave;
+				brst_len_add_en = vf->vf_lossycomp_param.burst_length_add_en;
+				brst_len_add_value = vf->vf_lossycomp_param.burst_length_add_value;
+				ofset_brst4_en = vf->vf_lossycomp_param.ofset_burst4_en;
+				cur_dev->rdma_func[vpp_index].rdma_wr
+					(vd_afbc_reg->afbcd_loss_ctrl,
+					(fix_cr_en << 4) |
+					quant_diff_root_leave);
+				if (type & VIDTYPE_VIU_444)
+					cur_dev->rdma_func[vpp_index].rdma_wr
+						(vd_afbc_reg->afbcd_burst_ctrl,
+						(ofset_brst4_en     << 4) |
+						(brst_len_add_en    << 3) |
+						(brst_len_add_value << 0));
+			} else {
+				/* quan_loosy */
+				cur_dev->rdma_func[vpp_index].rdma_wr
+					(vd_afbc_reg->afbcdec_iquant_enable,
+					((1 << 11) |
+					(1 << 10) |
+					(1 << 4) |
+					(1 << 0)));
+			}
+		} else {
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(vd_afbc_reg->afbcdec_iquant_enable, 0);
-
+			/* disable cr loss */
+			if (cur_dev->cr_loss)
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
+					(vd_afbc_reg->afbcd_loss_ctrl, 0, 4, 1);
+		}
 		vd1_path_select_s5(layer, true, false, di_post, di_pre_link);
 		if (is_mvc)
 			vdx_path_select_s5(layer, true, false);
@@ -6535,16 +6565,47 @@ static void vd1_set_slice_dcu_s5(struct video_layer_s *layer,
 
 		cur_dev->rdma_func[vpp_index].rdma_wr(vd_afbc_reg->afbc_vd_cfmt_ctrl, r);
 
-		if (type & VIDTYPE_COMPRESS_LOSS)
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(vd_afbc_reg->afbcdec_iquant_enable,
-				((1 << 11) |
-				(1 << 10) |
-				(1 << 4) |
-				(1 << 0)));
-		else
+		if (type & VIDTYPE_COMPRESS_LOSS) {
+			/* 1:cr_loosy  0:quan_loosy */
+			if (vf->vf_lossycomp_param.lossy_mode == 1 &&
+				cur_dev->cr_loss) {
+				/* cr_lossy */
+				u32 fix_cr_en, quant_diff_root_leave;
+				u32 ofset_brst4_en, brst_len_add_value, brst_len_add_en;
+
+				fix_cr_en = 1;
+				quant_diff_root_leave =
+					vf->vf_lossycomp_param.quant_diff_root_leave;
+				brst_len_add_en = vf->vf_lossycomp_param.burst_length_add_en;
+				brst_len_add_value = vf->vf_lossycomp_param.burst_length_add_value;
+				ofset_brst4_en = vf->vf_lossycomp_param.ofset_burst4_en;
+				cur_dev->rdma_func[vpp_index].rdma_wr
+					(vd_afbc_reg->afbcd_loss_ctrl,
+					(fix_cr_en << 4) |
+					quant_diff_root_leave);
+				if (type & VIDTYPE_VIU_444)
+					cur_dev->rdma_func[vpp_index].rdma_wr
+						(vd_afbc_reg->afbcd_burst_ctrl,
+						(ofset_brst4_en     << 4) |
+						(brst_len_add_en    << 3) |
+						(brst_len_add_value << 0));
+			} else {
+				/* quan_loosy */
+				cur_dev->rdma_func[vpp_index].rdma_wr
+					(vd_afbc_reg->afbcdec_iquant_enable,
+					((1 << 11) |
+					(1 << 10) |
+					(1 << 4) |
+					(1 << 0)));
+			}
+		} else {
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(vd_afbc_reg->afbcdec_iquant_enable, 0);
+			/* disable cr loss */
+			if (cur_dev->cr_loss)
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
+					(vd_afbc_reg->afbcd_loss_ctrl, 0, 4, 1);
+		}
 
 		vd1_path_select_s5(layer, true, false, di_post, di_pre_link);
 		cur_dev->rdma_func[vpp_index].rdma_wr
@@ -6952,16 +7013,48 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(vd_afbc_reg->afbc_vd_cfmt_ctrl, r);
 
-		if (type & VIDTYPE_COMPRESS_LOSS)
+		if (type & VIDTYPE_COMPRESS_LOSS) {
+			/* 1:cr_loosy  0:quan_loosy */
+			if (vf->vf_lossycomp_param.lossy_mode == 1 &&
+				cur_dev->cr_loss) {
+				/* cr_lossy */
+				u32 fix_cr_en, quant_diff_root_leave;
+				u32 ofset_brst4_en, brst_len_add_value, brst_len_add_en;
+
+				fix_cr_en = 1;
+				quant_diff_root_leave =
+					vf->vf_lossycomp_param.quant_diff_root_leave;
+				brst_len_add_en = vf->vf_lossycomp_param.burst_length_add_en;
+				brst_len_add_value = vf->vf_lossycomp_param.burst_length_add_value;
+				ofset_brst4_en = vf->vf_lossycomp_param.ofset_burst4_en;
+				cur_dev->rdma_func[vpp_index].rdma_wr
+					(vd_afbc_reg->afbcd_loss_ctrl,
+					(fix_cr_en << 4) |
+					quant_diff_root_leave);
+				if (type & VIDTYPE_VIU_444)
+					cur_dev->rdma_func[vpp_index].rdma_wr
+						(vd_afbc_reg->afbcd_burst_ctrl,
+						(ofset_brst4_en     << 4) |
+						(brst_len_add_en    << 3) |
+						(brst_len_add_value << 0));
+			} else {
+				/* quan_loosy */
+				cur_dev->rdma_func[vpp_index].rdma_wr
+					(vd_afbc_reg->afbcdec_iquant_enable,
+					((1 << 11) |
+					(1 << 10) |
+					(1 << 4) |
+					(1 << 0)));
+			}
+		} else {
 			cur_dev->rdma_func[vpp_index].rdma_wr
-			(vd_afbc_reg->afbcdec_iquant_enable,
-			((1 << 11) |
-			(1 << 10) |
-			(1 << 4) |
-			(1 << 0)));
-		else
-			cur_dev->rdma_func[vpp_index].rdma_wr
-			(vd_afbc_reg->afbcdec_iquant_enable, 0);
+				(vd_afbc_reg->afbcdec_iquant_enable, 0);
+			/* disable cr loss */
+			if (cur_dev->cr_loss)
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
+					(vd_afbc_reg->afbcd_loss_ctrl, 0, 4, 1);
+		}
+
 		vdx_path_select_s5(layer, true, false);
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(vd_mif_reg->vd_if0_gen_reg, 0);
@@ -11935,6 +12028,7 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	cur_dev->is_tv_panel = p_amvideo->is_tv_panel;
 	cur_dev->sr01_num = p_amvideo->dev_property.sr01_num;
 	cur_dev->mosaic_support = p_amvideo->dev_property.mosaic_support;
+	cur_dev->cr_loss = p_amvideo->dev_property.cr_loss;
 	if (cur_dev->aisr_support)
 		cur_dev->pps_auto_calc = 1;
 	cur_dev->prevsync_support = p_amvideo->dev_property.prevsync_support;

@@ -563,6 +563,14 @@ struct vf_ud_param_s {
 	struct userdata_param_t ud_param;
 };
 
+struct vf_lossycomp_param_s {
+	u32 lossy_mode;//0:quan_loosy  1:cr_loosy
+	u32 quant_diff_root_leave;
+	u32 burst_length_add_en;
+	u32 burst_length_add_value;
+	u32 ofset_burst4_en;
+};
+
 struct vframe_s {
 	u32 index;
 	u32 index_disp;
@@ -763,9 +771,9 @@ struct vframe_s {
 	/* data address of userdata_param_t structure */
 	struct vf_ud_param_s vf_ud_param;
 	u32 afbce_num;
-
 	/* link to uvm src_vf */
 	struct vframe_s *uvm_vf;
+	struct vf_lossycomp_param_s vf_lossycomp_param;
 } /*vframe_t */;
 
 #define VC_FLAG_AI_SR		0x1

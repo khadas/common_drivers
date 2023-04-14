@@ -36,6 +36,7 @@ static const struct pll_params_table t3x_sys_pll_params_table[] = {
 	PLL_PARAMS(71, 1, 0), /*DCO=1704MM OD=1704M*/
 	PLL_PARAMS(75, 1, 0), /*DCO=1800M OD=1800M*/
 	PLL_PARAMS(79, 1, 0), /*DCO=1896M OD=1896M*/
+	PLL_PARAMS(167, 2, 0), /*DCO=2004M OD=2004M*/
 	PLL_PARAMS(84, 1, 0), /*DCO=2016M OD=2016M*/
 	{ /* sentinel */ }
 };
@@ -56,6 +57,7 @@ static const struct pll_params_table t3x_sys_pll_params_table[] = {
 	PLL_PARAMS(71, 1), /*DCO=1704MM OD=1704M*/
 	PLL_PARAMS(75, 1), /*DCO=1800M OD=1800M*/
 	PLL_PARAMS(79, 1), /*DCO=1896M OD=1896M*/
+	PLL_PARAMS(167, 2), /*DCO=2004M OD=2004M*/
 	PLL_PARAMS(84, 1), /*DCO=2016M OD=2016M*/
 	{ /* sentinel */ }
 };

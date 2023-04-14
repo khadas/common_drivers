@@ -3063,6 +3063,7 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 		bit_depth = 12;
 	else if (module_sel == VDIN0_HDR ||
 		module_sel == VDIN1_HDR ||
+		module_sel == VDIN2_HDR ||
 		module_sel == DI_HDR ||
 		module_sel == DI_M2M_HDR ||
 		module_sel == VICP_HDR)
@@ -3486,6 +3487,7 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 	    module_sel == DI_M2M_HDR ||
 	    module_sel == VDIN0_HDR ||
 	    module_sel == VDIN1_HDR ||
+	    module_sel == VDIN2_HDR ||
 	    module_sel == VICP_HDR) {
 		/* default setting for HDR*/
 		if (hdr_process_select & RGB_VDIN &&
@@ -3619,6 +3621,7 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 		    module_sel == DI_M2M_HDR ||
 		    module_sel == VDIN0_HDR ||
 		    module_sel == VDIN1_HDR ||
+		    module_sel == VDIN2_HDR ||
 		    module_sel == VICP_HDR) {
 			if (hdr_process_select & RGB_VDIN &&
 			    hdr_process_select & FULL_VDIN) {
@@ -3742,6 +3745,7 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 		    module_sel == DI_M2M_HDR ||
 		    module_sel == VDIN0_HDR ||
 		    module_sel == VDIN1_HDR ||
+		    module_sel == VDIN2_HDR ||
 		    module_sel == VICP_HDR) {
 			if (hdr_process_select & RGB_VDIN &&
 			    hdr_process_select & FULL_VDIN) {
@@ -4163,6 +4167,7 @@ int hdr10p_ebzcurve_update(enum hdr_module_sel module_sel,
 		bit_depth = 12;
 	else if (module_sel == VDIN0_HDR ||
 		 module_sel == VDIN1_HDR ||
+		 module_sel == VDIN2_HDR ||
 		 module_sel == DI_HDR ||
 		 module_sel == DI_M2M_HDR ||
 		 module_sel == VICP_HDR)
@@ -4271,6 +4276,7 @@ int hdr10_tm_update(enum hdr_module_sel module_sel,
 		bit_depth = 12;
 	else if (module_sel == VDIN0_HDR ||
 		 module_sel == VDIN1_HDR ||
+		 module_sel == VDIN2_HDR ||
 		 module_sel == DI_HDR ||
 		 module_sel == DI_M2M_HDR ||
 		 module_sel == VICP_HDR)
@@ -4392,6 +4398,7 @@ enum hdr_process_sel hdr10p_func(enum hdr_module_sel module_sel,
 		bit_depth = 12;
 	else if (module_sel == VDIN0_HDR ||
 		 module_sel == VDIN1_HDR ||
+		 module_sel == VDIN2_HDR ||
 		 module_sel == DI_HDR ||
 		 module_sel == DI_M2M_HDR ||
 		 module_sel == VICP_HDR)
@@ -4674,6 +4681,7 @@ int cuva_hdr_update(enum hdr_module_sel module_sel,
 		bit_depth = 12;
 	else if (module_sel == VDIN0_HDR ||
 		module_sel == VDIN1_HDR ||
+		module_sel == VDIN2_HDR ||
 		module_sel == DI_HDR ||
 		module_sel == DI_M2M_HDR ||
 		module_sel == VICP_HDR)
@@ -4993,6 +5001,7 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 		bit_depth = 12;
 	else if (module_sel == VDIN0_HDR ||
 		module_sel == VDIN1_HDR ||
+		module_sel == VDIN2_HDR ||
 		module_sel == DI_HDR ||
 		module_sel == DI_M2M_HDR ||
 		module_sel == VICP_HDR)
@@ -5425,6 +5434,7 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 	    module_sel == DI_M2M_HDR ||
 	    module_sel == VDIN0_HDR ||
 	    module_sel == VDIN1_HDR ||
+	    module_sel == VDIN2_HDR ||
 	    module_sel == VICP_HDR) {
 		/* default setting for HDR*/
 		if (hdr_process_select & RGB_VDIN &&
@@ -5555,6 +5565,7 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 		    module_sel == DI_M2M_HDR ||
 		    module_sel == VDIN0_HDR ||
 		    module_sel == VDIN1_HDR ||
+		    module_sel == VDIN2_HDR ||
 		    module_sel == VICP_HDR) {
 			if (hdr_process_select & RGB_VDIN &&
 			    hdr_process_select & FULL_VDIN) {
@@ -5731,6 +5742,7 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 		    module_sel == DI_M2M_HDR ||
 		    module_sel == VDIN0_HDR ||
 		    module_sel == VDIN1_HDR ||
+		    module_sel == VDIN2_HDR ||
 		    module_sel == VICP_HDR) {
 			if (hdr_process_select & RGB_VDIN &&
 			    hdr_process_select & FULL_VDIN) {
@@ -5833,6 +5845,7 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 		    module_sel == DI_M2M_HDR ||
 		    module_sel == VDIN0_HDR ||
 		    module_sel == VDIN1_HDR ||
+		    module_sel == VDIN2_HDR ||
 		    module_sel == VICP_HDR) {
 			if (hdr_process_select & RGB_VDIN &&
 			    hdr_process_select & FULL_VDIN) {

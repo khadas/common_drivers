@@ -106,8 +106,8 @@ void vdin_hw_enable_t3x(struct vdin_dev_s *devp);
 void vdin_hw_disable_t3x(struct vdin_dev_s *devp);
 unsigned int vdin_get_field_type(unsigned int offset);
 int vdin_vsync_reset_mif_t3x(int index);
-bool vdin_check_vdi6_afifo_overflow(unsigned int offset);
-void vdin_clear_vdi6_afifo_overflow_flg(unsigned int offset);
+bool vdin_check_vdi6_afifo_overflow_t3x(unsigned int offset);
+void vdin_clear_vdi6_afifo_overflow_flg_t3x(unsigned int offset);
 void vdin_set_cutwin_t3x(struct vdin_dev_s *devp);
 void vdin_set_decimation_t3x(struct vdin_dev_s *devp);
 void vdin_fix_nonstd_vsync_t3x(struct vdin_dev_s *devp);
@@ -137,11 +137,11 @@ void vdin_wr_reverse_t3x(unsigned int offset, bool h_reverse,
 		     bool v_reverse);
 void vdin_set_hv_scale_t3x(struct vdin_dev_s *devp);
 void vdin_set_bitdepth_t3x(struct vdin_dev_s *devp);
-void vdin_set_cm2(unsigned int offset, unsigned int w,
+void vdin_set_cm2_t3x(unsigned int offset, unsigned int w,
 		  unsigned int h, unsigned int *data);
-void vdin_bypass_isp(unsigned int offset);
-void vdin_set_mpegin(struct vdin_dev_s *devp);
-void vdin_force_go_filed(struct vdin_dev_s *devp);
+void vdin_bypass_isp_t3x(unsigned int offset);
+void vdin_set_mpegin_t3x(struct vdin_dev_s *devp);
+void vdin_force_go_filed_t3x(struct vdin_dev_s *devp);
 void vdin_adjust_tvafe_snow_brightness(void);
 void vdin_set_config(struct vdin_dev_s *devp);
 void vdin_set_wr_mif_t3x(struct vdin_dev_s *devp);
@@ -166,18 +166,8 @@ void vdin_urgent_patch_resume_t3x(unsigned int offset);
 int vdin_hdr_sei_error_check(struct vdin_dev_s *devp);
 void vdin_set_drm_data(struct vdin_dev_s *devp,
 		       struct vframe_s *vf);
-void vdin_set_freesync_data(struct vdin_dev_s *devp,
-			    struct vframe_s *vf);
-u32 vdin_get_curr_field_type(struct vdin_dev_s *devp);
-void vdin_set_source_type(struct vdin_dev_s *devp,
-			  struct vframe_s *vf);
-void vdin_set_source_mode(struct vdin_dev_s *devp, struct vframe_s *vf);
 void vdin_set_source_bitdepth(struct vdin_dev_s *devp,
 			      struct vframe_s *vf);
-void vdin_set_pixel_aspect_ratio(struct vdin_dev_s *devp,
-				 struct vframe_s *vf);
-void vdin_set_display_ratio(struct vdin_dev_s *devp,
-			    struct vframe_s *vf);
 void vdin_source_bitdepth_reinit(struct vdin_dev_s *devp);
 void set_invert_top_bot(bool invert_flag);
 void vdin_clk_on_off_t3x(struct vdin_dev_s *devp, bool on_off);
@@ -187,7 +177,6 @@ extern enum tvin_force_color_range_e color_range_force;
 //void vdin_vlock_input_sel(unsigned int type,
 //			  enum vframe_source_type_e source_type);
 void vdin_set_dv_tunnel_t3x(struct vdin_dev_s *devp);
-void vdin_check_hdmi_hdr(struct vdin_dev_s *devp);
 void vdin_dolby_mdata_write_en_t3x(unsigned int offset, unsigned int en);
 void vdin_prob_set_xy_t3x(unsigned int offset,
 		      unsigned int x, unsigned int y, struct vdin_dev_s *devp);
@@ -209,7 +198,6 @@ void vdin_dolby_de_tunnel_to_12bit(struct vdin_dev_s *devp,
 				   unsigned int on_off);
 void vdin_wr_frame_en(unsigned int ch, unsigned int on_off);
 void vdin_set_mif_on_off_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable);
-void vdin_vs_proc_monitor(struct vdin_dev_s *devp);
 enum tvin_color_fmt_range_e
 	tvin_get_force_fmt_range(enum tvin_color_fmt_e color_fmt);
 bool vdin_is_convert_to_444(u32 format_convert);
@@ -242,7 +230,6 @@ void vdin_set_to_vpp_parm(struct vdin_dev_s *devp);
 void vdin_dmc_ctrl(struct vdin_dev_s *devp, bool on_off);
 void vdin_pause_mif_write_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable);
 bool vdin_check_is_spd_data(struct vdin_dev_s *devp);
-bool vdin_check_spd_data_chg(struct vdin_dev_s *devp);
 void vdin_sw_reset_t3x(struct vdin_dev_s *devp);
 void vdin_bist_t3x(struct vdin_dev_s *devp, unsigned int mode);
 #endif

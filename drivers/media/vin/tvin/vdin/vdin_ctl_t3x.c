@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2021 Amlogic, Inc. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -49,7 +49,7 @@ static unsigned int rgb_info_g;
 static unsigned int rgb_info_b;
 //static int vdin_det_idle_wait = 100;
 static unsigned int delay_line_num;
-static bool invert_top_bot;
+//static bool invert_top_bot;
 //static unsigned int vdin0_afbce_debug_force;
 static unsigned int vdin_luma_max;
 
@@ -97,51 +97,8 @@ static bool cm_enable = 1;
 #define VDIN_PIXEL_CLK_4K_30HZ		248832000
 #define VDIN_PIXEL_CLK_4K_60HZ		530841600 //4096x2160x60
 
-/*reset reg mif value of vdin0:
- *	VDIN_WR_CTRL \VDIN_COM_CTRL0\ VDIN_MISC_CTRL
- */
-//static void vdin0_wr_mif_reset_t3x(void)
-//{
-//	if (vsync_reset_mask & 0x08) {
-//		W_VCBUS_BIT(VDIN_WR_CTRL, 1, FRAME_SOFT_RST_EN_BIT, FRAME_SOFT_RST_EN_WID);
-//		W_VCBUS_BIT(VDIN_COM_CTRL0, 1, VDIN_FORCEGOLINE_EN_BIT, 1);
-//		udelay(1);
-//		W_VCBUS_BIT(VDIN_WR_CTRL, 0, FRAME_SOFT_RST_EN_BIT, FRAME_SOFT_RST_EN_WID);
-//	} else {
-//		W_VCBUS_BIT(VDIN_WR_CTRL, 0,
-//			VDIN_WR_CTRL_REG_PAUSE_BIT, VDIN_WR_CTRL_REG_PAUSE_WID);
-//		W_VCBUS_BIT(VDIN_MISC_CTRL, 1, 2, 1);
-//		W_VCBUS_BIT(VDIN_MISC_CTRL, 1, VDIN0_MIF_RST_BIT, 1);
-//		udelay(1);
-//		W_VCBUS_BIT(VDIN_MISC_CTRL, 0, VDIN0_MIF_RST_BIT, 1);
-//		W_VCBUS_BIT(VDIN_MISC_CTRL, 0, 2, 1);
-//		W_VCBUS_BIT(VDIN_WR_CTRL, 1, WR_REQ_EN_BIT, WR_REQ_EN_WID);
-//		W_VCBUS_BIT(VDIN_WR_CTRL, 1,
-//			VDIN_WR_CTRL_REG_PAUSE_BIT, VDIN_WR_CTRL_REG_PAUSE_WID);
-//	}
-//};
-
-/*reset reg mif value of vdin1:
- *	VDIN_WR_CTRL \VDIN_COM_CTRL1\ VDIN_MISC_CTRL
- */
-//static void vdin1_wr_mif_reset_t3x(void)
-//{
-//	if (vsync_reset_mask & 0x08) {
-//		W_VCBUS_BIT(VDIN1_WR_CTRL, 1, FRAME_SOFT_RST_EN_BIT, 1);
-//		W_VCBUS_BIT(VDIN_COM_CTRL1, 1, VDIN_FORCEGOLINE_EN_BIT, 1);
-//		udelay(1);
-//		W_VCBUS_BIT(VDIN1_WR_CTRL, 0, FRAME_SOFT_RST_EN_BIT, 1);
-//	} else {
-//		W_VCBUS_BIT(VDIN1_WR_CTRL, 0, VDIN_WR_CTRL_REG_PAUSE_BIT, 1);
-//		W_VCBUS_BIT(VDIN_MISC_CTRL, 1, VDIN1_MIF_RST_BIT, 1);
-//		udelay(1);
-//		W_VCBUS_BIT(VDIN_MISC_CTRL, 0, VDIN1_MIF_RST_BIT, 1);
-//		W_VCBUS_BIT(VDIN1_WR_CTRL, 1, WR_REQ_EN_BIT, WR_REQ_EN_WID);
-//		W_VCBUS_BIT(VDIN1_WR_CTRL, 1, VDIN_WR_CTRL_REG_PAUSE_BIT, 1);
-//	}
-//}
-
 /***************************Local Structures**********************************/
+//lht todo
 static struct vdin_matrix_lup_s vdin_matrix_lup[] = {
 	{0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
 		0x00000000, 0x0400200, 0x00000200,},
@@ -377,335 +334,6 @@ static struct vdin_matrix_lup_s vdin_matrix_lup[] = {
 
 /***************************Local function**********************************/
 
-/*set csc range idx
- * parameters:
- *	a.devp
- * return
- *	0: limit
- *	1: full
- */
-u32 vdin_matrix_range_chk_t3x(struct vdin_dev_s *devp)
-{
-	enum tvin_color_fmt_range_e fmt_range;
-	enum vdin_format_convert_e format_convert;
-
-	fmt_range = devp->prop.color_fmt_range;
-	format_convert = devp->format_convert;
-	switch (devp->csc_idx) {
-	case VDIN_MATRIX_YUV601F_RGB:
-	case VDIN_MATRIX_RGBS_YUV601F:
-	case VDIN_MATRIX_YUV601_YUV601F:
-	case VDIN_MATRIX_YUV709_RGB:
-	case VDIN_MATRIX_YUV709_GBR:
-	case VDIN_MATRIX_YUV709_BRG:
-	case VDIN_MATRIX_RGB_YUV709F:
-	case VDIN_MATRIX_YUV709F_RGB:
-	case VDIN_MATRIX_RGBS_YUV709F:
-	case VDIN_MATRIX_YUV709_YUV709F:
-	case VDIN_MATRIX_YUV601_YUV709F:
-	case VDIN_MATRIX_YUV601F_YUV709F:
-	case VDIN_MATRIX_YUV709F_YUV601F:
-	case VDIN_MATRIX_YUV709_YUV601F:
-	case VDIN_MATRIX_RGBS_RGB:
-		return 1;
-
-	case VDIN_MATRIX_NULL:
-		if (format_convert == VDIN_FORMAT_CONVERT_RGB_RGB)
-			if (fmt_range == TVIN_FMT_RANGE_NULL ||
-			    fmt_range == TVIN_RGB_FULL)
-				return 1;
-			else
-				return 0;
-		else
-			if (fmt_range == TVIN_RGB_FULL ||
-			    fmt_range == TVIN_YUV_FULL)
-				return 1;
-			else
-				return 0;
-	case VDIN_MATRIX_XXX_YUV601_BLACK:
-	case VDIN_MATRIX_RGB_YUV601:
-	case VDIN_MATRIX_GBR_YUV601:
-	case VDIN_MATRIX_BRG_YUV601:
-	case VDIN_MATRIX_RGBS_YUV601:
-	case VDIN_MATRIX_YUV601_RGBS:
-	case VDIN_MATRIX_YUV601F_RGBS:
-	case VDIN_MATRIX_YUV601F_YUV601:
-	case VDIN_MATRIX_RGB_YUV709:
-	case VDIN_MATRIX_RGBS_YUV709:
-	case VDIN_MATRIX_YUV709_RGBS:
-	case VDIN_MATRIX_YUV709F_RGBS:
-	case VDIN_MATRIX_YUV709F_YUV709:
-	case VDIN_MATRIX_YUV601_YUV709:
-	case VDIN_MATRIX_YUV709_YUV601:
-	case VDIN_MATRIX_YUV709F_YUV601:
-	case VDIN_MATRIX_YUV601F_YUV709:
-	case VDIN_MATRIX_RGB_RGBS:
-	case VDIN_MATRIX_RGB2020_YUV2020:
-	default:
-		return 0;
-	}
-}
-
-/* set format_convert
- * base on parameters:
- *	a.color_format
- *	b.dest_cfmt
- */
-void vdin_get_format_convert_t3x(struct vdin_dev_s *devp)
-{
-	enum vdin_format_convert_e	format_convert;
-	unsigned int port = devp->parm.port;
-	unsigned int scan_mod = devp->fmt_info_p->scan_mode;
-	unsigned int manual_md = (devp->flags & VDIN_FLAG_MANUAL_CONVERSION);
-
-	if (IS_HDMI_SRC(port) && !manual_md)
-		devp->prop.dest_cfmt = TVIN_COLOR_FMT_MAX;
-
-#ifdef VDIN_BRINGUP_BYPASS_COLOR_CNVT
-	devp->prop.dest_cfmt = devp->prop.color_format;
-#endif
-
-	if (devp->prop.color_format == devp->prop.dest_cfmt) {
-		switch (devp->prop.color_format) {
-		case TVIN_YUV422:
-		case TVIN_YUYV422:
-		case TVIN_YVYU422:
-		case TVIN_UYVY422:
-		case TVIN_VYUY422:
-			format_convert = VDIN_FORMAT_CONVERT_YUV_YUV422;
-			break;
-		case TVIN_YUV444:
-			format_convert = VDIN_FORMAT_CONVERT_YUV_YUV444;
-			break;
-		case TVIN_RGB444:
-			format_convert = VDIN_FORMAT_CONVERT_RGB_RGB;
-			break;
-		default:
-			format_convert = VDIN_FORMAT_CONVERT_MAX;
-			break;
-		}
-	} else {
-		switch (devp->prop.color_format) {
-		case TVIN_YUV422:
-		case TVIN_YUYV422:
-		case TVIN_YVYU422:
-		case TVIN_UYVY422:
-		case TVIN_VYUY422:
-			if (devp->prop.dest_cfmt == TVIN_NV21) {
-				format_convert = VDIN_FORMAT_CONVERT_YUV_NV21;
-			} else if (devp->prop.dest_cfmt == TVIN_NV12) {
-				format_convert = VDIN_FORMAT_CONVERT_YUV_NV12;
-			} else {
-				if (manual_md &&
-				    devp->prop.dest_cfmt == TVIN_RGB444)
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_RGB;
-				else if (manual_md &&
-					 devp->prop.dest_cfmt == TVIN_YUV444)
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_YUV444;
-				else
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_YUV422;
-			}
-			break;
-		case TVIN_YUV444:
-			if (IS_HDMI_SRC(port) &&
-			    scan_mod == TVIN_SCAN_MODE_PROGRESSIVE && !manual_md) {
-				if (devp->vdin_pc_mode)
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_YUV444;
-				else
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_YUV422;
-			} else if (devp->prop.dest_cfmt == TVIN_NV21) {
-				format_convert = VDIN_FORMAT_CONVERT_YUV_NV21;
-			} else if (devp->prop.dest_cfmt == TVIN_NV12) {
-				format_convert = VDIN_FORMAT_CONVERT_YUV_NV12;
-			} else {
-				if (manual_md &&
-				    devp->prop.dest_cfmt == TVIN_RGB444)
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_RGB;
-				else if (manual_md &&
-					 devp->prop.dest_cfmt == TVIN_YUV422)
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_YUV422;
-				else if (manual_md &&
-					 devp->prop.dest_cfmt == TVIN_YUV444)
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_YUV444;
-				else
-					format_convert =
-						VDIN_FORMAT_CONVERT_YUV_YUV422;
-			}
-			break;
-		case TVIN_RGB444:
-			if (IS_HDMI_SRC(port) &&
-			    scan_mod == TVIN_SCAN_MODE_PROGRESSIVE && !manual_md) {
-				if (devp->vdin_pc_mode)
-					format_convert =
-						VDIN_FORMAT_CONVERT_RGB_RGB;
-				else
-					format_convert =
-						VDIN_FORMAT_CONVERT_RGB_YUV422;
-			} else if (devp->prop.dest_cfmt == TVIN_NV21) {
-				format_convert = VDIN_FORMAT_CONVERT_RGB_NV21;
-			} else if (devp->prop.dest_cfmt == TVIN_NV12) {
-				format_convert = VDIN_FORMAT_CONVERT_RGB_NV12;
-			} else {
-				if (manual_md &&
-				    devp->prop.dest_cfmt == TVIN_RGB444)
-					format_convert =
-						VDIN_FORMAT_CONVERT_RGB_RGB;
-				else if (manual_md &&
-					 devp->prop.dest_cfmt == TVIN_YUV422)
-					format_convert =
-						VDIN_FORMAT_CONVERT_RGB_YUV422;
-				else if (manual_md &&
-					 devp->prop.dest_cfmt == TVIN_YUV444)
-					format_convert =
-						VDIN_FORMAT_CONVERT_RGB_YUV444;
-				else
-					format_convert =
-						VDIN_FORMAT_CONVERT_RGB_YUV422;
-			}
-			break;
-		default:
-			format_convert = VDIN_FORMAT_CONVERT_MAX;
-		break;
-		}
-	}
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-	if (vdin_is_dolby_signal_in(devp)) {
-		/* Is dolby vision signal input */
-		/*
-		 *if (devp->dv.low_latency) {
-		 *	if (devp->prop.color_format == TVIN_YUV422) {
-		 *		format_convert = VDIN_FORMAT_CONVERT_YUV_YUV444;
-		 *	} else if (devp->prop.color_format == TVIN_RGB444) {
-		 *		format_convert = VDIN_FORMAT_CONVERT_RGB_RGB;
-		 *	}
-		 *} else {
-		 *	format_convert = VDIN_FORMAT_CONVERT_YUV_YUV444;
-		 *}
-		 */
-		if (devp->prop.color_format == TVIN_YUV422) {
-			/*rx will tunneled to 444*/
-			format_convert = VDIN_FORMAT_CONVERT_YUV_YUV444;
-		} else if (devp->prop.color_format == TVIN_RGB444) {
-			format_convert = VDIN_FORMAT_CONVERT_RGB_RGB;
-		} else {
-			format_convert = VDIN_FORMAT_CONVERT_YUV_YUV444;
-		}
-	}
-#endif
-	/*hw test:vdin de-tunnel to 422 12bit*/
-	//if (devp->dtdata->ipt444_to_422_12bit && vdin_cfg_444_to_422_wmif_en)
-	//	format_convert = VDIN_FORMAT_CONVERT_YUV_YUV422;
-
-	/* vdin v4l2 mode */
-	if (devp->work_mode == VDIN_WORK_MD_V4L) {
-		pr_info("%s vdin v4l2 mode,color_format:%#x,pixelformat:%#x\n", __func__,
-			devp->prop.color_format, devp->v4l2_fmt.fmt.pix_mp.pixelformat);
-		if (devp->prop.color_format == TVIN_RGB444) {
-			if (devp->v4l2_fmt.fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV12 ||
-				devp->v4l2_fmt.fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV12M)
-				format_convert = VDIN_FORMAT_CONVERT_RGB_NV12;
-			else if (devp->v4l2_fmt.fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV21 ||
-				devp->v4l2_fmt.fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV21M)
-				format_convert = VDIN_FORMAT_CONVERT_RGB_NV21;
-			else
-				format_convert = VDIN_FORMAT_CONVERT_RGB_YUV422;
-		} else {
-			if (devp->v4l2_fmt.fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV12 ||
-				devp->v4l2_fmt.fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV12M)
-				format_convert = VDIN_FORMAT_CONVERT_YUV_NV12;
-			else if (devp->v4l2_fmt.fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV21 ||
-				devp->v4l2_fmt.fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV21M)
-				format_convert = VDIN_FORMAT_CONVERT_YUV_NV21;
-			else
-				format_convert = VDIN_FORMAT_CONVERT_YUV_YUV422;
-		}
-	}
-
-	devp->format_convert = format_convert;
-	if (vdin_is_convert_to_422(format_convert))
-		devp->mif_fmt = MIF_FMT_YUV422;
-	else if (vdin_is_convert_to_444(format_convert))
-		devp->mif_fmt = MIF_FMT_YUV444;
-	else if (vdin_is_convert_to_nv21(format_convert))
-		devp->mif_fmt = MIF_FMT_NV12_21;
-	else
-		devp->mif_fmt = MIF_FMT_YUV422;
-	pr_info("%s pc mode:%d(%d), man_md:0x%x, cfmt:%d, dst cfmt:%d convert md:%d mif_fmt:%d\n",
-		__func__, vdin_pc_mode, devp->vdin_pc_mode, manual_md,
-		devp->prop.color_format, devp->prop.dest_cfmt, format_convert,
-		devp->mif_fmt);
-}
-
-/*function:
- *	format_convert
- *	based on dest_cfmt
- */
-enum vdin_format_convert_e
-vdin_get_format_convert_matrix0_t3x(struct vdin_dev_s *devp)
-{
-	enum vdin_format_convert_e format_convert = VDIN_FORMAT_CONVERT_MAX;
-
-	switch (devp->format_convert) {
-	case VDIN_FORMAT_CONVERT_YUV_NV21:
-	case VDIN_FORMAT_CONVERT_RGB_NV21:
-		format_convert = VDIN_FORMAT_CONVERT_RGB_NV21;
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_NV12:
-	case VDIN_FORMAT_CONVERT_RGB_NV12:
-		format_convert = VDIN_FORMAT_CONVERT_RGB_NV12;
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_RGB:
-	case VDIN_FORMAT_CONVERT_RGB_RGB:
-		format_convert = VDIN_FORMAT_CONVERT_RGB_RGB;
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_YUV444:
-	case VDIN_FORMAT_CONVERT_RGB_YUV444:
-		format_convert = VDIN_FORMAT_CONVERT_RGB_YUV444;
-		break;
-	default:
-		format_convert = VDIN_FORMAT_CONVERT_RGB_YUV422;
-		break;
-	}
-
-	return format_convert;
-}
-
-/*function:
- *	format_convert
- *	based on color_cfmt
- */
-enum vdin_format_convert_e
-vdin_get_format_convert_matrix1_t3x(struct vdin_dev_s *devp)
-{
-	enum vdin_format_convert_e format_convert = VDIN_FORMAT_CONVERT_MAX;
-
-	switch (devp->prop.color_format) {
-	case TVIN_YUV422:
-	case TVIN_YUYV422:
-	case TVIN_YVYU422:
-	case TVIN_UYVY422:
-	case TVIN_VYUY422:
-	case TVIN_YUV444:
-		format_convert = VDIN_FORMAT_CONVERT_YUV_RGB;
-	break;
-	case TVIN_RGB444:
-		format_convert = VDIN_FORMAT_CONVERT_RGB_RGB;
-		break;
-	default:
-		format_convert = VDIN_FORMAT_CONVERT_MAX;
-	break;
-	}
-	return format_convert;
-}
-
 /*get prob of r/g/b
  *	r 9:0
  *	g 19:10
@@ -714,13 +342,13 @@ vdin_get_format_convert_matrix1_t3x(struct vdin_dev_s *devp)
 void vdin_prob_get_rgb_t3x(unsigned int offset,
 		       unsigned int *r, unsigned int *g, unsigned int *b)
 {
-	*b = rgb_info_b = rd_bits(offset, VDIN_MAT0_PROBE_COLOR,
+	*b = rgb_info_b = rd_bits(offset, VDIN0_MAT_PROBE_COLOR,
 				  COMPONENT2_PROBE_COLOR_BIT,
 				  COMPONENT0_PROBE_COLOR_WID);
-	*g = rgb_info_g = rd_bits(offset, VDIN_MAT0_PROBE_COLOR,
+	*g = rgb_info_g = rd_bits(offset, VDIN0_MAT_PROBE_COLOR,
 				  COMPONENT1_PROBE_COLOR_BIT,
 				  COMPONENT1_PROBE_COLOR_WID);
-	*r = rgb_info_r = rd_bits(offset, VDIN_MAT0_PROBE_COLOR,
+	*r = rgb_info_r = rd_bits(offset, VDIN0_MAT_PROBE_COLOR,
 				  COMPONENT0_PROBE_COLOR_BIT,
 				  COMPONENT0_PROBE_COLOR_WID);
 }
@@ -730,13 +358,13 @@ void vdin_prob_get_yuv_t3x(unsigned int offset,
 		       unsigned int *rgb_yuv1,
 		       unsigned int *rgb_yuv2)
 {
-	*rgb_yuv0 = ((rd_bits(offset, VDIN_MAT0_PROBE_COLOR,
+	*rgb_yuv0 = ((rd_bits(offset, VDIN0_MAT_PROBE_COLOR,
 			      COMPONENT2_PROBE_COLOR_BIT,
 			      COMPONENT2_PROBE_COLOR_WID) << 8) >> 10);
-	*rgb_yuv1 = ((rd_bits(offset, VDIN_MAT0_PROBE_COLOR,
+	*rgb_yuv1 = ((rd_bits(offset, VDIN0_MAT_PROBE_COLOR,
 			      COMPONENT1_PROBE_COLOR_BIT,
 			      COMPONENT1_PROBE_COLOR_WID) << 8) >> 10);
-	*rgb_yuv2 = ((rd_bits(offset, VDIN_MAT0_PROBE_COLOR,
+	*rgb_yuv2 = ((rd_bits(offset, VDIN0_MAT_PROBE_COLOR,
 			      COMPONENT0_PROBE_COLOR_BIT,
 			      COMPONENT0_PROBE_COLOR_WID) << 8) >> 10);
 }
@@ -744,11 +372,10 @@ void vdin_prob_get_yuv_t3x(unsigned int offset,
 void vdin_prob_set_before_or_after_mat_t3x(unsigned int offset,
 				       unsigned int x, struct vdin_dev_s *devp)
 {
-	if (x != 0 && x != 1)
+	if (x != 0 && x != 1) //?
 		return;
 	/* 1:probe pixel data after matrix */
-	wr_bits(offset, VDIN_MATRIX_CTRL, x,
-		VDIN_PROBE_POST_BIT, VDIN_PROBE_POST_WID);
+	wr_bits(offset, VDIN0_MAT_CTRL, x, 1, 1);
 }
 
 void vdin_prob_matrix_sel_t3x(unsigned int offset,
@@ -758,7 +385,7 @@ void vdin_prob_matrix_sel_t3x(unsigned int offset,
 
 	x = sel & 0x03;
 	/* 1:select matrix 1 */
-	wr_bits(offset, VDIN_MAT0_CTRL, x, 1, 1);
+	wr_bits(offset, VDIN0_MAT_CTRL, x, 1, 1);
 }
 
 /* this function set flowing parameters:
@@ -777,9 +404,9 @@ void vdin_prob_set_xy_t3x(unsigned int offset,
 		rgb_info_y = y;
 
 	/* #if defined(VDIN_V1) */
-	wr_bits(offset, VDIN_MAT0_PROBE_POS, rgb_info_y,
+	wr_bits(offset, VDIN0_MAT_PROBE_POS, rgb_info_y,
 		PROBE_POX_Y_BIT, PROBE_POX_Y_WID);
-	wr_bits(offset, VDIN_MAT0_PROBE_POS, rgb_info_x,
+	wr_bits(offset, VDIN0_MAT_PROBE_POS, rgb_info_x,
 		PROBE_POS_X_BIT, PROBE_POS_X_WID);
 }
 
@@ -803,7 +430,7 @@ static void vdin_set_meas_mux_t3x(unsigned int offset, enum tvin_port_e port_,
 	/* unsigned int offset = devp->addr_offset; */
 	unsigned int meas_mux = MEAS_MUX_NULL;
 
-	if (is_meson_t3x_cpu())
+	if (is_meson_t3x_cpu()) //lht todo
 		return;
 
 	switch ((port_) >> 8) {
@@ -939,11 +566,12 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 		wr(0, VDIN_INTF_VDI4B_SIZE, vdi_size);
 		break;
 	case 0x40: /* hdmi rx hdmi0~1,vp core0--->vdi4b */
-		if (port == TVIN_PORT_HDMI0 || port == TVIN_PORT_HDMI1) {
-			vdin_mux = VDIN_VDI4B_HDMIRX_T3X;
-			wr(0, VDIN_INTF_VDI4B_CTRL, 0xe4);
-			wr(0, VDIN_INTF_VDI4B_SIZE, vdi_size);
-		} else {/* hdmi rx hdmi2~3,vp core1--->vdi4a */
+//		if (port == TVIN_PORT_HDMI0 || port == TVIN_PORT_HDMI1) {
+//			vdin_mux = VDIN_VDI4B_HDMIRX_T3X;
+//			wr(0, VDIN_INTF_VDI4B_CTRL, 0xe4);
+//			wr(0, VDIN_INTF_VDI4B_SIZE, vdi_size);
+//		} else {
+		/* hdmi rx hdmi2~3,vp core1--->vdi4a */
 			vdin_mux = VDIN_VDI4A_HDMIRX_T3X;
 			wr(0, VDIN_INTF_VDI4A_CTRL, 0xe4);
 			wr(0, VDIN_INTF_VDI4A_SIZE, vdi_size);
@@ -960,7 +588,7 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 			iounmap(dsc_clk);
 			//codecio_write_nocbus(DSC_CLK_CTRL_OFFSET, value);
 			pr_info("%s %d:value:%#x\n", __func__, __LINE__, value);
-		}
+//		}
 		vdin_data_bus_0 = VDIN_MAP_RCR;
 		vdin_data_bus_1 = VDIN_MAP_Y_G;
 		vdin_data_bus_2 = VDIN_MAP_BPB;
@@ -1464,9 +1092,11 @@ vdin_set_color_matrix_t3x(enum vdin_matrix_sel_e matrix_sel, unsigned int offset
 
 void vdin_set_hdr_t3x(struct vdin_dev_s *devp)
 {
-	enum vd_format_e video_format;
+	enum vd_format_e video_format = SIGNAL_SDR;
+	unsigned int vdin_hdr = VDIN1_HDR;
 
-	if (devp->hw_core != VDIN_HW_CORE_LITE || !devp->dtdata->vdin1_set_hdr ||
+	if ((devp->hw_core == VDIN_HW_CORE_NORMAL && !devp->dtdata->vdin0_set_hdr) ||
+	    (devp->hw_core == VDIN_HW_CORE_LITE && !devp->dtdata->vdin1_set_hdr) ||
 		devp->debug.vdin1_set_hdr_bypass)
 		return;
 
@@ -1492,6 +1122,14 @@ void vdin_set_hdr_t3x(struct vdin_dev_s *devp)
 	case TVIN_PORT_VIU2_ENCP:
 		video_format = devp->tx_fmt;
 		break;
+	case TVIN_PORT_HDMI0 ... TVIN_PORT_HDMI7:
+		if (devp->prop.hdr10p_info.hdr10p_on)
+			video_format = SIGNAL_HDR10PLUS;
+		else if (devp->prop.vdin_hdr_flag)
+			video_format = SIGNAL_HDR10;
+		else
+			video_format = SIGNAL_SDR;
+		break;
 
 	default:
 		video_format = devp->tx_fmt;
@@ -1504,6 +1142,13 @@ void vdin_set_hdr_t3x(struct vdin_dev_s *devp)
 		return;
 	}
 #endif
+	//video_format = SIGNAL_HDR10; // force for debug
+	if (devp->index == 1)
+		vdin_hdr = VDIN1_HDR;
+	else if (devp->index == 2)
+		vdin_hdr = VDIN2_HDR;
+	else
+		vdin_hdr = VDIN0_HDR;
 
 #ifndef VDIN_BRINGUP_NO_AMLVECM
 	pr_info("%s fmt:%d\n", __func__, video_format);
@@ -1515,17 +1160,17 @@ void vdin_set_hdr_t3x(struct vdin_dev_s *devp)
 		 * 2nd, process sel: bit1=HDR_SDR
 		 * bit11=HDR10P_SDR
 		 */
-		hdr_set(VDIN1_HDR, HDR_SDR, VPP_TOP0);
+		hdr_set(vdin_hdr, HDR_SDR, VPP_TOP0);
 		break;
 
 	case SIGNAL_SDR:
 		/* HDR_BYPASS(bit0) | HLG_BYPASS(bit3) */
-		hdr_set(VDIN1_HDR, HDR_BYPASS | HLG_BYPASS, VPP_TOP0);
+		hdr_set(vdin_hdr, HDR_BYPASS | HLG_BYPASS, VPP_TOP0);
 		break;
 
 	case SIGNAL_HLG:
 		/* HLG_SDR(bit4) */
-		hdr_set(VDIN1_HDR, HLG_SDR, VPP_TOP0);
+		hdr_set(vdin_hdr, HLG_SDR, VPP_TOP0);
 		break;
 
 	/* VDIN DON'T support dv loopback currently */
@@ -1586,7 +1231,7 @@ void vdin_set_matrix_t3x(struct vdin_dev_s *devp)
 			devp->csc_idx = VDIN_MATRIX_NULL;
 		}
 
-		//vdin_set_hdr_t3x(devp);
+		vdin_set_hdr_t3x(devp);
 
 //		#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 //		if (vdin_is_dolby_signal_in(devp) ||
@@ -1890,13 +1535,13 @@ void vdin_urgent_patch_t3x(unsigned int offset, unsigned int v,
 		wr_bits(offset, VDIN0_LFIFO_CTRL, 8,
 			VDIN_LFIFO_URG_DN_TH_BIT, VDIN_LFIFO_URG_DN_TH_WID);
 		/*vlsi guys suggest setting:*/
-		W_VCBUS_BIT(VPU_ARB_URG_CTRL, 1,
-			    VDIN_LFF_URG_CTRL_BIT, VDIN_LFF_URG_CTRL_WID);
-		W_VCBUS_BIT(VPU_ARB_URG_CTRL, 1,
-			    VPP_OFF_URG_CTRL_BIT, VPP_OFF_URG_CTRL_WID);
+//		W_VCBUS_BIT(VPU_ARB_URG_CTRL, 1,
+//			    VDIN_LFF_URG_CTRL_BIT, VDIN_LFF_URG_CTRL_WID);
+//		W_VCBUS_BIT(VPU_ARB_URG_CTRL, 1,
+//			    VPP_OFF_URG_CTRL_BIT, VPP_OFF_URG_CTRL_WID);
 	} else {
 		wr(offset, VDIN0_LFIFO_CTRL, 0);
-		aml_write_vcbus(VPU_ARB_URG_CTRL, 0);
+		//aml_write_vcbus(VPU_ARB_URG_CTRL, 0);
 	}
 }
 
@@ -2200,15 +1845,15 @@ void vdin_set_mif_on_off_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable)
 }
 
 /***************************global function**********************************/
-unsigned int vdin_get_meas_hcnt64_t3x(unsigned int offset)
+unsigned int vdin_get_meas_h_cnt64_t3x(unsigned int offset)
 {
-	return rd_bits(offset, VDIN_MEAS_HS_COUNT,
-		       MEAS_HS_CNT_BIT, MEAS_HS_CNT_WID);
+	return 0;
 }
 
 unsigned int vdin_get_meas_vstamp_t3x(unsigned int offset)
 {
-	return rd(offset, VDIN_MEAS_VS_COUNT_LO);
+	//return rd(offset, VDIN_MEAS_VS_COUNT_LO);
+	return 0;
 }
 
 unsigned int vdin_get_active_h_t3x(unsigned int offset)
@@ -2327,12 +1972,12 @@ void vdin_set_chroma_canvas_id_t3x(struct vdin_dev_s *devp, unsigned int rdma_en
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	if (rdma_enable)
 		rdma_write_reg_bits(devp->rdma_handle,
-				    VDIN_WRMIF_CTRL2 + devp->addr_offset,
+				    VDIN0_WRMIF_CTRL2 + devp->addr_offset,
 				    canvas_id, WRITE_CHROMA_CANVAS_ADDR_BIT,
 				    WRITE_CHROMA_CANVAS_ADDR_WID);
 	else
 #endif
-		wr_bits(devp->addr_offset, VDIN_WRMIF_CTRL2, canvas_id,
+		wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL2, canvas_id,
 			WRITE_CHROMA_CANVAS_ADDR_BIT,
 			WRITE_CHROMA_CANVAS_ADDR_WID);
 }
@@ -2359,25 +2004,25 @@ void vdin_set_canvas_id_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable,
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	if (rdma_enable) {
 		rdma_write_reg_bits(devp->rdma_handle,
-				    VDIN_WRMIF_CTRL + devp->addr_offset,
+				    VDIN0_WRMIF_CTRL + devp->addr_offset,
 				    canvas_id, WR_CANVAS_BIT, WR_CANVAS_WID);
 
 		if (devp->pause_dec)
-			rdma_write_reg_bits(devp->rdma_handle, VDIN_WRMIF_CTRL + devp->addr_offset,
+			rdma_write_reg_bits(devp->rdma_handle, VDIN0_WRMIF_CTRL + devp->addr_offset,
 					    0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
 		else
-			rdma_write_reg_bits(devp->rdma_handle, VDIN_WRMIF_CTRL + devp->addr_offset,
+			rdma_write_reg_bits(devp->rdma_handle, VDIN0_WRMIF_CTRL + devp->addr_offset,
 					    1, WR_REQ_EN_BIT, WR_REQ_EN_WID);
 	} else {
 #endif
-		wr_bits(devp->addr_offset, VDIN_WRMIF_CTRL, canvas_id,
+		wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL, canvas_id,
 			WR_CANVAS_BIT, WR_CANVAS_WID);
 
 		if (devp->pause_dec)
-			wr_bits(devp->addr_offset, VDIN_WRMIF_CTRL, 0,
+			wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL, 0,
 				WR_REQ_EN_BIT, WR_REQ_EN_WID);
 		else
-			wr_bits(devp->addr_offset, VDIN_WRMIF_CTRL, 1,
+			wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL, 1,
 				WR_REQ_EN_BIT, WR_REQ_EN_WID);
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	}
@@ -2423,108 +2068,108 @@ static void vdin_set_ldim_max_init_t3x(unsigned int offset,
 				   int pic_h, int pic_v, int blk_vnum,
 				   int blk_hnum)
 {
-	int k;
-	struct ldim_max_s ldim_max;
-	int ldim_pic_rowmax = VDIN_LDIM_PIC_ROWMAX;
-	int ldim_pic_colmax = VDIN_LDIM_PIC_COLMAX;
-	int ldim_blk_vnum = VDIN_LDIM_BLK_VNUM;
-	int ldim_blk_hnum = VDIN_LDIM_BLK_HNUM;
-
-	ldim_pic_rowmax = pic_v;
-	ldim_pic_colmax = pic_h;
-	ldim_blk_vnum = blk_vnum; /* 8; */
-	ldim_blk_hnum = blk_hnum; /* 2; */
-	ldim_max.ld_stamax_hidx[0] = 0;
-
-	/* check ic type */
-	if (!is_meson_gxtvbb_cpu())
-		return;
-	if (vdin_ctl_dbg)
-		pr_info("\n****************%s:hidx start********\n", __func__);
-	for (k = 1; k < 11; k++) {
-		ldim_max.ld_stamax_hidx[k] =
-			((ldim_pic_colmax + ldim_blk_hnum - 1) /
-			ldim_blk_hnum) * k;
-		if (ldim_max.ld_stamax_hidx[k] > VDIN_LDIM_MAX_HIDX)
-			/* clip U12 */
-			ldim_max.ld_stamax_hidx[k] = VDIN_LDIM_MAX_HIDX;
-		if (ldim_max.ld_stamax_hidx[k] == ldim_pic_colmax)
-			ldim_max.ld_stamax_hidx[k] = ldim_pic_colmax - 1;
-		if (vdin_ctl_dbg)
-			pr_info("%d\t", ldim_max.ld_stamax_hidx[k]);
-	}
-	if (vdin_ctl_dbg)
-		pr_info("\n****************%s:hidx end*********\n", __func__);
-	ldim_max.ld_stamax_vidx[0] = 0;
-	if (vdin_ctl_dbg)
-		pr_info("\n***********%s:vidx start************\n", __func__);
-	for (k = 1; k < 11; k++) {
-		ldim_max.ld_stamax_vidx[k] = ((ldim_pic_rowmax +
-					      ldim_blk_vnum - 1) /
-					     ldim_blk_vnum) * k;
-		if (ldim_max.ld_stamax_vidx[k] > VDIN_LDIM_MAX_HIDX)
-			/* clip to U12 */
-			ldim_max.ld_stamax_vidx[k] = VDIN_LDIM_MAX_HIDX;
-		if (ldim_max.ld_stamax_vidx[k] == ldim_pic_rowmax)
-			ldim_max.ld_stamax_vidx[k] = ldim_pic_rowmax - 1;
-		if (vdin_ctl_dbg)
-			pr_info("%d\t", ldim_max.ld_stamax_vidx[k]);
-	}
-	if (vdin_ctl_dbg)
-		pr_info("\n*******%s:vidx end*******\n", __func__);
-	wr(offset, VDIN_LDIM_STTS_HIST_REGION_IDX,
-	   (1 << LOCAL_DIM_STATISTIC_EN_BIT)  |
-	   (0 << EOL_EN_BIT)                  |
-	   (2 << VLINE_OVERLAP_NUMBER_BIT)    |
-	   (1 << HLINE_OVERLAP_NUMBER_BIT)    |
-	   (1 << LPF_BEFORE_STATISTIC_EN_BIT) |
-	   (1 << REGION_RD_INDEX_INC_BIT));
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 0,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_vidx[0] << 16 | ldim_max.ld_stamax_hidx[0]);
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 1,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_hidx[2] << 16 | ldim_max.ld_stamax_hidx[1]);
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 2,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_vidx[2] << 16 | ldim_max.ld_stamax_vidx[1]);
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 3,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_hidx[4] << 16 | ldim_max.ld_stamax_hidx[3]);
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 4,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_vidx[4] << 16 | ldim_max.ld_stamax_vidx[3]);
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 5,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_hidx[6] << 16 | ldim_max.ld_stamax_hidx[5]);
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 6,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_vidx[6] << 16 | ldim_max.ld_stamax_vidx[5]);
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 7,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_hidx[8] << 16 | ldim_max.ld_stamax_hidx[7]);
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 8,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_vidx[8] << 16 | ldim_max.ld_stamax_vidx[7]);
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 9,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_hidx[10] << 16 | ldim_max.ld_stamax_hidx[9]);
-	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 10,
-		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
-	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
-	   ldim_max.ld_stamax_vidx[10] << 16 | ldim_max.ld_stamax_vidx[9]);
-	wr_bits(offset, VDIN_HIST_CTRL, 3, 9, 2);
-	wr_bits(offset, VDIN_HIST_CTRL, 1, 8, 1);
+//	int k;
+//	struct ldim_max_s ldim_max;
+//	int ldim_pic_rowmax = VDIN_LDIM_PIC_ROWMAX;
+//	int ldim_pic_colmax = VDIN_LDIM_PIC_COLMAX;
+//	int ldim_blk_vnum = VDIN_LDIM_BLK_VNUM;
+//	int ldim_blk_hnum = VDIN_LDIM_BLK_HNUM;
+//
+//	ldim_pic_rowmax = pic_v;
+//	ldim_pic_colmax = pic_h;
+//	ldim_blk_vnum = blk_vnum; /* 8; */
+//	ldim_blk_hnum = blk_hnum; /* 2; */
+//	ldim_max.ld_stamax_hidx[0] = 0;
+//
+//	/* check ic type */
+//	if (!is_meson_gxtvbb_cpu())
+//		return;
+//	if (vdin_ctl_dbg)
+//		pr_info("\n****************%s:hidx start********\n", __func__);
+//	for (k = 1; k < 11; k++) {
+//		ldim_max.ld_stamax_hidx[k] =
+//			((ldim_pic_colmax + ldim_blk_hnum - 1) /
+//			ldim_blk_hnum) * k;
+//		if (ldim_max.ld_stamax_hidx[k] > VDIN_LDIM_MAX_HIDX)
+//			/* clip U12 */
+//			ldim_max.ld_stamax_hidx[k] = VDIN_LDIM_MAX_HIDX;
+//		if (ldim_max.ld_stamax_hidx[k] == ldim_pic_colmax)
+//			ldim_max.ld_stamax_hidx[k] = ldim_pic_colmax - 1;
+//		if (vdin_ctl_dbg)
+//			pr_info("%d\t", ldim_max.ld_stamax_hidx[k]);
+//	}
+//	if (vdin_ctl_dbg)
+//		pr_info("\n****************%s:hidx end*********\n", __func__);
+//	ldim_max.ld_stamax_vidx[0] = 0;
+//	if (vdin_ctl_dbg)
+//		pr_info("\n***********%s:vidx start************\n", __func__);
+//	for (k = 1; k < 11; k++) {
+//		ldim_max.ld_stamax_vidx[k] = ((ldim_pic_rowmax +
+//					      ldim_blk_vnum - 1) /
+//					     ldim_blk_vnum) * k;
+//		if (ldim_max.ld_stamax_vidx[k] > VDIN_LDIM_MAX_HIDX)
+//			/* clip to U12 */
+//			ldim_max.ld_stamax_vidx[k] = VDIN_LDIM_MAX_HIDX;
+//		if (ldim_max.ld_stamax_vidx[k] == ldim_pic_rowmax)
+//			ldim_max.ld_stamax_vidx[k] = ldim_pic_rowmax - 1;
+//		if (vdin_ctl_dbg)
+//			pr_info("%d\t", ldim_max.ld_stamax_vidx[k]);
+//	}
+//	if (vdin_ctl_dbg)
+//		pr_info("\n*******%s:vidx end*******\n", __func__);
+//	wr(offset, VDIN_LDIM_STTS_HIST_REGION_IDX,
+//	   (1 << LOCAL_DIM_STATISTIC_EN_BIT)  |
+//	   (0 << EOL_EN_BIT)                  |
+//	   (2 << VLINE_OVERLAP_NUMBER_BIT)    |
+//	   (1 << HLINE_OVERLAP_NUMBER_BIT)    |
+//	   (1 << LPF_BEFORE_STATISTIC_EN_BIT) |
+//	   (1 << REGION_RD_INDEX_INC_BIT));
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 0,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_vidx[0] << 16 | ldim_max.ld_stamax_hidx[0]);
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 1,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_hidx[2] << 16 | ldim_max.ld_stamax_hidx[1]);
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 2,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_vidx[2] << 16 | ldim_max.ld_stamax_vidx[1]);
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 3,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_hidx[4] << 16 | ldim_max.ld_stamax_hidx[3]);
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 4,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_vidx[4] << 16 | ldim_max.ld_stamax_vidx[3]);
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 5,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_hidx[6] << 16 | ldim_max.ld_stamax_hidx[5]);
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 6,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_vidx[6] << 16 | ldim_max.ld_stamax_vidx[5]);
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 7,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_hidx[8] << 16 | ldim_max.ld_stamax_hidx[7]);
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 8,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_vidx[8] << 16 | ldim_max.ld_stamax_vidx[7]);
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 9,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_hidx[10] << 16 | ldim_max.ld_stamax_hidx[9]);
+//	wr_bits(offset, VDIN_LDIM_STTS_HIST_REGION_IDX, 10,
+//		BLK_HV_POS_IDX_BIT, BLK_HV_POS_IDX_WID);
+//	wr(offset, VDIN_LDIM_STTS_HIST_SET_REGION,
+//	   ldim_max.ld_stamax_vidx[10] << 16 | ldim_max.ld_stamax_vidx[9]);
+//	wr_bits(offset, VDIN_HIST_CTRL, 3, 9, 2);
+//	wr_bits(offset, VDIN_HIST_CTRL, 1, 8, 1);
 }
 
 #endif
@@ -2875,18 +2520,20 @@ void vdin_hw_disable_t3x(struct vdin_dev_s *devp)
 /* get current vsync field type 0:top 1 bottom */
 unsigned int vdin_get_field_type_t3x(unsigned int offset)
 {
-	return rd_bits(offset, VDIN_COM_STATUS0, 0, 1);
+	//return rd_bits(offset, VDIN_COM_STATUS0, 0, 1);
+	return 0;
 }
 
 bool vdin_check_vdi6_afifo_overflow_t3x(unsigned int offset)
 {
-	return rd_bits(offset, VDIN_COM_STATUS2, 15, 1);
+	//return rd_bits(offset, VDIN_COM_STATUS2, 15, 1);
+	return 0;
 }
 
 void vdin_clear_vdi6_afifo_overflow_flg_t3x(unsigned int offset)
 {
-	wr_bits(offset, VDIN_ASFIFO_CTRL3, 0x1, 1, 1);
-	wr_bits(offset, VDIN_ASFIFO_CTRL3, 0x0, 1, 1);
+//	wr_bits(offset, VDIN_ASFIFO_CTRL3, 0x1, 1, 1);
+//	wr_bits(offset, VDIN_ASFIFO_CTRL3, 0x0, 1, 1);
 }
 
 //static unsigned int vdin_reset_flag;
@@ -3000,12 +2647,12 @@ bool vdin_write_done_check_t3x(unsigned int offset, struct vdin_dev_s *devp)
 {
 	if (vdin_isr_monitor & VDIN_ISR_MONITOR_WRITE_DONE) {
 		pr_info("vdin%d,[%#x]:%#x,[%#x]:%#x,[%#x]:%#x\n", devp->index,
-			VDIN_LFIFO_BUF_COUNT, rd(0, VDIN_LFIFO_BUF_COUNT),
-			VDIN_IF_TOP_VDI_INT_STATUS1, rd(0, VDIN_IF_TOP_VDI_INT_STATUS1),
-			VDIN_WRMIF_RO_STATUS, rd(0, VDIN_WRMIF_RO_STATUS));
+			VDIN0_LFIFO_BUF_COUNT, rd(0, VDIN0_LFIFO_BUF_COUNT),
+			VDIN_INTF_VDI_INT_STATUS1, rd(0, VDIN_INTF_VDI_INT_STATUS1),
+			VDIN0_WRMIF_RO_STATUS, rd(devp->addr_offset, VDIN0_WRMIF_RO_STATUS));
 	}
 	/*clear int status,reg_field_done_clr_bit */
-	wr_bits(offset, VDIN_WRMIF_CTRL, 1, 18, 1);
+	//wr_bits(offset, VDIN_WRMIF_CTRL, 1, 18, 1);//cause video flicker
 
 //	/*clear int status*/
 //	wr_bits(offset, VDIN_WR_CTRL, 1,
@@ -3026,106 +2673,6 @@ bool vdin_write_done_check_t3x(unsigned int offset, struct vdin_dev_s *devp)
 //	devp->wr_done_abnormal_cnt++;
 //	return false;
 	return true;
-}
-
-void vdin_get_duration_by_fps_t3x(struct vdin_dev_s *devp)
-{
-	if (devp->parm.info.fps && IS_HDMI_SRC(devp->parm.port))
-		devp->duration = 96000 / (devp->parm.info.fps);
-	else
-		devp->duration = devp->fmt_info_p->duration;
-}
-
-/*
- * cycle = delta_stamp = ((1/fps)/(1/msr_clk))*(vsync_span + 1)
- * msr_clk/fps unit is HZ
- * vsync_span(0x125a[11:4]) usually should be 0;
- */
-bool vdin_check_cycle_t3x(struct vdin_dev_s *devp)
-{
-	bool ret = false;
-	unsigned int stamp, cycle;
-
-	stamp = vdin_get_meas_v_stamp(devp->addr_offset);
-
-	if (stamp < devp->stamp)
-		cycle = 0xffffffff - devp->stamp + stamp + 1;
-	else
-		cycle = stamp - devp->stamp;
-
-	if (cycle <= (devp->msr_clk_val / 1000)) {
-		ret = true;
-	} else {
-		devp->stamp = stamp;
-		devp->cycle  = cycle;
-		ret = false;
-	}
-
-	return ret;
-}
-
-/*function:calculate curr_wr_vf->duration
- * based on parm.port\ msr_clk_val\ parm.flag and
- * curr_field_type
- */
-void vdin_calculate_duration_t3x(struct vdin_dev_s *devp)
-{
-	unsigned int last_field_type, cycle_phase;
-	struct vframe_s *curr_wr_vf = NULL;
-	const struct tvin_format_s *fmt_info = devp->fmt_info_p;
-	enum tvin_port_e port = devp->parm.port;
-	unsigned int fps;
-
-	curr_wr_vf = &devp->curr_wr_vfe->vf;
-	last_field_type = devp->curr_field_type;
-	cycle_phase = devp->msr_clk_val / 96000;
-	if (cycle_phase == 0)
-		cycle_phase = 250;
-
-	/* dynamic duration update */
-	if (devp->dtdata->hw_ver >= VDIN_HW_T7) {
-		/* 59.94 for 1601 so need special handling */
-		/* value is 834170 add 56 and minus 56 */
-		if (devp->cycle > 834114 && devp->cycle < 834226) {
-			devp->duration = 1601;
-		} else if (devp->cycle) {
-			fps = devp->cycle * 96;
-			devp->duration = DIV_ROUND_CLOSEST(fps, (devp->msr_clk_val / 1000));
-		} else {
-			/* null branch */
-		}
-		curr_wr_vf->duration = devp->duration;
-	} else {
-#ifdef VDIN_DYNAMIC_DURATION
-		devp->curr_wr_vf->duration =
-			(devp->cycle + cycle_phase / 2) / cycle_phase;
-#else
-		if (devp->use_frame_rate == 1 &&
-		    IS_HDMI_SRC(port)) {
-			curr_wr_vf->duration =
-				(devp->cycle + cycle_phase / 2) / cycle_phase;
-		} else {
-			curr_wr_vf->duration = devp->duration;
-		}
-#endif
-		/* for 2D->3D mode & interlaced format, double top field
-		 * duration to match software frame lock
-		 */
-#ifdef VDIN_DYNAMIC_DURATION
-		if ((devp->parm.flag & TVIN_PARM_FLAG_2D_TO_3D) &&
-		    (last_field_type & VIDTYPE_INTERLACE))
-			curr_wr_vf->duration <<= 1;
-#else
-		if ((devp->parm.flag & TVIN_PARM_FLAG_2D_TO_3D) &&
-		    (last_field_type & VIDTYPE_INTERLACE)) {
-			if (!fmt_info->duration)
-				curr_wr_vf->duration = ((devp->cycle << 1) +
-							cycle_phase / 2) / cycle_phase;
-			else
-				curr_wr_vf->duration = fmt_info->duration << 1;
-		}
-#endif
-	}
 }
 
 /* just for horizontal down scale src_w is origin width,
@@ -3711,49 +3258,6 @@ void vdin_set_bitdepth_t3x(struct vdin_dev_s *devp)
 			devp->color_depth_config, devp->prop.colordepth);
 }
 
-static void vdin_get_video_format_t3x(struct vdin_dev_s *devp)
-{
-	switch (devp->format_convert) {
-	case VDIN_FORMAT_CONVERT_YUV_YUV444:
-	case VDIN_FORMAT_CONVERT_RGB_YUV444:
-		devp->vdin2vpp_info.cfmt = TVIN_YUV444;
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_YUV422:
-	case VDIN_FORMAT_CONVERT_RGB_YUV422:
-		devp->vdin2vpp_info.cfmt = TVIN_YUV422;
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_RGB:
-	case VDIN_FORMAT_CONVERT_RGB_RGB:
-		devp->vdin2vpp_info.cfmt = TVIN_RGB444;
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_NV21:
-	case VDIN_FORMAT_CONVERT_RGB_NV21:
-		devp->vdin2vpp_info.cfmt = TVIN_NV21;
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_NV12:
-	case VDIN_FORMAT_CONVERT_RGB_NV12:
-		devp->vdin2vpp_info.cfmt = TVIN_NV12;
-		break;
-	default:
-		break;
-	}
-}
-
-void vdin_set_to_vpp_parm_t3x(struct vdin_dev_s *devp)
-{
-	if (devp->index)
-		return;
-
-	devp->vdin2vpp_info.is_dv = devp->dv.dv_flag;
-	devp->vdin2vpp_info.scan_mode = devp->fmt_info_p->scan_mode;
-	devp->vdin2vpp_info.fps = devp->parm.info.fps;
-	devp->vdin2vpp_info.width = devp->h_active;
-	devp->vdin2vpp_info.height = devp->v_active;
-	vdin_get_video_format_t3x(devp);
-
-	vdin_start_notify_vpp(&devp->vdin2vpp_info);
-}
-
 /* do horizontal reverse and vertical reverse
  * h reverse:
  * VDIN_WR_H_START_END
@@ -3777,11 +3281,11 @@ void vdin_wr_reverse_t3x(unsigned int offset, bool h_reverse, bool v_reverse)
 
 void vdin_bypass_isp_t3x(unsigned int offset)
 {
-	wr_bits(offset, VDIN_CM_BRI_CON_CTRL, 0, CM_TOP_EN_BIT, CM_TOP_EN_WID);
-	wr_bits(offset, VDIN_MATRIX_CTRL, 0,
-		VDIN_MATRIX_EN_BIT, VDIN_MATRIX_EN_WID);
-	wr_bits(offset, VDIN_MATRIX_CTRL, 0,
-		VDIN_MATRIX1_EN_BIT, VDIN_MATRIX1_EN_WID);
+//	wr_bits(offset, VDIN_CM_BRI_CON_CTRL, 0, CM_TOP_EN_BIT, CM_TOP_EN_WID);
+//	wr_bits(offset, VDIN_MATRIX_CTRL, 0,
+//		VDIN_MATRIX_EN_BIT, VDIN_MATRIX_EN_WID);
+//	wr_bits(offset, VDIN_MATRIX_CTRL, 0,
+//		VDIN_MATRIX1_EN_BIT, VDIN_MATRIX1_EN_WID);
 }
 
 void vdin_set_cm2_t3x(unsigned int offset, unsigned int w,
@@ -3793,22 +3297,21 @@ void vdin_set_cm2_t3x(unsigned int offset, unsigned int w,
 		return;
 	pr_info("%s %d,w=%d,h=%d\n", __func__, __LINE__, w, h);
 
-	//wr_bits(offset, VDIN_CM_BRI_CON_CTRL, 0, CM_TOP_EN_BIT, CM_TOP_EN_WID);
-	wr_bits(offset, VDIN_PP_TOP_CTRL, 0, PP_CM_EN_BIT, PP_CM_EN_WID);
+	/* reg_cm_en */
+	wr_bits(offset, VDIN0_PP_CTRL, 0, PP_CM_EN_BIT, PP_CM_EN_WID);
 	for (i = 0; i < 160; i++) {
 		j = i / 5;
-		wr(offset, VDIN_PP_CHROMA_ADDR_PORT, start_addr + (j << 3) + (i % 5));
-		wr(offset, VDIN_PP_CHROMA_DATA_PORT, cm2[i]);
+		wr(offset, VDIN0_CM_ADDR_PORT, start_addr + (j << 3) + (i % 5));
+		wr(offset, VDIN0_CM_DATA_PORT, cm2[i]);
 	}
 	for (i = 0; i < 28; i++) {
-		wr(offset, VDIN_PP_CHROMA_ADDR_PORT, 0x200 + i);
-		wr(offset, VDIN_PP_CHROMA_DATA_PORT, cm2[160 + i]);
+		wr(offset, VDIN0_CM_ADDR_PORT, 0x200 + i);
+		wr(offset, VDIN0_CM_DATA_PORT, cm2[160 + i]);
 	}
 	/*config cm2 frame size*/
-	wr(offset, VDIN_PP_CHROMA_ADDR_PORT, 0x205);
-	wr(offset, VDIN_PP_CHROMA_DATA_PORT, h << 16 | w);
-	//wr_bits(offset, VDIN_CM_BRI_CON_CTRL, 1, CM_TOP_EN_BIT, CM_TOP_EN_WID);
-	wr_bits(offset, VDIN_PP_TOP_CTRL, 1, PP_CM_EN_BIT, PP_CM_EN_WID);
+	wr(offset, VDIN0_CM_ADDR_PORT, 0x205);
+	wr(offset, VDIN0_CM_DATA_PORT, h << 16 | w);
+	wr_bits(offset, VDIN0_PP_CTRL, 1, PP_CM_EN_BIT, PP_CM_EN_WID);
 }
 
 /*vdin0 output ctrl
@@ -3818,14 +3321,14 @@ void vdin_set_cm2_t3x(unsigned int offset, unsigned int w,
  */
 static void vdin_output_ctl_t3x(unsigned int offset, unsigned int output_nr_flag)
 {
-	wr_bits(offset, VDIN_WR_CTRL, 1, VCP_IN_EN_BIT, VCP_IN_EN_WID);
-	if (output_nr_flag) {
-		wr_bits(offset, VDIN_WR_CTRL, 0, VCP_WR_EN_BIT, VCP_WR_EN_WID);
-		wr_bits(offset, VDIN_WR_CTRL, 1, VCP_NR_EN_BIT, VCP_NR_EN_WID);
-	} else {
-		wr_bits(offset, VDIN_WR_CTRL, 1, VCP_WR_EN_BIT, VCP_WR_EN_WID);
-		wr_bits(offset, VDIN_WR_CTRL, 0, VCP_NR_EN_BIT, VCP_NR_EN_WID);
-	}
+//	wr_bits(offset, VDIN_WR_CTRL, 1, VCP_IN_EN_BIT, VCP_IN_EN_WID);
+//	if (output_nr_flag) {
+//		wr_bits(offset, VDIN_WR_CTRL, 0, VCP_WR_EN_BIT, VCP_WR_EN_WID);
+//		wr_bits(offset, VDIN_WR_CTRL, 1, VCP_NR_EN_BIT, VCP_NR_EN_WID);
+//	} else {
+//		wr_bits(offset, VDIN_WR_CTRL, 1, VCP_WR_EN_BIT, VCP_WR_EN_WID);
+//		wr_bits(offset, VDIN_WR_CTRL, 0, VCP_NR_EN_BIT, VCP_NR_EN_WID);
+//	}
 }
 
 /* set mpegin
@@ -3844,639 +3347,55 @@ void vdin_set_mpegin_t3x(struct vdin_dev_s *devp)
 	/* else */
 	/* aml_write_cbus(HHI_VDIN_MEAS_CLK_CNTL, 0x00000100); */
 
-	wr(offset, VDIN_COM_CTRL0, 0x80000911);
-	vdin_delay_line_t3x(devp, delay_line_num);
-	wr(offset, VDIN_COM_GCLK_CTRL, 0x0);
-
-	wr(offset, VDIN_INTF_WIDTHM1, devp->h_active - 1);
-	wr(offset, VDIN_WR_CTRL2, 0x0);
-
-	wr(offset, VDIN_HIST_CTRL, 0x3);
-	wr(offset, VDIN_HIST_H_START_END, devp->h_active - 1);
-	wr(offset, VDIN_HIST_V_START_END, devp->v_active - 1);
+//	wr(offset, VDIN_COM_CTRL0, 0x80000911);
+//	vdin_delay_line_t3x(devp, delay_line_num);
+//	wr(offset, VDIN_COM_GCLK_CTRL, 0x0);
+//
+//	wr(offset, VDIN_INTF_WIDTHM1, devp->h_active - 1);
+//	wr(offset, VDIN_WR_CTRL2, 0x0);
+//
+//	wr(offset, VDIN_HIST_CTRL, 0x3);
+//	wr(offset, VDIN_HIST_H_START_END, devp->h_active - 1);
+//	wr(offset, VDIN_HIST_V_START_END, devp->v_active - 1);
 	vdin_output_ctl_t3x(offset, 1);
 }
 
-void vdin_force_gofiled_t3x(struct vdin_dev_s *devp)
+void vdin_force_go_filed_t3x(struct vdin_dev_s *devp)
 {
-	unsigned int offset = devp->addr_offset;
+//	unsigned int offset = devp->addr_offset;
 
-	wr_bits(offset, VDIN_COM_CTRL0, 1, 28, 1);
-	wr_bits(offset, VDIN_COM_CTRL0, 0, 28, 1);
-}
-
-bool vdin_is_convert_to_444_t3x(u32 format_convert)
-{
-	if (format_convert == VDIN_FORMAT_CONVERT_YUV_YUV444 ||
-	    format_convert == VDIN_FORMAT_CONVERT_YUV_RGB ||
-	    format_convert == VDIN_FORMAT_CONVERT_YUV_GBR ||
-	    format_convert == VDIN_FORMAT_CONVERT_YUV_BRG ||
-	    format_convert == VDIN_FORMAT_CONVERT_RGB_YUV444 ||
-	    format_convert == VDIN_FORMAT_CONVERT_RGB_RGB)
-		return true;
-	else
-		return false;
-}
-
-bool vdin_is_convert_to_422_t3x(u32 format_convert)
-{
-	if (format_convert == VDIN_FORMAT_CONVERT_YUV_YUV422 ||
-	    format_convert == VDIN_FORMAT_CONVERT_RGB_YUV422 ||
-	    format_convert == VDIN_FORMAT_CONVERT_GBR_YUV422 ||
-	    format_convert == VDIN_FORMAT_CONVERT_BRG_YUV422)
-		return true;
-	else
-		return false;
-}
-
-bool vdin_is_convert_to_nv21_t3x(u32 format_convert)
-{
-	if (format_convert == VDIN_FORMAT_CONVERT_YUV_NV12 ||
-	    format_convert == VDIN_FORMAT_CONVERT_YUV_NV21 ||
-	    format_convert == VDIN_FORMAT_CONVERT_RGB_NV12 ||
-	    format_convert == VDIN_FORMAT_CONVERT_RGB_NV21)
-		return true;
-	else
-		return false;
-}
-
-bool vdin_is_4k_t3x(struct vdin_dev_s *devp)
-{
-	if (devp->h_active >= 3800 && devp->v_active >= 2100)
-		return true;
-	else
-		return false;
-}
-
-bool vdin_is_hdr_signal_in_t3x(struct vdin_dev_s *devp)
-{
-	if (devp->prop.hdr_info.hdr_state == HDR_STATE_GET)
-		return true;
-	else
-		return false;
-}
-
-bool vdin_is_dolby_signal_in_t3x(struct vdin_dev_s *devp)
-{
-	if (K_FORCE_DV_ON)
-		return 1;
-	else
-		return ((devp->dv.dolby_input & (1 << devp->index)) ||
-			(devp->dv.dv_flag));
-}
-
-void vdin_dolby_addr_alloc_t3x(struct vdin_dev_s *devp, unsigned int size)
-{
-	unsigned int index;
-	/*int highmem_flag;*/
-	unsigned int one_buf_size = dolby_size_byte;
-
-	dolby_size_byte = one_buf_size;
-
-	if (devp->dtdata->hw_ver == VDIN_HW_T7)
-		devp->dv.dv_dma_size = one_buf_size * size + K_DV_META_RAW_BUFF0;
-	else
-		devp->dv.dv_dma_size = one_buf_size * size;
-	devp->dv.dv_dma_vaddr = dma_alloc_coherent(&devp->this_pdev->dev,
-						   devp->dv.dv_dma_size,
-						   &devp->dv.dv_dma_paddr,
-						   GFP_KERNEL);
-	if (!devp->dv.dv_dma_vaddr) {
-		pr_info("%s:dma alloc_coherent fail!!\n", __func__);
-		return;
-	}
-	memset(devp->dv.dv_dma_vaddr, 0, devp->dv.dv_dma_size);
-	/*if (devp->cma_config_flag & 0x100)*/
-	/*	highmem_flag = PageHighMem(phys_to_page(devp->vfmem_start[0]));*/
-	/*else*/
-	/*	highmem_flag = PageHighMem(phys_to_page(devp->mem_start));*/
-
-	for (index = 0; index < size; index++) {
-		devp->vfp->dv_buf_mem[index] = devp->dv.dv_dma_paddr +
-			one_buf_size * index;
-		devp->vfp->dv_buf_vmem[index] = devp->dv.dv_dma_vaddr +
-			one_buf_size * index;
-		/*
-		 *if (highmem_flag == 0) {
-		 *	if ((devp->cma_config_flag & 0x100) &&
-		 *	    devp->cma_config_en)
-		 *		devp->vfp->dv_buf_ori[index] =
-		 *			phys_to_virt(devp->vfmem_start[index] +
-		 *				     devp->vfmem_size -
-		 *				     one_buf_size);
-		 *	else
-		 *		devp->vfp->dv_buf_ori[index] =
-		 *			phys_to_virt(devp->mem_start +
-		 *				     devp->mem_size -
-		 *				     one_buf_size *
-		 *				     (devp->canvas_max_num
-		 *				      - index));
-		 *} else {
-		 *	if ((devp->cma_config_flag & 0x100) &&
-		 *	    devp->cma_config_en)
-		 *		devp->vfp->dv_buf_ori[index] =
-		 *			vdin_vmap(devp->vfmem_start[index] +
-		 *				  devp->vfmem_size -
-		 *				  one_buf_size,
-		 *				  one_buf_size);
-		 *	else
-		 *		devp->vfp->dv_buf_ori[index] =
-		 *			vdin_vmap(devp->mem_start +
-		 *			devp->mem_size -
-		 *			one_buf_size *
-		 *			(devp->canvas_max_num - index),
-		 *			one_buf_size);
-		 *}
-		 */
-		/*pr_info("%s:dv_buf[%d]=(0x%x,0x%p)\n", __func__, index,*/
-			/*devp->vfp->dv_buf_ori[index],*/
-		/*	devp->vfp->dv_buf_mem[index],*/
-		/*	devp->vfp->dv_buf_vmem[index]);*/
-	}
-	devp->dv.dv_mem_allocated = 1;
-	pr_info("%s:dv_dma_vaddr=%p,dv_dma_paddr=0x%lx\n", __func__,
-		devp->dv.dv_dma_vaddr, (ulong)devp->dv.dv_dma_paddr);
-
-	devp->dv.temp_meta_data = kmalloc(K_DV_META_TEMP_BUFF_SIZE, GFP_KERNEL);
-	if (IS_ERR_OR_NULL(devp->dv.temp_meta_data)) {
-		pr_info("malloc dv temp buffer fail\n");
-		devp->dv.temp_meta_data = NULL;
-	} else {
-		pr_info("malloc dv temp 2k buffer\n");
-	}
-}
-
-void vdin_dolby_addr_release_t3x(struct vdin_dev_s *devp, unsigned int size)
-{
-	/*int highmem_flag;*/
-	/*int index;*/
-
-	if (devp->dv.dv_mem_allocated == 0)
-		return;
-
-	if (devp->dv.dv_dma_vaddr)
-		dma_free_coherent(&devp->this_pdev->dev, devp->dv.dv_dma_size,
-				  devp->dv.dv_dma_vaddr, devp->dv.dv_dma_paddr);
-	devp->dv.dv_dma_vaddr = NULL;
-	devp->dv.dv_dma_size = 0;
-	/*
-	 *if (devp->cma_config_flag & 0x100)
-	 *	highmem_flag = PageHighMem(phys_to_page(devp->vfmem_start[0]));
-	 *else
-	 *	highmem_flag = PageHighMem(phys_to_page(devp->mem_start));
-	 *
-	 *if (highmem_flag) {
-	 *	for (index = 0; index < size; index++) {
-	 *		if (devp->vfp->dv_buf_ori[index]) {
-	 *			vdin_unmap_phyaddr(devp->vfp->dv_buf_ori
-	 *					   [index]);
-	 *			devp->vfp->dv_buf_ori[index] = NULL;
-	 *		}
-	 *	}
-	 *}
-	 */
-	devp->dv.dv_mem_allocated = 0;
-
-	if (!IS_ERR_OR_NULL(devp->dv.temp_meta_data)) {
-		kfree(devp->dv.temp_meta_data);
-		devp->dv.temp_meta_data = NULL;
-		pr_info("release dv temp buffer\n");
-	}
-
-	if (!IS_ERR_OR_NULL(devp->dv.meta_data_raw_buffer1)) {
-		kfree(devp->dv.meta_data_raw_buffer1);
-		devp->dv.meta_data_raw_buffer1 = NULL;
-		pr_info("release dv raw_buff1\n");
-	}
-}
-
-static void vdin_dolby_metadata_swap_t3x(struct vdin_dev_s *devp, char *buf)
-{
-	char ext;
-	unsigned int i, j;
-
-	for (i = 0; (i * 16) < dolby_size_byte; i++) {
-		for (j = 0; j < 8; j++) {
-			ext = buf[i * 16 + j];
-			buf[i * 16 + j] = buf[i * 16 + 15 - j];
-			buf[i * 16 + 15 - j] = ext;
-		}
-	}
-
-	//vdin_dma_flush(devp, buf, dolby_size_byte, DMA_TO_DEVICE);
-}
-
-static u32 crc32_lut[256] = {
-	0x00000000, 0x04c11db7, 0x09823b6e, 0x0d4326d9, 0x130476dc, 0x17c56b6b,
-	0x1a864db2, 0x1e475005, 0x2608edb8, 0x22c9f00f, 0x2f8ad6d6, 0x2b4bcb61,
-	0x350c9b64, 0x31cd86d3, 0x3c8ea00a, 0x384fbdbd, 0x4c11db70, 0x48d0c6c7,
-	0x4593e01e, 0x4152fda9, 0x5f15adac, 0x5bd4b01b, 0x569796c2, 0x52568b75,
-	0x6a1936c8, 0x6ed82b7f, 0x639b0da6, 0x675a1011, 0x791d4014, 0x7ddc5da3,
-	0x709f7b7a, 0x745e66cd, 0x9823b6e0, 0x9ce2ab57, 0x91a18d8e, 0x95609039,
-	0x8b27c03c, 0x8fe6dd8b, 0x82a5fb52, 0x8664e6e5, 0xbe2b5b58, 0xbaea46ef,
-	0xb7a96036, 0xb3687d81, 0xad2f2d84, 0xa9ee3033, 0xa4ad16ea, 0xa06c0b5d,
-	0xd4326d90, 0xd0f37027, 0xddb056fe, 0xd9714b49, 0xc7361b4c, 0xc3f706fb,
-	0xceb42022, 0xca753d95, 0xf23a8028, 0xf6fb9d9f, 0xfbb8bb46, 0xff79a6f1,
-	0xe13ef6f4, 0xe5ffeb43, 0xe8bccd9a, 0xec7dd02d, 0x34867077, 0x30476dc0,
-	0x3d044b19, 0x39c556ae, 0x278206ab, 0x23431b1c, 0x2e003dc5, 0x2ac12072,
-	0x128e9dcf, 0x164f8078, 0x1b0ca6a1, 0x1fcdbb16, 0x018aeb13, 0x054bf6a4,
-	0x0808d07d, 0x0cc9cdca, 0x7897ab07, 0x7c56b6b0, 0x71159069, 0x75d48dde,
-	0x6b93dddb, 0x6f52c06c, 0x6211e6b5, 0x66d0fb02, 0x5e9f46bf, 0x5a5e5b08,
-	0x571d7dd1, 0x53dc6066, 0x4d9b3063, 0x495a2dd4, 0x44190b0d, 0x40d816ba,
-	0xaca5c697, 0xa864db20, 0xa527fdf9, 0xa1e6e04e, 0xbfa1b04b, 0xbb60adfc,
-	0xb6238b25, 0xb2e29692, 0x8aad2b2f, 0x8e6c3698, 0x832f1041, 0x87ee0df6,
-	0x99a95df3, 0x9d684044, 0x902b669d, 0x94ea7b2a, 0xe0b41de7, 0xe4750050,
-	0xe9362689, 0xedf73b3e, 0xf3b06b3b, 0xf771768c, 0xfa325055, 0xfef34de2,
-	0xc6bcf05f, 0xc27dede8, 0xcf3ecb31, 0xcbffd686, 0xd5b88683, 0xd1799b34,
-	0xdc3abded, 0xd8fba05a, 0x690ce0ee, 0x6dcdfd59, 0x608edb80, 0x644fc637,
-	0x7a089632, 0x7ec98b85, 0x738aad5c, 0x774bb0eb, 0x4f040d56, 0x4bc510e1,
-	0x46863638, 0x42472b8f, 0x5c007b8a, 0x58c1663d, 0x558240e4, 0x51435d53,
-	0x251d3b9e, 0x21dc2629, 0x2c9f00f0, 0x285e1d47, 0x36194d42, 0x32d850f5,
-	0x3f9b762c, 0x3b5a6b9b, 0x0315d626, 0x07d4cb91, 0x0a97ed48, 0x0e56f0ff,
-	0x1011a0fa, 0x14d0bd4d, 0x19939b94, 0x1d528623, 0xf12f560e, 0xf5ee4bb9,
-	0xf8ad6d60, 0xfc6c70d7, 0xe22b20d2, 0xe6ea3d65, 0xeba91bbc, 0xef68060b,
-	0xd727bbb6, 0xd3e6a601, 0xdea580d8, 0xda649d6f, 0xc423cd6a, 0xc0e2d0dd,
-	0xcda1f604, 0xc960ebb3, 0xbd3e8d7e, 0xb9ff90c9, 0xb4bcb610, 0xb07daba7,
-	0xae3afba2, 0xaafbe615, 0xa7b8c0cc, 0xa379dd7b, 0x9b3660c6, 0x9ff77d71,
-	0x92b45ba8, 0x9675461f, 0x8832161a, 0x8cf30bad, 0x81b02d74, 0x857130c3,
-	0x5d8a9099, 0x594b8d2e, 0x5408abf7, 0x50c9b640, 0x4e8ee645, 0x4a4ffbf2,
-	0x470cdd2b, 0x43cdc09c, 0x7b827d21, 0x7f436096, 0x7200464f, 0x76c15bf8,
-	0x68860bfd, 0x6c47164a, 0x61043093, 0x65c52d24, 0x119b4be9, 0x155a565e,
-	0x18197087, 0x1cd86d30, 0x029f3d35, 0x065e2082, 0x0b1d065b, 0x0fdc1bec,
-	0x3793a651, 0x3352bbe6, 0x3e119d3f, 0x3ad08088, 0x2497d08d, 0x2056cd3a,
-	0x2d15ebe3, 0x29d4f654, 0xc5a92679, 0xc1683bce, 0xcc2b1d17, 0xc8ea00a0,
-	0xd6ad50a5, 0xd26c4d12, 0xdf2f6bcb, 0xdbee767c, 0xe3a1cbc1, 0xe760d676,
-	0xea23f0af, 0xeee2ed18, 0xf0a5bd1d, 0xf464a0aa, 0xf9278673, 0xfde69bc4,
-	0x89b8fd09, 0x8d79e0be, 0x803ac667, 0x84fbdbd0, 0x9abc8bd5, 0x9e7d9662,
-	0x933eb0bb, 0x97ffad0c, 0xafb010b1, 0xab710d06, 0xa6322bdf, 0xa2f33668,
-	0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
-};
-
-static u32 crc32_t3x(u32 crc, const void *buf, size_t size)
-{
-	const u8 *p = (const uint8_t *)buf;
-
-	crc = ~crc;
-	while (size) {
-		crc = (crc << 8) ^ crc32_lut[((crc >> 24) ^ *p) & 0xff];
-		p++;
-		size--;
-	}
-	return crc;
-}
-
-bool vdin_is_dolby_tunnel_444_input_t3x(struct vdin_dev_s *devp)
-{
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-	if (vdin_is_dolby_signal_in(devp) &&
-	    devp->prop.color_format == TVIN_YUV422)
-		return true;
-#endif
-	return false;
-}
-
-void vdin_dv_pr_meta_data_t3x(void *addr, unsigned int size, unsigned int index)
-{
-	unsigned int i;
-	char *c = addr;
-
-	for (i = 0; i < size; i += 16) {
-		pr_info("meta0:%d %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-			index, c[i], c[i + 1], c[i + 2], c[i + 3],
-			c[i + 4], c[i + 5], c[i + 6], c[i + 7],
-			c[i + 8], c[i + 9], c[i + 10], c[i + 11],
-			c[i + 12], c[i + 13], c[i + 14], c[i + 15]);
-	}
-}
-
-static void vdin_dv_pr_event_meta_data_t3x(void *addr, unsigned int size, unsigned int index)
-{
-	unsigned int i;
-	char *c = addr;
-
-	for (i = 0; i < size; i += 16) {
-		pr_info("meta1:%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-			c[i], c[i + 1], c[i + 2], c[i + 3],
-			c[i + 4], c[i + 5], c[i + 6], c[i + 7],
-			c[i + 8], c[i + 9], c[i + 10], c[i + 11],
-			c[i + 12], c[i + 13], c[i + 14], c[i + 15]);
-	}
-}
-
-void vdin_pr_vsif_data_t3x(struct vdin_dev_s *devp, struct vframe_s *vf)
-{
-	if (dv_dbg_log & DV_DEBUG_RAW_DATA)
-		pr_info("vsif:index:%d size:%x pk:%02x ver:%02x,len:%02x PB:0x%02x %02x %02x %02x\n",
-			vf->index, vf->vsif.size, devp->dv.dv_vsif_raw.pkttype,
-			devp->dv.dv_vsif_raw.version, devp->dv.dv_vsif_raw.length,
-			devp->dv.dv_vsif_raw.PB[0], devp->dv.dv_vsif_raw.PB[1],
-			devp->dv.dv_vsif_raw.PB[2], devp->dv.dv_vsif_raw.PB[3]);
-}
-
-static void vdin_pr_hdr_rawdata_t3x(struct vdin_dev_s *devp, struct vframe_s *vf)
-{
-	if (vdin_isr_monitor & VDIN_ISR_MONITOR_HDR_RAW_DATA)
-		pr_info("hdr_rawdata idx:%d size:%x data:0x%02x 0x%02x 0x%02x 0x%02x\n",
-			vf->index, vf->drm_if.size,
-			devp->prop.hdr_info.hdr_data.rawdata[0],
-			devp->prop.hdr_info.hdr_data.rawdata[1],
-			devp->prop.hdr_info.hdr_data.rawdata[2],
-			devp->prop.hdr_info.hdr_data.rawdata[3]);
-}
-
-void vdin_pr_emp_data_t3x(struct vdin_dev_s *devp, struct vframe_s *vf)
-{
-	if (vdin_isr_monitor & VDIN_ISR_MONITOR_HDR_EMP_DATA)
-		pr_info("emp idx:%d emp size:%02x id:0x02%x data:0x%02x 0x%02x 0x%02x 0x%02x\n",
-			vf->index, devp->prop.emp_data.size,
-			devp->prop.emp_data.tag_id,
-			devp->prop.emp_data.empbuf[0],
-			devp->prop.emp_data.empbuf[1],
-			devp->prop.emp_data.empbuf[2],
-			devp->prop.emp_data.empbuf[3]);
-}
-
-static void vdin_pr_sei_hdr_data_t3x(struct vdin_dev_s *devp)
-{
-	if (vdin_isr_monitor & VDIN_ISR_MONITOR_AFBCE)
-		pr_info("sei_data idx:%d et:%d sta:%x id:%02x len:%02x data:%x %x %x %x %x %x\n",
-			devp->curr_wr_vfe->vf.index,
-			devp->prop.hdr_info.hdr_data.eotf,
-			devp->prop.hdr_info.hdr_state,
-			devp->prop.hdr_info.hdr_data.metadata_id,
-			devp->prop.hdr_info.hdr_data.length,
-			devp->prop.hdr_info.hdr_data.primaries[0].x,
-			devp->prop.hdr_info.hdr_data.primaries[0].y,
-			devp->prop.hdr_info.hdr_data.white_points.x,
-			devp->prop.hdr_info.hdr_data.white_points.y,
-			devp->prop.hdr_info.hdr_data.master_lum.x,
-			devp->prop.hdr_info.hdr_data.master_lum.y);
-}
-
-void vdin_pr_vrr_data_t3x(struct vdin_dev_s *devp, struct vframe_s *vf)
-{
-	if (vdin_isr_monitor & VDIN_ISR_MONITOR_VRR_DATA)
-		pr_info("index:%d en:%d mc:%x ffm:%02x pkt:%02x ver:%02x %02x %02x %02x %02x %02x\n",
-			vf->index, devp->prop.vtem_data.vrr_en,
-			devp->prop.vtem_data.m_const,
-			devp->prop.vtem_data.fva_factor_m1,
-			devp->prop.spd_data.pkttype,
-			devp->prop.spd_data.version,
-			devp->prop.spd_data.length,
-			devp->prop.spd_data.data[0],
-			devp->prop.spd_data.data[1],
-			devp->prop.spd_data.data[2],
-			devp->prop.spd_data.data[5]);
-}
-
-void vdin_dolby_buffer_update_t3x(struct vdin_dev_s *devp, unsigned int index)
-{
-	u32 *p;
-	char *c;
-	char *cp;
-	u32 meta32, meta_size;
-	int i, j;
-	int count;
-	unsigned int offset = devp->addr_offset;
-	u32 crc_r = 0, crc = 1;
-	bool multimeta_flag = 0;
-	bool multimetatail_flag = 0;
-	u32 crc1_r = 0;
-	u32 crc1 = 0;
-	u32 max_pkt = 15;
-	static u32 cnt;
-	u32 rpt_cnt = 0, tail_cnt = 0, rev_cnt = 0, end_flag = 0;
-	u8 pkt_type;
-	struct dv_meta_pkt *pkt_p;
-	u32 cp_size, cp_offset, cp_sum = 0;
-	u32 *src_meta = devp->dv.meta_data_raw_buffer1;
-
-	devp->dv.dv_crc_check = true;
-	max_pkt = 15;
-	if (index >= devp->canvas_max_num) {
-		if (dv_dbg_log & DV_DEBUG_CANVAS_NUM)
-			pr_info("%s er: %d %d\n", __func__,
-				index, devp->canvas_max_num);
-		devp->dv.dv_crc_check = false;
-		return;
-	}
-
-	if (devp->dtdata->hw_ver == VDIN_HW_T7 &&
-	    IS_ERR_OR_NULL(src_meta)) {
-		devp->dv.dv_crc_check = false;
-		pr_info("err: null meta buffer\n");
-		return;
-	}
-
-	cp = devp->dv.temp_meta_data;
-	/*c = devp->vfp->dv_buf_ori[index];*/
-	c = devp->vfp->dv_buf_vmem[index];
-	p = (u32 *)c;
-	for (count = 0; count < META_RETRY_MAX; count++) {
-		if (dv_dbg_mask & DV_READ_MODE_AXI) {
-			memcpy(p, devp->vfp->dv_buf_vmem[index], 128 * max_pkt);
-			//vdin_dma_flush(devp, p, 128 * max_pkt, DMA_TO_DEVICE);
-			vdin_dolby_metadata_swap_t3x(devp, c);
-			/*vdin_dma_flush(devp, p, 128*max_pkt, DMA_TO_DEVICE);*/
-		} else {
-			if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
-				wr(offset, VDIN_DOLBY_DSC_CTRL2, 0xe800c0d5);
-			else
-				wr(offset, VDIN_DOLBY_DSC_CTRL2, 0xd180c0d5);
-			rpt_cnt = 0;
-			tail_cnt = 0;
-			rev_cnt = 0;
-			for (i = 0; i < (32 * max_pkt); i++) {
-				if (devp->dtdata->hw_ver == VDIN_HW_T7) {
-					p[i] = src_meta[i];
-				} else {
-					meta32 = rd(offset, VDIN_DOLBY_DSC_STATUS1);
-					p[i] = swap32(meta32);
-				}
-
-				if (((i % 32) == 0) && !end_flag) {
-					rev_cnt++;
-					pkt_type = c[i * 4] & 0xc0;
-					if (pkt_type == META_PKY_TYPE_START)
-						multimeta_flag = 1;
-
-					if (pkt_type == META_PKY_TYPE_START)
-						rpt_cnt++;
-
-					if (pkt_type == META_PKY_TYPE_TAIL) {
-						multimetatail_flag = 1;
-						tail_cnt++;
-					}
-
-					if (tail_cnt >= rpt_cnt) {
-						end_flag = 1;
-						max_pkt = rev_cnt;
-					}
-					if (((cnt % dv_dbg_log_du) == 0) &&
-					    (dv_dbg_log & DV_DEBUG_NORMAL))
-						pr_info("pkt_type %d:0x%x\n", i,
-							pkt_type);
-				}
-
-				if (i == 31 && multimeta_flag == 0)
-					break;
-			}
-		}
-
-		meta_size = (c[3] << 8) | c[4];
-		if (meta_size > 1024 || rev_cnt > 20 ||
-		    rpt_cnt != tail_cnt ||
-		    (meta_size > 128 && rev_cnt == 1)) {
-			if (((cnt % dv_dbg_log_du) == 0) && (dv_dbg_log & DV_DEBUG_NORMAL))
-				pr_info("err size:%d rp_cnt:%d, tal_cnt:%d, rv_cnt:%d max_pkt:%d\n",
-					meta_size, rpt_cnt, tail_cnt, rev_cnt, max_pkt);
-
-			devp->dv.dv_crc_check = false;
-			return;
-		}
-		crc = p[31];/*first pkt chk sum*/
-		crc_r = crc32_t3x(0, p, 124);
-		crc_r = swap32(crc_r);
-		if (meta_size > DV_META_SINGLE_PKT_SIZE || multimeta_flag) {
-			rev_cnt = min(rev_cnt, max_pkt);
-			for (j = 0; j < (128 * rev_cnt); j += (128 * rpt_cnt)) {
-				pkt_type = c[j] & 0xc0;
-				cp_size = DV_META_SINGLE_PKT_SIZE;
-				if (!(pkt_type == META_PKY_TYPE_START)) {
-					cp_size += 2;
-					cp_offset = 3;
-				} else {
-					cp_offset = 5;
-				}
-				for (i = 0; i < rpt_cnt; i++) {
-					pkt_p = (struct dv_meta_pkt *)
-						&c[j + 128 * i];
-					crc1 = pkt_p->crc;
-					crc1_r = crc32_t3x(0, (char *)pkt_p, 124);
-					crc1_r = swap32(crc1_r);
-					if (((cnt % dv_dbg_log_du) == 0) &&
-					    (dv_dbg_log & DV_DEBUG_NORMAL))
-						pr_info("crc:0x%x, 0x%x\n",
-							crc1, crc1_r);
-					if (crc1 == crc1_r) {
-						cp_offset += j + 128 * i;
-						memcpy(cp,
-						       &c[cp_offset], cp_size);
-						cp += cp_size;
-						cp_sum += cp_size;
-						break;
-					}
-				}
-				if (rpt_cnt == 0)
-					break;
-				if (((cnt % dv_dbg_log_du) == 0) &&
-				    (dv_dbg_log & DV_DEBUG_NORMAL))
-					pr_info("data idx %d:0x%x\n",
-						j, c[j] & 0xc0);
-			}
-		} else {
-			rev_cnt = 1;
-			rpt_cnt = 0;
-			tail_cnt = 0;
-		}
-
-		if (((cnt % dv_dbg_log_du) == 0) && (dv_dbg_log & DV_DEBUG_NORMAL)) {
-			pr_info("mult_flag=%d tail_flag=%d meta_size=%d\n",
-				multimeta_flag, multimetatail_flag, meta_size);
-			pr_info("rpt_cnt:%d tail_cnt:%d rev_cnt:%d cp_sum:%d\n",
-				rpt_cnt, tail_cnt, rev_cnt, cp_sum);
-		}
-
-		if (crc == crc_r) {
-			if (multimeta_flag == 1 &&
-			    multimetatail_flag == 1) {
-				if (crc1 == crc1_r)
-					break;
-			} else {
-				break;
-			}
-		}
-	}
-
-	/*meta data pkt data*/
-	if (((cnt % dv_dbg_log_du) == 0) && (dv_dbg_log & DV_DEBUG_META_PKT_DATA))
-		vdin_dv_pr_meta_data(c, 128 * rev_cnt, index);
-
-	if (crc != crc_r ||
-	    (multimeta_flag == 1 && multimetatail_flag == 1 &&
-	    crc1 != crc1_r)) {
-		/* set small size to make control path return -1
-		 *	to use previous setting
-		 */
-		devp->vfp->dv_buf[index] = &c[5];
-		devp->vfp->dv_buf_size[index] = 4;
-		if (((cnt % dv_dbg_log_du) == 0) && (dv_dbg_log & DV_DEBUG_ERR_META_DATA)) {
-			pr_err("%s:hdmi dovi meta crc error:%08x!=%08x\n",
-			       __func__, crc, crc_r);
-			pr_info("%s:index:%d dma:%x vaddr:%p size:%d\n",
-				__func__, index,
-				devp->vfp->dv_buf_mem[index],
-				devp->vfp->dv_buf_vmem[index],
-				meta_size);
-			vdin_dv_pr_meta_data(p, 128, index);
-		}
-		devp->dv.dv_crc_check = false;
-	} else {
-		devp->dv.dv_crc_check = true;
-		devp->vfp->dv_buf[index] = &c[5];
-		devp->vfp->dv_buf_size[index] = meta_size;
-		if (multimeta_flag == 1 && multimetatail_flag == 1) {
-			devp->vfp->dv_buf[index] = c;
-			cp = devp->dv.temp_meta_data;
-			memcpy(c, cp, meta_size);
-			if (((cnt % dv_dbg_log_du) == 0) && (dv_dbg_log & DV_DEBUG_NORMAL))
-				pr_info("cp %d meta to buff\n", meta_size);
-		} else if (meta_size > DV_META_SINGLE_PKT_SIZE) {
-			devp->dv.dv_crc_check = false;
-		}
-
-		if (((cnt % dv_dbg_log_du) == 0) && (dv_dbg_log & DV_DEBUG_NORMAL))
-			pr_info("%s:index:%d dma:%x vaddr:%p size:%d crc:%x crc1:%x\n",
-				__func__, index,
-				devp->vfp->dv_buf_mem[index],
-				devp->vfp->dv_buf_vmem[index],
-				meta_size, crc, crc1);
-		/*meta data raw data*/
-		if (((cnt % dv_dbg_log_du) == 0) && (dv_dbg_log & DV_DEBUG_OK_META_DATA))
-			vdin_dv_pr_meta_data(c, meta_size, index);
-	}
-
-	cnt++;
+	wr_bits(devp->index * VDIN_TOP_OFFSET, VDIN0_SYNC_CONVERT_SYNC_CTRL0, 1, 31, 1);
+	wr_bits(devp->index * VDIN_TOP_OFFSET, VDIN0_SYNC_CONVERT_SYNC_CTRL0, 0, 31, 1);
 }
 
 void vdin_dolby_addr_update_t3x(struct vdin_dev_s *devp, unsigned int index)
 {
-	unsigned int offset = devp->addr_offset;
-	u32 *p;
-
-	if (index >= devp->canvas_max_num)
-		return;
-	devp->vfp->dv_buf[index] = NULL;
-	devp->vfp->dv_buf_size[index] = 0;
-	p = (u32 *)devp->vfp->dv_buf_vmem[index];
-	p[0] = 0;
-	p[1] = 0;
-	if (dv_dbg_mask & DV_READ_MODE_AXI) {
-		wr(offset, VDIN_DOLBY_AXI_CTRL1,
-		   devp->vfp->dv_buf_mem[index]);
-		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 1, 4, 1);
-		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 0, 4, 1);
-		if (dv_dbg_log & DV_DEBUG_NORMAL)
-			pr_info("%s:index:%d dma:%x\n", __func__,
-				index, devp->vfp->dv_buf_mem[index]);
-	} else {
-		wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x5180c0d5);
-		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
-			wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x6800c0d5);
-		else
-			wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x5180c0d5);
-		wr(offset, VDIN_DOLBY_DSC_CTRL3, 0);
-	}
+//	unsigned int offset = devp->addr_offset;
+//	u32 *p;
+//
+//	if (index >= devp->canvas_max_num)
+//		return;
+//	devp->vfp->dv_buf[index] = NULL;
+//	devp->vfp->dv_buf_size[index] = 0;
+//	p = (u32 *)devp->vfp->dv_buf_vmem[index];
+//	p[0] = 0;
+//	p[1] = 0;
+//	if (dv_dbg_mask & DV_READ_MODE_AXI) {
+//		wr(offset, VDIN_DOLBY_AXI_CTRL1,
+//		   devp->vfp->dv_buf_mem[index]);
+//		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 1, 4, 1);
+//		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 0, 4, 1);
+//		if (dv_dbg_log & DV_DEBUG_NORMAL)
+//			pr_info("%s:index:%d dma:%x\n", __func__,
+//				index, devp->vfp->dv_buf_mem[index]);
+//	} else {
+//		wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x5180c0d5);
+//		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
+//			wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x6800c0d5);
+//		else
+//			wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x5180c0d5);
+//		wr(offset, VDIN_DOLBY_DSC_CTRL3, 0);
+//	}
 }
 
 void vdin_dolby_config_t3x(struct vdin_dev_s *devp)
@@ -4546,71 +3465,71 @@ void vdin_dolby_mdata_write_en_t3x(unsigned int offset, unsigned int en)
 void vdin_dv_desc_to_4448bit_t3x(struct vdin_dev_s *devp,
 			       unsigned int on_off)
 {
-	unsigned int offset = devp->addr_offset;
-
+//	unsigned int offset = devp->addr_offset;
+//
 	/* only support vdin0
 	 * don't support in T5
 	 */
-	if (devp->index == 1 ||
-	    (devp->dtdata->hw_ver == VDIN_HW_T5 ||
-	     devp->dtdata->hw_ver == VDIN_HW_T5D))
-		return;
-
-	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2)) {
-		if (on_off) {
-			if (!devp->double_wr) {
-				/* enable channel 1 for scramble */
-				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 0,
-					CH0_OUT_EN_BIT, CH_OUT_EN_WID);
-				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 1,
-					CH1_OUT_EN_BIT, CH_OUT_EN_WID);
-				/* switch vdin 0 wr mif to small */
-				wr_bits(0, VDIN_TOP_DOUBLE_CTRL,
-					WR_SEL_VDIN0_SML,
-					MIF0_OUT_SEL_BIT, VDIN_REORDER_SEL_WID);
-			}
-			wr(offset, VDIN_DSC_TUNNEL_SEL, 0x3d11);/*re-order*/
-
-			/*small path size in*/
-			wr_bits(offset, VDIN_SCB_CTRL1, devp->v_shrink_out, 0, 13);
-			wr_bits(offset, VDIN_SCB_CTRL1, devp->h_shrink_out, 16, 13);
-			/*de-scramble enable*/
-			wr_bits(offset, VDIN_VSHRK_CTRL, 0x1, 28, 1);
-			/*small path scramble enable*/
-			wr_bits(offset, VDIN_VSHRK_CTRL, 0x1, 29, 1);
-			if (vdin_dbg_en)
-				pr_info("vdin SC small in:(%d, %d)\n",
-					devp->h_shrink_out, devp->v_shrink_out);
-
-			/* normal path size in */
-			wr_bits(offset, VDIN_DSC2_HSIZE, devp->v_active, 0, 13);
-			wr_bits(offset, VDIN_DSC2_HSIZE, devp->h_active, 16, 13);
-			/* normal patch scramble enable */
-			wr_bits(offset, VDIN_SCB_CTRL0, 0x1, 28, 1);
-
-			if (vdin_dbg_en)
-				pr_info("vdin SC normal in:(%d, %d)\n",
-					devp->h_active, devp->v_active);
-
-		} else {
-			/* disable descramble & scramble */
-			/*small patch disable*/
-			/*de-scramble disable*/
-			wr_bits(offset, VDIN_VSHRK_CTRL, 0x0, 28, 1);
-			/*small path scramble enable*/
-			wr_bits(offset, VDIN_VSHRK_CTRL, 0x0, 29, 1);
-			/* normal path disable */
-			wr_bits(offset, VDIN_SCB_CTRL0, 0x0, 28, 1);
-
-			if (!devp->double_wr) {
-				/* enable channel 0 for normal TV path */
-				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 1,
-					CH0_OUT_EN_BIT, CH_OUT_EN_WID);
-				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 0,
-					CH1_OUT_EN_BIT, CH_OUT_EN_WID);
-			}
-		}
-	}
+//	if (devp->index == 1 ||
+//	    (devp->dtdata->hw_ver == VDIN_HW_T5 ||
+//	     devp->dtdata->hw_ver == VDIN_HW_T5D))
+//		return;
+//
+//	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2)) {
+//		if (on_off) {
+//			if (!devp->double_wr) {
+//				/* enable channel 1 for scramble */
+//				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 0,
+//					CH0_OUT_EN_BIT, CH_OUT_EN_WID);
+//				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 1,
+//					CH1_OUT_EN_BIT, CH_OUT_EN_WID);
+//				/* switch vdin 0 wr mif to small */
+//				wr_bits(0, VDIN_TOP_DOUBLE_CTRL,
+//					WR_SEL_VDIN0_SML,
+//					MIF0_OUT_SEL_BIT, VDIN_REORDER_SEL_WID);
+//			}
+//			wr(offset, VDIN_DSC_TUNNEL_SEL, 0x3d11);/*re-order*/
+//
+//			/*small path size in*/
+//			wr_bits(offset, VDIN_SCB_CTRL1, devp->v_shrink_out, 0, 13);
+//			wr_bits(offset, VDIN_SCB_CTRL1, devp->h_shrink_out, 16, 13);
+//			/*de-scramble enable*/
+//			wr_bits(offset, VDIN_VSHRK_CTRL, 0x1, 28, 1);
+//			/*small path scramble enable*/
+//			wr_bits(offset, VDIN_VSHRK_CTRL, 0x1, 29, 1);
+//			if (vdin_dbg_en)
+//				pr_info("vdin SC small in:(%d, %d)\n",
+//					devp->h_shrink_out, devp->v_shrink_out);
+//
+//			/* normal path size in */
+//			wr_bits(offset, VDIN_DSC2_HSIZE, devp->v_active, 0, 13);
+//			wr_bits(offset, VDIN_DSC2_HSIZE, devp->h_active, 16, 13);
+//			/* normal patch scramble enable */
+//			wr_bits(offset, VDIN_SCB_CTRL0, 0x1, 28, 1);
+//
+//			if (vdin_dbg_en)
+//				pr_info("vdin SC normal in:(%d, %d)\n",
+//					devp->h_active, devp->v_active);
+//
+//		} else {
+//			/* disable descramble & scramble */
+//			/*small patch disable*/
+//			/*de-scramble disable*/
+//			wr_bits(offset, VDIN_VSHRK_CTRL, 0x0, 28, 1);
+//			/*small path scramble enable*/
+//			wr_bits(offset, VDIN_VSHRK_CTRL, 0x0, 29, 1);
+//			/* normal path disable */
+//			wr_bits(offset, VDIN_SCB_CTRL0, 0x0, 28, 1);
+//
+//			if (!devp->double_wr) {
+//				/* enable channel 0 for normal TV path */
+//				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 1,
+//					CH0_OUT_EN_BIT, CH_OUT_EN_WID);
+//				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 0,
+//					CH1_OUT_EN_BIT, CH_OUT_EN_WID);
+//			}
+//		}
+//	}
 }
 
 /*
@@ -4619,35 +3538,35 @@ void vdin_dv_desc_to_4448bit_t3x(struct vdin_dev_s *devp,
 void vdin_dv_de_tunnel_to_44410bit_t3x(struct vdin_dev_s *devp,
 				   unsigned int on_off)
 {
-	u32 data32;
-	unsigned int offset = devp->addr_offset;
-
-	data32 = (3 << 18 |
-		  2 << 15 |
-		  0 << 12 |
-		  5 << 9 |
-		  4 << 6 |
-		  1 << 3);/*1 << 2 0:off 1:on*/
-
-	if (on_off)
-		wr(offset, VDIN_RO_WRMIF_STATUS, data32 | (1 << 2));
-	else
-		wr(offset, VDIN_RO_WRMIF_STATUS, data32);
-
-	wr(offset, VDIN_DSC_DETUNNEL_SEL, 0x2c2d0);
-	/*de-scramble h size in*/
-	wr_bits(offset, VDIN_CFMT_W, devp->h_active_org / 2,
-		0, 13);
-	wr_bits(offset, VDIN_CFMT_W, devp->h_active_org,
-		16, 13);
-	/**/
-	wr_bits(offset, VDIN_DSC_HSIZE, devp->h_active_org,
-		0, 13);
-	wr_bits(offset, VDIN_DSC_HSIZE, devp->h_active_org,
-		16, 13);
-	if (vdin_dbg_en)
-		pr_info("vdin DSC in:(%d, %d)\n",
-			devp->h_active_org, devp->v_active_org);
+//	u32 data32;
+//	unsigned int offset = devp->addr_offset;
+//
+//	data32 = (3 << 18 |
+//		  2 << 15 |
+//		  0 << 12 |
+//		  5 << 9 |
+//		  4 << 6 |
+//		  1 << 3);/*1 << 2 0:off 1:on*/
+//
+//	if (on_off)
+//		wr(offset, VDIN_RO_WRMIF_STATUS, data32 | (1 << 2));
+//	else
+//		wr(offset, VDIN_RO_WRMIF_STATUS, data32);
+//
+//	wr(offset, VDIN_DSC_DETUNNEL_SEL, 0x2c2d0);
+//	/*de-scramble h size in*/
+//	wr_bits(offset, VDIN_CFMT_W, devp->h_active_org / 2,
+//		0, 13);
+//	wr_bits(offset, VDIN_CFMT_W, devp->h_active_org,
+//		16, 13);
+//	/**/
+//	wr_bits(offset, VDIN_DSC_HSIZE, devp->h_active_org,
+//		0, 13);
+//	wr_bits(offset, VDIN_DSC_HSIZE, devp->h_active_org,
+//		16, 13);
+//	if (vdin_dbg_en)
+//		pr_info("vdin DSC in:(%d, %d)\n",
+//			devp->h_active_org, devp->v_active_org);
 }
 
 void vdin_dv_tunnel_set_t3x(struct vdin_dev_s *devp)
@@ -4673,832 +3592,6 @@ void vdin_dv_tunnel_set_t3x(struct vdin_dev_s *devp)
 //		vdin_dolby_de_tunnel_to_44410bit(devp, false);
 //		vdin_dolby_desc_to_4448bit(devp, false);
 //	}
-}
-
-static int vdin_get_max_buf_t3x(struct vdin_dev_s *devp)
-{
-	if (!devp) {
-		pr_err("devp is NULL\n");
-		return -1;
-	}
-
-	return devp->frame_buff_num;
-}
-
-int vdin_event_cb_t3x(int type, void *data, void *op_arg)
-{
-	unsigned long flags;
-	struct vf_pool *p;
-	struct vdin_dev_s *devp = vdin_get_dev(0);
-
-	if (!op_arg) {
-		if (vdin_ctl_dbg & CTL_DEBUG_EVENT_OP_ARG)
-			pr_info("%s:op_arg is NULL!\n", __func__);
-		return -1;
-	}
-	if (!data) {
-		if (vdin_ctl_dbg & CTL_DEBUG_EVENT_DATA)
-			pr_info("%s:data is NULL!\n", __func__);
-		return -1;
-	}
-	p = (struct vf_pool *)op_arg;
-	if (type & VFRAME_EVENT_RECEIVER_GET_AUX_DATA) {
-		struct provider_aux_req_s *req =
-			(struct provider_aux_req_s *)data;
-		unsigned char index;
-
-		if (!req->vf) {
-			pr_info("%s:req->vf is NULL!\n", __func__);
-			return -1;
-		}
-		spin_lock_irqsave(&p->dv_lock, flags);
-		index = req->vf->index & 0xff;
-		req->aux_buf = NULL;
-		req->aux_size = 0;
-		req->dv_enhance_exist = 0;
-		/* TODO: need change the low latency flag when LL mode */
-		req->low_latency = p->low_latency;
-		memcpy(&req->dv_vsif,
-			&p->dv_vsif, sizeof(struct tvin_dv_vsif_s));
-		if (req->bot_flag)
-			index = (req->vf->index >> 8) & 0xff;
-		if (index != 0xff && index < p->size && p->dv_buf[index]) {
-			req->aux_buf = p->dv_buf[index];
-			req->aux_size = p->dv_buf_size[index];
-		}
-		spin_unlock_irqrestore(&p->dv_lock, flags);
-
-		if (dv_dbg_log & DV_DEBUG_EVENT_META_DATA) {
-			pr_info("%s(type 0x%x vf index 0x%x)=>size 0x%x\n",
-				__func__, type, index, req->aux_size);
-			vdin_dv_pr_event_meta_data_t3x(req->aux_buf,
-					req->aux_size, index);
-		}
-	} else if (type & VFRAME_EVENT_RECEIVER_DISP_MODE) {
-		struct provider_disp_mode_req_s *req =
-			(struct provider_disp_mode_req_s *)data;
-		unsigned int index_disp;
-
-		if (!req->vf) {
-			pr_info("%s:req->vf is NULL!\n", __func__);
-			return -1;
-		}
-		index_disp = req->vf->index_disp & 0xff;
-		if (index_disp >= VFRAME_DISP_MAX_NUM) {
-			if (vdin_ctl_dbg & CTL_DEBUG_EVENT_INDEX)
-				pr_info("%s:req->vf->index_disp(%d) is overflow!\n",
-					__func__, index_disp);
-			return -1;
-		}
-		if (devp->game_mode || devp->skip_disp_md_check)
-			req->disp_mode = VFRAME_DISP_MODE_NULL;
-		else
-			req->disp_mode = p->disp_mode[index_disp];
-		if (req->req_mode == 1 && p->skip_vf_num)
-			p->disp_mode[index_disp] = VFRAME_DISP_MODE_UNKNOWN;
-		if (vdin_ctl_dbg & CTL_DEBUG_EVENT_DISP_MODE)
-			pr_info("%s(type 0x%x vf index 0x%x)=>disp_mode %d,req_mode:%d;[%d]=%d,[%d]=%d\n",
-				__func__, type, index_disp, req->disp_mode, req->req_mode,
-				p->disp_index[0], p->disp_mode[p->disp_index[0]],
-				p->disp_index[1], p->disp_mode[p->disp_index[1]]);
-	} else if (type & VFRAME_EVENT_RECEIVER_NEED_NO_COMP) {
-		unsigned int *cnt;
-
-		/* use for debug */
-//		if (vdin0_afbce_debug_force)
-//			return 0;
-
-		cnt = (unsigned int *)data;
-		if (*cnt) {
-			devp->afbce_mode = 0;
-		} else {
-			if (devp->afbce_valid)
-				devp->afbce_mode = 1;
-		}
-
-		if (vdin_ctl_dbg & CTL_DEBUG_EVENT_NO_COMP)
-			pr_info("%s(type 0x%x vdin%d) afbce_mode: %d, vpp_cnt: %d\n",
-				__func__, type, devp->index,
-				devp->afbce_mode, *cnt);
-	} else if (type & VFRAME_EVENT_RECEIVER_BUF_COUNT) {
-		*(int *)data = vdin_get_max_buf_t3x(devp);
-	} else if (type & VFRAME_EVENT_RECEIVER_REQ_STATE) {
-		struct provider_state_req_s *req =
-			(struct provider_state_req_s *)data;
-
-		#ifdef CONFIG_AMLOGIC_TEE
-		if (devp->secure_en && devp->mem_protected)
-			req->req_result[0] = 1;
-		else
-			req->req_result[0] = 0;
-		#else
-			req->req_result[0] = 0;
-		#endif
-	}
-
-	return 0;
-}
-
-void set_invert_top_bot_t3x(bool invert_flag)
-{
-	invert_top_bot = invert_flag;
-}
-
-int vdin_hdr_sei_error_check_t3x(struct vdin_dev_s *devp)
-{
-	int primary_data[3][2];
-	int i;
-
-	vdin_pr_sei_hdr_data_t3x(devp);
-	/*GBR compare with standard 709 primary*/
-	for (i = 0; i < 3; i++) {
-		primary_data[i][0] =
-			devp->prop.hdr_info.hdr_data.primaries[i].x;
-		primary_data[i][1] =
-			devp->prop.hdr_info.hdr_data.primaries[i].y;
-	}
-	if (((primary_data[0][0] + 250) / 500 == 30) &&
-	    ((primary_data[0][1] + 250) / 500 == 60) &&
-	    ((primary_data[1][0] + 250) / 500 == 15) &&
-	    ((primary_data[1][1] + 250) / 500 == 6) &&
-	    ((primary_data[2][0] + 250) / 500 == 64) &&
-	    ((primary_data[2][1] + 250) / 500 == 33))
-		return 1;
-
-	/*RGB compare with standard 709 primary*/
-	for (i = 0; i < 3; i++) {
-		primary_data[(i + 2) % 3][0] =
-			devp->prop.hdr_info.hdr_data.primaries[i].x;
-		primary_data[(i + 2) % 3][1] =
-			devp->prop.hdr_info.hdr_data.primaries[i].y;
-	}
-
-	if (((primary_data[0][0] + 250) / 500 == 30) &&
-	    ((primary_data[0][1] + 250) / 500 == 60) &&
-	    ((primary_data[1][0] + 250) / 500 == 15) &&
-	    ((primary_data[1][1] + 250) / 500 == 6) &&
-	    ((primary_data[2][0] + 250) / 500 == 64) &&
-	    ((primary_data[2][1] + 250) / 500 == 33))
-		return 1;
-
-	/*GxBxRxGyByRy compare with standard 709 primary*/
-	primary_data[0][0] = devp->prop.hdr_info.hdr_data.primaries[0].x;
-	primary_data[0][1] = devp->prop.hdr_info.hdr_data.primaries[1].y;
-	primary_data[1][0] = devp->prop.hdr_info.hdr_data.primaries[0].y;
-	primary_data[1][1] = devp->prop.hdr_info.hdr_data.primaries[2].x;
-	primary_data[2][0] = devp->prop.hdr_info.hdr_data.primaries[1].x;
-	primary_data[2][1] = devp->prop.hdr_info.hdr_data.primaries[2].y;
-
-	if (((primary_data[0][0] + 250) / 500 == 30) &&
-	    ((primary_data[0][1] + 250) / 500 == 60) &&
-	    ((primary_data[1][0] + 250) / 500 == 15) &&
-	    ((primary_data[1][1] + 250) / 500 == 6) &&
-	    ((primary_data[2][0] + 250) / 500 == 64) &&
-	    ((primary_data[2][1] + 250) / 500 == 33))
-		return 1;
-	else
-		return 0;
-}
-
-void vdin_hdr10plus_check_t3x(struct vdin_dev_s *devp,
-			  struct vframe_s *vf)
-{
-	if (devp->prop.hdr10p_info.hdr10p_on) {
-		/*devp->prop.hdr10p_info.hdr10p_on = false;*/
-
-		vf->signal_type |= (1 << 29);/*present_flag*/
-		vf->signal_type |= (0 << 25);/*0:limited*/
-		/*color_primaries*/
-		vf->signal_type = ((9 << 16) |
-			(vf->signal_type & (~0xFF0000)));
-		/*transfer_characteristic*/
-		vf->signal_type = ((0x30 << 8) |
-			(vf->signal_type & (~0xFF00)));
-		/*matrix_coefficient*/
-		vf->signal_type = ((9 << 0) |
-			(vf->signal_type & (~0xFF)));
-		memcpy(&vf->prop.hdr10p_data,
-		       &devp->prop.hdr10p_info.hdr10p_data,
-		       sizeof(struct tvin_hdr10p_data_s));
-	}
-}
-
-void vdin_set_drm_data_t3x(struct vdin_dev_s *devp,
-		       struct vframe_s *vf)
-{
-	struct vframe_master_display_colour_s *vf_dp =
-		&vf->prop.master_display_colour;
-	u32 val = 0;
-
-	if (devp->prop.hdr_info.hdr_state != HDR_STATE_NULL) {
-		if (vdin_hdr_sei_error_check(devp) == 1) {
-			vf_dp->present_flag = false;
-			vf->signal_type &= ~(1 << 29);
-			vf->signal_type &= ~(1 << 25);
-			/*todo;default is bt709,if change need sync*/
-			vf->signal_type = ((1 << 16) |
-				(vf->signal_type & (~0xFF0000)));
-			vf->signal_type = ((1 << 8) |
-				(vf->signal_type & (~0xFF00)));
-		} else {
-			memcpy(vf_dp->primaries,
-			       devp->prop.hdr_info.hdr_data.primaries,
-			       sizeof(u32) * 6);
-			memcpy(vf_dp->white_point,
-			       &devp->prop.hdr_info.hdr_data.white_points,
-			       sizeof(u32) * 2);
-			memcpy(vf_dp->luminance,
-			       &devp->prop.hdr_info.hdr_data.master_lum,
-			       sizeof(u32) * 2);
-			/* content_light_level */
-			vf_dp->content_light_level.max_content =
-				devp->prop.hdr_info.hdr_data.mcll;
-			vf_dp->content_light_level.max_pic_average =
-				devp->prop.hdr_info.hdr_data.mfall;
-
-			vf_dp->present_flag = true;
-
-			if (devp->prop.hdr_info.hdr_data.mcll != 0 &&
-			    devp->prop.hdr_info.hdr_data.mfall != 0)
-				vf_dp->content_light_level.present_flag = 1;
-			else
-				vf_dp->content_light_level.present_flag = 0;
-
-			if (devp->prop.hdr_info.hdr_data.eotf ==
-			    EOTF_SMPTE_ST_2048 ||
-			    devp->prop.hdr_info.hdr_data.eotf ==
-			    EOTF_HDR) {
-				vf->signal_type |= (1 << 29);
-				vf->signal_type |= (0 << 25);/*0:limit*/
-				vf->signal_type = ((9 << 16) |
-					(vf->signal_type & (~0xFF0000)));
-				vf->signal_type = ((16 << 8) |
-					(vf->signal_type & (~0xFF00)));
-				vf->signal_type = ((9 << 0) |
-					(vf->signal_type & (~0xFF)));
-			} else if (devp->prop.hdr_info.hdr_data.eotf ==
-					EOTF_HLG) {
-				vf->signal_type |= (1 << 29);
-				vf->signal_type |= (0 << 25);/*0:limit*/
-				vf->signal_type = ((9 << 16) |
-					(vf->signal_type & (~0xFF0000)));
-				vf->signal_type = ((14 << 8) |
-					(vf->signal_type & (~0xFF00)));
-				vf->signal_type = ((9 << 0) |
-					(vf->signal_type & (~0xFF)));
-			} else {
-				vf->signal_type &= ~(1 << 29);
-				vf->signal_type &= ~(1 << 25);
-				/*todo;default is bt709,if change need sync*/
-				vf->signal_type = ((1 << 16) |
-					(vf->signal_type & (~0xFF0000)));
-				vf->signal_type = ((1 << 8) |
-					(vf->signal_type & (~0xFF00)));
-			}
-		}
-	} else if (devp->prop.hdr_info.hdr_state == HDR_STATE_NULL) {
-		vf_dp->present_flag = false;
-		vf->signal_type &= ~(1 << 29);
-		vf->signal_type &= ~(1 << 25);
-		val = vdin_matrix_range_chk_t3x(devp);
-		vf->signal_type |= (val << 25);
-		/*todo;default is bt709,if change need sync*/
-		vf->signal_type = ((1 << 16) |
-			(vf->signal_type & (~0xFF0000)));
-		vf->signal_type = ((1 << 8) |
-			(vf->signal_type & (~0xFF00)));
-	}
-
-	/* hdr10+ check */
-	vdin_hdr10plus_check_t3x(devp, vf);
-
-	memcpy(&devp->dv.dv_vsif_raw, &devp->prop.dv_vsif_raw,
-		sizeof(struct tvin_dv_vsif_raw_s));
-	vf->vsif.addr = &devp->dv.dv_vsif_raw;
-	if (devp->dv.dv_flag) {
-		vf->vsif.size = sizeof(struct tvin_dv_vsif_raw_s);
-		vdin_pr_vsif_data_t3x(devp, vf);
-	} else {
-		vf->vsif.size = 0;
-	}
-
-	vf->drm_if.addr = &devp->prop.hdr_info.hdr_data.rawdata;
-	if (devp->prop.vdin_hdr_flag) {
-		vf->drm_if.size = sizeof(devp->prop.hdr_info.hdr_data.rawdata);
-		vdin_pr_hdr_rawdata_t3x(devp, vf);
-	} else {
-		vf->drm_if.size = 0;
-	}
-
-	vf->emp.addr = &devp->prop.emp_data.empbuf;
-	vf->emp.size = devp->prop.emp_data.size;
-	vdin_pr_emp_data_t3x(devp, vf);
-}
-
-bool vdin_check_is_spd_data_t3x(struct vdin_dev_s *devp)
-{
-	if (!devp)
-		return false;
-
-	if (devp->prop.spd_data.data[0] == 0x1A &&
-	    devp->prop.spd_data.data[1] == 0x00 &&
-	    devp->prop.spd_data.data[2] == 0x00)
-		return true;
-	else
-		return false;
-}
-
-bool vdin_check_spd_data_chg_t3x(struct vdin_dev_s *devp)
-{
-	if (!devp)
-		return false;
-
-	if ((devp->pre_prop.spd_data.data[0] == 0x1a &&
-	     devp->pre_prop.spd_data.data[1] == 0x00 &&
-	     devp->pre_prop.spd_data.data[2] == 0x00) ||
-	    (devp->prop.spd_data.data[0] == 0x1a &&
-	     devp->prop.spd_data.data[1] == 0x00 &&
-	     devp->prop.spd_data.data[2] == 0x00)) {
-		if ((devp->pre_prop.spd_data.data[5] >> 2 & 0x3) !=
-		     (devp->prop.spd_data.data[5] >> 2 & 0x3))
-			return true;
-	} else {
-		return false;
-	}
-
-	return false;
-}
-
-void vdin_set_freesync_data_t3x(struct vdin_dev_s *devp, struct vframe_s *vf)
-{
-	if (devp->prop.vtem_data.vrr_en) {
-		memcpy(&devp->vrr_data.vtem_data, &devp->prop.vtem_data,
-			sizeof(struct tvin_vtem_data_s));
-		vf->vtem.addr = &devp->vrr_data.vtem_data;
-		vf->vtem.size = sizeof(devp->prop.vtem_data);
-	} else if (vdin_check_is_spd_data(devp) &&
-		(devp->prop.spd_data.data[5] >> 2 & 0x3)) {
-		memcpy(&devp->vrr_data.spd_data, &devp->prop.spd_data,
-			sizeof(struct tvin_spd_data_s));
-		vf->spd.addr = &devp->vrr_data.spd_data;
-		vf->spd.size = sizeof(devp->prop.spd_data);
-	} else {
-		vf->vtem.size = 0;
-		vf->spd.size = 0;
-	}
-	vdin_pr_vrr_data_t3x(devp, vf);
-}
-
-void vdin_vs_proc_monitor_t3x(struct vdin_dev_s *devp)
-{
-	if (IS_HDMI_SRC(devp->parm.port)) {
-		if (devp->prop.dolby_vision != devp->dv.dv_flag ||
-		    (devp->prop.low_latency != devp->dv.low_latency &&
-		     devp->dv.dv_flag))
-			devp->dv.chg_cnt++;
-		else
-			devp->dv.chg_cnt = 0;
-
-		if (devp->prop.vdin_hdr_flag != devp->pre_prop.vdin_hdr_flag)
-			devp->prop.hdr_info.hdr_check_cnt++;
-		else
-			devp->prop.hdr_info.hdr_check_cnt = 0;
-
-		if (devp->prop.latency.allm_mode != devp->pre_prop.latency.allm_mode ||
-		    devp->prop.latency.it_content != devp->pre_prop.latency.it_content ||
-		    devp->prop.latency.cn_type != devp->pre_prop.latency.cn_type)
-			devp->dv.allm_chg_cnt++;
-		else
-			devp->dv.allm_chg_cnt = 0;
-
-		/*hdmi source afd check*/
-		if (devp->pre_prop.aspect_ratio !=
-		    devp->prop.aspect_ratio)
-			devp->sg_chg_afd_cnt++;
-		else
-			devp->sg_chg_afd_cnt = 0;
-
-		if (devp->vrr_data.vdin_vrr_en_flag != devp->prop.vtem_data.vrr_en ||
-			vdin_check_spd_data_chg(devp))
-			devp->vrr_data.vrr_chg_cnt++;
-		else
-			devp->vrr_data.vrr_chg_cnt = 0;
-
-		if (vdin_isr_monitor & VDIN_ISR_MONITOR_FLAG)
-			pr_info("dv:%d, LL:%d hdr st:%d eotf:%d fg:%d allm:%d sty:0x%x spd:0x%x 0x%x\n",
-				devp->prop.dolby_vision,
-				devp->prop.low_latency,
-				devp->prop.hdr_info.hdr_state,
-				devp->prop.hdr_info.hdr_data.eotf,
-				devp->prop.vdin_hdr_flag,
-				devp->prop.latency.allm_mode,
-				devp->parm.info.signal_type,
-				devp->prop.spd_data.data[0],
-				devp->prop.spd_data.data[5]);
-		if (vdin_isr_monitor & VDIN_ISR_MONITOR_EMP)
-			pr_info("emp size:%d, data:0x%02x 0x%02x 0x%02x 0x%02x\n",
-				devp->prop.emp_data.size,
-				devp->prop.emp_data.empbuf[0],
-				devp->prop.emp_data.empbuf[1],
-				devp->prop.emp_data.empbuf[2],
-				devp->prop.emp_data.empbuf[3]);
-		if (vdin_isr_monitor & VDIN_ISR_MONITOR_RATIO)
-			pr_info("aspect_ratio=0x%x,vrr_en:%d,fr:%d\n",
-				devp->prop.aspect_ratio, devp->prop.vtem_data.vrr_en,
-				devp->prop.vtem_data.base_framerate);
-	}
-
-	if (color_range_force)
-		devp->prop.color_fmt_range =
-		tvin_get_force_fmt_range(devp->prop.color_format);
-}
-
-void vdin_check_hdmi_hdr_t3x(struct vdin_dev_s *devp)
-{
-	struct tvin_state_machine_ops_s *sm_ops;
-	enum tvin_port_e port = TVIN_PORT_NULL;
-	struct tvin_sig_property_s *prop;
-
-	if (!devp)
-		return;
-
-	port = devp->parm.port;
-
-	if (!IS_HDMI_SRC(port))
-		return;
-
-	prop = &devp->prop;
-	sm_ops = devp->frontend->sm_ops;
-	if (sm_ops->get_sig_property) {
-		/* don't need get again, already got from start dec */
-		/* sm_ops->get_sig_property(devp->frontend, prop); */
-		pr_info("vdin%d hdmi hdr eotf:0x%x, state:%d\n",
-			devp->index,
-			devp->prop.hdr_info.hdr_data.eotf,
-			devp->prop.hdr_info.hdr_state);
-		/*devp->prop.vdin_hdr_flag = vdin_is_hdr_signal_in(devp);*/
-	}
-}
-
-u32 vdin_get_curr_field_type_t3x(struct vdin_dev_s *devp)
-{
-	u32 field_status;
-	u32 type = VIDTYPE_VIU_SINGLE_PLANE | VIDTYPE_VIU_FIELD;
-
-	/* struct tvin_parm_s *parm = &devp->parm; */
-	const struct tvin_format_s *fmt_info = devp->fmt_info_p;
-
-	if (fmt_info->scan_mode == TVIN_SCAN_MODE_PROGRESSIVE) {
-		type |= VIDTYPE_PROGRESSIVE;
-	} else {
-		field_status = vdin_get_field_type(devp->addr_offset);
-		/*tvafe FIELD POLARITY 0 TOP,vdin must invert for correct*/
-
-		if (invert_top_bot || IS_TVAFE_SRC(devp->parm.port))
-			type |=	field_status ?
-			VIDTYPE_INTERLACE_TOP :	VIDTYPE_INTERLACE_BOTTOM;
-		else
-			type |= field_status ?
-			VIDTYPE_INTERLACE_BOTTOM : VIDTYPE_INTERLACE_TOP;
-
-		/*md2 get pre field sts, need invert for cur*/
-		if ((devp->game_mode & VDIN_GAME_MODE_2) == VDIN_GAME_MODE_2) {
-			if ((type & VIDTYPE_INTERLACE_BOTTOM) ==
-				VIDTYPE_INTERLACE_TOP) {
-				type |= VIDTYPE_INTERLACE_BOTTOM;
-			} else if ((type & VIDTYPE_INTERLACE_BOTTOM) ==
-				VIDTYPE_INTERLACE_BOTTOM) {
-				type &= ~VIDTYPE_INTERLACE_BOTTOM;
-				type |= VIDTYPE_INTERLACE_TOP;
-			}
-		}
-	}
-
-	switch (devp->format_convert) {
-	case VDIN_FORMAT_CONVERT_YUV_YUV444:
-	case VDIN_FORMAT_CONVERT_RGB_YUV444:
-		type |= VIDTYPE_VIU_444;
-		/*if (devp->afbce_mode_pre) */
-		/*	type |= VIDTYPE_COMB_MODE; */
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_YUV422:
-	case VDIN_FORMAT_CONVERT_RGB_YUV422:
-		type |= VIDTYPE_VIU_422;
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_RGB:
-	case VDIN_FORMAT_CONVERT_RGB_RGB:
-		type |= VIDTYPE_RGB_444;
-		if (devp->afbce_mode_pre && vdin_chk_is_comb_mode(devp))
-			type |= VIDTYPE_COMB_MODE;
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_NV21:
-	case VDIN_FORMAT_CONVERT_RGB_NV21:
-		type |= VIDTYPE_VIU_NV21;
-		type &= (~VIDTYPE_VIU_SINGLE_PLANE);
-		break;
-	case VDIN_FORMAT_CONVERT_YUV_NV12:
-	case VDIN_FORMAT_CONVERT_RGB_NV12:
-		/* type |= VIDTYPE_VIU_NV12; */
-		type &= (~VIDTYPE_VIU_SINGLE_PLANE);
-		break;
-	default:
-		break;
-	}
-
-	if (devp->afbce_valid)
-		type |= VIDTYPE_SUPPORT_COMPRESS;
-
-	if (devp->double_wr) {
-		type |= VIDTYPE_COMPRESS;
-		type &= ~VIDTYPE_NO_DW;
-		type |= VIDTYPE_SCATTER;
-
-		/* add only for TL1 switch mif/afbce dynamically */
-		type &= ~VIDTYPE_SUPPORT_COMPRESS;
-
-		if (devp->afbce_flag & VDIN_AFBCE_EN_LOSSY)
-			type |= VIDTYPE_COMPRESS_LOSS;
-		if (vdin_chk_is_comb_mode(devp))
-			type |= VIDTYPE_COMB_MODE;
-	} else if (devp->afbce_mode_pre) {
-		type |= VIDTYPE_COMPRESS;
-		type |= VIDTYPE_NO_DW;
-		type |= VIDTYPE_SCATTER;
-		if (devp->afbce_flag & VDIN_AFBCE_EN_LOSSY)
-			type |= VIDTYPE_COMPRESS_LOSS;
-		if (vdin_chk_is_comb_mode(devp))
-			type |= VIDTYPE_COMB_MODE;
-	}
-
-#ifdef CONFIG_AMLOGIC_TEE
-	if (devp->secure_en)
-		type |= VIDTYPE_SEC_MD;
-	else
-		type &= ~VIDTYPE_SEC_MD;
-#endif
-
-	return type;
-}
-
-/*	function: set vf source type
- *	source type list:
- *	a.VFRAME_SOURCE_TYPE_TUNER	(TVIN_PORT CVBS3)
- *	b.VFRAME_SOURCE_TYPE_CVBS	(TVIN_PORT CVBS0/CVBS1/
- *		CVBS2/CVBS4/CVBS5/CVBS6/CVBS7)
- *	c.VFRAME_SOURCE_TYPE_COMP	(TVIN_PORT COMP0~COMP7)
- *	d.VFRAME_SOURCE_TYPE_HDMI	(TVIN_PORT HDMI0~HDMI7/DVIN0)
- *	e.others
- */
-inline void vdin_set_source_type_t3x(struct vdin_dev_s *devp,
-				 struct vframe_s *vf)
-{
-	switch (devp->parm.port) {
-	case TVIN_PORT_CVBS3:
-		vf->source_type = VFRAME_SOURCE_TYPE_TUNER;
-		break;
-	case TVIN_PORT_CVBS0:
-	case TVIN_PORT_CVBS1:
-	case TVIN_PORT_CVBS2:
-		vf->source_type = VFRAME_SOURCE_TYPE_CVBS;
-		break;
-	case TVIN_PORT_HDMI0 ... TVIN_PORT_HDMI_MAX:
-//	case TVIN_PORT_HDMI1:
-//	case TVIN_PORT_HDMI2:
-//	case TVIN_PORT_HDMI3:
-//	case TVIN_PORT_HDMI4:
-//	case TVIN_PORT_HDMI5:
-//	case TVIN_PORT_HDMI6:
-//	case TVIN_PORT_HDMI7:
-	case TVIN_PORT_DVIN0:/* external hdmiin used default */
-		vf->source_type = VFRAME_SOURCE_TYPE_HDMI;
-		break;
-	default:
-		vf->source_type = VFRAME_SOURCE_TYPE_OTHERS;
-		break;
-	}
-}
-
-/* function:set
- * main source modes:
- * a.NTSC	b.PAL
- * c.SECAM	d.others
- */
-inline void vdin_set_source_mode_t3x(struct vdin_dev_s *devp,
-				 struct vframe_s *vf)
-{
-	switch (devp->parm.info.fmt) {
-	case TVIN_SIG_FMT_CVBS_NTSC_M:
-	case TVIN_SIG_FMT_CVBS_NTSC_443:
-		vf->source_mode = VFRAME_SOURCE_MODE_NTSC;
-		break;
-	case TVIN_SIG_FMT_CVBS_PAL_I:
-	case TVIN_SIG_FMT_CVBS_PAL_M:
-	case TVIN_SIG_FMT_CVBS_PAL_60:
-	case TVIN_SIG_FMT_CVBS_PAL_CN:
-		vf->source_mode = VFRAME_SOURCE_MODE_PAL;
-		break;
-	case TVIN_SIG_FMT_CVBS_SECAM:
-		vf->source_mode = VFRAME_SOURCE_MODE_SECAM;
-		break;
-	default:
-		vf->source_mode = VFRAME_SOURCE_MODE_OTHERS;
-		break;
-	}
-}
-
-/*
- * 480p/i = 9:8
- * 576p/i = 16:15
- * 720p and 1080p/i = 1:1
- * All VGA format = 1:1
- */
-void vdin_set_pixel_aspect_ratio_t3x(struct vdin_dev_s *devp,
-				 struct vframe_s *vf)
-{
-	switch (devp->parm.info.fmt) {
-	/* 480P */
-	case TVIN_SIG_FMT_HDMI_640X480P_60HZ:
-	case TVIN_SIG_FMT_HDMI_640X480P_72HZ:
-	case TVIN_SIG_FMT_HDMI_640X480P_75HZ:
-	case TVIN_SIG_FMT_HDMI_720X480P_60HZ:
-	case TVIN_SIG_FMT_HDMI_1440X480P_60HZ:
-	case TVIN_SIG_FMT_HDMI_2880X480P_60HZ:
-	case TVIN_SIG_FMT_HDMI_720X480P_120HZ:
-	case TVIN_SIG_FMT_HDMI_720X480P_240HZ:
-	case TVIN_SIG_FMT_HDMI_720X480P_60HZ_FRAME_PACKING:
-	case TVIN_SIG_FMT_CAMERA_640X480P_30HZ:
-		/* 480I */
-	case TVIN_SIG_FMT_CVBS_NTSC_M:
-	case TVIN_SIG_FMT_CVBS_NTSC_443:
-	case TVIN_SIG_FMT_CVBS_PAL_M:
-	case TVIN_SIG_FMT_CVBS_PAL_60:
-	case TVIN_SIG_FMT_HDMI_1440X480I_60HZ:
-	case TVIN_SIG_FMT_HDMI_2880X480I_60HZ:
-	case TVIN_SIG_FMT_HDMI_1440X480I_120HZ:
-	case TVIN_SIG_FMT_HDMI_1440X480I_240HZ:
-	case TVIN_SIG_FMT_BT656IN_480I_60HZ:
-	case TVIN_SIG_FMT_BT601IN_480I_60HZ:
-		vf->pixel_ratio = PIXEL_ASPECT_RATIO_8_9;
-		break;
-		/* 576P */
-	case TVIN_SIG_FMT_HDMI_720X576P_50HZ:
-	case TVIN_SIG_FMT_HDMI_1440X576P_50HZ:
-	case TVIN_SIG_FMT_HDMI_2880X576P_50HZ:
-	case TVIN_SIG_FMT_HDMI_720X576P_100HZ:
-	case TVIN_SIG_FMT_HDMI_720X576P_200HZ:
-	case TVIN_SIG_FMT_HDMI_720X576P_50HZ_FRAME_PACKING:
-		/* 576I */
-	case TVIN_SIG_FMT_CVBS_PAL_I:
-	case TVIN_SIG_FMT_CVBS_PAL_CN:
-	case TVIN_SIG_FMT_CVBS_SECAM:
-	case TVIN_SIG_FMT_HDMI_1440X576I_50HZ:
-	case TVIN_SIG_FMT_HDMI_2880X576I_50HZ:
-	case TVIN_SIG_FMT_HDMI_1440X576I_100HZ:
-	case TVIN_SIG_FMT_HDMI_1440X576I_200HZ:
-	case TVIN_SIG_FMT_BT656IN_576I_50HZ:
-	case TVIN_SIG_FMT_BT601IN_576I_50HZ:
-		vf->pixel_ratio = PIXEL_ASPECT_RATIO_16_15;
-		break;
-	default:
-		vf->pixel_ratio = PIXEL_ASPECT_RATIO_1_1;
-		break;
-	}
-}
-
-/*
- * based on the bellow parameters:
- * 1.h_active
- * 2.v_active
- */
-void vdin_set_display_ratio_t3x(struct vdin_dev_s *devp,
-			    struct vframe_s *vf)
-{
-	unsigned int re = 0;
-	enum tvin_aspect_ratio_e aspect_ratio = devp->prop.aspect_ratio;
-
-	if (vf->width == 0 || vf->height == 0)
-		return;
-	re = (vf->width * 36) / vf->height;
-	if ((re > 36 && re <= 56) || re == 90 || re == 108)
-		vf->ratio_control = 0xc0 << DISP_RATIO_ASPECT_RATIO_BIT;
-	else if (re > 56)
-		vf->ratio_control = 0x90 << DISP_RATIO_ASPECT_RATIO_BIT;
-	else
-		vf->ratio_control = 0x0 << DISP_RATIO_ASPECT_RATIO_BIT;
-
-	switch (aspect_ratio) {
-	case TVIN_ASPECT_4x3_FULL:
-		vf->pic_mode.screen_mode = VIDEO_WIDEOPTION_CUSTOM;
-		vf->pic_mode.provider = PIC_MODE_PROVIDER_WSS;
-		vf->pic_mode.hs = 0;
-		vf->pic_mode.he = 0;
-		vf->pic_mode.vs = 0;
-		vf->pic_mode.ve = 0;
-		/* 3*256/4=0xc0 */
-		vf->pic_mode.custom_ar = 0xc0;
-		vf->ratio_control |= DISP_RATIO_ADAPTED_PICMODE;
-		break;
-	case TVIN_ASPECT_14x9_FULL:
-		vf->pic_mode.screen_mode = VIDEO_WIDEOPTION_CUSTOM;
-		vf->pic_mode.provider = PIC_MODE_PROVIDER_WSS;
-		vf->pic_mode.hs = 0;
-		vf->pic_mode.he = 0;
-		vf->pic_mode.vs = 0;
-		vf->pic_mode.ve = 0;
-		/* 9*256/14=0xc0 */
-		vf->pic_mode.custom_ar = 0xa4;
-		vf->ratio_control |= DISP_RATIO_ADAPTED_PICMODE;
-		break;
-	case TVIN_ASPECT_16x9_FULL:
-		vf->pic_mode.screen_mode = VIDEO_WIDEOPTION_CUSTOM;
-		vf->pic_mode.provider = PIC_MODE_PROVIDER_WSS;
-		vf->pic_mode.hs = 0;
-		vf->pic_mode.he = 0;
-		vf->pic_mode.vs = 0;
-		vf->pic_mode.ve = 0;
-		/* 9*256/16=0xc0 */
-		vf->pic_mode.custom_ar = 0x90;
-		vf->ratio_control |= DISP_RATIO_ADAPTED_PICMODE;
-		break;
-	case TVIN_ASPECT_14x9_LB_CENTER:
-		/**720/462=14/9;(576-462)/2=57;57/2=28**/
-		/**need cut more**/
-		vf->pic_mode.screen_mode = VIDEO_WIDEOPTION_CUSTOM;
-		vf->pic_mode.provider = PIC_MODE_PROVIDER_WSS;
-		vf->pic_mode.hs = 0;
-		vf->pic_mode.he = 0;
-		vf->pic_mode.vs = 36;
-		vf->pic_mode.ve = 36;
-		vf->pic_mode.custom_ar = 0xa4;
-		vf->ratio_control |= DISP_RATIO_ADAPTED_PICMODE;
-		break;
-	case TVIN_ASPECT_14x9_LB_TOP:
-		/**720/462=14/9;(576-462)/2=57**/
-		vf->pic_mode.screen_mode = VIDEO_WIDEOPTION_CUSTOM;
-		vf->pic_mode.provider = PIC_MODE_PROVIDER_WSS;
-		vf->pic_mode.hs = 0;
-		vf->pic_mode.he = 0;
-		vf->pic_mode.vs = 0;
-		vf->pic_mode.ve = 57;
-		vf->pic_mode.custom_ar = 0xa4;
-		vf->ratio_control |= DISP_RATIO_ADAPTED_PICMODE;
-		break;
-	case TVIN_ASPECT_16x9_LB_CENTER:
-		/**720/405=16/9;(576-405)/2=85;85/2=42**/
-		/**need cut more**/
-		vf->pic_mode.screen_mode = VIDEO_WIDEOPTION_CUSTOM;
-		vf->pic_mode.provider = PIC_MODE_PROVIDER_WSS;
-		vf->pic_mode.hs = 0;
-		vf->pic_mode.he = 0;
-		vf->pic_mode.vs = 70;
-		vf->pic_mode.ve = 70;
-		vf->pic_mode.custom_ar = 0x90;
-		vf->ratio_control |= DISP_RATIO_ADAPTED_PICMODE;
-		break;
-	case TVIN_ASPECT_16x9_LB_TOP:
-		/**720/405=16/9;(576-405)/2=85**/
-		vf->pic_mode.screen_mode = VIDEO_WIDEOPTION_CUSTOM;
-		vf->pic_mode.provider = PIC_MODE_PROVIDER_WSS;
-		vf->pic_mode.hs = 0;
-		vf->pic_mode.he = 0;
-		vf->pic_mode.vs = 0;
-		vf->pic_mode.ve = 85;
-		vf->pic_mode.custom_ar = 0x90;
-		vf->ratio_control |= DISP_RATIO_ADAPTED_PICMODE;
-		break;
-	default:
-		break;
-	}
-}
-
-/*function:set source bitdepth
- *	based on parameter:
- *	devp->source_bitdepth:	8/9/10
- */
-inline void vdin_set_source_bitdepth_t3x(struct vdin_dev_s *devp,
-				     struct vframe_s *vf)
-{
-	switch (devp->source_bitdepth) {
-	case VDIN_COLOR_DEEPS_10BIT:
-		vf->bitdepth = BITDEPTH_Y10 | BITDEPTH_U10 | BITDEPTH_V10;
-		break;
-	case VDIN_COLOR_DEEPS_9BIT:
-		vf->bitdepth = BITDEPTH_Y9 | BITDEPTH_U9 | BITDEPTH_V9;
-		break;
-	case VDIN_COLOR_DEEPS_8BIT:
-		vf->bitdepth = BITDEPTH_Y8 | BITDEPTH_U8 | BITDEPTH_V8;
-		break;
-	default:
-		vf->bitdepth = BITDEPTH_Y8 | BITDEPTH_U8 | BITDEPTH_V8;
-		break;
-	}
-	if (devp->full_pack == VDIN_422_FULL_PK_EN &&
-	    devp->source_bitdepth > 8 &&
-	    (devp->format_convert == VDIN_FORMAT_CONVERT_YUV_YUV422 ||
-	     devp->format_convert == VDIN_FORMAT_CONVERT_RGB_YUV422 ||
-	     devp->format_convert == VDIN_FORMAT_CONVERT_GBR_YUV422 ||
-	     devp->format_convert == VDIN_FORMAT_CONVERT_BRG_YUV422))
-		vf->bitdepth |= FULL_PACK_422_MODE;
 }
 
 /*@20170905new add for support dynamic adj dest_format yuv422/yuv444,
@@ -5542,35 +3635,34 @@ void vdin_set_matrix_color_t3x(struct vdin_dev_s *devp)
 	unsigned int mode = devp->matrix_pattern_mode;
 
 	/*vdin bist mode RGB:black*/
-	wr(offset, VDIN_MATRIX_CTRL, 0x4);
-	wr(offset, VDIN_MATRIX_COEF00_01, 0x0);
-	wr(offset, VDIN_MATRIX_COEF02_10, 0x0);
-	wr(offset, VDIN_MATRIX_COEF11_12, 0x0);
-	wr(offset, VDIN_MATRIX_COEF20_21, 0x0);
-	wr(offset, VDIN_MATRIX_COEF22, 0x0);
-	wr(offset, VDIN_MATRIX_PRE_OFFSET0_1, 0x0);
-	wr(offset, VDIN_MATRIX_PRE_OFFSET2, 0x0);
+	wr(offset, VDIN0_MAT_COEF00_01, 0x0);
+	wr(offset, VDIN0_MAT_COEF02_10, 0x0);
+	wr(offset, VDIN0_MAT_COEF11_12, 0x0);
+	wr(offset, VDIN0_MAT_COEF20_21, 0x0);
+	wr(offset, VDIN0_MAT_COEF22, 0x0);
+	wr(offset, VDIN0_MAT_PRE_OFFSET0_1, 0x0);
+	wr(offset, VDIN0_MAT_PRE_OFFSET2, 0x0);
 	if (mode == 1) {
-		wr(offset, VDIN_MATRIX_OFFSET0_1, 0x10f010f);
-		wr(offset, VDIN_MATRIX_OFFSET2, 0x2ff);
+		wr(offset, VDIN0_MAT_OFFSET0_1, 0x10f010f);
+		wr(offset, VDIN0_MAT_OFFSET2, 0x2ff);
 	} else if (mode == 2) {
-		wr(offset, VDIN_MATRIX_OFFSET0_1, 0x10f010f);
-		wr(offset, VDIN_MATRIX_OFFSET2, 0x1ff);
+		wr(offset, VDIN0_MAT_OFFSET0_1, 0x10f010f);
+		wr(offset, VDIN0_MAT_OFFSET2, 0x1ff);
 	} else if (mode == 3) {
-		wr(offset, VDIN_MATRIX_OFFSET0_1, 0x00003ff);
-		wr(offset, VDIN_MATRIX_OFFSET2, 0x0);
+		wr(offset, VDIN0_MAT_OFFSET0_1, 0x00003ff);
+		wr(offset, VDIN0_MAT_OFFSET2, 0x0);
 	} else if (mode == 4) {
-		wr(offset, VDIN_MATRIX_OFFSET0_1, 0x1ff01ff);
-		wr(offset, VDIN_MATRIX_OFFSET2, 0x1ff);
+		wr(offset, VDIN0_MAT_OFFSET0_1, 0x1ff01ff);
+		wr(offset, VDIN0_MAT_OFFSET2, 0x1ff);
 	} else {
-		wr(offset, VDIN_MATRIX_OFFSET0_1, 0x1ff010f);
-		wr(offset, VDIN_MATRIX_OFFSET2, 0x2ff);
+		wr(offset, VDIN0_MAT_OFFSET0_1, 0x1ff010f);
+		wr(offset, VDIN0_MAT_OFFSET2, 0x2ff);
 	}
 
 	if (mode)
-		wr(offset, VDIN_MATRIX_CTRL, 0x6);
+		wr_bits(offset, VDIN0_PP_CTRL, 1, PP_MAT0_EN_BIT, PP_MAT0_EN_WID);
 	else
-		wr(offset, VDIN_MATRIX_CTRL, 0x0);
+		wr_bits(offset, VDIN0_PP_CTRL, 0, PP_MAT0_EN_BIT, PP_MAT0_EN_WID);
 	if (vdin_dbg_en)
 		pr_info("%s offset:%d, md:%d\n", __func__, offset, mode);
 }
@@ -5668,7 +3760,7 @@ void vdin_bist_t3x(struct vdin_dev_s *devp, unsigned int mode)
 			vde_start = 2;
 		}
 	}
-	wr(devp->addr_offset, VDIN_IF_TOP_PTGEN_CTRL,
+	wr(0, VDIN_INTF_PTGEN_CTRL,
 		(bist_en << 0) | (test_pat << 1) | (hblank << 4) |
 		(vblank << 12) | (vde_start << 20));
 }

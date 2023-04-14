@@ -104,6 +104,53 @@ void vdin_afbce_update_t3x(struct vdin_dev_s *devp)
 		       (uncompress_bits & 0xf));
 }
 
+/* Refer to vdin afbce doc
+ * format		YUV420		YUV422		YUV444
+ * bit width		8 10 12		8 10 12		8  10 12
+ * 32byte number	6 8  9		8 10 12		12 15 18
+ */
+//sum = reg_block_burst_num0 + reg_block_burst_num1 + reg_block_burst_num2 + reg_block_burst_num3;
+//avg = sum/4;
+//ratio = avg/uncmp_num;
+void vdin_afbce_config_comp_ratio_t3x(struct vdin_dev_s *devp, unsigned int format_mode)
+{
+	unsigned int afbce_loss_burst_num, sum, byte_num;
+	unsigned int reg_block_burst_num0, reg_block_burst_num1;
+	unsigned int reg_block_burst_num2, reg_block_burst_num3;
+
+	if (!devp->cr_lossy_param.cr_lossy_ratio)
+		return;
+
+	if (format_mode == 0) {//YUV444
+		if (devp->source_bitdepth == 8)
+			byte_num = 12;
+		else if (devp->source_bitdepth == 12)
+			byte_num = 18;
+		else
+			byte_num = 15;
+	} else if (format_mode == 2) {//YUV420
+		if (devp->source_bitdepth == 8)
+			byte_num = 6;
+		else if (devp->source_bitdepth == 12)
+			byte_num = 9;
+		else
+			byte_num = 8;
+	} else {//YUV422
+		byte_num = devp->source_bitdepth;
+	}
+
+	sum = devp->cr_lossy_param.cr_lossy_ratio * byte_num * 4 / 100;
+	reg_block_burst_num0 = (sum / 4);
+	reg_block_burst_num1 = reg_block_burst_num0 + (sum % 4) / 2;
+	reg_block_burst_num2 = reg_block_burst_num0;
+	reg_block_burst_num3 = reg_block_burst_num0 + (sum % 4) / 2;
+
+	afbce_loss_burst_num = (reg_block_burst_num0 << 24) | (reg_block_burst_num1 << 16) |
+			       (reg_block_burst_num2 << 8)  | (reg_block_burst_num3 << 0);
+
+	W_VCBUS(devp->addr_offset + VDIN0_AFBCE_LOSS_BURST_NUM, afbce_loss_burst_num);
+}
+
 void vdin_afbce_config_t3x(struct vdin_dev_s *devp)
 {
 	int hold_line_num = VDIN_AFBCE_HOLD_LINE_NUM;
@@ -202,7 +249,19 @@ void vdin_afbce_config_t3x(struct vdin_dev_s *devp)
 
 	if (devp->afbce_flag & VDIN_AFBCE_EN_LOSSY) {
 		W_VCBUS(offset + VDIN0_AFBCE_QUANT_ENABLE, 0xc11);
-		pr_info("afbce use lossy compression mode\n");
+		if (devp->cr_lossy_param.lossy_mode) {/* cr_lossy*/
+			W_VCBUS_BIT(offset + VDIN0_AFBCE_LOSS_CTRL, 1, 31, 1);//reg_fix_cr_en
+			//reg_quant_diff_root_leave
+			W_VCBUS_BIT(offset + VDIN0_AFBCE_LOSS_CTRL,
+				devp->cr_lossy_param.quant_diff_root_leave, 12, 4);
+			//compression ratio setting
+			vdin_afbce_config_comp_ratio_t3x(devp, reg_format_mode);
+		} else {
+			W_VCBUS_BIT(offset + VDIN0_AFBCE_LOSS_CTRL, 0, 31, 1);//reg_fix_cr_en
+		}
+		pr_info("vdin%d,afbce cr_lossy:%d,leave:%d\n",
+			devp->index, devp->cr_lossy_param.lossy_mode,
+			devp->cr_lossy_param.quant_diff_root_leave);
 	}
 
 	W_VCBUS(offset + VDIN0_AFBCE_SIZE_IN,
@@ -380,6 +439,7 @@ void vdin_afbce_set_next_frame_t3x(struct vdin_dev_s *devp,
 	i = vfe->af_num;
 	vfe->vf.compHeadAddr = devp->afbce_info->fm_head_paddr[i];
 	vfe->vf.compBodyAddr = devp->afbce_info->fm_body_paddr[i];
+	vdin_set_lossy_param(devp, &vfe->vf);
 
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	if (rdma_enable) {

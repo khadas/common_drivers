@@ -21,6 +21,7 @@ enum hdr_module_sel {
 	S5_VD1_SLICE2 = 12,
 	S5_VD1_SLICE3 = 13,
 	VICP_HDR = 14,
+	VDIN2_HDR,
 	HDR_MAX
 };
 

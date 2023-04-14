@@ -1977,8 +1977,8 @@ int vdin_v4l2_loopback_fmt(struct vdin_dev_s *devp)
 	dprintk(1, "%s,%d; %dx%d,vmode:%d\n", __func__, __LINE__,
 		vinfo->width, vinfo->height, vinfo->mode);
 #else
-	h = vdin_get_active_h(devp->addr_offset);
-	v = vdin_get_active_v(devp->addr_offset);
+	h = vdin_get_active_h(devp);
+	v = vdin_get_active_v(devp);
 	dprintk(1, "%s,%d; %dx%d\n", __func__, __LINE__, vinfo->width, vinfo->height);
 #endif
 	if (h >= 4096 - err_range && h <= 4096 + err_range &&

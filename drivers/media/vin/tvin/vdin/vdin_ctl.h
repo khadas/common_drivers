@@ -216,9 +216,9 @@ void vdin_set_decimation(struct vdin_dev_s *devp);
 void vdin_fix_nonstd_vsync(struct vdin_dev_s *devp);
 unsigned int vdin_get_meas_h_cnt64(unsigned int offset);
 unsigned int vdin_get_meas_v_stamp(unsigned int offset);
-unsigned int vdin_get_active_h(unsigned int offset);
-unsigned int vdin_get_active_v(unsigned int offset);
-unsigned int vdin_get_total_v(unsigned int offset);
+unsigned int vdin_get_active_h(struct vdin_dev_s *devp);
+unsigned int vdin_get_active_v(struct vdin_dev_s *devp);
+unsigned int vdin_get_total_v(struct vdin_dev_s *devp);
 unsigned int vdin_get_canvas_id(unsigned int offset);
 void vdin_set_canvas_id(struct vdin_dev_s *devp,
 			unsigned int rdma_enable,
@@ -280,6 +280,7 @@ void vdin_set_source_type(struct vdin_dev_s *devp,
 void vdin_set_source_mode(struct vdin_dev_s *devp, struct vframe_s *vf);
 void vdin_set_source_bitdepth(struct vdin_dev_s *devp,
 			      struct vframe_s *vf);
+void vdin_set_lossy_param(struct vdin_dev_s *devp, struct vframe_s *vf);
 void vdin_set_pixel_aspect_ratio(struct vdin_dev_s *devp,
 				 struct vframe_s *vf);
 void vdin_set_display_ratio(struct vdin_dev_s *devp,

@@ -2622,7 +2622,6 @@
 		interrupts = <GIC_SPI 23 IRQ_TYPE_EDGE_RISING>;
 	};
 
-	/*if you want to use vdin just modify status to "ok"*/
 	vdin0: vdin0 {/*common define*/
 		compatible = "amlogic, vdin-t3x";
 		dev_name = "vdin0";
@@ -2677,6 +2676,8 @@
 		 * bit7 -- afbce for smaller resolution
 		 */
 		afbce_bit_mode = <0x11>;
+		lossy_mode = <0x0>; /* 0x0:quan_lossy 0x1:cr_lossy */
+		cr_lossy_ratio = <50>; /* the compression ration in cr_lossy mode */
 		/* urgent_en; */
 		double_write_en;
 		/* vdin v4l2 */

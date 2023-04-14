@@ -231,6 +231,7 @@ struct match_data_s {
 	bool de_tunnel_tunnel;
 	/* tm2 verb :444 de-tunnel and wr mif 12 bit mode*/
 	bool ipt444_to_422_12bit;
+	bool vdin0_set_hdr;
 	bool vdin1_set_hdr;
 	u32 vdin0_en;
 	u32 vdin1_en;
@@ -540,6 +541,9 @@ struct vdin_debug_s {
 	unsigned int sar_width;
 	unsigned int sar_height;
 	unsigned int ratio_control;
+	unsigned int dbg_rw_reg_en;
+	unsigned int dbg_reg_addr;
+	unsigned int dbg_reg_val;
 };
 
 struct vdin_dv_s {
@@ -697,8 +701,16 @@ struct vdin_msct_top_s {
 	u64 sc_start_time;
 	struct vf_entry *vfe;
 };
-
 /* scatter end */
+
+struct vdin_lossy_comp_param_s {
+	u32 lossy_mode;//0:quan_loosy  1:cr_loosy
+	u32 quant_diff_root_leave;
+	u32 burst_length_add_en;
+	u32 burst_length_add_value;
+	u32 ofset_burst4_en;
+	u32 cr_lossy_ratio;
+};
 
 struct vdin_dev_s {
 	struct cdev cdev;
@@ -915,6 +927,7 @@ struct vdin_dev_s {
 	unsigned int afbce_mode_pre;
 	unsigned int afbce_mode;
 	unsigned int afbce_valid;
+	struct vdin_lossy_comp_param_s cr_lossy_param;
 
 	unsigned int cfg_dma_buf;
 	/*fot 'T correction' on projector*/
@@ -1081,6 +1094,7 @@ bool is_amdv_enable(void);
 void vdin_debugfs_init(struct vdin_dev_s *devp);
 void vdin_debugfs_exit(struct vdin_dev_s *devp);
 void vdin_dump_frames(struct vdin_dev_s *devp);
+int vdin_dbg_access_reg_in_vsync(struct vdin_dev_s *devp);
 
 bool vlock_get_phlock_flag(void);
 bool vlock_get_vlock_flag(void);

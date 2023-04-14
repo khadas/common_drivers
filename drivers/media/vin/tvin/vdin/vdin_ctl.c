@@ -964,6 +964,9 @@ void vdin_prob_set_xy(unsigned int offset,
 	if (is_meson_s5_cpu()) {
 		vdin_prob_set_xy_s5(offset, x, y, devp);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_prob_set_xy_t3x(offset, x, y, devp);
+		return;
 	}
 #endif
 
@@ -2544,6 +2547,9 @@ void vdin_set_mif_on_off(struct vdin_dev_s *devp, unsigned int rdma_enable)
 /***************************global function**********************************/
 unsigned int vdin_get_meas_h_cnt64(unsigned int offset)
 {
+	if (is_meson_t3x_cpu())
+		return vdin_get_meas_h_cnt64_t3x(offset);
+
 	return rd_bits(offset, VDIN_MEAS_HS_COUNT,
 		       MEAS_HS_CNT_BIT, MEAS_HS_CNT_WID);
 }
@@ -2560,42 +2566,42 @@ unsigned int vdin_get_meas_v_stamp(unsigned int offset)
 		return rd(offset, VDIN_MEAS_VS_COUNT_LO);
 }
 
-unsigned int vdin_get_active_h(unsigned int offset)
+unsigned int vdin_get_active_h(struct vdin_dev_s *devp)
 {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
-		return vdin_get_active_h_s5(offset);
+		return vdin_get_active_h_s5(devp->addr_offset);
 	else if (is_meson_t3x_cpu())
-		return vdin_get_active_h_t3x(offset);
+		return vdin_get_active_h_t3x(devp->index * VDIN_TOP_OFFSET);
 #endif
 
-	return rd_bits(offset, VDIN_ACTIVE_MAX_PIX_CNT_STATUS,
+	return rd_bits(devp->addr_offset, VDIN_ACTIVE_MAX_PIX_CNT_STATUS,
 		       ACTIVE_MAX_PIX_CNT_SDW_BIT, ACTIVE_MAX_PIX_CNT_SDW_WID);
 }
 
-unsigned int vdin_get_active_v(unsigned int offset)
+unsigned int vdin_get_active_v(struct vdin_dev_s *devp)
 {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
-		return vdin_get_active_v_s5(offset);
+		return vdin_get_active_v_s5(devp->addr_offset);
 	else if (is_meson_t3x_cpu())
-		return vdin_get_active_v_t3x(offset);
+		return vdin_get_active_v_t3x(devp->index * VDIN_TOP_OFFSET);
 #endif
 
-	return rd_bits(offset, VDIN_LCNT_SHADOW_STATUS,
+	return rd_bits(devp->addr_offset, VDIN_LCNT_SHADOW_STATUS,
 		       ACTIVE_LN_CNT_SDW_BIT, ACTIVE_LN_CNT_SDW_WID);
 }
 
-unsigned int vdin_get_total_v(unsigned int offset)
+unsigned int vdin_get_total_v(struct vdin_dev_s *devp)
 {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
-		return vdin_get_total_v_s5(offset);
+		return vdin_get_total_v_s5(devp->addr_offset);
 	else if (is_meson_t3x_cpu())
-		return vdin_get_total_v_t3x(offset);
+		return vdin_get_total_v_t3x(devp->index * VDIN_TOP_OFFSET);
 #endif
 
-	return rd_bits(offset, VDIN_LCNT_SHADOW_STATUS,
+	return rd_bits(devp->addr_offset, VDIN_LCNT_SHADOW_STATUS,
 		       GO_LN_CNT_SDW_BIT, GO_LN_CNT_SDW_WID);
 }
 
@@ -3871,6 +3877,9 @@ void vdin_hw_close(struct vdin_dev_s *devp)
 	if (is_meson_s5_cpu()) {
 		vdin_hw_disable_s5(devp);
 		return;
+	} else if (is_meson_t3x_cpu()) {
+		//vdin_hw_close_t3x(devp);
+		return;
 	}
 #endif
 
@@ -3921,18 +3930,28 @@ void vdin_hw_close(struct vdin_dev_s *devp)
 /* get current vsync field type 0:top 1 bottom */
 unsigned int vdin_get_field_type(unsigned int offset)
 {
-	return rd_bits(offset, VDIN_COM_STATUS0, 0, 1);
+	if (is_meson_t3x_cpu())
+		return 0;
+	else
+		return rd_bits(offset, VDIN_COM_STATUS0, 0, 1);
 }
 
 bool vdin_check_vdi6_afifo_overflow(unsigned int offset)
 {
-	return rd_bits(offset, VDIN_COM_STATUS2, 15, 1);
+	if (is_meson_t3x_cpu())
+		return 0;
+	else
+		return rd_bits(offset, VDIN_COM_STATUS2, 15, 1);
 }
 
 void vdin_clear_vdi6_afifo_overflow_flg(unsigned int offset)
 {
-	wr_bits(offset, VDIN_ASFIFO_CTRL3, 0x1, 1, 1);
-	wr_bits(offset, VDIN_ASFIFO_CTRL3, 0x0, 1, 1);
+	if (is_meson_t3x_cpu()) {
+		vdin_clear_vdi6_afifo_overflow_flg_t3x(offset);
+	} else {
+		wr_bits(offset, VDIN_ASFIFO_CTRL3, 0x1, 1, 1);
+		wr_bits(offset, VDIN_ASFIFO_CTRL3, 0x0, 1, 1);
+	}
 }
 
 static unsigned int vdin_reset_flag;
@@ -4767,7 +4786,7 @@ static void vdin_get_video_format(struct vdin_dev_s *devp)
 
 void vdin_set_to_vpp_parm(struct vdin_dev_s *devp)
 {
-	if (devp->index) //lht todo
+	if (devp->hw_core == VDIN_HW_CORE_LITE)
 		return;
 
 	devp->vdin2vpp_info.is_dv = devp->dv.dv_flag;
@@ -4830,7 +4849,10 @@ void vdin_set_cm2(unsigned int offset, unsigned int w,
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
-		vdin_set_cm2(offset, w, h, cm2);
+		vdin_set_cm2_s5(offset, w, h, cm2);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_cm2_t3x(offset, w, h, cm2);
 		return;
 	}
 #endif
@@ -4880,6 +4902,11 @@ void vdin_set_mpegin(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
 
+	if (is_meson_t3x_cpu()) {
+		vdin_set_mpegin_t3x(devp);
+		return;
+	}
+
 	/* set VDIN_MEAS_CLK_CNTL, select XTAL clock */
 	/* if (is_meson_gxbb_cpu()) */
 	/* ; */
@@ -4903,6 +4930,10 @@ void vdin_force_go_filed(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
 
+	if (is_meson_t3x_cpu()) {
+		vdin_force_go_filed_t3x(devp);
+		return;
+	}
 	wr_bits(offset, VDIN_COM_CTRL0, 1, 28, 1);
 	wr_bits(offset, VDIN_COM_CTRL0, 0, 28, 1);
 }
@@ -5348,6 +5379,8 @@ void vdin_dolby_buffer_update(struct vdin_dev_s *devp, unsigned int index)
 		} else {
 			if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
 				wr(offset, VDIN_DOLBY_DSC_CTRL2, 0xe800c0d5);
+			else if (is_meson_t3x_cpu())
+				wr(offset, VDIN0_META_DSC_CTRL2, 0xe800c0d5);//todo:confirm
 			else
 				wr(offset, VDIN_DOLBY_DSC_CTRL2, 0xd180c0d5);
 			rpt_cnt = 0;
@@ -5357,7 +5390,10 @@ void vdin_dolby_buffer_update(struct vdin_dev_s *devp, unsigned int index)
 				if (devp->dtdata->hw_ver == VDIN_HW_T7) {
 					p[i] = src_meta[i];
 				} else {
-					meta32 = rd(offset, VDIN_DOLBY_DSC_STATUS1);
+					if (is_meson_t3x_cpu())
+						meta32 = rd(offset, VDIN0_META_DSC_STATUS1);
+					else
+						meta32 = rd(offset, VDIN_DOLBY_DSC_STATUS1);
 					p[i] = swap32(meta32);
 				}
 
@@ -6681,6 +6717,20 @@ inline void vdin_set_source_bitdepth(struct vdin_dev_s *devp,
 	     devp->format_convert == VDIN_FORMAT_CONVERT_GBR_YUV422 ||
 	     devp->format_convert == VDIN_FORMAT_CONVERT_BRG_YUV422))
 		vf->bitdepth |= FULL_PACK_422_MODE;
+}
+
+void vdin_set_lossy_param(struct vdin_dev_s *devp, struct vframe_s *vf)
+{
+	vf->vf_lossycomp_param.lossy_mode		=
+		devp->cr_lossy_param.lossy_mode;
+	vf->vf_lossycomp_param.quant_diff_root_leave	=
+		devp->cr_lossy_param.quant_diff_root_leave;
+	vf->vf_lossycomp_param.burst_length_add_en	=
+		devp->cr_lossy_param.burst_length_add_en;
+	vf->vf_lossycomp_param.burst_length_add_value	=
+		devp->cr_lossy_param.burst_length_add_value;
+	vf->vf_lossycomp_param.ofset_burst4_en =
+		devp->cr_lossy_param.ofset_burst4_en;
 }
 
 /*@20170905new add for support dynamic adj dest_format yuv422/yuv444,

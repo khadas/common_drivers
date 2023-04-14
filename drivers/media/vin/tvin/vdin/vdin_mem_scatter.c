@@ -107,7 +107,10 @@ void vdin_sct_free_wr_list_idx(struct vf_pool *p, struct vframe_s *vf)
 void vdin_sct_read_mmu_num(struct vdin_dev_s *devp, struct vf_entry *vfe)
 {
 	if (devp->mem_type == VDIN_MEM_TYPE_SCT && vfe) {
-		vfe->vf.afbce_num = rd(devp->addr_offset, AFBCE_MMU_NUM);
+		if (is_meson_t3x_cpu())
+			vfe->vf.afbce_num = rd(devp->addr_offset, VDIN0_AFBCE_MMU_NUM);
+		else
+			vfe->vf.afbce_num = rd(devp->addr_offset, AFBCE_MMU_NUM);
 		devp->msct_top.vfe = vfe;
 		if (sct_print_ctl & SCT_PRINT_CTL_MMU_NUM)
 			pr_info("vdin%d vf:%d afbce_num:%d\n",

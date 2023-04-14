@@ -54,9 +54,9 @@ void vdin_set_decimation_s5(struct vdin_dev_s *devp);
 void vdin_fix_nonstd_vsync_s5(struct vdin_dev_s *devp);
 unsigned int vdin_get_meas_h_cnt64(unsigned int offset);
 unsigned int vdin_get_meas_v_stamp(unsigned int offset);
-unsigned int vdin_get_active_h(unsigned int offset);
-unsigned int vdin_get_active_v(unsigned int offset);
-unsigned int vdin_get_total_v(unsigned int offset);
+unsigned int vdin_get_active_h(struct vdin_dev_s *devp);
+unsigned int vdin_get_active_v(struct vdin_dev_s *devp);
+unsigned int vdin_get_total_v(struct vdin_dev_s *devp);
 unsigned int vdin_get_canvas_id(unsigned int offset);
 void vdin_set_canvas_id_s5(struct vdin_dev_s *devp,
 			unsigned int rdma_enable,
@@ -78,7 +78,7 @@ void vdin_wr_reverse_s5(unsigned int offset, bool h_reverse,
 		     bool v_reverse);
 void vdin_set_hv_scale_s5(struct vdin_dev_s *devp);
 void vdin_set_bitdepth_s5(struct vdin_dev_s *devp);
-void vdin_set_cm2(unsigned int offset, unsigned int w,
+void vdin_set_cm2_s5(unsigned int offset, unsigned int w,
 		  unsigned int h, unsigned int *data);
 void vdin_bypass_isp(unsigned int offset);
 void vdin_set_mpegin(struct vdin_dev_s *devp);

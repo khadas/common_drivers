@@ -981,6 +981,7 @@ static void vdin_vf_init(struct vdin_dev_s *devp)
 		     (IS_TVAFE_SRC(devp->parm.port) || IS_HDMI_SRC(devp->parm.port))))
 			vdin_set_display_ratio(devp, vf);
 		vdin_set_source_bitdepth(devp, vf);
+		vdin_set_lossy_param(devp, vf);
 		/* init slave vframe */
 		slave	= vf_get_slave(p, i);
 		if (!slave)
@@ -3380,6 +3381,8 @@ irq_handled:
 	}
 #endif
 	vdin_sct_queue_work(devp);
+	//for debug
+	vdin_dbg_access_reg_in_vsync(devp);
 
 	isr_log(devp->vfp);
 
@@ -3465,8 +3468,8 @@ irqreturn_t vdin_v4l2_isr(int irq, void *dev_id)
 		goto irq_handled;
 	}
 
-	if (vdin_get_active_h(devp->addr_offset) < VDIN_INPUT_DATA_THRESHOLD ||
-	    vdin_get_active_v(devp->addr_offset) < VDIN_INPUT_DATA_THRESHOLD) {
+	if (vdin_get_active_h(devp) < VDIN_INPUT_DATA_THRESHOLD ||
+	    vdin_get_active_v(devp) < VDIN_INPUT_DATA_THRESHOLD) {
 		devp->vdin_irq_flag = VDIN_IRQ_FLG_FAKE_IRQ;
 		vdin_drop_frame_info(devp, "no data input");
 		if (devp->vdin_function_sel & VDIN_NOT_DATA_INPUT_DROP)
@@ -5427,7 +5430,8 @@ static const struct match_data_s vdin_dt_t3x = {
 	.vdin0_en = 1, .vdin1_en = 1,   .vdin2_en = 1,
 	.de_tunnel_tunnel = 0, /*0,1*/  .ipt444_to_422_12bit = 0, /*0,1*/
 	.vdin0_line_buff_size = 0x1000, .vdin1_line_buff_size = 0x780,
-	.vdin2_line_buff_size = 0x1000, .vdin1_set_hdr = false,
+	.vdin2_line_buff_size = 0x1000,
+	.vdin0_set_hdr = false, .vdin1_set_hdr = false,
 };
 #endif
 
@@ -5543,8 +5547,10 @@ static void vdin_event_work(struct work_struct *work)
 
 	if (devp->index == 0)
 		devp->dev->kobj.name = "vdin0event";
-	else
+	else if (devp->index == 1)
 		devp->dev->kobj.name = "vdin1event";
+	else
+		devp->dev->kobj.name = "vdin2event";
 
 	ret = kobject_uevent_env(&devp->dev->kobj, KOBJ_CHANGE, envp);
 }
@@ -5720,6 +5726,20 @@ static void vdin_get_dts_config(struct vdin_dev_s *devp,
 
 	devp->dbg_no_wr_check =
 		of_property_read_bool(pdev->dev.of_node, "dbg_no_wr_check");
+
+	ret = of_property_read_u32(pdev->dev.of_node, "lossy_mode",
+				   &devp->cr_lossy_param.lossy_mode);
+	if (ret)
+		devp->cr_lossy_param.lossy_mode = 0;
+	ret = of_property_read_u32(pdev->dev.of_node, "cr_lossy_ratio",
+				   &devp->cr_lossy_param.cr_lossy_ratio);
+	if (ret)
+		devp->cr_lossy_param.cr_lossy_ratio = 50;//50%
+	//lossy default
+	devp->cr_lossy_param.quant_diff_root_leave = 2;
+	devp->cr_lossy_param.burst_length_add_en = 0;
+	devp->cr_lossy_param.burst_length_add_value = 2;
+	devp->cr_lossy_param.ofset_burst4_en = 0;
 }
 
 static int vdin_drv_probe(struct platform_device *pdev)

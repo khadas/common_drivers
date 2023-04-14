@@ -33,6 +33,9 @@
 		spi1 = &spicc0;
 		spi2 = &spicc1;
 		spi3 = &spicc2;
+		spi4 = &spicc3;
+		spi5 = &spicc4;
+		spi6 = &spicc5;
 		tsensor0 = &cpu_tsensor;
 		tsensor1 = &gpu_tsensor;
 		tsensor2 = &vpu_tsensor;
@@ -1719,25 +1722,22 @@
 	};
 };
 
-&spicc0 {
+&spicc0 {	//for TCON
 	status = "disabled";
 	pinctrl-names = "default";
-	pinctrl-0 = <&spicc0_pins_t>;
-	//cs-gpios = <&gpio GPIOT_4 0>;
+	pinctrl-0 = <&spicc0_pins_h>;
 };
 
-&spicc1 {
+&spicc1 {	//for UWB/LocalDimm
 	status = "disabled";
 	pinctrl-names = "default";
-	pinctrl-0 = <&spicc1_pins>;
-	cs-gpios = <&gpio GPIOH_6 0>;
+	pinctrl-0 = <&spicc1_pins_h>;
 };
 
 &spicc2 {
 	status = "disabled";
 	pinctrl-names = "default";
-	pinctrl-0 = <&spicc2_pins_x>;
-	//cs-gpios = <&gpio GPIOX_2 0>;
+	pinctrl-0 = <&spicc2_pins_c>;
 };
 
 &fb {

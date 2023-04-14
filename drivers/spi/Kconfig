@@ -10,6 +10,12 @@ config AMLOGIC_SPI_MESON_SPICC
 	  This enables master mode support for the SPICC (SPI communication
 	  controller) available in Amlogic Meson SoCs.
 
+config AMLOGIC_SPI_MESON_SPICC_V2
+	tristate "Amlogic Meson SPICC controller(v2)"
+	help
+	  This enables master mode support for the SPICC (SPI communication
+	  controller) available in A4, T3X Amlogic Meson SoCs.
+
 config AMLOGIC_SPI_MESON_SPIFC
 	tristate "Amlogic Meson SPIFC controller"
 	depends on REGMAP_MMIO

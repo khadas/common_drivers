@@ -770,6 +770,10 @@ void osd_scaler_config(struct osd_scaler_reg_s *reg,
 	hsc_bank_length = bank_length;
 	hsc_init_rpt_p0_num = bank_length / 2 - 1;
 
+	if (!vblk->init_done) {
+		reg_ops->rdma_write_reg(reg->vpp_osd_sc_ctrl0, 0);
+		vblk->init_done = 1;
+	}
 	if (version <= OSD_V2)
 		phase_step_v = (u64)(height_in - 1) << OSD_ZOOM_HEIGHT_BITS;
 	else

@@ -131,6 +131,7 @@ struct meson_vpu_block {
 	u8 max_outputs;
 	u8 avail_inputs;
 	u8 avail_outputs;
+	u8 init_done;
 	unsigned long inputs_mask;
 	unsigned long outputs_mask;
 	struct meson_vpu_block_link inputs[MESON_BLOCK_MAX_INPUTS];

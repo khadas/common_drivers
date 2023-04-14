@@ -86,6 +86,10 @@ static struct postblend_reg_s s5_postblend_reg = {
 };
 #endif
 
+static void fix_vpu_clk2_default_regs(struct meson_vpu_block *vblk,
+				      struct rdma_reg_ops *reg_ops);
+static void postblend_osd2_def_conf(struct meson_vpu_block *vblk);
+
 /*vpp post&post blend for osd1 premult flag config as 0 default*/
 static void osd1_blend_premult_set(struct meson_vpu_block *vblk,
 				   struct rdma_reg_ops *reg_ops,
@@ -354,6 +358,14 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 	secure_config(OSD_MODULE, mvps->sec_src, crtc_index);
 #endif
 
+	if (!vblk->init_done) {
+		if (crtc_index == 0) {
+			fix_vpu_clk2_default_regs(vblk, reg_ops);
+			postblend_osd2_def_conf(vblk);
+		}
+		vblk->init_done = 1;
+	}
+
 	if (crtc_index == 0) {
 		vpp_osd1_blend_scope_set(vblk, reg_ops, reg, scope);
 
@@ -583,7 +595,7 @@ static void fix_vpu_clk2_default_regs(struct meson_vpu_block *vblk,
 	/* default: osd byp osd_blend */
 	reg_ops->rdma_write_reg_bits(VPP_OSD1_SCALE_CTRL, 0x2, 0, 3);
 	reg_ops->rdma_write_reg_bits(VPP_OSD2_SCALE_CTRL, 0x3, 0, 3);
-	reg_ops->rdma_write_reg_bits(VPP_OSD3_SCALE_CTRL, 0x3, 0, 3);
+	reg_ops->rdma_write_reg_bits(VPP_OSD3_SCALE_CTRL, 0x7, 0, 3);
 	reg_ops->rdma_write_reg_bits(VPP_OSD4_SCALE_CTRL, 0x3, 0, 3);
 
 	/* default: osd byp dolby */
@@ -672,11 +684,6 @@ static void t7_postblend_hw_init(struct meson_vpu_block *vblk)
 
 	postblend->reg = &postblend_reg;
 	postblend->reg1 = &postblend1_reg[vblk->index];
-
-	if (vblk->index == 0) {
-		fix_vpu_clk2_default_regs(vblk, vblk->pipeline->subs[0].reg_ops);
-		postblend_osd2_def_conf(vblk);
-	}
 
 	DRM_DEBUG("%s hw_init called.\n", postblend->base.name);
 }

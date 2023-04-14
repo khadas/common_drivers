@@ -1531,17 +1531,10 @@ static void osd_afbc_hw_init(struct meson_vpu_block *vblk)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void t7_osd_afbc_hw_init(struct meson_vpu_block *vblk)
 {
-	struct meson_vpu_pipeline *pipeline = vblk->pipeline;
 	struct meson_vpu_afbc *afbc = to_afbc_block(vblk);
 
 	afbc->afbc_regs = &afbc_osd_t7_regs[0];
 	afbc->status_regs = &afbc_status_t7_regs[vblk->index];
-
-	meson_vpu_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0, 23, 1);
-
-	/* disable osd1 afbc */
-	t7_osd_afbc_enable(vblk, pipeline->subs[0].reg_ops,
-						afbc->status_regs, vblk->index, 0);
 
 	DRM_DEBUG("%s hw_init called.\n", afbc->base.name);
 }

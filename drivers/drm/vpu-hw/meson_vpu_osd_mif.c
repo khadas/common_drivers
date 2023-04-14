@@ -25,7 +25,7 @@
 #include "meson_vpu_util.h"
 #include <linux/amlogic/media/registers/register.h>
 
-static int osd_hold_line = 8;
+static int osd_hold_line = VIU1_DEFAULT_HOLD_LINE;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 u32 original_swap_t3x;
 u32 original_osd1_fifo_ctrl_stat_t3x;
@@ -695,6 +695,10 @@ void osd_ctrl_init(struct meson_vpu_block *vblk, struct rdma_reg_ops *reg_ops,
 {
 	/*Need config follow crtc index.*/
 	u8 holdline = VIU1_DEFAULT_HOLD_LINE;
+	u8 fifo_val = 0x20;
+
+	if (vblk->init_done)
+		return;
 
 	reg_ops->rdma_write_reg(reg->viu_osd_fifo_ctrl_stat,
 			    (1 << 31) | /*BURSET_LEN_SEL[2]*/
@@ -702,7 +706,7 @@ void osd_ctrl_init(struct meson_vpu_block *vblk, struct rdma_reg_ops *reg_ops,
 			    (0 << 29) | /*div swap*/
 			    (2 << 24) | /*Fifo_lim 5bits*/
 			    (2 << 22) | /*Fifo_ctrl 2bits*/
-			    (0x20 << 12) | /*FIFO_DEPATH_VAL 7bits*/
+			    (fifo_val << 12) | /*FIFO_DEPATH_VAL 7bits*/
 			    (1 << 10) | /*BURSET_LEN_SEL[1:0]*/
 			    (holdline << 5) | /*hold fifo lines 5bits*/
 			    (0 << 4) | /*CLEAR_ERR*/
@@ -717,6 +721,8 @@ void osd_ctrl_init(struct meson_vpu_block *vblk, struct rdma_reg_ops *reg_ops,
 			    (0 << 2) | /*osd_mem_mode 0:canvas_addr*/
 			    (0 << 1) | /*premult_en*/
 			    (0 << 0)/*OSD_BLK_ENABLE*/);
+
+	vblk->init_done = 1;
 }
 
 static void osd_color_config(struct meson_vpu_block *vblk,
@@ -1035,7 +1041,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	struct meson_vpu_pipeline_state *mvps;
 	struct rdma_reg_ops *reg_ops;
 	int crtc_index;
-	u32 pixel_format, canvas_index, src_h, byte_stride, flush_reg;
+	u32 pixel_format, canvas_index, src_h, byte_stride, flush_reg, hold_line;
 	struct osd_scope_s scope_src = {0, 1919, 0, 1079};
 	struct osd_mif_reg_s *reg;
 	bool alpha_div_en = 0, reverse_x, reverse_y, afbc_en;
@@ -1063,12 +1069,22 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	if (old_state)
 		old_mvos = to_osd_state(old_state);
 
+	osd_ctrl_init(vblk, reg_ops, reg);
+
+	if (mvos->crtc_index == 1)
+		/*for multi-vpp, the vpp1 default is 4*/
+		hold_line = VIU2_DEFAULT_HOLD_LINE;
+	else
+		hold_line = osd_hold_line;
+
 	flush_reg = osd_check_config(mvos, old_mvos);
 	DRM_DEBUG("flush_reg-%d index-%d\n", flush_reg, vblk->index);
 	if (!flush_reg) {
 		/*after v7 chips, always linear addr*/
 		if (osd->mif_acc_mode == LINEAR_MIF)
 			osd_mem_mode(vblk, reg_ops, reg, 1);
+
+		ods_hold_line_config(vblk, reg_ops, reg, hold_line);
 
 		DRM_DEBUG("%s-%d not need to flush mif register.\n", osd->base.name, vblk->index);
 		return;
@@ -1145,7 +1161,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	osd_scan_mode_config(vblk, reg_ops, reg, pipe->subs[crtc_index].mode.flags &
 				 DRM_MODE_FLAG_INTERLACE);
 	osd_set_dimm_ctrl(vblk, reg_ops, reg, 0);
-	ods_hold_line_config(vblk, reg_ops, reg, osd_hold_line);
+	ods_hold_line_config(vblk, reg_ops, reg, hold_line);
 	osd_set_two_ports(mvos->read_ports);
 
 	DRM_DEBUG("plane_index=%d,HW-OSD=%d\n",
@@ -1281,7 +1297,7 @@ static void osd_hw_init(struct meson_vpu_block *vblk)
 	meson_drm_osd_canvas_alloc();
 
 	osd->reg = &osd_mif_reg[vblk->index];
-	osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
+	//osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
 	osd->mif_acc_mode = CANVAS_MODE;
 
 	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
@@ -1305,7 +1321,7 @@ static void t7_osd_hw_init(struct meson_vpu_block *vblk)
 	}
 
 	osd->reg = &osd_mif_reg[vblk->index];
-	osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
+	//osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
 	osd->mif_acc_mode = LINEAR_MIF;
 
     /* osd secure function init */

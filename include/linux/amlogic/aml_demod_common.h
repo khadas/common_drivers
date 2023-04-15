@@ -204,51 +204,6 @@ struct aml_tuner {
 
 typedef struct dvb_frontend *(*dm_attach_cb)(const struct demod_config *config);
 
-/** generic AML DVB attach function. */
-#if (defined CONFIG_AMLOGIC_DVB_EXTERN ||\
-		defined CONFIG_AMLOGIC_DVB_EXTERN_MODULE)
-#define aml_dvb_attach(FUNCTION, ARGS...) ({ \
-	void *__r = NULL; \
-	typeof(&FUNCTION) __a = symbol_request(FUNCTION); \
-	if (__a) { \
-		__r = (void *) __a(ARGS); \
-		if (__r == NULL) \
-			symbol_put(FUNCTION); \
-	} else { \
-		printk(KERN_ERR "AML DVB: Unable to find symbol " \
-			#FUNCTION"()\n"); \
-	} \
-	__r; \
-})
-
-#define aml_dvb_detach(FUNC) symbol_put_addr(FUNC)
-
-#define AML_DEMOD_ATTACH_FUNCTION(name) \
-static inline struct dvb_frontend *name##_attach(\
-		const struct demod_config *cfg)\
-{\
-	return NULL;\
-}
-
-#define AML_TUNER_ATTACH_FUNCTION(name) \
-static inline struct dvb_frontend *name##_attach(struct dvb_frontend *fe,\
-		const struct tuner_config *cfg)\
-{\
-	return NULL;\
-}
-
-#else
-#define aml_dvb_attach(FUNCTION, ARGS...) ({ \
-	FUNCTION(ARGS); \
-})
-
-#define aml_dvb_detach(FUNC) {}
-
-#define AML_DEMOD_ATTACH_FUNCTION(name)
-
-#define AML_TUNER_ATTACH_FUNCTION(name)
-#endif
-
 /*COLOR MODULATION TYPE*/
 #define V4L2_COLOR_STD_PAL    ((v4l2_std_id) 0x04000000)
 #define V4L2_COLOR_STD_NTSC   ((v4l2_std_id) 0x08000000)

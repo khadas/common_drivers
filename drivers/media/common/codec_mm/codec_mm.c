@@ -2931,6 +2931,7 @@ int codec_mm_mgt_init(struct device *dev)
 		mgt->res_mem_flags |= RES_MEM_FLAGS_HAVE_MAPED;
 #endif
 	}
+
 	mgt->total_cma_size = codec_mm_get_cma_size_int_byte(mgt->dev);
 	mgt->total_codec_mem_size += mgt->total_cma_size;
 	if (get_meson_cpu_version(MESON_CPU_VERSION_LVL_MAJOR) <

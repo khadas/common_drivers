@@ -31,16 +31,16 @@
 #if IS_BUILTIN(CONFIG_AMLOGIC_MEDIA_MODULE)
 #include <linux/amlogic/aml_cma.h>
 #endif
+
 static int dmabuf_manage_debug = 1;
 module_param(dmabuf_manage_debug, int, 0644);
 
-static int secure_vdec_def_size_bytes;
-static u32 secure_block_align_2n;
-static u32 secure_heap_version = SECURE_HEAP_SUPPORT_MULTI_POOL_VERSION;
-static u32 secure_es_def_size = 2 * 1024 * 1024;
-static u32 secure_pool_def_block_num = 8;
-static u32 secure_pool_def_size = 4 * 1024 * 1024;
-static u32 secure_pool_4k_size = 12 * 1024 * 1024;
+static u32 secure_heap_version = SECURE_HEAP_DYNAMIC_ALLOC_VERSION;
+static u32 secure_pool_max_block_count = 8;
+static u32 secure_vdec_def_size_bytes;
+static u32 secure_hd_pool_size_mb = 4;
+static u32 secure_uhd_pool_size_mb = 12;
+static u32 secure_fuhd_pool_size_mb = 32;
 
 #define  DEVICE_NAME "secmem"
 #define  CLASS_NAME  "dmabuf_manage"
@@ -59,54 +59,39 @@ static u32 secure_pool_4k_size = 12 * 1024 * 1024;
 #define pr_inf(fmt, args ...) dprintk(8, fmt, ## args)
 #define pr_enter() pr_inf("enter")
 
+#define POOL_SIZE_MB (1024 * 1024)
+#define DMABUF_MANAGE_POOL_ALIGN_2N		20
+#define DMABUF_MANAGE_POOL_SIZE_MB		32
+
 struct kdmabuf_attachment {
 	struct sg_table sgt;
 	enum dma_data_direction dma_dir;
 };
 
-#define MEM_SZ_1_5G							0x60000000
-#define SECURE_MM_ALIGNED_2N				20
-#define SECURE_MM_BLOCK_ALIGNED_2N			12
-#define SECURE_MM_BLOCK_PADDING_SIZE		(256 * 1024)
-#define SECURE_MM_MAX_VDEC_SIZE_BYTES		(80 * 1024 * 1024)
-#define SECURE_MM_DEF_VDEC_SIZE_BYTES		(28 * 1024 * 1024)
-#define SECURE_MM_MID_VDEC_SIZE_BYTES		(20 * 1024 * 1024)
-#define SECURE_MM_MIN_VDEC_SIZE_BYTES		(8 * 1024 * 1024)
-#define SECURE_MM_MIN_CMA_SIZE_BYTES		(320 * 1024 * 1024)
-#define SECURE_MAX_VDEC_POOL_NUM			4
-
-#define SECURE_BLOCK_CHECKIN_ERROR			1
-
 struct block_node {
-	struct list_head list;
-	u32 paddr;
+	struct list_head node;
+	u32 addr;
 	u32 size;
-	u32 flag;
-	u32 index;
 };
 
 struct secure_pool_info {
-	struct gen_pool *pool;
-	phys_addr_t paddr;
-	u32 size;
-	u32 instance;
-	u32 bind;
-	u32 block_num;
-	u32 frame_size;
-};
-
-struct secure_vdec_info {
-	u32 used;
-	u32 vdec_handle;
-	u32 vdec_paddr;
-	u32 vdec_size;
-	u32 vdec_align_paddr;
-	u32 vdec_align_size;
-	struct gen_pool *pool;
-	struct secure_pool_info vdec_pool[SECURE_MAX_VDEC_POOL_NUM];
+	struct list_head node;
+	struct list_head block_node;
+	u32 version;
+	u32 id_high;
+	u32 id_low;
+	u32 protect_handle;
+	struct gen_pool *gen_pool;
+	struct codec_mm_s *mms;
+	phys_addr_t pool_addr;
+	u32 pool_size;
+	u32 block_size;
+	u32 max_frame_size;
+	u32 channel_register;
 };
 
 typedef int (*decode_info)(struct dmx_demux *demux, void *info);
+static long dmabuf_manage_release_channel(u32 id_high, u32 id_low);
 
 struct dmx_filter_info {
 	struct list_head list;
@@ -116,12 +101,11 @@ struct dmx_filter_info {
 	decode_info decode_info_func;
 };
 
-static struct list_head block_list;
+static struct list_head pool_list;
 static struct list_head dmx_filter_list;
 static int dev_no;
 static struct device *dmabuf_manage_dev;
-static DEFINE_MUTEX(g_dmabuf_mutex);
-static struct secure_vdec_info g_vdec_info;
+static DEFINE_MUTEX(g_secure_pool_mutex);
 
 static int dmabuf_manage_attach(struct dma_buf *dbuf, struct dma_buf_attachment *attachment)
 {
@@ -232,10 +216,11 @@ static void dmabuf_manage_unmap_dma_buf(struct dma_buf_attachment *attachment,
 
 static void dmabuf_manage_buf_release(struct dma_buf *dbuf)
 {
-	struct dmabuf_manage_block *block;
-	struct dmabuf_dmx_sec_es_data *es;
+	struct dmabuf_manage_block *block = NULL;
+	struct dmabuf_dmx_sec_es_data *es = NULL;
 	struct dmx_filter_info *node = NULL;
-	struct list_head *pos, *tmp;
+	struct secure_vdec_channel *channel = NULL;
+	struct list_head *pos = NULL, *tmp = NULL;
 	int found = 0;
 	struct decoder_mem_info rp_info;
 
@@ -262,7 +247,12 @@ static void dmabuf_manage_buf_release(struct dma_buf *dbuf)
 	} else if (block && block->type == DMA_BUF_TYPE_DMABUF) {
 		if (block->flags & DMABUF_ALLOC_FROM_CMA)
 			codec_mm_free_for_dma("dmabuf", block->paddr);
+	} else if (block && block->priv &&
+		block->type == DMA_BUF_TYPE_SECURE_VDEC) {
+		channel = (struct secure_vdec_channel *)block->priv;
+		dmabuf_manage_release_channel(channel->id_high, channel->id_low);
 	}
+
 	if (block) {
 		pr_dbg("dma release handle:%x\n", block->handle);
 		kfree(block->priv);
@@ -724,7 +714,7 @@ static int dmabuf_manage_alloc_dmabuf(unsigned long args)
 		goto error_copy;
 	}
 	block->paddr = codec_mm_alloc_for_dma("dmabuf", info.size / PAGE_SIZE,
-		SECURE_MM_BLOCK_ALIGNED_2N, CODEC_MM_FLAGS_DMA);
+		PAGE_SHIFT, CODEC_MM_FLAGS_DMA);
 	if (block->paddr <= 0)
 		goto error_alloc_object;
 	block->size = PAGE_ALIGN(info.size);
@@ -806,490 +796,442 @@ error:
 }
 EXPORT_SYMBOL(dmabuf_manage_get_info);
 
-static void *secure_pool_init(phys_addr_t addr, u32 size, u32 order)
+static struct secure_pool_info *dmabuf_manage_get_secure_vdec_pool(u32 id_high,
+	u32 id_low)
 {
-	struct gen_pool *pool;
+	struct list_head *pos = NULL;
+	struct list_head *tmp = NULL;
+	struct secure_pool_info *pool = NULL;
 
-	pool = gen_pool_create(order, -1);
-	if (!pool)
-		return NULL;
-	if (gen_pool_add(pool, addr, size, -1) != 0) {
-		gen_pool_destroy(pool);
-		return NULL;
+	if (!list_empty(&pool_list)) {
+		list_for_each_safe(pos, tmp, &pool_list) {
+			pool = list_entry(pos, struct secure_pool_info, node);
+			if (pool && pool->id_high == id_high && pool->id_low == id_low)
+				return pool;
+		}
 	}
-	return pool;
+
+	return NULL;
 }
 
-static void secure_pool_destroy(void *handle)
+static int dmabuf_manage_secure_pool_get_block_count(struct secure_pool_info *pool)
 {
-	if (handle)
-		gen_pool_destroy(handle);
+	int count = 0;
+	struct list_head *pos = NULL;
+	struct list_head *tmp = NULL;
+
+	if (pool && !list_empty(&pool->block_node)) {
+		list_for_each_safe(pos, tmp, &pool->block_node)
+			count++;
+	}
+
+	return count;
 }
 
-static phys_addr_t secure_pool_alloc(void *handle, u32 size)
+static int dmabuf_manage_secure_pool_get_block_free_slot(struct secure_pool_info *pool,
+	u32 frame_size)
 {
-	return gen_pool_alloc(handle, size);
+	int slot = 0;
+	int index = 0;
+	phys_addr_t *paddr = NULL;
+	int alignsize = PAGE_ALIGN(frame_size);
+
+	if (pool && pool->gen_pool) {
+		if (pool->max_frame_size < alignsize)
+			pool->max_frame_size = alignsize;
+
+		paddr = kcalloc(secure_pool_max_block_count, sizeof(phys_addr_t), GFP_KERNEL);
+		if (!paddr)
+			return slot;
+
+		for (index = 0; index < secure_pool_max_block_count; index++, slot++) {
+			paddr[index] = gen_pool_alloc(pool->gen_pool, alignsize);
+			if (paddr[index] <= 0)
+				break;
+		}
+
+		for (index = 0; index < slot; index++)
+			gen_pool_free(pool->gen_pool, paddr[index], alignsize);
+
+		kfree(paddr);
+	}
+
+	return slot;
 }
 
-static void secure_pool_free(void *handle, u32 addr, u32 size)
-{
-	return gen_pool_free(handle, addr, size);
-}
-
-static size_t secure_pool_free_size(void *handle)
-{
-	return gen_pool_avail(handle);
-}
-
-static inline u32 secure_align_down_2n(u32 size, u32 alg2n)
-{
-	return ((size) & (~((1 << (alg2n)) - 1)));
-}
-
-static inline u32 secure_align_up2n(u32 size, u32 alg2n)
+static inline u32 secure_pool_align_up2n(u32 size, u32 alg2n)
 {
 	return ((size + (1 << alg2n) - 1) & (~((1 << alg2n) - 1)));
 }
 
-static inline u32 secure_addr_is_aligned(u32 addr, u32 alg2n)
+static int dmabuf_manage_secure_pool_init(u32 id_high, u32 id_low, u32 block_size,
+	u32 *pool_addr, u32 *pool_size, u32 version)
 {
-	if ((addr & (~((1 << alg2n) - 1))) == addr)
+	int res = 1;
+	struct secure_pool_info *pool = NULL;
+
+	if (!pool_addr || !pool_size)
+		goto error;
+
+	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
+	if (!pool)
+		goto error;
+
+	pool->version = version;
+	pool->id_high = id_high;
+	pool->id_low = id_low;
+	pool->block_size = block_size;
+
+	if (version == SECURE_HEAP_DEFAULT_VERSION) {
+		pool->pool_size = PAGE_ALIGN(block_size * secure_pool_max_block_count);
+	} else {
+		if (block_size <= 2 * POOL_SIZE_MB)
+			pool->pool_size = secure_hd_pool_size_mb * POOL_SIZE_MB;
+		else if (block_size <= 6 * POOL_SIZE_MB)
+			pool->pool_size = secure_uhd_pool_size_mb * POOL_SIZE_MB;
+		else
+			pool->pool_size = secure_fuhd_pool_size_mb * POOL_SIZE_MB;
+	}
+
+	pool->pool_size = secure_pool_align_up2n(pool->pool_size,
+		DMABUF_MANAGE_POOL_ALIGN_2N);
+	if (pool->pool_size > DMABUF_MANAGE_POOL_SIZE_MB * POOL_SIZE_MB)
+		pool->pool_size = DMABUF_MANAGE_POOL_SIZE_MB * POOL_SIZE_MB;
+
+	pool->mms = codec_mm_alloc("dma-secure-buf", pool->pool_size,
+		DMABUF_MANAGE_POOL_ALIGN_2N, CODEC_MM_FLAGS_DMA);
+	if (!pool->mms || !pool->mms->phy_addr)
+		goto error_alloc;
+
+	pool->pool_addr = pool->mms->phy_addr;
+#if IS_BUILTIN(CONFIG_AMLOGIC_MEDIA_MODULE)
+	cma_mmu_op(pool->mms->mem_handle, pool->mms->page_count, 0);
+#endif
+	res = tee_protect_mem_by_type(TEE_MEM_TYPE_STREAM_INPUT,
+		(u32)pool->pool_addr, pool->pool_size, &pool->protect_handle);
+	if (res) {
+		pr_error("Protect vdec fail %x %d %d %x %x\n", res, id_high, id_low,
+			(u32)pool->pool_addr, pool->pool_size);
+		goto error_protect;
+	}
+
+	res = tee_check_in_mem((u32)pool->pool_addr, (u32)pool->pool_size);
+	if (res) {
+		pr_error("CheckIn vdec fail %x %d %d %x %x\n", res, id_high, id_low,
+			(u32)pool->pool_addr, pool->pool_size);
+		goto error_checkin;
+	}
+
+	pool->gen_pool = gen_pool_create(PAGE_SHIFT, -1);
+	if (!pool->gen_pool) {
+		pr_error("Create gen pool fail for %d %d %x %x\n", id_high, id_low,
+			(u32)pool->pool_addr, pool->pool_size);
+		goto error_create_pool;
+	}
+
+	res = gen_pool_add(pool->gen_pool, pool->pool_addr, pool->pool_size, -1);
+	if (res) {
+		pr_error("Add gen pool fail %d for %d %d %x %x\n", res, id_high, id_low,
+			(u32)pool->pool_addr, pool->pool_size);
+		goto error_add_pool;
+	}
+
+	*pool_addr = pool->pool_addr;
+	*pool_size = pool->pool_size;
+	INIT_LIST_HEAD(&pool->block_node);
+	list_add_tail(&pool->node, &pool_list);
+	return 0;
+error_add_pool:
+	gen_pool_destroy(pool->gen_pool);
+error_create_pool:
+	res = tee_check_out_mem(pool->pool_addr,  pool->pool_size);
+	if (res)
+		pr_error("Check Out %x %x fail\n", (u32)pool->pool_addr, pool->pool_size);
+error_checkin:
+	tee_unprotect_mem(pool->protect_handle);
+error_protect:
+#if IS_BUILTIN(CONFIG_AMLOGIC_MEDIA_MODULE)
+	cma_mmu_op(pool->mms->mem_handle, pool->mms->page_count, 1);
+#endif
+	res = codec_mm_free_for_dma("dma-secure-buf", pool->pool_addr);
+	if (res)
+		pr_error("Free %x %x fail\n", (u32)pool->pool_addr, pool->pool_size);
+error_alloc:
+	kfree(pool);
+error:
+	return 1;
+}
+
+int dmabuf_manage_secure_pool_create(u32 id_high, u32 id_low, u32 block_size,
+	u32 *pool_addr, u32 *pool_size, u32 version)
+{
+	int res = 0;
+	struct secure_pool_info *pool = NULL;
+
+	if (!pool_addr || !pool_size)
 		return 1;
-	return 0;
+
+	mutex_lock(&g_secure_pool_mutex);
+	pool = dmabuf_manage_get_secure_vdec_pool(id_high, id_low);
+
+	if (pool) {
+		*pool_addr = pool->pool_addr;
+		*pool_size = pool->pool_size;
+	} else {
+		res = dmabuf_manage_secure_pool_init(id_high, id_low,
+			block_size, pool_addr, pool_size, version);
+	}
+
+	mutex_unlock(&g_secure_pool_mutex);
+	return res;
 }
 
-static int secure_block_pool_init(void)
+static void dmabuf_manage_destroy_secure_pool(struct secure_pool_info *pool)
 {
-	int ret;
-	u32 max_cma_size_bytes = codec_mm_get_total_size();
-	u32 vdec_size = secure_vdec_def_size_bytes;
-	u32 total_mem = totalram_pages() << PAGE_SHIFT;
-	struct codec_mm_s *mms;
+	int res = 0;
 
-	if (g_vdec_info.used)
-		return 0;
-	if (secure_heap_version >= SECURE_HEAP_SUPPORT_MULTI_POOL_VERSION &&
-		vdec_size >= secure_pool_def_size) {
-		pr_info("Use customer defined vdec size %x", vdec_size);
-	} else {
-		if (vdec_size < SECURE_MM_MIN_VDEC_SIZE_BYTES ||
-			vdec_size > SECURE_MM_MAX_VDEC_SIZE_BYTES) {
-			if (total_mem <= SZ_1G) {
-				vdec_size = SECURE_MM_MIN_VDEC_SIZE_BYTES;
-			} else if (total_mem > SZ_1G && total_mem < MEM_SZ_1_5G) {
-				if (max_cma_size_bytes >= SECURE_MM_MIN_CMA_SIZE_BYTES)
-					vdec_size = SECURE_MM_DEF_VDEC_SIZE_BYTES;
-				else
-					vdec_size = SECURE_MM_MID_VDEC_SIZE_BYTES;
-			} else {
-				vdec_size = SECURE_MM_DEF_VDEC_SIZE_BYTES;
-			}
-		}
-		pr_info("Use default vdec size %x", vdec_size);
+	if (!pool)
+		return;
+
+	if (!pool->channel_register && list_empty(&pool->block_node)) {
+		gen_pool_destroy(pool->gen_pool);
+
+		res = tee_check_out_mem(pool->pool_addr,  pool->pool_size);
+		if (res)
+			pr_error("Check Out %x %x fail\n", (u32)pool->pool_addr, pool->pool_size);
+
+		tee_unprotect_mem(pool->protect_handle);
+#if IS_BUILTIN(CONFIG_AMLOGIC_MEDIA_MODULE)
+		cma_mmu_op(pool->mms->mem_handle, pool->mms->page_count, 1);
+#endif
+
+		res = codec_mm_free_for_dma("dma-secure-buf", pool->pool_addr);
+		if (res)
+			pr_error("Free %x %x fail\n", (u32)pool->pool_addr, pool->pool_size);
+
+		list_del(&pool->node);
+		kfree(pool);
 	}
-	vdec_size += 1024 * 1024;
-	g_vdec_info.vdec_size = secure_align_up2n(vdec_size, SECURE_MM_ALIGNED_2N);
-	mms = codec_mm_alloc("dma-secure-buf", g_vdec_info.vdec_size,
-			0, CODEC_MM_FLAGS_DMA);
-	if (!mms || !mms->phy_addr) {
-		pr_error("allocate cma size failed %x\n", g_vdec_info.vdec_size);
-		goto error_init;
-	}
-	g_vdec_info.vdec_paddr = mms->phy_addr;
-	if (secure_addr_is_aligned(g_vdec_info.vdec_paddr, SECURE_MM_ALIGNED_2N)) {
-		g_vdec_info.vdec_align_paddr = g_vdec_info.vdec_paddr;
-		g_vdec_info.vdec_align_size = g_vdec_info.vdec_size;
-	} else {
-		g_vdec_info.vdec_align_paddr =
-			secure_align_up2n(g_vdec_info.vdec_paddr, SECURE_MM_ALIGNED_2N);
-		vdec_size = g_vdec_info.vdec_paddr +
-			g_vdec_info.vdec_size - g_vdec_info.vdec_align_paddr;
-		g_vdec_info.vdec_align_size = secure_align_down_2n(vdec_size,
-			SECURE_MM_ALIGNED_2N);
-	}
-	cma_mmu_op(mms->mem_handle, mms->page_count, 0);
-	ret = tee_protect_mem_by_type(TEE_MEM_TYPE_STREAM_INPUT,
-				(u32)g_vdec_info.vdec_align_paddr,
-				(u32)g_vdec_info.vdec_align_size,
-				&g_vdec_info.vdec_handle);
-	if (ret) {
-		pr_error("protect vdec failed addr %x %x ret is %x\n",
-			g_vdec_info.vdec_align_paddr, g_vdec_info.vdec_align_size, ret);
-		goto error_init;
-	}
-	if (secure_block_align_2n == 0)
-		secure_block_align_2n = SECURE_MM_BLOCK_ALIGNED_2N;
-	g_vdec_info.pool = secure_pool_init(g_vdec_info.vdec_align_paddr,
-			g_vdec_info.vdec_align_size, secure_block_align_2n);
-	if (!g_vdec_info.pool) {
-		pr_error("Init global pool failed\n");
-		goto error_init;
-	}
-	INIT_LIST_HEAD(&block_list);
-	g_vdec_info.used = 1;
-	return 0;
-error_init:
-	if (g_vdec_info.vdec_handle) {
-		tee_unprotect_mem(g_vdec_info.vdec_handle);
-		/*
-		 * If mms is NULL, g_vdec_info.vdec_handle must also be NULL,
-		 * the condition is not satisfied.
-		 */
-		/*coverity[var_deref_op:SUPPRESS]*/
-		cma_mmu_op(mms->mem_handle, mms->page_count, 1);
-	}
-	if (codec_mm_free_for_dma("dma-secure-buf", g_vdec_info.vdec_paddr))
-		pr_error("free dma buf failed in init");
-	memset(&g_vdec_info, 0, sizeof(struct secure_vdec_info));
-	return -1;
 }
 
-static ssize_t dmabuf_manage_dump_vdec_info(int forceshow)
+static long dmabuf_manage_register_channel(unsigned long args)
+{
+	struct secure_vdec_channel *channel = NULL;
+	struct secure_pool_info *pool = NULL;
+	int ret = 0;
+	int fd = -1;
+	int fd_flags = O_CLOEXEC;
+	struct dmabuf_manage_block *block = NULL;
+	struct dma_buf *dbuf = NULL;
+
+	mutex_lock(&g_secure_pool_mutex);
+	pr_enter();
+
+	channel = (struct secure_vdec_channel *)
+		kzalloc(sizeof(*channel), GFP_KERNEL);
+	if (!channel) {
+		pr_error("kmalloc channel failed\n");
+		goto error_alloc_channel;
+	}
+
+	ret = copy_from_user((void *)channel, (void __user *)args, sizeof(*channel));
+	if (ret) {
+		pr_error("copy channel information failed\n");
+		goto error_copy;
+	}
+
+	pool = dmabuf_manage_get_secure_vdec_pool(channel->id_high, channel->id_low);
+	if (pool) {
+		pool->channel_register = 1;
+		block = (struct dmabuf_manage_block *)
+			kzalloc(sizeof(*block), GFP_KERNEL);
+		if (!block) {
+			pr_error("kmalloc failed\n");
+			goto error_alloc_object;
+		}
+
+		block->handle = pool->protect_handle;
+		block->paddr = pool->pool_addr;
+		block->size = pool->block_size;
+		block->type = DMA_BUF_TYPE_SECURE_VDEC;
+		block->priv = (void *)channel;
+
+		dbuf = get_dmabuf(block, fd_flags);
+		if (!dbuf) {
+			pr_error("get_dmabuf failed\n");
+			goto error_export;
+		}
+
+		fd = dma_buf_fd(dbuf, fd_flags);
+		if (fd < 0) {
+			pr_error("dma_buf_fd failed\n");
+			goto error_fd;
+		}
+	} else {
+		goto error_copy;
+	}
+
+	mutex_unlock(&g_secure_pool_mutex);
+	return fd;
+error_fd:
+	dma_buf_put(dbuf);
+error_export:
+	kfree(block);
+error_alloc_object:
+error_copy:
+	kfree(channel);
+error_alloc_channel:
+	mutex_unlock(&g_secure_pool_mutex);
+	return -EFAULT;
+}
+
+static long dmabuf_manage_release_channel(u32 id_high, u32 id_low)
+{
+	struct secure_pool_info *pool = NULL;
+
+	mutex_lock(&g_secure_pool_mutex);
+	pr_enter();
+
+	pool = dmabuf_manage_get_secure_vdec_pool(id_high, id_low);
+	if (pool) {
+		pool->channel_register = 0;
+		dmabuf_manage_destroy_secure_pool(pool);
+	}
+
+	mutex_unlock(&g_secure_pool_mutex);
+	return 0;
+}
+
+static void dmabuf_manage_dump_secure_pool(struct secure_pool_info *pool)
 {
 	char buf[1024] = { 0 };
-	char *pbuf = buf;
-	u32 i = 0;
 	u32 size = 1024;
 	u32 s = 0;
 	u32 tsize = 0;
-	u32 freesize = 0;
-	u32 blocknum = 0;
+	char *pbuf = buf;
+	u32 block_count = 0;
+	struct list_head *pos = NULL;
+	struct list_head *tmp = NULL;
 	struct block_node *block = NULL;
-	struct list_head *pos, *tmp;
-	struct secure_pool_info *vdec_pool;
 
-	if (forceshow == 0 && dmabuf_manage_debug < 8)
-		return 0;
-	s = snprintf(pbuf, size - tsize,
-			"secure mem info:\nused %d\n", g_vdec_info.used);
-	tsize += s;
-	pbuf += s;
-	s = snprintf(pbuf, size - tsize,
-			"vdec size: %d\ndef vdec size: %d\n",
-			g_vdec_info.vdec_size, secure_vdec_def_size_bytes);
-	tsize += s;
-	pbuf += s;
-	if (g_vdec_info.used) {
-		for (i = 0; i < SECURE_MAX_VDEC_POOL_NUM; i++) {
-			vdec_pool = &g_vdec_info.vdec_pool[i];
-			if (vdec_pool->pool)
-				freesize = secure_pool_free_size(vdec_pool->pool);
-			else
-				freesize = 0;
-			s = snprintf(pbuf, size - tsize,
-			"Pool %d \t total:%d \t alloc:%d \t free:%d \t framesize:%d \t blocknum:%d\n",
-			i, vdec_pool->size, vdec_pool->size - freesize, freesize,
-			vdec_pool->frame_size, vdec_pool->block_num);
-			tsize += s;
-			pbuf += s;
+	if (pool) {
+		s = snprintf(pbuf, size - tsize,
+			"Pool Ver %d %d Id %d %d Addr %x %x %x Block %x %x\n",
+			pool->version, pool->channel_register,
+			pool->id_high, pool->id_low, pool->protect_handle,
+			(u32)pool->pool_addr, pool->pool_size, pool->block_size,
+			pool->max_frame_size);
+		tsize += s;
+		pbuf += s;
+
+		if (!list_empty(&pool->block_node)) {
+			list_for_each_safe(pos, tmp, &pool->block_node) {
+				block = list_entry(pos, struct block_node, node);
+				if (block) {
+					s = snprintf(pbuf, size - tsize,
+						"Block %d addr %d size %d\n", block_count,
+						block->addr, block->size);
+					tsize += s;
+					pbuf += s;
+					block_count++;
+				}
+			}
 		}
-		list_for_each_safe(pos, tmp, &block_list) {
-			block = list_entry(pos, struct block_node, list);
-			s = snprintf(pbuf, size - tsize, "[%d]\t addr %x size %d flag %x %x\n",
-				blocknum, block->paddr, block->size, block->flag, block->index);
-			blocknum++;
-			tsize += s;
-			pbuf += s;
-		}
+
+		pr_error("%s", buf);
 	}
-	s = snprintf(pbuf, size - tsize, "Total block num %d\n", blocknum);
-	pr_error("%s", buf);
+}
+
+int dmabuf_manage_secure_pool_status(u32 id_high, u32 id_low, u32 frame_size,
+	u32 *block_count, u32 *block_free_slot)
+{
+	struct secure_pool_info *pool = NULL;
+
+	if (!block_count || !block_free_slot)
+		return 0;
+
+	mutex_lock(&g_secure_pool_mutex);
+	*block_count = 0;
+	*block_free_slot = 0;
+
+	pool = dmabuf_manage_get_secure_vdec_pool(id_high, id_low);
+	if (pool) {
+		*block_count = dmabuf_manage_secure_pool_get_block_count(pool);
+		*block_free_slot =
+			dmabuf_manage_secure_pool_get_block_free_slot(pool, frame_size);
+	}
+
+	mutex_unlock(&g_secure_pool_mutex);
 	return 0;
 }
 
-static u32 secure_get_subpoolsize_by_framesize(unsigned long framesize)
+phys_addr_t dmabuf_manage_secure_block_alloc(u32 id_high, u32 id_low, u32 size)
 {
-	return framesize >= secure_es_def_size ? secure_pool_4k_size :
-		secure_pool_def_size;
-}
-
-static u32 secure_get_subpoolindex_by_framesize(u32 framesize, u32 ignorebind)
-{
-	u32 index = 0;
-
-	for (index = 0; index < SECURE_MAX_VDEC_POOL_NUM; index++) {
-		if (g_vdec_info.vdec_pool[index].pool &&
-			g_vdec_info.vdec_pool[index].frame_size == framesize &&
-			g_vdec_info.vdec_pool[index].block_num < secure_pool_def_block_num) {
-			if (!ignorebind && g_vdec_info.vdec_pool[index].bind)
-				continue;
-			break;
-		}
-	}
-	return index;
-}
-
-static u32 secure_get_vdec_pool_by_instance(unsigned long id)
-{
-	u32 index = 0;
-
-	for (index = 0; index < SECURE_MAX_VDEC_POOL_NUM; index++) {
-		if (g_vdec_info.vdec_pool[index].instance == id)
-			break;
-	}
-	return index;
-}
-
-static u32 secure_get_vdec_pool_by_paddr(phys_addr_t paddr)
-{
-	u32 index = 0;
-	struct secure_pool_info *vdec_pool;
-
-	for (index = 0; index < SECURE_MAX_VDEC_POOL_NUM; index++) {
-		vdec_pool = &g_vdec_info.vdec_pool[index];
-		if (paddr >= vdec_pool->paddr && paddr < vdec_pool->paddr + vdec_pool->size)
-			break;
-	}
-	return index;
-}
-
-static struct secure_pool_info *secure_subpool_init(int poolsize, int *subindex, int framesize)
-{
-	struct secure_pool_info *vdec_pool = NULL;
-	int index = 0;
-
-	for (index = 0; index < SECURE_MAX_VDEC_POOL_NUM; index++) {
-		if (!g_vdec_info.vdec_pool[index].pool)
-			break;
-	}
-	if (index >= SECURE_MAX_VDEC_POOL_NUM) {
-		pr_error("Invalid subpool %d\n", index);
-		goto error_init_subpool;
-	}
-	vdec_pool = &g_vdec_info.vdec_pool[index];
-	do {
-		vdec_pool->paddr = secure_pool_alloc(g_vdec_info.pool, poolsize);
-		if (vdec_pool->paddr > 0) {
-			vdec_pool->size = poolsize;
-			vdec_pool->pool = secure_pool_init(vdec_pool->paddr, vdec_pool->size,
-				secure_block_align_2n);
-		} else {
-			poolsize -= 1024 * 1024;
-		}
-	} while (!vdec_pool->pool && poolsize > secure_pool_def_size);
-	if (!vdec_pool->pool) {
-		pr_error("secure pool create failed\n");
-		goto error_init_subpool1;
-	}
-	vdec_pool->instance = 0;
-	vdec_pool->bind = 0;
-	vdec_pool->block_num = 0;
-	vdec_pool->frame_size = framesize;
-	if (subindex)
-		*subindex = index;
-	return vdec_pool;
-error_init_subpool1:
-	memset(vdec_pool, 0, sizeof(*vdec_pool));
-error_init_subpool:
-	return NULL;
-}
-
-static void secure_subpool_destroy(struct secure_pool_info *vdec_pool)
-{
-	if (vdec_pool) {
-		if (vdec_pool->pool) {
-			secure_pool_destroy(vdec_pool->pool);
-			secure_pool_free(g_vdec_info.pool, vdec_pool->paddr, vdec_pool->size);
-		}
-		memset(vdec_pool, 0, sizeof(*vdec_pool));
-	}
-}
-
-phys_addr_t secure_block_alloc(unsigned long size, unsigned long maxsize, unsigned long id)
-{
-	phys_addr_t paddr = 0;
-	int ret = 0;
-	u32 alignsize = 0;
+	struct secure_pool_info *pool = NULL;
+	phys_addr_t addr = 0;
 	struct block_node *block = NULL;
-	struct secure_pool_info *vdec_pool;
-	u32 index = 0;
-	u32 freesize = 0;
-	u32 subpool_size = 0;
-	u32 forcedebug = 1;
 
-	mutex_lock(&g_dmabuf_mutex);
-	pr_enter();
-	if (!g_vdec_info.used)
-		goto error_alloc;
-	alignsize = secure_align_up2n(size, SECURE_MM_BLOCK_ALIGNED_2N);
-	if (secure_heap_version == SECURE_HEAP_DEFAULT_VERSION)
-		alignsize += SECURE_MM_BLOCK_PADDING_SIZE;
-	if (secure_heap_version <= SECURE_HEAP_SUPPORT_DELAY_ALLOC_VERSION) {
-		if (!g_vdec_info.vdec_pool[index].pool) {
-			subpool_size = secure_pool_free_size(g_vdec_info.pool);
-			vdec_pool = secure_subpool_init(subpool_size, &index, 0);
-			if (!vdec_pool) {
-				pr_inf("init subpool failed\n");
-				goto error_alloc;
-			}
-		}
-		vdec_pool = &g_vdec_info.vdec_pool[index];
-	} else {
-		index = SECURE_MAX_VDEC_POOL_NUM;
-		if (id > 0)
-			index = secure_get_vdec_pool_by_instance(id);
-		if (index >= SECURE_MAX_VDEC_POOL_NUM)
-			index = secure_get_subpoolindex_by_framesize(maxsize, 1);
-		if (index >= SECURE_MAX_VDEC_POOL_NUM) {
-			freesize = secure_pool_free_size(g_vdec_info.pool);
-			subpool_size = secure_get_subpoolsize_by_framesize(maxsize);
-			if (subpool_size > freesize)
-				subpool_size = freesize;
-			vdec_pool = secure_subpool_init(subpool_size, &index, maxsize);
-			if (!vdec_pool) {
-				pr_inf("init subpool %d failed\n", index);
-				goto error_alloc;
-			}
-		}
-		vdec_pool = &g_vdec_info.vdec_pool[index];
-	}
-	paddr = secure_pool_alloc(vdec_pool->pool, alignsize);
-	if (paddr > 0) {
-		ret = tee_check_in_mem(paddr, alignsize);
-		if (ret)
-			pr_error("Secmem checkin err %x\n", ret);
-		if (dmabuf_manage_debug >= 6) {
+	mutex_lock(&g_secure_pool_mutex);
+	pool = dmabuf_manage_get_secure_vdec_pool(id_high, id_low);
+	if (pool) {
+		addr = gen_pool_alloc(pool->gen_pool, size);
+		if (addr) {
 			block = kzalloc(sizeof(*block), GFP_KERNEL);
-			if (!block)
-				goto error_alloc;
-			block->paddr = paddr;
-			block->size = alignsize;
-			block->index = index;
-			list_add_tail(&block->list, &block_list);
-			if (ret)
-				block->flag = SECURE_BLOCK_CHECKIN_ERROR;
-		}
-	} else {
-		pr_error("Alloc block %d %d failed\n", alignsize, index);
-		goto error_alloc;
-	}
-	vdec_pool->block_num++;
-	forcedebug = 0;
-error_alloc:
-	dmabuf_manage_dump_vdec_info(forcedebug);
-	mutex_unlock(&g_dmabuf_mutex);
-	return paddr;
-}
-
-unsigned long secure_block_free(phys_addr_t addr, unsigned long size)
-{
-	int ret = -1;
-	u32 alignsize = 0;
-	struct block_node *block = NULL;
-	struct list_head *pos, *tmp;
-	u32 index = 0;
-	struct secure_pool_info *vdec_pool;
-	u32 forcedebug = 1;
-
-	mutex_lock(&g_dmabuf_mutex);
-	pr_enter();
-	if (!g_vdec_info.used)
-		goto error_free;
-	alignsize = secure_align_up2n(size, SECURE_MM_BLOCK_ALIGNED_2N);
-	if (secure_heap_version == SECURE_HEAP_DEFAULT_VERSION)
-		alignsize += SECURE_MM_BLOCK_PADDING_SIZE;
-	index = secure_get_vdec_pool_by_paddr(addr);
-	if (index >= SECURE_MAX_VDEC_POOL_NUM)
-		goto error_free;
-	vdec_pool = &g_vdec_info.vdec_pool[index];
-	secure_pool_free(vdec_pool->pool, addr, alignsize);
-	ret = tee_check_out_mem(addr, alignsize);
-	if (ret) {
-		pr_inf("Secmem checkout err %x\n", ret);
-		ret = 0;
-	}
-	if (dmabuf_manage_debug >= 6) {
-		list_for_each_safe(pos, tmp, &block_list) {
-			block = list_entry(pos, struct block_node, list);
-			if (block->size == alignsize && block->paddr == addr) {
-				list_del(&block->list);
-				kfree(block);
-			}
-		}
-	}
-	vdec_pool->block_num--;
-	if (vdec_pool->block_num == 0)
-		secure_subpool_destroy(vdec_pool);
-	forcedebug = 0;
-error_free:
-	dmabuf_manage_dump_vdec_info(forcedebug);
-	mutex_unlock(&g_dmabuf_mutex);
-	return ret;
-}
-
-unsigned int dmabuf_manage_get_can_alloc_blocknum(unsigned long id,
-	unsigned long maxsize, unsigned long predictedsize, unsigned long addr)
-{
-	u32 num = 0;
-	phys_addr_t *paddr = NULL;
-	struct secure_pool_info *vdec_pool = NULL;
-	u32 index = 0;
-	u32 i = 0;
-	unsigned long alignsize = secure_align_up2n(predictedsize, SECURE_MM_BLOCK_ALIGNED_2N);
-
-	paddr = kcalloc(secure_pool_def_block_num, sizeof(phys_addr_t), GFP_KERNEL);
-	if (!paddr)
-		goto error_alloc_object;
-	mutex_lock(&g_dmabuf_mutex);
-	pr_enter();
-	if (g_vdec_info.used && id > 0 && predictedsize > 0) {
-		index = secure_get_vdec_pool_by_instance(id);
-		if (index >= SECURE_MAX_VDEC_POOL_NUM)
-			index = secure_get_vdec_pool_by_paddr(addr);
-		if (index < SECURE_MAX_VDEC_POOL_NUM) {
-			vdec_pool = &g_vdec_info.vdec_pool[index];
-			for (i = 0; i < secure_pool_def_block_num; i++, num++) {
-				paddr[i] = secure_pool_alloc(vdec_pool->pool, alignsize);
-				if (paddr[i] <= 0)
-					break;
-			}
-			for (i = 0; i < num; i++)
-				secure_pool_free(vdec_pool->pool, paddr[i], alignsize);
-			if (!vdec_pool->bind) {
-				vdec_pool->instance = id;
-				vdec_pool->bind = 1;
+			if (block) {
+				block->addr = addr;
+				block->size = size;
+				list_add_tail(&block->node, &pool->block_node);
+			} else {
+				pr_error("No Memory for secure block\n");
 			}
 		} else {
-			num = secure_get_subpoolsize_by_framesize(maxsize) / predictedsize;
+			dmabuf_manage_dump_secure_pool(pool);
 		}
+	} else {
+		pr_error("Can't found pool for %d %d\n", id_high, id_low);
 	}
-	mutex_unlock(&g_dmabuf_mutex);
-	kfree(paddr);
-error_alloc_object:
-	return num;
+
+	mutex_unlock(&g_secure_pool_mutex);
+	return addr;
 }
 
-unsigned int dmabuf_manage_get_allocated_blocknum(unsigned long id)
+int dmabuf_manage_secure_block_free(u32 id_high, u32 id_low, u32 release,
+	phys_addr_t addr, u32 size)
 {
-	u32 num = 0;
-	struct secure_pool_info *vdec_pool;
-	u32 index = 0;
+	struct secure_pool_info *pool = NULL;
+	struct list_head *pos = NULL;
+	struct list_head *tmp = NULL;
+	struct block_node *block = NULL;
 
-	mutex_lock(&g_dmabuf_mutex);
-	pr_enter();
-	if (g_vdec_info.used && id > 0) {
-		index = secure_get_vdec_pool_by_instance(id);
-		if (index < SECURE_MAX_VDEC_POOL_NUM) {
-			vdec_pool = &g_vdec_info.vdec_pool[index];
-			num = vdec_pool->block_num;
+	mutex_lock(&g_secure_pool_mutex);
+	pool = dmabuf_manage_get_secure_vdec_pool(id_high, id_low);
+
+	if (pool) {
+		if (addr && size > 0) {
+			gen_pool_free(pool->gen_pool, addr, size);
+
+			if (!list_empty(&pool->block_node)) {
+				list_for_each_safe(pos, tmp, &pool->block_node) {
+					block = list_entry(pos, struct block_node, node);
+					if (block && block->addr == addr && block->size == size) {
+						list_del(&block->node);
+						kfree(block);
+					}
+				}
+			}
 		}
+
+		if (release)
+			dmabuf_manage_destroy_secure_pool(pool);
 	}
-	mutex_unlock(&g_dmabuf_mutex);
-	return num;
+
+	mutex_unlock(&g_secure_pool_mutex);
+	return 0;
 }
 
-unsigned int dmabuf_manage_get_secure_heap_version(void)
+int dmabuf_manage_get_secure_heap_version(void)
 {
-	u32 version = 0;
-
-	pr_enter();
-	if (secure_heap_version < SECURE_HEAP_DEFAULT_VERSION ||
-		secure_heap_version >= SECURE_HEAP_MAX_VERSION)
-		version = SECURE_HEAP_DEFAULT_VERSION;
-	else
-		version = secure_heap_version;
-	pr_inf("version %d\n", version);
-	return version;
+	return secure_heap_version;
 }
 
 static int dmabuf_manage_open(struct inode *inodep, struct file *filep)
@@ -1337,8 +1279,8 @@ static long dmabuf_manage_ioctl(struct file *filep, unsigned int cmd,
 	case DMABUF_MANAGE_IMPORT_DMA:
 		ret = dmabuf_manage_import(args);
 		break;
-	case DMABUF_MANAGE_SET_VDEC_INFO:
-		ret = secure_block_pool_init();
+	case DMABUF_MANAGE_REGISTER_CHANNEL:
+		ret = dmabuf_manage_register_channel(args);
 		break;
 	case DMABUF_MANAGE_VERSION:
 		ret = AML_DMA_BUF_MANAGER_VERSION;
@@ -1388,9 +1330,20 @@ const struct file_operations fops = {
 static ssize_t dmabuf_manage_dump_show(struct class *class,
 				  struct class_attribute *attr, char *buf)
 {
-	mutex_lock(&g_dmabuf_mutex);
-	dmabuf_manage_dump_vdec_info(1);
-	mutex_unlock(&g_dmabuf_mutex);
+	struct list_head *pos = NULL;
+	struct list_head *tmp = NULL;
+	struct secure_pool_info *pool = NULL;
+
+	mutex_lock(&g_secure_pool_mutex);
+
+	if (!list_empty(&pool_list) && dmabuf_manage_debug >= 6) {
+		list_for_each_safe(pos, tmp, &pool_list) {
+			pool = list_entry(pos, struct secure_pool_info, node);
+				dmabuf_manage_dump_secure_pool(pool);
+		}
+	}
+
+	mutex_unlock(&g_secure_pool_mutex);
 	return 0;
 }
 
@@ -1411,22 +1364,18 @@ static ssize_t dmabuf_manage_config_store(struct class *class,
 	int ret;
 
 	ret = configs_set_prefix_path_valonpath(CONFIG_PREFIX, buf);
-	if (ret < 0) {
+	if (ret < 0)
 		pr_err("set config failed %s\n", buf);
-	} else {
-		if (buf && strstr(buf, "secure_vdec_def_size_bytes"))
-			secure_block_pool_init();
-	}
+
 	return size;
 }
 
 static struct mconfig dmabuf_manage_configs[] = {
 	MC_PI32("secure_vdec_def_size_bytes", &secure_vdec_def_size_bytes),
-	MC_PI32("secure_es_def_size", &secure_es_def_size),
-	MC_PI32("secure_pool_def_block_num", &secure_pool_def_block_num),
-	MC_PI32("secure_pool_def_size", &secure_pool_def_size),
-	MC_PI32("secure_pool_4k_size", &secure_pool_4k_size),
-	MC_PI32("secure_block_align_2n", &secure_block_align_2n),
+	MC_PI32("secure_hd_pool_size_mb", &secure_hd_pool_size_mb),
+	MC_PI32("secure_uhd_pool_size_mb", &secure_uhd_pool_size_mb),
+	MC_PI32("secure_fuhd_pool_size_mb", &secure_fuhd_pool_size_mb),
+	MC_PI32("secure_pool_max_block_count", &secure_pool_max_block_count),
 	MC_PI32("secure_heap_version", &secure_heap_version)
 };
 
@@ -1471,6 +1420,7 @@ int __init dmabuf_manage_init(void)
 	}
 	REG_PATH_CONFIGS(CONFIG_PATH, dmabuf_manage_configs);
 	INIT_LIST_HEAD(&dmx_filter_list);
+	INIT_LIST_HEAD(&pool_list);
 	pr_dbg("init done\n");
 	return 0;
 error_create:

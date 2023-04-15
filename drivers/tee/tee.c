@@ -178,6 +178,7 @@ static int tee_pta_invoke_cmd(uuid_t uuid, u32 cmd, struct tee_param *param)
 	if (ret < 0 || sess_arg.ret != TEEC_SUCCESS) {
 		pr_err("%s open session failed, cmd = %u, ret = %d, res = 0x%x, origin = 0x%x\n",
 				__func__, cmd, ret, sess_arg.ret, sess_arg.ret_origin);
+		ret = sess_arg.ret;
 		goto out_ctx;
 	}
 
@@ -189,6 +190,7 @@ static int tee_pta_invoke_cmd(uuid_t uuid, u32 cmd, struct tee_param *param)
 	if (ret < 0 || inv_arg.ret != TEEC_SUCCESS) {
 		pr_err("%s invoke func failed, cmd = %u, ret= %d, res = 0x%x, origin = 0x%x\n",
 				__func__, cmd, ret, inv_arg.ret, inv_arg.ret_origin);
+		ret = inv_arg.ret;
 	}
 
 	tee_client_close_session(ctx, sess_arg.session);

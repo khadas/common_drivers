@@ -19,6 +19,7 @@ enum dmabuf_manage_type {
 	DMA_BUF_TYPE_DMX_ES,
 	DMA_BUF_TYPE_DMABUF,
 	DMA_BUF_TYPE_VIDEODEC_ES,
+	DMA_BUF_TYPE_SECURE_VDEC,
 	DMA_BUF_TYPE_MAX
 };
 
@@ -87,17 +88,24 @@ struct dmabuf_manage_block {
 	void *priv;
 };
 
-#define SECURE_HEAP_DEFAULT_VERSION			1
-#define SECURE_HEAP_SUPPORT_DELAY_ALLOC_VERSION		2
-#define SECURE_HEAP_SUPPORT_MULTI_POOL_VERSION		3
-#define SECURE_HEAP_MAX_VERSION				4
+struct secure_vdec_channel {
+	__u32 id_high;
+	__u32 id_low;
+};
 
-phys_addr_t secure_block_alloc(unsigned long size, unsigned long maxsize, unsigned long id);
-unsigned long secure_block_free(phys_addr_t addr, unsigned long size);
-unsigned int dmabuf_manage_get_can_alloc_blocknum(unsigned long id, unsigned long maxsize,
-	unsigned long predictedsize, unsigned long paddr);
-unsigned int dmabuf_manage_get_allocated_blocknum(unsigned long id);
-unsigned int dmabuf_manage_get_secure_heap_version(void);
+#define SECURE_HEAP_DEFAULT_VERSION				1
+#define SECURE_HEAP_DYNAMIC_ALLOC_VERSION		2
+#define SECURE_HEAP_MAX_VERSION					3
+
+int dmabuf_manage_secure_pool_create(u32 id_high, u32 id_low, u32 block_size,
+	u32 *pool_addr, u32 *pool_size, u32 version);
+int dmabuf_manage_secure_pool_status(u32 id_high, u32 id_low, u32 frame_size,
+	u32 *block_count, u32 *block_free_slot);
+phys_addr_t dmabuf_manage_secure_block_alloc(u32 id_high, u32 id_low, u32 size);
+int dmabuf_manage_secure_block_free(u32 id_high, u32 id_low, u32 release,
+	phys_addr_t addr, u32 size);
+int dmabuf_manage_get_secure_heap_version(void);
+
 unsigned int dmabuf_manage_get_type(struct dma_buf *dbuf);
 void *dmabuf_manage_get_info(struct dma_buf *dbuf, unsigned int type);
 
@@ -107,8 +115,7 @@ void *dmabuf_manage_get_info(struct dma_buf *dbuf, unsigned int type);
 #define DMABUF_MANAGE_GET_HANDLE		_IOWR(DMABUF_MANAGE_IOC_MAGIC, 2, int)
 #define DMABUF_MANAGE_GET_PHYADDR		_IOWR(DMABUF_MANAGE_IOC_MAGIC, 3, int)
 #define DMABUF_MANAGE_IMPORT_DMA		_IOWR(DMABUF_MANAGE_IOC_MAGIC, 4, int)
-#define DMABUF_MANAGE_SET_VDEC_INFO		_IOWR(DMABUF_MANAGE_IOC_MAGIC, 5, int)
-#define DMABUF_MANAGE_CLEAR_VDEC_INFO	_IOWR(DMABUF_MANAGE_IOC_MAGIC, 6, int)
+#define DMABUF_MANAGE_REGISTER_CHANNEL	_IOWR(DMABUF_MANAGE_IOC_MAGIC, 5, int)
 
 #define DMABUF_MANAGE_VERSION			_IOWR(DMABUF_MANAGE_IOC_MAGIC, 1000, int)
 #define DMABUF_MANAGE_EXPORT_DMABUF		_IOWR(DMABUF_MANAGE_IOC_MAGIC, 1001, int)

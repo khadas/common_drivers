@@ -1566,7 +1566,7 @@
 };
 
 &uart_A {
-	status = "disable";
+	status = "okay";
 };
 
 &pcie_A {

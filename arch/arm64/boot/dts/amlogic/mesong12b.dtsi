@@ -1029,10 +1029,10 @@
 		reg = <0x0 0xffd24000 0x0 0x18>;
 		interrupts = <0 26 1>;
 		status = "disabled";
-		//clocks = <&xtal
-		//	&clkc CLKID_UART0>;
-		//clock-names = "clk_uart",
-		//	"clk_gate";
+		clocks = <&xtal
+			&clkc CLKID_UART0>;
+		clock-names = "clk_uart",
+			"clk_gate";
 		fifosize = < 128 >;
 		pinctrl-names = "default";
 		pinctrl-0 = <&a_uart_pins>;

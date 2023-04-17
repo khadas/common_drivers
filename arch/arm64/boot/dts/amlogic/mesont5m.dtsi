@@ -856,7 +856,7 @@
 			};
 
 			spicc0: spi@50000 {
-				compatible = "amlogic,meson-g12-spicc";
+				compatible = "amlogic,meson-s5-spicc";
 				reg = <0x0 0x50000 0x0 0x58>;
 				interrupts = <GIC_SPI 183 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clkc CLKID_SYS_CLK_SPICC0>,
@@ -869,7 +869,7 @@
 			};
 
 			spicc1: spi@52000 {
-				compatible = "amlogic,meson-g12-spicc";
+				compatible = "amlogic,meson-s5-spicc";
 				reg = <0x0 0x52000 0x0 0x58>;
 				interrupts = <GIC_SPI 184 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clkc CLKID_SYS_CLK_SPICC1>,
@@ -882,7 +882,7 @@
 			};
 
 			spicc2: spi@54000 {
-				compatible = "amlogic,meson-g12-spicc";
+				compatible = "amlogic,meson-s5-spicc";
 				reg = <0x0 0x54000 0x0 0x58>;
 				interrupts = <GIC_SPI 167 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clkc CLKID_SYS_CLK_SPICC2>,

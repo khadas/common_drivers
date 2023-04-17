@@ -1409,7 +1409,6 @@ static struct clk *meson_spicc_clk_get(struct meson_spicc_device *spicc)
 	return clk;
 }
 
-#ifdef CONFIG_PM_SLEEP
 /* The clk data rate setting is handled by clk core. We have to save/restore
  * it when system suspend/resume.
  */
@@ -1432,7 +1431,6 @@ static void meson_spicc_hw_clk_restore(struct meson_spicc_device *spicc)
 	writel_bits_relaxed(SPICC_DELAY_MASK, spicc->backup_test,
 			    spicc->base + SPICC_TESTREG);
 }
-#endif
 #endif
 
 static int meson_spicc_probe(struct platform_device *pdev)
@@ -1681,6 +1679,7 @@ static int meson_spicc_resume(struct device *dev)
 }
 #endif /* CONFIG_PM_SLEEP */
 
+#ifdef CONFIG_PM
 static int meson_spicc_runtime_suspend(struct device *dev)
 {
 	struct meson_spicc_device *spicc = dev_get_drvdata(dev);
@@ -1701,6 +1700,7 @@ static int meson_spicc_runtime_resume(struct device *dev)
 
 	return meson_spicc_clk_enable(spicc);
 }
+#endif
 
 static const struct dev_pm_ops meson_spicc_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(meson_spicc_suspend, meson_spicc_resume)
@@ -1727,11 +1727,6 @@ static struct meson_spicc_data meson_spicc_g12_data __initdata = {
 	.has_linear_div = true,
 	.has_oen = true,
 	.has_async_clk = true,
-	.is_div_parent_async_clk = true,
-	.has_word_mode_ctrl = true,
-	.has_endian_ctrl = true,
-	.has_enh_intr = true,
-	.support_dma_burst_len_1 = true,
 };
 
 static struct meson_spicc_data meson_spicc_s5_data __initdata = {

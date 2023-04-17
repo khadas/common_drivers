@@ -113,5 +113,8 @@ int get_chip_type(void);
 void frc_set_h2v2(u32 enable);
 void frc_set_mcdw_buffer_ratio(u32 ratio);
 void frc_memc_120hz_patch(struct frc_dev_s *frc_devp);
+void frc_memc_120hz_patch_1(struct frc_dev_s *frc_devp);
+void frc_memc_120hz_patch_2(struct frc_dev_s *frc_devp);
+void frc_memc_120hz_patch_3(struct frc_dev_s *frc_devp);
 
 #endif

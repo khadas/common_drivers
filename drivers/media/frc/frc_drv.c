@@ -781,7 +781,8 @@ int frc_vd_notify_callback(struct notifier_block *block, unsigned long cmd, void
 			devp->probe_ok && !devp->in_sts.frc_seamless_en) {
 			set_frc_enable(false);
 			set_frc_bypass(true);
-			frc_change_to_state(FRC_STATE_DISABLE);
+			// frc_change_to_state(FRC_STATE_DISABLE);
+			frc_change_to_state(FRC_STATE_BYPASS);
 			frc_state_change_finish(devp);
 			if (devp->frc_sts.frame_cnt != 0) {
 				devp->frc_sts.frame_cnt = 0;
@@ -1218,7 +1219,7 @@ static int frc_probe(struct platform_device *pdev)
 // #endif
 	INIT_WORK(&frc_devp->frc_clk_work, frc_clock_workaround);
 	frc_devp->clk_chg = 1;
-	frc_set_enter_forcefilm(frc_devp, 1);
+	frc_set_enter_forcefilm(frc_devp, 0);
 
 	frc_devp->probe_ok = true;
 	frc_devp->power_off_flag = false;

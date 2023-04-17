@@ -481,11 +481,8 @@ struct frc_ud_s {
 
 	unsigned inud_time_en:1;
 	unsigned outud_time_en:1;
-	unsigned res1_time_en:2;
-	unsigned res2_time_en:1;
-	unsigned res3_time_en:1;
-	unsigned res4_time_en:1;
-	unsigned res5_time_en:1;
+	unsigned res1_time_en:1;
+	unsigned res2_time_en:5;
 
 	unsigned mc_undone_err:1;
 	unsigned me_undone_err:1;

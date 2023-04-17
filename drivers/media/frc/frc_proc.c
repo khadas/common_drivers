@@ -94,6 +94,7 @@ void frc_hw_initial(struct frc_dev_s *devp)
 	frc_mtx_set(devp);
 	frc_top_init(devp);
 	frc_input_size_align_check(devp);
+	frc_memc_120hz_patch_1(devp);
 	return;
 }
 
@@ -112,7 +113,7 @@ void frc_in_reg_monitor(struct frc_dev_s *devp)
 				return;
 			}
 			devp->dbg_buf_len++;
-			pr_info("ivs:%d 0x%x=0x%08x\n", devp->out_sts.vs_cnt,
+			pr_info("ivs:%d 0x%x=0x%08x\n", devp->in_sts.vs_cnt,
 				reg, READ_FRC_REG(reg));
 		}
 	}
@@ -271,7 +272,6 @@ irqreturn_t frc_output_isr(int irq, void *dev_id)
 
 	if (devp->dbg_reg_monitor_o)
 		frc_out_reg_monitor(devp);
-
 	tasklet_schedule(&devp->output_tasklet);
 
 	// frc_rdma->rdma_item_count = 0;
@@ -642,7 +642,8 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 	/* even attach , mode change */
 	if (devp->frc_sts.auto_ctrl && sts_change) {
 		if (sts_change & FRC_EVENT_VF_CHG_TO_NO)
-			frc_change_to_state(FRC_STATE_DISABLE);
+			// frc_change_to_state(FRC_STATE_DISABLE);
+			frc_change_to_state(FRC_STATE_BYPASS);
 		else if (sts_change & FRC_EVENT_VF_CHG_TO_HAVE)
 			frc_change_to_state(FRC_STATE_ENABLE);
 	}
@@ -1251,18 +1252,24 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 	static u8 off2on_cnt;
 	u8 frc_input_fid = 0;
 	u32 read0x60 = 0;
+	u8 chg_flag = 0;
 	u32 log = 1;
 
 	cur_state = devp->frc_sts.state;
 	new_state = devp->frc_sts.new_state;
 	frame_cnt = devp->frc_sts.frame_cnt;
+	chg_flag = devp->ud_dbg.res2_time_en;
 	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
 	if (cur_state != new_state) {
 		state_changed = 1;
 		pr_frc(log, "stat_chg(%d->%d), frm_cnt:%d\n", cur_state,
 			new_state, frame_cnt);
+		if (chg_flag < 0x1F && frame_cnt < 20)
+			pr_frc(log, "read frm:%d, reg_0x102:0x%08X, reg_0x113:0x%08X\n",
+				frame_cnt,
+				READ_FRC_REG(FRC_REG_PAT_POINTER),
+				READ_FRC_REG(FRC_REG_OUT_FID));
 	}
-
 	switch (cur_state) {
 	case FRC_STATE_DISABLE:
 	if (state_changed) {
@@ -1303,47 +1310,37 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					set_frc_enable(ON);
 					pr_frc(log, "frc_bypass_cnt:%d,freeze_cnt:%d\n",
 							bypasscnt, freezecnt);
-					pr_frc(log, "start frm:%d, bufidx:0x%X\n",
-							devp->frc_sts.frame_cnt,
-							READ_FRC_REG(FRC_REG_PAT_POINTER));
 					devp->frc_sts.frame_cnt++;
 				}
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt < bypasscnt + 1) {
-				pr_frc(log, "start frm:%d, bufidx:0x%X\n",
-						devp->frc_sts.frame_cnt,
-						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == bypasscnt + 1) {
-				pr_frc(log, "frm:%d, bufidx:0x%X, will force\n",
-					devp->frc_sts.frame_cnt,
-					READ_FRC_REG(FRC_REG_PAT_POINTER));
 				forceidx = frc_frame_forcebuf_enable(1);
 				frc_frame_forcebuf_count(forceidx);
-				pr_frc(log, "d-e_freeze idx:%d, frm:%d\n",
-					forceidx, devp->frc_sts.frame_cnt);
+				if (chg_flag == 0)
+					frc_memc_120hz_patch_2(devp);
+				pr_frc(log, "d-e_freeze idx:%d, frm:%d, chg:%d\n",
+					forceidx, devp->frc_sts.frame_cnt, chg_flag);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt > bypasscnt + 1 &&
 						devp->frc_sts.frame_cnt <
 						freezecnt + bypasscnt + 1) {
-				pr_frc(log, "frm:%d, bufidx:0x%X\n",
-					devp->frc_sts.frame_cnt,
-					READ_FRC_REG(FRC_REG_PAT_POINTER));
 				frc_frame_forcebuf_count(forceidx);
+				if (devp->frc_sts.frame_cnt == chg_flag + bypasscnt + 1)
+					frc_memc_120hz_patch_2(devp);
 				frc_input_fid =
 				READ_FRC_REG(FRC_REG_PAT_POINTER) >> 4 & 0xF;
-				pr_frc(log, "d-e_freezing readidx:%d, frm:%d\n",
-					frc_input_fid, devp->frc_sts.frame_cnt);
+				pr_frc(log, "d-e_freezing readidx:%d, frm:%d, chg:%d\n",
+					frc_input_fid, devp->frc_sts.frame_cnt, chg_flag);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt ==
 						freezecnt + bypasscnt + 1) {
-				pr_frc(log, "frm:%d, bufidx:0x%X\n",
-					devp->frc_sts.frame_cnt,
-					READ_FRC_REG(FRC_REG_PAT_POINTER));
 				frc_frame_forcebuf_enable(0);
+				frc_memc_120hz_patch_3(devp);
 				pr_frc(log, "d-e_freezed to open, frm:%d\n",
 					devp->frc_sts.frame_cnt);
 				// frc_state_change_finish(devp);
@@ -1363,9 +1360,6 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				pr_frc(log, "d-e_detecting film[%d], frm: %d\n",
 						frc_check_film_mode(devp),
 						devp->frc_sts.frame_cnt);
-				pr_frc(log, "frm:%d, bufidx:0x%X\n",
-					devp->frc_sts.frame_cnt,
-					READ_FRC_REG(FRC_REG_PAT_POINTER));
 				off2on_cnt++;
 				devp->frc_sts.frame_cnt++;
 			}
@@ -1464,48 +1458,39 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				set_frc_enable(ON);
 				pr_frc(log, "frc_bypass_cnt:%d,freeze_cnt:%d",
 						bypasscnt, freezecnt);
-				pr_frc(log, "start frm:%d, bufidx:0x%X\n",
-						devp->frc_sts.frame_cnt,
-						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt < bypasscnt + 2) {
 				pr_frc(log, "b-e_bypassing frm:%d\n",
 					devp->frc_sts.frame_cnt);
-				pr_frc(log, "frm:%d, chk bufidx:0x%X\n",
-						devp->frc_sts.frame_cnt,
-						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt == bypasscnt + 2) {
-				pr_frc(log, "frm:%d, chk bufidx:0x%X\n",
-						devp->frc_sts.frame_cnt,
-						READ_FRC_REG(FRC_REG_PAT_POINTER));
+				// frc_memc_120hz_patch_3(devp);
 				forceidx = frc_frame_forcebuf_enable(1);
 				frc_frame_forcebuf_count(forceidx);
-				pr_frc(log, "b-e_freeze start, rd_idx:%d, frm:%d\n",
-					forceidx, devp->frc_sts.frame_cnt);
+				if (chg_flag == 0)
+					frc_memc_120hz_patch_2(devp);
+				pr_frc(log, "b-e_freeze start, rd_idx:%d, frm:%d, chg:%d\n",
+					forceidx, devp->frc_sts.frame_cnt, chg_flag);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt > bypasscnt + 2 &&
 					devp->frc_sts.frame_cnt <
 					 bypasscnt + freezecnt + 2) {
-				pr_frc(log, "frm:%d, chk bufidx:0x%X\n",
-						devp->frc_sts.frame_cnt,
-						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				frc_frame_forcebuf_count(forceidx);
+				if (devp->frc_sts.frame_cnt == chg_flag + bypasscnt + 2)
+					frc_memc_120hz_patch_2(devp);
 				frc_input_fid =
 				READ_FRC_REG(FRC_REG_PAT_POINTER) >> 4 & 0xF;
-				pr_frc(log, "b-e_freezing readidx %d, frm: %d\n",
-					frc_input_fid, devp->frc_sts.frame_cnt);
+				pr_frc(log, "b-e_freezing readidx %d, frm: %d, chg:%d\n",
+					frc_input_fid, devp->frc_sts.frame_cnt, chg_flag);
 				devp->frc_sts.frame_cnt++;
 				off2on_cnt++;
 			} else if (devp->frc_sts.frame_cnt ==
 					bypasscnt + freezecnt + 2) {
-				pr_frc(log, "frm:%d, chk bufidx:0x%X\n",
-						devp->frc_sts.frame_cnt,
-						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				frc_frame_forcebuf_enable(0);
+				frc_memc_120hz_patch_3(devp);
 				pr_frc(log, "b-e_freezed to open, frm:%d\n",
 					devp->frc_sts.frame_cnt);
 				// frc_state_change_finish(devp);
@@ -1522,9 +1507,6 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 				off2on_cnt = 0;
 			} else if (devp->frc_sts.frame_cnt > bypasscnt + freezecnt + 2 &&
 					  (frc_check_film_mode(devp) == 0)) {
-				pr_frc(log, "frm:%d, chk bufidx:0x%X\n",
-						devp->frc_sts.frame_cnt,
-						READ_FRC_REG(FRC_REG_PAT_POINTER));
 				pr_frc(log, "b-e_detecting film[%d], frm: %d\n",
 						frc_check_film_mode(devp),
 						devp->frc_sts.frame_cnt);

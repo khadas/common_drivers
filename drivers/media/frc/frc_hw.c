@@ -936,16 +936,20 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
 
-	me_hold_line = fw_data->holdline_parm.me_hold_line;
-	mc_hold_line = fw_data->holdline_parm.mc_hold_line;
-	inp_hold_line = fw_data->holdline_parm.inp_hold_line;
+	regdata_outholdctl_0003 = READ_FRC_REG(FRC_OUT_HOLD_CTRL);
+	regdata_inpholdctl_0002 = READ_FRC_REG(FRC_INP_HOLD_CTRL);
+
+	me_hold_line = regdata_outholdctl_0003 & 0xff;
+	mc_hold_line = (regdata_outholdctl_0003 >> 8) & 0xff;
+	inp_hold_line = regdata_inpholdctl_0002 & 0x1fff;
+
 	reg_post_dly_vofst = fw_data->holdline_parm.reg_post_dly_vofst;
 	reg_mc_dly_vofst0 = fw_data->holdline_parm.reg_mc_dly_vofst0;
 	chip = get_chip_type();
 
 	tmpvalue = READ_FRC_REG(FRC_REG_TOP_RESERVE0);
 	if ((tmpvalue & 0xFF) == 0)
-		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x14, 0, 8);
+		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x17, 0, 8);
 	frc_input_init(frc_devp, frc_top);
 	config_phs_lut(frc_top->frc_ratio_mode, frc_top->film_mode);
 	config_phs_regs(frc_top->frc_ratio_mode, frc_top->film_mode);
@@ -1142,7 +1146,7 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	pr_frc(log, "reg_mc_dly_vofst1 = %d\n", reg_mc_dly_vofst1);
 	pr_frc(log, "frc_ratio_mode = %d\n", frc_top->frc_ratio_mode);
 	pr_frc(log, "frc_fb_num = %d\n", frc_top->frc_fb_num);
-
+/*
 	regdata_outholdctl_0003 = READ_FRC_REG(FRC_OUT_HOLD_CTRL);
 	regdata_inpholdctl_0002 = READ_FRC_REG(FRC_INP_HOLD_CTRL);
 	frc_config_reg_value(me_hold_line, 0xff, &regdata_outholdctl_0003);
@@ -1154,8 +1158,8 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	// sys_fw_param_frc_init(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
 	// init_bb_xyxy(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
 
-	/*protect mode, enable: memc delay 2 frame*/
-	/*disable: memc delay n frame, n depend on cadence, for debug*/
+	// protect mode, enable: memc delay 2 frame
+	// disable: memc delay n frame, n depend on cadence, for debug
 	if (frc_top->frc_prot_mode) {
 		regdata_top_ctl_0009 = READ_FRC_REG(FRC_REG_TOP_CTRL9);
 		regdata_top_ctl_0011 = READ_FRC_REG(FRC_REG_TOP_CTRL17);
@@ -1167,7 +1171,7 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	} else {
 		WRITE_FRC_REG_BY_CPU(FRC_MODE_OPT, 0x0); // clear bit1/bit2
 	}
-
+*/
 }
 
 /*buffer number can dynamic kmalloc,  film_hwfw_sel ????*/
@@ -1526,6 +1530,7 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		input_n          = 1;
 		output_m         = 1;
 	}
+	regdata_top_ctl_0011 = READ_FRC_REG(FRC_REG_TOP_CTRL17);
 	frc_config_reg_value(0x08, 0x18, &regdata_top_ctl_0011); //lut_cfg_en
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL17, regdata_top_ctl_0011);
 	WRITE_FRC_REG_BY_CPU(FRC_TOP_LUT_ADDR, 0);
@@ -1687,9 +1692,9 @@ void config_phs_regs(enum frc_ratio_mode_type frc_ratio_mode,
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL19, (inp_frm_vld_lut >> 32) & 0xffffffff);
 	WRITE_FRC_REG_BY_CPU(FRC_REG_PD_PAT_NUM, reg_frc_pd_pat_num);
 
-	frc_config_reg_value(reg_out_frm_dly_num << 24,
-						0xF000000, &regdata_top_ctl_0009);
-	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL9, regdata_top_ctl_0009);
+	// frc_config_reg_value(reg_out_frm_dly_num << 24,
+	//					0xF000000, &regdata_top_ctl_0009);
+	// WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL9, regdata_top_ctl_0009);
 	regdata_loadorgframe[0] = READ_FRC_REG(FRC_REG_LOAD_ORG_FRAME_0);
 	regdata_loadorgframe[1] = READ_FRC_REG(FRC_REG_LOAD_ORG_FRAME_1);
 	regdata_loadorgframe[2] = READ_FRC_REG(FRC_REG_LOAD_ORG_FRAME_2);
@@ -2078,10 +2083,17 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 {
 	int i;
 	enum chip_id chip;
+	struct frc_fw_data_s *fw_data;
+	struct frc_top_type_s *frc_top;
+	u32 me_hold_line;//me_hold_line
+	u32 mc_hold_line;//mc_hold_line
+	u32 inp_hold_line;
+
+	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
+	frc_top = &fw_data->frc_top_type;
 
 	if (!frc_devp)
 		return;
-
 	//int mc_range_norm_lut[36] = {
 	//	-8, 8, -24, 24, -16, 16, -16, 16,
 	//	-24, 24, -8, 8, 0, 0, 0, 0,
@@ -2102,9 +2114,6 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	//	320, 384, 0, 0, 0, 0, 0, 0, 0, 0,
 	//	0, 0, 0, 0
 	//};
-
-	struct frc_fw_data_s *fw_data;
-	struct frc_top_type_s *frc_top;
 	chip = get_chip_type();
 	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
@@ -2131,8 +2140,37 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	frc_set_urgent_cfg(1, 3);
 	frc_set_urgent_cfg(2, 0);
 
-	// frc_inp_init(frc_top->frc_fb_num, frc_top->film_hwfw_sel);
+	me_hold_line = fw_data->holdline_parm.me_hold_line;
+	mc_hold_line = fw_data->holdline_parm.mc_hold_line;
+	inp_hold_line = fw_data->holdline_parm.inp_hold_line;
+
+	regdata_outholdctl_0003 = READ_FRC_REG(FRC_OUT_HOLD_CTRL);
+	regdata_inpholdctl_0002 = READ_FRC_REG(FRC_INP_HOLD_CTRL);
+	frc_config_reg_value(me_hold_line, 0xff, &regdata_outholdctl_0003);
+	frc_config_reg_value(mc_hold_line << 8, 0xff00, &regdata_outholdctl_0003);
+	WRITE_FRC_REG_BY_CPU(FRC_OUT_HOLD_CTRL, regdata_outholdctl_0003);
+	frc_config_reg_value(inp_hold_line, 0x1fff, &regdata_inpholdctl_0002);
+	WRITE_FRC_REG_BY_CPU(FRC_INP_HOLD_CTRL, regdata_inpholdctl_0002);
+
+	// sys_fw_param_frc_init(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
+	// init_bb_xyxy(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
+
+	// protect mode, enable: memc delay 2 frame
+	// disable: memc delay n frame, n depend on cadence, for debug
+	if (frc_devp->prot_mode) {
+		regdata_top_ctl_0009 = READ_FRC_REG(FRC_REG_TOP_CTRL9);
+		regdata_top_ctl_0011 = READ_FRC_REG(FRC_REG_TOP_CTRL17);
+		frc_config_reg_value(0x0, 0x0F000000, &regdata_top_ctl_0009);
+		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL9, regdata_top_ctl_0009); //dly_num =1
+		frc_config_reg_value(0x100, 0x100, &regdata_top_ctl_0011);
+		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL17, regdata_top_ctl_0011); //buf prot open
+		WRITE_FRC_REG_BY_CPU(FRC_MODE_OPT, 0x6); // set bit1/bit2
+	} else {
+		WRITE_FRC_REG_BY_CPU(FRC_MODE_OPT, 0x0); // clear bit1/bit2
+	}
+
 	frc_inp_init();
+	frc_devp->ud_dbg.res2_time_en = 0;
 	// config_phs_lut(frc_top->frc_ratio_mode, frc_top->film_mode);
 	// config_phs_regs(frc_top->frc_ratio_mode, frc_top->film_mode);
 	config_me_top_hw_reg();
@@ -2140,7 +2178,8 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	frc_cfg_memc_loss(frc_top->memc_loss_en & 0x3);
 	frc_cfg_mcdw_loss((frc_top->memc_loss_en >> 4) & 0x01);
 	// frc_set_h2v2(0);
-	frc_memc_120hz_patch(frc_devp);
+	// frc_memc_120hz_patch(frc_devp);
+	frc_memc_120hz_patch_1(frc_devp);
 
 	/*protect mode, enable: memc delay 2 frame*/
 	/*disable: memc delay n frame, n depend on cadence, for debug*/
@@ -2153,10 +2192,11 @@ u8 frc_frame_forcebuf_enable(u8 enable)
 	u8  ro_frc_input_fid = 0;//u4
 
 	if (enable == 1) {	//frc off->on
-		// ro_frc_input_fid = READ_FRC_REG(FRC_REG_PAT_POINTER) >> 4 & 0xF;
-		ro_frc_input_fid = (regdata_pat_pointer_0102 >> 4) & 0xF;
+		ro_frc_input_fid = READ_FRC_REG(FRC_REG_PAT_POINTER) >> 4 & 0xF;
+		// ro_frc_input_fid = (regdata_pat_pointer_0102 >> 4) & 0xF;
 		//force phase 0
 		// UPDATE_FRC_REG_BITS(FRC_REG_TOP_CTRL7, 0x9000000, 0x9000000);
+		regdata_top_ctl_0007 = READ_FRC_REG(FRC_REG_TOP_CTRL7);
 		frc_config_reg_value(0x9000000, 0x9000000, &regdata_top_ctl_0007);
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL8, 0);
@@ -2172,6 +2212,7 @@ void frc_frame_forcebuf_count(u8 forceidx)
 {
 	// UPDATE_FRC_REG_BITS(FRC_REG_TOP_CTRL7,
 	// (forceidx | forceidx << 4 | forceidx << 8), 0xFFF);//0-11bit
+	regdata_top_ctl_0007 = READ_FRC_REG(FRC_REG_TOP_CTRL7);
 	frc_config_reg_value((forceidx | forceidx << 4 | forceidx << 8),
 		0xFFF, &regdata_top_ctl_0007);
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
@@ -2593,3 +2634,161 @@ void frc_memc_120hz_patch(struct frc_dev_s *frc_devp)
 	pr_frc(1, "FRC_INP_PATH_OPT=0x%x\n",
 				READ_FRC_REG(FRC_INP_PATH_OPT));
 }
+
+void frc_memc_120hz_patch_1(struct frc_dev_s *frc_devp)
+{
+	enum chip_id chip;
+	struct frc_fw_data_s *fw_data;
+	struct frc_top_type_s *frc_top;
+	u32  tmp = 0;
+
+	if (!frc_devp)
+		return;
+
+	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
+	frc_top = &fw_data->frc_top_type;
+	chip = get_chip_type();
+
+	if (chip != ID_T3X)
+		return;
+
+	// h2v2 setting
+	tmp = READ_FRC_REG(FRC_MC_H2V2_SETTING);
+	tmp |= 0x7E000000;
+	tmp |= 0x01F80000;
+	WRITE_FRC_REG_BY_CPU(FRC_MC_H2V2_SETTING, tmp);
+
+	// hold mc chroma path
+	tmp = READ_FRC_REG(0x927);
+	tmp &= 0xFFFFFF8E;
+	tmp |= 0xFFFFFF7E;
+	WRITE_FRC_REG_BY_CPU(0x927, tmp);
+
+	// close opt for prefetch phase
+	tmp = READ_FRC_REG(FRC_INP_PATH_OPT);
+	tmp |= 0x1B;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_PATH_OPT, tmp);
+
+	// OUT_INT_OPT
+	tmp = READ_FRC_REG(FRC_REG_MODE_OPT);
+	tmp |= 0x20;
+	WRITE_FRC_REG_BY_CPU(FRC_REG_MODE_OPT, tmp);
+
+	// mcdw
+	tmp = READ_FRC_REG(FRC_INP_MCDW_CTRL);
+	tmp |= BIT_28 + BIT_4 + BIT_0 + BIT_25 + BIT_24;
+	// tmp &= 0xFEFFFFFF;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, tmp);
+
+	tmp = READ_FRC_REG(FRC_MCDW_PATH_CTRL);
+	tmp |= BIT_4 + BIT_1 + BIT_0;
+	// tmp &= 0xFFFFFFFE;
+	WRITE_FRC_REG_BY_CPU(FRC_MCDW_PATH_CTRL, tmp);
+
+	tmp = READ_FRC_REG(FRC_BYP_PATH_CTRL);
+	tmp |= BIT_0 + BIT_4;
+	WRITE_FRC_REG_BY_CPU(FRC_BYP_PATH_CTRL, tmp);
+
+	// mc lp mode set
+	tmp = READ_FRC_REG(FRC_MC_HW_CTRL0);
+	tmp |= BIT_3;
+	WRITE_FRC_REG_BY_CPU(FRC_MC_HW_CTRL0, tmp);
+
+	// close mc loss
+	frc_top->memc_loss_en = 0x12;
+	frc_cfg_memc_loss(frc_top->memc_loss_en & 0x3);
+
+	// mcdw setting
+	pr_frc(1, "%s set\n", __func__);
+	pr_frc(1, "FRC_MC_H2V2_SETTING=0x%x\n",
+				READ_FRC_REG(FRC_MC_H2V2_SETTING));
+	pr_frc(1, "FRC_INP_MCDW_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_INP_MCDW_CTRL));
+	pr_frc(1, "FRC_MCDW_PATH_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_MCDW_PATH_CTRL));
+	pr_frc(1, "FRC_BYP_PATH_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_BYP_PATH_CTRL));
+	pr_frc(1, "FRC_INP_PATH_OPT=0x%x\n",
+				READ_FRC_REG(FRC_INP_PATH_OPT));
+}
+
+void frc_memc_120hz_patch_2(struct frc_dev_s *frc_devp)
+{
+	enum chip_id chip;
+	struct frc_fw_data_s *fw_data;
+	struct frc_top_type_s *frc_top;
+	u32  tmp = 0;
+
+	if (!frc_devp)
+		return;
+
+	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
+	frc_top = &fw_data->frc_top_type;
+	chip = get_chip_type();
+
+	if (chip != ID_T3X)
+		return;
+
+	// mcdw
+	tmp = READ_FRC_REG(FRC_INP_MCDW_CTRL);
+	tmp |= BIT_25;
+	tmp &= 0xFEFFFFFF;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, tmp);
+
+	// TOP setting
+	//tmp = READ_FRC_REG(FRC_REG_TOP_CTRL7);
+	//tmp |= 0x03000000;
+	//tmp &= 0xFFE00000;
+	//WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, tmp);
+
+	//regdata_top_ctl_0007 = READ_FRC_REG(FRC_REG_TOP_CTRL7);
+	//frc_config_reg_value(0x0300000, 0x031FFFFF, &regdata_top_ctl_0007);
+	//WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
+
+	pr_frc(1, "%s set\n", __func__);
+	pr_frc(1, "FRC_INP_MCDW_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_INP_MCDW_CTRL));
+	//pr_frc(1, "FRC_REG_TOP_CTRL7=0x%x\n",
+	//			READ_FRC_REG(FRC_REG_TOP_CTRL7));
+}
+
+void frc_memc_120hz_patch_3(struct frc_dev_s *frc_devp)
+{
+	enum chip_id chip;
+	struct frc_fw_data_s *fw_data;
+	struct frc_top_type_s *frc_top;
+	u32  tmp = 0;
+
+	if (!frc_devp)
+		return;
+
+	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
+	frc_top = &fw_data->frc_top_type;
+	chip = get_chip_type();
+
+	if (chip != ID_T3X)
+		return;
+
+	// TOP setting
+	//regdata_top_ctl_0007 = READ_FRC_REG(FRC_REG_TOP_CTRL7);
+	//frc_config_reg_value(0x0, 0x03000000, &regdata_top_ctl_0007);
+	//WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL7, regdata_top_ctl_0007);
+
+	tmp = READ_FRC_REG(FRC_MCDW_PATH_CTRL);
+	tmp &= 0xFFFFFFFE;
+	WRITE_FRC_REG_BY_CPU(FRC_MCDW_PATH_CTRL, tmp);
+
+	// h2v2 setting
+	tmp = READ_FRC_REG(FRC_MC_H2V2_SETTING);
+	tmp &= 0x41AFFFFF;
+	WRITE_FRC_REG_BY_CPU(FRC_MC_H2V2_SETTING, tmp);
+
+	pr_frc(1, "%s set\n", __func__);
+	pr_frc(1, "FRC_MCDW_PATH_CTRL=0x%x\n",
+				READ_FRC_REG(FRC_MCDW_PATH_CTRL));
+	pr_frc(1, "FRC_MC_H2V2_SETTING=0x%x\n",
+				READ_FRC_REG(FRC_MC_H2V2_SETTING));
+	//pr_frc(1, "FRC_REG_TOP_CTRL7=0x%x\n",
+	//			READ_FRC_REG(FRC_REG_TOP_CTRL7));
+}
+

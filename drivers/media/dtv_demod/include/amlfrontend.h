@@ -87,6 +87,7 @@
 /*  V1.1.93  add t5m dvbt2 mplp config */
 /*  V1.1.94  fix j83b's status false alarm */
 /*  V1.1.95  fix diseqc and lnb attach */
+/*  V1.1.96  fix T2 pulse test failed when tuner is mxl661 */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -103,8 +104,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.95"
-#define DTVDEMOD_VER	"2023/04/18: fix diseqc and lnb attach"
+#define AMLDTVDEMOD_VER "V1.1.96"
+#define DTVDEMOD_VER	"2023/04/23: fix T2 pulse test failed when tuner is mxl661"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

@@ -52,3 +52,4 @@ dtb-y += txhd2_reva_t950s_be311.dtb
 dtb-y += txhd2_reva_t950s_be319.dtb
 dtb-y += txhd2_reva_t950s_be311_512m.dtb
 dtb-y += txhd2_reva_t950s_be319_512m.dtb
+dtb-y += s1a_pxp.dtb

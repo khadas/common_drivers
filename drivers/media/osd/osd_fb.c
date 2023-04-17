@@ -4399,22 +4399,6 @@ EXPORT_SYMBOL(osd_resume_early);
 #endif
 
 #ifdef CONFIG_HIBERNATION
-static int osd_realdata_save(void)
-{
-	osd_realdata_save_hw();
-	return 0;
-}
-
-static void osd_realdata_restore(void)
-{
-	osd_realdata_restore_hw();
-}
-
-static struct instaboot_realdata_ops osd_realdata_ops = {
-	.save		= osd_realdata_save,
-	.restore	= osd_realdata_restore,
-};
-
 static int osd_freeze(struct device *dev)
 {
 	osd_freeze_hw();

@@ -452,7 +452,6 @@ static int amlogic_crg_drd_usb2_probe(struct platform_device *pdev)
 	u32 phy_id = 0;
 	u32 val;
 	u32 usbclk_div = 0;
-	u32 ret;
 	const char *gpio_name = NULL;
 	int gpio_vbus_power_pin = -1;
 	struct gpio_desc *usb_gd = NULL;
@@ -508,13 +507,6 @@ static int amlogic_crg_drd_usb2_probe(struct platform_device *pdev)
 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
 	if (!phy)
 		return -ENOMEM;
-
-	phy->general_clk = devm_clk_get(dev, "crg_general");
-	if (IS_ERR(phy->general_clk)) {
-		ret = PTR_ERR(phy->general_clk);
-		return ret;
-	}
-	clk_prepare_enable(phy->general_clk);
 
 	phy_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	phy_base = ioremap(phy_mem->start, resource_size(phy_mem));
@@ -670,7 +662,7 @@ static int amlogic_crg_drd_usb2_probe(struct platform_device *pdev)
 	}
 
 	/**USB PHY CLOCK ENABLE**/
-	phy->clk = devm_clk_get(dev, "usb_phy");
+	phy->clk = devm_clk_get(dev, "crg_general");
 	if (!IS_ERR(phy->clk)) {
 		retval = clk_prepare_enable(phy->clk);
 		if (retval) {

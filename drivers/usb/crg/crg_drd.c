@@ -431,6 +431,8 @@ static void crg_shutdown(struct platform_device *pdev)
 	pm_runtime_put_sync(&pdev->dev);
 	pm_runtime_allow(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
+
+	clk_disable_unprepare(crg->general_clk);
 }
 
 static int crg_remove(struct platform_device *pdev)
@@ -444,6 +446,8 @@ static int crg_remove(struct platform_device *pdev)
 	pm_runtime_put_sync(&pdev->dev);
 	pm_runtime_allow(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
+
+	clk_disable_unprepare(crg->general_clk);
 
 	return 0;
 }
@@ -570,6 +574,8 @@ static int crg_suspend(struct device *dev)
 	if (ret)
 		return ret;
 
+	clk_disable_unprepare(crg->general_clk);
+
 	pinctrl_pm_select_sleep_state(dev);
 
 	return 0;
@@ -583,6 +589,8 @@ static int crg_resume(struct device *dev)
 	crg->usb_suspend = 0;
 
 	pinctrl_pm_select_default_state(dev);
+
+	clk_prepare_enable(crg->general_clk);
 
 	ret = crg_resume_common(crg);
 	if (ret)

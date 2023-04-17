@@ -2069,7 +2069,7 @@
 		aml_wifi: aml_wifi {
 			compatible = "amlogic, aml-wifi";
 			status = "disabled";
-			irq_trigger_type = "GPIO_IRQ_LOW";
+			irq_trigger_type = "IRQF_TRIGGER_LOW";
 			/* dhd_static_buf; */ /*use bcm wifi*/
 			//pinctrl-0 = <&pwm_e_pins>;
 			//pinctrl-names = "default";

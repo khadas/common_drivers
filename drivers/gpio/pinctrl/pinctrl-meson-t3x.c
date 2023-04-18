@@ -2162,9 +2162,9 @@ static struct meson_bank meson_t3x_periphs_banks[] = {
 		0x3b,  0,   0x3c,  0,   0x3a, 0,   0x39,  0,  0x38,  0,  0x3f, 0),
 	BANK_DS("W",    GPIOW_0,    GPIOW_16, 25, 41,
 		0x63,  0,  0x64,  0,  0x62,   0,  0x61,   0,  0x60, 0,  0x67, 0),
-	BANK_DS("M",    GPIOM_0,    GPIOM_15, 80, 109,
+	BANK_DS("M",    GPIOM_0,    GPIOM_15, 80, 95,
 		0x73,  0,  0x74,  0,  0x72,   0,  0x71,   0,  0x70, 0,  0x77, 0),
-	BANK_DS("M1",   GPIOM_16,   GPIOM_29, 80, 109,
+	BANK_DS("M1",   GPIOM_16,   GPIOM_29, 96, 109,
 		0x73,  16,  0x74,  16,  0x72, 16,  0x71,  16, 0x70, 16, 0xc2, 0),
 	BANK_DS("GPIO_TEST_N", GPIO_TEST_N,    GPIO_TEST_N, 139, 139,
 		0x83,  0,  0x84,  0,  0x82,   0,  0x81,   0,  0x80, 0,  0x87, 0)

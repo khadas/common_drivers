@@ -50,7 +50,8 @@
 /* 20230912: bypass phy data buffer */
 /* 20230915: update phy setting for txhd2 */
 /* 20230918: support ultra refresh rate function*/
-#define LCD_DRV_VERSION    "20230918"
+/* 20231011: t3x dual display support */
+#define LCD_DRV_VERSION    "20231011"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

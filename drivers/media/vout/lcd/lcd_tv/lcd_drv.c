@@ -778,7 +778,7 @@ static void lcd_vbyone_control_off(struct aml_lcd_drv_s *pdrv)
 		/* disable fifo */
 		lcd_combo_dphy_setb(pdrv, reg_dphy_tx_ctrl1, 0, 6, 2);
 		/* disable lane */
-		lcd_combo_dphy_setb(pdrv, reg_dphy_tx_ctrl0, 0, 16, 8);
+		lcd_combo_dphy_setb(pdrv, reg_dphy_tx_ctrl0, 0, 16, 16);
 		break;
 	case LCD_CHIP_T3:
 	case LCD_CHIP_T5M:

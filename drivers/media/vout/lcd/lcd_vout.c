@@ -77,7 +77,6 @@ static char lcd_propname[LCD_MAX_DRV][24] = {"mipi_0", "null", "null"};
 static char lcd_panel_name[LCD_MAX_DRV][24] = {"null", "null", "null"};
 
 #define LCD_VSYNC_NONE_INTERVAL     msecs_to_jiffies(500)
-
 /* *********************************************************
  * lcd config define
  * *********************************************************
@@ -634,7 +633,6 @@ static void lcd_auto_test_func(struct aml_lcd_drv_s *pdrv)
 	lcd_queue_delayed_work(&pdrv->test_delayed_work, 20000);
 }
 
-static int lcd_vsync_print_cnt;
 static inline void lcd_vsync_handler(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned long flags = 0;
@@ -701,8 +699,7 @@ static inline void lcd_vsync_handler(struct aml_lcd_drv_s *pdrv)
 	}
 	spin_unlock_irqrestore(&pdrv->isr_lock, flags);
 
-	if (lcd_vsync_print_cnt++ >= LCD_DEBUG_VSYNC_INTERVAL) {
-		lcd_vsync_print_cnt = 0;
+	if (!(pdrv->vsync_cnt % LCD_DEBUG_VSYNC_INTERVAL)) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_ISR) {
 			LCDPR("[%d]: %s: viu_sel: %d, mute_count: %d\n",
 			      pdrv->index, __func__, pdrv->viu_sel, pdrv->mute_count);
@@ -2234,7 +2231,6 @@ static int lcd_probe(struct platform_device *pdev)
 	/* set drvdata */
 	lcd_driver[index] = pdrv;
 	pdrv->data = pdata;
-	//pdrv->of_node = pdev->dev.of_node;
 	platform_set_drvdata(pdev, pdrv);
 	pdrv->pdev = pdev;
 

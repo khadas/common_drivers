@@ -1762,7 +1762,7 @@
 		//power-domains = <&pwrdm PDID_P1_ISP_C>;
 //		clocks = <&clkc CLKID_ISP2>;
 //		clock-names = "cts_mipi_isp_clk";
-		interrupts = <0 113 1>;
+		//interrupts = <0 113 1>;
 	};
 
 	camera2 {
@@ -2243,6 +2243,13 @@
 		interrupts = <GIC_SPI 115 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "vsync";
 		vs_meas=<0>;
+	};
+
+	vout2: vout2 {
+		compatible = "amlogic, vout2";
+		interrupts = <GIC_SPI 113 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "vsync";
+		status = "okay";
 	};
 
 	dummy_venc: dummy_venc {

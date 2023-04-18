@@ -987,6 +987,18 @@ static int lcd_reg_print_vbyone(struct aml_lcd_drv_s *pdrv, char *buf, int offse
 	len += snprintf((buf + len), n,
 		"VX1_INTR_STATE               [0x%04x] = 0x%08x\n",
 		reg, lcd_vcbus_read(reg));
+	reg = LCD_PORT_SWAP + reg_offset;
+	len += snprintf((buf + len), n,
+		"LCD_PORT_SWAP                [0x%04x] = 0x%08x\n",
+		reg, lcd_vcbus_read(reg));
+	reg = P2P_CH_SWAP0 + reg_offset;
+	len += snprintf((buf + len), n,
+		"P2P_CH_SWAP0                 [0x%04x] = 0x%08x\n",
+		reg, lcd_vcbus_read(reg));
+	reg = P2P_CH_SWAP1 + reg_offset;
+	len += snprintf((buf + len), n,
+		"P2P_CH_SWAP1                 [0x%04x] = 0x%08x\n",
+		reg, lcd_vcbus_read(reg));
 
 	return len;
 }

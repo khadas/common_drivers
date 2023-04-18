@@ -1713,4 +1713,3 @@ void lcd_clk_config_chip_init_t3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 	}
 	cconf->data->enc_clk_msr_id = -1;
 }
-

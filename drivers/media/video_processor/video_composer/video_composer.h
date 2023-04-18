@@ -80,6 +80,8 @@
 #define PRINT_NN		0X0080
 #define PRINT_DEWARP		0X0100
 #define PRINT_VICP		0X0200
+#define PRINT_DALTON		0X0400
+#define PRINT_AIFACE		0X0800
 
 #define SOURCE_DTV_FIX_TUNNEL		0x1
 #define SOURCE_HWC_CREAT_ION		0x2
@@ -278,6 +280,7 @@ struct composer_dev {
 	u32 last_drop_cnt;
 	u64 output_duration;
 	u32 nn_mode_flag;
+	struct vf_aiface_t *aiface_buf;
 };
 
 struct capability_info_t {

@@ -1579,6 +1579,7 @@ s32 primary_render_frame(struct video_layer_s *layer,
 	struct vframe_s *dispbuf = NULL;
 	int pq_process_debug[4];
 	int ret = 0;
+	int count = 0, k = 0, l = 0;
 
 	if (!layer) {
 		ret = -1;
@@ -1834,6 +1835,7 @@ render_exit:
 
 	vd_clip_setting(0, &vd_layer[0].clip_setting);
 
+	memset(&ai_face_value, 0, sizeof(ai_face_value));
 	if (vd_layer[0].dispbuf &&
 		cur_dev->display_module != C3_DISPLAY_MODULE) {
 		pq_process_debug[0] = ai_pq_value;
@@ -1852,6 +1854,49 @@ render_exit:
 		}
 		memcpy(nn_scenes_value, vd_layer[0].dispbuf->nn_value,
 		       sizeof(nn_scenes_value));
+		if (vd_layer[0].dispbuf->vc_private &&
+			vd_layer[0].dispbuf->vc_private->flag & VC_FLAG_AI_FACE) {
+			count = vd_layer[0].dispbuf->vc_private->aiface_info->aiface_value_count;
+			for (k = 0; k < count; k++) {
+				ai_face_value.face_value[k] =
+					vd_layer[0].dispbuf->vc_private->aiface_info->face_value[k];
+				if (debug_flag & DEBUG_FLAG_AI_FACE) {
+					pr_info("vd0:omx_index=%d: i=%d: x=%d; y=%d; w=%d; h=%d; score=%d.\n",
+						vd_layer[0].dispbuf->omx_index,
+						k,
+						ai_face_value.face_value[k].x,
+						ai_face_value.face_value[k].y,
+						ai_face_value.face_value[k].w,
+						ai_face_value.face_value[k].h,
+						ai_face_value.face_value[k].score);
+				}
+			}
+			ai_face_value.face_count_vd0 = count;
+		}
+	}
+
+	if (vd_layer[1].dispbuf &&
+		cur_dev->display_module != C3_DISPLAY_MODULE) {
+		if (vd_layer[1].dispbuf->vc_private &&
+			vd_layer[1].dispbuf->vc_private->flag & VC_FLAG_AI_FACE) {
+			count = vd_layer[1].dispbuf->vc_private->aiface_info->aiface_value_count;
+			for (k = 0; k < count; k++) {
+				l = ai_face_value.face_count_vd0 + k;
+				ai_face_value.face_value[l] =
+					vd_layer[1].dispbuf->vc_private->aiface_info->face_value[k];
+				if (debug_flag & DEBUG_FLAG_AI_FACE) {
+					pr_info("vd1:omx_index=%d: i=%d: x=%d; y=%d; w=%d; h=%d; score=%d.\n",
+						vd_layer[1].dispbuf->omx_index,
+						k,
+						ai_face_value.face_value[l].x,
+						ai_face_value.face_value[l].y,
+						ai_face_value.face_value[l].w,
+						ai_face_value.face_value[l].h,
+						ai_face_value.face_value[l].score);
+				}
+			}
+			ai_face_value.face_count_vd1 = count;
+		}
 	}
 
 	if (vd_layer[0].dispbuf &&

@@ -35,6 +35,12 @@ extern bridge_item_t vsync_fiq_bridge;
 
 extern spinlock_t lock;
 
+struct video_frame_aiface_s {
+	u32 face_count_vd0;
+	u32 face_count_vd1;
+	struct face_value_t face_value[MAX_FACE_COUNT_PER_FRAME];
+};
+
 /* pts related */
 #if defined(PTS_LOGGING) || defined(PTS_TRACE_DEBUG)
 extern int pts_trace;
@@ -68,6 +74,7 @@ extern int vsync_exit_line_max;
 extern u32 video_notify_flag;
 extern struct ai_scenes_pq vpp_scenes[AI_SCENES_MAX];
 extern struct nn_value_t nn_scenes_value[AI_PQ_TOP];
+extern struct video_frame_aiface_s ai_face_value;
 extern int vframe_walk_delay;
 extern u32  video_mirror;
 extern int tvin_source_type;

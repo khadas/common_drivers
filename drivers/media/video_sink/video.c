@@ -533,6 +533,8 @@ int ai_pq_value = -1;
 int ai_pq_policy = 1;
 struct ai_scenes_pq vpp_scenes[AI_SCENES_MAX];
 struct nn_value_t nn_scenes_value[AI_PQ_TOP];
+struct video_frame_aiface_s ai_face_value;
+
 /* pts related */
 u32 vsync_pts_inc_scale;
 u32 vsync_pts_inc_scale_base = 1;
@@ -10714,6 +10716,81 @@ static ssize_t cur_ai_scenes_show(struct class *cla,
 	return count;
 }
 
+static ssize_t cur_ai_face_show(struct class *cla, struct class_attribute *attr, char *buf)
+{
+	ssize_t count = 0;
+	int i = 0, j = 0;
+	int x, y, w, h, score;
+	bool need_show_vd0 = true, need_show_vd1 = true;
+
+	if (!vd_layer[0].dispbuf) {
+		need_show_vd0 = false;
+	} else {
+		if (vd_layer[0].disable_video == 1 ||
+		    vd_layer[0].global_output == 0) {
+			need_show_vd0 = false;
+		}
+
+		if (!vd_layer[0].dispbuf->vc_private) {
+			need_show_vd0 = false;
+		} else {
+			if ((vd_layer[0].dispbuf->vc_private->flag & VC_FLAG_AI_FACE) == 0)
+				need_show_vd0 = false;
+		}
+	}
+
+	if (!vd_layer[1].dispbuf) {
+		need_show_vd1 = false;
+	} else {
+		if (vd_layer[1].disable_video == 1 ||
+		    vd_layer[1].global_output == 0)
+			need_show_vd1 = false;
+
+		if (!vd_layer[1].dispbuf->vc_private) {
+			need_show_vd1 = false;
+		} else {
+			if ((vd_layer[1].dispbuf->vc_private->flag & VC_FLAG_AI_FACE) == 0)
+				need_show_vd1 = false;
+		}
+	}
+
+	if (!need_show_vd0 && !need_show_vd1)
+		return 0;
+
+	if (need_show_vd0) {
+		while (i < ai_face_value.face_count_vd0) {
+			x = ai_face_value.face_value[i].x;
+			y = ai_face_value.face_value[i].y;
+			w = ai_face_value.face_value[i].w;
+			h = ai_face_value.face_value[i].h;
+			score = ai_face_value.face_value[i].score;
+			count += sprintf(buf + count,
+				"omx_index=%d: i=%d: x=%d; y=%d; w=%d; h=%d; score=%d\n",
+				vd_layer[0].dispbuf->omx_index, i, x, y, w, h, score);
+			i++;
+		}
+	}
+
+	if (need_show_vd1) {
+		i = 0;
+		while (i < ai_face_value.face_count_vd1) {
+			j = ai_face_value.face_count_vd0 + i;
+			x = ai_face_value.face_value[j].x;
+			y = ai_face_value.face_value[j].y;
+			w = ai_face_value.face_value[j].w;
+			h = ai_face_value.face_value[j].h;
+			score = ai_face_value.face_value[j].score;
+			count += sprintf(buf + count,
+				"omx_index=%d: i=%d: x=%d; y=%d; w=%d; h=%d; score=%d\n",
+				vd_layer[1].dispbuf->omx_index, j, x, y, w, h, score);
+			i++;
+		}
+	}
+
+	count += sprintf(buf + count, "\n");
+	return count;
+}
+
 static ssize_t pre_hscaler_ntap_set_store
 	(struct class *cla,
 	struct class_attribute *attr,
@@ -12603,6 +12680,7 @@ static struct class_attribute amvideo_class_attrs[] = {
 	__ATTR(mosaic_axis_pic, 0644,
 		mosaic_axis_pic_show,
 		mosaic_axis_pic_store),
+	__ATTR_RO(cur_ai_face),
 };
 
 static struct class_attribute amvideo_poll_class_attrs[] = {

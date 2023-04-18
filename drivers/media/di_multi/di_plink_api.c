@@ -4149,8 +4149,10 @@ void dpvpph_unreg_setting(void)
 	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_GXTVBB)) {
 		DIM_DI_WR(DI_CLKG_CTRL, 0x80f60000);
 		DIM_DI_WR(DI_PRE_CTRL, 0);
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	} else {
 		DIM_DI_WR(DI_CLKG_CTRL, 0xf60000);
+#endif
 	}
 	/*ary add for switch to post wr, can't display*/
 	dbg_pl("dimh_disable_post_deinterlace_2\n");

@@ -634,10 +634,10 @@ void dimh_hw_init(bool pd_enable, bool mc_enable)
 		dim_top_gate_control(true, true);
 	} else if (DIM_IS_IC_EF(SC2)) {
 		dim_top_gate_control_sc2(true, true);
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	} else if (is_meson_gxl_cpu()	||
 		 is_meson_gxm_cpu()	||
 		 is_meson_gxlx_cpu()) {
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		DIM_DI_WR(DI_CLKG_CTRL, 0xffff0001);
 #endif
 	} else {
@@ -739,8 +739,8 @@ void dimh_hw_init(bool pd_enable, bool mc_enable)
 		dim_pre_gate_control_sc2(false, true);
 		dim_post_gate_control_sc2(false);
 		dim_top_gate_control_sc2(false, false);
-	} else if (is_meson_txl_cpu() || is_meson_gxlx_cpu()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+	} else if (is_meson_txl_cpu() || is_meson_gxlx_cpu()) {
 		/* di clock div enable for pq load */
 		DIM_DI_WR(DI_CLKG_CTRL, 0x80000000);
 #endif
@@ -2796,8 +2796,11 @@ static void post_bit_mode_config(unsigned char if0,
 				 unsigned char if2,
 				 unsigned char post_wr)
 {
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	if (!cpu_after_eq(MESON_CPU_MAJOR_ID_GXTVBB))
 		return;
+#endif
+
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
 		DIM_DI_WR_REG_BITS(DI_IF0_GEN_REG3, if0 & 0x3, 8, 2);
 	else

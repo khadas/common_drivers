@@ -6824,8 +6824,11 @@ static void di_unreg_process_irq(void)
 	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_GXTVBB)) {
 		DI_Wr(DI_CLKG_CTRL, 0x80f60000);
 		DI_Wr(DI_PRE_CTRL, 0);
-	} else
+	}
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
+	else
 		DI_Wr(DI_CLKG_CTRL, 0xf60000);
+#endif
 /* nr/blend0/ei0/mtn0 clock gate */
 	if (mirror_disable) {
 		di_hw_disable(mcpre_en);

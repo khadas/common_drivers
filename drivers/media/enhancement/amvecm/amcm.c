@@ -271,8 +271,10 @@ void am_set_regmap(struct am_regs_s *p)
 					if (get_cpu_type() >=
 						MESON_CPU_MAJOR_ID_G12A)
 						val = val & 0xfffffffc;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 					else
 						val = val & 0xfffffff9;
+#endif
 				}
 				pr_amcm_dbg("[amcm]:%s %s addr:0x%x",
 					    "REG_TYPE_INDEX_VPPCHROMA",
@@ -285,12 +287,14 @@ void am_set_regmap(struct am_regs_s *p)
 						cm_dis_flag = false;
 					else
 						cm_dis_flag = true;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 				} else {
 					val = val & 0xfffffffb;
 					if (val & 0x2)
 						cm_dis_flag = false;
 					else
 						cm_dis_flag = true;
+#endif
 				}
 			}
 
@@ -449,6 +453,7 @@ void amcm_disable(enum wr_md_e md)
 					WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
 							    temp & 0xfffffffe);
 				}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			} else {
 				if (temp & 0x2) {
 					WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
@@ -456,6 +461,7 @@ void amcm_disable(enum wr_md_e md)
 					WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
 							    temp & 0xfffffffd);
 				}
+#endif
 			}
 			break;
 		case WR_DMA:
@@ -466,6 +472,7 @@ void amcm_disable(enum wr_md_e md)
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
 							    temp & 0xfffffffe);
 				}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			} else {
 				if (temp & 0x2) {
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
@@ -473,6 +480,7 @@ void amcm_disable(enum wr_md_e md)
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
 							    temp & 0xfffffffd);
 				}
+#endif
 			}
 			break;
 		default:
@@ -532,6 +540,7 @@ void amcm_enable(enum wr_md_e md)
 					WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
 							    temp | 0x1);
 				}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			} else {
 				if (!(temp & 0x2)) {
 					WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
@@ -539,6 +548,7 @@ void amcm_enable(enum wr_md_e md)
 					WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
 							    temp | 0x2);
 				}
+#endif
 			}
 			break;
 		case WR_DMA:
@@ -549,6 +559,7 @@ void amcm_enable(enum wr_md_e md)
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
 								temp | 0x1);
 				}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			} else {
 				if (!(temp & 0x2)) {
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT,
@@ -556,6 +567,7 @@ void amcm_enable(enum wr_md_e md)
 					VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT,
 								temp | 0x2);
 				}
+#endif
 			}
 			break;
 		default:

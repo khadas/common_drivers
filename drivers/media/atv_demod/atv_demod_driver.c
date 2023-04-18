@@ -749,13 +749,14 @@ static int aml_atvdemod_probe(struct platform_device *pdev)
 	}
 
 	/* add for audio system control */
-	if (is_meson_txlx_cpu() || is_meson_txhd_cpu()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+	if (is_meson_txlx_cpu() || is_meson_txhd_cpu()) {
 		dev->audio_reg_base = ioremap(round_down(0xffd0d340, 0x3), 4);
 
 		pr_info("audio_reg_base = 0x%p.\n", dev->audio_reg_base);
+	}
 #endif
-	} else if (is_meson_t3_cpu() || is_meson_t5m_cpu()) {
+	if (is_meson_t3_cpu() || is_meson_t5m_cpu()) {
 		dev->audio_reg_base = ioremap(round_down(0xfe33074c, 0x3), 4);
 
 		pr_info("audio_reg_base = 0x%p.\n", dev->audio_reg_base);

@@ -1076,9 +1076,11 @@ static inline void cam_disable_clk(int spread_spectrum)
 void aml_cam_init(struct aml_cam_info_s *cam_dev)
 {
 	/*select XTAL as camera clock*/
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	if (get_cpu_type() == MESON_CPU_MAJOR_ID_GXBB)
 		GXBB_cam_enable_clk();
-	else if ((get_cpu_type() == MESON_CPU_MAJOR_ID_G12A) ||
+#endif
+	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_G12A) ||
 		(get_cpu_type() == MESON_CPU_MAJOR_ID_G12B) ||
 		(is_meson_sm1_cpu()))
 		GX12_cam_enable_clk();
@@ -1136,9 +1138,11 @@ void aml_cam_uninit(struct aml_cam_info_s *cam_dev)
 
 	msleep(20);
 
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	if (get_cpu_type() == MESON_CPU_MAJOR_ID_GXBB)
 		GXBB_cam_disable_clk(cam_dev->spread_spectrum);
-	else if ((get_cpu_type() == MESON_CPU_MAJOR_ID_G12A) ||
+#endif
+	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_G12A) ||
 		(get_cpu_type() == MESON_CPU_MAJOR_ID_G12B) ||
 		(is_meson_sm1_cpu()))
 		GX12_cam_disable_clk(cam_dev->spread_spectrum);

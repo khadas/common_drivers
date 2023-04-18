@@ -1156,8 +1156,10 @@ static void vlock_setting(struct vframe_s *vf, struct stvlock_sig_sts *pvlock)
 			}
 			reg_value = (hiu_m_val << 12)
 				+ (hiu_frac_val << 2);
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		} else {
 			pr_info("err: m f value\n");
+#endif
 		}
 		///if (vlock_debug & VLOCK_DEBUG_INFO) {
 		//	pr_info("hiu_m_val=0x%x\n", hiu_m_val);

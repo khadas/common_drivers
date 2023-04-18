@@ -48,6 +48,7 @@
  *blx_soft = 0;        % 0: means not black soft clipping;
 	otherwise soft clipping, e.g. 2*4
 */
+
 unsigned int eotf_33_2084_table[][33] = {
 	{/*260*/
 	    0,     4,     9,    16,    27,    43,    66,   101,
@@ -882,6 +883,7 @@ unsigned int oetf_289_gamma22_table[][289] = {
 	}
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /*Mbox: iptv/ott hdr curve select*/
 /*600nit alpha_low = 0.12; */
 static unsigned int eotf_33_2084_mapping_box[33] = {
@@ -1127,6 +1129,6 @@ static unsigned int oetf_289_gamma22_mapping_level4_box[289] = {
 	1023, 1023, 1023, 1023, 1023, 1023, 1023, 1023,
 	1023
 };
-
+#endif
 #endif
 

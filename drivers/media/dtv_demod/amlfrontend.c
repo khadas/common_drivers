@@ -7882,11 +7882,13 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
 		aml_dtvdm_ops.delsys[4] = SYS_ANALOG;
 #endif
-		if (ic_version == MESON_CPU_MAJOR_ID_TL1) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+		if (ic_version == MESON_CPU_MAJOR_ID_TL1) {
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DTMB/ATSC dtv demod tl1");
-#endif
 		} else {
+#else
+		{
+#endif
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DTMB/ATSC dtv demod tm2");
 		}
 		break;

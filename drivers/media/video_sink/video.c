@@ -7128,12 +7128,14 @@ static ssize_t video_brightness_store(struct class *cla,
 		return -EINVAL;
 
 	if (cur_dev->display_module != S5_DISPLAY_MODULE) {
-		if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+		if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
 			WRITE_VCBUS_REG_BITS(VPP_VADJ1_Y +
 				cur_dev->vpp_off, val, 8, 9);
-#endif
 		} else {
+#else
+		{
+#endif
 			WRITE_VCBUS_REG_BITS(VPP_VADJ1_Y +
 				cur_dev->vpp_off, val << 1, 8, 10);
 		}
@@ -7197,12 +7199,14 @@ static ssize_t vpp_brightness_store(struct class *cla,
 	if (r < 0 || val < -255 || val > 255)
 		return -EINVAL;
 	if (cur_dev->display_module != S5_DISPLAY_MODULE) {
-		if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+		if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
 			WRITE_VCBUS_REG_BITS(VPP_VADJ2_Y +
 				cur_dev->vpp_off, val, 8, 9);
-#endif
 		} else {
+#else
+		{
+#endif
 			WRITE_VCBUS_REG_BITS(VPP_VADJ2_Y +
 				cur_dev->vpp_off, val << 1, 8, 10);
 		}

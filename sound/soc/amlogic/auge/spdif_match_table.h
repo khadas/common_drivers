@@ -213,6 +213,7 @@ static const struct of_device_id aml_spdif_device_id[] = {
 		.compatible = "amlogic, g12a-snd-spdif-b",
 		.data       = &g12a_spdif_b_chipinfo,
 	},
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
 		.compatible = "amlogic, tl1-snd-spdif-a",
 		.data       = &tl1_spdif_a_chipinfo,
@@ -221,6 +222,7 @@ static const struct of_device_id aml_spdif_device_id[] = {
 		.compatible = "amlogic, tl1-snd-spdif-b",
 		.data       = &tl1_spdif_b_chipinfo,
 	},
+#endif
 	{
 		.compatible = "amlogic, sm1-snd-spdif-a",
 		.data		= &sm1_spdif_a_chipinfo,

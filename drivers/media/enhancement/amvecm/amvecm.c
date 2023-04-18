@@ -629,22 +629,28 @@ static int amvecm_set_brightness2(int val)
 	if (chip_type_id == chip_s5) {
 		ve_brigtness_set(val, VE_VADJ2, WR_VCB);
 		return 0;
-	} else if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
+	}
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+	else if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
 		WRITE_VPP_REG_BITS(VPP_VADJ2_Y,
 				   val, 8, 9);
+	}
 #endif
-	} else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
+	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
 		WRITE_VPP_REG_BITS(VPP_VADJ2_Y_2,
 				   val, 8, 11);
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	else
 		WRITE_VPP_REG_BITS(VPP_VADJ2_Y,
 				   val >> 1, 8, 10);
+#endif
 
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
 		WRITE_VPP_REG_BITS(VPP_VADJ2_MISC, 1, 0, 1);
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	else
 		WRITE_VPP_REG_BITS(VPP_VADJ_CTRL, 1, 2, 1);
+#endif
 	return 0;
 }
 
@@ -686,14 +692,16 @@ static ssize_t video_adj1_brightness_show(struct class *cla,
 		val = (val >> 8) & 0x7ff;
 		val = (val << 21) >> 21;
 		return sprintf(buf, "%d\n", val);
-	} else if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
+	}
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+	else if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
 		val = (READ_VPP_REG(VPP_VADJ1_Y) >> 8) & 0x1ff;
 		val = (val << 23) >> 23;
 
 		return sprintf(buf, "%d\n", val);
+	}
 #endif
-	} else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
+	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		val = (READ_VPP_REG(VPP_VADJ1_Y_2) >> 8) & 0x7ff;
 		val = (val << 21) >> 21;
 
@@ -718,9 +726,11 @@ static ssize_t video_adj1_brightness_store(struct class *cla,
 
 	if (chip_type_id == chip_s5)
 		ve_brigtness_set(val, VE_VADJ1, WR_VCB);
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	else if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB)
 		WRITE_VPP_REG_BITS(VPP_VADJ1_Y, val, 8, 9);
-	else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
+#endif
+	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
 		WRITE_VPP_REG_BITS(VPP_VADJ1_Y_2, val, 8, 11);
 	else
 		WRITE_VPP_REG_BITS(VPP_VADJ1_Y, val >> 1, 8, 10);
@@ -789,14 +799,16 @@ static ssize_t video_adj2_brightness_show(struct class *cla,
 		val = (val >> 8) & 0x7ff;
 		val = (val << 21) >> 21;
 		return sprintf(buf, "%d\n", val);
-	} else if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
+	}
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+	else if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
 		val = (READ_VPP_REG(VPP_VADJ2_Y) >> 8) & 0x1ff;
 		val = (val << 23) >> 23;
 
 		return sprintf(buf, "%d\n", val);
+	}
 #endif
-	} else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
+	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		val = (READ_VPP_REG(VPP_VADJ2_Y_2) >> 8) & 0x7ff;
 		val = (val << 21) >> 21;
 
@@ -11570,15 +11582,16 @@ static int aml_vecm_probe(struct platform_device *pdev)
 	aml_vrr_atomic_notifier_register(&flock_vdin_vrr_en_notifier_nb);
 	/* #endif */
 
-	if (is_meson_txlx_cpu()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+	if (is_meson_txlx_cpu()) {
 		vpp_set_12bit_datapath2();
 		/*post matrix 12bit yuv2rgb*/
 		/* mtx_sel_dbg |= 1 << VPP_MATRIX_2; */
 		/* amvecm_vpp_mtx_debug(mtx_sel_dbg, 1);*/
 		WRITE_VPP_REG(VPP_MATRIX_PROBE_POS, 0x1fff1fff);
+	}
 #endif
-	} else if (is_meson_txhd_cpu()) {
+	if (is_meson_txhd_cpu()) {
 		vpp_set_10bit_datapath1();
 	} else if (is_meson_g12a_cpu() || is_meson_g12b_cpu()) {
 		vpp_set_12bit_datapath_g12a();
@@ -11588,11 +11601,13 @@ static int aml_vecm_probe(struct platform_device *pdev)
 	/* box sdr_mode:auto, tv sdr_mode:off */
 	/* disable contrast and saturation adjustment for HDR on TV */
 	/* disable SDR to HDR convert on TV */
-	if (is_meson_gxl_cpu() || is_meson_gxm_cpu()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+	if (is_meson_gxl_cpu() || is_meson_gxm_cpu()) {
 		hdr_flag = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3);
-#endif
 	} else {
+#else
+	{
+#endif
 		hdr_flag = (1 << 0) | (1 << 1) | (0 << 2) | (0 << 3) | (1 << 4);
 	}
 	hdr_init(&amvecm_dev.hdr_d);

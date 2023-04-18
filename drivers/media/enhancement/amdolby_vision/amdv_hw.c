@@ -2983,14 +2983,16 @@ static int dv_core3_set
 	if (force_update_reg & 4)
 		reset = true;
 
-	if (is_aml_gxm()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+	if (is_aml_gxm()) {
 		if ((first_reseted & 0x2) == 0) {
 			first_reseted = (first_reseted | 0x2);
 			reset = true;
 		}
-#endif
 	} else {
+#else
+	{
+#endif
 		if (dv_core1[0].run_mode_count == 0)
 			reset = true;
 	}
@@ -3824,8 +3826,8 @@ void video_effect_bypass(int bypass)
 
 	if (bypass) {
 		if (!is_video_effect_bypass) {
-			if (is_aml_txlx()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+			if (is_aml_txlx()) {
 				viu_eotf_ctrl_backup =
 					VSYNC_RD_DV_REG(VIU_EOTF_CTL);
 				xvycc_lut_ctrl_backup =
@@ -3840,13 +3842,13 @@ void video_effect_bypass(int bypass)
 					VSYNC_RD_DV_REG(VPP_VE_ENABLE_CTRL);
 				vpp_gainoff_backup =
 					VSYNC_RD_DV_REG(VPP_GAINOFF_CTRL0);
-#endif
 			}
+#endif
 		}
 		/*todo, there is a bug in amvecm, need to call dv_pq_ctl every vsync*/
 		if (1/*!is_video_effect_bypass*/) {
-			if (is_aml_txlx()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+			if (is_aml_txlx()) {
 				VSYNC_WR_DV_REG(VIU_EOTF_CTL, 0);
 				VSYNC_WR_DV_REG(XVYCC_LUT_CTL, 0);
 				VSYNC_WR_DV_REG(XVYCC_INV_LUT_CTL, 0);
@@ -3854,8 +3856,10 @@ void video_effect_bypass(int bypass)
 				VSYNC_WR_DV_REG(XVYCC_VD1_RGB_CTRST, 0);
 				VSYNC_WR_DV_REG(VPP_VE_ENABLE_CTRL, 0);
 				VSYNC_WR_DV_REG(VPP_GAINOFF_CTRL0, 0);
-#endif
 			} else {
+#else
+			{
+#endif
 				if ((dolby_vision_flags & FLAG_CERTIFICATION) ||
 				    bypass_all_vpp_pq)
 					dv_pq_ctl(DV_PQ_CERT);
@@ -3867,8 +3871,8 @@ void video_effect_bypass(int bypass)
 		}
 		is_video_effect_bypass = true;
 	} else if (is_video_effect_bypass) {
-		if (is_aml_txlx()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+		if (is_aml_txlx()) {
 			VSYNC_WR_DV_REG
 				(VIU_EOTF_CTL,
 				 viu_eotf_ctrl_backup);
@@ -3890,8 +3894,10 @@ void video_effect_bypass(int bypass)
 			VSYNC_WR_DV_REG
 				(VPP_GAINOFF_CTRL0,
 				vpp_gainoff_backup);
-#endif
 		} else {
+#else
+		{
+#endif
 			dv_pq_ctl(DV_PQ_REC);
 		}
 		is_video_effect_bypass = false;
@@ -4136,14 +4142,14 @@ void enable_amdv_v1(int enable)
 				VSYNC_RD_DV_REG(VPP_MATRIX_CTRL);
 			vpp_dummy1_backup =
 				VSYNC_RD_DV_REG(VPP_DUMMY_DATA1);
-			if (is_aml_txlx()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+			if (is_aml_txlx()) {
 				vpp_data_conv_para0_backup =
 					VSYNC_RD_DV_REG(VPP_DAT_CONV_PARA0);
 				vpp_data_conv_para1_backup =
 					VSYNC_RD_DV_REG(VPP_DAT_CONV_PARA1);
-#endif
 			}
+#endif
 			if (is_aml_tvmode()) {
 				update_dma_buf();
 				if (!amdv_core1_on)
@@ -4311,8 +4317,8 @@ void enable_amdv_v1(int enable)
 					bypass_pps_sr_gamma_gainoff(3);
 					/* bypass all video effect */
 					video_effect_bypass(1);
-					if (is_aml_txlx_tvmode()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+					if (is_aml_txlx_tvmode()) {
 						/* 12 bit unsigned to sign*/
 						/*   before vadj1 */
 						/* 12 bit sign to unsign*/
@@ -4323,8 +4329,8 @@ void enable_amdv_v1(int enable)
 						/*   10->12 after gainoff */
 						VSYNC_WR_DV_REG
 							(VPP_DAT_CONV_PARA1, 0x20002000);
-#endif
 					}
+#endif
 					WRITE_VPP_DV_REG(AMDV_TV_DIAG_CTRL,
 							 0xb);
 				} else {
@@ -4332,8 +4338,8 @@ void enable_amdv_v1(int enable)
 					if (dolby_vision_flags &
 					    FLAG_BYPASS_VPP)
 						video_effect_bypass(1);
-					if (is_aml_txlx_tvmode()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+					if (is_aml_txlx_tvmode()) {
 						/* 12->10 before vadj1*/
 						/*   10->12 before post blend */
 						VSYNC_WR_DV_REG
@@ -4344,8 +4350,8 @@ void enable_amdv_v1(int enable)
 					VSYNC_WR_DV_REG
 						(VPP_DAT_CONV_PARA1,
 						 0x20002000);
-#endif
 					}
+#endif
 				}
 				VSYNC_WR_DV_REG
 					(VPP_DUMMY_DATA1,
@@ -5380,8 +5386,8 @@ void enable_amdv_v1(int enable)
 			}
 			VSYNC_WR_DV_REG(VIU_SW_RESET, 3 << 9);
 			VSYNC_WR_DV_REG(VIU_SW_RESET, 0);
-			if (is_aml_txlx()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
+			if (is_aml_txlx()) {
 				VSYNC_WR_DV_REG(VPP_DAT_CONV_PARA0,
 						vpp_data_conv_para0_backup);
 				VSYNC_WR_DV_REG(VPP_DAT_CONV_PARA1,
@@ -5394,8 +5400,8 @@ void enable_amdv_v1(int enable)
 						0x414);
 				VSYNC_WR_DV_REG(AMDV_TV_AXI2DMA_CTRL0,
 						0x01000042);
-#endif
 			}
+#endif
 			if (is_aml_box() || is_aml_tm2_stbmode() || is_aml_t7_stbmode()) {
 				VSYNC_WR_DV_REG(AMDV_CORE1A_CLKGATE_CTRL,
 						0x55555555);

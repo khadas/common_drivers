@@ -499,6 +499,11 @@
 		sensor-name = "imx290"; /*imx290;os08a10;imx227*/
 	};
 
+	lens: lens {
+		compatible = "soc, lens";
+		status = "okay";
+	};
+
 	hdmirx {
 		compatible = "amlogic, hdmirx_t7";
 		#address-cells=<1>;

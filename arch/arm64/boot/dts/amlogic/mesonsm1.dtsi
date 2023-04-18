@@ -2017,6 +2017,7 @@
 
 	chosen {
 		kaslr-seed = <0x0 0x0>;
+		bootargs = "usbcore.autosuspend=-1";
 	};
 };/* end of / */
 

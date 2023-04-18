@@ -3037,6 +3037,10 @@
 		};
 	};
 
+	chosen {
+		bootargs = "usbcore.autosuspend=-1";
+	};
+
 };
 
 &periphs_pinctrl {

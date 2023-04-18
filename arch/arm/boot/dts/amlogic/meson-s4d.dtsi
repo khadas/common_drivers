@@ -2209,6 +2209,10 @@
 		status = "okay";
 		reg = <0xfe440200 0x80>;
 	};
+
+	chosen {
+		bootargs = "usbcore.autosuspend=-1";
+	};
 };
 
 &periphs_pinctrl {

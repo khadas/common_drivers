@@ -1756,6 +1756,10 @@
 		reg=<0xfe005118 0x4>;
 		quality=/bits/ 16 <1000>;
 	};
+
+	chosen {
+		bootargs = "usbcore.autosuspend=-1";
+	};
 };
 
 /* add pin mux here */

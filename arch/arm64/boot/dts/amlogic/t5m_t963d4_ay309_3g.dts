@@ -1834,8 +1834,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc1_pins &spicc1_cs_pins>;
 	//cs-gpios = <&gpio GPIOH_22 GPIO_ACTIVE_HIGH>;
-	latency = <2>;
-	slave;
 };
 
 &spicc2 {

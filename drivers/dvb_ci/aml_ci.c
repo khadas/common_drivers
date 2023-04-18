@@ -395,14 +395,14 @@ static int aml_ci_unregister_class(struct aml_ci *ci)
 	return 0;
 }
 
-extern struct dvb_adapter *aml_get_dvb_adapter(void);
+extern struct dvb_adapter *aml_dvb_get_adapter(struct device *dev);
 
 static int aml_ci_probe(struct platform_device *pdev)
 {
 	struct dvb_adapter *dvb_adapter = NULL;
 	int err = 0;
 
-	dvb_adapter = aml_get_dvb_adapter();
+	dvb_adapter = aml_dvb_get_adapter(&pdev->dev);
 
 	pr_dbg("---Amlogic CI Init---[%p]\n", dvb_adapter);
 

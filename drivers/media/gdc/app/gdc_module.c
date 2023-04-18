@@ -69,6 +69,14 @@ static struct gdc_device_data_s arm_gdc_clk2 = {
 	.has_pwd = 0
 };
 
+static struct gdc_device_data_s c2_gdc_clk2 = {
+	.dev_type = ARM_GDC,
+	.clk_type = CORE_AXI,
+	.core_cnt = 1,
+	.fw_version = ARMGDC_FW_V1,
+	.has_pwd = 1
+};
+
 static struct gdc_device_data_s arm_gdc = {
 	.dev_type = ARM_GDC,
 	.clk_type = MUXGATE_MUXSEL_GATE,
@@ -118,6 +126,7 @@ static struct gdc_device_data_s aml_gdc_v4 = {
 
 static const struct of_device_id gdc_dt_match[] = {
 	{.compatible = "amlogic, g12b-gdc", .data = &arm_gdc_clk2},
+	{.compatible = "amlogic, c2-gdc", .data = &c2_gdc_clk2},
 	{.compatible = "amlogic, arm-gdc",  .data = &arm_gdc},
 	{} };
 

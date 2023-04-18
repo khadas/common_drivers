@@ -1679,7 +1679,7 @@
 		#address-cells=<2>;
 		#size-cells=<2>;
 		status = "okay";
-		compatible = "amlogic, g12b-gdc";
+		compatible = "amlogic, c2-gdc";
 		reg = <0 0xFE008800 0 0x0000100
 			0 0xFE000918 0 0x0000004
 			0 0xFE00789c 0 0x0000004>;

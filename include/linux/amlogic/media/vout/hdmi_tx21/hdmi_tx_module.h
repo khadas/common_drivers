@@ -439,9 +439,6 @@ int check21_dvi_hdmi_edid_valid(u8 *buf);
 enum hdmi_vic hdmitx21_edid_get_VIC(struct hdmitx_dev *hdev,
 				  const char *disp_mode,
 				  char force_flag);
-
-int hdmitx21_edid_dump(struct hdmitx_dev *hdev, char *buffer,
-		     int buffer_len);
 bool hdmitx21_edid_check_valid_mode(struct hdmitx_dev *hdev,
 				  struct hdmi_format_para *para);
 const char *hdmitx21_edid_vic_to_string(enum hdmi_vic vic);
@@ -520,6 +517,7 @@ int hdmitx21_set_audio(struct hdmitx_dev *hdev,
 #define HDMITX_UNPLUG			2
 #define HDMITX_PHY_ADDR_VALID		3
 #define HDMITX_KSVLIST	4
+/* #define HDMITX_HDR_PRIORITY		5 */
 
 #define HDMI_SUSPEND    0
 #define HDMI_WAKEUP     1

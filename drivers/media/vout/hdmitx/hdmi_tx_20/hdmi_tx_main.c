@@ -3600,6 +3600,73 @@ static ssize_t vic_show(struct device *dev,
 	return pos;
 }
 
+static ssize_t avmute_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	int ret = 0;
+	int pos = 0;
+	struct hdmitx_dev *hdev = &hdmitx_device;
+
+	ret = hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_READ_AVMUTE_OP, 0);
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d", ret);
+
+	return pos;
+}
+
+/*
+ *  1: set avmute
+ * -1: clear avmute
+ *  0: off avmute
+ */
+static ssize_t avmute_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	int cmd = OFF_AVMUTE;
+	static int mask0;
+	static int mask1;
+	static DEFINE_MUTEX(avmute_mutex);
+
+	unsigned int mute_us =
+		hdmitx_device.debug_param.avmute_frame * hdmitx_get_frame_duration();
+
+	pr_info("%s %s\n", __func__, buf);
+	mutex_lock(&avmute_mutex);
+	if (strncmp(buf, "-1", 2) == 0) {
+		cmd = CLR_AVMUTE;
+		mask0 = -1;
+	} else if (strncmp(buf, "0", 1) == 0) {
+		cmd = OFF_AVMUTE;
+		mask0 = 0;
+	} else if (strncmp(buf, "1", 1) == 0) {
+		cmd = SET_AVMUTE;
+		mask0 = 1;
+	}
+	if (strncmp(buf, "r-1", 3) == 0) {
+		cmd = CLR_AVMUTE;
+		mask1 = -1;
+	} else if (strncmp(buf, "r0", 2) == 0) {
+		cmd = OFF_AVMUTE;
+		mask1 = 0;
+	} else if (strncmp(buf, "r1", 2) == 0) {
+		cmd = SET_AVMUTE;
+		mask1 = 1;
+	}
+	if (mask0 == 1 || mask1 == 1)
+		cmd = SET_AVMUTE;
+	else if ((mask0 == -1) && (mask1 == -1))
+		cmd = CLR_AVMUTE;
+
+	hdmitx_device.tx_hw.cntlmisc(&hdmitx_device.tx_hw, MISC_AVMUTE_OP, cmd);
+
+	if (cmd == SET_AVMUTE && hdmitx_device.debug_param.avmute_frame > 0)
+		msleep(mute_us / 1000);
+
+	mutex_unlock(&avmute_mutex);
+
+	return count;
+}
+
 static ssize_t rxsense_policy_store(struct device *dev,
 				    struct device_attribute *attr,
 				    const char *buf, size_t count)
@@ -5346,6 +5413,7 @@ static DEVICE_ATTR_RW(allm_mode);
 static DEVICE_ATTR_RW(aud_ch);
 static DEVICE_ATTR_RW(swap);
 static DEVICE_ATTR_RW(vic);
+static DEVICE_ATTR_RW(avmute);
 static DEVICE_ATTR_RW(sspll);
 static DEVICE_ATTR_RW(rxsense_policy);
 static DEVICE_ATTR_RW(cedst_policy);
@@ -6862,6 +6930,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_aud_ch);
 	ret = device_create_file(dev, &dev_attr_swap);
 	ret = device_create_file(dev, &dev_attr_vic);
+	ret = device_create_file(dev, &dev_attr_avmute);
 	ret = device_create_file(dev, &dev_attr_sspll);
 	ret = device_create_file(dev, &dev_attr_rxsense_policy);
 	ret = device_create_file(dev, &dev_attr_rxsense_state);
@@ -7067,6 +7136,7 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_ready);
 	device_remove_file(dev, &dev_attr_support_3d);
 	device_remove_file(dev, &dev_attr_vic);
+	device_remove_file(dev, &dev_attr_avmute);
 	device_remove_file(dev, &dev_attr_sspll);
 	device_remove_file(dev, &dev_attr_rxsense_policy);
 	device_remove_file(dev, &dev_attr_rxsense_state);

@@ -45,6 +45,7 @@
 	"V03.01.00.00.03.04.13 [20230111] [NEW] add support for 480i/576i\n" \
 	"V03.01.00.00.03.04.14 [20230308] [BUG]  fix y422 deep color check" \
 	"V03.01.00.00.03.04.15 [20230316] [BUG] 480p&576p colorimetry should be 601" \
-	"V03.01.00.00.03.04.16 [20230317] [NEW] tx21 send emds pkt for cuva"
+	"V03.01.00.00.03.04.16 [20230317] [NEW] tx21 send emds pkt for cuva" \
+	"V03.01.00.00.03.04.17 [20230419] [COMP] sync 5.4 code to 5.15\n"
 
 #endif // __HDMI21_VERSION_H__

@@ -47,7 +47,7 @@
 
 #define EXTENSION_VENDOR_SPECIFIC 0x1
 #define EXTENSION_COLORMETRY_TAG 0x5
-/* DRM stands for "Dynamic Range and Mastering " */
+/* DRM stands for "Dynamic Range and Mastering" */
 #define EXTENSION_DRM_STATIC_TAG 0x6
 #define EXTENSION_DRM_DYNAMIC_TAG 0x7
    #define TYPE_1_HDR_METADATA_TYPE 0x0001
@@ -78,7 +78,6 @@
 #define TAG_ESTABLISHED_TIMING_III 0xF7
 #define TAG_DUMMY_DES 0x10
 
-static u8 __nosavedata edid_checkvalue[4] = {0};
 static u32 hdmitx_edid_check_valid_blocks(u8 *buf);
 static void edid_dtd_parsing(struct rx_cap *prxcap, u8 *data);
 static void hdmitx_edid_set_default_aud(struct hdmitx_dev *hdev);
@@ -86,44 +85,6 @@ static void hdmitx_edid_set_default_aud(struct hdmitx_dev *hdev);
 struct edid_venddat_t {
 	u8 data[10];
 };
-
-static int xtochar(int num, u8 *checksum)
-{
-	if (((edid_checkvalue[num]  >> 4) & 0xf) <= 9)
-		checksum[0] = ((edid_checkvalue[num]  >> 4) & 0xf) + '0';
-	else
-		checksum[0] = ((edid_checkvalue[num]  >> 4) & 0xf) - 10 + 'a';
-
-	if ((edid_checkvalue[num] & 0xf) <= 9)
-		checksum[1] = (edid_checkvalue[num] & 0xf) + '0';
-	else
-		checksum[1] = (edid_checkvalue[num] & 0xf) - 10 + 'a';
-
-	return 0;
-}
-
-static void edid_save_checkvalue(u8 *buf, u32 block_cnt,
-				 struct rx_cap *rxcap)
-{
-	u32 i, length, max;
-
-	if (!buf)
-		return;
-
-	length = sizeof(edid_checkvalue);
-	memset(edid_checkvalue, 0x00, length);
-
-	max = (block_cnt > length) ? length : block_cnt;
-
-	for (i = 0; i < max; i++)
-		edid_checkvalue[i] = *(buf + (i + 1) * 128 - 1);
-
-	rxcap->chksum[0] = '0';
-	rxcap->chksum[1] = 'x';
-
-	for (i = 0; i < 4; i++)
-		xtochar(i, &rxcap->chksum[2 * i + 2]);
-}
 
 static int edid_decodeheader(struct hdmitx_info *info, u8 *buff)
 {
@@ -2793,7 +2754,7 @@ int hdmitx21_edid_parse(struct hdmitx_dev *hdmitx_device)
 	if (!prxcap->AUD_count && hdmitx_device->hdmi_info.support_basic_audio_flag)
 		hdmitx_edid_set_default_aud(hdmitx_device);
 
-	edid_save_checkvalue(EDID_buf, blockcount + 1, prxcap);
+	hdmitx_update_edid_chksum(EDID_buf, blockcount + 1, prxcap);
 
 	if (!hdmitx_edid_check_valid_blocks(&EDID_buf[0])) {
 		prxcap->ieeeoui = HDMI_IEEE_OUI;
@@ -3224,185 +3185,6 @@ void hdmitx21_edid_buf_compare_print(struct hdmitx_dev *hdmitx_device)
 		for (blk_idx = 0; blk_idx < valid_blk_no; blk_idx++)
 			hdmitx_edid_blk_print(&buf1[blk_idx * 128], blk_idx);
 	}
-}
-
-int hdmitx21_edid_dump(struct hdmitx_dev *hdmitx_device, char *buffer,
-		     int buffer_len)
-{
-	int i, pos = 0;
-	struct rx_cap *prxcap = &hdmitx_device->tx_comm.rxcap;
-	struct hdmitx_common *tx_comm = &hdmitx_device->tx_comm;
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Rx Manufacturer Name: %s\n", prxcap->IDManufacturerName);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Rx Product Code: %02x%02x\n",
-		prxcap->IDProductCode[0],
-		prxcap->IDProductCode[1]);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Rx Serial Number: %02x%02x%02x%02x\n",
-		prxcap->IDSerialNumber[0],
-		prxcap->IDSerialNumber[1],
-		prxcap->IDSerialNumber[2],
-		prxcap->IDSerialNumber[3]);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Rx Product Name: %s\n", prxcap->ReceiverProductName);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Manufacture Week: %d\n", prxcap->manufacture_week);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Manufacture Year: %d\n", prxcap->manufacture_year + 1990);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Physical size(mm): %d x %d\n",
-		prxcap->physical_width, prxcap->physical_height);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"EDID Version: %d.%d\n",
-		prxcap->edid_version, prxcap->edid_revision);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"EDID block number: 0x%x\n", tx_comm->EDID_buf[0x7e]);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"blk0 chksum: 0x%02x\n", prxcap->blk0_chksum);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Source Physical Address[a.b.c.d]: %x.%x.%x.%x\n",
-		hdmitx_device->hdmi_info.vsdb_phy_addr.a,
-		hdmitx_device->hdmi_info.vsdb_phy_addr.b,
-		hdmitx_device->hdmi_info.vsdb_phy_addr.c,
-		hdmitx_device->hdmi_info.vsdb_phy_addr.d);
-
-	// TODO native_vic2
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"native Mode %x, VIC (native %d):\n",
-		prxcap->native_Mode, prxcap->native_vic);
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"ColorDeepSupport %x\n", prxcap->ColorDeepSupport);
-
-	for (i = 0; i < prxcap->VIC_count ; i++) {
-		pos += snprintf(buffer + pos, buffer_len - pos, "%d ",
-		prxcap->VIC[i]);
-	}
-	pos += snprintf(buffer + pos, buffer_len - pos, "\n");
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Audio {format, channel, freq, cce}\n");
-	for (i = 0; i < prxcap->AUD_count; i++) {
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			"{%d, %d, %x, %x}\n",
-			prxcap->RxAudioCap[i].audio_format_code,
-			prxcap->RxAudioCap[i].channel_num_max,
-			prxcap->RxAudioCap[i].freq_cc,
-			prxcap->RxAudioCap[i].cc3);
-	}
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Speaker Allocation: %x\n", prxcap->RxSpeakerAllocation);
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"Vendor: 0x%x ( %s device)\n",
-		prxcap->ieeeoui, (prxcap->ieeeoui) ? "HDMI" : "DVI");
-
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"MaxTMDSClock1 %d MHz\n", prxcap->Max_TMDS_Clock1 * 5);
-
-	if (prxcap->hf_ieeeoui) {
-		pos +=
-		snprintf(buffer + pos,
-			 buffer_len - pos, "Vendor2: 0x%x\n",
-			prxcap->hf_ieeeoui);
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			"MaxTMDSClock2 %d MHz\n", prxcap->Max_TMDS_Clock2 * 5);
-	}
-
-	if (prxcap->allm)
-		pos += snprintf(buffer + pos, buffer_len - pos, "ALLM: %x\n",
-				prxcap->allm);
-
-	if (prxcap->cnc3)
-		pos += snprintf(buffer + pos, buffer_len - pos, "Game/CNC3: %x\n",
-				prxcap->cnc3);
-
-	pos += snprintf(buffer + pos, buffer_len - pos, "vLatency: ");
-	if (prxcap->vLatency == LATENCY_INVALID_UNKNOWN)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-				" Invalid/Unknown\n");
-	else if (prxcap->vLatency == LATENCY_NOT_SUPPORT)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			" UnSupported\n");
-	else
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			" %d\n", prxcap->vLatency);
-
-	pos += snprintf(buffer + pos, buffer_len - pos, "aLatency: ");
-	if (prxcap->aLatency == LATENCY_INVALID_UNKNOWN)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-				" Invalid/Unknown\n");
-	else if (prxcap->aLatency == LATENCY_NOT_SUPPORT)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			" UnSupported\n");
-	else
-		pos += snprintf(buffer + pos, buffer_len - pos, " %d\n",
-			prxcap->aLatency);
-
-	pos += snprintf(buffer + pos, buffer_len - pos, "i_vLatency: ");
-	if (prxcap->i_vLatency == LATENCY_INVALID_UNKNOWN)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-				" Invalid/Unknown\n");
-	else if (prxcap->i_vLatency == LATENCY_NOT_SUPPORT)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			" UnSupported\n");
-	else
-		pos += snprintf(buffer + pos, buffer_len - pos, " %d\n",
-			prxcap->i_vLatency);
-
-	pos += snprintf(buffer + pos, buffer_len - pos, "i_aLatency: ");
-	if (prxcap->i_aLatency == LATENCY_INVALID_UNKNOWN)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-				" Invalid/Unknown\n");
-	else if (prxcap->i_aLatency == LATENCY_NOT_SUPPORT)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			" UnSupported\n");
-	else
-		pos += snprintf(buffer + pos, buffer_len - pos, " %d\n",
-			prxcap->i_aLatency);
-
-	if (prxcap->colorimetry_data)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			"ColorMetry: 0x%x\n", prxcap->colorimetry_data);
-	pos += snprintf(buffer + pos, buffer_len - pos, "SCDC: %x\n",
-		prxcap->scdc_present);
-	pos += snprintf(buffer + pos, buffer_len - pos, "RR_Cap: %x\n",
-		prxcap->scdc_rr_capable);
-	pos += snprintf(buffer + pos, buffer_len - pos, "FRL_RATE: %x\n",
-		prxcap->max_frl_rate);
-	pos +=
-	snprintf(buffer + pos, buffer_len - pos, "LTE_340M_Scramble: %x\n",
-		 prxcap->lte_340mcsc_scramble);
-
-	if (prxcap->dv_info.ieeeoui == DOVI_IEEEOUI)
-		pos += snprintf(buffer + pos, buffer_len - pos,
-			"  DolbyVision%d", prxcap->dv_info.ver);
-	if (prxcap->hdr_info2.hdr_support)
-		pos += snprintf(buffer + pos, buffer_len - pos, "  HDR/%d",
-			prxcap->hdr_info2.hdr_support);
-	if (prxcap->dc_y444 || prxcap->dc_30bit || prxcap->dc_30bit_420)
-		pos += snprintf(buffer + pos, buffer_len - pos, "  DeepColor");
-	pos += snprintf(buffer + pos, buffer_len - pos, "\n");
-	pos += snprintf(buffer + pos, buffer_len - pos, "additional_vsif_num: %d\n",
-			prxcap->additional_vsif_num);
-	pos += snprintf(buffer + pos, buffer_len - pos, "ifdb_present: %d\n",
-			prxcap->ifdb_present);
-	/* for checkvalue which maybe used by application to adjust
-	 * whether edid is changed
-	 */
-	pos += snprintf(buffer + pos, buffer_len - pos,
-		"checkvalue: 0x%02x%02x%02x%02x\n",
-			edid_checkvalue[0],
-			edid_checkvalue[1],
-			edid_checkvalue[2],
-			edid_checkvalue[3]);
-
-	return pos;
 }
 
 bool hdmitx21_edid_only_support_sd(struct hdmitx_dev *hdev)

@@ -62,6 +62,7 @@
 #include <hdmitx_boot_parameters.h>
 #include <hdmitx_drm_hook.h>
 #include <hdmitx_sysfs_common.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 #define HDMI_TX_COUNT 32
 #define HDMI_TX_POOL_NUM  6
@@ -362,6 +363,7 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	hdmitx21_set_uevent(HDMITX_AUDIO_EVENT, 0);
 	hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CLR_AVI_PACKET, 0);
 	hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CLR_VSDB_PACKET, 0);
+	mutex_unlock(&hdev->hdmimode_mutex);
 }
 
 static int hdmitx_is_hdmi_vmode(char *mode_name)
@@ -397,9 +399,9 @@ static void hdmitx_late_resume(struct early_suspend *h)
 
 	pr_info("hdmitx hpd state: %d\n", hdev->tx_comm.hpd_state);
 
-	/*force to get EDID after resume */
+	/* force to get EDID after resume */
 	if (hdev->tx_comm.hpd_state) {
-		/*add i2c soft reset before read EDID */
+		/* add i2c soft reset before read EDID */
 		hdev->hwop.cntlddc(hdev, DDC_GLITCH_FILTER_RESET, 0);
 		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_I2C_RESET, 0);
 		hdmitx_get_edid(hdev);
@@ -1788,7 +1790,7 @@ static void hdmitx_set_vsif_pkt(enum eotf_type type,
 				/* hdmi_vend_infoframe_set(NULL); */
 				hdmi_vend_infoframe_rawset(NULL, NULL);
 			if (signal_sdr) {
-				pr_info("hdmitx: H14b VSIF, switching signal to SDR\n");
+				pr_info("hdmitx: Dolby H14b VSIF, switching signal to SDR\n");
 				update_current_para(hdev);
 				hdmi_avi_infoframe_config(CONF_AVI_CS, hdev->para->cs);
 				hdmi_avi_infoframe_config(CONF_AVI_Q01, RGB_RANGE_LIM);
@@ -3231,7 +3233,7 @@ static ssize_t ll_mode_show(struct device *dev,
 	return pos;
 }
 
-/* 1.echo 1 to enalbe ALLM OR HDMI1.X game mode
+/* 1.echo 1 to enable ALLM OR HDMI1.X game mode
  * if sink support ALLM, then output ALLM mode;
  * else if support HDMI1.X game mode, then output
  * HDMI1.X game mode; else, do nothing
@@ -3440,7 +3442,7 @@ void hdmitx21_av_mute_op(u32 flag, unsigned int path)
 	if (flag == SET_AVMUTE) {
 		avmute_path |= path;
 		pr_info("%s: AVMUTE path=0x%x\n", __func__, path);
-		hdev->hwop.cntlmisc(hdev, MISC_AVMUTE_OP, SET_AVMUTE);
+		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, SET_AVMUTE);
 	} else if (flag == CLR_AVMUTE) {
 		avmute_path &= ~path;
 		/* unmute only if none of the paths are muted */
@@ -3452,6 +3454,62 @@ void hdmitx21_av_mute_op(u32 flag, unsigned int path)
 		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, OFF_AVMUTE);
 	}
 	mutex_unlock(&avmute_mutex);
+}
+
+/*
+ *  1: set avmute
+ * -1: clear avmute
+ * 0: off avmute
+ */
+static ssize_t avmute_store(struct device *dev,
+			    struct device_attribute *attr,
+			    const char *buf, size_t count)
+{
+	int cmd = OFF_AVMUTE;
+	static int mask0;
+	static int mask1;
+
+	pr_info("%s %s\n", __func__, buf);
+	if (strncmp(buf, "-1", 2) == 0) {
+		cmd = CLR_AVMUTE;
+		mask0 = -1;
+	} else if (strncmp(buf, "0", 1) == 0) {
+		cmd = OFF_AVMUTE;
+		mask0 = 0;
+	} else if (strncmp(buf, "1", 1) == 0) {
+		cmd = SET_AVMUTE;
+		mask0 = 1;
+	}
+	if (strncmp(buf, "r-1", 3) == 0) {
+		cmd = CLR_AVMUTE;
+		mask1 = -1;
+	} else if (strncmp(buf, "r0", 2) == 0) {
+		cmd = OFF_AVMUTE;
+		mask1 = 0;
+	} else if (strncmp(buf, "r1", 2) == 0) {
+		cmd = SET_AVMUTE;
+		mask1 = 1;
+	}
+	if (mask0 == 1 || mask1 == 1)
+		cmd = SET_AVMUTE;
+	else if ((mask0 == -1) && (mask1 == -1))
+		cmd = CLR_AVMUTE;
+	hdmitx21_av_mute_op(cmd, AVMUTE_PATH_1);
+
+	return count;
+}
+
+static ssize_t avmute_show(struct device *dev,
+			   struct device_attribute *attr, char *buf)
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	int ret = 0;
+	int pos = 0;
+
+	ret = hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_READ_AVMUTE_OP, 0);
+	pos += snprintf(buf + pos, PAGE_SIZE, "%d", ret);
+
+	return pos;
 }
 
 static ssize_t rxsense_policy_store(struct device *dev,
@@ -3717,9 +3775,9 @@ static ssize_t hdcp_mode_show(struct device *dev,
 {
 	int pos = 0;
 	unsigned int hdcp_ret = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	u32 hdcp_mode = hdmitx21_get_hdcp_mode();
 
-	switch (hdev->hdcp_mode) {
+	switch (hdcp_mode) {
 	case 1:
 		pos += snprintf(buf + pos, PAGE_SIZE, "14");
 		break;
@@ -3731,10 +3789,10 @@ static ssize_t hdcp_mode_show(struct device *dev,
 		break;
 	}
 
-	if (hdmitx21_device.hdcp_ctl_lvl > 0 && hdev->hdcp_mode > 0) {
-		if (hdev->hdcp_mode == 1)
+	if (hdmitx21_device.hdcp_ctl_lvl > 0 && hdcp_mode > 0) {
+		if (hdcp_mode == 1)
 			hdcp_ret = get_hdcp1_result();
-		else if (hdev->hdcp_mode == 2)
+		else if (hdcp_mode == 2)
 			hdcp_ret = get_hdcp2_result();
 		else
 			hdcp_ret = 0;
@@ -3755,11 +3813,11 @@ static ssize_t hdcp_mode_store(struct device *dev,
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	if (strncmp(buf, "f1", 2) == 0) {
-		hdev->hdcp_mode = 0x11;
+		hdev->hdcp_mode = 0x1;
 		hdcp_mode_set(1);
 	}
 	if (strncmp(buf, "f2", 2) == 0) {
-		hdev->hdcp_mode = 0x12;
+		hdev->hdcp_mode = 0x2;
 		hdcp_mode_set(2);
 	}
 	if (buf[0] == '0') {
@@ -4452,6 +4510,7 @@ static DEVICE_ATTR_RO(allm_cap);
 static DEVICE_ATTR_RW(allm_mode);
 static DEVICE_ATTR_RW(ll_mode);
 static DEVICE_ATTR_RW(ll_user_mode);
+static DEVICE_ATTR_RW(avmute);
 static DEVICE_ATTR_RW(sspll);
 static DEVICE_ATTR_RW(rxsense_policy);
 static DEVICE_ATTR_RW(cedst_policy);
@@ -5191,6 +5250,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	 * set hdmi mode
 	 */
 	if (hdev->suspend_flag) {
+		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 1);
 		hdmitx21_set_uevent_state(HDMITX_HPD_EVENT, 1);
 		hdmitx21_set_uevent_state(HDMITX_AUDIO_EVENT, 1);
 	} else {
@@ -5202,10 +5262,10 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	cancel_delayed_work(&hdev->work_cedst);
 	if (hdev->cedst_policy)
 		queue_delayed_work(hdev->cedst_wq, &hdev->work_cedst, 0);
-	/*notify to drm hdmi*/
-	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 	mutex_unlock(&hdev->hdmimode_mutex);
 	mutex_unlock(&hdev->tx_comm.setclk_mutex);
+	/*notify to drm hdmi*/
+	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 }
 
 static void clear_rx_vinfo(struct hdmitx_dev *hdev)
@@ -5319,6 +5379,7 @@ static void hdmitx_hpd_plugout_handler(struct work_struct *work)
 	 * set hdmi mode
 	 */
 	if (hdev->suspend_flag) {
+		extcon_set_state(hdmitx_extcon_hdmi, EXTCON_DISP_HDMI, 0);
 		hdmitx21_set_uevent_state(HDMITX_HPD_EVENT, 0);
 		hdmitx21_set_uevent_state(HDMITX_AUDIO_EVENT, 0);
 	} else {
@@ -6056,6 +6117,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_lipsync_cap);
 	ret = device_create_file(dev, &dev_attr_hdmi_hdr_status);
 	ret = device_create_file(dev, &dev_attr_aud_mute);
+	ret = device_create_file(dev, &dev_attr_avmute);
 	ret = device_create_file(dev, &dev_attr_sspll);
 	ret = device_create_file(dev, &dev_attr_rxsense_policy);
 	ret = device_create_file(dev, &dev_attr_rxsense_state);
@@ -6249,6 +6311,7 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_ready);
 	device_remove_file(dev, &dev_attr_support_3d);
 	device_remove_file(dev, &dev_attr_aud_mute);
+	device_remove_file(dev, &dev_attr_avmute);
 	device_remove_file(dev, &dev_attr_sspll);
 	device_remove_file(dev, &dev_attr_rxsense_policy);
 	device_remove_file(dev, &dev_attr_rxsense_state);
@@ -6798,7 +6861,7 @@ static long hdcp_comm_ioctl(struct file *file,
 		pr_info("tee load hdcp key ready\n");
 		if (hdev->tx_comm.hpd_state == 1 &&
 			hdev->ready &&
-			hdev->hdcp_mode == 0) {
+			hdmitx21_get_hdcp_mode() == 0) {
 			pr_info("hdmi ready but hdcp not enabled, enable now\n");
 			if (hdcp_need_control_by_upstream(hdev))
 				pr_info("hdmitx: currently hdcp should started by upstream\n");

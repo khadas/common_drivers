@@ -1868,7 +1868,7 @@ int hdmitx21_hdcp_init(void)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	pr_info("L_2, %s\n", __func__);
+	pr_hdcp_info(L_2, "%s[%d]\n", __func__, __LINE__);
 	hdev->am_hdcp = &hdcp_hdcp;
 	p_hdcp = &hdcp_hdcp;
 	p_hdcp->hdcp_state = HDCP_STAT_NONE;

@@ -1,4 +1,4 @@
-From 87803d40290ef744c27bd40597881eaacf407921 Mon Sep 17 00:00:00 2001
+From e33e1bf8e22318f8af9d3bfe1bce1ed729978e87 Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Thu, 2 Feb 2023 15:49:10 +0800
 Subject: [PATCH] init: initialize the building framework of androidu-5.15 for
@@ -22,7 +22,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  Makefile                                      |  35 ++
  drivers/Kconfig                               |  52 +++
  .../greybus/tools/{Android.mk => Android_mk}  |   0
- kernel/Makefile                               |   6 +
+ kernel/Makefile                               |   3 +-
  scripts/amlogic/licence_check.pl              | 153 +++++++
  scripts/amlogic/licence_pre.pl                |  53 +++
  scripts/amlogic/merge_pre_check.pl            | 429 ++++++++++++++++++
@@ -30,7 +30,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  scripts/amlogic/pre-commit-common_drivers     |  24 +
  scripts/checkpatch.pl                         | 158 +++----
  scripts/kconfig/Makefile                      |   9 +-
- 12 files changed, 866 insertions(+), 80 deletions(-)
+ 12 files changed, 862 insertions(+), 81 deletions(-)
  rename drivers/staging/greybus/tools/{Android.mk => Android_mk} (100%)
  create mode 100755 scripts/amlogic/licence_check.pl
  create mode 100755 scripts/amlogic/licence_pre.pl
@@ -188,24 +188,19 @@ similarity index 100%
 rename from drivers/staging/greybus/tools/Android.mk
 rename to drivers/staging/greybus/tools/Android_mk
 diff --git a/kernel/Makefile b/kernel/Makefile
-index 9dc7e32828ca..36c0c11ade5c 100644
+index 9dc7e32828ca..15f2927298a1 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
-@@ -175,8 +175,14 @@ $(obj)/gki_module_unprotected.h: $(ALL_KMI_SYMBOLS) \
+@@ -175,7 +175,8 @@ $(obj)/gki_module_unprotected.h: $(ALL_KMI_SYMBOLS) \
  	$(ALL_KMI_SYMBOLS)
  
  # Generate symbol list with union of all symbol list for arm64; empty for others
+-$(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_*),)
 +# boot.img need to use once build with gki, not CONFIG_AMLOGIC_DRIVER when once build.
-+ifndef CONFIG_AMLOGIC_DRIVER
 +$(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_* $(srctree)/$(COMMON_DRIVERS_DIR)/android/abi_gki_aarch64_*),)
-+	$(if $(strip $^),cat $^ > $(ALL_KMI_SYMBOLS), echo "" > $(ALL_KMI_SYMBOLS))
-+else
- $(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_*),)
  	$(if $(strip $^),cat $^ > $(ALL_KMI_SYMBOLS), echo "" > $(ALL_KMI_SYMBOLS))
-+endif
  
  $(obj)/gki_module_protected_exports.h: $(srctree)/android/abi_gki_protected_exports \
- 				$(srctree)/scripts/gen_gki_modules_headers.sh
 diff --git a/scripts/amlogic/licence_check.pl b/scripts/amlogic/licence_check.pl
 new file mode 100755
 index 000000000000..2163ce102ab6

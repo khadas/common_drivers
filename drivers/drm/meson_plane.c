@@ -86,6 +86,27 @@ static const u32 supported_drm_formats_v2[] = {
 	DRM_FORMAT_RGB565,
 };
 
+static const u32 supported_drm_formats_v3[] = {
+	DRM_FORMAT_RGBA1010102,
+	DRM_FORMAT_ARGB2101010,
+	DRM_FORMAT_ABGR2101010,
+	DRM_FORMAT_BGRA1010102,
+	DRM_FORMAT_XRGB8888,
+	DRM_FORMAT_XBGR8888,
+	DRM_FORMAT_RGBX8888,
+	DRM_FORMAT_BGRX8888,
+	DRM_FORMAT_ARGB8888,
+	DRM_FORMAT_ABGR8888,
+	DRM_FORMAT_RGBA8888,
+	DRM_FORMAT_BGRA8888,
+	DRM_FORMAT_RGB888,
+	DRM_FORMAT_ABGR4444,
+	DRM_FORMAT_ARGB4444,
+	DRM_FORMAT_BGRA4444,
+	DRM_FORMAT_RGBA4444,
+	DRM_FORMAT_RGB565,
+};
+
 static u64 video_fbc_modifier[] = {
 	DRM_FORMAT_MOD_AMLOGIC_FBC(AMLOGIC_FBC_LAYOUT_BASIC, 0),
 	DRM_FORMAT_MOD_AMLOGIC_FBC(AMLOGIC_FBC_LAYOUT_BASIC,
@@ -1578,8 +1599,13 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 		osd_plane->osd_occupied = false;
 
 	if (conf->osd_formats_group) {
-		formats_group = supported_drm_formats_v2;
-		num_formats = ARRAY_SIZE(supported_drm_formats_v2);
+		if (conf->osd_formats_group == 1) {
+			formats_group = supported_drm_formats_v2;
+			num_formats = ARRAY_SIZE(supported_drm_formats_v2);
+		} else if (conf->osd_formats_group == 2) {
+			formats_group = supported_drm_formats_v3;
+			num_formats = ARRAY_SIZE(supported_drm_formats_v3);
+		}
 	} else {
 		formats_group = supported_drm_formats;
 		num_formats = ARRAY_SIZE(supported_drm_formats);

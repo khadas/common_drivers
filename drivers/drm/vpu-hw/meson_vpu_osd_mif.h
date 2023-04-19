@@ -291,6 +291,9 @@
 #define VIU_OSD4_PROT_CTRL_S5                   0x42de
 #define VIU_OSD4_MALI_UNPACK_CTRL_S5            0x42df
 #define VIU_OSD4_DIMM_CTRL_S5                   0x42e0
+/* t3x reg pixel format workaround */
+#define VIU_OSD1_NORMAL_SWAP_T3X                       0x4221
+#define VIU_OSD1_FIFO_CTRL_STAT_T3X                    0x421c
 
 struct osd_mif_reg_s {
 	u32 viu_osd_ctrl_stat;
@@ -354,7 +357,10 @@ enum osd_color_matrix_e {
 	/*for 16bit:blk-mode=BLOCK_MODE_16BIT*/
 	COLOR_MATRIX_655 = 0,
 	COLOR_MATRIX_844,
+	COLOR_MATRIX_4444 = 4,
 	COLOR_MATRIX_565 = 4,
+	COLOR_MATRIX_4444_t3x = 5,
+	COLOR_MATRIX_565_t3x = 6,
 	/*for 32bit:blk-mode=BLOCK_MODE_32BIT*/
 	COLOR_MATRIX_RGBA8888 = 0,
 	COLOR_MATRIX_ARGB8888,

@@ -2053,3 +2053,7 @@
 &pwm_cd {
 	status = "okay";
 };
+
+&dmx_aucpu {
+	status = "okay";
+};

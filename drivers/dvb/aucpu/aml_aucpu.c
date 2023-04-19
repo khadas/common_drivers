@@ -653,7 +653,7 @@ static int load_start_aucpu_fw(struct device *device)
 
 	result = request_firmware(&my_fw, "aucpu_fw.bin", device);
 	if (!my_fw || result < 0) {
-		aucpu_pr(LOG_ERROR, "load aucpu_fw.bin fail\n");
+		aucpu_pr(LOG_ERROR, "load aucpu_fw.bin fail, result=%d\n", result);
 		result = AUCPU_ERROR_NOT_IMPLEMENTED;
 		return result;
 	}
@@ -1271,7 +1271,7 @@ static s32 aucpu_init_try(struct platform_device *pdev)
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
 	/* if platform driver is implemented */
-	if (res->start != 0) {
+	if (res && res->start != 0) {
 		pctx->aucpu_reg.phys_addr = res->start;
 		pctx->aucpu_reg.base =
 			(ulong)ioremap(res->start,

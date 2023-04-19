@@ -2893,9 +2893,7 @@
 		#address-cells=<2>;
 		#size-cells=<2>;
 		ranges;
-		io_reg_base{
-			reg = <0x0 0xfe09e080 0x0 0x100>;
-		};
+		reg = <0x0 0xfe09e080 0x0 0x100>;
 	};
 
 	ge2d {

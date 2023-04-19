@@ -9,6 +9,16 @@
 #include <dt-bindings/clock/txhd2-clkc.h>
 #include <dt-bindings/clock/txhd2-aoclkc.h>
 #include <dt-bindings/mailbox/amlogic,mbox.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/gpio/meson-txhd2-gpio.h>
+#include <dt-bindings/pwm/pwm.h>
+#include <dt-bindings/pwm/meson.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/input/meson_ir.h>
+#include <dt-bindings/iio/adc/amlogic-saradc.h>
+#include "meson-ir-map.dtsi"
+#include <dt-bindings/thermal/thermal.h>
+#include <dt-bindings/hwspinlock/amlogic,hwspinlock.h>
 / {
 	cpus:cpus {
 		#address-cells = <1>;
@@ -141,6 +151,35 @@
 		reserve_mem_size = <0x00300000>;
 	};
 
+	optee {
+		compatible = "linaro,optee-tz";
+		method = "smc";
+	};
+
+	meson_suspend:pm {
+		compatible = "amlogic, pm";
+		status = "disabled";
+		device_name = "aml_pm";
+		extend_resume_reason;
+		reg = <0xfe010288 0x4>, /*SYSCTRL_STATUS_REG2*/
+			<0xfe0102dc 0x4>; /*SYSCTRL_STICKY_REG7*/
+	};
+
+	ram-dump {
+		compatible = "amlogic, ram_dump";
+		status = "disabled";
+		reg = <0xFE0102D8  0x4>;
+		reg-names = "SYSCTRL_STICKY_REG6";
+		store_device = "data";
+	};
+
+	cma_shrinker: cma_shrinker {
+		compatible = "amlogic, cma-shrinker";
+		status = "disabled";
+		adj  = <0 100 200 250 900 950>;
+		free = <8192 12288 16384 24576 28672 32768>;
+	};
+
 	xtal: xtal-clk {
 		compatible = "fixed-clock";
 		clock-frequency = <24000000>;
@@ -175,6 +214,81 @@
 		mbox-dests = <MAILBOX_AOCPU>;
 	};
 
+	cpuinfo {
+		compatible = "amlogic, cpuinfo";
+		status = "okay";
+		cpuinfo_cmd = <0x82000044>;
+	};
+
+	arm_pmu {
+		compatible = "arm,armv8-pmuv3";
+		private-interrupts;
+		interrupts = <GIC_SPI 137 IRQ_TYPE_LEVEL_HIGH>;
+		reg = <0xff634680 0x4>;
+		status = "disabled";
+	};
+
+	ddr_bandwidth {
+		compatible = "amlogic,ddr-bandwidth-t5m";
+		status = "disabled";
+		reg = <0 0xfe036000 0 0x400
+		       0 0xfe034000 0 0x400
+		       0 0xfe0368a4 0 0x4>;
+		freq_reg = <0xfe0348a4>;
+		interrupts = <0 136 IRQ_TYPE_EDGE_RISING
+			      0 140 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "ddr_bandwidth";
+	};
+
+	dmc_monitor {
+		compatible = "amlogic,dmc_monitor-t5m";
+		status = "disabled";
+		reg = <0 0xfe036000 0 0x400
+		       0 0xfe034000 0 0x400>;
+		reg_base = <0xfe036000>;
+		interrupts = <0 137 IRQ_TYPE_EDGE_RISING
+			      0 141 IRQ_TYPE_EDGE_RISING>;
+	};
+
+	galcore {
+		compatible = "amlogic, galcore";
+		dev_name = "galcore";
+		status = "disabled";
+		//clocks = <&clkc CLKID_CTS_NNA_AXI_CLK>,
+		//      <&clkc CLKID_CTS_NNA_CORE_CLK>,
+		//      <&clkc CLKID_SYS1_PLL>;
+		//clock-names = "cts_vipnanoq_axi_clk_composite",
+		//      "cts_vipnanoq_core_clk_composite",
+		//      "sys1_pll";
+		//assigned-clocks =  <&clkc CLKID_SYS1_PLL>;
+		assigned-clock-rates =  <1704000000>;
+		interrupts = <0 59 4>;
+		interrupt-names = "galcore";
+		//power-domains = <&pwrdm PDID_T3_NNA>;
+		reg = <0x0 0xfdb00000 0x0 0x40000
+		      0x0 0xfe090000 0x0 0x2000
+		      0x0 0xfe00c0a4 0x0 0x4
+		      0x0 0xfe00c0a8 0x0 0x4
+		      0x0 0xfe00c034 0x0 0x4
+		      0X0 0xfe000220 0X0 0x4>;
+		reg-names = "NN_REG","NN_SRAM","NN_MEM0",
+		      "NN_MEM1","NN_RESET","NN_CLK";
+		nn_power_version = <5>;
+	};
+
+	vrtc: rtc@0xfe010288 {
+		compatible = "amlogic,meson-vrtc";
+		reg = <0x0 0xfe010288 0x0 0x4>; //SYSCTRL_STATUS_REG2
+		status = "disabled";
+		//mboxes = <&mhu_fifo 3>;
+	};
+
+	vcodec_dec {
+		compatible = "amlogic, vcodec-dec";
+		dev_name = "aml-vcodec-dec";
+		status = "disabled";
+	};
+
 	aml_reboot {
 		compatible = "aml, reboot";
 		sys_reset = <0x84000009>;
@@ -182,6 +296,22 @@
 		dis_nb_cpus_in_shutdown;
 		reg = <0xff80023c 0x4>; /* SEC_AO_SEC_SD_CFG15 */
 		status = "okay";
+	};
+
+	adc: adc {
+		compatible = "amlogic, adc-t3";
+		status = "disabled";
+		reg = <0x0 0xfe072000 0x0 0x2000/* afe reg base */
+			0x0 0xfe008000 0x0 0x2000/* ana base */
+			>;
+	};
+
+	jtag {
+		compatible = "amlogic, jtag";
+		status = "disabled";
+		select = "disable"; /* disable/jtag_a/jtag_b */
+		//pinctrl-names="jtag_a_pins";
+		//pinctrl-0=<&jtag_a_pins>;
 	};
 
 	soc {
@@ -223,7 +353,9 @@
 			ranges = <0x0 0xff800000 0xa000>;
 
 			cpu_version {
-				reg=<0x220 0x4>;
+				compatible = "amlogic,meson-gx-ao-secure", "syscon";
+				reg=<0x0 0x140 0x0 0x4>;
+				amlogic,has-chip-id;
 			};
 
 			uart_AO: serial@3000 {

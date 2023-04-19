@@ -1,4 +1,4 @@
-From 5335fad81e77aa4a13411c66beb3f8933cbfac09 Mon Sep 17 00:00:00 2001
+From 36bcb2b56da66a51899794799a426c0df8584395 Mon Sep 17 00:00:00 2001
 From: "song.han" <song.han@amlogic.com>
 Date: Wed, 19 Apr 2023 10:58:17 +0800
 Subject: [PATCH] debug: iotrace driver follow gki 2.0 [1/2]
@@ -20,7 +20,7 @@ Signed-off-by: song.han <song.han@amlogic.com>
  arch/arm/include/asm/io.h       |  8 +--
  arch/arm/include/asm/irqflags.h |  2 +-
  arch/arm64/include/asm/io.h     |  4 +-
- arch/arm64/kernel/image-vars.h  |  5 +-
+ arch/arm64/kernel/image-vars.h  |  4 +-
  arch/arm64/kernel/io.c          | 22 +-------
  drivers/base/power/domain.c     | 71 -------------------------
  drivers/clk/clk.c               | 92 ---------------------------------
@@ -33,7 +33,7 @@ Signed-off-by: song.han <song.han@amlogic.com>
  kernel/module.c                 |  9 ----
  kernel/sched/core.c             | 14 -----
  mm/vmalloc.c                    | 34 ------------
- 16 files changed, 16 insertions(+), 331 deletions(-)
+ 16 files changed, 15 insertions(+), 331 deletions(-)
 
 diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
 index eeb676c6380c..b38c3d5f5b39 100644
@@ -104,23 +104,20 @@ index f4af32daf24d..aff15597d672 100644
  #else
  /*
 diff --git a/arch/arm64/kernel/image-vars.h b/arch/arm64/kernel/image-vars.h
-index 415b81a941ab..28385ed627cb 100644
+index 7aca04fb8790..dda0961a7382 100644
 --- a/arch/arm64/kernel/image-vars.h
 +++ b/arch/arm64/kernel/image-vars.h
-@@ -134,10 +134,11 @@ KVM_NVHE_ALIAS(__hyp_event_ids_end);
- /* pKVM static key */
- KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+@@ -138,8 +138,8 @@ KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+ KVM_NVHE_ALIAS(pkvm_force_nc);
+ #endif
  
 -#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
 -KVM_NVHE_ALIAS(__pstore_io_save);
-+#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
++#if IS_BUILTIN(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
 +KVM_NVHE_ALIAS(pstore_io_save);
  KVM_NVHE_ALIAS(vabits_actual);
  #endif
-+
- #endif /* CONFIG_KVM */
  
- #endif /* __ARM64_KERNEL_IMAGE_VARS_H */
 diff --git a/arch/arm64/kernel/io.c b/arch/arm64/kernel/io.c
 index a7569c19c8af..9186cd23516d 100644
 --- a/arch/arm64/kernel/io.c
@@ -199,7 +196,7 @@ index a7569c19c8af..9186cd23516d 100644
  }
  EXPORT_SYMBOL(__memset_io);
 diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-index 61663ed63f3b..94fe30c187ad 100644
+index 85a225049365..24a82e252b7e 100644
 --- a/drivers/base/power/domain.c
 +++ b/drivers/base/power/domain.c
 @@ -39,51 +39,6 @@
@@ -254,7 +251,7 @@ index 61663ed63f3b..94fe30c187ad 100644
  static LIST_HEAD(gpd_list);
  static DEFINE_MUTEX(gpd_list_lock);
  
-@@ -554,11 +509,6 @@ static int _genpd_power_on(struct generic_pm_domain *genpd, bool timed)
+@@ -551,11 +506,6 @@ static int _genpd_power_on(struct generic_pm_domain *genpd, bool timed)
  	if (!genpd->power_on)
  		goto out;
  
@@ -266,7 +263,7 @@ index 61663ed63f3b..94fe30c187ad 100644
  	if (!timed) {
  		ret = genpd->power_on(genpd);
  		if (ret)
-@@ -596,9 +546,6 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
+@@ -593,9 +543,6 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
  	ktime_t time_start;
  	s64 elapsed_ns;
  	int ret;
@@ -276,7 +273,7 @@ index 61663ed63f3b..94fe30c187ad 100644
  
  	/* Notify consumers that we are about to power off. */
  	ret = raw_notifier_call_chain_robust(&genpd->power_notifiers,
-@@ -611,24 +558,6 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
+@@ -608,24 +555,6 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
  	if (!genpd->power_off)
  		goto out;
  
@@ -682,7 +679,7 @@ index 19ea8e6aa7e2..2ce06c79b4bb 100644
  	mutex_unlock(&module_mutex);
  	wake_up_all(&module_wq);
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 64201f145f1a..80838191f650 100644
+index fb1191121aa1..cb379c317c64 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -31,10 +31,6 @@
@@ -696,7 +693,7 @@ index 64201f145f1a..80838191f650 100644
  /*
   * Export tracepoints that act as a bare tracehook (ie: have no trace event
   * associated with them) to allow external modules to probe them.
-@@ -6500,16 +6496,6 @@ static void __sched notrace __schedule(unsigned int sched_mode)
+@@ -6503,16 +6499,6 @@ static void __sched notrace __schedule(unsigned int sched_mode)
  		psi_sched_switch(prev, next, !task_on_rq_queued(prev));
  
  		trace_sched_switch(sched_mode & SM_MASK_PREEMPT, prev, next);

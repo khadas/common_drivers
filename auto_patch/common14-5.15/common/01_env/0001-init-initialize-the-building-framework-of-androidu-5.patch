@@ -51,10 +51,10 @@ index 265959544978..0bbfe4cd37fc 100644
 +# amlogic drivers
 +/common_drivers/
 diff --git a/Makefile b/Makefile
-index f75dd9ba2b0c..a2e4f0155031 100644
+index 38945b41e976..3b2ad5a56ab5 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -431,6 +431,14 @@ ifneq ($(SRCARCH),$(SUBARCH))
+@@ -438,6 +438,14 @@ ifneq ($(SRCARCH),$(SUBARCH))
  cross_compiling := 1
  endif
  
@@ -69,7 +69,7 @@ index f75dd9ba2b0c..a2e4f0155031 100644
  KCONFIG_CONFIG	?= .config
  export KCONFIG_CONFIG
  
-@@ -682,10 +690,19 @@ ifdef need-config
+@@ -689,10 +697,19 @@ ifdef need-config
  include include/config/auto.conf
  endif
  
@@ -89,7 +89,7 @@ index f75dd9ba2b0c..a2e4f0155031 100644
  drivers-$(CONFIG_SAMPLES) += samples/
  drivers-$(CONFIG_NET) += net/
  drivers-y	+= virt/
-@@ -1211,6 +1228,9 @@ ifeq ($(KBUILD_EXTMOD),)
+@@ -1219,6 +1236,9 @@ ifeq ($(KBUILD_EXTMOD),)
  endif
  	$(Q)$(MAKE) $(hdr-inst)=$(hdr-prefix)include/uapi
  	$(Q)$(MAKE) $(hdr-inst)=$(hdr-prefix)arch/$(SRCARCH)/include/uapi
@@ -99,7 +99,7 @@ index f75dd9ba2b0c..a2e4f0155031 100644
  
  ifeq ($(KBUILD_EXTMOD),)
  core-y			+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/
-@@ -2076,8 +2096,23 @@ endif # config-build
+@@ -2084,8 +2104,23 @@ endif # config-build
  endif # mixed-build
  endif # need-sub-make
  
@@ -199,24 +199,19 @@ index 67f44716797e..09c9fcfb9236 100644
 +endif
 +endif
  endmenu
-diff --git a/drivers/staging/greybus/tools/Android.mk b/drivers/staging/greybus/tools/Android_mk
-similarity index 100%
-rename from drivers/staging/greybus/tools/Android.mk
-rename to drivers/staging/greybus/tools/Android_mk
 diff --git a/kernel/Makefile b/kernel/Makefile
-index 9dc7e32828ca..15f2927298a1 100644
+index ce5fc348b16a..f50bc5b8b494 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
-@@ -175,7 +175,8 @@ $(obj)/gki_module_unprotected.h: $(ALL_KMI_SYMBOLS) \
+@@ -175,7 +175,7 @@ $(obj)/gki_module_unprotected.h: $(ALL_KMI_SYMBOLS) \
  	$(ALL_KMI_SYMBOLS)
  
  # Generate symbol list with union of all symbol list for arm64; empty for others
 -$(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_*),)
-+# boot.img need to use once build with gki, not CONFIG_AMLOGIC_DRIVER when once build.
 +$(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_* $(srctree)/$(COMMON_DRIVERS_DIR)/android/abi_gki_aarch64_*),)
  	$(if $(strip $^),cat $^ > $(ALL_KMI_SYMBOLS), echo "" > $(ALL_KMI_SYMBOLS))
  
- $(obj)/gki_module_protected_exports.h: $(srctree)/android/abi_gki_protected_exports \
+ # ABI protected exports list file specific to ARCH if exists else empty
 diff --git a/scripts/amlogic/licence_check.pl b/scripts/amlogic/licence_check.pl
 new file mode 100755
 index 000000000000..2163ce102ab6

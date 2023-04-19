@@ -1,7 +1,7 @@
-From 2301732e818de68f5bebe2b9f1e35343564eccf8 Mon Sep 17 00:00:00 2001
+From 8a8ae685d8fb293a39be827d16f6dbcf61753971 Mon Sep 17 00:00:00 2001
 From: Hanjie Lin <hanjie.lin@amlogic.com>
 Date: Fri, 14 Oct 2022 17:06:39 +0800
-Subject: [PATCH 62/95] debug: fix iotrace break gki issue [1/3]
+Subject: [PATCH] debug: fix iotrace break gki issue [1/3]
 
 PD#SWPL-94447
 
@@ -39,18 +39,18 @@ index f4f8df403362..78fdd094f812 100644
  #else
  /*
 diff --git a/arch/arm64/kernel/image-vars.h b/arch/arm64/kernel/image-vars.h
-index d114e81d6970..e1cecaf34991 100644
+index 3a1ecdd288d9..bfb46039d4e2 100644
 --- a/arch/arm64/kernel/image-vars.h
 +++ b/arch/arm64/kernel/image-vars.h
-@@ -135,7 +135,7 @@ KVM_NVHE_ALIAS(__hyp_event_ids_end);
- KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+@@ -139,7 +139,7 @@ KVM_NVHE_ALIAS(pkvm_force_nc);
+ #endif
  
  #ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
 -KVM_NVHE_ALIAS(pstore_io_save);
 +KVM_NVHE_ALIAS(__pstore_io_save);
  KVM_NVHE_ALIAS(vabits_actual);
  #endif
- #endif /* CONFIG_KVM */
+ 
 diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
 index c49d554cc9ae..09c4227070d5 100644
 --- a/fs/pstore/Kconfig

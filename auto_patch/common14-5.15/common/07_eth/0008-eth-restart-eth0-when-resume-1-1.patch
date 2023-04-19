@@ -1,4 +1,4 @@
-From f7604b1be6911827eb257051bcfe92ff4db11ec3 Mon Sep 17 00:00:00 2001
+From 06fe0a878ceff1e583fc78211e6bdf85d674eed1 Mon Sep 17 00:00:00 2001
 From: Zhuo Wang <zhuo.wang@amlogic.com>
 Date: Fri, 10 Mar 2023 09:10:40 +0000
 Subject: [PATCH] eth: restart eth0 when resume [1/1]
@@ -136,7 +136,7 @@ index 05b5371ca036..e1da8daa136a 100644
 +#endif
  #endif /* __STMMAC_H__ */
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 4bab55fd7d39..ad2d126a1963 100644
+index 621b4d75c69e..1317fc4ce53b 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 @@ -276,6 +276,15 @@ static void stmmac_service_event_schedule(struct stmmac_priv *priv)
@@ -164,10 +164,10 @@ index 4bab55fd7d39..ad2d126a1963 100644
   * stmmac_clk_csr_set - dynamically set the MDC clock
   * @priv: driver private structure
 diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
-index 2fc851082e7b..3aee6c2da4a5 100644
+index 1135e63a4a76..c6749e5201cf 100644
 --- a/drivers/net/phy/phy.c
 +++ b/drivers/net/phy/phy.c
-@@ -972,7 +972,8 @@ static irqreturn_t phy_interrupt(int irq, void *phy_dat)
+@@ -984,7 +984,8 @@ static irqreturn_t phy_interrupt(int irq, void *phy_dat)
  	struct phy_device *phydev = phy_dat;
  	struct phy_driver *drv = phydev->drv;
  	irqreturn_t ret;
@@ -177,7 +177,7 @@ index 2fc851082e7b..3aee6c2da4a5 100644
  	/* Wakeup interrupts may occur during a system sleep transition.
  	 * Postpone handling until the PHY has resumed.
  	 */
-@@ -994,7 +995,7 @@ static irqreturn_t phy_interrupt(int irq, void *phy_dat)
+@@ -1006,7 +1007,7 @@ static irqreturn_t phy_interrupt(int irq, void *phy_dat)
  		disable_irq_nosync(irq);
  		return IRQ_HANDLED;
  	}

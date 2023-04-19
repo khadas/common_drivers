@@ -1,7 +1,7 @@
-From eb7fd093b8e4d11166661602b782eef7a590438b Mon Sep 17 00:00:00 2001
+From 951b506fc84737225fa586f680a8119f15d5f8c1 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Mon, 10 Oct 2022 21:00:09 +0800
-Subject: [PATCH 59/95] mm: disable FAULT_FLAG_SPECULATIVE. [1/2]
+Subject: [PATCH] mm: disable FAULT_FLAG_SPECULATIVE. [1/2]
 
 PD#SWPL-94445
 
@@ -21,22 +21,23 @@ Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
  1 file changed, 6 insertions(+)
 
 diff --git a/arch/arm64/mm/fault.c b/arch/arm64/mm/fault.c
-index 4b5bc411266c..9735e01cc979 100644
+index 7e7f147e8363..fc8ea32faac1 100644
 --- a/arch/arm64/mm/fault.c
 +++ b/arch/arm64/mm/fault.c
-@@ -551,9 +551,11 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+@@ -551,10 +551,12 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
  	unsigned long vm_flags;
  	unsigned int mm_flags = FAULT_FLAG_DEFAULT;
  	unsigned long addr = untagged_addr(far);
 +#ifndef CONFIG_AMLOGIC_CMA
  #ifdef CONFIG_SPECULATIVE_PAGE_FAULT
  	struct vm_area_struct *vma;
+ 	struct vm_area_struct pvma;
  	unsigned long seq;
 +#endif
  #endif
  
  	if (kprobe_page_fault(regs, esr))
-@@ -612,6 +614,7 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+@@ -613,6 +615,7 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
  
  	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
  
@@ -44,7 +45,7 @@ index 4b5bc411266c..9735e01cc979 100644
  #ifdef CONFIG_SPECULATIVE_PAGE_FAULT
  	/*
  	 * No need to try speculative faults for kernel or
-@@ -664,6 +667,7 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+@@ -665,6 +668,7 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
  no_spf:
  
  #endif	/* CONFIG_SPECULATIVE_PAGE_FAULT */
@@ -52,7 +53,7 @@ index 4b5bc411266c..9735e01cc979 100644
  
  	/*
  	 * As per x86, we may deadlock here. However, since the kernel only
-@@ -705,8 +709,10 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+@@ -706,8 +710,10 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
  		}
  	}
  	mmap_read_unlock(mm);

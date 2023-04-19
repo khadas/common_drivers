@@ -1,4 +1,4 @@
-From f8b8a1b99b473879d2989791a3e41a0e8117c352 Mon Sep 17 00:00:00 2001
+From a6d91e88b8eb6ba588dca4b9afb9a5e5de21bfc5 Mon Sep 17 00:00:00 2001
 From: Zhuo Wang <zhuo.wang@amlogic.com>
 Date: Thu, 16 Mar 2023 05:49:04 +0000
 Subject: [PATCH] eth: complete wol other function [1/1]
@@ -21,14 +21,14 @@ Change-Id: I7557b4946e8b3ac455f2c28e88a6c1563a0cb4ae
 Signed-off-by: Zhuo Wang <zhuo.wang@amlogic.com>
 ---
  .../ethernet/stmicro/stmmac/dwmac-meson8b.c   | 54 +++++++++++++++----
- .../net/ethernet/stmicro/stmmac/stmmac_main.c |  7 +++
- 2 files changed, 50 insertions(+), 11 deletions(-)
+ .../net/ethernet/stmicro/stmmac/stmmac_main.c |  8 +++
+ 2 files changed, 51 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
-index 401923926257..c6be1ac009dd 100644
+index e161c387dc9f..9b64e712da7f 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
-@@ -409,6 +409,7 @@ static int meson8b_init_prg_eth(struct meson8b_dwmac *dwmac)
+@@ -407,6 +407,7 @@ static int meson8b_init_prg_eth(struct meson8b_dwmac *dwmac)
  
  #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
  #ifdef CONFIG_PM_SLEEP
@@ -36,7 +36,7 @@ index 401923926257..c6be1ac009dd 100644
  void set_wol_notify_bl31(u32 enable_bl31)
  {
  	struct arm_smccc_res res;
-@@ -421,6 +422,15 @@ static void set_wol_notify_bl30(u32 enable_bl30)
+@@ -419,6 +420,15 @@ static void set_wol_notify_bl30(u32 enable_bl30)
  {
  	scpi_set_ethernet_wol(enable_bl30);
  }
@@ -52,7 +52,7 @@ index 401923926257..c6be1ac009dd 100644
  #endif
  unsigned int internal_phy;
  static int aml_custom_setting(struct platform_device *pdev, struct meson8b_dwmac *dwmac)
-@@ -440,6 +450,11 @@ static int aml_custom_setting(struct platform_device *pdev, struct meson8b_dwmac
+@@ -438,6 +448,11 @@ static int aml_custom_setting(struct platform_device *pdev, struct meson8b_dwmac
  		pr_info("use default internal_phy as 0\n");
  
  	ndev->wol_enabled = true;
@@ -64,7 +64,7 @@ index 401923926257..c6be1ac009dd 100644
  	return 0;
  }
  #endif
-@@ -551,6 +566,9 @@ static int meson8b_dwmac_probe(struct platform_device *pdev)
+@@ -549,6 +564,9 @@ static int meson8b_dwmac_probe(struct platform_device *pdev)
  #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
  	aml_custom_setting(pdev, dwmac);
  #ifdef CONFIG_PM_SLEEP
@@ -74,7 +74,7 @@ index 401923926257..c6be1ac009dd 100644
  	/*input device to send virtual pwr key for android*/
  	input_dev = input_allocate_device();
  	if (!input_dev) {
-@@ -598,6 +616,12 @@ static void meson8b_dwmac_shutdown(struct platform_device *pdev)
+@@ -596,6 +614,12 @@ static void meson8b_dwmac_shutdown(struct platform_device *pdev)
  	struct meson8b_dwmac *dwmac = get_stmmac_bsp_priv(&pdev->dev);
  	int ret;
  
@@ -87,7 +87,7 @@ index 401923926257..c6be1ac009dd 100644
  	pr_info("aml_eth_shutdown\n");
  	ret = stmmac_suspend(priv->device);
  	if (internal_phy != 2) {
-@@ -642,21 +666,23 @@ static int meson8b_suspend(struct device *dev)
+@@ -640,21 +664,23 @@ static int meson8b_suspend(struct device *dev)
  	if ((wol_switch_from_user) && phydev->link) {
  		set_wol_notify_bl31(true);
  		set_wol_notify_bl30(true);
@@ -119,7 +119,7 @@ index 401923926257..c6be1ac009dd 100644
  
  		ret = stmmac_suspend(dev);
  		if (internal_phy != 2) {
-@@ -692,9 +718,15 @@ static int meson8b_resume(struct device *dev)
+@@ -690,9 +716,15 @@ static int meson8b_resume(struct device *dev)
  			input_sync(dwmac->input_dev);
  		}
  
@@ -139,10 +139,10 @@ index 401923926257..c6be1ac009dd 100644
  		if (internal_phy != 2) {
  			if (dwmac->data->resume)
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index a46a218ee8f0..172a0ba971cc 100644
+index 1317fc4ce53b..55996c2ce4da 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -1178,6 +1178,13 @@ static void stmmac_mac_link_up(struct phylink_config *config,
+@@ -1186,6 +1186,14 @@ static void stmmac_mac_link_up(struct phylink_config *config,
  		writel(ctrl, priv->ioaddr + MAC_CTRL_REG);
  
  	stmmac_mac_set(priv, priv->ioaddr, true);
@@ -153,9 +153,10 @@ index a46a218ee8f0..172a0ba971cc 100644
 +	}
 +#endif
 +#endif
++
  	if (phy && priv->dma_cap.eee) {
- 		priv->eee_active = phy_init_eee(phy, 1) >= 0;
- 		priv->eee_enabled = stmmac_eee_init(priv);
+ 		priv->eee_active =
+ 			phy_init_eee(phy, !priv->plat->rx_clk_runs_in_lpi) >= 0;
 -- 
 2.25.1
 

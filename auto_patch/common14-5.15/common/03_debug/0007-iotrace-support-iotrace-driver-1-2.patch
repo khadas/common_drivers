@@ -1,7 +1,7 @@
-From 46c563c6eae77d4d753e5cdeb5db7a0f1f19e806 Mon Sep 17 00:00:00 2001
+From 63c946f4725e526d78bf1d341111a4ab73b139dc Mon Sep 17 00:00:00 2001
 From: "song.han" <song.han@amlogic.com>
 Date: Mon, 28 Feb 2022 17:27:45 +0800
-Subject: [PATCH 21/95] iotrace: support iotrace driver [1/2]
+Subject: [PATCH] iotrace: support iotrace driver [1/2]
 
 PD#SWPL-71754
 
@@ -19,7 +19,7 @@ Signed-off-by: song.han <song.han@amlogic.com>
 ---
  arch/arm/include/asm/io.h      | 12 +++++++----
  arch/arm64/include/asm/io.h    |  4 ++++
- arch/arm64/kernel/image-vars.h |  4 ++++
+ arch/arm64/kernel/image-vars.h |  5 +++++
  arch/arm64/kernel/io.c         | 25 +++++++++++++++++++++++
  drivers/irqchip/irq-gic.c      |  3 +++
  fs/pstore/ftrace.c             |  8 ++++++++
@@ -29,7 +29,7 @@ Signed-off-by: song.han <song.han@amlogic.com>
  include/linux/pstore.h         | 20 ++++++++++++++++++
  kernel/module.c                | 37 ++++++++++++++++++++++++++++++++++
  mm/vmalloc.c                   | 28 +++++++++++++++++++++++++
- 12 files changed, 178 insertions(+), 8 deletions(-)
+ 12 files changed, 179 insertions(+), 8 deletions(-)
 
 diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
 index 79d246ac93ab..ec4004fd5a27 100644
@@ -101,17 +101,18 @@ index 3995652daf81..f4f8df403362 100644
  /* IO barriers */
  #define __iormb(v)							\
 diff --git a/arch/arm64/kernel/image-vars.h b/arch/arm64/kernel/image-vars.h
-index 8ca6df922da8..d114e81d6970 100644
+index 41a068e9ce5e..3a1ecdd288d9 100644
 --- a/arch/arm64/kernel/image-vars.h
 +++ b/arch/arm64/kernel/image-vars.h
-@@ -134,6 +134,10 @@ KVM_NVHE_ALIAS(__hyp_event_ids_end);
- /* pKVM static key */
- KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+@@ -138,6 +138,11 @@ KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+ KVM_NVHE_ALIAS(pkvm_force_nc);
+ #endif
  
 +#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
 +KVM_NVHE_ALIAS(pstore_io_save);
 +KVM_NVHE_ALIAS(vabits_actual);
 +#endif
++
  #endif /* CONFIG_KVM */
  
  #endif /* __ARM64_KERNEL_IMAGE_VARS_H */
@@ -193,7 +194,7 @@ index aa7a4ec6a3ae..7e8ea7c88833 100644
  }
  EXPORT_SYMBOL(__memset_io);
 diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 1cf231bcc1e1..70417398d139 100644
+index a02bdad09318..13039ec336b1 100644
 --- a/drivers/irqchip/irq-gic.c
 +++ b/drivers/irqchip/irq-gic.c
 @@ -17,6 +17,9 @@

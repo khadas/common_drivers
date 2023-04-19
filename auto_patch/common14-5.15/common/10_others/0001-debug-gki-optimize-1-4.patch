@@ -1,7 +1,7 @@
-From 71d2107ffda828e61960ef387a0b30075b8f61f1 Mon Sep 17 00:00:00 2001
+From afe35deb45094d908ee31406d2f1c90fba5a9f08 Mon Sep 17 00:00:00 2001
 From: Hanjie Lin <hanjie.lin@amlogic.com>
 Date: Fri, 11 Nov 2022 16:54:23 +0800
-Subject: [PATCH 86/95] debug: gki optimize [1/4]
+Subject: [PATCH] debug: gki optimize [1/4]
 
 PD#SWPL-99365
 
@@ -131,10 +131,10 @@ index 7e0357e63247..567dff5b716a 100644
  #endif /* ifdef __KERNEL__ */
  #endif /* ifndef __ASM_ARM_IRQFLAGS_H */
 diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
-index 59fdf257bf8b..55d03d7b9678 100644
+index 1076a82d6472..d6125fbc2f65 100644
 --- a/arch/arm/kernel/unwind.c
 +++ b/arch/arm/kernel/unwind.c
-@@ -390,10 +390,20 @@ int unwind_frame(struct stackframe *frame)
+@@ -394,10 +394,20 @@ int unwind_frame(struct stackframe *frame)
  		return -URC_FAILURE;
  
  	idx = unwind_find_idx(frame->pc);
@@ -190,12 +190,12 @@ index c5b1d0f5f4e3..bf5a43fc2f0a 100644
  
  #endif /* __ASM_IRQFLAGS_H */
 diff --git a/arch/arm64/kernel/image-vars.h b/arch/arm64/kernel/image-vars.h
-index e1cecaf34991..415b81a941ab 100644
+index bfb46039d4e2..7aca04fb8790 100644
 --- a/arch/arm64/kernel/image-vars.h
 +++ b/arch/arm64/kernel/image-vars.h
-@@ -134,7 +134,7 @@ KVM_NVHE_ALIAS(__hyp_event_ids_end);
- /* pKVM static key */
- KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+@@ -138,7 +138,7 @@ KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+ KVM_NVHE_ALIAS(pkvm_force_nc);
+ #endif
  
 -#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
 +#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
@@ -283,7 +283,7 @@ index 4bf243bf3085..1dcd05ea62cc 100644
  {
  	int ret = 0;
 diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 2e07cb3216ee..258671b6b3cd 100644
+index 57269f93d1d6..3a3719471066 100644
 --- a/drivers/base/dd.c
 +++ b/drivers/base/dd.c
 @@ -57,7 +57,7 @@ static LIST_HEAD(deferred_probe_active_list);
@@ -305,7 +305,7 @@ index 2e07cb3216ee..258671b6b3cd 100644
  		struct device_private *p;
  
 diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-index d85898ce8de8..61663ed63f3b 100644
+index 137e4f019160..85a225049365 100644
 --- a/drivers/base/power/domain.c
 +++ b/drivers/base/power/domain.c
 @@ -39,7 +39,7 @@
@@ -317,7 +317,7 @@ index d85898ce8de8..61663ed63f3b 100644
  #include <linux/amlogic/debug_ftrace_ramoops.h>
  #define SKIP_PD_MAX_NUM 10
  #define SKIP_PD_MAX_NAME_LEN 16
-@@ -554,7 +554,7 @@ static int _genpd_power_on(struct generic_pm_domain *genpd, bool timed)
+@@ -551,7 +551,7 @@ static int _genpd_power_on(struct generic_pm_domain *genpd, bool timed)
  	if (!genpd->power_on)
  		goto out;
  
@@ -326,7 +326,7 @@ index d85898ce8de8..61663ed63f3b 100644
  	pstore_ftrace_pd_power_on((unsigned long)genpd->name);
  	if (ramoops_io_en && meson_pd_debug)
  		pr_info("power_on pd %s\n", genpd->name);
-@@ -596,7 +596,7 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
+@@ -593,7 +593,7 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
  	ktime_t time_start;
  	s64 elapsed_ns;
  	int ret;
@@ -335,7 +335,7 @@ index d85898ce8de8..61663ed63f3b 100644
  	int i;
  #endif
  
-@@ -611,7 +611,7 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
+@@ -608,7 +608,7 @@ static int _genpd_power_off(struct generic_pm_domain *genpd, bool timed)
  	if (!genpd->power_off)
  		goto out;
  
@@ -438,7 +438,7 @@ index 70417398d139..44ba4849f78c 100644
  #endif
  #include <linux/init.h>
 diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-index 2542add8980a..50ee52bc7b0f 100644
+index 3ee6a628fc7f..e009b61422f8 100644
 --- a/drivers/regulator/fixed.c
 +++ b/drivers/regulator/fixed.c
 @@ -338,7 +338,7 @@ static struct platform_driver regulator_fixed_voltage_driver = {
@@ -789,7 +789,7 @@ index f849175ce5f1..957ef52b8af4 100644
  		break;
  
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 38b34bb2080e..64201f145f1a 100644
+index 918863a367d4..fb1191121aa1 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -31,7 +31,7 @@
@@ -801,7 +801,7 @@ index 38b34bb2080e..64201f145f1a 100644
  #include <linux/amlogic/debug_ftrace_ramoops.h>
  #endif
  
-@@ -6500,7 +6500,7 @@ static void __sched notrace __schedule(unsigned int sched_mode)
+@@ -6503,7 +6503,7 @@ static void __sched notrace __schedule(unsigned int sched_mode)
  		psi_sched_switch(prev, next, !task_on_rq_queued(prev));
  
  		trace_sched_switch(sched_mode & SM_MASK_PREEMPT, prev, next);
@@ -936,7 +936,7 @@ index cf480c5a3a0d..e798987fa5cd 100644
  		WARN_ONCE(1, "<%s> pwq_NULL <%lx> <%ps>, <%ps> %s\n",
  			__func__, atomic_long_read(&work->data),
 diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 865dd5f4b781..cc7834e73841 100644
+index 860054a2eea7..c1b6fa3ed578 100644
 --- a/mm/vmalloc.c
 +++ b/mm/vmalloc.c
 @@ -45,7 +45,7 @@
@@ -975,7 +975,7 @@ index 865dd5f4b781..cc7834e73841 100644
  	if (need_dump_iomap() && !is_normal_memory(prot)) {
  		pr_err("io__map <va:0x%08lx-0x%08lx> pa:0x%lx,port:0x%lx\n",
  		       addr, end, (unsigned long)phys_addr_save,
-@@ -2662,7 +2662,7 @@ static void __vunmap(const void *addr, int deallocate_pages)
+@@ -2669,7 +2669,7 @@ static void __vunmap(const void *addr, int deallocate_pages)
  		return;
  	}
  

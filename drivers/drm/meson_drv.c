@@ -624,11 +624,6 @@ static int am_meson_drm_pm_resume(struct device *dev)
 		return 0;
 	}
 
-	if (is_meson_t5m_cpu()) {
-		meson_drm_write_reg(VPP_RDARB_MODE, 0xb30000);
-		meson_drm_write_reg(VPU_RDARB_MODE_L2C1, 0x920000);
-	}
-
 	drm_atomic_helper_resume(drm, priv->state);
 	am_meson_drm_fb_resume(drm);
 	drm_kms_helper_poll_enable(drm);

@@ -8,6 +8,7 @@
 #include <dt-bindings/power/txhd2-pd.h>
 #include <dt-bindings/clock/txhd2-clkc.h>
 #include <dt-bindings/clock/txhd2-aoclkc.h>
+#include <dt-bindings/mailbox/amlogic,mbox.h>
 / {
 	cpus:cpus {
 		#address-cells = <1>;
@@ -145,6 +146,33 @@
 		clock-frequency = <24000000>;
 		clock-output-names = "xtal";
 		#clock-cells = <0>;
+	};
+
+	mailbox_pl: mhu@ff63c420 {
+		status = "okay";
+		compatible = "amlogic, meson_mhu_pl";
+		reg = <0xff63c420 0x4>,   /*from ao sts registers */
+		      <0xff63c428 0x4>,   /*to ao set registers */
+		      <0xff63c430 0x4>,   /*to ao clr registers */
+		      <0xfffc7400 0x400>;   /*to ao payload */
+		interrupts = <0 211 1>,  /* ap Rev ao*/
+			     <0 136 1>;  /* ap Send ao*/
+		mbox-names = "ao_dev",
+			     "ap_to_ao";
+		#mbox-cells = <1>;
+		mboxes = <&mailbox_pl 0>,
+			 <&mailbox_pl 1>;
+		mbox-nums = <2>;
+		mbox-mb = <1>;
+	};
+
+	mbox_user: mbox-user@0 {
+		status = "okay";
+		compatible = "amlogic, meson-mbox-user";
+		mbox-nums = <1>;
+		mbox-names = "ree2aocpu";
+		mboxes = <&mailbox_pl 1>;
+		mbox-dests = <MAILBOX_AOCPU>;
 	};
 
 	soc {

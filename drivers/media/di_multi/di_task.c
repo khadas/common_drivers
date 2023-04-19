@@ -898,7 +898,7 @@ int mtask_start(void)
 	int flg_err;
 	struct di_mtask *tsk = get_mtask();
 	struct task_struct *fe_thread;
-	//struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
 
 	pr_info(".");
 	flg_err = 0;
@@ -942,7 +942,7 @@ int mtask_start(void)
 		return ret;
 	}
 
-	//sched_setscheduler_nocheck(fe_thread, SCHED_FIFO, &param);
+	sched_setscheduler_nocheck(fe_thread, SCHED_FIFO, &param);
 	tsk->flg_init = 1;
 	tsk->thread = fe_thread;
 	return 0;

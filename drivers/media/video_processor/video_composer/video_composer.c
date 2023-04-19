@@ -1379,6 +1379,9 @@ void videocomposer_vf_put(struct vframe_s *vf, void *op_arg)
 		file_vf = vd_prepare->src_frame->file_vf;
 		for (i = 0; i <= repeat_count; i++) {
 			if (file_vf) {
+				vc_print(dev->index, PRINT_FENCE,
+					"fput file_vf=%px, file_count=%ld\n",
+					file_vf, file_count(file_vf));
 				fput(file_vf);
 				total_put_count++;
 				dev->fput_count++;
@@ -2013,6 +2016,49 @@ static struct vf_aiface_t *aiface_info_adjust(struct composer_dev *dev, struct f
 	return aiface_info;
 }
 
+static int video_wait_file_fence(struct composer_dev *dev,
+				   struct file *fence_file)
+{
+	struct sync_file *sync_file = NULL;
+	struct dma_fence *fence_obj = NULL;
+	int ret = 1;
+	u64 timestamp;
+
+	if (!IS_ERR_OR_NULL(fence_file)) {
+		sync_file = (struct sync_file *)fence_file->private_data;
+	} else {
+		vc_print(dev->index, PRINT_FENCE, "wait: fence_file is NULL\n");
+		return 1;
+	}
+
+	if (!IS_ERR_OR_NULL(sync_file)) {
+		fence_obj = sync_file->fence;
+	} else {
+		vc_print(dev->index, PRINT_FENCE, "sync_file is NULL\n");
+		return 1;
+	}
+
+	if (fence_obj) {
+		vc_print(dev->index, PRINT_FENCE, "sync_file=%px, seqno=%lld\n",
+			sync_file, fence_obj->seqno);
+		timestamp = local_clock();
+		ret = dma_fence_wait_timeout(fence_obj,
+					     false, msecs_to_jiffies(3000));
+		if (ret == 0) {
+			vc_print(dev->index, PRINT_ERROR, "fence wait timeout\n");
+			return 0;
+		}
+
+		vc_print(dev->index, PRINT_FENCE,
+			 "wait fence, state: %d, wait cost time:%lldms\n",
+			 ret,
+			 div64_u64((local_clock() - timestamp), 1000000));
+	}
+
+	fput(fence_file);
+	return 1;
+}
+
 static void vframe_do_mosaic_22(struct composer_dev *dev)
 {
 	struct received_frames_t *received_frames = NULL;
@@ -2317,6 +2363,7 @@ static void vframe_composer(struct composer_dev *dev)
 	u32 num = 0, last_num = 0, size = 0;
 	struct vframe_s *input_vf[MXA_LAYER_COUNT] = {NULL};
 	struct output_axis out_axis[MXA_LAYER_COUNT] = {0};
+	struct file *fence_file;
 
 	if (IS_ERR_OR_NULL(dev)) {
 		vc_print(dev->index, PRINT_ERROR, "%s: invalid param.\n", __func__);
@@ -2446,7 +2493,15 @@ static void vframe_composer(struct composer_dev *dev)
 
 	for (i = 0; i < count; i++) {
 		file_vf = received_frames->file_vf[vf_dev[i]];
+		fence_file = received_frames->fence_file[vf_dev[i]];
+		if (video_wait_file_fence(dev, fence_file) == 0)
+			continue;
+
 		vframe_info_cur = vframe_info[vf_dev[i]];
+		if (!vframe_info_cur) {
+			vc_print(dev->index, PRINT_ERROR, "vframe_info_cur NULL\n");
+			return;
+		}
 		is_dec_vf = is_valid_mod_type(file_vf->private_data, VF_SRC_DECODER);
 		is_v4l_vf = is_valid_mod_type(file_vf->private_data, VF_PROCESS_V4LVIDEO);
 		if (vframe_info_cur->transform != 0 || count != 1)
@@ -2719,6 +2774,10 @@ static void vframe_composer(struct composer_dev *dev)
 	if (is_fixtunnel)
 		dst_vf->flag |= VFRAME_FLAG_FIX_TUNNEL;
 
+	if (!vframe_info_cur) {
+		vc_print(dev->index, PRINT_ERROR, "vframe_info_cur NULL\n");
+		return;
+	}
 	if (vframe_info_cur->transform == VC_TRANSFORM_FLIP_H_ROT_90)
 		dst_vf->flag |= VFRAME_FLAG_MIRROR_H;
 	if (vframe_info_cur->transform == VC_TRANSFORM_FLIP_V_ROT_90)
@@ -3115,6 +3174,7 @@ static void video_composer_task(struct composer_dev *dev)
 {
 	struct vframe_s *vf = NULL;
 	struct file *file_vf = NULL;
+	struct file *fence_file = NULL;
 	struct frame_info_t *frame_info = NULL;
 	struct received_frames_t *received_frames = NULL;
 	struct frames_info_t *frames_info = NULL;
@@ -3178,6 +3238,9 @@ static void video_composer_task(struct composer_dev *dev)
 	}
 
 	if (!need_composer && !do_mosaic_22) {
+		fence_file = received_frames->fence_file[0];
+		if (video_wait_file_fence(dev, fence_file) == 0)
+			return;
 		frames_info = &received_frames->frames_info;
 		frame_info = frames_info->frame_info;
 		phy_addr = received_frames->phy_addr[0];
@@ -3553,6 +3616,8 @@ static void video_composer_task(struct composer_dev *dev)
 						 "too time1=%lld, time2=%lld\n",
 						 delay_time1, delay_time2);
 			}
+			vc_print(dev->index, PRINT_FENCE,
+				"task: push to ready list: omx_index=%d\n", vf->omx_index);
 			video_display_push_ready(dev, vf);
 			if (!kfifo_put(&dev->ready_q,
 				       (const struct vframe_s *)vf))
@@ -3958,15 +4023,15 @@ static void set_frames_info(struct composer_dev *dev,
 		if (!IS_ERR_OR_NULL(fence_file))
 			sync_file = (struct sync_file *)fence_file->private_data;
 		else
-			vc_print(dev->index, PRINT_FENCE, "fence_file is NULL\n");
+			vc_print(dev->index, PRINT_FENCE, "creat fence_file is NULL\n");
 
 		if (!IS_ERR_OR_NULL(sync_file))
 			fence_obj = sync_file->fence;
 		else
-			vc_print(dev->index, PRINT_FENCE, "sync_file is NULL\n");
+			vc_print(dev->index, PRINT_FENCE, "creat sync_file is NULL\n");
 
 		if (fence_obj) {
-			vc_print(dev->index, PRINT_FENCE, "sync_file=%px, seqno=%lld\n",
+			vc_print(dev->index, PRINT_FENCE, "creat sync_file=%px, seqno=%lld\n",
 					sync_file, fence_obj->seqno);
 		}
 		if (!IS_ERR_OR_NULL(fence_file))
@@ -3999,29 +4064,40 @@ static void set_frames_info(struct composer_dev *dev,
 			vc_print(dev->index, PRINT_ERROR, "fget fd fail\n");
 			return;
 		}
+		fence_file = NULL;
+		if (frames_info->frame_info[j].disp_fen_fd >= 0) {
+			fence_file = fget(frames_info->frame_info[j].disp_fen_fd);
+			if (!fence_file)
+				vc_print(dev->index, PRINT_OTHER, "fget disp_fen_fd fail\n");
+		}
 		total_get_count++;
 		dev->received_frames[i].file_vf[j] = file_vf;
+		dev->received_frames[i].fence_file[j] = fence_file;
+
 		type = frames_info->frame_info[j].type;
 		is_dec_vf =
 		is_valid_mod_type(file_vf->private_data, VF_SRC_DECODER);
 		is_v4l_vf =
 		is_valid_mod_type(file_vf->private_data, VF_PROCESS_V4LVIDEO);
 
-		vc_print(dev->index, PRINT_FENCE, "receive:file=%px, dma=%px\n",
+		vc_print(dev->index, PRINT_FENCE, "receive:file=%px, dma=%px, file_count=%ld\n",
 			 file_vf,
-			 file_vf->private_data);
+			 file_vf->private_data,
+			 file_count(file_vf));
 
 		if (frames_info->frame_info[j].transform != 0 ||
 			frames_info->frame_count != 1)
 			need_dw = true;
 		if (type == 0 || type == 1) {
 			vc_print(dev->index, PRINT_FENCE,
-				 "received_cnt=%lld,new_cnt=%lld,i=%d,z=%d,DMA_fd=%d\n",
+				 "received_cnt=%lld,new_cnt=%lld,i=%d,z=%d,DMA_fd=%d, disp_fen_fd=%d, fence_file=%px\n",
 				 dev->received_count + 1,
 				 dev->received_new_count + 1,
 				 i,
 				 frames_info->frame_info[j].zorder,
-				 frames_info->frame_info[j].fd);
+				 frames_info->frame_info[j].fd,
+				 frames_info->frame_info[j].disp_fen_fd,
+				 fence_file);
 			if (!(is_dec_vf || is_v4l_vf)) {
 				if (type == 0) {
 					vc_print(dev->index, PRINT_ERROR,

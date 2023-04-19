@@ -11195,6 +11195,7 @@ void di_reg_variable(unsigned int channel, struct vframe_s *vframe)
 
 	dim_print("%s:0x%p\n", __func__, vframe);
 	pch = get_chdata(channel);
+	dim_set_post_num(pch, dim_get_post_num());
 	mm = dim_mm_get(channel);
 	if (vframe) {
 //		if (DIM_IS_IC_EF(SC2) && dim_afds())

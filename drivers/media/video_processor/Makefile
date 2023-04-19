@@ -12,3 +12,4 @@ include $(COMMON_DRIVERS_DIR)/drivers/media/video_processor/videotunnel/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/video_processor/vdetect/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/video_processor/videoqueue/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/video_processor/common/Makefile
+include $(COMMON_DRIVERS_DIR)/drivers/media/video_processor/di_process/Makefile

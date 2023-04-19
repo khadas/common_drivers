@@ -21,6 +21,9 @@
 
 #define V4LVIDEO_FLAG_DI_NR      1
 #define V4LVIDEO_FLAG_DI_DEC     2
+#define V4LVIDEO_FLAG_DI_V3      4
+#define V4LVIDEO_FLAG_DI_BYPASS  8
+
 
 #include <linux/dma-buf.h>
 #include <linux/file.h>
@@ -48,7 +51,7 @@ struct file_private_data {
 	int keep_id_1;
 	int keep_head_id;
 	int keep_dw_id;
-	struct file *file;
+	struct file *file;  /*di_process store dec file*/
 	ulong vb_handle;
 	ulong v4l_dec_ctx;
 	u32 v4l_inst_id;
@@ -58,6 +61,8 @@ struct file_private_data {
 	struct metadata md;
 	void *private;
 	struct file *cnt_file;
+	void *private2; /*di v3 di_buf*/ /*v4lvideo use this for v4l_buf(di post)*/
+	char *p_ud_param;
 };
 
 struct v4l_data_t {

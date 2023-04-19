@@ -55,6 +55,13 @@ struct ins_mng_s {	/*ary add*/
 	struct page	*pages;
 };
 
+struct caller_mng_s {	/*jintao add*/
+	bool queued;
+	bool dropped;
+	bool dummy;
+	struct file *src_file;
+};
+
 struct di_buffer {
 	/*header*/
 	struct ins_mng_s mng;
@@ -66,6 +73,7 @@ struct di_buffer {
 	u32 flag;
 	unsigned int crcout;
 	unsigned int nrcrcout;
+	struct caller_mng_s caller_mng;
 };
 
 enum DI_FLAG {

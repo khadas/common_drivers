@@ -1888,6 +1888,12 @@
 		status = "okay";
 	};
 
+	di_process {
+		compatible = "amlogic, di_process";
+		dev_name = "di_process";
+		status = "okay";
+	};
+
 	vpu_security {
 		compatible = "amlogic, meson-s4, vpu_security";
 		dev_name = "amlogic-vpu-security";

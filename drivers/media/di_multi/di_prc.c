@@ -3262,11 +3262,11 @@ void dip_init_value_reg(unsigned int ch, struct vframe_s *vframe)
 	if ((post_nub) && post_nub <= POST_BUF_NUM)
 		mm->cfg.num_post = post_nub;
 
-	PR_INF("%s:ch[%d]:fix_buf:%d;ponly <%d,%d>\n",
+	PR_INF("%s:ch[%d]:fix_buf:%d;ponly <%d,%d> post_nub=%d\n",
 	       "value reg",
 	       ch,
 	       mm->cfg.fix_buf,
-	       pch->ponly, ponly_by_firstp);
+	       pch->ponly, ponly_by_firstp, post_nub);
 
 	pch->mode = dim_cnt_mode(pch);
 }
@@ -5540,6 +5540,20 @@ module_param_named(dim_slt_mode, dim_slt_mode, bool, 0664);
 bool dim_is_slt_mode(void)
 {
 	return dim_slt_mode;
+}
+
+static int dim_post_num;
+module_param_named(dim_post_num, dim_post_num, int, 0664);
+
+unsigned int dim_get_post_num(void)
+{
+	return dim_post_num;
+}
+
+void dim_set_post_num(struct di_ch_s *pch, unsigned int data)
+{
+	if (data)
+		cfgsch(pch, POST_NUB, data);
 }
 
 void dim_slt_init(void)

@@ -18,7 +18,11 @@
 #include <linux/interrupt.h>
 #include <linux/stacktrace.h>
 #include <linux/arm-smccc.h>
+#include <linux/io.h>
+#include <linux/amlogic/gki_module.h>
 #include <linux/kprobes.h>
+#include <linux/printk.h>
+#include <linux/amlogic/user_fault.h>
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_TEST)
 #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_ALL
 #include <trace/events/meson_atrace.h>
@@ -89,6 +93,76 @@ module_param(irq_disable_thr, ullong, 0644);
 
 static int irq_check_en;
 module_param(irq_check_en, int, 0644);
+
+static int irq_check_en_setup(char *str)
+{
+	if (!strcmp(str, "1")) {
+		irq_check_en = 1;
+		return 0;
+	}
+	if (!strcmp(str, "0")) {
+		irq_check_en = 0;
+		return 0;
+	}
+	return 1;
+}
+__setup("irq_check_en=", irq_check_en_setup);
+
+#if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
+#define FIQ_DEBUG_SMC_CMD	0x820000f1
+#define FIQ_INIT_SMC_ARG	0x1
+#define FIQ_SEND_SMC_ARG	0x2
+
+static int fiq_check_en = 1;
+
+static int fiq_check_en_setup(char *str)
+{
+	if (!strcmp(str, "1")) {
+		fiq_check_en = 1;
+		return 0;
+	}
+	if (!strcmp(str, "0")) {
+		fiq_check_en = 0;
+		return 0;
+	}
+	return 1;
+}
+__setup("fiq_check_en=", fiq_check_en_setup);
+
+static int fiq_check_show_regs_en;
+
+static int fiq_check_show_regs_en_setup(char *str)
+{
+	if (!strcmp(str, "1")) {
+		fiq_check_show_regs_en = 1;
+		return 0;
+	}
+	if (!strcmp(str, "0")) {
+		fiq_check_show_regs_en = 0;
+		return 0;
+	}
+	return 1;
+}
+__setup("fiq_check_show_regs_en=", fiq_check_show_regs_en_setup);
+
+struct fiq_regs {
+	u64 regs[31];
+	u64 sp;
+	u64 pc;
+	u64 pstate;
+};
+
+struct fiq_smc_ret {
+	unsigned long phy_addr;
+	unsigned long buf_size;
+	unsigned long percpu_size;
+	unsigned long reserved1;
+};
+
+static void *fiq_virt_addr;
+static unsigned long fiq_buf_size;
+static unsigned long fiq_percpu_size;
+#endif
 
 static int initialized;
 
@@ -545,6 +619,326 @@ void set_lockup_hook(void (*func)(int cpu))
 }
 EXPORT_SYMBOL(set_lockup_hook);
 
+#ifdef CONFIG_AMLOGIC_ARMV8_AARCH32
+bool is_vmalloc_addr(const void *x)
+{
+	unsigned long addr = (unsigned long)kasan_reset_tag(x);
+
+	return addr >= VMALLOC_START && addr < VMALLOC_END;
+}
+
+int is_vmalloc_or_module_addr(const void *x)
+{
+#if defined(CONFIG_MODULES) && defined(MODULES_VADDR)
+	unsigned long addr = (unsigned long)kasan_reset_tag(x);
+
+	if (addr >= MODULES_VADDR && addr < MODULES_END)
+		return 1;
+#endif
+	return is_vmalloc_addr(x);
+}
+
+void show_vmalloc_pfn(struct pt_regs *regs)
+{
+	int i;
+	struct page *page;
+
+	for (i = 0; i < 16; i++) {
+		if (is_vmalloc_or_module_addr((void *)regs->uregs[i])) {
+			page = vmalloc_to_page((void *)regs->uregs[i]);
+			if (!page)
+				continue;
+			pr_info("R%-2d : %08lx, PFN:%5lx\n",
+				i, regs->uregs[i], page_to_pfn(page));
+		}
+	}
+}
+
+static int show_data_valid(unsigned long reg)
+{
+	struct page *page;
+
+	if (reg < (unsigned long)PAGE_OFFSET)
+		return 0;
+	else if (reg <= (unsigned long)high_memory)
+		return 1;
+
+	page = vmalloc_to_page((const void *)reg);
+	if (page && pfn_valid(page_to_pfn(page)))
+		return 1;
+
+	return 0;
+}
+
+static void show_data(unsigned long addr, int nbytes, const char *name)
+{
+	int	i, j;
+	int	nlines;
+	u32	*p;
+
+	/*
+	 * don't attempt to dump non-kernel addresses or
+	 * values that are probably just small negative numbers
+	 */
+	if (addr < PAGE_OFFSET || addr > -256UL)
+		return;
+	/*
+	 * Treating data in general purpose register as an address
+	 * and dereferencing it is quite a dangerous behaviour,
+	 * especially when it belongs to secure monotor region or
+	 * ioremap region(for arm64 vmalloc region is already filtered
+	 * out), which can lead to external abort on non-linefetch and
+	 * can not be protected by probe_kernel_address.
+	 * We need more strict filtering rules
+	 */
+
+#ifdef CONFIG_AMLOGIC_SECMON
+	/*
+	 * filter out secure monitor region
+	 */
+	if (addr <= (unsigned long)high_memory)
+		if (within_secmon_region(addr)) {
+			pr_info("\n%s: %#lx S\n", name, addr);
+			return;
+		}
+#endif
+
+	pr_info("\n%s: %#lx:\n", name, addr);
+
+	if (!show_data_valid((unsigned long)(addr + nbytes / 2)))
+		return;
+	/*
+	 * round address down to a 32 bit boundary
+	 * and always dump a multiple of 32 bytes
+	 */
+	p = (u32 *)(addr & ~(sizeof(u32) - 1));
+	nbytes += (addr & (sizeof(u32) - 1));
+	nlines = (nbytes + 31) / 32;
+
+	for (i = 0; i < nlines; i++) {
+		/*
+		 * just display low 16 bits of address to keep
+		 * each line of the dump < 80 characters
+		 */
+		pr_cont("%04lx ", (unsigned long)p & 0xffff);
+		for (j = 0; j < 8; j++) {
+			u32 data = 0;
+
+			if (get_kernel_nofault(data, p))
+				pr_cont(" ********");
+			else
+				pr_cont(" %08x", data);
+			++p;
+		}
+		pr_cont("\n");
+	}
+}
+
+static void show_user_data(unsigned long addr, int nbytes, const char *name)
+{
+	int	i, j;
+	int	nlines;
+	u32	*p;
+
+	if (!access_ok((void *)addr, nbytes))
+		return;
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	/*
+	 * Treating data in general purpose register as an address
+	 * and dereferencing it is quite a dangerous behaviour,
+	 * especially when it is an address belonging to secure
+	 * region or ioremap region, which can lead to external
+	 * abort on non-linefetch and can not be protected by
+	 * probe_kernel_address.
+	 * We need more strict filtering rules
+	 */
+
+#ifdef CONFIG_AMLOGIC_SEC
+	/*
+	 * filter out secure monitor region
+	 */
+	if (addr <= (unsigned long)high_memory)
+		if (within_secmon_region(addr)) {
+			pr_info("\n%s: %#lx S\n", name, addr);
+			return;
+		}
+#endif
+
+	/*
+	 * filter out ioremap region
+	 */
+	if (addr >= VMALLOC_START && addr <= VMALLOC_END)
+		if (!pfn_valid(vmalloc_to_pfn((void *)addr))) {
+			pr_info("\n%s: %#lx V\n", name, addr);
+			return;
+		}
+#endif
+
+	pr_info("\n%s: %#lx:\n", name, addr);
+
+	/*
+	 * round address down to a 32 bit boundary
+	 * and always dump a multiple of 32 bytes
+	 */
+	p = (u32 *)(addr & ~(sizeof(u32) - 1));
+	nbytes += (addr & (sizeof(u32) - 1));
+	nlines = (nbytes + 31) / 32;
+
+	for (i = 0; i < nlines; i++) {
+		/*
+		 * just display low 16 bits of address to keep
+		 * each line of the dump < 80 characters
+		 */
+		pr_info("%04lx ", (unsigned long)p & 0xffff);
+		for (j = 0; j < 8; j++) {
+			u32 data;
+			int bad;
+
+			bad = __get_user(data, p);
+			if (bad) {
+				if (j != 7)
+					pr_cont(" ********");
+				else
+					pr_cont(" ********\n");
+			} else {
+				if (j != 7)
+					pr_cont(" %08x", data);
+				else
+					pr_cont(" %08x\n", data);
+			}
+			++p;
+		}
+	}
+}
+
+static void show_extra_register_data(struct pt_regs *regs, int nbytes)
+{
+	show_data(regs->ARM_pc - nbytes, nbytes * 2, "PC");
+	show_data(regs->ARM_lr - nbytes, nbytes * 2, "LR");
+	show_data(regs->ARM_sp - nbytes, nbytes * 2, "SP");
+	show_data(regs->ARM_ip - nbytes, nbytes * 2, "IP");
+	show_data(regs->ARM_fp - nbytes, nbytes * 2, "FP");
+	show_data(regs->ARM_r0 - nbytes, nbytes * 2, "R0");
+	show_data(regs->ARM_r1 - nbytes, nbytes * 2, "R1");
+	show_data(regs->ARM_r2 - nbytes, nbytes * 2, "R2");
+	show_data(regs->ARM_r3 - nbytes, nbytes * 2, "R3");
+	show_data(regs->ARM_r4 - nbytes, nbytes * 2, "R4");
+	show_data(regs->ARM_r5 - nbytes, nbytes * 2, "R5");
+	show_data(regs->ARM_r6 - nbytes, nbytes * 2, "R6");
+	show_data(regs->ARM_r7 - nbytes, nbytes * 2, "R7");
+	show_data(regs->ARM_r8 - nbytes, nbytes * 2, "R8");
+	show_data(regs->ARM_r9 - nbytes, nbytes * 2, "R9");
+	show_data(regs->ARM_r10 - nbytes, nbytes * 2, "R10");
+}
+
+static void show_user_extra_register_data(struct pt_regs *regs, int nbytes)
+{
+	show_user_data(regs->ARM_pc - nbytes, nbytes * 2, "PC");
+	show_user_data(regs->ARM_lr - nbytes, nbytes * 2, "LR");
+	show_user_data(regs->ARM_sp - nbytes, nbytes * 2, "SP");
+	show_user_data(regs->ARM_ip - nbytes, nbytes * 2, "IP");
+	show_user_data(regs->ARM_fp - nbytes, nbytes * 2, "FP");
+	show_user_data(regs->ARM_r0 - nbytes, nbytes * 2, "R0");
+	show_user_data(regs->ARM_r1 - nbytes, nbytes * 2, "R1");
+	show_user_data(regs->ARM_r2 - nbytes, nbytes * 2, "R2");
+	show_user_data(regs->ARM_r3 - nbytes, nbytes * 2, "R3");
+	show_user_data(regs->ARM_r4 - nbytes, nbytes * 2, "R4");
+	show_user_data(regs->ARM_r5 - nbytes, nbytes * 2, "R5");
+	show_user_data(regs->ARM_r6 - nbytes, nbytes * 2, "R6");
+	show_user_data(regs->ARM_r7 - nbytes, nbytes * 2, "R7");
+	show_user_data(regs->ARM_r8 - nbytes, nbytes * 2, "R8");
+	show_user_data(regs->ARM_r9 - nbytes, nbytes * 2, "R9");
+	show_user_data(regs->ARM_r10 - nbytes, nbytes * 2, "R10");
+}
+
+void show_extra_reg_data(struct pt_regs *regs)
+{
+	if (!user_mode(regs))
+		show_extra_register_data(regs, 128);
+	else
+		show_user_extra_register_data(regs, 128);
+	pr_info("\n");
+}
+
+void show_regs_32(struct pt_regs *regs)
+{
+	pr_info("PC is at %pS\n", (void *)instruction_pointer(regs));
+	pr_info("LR is at %pS\n", (void *)regs->ARM_lr);
+	pr_info("pc : [<%08lx>]    lr : [<%08lx>]    psr: %08lx\n",
+	       regs->ARM_pc, regs->ARM_lr, regs->ARM_cpsr);
+	pr_info("sp : %08lx  ip : %08lx  fp : %08lx\n",
+	       regs->ARM_sp, regs->ARM_ip, regs->ARM_fp);
+	pr_info("r10: %08lx  r9 : %08lx  r8 : %08lx\n",
+		regs->ARM_r10, regs->ARM_r9,
+		regs->ARM_r8);
+	pr_info("r7 : %08lx  r6 : %08lx  r5 : %08lx  r4 : %08lx\n",
+		regs->ARM_r7, regs->ARM_r6,
+		regs->ARM_r5, regs->ARM_r4);
+	pr_info("r3 : %08lx  r2 : %08lx  r1 : %08lx  r0 : %08lx\n",
+		regs->ARM_r3, regs->ARM_r2,
+		regs->ARM_r1, regs->ARM_r0);
+
+	show_vmalloc_pfn(regs);
+	show_extra_reg_data(regs);
+}
+#endif
+
+#if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
+void fiq_debug_entry(void)
+{
+	int cpu;
+	struct fiq_regs *pregs  = NULL;
+	struct fiq_regs fiq_regs;
+	struct pt_regs regs;
+
+	cpu = get_cpu();
+	put_cpu();
+
+	pregs = (struct fiq_regs *)(fiq_virt_addr +
+						cpu * fiq_percpu_size);
+	memcpy(&fiq_regs, pregs, sizeof(struct fiq_regs));
+
+#ifdef CONFIG_ARM64
+	/* sp_el0 */
+	memcpy(&regs.regs[0], &fiq_regs.regs[0], 31 * sizeof(uint64_t));
+	regs.pc = fiq_regs.pc;
+	regs.pstate = fiq_regs.pstate;
+#elif CONFIG_AMLOGIC_ARMV8_AARCH32
+	regs.ARM_cpsr = (unsigned long)fiq_regs.pstate;
+	regs.ARM_pc = (unsigned long)fiq_regs.pc;
+	regs.ARM_sp = (unsigned long)fiq_regs.regs[19];
+	regs.ARM_lr = (unsigned long)fiq_regs.regs[18];
+	regs.ARM_ip = (unsigned long)fiq_regs.regs[12];
+	regs.ARM_fp = (unsigned long)fiq_regs.regs[11];
+	regs.ARM_r10 = (unsigned long)fiq_regs.regs[10];
+	regs.ARM_r9 = (unsigned long)fiq_regs.regs[9];
+	regs.ARM_r8 = (unsigned long)fiq_regs.regs[8];
+	regs.ARM_r7 = (unsigned long)fiq_regs.regs[7];
+	regs.ARM_r6 = (unsigned long)fiq_regs.regs[6];
+	regs.ARM_r5 = (unsigned long)fiq_regs.regs[5];
+	regs.ARM_r4 = (unsigned long)fiq_regs.regs[4];
+	regs.ARM_r3 = (unsigned long)fiq_regs.regs[3];
+	regs.ARM_r2 = (unsigned long)fiq_regs.regs[2];
+	regs.ARM_r1 = (unsigned long)fiq_regs.regs[1];
+	regs.ARM_r0 = (unsigned long)fiq_regs.regs[0];
+#endif
+
+	pr_err("\n\n--------fiq_dump CPU%d--------\n\n", cpu);
+	if (fiq_check_show_regs_en) {
+#ifdef CONFIG_ARM64
+		show_regs(&regs);
+#elif CONFIG_AMLOGIC_ARMV8_AARCH32
+		show_regs_32(&regs);
+#endif
+	}
+	dump_stack();
+	pr_info("\n");
+	while (1)
+		;
+}
+#endif
+
 void pr_lockup_info(int lock_cpu)
 {
 	int cpu;
@@ -631,6 +1025,15 @@ void pr_lockup_info(int lock_cpu)
 	pr_err("%s: lock_cpu=[%d] --------- END --------\n", __func__, lock_cpu);
 
 	local_irq_restore(flags);
+
+#if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
+	if (fiq_virt_addr && fiq_check_en) {
+		struct arm_smccc_res res;
+
+		arm_smccc_smc(FIQ_DEBUG_SMC_CMD, FIQ_SEND_SMC_ARG, lock_cpu, 0, 0, 0, 0, 0, &res);
+		mdelay(1000);
+	}
+#endif
 }
 EXPORT_SYMBOL(pr_lockup_info);
 
@@ -681,6 +1084,47 @@ static void ftrace_format_check_hook(void *data, bool *ftrace_check)
 }
 */
 
+#if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
+static void fiq_debug_addr_init(void)
+{
+	union {
+		struct arm_smccc_res smccc;
+		struct fiq_smc_ret result;
+	} res;
+	phys_addr_t fiq_phy_addr = 0;
+
+	if (!fiq_check_en)
+		return;
+
+	memset(&res, 0, sizeof(res));
+	arm_smccc_smc(FIQ_DEBUG_SMC_CMD, FIQ_INIT_SMC_ARG,
+		(unsigned long)fiq_debug_entry, 0, 0, 0, 0, 0, &res.smccc);
+	fiq_phy_addr = (phys_addr_t)res.result.phy_addr;
+	fiq_buf_size = res.result.buf_size;
+	fiq_percpu_size = res.result.percpu_size;
+
+	/* Current ATF version does not support FIQ DEBUG */
+	if (fiq_phy_addr == 0 || fiq_phy_addr == 0xFFFFFFFF) {
+		pr_err("invalid fiq_phy_addr\n");
+		return;
+	}
+
+	fiq_virt_addr = ioremap_cache(fiq_phy_addr,
+					fiq_buf_size);
+	if (!fiq_virt_addr) {
+		pr_err("failed to map fiq_virt_addr space\n");
+		return;
+	}
+
+	pr_info("fiq_phy_addr:%lx, fiq_buf_size: %lx, fiq_virt_addr:%lx\n",
+		(unsigned long)fiq_phy_addr, fiq_buf_size,
+		(unsigned long)fiq_virt_addr);
+
+	if (fiq_virt_addr)
+		memset(fiq_virt_addr, 0, fiq_buf_size);
+}
+#endif
+
 int debug_lockup_init(void)
 {
 	int cpu;
@@ -730,6 +1174,10 @@ int debug_lockup_init(void)
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_TEST)
 	irq_check_en = 1;
+#endif
+
+#if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
+	fiq_debug_addr_init();
 #endif
 
 	return 0;

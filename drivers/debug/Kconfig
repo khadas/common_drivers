@@ -130,3 +130,11 @@ config AMLOGIC_DEBUG_IOTRACE
 	default n
 	help
 	  support io/sched/irq/smc/misc trace
+
+config AMLOGIC_ARMV8_AARCH32
+	bool "AARCH32 kernel support for Amlogic ARMv8 Soc"
+	depends on AMLOGIC_BREAK_GKI_20
+	default n
+	help
+	  32 bit kernel support for amlogic armv8 SoC.
+	  choose y if you wanna kerenl working in ARMv8 AARCH32 mode

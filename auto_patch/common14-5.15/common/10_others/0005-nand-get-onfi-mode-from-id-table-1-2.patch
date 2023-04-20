@@ -1,0 +1,102 @@
+From 148435976561a993df3fffd98d30867230c40b2e Mon Sep 17 00:00:00 2001
+From: Bichao Zheng <bichao.zheng@amlogic.com>
+Date: Thu, 20 Apr 2023 16:23:24 +0800
+Subject: [PATCH] nand: get onfi mode from id table [1/2]
+
+PD#SWPL-120491
+
+Problem:
+wrong select onfi mode
+
+Solution:
+get onfi mode from id table
+
+Verify:
+s4
+
+Change-Id: Ie747ceb95f1045c2acaaf2afb6862c9b05d36d8b
+Signed-off-by: Bichao Zheng <bichao.zheng@amlogic.com>
+
+diff --git a/drivers/mtd/nand/raw/nand_base.c b/drivers/mtd/nand/raw/nand_base.c
+index 881e768f636f..86849348fb70 100644
+--- a/drivers/mtd/nand/raw/nand_base.c
++++ b/drivers/mtd/nand/raw/nand_base.c
+@@ -963,6 +963,10 @@ int nand_choose_best_sdr_timings(struct nand_chip *chip,
+ 	return ret;
+ }
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND)
++EXPORT_SYMBOL_GPL(nand_choose_best_sdr_timings);
++#endif
++
+ /**
+  * nand_choose_best_nvddr_timings - Pick up the best NVDDR timings that both the
+  *                                  NAND controller and the NAND chip support
+@@ -5151,7 +5155,9 @@ static int nand_detect(struct nand_chip *chip, struct nand_flash_dev *type)
+ 		chip->options |= NAND_ROW_ADDR_3;
+ 
+ 	chip->badblockbits = 8;
+-
++#if IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND)
++	chip->type = type;
++#endif
+ 	nand_legacy_adjust_cmdfunc(chip);
+ 
+ 	pr_info("device found, Manufacturer ID: 0x%02x, Chip ID: 0x%02x\n",
+diff --git a/drivers/mtd/nand/raw/nand_timings.c b/drivers/mtd/nand/raw/nand_timings.c
+index 7b41afc372d2..0b8e90d3aa99 100644
+--- a/drivers/mtd/nand/raw/nand_timings.c
++++ b/drivers/mtd/nand/raw/nand_timings.c
+@@ -735,3 +735,7 @@ void onfi_fill_interface_config(struct nand_chip *chip,
+ 	else
+ 		return onfi_fill_nvddr_interface_config(chip, iface, timing_mode);
+ }
++
++#if IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND)
++EXPORT_SYMBOL_GPL(onfi_fill_interface_config);
++#endif
+diff --git a/include/linux/mtd/rawnand.h b/include/linux/mtd/rawnand.h
+index dcf90144d70b..5ecf1bdaedf1 100644
+--- a/include/linux/mtd/rawnand.h
++++ b/include/linux/mtd/rawnand.h
+@@ -1304,6 +1304,9 @@ struct nand_chip {
+ 	/* Externals */
+ 	struct nand_controller *controller;
+ 	struct nand_ecc_ctrl ecc;
++#if IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND)
++	struct nand_flash_dev *type;
++#endif
+ 	void *priv;
+ };
+ 
+@@ -1432,6 +1435,9 @@ struct nand_flash_dev {
+ 		uint16_t strength_ds;
+ 		uint16_t step_ds;
+ 	} ecc;
++#if IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND)
++	int onfi_timing_mode_default;
++#endif
+ };
+ 
+ int nand_create_bbt(struct nand_chip *chip);
+@@ -1548,6 +1554,17 @@ int nand_read_page_hwecc_oob_first(struct nand_chip *chip, uint8_t *buf,
+ int nand_scan_with_ids(struct nand_chip *chip, unsigned int max_chips,
+ 		       struct nand_flash_dev *ids);
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND)
++void onfi_fill_interface_config(struct nand_chip *chip,
++				struct nand_interface_config *iface,
++				enum nand_interface_type type,
++				unsigned int timing_mode);
++
++int nand_choose_best_sdr_timings(struct nand_chip *chip,
++				 struct nand_interface_config *iface,
++				 struct nand_sdr_timings *spec_timings);
++#endif
++
+ static inline int nand_scan(struct nand_chip *chip, unsigned int max_chips)
+ {
+ 	return nand_scan_with_ids(chip, max_chips, NULL);
+-- 
+2.37.1
+

@@ -147,7 +147,7 @@ static void meson_nfc_cmd_access(struct nand_chip *nand, int raw, bool dir,
 
 	if (raw) {
 		len = mtd->writesize + mtd->oobsize;
-		cmd = (len & GENMASK(5, 0)) | (scrambler << 19) | DMA_DIR(dir);
+		cmd = (len & GENMASK(13, 0)) | (scrambler << 19) | DMA_DIR(dir);
 		writel(cmd, nfc->reg_base + NFC_REG_CMD);
 		return;
 	}
@@ -455,7 +455,7 @@ static int meson_nfc_read_buf(struct nand_chip *nand, u8 *buf, int len)
 	if (ret)
 		goto out;
 
-	cmd = NFC_CMD_N2M | (len & GENMASK(5, 0));
+	cmd = NFC_CMD_N2M | (len & GENMASK(13, 0));
 	writel(cmd, nfc->reg_base + NFC_REG_CMD);
 	meson_nfc_wait_dma_finish(nfc);
 	meson_nfc_dma_buffer_release(nand, len, PER_INFO_BYTE, DMA_FROM_DEVICE);
@@ -477,7 +477,7 @@ static int meson_nfc_write_buf(struct nand_chip *nand, u8 *buf, int len)
 	if (ret)
 		return ret;
 
-	cmd = NFC_CMD_M2N | (len & GENMASK(5, 0));
+	cmd = NFC_CMD_M2N | (len & GENMASK(13, 0));
 	writel(cmd, nfc->reg_base + NFC_REG_CMD);
 
 	meson_nfc_wait_dma_finish(nfc);
@@ -1317,9 +1317,9 @@ int meson_nfc_setup_data_interface(struct nand_chip *nand, int csline,
 	meson_chip->level1_divider = div;
 	meson_chip->clk_rate = 1000000000 / meson_chip->level1_divider;
 	meson_chip->bus_timing = (bt_min + bt_max) / 2 + 1;
-	pr_info("%s %d level1_divider: %ld, clk_rate: %ld, bus_timing: %d\n",
+	pr_info("%s %d level1_divider: %ld, clk_rate: %ld, bus_timing: %d mode: %d\n",
 		__func__, __LINE__, meson_chip->level1_divider, meson_chip->clk_rate,
-		meson_chip->bus_timing);
+		meson_chip->bus_timing, conf->timings.mode);
 
 	return 0;
 }
@@ -1534,6 +1534,14 @@ static const char * const meson_types[] = {
 	NULL
 };
 
+static int meson_choose_interface_config(struct nand_chip *chip,
+					struct nand_interface_config *iface)
+{
+	onfi_fill_interface_config(chip, iface, NAND_SDR_IFACE,
+				   chip->type->onfi_timing_mode_default);
+	return nand_choose_best_sdr_timings(chip, iface, &iface->timings.sdr);
+}
+
 static int
 meson_nfc_nand_chip_init(struct device *dev,
 			 struct meson_nfc *nfc, struct device_node *np)
@@ -1572,6 +1580,7 @@ meson_nfc_nand_chip_init(struct device *dev,
 	nand->controller->ops = &meson_nand_controller_ops;
 	nand_set_flash_node(nand, np);
 	nand_set_controller_data(nand, nfc);
+	nand->ops.choose_interface_config = meson_choose_interface_config;
 
 	nand->options |= NAND_USES_DMA;
 	mtd = nand_to_mtd(nand);

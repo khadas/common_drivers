@@ -2766,12 +2766,13 @@ void lcd_basic_timing_range_init(struct aml_lcd_drv_s *pdrv)
 	//for vrr range config
 	lcd_vrr_config_update(pdrv);
 
-	//save default config
+	//save base config
 	pconf->basic.v_period_min_dft = pconf->basic.v_period_min;
 	pconf->basic.v_period_max_dft = pconf->basic.v_period_max;
-	pconf->timing.lcd_clk_dft = pconf->timing.lcd_clk;
-	pconf->timing.h_period_dft = pconf->basic.h_period;
-	pconf->timing.v_period_dft = pconf->basic.v_period;
+	pconf->timing.base_pixel_clk = pconf->timing.lcd_clk;
+	pconf->timing.base_h_period = pconf->basic.h_period;
+	pconf->timing.base_v_period = pconf->basic.v_period;
+	pconf->timing.base_frame_rate = pconf->timing.frame_rate;
 }
 
 void lcd_timing_init_config(struct aml_lcd_drv_s *pdrv)
@@ -2792,8 +2793,8 @@ void lcd_timing_init_config(struct aml_lcd_drv_s *pdrv)
 		break;
 	}
 	/* use period_dft to avoid period changing offset */
-	h_period = pconf->timing.h_period_dft;
-	v_period = pconf->timing.v_period_dft;
+	h_period = pconf->timing.base_h_period;
+	v_period = pconf->timing.base_v_period;
 	h_active = pconf->basic.h_active;
 	v_active = pconf->basic.v_active;
 	hsync_bp = pconf->timing.hsync_bp;
@@ -2863,9 +2864,9 @@ int lcd_vmode_change(struct aml_lcd_drv_s *pdrv)
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned char type = pconf->timing.fr_adjust_type;
 	 /* use default value to avoid offset */
-	unsigned int pclk = pconf->timing.lcd_clk_dft;
-	unsigned int h_period = pconf->timing.h_period_dft;
-	unsigned int v_period = pconf->timing.v_period_dft;
+	unsigned int pclk = pconf->timing.base_pixel_clk;
+	unsigned int h_period = pconf->timing.base_h_period;
+	unsigned int v_period = pconf->timing.base_v_period;
 	unsigned int pclk_min = pconf->basic.lcd_clk_min;
 	unsigned int pclk_max = pconf->basic.lcd_clk_max;
 	unsigned int duration_num = pconf->timing.sync_duration_num;

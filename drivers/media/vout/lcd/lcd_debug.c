@@ -635,6 +635,17 @@ static int lcd_info_basic_print(struct aml_lcd_drv_s *pdrv, char *buf, int offse
 
 	n = lcd_debug_info_len(len + offset);
 	len += snprintf((buf + len), n,
+		"base_pixel_clk   %d\n"
+		"base_h_period    %d\n"
+		"base_h_period    %d\n"
+		"base_frame_rate  %d\n\n",
+		pconf->timing.base_pixel_clk,
+		pconf->timing.base_h_period,
+		pconf->timing.base_v_period,
+		pconf->timing.base_frame_rate);
+
+	n = lcd_debug_info_len(len + offset);
+	len += snprintf((buf + len), n,
 		"pll_ctrl        0x%08x\n"
 		"div_ctrl        0x%08x\n"
 		"clk_ctrl        0x%08x\n"
@@ -2462,7 +2473,7 @@ static ssize_t lcd_debug_store(struct device *dev, struct device_attribute *attr
 				pr_info("set clk: %dHz\n", temp);
 			}
 			pconf->timing.lcd_clk = temp;
-			pconf->timing.lcd_clk_dft = pconf->timing.lcd_clk;
+			pconf->timing.base_pixel_clk = pconf->timing.lcd_clk;
 			lcd_debug_clk_change(pdrv);
 		} else {
 			LCDERR("invalid data\n");
@@ -2478,8 +2489,8 @@ static ssize_t lcd_debug_store(struct device *dev, struct device_attribute *attr
 				pconf->basic.v_active = val[1];
 				pconf->basic.h_period = val[2];
 				pconf->basic.v_period = val[3];
-				pconf->timing.h_period_dft = val[2];
-				pconf->timing.v_period_dft = val[3];
+				pconf->timing.base_h_period = val[2];
+				pconf->timing.base_v_period = val[3];
 				pr_info("set h_active=%d, v_active=%d\n",
 					val[0], val[1]);
 				pr_info("set h_period=%d, v_period=%d\n",
@@ -2491,8 +2502,8 @@ static ssize_t lcd_debug_store(struct device *dev, struct device_attribute *attr
 				pconf->basic.v_active = val[1];
 				pconf->basic.h_period = val[2];
 				pconf->basic.v_period = val[3];
-				pconf->timing.h_period_dft = val[2];
-				pconf->timing.v_period_dft = val[3];
+				pconf->timing.base_h_period = val[2];
+				pconf->timing.base_v_period = val[3];
 				pconf->basic.lcd_bits = val[4];
 				pr_info("set h_active=%d, v_active=%d\n",
 					val[0], val[1]);
@@ -2790,7 +2801,7 @@ static ssize_t lcd_debug_change_store(struct device *dev, struct device_attribut
 				pr_info("change clk=%dHz\n", temp);
 			}
 			pconf->timing.lcd_clk = temp;
-			pconf->timing.lcd_clk_dft = pconf->timing.lcd_clk;
+			pconf->timing.base_pixel_clk = pconf->timing.lcd_clk;
 			lcd_debug_change_clk_change(pdrv);
 			pconf->change_flag = 1;
 		} else {
@@ -2807,8 +2818,8 @@ static ssize_t lcd_debug_change_store(struct device *dev, struct device_attribut
 				pconf->basic.v_active = val[1];
 				pconf->basic.h_period = val[2];
 				pconf->basic.v_period = val[3];
-				pconf->timing.h_period_dft = val[2];
-				pconf->timing.v_period_dft = val[3];
+				pconf->timing.base_h_period = val[2];
+				pconf->timing.base_v_period = val[3];
 				pr_info("change h_active=%d, v_active=%d\n",
 					val[0], val[1]);
 				pr_info("change h_period=%d, v_period=%d\n",
@@ -2820,8 +2831,8 @@ static ssize_t lcd_debug_change_store(struct device *dev, struct device_attribut
 				pconf->basic.v_active = val[1];
 				pconf->basic.h_period = val[2];
 				pconf->basic.v_period = val[3];
-				pconf->timing.h_period_dft = val[2];
-				pconf->timing.v_period_dft = val[3];
+				pconf->timing.base_h_period = val[2];
+				pconf->timing.base_v_period = val[3];
 				pconf->basic.lcd_bits = val[4];
 				pr_info("change h_active=%d, v_active=%d\n",
 					val[0], val[1]);

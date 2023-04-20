@@ -152,10 +152,11 @@ struct lcd_timing_s {
 	unsigned char fr_adjust_type; /* 0=clock, 1=htotal, 2=vtotal */
 	unsigned char clk_change; /* internal used */
 	unsigned int lcd_clk;   /* pixel clock(unit: Hz) */
-	unsigned int lcd_clk_dft; /* internal used */
 	unsigned int bit_rate; /* Hz */
-	unsigned int h_period_dft; /* internal used */
-	unsigned int v_period_dft; /* internal used */
+	unsigned int base_pixel_clk; /* internal used */
+	unsigned int base_h_period; /* internal used */
+	unsigned int base_v_period; /* internal used */
+	unsigned int base_frame_rate; /* internal used */
 	unsigned int pll_ctrl;  /* pll settings */
 	unsigned int div_ctrl;  /* divider settings */
 	unsigned int clk_ctrl;  /* clock settings */

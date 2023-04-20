@@ -128,4 +128,13 @@ config AMLOGIC_PINCTRL_MESON_TXHD2
 	  TXHD2 pinctrl can work.
 	  otherwise TXHD2 pinctrl can't work
 
+config AMLOGIC_PINCTRL_MESON_C1
+	tristate "Meson C1 Soc pinctrl driver"
+	default n
+	help
+	  the chip of C1 will be built
+	  when enable this config.
+	  C1 pinctrl can work.
+	  otherwise C1 pinctrl can't work
+
 endif

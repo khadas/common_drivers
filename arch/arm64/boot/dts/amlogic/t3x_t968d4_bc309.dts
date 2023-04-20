@@ -942,20 +942,39 @@
 		ts1_control = <0x0>;
 		ts1_invert = <0>;
 
-		ts2_sid = <0x22>;
-		ts2 = "parallel";
-		ts2_control = <0x0>;
-		ts2_invert = <0>;
-
-		pinctrl-names = "p_ts1", "p_ts2";
+		pinctrl-names = "p_ts1";
 		pinctrl-0 = <&dvb_p_ts1_pins>;
-		pinctrl-1 = <&dvb_p_ts2_pins>;
 
 		ts3_sid = <0x23>;
 		ts3 = "parallel"; /* tsind: parallel */
 		ts3_control = <0x0>;
 		ts3_invert = <0>;
 
+	};
+
+	dvbci {
+		compatible = "amlogic, dvbci";
+		dev_name = "dvbci";
+		status = "disabled";
+		io_type = <4>; /* 0=iobus,1=spi,2=cimax,3=spi-t312 4:T5D,ci bus*/
+		addr_ts_mode_multiplex = <0>; /*AY301 not multi ts and addr,default 1*/
+		le_enable_level = <0>; /*LE pin enable level*/
+		/*gpio pin define*/
+		pinctrl-names= "ci_ts_pins";
+		pinctrl-0=<&dvb_ci_bus_pins_all &ci_ts_pins &ci_ts_clk_pins>;
+		reg = <0x0 0xFE04A000 0x0 0x1FFF>;
+		/*irq define dvbci not use irq now*/
+		interrupts = <0 150 1
+				0 151 1>;
+		interrupt-names = "irq_cmp",
+				  "irq_timeout";
+
+		dvbci_io {
+			/*gpio define  GPIOM_27 GPIOM_28 GPIOM_30*/
+			cd_pin1 = <&gpio       GPIOM_27       GPIO_ACTIVE_HIGH>;
+			pwr_pin = <&gpio       GPIOM_28       GPIO_ACTIVE_HIGH>;
+			le_pin = <&gpio        GPIOM_29       GPIO_ACTIVE_HIGH>;
+		};
 	};
 
 	ppmgr {
@@ -1950,16 +1969,6 @@
 			output-low;
 		};
 	};
-	dvb_s_ts0_pins: dvb_s_ts0_pins {
-		tsin_a {
-			groups =   "tsin_aclk_z",
-				   "tsin_a_sop_z",
-				   "tsin_a_valid",
-				   "tsin_a_clk",
-				   "tsin_a_din0";
-			function = "tsin_a";
-		};
-	};
 
 	dvb_p_ts1_pins: dvb_p_ts1_pins {
 		tsin_b {
@@ -1986,6 +1995,40 @@
 				   "tsin_c_d0_c";
 			function = "tsin_c";
 		};
+	};
+
+	dvb_ci_bus_pins_all: dvb_ci_bus_pins_all {
+		mux {
+			groups = "cicam_cen", "cicam_oen",
+				"cicam_wen", "cicam_iordn",
+				"cicam_iowrn", "cicam_reset",
+				"cicam_a0", "cicam_a1", "cicam_a2_c",
+				"cicam_a3_c", "cicam_a4_c", "cicam_a5_c",
+				"cicam_a6_c", "cicam_a7_c", "cicam_a8_c",
+				"cicam_a9_c", "cicam_a10_c", "cicam_a11_c",
+				"cicam_data0", "cicam_data1", "cicam_data2",
+				"cicam_data3", "cicam_data4", "cicam_data5",
+				"cicam_data6", "cicam_data7";
+			function = "cicam";
+		};
+	};
+
+	ci_ts_pins: ci_ts_pins {
+		mux {
+			groups = "tsout_sop", "tsout_valid",
+				"tsout_d0", "tsout_d1", "tsout_d2",
+				"tsout_d3", "tsout_d4", "tsout_d5",
+				"tsout_d6", "tsout_d7";
+			function = "tsout";
+		};
+	};
+
+	ci_ts_clk_pins: ci_ts_clk_pins {
+		mux {
+			groups = "tsout_clk";
+			function = "tsout";
+		};
+
 	};
 
 	/*backlight*/

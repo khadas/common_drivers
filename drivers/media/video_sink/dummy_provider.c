@@ -365,10 +365,12 @@ static int get_fram_phyaddr(struct vp_frame_s *frame_info, unsigned long *addr)
 
 	switch (frame_info->mem_type) {
 	case VP_MEM_ION:
+#ifdef CONFIG_AMLOGIC_ION_DEV
 		ret = meson_ion_share_fd_to_phys(frame_info->shared_fd,
 						 (phys_addr_t *)addr, &len);
 		if (ret != 0)
 			return ret;
+#endif
 		vp_dbg("ion frame addr 0x%lx, len %zu\n", *addr, len);
 		break;
 	case VP_MEM_DMABUF:

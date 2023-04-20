@@ -240,7 +240,9 @@ static int ge2d_vf_process(struct vframe_s *vf, struct ge2d_output_t *output)
 	aiface_print(PRINT_OTHER, "src width: %d, height: %d\n",
 		input_width, input_height);
 
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 	src_format = get_ge2d_input_format(vf);
+#endif
 	interlace_mode = vf->type & VIDTYPE_TYPEMASK;
 	if (interlace_mode == VIDTYPE_INTERLACE_BOTTOM ||
 	    interlace_mode == VIDTYPE_INTERLACE_TOP) {
@@ -548,6 +550,7 @@ int aiface_getinfo(void *arg, char *buf)
 		}
 
 		aiface_fd = aiface_info->aiface_fd;
+#ifdef CONFIG_AMLOGIC_ION_DEV
 		if (aiface_fd != -1) {
 			ret = meson_ion_share_fd_to_phys(aiface_fd, &addr, &len);
 			if (ret < 0) {
@@ -556,6 +559,7 @@ int aiface_getinfo(void *arg, char *buf)
 				return -EINVAL;
 			}
 		}
+#endif
 		memset(&output, 0, sizeof(struct ge2d_output_t));
 		output.width = aiface_info->nn_input_frame_width;
 		output.height = aiface_info->nn_input_frame_height;

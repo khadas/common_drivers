@@ -8,7 +8,11 @@
 
 int aml_debug_init(void);
 int debug_lockup_init(void);
+#ifdef CONFIG_AMLOGIC_DEBUG_MHZ
 int cpu_mhz_init(void);
+#else
+int cpu_mhz_init(void)  { return 0; }
+#endif
 int aml_sched_init(void);
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)

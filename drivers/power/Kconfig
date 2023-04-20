@@ -9,5 +9,13 @@ config AMLOGIC_POWER
 	  Say y here if you want power related driver(pmu/dvfs) support
 	  The use of select here is due to the PM_GENERIC_DOMAINS set by gki's QCOM walk
 
+config AMLOGIC_POWER_EE
+	bool "Amlogic power domain ee support"
+	default y if (AMLOGIC_POWER=m || AMLOGIC_POWER=y)
+	depends on AMLOGIC_POWER
+	help
+	  this config enables to use amlogic ee power management driver
+
+
 source "$(COMMON_DRIVERS_DIR)/drivers/power/meson_pmic6b/Kconfig"
 

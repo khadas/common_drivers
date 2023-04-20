@@ -1429,12 +1429,14 @@ static int malloc_osd_memory(struct fb_info *info)
 					dmabuf = ion_alloc(len,
 					  (1 << meson_ion_cma_heap_id_get()),
 					  ION_FLAG_EXTEND_MESON_HEAP);
+#ifdef CONFIG_AMLOGIC_ION_DEV
 				if (IS_ERR_OR_NULL(dmabuf) &&
 					meson_ion_fb_heap_id_get()) {
 					dmabuf = ion_alloc(len,
 					(1 << meson_ion_fb_heap_id_get()),
 					ION_FLAG_EXTEND_MESON_HEAP);
 				}
+#endif
 				if (IS_ERR(dmabuf)) {
 					osd_log_err("%s: size=%x, FAILED\n",
 						    __func__,
@@ -1495,12 +1497,14 @@ static int malloc_osd_memory(struct fb_info *info)
 				dmabuf = ion_alloc(fb_memsize[fb_index + 1],
 					(1 << meson_ion_cma_heap_id_get()),
 					ION_FLAG_EXTEND_MESON_HEAP);
+#ifdef CONFIG_AMLOGIC_ION_DEV
 			if (IS_ERR_OR_NULL(dmabuf) &&
 				meson_ion_fb_heap_id_get()) {
 				dmabuf = ion_alloc(fb_memsize[fb_index + 1],
 					(1 << meson_ion_fb_heap_id_get()),
 					ION_FLAG_EXTEND_MESON_HEAP);
 			}
+#endif
 			if (IS_ERR(dmabuf)) {
 				osd_log_err("%s: size=%x, FAILED\n",
 						__func__,

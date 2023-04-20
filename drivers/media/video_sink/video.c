@@ -12758,7 +12758,9 @@ static struct class_attribute amvideo_poll_class_attrs[] = {
 	__ATTR_RO(primary_src_fmt),
 	__ATTR_RO(status_changed),
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	__ATTR_RO(frc_delay),
+#endif
 #endif
 	__ATTR_NULL
 };

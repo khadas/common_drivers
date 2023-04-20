@@ -1444,7 +1444,7 @@ static int build_ge2d_addr_config_ion(struct config_planes_ion_s *plane,
 		return ret;
 	for (i = 0; i < MAX_PLANE; i++) {
 		if (plane[i].shared_fd) {
-#ifdef CONFIG_AMLOGIC_ION
+#ifdef CONFIG_AMLOGIC_ION_DEV
 			size_t len = 0;
 
 			ret = meson_ion_share_fd_to_phys(plane[i].shared_fd,
@@ -1601,7 +1601,7 @@ static int build_ge2d_config_ex_ion(struct ge2d_context_s *context,
 			/* multi-src_planes */
 			canvas_set = 0;
 			if (plane[i].shared_fd) {
-#ifdef CONFIG_AMLOGIC_ION
+#ifdef CONFIG_AMLOGIC_ION_DEV
 				size_t len;
 
 				ret = meson_ion_share_fd_to_phys

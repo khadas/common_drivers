@@ -1628,7 +1628,7 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 			sizeof(gs), gs.magic);
 
 		//configure gdc config, buffer address and resolution
-	#ifdef CONFIG_AMLOGIC_ION
+#ifdef CONFIG_AMLOGIC_ION_DEV
 		ret = meson_ion_share_fd_to_phys(gs.out_fd,
 						 &addr,
 						 &len);
@@ -1649,7 +1649,7 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 		gdc_cmd->base_gdc = 0;
 		gdc_cmd->current_addr = gdc_cmd->buffer_addr;
 
-	#ifdef CONFIG_AMLOGIC_ION
+#ifdef CONFIG_AMLOGIC_ION_DEV
 		ret = meson_ion_share_fd_to_phys(gc->config_addr,
 						 &addr,
 						 &len);
@@ -1664,7 +1664,7 @@ static long meson_gdc_ioctl(struct file *file, unsigned int cmd,
 
 		gc->config_addr = addr;
 
-	#ifdef CONFIG_AMLOGIC_ION
+#ifdef CONFIG_AMLOGIC_ION_DEV
 		ret = meson_ion_share_fd_to_phys(gs.in_fd,
 						 &addr,
 						 &len);

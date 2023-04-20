@@ -49,12 +49,16 @@ void meson_vout_notify_mode_change(int idx,
 			vout_notifier_call_chain(VOUT_EVENT_MODE_CHANGE_PRE, &mode);
 			break;
 		case 2:
+#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
 			vout2_set_uevent(VOUT_EVENT_MODE_CHANGE, 1);
 			vout2_notifier_call_chain(VOUT_EVENT_MODE_CHANGE_PRE, &mode);
+#endif
 			break;
 		case 3:
+#ifdef CONFIG_AMLOGIC_VOUT3_SERVE
 			vout3_set_uevent(VOUT_EVENT_MODE_CHANGE, 1);
 			vout3_notifier_call_chain(VOUT_EVENT_MODE_CHANGE_PRE, &mode);
+#endif
 			break;
 		default:
 			DRM_ERROR("%s:unknown vout %d\n", __func__, idx);
@@ -67,12 +71,16 @@ void meson_vout_notify_mode_change(int idx,
 			vout_set_uevent(VOUT_EVENT_MODE_CHANGE, 0);
 			break;
 		case 2:
+#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
 			vout2_notifier_call_chain(VOUT_EVENT_MODE_CHANGE, &mode);
 			vout2_set_uevent(VOUT_EVENT_MODE_CHANGE, 0);
+#endif
 			break;
 		case 3:
+#ifdef CONFIG_AMLOGIC_VOUT3_SERVE
 			vout3_notifier_call_chain(VOUT_EVENT_MODE_CHANGE, &mode);
 			vout3_set_uevent(VOUT_EVENT_MODE_CHANGE, 0);
+#endif
 			break;
 		default:
 			DRM_ERROR("%s: unknown vout %d\n", __func__, idx);
@@ -88,10 +96,14 @@ void meson_vout_update_mode_name(int idx, char *modename, char *ctx)
 		__func__, ctx, idx, modename);
 	if (idx == 1)
 		set_vout_mode_name(modename);
+#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
 	else if (idx == 2)
 		set_vout2_mode_name(modename);
+#endif
+#ifdef CONFIG_AMLOGIC_VOUT3_SERVE
 	else if (idx == 3)
 		set_vout3_mode_name(modename);
+#endif
 	else
 		DRM_ERROR("%s:unsupported vout idx %d.\n", __func__, idx);
 }

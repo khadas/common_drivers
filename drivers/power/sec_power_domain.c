@@ -76,6 +76,7 @@ static int sec_pm_domain_power_on(struct generic_pm_domain *genpd)
 #define POWER_DOMAIN(_name, index, status, flag)	\
 	TOP_DOMAIN(_name, index, status, flag, 0)
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct sec_pm_private_domain a1_pm_domains[] __initdata = {
 	[PDID_DSP_A] =  POWER_DOMAIN(dsp_a, PDID_DSP_A, DOMAIN_INIT_ON, GENPD_FLAG_ACTIVE_WAKEUP),
 	[PDID_DSP_B] =  POWER_DOMAIN(dsp_b, PDID_DSP_B, DOMAIN_INIT_ON, GENPD_FLAG_ACTIVE_WAKEUP),
@@ -105,6 +106,7 @@ static struct sec_pm_domain_data a1_pm_domain_data __initdata = {
 	.domains = a1_pm_domains,
 	.domains_count = ARRAY_SIZE(a1_pm_domains),
 };
+#endif
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static struct sec_pm_private_domain c1_pm_domains[] __initdata = {
@@ -158,6 +160,7 @@ static struct sec_pm_domain_data c1_pm_domain_data __initdata = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* If there is GENPD_FLAG_ALWAYS_ON, the domain must be initialized to on */
 static struct sec_pm_private_domain c2_pm_domains[] __initdata = {
 	[PDID_CX_CPU_PWR0] = POWER_DOMAIN(cpu_pwr0, PDID_CX_CPU_PWR0, DOMAIN_INIT_ON,
@@ -324,6 +327,7 @@ static struct sec_pm_domain_data t7_pm_domain_data __initdata = {
 	.domains = t7_pm_domains,
 	.domains_count = ARRAY_SIZE(t7_pm_domains),
 };
+#endif
 
 static struct sec_pm_private_domain s4_pm_domains[] __initdata = {
 	[PDID_S4_DOS_HEVC] = POWER_DOMAIN(hevc, PDID_S4_DOS_HEVC, DOMAIN_INIT_OFF, 0),
@@ -337,12 +341,12 @@ static struct sec_pm_private_domain s4_pm_domains[] __initdata = {
 	[PDID_S4_DEMOD] = POWER_DOMAIN(demod, PDID_S4_DEMOD, DOMAIN_INIT_OFF, 0),
 	[PDID_S4_AUDIO] = POWER_DOMAIN(audio, PDID_S4_AUDIO, DOMAIN_INIT_OFF, 0),
 };
-
 static struct sec_pm_domain_data s4_pm_domain_data __initdata = {
 	.domains = s4_pm_domains,
 	.domains_count = ARRAY_SIZE(s4_pm_domains),
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct sec_pm_private_domain s5_pm_domains[] = {
 	[PDID_S5_MALI_0] = TOP_DOMAIN(mali_0, PDID_S5_MALI_0,
 			DOMAIN_INIT_OFF, 0, PDID_S5_MALI_TOP),
@@ -594,6 +598,7 @@ static struct sec_pm_domain_data c3_pm_domain_data __initdata = {
 	.domains = c3_pm_domains,
 	.domains_count = ARRAY_SIZE(c3_pm_domains),
 };
+#endif
 
 static int sec_pd_probe(struct platform_device *pdev)
 {
@@ -691,6 +696,7 @@ static const struct of_device_id pd_match_table[] = {
 		.data = &c1_pm_domain_data,
 	},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,c2-power-domain",
 		.data = &c2_pm_domain_data,
@@ -707,10 +713,12 @@ static const struct of_device_id pd_match_table[] = {
 		.compatible = "amlogic,t7-power-domain",
 		.data = &t7_pm_domain_data,
 	},
+#endif
 	{
 		.compatible = "amlogic,s4-power-domain",
 		.data = &s4_pm_domain_data,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,t3-power-domain",
 		.data = &t3_pm_domain_data,
@@ -739,6 +747,7 @@ static const struct of_device_id pd_match_table[] = {
 		.compatible = "amlogic,s5-power-domain",
 		.data = &s5_pm_domain_data,
 	},
+#endif
 	{}
 };
 

@@ -76,6 +76,14 @@ config AMLOGIC_DEBUG_HLD
 	  if you want to hardlockup detector support,
 	  please use this option switch it.
 
+
+config AMLOGIC_DEBUG_MHZ
+	bool "Amlogic hardlockup detector support"
+	depends on AMLOGIC_DEBUG
+	default y if (AMLOGIC_DEBUG=y || AMLOGIC_DEBUG=m)
+	help
+	  if you want to hardlockup detector support,
+
 config AMLOGIC_HOTPLUG_ARM_CPU0
 	bool "Support VTS thermal 1.0 test on arm"
 	default n

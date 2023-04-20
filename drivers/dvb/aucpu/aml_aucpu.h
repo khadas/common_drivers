@@ -173,6 +173,7 @@ enum aml_aucpu_report {
 /* max supported instances number*/
 #define AUCPU_MAX_INTST_NUM    32
 
+#ifdef CONFIG_AMLOGIC_AUCPU
 /**
  * extern s32 aml_aucpu_strm_create()
  * create a stream instance with input output buffers and configurations
@@ -281,5 +282,39 @@ s32 aml_aucpu_strm_get_status(s32 handle, s32 *state, s32 *report);
  *		error code <0 if errors on the operation
  **/
 s32 aml_aucpu_strm_get_load_firmware_status(void);
+#else
+static inline s32 aml_aucpu_strm_start(s32 handle)
+{
+	return 0;
+}
+
+static inline s32 aml_aucpu_strm_create(struct aml_aucpu_strm_buf *src,
+		struct aml_aucpu_strm_buf *dst,
+		struct aml_aucpu_inst_config *cfg)
+{
+	return 0;
+}
+
+static inline s32 aml_aucpu_strm_remove(s32 handle)
+{
+	return 0;
+}
+
+static inline s32 aml_aucpu_strm_get_dst(s32 handle, struct aml_aucpu_buf_upd *upd)
+{
+	return 0;
+}
+
+static inline s32 aml_aucpu_strm_stop(s32 handle)
+{
+	return 0;
+}
+
+static inline s32 aml_aucpu_strm_get_load_firmware_status(void)
+{
+	return 0;
+}
+
+#endif
 
 #endif /* _AML_AUCPU_H_ */

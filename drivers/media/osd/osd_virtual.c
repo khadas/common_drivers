@@ -624,9 +624,11 @@ static int malloc_fb_memory(struct fb_info *info)
 				    __func__, fb_memsize);
 			return -ENOMEM;
 		}
+#ifdef CONFIG_AMLOGIC_ION_DEV
 		if (meson_ion_share_fd_to_phys(ion_fd, &fb_rmem_paddr,
 					       &fb_memsize_total))
 			osd_log_err("fd_to_phys failed\n");
+#endif
 		fb_rmem_vaddr = aml_map_phyaddr_to_virt(fb_rmem_paddr,
 							fb_memsize_total);
 		dev_notice(&pdev->dev,

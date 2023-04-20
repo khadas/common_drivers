@@ -447,8 +447,10 @@ struct dma_buf *ion_alloc(size_t len, unsigned int heap_id_mask, unsigned int fl
 
 	if (!(flags & ION_FLAG_EXTEND_PROTECTED) &&
 	    !(flags & ION_FLAG_EXTEND_MESON_HEAP_SECURE)) {
+#ifdef CONFIG_AMLOGIC_ION_DEV
 		if (!internal_dev->dev.parent)
 			internal_dev->dev.parent = meson_ion_get_dev();
+#endif
 		/* flush alloc memory cache */
 		for_each_sg(buffer->sg_table->sgl, s, buffer->sg_table->nents, i)
 			sg_dma_address(s) = sg_phys(s);

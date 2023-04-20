@@ -950,7 +950,9 @@ void am_meson_logo_init(struct drm_device *dev)
 	if (strmode && !strcmp("4", strmode))
 		DRM_INFO("current is strmode\n");
 	else
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		for (i = 0; i < MESON_MAX_CRTC; i++)
+#endif
 			am_meson_load_logo(dev, fb, i);
 
 	if (drm_framebuffer_read_refcount(fb) > 1)

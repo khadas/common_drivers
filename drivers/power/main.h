@@ -20,7 +20,7 @@ static inline void sec_power_domain_exit(void)
 }
 #endif
 
-#if IS_ENABLED(CONFIG_AMLOGIC_POWER)
+#if IS_ENABLED(CONFIG_AMLOGIC_POWER_EE)
 int power_ee_domain_init(void);
 void power_ee_domain_exit(void);
 #else

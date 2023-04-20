@@ -563,7 +563,9 @@ static void tvafe_dec_start(struct tvin_frontend_s *fe, enum tvin_sig_fmt_e fmt)
 
 	tvafe->parm.info.fmt = fmt;
 	tvafe->parm.info.status = TVIN_SIG_STATUS_STABLE;
+#ifdef CONFIG_AMLOGIC_MEDIA_TVIN_VBI
 	tvafe_vbi_set_wss();
+#endif
 	devp->flags |= TVAFE_FLAG_DEV_STARTED;
 
 	tvafe_pr_info("%s start fmt:%s ok.\n",

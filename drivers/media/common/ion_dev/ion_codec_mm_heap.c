@@ -112,6 +112,7 @@ static void ion_codec_mm_heap_free(struct ion_buffer *buffer)
 	struct sg_table *table = buffer->priv_virt;
 	struct page *page = sg_page(table->sgl);
 	phys_addr_t paddr = PFN_PHYS(page_to_pfn(page));
+#ifdef CONFIG_AMLOGIC_ION_DEV
 	struct device *ion_dev = meson_ion_get_dev();
 
 	if ((buffer->flags & ION_FLAG_EXTEND_PROTECTED) !=
@@ -127,6 +128,7 @@ static void ion_codec_mm_heap_free(struct ion_buffer *buffer)
 
 	sg_free_table(table);
 	kfree(table);
+#endif
 }
 
 struct ion_heap_ops codec_mm_heap_ops = {

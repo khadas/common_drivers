@@ -428,7 +428,9 @@ static void video_set_state(struct meson_vpu_block *vblk,
 			DRM_DEBUG("vf-info crop:%u, %u, %u, %u, pic:%u, %u\n",
 				vf_info.crop_x, vf_info.crop_y, vf_info.crop_w, vf_info.crop_h,
 				vf_info.buffer_w, vf_info.buffer_h);
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 			video_display_setframe(vblk->index, &vf_info, 0);
+#endif
 		} else {
 			/*crop bottow*/
 			if (pic_h > recal_src_h + vf->crop[0])
@@ -455,7 +457,9 @@ static void video_set_state(struct meson_vpu_block *vblk,
 			vf_info.phy_addr[1] = mvvs->phy_addr[1];
 			vf_info.reserved[0] = video_type_get(pixel_format);
 			dma_resv_add_excl_fence(vf_info.dmabuf->resv, vf_info.release_fence);
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 			video_display_setframe(vblk->index, &vf_info, 0);
+#endif
 		} else {
 			if (pixel_format == DRM_FORMAT_NV12 ||
 			    pixel_format == DRM_FORMAT_NV21) {
@@ -563,8 +567,10 @@ static void video_hw_disable(struct meson_vpu_block *vblk,
 	}
 
 	if (video->vfm_mode) {
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 		video_display_setenable(vblk->index, 0);
 		video->video_enabled = 0;
+#endif
 	} else {
 		video_disable_fence(video);
 		video->fence = NULL;

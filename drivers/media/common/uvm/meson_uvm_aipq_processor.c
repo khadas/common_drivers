@@ -311,7 +311,9 @@ int ge2d_vf_process(struct vframe_s *vf, struct ge2d_output_t *output)
 	aipq_print(PRINT_OTHER, "src width: %d, height: %d\n",
 		input_width, input_height);
 
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 	src_format = get_ge2d_input_format(vf);
+#endif
 	interlace_mode = vf->type & VIDTYPE_TYPEMASK;
 	if (interlace_mode == VIDTYPE_INTERLACE_BOTTOM ||
 	    interlace_mode == VIDTYPE_INTERLACE_TOP) {

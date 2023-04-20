@@ -204,7 +204,7 @@ static inline int ion_system_heap_create_init(void) { return 0; }
 static inline int ion_system_contig_heap_create_init(void) { return 0; }
 #endif
 
-#ifdef CONFIG_AMLOGIC_ION
+#ifdef CONFIG_AMLOGIC_ION_DEV
 int ion_init(void);
 #else
 static inline int ion_init(void)

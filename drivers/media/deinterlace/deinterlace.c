@@ -3535,9 +3535,11 @@ static void pre_de_process(void)
 		}
 	}
 
+#ifdef CONFIG_AMLOGIC_MEDIA_TVIN
 	/*patch for SECAM signal format from vlsi-feijun for all IC*/
 	di_nr_opl()->secam_cfr_adjust(di_pre_stru.di_inp_buf->vframe->sig_fmt,
 			 di_pre_stru.di_inp_buf->vframe->type);
+#endif
 
 	/* set interrupt mask for pre module.
 	 * we need to only leave one mask open
@@ -4351,7 +4353,9 @@ jiffies_to_msecs(jiffies_64 - vframe->ready_jiffies64));
 			di_pre_stru.cur_inp_type = di_buf->vframe->type;
 			di_pre_stru.cur_source_type =
 				di_buf->vframe->source_type;
+#ifdef CONFIG_AMLOGIC_MEDIA_TVIN
 			di_pre_stru.cur_sig_fmt = di_buf->vframe->sig_fmt;
+#endif
 			di_pre_stru.orientation = di_buf->vframe->video_angle;
 			di_pre_stru.source_change_flag = 1;
 			di_pre_stru.input_size_change_flag = true;
@@ -7202,12 +7206,14 @@ static void di_reg_process_irq(void)
 		di_pre_size_change(vframe->width, nr_height,
 				first_field_type);
 
+#ifdef CONFIG_AMLOGIC_MEDIA_TVIN
 		di_pre_stru.mtn_status =
 			adpative_combing_config(vframe->width,
 					(vframe->height>>1),
 					(vframe->source_type),
 					is_progressive(vframe),
 					vframe->sig_fmt);
+#endif
 
 		di_patch_post_update_mc_sw(DI_MC_SW_REG, true);
 		di_nr_opl()->cue_int(vframe);

@@ -69,7 +69,7 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 	bool from_heap_codecmm = false;
 	char DMAHEAP[][20] = {"heap-fb", "heap-gfx", "heap-codecmm"};
 #endif
-#ifdef CONFIG_AMLOGIC_ION
+#ifdef CONFIG_AMLOGIC_ION_DEV
 	size_t len;
 	unsigned int id;
 	struct ion_buffer *buffer;
@@ -109,7 +109,8 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 		DRM_DEBUG("%s: dmabuf(%p) dma_heap_alloc success. size = %zu\n",
 			__func__, dmabuf, meson_gem_obj->base.size);
 #endif
-#ifdef CONFIG_AMLOGIC_ION
+#ifdef CONFIG_AMLOGIC_ION_DEV
+
 		if (!meson_gem_obj->is_dma) {
 			id = meson_ion_fb_heap_id_get();
 			if (id) {
@@ -143,7 +144,7 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 			meson_gem_obj->is_dma = true;
 		}
 #endif
-#ifdef CONFIG_AMLOGIC_ION
+#ifdef CONFIG_AMLOGIC_ION_DEV
 		if (!meson_gem_obj->is_dma) {
 			id = meson_ion_codecmm_heap_id_get();
 			if (id)
@@ -215,7 +216,7 @@ static int am_meson_gem_alloc_ion_buff(struct am_meson_gem_object *
 		meson_gem_obj->addr = PFN_PHYS(page_to_pfn(page));
 	}
 #endif
-#ifdef CONFIG_AMLOGIC_ION
+#ifdef CONFIG_AMLOGIC_ION_DEV
 	if (!meson_gem_obj->is_dma) {
 		buffer = (struct ion_buffer *)dmabuf->priv;
 		meson_gem_obj->ionbuffer = buffer;

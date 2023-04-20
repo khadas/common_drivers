@@ -365,6 +365,7 @@ static void hdmitx_early_suspend(struct early_suspend *h)
 	hdmitx_set_hdr10plus_pkt(0, NULL);
 	clear_rx_vinfo(hdev);
 	hdmitx_edid_clear(hdev);
+	hdmitx_edid_done = false;
 	hdmitx_edid_ram_buffer_clear(hdev);
 	edidinfo_detach_to_vinfo(hdev);
 
@@ -473,6 +474,8 @@ static void hdmitx_late_resume(struct early_suspend *h)
 		if (hdev->hdcp_ctl_lvl == 0x1)
 			hdev->hwop.am_hdmitx_set_out_mode();
 	}
+	/*notify to drm hdmi*/
+	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 }
 
 /* Set avmute_set signal to HDMIRX */
@@ -6091,7 +6094,8 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	mutex_unlock(&setclk_mutex);
 
 	/*notify to drm hdmi*/
-	hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
+	if (!hdev->suspend_flag)
+		hdmitx_hpd_notify_unlocked(&hdev->tx_comm);
 }
 
 static void clear_rx_vinfo(struct hdmitx_dev *hdev)

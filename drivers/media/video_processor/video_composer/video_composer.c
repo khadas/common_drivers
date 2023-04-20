@@ -59,6 +59,8 @@
 
 #define WAIT_READY_Q_TIMEOUT 100
 
+#define ADDR_VALUE_8G    0x200000000
+
 static u32 use_low_latency;
 MODULE_PARM_DESC(use_low_latency, "\n use_low_latency\n");
 module_param(use_low_latency, uint, 0664);
@@ -2765,6 +2767,19 @@ static void vframe_composer(struct composer_dev *dev)
 			dst_vf->compHeight = dst_buf->buf_h;
 			dst_vf->compHeadAddr = dst_buf->afbc_head_addr;
 			dst_vf->compBodyAddr = dst_buf->afbc_body_addr;
+			if (get_cpu_type() == MESON_CPU_MAJOR_ID_T3X) {
+				dst_vf->fgs_valid = false;
+				dst_vf->type |= VIDTYPE_COMPRESS_LOSS;
+				dst_vf->vf_lossycomp_param.lossy_mode = 1;
+				dst_vf->vf_lossycomp_param.burst_length_add_en = 0;
+				dst_vf->vf_lossycomp_param.burst_length_add_value = 2;
+				dst_vf->vf_lossycomp_param.quant_diff_root_leave = 2;
+				if (dst_vf->compHeadAddr >= ADDR_VALUE_8G ||
+					dst_vf->compBodyAddr >= ADDR_VALUE_8G)
+					dst_vf->vf_lossycomp_param.ofset_burst4_en = 1;
+				else
+					dst_vf->vf_lossycomp_param.ofset_burst4_en = 0;
+			}
 		}
 
 		if (vicp_shrink_mode >= VICP_SHRINK_MODE_MAX) {

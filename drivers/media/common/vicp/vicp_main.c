@@ -77,6 +77,7 @@ u32 debug_axis_en;
 struct output_axis_s axis;
 u32 rdma_en;
 u32 debug_rdma_en;
+u32 lossy_compress_rate;//0: 100% copress; 1: 67% compress; 2: 83% compress
 
 struct mutex vicp_mutex; /*used to avoid user space call at the same time*/
 struct vicp_hdr_s *vicp_hdr;
@@ -717,6 +718,28 @@ static ssize_t debug_rdma_en_store(struct class *cla, struct class_attribute *at
 	return count;
 }
 
+static ssize_t lossy_compress_rate_show(struct class *cla, struct class_attribute *attr,
+	char *buf)
+{
+	return snprintf(buf, 80, "current lossy_compress_rate is %d.\n", lossy_compress_rate);
+}
+
+static ssize_t lossy_compress_rate_store(struct class *cla, struct class_attribute *attr,
+	const char *buf, size_t count)
+{
+	long tmp;
+	int ret;
+
+	ret = kstrtol(buf, 0, &tmp);
+	if (ret != 0) {
+		pr_err("ERROR converting %s to long int!\n", buf);
+		return ret;
+	}
+
+	lossy_compress_rate = tmp;
+	return count;
+}
+
 static CLASS_ATTR_RW(print_flag);
 static CLASS_ATTR_RW(reg);
 static CLASS_ATTR_RW(demo_enable);
@@ -738,6 +761,7 @@ static CLASS_ATTR_RW(debug_axis_en);
 static CLASS_ATTR_RW(axis);
 static CLASS_ATTR_RW(rdma_en);
 static CLASS_ATTR_RW(debug_rdma_en);
+static CLASS_ATTR_RW(lossy_compress_rate);
 
 static struct attribute *vicp_class_attrs[] = {
 	&class_attr_print_flag.attr,
@@ -761,6 +785,7 @@ static struct attribute *vicp_class_attrs[] = {
 	&class_attr_axis.attr,
 	&class_attr_rdma_en.attr,
 	&class_attr_debug_rdma_en.attr,
+	&class_attr_lossy_compress_rate.attr,
 	NULL
 };
 ATTRIBUTE_GROUPS(vicp_class);
@@ -921,11 +946,17 @@ static const struct file_operations vicp_fops = {
 static struct vicp_device_data_s vicp_s5 = {
 	.rate = 667000000,
 	.cpu_type = MESON_CPU_MAJOR_ID_S5,
+	.film_grain_support = false,
+	.cr_lossy_support = false,
+	.ddr16_support = false,
 };
 
 static struct vicp_device_data_s vicp_t3x = {
 	.rate = 800000000,
 	.cpu_type = MESON_CPU_MAJOR_ID_T3X,
+	.film_grain_support = true,
+	.cr_lossy_support = true,
+	.ddr16_support = true,
 };
 
 static const struct of_device_id vicp_dt_match[] = {
@@ -988,10 +1019,11 @@ static int uninit_vicp_device(void)
 	return  0;
 }
 
-static void vicp_param_init(struct vicp_device_data_s *device_data)
+static void vicp_param_init(struct vicp_device_data_s device_data)
 {
 	mutex_init(&vicp_mutex);
-	init_vicp_module_reg(device_data->cpu_type);
+	vicp_device_init(device_data);
+	init_vicp_module_reg(device_data.cpu_type);
 	memset(&axis, 0, sizeof(struct output_axis_s));
 
 	vicp_hdr = vicp_hdr_prob();
@@ -1164,7 +1196,7 @@ static int vicp_probe(struct platform_device *pdev)
 		pr_err("runtime get power error.\n");
 
 	//clk_disable_unprepare(clk_gate);
-	vicp_param_init(vicp_meson);
+	vicp_param_init(*vicp_meson);
 	return 0;
 error:
 	unregister_chrdev(VICP_MAJOR, VICP_DEVICE_NAME);

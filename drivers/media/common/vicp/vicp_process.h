@@ -23,6 +23,7 @@
 #include "vicp_rdma.h"
 #include "vicp_hdr.h"
 
+#define ADDR_VALUE_8G    0x200000000
 extern u32 print_flag;
 extern u32 input_width;
 extern u32 input_height;
@@ -46,19 +47,32 @@ extern struct vicp_hdr_s *vicp_hdr;
 extern u32 rdma_en;
 extern u32 debug_rdma_en;
 extern u32 fgrain_en;
+extern u32 lossy_compress_rate;
 /* *********************************************************************** */
 /* ************************* enum definitions **************************.*/
 /* *********************************************************************** */
 enum vicp_lossy_compress_mode_e {
-	VICP_LOSSY_COMPRESS_MODE_OFF,
-	VICP_LOSSY_COMPRESS_MODE_LUMA,
-	VICP_LOSSY_COMPRESS_MODE_CHRMA,
-	VICP_LOSSY_COMPRESS_MODE_ALL,
-	VICP_LOSSY_COMPRESS_MODE_MAX,
+	LOSSY_COMPRESS_MODE_OFF,
+	LOSSY_COMPRESS_MODE_QUAN_LUMA,
+	LOSSY_COMPRESS_MODE_QUAN_CHRMA,
+	LOSSY_COMPRESS_MODE_QUAN_ALL,
+	LOSSY_COMPRESS_MODE_CR,
+	LOSSY_COMPRESS_MODE_MAX,
 };
 /* *********************************************************************** */
 /* ************************* struct definitions **************************.*/
 /* *********************************************************************** */
+struct vid_cmpr_lossy_compress_s {
+	u32 compress_mode; //0:close 1:luma loosy 2:chrma loosy 3:luma&&chrma loosy 4:cr loosy
+	u32 quant_diff_root_leave;
+	u32 rc_en;
+	u32 brst_len_add_en;
+	//0:brst_len_add_en=0&brst_len_add_value=2  2:en=1&value=2 3:en=1&value=3
+	u32 brst_len_add_value;
+	u32 ofset_brst4_en;
+	u32 compress_rate;
+};
+
 struct vid_cmpr_top_s {
 	u32 src_compress;
 	u32 src_hsize;//input size
@@ -128,14 +142,8 @@ struct vid_cmpr_top_s {
 	u32 film_grain_en;
 	u64 film_lut_addr;
 	// lossy
-	u32 src_lossy_en; //0:no lossy  1:new lossy fix_cr_en=1  3:old lossy luma&chroma all on
-	//0:brst_len_add_en=0&brst_len_add_value=2  2:en=1&value=2 3:en=1&value=3
-	u32 src_brst_len_add_value;
-	u32 src_ofset_brst4_en;
-	u32 out_lossy_en;
-	u32 out_rc_en;
-	u32 out_brst_len_add_value;
-	u32 out_ofset_brst4_en;
+	struct vid_cmpr_lossy_compress_s src_lossy_compress;
+	struct vid_cmpr_lossy_compress_s out_lossy_compress;
 	// afbce mmu_page_size
 	u32 src_mmu_page_size_mode; //0:mmu_page_size=4096  1:mmu_page_size=8192
 };
@@ -186,16 +194,6 @@ struct vid_cmpr_crop_s {
 	u32 win_end_h;
 	u32 win_bgn_v;
 	u32 win_end_v;
-};
-
-struct vid_cmpr_lossy_compress_s {
-	u32 lossy_mode; //0:close 1:luma loosy 2:chrma loosy 3: luma & chrma loosy
-	u32 rc_en;
-	u32 fix_cr_en;
-	u32 brst_len_add_en;
-	//0:brst_len_add_en=0&brst_len_add_value=2  2:en=1&value=2 3:en=1&value=3
-	u32 brst_len_add_value;
-	u32 ofset_brst4_en;
 };
 
 struct vid_cmpr_afbce_s {
@@ -322,16 +320,16 @@ struct vid_cmpr_fgrain_s {
 	u64 fgs_table_adr;
 };
 
-/* *********************************************************************** */
-/* ************************* function definitions **************************.*/
-/* *********************************************************************** */
+/* **************************************************************************/
+/* ************************* function definitions ***************************/
+/* **************************************************************************/
 irqreturn_t vicp_isr_handle(int irq, void *dev_id);
 irqreturn_t vicp_rdma_handle(int irq, void *dev_id);
+void vicp_device_init(struct vicp_device_data_s device);
 int vicp_process_config(struct vicp_data_config_s *data_config,
 	struct vid_cmpr_top_s *vid_cmpr_top);
 int vicp_process_reset(void);
 int vicp_process_task(struct vid_cmpr_top_s *vid_cmpr_top);
-
 void set_vid_cmpr_crop(struct vid_cmpr_crop_s *crop_param);
 void set_mif_stride(struct vid_cmpr_mif_s *mif, int *stride_y, int *stride_cb, int *stride_cr);
 void set_vid_cmpr_shrink(int is_enable, int size, int mode_h, int mode_v);
@@ -341,5 +339,4 @@ void set_vid_cmpr_rmif(struct vid_cmpr_mif_s *rd_mif, int urgent, int hold_line)
 void set_vid_cmpr_scale(int is_enable, struct vid_cmpr_scaler_s *scaler);
 void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_s *afbcd);
 void set_vid_cmpr_hdr(int hdr2_top_en);
-void set_vid_cmpr_fgrain(struct vid_cmpr_fgrain_s fgrain);
 #endif //_VICP_PROCESS_H_

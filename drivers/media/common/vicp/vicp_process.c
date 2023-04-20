@@ -47,6 +47,7 @@ static u32 last_fbcinput_en;
 static u32 last_output_w, last_output_h, last_output_fbcfmt, last_output_miffmt;
 static u32 last_fbcoutput_en, last_mifoutput_en;
 static u32 last_output_begin_v, last_output_begin_h, last_output_end_v, last_output_end_h;
+static struct vicp_device_data_s vicp_dev;
 
 irqreturn_t vicp_isr_handle(int irq, void *dev_id)
 {
@@ -91,8 +92,7 @@ void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_s *afbce, bool rdma_en
 	int blk_out_end_h = (afbce->enc_win_end_h + 31) >> 5;
 	int blk_out_bgn_v = afbce->enc_win_bgn_v >> 2;
 	int blk_out_end_v = (afbce->enc_win_end_v + 3) >> 2;
-	int lossy_luma_en;
-	int lossy_chrm_en;
+	int lossy_luma_en, lossy_chrm_en, lossy_cr_en;
 	int reg_fmt444_comb;
 	int uncmp_size;
 	int uncmp_bits;
@@ -133,8 +133,7 @@ void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_s *afbce, bool rdma_en
 		pr_info("vicp: force_444_comb = %d\n", afbce->force_444_comb);
 		pr_info("vicp: rotation enable %d\n", afbce->rot_en);
 		pr_info("vicp: din_swt = %d\n", afbce->din_swt);
-		pr_info("vicp: lossy_compress: mode: %d.\n", afbce->lossy_compress.lossy_mode);
-		pr_info("vicp: lossy_compress: cr_en = %d.\n", afbce->lossy_compress.fix_cr_en);
+		pr_info("vicp: lossy_compress: mode: %d.\n", afbce->lossy_compress.compress_mode);
 		pr_info("vicp: lossy_compress: brst_len_add_en: %d, value: %d.\n",
 			afbce->lossy_compress.brst_len_add_en,
 			afbce->lossy_compress.brst_len_add_value);
@@ -173,18 +172,26 @@ void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_s *afbce, bool rdma_en
 
 	mmu_page_size = afbce->mmu_page_size == 0 ? 4096 : 8192;
 
-	if (afbce->lossy_compress.lossy_mode == VICP_LOSSY_COMPRESS_MODE_OFF) {
-		lossy_luma_en = 0;
-		lossy_chrm_en = 0;
-	} else if (afbce->lossy_compress.lossy_mode == VICP_LOSSY_COMPRESS_MODE_LUMA) {
+	if (afbce->lossy_compress.compress_mode == LOSSY_COMPRESS_MODE_QUAN_LUMA) {
 		lossy_luma_en = 1;
 		lossy_chrm_en = 0;
-	} else if (afbce->lossy_compress.lossy_mode == VICP_LOSSY_COMPRESS_MODE_CHRMA) {
+		lossy_cr_en = 0;
+	} else if (afbce->lossy_compress.compress_mode == LOSSY_COMPRESS_MODE_QUAN_CHRMA) {
 		lossy_luma_en = 0;
 		lossy_chrm_en = 1;
+		lossy_cr_en = 0;
+	} else if (afbce->lossy_compress.compress_mode == LOSSY_COMPRESS_MODE_QUAN_ALL) {
+		lossy_luma_en = 1;
+		lossy_chrm_en = 1;
+		lossy_cr_en = 0;
+	} else if (afbce->lossy_compress.compress_mode == LOSSY_COMPRESS_MODE_CR) {
+		lossy_luma_en = 0;
+		lossy_chrm_en = 0;
+		lossy_cr_en = 1;
 	} else {
-		lossy_luma_en = 1;
-		lossy_chrm_en = 1;
+		lossy_luma_en = 0;
+		lossy_chrm_en = 0;
+		lossy_cr_en = 0;
 	}
 
 	if (rdma_en)
@@ -248,29 +255,54 @@ void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_s *afbce, bool rdma_en
 
 	set_afbce_rotation_control(afbce->rot_en, 8);
 
-	memset(&loss_ctrl_reg, 0, sizeof(struct vicp_afbce_loss_ctrl_reg_s));
-	loss_ctrl_reg.fix_cr_en = afbce->lossy_compress.fix_cr_en;
-	loss_ctrl_reg.rc_en = afbce->lossy_compress.rc_en;
-	loss_ctrl_reg.write_qlevel_mode = 1;
-	loss_ctrl_reg.debug_qlevel_en = 0;
-	loss_ctrl_reg.cal_bit_early_mode = 2;
-	loss_ctrl_reg.quant_diff_root_leave = 2;
-	loss_ctrl_reg.debug_qlevel_value = 0;
-	loss_ctrl_reg.debug_qlevel_max_0 = 10;
-	loss_ctrl_reg.debug_qlevel_max_1 = 10;
-	set_afbce_lossy_control(loss_ctrl_reg);
-
 	memset(&format_reg, 0, sizeof(struct vicp_afbce_format_reg_s));
-	format_reg.burst_length_add_value = afbce->lossy_compress.brst_len_add_value;
-	format_reg.ofset_burst4_en = afbce->lossy_compress.ofset_brst4_en;
-	format_reg.burst_length_add_en = afbce->lossy_compress.brst_len_add_en;
+	if (afbce->reg_format_mode == 0 && afbce->reg_compbits_y == 12) {//44412bit
+		format_reg.burst_length_add_en = 1;
+		if (afbce->reg_pip_mode == 1)
+			format_reg.burst_length_add_value = 3;
+		else
+			format_reg.burst_length_add_value = 2;
+	} else {
+		format_reg.burst_length_add_en = 0;
+		format_reg.burst_length_add_value = 2;
+	}
+
+	if (vicp_dev.ddr16_support &&
+		(afbce->head_baddr >= ADDR_VALUE_8G || afbce->table_baddr >= ADDR_VALUE_8G))
+		format_reg.ofset_burst4_en = 1;
+	else
+		format_reg.ofset_burst4_en = 0;
 	format_reg.format_mode = afbce->reg_format_mode;
-	format_reg.compbits_c = 8;
-	format_reg.compbits_y = 8;
+	format_reg.compbits_c = afbce->reg_compbits_c;
+	format_reg.compbits_y = afbce->reg_compbits_y;
 	set_afbce_format(format_reg);
 
-	if (afbce->lossy_compress.fix_cr_en)
-		set_afbce_lossy_brust_num(7, 8, 7, 8);
+	if (vicp_dev.cr_lossy_support) {
+		memset(&loss_ctrl_reg, 0, sizeof(struct vicp_afbce_loss_ctrl_reg_s));
+		if (lossy_cr_en) {
+			loss_ctrl_reg.fix_cr_en = lossy_cr_en;
+			loss_ctrl_reg.rc_en = 1;
+			loss_ctrl_reg.write_qlevel_mode = 1;
+			loss_ctrl_reg.debug_qlevel_en = 0;
+			loss_ctrl_reg.cal_bit_early_mode = 2;
+			loss_ctrl_reg.quant_diff_root_leave = 2;
+			loss_ctrl_reg.debug_qlevel_value = 0;
+			loss_ctrl_reg.debug_qlevel_max_0 = 10;
+			loss_ctrl_reg.debug_qlevel_max_1 = 10;
+			set_afbce_lossy_control(loss_ctrl_reg);
+
+			if (afbce->lossy_compress.compress_rate == 1)//67% compress
+				set_afbce_lossy_brust_num(4, 4, 4, 4);
+			else if (afbce->lossy_compress.compress_rate == 2)//83% compress
+				set_afbce_lossy_brust_num(5, 5, 5, 5);
+			else//default
+				set_afbce_lossy_brust_num(7, 8, 7, 8);
+		} else {
+			set_afbce_lossy_control(loss_ctrl_reg);
+		}
+	} else {
+		vicp_print(VICP_INFO, "don't support cr lossy compress.\n");
+	}
 
 	memset(&mif_size_reg, 0, sizeof(struct vicp_afbce_mif_size_reg_s));
 	mif_size_reg.ddr_blk_size = 1;
@@ -324,12 +356,17 @@ void set_vid_cmpr_hdr(int hdr2_top_en)
 		set_hdr_enable(0);
 }
 
-void set_vid_cmpr_fgrain(struct vid_cmpr_fgrain_s fgrain)
+static void set_vid_cmpr_fgrain(struct vid_cmpr_fgrain_s fgrain)
 {
 	struct vicp_fgrain_ctrl_reg_s fgrain_ctrl_reg;
 	int window_v_bgn, window_v_end, window_h_bgn, window_h_end;
 	u8 *temp_addr;
 	int data_size = 0, i = 0;
+
+	if (!vicp_dev.film_grain_support) {
+		vicp_print(VICP_INFO, "don't support film grain.\n");
+		return;
+	}
 
 	if (print_flag & VICP_FGRAIN) {
 		pr_info("vicp: ##########fgrain config##########\n");
@@ -656,12 +693,14 @@ void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_s
 	u32 use_4kram;
 	u32 real_hsize_mt2k;
 	u32 comp_mt_20bit;
+	int lossy_luma_en, lossy_chrm_en, fix_cr_en;
 	struct vicp_afbcd_mode_reg_s afbcd_mode;
 	struct vicp_afbcd_general_reg_s afbcd_general;
 	struct vicp_afbcd_cfmt_control_reg_s cfmt_control;
 	struct vicp_afbcd_quant_control_reg_s quant_control;
 	struct vicp_afbcd_rotate_control_reg_s rotate_control;
 	struct vicp_afbcd_rotate_scope_reg_s rotate_scope;
+	struct vicp_afbcd_lossy_ctrl_reg_s lossy_ctrl_reg;
 	struct vicp_afbcd_burst_ctrl_reg_s burst_ctrl_reg;
 
 	if (IS_ERR_OR_NULL(afbcd)) {
@@ -698,8 +737,7 @@ void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_s
 		pr_info("vicp: rotation_output_format = %d.\n", afbcd->rot_ofmt_mode);
 		pr_info("vicp: rotation_output_compbits = %d.\n", afbcd->rot_ocompbit);
 		pr_info("vicp: pip_src_mode = %d.\n", afbcd->pip_src_mode);
-		pr_info("vicp: lossy_compress: mode: %d.\n", afbcd->lossy_compress.lossy_mode);
-		pr_info("vicp: lossy_compress: cr_en = %d.\n", afbcd->lossy_compress.fix_cr_en);
+		pr_info("vicp: lossy_compress: mode: %d.\n", afbcd->lossy_compress.compress_mode);
 		pr_info("vicp: lossy_compress: brst_len_add_en: %d, value: %d.\n",
 			afbcd->lossy_compress.brst_len_add_en,
 			afbcd->lossy_compress.brst_len_add_value);
@@ -773,8 +811,8 @@ void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_s
 	set_afbcd_default_color(afbcd->def_color_y, afbcd->def_color_u, afbcd->def_color_v);
 	set_afbcd_conv_control((enum vicp_color_format_e)afbcd->fmt_mode, conv_lbuf_len);
 	set_afbcd_lbuf_depth(dec_lbuf_depth, mif_lbuf_depth);
-	set_afbcd_addr(0, afbcd->head_baddr);
-	set_afbcd_addr(1, afbcd->body_baddr);
+	set_afbcd_headaddr(afbcd->head_baddr);
+	set_afbcd_bodyaddr(afbcd->body_baddr);
 	set_afbcd_mif_scope(0, mif_blk_bgn_h, mif_blk_end_h);
 	set_afbcd_mif_scope(1, mif_blk_bgn_v, mif_blk_end_v);
 	set_afbcd_pixel_scope(0, dec_pixel_bgn_h, dec_pixel_end_h);
@@ -859,6 +897,28 @@ void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_s
 			hz_yc_ratio = 0;
 	}
 
+	if (afbcd->lossy_compress.compress_mode == LOSSY_COMPRESS_MODE_QUAN_LUMA) {
+		lossy_luma_en = 1;
+		lossy_chrm_en = 0;
+		fix_cr_en = 0;
+	} else if (afbcd->lossy_compress.compress_mode == LOSSY_COMPRESS_MODE_QUAN_CHRMA) {
+		lossy_luma_en = 0;
+		lossy_chrm_en = 1;
+		fix_cr_en = 0;
+	} else if (afbcd->lossy_compress.compress_mode == LOSSY_COMPRESS_MODE_QUAN_ALL) {
+		lossy_luma_en = 1;
+		lossy_chrm_en = 1;
+		fix_cr_en = 0;
+	} else if (afbcd->lossy_compress.compress_mode == LOSSY_COMPRESS_MODE_CR) {
+		lossy_luma_en = 0;
+		lossy_chrm_en = 0;
+		fix_cr_en = 1;
+	} else {
+		lossy_luma_en = 0;
+		lossy_chrm_en = 0;
+		fix_cr_en = 0;
+	}
+
 	memset(&cfmt_control, 0, sizeof(struct vicp_afbcd_cfmt_control_reg_s));
 	cfmt_control.cfmt_h_ini_phase = afbcd->hz_ini_phase;
 	cfmt_control.cfmt_h_rpt_p0_en = afbcd->hz_rpt_fst0_en;
@@ -874,8 +934,8 @@ void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_s
 	set_afbcd_colorformat_size(0, uv_vsize_in, 0);
 
 	memset(&quant_control, 0, sizeof(struct vicp_afbcd_quant_control_reg_s));
-	quant_control.lossy_chrm_en = afbcd->lossy_compress.lossy_mode;
-	quant_control.lossy_luma_en = afbcd->lossy_compress.lossy_mode;
+	quant_control.lossy_chrm_en = lossy_chrm_en;
+	quant_control.lossy_luma_en = lossy_luma_en;
 	set_afbcd_quant_control(quant_control);
 
 	memset(&rotate_control, 0, sizeof(struct vicp_afbcd_rotate_control_reg_s));
@@ -902,10 +962,24 @@ void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_s
 	rotate_scope.win_bgn_h = afbcd->rot_hbgn;
 	set_afbcd_rotate_scope(rotate_scope);
 
-	memset(&burst_ctrl_reg, 0, sizeof(struct vicp_afbcd_burst_ctrl_reg_s));
-	burst_ctrl_reg.ofset_burst4_en = afbcd->lossy_compress.ofset_brst4_en;
-	burst_ctrl_reg.burst_length_add_en = afbcd->lossy_compress.brst_len_add_en;
-	burst_ctrl_reg.burst_length_add_value = afbcd->lossy_compress.brst_len_add_value;
+	memset(&lossy_ctrl_reg, 0, sizeof(struct vicp_afbcd_lossy_ctrl_reg_s));
+	lossy_ctrl_reg.fix_cr_en = fix_cr_en;
+	if (fix_cr_en)
+		lossy_ctrl_reg.quant_diff_root_leave = afbcd->lossy_compress.quant_diff_root_leave;
+	else
+		lossy_ctrl_reg.quant_diff_root_leave = 2;
+	set_afbcd_loss_control(lossy_ctrl_reg);
+
+	if (fix_cr_en) {
+		memset(&burst_ctrl_reg, 0, sizeof(struct vicp_afbcd_burst_ctrl_reg_s));
+		burst_ctrl_reg.ofset_burst4_en = afbcd->lossy_compress.ofset_brst4_en;
+		burst_ctrl_reg.burst_length_add_en = afbcd->lossy_compress.brst_len_add_en;
+		burst_ctrl_reg.burst_length_add_value = afbcd->lossy_compress.brst_len_add_value;
+	} else {
+		burst_ctrl_reg.ofset_burst4_en = 0;
+		burst_ctrl_reg.burst_length_add_en = 0;
+		burst_ctrl_reg.burst_length_add_value = 2;
+	}
 	set_afbcd_burst_control(burst_ctrl_reg);
 }
 
@@ -1522,8 +1596,8 @@ static void set_vid_cmpr_basic_param(struct vid_cmpr_top_s *vid_cmpr_top)
 	}
 
 	if (vid_cmpr_top->src_compress == 1) {
-		set_afbcd_addr(0, vid_cmpr_top->src_head_baddr >> 4);
-		set_afbcd_addr(1, vid_cmpr_top->src_body_baddr >> 4);
+		set_afbcd_headaddr(vid_cmpr_top->src_head_baddr);
+		set_afbcd_bodyaddr(vid_cmpr_top->src_body_baddr);
 	} else {
 		set_rdmif_base_addr(RDMIF_BASEADDR_TYPE_Y, vid_cmpr_top->rdmif_canvas0_addr0);
 		set_rdmif_base_addr(RDMIF_BASEADDR_TYPE_CB, vid_cmpr_top->rdmif_canvas0_addr1);
@@ -1546,6 +1620,7 @@ static void set_vid_cmpr_basic_param(struct vid_cmpr_top_s *vid_cmpr_top)
 	set_vid_cmpr_fgrain(fgrain);
 
 	if (vid_cmpr_top->wrmif_en == 1) {
+		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 1, 0, 1);
 		if (vid_cmpr_top->out_shrk_en == 1) {
 			buf_h = vid_cmpr_top->out_hsize_bgnd >> (1 + vid_cmpr_top->out_shrk_mode);
 			buf_v = vid_cmpr_top->out_vsize_bgnd >> (1 + vid_cmpr_top->out_shrk_mode);
@@ -1555,11 +1630,22 @@ static void set_vid_cmpr_basic_param(struct vid_cmpr_top_s *vid_cmpr_top)
 		}
 		set_wrmif_base_addr(0, vid_cmpr_top->wrmif_canvas0_addr0);
 		set_wrmif_base_addr(1, vid_cmpr_top->wrmif_canvas0_addr0 + (buf_h * buf_v));
+	} else {
+		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 0, 0, 1);
 	}
 
 	if (vid_cmpr_top->out_afbce_enable == 1) {
+		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 1, 1, 1);
 		set_afbce_head_addr(vid_cmpr_top->out_head_baddr);
 		set_afbce_mmu_rmif_control4(vid_cmpr_top->out_mmu_info_baddr);
+		if (vicp_dev.ddr16_support &&
+			(vid_cmpr_top->out_head_baddr >= ADDR_VALUE_8G ||
+			vid_cmpr_top->out_mmu_info_baddr >= ADDR_VALUE_8G))
+			set_afbce_ofset_burst4_en(1);
+		else
+			set_afbce_ofset_burst4_en(0);
+	} else {
+		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 0, 0, 1);
 	}
 }
 
@@ -1594,8 +1680,8 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 			vid_cmpr_afbcd.blk_mem_mode = 0;
 		vid_cmpr_afbcd.hsize = vid_cmpr_top->src_hsize;
 		vid_cmpr_afbcd.vsize = vid_cmpr_top->src_vsize;
-		vid_cmpr_afbcd.head_baddr = vid_cmpr_top->src_head_baddr >> 4;
-		vid_cmpr_afbcd.body_baddr = vid_cmpr_top->src_body_baddr >> 4;
+		vid_cmpr_afbcd.head_baddr = vid_cmpr_top->src_head_baddr;
+		vid_cmpr_afbcd.body_baddr = vid_cmpr_top->src_body_baddr;
 		vid_cmpr_afbcd.compbits_y = vid_cmpr_top->src_compbits - 8;
 		vid_cmpr_afbcd.compbits_u = vid_cmpr_top->src_compbits - 8;
 		vid_cmpr_afbcd.compbits_v = vid_cmpr_top->src_compbits - 8;
@@ -1662,15 +1748,7 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 		vid_cmpr_afbcd.rot_drop_mode = 0;
 		vid_cmpr_afbcd.rot_ofmt_mode = vid_cmpr_top->out_reg_format_mode;
 		vid_cmpr_afbcd.rot_ocompbit = vid_cmpr_top->out_reg_compbits - 8;
-		vid_cmpr_afbcd.lossy_compress.lossy_mode =
-			vid_cmpr_top->src_lossy_en == 1 ? 0 : vid_cmpr_top->src_lossy_en;
-		vid_cmpr_afbcd.lossy_compress.fix_cr_en =
-			vid_cmpr_top->src_lossy_en == 3 ? 0 : vid_cmpr_top->src_lossy_en;
-		vid_cmpr_afbcd.lossy_compress.brst_len_add_en =
-			vid_cmpr_top->src_brst_len_add_value == 0 ? 0 : 1;
-		vid_cmpr_afbcd.lossy_compress.brst_len_add_value =
-			vid_cmpr_top->src_brst_len_add_value;
-		vid_cmpr_afbcd.lossy_compress.ofset_brst4_en = vid_cmpr_top->src_ofset_brst4_en;
+		vid_cmpr_afbcd.lossy_compress = vid_cmpr_top->src_lossy_compress;
 
 		set_vid_cmpr_afbcd(2, vid_cmpr_top->rdma_enable, &vid_cmpr_afbcd);
 	} else {
@@ -1814,10 +1892,7 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 	set_vid_cmpr_hdr(vid_cmpr_hdr.hdr2_en);
 
 	if (vid_cmpr_top->wrmif_en == 1) {
-		if (vid_cmpr_top->out_afbce_enable == 0)
-			set_output_path(VICP_OUTPUT_PATH_WRMIF);
-		else
-			set_output_path(VICP_OUTPUT_PATH_ALL);
+		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 1, 0, 1);
 		memset(&vid_cmpr_wmif, 0, sizeof(struct vid_cmpr_mif_s));
 		output_begin_h = vid_cmpr_top->out_win_bgn_h;
 		output_begin_v = vid_cmpr_top->out_win_bgn_v;
@@ -1881,11 +1956,12 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 
 		set_vid_cmpr_wmif(&vid_cmpr_wmif, vid_cmpr_top->wrmif_en);
 	} else {
-		set_output_path(VICP_OUTPUT_PATH_AFBCE);
+		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 0, 0, 1);
 	}
 
 	memset(&vid_cmpr_afbce, 0, sizeof(struct vid_cmpr_afbce_s));
 	if (vid_cmpr_top->out_afbce_enable == 1) {
+		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 1, 1, 1);
 		vid_cmpr_afbce.head_baddr = vid_cmpr_top->out_head_baddr;
 		vid_cmpr_afbce.table_baddr = vid_cmpr_top->out_mmu_info_baddr;
 		vid_cmpr_afbce.reg_init_ctrl = vid_cmpr_top->out_reg_init_ctrl;
@@ -1910,24 +1986,20 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 		vid_cmpr_afbce.force_444_comb = 0;
 		vid_cmpr_afbce.rot_en = vid_cmpr_top->out_rot_en;
 		vid_cmpr_afbce.din_swt = 0;
-		vid_cmpr_afbce.lossy_compress.lossy_mode =
-			vid_cmpr_top->out_lossy_en == 1 ? 0 : vid_cmpr_top->out_lossy_en;
-		vid_cmpr_afbce.lossy_compress.fix_cr_en =
-			vid_cmpr_top->out_lossy_en == 3 ? 0 : vid_cmpr_top->out_lossy_en;
-		vid_cmpr_afbce.lossy_compress.rc_en = vid_cmpr_top->out_rc_en;
-		vid_cmpr_afbce.lossy_compress.brst_len_add_en =
-			vid_cmpr_top->out_brst_len_add_value == 0 ? 0 : 1;
-		vid_cmpr_afbce.lossy_compress.brst_len_add_value =
-			vid_cmpr_top->out_brst_len_add_value;
-		vid_cmpr_afbce.lossy_compress.ofset_brst4_en = vid_cmpr_top->out_ofset_brst4_en;
-
+		vid_cmpr_afbce.lossy_compress = vid_cmpr_top->out_lossy_compress;
 		vid_cmpr_afbce.mmu_page_size = vid_cmpr_top->src_mmu_page_size_mode;
 		set_vid_cmpr_afbce(1, &vid_cmpr_afbce, vid_cmpr_top->rdma_enable);
 	} else {
+		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 0, 0, 1);
 		set_vid_cmpr_afbce(0, &vid_cmpr_afbce, vid_cmpr_top->rdma_enable);
 	}
 
 	set_top_holdline();
+}
+
+void vicp_device_init(struct vicp_device_data_s device)
+{
+	vicp_dev = device;
 }
 
 int vicp_process_config(struct vicp_data_config_s *data_config,
@@ -1937,12 +2009,15 @@ int vicp_process_config(struct vicp_data_config_s *data_config,
 	struct dma_data_config_s *input_dma = NULL;
 	enum vicp_rotation_mode_e rotation;
 	enum vframe_signal_fmt_e signal_fmt;
+	struct vid_cmpr_lossy_compress_s temp_compress_param;
 	u32 canvas_width = 0;
 
 	if (IS_ERR_OR_NULL(data_config) || IS_ERR_OR_NULL(vid_cmpr_top)) {
 		vicp_print(VICP_ERROR, "%s: NULL param.\n", __func__);
 		return -1;
 	}
+
+	memset(&temp_compress_param, 0, sizeof(temp_compress_param));
 
 	if (data_config->input_data.is_vframe) {
 		input_vframe = data_config->input_data.data_vf;
@@ -1962,8 +2037,24 @@ int vicp_process_config(struct vicp_data_config_s *data_config,
 			vid_cmpr_top->src_vsize = input_vframe->compHeight;
 			vid_cmpr_top->src_head_baddr = input_vframe->compHeadAddr;
 			vid_cmpr_top->src_body_baddr = input_vframe->compBodyAddr;
+
+			if (input_vframe->type & VIDTYPE_COMPRESS_LOSS &&
+			    input_vframe->vf_lossycomp_param.lossy_mode == 1) {
+				temp_compress_param.compress_mode = LOSSY_COMPRESS_MODE_CR;
+				temp_compress_param.quant_diff_root_leave =
+					input_vframe->vf_lossycomp_param.quant_diff_root_leave;
+				temp_compress_param.brst_len_add_en =
+					input_vframe->vf_lossycomp_param.burst_length_add_en;
+				temp_compress_param.brst_len_add_value =
+					input_vframe->vf_lossycomp_param.burst_length_add_value;
+				temp_compress_param.ofset_brst4_en =
+					input_vframe->vf_lossycomp_param.ofset_burst4_en;
+			} else {
+				temp_compress_param.compress_mode = LOSSY_COMPRESS_MODE_OFF;
+			}
 		} else {
 			vid_cmpr_top->src_compress = 0;
+			temp_compress_param.compress_mode = LOSSY_COMPRESS_MODE_OFF;
 			vid_cmpr_top->src_hsize = input_vframe->width;
 			vid_cmpr_top->src_vsize = input_vframe->height;
 			vid_cmpr_top->src_head_baddr = 0;
@@ -2021,6 +2112,7 @@ int vicp_process_config(struct vicp_data_config_s *data_config,
 	} else {
 		input_dma = data_config->input_data.data_dma;
 		vid_cmpr_top->src_compress = 0;
+		temp_compress_param.compress_mode = LOSSY_COMPRESS_MODE_OFF;
 		vid_cmpr_top->src_hsize = input_dma->data_width;
 		vid_cmpr_top->src_vsize = input_dma->data_height;
 		vid_cmpr_top->src_fmt_mode = input_dma->color_format;
@@ -2060,6 +2152,7 @@ int vicp_process_config(struct vicp_data_config_s *data_config,
 		vid_cmpr_top->film_lut_addr = 0;
 	}
 
+	vid_cmpr_top->src_lossy_compress = temp_compress_param;
 	if (!fgrain_en)
 		vid_cmpr_top->film_grain_en = 0;
 
@@ -2169,6 +2262,14 @@ int vicp_process_config(struct vicp_data_config_s *data_config,
 
 	vid_cmpr_top->out_need_swap_cbcr = data_config->output_data.need_swap_cbcr;
 
+	if (lossy_compress_rate) {
+		vid_cmpr_top->out_lossy_compress.compress_mode = 4;
+		vid_cmpr_top->out_lossy_compress.compress_rate = lossy_compress_rate;
+	} else {
+		vid_cmpr_top->out_lossy_compress.compress_mode = 0;
+		vid_cmpr_top->out_lossy_compress.compress_rate = 0;
+	}
+
 	return 0;
 }
 
@@ -2193,6 +2294,7 @@ int vicp_process_task(struct vid_cmpr_top_s *vid_cmpr_top)
 	set_vid_cmpr_security(vid_cmpr_top->security_en);
 
 	if (vid_cmpr_top->rdma_enable) {
+		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 3, 0, 2);
 		set_module_enable(1);
 		set_module_reset();
 		set_vid_cmpr_all_param(vid_cmpr_top);
@@ -2296,6 +2398,7 @@ int vicp_process_task(struct vid_cmpr_top_s *vid_cmpr_top)
 		};
 
 		init_completion(&vicp_proc_done);
+		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 3, 0, 2);
 		set_module_enable(1);
 		set_module_reset();
 		if (is_need_update_all)

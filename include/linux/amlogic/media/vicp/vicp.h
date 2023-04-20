@@ -61,20 +61,15 @@ enum vicp_skip_mode_e {
 	VICP_SKIP_MODE_ALL,
 	VICP_SKIP_MODE_MAX,
 };
-
-enum vicp_fbc_compress_mode_e {
-	VICP_FBC_COMPRESS_LOSS_LESS = 0,
-	VICP_FBC_COMPRESS_LOSSY_QUAN,
-	VICP_FBC_COMPRESS_LOSSY_CR,
-	VICP_FBC_COMPRESS_MODE_MAX,
-};
-
 /* *********************************************************************** */
 /* ************************* struct definitions **************************.*/
 /* *********************************************************************** */
 struct vicp_device_data_s {
 	int cpu_type;
 	int rate;
+	bool film_grain_support;
+	bool cr_lossy_support;
+	bool ddr16_support;
 };
 
 struct output_axis_s {

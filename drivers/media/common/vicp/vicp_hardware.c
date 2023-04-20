@@ -168,11 +168,6 @@ void set_input_path(enum vicp_input_path_e path)
 	return write_vicp_reg_bits(VID_CMPR_AFBCDM_VDTOP_CTRL0, path, 13, 1);
 }
 
-void set_output_path(enum vicp_output_path_e path)
-{
-	return write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, path, 0, 2);
-}
-
 void set_input_size(u32 size_v, u32 size_h)
 {
 	return  write_vicp_reg(VID_CMPR_IN_SIZE, (size_v << 16) | size_h);
@@ -240,13 +235,14 @@ void set_afbcd_lbuf_depth(u32 dec_lbuf_depth, u32 mif_lbuf_depth)
 	return write_vicp_reg(VID_CMPR_AFBCDM_LBUF_DEPTH, value);
 }
 
-void set_afbcd_addr(u32 head_body_flag, u64 addr)
+void set_afbcd_headaddr(u64 addr)
 {
-	//0 head_addr, 1 body_addr
-	if (head_body_flag == 0)
-		return write_vicp_reg(VID_CMPR_AFBCDM_HEAD_BADDR, addr);
-	else
-		return write_vicp_reg(VID_CMPR_AFBCDM_BODY_BADDR, addr);
+	return write_vicp_reg(VID_CMPR_AFBCDM_HEAD_BADDR, addr >> 4);
+}
+
+void set_afbcd_bodyaddr(u64 addr)
+{
+	return write_vicp_reg(VID_CMPR_AFBCDM_BODY_BADDR, addr >> 4);
 }
 
 void set_afbcd_mif_scope(u32 v_h_flag, u32 scope_begin, u32 scope_end)
@@ -386,11 +382,12 @@ void set_afbcd_rotate_scope(struct vicp_afbcd_rotate_scope_reg_s rotate_scope)
 	return write_vicp_reg(VID_CMPR_AFBCDM_ROT_SCOPE, value);
 }
 
-void set_afbcd_loss_control(u32 fix_cr_en, u32 quant_diff)
+void set_afbcd_loss_control(struct vicp_afbcd_lossy_ctrl_reg_s lossy_ctrl_reg)
 {
 	u32 value = 0;
 
-	value = ((fix_cr_en & 0x1) << 4) | ((quant_diff & 0xf) << 0);
+	value = ((lossy_ctrl_reg.fix_cr_en & 0x1) << 4) |
+		((lossy_ctrl_reg.quant_diff_root_leave & 0xf) << 0);
 	return write_vicp_reg(VID_CMPR_AFBCD_LOSS_CTRL, value);
 }
 
@@ -442,6 +439,11 @@ void set_afbce_lossy_brust_num(u32 num0, u32 num1, u32 num2, u32 num3)
 		((num0 & 0x1f) << 0);
 
 	return write_vicp_reg(lossy_compress_reg.loss_burst_num, value);
+}
+
+void set_afbce_ofset_burst4_en(u32 enable)
+{
+	return vicp_reg_set_bits(afbce_reg.afbce_format, enable, 11, 1);
 }
 
 void set_afbce_format(struct vicp_afbce_format_reg_s format_reg)

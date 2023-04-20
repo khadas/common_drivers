@@ -138,3 +138,12 @@ config AMLOGIC_ARMV8_AARCH32
 	help
 	  32 bit kernel support for amlogic armv8 SoC.
 	  choose y if you wanna kerenl working in ARMv8 AARCH32 mode
+
+config AMLOGIC_APU
+	bool "Amlogic APU enable"
+	default n
+	depends on AMLOGIC_BREAK_GKI_20
+	help
+	  this option is provide for AMLOGIC APU support, eg t3x/t5m
+	  has dedicated core for APU and should not used by other
+	  modules, and should enable

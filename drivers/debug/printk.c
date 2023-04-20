@@ -33,6 +33,11 @@ void printk_caller_id(void *data, u32 *caller_id)
 	u8 cpu = raw_smp_processor_id();
 	u8 irq_trace;
 
+#ifdef CONFIG_AMLOGIC_APU
+	if (apu_enable && cpu == apu_id)
+		cpu = 0;
+#endif
+
 	local_save_flags(irqflags);
 	irq_trace =
 		(irqs_disabled_flags(irqflags) ? TRACE_FLAG_IRQS_OFF : 0) |

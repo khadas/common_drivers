@@ -26,6 +26,8 @@
 	cpus:cpus {
 		#address-cells = <2>;
 		#size-cells = <0>;
+		apu_id = <0x4>;
+		apu_hwid = <0x400>;
 
 		CPU0:cpu@0 {
 			device_type = "cpu";
@@ -118,35 +120,6 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a55","arm,armv8";
 			reg = <0x0 0x300>;
-			enable-method = "psci";
-			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
-			#cooling-cells = <2>;
-			clocks = <&clkc CLKID_CPU_CLK>,
-				<&clkc CLKID_CPU_DYN_CLK>,
-				<&clkc CLKID_SYS_PLL>,
-				<&clkc CLKID_DSU_CLK>,
-				<&clkc CLKID_DSU_PRE_CLK>;
-			clock-names = "core_clk",
-				"low_freq_clk_parent",
-				"high_freq_clk_parent",
-				"dsu_clk",
-				"dsu_pre_parent";
-			multi_tables_available;
-			operating-points-v2 = <&cpu_opp_table0>,
-				<&cpu_opp_table1>,
-				<&cpu_opp_table2>,
-				<&cpu_opp_table3>;
-			cpu-supply = <&vddcpu0>;
-			voltage-tolerance = <0>;
-			clock-latency = <50000>;
-			suspend-freq = <1200000>;
-			dynamic-power-coefficient = <230>;
-		};
-
-		CPU4:cpu@4 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a55","arm,armv8";
-			reg = <0x0 0x400>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
 			#cooling-cells = <2>;

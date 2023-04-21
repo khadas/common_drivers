@@ -45,6 +45,7 @@ struct spdif_chipinfo {
 	int out_reset_reg_shift;
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct spdif_chipinfo axg_spdif_chipinfo = {
 	.id               = SPDIF_A,
 	.irq_no_papb      = true,
@@ -153,6 +154,7 @@ struct spdif_chipinfo tm2_spdif_b_chipinfo = {
 	.out_reset_reg_offset = 0xa,
 	.out_reset_reg_shift = 16,
 };
+#endif
 
 struct spdif_chipinfo tm2_revb_spdif_a_chipinfo = {
 	.id           = SPDIF_A,
@@ -181,6 +183,7 @@ struct spdif_chipinfo tm2_revb_spdif_b_chipinfo = {
 	.out_reset_reg_shift = 16,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct spdif_chipinfo a5_spdif_a_chipinfo = {
 	.id           = SPDIF_A,
 	.chnum_en     = true,
@@ -203,8 +206,10 @@ struct spdif_chipinfo a1_spdif_in_chipinfo = {
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V1,
 	.use_arb      = true,
 };
+#endif
 
 static const struct of_device_id aml_spdif_device_id[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, g12a-snd-spdif-a",
 		.data       = &g12a_spdif_a_chipinfo,
@@ -239,6 +244,7 @@ static const struct of_device_id aml_spdif_device_id[] = {
 		.compatible = "amlogic, tm2-snd-spdif-b",
 		.data		= &tm2_spdif_b_chipinfo,
 	},
+#endif
 	{
 		.compatible = "amlogic, tm2-revb-snd-spdif-a",
 		.data		= &tm2_revb_spdif_a_chipinfo,
@@ -247,6 +253,7 @@ static const struct of_device_id aml_spdif_device_id[] = {
 		.compatible = "amlogic, tm2-revb-snd-spdif-b",
 		.data		= &tm2_revb_spdif_b_chipinfo,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, a5-snd-spdif-a",
 		.data		= &a5_spdif_a_chipinfo,
@@ -259,6 +266,7 @@ static const struct of_device_id aml_spdif_device_id[] = {
 		.compatible = "amlogic, a1-snd-spdif-a",
 		.data		= &a1_spdif_in_chipinfo,
 	},
+#endif
 	{},
 };
 MODULE_DEVICE_TABLE(of, aml_spdif_device_id);

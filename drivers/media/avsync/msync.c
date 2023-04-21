@@ -1679,7 +1679,7 @@ static long session_ioctl(struct file *file, unsigned int cmd, ulong arg)
 		if (!copy_from_user(&policy, argp, sizeof(policy))) {
 			msync_dbg(LOG_DEBUG,
 				"session[%d] policies %u timeout %u, old timeout=%d.\n",
-				session->id, policy.policy, 
+				session->id, policy.policy,
 				policy.timeout, session->start_policy.timeout);
 			session->start_policy.policy = policy.policy;
 			if (policy.timeout >= 0) {
@@ -2630,6 +2630,5 @@ void __exit msync_exit(void)
 #ifndef MODULE
 module_init(msync_init);
 module_exit(msync_exit);
-#endif
-
 MODULE_LICENSE("GPL");
+#endif

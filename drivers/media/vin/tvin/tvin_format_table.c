@@ -1056,6 +1056,7 @@ const unsigned char adc_cvbs_table[ADC_REG_NUM] = {
 };
 EXPORT_SYMBOL(adc_cvbs_table);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define r180 (unsigned char)((CVD2_CHROMA_DTO_NTSC_M >> 24) & 0x000000ff)
 #define r190 (unsigned char)((CVD2_CHROMA_DTO_NTSC_M >> 16) & 0x000000ff)
 #define r1a0 (unsigned char)((CVD2_CHROMA_DTO_NTSC_M  >> 8) & 0x000000ff)
@@ -3226,6 +3227,7 @@ const unsigned char cvd_yc_reg_0x18_0x1f[TVIN_SIG_FMT_CVBS_NTSC_50 -
 	}, /* TVIN_SIG_FMT_CVBS_NTSC_50, */
 };
 EXPORT_SYMBOL(cvd_yc_reg_0x18_0x1f);
+#endif
 
 //MODULE_LICENSE("GPL");
 

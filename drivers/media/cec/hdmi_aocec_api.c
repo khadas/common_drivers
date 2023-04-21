@@ -542,6 +542,7 @@ static void ao_cecb_init(void)
 		/* cec enable */
 		hdmirx_set_bits_dwc(DWC_DMI_DISABLE_IF, 1, 5, 1);
 	} else {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (cec_dev->plat_data->chip_id <= CEC_CHIP_A1) {
 			/*ao cec b set clk*/
 			reg =   (0 << 31) |
@@ -570,7 +571,7 @@ static void ao_cecb_init(void)
 			reg |=  (0x01 << 14);	/* xtal gate */
 			write_ao(AO_RTI_PWR_CNTL_REG0, reg);
 		}
-
+#endif
 		data32  = 0;
 		data32 |= (7 << 12);	/* filter_del */
 		data32 |= (1 <<  8);	/* filter_tick: 1us */
@@ -604,6 +605,7 @@ static void cecb_irq_enable(bool enable)
 {
 	u32 tmp;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cec_dev->plat_data->chip_id < CEC_CHIP_TXLX) {
 		if (enable) {
 			hdmirx_cec_write(DWC_AUD_CEC_IEN_SET,
@@ -621,7 +623,9 @@ static void cecb_irq_enable(bool enable)
 		}
 		CEC_INFO("%s-0:int %d mask:0x%x\n", __func__, enable,
 			 hdmirx_cec_read(DWC_AUD_CEC_IEN));
-	} else {
+	} else
+#endif
+	{
 		if (enable) {
 			write_ao(AO_CECB_INTR_MASKN, CECB_IRQ_EN_MASK);
 		} else {
@@ -809,6 +813,7 @@ static void ceca_arbit_bit_time_set(unsigned int bit_set,
 static void ao_ceca_init(void)
 {
 	unsigned long data32;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	unsigned int reg;
 
 	if (cec_dev->plat_data->chip_id > CEC_CHIP_TXL &&
@@ -872,7 +877,7 @@ static void ao_ceca_init(void)
 			write_ao(AO_RTI_PWR_CNTL_REG0, reg);
 		}
 	}
-
+#endif
 	if (cec_dev->plat_data->ee_to_ao) {
 		data32	= 0;
 		data32 |= (7 << 12);	/* filter_del */
@@ -978,6 +983,7 @@ int ceca_trigger_tx(const unsigned char *msg, int len)
 	return -1;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void ceca_hw_buf_clear(void)
 {
 	aocec_wr_reg(CEC_RX_MSG_CMD, RX_DISABLE);
@@ -991,6 +997,7 @@ static void ceca_hw_buf_clear(void)
 	aocec_wr_reg(CEC_RX_MSG_CMD, RX_NO_OP);
 	aocec_wr_reg(CEC_TX_MSG_CMD, TX_NO_OP);
 }
+#endif
 
 void ceca_rx_buf_clear(void)
 {
@@ -1021,7 +1028,9 @@ void ceca_hw_reset(void)
 static void ceca_addr_add(unsigned int l_add)
 {
 	unsigned int addr;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	unsigned int i;
+#endif
 
 	if (cec_dev->plat_data->chip_id >= CEC_CHIP_A1) {
 		if (l_add < 8) {
@@ -1033,7 +1042,9 @@ static void ceca_addr_add(unsigned int l_add)
 			addr |= (1 << (l_add - 8));
 			aocec_wr_reg(CEC_LOGICAL_ADDR1, addr);
 		}
-	} else {
+	}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	else {
 		/* check if the logical addr is exist ? */
 		for (i = CEC_LOGICAL_ADDR0; i <= CEC_LOGICAL_ADDR4; i++) {
 			addr = aocec_rd_reg(i);
@@ -1055,6 +1066,7 @@ static void ceca_addr_add(unsigned int l_add)
 			}
 		}
 	}
+#endif
 }
 
 /*--------------------- END of AO CEC --------------------*/
@@ -1124,8 +1136,10 @@ void cec_hw_init(void)
 			 * for cec robustness, use cecb controller
 			 * with CEC_A pin(share to CEC_B)
 			 */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (cec_dev->plat_data->chip_id == CEC_CHIP_T7)
 				cec_ip_share_io(true, CEC_A);
+#endif
 		} else {
 			ao_ceca_init();
 		}
@@ -1187,7 +1201,9 @@ void cec_logicaddr_set(int l_add)
 			else
 				aocec_wr_reg(CEC_LOGICAL_ADDR1,
 					     1 << (l_add - 8));
-		} else {
+		}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+		else {
 			/*clear all logical address*/
 			aocec_wr_reg(CEC_LOGICAL_ADDR0, 0);
 			aocec_wr_reg(CEC_LOGICAL_ADDR1, 0);
@@ -1201,6 +1217,7 @@ void cec_logicaddr_set(int l_add)
 			aocec_wr_reg(CEC_LOGICAL_ADDR0,
 				(0x1 << 4) | (l_add & 0xf));
 		}
+#endif
 	}
 }
 
@@ -1219,7 +1236,9 @@ void cec_logicaddr_add(unsigned int cec_sel, unsigned int l_add)
 void cec_logicaddr_remove(unsigned int cec_sel, unsigned int l_add)
 {
 	unsigned int addr;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	unsigned int i;
+#endif
 	unsigned char temp;
 
 	if (cec_sel == CEC_B) {
@@ -1243,7 +1262,9 @@ void cec_logicaddr_remove(unsigned int cec_sel, unsigned int l_add)
 				addr &= ~(1 << (l_add - 8));
 				aocec_wr_reg(CEC_LOGICAL_ADDR1, addr);
 			}
-		} else {
+		}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+		else {
 			for (i = CEC_LOGICAL_ADDR0;
 				 i <= CEC_LOGICAL_ADDR4; i++) {
 				addr = aocec_rd_reg(i);
@@ -1255,6 +1276,7 @@ void cec_logicaddr_remove(unsigned int cec_sel, unsigned int l_add)
 				}
 			}
 		}
+#endif
 	}
 
 	/* clear saved logic addr */
@@ -1331,6 +1353,7 @@ void cec_irq_enable(bool enable)
 
 void cec_enable_arc_pin(bool enable)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	unsigned int data;
 	unsigned int chipid = cec_dev->plat_data->chip_id;
 
@@ -1364,6 +1387,7 @@ void cec_enable_arc_pin(bool enable)
 		/*CEC_INFO("set arc en:%d, reg:%lx\n",*/
 		/*	 enable, hdmirx_rd_top(TOP_ARCTX_CNTL));*/
 	}
+#endif
 }
 EXPORT_SYMBOL(cec_enable_arc_pin);
 
@@ -2116,9 +2140,11 @@ void cec_save_mail_box(void)
 	if (cec_dev->plat_data->chip_id >= CEC_CHIP_SC2)
 		scpi_send_cec_data(SCPI_CMD_SET_CEC_DATA, (void *)&cec_mailbox,
 				   sizeof(struct st_cec_mailbox_data));
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	else
 		scpi_send_usr_data(SCPI_CL_SET_CEC_DATA, (void *)&cec_mailbox,
 				   sizeof(struct st_cec_mailbox_data));
+#endif
 }
 
 void cec_get_wakeup_reason(void)
@@ -2200,6 +2226,7 @@ void cec_get_wakeup_data(void)
 	 * SYSCTRL_STICKY_REG6: bit 31~16
 	 * SYSCTRL_STICKY_REG5: bit 31~0
 	 */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cec_dev->plat_data->chip_id == CEC_CHIP_T7) {
 		switch ((stick_cec1 >> 16) & 0xff) {
 		/* when T7 as playback or soundbar */
@@ -2238,6 +2265,7 @@ void cec_get_wakeup_data(void)
 		}
 		return;
 	}
+#endif
 	/* for otp, recovery and compose to msg */
 	switch ((stick_cec1 >> 16) & 0xff) {
 	case CEC_OC_ROUTING_CHANGE:
@@ -2320,12 +2348,15 @@ int dump_cec_reg(char *buf)
 			reg32);
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cec_dev->plat_data->chip_id == CEC_CHIP_A1) {
 		pos += snprintf(buf + pos, PAGE_SIZE, "%2x:%2x\n", 0xe4, read_periphs(0xe4));
 		pos += snprintf(buf + pos, PAGE_SIZE, "%2x:%2x\n", 0xe8, read_periphs(0xe8));
 		pos += snprintf(buf + pos, PAGE_SIZE, "%2x:%2x\n", 0xec, read_periphs(0xec));
 		pos += snprintf(buf + pos, PAGE_SIZE, "%2x:%2x\n", 0xf0, read_periphs(0xf0));
-	} else if (cec_dev->plat_data->chip_id == CEC_CHIP_SC2 ||
+	} else
+#endif
+	if (cec_dev->plat_data->chip_id == CEC_CHIP_SC2 ||
 		   cec_dev->plat_data->chip_id == CEC_CHIP_S4) {
 		pos += snprintf(buf + pos, PAGE_SIZE, "%2x:%2x\n", 0x22, read_clock(0x22));
 		pos += snprintf(buf + pos, PAGE_SIZE, "%2x:%2x\n", 0x23, read_clock(0x23));
@@ -2482,6 +2513,7 @@ inline unsigned int get_pin_status(void)
 		reg = read_pad_reg(PADCTRL_GPIOH_I);
 		reg = (reg >> 3) & 0x1;
 		break;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case CEC_CHIP_S5:
 		/* GPIOH_3 */
 		reg = read_pad_reg(PADCTRL_GPIOH_I_S5);
@@ -2511,6 +2543,7 @@ inline unsigned int get_pin_status(void)
 		reg = read_pad_reg(PADCTRL_GPIOW_I_T5M);
 		reg = (reg >> 16) & 0x1;
 		break;
+#endif
 	default:
 		/* means not implemented */
 		reg = 0xFF;

@@ -46,6 +46,7 @@ void vdin_wrmif2_enable(struct vdin_dev_s *devp, u32 en, unsigned int rdma_enabl
 	if (devp->dtdata->hw_ver != VDIN_HW_T7 || devp->index)
 		return;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	if (rdma_enable) {
 		/*clear int status*/
@@ -89,6 +90,7 @@ void vdin_wrmif2_enable(struct vdin_dev_s *devp, u32 en, unsigned int rdma_enabl
 	}
 #endif
 	dprintk(1, "%s %d\n", __func__, en);
+#endif
 }
 
 /*
@@ -98,6 +100,7 @@ void vdin_wrmif2_enable(struct vdin_dev_s *devp, u32 en, unsigned int rdma_enabl
  */
 void vdin_wrmif2_initial(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	u32 offset = 0;
 	u32 hsize = VDIN2_DV_HSIZE;
 	u32 vsize = VDIN2_DV_VSIZE;
@@ -135,6 +138,7 @@ void vdin_wrmif2_initial(struct vdin_dev_s *devp)
 			DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
 	wr_bits(0, VDIN2_WR_CTRL, 0,
 			DIRECT_DONE_CLR_BIT, DIRECT_DONE_CLR_WID);
+#endif
 }
 
 /*
@@ -142,6 +146,7 @@ void vdin_wrmif2_initial(struct vdin_dev_s *devp)
  */
 void vdin_wrmif2_addr_update(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	u32 offset = 0;
 	u32 stride_luma;
 	u32 hsize = VDIN2_DV_HSIZE;
@@ -160,6 +165,7 @@ void vdin_wrmif2_addr_update(struct vdin_dev_s *devp)
 
 	wr(offset, VDIN2_WR_BADDR_LUMA, baddr >> 4);
 	wr(offset, VDIN2_WR_STRIDE_LUMA, stride_luma << 2);
+#endif
 }
 
 irqreturn_t vdin_wrmif2_dv_meta_wr_done_isr(int irq, void *dev_id)
@@ -167,6 +173,7 @@ irqreturn_t vdin_wrmif2_dv_meta_wr_done_isr(int irq, void *dev_id)
 	/*struct vdin_dev_s *devp = (struct vdin_dev_s *)dev_id;*/
 	irqreturn_t sts = IRQ_HANDLED;
 	struct vdin_dev_s *devp = (struct vdin_dev_s *)dev_id;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	char *src_dv_meta_vaddr;
 	u32 len_raw_data;
 	char *dst_dv_meta_vaddr;
@@ -175,6 +182,7 @@ irqreturn_t vdin_wrmif2_dv_meta_wr_done_isr(int irq, void *dev_id)
 	u8 data;
 	u32 max_pkt = 15;
 	static u32 irq_cnt;
+#endif
 
 	devp->stats.meta_wr_done_irq_cnt++;
 
@@ -182,6 +190,7 @@ irqreturn_t vdin_wrmif2_dv_meta_wr_done_isr(int irq, void *dev_id)
 	    !(devp->flags & VDIN_FLAG_ISR_EN))
 		return sts;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	src_dv_meta_vaddr = devp->dv.meta_data_raw_v_buffer0;
 	dst_dv_meta_vaddr = devp->dv.meta_data_raw_buffer1;
 
@@ -237,6 +246,7 @@ irqreturn_t vdin_wrmif2_dv_meta_wr_done_isr(int irq, void *dev_id)
 	//	vdin_dolby_pr_meta_data(dst_dv_meta_vaddr,
 	//				6 * DV_META_PACKET_SIZE);
 	irq_cnt++;
+#endif
 	return sts;
 }
 

@@ -5268,6 +5268,7 @@ static const struct match_data_s vdin_dt_xxx = {
 	.vdin0_line_buff_size = 0xf00,	.vdin1_line_buff_size = 0xf00,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 const struct match_data_s vdin_dt_tl1 = {
 	.name = "vdin",
@@ -5367,6 +5368,7 @@ static const struct match_data_s vdin_dt_t3 = {
 	.vdin0_line_buff_size = 0x1000,  .vdin1_line_buff_size = 0x1000,
 	.vdin0_max_w_h = VDIN_4K_SIZE,	.vdin1_set_hdr = false,
 };
+#endif
 
 static const struct match_data_s vdin_dt_s4d = {
 	.name = "vdin-s4d",
@@ -5377,6 +5379,7 @@ static const struct match_data_s vdin_dt_s4d = {
 	.vdin0_max_w_h = 0,		.vdin1_set_hdr = true,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct match_data_s vdin_dt_t5w = {
 	.name = "vdin-t5w",
 	.hw_ver = VDIN_HW_T5W,
@@ -5403,8 +5406,10 @@ static const struct match_data_s vdin_dt_t5m = {
 	.vdin0_line_buff_size = 0x1000,  .vdin1_line_buff_size = 0x780,
 					.vdin1_set_hdr = false,
 };
+#endif
 
 static const struct of_device_id vdin_dt_match[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, vdin",
 		.data = &vdin_dt_xxx,
@@ -5455,10 +5460,12 @@ static const struct of_device_id vdin_dt_match[] = {
 		.compatible = "amlogic, vdin-t3",
 		.data = &vdin_dt_t3,
 	},
+#endif
 	{
 		.compatible = "amlogic, vdin-s4d",
 		.data = &vdin_dt_s4d,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, vdin-t5w",
 		.data = &vdin_dt_t5w,
@@ -5471,6 +5478,7 @@ static const struct of_device_id vdin_dt_match[] = {
 		.compatible = "amlogic, vdin-t5m",
 		.data = &vdin_dt_t5m,
 	},
+#endif
 	/* DO NOT remove to avoid scan error of KASAN */
 	{}
 };
@@ -5880,11 +5888,14 @@ static int vdin_drv_probe(struct platform_device *pdev)
 
 	/* vdin_addr_offset */
 	if (devp->index == 1) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (is_meson_gxbb_cpu())
 			vdin_addr_offset[1] = 0x70;
 		else if (is_meson_s5_cpu())
 			vdin_addr_offset[1] = 0;
-		else if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
+		else
+#endif
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
 			vdin_addr_offset[1] = 0x100;
 
 		devp->hv_reverse_en = 1;

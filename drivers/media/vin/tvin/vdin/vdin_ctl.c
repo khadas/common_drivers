@@ -885,10 +885,12 @@ vdin_get_format_convert_matrix1(struct vdin_dev_s *devp)
 void vdin_prob_get_rgb(unsigned int offset,
 		       unsigned int *r, unsigned int *g, unsigned int *b)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_prob_get_rgb_s5(offset, r, g, b);
 		return;
 	}
+#endif
 
 	*b = rgb_info_b = rd_bits(offset, VDIN_MATRIX_PROBE_COLOR,
 				  COMPONENT2_PROBE_COLOR_BIT,
@@ -906,10 +908,12 @@ void vdin_prob_get_yuv(unsigned int offset,
 		       unsigned int *rgb_yuv1,
 		       unsigned int *rgb_yuv2)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_prob_get_yuv_s5(offset, rgb_yuv0, rgb_yuv1, rgb_yuv2);
 		return;
 	}
+#endif
 
 	*rgb_yuv0 = ((rd_bits(offset, VDIN_MATRIX_PROBE_COLOR,
 			      COMPONENT2_PROBE_COLOR_BIT,
@@ -937,10 +941,12 @@ void vdin_prob_matrix_sel(unsigned int offset,
 {
 	unsigned int x;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_prob_matrix_sel_s5(offset, sel, devp);
 		return;
 	}
+#endif
 	x = sel & 0x03;
 	/* 1:select matrix 1 */
 	wr_bits(offset, VDIN_MATRIX_CTRL, x,
@@ -955,10 +961,12 @@ void vdin_prob_matrix_sel(unsigned int offset,
 void vdin_prob_set_xy(unsigned int offset,
 		      unsigned int x, unsigned int y, struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_prob_set_xy_s5(offset, x, y, devp);
 		return;
 	}
+#endif
 
 	/* set position */
 	rgb_info_x = x;
@@ -1093,10 +1101,12 @@ void vdin_set_top(struct vdin_dev_s *devp, unsigned int offset,
 	unsigned int vdin_data_bus_1 = VDIN_MAP_BPB;
 	unsigned int vdin_data_bus_2 = VDIN_MAP_RCR;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_top_s5(devp, port, input_cfmt, bt_path);
 		return;
 	}
+#endif
 
 	/* [28:16]         top.input_width_m1   = h - 1 */
 	/* [12: 0]         top.output_width_m1  = h - 1 */
@@ -1284,10 +1294,12 @@ void vdin_set_decimation(struct vdin_dev_s *devp)
 	unsigned int new_clk = 0;
 	bool decimation_in_frontend = false;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_decimation_s5(devp);
 		return;
 	}
+#endif
 
 	if (devp->prop.decimation_ratio & HDMI_DE_REPEAT_DONE_FLAG) {
 		decimation_in_frontend = true;
@@ -1337,10 +1349,12 @@ void vdin_fix_nonstd_vsync(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		//vdin_fix_nonstd_vsync_s5(devp);
 		return;
 	}
+#endif
 
 	/* prevent vdin enter hold status by mass vsync from hdmi rx
 	 * phenomenon: not wr any data to DDR, picture stuck
@@ -1375,10 +1389,12 @@ void vdin_set_cutwin(struct vdin_dev_s *devp)
 	unsigned int offset = devp->addr_offset;
 	unsigned int he = 0, ve = 0;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_cutwin_s5(devp);
 		return;
 	}
+#endif
 
 	if ((devp->prop.hs || devp->prop.he ||
 	     devp->prop.vs || devp->prop.ve) &&
@@ -1450,6 +1466,7 @@ EXPORT_SYMBOL(vdin_adjust_tvafe_snow_brightness);
 
 void vdin_set_config(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_gxbb_cpu() || is_meson_gxm_cpu() || is_meson_gxl_cpu()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		/* max pixel clk of vdin for gxbb/gxm/gxl */
@@ -1459,7 +1476,9 @@ void vdin_set_config(struct vdin_dev_s *devp)
 	} else if (is_meson_s5_cpu()) {
 		devp->vdin_max_pixel_clk =
 			VDIN_PIXEL_CLK_8K_60HZ; /* 4320p60hz*/
-	} else {
+	} else
+#endif
+	{
 		devp->vdin_max_pixel_clk =
 			VDIN_PIXEL_CLK_4K_60HZ; /* 2160p60hz*/
 	}
@@ -1860,10 +1879,12 @@ void vdin_set_matrix(struct vdin_dev_s *devp)
 	unsigned int offset = devp->addr_offset;
 	enum vdin_matrix_sel_e matrix_sel;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_matrix_s5(devp);
 		return;
 	}
+#endif
 
 	if (rgb_info_enable == 0) {
 		/* matrix1 disable */
@@ -2124,8 +2145,10 @@ static void vdin_urgent_patch(unsigned int offset, unsigned int v,
 
 void vdin_urgent_patch_resume(unsigned int offset)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return;
+#endif
 
 	/* urgent ctr config */
 	wr(offset, VDIN_LFIFO_URG_CTRL, 0);
@@ -2419,10 +2442,12 @@ void vdin_set_wr_mif(struct vdin_dev_s *devp)
 	static unsigned int temp_height;
 	static unsigned int temp_width;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_wr_mif_s5(devp);
 		return;
 	}
+#endif
 
 	height = ((rd(0, VPP_POSTBLEND_VD1_V_START_END) & 0xfff) -
 		((rd(0, VPP_POSTBLEND_VD1_V_START_END) >> 16) & 0xfff) + 1);
@@ -2463,10 +2488,12 @@ void vdin_set_mif_on_off(struct vdin_dev_s *devp, unsigned int rdma_enable)
 {
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_mif_on_off_s5(devp, rdma_enable);
 		return;
 	}
+#endif
 
 	if (devp->vframe_wr_en_pre == devp->vframe_wr_en)
 		return;
@@ -2494,16 +2521,20 @@ unsigned int vdin_get_meas_h_cnt64(unsigned int offset)
 
 unsigned int vdin_get_meas_v_stamp(unsigned int offset)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return 0;//rd(offset, VDIN_MEAS_VS_COUNT_LO);
 	else
+#endif
 		return rd(offset, VDIN_MEAS_VS_COUNT_LO);
 }
 
 unsigned int vdin_get_active_h(unsigned int offset)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return vdin_get_active_h_s5(offset);
+#endif
 
 	return rd_bits(offset, VDIN_ACTIVE_MAX_PIX_CNT_STATUS,
 		       ACTIVE_MAX_PIX_CNT_SDW_BIT, ACTIVE_MAX_PIX_CNT_SDW_WID);
@@ -2511,8 +2542,10 @@ unsigned int vdin_get_active_h(unsigned int offset)
 
 unsigned int vdin_get_active_v(unsigned int offset)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return vdin_get_active_v_s5(offset);
+#endif
 
 	return rd_bits(offset, VDIN_LCNT_SHADOW_STATUS,
 		       ACTIVE_LN_CNT_SDW_BIT, ACTIVE_LN_CNT_SDW_WID);
@@ -2520,8 +2553,10 @@ unsigned int vdin_get_active_v(unsigned int offset)
 
 unsigned int vdin_get_total_v(unsigned int offset)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return vdin_get_total_v_s5(offset);
+#endif
 
 	return rd_bits(offset, VDIN_LCNT_SHADOW_STATUS,
 		       GO_LN_CNT_SDW_BIT, GO_LN_CNT_SDW_WID);
@@ -2535,11 +2570,13 @@ void vdin_set_frame_mif_write_addr(struct vdin_dev_s *devp,
 	u32 hsize;
 	u32 phy_addr_luma = 0, phy_addr_chroma = 0;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_frame_mif_write_addr_s5(devp,
 			devp->flags & VDIN_FLAG_RDMA_ENABLE, vfe);
 		return;
 	}
+#endif
 	if (devp->vf_mem_size_small)
 		hsize = devp->h_shrink_out;
 	else
@@ -2613,10 +2650,12 @@ void vdin_set_canvas_id(struct vdin_dev_s *devp, unsigned int rdma_enable,
 {
 	u32 canvas_id;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		//vdin_set_canvas_id_s5(devp, rdma_enable, vfe);
 		return;
 	}
+#endif
 	if (vfe) {
 		if (vfe->vf.canvas0Addr != (u32)-1)
 			canvas_id = vfe->vf.canvas0Addr;
@@ -2687,10 +2726,12 @@ void vdin_set_chroma_canvas_id(struct vdin_dev_s *devp, unsigned int rdma_enable
 {
 	u32 canvas_id;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		//vdin_set_chroma_canvas_id_s5(devp, rdma_enable, vfe);
 		return;
 	}
+#endif
 
 	if (!vfe)
 		return;
@@ -2722,10 +2763,12 @@ unsigned int vdin_get_chroma_canvas_id(unsigned int offset)
 
 void vdin_set_crc_pulse(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_crc_pulse_s5(devp);
 		return;
 	}
+#endif
 
 	if (!cpu_after_eq(MESON_CPU_MAJOR_ID_SM1) ||
 	    cpu_after_eq(MESON_CPU_MAJOR_ID_T5W))
@@ -2749,8 +2792,10 @@ void vdin_set_def_wr_canvas(struct vdin_dev_s *devp)
 	unsigned int offset = devp->addr_offset;
 	unsigned int def_canvas;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return;
+#endif
 
 	def_canvas = vdin_canvas_ids[devp->index][0];
 
@@ -2898,10 +2943,12 @@ void vdin_set_vframe_prop_info(struct vframe_s *vf,
 	u64 divisor;
 	struct vframe_bbar_s bbar = {0};
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_vframe_prop_info_s5(vf, devp);
 		return;
 	}
+#endif
 
 #ifdef CONFIG_AML_LOCAL_DIMMING
 	/*int i;*/
@@ -3175,8 +3222,10 @@ void vdin_set_vframe_prop_info(struct vframe_s *vf,
 void vdin_get_crc_val(struct vframe_s *vf, struct vdin_dev_s *devp)
 {
 	/* fetch CRC value of the previous frame */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return;
+#endif
 
 	vf->crc = rd(devp->addr_offset, VDIN_RO_CRC);
 }
@@ -3191,10 +3240,12 @@ static inline ulong vdin_reg_limit(ulong val, ulong wid)
 
 void vdin_set_all_regs(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_all_regs_s5(devp);
 		return;
 	}
+#endif
 
 	/* matrix sub-module */
 	vdin_set_matrix(devp);
@@ -3227,11 +3278,13 @@ void vdin_set_all_regs(struct vdin_dev_s *devp)
 			  devp->bt_path);
 
 	/* for t7 vdin2 write meta data */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (devp->dtdata->hw_ver == VDIN_HW_T7 && devp->index == 0) {
 		vdin_wrmif2_initial(devp);
 		vdin_wrmif2_addr_update(devp);
 		vdin_wrmif2_enable(devp, 0, 0);
 	}
+#endif
 }
 
 void vdin_set_dv_tunnel(struct vdin_dev_s *devp)
@@ -3242,10 +3295,12 @@ void vdin_set_dv_tunnel(struct vdin_dev_s *devp)
 	unsigned int offset;
 	struct tvin_state_machine_ops_s *sm_ops;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_dv_tunnel_s5(devp);
 		return;
 	}
+#endif
 
 	/* avoid null pointer oops */
 	if (!devp || !(devp->frontend) || !(devp->frontend->sm_ops) ||
@@ -3280,10 +3335,12 @@ void vdin_set_dv_tunnel(struct vdin_dev_s *devp)
 
 static void vdin_delay_line(unsigned short num, unsigned int offset)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_delay_line(num, offset);
 		return;
 	}
+#endif
 
 	wr_bits(offset, VDIN_COM_CTRL0, num,
 		DLY_GO_FLD_LN_NUM_BIT, DLY_GO_FLD_LN_NUM_WID);
@@ -3297,10 +3354,12 @@ static void vdin_delay_line(unsigned short num, unsigned int offset)
 
 void vdin_set_double_write_regs(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_double_write_regs_s5(devp);
 		return;
 	}
+#endif
 
 	if (devp->double_wr) {
 		if (devp->index == 0) {
@@ -3323,10 +3382,12 @@ void vdin_set_default_regmap(struct vdin_dev_s *devp)
 	/*unsigned int def_canvas_id;*/
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_default_regmap_s5(devp);
 		return;
 	}
+#endif
 
 	/* [   31]        mpeg.en               = 0 ***sub_module.enable*** */
 	/* [   30]        mpeg.even_fld         = 0/(odd, even) */
@@ -3437,11 +3498,14 @@ void vdin_set_default_regmap(struct vdin_dev_s *devp)
 		/*wr(offset, VDIN_LFIFO_CTRL, 0xc0000000);*/
 
 		/*t7 capture use small path*/
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (devp->dtdata->hw_ver == VDIN_HW_T7 && devp->index) {
 			//wr_bits(offset, VDIN_LFIFO_CTRL, 2, 17, 2);
 			wr_bits(offset, VDIN_LFIFO_CTRL, 0, CH0_OUT_EN_BIT, CH_OUT_EN_WID);
 			wr_bits(offset, VDIN_LFIFO_CTRL, 1, CH1_OUT_EN_BIT, CH_OUT_EN_WID);
-		} else {
+		} else
+#endif
+		{
 			//wr_bits(offset, VDIN_LFIFO_CTRL, 1, 17, 2);
 			wr_bits(offset, VDIN_LFIFO_CTRL, 1, CH0_OUT_EN_BIT, CH_OUT_EN_WID);
 			wr_bits(offset, VDIN_LFIFO_CTRL, 0, CH1_OUT_EN_BIT, CH_OUT_EN_WID);
@@ -3457,10 +3521,12 @@ void vdin_set_default_regmap(struct vdin_dev_s *devp)
 				MIF0_OUT_SEL_BIT, VDIN_REORDER_SEL_WID);
 			wr(offset, VDIN_HDR2_MATRIXI_EN_CTRL, 0);
 		} else {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (devp->dtdata->hw_ver == VDIN_HW_T7)
 				wr_bits(0, VDIN_TOP_DOUBLE_CTRL, WR_SEL_VDIN1_SML,
 					MIF1_OUT_SEL_BIT, VDIN_REORDER_SEL_WID);
 			else
+#endif
 				wr_bits(0, VDIN_TOP_DOUBLE_CTRL, WR_SEL_VDIN1_NOR,
 					MIF1_OUT_SEL_BIT, VDIN_REORDER_SEL_WID);
 		}
@@ -3639,10 +3705,12 @@ void vdin_hw_enable(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_hw_enable_s5(devp);
 		return;
 	}
+#endif
 
 	/* enable video data input */
 	/* [    4]  top.datapath_en  = 1 */
@@ -3658,10 +3726,12 @@ void vdin_hw_disable(struct vdin_dev_s *devp)
 	unsigned int offset = devp->addr_offset;
 	unsigned int def_canvas;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_hw_disable_s5(devp);
 		return;
 	}
+#endif
 
 	def_canvas = offset ? vdin_canvas_ids[1][0] : vdin_canvas_ids[0][0];
 	/* disable cm2 */
@@ -3711,10 +3781,12 @@ void vdin_hw_close(struct vdin_dev_s *devp)
 	unsigned int offset = devp->addr_offset;
 	unsigned int def_canvas;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_hw_disable_s5(devp);
 		return;
 	}
+#endif
 
 	def_canvas = offset ? vdin_canvas_ids[1][0] : vdin_canvas_ids[0][0];
 	/* disable cm2 */
@@ -3783,8 +3855,10 @@ inline int vdin_vsync_reset_mif(int index)
 	int i;
 	int start_line;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return 0;
+#endif
 
 	start_line = aml_read_vcbus(VDIN_LCNT_STATUS) & 0xfff;
 	if (!enable_reset || vdin_reset_flag || start_line > 0)
@@ -3867,10 +3941,12 @@ void vdin_enable_module(struct vdin_dev_s *devp, bool enable)
 {
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_enable_module_s5(devp, enable);
 		return;
 	}
+#endif
 
 	vdin_dmc_ctrl(devp, 1);
 	if (enable)	{
@@ -3896,8 +3972,10 @@ bool vdin_write_done_check(unsigned int offset, struct vdin_dev_s *devp)
 {
 	bool ret = false;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		return vdin_write_done_check_s5(offset, devp);
+#endif
 
 	/*clear int status*/
 	wr_bits(offset, VDIN_WR_CTRL, 1,
@@ -4359,10 +4437,12 @@ int vdin_scaling_adjust(struct vdin_dev_s *devp)
  */
 void vdin_set_hv_scale(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_hv_scale_s5(devp);
 		return;
 	}
+#endif
 
 	/*backup current h v size*/
 	devp->h_active_org = devp->h_active;
@@ -4446,10 +4526,12 @@ void vdin_set_bitdepth(struct vdin_dev_s *devp)
 	enum vdin_color_deeps_e bit_dep;
 	unsigned int convert_fmt;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_bitdepth_s5(devp);
 		return;
 	}
+#endif
 
 	/* yuv 422 full pack check */
 	if (devp->color_depth_support &
@@ -4610,10 +4692,12 @@ void vdin_set_to_vpp_parm(struct vdin_dev_s *devp)
  */
 void vdin_wr_reverse(unsigned int offset, bool h_reverse, bool v_reverse)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_wr_reverse_s5(offset, h_reverse, v_reverse);
 		return;
 	}
+#endif
 	if (h_reverse)
 		wr_bits(offset, VDIN_WR_H_START_END, 1,
 			HORIZONTAL_REVERSE_BIT, HORIZONTAL_REVERSE_WID);
@@ -4642,10 +4726,12 @@ void vdin_set_cm2(unsigned int offset, unsigned int w,
 {
 	unsigned int i = 0, j = 0, start_addr = 0x100;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_cm2(offset, w, h, cm2);
 		return;
 	}
+#endif
 
 	if (!cm_enable)
 		return;
@@ -4858,6 +4944,7 @@ void vdin_dolby_addr_alloc(struct vdin_dev_s *devp, unsigned int size)
 		devp->dv.temp_meta_data = NULL;
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (devp->dtdata->hw_ver == VDIN_HW_T7) {
 		/*need dma buffer*/
 		devp->dv.meta_data_raw_p_buffer0 = devp->dv.dv_dma_paddr +
@@ -4877,6 +4964,7 @@ void vdin_dolby_addr_alloc(struct vdin_dev_s *devp, unsigned int size)
 			pr_info("malloc dv raw_buffer1\n");
 		}
 	}
+#endif
 }
 
 void vdin_dolby_addr_release(struct vdin_dev_s *devp, unsigned int size)
@@ -5136,12 +5224,14 @@ void vdin_dolby_buffer_update(struct vdin_dev_s *devp, unsigned int index)
 		return;
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (devp->dtdata->hw_ver == VDIN_HW_T7 &&
 	    IS_ERR_OR_NULL(src_meta)) {
 		devp->dv.dv_crc_check = false;
 		pr_info("err: null meta buffer\n");
 		return;
 	}
+#endif
 
 	cp = devp->dv.temp_meta_data;
 	/*c = devp->vfp->dv_buf_ori[index];*/
@@ -5358,10 +5448,12 @@ void vdin_dolby_config(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_dolby_config_s5(devp);
 		return;
 	}
+#endif
 
 	devp->dv.dv_config = 1;
 	devp->dv.dv_path_idx = devp->index;
@@ -5398,10 +5490,12 @@ void vdin_dolby_config(struct vdin_dev_s *devp)
 
 void vdin_dolby_mdata_write_en(unsigned int offset, unsigned int en)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_dolby_mdata_write_en_s5(offset, en);
 		return;
 	}
+#endif
 
 	/*printk("=========>> wr memory %d\n", en);*/
 	if (en) {
@@ -5533,10 +5627,12 @@ void vdin_dv_de_tunnel_to_44410bit(struct vdin_dev_s *devp,
 
 void vdin_dv_tunnel_set(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_dv_tunnel_set_s5(devp);
 		return;
 	}
+#endif
 
 	if (!vdin_is_dolby_signal_in(devp))
 		return;
@@ -6494,10 +6590,12 @@ void vdin_clk_on_off(struct vdin_dev_s *devp, bool on_off)
 {
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_clk_on_off_s5(devp, on_off);
 		return;
 	}
+#endif
 
 	if (on_off) {
 		wr(offset, VDIN_COM_GCLK_CTRL, 0);
@@ -6555,10 +6653,12 @@ void vdin_set_bist_pattern(struct vdin_dev_s *devp, unsigned int on_off, unsigne
 	unsigned int v_blank = 0x3f;
 	unsigned int h_blank = 0xff;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_set_bist_pattern_s5(devp, on_off, pat);
 		return;
 	}
+#endif
 
 	if (on_off) {
 		wr_bits(offset, VDIN_ASFIFO_CTRL0, de_start,
@@ -6609,12 +6709,16 @@ void vdin_dmc_ctrl(struct vdin_dev_s *devp, bool on_off)
 
 void vdin_sw_reset(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		vdin_sw_reset_s5(devp);
+#endif
 }
 
 void vdin_bist(struct vdin_dev_s *devp, unsigned int mode)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu())
 		vdin_bist_s5(devp, mode);
+#endif
 }

@@ -27,8 +27,8 @@ void set_cpu_type_from_media(int cpu_id);
 static u32 regs_cmd_debug;
 
 struct codecio_device_data_s codecio_meson_dev;
-EXPORT_SYMBOL(codecio_meson_dev);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static struct codecio_device_data_s codecio_gxbb = {
 	.cpu_id = MESON_CPU_MAJOR_ID_GXBB,
@@ -102,11 +102,13 @@ static struct codecio_device_data_s codecio_t7 = {
 static struct codecio_device_data_s codecio_s4 = {
 	.cpu_id = MESON_CPU_MAJOR_ID_S4,
 };
+#endif
 
 static struct codecio_device_data_s codecio_s4d = {
 	.cpu_id = MESON_CPU_MAJOR_ID_S4D,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct codecio_device_data_s codecio_t3 = {
 	.cpu_id = MESON_CPU_MAJOR_ID_T3,
 };
@@ -126,8 +128,10 @@ static struct codecio_device_data_s codecio_s5 = {
 static struct codecio_device_data_s codecio_t5m = {
 	.cpu_id = MESON_CPU_MAJOR_ID_T5M,
 };
+#endif
 
 static const struct of_device_id codec_io_dt_match[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
 		.compatible = "amlogic, meson-gxbb, codec-io",
@@ -207,10 +211,12 @@ static const struct of_device_id codec_io_dt_match[] = {
 		.compatible = "amlogic, meson-s4, codec-io",
 		.data = &codecio_s4,
 	},
+#endif
 	{
 		.compatible = "amlogic, meson-s4d, codec-io",
 		.data = &codecio_s4d,
 	},
+  #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, meson-t3, codec-io",
 		.data = &codecio_t3,
@@ -231,6 +237,7 @@ static const struct of_device_id codec_io_dt_match[] = {
 		.compatible = "amlogic, meson-t5m, codec-io",
 		.data = &codecio_t5m,
 	},
+#endif
 	{},
 };
 
@@ -253,7 +260,7 @@ static int codecio_reg_read(u32 bus_type, unsigned int reg, unsigned int *val)
 		ret = 0;
 	} else {
 		dump_stack();
-		ret = -1;
+		pr_err("read bus:0x%x reg %x error %d\n", bus_type, reg, ret);
 	}
 
 	return ret;
@@ -273,8 +280,7 @@ static int codecio_reg_write(u32 bus_type, unsigned int reg, unsigned int val)
 		ret = 0;
 	} else {
 		dump_stack();
-
-		ret = -1;
+		pr_err("write bus:0x%x reg %x error %d\n", bus_type, reg, ret);
 	}
 
 	return ret;
@@ -286,7 +292,6 @@ int codecio_read_cbus(unsigned int reg)
 
 	ret = codecio_reg_read(CODECIO_CBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read cbus reg %x error %d\n", reg, ret);
 		return -1;
 	} else {
 		return val;
@@ -299,7 +304,6 @@ void codecio_write_cbus(unsigned int reg, unsigned int val)
 
 	ret = codecio_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
 	if (ret) {
-		pr_err("write cbus reg %x error %d\n", reg, ret);
 		return;
 	} else {
 		return;
@@ -312,7 +316,6 @@ int codecio_read_dosbus(unsigned int reg)
 
 	ret = codecio_reg_read(CODECIO_DOSBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read cbus reg %x error %d\n", reg, ret);
 		val = -1;
 	} else {
 		if (regs_cmd_debug)
@@ -326,9 +329,7 @@ void codecio_write_dosbus(unsigned int reg, unsigned int val)
 	int ret;
 
 	ret = codecio_reg_write(CODECIO_DOSBUS_BASE, reg << 2, val);
-	if (ret) {
-		pr_err("write cbus reg %x error %d\n", reg, ret);
-	} else {
+	if (!ret) {
 		if (regs_cmd_debug)
 			pr_info("DOS WRITE, reg: 0x%x, val: 0x%x\n", reg, val);
 	}
@@ -340,7 +341,6 @@ int codecio_read_hiubus(unsigned int reg)
 
 	ret = codecio_reg_read(CODECIO_HIUBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read cbus reg %x error %d\n", reg, ret);
 		return -1;
 	} else {
 		return val;
@@ -349,15 +349,7 @@ int codecio_read_hiubus(unsigned int reg)
 
 void codecio_write_hiubus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = codecio_reg_write(CODECIO_HIUBUS_BASE, reg << 2, val);
-	if (ret) {
-		pr_err("write cbus reg %x error %d\n", reg, ret);
-		return;
-	} else {
-		return;
-	}
+	codecio_reg_write(CODECIO_HIUBUS_BASE, reg << 2, val);
 }
 
 int codecio_read_aobus(unsigned int reg)
@@ -369,7 +361,6 @@ int codecio_read_aobus(unsigned int reg)
 	 */
 	ret = codecio_reg_read(CODECIO_AOBUS_BASE, reg, &val);
 	if (ret) {
-		pr_err("read cbus reg %x error %d\n", reg, ret);
 		return -1;
 	} else {
 		return val;
@@ -378,15 +369,7 @@ int codecio_read_aobus(unsigned int reg)
 
 void codecio_write_aobus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = codecio_reg_write(CODECIO_AOBUS_BASE, reg, val);
-	if (ret) {
-		pr_err("write cbus reg %x error %d\n", reg, ret);
-		return;
-	} else {
-		return;
-	}
+	codecio_reg_write(CODECIO_AOBUS_BASE, reg, val);
 }
 
 int codecio_read_vcbus(unsigned int reg)
@@ -399,7 +382,6 @@ int codecio_read_vcbus(unsigned int reg)
 	}
 	ret = codecio_reg_read(CODECIO_VCBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read vcbus reg %x error %d\n", reg, ret);
 		return -1;
 	} else {
 		return val;
@@ -408,19 +390,11 @@ int codecio_read_vcbus(unsigned int reg)
 
 void codecio_write_vcbus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
 	if (reg >= 0x1900 && reg < 0x1a00) {
 		pr_err("write vcbus reg %x error!\n", reg);
 		return;
 	}
-	ret = codecio_reg_write(CODECIO_VCBUS_BASE, reg << 2, val);
-	if (ret) {
-		pr_err("write vcbus reg %x error %d\n", reg, ret);
-		return;
-	} else {
-		return;
-	}
+	codecio_reg_write(CODECIO_VCBUS_BASE, reg << 2, val);
 }
 
 int codecio_read_dmcbus(unsigned int reg)
@@ -429,7 +403,6 @@ int codecio_read_dmcbus(unsigned int reg)
 
 	ret = codecio_reg_read(CODECIO_DMCBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read cbus reg %x error %d\n", reg, ret);
 		return -1;
 	} else {
 		return val;
@@ -439,15 +412,7 @@ EXPORT_SYMBOL(codecio_read_dmcbus);
 
 void codecio_write_dmcbus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = codecio_reg_write(CODECIO_DMCBUS_BASE, reg << 2, val);
-	if (ret) {
-		pr_err("write dmcbus reg %x error %d\n", reg, ret);
-		return;
-	} else {
-		return;
-	}
+	codecio_reg_write(CODECIO_DMCBUS_BASE, reg << 2, val);
 }
 EXPORT_SYMBOL(codecio_write_dmcbus);
 
@@ -457,7 +422,6 @@ int codecio_read_parsbus(unsigned int reg)
 
 	ret = codecio_reg_read(CODECIO_CBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read parser reg %x error %d\n", reg, ret);
 		return -1;
 	}
 
@@ -466,11 +430,7 @@ int codecio_read_parsbus(unsigned int reg)
 
 void codecio_write_parsbus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = codecio_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
-	if (ret)
-		pr_err("write parser reg %x error %d\n", reg, ret);
+	codecio_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
 }
 
 int codecio_read_aiubus(unsigned int reg)
@@ -479,7 +439,6 @@ int codecio_read_aiubus(unsigned int reg)
 
 	ret = codecio_reg_read(CODECIO_CBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read aiu reg %x error %d\n", reg, ret);
 		return -1;
 	}
 
@@ -488,11 +447,7 @@ int codecio_read_aiubus(unsigned int reg)
 
 void codecio_write_aiubus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = codecio_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
-	if (ret)
-		pr_err("write aiu reg %x error %d\n", reg, ret);
+	codecio_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
 }
 
 int codecio_read_demuxbus(unsigned int reg)
@@ -501,7 +456,6 @@ int codecio_read_demuxbus(unsigned int reg)
 
 	ret = codecio_reg_read(CODECIO_CBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read demux reg %x error %d\n", reg, ret);
 		return -1;
 	}
 
@@ -510,11 +464,7 @@ int codecio_read_demuxbus(unsigned int reg)
 
 void codecio_write_demuxbus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = codecio_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
-	if (ret)
-		pr_err("write demux reg %x error %d\n", reg, ret);
+	codecio_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
 }
 
 int codecio_read_resetbus(unsigned int reg)
@@ -523,7 +473,6 @@ int codecio_read_resetbus(unsigned int reg)
 
 	ret = codecio_reg_read(CODECIO_CBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read reset reg %x error %d\n", reg, ret);
 		return -1;
 	}
 
@@ -532,11 +481,7 @@ int codecio_read_resetbus(unsigned int reg)
 
 void codecio_write_resetbus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = codecio_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
-	if (ret)
-		pr_err("write reset reg %x error %d\n", reg, ret);
+	codecio_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
 }
 
 int codecio_read_efusebus(unsigned int reg)
@@ -545,7 +490,6 @@ int codecio_read_efusebus(unsigned int reg)
 
 	ret = codecio_reg_read(CODECIO_EFUSE_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read reset reg %x error %d\n", reg, ret);
 		return -1;
 	}
 
@@ -554,11 +498,7 @@ int codecio_read_efusebus(unsigned int reg)
 
 void codecio_write_efusebus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = codecio_reg_write(CODECIO_EFUSE_BASE, reg << 2, val);
-	if (ret)
-		pr_err("write reset reg %x error %d\n", reg, ret);
+	codecio_reg_write(CODECIO_EFUSE_BASE, reg << 2, val);
 }
 
 int codecio_read_nocbus(unsigned int reg)
@@ -567,7 +507,6 @@ int codecio_read_nocbus(unsigned int reg)
 
 	ret = codecio_reg_read(CODECIO_NOC_BASE, reg, &val);
 	if (ret) {
-		pr_err("read reset reg %x error %d\n", reg, ret);
 		return -1;
 	}
 
@@ -576,11 +515,7 @@ int codecio_read_nocbus(unsigned int reg)
 
 void codecio_write_nocbus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = codecio_reg_write(CODECIO_NOC_BASE, reg, val);
-	if (ret)
-		pr_err("write reset reg %x error %d\n", reg, ret);
+	codecio_reg_write(CODECIO_NOC_BASE, reg, val);
 }
 
 /* aml_read_xxx/ aml_write_xxx apis*/
@@ -588,13 +523,11 @@ int aml_reg_read(u32 bus_type, unsigned int reg, unsigned int *val)
 {
 	return codecio_reg_read(bus_type, reg, val);
 }
-EXPORT_SYMBOL(aml_reg_read);
 
 int aml_reg_write(u32 bus_type, unsigned int reg, unsigned int val)
 {
 	return codecio_reg_write(bus_type, reg, val);
 }
-EXPORT_SYMBOL(aml_reg_write);
 
 int aml_regmap_update_bits(u32 bus_type,
 			   unsigned int reg,
@@ -606,17 +539,13 @@ int aml_regmap_update_bits(u32 bus_type,
 
 	ret = aml_reg_read(bus_type, reg, &orig);
 	if (ret) {
-		pr_err("write bus reg %x error %d\n", reg, ret);
 		return ret;
 	}
 	tmp = orig & ~mask;
 	tmp |= val & mask;
 	ret = aml_reg_write(bus_type, reg, tmp);
-	if (ret)
-		pr_err("write bus reg %x error %d\n", reg, ret);
 	return ret;
 }
-EXPORT_SYMBOL(aml_regmap_update_bits);
 
 int aml_read_cbus(unsigned int reg)
 {
@@ -624,7 +553,6 @@ int aml_read_cbus(unsigned int reg)
 
 	ret = aml_reg_read(CODECIO_CBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read cbus reg %x error %d\n", reg, ret);
 		return -1;
 	} else {
 		return val;
@@ -634,11 +562,11 @@ EXPORT_SYMBOL(aml_read_cbus);
 
 void aml_write_cbus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = aml_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
-	if (ret)
-		pr_err("write cbus reg %x error %d\n", reg, ret);
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_reg_write(CODECIO_CBUS_BASE, reg << 2, val);
 }
 EXPORT_SYMBOL(aml_write_cbus);
 
@@ -646,11 +574,11 @@ void aml_cbus_update_bits(unsigned int reg,
 			  unsigned int mask,
 			  unsigned int val)
 {
-	int ret;
-
-	ret = aml_regmap_update_bits(CODECIO_CBUS_BASE, reg << 2, mask, val);
-	if (ret)
-		pr_err("write cbus reg %x error %d\n", reg, ret);
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_regmap_update_bits(CODECIO_CBUS_BASE, reg << 2, mask, val);
 }
 EXPORT_SYMBOL(aml_cbus_update_bits);
 
@@ -660,21 +588,20 @@ int aml_read_aobus(unsigned int reg)
 
 	ret = aml_reg_read(CODECIO_AOBUS_BASE, reg, &val);
 	if (ret) {
-		pr_err("read ao bus reg %x error %d\n", reg, ret);
-		return -1;
+			return -1;
 	} else {
-		return val;
+			return val;
 	}
 }
 EXPORT_SYMBOL(aml_read_aobus);
 
 void aml_write_aobus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = aml_reg_write(CODECIO_AOBUS_BASE, reg, val);
-	if (ret)
-		pr_err("write ao bus reg %x error %d\n", reg, ret);
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_reg_write(CODECIO_AOBUS_BASE, reg, val);
 }
 EXPORT_SYMBOL(aml_write_aobus);
 
@@ -682,11 +609,11 @@ void aml_aobus_update_bits(unsigned int reg,
 			   unsigned int mask,
 			   unsigned int val)
 {
-	int ret;
-
-	ret = aml_regmap_update_bits(CODECIO_AOBUS_BASE, reg, mask, val);
-	if (ret)
-		pr_err("write aobus reg %x error %d\n", reg, ret);
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_regmap_update_bits(CODECIO_AOBUS_BASE, reg, mask, val);
 }
 EXPORT_SYMBOL(aml_aobus_update_bits);
 
@@ -697,7 +624,6 @@ int aml_read_vcbus(unsigned int reg)
 	ret = aml_reg_read(CODECIO_VCBUS_BASE, reg << 2, &val);
 
 	if (ret) {
-		pr_err("read vcbus reg %x error %d\n", reg, ret);
 		return -1;
 	} else {
 		return val;
@@ -707,12 +633,11 @@ EXPORT_SYMBOL(aml_read_vcbus);
 
 void aml_write_vcbus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = aml_reg_write(CODECIO_VCBUS_BASE, reg << 2, val);
-
-	if (ret)
-		pr_err("write vcbus reg %x error %d\n", reg, ret);
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_reg_write(CODECIO_VCBUS_BASE, reg << 2, val);
 }
 EXPORT_SYMBOL(aml_write_vcbus);
 
@@ -720,12 +645,12 @@ void aml_vcbus_update_bits(unsigned int reg,
 			   unsigned int mask,
 			   unsigned int val)
 {
-	int ret;
-
-	ret = aml_regmap_update_bits(CODECIO_VCBUS_BASE,
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_regmap_update_bits(CODECIO_VCBUS_BASE,
 				     reg << 2, mask, val);
-	if (ret)
-		pr_err("write vcbus reg %x error %d\n", reg, ret);
 }
 EXPORT_SYMBOL(aml_vcbus_update_bits);
 
@@ -735,7 +660,6 @@ int aml_read_hiubus(unsigned int reg)
 
 	ret = aml_reg_read(CODECIO_HIUBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read cbus reg %x error %d\n", reg, ret);
 		return -1;
 	} else {
 		return val;
@@ -745,23 +669,23 @@ EXPORT_SYMBOL(aml_read_hiubus);
 
 void aml_write_hiubus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = aml_reg_write(CODECIO_HIUBUS_BASE, reg << 2, val);
-	if (ret)
-		pr_err("write cbus reg %x error %d\n", reg, ret);
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_reg_write(CODECIO_HIUBUS_BASE, reg << 2, val);
 }
 EXPORT_SYMBOL(aml_write_hiubus);
 
 void aml_hiubus_update_bits(unsigned int reg,
 			    unsigned int mask, unsigned int val)
 {
-	int ret;
-
-	ret = aml_regmap_update_bits(CODECIO_HIUBUS_BASE,
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_regmap_update_bits(CODECIO_HIUBUS_BASE,
 				     reg << 2, mask, val);
-	if (ret)
-		pr_err("write cbus reg %x error %d\n", reg, ret);
 }
 EXPORT_SYMBOL(aml_hiubus_update_bits);
 
@@ -771,7 +695,6 @@ int aml_read_dmcbus(unsigned int reg)
 
 	ret = aml_reg_read(CODECIO_DMCBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read cbus reg %x error %d\n", reg, ret);
 		return -1;
 	} else {
 		return val;
@@ -781,23 +704,23 @@ EXPORT_SYMBOL(aml_read_dmcbus);
 
 void aml_write_dmcbus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = aml_reg_write(CODECIO_DMCBUS_BASE, reg << 2, val);
-	if (ret)
-		pr_err("write cbus reg %x error %d\n", reg, ret);
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_reg_write(CODECIO_DMCBUS_BASE, reg << 2, val);
 }
 EXPORT_SYMBOL(aml_write_dmcbus);
 
 void aml_dmcbus_update_bits(unsigned int reg,
 			    unsigned int mask, unsigned int val)
 {
-	int ret;
-
-	ret = aml_regmap_update_bits(CODECIO_DMCBUS_BASE,
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_regmap_update_bits(CODECIO_DMCBUS_BASE,
 				     reg << 2, mask, val);
-	if (ret)
-		pr_err("write cbus reg %x error %d\n", reg, ret);
 }
 EXPORT_SYMBOL(aml_dmcbus_update_bits);
 
@@ -807,7 +730,6 @@ int aml_read_dosbus(unsigned int reg)
 
 	ret = aml_reg_read(CODECIO_DOSBUS_BASE, reg << 2, &val);
 	if (ret) {
-		pr_err("read cbus reg %x error %d\n", reg, ret);
 		return -1;
 	} else {
 		return val;
@@ -817,23 +739,23 @@ EXPORT_SYMBOL(aml_read_dosbus);
 
 void aml_write_dosbus(unsigned int reg, unsigned int val)
 {
-	int ret;
-
-	ret = aml_reg_write(CODECIO_DOSBUS_BASE, reg << 2, val);
-	if (ret)
-		pr_err("write cbus reg %x error %d\n", reg, ret);
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_reg_write(CODECIO_DOSBUS_BASE, reg << 2, val);
 }
 EXPORT_SYMBOL(aml_write_dosbus);
 
 void aml_dosbus_update_bits(unsigned int reg,
 			    unsigned int mask, unsigned int val)
 {
-	int ret;
-
-	ret = aml_regmap_update_bits(CODECIO_DOSBUS_BASE,
+	/*
+	 * the error message has already been printed inside.
+	 */
+	// coverity[check_return:SUPPRESS]
+	aml_regmap_update_bits(CODECIO_DOSBUS_BASE,
 				     reg << 2, mask, val);
-	if (ret)
-		pr_err("write cbus reg %x error %d\n", reg, ret);
 }
 EXPORT_SYMBOL(aml_dosbus_update_bits);
 

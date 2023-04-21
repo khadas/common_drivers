@@ -135,7 +135,6 @@ int register_reg_ops_per_cpu(struct chip_register_ops *sops,
 		register_reg_onebus_ops(&ops[i]);
 	return 0;
 }
-EXPORT_SYMBOL(register_reg_ops_per_cpu);
 
 int register_reg_ops_mgr(struct chip_register_ops *sops_list,
 			 int ops_size)
@@ -143,7 +142,6 @@ int register_reg_ops_mgr(struct chip_register_ops *sops_list,
 	register_reg_ops_per_cpu(sops_list, ops_size);
 	return 0;
 }
-EXPORT_SYMBOL(register_reg_ops_mgr);
 
 int register_reg_ex_ops_mgr(struct chip_register_ops *ex_ops_list,
 			    int ops_size)
@@ -151,5 +149,3 @@ int register_reg_ex_ops_mgr(struct chip_register_ops *ex_ops_list,
 	register_reg_ops_per_cpu(ex_ops_list, ops_size);
 	return 0;
 }
-EXPORT_SYMBOL(register_reg_ex_ops_mgr);
-

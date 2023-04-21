@@ -625,6 +625,7 @@ static int new_resample_init(struct audioresample *p_resample)
 	return 0;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct resample_chipinfo axg_resample_chipinfo = {
 	.num        = 1,
 	.id         = RESAMPLE_A,
@@ -683,6 +684,7 @@ static struct resample_chipinfo tm2_revb_resample_b_chipinfo = {
 	.chnum_sync = true,
 	.watchdog  = true,
 };
+#endif
 
 static struct resample_chipinfo t5_resample_a_chipinfo = {
 	.num        = 2,
@@ -705,6 +707,7 @@ static struct resample_chipinfo t5_resample_b_chipinfo = {
 };
 
 static const struct of_device_id resample_device_id[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, axg-resample",
 		.data = &axg_resample_chipinfo,
@@ -737,6 +740,7 @@ static const struct of_device_id resample_device_id[] = {
 		.compatible = "amlogic, tm2-revb-resample-b",
 		.data = &tm2_revb_resample_b_chipinfo,
 	},
+#endif
 	{
 		.compatible = "amlogic, t5-resample-a",
 		.data = &t5_resample_a_chipinfo,

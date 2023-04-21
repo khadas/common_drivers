@@ -84,6 +84,7 @@ struct tdm_chipinfo {
 #define TDMIN_SRC_CONFIG(_name, _val) \
 {	.name = (_name), .val = (_val)}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct src_table tdmin_srcs_v1[] = {
 	TDMIN_SRC_CONFIG(SRC_TDMIN_A, 0),
 	TDMIN_SRC_CONFIG(SRC_TDMIN_B, 1),
@@ -98,6 +99,7 @@ struct src_table tdmin_srcs_v1[] = {
 	TDMIN_SRC_CONFIG(SRC_TDMOUT_C, 15),
 	{ /* sentinel */ }
 };
+#endif
 
 /* t5 afterwards */
 struct src_table tdmin_srcs_v2[] = {
@@ -112,6 +114,7 @@ struct src_table tdmin_srcs_v2[] = {
 	{ /* sentinel */ }
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* t7 afterwards */
 struct src_table tdmin_srcs_v3[] = {
 	TDMIN_SRC_CONFIG(SRC_TDMIN_A, 0),
@@ -390,6 +393,7 @@ struct tdm_chipinfo tm2_revb_tdmc_chipinfo = {
 	.gain_ver = GAIN_VER3,
 	.use_arb = true,
 };
+#endif
 
 struct tdm_chipinfo t5_tdma_chipinfo = {
 	.id          = TDM_A,
@@ -445,6 +449,7 @@ struct tdm_chipinfo t5_tdmc_chipinfo = {
 	.use_arb = true,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct tdm_chipinfo t7_tdma_chipinfo = {
 	.id          = TDM_A,
 	.sclk_ws_inv = true,
@@ -734,8 +739,10 @@ struct tdm_chipinfo c3_tdmb_chipinfo = {
 	.use_arb = false,
 	.regulator = true,
 };
+#endif
 
 static const struct of_device_id aml_tdm_device_id[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, g12a-snd-tdma",
 		.data       = &g12a_tdma_chipinfo,
@@ -798,6 +805,7 @@ static const struct of_device_id aml_tdm_device_id[] = {
 		.compatible = "amlogic, tm2-revb-snd-tdmc",
 		.data       = &tm2_revb_tdmc_chipinfo,
 	},
+#endif
 	{
 		.compatible = "amlogic, t5-snd-tdma",
 		.data       = &t5_tdma_chipinfo,
@@ -810,6 +818,7 @@ static const struct of_device_id aml_tdm_device_id[] = {
 		.compatible = "amlogic, t5-snd-tdmc",
 		.data       = &t5_tdmc_chipinfo,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, t7-snd-tdma",
 		.data       = &t7_tdma_chipinfo,
@@ -870,6 +879,7 @@ static const struct of_device_id aml_tdm_device_id[] = {
 		.compatible = "amlogic, c3-snd-tdmb",
 		.data       = &c3_tdmb_chipinfo,
 	},
+#endif
 	{}
 };
 MODULE_DEVICE_TABLE(of, aml_tdm_device_id);

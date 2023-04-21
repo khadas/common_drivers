@@ -67,6 +67,7 @@ bool vdin_is_afbce_enabled(struct vdin_dev_s *devp)
 /* fixed config mif by default */
 void vdin_mif_config_init(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		if (devp->index == 0) {
 			W_VCBUS_BIT(VDIN_TOP_MISC0,
@@ -83,7 +84,9 @@ void vdin_mif_config_init(struct vdin_dev_s *devp)
 			//W_VCBUS_BIT(VDIN_TOP_MISC0,
 			//		1, VDIN_TOP_MISC1, 1);
 		}
-	} else {
+	} else
+#endif
+	{
 		if (devp->index == 0) {
 			W_VCBUS_BIT(VDIN_MISC_CTRL,
 				    1, VDIN0_MIF_ENABLE_BIT, 1);

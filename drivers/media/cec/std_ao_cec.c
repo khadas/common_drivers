@@ -906,6 +906,7 @@ static void cec_task(struct work_struct *work)
 
 		/*for check rx buffer for old chip version, cec rx irq process*/
 		/*in internal hdmi rx, for avoid msg lose*/
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (cec_dev->plat_data->chip_id <= CEC_CHIP_TXLX &&
 		    cec_cfg == CEC_FUNC_CFG_ALL) {
 			if (cec_late_check_rx_buffer()) {
@@ -914,6 +915,7 @@ static void cec_task(struct work_struct *work)
 				return;
 			}
 		}
+#endif
 	}
 
 	if (ceca_err_flag && cec_dev->probe_finish)
@@ -1707,6 +1709,7 @@ static void aocec_late_resume(struct early_suspend *h)
 #endif
 
 #ifdef CONFIG_OF
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static const struct cec_platform_data_s cec_gxl_data = {
 	.chip_id = CEC_CHIP_GXL,
@@ -1878,6 +1881,7 @@ static const struct cec_platform_data_s cec_s4_data = {
 	.reg_tab_group = cec_reg_group_a1,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct cec_platform_data_s cec_t3_data = {
 	.chip_id = CEC_CHIP_T3,
 	.line_reg = 0xff,/*don't check*/
@@ -1926,8 +1930,9 @@ static const struct cec_platform_data_s cec_s5_data = {
 	.share_io = true,
 	.reg_tab_group = cec_reg_group_a1,
 };
-
+#endif
 static const struct of_device_id aml_cec_dt_match[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
 		.compatible = "amlogic, amlogic-aocec",
@@ -1982,10 +1987,12 @@ static const struct of_device_id aml_cec_dt_match[] = {
 		.compatible = "amlogic, aocec-t7",
 		.data = &cec_t7_data,
 	},
+#endif
 	{
 		.compatible = "amlogic, aocec-s4",
 		.data = &cec_s4_data,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, aocec-t3",
 		.data = &cec_t3_data,
@@ -2002,6 +2009,7 @@ static const struct of_device_id aml_cec_dt_match[] = {
 		.compatible = "amlogic, aocec-s5",
 		.data = &cec_s5_data,
 	},
+#endif
 	{}
 };
 #endif
@@ -3025,8 +3033,10 @@ static int aml_cec_resume_noirq(struct device *dev)
 		 */
 		if (cec_dev->plat_data->chip_id >= CEC_CHIP_SC2)
 			cec_get_wk_msg();
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		else
 			cec_get_wakeup_data();
+#endif
 		/* disable all logical address */
 		/*cec_dev->cec_info.addr_enable = 0;*/
 	}

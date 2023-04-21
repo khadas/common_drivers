@@ -1393,6 +1393,7 @@ static int adc_resume(struct platform_device *pdev)
 }
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static const struct adc_platform_data_s adc_data_txl = {
 	.chip_id = ADC_CHIP_TXL,
@@ -1447,6 +1448,7 @@ static const struct adc_platform_data_s adc_data_t3 = {
 	.chip_id = ADC_CHIP_T3,
 	.is_tv_chip = true,
 };
+#endif
 
 static const struct adc_platform_data_s adc_data_s4d = {
 	ADC_ADDR_TL1_TO_S4,
@@ -1455,6 +1457,7 @@ static const struct adc_platform_data_s adc_data_s4d = {
 	.is_tv_chip = false,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct adc_platform_data_s adc_data_t5w = {
 	ADC_ADDR_TL1_TO_S4,
 	ADC_PLL_ADDR_TL1,
@@ -1468,8 +1471,10 @@ static const struct adc_platform_data_s adc_data_t5m = {
 	.chip_id = ADC_CHIP_T5M,
 	.is_tv_chip = true,
 };
+#endif
 
 static const struct of_device_id adc_dt_match[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
 		.compatible = "amlogic, adc-txl",
@@ -1508,10 +1513,12 @@ static const struct of_device_id adc_dt_match[] = {
 		.compatible = "amlogic, adc-t3",
 		.data = &adc_data_t3,
 	},
+#endif
 	{
 		.compatible = "amlogic, adc-s4d",
 		.data = &adc_data_s4d,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, adc-t5w",
 		.data = &adc_data_t5w,
@@ -1520,6 +1527,7 @@ static const struct of_device_id adc_dt_match[] = {
 		.compatible = "amlogic, adc-t5m",
 		.data = &adc_data_t5m,
 	},
+#endif
 	{}
 };
 

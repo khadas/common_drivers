@@ -2596,10 +2596,12 @@ static void vdin_dump_regs(struct vdin_dev_s *devp, u32 size)
 	unsigned int reg;
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		vdin_dump_regs_s5(devp, size);
 		return;
 	}
+#endif
 	if (size) {
 		pr_info("vdin dump reg value:%d\n", size);
 		if (size > 256)
@@ -2616,6 +2618,7 @@ static void vdin_dump_regs(struct vdin_dev_s *devp, u32 size)
 		pr_info("0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
 	pr_info("vdin%d regs end----\n\n", devp->index);
 
+#ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	if (is_meson_tm2_cpu()) {
 		pr_info("vdin%d HDR2 regs start----\n", devp->index);
 		for (reg = VDIN_HDR2_CTRL;
@@ -2644,6 +2647,7 @@ static void vdin_dump_regs(struct vdin_dev_s *devp, u32 size)
 			rd(offset, VDIN_DOLBY_DSC_STATUS3));
 		pr_info("vdin%d DV regs end----\n", devp->index);
 	}
+#endif
 
 	if (devp->dtdata->hw_ver >= VDIN_HW_T7) {
 		for (reg = VDIN_WR_BADDR_LUMA;
@@ -3043,6 +3047,7 @@ start_chk:
 					  devp->irq_name, (void *)devp);
 			disable_irq(devp->irq);
 			/* for t7 meta data */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (devp->dtdata->hw_ver == VDIN_HW_T7) {
 				ret = request_irq(devp->vdin2_meta_wr_done_irq,
 						  vdin_wrmif2_dv_meta_wr_done_isr,
@@ -3053,6 +3058,7 @@ start_chk:
 				pr_info("vdin%d req meta_wr_done_irq",
 					devp->index);
 			}
+#endif
 			devp->flags |= VDIN_FLAG_ISR_REQ;
 		}
 		vdin_start_dec(devp);
@@ -3883,9 +3889,11 @@ start_chk:
 			vdin1_hist.width, vdin1_hist.height,
 			vdin1_hist.ave);
 	} else if (!strcmp(parm[0], "vf_crc")) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (is_meson_s5_cpu())
 			pr_info("s5 vf crc:0x%x\n", rd(devp->addr_offset, VDIN_TOP_CRC1_OUT));
 		else
+#endif
 			pr_info("vf crc:0x%x\n", rd(devp->addr_offset, VDIN_RO_CRC));
 	} else if (!strcmp(parm[0], "game_mode")) {
 		if (parm[1] && (kstrtouint(parm[1], 16, &temp) == 0)) {

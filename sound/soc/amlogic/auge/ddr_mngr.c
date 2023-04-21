@@ -2156,6 +2156,7 @@ static struct ddr_chipinfo tl1_ddr_chipinfo = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct ddr_chipinfo a1_ddr_chipinfo = {
 	.same_src_fn           = true,
 	.src_sel_ctrl          = true,
@@ -2244,6 +2245,7 @@ static struct ddr_chipinfo c2_ddr_chipinfo = {
 	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v3[0],
 	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v3[0],
 };
+#endif
 
 static struct ddr_chipinfo t5_ddr_chipinfo = {
 	.same_src_fn           = true,
@@ -2262,6 +2264,7 @@ static struct ddr_chipinfo t5_ddr_chipinfo = {
 	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v2[0],
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct ddr_chipinfo p1_ddr_chipinfo = {
 	.same_src_fn           = true,
 	.ugt                   = true,
@@ -2323,8 +2326,10 @@ static struct ddr_chipinfo s5_ddr_chipinfo = {
 	.fr_reset_reg_offset   = &fr_reset_reg_offset_array_v2[0],
 	.fr_reset_reg_shift    = &fr_reset_reg_shift_array_v2[0],
 };
+#endif
 
 static const struct of_device_id aml_ddr_mngr_device_id[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
 		.compatible = "amlogic, tl1-audio-ddr-manager",
@@ -2355,10 +2360,12 @@ static const struct of_device_id aml_ddr_mngr_device_id[] = {
 		.compatible = "amlogic, c2-audio-ddr-manager",
 		.data       = &c2_ddr_chipinfo,
 	},
+#endif
 	{
 		.compatible = "amlogic, t5-audio-ddr-manager",
 		.data       = &t5_ddr_chipinfo,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, p1-audio-ddr-manager",
 		.data       = &p1_ddr_chipinfo,
@@ -2375,6 +2382,7 @@ static const struct of_device_id aml_ddr_mngr_device_id[] = {
 		.compatible = "amlogic, s5-audio-ddr-manager",
 		.data       = &s5_ddr_chipinfo,
 	},
+#endif
 	{},
 };
 MODULE_DEVICE_TABLE(of, aml_ddr_mngr_device_id);

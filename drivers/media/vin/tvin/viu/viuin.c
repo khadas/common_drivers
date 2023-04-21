@@ -282,6 +282,7 @@ static void viuin_set_vdin_if_mux_ctrl(enum tvin_port_e port)
 	}
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void viuin_set_wr_bak_ctrl_s5(enum tvin_port_e port)
 {
 	const struct vinfo_s *vinfo = NULL;
@@ -388,13 +389,16 @@ static void viuin_set_wr_bak_ctrl_s5(enum tvin_port_e port)
 		break;
 	}
 }
+#endif
 
 static void viuin_set_wr_bak_ctrl(enum tvin_port_e port)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
 		viuin_set_wr_bak_ctrl_s5(port);
 		return;
 	}
+#endif
 
 	switch (port) {
 	/* wr_bak_chan1_sel wb_chan_sel*/
@@ -556,6 +560,7 @@ static int viuin_open(struct tvin_frontend_s *fe, enum tvin_port_e port)
 		wr_bits_viu(VIU2_FRM_CTRL, 3, 24, 2);
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_gxbb_cpu() || is_meson_gxm_cpu() || is_meson_gxl_cpu()) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 		if (devp->parm.v_active == 2160 && devp->parm.frame_rate > 30)
@@ -565,7 +570,9 @@ static int viuin_open(struct tvin_frontend_s *fe, enum tvin_port_e port)
 	} else if (is_meson_s5_cpu()) {
 		wr_viu(VPU_VIU2VDIN_HDN_CTRL, devp->parm.h_active);
 		//wr_viu(S5_VPP_POST_HOLD_CTRL, 0xc77f0412);
-	} else {
+	} else
+#endif
+	{
 		wr_bits_viu(VPU_VIU2VDIN_HDN_CTRL, devp->parm.h_active, 0, 14);
 	}
 
@@ -575,6 +582,7 @@ static int viuin_open(struct tvin_frontend_s *fe, enum tvin_port_e port)
 		viuin_set_vdin_if_mux_ctrl(port);
 		/* set VPP_WR_BAK_CTRL */
 		viuin_set_wr_bak_ctrl(port);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (!is_meson_s5_cpu()) {
 			/* wr_back hsync en */
 			if (port >= TVIN_PORT_VIU1_VIDEO &&
@@ -585,6 +593,7 @@ static int viuin_open(struct tvin_frontend_s *fe, enum tvin_port_e port)
 				wr_bits_viu(WR_BACK_MISC_CTRL, 0xf, 0, 4);
 			}
 		}
+#endif
 	} else {
 		wr_bits_viu(VPU_VIU_VENC_MUX_CTRL, viu_mux, 4, 4);
 		wr_bits_viu(VPU_VIU_VENC_MUX_CTRL, viu_mux, 8, 4);
@@ -747,9 +756,11 @@ static void viuin_sig_property(struct tvin_frontend_s *fe,
 	case TVIN_PORT_VENC0:
 	case TVIN_PORT_VENC1:
 	case TVIN_PORT_VENC2:
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (is_meson_s5_cpu())
 			vinfo = get_current_vinfo();
 		else
+#endif
 			vinfo = get_current_vinfo2();
 
 		if (devp->parm.port == TVIN_PORT_VENC1)

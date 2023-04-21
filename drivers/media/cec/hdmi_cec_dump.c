@@ -59,12 +59,15 @@ static int dump_cec_reg_show(struct seq_file *s, void *p)
 
 	seq_puts(s, "\n--------CEC registers--------\n");
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cec_dev->plat_data->chip_id == CEC_CHIP_A1) {
 		seq_printf(s, "[%2x]:%2x\n", 0xe4, read_periphs(0xe4));
 		seq_printf(s, "[%2x]:%2x\n", 0xe8, read_periphs(0xe8));
 		seq_printf(s, "[%2x]:%2x\n", 0xec, read_periphs(0xec));
 		seq_printf(s, "[%2x]:%2x\n", 0xf0, read_periphs(0xf0));
-	} else if (cec_dev->plat_data->chip_id == CEC_CHIP_SC2 ||
+	} else
+#endif
+	if (cec_dev->plat_data->chip_id == CEC_CHIP_SC2 ||
 		   cec_dev->plat_data->chip_id == CEC_CHIP_S4) {
 		seq_printf(s, "[%2x]:%2x\n", 0x22, read_clock(0x22));
 		seq_printf(s, "[%2x]:%2x\n", 0x23, read_clock(0x23));

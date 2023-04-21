@@ -177,7 +177,7 @@ static int am_meson_vpu_bind(struct device *dev,
 	vpu_topology_populate(pipeline);
 	meson_vpu_block_state_init(private, private->pipeline);
 
-	meson_of_init(drm_dev, private);
+	meson_of_init(dev, drm_dev, private);
 
 	ret = am_meson_plane_create(private);
 	if (ret) {

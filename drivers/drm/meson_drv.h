@@ -121,7 +121,8 @@ int meson_atomic_commit(struct drm_device *dev,
 void meson_atomic_helper_commit_tail(struct drm_atomic_state *old_state);
 
 /*meson of parse*/
-void meson_of_init(struct drm_device *dev, struct meson_drm *priv);
+void meson_of_init(struct device *vpu_dev, struct drm_device *dev,
+	struct meson_drm *priv);
 /*******************************/
 
 #ifdef CONFIG_DEBUG_FS

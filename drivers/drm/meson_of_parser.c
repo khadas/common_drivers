@@ -97,7 +97,8 @@ static void am_meson_vpu_get_plane_crtc_mask(struct meson_drm *priv,
 	}
 }
 
-void meson_of_init(struct drm_device *dev, struct meson_drm *priv)
+void meson_of_init(struct device *vpu_dev, struct drm_device *dev,
+	struct meson_drm *priv)
 {
 	int ret;
 	u32 osd_occupied_index;
@@ -108,10 +109,12 @@ void meson_of_init(struct drm_device *dev, struct meson_drm *priv)
 
 	meson_parse_dma_mask(dev->dev);
 
-	ret = of_property_read_u8(dev->dev->of_node,
+	ret = of_property_read_u8(vpu_dev->of_node,
 				  "osd_ver", &pipeline->osd_version);
+	if (ret)
+		DRM_ERROR("osd_ver parser failed, need fix it!!\n");
 
-	ret = of_property_read_u32(dev->dev->of_node,
+	ret = of_property_read_u32(vpu_dev->of_node,
 				"osd_occupied_index", &osd_occupied_index);
 	if (!ret)
 		priv->osd_occupied_index = osd_occupied_index;

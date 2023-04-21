@@ -166,13 +166,11 @@ struct iio_buffer *iio_kfifo_allocate(void)
 
 	return &kf->buffer;
 }
-EXPORT_SYMBOL(iio_kfifo_allocate);
 
 void iio_kfifo_free(struct iio_buffer *r)
 {
 	iio_buffer_put(r);
 }
-EXPORT_SYMBOL(iio_kfifo_free);
 
 static void devm_iio_kfifo_release(struct device *dev, void *res)
 {
@@ -243,6 +241,5 @@ int devm_iio_kfifo_buffer_setup_ext(struct device *dev,
 
 	return iio_device_attach_buffer(indio_dev, buffer);
 }
-EXPORT_SYMBOL_GPL(devm_iio_kfifo_buffer_setup_ext);
 
 MODULE_LICENSE("GPL");

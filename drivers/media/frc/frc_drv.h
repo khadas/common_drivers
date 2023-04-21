@@ -124,6 +124,10 @@ extern int frc_dbg_en;
 #define FRC_COMPRESS_RATE_MCDW_Y	48
 #define FRC_COMPRESS_RATE_MCDW_C	39
 
+#define FRC_INFO_BUF_FACTOR_T3		2
+#define FRC_INFO_BUF_FACTOR_T5M		2
+#define FRC_INFO_BUF_FACTOR_T3X		32
+
 #define FRC_TOTAL_BUF_NUM		16
 #define FRC_MEMV_BUF_NUM		6
 #define FRC_MEMV2_BUF_NUM		7
@@ -247,6 +251,7 @@ struct st_frc_buf {
 	u8  memc_comprate;
 	u8  mcdw_y_comprate;
 	u8  mcdw_c_comprate;
+	u8  info_factor;
 
 	/*frame size*/
 	u32 in_hsize;

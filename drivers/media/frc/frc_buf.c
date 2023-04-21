@@ -672,6 +672,7 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	u32 temp;
 	int log = 2;
 	u32 ratio;
+	u8  info_factor;
 	u32 mcdw_h_ratio, mcdw_v_ratio;
 	enum chip_id chip;
 
@@ -689,23 +690,27 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
 			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
 			devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
+			devp->buf.info_factor = FRC_INFO_BUF_FACTOR_T3;
 
 		} else if (chip == ID_T5M) {
 			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T5M;
 			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
 			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
 			devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
+			devp->buf.info_factor = FRC_INFO_BUF_FACTOR_T5M;
 
 		} else if (chip == ID_T3X) {
 			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T3;
 			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y_T3X;
 			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C_T3X;
 			devp->buf.addr_shft_bits = DDR_SHFT_4_BITS;
+			devp->buf.info_factor = FRC_INFO_BUF_FACTOR_T3X;
 		} else {
 			devp->buf.me_comprate = FRC_COMPRESS_RATE_ME_T3;
 			devp->buf.mc_y_comprate = FRC_COMPRESS_RATE_MC_Y;
 			devp->buf.mc_c_comprate = FRC_COMPRESS_RATE_MC_C;
 			devp->buf.addr_shft_bits = DDR_SHFT_0_BITS;
+			devp->buf.info_factor = FRC_INFO_BUF_FACTOR_T3;
 		}
 		devp->buf.mcdw_c_comprate = FRC_COMPRESS_RATE_MCDW_C;
 		devp->buf.mcdw_y_comprate = FRC_COMPRESS_RATE_MCDW_Y;
@@ -726,6 +731,7 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	align_vsize = devp->buf.in_align_vsize;
 	mcdw_h_ratio = (devp->buf.mcdw_size_rate >> 4) & 0xF;
 	mcdw_v_ratio =	devp->buf.mcdw_size_rate & 0xF;
+	info_factor = devp->buf.info_factor;
 
 	if (devp->out_sts.vout_width > 1920 && devp->out_sts.vout_height > 1080) {
 		devp->buf.me_hsize =
@@ -782,9 +788,11 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 		align_vsize / mcdw_v_ratio);
 	devp->buf.total_size = 0;
 	/*mc y/c/v info buffer, address 64 bytes align*/
-	devp->buf.lossy_mc_y_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
-	devp->buf.lossy_mc_c_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
-	devp->buf.lossy_mc_v_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
+	devp->buf.lossy_mc_y_info_buf_size =
+		LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM * info_factor;
+	devp->buf.lossy_mc_c_info_buf_size =
+		LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM * info_factor;
+	devp->buf.lossy_mc_v_info_buf_size = 0;
 	devp->buf.total_size += devp->buf.lossy_mc_y_info_buf_size;
 	devp->buf.total_size += devp->buf.lossy_mc_c_info_buf_size;
 	devp->buf.total_size += devp->buf.lossy_mc_v_info_buf_size;
@@ -793,7 +801,8 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	       devp->buf.lossy_mc_y_info_buf_size * 2);
 
 	/*me info buffer*/
-	devp->buf.lossy_me_x_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
+	devp->buf.lossy_me_x_info_buf_size =
+		LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM * info_factor;
 	devp->buf.total_size += devp->buf.lossy_me_x_info_buf_size;
 
 	pr_frc(log, "lossy_me_info_buf_size=%d, line buf:%d all:%d\n",
@@ -802,8 +811,10 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 
 	// only t3x mc y/c info buffer, address 64 bytes align
 	if (chip == ID_T3X) {
-		devp->buf.lossy_mcdw_y_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
-		devp->buf.lossy_mcdw_c_info_buf_size = LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM;
+		devp->buf.lossy_mcdw_y_info_buf_size =
+			LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM * info_factor;
+		devp->buf.lossy_mcdw_c_info_buf_size =
+			LOSSY_MC_INFO_LINE_SIZE * FRC_SLICER_NUM * info_factor;
 		devp->buf.total_size += devp->buf.lossy_mcdw_y_info_buf_size;
 		devp->buf.total_size += devp->buf.lossy_mcdw_c_info_buf_size;
 		pr_frc(log, "lossy_mcdw_info_buf_size=%d, line buf:%d  all:%d\n",
@@ -831,7 +842,7 @@ int frc_buf_calculate(struct frc_dev_s *devp)
 	}
 	pr_frc(log, "lossy_mc_data_buf_size=%d, line buf:%d all:%d\n",
 	       devp->buf.lossy_mc_c_data_buf_size[0], temp,
-	       devp->buf.lossy_mc_c_data_buf_size[0] * FRC_TOTAL_BUF_NUM * 3);
+	       devp->buf.lossy_mc_c_data_buf_size[0] * FRC_TOTAL_BUF_NUM * 2);
 
 	temp = (devp->buf.me_hsize * FRC_ME_BITS_NUM + 511) / 8;
 	/*lossy me data buffer*/

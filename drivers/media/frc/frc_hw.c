@@ -1222,11 +1222,19 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		phs_lut_table[i] =  0xffffffffffffffff;
 
 	if(frc_ratio_mode == FRC_RATIO_1_2) {
-				  //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//phs_lut_table[0] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h00   ,8'h40   ,8'h00     ,8'h00};
-		//phs_lut_table[1] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h40   ,8'h40   ,8'h00     ,8'h01};
+		//phs_st plog_dif clog_dif pfrm_dif cfrm_dif nfrm_dif mc_ph me_ph film_ph frc_ph
+		//phs_lut_table[0] = {1'h1,4'h3,4'h2,4'h3,4'h2,4'h1,8'h00,8'h40,8'h00,8'h00};
+		//phs_lut_table[1] = {1'h0,4'h3,4'h2,4'h3,4'h2,4'h1,8'h40,8'h40,8'h00,8'h01};
 		phs_lut_table[0] = 0x13232100400000;
 		phs_lut_table[1] = 0x03232140400001;
+		//phs_lut_table[0] = {1'h1,4'h4,4'h3,4'h4,4'h3,4'h1,8'h00,8'h20,8'h01,8'h00};
+		//phs_lut_table[1] = {1'h0,4'h4,4'h3,4'h4,4'h3,4'h1,8'h20,8'h20,8'h02,8'h01};
+		//phs_lut_table[2] = {1'h0,4'h5,4'h3,4'h5,4'h3,4'h2,8'h40,8'h40,8'h03,8'h00};
+		//phs_lut_table[3] = {1'h0,4'h5,4'h3,4'h5,4'h3,4'h2,8'h60,8'h60,8'h00,8'h01};
+		//phs_lut_table[0] = 0x14343100200100;
+		//phs_lut_table[1] = 0x04343120200201;
+		//phs_lut_table[2] = 0x05353240400300;
+		//phs_lut_table[3] = 0x05353260600001;
 		input_n          = 1;
 		output_m         = 2;
 	}

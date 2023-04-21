@@ -33,7 +33,9 @@
 /* 20230304: ntsc 50HZ will crash */
 /* 20230310: adjust electrical value */
 /* 20230322: memset vbi memory */
-#define TVAFE_VER "20230322: memset vbi memory"
+/* 20230423: Set the default value of comp_level_adj to 3 */
+/* 20230423: white level detection is enabled by default */
+#define TVAFE_VER "20230423: Set the default value of comp_level_adj to 3"
 
 /* used to set the flag of tvafe_dev_s */
 #define TVAFE_FLAG_DEV_OPENED 0x00000010

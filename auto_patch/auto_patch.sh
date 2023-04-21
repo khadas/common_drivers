@@ -31,13 +31,13 @@ function am_patch()
 		if [ $? -ne 0 ]; then
 			# echo "###patch ${patch##*/}###      "
 			git am -q $patch 1>/dev/null 2>&1;
-			echo -n .
 			if [ $? != 0 ]; then
 				git am --abort
 				cd $ROOT_DIR
 				echo "Patch Error : Failed to patch [$patch], Need check it. exit!!!"
 				exit -1
 			fi
+			echo -n .
 		fi
 		cd $ROOT_DIR
 	fi

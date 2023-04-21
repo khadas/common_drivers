@@ -30,7 +30,8 @@
 //fix emp pkt parse err
 //2023.03.18
 //disabled edid response after HPD low
-#define RX_VER0 "ver.2023/03/18"
+//hdmirx earc
+#define RX_VER0 "ver.2023/4/21"
 
 /*print type*/
 #define	LOG_EN		0x01

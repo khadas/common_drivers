@@ -517,6 +517,8 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 	rx.open_fg = 0;
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
+	if (rx_get_cur_hpd_sts() == 0)
+		port_hpd_rst_flag |= (1 << rx.port);
 	rx.vs_info_details.hdmi_allm = 0;
 	rx.cur.cn_type = 0;
 	rx.cur.it_content = 0;
@@ -1544,6 +1546,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		if (edid_delivery_mothed == EDID_DELIVERY_ALL_PORT) {
 			rx_irq_en(false);
 			rx_set_cur_hpd(0, 4);
+			port_hpd_rst_flag |= (1 << rx.port);
 			edid_update_flag = 1;
 		}
 		fsm_restart();

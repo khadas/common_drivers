@@ -4298,7 +4298,7 @@ void rx_hpd_monitor(void)
 		return;
 
 	if (rx.open_fg)
-		port_hpd_rst_flag &= ~rx.port;
+		port_hpd_rst_flag &= ~(1 << rx.port);
 
 	if (port_hpd_rst_flag & 1) {
 		if (hpd_wait_cnt0++ > hpd_wait_max) {
@@ -4340,6 +4340,7 @@ void hdmirx_timer_handler(struct timer_list *t)
 	rx_5v_monitor();
 	rx_dw_edid_monitor();
 	rx_clkmsr_monitor();
+	rx_hpd_monitor();
 	if (rx.open_fg) {
 		rx_nosig_monitor();
 		rx_cable_clk_monitor();
@@ -4363,7 +4364,7 @@ void hdmirx_timer_handler(struct timer_list *t)
 			#endif
 		}
 	} else {
-		rx_hpd_monitor();
+		;//rx_hpd_monitor();
 	}
 	devp->timer.expires = jiffies + TIMER_STATE_CHECK;
 	add_timer(&devp->timer);

@@ -2812,11 +2812,6 @@ static int earc_platform_probe(struct platform_device *pdev)
 				dev_err(dev, "Can't set clk_tx_dmac parent clock\n");
 				return ret;
 			}
-			if (!IS_ERR(p_earc->clk_src_cd)) {
-				ret = clk_set_rate(p_earc->clk_src_cd, MPLL_HBR_FIXED_FREQ);
-				if (ret)
-					dev_err(dev, "Can't set clk_src_cd  clock\n");
-			}
 		}
 
 		p_earc->irq_earc_tx =

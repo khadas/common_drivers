@@ -2329,12 +2329,6 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 		ret = clk_notifier_register(p_tdm->clk, &p_tdm->clk_nb);
 		if (ret)
 			dev_err(&pdev->dev, "unable to register clock notifier\n");
-		if (!IS_ERR(p_tdm->clk_src_cd)) {
-			/* not use MPLL_CD_FIXED_FREQ  */
-			ret = clk_set_rate(p_tdm->clk_src_cd, MPLL_HBR_FIXED_FREQ);
-			if (ret)
-				dev_err(dev, "Can't set clk_src_cd	clock\n");
-		}
 	}
 
 	p_tdm->mclk = devm_clk_get(&pdev->dev, "mclk");

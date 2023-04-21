@@ -6,6 +6,7 @@ RAMDISK_MODULES_LOAD_LIST=(
 	amlogic-memory-debug
 	amlogic-secmon
 	amlogic-clk
+	amlogic-aoclk
 	amlogic-gpio
 	amlogic-pinctrl
 	amlogic-mailbox

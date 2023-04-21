@@ -3664,6 +3664,7 @@ static u32 osd_get_hw_reset_flag(u32 output_index)
 	case __MESON_CPU_MAJOR_ID_T7:
 	case __MESON_CPU_MAJOR_ID_T3:
 	case __MESON_CPU_MAJOR_ID_T5W:
+	case __MESON_CPU_MAJOR_ID_T5M:
 		{
 		int i, afbc_enable = 0;
 		u32 mali_afbc_reset;
@@ -14226,7 +14227,8 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		       sizeof(struct hw_osd_reg_s) *
 		       osd_hw.osd_meson_dev.osd_count);
 	} else if (osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_T3 ||
-		   osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_T5W) {
+		   osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_T5W ||
+		   osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_T5M) {
 		/* 4 or 3 OSD, multi_afbc_core */
 		memcpy(&hw_osd_reg_array[0], &hw_osd_reg_array_t3[0],
 		       sizeof(struct hw_osd_reg_s) *

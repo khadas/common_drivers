@@ -1550,7 +1550,7 @@
 
 &crg_phy_20 {
 	status = "okay";
-	portnum = <1>;
+	portnum = <2>;
 };
 
 &crg3_phy_20 {

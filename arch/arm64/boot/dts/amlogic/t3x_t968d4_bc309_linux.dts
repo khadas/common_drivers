@@ -1557,7 +1557,7 @@
 
 &crg_phy_20 {
 	status = "okay";
-	portnum = <1>;
+	portnum = <2>;
 	gpio-vbus-power = "GPIOM_22";
 	gpios = <&gpio GPIOM_22 GPIO_ACTIVE_HIGH>;
 };

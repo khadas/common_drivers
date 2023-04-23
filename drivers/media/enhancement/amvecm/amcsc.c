@@ -8824,7 +8824,6 @@ int amvecm_matrix_process(struct vframe_s *vf,
 	bool cap_changed = false;
 	bool send_fake_frame = false;
 	struct vframe_master_display_colour_s *pa;
-	int dv_hdr_policy = 0;
 	static bool amdv_enable;
 	int s5_silce_mode = get_s5_silce_mode();
 
@@ -9149,6 +9148,8 @@ int amvecm_matrix_process(struct vframe_s *vf,
 			}
 			/* video off */
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+			int dv_hdr_policy = 0;
+
 			if (is_amdv_enable()) {
 				/* dolby enable */
 				dv_hdr_policy = get_amdv_hdr_policy();

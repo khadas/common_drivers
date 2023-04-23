@@ -11,9 +11,7 @@
 #include "meson_vpu_util.h"
 #include "meson_vpu_osdblend.h"
 #include "meson_osd_proc.h"
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
-#endif
 
 static int align_proc = 4;
 module_param(align_proc, int, 0664);
@@ -920,7 +918,9 @@ static void s5_osdblend_hw_init(struct meson_vpu_block *vblk)
 	/*reset blend ctrl hold line*/
 	reg_ops->rdma_write_reg_bits(osdblend->reg->viu_osd_blend_ctrl, 4, 29, 3);
 
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	register_osd_func(osd_dv_get_osd_status);
+#endif
 
 	DRM_DEBUG("%s hw_init called.\n", osdblend->base.name);
 }

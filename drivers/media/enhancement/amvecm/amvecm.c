@@ -68,9 +68,7 @@
 #include "bitdepth.h"
 #include "cm2_adj.h"
 #include "pattern_detection.h"
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
-#endif
 #include "dnlp_cal.h"
 #include "vlock.h"
 #include "hdr/am_hdr10_plus.h"

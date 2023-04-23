@@ -3317,6 +3317,7 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 		hdr_lut_param.bitdepth = bit_depth;
 		hdr_lut_param.cgain_en = LUT_ON;
 		hdr_lut_param.hist_en = LUT_ON;
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	} else if (hdr_process_select & SDR_IPT) {
 		for (i = 0; i < HDR2_OETF_LUT_SIZE; i++) {
 			hdr_lut_param.oetf_lut[i]  = oe_y_lut_hdr[i];
@@ -3396,6 +3397,7 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 		hdr_lut_param.bitdepth = bit_depth;
 		hdr_lut_param.cgain_en = LUT_ON;
 		hdr_lut_param.hist_en = LUT_ON;
+#endif
 	} else if (hdr_process_select & HDR_HLG ||
 		hdr_process_select & CUVA_HLG) {
 		for (i = 0; i < HDR2_OETF_LUT_SIZE; i++) {
@@ -3886,6 +3888,7 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 		}
 		hdr_mtx_param.mtx_on = MTX_ON;
 		hdr_mtx_param.p_sel = HLG_CUVA;
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	} else if (hdr_process_select & SDR_IPT) {
 		hdr_mtx_param.mtx_only = HDR_ONLY;
 		hdr_mtx_param.mtx_gamut_mode = 2;
@@ -3973,6 +3976,7 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 		}
 		hdr_mtx_param.mtx_on = MTX_ON;
 		hdr_mtx_param.p_sel = hdr_process_select;
+#endif
 	} else if (hdr_process_select & SDR_GMT_CONVERT) {
 		if (hdr_process_select & RGB_VDIN &&
 		    hdr_process_select & FULL_VDIN) {
@@ -5222,6 +5226,7 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 		lut_param->bitdepth = bit_depth;
 		lut_param->cgain_en = LUT_ON;
 		lut_param->hist_en = LUT_ON;
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	} else if (hdr_process_select & SDR_IPT) {
 		for (i = 0; i < HDR2_OETF_LUT_SIZE; i++) {
 			lut_param->oetf_lut[i]  = oe_y_lut_hdr[i];
@@ -5304,6 +5309,7 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 		lut_param->bitdepth = bit_depth;
 		lut_param->cgain_en = LUT_ON;
 		lut_param->hist_en = LUT_ON;
+#endif
 	} else if (hdr_process_select & HDR_HLG ||
 		hdr_process_select & CUVA_HLG) {
 		for (i = 0; i < HDR2_OETF_LUT_SIZE; i++) {
@@ -5852,6 +5858,7 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 		mtx_param->mtx_only = HDR_ONLY;
 		mtx_param->mtx_on = MTX_ON;
 		mtx_param->p_sel = HLG_CUVA;
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	}  else if (hdr_process_select & SDR_IPT) {
 		mtx_param->mtx_only = HDR_ONLY;
 		mtx_param->mtx_gamut_mode = 2;
@@ -5939,6 +5946,7 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 		}
 		mtx_param->mtx_on = MTX_ON;
 		mtx_param->p_sel = hdr_process_select;
+#endif
 	} else if (hdr_process_select & SDR_GMT_CONVERT) {
 		if (hdr_process_select & RGB_VDIN &&
 		    hdr_process_select & FULL_VDIN) {

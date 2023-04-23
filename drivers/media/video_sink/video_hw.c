@@ -944,12 +944,36 @@ void amdv_update_backlight(void)
 {
 }
 
-bool is_amdv_frame(struct vframe_s *vf)
+int is_amdv_frame(struct vframe_s *vf)
 {
 	return false;
 }
 
 void amdv_set_toggle_flag(int flag)
+{
+}
+
+int get_dv_support_info(void)
+{
+	return false;
+}
+
+bool support_multi_core1(void)
+{
+	return false;
+}
+
+bool is_hdmi_ll_as_hdr10(void)
+{
+	return false;
+}
+
+int get_amdv_mode(void)
+{
+	return false;
+}
+
+void set_amdv_mode(int mode)
 {
 }
 #endif

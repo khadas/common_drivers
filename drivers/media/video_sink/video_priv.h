@@ -731,7 +731,7 @@ bool is_amdv_enable(void);
 bool is_amdv_on(void);
 bool is_amdv_stb_mode(void);
 bool for_amdv_certification(void);
-bool is_amdv_frame(struct vframe_s *vf);
+int is_amdv_frame(struct vframe_s *vf);
 void amdv_set_toggle_flag(int flag);
 #endif
 

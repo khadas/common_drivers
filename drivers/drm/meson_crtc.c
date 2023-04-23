@@ -25,6 +25,34 @@ module_param(crtc_force_hint, int, 0644);
 
 int gamma_ctl = 1;
 
+#ifndef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+bool get_amdv_mode(void)
+{
+	return false;
+}
+
+bool is_amdv_enable(void)
+{
+	return false;
+}
+
+void set_amdv_ll_policy(int policy)
+{
+}
+
+void set_amdv_policy(int policy)
+{
+}
+
+void set_amdv_enable(bool enable)
+{
+}
+
+void set_amdv_mode(int mode)
+{
+}
+#endif
+
 static int gamma_boot_ctl(char *str)
 {
 	if (strncmp("0", str, 1) == 0)

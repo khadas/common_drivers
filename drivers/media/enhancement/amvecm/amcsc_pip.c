@@ -249,10 +249,7 @@ void vd2_map_top1_policy_process(struct vinfo_s *vinfo,
 		       enum vd_path_e vd_path,
 		       enum vpp_index_e vpp_index)
 {
-	int dv_policy = 0;
 	int dv_hdr_policy = 0;
-	int dv_mode = 0;
-	int dv_format = 0;
 	int cur_hdr_policy = 0;
 	bool hdr10_plus_support	=
 		sink_hdr_support(vinfo) & HDRP_SUPPORT;
@@ -262,6 +259,10 @@ void vd2_map_top1_policy_process(struct vinfo_s *vinfo,
 	cur_hdr_policy = get_hdr_policy();
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+	int dv_format = 0;
+	int dv_mode = 0;
+	int dv_policy = 0;
+
 	if (is_amdv_enable()) {
 		/* sync hdr_policy with dolby_vision_policy */
 		/* get current dolby_vision_mode */

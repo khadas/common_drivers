@@ -36,8 +36,11 @@ bool is_amdv_enable(void);
 bool is_amdv_on(void);
 bool is_amdv_stb_mode(void);
 bool for_amdv_certification(void);
-bool is_amdv_frame(struct vframe_s *vf);
+int is_amdv_frame(struct vframe_s *vf);
 void amdv_set_toggle_flag(int flag);
+int get_dv_support_info(void);
+bool support_multi_core1(void);
+bool is_hdmi_ll_as_hdr10(void);
 #endif
 
 #ifndef MAX

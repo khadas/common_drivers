@@ -89,6 +89,7 @@ struct di_dolby_hw_s {
 	u32 dm_count;
 	u32 comp_count;
 	u32 lut_count;
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	struct composer_reg_ipcore *comp_reg;
 	struct dm_reg_ipcore1 *dm_reg;
 	struct dm_lut_ipcore *dm_lut;
@@ -96,6 +97,7 @@ struct di_dolby_hw_s {
 	struct composer_reg_ipcore *last_comp_reg;
 	struct dm_reg_ipcore1 *last_dm_reg;
 	struct dm_lut_ipcore *last_dm_lut;
+#endif
 };
 
 enum disignal_format_e {
@@ -122,11 +124,12 @@ struct di_dolby_dev_s {
 	u8 cur_tbl_id;
 
 	//struct mutex di_mutex;
-
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	u32 update_flag[2];
 	struct composer_reg_ipcore comp_reg[2];
 	struct dm_reg_ipcore1 dm_reg[2];
 	struct dm_lut_ipcore dm_lut[2];
+#endif
 	struct di_dolby_hw_s hw;
 };
 
@@ -143,6 +146,7 @@ void di_dolby_enable(bool enable)
 	}
 }
 
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 static int di_dolby_core_set(struct di_dolby_hw_s *hw,
 			     bool lut_endian,
 			     u32 op_flag,
@@ -278,12 +282,15 @@ static int di_dolby_core_set(struct di_dolby_hw_s *hw,
 		  ((hw->bl_enable ? 1 : 0) << 0));
 	return 0;
 }
+#endif
 
 int di_dolby_do_setting(void /*struct di_dolby_dev_s *dev*/)
 {
 	u32 op_flag = 0;
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	u32 update_flag = 0;
 	int tmp;
+#endif
 
 	struct di_dolby_dev_s *dev = di_dolby;
 
@@ -301,6 +308,7 @@ int di_dolby_do_setting(void /*struct di_dolby_dev_s *dev*/)
 	if (dev->bypass_cvm)
 		op_flag |= DIFLAG_BYPASS_CVM;
 
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	dev->hw.dm_reg = &dev->dm_reg[dev->cur_tbl_id];
 	dev->hw.comp_reg = &dev->comp_reg[dev->cur_tbl_id];
 	dev->hw.dm_lut = &dev->dm_lut[dev->cur_tbl_id];
@@ -314,9 +322,11 @@ int di_dolby_do_setting(void /*struct di_dolby_dev_s *dev*/)
 	dev->hw.last_dm_reg = dev->hw.dm_reg;
 	dev->hw.last_comp_reg = dev->hw.comp_reg;
 	dev->hw.last_dm_lut = dev->hw.dm_lut;
+#endif
 	return 0;
 }
 
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 int di_dolby_update_setting(struct dm_reg_ipcore1 *dm_reg,
 			    struct composer_reg_ipcore *comp_reg,
 			    struct dm_lut_ipcore *dm_lut,
@@ -362,6 +372,7 @@ int di_dolby_update_setting(struct dm_reg_ipcore1 *dm_reg,
 	//mutex_unlock(&di_dolby->di_mutex);
 	return 0;
 }
+#endif
 
 void di_dolby_sw_init(void)
 {

@@ -735,56 +735,27 @@ int debug_lockup_init(void)
 	return 0;
 }
 
-static ssize_t params_write_file(struct file *file, const char __user *userbuf,
+static ssize_t write_sysrq_trigger(struct file *file, const char __user *buf,
 				size_t count, loff_t *ppos)
 {
-	char arg = 0;
-	char *buf;
-	ssize_t retval = -EINVAL;
+	if (count) {
+		char c;
 
-	buf = kmalloc(count, GFP_KERNEL);
-	if (!buf)
-		return -ENOMEM;
-
-	if (copy_from_user(buf, userbuf, count))
-		goto exit;
-
-	if (!strncmp(buf, "sysrq=", 5)) {	/* option for 'sysrq=' */
-		if (sscanf(buf, "sysrq=%c", &arg) < 0)
-			goto exit;
-
-		if (arg == 'x') {
-			retval = count;
+		if (get_user(c, buf))
+			return -EFAULT;
+		if (c == 'x') {
 			local_irq_disable();
 			pr_emerg("trigger hardlockup\n");
 			while (1)
 				;
 		}
-		goto exit;
 	}
-
-exit:
-	kfree(buf);
-
-	return retval;
+	return count;
 }
 
-static int params_debug_show(struct seq_file *m, void *arg)
-{
-	return 0;
-}
-
-static int params_debug_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, params_debug_show, NULL);
-}
-
-static const struct file_operations params_debug_ops = {
-	.open		= params_debug_open,
-	.read		= seq_read,
-	.write		= params_write_file,
-	.llseek		= seq_lseek,
-	.release	= single_release,
+static const struct file_operations sysrq_trigger_debug_ops = {
+	.write		= write_sysrq_trigger,
+	.llseek		= noop_llseek,
 };
 
 int aml_debug_init(void)
@@ -797,7 +768,7 @@ int aml_debug_init(void)
 		debug_lockup = NULL;
 		return -ENOMEM;
 	}
-	debugfs_create_file("params", S_IFREG | 0664,
-			    debug_lockup, NULL, &params_debug_ops);
+	debugfs_create_file("sysrq-trigger", S_IFREG | 0664,
+			    debug_lockup, NULL, &sysrq_trigger_debug_ops);
 	return 0;
 }

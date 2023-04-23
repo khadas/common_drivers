@@ -108,21 +108,21 @@
 			/* 1080p TV androidR size 36M */
 			size = <0x0 0x2400000>;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x00000000 0x0 0x40000000>;
+			alloc-ranges = <0x0 0x00000000 0x0 0x80000000>;
 		};
 		dmaheap_cma_reserved:heap-gfx {
 			compatible = "shared-dma-pool";
 			reusable;
 			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x00000000 0x0 0x40000000>;
+			alloc-ranges = <0x0 0x00000000 0x0 0x80000000>;
 		};
 		dmaheap_fb_reserved:heap-fb {
 			compatible = "shared-dma-pool";
 			reusable;
 			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x00000000 0x0 0x40000000>;
+			alloc-ranges = <0x0 0x00000000 0x0 0x80000000>;
 		};
 
 		/*  vdin0 CMA pool */
@@ -145,7 +145,7 @@
 			 */
 			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x00000000 0x0 0x40000000>;
+			alloc-ranges = <0x0 0x00000000 0x0 0x80000000>;
 		};
 
 		codec_mm_cma:linux,codec_mm_cma {
@@ -172,7 +172,7 @@
 			size = <0x0 0x000000>;
 			//size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x0 0x0 0x40000000>;
+			alloc-ranges = <0x0 0x0 0x0 0x80000000>;
 		};
 		/* codec shared reserved */
 		codec_mm_reserved:linux,codec_mm_reserved {

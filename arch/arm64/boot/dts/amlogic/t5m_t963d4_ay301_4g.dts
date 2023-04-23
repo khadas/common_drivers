@@ -227,7 +227,7 @@
 		 *	reusable;
 		 *	size = <0x0 0x400000>;
 		 *	alignment = <0x0 0x400000>;
-		 *	alloc-ranges = <0x0 0x0 0x0 0x40000000>;
+		 *	alloc-ranges = <0x0 0x0 0x0 0x80000000>;
 		 *};
 		 */
 
@@ -510,7 +510,7 @@
 		compatible = "amlogic,unifykey";
 		status = "okay";
 
-		unifykey-num = <26>;
+		unifykey-num = <24>;
 		unifykey-index-0 = <&keysn_0>;
 		unifykey-index-1 = <&keysn_1>;
 		unifykey-index-2 = <&keysn_2>;
@@ -536,8 +536,6 @@
 		unifykey-index-22 = <&keysn_22>;
 		unifykey-index-23 = <&keysn_23>;
 		unifykey-index-24 = <&keysn_24>;
-		unifykey-index-25 = <&keysn_25>;
-		unifykey-index-26 = <&keysn_26>;
 
 		keysn_0: key_0{
 			key-name = "usid";
@@ -666,16 +664,6 @@
 		};
 		keysn_24:key_24{
 			key-name = "ldim_dev";
-			key-device = "normal";
-			key-permit = "read","write","del";
-		};
-		keysn_25:key_25{
-			key-name = "panel_ini_path";
-			key-device = "normal";
-			key-permit = "read","write","del";
-		};
-		keysn_26:key_26{
-			key-name = "panel_tcon_bin_path";
 			key-device = "normal";
 			key-permit = "read","write","del";
 		};
@@ -1185,11 +1173,13 @@
 		clocks = <&clkaudio CLKID_AUDIO_GATE_PDM
 			&clkc CLKID_FCLK_DIV3
 			&clkc CLKID_HIFI_PLL
+			&clkc CLKID_HIFI1_PLL
 			&clkaudio CLKID_AUDIO_PDMIN0
 			&clkaudio CLKID_AUDIO_PDMIN1>;
 		clock-names = "gate",
 			"sysclk_srcpll",
 			"dclk_srcpll",
+			"clk_src_cd",
 			"pdm_dclk",
 			"pdm_sysclk";
 
@@ -1301,9 +1291,10 @@
 	asrca: resample@0 {
 		compatible = "amlogic, t5-resample-a";
 		clocks = <&clkc CLKID_HIFI_PLL
+			&clkc CLKID_HIFI1_PLL
 			&clkaudio CLKID_AUDIO_MCLK_B
 			&clkaudio CLKID_AUDIO_RESAMPLE_A>;
-		clock-names = "resample_pll", "resample_src", "resample_clk";
+		clock-names = "resample_pll", "clk_src_cd", "resample_src", "resample_clk";
 
 		/*same with toddr_src
 		 *	TDMIN_A,    0
@@ -1329,9 +1320,10 @@
 	asrcb: resample@1 {
 		compatible = "amlogic, t5-resample-b";
 		clocks = <&clkc CLKID_HIFI_PLL
+			&clkc CLKID_HIFI1_PLL
 			&clkaudio CLKID_AUDIO_MCLK_F
 			&clkaudio CLKID_AUDIO_RESAMPLE_B>;
-		clock-names = "resample_pll", "resample_src", "resample_clk";
+		clock-names = "resample_pll", "clk_src_cd", "resample_src", "resample_clk";
 		src-clk-freq = <491520000>;
 
 		/*this resample is only used for loopback_A.*/
@@ -1429,7 +1421,7 @@
 		datalb_chmask = <0x3>;
 		/* config which data pin as loopback */
 		datalb-lane-mask-in = <1 0 0 0>;
-
+		src-clk-freq = <491520000>;
 		/* define loopack with pdm mic. */
 		mic-src = <&pdm>;
 		suspend-clk-off = <1>;
@@ -1762,8 +1754,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc1_pins &spicc1_cs_pins>;
 	//cs-gpios = <&gpio GPIOH_22 GPIO_ACTIVE_HIGH>;
-	latency = <2>;
-	slave;
 };
 
 &spicc2 {

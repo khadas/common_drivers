@@ -2599,7 +2599,7 @@ static void dump_m_setting(struct m_dovi_setting_s *m_setting,
 			i <= AMDV_CORE3_REG_START + 67; i++)
 			pr_info("[0x%4x] = 0x%x\n",
 				i, READ_VPP_DV_REG(i));
-		if (is_aml_s5() && core3_slice_info.slice_num > 1) {
+		if (is_aml_s5() && core3_slice_info.vpp0_post_info.slice_num > 1) {
 			pr_info("core3 S1 swap\n");
 			for (i = AMDV_CORE3_S1_CLKGATE_CTRL;
 				i <= AMDV_CORE3_S1_OUTPUT_CSC_CRC; i++)

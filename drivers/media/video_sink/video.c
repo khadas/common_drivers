@@ -14324,7 +14324,7 @@ static void video_cap_set(struct amvideo_device_data_s *p_amvideo)
 		layer_cap |= ((u32)vd_layer[0].vpp_index << LAYER0_VPP |
 			(u32)vd_layer[1].vpp_index << LAYER1_VPP |
 			(u32)vd_layer[2].vpp_index << LAYER2_VPP);
-		if (p_amvideo->cpu_type == MESON_CPU_MAJOR_ID_S5_)
+		if (cur_dev->mosaic_support)
 			layer_cap |= MOSAIC_MODE;
 	}
 	pr_debug("%s cap:%x, ptype:%d\n", __func__, layer_cap, p_amvideo->cpu_type);

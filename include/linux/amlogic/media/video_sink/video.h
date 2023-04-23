@@ -364,12 +364,17 @@ struct slice_info {
 	u32 scaler_in_hsize;
 };
 
-struct vpp_post_info_t {
-	u32 slice_num;   /*valid slice num*/
+struct vppx_post_info_t {
+	u32 slice_num;   /*valid slice num, vpp1 slice_num = 0 means bypass slice1 */
 	u32 overlap_hsize;
 	u32 vpp_post_blend_hsize;   /*blend out hsize*/
 	u32 vpp_post_blend_vsize;   /*blend out vsize*/
 	struct slice_info slice[POST_SLICE_NUM];
+};
+
+struct vpp_post_info_t {
+	struct vppx_post_info_t vpp0_post_info;
+	struct vppx_post_info_t vpp1_post_info;
 };
 
 struct vd_proc_info_t {
@@ -437,6 +442,7 @@ bool is_di_hf_y_reverse(void);
 void set_post_blend_dummy_data(u32 vpp_index,
 	u32 dummy_data, u32 dummy_alpha);
 struct vpp_post_info_t *get_vpp_post_amdv_info(void);
+struct vpp_post_info_t *get_vpp_post_amvecm_info(void);
 struct vd_proc_info_t *get_vd_proc_amdv_info(void);
 struct vd_proc_amvecm_info_t *get_vd_proc_amvecm_info(void);
 

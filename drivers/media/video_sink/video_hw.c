@@ -8520,6 +8520,96 @@ void vppx_vd_blend_setting(struct video_layer_s *layer, struct blend_setting_s *
 		<< VPP_VD1_END_BIT));
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void vpp1_blend_update_s5(const struct vinfo_s *vinfo, u32 vpp_index)
+{
+	unsigned long flags;
+	int videox_off_req = 0;
+	bool force_flush = false;
+	static u32 blend_en_status_save;
+
+	if (vd_layer_vpp[0].vpp_index != VPP0) {
+		if (likely(vd_layer_vpp[0].onoff_state != VIDEO_ENABLE_STATE_IDLE)) {
+			/* state change for video layer2 enable/disable */
+			spin_lock_irqsave(&videox_vpp1_onoff_lock, flags);
+			if (vd_layer_vpp[0].onoff_state == VIDEO_ENABLE_STATE_ON_REQ) {
+				/*
+				 * the video layer 2
+				 * is enabled one vsync later, assumming
+				 * all registers are ready from RDMA.
+				 */
+				vd_layer_vpp[0].onoff_state = VIDEO_ENABLE_STATE_ON_PENDING;
+			} else if (vd_layer_vpp[0].onoff_state ==
+				VIDEO_ENABLE_STATE_ON_PENDING) {
+				if (vd_layer_vpp[0].dispbuf)
+					vd_layer_vpp[0].vppx_blend_en = 1;
+				vd_layer_vpp[0].onoff_state = VIDEO_ENABLE_STATE_IDLE;
+				vd_layer_vpp[0].onoff_time = jiffies_to_msecs(jiffies);
+#ifdef CONFIG_AMLOGIC_VPU
+					vpu_delay_work_flag |=
+						VPU_VIDEO_LAYER2_CHANGED;
+#endif
+				if (vd_layer_vpp[0].global_debug & DEBUG_FLAG_BASIC_INFO)
+					pr_info("VIDEO: VsyncEnableVideoLayer2\n");
+				force_flush = true;
+			} else if (vd_layer_vpp[0].onoff_state ==
+				VIDEO_ENABLE_STATE_OFF_REQ) {
+				vd_layer_vpp[0].vppx_blend_en = 0;
+				vd_layer_vpp[0].onoff_state = VIDEO_ENABLE_STATE_IDLE;
+				vd_layer_vpp[0].onoff_time = jiffies_to_msecs(jiffies);
+#ifdef CONFIG_AMLOGIC_VPU
+					vpu_delay_work_flag |=
+						VPU_VIDEO_LAYER2_CHANGED;
+#endif
+				if (vd_layer_vpp[0].global_debug & DEBUG_FLAG_BASIC_INFO)
+					pr_info("VIDEO: VsyncDisableVideoLayer2\n");
+				videox_off_req = 1;
+				force_flush = true;
+			}
+			spin_unlock_irqrestore(&videox_vpp1_onoff_lock, flags);
+		} else if (vd_layer_vpp[0].enabled) {
+			if (vd_layer_vpp[0].dispbuf)
+				vd_layer_vpp[0].vppx_blend_en = 1;
+		}
+	}
+
+	if (vd_layer_vpp[0].vpp_index != VPP0) {
+		if (vd_layer_vpp[0].global_output == 0 ||
+			vd_layer_vpp[0].force_disable ||
+			black_threshold_check(1)) {
+			if (vd_layer_vpp[0].enabled)
+				force_flush = true;
+			vd_layer_vpp[0].enabled = 0;
+			vd_layer_vpp[0].vppx_blend_en = 0;
+		} else {
+			if (vd_layer_vpp[0].enabled != vd_layer_vpp[0].enabled_status_saved)
+				force_flush = true;
+			vd_layer_vpp[0].enabled = vd_layer_vpp[0].enabled_status_saved;
+			if (vd_layer_vpp[0].enabled) {
+				if (vd_layer_vpp[0].dispbuf)
+					vd_layer_vpp[0].vppx_blend_en = 1;
+			} else {
+				vd_layer_vpp[0].vppx_blend_en = 0;
+			}
+		}
+	}
+	if (vd_layer_vpp[0].vpp_index != VPP0 &&
+		blend_en_status_save != vd_layer_vpp[0].vppx_blend_en)
+		force_flush = true;
+	force_flush |= update_vpp1_input_info(vinfo);
+
+	if (force_flush)
+		vpp1_post_blend_update_s5(vinfo);
+
+	blend_en_status_save = vd_layer_vpp[0].vppx_blend_en;
+	if (vd_layer_vpp[0].vpp_index != VPP0 &&
+	    videox_off_req) {
+		if (vd_layer_vpp[0].layer_id == 1)
+			disable_vd2_blend(&vd_layer_vpp[0]);
+	}
+}
+#endif
+
 void vpp1_blend_update(u32 vpp_index)
 {
 	unsigned long flags;
@@ -8823,6 +8913,13 @@ void vpp2_blend_update(u32 vpp_index)
 
 void vppx_blend_update(const struct vinfo_s *vinfo, u32 vpp_index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	if (cur_dev->display_module == S5_DISPLAY_MODULE &&
+		cur_dev->is_tv_panel) {
+		vpp1_blend_update_s5(vinfo, vpp_index);
+		return;
+	}
+#endif
 	if (vinfo && vinfo->mode != VMODE_INVALID) {
 		u32 read_value;
 

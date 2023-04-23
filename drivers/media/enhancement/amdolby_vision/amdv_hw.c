@@ -3277,40 +3277,48 @@ void update_core3_slice_info(u32 v_width, u32 v_height)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int i;
 	struct vpp_post_info_t *post_info;
+	struct vppx_post_info_t *post0_info;
 
 	if (is_aml_s5()) { /*get from vpp*/
 		post_info = get_vpp_post_amdv_info();
-		core3_slice_info.overlap_hsize = post_info->overlap_hsize;
-		core3_slice_info.slice_num = post_info->slice_num;
-		core3_slice_info.vpp_post_blend_hsize = post_info->vpp_post_blend_hsize;
-		core3_slice_info.vpp_post_blend_vsize = post_info->vpp_post_blend_vsize;
+		post0_info = &post_info->vpp0_post_info;
+		core3_slice_info.vpp0_post_info.overlap_hsize =
+			post0_info->overlap_hsize;
+		core3_slice_info.vpp0_post_info.slice_num =
+			post0_info->slice_num;
+		core3_slice_info.vpp0_post_info.vpp_post_blend_hsize =
+			post0_info->vpp_post_blend_hsize;
+		core3_slice_info.vpp0_post_info.vpp_post_blend_vsize =
+			post0_info->vpp_post_blend_vsize;
 		for (i = 0; i < POST_SLICE_NUM; i++) {
-			core3_slice_info.slice[i].hsize = post_info->slice[i].hsize;
-			core3_slice_info.slice[i].vsize = post_info->slice[i].vsize;
+			core3_slice_info.vpp0_post_info.slice[i].hsize =
+				post0_info->slice[i].hsize;
+			core3_slice_info.vpp0_post_info.slice[i].vsize =
+				post0_info->slice[i].vsize;
 		}
 		if (debug_dolby & 2)
 			pr_dv_dbg("core3_info %d %d %d %d %d %d %d %d %d %d %d %d\n",
-					  core3_slice_info.slice_num,
-					  core3_slice_info.overlap_hsize,
-					  core3_slice_info.vpp_post_blend_hsize,
-					  core3_slice_info.vpp_post_blend_vsize,
-					  core3_slice_info.slice[0].hsize,
-					  core3_slice_info.slice[0].vsize,
-					  core3_slice_info.slice[1].hsize,
-					  core3_slice_info.slice[1].vsize,
-					  core3_slice_info.slice[2].hsize,
-					  core3_slice_info.slice[2].vsize,
-					  core3_slice_info.slice[3].hsize,
-					  core3_slice_info.slice[3].vsize);
+					  core3_slice_info.vpp0_post_info.slice_num,
+					  core3_slice_info.vpp0_post_info.overlap_hsize,
+					  core3_slice_info.vpp0_post_info.vpp_post_blend_hsize,
+					  core3_slice_info.vpp0_post_info.vpp_post_blend_vsize,
+					  core3_slice_info.vpp0_post_info.slice[0].hsize,
+					  core3_slice_info.vpp0_post_info.slice[0].vsize,
+					  core3_slice_info.vpp0_post_info.slice[1].hsize,
+					  core3_slice_info.vpp0_post_info.slice[1].vsize,
+					  core3_slice_info.vpp0_post_info.slice[2].hsize,
+					  core3_slice_info.vpp0_post_info.slice[2].vsize,
+					  core3_slice_info.vpp0_post_info.slice[3].hsize,
+					  core3_slice_info.vpp0_post_info.slice[3].vsize);
 
 	} else
 #endif
 	{
-		core3_slice_info.slice_num = 1;
-		core3_slice_info.vpp_post_blend_hsize = v_width;
-		core3_slice_info.vpp_post_blend_vsize = v_height;
-		core3_slice_info.slice[0].hsize = v_width;
-		core3_slice_info.slice[0].vsize = v_height;
+		core3_slice_info.vpp0_post_info.slice_num = 1;
+		core3_slice_info.vpp0_post_info.vpp_post_blend_hsize = v_width;
+		core3_slice_info.vpp0_post_info.vpp_post_blend_vsize = v_height;
+		core3_slice_info.vpp0_post_info.slice[0].hsize = v_width;
+		core3_slice_info.vpp0_post_info.slice[0].vsize = v_height;
 	}
 }
 
@@ -3727,21 +3735,21 @@ void apply_stb_core_settings(dma_addr_t dma_paddr,
 		}
 		update_core3_slice_info(vinfo->width, v_height);
 
-		for (i = 0; i < core3_slice_info.slice_num; i++)
+		for (i = 0; i < core3_slice_info.vpp0_post_info.slice_num; i++)
 			dv_core3_set
 				(26, p_md_reg3->size,
 				 (uint32_t *)p_dm_reg3,
 				 p_md_reg3->raw_metadata,
 				 i,
-				 core3_slice_info.slice[i].hsize,
-				 core3_slice_info.slice[i].vsize,
+				 core3_slice_info.vpp0_post_info.slice[i].hsize,
+				 core3_slice_info.vpp0_post_info.slice[i].vsize,
 				 1,
 				 dolby_vision_mode ==
 				 AMDV_OUTPUT_MODE_IPT_TUNNEL,
 				 pps_state);
 
 		if (is_aml_s5()) {
-			if (core3_slice_info.slice_num == 1) {
+			if (core3_slice_info.vpp0_post_info.slice_num == 1) {
 				VSYNC_WR_DV_REG_BITS(S5_VPP_DOLBY_CTRL,
 						1, 3, 1);	/* core3 S0 enable */
 				VSYNC_WR_DV_REG_BITS(VPP_SLICE1_DOLBY_CTRL,
@@ -3750,7 +3758,7 @@ void apply_stb_core_settings(dma_addr_t dma_paddr,
 						0, 3, 1);	/* core3 S2 disable */
 				VSYNC_WR_DV_REG_BITS(VPP_SLICE3_DOLBY_CTRL,
 						0, 3, 1);	/* core3 S3 disable */
-			} else if (core3_slice_info.slice_num == 2) {
+			} else if (core3_slice_info.vpp0_post_info.slice_num == 2) {
 				VSYNC_WR_DV_REG_BITS(S5_VPP_DOLBY_CTRL,
 						1, 3, 1);	/* core3 S0 enable */
 				VSYNC_WR_DV_REG_BITS(VPP_SLICE1_DOLBY_CTRL,
@@ -3759,7 +3767,7 @@ void apply_stb_core_settings(dma_addr_t dma_paddr,
 						0, 3, 1);	/* core3 S2 disable */
 				VSYNC_WR_DV_REG_BITS(VPP_SLICE3_DOLBY_CTRL,
 						0, 3, 1);	/* core3 S3 disable */
-			} else if (core3_slice_info.slice_num == 4) {
+			} else if (core3_slice_info.vpp0_post_info.slice_num == 4) {
 				VSYNC_WR_DV_REG_BITS(S5_VPP_DOLBY_CTRL,
 						1, 3, 1);	/* core3 S0 enable */
 				VSYNC_WR_DV_REG_BITS(VPP_SLICE1_DOLBY_CTRL,
@@ -3777,9 +3785,9 @@ void apply_stb_core_settings(dma_addr_t dma_paddr,
 				!diagnostic_enable) {
 				/*set meta data crc*/
 				dolby_core3_meta_reg_set
-					(core3_slice_info.slice_num,
-					 core3_slice_info.vpp_post_blend_hsize,
-					 core3_slice_info.overlap_hsize,
+					(core3_slice_info.vpp0_post_info.slice_num,
+					 core3_slice_info.vpp0_post_info.vpp_post_blend_hsize,
+					 core3_slice_info.vpp0_post_info.overlap_hsize,
 					 p_md_reg3->size,
 					 p_md_reg3->raw_metadata);
 			} else {

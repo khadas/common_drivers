@@ -984,6 +984,18 @@ struct vd_proc_blend_reg_s vd_proc_blend_reg_s5 = {
 	VPP_VD_BLND_CTRL,
 };
 
+struct vpp1_post_blend_reg_s vpp1_post_blend_reg_t3x = {
+	T3X_VPP1_OSD3_BLD_H_SCOPE,
+	T3X_VPP1_OSD3_BLD_V_SCOPE,
+	S5_VPP_POSTBLEND_VD3_H_START_END,
+	S5_VPP_POSTBLEND_VD3_V_START_END,
+	T3X_VPP1_BLEND_H_V_SIZE,
+	T3X_VPP1_BLEND_BLEND_DUMMY_DATA,
+	T3X_VPP1_BLEND_DUMMY_ALPHA,
+	T3X_VPP1_BLEND_DUMMY_ALPHA1,
+	T3X_VPP1_BLD_CTRL,
+};
+
 struct vd1_slice_pad_reg_s vd1_slice_pad_size0_reg_s5[SLICE_NUM] = {
 	{
 		VD1_S0_PAD_H_SIZE0,

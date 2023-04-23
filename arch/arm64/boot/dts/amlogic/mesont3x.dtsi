@@ -2822,7 +2822,7 @@
 		clock-names = "cts_vid_lock_clk";
 	};
 
-	meson-amvideom {
+	amvideom: meson-amvideom {
 		compatible = "amlogic, amvideom-t3x";
 		dev_name = "amvideom";
 		status = "okay";

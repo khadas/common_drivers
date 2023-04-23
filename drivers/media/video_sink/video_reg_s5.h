@@ -214,6 +214,18 @@ struct vpp_post_blend_reg_s {
 	u32 vpp_postblend_ctrl;
 };
 
+struct vpp1_post_blend_reg_s {
+	u32 vpp_osd1_bld_h_scope;
+	u32 vpp_osd1_bld_v_scope;
+	u32 vpp_postblend_vd1_h_start_end;
+	u32 vpp_postblend_vd1_v_start_end;
+	u32 vpp_postblend_h_v_size;
+	u32 vpp_post_blend_blend_dummy_data;
+	u32 vpp_post_blend_dummy_alpha;
+	u32 vpp_post_blend_dummy_alpha1;
+	u32 vpp_postblend_ctrl;
+};
+
 struct vd_proc_blend_reg_s {
 	u32 vpp_vd_blnd_h_v_size;
 	u32 vpp_vd_blend_dummy_data;
@@ -309,6 +321,7 @@ extern struct vpp_post_blend_reg_s vpp_post_blend_reg_s5;
 extern struct vpp_post_blend_reg_s vpp_post_blend_reg_t3x;
 extern struct vpp_post_misc_reg_s vpp_post_misc_reg_s5;
 extern struct vpp_post_misc_reg_s vpp_post_misc_reg_t3x;
+extern struct vpp1_post_blend_reg_s vpp1_post_blend_reg_t3x;
 
 extern struct vd_proc_reg_s vd_proc_reg;
 extern struct vd_pps_reg_s pps_reg_s5_array[MAX_VD_LAYER_S5 + 1];

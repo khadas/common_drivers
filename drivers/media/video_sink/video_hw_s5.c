@@ -104,6 +104,7 @@ static bool vd2_pi_input_size_update;
 static struct vd_pps_val_s vd_pps_val[SLICE_NUM];
 static int mosaic_frame_idx;
 struct mosaic_frame_s g_mosaic_frame[4];
+static struct vpp_post_s g_vpp_post;
 #define SIZE_ALIG32(frm_hsize)   ((((frm_hsize) + 31) >> 5) << 5)
 #define SIZE_ALIG16(frm_hsize)   ((((frm_hsize) + 15) >> 4) << 4)
 #define SIZE_ALIG8(frm_hsize)    ((((frm_hsize) + 7) >> 3) << 3)
@@ -1171,6 +1172,43 @@ static void dump_vd_aisr_reg(void)
 	}
 }
 
+static void dump_vd_top_regs(void)
+{
+	u32 reg_addr, reg_val = 0;
+
+	pr_info("vd top regs:\n");
+	reg_addr = VPP_VD_SYS_CTRL;
+	reg_val = READ_VCBUS_REG(VPP_VD_SYS_CTRL);
+	pr_info("[0x%x] = 0x%X [VPP_VD_SYS_CTRL]\n",
+		   reg_addr, reg_val);
+
+	reg_addr = SLICE2PPC_H_V_SIZE;
+	reg_val = READ_VCBUS_REG(SLICE2PPC_H_V_SIZE);
+	pr_info("[0x%x] = 0x%X [SLICE2PPC_H_V_SIZE]\n",
+		   reg_addr, reg_val);
+
+	reg_addr = S5_VIU_VD1_MISC;
+	reg_val = READ_VCBUS_REG(S5_VIU_VD1_MISC);
+	pr_info("[0x%x] = 0x%X [S5_VIU_VD1_MISC]\n",
+		   reg_addr, reg_val);
+	reg_addr = S5_VIU_VD2_MISC;
+	reg_val = READ_VCBUS_REG(S5_VIU_VD2_MISC);
+	pr_info("[0x%x] = 0x%X [S5_VIU_VD2_MISC]\n",
+		   reg_addr, reg_val);
+	reg_addr = S5_VIU_VD3_MISC;
+	reg_val = READ_VCBUS_REG(S5_VIU_VD3_MISC);
+	pr_info("[0x%x] = 0x%X [S5_VIU_VD3_MISC]\n",
+		   reg_addr, reg_val);
+	reg_addr = S5_VIU_VD4_MISC;
+	reg_val = READ_VCBUS_REG(S5_VIU_VD4_MISC);
+	pr_info("[0x%x] = 0x%X [S5_VIU_VD4_MISC]\n",
+		   reg_addr, reg_val);
+	reg_addr = S5_VIU_VD5_MISC;
+	reg_val = READ_VCBUS_REG(S5_VIU_VD5_MISC);
+	pr_info("[0x%x] = 0x%X [S5_VIU_VD5_MISC]\n",
+		   reg_addr, reg_val);
+}
+
 void dump_s5_vd_proc_regs(void)
 {
 	dump_mif_reg();
@@ -1187,6 +1225,7 @@ void dump_s5_vd_proc_regs(void)
 	dump_vd_pip_alpha_reg();
 	if (cur_dev->aisr_support)
 		dump_vd_aisr_reg();
+	dump_vd_top_regs();
 }
 
 void dump_mosaic_pps(void)
@@ -2480,12 +2519,53 @@ static void vd1_proc_set(u32 vpp_index, struct vd_proc_s *vd_proc)
 	vd_proc_pi_path_set(vpp_index, vd_proc);
 }
 
+static void vd_3mux3_set(u8 vpp_index)
+{
+	u32 vppx_go_field = VPP0;
+
+	if (cur_dev->has_vpp1) {
+		/* vd3 mux3: VPP_VD_SYS_CTRL */
+		/* Bit 9:8 vd3_3mux3_sel out:vd3, in:1:vd1s0 2:vd2 3:vd1s1 */
+		/* Bit 7:6 vd2_3mux3_sel out:vd2, in:1:vd1s0 2:vd2 3:vd1s1 */
+		if (vd_layer[1].vpp_index == VPP0 &&
+			vd_layer[1].layer_id == 1) {
+			/* in vd2, out: vd3*/
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_VD_SYS_CTRL,
+				3, 8, 2);
+			/* in vd1s1, out: vd2*/
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_VD_SYS_CTRL,
+				2, 6, 2);
+			/* 0:use vpp0_go_field 1:use vpp1_go_field 2:use vpp2_go_field */
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(S5_VIU_VD5_MISC,
+				vppx_go_field, 0, 2);
+		}
+		if (vd_layer_vpp[0].vpp_index == VPP1 &&
+			vd_layer_vpp[0].layer_id == 1) {
+			/* in vd2, out: vd3*/
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_VD_SYS_CTRL,
+				2, 8, 2);
+			/* in vd1s1, out: vd2*/
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(VPP_VD_SYS_CTRL,
+				3, 6, 2);
+			/* vd5 go field vpp1 VIU_VD5_MISC bit0:1 to 1 */
+			/* 0:use vpp0_go_field 1:use vpp1_go_field 2:use vpp2_go_field	*/
+			vppx_go_field = vd_layer_vpp[0].vpp_index;
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits(S5_VIU_VD5_MISC,
+				vppx_go_field, 0, 2);
+		}
+		if (debug_flag_s5 & DEBUG_VD2_PROC)
+			pr_info("%s, vppx_go_field=%d\n", __func__, vppx_go_field);
+	}
+}
+
 static void vd2_proc_set(u32 vpp_index, struct vd2_proc_s *vd2_proc)
 {
 	struct vd2_proc_misc_reg_s *vd2_proc_misc_reg = NULL;
 	rdma_wr_op rdma_wr = cur_dev->rdma_func[vpp_index].rdma_wr;
 	rdma_wr_bits_op rdma_wr_bits = cur_dev->rdma_func[vpp_index].rdma_wr_bits;
+	struct video_layer_s *layer = NULL;
 
+	layer = get_vd_layer(1);
 	vd2_proc_misc_reg = &vd_proc_reg.vd2_proc_misc_reg;
 	rdma_wr(vd2_proc_misc_reg->vd2_proc_in_size,
 		vd2_proc->din_hsize << 16 |
@@ -2495,7 +2575,7 @@ static void vd2_proc_set(u32 vpp_index, struct vd2_proc_s *vd2_proc)
 	/* hdr */
 	vd2_proc_bypass_hdr(vpp_index, vd2_proc->bypass_hdr);
 	/* pps */
-	vdx_scaler_setting_s5(&vd_layer[1], &vd_layer[1].sc_setting);
+	vdx_scaler_setting_s5(layer, &layer->sc_setting);
 	if (vd2_proc->vd2_dout_dpsel == VD2_DOUT_PI) {
 		/* vd2 pi set */
 		rdma_wr_bits(vd2_proc_misc_reg->vd2_pilite_ctrl,
@@ -2511,6 +2591,7 @@ static void vd2_proc_set(u32 vpp_index, struct vd2_proc_s *vd2_proc)
 			vd2_proc->dout_vsize);
 	}
 	vd2_proc_bypass_dv(vpp_index, vd2_proc->bypass_dv);
+	vd_3mux3_set(vpp_index);
 }
 
 static void vd_proc_set(u32 vpp_index, struct vd_proc_s *vd_proc)
@@ -3235,19 +3316,24 @@ static void set_vd_proc_info(struct video_layer_s *layer)
 			vd_proc_preblend_info->prebld_dout_vsize = src_h;
 		}
 	}
-	if (debug_flag_s5 & DEBUG_VD_PROC) {
-		if (vd_proc->vd1_used) {
-			pr_info("%s:vd_proc_vd1_info->slice_num=%d\n",
-				__func__, vd_proc_vd1_info->slice_num);
-			pr_info("%s:vd1_work_mode=0x%x, vd1_slices_dout_dpsel=0x%x, overlap=%d\n",
-				__func__, vd_proc_vd1_info->vd1_work_mode,
-				vd_proc_vd1_info->vd1_slices_dout_dpsel,
-				vd_proc_vd1_info->vd1_overlap_hsize);
-		} else if (vd_proc->vd2_used) {
-			pr_info("%s: vd2_dout_dpsel=%d, vd1s0_vd2_prebld_en=%d\n",
-				__func__, vd_proc_vd2_info->vd2_dout_dpsel,
-				vd_proc_preblend_info->vd1s0_vd2_prebld_en);
-		}
+
+	if (vd_proc->vd1_used &&
+		debug_flag_s5 & DEBUG_VD_PROC) {
+		pr_info("%s:vd_proc_vd1_info->slice_num=%d\n",
+			__func__, vd_proc_vd1_info->slice_num);
+		pr_info("%s:vd1_work_mode=0x%x, vd1_slices_dout_dpsel=0x%x, overlap=%d\n",
+			__func__, vd_proc_vd1_info->vd1_work_mode,
+			vd_proc_vd1_info->vd1_slices_dout_dpsel,
+			vd_proc_vd1_info->vd1_overlap_hsize);
+	} else if (vd_proc->vd2_used &&
+		debug_flag_s5 & DEBUG_VD2_PROC) {
+		pr_info("%s: vd2 used vpp_index=%d, vd2_dout_dpsel=%d, vd1s0_vd2_prebld_en=%d\n",
+			__func__, layer->vpp_index,
+			vd_proc_vd2_info->vd2_dout_dpsel,
+			vd_proc_preblend_info->vd1s0_vd2_prebld_en);
+	}
+	if (debug_flag_s5 & DEBUG_VD_PROC ||
+		debug_flag_s5 & DEBUG_VD2_PROC) {
 		pr_info("%s:src_w=%d, src_h=%d, dst_w=%d, dst_h=%d\n",
 			__func__, src_w, src_h, dst_w, dst_h);
 		pr_info("%s:h_start=%d, v_start=%d\n",
@@ -5468,7 +5554,7 @@ static void vd_proc_param_set_vd2(struct vd_proc_s *vd_proc)
 	vd2_proc->bypass_detunnel = vd_proc->bypass_detunnel;
 	vd2_proc->bypass_hdr = vd_proc->bypass_hdr;
 	//vd2_proc->dolby_en = 0;
-	if (debug_flag_s5 & DEBUG_VD_PROC)
+	if (debug_flag_s5 & DEBUG_VD2_PROC)
 		pr_info("%s: din size: %d, %d, dout size: %d, %d, x/y start: %d, %d\n",
 			__func__,
 			vd2_proc->din_hsize,
@@ -5609,23 +5695,50 @@ struct vd_proc_info_t *get_vd_proc_amdv_info(void)
 	return &vd_proc_amdv;
 }
 
-static void update_vpp_post_amdv_info(struct vpp_post_s *vpp_post)
+static void update_vpp_post_amdv_info(u8 vpp_index, struct vpp_post_s *vpp_post)
 {
-	int i;
+	if (vpp_index == VPP0) {
+		struct vpp0_post_s *vpp0_post;
+		struct vppx_post_info_t *vpp0_post_info;
+		int i;
 
-	vpp_post_amdv.slice_num = vpp_post->slice_num;
-	vpp_post_amdv.overlap_hsize = vpp_post->overlap_hsize;
-	vpp_post_amdv.vpp_post_blend_hsize = vpp_post->vpp_post_blend.bld_out_w;
-	vpp_post_amdv.vpp_post_blend_vsize = vpp_post->vpp_post_blend.bld_out_h;
-	for (i = 0; i < vpp_post->slice_num; i++) {
-		vpp_post_amdv.slice[i].hsize =
-			vpp_post->vpp_post_proc.vpp_post_proc_slice.hsize[i];
-		vpp_post_amdv.slice[i].vsize =
-			vpp_post->vpp_post_proc.vpp_post_proc_slice.vsize[i];
+		vpp0_post_info = &vpp_post_amdv.vpp0_post_info;
+		vpp0_post = &vpp_post->vpp0_post;
+		vpp0_post_info->slice_num = vpp0_post->slice_num;
+		vpp0_post_info->overlap_hsize = vpp0_post->overlap_hsize;
+		vpp0_post_info->vpp_post_blend_hsize = vpp0_post->vpp_post_blend.bld_out_w;
+		vpp0_post_info->vpp_post_blend_vsize = vpp0_post->vpp_post_blend.bld_out_h;
+		for (i = 0; i < vpp0_post->slice_num; i++) {
+			vpp0_post_info->slice[i].hsize =
+				vpp0_post->vpp_post_proc.vpp_post_proc_slice.hsize[i];
+			vpp0_post_info->slice[i].vsize =
+				vpp0_post->vpp_post_proc.vpp_post_proc_slice.vsize[i];
+		}
+	} else if (vpp_index == VPP1) {
+		struct vpp1_post_s *vpp1_post;
+		struct vppx_post_info_t *vpp1_post_info;
+
+		vpp1_post_info = &vpp_post_amdv.vpp1_post_info;
+		vpp1_post = &vpp_post->vpp1_post;
+		/*valid slice num, vpp1 slice_num = 0 means bypass slice1 */
+		/* vpp slice num = 1 means always used slice1 */
+		vpp1_post_info->slice_num = vpp1_post->slice_num;
+		vpp1_post_info->overlap_hsize = vpp1_post->overlap_hsize;
+		vpp1_post_info->vpp_post_blend_hsize = vpp1_post->vpp1_post_blend.bld_out_w;
+		vpp1_post_info->vpp_post_blend_vsize = vpp1_post->vpp1_post_blend.bld_out_h;
+		vpp1_post_info->slice[1].hsize =
+			vpp1_post->vpp1_post_blend.bld_out_w;
+		vpp1_post_info->slice[1].vsize =
+			vpp1_post->vpp1_post_blend.bld_out_h;
 	}
 }
 
 struct vpp_post_info_t *get_vpp_post_amdv_info(void)
+{
+	return &vpp_post_amdv;
+}
+
+struct vpp_post_info_t *get_vpp_post_amvecm_info(void)
 {
 	return &vpp_post_amdv;
 }
@@ -11322,7 +11435,6 @@ void vd_clip_setting_s5(u8 vpp_index, u8 layer_id,
 void vpp_post_blend_update_s5(const struct vinfo_s *vinfo)
 {
 	struct vpp_post_input_s *vpp_input;
-	struct vpp_post_s vpp_post;
 
 	vpp_input = get_vpp_input_info();
 	if (debug_flag_s5 & DEBUG_VPP_POST)
@@ -11336,9 +11448,30 @@ void vpp_post_blend_update_s5(const struct vinfo_s *vinfo)
 			vpp_input->bld_out_hsize,
 			vpp_input->bld_out_vsize);
 
-	vpp_post_param_set(vpp_input, &vpp_post);
-	vpp_post_set(VPP0, &vpp_post);
-	update_vpp_post_amdv_info(&vpp_post);
+	vpp_post_param_set(vpp_input, &g_vpp_post.vpp0_post);
+	vpp_post_set(VPP0, &g_vpp_post);
+	update_vpp_post_amdv_info(VPP0, &g_vpp_post);
+}
+
+void vpp1_post_blend_update_s5(const struct vinfo_s *vinfo)
+{
+	struct vpp_post_input_s *vpp_input;
+
+	vpp_input = get_vpp1_input_info();
+	if (debug_flag_s5 & DEBUG_VPP1_POST)
+		pr_info("%s,slice_num=%d, din size[0]=%d, %d, din size[1]:%d, %d, bld_out =%d, %d\n",
+			__func__,
+			vpp_input->slice_num,
+			vpp_input->din_hsize[0],
+			vpp_input->din_vsize[0],
+			vpp_input->din_hsize[1],
+			vpp_input->din_vsize[1],
+			vpp_input->bld_out_hsize,
+			vpp_input->bld_out_vsize);
+
+	vpp1_post_param_set(vpp_input, &g_vpp_post.vpp1_post);
+	vpp_post_set(VPP1, &g_vpp_post);
+	update_vpp_post_amdv_info(VPP1, &g_vpp_post);
 }
 
 struct vd_proc_s *get_vd_proc_info(void)
@@ -12089,7 +12222,8 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	if (cur_dev->aisr_support)
 		cur_dev->pps_auto_calc = 1;
 	cur_dev->prevsync_support = p_amvideo->dev_property.prevsync_support;
-
+	cur_dev->has_vpp1 = p_amvideo->has_vpp1;
+	cur_dev->has_vpp2 = p_amvideo->has_vpp2;
 	for (i = 0; i < cur_dev->max_vd_layers; i++) {
 		vd_layer[i].layer_id = i;
 		vd_layer[i].cur_canvas_id = 0;
@@ -12277,6 +12411,9 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 		memcpy(&vpp_post_reg.vpp_post_misc_reg,
 		   &vpp_post_misc_reg_t3x,
 		   sizeof(struct vpp_post_misc_reg_s));
+		memcpy(&vpp_post_reg.vpp1_post_blend_reg,
+		   &vpp1_post_blend_reg_t3x,
+		   sizeof(struct vpp1_post_blend_reg_s));
 	}
 	vd_layer[0].layer_alpha = 0x100;
 
@@ -12299,6 +12436,10 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	/* vd_layer_vpp is for multiple vpp */
 	memcpy(&vd_layer_vpp[0], &vd_layer[1], sizeof(struct video_layer_s));
 	memcpy(&vd_layer_vpp[1], &vd_layer[2], sizeof(struct video_layer_s));
+	/* init vpp_post */
+	memset(&g_vpp_post, 0, sizeof(struct vpp_post_s));
+	/* for tx3 dual screen display */
+	g_vpp1_bypass_slice1 = 1;
 	return r;
 }
 

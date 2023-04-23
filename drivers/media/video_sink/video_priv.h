@@ -283,6 +283,8 @@ struct video_dev_s {
 	u8 cr_loss;
 	u8 amdv_tvcore;
 	u8 vsync_2to1_enable;
+	u8 has_vpp1;
+	u8 has_vpp2;
 };
 
 struct video_layer_s;
@@ -853,6 +855,7 @@ void vd_blend_setting_s5(struct video_layer_s *layer, struct blend_setting_s *se
 void vd_clip_setting_s5(u8 vpp_index, u8 layer_id,
 	struct clip_setting_s *setting);
 void vpp_post_blend_update_s5(const struct vinfo_s *vinfo);
+void vpp1_post_blend_update_s5(const struct vinfo_s *vinfo);
 void adjust_vpp_filter_parm(struct vpp_frame_par_s *frame_par,
 	u32 supsc1_hori_ratio,
 	u32 supsc1_vert_ratio,

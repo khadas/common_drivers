@@ -232,7 +232,7 @@
 //Bit 1      vd1_s3_dv_ext_mode                   //unsigned, RW, default = 0
 //Bit 0      vd1_s3_dv_en                         //unsigned, RW, default = 0
 
-// T3X_PROC_REGS
+//T3X_PROC_REGS
 #define T3X_VD_PROC_S1_PPS_IN_SIZE                     0x2809
 //Bit 31:29 reserved
 //Bit 28:16 vd_proc_s1_pps_in_hsize               //unsigned, RW, default = 1920
@@ -642,6 +642,46 @@
 //Bit 7 :5   reserved
 //Bit 4 :0   reg_default_osd_flag             //unsigned ,RW, default = 5'h18
 
+// T3X_VPP1_POST_REGS
+#define T3X_VPP1_BLEND_H_V_SIZE                       0x1d1a
+//Bit 31:30  reserved
+//Bit 29:16  vpp1_blend_vsize                 //unsigned, RW, default = 1080
+//Bit 15:14  reserved
+//Bit 13:0   vpp1_blend_hsize                 //unsigned, RW, default = 1920
+#define T3X_VPP1_BLD_CTRL                             0x1d1b
+//Bit 31     vpp1_bld_en             //default = 0
+//Bit 30     vpp1_dpath_sel          //1:output to vpp slice1 0:output to venc1 directly
+//Bit 29     vd3_dpath_sel           //default = 0, 0:select postblend 1:select vpp1 blend
+//Bit 28     reg_vpp1_obuf_urgt      //default = 1, vpp1 urgt when go to venc directly
+//Bit 27:20  reserved
+//Bit 19:16  vpp1_bld_din_premult_en          //unsigned, RW, default = 0
+//Bit 15:0   vpp1_bld_din_reoder_sel          //unsigned, RW, default = 0
+#define T3X_VPP1_OSD3_BLD_H_SCOPE                     0x1d1c
+//Bit 31:29  reserved
+//Bit 28:16  osd3xn_scope_hs        //vpp1 osd3 scope horizontal starting
+//Bit 15:13  reserved
+//Bit 12:0   osd3xn_scope_he        //vpp1 osd3 scope horizontal ending
+#define T3X_VPP1_OSD3_BLD_V_SCOPE                     0x1d1d
+//Bit 31:29  reserved
+//Bit 28:16  osd3xn_scope_vs       //vpp1 osd3 scope vertical starting
+//Bit 15:13  reserved
+//Bit 12:0   osd3xn_scope_ve       //vpp1 osd3 scope vertical ending
+#define T3X_VPP1_BLEND_BLEND_DUMMY_DATA               0x1d51
+//Bit 31:24  reserved
+//Bit 23:16  blend0_dummy_data_y               //unsigned ,RW, default = 8'h00
+//Bit 15:8   blend0_dummy_data_cb              //unsigned ,RW, default = 8'h80
+//Bit 7 :0   blend0_dummy_data_cr              //unsigned ,RW, default = 8'h80
+#define T3X_VPP1_BLEND_DUMMY_ALPHA                    0x1d52
+//Bit 31:25  reserved
+//Bit 24:16  blend1_dummy_alpha                //unsigned ,RW, default = 9'h0
+//Bit 15:9   reserved
+//Bit 8 :0   blend0_dummy_alpha                //unsigned ,RW, default = 9'h0
+#define T3X_VPP1_BLEND_DUMMY_ALPHA1                   0x1d54
+//Bit 31:25  reserved
+//Bit 24:16  blend3_dummy_alpha                //unsigned ,RW, default = 9'h0
+//Bit 15:9   reserved
+//Bit 8 :0   blend2_dummy_alpha                //unsigned ,RW, default = 9'h0
+
 // T3X_VPP_POST_REGS
 #define T3X_VPP_POST_HOLD_CTRL                         0x1d19
 //Bit 31     reg_hold_en                      //unsigned ,RW, default = 0
@@ -954,9 +994,18 @@
 //Bit 4      vd1_s3_blend_premult                //unsigned, RW, default = 0, vd1 s3 premult en
 //Bit 3:0    vd1_s3_blend_src                    //unsigned, RW, default = 0, vd1 s3 source sel
 #define VPP_VD_SYS_CTRL                            0x3217
-//Bit 31:2   reserved
-//Bit 2      reg_vd2_dpsel                       //unsigned, RW, default = 0, 0:vd2_proc outputinclude pi_lite 1:slice2ppc output
-//Bit 1:0    reg_vd1_dpsel                       //unsigned, RW, default = 1, 0:pi or s2p output 1:4slice4ppc output 2:2slice2ppc output
+//Bit 31:10  reserved
+//Bit 9:8    vd3_3mux3_sel
+//unsigned, RW, default = 3, out:vd3, in:1:vd1s0 2:vd2 3:vd1s1
+//Bit 7:6    vd2_3mux3_sel
+//unsigned, RW, default = 2, out:vd2, in:1:vd1s0 2:vd2 3:vd1s1
+//Bit 5:4    vd1_3mux3_sel
+//unsigned, RW, default = 1, out:vd1, in:1:vd1s0 2:vd2 3:vd1s1
+//Bit 3      reserved
+//Bit 2      reg_vd2_dpsel
+//unsigned, RW, default = 0, 0:vd2_proc output(include pi_lite) 1:slice2ppc output
+//Bit 1:0    reg_vd1_dpsel
+//unsigned, RW, default = 1, 0:pi or s2p output 1:4slice4ppc output 2:2slice2ppc output
 #define SLICE2PPC_H_V_SIZE                         0x3218
 //Bit 31:29  reserved
 //Bit 28:16  slice2ppc_vsize                     //unsigned, RW, default = 1080

@@ -22,6 +22,7 @@
 #include <dt-bindings/power/s5-pd.h>
 #include <dt-bindings/power/t3x-pd.h>
 #include <dt-bindings/power/txhd2-pd.h>
+#include <dt-bindings/power/s1a-pd.h>
 #include <linux/kallsyms.h>
 
 struct sec_pm_private_domain {
@@ -678,6 +679,28 @@ static struct sec_pm_domain_data txhd2_pm_domain_data __initdata = {
 
 #endif
 
+static struct sec_pm_private_domain s1a_pm_domains[] __initdata = {
+	[PDID_S1A_DOS_HEVC] = POWER_DOMAIN(hevc, PDID_S1A_DOS_HEVC,
+				DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
+	[PDID_S1A_DOS_VDEC] = POWER_DOMAIN(vdec, PDID_S1A_DOS_VDEC, DOMAIN_INIT_ON,
+				       GENPD_FLAG_ALWAYS_ON),
+	[PDID_S1A_VPU_HDMI] = POWER_DOMAIN(hdmi, PDID_S1A_VPU_HDMI, DOMAIN_INIT_ON,
+					  GENPD_FLAG_ALWAYS_ON),
+	[PDID_S1A_USB_COMB] = POWER_DOMAIN(usb_comb, PDID_S1A_USB_COMB, DOMAIN_INIT_ON,
+					  GENPD_FLAG_ALWAYS_ON),
+	[PDID_S1A_GE2D] = POWER_DOMAIN(ge2d, PDID_S1A_GE2D, DOMAIN_INIT_ON,
+					  GENPD_FLAG_ALWAYS_ON),
+	[PDID_S1A_ETH] = POWER_DOMAIN(eth, PDID_S1A_ETH, DOMAIN_INIT_ON,
+					GENPD_FLAG_ALWAYS_ON),
+	[PDID_S1A_DEMOD] = POWER_DOMAIN(demod, PDID_S1A_DEMOD, DOMAIN_INIT_ON,
+				     GENPD_FLAG_ALWAYS_ON),
+};
+
+static struct sec_pm_domain_data s1a_pm_domain_data __initdata = {
+	.domains = s1a_pm_domains,
+	.domains_count = ARRAY_SIZE(s1a_pm_domains),
+};
+
 static int sec_pd_probe(struct platform_device *pdev)
 {
 	int ret, i;
@@ -834,6 +857,10 @@ static const struct of_device_id pd_match_table[] = {
 		.data = &txhd2_pm_domain_data,
 	},
 #endif
+	{
+		.compatible = "amlogic,s1a-power-domain",
+		.data = &s1a_pm_domain_data,
+	},
 	{}
 };
 

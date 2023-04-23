@@ -485,7 +485,7 @@ fi
 if [ "${ABI}" -eq "1" ]; then
 	${ROOT_DIR}/${BUILD_DIR}/build_abi.sh "$@"
 else
-	if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" ]]; then
+	if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" ]]; then
 		if [[ ${BAZEL} == 1 ]]; then
 			args="$@ --lto=${LTO}"
 			PROJECT_DIR=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/project

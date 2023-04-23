@@ -38,6 +38,8 @@
 
 // Define how often to check (and clear) the fault status register (in ms)
 #define AD82128_FAULT_CHECK_INTERVAL 500
+#define AD82128_VOLUME_MAX  (230)
+#define AD82128_VOLUME_MIN  (0)
 
 enum ad82128_type {
 	AD82128,
@@ -61,6 +63,7 @@ struct ad82128_data {
 	unsigned int last_fault;
 	int reset_pin;
 	int init_done;
+	int vol;
 };
 
 static int ad82128_hw_params(struct snd_pcm_substream *substream,
@@ -147,6 +150,73 @@ static int ad82128_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		dev_err(component->dev, "error setting SAIF format: %d\n", ret);
 		return ret;
 	}
+
+	return 0;
+}
+
+static int ad82128_vol_info(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->access =
+	    (SNDRV_CTL_ELEM_ACCESS_TLV_READ | SNDRV_CTL_ELEM_ACCESS_READWRITE);
+	uinfo->count = 1;
+
+	uinfo->value.integer.min = AD82128_VOLUME_MIN;
+	uinfo->value.integer.max = AD82128_VOLUME_MAX;
+	uinfo->value.integer.step = 1;
+
+	return 0;
+}
+
+static int ad82128_vol_locked_get(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct ad82128_data *ad82128 = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = ad82128->vol;
+
+	return 0;
+}
+
+static inline int get_volume_index(int vol)
+{
+	int index;
+
+	index = vol;
+
+	if (index < AD82128_VOLUME_MIN)
+		index = AD82128_VOLUME_MIN;
+
+	if (index > AD82128_VOLUME_MAX)
+		index = AD82128_VOLUME_MAX;
+
+	return index;
+}
+
+static void ad82128_set_volume(struct snd_soc_component *component, int vol)
+{
+	unsigned int index;
+	u32 volume_hex;
+	u8 byte;
+
+	index = get_volume_index(vol);
+	volume_hex = ad82128_volume[index];
+
+	byte = (volume_hex & 0xFF);
+
+	snd_soc_component_write(component, AD82128_VOLUME_CTRL_REG, byte);
+}
+
+static int ad82128_vol_locked_put(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct ad82128_data *ad82128 = snd_soc_component_get_drvdata(component);
+
+	ad82128->vol = ucontrol->value.integer.value[0];
+	ad82128_set_volume(component, ad82128->vol);
 
 	return 0;
 }
@@ -476,12 +546,16 @@ static const DECLARE_TLV_DB_RANGE(dac_analog_tlv,
  * setting the gain below -100 dB (register value <0x7) is effectively a MUTE
  * as per device datasheet.
  */
-static DECLARE_TLV_DB_SCALE(dac_tlv, -10350, 50, 0);
 static const DECLARE_TLV_DB_SCALE(chvol_tlv, -10300, 50, 1);
 
 static const struct snd_kcontrol_new ad82128_snd_controls[] = {
-	SOC_SINGLE_TLV("Speaker Driver Playback Volume",
-	AD82128_VOLUME_CTRL_REG, 0, 0xff, 0, dac_tlv),
+	{
+	 .iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	 .name = "Master Volume",
+	 .info = ad82128_vol_info,
+	 .get = ad82128_vol_locked_get,
+	 .put = ad82128_vol_locked_put,
+	 },
 	SOC_SINGLE_TLV("Ch1 Volume", AD82128_VOLUME_CTRL_REG_CH1,
 		0, 0xff, 1, chvol_tlv),
 	SOC_SINGLE_TLV("Ch2 Volume", AD82128_VOLUME_CTRL_REG_CH2,

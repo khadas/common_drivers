@@ -761,6 +761,7 @@ static int gxtv_demod_dvbc_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 
 static int Gxtv_Demod_Dvbc_Init(struct aml_dtvdemod *demod, int mode)
 {
+	int ret = 0;
 	struct aml_demod_sys sys;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	struct ddemod_dig_clk_addr *dig_clk = &devp->data->dig_clk;
@@ -805,9 +806,9 @@ static int Gxtv_Demod_Dvbc_Init(struct aml_dtvdemod *demod, int mode)
 	else if (devp->data->hw_ver >= DTVDEMOD_HW_TL1)
 		dd_hiu_reg_write(dig_clk->demod_clk_ctl, 0x502);
 
-	demod_set_sys(demod, &sys);
+	ret = demod_set_sys(demod, &sys);
 
-	return 0;
+	return ret;
 }
 
 static int gxtv_demod_dvbc_set_frontend(struct dvb_frontend *fe)
@@ -1679,6 +1680,7 @@ static int gxtv_demod_dvbt_get_frontend(struct dvb_frontend *fe)
 
 int dvbt_isdbt_Init(struct aml_dtvdemod *demod)
 {
+	int ret = 0;
 	struct aml_demod_sys sys;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	struct ddemod_dig_clk_addr *dig_clk = &devp->data->dig_clk;
@@ -1701,13 +1703,14 @@ int dvbt_isdbt_Init(struct aml_dtvdemod *demod)
 	else
 		dd_hiu_reg_write(dig_clk->demod_clk_ctl, 0x501);
 
-	demod_set_sys(demod, &sys);
+	ret = demod_set_sys(demod, &sys);
 
-	return 0;
+	return ret;
 }
 
 static unsigned int dvbt_init(struct aml_dtvdemod *demod)
 {
+	int ret = 0;
 	struct aml_demod_sys sys;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	struct ddemod_dig_clk_addr *dig_clk;
@@ -1725,17 +1728,19 @@ static unsigned int dvbt_init(struct aml_dtvdemod *demod)
 	demod->demod_status.ch_if = DEMOD_5M_IF;
 	demod->demod_status.adc_freq = sys.adc_clk;
 	demod->demod_status.clk_freq = sys.demod_clk;
+	demod->last_status = 0;
 
 	dd_hiu_reg_write(dig_clk->demod_clk_ctl_1, 0x704);
 	dd_hiu_reg_write(dig_clk->demod_clk_ctl, 0x501);
-	demod_set_sys(demod, &sys);
-	demod->last_status = 0;
 
-	return 0;
+	ret = demod_set_sys(demod, &sys);
+
+	return ret;
 }
 
 static unsigned int dtvdemod_dvbt2_init(struct aml_dtvdemod *demod)
 {
+	int ret = 0;
 	struct aml_demod_sys sys;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	struct ddemod_dig_clk_addr *dig_clk = &devp->data->dig_clk;
@@ -1752,13 +1757,14 @@ static unsigned int dtvdemod_dvbt2_init(struct aml_dtvdemod *demod)
 	demod->demod_status.ch_if = DEMOD_5M_IF;
 	demod->demod_status.adc_freq = sys.adc_clk;
 	demod->demod_status.clk_freq = sys.demod_clk;
+	demod->last_status = 0;
 
 	dd_hiu_reg_write(dig_clk->demod_clk_ctl_1, 0x704);
 	dd_hiu_reg_write(dig_clk->demod_clk_ctl, 0x501);
-	demod_set_sys(demod, &sys);
-	demod->last_status = 0;
 
-	return 0;
+	ret = demod_set_sys(demod, &sys);
+
+	return ret;
 }
 
 static void gxtv_demod_atsc_release(struct dvb_frontend *fe)
@@ -2767,6 +2773,7 @@ static int dvbt2_tune(struct dvb_frontend *fe, bool re_tune,
 
 static int dtvdemod_atsc_init(struct aml_dtvdemod *demod)
 {
+	int ret = 0;
 	struct aml_demod_sys sys;
 	struct dtv_frontend_properties *c = &demod->frontend.dtv_property_cache;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
@@ -2798,9 +2805,9 @@ static int dtvdemod_atsc_init(struct aml_dtvdemod *demod)
 			dd_hiu_reg_write(dig_clk->demod_clk_ctl, 0x501);
 	}
 
-	demod_set_sys(demod, &sys);
+	ret = demod_set_sys(demod, &sys);
 
-	return 0;
+	return ret;
 }
 
 static void gxtv_demod_dtmb_release(struct dvb_frontend *fe)
@@ -3212,6 +3219,7 @@ static int gxtv_demod_dtmb_get_frontend(struct dvb_frontend *fe)
 
 int Gxtv_Demod_Dtmb_Init(struct aml_dtvdemod *demod)
 {
+	int ret = 0;
 	struct aml_demod_sys sys;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	struct ddemod_dig_clk_addr *dig_clk;
@@ -3251,9 +3259,9 @@ int Gxtv_Demod_Dtmb_Init(struct aml_dtvdemod *demod)
 	if (devp->data->hw_ver >= DTVDEMOD_HW_TL1)
 		dd_hiu_reg_write(dig_clk->demod_clk_ctl, 0x501);
 
-	demod_set_sys(demod, &sys);
+	ret = demod_set_sys(demod, &sys);
 
-	return 0;
+	return ret;
 }
 
 unsigned int demod_dvbc_get_fast_search(void)
@@ -4799,6 +4807,7 @@ static int dtvdemod_dvbs_tune(struct dvb_frontend *fe, bool re_tune,
 
 static int dtvdemod_dvbs2_init(struct aml_dtvdemod *demod)
 {
+	int ret = 0;
 	struct aml_demod_sys sys;
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
 	struct ddemod_dig_clk_addr *dig_clk = &devp->data->dig_clk;
@@ -4818,6 +4827,7 @@ static int dtvdemod_dvbs2_init(struct aml_dtvdemod *demod)
 	PR_DBG("[%s]adc_clk is %d,demod_clk is %d\n", __func__, sys.adc_clk,
 	       sys.demod_clk);
 	demod->auto_flags_trig = 0;
+	demod->last_status = 0;
 
 	if (devp->data->hw_ver == DTVDEMOD_HW_S4D) {
 		PR_DBG("[%s]S4D SET DEMOD CLK\n", __func__);
@@ -4828,11 +4838,9 @@ static int dtvdemod_dvbs2_init(struct aml_dtvdemod *demod)
 		dd_hiu_reg_write(dig_clk->demod_clk_ctl, 0x501);
 	}
 
-	demod_set_sys(demod, &sys);
-	demod->last_status = 0;
-	aml_diseqc_isr_en(&devp->diseqc, true);
-	/*enable diseqc irq*/
-	return 0;
+	ret = demod_set_sys(demod, &sys);
+
+	return ret;
 }
 
 static int gxtv_demod_dtmb_tune(struct dvb_frontend *fe, bool re_tune,
@@ -5171,11 +5179,12 @@ static bool enter_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsy
 		}
 	}
 
-	demod->inited = true;
-
 	switch (delsys) {
 	case SYS_DTMB:
 		ret = Gxtv_Demod_Dtmb_Init(demod);
+		if (ret)
+			break;
+
 		demod->act_dtmb = true;
 		dtmb_set_mem_st(devp->mem_start);
 
@@ -5186,6 +5195,8 @@ static bool enter_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsy
 	case SYS_DVBC_ANNEX_A:
 	case SYS_DVBC_ANNEX_C:
 		ret = Gxtv_Demod_Dvbc_Init(demod, ADC_MODE);
+		if (ret)
+			break;
 
 		/* The maximum time of signal detection is 3s */
 		timer_set_max(demod, D_TIMER_DETECT, demod->timeout_dvbc_ms);
@@ -5198,6 +5209,8 @@ static bool enter_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsy
 	case SYS_ATSCMH:
 	case SYS_DVBC_ANNEX_B:
 		ret = dtvdemod_atsc_init(demod);
+		if (ret)
+			break;
 
 		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1))
 			timer_set_max(demod, D_TIMER_DETECT, demod->timeout_atsc_ms);
@@ -5207,6 +5220,9 @@ static bool enter_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsy
 
 	case SYS_DVBT:
 		ret = dvbt_init(demod);
+		if (ret)
+			break;
+
 		timer_set_max(demod, D_TIMER_DETECT, demod->timeout_dvbt_ms);
 		PR_DVBT("timeout is %dms\n", demod->timeout_dvbt_ms);
 		break;
@@ -5218,13 +5234,24 @@ static bool enter_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsy
 			dtvdemod_dmc_reg_write(0x274, 0x18100000);
 		}
 
-		dtvdemod_dvbt2_init(demod);
+		ret = dtvdemod_dvbt2_init(demod);
+		if (ret) {
+			if (devp->data->hw_ver == DTVDEMOD_HW_T5D) {
+				PR_INFO("resume dmc val 0x%x\n", devp->dmc_saved);
+				dtvdemod_dmc_reg_write(0x274, devp->dmc_saved);
+			}
+			break;
+		}
+
 		timer_set_max(demod, D_TIMER_DETECT, demod->timeout_dvbt_ms);
 		PR_DVBT("timeout is %dms\n", demod->timeout_dvbt_ms);
 		break;
 
 	case SYS_ISDBT:
 		ret = dvbt_isdbt_Init(demod);
+		if (ret)
+			break;
+
 		/*The maximum time of signal detection is 2s */
 		timer_set_max(demod, D_TIMER_DETECT, 2000);
 		/*reset is 4s*/
@@ -5235,15 +5262,25 @@ static bool enter_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsy
 
 	case SYS_DVBS:
 	case SYS_DVBS2:
-		dtvdemod_dvbs2_init(demod);
+		ret = dtvdemod_dvbs2_init(demod);
+		if (ret)
+			break;
+
+		aml_diseqc_isr_en(&devp->diseqc, true);
 		dvbs2_diseqc_init();
 		timer_set_max(demod, D_TIMER_DETECT, demod->timeout_dvbs_ms);
 		PR_DVBS("timeout is %dms\n", demod->timeout_dvbs_ms);
 		break;
 
 	default:
+		ret = -EINVAL;
 		break;
 	}
+
+	if (!ret)
+		demod->inited = true;
+	else
+		demod->inited = false;
 
 	return ret;
 }
@@ -5311,7 +5348,6 @@ static int leave_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsys
 
 	case SYS_ISDBT:
 	case SYS_DVBT2:
-
 		if (devp->data->hw_ver == DTVDEMOD_HW_T5D && delsys == SYS_DVBT2) {
 			PR_INFO("resume dmc val 0x%x\n", devp->dmc_saved);
 			dtvdemod_dmc_reg_write(0x274, devp->dmc_saved);
@@ -5321,6 +5357,7 @@ static int leave_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsys
 		demod_top_write_reg(DEMOD_TOP_REGC, 0x11);
 		demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x0);
 		break;
+
 	case SYS_DVBS:
 	case SYS_DVBS2:
 		/*disable irq*/
@@ -5328,6 +5365,7 @@ static int leave_mode(struct aml_dtvdemod *demod, enum fe_delivery_system delsys
 		/* disable dvbs mode to avoid hang when switch to other demod */
 		demod_top_write_reg(DEMOD_TOP_REGC, 0x11);
 		break;
+
 	default:
 		break;
 	}
@@ -6790,7 +6828,8 @@ static int delsys_set(struct dvb_frontend *fe, unsigned int delsys)
 
 		if (enter_mode(demod, cdelsys)) {
 			PR_INFO("enter_mode failed,leave!\n");
-			delsys_exit(demod, cdelsys, SYS_UNDEFINED);
+			if (demod->inited)
+				delsys_exit(demod, cdelsys, SYS_UNDEFINED);
 
 			return 0;
 		}

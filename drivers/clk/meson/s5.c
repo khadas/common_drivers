@@ -1167,7 +1167,7 @@ static struct clk_regmap s5_gp2_pll = {
 
 #ifdef CONFIG_ARM
 static const struct pll_params_table s5_fpll_table[] = {
-	PLL_PARAMS(100, 1, 1, /*DCO=2400M OD=1200M*/
+	PLL_PARAMS(100, 1, 1), /*DCO=2400M OD=1200M*/
 	PLL_PARAMS(125, 1, 1), /*DCO=3000M OD=1500M*/
 	{ /* sentinel */  }
 };

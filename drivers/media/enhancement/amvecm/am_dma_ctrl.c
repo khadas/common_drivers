@@ -154,8 +154,6 @@ static void _set_vpu_lut_dma_mif_wr_unit(int enable,
 	addr = ADDR_PARAM(dma_reg_cfg.page,
 		dma_reg_cfg.reg_wrmif0_badr1) + (offset << 1);
 	WRITE_VPP_REG_S5(addr, cfg_data->baddr1);
-	pr_info("%s: addr = %x, val = %x, %x\n",
-		__func__, addr, cfg_data->baddr0, cfg_data->baddr1);
 }
 
 void am_dma_init(void)

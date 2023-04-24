@@ -11173,11 +11173,11 @@ tvchip_pq_setting:
 	/*am_dma_ctrl init*/
 	if (chip_type_id == chip_t3x) {
 		am_dma_set_mif_wr_status(1);
-		am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_0, 0);
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_1, 0);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_1, 0);*/
-		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_0, 0);*/
+		am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_0, 0);
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_1, 0);*/
 	}
 
@@ -12179,12 +12179,12 @@ static int aml_vecm_probe(struct platform_device *pdev)
 	aml_vecm_dt_parse(devp, pdev);
 
 	if (chip_type_id == chip_t3x) {
-		/*am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_LC_STTS_0);*/
-		/*am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_LC_STTS_1);*/
+		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_LC_STTS_0);
+		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_LC_STTS_1);
 		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VI_HIST_SPL_0);
 		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VI_HIST_SPL_1);
-		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_CM2_HIST_0);
-		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_CM2_HIST_1);
+		/*am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_CM2_HIST_0);*/
+		/*am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_CM2_HIST_1);*/
 		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VD1_HDR_0);
 		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VD1_HDR_1);
 		am_dma_init();
@@ -12254,12 +12254,12 @@ static int __exit aml_vecm_remove(struct platform_device *pdev)
 
 	if (chip_type_id == chip_t3x) {
 		am_dma_set_mif_wr_status(0);
-		/*am_dma_buffer_free(pdev, EN_DMA_WR_ID_LC_STTS_0);*/
-		/*am_dma_buffer_free(pdev, EN_DMA_WR_ID_LC_STTS_1);*/
+		am_dma_buffer_free(pdev, EN_DMA_WR_ID_LC_STTS_0);
+		am_dma_buffer_free(pdev, EN_DMA_WR_ID_LC_STTS_1);
 		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VI_HIST_SPL_0);
 		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VI_HIST_SPL_1);
-		am_dma_buffer_free(pdev, EN_DMA_WR_ID_CM2_HIST_0);
-		am_dma_buffer_free(pdev, EN_DMA_WR_ID_CM2_HIST_1);
+		/*am_dma_buffer_free(pdev, EN_DMA_WR_ID_CM2_HIST_0);*/
+		/*am_dma_buffer_free(pdev, EN_DMA_WR_ID_CM2_HIST_1);*/
 		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VD1_HDR_0);
 		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VD1_HDR_1);
 	}

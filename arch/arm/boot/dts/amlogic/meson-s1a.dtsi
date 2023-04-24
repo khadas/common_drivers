@@ -359,10 +359,13 @@
 	mbox_user: mbox-user@0 {
 		status = "okay";
 		compatible = "amlogic, meson-mbox-user";
-		mbox-nums = <1>;
-		mbox-names = "nee2scpu";
-		mboxes = <&mbox_mhu_sec 0>;
-		mbox-dests = <MAILBOX_SECPU>;
+		mbox-nums = <2>;
+		mbox-names = "nee2scpu",
+				"ree2aocpu";
+		mboxes = <&mbox_mhu_sec 0>,
+			   <&mailbox_mhu_fifo 1>;
+		mbox-dests = <MAILBOX_SECPU>,
+				<MAILBOX_AOCPU>;
 	};
 
 	vddcpu0: pwm_j-regulator {

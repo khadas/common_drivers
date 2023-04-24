@@ -3887,6 +3887,7 @@ static u32 osd_get_hw_reset_flag(u32 output_index)
 	case __MESON_CPU_MAJOR_ID_T5:
 	case __MESON_CPU_MAJOR_ID_T5D:
 	case __MESON_CPU_MAJOR_ID_S4:
+	case __MESON_CPU_MAJOR_ID_TXHD2:
 		{
 		int i, afbc_enable = 0;
 
@@ -12232,6 +12233,10 @@ static void set_osd_blend_reg(struct osd_blend_reg_s *osd_blend_reg)
 			     (3 << 4) |
 			     ((osd2_alpha_div & 0x1) << 12) |
 			     (3 << 16));
+	if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_TXHD2) {
+		VSYNCOSD_WR_MPEG_REG_BITS(VIU_OSD_BLEND_CTRL, 0, 0, 1);
+		VSYNCOSD_WR_MPEG_REG_BITS(VIU_OSD_BLEND_CTRL1, 0, 0, 1);
+	}
 
 	VSYNCOSD_WR_MPEG_REG(hw_osd_reg_blend.osd_blend_blend0_size,
 			     osd_blend_reg->osd_blend_blend0_size);
@@ -14584,10 +14589,16 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 #endif
 	} else if (osd_meson->cpu_id >= __MESON_CPU_MAJOR_ID_G12A) {
 		if (osd_dev_hw.display_type != C3_DISPLAY) {
-			if (osd_dev_hw.multi_afbc_core)
-				backup_regs_init(HW_RESET_NONE);
-			else
-				backup_regs_init(HW_RESET_MALI_AFBCD_REGS);
+			if (osd_dev_hw.multi_afbc_core) {
+				backup_regs_init(HW_RESET_MALI_AFBCD_REGS |
+						HW_RESET_MALI_AFBCD1_REGS |
+						HW_RESET_MALI_AFBCD2_REGS);
+			} else {
+				if (osd_meson->afbc_type == NO_AFBC)
+					backup_regs_init(HW_RESET_NONE);
+				else
+					backup_regs_init(HW_RESET_MALI_AFBCD_REGS);
+			}
 		}
 	} else {
 		backup_regs_init(HW_RESET_NONE);

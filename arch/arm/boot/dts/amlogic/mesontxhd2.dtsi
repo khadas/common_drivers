@@ -334,6 +334,24 @@
 		/* 4: 333.3M    5: 400.0M */
 	};
 
+	meson_fb: fb {
+		compatible = "amlogic, fb-txhd2";
+		memory-region = <&logo_reserved>;
+		status = "disabled";
+		interrupts = <0 3 1
+				0 56 1
+				0 89 1>;
+		interrupt-names = "viu-vsync", "viu2-vsync", "rdma";
+		/* uboot logo,fb0/fb1 memory size,if afbcd fb0=0x01851000*/
+		display_mode_default = "1080p60hz";
+		scale_mode = <1>;
+		/** 0:VPU free scale 1:OSD free scale 2:OSD super scale */
+		display_size_default = <1920 1080 1920 2160 32>;
+		/*1920*1080*4*3 = 0x17BB000*/
+		clocks = <&clkc CLKID_VPU>;
+		clock-names = "vpu_clkc";
+	};
+
 	soc {
 		compatible = "simple-bus";
 		#address-cells = <1>;

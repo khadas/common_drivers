@@ -40,6 +40,12 @@
 			alignment = <0x400000>;
 			reg = <0x05000000 0x400000>;
 		};
+
+	logo_reserved:linux,meson-fb {
+		compatible = "amlogic, meson-fb";
+		alignment = <0x400000>;
+		reg = <0x3f800000 0x800000>;
+		};
 	};
 
 	unifykey{
@@ -186,6 +192,15 @@
 //  mmc-pwrseq = <&emmc_pwrseq>;
 //  vmmc-supply = <&vddao_3v3>;
 //  vqmmc-supply = <&vddao_1v8>;
+};
+
+&meson_fb {
+	status = "okay";
+	display_size_default = <1920 1080 1920 2160 32>;
+	mem_size = <0x00800000 0x1980000 0x100000>;
+	logo_addr = "0x3f800000";
+	mem_alloc = <0>;
+	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
 &uart_AO {

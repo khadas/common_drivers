@@ -5214,6 +5214,26 @@ static struct osd_device_hw_s t3x_dev_property = {
 	.s5_display = 1,
 };
 
+static struct osd_device_data_s osd_txhd2 = {
+	.cpu_id = __MESON_CPU_MAJOR_ID_TXHD2,
+	.osd_ver = OSD_HIGH_ONE,
+	.afbc_type = NO_AFBC,
+	.osd_count = 2,
+	.has_deband = 0,
+	.has_lut = 1,
+	.has_rdma = 1,
+	.has_dolby_vision = 0,
+	.osd_fifo_len = 64, /* fifo len 64*8 = 512 */
+	.vpp_fifo_len = 0x77f,
+	.dummy_data = 0x00808000,
+	.has_viu2 = 0,
+	.osd0_sc_independ = 0,
+	.osd_rgb2yuv = 1,
+	.mif_linear = 0,
+	.has_vpp1 = 0,
+	.has_vpp2 = 0,
+};
+
 static const struct of_device_id meson_fb_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -5317,6 +5337,10 @@ static const struct of_device_id meson_fb_dt_match[] = {
 	{
 		.compatible = "amlogic, fb-t3x",
 		.data = &osd_t3x,
+	},
+	{
+		.compatible = "amlogic, fb-txhd2",
+		.data = &osd_txhd2,
 	},
 	{},
 };

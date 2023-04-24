@@ -79,10 +79,13 @@ unsigned int lc_hist_hs;
 unsigned int lc_hist_he;
 /*lc curve data and hist data*/
 int *lc_szcurve;/*12*8*6+4*/
+int *lc_szcurve_slice1;/*12*8*6+4*/
 int *curve_nodes_cur;
 static int *curve_nodes_pre;
 static s64 *curve_nodes_pre_raw;
 int *lc_hist;/*12*8*17*/
+int *lc_hist_slice1;/*12*8*17*/
+
 static bool lc_malloc_ok;
 /*print one or more frame data*/
 unsigned int lc_hist_prcnt;
@@ -732,7 +735,7 @@ static void lc_blk_bdry_config(unsigned int height, unsigned int width)
 }
 
 static void lc_top_config(int enable, int h_num, int v_num,
-			  unsigned int height, unsigned int width, int bitdepth,
+	unsigned int height, unsigned int width, int bitdepth,
 	int flag, int flag_full)
 {
 	if (chip_type_id != chip_t3x) {
@@ -788,19 +791,23 @@ void lc_disable(void)
 		WRITE_VPP_REG_BITS(LC_CURVE_RAM_CTRL, 0, 0, 1);
 		/*lc hist stts enable*/
 		WRITE_VPP_REG_BITS(LC_STTS_HIST_REGION_IDX, 0, 31, 1);
-		if (!lc_malloc_ok) {
-			lc_en_chflg = 0x0;
-			return;
-		}
-		memset(lc_hist, 0, LC_HIST_SIZE * sizeof(int));
-		memset(lc_szcurve, 0, LC_CURV_SIZE * sizeof(int));
-		memset(curve_nodes_cur, 0, LC_CURV_SIZE * sizeof(int));
-		memset(curve_nodes_pre, 0, LC_CURV_SIZE * sizeof(int));
-		memset(curve_nodes_pre_raw, 0, LC_CURV_SIZE * sizeof(int64_t));
-		lc_en_chflg = 0x0;
 	} else {
 		ve_lc_disable();
 	}
+
+	if (!lc_malloc_ok) {
+		lc_en_chflg = 0x0;
+		return;
+	}
+
+	memset(lc_hist, 0, LC_HIST_SIZE * sizeof(int));
+	memset(lc_hist_slice1, 0, LC_HIST_SIZE * sizeof(int));
+	memset(lc_szcurve, 0, LC_CURV_SIZE * sizeof(int));
+	memset(lc_szcurve_slice1, 0, LC_CURV_SIZE * sizeof(int));
+	memset(curve_nodes_cur, 0, LC_CURV_SIZE * sizeof(int));
+	memset(curve_nodes_pre, 0, LC_CURV_SIZE * sizeof(int));
+	memset(curve_nodes_pre_raw, 0, LC_CURV_SIZE * sizeof(int64_t));
+	lc_en_chflg = 0x0;
 }
 
 /* detect super white and super black currently */
@@ -864,12 +871,12 @@ static void lc_config(int enable,
 		sps_w_in_pre != sps_w_in) {
 		pr_amlc_dbg("signal/sps_w_in/sps_h_in changed,\n");
 		pr_amlc_dbg("flag_full:%d->%d sps_w_in:%d->%d sps_h_in:%d->%d\n",
-				flag_full_pre,
-				flag_full,
-				sps_w_in_pre,
-				sps_w_in,
-				sps_h_in_pre,
-				sps_h_in);
+			flag_full_pre,
+			flag_full,
+			sps_w_in_pre,
+			sps_w_in,
+			sps_h_in_pre,
+			sps_h_in);
 	}
 
 	if (vf_height == vf->height &&
@@ -915,11 +922,14 @@ static void lc_config(int enable,
 	if (chip_type_id != chip_t3x) {
 		lc_curve_ctrl_config(enable, height, width);
 		lc_stts_blk_config(enable, height, width);
-		lc_stts_en(enable, height, width, 0, 0, 1, 1, 4,
+		lc_stts_en(enable, height, width,
+			0, 0, 1, 1, 4,
 			bitdepth, flag, flag_full);
 	} else {
-		ve_lc_curve_ctrl_cfg(enable, height, width);
-		ve_lc_stts_blk_cfg(height, width);
+		ve_lc_curve_ctrl_cfg(enable,
+			height, width, h_num, v_num);
+		ve_lc_stts_blk_cfg(height, width,
+			h_num, v_num);
 		ve_lc_stts_en(enable, height, width,
 			0, 0, 1, 1, 4,
 			bitdepth, flag, flag_full,
@@ -1785,15 +1795,25 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 {
 	int i, j;
 	unsigned int cur_block;
+	int *data_curve;
+	int *data_hist;
 
 	pr_amlc_dbg("%s: slice = %d", __func__, slice);
 
 	if (chip_type_id != chip_t3x) {
 		_read_region(blk_vnum, blk_hnum);
 	} else {
-		ve_lc_region_read(blk_vnum, blk_hnum, 0,
+		if (slice == 0) {
+			data_curve = lc_szcurve;
+			data_hist = lc_hist;
+		} else {
+			data_curve = lc_szcurve_slice1;
+			data_hist = lc_hist_slice1;
+		}
+
+		ve_lc_region_read(blk_vnum, blk_hnum, slice,
 			&lc_tune_curve.lc_reg_black_count,
-			lc_szcurve, lc_hist);
+			data_curve, data_hist);
 
 		/*part3: add tune curve node patch--by vlsi-guopan*/
 		for (i = 0; i < blk_vnum; i++) {
@@ -1801,10 +1821,10 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 				cur_block = i * blk_hnum + j;
 
 				if (tune_curve_en == 2) {
-					tune_nodes_patch(&lc_szcurve[cur_block * 6],
-						&lc_hist[cur_block * 17], i, j);
+					tune_nodes_patch(&data_curve[cur_block * 6],
+						&data_hist[cur_block * 17], i, j);
 				} else if (tune_curve_en == 1) {
-					linear_nodes_patch(&lc_szcurve[cur_block * 6]);
+					linear_nodes_patch(&data_curve[cur_block * 6]);
 				} else {
 					break;
 				}
@@ -1814,7 +1834,7 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 
 	if (amlc_debug == 0x8 && lc_hist_prcnt) /*print all hist data*/
 		for (i = 0; i < 8 * 12 * 17; i++)
-			pr_info("%x\n", lc_hist[i]);
+			pr_info("%x\n", data_hist[i]);
 	if (lc_hist_prcnt > 0)
 		lc_hist_prcnt--;
 }
@@ -1832,6 +1852,16 @@ static void lc_prt_curve(void)
 		for (j = 0; j < 6 ; j++)
 			pr_amlc_dbg("%d\n", lc_szcurve[i * 6 + j]);
 		pr_amlc_dbg("\n");
+	}
+
+	if (chip_type_id == chip_t3x &&
+		ve_multi_slice_case_get()) {
+		for (i = 0; i < blk_hnum * blk_vnum; i++) {
+			for (j = 0; j < 6 ; j++)
+				pr_amlc_dbg("%d\n",
+					lc_szcurve_slice1[i * 6 + j]);
+			pr_amlc_dbg("\n");
+		}
 	}
 }
 
@@ -1888,6 +1918,33 @@ void lc_init(int bitdepth)
 		kfree(curve_nodes_pre);
 		kfree(lc_hist);
 		return;
+	}
+
+	if (chip_type_id == chip_t3x) {
+		if (!lc_szcurve_slice1)
+			lc_szcurve_slice1 = kcalloc(LC_CURV_SIZE,
+				sizeof(int), GFP_KERNEL);
+		if (!lc_szcurve_slice1) {
+			kfree(lc_szcurve);
+			kfree(curve_nodes_cur);
+			kfree(curve_nodes_pre);
+			kfree(lc_hist);
+			kfree(curve_nodes_pre_raw);
+			return;
+		}
+
+		if (!lc_hist_slice1)
+			lc_hist_slice1 = kcalloc(LC_HIST_SIZE,
+				sizeof(int), GFP_KERNEL);
+		if (!lc_hist_slice1) {
+			kfree(lc_szcurve);
+			kfree(curve_nodes_cur);
+			kfree(curve_nodes_pre);
+			kfree(lc_hist);
+			kfree(curve_nodes_pre_raw);
+			kfree(lc_szcurve_slice1);
+			return;
+		}
 	}
 
 	lc_malloc_ok = 1;
@@ -2059,9 +2116,11 @@ void lc_process(struct vframe_s *vf,
 		if (chip_type_id != chip_t3x) {
 			set_lc_curve(1, 0);
 		} else {
-			ve_lc_curve_set(1, 0, NULL, 0);
-			ve_lc_curve_set(1, 0, NULL, 1);
+			ve_lc_curve_set(1, 0, lc_szcurve, 0);
+			if (ve_multi_slice_case_get())
+				ve_lc_curve_set(1, 0, lc_szcurve_slice1, 1);
 		}
+
 		lc_bypass_flag++;
 		return;
 	}
@@ -2087,18 +2146,30 @@ void lc_process(struct vframe_s *vf,
 		ve_lc_blk_num_get(&blk_hnum, &blk_vnum, 0);
 
 		/*get hist & curve node*/
-		if (!use_lc_curve_isr || !lc_curve_isr_defined)
+		if (!use_lc_curve_isr || !lc_curve_isr_defined) {
 			lc_read_region(blk_vnum, blk_hnum, 0);
+			if (ve_multi_slice_case_get())
+				lc_read_region(blk_vnum, blk_hnum, 1);
+		}
 
 		/*do time domain iir*/
 		lc_fw_curve_iir(vf, lc_hist,
 			lc_szcurve, blk_vnum, blk_hnum);
+		if (ve_multi_slice_case_get())
+			lc_fw_curve_iir(vf, lc_hist_slice1,
+				lc_szcurve_slice1, blk_vnum, blk_hnum);
+
 		if (lc_curve_prcnt > 0) { /*debug lc curve node*/
 			lc_prt_curve();
 			lc_curve_prcnt--;
 		}
 
-		ve_lc_curve_set(0, lc_demo_mode, lc_szcurve, 0);
+		if (!ve_multi_slice_case_get()) {
+			ve_lc_curve_set(0, lc_demo_mode, lc_szcurve, 0);
+		} else {
+			ve_lc_curve_set(0, 0, lc_szcurve, 0);
+			ve_lc_curve_set(0, 0, lc_szcurve_slice1, 1);
+		}
 	}
 
 	pr_amlc_dbg("blk_hnum = %d, blk_vnum = %d",
@@ -2124,5 +2195,11 @@ void lc_free(void)
 	kfree(curve_nodes_pre);
 	kfree(curve_nodes_pre_raw);
 	kfree(lc_hist);
+
+	if (chip_type_id == chip_t3x) {
+		kfree(lc_szcurve_slice1);
+		kfree(lc_hist_slice1);
+	}
+
 	lc_malloc_ok = 0;
 }

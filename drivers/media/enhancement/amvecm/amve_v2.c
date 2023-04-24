@@ -60,7 +60,7 @@ unsigned int pst_reg_ofst[4] = {
 
 /*sr sharpness module slice0~slice1 offset*/
 unsigned int sr_sharp_reg_ofst[2] = {
-	0x0, 0x100
+	0x0, 0x2500
 };
 
 /*lc curve module slice0~slice1 offset*/
@@ -1456,14 +1456,11 @@ void ve_dnlp_set(ulong *data)
 	int slice_max;
 	int dnlp_reg = VPP_SRSHARP1_DNLP_00;
 
-	if (multi_slice_case)
-		slice_max = get_slice_max();
-	else
-		slice_max = 1;
+	slice_max = get_slice_max();
 
 	for (i = SLICE0; i < slice_max; i++)
 		for (j = 0; j < 32; j++)
-			WRITE_VPP_REG_S5(dnlp_reg + sr_sharp_reg_ofst[i],
+			WRITE_VPP_REG_S5(dnlp_reg + j + sr_sharp_reg_ofst[i],
 				data[j]);
 }
 
@@ -1473,14 +1470,14 @@ void ve_dnlp_ctl(int enable)
 	int slice_max;
 	int dnlp_reg = VPP_SRSHARP1_DNLP_EN;
 
-	if (multi_slice_case)
-		slice_max = get_slice_max();
-	else
-		slice_max = 1;
+	slice_max = get_slice_max();
 
-	for (i = SLICE0; i < slice_max; i++)
+	for (i = SLICE0; i < slice_max; i++) {
 		WRITE_VPP_REG_BITS_S5(dnlp_reg + sr_sharp_reg_ofst[i],
 			enable, 0, 1);
+		pr_amve_v2("%s: addr = %x, val = %d\n", __func__,
+			dnlp_reg + sr_sharp_reg_ofst[i], enable);
+	}
 }
 
 void ve_dnlp_sat_set(unsigned int value)
@@ -1492,10 +1489,7 @@ void ve_dnlp_sat_set(unsigned int value)
 	int addr_reg;
 	int data_reg;
 
-	if (multi_slice_case)
-		slice_max = get_slice_max();
-	else
-		slice_max = 1;
+	slice_max = get_slice_max();
 
 	cm_port = get_cm_port();
 
@@ -1967,13 +1961,11 @@ static void _lc_blk_bdry_cfg(unsigned int height, unsigned int width)
 }
 
 void ve_lc_stts_blk_cfg(unsigned int height,
-	unsigned int width)
+	unsigned int width, int h_num, int v_num)
 {
 	int lc_reg;
 	int row_start = 0;
 	int col_start = 0;
-	int h_num = 12;
-	int v_num = 8;
 	int blk_height, blk_width;
 	int data32;
 	int hend0, hend1, hend2, hend3, hend4, hend5, hend6;
@@ -2058,10 +2050,11 @@ void ve_lc_stts_en(int enable,
 	WRITE_VPP_REG_S5(VPP_LC_STTS2_WIDTHM1_HEIGHTM1,
 		data32);
 
-	data32 = 0x80000000 | ((pix_drop_mode & 0x3) << 29);
-	data32 = data32 | ((eol_en & 0x1) << 28);
-	data32 = data32 | ((hist_mode & 0x3) << 22);
-	data32 = data32 | ((lpf_en & 0x1) << 21);
+	data32 = (0x3 << 30) | ((pix_drop_mode & 0x3) << 28);
+	data32 = data32 | ((eol_en & 0x3) << 24);
+	/*22: lc_hist_mode, 0 for y, 1 for maxrgb*/
+	data32 = data32 | ((hist_mode & 0x1) << 22);
+	data32 = data32 | ((lpf_en & 0x3) << 20);
 	WRITE_VPP_REG_S5(VPP_LC_STTS_HIST_REGION_IDX, data32);
 
 	for (i = SLICE0; i < slice_max; i++) {
@@ -2085,12 +2078,12 @@ void ve_lc_stts_en(int enable,
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL1, 1, 10, 1);
 	/*lc hist stts enable*/
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_HIST_REGION_IDX,
-		enable, 31, 1);
+		enable, 30, 2);
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_BLACK_INFO1,
 		thd_black, 0, 8);
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_BLACK_INFO2,
 		thd_black, 0, 8);
-	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL, enable, 0, 1);
+	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL, enable, 0, 2);
 }
 
 void ve_lc_blk_num_get(int *h_num, int *v_num,
@@ -2142,19 +2135,21 @@ void ve_lc_disable(void)
 }
 
 void ve_lc_curve_ctrl_cfg(int enable,
-	unsigned int height, unsigned int width)
+	unsigned int height, unsigned int width,
+	int h_num, int v_num)
 {
 	unsigned int histvld_thrd;
 	unsigned int blackbar_mute_thrd;
 	unsigned int lmtrat_minmax;
-	int h_num = 12;
-	int v_num = 8;
 	int i;
 	int slice_max;
 	int lc_reg;
 	int tmp;
 
-	slice_max = get_slice_max();
+	if (multi_slice_case)
+		slice_max = get_slice_max();
+	else
+		slice_max = SLICE1;
 
 	for (i = SLICE0; i < slice_max; i++) {
 		lc_reg = VPP_LC1_CURVE_LMT_RAT +

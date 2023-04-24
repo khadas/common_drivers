@@ -71,7 +71,7 @@ void ve_dnlp_ctl(int enable);
 void ve_dnlp_sat_set(unsigned int value);
 
 void ve_lc_stts_blk_cfg(unsigned int height,
-	unsigned int width);
+	unsigned int width, int h_num, int v_num);
 void ve_lc_stts_en(int enable,
 	unsigned int height, unsigned int width,
 	int pix_drop_mode, int eol_en, int hist_mode,
@@ -81,7 +81,8 @@ void ve_lc_blk_num_get(int *h_num, int *v_num,
 	int slice);
 void ve_lc_disable(void);
 void ve_lc_curve_ctrl_cfg(int enable,
-	unsigned int height, unsigned int width);
+	unsigned int height, unsigned int width,
+	int h_num, int v_num);
 void ve_lc_top_cfg(int enable, int h_num, int v_num,
 	unsigned int height, unsigned int width, int bitdepth,
 	int flag, int flag_full);

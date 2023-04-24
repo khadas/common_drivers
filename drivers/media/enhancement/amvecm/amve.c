@@ -931,7 +931,7 @@ void ve_enable_dnlp(void)
 {
 	ve_en = 1;
 
-	if (chip_type_id != chip_t3) {
+	if (chip_type_id != chip_t3x) {
 /* #ifdef NEW_DNLP_IN_SHARPNESS */
 /* if(dnlp_sel == NEW_DNLP_IN_SHARPNESS){ */
 		if (dnlp_sel == NEW_DNLP_IN_SHARPNESS) {
@@ -949,7 +949,7 @@ void ve_enable_dnlp(void)
 		} else {
 			/* #endif */
 			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
-					   1, DNLP_EN_BIT, DNLP_EN_WID);
+				1, DNLP_EN_BIT, DNLP_EN_WID);
 		}
 	} else {
 		ve_dnlp_ctl(1);
@@ -960,7 +960,7 @@ void ve_disable_dnlp(void)
 {
 	ve_en = 0;
 
-	if (chip_type_id != chip_t3) {
+	if (chip_type_id != chip_t3x) {
 		if (dnlp_sel == NEW_DNLP_IN_SHARPNESS) {
 			if (is_meson_gxlx_cpu() || is_meson_txlx_cpu()) {
 				WRITE_VPP_REG_BITS(SRSHARP1_DNLP_EN, 0, 0, 1);
@@ -975,7 +975,7 @@ void ve_disable_dnlp(void)
 			}
 		} else {
 			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
-					   0, DNLP_EN_BIT, DNLP_EN_WID);
+				0, DNLP_EN_BIT, DNLP_EN_WID);
 		}
 	} else {
 		ve_dnlp_ctl(0);

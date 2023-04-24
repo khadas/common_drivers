@@ -269,7 +269,7 @@ unsigned int vecm_latch_flag2;
 module_param(vecm_latch_flag2, uint, 0664);
 MODULE_PARM_DESC(vecm_latch_flag2, "\n vecm_latch_flag2\n");
 
-unsigned int pq_load_en; /* = 1; load pq table enable/disable */
+unsigned int pq_load_en; /*= 1; load pq table enable/disable*/
 module_param(pq_load_en, uint, 0664);
 MODULE_PARM_DESC(pq_load_en, "\n pq_load_en\n");
 
@@ -11172,12 +11172,14 @@ tvchip_pq_setting:
 
 	/*am_dma_ctrl init*/
 	if (chip_type_id == chip_t3x) {
-		am_dma_set_mif_wr_status(1);
+		am_dma_set_mif_wr_status(0);
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_0, 1);*/
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_1, 0);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_1, 0);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_1, 0);*/
-		am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_0, 0);
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_1, 0);*/
 	}
 

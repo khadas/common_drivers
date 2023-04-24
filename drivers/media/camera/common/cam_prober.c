@@ -1079,6 +1079,7 @@ void aml_cam_init(struct aml_cam_info_s *cam_dev)
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	if (get_cpu_type() == MESON_CPU_MAJOR_ID_GXBB)
 		GXBB_cam_enable_clk();
+	else
 #endif
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_G12A) ||
 		(get_cpu_type() == MESON_CPU_MAJOR_ID_G12B) ||
@@ -1141,6 +1142,7 @@ void aml_cam_uninit(struct aml_cam_info_s *cam_dev)
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	if (get_cpu_type() == MESON_CPU_MAJOR_ID_GXBB)
 		GXBB_cam_disable_clk(cam_dev->spread_spectrum);
+	else
 #endif
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_G12A) ||
 		(get_cpu_type() == MESON_CPU_MAJOR_ID_G12B) ||

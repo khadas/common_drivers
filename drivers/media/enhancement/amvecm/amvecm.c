@@ -634,7 +634,7 @@ static int amvecm_set_brightness2(int val)
 	else if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB) {
 		WRITE_VPP_REG_BITS(VPP_VADJ2_Y,
 				   val, 8, 9);
-	}
+	} else
 #endif
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
 		WRITE_VPP_REG_BITS(VPP_VADJ2_Y_2,
@@ -699,7 +699,7 @@ static ssize_t video_adj1_brightness_show(struct class *cla,
 		val = (val << 23) >> 23;
 
 		return sprintf(buf, "%d\n", val);
-	}
+	} else
 #endif
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		val = (READ_VPP_REG(VPP_VADJ1_Y_2) >> 8) & 0x7ff;
@@ -729,6 +729,7 @@ static ssize_t video_adj1_brightness_store(struct class *cla,
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	else if (get_cpu_type() <= MESON_CPU_MAJOR_ID_GXTVBB)
 		WRITE_VPP_REG_BITS(VPP_VADJ1_Y, val, 8, 9);
+	else
 #endif
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
 		WRITE_VPP_REG_BITS(VPP_VADJ1_Y_2, val, 8, 11);
@@ -806,7 +807,7 @@ static ssize_t video_adj2_brightness_show(struct class *cla,
 		val = (val << 23) >> 23;
 
 		return sprintf(buf, "%d\n", val);
-	}
+	} else
 #endif
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		val = (READ_VPP_REG(VPP_VADJ2_Y_2) >> 8) & 0x7ff;
@@ -11589,7 +11590,7 @@ static int aml_vecm_probe(struct platform_device *pdev)
 		/* mtx_sel_dbg |= 1 << VPP_MATRIX_2; */
 		/* amvecm_vpp_mtx_debug(mtx_sel_dbg, 1);*/
 		WRITE_VPP_REG(VPP_MATRIX_PROBE_POS, 0x1fff1fff);
-	}
+	} else
 #endif
 	if (is_meson_txhd_cpu()) {
 		vpp_set_10bit_datapath1();

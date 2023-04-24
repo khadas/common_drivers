@@ -130,7 +130,7 @@ void adc_set_ddemod_default(enum fe_delivery_system delsys)
 		/* remove vdac reg write, make sure it write in vdac driver,
 		 * because multi module use it
 		 */
-	}
+	} else
 #endif
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
 		switch (devp->plat_data->chip_id) {
@@ -578,7 +578,7 @@ int adc_set_pll_cntl(bool on, enum adc_sel module_sel, void *p_para)
 					adc_wr_hiu_bits(adc_addr->vdac_cntl_0, 1, 11, 1);
 					adc_wr_hiu(adc_addr->s2_dadc_cntl_2, 0x00000582);
 					adc_wr_hiu(adc_addr->dadc_cntl_4, 0x0);
-				}
+				} else
 #endif
 				if (get_cpu_type() >= MESON_CPU_MAJOR_ID_T5) {
 					adc_wr_hiu(pll_addr->adc_pll_cntl_0, 0x210504a0);

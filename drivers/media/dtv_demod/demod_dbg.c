@@ -1084,7 +1084,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 		if (is_meson_txlx_cpu()) {
 			for (reg_start = 0; reg_start <= 0xfff; reg_start++)
 				pr_info("[0x%x] = 0x%x\n", reg_start, atsc_read_reg(reg_start));
-		}
+		} else
 #endif
 		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
 			for (reg_start = 0; reg_start <= 0xff; reg_start++)

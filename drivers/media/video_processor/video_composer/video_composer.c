@@ -1740,6 +1740,49 @@ static void dump_vf(int vc_index, struct vframe_s *vf, int flag)
 #endif
 }
 
+static void dump_dma(int vc_index, struct frame_info_t *vframe_info_cur,
+		unsigned long addr)
+{
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
+	struct file *fp = NULL;
+	char name_buf[32];
+	int data_size_y, data_size_uv;
+	u8 *data_y;
+	u8 *data_uv;
+	loff_t pos;
+	unsigned long addr_uv;
+
+	snprintf(name_buf, sizeof(name_buf), "/data/src_vframe_%d.yuv", dump_vframe);
+	fp = filp_open(name_buf, O_CREAT | O_RDWR, 0644);
+	if (IS_ERR(fp))
+		return;
+	data_size_y = vframe_info_cur->buffer_w *
+			vframe_info_cur->buffer_h;
+	data_size_uv = vframe_info_cur->buffer_w *
+			vframe_info_cur->buffer_h / 2;
+	addr_uv = addr + data_size_y;
+	data_y = codec_mm_vmap(addr, data_size_y);
+	data_uv = codec_mm_vmap(addr_uv, data_size_uv);
+	if (!data_y || !data_uv) {
+		vc_print(vc_index, PRINT_ERROR, "%s: vmap failed.\n", __func__);
+		return;
+	}
+	pos = fp->f_pos;
+	kernel_write(fp, data_y, data_size_y, &pos);
+	fp->f_pos = pos;
+	vc_print(vc_index, PRINT_ERROR, "%s: write %u size to addr%p\n",
+		__func__, data_size_y, data_y);
+	codec_mm_unmap_phyaddr(data_y);
+	pos = fp->f_pos;
+	kernel_write(fp, data_uv, data_size_uv, &pos);
+	fp->f_pos = pos;
+	vc_print(vc_index, PRINT_ERROR, "%s: write %u size to addr%p\n",
+		__func__, data_size_uv, data_uv);
+	codec_mm_unmap_phyaddr(data_uv);
+	filp_close(fp, NULL);
+#endif
+}
+
 static void dump_fbc_out_data(ulong addr, u32 data_size)
 {
 #ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
@@ -2208,7 +2251,7 @@ static void vframe_composer(struct composer_dev *dev)
 	struct received_frames_t *received_frames = NULL;
 	struct received_frames_t *received_frames_tmp = NULL;
 	struct frames_info_t *frames_info = NULL;
-	struct vframe_s *scr_vf = NULL;
+	struct vframe_s *src_vf = NULL;
 	struct file *file_vf = NULL;
 	int vf_dev[MXA_LAYER_COUNT];
 	struct frame_info_t *vframe_info[MXA_LAYER_COUNT];
@@ -2272,6 +2315,7 @@ static void vframe_composer(struct composer_dev *dev)
 	if (ret != 0) {
 		vc_print(dev->index, PRINT_ERROR, "vc: init buffer failed!\n");
 		video_composer_uninit_buffer(dev);
+		return;
 	} else {
 		dst_vf = get_dst_vframe_buffer(dev);
 		if (!dst_vf)
@@ -2387,20 +2431,21 @@ static void vframe_composer(struct composer_dev *dev)
 
 		if (is_dec_vf || is_v4l_vf) {
 			vc_print(dev->index, PRINT_OTHER, "%s dma buffer is vf\n", __func__);
-			scr_vf = get_vf_from_file(dev, file_vf, need_dw);
-			if (!scr_vf) {
+			src_vf = get_vf_from_file(dev, file_vf, need_dw);
+			if (!src_vf) {
 				vc_print(dev->index, PRINT_ERROR, "get vf NULL\n");
 				continue;
 			}
-			if (scr_vf->type & VIDTYPE_V4L_EOS) {
+			if (src_vf->type & VIDTYPE_V4L_EOS) {
 				vc_print(dev->index, PRINT_ERROR, "eos vf\n");
 				continue;
 			}
-			common_para.input_para.vframe = scr_vf;
+			common_para.input_para.vframe = src_vf;
 		} else {
 			addr = received_frames->phy_addr[vf_dev[i]];
 			vc_print(dev->index, PRINT_OTHER,
-				"%s dma buffer not vf\n", __func__);
+				"%s dma buffer not vf, i=%d fd=%d phy_addr=0x%lx\n", __func__,
+				vf_dev[i], vframe_info_cur->fd, addr);
 		}
 
 		crop_info.left = vframe_info_cur->crop_x;
@@ -2426,7 +2471,7 @@ static void vframe_composer(struct composer_dev *dev)
 		if (max_bottom < (dst_axis.top + dst_axis.height))
 			max_bottom = dst_axis.top + dst_axis.height;
 
-		input_vf[i] = scr_vf;
+		input_vf[i] = src_vf;
 		out_axis[i] = display_axis;
 
 		common_para.input_para.call_index = dev->index;
@@ -2463,7 +2508,7 @@ static void vframe_composer(struct composer_dev *dev)
 		} else if (dev->dev_choice == COMPOSER_WITH_VICP) {
 			vc_print(dev->index, PRINT_OTHER, "use vicp composer.\n");
 			memset(&data_config, 0, sizeof(struct vicp_data_config_t));
-			config_vicp_input_data(scr_vf,
+			config_vicp_input_data(src_vf,
 					addr,
 					dst_buf->buf_w,
 					dst_buf->buf_w,
@@ -2544,7 +2589,7 @@ static void vframe_composer(struct composer_dev *dev)
 				src_data.is_yuv444 = true;
 			else
 				src_data.is_yuv444 = false;
-			ret = config_ge2d_data(scr_vf,
+			ret = config_ge2d_data(src_vf,
 				addr,
 				vframe_info_cur->buffer_w,
 				vframe_info_cur->buffer_h,
@@ -2700,12 +2745,12 @@ static void vframe_composer(struct composer_dev *dev)
 		 "min_top,min_left,max_bottom,max_right: %d %d %d %d\n",
 		 min_top, min_left, max_bottom, max_right);
 
-	if (scr_vf && count == 1 && dev->dev_choice != COMPOSER_WITH_VICP) {
+	if (src_vf && count == 1 && dev->dev_choice != COMPOSER_WITH_VICP) {
 		vc_print(dev->index, PRINT_OTHER,
 			 "%s: copy hdr info.\n", __func__);
-		dst_vf->src_fmt = scr_vf->src_fmt;
-		dst_vf->signal_type = scr_vf->signal_type;
-		dst_vf->source_type = scr_vf->source_type;
+		dst_vf->src_fmt = src_vf->src_fmt;
+		dst_vf->signal_type = src_vf->signal_type;
+		dst_vf->source_type = src_vf->source_type;
 	}
 
 	dst_vf->zorder = frames_info->disp_zorder;
@@ -2791,7 +2836,9 @@ static void vframe_composer(struct composer_dev *dev)
 	dev->fake_vf = *dev->last_dst_vf;
 
 	if (dump_vframe != dev->vframe_dump_flag) {
-		dump_vf(dev->index, scr_vf, 0);
+		dump_vf(dev->index, src_vf, 0);
+		if (!(is_dec_vf || is_v4l_vf))
+			dump_dma(dev->index, vframe_info_cur, addr);
 		dump_vf(dev->index, dst_vf, 1);
 		if (fbcout_en && dev->dev_choice == COMPOSER_WITH_VICP) {
 			dump_fbc_out_data(dst_buf->afbc_head_addr, dst_buf->afbc_head_size);

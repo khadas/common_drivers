@@ -1511,8 +1511,6 @@
 &crg21_otg {
 	status = "okay";
 	controller-type = <1>;
-	gpio-vbus-power = "GPIOM_26";
-	gpios = <&gpio GPIOM_26 GPIO_ACTIVE_HIGH>;
 };
 
 &crg20 {

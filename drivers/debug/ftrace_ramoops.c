@@ -21,6 +21,8 @@
 #include <linux/irqflags.h>
 #include <linux/percpu.h>
 #include <linux/ftrace.h>
+#include <linux/kprobes.h>
+#include <linux/pm_domain.h>
 #include <trace/hooks/sched.h>
 #include <linux/amlogic/aml_iotrace.h>
 #include <linux/amlogic/gki_module.h>
@@ -29,17 +31,13 @@ static DEFINE_PER_CPU(int, en);
 
 #define IRQ_D	1
 
-int ramoops_io_skip = 1;
-EXPORT_SYMBOL(ramoops_io_skip);
-module_param(ramoops_io_skip, int, 0664);
-
 void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsigned int flag,
 									unsigned long *irq_flags)
 {
 	int cpu;
 	struct io_trace_data data;
 
-	if (!aml_iotrace_en)
+	if (!ramoops_io_en)
 		return;
 
 	if ((flag == PSTORE_FLAG_IO_R || flag == PSTORE_FLAG_IO_W) && IRQ_D)
@@ -100,9 +98,84 @@ static void schedule_hook(void *data, struct task_struct *prev, struct task_stru
 
 }
 
+static struct kprobe clk_disable_kp = {
+	.symbol_name = "clk_core_disable",
+};
+
+static struct kprobe clk_unprepare_kp = {
+	.symbol_name = "clk_core_unprepare",
+};
+
+static struct kprobe power_off_kp = {
+	.symbol_name = "_genpd_power_off",
+};
+
+static int clk_handler_pre(struct kprobe *p, struct pt_regs *regs)
+{
+	/*
+	 * set clk_core_disable/clk_core_unprepare x0 to 0, do not disable clk
+	 */
+#if defined(CONFIG_ARM64)
+	regs->regs[0] = 0;
+#elif defined(CONFIG_ARM)
+	regs->ARM_r0 = 0;
+#endif
+
+	return 0;
+}
+
+static int power_handler_pre(struct kprobe *p, struct pt_regs *regs)
+{
+	/*
+	 * set _genpd_power_off (struct _genpd_power_off *)x0->power_off to 0, do not power_off
+	 */
+#if defined(CONFIG_ARM64)
+	((struct generic_pm_domain *)regs->regs[0])->power_off = 0;
+	pr_info("skip all pd power_off,%s pd will not power_off\n",
+		((struct generic_pm_domain *)regs->regs[0])->name);
+#elif defined(CONFIG_ARM)
+	((struct generic_pm_domain *)regs->ARM_r0)->power_off = 0;
+	pr_info("skip all pd power_off,%s pd will not power_off\n",
+		((struct generic_pm_domain *)regs->ARM_r0)->name);
+#endif
+	return 0;
+}
+
 int ftrace_ramoops_init(void)
 {
+	int ret;
+
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
 	register_trace_android_rvh_schedule(schedule_hook, NULL);
+#endif
+
+	if (meson_clk_debug) {
+		clk_disable_kp.pre_handler = clk_handler_pre;
+		ret = register_kprobe(&clk_disable_kp);
+		if (ret < 0) {
+			pr_err("register 'clk_core_disable' failed, returned %d\n", ret);
+			return ret;
+		}
+		pr_info("kprobe at 'clk_core_disable'\n");
+
+		clk_unprepare_kp.pre_handler = clk_handler_pre;
+		ret = register_kprobe(&clk_unprepare_kp);
+		if (ret < 0) {
+			pr_err("register 'clk_core_unprepare' failed, returned %d\n", ret);
+			return ret;
+		}
+		pr_info("kprobe at 'clk_core_unprepare'\n");
+	}
+
+	if (meson_pd_debug) {
+		power_off_kp.pre_handler = power_handler_pre;
+		ret = register_kprobe(&power_off_kp);
+		if (ret < 0) {
+			pr_err("register '_genpd_power_off' failed, returned %d\n", ret);
+			return ret;
+		}
+		pr_info("kprobe at '_genpd_power_off'\n");
+	}
 
 	return 0;
 }

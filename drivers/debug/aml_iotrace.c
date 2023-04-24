@@ -20,7 +20,111 @@
 #include <linux/trace_clock.h>
 #include <asm-generic/div64.h>
 #include <linux/amlogic/aml_iotrace.h>
+#include <linux/amlogic/gki_module.h>
+#include <linux/workqueue.h>
 #define AML_PERSISTENT_RAM_SIG (0x4c4d41) /* AML */
+
+static int ramoops_ftrace_en;
+
+int ramoops_io_skip = 1;
+
+static int ramoops_io_skip_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &ramoops_io_skip)) {
+		pr_err("ramoops_io_skip error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("ramoops_io_skip=", ramoops_io_skip_setup);
+
+int ramoops_io_en;
+EXPORT_SYMBOL(ramoops_io_en);
+
+static int ramoops_io_en_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &ramoops_io_en)) {
+		pr_err("ramoops_io_en error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("ramoops_io_en=", ramoops_io_en_setup);
+
+int ramoops_io_dump;
+
+static int ramoops_io_dump_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &ramoops_io_dump)) {
+		pr_err("ramoops_io_dump error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("ramoops_io_dump=", ramoops_io_dump_setup);
+
+int meson_clk_debug;
+
+static int meson_clk_debug_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &meson_clk_debug)) {
+		pr_err("meson_clk_debug error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("meson_clk_debug=", meson_clk_debug_setup);
+
+int meson_pd_debug;
+
+static int meson_pd_debug_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &meson_pd_debug)) {
+		pr_err("meson_pd_debug error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("meson_pd_debug=", meson_pd_debug_setup);
+
+/* ramoops_io_dump_delay_secs : iotrace dump delayed time, s */
+static int ramoops_io_dump_delay_secs = 10; /* default : 10s */
+
+static struct delayed_work iotrace_work;
+
+static int ramoops_io_dump_delay_secs_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &ramoops_io_dump_delay_secs)) {
+		pr_err("ramoops_io_dump_delay_secs error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("ramoops_io_dump_delay_secs=", ramoops_io_dump_delay_secs_setup);
 
 struct prz_record_iter {
 	void *ptr;
@@ -435,7 +539,7 @@ void aml_pstore_write(enum aml_pstore_type_id type, char *buf, unsigned long siz
 	int cpu;
 	unsigned long flags = 0;
 
-	if (!aml_iotrace_en)
+	if (!ramoops_ftrace_en || !ramoops_io_en)
 		return;
 
 	if (!size)
@@ -898,11 +1002,63 @@ static void proc_init(void)
 		}
 }
 
+static void trace_auto_show_iter(struct prz_record_iter *iter)
+{
+	unsigned long sec = 0, us = 0;
+	unsigned long long time;
+	struct record_head *head = (struct record_head *)iter->ptr;
+	char buf[1024];
+
+	time = head->time;
+	do_div(time, 1000);
+	us = (unsigned long)do_div(time, 1000000);
+	sec = (unsigned long)time;
+
+	if (iter->type == AML_PSTORE_TYPE_IO) {
+		struct io_trace_data *data =
+		(struct io_trace_data *)(iter->ptr + sizeof(struct record_head));
+		pr_info("[%04ld.%06ld@%d] <%s-%d> <%6s %08x-%8x>  <%ps <- %pS>\n",
+			sec, us, iter->cpu, head->comm, head->pid, record_name[data->flag],
+			data->reg, data->val, (void *)(data->ip & ~(0x3)),
+			(void *)(data->parent_ip));
+	} else {
+		memset(buf, 0, sizeof(buf));
+		memcpy(buf, (void *)head + sizeof(struct record_head), head->size);
+		pr_info("[%04ld.%06ld@%d] <%s-%d> <%s>\n",
+					sec, us, iter->cpu, head->comm, head->pid, buf);
+	}
+	iter->size += sizeof(struct record_head) + head->size;
+	iter->ptr += sizeof(struct record_head) + head->size;
+}
+
+void iotrace_auto_dump(void)
+{
+	aml_oops_cxt.curr_record_iter = prz_record_iter_init();
+	if (!aml_oops_cxt.curr_record_iter)
+		return;
+
+	trace_auto_show_iter(aml_oops_cxt.curr_record_iter);
+
+	while (1) {
+		aml_oops_cxt.curr_record_iter = get_next_record();
+		if (!aml_oops_cxt.curr_record_iter)
+			break;
+
+		trace_auto_show_iter(aml_oops_cxt.curr_record_iter);
+	}
+}
+
+static void iotrace_work_func(struct work_struct *work)
+{
+	pr_info("ramoops_io_en:%d, ramoops_io_dump=%d, ramoops_io_skip=%d\n",
+		ramoops_io_en, ramoops_io_dump, ramoops_io_skip);
+	iotrace_auto_dump();
+	cancel_delayed_work(&iotrace_work);
+}
+
 int __init aml_iotrace_init(void)
 {
 	int ret = 0;
-
-	module_debug_init();
 
 	ret = aml_ramoops_init();
 	if (ret) {
@@ -913,7 +1069,14 @@ int __init aml_iotrace_init(void)
 	proc_init();
 	ftrace_ramoops_init();
 
+	ramoops_ftrace_en = 1;
 	pr_info("Amlogic debug-iotrace driver version V2\n");
+
+	if (ramoops_io_dump) {
+		INIT_DELAYED_WORK(&iotrace_work, iotrace_work_func);
+		schedule_delayed_work(&iotrace_work, ramoops_io_dump_delay_secs * HZ);
+	}
+
 	return 0;
 }
 

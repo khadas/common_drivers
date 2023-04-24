@@ -151,7 +151,7 @@ static void __maybe_unused isr_in_hook(void *data, int irq, struct irqaction *ac
 		return;
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	if (aml_iotrace_en) {
+	if (ramoops_io_en) {
 		memset(buf, 0, sizeof(buf));
 		snprintf(buf, 20, "isr-in irq:%d", irq);
 		aml_pstore_write(AML_PSTORE_TYPE_IRQ, buf, 0);
@@ -198,7 +198,7 @@ static void __maybe_unused isr_out_hook(void *data, int irq, struct irqaction *a
 		return;
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-	if (aml_iotrace_en) {
+	if (ramoops_io_en) {
 		memset(buf, 0, sizeof(buf));
 		snprintf(buf, 20, "isr-out irq:%d", irq);
 		aml_pstore_write(AML_PSTORE_TYPE_IRQ, buf, 0);
@@ -354,7 +354,7 @@ static void smc_in_hook(unsigned long smcid, unsigned long val, bool noret)
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 	char buf[50];
 
-	if (aml_iotrace_en) {
+	if (ramoops_io_en) {
 		memset(buf, 0, sizeof(buf));
 		snprintf(buf, 50, "smc-in smcid:%lx, val:%lx, noret:%d", smcid, val, noret);
 		aml_pstore_write(AML_PSTORE_TYPE_SMC, buf, 0);
@@ -389,7 +389,7 @@ static void smc_out_hook(unsigned long smcid, unsigned long val)
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 	char buf[50];
 
-	if (aml_iotrace_en) {
+	if (ramoops_io_en) {
 		memset(buf, 0, sizeof(buf));
 		snprintf(buf, 50, "smc-out smcid:%lx, val:%lx", smcid, val);
 		aml_pstore_write(AML_PSTORE_TYPE_SMC, buf, 0);

@@ -7,6 +7,9 @@
 #define __AML_IOTRACE_H
 
 extern int ramoops_io_skip;
+extern int ramoops_io_en;
+extern int meson_clk_debug;
+extern int meson_pd_debug;
 
 void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsigned int flag,
 							unsigned long *irq_flags);
@@ -40,8 +43,6 @@ pstore_io_save(reg, 0, PSTORE_FLAG_IO_R_END, &irqflg)
 
 #endif /*CONFIG_AMLOGIC_DEBUG_IOTRACE && !SKIP_IO_TRACE */
 
-extern int aml_iotrace_en;
-
 enum aml_pstore_type_id {
 	AML_PSTORE_TYPE_IO      = 0,
 	AML_PSTORE_TYPE_SCHED   = 1,
@@ -65,8 +66,6 @@ struct io_trace_data {
 };
 
 void aml_pstore_write(enum aml_pstore_type_id type, char *buf, unsigned long size);
-
-int module_debug_init(void);
 
 int ftrace_ramoops_init(void);
 #endif

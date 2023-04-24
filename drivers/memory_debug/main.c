@@ -57,25 +57,30 @@ unsigned long aml_free_reserved_area(void *start, void *end, int poison, const c
 EXPORT_SYMBOL(aml_free_reserved_area);
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
-/*
- * help iotrace driver free reserved-memory
- * set ramoops_io_skip
- * avoid interdependence between ko
- */
+#include <linux/of_address.h>
+#include <linux/of.h>
 #include <linux/amlogic/aml_iotrace.h>
-static int ramoops_io_skip_setup(char *buf)
+void free_iotrace_reserved_memory(void)
 {
-	if (!buf)
-		return -EINVAL;
+	int ret;
+	struct resource res;
+	struct device_node *node = NULL;
 
-	if (kstrtoint(buf, 0, &ramoops_io_skip)) {
-		pr_err("ramoops_io_skip error: %s\n", buf);
-		return -EINVAL;
+	node = of_find_node_by_path("/reserved-memory/linux,iotrace");
+	if (!node)
+		return;
+
+	ret = of_address_to_resource(node, 0, &res);
+	if (ret)
+		return;
+
+	// free reserved-memory if no need
+	if (!ramoops_io_en) {
+		aml_free_reserved_area(__va(res.start), __va(PAGE_ALIGN(res.end)), 0,
+								"free_reserved");
+		pr_info("free iotrace reserved_memory\n");
 	}
-
-	return 0;
 }
-__setup("ramoops_io_skip=", ramoops_io_skip_setup);
 #endif
 
 static int __init memory_main_init(void)
@@ -86,6 +91,9 @@ static int __init memory_main_init(void)
 	call_sub_init(aml_reg_init);
 	call_sub_init(ddr_tool_init);
 	call_sub_init(ramdump_init);
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+	free_iotrace_reserved_memory();
+#endif
 	pr_debug("### %s() end\n", __func__);
 
 	return 0;

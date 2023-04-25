@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+config AMLOGIC_LINUX_BT_SMP
+		bool "Amlogic kernel 5.15 for smp"
+		depends on AMLOGIC_BREAK_GKI
+		default n
+		help
+		  kernel 5.15 JUST_WORKS no need user confirm

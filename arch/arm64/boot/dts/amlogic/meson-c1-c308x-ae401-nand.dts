@@ -1,0 +1,1413 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+/dts-v1/;
+
+#include "meson-c1.dtsi"
+
+/ {
+	compatible = "amlogic,c1";
+	model = "Amlogic Meson c1 Development Board";
+
+	aliases {
+		serial0 = &uart_B;
+		serial1 = &uart_A;
+		serial2 = &uart_C;
+		serial3 = &uart_D;
+		serial4 = &uart_E;
+		i2c0 = &i2c0;
+		i2c1 = &i2c1;
+		i2c2 = &i2c2;
+		i2c3 = &i2c3;
+		i2c4 = &i2c4;
+		spi0 = &spifc;
+		spi1 = &spicc0;
+		spi2 = &spicc1;
+		tsensor0 = &tsensor;
+	};
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+	memory@0 {
+		device_type = "memory";
+		linux,usable-memory = <0x0 0x0 0x0 0x80000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+		secmon_reserved:linux,secmon {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x400000>;
+			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x05000000 0x0 0x400000>;
+		};
+
+		dsp_fw_reserved:linux,dsp_fw {
+			compatible = "amlogic, aml_dsp_memory";
+			reusable;
+			size = <0x0 0x800000>;
+			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x3400000 0x0 0x800000>;
+		};
+
+		autocap_reserved:linux,autocap_reserved {
+			compatible = "amlogic, aml_autocap_memory";
+			status = "okay";
+			size = <0x0 0x25800000>;
+			alloc-ranges = <0x0 0x40000000 0x0 0x25800000>;
+		};
+
+		ramoops@0x07400000 {
+			compatible = "ramoops";
+			reg = <0x0 0x07400000 0x0 0x00100000>;
+			record-size = <0x20000>;
+			console-size = <0x20000>;
+			ftrace-size = <0x80000>;
+			pmsg-size = <0x0>;
+			no-map;
+		};
+
+		fb_reserved:linux,meson-fb {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x800000>;
+			alignment = <0x0 0x400000>;
+		};
+
+		codec_mm_cma:linux,codec_mm_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* ion_codec_mm max can alloc size 80M*/
+			size = <0x0 0x13400000>;
+			alignment = <0x0 0x400000>;
+			linux,contiguous-region;
+		};
+		/* codec shared reserved */
+		codec_mm_reserved:linux,codec_mm_reserved {
+			compatible = "amlogic, codec-mm-reserved";
+			size = <0x0 0x0>;
+			alignment = <0x0 0x100000>;
+			//no-map;
+		};
+
+		isp_cma_reserved:linux,isp_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			status = "okay";
+			size = <0x0 0x10000000>;
+			alignment = <0x0 0x400000>;
+		};
+
+		adapt_cma_reserved:linux,adapt_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			status = "okay";
+			size = <0x0 0x1800000>;
+		};
+
+		ion_cma_reserved:linux,ion-dev {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x8000000>;
+			alignment = <0x0 0x400000>;
+		};
+
+		gdc_cma_reserved:linux,gdc_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			status = "okay";
+			size = <0x0 0x04000000>;
+			alignment = <0x0 0x400000>;
+		};
+
+		jpegenc_cma_reserved:linux,jpegenc_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x2400000>;
+			alignment = <0x0 0x400000>;
+		};
+	};
+
+	free_reserved {
+		compatible = "amlogic, free_reserved";
+		memory-region = <&autocap_reserved>;
+		status = "okay";
+	};
+
+	codec_mm {
+		compatible = "amlogic, codec, mm";
+		memory-region = <&codec_mm_cma &codec_mm_reserved>;
+		dev_name = "codec_mm";
+		status = "okay";
+	};
+
+	main_12v: regulator-main_12v {
+		compatible = "regulator-fixed";
+		regulator-name = "12V";
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+		regulator-always-on;
+	};
+
+	vcc_5v: regulator-vcc_5v {
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		vin-supply = <&main_12v>;
+		regulator-always-on;
+	};
+
+	vddq_1v2: regulator-vddq_1v2 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDDQ_1V2";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		vin-supply = <&main_12v>;
+		regulator-always-on;
+	};
+
+	vddao_3v3: regulator-vddao_3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDDAO_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&main_12v>;
+		regulator-always-on;
+	};
+
+	vcc_3v3: regulator-vcc_3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&vddao_3v3>;
+		regulator-always-on;
+	};
+
+	vddio_1v8: regulator-vddio_1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDDIO_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vddao_3v3>;
+		regulator-always-on;
+	};
+
+	vcc_1v8: regulator-vcc_1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vcc_3v3>;
+		regulator-always-on;
+	};
+
+	sdcard_power: regulator-sdcard {
+		compatible = "regulator-fixed";
+
+		regulator-name = "SDCARD_POWER";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+
+		gpio = <&gpio GPIOD_5 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	vddio_card: gpio-regulator {
+		compatible = "regulator-gpio";
+
+		regulator-name = "VDDIO_CARD";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <3300000>;
+
+		gpios = <&gpio GPIOC_7 GPIO_ACTIVE_LOW>;
+		gpios-states = <1>;
+
+		/* Based on P200 schematics, signal CARD_1.8V/3.3V_CTR */
+		states = <1800000 1
+			3300000 0>;
+	};
+
+	/* Audio Related start */
+	pdm_codec:pdm_codec{
+		#sound-dai-cells = <0>;
+		compatible = "amlogic, pdm_dummy_codec";
+		status = "okay";
+	};
+
+	dummy_codec:dummy_codec{
+		#sound-dai-cells = <0>;
+		compatible = "amlogic, aml_dummy_codec";
+		status = "okay";
+	};
+
+	a1_codec:a1_codec {
+		#sound-dai-cells = <0>;
+		compatible = "amlogic, a1_acodec";
+		status = "okay";
+		reg = <0x0 0xFE004800 0x0 0x20>;
+		tdmout_index = <1>;
+		tdmin_index = <1>;
+		dat0_ch_sel = <0>;
+		dacr_output_inv = <0>;
+		//power-domains = <&pwrdm PDID_ACODEC>;
+	};
+
+	partitions: partitions{
+		parts = <16>;
+		part-0 = <&rtos>;
+		part-1 = <&NBG>;
+		part-2 = <&dspA>;
+		part-3 = <&dspB>;
+		part-4 = <&recovery>;
+		part-5 = <&misc>;
+		part-6 = <&dto>;
+		part-7 = <&cri_data>;
+		part-8 = <&param>;
+		part-9 = <&boot>;
+		part-10 = <&rsv>;
+		part-11= <&tee>;
+		part-12 = <&vendor>;
+		part-13 = <&odm>;
+		part-14 = <&system>;
+		part-15 = <&data>;
+
+		rtos:rtos{
+			pname = "rtos-0";
+			size = <0x0 0x800000>;
+			mask = <8>;
+		};
+		NBG:NBG{
+			pname = "NBG";
+			size = <0x0 0x200000>;
+			mask = <8>;
+		};
+		dspA:dspA{
+			pname = "dspA";
+			size = <0x0 0x200000>;
+			mask = <1>;
+		};
+		dspB:dspB{
+			pname = "dspB";
+			size = <0x0 0x200000>;
+			mask = <1>;
+		};
+		recovery:recovery{
+			pname = "recovery";
+			size = <0x0 0x3000000>;
+			mask = <1>;
+		};
+		misc:misc{
+			pname = "misc";
+			size = <0x0 0x800000>;
+			mask = <1>;
+		};
+		dto:dto{
+			pname = "dto";
+			size = <0x0 0x800000>;
+			mask = <1>;
+		};
+		cri_data:cri_data{
+			pname = "cri_data";
+			size = <0x0 0x800000>;
+			mask = <2>;
+		};
+		rsv:rsv{
+			pname = "rsv";
+			size = <0x0 0x1000000>;
+			mask = <1>;
+		};
+		param:param{
+			pname = "param";
+			size = <0x0 0x1000000>;
+			mask = <2>;
+		};
+		boot:boot{
+			pname = "boot";
+			size = <0x0 0x3000000>;
+			mask = <1>;
+		};
+		tee:tee{
+			pname = "tee";
+			size = <0x0 0x2000000>;
+			mask = <1>;
+		};
+		vendor:vendor{
+			pname = "vendor";
+			size = <0x0 0x10000000>;
+			mask = <1>;
+		};
+		odm:odm{
+			pname = "odm";
+			size = <0x0 0x10000000>;
+			mask = <1>;
+		};
+		system:system{
+			pname = "system";
+			size = <0x0 0x80000000>;
+			mask = <1>;
+		};
+		data:data{
+			pname = "data";
+			size = <0xffffffff 0xffffffff>;
+			mask = <4>;
+		};
+	};
+
+	auge_sound {
+		compatible = "amlogic, a1-sound-card";
+		aml-audio-card,name = "AML-AUGESOUND";
+
+		/*avout mute gpio*/
+		avout_mute-gpios = <&gpio GPIOD_11 GPIO_ACTIVE_HIGH>;
+
+		aml-audio-card,dai-link@0 {
+			format = "dsp_a";
+			mclk-fs = <512>;
+			//continuous-clock;
+			//bitclock-inversion;
+			//frame-inversion;
+			/* master mode */
+			bitclock-master = <&tdma>;
+			frame-master = <&tdma>;
+			/* slave mode */
+			/*
+			 * bitclock-master = <&tdmacodec>;
+			 * frame-master = <&tdmacodec>;
+			 */
+			suffix-name = "alsaPORT-pcm";
+			tdmacpu: cpu {
+				sound-dai = <&tdma>;
+				dai-tdm-slot-tx-mask =
+							<1 1 1 1 1 1 1 1>;
+				dai-tdm-slot-rx-mask =
+							<1 1 1 1 1 1 1 1>;
+				dai-tdm-slot-num = <8>;
+				dai-tdm-slot-width = <32>;
+				system-clock-frequency = <24576000>;
+			};
+			tdmacodec: codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+
+		aml-audio-card,dai-link@1 {
+			format = "i2s";// "dsp_a";
+			mclk-fs = <256>;
+			//continuous-clock;
+			//bitclock-inversion;
+			//frame-inversion;
+			/* master mode */
+			bitclock-master = <&tdmb>;
+			frame-master = <&tdmb>;
+			/* slave mode */
+			//bitclock-master = <&tdmbcodec>;
+			//frame-master = <&tdmbcodec>;
+			/* suffix-name, sync with android audio hal
+			 * what's the dai link used for
+			 */
+			suffix-name = "alsaPORT-i2s";
+			tdmbcpu: cpu {
+				sound-dai = <&tdmb>;
+				dai-tdm-slot-tx-mask = <1 1>;
+				dai-tdm-slot-rx-mask = <1 1>;
+				dai-tdm-slot-num = <2>;
+				dai-tdm-slot-width = <32>;
+				system-clock-frequency = <24576000>;
+			};
+			tdmbcodec: codec {
+				sound-dai = <&a1_codec>;
+			};
+		};
+
+#if 0
+		aml-audio-card,dai-link@2 {
+			format = "i2s";// "dsp_a";
+			mclk-fs = <256>;
+			//continuous-clock;
+			//bitclock-inversion;
+			//frame-inversion;
+			/* master mode */
+			bitclock-master = <&tdmlb>;
+			frame-master = <&tdmlb>;
+			/* slave mode */
+			//bitclock-master = <&tdmlbcodec>;
+			//frame-master = <&tdmlbcodec>;
+			/* suffix-name, sync with android audio hal
+			 * what's the dai link used for
+			 */
+			suffix-name = "alsaPORT-i2s";
+			cpu {
+				sound-dai = <&tdmlb>;
+				dai-tdm-slot-tx-mask = <1 1>;
+				dai-tdm-slot-rx-mask = <1 1>;
+				dai-tdm-slot-num = <2>;
+				dai-tdm-slot-width = <32>;
+				system-clock-frequency = <12288000>;
+			};
+			tdmlbcodec: codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+#endif
+
+		aml-audio-card,dai-link@2 {
+			mclk-fs = <64>;
+			/* suffix-name, sync with android audio hal
+			 * what's the dai link used for
+			 */
+			suffix-name = "alsaPORT-pdm";
+			cpu {
+				sound-dai = <&pdm>;
+			};
+			codec {
+				sound-dai = <&pdm_codec>;
+			};
+		};
+
+#if 0
+		aml-audio-card,dai-link@3 {
+			mclk-fs = <128>;
+			/* suffix-name, sync with android audio hal used for */
+			suffix-name = "alsaPORT-spdif";
+			cpu {
+				sound-dai = <&spdifa>;
+				system-clock-frequency = <6144000>;
+			};
+			codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+#endif
+
+		aml-audio-card,dai-link@4 {
+			mclk-fs = <256>;
+			continuous-clock;
+			suffix-name = "alsaPORT-loopback";
+			cpu {
+				sound-dai = <&loopback>;
+				system-clock-frequency = <12288000>;
+			};
+			codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+	};
+	audiolocker: locker {
+		compatible = "amlogic, audiolocker";
+		clocks = <&clkaudio CLKID_AUDIO_LOCKER_OUT
+				&clkaudio CLKID_AUDIO_LOCKER_IN
+				&clkaudio CLKID_AUDIO_MCLK_C
+				&clkaudio CLKID_AUDIO_MCLK_D
+				&clkc CLKID_FCLK_DIV2
+				&clkc CLKID_FCLK_DIV3>;
+		clock-names = "lock_out", "lock_in", "out_src",
+					"in_src", "out_calc", "in_ref";
+		interrupts = <GIC_SPI 42 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "irq";
+		frequency = <49000000>; /* pll */
+		dividor = <49>; /* locker's parent */
+		//power-domains = <&pwrdm PDID_AUDIO>;
+		status = "okay";
+	};
+	/* Audio Related end */
+	aml_enc {
+		compatible = "cnm, MultiEnc";
+		dev_name = "amvenc_multi";
+		status = "okay";
+		config_mm_sz_mb = <256>;
+		clocks = <&clkc CLKID_SYS_DOS
+			&clkc CLKID_DOS_APB
+			&clkc CLKID_WAVE_A_GATE
+			&clkc CLKID_WAVE_B_GATE
+			&clkc CLKID_WAVE_C_GATE>;
+		clock-names = "clk_dos",
+			"clk_apb_dos",
+			"clk_MultiEnc_A",
+			"clk_MultiEnc_B",
+			"clk_MultiEnc_C";
+		interrupts = <0 82 1
+			0 83 1>;
+		interrupt-names = "multienc_irq",
+			"multienc_idle_irq";
+		#address-cells=<2>;
+		#size-cells=<2>;
+		ranges;
+		io_reg_base {
+			reg = <0x0 0xfe070000 0x0 0x10000>;
+		};
+	};
+	sensor: sensor {
+		compatible = "soc, sensor";
+		status = "okay";
+		sensor-name = "os08a10"; /*imx290;os08a10;imx227*/
+		pinctrl-names= "default", "mclk37_pin";
+		pinctrl-0= <&clk12_24_m13_pins>;
+		pinctrl-1= <&cmclkout2_pins>;
+		clocks = <&clkc CLKID_24M
+					&clkc CLKID_GP_PLL_DIV2_GATE>;
+		clock-names = "g12a_24m","mclk_0";
+		pwdn = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
+		reset = <&gpio GPIOM_12 GPIO_ACTIVE_HIGH>;
+#if 0
+		ir_cut_gpio = <&gpio GPIOA_10 GPIO_ACTIVE_HIGH
+				&gpio GPIOA_12 GPIO_ACTIVE_HIGH>;
+#endif
+	};
+
+	iq: iq {
+		compatible = "soc, iq";
+		status = "okay";
+		sensor-name = "os08a10"; /*imx290;os08a10;imx227*/
+	};
+
+	ircut: ircut {
+		compatible = "amlogic, aml-ircut";
+		status = "okay";
+		ircut-gpio = <&gpio GPIOA_10 GPIO_ACTIVE_LOW
+				&gpio GPIOA_12 GPIO_ACTIVE_LOW>;
+		ir-led-gpio = <&gpio GPIOM_8 GPIO_ACTIVE_HIGH>;
+		ldr-gpio = <&gpio GPIOM_5 GPIO_ACTIVE_LOW>;
+		/* sequence description
+		 * 0: port 0(GPIOA_10), 0=0, set port 0 to Low
+		 *  w: wait mseconds
+		 */
+		ircut-sequence = "init: 0=1,1=0,w=500,0=0,1=1,w=500,0=0,1=0",
+				"enable: 0=1,1=0,w=500,0=0,1=0",
+				"disable: 0=0,1=1,w=500,0=0,1=0";
+		ir-led-sequence = "init: 0=0",
+				"enable: 0=1",
+				"disable: 0=0";
+	};
+
+	cpu_opp_table0: cpu_opp_table0 {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp00 {
+			opp-hz = /bits/ 64 <100000000>;
+			opp-microvolt = <910000>;
+		};
+		opp01 {
+			opp-hz = /bits/ 64 <250000000>;
+			opp-microvolt = <910000>;
+		};
+		opp02 {
+			opp-hz = /bits/ 64 <500000000>;
+			opp-microvolt = <910000>;
+		};
+		opp03 {
+			opp-hz = /bits/ 64 <667000000>;
+			opp-microvolt = <910000>;
+		};
+		opp04 {
+			opp-hz = /bits/ 64 <1000000000>;
+			opp-microvolt = <910000>;
+		};
+		opp05 {
+			opp-hz = /bits/ 64 <1200000000>;
+			opp-microvolt = <910000>;
+		};
+		opp06 {
+			opp-hz = /bits/ 64 <1416000000>;
+			opp-microvolt = <980000>;
+		};
+		opp07 {
+			opp-hz = /bits/ 64 <1512000000>;
+			opp-microvolt = <980000>;
+		};
+	};
+
+	cpu_opp_table1: cpu_opp_table1 {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp00 {
+			opp-hz = /bits/ 64 <100000000>;
+			opp-microvolt = <880000>;
+		};
+		opp01 {
+			opp-hz = /bits/ 64 <250000000>;
+			opp-microvolt = <880000>;
+		};
+		opp02 {
+			opp-hz = /bits/ 64 <500000000>;
+			opp-microvolt = <880000>;
+		};
+		opp03 {
+			opp-hz = /bits/ 64 <667000000>;
+			opp-microvolt = <880000>;
+		};
+		opp04 {
+			opp-hz = /bits/ 64 <1000000000>;
+			opp-microvolt = <880000>;
+		};
+		opp05 {
+			opp-hz = /bits/ 64 <1200000000>;
+			opp-microvolt = <880000>;
+		};
+		opp06 {
+			opp-hz = /bits/ 64 <1416000000>;
+			opp-microvolt = <930000>;
+		};
+		opp07 {
+			opp-hz = /bits/ 64 <1512000000>;
+			opp-microvolt = <930000>;
+		};
+	};
+
+	cpu_opp_table2: cpu_opp_table2 {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp00 {
+			opp-hz = /bits/ 64 <100000000>;
+			opp-microvolt = <860000>;
+		};
+		opp01 {
+			opp-hz = /bits/ 64 <250000000>;
+			opp-microvolt = <860000>;
+		};
+		opp02 {
+			opp-hz = /bits/ 64 <500000000>;
+			opp-microvolt = <860000>;
+		};
+		opp03 {
+			opp-hz = /bits/ 64 <667000000>;
+			opp-microvolt = <860000>;
+		};
+		opp04 {
+			opp-hz = /bits/ 64 <1000000000>;
+			opp-microvolt = <860000>;
+		};
+		opp05 {
+			opp-hz = /bits/ 64 <1200000000>;
+			opp-microvolt = <860000>;
+		};
+		opp06 {
+			opp-hz = /bits/ 64 <1416000000>;
+			opp-microvolt = <910000>;
+		};
+		opp07 {
+			opp-hz = /bits/ 64 <1512000000>;
+			opp-microvolt = <910000>;
+		};
+	};
+
+	cpu_opp_table3: cpu_opp_table3 {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp00 {
+			opp-hz = /bits/ 64 <100000000>;
+			opp-microvolt = <830000>;
+		};
+		opp01 {
+			opp-hz = /bits/ 64 <250000000>;
+			opp-microvolt = <830000>;
+		};
+		opp02 {
+			opp-hz = /bits/ 64 <500000000>;
+			opp-microvolt = <830000>;
+		};
+		opp03 {
+			opp-hz = /bits/ 64 <667000000>;
+			opp-microvolt = <830000>;
+		};
+		opp04 {
+			opp-hz = /bits/ 64 <1000000000>;
+			opp-microvolt = <830000>;
+		};
+		opp05 {
+			opp-hz = /bits/ 64 <1200000000>;
+			opp-microvolt = <830000>;
+		};
+		opp06 {
+			opp-hz = /bits/ 64 <1416000000>;
+			opp-microvolt = <880000>;
+		};
+		opp07 {
+			opp-hz = /bits/ 64 <1512000000>;
+			opp-microvolt = <880000>;
+		};
+	};
+
+	cpufreq-meson {
+		compatible = "amlogic, cpufreq-meson";
+		status = "okay";
+	};
+
+	gpio_keypad{
+		compatible = "amlogic, gpio_keypad";
+		status = "okay";
+		scan_period = <20>;
+		key_num = <1>;
+		key_name = "power";
+		key_code = <116>;
+		key-gpios = <&gpio  GPIOD_3  GPIO_ACTIVE_HIGH>;
+		detect_mode = <0>;/*0:polling mode, 1:irq mode*/
+	};
+
+	adc_keypad {
+		compatible = "amlogic, adc_keypad";
+		status = "okay";
+		key_name = "update", "vol-", "vol+", "ok";
+		key_num = <4>;
+		io-channels = <&saradc 2>;
+		io-channel-names = "key-chan-2";
+		key_chan = <2 2 2 2>;
+		key_code = <141 114 115 28>;
+		key_val = <0 143 266 389>; //val=voltage/1800mV*1023
+		key_tolerance = <40 40 40 40>;
+	};
+};
+
+&cpu0 {
+	cpu-supply = <&vddcpu0>;
+	/*set different table cpufreq max*/
+	multi_tables_available;
+	operating-points-v2 = <&cpu_opp_table0>,
+			<&cpu_opp_table1>,
+			<&cpu_opp_table2>,
+			<&cpu_opp_table3>;
+};
+
+&cpu1 {
+	cpu-supply = <&vddcpu0>;
+	/*set different table cpufreq max*/
+	multi_tables_available;
+	operating-points-v2 = <&cpu_opp_table0>,
+			<&cpu_opp_table1>,
+			<&cpu_opp_table2>,
+			<&cpu_opp_table3>;
+};
+
+&pwm_ab {
+	status = "okay";
+};
+
+&vddcpu0 {
+	status = "okay";
+};
+
+/* Audio Related start */
+&audiobus {
+	tdma: tdm@0 {
+		compatible = "amlogic, a1-snd-tdma";
+		#sound-dai-cells = <0>;
+		dai-tdm-lane-slot-mask-in = <0 1>;
+		dai-tdm-lane-oe-slot-mask-out = <1 0>;
+		dai-tdm-clk-sel = <0>;
+		clocks = <&clkaudio CLKID_AUDIO_MCLK_A
+				&clkc CLKID_FCLK_DIV3>;
+		clock-names = "mclk", "clk_srcpll";
+		pinctrl-names = "tdm_pins";
+		pinctrl-0 = <&tdmout_a &tdmin_a>;
+		//power-domains = <&pwrdm PDID_AUDIO>;
+
+		status = "okay";
+	};
+
+	tdmb: tdm@1 {
+		compatible = "amlogic, a1-snd-tdmb";
+		#sound-dai-cells = <0>;
+		dai-tdm-lane-slot-mask-in = <1 0 0 0>;
+		dai-tdm-lane-slot-mask-out = <1 0 0 0>;
+		/* dai-tdm-lane-oe-slot-mask-in = <0 1>; */
+		dai-tdm-clk-sel = <1>;
+		clocks = <&clkaudio CLKID_AUDIO_MCLK_B
+				&clkc CLKID_AUD_DDS>;
+				//&clkaudio CLKID_AUDIO_SPDIFOUT_A>;
+		clock-names = "mclk", "clk_srcpll";
+		pinctrl-names = "tdm_pins";
+		pinctrl-0 = <&tdmb_mclk &tdmout_b /*&tdmin_b*/>;
+
+		mclk_pad = <0>;  /* 0: mclk_0; 1: mclk_1 */
+
+		/* tdmin data comes from ACODEC adc */
+		acodec_adc = <1>;
+
+		/*
+		 * 0: tdmout_a;
+		 * 1: tdmout_b;
+		 * 2: tdmout_c;
+		 * 3: spdifout;
+		 * 4: spdifout_b;
+		 */
+		//samesource_sel = <3>;
+		start_clk_enable = <1>;
+		//power-domains = <&pwrdm PDID_AUDIO>;
+
+		status = "okay";
+	};
+
+	tdmlb:tdm@3 {
+		compatible = "amlogic, a1-snd-tdmlb";
+		#sound-dai-cells = <0>;
+
+		dai-tdm-lane-lb-slot-mask-in = <1 0 0 0>;
+		dai-tdm-clk-sel = <1>;
+
+		clocks = <&clkaudio CLKID_AUDIO_MCLK_B
+				&clkc CLKID_FCLK_DIV3>;
+		clock-names = "mclk", "clk_srcpll";
+
+		/*
+		 * select tdmin_lb src;
+		 * AXG
+		 *  0: TDMOUTA
+		 *  1: TDMOUTB
+		 *  2: TDMOUTC
+		 *  3: PAD_TDMINA
+		 *  4: PAD_TDMINB
+		 *  5: PAD_TDMINC
+		 *
+		 * G12A/G12B
+		 *  0: TDMOUTA
+		 *  1: TDMOUTB
+		 *  2: TDMOUTC
+		 *  3: PAD_TDMINA_DIN*
+		 *  4: PAD_TDMINB_DIN*
+		 *  5: PAD_TDMINC_DIN*
+		 *  6: PAD_TDMINA_D*, oe pin
+		 *  7: PAD_TDMINB_D*, oe pin
+		 *
+		 * TL1/SM1
+		 *  0: TDMOUTA
+		 *  1: TDMOUTB
+		 *  2: TDMOUTC
+		 *  3: PAD_TDMINA_DIN*
+		 *  4: PAD_TDMINB_DIN*
+		 *  5: PAD_TDMINC_DIN*
+		 *  6: PAD_TDMINA_D*
+		 *  7: PAD_TDMINB_D*
+		 *  8: PAD_TDMINC_D*
+		 *  9: HDMIRX_I2S
+		 *  10: ACODEC_ADC
+		 *
+		 * A1
+		 *  0: TDMOUTA
+		 *  1: TDMOUTB
+		 *  3: PAD_TDMINA_DIN*
+		 *  4: PAD_TDMINB_DIN*
+		 */
+
+		lb-src-sel = <1>;
+		//power-domains = <&pwrdm PDID_AUDIO>;
+
+		status = "disabled";
+	};
+
+	spdifa: spdif@0 {
+		compatible = "amlogic, a1-snd-spdif-a";
+		#sound-dai-cells = <0>;
+		clocks = <&clkc CLKID_FCLK_DIV3
+				&clkaudio CLKID_AUDIO_GATE_SPDIFIN
+				&clkaudio CLKID_AUDIO_SPDIFIN>;
+		clock-names = "fixed_clk", "gate_spdifin", "clk_spdifin";
+		interrupts =
+				<GIC_SPI 39 IRQ_TYPE_EDGE_RISING>;
+
+		interrupt-names = "irq_spdifin";
+		pinctrl-names = "spdif_pins";
+		pinctrl-0 = <&spdifin>;
+		//power-domains = <&pwrdm PDID_AUDIO>;
+
+		status = "disabled";
+	};
+
+	pdm: pdm {
+		compatible = "amlogic, a1-snd-pdm";
+		#sound-dai-cells = <0>;
+
+		clocks = <&clkaudio CLKID_AUDIO2_GATE_PDM
+			&clkc CLKID_FCLK_DIV2
+			&clkc CLKID_AUD_DDS
+			&clkaudio CLKID_AUDIO2_PDM_DCLK
+			&clkaudio CLKID_AUDIO2_PDM_SYSCLK>;
+		clock-names = "gate",
+			"sysclk_srcpll",
+			"dclk_srcpll",
+			"pdm_dclk",
+			"pdm_sysclk";
+
+		pinctrl-names = "pdm_pins";
+		pinctrl-0 = <&pdmin>;
+
+		/* mode 0~4, defalut:1 */
+		filter_mode = <1>;
+		lane-mask-in = <1 1 0 0>;
+
+		//power-domains = <&pwrdm PDID_PDM>;
+
+		status = "okay";
+	};
+
+	asrcb: resample@1 {
+		compatible = "amlogic, a1-resample-b";
+		clocks = <&clkc CLKID_AUD_DDS
+			&clkaudio CLKID_AUDIO_MCLK_D
+			&clkaudio CLKID_AUDIO_RESAMPLEA>;
+		clock-names = "resample_pll", "resample_src", "resample_clk";
+
+		/*this resample is only used for loopback_A.*/
+		/*only support 16000 or 48000Hz for capture*/
+		capture_sample_rate = <16000>;
+
+		status = "okay";
+	};
+
+	loopback: loopback {
+		compatible = "amlogic, a1-loopbacka";
+		#sound-dai-cells = <0>;
+
+		original-src = <&tdmb>;
+		//tdmin_lb-src = <&tdmin_lb>;
+
+		clocks = <&clkaudio CLKID_AUDIO2_GATE_PDM
+			&clkc CLKID_FCLK_DIV2
+			&clkc CLKID_AUD_DDS
+			&clkaudio CLKID_AUDIO2_PDM_DCLK
+			&clkaudio CLKID_AUDIO2_PDM_SYSCLK
+			&clkc CLKID_AUD_DDS
+			&clkaudio CLKID_AUDIO_MCLK_C>;
+		clock-names = "pdm_gate",
+			"pdm_sysclk_srcpll",
+			"pdm_dclk_srcpll",
+			"pdm_dclk",
+			"pdm_sysclk",
+			"tdminlb_mpll",
+			"tdminlb_mclk";
+
+		/* datain src
+		 * 0: tdmin_a;
+		 * 1: tdmin_b;
+		 * 2: tdmin_c;
+		 * 3: spdifin;
+		 * 4: pdmin;
+		 */
+		datain_src = <4>;
+		datain_chnum = <2>;
+		datain_chmask = <0x3>;
+		/* config which data pin for loopback */
+		datain-lane-mask-in = <1 0 0 0>;
+
+		/* calc mclk for datalb */
+		mclk-fs = <256>;
+
+		/* tdmin_lb src
+		 * 0: tdmoutA
+		 * 1: tdmoutB
+		 * 2: tdmoutC
+		 * 3: PAD_TDMINA_DIN*, refer to core pinmux
+		 * 4: PAD_TDMINB_DIN*, refer to core pinmux
+		 * 5: PAD_TDMINC_DIN*, refer to core pinmux
+		 * 6: PAD_TDMINA_D*, oe, refer to core pinmux
+		 * 7: PAD_TDMINB_D*, oe, refer to core pinmux
+		 */
+		/* if tdmin_lb >= 3, use external loopback */
+		datalb_src = <1>;
+		datalb_chnum = <2>;
+		datalb_chmask = <0x3>;
+		/* config which data pin as loopback */
+		datalb-lane-mask-in = <1 0 0 0>;
+		//power-domains = <&pwrdm PDID_AUDIO>;
+
+		status = "okay";
+	};
+}; /* end of audiobus */
+/* Audio Related end */
+
+&i2c2 {
+	status = "okay";
+	pinctrl-names="default";
+	pinctrl-0=<&i2c2_master_pins2>;
+	clock-frequency = <100000>; /* default 100k */
+	sensor-i2c@6c {
+		compatible = "arm, i2c-sensor";
+		reg = <0x6c>;
+		reg-names = "i2c-sensor";
+		slave-addr = <0x6c>;
+		reg-type = <2>;
+		reg-data-type = <1>;
+		link-device = <&phycsi>;
+	};
+};
+
+&isp {
+	status = "okay";
+	temper-line-offset = <0x2D00>;
+	temper-buf-size = <48>;
+	temper-frame-num = <1>;
+	temper-frame-size = <0x2F76000>;
+	memory-region = <&isp_cma_reserved>;
+};
+
+&adapter {
+	status = "okay";
+	mem_alloc = <24>;
+	memory-region = <&adapt_cma_reserved>;
+};
+
+&pinctrl_periphs {
+	/* Audio Related start */
+	tdmout_a: tdmout_a {
+		mux { /* GPIOX_11, GPIOX_10, GPIOX_9 */
+			groups = "tdm_a_sclk",
+				"tdm_a_fs",
+				"tdm_a_dout0";
+			function = "tdm_a";
+		};
+	};
+
+	tdmin_a: tdmin_a {
+		mux { /* GPIOX_8 */
+			groups = "tdm_a_din1";
+			function = "tdm_a";
+		};
+	};
+
+	tdmb_mclk: tdmb_mclk {
+		mux {
+			groups = "mclk_0";
+			function = "mclk_0";
+			drive-strength = <2>;
+		};
+	};
+
+	tdmout_b: tdmout_b {
+		mux { /* GPIOA_1, GPIOA_2, GPIOA_3 */
+			groups = "tdm_b_sclk",
+				"tdm_b_fs",
+				"tdm_b_dout0";
+			function = "tdm_b";
+			drive-strength = <2>;
+		};
+	};
+
+	tdmin_b:tdmin_b {
+		mux { /* GPIOA_7 */
+			groups = "tdm_b_din0";
+			function = "tdm_b";
+			drive-strength = <2>;
+		};
+	};
+
+	spdifin: spdifin {
+		mux {/* GPIOF_6 */
+			groups = "spdif_in_f6";
+			function = "spdif_in";
+		};
+	};
+
+	pdmin: pdmin {
+		mux { /* GPIOA_6, GPIOA_7, GPIOA_8, GPIOA_9 */
+			groups =
+				"pdm_din1_m",
+				"pdm_din0_m",
+				"pdm_dclk_m";
+			function = "pdm";
+		};
+	};
+
+	cmclkout2_pins:cmclkout2_pins {
+		mux {
+			groups = "cmclkout2";
+			function = "cmclkout";
+			drive-strength = <4>;
+		};
+	};
+	/* Audio Related end */
+	clk12_24_m13_pins:clk12_24_m13_pins {
+		mux {
+			groups = "clk12_24_m13";
+			function = "clk12_24";
+			drive-strength = <4>;
+		};
+	};
+}; /* end of pinctrl_periphs */
+
+&gdc {
+	status = "okay";
+	memory-region = <&gdc_cma_reserved>;
+};
+
+&sd_emmc_c {
+	status = "disabled";
+	pinctrl-0 = <&emmc_pins>;
+	pinctrl-1 = <&emmc_clk_gate_pins>;
+	pinctrl-names = "default", "clk-gate";
+	bus-width = <8>;
+	cap-sd-highspeed;
+	cap-mmc-highspeed;
+	max-frequency = <50000000>;
+	non-removable;
+	disable-wp;
+	mmc-cap-erase;
+	//mmc-ddr-1_8v;
+//	mmc-hs200-1_8v;
+//	mmc-hs400-1_8v;
+	card_type = <1>;/*emmc:1,sdcard:2,sdio:3*/
+	vmmc-supply = <&vcc_3v3>;
+	vqmmc-supply = <&vcc_1v8>;
+};
+
+/* SD card */
+&sd_emmc_b {
+	status = "okay";
+	pinctrl-0 = <&sdcard_pins>;
+	pinctrl-1 = <&sdcard_clk_gate_pins>;
+	pinctrl-2 = <&sd_1bit_pins>;
+	pinctrl-3 = <&b_uart_pins1
+		&sdcard_clk_gate_pins &ao_to_sd_uart_pins>;
+	pinctrl-4 = <&b_uart_pins1
+		&sd_1bit_pins &ao_to_sd_uart_pins>;
+	pinctrl-5 = <&sdcard_pins &b_uart_enable_pins1>;
+	pinctrl-6 = <&b_uart_pins1
+		&ao_to_sd_uart_pins>;
+	pinctrl-7 = <&sdcard_pins &b_uart_enable_pins1>;
+	pinctrl-8 = <&b_uart_pins1
+		&ao_to_sd_uart_pins>;
+	pinctrl-9 = <&sdcard_pins_sleep>;
+	pinctrl-names = "sd_default",
+			"clk-gate",
+			"sd_1bit_pins",
+			"sd_clk_cmd_uart_pins",
+			"sd_1bit_uart_pins",
+			"sd_to_ao_uart_pins",
+			"ao_to_sd_uart_pins",
+			"sd_to_ao_jtag_pins",
+			"ao_to_sd_jtag_pins",
+			"sleep";
+	bus-width = <4>;
+	cap-sd-highspeed;
+	sd-uhs-sdr12;
+	sd-uhs-sdr25;
+	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+	max-frequency = <200000000>;
+	disable-wp;
+	cd-gpios = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
+	dat1-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
+	dat3-gpios = <&gpio GPIOC_3 GPIO_ACTIVE_HIGH>;
+	cd-inverted;
+	card_type = <5>;
+	vmmc-supply = <&sdcard_power>;
+	vqmmc-supply = <&vddio_card>;
+};
+
+/*sdio*/
+&sd_emmc_a {
+	status = "okay";
+	pinctrl-0 = <&sdio_pins>;
+	pinctrl-1 = <&sdio_clk_gate_pins>;
+	pinctrl-names = "default", "clk-gate";
+	bus-width = <4>;
+	cap-sd-highspeed;
+	sd-uhs-sdr12;
+	sd-uhs-sdr25;
+	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+	non-removable;
+	max-frequency = <200000000>;
+	disable-wp;
+	cap-sdio-irq;
+	keep-power-in-suspend;
+	card_type = <3>;
+	vmmc-supply = <&vddao_3v3>;
+	vqmmc-supply = <&vcc_1v8>;
+};
+
+&nand {
+	status = "okay";
+	pinctrl-names = "nand_norb_mod", "nand_cs_only";
+	pinctrl-0 = <&all_nand_pins>;
+	pinctrl-1 = <&nand_cs_pins>;
+	/* bl_mode: 0 compact mode; 1 discrete mode */
+	bl_mode = <1>;
+	fip_copies = <4>;
+	fip_size = <0x200000>;
+	nand_clk_ctrl = <0xFE012000>;
+	nand_ext_clk_ctrl = <0xFE000920>;
+	partition = <&slc_partitions>;
+	slc_partitions: slc_partitions{
+			tpl{
+					offset=<0x0 0x0>;
+					size=<0x0 0x0>;
+			};
+			logo{
+					offset=<0x0 0x0>;
+					size=<0x0 0x200000>;
+			};
+			recovery{
+					offset=<0x0 0x0>;
+					size=<0x0 0x1000000>;
+			};
+			boot{
+					offset=<0x0 0x0>;
+					size=<0x0 0x1000000>;
+			};
+			system{
+					offset=<0x0 0x0>;
+					size=<0x0 0x4000000>;
+			};
+			data{
+					offset=<0xffffffff 0xffffffff>;
+					size=<0x0 0x0>;
+			};
+	};
+};
+
+&dwc2_a {
+	status = "disabled";
+	/** 0: normal, 1: otg+dwc3 host only, 2: otg+dwc3 device only*/
+	controller-type = <3>;
+};
+
+&usb0 {
+	status = "okay";
+};
+
+&usb2_phy_v2 {
+	status = "okay";
+	portnum = <1>;
+	otg-phy-index = <0>;
+};
+
+&usb3_phy_v2 {
+	status = "okay";
+	portnum = <0>;
+	otg = <1>;
+	gpio-vbus-power = "GPIOD_9";
+	gpios = <&gpio GPIOD_9 GPIO_ACTIVE_HIGH>;
+};
+
+&uart_B {
+	status = "okay";
+};
+
+&i2c3 {
+	status = "okay";
+	pinctrl-names="default";
+	pinctrl-0=<&i2c3_master_pins2>;
+	clock-frequency = <400000>; /* max supported freq */
+
+	pcf8536@51 {
+		compatible = "nxp,pcf8563";
+		reg = <0x51>;
+	};
+};
+
+&spifc {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spifc_pins>;
+	spi-nor@1 {
+		compatible = "jedec,spi-nor";
+		spi-max-frequency = <96000000>;
+		reg = <1>;
+	};
+	spi-nand@0 {
+		compatible = "spi-nand";
+		status = "okay";
+		reg = <0>;
+		spi-max-frequency = <96000000>;
+		bl_mode = <1>;
+		fip_copies = <4>;
+		fip_size = <0x200000>;
+		partition = <&snand_partitions>;
+		snand_partitions: snand_partitions{
+			bootloader{
+				offset=<0x0 0x0>;
+				size=<0x0 0x0>;
+			};
+			tpl{
+				offset=<0x0 0x0>;
+				size=<0x0 0x0>;
+			};
+			logo{
+				offset=<0x0 0x0>;
+				size=<0x0 0x200000>;
+			};
+			recovery{
+				offset=<0x0 0x0>;
+				size=<0x0 0x1000000>;
+			};
+			boot{
+				offset=<0x0 0x0>;
+				size=<0x0 0x1000000>;
+			};
+			system{
+				offset=<0x0 0x0>;
+				size=<0x0 0x4000000>;
+			};
+			data{
+				offset=<0xffffffff 0xffffffff>;
+				size=<0x0 0x0>;
+			};
+		};
+	};
+};
+
+&spicc0 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spicc0_pins1>;
+	cs-gpios = <&gpio GPIOA_8 0>,
+		   <&gpio GPIOA_9 0>;
+};
+
+&spicc1 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spicc1_pins1>;
+	cs-gpios = <&gpio GPIOA_14 0>;
+};
+
+&uart_A {
+	status = "okay";
+};
+
+&aml_wifi {
+	status = "okay";
+};
+
+&aml_bt {
+	status = "okay";
+};
+
+&pwm_ef {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm_e_pins1>;
+};
+
+&ethmac {
+	status = "okay";
+	pinctrl-names = "internal_eth_pins";
+	pinctrl-0 = <&internal_eth_pins>;
+	mc_val = <0x4be04>;
+	internal_phy=<1>;
+};
+
+&freertos {
+	status = "okay";
+};
+
+&saradc {
+	status = "okay";
+	vref-supply = <&vcc_1v8>;
+};
+
+&meson_fb {
+	status = "okay";
+	display_size_default = <1920 1080 1920 1080 32>;
+	mem_size = <0x00800000>;
+};

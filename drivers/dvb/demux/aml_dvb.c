@@ -64,7 +64,6 @@ static int tso_src = -1;
 static int cpu_type;
 static int minor_type;
 
-#define MAX_DMX_DEV_NUM      32
 #define DEFAULT_DMX_DEV_NUM  3
 
 int is_security_dmx;
@@ -733,6 +732,8 @@ static int aml_dvb_probe(struct platform_device *pdev)
 
 	frontend_probe(pdev);
 	dmx_dev_num = dmx_get_dev_num(pdev);
+	if (dmx_dev_num > DMX_DEV_COUNT)
+		dmx_dev_num = DMX_DEV_COUNT;
 
 	dmx_get_tsn_flag(pdev, &tsn_in, &tsn_out);
 

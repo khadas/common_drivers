@@ -150,6 +150,7 @@ int ts_input_write(struct in_elem *elem, const char *buf, int count, int dmx_id)
 	return ret;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /**
  * ts_input_write_empty
  * \param elem:
@@ -163,4 +164,5 @@ int ts_input_write_empty(struct in_elem *elem, int pid)
 	ret = SC2_bufferid_write_empty(elem->pchan, pid);
 	return ret;
 }
+#endif
 

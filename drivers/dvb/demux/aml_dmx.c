@@ -176,6 +176,7 @@ static int _dmx_write_from_user(struct dmx_demux *demux,
 	struct aml_dmx *pdmx = (struct aml_dmx *)demux->priv;
 	int ret = 0;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (pdmx->reset_init == 0 && pdmx->video_pid != -1 && pdmx->sc2_input) {
 		ts_input_write_empty(pdmx->sc2_input, pdmx->video_pid);
 		pdmx->reset_init = 1;
@@ -184,6 +185,7 @@ static int _dmx_write_from_user(struct dmx_demux *demux,
 		ts_input_write_empty(pdmx->sc2_input, pdmx->audio_pid);
 		pdmx->reset_init_audio = 1;
 	}
+#endif
 	if (mutex_lock_interruptible(pdmx->pmutex)) {
 		dprint("%s line:%d\n", __func__, __LINE__);
 		return -ERESTARTSYS;

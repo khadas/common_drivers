@@ -1455,6 +1455,7 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 	return count - r;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int SC2_bufferid_write_empty(struct chan_id *pchan, int pid)
 {
 	unsigned int len;
@@ -1543,6 +1544,7 @@ int SC2_bufferid_write_empty(struct chan_id *pchan, int pid)
 	dprint("%s pid:%d end\n", __func__, pid);
 	return len;
 }
+#endif
 
 int SC2_add_dump_cb(struct list_head *node, dmx_dump_cb cb)
 {

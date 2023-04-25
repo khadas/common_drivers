@@ -10,7 +10,12 @@
 #include "aml_dsc.h"
 //#include "hw_demux/hwdemux.h"
 
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+#define DMX_DEV_COUNT     3
+#else
 #define DMX_DEV_COUNT     32
+#endif
+
 #define DSC_DEV_COUNT     DMX_DEV_COUNT
 /*TSIN just 4, but maxlinear maybe send 8 TS at one TSIN.*/
 /*will save all dts config*/

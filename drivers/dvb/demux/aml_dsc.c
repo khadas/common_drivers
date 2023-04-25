@@ -47,8 +47,6 @@
 #define DSC_STATE_READY     3
 #define DSC_STATE_GO        4
 
-#define DSC_COUNT         8
-
 struct dsc_channel {
 	struct aml_dsc *dsc;
 
@@ -68,8 +66,10 @@ struct dsc_channel {
 #define MAX_DSC_PID_TABLE_NUM		(64)
 
 static struct dsc_pid_table dsc_tsn_pid_table[MAX_DSC_PID_TABLE_NUM];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct dsc_pid_table dsc_tsd_pid_table[MAX_DSC_PID_TABLE_NUM];
 static struct dsc_pid_table dsc_tse_pid_table[MAX_DSC_PID_TABLE_NUM];
+#endif
 
 #define dprint_i(fmt, args...)   \
 	dprintk(LOG_ERROR, debug_dsc, fmt, ## args)
@@ -101,8 +101,10 @@ static void _init_dsc_table(void)
 {
 	if (s_init_flag == 0) {
 		_init_per_table(dsc_tsn_pid_table, MAX_DSC_PID_TABLE_NUM);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		_init_per_table(dsc_tsd_pid_table, MAX_DSC_PID_TABLE_NUM);
 		_init_per_table(dsc_tse_pid_table, MAX_DSC_PID_TABLE_NUM);
+#endif
 		s_init_flag = 1;
 	}
 }
@@ -116,10 +118,15 @@ static struct dsc_pid_table *_get_dsc_pid_table(int index, int dsc_type)
 
 	if (dsc_type == CA_DSC_COMMON_TYPE)
 		table = dsc_tsn_pid_table;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	else if (dsc_type == CA_DSC_TSD_TYPE)
 		table = dsc_tsd_pid_table;
 	else
 		table = dsc_tse_pid_table;
+#else
+	else
+		return NULL;
+#endif
 
 	return &table[index];
 }
@@ -131,10 +138,15 @@ static int _malloc_dsc_table_index(int dsc_type)
 
 	if (dsc_type == CA_DSC_COMMON_TYPE)
 		table = dsc_tsn_pid_table;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	else if (dsc_type == CA_DSC_TSD_TYPE)
 		table = dsc_tsd_pid_table;
 	else
 		table = dsc_tse_pid_table;
+#else
+	else
+		return -1;
+#endif
 
 	for (i = 0; i < MAX_DSC_PID_TABLE_NUM; i++) {
 		if (table[i].used == 0) {
@@ -163,10 +175,15 @@ static int _free_dsc_table_index(int index, int dsc_type)
 
 	if (dsc_type == CA_DSC_COMMON_TYPE)
 		table = dsc_tsn_pid_table;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	else if (dsc_type == CA_DSC_TSD_TYPE)
 		table = dsc_tsd_pid_table;
 	else
 		table = dsc_tse_pid_table;
+#else
+	else
+		return -1;
+#endif
 
 	ptmp = &table[index];
 	id = ptmp->id;

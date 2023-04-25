@@ -14,7 +14,6 @@ menuconfig AMLOGIC_MEMORY_EXTEND
 
 config AMLOGIC_PAGE_TRACE
 	tristate "Amlogic trace for page allocate"
-	depends on AMLOGIC_MEMORY_EXTEND
 	depends on KALLSYMS
 	depends on !NUMA_BALANCING
 	default n

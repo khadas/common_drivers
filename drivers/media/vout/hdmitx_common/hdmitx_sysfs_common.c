@@ -420,6 +420,8 @@ static ssize_t _show_dv_cap(struct device *dev,
 			"2160p%shz: 1\n",
 			dv->sup_2160p60hz ? "60" : "30");
 		pos += snprintf(buf + pos, PAGE_SIZE,
+			"Parity: %d\n", dv->parity);
+		pos += snprintf(buf + pos, PAGE_SIZE,
 			"Support mode:\n");
 		if (dv->Interface != 0x00 && dv->Interface != 0x01) {
 			pos += snprintf(buf + pos, PAGE_SIZE,

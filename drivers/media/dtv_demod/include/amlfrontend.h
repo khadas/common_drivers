@@ -96,6 +96,7 @@
 /*  V3.1.102  bring up dump ADC data feature */
 /*  V3.2.103  t3x bringup */
 /*  V3.2.104  optimize isdbt stability of locking signal */
+/*  V3.2.105  remove dtmb workaround for AMBUS issue */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -112,8 +113,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.1.102"
-#define DTVDEMOD_VER	"2023/5/17: optimize isdbt stability of locking signal"
+#define AMLDTVDEMOD_VER "V3.2.105"
+#define DTVDEMOD_VER	"2023/5/23: remove dtmb workaround for AMBUS issue"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

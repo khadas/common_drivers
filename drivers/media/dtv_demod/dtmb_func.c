@@ -257,8 +257,7 @@ void dtmb_initial(struct aml_dtvdemod *demod)
 	/* dtmb_write_reg(0x049, memstart);		//only for init */
 	dtmb_register_reset();
 
-	if (devp->data->hw_ver == DTVDEMOD_HW_T3 ||
-			devp->data->hw_ver == DTVDEMOD_HW_T5M) {
+	if (devp->data->hw_ver == DTVDEMOD_HW_T3) {
 		clear_ddr_bus_data(demod);
 		//dtmb_write_reg(0x47, 0x133220);
 		dtmb_write_reg_bits(0x47, 0x0, 22, 1);
@@ -266,8 +265,7 @@ void dtmb_initial(struct aml_dtvdemod *demod)
 	}
 	dtmb_all_reset(demod);
 
-	if (devp->data->hw_ver == DTVDEMOD_HW_T3 ||
-			devp->data->hw_ver == DTVDEMOD_HW_T5M) {
+	if (devp->data->hw_ver == DTVDEMOD_HW_T3) {
 		//dtmb_write_reg(0x7, 0x4ffffff);
 		dtmb_write_reg_bits(0x7, 0x1, 26, 1);
 		dtmb_write_reg_bits(0x7, 0x0, 25, 1);

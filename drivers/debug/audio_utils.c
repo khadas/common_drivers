@@ -22,16 +22,14 @@
 #define TEST_IOC_FREE_LIB	_IOW(TEST_IOC_MAGIC, 0x02, uint32_t)
 
 static LIST_HEAD(code_list);
+static int written;
 static int write_size;
 static int lib_size;
 static int curr_offset;
 
 static int audio_utils_open(struct inode *inode, struct file *file)
 {
-	pr_debug("%s, %d, isize:%lld, wsize:%d, inode:%p, ino:%ld, iflag:%x\n",
-		__func__, __LINE__, inode->i_size,
-		write_size, inode, inode->i_ino, inode->i_flags);
-
+	pr_info("%s\n", __func__);
 	return 0;
 }
 
@@ -46,23 +44,23 @@ static ssize_t audio_utils_write(struct file *file, const char __user *buffer,
 	while (count > 0) {
 		page = alloc_page(GFP_HIGHUSER);
 		if (!page) {
-			pr_err("%s, %d\n", __func__, __LINE__);
+			pr_err("%s-%d\n", __func__, __LINE__);
 			return -ENOMEM;
 		}
-		pr_debug("%s, page:%lx, count:%d\n",
+		pr_debug("%s page: %lx, count: %d\n",
 			 __func__, page_to_pfn(page), count);
 		tmp = kmap_atomic(page);
 		WARN_ON(!tmp);
 		if (count >= PAGE_SIZE) {
 			if (copy_from_user(tmp, buffer + write, PAGE_SIZE)) {
-				pr_err("%s, %d\n", __func__, __LINE__);
+				pr_err("%s-%d\n", __func__, __LINE__);
 				return -EINVAL;
 			}
 			count -= PAGE_SIZE;
 			write += PAGE_SIZE;
 		} else if (count) { /* remain */
 			if (copy_from_user(tmp, buffer + write, count)) {
-				pr_err("%s, %d\n", __func__, __LINE__);
+				pr_err("%s-%d\n", __func__, __LINE__);
 				return -EINVAL;
 			}
 			count -= count;
@@ -73,8 +71,7 @@ static ssize_t audio_utils_write(struct file *file, const char __user *buffer,
 	}
 	write_size += _count;
 	file->f_inode->i_size = write_size;
-	pr_debug("%s, write_size:%x, inode:%p\n",
-		__func__, write_size, file->f_inode);
+	pr_debug("%s write_size: %d\n", __func__, write_size);
 
 	return _count;
 }
@@ -88,26 +85,39 @@ static long audio_utils_ioctl(struct file *f,
 	/*
 	 * TODO: here just free maintained pages, need more ioctrl commands
 	 */
-	pr_debug("%s, %d, cmd:%x, arg:%lx\n", __func__, __LINE__, cmd, arg);
 	switch (cmd) {
 	case TEST_IOC_SET_LIB_SIZE:
+		pr_info("%s SET_LIB_SIZE %ld\n", __func__, arg);
 		lib_size = arg;
 		break;
 
 	case TEST_IOC_WRITE_LIB:
-		if (audio_utils_write(f, argp, lib_size, NULL) != lib_size) {
-			pr_err("%s, %d\n", __func__, __LINE__);
+		pr_info("%s WRITE_LIB\n", __func__);
+		if (written) {
+			pr_err("%s have written\n", __func__);
 			return -EINVAL;
 		}
+
+		if (audio_utils_write(f, argp, lib_size, NULL) != lib_size) {
+			pr_err("%s, %d\n", __func__, __LINE__);
+			list_for_each_entry_safe(page, next, &code_list, lru) {
+				__free_page(page);
+			}
+			INIT_LIST_HEAD(&code_list);
+			lib_size = 0;
+			return -ENOMEM;
+		}
+		written = 1;
 		break;
 
 	case TEST_IOC_FREE_LIB:
+		pr_info("%s FREE_LIB\n", __func__);
+		written = 0;
 		list_for_each_entry_safe(page, next, &code_list, lru) {
 			__free_page(page);
 		}
 		INIT_LIST_HEAD(&code_list);
 		break;
-
 	default:
 		break;
 	}
@@ -125,8 +135,8 @@ static int audio_utils_mmap(struct file *file, struct vm_area_struct *vma)
 	size = vma->vm_end - vma->vm_start;
 	total_pages = ALIGN(write_size, PAGE_SIZE) / PAGE_SIZE;
 	if (vma->vm_pgoff > total_pages) {
-		pr_err("wrong page off:%ld, total:%d, fsize:%d\n",
-		       vma->vm_pgoff, total_pages, write_size);
+		pr_err("%s wrong page off:%ld, total:%d, fsize:%d\n",
+		       __func__, vma->vm_pgoff, total_pages, write_size);
 		return -EINVAL;
 	}
 	page = list_first_entry(&code_list, struct page, lru);
@@ -136,10 +146,10 @@ static int audio_utils_mmap(struct file *file, struct vm_area_struct *vma)
 
 	while (addr < vma->vm_end) {
 		ret = vm_insert_page(vma, addr, page);
-		pr_debug("%s, insert page %5lx for %lx, ret:%d\n",
+		pr_debug("%s insert page %5lx for %lx, ret:%d\n",
 			 __func__, page_to_pfn(page), addr, ret);
 		if (ret < 0) {
-			pr_err("%s, %d\n", __func__, __LINE__);
+			pr_err("%s-%d\n", __func__, __LINE__);
 			return ret;
 		}
 		addr += PAGE_SIZE;
@@ -167,8 +177,8 @@ ssize_t audio_utils_read(struct file *file, char __user *buf,
 	struct page *page;
 	void *tmp;
 
-	pr_debug("%s, %d, off:%lx, cur:%x, size:%ld\n",
-		 __func__, __LINE__, (unsigned long)*ppos, curr_offset,
+	pr_debug("%s off:%lx, cur:%x, size:%ld\n",
+		 __func__, (unsigned long)*ppos, curr_offset,
 		 (unsigned long)size);
 	page = list_first_entry(&code_list, struct page, lru);
 	while (off < *ppos) {
@@ -187,14 +197,14 @@ ssize_t audio_utils_read(struct file *file, char __user *buf,
 	while (rd_size > 0) {
 		tmp = kmap_atomic(page);
 		if (!tmp) {
-			pr_err("%s, %d\n", __func__, __LINE__);
+			pr_err("%s-%d\n", __func__, __LINE__);
 			return -EINVAL;
 		}
 		if (copy_to_user(buf + to, tmp, can_read)) {
-			pr_err("%s, %d\n", __func__, __LINE__);
+			pr_err("%s-%d\n", __func__, __LINE__);
 			return -EINVAL;
 		}
-		pr_debug("%s, buf:%p, to:%d, canread:%d, rdsize:%d, page:%lx\n",
+		pr_debug("%s buf:%p, to:%d, canread:%d, rdsize:%d, page:%lx\n",
 			 __func__, buf, to, can_read,
 			 rd_size, page_to_pfn(page));
 		rd_size -= can_read;
@@ -214,14 +224,14 @@ ssize_t audio_utils_read(struct file *file, char __user *buf,
 
 loff_t audio_utils_seek(struct file *file, loff_t offset, int whence)
 {
-	pr_debug("%s, %d, where:%d, off:%lx\n",
-		 __func__, __LINE__, whence, (unsigned long)offset);
+	pr_debug("%s where:%d, off:%lx\n",
+		 __func__, whence, (unsigned long)offset);
 	return 0;
 }
 
 static int audio_utils_release(struct inode *inode, struct file *file)
 {
-	pr_debug("%s, %d\n", __func__, __LINE__);
+	pr_info("%s\n", __func__);
 	return 0;
 }
 
@@ -234,7 +244,6 @@ static const struct file_operations audio_utils_fops = {
 	.compat_ioctl   = audio_utils_compact_ioctl,
 #endif
 	.mmap		= audio_utils_mmap,
-	.write		= audio_utils_write,
 	.release	= audio_utils_release,
 };
 
@@ -251,18 +260,18 @@ static int __init audio_utils_init(void)
 
 	r = class_register(&audio_utils_class);
 	if (r) {
-		pr_err("%s, regist class failed\n", __func__);
+		pr_err("%s regist class failed\n", __func__);
 		return -EINVAL;
 	}
 	major = register_chrdev(0, DEVICE_NAME, &audio_utils_fops);
 	if (major < 0) {
-		pr_err("%s, register cdev failed\n", __func__);
+		pr_err("%s register cdev failed\n", __func__);
 		return -EINVAL;
 	}
 	cdev = device_create(&audio_utils_class, NULL,
 			     MKDEV(major, 0), NULL, DEVICE_NAME);
 	if (IS_ERR_OR_NULL(cdev)) {
-		pr_err("%s, alloc cdev failed, cdev:%p\n", __func__, cdev);
+		pr_err("%s alloc cdev failed, cdev:%p\n", __func__, cdev);
 		return -EINVAL;
 	}
 

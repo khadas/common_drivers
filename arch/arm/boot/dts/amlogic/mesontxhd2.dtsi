@@ -478,6 +478,31 @@
 			clock-names = "xtal";
 			status = "okay";
 		};
+
+		sd_emmc_c: mmc@ffe07000 {
+			compatible = "amlogic,meson-axg-mmc";
+			reg = <0xffe07000 0x800>,
+				<0xff63c25c 0x4>,
+				<0xff6346c0 0x4>;
+			interrupts = <GIC_SPI 191 IRQ_TYPE_EDGE_RISING>;
+			status = "disabled";
+			clocks = <&clkc CLKID_CLK81_SD_EMMC_C>,
+					<&clkc CLKID_SD_EMMC_C_SEL>,
+					<&clkc CLKID_SD_EMMC_C>,
+					<&xtal>,
+					<&clkc CLKID_FCLK_DIV2>,
+					<&clkc CLKID_FCLK_DIV2>;
+			clock-names = "core", "mux0", "mux1",
+					"clkin0", "clkin1", "clkin2";
+			no-sdio;
+			no-sd;
+			card_type = <1>;
+			ignore_desc_busy;
+			mmc_debug_flag;
+		//	tx_delay = <10>;
+		//	src_clk_rate = <1179648000>;
+		//  resets = <&reset RESET_SD_EMMC_C>;
+		};
 	}; /* end of soc*/
 
 	pwrdm: power-domains {
@@ -536,6 +561,45 @@
 			#gpio-cells = <2>;
 			gpio-ranges = <&pinctrl_periphs 0 0 66>;
 		};
+
+		emmc_pins: emmc_pins {
+			mux-0 {
+				groups = "emmc_d0",
+						"emmc_d1",
+						"emmc_d2",
+						"emmc_d3",
+						"emmc_d4",
+						"emmc_d5",
+						"emmc_d6",
+						"emmc_d7",
+						"emmc_cmd";
+				function = "emmc";
+				bias-pull-up;
+			};
+
+			mux-1 {
+				groups = "emmc_clk";
+				function = "emmc";
+				bias-pull-up;
+			};
+		};
+
+		emmc_ds_pins: emmc_ds_pins {
+			mux {
+				groups = "emmc_ds";
+				function = "emmc";
+				bias-pull-down;
+			};
+		};
+
+		emmc_clk_gate_pins: emmc_clk_gate_pins {
+			mux {
+				groups = "GPIOB_8";
+				function = "gpio_periphs";
+				bias-pull-down;
+			};
+		};
+
 	};
 };
 

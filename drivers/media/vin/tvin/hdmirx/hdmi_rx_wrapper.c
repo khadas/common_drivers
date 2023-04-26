@@ -4294,8 +4294,8 @@ void rx_hpd_monitor(void)
 {
 	static u8 hpd_wait_cnt0, hpd_wait_cnt1, hpd_wait_cnt2;
 
-	if (!hdmi_cec_en)
-		return;
+	//if (!hdmi_cec_en)
+		//return;
 
 	if (rx.open_fg)
 		port_hpd_rst_flag &= ~(1 << rx.port);

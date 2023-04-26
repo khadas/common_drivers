@@ -123,6 +123,7 @@ static struct drm_crtc_state *meson_crtc_duplicate_state(struct drm_crtc *crtc)
 	new_state->eotf_type_by_property = cur_state->eotf_type_by_property;
 	new_state->dv_mode = cur_state->dv_mode;
 	new_state->preset_vmode = VMODE_INVALID;
+	new_state->vmode = cur_state->vmode;
 	new_state->prev_vrefresh = cur_state->prev_vrefresh;
 	new_state->prev_height = cur_state->prev_height;
 
@@ -581,6 +582,12 @@ static void am_meson_crtc_atomic_disable(struct drm_crtc *crtc,
 		crtc->state->event = NULL;
 	}
 	disable_irq(amcrtc->irq);
+
+	if ((meson_crtc_state->vmode & VMODE_MASK) == VMODE_LCD) {
+		DRM_INFO("%s[%d], lcd skip setting null vmode\n", __func__,
+			 meson_crtc_state->vmode);
+		return;
+	}
 
 	meson_crtc_state->vmode = VMODE_INVALID;
 	/* disable output by config null

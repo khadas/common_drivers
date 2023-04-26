@@ -478,7 +478,9 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 		offset = 0x0;
 
 	inp_ud_flag = READ_FRC_REG(FRC_INP_UE_DBG + offset) & 0x3f;
-	if (inp_ud_flag != 0) {
+	if (inp_ud_flag == 0x10 && (chip == ID_T5M || chip == ID_T3X)) {
+		return;
+	} else if (inp_ud_flag != 0) {
 		WRITE_FRC_REG_BY_CPU(FRC_INP_UE_CLR + offset, 0x3f);
 		WRITE_FRC_REG_BY_CPU(FRC_INP_UE_CLR + offset, 0x0);
 		frc_devp->ud_dbg.inp_undone_err = inp_ud_flag;
@@ -553,22 +555,21 @@ void mc_undone_read(struct frc_dev_s *frc_devp)
 	if (!frc_devp->probe_ok || !frc_devp->power_on_flag)
 		return;
 	if (frc_devp->ud_dbg.mcud_dbg_en) {
-		val = READ_FRC_REG(FRC_MC_DBG_MC_WRAP);
-		mc_ud_flag = (val >> 24) & 0x1;
+		val = READ_FRC_REG(FRC_RO_MC_STAT);
+		mc_ud_flag = (val >> 12) & 0x1;
 		if (mc_ud_flag != 0) {
-			frc_devp->frc_sts.mc_undone_cnt++;
+			frc_devp->frc_sts.mc_undone_cnt = (val >> 16) & 0xfff;
 			frc_devp->ud_dbg.mc_undone_err = 1;
 			WRITE_FRC_BITS(FRC_MC_HW_CTRL0, 1, 21, 1);
 			WRITE_FRC_BITS(FRC_MC_HW_CTRL0, 0, 21, 1);
-			if (frc_devp->frc_sts.mc_undone_cnt >= MAX_MC_UNDONE_CNT)
-				pr_frc(0, "outvs_cnt = %d, mc_ud_err cnt= %d\n",
-					frc_devp->out_sts.vs_cnt,
-					frc_devp->frc_sts.mc_undone_cnt);
-
 		} else {
 			frc_devp->ud_dbg.mc_undone_err = 0;
 			frc_devp->frc_sts.mc_undone_cnt = 0;
 		}
+		if (frc_devp->ud_dbg.mc_undone_err == 1)
+			pr_frc(0, "outvs_cnt = %d, mc_undo_vcnt= %d\n",
+				frc_devp->out_sts.vs_cnt,
+				frc_devp->frc_sts.mc_undone_cnt);
 	}
 }
 
@@ -954,16 +955,19 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	config_phs_lut(frc_top->frc_ratio_mode, frc_top->film_mode);
 	config_phs_regs(frc_top->frc_ratio_mode, frc_top->film_mode);
 	pr_frc(log, "%s\n", __func__);
-	//Config frc input size
-	tmpvalue = frc_top->hsize;
-	tmpvalue |= (frc_top->vsize) << 16;
-	WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
-	/*!!!!!!!!!  vpu register*/
-	if (chip == ID_T3X)
+	// Config frc input size & vpu register
+	if (chip == ID_T3X) {
+		tmpvalue = (frc_top->hsize + 15) & 0xFFF0;
+		tmpvalue |= (frc_top->vsize) << 16;
+		WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
 		frc_top->vfb =
 			(vpu_reg_read(ENCL_VIDEO_VAVON_BLINE_T3X) >> 16) & 0xffff;
-	else
+	} else {
+		tmpvalue = frc_top->hsize;
+		tmpvalue |= (frc_top->vsize) << 16;
+		WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
 		frc_top->vfb = vpu_reg_read(ENCL_VIDEO_VAVON_BLINE);
+	}
 	pr_frc(log, "ENCL_VIDEO_VAVON_BLINE:%d\n", frc_top->vfb);
 	//(frc_top->vfb / 4) * 3; 3/4 point of front vblank, default
 	reg_mc_out_line = frc_init_out_line();

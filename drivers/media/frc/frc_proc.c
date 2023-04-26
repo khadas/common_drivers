@@ -516,7 +516,10 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 
 	if (seamless_cnt) {
 		frc_input_init(devp, frc_top);
-		tmpvalue = frc_top->hsize;
+		//tmpvalue = frc_top->hsize;
+		//tmpvalue |= (frc_top->vsize) << 16;
+		//WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
+		tmpvalue = (frc_top->hsize + 15) & 0xFFF0;
 		tmpvalue |= (frc_top->vsize) << 16;
 		WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
 		frc_top->is_me1mc4 = 1;/*me:mc 1:4*/
@@ -1942,7 +1945,6 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
 			(in_hsize & 0x1fff) << 13 | (in_vsize & 0x1ff));
 	}
-
 	pr_frc(2, "align_vsize:%d align_hsize:%d\n", in_vsize, in_hsize);
 }
 

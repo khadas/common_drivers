@@ -2212,6 +2212,14 @@
 //Bit 2             reg_mcp_byp_en            // unsigned ,    RW, default = 0
 //Bit 1             reg_mc_byp_ctrl           // unsigned ,    RW, default = 0
 //Bit 0             reg_mc_bypass_en          // unsigned ,    RW, default = 0
+#define FRC_RO_MC_STAT                             0x3994
+//Bit 31:29         reserved
+//Bit 28:16         ro_undone_vcnt               // unsigned ,   RO, default = 0  ro_undone_vcnt
+//Bit 15:13         reserved
+//Bit 12            ro_undone_flag               // unsigned ,   RO, default = 0  ro_undone_flag
+//Bit 11: 8         ro_logo_corr_info            // unsigned ,   RO, default = 0  ro_logo_corr_info
+//Bit  7: 4         ro_chrm_corr_info            // unsigned ,   RO, default = 0  ro_chrm_corr_info
+//Bit  3: 0         ro_luma_corr_info            // unsigned ,   RO, default = 0  ro_luma_corr_info
 #define FRC_MC_DBG_MC_WRAP                         0x39ee
  //Bit 31	   ro_melogo_din_srdy		   // unsigned ,    RO, default = 0
  //Bit 30	   ro_melogo_din_rrdy		   // unsigned ,    RO, default = 0

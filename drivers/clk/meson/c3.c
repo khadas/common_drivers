@@ -567,6 +567,7 @@ static struct clk_regmap c3_gp0_pll_vco = {
 		.table = c3_gp0_pll_params_table,
 		.init_regs = c3_gp0_init_regs,
 		.init_count = ARRAY_SIZE(c3_gp0_init_regs),
+		.flags = CLK_MESON_PLL_IGNORE_INIT,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "gp0_pll_vco",

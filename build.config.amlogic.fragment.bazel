@@ -1,9 +1,7 @@
-DEFCONFIG1=amlogic_gki_defconfig
-#DEFCONFIG=gki_defconfig
 DEFCONFIG=amlogic_gki_defconfig
 
 function pre_defconfig_cmds() {
-	KCONFIG_DEFCONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${DEFCONFIG1}
+	KCONFIG_DEFCONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${DEFCONFIG}
 	local temp_file=`mktemp /tmp/config.XXXXXXXXXXXX`
 
 	if [[ ${GKI_CONFIG} == gki_20 ]]; then
@@ -38,4 +36,4 @@ function pre_defconfig_cmds() {
 export -f pre_defconfig_cmds
 PRE_DEFCONFIG_CMDS=pre_defconfig_cmds
 
-POST_DEFCONFIG_CMDS="rm ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${DEFCONFIG1}"
+POST_DEFCONFIG_CMDS="rm ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${DEFCONFIG}"

@@ -1,4 +1,4 @@
-From e33e1bf8e22318f8af9d3bfe1bce1ed729978e87 Mon Sep 17 00:00:00 2001
+From b7a6ffcc28f3802f0b5f77d6513ef6104e668b77 Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Thu, 2 Feb 2023 15:49:10 +0800
 Subject: [PATCH] init: initialize the building framework of androidu-5.15 for
@@ -20,6 +20,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
 ---
  .gitignore                                    |   3 +
  Makefile                                      |  35 ++
+ build.config.gki.aarch64                      |   4 +
  drivers/Kconfig                               |  52 +++
  .../greybus/tools/{Android.mk => Android_mk}  |   0
  kernel/Makefile                               |   3 +-
@@ -30,7 +31,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  scripts/amlogic/pre-commit-common_drivers     |  24 +
  scripts/checkpatch.pl                         | 158 +++----
  scripts/kconfig/Makefile                      |   9 +-
- 12 files changed, 862 insertions(+), 81 deletions(-)
+ 13 files changed, 866 insertions(+), 81 deletions(-)
  rename drivers/staging/greybus/tools/{Android.mk => Android_mk} (100%)
  create mode 100755 scripts/amlogic/licence_check.pl
  create mode 100755 scripts/amlogic/licence_pre.pl
@@ -122,6 +123,21 @@ index f75dd9ba2b0c..a2e4f0155031 100644
  
  # Declare the contents of the PHONY variable as phony.  We keep that
  # information in a variable so we can use it in if_changed and friends.
+diff --git a/build.config.gki.aarch64 b/build.config.gki.aarch64
+index 574c9ebf2fca..60099374a68e 100644
+--- a/build.config.gki.aarch64
++++ b/build.config.gki.aarch64
+@@ -2,6 +2,10 @@
+ . ${ROOT_DIR}/${KERNEL_DIR}/build.config.aarch64
+ . ${ROOT_DIR}/${KERNEL_DIR}/build.config.gki
+ 
++if [[ -f ${ROOT_DIR}/${KERNEL_DIR}/common_drivers/project/build.config.gki10 ]]; then
++source ${ROOT_DIR}/${KERNEL_DIR}/common_drivers/project/build.config.gki10
++fi
++
+ MAKE_GOALS="${MAKE_GOALS}
+ Image.lz4
+ Image.gz
 diff --git a/drivers/Kconfig b/drivers/Kconfig
 index 67f44716797e..09c9fcfb9236 100644
 --- a/drivers/Kconfig

@@ -958,7 +958,7 @@
 	dvbci {
 		compatible = "amlogic, dvbci";
 		dev_name = "dvbci";
-		status = "okay";
+		status = "disabled";
 		io_type = <4>; /* 0=iobus,1=spi,2=cimax,3=spi-t312 4:T5D,ci bus*/
 		addr_ts_mode_multiplex = <0>; /*AY301 not multi ts and addr,default 1*/
 		le_enable_level = <0>; /*LE pin enable level*/

@@ -387,6 +387,61 @@
 				clock-frequency = <100000>;
 				status = "disabled";
 			};
+
+			pwm_ab: pwm@1b000 {
+				compatible = "amlogic,meson-t5d-ee-pwm";
+				reg = <0x1b000 0x20>;
+				#pwm-cells = <3>;
+				clocks = <&xtal>,
+					<&xtal>,
+					<&xtal>,
+					<&xtal>;
+				clock-names = "clkin0",
+						"clkin1",
+						"clkin2",
+						"clkin3";
+				/* default xtal 24m  clkin0-clkin2 and
+				 * clkin1-clkin3 should be set the same
+				 */
+				status = "disabled";
+			};
+
+			pwm_cd: pwm@1a000 {
+				compatible = "amlogic,meson-t5d-ee-pwm";
+				reg = <0x1a000 0x20>;
+				#pwm-cells = <3>;
+				clocks = <&xtal>,
+					<&xtal>,
+					<&xtal>,
+					<&xtal>;
+				clock-names = "clkin0",
+						"clkin1",
+						"clkin2",
+						"clkin3";
+				/* default xtal 24m  clkin0-clkin2 and
+				 * clkin1-clkin3 should be set the same
+				 */
+				status = "disabled";
+			};
+
+			pwm_ef: pwm@19000 {
+				compatible = "amlogic,meson-t5d-ee-pwm";
+				reg = <0x19000 0x20>;
+				#pwm-cells = <3>;
+				clocks = <&xtal>,
+					<&xtal>,
+					<&xtal>,
+					<&xtal>;
+				clock-names = "clkin0",
+						"clkin1",
+						"clkin2",
+						"clkin3";
+				/* default xtal 24m  clkin0-clkin2 and
+				 * clkin1-clkin3 should be set the same
+				 */
+				status = "disabled";
+			};
+
 		}; /* end of cbus */
 
 		aobus: aobus@ff800000 {
@@ -425,6 +480,42 @@
 				#size-cells = <0>;
 				clocks = <&clkc CLKID_CLK81_I2C>;
 				clock-frequency = <100000>;
+				status = "disabled";
+			};
+
+			pwm_AO_ab: pwm@7000 {
+				compatible = "amlogic,meson-g12a-ao-pwm-ab";
+				reg = <0x7000 0x20>;
+				#pwm-cells = <3>;
+				clocks = <&xtal>,
+					<&xtal>,
+					<&xtal>,
+					<&xtal>;
+				clock-names = "clkin0",
+						"clkin1",
+						"clkin2",
+						"clkin3";
+				/* default xtal 24m  clkin0-clkin2 and
+				 * clkin1-clkin3 should be set the same
+				 */
+				status = "disabled";
+			};
+
+			pwm_AO_cd: pwm@2000 {
+				compatible = "amlogic,meson-g12a-ao-pwm-cd";
+				reg = <0x7000 0x20>;
+				#pwm-cells = <3>;
+				clocks = <&xtal>,
+					<&xtal>,
+					<&xtal>,
+					<&xtal>;
+				clock-names = "clkin0",
+						"clkin1",
+						"clkin2",
+						"clkin3";
+				/* default xtal 24m  clkin0-clkin2 and
+				 * clkin1-clkin3 should be set the same
+				 */
 				status = "disabled";
 			};
 
@@ -541,6 +632,49 @@
 				function = "i2cm_ao_a";
 				drive-strength-microamp = <3000>;
 				bias-disable;
+			};
+		};
+
+		pwm_AO_a_pins1:pwm_AO_a_pins1 {
+			mux {
+				groups = "pwm_ao_a_ao3";
+				function = "pwm_ao_a";
+			};
+		};
+		pwm_AO_a_pins2:pwm_AO_a_pins2 {
+			mux {
+				groups = "pwm_ao_a_ao7";
+				function = "pwm_ao_a";
+			};
+		};
+		pwm_AO_b_pins1:pwm_AO_b_pins1 {
+			mux {
+				groups = "pwm_ao_b";
+				function = "pwm_ao_b";
+			};
+		};
+		pwm_AO_c_pins1:pwm_AO_c_pins1 {
+			mux {
+				groups = "pwm_ao_c_ao8";
+				function = "pwm_ao_c";
+			};
+		};
+		pwm_AO_c_pins2:pwm_AO_c_pins2 {
+			mux {
+				groups = "pwm_ao_c_ao12";
+				function = "pwm_ao_c";
+			};
+		};
+		pwm_AO_d_pins1:pwm_AO_d_pins1 {
+			mux {
+				groups = "pwm_ao_d_ao2";
+				function = "pwm_ao_d";
+			};
+		};
+		pwm_AO_d_pins2:pwm_AO_d_pins2 {
+			mux {
+				groups = "pwm_ao_d_ao13";
+				function = "pwm_ao_d";
 			};
 		};
 	};
@@ -683,6 +817,108 @@
 			function = "i2cm_d";
 			drive-strength-microamp = <3000>;
 			bias-disable;
+		};
+	};
+
+	pwm_a_pins1:pwm_a_pins1 {
+		mux {
+			groups = "pwm_a_dv4";
+			function = "pwm_a";
+		};
+	};
+	pwm_a_pins2:pwm_a_pins2 {
+		mux {
+			groups = "pwm_a_h7";
+			function = "pwm_a";
+		};
+	};
+	pwm_a_pins3:pwm_a_pins3 {
+		mux {
+			groups = "pwm_a_z5";
+			function = "pwm_a";
+		};
+	};
+	pwm_a_pins4:pwm_a_pins4 {
+		mux {
+			groups = "pwm_a_z7";
+			function = "pwm_a";
+		};
+	};
+
+	pwm_b_pins1:pwm_b_pins1 {
+		mux {
+			groups = "pwm_b_c9";
+			function = "pwm_b";
+		};
+	};
+	pwm_b_pins2:pwm_b_pins2 {
+		mux {
+			groups = "pwm_b_z1";
+			function = "pwm_b";
+		};
+	};
+
+	pwm_c_pins1:pwm_c_pins1 {
+		mux {
+			groups = "pwm_c_c10";
+			function = "pwm_c";
+		};
+	};
+	pwm_c_pins2:pwm_c_pins2 {
+		mux {
+			groups = "pwm_c_h11";
+			function = "pwm_c";
+		};
+	};
+	pwm_c_pins3:pwm_c_pins3 {
+		mux {
+			groups = "pwm_c_z0";
+			function = "pwm_c";
+		};
+	};
+
+	pwm_d_pins1:pwm_d_pins1 {
+		mux {
+			groups = "pwm_d_dv2";
+			function = "pwm_d";
+		};
+	};
+	pwm_d_pins2:pwm_d_pins2 {
+		mux {
+			groups = "pwm_d_c6";
+			function = "pwm_d";
+		};
+	};
+	pwm_d_pins3:pwm_d_pins3 {
+		mux {
+			groups = "pwm_d_h9";
+			function = "pwm_d";
+		};
+	};
+	pwm_d_pins4:pwm_d_pins4 {
+		mux {
+			groups = "pwm_d_z2";
+			function = "pwm_d";
+		};
+	};
+
+	pwm_e_pins1:pwm_e_pins1 {
+		mux {
+			groups = "pwm_e_h8";
+			function = "pwm_e";
+		};
+	};
+	pwm_e_pins2:pwm_e_pins2 {
+		mux {
+			groups = "pwm_e_z4";
+			function = "pwm_e";
+		};
+	};
+
+	pwm_f_pins1:pwm_f_pins1 {
+		mux {
+			groups = "pwm_f";
+			function = "pwm_f";
 		};
 	};
 };

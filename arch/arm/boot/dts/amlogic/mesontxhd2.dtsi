@@ -315,6 +315,25 @@
 		//pinctrl-0=<&jtag_a_pins>;
 	};
 
+	vpu: vpu {
+		compatible = "amlogic, vpu-txhd2";
+		status = "okay";
+		clocks = <&clkc CLKID_VAPB>,
+			<&clkc CLKID_VPU_0>,
+			<&clkc CLKID_VPU_1>,
+			<&clkc CLKID_VPU>;
+		clock-names = "vapb_clk",
+			"vpu_clk0",
+			"vpu_clk1",
+			"vpu_clk";
+		reg = <0xff646000 0x200    /* clk */
+			0xff644000 0x40     /* pwrctrl */
+			0xff900000 0x40000>; /* vcbus */
+		clk_level = <5>;
+		/* 0: 100.0M    1: 166.7M    2: 200.0M    3: 250.0M */
+		/* 4: 333.3M    5: 400.0M */
+	};
+
 	soc {
 		compatible = "simple-bus";
 		#address-cells = <1>;

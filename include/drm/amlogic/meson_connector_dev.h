@@ -155,17 +155,26 @@ struct meson_panel_dev {
 	int (*get_modes)(struct meson_panel_dev *panel, struct drm_display_mode **modes, int *num);
 };
 
+/*dummy_l specified struct*/
+struct meson_dummyl_dev {
+	struct meson_connector_dev base;
+};
+
+/*dummy_l specified type*/
+#define DRM_MODE_CONNECTOR_MESON_DUMMY_L  0x200
+
 #define to_meson_panel_dev(x)	container_of(x, struct meson_panel_dev, base)
+#define to_meson_dummyl_dev(x)	container_of(x, struct meson_dummyl_dev, base)
 
 /*lcd specified struct*/
 
 /*amlogic extend connector type: for original type is not enough.
  *start from: 0xff,
- *extend connector: 0x100 ~ 0xfff,
+ *extend connector: 0x100 ~ 0x1ff,
  *legacy panel type for non-drm: 0x1000 ~
  */
 #define DRM_MODE_MESON_CONNECTOR_PANEL_START 0xff
-#define DRM_MODE_MESON_CONNECTOR_PANEL_END   0xfff
+#define DRM_MODE_MESON_CONNECTOR_PANEL_END   0x1ff
 
 enum {
 	DRM_MODE_CONNECTOR_MESON_LVDS_A = 0x100,

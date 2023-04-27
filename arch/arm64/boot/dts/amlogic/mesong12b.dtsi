@@ -1320,6 +1320,17 @@
 			"enci_int_gate1",
 			"encl_top_gate",
 			"encl_int_gate";
+
+		ports {
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				dummyl_to_drm: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <0>;
+				};
+			};
+		};
 	};
 
 	vdac {

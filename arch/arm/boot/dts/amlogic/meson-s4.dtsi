@@ -1806,6 +1806,17 @@
 	dummy_venc: dummy_venc {
 		compatible = "amlogic, dummy_venc_s4";
 		status = "okay";
+
+		ports {
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				dummyl_to_drm: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <0>;
+				};
+			};
+		};
 	};
 
 	adc: adc {

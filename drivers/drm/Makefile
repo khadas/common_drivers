@@ -31,11 +31,12 @@ $(MESON_DRM_MODULE_NAME)-y += meson_drv.o meson_plane.o \
                               meson_debugfs.o meson_vpu_util.o \
                               meson_drm_bind.o meson_lcd.o\
                               meson_hdmi.o meson_cvbs.o\
+                              meson_dummyl.o \
                               vpu-hw/meson_vpu_video_wrapper.o \
                               vpu-hw/meson_vpu_osd_mif.o \
                               vpu-hw/meson_osd_afbc.o \
                               vpu-hw/meson_osd_scaler.o \
-			      vpu-hw/meson_osd_proc.o \
+                              vpu-hw/meson_osd_proc.o \
                               vpu-hw/meson_vpu_osdblend.o \
                               vpu-hw/meson_vpu_hdr_dv.o \
                               vpu-hw/meson_vpu_postblend.o \

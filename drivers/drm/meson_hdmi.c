@@ -50,25 +50,6 @@ char attr_debugfs[16];
 /*for hw limitation, limit to 1080p/720p for recovery ui.*/
 static bool hdmitx_set_smaller_pref = true;
 
-/*TODO:will remove later.*/
-static struct drm_display_mode dummy_mode = {
-	.name = "dummy_l",
-	.type = DRM_MODE_TYPE_USERDEF,
-	.status = MODE_OK,
-	.clock = 25000,
-	.hdisplay = 720,
-	.hsync_start = 736,
-	.hsync_end = 798,
-	.htotal = 858,
-	.hskew = 0,
-	.vdisplay = 480,
-	.vsync_start = 489,
-	.vsync_end = 495,
-	.vtotal = 525,
-	.vscan = 0,
-	.flags =  DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
-};
-
 struct hdmitx_color_attr dv_color_attr_list[] = {
 	{HDMI_COLORSPACE_YUV444, 8}, //"444,8bit"
 	{HDMI_COLORSPACE_RESERVED6, COLORDEPTH_RESERVED}
@@ -300,6 +281,11 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 	char *strp = NULL;
 	u32 num, den;
 
+	if (!am_hdmitx) {
+		DRM_ERROR("am_hdmitx is NULL!\n");
+		return count;
+	}
+
 	edid = (struct edid *)am_hdmitx->hdmitx_dev->get_raw_edid();
 	drm_connector_update_edid_property(connector, edid);
 
@@ -328,6 +314,7 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 			}
 
 			strncpy(mode->name, para.name, DRM_DISPLAY_MODE_LEN);
+			mode->name[DRM_DISPLAY_MODE_LEN - 1] = '\0';
 			/* remove _4x3 suffix, in case misunderstand */
 			strp = strstr(mode->name, "_4x3");
 			if (strp)
@@ -415,16 +402,6 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 		kfree(vics);
 	} else {
 		DRM_ERROR("get vic_list from hdmitx dev return 0.\n");
-	}
-
-	/*TODO:add dummy mode temp.*/
-	mode = drm_mode_duplicate(connector->dev, &dummy_mode);
-	if (!mode) {
-		DRM_INFO("[%s:%d]dup dummy mode failed.\n", __func__,
-			 __LINE__);
-	} else {
-		drm_mode_probed_add(connector, mode);
-		count++;
 	}
 
 	return count;
@@ -1411,7 +1388,7 @@ static int meson_hdmitx_choose_preset_mode(struct am_hdmi_tx *hdmitx,
 	build_hdmitx_attr_str(attr_str, matched_attr.colorformat, matched_attr.bitdepth);
 	if (!hdmitx->hdmitx_dev->test_attr(modename, attr_str)) {
 		DRM_ERROR("mode %s NOT supporteds\n", modename);
-		vout_mode = vout_func_validate_vmode(amcrtc->vout_index, dummy_mode.name, 0);
+		vout_mode = vout_func_validate_vmode(amcrtc->vout_index, "dummy_l", 0);
 		meson_crtc_state->preset_vmode = vout_mode;
 	}
 

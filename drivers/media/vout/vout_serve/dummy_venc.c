@@ -28,6 +28,8 @@
 #endif
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/gki_module.h>
+#include <linux/component.h>
+#include <drm/amlogic/meson_drm_bind.h>
 
 /* Local Headers */
 #include "vout_func.h"
@@ -79,6 +81,8 @@ struct dummy_venc_data_s {
 
 struct dummy_venc_driver_s {
 	struct device *dev;
+	struct meson_dummyl_dev drm_instance;
+	int drm_id;
 	unsigned char status;
 	unsigned char vout_valid;
 	unsigned char viu_sel;
@@ -2046,6 +2050,47 @@ static const struct of_device_id dummy_venc_dt_match_table[] = {
 	{}
 };
 
+static int meson_dummyl_bind(struct device *dev,
+			      struct device *master, void *data)
+{
+	struct meson_drm_bound_data *bound_data = data;
+
+	dummy_encl_drv->drm_instance.base.ver = MESON_DRM_CONNECTOR_V10;
+	if (bound_data->connector_component_bind) {
+		dummy_encl_drv->drm_id = bound_data->connector_component_bind
+			(bound_data->drm,
+			DRM_MODE_CONNECTOR_MESON_DUMMY_L,
+			&dummy_encl_drv->drm_instance.base);
+		pr_err("%s dummyl[%d]\n", __func__, dummy_encl_drv->drm_id);
+	} else {
+		pr_err("no bind func from drm.\n");
+	}
+
+	return 0;
+}
+
+static void meson_dummyl_unbind(struct device *dev,
+				 struct device *master, void *data)
+{
+	struct meson_drm_bound_data *bound_data = data;
+
+	if (bound_data->connector_component_unbind) {
+		bound_data->connector_component_unbind(bound_data->drm,
+			DRM_MODE_CONNECTOR_MESON_DUMMY_L, dummy_encl_drv->drm_id);
+		pr_err("%s dummyl[%d]\n", __func__, dummy_encl_drv->drm_id);
+	} else {
+		pr_err("no unbind func from drm.\n");
+	}
+
+	dummy_encl_drv->drm_id = 0;
+}
+
+/*drm component bind*/
+static const struct component_ops meson_dummyl_bind_ops = {
+	.bind	= meson_dummyl_bind,
+	.unbind	= meson_dummyl_unbind,
+};
+
 static void dummy_venc_dts_config(struct device_node *of_node,
 		struct dummy_venc_data_s *vdata)
 {
@@ -2149,6 +2194,8 @@ static int dummy_venc_probe(struct platform_device *pdev)
 #endif
 
 	dummy_venc_creat_class();
+
+	component_add(&pdev->dev, &meson_dummyl_bind_ops);
 
 	VOUTPR("%s OK\n", __func__);
 

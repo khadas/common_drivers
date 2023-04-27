@@ -83,6 +83,10 @@
 				reg = <1>;
 				remote-endpoint = <&cvbs_to_drm>;
 			};
+			drm_to_dummyl: endpoint@2 {
+				reg = <2>;
+				remote-endpoint = <&dummyl_to_drm>;
+			};
 		};
 	};
 
@@ -254,6 +258,19 @@
 			hdmitx_to_drm: endpoint@0 {
 				reg = <0>;
 				remote-endpoint = <&drm_to_hdmitx>;
+			};
+		};
+	};
+};
+
+&dummy_venc {
+	ports {
+		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dummyl_to_drm: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&drm_to_dummyl>;
 			};
 		};
 	};

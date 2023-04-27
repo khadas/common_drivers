@@ -277,11 +277,11 @@
 		nn_power_version = <5>;
 	};
 
-	vrtc: rtc@0xfe010288 {
+	vrtc: rtc@0xff8000a8 {
 		compatible = "amlogic,meson-vrtc";
-		reg = <0x0 0xfe010288 0x0 0x4>; //SYSCTRL_STATUS_REG2
-		status = "disabled";
-		//mboxes = <&mhu_fifo 3>;
+		reg = <0xff8000a8 0x4>;
+		status = "okay";
+		mboxes = <&mailbox_pl 1>;
 	};
 
 	vcodec_dec {

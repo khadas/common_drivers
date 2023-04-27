@@ -173,7 +173,8 @@
 	pinctrl-names = "default", "clk-gate";
 
 	bus-width = <4>;
-//  cap-mmc-highspeed;
+	cap-sd-highspeed;
+	cap-mmc-highspeed;
 //  mmc-ddr-1_8v;
 //  mmc-hs200-1_8v;
 //  mmc-hs400-1_8v;

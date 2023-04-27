@@ -611,7 +611,6 @@
 			clock-names = "core", "mux0", "mux1",
 					"clkin0", "clkin1", "clkin2";
 			no-sdio;
-			no-sd;
 			card_type = <1>;
 			ignore_desc_busy;
 			mmc_debug_flag;

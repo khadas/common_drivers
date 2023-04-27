@@ -1846,7 +1846,8 @@ static void vd_proc_sr0_set(u32 vpp_index,
 			rdma_wr(vd_sr_slice_reg->srsharp0_sharp_sr2_ctrl, tmp_data);
 		}
 	}
-	rdma_wr(vd_sr_slice_reg->srsharp0_sharp_sr2_ctrl2, 0x0);
+	/* remove it, for pq db will take control */
+	//rdma_wr(vd_sr_slice_reg->srsharp0_sharp_sr2_ctrl2, 0x0);
 
 	super_scaler = get_super_scaler_status();
 	if (vd_proc_get_slice_num() == SLICE_NUM)

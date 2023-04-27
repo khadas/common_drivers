@@ -121,7 +121,7 @@ static int register_audio_controller(struct platform_device *pdev,
 	if (!res_mem)
 		return -ENOENT;
 
-	regs = devm_ioremap_resource(&pdev->dev, res_mem);
+	regs = ioremap(res_mem->start, resource_size(res_mem));
 	if (IS_ERR(regs))
 		return PTR_ERR(regs);
 

@@ -882,6 +882,8 @@
 				clocks = <&clkc CLKID_SYS_CLK_SPICC0>,
 					 <&clkc CLKID_SPICC0>;
 				clock-names = "sys", "spi";
+				assigned-clocks = <&clkc CLKID_SPICC0>;
+				assigned-clock-rates = <500000000>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				status = "disabled";
@@ -894,6 +896,8 @@
 				clocks = <&clkc CLKID_SYS_CLK_SPICC1>,
 					 <&clkc CLKID_SPICC1>;
 				clock-names = "sys", "spi";
+				assigned-clocks = <&clkc CLKID_SPICC1>;
+				assigned-clock-rates = <500000000>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				status = "disabled";
@@ -906,6 +910,8 @@
 				clocks = <&clkc CLKID_SYS_CLK_SPICC2>,
 					 <&clkc CLKID_SPICC2>;
 				clock-names = "sys", "spi";
+				assigned-clocks = <&clkc CLKID_SPICC2>;
+				assigned-clock-rates = <500000000>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				status = "disabled";
@@ -915,9 +921,10 @@
 				compatible = "amlogic,meson-a4-spicc-v2";
 				reg = <0x0 0x50300 0x0 0x38>;
 				interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>;
-				//clocks = <&clkc CLKID_SYS_CLK_SPICC3>,
-				//	 <&clkc CLKID_SPICC3>;
-				//clock-names = "sys", "spi";
+				clocks = <&clkc CLKID_SPICC3>;
+				clock-names = "spi";
+				assigned-clocks = <&clkc CLKID_SPICC3>;
+				assigned-clock-rates = <500000000>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				status = "disabled";
@@ -927,9 +934,10 @@
 				compatible = "amlogic,meson-a4-spicc-v2";
 				reg = <0x0 0x50400 0x0 0x38>;
 				interrupts = <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>;
-				//clocks = <&clkc CLKID_SYS_CLK_SPICC4>,
-				//	 <&clkc CLKID_SPICC4>;
-				//clock-names = "sys", "spi";
+				clocks = <&clkc CLKID_SPICC4>;
+				clock-names = "spi";
+				assigned-clocks = <&clkc CLKID_SPICC4>;
+				assigned-clock-rates = <500000000>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				status = "disabled";
@@ -939,9 +947,10 @@
 				compatible = "amlogic,meson-a4-spicc-v2";
 				reg = <0x0 0x50500 0x0 0x38>;
 				interrupts = <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>;
-				//clocks = <&clkc CLKID_SYS_CLK_SPICC5>,
-				//	 <&clkc CLKID_SPICC5>;
-				//clock-names = "sys", "spi";
+				clocks = <&clkc CLKID_SPICC5>;
+				clock-names = "spi";
+				assigned-clocks = <&clkc CLKID_SPICC5>;
+				assigned-clock-rates = <500000000>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				status = "disabled";
@@ -4195,7 +4204,7 @@
 				 "spi0_clk_h11";
 			function = "spi0";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4207,7 +4216,7 @@
 				 "spi0_clk_m";
 			function = "spi0";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4221,7 +4230,7 @@
 				 "spi1_clk_h";
 			function = "spi1";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4235,7 +4244,7 @@
 				 "spi1_clk_z";
 			function = "spi1";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4249,7 +4258,7 @@
 				 "spi2_clk_c";
 			function = "spi2";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4261,7 +4270,7 @@
 				 "spi2_clk_m";
 			function = "spi2";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4275,7 +4284,7 @@
 				 "spi2_clk_p";
 			function = "spi2";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4287,7 +4296,7 @@
 				 "spi3_clk_c";
 			function = "spi3";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4299,7 +4308,7 @@
 				 "spi3_clk_p";
 			function = "spi3";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4311,7 +4320,7 @@
 				 "spi4_clk_c";
 			function = "spi4";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4323,7 +4332,7 @@
 				 "spi4_clk_p";
 			function = "spi4";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4335,7 +4344,7 @@
 				 "spi5_clk_c";
 			function = "spi5";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 
@@ -4347,7 +4356,7 @@
 				 "spi5_clk_p";
 			function = "spi5";
 			bias-pull-up;
-			drive-strength-microamp = <3000>;
+			drive-strength-microamp = <4000>;
 		};
 	};
 

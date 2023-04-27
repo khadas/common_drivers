@@ -1559,7 +1559,7 @@ void vdin_set_matrix_s5(struct vdin_dev_s *devp)
 			devp->csc_idx = VDIN_MATRIX_NULL;
 		}
 		//TODO:Kernel panic
-		//vdin_set_hdr_s5(devp);
+		vdin_set_hdr_s5(devp);
 
 //		#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 //		if (vdin_is_dolby_signal_in(devp) ||

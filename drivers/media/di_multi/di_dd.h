@@ -30,7 +30,7 @@
 #define __CH_NUB_IDLE	(2)
 #define __CH_MAX	(4)
 
-#define __NUB_BLK_MAX	(20) //tmp
+#define __NUB_BLK_MAX	(63) //tmp
 #define __NUB_DIS_MAX	(63)
 
 #define __SIZE_QC_4	(4)

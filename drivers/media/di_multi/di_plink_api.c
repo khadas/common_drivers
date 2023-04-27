@@ -305,6 +305,7 @@ static bool dpvpp_dbg_force_bypass_2(void)
 {
 	if (tst_pre_vpp & DI_BIT19)
 		return true;
+
 	if (dimp_get(edi_mp_di_debug_flag) & 0x100000)
 		return true;
 
@@ -361,10 +362,10 @@ static void ext_vpp_prelink_state_changed_notify(void)
 }
 
 /* allow vpp sw other*/
-static void ext_vpp_prelink_real_sw(bool sw)
+static void ext_vpp_prelink_real_sw(bool sw, bool wait)
 {
 #ifndef VPP_LINK_USED_FUNC
-
+	di_prelink_force_dmc_priority(sw, wait);
 #else
 	PR_WARN("dbg:%s:no this function\n", __func__);
 #endif
@@ -978,6 +979,73 @@ static int event_qurey_state(struct dimn_itf_s *itf)
 	return RECEIVER_INACTIVE;
 }
 #endif /* DIM_PLINK_ENABLE_CREATE */
+
+static struct vframe_s *in_patch_first_buffer(struct dimn_itf_s *itf)
+{
+	unsigned int cnt;
+	struct buf_que_s *pbufq;
+	union q_buf_u q_buf;
+	struct dim_nins_s *ins;
+	bool ret;
+	unsigned int qt_in;
+	unsigned int bindex;
+	struct di_ch_s *pch;
+	struct vframe_s *vf = NULL;
+
+	if (!itf)
+		return NULL;
+
+	if (itf->bind_ch >= DI_CHANNEL_MAX) {
+		PR_ERR("%s:ch[%d] overflow\n", __func__, itf->bind_ch);
+		return NULL;
+	}
+	pch = get_chdata(itf->bind_ch);
+
+	if (!pch) {
+		PR_ERR("%s:no pch:id[%d]\n", __func__, itf->bind_ch);
+		return NULL;
+	}
+	pbufq = &pch->nin_qb;
+
+	qt_in = QBF_NINS_Q_CHECK;
+
+	cnt = nins_cnt(pch, qt_in);
+
+	if (!cnt)
+		return NULL;
+
+	ret = qbuf_out(pbufq, qt_in, &bindex);
+	if (!ret) {
+		PR_ERR("%s:1:%d:can't get out\n", __func__, bindex);
+		return NULL;
+	}
+	if (bindex >= DIM_NINS_NUB) {
+		PR_ERR("%s:2:%d\n", __func__, bindex);
+		return NULL;
+	}
+	q_buf = pbufq->pbuf[bindex];
+	ins = (struct dim_nins_s *)q_buf.qbc;
+	vf = (struct vframe_s *)ins->c.ori;
+	if (!vf) {
+		ins->c.vfm_cp.decontour_pre = NULL;
+		memset(&ins->c, 0, sizeof(ins->c));
+		qbuf_in(pbufq, QBF_NINS_Q_IDLE, bindex);
+		PR_ERR("%s:3:%d\n", __func__, bindex);
+		return NULL;
+	}
+	vf->di_flag = 0;
+	vf->di_flag |= DI_FLAG_DI_GET;
+	if (ins->c.vfm_cp.decontour_pre)
+		vf->decontour_pre = ins->c.vfm_cp.decontour_pre;
+	else
+		vf->decontour_pre = NULL;
+	ins->c.vfm_cp.decontour_pre = NULL;
+	memset(&ins->c, 0, sizeof(ins->c));
+	qbuf_in(pbufq, QBF_NINS_Q_IDLE, bindex);
+	itf->c.sum_pre_get++;
+	dim_print("%s:%px cnt:%d\n", __func__, vf, itf->c.sum_pre_get);
+	return vf;
+}
 
 struct vframe_s *in_vf_get(struct dimn_itf_s *itf)
 {
@@ -2878,7 +2946,7 @@ static bool dpvpp_reg_alloc_mem(struct dimn_itf_s *itf)
 		return false;
 	}
 
-	PR_INF("dim:%s:\n", __func__);
+	dbg_mem2("%s:\n", __func__);
 	itf->c.src_state &= (~EDVPP_SRC_NEED_MEM);
 	return true;
 }
@@ -2907,7 +2975,7 @@ static void dpvpp_mem_release(struct dim_prevpp_ds_s *ds)
 	udiff	-= ustime;
 	PR_INF("%s:use %u us\n", __func__, (unsigned int)udiff);
 #else
-	PR_INF("dim:%s:\n", __func__);
+	PR_INF("%s:\n", __func__);
 #endif
 }
 #endif
@@ -2924,7 +2992,7 @@ irqreturn_t dpvpp_irq(int irq, void *dev_instance)
 	//unsigned long irq_flg;
 	static unsigned int dbg_last_fcnt;
 
-	//PR_INF("dim:%s:\n", __func__);
+	//dim_print("%s:\n", __func__);
 	hw = &get_datal()->dvs_prevpp.hw;
 	id = hw->id_c;
 
@@ -3669,7 +3737,7 @@ static void mem_hw_reg(void)
 	struct dim_pvpp_hw_s *hw;
 
 	hw = &get_datal()->dvs_prevpp.hw;
-	PR_INF("dim:%s\n", __func__);
+	dbg_plink1("%s\n", __func__);
 	init_completion(&hw->pw_done);
 	if (dim_is_pst_wr())
 		hw->en_pst_wr_test	= true;
@@ -4457,17 +4525,23 @@ static int dpvpp_reg_link_sw(bool vpp_disable_async)
 			       __func__, ton_vpp, ton_di, hw->op_n);
 		}
 	} else {
+		bool sw_done = false;
+
 		//off:
 		/*check if bypass*/
 		if (!ton_di && !hw->has_notify_vpp) {
 			/* non-block */
 			ext_vpp_disable_prelink_notify(vpp_disable_async);
+			ext_vpp_prelink_real_sw(false, false);
 			hw->has_notify_vpp = true;
+			sw_done = true;
 		}
 		if (hw->dis_last_para.dmode != EPVPP_DISPLAY_MODE_BYPASS) {
 			PR_INF("wait for bypass\n");
 			return 0;
 		}
+		if (!sw_done)
+			ext_vpp_prelink_real_sw(false, true);
 		atomic_set(&hw->link_sts, 0);//on
 		get_datal()->pre_vpp_active = false;/* interface */
 		PR_INF("%s:set inactive<%d, %d>\n", __func__, ton_vpp, ton_di);
@@ -5484,14 +5558,18 @@ static bool vf_m_in(struct dimn_itf_s *itf)
 	}
 
 	for (i = 0; i < (DIM_K_VFM_IN_LIMIT - in_nub); i++) {
-		vf = in_vf_peek(itf);
-		if (!vf)
-			break;
 #ifdef pre_dbg_is_run
 		if (!pre_dbg_is_run(itf->bind_ch)) //p_pause
 			break;
 #endif
-		vf = in_vf_get(itf);
+		vf = in_patch_first_buffer(itf);
+		if (!vf) {
+			vf = in_vf_peek(itf);
+			if (!vf)
+				break;
+
+			vf = in_vf_get(itf);
+		}
 		if (!vf)
 			break;
 		mvf = (struct vframe_s *)qidle->ops.get(qidle);
@@ -5720,7 +5798,7 @@ void dpvpph_unreg_setting(void)
 	struct di_dev_s *de_devp = get_dim_de_devp();
 	const struct reg_acc *op = &di_pre_regset;//&dpvpp_regset; //
 
-	PR_INF("dim:%s:\n", __func__);
+	dbg_plink1("%s:\n", __func__);
 	//tmp sc2_dbg_set(0);
 	/*set flg*/
 #ifdef HIS_CODE //tmp
@@ -5823,7 +5901,7 @@ void dpvpph_unreg_setting(void)
 				     dimp_get(edi_mp_clock_low_ratio));
 		#endif
 	}
-	PR_INF("dim:%s:end\n", __func__);
+	dbg_plink1("%s:end\n", __func__);
 }
 
 /* use this for coverity */
@@ -7019,7 +7097,7 @@ static void dpvpph_prelink_sw(const struct reg_acc *op, bool p_link)
 
 	if (p_link) {
 		/* set on*/
-		ext_vpp_prelink_real_sw(true);
+		ext_vpp_prelink_real_sw(true, false);
 		val = op->rd(VD1_AFBCD0_MISC_CTRL);
 		if (DIM_IS_IC_EF(SC2)) {
 			/* ? */
@@ -7045,7 +7123,6 @@ static void dpvpph_prelink_sw(const struct reg_acc *op, bool p_link)
 			op->bwr(VD1_AFBCD0_MISC_CTRL, 0, 8, 1);
 			op->bwr(VD1_AFBCD0_MISC_CTRL, 0, 20, 1);
 		}
-		ext_vpp_prelink_real_sw(false);
 		//prelink_status = false;
 		dbg_plink1("c_sw:bk\n");
 	}
@@ -8843,7 +8920,7 @@ static unsigned int cnt_dct_buf_size(struct c_cfg_dct_s *dct_inf)
 	int total_size = grd_size + yds_size + cds_size;
 
 	if (!dct_inf) {
-		pr_err("dim:err:%s:\n", __func__);
+		PR_ERR("%s:\n", __func__);
 		return 0;
 	}
 	dct_inf->grd_size	= grd_size;

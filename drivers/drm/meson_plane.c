@@ -4,9 +4,15 @@
  */
 
 #include <linux/types.h>
+#include <linux/sync_file.h>
+#include <linux/dma-fence.h>
+#include <linux/dma-buf.h>
+#include <uapi/linux/dma-buf.h>
+#include <uapi/linux/magic.h>
 #ifdef CONFIG_AMLOGIC_MEDIA_FB
 #include <linux/amlogic/media/osd/osd_logo.h>
 #endif
+
 #include "meson_plane.h"
 #include "meson_crtc.h"
 #include "meson_vpu.h"
@@ -124,6 +130,67 @@ static const u32 video_supported_drm_formats[] = {
 	DRM_FORMAT_UYVY,
 	DRM_FORMAT_VUY888,
 };
+
+#if IS_ENABLED(CONFIG_SYNC_FILE)
+int am_meson_dmabuf_export_sync_file_ioctl(struct drm_device *dev,
+	void *data, struct drm_file *file_priv)
+{
+	struct drm_meson_dma_buf_export_sync_file *arg = data;
+	struct dma_fence *fence = NULL;
+	struct dma_buf *dmabuf = NULL;
+	struct sync_file *sync_file;
+	int fd, ret;
+
+	DRM_DEBUG("dmabuf-%px fence-%px", dmabuf, fence);
+	if (arg->flags & ~DMA_BUF_SYNC_RW)
+		return -EINVAL;
+
+	if ((arg->flags & DMA_BUF_SYNC_RW) == 0)
+		return -EINVAL;
+
+	fd = get_unused_fd_flags(O_CLOEXEC);
+	if (fd < 0)
+		return fd;
+	if (arg->dmabuf_fd <= 0)
+		return -EINVAL;
+
+	dmabuf = dma_buf_get(arg->dmabuf_fd);
+	if (IS_ERR_OR_NULL(dmabuf))
+		return -EINVAL;
+
+	if (arg->flags & DMA_BUF_SYNC_WRITE) {
+		//fence = dma_resv_get_singleton_unlocked(dmabuf->resv);
+		//if (IS_ERR(fence)) {
+		//	ret = PTR_ERR(fence);
+		//	goto err_put_fd;
+		//}
+	} else if (arg->flags & DMA_BUF_SYNC_READ) {
+		fence = dma_resv_get_excl_unlocked(dmabuf->resv);
+	}
+	if (!fence)
+		fence = dma_fence_get_stub();
+
+	sync_file = sync_file_create(fence);
+
+	dma_fence_put(fence);
+	dma_buf_put(dmabuf);
+
+	if (!sync_file) {
+		ret = -ENOMEM;
+		goto err_put_fd;
+	}
+
+	fd_install(fd, sync_file->file);
+
+	arg->fd = fd;
+	DRM_DEBUG("dmabuf-%px fence-%px fd-%d", dmabuf, fence, fd);
+	return 0;
+
+err_put_fd:
+	put_unused_fd(fd);
+	return ret;
+}
+#endif
 
 static void
 meson_plane_position_calc(struct meson_vpu_osd_layer_info *plane_info,

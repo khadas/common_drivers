@@ -11,6 +11,7 @@
 #include <drm/drm_plane.h>
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
+#include <uapi/amlogic/drm/meson_drm.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/meson_uvm_core.h>
 #include <drm/amlogic/meson_drm_plane.h>
@@ -109,4 +110,8 @@ meson_create_scaling_filter_prop(struct drm_device *dev,
 void meson_video_set_vfmmode(struct device_node *of_node,
 	struct meson_drm *priv);
 
+#if IS_ENABLED(CONFIG_SYNC_FILE)
+int am_meson_dmabuf_export_sync_file_ioctl(struct drm_device *dev,
+	void *data, struct drm_file *file_priv);
+#endif
 #endif

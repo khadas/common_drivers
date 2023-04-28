@@ -1,3 +1,4 @@
   spi_finalize_current_message
   strim
   bpf_trace_run8
+  dma_fence_get_stub

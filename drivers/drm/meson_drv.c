@@ -40,7 +40,7 @@
 #include "meson_sysfs.h"
 #include "meson_writeback.h"
 #include "meson_logo.h"
-
+#include "meson_plane.h"
 #include <linux/amlogic/media/osd/osd_logo.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/cpu_version.h>
@@ -90,6 +90,10 @@ static const struct drm_ioctl_desc meson_ioctls[] = {
 	#endif
 	DRM_IOCTL_DEF_DRV(MESON_ASYNC_ATOMIC, meson_async_atomic_ioctl,
 			  DRM_UNLOCKED | DRM_AUTH | DRM_RENDER_ALLOW),
+	#if IS_ENABLED(CONFIG_SYNC_FILE)
+	DRM_IOCTL_DEF_DRV(MESON_DMABUF_EXPORT_SYNC_FILE, am_meson_dmabuf_export_sync_file_ioctl,
+			  DRM_MASTER),
+	#endif
 };
 
 DEFINE_DRM_GEM_FOPS(meson_drm_fops);

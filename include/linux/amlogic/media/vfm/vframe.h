@@ -417,7 +417,7 @@ struct drm_info_t {
 
 struct emp_info {
 	void *addr;
-	unsigned int size;
+	unsigned int size; //dv is pkt_cnt
 };
 
 struct spd_data {

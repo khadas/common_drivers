@@ -154,7 +154,51 @@ struct tee_sys_info {
 #define PTA_STEST_UUID UUID_INIT(0x7a7050be, 0xb5f8, 0x4c06, \
 			0x81, 0xca, 0x52, 0x3a, 0xb2, 0x02, 0xa3, 0x8a)
 
+/* debug pta related */
+#define DEBUG_CMD_GET_TRACE_EXT_LEVEL   17
+#define DEBUG_CMD_SET_TRACE_EXT_LEVEL   18
+
+#define PTA_DEBUG_UUID UUID_INIT(0xd96a5b40, 0xe2c7, 0xb1af, \
+			0x87, 0x94, 0x10, 0x02, 0xa5, 0xd5, 0xc6, 0x1c)
+
 static struct class *tee_sys_class;
+
+/* TEE Sub-modules ID */
+enum module_id_e {
+	MODULE_ID_KEYTABLE   = 0,
+	MODULE_ID_KEYLADDER  = 1,
+	MODULE_ID_CRYPTO     = 2,
+	MODULE_ID_TVP        = 3,
+	MODULE_ID_DMC        = 4,
+	MODULE_ID_HDCP       = 5,
+	MODULE_ID_EFUSE      = 6,
+	MODULE_ID_PROVISION  = 7,
+	MODULE_ID_PERMISSION = 8,
+	MODULE_ID_RNG        = 9,
+	MODULE_ID_RPMB       = 10,
+	MODULE_ID_SECTIMER   = 11,
+	MODULE_ID_VIDEOFW    = 12,
+	MODULE_ID_WATERMARK  = 13,
+	MODULE_ID_MAX,
+};
+
+/* TEE Sub-modules Name */
+static const char *tee_module_name[MODULE_ID_MAX] = {
+	"keytable",  /* MODULE_ID_KEYTABLE */
+	"keyladder", /* MODULE_ID_KEYLADDER */
+	"crypto",    /* MODULE_ID_CRYPTO */
+	"tvp",       /* MODULE_ID_TVP */
+	"dmc",       /* MODULE_ID_DMC */
+	"hdcp",      /* MODULE_ID_HDCP */
+	"efuse",     /* MODULE_ID_EFUSE */
+	"provision", /* MODULE_ID_PROVISION */
+	"permission",/* MODULE_ID_PERMISSION */
+	"rng",       /* MODULE_ID_RNG */
+	"rpmb",      /* MODULE_ID_RPMB */
+	"sectimer",  /* MODULE_ID_SECTIMER */
+	"videofw",   /* MODULE_ID_VIDEOFW */
+	"watermark", /* MODULE_ID_WATERMARK */
+};
 
 struct tee_smc_calls_revision_result {
 	unsigned long major;
@@ -276,6 +320,62 @@ static int tee_get_sys_info(char *buf)
 
 out_shm:
 	tee_shm_free(shm_pool);
+out:
+	tee_client_close_context(ctx);
+	return ret;
+}
+
+static int tee_set_trace_ext_level(int module_id, int trace_level)
+{
+	int ret = 0;
+	struct tee_context *ctx = NULL;
+	uuid_t uuid = PTA_DEBUG_UUID;
+	struct tee_param param[TEE_PARAM_NUM] = { 0 };
+
+	/* Open context with TEE driver */
+	ctx = tee_client_open_context(NULL, optee_ctx_match, NULL, NULL);
+	if (IS_ERR(ctx)) {
+		pr_err("%s open context failed\n", __func__);
+		return -ENODEV;
+	}
+
+	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
+	param[0].u.value.a = module_id;
+	param[0].u.value.b = trace_level;
+
+	ret = tee_pta_invoke_cmd(ctx, uuid, DEBUG_CMD_SET_TRACE_EXT_LEVEL, param);
+	if (ret)
+		pr_err("%s invoke set trace level command failed\n", __func__);
+
+	tee_client_close_context(ctx);
+	return ret;
+}
+
+static int tee_get_trace_ext_level(int module_id, int *trace_level)
+{
+	int ret = 0;
+	struct tee_context *ctx = NULL;
+	uuid_t uuid = PTA_DEBUG_UUID;
+	struct tee_param param[TEE_PARAM_NUM] = { 0 };
+
+	/* Open context with TEE driver */
+	ctx = tee_client_open_context(NULL, optee_ctx_match, NULL, NULL);
+	if (IS_ERR(ctx)) {
+		pr_err("%s open context failed\n", __func__);
+		return -ENODEV;
+	}
+
+	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INOUT;
+	param[0].u.value.a = module_id;
+
+	ret = tee_pta_invoke_cmd(ctx, uuid, DEBUG_CMD_GET_TRACE_EXT_LEVEL, param);
+	if (ret) {
+		pr_err("%s invoke get trace level command failed\n", __func__);
+		*trace_level = -1;
+		goto out;
+	}
+
+	*trace_level = param[0].u.value.b;
 out:
 	tee_client_close_context(ctx);
 	return ret;
@@ -406,6 +506,22 @@ static ssize_t sys_boot_complete_show(struct class *class,
 	return ret;
 }
 
+static ssize_t modules_log_level_show(struct class *class,
+				struct class_attribute *attr, char *buf)
+{
+	int ret = 0;
+	int trace_level = 0;
+	int i = 0;
+
+	for (i = 0; i < MODULE_ID_MAX; i++) {
+		tee_get_trace_ext_level(i, &trace_level);
+		sprintf(buf + strlen(buf), "%-55s | %d\n", tee_module_name[i], trace_level);
+	}
+
+	ret = strlen(buf);
+	return ret;
+}
+
 static ssize_t sys_boot_complete_store(struct class *class,
 				struct class_attribute *attr,
 				const char *buf, size_t count)
@@ -474,12 +590,34 @@ static ssize_t log_level_store(struct class *class,
 	return count;
 }
 
+static ssize_t modules_log_level_store(struct class *class,
+				struct class_attribute *attr,
+				const char *buf, size_t count)
+{
+	int val = 0;
+	int trace_level = 0;
+	int i = 0;
+
+	if (kstrtoint(buf, 0, &val))
+		return -EINVAL;
+
+	trace_level = val & 0x7;
+
+	for (i = 0; i < MODULE_ID_MAX; i++) {
+		if ((val & (0x1 << (3 + i))) != 0)
+			tee_set_trace_ext_level(i, trace_level);
+	}
+
+	return count;
+}
+
 static CLASS_ATTR_RO(os_version);
 static CLASS_ATTR_RO(api_version);
 static CLASS_ATTR_RO(sys_info);
 static CLASS_ATTR_RW(sys_boot_complete);
 static CLASS_ATTR_RW(log_mode);
 static CLASS_ATTR_RW(log_level);
+static CLASS_ATTR_RW(modules_log_level);
 
 /*
  * index: firmware index
@@ -815,6 +953,12 @@ int tee_create_sysfs(void)
 	ret = class_create_file(tee_sys_class, &class_attr_log_level);
 	if (ret != 0) {
 		pr_err("create class file log_level fail\n");
+		return ret;
+	}
+
+	ret = class_create_file(tee_sys_class, &class_attr_modules_log_level);
+	if (ret != 0) {
+		pr_err("create class file modules_log_level fail\n");
 		return ret;
 	}
 

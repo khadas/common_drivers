@@ -20,8 +20,8 @@
 
 static int __init gki_tool_init(void)
 {
-	module_debug_init();
 	gki_module_init();
+	module_debug_init();
 	return 0;
 }
 

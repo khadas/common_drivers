@@ -26,6 +26,32 @@
 
 static int ramoops_ftrace_en;
 
+/*
+ * bit0: io_trace
+ * bit1: sched_trace
+ * bit2: irq_trace
+ * bit3: smc_trace
+ * bit4: other_trace
+ * disable bits will forbit record this type log
+ * record all type log as default
+ */
+int ramoops_trace_mask = 0x1f;
+EXPORT_SYMBOL(ramoops_trace_mask);
+
+static int ramoops_trace_mask_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &ramoops_trace_mask)) {
+		pr_err("ramoops_trace_mask error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("ramoops_trace_mask=", ramoops_trace_mask_setup);
+
 int ramoops_io_skip = 1;
 
 static int ramoops_io_skip_setup(char *buf)

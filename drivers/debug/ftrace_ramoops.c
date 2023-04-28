@@ -37,7 +37,7 @@ void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsign
 	int cpu;
 	struct io_trace_data data;
 
-	if (!ramoops_io_en)
+	if (!ramoops_io_en || !(ramoops_trace_mask & 0x1))
 		return;
 
 	if ((flag == PSTORE_FLAG_IO_R || flag == PSTORE_FLAG_IO_W) && IRQ_D)
@@ -91,6 +91,9 @@ static void schedule_hook(void *data, struct task_struct *prev, struct task_stru
 {
 	char buf[100];
 
+	if (!(ramoops_trace_mask & 0x2))
+		return;
+
 	memset(buf, 0, sizeof(buf));
 	sprintf(buf, "next_task:%s,pid:%d", next->comm, next->pid);
 
@@ -141,12 +144,147 @@ static int power_handler_pre(struct kprobe *p, struct pt_regs *regs)
 	return 0;
 }
 
+#if IS_MODULE(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+/*
+ * struct regmap_mmio_context sync from common/drivers/base/regmap/regmap-mmio.c
+ */
+struct regmap_mmio_context {
+	void __iomem *regs;
+	unsigned int val_bytes;
+	bool relaxed_mmio;
+
+	bool attached_clk;
+	struct clk *clk;
+
+	void (*reg_write)(struct regmap_mmio_context *ctx,
+			  unsigned int reg, unsigned int val);
+	unsigned int (*reg_read)(struct regmap_mmio_context *ctx,
+					unsigned int reg);
+};
+
+struct regmap_data {
+	unsigned long reg;
+	unsigned long val;
+	unsigned long flag;
+};
+
+static int regmap_read_entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct regmap_data *data;
+#if defined(CONFIG_ARM64)
+	unsigned long reg = (unsigned long)
+			(((struct regmap_mmio_context *)regs->regs[0])->regs + regs->regs[1]);
+#elif defined(CONFIG_ARM)
+	unsigned long reg = (unsigned long)
+			(((struct regmap_mmio_context *)regs->ARM_r0)->regs + regs->ARM_r1);
+#endif
+	/*
+	 * #define pstore_ftrace_io_rd(reg)		\
+	 * unsigned long irqflg;					\
+	 * pstore_io_save(reg, 0, PSTORE_FLAG_IO_R, &irqflg)
+	 */
+	pstore_ftrace_io_rd(reg);
+
+	data = (struct regmap_data *)ri->data;
+	(*data).reg = reg;
+	(*data).flag = irqflg;
+
+	return 0;
+}
+
+static int regmap_read_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct regmap_data data = *(struct regmap_data *)ri->data;
+	unsigned long irqflg = data.flag;
+
+	/*
+	 * #define pstore_ftrace_io_rd_end(reg)	\
+	 * pstore_io_save(reg, 0, PSTORE_FLAG_IO_R_END, &irqflg)
+	 */
+	pstore_ftrace_io_rd_end(data.reg);
+
+	return 0;
+}
+
+static struct kretprobe regmap_mmio_read_krp = {
+	.handler = regmap_read_ret_handler,
+	.entry_handler = regmap_read_entry_handler,
+	.data_size = sizeof(struct regmap_data),
+};
+
+static int regmap_write_entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct regmap_data *data;
+#if defined(CONFIG_ARM64)
+	unsigned long reg = (unsigned long)
+			(((struct regmap_mmio_context *)regs->regs[0])->regs + regs->regs[1]);
+	unsigned long val = (unsigned long)regs->regs[2];
+#elif defined(CONFIG_ARM)
+	unsigned long reg = (unsigned long)
+			(((struct regmap_mmio_context *)regs->ARM_r0)->regs + regs->ARM_r1);
+	unsigned long val = (unsigned long)regs->ARM_r2;
+#endif
+	/*
+	 * #define pstore_ftrace_io_wr(reg, val)	\
+	 * unsigned long irqflg;					\
+	 * pstore_io_save(reg, val, PSTORE_FLAG_IO_W, &irqflg)
+	 */
+	pstore_ftrace_io_wr(reg, val);
+
+	data = (struct regmap_data *)ri->data;
+	(*data).reg = reg;
+	(*data).val = val;
+	(*data).flag = irqflg;
+
+	return 0;
+}
+
+static int regmap_write_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct regmap_data data = *(struct regmap_data *)ri->data;
+	unsigned long irqflg = data.flag;
+
+	/*
+	 * #define pstore_ftrace_io_wr_end(reg, val)	\
+	 * pstore_io_save(reg, val, PSTORE_FLAG_IO_W_END, &irqflg)
+	 */
+	pstore_ftrace_io_wr_end(data.reg, data.val);
+
+	return 0;
+}
+
+static struct kretprobe regmap_mmio_write_krp = {
+	.handler = regmap_write_ret_handler,
+	.entry_handler = regmap_write_entry_handler,
+	.data_size = sizeof(struct regmap_data),
+};
+#endif /* CONFIG_AMLOGIC_DEBUG_IOTRACE */
+
 int ftrace_ramoops_init(void)
 {
 	int ret;
 
+	if (!ramoops_io_en)
+		return 0;
+
 #ifdef CONFIG_ANDROID_VENDOR_HOOKS
 	register_trace_android_rvh_schedule(schedule_hook, NULL);
+#endif
+
+#if IS_MODULE(CONFIG_AMLOGIC_DEBUG_IOTRACE)
+	regmap_mmio_read_krp.kp.symbol_name = "regmap_mmio_read";
+	ret = register_kretprobe(&regmap_mmio_read_krp);
+	if (ret < 0) {
+		pr_err("register kretprobe 'regmap_mmio_read' failed, returned %d\n", ret);
+		return ret;
+	}
+
+	regmap_mmio_write_krp.kp.symbol_name = "regmap_mmio_write";
+	ret = register_kretprobe(&regmap_mmio_write_krp);
+	if (ret < 0) {
+		pr_err("register kretprobe 'regmap_mmio_write' failed, returned %d\n", ret);
+		return ret;
+	}
 #endif
 
 	if (meson_clk_debug) {
@@ -156,7 +294,6 @@ int ftrace_ramoops_init(void)
 			pr_err("register 'clk_core_disable' failed, returned %d\n", ret);
 			return ret;
 		}
-		pr_info("kprobe at 'clk_core_disable'\n");
 
 		clk_unprepare_kp.pre_handler = clk_handler_pre;
 		ret = register_kprobe(&clk_unprepare_kp);
@@ -164,7 +301,6 @@ int ftrace_ramoops_init(void)
 			pr_err("register 'clk_core_unprepare' failed, returned %d\n", ret);
 			return ret;
 		}
-		pr_info("kprobe at 'clk_core_unprepare'\n");
 	}
 
 	if (meson_pd_debug) {
@@ -174,7 +310,6 @@ int ftrace_ramoops_init(void)
 			pr_err("register '_genpd_power_off' failed, returned %d\n", ret);
 			return ret;
 		}
-		pr_info("kprobe at '_genpd_power_off'\n");
 	}
 
 	return 0;

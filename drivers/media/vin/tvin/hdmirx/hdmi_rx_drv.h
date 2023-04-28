@@ -32,7 +32,9 @@
 //disabled edid response after HPD low
 //hdmirx earc
 //add an ioctl to update single edid
-#define RX_VER0 "ver.2023/4/26"
+//2023.04.28
+//fix HDR10+ info error
+#define RX_VER0 "ver.2023/04/28"
 
 /*print type*/
 #define	LOG_EN		0x01

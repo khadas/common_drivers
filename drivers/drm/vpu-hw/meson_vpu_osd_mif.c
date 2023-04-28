@@ -145,6 +145,7 @@ static struct osd_mif_reg_s s5_osd_mif_reg[HW_OSD_MIF_NUM] = {
 		VIU_OSD1_PROT_CTRL_S5,
 		VIU_OSD1_MALI_UNPACK_CTRL_S5,
 		VIU_OSD1_DIMM_CTRL_S5,
+		VIU_OSD1_NORMAL_SWAP_S5,
 	},
 	{
 		VIU_OSD2_CTRL_STAT_S5,
@@ -167,6 +168,7 @@ static struct osd_mif_reg_s s5_osd_mif_reg[HW_OSD_MIF_NUM] = {
 		VIU_OSD2_PROT_CTRL_S5,
 		VIU_OSD2_MALI_UNPACK_CTRL_S5,
 		VIU_OSD2_DIMM_CTRL_S5,
+		VIU_OSD2_NORMAL_SWAP_S5,
 	},
 	{
 		VIU_OSD3_CTRL_STAT_S5,
@@ -189,6 +191,7 @@ static struct osd_mif_reg_s s5_osd_mif_reg[HW_OSD_MIF_NUM] = {
 		VIU_OSD3_PROT_CTRL_S5,
 		VIU_OSD3_MALI_UNPACK_CTRL_S5,
 		VIU_OSD3_DIMM_CTRL_S5,
+		VIU_OSD3_NORMAL_SWAP_S5,
 	},
 	{
 		VIU_OSD4_CTRL_STAT_S5,
@@ -211,6 +214,7 @@ static struct osd_mif_reg_s s5_osd_mif_reg[HW_OSD_MIF_NUM] = {
 		VIU_OSD4_PROT_CTRL_S5,
 		VIU_OSD4_MALI_UNPACK_CTRL_S5,
 		VIU_OSD4_DIMM_CTRL_S5,
+		VIU_OSD4_NORMAL_SWAP_S5
 	},
 };
 #endif
@@ -716,16 +720,16 @@ static void osd_color_config(struct meson_vpu_block *vblk,
 		alpha_replace = (pixel_blend == DRM_MODE_BLEND_PIXEL_NONE) ||
 			meson_drm_format_alpha_replace_t3x(pixel_format, afbc_en);
 		/* t3x pixel format workaround */
-		reg_ops->rdma_write_reg(VIU_OSD1_NORMAL_SWAP_T3X, original_swap_t3x);
-		reg_ops->rdma_write_reg(VIU_OSD1_FIFO_CTRL_STAT_T3X,
+		reg_ops->rdma_write_reg(reg->viu_osd_normal_swap, original_swap_t3x);
+		reg_ops->rdma_write_reg(reg->viu_osd_fifo_ctrl_stat,
 							original_osd1_fifo_ctrl_stat_t3x);
 		if (pixel_format == DRM_FORMAT_ARGB4444) {
-			reg_ops->rdma_write_reg(VIU_OSD1_NORMAL_SWAP_T3X, 0x1230);
+			reg_ops->rdma_write_reg(reg->viu_osd_normal_swap, 0x1230);
 		} else if (pixel_format == DRM_FORMAT_BGRA4444) {
-			reg_ops->rdma_write_reg_bits(VIU_OSD1_FIFO_CTRL_STAT_T3X, 1, 30, 1);
+			reg_ops->rdma_write_reg_bits(reg->viu_osd_fifo_ctrl_stat, 1, 30, 1);
 		} else if (pixel_format == DRM_FORMAT_RGBA4444) {
-			reg_ops->rdma_write_reg(VIU_OSD1_NORMAL_SWAP_T3X, 0x1230);
-			reg_ops->rdma_write_reg_bits(VIU_OSD1_FIFO_CTRL_STAT_T3X, 1, 30, 1);
+			reg_ops->rdma_write_reg(reg->viu_osd_normal_swap, 0x1230);
+			reg_ops->rdma_write_reg_bits(reg->viu_osd_fifo_ctrl_stat, 1, 30, 1);
 		}
 	} else {
 		blk_mode = meson_drm_format_hw_blkmode(pixel_format, afbc_en);
@@ -1315,9 +1319,10 @@ static void s5_osd_hw_init(struct meson_vpu_block *vblk)
 	osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
 	osd->mif_acc_mode = LINEAR_MIF;
 
-	original_swap_t3x = pipeline->subs[0].reg_ops->rdma_read_reg(VIU_OSD1_NORMAL_SWAP_T3X);
+	original_swap_t3x =
+		pipeline->subs[0].reg_ops->rdma_read_reg(osd->reg->viu_osd_normal_swap);
 	original_osd1_fifo_ctrl_stat_t3x =
-		pipeline->subs[0].reg_ops->rdma_read_reg(VIU_OSD1_FIFO_CTRL_STAT_T3X);
+		pipeline->subs[0].reg_ops->rdma_read_reg(osd->reg->viu_osd_fifo_ctrl_stat);
 
 	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
 }

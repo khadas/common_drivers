@@ -189,6 +189,7 @@
 #define VIU_OSD1_PROT_CTRL_S5                   0x421e
 #define VIU_OSD1_MALI_UNPACK_CTRL_S5            0x421f
 #define VIU_OSD1_DIMM_CTRL_S5                   0x4220
+#define VIU_OSD1_NORMAL_SWAP_S5                 0x4221
 
 #define VIU_OSD2_CTRL_STAT_S5                   0x4240
 #define VIU_OSD2_CTRL_STAT2_S5                  0x4241
@@ -223,6 +224,7 @@
 #define VIU_OSD2_PROT_CTRL_S5                   0x425e
 #define VIU_OSD2_MALI_UNPACK_CTRL_S5            0x425f
 #define VIU_OSD2_DIMM_CTRL_S5                   0x4260
+#define VIU_OSD2_NORMAL_SWAP_S5                 0x4261
 
 #define VIU_OSD3_CTRL_STAT_S5                   0x4280
 #define VIU_OSD3_CTRL_STAT2_S5                  0x4281
@@ -257,6 +259,7 @@
 #define VIU_OSD3_PROT_CTRL_S5                   0x429e
 #define VIU_OSD3_MALI_UNPACK_CTRL_S5            0x429f
 #define VIU_OSD3_DIMM_CTRL_S5                   0x42a0
+#define VIU_OSD3_NORMAL_SWAP_S5                 0x42a1
 
 #define VIU_OSD4_CTRL_STAT_S5                   0x42c0
 #define VIU_OSD4_CTRL_STAT2_S5                  0x42c1
@@ -291,9 +294,7 @@
 #define VIU_OSD4_PROT_CTRL_S5                   0x42de
 #define VIU_OSD4_MALI_UNPACK_CTRL_S5            0x42df
 #define VIU_OSD4_DIMM_CTRL_S5                   0x42e0
-/* t3x reg pixel format workaround */
-#define VIU_OSD1_NORMAL_SWAP_T3X                       0x4221
-#define VIU_OSD1_FIFO_CTRL_STAT_T3X                    0x421c
+#define VIU_OSD4_NORMAL_SWAP_S5                 0x42e1
 
 struct osd_mif_reg_s {
 	u32 viu_osd_ctrl_stat;
@@ -316,6 +317,7 @@ struct osd_mif_reg_s {
 	u32 viu_osd_prot_ctrl;
 	u32 viu_osd_mali_unpack_ctrl;
 	u32 viu_osd_dimm_ctrl;
+	u32 viu_osd_normal_swap;
 };
 
 /**

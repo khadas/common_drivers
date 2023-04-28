@@ -58,7 +58,8 @@
 
 /* correct phy trim value config method */
 /* merge project modifications back to trunk */
-#define RX_VER1 "ver.2023/3/16"
+/* optimize unnormal_format logic */
+#define RX_VER1 "ver.2023/4/28"
 
 /*
  * Currently, a total of 5 VSIF packages are supported,

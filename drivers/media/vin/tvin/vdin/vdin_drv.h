@@ -138,7 +138,8 @@
 /* 20230404: interlace not into game mode */
 /* 20230420: add osd only support for screencap */
 /* 20230427: fix screen cap stress test crash issue */
-#define VDIN_VER "20230427"
+/* 20230504: keystone interlace update dest value */
+#define VDIN_VER "20230504"
 
 //#define VDIN_BRINGUP_NO_VF
 //#define VDIN_BRINGUP_NO_VLOCK

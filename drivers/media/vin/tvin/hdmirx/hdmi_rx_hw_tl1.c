@@ -208,8 +208,9 @@ bool is_tl1_former(void)
 
 void aml_eq_cfg_tl1(void)
 {
+	u8 port = rx_info.main_port;
 	u32 data32 = 0;
-	u32 idx = rx.phy.phy_bw;
+	u32 idx = rx[port].phy.phy_bw;
 
 	/* data channel release reset */
 	data32 = rd_reg_hhi(TL1_HHI_HDMIRX_PHY_MISC_CNTL0);
@@ -219,9 +220,9 @@ void aml_eq_cfg_tl1(void)
 	if (find_best_eq) {
 		data32 = phy_dchd_1[idx][1] & (~(MSK(16, 4)));
 		data32 |= find_best_eq << 4;
-	} else if ((rx.phy.cablesel % 2) == 0) {
+	} else if ((rx[port].phy.cablesel % 2) == 0) {
 		data32 = phy_dchd_1[idx][1];
-	} else if ((rx.phy.cablesel % 2) == 1) {
+	} else if ((rx[port].phy.cablesel % 2) == 1) {
 		data32 = phy_dchd_2[idx][1];
 	}
 	wr_reg_hhi(TL1_HHI_HDMIRX_PHY_DCHD_CNTL1, data32);
@@ -232,10 +233,11 @@ void aml_eq_cfg_tl1(void)
 
 void aml_phy_cfg_tl1(void)
 {
-	u32 idx = rx.phy.phy_bw;
+	u8 port = rx_info.main_port;
+	u32 idx = rx[port].phy.phy_bw;
 	u32 data32, c1, c2, r1, r2;
 	u32 term_value =
-		hdmirx_rd_top(TOP_HPD_PWR5V) & 0x7;
+		hdmirx_rd_top(TOP_HPD_PWR5V, port) & 0x7;
 
 	c1 = eq_debug[eq_dbg_lvl] & 0xff;
 	c2 = (eq_debug[eq_dbg_lvl] >> 8) & 0xff;
@@ -275,7 +277,7 @@ void aml_phy_cfg_tl1(void)
 
 	/* reset and select data port */
 	data32 = phy_misci[idx][3];
-	data32 |= ((1 << rx.port) << 6);
+	data32 |= ((1 << port) << 6);
 	wr_reg_hhi(TL1_HHI_HDMIRX_PHY_MISC_CNTL3, data32);
 
 	/* release reset */
@@ -312,9 +314,9 @@ void aml_phy_cfg_tl1(void)
 	wr_reg_hhi(TL1_HHI_HDMIRX_PHY_DCHD_CNTL2, phy_dchd_1[idx][2]);
 
 	wr_reg_hhi(TL1_HHI_HDMIRX_PHY_DCHD_CNTL2, phy_dchd_1[idx][2]);
-	if ((rx.phy.cablesel % 2) == 0)
+	if ((rx[port].phy.cablesel % 2) == 0)
 		data32 = phy_dchd_1[idx][1];
-	else if ((rx.phy.cablesel % 2) == 1)
+	else if ((rx[port].phy.cablesel % 2) == 1)
 		data32 = phy_dchd_2[idx][1];
 
 	/* wr_reg_hhi(TL1_HHI_HDMIRX_PHY_DCHD_CNTL1, data32); */
@@ -342,19 +344,20 @@ struct apll_param apll_tab_tl1[] = {
 
 void aml_pll_bw_cfg_tl1(void)
 {
+	u8 port = rx_info.main_port;
 	u32 M, N;
 	u32 od, od_div;
 	u32 od2, od2_div;
-	u32 bw = rx.phy.pll_bw;
+	u32 bw = rx[port].phy.pll_bw;
 	u32 vco_clk;
 	u32 data, data2;
-	u32 cableclk = rx.clk.cable_clk / KHz;
+	u32 cableclk = rx[port].clk.cable_clk / KHz;
 	int pll_rst_cnt = 0;
 	u32 clk_rate;
 
-	clk_rate = rx_get_scdc_clkrate_sts();
-	bw = aml_phy_pll_band(rx.clk.cable_clk, clk_rate);
-	if (!is_clk_stable() || !cableclk)
+	clk_rate = rx_get_scdc_clkrate_sts(port);
+	bw = aml_phy_pll_band(rx[port].clk.cable_clk, clk_rate);
+	if (!is_clk_stable(port) || !cableclk)
 		return;
 	od_div = apll_tab_tl1[bw].od_div;
 	od = apll_tab_tl1[bw].od;
@@ -364,7 +367,7 @@ void aml_pll_bw_cfg_tl1(void)
 	od2 = apll_tab_tl1[bw].od2;
 
 	/*set audio pll divider*/
-	rx.phy.aud_div = apll_tab_tl1[bw].aud_div;
+	rx[port].phy.aud_div = apll_tab_tl1[bw].aud_div;
 	vco_clk = (cableclk * M) / N; /*KHz*/
 	if ((vco_clk < (2970 * KHz)) || (vco_clk > (6000 * KHz))) {
 		if (log_level & VIDEO_LOG)
@@ -413,10 +416,10 @@ void aml_pll_bw_cfg_tl1(void)
 		}
 		if (log_level & VIDEO_LOG)
 			rx_pr("pll init-cableclk=%d,pixelclk=%d,sq=%d\n",
-			      rx.clk.cable_clk / MHz,
-			      rx.clk.pixel_clk / MHz,
-			      hdmirx_rd_top(TOP_MISC_STAT0) & 0x1);
-	} while ((!is_tmds_clk_stable()) && is_clk_stable());
+			      rx[port].clk.cable_clk / MHz,
+			      rx[port].clk.pixel_clk / MHz,
+			      hdmirx_rd_top(TOP_MISC_STAT0, port) & 0x1);
+	} while ((!is_tmds_clk_stable(port)) && is_clk_stable(port));
 
 	/* data channel reset */
 	data = rd_reg_hhi(TL1_HHI_HDMIRX_PHY_MISC_CNTL0);
@@ -464,16 +467,17 @@ void dump_reg_phy_tl1_tm2(void)
 
 void dump_aml_phy_sts_tl1(void)
 {
-	u32 val0, val1, val2, data32;
+	u8 port = rx_info.main_port;
+	u32 val0, val1, val2, val3, data32;
 
 	rx_pr("[PHY info]\n");
-	rx_get_error_cnt(&val0, &val1, &val2);
+	rx_get_error_cnt(&val0, &val1, &val2, &val3, 0);
 	rx_pr("err cnt- ch0: %d,ch1:%d ch2:%d\n", val0, val1, val2);
 	rx_pr("PLL_LCK_STS(tmds valid) = 0x%x\n", hdmirx_rd_dwc(DWC_HDMI_PLL_LCK_STS));
-	rx_pr("MISC_STAT0 sqo = 0x%x\n", hdmirx_rd_top(TOP_MISC_STAT0));
+	rx_pr("MISC_STAT0 sqo = 0x%x\n", hdmirx_rd_top(TOP_MISC_STAT0, port));
 	rx_pr("PHY_DCHD_STAT = 0x%x\n", rd_reg_hhi(TL1_HHI_HDMIRX_PHY_DCHD_STAT));
 	rx_pr("APLL_CNTL0 = 0x%x\n", rd_reg_hhi(TL1_HHI_HDMIRX_APLL_CNTL0));
-	rx_pr("TMDS_ALIGN_STAT = 0x%x\n", hdmirx_rd_top(TOP_TMDS_ALIGN_STAT));
+	rx_pr("TMDS_ALIGN_STAT = 0x%x\n", hdmirx_rd_top(TOP_TMDS_ALIGN_STAT, port));
 	rx_pr("all valid = 0x%x\n", aml_get_tmds_valid_tl1());
 
 	data32 = rd_reg_hhi(TL1_HHI_HDMIRX_PHY_DCHD_CNTL1);
@@ -575,7 +579,7 @@ void aml_phy_short_bist_tl1(void)
 		data32	|=	1 << 8;
 		data32	|=	1 << 7;
 		/* Configure BIST analyzer before BIST path out of reset */
-		hdmirx_wr_top(TOP_SW_RESET, data32);
+		hdmirx_wr_top(TOP_SW_RESET, data32, port);
 		usleep_range(5, 10);
 		// Configure BIST analyzer before BIST path out of reset
 		data32 = 0;
@@ -612,14 +616,14 @@ void aml_phy_short_bist_tl1(void)
 		data32	|=	0 << 2;
 		// [	1] prbs_ana_ch0_bit_reverse
 		data32	|=	1 << 1;
-		hdmirx_wr_top(TOP_PRBS_ANA_0,  data32);
+		hdmirx_wr_top(TOP_PRBS_ANA_0,  data32, port);
 		usleep_range(5, 10);
 		data32			= 0;
 		// [19: 8] prbs_ana_time_window
 		data32	|=	255 << 8;
 		// [ 7: 0] prbs_ana_err_thr
 		data32	|=	0;
-		hdmirx_wr_top(TOP_PRBS_ANA_1,  data32);
+		hdmirx_wr_top(TOP_PRBS_ANA_1,  data32, port);
 		usleep_range(5, 10);
 		// Configure channel switch
 		data32			= 0;
@@ -636,7 +640,7 @@ void aml_phy_short_bist_tl1(void)
 		data32	|=	0 << 5;// [    5] polarity_1
 		data32	|=	0 << 4;// [    4] polarity_0
 		data32	|=	0;// [	  0] enable
-		hdmirx_wr_top(TOP_CHAN_SWITCH_0, data32);
+		hdmirx_wr_top(TOP_CHAN_SWITCH_0, data32, port);
 		usleep_range(5, 10);
 		// Configure BIST generator
 		data32		   = 0;
@@ -646,14 +650,14 @@ void aml_phy_short_bist_tl1(void)
 		data32	|=	bist_mode << 3;
 		data32	|=	3 << 1;// [ 2: 1] prbs_gen_width:3=10-bit.
 		data32	|=	0;// [	 0] prbs_gen_enable
-		hdmirx_wr_top(TOP_PRBS_GEN, data32);
+		hdmirx_wr_top(TOP_PRBS_GEN, data32, port);
 		usleep_range(100, 110);
 		/* Reset */
 		data32	= 0x0;
 		data32	&=	~(1 << 8);
 		data32	&=	~(1 << 7);
 		/* Configure BIST analyzer before BIST path out of reset */
-		hdmirx_wr_top(TOP_SW_RESET, data32);
+		hdmirx_wr_top(TOP_SW_RESET, data32, port);
 		usleep_range(100, 110);
 		// Configure channel switch
 		data32 = 0;
@@ -670,7 +674,7 @@ void aml_phy_short_bist_tl1(void)
 		data32	|=	0 << 5;// [    5] polarity_1
 		data32	|=	0 << 4;// [    4] polarity_0
 		data32	|=	1;// [	  0] enable
-		hdmirx_wr_top(TOP_CHAN_SWITCH_0, data32);
+		hdmirx_wr_top(TOP_CHAN_SWITCH_0, data32, port);
 
 		/* Configure BIST generator */
 		data32			= 0;
@@ -685,12 +689,12 @@ void aml_phy_short_bist_tl1(void)
 		data32	|=	3 << 1;
 		/* [	0] prbs_gen_enable */
 		data32	|=	1;
-		hdmirx_wr_top(TOP_PRBS_GEN, data32);
+		hdmirx_wr_top(TOP_PRBS_GEN, data32, port);
 
 		/* PRBS analyzer control */
-		hdmirx_wr_top(TOP_PRBS_ANA_0, 0xf6f6f6);
+		hdmirx_wr_top(TOP_PRBS_ANA_0, 0xf6f6f6, port);
 		usleep_range(100, 110);
-		hdmirx_wr_top(TOP_PRBS_ANA_0, 0xf2f2f2);
+		hdmirx_wr_top(TOP_PRBS_ANA_0, 0xf2f2f2, port);
 
 		//if ((hdmirx_rd_top(TOP_PRBS_GEN) & data32) != 0)
 			//return;
@@ -698,14 +702,14 @@ void aml_phy_short_bist_tl1(void)
 
 		/* Check BIST analyzer BER counters */
 		if (port == 0)
-			rx_pr("BER_CH0 = %x\n", hdmirx_rd_top(TOP_PRBS_ANA_BER_CH0));
+			rx_pr("BER_CH0 = %x\n", hdmirx_rd_top(TOP_PRBS_ANA_BER_CH0, port));
 		else if (port == 1)
-			rx_pr("BER_CH1 = %x\n", hdmirx_rd_top(TOP_PRBS_ANA_BER_CH1));
+			rx_pr("BER_CH1 = %x\n", hdmirx_rd_top(TOP_PRBS_ANA_BER_CH1, port));
 		else if (port == 2)
-			rx_pr("BER_CH2 = %x\n", hdmirx_rd_top(TOP_PRBS_ANA_BER_CH2));
+			rx_pr("BER_CH2 = %x\n", hdmirx_rd_top(TOP_PRBS_ANA_BER_CH2, port));
 
 		/* check BIST analyzer result */
-		lock_sts = hdmirx_rd_top(TOP_PRBS_ANA_STAT) & 0x3f;
+		lock_sts = hdmirx_rd_top(TOP_PRBS_ANA_STAT, port) & 0x3f;
 		rx_pr("ch%dsts=0x%x\n", port, lock_sts);
 		if (port == 0) {
 			ch0_lock = lock_sts & 3;
@@ -745,21 +749,22 @@ bool aml_get_tmds_valid_tl1(void)
 	/* unsigned int pll_lock; */
 	unsigned int tmds_align;
 	u32 ret;
+	u8 port = rx_info.main_port;
 
 	/* digital tmds valid depends on PLL lock from analog phy. */
 	/* it is not necessary and T7 has not it */
 	/* tmds_valid = hdmirx_rd_dwc(DWC_HDMI_PLL_LCK_STS) & 0x01; */
-	sqofclk = hdmirx_rd_top(TOP_MISC_STAT0) & 0x1;
-	tmdsclk_valid = is_tmds_clk_stable();
-	tmds_align = hdmirx_rd_top(TOP_TMDS_ALIGN_STAT) & 0x3f000000;
+	sqofclk = hdmirx_rd_top(TOP_MISC_STAT0, port) & 0x1;
+	tmdsclk_valid = is_tmds_clk_stable(port);
+	tmds_align = hdmirx_rd_top(TOP_TMDS_ALIGN_STAT, port) & 0x3f000000;
 	if (sqofclk && tmdsclk_valid && tmds_align == 0x3f000000) {
 		ret = 1;
 	} else {
 		if (log_level & VIDEO_LOG) {
 			rx_pr("sqo:%x,tmdsclk_valid:%x,align:%x\n",
 			      sqofclk, tmdsclk_valid, tmds_align);
-			rx_pr("cable clk0:%d\n", rx.clk.cable_clk);
-			rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK));
+			rx_pr("cable clk0:%d\n", rx[port].clk.cable_clk);
+			rx_pr("cable clk1:%d\n", rx_get_clock(TOP_HDMI_CABLECLK, port));
 		}
 		ret = 0;
 	}
@@ -783,11 +788,12 @@ void aml_phy_power_off_tl1(void)
 void aml_phy_switch_port_tl1(void)
 {
 	u32 data32;
+	u8 port = rx_info.main_port;
 
 	/* reset and select data port */
 	data32 = rd_reg_hhi(TL1_HHI_HDMIRX_PHY_MISC_CNTL3);
 	data32 &= (~(0x7 << 6));
-	data32 |= ((1 << rx.port) << 6);
+	data32 |= ((1 << port) << 6);
 	wr_reg_hhi(TL1_HHI_HDMIRX_PHY_MISC_CNTL3, data32);
 	data32 &= (~(1 << 11));
 	/* release reset */
@@ -796,7 +802,7 @@ void aml_phy_switch_port_tl1(void)
 	udelay(5);
 
 	data32 = 0;
-	data32 |= rx.port << 2;
+	data32 |= port << 2;
 	hdmirx_wr_dwc(DWC_SNPS_PHYG3_CTRL, data32);
 }
 

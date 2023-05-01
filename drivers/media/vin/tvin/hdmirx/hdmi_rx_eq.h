@@ -138,7 +138,7 @@ extern int eq_dbg_ch0;
 extern int eq_dbg_ch1;
 extern int eq_dbg_ch2;
 extern int long_cable_best_setting;
-extern enum eq_sts_e eq_sts;
+extern enum eq_sts_e eq_sts[4];
 /*--------------------------function declare------------------*/
 int rx_eq_algorithm(void);
 int hdmirx_phy_start_eq(void);
@@ -152,8 +152,8 @@ void hdmirx_phy_conf_eq_setting(int rx_port_sel,
 				int ch2setting);
 void eq_cfg(void);
 void eq_run(void);
-void rx_set_eq_run_state(enum eq_sts_e state);
-enum eq_sts_e rx_get_eq_run_state(void);
+void rx_set_eq_run_state(enum eq_sts_e state, u8 port);
+enum eq_sts_e rx_get_eq_run_state(u8 port);
 void dump_eq_data(void);
 void eq_dwork_handler(struct work_struct *work);
 

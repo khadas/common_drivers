@@ -35,7 +35,7 @@ static int min_max_diff = 4;
 struct st_eq_data eq_ch0;
 struct st_eq_data eq_ch1;
 struct st_eq_data eq_ch2;
-enum eq_sts_e eq_sts = E_EQ_START;
+enum eq_sts_e eq_sts[4] = {E_EQ_START, E_EQ_START, E_EQ_START, E_EQ_START};
 /* variable define*/
 int long_cable_best_setting = 6;
 int delay_ms_cnt = 5; /* 5 */
@@ -142,27 +142,28 @@ u16 hdmi_rx_phy_corestatusch2(void)
 	return hdmirx_rd_phy(PHY_CORESTATUS_CH2);
 }
 
-void rx_set_eq_run_state(enum eq_sts_e state)
+void rx_set_eq_run_state(enum eq_sts_e state, u8 port)
 {
 	if (state <= E_EQ_FAIL) {
-		eq_sts = state;
+		eq_sts[port] = state;
 		/*rx_pr("run_eq_flag: %d\n", eq_sts);*/
 	}
 }
 
-enum eq_sts_e rx_get_eq_run_state(void)
+enum eq_sts_e rx_get_eq_run_state(u8 port)
 {
-	return eq_sts;
+	return eq_sts[port];
 }
 
 void eq_dwork_handler(struct work_struct *work)
 {
 	unsigned int i;
+	u8 port = rx_info.main_port;
 
 	cancel_delayed_work(&eq_dwork);
 
 	/* for tl1 no SW eq */
-	if (rx.chip_id >= CHIP_ID_TL1)
+	if (rx_info.chip_id >= CHIP_ID_TL1)
 		return;
 
 	for (i = 0; i < NTRYS; i++) {
@@ -175,7 +176,7 @@ void eq_dwork_handler(struct work_struct *work)
 			if (eq_max_vs_min(eq_ch0.bestsetting,
 					eq_ch1.bestsetting,
 					eq_ch2.bestsetting) == 1) {
-				eq_sts = E_EQ_PASS;
+				eq_sts[port] = E_EQ_PASS;
 				if (log_level & EQ_LOG)
 					rx_pr("pass\n");
 				break;
@@ -190,7 +191,7 @@ void eq_dwork_handler(struct work_struct *work)
 		eq_ch2.bestsetting = ERRORCABLESETTING;
 		if (log_level & EQ_LOG)
 			rx_pr("EQ fail-retry\n");
-		eq_sts = E_EQ_FAIL;
+		eq_sts[port] = E_EQ_FAIL;
 	}
 	eq_cfg();
 	/*rx_set_eq_run_state(E_EQ_FINISH);*/
@@ -352,15 +353,15 @@ u8 aquire_early_cnt(u16 setting)
 	/* Get early counters */
 	eq_ch0.acq = rx_phy_rd_early_cnt_ch0() >> AVGACQ;
 	eq_ch0.acq_n[setting] = eq_ch0.acq;
-	if (log_level & ERR_LOG)
+	if (log_level & PHY_LOG)
 		rx_pr("eq_ch0_acq #%d = %d\n", setting, eq_ch0.acq);
 	eq_ch1.acq = rx_phy_rd_early_cnt_ch1() >> AVGACQ;
 	eq_ch1.acq_n[setting] = eq_ch1.acq;
-	if (log_level & ERR_LOG)
+	if (log_level & PHY_LOG)
 		rx_pr("eq_ch1_acq #%d = %d\n", setting, eq_ch1.acq);
 	eq_ch2.acq = rx_phy_rd_early_cnt_ch2() >> AVGACQ;
 	eq_ch2.acq_n[setting] = eq_ch2.acq;
-	if (log_level & ERR_LOG)
+	if (log_level & PHY_LOG)
 		rx_pr("eq_ch2_acq #%d = %d\n", setting, eq_ch2.acq);
 
 	return 1;
@@ -428,7 +429,7 @@ void rx_eq_cfg(u8 ch0, u8 ch1, u8 ch2)
 
 bool is_6g_mode(void)
 {
-	return (rx_get_scdc_clkrate_sts() == 1) ? true : false;
+	return (rx_get_scdc_clkrate_sts(0) == 1) ? true : false;
 }
 
 struct eq_cfg_coef_s eq_cfg_coef_tbl[] = {
@@ -451,27 +452,28 @@ int rx_eq_algorithm(void)
 {
 	static u8 pre_eq_freq = 0xff;
 	u8 pll_rate = hdmirx_rd_phy(PHY_MAINFSM_STATUS1) >> 9 & 3;
+	u8 port = rx_info.main_port;
 
 	if (is_6g_mode())
 		pll_rate = E_EQ_6G;
 
 	rx_pr("pll rate pre:%d, cur:%d\n", pre_eq_freq, pll_rate);
-	rx_pr("eq_sts = %d\n", eq_sts);
+	rx_pr("eq_sts = %d\n", eq_sts[port]);
 
 	if ((eq_dbg_ch0) || (eq_dbg_ch1) || (eq_dbg_ch2))  {
 		rx_eq_cfg(eq_dbg_ch0, eq_dbg_ch1, eq_dbg_ch2);
 		return 0;
 	}
 	if (pre_eq_freq == pll_rate) {
-		if (eq_sts == E_EQ_PASS ||
-		    eq_sts == E_EQ_SAME) {
-			eq_sts = E_EQ_SAME;
+		if (eq_sts[port] == E_EQ_PASS ||
+		    eq_sts[port] == E_EQ_SAME) {
+			eq_sts[port] = E_EQ_SAME;
 			rx_pr("same pll rate\n");
 			return 0;
 		}
 	}
 	if ((pll_rate & 0x2) == E_EQ_SD) {
-		eq_sts = E_EQ_FINISH;
+		eq_sts[port] = E_EQ_FINISH;
 		pre_eq_freq = pll_rate;
 		rx_pr("low pll rate\n");
 		return 0;
@@ -488,7 +490,7 @@ int rx_eq_algorithm(void)
 	hdmirx_wr_phy(PHY_EQCTRL6_CH2, fat_bit_status);
 	eq_run();
 
-	eq_sts = E_EQ_START;
+	eq_sts[port] = E_EQ_START;
 
 	return 1;
 }

@@ -23,6 +23,7 @@
 #include <linux/clk.h>
 #include <linux/of.h>
 #include <linux/of_reserved_mem.h>
+#include <linux/of_irq.h>
 #include <linux/poll.h>
 #include <linux/io.h>
 #include <linux/compat.h>
@@ -58,6 +59,7 @@
 #include "hdmi_rx_edid.h"
 #include "hdmi_rx_eq.h"
 #include "hdmi_rx_repeater.h"
+#include "hdmi_rx_hw_t3x.h"
 /*------------------------extern function------------------------------*/
 static int aml_hdcp22_pm_notify(struct notifier_block *nb,
 				unsigned long event, void *dummy);
@@ -91,12 +93,22 @@ struct delayed_work	esm_dwork;
 struct workqueue_struct	*esm_wq;
 struct delayed_work	repeater_dwork;
 struct workqueue_struct	*repeater_wq;
-struct work_struct     aml_phy_dwork;
-struct workqueue_struct *aml_phy_wq;
+//struct phy_port_data aml_phy_dwork;
+struct work_struct     aml_phy_dwork_port0;
+struct workqueue_struct *aml_phy_wq_port0;
+struct work_struct     aml_phy_dwork_port1;
+struct workqueue_struct *aml_phy_wq_port1;
+struct work_struct     aml_phy_dwork_port2;
+struct workqueue_struct *aml_phy_wq_port2;
+struct work_struct     aml_phy_dwork_port3;
+struct workqueue_struct *aml_phy_wq_port3;
 struct work_struct     clkmsr_dwork;
 struct workqueue_struct *clkmsr_wq;
 struct work_struct     earc_hpd_dwork;
 struct workqueue_struct *earc_hpd_wq;
+struct work_struct     frl_train_dwork;
+struct workqueue_struct *frl_train_wq;
+
 
 unsigned int hdmirx_addr_port;
 unsigned int hdmirx_data_port;
@@ -109,7 +121,8 @@ static unsigned int  hdmirx_log_buf_size;
 unsigned int pwr_sts;
 struct tvin_latency_s latency_info;
 struct tasklet_struct rx_tasklet;
-u32 *pd_fifo_buf;
+u32 *pd_fifo_buf_a;
+u32 *pd_fifo_buf_b;
 static DEFINE_SPINLOCK(rx_pr_lock);
 DECLARE_WAIT_QUEUE_HEAD(query_wait);
 
@@ -117,13 +130,13 @@ int hdmi_yuv444_enable = 1;
 module_param(hdmi_yuv444_enable, int, 0664);
 MODULE_PARM_DESC(hdmi_yuv444_enable, "hdmi_yuv444_enable");
 
-bool downstream_repeat_support;
-MODULE_PARM_DESC(downstream_repeat_support, "\n downstream_repeat_support\n");
-module_param(downstream_repeat_support, bool, 0664);
-
 int pc_mode_en;
 MODULE_PARM_DESC(pc_mode_en, "\n pc_mode_en\n");
 module_param(pc_mode_en, int, 0664);
+
+bool downstream_repeat_support;
+MODULE_PARM_DESC(downstream_repeat_support, "\n downstream_repeat_support\n");
+module_param(downstream_repeat_support, bool, 0664);
 
 int rx_audio_block_len = 13;
 u8 rx_audio_block[MAX_AUDIO_BLK_LEN] = {
@@ -159,6 +172,12 @@ int disable_port_en;
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 static bool early_suspend_flag;
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_VRR
+struct notifier_block vrr_notify;
+#endif
+#ifdef CONFIG_AMLOGIC_HDMITX
+struct notifier_block tx_notify;
+#endif
 
 struct reg_map rx_reg_maps[MAP_ADDR_MODULE_NUM];
 
@@ -166,21 +185,12 @@ struct reg_map rx_reg_maps[MAP_ADDR_MODULE_NUM];
 //1.  HPD pulled down.
 //2.  works on receiver mode
 int rpt_only_mode;
+int rpt_edid_selection;
 
 /* disable hdr function in dts */
 int disable_hdr;
 
-/* audio block compose method for hdmitx/rx:
- * 1: for soundbar:
- * EDID = downstream TV's video + soundbar's audio capability.
- * 2: for RPT, use EDID of downstream directly.
- * both no audio blk mix.
- * 0: keep EDID of hdmirx itself
- */
-int aud_compose_type = 1;
-/*
- * vrr field VRRmin/max dynamic update enable
- */
+//vrr field VRRmin/max dynamic update enable
 int vrr_range_dynamic_update_en;
 int rx_phy_level;
 
@@ -361,10 +371,37 @@ int rx_init_reg_map(struct platform_device *pdev)
 		rx_reg_maps[i].p = devm_ioremap(&pdev->dev,
 						     res->start, size);
 		rx_reg_maps[i].size = size;
-		rx_pr("phy_addr = 0x%x, size = 0x%x, maped:%p\n",
+		rx_pr("phy_addr = 0x%x, size = 0x%x, maped:%px\n",
 		      rx_reg_maps[i].phy_addr, size, rx_reg_maps[i].p);
 	}
 	return ret;
+}
+
+int rx_init_irq(struct platform_device *pdev, struct hdmirx_dev_s *hdevp)
+{
+	int i;
+	struct resource *res = 0;
+	int ret[4] = {0};
+
+	irqreturn_t (*irq_handler[4])(int, void*) = {
+		irq0_handler, irq1_handler, irq2_handler, irq3_handler};
+
+	for (i = 0; i < 4; i++) {
+		res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
+		ret[i] = res ? 0 : -ENXIO;
+		if (!res) {
+			rx_pr("%s: can't get irq resource\n", __func__);
+			break;
+		}
+		hdevp->irq[i] = res->start;
+		snprintf(hdevp->irq_name[i], sizeof(hdevp->irq_name[i]),
+			"hdmirx%d-irq", i);
+		rx_pr("hdevp irq: %d, %d\n", i, hdevp->irq[i]);
+		if (request_irq(hdevp->irq[i], irq_handler[i],
+			IRQF_SHARED, hdevp->irq_name[i], (void *)&rx))
+			rx_pr(__func__, "RX IRQ request");
+	}
+	return ret[0];
 }
 
 /*
@@ -414,6 +451,8 @@ unsigned int rx_set_bits(unsigned int data,
 
 bool hdmirx_repeat_support(void)
 {
+	if (rx_info.chip_id != CHIP_ID_T7)
+		return false;
 	return downstream_repeat_support;
 }
 
@@ -450,8 +489,8 @@ int hdmirx_dec_open(struct tvin_frontend_s *fe, enum tvin_port_e port)
 	/* should enable the adc ref signal for audio pll */
 	/* vdac_enable(1, VDAC_MODULE_AUDIO_OUT); */
 	hdmirx_open_port(port);
-	rx.open_fg = 1;
-	rx_pr("%s port:%x ok nosignal:%d\n", __func__, port, rx.no_signal);
+	rx_info.open_fg = 1;
+	rx_pr("%s port:%x ok\n", __func__, port);
 	return 0;
 }
 
@@ -487,9 +526,9 @@ void hdmirx_dec_stop(struct tvin_frontend_s *fe, enum tvin_port_e port)
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
 	if (vpp_mute_enable) {
-		if (get_video_mute() && rx.vpp_mute)
+		if (get_video_mute())// && rx[port].vpp_mute)
 			set_video_mute(false);
-		rx.vpp_mute = false;
+		//rx[port].vpp_mute = false;
 	}
 	/* parm->info.fmt = TVIN_SIG_FMT_NULL; */
 	/* parm->info.status = TVIN_SIG_STATUS_NULL; */
@@ -504,6 +543,7 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 {
 	struct hdmirx_dev_s *devp;
 	struct tvin_parm_s *parm;
+	u8 port = rx_info.main_port;  //todo for pip
 
 	/*
 	 * txl:should disable the adc ref signal for audio pll
@@ -511,22 +551,20 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 	 *	reset the vdac) to avoid noise issue
 	 */
 	/* For txl,also need to keep bandgap always on:SWPL-1224 */
-	/* if (rx.chip_id == CHIP_ID_TXL) */
+	/* if (rx_info.chip_id == CHIP_ID_TXL) */
 		/* vdac_enable(0, VDAC_MODULE_AUDIO_OUT); */
 	/* open_flage = 0; */
-	rx.open_fg = 0;
+	rx_info.open_fg = 0;
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
-	if (rx_get_cur_hpd_sts() == 0)
-		port_hpd_rst_flag |= (1 << rx.port);
-	rx.vs_info_details.hdmi_allm = 0;
-	rx.cur.cn_type = 0;
-	rx.cur.it_content = 0;
+	rx[port].vs_info_details.hdmi_allm = 0;
+	rx[port].cur.cn_type = 0;
+	rx[port].cur.it_content = 0;
 	latency_info.allm_mode = 0;
 	latency_info.it_content = 0;
 	latency_info.cn_type = 0;
 #ifdef CONFIG_AMLOGIC_HDMITX
-	if (rx.chip_id == CHIP_ID_T7)
+	if (rx_info.chip_id == CHIP_ID_T7)
 		hdmitx_update_latency_info(&latency_info);
 #endif
 	/*del_timer_sync(&devp->timer);*/
@@ -535,9 +573,9 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 	parm->info.status = TVIN_SIG_STATUS_NULL;
 	/* clear vpp mute, such as after unplug */
 	if (vpp_mute_enable) {
-		if (get_video_mute() && rx.vpp_mute)
+		if (get_video_mute())// && rx[port].vpp_mute)
 			set_video_mute(false);
-		rx.vpp_mute = false;
+		//rx[port].vpp_mute = false;
 	}
 	rx_pr("%s ok\n", __func__);
 }
@@ -551,22 +589,23 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 	struct hdmirx_dev_s *devp;
 	struct tvin_parm_s *parm;
 	u32 avmute_flag;
+	u8 port = rx_info.main_port;  //todo
 
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
 
-	if (!rx.var.force_pattern) {
+	if (!rx[port].var.force_pattern) {
 		/*prevent spurious pops or noise when pw down*/
-		if (rx.state == FSM_SIG_READY) {
-			avmute_flag = rx_get_avmute_sts();
+		if (rx[port].state == FSM_SIG_READY) {
+			avmute_flag = rx_get_avmute_sts(port);
 			if (avmute_flag == 1) {
-				rx.avmute_skip += 1;
-				hdmirx_set_video_mute(1);
-				skip_frame(2);
+				rx[port].avmute_skip += 1;
+				hdmirx_set_video_mute(1, port);
+				skip_frame(2, port);
 				/* return TVIN_BUF_SKIP; */
 			} else {
-				hdmirx_set_video_mute(0);
-				rx.avmute_skip = 0;
+				hdmirx_set_video_mute(0, port);
+				rx[port].avmute_skip = 0;
 			}
 		}
 	}
@@ -574,7 +613,7 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 	if (parm->info.status != TVIN_SIG_STATUS_STABLE ||
 	    parm->info.fmt == TVIN_SIG_FMT_NULL)
 		return -1;
-	else if (rx.skip > 0)
+	else if (rx[port].skip > 0)
 		return TVIN_BUF_SKIP;
 	return 0;
 }
@@ -631,8 +670,9 @@ static struct tvin_decoder_ops_s hdmirx_dec_ops = {
 bool hdmirx_is_nosig(struct tvin_frontend_s *fe)
 {
 	bool ret = 0;
+	u8 port = rx_info.main_port; //todo
 
-	ret = rx_is_nosig();
+	ret = rx_is_nosig(port);
 	return ret;
 }
 
@@ -649,13 +689,14 @@ bool hdmirx_fmt_chg(struct tvin_frontend_s *fe)
 	enum tvin_sig_fmt_e fmt = TVIN_SIG_FMT_NULL;
 	struct hdmirx_dev_s *devp;
 	struct tvin_parm_s *parm;
+	u8 port = rx_info.main_port; //todo
 
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
-	if (rx_is_sig_ready() == false) {
+	if (rx_is_sig_ready(port) == false) {
 		ret = true;
 	} else {
-		fmt = hdmirx_hw_get_fmt();
+		fmt = hdmirx_hw_get_fmt(port);
 		if (fmt != parm->info.fmt) {
 			rx_pr("hdmirx fmt: %d --> %d\n",
 			      parm->info.fmt, fmt);
@@ -675,14 +716,17 @@ bool hdmirx_fmt_chg(struct tvin_frontend_s *fe)
 enum tvin_sig_fmt_e hdmirx_get_fmt(struct tvin_frontend_s *fe)
 {
 	enum tvin_sig_fmt_e fmt = TVIN_SIG_FMT_NULL;
+	u8 port = rx_info.main_port; //todo
 
-	fmt = hdmirx_hw_get_fmt();
+	fmt = hdmirx_hw_get_fmt(port);
 	return fmt;
 }
 
 bool hdmirx_hw_check_frame_skip(void)
 {
-	if (rx.state != FSM_SIG_READY || rx.skip > 0)
+	u8 port = rx_info.main_port;  //todo for pip
+
+	if (rx[port].state != FSM_SIG_READY || rx[port].skip > 0)
 		return true;
 
 	return false;
@@ -691,45 +735,45 @@ bool hdmirx_hw_check_frame_skip(void)
 /*
  * hdmirx_get_dvi_info - get dvi state
  */
-void hdmirx_get_dvi_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_dvi_info(struct tvin_sig_property_s *prop, u8 port)
 {
-	prop->dvi_info = rx.pre.sw_dvi;
+	prop->dvi_info = rx[port].pre.sw_dvi;
 }
 
 /*
  * hdmirx_get_hdcp_sts - get hdcp status 0:none hdcp  1:hdcp14 or 22
  */
-void hdmirx_get_hdcp_sts(struct tvin_sig_property_s *prop)
+void hdmirx_get_hdcp_sts(struct tvin_sig_property_s *prop, u8 port)
 {
-	if (rx.hdcp.hdcp_version != HDCP_VER_NONE)
+	if (rx[port].hdcp.hdcp_version != HDCP_VER_NONE)
 		prop->hdcp_sts = 1;
 	else
 		prop->hdcp_sts = 0;
 
 }
 
-void hdmirx_get_hw_vic(struct tvin_sig_property_s *prop)
+void hdmirx_get_hw_vic(struct tvin_sig_property_s *prop, u8 port)
 {
-	prop->hw_vic = rx.pre.hw_vic;
+	prop->hw_vic = rx[port].pre.hw_vic;
 }
 
 /*
  * hdmirx_get_fps_info - get video frame rate info
  */
-void hdmirx_get_fps_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_fps_info(struct tvin_sig_property_s *prop, u8 port)
 {
-	u32 rate = rx.pre.frame_rate;
+	u32 rate = rx[port].pre.frame_rate;
 
 	rate = rate / 100 + (((rate % 100) / 10 >= 5) ? 1 : 0);
 	prop->fps = rate;
 }
 
-enum tvin_aspect_ratio_e get_format_ratio(void)
+enum tvin_aspect_ratio_e get_format_ratio(u8 port)
 {
 	enum tvin_aspect_ratio_e ratio = TVIN_ASPECT_NULL;
 	enum hdmi_vic_e vic = HDMI_UNKNOWN;
 
-	vic = rx.pre.sw_vic;
+	vic = rx[port].pre.sw_vic;
 	if (force_vic)
 		vic = force_vic;
 
@@ -754,37 +798,37 @@ enum tvin_aspect_ratio_e get_format_ratio(void)
 	return ratio;
 }
 
-void hdmirx_get_active_aspect_ratio(struct tvin_sig_property_s *prop)
+void hdmirx_get_active_aspect_ratio(struct tvin_sig_property_s *prop, u8 port)
 {
 	prop->aspect_ratio = TVIN_ASPECT_NULL;
-	if (rx.cur.active_valid) {
-		if (rx.cur.active_ratio == 9) {
+	if (rx[port].cur.active_valid) {
+		if (rx[port].cur.active_ratio == 9) {
 			prop->aspect_ratio = TVIN_ASPECT_4x3_FULL;
-		} else if (rx.cur.active_ratio == 10) {
+		} else if (rx[port].cur.active_ratio == 10) {
 			prop->aspect_ratio = TVIN_ASPECT_16x9_FULL;
-		} else if (rx.cur.active_ratio == 11) {
+		} else if (rx[port].cur.active_ratio == 11) {
 			prop->aspect_ratio = TVIN_ASPECT_14x9_FULL;
 		} else {
-			if (rx.cur.picture_ratio == 1)
+			if (rx[port].cur.picture_ratio == 1)
 				prop->aspect_ratio = TVIN_ASPECT_4x3_FULL;
-			else if (rx.cur.picture_ratio == 2)
+			else if (rx[port].cur.picture_ratio == 2)
 				prop->aspect_ratio = TVIN_ASPECT_16x9_FULL;
 			else
-				prop->aspect_ratio = get_format_ratio();
+				prop->aspect_ratio = get_format_ratio(port);
 		}
 		/*
-		 * prop->bar_end_top = rx.cur.bar_end_top;
-		 * prop->bar_start_bottom = rx.cur.bar_start_bottom;
-		 * prop->bar_end_left = rx.cur.bar_end_left;
-		 * prop->bar_start_right = rx.cur.bar_start_right;
+		 * prop->bar_end_top = rx[port].cur.bar_end_top;
+		 * prop->bar_start_bottom = rx[port].cur.bar_start_bottom;
+		 * prop->bar_end_left = rx[port].cur.bar_end_left;
+		 * prop->bar_start_right = rx[port].cur.bar_start_right;
 		 */
 	} else {
-		if (rx.cur.picture_ratio == 1)
+		if (rx[port].cur.picture_ratio == 1)
 			prop->aspect_ratio = TVIN_ASPECT_4x3_FULL;
-		else if (rx.cur.picture_ratio == 2)
+		else if (rx[port].cur.picture_ratio == 2)
 			prop->aspect_ratio = TVIN_ASPECT_16x9_FULL;
 		else
-			prop->aspect_ratio = get_format_ratio();
+			prop->aspect_ratio = get_format_ratio(port);
 	}
 }
 
@@ -792,11 +836,11 @@ void hdmirx_get_active_aspect_ratio(struct tvin_sig_property_s *prop)
  * hdmirx_set_timing_info
  * adjust timing info for video process
  */
-void hdmirx_set_timing_info(struct tvin_sig_property_s *prop)
+void hdmirx_set_timing_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	enum tvin_sig_fmt_e sig_fmt;
 
-	sig_fmt = hdmirx_hw_get_fmt();
+	sig_fmt = hdmirx_hw_get_fmt(port);
 	/* in some PC case, 4096X2160 show in 3840X2160 monitor will */
 	/* result in blurred, so adjust hactive to 3840 to show dot by dot */
 	if (en_4k_2_2k) {
@@ -818,22 +862,22 @@ void hdmirx_set_timing_info(struct tvin_sig_property_s *prop)
 	/* 420 : hdmiout clk = pixel clk * 2 */
 	/* 422 : hdmiout clk = pixel clk * colordepth / 8 */
 	/* 444 : hdmiout clk = pixel clk */
-	if (rx.chip_id < CHIP_ID_TL1) {
+	if (rx_info.chip_id < CHIP_ID_TL1) {
 		/* tl1 need verify this bug */
-		if (rx.pre.colordepth > E_COLORDEPTH_8 &&
+		if (rx[port].pre.colordepth > E_COLORDEPTH_8 &&
 		    prop->fps > 49 &&
 		    (sig_fmt == TVIN_SIG_FMT_HDMI_4096_2160_00HZ ||
 		     sig_fmt == TVIN_SIG_FMT_HDMI_3840_2160_00HZ))
 			prop->ve = 1;
-	} else if (rx.chip_id >= CHIP_ID_TM2) {
+	} else if (rx_info.chip_id >= CHIP_ID_TM2) {
 		/* workaround for 16bit4K flash line issue. */
-		if (rx.pre.colordepth == E_COLORDEPTH_16 &&
+		if (rx[port].pre.colordepth == E_COLORDEPTH_16 &&
 		    (sig_fmt == TVIN_SIG_FMT_HDMI_4096_2160_00HZ ||
 		     sig_fmt == TVIN_SIG_FMT_HDMI_3840_2160_00HZ))
 			prop->ve = 1;
 	}
-	if (rx.var.dbg_ve)
-		prop->ve = rx.var.dbg_ve;
+	if (rx[port].var.dbg_ve)
+		prop->ve = rx[port].var.dbg_ve;
 }
 
 /*
@@ -856,26 +900,26 @@ int hdmirx_set_cec_cfg(u32 cfg)
 	switch (cfg) {
 	case 1:
 		hdmi_cec_en = 1;
-		if (rx.boot_flag)
+		if (rx_info.boot_flag)
 			rx_force_hpd_rxsense_cfg(1);
 		break;
 	case 2:
 		hdmi_cec_en = 1;
 		tv_auto_power_on = 1;
-		if (rx.boot_flag)
+		if (rx_info.boot_flag)
 			rx_force_hpd_rxsense_cfg(1);
 		break;
 	case 0:
 	default:
 		hdmi_cec_en = 0;
 		/* fix source can't get edid if cec off */
-		if (rx.boot_flag) {
+		if (rx_info.boot_flag) {
 			if (hpd_low_cec_off == 0)
 				rx_force_hpd_rxsense_cfg(1);
 		}
 		break;
 	}
-	rx.boot_flag = false;
+	rx_info.boot_flag = false;
 	rx_pr("cec cfg = %d\n", cfg);
 	return 0;
 }
@@ -940,19 +984,19 @@ EXPORT_SYMBOL(hdmirx_get_base_fps);
  * except the 640x480p Video Format.
  * IT Video Format: Any Video Format that is not a CE Video Format.
  */
-static bool is_it_vid_fmt(void)
+static bool is_it_vid_fmt(u8 port)
 {
 	bool ret = false;
 
-	if (rx.pre.sw_vic == HDMI_640x480p60 ||
-	    (rx.pre.sw_vic >= HDMI_VESA_OFFSET &&
-	    rx.pre.sw_vic < HDMI_UNSUPPORT))
+	if (rx[port].pre.sw_vic == HDMI_640x480p60 ||
+	    (rx[port].pre.sw_vic >= HDMI_VESA_OFFSET &&
+	    rx[port].pre.sw_vic < HDMI_UNSUPPORT))
 		ret = true;
 	else
 		ret = false;
 
-	if (log_level & ERR_LOG)
-		rx_pr("sw_vic: %d, it video format: %d\n", rx.pre.sw_vic, ret);
+	if (log_level & VIDEO_LOG)
+		rx_pr("sw_vic: %d, it video format: %d\n", rx[port].pre.sw_vic, ret);
 	return ret;
 }
 
@@ -965,19 +1009,21 @@ static bool is_it_vid_fmt(void)
  */
 static enum scan_mode_e hdmirx_get_scan_mode(void)
 {
-	if (rx.state != FSM_SIG_READY)
+	u8 port = rx_info.main_port; //todo
+
+	if (rx[port].state != FSM_SIG_READY)
 		return E_UNKNOWN_SCAN;
 
-	if (rx.pre.scan_info == E_OVERSCAN)
+	if (rx[port].pre.scan_info == E_OVERSCAN)
 		return E_OVERSCAN;
-	else if (rx.pre.scan_info == E_UNDERSCAN)
+	else if (rx[port].pre.scan_info == E_UNDERSCAN)
 		return E_UNDERSCAN;
 
-	if (is_it_vid_fmt() || rx.pre.it_content) {
+	if (is_it_vid_fmt(port) || rx[port].pre.it_content) {
 		return E_UNDERSCAN;
-	} else if ((rx.pre.hw_vic == HDMI_UNKNOWN) &&
-		 (rx.pre.sw_vic > HDMI_UNKNOWN) &&
-		 (rx.pre.sw_vic < HDMI_UNSUPPORT)) {
+	} else if ((rx[port].pre.hw_vic == HDMI_UNKNOWN) &&
+		 (rx[port].pre.sw_vic > HDMI_UNKNOWN) &&
+		 (rx[port].pre.sw_vic < HDMI_UNSUPPORT)) {
 		/* TX may send VESA timing 1080p, VIC = 0 */
 		if (log_level & VIDEO_LOG)
 			rx_pr("under scan for vesa mode\n");
@@ -997,11 +1043,11 @@ static ssize_t scan_mode_show(struct device *dev,
 /*
  * hdmirx_get_color_fmt - get video color format
  */
-void hdmirx_get_color_fmt(struct tvin_sig_property_s *prop)
+void hdmirx_get_color_fmt(struct tvin_sig_property_s *prop, u8 port)
 {
-	int format = rx.cur.colorspace;
+	int format = rx[port].cur.colorspace;
 
-	if (rx.pre.sw_dvi == 1)
+	if (rx[port].pre.sw_dvi == 1)
 		format = E_COLOR_RGB;
 	switch (format) {
 	case E_COLOR_YUV422:
@@ -1022,27 +1068,27 @@ void hdmirx_get_color_fmt(struct tvin_sig_property_s *prop)
 		prop->dest_cfmt = TVIN_YUV444;
 		break;
 	}
-	if (rx.pre.interlaced == 1)
+	if (rx[port].pre.interlaced == 1)
 		prop->dest_cfmt = TVIN_YUV422;
 
 	switch (prop->color_format) {
 	case TVIN_YUV444:
 	case TVIN_YUV422:
 		/* Table 8-5 of hdmi1.4b spec */
-		if (yuv_quant_range == E_YCC_RANGE_LIMIT)
+		if (rx[port].cur.yuv_quant_range == E_YCC_RANGE_LIMIT)
 			prop->color_fmt_range = TVIN_YUV_LIMIT;
-		else if (yuv_quant_range == E_YCC_RANGE_FULL)
+		else if (rx[port].cur.yuv_quant_range == E_YCC_RANGE_FULL)
 			prop->color_fmt_range = TVIN_YUV_FULL;
 		else
 			prop->color_fmt_range = TVIN_FMT_RANGE_NULL;
 		break;
 	case TVIN_RGB444:
-		if (rgb_quant_range == E_RGB_RANGE_FULL ||
-		    rx.pre.sw_dvi == 1)
+		if (rx[port].cur.rgb_quant_range == E_RGB_RANGE_FULL ||
+		    rx[port].pre.sw_dvi == 1)
 			prop->color_fmt_range = TVIN_RGB_FULL;
-		else if (rgb_quant_range == E_RGB_RANGE_LIMIT)
+		else if (rx[port].cur.rgb_quant_range == E_RGB_RANGE_LIMIT)
 			prop->color_fmt_range = TVIN_RGB_LIMIT;
-		else if (is_it_vid_fmt())
+		else if (is_it_vid_fmt(port))
 			prop->color_fmt_range = TVIN_RGB_FULL;
 		else
 			prop->color_fmt_range = TVIN_RGB_LIMIT;
@@ -1056,16 +1102,16 @@ void hdmirx_get_color_fmt(struct tvin_sig_property_s *prop)
 /*
  * hdmirx_get_colordepth - get video color depth
  */
-void hdmirx_get_colordepth(struct tvin_sig_property_s *prop)
+void hdmirx_get_colordepth(struct tvin_sig_property_s *prop, u8 port)
 {
-	prop->colordepth = rx.pre.colordepth;
+	prop->colordepth = rx[port].pre.colordepth;
 }
 
-int hdmirx_hw_get_3d_structure(void)
+int hdmirx_hw_get_3d_structure(u8 port)
 {
 	u8 ret = 0;
 
-	if (rx.vs_info_details.vd_fmt == VSI_FORMAT_3D_FORMAT)
+	if (rx[port].vs_info_details.vd_fmt == VSI_FORMAT_3D_FORMAT)
 		ret = 1;
 	return ret;
 }
@@ -1075,107 +1121,89 @@ int hdmirx_hw_get_3d_structure(void)
  * this func is used to get 3D format and dobly
  * vision state of current video
  */
-void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	static u8 last_vsi_state;
 
-	if (last_vsi_state != rx.vs_info_details.vsi_state) {
+	if (last_vsi_state != rx[port].vs_info_details.vsi_state) {
 		if (log_level & PACKET_LOG) {
 			rx_pr("!!!vsi state = %d\n",
-			      rx.vs_info_details.vsi_state);
+			      rx[port].vs_info_details.vsi_state);
 			rx_pr("1:4K3D;2:vsi21;3:HDR10+;4:DV10;5:DV15\n");
 		}
 		prop->trans_fmt = TVIN_TFMT_2D;
 		prop->dolby_vision = DV_NULL;
 		prop->hdr10p_info.hdr10p_on = false;
 		prop->cuva_info.cuva_on = false;
-		last_vsi_state = rx.vs_info_details.vsi_state;
+		last_vsi_state = rx[port].vs_info_details.vsi_state;
 	}
-	if (rx.pre.colorspace != E_COLOR_YUV420)
-		prop->dolby_vision = rx.vs_info_details.dolby_vision_flag;
-#ifdef MULTI_VSIF_EXPORT_TO_EMP
-	if (log_level & PACKET_LOG && rx.new_emp_pkt)
-		rx_pr("vsi_state:0x%x\n", rx.vs_info_details.vsi_state);
+	if (rx[port].pre.colorspace != E_COLOR_YUV420)
+		prop->dolby_vision = rx[port].vs_info_details.dolby_vision_flag;
+	if (log_level & PACKET_LOG && rx[port].new_emp_pkt)
+		rx_pr("vsi_state:0x%x\n", rx[port].vs_info_details.vsi_state);
 
-	if (rx.vs_info_details.vsi_state & E_VSI_DV10 || rx.vs_info_details.vsi_state & E_VSI_DV15)
-		rx.vs_info_details.vsi_state = E_VSI_DV15;
-	else if (rx.vs_info_details.vsi_state & E_VSI_HDR10PLUS)
-		rx.vs_info_details.vsi_state = E_VSI_HDR10PLUS;
-	else if (rx.vs_info_details.vsi_state & E_VSI_CUVAHDR)
-		rx.vs_info_details.vsi_state = E_VSI_CUVAHDR;
-	else if (rx.vs_info_details.vsi_state & E_VSI_4K3D)
-		rx.vs_info_details.vsi_state = E_VSI_4K3D;
+	if (rx[port].vs_info_details.vsi_state & E_VSI_DV10 ||
+		rx[port].vs_info_details.vsi_state & E_VSI_DV15)
+		rx[port].vs_info_details.vsi_state = E_VSI_DV15;
+	else if (rx[port].vs_info_details.vsi_state & E_VSI_HDR10PLUS)
+		rx[port].vs_info_details.vsi_state = E_VSI_HDR10PLUS;
+	else if (rx[port].vs_info_details.vsi_state & E_VSI_CUVAHDR)
+		rx[port].vs_info_details.vsi_state = E_VSI_CUVAHDR;
+	else if (rx[port].vs_info_details.vsi_state & E_VSI_4K3D)
+		rx[port].vs_info_details.vsi_state = E_VSI_4K3D;
 	else
-		rx.vs_info_details.vsi_state = E_VSI_VSI21;
+		rx[port].vs_info_details.vsi_state = E_VSI_VSI21;
 
-	switch (rx.vs_info_details.vsi_state) {
+	switch (rx[port].vs_info_details.vsi_state) {
 	case E_VSI_DV10:
 	case E_VSI_DV15:
-		prop->low_latency = rx.vs_info_details.low_latency;
-		if (rx.vs_info_details.dolby_vision_flag == DV_VSIF) {
+		prop->low_latency = rx[port].vs_info_details.low_latency;
+		if (rx[port].vs_info_details.dolby_vision_flag == DV_VSIF) {
 			memcpy(&prop->dv_vsif_raw,
-			       &rx_pkt.multi_vs_info[DV15], 3);
+			       &rx_pkt[port].multi_vs_info[DV15], 3);
 			memcpy((char *)(&prop->dv_vsif_raw) + 3,
-			       &rx_pkt.multi_vs_info[DV15].PB0,
+			       &rx_pkt[port].multi_vs_info[DV15].PB0,
 			       sizeof(struct tvin_dv_vsif_raw_s) - 4);
 		}
 		break;
 	case E_VSI_HDR10PLUS:
-		prop->hdr10p_info.hdr10p_on = rx.vs_info_details.hdr10plus;
-		memcpy(&prop->hdr10p_info.hdr10p_data, &rx_pkt.multi_vs_info[HDR10PLUS],
+		prop->hdr10p_info.hdr10p_on = rx[port].vs_info_details.hdr10plus;
+		memcpy(&prop->hdr10p_info.hdr10p_data, &rx_pkt[port].multi_vs_info[HDR10PLUS],
 			sizeof(struct tvin_hdr10p_data_s));
 		break;
 	case E_VSI_CUVAHDR:
 		prop->cuva_info.cuva_on = true;
-		if (rx.vs_info_details.cuva_hdr) {
+		if (rx[port].vs_info_details.cuva_hdr) {
 			memset(&prop->cuva_info.cuva_data, 0,
 				sizeof(struct tvin_cuva_data_s));
 			memcpy(&prop->cuva_info.cuva_data,
-			       &rx_pkt.multi_vs_info[CUVAHDR], sizeof(struct tvin_cuva_data_s));
+			       &rx_pkt[port].multi_vs_info[CUVAHDR],
+			       sizeof(struct tvin_cuva_data_s));
 		}
 		break;
-#else
-	switch (rx.vs_info_details.vsi_state) {
-	case E_VSI_HDR10PLUS:
-		prop->hdr10p_info.hdr10p_on = rx.vs_info_details.hdr10plus;
-		memcpy(&prop->hdr10p_info.hdr10p_data,
-		       &rx_pkt.vs_info, sizeof(struct tvin_hdr10p_data_s));
-		break;
-	case E_VSI_DV10:
-	case E_VSI_DV15:
-		prop->low_latency = rx.vs_info_details.low_latency;
-		if (rx.vs_info_details.dolby_vision_flag == DV_VSIF) {
-			memcpy(&prop->dv_vsif_raw,
-			       &rx_pkt.vs_info, 3);
-			memcpy((char *)(&prop->dv_vsif_raw) + 3,
-			       &rx_pkt.vs_info.PB0,
-			       sizeof(struct tvin_dv_vsif_raw_s) - 4);
-		}
-		break;
-#endif
 	case E_VSI_4K3D:
-		if (hdmirx_hw_get_3d_structure() == 1) {
-			if (rx.vs_info_details._3d_structure == 0x1) {
+		if (hdmirx_hw_get_3d_structure(port) == 1) {
+			if (rx[port].vs_info_details._3d_structure == 0x1) {
 				/* field alternative */
 				prop->trans_fmt = TVIN_TFMT_3D_FA;
-			} else if (rx.vs_info_details._3d_structure == 0x2) {
+			} else if (rx[port].vs_info_details._3d_structure == 0x2) {
 				/* line alternative */
 				prop->trans_fmt = TVIN_TFMT_3D_LA;
-			} else if (rx.vs_info_details._3d_structure == 0x3) {
+			} else if (rx[port].vs_info_details._3d_structure == 0x3) {
 				/* side-by-side full */
 				prop->trans_fmt = TVIN_TFMT_3D_LRF;
-			} else if (rx.vs_info_details._3d_structure == 0x4) {
+			} else if (rx[port].vs_info_details._3d_structure == 0x4) {
 				/* L + depth */
 				prop->trans_fmt = TVIN_TFMT_3D_LD;
-			} else if (rx.vs_info_details._3d_structure == 0x5) {
+			} else if (rx[port].vs_info_details._3d_structure == 0x5) {
 				/* L + depth + graphics + graphics-depth */
 				prop->trans_fmt = TVIN_TFMT_3D_LDGD;
-			} else if (rx.vs_info_details._3d_structure == 0x6) {
+			} else if (rx[port].vs_info_details._3d_structure == 0x6) {
 				/* top-and-bot */
 				prop->trans_fmt = TVIN_TFMT_3D_TB;
-			} else if (rx.vs_info_details._3d_structure == 0x8) {
+			} else if (rx[port].vs_info_details._3d_structure == 0x8) {
 				/* Side-by-Side half */
-				switch (rx.vs_info_details._3d_ext_data) {
+				switch (rx[port].vs_info_details._3d_ext_data) {
 				case 0x5:
 					/*Odd/Left picture, Even/Right picture*/
 					prop->trans_fmt = TVIN_TFMT_3D_LRH_OLER;
@@ -1204,152 +1232,153 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop)
 	}
 }
 
-void hdmirx_get_spd_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_spd_info(struct tvin_sig_property_s *prop, u8 port)//todo)
 {
-	if (!rx_pkt_chk_updated_spd()) {
+	if (!rx_pkt_chk_updated_spd(port)) {
 		memset(&prop->spd_data, 0, sizeof(struct tvin_spd_data_s));
 	} else {
-		rx_pkt_clr_updated_spd();
-		memcpy(&prop->spd_data, &rx_pkt.spd_info, sizeof(struct tvin_spd_data_s));
+		rx_pkt_clr_updated_spd(port);
+		memcpy(&prop->spd_data, &rx_pkt[port].spd_info,
+			sizeof(struct tvin_spd_data_s));
 	}
 }
 
 /*
  * hdmirx_get_repetition_info - get repetition info
  */
-void hdmirx_get_repetition_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_repetition_info(struct tvin_sig_property_s *prop, u8 port)
 {
-	prop->decimation_ratio = rx.pre.repeat |
+	prop->decimation_ratio = rx[port].pre.repeat |
 			HDMI_DE_REPEAT_DONE_FLAG;
 }
 
 /*
  * hdmirx_get_allm_mode - get allm mode
  */
-void hdmirx_get_latency_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_latency_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	prop->latency.allm_mode =
-		rx.vs_info_details.hdmi_allm || rx.vs_info_details.dv_allm;
-	prop->latency.it_content = rx.cur.it_content;
-	prop->latency.cn_type = rx.cur.cn_type;
+		rx[port].vs_info_details.hdmi_allm || rx[port].vs_info_details.dv_allm;
+	prop->latency.it_content = rx[port].cur.it_content;
+	prop->latency.cn_type = rx[port].cur.cn_type;
 #ifdef CONFIG_AMLOGIC_HDMITX
-	if (rx.open_fg  &&
-		(latency_info.allm_mode != rx.vs_info_details.hdmi_allm ||
-		latency_info.it_content != rx.cur.it_content ||
-		latency_info.cn_type != rx.cur.cn_type)) {
-		latency_info.allm_mode  = rx.vs_info_details.hdmi_allm;
-		latency_info.it_content = rx.cur.it_content;
-		latency_info.cn_type  = rx.cur.cn_type;
+	if (rx_info.open_fg  &&
+		(latency_info.allm_mode != rx[port].vs_info_details.hdmi_allm ||
+		latency_info.it_content != rx[port].cur.it_content ||
+		latency_info.cn_type != rx[port].cur.cn_type)) {
+		latency_info.allm_mode  = rx[port].vs_info_details.hdmi_allm;
+		latency_info.it_content = rx[port].cur.it_content;
+		latency_info.cn_type  = rx[port].cur.cn_type;
 		hdmitx_update_latency_info(&latency_info);
 	}
 #endif
 }
 
 static u32 emp_irq_cnt;
-void hdmirx_get_emp_dv_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_emp_dv_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	u8 i;
 
 	//emp buffer not only stores DV_EMP packet, but also other packets.
 	//only DV_EMP is needed here
-	if (rx.vs_info_details.dolby_vision_flag != DV_EMP)
+	if (rx[port].vs_info_details.dolby_vision_flag != DV_EMP)
 		return;
 
-	if (rx.emp_dv_info.flag) {
-		prop->emp_data.size = rx.emp_dv_info.dv_pkt_cnt;
-		for (i = 0; i < rx.emp_dv_info.dv_pkt_cnt; i++) {
+	if (rx[port].emp_dv_info.flag) {
+		prop->emp_data.size = rx[port].emp_dv_info.dv_pkt_cnt;
+		for (i = 0; i < rx[port].emp_dv_info.dv_pkt_cnt; i++) {
 			memcpy(prop->emp_data.empbuf + i * 31,
-				rx.emp_dv_info.dv_addr + i * 32, 3);
+				rx[port].emp_dv_info.dv_addr + i * 32, 3);
 			//28=31-3 start of PB0
 			memcpy(prop->emp_data.empbuf + i * 31 + 3,
-				rx.emp_dv_info.dv_addr + i * 32 + 4, 28);
+				rx[port].emp_dv_info.dv_addr + i * 32 + 4, 28);
 		}
 	}
 #ifndef HDMIRX_SEND_INFO_TO_VDIN
-	if (emp_irq_cnt == rx.emp_buff.irq_cnt)
-		rx.vs_info_details.emp_pkt_cnt = 0;
-	emp_irq_cnt = rx.emp_buff.irq_cnt;
+	if (emp_irq_cnt == rx[port].emp_info->irq_cnt)
+		rx[port].vs_info_details.emp_pkt_cnt = 0;
+	emp_irq_cnt = rx[port].emp_info->irq_cnt;
 #endif
 }
 
-void hdmirx_get_vtem_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_vtem_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	memset(&prop->vtem_data, 0, sizeof(struct tvin_vtem_data_s));
-	if (rx.vtem_info.vrr_en)
+	if (rx[port].vtem_info.vrr_en)
 		memcpy(&prop->vtem_data,
-			   &rx.vtem_info, sizeof(struct vtem_info_s));
+			   &rx[port].vtem_info, sizeof(struct vtem_info_s));
 }
 
-void hdmirx_get_sbtm_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_sbtm_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	memset(&prop->sbtm_data, 0, sizeof(struct tvin_sbtm_data_s));
-	if (rx.sbtm_info.flag)
+	if (rx[port].sbtm_info.flag)
 		memcpy(&prop->sbtm_data,
-			   &rx.sbtm_info, sizeof(struct sbtm_info_s));
+			   &rx[port].sbtm_info, sizeof(struct sbtm_info_s));
 }
 
-void hdmirx_get_cuva_emds_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_cuva_emds_info(struct tvin_sig_property_s *prop, u8 port)
 {
-	if (rx.emp_cuva_info.cuva_emds_size > sizeof(prop->cuva_emds_data))
+	if (rx[port].emp_cuva_info.cuva_emds_size > sizeof(prop->cuva_emds_data))
 		rx_pr("cuva emds size exceeds 96 bytes\n");
 	memset(&prop->cuva_emds_data, 0, sizeof(prop->cuva_emds_data));
-	if (rx.emp_cuva_info.flag)
-		memcpy(&prop->cuva_emds_data, rx.emp_cuva_info.emds_addr,
+	if (rx[port].emp_cuva_info.flag)
+		memcpy(&prop->cuva_emds_data, rx[port].emp_cuva_info.emds_addr,
 			sizeof(prop->cuva_emds_data));
 }
 
 void rx_set_sig_info(void)
 {
-	struct tvin_frontend_s *fe = tvin_get_frontend(TVIN_PORT_HDMI0,
-		VDIN_FRONTEND_IDX);
-
-	if (fe->sm_ops && fe->sm_ops->vdin_set_property)
-		fe->sm_ops->vdin_set_property(fe);
-	else
-		rx_pr("hdmi notify err\n");
+	//return;
+	//struct tvin_frontend_s *fe = tvin_get_frontend(TVIN_PORT_HDMI0,
+		//VDIN_FRONTEND_IDX);
+	//if (fe->sm_ops && fe->sm_ops->vdin_set_property)
+		//fe->sm_ops->vdin_set_property(fe);
+	//else
+		//rx_pr("hdmi notify err\n");
 }
 
-void rx_update_sig_info(void)
+void rx_update_sig_info(u8 port)
 {
-	rx_get_vsi_info();
-	rx_get_em_info();
-	rx_get_aif_info();
+	rx_get_vsi_info(port);
+	rx_get_em_info(port);
+	//rx_get_aif_info(port);
 	rx_set_sig_info();
 }
 
 /*
  * hdmirx_get_hdr_info - get hdr info
  */
-void hdmirx_get_hdr_info(struct tvin_sig_property_s *prop)
+void hdmirx_get_hdr_info(struct tvin_sig_property_s *prop, u8 port)
 {
 	struct drm_infoframe_st *drm_pkt;
 
 	/*check drm packet is attach every VS*/
-	u32 drm_attach = rx_pkt_chk_attach_drm();
+	u32 drm_attach = rx_pkt_chk_attach_drm(port);
 
-	drm_pkt = (struct drm_infoframe_st *)&rx_pkt.drm_info;
+	drm_pkt = (struct drm_infoframe_st *)&rx_pkt[port].drm_info;
 
 	if (drm_attach) {
-		rx.hdr_info.hdr_state = HDR_STATE_SET;
-		rx_pkt_clr_attach_drm();
+		rx[port].hdr_info.hdr_state = HDR_STATE_SET;
+		rx_pkt_clr_attach_drm(port);
 	}
 
 	/* hdr data processing */
-	switch (rx.hdr_info.hdr_state) {
+	switch (rx[port].hdr_info.hdr_state) {
 	case HDR_STATE_NULL:
 		/* filter for state, 10*10ms */
-		if (rx.hdr_info.hdr_check_cnt++ > 10) {
+		if (rx[port].hdr_info.hdr_check_cnt++ > 10) {
 			prop->hdr_info.hdr_state = HDR_STATE_NULL;
-			rx.hdr_info.hdr_check_cnt = 0;
+			rx[port].hdr_info.hdr_check_cnt = 0;
 		}
 		break;
 	case HDR_STATE_GET:
-		rx.hdr_info.hdr_check_cnt = 0;
+		rx[port].hdr_info.hdr_check_cnt = 0;
 		break;
 	case HDR_STATE_SET:
-		rx.hdr_info.hdr_check_cnt = 0;
+		rx[port].hdr_info.hdr_check_cnt = 0;
 		if (prop->hdr_info.hdr_state != HDR_STATE_GET) {
-			if (rx_pkt_chk_busy_drm())
+			if (rx_pkt_chk_busy_drm(port))
 				break;
 
 			prop->hdr_info.hdr_data.length = drm_pkt->length;
@@ -1392,7 +1421,7 @@ void hdmirx_get_hdr_info(struct tvin_sig_property_s *prop)
 		 * is already taken by vdin, no need to
 		 * wait until vdin process this hdr data
 		 */
-		rx.hdr_info.hdr_state = HDR_STATE_NULL;
+		rx[port].hdr_info.hdr_state = HDR_STATE_NULL;
 		break;
 	default:
 		break;
@@ -1402,35 +1431,59 @@ void hdmirx_get_hdr_info(struct tvin_sig_property_s *prop)
 /*
  * get hdmirx avi packet ext_colorimetry info
  */
-void hdmirx_get_avi_ext_colorimetry(struct tvin_sig_property_s *prop)
+void hdmirx_get_avi_ext_colorimetry(struct tvin_sig_property_s *prop, u8 port)
 {
-	prop->avi_ec = rx.cur.ext_colorimetry;
+	prop->avi_ec = rx[port].cur.ext_colorimetry;
 }
 
 /***************************************************
  *func: hdmirx_get_sig_property - get signal property
  **************************************************/
-void hdmirx_get_sig_property(struct tvin_frontend_s *fe,
+void hdmirx_get_sig_prop(struct tvin_frontend_s *fe,
 			     struct tvin_sig_property_s *prop)
 {
-	hdmirx_get_dvi_info(prop);
-	hdmirx_get_colordepth(prop);
-	hdmirx_get_fps_info(prop);
-	hdmirx_get_color_fmt(prop);
-	hdmirx_get_repetition_info(prop);
-	hdmirx_set_timing_info(prop);
-	hdmirx_get_hdr_info(prop);
-	hdmirx_get_vsi_info(prop);
-	hdmirx_get_spd_info(prop);
-	hdmirx_get_latency_info(prop);
-	hdmirx_get_emp_dv_info(prop);
-	hdmirx_get_vtem_info(prop);
-	hdmirx_get_sbtm_info(prop);
-	hdmirx_get_cuva_emds_info(prop);
-	hdmirx_get_active_aspect_ratio(prop);
-	hdmirx_get_hdcp_sts(prop);
-	hdmirx_get_hw_vic(prop);
-	hdmirx_get_avi_ext_colorimetry(prop);
+	hdmirx_get_dvi_info(prop, rx_info.main_port);
+	hdmirx_get_colordepth(prop, rx_info.main_port);
+	hdmirx_get_fps_info(prop, rx_info.main_port);
+	hdmirx_get_color_fmt(prop, rx_info.main_port);
+	hdmirx_get_repetition_info(prop, rx_info.main_port);
+	hdmirx_set_timing_info(prop, rx_info.main_port);
+	hdmirx_get_hdr_info(prop, rx_info.main_port);
+	hdmirx_get_vsi_info(prop, rx_info.main_port);
+	hdmirx_get_spd_info(prop, rx_info.main_port);
+	hdmirx_get_latency_info(prop, rx_info.main_port);
+	hdmirx_get_emp_dv_info(prop, rx_info.main_port);
+	hdmirx_get_vtem_info(prop, rx_info.main_port);
+	hdmirx_get_sbtm_info(prop, rx_info.main_port);
+	hdmirx_get_cuva_emds_info(prop, rx_info.main_port);
+	hdmirx_get_active_aspect_ratio(prop, rx_info.main_port);
+	hdmirx_get_hdcp_sts(prop, rx_info.main_port);
+	hdmirx_get_hw_vic(prop, rx_info.main_port);
+	hdmirx_get_avi_ext_colorimetry(prop, rx_info.main_port);
+	prop->skip_vf_num = vdin_drop_frame_cnt;
+}
+
+void hdmirx_get_sig_prop2(struct tvin_frontend_s *fe,
+			     struct tvin_sig_property_s *prop)
+{
+	hdmirx_get_dvi_info(prop, rx_info.sub_port);
+	hdmirx_get_colordepth(prop, rx_info.sub_port);
+	hdmirx_get_fps_info(prop, rx_info.sub_port);
+	hdmirx_get_color_fmt(prop, rx_info.sub_port);
+	hdmirx_get_repetition_info(prop, rx_info.sub_port);
+	hdmirx_set_timing_info(prop, rx_info.sub_port);
+	hdmirx_get_hdr_info(prop, rx_info.sub_port);
+	hdmirx_get_vsi_info(prop, rx_info.sub_port);
+	hdmirx_get_spd_info(prop, rx_info.sub_port);
+	hdmirx_get_latency_info(prop, rx_info.sub_port);
+	hdmirx_get_emp_dv_info(prop, rx_info.sub_port);
+	hdmirx_get_vtem_info(prop, rx_info.sub_port);
+	hdmirx_get_sbtm_info(prop, rx_info.sub_port);
+	hdmirx_get_cuva_emds_info(prop, rx_info.sub_port);
+	hdmirx_get_active_aspect_ratio(prop, rx_info.sub_port);
+	hdmirx_get_hdcp_sts(prop, rx_info.sub_port);
+	hdmirx_get_hw_vic(prop, rx_info.sub_port);
+	hdmirx_get_avi_ext_colorimetry(prop, rx_info.sub_port);
 	prop->skip_vf_num = vdin_drop_frame_cnt;
 }
 
@@ -1447,14 +1500,17 @@ bool hdmirx_check_frame_skip(struct tvin_frontend_s *fe)
 
 bool hdmirx_dv_config(bool en, struct tvin_frontend_s *fe)
 {
-	set_dv_ll_mode(en);
+	u8 port = rx_info.main_port;
 
+	set_dv_ll_mode(en, port);
 	return true;
 }
 
 bool hdmirx_clr_vsync(struct tvin_frontend_s *fe)
 {
-	return rx_clr_tmds_valid();
+	u8 port = rx_info.main_port;
+
+	return rx_clr_tmds_valid(port);
 }
 
 static struct tvin_state_machine_ops_s hdmirx_sm_ops = {
@@ -1464,7 +1520,8 @@ static struct tvin_state_machine_ops_s hdmirx_sm_ops = {
 	.fmt_config       = NULL,
 	.adc_cal          = NULL,
 	.pll_lock         = NULL,
-	.get_sig_property  = hdmirx_get_sig_property,
+	.get_sig_property  = hdmirx_get_sig_prop,
+	.get_sig_property2 = hdmirx_get_sig_prop2,
 	.vga_set_param    = NULL,
 	.vga_get_param    = NULL,
 	.check_frame_skip = hdmirx_check_frame_skip,
@@ -1528,8 +1585,8 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		if (!argp)
 			return -EINVAL;
 		mutex_lock(&devp->rx_lock);
-		ksv.bksv0 = rx.hdcp.bksv[0];
-		ksv.bksv1 = rx.hdcp.bksv[1];
+		ksv.bksv0 = rx[rx_info.main_port].hdcp.bksv[0];
+		ksv.bksv1 = rx[rx_info.main_port].hdcp.bksv[1];
 		if (copy_to_user(argp, &ksv, sizeof(struct _hdcp_ksv))) {
 			ret = -EFAULT;
 			mutex_unlock(&devp->rx_lock);
@@ -1540,26 +1597,26 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 	}
 	case HDMI_IOC_HDCP_ON:
 		hdcp_enable = 1;
-		rx_irq_en(false);
-		rx_set_cur_hpd(0, 4);
+		rx_irq_en(false, rx_info.main_port);
+		rx_set_cur_hpd(0, 4, rx_info.main_port);
 		/*fsm_restart();*/
 		break;
 	case HDMI_IOC_HDCP_OFF:
 		hdcp_enable = 0;
-		rx_irq_en(false);
-		rx_set_cur_hpd(0, 4);
-		hdmirx_hw_config();
+		rx_irq_en(false, rx_info.main_port);
+		rx_set_cur_hpd(0, 4, rx_info.main_port);
+		hdmirx_hw_config(rx_info.main_port);
 		/*fsm_restart();*/
 		break;
 	case HDMI_IOC_EDID_UPDATE:
 		/* ref board ui can only be set in current hdmi port */
 		if (edid_delivery_mothed == EDID_DELIVERY_ALL_PORT) {
-			rx_irq_en(false);
-			rx_set_cur_hpd(0, 4);
-			port_hpd_rst_flag |= (1 << rx.port);
-			edid_update_flag = 1;
+			rx_irq_en(false, rx_info.main_port);
+			rx_set_cur_hpd(0, 4, rx_info.main_port);
+			port_hpd_rst_flag |= (1 << rx_info.main_port);
+			rx[rx_info.main_port].var.edid_update_flag = 1;
 		}
-		fsm_restart();
+		fsm_restart(rx_info.main_port);
 		rx_pr("*update edid*\n");
 		break;
 	case HDMI_IOC_EDID_UPDATE_WITH_PORT:
@@ -1573,7 +1630,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		}
 		port_idx = hdmi_idx - 1;
 		if (port_idx >= 3) {
-			rx_pr("port_idx illeage\n");
+			rx_pr("port_idx error\n");
 			ret = -EFAULT;
 			mutex_unlock(&devp->rx_lock);
 			break;
@@ -1582,30 +1639,24 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		rx_set_port_hpd(port_idx, 0);
 		rx_pr("port%d_hpd_low\n", port_idx);
 
-		if (!rx.open_fg) {
+		if (!rx_info.open_fg) {
 			port_hpd_rst_flag |= (1 << port_idx);
 			hdmi_rx_top_edid_update();
 		} else {
-			if (port_idx != rx.port) {
+			if (port_idx != rx_info.main_port) {
 				port_hpd_rst_flag |= (1 << port_idx);
 				hdmi_rx_top_edid_update();
 			} else {
-				rx_irq_en(false);
+				rx_irq_en(false, port_idx);
 				//rx_set_cur_hpd(0, 4);
-				fsm_restart();
+				fsm_restart(port_idx);
 			}
 		}
 		mutex_unlock(&devp->rx_lock);
 		break;
 	case HDMI_IOC_PC_MODE_ON:
-		pc_mode_en = 1;
-		hotplug_wait_query();
-		rx_pr("pc mode on\n");
 		break;
 	case HDMI_IOC_PC_MODE_OFF:
-		pc_mode_en = 0;
-		hotplug_wait_query();
-		rx_pr("pc mode off\n");
 		break;
 	case HDMI_IOC_HDCP22_AUTO:
 		break;
@@ -1620,7 +1671,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 			break;
 		}
 		rx_pr("en cmd:0x%x\n", param);
-		rx_pkt_buffclear(param);
+		rx_pkt_buffclear(param, rx_info.main_port);
 		temp = rx_pkt_type_mapping(param);
 		packet_fifo_cfg |= temp;
 		/*enable pkt pd fifo*/
@@ -1632,7 +1683,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		/*open pd fifo interrupt source if signal stable*/
 		temp_val = hdmirx_rd_dwc(DWC_PDEC_IEN);
 		if ((temp_val & PD_FIFO_START_PASS) == 0 &&
-		    rx.state >= FSM_SIG_UNSTABLE) {
+		    rx[rx_info.main_port].state >= FSM_SIG_UNSTABLE) {
 			temp_val |= pdec_ists_en;
 			hdmirx_wr_dwc(DWC_PDEC_IEN_SET, temp_val);
 			rx_pr("open pd fifo int:0x%x\n", pdec_ists_en);
@@ -1692,12 +1743,12 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		/* if sysctl can not find the aic tools,
 		 * it will inform driver that 2.2 not support via ioctl
 		 */
-		hdcp22_on = 0;
-		if (rx.open_fg)
-			rx_send_hpd_pulse();
-		else
-			hdmirx_wr_dwc(DWC_HDCP22_CONTROL, 2);
-		rx_pr("hdcp2.2 not support\n");
+		//hdcp22_on = 0;
+		//if (rx_info.open_fg)
+			//rx_send_hpd_pulse();
+		//else
+			//hdmirx_wr_dwc(DWC_HDCP22_CONTROL, 2);
+		//rx_pr("hdcp2.2 not support\n");
 		break;
 	case HDMI_IOC_GET_AUD_SAD:
 		if (!argp)
@@ -1731,7 +1782,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 			rx_pr("sad data length err\n");
 		break;
 	case HDMI_IOC_GET_SPD_SRC_INFO:
-		spd_pkt = (struct spd_infoframe_st *)&rx_pkt.spd_info;
+		spd_pkt = (struct spd_infoframe_st *)&rx_pkt[rx_info.main_port].spd_info;
 		if (!argp)
 			return -EINVAL;
 		mutex_lock(&devp->rx_lock);
@@ -1798,15 +1849,7 @@ static ssize_t hdmirx_sts_read(struct file *file,
 	int ret = 0;
 	int rx_sts;
 
-	/*
-	 * sysctl set the pc_mode on/off via UI,tvserver need to know
-	 * the status,but it cant get the status from sysctl because of the
-	 * limit of the communication from sysctl to tvserver,so it needs
-	 * hdmi driver to feedback the pc_mode status to tvserver
-	 */
-
-	rx_sts = pwr_sts | (pc_mode_en << 4);
-
+	rx_sts = pwr_sts;
 	if (copy_to_user(buf, &rx_sts, sizeof(unsigned int)))
 		return -EFAULT;
 
@@ -2001,7 +2044,7 @@ static ssize_t edid_show(struct device *dev,
 				struct device_attribute *attr,
 				char *buf)
 {
-	return hdmirx_read_edid_buf(buf, MAX_EDID_BUF_SIZE);
+	return 0;//hdmirx_read_edid_buf(buf, EDID_TOTAL_SIZE);
 }
 
 static ssize_t edid_store(struct device *dev,
@@ -2040,7 +2083,7 @@ static ssize_t hdcp_version_show(struct device *dev,
 				 struct device_attribute *attr,
 				 char *buf)
 {
-	return sprintf(buf, "%x\n", rx.hdcp.hdcp_version);
+	return sprintf(buf, "%x\n", rx[rx_info.main_port].hdcp.hdcp_version);
 }
 
 static ssize_t hdcp_version_store(struct device *dev,
@@ -2057,7 +2100,7 @@ static ssize_t hdcp14_onoff_show(struct device *dev,
 {
 	int pos = 0;
 
-	if (rx.chip_id >= CHIP_ID_T7)
+	if (rx_info.chip_id >= CHIP_ID_T7)
 		;//TODO
 	else
 		return sprintf(buf, "%s", (hdmirx_rd_dwc(DWC_HDCP_BKSV0) ? "1" : "0"));
@@ -2079,12 +2122,13 @@ static ssize_t hw_info_show(struct device *dev,
 			    char *buf)
 {
 	struct hdcp_hw_info_s info;
+	u8 port = rx_info.main_port;
 
 	memset(&info, 0, sizeof(info));
-	info.cur_5v = rx.cur_5v_sts;
-	info.open = rx.open_fg;
-	info.frame_rate = rx.pre.frame_rate / 100;
-	info.signal_stable = ((rx.state == FSM_SIG_READY) ? 1 : 0);
+	info.cur_5v = rx[port].cur_5v_sts;
+	info.open = rx_info.open_fg;
+	info.frame_rate = rx[port].pre.frame_rate / 100;
+	info.signal_stable = ((rx[port].state == FSM_SIG_READY) ? 1 : 0);
 	return sprintf(buf, "%x\n", *((unsigned int *)&info));
 }
 
@@ -2134,7 +2178,7 @@ static ssize_t cec_store(struct device *dev,
 	if ((val & 0xF) == 0) {
 		hdmi_cec_en = 0;
 		/* fix source can't get edid if cec off */
-		if (rx.boot_flag) {
+		if (rx_info.boot_flag) {
 			if (hpd_low_cec_off == 0)
 				rx_force_hpd_rxsense_cfg(1);
 		}
@@ -2144,7 +2188,7 @@ static ssize_t cec_store(struct device *dev,
 		hdmi_cec_en = 1;
 		rx_force_hpd_rxsense_cfg(1);
 	}
-	rx.boot_flag = false;
+	rx_info.boot_flag = false;
 	tv_auto_power_on = (val >> 4) & 0xF;
 	rx_pr("cec sts = %d\n", val);
 	return count;
@@ -2180,6 +2224,8 @@ static ssize_t esm_base_show(struct device *dev,
 {
 	int pos = 0;
 
+	if (rx_info.chip_id >= CHIP_ID_T7)
+		return 0;
 	pos += snprintf(buf, PAGE_SIZE, "0x%x\n",
 			rx_reg_maps[MAP_ADDR_MODULE_HDMIRX_CAPB3].phy_addr);
 	rx_pr("hdcp_rx22 esm base:%#x\n",
@@ -2200,7 +2246,18 @@ static ssize_t info_show(struct device *dev,
 			 struct device_attribute *attr,
 			 char *buf)
 {
-	return hdmirx_show_info(buf, PAGE_SIZE);
+	int pos = 0;
+
+	u8 port = rx_info.main_port;
+
+	if (rx_info.chip_id < CHIP_ID_T3X) {
+		pos = hdmirx_show_info(buf, PAGE_SIZE, port);
+	} else {
+		for (port = E_PORT0; port < E_PORT_NUM; port++)
+			pos += hdmirx_show_info(buf, PAGE_SIZE, port);
+	}
+
+	return pos;
 }
 
 static ssize_t info_store(struct device *dev,
@@ -2391,31 +2448,39 @@ static ssize_t mode_show(struct device *dev,
 				  char *buf)
 {
 	ssize_t len = 0;
+	u8 port = rx_info.main_port;
 
-	if (abs(rx.cur.hactive - 3840) < 5 && abs(rx.cur.vactive - 2160) < 5) {
+	if (abs(rx[port].cur.hactive - 3840) < 5 &&
+		abs(rx[port].cur.vactive - 2160) < 5) {
 		len += snprintf(buf + len, PAGE_SIZE, "2160");
-	} else if (abs(rx.cur.hactive - 1920) < 5 && abs(rx.cur.vactive - 2160) < 5 &&
-			   rx.cur.colorspace == E_COLOR_YUV420) {
+	} else if (abs(rx[port].cur.hactive - 1920) < 5 &&
+		abs(rx[port].cur.vactive - 2160) < 5 &&
+			   rx[port].cur.colorspace == E_COLOR_YUV420) {
 		len += snprintf(buf + len, PAGE_SIZE, "2160");
-	} else if (abs(rx.cur.hactive - 1920) < 5 && abs(rx.cur.vactive - 1080) < 5) {
+	} else if (abs(rx[port].cur.hactive - 1920) < 5 &&
+		abs(rx[port].cur.vactive - 1080) < 5) {
 		len += snprintf(buf + len, PAGE_SIZE, "1080");
-	} else if (abs(rx.cur.hactive - 1280) < 5 && abs(rx.cur.vactive - 720) < 5) {
+	} else if (abs(rx[port].cur.hactive - 1280) < 5 &&
+		abs(rx[port].cur.vactive - 720) < 5) {
 		len += snprintf(buf + len, PAGE_SIZE, "720");
-	} else if (abs(rx.cur.hactive - 720) < 5 && abs(rx.cur.vactive - 480) < 5) {
+	} else if (abs(rx[port].cur.hactive - 720) < 5 &&
+		abs(rx[port].cur.vactive - 480) < 5) {
 		len += snprintf(buf + len, PAGE_SIZE, "480");
-	} else if (abs(rx.cur.hactive - 720) < 5 && abs(rx.cur.vactive - 576) < 5) {
+	} else if (abs(rx[port].cur.hactive - 720) < 5 &&
+		abs(rx[port].cur.vactive - 576) < 5) {
 		len += snprintf(buf + len, PAGE_SIZE, "576");
-	} else if ((rx.cur.hactive != 0) && (rx.cur.vactive != 0)) {
+	} else if ((rx[port].cur.hactive != 0) &&
+		(rx[port].cur.vactive != 0)) {
 		len += snprintf(buf + len, PAGE_SIZE, "%dx%d",
-		rx.cur.hactive, rx.cur.vactive);
+		rx[port].cur.hactive, rx[port].cur.vactive);
 	} else {
 		len += snprintf(buf + len, PAGE_SIZE, "invalid");
 		return len;
 	}
 	len += snprintf(buf + len, PAGE_SIZE, "%s",
-			(rx.cur.interlaced) ? "i" : "p");
+			(rx[port].cur.interlaced) ? "i" : "p");
 	len += snprintf(buf + len, PAGE_SIZE, "%dhz",
-			(rx.cur.frame_rate + 50) / 100);
+			(rx[port].cur.frame_rate + 50) / 100);
 
 	return len;
 }
@@ -2425,14 +2490,15 @@ static ssize_t colorspace_show(struct device *dev,
 				  char *buf)
 {
 	ssize_t len = 0;
+	u8 port = rx_info.main_port;
 
-	if (rx.cur.colorspace == E_COLOR_RGB)
+	if (rx[port].cur.colorspace == E_COLOR_RGB)
 		len += snprintf(buf + len, PAGE_SIZE, "rgb");
-	else if (rx.cur.colorspace == E_COLOR_YUV422)
+	else if (rx[port].cur.colorspace == E_COLOR_YUV422)
 		len += snprintf(buf + len, PAGE_SIZE, "422");
-	else if (rx.cur.colorspace == E_COLOR_YUV444)
+	else if (rx[port].cur.colorspace == E_COLOR_YUV444)
 		len += snprintf(buf + len, PAGE_SIZE, "444");
-	else if (rx.cur.colorspace == E_COLOR_YUV420)
+	else if (rx[port].cur.colorspace == E_COLOR_YUV420)
 		len += snprintf(buf + len, PAGE_SIZE, "420");
 	else
 		len += snprintf(buf + len, PAGE_SIZE, "invalid\n");
@@ -2445,8 +2511,9 @@ static ssize_t colordepth_show(struct device *dev,
 				  char *buf)
 {
 	ssize_t len = 0;
+	u8 port = rx_info.main_port;
 
-	len += snprintf(buf + len, PAGE_SIZE, "%d", rx.cur.colordepth);
+	len += snprintf(buf + len, PAGE_SIZE, "%d", rx[port].cur.colordepth);
 
 	return len;
 }
@@ -2456,8 +2523,10 @@ static ssize_t frac_mode_show(struct device *dev,
 				  char *buf)
 {
 	ssize_t len = 0;
+	u8 port = rx_info.main_port;
 
-	if (rx.cur.frame_rate && (rx.cur.frame_rate % 100 == 0))
+	if (rx[port].cur.frame_rate &&
+		(rx[port].cur.frame_rate % 100 == 0))
 		len += snprintf(buf + len, PAGE_SIZE, "0");
 	else
 		len += snprintf(buf + len, PAGE_SIZE, "1");
@@ -2471,15 +2540,16 @@ static ssize_t hdmi_hdr_status_show(struct device *dev,
 {
 	ssize_t len = 0;
 	struct drm_infoframe_st *drmpkt;
+	u8 port = rx_info.main_port;
 
-	drmpkt = (struct drm_infoframe_st *)&rx_pkt.drm_info;
+	drmpkt = (struct drm_infoframe_st *)&rx_pkt[port].drm_info;
 
-	if (rx.vs_info_details.dolby_vision_flag == 1) {
-		if (rx.vs_info_details.low_latency)
+	if (rx[port].vs_info_details.dolby_vision_flag == 1) {
+		if (rx[port].vs_info_details.low_latency)
 			len += snprintf(buf + len, PAGE_SIZE, "DolbyVision-Lowlatency");
 		else
 			len += snprintf(buf + len, PAGE_SIZE, "DolbyVision-Std");
-	} else if (rx.vs_info_details.hdr10plus != 0) {
+	} else if (rx[port].vs_info_details.hdr10plus != 0) {
 		len += snprintf(buf + len, PAGE_SIZE, "HDR10Plus");
 	} else if (drmpkt->des_u.tp1.eotf == EOTF_SDR) {
 		len += snprintf(buf + len, PAGE_SIZE, "SDR");
@@ -2500,8 +2570,9 @@ static ssize_t hdcp_auth_sts_show(struct device *dev,
 			  char *buf)
 {
 	int pos = 0;
+	u8 port = rx_info.main_port;
 
-	pos += sprintf(buf, "%d", rx_get_hdcp_auth_sts());
+	pos += sprintf(buf, "%d", rx_get_hdcp_auth_sts(port));
 	return pos;
 }
 
@@ -2636,7 +2707,12 @@ static void rx_phy_suspend(void)
 		/* phy powerdown */
 		rx_phy_power_on(0);
 	}
-	hdmirx_top_irq_en(0, 0);
+	hdmirx_top_irq_en(0, 0, E_PORT0); //todo
+	if (rx_info.chip_id == CHIP_ID_T3X) {
+		hdmirx_top_irq_en(0, 0, E_PORT1); //todo
+		hdmirx_top_irq_en(0, 0, E_PORT2); //todo
+		hdmirx_top_irq_en(0, 0, E_PORT3); //todo
+	}
 }
 
 static void rx_phy_resume(void)
@@ -2653,53 +2729,98 @@ static void rx_phy_resume(void)
 			rx_phy_rxsense_pulse(10, 50, 1);
 		}
 	}
-	if (rx.phy_ver >= PHY_VER_TM2)
-		rx.aml_phy.pre_int = 1;
-	hdmirx_phy_init();
+	if (rx_info.phy_ver >= PHY_VER_TM2)
+		rx_info.aml_phy.pre_int = 1;
+	if (rx_info.chip_id <= CHIP_ID_T3X) {
+		hdmirx_phy_init(E_PORT0);
+	} else {
+		hdmirx_phy_init(E_PORT0);
+		hdmirx_phy_init(E_PORT1);
+		hdmirx_phy_init(E_PORT2);
+		hdmirx_phy_init(E_PORT3);
+	}
 	pre_port = 0xff;
-	rx.boot_flag = true;
+	rx_info.boot_flag = true;
 	//hdmirx_top_irq_en(1, 2);
 }
 
 void rx_emp_resource_allocate(struct device *dev)
 {
-	if (rx.chip_id >= CHIP_ID_TL1) {
+	if (rx_info.chip_id >= CHIP_ID_TL1) {
 		/* allocate buffer */
-		if (!rx.emp_buff.store_a)
-			rx.emp_buff.store_a =
+		if (!rx_info.emp_buff_a.store_a)
+			rx_info.emp_buff_a.store_a =
 				kmalloc(EMP_BUFFER_SIZE, GFP_KERNEL);
 		else
 			rx_pr("malloc emp buffer err\n");
 
-		if (rx.emp_buff.store_a)
-			rx.emp_buff.store_b =
-				rx.emp_buff.store_a + (EMP_BUFFER_SIZE >> 1);
+		if (rx_info.emp_buff_a.store_a)
+			rx_info.emp_buff_a.store_b =
+				rx_info.emp_buff_a.store_a + (EMP_BUFFER_SIZE >> 1);
 		else
 			rx_pr("emp buff err-0\n");
-		rx_pr("pkt_buff_a=0x%p\n", rx.emp_buff.store_a);
-		rx_pr("pkt_buff_b=0x%p\n", rx.emp_buff.store_b);
-		rx.emp_buff.dump_mode = DUMP_MODE_EMP;
+		rx_pr("pkt_buffa_a=0x%p\n", rx_info.emp_buff_a.store_a);
+		rx_pr("pkt_buffa_b=0x%p\n", rx_info.emp_buff_a.store_b);
+		rx_info.emp_buff_a.dump_mode = DUMP_MODE_EMP;
 		/* allocate buffer for hw access*/
-		rx.emp_buff.pg_addr =
+		rx_info.emp_buff_a.pg_addr =
 			dma_alloc_from_contiguous(dev,
 						  EMP_BUFFER_SIZE >> PAGE_SHIFT, 0, 0);
-		if (rx.emp_buff.pg_addr) {
+		if (rx_info.emp_buff_a.pg_addr) {
 			/* hw access */
 			/* page to real physical address*/
-			rx.emp_buff.p_addr_a =
-				page_to_phys(rx.emp_buff.pg_addr);
-			rx.emp_buff.p_addr_b =
-				rx.emp_buff.p_addr_a + (EMP_BUFFER_SIZE >> 1);
+			rx_info.emp_buff_a.p_addr_a = page_to_phys(rx_info.emp_buff_a.pg_addr);
+			rx_info.emp_buff_a.p_addr_b =
+				rx_info.emp_buff_a.p_addr_a + (EMP_BUFFER_SIZE >> 1);
 			//page_address
-			rx_pr("buff_a paddr=0x%p\n",
-			      (void *)rx.emp_buff.p_addr_a);
-			rx_pr("buff_b paddr=0x%p\n",
-			      (void *)rx.emp_buff.p_addr_b);
+			rx_pr("buffa_a paddr=0x%p\n",
+			      (void *)rx_info.emp_buff_a.p_addr_a);
+			rx_pr("buffa_b paddr=0x%p\n",
+			      (void *)rx_info.emp_buff_a.p_addr_b);
 		} else {
 			rx_pr("emp buff err-1\n");
 		}
-		rx.emp_buff.emp_pkt_cnt = 0;
+		rx_info.emp_buff_a.emp_pkt_cnt = 0;
 	}
+}
+
+void rx_emp1_resource_allocate(struct device *dev)
+{
+	/* allocate buffer */
+	if (!rx_info.emp_buff_b.store_a)
+		rx_info.emp_buff_b.store_a =
+			kmalloc(EMP_BUFFER_SIZE, GFP_KERNEL);
+	else
+		rx_pr("malloc emp1 buffer err\n");
+
+	if (rx_info.emp_buff_b.store_a)
+		rx_info.emp_buff_b.store_b =
+			rx_info.emp_buff_b.store_a + (EMP_BUFFER_SIZE >> 1);
+	else
+		rx_pr("emp buff err-0\n");
+	rx_pr("pkt_buffb_a=0x%p\n", rx_info.emp_buff_b.store_a);
+	rx_pr("pkt_buffb_b=0x%p\n", rx_info.emp_buff_b.store_b);
+	rx_info.emp_buff_b.dump_mode = DUMP_MODE_EMP;
+	/* allocate buffer for hw access*/
+	rx_info.emp_buff_b.pg_addr =
+		dma_alloc_from_contiguous(dev,
+					  EMP_BUFFER_SIZE >> PAGE_SHIFT, 0, 0);
+	if (rx_info.emp_buff_b.pg_addr) {
+		/* hw access */
+		/* page to real physical address*/
+		rx_info.emp_buff_b.p_addr_a =
+			page_to_phys(rx_info.emp_buff_b.pg_addr);
+		rx_info.emp_buff_b.p_addr_b =
+			rx_info.emp_buff_b.p_addr_a + (EMP_BUFFER_SIZE >> 1);
+		//page_address
+		rx_pr("buffb_a paddr=0x%p\n",
+		      (void *)rx_info.emp_buff_b.p_addr_a);
+		rx_pr("buffb_b paddr=0x%p\n",
+		      (void *)rx_info.emp_buff_b.p_addr_b);
+	} else {
+		rx_pr("emp1 buff err-1\n");
+	}
+	rx_info.emp_buff_b.emp_pkt_cnt = 0;
 }
 
 int rx_hdcp22_send_uevent(int val)
@@ -2727,7 +2848,8 @@ int rx_hdcp22_send_uevent(int val)
 	ret = kobject_uevent_env(&hdmirx_dev->kobj, KOBJ_CHANGE, envp);
 	return ret;
 }
-void rx_tmds_resource_allocate(struct device *dev)
+
+void rx_tmds_resource_allocate(struct device *dev, u8 port)
 {
 	/*u32 *src_v_addr;*/
 	/*u32 *temp;*/
@@ -2735,36 +2857,39 @@ void rx_tmds_resource_allocate(struct device *dev)
 	/*phys_addr_t p_addr;*/
 	/*struct page *pg_addr;*/
 
-	if (rx.chip_id >= CHIP_ID_TL1) {
-		if (rx.emp_buff.dump_mode == DUMP_MODE_EMP) {
-			if (rx.emp_buff.pg_addr) {
+	if (!rx[port].emp_info)
+		return;
+
+	if (rx_info.chip_id >= CHIP_ID_TL1) {
+		if (rx[port].emp_info->dump_mode == DUMP_MODE_EMP) {
+			if (rx[port].emp_info->pg_addr) {
 				dma_release_from_contiguous(dev,
-							    rx.emp_buff.pg_addr,
+							    rx[port].emp_info->pg_addr,
 							    EMP_BUFFER_SIZE >> PAGE_SHIFT);
 				/*free_reserved_area();*/
-				rx.emp_buff.pg_addr = 0;
+				rx[port].emp_info->pg_addr = 0;
 				rx_pr("release emp data buffer\n");
 			}
 		} else {
-			if (rx.emp_buff.pg_addr)
+			if (rx[port].emp_info->pg_addr)
 				dma_release_from_contiguous(dev,
-							    rx.emp_buff.pg_addr,
+							    rx[port].emp_info->pg_addr,
 							    TMDS_BUFFER_SIZE >> PAGE_SHIFT);
-			rx.emp_buff.pg_addr = 0;
+			rx[port].emp_info->pg_addr = 0;
 			rx_pr("release pre tmds data buffer\n");
 		}
 
 		/* allocate tmds data buffer */
-		rx.emp_buff.pg_addr =
+		rx[port].emp_info->pg_addr =
 			dma_alloc_from_contiguous(dev, TMDS_BUFFER_SIZE >> PAGE_SHIFT, 0, 0);
 
-		if (rx.emp_buff.pg_addr)
-			rx.emp_buff.p_addr_a =
-				page_to_phys(rx.emp_buff.pg_addr);
+		if (rx[port].emp_info->pg_addr)
+			rx[port].emp_info->p_addr_a =
+				page_to_phys(rx[port].emp_info->pg_addr);
 		else
 			rx_pr("allocate tmds data buff fail\n");
-		rx.emp_buff.dump_mode = DUMP_MODE_TMDS;
-		rx_pr("buff_a paddr=0x%p\n", (void *)rx.emp_buff.p_addr_a);
+		rx[port].emp_info->dump_mode = DUMP_MODE_TMDS;
+		rx_pr("buff_a paddr=0x%p\n", (void *)rx[port].emp_info->p_addr_a);
 	}
 }
 
@@ -2772,7 +2897,7 @@ void rx_tmds_resource_allocate(struct device *dev)
  * capture emp pkt data save file emp_data.bin
  *
  */
-void rx_emp_data_capture(void)
+void rx_emp_data_capture(u8 port)
 {
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	struct file *filp = NULL;
@@ -2787,12 +2912,13 @@ void rx_emp_data_capture(void)
 		rx_pr("create %s error.\n", path);
 		return;
 	}
-
+	if (!rx[port].emp_info)
+		return;
 	pos += offset;
 	/*start buffer address*/
-	buf = rx.emp_buff.ready;
+	buf = rx[port].emp_info->ready;
 	/*write size*/
-	offset = rx.emp_buff.emp_pkt_cnt * 32;
+	offset = rx[port].emp_info->emp_pkt_cnt * 32;
 	vfs_write(filp, buf, offset, &pos);
 	rx_pr("write from 0x%x to 0x%x to %s.\n",
 	      0, 0 + offset, path);
@@ -2805,7 +2931,7 @@ void rx_emp_data_capture(void)
  * capture tmds data save file emp_data.bin
  *
  */
-void rx_tmds_data_capture(void)
+void rx_tmds_data_capture(u8 port)
 {
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	/* data to terminal or save a file */
@@ -2827,20 +2953,21 @@ void rx_tmds_data_capture(void)
 		pr_info("create %s error.\n", path);
 		return;
 	}
-
+	if (!rx[port].emp_info)
+		return;
 	tmp_buff = kmalloc(PAGE_SIZE + 16, GFP_KERNEL);
 	if (!tmp_buff) {
 		rx_pr("tmds malloc buffer err\n");
 		return;
 	}
 	memset(tmp_buff, 0, PAGE_SIZE);
-	recv_byte_cnt = rx.emp_buff.tmds_pkt_cnt * 4;
+	recv_byte_cnt = rx[port].emp_info->tmds_pkt_cnt * 4;
 	recv_pagenum = (recv_byte_cnt >> PAGE_SHIFT) + 1;
 
 	rx_pr("total byte:%d page:%d\n", recv_byte_cnt, recv_pagenum);
 	for (i = 0; i < recv_pagenum; i++) {
 		/* one page 4k,tmds data physical address, need map v addr */
-		p_addr = rx.emp_buff.p_addr_a + i * PAGE_SIZE;
+		p_addr = rx[port].emp_info->p_addr_a + i * PAGE_SIZE;
 		pg_addr = phys_to_page(p_addr);
 		src_v_addr = kmap(pg_addr);
 		dma_sync_single_for_cpu(hdmirx_dev,
@@ -2866,7 +2993,7 @@ void rx_tmds_data_capture(void)
 
 	/* for test */
 	for (i = 0; i < recv_pagenum; i++) {
-		p_addr = rx.emp_buff.p_addr_a + i * PAGE_SIZE;
+		p_addr = rx[port].emp_info->p_addr_a + i * PAGE_SIZE;
 		pg_addr = phys_to_page(p_addr);
 		/* p addr map to v addr*/
 		paddr = kmap(pg_addr);
@@ -2907,9 +3034,9 @@ static int rx_vrr_notify_handler(struct notifier_block *nb,
 	switch (value) {
 	case VRR_EVENT_UPDATE:
 		memcpy(&vdata, p, sizeof(struct vrr_notifier_data_s));
-		rx.vrr_min = vdata.dev_vfreq_min;
-		rx.vrr_max = vdata.dev_vfreq_max;
-		rx_pr("%s: vrr_min=%d, vrr_max=%d\n", __func__, rx.vrr_min, rx.vrr_max);
+		rx_info.vrr_min = vdata.dev_vfreq_min;
+		rx_info.vrr_max = vdata.dev_vfreq_max;
+		rx_pr("%s: vrr_min=%d, vrr_max=%d\n", __func__, rx_info.vrr_min, rx_info.vrr_max);
 		break;
 	default:
 		ret = -EINVAL;
@@ -2926,7 +3053,12 @@ static void hdmirx_early_suspend(struct early_suspend *h)
 		return;
 
 	early_suspend_flag = true;
-	rx_irq_en(false);
+	rx_irq_en(false, E_PORT0);
+	if (rx_info.chip_id == CHIP_ID_T3X) {
+		rx_irq_en(false, E_PORT1);
+		rx_irq_en(false, E_PORT2);
+		rx_irq_en(false, E_PORT3);
+	}
 	rx_phy_suspend();
 	rx_pr("%s- ok\n", __func__);
 }
@@ -2952,8 +3084,9 @@ static struct early_suspend hdmirx_early_suspend_handler = {
 static int hdmirx_probe(struct platform_device *pdev)
 {
 	int ret = 0;
+	int port = 0;
 	struct hdmirx_dev_s *hdevp;
-	struct resource *res;
+	//struct resource *res;
 	struct clk *xtal_clk;
 	struct clk *fclk_div3_clk;
 	struct clk *fclk_div4_clk;
@@ -2981,17 +3114,18 @@ static int hdmirx_probe(struct platform_device *pdev)
 	}
 	memset(hdevp, 0, sizeof(struct hdmirx_dev_s));
 	hdevp->data = of_id->data;
-	rx.hdmirx_dev = hdevp;
+	rx_info.hdmirx_dev = hdevp;
 
 	if (hdevp->data) {
-		rx.chip_id = hdevp->data->chip_id;
-		rx.phy_ver = hdevp->data->phy_ver;
-		rx.port_num = hdevp->data->port_num;
-		rx_pr("chip id:%d\n", rx.chip_id);
-		rx_pr("phy ver:%d\n", rx.hdmirx_dev->data->phy_ver);
+		rx_info.chip_id = hdevp->data->chip_id;
+		rx_info.phy_ver = hdevp->data->phy_ver;
+		rx_info.port_num = hdevp->data->port_num;
+		rx_info.main_port = 0;
+		rx_info.sub_port = 0;
+		rx_pr("chip id:%d\n", rx_info.chip_id);
+		rx_pr("phy ver:%d\n", rx_info.hdmirx_dev->data->phy_ver);
 	} else {
-		/*txlx chip for default*/
-		rx.chip_id = CHIP_ID_TXLX;
+		rx_info.chip_id = CHIP_ID_T3;
 		rx_pr("err: hdevp->data null\n");
 	}
 
@@ -3056,7 +3190,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_pr("hdmirx: fail to create info attribute file\n");
 		goto fail_create_info_file;
 	}
-	if (rx.chip_id < CHIP_ID_T7) {
+	if (rx_info.chip_id < CHIP_ID_T7) {
 		ret = device_create_file(hdevp->dev, &dev_attr_esm_base);
 		if (ret < 0) {
 			rx_pr("hdmirx: fail to create esm_base attribute file\n");
@@ -3158,23 +3292,10 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_pr("hdmirx: fail to create hdcp_auth_sts file\n");
 		goto fail_create_hdcp_auth_sts;
 	}
-	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (!res) {
-		rx_pr("%s: can't get irq resource\n", __func__);
-		ret = -ENXIO;
+
+	if (rx_init_irq(pdev, hdevp))
 		goto fail_get_resource_irq;
-	}
-	hdevp->irq = res->start;
-	snprintf(hdevp->irq_name, sizeof(hdevp->irq_name),
-		 "hdmirx%d-irq", hdevp->index);
-	rx_pr("hdevp irq: %d, %d\n", hdevp->index,
-	      hdevp->irq);
-	if (request_irq(hdevp->irq,
-			&irq_handler,
-			IRQF_SHARED,
-			hdevp->irq_name,
-			(void *)&rx))
-		rx_pr(__func__, "RX IRQ request");
+
 	/* frontend */
 	tvin_frontend_init(&hdevp->frontend,
 			   &hdmirx_dec_ops,
@@ -3222,7 +3343,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 	if (IS_ERR(hdevp->cfg_clk)) {
 		rx_pr("get cfg_clk err\n");
 	} else {
-		if (rx.chip_id >= CHIP_ID_T7)
+		if (rx_info.chip_id >= CHIP_ID_T7)
 			ret = clk_set_rate(hdevp->cfg_clk, 50000000);
 		else
 			ret = clk_set_rate(hdevp->cfg_clk, 133333333);
@@ -3231,7 +3352,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 		clk_prepare_enable(hdevp->cfg_clk);
 		clk_rate = clk_get_rate(hdevp->cfg_clk);
 	}
-	if (rx.chip_id < CHIP_ID_T7) {
+	if (rx_info.chip_id < CHIP_ID_T7) {
 		hdevp->esm_clk = clk_get(&pdev->dev, "hdcp_rx22_esm");
 		if (IS_ERR(hdevp->esm_clk)) {
 			rx_pr("get esm_clk err\n");
@@ -3255,7 +3376,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 			clk_rate = clk_get_rate(hdevp->skp_clk);
 		}
 	}
-	if (rx.chip_id >= CHIP_ID_TL1) {
+	if (rx_info.chip_id >= CHIP_ID_TL1) {
 		/*for audio clk measure*/
 		hdevp->meter_clk = clk_get(&pdev->dev, "cts_hdmirx_meter_clk");
 		if (IS_ERR(hdevp->meter_clk)) {
@@ -3273,7 +3394,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 		if (IS_ERR(hdevp->axi_clk)) {
 			rx_pr("get cts axi clk err\n");
 		} else {
-			clk_set_rate(hdevp->axi_clk, 667000000);
+			ret = clk_set_rate(hdevp->axi_clk, 667000000);
 			if (ret)
 				rx_pr("clk_set_rate:meter err-%d\n", __LINE__);
 			clk_prepare_enable(hdevp->axi_clk);
@@ -3300,7 +3421,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 		}
 	}
 
-	if (rx.chip_id >= CHIP_ID_T7) {
+	if (rx_info.chip_id >= CHIP_ID_T7) {
 		hdevp->cts_hdmirx_5m_clk = clk_get(&pdev->dev, "cts_hdmirx_5m_clk");
 		if (IS_ERR(hdevp->cts_hdmirx_5m_clk)) {
 			rx_pr("get cts_hdmirx_5m_clk err\n");
@@ -3338,12 +3459,21 @@ static int hdmirx_probe(struct platform_device *pdev)
 		else
 			clk_rate = clk_get_rate(fclk_div4_clk);
 	}
-	pd_fifo_buf = kmalloc_array(1, PFIFO_SIZE * sizeof(u32),
+	pd_fifo_buf_a = kmalloc_array(1, PFIFO_SIZE * sizeof(u32),
 				    GFP_KERNEL);
-	if (!pd_fifo_buf) {
-		rx_pr("hdmirx:allocate pd fifo failed\n");
+	if (!pd_fifo_buf_a) {
+		rx_pr("hdmirx:allocate pd fifo 0 failed\n");
 		ret = -ENOMEM;
 		goto fail_kmalloc_pd_fifo;
+	}
+	if (rx_info.chip_id >= CHIP_ID_T3X) {
+		pd_fifo_buf_b = kmalloc_array(1, PFIFO_SIZE * sizeof(u32),
+				    GFP_KERNEL);
+		if (!pd_fifo_buf_b) {
+			rx_pr("hdmirx:allocate pd fifo 1 failed\n");
+			ret = -ENOMEM;
+			goto fail_kmalloc_pd_fifo;
+		}
 	}
 
 	tasklet_init(&rx_tasklet, rx_tasklet_handler, (unsigned long)&rx);
@@ -3351,15 +3481,23 @@ static int hdmirx_probe(struct platform_device *pdev)
 	eq_wq = create_singlethread_workqueue(hdevp->frontend.name);
 	INIT_DELAYED_WORK(&eq_dwork, eq_dwork_handler);
 
-	if (rx.chip_id < CHIP_ID_T7) {
+	if (rx_info.chip_id < CHIP_ID_T7) {
 		esm_wq = create_singlethread_workqueue(hdevp->frontend.name);
 		INIT_DELAYED_WORK(&esm_dwork, rx_hpd_to_esm_handle);
 		/* queue_delayed_work(eq_wq, &eq_dwork, msecs_to_jiffies(5)); */
 	}
 	/* create for aml phy init */
-	aml_phy_wq = create_workqueue(hdevp->frontend.name);
-	INIT_WORK(&aml_phy_dwork, aml_phy_init_handler);
+	aml_phy_wq_port0 = create_workqueue(hdevp->frontend.name);
+	INIT_WORK(&aml_phy_dwork_port0, aml_phy_init_handler_port0);
 
+	aml_phy_wq_port1 = create_workqueue(hdevp->frontend.name);
+	INIT_WORK(&aml_phy_dwork_port1, aml_phy_init_handler_port1);
+
+	aml_phy_wq_port2 = create_workqueue(hdevp->frontend.name);
+	INIT_WORK(&aml_phy_dwork_port2, aml_phy_init_handler_port2);
+
+	aml_phy_wq_port3 = create_workqueue(hdevp->frontend.name);
+	INIT_WORK(&aml_phy_dwork_port3, aml_phy_init_handler_port3);
 	/* create for clk msr */
 	clkmsr_wq = create_workqueue(hdevp->frontend.name);
 	INIT_WORK(&clkmsr_dwork, rx_clkmsr_handler);
@@ -3367,6 +3505,10 @@ static int hdmirx_probe(struct platform_device *pdev)
 	/* create for earc hpd ctl */
 	earc_hpd_wq = create_workqueue(hdevp->frontend.name);
 	INIT_WORK(&earc_hpd_dwork, rx_earc_hpd_handler);
+
+	/* create for frl training */
+	frl_train_wq = create_workqueue(hdevp->frontend.name);
+	INIT_WORK(&frl_train_dwork, rx_frl_train_handler);
 
 	/*repeater_wq = create_singlethread_workqueue(hdevp->frontend.name);*/
 	/*INIT_DELAYED_WORK(&repeater_dwork, repeater_dwork_handle);*/
@@ -3402,10 +3544,10 @@ static int hdmirx_probe(struct platform_device *pdev)
 		disable_port_num = disable_port & 0xF;
 	}
 	ret = of_property_read_u32(pdev->dev.of_node,
-				   "arc_port", &rx.arc_port);
+				   "arc_port", &rx_info.arc_port);
 	if (ret) {
 		/* default arc port is port B */
-		rx.arc_port = 0x1;
+		rx_info.arc_port = 0x1;
 		rx_pr("not find arc_port, portB by default\n");
 	}
 	ret = of_property_read_u32(pdev->dev.of_node,
@@ -3421,9 +3563,9 @@ static int hdmirx_probe(struct platform_device *pdev)
 	rx_is_hdcp22_support();
 	ret = of_property_read_u32(pdev->dev.of_node,
 				   "aud_compose_type",
-				   &aud_compose_type);
+				   &rpt_edid_selection);
 	if (ret) {
-		aud_compose_type = 1;
+		rpt_edid_selection = 1;
 		rx_pr("not find aud_compose_type, soundbar by default\n");
 	}
 	ret = of_property_read_u32(pdev->dev.of_node,
@@ -3444,36 +3586,37 @@ static int hdmirx_probe(struct platform_device *pdev)
 	if (ret != 0)
 		rx_pr("warning: no rev cmd mem\n");
 	rx_emp_resource_allocate(&pdev->dev);
-	rx.port = rx.arc_port;
+	if (rx_info.chip_id >= CHIP_ID_T3X)
+		rx_emp1_resource_allocate(&pdev->dev);
+	//rx[rx_info.main_port].port = rx[rx_info.main_port].arc_port;
 	aml_phy_get_trim_val();
 	fs_mode_init();
 	hdmirx_hw_probe();
-	if (rx.chip_id >= CHIP_ID_TL1 && phy_tdr_en)
+	if (rx_info.chip_id >= CHIP_ID_TL1 && phy_tdr_en)
 		term_cal_en = (!is_ft_trim_done());
-	hdmirx_init_params();
+	for (port = E_PORT0; port < E_PORT_NUM; port++)
+		hdmirx_init_params(port);
 	hdmirx_switch_pinmux(&pdev->dev);
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	register_early_suspend(&hdmirx_early_suspend_handler);
 #endif
 	mutex_init(&hdevp->rx_lock);
 	register_pm_notifier(&aml_hdcp22_pm_notifier);
-	/* init_timer(&hdevp->timer); */
-	/* hdevp->timer.data = (ulong)hdevp; */
 	hdevp->timer.function = hdmirx_timer_handler;
 	hdevp->timer.expires = jiffies + TIMER_STATE_CHECK;
 	add_timer(&hdevp->timer);
-	rx.boot_flag = true;
+	rx_info.boot_flag = true;
 #ifdef CONFIG_AMLOGIC_HDMITX
-	if (rx.chip_id == CHIP_ID_TM2 ||
-	    rx.chip_id == CHIP_ID_T7) {
-		rx.tx_notify.notifier_call = rx_hdmi_tx_notify_handler;
-		hdmitx_event_notifier_regist(&rx.tx_notify);
+	if (rx_info.chip_id == CHIP_ID_TM2 ||
+	    rx_info.chip_id == CHIP_ID_T7) {
+		tx_notify.notifier_call = rx_hdmi_tx_notify_handler;
+		hdmitx_event_notifier_regist(&tx_notify);
 	}
 #endif
 #ifdef CONFIG_AMLOGIC_MEDIA_VRR
-	if (rx.chip_id >= CHIP_ID_T3) {
-		rx.vrr_notify.notifier_call = rx_vrr_notify_handler;
-		aml_vrr_atomic_notifier_register(&rx.vrr_notify);
+	if (rx_info.chip_id >= CHIP_ID_T3) {
+		vrr_notify.notifier_call = rx_vrr_notify_handler;
+		aml_vrr_atomic_notifier_register(&vrr_notify);
 	}
 #endif
 	input_dev = input_allocate_device();
@@ -3501,6 +3644,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 	return 0;
 fail_kmalloc_pd_fifo:
 	return ret;
+
 fail_get_resource_irq:
 	return ret;
 
@@ -3584,8 +3728,14 @@ static int hdmirx_remove(struct platform_device *pdev)
 	cancel_delayed_work_sync(&esm_dwork);
 	destroy_workqueue(esm_wq);
 
-	cancel_work_sync(&aml_phy_dwork);
-	destroy_workqueue(aml_phy_wq);
+	cancel_work_sync(&aml_phy_dwork_port0);
+	destroy_workqueue(aml_phy_wq_port0);
+	cancel_work_sync(&aml_phy_dwork_port1);
+	destroy_workqueue(aml_phy_wq_port1);
+	cancel_work_sync(&aml_phy_dwork_port2);
+	destroy_workqueue(aml_phy_wq_port2);
+	cancel_work_sync(&aml_phy_dwork_port3);
+	destroy_workqueue(aml_phy_wq_port3);
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	unregister_early_suspend(&hdmirx_early_suspend_handler);
 #endif
@@ -3619,7 +3769,9 @@ static int hdmirx_remove(struct platform_device *pdev)
 	tvin_unreg_frontend(&hdevp->frontend);
 	hdmirx_delete_device(hdevp->index);
 	tasklet_kill(&rx_tasklet);
-	kfree(pd_fifo_buf);
+	kfree(pd_fifo_buf_a);
+	if (rx_info.chip_id >= CHIP_ID_T3X)
+		kfree(pd_fifo_buf_b);
 	cdev_del(&hdevp->cdev);
 	kfree(hdevp);
 	rx_pr("hdmirx: driver removed ok.\n");
@@ -3646,7 +3798,7 @@ static int aml_hdcp22_pm_notify(struct notifier_block *nb,
 {
 	int delay = 0;
 
-	if (rx.chip_id >= CHIP_ID_T7)
+	if (rx_info.chip_id >= CHIP_ID_T7)
 		return NOTIFY_OK;
 	if (event == PM_SUSPEND_PREPARE && hdcp22_on) {
 		rx_pr("PM_SUSPEND_PREPARE\n");
@@ -3676,7 +3828,12 @@ static int hdmirx_suspend(struct platform_device *pdev, pm_message_t state)
 
 	hdevp = platform_get_drvdata(pdev);
 	del_timer_sync(&hdevp->timer);
-	hdmirx_top_irq_en(0, 0);
+	hdmirx_top_irq_en(0, 0, E_PORT0);
+	if (rx_info.chip_id >= CHIP_ID_T3X) {
+		hdmirx_top_irq_en(0, 0, E_PORT1);
+		hdmirx_top_irq_en(0, 0, E_PORT2);
+		hdmirx_top_irq_en(0, 0, E_PORT3);
+	}
 	hdmirx_output_en(false);
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	/* if early suspend not called, need to pw down phy here */
@@ -3735,7 +3892,12 @@ static void hdmirx_shutdown(struct platform_device *pdev)
 	rx_phy_power_on(0);
 	if (hdcp22_on)
 		hdcp_22_off();
-	hdmirx_top_irq_en(0, 0);
+	hdmirx_top_irq_en(0, 0, E_PORT0);
+	if (rx_info.chip_id >= CHIP_ID_T3X) {
+		hdmirx_top_irq_en(0, 0, E_PORT1);
+		hdmirx_top_irq_en(0, 0, E_PORT2);
+		hdmirx_top_irq_en(0, 0, E_PORT3);
+	}
 	hdmirx_output_en(false);
 	rx_dig_clk_en(0);
 	rx_pr("%s- success\n", __func__);

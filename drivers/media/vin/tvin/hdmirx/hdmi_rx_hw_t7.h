@@ -69,10 +69,10 @@
 
 /*--------------------------function declare------------------*/
 /* T7 */
-u8 rx_get_stream_manage_info(void);
-void rpt_update_hdcp1x(struct hdcp_topo_s *topo);
-void rpt_update_hdcp2x(struct hdcp_topo_s *topo);
-void hdcp_init_t7(void);
+u8 rx_get_stream_manage_info(u8 port);
+void rpt_update_hdcp1x(struct hdcp_topo_s *topo, u8 port);
+void rpt_update_hdcp2x(struct hdcp_topo_s *topo, u8 port);
+void hdcp_init_t7(u8 port);
 void dump_reg_phy_t7(void);
 void aml_phy_init_t7(void);
 void dump_aml_phy_sts_t7(void);
@@ -84,10 +84,10 @@ bool aml_get_tmds_valid_t7(void);
 void aml_phy_power_off_t7(void);
 void aml_phy_switch_port_t7(void);
 unsigned int rx_sec_hdcp_cfg_t7(void);
-void dump_vsi_reg_t7(void);
-void rx_set_irq_t7(bool en);
+void dump_vsi_reg_t7(u8 port);
+void rx_set_irq_t7(bool en, u8 port);
 void rx_set_aud_output_t7(u32 param);
-void rx_sw_reset_t7(int level);
+void rx_sw_reset_t7(int level, u8 port);
 void aml_phy_get_trim_val_t7(void);
 
 /*function declare end*/

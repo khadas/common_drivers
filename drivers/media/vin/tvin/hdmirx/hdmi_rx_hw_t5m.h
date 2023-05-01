@@ -64,6 +64,15 @@
 #define T5M_RG_RX20PLL_0		0x000
 #define T5M_RG_RX20PLL_1		0x004
 
+extern int tapx_value;
+extern int agc_enable;
+extern u32 afe_value;
+extern u32 dfe_value;
+extern u32 cdr_value;
+extern u32 eq_value;
+extern u32 misc2_value;
+extern u32 misc1_value;
+
 /*--------------------------function declare------------------*/
 /* T5m */
 void aml_phy_init_t5m(void);
@@ -75,9 +84,9 @@ bool aml_get_tmds_valid_t5m(void);
 void aml_phy_power_off_t5m(void);
 void aml_phy_switch_port_t5m(void);
 void aml_phy_iq_skew_monitor_t5m(void);
-void dump_vsi_reg_t5m(void);
+void dump_vsi_reg_t5m(u8 port);
 unsigned int rx_sec_hdcp_cfg_t5m(void);
-void rx_set_irq_t5m(bool en);
+void rx_set_irq_t5m(bool en, u8 port);
 void rx_set_aud_output_t5m(u32 param);
 void rx_sw_reset_t5m(int level);
 void hdcp_init_t5m(void);
@@ -87,7 +96,6 @@ void comb_val_t5m(void (*p)(char *, unsigned int, int),
 		 unsigned int val_2, int len);
 void get_flag_val_t5m(char *temp, unsigned int val, int len);
 void get_val_t5m(char *temp, unsigned int val, int len);
-void reset_pcs(void);
 void get_eq_val_t5m(void);
 void bubble_sort(u32 *sort_array);
 void quick_sort2(int arr[], int l, int r);

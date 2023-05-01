@@ -57,6 +57,8 @@ struct tvin_state_machine_ops_s {
 	bool (*pll_lock)(struct tvin_frontend_s *fe);
 	void (*get_sig_property)(struct tvin_frontend_s *fe,
 				 struct tvin_sig_property_s *prop);
+	void (*get_sig_property2)(struct tvin_frontend_s *fe,
+				 struct tvin_sig_property_s *prop);
 	void (*vga_set_param)(struct tvafe_vga_parm_s *vga_parm,
 			      struct tvin_frontend_s *fe);
 	void (*vga_get_param)(struct tvafe_vga_parm_s *vga_parm,

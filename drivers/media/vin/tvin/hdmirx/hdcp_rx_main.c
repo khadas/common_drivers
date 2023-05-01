@@ -466,6 +466,8 @@ static struct miscdevice hld_device = {
 
 int __init hld_init(void)
 {
+	if (rx_info.chip_id >= CHIP_ID_T7)
+		return 0;
 	pr_info("%sInitializing...\n", MY_TAG);
 	return misc_register(&hld_device);
 }

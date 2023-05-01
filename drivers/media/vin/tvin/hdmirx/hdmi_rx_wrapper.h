@@ -26,7 +26,7 @@
 /* #define AUD_SR_RANGE 2000 */
 #define PHY_REQUEST_CLK_MIN	170000000
 #define PHY_REQUEST_CLK_MAX	370000000
-#define TIMER_STATE_CHECK	(1 * HZ / 100)
+#define TIMER_STATE_CHECK	(1 * HZ / 200)
 
 struct freq_ref_s {
 	bool interlace;
@@ -42,6 +42,8 @@ enum fsm_states_e {
 	FSM_INIT,
 	FSM_HPD_LOW,
 	FSM_HPD_HIGH,
+	FSM_FRL_TRN,
+	FSM_WAIT_FRL_TRN_DONE,
 	FSM_WAIT_CLK_STABLE,
 	FSM_EQ_START,
 	FSM_WAIT_EQ_DONE,
@@ -49,6 +51,7 @@ enum fsm_states_e {
 	FSM_SIG_UNSTABLE,
 	FSM_SIG_WAIT_STABLE,
 	FSM_SIG_STABLE,
+	FSM_SIG_HOLD,
 	FSM_SIG_READY,
 	FSM_NULL,
 };
@@ -123,36 +126,34 @@ extern u32 force_vic;
 extern u32 vpp_mute_enable;
 extern u32 dbg_cs;
 extern int color_bar_debug_en;
-
-enum tvin_sig_fmt_e hdmirx_hw_get_fmt(void);
+extern int port_debug_en;
+enum tvin_sig_fmt_e hdmirx_hw_get_fmt(u8 port);
 void rx_main_state_machine(void);
-void rx_err_monitor(void);
-void rx_nosig_monitor(void);
-bool rx_is_nosig(void);
-bool rx_is_sig_ready(void);
+void rx_nosig_monitor(u8 port);
+bool rx_is_nosig(u8 port);
+bool rx_is_sig_ready(u8 port);
 void hdmirx_open_port(enum tvin_port_e port);
 void hdmirx_close_port(void);
-bool is_clk_stable(void);
+bool is_clk_stable(u8 port);
 unsigned int rx_get_pll_lock_sts(void);
-unsigned int rx_get_scdc_clkrate_sts(void);
-void set_scdc_cfg(int hpdlow, int pwr_provided);
-void fsm_restart(void);
+unsigned int rx_get_scdc_clkrate_sts(u8 port);
+void set_scdc_cfg(int hpdlow, int pwr_provided, u8 port);
+void fsm_restart(u8 port);
 void rx_5v_monitor(void);
 void rx_audio_pll_sw_update(void);
 void rx_acr_info_sw_update(void);
-void rx_sw_reset(int level);
-void rx_aud_pll_ctl(bool en);
+void rx_sw_reset(int level, u8 port);
+void rx_aud_pll_ctl(bool en, u8 port);
 void hdmirx_timer_handler(struct timer_list *t);
-void rx_tmds_resource_allocate(struct device *dev);
+void rx_tmds_resource_allocate(struct device *dev, u8 port);
 void rx_emp_resource_allocate(struct device *dev);
-void rx_emp_data_capture(void);
-void rx_tmds_data_capture(void);
-void dump_state(int enable);
-void hdmirx_init_params(void);
+void rx_emp_data_capture(u8 port);
+void rx_tmds_data_capture(u8 port);
+void dump_state(int enable, u8 port);
+void hdmirx_init_params(u8 port);
 void fs_mode_init(void);
 void set_video_mute(bool on);
-void rx_dwc_reset(void);
-int rx_get_cur_hpd_sts(void);
+void rx_dwc_reset(u8 port);
 
 void __weak set_video_mute(bool on)
 {

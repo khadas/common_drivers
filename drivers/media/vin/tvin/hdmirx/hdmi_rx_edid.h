@@ -7,7 +7,10 @@
 #define _HDMI_RX_EDID_H_
 
 #define EDID_EXT_BLK_OFF	128
-#define EDID_SIZE			256
+#define EDID_SIZE			512
+#define EDID_TOTAL_SIZE		1536
+#define EDID_BUF_SIZE	(EDID_SIZE * 2)
+
 #define EDID_HDR_SIZE		7
 #define EDID_HDR_HEAD_LEN	4
 #define MAX_HDR_LUMI_LEN	3
@@ -793,11 +796,9 @@ enum earc_cap_block_id {
 extern u8 port_hpd_rst_flag;
 extern int edid_mode;
 extern int port_map;
-extern bool new_hdr_lum;
 extern u32 atmos_edid_update_hpd_en;
 extern u32 en_take_dtd_space;
 extern u32 earc_cap_ds_update_hpd_en;
-extern unsigned char edid_temp[MAX_EDID_BUF_SIZE];
 extern unsigned int edid_select;
 extern u32 vsvdb_update_hpd_en;
 extern enum edid_delivery_mothed_e edid_delivery_mothed;
@@ -832,7 +833,6 @@ void edid_rm_db_by_tag(u8 *p_edid, u16 tagid);
 void edid_rm_db_by_idx(u8 *p_edid, u8 blk_idx);
 void splice_tag_db_to_edid(u8 *p_edid, u8 *add_buf,
 			   u8 buf_len, u16 tagid);
-u8 *edid_tag_extract(u8 *p_edid, u16 tagid);
 void splice_data_blk_to_edid(u_char *p_edid, u_char *add_buf,
 			     u_char blk_idx);
 void rx_modify_edid(unsigned char *buffer,
@@ -841,10 +841,12 @@ void rx_edid_update_audio_info(unsigned char *p_edid,
 			       unsigned int len);
 bool is_ddc_idle(unsigned char port_id);
 bool is_edid_buff_normal(unsigned char port_id);
-bool need_update_edid(void);
+bool need_update_edid(u8 port);
 enum edid_ver_e get_edid_selection(u8 port);
 enum edid_ver_e rx_parse_edid_ver(u8 *p_edid);
-u_char *rx_get_cur_edid(u_char port);
+u_char *rx_get_cur_def_edid(u_char port);
+u_char *rx_get_cur_used_edid(u_char port);
+
 bool rx_set_vsvdb(unsigned char *data, unsigned int len);
 u_char rx_edid_get_aud_sad(u_char *sad_data);
 bool rx_edid_set_aud_sad(u_char *sad, u_char len);

@@ -98,7 +98,7 @@ void repeater_dwork_handle(struct work_struct *work);
 			 //bool cas_exceed, bool devs_exceed);
 void rx_repeat_hpd_state(bool plug);
 void rx_repeat_hdcp_ver(int version);
-void rx_check_repeat(void);
+void rx_check_repeat(u8 port);
 bool hdmirx_is_key_write(void);
 unsigned char *rx_get_dw_hdcp_addr(void);
 unsigned char *rx_get_dw_edid_addr(void);

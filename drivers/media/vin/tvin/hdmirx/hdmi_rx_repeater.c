@@ -74,26 +74,26 @@ u8 ksvlist[10] = {
 
 void rx_start_repeater_auth(void)
 {
-	rx.hdcp.state = REPEATER_STATE_START;
+	rx[rx_info.main_port].hdcp.state = REPEATER_STATE_START;
 	start_auth_14 = 1;
-	rx.hdcp.delay = 0;
+	rx[rx_info.main_port].hdcp.delay = 0;
 	hdcp_len = 0;
 	hdcp_repeat_depth = 0;
-	rx.hdcp.dev_exceed = 0;
-	rx.hdcp.cascade_exceed = 0;
-	rx.hdcp.depth = 0;
-	rx.hdcp.count = 0;
+	rx[rx_info.main_port].hdcp.dev_exceed = 0;
+	rx[rx_info.main_port].hdcp.cascade_exceed = 0;
+	rx[rx_info.main_port].hdcp.depth = 0;
+	rx[rx_info.main_port].hdcp.count = 0;
 	//memset(&receive_hdcp, 0, sizeof(receive_hdcp));
 }
 
 void rx_update_rpt_sts(struct hdcp_topo_s *topo)
 {
 	/* only update topo for corresponding hdcp version */
-	if (rx.hdcp.rpt_reauth_event == HDCP_VER_22)
-		rpt_update_hdcp2x(topo);
-	else if (rx.hdcp.rpt_reauth_event == HDCP_VER_14)
-		rpt_update_hdcp1x(topo);
-	rx_pr("update ksv, rpt_reauth_event: %d\n", rx.hdcp.rpt_reauth_event);
+	if (rx[rx_info.main_port].hdcp.rpt_reauth_event == HDCP_VER_22)
+		rpt_update_hdcp2x(topo, rx_info.main_port);
+	else if (rx[rx_info.main_port].hdcp.rpt_reauth_event == HDCP_VER_14)
+		rpt_update_hdcp1x(topo, rx_info.main_port);
+	rx_pr("update ksv, rpt_reauth_event: %d\n", rx[rx_info.main_port].hdcp.rpt_reauth_event);
 }
 
 /* save downstream topo if no hdcp converter */
@@ -124,28 +124,28 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 			rx_pr("update EDID from HDMITX\n");
 			rx_update_tx_edid_with_audio_block(p, rx_audio_block);
 		}
-		rx_irq_en(false);
-		rx_set_cur_hpd(0, 4);
-		if (!rx.open_fg)
+		rx_irq_en(false, rx_info.main_port);
+		rx_set_cur_hpd(0, 4, rx_info.main_port);
+		if (!rx_info.open_fg)
 			port_hpd_rst_flag = 7;
 		//if (hdmirx_repeat_support())
-		rx.hdcp.repeat = true;
-		fsm_restart();
+		rx[rx_info.main_port].hdcp.repeat = true;
+		fsm_restart(rx_info.main_port);
 		ret = NOTIFY_OK;
 		break;
 	case HDMITX_UNPLUG:
 		if (log_level & EDID_LOG)
 			rx_pr("%s, HDMITX_UNPLUG, recover primary EDID\n",
 			      __func__);
-		rx.hdcp.repeat = false;
+		rx[rx_info.main_port].hdcp.repeat = false;
 		if (rpt_only_mode == 1) {
 			rx_force_hpd_rxsense_cfg(0);
 		} else {
 			rx_update_tx_edid_with_audio_block(NULL, NULL);
 			hdmi_rx_top_edid_update();
-			hdcp_init_t7();
+			hdcp_init_t7(rx_info.main_port);
 		}
-		//rx_irq_en(false);
+		//rx_irq_en(false, rx_info.main_port);
 		//rx_set_cur_hpd(0, 4);
 		//fsm_restart();
 		ret = NOTIFY_OK;
@@ -154,11 +154,11 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 		tx_hdr_priority = *((u32 *)p);
 		if (log_level & EDID_LOG)
 			rx_pr("tx_hdr_priority = %d\n", tx_hdr_priority);
-		rx_irq_en(false);
-		rx_set_cur_hpd(0, 4);
-		if (!rx.open_fg)
+		rx_irq_en(false, rx_info.main_port);
+		rx_set_cur_hpd(0, 4, rx_info.main_port);
+		if (!rx_info.open_fg)
 			port_hpd_rst_flag = 7;
-		fsm_restart();
+		fsm_restart(rx_info.main_port);
 		ret = NOTIFY_OK;
 		break;
 	case HDMITX_PHY_ADDR_VALID:
@@ -180,10 +180,10 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 		/* before hdcp auth start on upstream side,
 		 * no need to care ds ksv list
 		 */
-		if (rx.hdcp.rpt_reauth_event == HDCP_VER_NONE)
+		if (rx[rx_info.main_port].hdcp.rpt_reauth_event == HDCP_VER_NONE)
 			break;
 		/* before request ds re-auth, no need to care ds ksv list */
-		if (rx.hdcp.rpt_reauth_event & HDCP_NEED_REQ_DS_AUTH)
+		if (rx[rx_info.main_port].hdcp.rpt_reauth_event & HDCP_NEED_REQ_DS_AUTH)
 			break;
 		if (!memcmp(&pre_topo, topo, sizeof(pre_topo))) {
 			rx_pr("same topo, exit\n");
@@ -191,14 +191,15 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 			break;
 		}
 		memcpy(&pre_topo, topo, sizeof(pre_topo));
-		rx.hdcp.ds_hdcp_ver = topo->hdcp_ver;
+		rx[rx_info.main_port].hdcp.ds_hdcp_ver = topo->hdcp_ver;
 		/* see hdcp2.3 spec 2.11.1 HDCP2 - HDCP1.X Converters
 		 * and 2.11.2 HDCP1.X-HDCP2 Converters
 		 * receiver ID is in big-endian, KSV is in little-endian
 		 * if hdcp version of downstream and upstream side
 		 * not match, need to do ksv~receiverID convert
 		 */
-		if (rx.hdcp.ds_hdcp_ver != rx.hdcp.rpt_reauth_event) {
+		if (rx[rx_info.main_port].hdcp.ds_hdcp_ver !=
+			rx[rx_info.main_port].hdcp.rpt_reauth_event) {
 			memcpy(&hdcp_convert_topo, &pre_topo, sizeof(pre_topo));
 			for (i = 0; i < hdcp_convert_topo.dev_cnt; i++) {
 				for (j = 0; j <= 1; j++) {
@@ -213,19 +214,19 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 			rx_update_rpt_sts(&pre_topo);
 		}
 		if (log_level & HDCP_LOG)
-			rx_pr("seq_num_V: 0x%x\n", rx.hdcp.topo_updated);
-		if (rx.hdcp.rpt_reauth_event == HDCP_VER_22) {
-			rx.hdcp.topo_updated++;
-			if (rx.hdcp.topo_updated > 0xFFFFFFUL)
-				rx.hdcp.topo_updated = 0;
+			rx_pr("seq_num_V: 0x%x\n", rx[rx_info.main_port].hdcp.topo_updated);
+		if (rx[rx_info.main_port].hdcp.rpt_reauth_event == HDCP_VER_22) {
+			rx[rx_info.main_port].hdcp.topo_updated++;
+			if (rx[rx_info.main_port].hdcp.topo_updated > 0xFFFFFFUL)
+				rx[rx_info.main_port].hdcp.topo_updated = 0;
 		}
-		//hdmirx_wr_cor(RX_SHA_ctrl_HDCP1X_IVCRX, 1);
+		//hdmirx_wr_cor(RX_SHA_ctrl_HDCP1X_IVCRX, 1, port);
 		mdelay(1);
 		if (log_level & HDCP_LOG)
 			rx_pr("step3\n");
 		/* only update topo for corresponding hdcp version */
-		if (rx.hdcp.rpt_reauth_event == HDCP_VER_14)
-			rx.hdcp.hdcp14_ready = true;
+		if (rx[rx_info.main_port].hdcp.rpt_reauth_event == HDCP_VER_14)
+			rx[rx_info.main_port].hdcp.hdcp14_ready = true;
 		ret = NOTIFY_OK;
 		break;
 	default:
@@ -237,7 +238,7 @@ int rx_hdmi_tx_notify_handler(struct notifier_block *nb,
 	return ret;
 }
 
-void rx_check_repeat(void)
+void rx_check_repeat(u8 port)
 {
 	//struct hdcp14_topo_s *topo_data = (struct hdcp14_topo_s *)receive_hdcp;
 	//struct hdcp_topo_s *topo;
@@ -249,34 +250,34 @@ void rx_check_repeat(void)
 	//topo->depth = 1;
 	//topo->dev_cnt = 2;
 	//RX detect hdcp auth from upstream, but not request tx re-auth yet
-	if (rx.hdcp.rpt_reauth_event & HDCP_NEED_REQ_DS_AUTH) {
-		rx.hdcp.rpt_reauth_event &= (~HDCP_NEED_REQ_DS_AUTH);
+	if (rx[port].hdcp.rpt_reauth_event & HDCP_NEED_REQ_DS_AUTH) {
+		rx[port].hdcp.rpt_reauth_event &= (~HDCP_NEED_REQ_DS_AUTH);
 		//rx_update_rpt_sts(NULL);
 		memset(&pre_topo, 0, sizeof(pre_topo));
 		memset(&hdcp_convert_topo, 0, sizeof(hdcp_convert_topo));
-		rx.hdcp.topo_updated = 0;
+		rx[port].hdcp.topo_updated = 0;
 #ifdef CONFIG_AMLOGIC_HDMITX
 		hdmitx_reauth_request(0);
 #endif
 		//rx_start_repeater_auth();
-		//rx.hdcp.rpt_reauth_event = 0;
+		//rx[rx_info.main_port].hdcp.rpt_reauth_event = 0;
 	}
-	if (rx.hdcp.hdcp14_ready) {
-		//hdmirx_wr_cor(RX_SHA_ctrl_HDCP1X_IVCRX, 1);
-		hdmirx_wr_cor(RX_BCAPS_SET_HDCP1X_IVCRX, 0xe0);
+	if (rx[port].hdcp.hdcp14_ready) {
+		//hdmirx_wr_cor(RX_SHA_ctrl_HDCP1X_IVCRX, 1, rx_info.main_port);
+		hdmirx_wr_cor(RX_BCAPS_SET_HDCP1X_IVCRX, 0xe0, port);
 		if (log_level & HDCP_LOG)
 			rx_pr("step4\n");
-		rx.hdcp.hdcp14_ready = false;
+		rx[port].hdcp.hdcp14_ready = false;
 	}
-	if (rx.hdcp.stream_manage_rcvd) {
-		data8 = rx_get_stream_manage_info();
+	if (rx[port].hdcp.stream_manage_rcvd) {
+		data8 = rx_get_stream_manage_info(port);
 		if (log_level & HDCP_LOG)
 			rx_pr("step5-%d\n", data8);
-		rx.hdcp.stream_type = data8;
+		rx[port].hdcp.stream_type = data8;
 #ifdef CONFIG_AMLOGIC_HDMITX
 		hdmitx_reauth_request(data8 | STREAMTYPE_UPDATE);
 #endif
-		rx.hdcp.stream_manage_rcvd = false;
+		rx[port].hdcp.stream_manage_rcvd = false;
 	}
 }
 
@@ -287,7 +288,7 @@ unsigned char *rx_get_dw_edid_addr(void)
 
 bool get_rx_active_sts(void)
 {
-	return rx.open_fg;
+	return rx_info.open_fg;
 }
 EXPORT_SYMBOL(get_rx_active_sts);
 
@@ -316,7 +317,6 @@ bool rx_poll_dwc(u16 addr, u32 exp_data,
 		}
 	}
 	if (done == 0) {
-		/* if(log_level & ERR_LOG) */
 		rx_pr("poll dwc%x time-out!\n", addr);
 		return false;
 	}
@@ -339,37 +339,38 @@ bool rx_set_repeat_aksv(unsigned char *data, int len, int depth,
 		hdmirx_wr_bits_dwc(DWC_HDCP_RPT_BSTATUS,
 				   MAX_CASCADE_EXCEEDED, 0);
 		hdmirx_wr_bits_dwc(DWC_HDCP_RPT_BSTATUS, DEPTH, depth);
-		rx.hdcp.depth = depth;
+		rx[rx_info.main_port].hdcp.depth = depth;
 	} else {
 		hdmirx_wr_bits_dwc(DWC_HDCP_RPT_BSTATUS,
 				   MAX_CASCADE_EXCEEDED, 1);
-		rx.hdcp.depth = 0;
+		rx[rx_info.main_port].hdcp.depth = 0;
 	}
 	/*set repeat count*/
 	if (len <= HDCP14_KSV_MAX_COUNT && !dev_exceed) {
 		hdmirx_wr_bits_dwc(DWC_HDCP_RPT_BSTATUS,
 				   MAX_DEVS_EXCEEDED, 0);
-		rx.hdcp.count = len;
+		rx[rx_info.main_port].hdcp.count = len;
 		hdmirx_wr_bits_dwc(DWC_HDCP_RPT_BSTATUS, DEVICE_COUNT,
-				   rx.hdcp.count);
+				   rx[rx_info.main_port].hdcp.count);
 	} else {
 		hdmirx_wr_bits_dwc(DWC_HDCP_RPT_BSTATUS,
 				   MAX_DEVS_EXCEEDED, 1);
-		rx.hdcp.count = 0;
+		rx[rx_info.main_port].hdcp.count = 0;
 	}
 	/*set repeat status*/
-	/* if (rx.hdcp.count > 0) {
-	 *	rx.hdcp.repeat = true;
+	/* if (rx[rx_info.main_port].hdcp.count > 0) {
+	 *	rx[rx_info.main_port].hdcp.repeat = true;
 	 *	hdmirx_wr_bits_dwc(DWC_HDCP_RPT_CTRL, REPEATER, 1);
 	 *} else {
-	 *	rx.hdcp.repeat = false;
+	 *	rx[rx_info.main_port].hdcp.repeat = false;
 	 *	hdmirx_wr_bits_dwc(DWC_HDCP_RPT_CTRL, REPEATER, 0);
 	 *}
 	 */
-	ksvlist_ready = ((rx.hdcp.count > 0) && (rx.hdcp.depth > 0));
-	rx_pr("[RX]write ksv list count:%d\n", rx.hdcp.count);
+	ksvlist_ready = ((rx[rx_info.main_port].hdcp.count > 0) &&
+	(rx[rx_info.main_port].hdcp.depth > 0));
+	rx_pr("[RX]write ksv list count:%d\n", rx[rx_info.main_port].hdcp.count);
 	/*write ksv list to fifo*/
-	for (i = 0; i < rx.hdcp.count; i++) {
+	for (i = 0; i < rx[rx_info.main_port].hdcp.count; i++) {
 		if (rx_poll_dwc(DWC_HDCP_RPT_CTRL, ~KSV_HOLD, KSV_HOLD,
 				KSV_LIST_WR_TH)) {
 			/*check fifo can be written*/
@@ -402,6 +403,6 @@ bool rx_set_repeat_aksv(unsigned char *data, int len, int depth,
 
 void rx_set_repeat_signal(bool repeat)
 {
-	//rx.hdcp.repeat = repeat;
+	//rx[rx_info.main_port].hdcp.repeat = repeat;
 }
 #endif

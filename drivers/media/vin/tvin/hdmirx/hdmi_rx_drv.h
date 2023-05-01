@@ -34,9 +34,12 @@
 //add an ioctl to update single edid
 //2023.04.28
 //fix HDR10+ info error
-#define RX_VER0 "ver.2023/04/28"
+//2023.5.6
+//bring up sync to 5.15
+#define RX_VER0 "ver.2023/05/06"
 
 /*print type*/
+#define COR1_LOG	0x10000
 #define	LOG_EN		0x01
 #define VIDEO_LOG	0x02
 #define AUDIO_LOG	0x04
@@ -44,7 +47,7 @@
 #define PACKET_LOG	0x10
 #define EQ_LOG		0x20
 #define REG_LOG		0x40
-#define ERR_LOG		0x80
+#define ECC_LOG		0x80
 #define EDID_LOG	0x100
 #define PHY_LOG		0x200
 #define VSI_LOG		0x800
@@ -52,23 +55,24 @@
 #define IRQ_LOG		0x2000
 #define COR_LOG		0x4000
 #define DBG1_LOG    0x8000
-#define ECC_LOG		0x10000
+
 #define EDID_DATA_LOG	0x20000
 #define RP_LOG		0x40000
+#define FRL_LOG		0x80000
 
+/* fix 3d timing issue and panasonic 1080p */
+/* 0323: t3x bringup*/
+/* 0406 add t3x edid*/
+/* t3x top sw reset */
+/* t3x sw flow */
+/* 2-path-emp support */
+/* hdmirx set all ports hpd */
+/* select new api for clk msr */
+/* modify code and single dwork for t3x */
 /* correct phy trim value config method */
 /* merge project modifications back to trunk */
 /* optimize unnormal_format logic */
 #define RX_VER1 "ver.2023/4/28"
-
-/*
- * Currently, a total of 5 VSIF packages are supported,
- * DV/HDR10+/CUVA/HDMI2.1/HDMI1.4, but only the last one can be parsed
- * each time. The purpose of MULTI_VSIF_EXPORT_TO_EMP is to transfer the
- * optimal VSIF packet to VDIN when multiple VSIF packets are received.
- */
-#define MULTI_VSIF_EXPORT_TO_EMP
-
 /*
  * Currently, a total of 5 VSIF packages are supported,
  * DV/HDR10+/CUVA/HDMI2.1/HDMI1.4, but only the last one can be parsed
@@ -154,8 +158,8 @@ struct hdmirx_dev_s {
 	struct tvin_parm_s          param;
 	struct timer_list           timer;
 	struct tvin_frontend_s		frontend;
-	unsigned int			irq;
-	char					irq_name[12];
+	unsigned int			irq[4];
+	char					irq_name[4][12];
 	/* mutex for wwwreg W/R protection */
 	struct mutex			rx_lock;
 	struct clk *modet_clk;
@@ -197,7 +201,7 @@ struct hdmirx_dev_s {
 #define HDMI_IOC_GET_AUD_SAD	_IOR(HDMI_IOC_MAGIC, 0x10, int)
 #define HDMI_IOC_GET_SPD_SRC_INFO	_IOR(HDMI_IOC_MAGIC, 0x11, struct spd_infoframe_st)
 #define HDMI_5V_PIN_STATUS	_IOR(HDMI_IOC_MAGIC, 0x12, unsigned int)
-#define HDMI_IOC_EDID_UPDATE_WITH_PORT  _IOW(HDMI_IOC_MAGIC, 0x13, char*)
+#define HDMI_IOC_EDID_UPDATE_WITH_PORT  _IOW(HDMI_IOC_MAGIC, 0x13, unsigned char)
 
 
 #define IOC_SPD_INFO  _BIT(0)
@@ -295,13 +299,9 @@ struct rx_var_param {
 	bool dvi_check_en;
 	int sig_unready_cnt;
 	int sig_unready_max;
-	int pow5v_max_cnt;
-	/* timing diff offset */
 	int diff_pixel_th;
 	int diff_line_th;
 	int diff_frame_th;
-	int err_dbg_cnt;
-	int err_dbg_cnt_max;
 	u32 force_vic;
 	u32 err_chk_en;
 	int aud_sr_stb_max;
@@ -353,6 +353,7 @@ struct rx_var_param {
 	u8 avi_chk_frames;
 	u32 avi_rcv_cnt;
 	bool force_pattern;
+	int frl_rate;
 };
 
 struct rx_aml_phy {
@@ -405,6 +406,18 @@ struct rx_aml_phy {
 	int cdr_retry_en;
 	int cdr_retry_max;
 	int cdr_fr_en_auto;
+};
+
+struct rx_aml_phy_21 {
+	int phy_bwth;
+	u32 vga_gain;
+	u32 eq_stg1;
+	u32 eq_stg2;
+	int cdr_fr_en;
+	u32 eq_hold;
+	u32 eq_retry;
+	u32 dfe_en;
+	int dfe_hold;
 };
 
 enum scan_mode_e {
@@ -534,7 +547,6 @@ struct hdmi_rx_hdcp {
 	 * @note 0: high order, 1: low order
 	 */
 	u32 keys[HDCP_KEYS_SIZE];
-	struct extcon_dev *rx_extcon_auth;
 	enum hdcp_version_e hdcp_version;/* 0 no hdcp;1 hdcp14;2 hdcp22 */
 	/* add for dv cts */
 	enum hdcp_version_e hdcp_pre_ver;
@@ -675,7 +687,8 @@ struct clk_msr {
 	u32 esm_clk;
 	u32 p_clk;
 };
-struct emp_buff {
+
+struct emp_info_s {
 	unsigned int dump_mode;
 	struct page *pg_addr;
 	phys_addr_t p_addr_a;
@@ -718,42 +731,45 @@ struct hdmirx_uevent {
 
 int hdmirx_set_uevent(enum hdmirx_event type, int val);
 
-struct rx_s {
+struct rx_info_s {
+	struct hdmirx_dev_s *hdmirx_dev;
 	enum chip_id_e chip_id;
 	enum phy_ver_e phy_ver;
-	struct hdmirx_dev_s *hdmirx_dev;
+	struct rx_fastswitch_mode fs_mode;
+	u8 port_num;
+	u8 main_port;
+	u8 sub_port;
+	u8 vp_cor0_port;
+	u8 vp_cor1_port;
+	bool boot_flag;
+	bool open_fg;
+	u8 vrr_min;
+	u8 vrr_max;
+	u32 arc_port;
+	bool arc_5vsts;
+	struct rx_aml_phy aml_phy;
+	struct rx_aml_phy aml_phy_21;
+	struct emp_info_s emp_buff_a; //for vid0
+	struct emp_info_s emp_buff_b; //for vid1
+};
+
+struct rx_s {
 	/** HDMI RX received signal changed */
 	u32 skip;
 	/*avmute*/
 	u32 avmute_skip;
 	bool vpp_mute;
-	/** HDMI RX input port 0 (A) or 1 (B) (or 2(C) or 3 (D)) */
-	u8 port;
-	/* first boot flag */
-	/* workaround for xiaomi-MTK box: */
-	/* if box is under suspend and it worked at hdcp2.2 mode before, */
-	/* must do hpd reset and keep hpd low at least 2S to ensure hdcp2.2 */
-	/* work normally, otherwise mibox's hdcp22 module will pull down SDA */
-	/* and stop EDID communication.*/
-	/* compare with LG & LETV, the result is the same. */
-	bool boot_flag;
-	bool open_fg;
 	bool cableclk_stb_flg;
 	u8 irq_flag;
 	/** HDMI RX controller HDCP configuration */
 	struct hdmi_rx_hdcp hdcp;
 	/*report hpd status to app*/
-	struct extcon_dev *rx_extcon_rx22;
-	struct extcon_dev *rx_extcon_open;
-
 	/* wrapper */
 	unsigned int state;
 	unsigned int fsm_ext_state;
 	unsigned int pre_state;
-	struct rx_fastswitch_mode fs_mode;
 	/* recovery mode */
 	unsigned char err_rec_mode;
-	unsigned char err_code;
 	unsigned char pre_5v_sts;
 	unsigned char cur_5v_sts;
 	bool no_signal;
@@ -774,6 +790,8 @@ struct rx_s {
 	struct sbtm_info_s sbtm_info;
 	struct cuva_emds_s emp_cuva_info;
 	struct dv_info_s emp_dv_info;
+	u8 emp_vid_idx;
+	struct emp_info_s *emp_info;
 	u8 emp_dsf_cnt;
 	bool emp_pkt_rev;
 	bool new_emp_pkt;
@@ -784,31 +802,21 @@ struct rx_s {
 	/*struct pd_infoframe_s dbg_info;*/
 	struct phy_sts phy;
 	struct clk_msr clk;
-	struct emp_buff emp_buff;
-	u32 arc_port;
+
 	enum edid_ver_e edid_ver;
 	bool arc_5vsts;
 	u32 vsync_cnt;
 	bool vrr_en;
-	u8 vrr_min;
-	u8 vrr_max;
 	u8 free_sync_sts;
 	u8 afifo_sts;
 	u32 ecc_err;
 	u32 ecc_pkt_cnt;
 	u32 ecc_err_frames_cnt;
 	bool ddc_filter_en;
-	unsigned char port_num;
-#ifdef CONFIG_AMLOGIC_HDMITX
-	struct notifier_block tx_notify;
-#endif
-#ifdef CONFIG_AMLOGIC_MEDIA_VRR
-	struct notifier_block vrr_notify;
-#endif
-
 	struct rx_var_param var;
-	struct rx_aml_phy aml_phy;
 	u8 last_hdcp22_state;
+	struct rx_aml_phy aml_phy;
+	struct rx_aml_phy aml_phy_21;
 	//struct spkts_rcvd_sts pkts_sts;
 };
 
@@ -824,51 +832,76 @@ struct reg_map {
 	int flag;
 };
 
+struct phy_port_data {
+	int port_idx;
+	struct work_struct work;
+	struct workqueue_struct *aml_phy_wq;
+};
+
 /* system */
 extern struct delayed_work	eq_dwork;
 extern struct workqueue_struct	*eq_wq;
 extern struct delayed_work	esm_dwork;
 extern struct workqueue_struct	*esm_wq;
 extern struct delayed_work	repeater_dwork;
-extern struct work_struct	aml_phy_dwork;
-extern struct workqueue_struct	*aml_phy_wq;
+//extern struct work_struct	aml_phy_dwork;
+//extern struct workqueue_struct	*aml_phy_wq;
+extern struct work_struct	aml_phy_dwork_port0;
+extern struct workqueue_struct	*aml_phy_wq_port0;
+extern struct work_struct	aml_phy_dwork_port1;
+extern struct workqueue_struct	*aml_phy_wq_port1;
+extern struct work_struct	aml_phy_dwork_port2;
+extern struct workqueue_struct	*aml_phy_wq_port2;
+extern struct work_struct	aml_phy_dwork_port3;
+extern struct workqueue_struct	*aml_phy_wq_port3;
 extern struct work_struct     clkmsr_dwork;
 extern struct workqueue_struct *clkmsr_wq;
 extern struct work_struct     earc_hpd_dwork;
 extern struct workqueue_struct *earc_hpd_wq;
 extern struct workqueue_struct	*repeater_wq;
+extern struct work_struct     frl_train_dwork;
+extern struct workqueue_struct *frl_train_wq;
 extern struct tasklet_struct rx_tasklet;
 extern struct device *hdmirx_dev;
-extern struct rx_s rx;
+extern struct rx_s rx[4];
+extern struct rx_info_s rx_info;
+//extern struct phy_port_data aml_phy_dwork;
+//extern u8 port_idx;
+
 extern struct tvin_latency_s latency_info;
 extern struct reg_map rx_reg_maps[MAP_ADDR_MODULE_NUM];
 extern bool downstream_repeat_support;
 extern int vrr_range_dynamic_update_en;
 void rx_tasklet_handler(unsigned long arg);
-void skip_frame(unsigned int cnt);
+void skip_frame(unsigned int cnt, u8 port);
 
 /* reg */
 
 /* packets */
 extern unsigned int packet_fifo_cfg;
-extern unsigned int *pd_fifo_buf;
+extern unsigned int *pd_fifo_buf_a;
+extern unsigned int *pd_fifo_buf_b;
 
 /* hotplug */
 extern unsigned int pwr_sts;
 extern int pre_port;
 void hotplug_wait_query(void);
-void rx_send_hpd_pulse(void);
+void rx_send_hpd_pulse(u8 port);
 
 /* irq */
-void rx_irq_en(bool enable);
+void rx_irq_en(bool enable, u8 port);
 irqreturn_t irq_handler(int irq, void *params);
+irqreturn_t irq0_handler(int irq, void *params);
+irqreturn_t irq1_handler(int irq, void *params);
+irqreturn_t irq2_handler(int irq, void *params);
+irqreturn_t irq3_handler(int irq, void *params);
+
 void cecb_irq_handle(void);
 
 /* user interface */
-extern int pc_mode_en;
-extern int it_content;
-extern int rgb_quant_range;
-extern int yuv_quant_range;
+//extern int it_content;
+//extern int rgb_quant_range;
+//extern int yuv_quant_range;
 extern int en_4k_timing;
 extern int cec_dev_en;
 extern bool dev_is_apple_tv_v2;
@@ -877,7 +910,7 @@ extern int en_4k_2_2k;
 extern bool hdmi_cec_en;
 extern int hdmi_yuv444_enable;
 extern int vdin_drop_frame_cnt;
-extern int aud_compose_type;
+extern int rpt_edid_selection;
 extern int rpt_only_mode;
 extern u32 vrr_func_en;
 /* debug */
@@ -899,7 +932,11 @@ extern int esm_recovery_mode;
 extern u32 dbg_pkt;
 extern int disable_hdr;
 extern int rx_phy_level;
+#ifdef CONFIG_AMLOGIC_MEDIA_VRR
+extern struct notifier_block vrr_notify;
+#endif
 #ifdef CONFIG_AMLOGIC_HDMITX
+extern struct notifier_block tx_notify;
 void hdmitx_update_latency_info(struct tvin_latency_s *latency_info);
 #endif
 void __weak hdmitx_update_latency_info(struct tvin_latency_s *latency_info)
@@ -910,28 +947,27 @@ int rx_set_global_variable(const char *buf, int size);
 void rx_get_global_variable(const char *buf);
 int rx_pr(const char *fmt, ...);
 unsigned int hdmirx_hw_dump_reg(unsigned char *buf, int size);
-unsigned int hdmirx_show_info(unsigned char *buf, int size);
+unsigned int hdmirx_show_info(unsigned char *buf, int size, u8 port);
+unsigned int hdmirx_show_info_t3x(unsigned char *buf, int size);
 bool is_aud_fifo_error(void);
 bool is_aud_pll_error(void);
 int hdmirx_debug(const char *buf, int size);
-void dump_reg(void);
-void dump_edid_reg(void);
-void rx_debug_loadkey(void);
-void rx_debug_load22key(void);
-int rx_debug_wr_reg(const char *buf, char *tmpbuf, int i);
-int rx_debug_rd_reg(const char *buf, char *tmpbuf);
-void rx_update_sig_info(void);
+void dump_reg(u8 port);
+void dump_edid_reg(u32 size);
+void rx_debug_loadkey(u8 port);
+void rx_debug_load22key(u8 port);
+int rx_debug_wr_reg(const char *buf, char *tmpbuf, int i, u8 port);
+int rx_debug_rd_reg(const char *buf, char *tmpbuf, u8 port);
+void rx_update_sig_info(u8 port);
 int aml_vrr_atomic_notifier_register(struct notifier_block *nb);
 /* repeater */
 bool hdmirx_repeat_support(void);
 
 /* edid-hdcp14 */
-extern unsigned int edid_update_flag;
 extern unsigned int downstream_hpd_flag;
 
 void hdmirx_fill_edid_buf(const char *buf, int size);
 void hdmirx_fill_edid_with_port_buf(const char *buf, int size);
-unsigned int hdmirx_read_edid_buf(char *buf, int max_size);
 void hdmirx_fill_key_buf(const char *buf, int size);
 extern int rx_audio_block_len;
 extern u8 rx_audio_block[MAX_AUDIO_BLK_LEN];

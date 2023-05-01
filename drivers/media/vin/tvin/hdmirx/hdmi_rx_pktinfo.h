@@ -14,8 +14,6 @@
 
 #define K_FLAG_TAB_END			0xa0a05f5f
 
-//#define VSIF_PKT_READ_FROM_PD_FIFO
-
 #define IEEE_VSI14		0x000c03
 #define IEEE_DV15		0x00d046
 #define IEEE_VSI21		0xc45dd8
@@ -1143,24 +1141,22 @@ struct st_pkt_test_buff {
 	struct pd_infoframe_s ex_amp;
 };
 
-extern struct packet_info_s rx_pkt;
-extern u32 rx_vsif_type;
-extern u32 rx_emp_type;
-extern u32 rx_spd_type;
+extern struct packet_info_s rx_pkt[4];
+extern u32 rx_vsif_type[4];
+extern u32 rx_emp_type[4];
+extern u32 rx_spd_type[4];
 /*extern bool hdr_enable;*/
-void rx_pkt_status(void);
+void rx_pkt_status(u8 port);
 void rx_pkt_debug(void);
-void rx_debug_pktinfo(char input[][20]);
-void rx_pkt_dump(enum pkt_type_e typeid);
+void rx_debug_pktinfo(char input[][20], u8 port);
+void rx_pkt_dump(enum pkt_type_e typeid, u8 port);
 void rx_pkt_initial(void);
-int rx_pkt_handler(enum pkt_decode_type pkt_int_src);
+int rx_pkt_handler(enum pkt_decode_type pkt_int_src, u8 port);
 u32 rx_pkt_type_mapping(enum pkt_type_e pkt_type);
-void rx_pkt_buffclear(enum pkt_type_e pkt_type);
-void rx_pkt_content_chk_en(u32 enable);
-void rx_pkt_check_content(void);
-void rx_pkt_set_fifo_pri(u32 pri);
-u32 rx_pkt_get_fifo_pri(void);
-void rx_get_vsi_info(void);
+void rx_pkt_buffclear(enum pkt_type_e pkt_type, u8 port);
+void rx_pkt_content_chk_en(u32 enable, u8 port);
+void rx_pkt_check_content(u8 port);
+void rx_get_vsi_info(u8 port);
 /*please ignore checksum byte*/
 void rx_pkt_get_audif_ex(void *pktinfo);
 /*please ignore checksum byte*/
@@ -1170,22 +1166,21 @@ void rx_pkt_get_acr_ex(void *pktinfo);
 void rx_pkt_get_gmd_ex(void *pktinfo);
 void rx_pkt_get_ntscvbi_ex(void *pktinfo);
 void rx_pkt_get_amp_ex(void *pktinfo);
-void rx_pkt_get_vsi_ex(void *pktinfo);
+void rx_pkt_get_vsi_ex(void *pktinfo, u8 port);
 void rx_pkt_get_gcp_ex(void *pktinfo);
-u32 rx_pkt_chk_attach_vsi(void);
-void rx_pkt_clr_attach_vsi(void);
-u32 rx_pkt_chk_attach_drm(void);
+u32 rx_pkt_chk_attach_vsi(u8 port);
+void rx_pkt_clr_attach_vsi(u8 port);
+u32 rx_pkt_chk_attach_drm(u8 port);
 //SPD
-u32 rx_pkt_chk_updated_spd(void);
-void rx_pkt_clr_updated_spd(void);
-void rx_pkt_clr_attach_drm(void);
-u32 rx_pkt_chk_busy_vsi(void);
-u32 rx_pkt_chk_busy_drm(void);
-void rx_get_pd_fifo_param(enum pkt_type_e pkt_type,
-			  struct pd_infoframe_s *pkt_info);
+u32 rx_pkt_chk_updated_spd(u8 port);
+void rx_pkt_clr_updated_spd(u8 port);
+void rx_pkt_clr_attach_drm(u8 port);
+u32 rx_pkt_chk_busy_vsi(u8 port);
+u32 rx_pkt_chk_busy_drm(u8 port);
 void rx_get_avi_info(struct avi_infoframe_st *st_pkt);
-void rx_get_em_info(void);
-void rx_get_aif_info(void);
-void dump_pktinfo_status(void);
-bool rx_is_specific_20_dev(void);
+void rx_get_em_info(u8 port);
+void rx_get_aif_info(u8 port);
+void dump_pktinfo_status(u8 port);
+bool rx_is_specific_20_dev(u8 port);
+struct emp_info_s *rx_get_emp_info(u8 port);
 #endif

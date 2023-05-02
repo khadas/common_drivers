@@ -2218,10 +2218,11 @@
 		rdma_table_page_count = <16>;
 	};
 
-	dsc: dsc {
-		compatible = "amlogic, dsc-s5";
-		status = "disabled";
-		reg = <0x0 0xfe0be000 0x0 0x80>;
+	dsc_dec: dsc_dec {
+		compatible = "amlogic, dsc_dec-t3x";
+		status = "okay";
+		reg = <0x0 0xfe000000 0x0 0xc00   /* clk ctrl addr */
+			0x0 0xfe0be000 0x0 0x80>; /* dsc dec addr */
 	};
 
 	vclk_serve: vclk_serve {

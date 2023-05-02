@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# HDMI Rx Device Driver Configuration
+#
+
+
+config AMLOGIC_MEDIA_TVIN_DSC_DEC
+    tristate "Amlogic DSC DEC device driver"
+    default n
+    help
+      DSC DEC device driver.

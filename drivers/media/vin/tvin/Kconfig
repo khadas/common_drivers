@@ -22,6 +22,7 @@ source "$(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/viu/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/bt656/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/csi/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/hdmirx/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/dsc_dec/Kconfig"
 endif
 
 config AMLOGIC_TVIN_USE_DEBUG_FILE

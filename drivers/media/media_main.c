@@ -104,6 +104,7 @@ static int __init media_main_init(void)
 	call_sub_init(amvdec_656in_init_module);
 	call_sub_init(amvdec_csi_init_module);
 	call_sub_init(hdmirx_init);
+	call_sub_init(dsc_dec_init);
 	call_sub_init(hld_init);
 	call_sub_init(viuin_init_module);
 	call_sub_init(resman_init);

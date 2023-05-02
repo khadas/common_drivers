@@ -13,3 +13,4 @@ include $(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/viu/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/bt656/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/csi/Makefile
 include $(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/hdmirx/Makefile
+include $(COMMON_DRIVERS_DIR)/drivers/media/vin/tvin/dsc_dec/Makefile

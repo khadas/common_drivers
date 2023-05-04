@@ -484,6 +484,8 @@ static int ad82128_resume(struct snd_soc_component *component)
 		gpio_direction_output(ad82128->reset_pin, 0);
 		msleep(20);
 		gpio_direction_output(ad82128->reset_pin, 1);
+		/* need delay before regcache for spec request */
+		msleep(20);
 	}
 
 	regcache_cache_only(ad82128->regmap, false);

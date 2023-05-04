@@ -1520,9 +1520,11 @@ static int dv_core1a_set(u32 dm_count,
 	int copy_core1a_to_core1b = ((copy_core1a & 1) &&
 				(is_aml_tm2_stbmode() || is_aml_t7_stbmode()));
 	int copy_core1a_to_core1c = ((copy_core1a & 2) && is_aml_t7_stbmode());
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int hsize_2;
 	int vsize_2;
 	struct vd_proc_info_t *vd_proc_info;
+#endif
 
 	/* G12A: make sure the BL is enable for the very 1st frame*/
 	/* Register: dolby_path_ctrl[0] = 0 to enable BL*/
@@ -1558,6 +1560,7 @@ static int dv_core1a_set(u32 dm_count,
 	if (force_update_reg & 1)
 		reset = true;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_aml_s5()) {
 		copy_core1a_to_core1b = (copy_core1a & 1);
 		if (copy_core1a_to_core1b) {
@@ -1575,6 +1578,7 @@ static int dv_core1a_set(u32 dm_count,
 			}
 		}
 	}
+#endif
 
 	if ((!dolby_vision_on || reset) && core1a_enable) {
 		amdv_core_reset(AMDV_CORE1A);
@@ -3239,6 +3243,7 @@ static char mute_type_str[4][4] = {
 
 void update_core3_slice_info(u32 v_width, u32 v_height)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int i;
 	struct vpp_post_info_t *post_info;
 
@@ -3267,7 +3272,9 @@ void update_core3_slice_info(u32 v_width, u32 v_height)
 					  core3_slice_info.slice[3].hsize,
 					  core3_slice_info.slice[3].vsize);
 
-	} else {
+	} else
+#endif
+	{
 		core3_slice_info.slice_num = 1;
 		core3_slice_info.vpp_post_blend_hsize = v_width;
 		core3_slice_info.vpp_post_blend_vsize = v_height;

@@ -651,6 +651,7 @@ static struct vpu_dev_s *vpu_prime_dolby_ram;
 		pr_info("VIDEO: disable_video_all_layer_nodelay()\n"); \
 	} while (0)
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void disable_video_layer_s5(u32 layer_id, u32 async)
 {
 	int i;
@@ -708,6 +709,33 @@ static void disable_video_all_layer_nodelay_s5(void)
 	WRITE_VCBUS_REG(vd_proc_reg.vd_afbc_reg[SLICE_NUM].afbc_enable, 0);
 	WRITE_VCBUS_REG(vd_proc_reg.vd_mif_reg[SLICE_NUM].vd_if0_gen_reg, 0);
 }
+#else
+u32 get_slice_num(u32 layer_id)
+{
+	return 1;
+}
+
+u32 get_pi_enabled(u32 layer_id)
+{
+	return 0;
+}
+
+void vd_s5_hw_set(struct video_layer_s *layer,
+	struct vframe_s *dispbuf, struct vpp_frame_par_s *frame_par)
+{
+		return;
+}
+
+void vd_switch_frm_idx(u32 vpp_index, u32 frm_idx)
+{
+}
+
+struct mosaic_frame_s *get_mosaic_vframe_info(u32 slice)
+{
+	return NULL;
+}
+
+#endif
 
 #ifdef CONFIG_AMLOGIC_VPU
 void dv_mem_power_off(enum vpu_mod_e mode)
@@ -1079,6 +1107,7 @@ void update_vd_src_info(u8 layer_id,
 	layer->compHeight = compHeight;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static bool is_layer_8k_to_4k_input(u8 layer_id)
 {
 	bool video_en = false;
@@ -1295,6 +1324,7 @@ bool is_bandwidth_policy_hit(u8 layer_id)
 }
 
 #endif
+#endif
 
 bool is_di_on(void)
 {
@@ -1378,11 +1408,14 @@ bool is_afbc_enabled(u8 layer_id)
 		return -1;
 
 	layer = &vd_layer[layer_id];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		if (layer_id == MAX_VD_CHAN_S5 - 1)
 			layer_id += SLICE_NUM - 1;
 		value = READ_VCBUS_REG(vd_proc_reg.vd_afbc_reg[layer_id].afbc_enable);
-	} else {
+	} else
+#endif
+	{
 		value = READ_VCBUS_REG(layer->vd_afbc_reg.afbc_enable);
 	}
 	return (value & 0x100) ? true : false;
@@ -1646,9 +1679,11 @@ void safe_switch_videolayer(u8 layer_id, bool on, bool async)
 		if (on) {
 			enable_video_layer();
 		} else {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (cur_dev->display_module == S5_DISPLAY_MODULE)
 				disable_video_layer_s5(layer_id, async);
 			else
+#endif
 				disable_video_layer(async);
 		}
 	}
@@ -1657,9 +1692,11 @@ void safe_switch_videolayer(u8 layer_id, bool on, bool async)
 		if (on) {
 			enable_video_layer2();
 		} else {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (cur_dev->display_module == S5_DISPLAY_MODULE)
 				disable_video_layer_s5(layer_id, async);
 			else
+#endif
 				disable_video_layer2(async);
 		}
 	}
@@ -1668,10 +1705,13 @@ void safe_switch_videolayer(u8 layer_id, bool on, bool async)
 		if (on) {
 			enable_video_layer3();
 		} else {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 				/*coverity[overrun-call] error report*/
 				disable_video_layer_s5(layer_id, async);
-			} else {
+			} else
+#endif
+			{
 				disable_video_layer3(async);
 			}
 		}
@@ -1684,21 +1724,26 @@ void safe_switch_videolayer(u8 layer_id, bool on, bool async)
 			if (cur_dev->max_vd_layers == 3)
 				enable_video_layer3();
 		} else  if (async) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 				int i;
 
 				for (i = 0; i < cur_dev->max_vd_layers; i++)
 					disable_video_layer_s5(i, async);
-			} else {
+			} else
+#endif
+			{
 				disable_video_layer(async);
 				disable_video_layer2(async);
 				if (cur_dev->max_vd_layers == 3)
 					disable_video_layer3(async);
 			}
 		} else {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (cur_dev->display_module == S5_DISPLAY_MODULE)
 				disable_video_all_layer_nodelay_s5();
 			else
+#endif
 				disable_video_all_layer_nodelay();
 		}
 	}
@@ -1828,10 +1873,12 @@ static void set_vd_mif_linear_cs(struct video_layer_s *layer,
 	u32 vd_if_baddr_y, vd_if_baddr_cb, vd_if_baddr_cr;
 	u32 vd_if_stride_0, vd_if_stride_1;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		set_vd_mif_linear_cs_s5(layer, cs0, cs1, cs2, vf, lr_select);
 		return;
 	}
+#endif
 	if (!lr_select) {
 		vd_if_baddr_y = vd_mif_linear_reg->vd_if0_baddr_y;
 		vd_if_baddr_cb = vd_mif_linear_reg->vd_if0_baddr_cb;
@@ -1902,10 +1949,12 @@ static void set_vd_mif_linear(struct video_layer_s *layer,
 	u32 vd_if_baddr_y, vd_if_baddr_cb, vd_if_baddr_cr;
 	u32 vd_if_stride_0, vd_if_stride_1;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		set_vd_mif_linear_s5(layer, config, planes, vf, lr_select);
 		return;
 	}
+#endif
 
 	vpp_index = layer->vpp_index;
 	if (!lr_select) {
@@ -1992,10 +2041,12 @@ static void vd_set_blk_mode(struct video_layer_s *layer, u8 block_mode)
 	u32 pic_32byte_aligned = 0;
 	u8 vpp_index;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		vd_set_blk_mode_s5(layer, block_mode);
 		return;
 	}
+#endif
 
 	vpp_index = layer->vpp_index;
 	cur_dev->rdma_func[vpp_index].rdma_wr_bits(vd_mif_reg->vd_if0_gen_reg3,
@@ -2066,6 +2117,7 @@ static void vd1_set_dcu(struct video_layer_s *layer,
 
 	type = vf->type;
 #ifdef ENABLE_PRE_LINK
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (video_is_meson_t5d_revb_cpu() &&
 	    !layer->vd1_vd2_mux &&
 	    !is_local_vf(vf) &&
@@ -2082,6 +2134,7 @@ static void vd1_set_dcu(struct video_layer_s *layer,
 			skip_afbc = true;
 		}
 	}
+#endif
 #endif
 
 	if (type & VIDTYPE_MVC)
@@ -2124,6 +2177,7 @@ static void vd1_set_dcu(struct video_layer_s *layer,
 			(vd_mif_reg->vd_if0_gen_reg, 0);
 		return;
 	} else if (type & VIDTYPE_COMPRESS) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (cur_dev->display_module == T7_DISPLAY_MODULE) {
 			if (conv_lbuf_len[layer->layer_id] == VIDEO_USE_4K_RAM)
 				r = 3;
@@ -2134,6 +2188,7 @@ static void vd1_set_dcu(struct video_layer_s *layer,
 				(vd_afbc_reg->afbc_top_ctrl,
 				 r, 13, 2);
 		}
+#endif
 		if (!legacy_vpp || is_meson_txlx_cpu())
 			burst_len = 2;
 		r = (3 << 24) |
@@ -2253,10 +2308,12 @@ static void vd1_set_dcu(struct video_layer_s *layer,
 		type |= VIDTYPE_VIU_NV21;
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == T7_DISPLAY_MODULE)
 		cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(vd_afbc_reg->afbc_top_ctrl,
 			0, 13, 2);
+#endif
 
 	/* vd mif burst len is 2 as default */
 	burst_len = 2;
@@ -2675,6 +2732,7 @@ static void vdx_set_dcu(struct video_layer_s *layer,
 		type &= ~VIDTYPE_COMPRESS;
 
 	if (type & VIDTYPE_COMPRESS) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (cur_dev->display_module == T7_DISPLAY_MODULE) {
 			if (conv_lbuf_len[layer->layer_id] == VIDEO_USE_4K_RAM)
 				r = 3;
@@ -2685,6 +2743,7 @@ static void vdx_set_dcu(struct video_layer_s *layer,
 				(vd_afbc_reg->afbc_top_ctrl,
 				 r, 13, 2);
 		}
+#endif
 
 		if (!legacy_vpp || is_meson_txlx_cpu())
 			burst_len = 2;
@@ -2811,10 +2870,12 @@ static void vdx_set_dcu(struct video_layer_s *layer,
 		type |= VIDTYPE_VIU_NV21;
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == T7_DISPLAY_MODULE)
 		cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(vd_afbc_reg->afbc_top_ctrl,
 			0, 13, 2);
+#endif
 
 	/* vd mif burst len is 2 as default */
 	burst_len = 2;
@@ -4613,6 +4674,7 @@ static void vdx_scaler_setting(struct video_layer_s *layer, struct scaler_settin
 			vpp_filter->vpp_vsc_start_phase_step);
 	}
 	if (layer_id == 1) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (cur_dev->display_module == T7_DISPLAY_MODULE)
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(VD2_HDR_IN_SIZE + misc_off,
@@ -4620,16 +4682,19 @@ static void vdx_scaler_setting(struct video_layer_s *layer, struct scaler_settin
 				| frame_par->VPP_line_in_length_);
 
 		else
+#endif
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(VPP_VD2_HDR_IN_SIZE + misc_off,
 				(frame_par->VPP_pic_in_height_ << 16)
 				| frame_par->VPP_line_in_length_);
 	} else if (layer_id == 2) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (cur_dev->display_module == T7_DISPLAY_MODULE)
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(VD3_HDR_IN_SIZE + misc_off,
 				(frame_par->VPP_pic_in_height_ << 16)
 				| frame_par->VPP_line_in_length_);
+#endif
 	}
 }
 
@@ -4639,8 +4704,10 @@ static void disable_vd1_blend(struct video_layer_s *layer)
 	u8 vpp_index;
 	static bool first_set = true;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return disable_vd1_blend_s5(layer);
+#endif
 	if (!layer)
 		return;
 	vpp_index = layer->vpp_index;
@@ -4716,8 +4783,10 @@ static void disable_vd2_blend(struct video_layer_s *layer)
 {
 	u8 vpp_index;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return disable_vd2_blend_s5(layer);
+#endif
 
 	if (!layer)
 		return;
@@ -5374,10 +5443,12 @@ void switch_3d_view_per_vsync(struct video_layer_s *layer)
 
 	if (!layer || !layer->cur_frame_par || !layer->dispbuf)
 		return;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		switch_3d_view_per_vsync_s5(layer);
 		return;
 	}
+#endif
 
 	if (layer->switch_vf && layer->vf_ext)
 		dispbuf = layer->vf_ext;
@@ -5811,6 +5882,7 @@ s32 config_vd_pps_internal(struct video_layer_s *layer,
 		src_h = cur_frame_par->video_input_h << cur_frame_par->supsc0_vert_ratio;
 		dst_w = cur_frame_par->VPP_hsc_endp - cur_frame_par->VPP_hsc_startp + 1;
 		dst_h = cur_frame_par->VPP_vsc_endp - cur_frame_par->VPP_vsc_startp + 1;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		/* for s5 calc sr later */
 		src_w = cur_frame_par->video_input_w;
@@ -5819,6 +5891,7 @@ s32 config_vd_pps_internal(struct video_layer_s *layer,
 			cur_frame_par->supsc1_hori_ratio;
 		dst_h = (cur_frame_par->VPP_vsc_endp - cur_frame_par->VPP_vsc_startp + 1) >>
 			cur_frame_par->supsc1_vert_ratio;
+#endif
 	}
 	if (vpp_filter->vpp_hsc_start_phase_step == 0x1000000 &&
 	    vpp_filter->vpp_vsc_start_phase_step == 0x1000000 &&
@@ -5887,6 +5960,7 @@ s32 config_vd_blend(struct video_layer_s *layer,
 	y_lines = layer->end_y_lines /
 		(cur_frame_par->vscale_skip_count + 1);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == C3_DISPLAY_MODULE) {
 		setting->postblend_h_start =
 			cur_frame_par->VPP_hd_start_lines_;
@@ -5900,6 +5974,7 @@ s32 config_vd_blend(struct video_layer_s *layer,
 			cur_frame_par->video_input_h - 1;
 		return 0;
 	}
+#endif
 
 	if (legacy_vpp) {
 		setting->preblend_h_start = 0;
@@ -6032,14 +6107,17 @@ void vd_blend_setting(struct video_layer_s *layer, struct blend_setting_s *setti
 
 	if (!setting)
 		return;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		vd_blend_setting_s5(layer, setting);
 		return;
 	}
+#endif
 	/* g12a change to 13 bits */
 	if (!legacy_vpp)
 		vd_size_mask = 0x1fff;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == C3_DISPLAY_MODULE) {
 		/* default video is background */
 		/* forground setting */
@@ -6059,6 +6137,7 @@ void vd_blend_setting(struct video_layer_s *layer, struct blend_setting_s *setti
 		<< 16));
 		return;
 	}
+#endif
 
 	misc_off = setting->misc_reg_offt;
 	/* preblend setting */
@@ -6138,11 +6217,13 @@ void vd_clip_setting(u8 layer_id,
 {
 	if (setting->clip_done)
 		return;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		vd_clip_setting_s5(layer_id, setting);
 		setting->clip_done = true;
 		return;
 	}
+#endif
 	vdx_clip_setting(layer_id, setting);
 	setting->clip_done = true;
 }
@@ -6157,10 +6238,13 @@ void proc_vd_vsc_phase_per_vsync(struct video_layer_s *layer,
 	struct hw_pps_reg_s *vd_pps_reg;
 	u8 vpp_index;
 	u8 layer_id = 0;
-	struct vd_pps_reg_s *vd_pps_reg_s5;
 	u32 vd_vsc_phase_ctrl_val = 0;
 	u32 slice = 1;
-	int i = 0, layer_index = 0, use_pps_save = 0;
+	int i = 0, use_pps_save = 0;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	struct vd_pps_reg_s *vd_pps_reg_s5;
+	int layer_index = 0;
+#endif
 
 	if (!layer || !frame_par || !vf)
 		return;
@@ -6177,6 +6261,7 @@ void proc_vd_vsc_phase_per_vsync(struct video_layer_s *layer,
 	vd_pps_reg = &layer->pps_reg;
 	slice = get_slice_num(layer_id);
 	for (i = 0; i < slice; i++) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 			if (layer_id != 0) {
 				layer_index = layer_id + SLICE_NUM - 1;
@@ -6187,6 +6272,7 @@ void proc_vd_vsc_phase_per_vsync(struct video_layer_s *layer,
 			vd_pps_reg_s5 = &vd_proc_reg.vd_pps_reg[layer_index];
 			memcpy(&vd_pps_reg, &vd_pps_reg_s5, sizeof(vd_pps_reg_s5));
 		}
+#endif
 
 		/* vertical phase */
 		vphase = &frame_par->VPP_vf_ini_phase_
@@ -6491,7 +6577,9 @@ static inline void vdx_test_pattern_output(u32 index, u32 on, u32 color)
 {
 	u8 vpp_index = VPP0;
 	u32 vdx_clip_misc0, vdx_clip_misc1;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct clip_setting_s setting;
+#endif
 
 	switch (index) {
 	case 0:
@@ -6547,10 +6635,12 @@ static inline void vdx_test_pattern_output(u32 index, u32 on, u32 color)
 				color);
 			WRITE_VCBUS_REG(vdx_clip_misc0, color);
 			WRITE_VCBUS_REG(vdx_clip_misc1, color);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			setting.clip_min = color;
 			setting.clip_max = color;
 			vd_clip_setting_s5(index, &setting);
+#endif
 		}
 	} else {
 		if (cur_dev->display_module != S5_DISPLAY_MODULE) {
@@ -6563,10 +6653,12 @@ static inline void vdx_test_pattern_output(u32 index, u32 on, u32 color)
 				(vdx_clip_misc1,
 				(0x0 << 20) |
 				(0x0 << 10) | 0x0);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			setting.clip_min = 0;
 			setting.clip_max = 0x3fffffff;
 			vd_clip_setting_s5(index, &setting);
+#endif
 		}
 	}
 }
@@ -6595,7 +6687,9 @@ static void check_video_pattern_output(void)
 static inline void postblend_test_pattern_output(u32 on, u32 color)
 {
 	u8 vpp_index = VPP0;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	static u32 blend_din_en_save;
+#endif
 
 	if (on) {
 		if (is_tv_panel()) {
@@ -6635,10 +6729,12 @@ static inline void postblend_test_pattern_output(u32 on, u32 color)
 				color);
 			WRITE_VCBUS_REG(VPP_CLIP_MISC0, color);
 			WRITE_VCBUS_REG(VPP_CLIP_MISC1, color);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			blend_din_en_save = READ_VCBUS_REG(VPU_VOUT_BLEND_CTRL);
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, color);
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL, 0x7);
+#endif
 		}
 	} else {
 		if (cur_dev->display_module != C3_DISPLAY_MODULE) {
@@ -6651,10 +6747,12 @@ static inline void postblend_test_pattern_output(u32 on, u32 color)
 				(VPP_CLIP_MISC1,
 				(0x0 << 20) |
 				(0x0 << 10) | 0x0);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, 0x0);
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL,
 				blend_din_en_save);
+#endif
 		}
 	}
 }
@@ -7400,6 +7498,7 @@ void vpp_blend_update_t7(const struct vinfo_s *vinfo)
 		disable_vd1_blend(&vd_layer[0]);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void vpp_blend_update_s5(const struct vinfo_s *vinfo)
 {
 	static u32 t7_vd1_enabled;
@@ -7698,6 +7797,7 @@ static void vpp_blend_update_s5(const struct vinfo_s *vinfo)
 	if (video1_off_req)
 		disable_vd1_blend(&vd_layer[0]);
 }
+#endif
 
 void vpp_blend_update(const struct vinfo_s *vinfo)
 {
@@ -7725,16 +7825,19 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 			vd_clip_setting(2, &vd_layer[2].clip_setting);
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == C3_DISPLAY_MODULE) {
 		vpp_blend_update_c3(vinfo);
 		return;
 	}
+#endif
 
 	check_video_pattern_output();
 	check_postblend_pattern_output();
 	check_video_mute();
 	check_output_mute();
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		vpp_blend_update_s5(vinfo);
 		return;
@@ -7743,6 +7846,7 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 		vpp_blend_update_t7(vinfo);
 		return;
 	}
+#endif
 
 	if (vd_layer[0].enable_3d_mode == mode_3d_mvc_enable)
 		mode |= COMPOSE_MODE_3D;
@@ -8804,8 +8908,10 @@ static bool is_sr_phase_changed(void)
 	if (!cur_dev->aisr_support ||
 	    !cur_dev->pps_auto_calc)
 		return false;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return is_sr_phase_changed_s5();
+#endif
 
 	sr = &sr_info;
 	sr0_sharp_sr2_ctrl2 =
@@ -8832,11 +8938,14 @@ int get_layer_display_canvas(u8 layer_id)
 	if (layer_id >= MAX_VD_LAYER)
 		return -1;
 	layer = &vd_layer[layer_id];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		if (layer_id == MAX_VD_CHAN_S5 - 1)
 			layer_id += SLICE_NUM - 1;
 		ret = READ_VCBUS_REG(vd_proc_reg.vd_mif_reg[layer_id].vd_if0_canvas0);
-	} else {
+	} else
+#endif
+	{
 		ret = READ_VCBUS_REG(layer->vd_mif_reg.vd_if0_canvas0);
 	}
 	return ret;
@@ -9055,6 +9164,7 @@ void get_mosaic_axis(void)
 	}
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void set_mosaic_vframe_info(struct video_layer_s *layer,
 	struct disp_info_s *layer_info,
 	struct vframe_s *vf)
@@ -9298,6 +9408,7 @@ int set_layer_slice_display_canvas_s5(struct video_layer_s *layer,
 	}
 	return 0;
 }
+#endif
 
 int set_layer_display_canvas(struct video_layer_s *layer,
 			     struct vframe_s *vf,
@@ -9309,10 +9420,13 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 	bool is_mvc = false;
 	bool update_mif = true;
 	u8 vpp_index;
-	u8 layer_id, layer_index;
+	u8 layer_id;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	u8 layer_index;
 	struct vd_mif_reg_s *vd_mif_reg_s5;
 	struct vd_mif_reg_s *vd_mif_reg_mvc_s5;
 	struct vd_afbc_reg_s *vd_afbc_reg_s5;
+#endif
 	struct hw_vd_reg_s *vd_mif_reg;
 	struct hw_vd_reg_s *vd_mif_reg_mvc;
 	struct hw_afbc_reg_s *vd_afbc_reg;
@@ -9331,6 +9445,7 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 			else
 				temp_slice = slice;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (layer->mosaic_mode) {
 				/* set pic0/1 */
 				set_layer_mosaic_display_canvas_s5(layer, vf,
@@ -9339,14 +9454,17 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 				set_layer_slice_display_canvas_s5(layer, vf,
 					cur_frame_par, disp_info, temp_slice, line);
 			}
+#endif
 		}
 		if (layer->mosaic_mode) {
 			frame_id = 1;
 			vd_switch_frm_idx(VPP0, frame_id);
 			for (slice = 0; slice < layer->slice_num; slice++) {
 				/* switch frame, set pic2/3 */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 				set_layer_mosaic_display_canvas_s5(layer, vf,
 					cur_frame_par, disp_info, slice, frame_id);
+#endif
 			}
 			layer->mosaic_frame = true;
 			frame_id = 0;
@@ -9364,6 +9482,7 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 	cur_canvas_id = layer->cur_canvas_id;
 	cur_canvas_tbl =
 		&layer->canvas_tbl[cur_canvas_id][0];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		if (layer_id > MAX_VD_CHAN_S5)
 			return -1;
@@ -9377,7 +9496,9 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 		memcpy(&vd_mif_reg, &vd_mif_reg_s5, sizeof(vd_mif_reg));
 		memcpy(&vd_mif_reg_mvc, &vd_mif_reg_mvc_s5, sizeof(vd_mif_reg));
 		memcpy(&vd_afbc_reg, &vd_afbc_reg_s5, sizeof(vd_afbc_reg));
-	} else {
+	} else
+#endif
+	{
 		if (layer_id >= MAX_VD_LAYER)
 			return -1;
 		vd_mif_reg = &vd_layer[layer_id].vd_mif_reg;
@@ -9870,8 +9991,10 @@ s32 layer_swap_frame(struct vframe_s *vf, struct video_layer_s *layer,
 		layer->force_config_cnt--;
 		force_toggle = true;
 	}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	set_video_slice_policy(layer, vf);
 	set_mosaic_vframe_info(layer, layer_info, vf);
+#endif
 
 	if (!vf_ext) {
 		if (layer->switch_vf) {
@@ -10228,6 +10351,7 @@ void alpha_win_set(struct video_layer_s *layer)
 {
 	u8 layer_id = layer->layer_id;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		if (glayer_info[layer_id].alpha_support) {
 			if (layer_id == 0 &&
@@ -10243,7 +10367,9 @@ void alpha_win_set(struct video_layer_s *layer)
 			}
 			vd_set_alpha_s5(layer, &layer->alpha_win);
 		}
-	} else {
+	} else
+#endif
+	{
 		if (glayer_info[layer_id].alpha_support)
 			vd_set_alpha(layer, &layer->alpha_win);
 	}
@@ -10256,11 +10382,14 @@ int detect_vout_type(const struct vinfo_s *vinfo)
 	int vout_type = VOUT_TYPE_PROG;
 	u32 encl_info_reg, encp_info_reg;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == T7_DISPLAY_MODULE ||
 		cur_dev->display_module == S5_DISPLAY_MODULE) {
 		encl_info_reg = VPU_VENCI_STAT;
 		encp_info_reg = VPU_VENCP_STAT;
-	} else {
+	} else
+#endif
+	{
 		encl_info_reg = ENCI_INFO_READ;
 		encp_info_reg = ENCP_INFO_READ;
 	}
@@ -10304,6 +10433,7 @@ static int get_venc_type(void)
 {
 	u32 venc_type = 0;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == T7_DISPLAY_MODULE) {
 		u32 venc_mux = 3;
 		u32 venc_addr = VPU_VENC_CTRL;
@@ -10323,7 +10453,9 @@ static int get_venc_type(void)
 			break;
 		}
 		venc_type = READ_VCBUS_REG(venc_addr);
-	} else {
+	} else
+#endif
+	{
 		venc_type = READ_VCBUS_REG(VPU_VIU_VENC_MUX_CTRL);
 	}
 	venc_type &= 0x3;
@@ -10337,6 +10469,7 @@ u32 get_active_start_line(void)
 	u32 offset = 0;
 	u32 reg = ENCL_VIDEO_VAVON_BLINE;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == T7_DISPLAY_MODULE ||
 		cur_dev->display_module == S5_DISPLAY_MODULE) {
 		u32 venc_mux = 3;
@@ -10367,7 +10500,9 @@ u32 get_active_start_line(void)
 			break;
 		}
 
-	} else {
+	} else
+#endif
+	{
 		switch (get_venc_type()) {
 		case 0:
 			reg = ENCL_VIDEO_VAVON_BLINE;
@@ -10397,6 +10532,7 @@ u32 get_cur_enc_line(void)
 	u32 offset = 0;
 	u32 venc_type = get_venc_type();
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return get_cur_enc_line_s5();
 	if (cur_dev->display_module == T7_DISPLAY_MODULE) {
@@ -10426,7 +10562,9 @@ u32 get_cur_enc_line(void)
 			reg = VPU_VENCL_STAT;
 			break;
 		}
-	} else {
+	} else
+#endif
+	{
 		switch (venc_type) {
 		case 0:
 			reg = ENCL_INFO_READ;
@@ -10459,6 +10597,7 @@ u32 get_cur_enc_num(void)
 	u32 venc_type = get_venc_type();
 	u32 bit_offest = 0;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return get_cur_enc_num_s5();
 	if (cur_dev->display_module == T7_DISPLAY_MODULE) {
@@ -10489,7 +10628,9 @@ u32 get_cur_enc_num(void)
 			reg = VPU_VENCL_STAT;
 			break;
 		}
-	} else {
+	} else
+#endif
+	{
 		bit_offest = 29;
 		switch (venc_type) {
 		case 0:
@@ -10688,8 +10829,10 @@ int vpp_crc_check(u32 vpp_crc_en, u8 vpp_index)
 	int vpp_crc_result = 0;
 	static u32 val_pre, crc_cnt;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return vpp_crc_check_s5(vpp_crc_en, vpp_index);
+#endif
 	if (vpp_crc_en && cpu_after_eq(MESON_CPU_MAJOR_ID_SM1)) {
 		cur_dev->rdma_func[vpp_index].rdma_wr(VPP_CRC_CHK, 1);
 		if (crc_cnt >= 1) {
@@ -10743,13 +10886,16 @@ void dump_pps_coefs_info(u8 layer_id, u8 bit9_mode, u8 coef_type)
 	u32 pps_coef_idx_save;
 	int i;
 	struct hw_pps_reg_s *vd_pps_reg;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct vd_pps_reg_s *vd_pps_reg_s5;
-	int scaler_sep_coef_en;
 	u8 layer_index;
+#endif
+	int scaler_sep_coef_en;
 
 	/* bit9_mode : 0 8bit, 1: 9bit*/
 	/* coef_type : 0 horz, 1: vert*/
 	vd_pps_reg = &vd_layer[layer_id].pps_reg;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		if (layer_id != 0)
 			layer_index = layer_id + SLICE_NUM - 1;
@@ -10758,6 +10904,7 @@ void dump_pps_coefs_info(u8 layer_id, u8 bit9_mode, u8 coef_type)
 		vd_pps_reg_s5 = &vd_proc_reg.vd_pps_reg[layer_index];
 		memcpy(&vd_pps_reg, &vd_pps_reg_s5, sizeof(vd_pps_reg_s5));
 	}
+#endif
 	scaler_sep_coef_en = cur_dev->scaler_sep_coef_en;
 	if (layer_id == 0xff) {
 		vd_pps_reg = &cur_dev->aisr_pps_reg;
@@ -11221,10 +11368,12 @@ static void fgrain_uninit(u8 layer_id)
 {
 	u32 channel = FILM_GRAIN0_CHAN;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		fgrain_uninit_s5(layer_id);
 		return;
 	}
+#endif
 	if (!glayer_info[layer_id].fgrain_support)
 		return;
 
@@ -11255,6 +11404,7 @@ static int fgrain_write(u32 layer_id, ulong fgs_table_addr)
 	return 0;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int get_viu_irq_source(u8 vpp_index)
 {
 	u32 venc_mux = 3;
@@ -11278,16 +11428,20 @@ static int get_viu_irq_source(u8 vpp_index)
 	}
 	return irq_source;
 }
+#endif
 
 static void fgrain_update_irq_source(u8 layer_id, u8 vpp_index)
 {
 	u32 irq_source = ENCP_GO_FIELD;
 	u32 viu, channel = 0;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == T7_DISPLAY_MODULE) {
 		/* get vpp0 irq source */
 		irq_source = get_viu_irq_source(vpp_index);
-	} else {
+	} else
+#endif
+	{
 		viu = READ_VCBUS_REG(VPU_VIU_VENC_MUX_CTRL) & 0x3;
 
 		switch (viu) {
@@ -11417,8 +11571,10 @@ void fgrain_update_table(struct video_layer_s *layer,
 
 	if (!vf)
 		return;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return fgrain_update_table_s5(layer, vf);
+#endif
 	layer_id = layer->layer_id;
 	if (!glayer_info[layer_id].lut_dma_support)
 		return;
@@ -11553,10 +11709,12 @@ void aisr_reshape_addr_set(struct video_layer_s *layer,
 
 	if (!is_layer_aisr_supported(layer))
 		return;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		aisr_reshape_addr_set_s5(layer, aisr_mif_setting);
 		return;
 	}
+#endif
 	if (!aisr_mif_setting->aisr_enable) {
 		cur_dev->rdma_func[VPP0].rdma_wr_bits
 			(aisr_reshape_reg.aisr_post_ctrl,
@@ -11764,8 +11922,10 @@ void aisr_reshape_cfg(struct video_layer_s *layer,
 		return;
 	if (!aisr_mif_setting->aisr_enable)
 		return;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return aisr_reshape_cfg_s5(layer, aisr_mif_setting);
+#endif
 	vscale_skip_count = aisr_mif_setting->vscale_skip_count;
 	aisr_hsize = aisr_mif_setting->x_end - aisr_mif_setting->x_start + 1;
 	aisr_vsize = aisr_mif_setting->y_end - aisr_mif_setting->y_start + 1;
@@ -11928,10 +12088,12 @@ void aisr_scaler_setting(struct video_layer_s *layer,
 	u8 vpp_index, layer_id;
 	u32 aisr_enable = layer->aisr_mif_setting.aisr_enable;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		aisr_scaler_setting_s5(layer, setting);
 		return;
 	}
+#endif
 
 	if (!is_layer_aisr_supported(layer) ||
 	    !setting || !setting->frame_par)
@@ -12010,10 +12172,12 @@ void aisr_scaler_setting(struct video_layer_s *layer,
 	if (setting->sc_h_enable) {
 		bit9_mode = vpp_filter->vpp_horz_coeff[1] & 0x8000;
 		s11_mode = vpp_filter->vpp_horz_coeff[1] & 0x4000;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (s11_mode && cur_dev->display_module == T7_DISPLAY_MODULE)
 			cur_dev->rdma_func[vpp_index].rdma_wr_bits(aisr_pps_reg->vd_pre_scale_ctrl,
 					       0x199, 12, 9);
 		else
+#endif
 			cur_dev->rdma_func[vpp_index].rdma_wr_bits(aisr_pps_reg->vd_pre_scale_ctrl,
 					       0x77, 12, 9);
 		if (hscaler_8tap_enable[layer_id]) {
@@ -12344,10 +12508,12 @@ void aisr_scaler_setting(struct video_layer_s *layer,
 			VPP_PHASECTL_DOUBLELINE_WID);
 		bit9_mode = vpp_filter->vpp_vert_coeff[1] & 0x8000;
 		s11_mode = vpp_filter->vpp_vert_coeff[1] & 0x4000;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (s11_mode && cur_dev->display_module == T7_DISPLAY_MODULE)
 			cur_dev->rdma_func[vpp_index].rdma_wr_bits(aisr_pps_reg->vd_pre_scale_ctrl,
 					       0x199, 12, 9);
 		else
+#endif
 			cur_dev->rdma_func[vpp_index].rdma_wr_bits(aisr_pps_reg->vd_pre_scale_ctrl,
 					       0x77, 12, 9);
 		if (bit9_mode || s11_mode) {
@@ -12385,11 +12551,13 @@ void aisr_scaler_setting(struct video_layer_s *layer,
 
 			bit9_mode = pcoeff[1] & 0x8000;
 			s11_mode = pcoeff[1] & 0x4000;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (s11_mode && cur_dev->display_module == T7_DISPLAY_MODULE)
 				cur_dev->rdma_func[vpp_index].rdma_wr_bits
 				(aisr_pps_reg->vd_pre_scale_ctrl,
 				0x199, 12, 9);
 			else
+#endif
 				cur_dev->rdma_func[vpp_index].rdma_wr_bits
 				(aisr_pps_reg->vd_pre_scale_ctrl,
 				0x77, 12, 9);
@@ -12510,8 +12678,10 @@ void aisr_demo_axis_set(struct video_layer_s *layer)
 			last_aisr_demo_ystart = new_aisr_demo_ystart;
 			last_aisr_demo_yend = new_aisr_demo_yend;
 		}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (cur_dev->display_module == S5_DISPLAY_MODULE)
 			return aisr_demo_axis_set_s5(layer);
+#endif
 		if (layer->pi_enable) {
 			new_aisr_demo_xstart /= 2;
 			new_aisr_demo_xend /= 2;
@@ -12544,8 +12714,10 @@ void aisr_demo_axis_set(struct video_layer_s *layer)
 	} else {
 		if (!cur_dev->aisr_support)
 			return;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (cur_dev->display_module == S5_DISPLAY_MODULE)
 			return aisr_demo_axis_set_s5(layer);
+#endif
 		if (en_flag) {
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(DEMO_MODE_WINDO_CTRL0, original_reg_value1);
@@ -12861,6 +13033,7 @@ int set_vpu_super_urgent_t3(u32 module_id, u32 low_level, u32 high_level)
 	return 0;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void video_hw_init_c3(void)
 {
 	vd1_matrix = YUV2RGB;
@@ -12871,6 +13044,7 @@ static void video_hw_init_c3(void)
 	vd1_vpu_dev = vpu_dev_register(VPU_VIU_VD1, "VD1");
 #endif
 }
+#endif
 
 static void vd_set_go_field_default(void)
 {
@@ -12923,11 +13097,13 @@ int video_hw_init(void)
 					       PRE_VSYNC_WR_MPEG_REG_BITS};
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == C3_DISPLAY_MODULE) {
 		video_hw_init_c3();
 		pr_info("%s, LINE=%d\n", __func__, __LINE__);
 		return 0;
 	}
+#endif
 
 	if (!legacy_vpp) {
 		if (vpp_ofifo_size == 0xff)
@@ -12977,18 +13153,23 @@ int video_hw_init(void)
 		cpu_after_eq(MESON_CPU_MAJOR_ID_G12A)) {
 		/*black 10bit*/
 		WRITE_VCBUS_REG(VPP_DUMMY_DATA, 0x4080200);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (cur_dev->display_module == T7_DISPLAY_MODULE) {
 			WRITE_VCBUS_REG(T7_VD2_PPS_DUMMY_DATA, 0x4080200);
 			WRITE_VCBUS_REG(VD3_PPS_DUMMY_DATA, 0x4080200);
 		}
+#endif
 	}
 	/* select afbcd output to di pre */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (video_is_meson_t5d_revb_cpu() && vd1_vd2_mux_dts) {
 		/* default false */
 		vd1_vd2_mux = true;
 		vd_layer[0].vd1_vd2_mux = true;
 		di_used_vd1_afbc(true);
-	} else {
+	} else
+#endif
+	{
 		vd1_vd2_mux = false;
 		vd_layer[0].vd1_vd2_mux = false;
 		di_used_vd1_afbc(false);
@@ -13091,6 +13272,7 @@ int video_hw_init(void)
 			fgrain_init(i, FGRAIN_TBL_SIZE);
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (video_is_meson_t7_cpu()) {
 		/* vpu port map for t7 */
 		/* vpp_arb0: osd1, vd1, osd3, dolby0, vd3 */
@@ -13111,6 +13293,7 @@ int video_hw_init(void)
 		/* vpp_arb0, vpp_arb1 super urgent */
 		WRITE_VCBUS_REG(VPU_RDARB_UGT_L2C1, 0xffff);
 	}
+#endif
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	secure_register(VIDEO_MODULE, 0, video_secure_op, vpp_secure_cb);
 #endif
@@ -13395,6 +13578,7 @@ int video_early_init(struct amvideo_device_data_s *p_amvideo)
 		cur_dev->prevsync_support);
 	if (cur_dev->aisr_support)
 		cur_dev->pps_auto_calc = 1;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == T7_DISPLAY_MODULE) {
 		for (i = 0; i < cur_dev->max_vd_layers; i++) {
 			memcpy(&vd_layer[i].vd_afbc_reg,
@@ -13431,7 +13615,9 @@ int video_early_init(struct amvideo_device_data_s *p_amvideo)
 				  &vd_mif_linear_reg_c3_array[i],
 				  sizeof(struct hw_vd_linear_reg_s));
 			}
-	} else if (video_is_meson_sc2_cpu() ||
+	} else
+#endif
+	if (video_is_meson_sc2_cpu() ||
 			video_is_meson_s4_cpu()) {
 		for (i = 0; i < cur_dev->max_vd_layers; i++) {
 			memcpy(&vd_layer[i].vd_afbc_reg,
@@ -13447,14 +13633,17 @@ int video_early_init(struct amvideo_device_data_s *p_amvideo)
 				memcpy(&vd_layer[i].pps_reg,
 				       &pps_reg_array_t5d[i],
 				       sizeof(struct hw_pps_reg_s));
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			else
 				memcpy(&vd_layer[i].pps_reg,
 				       &pps_reg_array[i],
 				       sizeof(struct hw_pps_reg_s));
+#endif
 			memcpy(&vd_layer[i].vpp_blend_reg,
 			       &vpp_blend_reg_array[i],
 			       sizeof(struct hw_vpp_blend_reg_s));
 		}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		for (i = 0; i < cur_dev->max_vd_layers; i++) {
 			memcpy(&vd_layer[i].vd_afbc_reg,
@@ -13486,6 +13675,7 @@ int video_early_init(struct amvideo_device_data_s *p_amvideo)
 			       &vpp_blend_reg_array[i],
 			       sizeof(struct hw_vpp_blend_reg_s));
 		}
+#endif
 	}
 	vd_layer[0].layer_alpha = 0x100;
 

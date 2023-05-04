@@ -254,6 +254,7 @@ bool is_layer_aisr_supported(struct video_layer_s *layer)
 		return true;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void dump_vout_blend_reg(void)
 {
 	u32 reg_addr, reg_val = 0;
@@ -1156,3 +1157,4 @@ ssize_t reg_dump_store(struct class *cla,
 	}
 	return count;
 }
+#endif

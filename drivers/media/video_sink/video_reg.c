@@ -19,6 +19,7 @@
 #include <linux/amlogic/media/registers/register.h>
 #include "video_reg.h"
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct hw_vd_reg_s vd_mif_reg_legacy_array[MAX_VD_LAYER_G12] = {
 	{
 		VD1_IF0_GEN_REG,
@@ -124,6 +125,7 @@ struct hw_vd_reg_s vd_mif_reg_g12_array[MAX_VD_LAYER_G12] = {
 		G12_VIU_VD2_FMT_W,
 	}
 };
+#endif
 
 struct hw_vd_reg_s vd_mif_reg_sc2_array[MAX_VD_LAYER_G12] = {
 	{
@@ -178,6 +180,7 @@ struct hw_vd_reg_s vd_mif_reg_sc2_array[MAX_VD_LAYER_G12] = {
 	}
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct hw_vd_reg_s vd_mif_reg_t7_array[MAX_VD_LAYER_T7] = {
 	{
 		SC2_VD1_IF0_GEN_REG,
@@ -391,6 +394,7 @@ struct hw_afbc_reg_s vd_afbc_reg_array[MAX_VD_LAYER_G12] = {
 		VD2_AFBCDEC_IQUANT_LUT_4,
 	}
 };
+#endif
 
 struct hw_afbc_reg_s vd_afbc_reg_sc2_array[MAX_VD_LAYER_G12] = {
 	{
@@ -445,6 +449,7 @@ struct hw_afbc_reg_s vd_afbc_reg_sc2_array[MAX_VD_LAYER_G12] = {
 	}
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct hw_afbc_reg_s vd_afbc_reg_t7_array[MAX_VD_LAYER_T7] = {
 	{
 		SC2_AFBC_ENABLE,
@@ -556,6 +561,7 @@ struct hw_fg_reg_s fg_reg_g12_array[MAX_VD_LAYER_G12] = {
 		G12_VD2_FGRAIN_WIN_V,
 	},
 };
+#endif
 
 struct hw_fg_reg_s fg_reg_sc2_array[MAX_VD_LAYER_G12] = {
 	{
@@ -570,6 +576,7 @@ struct hw_fg_reg_s fg_reg_sc2_array[MAX_VD_LAYER_G12] = {
 	},
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct hw_fg_reg_s fg_reg_t7_array[MAX_VD_LAYER_T7] = {
 	{
 		SC2_FGRAIN_CTRL,
@@ -640,6 +647,7 @@ struct hw_pps_reg_s pps_reg_array[MAX_VD_LAYER_G12] = {
 		0,
 	},
 };
+#endif
 
 struct hw_pps_reg_s pps_reg_array_t5d[MAX_VD_LAYER_G12] = {
 	{
@@ -694,6 +702,7 @@ struct hw_pps_reg_s pps_reg_array_t5d[MAX_VD_LAYER_G12] = {
 	},
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct hw_pps_reg_s pps_reg_t7_array[MAX_VD_LAYER_T7 + 1] = {
 	{
 		VPP_SCALE_COEF_IDX,
@@ -797,6 +806,7 @@ struct hw_pps_reg_s pps_reg_t7_array[MAX_VD_LAYER_T7 + 1] = {
 		SCHN_PREHSC_COEF1,
 	},
 };
+#endif
 
 struct hw_vpp_blend_reg_s vpp_blend_reg_array[MAX_VD_LAYER_G12] = {
 	{
@@ -821,6 +831,7 @@ struct hw_vpp_blend_reg_s vpp_blend_reg_array[MAX_VD_LAYER_G12] = {
 	},
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct hw_vpp_blend_reg_s vpp_blend_reg_t7_array[MAX_VD_LAYER_T7] = {
 	{
 		VPP_PREBLEND_VD1_H_START_END,
@@ -853,6 +864,7 @@ struct hw_vpp_blend_reg_s vpp_blend_reg_t7_array[MAX_VD_LAYER_T7] = {
 		VD3_PIP_ALPH_SCP_V_0,
 	},
 };
+#endif
 
 struct hw_vppx_blend_reg_s vppx_blend_reg_array[MAX_VPP_NUM - 1] = {
 	{
@@ -892,6 +904,7 @@ struct hw_viu_misc_reg_s viu_misc_reg = {
 	VPP_VD3_CLIP_MISC1,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct hw_vpp_path_size_s vpp_path_size_reg = {
 	VD1_HDR_IN_SIZE,
 	VD2_HDR_IN_SIZE,
@@ -935,6 +948,7 @@ struct hw_vpp_path_size_s vpp_path_size_reg = {
 	VPP_BLEND_VD3_H_START_END,
 	VPP_BLEND_VD3_V_START_END,
 };
+#endif
 
 struct hw_aisr_reshape_reg_s aisr_reshape_reg = {
 	AISR_RESHAP_CTRL0,

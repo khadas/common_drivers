@@ -1607,8 +1607,10 @@ static int vpp_set_filters_internal
 			(video_source_crop_right + 3) & ~0x03;
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_bandwidth_policy_hit(input->layer_id))
 		next_frame_par->vscale_skip_count++;
+#endif
 	if (super_debug)
 		pr_info("layer_id=%d, next_frame_par->vscale_skip_count=%d\n",
 			input->layer_id,
@@ -2283,7 +2285,9 @@ RESTART:
 			pr_info
 			("layer%d: Try DW buffer for compress frame.\n",
 			input->layer_id);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		adjust_video_slice_policy(input->layer_id, vf, no_compress);
+#endif
 		/* for VIDTYPE_COMPRESS, check if we can use double write
 		 * buffer when primary frame can not be scaled.
 		 */
@@ -2745,12 +2749,15 @@ static void sr_pps_phase_auto_calculation(struct vpp_frame_par_s *next_frame_par
 	if (!cur_dev->pps_auto_calc)
 		return;
 	sr = &sr_info;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		srsharp0_sharp_sr2_ctrl = S5_SRSHARP0_SHARP_SR2_CTRL;
 		srsharp1_sharp_sr2_ctrl = S5_SRSHARP1_SHARP_SR2_CTRL;
 		srsharp0_sharp_sr2_ctrl2 = S5_SRSHARP0_SHARP_SR2_CTRL2;
 		srsharp1_sharp_sr2_ctrl2 = S5_SRSHARP1_SHARP_SR2_CTRL2;
-	} else {
+	} else
+#endif
+	{
 		srsharp0_sharp_sr2_ctrl = SRSHARP0_SHARP_SR2_CTRL +
 			sr->sr_reg_offt;
 		srsharp1_sharp_sr2_ctrl = SRSHARP1_SHARP_SR2_CTRL +
@@ -3089,8 +3096,10 @@ void aisr_sr1_nn_enable(u32 enable)
 	struct sr_info_s *sr;
 	u32 sr_reg_offt2;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return aisr_sr1_nn_enable_s5(enable);
+#endif
 
 	if (!cur_dev->aisr_support)
 		return;
@@ -3114,8 +3123,10 @@ void aisr_sr1_nn_enable_sync(u32 enable)
 	if (!cur_dev->aisr_support)
 		return;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return aisr_sr1_nn_enable_sync_s5(enable);
+#endif
 	sr = &sr_info;
 	sr_reg_offt2 = sr->sr_reg_offt2;
 	if (enable)
@@ -3133,8 +3144,10 @@ void aisr_reshape_output(u32 enable)
 	struct sr_info_s *sr = NULL;
 	u32 sr_reg_offt2 = 0;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE)
 		return aisr_reshape_output_s5(enable);
+#endif
 	if (!cur_dev->aisr_support ||
 		!cur_dev->aisr_enable)
 		return;

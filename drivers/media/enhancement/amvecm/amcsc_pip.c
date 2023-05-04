@@ -2125,7 +2125,7 @@ void video_post_process_t7(struct vframe_s *vf,
 
 int get_s5_silce_mode(void)
 {
-	int slice_number;
+	int slice_number = 1;
 
 	if (!is_meson_s5_cpu())
 		return 1;

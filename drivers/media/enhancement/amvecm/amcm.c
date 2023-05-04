@@ -90,7 +90,9 @@ static struct am_regs_s amregs3;
 static struct am_regs_s amregs4;
 static struct am_regs_s amregs5;
 #if CONFIG_AMLOGIC_MEDIA_VIDEO
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct vd_proc_amvecm_info_t *vd_size_info;
+#endif
 #endif
 
 /* extern unsigned int vecm_latch_flag; */
@@ -666,7 +668,7 @@ void amcm_level_sel(unsigned int cm_level)
 
 int size_changed_state(struct vframe_s *vf)
 {
-	int slice_num;
+	int slice_num = 0;
 	int hsize[SLICE_MAX] = {0};
 	int vsize[SLICE_MAX] = {0};
 	static int pre_slice_num;
@@ -676,6 +678,7 @@ int size_changed_state(struct vframe_s *vf)
 	int i;
 
 #if CONFIG_AMLOGIC_MEDIA_VIDEO
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vd_size_info = get_vd_proc_amvecm_info();
 	slice_num = vd_size_info->slice_num;
 	if (slice_num > 0) {
@@ -687,6 +690,7 @@ int size_changed_state(struct vframe_s *vf)
 					i, hsize[i], vsize[i]);
 		}
 	}
+#endif
 #endif
 
 	if (slice_num != pre_slice_num) {
@@ -713,6 +717,7 @@ int cm_force_update_flag(void)
 	return cm_force_flag;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void cm_frame_size_s5(struct vframe_s *vf)
 {
 	unsigned int vpp_size, width, height;
@@ -787,6 +792,7 @@ void cm_frame_size_s5(struct vframe_s *vf)
 		en_flag = 1;
 	}
 }
+#endif
 
 void cm2_frame_size_patch(struct vframe_s *vf,
 	unsigned int width, unsigned int height)
@@ -795,10 +801,14 @@ void cm2_frame_size_patch(struct vframe_s *vf,
 	int addr_port;
 	int data_port;
 
+#if CONFIG_AMLOGIC_MEDIA_VIDEO
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_s5) {
 		cm_frame_size_s5(vf);
 		return;
 	}
+#endif
+#endif
 
 	addr_port = VPP_CHROMA_ADDR_PORT;
 	data_port = VPP_CHROMA_DATA_PORT;

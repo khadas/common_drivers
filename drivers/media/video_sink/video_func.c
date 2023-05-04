@@ -3881,7 +3881,9 @@ static void misc_late_proc(void)
 	/* vsync_rdma_config(); */
 RUN_FIRST_RDMA:
 	vsync_rdma_process();
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	set_vd_pi_input_size();
+#endif
 	enc_line = get_cur_enc_line();
 	cur_line_info = get_cur_line_info();
 	vpp_trace_encline("AFTER-RDMA", cur_line_info->enc_line_start, enc_line);
@@ -4524,8 +4526,10 @@ void post_vsync_process(void)
 
 	if (cur_dev->display_module != S5_DISPLAY_MODULE)
 		blend_reg_conflict_detect();
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	else
 		check_afbc_status();
+#endif
 	if (vd_layer[0].force_disable)
 		atomic_set(&vt_disable_video_done, 1);
 
@@ -5344,11 +5348,14 @@ EXPORT_SYMBOL(set_vdx_blackout_policy);
 
 u8 is_vpp_postblend(void)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 	} else if (cur_dev->display_module == T7_DISPLAY_MODULE) {
 		if (READ_VCBUS_REG(VPP_MISC + cur_dev->vpp_off) & VPP_POSTBLEND_EN)
 			return 1;
-	} else {
+	} else
+#endif
+	{
 		if (READ_VCBUS_REG(VPP_MISC + cur_dev->vpp_off) & VPP_VD1_POSTBLEND)
 			return 1;
 	}

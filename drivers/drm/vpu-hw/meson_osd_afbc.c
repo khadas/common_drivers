@@ -123,6 +123,7 @@ static struct afbc_status_reg_s afbc_status_regs = {
 	VPU_MAFBC_SURFACE_CFG,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct afbc_osd_reg_s afbc_osd_t7_regs[MESON_MAX_OSDS] = {
 	{
 		VPU_MAFBC_HEADER_BUF_ADDR_LOW_S0,
@@ -271,6 +272,7 @@ static struct afbc_status_reg_s afbc_status_s5_regs[2] = {
 		VPP_INTF_OSD3_CTRL,
 	},
 };
+#endif
 
 static int afbc_pix_format(u32 fmt_mode)
 {
@@ -376,6 +378,7 @@ static void osd_afbc_enable(struct meson_vpu_block *vblk,
 	}
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void t7_osd_afbc_enable(struct meson_vpu_block *vblk,
 			       struct rdma_reg_ops *reg_ops,
 			       struct afbc_status_reg_s *reg, u32 osd_index, bool flag)
@@ -390,6 +393,7 @@ static void t7_osd_afbc_enable(struct meson_vpu_block *vblk,
 		global_afbc_mask &= ~(1 << osd_index);
 	}
 }
+#endif
 
 /*only supports one 4k fb at most for osd plane*/
 static
@@ -574,6 +578,7 @@ static void g12a_osd_afbc_set_state(struct meson_vpu_block *vblk,
 	DRM_DEBUG("%s set_state called.\n", afbc->base.name);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void t7_osd_afbc_set_state(struct meson_vpu_block *vblk,
 				  struct meson_vpu_block_state *state,
 				  struct meson_vpu_block_state *old_state)
@@ -1128,6 +1133,7 @@ static void s5_osd_afbc_set_state(struct meson_vpu_block *vblk,
 
 	DRM_DEBUG("%s set_state called.\n", afbc->base.name);
 }
+#endif
 
 static void osd_afbc_dump_register(struct meson_vpu_block *vblk,
 				   struct seq_file *seq)
@@ -1220,6 +1226,7 @@ static void osd_afbc_hw_disable(struct meson_vpu_block *vblk,
 	DRM_DEBUG("%s disable called.\n", afbc->base.name);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void t7_osd_afbc_hw_disable(struct meson_vpu_block *vblk,
 				   struct meson_vpu_block_state *state)
 {
@@ -1229,6 +1236,7 @@ static void t7_osd_afbc_hw_disable(struct meson_vpu_block *vblk,
 					afbc->status_regs, vblk->index, 0);
 	DRM_DEBUG("%s disable called.\n", afbc->base.name);
 }
+#endif
 
 static void osd_afbc_hw_init(struct meson_vpu_block *vblk)
 {
@@ -1246,6 +1254,7 @@ static void osd_afbc_hw_init(struct meson_vpu_block *vblk)
 	DRM_DEBUG("%s hw_init called.\n", afbc->base.name);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void t7_osd_afbc_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_pipeline *pipeline = vblk->pipeline;
@@ -1291,6 +1300,7 @@ static void s5_osd_afbc_hw_init(struct meson_vpu_block *vblk)
 
 	DRM_DEBUG("%s hw_init called.\n", afbc->base.name);
 }
+#endif
 
 void arm_fbc_start(struct meson_vpu_pipeline_state *pipeline_state)
 {
@@ -1339,6 +1349,7 @@ struct meson_vpu_block_ops afbc_ops = {
 	.init = osd_afbc_hw_init,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct meson_vpu_block_ops t7_afbc_ops = {
 	.check_state = osd_afbc_check_state,
 	.update_state = t7_osd_afbc_set_state,
@@ -1365,3 +1376,4 @@ struct meson_vpu_block_ops s5_afbc_ops = {
 	.dump_register = osd_afbc_dump_register,
 	.init = s5_osd_afbc_hw_init,
 };
+#endif

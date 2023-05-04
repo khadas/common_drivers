@@ -1463,10 +1463,13 @@ void vpp_vd_adj1_contrast(signed int cont_val, struct vframe_s *vf)
 		}
 	}
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_s5) {
 		ve_contrast_set(cont_val, VE_VADJ1, WR_DMA);
 		return;
-	} else if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
+	} else
+#endif
+	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		vd1_contrast = (READ_VPP_REG(VPP_VADJ1_Y_2) & 0x7ff00) |
 						(cont_val << 0);
 		//VSYNC_WRITE_VPP_REG(VPP_VADJ1_Y_2, vd1_contrast);

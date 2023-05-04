@@ -248,6 +248,7 @@ static void config_video_mapping(enum hdmi_colorspace cs,
 /* reset HDMITX APB & TX */
 void hdmitx21_sys_reset(void)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	switch (hdev->data->chip_type) {
@@ -260,6 +261,7 @@ void hdmitx21_sys_reset(void)
 	default:
 		break;
 	}
+#endif
 }
 
 bool hdmitx21_uboot_already_display(struct hdmitx_dev *hdev)
@@ -521,15 +523,20 @@ static void hdmitx_phy_pre_init(struct hdmitx_dev *hdev)
 	/* only need for s5 or later */
 	if (hdev->data->chip_type <= MESON_CPU_ID_T7)
 		return;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	hdmitx_s5_phy_pre_init(hdev);
+#endif
 }
 
 static void set_phy_by_mode(u32 mode)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	u32 tmds_clk = 0;
+#endif
 
 	switch (hdev->data->chip_type) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case MESON_CPU_ID_T7:
 		set21_phy_by_mode_t7(mode);
 		break;
@@ -538,6 +545,7 @@ static void set_phy_by_mode(u32 mode)
 		pr_info("%s[%d] tmds_clk %d\n", __func__, __LINE__, tmds_clk);
 		hdmitx_set_s5_phypara(hdev->frl_rate, tmds_clk);
 		break;
+#endif
 	default:
 		pr_info("%s: Not match chip ID\n", __func__);
 		break;

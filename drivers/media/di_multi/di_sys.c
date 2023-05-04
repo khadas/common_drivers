@@ -3668,6 +3668,7 @@ static const struct file_operations di_fops = {
 
 //#define ARY_MATCH (1)
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct di_meson_data  data_g12a = {
 	.name = "dim_g12a",
 	.ic_id	= DI_IC_ID_G12A,
@@ -3716,12 +3717,14 @@ static const struct di_meson_data  data_t5d_vb = {
 	.ic_id	= DI_IC_ID_T5DB,
 	.support = IC_SUPPORT_PRE_VPP_LINK
 };
+#endif
 
 static const struct di_meson_data  data_s4 = {
 	.name = "dim_s4",
 	.ic_id	= DI_IC_ID_S4,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct di_meson_data  data_t3 = {
 	.name = "dim_t3",//t5w sub_v=1,t3 costdown
 	.ic_id	= DI_IC_ID_T3,
@@ -3738,10 +3741,12 @@ static const struct di_meson_data  data_s5 = {
 		   IC_SUPPORT_DW	|
 		   IC_SUPPORT_TB
 };
+#endif
 
 /* #ifdef CONFIG_USE_OF */
 static const struct of_device_id amlogic_deinterlace_dt_match[] = {
 	/*{ .compatible = "amlogic, deinterlace", },*/
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{	.compatible = "amlogic, dim-g12a",
 		.data = &data_g12a,
 	}, {	.compatible = "amlogic, dim-g12b",
@@ -3760,12 +3765,16 @@ static const struct of_device_id amlogic_deinterlace_dt_match[] = {
 		.data = &data_t5d_va,
 	}, {	.compatible = "amlogic, dim-t5dvb",
 		.data = &data_t5d_vb,
-	}, {	.compatible = "amlogic, dim-s4",
+	},
+#endif
+	{	.compatible = "amlogic, dim-s4",
 		.data = &data_s4,
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	}, {	.compatible = "amlogic, dim-t3",
 		.data = &data_t3,
 	}, {	.compatible = "amlogic, dim-s5",
 		.data = &data_s5,
+#endif
 	}, {}
 };
 

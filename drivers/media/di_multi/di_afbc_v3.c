@@ -223,9 +223,11 @@ static bool is_cfg(enum EAFBC_CFG cfg_cmd)
 		if (cfg_cmd > EAFBC_CFG_INP_AFBC)
 			return false;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else if (pafd_ctr->fb.ver == AFBCD_V4) {
 		if (cfg_cmd > EAFBC_CFG_MEM)
 			return false;
+#endif
 	}
 
 	ret = false;
@@ -527,6 +529,7 @@ static const unsigned int reg_afbc[AFBC_DEC_NUB][AFBC_REG_INDEX_NUB] = {
 
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const unsigned int reg_afbc_v5[AFBC_DEC_NUB_V5][AFBC_REG_INDEX_NUB] = {
 	[EAFBC_DEC0] = {
 		AFBCDM_VD1_ENABLE,
@@ -692,6 +695,7 @@ static const unsigned int reg_afbc_v5[AFBC_DEC_NUB_V5][AFBC_REG_INDEX_NUB] = {
 	},
 
 };
+#endif
 
 /*keep order with struct afbce_bits_s*/
 static const unsigned int reg_afbc_e[AFBC_ENC_NUB_V5][DIM_AFBCE_NUB] = {
@@ -805,12 +809,16 @@ static const unsigned int reg_afbc_e[AFBC_ENC_NUB_V5][DIM_AFBCE_NUB] = {
 
 static const unsigned int *afbc_get_addrp(enum EAFBC_DEC eidx)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct afbcd_ctr_s *pafd_ctr = di_get_afd_ctr();
 
 	if (pafd_ctr->fb.ver < AFBCD_V5)
 		return &reg_afbc[eidx][0];
 
 	return &reg_afbc_v5[eidx][0];
+#else
+	return &reg_afbc[eidx][0];
+#endif
 }
 
 static void afbcd_reg_bwr(enum EAFBC_DEC eidx, enum EAFBC_REG adr_idx,
@@ -844,16 +852,20 @@ static void dump_afbcd_reg(void)
 	for (i = 0; i < AFBC_REG_INDEX_NUB; i++) {
 		if (pafd_ctr->fb.ver < AFBCD_V5)
 			afbc_reg = reg_afbc[EAFBC_DEC0][i];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		else
 			afbc_reg = reg_afbc_v5[EAFBC_DEC0][i];
+#endif
 		pr_info("reg 0x%x val:0x%x\n", afbc_reg, reg_rd(afbc_reg));
 	}
 	pr_info("---- dump afbc EAFBC_DEC1 reg -----\n");
 	for (i = 0; i < AFBC_REG_INDEX_NUB; i++) {
 		if (pafd_ctr->fb.ver < AFBCD_V5)
 			afbc_reg = reg_afbc[EAFBC_DEC1][i];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		else
 			afbc_reg = reg_afbc_v5[EAFBC_DEC1][i];
+#endif
 		pr_info("reg 0x%x val:0x%x\n", afbc_reg, reg_rd(afbc_reg));
 	}
 	pr_info("reg 0x%x val:0x%x\n",
@@ -946,10 +958,14 @@ static const unsigned int *afbc_get_inp_base(void)
 
 	if (!pafd_ctr)
 		return NULL;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (pafd_ctr->fb.ver < AFBCD_V5)
 		return &reg_afbc[pafd_ctr->fb.pre_dec][0];
 
 	return &reg_afbc_v5[pafd_ctr->fb.pre_dec][0];
+#else
+	return &reg_afbc[pafd_ctr->fb.pre_dec][0];
+#endif
 }
 
 static bool afbc_is_supported(void)
@@ -1024,6 +1040,7 @@ static const struct afbc_fb_s cafbc_v5_sc2 = {
 	.if2_dec = EAFBC_DEC_IF2,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct afbc_fb_s cafbc_v4_tm2 = {
 	.ver = AFBCD_V4,
 	.sp.b.inp		= 1,
@@ -1078,8 +1095,10 @@ static const struct afbc_fb_s cafbc_v3_tl1 = {
 	.if1_dec = 0,
 	.if2_dec = 0
 };
+#endif
 
 static const union afbc_blk_s cafbc_cfg_mode[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	[AFBC_WK_NONE] = {
 		.b.inp		= 0,
 		.b.mem		= 0,
@@ -1090,6 +1109,7 @@ static const union afbc_blk_s cafbc_cfg_mode[] = {
 		.b.enc_nr		= 0,
 		.b.enc_wr		= 0,
 	},
+#endif
 	[AFBC_WK_IN] = {
 		.b.inp		= 1,
 		.b.mem		= 0,
@@ -1099,6 +1119,7 @@ static const union afbc_blk_s cafbc_cfg_mode[] = {
 		.b.if2		= 0,
 		.b.enc_nr		= 0,
 		.b.enc_wr		= 0,
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	},
 	[AFBC_WK_P] = {
 		.b.inp		= 1,
@@ -1139,6 +1160,7 @@ static const union afbc_blk_s cafbc_cfg_mode[] = {
 		.b.if2		= 1,
 		.b.enc_nr		= 1,
 		.b.enc_wr		= 0,
+#endif
 	}
 };
 
@@ -1323,6 +1345,7 @@ static void afbc_get_mode_from_cfg(void)
 		else if (is_cfg(EAFBC_CFG_6DEC_1ENC3))
 			pafd_ctr->fb.mode = AFBC_WK_6D_NV21;
 	} else {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (pafd_ctr->fb.ver >= AFBCD_V5)
 			pafd_ctr->fb.mode = AFBC_WK_6D_NV21;
 		else if (pafd_ctr->fb.ver >= AFBCD_V4)
@@ -1330,6 +1353,7 @@ static void afbc_get_mode_from_cfg(void)
 		else if (pafd_ctr->fb.ver >= AFBCD_V1)
 			pafd_ctr->fb.mode = AFBC_WK_IN;
 		else
+#endif
 			pafd_ctr->fb.mode = AFBC_WK_NONE;
 	}
 	dim_print("%s:mode[%d]:cfg[0x%x]:\n",
@@ -1360,6 +1384,7 @@ static void afbc_prob(unsigned int cid, struct afd_s *p)
 		else
 			pafd_ctr->fb.mode = AFBC_WK_P;
 		//AFBC_WK_6D_ALL;//AFBC_WK_IN;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else if (IS_IC(cid, T5DB)) {
 		if (cfgg(T5DB_AFBCD_EN))
 			afbc_cfg = 0;
@@ -1406,6 +1431,7 @@ static void afbc_prob(unsigned int cid, struct afd_s *p)
 		pafd_ctr->fb.sp.b.mem = 0;
 		pafd_ctr->fb.pre_dec = EAFBC_DEC0;
 		pafd_ctr->fb.mode = AFBC_WK_NONE;
+#endif
 	}
 	/*******************************
 	 * cfg for debug:
@@ -2981,6 +3007,7 @@ static void afbc_sw_tl2(bool en, const struct reg_acc *op_in)
 	}
 	if (pafd_ctr->fb.mode == AFBC_WK_IN) {
 		afbc_tm2_sw_inp(en, op_in);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else if (pafd_ctr->fb.mode == AFBC_WK_P) {
 	#ifdef MARK_SC2
 		afbc_tm2_sw_inp(en);
@@ -2993,6 +3020,7 @@ static void afbc_sw_tl2(bool en, const struct reg_acc *op_in)
 			afbce_tm2_sw(en, op_in);
 		}
 	#endif
+#endif
 	}
 }
 
@@ -3562,7 +3590,9 @@ void dbg_afd_reg_v3(struct seq_file *s, enum EAFBC_DEC eidx)
 	int i;
 	unsigned int addr;
 	struct afbcd_ctr_s *pafd_ctr = di_get_afd_ctr();
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	unsigned int regs_ofst;
+#endif
 
 	seq_printf(s, "dump reg:afd[%d]\n", eidx);
 
@@ -3576,6 +3606,7 @@ void dbg_afd_reg_v3(struct seq_file *s, enum EAFBC_DEC eidx)
 			addr = reg_afbc[eidx][i];
 			seq_printf(s, "reg[0x%x]=0x%x.\n", addr, reg_rd(addr));
 		}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		for (i = 0; i < AFBC_REG_INDEX_NUB; i++) {
 			addr = reg_afbc_v5[eidx][i];
@@ -3591,6 +3622,7 @@ void dbg_afd_reg_v3(struct seq_file *s, enum EAFBC_DEC eidx)
 			addr = regs_ofst + AFBCDM_ROT_SCOPE;
 			seq_printf(s, "reg[0x%x]=0x%x.\n", addr, reg_rd(addr));
 		}
+#endif
 	}
 }
 EXPORT_SYMBOL(dbg_afd_reg_v3);

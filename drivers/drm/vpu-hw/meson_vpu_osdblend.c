@@ -22,7 +22,9 @@ MODULE_PARM_DESC(align_proc, "align_proc");
 #define BLEND_DOUT_DEF_HSIZE 3840
 #define BLEND_DOUT_DEF_VSIZE 2160
 
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 static int osd_enable[MESON_MAX_OSDS] = {1, 0, 1, 0};
+#endif
 
 static struct osdblend_reg_s osdblend_reg = {
 	VIU_OSD_BLEND_CTRL,
@@ -41,6 +43,7 @@ static struct osdblend_reg_s osdblend_reg = {
 	VIU_OSD_BLEND_CTRL1,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct osdblend_reg_s osdblend_s5_reg = {
 	VIU_OSD_BLEND_CTRL_S5,
 	VIU_OSD_BLEND_DIN0_SCOPE_H_S5,
@@ -57,6 +60,7 @@ static struct osdblend_reg_s osdblend_s5_reg = {
 	VIU_OSD_BLEND_BLEND1_SIZE_S5,
 	VIU_OSD_BLEND_CTRL1_S5,
 };
+#endif
 
 /*0:din0 go through blend0,1:bypass blend0,dirct to Dout0*/
 static void osd_din0_switch_set(struct meson_vpu_block *vblk,
@@ -253,6 +257,7 @@ static void osd_dv_core_size_set(u32 h_size, u32 v_size)
 #endif
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void osd_dv_core_size_set_s5(u32 h_size, u32 v_size, int i)
 {
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
@@ -269,6 +274,7 @@ static void osd_dv_core_size_set_s5(u32 h_size, u32 v_size, int i)
 	update_graphic_width_height(h_size, v_size, 0);
 #endif
 }
+#endif
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 /* -1: invalid osd index
@@ -567,12 +573,14 @@ static int osdblend_check_state(struct meson_vpu_block *vblk,
 	return 0;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int s5_osdblend_check_state(struct meson_vpu_block *vblk,
 				struct meson_vpu_block_state *state,
 		struct meson_vpu_pipeline_state *mvps)
 {
 	return 0;
 }
+#endif
 
 static void osdblend_set_state(struct meson_vpu_block *vblk,
 			       struct meson_vpu_block_state *state,
@@ -606,6 +614,7 @@ static void osdblend_set_state(struct meson_vpu_block *vblk,
 	DRM_DEBUG("%s set_state done.\n", osdblend->base.name);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void s5_osdblend_set_state(struct meson_vpu_block *vblk,
 			       struct meson_vpu_block_state *state,
 				   struct meson_vpu_block_state *old_state)
@@ -794,6 +803,7 @@ static void s5_osdblend_set_state(struct meson_vpu_block *vblk,
 
 	DRM_DEBUG("%s set_state done.\n", osdblend->base.name);
 }
+#endif
 
 static void osdblend_hw_enable(struct meson_vpu_block *vblk,
 			       struct meson_vpu_block_state *state)
@@ -894,6 +904,7 @@ static void osdblend_hw_init(struct meson_vpu_block *vblk)
 	DRM_DEBUG("%s hw_init called.\n", osdblend->base.name);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void s5_osdblend_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_osdblend *osdblend = to_osdblend_block(vblk);
@@ -913,6 +924,7 @@ static void s5_osdblend_hw_init(struct meson_vpu_block *vblk)
 
 	DRM_DEBUG("%s hw_init called.\n", osdblend->base.name);
 }
+#endif
 
 struct meson_vpu_block_ops osdblend_ops = {
 	.check_state = osdblend_check_state,
@@ -923,6 +935,7 @@ struct meson_vpu_block_ops osdblend_ops = {
 	.init = osdblend_hw_init,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct meson_vpu_block_ops s5_osdblend_ops = {
 	.check_state = s5_osdblend_check_state,
 	.update_state = s5_osdblend_set_state,
@@ -931,3 +944,4 @@ struct meson_vpu_block_ops s5_osdblend_ops = {
 	.dump_register = osdblend_dump_register,
 	.init = s5_osdblend_hw_init,
 };
+#endif

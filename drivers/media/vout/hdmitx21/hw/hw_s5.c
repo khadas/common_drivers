@@ -85,6 +85,7 @@ void disable_hdmitx_s5_plls(struct hdmitx_dev *hdev)
 	hd21_write_reg(CLKCTRL_GP2PLL_CTRL0, 0);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* htx pll VCO output: (3G, 6G), for tmds */
 static void set_s5_htxpll_clk_other(const u32 clk, const bool frl_en)
 {
@@ -275,6 +276,7 @@ void set_frl_hpll_od(enum frl_rate_enum rate)
 		break;
 	};
 }
+#endif
 
 // fpll: 2376M  2376/24=99=0x63
 //       2376/16=148.5M
@@ -368,6 +370,7 @@ void hdmitx_set_s5_clkdiv(struct hdmitx_dev *hdev)
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, hdev->frl_rate ? 4 : 0, 16, 3);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void hdmitx21_phy_bandgap_en_s5(void)
 {
 	u32 val = 0;
@@ -536,6 +539,7 @@ void set21_hpll_sspll_s5(enum hdmi_vic vic)
 		break;
 	}
 }
+#endif
 
 void hdmitx21_s5_clk_div_rst(u32 clk_idx)
 {

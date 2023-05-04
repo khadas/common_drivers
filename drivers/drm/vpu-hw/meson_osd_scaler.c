@@ -73,6 +73,7 @@ static struct osd_scaler_reg_s osd_scaler_reg[HW_OSD_SCALER_NUM] = {
 	}
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct osd_scaler_reg_s osd_scaler_t7_reg[HW_OSD_SCALER_NUM] = {
 	{
 		T7_VPP_OSD_SCALE_COEF_IDX,
@@ -206,6 +207,7 @@ static struct osd_scaler_reg_s osd_scaler_s5_reg[HW_OSD_SCALER_NUM] = {
 		OSD4_PROC_SCO_V_START_END,
 	},
 };
+#endif
 
 static unsigned int __osd_filter_coefs_bicubic_sharp[] = {
 	0x01fa008c, 0x01fa0100, 0xff7f0200, 0xfe7f0300,
@@ -1075,8 +1077,10 @@ static void scaler_hw_init(struct meson_vpu_block *vblk)
 
 	if (vblk->pipeline->osd_version != OSD_V7)
 		scaler->reg = &osd_scaler_reg[vblk->index];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	else
 		scaler->reg = &osd_scaler_t7_reg[vblk->index];
+#endif
 	scaler->linebuffer = OSD_SCALE_LINEBUFFER;
 	scaler->bank_length = OSD_SCALE_BANK_LENGTH;
 
@@ -1084,6 +1088,7 @@ static void scaler_hw_init(struct meson_vpu_block *vblk)
 	DRM_DEBUG("%s hw_init called.\n", scaler->base.name);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void s5_scaler_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_scaler *scaler = to_scaler_block(vblk);
@@ -1095,6 +1100,7 @@ static void s5_scaler_hw_init(struct meson_vpu_block *vblk)
 	meson_vpu_write_reg(scaler->reg->vpp_osd_sc_ctrl0, 0);
 	DRM_DEBUG("%s hw_init called.\n", scaler->base.name);
 }
+#endif
 
 struct meson_vpu_block_ops scaler_ops = {
 	.check_state = scaler_check_state,
@@ -1105,6 +1111,7 @@ struct meson_vpu_block_ops scaler_ops = {
 	.init = scaler_hw_init,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct meson_vpu_block_ops s5_scaler_ops = {
 	.check_state = scaler_check_state,
 	.update_state = scaler_set_state,
@@ -1113,3 +1120,4 @@ struct meson_vpu_block_ops s5_scaler_ops = {
 	.dump_register = scaler_dump_register,
 	.init = s5_scaler_hw_init,
 };
+#endif

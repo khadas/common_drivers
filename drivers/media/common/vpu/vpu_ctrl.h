@@ -40,6 +40,7 @@ static struct fclk_div_s fclk_div_table_g12a[] = {
 	{FCLK_DIV_MAX, 8,    1},
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct fclk_div_s fclk_div_table_c3[] = {
 	/* id,         mux,  div */
 	{FCLK_DIV3,    1,    3},
@@ -48,6 +49,7 @@ static struct fclk_div_s fclk_div_table_c3[] = {
 	{FCLK_DIV7,    7,    7},
 	{FCLK_DIV_MAX, 8,    1},
 };
+#endif
 
 static struct vpu_clk_s vpu_clk_table[] = {
 	/* frequency   clk_mux       div */
@@ -73,6 +75,7 @@ static unsigned int vcbus_test_reg[VCBUS_REG_CNT_MAX] = {
 	VPU_VPU_PWM_V0
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static unsigned int vcbus_test_reg_c3[VCBUS_REG_CNT_MAX] = {
 	VPU_VOUT_BLEND_DUMDATA,
 	VPP_VD1_MATRIX_OFFSET0_1,
@@ -108,6 +111,7 @@ static struct vpu_ctrl_s vpu_iso_sm1[] = {
 	{0,   AO_RTI_GEN_PWR_ISO0,    1,   8,   1},
 	{0,   VPU_REG_END,            0,   0,   0},
 };
+#endif
 
 /* ******************************************************* */
 /*                 VPU module init table                 */
@@ -178,6 +182,7 @@ static struct vpu_ctrl_s vpu_mem_pd_sc2[] = {
 	{VPU_MOD_MAX,         VPU_REG_END,     0,    0,   0},
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct vpu_ctrl_s vpu_mem_pd_t5[] = {
 	/* vpu module,        reg,                val,  bit, len */
 	{VPU_VIU_OSD1,        PWRCTRL_MEM_PD3_T5, 0x3,  0,   2},
@@ -324,6 +329,7 @@ static struct vpu_ctrl_s vpu_mem_pd_sm1[] = {
 	{VPU_AXI_WR0,         HHI_VPU_MEM_PD_REG4_SM1, 0x3,  2,   2},
 	{VPU_MOD_MAX,         VPU_REG_END,         0,    0,   0},
 };
+#endif
 
 /* ******************************************************* */
 /*                 VPU pwrctrl id table                 */
@@ -333,6 +339,7 @@ static unsigned int vpu_pwrctrl_id_table[] = {
 	VPU_PWR_ID_END
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static unsigned int vpu_pwrctrl_id_table_t7[] = {
 	PM_VPU_HDMI_T7,
 	PM_VI_CLK1_T7,
@@ -380,5 +387,6 @@ static struct vpu_reset_s vpu_reset_g12a[] = {
 	{RESET7_LEVEL, (1 << 7)},
 	{VPU_REG_END, 0},
 };
+#endif
 
 #endif

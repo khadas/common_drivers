@@ -110,6 +110,7 @@ static struct dummy_venc_driver_s *dummy_encl_drv;
  * common function
  * **********************************************************
  */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void dummy_venc_sel_t7(struct dummy_venc_driver_s *venc_drv, unsigned int venc_sel)
 {
 	unsigned int offset, reg_ctrl_sel = 0xff;
@@ -138,6 +139,7 @@ static void dummy_venc_sel_t7(struct dummy_venc_driver_s *venc_drv, unsigned int
 
 	vout_vcbus_setb(VPU_VENC_CTRL + offset, reg_ctrl_sel, 0, 2);
 }
+#endif
 
 /* **********************************************************
  * dummy_encp support
@@ -184,6 +186,7 @@ static struct vinfo_s dummy_encp_vinfo[] = {
 	}
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct vinfo_s dummy_encp_vinfo_t7[] = {
 	{
 		.name              = "dummy_p",
@@ -224,6 +227,7 @@ static struct vinfo_s dummy_encp_vinfo_t7[] = {
 		.vout_device       = NULL,
 	}
 };
+#endif
 
 static void dummy_encp_venc_set(struct dummy_venc_driver_s *venc_drv)
 {
@@ -361,6 +365,7 @@ static void dummy_encp_clk_ctrl(struct dummy_venc_driver_s *venc_drv, int flag)
 	}
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void dummy_encp_clk_gate_switch(struct dummy_venc_driver_s *venc_drv, int flag)
 {
 	int ret = 0;
@@ -405,6 +410,7 @@ static void dummy_encp_clk_gate_switch(struct dummy_venc_driver_s *venc_drv, int
 	if (ret)
 		VOUTERR("%s: ret=0x%x\n", __func__, ret);
 }
+#endif
 
 static void dummy_encp_vinfo_update(struct dummy_venc_driver_s *venc_drv)
 {
@@ -509,6 +515,7 @@ static enum vmode_e dummy_encp_validate_vmode(char *name, unsigned int frac, voi
 		return VMODE_MAX;
 
 	venc_index = venc_drv->vdata->default_venc_index;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (venc_drv->vdata->projection_valid) {
 		for (i = 0; i < 2; i++) {
 			if (strcmp(dummy_encp_vinfo_t7[i].name, name) == 0) {
@@ -524,6 +531,7 @@ static enum vmode_e dummy_encp_validate_vmode(char *name, unsigned int frac, voi
 			}
 		}
 	} else {
+#endif
 		for (i = 0; i < 2; i++) {
 			if (strcmp(dummy_encp_vinfo[i].name, name) == 0) {
 				venc_drv->vinfo = &dummy_encp_vinfo[i];
@@ -533,7 +541,9 @@ static enum vmode_e dummy_encp_validate_vmode(char *name, unsigned int frac, voi
 				break;
 			}
 		}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	}
+#endif
 
 	if (!find_mode)
 		return VMODE_MAX;
@@ -829,6 +839,7 @@ static void dummy_enci_clk_ctrl(struct dummy_venc_driver_s *venc_drv, int flag)
 	}
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void dummy_enci_clk_gate_switch(struct dummy_venc_driver_s *venc_drv, int flag)
 {
 	int ret = 0;
@@ -873,6 +884,7 @@ static void dummy_enci_clk_gate_switch(struct dummy_venc_driver_s *venc_drv, int
 	if (ret)
 		VOUTERR("%s: ret=0x%x\n", __func__, ret);
 }
+#endif
 
 static struct vinfo_s *dummy_enci_get_current_info(void *data)
 {
@@ -1179,6 +1191,7 @@ static void dummy_encl_clk_ctrl(struct dummy_venc_driver_s *venc_drv, int flag)
 	}
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void dummy_encl_clk_gate_switch(struct dummy_venc_driver_s *venc_drv, int flag)
 {
 	int ret = 0;
@@ -1215,6 +1228,7 @@ static void dummy_encl_clk_gate_switch(struct dummy_venc_driver_s *venc_drv, int
 	if (ret)
 		VOUTERR("%s: ret=0x%x\n", __func__, ret);
 }
+#endif
 
 static struct vinfo_s *dummy_encl_get_current_info(void *data)
 {
@@ -1751,6 +1765,7 @@ static int dummy_venc_remove_class(void)
 	return 0;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* ********************************************************* */
 static void dummy_venc_clktree_probe(struct device *dev)
 {
@@ -1837,6 +1852,7 @@ static struct venc_config_s dummy_venc_conf_dft = {
 	.venc_index = 0,
 	.venc_offset = 0,
 };
+#endif
 
 static struct venc_config_s dummy_venc_conf_sc2 = {
 	.vid_clk_ctrl_reg = CLKCTRL_VID_CLK_CTRL,
@@ -1849,6 +1865,7 @@ static struct venc_config_s dummy_venc_conf_sc2 = {
 	.venc_offset = 0,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct venc_config_s dummy_venc_conf_s5 = {
 	/* ENC0 */
 	.vid_clk_ctrl_reg = CLKCTRL_VID_CLK0_CTRL,
@@ -1926,6 +1943,7 @@ static struct dummy_venc_data_s dummy_venc_match_data_dft = {
 	.encl_clk_gate_switch = dummy_encl_clk_gate_switch,
 	.venc_sel = NULL,
 };
+#endif
 
 static struct dummy_venc_data_s dummy_venc_match_data_sc2 = {
 	.vconf = &dummy_venc_conf_sc2,
@@ -1942,6 +1960,7 @@ static struct dummy_venc_data_s dummy_venc_match_data_sc2 = {
 	.venc_sel = NULL,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct dummy_venc_data_s dummy_venc_match_data_t7 = {
 	.vconf = &dummy_venc_conf_t7_0,
 
@@ -1985,8 +2004,10 @@ static struct dummy_venc_data_s dummy_venc_match_data_s5 = {
 	.enci_clk_gate_switch = NULL,
 	.encl_clk_gate_switch = NULL,
 };
+#endif
 
 static const struct of_device_id dummy_venc_dt_match_table[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, dummy_venc",
 		.data = &dummy_venc_match_data_dft,
@@ -1995,10 +2016,12 @@ static const struct of_device_id dummy_venc_dt_match_table[] = {
 		.compatible = "amlogic, dummy_venc_sc2",
 		.data = &dummy_venc_match_data_sc2,
 	},
+#endif
 	{
 		.compatible = "amlogic, dummy_venc_s4",
 		.data = &dummy_venc_match_data_sc2,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, dummy_venc_t7",
 		.data = &dummy_venc_match_data_t7,
@@ -2019,6 +2042,7 @@ static const struct of_device_id dummy_venc_dt_match_table[] = {
 		.compatible = "amlogic, dummy_venc_s5",
 		.data = &dummy_venc_match_data_s5,
 	},
+#endif
 	{}
 };
 
@@ -2036,6 +2060,7 @@ static void dummy_venc_dts_config(struct device_node *of_node,
 	ret = of_property_read_u32(of_node, "default_venc_index", &temp);
 	if (ret == 0) {
 		vdata->default_venc_index = temp;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		switch (vdata->chip_type) {
 		case DUMMY_VENC_T7:
 			if (vdata->default_venc_index == 1)
@@ -2048,6 +2073,7 @@ static void dummy_venc_dts_config(struct device_node *of_node,
 		default:
 			break;
 		}
+#endif
 		VOUTPR("%s: default_venc_index = %d\n", __func__, temp);
 	}
 }

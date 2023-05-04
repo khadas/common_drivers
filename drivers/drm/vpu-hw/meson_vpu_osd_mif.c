@@ -119,6 +119,7 @@ static struct osd_mif_reg_s osd_mif_reg[HW_OSD_MIF_NUM] = {
 	}
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct osd_mif_reg_s s5_osd_mif_reg[HW_OSD_MIF_NUM] = {
 	{
 		VIU_OSD1_CTRL_STAT_S5,
@@ -209,6 +210,7 @@ static struct osd_mif_reg_s s5_osd_mif_reg[HW_OSD_MIF_NUM] = {
 		VIU_OSD4_DIMM_CTRL_S5,
 	},
 };
+#endif
 
 static unsigned int osd_canvas[3][2];
 static u32 osd_canvas_index[3] = {0, 0, 0};
@@ -1077,6 +1079,7 @@ static void osd_dump_register(struct meson_vpu_block *vblk,
 	seq_printf(seq, "%s_%-35s\t0x%08X\n", buff, "DIMM_CTRL:", value);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 static void osd_secure_cb(u32 arg)
 {
@@ -1088,6 +1091,7 @@ static void osd_secure_cb(u32 arg)
 	void *osd_secure_op[VPP_TOP_MAX] = {meson_vpu_write_reg_bits,
 					    meson_vpu1_write_reg_bits,
 					    meson_vpu2_write_reg_bits};
+#endif
 #endif
 
 static void osd_hw_init(struct meson_vpu_block *vblk)
@@ -1115,6 +1119,7 @@ static void osd_hw_init(struct meson_vpu_block *vblk)
 	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void t7_osd_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_pipeline *pipeline;
@@ -1165,6 +1170,7 @@ static void s5_osd_hw_init(struct meson_vpu_block *vblk)
 
 	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
 }
+#endif
 
 static void osd_hw_fini(struct meson_vpu_block *vblk)
 {
@@ -1196,6 +1202,7 @@ struct meson_vpu_block_ops osd_ops = {
 	.fini = osd_hw_fini,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct meson_vpu_block_ops t7_osd_ops = {
 	.check_state = osd_check_state,
 	.update_state = osd_set_state,
@@ -1215,3 +1222,4 @@ struct meson_vpu_block_ops s5_osd_ops = {
 	.init = s5_osd_hw_init,
 	.fini = osd_hw_fini,
 };
+#endif

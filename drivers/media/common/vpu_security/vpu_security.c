@@ -61,6 +61,7 @@ static struct vpu_sec_reg_s reg_v1[] = {
 	{VIU_DATA_SEC, 1, 8, 1}  /* 08. VPP_TOP */
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct vpu_sec_reg_s reg_v2[] = {
 	{MALI_AFBCD_TOP_CTRL,  1, 17, 1}, /* 00. OSD1 */
 	{MALI_AFBCD_TOP_CTRL,  1, 22, 1}, /* 01. OSD2 */
@@ -112,11 +113,13 @@ static struct vpu_sec_reg_s reg_v4[] = {
 static struct sec_dev_data_s vpu_security_sc2 = {
 	.version = VPU_SEC_V1,
 };
+#endif
 
 static struct sec_dev_data_s vpu_security_s4 = {
 	.version = VPU_SEC_V1,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct sec_dev_data_s vpu_security_t7 = {
 	.version = VPU_SEC_V2,
 };
@@ -128,16 +131,20 @@ static struct sec_dev_data_s vpu_security_t3 = {
 static struct sec_dev_data_s vpu_security_s5 = {
 	.version = VPU_SEC_V4,
 };
+#endif
 
 static const struct of_device_id vpu_security_dt_match[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, meson-sc2, vpu_security",
 		.data = &vpu_security_sc2,
 	},
+#endif
 	{
 		.compatible = "amlogic, meson-s4, vpu_security",
 		.data = &vpu_security_s4,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, meson-t7, vpu_security",
 		.data = &vpu_security_t7,
@@ -150,6 +157,7 @@ static const struct of_device_id vpu_security_dt_match[] = {
 		.compatible = "amlogic, meson-s5, vpu_security",
 		.data = &vpu_security_s5,
 	},
+#endif
 	{}
 };
 
@@ -204,9 +212,11 @@ static void secure_reg_update(struct vpu_secure_ins *ins,
 			      u32 vpp_index)
 {
 	enum vpu_security_version_e version;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int i, en = 0, reg_val = 0;
 	int reg_size = 0;
 	struct vpu_sec_reg_s *reg_item = NULL;
+#endif
 
 	if (!is_vpu_secure_support())
 		return;
@@ -222,6 +232,7 @@ static void secure_reg_update(struct vpu_secure_ins *ins,
 		ins->reg_wr_op[vpp_index](reg_v1[0].reg,
 					  change->current_val,
 					  0, ARRAY_SIZE(reg_v1));
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else if (version >= VPU_SEC_V2 && version < VPU_SEC_MAX) {
 		if (version == VPU_SEC_V2) {
 			reg_size = ARRAY_SIZE(reg_v2);
@@ -248,6 +259,7 @@ static void secure_reg_update(struct vpu_secure_ins *ins,
 							  reg_item[i].len);
 			}
 		}
+#endif
 	} else {
 		pr_err("%s, wrong version\n", __func__);
 		return;
@@ -560,7 +572,9 @@ irqreturn_t vpu_security_isr(int irq, void *dev_id)
 	struct vpu_secure_ins *ins = NULL;
 	int i;
 	enum vpu_security_version_e version;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	u32 error_bit = 0;
+#endif
 
 	version = vpu_secure_version();
 
@@ -568,6 +582,7 @@ irqreturn_t vpu_security_isr(int irq, void *dev_id)
 	if (version == VPU_SEC_V1) {
 		if (log_level >= 1)
 			pr_err("sec: mismatch(%d)\n", info->mismatch_cnt);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else if (version == VPU_SEC_V2) {
 		error_bit = READ_VCBUS_REG(VPU_SEC_INT_STAT);
 		for (i = 0; i < VPP_TOP_MAX; i++) {
@@ -578,6 +593,7 @@ irqreturn_t vpu_security_isr(int irq, void *dev_id)
 				WRITE_VCBUS_REG_BITS(VPU_SEC_INT_STAT, 1, i, 1);
 			}
 		}
+#endif
 	}
 
 	for (i = 0; i < MODULE_NUM; i++) {

@@ -145,6 +145,7 @@ void hdcp_enable_intrs(bool en)
 
 static void hdmitx_phy_bandgap_en(struct hdmitx_dev *hdev)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
 		hdmitx21_phy_bandgap_en_t7();
@@ -152,6 +153,7 @@ static void hdmitx_phy_bandgap_en(struct hdmitx_dev *hdev)
 	default:
 		break;
 	}
+#endif
 }
 
 void hdmitx_top_intr_handler(struct work_struct *work)

@@ -1282,7 +1282,7 @@
 };
 
 &usb3_phy_v2 {
-	status = "okay";
+	status = "disabled";
 	portnum = <0>;
 	otg = <0>;
 	/*gpio-vbus-power = "GPIOH_6";*/

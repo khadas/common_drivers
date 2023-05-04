@@ -544,6 +544,7 @@ int vpu_pipeline_check_block(int *combination, int num_planes,
 	return ret;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int s5_check_pipeline_path(int *combination, int num_planes,
 			   struct meson_vpu_pipeline_state *mvps,
 			   struct drm_atomic_state *state)
@@ -608,6 +609,7 @@ int t7_check_pipeline_path(int *combination, int num_planes,
 {
 	return vpu_pipeline_check_block(combination, num_planes, mvps, state);
 }
+#endif
 
 int g12a_check_pipeline_path(int *combination, int num_planes,
 			     struct meson_vpu_pipeline_state *mvps,
@@ -682,6 +684,7 @@ void vpu_pipeline_enable_block(int *combination, int num_planes,
 	//for (i = 0; i < MESON_MAX_VIDEO; i++)
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int s5_set_pipeline_para(int *combination, int num_planes,
 			 struct meson_vpu_pipeline_state *mvps,
 			 struct drm_atomic_state *state)
@@ -886,6 +889,7 @@ int t7_set_pipeline_para(int *combination, int num_planes,
 	vpu_pipeline_enable_block(combination, num_planes, mvps);
 	return 0;
 }
+#endif
 
 int g12a_set_pipeline_para(int *combination, int num_planes,
 			     struct meson_vpu_pipeline_state *mvps,
@@ -1082,6 +1086,7 @@ struct meson_vpu_pipeline_ops g12a_vpu_pipeline_ops = {
 	.set_pipeline_para = g12a_set_pipeline_para,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct meson_vpu_pipeline_ops t7_vpu_pipeline_ops = {
 	.check_pipeline_path = t7_check_pipeline_path,
 	.set_pipeline_para = t7_set_pipeline_para,
@@ -1091,4 +1096,5 @@ struct meson_vpu_pipeline_ops s5_vpu_pipeline_ops = {
 	.check_pipeline_path = s5_check_pipeline_path,
 	.set_pipeline_para = s5_set_pipeline_para,
 };
+#endif
 

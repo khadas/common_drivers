@@ -92,6 +92,7 @@ static struct ddr_priority ddr_priority_s4[] __initdata = {
 		.r_offset = (0x7c << 2), .r_bit_s = 16, .r_width = 0x7	}
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct ddr_priority ddr_priority_t7[] __initdata = {
 	{ .port_id = 1, .reg_base = 0xfe704100,
 		.reg_mode = 1, .reg_config = 0,
@@ -739,6 +740,7 @@ static struct ddr_priority ddr_priority_t5m[] __initdata = {
 		.w_offset = (0x137 << 2), .w_bit_s = 0, .w_width = 0xf,
 		.r_offset = (0x137 << 2), .r_bit_s = 4, .r_width = 0xf	},
 };
+#endif
 
 static struct ddr_priority *ddr_priority_list;
 static unsigned int ddr_priority_list_num __initdata;
@@ -748,14 +750,17 @@ int __init ddr_find_port_priority(int cpu_type, struct ddr_priority **desc)
 	int desc_size = -EINVAL;
 
 	switch (cpu_type) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DMC_TYPE_T7:
 		*desc = ddr_priority_t7;
 		desc_size = ARRAY_SIZE(ddr_priority_t7);
 		break;
+#endif
 	case DMC_TYPE_S4:
 		*desc = ddr_priority_s4;
 		desc_size = ARRAY_SIZE(ddr_priority_s4);
 		break;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DMC_TYPE_S5:
 		*desc = ddr_priority_s5;
 		desc_size = ARRAY_SIZE(ddr_priority_s5);
@@ -768,6 +773,7 @@ int __init ddr_find_port_priority(int cpu_type, struct ddr_priority **desc)
 		*desc = ddr_priority_t5m;
 		desc_size = ARRAY_SIZE(ddr_priority_t5m);
 		break;
+#endif
 	default:
 		return -EINVAL;
 	}

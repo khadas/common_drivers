@@ -275,6 +275,7 @@ static const struct meson_vpu_data vpu_g12a_data = {
 	.video_ops = &video_ops,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct meson_vpu_data vpu_t7_data = {
 	.pipe_ops = &t7_vpu_pipeline_ops,
 	.osd_ops = &t7_osd_ops,
@@ -328,6 +329,7 @@ static const struct meson_vpu_data vpu_s5_data = {
 	.enc_method = 1,
 	.slice_mode = 1,
 };
+#endif
 
 static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -339,6 +341,7 @@ static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
 	{ .compatible = "amlogic, meson-axg-vpu",},
 	{.compatible = "amlogic, meson-tl1-vpu",},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{ .compatible = "amlogic, meson-g12a-vpu",
 	  .data = &vpu_g12a_data,},
 	{ .compatible = "amlogic, meson-g12b-vpu",
@@ -351,8 +354,10 @@ static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
 	  .data = &vpu_g12a_data,},
 	{.compatible = "amlogic, meson-sc2-vpu",
 	  .data = &vpu_g12a_data,},
+#endif
 	{.compatible = "amlogic, meson-s4-vpu",
 	  .data = &vpu_g12a_data,},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{.compatible = "amlogic, meson-t7-vpu",
 	 .data = &vpu_t7_data,},
 	{.compatible = "amlogic, meson-t5w-vpu",
@@ -361,6 +366,7 @@ static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
 	 .data = &vpu_t3_data,},
 	{.compatible = "amlogic, meson-s5-vpu",
 	 .data = &vpu_s5_data,},
+#endif
 	{}
 };
 

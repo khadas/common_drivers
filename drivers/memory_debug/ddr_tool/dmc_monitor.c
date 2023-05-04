@@ -1073,6 +1073,7 @@ static const struct of_device_id dmc_monitor_match[] = {
 		.data = (void *)DMC_TYPE_C1,
 	},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,dmc_monitor-c2",
 		.data = (void *)DMC_TYPE_C2,
@@ -1117,10 +1118,12 @@ static const struct of_device_id dmc_monitor_match[] = {
 		.compatible = "amlogic,dmc_monitor-p1",
 		.data = (void *)DMC_TYPE_P1,
 	},
+#endif
 	{
 		.compatible = "amlogic,dmc_monitor-s4",
 		.data = (void *)DMC_TYPE_S4,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,dmc_monitor-sc2",
 		.data = (void *)DMC_TYPE_SC2,
@@ -1137,6 +1140,7 @@ static const struct of_device_id dmc_monitor_match[] = {
 		.compatible = "amlogic,dmc_monitor-s5",
 		.data = (void *)DMC_TYPE_S5,
 	},
+#endif
 	{}
 };
 #endif

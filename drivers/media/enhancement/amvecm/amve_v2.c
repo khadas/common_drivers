@@ -75,6 +75,7 @@ static void ve_brightness_cfg(int val,
 	pr_amve_v2("brigtness: val = %d, slice = %d", val, slice);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void ve_contrast_cfg(int val,
 	enum wr_md_e mode, enum vadj_index_e vadj_idx,
 	enum vpp_slice_e slice)
@@ -105,6 +106,7 @@ static void ve_contrast_cfg(int val,
 
 	pr_amve_v2("contrast: val = %d, slice = %d", val, slice);
 }
+#endif
 
 static void ve_sat_hue_mab_cfg(int mab,
 	enum wr_md_e mode, enum vadj_index_e vadj_idx,
@@ -188,6 +190,7 @@ void ve_brigtness_set(int val,
 		ve_brightness_cfg(val, mode, vadj_idx, i);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void ve_contrast_set(int val,
 	enum vadj_index_e vadj_idx,
 	enum wr_md_e mode)
@@ -197,6 +200,7 @@ void ve_contrast_set(int val,
 	for (i = SLICE0; i < SLICE_MAX; i++)
 		ve_contrast_cfg(val, mode, vadj_idx, i);
 }
+#endif
 
 void ve_color_mab_set(int mab,
 	enum vadj_index_e vadj_idx,

@@ -1461,6 +1461,7 @@ static const struct of_device_id aml_ddr_bandwidth_dt_match[] = {
 		.data = (void *)DMC_TYPE_C1,
 	},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,ddr-bandwidth-a1",
 		.data = (void *)DMC_TYPE_A1,
@@ -1505,10 +1506,12 @@ static const struct of_device_id aml_ddr_bandwidth_dt_match[] = {
 		.compatible = "amlogic,ddr-bandwidth-t3",
 		.data = (void *)DMC_TYPE_T3,
 	},
+#endif
 	{
 		.compatible = "amlogic,ddr-bandwidth-s4",
 		.data = (void *)DMC_TYPE_S4,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,ddr-bandwidth-sc2",
 		.data = (void *)DMC_TYPE_SC2,
@@ -1529,6 +1532,7 @@ static const struct of_device_id aml_ddr_bandwidth_dt_match[] = {
 		.compatible = "amlogic,ddr-bandwidth-s5",
 		.data = (void *)DMC_TYPE_S5,
 	},
+#endif
 	{}
 };
 #endif

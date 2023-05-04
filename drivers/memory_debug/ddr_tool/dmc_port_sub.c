@@ -119,6 +119,7 @@ static struct vpu_sub_desc vpu_sub_desc_tl1[] __initdata = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct vpu_sub_desc vpu_sub_desc_sm1[] __initdata = {
 	{ .sub_id = 0x0, .vpu_r0_2 = "OSD1", .vpu_r1 = "DI_IF1",
 			.vpu_w0 = "VDIN0", .vpu_w1 = "NR"		},
@@ -421,6 +422,7 @@ static struct vpu_sub_desc vpu_sub_desc_t3[] __initdata = {
 	{ .sub_id = 0xF, .vpu_r0_2 = "VPU_SUBRD", .vpu_r1 = "NULL",
 			.vpu_w0 = "NULL", .vpu_w1 = "NULL"		}
 };
+#endif
 
 // static struct vpu_sub_desc vpu_sub_desc_s4d[] __initdata = vpu_sub_desc_s4[]
 static struct vpu_sub_desc vpu_sub_desc_s4[] __initdata = {
@@ -473,6 +475,7 @@ static struct vpu_sub_desc vpu_sub_desc_s4[] __initdata = {
 			.vpu_w0 = "NULL", .vpu_w1 = "NULL"		}
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct vpu_sub_desc vpu_sub_desc_sc2[] __initdata = {
 	{ .sub_id = 0x0, .vpu_r0_2 = "OSD1", .vpu_r1 = "DI_IF1",
 			.vpu_w0 = "VDIN0", .vpu_w1 = "NR"		},
@@ -622,6 +625,7 @@ static struct vpu_sub_desc vpu_sub_desc_s5[] __initdata = {
 	{ .sub_id = 0xF, .vpu_r0_2 = "VPU_SUBRD", .vpu_r1 = "NULL",
 			.vpu_w0 = "NULL", .vpu_w1 = "NULL"		}
 };
+#endif
 
 static struct vpu_sub_desc *vpu_port_sub;
 static unsigned int vpu_port_sub_num __initdata;
@@ -648,6 +652,7 @@ int __init dmc_find_port_sub(int cpu_type, struct vpu_sub_desc **desc)
 		desc_size = ARRAY_SIZE(vpu_sub_desc_tl1);
 		break;
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DMC_TYPE_G12A:
 	case DMC_TYPE_G12B:
 	case DMC_TYPE_SM1:
@@ -674,10 +679,12 @@ int __init dmc_find_port_sub(int cpu_type, struct vpu_sub_desc **desc)
 		*desc = vpu_sub_desc_t3;
 		desc_size = ARRAY_SIZE(vpu_sub_desc_t3);
 		break;
+#endif
 	case DMC_TYPE_S4:
 		*desc = vpu_sub_desc_s4;
 		desc_size = ARRAY_SIZE(vpu_sub_desc_s4);
 		break;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DMC_TYPE_SC2:
 		*desc = vpu_sub_desc_sc2;
 		desc_size = ARRAY_SIZE(vpu_sub_desc_sc2);
@@ -691,6 +698,7 @@ int __init dmc_find_port_sub(int cpu_type, struct vpu_sub_desc **desc)
 		*desc = vpu_sub_desc_s5;
 		desc_size = ARRAY_SIZE(vpu_sub_desc_s5);
 		break;
+#endif
 	default:
 		return -EINVAL;
 	}

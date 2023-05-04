@@ -183,6 +183,7 @@ static int vpu_vmod_clk_release(unsigned int vmod)
 	return ret;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int vpu_vmod_mem_pd_switch(unsigned int vmod, int flag)
 {
 	unsigned int _val, _reg, _bit, _len;
@@ -223,6 +224,7 @@ static int vpu_vmod_mem_pd_switch(unsigned int vmod, int flag)
 		return -1;
 	return 0;
 }
+#endif
 
 static int vpu_vmod_mem_pd_switch_new(unsigned int vmod, int flag)
 {
@@ -241,6 +243,7 @@ static int vpu_vmod_mem_pd_switch_new(unsigned int vmod, int flag)
 	return ret;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int vpu_vmod_mem_pd_get(unsigned int vmod)
 {
 	unsigned int _reg, _bit, _len;
@@ -282,6 +285,7 @@ static int vpu_vmod_mem_pd_get(unsigned int vmod)
 	else
 		return VPU_MEM_POWER_DOWN;
 }
+#endif
 
 static int vpu_vmod_mem_pd_get_new(unsigned int vmod)
 {
@@ -905,6 +909,7 @@ void vpu_dev_clk_gate_off(struct vpu_dev_s *vpu_dev)
 }
 EXPORT_SYMBOL(vpu_dev_clk_gate_off);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* *********************************************** */
 
 /* *********************************************** */
@@ -1421,6 +1426,7 @@ static int remove_vpu_debug_class(void)
 	vpu_debug_class = NULL;
 	return 0;
 }
+#endif
 
 /* ********************************************************* */
 
@@ -1498,6 +1504,7 @@ static void vpu_power_init(void)
 		vpu_conf.data->module_init_config();
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct vpu_data_s vpu_data_sc2 = {
 	.chip_type = VPU_CHIP_SC2,
 	.chip_name = "sc2",
@@ -1798,6 +1805,7 @@ static struct vpu_data_s vpu_data_t3 = {
 	.clk_apply = vpu_clk_apply_dft,
 	.clktree_init = vpu_clktree_init_dft,
 };
+#endif
 
 static struct vpu_data_s vpu_data_s4d = {
 	.chip_type = VPU_CHIP_S4D,
@@ -1842,6 +1850,7 @@ static struct vpu_data_s vpu_data_s4d = {
 	.clktree_init = vpu_clktree_init_dft,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct vpu_data_s vpu_data_c3 = {
 	.chip_type = VPU_CHIP_C3,
 	.chip_name = "c3",
@@ -2057,7 +2066,10 @@ static struct vpu_data_s vpu_data_sm1 = {
 	.clk_apply = vpu_clk_apply_dft,
 	.clktree_init = vpu_clktree_init_dft,
 };
+#endif
+
 static const struct of_device_id vpu_of_table[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, vpu-sc2",
 		.data = &vpu_data_sc2,
@@ -2078,10 +2090,12 @@ static const struct of_device_id vpu_of_table[] = {
 		.compatible = "amlogic, vpu-s4",
 		.data = &vpu_data_s4,
 	},
+#endif
 	{
 		.compatible = "amlogic, vpu-s4d",
 		.data = &vpu_data_s4d,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, vpu-t3",
 		.data = &vpu_data_t3,
@@ -2114,6 +2128,7 @@ static const struct of_device_id vpu_of_table[] = {
 		.compatible = "amlogic, vpu-s5",
 		.data = &vpu_data_s5,
 	},
+#endif
 	{}
 };
 
@@ -2161,7 +2176,9 @@ static int vpu_probe(struct platform_device *pdev)
 	mutex_unlock(&vpu_clk_mutex);
 	if (ret)
 		vpu_power_init();
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	creat_vpu_debug_class();
+#endif
 
 	VPUPR("%s OK\n", __func__);
 	return 0;
@@ -2169,7 +2186,9 @@ static int vpu_probe(struct platform_device *pdev)
 
 static int vpu_remove(struct platform_device *pdev)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	remove_vpu_debug_class();
+#endif
 	kfree(vpu_conf.clk_vmod);
 	vpu_conf.clk_vmod = NULL;
 

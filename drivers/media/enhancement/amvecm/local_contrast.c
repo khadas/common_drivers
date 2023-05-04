@@ -40,6 +40,9 @@
 #define HIST_BIN 16
 
 int amlc_debug;
+module_param(amlc_debug, int, 0664);
+MODULE_PARM_DESC(amlc_debug, "\n amlc_debug\n");
+
 #define pr_amlc_dbg(fmt, args...)\
 	do {\
 		if (amlc_debug & 0x1)\
@@ -49,7 +52,11 @@ int amlc_debug;
 int lc_en = 1;
 int lc_bitdepth = 10;
 int lc_curve_isr_defined;
+
 int use_lc_curve_isr = 1;
+module_param(use_lc_curve_isr, int, 0664);
+MODULE_PARM_DESC(use_lc_curve_isr, "\n use_lc_curve_isr\n");
+
 int lc_demo_mode;
 int lc_en_chflg = 0xff;
 static int lc_flag = 0xff;
@@ -87,8 +94,12 @@ int *lc_hist;/*12*8*17*/
 int *lc_hist_slice1;/*12*8*17*/
 
 static bool lc_malloc_ok;
+
 /*print one or more frame data*/
 unsigned int lc_hist_prcnt;
+module_param(lc_hist_prcnt, int, 0664);
+MODULE_PARM_DESC(lc_hist_prcnt, "\n lc_hist_prcnt\n");
+
 unsigned int lc_node_prcnt;
 unsigned int lc_node_pos_h;
 unsigned int lc_node_pos_v;
@@ -738,6 +749,11 @@ static void lc_top_config(int enable, int h_num, int v_num,
 	unsigned int height, unsigned int width, int bitdepth,
 	int flag, int flag_full)
 {
+	pr_amlc_dbg("enable/h_num/v_num/height/width: %d/%d/%d/%d/%d\n",
+		enable, h_num, v_num, height, width);
+	pr_amlc_dbg("bitdepth/flag/flag_full: %d/%d/%d\n",
+		bitdepth, flag, flag_full);
+
 	if (chip_type_id != chip_t3x) {
 		/*lcinput_ysel*/
 		WRITE_VPP_REG_BITS(SRSHARP1_LC_INPUT_MUX, 5, 4, 3);
@@ -777,7 +793,7 @@ static void lc_top_config(int enable, int h_num, int v_num,
 			}
 		}
 	} else {
-		ve_lc_top_cfg(0, h_num, v_num,
+		ve_lc_top_cfg(enable, h_num, v_num,
 			height, width, bitdepth, 1, 0);
 	}
 }
@@ -853,6 +869,7 @@ static void lc_config(int enable,
 	if (!vf) {
 		vf_height = 0;
 		vf_width = 0;
+		pr_amlc_dbg("%s: vf is NULL!\n", __func__);
 		return;
 	}
 
@@ -885,6 +902,8 @@ static void lc_config(int enable,
 		sps_w_in_pre == sps_w_in &&
 		sps_h_in_pre == sps_h_in &&
 		lc_en_chflg) {
+		pr_amlc_dbg("%s: lc_en_chflg = %d\n",
+			__func__, lc_en_chflg);
 		return;
 	}
 
@@ -913,6 +932,7 @@ static void lc_config(int enable,
 		/* signal_type is not present */
 		/* use default value bt709 */
 		flag = 0x1;
+
 	lc_top_config(enable, h_num, v_num, height,
 		width, bitdepth, flag, flag_full);
 
@@ -931,7 +951,7 @@ static void lc_config(int enable,
 		ve_lc_stts_blk_cfg(height, width,
 			h_num, v_num);
 		ve_lc_stts_en(enable, height, width,
-			0, 0, 1, 1, 4,
+			0, 0, 0, 1, 0,
 			bitdepth, flag, flag_full,
 			lc_tune_curve.lc_reg_thd_black);
 	}
@@ -1761,8 +1781,7 @@ static void _read_region(int blk_vnum, int blk_hnum)
 				lc_hist[cur_block * 17 + k] = data32;
 				if (i >= lc_hist_vs && i <= lc_hist_ve &&
 					j >= lc_hist_hs && j <= lc_hist_he &&
-					amlc_debug == 0x6 &&
-					lc_hist_prcnt) {
+					amlc_debug == 0x6 && lc_hist_prcnt) {
 					/*print chosen hist*/
 					if (k == 16) {/*last bin*/
 						rgb_min =
@@ -1835,6 +1854,7 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 	if (amlc_debug == 0x8 && lc_hist_prcnt) /*print all hist data*/
 		for (i = 0; i < 8 * 12 * 17; i++)
 			pr_info("%x\n", data_hist[i]);
+
 	if (lc_hist_prcnt > 0)
 		lc_hist_prcnt--;
 }
@@ -2086,12 +2106,13 @@ void lc_process(struct vframe_s *vf,
 		return;
 
 	if (!lc_malloc_ok) {
-		pr_amlc_dbg("%s: lc malloc fail", __func__);
+		pr_amlc_dbg("%s: lc malloc fail\n", __func__);
 		return;
 	}
 
 	if (!lc_en) {
 		lc_disable();
+		pr_amlc_dbg("%s: lc_en = %d\n", __func__, lc_en);
 		return;
 	}
 
@@ -2101,11 +2122,13 @@ void lc_process(struct vframe_s *vf,
 			lc_flag = 0x0;
 			lc_bypass_flag = 0x0;
 		}
+		pr_amlc_dbg("%s: vf is NULL\n", __func__);
 		return;
 	}
 
 	if (lc_flag <= 1) {
 		lc_flag++;
+		pr_amlc_dbg("%s: lc_flag = %d\n", __func__, lc_flag);
 		return;
 	}
 
@@ -2141,11 +2164,13 @@ void lc_process(struct vframe_s *vf,
 		}
 
 		if (set_lc_curve(0, 0))
-			pr_amlc_dbg("%s: set lc curve fail", __func__);
+			pr_amlc_dbg("%s: set lc curve fail\n", __func__);
 	} else {
 		ve_lc_blk_num_get(&blk_hnum, &blk_vnum, 0);
 
 		/*get hist & curve node*/
+		pr_amlc_dbg("%s: use_lc_curve_isr/defined: %d/%d\n",
+			__func__, use_lc_curve_isr, lc_curve_isr_defined);
 		if (!use_lc_curve_isr || !lc_curve_isr_defined) {
 			lc_read_region(blk_vnum, blk_hnum, 0);
 			if (ve_multi_slice_case_get())

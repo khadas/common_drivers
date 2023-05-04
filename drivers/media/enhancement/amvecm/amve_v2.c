@@ -1449,6 +1449,37 @@ void ve_mtrx_setting(enum vpp_matrix_e mtx_sel,
 	/*pr_info("mtx_sel:%d, mtx_csc:0x%x\n", mtx_sel, mtx_csc);*/
 }
 
+void ve_sharpness_ctl(enum wr_md_e mode, int sr0_en, int sr1_en)
+{
+	int i;
+	int slice_max;
+	int sr0_reg = VPP_SRSHARP0_PK_NR_EN;
+	int sr1_reg = VPP_SRSHARP1_PK_NR_EN;
+
+	slice_max = get_slice_max();
+
+	if (mode == WR_VCB) {
+		for (i = SLICE0; i < slice_max; i++) {
+			WRITE_VPP_REG_BITS_S5(sr0_reg + sr_sharp_reg_ofst[i],
+				sr0_en, 1, 1);
+			WRITE_VPP_REG_BITS_S5(sr1_reg + sr_sharp_reg_ofst[i],
+				sr1_en, 1, 1);
+		}
+	} else if (mode == WR_DMA) {
+		for (i = SLICE0; i < slice_max; i++) {
+			VSYNC_WRITE_VPP_REG_BITS(sr0_reg + sr_sharp_reg_ofst[i],
+				sr0_en, 1, 1);
+			VSYNC_WRITE_VPP_REG_BITS(sr1_reg + sr_sharp_reg_ofst[i],
+				sr1_en, 1, 1);
+		}
+	}
+
+	pr_amve_v2("%s: addr = %x, val = %d\n", __func__,
+		sr0_reg + sr_sharp_reg_ofst[i], sr0_en);
+	pr_amve_v2("%s: addr = %x, val = %d\n", __func__,
+		sr1_reg + sr_sharp_reg_ofst[i], sr1_en);
+}
+
 void ve_dnlp_set(ulong *data)
 {
 	int i;
@@ -1884,15 +1915,16 @@ static void _lc_mtrx_set(enum lc_mtx_sel_e mtrx_sel,
 	}
 }
 
-static void _lc_blk_bdry_cfg(unsigned int height, unsigned int width)
+static void _lc_blk_bdry_cfg(unsigned int height,
+	unsigned int width, int h_num, int v_num)
 {
 	int i;
 	int slice_max;
 	int lc_reg;
 	unsigned int value;
 
-	width /= 12;
-	height /= 8;
+	width /= h_num;
+	height /= v_num;
 
 	slice_max = get_slice_max();
 
@@ -1930,7 +1962,7 @@ static void _lc_blk_bdry_cfg(unsigned int height, unsigned int width)
 		WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = width & GET_BITS(0, 14);
+		value = (width * h_num) & GET_BITS(0, 14);
 		WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg = VPP_SRSHARP1_LC_CURVE_BLK_VIDX_0_1 +
@@ -1955,7 +1987,7 @@ static void _lc_blk_bdry_cfg(unsigned int height, unsigned int width)
 		WRITE_VPP_REG_S5(lc_reg, value);
 
 		lc_reg += 1;
-		value = height & GET_BITS(0, 14);
+		value = (height * v_num - 1) & GET_BITS(0, 14);
 		WRITE_VPP_REG_S5(lc_reg, value);
 	}
 }
@@ -1971,6 +2003,19 @@ void ve_lc_stts_blk_cfg(unsigned int height,
 	int hend0, hend1, hend2, hend3, hend4, hend5, hend6;
 	int hend7, hend8, hend9, hend10, hend11;
 	int vend0, vend1, vend2, vend3, vend4, vend5, vend6, vend7;
+	int row_start_s1 = 0;
+	int col_start_s1 = 0;
+	int hend0_s1, hend1_s1, hend2_s1, hend3_s1;
+	int hend4_s1, hend5_s1, hend6_s1, hend7_s1;
+	int hend8_s1, hend9_s1, hend10_s1, hend11_s1;
+	int vend0_s1, vend1_s1, vend2_s1, vend3_s1;
+	int vend4_s1, vend5_s1, vend6_s1, vend7_s1;
+
+	if (h_num > 12)
+		h_num = 12;
+
+	if (v_num > 8)
+		v_num = 8;
 
 	blk_height = height / v_num;
 	blk_width = width / h_num;
@@ -1997,36 +2042,85 @@ void ve_lc_stts_blk_cfg(unsigned int height,
 	vend6 = vend5 + blk_height;
 	vend7 = height - 1;
 
+	hend0_s1 = col_start_s1 + blk_width - 1;
+	hend1_s1 = hend0_s1 + blk_width;
+	hend2_s1 = hend1_s1 + blk_width;
+	hend3_s1 = hend2_s1 + blk_width;
+	hend4_s1 = hend3_s1 + blk_width;
+	hend5_s1 = hend4_s1 + blk_width;
+	hend6_s1 = hend5_s1 + blk_width;
+	hend7_s1 = hend6_s1 + blk_width;
+	hend8_s1 = hend7_s1 + blk_width;
+	hend9_s1 = hend8_s1 + blk_width;
+	hend10_s1 = hend9_s1 + blk_width;
+	hend11_s1 = width - 1;
+
+	vend0_s1 = row_start_s1 + blk_height - 1;
+	vend1_s1 = vend0_s1 + blk_height;
+	vend2_s1 = vend1_s1 + blk_height;
+	vend3_s1 = vend2_s1 + blk_height;
+	vend4_s1 = vend3_s1 + blk_height;
+	vend5_s1 = vend4_s1 + blk_height;
+	vend6_s1 = vend5_s1 + blk_height;
+	vend7_s1 = height - 1;
+
 	lc_reg = VPP_LC_STTS_HIST_REGION_IDX;
 	data32 = READ_VPP_REG_S5(lc_reg);
-	WRITE_VPP_REG_S5(lc_reg, 0xffe0ffff & data32);
+	/*4:0 h_index and v_index lut start*/
+	data32 = 0xffff00e0 & data32;
+	/*11:8 slice0 h_num*/
+	data32 = (h_num << 8) | data32;
+	/*15:12 slice1 h_num*/
+	data32 = (h_num << 12) | data32;
+	WRITE_VPP_REG_S5(lc_reg, data32);
 
 	lc_reg = VPP_LC_STTS_HIST_SET_REGION;
-	data32 = (((row_start & 0x1fff) << 16) & 0xffff0000) |
+	data32 = (((row_start_s1 & 0x1fff) << 16) & 0xffff0000) |
+		(row_start & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((vend1 & 0x1fff) << 16) | (vend0 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((vend3 & 0x1fff) << 16) | (vend2 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((vend5 & 0x1fff) << 16) | (vend4 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((vend7 & 0x1fff) << 16) | (vend6 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((vend1_s1 & 0x1fff) << 16) | (vend0_s1 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((vend3_s1 & 0x1fff) << 16) | (vend2_s1 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((vend5_s1 & 0x1fff) << 16) | (vend4_s1 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((vend7_s1 & 0x1fff) << 16) | (vend6_s1 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+
+	data32 = (((col_start_s1 & 0x1fff) << 16) & 0xffff0000) |
 		(col_start & 0x1fff);
 	WRITE_VPP_REG_S5(lc_reg, data32);
 	data32 = ((hend1 & 0x1fff) << 16) | (hend0 & 0x1fff);
 	WRITE_VPP_REG_S5(lc_reg, data32);
-	data32 = ((vend1 & 0x1fff) << 16) | (vend0 & 0x1fff);
-	WRITE_VPP_REG_S5(lc_reg, data32);
 	data32 = ((hend3 & 0x1fff) << 16) | (hend2 & 0x1fff);
-	WRITE_VPP_REG_S5(lc_reg, data32);
-	data32 = ((vend3 & 0x1fff) << 16) | (vend2 & 0x1fff);
 	WRITE_VPP_REG_S5(lc_reg, data32);
 	data32 = ((hend5 & 0x1fff) << 16) | (hend4 & 0x1fff);
 	WRITE_VPP_REG_S5(lc_reg, data32);
-	data32 = ((vend5 & 0x1fff) << 16) | (vend4 & 0x1fff);
-	WRITE_VPP_REG_S5(lc_reg, data32);
-
 	data32 = ((hend7 & 0x1fff) << 16) | (hend6 & 0x1fff);
-	WRITE_VPP_REG_S5(lc_reg, data32);
-	data32 = ((vend7 & 0x1fff) << 16) | (vend6 & 0x1fff);
 	WRITE_VPP_REG_S5(lc_reg, data32);
 	data32 = ((hend9 & 0x1fff) << 16) | (hend8 & 0x1fff);
 	WRITE_VPP_REG_S5(lc_reg, data32);
 	data32 = ((hend11 & 0x1fff) << 16) | (hend10 & 0x1fff);
 	WRITE_VPP_REG_S5(lc_reg, data32);
-	data32 = h_num;
+	data32 = ((hend1_s1 & 0x1fff) << 16) | (hend0_s1 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((hend3_s1 & 0x1fff) << 16) | (hend2_s1 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((hend5_s1 & 0x1fff) << 16) | (hend4_s1 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((hend7_s1 & 0x1fff) << 16) | (hend6_s1 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((hend9_s1 & 0x1fff) << 16) | (hend8_s1 & 0x1fff);
+	WRITE_VPP_REG_S5(lc_reg, data32);
+	data32 = ((hend11_s1 & 0x1fff) << 16) | (hend10_s1 & 0x1fff);
 	WRITE_VPP_REG_S5(lc_reg, data32);
 }
 
@@ -2039,6 +2133,10 @@ void ve_lc_stts_en(int enable,
 	int i;
 	int slice_max;
 	int data32;
+	int tmp = 0x1;
+
+	if (multi_slice_case)
+		tmp = 0x3;
 
 	slice_max = get_slice_max();
 
@@ -2050,7 +2148,8 @@ void ve_lc_stts_en(int enable,
 	WRITE_VPP_REG_S5(VPP_LC_STTS2_WIDTHM1_HEIGHTM1,
 		data32);
 
-	data32 = (0x3 << 30) | ((pix_drop_mode & 0x3) << 28);
+	data32 = READ_VPP_REG_S5(VPP_LC_STTS_HIST_REGION_IDX);
+	data32 = data32 | (tmp << 30) | ((pix_drop_mode & 0x3) << 28);
 	data32 = data32 | ((eol_en & 0x3) << 24);
 	/*22: lc_hist_mode, 0 for y, 1 for maxrgb*/
 	data32 = data32 | ((hist_mode & 0x1) << 22);
@@ -2072,17 +2171,29 @@ void ve_lc_stts_en(int enable,
 	}
 
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL0, din_sel, 3, 3);
-	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL1, 1, 3, 3);
+	if (multi_slice_case)
+		WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL1, 1, 3, 3);
 	/*lc input probe enable*/
-	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL0, 1, 10, 1);
-	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL1, 1, 10, 1);
+	/*WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL0, 1, 10, 1);*/
+	/*WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL1, 1, 10, 1);*/
+
 	/*lc hist stts enable*/
+	if (enable) {
+		if (multi_slice_case)
+			enable = 3;
+		else
+			enable = 1;
+	} else {
+		enable = 0;
+	}
+
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_HIST_REGION_IDX,
 		enable, 30, 2);
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_BLACK_INFO1,
 		thd_black, 0, 8);
-	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_BLACK_INFO2,
-		thd_black, 0, 8);
+	if (multi_slice_case)
+		WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_BLACK_INFO2,
+			thd_black, 0, 8);
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL, enable, 0, 2);
 }
 
@@ -2131,7 +2242,7 @@ void ve_lc_disable(void)
 	}
 
 	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_HIST_REGION_IDX,
-		0, 31, 1);
+		0, 30, 2);
 }
 
 void ve_lc_curve_ctrl_cfg(int enable,
@@ -2163,7 +2274,7 @@ void ve_lc_curve_ctrl_cfg(int enable,
 		if (!enable) {
 			lc_reg = VPP_LC1_CURVE_CTRL +
 				lc_reg_ofst[i];
-			WRITE_VPP_REG_BITS_S5(lc_reg, enable, 0, 1);
+			WRITE_VPP_REG_BITS_S5(lc_reg, 0, 0, 1);
 		} else {
 			lc_reg = VPP_LC1_CURVE_HV_NUM +
 				lc_reg_ofst[i];
@@ -2179,8 +2290,8 @@ void ve_lc_curve_ctrl_cfg(int enable,
 
 			lc_reg = VPP_LC1_CURVE_CTRL +
 				lc_reg_ofst[i];
-			WRITE_VPP_REG_BITS_S5(lc_reg, enable, 0, 1);
-			WRITE_VPP_REG_BITS_S5(lc_reg, enable, 31, 1);
+			WRITE_VPP_REG_BITS_S5(lc_reg, 1, 0, 1);
+			WRITE_VPP_REG_BITS_S5(lc_reg, 1, 31, 1);
 		}
 	}
 }
@@ -2206,7 +2317,7 @@ void ve_lc_top_cfg(int enable, int h_num, int v_num,
 	}
 
 	/*lc curve mapping config*/
-	_lc_blk_bdry_cfg(height, width);
+	_lc_blk_bdry_cfg(height, width, h_num, v_num);
 
 	for (i = SLICE0; i < slice_max; i++) {
 		lc_reg = VPP_SRSHARP1_LC_TOP_CTRL +

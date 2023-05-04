@@ -2347,7 +2347,7 @@ int amvecm_on_vs(struct vframe_s *vf,
 #ifdef T7_BRINGUP_MULTI_VPP
 	// todo, will not support in pxp bringup stage
 	if (get_cpu_type() == MESON_CPU_MAJOR_ID_T7 &&
-	    vpp_top_index != 0) {
+		vpp_top_index != 0) {
 		// for t7 case, for min vpp 1 & 2
 		// keep the legacy driver for vd1 not changed for back compatible
 		//and try to minimum the changes and add independent handler for min vpp newly added
@@ -2521,7 +2521,8 @@ void refresh_on_vs(struct vframe_s *vf, struct vframe_s *rpt_vf)
 		if (is_video_layer_on(VD1_PATH)) {
 			ve_hist_gamma_tgt(vf ? vf : rpt_vf);
 			vpp_backup_histgram(vf ? vf : rpt_vf);
-			pr_amvecm_dbg("[on_vs] hist related done.\n");
+			if (debug_amvecm == 66)
+				pr_info("[on_vs] hist related done.\n");
 		}
 		pattern_detect(vf ? vf : rpt_vf);
 		if (debug_amvecm == 66)
@@ -2544,6 +2545,9 @@ static irqreturn_t amvecm_viu2_vsync_isr(int irq, void *dev_id)
 
 static irqreturn_t amvecm_lc_curve_isr(int irq, void *dev_id)
 {
+	if (debug_amvecm == 88)
+		pr_info("[irq] lc_curve_isr in.\n");
+
 	if (use_lc_curve_isr) {
 		if (ve_multi_slice_case_get()) {
 			lc_read_region(8, 6, 0);
@@ -11053,12 +11057,12 @@ void init_pq_setting(void)
 		cm_init_config(bitdepth);
 		/*dnlp off*/
 		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 0,
-				   DNLP_EN_BIT, DNLP_EN_WID);
-		/*sr0  chroma filter bypass*/
+			DNLP_EN_BIT, DNLP_EN_WID);
+		/*sr0 chroma filter bypass*/
 		WRITE_VPP_REG(SRSHARP0_SHARP_SR2_CBIC_HCOEF0,
-			      0x4000);
+			0x4000);
 		WRITE_VPP_REG(SRSHARP0_SHARP_SR2_CBIC_VCOEF0,
-			      0x4000);
+			0x4000);
 
 		/*kernel sdr2hdr match uboot setting*/
 		def_hdr_sdr_mode();
@@ -11139,27 +11143,42 @@ tvchip_pq_setting:
 	} else {
 		WRITE_VPP_REG_BITS(VPP_SRSHARP1_CTRL, 1, 0, 1);
 	}
+
 	/*default dnlp off*/
 	WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
 		0, 1, 1);
 	WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
 		0, 1, 1);
+
 	if (chip_type_id != chip_t3x)
 		WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 0, DNLP_EN_BIT, DNLP_EN_WID);
 	/*end*/
+
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TXL)) {
 		WRITE_VPP_REG_BITS(SRSHARP1_PK_FINALGAIN_HP_BP,
-				   2, 16, 2);
-
+			2, 16, 2);
 		/*sr0 sr1 chroma filter bypass*/
 		WRITE_VPP_REG(SRSHARP0_SHARP_SR2_CBIC_HCOEF0,
-			      0x4000);
+			0x4000);
 		WRITE_VPP_REG(SRSHARP0_SHARP_SR2_CBIC_VCOEF0,
-			      0x4000);
+			0x4000);
 		WRITE_VPP_REG(SRSHARP1_SHARP_SR2_CBIC_HCOEF0,
-			      0x4000);
+			0x4000);
 		WRITE_VPP_REG(SRSHARP1_SHARP_SR2_CBIC_VCOEF0,
-			      0x4000);
+			0x4000);
+
+		if (chip_type_id == chip_t3x) {
+			WRITE_VPP_REG_BITS(SRSHARP1_PK_FINALGAIN_HP_BP + SLICE_OFFSET_1,
+				2, 16, 2);
+			WRITE_VPP_REG(SRSHARP0_SHARP_SR2_CBIC_HCOEF0 + SLICE_OFFSET,
+				0x4000);
+			WRITE_VPP_REG(SRSHARP0_SHARP_SR2_CBIC_VCOEF0 + SLICE_OFFSET,
+				0x4000);
+			WRITE_VPP_REG(SRSHARP1_SHARP_SR2_CBIC_HCOEF0 + SLICE_OFFSET_1,
+				0x4000);
+			WRITE_VPP_REG(SRSHARP1_SHARP_SR2_CBIC_VCOEF0 + SLICE_OFFSET_1,
+				0x4000);
+		}
 	}
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	if (is_meson_gxlx_cpu())
@@ -11172,8 +11191,8 @@ tvchip_pq_setting:
 
 	/*am_dma_ctrl init*/
 	if (chip_type_id == chip_t3x) {
-		am_dma_set_mif_wr_status(0);
-		/*am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_0, 1);*/
+		am_dma_set_mif_wr_status(1);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_0, 1);
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_1, 0);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_1, 0);*/
@@ -12127,7 +12146,7 @@ static int aml_vecm_probe(struct platform_device *pdev)
 		goto fail_add_cdev;
 
 	devp->dev = device_create(devp->clsp, NULL, devp->devno,
-				  NULL, AMVECM_NAME);
+		NULL, AMVECM_NAME);
 	if (IS_ERR(devp->dev)) {
 		ret = PTR_ERR(devp->dev);
 		goto fail_create_device;
@@ -12164,7 +12183,7 @@ static int aml_vecm_probe(struct platform_device *pdev)
 		vpp_set_12bit_datapath_g12a();
 	}
 	memset(&vpp_hist_param.vpp_histgram[0],
-	       0, sizeof(unsigned short) * 64);
+		0, sizeof(unsigned short) * 64);
 	/* box sdr_mode:auto, tv sdr_mode:off */
 	/* disable contrast and saturation adjustment for HDR on TV */
 	/* disable SDR to HDR convert on TV */
@@ -12226,7 +12245,7 @@ fail_class_create_file:
 	pr_info("[amvecm.] : amvecm class create file error.\n");
 	for (i = 0; amvecm_class_attrs[i].attr.name; i++) {
 		class_remove_file(devp->clsp,
-				  &amvecm_class_attrs[i]);
+			&amvecm_class_attrs[i]);
 	}
 	class_destroy(devp->clsp);
 	return ret;
@@ -12355,7 +12374,7 @@ int __init aml_vecm_init(void)
 {
 	/*unsigned int hiu_reg_base;*/
 
-	pr_info("%s:module init\n", __func__);
+	pr_info("%s:module init_20230505\n", __func__);
 
 	if (platform_driver_register(&aml_vecm_driver)) {
 		pr_err("failed to register bl driver module\n");

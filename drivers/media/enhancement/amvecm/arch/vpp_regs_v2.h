@@ -768,6 +768,9 @@
 
 #define VI_SLICE1_HIST_CTRL                       0x1a70
 
+#define VPP_SRSHARP0_PK_NR_EN                     0x5027
+#define VPP_SRSHARP1_PK_NR_EN                     0x5227
+
 #define VPP_SRSHARP1_DNLP_EN                      0x5245
 #define VPP_SRSHARP1_DNLP_00                      0x5290
 #define VPP_SRSHARP1_LC_INPUT_MUX                 0x52b1

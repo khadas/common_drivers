@@ -2715,12 +2715,6 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 	switch (md) {
 	case WR_VCB:
-		WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
-					 pq_cfg.sharpness0_en, 1, 1);
-
-		WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
-					 pq_cfg.sharpness1_en, 1, 1);
-
 		if (pq_cfg.dnlp_en) {
 			ve_enable_dnlp();
 			dnlp_en = 1;
@@ -2739,6 +2733,8 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 		if (chip_type_id == chip_s5 ||
 			chip_type_id == chip_t3x) {
+			ve_sharpness_ctl(md, pq_cfg.sharpness0_en,
+				pq_cfg.sharpness1_en);
 			ve_vadj_ctl(md, VE_VADJ1, pq_cfg.vadj1_en);
 			ve_vadj_ctl(md, VE_VADJ2, pq_cfg.vadj2_en);
 			ve_bs_ctl(md, 0);
@@ -2761,6 +2757,12 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 					lc_en = 0;
 			}
 		} else {
+			WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
+				pq_cfg.sharpness0_en, 1, 1);
+
+			WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
+				pq_cfg.sharpness1_en, 1, 1);
+
 			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
 				WRITE_VPP_REG_BITS(VPP_VADJ1_MISC,
 					pq_cfg.vadj1_en, 0, 1);
@@ -2819,12 +2821,6 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 		}
 		break;
 	case WR_DMA:
-		VSYNC_WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
-			pq_cfg.sharpness0_en, 1, 1);
-
-		VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
-			pq_cfg.sharpness1_en, 1, 1);
-
 		if (pq_cfg.dnlp_en) {
 			ve_enable_dnlp();
 			dnlp_en = 1;
@@ -2843,6 +2839,8 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 		if (chip_type_id == chip_s5 ||
 			chip_type_id == chip_t3x) {
+			ve_sharpness_ctl(md, pq_cfg.sharpness0_en,
+				pq_cfg.sharpness1_en);
 			ve_vadj_ctl(md, VE_VADJ1, pq_cfg.vadj1_en);
 			ve_vadj_ctl(md, VE_VADJ2, pq_cfg.vadj2_en);
 			ve_bs_ctl(md, 0);
@@ -2863,6 +2861,12 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 					lc_en = 0;
 			}
 		} else {
+			VSYNC_WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
+				pq_cfg.sharpness0_en, 1, 1);
+
+			VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
+				pq_cfg.sharpness1_en, 1, 1);
+
 			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
 				VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ1_MISC,
 					pq_cfg.vadj1_en, 0, 1);

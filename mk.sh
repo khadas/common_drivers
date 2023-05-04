@@ -293,194 +293,14 @@ else
 fi
 
 set -e
-export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG MANUAL_INSMOD_MODULE ARCH
-export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD CHECK_GKI_20 DEV_CONFIG CONFIG_GROUP
-export FULL_KERNEL_VERSION BAZEL
 
-echo ROOT_DIR=$ROOT_DIR
-echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG} MANUAL_INSMOD_MODULE=${MANUAL_INSMOD_MODULE}
-echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT} FAST_BUILD=${FAST_BUILD} CHECK_GKI_20=${CHECK_GKI_20}
-echo FULL_KERNEL_VERSION=${FULL_KERNEL_VERSION} BAZEL=${BAZEL}
+source "${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh"
 
-echo MENUCONFIG=${MENUCONFIG} BASICCONFIG=${BASICCONFIG} IMAGE=${IMAGE} MODULES=${MODULES} DTB_BUILD=${DTB_BUILD}
-if [[ -n ${MENUCONFIG} ]] || [[ -n ${BASICCONFIG} ]] || [[ ${CHECK_DEFCONFIG} -eq "1" ]]; then
-	# ${ROOT_DIR}/${BUILD_DIR}/config.sh menuconfig
-	HERMETIC_TOOLCHAIN=0
-	source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
-	source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
+export_env_variable
 
-	orig_config=$(mktemp)
-	orig_defconfig=$(mktemp)
-	out_config="${OUT_DIR}/.config"
-	out_defconfig="${OUT_DIR}/defconfig"
-	changed_config=$(mktemp)
-	changed_defconfig=$(mktemp)
+adjust_config_action
 
-	if [[ -n ${BASICCONFIG} ]]; then
-		set -x
-		defconfig_name=`basename ${GKI_BASE_CONFIG}`
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${defconfig_name})
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
-		cp ${out_config} ${orig_config}
-		cp ${out_defconfig} ${orig_defconfig}
-		if [ "${BASICCONFIG}" = "m" ]; then
-			(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" menuconfig)
-		fi
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
-		${KERNEL_DIR}/scripts/diffconfig ${orig_config} ${out_config} > ${changed_config}
-		${KERNEL_DIR}/scripts/diffconfig ${orig_defconfig} ${out_defconfig} > ${changed_defconfig}
-		if [ "${ARCH}" = "arm" ]; then
-			cp ${out_defconfig} ${GKI_BASE_CONFIG}
-		fi
-		set +x
-		echo
-		echo "========================================================"
-		echo "==================== .config diff   ===================="
-		cat ${changed_config}
-		echo "==================== defconfig diff ===================="
-		cat ${changed_defconfig}
-		echo "========================================================"
-		echo
-	elif [[ ${CHECK_DEFCONFIG} -eq "1" ]]; then
-		set -x
-		pre_defconfig_cmds
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${DEFCONFIG})
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
-		diff -u ${ROOT_DIR}/${GKI_BASE_CONFIG} ${OUT_DIR}/defconfig
-		post_defconfig_cmds
-		set +x
-	else
-		set -x
-		pre_defconfig_cmds
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${DEFCONFIG})
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
-		cp ${out_config} ${orig_config}
-		cp ${out_defconfig} ${orig_defconfig}
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" menuconfig)
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" savedefconfig)
-		${KERNEL_DIR}/scripts/diffconfig ${orig_config} ${out_config} > ${changed_config}
-		${KERNEL_DIR}/scripts/diffconfig ${orig_defconfig} ${out_defconfig} > ${changed_defconfig}
-		post_defconfig_cmds
-		set +x
-		echo
-		echo "========================================================"
-		echo "if the config follows GKI2.0, please add it to the file amlogic_gki.fragment manually"
-		echo "if the config follows GKI1.0 optimize, please add it to the file amlogic_gki.10 manually"
-		echo "if the config follows GKI1.0 debug, please add it to the file amlogic_gki.debug manually"
-		echo "==================== .config diff   ===================="
-		cat ${changed_config}
-		echo "==================== defconfig diff ===================="
-		cat ${changed_defconfig}
-		echo "========================================================"
-		echo
-	fi
-	rm -f ${orig_config} ${changed_config} ${orig_defconfig} ${changed_defconfig}
-	exit
-fi
-
-if [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n ${DTB_BUILD} ]]; then
-	old_path=${PATH}
-	source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
-	source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
-
-	if [[ ! -f ${OUT_DIR}/.config ]]; then
-		pre_defconfig_cmds
-		set -x
-		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${DEFCONFIG})
-		set +x
-		post_defconfig_cmds
-	fi
-
-	if [[ -n ${IMAGE} ]]; then
-		set -x
-		if [ "${ARCH}" = "arm64" ]; then
-			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) Image)
-		elif [ "${ARCH}" = "arm" ]; then
-			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) LOADADDR=0x108000 uImage)
-		fi
-		set +x
-	fi
-	mkdir -p ${DIST_DIR}
-	if [[ -n ${DTB_BUILD} ]]; then
-		set -x
-		(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) dtbs)
-		set +x
-	fi
-	if [[ -n ${MODULES} ]]; then
-		export MODULES_STAGING_DIR=$(readlink -m ${COMMON_OUT_DIR}/staging)
-		rm -rf ${MODULES_STAGING_DIR}
-		mkdir -p ${MODULES_STAGING_DIR}
-		if [ "${DO_NOT_STRIP_MODULES}" != "1" ]; then
-			MODULE_STRIP_FLAG="INSTALL_MOD_STRIP=1"
-		fi
-		if [[ `grep "CONFIG_AMLOGIC_IN_KERNEL_MODULES=y" ${ROOT_DIR}/${FRAGMENT_CONFIG}` ]]; then
-			set -x
-			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}" -j$(nproc) modules)
-			(cd ${OUT_DIR} && make O=${OUT_DIR} ${TOOL_ARGS} ${MODULE_STRIP_FLAG} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} "${MAKE_ARGS[@]}" modules_install)
-			set +x
-		fi
-		echo EXT_MODULES=$EXT_MODULES
-		prepare_module_build
-		if [[ -z "${SKIP_EXT_MODULES}" ]] && [[ -n "${EXT_MODULES}" ]]; then
-			echo "========================================================"
-			echo " Building external modules and installing them into staging directory"
-			KERNEL_UAPI_HEADERS_DIR=$(readlink -m ${COMMON_OUT_DIR}/kernel_uapi_headers)
-			for EXT_MOD in ${EXT_MODULES}; do
-				EXT_MOD_REL=$(rel_path ${ROOT_DIR}/${EXT_MOD} ${KERNEL_DIR})
-				mkdir -p ${OUT_DIR}/${EXT_MOD_REL}
-				set -x
-				make -C ${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
-					O=${OUT_DIR} ${TOOL_ARGS} "${MAKE_ARGS[@]}"
-				make -C ${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
-					O=${OUT_DIR} ${TOOL_ARGS} ${MODULE_STRIP_FLAG}         \
-					INSTALL_MOD_PATH=${MODULES_STAGING_DIR}                \
-					INSTALL_MOD_DIR="extra/${EXT_MOD}"                     \
-					INSTALL_HDR_PATH="${KERNEL_UAPI_HEADERS_DIR}/usr"      \
-					"${MAKE_ARGS[@]}" modules_install
-				set +x
-			done
-		fi
-		export OUT_AMLOGIC_DIR=$(readlink -m ${COMMON_OUT_DIR}/amlogic)
-		set -x
-		extra_cmds
-		set +x
-		MODULES=$(find ${MODULES_STAGING_DIR} -type f -name "*.ko")
-		cp -p ${MODULES} ${DIST_DIR}
-
-		new_path=${PATH}
-		PATH=${old_path}
-		echo "========================================================"
-		if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
-			echo "Rebuild rootfs in order to install modules!"
-			rebuild_rootfs ${ARCH}
-		else
-			echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
-		fi
-		PATH=${new_path}
-	fi
-	if [ -n "${DTS_EXT_DIR}" ]; then
-		if [ -d "${ROOT_DIR}/${DTS_EXT_DIR}" ]; then
-			DTS_EXT_DIR=$(rel_path ${ROOT_DIR}/${DTS_EXT_DIR} ${KERNEL_DIR})
-			if [ -d ${OUT_DIR}/${DTS_EXT_DIR} ]; then
-				FILES="$FILES `ls ${OUT_DIR}/${DTS_EXT_DIR}`"
-			fi
-		fi
-	fi
-	for FILE in ${FILES}; do
-		if [ -f ${OUT_DIR}/${FILE} ]; then
-			echo "  $FILE"
-			cp -p ${OUT_DIR}/${FILE} ${DIST_DIR}/
-		elif [[ "${FILE}" =~ \.dtb|\.dtbo ]]  && \
-			[ -n "${DTS_EXT_DIR}" ] && [ -f "${OUT_DIR}/${DTS_EXT_DIR}/${FILE}" ] ; then
-			# DTS_EXT_DIR is recalculated before to be relative to KERNEL_DIR
-			echo "  $FILE"
-			cp -p "${OUT_DIR}/${DTS_EXT_DIR}/${FILE}" "${DIST_DIR}/"
-		else
-			echo "  $FILE is not a file, skipping"
-		fi
-	done
-	exit
-fi
+build_part_of_kernel
 
 if [ "${ABI}" -eq "1" ]; then
 	${ROOT_DIR}/${BUILD_DIR}/build_abi.sh "$@"
@@ -588,25 +408,17 @@ fi
 source ${ROOT_DIR}/${BUILD_CONFIG}
 
 source ${KERNEL_BUILD_VAR_FILE}
+
 if [[ -n ${RM_KERNEL_BUILD_VAR_FILE} ]]; then
 	rm -f ${KERNEL_BUILD_VAR_FILE}
 fi
 
 rename_external_module_name
 
-echo "========================================================"
-if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
-	echo "Rebuild rootfs in order to install modules!"
-	rebuild_rootfs ${ARCH}
-else
-	echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
-fi
+rebuild_rootfs ${ARCH}
+
 set +e
 
-if [[ ${MODULES_DEPEND} -eq "1" ]]; then
-	echo "========================================================"
-	echo "print modules depend"
-	check_undefined_symbol
-fi
+check_undefined_symbol
 
-abi_symbol_list_detect # detect symbol information that should be submitted
+abi_symbol_list_detect

@@ -426,21 +426,23 @@ static void lcd_lvds_control_set(struct aml_lcd_drv_s *pdrv)
 		lcd_vcbus_write(P2P_BIT_REV_T7 + offset, 2);
 		break;
 	case LCD_CHIP_T3X:
+		ch_reg0 = P2P_CH_SWAP0_T7 + offset;
+		ch_reg1 = P2P_CH_SWAP1_T7 + offset;
 		if (port_swap) {
 			if (lane_reverse) {
-				lcd_vcbus_write(P2P_CH_SWAP0 + offset, 0x89abcdef);
-				lcd_vcbus_write(P2P_CH_SWAP1 + offset, 0x01234567);
+				lcd_vcbus_write(ch_reg0 + offset, 0x89abcdef);
+				lcd_vcbus_write(ch_reg1 + offset, 0x01234567);
 			} else {
-				lcd_vcbus_write(P2P_CH_SWAP0 + offset, 0xfedcba98);
-				lcd_vcbus_write(P2P_CH_SWAP1 + offset, 0x76543210);
+				lcd_vcbus_write(ch_reg0 + offset, 0xfedcba98);
+				lcd_vcbus_write(ch_reg1 + offset, 0x76543210);
 			}
 		} else {
 			if (lane_reverse) {
-				lcd_vcbus_write(P2P_CH_SWAP0 + offset, 0x01234567);
-				lcd_vcbus_write(P2P_CH_SWAP1 + offset, 0x89abcdef);
+				lcd_vcbus_write(ch_reg0 + offset, 0x01234567);
+				lcd_vcbus_write(ch_reg1 + offset, 0x89abcdef);
 			} else {
-				lcd_vcbus_write(P2P_CH_SWAP0 + offset, 0x76543210);
-				lcd_vcbus_write(P2P_CH_SWAP1 + offset, 0xfedcba98);
+				lcd_vcbus_write(ch_reg0 + offset, 0x76543210);
+				lcd_vcbus_write(ch_reg1 + offset, 0xfedcba98);
 			}
 		}
 		break;

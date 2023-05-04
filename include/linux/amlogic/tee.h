@@ -66,6 +66,8 @@ int tee_check_in_mem(u32 pa, u32 size);
 
 int tee_check_out_mem(u32 pa, u32 size);
 
+u32 tee_register_mem(u32 type, phys_addr_t pa, size_t size);
+
 int tee_vp9_prob_process(u32 cur_frame_type, u32 prev_frame_type,
 		u32 prob_status, u32 prob_addr);
 

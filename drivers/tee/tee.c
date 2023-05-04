@@ -137,6 +137,7 @@ static int disable_flag;
 #define TVP_CMD_UNPROTECT_MEM           1
 #define TVP_CMD_CHECK_IN_MEM            2
 #define TVP_CMD_CHECK_OUT_MEM           3
+#define TVP_CMD_REGISTER_MEM            4
 
 #define PTA_TVP_UUID UUID_INIT(0x1a658fe8, 0x894e, 0x4403, \
 			0xae, 0xa6, 0x5a, 0xe6, 0x91, 0xe8, 0xa3, 0x5f)
@@ -524,6 +525,25 @@ int tee_check_out_mem(u32 pa, u32 size)
 	return tee_pta_invoke_cmd(uuid, TVP_CMD_CHECK_OUT_MEM, param);
 }
 EXPORT_SYMBOL(tee_check_out_mem);
+
+u32 tee_register_mem(u32 type, phys_addr_t pa, size_t size)
+{
+	uuid_t uuid = PTA_TVP_UUID;
+	struct tee_param param[TEE_PARAM_NUM] = { 0 };
+
+	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
+	param[0].u.value.a = (u64)type;
+	param[1].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
+	param[1].u.value.a = pa & 0xffffffff;
+	param[1].u.value.b = (sizeof(phys_addr_t) == sizeof(u32)) ? 0 : pa >> 32;
+
+	param[2].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
+	param[2].u.value.a = size & 0xffffffff;
+	param[2].u.value.b = (sizeof(size_t) == sizeof(u32)) ? 0 : size >> 32;
+
+	return tee_pta_invoke_cmd(uuid, TVP_CMD_REGISTER_MEM, param);
+}
+EXPORT_SYMBOL(tee_register_mem);
 
 int tee_config_device_state(int dev_id, int secure)
 {

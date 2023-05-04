@@ -60,6 +60,7 @@ unsigned char get_meson_cpu_version(int level)
 #if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 #include <linux/amlogic/tee.h>
 #else
+#define TEE_MEM_TYPE_STREAM_INPUT	0x4
 u32 tee_protect_tvp_mem(u32 start, u32 size,
 			u32 *handle)
 {
@@ -92,6 +93,12 @@ u32 tee_protect_mem_by_type(u32 type,
 
 void tee_unprotect_mem(u32 handle)
 {
+}
+
+u32 tee_register_mem(u32 type, phys_addr_t pa, size_t size)
+{
+	pr_info("no tee config\n");
+	return (-1);
 }
 #endif
 
@@ -261,6 +268,7 @@ int cma_mmu_op(struct page *page, int count, bool set)
 
 static int dump_mem_infos(void *buf, int size);
 static int dump_free_mem_infos(void *buf, int size);
+static int __init secure_vdec_res_setup(struct reserved_mem *rmem);
 
 static inline u32 codec_mm_align_up2n(u32 addr, u32 alg2n)
 {
@@ -3561,6 +3569,32 @@ void get_mte_sync_tags_hook(void *data, struct iova_domain *iovad, dma_addr_t io
 static int codec_mm_probe(struct platform_device *pdev)
 {
 	int r;
+	struct reserved_mem *mem = NULL;
+	int secure_region_index = 0;
+	struct device_node *search_target = NULL;
+
+	while (1) {
+		search_target = of_parse_phandle(pdev->dev.of_node,
+						"memory-region",
+						secure_region_index);
+		if (!search_target)
+			break;
+
+		if (!strcmp(search_target->name, "linux,secure_vdec_reserved")) {
+			mem = of_reserved_mem_lookup(search_target);
+			if (mem) {
+				r = secure_vdec_res_setup(mem);
+				if (r)
+					pr_err("secure_vdec_res_setup res %x\n", r);
+				r = of_reserved_mem_device_init_by_idx(&pdev->dev,
+					pdev->dev.of_node, secure_region_index);
+				if (r)
+					pr_err("secure_vdec_res_setup device init failed\n");
+			}
+			break;
+		}
+		secure_region_index++;
+	}
 
 	pdev->dev.platform_data = get_mem_mgt();
 	r = of_reserved_mem_device_init(&pdev->dev);
@@ -3655,6 +3689,41 @@ static int __init codec_mm_res_setup(struct reserved_mem *rmem)
 
 RESERVEDMEM_OF_DECLARE(codec_mm_reserved, "amlogic, codec-mm-reserved",
 			   codec_mm_res_setup);
+
+static int secure_vdec_reserved_init(struct reserved_mem *rmem,
+	struct device *dev)
+{
+	int ret = -1;
+
+	if (!rmem || rmem->size <= 0) {
+		pr_err("Invalid reserved secure vdec memory");
+		return 0;
+	}
+
+	ret = tee_register_mem(TEE_MEM_TYPE_STREAM_INPUT,
+				(u32)rmem->base,
+				(u32)rmem->size);
+	if (ret) {
+		pr_err("protect vdec failed addr %x %x ret is %x\n",
+			(u32)rmem->base, (u32)rmem->size, ret);
+	}
+
+	return ret;
+}
+
+static const struct reserved_mem_ops secure_vdec_rmem_ops = {
+	.device_init = secure_vdec_reserved_init,
+};
+
+static int __init secure_vdec_res_setup(struct reserved_mem *rmem)
+{
+	rmem->ops = &secure_vdec_rmem_ops;
+
+	return 0;
+}
+
+RESERVEDMEM_OF_DECLARE(secure_vdec_reserved, "amlogic, secure-vdec-reserved",
+			secure_vdec_res_setup);
 
 module_param(debug_mode, uint, 0664);
 MODULE_PARM_DESC(debug_mode, "\n debug module\n");

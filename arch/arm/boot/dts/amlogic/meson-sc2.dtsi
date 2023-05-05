@@ -215,7 +215,7 @@
 
 	meson_suspend:pm {
 		compatible = "amlogic, pm";
-		status = "disabled";
+		status = "okay";
 		device_name = "aml_pm";
 		extend_resume_reason;
 		reg = <0xfe010288 0x4>, /*SYSCTRL_STATUS_REG2*/
@@ -351,7 +351,7 @@
 	};
 
 	mbox_mhu_sec: mhu_sec@0xfe441800 {
-		status = "disabled";
+		status = "okay";
 		compatible = "amlogic, meson_mhu_sec";
 		reg = <0xfe441800 0x10>,  /* nee2scpu csr */
 		      <0xfe441c00 0x10>,  /* scpu2nee csr */
@@ -1023,7 +1023,7 @@
 				clocks = <&clkc CLKID_PWM_I_MUX>,
 					     <&clkc CLKID_PWM_J_MUX>;
 				clock-names = "clkin0", "clkin1";
-				status = "disabled";
+				status = "okay";
 			};
 
 			i2c0: i2c@66000 {
@@ -1891,6 +1891,8 @@
 	vout_mux: vout_mux {
 		compatible = "amlogic, vout_mux";
 		status = "okay";
+		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VDIN_MEAS_GATE>;
+		clock-names = "fclk_div5", "vdin_meas_clk";
 	};
 
 	dummy_venc: dummy_venc {

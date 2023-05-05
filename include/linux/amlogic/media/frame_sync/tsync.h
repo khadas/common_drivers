@@ -68,7 +68,7 @@ enum tysnc_func_type_e {
 
 //bool disable_slow_sync;
 
-int demux_get_pcr(int demux_device_index, int index, u64 *stc);
+// int demux_get_pcr(int demux_device_index, int index, u64 *stc);
 
 typedef u8 (*pfun_tsdemux_pcrscr_valid)(void);
 //pfun_tsdemux_pcrscr_valid tsdemux_pcrscr_valid_cb;

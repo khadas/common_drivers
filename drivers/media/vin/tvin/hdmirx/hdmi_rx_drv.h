@@ -96,7 +96,8 @@
 /* collate t5m code */
 /* add aspect 4:3 */
 /* 2023.5.5 fix emp pkt parse error */
-#define RX_VER2 "ver.2023/05/05"
+/* 2023.05.09 core reset when afifo overflow */
+#define RX_VER2 "ver.2023/05/09"
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368

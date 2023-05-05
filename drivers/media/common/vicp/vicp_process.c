@@ -2262,9 +2262,10 @@ int vicp_process_config(struct vicp_data_config_s *data_config,
 
 	vid_cmpr_top->out_need_swap_cbcr = data_config->output_data.need_swap_cbcr;
 
-	if (lossy_compress_rate) {
+	if (data_config->data_option.compress_rate) {
 		vid_cmpr_top->out_lossy_compress.compress_mode = 4;
-		vid_cmpr_top->out_lossy_compress.compress_rate = lossy_compress_rate;
+		vid_cmpr_top->out_lossy_compress.compress_rate =
+			data_config->data_option.compress_rate;
 	} else {
 		vid_cmpr_top->out_lossy_compress.compress_mode = 0;
 		vid_cmpr_top->out_lossy_compress.compress_rate = 0;

@@ -110,6 +110,7 @@ static u32 vicp_output_dev = 2; /*1 mif, 2 fbc, 3 fbc+mif*/
 static u32 vicp_shrink_mode = 1; /*0 2x, 1 4x, 2 8x*/
 static u32 force_comp_w;
 static u32 force_comp_h;
+static u32 lossy_compress_rate;//0: 100% copress; 1: 67% compress; 2: 83% compress
 
 u32 vd_pulldown_level = 2;
 u32 vd_max_hold_count = 300;
@@ -2583,6 +2584,7 @@ static void vframe_composer(struct composer_dev *dev)
 			data_config.data_option.input_source_number = i;
 			data_config.data_option.security_enable = is_tvp;
 			data_config.data_option.skip_mode = skip_mode[vf_dev[i]];
+			data_config.data_option.compress_rate = lossy_compress_rate;
 
 			ret = vicp_data_composer(&data_config);
 			if (ret < 0)
@@ -2769,11 +2771,19 @@ static void vframe_composer(struct composer_dev *dev)
 			dst_vf->compBodyAddr = dst_buf->afbc_body_addr;
 			if (get_cpu_type() == MESON_CPU_MAJOR_ID_T3X) {
 				dst_vf->fgs_valid = false;
-				dst_vf->type |= VIDTYPE_COMPRESS_LOSS;
-				dst_vf->vf_lossycomp_param.lossy_mode = 1;
-				dst_vf->vf_lossycomp_param.burst_length_add_en = 0;
-				dst_vf->vf_lossycomp_param.burst_length_add_value = 2;
-				dst_vf->vf_lossycomp_param.quant_diff_root_leave = 2;
+				dst_vf->fgs_table_adr = 0;
+				if (lossy_compress_rate) {
+					dst_vf->type |= VIDTYPE_COMPRESS_LOSS;
+					dst_vf->vf_lossycomp_param.lossy_mode = 1;
+					dst_vf->vf_lossycomp_param.burst_length_add_en = 0;
+					dst_vf->vf_lossycomp_param.burst_length_add_value = 2;
+					dst_vf->vf_lossycomp_param.quant_diff_root_leave = 2;
+				} else {
+					dst_vf->vf_lossycomp_param.lossy_mode = 0;
+					dst_vf->vf_lossycomp_param.burst_length_add_en = 0;
+					dst_vf->vf_lossycomp_param.burst_length_add_value = 2;
+					dst_vf->vf_lossycomp_param.quant_diff_root_leave = 2;
+				}
 				if (dst_vf->compHeadAddr >= ADDR_VALUE_8G ||
 					dst_vf->compBodyAddr >= ADDR_VALUE_8G)
 					dst_vf->vf_lossycomp_param.ofset_burst4_en = 1;
@@ -5268,6 +5278,28 @@ static ssize_t dewarp_load_flag_store(struct class *cla, struct class_attribute 
 	return count;
 }
 
+static ssize_t lossy_compress_rate_show(struct class *cla, struct class_attribute *attr,
+	char *buf)
+{
+	return snprintf(buf, 80, "current lossy_compress_rate is %d.\n", lossy_compress_rate);
+}
+
+static ssize_t lossy_compress_rate_store(struct class *cla, struct class_attribute *attr,
+	const char *buf, size_t count)
+{
+	long tmp;
+	int ret;
+
+	ret = kstrtol(buf, 0, &tmp);
+	if (ret != 0) {
+		pr_err("ERROR converting %s to long int!\n", buf);
+		return ret;
+	}
+
+	lossy_compress_rate = tmp;
+	return count;
+}
+
 static CLASS_ATTR_RW(debug_axis_pip);
 static CLASS_ATTR_RW(debug_crop_pip);
 static CLASS_ATTR_RW(force_composer);
@@ -5316,6 +5348,7 @@ static CLASS_ATTR_RW(force_comp_w);
 static CLASS_ATTR_RW(force_comp_h);
 static CLASS_ATTR_RW(vd_test_fps);
 static CLASS_ATTR_RW(dewarp_load_flag);
+static CLASS_ATTR_RW(lossy_compress_rate);
 
 static struct attribute *video_composer_class_attrs[] = {
 	&class_attr_debug_crop_pip.attr,
@@ -5366,6 +5399,7 @@ static struct attribute *video_composer_class_attrs[] = {
 	&class_attr_force_comp_h.attr,
 	&class_attr_vd_test_fps.attr,
 	&class_attr_dewarp_load_flag.attr,
+	&class_attr_lossy_compress_rate.attr,
 	NULL
 };
 

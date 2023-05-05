@@ -77,7 +77,6 @@ u32 debug_axis_en;
 struct output_axis_s axis;
 u32 rdma_en;
 u32 debug_rdma_en;
-u32 lossy_compress_rate;//0: 100% copress; 1: 67% compress; 2: 83% compress
 
 struct mutex vicp_mutex; /*used to avoid user space call at the same time*/
 struct vicp_hdr_s *vicp_hdr;
@@ -718,28 +717,6 @@ static ssize_t debug_rdma_en_store(struct class *cla, struct class_attribute *at
 	return count;
 }
 
-static ssize_t lossy_compress_rate_show(struct class *cla, struct class_attribute *attr,
-	char *buf)
-{
-	return snprintf(buf, 80, "current lossy_compress_rate is %d.\n", lossy_compress_rate);
-}
-
-static ssize_t lossy_compress_rate_store(struct class *cla, struct class_attribute *attr,
-	const char *buf, size_t count)
-{
-	long tmp;
-	int ret;
-
-	ret = kstrtol(buf, 0, &tmp);
-	if (ret != 0) {
-		pr_err("ERROR converting %s to long int!\n", buf);
-		return ret;
-	}
-
-	lossy_compress_rate = tmp;
-	return count;
-}
-
 static CLASS_ATTR_RW(print_flag);
 static CLASS_ATTR_RW(reg);
 static CLASS_ATTR_RW(demo_enable);
@@ -761,7 +738,6 @@ static CLASS_ATTR_RW(debug_axis_en);
 static CLASS_ATTR_RW(axis);
 static CLASS_ATTR_RW(rdma_en);
 static CLASS_ATTR_RW(debug_rdma_en);
-static CLASS_ATTR_RW(lossy_compress_rate);
 
 static struct attribute *vicp_class_attrs[] = {
 	&class_attr_print_flag.attr,
@@ -785,7 +761,6 @@ static struct attribute *vicp_class_attrs[] = {
 	&class_attr_axis.attr,
 	&class_attr_rdma_en.attr,
 	&class_attr_debug_rdma_en.attr,
-	&class_attr_lossy_compress_rate.attr,
 	NULL
 };
 ATTRIBUTE_GROUPS(vicp_class);

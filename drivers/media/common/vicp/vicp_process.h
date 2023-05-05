@@ -47,7 +47,6 @@ extern struct vicp_hdr_s *vicp_hdr;
 extern u32 rdma_en;
 extern u32 debug_rdma_en;
 extern u32 fgrain_en;
-extern u32 lossy_compress_rate;
 /* *********************************************************************** */
 /* ************************* enum definitions **************************.*/
 /* *********************************************************************** */

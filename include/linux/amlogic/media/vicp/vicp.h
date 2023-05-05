@@ -96,6 +96,7 @@ struct data_option_s {
 	u32 input_source_count;
 	u32 input_source_number;
 	bool security_enable;
+	u32 compress_rate;
 };
 
 struct dma_data_config_s {

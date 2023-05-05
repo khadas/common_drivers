@@ -4034,7 +4034,7 @@ void dim_pre_de_process(unsigned int channel)
 					      &ppre->di_mcvecwr_mif,
 					      ppre->mcdi_enable);
 	}
-	if (dim_config_crc_icl()) //add for crc @2k23-0403
+	if (dim_config_crc_icl() && VFMT_IS_I(vf_i->type)) //add for crc @2k23-0403
 		dimh_set_crc_init_update(ppre->field_count_for_cont);
 
 	if (dim_is_slt_mode()) {

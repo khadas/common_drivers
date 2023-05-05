@@ -20,7 +20,11 @@ function pre_defconfig_cmds() {
 		echo "CONFIG_DEVTMPFS=y" >> ${temp_file}
 	fi
 
-	KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${ROOT_DIR}/${KERNEL_DIR}/common_drivers/arch/arm64/configs/amlogic_gki.fragment ${temp_file}
+	if [[ ${GKI_CONFIG} == gki_20 ]]; then
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.fragment ${temp_file}
+	else
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.fragment ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.10 ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.debug ${temp_file}
+	fi
 
 	rm ${temp_file}
 }
@@ -34,4 +38,5 @@ dtbs
 android_overlay_dt.dtbo
 "
 
+KMI_SYMBOL_LIST=android/abi_gki_aarch64_amlogic
 GKI_MODULES_LIST=android/gki_aarch64_modules

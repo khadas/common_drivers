@@ -307,9 +307,18 @@ if [ "${ABI}" -eq "1" ]; then
 else
 	if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" ]]; then
 		if [[ ${BAZEL} == 1 ]]; then
-			args="$@ --lto=${LTO}"
+			args="$@ --lto=${LTO} --allow_undeclared_modules"
 			PROJECT_DIR=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/project
 			[[ -d ${PROJECT_DIR} ]] || mkdir -p ${PROJECT_DIR}
+
+			pushd ${ROOT_DIR}/${KERNEL_DIR}
+			git checkout android/abi_gki_aarch64_amlogic
+			cat ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic >> android/abi_gki_aarch64_amlogic
+			cat ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.10 >> android/abi_gki_aarch64_amlogic
+			cat ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.debug >> android/abi_gki_aarch64_amlogic
+			cat ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.external >> android/abi_gki_aarch64_amlogic
+			cat ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.illegal >> android/abi_gki_aarch64_amlogic
+			popd
 
 			if [[ ! -f ${PROJECT_DIR}/build.config.project ]]; then
 				touch ${PROJECT_DIR}/build.config.project
@@ -327,8 +336,6 @@ else
 
 			if [[ ${GKI_CONFIG} == gki_20 ]]; then
 				[[ -n ${ANDROID_PROJECT} ]] && sed -i "/GKI_BUILD_CONFIG_FRAGMENT/d" ${PROJECT_DIR}/build.config.gki10
-			else
-				args="${args} --allow_undeclared_modules"
 			fi
 
 			if [[ ! -f ${PROJECT_DIR}/project.bzl ]]; then
@@ -365,6 +372,8 @@ else
 
 			sed -i "/GKI_BUILD_CONFIG_FRAGMENT/d" ${PROJECT_DIR}/build.config.gki10
 
+			echo "========================================================"
+			echo "after compiling with bazel and organizing the document"
 			source ${KERNEL_DIR}/build.config.constants
 			export COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
 			export DIST_DIR=$(readlink -m ${DIST_DIR:-${COMMON_OUT_DIR}/dist})

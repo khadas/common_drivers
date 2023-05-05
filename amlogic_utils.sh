@@ -650,18 +650,26 @@ function modules_install() {
 			fi
 		done
 
-		for module in `find ${DIST_DIR} -type f -name "*.ko"`; do
+		while read module
+		do
 			module_name=`echo ${module} | rev | cut -d '/' -f 1 | rev`
-			if [[ `grep ${module_name} ${DIST_DIR}/modules.load` ]]; then
-				cp ${module} ${OUT_AMLOGIC_DIR}/modules
+			if [[ `echo ${module} | grep "^kernel\/"` ]]; then
+				if [[ -f ${DIST_DIR}/${module_name} ]]; then
+					cp ${DIST_DIR}/${module_name} ${OUT_AMLOGIC_DIR}/modules
+				else
+					module=`find ${digit_output}/execroot/ -name ${module_name} | grep "amlogic"`
+					cp ${module} ${OUT_AMLOGIC_DIR}/modules
+				fi
+			elif [[ `echo ${module} | grep "^extra\/"` ]]; then
+				cp ${DIST_DIR}/${module_name} ${OUT_AMLOGIC_DIR}/ext_modules
 			else
-				cp ${module} ${OUT_AMLOGIC_DIR}/ext_modules
+				echo "warning unrecognized module: ${module}"
 			fi
-		done
+		done < ${DIST_DIR}/modules.load
 
 		dep_file=`find ${digit_output}/execroot/ -name *.dep | grep "amlogic"`
 		cp ${dep_file} ${OUT_AMLOGIC_DIR}/modules/full_modules.dep
-		grep -E "^kernel\/|^${common_drivers}\/" ${dep_file} > ${OUT_AMLOGIC_DIR}/modules/modules.dep
+		grep -E "^kernel\/" ${dep_file} > ${OUT_AMLOGIC_DIR}/modules/modules.dep
 		touch ${module} ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
 		for order_file in `find ${digit_output}/execroot/ -name "modules.order.*" | grep "amlogic"`; do
 			echo "# ${order_file}" >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order

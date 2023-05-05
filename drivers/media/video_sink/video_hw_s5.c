@@ -5702,7 +5702,7 @@ void vd_s5_hw_set(struct video_layer_s *layer,
 	struct vframe_s *dispbuf, struct vpp_frame_par_s *frame_par)
 {
 	struct vd_proc_s *vd_proc = &g_vd_proc;
-	u32 vpp_index = VPP0;
+	u32 vpp_index = layer->vpp_index;
 
 	if (cur_dev->display_module != S5_DISPLAY_MODULE)
 		return;
@@ -8645,6 +8645,7 @@ bool is_sr_phase_changed_s5(void)
 	bool changed = false;
 	struct vd_proc_sr_reg_s *vd_sr_reg = NULL;
 	struct vd_proc_sr_slice_reg_s *vd_sr_slice_reg = NULL;
+	u32 vpp_index = vd_layer[0].vpp_index;
 
 	vd_sr_reg = &vd_proc_reg.vd_proc_sr_reg;
 	/* for aisr only slice0 used */
@@ -8655,10 +8656,10 @@ bool is_sr_phase_changed_s5(void)
 
 	sr = &sr_info;
 	sr0_sharp_sr2_ctrl2 =
-		cur_dev->rdma_func[VPP0].rdma_rd
+		cur_dev->rdma_func[vpp_index].rdma_rd
 			(vd_sr_slice_reg->srsharp0_sharp_sr2_ctrl2);
 	sr1_sharp_sr2_ctrl2 =
-		cur_dev->rdma_func[VPP0].rdma_rd
+		cur_dev->rdma_func[vpp_index].rdma_rd
 			(vd_sr_slice_reg->srsharp1_sharp_sr2_ctrl2);
 	sr0_sharp_sr2_ctrl2 &= 0x7fff;
 	sr1_sharp_sr2_ctrl2 &= 0x7fff;
@@ -9642,17 +9643,18 @@ void switch_3d_view_per_vsync_s5(struct video_layer_s *layer)
 void aisr_sr1_nn_enable_s5(u32 enable)
 {
 	struct vd_proc_sr_reg_s *vd_sr_reg = NULL;
+	u32 vpp_index = vd_layer[0].vpp_index;
 
 	if (!cur_dev->aisr_support)
 		return;
 	vd_sr_reg = &vd_proc_reg.vd_proc_sr_reg;
 
 	if (enable)
-		cur_dev->rdma_func[VPP0].rdma_wr_bits
+		cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(vd_sr_reg->srsharp1_nn_post_top,
 			0x3, 13, 2);
 	else
-		cur_dev->rdma_func[VPP0].rdma_wr_bits
+		cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(vd_sr_reg->srsharp1_nn_post_top,
 			0x0, 13, 2);
 }
@@ -10238,7 +10240,7 @@ void aisr_reshape_output_s5(u32 enable)
 
 void aisr_demo_axis_set_s5(struct video_layer_s *layer)
 {
-	u8 vpp_index = VPP0;
+	u8 vpp_index = layer->vpp_index;
 	static bool en_flag;
 	static u32 original_reg_value1;
 	static u32 original_reg_value2;
@@ -10356,16 +10358,16 @@ void aisr_reshape_addr_set_s5(struct video_layer_s *layer,
 {
 	ulong baddr[4][4];
 	ulong baddr_base = aisr_mif_setting->phy_addr;
-	u32 aisr_stride, aisr_align_h;
+	u32 aisr_stride, aisr_align_h, vpp_index;
 	int i, j;
 	struct vd_aisr_reshape_reg_s *aisr_reshape_reg;
 
 	if (!is_layer_aisr_supported(layer))
 		return;
-
+	vpp_index = layer->vpp_index;
 	aisr_reshape_reg = &vd_proc_reg.aisr_reshape_reg;
 	if (!aisr_mif_setting->aisr_enable) {
-		cur_dev->rdma_func[VPP0].rdma_wr_bits
+		cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(aisr_reshape_reg->aisr_post_ctrl,
 			0,
 			31, 1);
@@ -10507,52 +10509,52 @@ void aisr_reshape_addr_set_s5(struct video_layer_s *layer,
 			break;
 		}
 	}
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr00,
 		baddr[0][0] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr01,
 		baddr[0][1] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr02,
 		baddr[0][2] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr03,
 		baddr[0][3] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr10,
 		baddr[1][0] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr11,
 		baddr[1][1] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr12,
 		baddr[1][2] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr13,
 		baddr[1][3] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr20,
 		baddr[2][0] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr21,
 		baddr[2][1] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr22,
 		baddr[2][2] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr23,
 		baddr[2][3] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr30,
 		baddr[3][0] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr31,
 		baddr[3][1] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr32,
 		baddr[3][2] >> 4);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_baddr33,
 		baddr[3][3] >> 4);
 }
@@ -10562,11 +10564,12 @@ void aisr_reshape_cfg_s5(struct video_layer_s *layer,
 {
 	u32 aisr_hsize = 0;
 	u32 aisr_vsize = 0;
-	u32 vscale_skip_count;
+	u32 vscale_skip_count, vpp_index;
 	int reg_hloop_num, reg_vloop_num;
 	int r = 0;
 	struct vd_aisr_reshape_reg_s *aisr_reshape_reg;
 
+	vpp_index = layer->vpp_index;
 	if (!is_layer_aisr_supported(layer) ||
 	    !aisr_mif_setting)
 		return;
@@ -10584,13 +10587,13 @@ void aisr_reshape_cfg_s5(struct video_layer_s *layer,
 		vscale_skip_count;
 	if (reg_vloop_num < 0)
 		reg_vloop_num = 0;
-	cur_dev->rdma_func[VPP0].rdma_wr_bits
+	cur_dev->rdma_func[vpp_index].rdma_wr_bits
 		(aisr_reshape_reg->aisr_reshape_ctrl0,
 		aisr_mif_setting->swap_64bit, 7, 1);
-	cur_dev->rdma_func[VPP0].rdma_wr_bits
+	cur_dev->rdma_func[vpp_index].rdma_wr_bits
 		(aisr_reshape_reg->aisr_reshape_ctrl0,
 		aisr_mif_setting->little_endian, 6, 1);
-	cur_dev->rdma_func[VPP0].rdma_wr_bits
+	cur_dev->rdma_func[vpp_index].rdma_wr_bits
 		(aisr_reshape_reg->aisr_reshape_ctrl0,
 		1, 0, 3);
 	if (aisr_mif_setting->di_hf_y_reverse) {
@@ -10608,35 +10611,35 @@ void aisr_reshape_cfg_s5(struct video_layer_s *layer,
 		else if (glayer_info[0].mirror == V_MIRROR)
 			r |= (0 << 0) | (1 << 1);
 	}
-	cur_dev->rdma_func[VPP0].rdma_wr_bits
+	cur_dev->rdma_func[vpp_index].rdma_wr_bits
 		(aisr_reshape_reg->aisr_reshape_ctrl0,
 		r, 4, 2);
 	/* stride set */
-	cur_dev->rdma_func[VPP0].rdma_wr_bits
+	cur_dev->rdma_func[vpp_index].rdma_wr_bits
 		(aisr_reshape_reg->aisr_reshape_ctrl1,
 		((aisr_mif_setting->src_align_w * 8 + 511) >> 9) << 2,
 		0, 13);
 	/* h v skip set */
-	cur_dev->rdma_func[VPP0].rdma_wr_bits
+	cur_dev->rdma_func[vpp_index].rdma_wr_bits
 		(aisr_reshape_reg->aisr_reshape_ctrl1,
 		reg_hloop_num << 4 |
 		reg_vloop_num,
 		20, 7);
 	/* scope x, y set */
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_scope_x,
 		(aisr_mif_setting->x_end << 16) |
 		aisr_mif_setting->x_start);
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_reshape_scope_y,
 		(aisr_mif_setting->y_end << 16) |
 		aisr_mif_setting->y_start);
 
-	cur_dev->rdma_func[VPP0].rdma_wr
+	cur_dev->rdma_func[vpp_index].rdma_wr
 		(aisr_reshape_reg->aisr_post_size,
 		(aisr_vsize << 16) |
 		aisr_hsize);
-	cur_dev->rdma_func[VPP0].rdma_wr_bits
+	cur_dev->rdma_func[vpp_index].rdma_wr_bits
 		(aisr_reshape_reg->aisr_post_ctrl,
 		aisr_mif_setting->aisr_enable,
 		31, 1);

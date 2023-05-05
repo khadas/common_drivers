@@ -282,6 +282,7 @@ struct video_dev_s {
 	u8 mosaic_support;
 	u8 cr_loss;
 	u8 amdv_tvcore;
+	u8 vsync_2to1_enable;
 };
 
 struct video_layer_s;

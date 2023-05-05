@@ -1583,6 +1583,12 @@ s32 primary_render_frame(struct video_layer_s *layer,
 		ret = -1;
 		goto render_exit;
 	}
+	if (cur_dev->vsync_2to1_enable && vsync_count_start) {
+		/* odd not handle */
+		if (vsync_frame_count % 2)
+			return 0;
+	}
+
 	local_vd2_mif.p_vd_mif_reg = &vd_layer[1].vd_mif_reg;
 	local_vd2_mif.p_vd_afbc_reg = &vd_layer[1].vd_afbc_reg;
 	/* filter setting management */
@@ -2809,6 +2815,14 @@ static int video_early_proc(u8 layer_id, u8 fake_layer_id)
 {
 	u8 func_id = 0, path_index = 0;
 
+	if (cur_dev->vsync_2to1_enable &&
+		layer_id == 0 &&
+		vsync_count_start) {
+		/* odd not handle */
+		if (vsync_frame_count % 2)
+			return 0;
+	}
+
 	if (layer_id == 0xff)
 		func_id = vd_fake_func[fake_layer_id].fake_func_id;
 	else if (layer_id < MAX_VD_LAYER)
@@ -2848,6 +2862,14 @@ static int video_late_proc(u8 layer_id, u8 fake_layer_id)
 	u8 func_id = 0;
 	u8 path_index = 0;
 
+	if (cur_dev->vsync_2to1_enable &&
+		layer_id == 0 &&
+		vsync_count_start) {
+		/* odd not handle */
+		if (vsync_frame_count % 2)
+			return 0;
+	}
+
 	if (layer_id == 0xff)
 		func_id = vd_fake_func[fake_layer_id].fake_func_id;
 	else if (layer_id < MAX_VD_LAYER)
@@ -2878,17 +2900,25 @@ static int vdx_misc_early_proc(u8 layer_id,
 	bool pre_vsync_notify = false;
 	bool post_vsync_notify = false;
 
+	if (cur_dev->vsync_2to1_enable &&
+		layer_id == 0 &&
+		vsync_count_start) {
+		/* odd not handle */
+		if (vsync_frame_count % 2)
+			return 0;
+	}
+
 	/* prevsync + postvsync case */
 	if (cur_dev->pre_vsync_enable) {
 		if (layer_id == 0) {
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 			vsync_notify_video_composer(layer_id,
-				vsync_pts_inc_scale,
+				vsync_pts_inc_scale / 2,
 				vsync_pts_inc_scale_base);
 #endif
 #ifdef CONFIG_AMLOGIC_VIDEOQUEUE
 			vsync_notify_videoqueue(layer_id,
-				vsync_pts_inc_scale,
+				vsync_pts_inc_scale / 2,
 				vsync_pts_inc_scale_base);
 #endif
 			pre_vsync_notify = true;
@@ -2908,7 +2938,8 @@ static int vdx_misc_early_proc(u8 layer_id,
 		}
 	} else {
 		/* postvsync case, only notify once per vsync*/
-		if (!post_vsync_notify) {
+		if (!post_vsync_notify &&
+			!(cur_dev->vsync_2to1_enable && layer_id == 0)) {
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 			vsync_notify_video_composer(layer_id,
 				vsync_pts_inc_scale,
@@ -2942,6 +2973,14 @@ static int vdx_misc_early_proc(u8 layer_id,
 
 static void vdx_misc_late_proc(u8 layer_id)
 {
+	if (cur_dev->vsync_2to1_enable &&
+		layer_id == 0 &&
+		vsync_count_start) {
+		/* odd not handle */
+		if (vsync_frame_count % 2)
+			return;
+	}
+
 	if  (layer_id == 0) {
 		if (vd_layer[0].dispbuf &&
 		    (vd_layer[0].dispbuf->type & VIDTYPE_MVC))
@@ -3129,33 +3168,50 @@ static struct vframe_s *video_toggle_frame
 {
 	u8 func_id = 0;
 	u8 path_index = 0;
-	struct vframe_s *new_frame = NULL;
+	struct vframe_s *path_new_frame = NULL;
 
+	if (cur_dev->vsync_2to1_enable &&
+		layer_id == 0 &&
+		vsync_count_start) {
+		vsync_frame_count++;
+		/* odd not handle */
+		if (vsync_frame_count % 2)
+			return NULL;
+	}
 	if (layer_id == 0xff)
 		func_id = vd_fake_func[fake_layer_id].fake_func_id;
 	else if (layer_id < MAX_VD_LAYER)
 		func_id = vd_layer[layer_id].func_path_id;
 	switch (func_id) {
 	case AMVIDEO:
-		new_frame = amvideo_toggle_frame(vd_path_id);
+		path_new_frame = amvideo_toggle_frame(vd_path_id);
 		break;
 	case PIP1:
 	case PIP2:
 		path_index = func_id - AMVIDEO;
 		if (path_index < MAX_VD_LAYER)
-			new_frame = do_pipx_toggle_frame(path_index, path_id);
+			path_new_frame = do_pipx_toggle_frame(path_index, path_id);
 		break;
 	case RENDER0:
 	case RENDER1:
 	case RENDER2:
 		path_index = func_id - RENDER0;
 		if (path_index < MAX_VD_LAYER)
-			new_frame = do_renderx_toggle_frame(path_index, vd_path_id, path_id);
+			path_new_frame = do_renderx_toggle_frame(path_index, vd_path_id, path_id);
 		break;
 	default:
 		break;
 	}
-	return new_frame;
+	if (cur_dev->vsync_2to1_enable &&
+		layer_id == 0 &&
+		path_new_frame) {
+		new_frame_cnt++;
+		if (new_frame_cnt == 1) {
+			vsync_count_start = true;
+			pr_info("%s, vsync_count_started\n", __func__);
+		}
+	}
+	return path_new_frame;
 }
 
 static struct vframe_s *vdx_swap_frame(u8 layer_id,
@@ -3537,6 +3593,14 @@ static void do_vd1_swap_frame(u8 layer_id,
 	struct vframe_s *new_frame = NULL;
 	enum vframe_signal_fmt_e fmt;
 	int source_type = 0;
+
+	if (cur_dev->vsync_2to1_enable &&
+		layer_id == 0 &&
+		vsync_count_start) {
+		/* odd not handle */
+		if (vsync_frame_count % 2)
+			return;
+	}
 
 	new_frame = vdx_swap_frame(0, vd1_path_id,
 				  cur_vd1_path_id,
@@ -4435,6 +4499,18 @@ void pre_vsync_process(void)
 	s32 vd_path_id[MAX_VD_LAYER] = {0};
 	struct path_id_s path_id;
 
+	if (cur_dev->vsync_2to1_enable) {
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
+		vsync_notify_video_composer(0,
+			vsync_pts_inc_scale / 2,
+			vsync_pts_inc_scale_base);
+#endif
+#ifdef CONFIG_AMLOGIC_VIDEOQUEUE
+		vsync_notify_videoqueue(0,
+			vsync_pts_inc_scale / 2,
+			vsync_pts_inc_scale_base);
+#endif
+	}
 	set_cur_line_info();
 	for (i = 0; i < MAX_VD_LAYER; i++)
 		vd_path_id[i] = glayer_info[i].display_path_id;
@@ -5522,6 +5598,13 @@ int video_property_notify(int flag)
 	return 0;
 }
 EXPORT_SYMBOL(video_property_notify);
+
+void set_vsync_2to1_mode(u8 enable)
+{
+	if (cur_dev->prevsync_support)
+		cur_dev->vsync_2to1_enable = enable;
+}
+EXPORT_SYMBOL(set_vsync_2to1_mode);
 /*********************************************************
  * Utilities
  *********************************************************/

@@ -579,6 +579,11 @@ int vpp_in_size_threshold_8k = 7;
 int vdec_out_size_threshold_4k = 9;
 int vpp_in_size_threshold_4k = 9;
 
+/* for vd1 vsync 2to1 */
+bool vsync_count_start;
+u32 vsync_frame_count;
+u32 new_frame_cnt;
+
 u32 new_frame_count;
 u32 vd1_vd2_mux_dts;
 u32 osd_vpp_misc;
@@ -1019,6 +1024,7 @@ static void video_vf_unreg_provider(void)
 	int i;
 #endif
 
+	clear_vsync_2to1_info();
 	new_frame_count = 0;
 	first_frame_toggled = 0;
 	videopeek = 0;
@@ -4494,6 +4500,18 @@ u32 get_tvin_dv_flag(void)
 }
 EXPORT_SYMBOL(get_tvin_dv_flag);
 
+void clear_vsync_2to1_info(void)
+{
+	if (cur_dev->vsync_2to1_enable) {
+		vsync_count_start = false;
+		vsync_frame_count = 0;
+		new_frame_cnt = 0;
+		pr_info("%s， vsync_frame_count=%d\n", __func__,
+			vsync_frame_count);
+	}
+}
+EXPORT_SYMBOL(clear_vsync_2to1_info);
+
 /*for video related files only.*/
 void video_module_lock(void)
 {
@@ -5003,6 +5021,12 @@ u32 get_first_frame_toggled(void)
 	return first_frame_toggled;
 }
 EXPORT_SYMBOL(get_first_frame_toggled);
+
+u32 get_vsync_frame_count(void)
+{
+	return new_frame_count;
+}
+EXPORT_SYMBOL(get_vsync_frame_count);
 
 static s32 is_afbc_for_vpp(u8 id)
 {
@@ -12256,6 +12280,30 @@ static ssize_t aisr_info_show(struct class *cla,
 			_cur_frame_par->nnhf_input_h);
 }
 
+static ssize_t vsync_2to1_enable_show(struct class *cla,
+				struct class_attribute *attr,
+				char *buf)
+{
+	return snprintf(buf, 40, "vsync_2to1_enable:%d\n", cur_dev->vsync_2to1_enable);
+}
+
+static ssize_t vsync_2to1_enable_store(struct class *cla,
+				 struct class_attribute *attr,
+				 const char *buf, size_t count)
+{
+	int res = 0;
+	int ret = 0;
+
+	ret = kstrtoint(buf, 0, &res);
+	if (ret) {
+		pr_err("kstrtoint err\n");
+		return -EINVAL;
+	}
+	if (cur_dev->prevsync_support)
+		cur_dev->vsync_2to1_enable = res;
+	return count;
+}
+
 static struct class_attribute amvideo_class_attrs[] = {
 	__ATTR(axis,
 	       0664,
@@ -12809,6 +12857,9 @@ static struct class_attribute amvideo_class_attrs[] = {
 		mosaic_axis_pic_store),
 #endif
 	__ATTR_RO(cur_ai_face),
+	__ATTR(vsync_2to1_enable, 0664,
+		vsync_2to1_enable_show,
+		vsync_2to1_enable_store),
 };
 
 static struct class_attribute amvideo_poll_class_attrs[] = {

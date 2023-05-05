@@ -163,8 +163,7 @@ do
 		shift
 		;;
 	--dev_config)
-		DEV_CONFIG=1
-		CONFIG_GROUP=$2
+		DEV_CONFIGS=$2
 		VA=1
 		shift
 		;;

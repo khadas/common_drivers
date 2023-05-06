@@ -60,6 +60,8 @@ struct es_params_t {
 	int es_overflow;
 	int es_error_cn;
 	u32 header_wp;
+	int has_splice;
+	unsigned int have_sent_len;
 };
 
 struct ts_out {
@@ -224,6 +226,14 @@ module_param(debug_section, int, 0644);
 MODULE_PARM_DESC(audio_es_len_limit, "\n\t\t debug section");
 static int audio_es_len_limit = (40 * 1024);
 module_param(audio_es_len_limit, int, 0644);
+
+MODULE_PARM_DESC(video_es_splice, "\n\t\t video es splice");
+static int video_es_splice;
+module_param(video_es_splice, int, 0644);
+
+MODULE_PARM_DESC(audio_es_splice, "\n\t\t audio es splice");
+static int audio_es_splice;
+module_param(audio_es_splice, int, 0644);
 
 MODULE_PARM_DESC(ts_output_max_pid_num_per_sid, "\n\t\t max pid num per sid in si_table");
 static int ts_output_max_pid_num_per_sid = 32;
@@ -924,29 +934,46 @@ static int write_es_data(struct out_elem *pout, struct es_params_t *es_params)
 	int ret;
 	char *ptmp;
 	int len;
+	struct dmx_non_sec_es_header header;
 	int h_len = sizeof(struct dmx_non_sec_es_header);
 	int es_len = 0;
 
 	if (es_params->have_header == 0)
 		return -1;
 
+	es_params->header.len -= es_params->have_sent_len;
+	es_params->have_sent_len = 0;
+
 	if (es_params->have_send_header == 0) {
-		ATRACE_COUNTER(pout->name, es_params->header.pts);
-		pr_dbg("%s pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, len:%d\n",
+		memset(&header, 0, h_len);
+		if (es_params->has_splice == 0) {
+			memcpy(&header, &es_params->header, h_len);
+			ATRACE_COUNTER(pout->name, es_params->header.pts);
+			pr_dbg("%s pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, len:%d\n",
 		       pout->type == AUDIO_TYPE ? "audio" : "video",
 			   pout->es_pes->pid,
 			   pout->sid,
-		       es_params->header.pts_dts_flag,
-		       (unsigned long)es_params->header.pts,
-		       (unsigned long)es_params->header.dts,
-		       es_params->header.len);
-
+		       header.pts_dts_flag,
+		       (unsigned long)header.pts,
+		       (unsigned long)header.dts,
+		       header.len);
+		} else {
+			header.len = es_params->header.len;
+		pr_dbg("%s pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, len:%d\n",
+		   pout->type == AUDIO_TYPE ? "last splice audio" : "last splice video",
+		   pout->es_pes->pid,
+		   pout->sid,
+		   header.pts_dts_flag,
+		   (unsigned long)header.pts,
+		   (unsigned long)header.dts,
+		   header.len);
+		}
 		if (!(es_params->header.pts_dts_flag & 0x4) ||
 			(pout->type == AUDIO_TYPE &&
 			 es_params->header.len < audio_es_len_limit))
-			out_ts_cb_list(pout, (char *)&es_params->header,
+			out_ts_cb_list(pout, (char *)&header,
 				h_len,
-				(h_len + es_params->header.len),
+				(h_len + header.len),
 				&es_params->es_overflow);
 		es_params->have_send_header = 1;
 	}
@@ -960,7 +987,7 @@ static int write_es_data(struct out_elem *pout, struct es_params_t *es_params)
 				(pout->type == AUDIO_TYPE &&
 				 es_params->header.len < audio_es_len_limit)) {
 #ifdef CHECK_AUD_ES
-				if (pout->type == AUDIO_TYPE)
+				if (pout->type == AUDIO_TYPE && es_params->has_splice == 0)
 					find_audio_es_type(ptmp, ret);
 #endif
 				out_ts_cb_list(pout, ptmp, ret, 0, 0);
@@ -1385,6 +1412,7 @@ static int write_aucpu_es_data(struct out_elem *pout,
 {
 	int ret;
 	char *ptmp;
+	struct dmx_non_sec_es_header header;
 	int h_len = sizeof(struct dmx_non_sec_es_header);
 	int es_len = 0;
 	int len = 0;
@@ -1413,21 +1441,40 @@ static int write_aucpu_es_data(struct out_elem *pout,
 		}
 	}
 
+	es_params->header.len -= es_params->have_sent_len;
+	es_params->have_sent_len = 0;
+
 	if (es_params->have_send_header == 0) {
-		ATRACE_COUNTER(pout->name, es_params->header.pts);
-		pr_dbg("%s pdts_flag:%d, pts:0x%lx, dts:0x%lx, len:%d\n",
+		memset(&header, 0, h_len);
+		if (es_params->has_splice) {
+			header.len = es_params->header.len;
+			pr_dbg("%s pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, len:%d\n",
+		   pout->type == AUDIO_TYPE ? "last splice audio" : "last splice video",
+		   pout->es_pes->pid,
+		   pout->sid,
+		   header.pts_dts_flag,
+		   (unsigned long)header.pts,
+		   (unsigned long)header.dts,
+		   header.len);
+		} else {
+			memcpy(&header, &es_params->header, h_len);
+			ATRACE_COUNTER(pout->name, es_params->header.pts);
+			pr_dbg("%s pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, len:%d\n",
 		       pout->type == AUDIO_TYPE ? "audio" : "video",
-		       es_params->header.pts_dts_flag,
-		       (unsigned long)es_params->header.pts,
-		       (unsigned long)es_params->header.dts,
-		       es_params->header.len);
+			   pout->es_pes->pid,
+			   pout->sid,
+		       header.pts_dts_flag,
+		       (unsigned long)header.pts,
+		       (unsigned long)header.dts,
+		       header.len);
+		}
 
 		if (!(es_params->header.pts_dts_flag & 0x4) ||
 			(pout->type == AUDIO_TYPE &&
 			 es_params->header.len < audio_es_len_limit))
 			out_ts_cb_list(pout, (char *)&es_params->header,
 				h_len,
-				(h_len + es_params->header.len),
+				(h_len + header.len),
 				&es_params->es_overflow);
 		es_params->have_send_header = 1;
 	}
@@ -1502,6 +1549,9 @@ static int write_aucpu_sec_es_data(struct out_elem *pout,
 		}
 	}
 
+	es_params->header.len -= es_params->have_sent_len;
+	es_params->have_sent_len = 0;
+
 	len = es_params->header.len - es_params->data_len;
 	ret = aucpu_bufferid_read(pout, &ptmp, len, 0);
 	if (es_params->data_start == 0)
@@ -1520,17 +1570,29 @@ static int write_aucpu_sec_es_data(struct out_elem *pout,
 	}
 
 	memset(&sec_es_data, 0, sizeof(struct dmx_sec_es_data));
-	sec_es_data.pts_dts_flag = es_params->header.pts_dts_flag;
-	sec_es_data.dts = es_params->header.dts;
-	sec_es_data.pts = es_params->header.pts;
+	if (es_params->has_splice == 0) {
+		sec_es_data.pts_dts_flag = es_params->header.pts_dts_flag;
+		sec_es_data.dts = es_params->header.dts;
+		sec_es_data.pts = es_params->header.pts;
+	}
 	sec_es_data.buf_start = pout->pchan->mem;
 	sec_es_data.buf_end = pout->pchan->mem + pout->pchan->mem_size;
 	sec_es_data.data_start = es_params->data_start;
 	sec_es_data.data_end = (unsigned long)ptmp + len;
 
-	pr_dbg("video data start:0x%x, end:0x%x\n",
-		sec_es_data.data_start, sec_es_data.data_end);
-	pr_dbg("video pdts_flag:%d, pts:0x%lx, dts:0x%lx, offset:0x%lx\n",
+	if (es_params->has_splice == 0)
+		pr_dbg("%s pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, offset:0x%lx\n",
+			pout->type == AUDIO_TYPE ? "audio" : "video",
+		   pout->es_pes->pid,
+		   pout->sid,
+	       sec_es_data.pts_dts_flag, (unsigned long)sec_es_data.pts,
+	       (unsigned long)sec_es_data.dts,
+	       (unsigned long)(sec_es_data.data_start - sec_es_data.buf_start));
+	else
+		pr_dbg("last splice %s pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, offset:0x%lx\n",
+			pout->type == AUDIO_TYPE ? "audio" : "video",
+		   pout->es_pes->pid,
+		   pout->sid,
 	       sec_es_data.pts_dts_flag, (unsigned long)sec_es_data.pts,
 	       (unsigned long)sec_es_data.dts,
 	       (unsigned long)(sec_es_data.data_start - sec_es_data.buf_start));
@@ -1604,6 +1666,9 @@ static int write_sec_video_es_data(struct out_elem *pout,
 	if (es_params->header.len == 0)
 		return -1;
 
+	es_params->header.len -= es_params->have_sent_len;
+	es_params->have_sent_len = 0;
+
 	if (pout->pchan->sec_level)
 		flag = 1;
 	len = es_params->header.len - es_params->data_len;
@@ -1659,9 +1724,12 @@ static int write_sec_video_es_data(struct out_elem *pout,
 		}
 	}
 	memset(&sec_es_data, 0, sizeof(struct dmx_sec_es_data));
-	sec_es_data.pts_dts_flag = es_params->header.pts_dts_flag;
-	sec_es_data.dts = es_params->header.dts;
-	sec_es_data.pts = es_params->header.pts;
+	if (es_params->has_splice == 0) {
+		sec_es_data.pts_dts_flag = es_params->header.pts_dts_flag;
+		sec_es_data.dts = es_params->header.dts;
+		sec_es_data.pts = es_params->header.pts;
+		ATRACE_COUNTER(pout->name, sec_es_data.pts);
+	}
 	sec_es_data.buf_start = pout->pchan->mem_phy;
 	sec_es_data.buf_end = pout->pchan->mem_phy + pout->pchan->mem_size;
 	if (flag) {
@@ -1682,8 +1750,17 @@ static int write_sec_video_es_data(struct out_elem *pout,
 //		pr_dbg("video data start:0x%x,data end:0x%x\n",
 //				sec_es_data.data_start, sec_es_data.data_end);
 
-	ATRACE_COUNTER(pout->name, sec_es_data.pts);
-	pr_dbg("video pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, offset:0x%lx\n",
+	if (es_params->has_splice == 0)
+		pr_dbg("video pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, offset:0x%lx\n",
+			pout->es_pes->pid,
+			pout->sid,
+			sec_es_data.pts_dts_flag,
+			(unsigned long)sec_es_data.pts,
+			(unsigned long)sec_es_data.dts,
+			(unsigned long)(sec_es_data.data_start -
+				sec_es_data.buf_start));
+	else
+		pr_dbg("last splice video pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, offset:0x%lx\n",
 			pout->es_pes->pid,
 			pout->sid,
 			sec_es_data.pts_dts_flag,
@@ -1697,6 +1774,196 @@ static int write_sec_video_es_data(struct out_elem *pout,
 
 	es_params->data_start = 0;
 	es_params->data_len = 0;
+	return 0;
+}
+
+static int transfer_header(struct dmx_non_sec_es_header *pheader, char *cur_header)
+{
+	pheader->pts_dts_flag = cur_header[2] & 0xF;
+	pheader->dts = cur_header[3] & 0x1;
+	pheader->dts <<= 32;
+	pheader->dts |= ((__u64)cur_header[11]) << 24
+	    | ((__u64)cur_header[10]) << 16
+	    | ((__u64)cur_header[9]) << 8
+	    | ((__u64)cur_header[8]);
+	pheader->dts &= 0x1FFFFFFFF;
+
+	pheader->pts = cur_header[3] >> 1 & 0x1;
+	pheader->pts <<= 32;
+	pheader->pts |= ((__u64)cur_header[15]) << 24
+	    | ((__u64)cur_header[14]) << 16
+	    | ((__u64)cur_header[13]) << 8
+	    | ((__u64)cur_header[12]);
+
+	pheader->pts &= 0x1FFFFFFFF;
+	return 0;
+}
+
+static int _handle_es_splice(struct out_elem *pout, struct es_params_t *es_params)
+{
+	struct dmx_non_sec_es_header *pheader = &es_params->header;
+	char *plast_header;
+	unsigned int len = 0;
+	unsigned int d_len = 0;
+	unsigned int h_len = 0;
+	struct dmx_sec_es_data sec_es_data;
+	char *ptmp;
+	int ret;
+	int flag = 0;
+
+	plast_header = (char *)&es_params->last_header;
+
+	if (plast_header[0] == 0xff && plast_header[1] == 0xff)
+		return -1;
+	if (plast_header[2] & 0x4 && pout->type == AUDIO_TYPE)
+		return -1;
+
+	/*read data length first*/
+	if (pout->aucpu_handle >= 0) {
+		unsigned int w_offset;
+
+		w_offset = SC2_bufferid_get_wp_offset(pout->pchan);
+		if (w_offset >= pout->aucpu_read_offset)
+			d_len = w_offset - pout->aucpu_read_offset;
+		else
+			d_len = pout->aucpu_mem_size - pout->aucpu_read_offset + w_offset;
+	} else {
+		d_len = SC2_bufferid_get_data_len(pout->pchan);
+	}
+	if (d_len == 0) {
+//		dprint("pengcc no es data\n");
+		return -1;
+	}
+
+	/*read es header length*/
+	mutex_lock(&pout->pts_mutex);
+	if (pout->aucpu_pts_handle >= 0) {
+		unsigned int w_offset;
+
+		w_offset = SC2_bufferid_get_wp_offset(pout->pchan1);
+		if (w_offset != pout->aucpu_pts_r_offset) {
+			mutex_unlock(&pout->pts_mutex);
+			return -1;
+		}
+	} else {
+		h_len = SC2_bufferid_get_data_len(pout->pchan1);
+		if (h_len != 0) {
+//			dprint("pengcc have es header\n");
+			mutex_unlock(&pout->pts_mutex);
+			return -1;
+		}
+	}
+	mutex_unlock(&pout->pts_mutex);
+
+	/*read es data*/
+	if (pout->aucpu_handle >= 0) {
+		ret = aucpu_bufferid_read(pout, &ptmp, d_len, 0);
+	} else {
+		if (pout->pchan->sec_level)
+			flag = 1;
+
+		ret = SC2_bufferid_read(pout->pchan, &ptmp, d_len, flag);
+	}
+	if (ret == 0) {
+//		dprint("pengcc get no es data\n");
+		return -1;
+	}
+
+	/*dump es data*/
+	if (dump_es_cb && pout->type == VIDEO_TYPE) {
+		if (flag) {
+			enforce_flush_cache(ptmp, ret);
+			dump_es_cb(pout->sid, pout->es_pes->pid,
+			DMX_DUMP_ES_VIDEO_TYPE,
+			ptmp - pout->pchan->mem_phy + pout->pchan->mem,
+			ret, &dump_es_head);
+		} else {
+			dump_es_cb(pout->sid, pout->es_pes->pid,
+				DMX_DUMP_ES_VIDEO_TYPE, ptmp, ret, &dump_es_head);
+		}
+	}
+
+	if (dump_es_cb && pout->type == AUDIO_TYPE) {
+		if (flag) {
+			enforce_flush_cache(ptmp, ret);
+			dump_es_cb(pout->sid, pout->es_pes->pid,
+			DMX_DUMP_ES_AUDIO_TYPE,
+			ptmp - pout->pchan->mem_phy + pout->pchan->mem,
+			ret, &dump_es_head);
+		} else {
+			dump_es_cb(pout->sid, pout->es_pes->pid,
+				DMX_DUMP_ES_AUDIO_TYPE, ptmp, ret, &dump_es_head);
+		}
+	}
+
+	/*send data to dvb-core */
+	len = ret;
+
+	if (pout->output_mode) {
+		memset(&sec_es_data, 0, sizeof(struct dmx_sec_es_data));
+		if (es_params->have_sent_len == 0) {
+			transfer_header(pheader, plast_header);
+
+			sec_es_data.pts_dts_flag = es_params->header.pts_dts_flag;
+			sec_es_data.dts = es_params->header.dts;
+			sec_es_data.pts = es_params->header.pts;
+		}
+		sec_es_data.buf_start = pout->pchan->mem_phy;
+		sec_es_data.buf_end = pout->pchan->mem_phy + pout->pchan->mem_size;
+		if (flag) {
+			sec_es_data.data_start = (unsigned long)ptmp;
+			sec_es_data.data_end = (unsigned long)ptmp + len;
+		} else {
+			sec_es_data.data_start = (unsigned long)ptmp -
+				pout->pchan->mem + pout->pchan->mem_phy;
+			sec_es_data.data_end = (unsigned long)ptmp -
+				pout->pchan->mem + pout->pchan->mem_phy + len;
+		}
+		es_params->have_sent_len += len;
+		es_params->has_splice++;
+
+		pr_dbg("%d %s pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, offset:0x%lx\n",
+			es_params->has_splice,
+			pout->type == VIDEO_TYPE ? "splice video" : "splice audio",
+			pout->es_pes->pid,
+		pout->sid,
+		sec_es_data.pts_dts_flag,
+		(unsigned long)sec_es_data.pts,
+		(unsigned long)sec_es_data.dts,
+		(unsigned long)(sec_es_data.data_start -
+			sec_es_data.buf_start));
+
+		out_ts_cb_list(pout, (char *)&sec_es_data,
+				sizeof(struct dmx_sec_es_data), 0, 0);
+		return 0;
+	}
+	h_len = sizeof(struct dmx_non_sec_es_header);
+	if (es_params->has_splice == 0) {
+		transfer_header(pheader, plast_header);
+		es_params->header.len = len;
+	} else {
+		memset((char *)&es_params->header, 0, h_len);
+		es_params->header.len = len;
+	}
+	es_params->have_sent_len += len;
+	es_params->has_splice++;
+
+	pr_dbg("%d %s pid:0x%0x sid:0x%0x flag:%d, pts:0x%lx, dts:0x%lx, len:%d\n",
+		   es_params->has_splice,
+		   pout->type == AUDIO_TYPE ? "splice audio" : "splice video",
+		   pout->es_pes->pid,
+		   pout->sid,
+		   es_params->header.pts_dts_flag,
+		   (unsigned long)es_params->header.pts,
+		   (unsigned long)es_params->header.dts,
+		   es_params->header.len);
+
+	out_ts_cb_list(pout, (char *)&es_params->header,
+		h_len,
+		(h_len + len),
+		&es_params->es_overflow);
+	if (!es_params->es_overflow)
+		out_ts_cb_list(pout, ptmp, ret, 0, 0);
 	return 0;
 }
 
@@ -1728,6 +1995,14 @@ static int _handle_es(struct out_elem *pout, struct es_params_t *es_params)
 					  pheader);
 		mutex_unlock(&pout->pts_mutex);
 		if (ret < 0) {
+			if (ret == -3) {
+				if (pout->type == VIDEO_TYPE && video_es_splice) {
+					if (pout->output_mode || pout->pchan->sec_level)
+						_handle_es_splice(pout, es_params);
+				} else if (pout->type == AUDIO_TYPE && audio_es_splice) {
+					_handle_es_splice(pout, es_params);
+				}
+			}
 			return -1;
 		} else if (ret > 0) {
 			dirty_len = ret;
@@ -1783,6 +2058,20 @@ static int _handle_es(struct out_elem *pout, struct es_params_t *es_params)
 			}
 			return 0;
 		}
+		if (pheader->len <= es_params->have_sent_len) {
+			es_params->have_header = 0;
+			es_params->have_send_header = 0;
+			es_params->data_len = 0;
+			es_params->data_start = 0;
+			es_params->es_overflow = 0;
+			es_params->have_sent_len = 0;
+			es_params->has_splice = 0;
+			memcpy(&es_params->last_last_header,
+				&es_params->last_header, 16);
+			memcpy(&es_params->last_header, pcur_header,
+				sizeof(es_params->last_header));
+			return 0;
+		}
 		if (pout->aucpu_handle >= 0) {
 			unsigned int w_offset;
 
@@ -1794,7 +2083,7 @@ static int _handle_es(struct out_elem *pout, struct es_params_t *es_params)
 		} else {
 			len = SC2_bufferid_get_data_len(pout->pchan);
 		}
-		if (pheader->len > len) {
+		if (pheader->len - es_params->have_sent_len > len) {
 			dprint("compute len:%d, es len:%d\n", pheader->len, len);
 			//re read header data again
 			if (pout->aucpu_pts_start) {
@@ -1815,7 +2104,7 @@ static int _handle_es(struct out_elem *pout, struct es_params_t *es_params)
 					memcpy(pcur_header, pheader_again, 0x10);
 					re_get_non_sec_es_header(pout, plast_header, pcur_header,
 					  pheader);
-					if (pheader->len > len) {
+					if (pheader->len - es_params->have_sent_len > len) {
 						dprint("two compute len:%d, es len:%d\n",
 							pheader->len, len);
 						goto error_handle;
@@ -1852,6 +2141,8 @@ static int _handle_es(struct out_elem *pout, struct es_params_t *es_params)
 			es_params->data_len = 0;
 			es_params->data_start = 0;
 			es_params->es_overflow = 0;
+			es_params->have_sent_len = 0;
+			es_params->has_splice = 0;
 			return 0;
 		} else {
 			return -1;
@@ -1865,6 +2156,8 @@ static int _handle_es(struct out_elem *pout, struct es_params_t *es_params)
 				es_params->data_len = 0;
 				es_params->data_start = 0;
 				es_params->es_overflow = 0;
+				es_params->have_sent_len = 0;
+				es_params->has_splice = 0;
 				return 0;
 			} else {
 				return -1;

@@ -1865,17 +1865,13 @@
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc1_pins_h>;
-	ss_leading_gap = <5>;  /* 5 sclk */
-	ss_trailing_gap = <1>;
-	rx_tuning = <7>; /* 4bit signed, +7 spi_clk */
 };
 
 &spicc2 {
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc2_pins_c>;
-	slave;
-	tx_tuning = <15>; /* 4bit signed, -1 spi_clk */
+	//slave;
 };
 
 &fb {

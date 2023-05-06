@@ -24,6 +24,7 @@
 #include <linux/gpio.h>
 #include <linux/delay.h>
 #include <asm/cacheflush.h>
+#include <linux/amlogic/aml_spi.h>
 
 /* Register Map */
 #define SPICC_REG_CFG_READY		0x00
@@ -161,13 +162,6 @@ struct spicc_descriptor {
 	struct spicc_sg_link		*rx_sg;
 };
 
-struct spicc_xfer {
-	const void			*tx_buf;
-	void				*rx_buf;
-	int				len;
-	unsigned long			flags;
-};
-
 struct spicc_device {
 	struct spi_controller		*controller;
 	struct platform_device		*pdev;
@@ -184,7 +178,9 @@ struct spicc_device {
 	union spicc_cfg_bus		cfg_bus;
 	u8				config_data_mode;
 	u8				config_ss_trailing_gap;
+	struct spicc_transfer		*ccxfer;
 	struct spi_device		*test_dev;
+	struct spicc_controller_data	test_cdata;
 	struct spi_message		*test_msg;
 	int				test_nxfers_max;
 	int				test_nxfers;
@@ -342,26 +338,45 @@ static int spicc_config_desc_one_transfer(struct spicc_device *spicc,
 		block_size = spicc->bytes_per_word;
 	xfer_blocks = xfer->len / block_size;
 
-	spicc_set_speed(spicc, xfer->speed_hz);
-	spicc->cfg_start.b.dc_level = 0;
-	spicc->cfg_bus.b.dc_mode = 0;
-	spicc->cfg_bus.b.half_duplex_en = 0;
+	spicc->cfg_start.b.tx_data_mode = SPICC_DATA_MODE_NONE;
+	spicc->cfg_start.b.rx_data_mode = SPICC_DATA_MODE_NONE;
 	spicc->cfg_bus.b.null_ctl = 0;
-	spicc->cfg_bus.b.dummy_ctl = 0;
+	if (spicc->ccxfer && spicc->ccxfer->dc_mode) {
+		spicc->cfg_start.b.dc_level = spicc->ccxfer->dc_level;
+		spicc->cfg_bus.b.read_turn_around =
+					spicc->ccxfer->read_turn_around;
+		spicc->cfg_bus.b.dc_mode = spicc->ccxfer->dc_mode - 1;
+	}
+	spicc_set_speed(spicc, xfer->speed_hz);
+	if (tx_addr) {
+		spicc->cfg_bus.b.lane = nbits_to_lane[xfer->tx_nbits];
+		spicc->cfg_start.b.tx_data_mode = spicc->config_data_mode;
+		spicc->cfg_start.b.op_mode =
+			(spicc->ccxfer && spicc->ccxfer->dc_mode) ?
+			SPICC_OP_MODE_WRITE_CMD : SPICC_OP_MODE_WRITE;
+	}
+	if (rx_addr) {
+		spicc->cfg_bus.b.lane = nbits_to_lane[xfer->rx_nbits];
+		spicc->cfg_start.b.rx_data_mode = spicc->config_data_mode;
+		spicc->cfg_start.b.op_mode =
+			(spicc->ccxfer && spicc->ccxfer->dc_mode) ?
+			SPICC_OP_MODE_READ_STS : SPICC_OP_MODE_READ;
+	}
 
 	while (xfer_blocks) {
 		blocks = min_t(int, xfer_blocks, SPICC_BLOCK_MAX);
 		len = blocks * block_size;
 		desc->cfg_start.d32 = spicc->cfg_start.d32;
 		desc->cfg_bus.d32 = spicc->cfg_bus.d32;
-		desc->cfg_start.b.block_size = block_size & 0x7;
-		desc->cfg_start.b.block_num = blocks;
+		if (spicc->cfg_start.b.op_mode == SPICC_OP_MODE_READ_STS) {
+			desc->cfg_start.b.block_size = blocks;
+			desc->cfg_start.b.block_num = 1;
+		} else {
+			desc->cfg_start.b.block_size = block_size & 0x7;
+			desc->cfg_start.b.block_num = blocks;
+		}
 
 		if (tx_addr) {
-			desc->cfg_bus.b.lane = nbits_to_lane[xfer->tx_nbits];
-			desc->cfg_start.b.op_mode = SPICC_OP_MODE_WRITE;
-			desc->cfg_start.b.tx_data_mode = spicc->config_data_mode;
-			desc->cfg_bus.b.read_turn_around = 0;
 			if (spicc->config_data_mode == SPICC_DATA_MODE_SG)
 				desc->tx_sg = spicc_map_buf(&tx_addr, &len, 1);
 			else if (first_desc)
@@ -372,10 +387,6 @@ static int spicc_config_desc_one_transfer(struct spicc_device *spicc,
 		}
 
 		if (rx_addr) {
-			desc->cfg_bus.b.lane = nbits_to_lane[xfer->rx_nbits];
-			desc->cfg_start.b.op_mode = SPICC_OP_MODE_READ;
-			desc->cfg_start.b.rx_data_mode = spicc->config_data_mode;
-			desc->cfg_bus.b.read_turn_around = SPICC_READ_TURN_AROUND_DEFAULT;
 			if (spicc->config_data_mode == SPICC_DATA_MODE_SG)
 				desc->rx_sg = spicc_map_buf(&rx_addr, &len, 1);
 			else if (first_desc)
@@ -412,6 +423,8 @@ static struct spicc_descriptor *spicc_create_desc_table
 	struct spicc_descriptor *desc, *desc_bk;
 	int blocks, desc_num = 0;
 	int len = 0;
+	struct spicc_controller_data *cdata = msg->spi->controller_data;
+	bool ccxfer_en = cdata ? cdata->ccxfer_en : 0;
 
 	/*calculate the desc num for all xfer */
 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
@@ -433,10 +446,9 @@ static struct spicc_descriptor *spicc_create_desc_table
 	if (!desc_num || !desc)
 		return NULL;
 
-	/* default */
-	spicc->cfg_start.b.tx_data_mode = SPICC_DATA_MODE_NONE;
-	spicc->cfg_start.b.rx_data_mode = SPICC_DATA_MODE_NONE;
 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
+		spicc->ccxfer = ccxfer_en ?
+		    container_of(xfer, struct spicc_transfer, xfer) : NULL;
 		desc_num = spicc_config_desc_one_transfer(spicc, desc, xfer);
 		desc += desc_num;
 	}
@@ -445,6 +457,7 @@ static struct spicc_descriptor *spicc_create_desc_table
 	if (spicc->config_ss_trailing_gap) {
 		desc->cfg_start.d32 = spicc->cfg_start.d32;
 		desc->cfg_bus.d32 = spicc->cfg_bus.d32;
+		desc->cfg_start.b.op_mode = SPICC_OP_MODE_WRITE;
 		desc->cfg_start.b.block_size = 1;
 		desc->cfg_start.b.block_num = spicc->config_ss_trailing_gap;
 		desc->cfg_bus.b.null_ctl = 1;
@@ -571,7 +584,7 @@ static int meson_spicc_transfer_one_message(struct spi_controller *ctlr,
 	desc_table = spicc_create_desc_table(spicc, msg, &paddr, &desc_len, &xfer_len);
 	if (desc_table) {
 		ret = spicc_xfer_desc(spicc, desc_table, xfer_len, paddr);
-		spicc_destroy_desc_table(spicc, desc_table, msg, paddr, xfer_len);
+		spicc_destroy_desc_table(spicc, desc_table, msg, paddr, desc_len);
 	}
 
 	msg->status = ret;
@@ -601,6 +614,7 @@ static int meson_spicc_unprepare_transfer(struct spi_controller *ctlr)
 static int meson_spicc_setup(struct spi_device *spi)
 {
 	struct spicc_device *spicc;
+	struct  spicc_controller_data *cdata;
 
 	spicc = spi_controller_get_devdata(spi->controller);
 	if (!spi->bits_per_word || spi->bits_per_word % 8) {
@@ -616,6 +630,30 @@ static int meson_spicc_setup(struct spi_device *spi)
 	spicc->cfg_bus.b.cpha = !!(spi->mode & SPI_CPHA);
 	spicc->cfg_bus.b.little_endian_en = !!(spi->mode & SPI_LSB_FIRST);
 	spicc->cfg_bus.b.half_duplex_en = !!(spi->mode & SPI_3WIRE);
+
+	cdata = (struct spicc_controller_data *)spi->controller_data;
+	if (cdata && cdata->timing_en) {
+		/* SCLK * N */
+		spicc->cfg_bus.b.ss_leading_gap = cdata->ss_leading_gap;
+		/* 2.75us + SCLK * 9 * N */
+		spicc->config_ss_trailing_gap = cdata->ss_trailing_gap;
+		/* 4bit signed, SCLK * N */
+		spicc->cfg_bus.b.tx_tuning = cdata->tx_tuning;
+		spicc->cfg_bus.b.rx_tuning = cdata->rx_tuning;
+		spicc->cfg_bus.b.dummy_ctl = cdata->dummy_ctl;
+	} else if (spi_controller_is_slave(spicc->controller)) {
+		spicc->cfg_bus.b.ss_leading_gap = 0;
+		spicc->config_ss_trailing_gap = 0;
+		spicc->cfg_bus.b.tx_tuning = 15; /* -1 SCLK */
+		spicc->cfg_bus.b.rx_tuning = 0;
+		spicc->cfg_bus.b.dummy_ctl = 0;
+	} else {
+		spicc->cfg_bus.b.ss_leading_gap = 5;
+		spicc->config_ss_trailing_gap = 1;
+		spicc->cfg_bus.b.tx_tuning = 0;
+		spicc->cfg_bus.b.rx_tuning = 7; /* 7 SCLK */
+		spicc->cfg_bus.b.dummy_ctl = 0;
+	}
 
 	spicc_dbg("set mode 0x%x\n", spi->mode);
 
@@ -751,7 +789,8 @@ static ssize_t test_dev_store(struct device *dev,
 {
 	struct spicc_device *spicc = dev_get_drvdata(dev);
 	struct spi_device *spi;
-	char *kstr, *argv[5];
+	struct spicc_controller_data *cdata = &spicc->test_cdata;
+	char *kstr, *argv[20];
 	unsigned long v;
 	int argc, ret;
 
@@ -789,19 +828,35 @@ static ssize_t test_dev_store(struct device *dev,
 		goto exit;
 	}
 
-	if (spicc_getopt(argc, argv, "cs", &v, NULL, 10))
-		v = 0;
-	spi->cs_gpio = (v > 0) ? v : -ENOENT;
+	ret = spicc_getopt(argc, argv, "cs", &v, NULL, 10);
+	spi->cs_gpio = (ret || !v) ? -ENOENT : v;
 
 	ret = spicc_getopt(argc, argv, "speed", &v, NULL, 10);
 	spi->max_speed_hz = ret ? 10000000 : v;
 
 	ret = spicc_getopt(argc, argv, "mode", &v, NULL, 16);
-	spi->mode =  ret ? 0 : v;
+	spi->mode = ret ? 0 : v;
 
 	ret = spicc_getopt(argc, argv, "bw", &v, NULL, 10);
-	spi->bits_per_word =  ret ? 8 : v;
+	spi->bits_per_word = ret ? 8 : v;
 
+	memset(cdata, 0, sizeof(*cdata));
+	if (!spicc_getopt(argc, argv, "ccxfer", NULL, NULL, 0))
+		cdata->ccxfer_en = 1;
+	if (!spicc_getopt(argc, argv, "timing", NULL, NULL, 0))
+		cdata->timing_en = 1;
+	if (!spicc_getopt(argc, argv, "ss_leading_gap", &v, NULL, 10))
+		cdata->ss_leading_gap = v;
+	if (!spicc_getopt(argc, argv, "ss_trailing_gap", &v, NULL, 10))
+		cdata->ss_trailing_gap = v;
+	if (!spicc_getopt(argc, argv, "tx_tuning", &v, NULL, 10))
+		cdata->tx_tuning = v;
+	if (!spicc_getopt(argc, argv, "rx_tuning", &v, NULL, 10))
+		cdata->rx_tuning = v;
+	if (!spicc_getopt(argc, argv, "dummy", NULL, NULL, 0))
+		cdata->dummy_ctl = 1;
+
+	spi->controller_data = (void *)cdata;
 	if (spi_setup(spi)) {
 		dev_err(dev, "setup failed\n");
 		meson_spicc_cleanup(spi);
@@ -825,8 +880,9 @@ static ssize_t test_xfer_store(struct device *dev,
 			       const char *buf, size_t count)
 {
 	struct spicc_device *spicc = dev_get_drvdata(dev);
+	struct spicc_transfer *ccxfer;
 	struct spi_transfer *xfer;
-	char *kstr, *data_str, *argv[10];
+	char *kstr, *data_str, *argv[20];
 	unsigned long v;
 	int argc, ret;
 
@@ -842,24 +898,32 @@ static ssize_t test_xfer_store(struct device *dev,
 	}
 
 	if (!spicc->test_msg) {
-		spicc->test_msg = kzalloc(sizeof(sizeof(*spicc->test_msg))
-				+ spicc->test_nxfers_max * sizeof(*xfer),
+		spicc->test_msg = kzalloc(sizeof(*spicc->test_msg)
+				+ spicc->test_nxfers_max * sizeof(*ccxfer),
 				GFP_KERNEL);
 		if (!spicc->test_msg) {
 			dev_err(dev, "alloc msg & xfers failed\n");
 			goto exit;
 		}
 
-		spi_message_init_no_memset(spicc->test_msg);
+		spi_message_init(spicc->test_msg);
 		spicc->test_nxfers = 0;
 	}
 
-	xfer = (struct spi_transfer *)(spicc->test_msg + 1);
-	xfer += spicc->test_nxfers;
+	ccxfer = (struct spicc_transfer *)(spicc->test_msg + 1);
+	ccxfer += spicc->test_nxfers;
+	memset(ccxfer, 0, sizeof(*ccxfer));
+	xfer = &ccxfer->xfer;
 
 	memset(argv, 0, sizeof(argv));
 	argc = make_argv(kstr, ARRAY_SIZE(argv), argv, "-");
 
+	if (!spicc_getopt(argc, argv, "dc_level", &v, NULL, 10))
+		ccxfer->dc_level = v;
+	if (!spicc_getopt(argc, argv, "read_turn_around", &v, NULL, 10))
+		ccxfer->read_turn_around = v;
+	if (!spicc_getopt(argc, argv, "dc_mode", &v, NULL, 10))
+		ccxfer->dc_mode = v;
 	if (!spicc_getopt(argc, argv, "speed", &v, NULL, 10))
 		xfer->speed_hz = v;
 	if (!spicc_getopt(argc, argv, "bw", &v, NULL, 10))
@@ -914,43 +978,6 @@ static ssize_t test_xfer_store(struct device *dev,
 	}
 
 exit:
-	kfree(kstr);
-	return count;
-}
-
-static ssize_t priv_store(struct device *dev,
-			      struct device_attribute *attr,
-			      const char *buf, size_t count)
-{
-	struct spicc_device *spicc = dev_get_drvdata(dev);
-	char *kstr, *argv[10];
-	unsigned long v;
-	int argc;
-
-	kstr = kstrdup(buf, GFP_KERNEL);
-	if (IS_ERR_OR_NULL(kstr)) {
-		dev_err(dev, "kstrdup failed\n");
-		return count;
-	}
-
-	memset(argv, 0, sizeof(argv));
-	argc = make_argv(kstr, ARRAY_SIZE(argv), argv, "-");
-
-	if (!spicc_getopt(argc, argv, "tx_tuning", &v, NULL, 10))
-		spicc->cfg_bus.b.tx_tuning = v;
-	if (!spicc_getopt(argc, argv, "rx_tuning", &v, NULL, 10))
-		spicc->cfg_bus.b.rx_tuning = v;
-	if (!spicc_getopt(argc, argv, "ss_leading_gap", &v, NULL, 10))
-		spicc->cfg_bus.b.ss_leading_gap = v;
-	if (!spicc_getopt(argc, argv, "ss_trailing_gap", &v, NULL, 10))
-		spicc->config_ss_trailing_gap = v;
-	if (!spicc_getopt(argc, argv, "null_ctl", &v, NULL, 10))
-		spicc->cfg_bus.b.null_ctl = v;
-	if (!spicc_getopt(argc, argv, "dummy_ctl", &v, NULL, 10))
-		spicc->cfg_bus.b.dummy_ctl = v;
-	if (spicc->test_dev && !spicc_getopt(argc, argv, "abort", NULL, NULL, 0))
-		meson_spicc_slave_abort(spicc->controller);
-
 	kfree(kstr);
 	return count;
 }
@@ -1025,14 +1052,12 @@ test_end2:
 
 static DEVICE_ATTR_WO(test_dev);
 static DEVICE_ATTR_WO(test_xfer);
-static DEVICE_ATTR_WO(priv);
 static DEVICE_ATTR_WO(test);
 
 static int meson_spicc_probe(struct platform_device *pdev)
 {
 	struct spi_controller *ctlr;
 	struct spicc_device *spicc;
-	u32 v;
 	int ret, irq;
 
 	ctlr = __spi_alloc_controller(&pdev->dev, sizeof(*spicc),
@@ -1115,10 +1140,6 @@ static int meson_spicc_probe(struct platform_device *pdev)
 	if (ret)
 		dev_warn(&pdev->dev, "Create test_xfer attribute failed\n");
 
-	ret = device_create_file(&pdev->dev, &dev_attr_priv);
-	if (ret)
-		dev_warn(&pdev->dev, "Create priv attribute failed\n");
-
 	ret = device_create_file(&pdev->dev, &dev_attr_test);
 	if (ret)
 		dev_warn(&pdev->dev, "Create test attribute failed\n");
@@ -1138,24 +1159,6 @@ static int meson_spicc_probe(struct platform_device *pdev)
 	spicc->cfg_start.b.pending = 1;
 	/* default keep ss */
 	spicc->cfg_bus.b.keep_ss = 1;
-
-	if (!of_property_read_s32(pdev->dev.of_node, "ss_leading_gap", &v))
-		spicc->cfg_bus.b.ss_leading_gap = v;
-	else if (!spi_controller_is_slave(spicc->controller))
-		/* default 5 sclk period */
-		spicc->cfg_bus.b.ss_leading_gap = 5;
-
-	if (!of_property_read_s32(pdev->dev.of_node, "ss_trailing_gap", &v))
-		spicc->config_ss_trailing_gap = DIV_ROUND_UP(v, 8);
-	else if (!spi_controller_is_slave(spicc->controller))
-		/* (n * 9 + 4) * sclk_period + 400ns (n > 0) */
-		spicc->config_ss_trailing_gap = 1;
-
-	if (!of_property_read_s32(pdev->dev.of_node, "tx_tuning", &v))
-		spicc->cfg_bus.b.tx_tuning = v;
-
-	if (!of_property_read_s32(pdev->dev.of_node, "rx_tuning", &v))
-		spicc->cfg_bus.b.rx_tuning = v;
 
 	return 0;
 
@@ -1179,7 +1182,6 @@ static int meson_spicc_remove(struct platform_device *pdev)
 	device_remove_file(&pdev->dev, &dev_attr_test);
 	device_remove_file(&pdev->dev, &dev_attr_test_dev);
 	device_remove_file(&pdev->dev, &dev_attr_test_xfer);
-	device_remove_file(&pdev->dev, &dev_attr_priv);
 
 	return 0;
 }

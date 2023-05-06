@@ -58,13 +58,13 @@ int tee_read_reg_bits(u32 reg, u32 *val, u32 offset, u32 length);
 int tee_write_reg_bits(u32 reg, u32 val, u32 offset, u32 length);
 
 u32 tee_protect_mem(u32 type, u32 level,
-		u32 start, u32 size, u32 *handle);
+		phys_addr_t start, size_t size, u32 *handle);
 
 void tee_unprotect_mem(u32 handle);
 
-int tee_check_in_mem(u32 pa, u32 size);
+int tee_check_in_mem(phys_addr_t pa, size_t size);
 
-int tee_check_out_mem(u32 pa, u32 size);
+int tee_check_out_mem(phys_addr_t pa, size_t size);
 
 u32 tee_register_mem(u32 type, phys_addr_t pa, size_t size);
 
@@ -76,14 +76,12 @@ int tee_vp9_prob_malloc(u32 *prob_addr);
 int tee_vp9_prob_free(u32 prob_addr);
 
 /* All of the following apis will be deprecated */
-u32 tee_protect_tvp_mem(u32 start, u32 size,
-			u32 *handle);
+u32 tee_protect_tvp_mem(phys_addr_t start, size_t size, u32 *handle);
 
 void tee_unprotect_tvp_mem(u32 handle);
 
 u32 tee_protect_mem_by_type(u32 type,
-		u32 start, u32 size,
-		u32 *handle);
+		phys_addr_t start, size_t size, u32 *handle);
 
 #endif /* __TEE_H__ */
 

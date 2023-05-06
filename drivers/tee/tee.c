@@ -445,7 +445,7 @@ bool tee_enabled(void)
 EXPORT_SYMBOL(tee_enabled);
 
 /* This function will be deprecated */
-u32 tee_protect_tvp_mem(u32 start, u32 size, u32 *handle)
+u32 tee_protect_tvp_mem(phys_addr_t start, size_t size, u32 *handle)
 {
 	return tee_protect_mem(TEE_MEM_TYPE_STREAM_OUTPUT, 0, start, size, handle);
 }
@@ -460,15 +460,14 @@ EXPORT_SYMBOL(tee_unprotect_tvp_mem);
 
 /* This function will be deprecated */
 u32 tee_protect_mem_by_type(u32 type,
-		u32 start, u32 size,
-		u32 *handle)
+		phys_addr_t start, size_t size, u32 *handle)
 {
 	return tee_protect_mem(type, 0, start, size, handle);
 }
 EXPORT_SYMBOL(tee_protect_mem_by_type);
 
 u32 tee_protect_mem(u32 type, u32 level,
-		u32 start, u32 size, u32 *handle)
+		phys_addr_t start, size_t size, u32 *handle)
 {
 	int ret = 0;
 	uuid_t uuid = PTA_TVP_UUID;
@@ -481,13 +480,17 @@ u32 tee_protect_mem(u32 type, u32 level,
 	param[0].u.value.a = (u64)type;
 	param[0].u.value.b = (u64)level;
 	param[1].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
-	param[1].u.value.a = (u64)start;
-	param[1].u.value.b = (u64)size;
-	param[2].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT;
+	param[1].u.value.a = start & 0xffffffff;
+	param[1].u.value.b = (sizeof(phys_addr_t) == sizeof(u32)) ? 0 : start >> 32;
+
+	param[2].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
+	param[2].u.value.a = size & 0xffffffff;
+	param[2].u.value.b = (sizeof(size_t) == sizeof(u32)) ? 0 : size >> 32;
+	param[3].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT;
 
 	ret = tee_pta_invoke_cmd(uuid, TVP_CMD_PROTECT_MEM, param);
 	if (!ret)
-		*handle = (u32)param[2].u.value.a;
+		*handle = (u32)param[3].u.value.a;
 
 	return ret;
 }
@@ -504,26 +507,32 @@ void tee_unprotect_mem(u32 handle)
 }
 EXPORT_SYMBOL(tee_unprotect_mem);
 
-int tee_check_in_mem(u32 pa, u32 size)
+int tee_check_in_mem(phys_addr_t pa, size_t size)
 {
 	uuid_t uuid = PTA_TVP_UUID;
 	struct tee_param param[TEE_PARAM_NUM] = { 0 };
 
 	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
-	param[0].u.value.a = (u64)pa;
-	param[0].u.value.b = (u64)size;
+	param[0].u.value.a = pa & 0xffffffff;
+	param[0].u.value.b = (sizeof(phys_addr_t) == sizeof(u32)) ? 0 : pa >> 32;
+	param[1].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
+	param[1].u.value.a = size & 0xffffffff;
+	param[1].u.value.b = (sizeof(size_t) == sizeof(u32)) ? 0 : size >> 32;
 	return tee_pta_invoke_cmd(uuid, TVP_CMD_CHECK_IN_MEM, param);
 }
 EXPORT_SYMBOL(tee_check_in_mem);
 
-int tee_check_out_mem(u32 pa, u32 size)
+int tee_check_out_mem(phys_addr_t pa, size_t size)
 {
 	uuid_t uuid = PTA_TVP_UUID;
 	struct tee_param param[TEE_PARAM_NUM] = { 0 };
 
 	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
-	param[0].u.value.a = (u64)pa;
-	param[0].u.value.b = (u64)size;
+	param[0].u.value.a = pa & 0xffffffff;
+	param[0].u.value.b = (sizeof(phys_addr_t) == sizeof(u32)) ? 0 : pa >> 32;
+	param[1].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
+	param[1].u.value.a = size & 0xffffffff;
+	param[1].u.value.b = (sizeof(size_t) == sizeof(u32)) ? 0 : size >> 32;
 	return tee_pta_invoke_cmd(uuid, TVP_CMD_CHECK_OUT_MEM, param);
 }
 EXPORT_SYMBOL(tee_check_out_mem);

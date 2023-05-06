@@ -24,7 +24,7 @@
 
 	drm_vpu: drm-vpu@0xff900000  {
 		status = "disabled";
-		compatible = "amlogic, meson-t5w-vpu";
+		compatible = "amlogic, meson-t5m-vpu";
 		osd_ver = /bits/ 8 <OSD_V7>;
 		reg = <0x0 0xff900000 0x0 0x40000>,
 			  <0x0 0xff63c000 0x0 0x2000>,
@@ -57,8 +57,6 @@
 		ports = <&connectors_dev>;
 		fbdev_sizes = <1920 1080 1920 2160 32>;
 		osd_ver = /bits/ 8 <OSD_V7>;
-		/* 0:def group 1:def group + 1010102 formats */
-		osd_formats_group = <1>;
 		/* OSD1&OSD2 with afbc, OSD3 has no afbc */
 		osd_afbc_mask = <3>;
 		vfm_mode = <1>; /** 0:drm mode 1:composer mode */

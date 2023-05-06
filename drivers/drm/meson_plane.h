@@ -87,6 +87,11 @@ struct vf_node {
 	struct list_head vfm_node;
 };
 
+struct meson_plane_supported_formats {
+	u32 *formats;
+	u32 format_num;
+};
+
 #define to_am_osd_plane(x) container_of(x, \
 	struct am_osd_plane, base)
 #define to_am_meson_plane_state(x) container_of(x, \

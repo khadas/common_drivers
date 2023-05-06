@@ -13,6 +13,7 @@
 #include "meson_vpu_reg.h"
 #include "meson_drv.h"
 #include "meson_vpu_util.h"
+#include "meson_plane.h"
 
 #define MESON_OSD1 0
 #define MESON_OSD2 1
@@ -720,6 +721,13 @@ extern struct meson_vpu_block_ops txhd2_postblend_ops;
 extern struct meson_vpu_pipeline_ops g12a_vpu_pipeline_ops;
 extern struct meson_vpu_pipeline_ops t7_vpu_pipeline_ops;
 extern struct meson_vpu_pipeline_ops s5_vpu_pipeline_ops;
+
+extern struct meson_plane_supported_formats osd_formats;
+extern struct meson_plane_supported_formats osd_formats_t3x;
+extern struct meson_plane_supported_formats osd_formats_t5m;
+extern struct meson_plane_supported_formats osd_formats_s1a;
+extern struct meson_plane_supported_formats video_formats;
+
 #ifdef CONFIG_DEBUG_FS
 extern u32 overwrite_reg[256];
 extern u32 overwrite_val[256];

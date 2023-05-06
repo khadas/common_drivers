@@ -38,8 +38,6 @@
 		max_fb_size = <1>; /** 0:1080p fb 1:4k fb */
 		max_sizes = <4096 4096>;
 		osd_ver = /bits/ 8 <OSD_V7>;
-		/* 0:def group 1:def group + 1010102 formats 2:t3x formats */
-		osd_formats_group = <2>;
 		vfm_mode = <1>; /** 0:drm mode 1:composer mode */
 		memory-region = <&logo_reserved>;
 		crtc_masks = <0 1 0>; /*for encoder: 0:hdmi 1:lcd 2:cvbs*/

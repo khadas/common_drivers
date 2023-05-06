@@ -61,7 +61,8 @@ static u64 afbc_modifier[] = {
 	DRM_FORMAT_MOD_INVALID
 };
 
-static const u32 supported_drm_formats[] = {
+/* default groups */
+u32 supported_drm_formats[] = {
 	DRM_FORMAT_ABGR2101010,
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_XBGR8888,
@@ -76,7 +77,8 @@ static const u32 supported_drm_formats[] = {
 	DRM_FORMAT_RGB565,
 };
 
-static const u32 supported_drm_formats_v2[] = {
+/* default groups + 1010102 formats */
+u32 supported_drm_formats_v2[] = {
 	DRM_FORMAT_RGBA1010102,
 	DRM_FORMAT_ARGB2101010,
 	DRM_FORMAT_ABGR2101010,
@@ -94,7 +96,8 @@ static const u32 supported_drm_formats_v2[] = {
 	DRM_FORMAT_RGB565,
 };
 
-static const u32 supported_drm_formats_v3[] = {
+/* v2 groups + 4444 formats */
+u32 supported_drm_formats_v3[] = {
 	DRM_FORMAT_RGBA1010102,
 	DRM_FORMAT_ARGB2101010,
 	DRM_FORMAT_ABGR2101010,
@@ -116,7 +119,8 @@ static const u32 supported_drm_formats_v3[] = {
 	DRM_FORMAT_RGB565,
 };
 
-static const u32 supported_drm_formats_v4[] = {
+/* formats supported by s1a */
+u32 supported_drm_formats_v4[] = {
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_XBGR8888,
 	DRM_FORMAT_RGBX8888,
@@ -148,7 +152,7 @@ static u64 video_fbc_modifier[] = {
 	DRM_FORMAT_MOD_INVALID
 };
 
-static const u32 video_supported_drm_formats[] = {
+u32 video_supported_drm_formats[] = {
 	DRM_FORMAT_NV12,
 	DRM_FORMAT_NV21,
 	DRM_FORMAT_UYVY,
@@ -215,6 +219,30 @@ err_put_fd:
 	return ret;
 }
 #endif
+struct meson_plane_supported_formats osd_formats = {
+	.formats = supported_drm_formats,
+	.format_num = ARRAY_SIZE(supported_drm_formats),
+};
+
+struct meson_plane_supported_formats osd_formats_t5m = {
+	.formats = supported_drm_formats_v2,
+	.format_num = ARRAY_SIZE(supported_drm_formats_v2),
+};
+
+struct meson_plane_supported_formats osd_formats_t3x = {
+	.formats = supported_drm_formats_v3,
+	.format_num = ARRAY_SIZE(supported_drm_formats_v3),
+};
+
+struct meson_plane_supported_formats osd_formats_s1a = {
+	.formats = supported_drm_formats_v4,
+	.format_num = ARRAY_SIZE(supported_drm_formats_v4),
+};
+
+struct meson_plane_supported_formats video_formats = {
+	.formats = video_supported_drm_formats,
+	.format_num = ARRAY_SIZE(video_supported_drm_formats),
+};
 
 static void
 meson_plane_position_calc(struct meson_vpu_osd_layer_info *plane_info,
@@ -1754,21 +1782,10 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 	else
 		osd_plane->osd_occupied = false;
 
-	if (conf->osd_formats_group) {
-		if (conf->osd_formats_group == 1) {
-			formats_group = supported_drm_formats_v2;
-			num_formats = ARRAY_SIZE(supported_drm_formats_v2);
-		} else if (conf->osd_formats_group == 2) {
-			formats_group = supported_drm_formats_v3;
-			num_formats = ARRAY_SIZE(supported_drm_formats_v3);
-		} else if (conf->osd_formats_group == 3) {
-			formats_group = supported_drm_formats_v4;
-			num_formats = ARRAY_SIZE(supported_drm_formats_v4);
-		} else {
-			formats_group = supported_drm_formats;
-			num_formats = ARRAY_SIZE(supported_drm_formats);
-		}
-	} else {
+	formats_group = priv->vpu_data->osd_formats->formats;
+	num_formats = priv->vpu_data->osd_formats->format_num;
+
+	if (!formats_group) {
 		formats_group = supported_drm_formats;
 		num_formats = ARRAY_SIZE(supported_drm_formats);
 	}
@@ -1829,6 +1846,8 @@ static struct am_video_plane *am_video_plane_create(struct meson_drm *priv,
 {
 	struct am_video_plane *video_plane;
 	struct drm_plane *plane;
+	const u32 *formats_group;
+	int num_formats;
 	char plane_name[8];
 	u32 zpos, min_zpos, max_zpos;
 	const char *const_plane_name;
@@ -1855,10 +1874,18 @@ static struct am_video_plane *am_video_plane_create(struct meson_drm *priv,
 	const_plane_name = plane_name;
 	spin_lock_init(&video_plane->lock);
 
+	formats_group = priv->vpu_data->video_formats->formats;
+	num_formats = priv->vpu_data->video_formats->format_num;
+
+	if (!formats_group) {
+		formats_group = video_supported_drm_formats;
+		num_formats = ARRAY_SIZE(video_supported_drm_formats);
+	}
+
 	drm_universal_plane_init(priv->drm, plane, 1 << crtc_mask,
 				 &am_video_plane_funs,
-				 video_supported_drm_formats,
-				 ARRAY_SIZE(video_supported_drm_formats),
+				 formats_group,
+				 num_formats,
 				 video_fbc_modifier,
 				 DRM_PLANE_TYPE_OVERLAY, const_plane_name);
 

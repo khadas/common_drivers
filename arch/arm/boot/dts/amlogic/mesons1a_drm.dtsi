@@ -62,8 +62,6 @@
 		memory-region = <&logo_reserved>;
 		primary_plane_index = <0>; /* primary plane index for crtcs */
 		crtc_masks = <1 1 1>; /*for encoder: 0:hdmi 1:lcd 2:cvbs*/
-		/* 0:def group 1:def group + 1010102 formats 2:t3x formats 3: s1a formats */
-		osd_formats_group = <3>;
 		crtcmask_of_osd = <0 0>;
 		crtcmask_of_video = <0 0>;
 		logo_skip = <0>;

@@ -69,7 +69,6 @@ struct meson_of_conf {
 	u32 crtcmask_osd[MESON_MAX_OSD];
 	u32 crtcmask_video[MESON_MAX_VIDEO];
 
-	u32 osd_formats_group;
 	char *pref_mode;
 };
 

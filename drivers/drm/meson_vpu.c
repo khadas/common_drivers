@@ -327,6 +327,8 @@ static const struct meson_vpu_data vpu_g12a_data = {
 	.dv_ops = &db_ops,
 	.postblend_ops = &postblend_ops,
 	.video_ops = &video_ops,
+	.osd_formats = &osd_formats,
+	.video_formats = &video_formats,
 };
 #endif
 
@@ -345,6 +347,8 @@ static const struct meson_vpu_data vpu_g12b_data = {
 	.dv_ops = &db_ops,
 	.postblend_ops = &g12b_postblend_ops,
 	.video_ops = &video_ops,
+	.osd_formats = &osd_formats,
+	.video_formats = &video_formats,
 };
 
 static const struct meson_vpu_data vpu_t7_data = {
@@ -360,6 +364,8 @@ static const struct meson_vpu_data vpu_t7_data = {
 	.dv_ops = &db_ops,
 	.postblend_ops = &t7_postblend_ops,
 	.video_ops = &video_ops,
+	.osd_formats = &osd_formats,
+	.video_formats = &video_formats,
 	.enc_method = 1,
 	.max_osdblend_width = 3840,
 	.max_osdblend_height = 2160,
@@ -378,6 +384,8 @@ static const struct meson_vpu_data vpu_t3_data = {
 	.dv_ops = &db_ops,
 	.postblend_ops = &t3_postblend_ops,
 	.video_ops = &video_ops,
+	.osd_formats = &osd_formats,
+	.video_formats = &video_formats,
 	.enc_method = 1,
 };
 
@@ -394,6 +402,23 @@ static const struct meson_vpu_data vpu_t5w_data = {
 	.dv_ops = &db_ops,
 	.postblend_ops = &t3_postblend_ops,
 	.video_ops = &video_ops,
+	.osd_formats = &osd_formats,
+	.video_formats = &video_formats,
+	.enc_method = 1,
+};
+
+static const struct meson_vpu_data vpu_t5m_data = {
+	.pipe_ops = &t7_vpu_pipeline_ops,
+	.osd_ops = &t7_osd_ops,
+	.afbc_ops = &t3_afbc_ops,
+	.scaler_ops = &scaler_ops,
+	.osdblend_ops = &osdblend_ops,
+	.hdr_ops = &hdr_ops,
+	.dv_ops = &db_ops,
+	.postblend_ops = &t3_postblend_ops,
+	.video_ops = &video_ops,
+	.osd_formats = &osd_formats_t5m,
+	.video_formats = &video_formats,
 	.enc_method = 1,
 };
 
@@ -411,6 +436,8 @@ static const struct meson_vpu_data vpu_s5_data = {
 	.postblend_ops = &s5_postblend_ops,
 	.video_ops = &video_ops,
 	.slice2ppc_ops = &slice2ppc_ops,
+	.osd_formats = &osd_formats,
+	.video_formats = &video_formats,
 	.enc_method = 1,
 	.slice_mode = 1,
 	.max_osdblend_width = 3840,
@@ -431,6 +458,8 @@ static const struct meson_vpu_data vpu_t3x_data = {
 	.postblend_ops = &t3x_postblend_ops,
 	.video_ops = &video_ops,
 	.slice2ppc_ops = &slice2ppc_ops,
+	.osd_formats = &osd_formats_t3x,
+	.video_formats = &video_formats,
 	.enc_method = 1,
 	.slice_mode = 1,
 	.max_osdblend_width = 3840,
@@ -450,6 +479,8 @@ static const struct meson_vpu_data vpu_txhd2_data = {
 	.dv_ops = &db_ops,
 	.postblend_ops = &txhd2_postblend_ops,
 	.video_ops = &video_ops,
+	.osd_formats = &osd_formats,
+	.video_formats = &video_formats,
 };
 #endif
 
@@ -466,6 +497,8 @@ static const struct meson_vpu_data vpu_s1a_data = {
 	.dv_ops = &db_ops,
 	.postblend_ops = &postblend_ops,
 	.video_ops = &video_ops,
+	.osd_formats = &osd_formats_s1a,
+	.video_formats = &video_formats,
 };
 
 static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
@@ -509,6 +542,8 @@ static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
 	 .data = &vpu_t3x_data,},
 	{.compatible = "amlogic, meson-txhd2-vpu",
 	  .data = &vpu_txhd2_data,},
+	{.compatible = "amlogic, meson-t5m-vpu",
+	 .data = &vpu_t5m_data,},
 #endif
 	{.compatible = "amlogic, meson-s1a-vpu",
 	  .data = &vpu_s1a_data,},

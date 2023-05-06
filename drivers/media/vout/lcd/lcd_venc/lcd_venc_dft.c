@@ -389,11 +389,18 @@ static void lcd_venc_set_vrr_recovery(struct aml_lcd_drv_s *pdrv)
 	lcd_vcbus_write(ENCL_VIDEO_MAX_LNCNT, vtotal);
 }
 
-static unsigned int lcd_venc_get_encl_lint_cnt(struct aml_lcd_drv_s *pdrv)
+static unsigned int lcd_venc_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned int line_cnt = lcd_vcbus_getb(ENCL_INFO_READ, 16, 13);
+	unsigned int cnt = lcd_vcbus_getb(ENCL_INFO_READ, 16, 13);
 
-	return line_cnt;
+	return cnt;
+}
+
+static unsigned int lcd_venc_get_encl_frm_cnt(struct aml_lcd_drv_s *pdrv)
+{
+	unsigned int cnt = lcd_vcbus_getb(ENCL_INFO_READ, 29, 3);
+
+	return cnt;
 }
 
 int lcd_venc_op_init_dft(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_op)
@@ -411,7 +418,8 @@ int lcd_venc_op_init_dft(struct aml_lcd_drv_s *pdrv, struct lcd_venc_op_s *venc_
 	venc_op->mute_set = lcd_venc_mute_set;
 	venc_op->get_venc_init_config = lcd_venc_get_init_config;
 	venc_op->venc_vrr_recovery = lcd_venc_set_vrr_recovery;
-	venc_op->get_encl_lint_cnt = lcd_venc_get_encl_lint_cnt;
+	venc_op->get_encl_line_cnt = lcd_venc_get_encl_line_cnt;
+	venc_op->get_encl_frm_cnt = lcd_venc_get_encl_frm_cnt;
 
 	INIT_WORK(&pdrv->test_check_work, lcd_test_pattern_check);
 

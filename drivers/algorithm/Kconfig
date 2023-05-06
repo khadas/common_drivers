@@ -14,12 +14,14 @@ config AMLOGIC_MEDIA_ALGORITHM
 		sl_hdr
 		ldim
 		frc
+		tcon
 
 if AMLOGIC_MEDIA_ALGORITHM
 #source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/ldim/Kconfig"
 #source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/dnlp/Kconfig"
 #source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/common/Kconfig"
 #source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/frc/Kconfig"
+#source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/tcon/Kconfig"
 endif
 
 endmenu

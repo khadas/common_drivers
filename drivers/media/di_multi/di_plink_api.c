@@ -3260,6 +3260,8 @@ void mem_count_buf_cfg(unsigned char mode, unsigned char idx)
 	unsigned long buf_start;
 
 	hw = &get_datal()->dvs_prevpp.hw;
+	dim_print("%s:%d:%d\n", __func__, mode, idx);
+
 	if (mode == 0xff) {
 		for (i = 0; i < K_BUF_CFG_T_NUB; i++)
 			hw->buf_cfg[i].support = false;
@@ -3490,6 +3492,9 @@ static void mem_count_buf_cfg2(unsigned char mode, unsigned char idx, unsigned c
 	unsigned long buf_start;
 
 	hw = &get_datal()->dvs_prevpp.hw;
+
+	dim_print("%s:overflow:%d:%d,:%d\n", __func__, mode, idx, by);
+
 	if (mode == 0xff) {
 		for (i = 0; i < K_BUF_CFG_T_NUB; i++)
 			hw->buf_cfg[i].support = false;
@@ -3893,6 +3898,43 @@ static void dpvpp_mem_dct(void)
 	}
 }
 
+void dpvpp_secure_pre_en(bool is_tvp)
+{
+	if (is_tvp) {
+		if (DIM_IS_IC_EF(SC2)) {
+			DIM_DI_WR(DI_PRE_SEC_IN, 0x3F);//secure
+		} else {
+		#ifdef CONFIG_AMLOGIC_TEE
+			tee_config_device_state(16, 1);
+		#endif
+		}
+		if (DIM_IS_IC(S5)) {
+		#ifdef CONFIG_AMLOGIC_TEE
+			tee_write_reg_bits
+				(((DI_VIUB_SECURE_REG << 2) + 0xff800000),
+				 1, 8, 1);// HF secure Polarity
+		#endif
+		}
+		//dbg_mem2("%s:tvp3 pre SECURE\n", __func__);
+	} else {
+		if (DIM_IS_IC_EF(SC2)) {
+			DIM_DI_WR(DI_PRE_SEC_IN, 0x0);
+		} else {
+		#ifdef CONFIG_AMLOGIC_TEE
+			tee_config_device_state(16, 0);
+		#endif
+		}
+		if (DIM_IS_IC(S5)) {
+		#ifdef CONFIG_AMLOGIC_TEE
+			tee_write_reg_bits
+				(((DI_VIUB_SECURE_REG << 2) + 0xff800000),
+				 0, 8, 1);// HF secure Polarity
+		#endif
+		}
+		//dbg_mem2("%s:tvp3 pre NOSECURE:\n", __func__);
+	}
+}
+
 //static
 void dpvpp_mng_set(void)
 {
@@ -3909,6 +3951,10 @@ void dpvpp_mng_set(void)
 	hw = &get_datal()->dvs_prevpp.hw;
 	d_dd = get_dd();
 
+	dim_print("%s:<%d,%d>, <%d,%d>\n", __func__,
+		hw->m_mode_tgt, hw->flg_tvp_tgt,
+		hw->m_mode, hw->flg_tvp);
+
 	if (hw->m_mode_tgt == hw->m_mode &&
 	    hw->flg_tvp_tgt == hw->flg_tvp) {
 		dim_print("%s:<%d,%d>, <%d,%d>\n", __func__,
@@ -3916,7 +3962,7 @@ void dpvpp_mng_set(void)
 			hw->m_mode, hw->flg_tvp);
 		return;
 	}
-
+	dpvpp_secure_pre_en(hw->flg_tvp_tgt);
 	switch (hw->m_mode_tgt) {
 	case EPVPP_MEM_T_HD_FULL:
 		if (hw->flg_tvp_tgt) {
@@ -3926,6 +3972,7 @@ void dpvpp_mng_set(void)
 			is_tvp = false;
 			index = EBLK_T_HD_FULL;
 		}
+		hw->flg_tvp = hw->flg_tvp_tgt;
 		cnt = 0;
 		for (i = 0; i < 2; i++) {
 			if (hw->src_blk[i]) {
@@ -3959,6 +4006,7 @@ void dpvpp_mng_set(void)
 			is_tvp = false;
 			index = EBLK_T_UHD_FULL_AFBCE;
 		}
+		hw->flg_tvp = hw->flg_tvp_tgt;
 		cnt = 0;
 		for (i = 0; i < 2; i++) {
 			if (hw->src_blk_uhd_afbce[i]) {
@@ -4006,6 +4054,7 @@ void dpvpp_mng_set(void)
 			is_tvp = false;
 			index = EBLK_T_HD_FULL;
 		}
+		hw->flg_tvp = hw->flg_tvp_tgt;
 		cnt = 0;
 		for (i = 0; i < 10; i++) {
 			if (hw->src_blk[i]) {
@@ -4078,6 +4127,9 @@ void dpvpp_mem_mng_get(unsigned int id)
 	back_tvp = hw->flg_tvp_tgt;
 	memset(&cnt[0], 0, sizeof(cnt));
 	memset(&cnt_tvp[0], 0, sizeof(cnt_tvp));
+	dim_print("%s:<%d,%d>, <%d,%d>\n", __func__,
+		hw->m_mode_tgt, hw->flg_tvp_tgt,
+		hw->m_mode, hw->flg_tvp);
 
 	for (ch = 0; ch < DI_PLINK_CN_NUB; ch++) {
 		//count mode:

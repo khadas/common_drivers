@@ -670,7 +670,7 @@ static int read_memory_to_file(char *path, unsigned int start_addr,
 }
 
 unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
-		unsigned int test_mode)
+		unsigned int test_mode, struct demod_priv *p_demod_priv)
 {
 	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
 	int addr = 0, width = 0, vld = 0;
@@ -861,6 +861,10 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 		front_write_bits(0x39, 0, 31, 1);
 		front_write_bits(0x39, 1, 31, 1);
 
+		//tb_capture_en 0x39[28]: capture data to ddr enable
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M))
+			front_write_bits(0x39, 1, 28, 1);
+
 		/* go tb */
 		front_write_bits(0x3a, 0, 12, 1);
 		wait_capture(0x3f, tb_depth, start_addr);
@@ -868,6 +872,9 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 
 	/* stop tb */
 	front_write_bits(0x3a, 1, 12, 1);
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M))
+		front_write_bits(0x39, 0, 28, 1);
+
 	tb_start = front_read_reg(0x3f);
 
 	if (devp->data->hw_ver >= DTVDEMOD_HW_T5D) {
@@ -875,10 +882,18 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 		devp->demod_thread = polling_en;
 	}
 
-	if (!testbus_read_only)
+	if (p_demod_priv)
+		p_demod_priv->size = size;
+
+	if (!testbus_read_only) {
 		read_memory_to_file(path, tb_start, size);
-	else
+		if (p_demod_priv)
+			p_demod_priv->data = tb_start;
+	} else {
 		read_memory_to_file(path, start_addr, size);
+		if (p_demod_priv)
+			p_demod_priv->data = start_addr;
+	}
 
 	return 0;
 }
@@ -1242,11 +1257,11 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 
 		if (parm[2] && kstrtouint(parm[2], 10, &cap_mode) == 0) {
 			if (parm[3] && kstrtouint(parm[3], 10, &test_mode) == 0)
-				capture_adc_data_once(parm[1], cap_mode, test_mode);
+				capture_adc_data_once(parm[1], cap_mode, test_mode, NULL);
 			else
-				capture_adc_data_once(parm[1], cap_mode, 0);
+				capture_adc_data_once(parm[1], cap_mode, 0, NULL);
 		} else {
-			capture_adc_data_once(parm[1], 0, 0);
+			capture_adc_data_once(parm[1], 0, 0, NULL);
 		}
 	} else if (!strcmp(parm[0], "state")) {
 		info_show();
@@ -1546,8 +1561,9 @@ static ssize_t attr_show(struct class *cls,
 	len += sprintf(buf + len, "\tdiseqc_burstsa\n");
 	len += sprintf(buf + len, "\tdiseqc_burstsb\n");
 	len += sprintf(buf + len, "\tdiseqc_toneon [val]\n");
-	len += sprintf(buf + len, "\tcapture_once /data/hcap_XXX.bin [mode]\n");
-	len += sprintf(buf + len, "\t\tmode: 0 - others adc(default); 3 - ts, 4 - t/t2 adc; 5 - s/s2 adc.\n");
+	//len += sprintf(buf + len, "\tcapture_once /data/hcap_XXX.bin [mode]\n");
+	//len += sprintf(buf + len,
+		//"\t\tmode: 0 - others adc(default); 3 - ts, 4 - t/t2 adc; 5 - s/s2 adc.\n");
 
 	return len;
 }
@@ -1849,7 +1865,7 @@ static int demod_dmc_dev_access_notify(struct notifier_block *nb, unsigned long 
 		demod_ddr_addr = dmc->addr;
 		demod_ddr_size = dmc->size;
 
-		capture_adc_data_once("/data/hdcp_dump.bin", 3, 0);
+		capture_adc_data_once("/data/hdcp_dump.bin", 3, 0, NULL);
 
 		demod_ddr_addr = 0;
 		demod_ddr_size = 0;

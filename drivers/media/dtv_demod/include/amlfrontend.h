@@ -91,6 +91,7 @@
 /*  V1.1.97  optimize 8VSB CN */
 /*  V1.1.98  fix r842 atsc missing TP and scan slowly */
 /*  V1.1.99  fix init flow */
+/*  V1.2.0  bring up dump ADC data feature */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -107,8 +108,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V1.1.99"
-#define DTVDEMOD_VER	"2023/05/06: fix init flow"
+#define AMLDTVDEMOD_VER "V1.2.0"
+#define DTVDEMOD_VER	"2023/5/9: bring up dump ADC data feature"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

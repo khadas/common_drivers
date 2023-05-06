@@ -7,6 +7,8 @@
 #define __DTV_DMD_DBG_H
 #include <linux/bitops.h>
 
+#include "aml_demod.h"
+
 #define CAP_SIZE (50)
 #define PER_WR	(BIT(20))
 
@@ -42,5 +44,7 @@ int dtvdemod_create_class_files(struct class *clsp);
 void dtvdemod_remove_class_files(struct class *clsp);
 unsigned int clear_ddr_bus_data(struct aml_dtvdemod *demod);
 void demod_dmc_notifier(void);
+unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
+		unsigned int test_mode, struct demod_priv *p_demod_priv);
 
 #endif

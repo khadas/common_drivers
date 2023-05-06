@@ -25,8 +25,6 @@
 #include <linux/i2c.h>
 #include <linux/delay.h>
 /* #include <mach/am_regs.h> */
-#include <linux/device.h>
-#include <linux/cdev.h>
 
 /* #include <asm/fiq.h> */
 #include <linux/uaccess.h>
@@ -68,6 +66,7 @@ const char aml_demod_dev_id[] = "aml_demod";
 unsigned int demod_id;
 
 static DECLARE_WAIT_QUEUE_HEAD(lock_wq);
+static struct mutex demod_lock;
 
 static ssize_t aml_demod_info_store(struct class *class,
 		struct class_attribute *attr, const char *buf, size_t count)
@@ -98,13 +97,33 @@ static struct class aml_demod_class = {
 
 static int aml_demod_open(struct inode *inode, struct file *file)
 {
-	pr_dbg("Amlogic Demod DVB-T/C Open\n");
+	int minor = iminor(inode);
+	int major = imajor(inode);
+	struct demod_device_t *pdev;
+
+	mutex_lock(&demod_lock);
+
+	pdev = container_of(inode->i_cdev, struct demod_device_t, dev);
+	if (!pdev) {
+		PR_ERR("demod_device_t == NULL\n");
+		return -1;
+	}
+	if (!pdev->priv) {
+		PR_ERR("pdev->priv == NULL\n");
+		return -1;
+	}
+
+	file->private_data = pdev->priv;
+
+	PR_INFO("%s: %s %s,major=%d,minor=%d\n", __func__, pdev->priv->name,
+			pdev->priv->dev->kobj.name, major, minor);
+	mutex_unlock(&demod_lock);
+
 	return 0;
 }
 
 static int aml_demod_release(struct inode *inode, struct file *file)
 {
-	pr_dbg("Amlogic Demod DVB-T/C Release\n");
 	return 0;
 }
 
@@ -127,6 +146,12 @@ static long aml_demod_ioctl(struct file *file,
 	unsigned int val = 0;
 	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
 	struct aml_dtvdemod *demod = NULL, *tmp = NULL;
+	int ret = 0;
+	unsigned int dump_param = 0;
+	struct demod_priv *priv = file->private_data;
+	void __user *argp;
+
+	mutex_lock(&demod_lock);
 
 	if (!devp) {
 		pr_err("%s devp is NULL\n", __func__);
@@ -144,6 +169,17 @@ static long aml_demod_ioctl(struct file *file,
 		pr_err("%s get demod [id %d] is NULL.\n", __func__, demod_id);
 		return -EFAULT;
 	}
+
+	if (!priv) {
+		PR_ERR("priv is NULL!\n");
+		return -EINVAL;
+	}
+	if (!devp->flg_cma_allc || !devp->cma_mem_size) {
+		PR_ERR("%s: not enter_mode or invalid cma_mem_size!!\n", __func__);
+		return -EINVAL;
+	}
+
+	argp = (void __user *)arg;
 
 	switch (cmd) {
 	case AML_DEMOD_GET_LOCK_STS:
@@ -298,10 +334,41 @@ static long aml_demod_ioctl(struct file *file,
 			pr_dbg("set demod_id %d.\n", demod_id);
 		break;
 
+	case DEMOD_IOC_START_DUMP_ADC:
+		ret = copy_from_user(&dump_param, argp, sizeof(unsigned int));
+		if (ret < 0) {
+			PR_ERR("Error user param\n");
+			return -EINVAL;
+		}
+		PR_INFO("%s dump_param %d\n", __func__, dump_param);
+		capture_adc_data_once(NULL, dump_param, 0, priv);
+		PR_INFO("%s %#x %d\n", __func__, priv->data, priv->size);
+
+		ret = copy_to_user(argp, &priv->size, sizeof(unsigned int));
+		if (ret < 0) {
+			PR_ERR("Error user param\n");
+			return -EINVAL;
+		}
+		break;
+	case DEMOD_IOC_STOP_DUMP_ADC:
+		break;
+	case DEMOD_IOC_START_DUMP_TS:
+		ret = copy_from_user(&dump_param, argp, sizeof(unsigned int));
+		if (ret < 0) {
+			PR_ERR("Error user param\n");
+			return -EINVAL;
+		}
+		PR_INFO("%s dump_param %d\n", __func__, dump_param);
+		break;
+	case DEMOD_IOC_STOP_DUMP_TS:
+		break;
+
 	default:
 		pr_dbg("enter Default! 0x%X\n", cmd);
 		return -EINVAL;
 	}
+
+	mutex_unlock(&demod_lock);
 
 	return 0;
 }
@@ -316,6 +383,64 @@ static long aml_demod_compat_ioctl(struct file *file, unsigned int cmd,
 
 #endif
 
+static int aml_demod_mmap(struct file *fp, struct vm_area_struct *vma)
+{
+	int ret = 0;
+	unsigned long phyaddr = 0;
+	unsigned long size = 0;
+	struct demod_priv *priv = fp->private_data;
+	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
+
+	mutex_lock(&demod_lock);
+
+	if (!vma) {
+		PR_ERR("input error: vma is NULL\n");
+		return -EINVAL;
+	}
+	if (!priv) {
+		PR_ERR("priv is NULL!\n");
+		return -EINVAL;
+	}
+
+	if (unlikely(!devp)) {
+		PR_ERR("%s:devp is NULL\n", __func__);
+		return -1;
+	}
+
+	if (!devp->flg_cma_allc || !devp->cma_mem_size) {
+		PR_ERR("%s: not enter_mode or invalid cma_mem_size!!\n", __func__);
+		return -1;
+	}
+
+	if (!priv->data) {
+		PR_ERR("%s: priv->data is NULL\n", __func__);
+		return -1;
+	}
+	PR_INFO("%s: %s\n", __func__,
+			PageHighMem(phys_to_page(priv->data)) ? "high_mem" : "low_mem");
+
+	phyaddr = (unsigned long)priv->data;
+	size = vma->vm_end - vma->vm_start;
+	PR_INFO("vma=0x%pK, size=%ld, vm_start=%#lx, end=%#lx.\n", vma,
+			vma->vm_end - vma->vm_start, vma->vm_start, vma->vm_end);
+
+	vma->vm_page_prot = PAGE_SHARED;
+	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
+
+	if (size > priv->size)
+		size = priv->size;
+
+	ret = remap_pfn_range(vma, vma->vm_start, phyaddr >> PAGE_SHIFT, size,
+			vma->vm_page_prot);
+	if (ret != 0) {
+		PR_ERR("remap_pfn_range failed, ret=%d\n", ret);
+		return -1;
+	}
+
+	mutex_unlock(&demod_lock);
+
+	return ret;
+}
 
 static const struct file_operations aml_demod_fops = {
 	.owner		= THIS_MODULE,
@@ -325,8 +450,10 @@ static const struct file_operations aml_demod_fops = {
 #ifdef CONFIG_COMPAT
 	.compat_ioctl	= aml_demod_compat_ioctl,
 #endif
+	.mmap			= aml_demod_mmap,
 };
 
+/*
 static int aml_demod_ui_open(struct inode *inode, struct file *file)
 {
 	pr_dbg("Amlogic aml_demod_ui_open Open\n");
@@ -379,7 +506,6 @@ static const struct file_operations aml_demod_ui_fops = {
 	.release	= aml_demod_ui_release,
 	.read		= aml_demod_ui_read,
 	.write		= aml_demod_ui_write,
-	/*   .unlocked_ioctl    = aml_demod_ui_ioctl, */
 };
 
 #if 0
@@ -400,7 +526,7 @@ static struct class_attribute aml_demod_ui_class_attrs[] = {
 
 static struct class aml_demod_ui_class = {
 	.name	= "aml_demod_ui",
-/*    .class_attrs = aml_demod_ui_class_attrs,*/
+//    .class_attrs = aml_demod_ui_class_attrs,
 };
 
 int aml_demod_ui_init(void)
@@ -432,10 +558,10 @@ int aml_demod_ui_init(void)
 		class_unregister(&aml_demod_ui_class);
 		return r;
 	}
-	/* connect the file operation with cdev */
+	// connect the file operation with cdev
 	cdev_init(aml_demod_cdevp_ui, &aml_demod_ui_fops);
 	aml_demod_cdevp_ui->owner = THIS_MODULE;
-	/* connect the major/minor number to cdev */
+	// connect the major/minor number to cdev
 	r = cdev_add(aml_demod_cdevp_ui, aml_demod_devno_ui, 1);
 	if (r) {
 		PR_ERR("aml_demod_ui:failed to add cdev\n");
@@ -469,10 +595,10 @@ void aml_demod_exit_ui(void)
 	kfree(aml_demod_cdevp_ui);
 	class_unregister(&aml_demod_ui_class);
 }
+*/
 
-static struct device *aml_demod_dev;
 static dev_t aml_demod_devno;
-static struct cdev *aml_demod_cdevp;
+static struct demod_device_t *demod_dev;
 
 #ifdef CONFIG_AM_DEMOD_DVBAPI
 int aml_demod_init(void)
@@ -481,6 +607,8 @@ static int __init aml_demod_init(void)
 #endif
 {
 	int r = 0;
+	struct demod_priv *priv;
+	struct device *aml_demod_dev;
 
 	pr_dbg("Amlogic Demod DVB-T/C DebugIF Init\n");
 
@@ -510,20 +638,30 @@ static int __init aml_demod_init(void)
 		goto err2;
 	}
 
-	aml_demod_cdevp = kmalloc(sizeof(struct cdev), GFP_KERNEL);
-	if (!aml_demod_cdevp) {
-		PR_ERR("aml_demod: failed to allocate memory\n");
+	//init demod_device_t
+	demod_dev = kzalloc(sizeof(*demod_dev), GFP_KERNEL);
+	if (!demod_dev) {
+		PR_ERR("kzalloc for demod_device_t error\n");
 		r = -ENOMEM;
 		goto err3;
 	}
+
+	//init demod_priv
+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+	if (!priv) {
+		PR_ERR("kzalloc for demod_priv error\n");
+		r = -ENOMEM;
+		goto err4;
+	}
+
 	/* connect the file operation with cdev */
-	cdev_init(aml_demod_cdevp, &aml_demod_fops);
-	aml_demod_cdevp->owner = THIS_MODULE;
+	cdev_init(&demod_dev->dev, &aml_demod_fops);
+	demod_dev->dev.owner = THIS_MODULE;
 	/* connect the major/minor number to cdev */
-	r = cdev_add(aml_demod_cdevp, aml_demod_devno, 1);
+	r = cdev_add(&demod_dev->dev, aml_demod_devno, 1);
 	if (r) {
 		PR_ERR("aml_demod:failed to add cdev\n");
-		goto err4;
+		goto err5;
 	}
 
 	aml_demod_dev = device_create(&aml_demod_class, NULL,
@@ -532,23 +670,32 @@ static int __init aml_demod_init(void)
 
 	if (IS_ERR(aml_demod_dev)) {
 		pr_dbg("Can't create aml_demod device\n");
-		goto err5;
+		goto err6;
 	}
+
+	priv->dev = aml_demod_dev;
+	strncpy(priv->name, DEVICE_NAME, sizeof(priv->name));
+	priv->name[sizeof(priv->name) - 1] = '\0';
+	priv->class = &aml_demod_class;
+	demod_dev->priv = priv;
+	mutex_init(&demod_lock);
+
 	pr_dbg("Amlogic Demod DVB-T/C DebugIF Init ok----------------\n");
 #if defined(CONFIG_AM_AMDEMOD_FPGA_VER) && !defined(CONFIG_AM_DEMOD_DVBAPI)
 	pr_dbg("sdio_init\n");
 	sdio_init();
 #endif
-	aml_demod_ui_init();
+	//aml_demod_ui_init();
 	aml_demod_dbg_init();
 
 	return 0;
 
+err6:
+	cdev_del(&demod_dev->dev);
 err5:
-	cdev_del(aml_demod_cdevp);
+	kfree(priv);
 err4:
-	kfree(aml_demod_cdevp);
-
+	kfree(demod_dev);
 err3:
 	unregister_chrdev_region(aml_demod_devno, 1);
 
@@ -568,18 +715,22 @@ void aml_demod_exit(void)
 static void __exit aml_demod_exit(void)
 #endif
 {
+	struct demod_priv *priv = demod_dev->priv;
 	pr_dbg("Amlogic Demod DVB-T/C DebugIF Exit\n");
 
 	unregister_chrdev_region(aml_demod_devno, 1);
-	device_destroy(&aml_demod_class, MKDEV(MAJOR(aml_demod_devno), 0));
-	cdev_del(aml_demod_cdevp);
-	kfree(aml_demod_cdevp);
+	device_destroy(priv->class, priv->dev->devt);
+	cdev_del(&demod_dev->dev);
 
 	/*   free_irq(INT_DEMOD, (void *)aml_demod_dev_id); */
 
-	class_unregister(&aml_demod_class);
+	class_unregister(priv->class);
 
-	aml_demod_exit_ui();
+	kfree(priv);
+	kfree(demod_dev);
+	demod_dev = NULL;
+
+	//aml_demod_exit_ui();
 	aml_demod_dbg_exit();
 }
 

@@ -17,6 +17,9 @@
 #include <linux/amlogic/cpu_version.h>
 #include <linux/dvb/aml_fe_ext.h>
 
+#include <linux/device.h>
+#include <linux/cdev.h>
+
 struct aml_demod_i2c {
 	u8_t tuner;		/*type */
 	u8_t addr;		/*slave addr */
@@ -162,6 +165,19 @@ struct fpga_m1_sdio {
 	unsigned char *data_buf;
 };
 
+struct demod_priv {
+	char name[15];
+	struct class  *class;
+	struct device *dev;
+	unsigned int data;
+	unsigned int size;
+};
+
+struct demod_device_t {
+	struct cdev dev;
+	struct demod_priv *priv;
+};
+
 //cmd
 #define AML_DBG_DEMOD_TOP_RW		0
 #define AML_DBG_DVBC_RW		1
@@ -210,6 +226,14 @@ struct fpga_m1_sdio {
 #define FPGA2M1_SDIO_RD_DDR		_IOR('D', 41, struct fpga_m1_sdio)
 #define FPGA2M1_SDIO_INIT		_IO('D', 42)
 #define FPGA2M1_SDIO_EXIT		_IO('D', 43)
+
+#define DEMOD_DUMP_IOC_MAGIC	'D'
+
+#define DEMOD_IOC_START_DUMP_ADC	_IOWR(DEMOD_DUMP_IOC_MAGIC, 0x50, unsigned int)
+#define DEMOD_IOC_STOP_DUMP_ADC		_IOW(DEMOD_DUMP_IOC_MAGIC, 0x51, unsigned int)
+#define DEMOD_IOC_START_DUMP_TS		_IOWR(DEMOD_DUMP_IOC_MAGIC, 0x52, unsigned int)
+#define DEMOD_IOC_STOP_DUMP_TS		_IOW(DEMOD_DUMP_IOC_MAGIC, 0x53, unsigned int)
+//#define DEMOD_IOC_GET_ADC_PARAM		_IOR(DEMOD_DUMP_IOC_MAGIC, 0x54, unsigned int)
 
 extern unsigned int get_symbol_rate(void);
 extern unsigned int get_ch_freq(void);

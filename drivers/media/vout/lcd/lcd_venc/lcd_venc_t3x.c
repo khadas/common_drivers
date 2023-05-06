@@ -287,7 +287,7 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 
 	if (pconf->basic.lcd_type == LCD_P2P ||
 	    pconf->basic.lcd_type == LCD_MLVDS) {
-		pre_de_vs = vstart - 8;
+		pre_de_vs = vstart - 16;
 		pre_de_ve = pconf->basic.v_active + pre_de_vs;
 		pre_de_hs = hstart + 6;
 		pre_de_he = pconf->basic.h_active + pre_de_hs;

@@ -668,9 +668,21 @@ int lcd_clk_path_change(struct aml_lcd_drv_s *pdrv, int sel)
 
 static void lcd_clk_config_chip_init(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf)
 {
-	cconf->pll_id = 0;
-	cconf->pll_offset = 0;
-	cconf->fin = FIN_FREQ;
+	unsigned int i;
+	struct lcd_clk_config_s *pclk_conf;
+	unsigned int clk_mode = pdrv->config.timing.clk_mode;
+	unsigned int loop_num = 1;
+
+	if (clk_mode == LCD_CLK_MODE_INDEPENDENCE)
+		loop_num = 2;
+
+	for (i = 0; i < loop_num; i++) {
+		pclk_conf = &cconf[i];
+		pclk_conf->pll_id = 0;
+		pclk_conf->pll_offset = 0;
+		pclk_conf->fin = FIN_FREQ;
+	}
+
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_AXG:
 		lcd_clk_config_chip_init_axg(pdrv, cconf);
@@ -730,8 +742,13 @@ static void lcd_clk_config_chip_init(struct aml_lcd_drv_s *pdrv, struct lcd_clk_
 void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
+	unsigned int size = sizeof(struct lcd_clk_config_s);
+	unsigned int clk_mode = pdrv->config.timing.clk_mode;
 
-	cconf = kzalloc(sizeof(*cconf), GFP_KERNEL);
+	if (clk_mode == LCD_CLK_MODE_INDEPENDENCE)
+		size = 2 * sizeof(struct lcd_clk_config_s);
+
+	cconf = kzalloc(size, GFP_KERNEL);
 	if (!cconf)
 		return;
 	pdrv->clk_conf = (void *)cconf;

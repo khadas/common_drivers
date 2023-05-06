@@ -143,6 +143,12 @@ struct lcd_clk_config_s { /* unit: kHz */
 	void (*clk_path_change)(struct aml_lcd_drv_s *pdrv, int sel);
 };
 
+enum lcd_clk_mode_e {
+	LCD_CLK_MODE_DEPENDENCE = 0,  /* pclk and phy use same pll */
+	LCD_CLK_MODE_INDEPENDENCE,    /* pclk and phy use different pll */
+	LCD_CLK_MODE_MAX,
+};
+
 struct lcd_clk_config_s *get_lcd_clk_config(struct aml_lcd_drv_s *pdrv);
 
 #endif

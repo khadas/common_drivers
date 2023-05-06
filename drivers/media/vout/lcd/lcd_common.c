@@ -28,6 +28,7 @@
 #include <linux/mm.h>
 #include "lcd_common.h"
 #include "lcd_reg.h"
+#include "lcd_clk/lcd_clk_config.h"
 
 void lcd_delay_us(int us)
 {
@@ -1577,6 +1578,12 @@ static int lcd_config_load_from_dts(struct aml_lcd_drv_s *pdrv)
 	else
 		pconf->timing.ppc = val;
 
+	ret = of_property_read_u32(child, "clk_mode", &val);
+	if (ret)
+		pconf->timing.clk_mode = LCD_CLK_MODE_DEPENDENCE;
+	else
+		pconf->timing.clk_mode = val;
+
 	ret = of_property_read_u32_array(child, "clk_attr", &para[0], 4);
 	if (ret) {
 		LCDERR("[%d]: failed to get clk_attr\n", pdrv->index);
@@ -2072,7 +2079,7 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv, char *key_s
 {
 	unsigned char *para;
 	int key_len, len;
-	unsigned char *p;
+	unsigned char *p, val;
 	const char *str;
 	struct aml_lcd_unifykey_header_s lcd_header;
 	struct lcd_config_s *pconf = &pdrv->config;
@@ -2165,11 +2172,9 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv, char *key_s
 	/* customer: 31byte */
 	pconf->timing.fr_adjust_type = *(p + LCD_UKEY_FR_ADJ_TYPE);
 	pconf->timing.ss_level = *(p + LCD_UKEY_SS_LEVEL);
-	pconf->timing.clk_auto = *(p + LCD_UKEY_CLK_AUTO_GEN);
-	pconf->timing.ppc = (pconf->timing.clk_auto >> 4) & 0xf;
-	pconf->timing.clk_auto &= ~(0xf << 4);
-	if (pconf->timing.ppc == 0)
-		pconf->timing.ppc = 1;
+	val = *(p + LCD_UKEY_CUST_VAL0);
+	pconf->timing.clk_mode = (val >> 4) & 0xf;
+	pconf->timing.clk_auto = val & 0xf;
 	pconf->timing.lcd_clk = (*(p + LCD_UKEY_PCLK) |
 		((*(p + LCD_UKEY_PCLK + 1)) << 8) |
 		((*(p + LCD_UKEY_PCLK + 2)) << 16) |
@@ -2198,7 +2203,10 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv, char *key_s
 	pconf->basic.frame_rate_min = *(p + LCD_UKEY_FRAME_RATE_MIN);
 	pconf->basic.frame_rate_max = *(p + LCD_UKEY_FRAME_RATE_MAX);
 
-	pconf->custom_pinmux = *(p + LCD_UKEY_CUST_PINMUX);
+	val = *(p + LCD_UKEY_CUST_VAL1);
+	pconf->timing.ppc = (val >> 4) & 0xf;
+	pconf->custom_pinmux = val & 0xf;
+
 	pconf->fr_auto_cus = *(p + LCD_UKEY_FR_AUTO_CUS);
 
 	/* interface: 20byte */
@@ -2619,6 +2627,7 @@ void lcd_p2p_config_set(struct aml_lcd_drv_s *pdrv)
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned int bit_rate, pclk, p2p_type;
 	unsigned int lcd_bits, lane_num;
+	unsigned int clk_mode;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
@@ -2627,13 +2636,18 @@ void lcd_p2p_config_set(struct aml_lcd_drv_s *pdrv)
 	lane_num = pconf->control.p2p_cfg.lane_num;
 	pclk = pconf->timing.lcd_clk / 1000;
 	p2p_type = pconf->control.p2p_cfg.p2p_type & 0x1f;
+	clk_mode = pconf->timing.clk_mode;
 	switch (p2p_type) {
 	case P2P_CEDS:
 	case P2P_EPI:
-		if (pclk >= 600000)
-			bit_rate = pclk * 3 * lcd_bits / lane_num;
-		else
+		if (clk_mode == LCD_CLK_MODE_DEPENDENCE) {
+			if (pclk >= 600000)
+				bit_rate = pclk * 3 * lcd_bits / lane_num;
+			else
+				bit_rate = pclk * (3 * lcd_bits + 4) / lane_num;
+		} else {
 			bit_rate = pclk * (3 * lcd_bits + 4) / lane_num;
+		}
 		break;
 	case P2P_CHPI: /* 8/10 coding */
 		bit_rate = (pclk * 3 * lcd_bits * 10 / 8) / lane_num;
@@ -2641,10 +2655,15 @@ void lcd_p2p_config_set(struct aml_lcd_drv_s *pdrv)
 	case P2P_CSPI:
 	case P2P_ISP:
 	case P2P_CMPI:
-		if (pclk >= 600000)
-			bit_rate = pclk * 3 * lcd_bits / lane_num;
-		else  /* 8/9 coding */
+		if (clk_mode == LCD_CLK_MODE_DEPENDENCE) {
+			if (pclk >= 600000)
+				bit_rate = pclk * 3 * lcd_bits / lane_num;
+			else  /* 8/9 coding */
+				bit_rate = (pclk * 3 * lcd_bits * 9 / 8) / lane_num;
+		} else {
+			/* 8/9 coding */
 			bit_rate = (pclk * 3 * lcd_bits * 9 / 8) / lane_num;
+		}
 		break;
 	default:
 		bit_rate = pclk * 3 * lcd_bits / lane_num;
@@ -2762,6 +2781,8 @@ void lcd_basic_timing_range_init(struct aml_lcd_drv_s *pdrv)
 		pconf->timing.sync_duration_den = 1000;
 		pconf->timing.frac = 0;
 	}
+	if (pconf->timing.ppc == 0)
+		pconf->timing.ppc = 1;
 
 	//for vrr range config
 	lcd_vrr_config_update(pdrv);

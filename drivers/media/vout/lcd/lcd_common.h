@@ -33,6 +33,7 @@
 /* 20230313: update tcon debug info print*/
 /* 20230319: optimize phy code*/
 /* 20230510: support tcon fw*/
+/* 20230505: t3x support */
 #define LCD_DRV_VERSION    "20230510"
 
 extern struct mutex lcd_vout_mutex;

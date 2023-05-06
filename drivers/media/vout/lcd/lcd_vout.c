@@ -1873,7 +1873,6 @@ static void lcd_config_default(struct aml_lcd_drv_s *pdrv)
 	unsigned int init_state;
 
 	pdrv->init_flag = 0;
-	pdrv->config.timing.ppc = pdrv->boot_ctrl->ppc == 0 ? 1 : pdrv->boot_ctrl->ppc;
 
 	init_state = lcd_get_venc_init_config(pdrv);
 	if (init_state) {
@@ -1900,9 +1899,11 @@ static void lcd_config_default(struct aml_lcd_drv_s *pdrv)
 		pdrv->status = 0;
 		pdrv->resume_flag = 0;
 	}
-	LCDPR("[%d]: ppc: %d, status: %d, init_flag: %d\n",
-	      pdrv->index, pdrv->config.timing.ppc,
-	      pdrv->status, pdrv->init_flag);
+	LCDPR("[%d]: ppc: %d, clk_mode: %d, base_fr: %d, status: 0x%x, init_flag: %d\n",
+		pdrv->index, pdrv->config.timing.ppc,
+		pdrv->config.timing.clk_mode,
+		pdrv->config.timing.base_frame_rate,
+		pdrv->status, pdrv->init_flag);
 }
 
 static int lcd_config_probe(struct aml_lcd_drv_s *pdrv, struct platform_device *pdev)
@@ -1932,6 +1933,20 @@ static int lcd_config_probe(struct aml_lcd_drv_s *pdrv, struct platform_device *
 	pdrv->viu_sel = LCD_VIU_SEL_NONE;
 	pdrv->vsync_none_timer_flag = 0;
 	pdrv->module_reset = lcd_module_reset;
+	pdrv->config.timing.clk_mode = pdrv->boot_ctrl->clk_mode;
+	pdrv->config.timing.base_frame_rate = pdrv->boot_ctrl->base_frame_rate;
+	switch (pdrv->boot_ctrl->ppc) {
+	case LCD_VENC_2PPC:
+		pdrv->config.timing.ppc = 2;
+		break;
+	case LCD_VENC_4PPC:
+		pdrv->config.timing.ppc = 4;
+		break;
+	case LCD_VENC_1PPC:
+	default:
+		pdrv->config.timing.ppc = 1;
+		break;
+	}
 	lcd_clk_config_probe(pdrv);
 	lcd_phy_config_init(pdrv);
 	lcd_venc_probe(pdrv);
@@ -2473,9 +2488,9 @@ static int lcd_boot_ctrl_setup(char *str)
 	boot_ctrl->advanced_flag = (data32 >> 8) & 0xff;
 	boot_ctrl->custom_pinmux = (data32 >> 16) & 0x1;
 	boot_ctrl->init_level = (data32 >> 18) & 0x3;
-	boot_ctrl->ppc = (data32 >> 24) & 0x3;
-	if (boot_ctrl->ppc & (boot_ctrl->ppc - 1))
-		boot_ctrl->ppc = 1;
+	boot_ctrl->ppc = (data32 >> 20) & 0x3;
+	boot_ctrl->clk_mode = (data32 >> 22) & 0x3;
+	boot_ctrl->base_frame_rate = (data32 >> 24) & 0xff;
 	return 0;
 }
 
@@ -2500,9 +2515,9 @@ static int lcd1_boot_ctrl_setup(char *str)
 	boot_ctrl->advanced_flag = (data32 >> 8) & 0xff;
 	boot_ctrl->custom_pinmux = (data32 >> 16) & 0x1;
 	boot_ctrl->init_level = (data32 >> 18) & 0x3;
-	boot_ctrl->ppc = (data32 >> 24) & 0x3;
-	if (boot_ctrl->ppc & (boot_ctrl->ppc - 1))
-		boot_ctrl->ppc = 1;
+	boot_ctrl->ppc = (data32 >> 20) & 0x3;
+	boot_ctrl->clk_mode = (data32 >> 22) & 0x3;
+	boot_ctrl->base_frame_rate = (data32 >> 24) & 0xff;
 	return 0;
 }
 
@@ -2527,9 +2542,9 @@ static int lcd2_boot_ctrl_setup(char *str)
 	boot_ctrl->advanced_flag = (data32 >> 8) & 0xff;
 	boot_ctrl->custom_pinmux = (data32 >> 16) & 0x1;
 	boot_ctrl->init_level = (data32 >> 18) & 0x3;
-	boot_ctrl->ppc = (data32 >> 24) & 0xf;
-	if (boot_ctrl->ppc & (boot_ctrl->ppc - 1))
-		boot_ctrl->ppc = 1;
+	boot_ctrl->ppc = (data32 >> 20) & 0x3;
+	boot_ctrl->clk_mode = (data32 >> 22) & 0x3;
+	boot_ctrl->base_frame_rate = (data32 >> 24) & 0xff;
 	return 0;
 }
 

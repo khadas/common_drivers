@@ -169,6 +169,7 @@ struct lcd_timing_s {
 	unsigned int frac;
 	unsigned int frame_rate;
 	unsigned int ppc;
+	unsigned int clk_mode;
 
 	unsigned int hstart;
 	unsigned int hend;
@@ -580,8 +581,14 @@ struct lcd_config_s {
 #define LCD_INIT_LEVEL_KERNEL_ON      2
 #define LCD_INIT_LEVEL_KERNEL_OFF     3
 
+#define LCD_VENC_1PPC                 0
+#define LCD_VENC_2PPC                 1
+#define LCD_VENC_4PPC                 2
+
 /*
- *bit[31:20]: reserved
+ *bit[31:24]: base frame rate
+ *bit[23:22]: clk mode
+ *bit[21:20]: ppc
  *bit[19:18]: lcd_init_level
  *bit[17]: reserved
  *bit[16]: custom pinmux flag
@@ -595,7 +602,9 @@ struct lcd_boot_ctrl_s {
 	unsigned char advanced_flag;
 	unsigned char custom_pinmux;
 	unsigned char init_level;
-	signed char ppc;
+	unsigned char ppc;
+	unsigned char clk_mode;
+	unsigned char base_frame_rate;
 };
 
 /*

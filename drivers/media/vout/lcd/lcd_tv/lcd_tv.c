@@ -88,6 +88,7 @@ enum lcd_vmode_e {
 	LCD_VMODE_1080P,
 	LCD_VMODE_2160P,
 	LCD_VMODE_3840_1080P,
+	LCD_VMODE_3840_2160P,
 	LCD_VMODE_MAX,
 };
 
@@ -410,16 +411,15 @@ static unsigned int lcd_std_frame_rate_index(struct aml_lcd_drv_s *pdrv,
 {
 	unsigned int i;
 
-	if (info->frame_rate > pdrv->config.timing.base_frame_rate)
-		goto lcd_std_frame_rate_index_invalid;
 	for (i = 0; i < LCD_STD_FRAME_RATE_MAX; i++) {
-		if (lcd_vmode_cur_info->duration[i].frame_rate == 0)
+		if (info->duration[i].frame_rate == 0)
 			break;
+		if (info->duration[i].frame_rate > pdrv->config.timing.base_frame_rate)
+			continue;
 		if (info->frame_rate == info->duration[i].frame_rate)
 			return i;
 	}
 
-lcd_std_frame_rate_index_invalid:
 	LCDERR("%s: invalid frame_rate: %d\n", __func__, info->frame_rate);
 	return LCD_STD_FRAME_RATE_MAX;
 }
@@ -553,8 +553,7 @@ static unsigned int lcd_parse_vout_init_name(char *name)
  * vout server api
  * **************************************************
  */
-static enum vmode_e lcd_validate_vmode(char *mode, unsigned int frac,
-				       void *data)
+static enum vmode_e lcd_validate_vmode(char *mode, unsigned int frac, void *data)
 {
 	struct aml_lcd_drv_s *pdrv = (struct aml_lcd_drv_s *)data;
 	struct lcd_vmode_info_s *info;

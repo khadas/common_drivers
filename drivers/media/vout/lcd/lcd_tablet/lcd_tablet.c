@@ -466,6 +466,7 @@ static void lcd_tablet_vinfo_update(struct aml_lcd_drv_s *pdrv)
 	temp = pconf->basic.v_period - pconf->basic.v_active -
 		pconf->timing.vsync_width - pconf->timing.vsync_bp;
 	pdrv->vinfo.vfp = temp;
+	pdrv->vinfo.cur_enc_ppc = pconf->timing.ppc;
 	switch (pconf->timing.fr_adjust_type) {
 	case 0:
 		pdrv->vinfo.fr_adj_type = VOUT_FR_ADJ_CLK;
@@ -522,6 +523,7 @@ static void lcd_tablet_vinfo_update_default(struct aml_lcd_drv_s *pdrv)
 	pdrv->vinfo.video_clk = 0;
 	pdrv->vinfo.htotal = pconf->basic.h_period;
 	pdrv->vinfo.vtotal = pconf->basic.v_period;
+	pdrv->vinfo.cur_enc_ppc = pconf->timing.ppc;
 	pdrv->vinfo.fr_adj_type = VOUT_FR_ADJ_NONE;
 }
 

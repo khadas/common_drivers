@@ -1873,6 +1873,8 @@ static void lcd_config_default(struct aml_lcd_drv_s *pdrv)
 	unsigned int init_state;
 
 	pdrv->init_flag = 0;
+	pdrv->config.timing.ppc = pdrv->boot_ctrl->ppc == 0 ? 1 : pdrv->boot_ctrl->ppc;
+
 	init_state = lcd_get_venc_init_config(pdrv);
 	if (init_state) {
 		switch (pdrv->boot_ctrl->init_level) {
@@ -1898,8 +1900,9 @@ static void lcd_config_default(struct aml_lcd_drv_s *pdrv)
 		pdrv->status = 0;
 		pdrv->resume_flag = 0;
 	}
-	LCDPR("[%d]: status: %d, init_flag: %d\n",
-	      pdrv->index, pdrv->status, pdrv->init_flag);
+	LCDPR("[%d]: ppc: %d, status: %d, init_flag: %d\n",
+	      pdrv->index, pdrv->config.timing.ppc,
+	      pdrv->status, pdrv->init_flag);
 }
 
 static int lcd_config_probe(struct aml_lcd_drv_s *pdrv, struct platform_device *pdev)
@@ -1929,9 +1932,7 @@ static int lcd_config_probe(struct aml_lcd_drv_s *pdrv, struct platform_device *
 	pdrv->viu_sel = LCD_VIU_SEL_NONE;
 	pdrv->vsync_none_timer_flag = 0;
 	pdrv->module_reset = lcd_module_reset;
-	pdrv->config.timing.ppc = lcd_boot_ctrl_config[pdrv->index].ppc;
 	lcd_clk_config_probe(pdrv);
-	LCDPR("%s ppc=%d\n", __func__, pdrv->config.timing.ppc);
 	lcd_phy_config_init(pdrv);
 	lcd_venc_probe(pdrv);
 	lcd_config_default(pdrv);

@@ -500,6 +500,7 @@ static void lcd_vmode_vinfo_update(struct aml_lcd_drv_s *pdrv, enum vmode_e mode
 		pconf->timing.vsync_width - pconf->timing.vsync_bp;
 	pdrv->vinfo.vfp = temp;
 	pdrv->vinfo.viu_mux = VIU_MUX_ENCL;
+	pdrv->vinfo.cur_enc_ppc = pconf->timing.ppc;
 	switch (pdrv->config.timing.fr_adjust_type) {
 	case 0:
 		pdrv->vinfo.fr_adj_type = VOUT_FR_ADJ_CLK;
@@ -1210,8 +1211,8 @@ static void lcd_vinfo_update_default(struct aml_lcd_drv_s *pdrv)
 	pdrv->vinfo.video_clk = 0;
 	pdrv->vinfo.htotal = pconf->basic.h_period;
 	pdrv->vinfo.vtotal = pconf->basic.v_period;
-	pdrv->vinfo.fr_adj_type = VOUT_FR_ADJ_NONE;
 	pdrv->vinfo.cur_enc_ppc = pconf->timing.ppc;
+	pdrv->vinfo.fr_adj_type = VOUT_FR_ADJ_NONE;
 
 	kfree(mode);
 }

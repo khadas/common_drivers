@@ -4194,7 +4194,8 @@ static ssize_t lcd_debug_vinfo_show(struct device *dev,
 		      "    fr_adj_type:           %d\n"
 		      "    video_clk:             %d\n"
 		      "    viu_color_fmt:         %d\n"
-		      "    viu_mux:               0x%x\n\n",
+		      "    viu_mux:               0x%x\n"
+		      "    cur_enc_ppc:           %d\n\n",
 		      lcd_mode_mode_to_str(pdrv->mode),
 		      pdrv->vinfo.name,
 		      pdrv->vinfo.mode,
@@ -4214,7 +4215,8 @@ static ssize_t lcd_debug_vinfo_show(struct device *dev,
 		      pdrv->vinfo.fr_adj_type,
 		      pdrv->vinfo.video_clk,
 		      pdrv->vinfo.viu_color_fmt,
-		      pdrv->vinfo.viu_mux);
+		      pdrv->vinfo.viu_mux,
+		      pdrv->vinfo.cur_enc_ppc);
 
 	return len;
 }

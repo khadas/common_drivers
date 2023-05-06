@@ -3159,6 +3159,7 @@ void lcd_vinfo_update(struct aml_lcd_drv_s *pdrv)
 	temp = pconf->basic.v_period - pconf->basic.v_active -
 		pconf->timing.vsync_width - pconf->timing.vsync_bp;
 	vinfo->vfp = temp;
+	vinfo->cur_enc_ppc = pconf->timing.ppc;
 
 	lcd_vout_notify_mode_change(pdrv);
 }

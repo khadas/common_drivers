@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+config AMLOGIC_SOC_TIMESTAMP
+	tristate "Amlogic SoC Timestamp"
+	depends on OF
+	default n
+	help
+	  Say yes if you want to get soc-level timestamp.

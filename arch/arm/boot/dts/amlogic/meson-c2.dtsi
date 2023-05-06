@@ -1760,6 +1760,12 @@
 	chosen {
 		bootargs = "usbcore.autosuspend=-1";
 	};
+
+	timestamp {
+		compatible = "amlogic, meson-soc-timestamp";
+		reg = <0xfe005904 0x8>;
+		status = "okay";
+	};
 };
 
 /* add pin mux here */

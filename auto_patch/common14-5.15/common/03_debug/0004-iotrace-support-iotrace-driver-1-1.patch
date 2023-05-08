@@ -1,0 +1,157 @@
+From 0a7fef0226aa23701f803c6c896708f50fdb74b2 Mon Sep 17 00:00:00 2001
+From: "qiankun.wang" <qiankun.wang@amlogic.com>
+Date: Thu, 11 May 2023 15:08:24 +0800
+Subject: [PATCH] iotrace: support iotrace driver [1/1]
+
+PD#SWPL-114632
+
+Problem:
+support iotrace driver
+
+Solution:
+support iotrace
+
+Verify:
+on s4d_ap222 and c2_af400
+
+Change-Id: Id4dc4f64d886dc551f32d776ebaa2c9c2d5650b0
+Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
+---
+ arch/arm/include/asm/io.h      | 12 ++++++++----
+ arch/arm64/include/asm/io.h    |  7 +++++++
+ arch/arm64/kernel/image-vars.h |  5 +++++
+ arch/arm64/kernel/io.c         |  6 ++++++
+ drivers/irqchip/irq-gic.c      |  3 +++
+ fs/pstore/ram_core.c           |  3 +++
+ 6 files changed, 32 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
+index 79d246ac93ab..b38c3d5f5b39 100644
+--- a/arch/arm/include/asm/io.h
++++ b/arch/arm/include/asm/io.h
+@@ -50,6 +50,11 @@ void __raw_readsb(const volatile void __iomem *addr, void *data, int bytelen);
+ void __raw_readsw(const volatile void __iomem *addr, void *data, int wordlen);
+ void __raw_readsl(const volatile void __iomem *addr, void *data, int longlen);
+ 
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
++#include <linux/amlogic/io_32.h>
++#elif IS_MODULE(CONFIG_AMLOGIC_DEBUG_IOTRACE) && defined(MODULE)
++#include <linux/amlogic/io_32.h>
++#else
+ #if __LINUX_ARM_ARCH__ < 6
+ /*
+  * Half-word accesses are problematic with RiscPC due to limitations of
+@@ -115,7 +120,7 @@ static inline u32 __raw_readl(const volatile void __iomem *addr)
+ 		     : "Qo" (*(volatile u32 __force *)addr));
+ 	return val;
+ }
+-
++#endif /* CONFIG_AMLOGIC_DEBUG_IOTRACE */
+ /*
+  * Architecture ioremap implementation.
+  */
+@@ -338,12 +343,11 @@ static inline void memcpy_toio(volatile void __iomem *to, const void *from,
+ 	mmiocpy((void __force *)to, from, count);
+ }
+ #define memcpy_toio(to,from,count) memcpy_toio(to,from,count)
+-
+-#else
++#else /* __ARMBE__ */
+ #define memset_io(c,v,l)	_memset_io(c,(v),(l))
+ #define memcpy_fromio(a,c,l)	_memcpy_fromio((a),c,(l))
+ #define memcpy_toio(c,a,l)	_memcpy_toio(c,(a),(l))
+-#endif
++#endif /*__ARMBE__ */
+ 
+ #endif	/* readl */
+ 
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index 3995652daf81..aff15597d672 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -18,6 +18,12 @@
+ #include <asm/alternative.h>
+ #include <asm/cpufeature.h>
+ 
++/* builtin code include iotrace can cause some symbols crc changed */
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
++#include <linux/amlogic/io_64.h>
++#elif (IS_MODULE(CONFIG_AMLOGIC_DEBUG_IOTRACE)) && defined(MODULE)
++#include <linux/amlogic/io_64.h>
++#else
+ /*
+  * Generic IO read/write.  These perform native-endian accesses.
+  */
+@@ -89,6 +95,7 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
+ 		     : "=r" (val) : "r" (addr));
+ 	return val;
+ }
++#endif
+ 
+ /* IO barriers */
+ #define __iormb(v)							\
+diff --git a/arch/arm64/kernel/image-vars.h b/arch/arm64/kernel/image-vars.h
+index 41a068e9ce5e..dda0961a7382 100644
+--- a/arch/arm64/kernel/image-vars.h
++++ b/arch/arm64/kernel/image-vars.h
+@@ -138,6 +138,11 @@ KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
+ KVM_NVHE_ALIAS(pkvm_force_nc);
+ #endif
+ 
++#if IS_BUILTIN(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
++KVM_NVHE_ALIAS(pstore_io_save);
++KVM_NVHE_ALIAS(vabits_actual);
++#endif
++
+ #endif /* CONFIG_KVM */
+ 
+ #endif /* __ARM64_KERNEL_IMAGE_VARS_H */
+diff --git a/arch/arm64/kernel/io.c b/arch/arm64/kernel/io.c
+index aa7a4ec6a3ae..9186cd23516d 100644
+--- a/arch/arm64/kernel/io.c
++++ b/arch/arm64/kernel/io.c
+@@ -7,7 +7,13 @@
+ 
+ #include <linux/export.h>
+ #include <linux/types.h>
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
++#define SKIP_IO_TRACE
+ #include <linux/io.h>
++#undef SKIP_IO_TRACE
++#else
++#include <linux/io.h>
++#endif
+ 
+ /*
+  * Copy data from IO memory space to "real" memory space.
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index a02bdad09318..50041c044a1a 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -17,6 +17,9 @@
+  * As such, the enable set/clear, pending set/clear and active bit
+  * registers are banked per-cpu for these sources.
+  */
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
++#define SKIP_IO_TRACE
++#endif
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/err.h>
+diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+index 155c7010b1f8..4f0c82f0e590 100644
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -5,6 +5,9 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
++#define SKIP_IO_TRACE
++#endif
+ #include <linux/device.h>
+ #include <linux/err.h>
+ #include <linux/errno.h>
+-- 
+2.25.1
+

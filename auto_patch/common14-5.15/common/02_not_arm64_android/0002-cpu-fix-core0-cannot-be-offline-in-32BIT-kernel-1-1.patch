@@ -1,9 +1,9 @@
-From 38793282bd60382a90dc04d74bb30c91503bdfe1 Mon Sep 17 00:00:00 2001
-From: Lei Zhang <lei.zhang@amlogic.com>
-Date: Sat, 31 Jul 2021 12:14:35 +0800
-Subject: [PATCH 65/95] cpu: fix core0 cannot be offline in 32BIT kernel [1/2]
+From fd029511d9262df0c49560a6e479429329d6a1e6 Mon Sep 17 00:00:00 2001
+From: "qiankun.wang" <qiankun.wang@amlogic.com>
+Date: Fri, 12 May 2023 15:01:39 +0800
+Subject: [PATCH] cpu: fix core0 cannot be offline in 32BIT kernel [1/1]
 
-PD#SWPL-98876
+PD#SWPL-114632
 
 Problem:
 fix core0 cannot be offline in 32BIT kernel
@@ -14,17 +14,17 @@ fix core0 cannot be offline in 32BIT kernel
 Verify:
 on s4_aq222
 
-Signed-off-by: Lei Zhang <lei.zhang@amlogic.com>
-Change-Id: I4e25fb47dde2c6108fd6fa218d4247928af57481
+Change-Id: I0c1bf91e013f133851494622bd59da33ac038a51
+Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
 ---
  arch/arm/kernel/smp.c | 4 ++++
  1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 9ba5d4d232f3..61bc8f52a7a3 100644
+index 0cdaebb28b26..083662ead0a8 100644
 --- a/arch/arm/kernel/smp.c
 +++ b/arch/arm/kernel/smp.c
-@@ -243,7 +243,11 @@ int platform_can_hotplug_cpu(unsigned int cpu)
+@@ -236,7 +236,11 @@ int platform_can_hotplug_cpu(unsigned int cpu)
  	 * since this is special on a lot of platforms, e.g. because
  	 * of clock tick interrupts.
  	 */

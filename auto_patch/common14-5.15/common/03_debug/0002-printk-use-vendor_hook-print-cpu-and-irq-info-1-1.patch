@@ -1,9 +1,9 @@
-From 0410d26dfb6eff6da993d7f62c1b8bda458d5b9e Mon Sep 17 00:00:00 2001
-From: "qinglin.li" <qinglin.li@amlogic.com>
-Date: Wed, 16 Nov 2022 16:54:47 +0800
-Subject: [PATCH 10/95] printk: use vendor_hook print cpu and irq info [1/3]
+From b9900e76e34f4f56ab31976ba9c8d11bf48e21cd Mon Sep 17 00:00:00 2001
+From: "qiankun.wang" <qiankun.wang@amlogic.com>
+Date: Fri, 12 May 2023 17:53:21 +0800
+Subject: [PATCH] printk: use vendor_hook print cpu and irq info [1/1]
 
-PD#SWPL-101578
+PD#SWPL-114632
 
 Problem:
 use vendor_hook print cpu and irq info
@@ -14,8 +14,8 @@ use vendor_hook print cpu and irq info
 Verify:
 sc2
 
-Change-Id: I34ee74ab9f85d35b56d329d733d806d073033200
-Signed-off-by: qinglin.li <qinglin.li@amlogic.com>
+Change-Id: I337e61de17494367063f0a14d59ce4cde6d07679
+Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
 ---
  include/trace/hooks/printk.h | 5 +++++
  1 file changed, 5 insertions(+)

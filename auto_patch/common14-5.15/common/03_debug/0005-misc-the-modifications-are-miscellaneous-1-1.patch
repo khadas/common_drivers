@@ -1,0 +1,296 @@
+From a27abe5bd83dde56ed2f621b3ccbea1d2eddc3f6 Mon Sep 17 00:00:00 2001
+From: "qiankun.wang" <qiankun.wang@amlogic.com>
+Date: Fri, 12 May 2023 15:09:23 +0800
+Subject: [PATCH] misc: misc modifications [1/1]
+
+PD#SWPL-114632
+
+Problem:
+gki optimize
+
+Solution:
+code optimize
+
+Verify:
+s4
+
+Change-Id: I4561d2c235baacaf73fd82e5b850dda74148724e
+Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
+---
+ drivers/Kconfig         |  9 +++++++++
+ drivers/base/dd.c       | 14 ++++++++++++++
+ init/main.c             | 37 +++++++++++++++++++++++++++++++++++++
+ kernel/module.c         | 38 ++++++++++++++++++++++++++++++++++++++
+ kernel/sched/topology.c |  8 +++++++-
+ kernel/workqueue.c      | 19 +++++++++++++++++++
+ 6 files changed, 124 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 09c9fcfb9236..ab7c3cfea329 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -249,6 +249,15 @@ config AMLOGIC_DRIVER
+ 	  Note: All amlogic driver should be placed in
+ 	  directory $(COMMON_DRIVERS_DIR)/drivers/
+ 
++config AMLOGIC_BREAK_GKI_20
++	bool "Amlogic Break GKI 2.0"
++	depends on AMLOGIC_BREAK_GKI
++	default n
++	help
++	  this option is provide for control Break GKI 2.0,
++	  if you want to break gki2.0 rule, should enable it,
++	  all break gki2.0 modify should be depends on this option
++
+ if AMLOGIC_DRIVER
+ config AMLOGIC_BREAK_GKI
+ 	bool "Amlogic Break GKI"
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 9cbf086fe552..3a3719471066 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -57,6 +57,11 @@ static LIST_HEAD(deferred_probe_active_list);
+ static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
+ static bool initcalls_done;
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++static int deferred_probe_printk;
++core_param(deferred_probe_printk, deferred_probe_printk, int, 0644);
++#endif
++
+ /* Save the async probe drivers' name from kernel cmdline */
+ #define ASYNC_DRV_NAMES_MAX_LEN	256
+ static char async_probe_drv_names[ASYNC_DRV_NAMES_MAX_LEN];
+@@ -183,6 +188,15 @@ static void driver_deferred_probe_trigger(void)
+ 	 */
+ 	mutex_lock(&deferred_probe_mutex);
+ 	atomic_inc(&deferred_trigger_count);
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++	if (deferred_probe_printk && !list_empty(&deferred_probe_pending_list)) {
++		struct device_private *p;
++
++		pr_warn("deferred probe trigger count %d\n", atomic_read(&deferred_trigger_count));
++		list_for_each_entry(p, &deferred_probe_pending_list, deferred_probe)
++			dev_info(p->device, "deferred probe pending\n");
++	}
++#endif
+ 	list_splice_tail_init(&deferred_probe_pending_list,
+ 			      &deferred_probe_active_list);
+ 	mutex_unlock(&deferred_probe_mutex);
+diff --git a/init/main.c b/init/main.c
+index 649d9e4201a8..f2579303f6a0 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -578,6 +578,19 @@ static int __init unknown_bootoption(char *param, char *val,
+ 		}
+ 		argv_init[i] = param;
+ 	}
++#ifdef CONFIG_AMLOGIC_ENV_DEBUG
++	if (panic_later) {
++		int k;
++
++		pr_err("Dump init args\n");
++		for (k = 0; argv_init[k] && k < MAX_INIT_ARGS; k++)
++			pr_err("[%2d]: %s\n", k, argv_init[k]);
++
++		pr_err("Dump env args\n");
++		for (k = 0; envp_init[k] && k < MAX_INIT_ENVS; k++)
++			pr_err("[%2d]: %s\n", k, envp_init[k]);
++	}
++#endif
+ 	return 0;
+ }
+ 
+@@ -1218,10 +1231,34 @@ static bool __init_or_module initcall_blacklisted(initcall_t fn)
+ 	strreplace(fn_name, ' ', '\0');
+ 
+ 	list_for_each_entry(entry, &blacklisted_initcalls, next) {
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++		char *str = strstr(fn_name, entry->buf);
++
++		if (!str)
++			continue;
++		/*
++		 * The judgment condition before "||" is for gcc compiler
++		 * and atfer "||" for clang compiler.
++		 * clang compiler will modify kernel symbol,the first character
++		 * before the kernel symbol is always '_',and the first two
++		 * characters are always numbers. we use this format to check
++		 * blacklisted init method.
++		 *
++		 * for example:
++		 * fn_name = __initstub__kmod_amlogic_debug__289_21_debug_main_init4
++		 * entry->buf = debug_main_init
++		 */
++		if (str == fn_name ||
++		    ((str >= fn_name + 2) && *(str - 1) == '_' && isdigit(*(str - 2)))) {
++			pr_info("initcall %s blacklisted, fn_name: %s\n", entry->buf, fn_name);
++			return true;
++		}
++#else
+ 		if (!strcmp(fn_name, entry->buf)) {
+ 			pr_debug("initcall %s blacklisted\n", fn_name);
+ 			return true;
+ 		}
++#endif
+ 	}
+ 
+ 	return false;
+diff --git a/kernel/module.c b/kernel/module.c
+index 8770b263e2e8..97439745c417 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -100,6 +100,11 @@ static void do_free_init(struct work_struct *w);
+ static DECLARE_WORK(init_free_wq, do_free_init);
+ static LLIST_HEAD(init_free_list);
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++static int module_debug;
++core_param(module_debug, module_debug, int, 0644);
++#endif
++
+ #ifdef CONFIG_MODULES_TREE_LOOKUP
+ 
+ /*
+@@ -982,6 +987,10 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
+ 	/* Store the name of the last unloaded module for diagnostic purposes */
+ 	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++	if (module_debug)
++		pr_info("remove module: %s\n", mod->name);
++#endif
+ 	free_module(mod);
+ 	/* someone could wait for the module in add_unformed_module() */
+ 	wake_up_all(&module_wq);
+@@ -1243,6 +1252,11 @@ static u32 resolve_rel_crc(const s32 *crc)
+ 	return *(u32 *)((void *)crc + *crc);
+ }
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++static int ignore_check_version = 1;
++core_param(ignore_check_version, ignore_check_version, int, 0644);
++#endif
++
+ static int check_version(const struct load_info *info,
+ 			 const char *symname,
+ 			 struct module *mod,
+@@ -1289,7 +1303,13 @@ static int check_version(const struct load_info *info,
+ bad_version:
+ 	pr_warn("%s: disagrees about version of symbol %s\n",
+ 	       info->name, symname);
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++	pr_warn("!!!MUST FIX!!! %s: ko need recompile.\n", info->name);
++	dump_stack();
++	return ignore_check_version;
++#else
+ 	return 0;
++#endif
+ }
+ 
+ static inline int check_modstruct_version(const struct load_info *info,
+@@ -3505,6 +3525,12 @@ static int move_module(struct module *mod, struct load_info *info)
+ 		mod->init_layout.base = NULL;
+ 
+ 	/* Transfer each section which specifies SHF_ALLOC */
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++	if (module_debug)
++		pr_info("module:%s init_base:%px size:%#x core_base:%px size:%#x, final section addresses:\n",
++			mod->name, mod->init_layout.base, mod->init_layout.size,
++			mod->core_layout.base, mod->core_layout.size);
++#endif
+ 	pr_debug("final section addresses:\n");
+ 	for (i = 0; i < info->hdr->e_shnum; i++) {
+ 		void *dest;
+@@ -3523,6 +3549,18 @@ static int move_module(struct module *mod, struct load_info *info)
+ 			memcpy(dest, (void *)shdr->sh_addr, shdr->sh_size);
+ 		/* Update sh_addr to point to copy in image. */
+ 		shdr->sh_addr = (unsigned long)dest;
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++		if (module_debug) {
++			if (!strcmp(info->secstrings + shdr->sh_name, ".bss") ||
++				!strcmp(info->secstrings + shdr->sh_name, ".data") ||
++				!strcmp(info->secstrings + shdr->sh_name, ".rodata") ||
++				!strcmp(info->secstrings + shdr->sh_name, ".text") ||
++				!strcmp(info->secstrings + shdr->sh_name, ".init.text") ||
++				!strcmp(info->secstrings + shdr->sh_name, ".exit.text"))
++				pr_info("\t0x%lx %s\n",
++					(long)shdr->sh_addr, info->secstrings + shdr->sh_name);
++		}
++#endif
+ 		pr_debug("\t0x%lx %s\n",
+ 			 (long)shdr->sh_addr, info->secstrings + shdr->sh_name);
+ 	}
+diff --git a/kernel/sched/topology.c b/kernel/sched/topology.c
+index 14be3c42e12e..8e8029d7e728 100644
+--- a/kernel/sched/topology.c
++++ b/kernel/sched/topology.c
+@@ -1373,8 +1373,12 @@ static void asym_cpu_capacity_scan(void)
+  * Initializers for schedule domains
+  * Non-inlined to reduce accumulated stack pressure in build_sched_domains()
+  */
+-
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++/* default enable SD_BALANCE_WAKE */
++static int default_relax_domain_level = 1;
++#else
+ static int default_relax_domain_level = -1;
++#endif
+ int sched_domain_level_max;
+ 
+ static int __init setup_relax_domain_level(char *str)
+@@ -1538,7 +1542,9 @@ sd_init(struct sched_domain_topology_level *tl,
+ 					| 1*SD_BALANCE_EXEC
+ 					| 1*SD_BALANCE_FORK
+ 					| 0*SD_BALANCE_WAKE
++#if !IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
+ 					| 1*SD_WAKE_AFFINE
++#endif
+ 					| 0*SD_SHARE_CPUCAPACITY
+ 					| 0*SD_SHARE_PKG_RESOURCES
+ 					| 0*SD_SERIALIZE
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index de9441696fab..70cf59b5e27e 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2206,11 +2206,20 @@ static void process_one_work(struct worker *worker, struct work_struct *work)
+ __releases(&pool->lock)
+ __acquires(&pool->lock)
+ {
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++	struct worker *collision;
++	bool cpu_intensive;
++	unsigned long work_data;
++	struct pool_workqueue *pwq = get_work_pwq(work);
++	struct worker_pool *pool = worker->pool;
++#else
+ 	struct pool_workqueue *pwq = get_work_pwq(work);
+ 	struct worker_pool *pool = worker->pool;
+ 	bool cpu_intensive = pwq->wq->flags & WQ_CPU_INTENSIVE;
+ 	unsigned long work_data;
+ 	struct worker *collision;
++#endif
++
+ #ifdef CONFIG_LOCKDEP
+ 	/*
+ 	 * It is permissible to free the struct work_struct from
+@@ -2222,6 +2231,16 @@ __acquires(&pool->lock)
+ 	struct lockdep_map lockdep_map;
+ 
+ 	lockdep_copy_map(&lockdep_map, &work->lockdep_map);
++#endif
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++	if (!pwq) {
++		WARN_ONCE(1, "<%s> pwq_NULL <%lx> <%ps>, <%ps> %s\n",
++			__func__, atomic_long_read(&work->data),
++			work->func, worker->current_func, worker->desc);
++		return;
++	}
++
++	cpu_intensive = pwq->wq->flags & WQ_CPU_INTENSIVE;
+ #endif
+ 	/* ensure we're on the correct CPU */
+ 	WARN_ON_ONCE(!(pool->flags & POOL_DISASSOCIATED) &&
+-- 
+2.25.1
+

@@ -1,0 +1,55 @@
+From b168c28453b962819abff7c82584e6b0b66f7365 Mon Sep 17 00:00:00 2001
+From: "qinglin.li" <qinglin.li@amlogic.com>
+Date: Mon, 16 Jan 2023 19:11:30 +0800
+Subject: [PATCH] gki_20: fix break gki_20 modify [1/1]
+
+PD#SWPL-111114
+
+Problem:
+fix break gki_20 modify
+
+Solution:
+fix break gki_20 modify
+
+Verify:
+local
+
+Change-Id: I239758e356ccaf5eed2027fe10cbeeba6b0143b9
+Signed-off-by: qinglin.li <qinglin.li@amlogic.com>
+---
+ drivers/media/dvb-core/dvb_frontend.c | 12 +++++-------
+ 1 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/media/dvb-core/dvb_frontend.c b/drivers/media/dvb-core/dvb_frontend.c
+index 7a8e194919f5..a03b9d587df7 100644
+--- a/drivers/media/dvb-core/dvb_frontend.c
++++ b/drivers/media/dvb-core/dvb_frontend.c
+@@ -1675,20 +1675,18 @@ static int dtv_set_frontend(struct dvb_frontend *fe);
+ 
+ static bool is_dvbv3_delsys(u32 delsys)
+ {
+-	bool status = false;
+-
+ #ifdef CONFIG_AMLOGIC_DVB_COMPAT
+-	status = (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
++	return (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
+ 		 (delsys == SYS_DVBS) || (delsys == SYS_ATSC) ||
+ 		 (delsys == SYS_DTMB) || (delsys == SYS_DVBS2) ||
+ 		 (delsys == SYS_DVBT2) || (delsys == SYS_ISDBC) ||
+ 		 (delsys == SYS_ISDBT) || (delsys == SYS_ISDBS);
++
+ #else
+-	status = (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
+-		 (delsys == SYS_DVBS) || (delsys == SYS_ATSC);
+-#endif
++	return (delsys == SYS_DVBT) || (delsys == SYS_DVBC_ANNEX_A) ||
++	       (delsys == SYS_DVBS) || (delsys == SYS_ATSC);
+ 
+-	return status;
++#endif
+ }
+ 
+ /**
+-- 
+2.25.1
+

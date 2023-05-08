@@ -1,0 +1,83 @@
+From 9efc3933cd547bdcec23aa407a611e951f148e6c Mon Sep 17 00:00:00 2001
+From: "qiankun.wang" <qiankun.wang@amlogic.com>
+Date: Thu, 11 May 2023 14:32:52 +0800
+Subject: [PATCH] config: Add CONFIG_AMLOGIC_LINUX_S_OPTIMIZE for kernel size
+ optimize. [1/1]
+
+PD#SWPL-114632
+
+Problem:
+Kernel size is too big
+
+Solution:
+Remove some CONFIGs
+
+Verify:
+c3 pass
+
+Change-Id: I259aa858e541cd18400c94abea5b2bb447720fbf
+Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
+---
+ arch/arm/Kconfig    | 16 +++++++++++-----
+ arch/arm/mm/Kconfig |  2 +-
+ 2 files changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index dfd442c09a97..1addf9e5d79a 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -128,7 +128,7 @@ config ARM
+ 	select PERF_USE_VMALLOC
+ 	select RTC_LIB
+ 	select SYS_SUPPORTS_APM_EMULATION
+-	select TRACE_IRQFLAGS_SUPPORT if !CPU_V7M
++	select TRACE_IRQFLAGS_SUPPORT if !CPU_V7M && !AMLOGIC_LINUX_S_OPTIMIZE
+ 	# Above selects are sorted alphabetically; please add new ones
+ 	# according to that.  Thanks.
+ 	help
+@@ -139,6 +139,12 @@ config ARM
+ 	  Europe.  There is an ARM Linux project with a web page at
+ 	  <http://www.arm.linux.org.uk/>.
+ 
++config AMLOGIC_LINUX_S_OPTIMIZE
++	bool "linux kernel size optimize"
++	default n
++	help
++	  Amlogic linux kernel size optimize
++
+ config ARM_HAS_SG_CHAIN
+ 	bool
+ 
+@@ -565,12 +571,12 @@ config ARCH_VIRT
+ 	depends on ARCH_MULTI_V7
+ 	select ARM_AMBA
+ 	select ARM_GIC
+-	select ARM_GIC_V2M if PCI
+-	select ARM_GIC_V3
+-	select ARM_GIC_V3_ITS if PCI
++	select ARM_GIC_V2M if PCI && !AMLOGIC_LINUX_S_OPTIMIZE
++	select ARM_GIC_V3 if !AMLOGIC_LINUX_S_OPTIMIZE
++	select ARM_GIC_V3_ITS if PCI && !AMLOGIC_LINUX_S_OPTIMIZE
+ 	select ARM_PSCI
+ 	select HAVE_ARM_ARCH_TIMER
+-	select ARCH_SUPPORTS_BIG_ENDIAN
++	select ARCH_SUPPORTS_BIG_ENDIAN if !AMLOGIC_LINUX_S_OPTIMIZE
+ 
+ #
+ # This is sorted alphabetically by mach-* pathname.  However, plat-*
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index f43cdc1cfbae..d24d71b8dcbe 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -415,7 +415,7 @@ config CPU_V7
+ 	select CPU_CP15_MPU if !MMU
+ 	select CPU_HAS_ASID if MMU
+ 	select CPU_PABRT_V7
+-	select CPU_SPECTRE if MMU
++	select CPU_SPECTRE if MMU && !AMLOGIC_LINUX_S_OPTIMIZE
+ 	select CPU_THUMB_CAPABLE
+ 	select CPU_TLB_V7 if MMU
+ 
+-- 
+2.25.1
+

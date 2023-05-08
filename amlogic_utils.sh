@@ -37,6 +37,9 @@ function pre_defconfig_cmds() {
 
 	if [[ -n ${UPGRADE_PROJECT} ]]; then
 		KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE}
+		if [[ ${ANDROID_VERSION} == p || ${ANDROID_VERSION} == P ]]; then
+			KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_P}
+		fi
 	fi
 
 	if [[ ${IN_BUILD_GKI_10} == 1 ]]; then
@@ -594,10 +597,14 @@ create_ramdisk_vendor_recovery() {
 		fi
 	done
 	# last_ramdisk_module=${RAMDISK_MODULES_LOAD_LIST[${#RAMDISK_MODULES_LOAD_LIST[@]}-1]}
-	last_ramdisk_module_line=`sed -n "/${last_ramdisk_module}/=" ${install_temp}`
-	for line in ${last_ramdisk_module_line}; do
-		ramdisk_last_line=${line}
-	done
+	if [[ -n ${last_ramdisk_module} ]]; then
+		last_ramdisk_module_line=`sed -n "/${last_ramdisk_module}/=" ${install_temp}`
+		for line in ${last_ramdisk_module_line}; do
+			ramdisk_last_line=${line}
+		done
+	else
+		ramdisk_last_line=1
+	fi
 	export ramdisk_last_line
 
 	if [[ -n ${ANDROID_PROJECT} ]]; then
@@ -615,13 +622,18 @@ create_ramdisk_vendor_recovery() {
 			fi
 		done
 		# last_recovery_module=${RECOVERY_MODULES_LOAD_LIST[${#RECOVERY_MODULES_LOAD_LIST[@]}-1]}
-		last_recovery_module_line=`sed -n "/${last_recovery_module}/=" ${recovery_install_temp}`
-		for line in ${last_recovery_module_line}; do
-			recovery_last_line=${line}
-		done
-
+		if [[ -n ${last_recovery_module} ]]; then
+			last_recovery_module_line=`sed -n "/${last_recovery_module}/=" ${recovery_install_temp}`
+			for line in ${last_recovery_module_line}; do
+				recovery_last_line=${line}
+			done
+		else
+			recovery_last_line=1
+		fi
 		sed -n "${ramdisk_last_line},${recovery_last_line}p" ${recovery_install_temp} > recovery_install.sh
-		sed -i "1d" recovery_install.sh
+		if [[ -n ${last_ramdisk_module} ]]; then
+			sed -i "1d" recovery_install.sh
+		fi
 		mkdir recovery
 		cat recovery_install.sh | cut -d ' ' -f 2 > recovery/recovery_modules.order
 		if [ ${#RECOVERY_MODULES_LOAD_LIST[@]} -ne 0 ]; then
@@ -1186,12 +1198,12 @@ export -f build_part_of_kernel
 
 function export_env_variable () {
 	export ABI BUILD_CONFIG LTO KMI_SYMBOL_LIST_STRICT_MODE CHECK_DEFCONFIG MANUAL_INSMOD_MODULE ARCH
-	export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT FAST_BUILD CHECK_GKI_20 DEV_CONFIGS
+	export KERNEL_DIR COMMON_DRIVERS_DIR BUILD_DIR ANDROID_PROJECT GKI_CONFIG UPGRADE_PROJECT ANDROID_VERSION FAST_BUILD CHECK_GKI_20 DEV_CONFIGS
 	export FULL_KERNEL_VERSION BAZEL
 
 	echo ROOT_DIR=$ROOT_DIR
 	echo ABI=${ABI} BUILD_CONFIG=${BUILD_CONFIG} LTO=${LTO} KMI_SYMBOL_LIST_STRICT_MODE=${KMI_SYMBOL_LIST_STRICT_MODE} CHECK_DEFCONFIG=${CHECK_DEFCONFIG} MANUAL_INSMOD_MODULE=${MANUAL_INSMOD_MODULE}
-	echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT} FAST_BUILD=${FAST_BUILD} CHECK_GKI_20=${CHECK_GKI_20}
+	echo KERNEL_DIR=${KERNEL_DIR} COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR} BUILD_DIR=${BUILD_DIR} ANDROID_PROJECT=${ANDROID_PROJECT} GKI_CONFIG=${GKI_CONFIG} UPGRADE_PROJECT=${UPGRADE_PROJECT} ANDROID_VERSION=${ANDROID_VERSION}  FAST_BUILD=${FAST_BUILD} CHECK_GKI_20=${CHECK_GKI_20}
 	echo FULL_KERNEL_VERSION=${FULL_KERNEL_VERSION} BAZEL=${BAZEL}
 	echo MENUCONFIG=${MENUCONFIG} BASICCONFIG=${BASICCONFIG} IMAGE=${IMAGE} MODULES=${MODULES} DTB_BUILD=${DTB_BUILD}
 }

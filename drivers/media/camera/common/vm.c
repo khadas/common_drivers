@@ -1971,7 +1971,7 @@ int uninit_vm_device(struct platform_device *plat_dev)
 	return 0;
 }
 
-#ifdef CONFIG_CMA
+#if defined(CONFIG_CMA) && defined(MODULE)
 struct page *dma_alloc_from_contiguous(struct device *dev, size_t count,
 				       unsigned int align, bool no_warn)
 {

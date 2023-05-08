@@ -26,6 +26,7 @@ function show_help {
 	echo "                                    so build GKI1.0 Image need with --gki_debug, default parameter --gki_debug"
 	echo "  --fast_build            for fast build"
 	echo "  --upgrade               for android upgrade builtin module optimize vendor_boot size"
+	echo "  --android_version       for android version"
 	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
 	echo "  --patch                 for only am patches"
 	echo "  --check_gki_20          for gki 2.0 check kernel build"
@@ -134,6 +135,11 @@ do
 		;;
 	--upgrade)
 		UPGRADE_PROJECT=1
+		shift
+		;;
+	--android_version)
+		ANDROID_VERSION=$2
+		VA=1
 		shift
 		;;
 	--manual_insmod_module)

@@ -393,7 +393,7 @@ static struct platform_driver amlogic_usb3_m31_driver = {
 	},
 };
 
-#ifdef MODULE
+#if IS_BUILTIN(CONFIG_AMLOGIC_CRG)
 
 int __init amlogic_usb3_m31_drv_init(void)
 {

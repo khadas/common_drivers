@@ -1770,6 +1770,8 @@
 	enc_idx = <0>;
 	vrr_type = <2>; /* 1: GAME-VRR, 2: QMS-VRR */
 	tv_usage = <1>;
+	/* hdcp ctrl 0: sysctrl, 1: drv, 2: linux app */
+	hdcp_ctl_lvl = <1>;
 };
 
 /*if you want to use vdin just modify status to "ok"*/

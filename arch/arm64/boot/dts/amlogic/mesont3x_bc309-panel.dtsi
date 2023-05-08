@@ -9,7 +9,6 @@
 		status = "okay";
 		index = <0>;
 		mode = "tv";
-		pxp = <0>;
 		fr_auto_policy = <1>; /* 0=disable, 1=60/50hz, 2=60/50/48hz */
 		key_valid = <1>;
 		clocks = <&clkc CLKID_FCLK_DIV5
@@ -55,7 +54,7 @@
 				1920 1080 /*h_active, v_active*/
 				2200 1125 /*h_period, v_period*/
 				8      /*lcd_bits */
-				16 9>; /*screen_widht, screen_height*/
+				941 529>; /*screen_widht, screen_height*/
 			range_setting = <
 				2060 2650  /*h_period_min,max*/
 				1100 1480  /*v_period_min,max*/
@@ -98,7 +97,7 @@
 				1920 1080 /*h_active, v_active*/
 				2200 1125 /*h_period, v_period*/
 				8      /*lcd_bits*/
-				16 9>; /*screen_widht, screen_height*/
+				941 529>; /*screen_widht, screen_height*/
 			range_setting = <
 				2080 2720 /*h_period min, max*/
 				1100 1380 /*v_period min, max*/
@@ -140,7 +139,7 @@
 				3840 2160 /*h_active, v_active*/
 				4400 2250 /*h_period, v_period*/
 				10     /*lcd_bits */
-				16 9>; /*screen_widht, screen_height*/
+				1210 680>; /*screen_widht, screen_height*/
 			range_setting = <
 				4240 4800 /*h_period_min, max*/
 				2200 2760 /*v_period_min, max*/
@@ -177,7 +176,7 @@
 				2 0 0 10 /*signal disable*/
 				0 0 0 500   /*panel power*/
 				0xff 0 0 0>; /*ending*/
-			backlight_index = <0>;
+			backlight_index = <0xff>;
 		};
 		vbyone_1{
 			model_name = "public_1region";
@@ -186,7 +185,7 @@
 				3840 2160 /*h_active, v_active*/
 				4400 2250 /*h_period, v_period*/
 				10     /*lcd_bits*/
-				16 9>; /*screen_widht, screen_height*/
+				1270 721>; /*screen_widht, screen_height*/
 			range_setting = <
 				4240 4800 /*h_period_min, max*/
 				2200 2790 /*v_period_min, max*/
@@ -223,7 +222,7 @@
 				2 0 0 10  /*signal disable*/
 				0 0 0 500   /*panel power*/
 				0xff 0 0 0>; /*ending*/
-			backlight_index = <0>;
+			backlight_index = <0xff>;
 		};
 		vbyone_2{
 			model_name = "public_2region_120hz";
@@ -232,7 +231,7 @@
 				3840 2160 /*h_active, v_active*/
 				4400 2250 /*h_period, v_period*/
 				10     /*lcd_bits*/
-				16 9>; /*screen_widht, screen_height*/
+				695 391>; /*screen_widht, screen_height*/
 			range_setting = <
 				4096 4800 /*h_period_min, max*/
 				2196 6750 /*v_period_min, max*/
@@ -266,16 +265,16 @@
 				2 0 0 10  /*signal disable*/
 				0 0 0 500   /*panel power*/
 				0xff 0 0 0>; /*ending*/
-			backlight_index = <0>;
+			backlight_index = <0xff>;
 		};
-		vbyone_3{
+		vbyone_6{
 			model_name = "public_2region_144hz";
 			interface = "vbyone"; /*lcd_interface(lvds, vbyone)*/
 			basic_setting = <
 				3840 2160 /*h_active, v_active*/
 				4096 2235 /*h_period, v_period*/
 				10     /*lcd_bits*/
-				16 9>; /*screen_widht, screen_height*/
+				695 391>; /*screen_widht, screen_height*/
 			range_setting = <
 				4096 4800 /*h_period_min, max*/
 				2196 6750 /*v_period_min, max*/
@@ -309,7 +308,7 @@
 				2 0 0 10  /*signal disable*/
 				0 0 0 500   /*panel power*/
 				0xff 0 0 0>; /*ending*/
-			backlight_index = <0>;
+			backlight_index = <0xff>;
 		};
 		p2p_0{
 			model_name = "p2p_ceds";

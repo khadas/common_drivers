@@ -12085,6 +12085,7 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	cur_dev->mosaic_support = p_amvideo->dev_property.mosaic_support;
 	cur_dev->cr_loss = p_amvideo->dev_property.cr_loss;
 	cur_dev->amdv_tvcore = p_amvideo->dev_property.amdv_tvcore;
+	cur_dev->prevsync_support = p_amvideo->dev_property.prevsync_support;
 	if (cur_dev->aisr_support)
 		cur_dev->pps_auto_calc = 1;
 	cur_dev->prevsync_support = p_amvideo->dev_property.prevsync_support;

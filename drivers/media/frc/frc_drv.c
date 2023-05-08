@@ -1011,10 +1011,13 @@ void get_vout_info(struct frc_dev_s *frc_devp)
 		pfw_data->frc_top_type.frc_other_reserved =
 			frc_devp->out_sts.out_framerate;
 		if (frc_devp->auto_n2m == 1) {
-			if (frc_devp->out_sts.out_framerate > 90)
+			if (frc_devp->out_sts.out_framerate > 90) {
 				frc_set_n2m(FRC_RATIO_1_2);
-			else if (frc_devp->out_sts.out_framerate < 70)
+				set_vsync_2to1_mode(1);
+			} else if (frc_devp->out_sts.out_framerate < 70) {
 				frc_set_n2m(FRC_RATIO_1_1);
+				set_vsync_2to1_mode(0);
+			}
 		}
 		pr_frc(0, "vout:w-%d,h-%d,rate-%d\n",
 				frc_devp->out_sts.vout_width,

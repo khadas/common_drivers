@@ -2429,6 +2429,7 @@ void frc_set_n2m(u8 ratio_value)
 		return;
 	if (ratio_value <= (u8)FRC_RATIO_1_1) {
 		devp->in_out_ratio = (enum frc_ratio_mode_type)ratio_value;
+		set_vsync_2to1_mode((ratio_value > 0) ? 0 : 1);
 		if (devp->frc_sts.state == FRC_STATE_ENABLE)
 			devp->frc_sts.re_config = true;
 	}

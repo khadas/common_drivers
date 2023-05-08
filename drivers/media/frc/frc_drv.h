@@ -640,5 +640,6 @@ struct frc_dev_s {
 struct frc_dev_s *get_frc_devp(void);
 void get_vout_info(struct frc_dev_s *frc_devp);
 int frc_buf_set(struct frc_dev_s *frc_devp);
+void set_vsync_2to1_mode(u8 enable);
 struct frc_fw_data_s *get_fw_data(void);
 #endif

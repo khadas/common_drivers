@@ -1732,6 +1732,7 @@ static struct meson_spicc_data meson_spicc_g12_data __initdata = {
 	.has_linear_div = true,
 	.has_oen = true,
 	.has_async_clk = true,
+	.is_div_parent_async_clk = true,
 };
 
 static struct meson_spicc_data meson_spicc_s5_data __initdata = {

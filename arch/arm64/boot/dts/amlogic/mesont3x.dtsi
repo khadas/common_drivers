@@ -1561,11 +1561,11 @@
 			 *1:OD pad2:Normal pad
 			 */
 			gpio-type = <2>;
-			pcie-gen2-l0-rst-bit = <18>;
-			pcie-apb-rst-bit = <7>;
-			pcie-phy-rst-bit = <10>;
-			pcie-a-rst-bit = <14>;
-			pcie-rst-bit = <12>;
+			pcie-gen2-l0-rst-bit = <12>;
+			pcie-apb-rst-bit = <6>;
+			pcie-phy-rst-bit = <9>;
+			pcie-a-rst-bit = <13>;
+			pcie-rst-bit = <4>;
 			pcie-rst-mask = <0xff>;
 			power-domains = <&pwrdm PDID_T3X_PCIE>;
 			status = "disabled";

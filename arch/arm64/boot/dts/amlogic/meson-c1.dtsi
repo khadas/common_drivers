@@ -333,61 +333,66 @@
 
 			pwm_ab: pwm@2400 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x0 0x2400 0x0 0x24>;
+				reg = <0x0 0x2400 0x0 0x24>,
+					<0x0 0x8c4 0x0 0x4>;
 				#pwm-cells = <3>;
-				//clocks = <&clkc CLKID_PWM_A>,
-				//	 <&clkc CLKID_PWM_B>;
+				clocks = <&clkc CLKID_PWM_A_MUX>,
+					 <&clkc CLKID_PWM_B_MUX>;
 				clock-names = "clkin0",
 					      "clkin1";
-				//power-domains = <&pwrdm PDID_I2C>;
+				power-domains = <&pwrdm PDID_CX_I2C>;
 				status = "disabled";
 			};
 
 			pwm_cd: pwm@2800 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x0 0x2800 0x0 0x24>;
+				reg = <0x0 0x2800 0x0 0x24>,
+				  <0x0 0x8c8 0x0 0x4>;
 				#pwm-cells = <3>;
-				//clocks = <&clkc CLKID_PWM_C>,
-				//	 <&clkc CLKID_PWM_D>;
+				clocks = <&clkc CLKID_PWM_C_MUX>,
+					 <&clkc CLKID_PWM_D_MUX>;
 				clock-names = "clkin0",
 					      "clkin1";
-				//power-domains = <&pwrdm PDID_I2C>;
+				power-domains = <&pwrdm PDID_CX_I2C>;
 				status = "disabled";
 			};
 
 			pwm_ef: pwm@5400 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x0 0x5400 0x0 0x24>;
+				reg = <0x0 0x5400 0x0 0x24>,
+				  <0x0 0x8cc 0x0 0x4>;
 				#pwm-cells = <3>;
-				//clocks = <&clkc CLKID_PWM_E>,
-				//	 <&clkc CLKID_PWM_F>;
+				clocks = <&clkc CLKID_PWM_E_MUX>,
+					 <&clkc CLKID_PWM_F_MUX>;
 				clock-names = "clkin0",
 					      "clkin1";
-				//power-domains = <&pwrdm PDID_I2C>;
+				power-domains = <&pwrdm PDID_CX_I2C>;
 				status = "disabled";
 			};
 
 			pwm_gh: pwm@a400 {
 				compatible = "amlogic,meson-v2-pwm";
-				reg = <0x0 0xa400 0x0 0x24>;
+				reg = <0x0 0xa400 0x0 0x24>,
+				  <0x0 0x928 0x0 0x4>;
 				#pwm-cells = <3>;
-				//clocks = <&clkc CLKID_PWM_G>,
-				//	 <&clkc CLKID_PWM_H>;
+				clocks = <&clkc CLKID_PWM_G_MUX>,
+					 <&clkc CLKID_PWM_H_MUX>;
 				clock-names = "clkin0",
 					      "clkin1";
-				//power-domains = <&pwrdm PDID_I2C>;
+				power-domains = <&pwrdm PDID_CX_I2C>;
 				status = "disabled";
 			};
 
 			pwm_ij: pwm@a800 {
-				compatible = "amlogic,meson-a1-pwm";
-				reg = <0x0 0xa800 0x0 0x24>;
+				compatible = "amlogic,meson-v2-pwm";
+				reg = <0x0 0xa800 0x0 0x24>,
+				  <0x0 0x92c 0x0 0x4>;
 				#pwm-cells = <3>;
-				//clocks = <&clkc CLKID_PWM_I>,
-				//	 <&clkc CLKID_PWM_J>;
+				clocks = <&clkc CLKID_PWM_I_MUX>,
+					 <&clkc CLKID_PWM_J_MUX>;
 				clock-names = "clkin0",
 					      "clkin1";
-				//power-domains = <&pwrdm PDID_I2C>;
+				power-domains = <&pwrdm PDID_CX_I2C>;
 
 				status = "disabled";
 			};

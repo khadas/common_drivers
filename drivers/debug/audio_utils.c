@@ -25,7 +25,6 @@ static LIST_HEAD(code_list);
 static int written;
 static int write_size;
 static int lib_size;
-static int curr_offset;
 
 static int audio_utils_open(struct inode *inode, struct file *file)
 {
@@ -37,9 +36,10 @@ static ssize_t audio_utils_write(struct file *file, const char __user *buffer,
 			      size_t _count, loff_t *ppos)
 {
 	struct page *page;
-	int count, write = 0;
+	int ret, count, write = 0;
 	void *tmp;
 
+	write_size = 0;
 	count = _count;
 	while (count > 0) {
 		page = alloc_page(GFP_HIGHUSER);
@@ -49,27 +49,35 @@ static ssize_t audio_utils_write(struct file *file, const char __user *buffer,
 		}
 		pr_debug("%s page: %lx, count: %d\n",
 			 __func__, page_to_pfn(page), count);
-		tmp = kmap_atomic(page);
+		tmp = kmap(page);
 		WARN_ON(!tmp);
 		if (count >= PAGE_SIZE) {
-			if (copy_from_user(tmp, buffer + write, PAGE_SIZE)) {
-				pr_err("%s-%d\n", __func__, __LINE__);
+			ret = copy_from_user(tmp, buffer + write, PAGE_SIZE);
+			if (ret) {
+				kunmap(tmp);
+				__free_page(page);
+				pr_err("%s-%d write offset=%d size=%d total size=%zu ret=%d\n",
+				       __func__, __LINE__, write, (int)PAGE_SIZE, _count, ret);
 				return -EINVAL;
 			}
 			count -= PAGE_SIZE;
 			write += PAGE_SIZE;
 		} else if (count) { /* remain */
-			if (copy_from_user(tmp, buffer + write, count)) {
-				pr_err("%s-%d\n", __func__, __LINE__);
+			ret = copy_from_user(tmp, buffer + write, count);
+			if (ret) {
+				kunmap(tmp);
+				__free_page(page);
+				pr_err("%s-%d write offset=%d size=%d total size=%zu ret=%d\n",
+				       __func__, __LINE__, write, count, _count, ret);
 				return -EINVAL;
 			}
 			count -= count;
 			write += count;
 		}
 		list_add_tail(&page->lru, &code_list);
-		kunmap_atomic(tmp);
+		kunmap(tmp);
 	}
-	write_size += _count;
+	write_size = _count;
 	file->f_inode->i_size = write_size;
 	pr_debug("%s write_size: %d\n", __func__, write_size);
 
@@ -104,6 +112,7 @@ static long audio_utils_ioctl(struct file *f,
 				__free_page(page);
 			}
 			INIT_LIST_HEAD(&code_list);
+			f->f_inode->i_size = 0;
 			lib_size = 0;
 			return -ENOMEM;
 		}
@@ -117,6 +126,8 @@ static long audio_utils_ioctl(struct file *f,
 			__free_page(page);
 		}
 		INIT_LIST_HEAD(&code_list);
+		f->f_inode->i_size = 0;
+		lib_size = 0;
 		break;
 	default:
 		break;
@@ -177,9 +188,8 @@ ssize_t audio_utils_read(struct file *file, char __user *buf,
 	struct page *page;
 	void *tmp;
 
-	pr_debug("%s off:%lx, cur:%x, size:%ld\n",
-		 __func__, (unsigned long)*ppos, curr_offset,
-		 (unsigned long)size);
+	pr_debug("%s off:%lx, size:%ld\n",
+		 __func__, (unsigned long)*ppos, (unsigned long)size);
 	page = list_first_entry(&code_list, struct page, lru);
 	while (off < *ppos) {
 		off += PAGE_SIZE;
@@ -195,12 +205,13 @@ ssize_t audio_utils_read(struct file *file, char __user *buf,
 		can_read = rd_size;
 
 	while (rd_size > 0) {
-		tmp = kmap_atomic(page);
+		tmp = kmap(page);
 		if (!tmp) {
 			pr_err("%s-%d\n", __func__, __LINE__);
 			return -EINVAL;
 		}
 		if (copy_to_user(buf + to, tmp, can_read)) {
+			kunmap(tmp);
 			pr_err("%s-%d\n", __func__, __LINE__);
 			return -EINVAL;
 		}
@@ -209,7 +220,7 @@ ssize_t audio_utils_read(struct file *file, char __user *buf,
 			 rd_size, page_to_pfn(page));
 		rd_size -= can_read;
 		to += can_read;
-		kunmap_atomic(tmp);
+		kunmap(tmp);
 		if (rd_size >= PAGE_SIZE)
 			can_read = PAGE_SIZE;
 		else
@@ -218,7 +229,7 @@ ssize_t audio_utils_read(struct file *file, char __user *buf,
 		if (&page->lru == &code_list)
 			break;
 	}
-	curr_offset += size;
+	*ppos += size;
 	return size;
 }
 

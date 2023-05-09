@@ -289,7 +289,7 @@
 	vrtc: rtc@0xfe010288 {
 		compatible = "amlogic,meson-vrtc";
 		reg = <0xfe010288 0x4>;
-		status = "disabled";
+		status = "okay";
 		mboxes = <&mailbox_mhu_fifo 1>;
 	};
 

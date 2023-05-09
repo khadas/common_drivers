@@ -56,7 +56,7 @@ obj-y        				+= dvb/
 obj-$(CONFIG_AMLOGIC_DRM)		+= drm/
 obj-y              			+= pci/
 obj-$(CONFIG_AMLOGIC_LED)		+= led/
-obj-y								+= firmware/
+obj-y              			+= firmware/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
 all:

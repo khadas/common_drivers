@@ -842,7 +842,7 @@ void frc_test_mm_secure_set_on(struct frc_dev_s *devp, u32 start, u32 size)
 
 void frc_mm_secure_set(struct frc_dev_s *devp)
 {
-	u32 addr_start;
+	phys_addr_t addr_start;
 	u32 addr_size;
 	enum frc_state_e new_state;
 
@@ -886,9 +886,9 @@ void frc_mm_secure_set(struct frc_dev_s *devp)
 				tee_protect_mem_by_type(TEE_MEM_TYPE_FRC, addr_start,
 							addr_size, &secure_tee_handle);
 				frc_force_secure(true);
-				pr_frc(1, "%s handl:%d addr_start:0x%x addr_size:0x%x\n",
+				pr_frc(1, "%s handl:%d addr_start:0x%lx addr_size:0x%x\n",
 					__func__, secure_tee_handle,
-					addr_start, addr_size);
+					(ulong)addr_start, addr_size);
 			}
 		} else {
 			if (devp->buf.secured) {

@@ -89,7 +89,7 @@
 // frc_20230301 frc add seamless mode
 // frc_20230411 frc add enable double buffer mc
 
-#define FRC_FW_VER			"2023-0404 frc t3x probe"
+#define FRC_FW_VER			"2023-0404 frc t3x probe secure"
 #define FRC_KERDRV_VER                  2796
 
 #define FRC_DEVNO	1
@@ -345,7 +345,7 @@ struct st_frc_buf {
 	u32 norm_melogo_buf_paddr[FRC_TOTAL_BUF_NUM];
 
 	s32 link_tab_size;
-	u32 secure_start;
+	phys_addr_t secure_start;
 	s32 secure_size;
 	u32 total_size;
 	u32 real_total_size;

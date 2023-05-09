@@ -3,6 +3,7 @@
 config AMLOGIC_MEDIA_CAMERA
 	tristate "Amlogic Camera driver"
 	select VIDEOBUF2_DMA_CONTIG
+	select VIDEOBUF2_VMALLOC
 	select V4L2_FWNODE
 	select V4L2_ASYNC
 	default n

@@ -1524,49 +1524,36 @@
 	};
 
 	amhdmitx: amhdmitx{
-		compatible = "amlogic, amhdmitx-sc2";
+		compatible = "amlogic, amhdmitx-s1a";
 		dev_name = "amhdmitx";
 		status = "disabled";
+		//power-domains = <&pwrdm PDID_T7_VI_CLK2>;
 		vend-data = <&vend_data>;
-		pinctrl-names="default";
-		pinctrl-0=<&hdmitx_hpd &hdmitx_ddc>;
-		//hdmitx-gpios-hpd = <&gpio GPIOH_2 0>;
-		//hdmitx-gpios-scl = <&gpio GPIOH_1 0>;
-		//hdmitx-gpios-sda = <&gpio GPIOH_0 0>;
-		clock-names = "venci_top_gate",
-			"venci_0_gate",
-			"venci_1_gate",
-			"hdmi_vapb_clk",
-			"hdmi_vpu_clk";
-		/* refer to sc2-system-registers.docx */
+		pinctrl-names="hdmitx_hpd", "hdmitx_ddc";
+		pinctrl-0=<&hdmitx_hpd>;
+		pinctrl-1=<&hdmitx_ddc>;
 		interrupts = <0 204 4
 			0 197 1>;
-		interrupt-names = "hdmitx_hpd", "viu1_vsync";
-		/* refer to hdmi_tx_module.h */
-		ic_type = <15>;
-		hdmi_rext = <1300>; /* HDMI Rext resistor uses 1.3k ohm, not 1.5k */
-		reg =	<0x00000000 0x000>, /* reserved */
-			<0xff000000 0x40000>,
-			<0x00000000 0x000>, /* reserved */
-			<0xfe308000 0x8000>,
-			<0xfe300000 0x8000>,
-			<0xfe032000 0x100>,
-			<0xfe008000 0x400>,
-			<0xfe00c000 0x800>,
-			<0xfe002000 0x400>,
-			<0xfe010000 0x100>,
-			<0xfe000000 0x2000>;
-		reg-names = "cbus",
-			    "vpu",
-			    "hiu",
-			    "hdmitxdwc",
+		interrupt-names = "hdmitx_hpd", "vrr_vsync";
+		enc_idx = <0>;
+		reg =	<0xff000000 0x40000>,
+			<0xfe340000 0x10000>,
+			<0xfe300000 0x10000>,
+			<0xfe010000 0x2000>,
+			<0xfe00c000 0x2000>,
+			<0xfe008000 0x2000>,
+			<0xfe002000 0x2000>,
+			<0xfe000000 0x2000>,
+			<0xfe004000 0x200>;
+		reg-names = "vpu",
+			    "hdmitxcor",
 			    "hdmitxtop",
-			    "esm",
-			    "anactrl",
-			    "pwrctrl",
-			    "resetctrl",
 			    "sysctrl",
-			    "clkctrl";
+			    "pwrctrl",
+			    "anactrl",
+			    "resetctrl",
+			    "clkctrl",
+			    "padctrl";
 
 		vend_data: vend_data{ /* Should modified by Customer */
 			vendor_name = "Amlogic"; /* Max Chars: 8 */
@@ -1777,7 +1764,7 @@
 
 	vout: vout {
 		compatible = "amlogic, vout";
-		status = "disabled";
+		status = "okay";
 
 		/* fr_policy:
 		 *    0: disable
@@ -1789,7 +1776,7 @@
 
 	vout_mux: vout_mux {
 		compatible = "amlogic, vout_mux";
-		status = "disabled";
+		status = "okay";
 	};
 
 	dummy_venc: dummy_venc {
@@ -2508,7 +2495,7 @@
 	hdmitx_ddc: hdmitx_ddc {
 		mux {
 			groups = "hdmitx_sda",
-				"hdmitx_sck";
+				"hdmitx_scl";
 			function = "hdmitx";
 			bias-disable;
 			drive-strength = <3>;

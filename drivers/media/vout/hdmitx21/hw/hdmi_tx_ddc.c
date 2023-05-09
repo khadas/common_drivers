@@ -99,6 +99,10 @@ static u8 ddc_tx_hdcp2x_check(void)
 {
 	u8 val;
 
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	if (hdev->data->chip_type == MESON_CPU_ID_S1A)
+		return 0;
 	val = hdmitx21_rd_reg(HDCP2X_CTL_0_IVCTX) & BIT_HDCP2X_CTL_0_EN;
 	if (val)
 		hdmitx21_set_bit(SCDC_CTL_IVCTX, BIT_SCDC_CTL_REG_DDC_STALL_REQ, true);

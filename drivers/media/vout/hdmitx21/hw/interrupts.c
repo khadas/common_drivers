@@ -148,6 +148,7 @@ static void hdmitx_phy_bandgap_en(struct hdmitx_dev *hdev)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
+	case MESON_CPU_ID_S1A:
 		hdmitx21_phy_bandgap_en_t7();
 		break;
 	default:
@@ -265,8 +266,11 @@ void hdmitx_setupirqs(struct hdmitx_dev *phdev)
 {
 	int r;
 
-	pr_info("%s%d\n", __func__, __LINE__);
-	hdmitx21_wr_reg(HDMITX_TOP_INTR_STAT_CLR, 0x7);
+	if (phdev->pxp_mode)
+		return;
+
+	if (phdev->data->chip_type != MESON_CPU_ID_S1A)
+		hdmitx21_wr_reg(HDMITX_TOP_INTR_STAT_CLR, 0x7);
 	r = request_irq(phdev->irq_hpd, &intr_handler,
 			IRQF_SHARED, "hdmitx",
 			(void *)phdev);

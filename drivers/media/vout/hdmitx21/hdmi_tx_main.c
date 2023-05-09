@@ -130,6 +130,11 @@ static struct amhdmitx_data_s amhdmitx_data_s5 = {
 	.chip_name = "s5",
 };
 
+static struct amhdmitx_data_s amhdmitx_data_s1a = {
+	.chip_type = MESON_CPU_ID_S1A,
+	.chip_name = "s1a",
+};
+
 static const struct of_device_id meson_amhdmitx_of_match[] = {
 	{
 		.compatible	 = "amlogic, amhdmitx-t7",
@@ -138,6 +143,10 @@ static const struct of_device_id meson_amhdmitx_of_match[] = {
 	{
 		.compatible	 = "amlogic, amhdmitx-s5",
 		.data = &amhdmitx_data_s5,
+	},
+	{
+		.compatible	 = "amlogic, amhdmitx-s1a",
+		.data = &amhdmitx_data_s1a,
 	},
 	{},
 };
@@ -182,6 +191,7 @@ static const struct dv_info dv_dummy;
 static struct dv_info ext_dvinfo;
 static int log21_level;
 static bool hdmitx_edid_done;
+static unsigned int res_1080p;
 
 static struct vout_device_s hdmitx_vdev = {
 	.dv_info = &hdmitx21_device.tx_comm.rxcap.dv_info,
@@ -748,6 +758,85 @@ static int check_vic_4x3_and_16x9(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	}
 
 	return vic;
+}
+
+/* check the resolution is over 1920x1080 or not */
+static bool is_over_1080p(struct hdmi_format_para *para)
+{
+	if (!para)
+		return 1;
+
+	if (para->timing.h_active > 1920 || para->timing.v_active > 1080)
+		return 1;
+
+	return 0;
+}
+
+/* check the fresh rate is over 60hz or not */
+static bool is_over_60hz(struct hdmi_format_para *para)
+{
+	if (!para)
+		return 1;
+
+	if (para->timing.v_freq > 60000)
+		return 1;
+
+	return 0;
+}
+
+/* test current vic is over 150MHz or not */
+static bool is_over_pixel_150mhz(struct hdmi_format_para *para)
+{
+	if (!para)
+		return 1;
+
+	if (para->timing.pixel_freq > 150000)
+		return 1;
+
+	return 0;
+}
+
+bool hdmitx21_is_vic_over_limited_1080p(enum hdmi_vic vic)
+{
+	struct vinfo_s *info = NULL;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmitx_common *tx_comm = &hdev->tx_comm;
+	struct hdmi_format_para *para = NULL;
+	u8 mode[32];
+
+	memset(mode, 0, sizeof(mode));
+
+	/* get current vinfo */
+	info = hdmitx_get_current_vinfo(NULL);
+	if (!info || !info->name)
+		return 1;
+	if (strncmp(info->name, "invalid", strlen("invalid")) == 0)
+		return 1;
+
+	strncpy(mode, info->name, sizeof(mode));
+	mode[31] = '\0';
+
+	hdmitx21_get_fmtpara(mode, tx_comm->fmt_attr, para);
+
+	/* if the vic equals to HDMI_UNKNOWN or VESA,
+	 * then treated it as over limited
+	 */
+	if (vic == HDMI_0_UNKNOWN || vic >= HDMITX_VESA_OFFSET)
+		return 1;
+
+	if (is_over_1080p(para) || is_over_60hz(para) ||
+		is_over_pixel_150mhz(para)) {
+		pr_err("over limited vic: %d\n", vic);
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+/* the hdmitx output limits to 1080p */
+bool hdmitx21_limited_1080p(void)
+{
+	return res_1080p;
 }
 
 static int set_disp_mode_auto(void)
@@ -2650,6 +2739,10 @@ static ssize_t disp_cap_show(struct device *dev,
 
 	for (i = 0; i < prxcap->VIC_count; i++) {
 		vic = prxcap->VIC[i];
+		if (hdmitx21_limited_1080p()) {
+			if (hdmitx21_is_vic_over_limited_1080p(vic))
+				continue;
+		}
 		if (vic == HDMI_2_720x480p60_4x3 ||
 			vic == HDMI_6_720x480i60_4x3 ||
 			vic == HDMI_17_720x576p50_4x3 ||
@@ -5840,7 +5933,7 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev)
 		/* Get pxp_mode information */
 		ret = of_property_read_u32(pdev->dev.of_node, "pxp_mode",
 					   &pxp_mode);
-		hdev->pxp_mode = 0;
+		hdev->pxp_mode = pxp_mode;
 		if (!ret)
 			pr_info("hdev->pxp_mode: %d\n", hdev->pxp_mode);
 
@@ -5851,6 +5944,9 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev)
 		if (!ret)
 			pr_info("hdev->dongle_mode: %d\n",
 				hdev->dongle_mode);
+		/* Get res_1080p information */
+		ret = of_property_read_u32(pdev->dev.of_node, "res_1080p", &res_1080p);
+		res_1080p = !!res_1080p;
 		/* Get repeater_tx information */
 		ret = of_property_read_u32(pdev->dev.of_node,
 					   "repeater_tx", &val);
@@ -6114,9 +6210,9 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmitx_common *tx_comm = &hdev->tx_comm;
 
-	pr_debug("%s start\n", __func__);
 	hdmitx_common_init(&hdev->tx_comm);
 
+	pr_debug("amhdmitx_probe_start\n");
 	amhdmitx21_device_init(hdev);
 	amhdmitx_infoframe_init(hdev);
 
@@ -6660,6 +6756,10 @@ static int drm_hdmitx_get_vic_list(int **vics)
 	viclist = kmalloc_array(len, sizeof(int), GFP_KERNEL);
 	for (i = 0; i < len; i++) {
 		vic = prxcap->VIC[i];
+		if (hdmitx21_limited_1080p()) {
+			if (hdmitx21_is_vic_over_limited_1080p(vic))
+				continue;
+		}
 		timing = hdmitx21_gettiming_from_vic(vic);
 		if (timing) {
 			viclist[count] = vic;

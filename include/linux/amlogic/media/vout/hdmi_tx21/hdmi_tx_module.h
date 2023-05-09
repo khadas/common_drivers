@@ -30,6 +30,7 @@
 /* chip type */
 enum amhdmitx_chip_e {
 	MESON_CPU_ID_T7,
+	MESON_CPU_ID_S1A,
 	MESON_CPU_ID_S5,
 	MESON_CPU_ID_MAX,
 };
@@ -608,6 +609,11 @@ int hdmitx21_ddc_hw_op(enum ddc_op cmd);
 #define INTR_MASKN_ENABLE   0
 #define INTR_MASKN_DISABLE  1
 #define INTR_CLEAR          2
+
+/* the hdmitx output limits to 1080p */
+bool hdmitx21_limited_1080p(void);
+/* test current vic is over limited or not */
+bool hdmitx21_is_vic_over_limited_1080p(enum hdmi_vic vic);
 
 void hdmi_tx_edid_proc(u8 *edid);
 

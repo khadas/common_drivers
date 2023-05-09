@@ -178,6 +178,7 @@ static void set_hpll_clk_out(u32 clk)
 
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
+	case MESON_CPU_ID_S1A:
 		set21_t7_hpll_clk_out(frac_rate, clk);
 	default:
 		break;
@@ -195,6 +196,7 @@ static void set_hpll_sspll(enum hdmi_vic vic)
 
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
+	case MESON_CPU_ID_S1A:
 		set21_hpll_sspll_t7(vic);
 		break;
 	case MESON_CPU_ID_S5:
@@ -213,6 +215,7 @@ static void set_hpll_od1(u32 div)
 
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
+	case MESON_CPU_ID_S1A:
 	default:
 		set21_hpll_od1_t7(div);
 		break;
@@ -225,6 +228,7 @@ static void set_hpll_od2(u32 div)
 
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
+	case MESON_CPU_ID_S1A:
 	default:
 		set21_hpll_od2_t7(div);
 		break;
@@ -237,6 +241,7 @@ static void set_hpll_od3(u32 div)
 
 	switch (hdev->data->chip_type) {
 	case MESON_CPU_ID_T7:
+	case MESON_CPU_ID_S1A:
 	default:
 		set21_hpll_od3_t7(div);
 		break;
@@ -958,6 +963,19 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev,
 		return;
 	}
 #endif
+
+	if (hdev->data->chip_type == MESON_CPU_ID_S1A) {
+		//pixel_clk fe_clk encp_clk
+		hd21_set_reg_bits(CLKCTRL_VID_PLL_CLK0_DIV, 3, 16, 2);
+		hd21_set_reg_bits(CLKCTRL_VID_PLL_CLK0_DIV, 1, 19, 1);
+
+		//encp_clk * 2 ---> move to encp_clk
+		hd21_set_reg_bits(CLKCTRL_VID_CLK0_DIV, 0, 8, 1);
+		hd21_set_reg_bits(CLKCTRL_VID_CLK0_DIV, 0, 24, 1);
+		//fe_clk * 2 [23:20] hdmitx_fe_clk clk sel ---> move to fe_clk
+		hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, 0, 20, 4);
+	}
+
 	/* YUV 422 always use 24B mode */
 	if (cs == HDMI_COLORSPACE_YUV422)
 		cd = COLORDEPTH_24B;
@@ -1383,6 +1401,7 @@ void hdmitx21_set_clk(struct hdmitx_dev *hdev)
 	switch (hdev->data->chip_type) {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case MESON_CPU_ID_T7:
+	case MESON_CPU_ID_S1A:
 		/* set the clock and test the pixel clock */
 		for (i = 0; i < SET_CLK_MAX_TIMES; i++) {
 			set_hdmitx_htx_pll(hdev, &test_clks);

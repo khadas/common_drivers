@@ -1200,6 +1200,7 @@ void rx_get_vsi_info(u8 port)
 	rx[port].vs_info_details.dolby_vision_flag = DV_NULL;
 	rx[port].vs_info_details.hdr10plus = false;
 	rx[port].vs_info_details.cuva_hdr = false;
+	rx[port].vs_info_details.filmmaker = false;
 	if (!emp_info_p) {
 		rx_pr("%s emp info null\n", __func__);
 		return;
@@ -1263,6 +1264,15 @@ void rx_get_vsi_info(u8 port)
 			pkt->sbpkt.vsi_cuva_hdr.transfer_char = 0;
 			pkt->sbpkt.vsi_cuva_hdr.monitor_mode_enable = 1;
 			rx[port].vs_info_details.cuva_hdr = true;
+		} else if (pkt->ieee == IEEE_FILMMAKER) {
+			if (pkt->length != E_PKT_LENGTH_5 ||
+				pkt->pkttype != 0x01 ||
+				pkt->ver_st.version != 0x01 ||
+				pkt->sbpkt.payload.data[0] != 0x01 ||
+				pkt->sbpkt.payload.data[1] != 0x00)
+				if (log_level & PACKET_LOG)
+					rx_pr("vsi filmmaker pkt err\n");
+			rx[port].vs_info_details.filmmaker = true;
 		}
 
 		if (pkt->ieee == IEEE_VSI14) {
@@ -1791,6 +1801,11 @@ int rx_pkt_fifodecode(struct packet_info_s *prx,
 			memcpy(&prx->multi_vs_info[CUVAHDR], pktdata,
 				sizeof(struct pd_infoframe_s));
 			rx[port].vs_info_details.vsi_state |= E_VSI_CUVAHDR;
+			break;
+		case IEEE_FILMMAKER:
+			memcpy(&prx->multi_vs_info[FILMMAKER], pktdata,
+				sizeof(struct pd_infoframe_s));
+			rx[port].vs_info_details.vsi_state |= E_VSI_FILMMAKER;
 			break;
 		case IEEE_VSI21:
 			memcpy(&prx->multi_vs_info[VSI21], pktdata,

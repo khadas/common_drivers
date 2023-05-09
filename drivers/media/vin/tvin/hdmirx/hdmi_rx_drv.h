@@ -36,7 +36,9 @@
 //fix HDR10+ info error
 //2023.5.6
 //bring up sync to 5.15
-#define RX_VER0 "ver.2023/05/06"
+//2023.5.17
+//support filmmaker mode
+#define RX_VER0 "ver.2023/05/17"
 
 /*print type*/
 #define COR1_LOG	0x10000
@@ -75,14 +77,6 @@
 /* 2023.5.12 fix silent issue, switch to FSM_HPD_LOW */
 /* 2023.05.15 optimize frl_rate monitor logic */
 #define RX_VER1 "ver.2023/5/15"
-
-/*
- * Currently, a total of 5 VSIF packages are supported,
- * DV/HDR10+/CUVA/HDMI2.1/HDMI1.4, but only the last one can be parsed
- * each time. The purpose of MULTI_VSIF_EXPORT_TO_EMP is to transfer the
- * optimal VSIF packet to VDIN when multiple VSIF packets are received.
- */
-#define MULTI_VSIF_EXPORT_TO_EMP
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 
@@ -577,8 +571,9 @@ struct vsi_info_s {
 	bool hdmi_allm;
 	bool hdr10plus;
 	bool cuva_hdr;
+	bool filmmaker;
 	u8 ccbpc;
-	u8 vsi_state; // bit0-5: 4K3D/VSI21/HDR10+/DV10/DV15/CUVA
+	u8 vsi_state; // bit0-6: 4K3D/VSI21/HDR10+/DV10/DV15/CUVA/filmmaker
 	u8 emp_pkt_cnt;
 	u8 timeout;
 	u8 max_frl_rate;
@@ -793,6 +788,7 @@ struct rx_s {
 	struct vtem_info_s vtem_info;
 	struct sbtm_info_s sbtm_info;
 	struct cuva_emds_s emp_cuva_info;
+	bool vsif_fmm_flag;
 	struct dv_info_s emp_dv_info;
 	u8 emp_vid_idx;
 	struct emp_info_s *emp_info;

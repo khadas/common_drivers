@@ -560,6 +560,7 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 	rx[port].vs_info_details.hdmi_allm = 0;
 	rx[port].cur.cn_type = 0;
 	rx[port].cur.it_content = 0;
+	rx[port].vsif_fmm_flag = false;
 	latency_info.allm_mode = 0;
 	latency_info.it_content = 0;
 	latency_info.cn_type = 0;
@@ -1135,6 +1136,7 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 		prop->dolby_vision = DV_NULL;
 		prop->hdr10p_info.hdr10p_on = false;
 		prop->cuva_info.cuva_on = false;
+		prop->filmmaker.fmm_vsif_flag = false;
 		last_vsi_state = rx[port].vs_info_details.vsi_state;
 	}
 	if (rx[port].pre.colorspace != E_COLOR_YUV420)
@@ -1149,10 +1151,12 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 		rx[port].vs_info_details.vsi_state = E_VSI_HDR10PLUS;
 	else if (rx[port].vs_info_details.vsi_state & E_VSI_CUVAHDR)
 		rx[port].vs_info_details.vsi_state = E_VSI_CUVAHDR;
-	else if (rx[port].vs_info_details.vsi_state & E_VSI_4K3D)
-		rx[port].vs_info_details.vsi_state = E_VSI_4K3D;
-	else
+	else if (rx[port].vs_info_details.vsi_state & E_VSI_FILMMAKER)
+		rx[port].vs_info_details.vsi_state = E_VSI_FILMMAKER;
+	else if (rx[port].vs_info_details.vsi_state & E_VSI_VSI21)
 		rx[port].vs_info_details.vsi_state = E_VSI_VSI21;
+	else
+		rx[port].vs_info_details.vsi_state = E_VSI_4K3D;
 
 	switch (rx[port].vs_info_details.vsi_state) {
 	case E_VSI_DV10:
@@ -1179,6 +1183,18 @@ void hdmirx_get_vsi_info(struct tvin_sig_property_s *prop, u8 port)
 			memcpy(&prop->cuva_info.cuva_data,
 			       &rx_pkt[port].multi_vs_info[CUVAHDR],
 			       sizeof(struct tvin_cuva_data_s));
+		}
+		break;
+	case E_VSI_FILMMAKER:
+		if (rx[port].vs_info_details.filmmaker && !rx[port].vs_info_details.hdmi_allm) {
+			rx[port].vsif_fmm_flag = true;
+			memset(&prop->filmmaker.fmm_data, 0,
+				sizeof(struct tvin_fmm_data_s));
+			memcpy((u8 *)&prop->filmmaker.fmm_data,
+				(u8 *)&rx_pkt[port].multi_vs_info[FILMMAKER], 3);
+			memcpy((u8 *)&prop->filmmaker.fmm_data + 3,
+				(u8 *)&rx_pkt[port].multi_vs_info[FILMMAKER] + 4,
+				sizeof(struct tvin_fmm_data_s) - 3);
 		}
 		break;
 	case E_VSI_4K3D:
@@ -1327,6 +1343,24 @@ void hdmirx_get_cuva_emds_info(struct tvin_sig_property_s *prop, u8 port)
 			sizeof(prop->cuva_emds_data));
 }
 
+void hdmirx_get_fmm_info(struct tvin_sig_property_s *prop, u8 port)
+{
+	/*
+	 * 1) AVI InfoFrame it_content:Byte3(bit7)-1 & content_type:Byte5(bit4-5):2
+	 * 2) Vendor Specific InfoFrame 0x1ABBFB & content_type:0x01 & content_subtype:0x0
+	 */
+	if ((rx[port].cur.it_content && rx[port].cur.cn_type == 0x2)) {
+		prop->filmmaker.fmm_flag = true;
+		prop->filmmaker.it_content = rx[port].cur.it_content;
+		prop->filmmaker.cn_type = rx[port].cur.cn_type;
+	} else if (rx[port].vsif_fmm_flag) {
+		prop->filmmaker.fmm_vsif_flag = true;
+	} else {
+		prop->filmmaker.fmm_flag = false;
+		prop->filmmaker.fmm_vsif_flag = false;
+	}
+}
+
 void rx_set_sig_info(void)
 {
 	//return;
@@ -1456,6 +1490,7 @@ void hdmirx_get_sig_prop(struct tvin_frontend_s *fe,
 	hdmirx_get_vtem_info(prop, rx_info.main_port);
 	hdmirx_get_sbtm_info(prop, rx_info.main_port);
 	hdmirx_get_cuva_emds_info(prop, rx_info.main_port);
+	hdmirx_get_fmm_info(prop, rx_info.main_port);
 	hdmirx_get_active_aspect_ratio(prop, rx_info.main_port);
 	hdmirx_get_hdcp_sts(prop, rx_info.main_port);
 	hdmirx_get_hw_vic(prop, rx_info.main_port);

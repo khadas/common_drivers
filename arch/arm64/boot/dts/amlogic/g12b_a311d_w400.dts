@@ -54,7 +54,7 @@
 
 		debug_reserved:linux,iotrace {
 			compatible = "amlogic, iotrace";
-			reg = <0x0 0x0ff00000 0x0 0x00100000>;
+			reg = <0x0 0x04f00000 0x0 0x00100000>;
 			io-size = <0x1b000>;
 			sched-size = <0x2000>;
 			irq-size = <0x1000>;

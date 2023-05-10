@@ -194,6 +194,7 @@ struct meson_host {
 	spinlock_t lock; /* lock for claim and bus ops */
 	bool src_clk_cfg_done;
 	struct dentry *debugfs_root;
+	struct clk *src_clk;
 };
 
 struct wifi_clk_table {

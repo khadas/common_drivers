@@ -584,6 +584,13 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 
 	/* switch source clock as Total before clk =0, then disable source clk */
 		if (rate == 0) {
+			if (host->mux_div && (!strcmp(__clk_get_name(src_clk), "xtal")))
+				ret = clk_set_parent(host->mux[2], src_clk);
+			else
+				ret = clk_set_parent(host->mux[0], src_clk);
+			if (host->src_clk)
+				clk_disable_unprepare(host->src_clk);
+
 			clk_disable_unprepare(src_clk);
 			cfg |= CFG_AUTO_CLK;
 			writel(cfg, host->regs + SD_EMMC_CFG);
@@ -598,6 +605,7 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 
 	writel(cfg, host->regs + SD_EMMC_CFG);
 	clk_prepare_enable(src_clk);
+	host->src_clk = src_clk;
 	if (host->mux_div && (!strcmp(__clk_get_name(src_clk), "xtal")))
 		ret = clk_set_parent(host->mux[2], src_clk);
 	else

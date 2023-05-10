@@ -821,6 +821,8 @@ static void meson_set_policy_volt_range(struct meson_cpufreq_driver_data *data)
 	unsigned long max = 0, min = -1;
 	int oldvolt_cpu, oldvolt_dsu;
 
+	if (cpufreq_voltage_set_skip)
+		return;
 	if (opp_table) {
 		mutex_lock(&opp_table->lock);
 		list_for_each_entry(opp, &opp_table->opp_list, node) {
@@ -976,7 +978,8 @@ static int meson_cpufreq_init(struct cpufreq_policy *policy)
 			show_dsu_opp_table(dsu_opp_table, cur_cluster);
 	}
 	cpu_reg = devm_regulator_get(cpu_dev, CORE_SUPPLY);
-	if (IS_ERR(cpu_reg)) {
+	ret = PTR_ERR_OR_ZERO(cpu_reg);
+	if (ret && !cpufreq_voltage_set_skip) {
 		pr_debug("%s:failed to get regulator, %ld\n", __func__,
 		       PTR_ERR(cpu_reg));
 		cpu_reg = NULL;

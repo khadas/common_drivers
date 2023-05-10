@@ -275,6 +275,7 @@ function extra_cmds() {
 		echo "MKBOOTIMG_STAGING_DIR=${MKBOOTIMG_STAGING_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "DIST_GKI_DIR=${DIST_GKI_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "FULL_KERNEL_VERSION=${FULL_KERNEL_VERSION}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "GKI_MODULES_LOAD_BLACK_LIST=\"${GKI_MODULES_LOAD_BLACK_LIST[*]}\"" >> ${KERNEL_BUILD_VAR_FILE}
 	fi
 
 	for module_path in ${PREBUILT_MODULES_PATH}; do
@@ -293,6 +294,7 @@ function bazel_extra_cmds() {
 		echo "COMMON_OUT_DIR=${COMMON_OUT_DIR}" >>  ${KERNEL_BUILD_VAR_FILE}
 		echo "DIST_DIR=${DIST_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "OUT_AMLOGIC_DIR=${OUT_AMLOGIC_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "GKI_MODULES_LOAD_BLACK_LIST=\"${GKI_MODULES_LOAD_BLACK_LIST[*]}\"" >> ${KERNEL_BUILD_VAR_FILE}
 	fi
 
 	if [[ ${GKI_CONFIG} != gki_20 ]]; then
@@ -303,7 +305,7 @@ function bazel_extra_cmds() {
 		pushd ${DIST_DIR}/system_dlkm_gki10
 		tar zxf ${DIST_DIR}/system_dlkm_staging_archive_back.tar.gz
 		find -name "*.ko" | while read module; do
-			module_name=`echo ${module} | rev | cut -d '/' -f 1 | rev`
+			module_name=${module##*/}
 			if [[ ! `grep "/${module_name}" ${DIST_DIR}/system_dlkm.modules.load` ]]; then
 				rm -f ${module}
 			fi
@@ -461,8 +463,30 @@ function adjust_sequence_modules_loading() {
 		done
 	fi
 
+	GKI_MODULES_LOAD_BLACK_LIST=()
+	if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" ]]; then
+		gki_modules_temp_file=`mktemp /tmp/config.XXXXXXXXXXXX`
+		cp ${ROOT_DIR}/${KERNEL_DIR}/android/gki_system_dlkm_modules ${gki_modules_temp_file}
+
+		for module in ${GKI_MODULES_LOAD_WHITE_LIST[@]}; do
+			sed -i "/\/${module}/d" ${gki_modules_temp_file}
+		done
+
+		for module in `cat ${gki_modules_temp_file}`; do
+			module=${module##*/}
+			GKI_MODULES_LOAD_BLACK_LIST[${#GKI_MODULES_LOAD_BLACK_LIST[*]}]=${module}
+		done
+		rm -f ${gki_modules_temp_file}
+
+		for module in ${GKI_MODULES_LOAD_BLACK_LIST[@]}; do
+			echo Delete module: ${module}
+			sed -n "/${module}:/p" modules.dep.temp
+			sed -i "/${module}:/d" modules.dep.temp
+		done
+	fi
+
 	cat modules.dep.temp | cut -d ':' -f 2 > modules.dep.temp1
-	delete_modules=(${delete_soc_module[@]} ${delete_clk_soc_modules[@]} ${delete_pinctrl_soc_modules[@]} ${delete_type_modules[@]} ${black_modules[@]})
+	delete_modules=(${delete_soc_module[@]} ${delete_clk_soc_modules[@]} ${delete_pinctrl_soc_modules[@]} ${delete_type_modules[@]} ${black_modules[@]} ${GKI_MODULES_LOAD_BLACK_LIST[@]})
 	for module in ${delete_modules[@]}; do
 		if [[ ! `ls $module` ]]; then
 			continue
@@ -654,7 +678,7 @@ function modules_install() {
 
 		while read module
 		do
-			module_name=`echo ${module} | rev | cut -d '/' -f 1 | rev`
+			module_name=${module##*/}
 			if [[ `echo ${module} | grep "^kernel\/"` ]]; then
 				if [[ -f ${DIST_DIR}/${module_name} ]]; then
 					cp ${DIST_DIR}/${module_name} ${OUT_AMLOGIC_DIR}/modules

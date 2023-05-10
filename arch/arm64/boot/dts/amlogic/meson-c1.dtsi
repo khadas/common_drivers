@@ -961,11 +961,11 @@
 		status = "disabled";
 	};
 
-//	pwrdm: power-domains {
-//		compatible = "amlogic,c1-power-domain";
-//		#power-domain-cells = <1>;
-//		status = "okay";
-//	};
+	pwrdm: power-domains {
+		compatible = "amlogic,c1-power-domain";
+		#power-domain-cells = <1>;
+		status = "okay";
+	};
 
 	usb2_phy_v2: usb2phy@fe004420 {
 		compatible = "amlogic,amlogic-new-usb2-v2";

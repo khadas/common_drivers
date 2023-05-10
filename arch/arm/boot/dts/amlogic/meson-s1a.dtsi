@@ -986,7 +986,7 @@
 				interrupts = <GIC_SPI 160 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//clocks = <&clkc CLKID_I2C_M_A>;
+				//clocks = <&clkc CLKID_SYS_I2C_M_A>;
 				status = "disabled";
 			};
 
@@ -996,7 +996,7 @@
 				interrupts = <GIC_SPI 161 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//clocks = <&clkc CLKID_I2C_M_B>;
+				//clocks = <&clkc CLKID_SYS_I2C_M_B>;
 				status = "disabled";
 			};
 
@@ -1006,27 +1006,7 @@
 				interrupts = <GIC_SPI 162 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//clocks = <&clkc CLKID_I2C_M_C>;
-				status = "disabled";
-			};
-
-			i2c3: i2c@6c000 {
-				compatible = "amlogic,meson-i2c";
-				reg = <0x6c000 0x48>;
-				interrupts = <GIC_SPI 163 IRQ_TYPE_EDGE_RISING>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				//clocks = <&clkc CLKID_I2C_M_D>;
-				status = "disabled";
-			};
-
-			i2c4: i2c@6e000 {
-				compatible = "amlogic,meson-i2c";
-				reg = <0x6e000 0x48>;
-				interrupts = <GIC_SPI 164 IRQ_TYPE_EDGE_RISING>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				//clocks = <&clkc CLKID_I2C_M_E>;
+				//clocks = <&clkc CLKID_SYS_I2C_M_C>;
 				status = "disabled";
 			};
 
@@ -2169,8 +2149,38 @@
 &periphs_pinctrl {
 	i2c0_pins1:i2c0_pins1 {
 		mux {
-			groups = "i2c0_sda",
-				"i2c0_scl";
+			groups = "i2c0_scl_d0",
+				"i2c0_sda_d1";
+			function = "i2c0";
+			drive-strength-microamp = <3000>;
+			bias-disable;
+		};
+	};
+
+	i2c0_pins2:i2c0_pins2 {
+		mux {
+			groups = "i2c0_scl_d5",
+				"i2c0_sda_d6";
+			function = "i2c0";
+			drive-strength-microamp = <3000>;
+			bias-disable;
+		};
+	};
+
+	i2c0_pins3:i2c0_pins3 {
+		mux {
+			groups = "i2c0_sda_d9",
+				"i2c0_scl_d10";
+			function = "i2c0";
+			drive-strength-microamp = <3000>;
+			bias-disable;
+		};
+	};
+
+	i2c0_pins4:i2c0_pins4 {
+		mux {
+			groups = "i2c0_scl_z0",
+				"i2c0_sda_z1";
 			function = "i2c0";
 			drive-strength-microamp = <3000>;
 			bias-disable;
@@ -2179,38 +2189,8 @@
 
 	i2c1_pins1:i2c1_pins1 {
 		mux {
-			groups = "i2c1_sda_c",
-				"i2c1_scl_c";
-			function = "i2c1";
-			drive-strength-microamp = <3000>;
-			bias-disable;
-		};
-	};
-
-	i2c1_pins2:i2c1_pins2 {
-		mux {
-			groups = "i2c1_sda_d",
-				"i2c1_scl_d";
-			function = "i2c1";
-			drive-strength-microamp = <3000>;
-			bias-disable;
-		};
-	};
-
-	i2c1_pins3:i2c1_pins3 {
-		mux {
-			groups = "i2c1_sda_h",
-				"i2c1_scl_h";
-			function = "i2c1";
-			drive-strength-microamp = <3000>;
-			bias-disable;
-		};
-	};
-
-	i2c1_pins4:i2c1_pins4 {
-		mux {
-			groups = "i2c1_sda_x",
-				"i2c1_scl_x";
+			groups = "i2c1_sda",
+				"i2c1_scl";
 			function = "i2c1";
 			drive-strength-microamp = <3000>;
 			bias-disable;
@@ -2219,8 +2199,8 @@
 
 	i2c2_pins1:i2c2_pins1 {
 		mux {
-			groups = "i2c2_sda_d",
-				"i2c2_scl_d";
+			groups = "i2c2_sda_d3",
+				"i2c2_scl_d4";
 			function = "i2c2";
 			drive-strength-microamp = <3000>;
 			bias-disable;
@@ -2229,8 +2209,8 @@
 
 	i2c2_pins2:i2c2_pins2 {
 		mux {
-			groups = "i2c2_sda_h8",
-				"i2c2_scl_h9";
+			groups = "i2c2_sda_d7",
+				"i2c2_scl_d8";
 			function = "i2c2";
 			drive-strength-microamp = <3000>;
 			bias-disable;
@@ -2239,59 +2219,19 @@
 
 	i2c2_pins3:i2c2_pins3 {
 		mux {
-			groups = "i2c2_sda_h0",
-				"i2c2_scl_h1";
+			groups = "i2c2_sda_z2",
+				"i2c2_scl_z5";
 			function = "i2c2";
 			drive-strength-microamp = <3000>;
 			bias-disable;
 		};
 	};
 
-	i2c3_pins1:i2c3_pins1 {
+	i2c2_pins4:i2c2_pins4 {
 		mux {
-			groups = "i2c3_sda_x",
-				"i2c3_scl_x";
-			function = "i2c3";
-			drive-strength-microamp = <3000>;
-			bias-disable;
-		};
-	};
-
-	i2c3_pins2:i2c3_pins2 {
-		mux {
-			groups = "i2c3_sda_z",
-				"i2c3_scl_z";
-			function = "i2c3";
-			drive-strength-microamp = <3000>;
-			bias-disable;
-		};
-	};
-
-	i2c4_pins1:i2c4_pins1 {
-		mux {
-			groups = "i2c4_sda_c",
-				"i2c4_scl_c";
-			function = "i2c4";
-			drive-strength-microamp = <3000>;
-			bias-disable;
-		};
-	};
-
-	i2c4_pins2:i2c4_pins2 {
-		mux {
-			groups = "i2c4_sda_d",
-				"i2c4_scl_d";
-			function = "i2c4";
-			drive-strength-microamp = <3000>;
-			bias-disable;
-		};
-	};
-
-	i2c4_pins3:i2c4_pins3 {
-		mux {
-			groups = "i2c4_sda_z",
-				"i2c4_scl_z";
-			function = "i2c4";
+			groups = "i2c2_sda_z6",
+				"i2c2_scl_z7";
+			function = "i2c2";
 			drive-strength-microamp = <3000>;
 			bias-disable;
 		};

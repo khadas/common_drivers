@@ -11192,14 +11192,14 @@ tvchip_pq_setting:
 	/*am_dma_ctrl init*/
 	if (chip_type_id == chip_t3x) {
 		am_dma_set_mif_wr_status(1);
-		am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_0, 1);
+		/*am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_1, 0);*/
-		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_0, 1);*/
-		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_1, 0);*/
+		am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_0, 1);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_1, 0);
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_1, 0);*/
-		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_0, 1);*/
-		/*am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_1, 0);*/
+		am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_0, 0);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_1, 0);
 	}
 
 	pq_reg_wr_rdma = 1;

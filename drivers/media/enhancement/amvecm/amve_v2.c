@@ -32,7 +32,7 @@ int multi_slice_case;
 module_param(multi_slice_case, int, 0644);
 MODULE_PARM_DESC(multi_slice_case, "multi_slice_case after t3x");
 
-int hist_dma_case;
+int hist_dma_case = 1;
 module_param(hist_dma_case, int, 0644);
 MODULE_PARM_DESC(hist_dma_case, "hist_dma_case after t3x");
 

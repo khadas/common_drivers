@@ -130,6 +130,16 @@ config AMLOGIC_DDR_BANDWIDTH_TXHD2
 		to get ddr total bandwidth, it can be used for
 		ddr DVFS/devfreq system.
 
+config AMLOGIC_DDR_BANDWIDTH_S1A
+	bool "Meson ddr bandwidth for S1A"
+	default n
+	depends on AMLOGIC_DDR_BANDWIDTH
+	help
+		This config enables ddr bandwidth measure for s1a.
+		If open it, this driver will export interface
+		to get ddr total bandwidth, it can be used for
+		ddr DVFS/devfreq system.
+
 config AMLOGIC_DMC_MONITOR
 	bool "Amlogic dmc monitor"
 	depends on AMLOGIC_DDR_TOOL
@@ -275,6 +285,17 @@ config AMLOGIC_DMC_MONITOR_TXHD2
 	default n
 	help
 		This config enables dmc monitor for txhd2 chip
+		DMC monitor for hardware connected to DMC master. Using it can
+		set up an address range and assign R/W permission for each
+		hardware. If hardware violated R/W permission, then interrupt
+		will generated and can help to debug memory pollution.
+
+config AMLOGIC_DMC_MONITOR_S1A
+	bool "Amlogic dmc monitor for S1A"
+	depends on AMLOGIC_DMC_MONITOR
+	default n
+	help
+		This config enables dmc monitor for s1a chip
 		DMC monitor for hardware connected to DMC master. Using it can
 		set up an address range and assign R/W permission for each
 		hardware. If hardware violated R/W permission, then interrupt

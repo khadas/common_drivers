@@ -1573,16 +1573,16 @@
 	};
 
 	ddr_bandwidth {
-		compatible = "amlogic,ddr-bandwidth-s4";
+		compatible = "amlogic,ddr-bandwidth-s1a";
 		status = "okay";
 		reg = <0xfe036000 0x400
-			0xfe036c00 0x100>;
+			0xfe0368a8 0x4>;
 		interrupts = <0 78 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "ddr_bandwidth";
 	};
 
 	dmc_monitor {
-		compatible = "amlogic,dmc_monitor-s4";
+		compatible = "amlogic,dmc_monitor-s1a";
 		status = "okay";
 		reg = <0xfe036000 0x400>;
 		reg_base = <0xfe037000>;

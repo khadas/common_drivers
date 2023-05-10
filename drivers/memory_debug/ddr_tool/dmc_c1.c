@@ -24,6 +24,7 @@
 #include <linux/kallsyms.h>
 #include <linux/of_irq.h>
 #include <linux/interrupt.h>
+#include <linux/amlogic/page_trace.h>
 #include "ddr_port.h"
 #include "dmc_monitor.h"
 

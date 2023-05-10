@@ -28,7 +28,6 @@ function show_help {
 	echo "  --upgrade               for android upgrade builtin module optimize vendor_boot size"
 	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
 	echo "  --patch                 for only am patches"
-	echo "  -v                      for kernel version: common13-5.15 common14-5.15"
 	echo "  --check_gki_20          for gki 2.0 check kernel build"
 	echo "  --dev_config            for use the config specified by oem instead of amlogic like ./mk.sh --dev_config a_config+b_config+c_config"
 	echo "  --bazel                 for choose bazel tool to build"
@@ -145,17 +144,6 @@ do
 		ONLY_PATCH=1
 		shift
 		;;
-	-v)
-		if [[ "$2" == "common13-5.15" ]] ||
-		   [[ "$2" == "common14-5.15" ]]; then
-			FULL_KERNEL_VERSION=$2
-		else
-			echo "The kernel version is not available"
-			exit
-		fi
-		VA=1
-		shift
-		;;
 	--check_gki_20)
 		CHECK_GKI_20=1
 		GKI_CONFIG=gki_20
@@ -198,18 +186,8 @@ fi
 set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
 				# amlogic parameters default value
 if [[ ${ONLY_PATCH} -eq "1" ]]; then
-	if [[ -z ${FULL_KERNEL_VERSION} ]]; then
-		if [[ "$(basename $(dirname $0))" == "common-5.15" ]]; then
-			FULL_KERNEL_VERSION="common13-5.15"
-		elif [[ "$(basename $(dirname $0))" == "common14-5.15" ]]; then
-			FULL_KERNEL_VERSION="common14-5.15"
-		fi
-	fi
 	CURRENT_DIR=`pwd`
 	cd $(dirname $0)
-fi
-if [[ -z ${FULL_KERNEL_VERSION} ]]; then
-	FULL_KERNEL_VERSION="common13-5.15"
 fi
 
 if [[ -z "${ABI}" ]]; then
@@ -248,6 +226,17 @@ if [[ -z "${BUILD_CONFIG}" ]]; then
 fi
 if [[ -z "${BUILD_DIR}" ]]; then
 	BUILD_DIR=build
+fi
+
+version_message=$(grep -rn BRANCH= ${KERNEL_DIR}/build.config.constants)
+version_message="common${version_message##*android}"
+if [[ -n ${FULL_KERNEL_VERSION} ]]; then
+	if [[ "${FULL_KERNEL_VERSION}" != "${version_message}" ]]; then
+		echo "kernel version is not match!!"
+		exit
+	fi
+else
+	FULL_KERNEL_VERSION=${version_message}
 fi
 
 #first auto patch when param parse end

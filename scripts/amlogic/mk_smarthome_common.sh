@@ -12,7 +12,6 @@ function show_help {
 	echo "  --menuconfig            for MENUCONFIG, [default]|1, not require parameter value"
 	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
 	echo "  --patch                 for only am patches"
-	echo "  -v                      for kernel version: common13-5.15 common14-5.15"
 }
 
 VA=
@@ -50,17 +49,6 @@ do
 		ONLY_PATCH=1
 		shift
 		;;
-	-v)
-		if [[ "$2" == "common13-5.15" ]] ||
-		   [[ "$2" == "common14-5.15" ]]; then
-			FULL_KERNEL_VERSION=$2
-		else
-			echo "The kernel version is not available"
-			exit
-		fi
-		VA=1
-		shift
-		;;
 	-h|--help)
 		show_help
 		exit 0
@@ -79,19 +67,6 @@ do
 	esac
 done
 set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
-
-if [[ ${ONLY_PATCH} -eq "1" ]]; then
-	if [[ -z ${FULL_KERNEL_VERSION} ]]; then
-		if [[ "$(basename $(dirname $0))" == "common-5.15" ]]; then
-			FULL_KERNEL_VERSION="common13-5.15"
-		elif [[ "$(basename $(dirname $0))" == "common14-5.15" ]]; then
-			FULL_KERNEL_VERSION="common14-5.15"
-		fi
-	fi
-fi
-if [[ -z ${FULL_KERNEL_VERSION} ]]; then
-	FULL_KERNEL_VERSION="common13-5.15"
-fi
 
 if [[ -z "${KERNEL_DIR}" ]]; then
 	KERNEL_DIR=common
@@ -113,6 +88,17 @@ if [[ ! -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh ]]; then
 fi
 
 export KERNEL_DIR COMMON_DRIVERS_DIR MANUAL_INSMOD_MODULE
+
+version_message=$(grep -rn BRANCH= ${KERNEL_DIR}/build.config.constants)
+version_message="common${version_message##*android}"
+if [[ -n ${FULL_KERNEL_VERSION} ]]; then
+	if [[ "${FULL_KERNEL_VERSION}" != "${version_message}" ]]; then
+		echo "kernel version is not match!!"
+		exit
+	fi
+else
+	FULL_KERNEL_VERSION=${version_message}
+fi
 
 if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
 	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ${FULL_KERNEL_VERSION}

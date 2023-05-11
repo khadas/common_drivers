@@ -3602,6 +3602,16 @@
 		};
 	};
 
+	hdmirx_d_mux:hdmirx_d_mux {
+		mux {
+			groups = "hdmirx_d_hpd",
+				"hdmirx_d_det",
+				"hdmirx_d_sda",
+				"hdmirx_d_sck";
+			function = "hdmirx_d";
+		};
+	};
+
 	cec_a: cec_a {
 		mux {
 			groups = "cec_a";

@@ -26,10 +26,10 @@
 
 		CPU0:cpu@0 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a55","arm,armv8";
-			reg = <0x0 0x0>;
+			compatible = "arm,cortex-a35";
+			reg = <0x0>;
 			enable-method = "psci";
-			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
+			//cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
 			dynamic-power-coefficient = <230>;
 			#cooling-cells = <2>;
 			//clocks = <&clkc CLKID_CPU_CLK>,
@@ -50,58 +50,10 @@
 
 		CPU1:cpu@1 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a55","arm,armv8";
-			reg = <0x0 0x1>;
+			compatible = "arm,cortex-a35";
+			reg = <0x1>;
 			enable-method = "psci";
-			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
-			dynamic-power-coefficient = <230>;
-			#cooling-cells = <2>;
-			//clocks = <&clkc CLKID_CPU_CLK>,
-			//	<&clkc CLKID_CPU_CLK_DYN>,
-			//	<&clkc CLKID_SYS_PLL>;
-			clock-names = "core_clk",
-				"low_freq_clk_parent",
-				"high_freq_clk_parent";
-			multi_tables_available;
-			operating-points-v2 = <&cpu_opp_table0>,
-				<&cpu_opp_table1>,
-				<&cpu_opp_table2>,
-				<&cpu_opp_table3>;
-			cpu-supply = <&vddcpu0>;
-			voltage-tolerance = <0>;
-			clock-latency = <50000>;
-		};
-
-		CPU2:cpu@2 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a55","arm,armv8";
-			reg = <0x0 0x2>;
-			enable-method = "psci";
-			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
-			dynamic-power-coefficient = <230>;
-			#cooling-cells = <2>;
-			//clocks = <&clkc CLKID_CPU_CLK>,
-			//	<&clkc CLKID_CPU_CLK_DYN>,
-			//	<&clkc CLKID_SYS_PLL>;
-			clock-names = "core_clk",
-				"low_freq_clk_parent",
-				"high_freq_clk_parent";
-			multi_tables_available;
-			operating-points-v2 = <&cpu_opp_table0>,
-				<&cpu_opp_table1>,
-				<&cpu_opp_table2>,
-				<&cpu_opp_table3>;
-			cpu-supply = <&vddcpu0>;
-			voltage-tolerance = <0>;
-			clock-latency = <50000>;
-		};
-
-		CPU3:cpu@3 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a55","arm,armv8";
-			reg = <0x0 0x3>;
-			enable-method = "psci";
-			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
+			//cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
 			dynamic-power-coefficient = <230>;
 			#cooling-cells = <2>;
 			//clocks = <&clkc CLKID_CPU_CLK>,

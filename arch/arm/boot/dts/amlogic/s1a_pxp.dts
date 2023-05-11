@@ -843,20 +843,6 @@
 		<&cpu_opp_table3_s805c3>;
 };
 
-&CPU2 {
-	operating-points-v2 = <&cpu_opp_table0_s805c3>,
-		<&cpu_opp_table1_s805c3>,
-		<&cpu_opp_table2_s805c3>,
-		<&cpu_opp_table3_s805c3>;
-};
-
-&CPU3 {
-	operating-points-v2 = <&cpu_opp_table0_s805c3>,
-		<&cpu_opp_table1_s805c3>,
-		<&cpu_opp_table2_s805c3>,
-		<&cpu_opp_table3_s805c3>;
-};
-
 &audiobus {
 	status = "disabled";
 	tdma: tdm@0 {

@@ -4305,7 +4305,7 @@ void hdmirx_open_port(enum tvin_port_e port)
 		if (rx[rx_info.main_port].state >= FSM_SIG_STABLE)
 			rx[rx_info.main_port].state = FSM_SIG_STABLE;
 		else
-			rx[rx_info.main_port].state = FSM_WAIT_CLK_STABLE;
+			rx[rx_info.main_port].state = FSM_HPD_LOW;
 	}
 	rx[rx_info.main_port].var.edid_update_flag = 0;
 	rx_pkt_initial();

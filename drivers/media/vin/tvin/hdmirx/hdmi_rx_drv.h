@@ -72,7 +72,9 @@
 /* correct phy trim value config method */
 /* merge project modifications back to trunk */
 /* optimize unnormal_format logic */
-#define RX_VER1 "ver.2023/4/28"
+/* 2023.5.12 fix silent issue, switch to FSM_HPD_LOW */
+#define RX_VER1 "ver.2023/5/12"
+
 /*
  * Currently, a total of 5 VSIF packages are supported,
  * DV/HDR10+/CUVA/HDMI2.1/HDMI1.4, but only the last one can be parsed

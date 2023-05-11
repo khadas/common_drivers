@@ -532,6 +532,8 @@ int pdm_dclkidx2rate(int idx)
 		rate = 768000;
 	else if (idx == 1)
 		rate = 1024000;
+	else if (idx == 3)
+		rate = 2048000;
 	else
 		rate = 3072000;
 
@@ -577,6 +579,13 @@ int pdm_get_ors(int dclk_idx, int sample_rate)
 		else
 			pr_err("%s, Not support rate:%d\n",
 				__func__, sample_rate);
+	} else if (dclk_idx == 3) {
+		if (sample_rate == 32000)
+			osr = 64;
+		else if (sample_rate == 16000)
+			osr = 128;
+		else if (sample_rate == 16000)
+			osr = 256;
 	} else {
 		if (sample_rate == 96000)
 			osr = 32;

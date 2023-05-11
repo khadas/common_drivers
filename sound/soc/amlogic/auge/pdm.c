@@ -169,6 +169,7 @@ static const char *const pdm_dclk_texts[] = {
 	"PDM Dclk 3.072m, support 8k/16k/32k/48k/64k/96k",
 	"PDM Dclk 1.024m, support 8k/16k",
 	"PDM Dclk   768k, support 8k/16k",
+	"PDM Dclk 2.048m, support 32k/16k/8k",
 };
 
 static const struct soc_enum pdm_dclk_enum =
@@ -1259,6 +1260,13 @@ static int aml_pdm_platform_probe(struct platform_device *pdev)
 		p_pdm->train_sample_count = -1;
 	pr_debug("%s pdm train sample count from dts:%d\n",
 		__func__, p_pdm->train_sample_count);
+
+	ret = of_property_read_u32(node, "pdm_dclk_id",
+			&p_pdm->dclk_idx);
+	if (ret < 0)
+		p_pdm->dclk_idx = 0;
+	pr_debug("%s pdm dclk id  from dts:%d\n",
+		__func__, p_pdm->dclk_idx);
 
 	if (p_pdm->chipinfo->regulator) {
 		p_pdm->regulator_vcc3v3 = devm_regulator_get(dev, "pdm3v3");

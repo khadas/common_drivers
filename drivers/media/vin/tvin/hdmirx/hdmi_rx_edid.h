@@ -88,6 +88,9 @@
 #define MAX_V_ACTIVE 2160
 #define MAX_FRAME_RATE 60
 #define REFRESH_RATE 60
+#define EDID_TYPE_256_PLUS_256 0
+#define EDID_TYPE_512_PLUS_512 1
+#define EDID_TYPE_256_PLUS_512 2
 
 enum edid_audio_format_e {
 	AUDIO_FORMAT_HEADER,

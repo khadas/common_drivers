@@ -2396,6 +2396,12 @@ static ssize_t edid_select_store(struct device *dev,
 	if (ret)
 		return -EINVAL;
 
+	if (!port_map) {
+		edid_select = tmp;
+		rx_pr("edid select for UI HDMI4~1: 0x%x, for portD~A: 0x%x\n",
+	      tmp, edid_select);
+		return count;
+	}
 	for (i = 0; i < E_PORT_NUM; i++) {
 		switch ((port_map >> (i * 4)) & 0xF) {
 		case 1:

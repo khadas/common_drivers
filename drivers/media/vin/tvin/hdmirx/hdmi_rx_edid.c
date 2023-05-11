@@ -56,7 +56,7 @@ u32 vsvdb_update_hpd_en = 1;
 
 int edid_mode;
 u8 port_hpd_rst_flag;
-int port_map = 0x4231;
+int port_map;
 MODULE_PARM_DESC(port_map, "\n port_map\n");
 module_param(port_map, int, 0664);
 
@@ -497,6 +497,7 @@ void hdmirx_fill_edid_buf(const char *buf, int size)
 void hdmirx_fill_edid_with_port_buf(const char *buf, int size)
 {
 	u8 port_num;
+	u8 edid_type;
 	u32 i = 0;
 	bool err_chk = false;
 
@@ -506,7 +507,8 @@ void hdmirx_fill_edid_with_port_buf(const char *buf, int size)
 	edid_delivery_mothed = EDID_DELIVERY_ONE_PORT;
 	rx_pr("%s edid size %d", __func__, size);
 
-	port_num = buf[0] - 1;
+	port_num = (buf[0] & 0x0f) - 1;
+	edid_type = buf[0] >> 0xf;
 	if (hdmi_cec_en) {
 		port_hpd_rst_flag |= 1 << port_num;
 		rx_set_port_hpd(port_num, 0);
@@ -514,23 +516,82 @@ void hdmirx_fill_edid_with_port_buf(const char *buf, int size)
 	}
 	switch (port_num) {
 	case 0:
-		memcpy(edid_buf1, buf + 1, size);
+		switch (edid_type) {
+		case EDID_TYPE_256_PLUS_256:
+			memcpy(edid_buf1, buf + 1, 256);
+			memcpy(edid_buf1 + 512, buf + 257, 256);
+		break;
+		case EDID_TYPE_512_PLUS_512:
+			memcpy(edid_buf1, buf + 1, 512);
+			memcpy(edid_buf1 + 512, buf + 513, 512);
+		break;
+		case EDID_TYPE_256_PLUS_512:
+			memcpy(edid_buf1, buf + 1, 256);
+			memcpy(edid_buf1 + 512, buf + 257, 512);
+		break;
+		default:
+			rx_pr("port 0 err edid_type\n");
+		}
 		if (is_valid_edid_data(edid_buf1))
 			err_chk = true;
 	break;
 	case 1:
-		memcpy(edid_buf2, buf + 1, size);
+		switch (edid_type) {
+		case EDID_TYPE_256_PLUS_256:
+			memcpy(edid_buf2, buf + 1, 256);
+			memcpy(edid_buf2 + 512, buf + 257, 256);
+		break;
+		case EDID_TYPE_512_PLUS_512:
+			memcpy(edid_buf2, buf + 1, 512);
+			memcpy(edid_buf2 + 512, buf + 513, 512);
+		break;
+		case EDID_TYPE_256_PLUS_512:
+			memcpy(edid_buf2, buf + 1, 256);
+			memcpy(edid_buf2 + 512, buf + 257, 512);
+		break;
+		default:
+			rx_pr("port 1 err edid_type\n");
+		}
 		if (is_valid_edid_data(edid_buf2))
 			err_chk = true;
 	break;
 	case 2:
-		memcpy(edid_buf3, buf + 1, size);
+		switch (edid_type) {
+		case EDID_TYPE_256_PLUS_256:
+			memcpy(edid_buf3, buf + 1, 256);
+			memcpy(edid_buf3 + 512, buf + 257, 256);
+		break;
+		case EDID_TYPE_512_PLUS_512:
+			memcpy(edid_buf3, buf + 1, 512);
+			memcpy(edid_buf3 + 512, buf + 513, 512);
+		break;
+		case EDID_TYPE_256_PLUS_512:
+			memcpy(edid_buf3, buf + 1, 256);
+			memcpy(edid_buf3 + 512, buf + 257, 512);
+		break;
+		default:
+			rx_pr("port 2 err edid_type\n");
+		}
 		if (is_valid_edid_data(edid_buf3))
 			err_chk = true;
 	break;
 	case 3:
-	default:
-		memcpy(edid_buf4, buf + 1, size);
+		switch (edid_type) {
+		case EDID_TYPE_256_PLUS_256:
+			memcpy(edid_buf4, buf + 1, 256);
+			memcpy(edid_buf4 + 512, buf + 257, 256);
+		break;
+		case EDID_TYPE_512_PLUS_512:
+			memcpy(edid_buf4, buf + 1, 512);
+			memcpy(edid_buf4 + 512, buf + 513, 512);
+		break;
+		case EDID_TYPE_256_PLUS_512:
+			memcpy(edid_buf4, buf + 1, 256);
+			memcpy(edid_buf4 + 512, buf + 257, 512);
+		break;
+		default:
+			rx_pr("port 3 err edid_type\n");
+		}
 		if (is_valid_edid_data(edid_buf4))
 			err_chk = true;
 	break;

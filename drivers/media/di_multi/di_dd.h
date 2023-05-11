@@ -46,7 +46,7 @@
 #define __SIZE_BLK_PLINK_HD (__SIZE_QC_16) //> __CH_NUB_PLINK
 #define __SIZE_BLK_PLINK_UHD (__SIZE_QC_4) //> __CH_NUB_PLINK
 
-#define DIM_P_LINK_DCT_NUB	8
+#define DIM_P_LINK_DCT_NUB	20//test 8
 enum MEM_FROM { //if change, check dim_mm_alloc_api2
 	MEM_FROM_CODEC,	//cma mode 4
 	MEM_FROM_CMA_DI, //1

@@ -9832,12 +9832,17 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 
 	if (!layer->need_disable_prelink &&
 	    is_pre_link_on(layer, vf)) {
-		if (layer->dispbuf &&
+		if (!layer->dispbuf ||
 		    layer->dispbuf->di_instance_id !=
-		    vf->di_instance_id &&
-		    vf->di_instance_id ==
-		    di_api_get_plink_instance_id())
+		    vf->di_instance_id ||
+		    vf->di_instance_id !=
+		    di_api_get_plink_instance_id()) {
 			layer->need_disable_prelink = true;
+			if (layer->global_debug & DEBUG_FLAG_PRELINK)
+				pr_info("pre-link: vf instance_id changed: %d->%d, cur:%d\n",
+					layer->dispbuf ? layer->dispbuf->di_instance_id : -1,
+					vf->di_instance_id, di_api_get_plink_instance_id());
+		}
 		if (!IS_DI_POST(vf->type))
 			layer->need_disable_prelink = true;
 		if (layer->need_disable_prelink && (layer->global_debug & DEBUG_FLAG_PRELINK))

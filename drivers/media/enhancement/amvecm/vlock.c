@@ -702,6 +702,8 @@ static unsigned int vlock_check_output_hz(unsigned int sync_duration_num,
 		ret_hz = 100;
 	else if (tempHz == 12000)
 		ret_hz = 120;
+	else if (tempHz == 14400)
+		ret_hz = 144;
 	else
 		ret_hz = 0;
 

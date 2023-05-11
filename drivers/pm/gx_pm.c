@@ -31,6 +31,8 @@
 #include <linux/amlogic/power_domain.h>
 #include <linux/syscore_ops.h>
 
+bool is_clr_resume_reason;
+
 #if IS_ENABLED(CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND)
 
 static DEFINE_MUTEX(early_suspend_lock);
@@ -46,7 +48,6 @@ static LIST_HEAD(early_suspend_handlers);
  */
 unsigned int sysfs_trigger;
 unsigned int early_suspend_state;
-bool is_clr_resume_reason;
 /*
  * Avoid run early_suspend/late_resume repeatedly.
  */

@@ -1334,11 +1334,11 @@ static struct meson_pmx_func meson_txhd2_aobus_functions[] __initdata = {
 
 static struct meson_bank meson_txhd2_periphs_banks[] = {
 	/* name  first  last  irq  pullen  pull  dir  out  in */
-	BANK("DV", GPIODV_0, GPIODV_9,  71,  80,
+	BANK("DV", GPIODV_0, GPIODV_9,  70,  79,
 	     0x000,  0, 0x000,  0, 0x010,  0, 0x011,  0, 0x012,  0),
 	BANK("B",  GPIOB_0, GPIOB_12, 30, 42,
 	     0x002,  0, 0x002,  0, 0x000,  0, 0x001,  0, 0x002,  0),
-	BANK("C",  GPIOC_0, GPIOC_10, 59, 70,
+	BANK("C",  GPIOC_0, GPIOC_10, 59, 69,
 	     0x002, 16, 0x002, 16, 0x00c,  0, 0x00d,  0, 0x00e,  0),
 	BANK("H",  GPIOH_0, GPIOH_15, 14, 29,
 	     0x001, 16, 0x001, 16, 0x006,  0, 0x007,  0, 0x008,  0),

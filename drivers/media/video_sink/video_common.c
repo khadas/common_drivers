@@ -417,6 +417,8 @@ static void dump_afbc_reg(void)
 	u32 reg_addr, reg_val = 0;
 
 	for (i = 0; i < cur_dev->max_vd_layers; i++) {
+		if (!glayer_info[i].afbc_support)
+			continue;
 		pr_info("vd%d afbc regs:\n", i);
 		reg_addr = vd_layer[i].vd_afbc_reg.afbc_enable;
 		reg_val = READ_VCBUS_REG(reg_addr);

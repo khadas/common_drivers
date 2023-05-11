@@ -393,6 +393,13 @@
 		reg = <0xff940000 0x10000>;
 	};
 
+	amvideom: meson-amvideom {
+		compatible = "amlogic, amvideom-txhd2";
+		status = "okay";
+		interrupts = <0 3 1>;
+		interrupt-names = "vsync";
+	};
+
 	soc {
 		compatible = "simple-bus";
 		#address-cells = <1>;

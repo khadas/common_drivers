@@ -13619,7 +13619,7 @@ int video_early_init(struct amvideo_device_data_s *p_amvideo)
 				       &vd_mif_reg_legacy_array[i],
 				       sizeof(struct hw_vd_reg_s));
 			}
-			if (video_is_meson_t5d_cpu())
+			if (video_is_meson_t5d_cpu() || video_is_meson_txhd2_cpu())
 				memcpy(&vd_layer[i].pps_reg,
 				       &pps_reg_array_t5d[i],
 				       sizeof(struct hw_pps_reg_s));

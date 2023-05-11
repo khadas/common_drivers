@@ -2185,44 +2185,56 @@ static void blend_reg_conflict_detect(void)
 
 	if (cur_dev->display_module == C3_DISPLAY_MODULE)
 		return;
-	if (!legacy_vpp) {
-		r1 = READ_VCBUS_REG(VD1_BLEND_SRC_CTRL);
-		if (r1 & 0xfff)
-			blend_en = 1;
-	} else {
-		r1 = READ_VCBUS_REG(VPP_MISC);
-		if (r1 & VPP_VD1_POSTBLEND)
-			blend_en = 1;
-	}
-	r2 = READ_VCBUS_REG(vd_layer[0].vd_afbc_reg.afbc_enable);
-	r3 = READ_VCBUS_REG(vd_layer[0].vd_mif_reg.vd_if0_gen_reg);
-	if (r2 == 0 && r3 == 0 && blend_en)
-		blend_conflict_cnt++;
-
-	blend_en = 0;
-	if (!legacy_vpp) {
-		r1 = READ_VCBUS_REG(VD2_BLEND_SRC_CTRL);
-		if (r1 & 0xfff)
-			blend_en = 1;
-	} else {
-		r1 = READ_VCBUS_REG(VPP_MISC);
-		if (r1 & VPP_VD2_POSTBLEND)
-			blend_en = 1;
-	}
-	r2 = READ_VCBUS_REG(vd_layer[1].vd_afbc_reg.afbc_enable);
-	r3 = READ_VCBUS_REG(vd_layer[1].vd_mif_reg.vd_if0_gen_reg);
-	if (r2 == 0 && r3 == 0 && blend_en)
-		blend_conflict_cnt++;
-
-	blend_en = 0;
-	if (cur_dev->max_vd_layers == 3) {
-		r1 = READ_VCBUS_REG(VD3_BLEND_SRC_CTRL);
-		if (r1 & 0xfff)
-			blend_en = 1;
-		r2 = READ_VCBUS_REG(vd_layer[2].vd_afbc_reg.afbc_enable);
-		r3 = READ_VCBUS_REG(vd_layer[2].vd_mif_reg.vd_if0_gen_reg);
+	if (glayer_info[0].afbc_support) {
+		if (!legacy_vpp) {
+			r1 = READ_VCBUS_REG(VD1_BLEND_SRC_CTRL);
+			if (r1 & 0xfff)
+				blend_en = 1;
+		} else {
+			r1 = READ_VCBUS_REG(VPP_MISC);
+			if (r1 & VPP_VD1_POSTBLEND)
+				blend_en = 1;
+		}
+		r2 = READ_VCBUS_REG(vd_layer[0].vd_afbc_reg.afbc_enable);
+		r3 = READ_VCBUS_REG(vd_layer[0].vd_mif_reg.vd_if0_gen_reg);
 		if (r2 == 0 && r3 == 0 && blend_en)
 			blend_conflict_cnt++;
+	} else {
+		return;
+	}
+
+	if (glayer_info[1].afbc_support) {
+		blend_en = 0;
+		if (!legacy_vpp) {
+			r1 = READ_VCBUS_REG(VD2_BLEND_SRC_CTRL);
+			if (r1 & 0xfff)
+				blend_en = 1;
+		} else {
+			r1 = READ_VCBUS_REG(VPP_MISC);
+			if (r1 & VPP_VD2_POSTBLEND)
+				blend_en = 1;
+		}
+		r2 = READ_VCBUS_REG(vd_layer[1].vd_afbc_reg.afbc_enable);
+		r3 = READ_VCBUS_REG(vd_layer[1].vd_mif_reg.vd_if0_gen_reg);
+		if (r2 == 0 && r3 == 0 && blend_en)
+			blend_conflict_cnt++;
+	} else {
+		return;
+	}
+
+	if (glayer_info[2].afbc_support) {
+		blend_en = 0;
+		if (cur_dev->max_vd_layers == 3) {
+			r1 = READ_VCBUS_REG(VD3_BLEND_SRC_CTRL);
+			if (r1 & 0xfff)
+				blend_en = 1;
+			r2 = READ_VCBUS_REG(vd_layer[2].vd_afbc_reg.afbc_enable);
+			r3 = READ_VCBUS_REG(vd_layer[2].vd_mif_reg.vd_if0_gen_reg);
+			if (r2 == 0 && r3 == 0 && blend_en)
+				blend_conflict_cnt++;
+		}
+	} else {
+		return;
 	}
 }
 

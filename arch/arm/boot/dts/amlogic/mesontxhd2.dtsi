@@ -20,6 +20,8 @@
 #include <dt-bindings/thermal/thermal.h>
 #include <dt-bindings/hwspinlock/amlogic,hwspinlock.h>
 #include <dt-bindings/reset/amlogic,meson-txhd2-reset.h>
+#include "mesongxbb-gpu-mali450.dtsi"
+
 / {
 	cpus:cpus {
 		#address-cells = <1>;
@@ -363,6 +365,16 @@
 		compatible = "amlogic, meson, canvas";
 		status = "okay";
 		reg = <0xff638048 0x2000>;
+	};
+
+	ion_dev {
+		compatible = "amlogic, ion_dev";
+		memory-region = <&ion_cma_reserved>;
+	};
+
+	ion_fb {
+		compatible = "amlogic, ion_fb";
+		memory-region = <&ion_cma_reserved>;
 	};
 
 	codec_io: codec_io {
@@ -1081,3 +1093,22 @@
 	};
 };
 
+&gpu{
+	reg = <0xffe40000 0x40000>, /*mali APB bus base address*/
+	      <0xffd01000 0x01000>, /*reset register*/
+	      <0xfffb0000 0x01000>, /*aobus for gpu pmu domain*/
+	      <0xff646000 0x01000>, /*hiubus for gpu clk cntl*/
+	      <0xffd01000 0x01000>;
+	interrupts = <0 160 4>, <0 161 4>, <0 162 4>, <0 163 4>,
+		     <0 164 4>, <0 165 4>, <0 166 4>, <0 167 4>;
+	interrupt-names = "IRQGP", "IRQGPMMU", "IRQPP", "IRQPMU",
+			  "IRQPP0", "IRQPPMMU0", "IRQPP1", "IRQPPMMU1";
+	pmu_domain_config = <0x1 0x2 0x4 0x0 0x0 0x0 0x0 0x0 0x0 0x1 0x2 0x0>;
+	num_of_pp = <2> ;
+	sc_mpp = <2>;/* number of pp used most of time.*/
+	clocks = <&clkc CLKID_MALI>, <&clkc CLKID_GP0_PLL>;
+	clock-names = "gpu_mux", "gp0_pll";
+
+	tbl = <&clk125_cfg &clk285_cfg &clk400_cfg
+	       &clk500_cfg &clk666_cfg &clk750_cfg &clk750_cfg>;
+};

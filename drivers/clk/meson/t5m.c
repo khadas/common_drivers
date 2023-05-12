@@ -36,6 +36,7 @@ static const struct pll_params_table t5m_sys_pll_params_table[] = {
 	PLL_PARAMS(67, 1, 0),  /*DCO=1608M OD=DCO/1=1608M*/
 	PLL_PARAMS(71, 1, 0),  /*DCO=1704M OD=DCO/1=1704M*/
 	PLL_PARAMS(75, 1, 0),  /*DCO=1800M OD=DCO/1=1800M*/
+	PLL_PARAMS(159, 2, 0),  /*DCO=1908M OD=DCO/1=1908M*/
 	PLL_PARAMS(80, 1, 0),  /*DCO=1920M OD=DCO/1=1920M*/
 	PLL_PARAMS(84, 1, 0),  /*DCO=2016M OD=DCO/1=2016M*/
 	{ /* sentinel */ }
@@ -56,6 +57,7 @@ static const struct pll_params_table t5m_sys_pll_params_table[] = {
 	PLL_PARAMS(67, 1),  /*DCO=1608M OD=DCO/1=1608M*/
 	PLL_PARAMS(71, 1),  /*DCO=1704M OD=DCO/1=1704M*/
 	PLL_PARAMS(75, 1),  /*DCO=1800M OD=DCO/1=1800M*/
+	PLL_PARAMS(159, 2),  /*DCO=1908M OD=DCO/1=1908M*/
 	PLL_PARAMS(80, 1),  /*DCO=1920M OD=DCO/1=1920M*/
 	PLL_PARAMS(84, 1),  /*DCO=2016M OD=DCO/1=2016M*/
 	{ /* sentinel */ }

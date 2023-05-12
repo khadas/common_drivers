@@ -144,3 +144,10 @@ $(TXHD2_AO_MODULE_NAME)-y += txhd2-aoclk.o
 PR_FMT_AO_TXHD2 = $(subst amlogic-,,$(TXHD2_AO_MODULE_NAME))
 PR_FMT_DEFINE_AO_TXHD2="-Dpr_fmt(fmt)= \"[$(PR_FMT_AO_TXHD2)]: \" fmt"
 CFLAGS_txhd2-aoclk.o += $(PR_FMT_DEFINE_AO_TXHD2)
+
+C1_MODULE_NAME = amlogic-clk-soc-c1
+obj-$(CONFIG_AMLOGIC_COMMON_CLK_C1) += $(C1_MODULE_NAME).o
+$(C1_MODULE_NAME)-y += c1.o
+PR_FMT_C1 = $(subst amlogic-,,$(C1_MODULE_NAME))
+PR_FMT_DEFINE_C1="-Dpr_fmt(fmt)= \"[$(PR_FMT_C1)]: \" fmt"
+CFLAGS_c1.o += $(PR_FMT_DEFINE_C1)

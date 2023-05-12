@@ -1,0 +1,448 @@
+From b38fcd1b330a27354ae87ecbcfb1350e85ae2563 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Thu, 24 Feb 2022 19:30:46 +0800
+Subject: [PATCH 05/11] mm: add memory extend support. [2/2]
+
+PD#SWPL-73189
+
+problem:
+add memory extend support.
+
+Solution:
+mm: reduce dcache and inode hash size. [1/1]
+dma-buf: dma-buf system heap report warning. [1/1]
+gki: delete vendor modifications to meet gki requirements. [1/1]
+mm: add AMLOGIC_MEMORY_STAT config. [1/2]
+mm: print more information for slabinfo. [1/1]
+mm: add code to count free pages on migrate list [1/1]
+mm: fixed tvp alloc failed. [1/1]
+reserved_memory: change print of all reserved memory. [1/1]
+dma-buf: dma-buf system heap report error [1/1]
+mm: reduce cache line size to 64 bytes to save memory [1/1]
+mm: forward memory reclaim process [2/2]
+
+Verify:
+local.
+
+Change-Id: I5a67b958824bc85c75fba2c9a5e726ffe4555343
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ arch/arm64/include/asm/cache.h      |  4 ++
+ drivers/dma-buf/heaps/system_heap.c |  8 ++++
+ drivers/of/fdt.c                    | 10 +++++
+ drivers/of/of_reserved_mem.c        | 10 +++++
+ fs/dcache.c                         |  4 ++
+ fs/inode.c                          |  4 ++
+ include/linux/mmzone.h              | 11 +++++
+ kernel/dma/contiguous.c             |  4 ++
+ mm/page_alloc.c                     | 68 +++++++++++++++++++++++++++++
+ mm/slab_common.c                    | 25 +++++++++++
+ mm/vmscan.c                         |  2 +
+ 11 files changed, 150 insertions(+)
+
+diff --git a/arch/arm64/include/asm/cache.h b/arch/arm64/include/asm/cache.h
+index b61289b98309..374ee4c5dc60 100644
+--- a/arch/arm64/include/asm/cache.h
++++ b/arch/arm64/include/asm/cache.h
+@@ -23,7 +23,11 @@
+  * cache before the transfer is done, causing old data to be seen by
+  * the CPU.
+  */
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
++#else
+ #define ARCH_DMA_MINALIGN	(64)
++#endif
+ 
+ #ifdef CONFIG_KASAN_SW_TAGS
+ #define ARCH_SLAB_MINALIGN	(1ULL << KASAN_SHADOW_SCALE_SHIFT)
+diff --git a/drivers/dma-buf/heaps/system_heap.c b/drivers/dma-buf/heaps/system_heap.c
+index b7e78e497493..538b31663179 100644
+--- a/drivers/dma-buf/heaps/system_heap.c
++++ b/drivers/dma-buf/heaps/system_heap.c
+@@ -52,6 +52,13 @@ struct dma_heap_attachment {
+ #define HIGH_ORDER_GFP  (((GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN \
+ 				| __GFP_NORETRY) & ~__GFP_RECLAIM) \
+ 				| __GFP_COMP)
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++#define LOW_ORDER_GFP_NO_WARN (GFP_HIGHUSER | __GFP_ZERO | __GFP_COMP | __GFP_NOWARN)
++static gfp_t order_flags[] = {HIGH_ORDER_GFP,
++				LOW_ORDER_GFP_NO_WARN, LOW_ORDER_GFP_NO_WARN,
++				LOW_ORDER_GFP, LOW_ORDER_GFP};
++static const unsigned int orders[] = {8, 6, 4, 2, 0};
++#else
+ static gfp_t order_flags[] = {HIGH_ORDER_GFP, MID_ORDER_GFP, LOW_ORDER_GFP};
+ /*
+  * The selection of the orders used for allocation (1MB, 64K, 4K) is designed
+@@ -60,6 +67,7 @@ static gfp_t order_flags[] = {HIGH_ORDER_GFP, MID_ORDER_GFP, LOW_ORDER_GFP};
+  * by reducing TLB pressure and time spent updating page tables.
+  */
+ static const unsigned int orders[] = {8, 4, 0};
++#endif
+ #define NUM_ORDERS ARRAY_SIZE(orders)
+ struct dmabuf_page_pool *pools[NUM_ORDERS];
+ 
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 8d9f6f0771cf..28895dd1b282 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -6,7 +6,9 @@
+  * benh@kernel.crashing.org
+  */
+ 
++#ifndef CONFIG_AMLOGIC_MEMORY_EXTEND /* save print time */
+ #define pr_fmt(fmt)	"OF: fdt: " fmt
++#endif
+ 
+ #include <linux/crash_dump.h>
+ #include <linux/crc32.h>
+@@ -525,8 +527,16 @@ static int __init __reserved_mem_reserve_reg(unsigned long node,
+ 
+ 		if (size &&
+ 		    early_init_dt_reserve_memory_arch(base, size, nomap) == 0)
++		#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++			pr_emerg("\t%08lx - %08lx, %8ld KB, %s\n",
++				 (unsigned long)base,
++				 (unsigned long)(base + size),
++				 (unsigned long)(size >> 10),
++				 uname);
++		#else
+ 			pr_debug("Reserved memory: reserved region for node '%s': base %pa, size %lu MiB\n",
+ 				uname, &base, (unsigned long)(size / SZ_1M));
++		#endif
+ 		else
+ 			pr_info("Reserved memory: failed to reserve memory for node '%s': base %pa, size %lu MiB\n",
+ 				uname, &base, (unsigned long)(size / SZ_1M));
+diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
+index 22c186cc0af8..f8a5b62b47a8 100644
+--- a/drivers/of/of_reserved_mem.c
++++ b/drivers/of/of_reserved_mem.c
+@@ -9,7 +9,9 @@
+  * Author: Josh Cartwright <joshc@codeaurora.org>
+  */
+ 
++#ifndef CONFIG_AMLOGIC_MEMORY_EXTEND /* save print time */
+ #define pr_fmt(fmt)	"OF: reserved mem: " fmt
++#endif
+ 
+ #include <linux/err.h>
+ #include <linux/of.h>
+@@ -191,8 +193,16 @@ static int __init __reserved_mem_init_node(struct reserved_mem *rmem)
+ 
+ 		ret = initfn(rmem);
+ 		if (ret == 0) {
++		#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++			pr_emerg("\t%08lx - %08lx, %8ld KB, %s\n",
++				 (unsigned long)rmem->base,
++				 (unsigned long)(rmem->base + rmem->size),
++				 (unsigned long)(rmem->size >> 10),
++				 rmem->name);
++		#else
+ 			pr_info("initialized node %s, compatible id %s\n",
+ 				rmem->name, compat);
++		#endif
+ 			break;
+ 		}
+ 	}
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 2225920518ba..f64805f194d0 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -3183,7 +3183,11 @@ void d_tmpfile(struct dentry *dentry, struct inode *inode)
+ }
+ EXPORT_SYMBOL(d_tmpfile);
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++static unsigned long dhash_entries __initdata = 65536;
++#else
+ static __initdata unsigned long dhash_entries;
++#endif
+ static int __init set_dhash_entries(char *str)
+ {
+ 	if (!str)
+diff --git a/fs/inode.c b/fs/inode.c
+index f53c8036f44a..9f0fddec5624 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -2035,7 +2035,11 @@ static void __wait_on_freeing_inode(struct inode *inode)
+ 	spin_lock(&inode_hash_lock);
+ }
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++static unsigned long ihash_entries __initdata = 32768;
++#else
+ static __initdata unsigned long ihash_entries;
++#endif
+ static int __init set_ihash_entries(char *str)
+ {
+ 	if (!str)
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index f297b7adf218..00043460669d 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -107,8 +107,19 @@ extern int page_group_by_mobility_disabled;
+ struct free_area {
+ 	struct list_head	free_list[MIGRATE_TYPES];
+ 	unsigned long		nr_free;
++#ifdef CONFIG_AMLOGIC_MEMORY_STAT
++	unsigned long           free_mt[MIGRATE_TYPES];
++#endif
+ };
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_STAT
++void count_free_migrate(struct free_area *area, struct page *page,
++			struct list_head *list, int op);
++#define FREE_LIST_ADD	0
++#define FREE_LIST_RM	1
++#define FREE_LIST_MOVE	2
++#endif
++
+ static inline struct page *get_page_from_free_area(struct free_area *area,
+ 					    int migratetype)
+ {
+diff --git a/kernel/dma/contiguous.c b/kernel/dma/contiguous.c
+index da70a24d1b7a..349996aa9f13 100644
+--- a/kernel/dma/contiguous.c
++++ b/kernel/dma/contiguous.c
+@@ -426,7 +426,9 @@ static int __init rmem_cma_setup(struct reserved_mem *rmem)
+ 
+ 	err = cma_init_reserved_mem(rmem->base, rmem->size, 0, rmem->name, &cma);
+ 	if (err) {
++	#ifndef CONFIG_AMLOGIC_CMA
+ 		pr_err("Reserved memory: unable to setup CMA region\n");
++	#endif
+ 		return err;
+ 	}
+ 	/* Architecture specific contiguous memory fixup. */
+@@ -438,8 +440,10 @@ static int __init rmem_cma_setup(struct reserved_mem *rmem)
+ 	rmem->ops = &rmem_cma_ops;
+ 	rmem->priv = cma;
+ 
++#ifndef CONFIG_AMLOGIC_CMA
+ 	pr_info("Reserved memory: created CMA memory pool at %pa, size %ld MiB\n",
+ 		&rmem->base, (unsigned long)rmem->size / SZ_1M);
++#endif
+ 
+ 	return 0;
+ }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 18ab492b83a2..eab66b481a57 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -87,6 +87,9 @@
+ #ifdef CONFIG_AMLOGIC_CMA
+ #include <linux/amlogic/aml_cma.h>
+ #endif
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++#include <linux/amlogic/memory.h>
++#endif
+ 
+ /* Free Page Internal flags: for internal, non-pcp variants of free_pages(). */
+ typedef int __bitwise fpi_t;
+@@ -980,6 +983,10 @@ static inline void add_to_free_list(struct page *page, struct zone *zone,
+ 
+ 	list_add(&page->lru, &area->free_list[migratetype]);
+ 	area->nr_free++;
++#ifdef CONFIG_AMLOGIC_MEMORY_STAT
++	count_free_migrate(area, page,
++		&area->free_list[migratetype], FREE_LIST_ADD);
++#endif
+ }
+ 
+ /* Used for pages not on another list */
+@@ -990,6 +997,10 @@ static inline void add_to_free_list_tail(struct page *page, struct zone *zone,
+ 
+ 	list_add_tail(&page->lru, &area->free_list[migratetype]);
+ 	area->nr_free++;
++#ifdef CONFIG_AMLOGIC_MEMORY_STAT
++	count_free_migrate(area, page,
++		&area->free_list[migratetype], FREE_LIST_ADD);
++#endif
+ }
+ 
+ /*
+@@ -1003,6 +1014,10 @@ static inline void move_to_free_list(struct page *page, struct zone *zone,
+ 	struct free_area *area = &zone->free_area[order];
+ 
+ 	list_move_tail(&page->lru, &area->free_list[migratetype]);
++#ifdef CONFIG_AMLOGIC_MEMORY_STAT
++	count_free_migrate(area, page,
++		&area->free_list[migratetype], FREE_LIST_MOVE);
++#endif
+ }
+ 
+ static inline void del_page_from_free_list(struct page *page, struct zone *zone,
+@@ -1016,6 +1031,9 @@ static inline void del_page_from_free_list(struct page *page, struct zone *zone,
+ 	__ClearPageBuddy(page);
+ 	set_page_private(page, 0);
+ 	zone->free_area[order].nr_free--;
++#ifdef CONFIG_AMLOGIC_MEMORY_STAT
++	count_free_migrate(&zone->free_area[order], page, NULL, FREE_LIST_RM);
++#endif
+ }
+ 
+ /*
+@@ -5680,6 +5698,9 @@ struct page *__alloc_pages(gfp_t gfp, unsigned int order, int preferred_nid,
+ 	 */
+ 	alloc_flags |= alloc_flags_nofragment(ac.preferred_zoneref->zone, gfp);
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	should_wakeup_kswap(gfp, order, &ac);
++#endif
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(alloc_gfp, order, alloc_flags, &ac);
+ 	if (likely(page))
+@@ -6359,6 +6380,9 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+ 		unsigned int order;
+ 		unsigned long nr[MAX_ORDER], flags, total = 0;
+ 		unsigned char types[MAX_ORDER];
++	#ifdef CONFIG_AMLOGIC_MEMORY_STAT
++		unsigned long free_mt[MIGRATE_TYPES] = {0};
++	#endif
+ 
+ 		if (show_mem_node_skip(filter, zone_to_nid(zone), nodemask))
+ 			continue;
+@@ -6375,6 +6399,9 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+ 
+ 			types[order] = 0;
+ 			for (type = 0; type < MIGRATE_TYPES; type++) {
++			#ifdef CONFIG_AMLOGIC_MEMORY_STAT
++				free_mt[type] += (area->free_mt[type] << order);
++			#endif
+ 				if (!free_area_empty(area, type))
+ 					types[order] |= 1 << type;
+ 			}
+@@ -6387,6 +6414,12 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+ 				show_migration_types(types[order]);
+ 		}
+ 		printk(KERN_CONT "= %lukB\n", K(total));
++	#ifdef CONFIG_AMLOGIC_MEMORY_STAT
++		for (order = 0; order < MIGRATE_TYPES; order++) {
++			pr_info("Free_%s:%ld\n", migratetype_names[order],
++					free_mt[order]);
++		}
++	#endif
+ 	}
+ 
+ 	hugetlb_show_meminfo();
+@@ -9831,6 +9864,41 @@ bool take_page_off_buddy(struct page *page)
+ }
+ #endif
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_STAT
++void count_free_migrate(struct free_area *area, struct page *page,
++			struct list_head *list, int op)
++{
++	int page_mt = -1;
++	int list_mt = -1;
++
++	page_mt = get_pcppage_migratetype(page);
++	if (list)
++		list_mt = ((void *)list - (void *)area) / (sizeof(*list));
++
++	switch (op) {
++	case FREE_LIST_ADD:
++		WARN_ON(list_mt == -1);
++		set_pcppage_migratetype(page, list_mt);
++		area->free_mt[list_mt]++;
++		break;
++
++	case FREE_LIST_MOVE:
++		WARN_ON(list_mt == -1);
++		set_pcppage_migratetype(page, list_mt);
++		area->free_mt[list_mt]++;
++		area->free_mt[page_mt]--;
++		break;
++
++	case FREE_LIST_RM:
++		area->free_mt[page_mt]--;
++		break;
++
++	default:
++		break;
++	}
++}
++#endif /* CONFIG_AMLOGIC_MEMORY_STAT */
++
+ #ifdef CONFIG_ZONE_DMA
+ bool has_managed_dma(void)
+ {
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 8cf667b3065e..f578c80c3666 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -1052,12 +1052,21 @@ static void print_slabinfo_header(struct seq_file *m)
+ #else
+ 	seq_puts(m, "slabinfo - version: 2.1\n");
+ #endif
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	/* add total bytes for each slab */
++	seq_puts(m, "# name                        <active_objs> <num_objs> ");
++	seq_puts(m, "<objsize> <objperslab> <pagesperslab>");
++#else
+ 	seq_puts(m, "# name            <active_objs> <num_objs> <objsize> <objperslab> <pagesperslab>");
++#endif /* CONFIG_AMLOGIC_MEMORY_EXTEND */
+ 	seq_puts(m, " : tunables <limit> <batchcount> <sharedfactor>");
+ 	seq_puts(m, " : slabdata <active_slabs> <num_slabs> <sharedavail>");
+ #ifdef CONFIG_DEBUG_SLAB
+ 	seq_puts(m, " : globalstat <listallocs> <maxobjs> <grown> <reaped> <error> <maxfreeable> <nodeallocs> <remotefrees> <alienoverflow>");
+ 	seq_puts(m, " : cpustat <allochit> <allocmiss> <freehit> <freemiss>");
++#endif
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	seq_puts(m, " : <total bytes> <reclaim>");
+ #endif
+ 	trace_android_vh_print_slabinfo_header(m);
+ 	seq_putc(m, '\n');
+@@ -1082,18 +1091,34 @@ void slab_stop(struct seq_file *m, void *p)
+ static void cache_show(struct kmem_cache *s, struct seq_file *m)
+ {
+ 	struct slabinfo sinfo;
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	char name[32];
++	long total;
++#endif
+ 
+ 	memset(&sinfo, 0, sizeof(sinfo));
+ 	get_slabinfo(s, &sinfo);
+ 
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	strncpy(name, s->name, 31);
++	seq_printf(m, "%-31s %6lu %6lu %6u %4u %4d",
++		   name, sinfo.active_objs, sinfo.num_objs, s->size,
++		   sinfo.objects_per_slab, (1 << sinfo.cache_order));
++#else
+ 	seq_printf(m, "%-17s %6lu %6lu %6u %4u %4d",
+ 		   s->name, sinfo.active_objs, sinfo.num_objs, s->size,
+ 		   sinfo.objects_per_slab, (1 << sinfo.cache_order));
++#endif /* CONFIG_AMLOGIC_MEMORY_EXTEND */
+ 
+ 	seq_printf(m, " : tunables %4u %4u %4u",
+ 		   sinfo.limit, sinfo.batchcount, sinfo.shared);
+ 	seq_printf(m, " : slabdata %6lu %6lu %6lu",
+ 		   sinfo.active_slabs, sinfo.num_slabs, sinfo.shared_avail);
++#ifdef CONFIG_AMLOGIC_MEMORY_EXTEND
++	total = sinfo.num_objs * s->size;
++	seq_printf(m, "%8lu, %s", total,
++		   (s->flags & SLAB_RECLAIM_ACCOUNT) ? "S_R" : "S_U");
++#endif
+ 	slabinfo_show_stats(m, s);
+ 	trace_android_vh_cache_show(m, &sinfo, s);
+ 	seq_putc(m, '\n');
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 95c05350d1de..3f9d4e569050 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2133,8 +2133,10 @@ static int too_many_isolated(struct pglist_data *pgdat, int file,
+ 	 * won't get blocked by normal direct-reclaimers, forming a circular
+ 	 * deadlock.
+ 	 */
++#ifndef CONFIG_AMLOGIC_MEMORY_EXTEND
+ 	if ((sc->gfp_mask & (__GFP_IO | __GFP_FS)) == (__GFP_IO | __GFP_FS))
+ 		inactive >>= 3;
++#endif
+ 
+ #ifdef CONFIG_AMLOGIC_CMA
+ 	check_cma_isolated(&isolated, inactive, inactive);
+-- 
+2.25.1
+

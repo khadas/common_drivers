@@ -1,23 +1,27 @@
-From aa6c4cd581a50e5a8343d67545e072319a5c6f77 Mon Sep 17 00:00:00 2001
+From 6ba130113168d844d16705dc55caa1f65948d1ec Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
-Date: Tue, 14 Mar 2023 08:35:42 +0000
-Subject: [PATCH] mm: enable vmap stack on 32bit arch. [1/1]
+Date: Thu, 8 Sep 2022 19:38:49 +0800
+Subject: [PATCH 08/11] mm: fix crash in auto-reboot after open vmap stack
+ [1/1]
 
-PD#SWPL-112184
+PD#SWPL-92714
 
 Problem:
-vmap stack is not enabled on 32bit arm arch.
+llmv can't guarantee frame pointer register is saved in leaf function
+calls. But x29 is dedicated used by vmap stack function. This caused
+stack mistake and system hung.
 
 Solution:
-Enabled it.
+Add -mno-omit-leaf-frame-pointer to force x29 used as dedicated frame
+pointer
 
 Verify:
-local.
+t5d am301
 
-Change-Id: I74f47c30719f42dbdaf79356569259d9def2cd63
+Change-Id: I688d61894bdbaaf8f968d1b7689f533d3d62cb88
 Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
 ---
- Makefile                           |   2 +
+ Makefile                           |   7 ++
  arch/arm/include/asm/assembler.h   |   4 +
  arch/arm/include/asm/memory.h      |  15 ++-
  arch/arm/include/asm/ptrace.h      |   7 ++
@@ -38,13 +42,13 @@ Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
  lib/Kconfig.debug                  |   1 +
  mm/kmemleak.c                      |  25 +++++
  mm/vmalloc.c                       |   7 ++
- 21 files changed, 376 insertions(+), 1 deletion(-)
+ 21 files changed, 381 insertions(+), 1 deletion(-)
 
 diff --git a/Makefile b/Makefile
-index f75dd9ba2b0c..b00deb0ebabf 100644
+index 7ecb05e9cbfd..304bebd22ec8 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -812,9 +812,11 @@ ifneq ($(CONFIG_FRAME_WARN),0)
+@@ -819,9 +819,11 @@ ifneq ($(CONFIG_FRAME_WARN),0)
  KBUILD_CFLAGS += -Wframe-larger-than=$(CONFIG_FRAME_WARN)
  endif
  
@@ -56,6 +60,18 @@ index f75dd9ba2b0c..b00deb0ebabf 100644
  
  KBUILD_CFLAGS += $(stackp-flags-y)
  
+@@ -856,6 +858,11 @@ KBUILD_CFLAGS += $(call cc-disable-warning, dangling-pointer)
+ 
+ ifdef CONFIG_FRAME_POINTER
+ KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
++ifdef CONFIG_AMLOGIC_VMAP
++ifdef CONFIG_ARM64
++KBUILD_CFLAGS	+= -mno-omit-leaf-frame-pointer
++endif
++endif
+ else
+ # Some targets (ARM with Thumb2, for example), can't be built with frame
+ # pointers.  For those, we don't have FUNCTION_TRACER automatically
 diff --git a/arch/arm/include/asm/assembler.h b/arch/arm/include/asm/assembler.h
 index 09c241280ed9..f61a8a5ed8b4 100644
 --- a/arch/arm/include/asm/assembler.h
@@ -754,7 +770,7 @@ index 1d8c46f42f2c..e2bccc9e2981 100644
  
  #endif /* _LINUX_VMALLOC_H */
 diff --git a/kernel/fork.c b/kernel/fork.c
-index 659dc5f5d00f..1114a618eb40 100644
+index abc1fd6c19c4..a6b881efb1df 100644
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
 @@ -106,6 +106,10 @@
@@ -831,7 +847,7 @@ index 659dc5f5d00f..1114a618eb40 100644
  
  static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index c0a0ec4dc067..98f84b5b844d 100644
+index c12795f10ec3..7d27c00c2835 100644
 --- a/lib/Kconfig.debug
 +++ b/lib/Kconfig.debug
 @@ -788,6 +788,7 @@ config DEBUG_KMEMLEAK_AUTO_SCAN
@@ -894,7 +910,7 @@ index acd7cbb82e16..1f98728d61de 100644
  			}
  		}
 diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 8d7fb80b50cf..4d385ddfacc9 100644
+index 1e508f34d6c1..239ddbdd8548 100644
 --- a/mm/vmalloc.c
 +++ b/mm/vmalloc.c
 @@ -2412,10 +2412,17 @@ static void clear_vm_uninitialized_flag(struct vm_struct *vm)

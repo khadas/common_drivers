@@ -1,7 +1,7 @@
-From 951b506fc84737225fa586f680a8119f15d5f8c1 Mon Sep 17 00:00:00 2001
+From 97fa9289c7ceb6f50d6b69f537a603215b71be30 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Mon, 10 Oct 2022 21:00:09 +0800
-Subject: [PATCH] mm: disable FAULT_FLAG_SPECULATIVE. [1/2]
+Subject: [PATCH 09/11] mm: disable FAULT_FLAG_SPECULATIVE. [1/2]
 
 PD#SWPL-94445
 

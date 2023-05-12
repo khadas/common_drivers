@@ -1,7 +1,7 @@
-From 68bb9b0ace271a4e2134a773365a283aa77670fc Mon Sep 17 00:00:00 2001
+From 7303acf822dc6fc26e8fc40567ac05877b07dab7 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Thu, 22 Sep 2022 17:25:35 +0800
-Subject: [PATCH 63/95] mm: pin locked file after fault. [1/2]
+Subject: [PATCH 10/11] mm: pin locked file after fault. [1/2]
 
 PD#SWPL-95400
 
@@ -22,16 +22,16 @@ sc2_ah212
 Change-Id: I05bb7654cc228604fe692429efbe40af713ca5c3
 Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
 ---
- mm/gup.c     | 19 +++++++++++++++++
- mm/memory.c  | 59 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/migrate.c |  7 +++++++
- mm/mlock.c   |  6 ++++++
- mm/rmap.c    | 17 ++++++++++++++-
- mm/vmscan.c  | 10 +++++++++
- 6 files changed, 117 insertions(+), 1 deletion(-)
+ mm/gup.c     | 19 +++++++++++++
+ mm/memory.c  | 76 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/migrate.c |  7 +++++
+ mm/mlock.c   | 10 +++++++
+ mm/rmap.c    | 17 +++++++++++-
+ mm/vmscan.c  | 10 +++++++
+ 6 files changed, 138 insertions(+), 1 deletion(-)
 
 diff --git a/mm/gup.c b/mm/gup.c
-index b2094b55a6f0..38bfa2d48dc3 100644
+index f8263f945838..4ba357c8a0f4 100644
 --- a/mm/gup.c
 +++ b/mm/gup.c
 @@ -21,6 +21,9 @@
@@ -75,20 +75,23 @@ index b2094b55a6f0..38bfa2d48dc3 100644
  	}
  out:
 diff --git a/mm/memory.c b/mm/memory.c
-index 26ee674bb896..96dd89563f55 100644
+index 5148c66d91c3..86a3b2dfdc4d 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -83,6 +83,9 @@
+@@ -84,6 +84,12 @@
  #include <linux/uaccess.h>
  #include <asm/tlb.h>
  #include <asm/tlbflush.h>
 +#ifdef CONFIG_AMLOGIC_PIN_LOCKED_FILE
 +#include <linux/amlogic/pin_file.h>
 +#endif
++#ifdef CONFIG_AMLOGIC_MEM_DEBUG
++#include <linux/amlogic/mem_debug.h>
++#endif
  
  #include "pgalloc-track.h"
  #include "internal.h"
-@@ -4842,6 +4845,48 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
+@@ -4886,6 +4892,48 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
  	return 0;
  }
  
@@ -137,7 +140,7 @@ index 26ee674bb896..96dd89563f55 100644
  /*
   * By the time we get here, we already hold the mm semaphore
   *
-@@ -4857,6 +4902,9 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
+@@ -4901,6 +4949,9 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
  		.flags = flags,
  		.pgoff = linear_page_index(vma, address),
  		.gfp_mask = __get_fault_gfp_mask(vma),
@@ -147,7 +150,22 @@ index 26ee674bb896..96dd89563f55 100644
  	};
  	unsigned int dirty = flags & FAULT_FLAG_WRITE;
  	struct mm_struct *mm = vma->vm_mm;
-@@ -5079,6 +5127,17 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
+@@ -4998,7 +5049,14 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
+ 
+ 		speculative_page_walk_end();
+ 
++#ifdef CONFIG_AMLOGIC_MEM_DEBUG
++		ret = handle_pte_fault(&vmf);
++		if (!ret && vma->vm_flags & VM_LOCKED)
++			mlock_fault_size++;
++		return ret;
++#else
+ 		return handle_pte_fault(&vmf);
++#endif
+ 
+ 	spf_fail:
+ 		speculative_page_walk_end();
+@@ -5123,7 +5181,25 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
  		}
  	}
  
@@ -162,11 +180,19 @@ index 26ee674bb896..96dd89563f55 100644
 +	}
 +	return ret;
 +#endif
++#ifdef CONFIG_AMLOGIC_MEM_DEBUG
++	ret = handle_pte_fault(&vmf);
++	if (!ret && vma->vm_flags & VM_LOCKED)
++		mlock_fault_size++;
++	return ret;
++#else
  	return handle_pte_fault(&vmf);
++#endif
  }
  
+ /**
 diff --git a/mm/migrate.c b/mm/migrate.c
-index fac40524ae0f..b51037af39af 100644
+index 804686ccb64c..664c84f64d00 100644
 --- a/mm/migrate.c
 +++ b/mm/migrate.c
 @@ -54,6 +54,9 @@
@@ -191,7 +217,7 @@ index fac40524ae0f..b51037af39af 100644
  	return rc;
  }
 diff --git a/mm/mlock.c b/mm/mlock.c
-index 0cc7fe053755..7ff77190e4f9 100644
+index 0cc7fe053755..1bd2a1f8dc19 100644
 --- a/mm/mlock.c
 +++ b/mm/mlock.c
 @@ -24,6 +24,9 @@
@@ -204,7 +230,23 @@ index 0cc7fe053755..7ff77190e4f9 100644
  
  #include "internal.h"
  
-@@ -587,6 +590,9 @@ static int apply_vma_lock_flags(unsigned long start, size_t len,
+@@ -192,6 +195,7 @@ unsigned int munlock_vma_page(struct page *page)
+ /*
+  * convert get_user_pages() return value to posix mlock() error
+  */
++#ifndef CONFIG_AMLOGIC_PIN_LOCKED_FILE_V2
+ static int __mlock_posix_error_return(long retval)
+ {
+ 	if (retval == -EFAULT)
+@@ -200,6 +204,7 @@ static int __mlock_posix_error_return(long retval)
+ 		retval = -EAGAIN;
+ 	return retval;
+ }
++#endif
+ 
+ /*
+  * Prepare page for fast batched LRU putback via putback_lru_evictable_pagevec()
+@@ -587,6 +592,9 @@ static int apply_vma_lock_flags(unsigned long start, size_t len,
  		tmp = vma->vm_end;
  		if (tmp > end)
  			tmp = end;
@@ -214,8 +256,20 @@ index 0cc7fe053755..7ff77190e4f9 100644
  		error = mlock_fixup(vma, &prev, nstart, tmp, newflags);
  		if (error)
  			break;
+@@ -685,9 +693,11 @@ static __must_check int do_mlock(unsigned long start, size_t len, vm_flags_t fla
+ 	if (error)
+ 		return error;
+ 
++#ifndef CONFIG_AMLOGIC_PIN_LOCKED_FILE_V2
+ 	error = __mm_populate(start, len, 0);
+ 	if (error)
+ 		return __mlock_posix_error_return(error);
++#endif
+ 	return 0;
+ }
+ 
 diff --git a/mm/rmap.c b/mm/rmap.c
-index 83b1af012b5c..0e1f54c2b941 100644
+index 761b7f26adc9..e2e606453f06 100644
 --- a/mm/rmap.c
 +++ b/mm/rmap.c
 @@ -80,6 +80,9 @@
@@ -228,7 +282,7 @@ index 83b1af012b5c..0e1f54c2b941 100644
  
  #include "internal.h"
  
-@@ -1477,8 +1480,14 @@ static bool try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+@@ -1471,8 +1474,14 @@ static bool try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
  			 * cleared).  But stop unmapping even in those cases.
  			 */
  			if (!PageTransCompound(page) || (PageHead(page) &&
@@ -244,7 +298,7 @@ index 83b1af012b5c..0e1f54c2b941 100644
  			page_vma_mapped_walk_done(&pvmw);
  			ret = false;
  			break;
-@@ -2042,7 +2051,13 @@ static bool page_mlock_one(struct page *page, struct vm_area_struct *vma,
+@@ -2036,7 +2045,13 @@ static bool page_mlock_one(struct page *page, struct vm_area_struct *vma,
  			 * nor on an Anon THP (which may still be PTE-mapped
  			 * after DoubleMap was cleared).
  			 */
@@ -259,10 +313,10 @@ index 83b1af012b5c..0e1f54c2b941 100644
  			 * No need to scan further once the page is marked
  			 * as mlocked.
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index ef2e66a25416..266b6550bdd7 100644
+index 3f9d4e569050..bdd00fbb7f95 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -75,6 +75,9 @@
+@@ -77,6 +77,9 @@
  #ifdef CONFIG_AMLOGIC_CMA
  #include <linux/amlogic/aml_cma.h>
  #endif
@@ -272,7 +326,7 @@ index ef2e66a25416..266b6550bdd7 100644
  
  EXPORT_TRACEPOINT_SYMBOL_GPL(mm_vmscan_direct_reclaim_begin);
  EXPORT_TRACEPOINT_SYMBOL_GPL(mm_vmscan_direct_reclaim_end);
-@@ -1650,6 +1653,13 @@ static unsigned int shrink_page_list(struct list_head *page_list,
+@@ -1656,6 +1659,13 @@ static unsigned int shrink_page_list(struct list_head *page_list,
  			enum ttu_flags flags = TTU_BATCH_FLUSH;
  			bool was_swapbacked = PageSwapBacked(page);
  

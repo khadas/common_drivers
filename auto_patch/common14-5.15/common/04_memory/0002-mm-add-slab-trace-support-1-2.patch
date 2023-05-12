@@ -1,7 +1,7 @@
-From 78b909daaceb33567d80f187075a99c714d1c61d Mon Sep 17 00:00:00 2001
+From 174c501d7fa60a4d5fa8293a0bbb61b312eb9628 Mon Sep 17 00:00:00 2001
 From: Tao Zeng <tao.zeng@amlogic.com>
 Date: Sat, 22 Jan 2022 17:40:08 +0800
-Subject: [PATCH 04/95] mm: add slab trace support [1/2]
+Subject: [PATCH 02/11] mm: add slab trace support [1/2]
 
 PD#SWPL-70022
 

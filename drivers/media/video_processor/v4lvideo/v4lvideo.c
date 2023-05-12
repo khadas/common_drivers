@@ -1760,6 +1760,11 @@ static unsigned int v4lvideo_poll(struct file *file,
 	}
 }
 
+static int vidioc_mmap(struct file *file, struct vm_area_struct *vma)
+{
+	return 0;
+}
+
 static int vidioc_querycap(struct file *file,
 			   void *priv,
 			   struct v4l2_capability *cap)
@@ -1950,6 +1955,11 @@ static int vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer *p)
 	u32 flag;
 	struct v4lvideo_file_s *v4lvideo_file;
 	u32 inst_id = dev->inst;
+
+	if (p->index >= V4LVIDEO_POOL_SIZE) {
+		pr_err("ionvideo: dbuf: err index=%d\n", p->index);
+		return -EINVAL;
+	}
 
 	dev->v4lvideo_input[p->index] = *p;
 
@@ -2309,7 +2319,7 @@ static const struct v4l2_file_operations v4lvideo_v4l2_fops = {
 	.read = vidioc_read,
 	.poll = v4lvideo_poll,
 	.unlocked_ioctl = video_ioctl2,/* V4L2 ioctl handler */
-	.mmap = vb2_fop_mmap,
+	.mmap = vidioc_mmap,
 };
 
 static const struct v4l2_ioctl_ops v4lvideo_ioctl_ops = {

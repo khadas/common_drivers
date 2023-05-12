@@ -1020,9 +1020,10 @@ static void scaler_hw_disable(struct meson_vpu_block *vblk,
 {
 	struct meson_vpu_scaler *scaler = to_scaler_block(vblk);
 	struct osd_scaler_reg_s *reg = scaler->reg;
+	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
 
 	/*disable sc*/
-	meson_vpu_write_reg(reg->vpp_osd_sc_ctrl0, 0);
+	reg_ops->rdma_write_reg(reg->vpp_osd_sc_ctrl0, 0);
 	DRM_DEBUG("%s disable called.\n", scaler->base.name);
 }
 
@@ -1088,7 +1089,7 @@ static void scaler_hw_init(struct meson_vpu_block *vblk)
 	scaler->linebuffer = OSD_SCALE_LINEBUFFER;
 	scaler->bank_length = OSD_SCALE_BANK_LENGTH;
 
-	meson_vpu_write_reg(scaler->reg->vpp_osd_sc_ctrl0, 0);
+//	meson_vpu_write_reg(scaler->reg->vpp_osd_sc_ctrl0, 0);
 	DRM_DEBUG("%s hw_init called.\n", scaler->base.name);
 }
 

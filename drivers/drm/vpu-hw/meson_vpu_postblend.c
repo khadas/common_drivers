@@ -87,7 +87,7 @@ static struct postblend_reg_s s5_postblend_reg = {
 #endif
 
 static void fix_vpu_clk2_default_regs(struct meson_vpu_block *vblk,
-				      struct rdma_reg_ops *reg_ops);
+				struct rdma_reg_ops *reg_ops, int crtc_index, u32 *crtcmask_osd);
 static void postblend_osd2_def_conf(struct meson_vpu_block *vblk);
 
 /*vpp post&post blend for osd1 premult flag config as 0 default*/
@@ -343,9 +343,11 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 	struct meson_vpu_pipeline *pipeline = postblend->base.pipeline;
 	struct postblend_reg_s *reg = postblend->reg;
 	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
+	u32 *crtcmask_osd;
 
 	crtc_index = vblk->index;
 	amc = vblk->pipeline->priv->crtcs[crtc_index];
+	crtcmask_osd = amc->priv->of_conf.crtcmask_osd;
 
 	DRM_DEBUG("%s set_state called.\n", postblend->base.name);
 	mvps = priv_to_pipeline_state(pipeline->obj.state);
@@ -359,12 +361,13 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 #endif
 
 	if (!vblk->init_done) {
-		if (crtc_index == 0) {
-			fix_vpu_clk2_default_regs(vblk, reg_ops);
+		if (crtc_index == 0)
 			postblend_osd2_def_conf(vblk);
-		}
+
 		vblk->init_done = 1;
 	}
+
+	fix_vpu_clk2_default_regs(vblk, reg_ops, crtc_index, crtcmask_osd);
 
 	if (crtc_index == 0) {
 		vpp_osd1_blend_scope_set(vblk, reg_ops, reg, scope);
@@ -589,37 +592,48 @@ static void postblend_dump_register(struct meson_vpu_block *vblk,
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+/*based on crtc index select corresponding rdma handle write method*/
 static void fix_vpu_clk2_default_regs(struct meson_vpu_block *vblk,
-				      struct rdma_reg_ops *reg_ops)
+				 struct rdma_reg_ops *reg_ops, int crtc_index, u32 *crtcmask_osd)
 {
-	/* default: osd byp osd_blend */
-	reg_ops->rdma_write_reg_bits(VPP_OSD1_SCALE_CTRL, 0x2, 0, 3);
-	reg_ops->rdma_write_reg_bits(VPP_OSD2_SCALE_CTRL, 0x3, 0, 3);
-	reg_ops->rdma_write_reg_bits(VPP_OSD3_SCALE_CTRL, 0x7, 0, 3);
-	reg_ops->rdma_write_reg_bits(VPP_OSD4_SCALE_CTRL, 0x3, 0, 3);
+	int i;
 
-	/* default: osd byp dolby */
-	reg_ops->rdma_write_reg_bits(VPP_VD1_DSC_CTRL, 0x1, 4, 1);
-	reg_ops->rdma_write_reg_bits(VPP_VD2_DSC_CTRL, 0x1, 4, 1);
-	reg_ops->rdma_write_reg_bits(VPP_VD3_DSC_CTRL, 0x1, 4, 1);
-	reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0x1, 14, 1);
-	reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0x1, 19, 1);
-	reg_ops->rdma_write_reg_bits(MALI_AFBCD1_TOP_CTRL, 0x1, 19, 1);
-	reg_ops->rdma_write_reg_bits(MALI_AFBCD1_TOP_CTRL, 0x1, 19, 1);
+	if (crtc_index == 0) {
+		/* default: osd byp dolby */
+		reg_ops->rdma_write_reg_bits(VPP_VD1_DSC_CTRL, 0x1, 4, 1);
+		reg_ops->rdma_write_reg_bits(VPP_VD2_DSC_CTRL, 0x1, 4, 1);
+		reg_ops->rdma_write_reg_bits(VPP_VD3_DSC_CTRL, 0x1, 4, 1);
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0x1, 14, 1);
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0x1, 19, 1);
+		/* default: osd 12bit path */
+		reg_ops->rdma_write_reg_bits(VPP_VD1_DSC_CTRL, 0x0, 5, 1);
+		reg_ops->rdma_write_reg_bits(VPP_VD2_DSC_CTRL, 0x0, 5, 1);
+		reg_ops->rdma_write_reg_bits(VPP_VD3_DSC_CTRL, 0x0, 5, 1);
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0x0, 15, 1);
+		reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0x0, 20, 1);
+		/* OSD3  uses VPP1*/
+		osd_set_vpp_path_default(vblk, reg_ops, 3, 1);
+		/* OSD4  uses VPP2*/
+		osd_set_vpp_path_default(vblk, reg_ops, 4, 2);
+	}
 
-	/* default: osd 12bit path */
-	reg_ops->rdma_write_reg_bits(VPP_VD1_DSC_CTRL, 0x0, 5, 1);
-	reg_ops->rdma_write_reg_bits(VPP_VD2_DSC_CTRL, 0x0, 5, 1);
-	reg_ops->rdma_write_reg_bits(VPP_VD3_DSC_CTRL, 0x0, 5, 1);
-	reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0x0, 15, 1);
-	reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0x0, 20, 1);
-	reg_ops->rdma_write_reg_bits(MALI_AFBCD1_TOP_CTRL, 0x0, 20, 1);
-	reg_ops->rdma_write_reg_bits(MALI_AFBCD1_TOP_CTRL, 0x0, 20, 1);
-
-	/* OSD3  uses VPP1*/
-	osd_set_vpp_path_default(vblk, reg_ops, 3, 1);
-	/* OSD4  uses VPP2*/
-	osd_set_vpp_path_default(vblk, reg_ops, 4, 2);
+	for (i = 0; i < MESON_MAX_OSDS; i++) {
+		if (crtcmask_osd[i] == crtc_index) {
+			if (i == 0) {
+				reg_ops->rdma_write_reg_bits(VPP_OSD1_SCALE_CTRL, 0x2, 0, 3);
+			} else if (i == 1) {
+				reg_ops->rdma_write_reg_bits(VPP_OSD2_SCALE_CTRL, 0x3, 0, 3);
+			} else if (i == 2) {
+				reg_ops->rdma_write_reg_bits(VPP_OSD3_SCALE_CTRL, 0x7, 0, 3);
+				reg_ops->rdma_write_reg_bits(MALI_AFBCD1_TOP_CTRL, 0x1, 19, 1);
+				reg_ops->rdma_write_reg_bits(MALI_AFBCD1_TOP_CTRL, 0x0, 20, 1);
+			} else if (i == 3) {
+				reg_ops->rdma_write_reg_bits(VPP_OSD4_SCALE_CTRL, 0x3, 0, 3);
+				reg_ops->rdma_write_reg_bits(MALI_AFBCD2_TOP_CTRL, 0x1, 19, 1);
+				reg_ops->rdma_write_reg_bits(MALI_AFBCD2_TOP_CTRL, 0x0, 20, 1);
+			}
+		}
+	}
 }
 
 static void independ_path_default_regs(struct meson_vpu_block *vblk,

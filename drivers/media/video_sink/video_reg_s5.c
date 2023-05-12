@@ -871,6 +871,8 @@ struct vd2_proc_misc_reg_s vd2_proc_misc_reg_s5 = {
 	VD2_PILITE_CTRL,
 	VD2_PROC_OUT_SIZE,
 	VD2_DV_BYPASS_CTRL,
+	VD2_CLIP_MISC0,
+	VD2_CLIP_MISC1,
 };
 
 struct vpp_post_blend_reg_s vpp_post_blend_reg_s5 = {

@@ -1638,10 +1638,10 @@ static int lowlatency_vsync(u8 instance_id)
 			   sizeof(nn_scenes_value));
 	}
 exit:
-	vd_clip_setting(0, &vd_layer[0].clip_setting);
-	vd_clip_setting(1, &vd_layer[1].clip_setting);
+	vd_clip_setting(VPP0, 0, &vd_layer[0].clip_setting);
+	vd_clip_setting(VPP0, 1, &vd_layer[1].clip_setting);
 	if (cur_dev->max_vd_layers == 3)
-		vd_clip_setting(2, &vd_layer[2].clip_setting);
+		vd_clip_setting(VPP0, 2, &vd_layer[2].clip_setting);
 
 	vpp_blend_update(vinfo);
 

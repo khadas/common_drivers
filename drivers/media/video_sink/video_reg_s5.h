@@ -182,6 +182,8 @@ struct vd2_proc_misc_reg_s {
 	u32 vd2_pilite_ctrl;
 	u32 vd2_proc_out_size;
 	u32 vd2_dv_bypass_ctrl;
+	u32 vd2_clip_misc0;
+	u32 vd2_clip_misc1;
 };
 
 struct vpp_post_blend_reg_s {

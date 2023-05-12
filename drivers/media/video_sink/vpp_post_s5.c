@@ -1105,7 +1105,7 @@ int update_vpp_input_info(const struct vinfo_s *info)
 	return update;
 }
 
-void vpp_clip_setting_s5(u32 on, u32 color)
+void vpp_clip_setting_s5(u8 vpp_index, struct clip_setting_s *setting)
 {
 	u32 slice_num = 0;
 	struct vpp_post_misc_reg_s *vpp_misc_reg = &vpp_post_reg.vpp_post_misc_reg;
@@ -1114,24 +1114,17 @@ void vpp_clip_setting_s5(u32 on, u32 color)
 
 	info = get_current_vinfo();
 	slice_num = get_vpp_slice_num(info);
-	if (on) {
-		for (i = 0; i < slice_num; i++) {
-			wr_slice_vpost(vpp_misc_reg->vpp_clip_misc0,
-				color, i);
-			wr_slice_vpost(vpp_misc_reg->vpp_clip_misc1,
-				color, i);
-			wr_slice_vpost_vcbus(vpp_misc_reg->vpp_clip_misc0, color, i);
-			wr_slice_vpost_vcbus(vpp_misc_reg->vpp_clip_misc1, color, i);
-		}
-	} else {
-		for (i = 0; i < slice_num; i++) {
-			wr_slice_vpost(vpp_misc_reg->vpp_clip_misc0,
-				(0x3ff << 20) |
-				(0x3ff << 10) |
-				0x3ff, i);
-			wr_slice_vpost(vpp_misc_reg->vpp_clip_misc1,
-				(0x0 << 20) |
-				(0x0 << 10) | 0x0, i);
+	for (i = 0; i < slice_num; i++) {
+		wr_slice_vpost(vpp_misc_reg->vpp_clip_misc0,
+			setting->clip_max, i);
+		wr_slice_vpost(vpp_misc_reg->vpp_clip_misc1,
+			setting->clip_min, i);
+		if (!(setting->clip_max == 0x3fffffff &&
+			setting->clip_min == 0x0)) {
+			wr_slice_vpost_vcbus(vpp_misc_reg->vpp_clip_misc0,
+				setting->clip_max, i);
+			wr_slice_vpost_vcbus(vpp_misc_reg->vpp_clip_misc1,
+				setting->clip_min, i);
 		}
 	}
 }

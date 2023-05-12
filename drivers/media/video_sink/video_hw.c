@@ -4907,6 +4907,7 @@ static void vdx_clip_setting(u8 layer_id, struct clip_setting_s *setting)
 		return;
 	layer = get_vd_layer(layer_id);
 	vpp_index = layer->vpp_index;
+	setting->misc_reg_offt = layer->misc_reg_offt;
 
 	switch (layer_id) {
 	case 0:
@@ -4917,6 +4918,13 @@ static void vdx_clip_setting(u8 layer_id, struct clip_setting_s *setting)
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(VPP_VD1_CLIP_MISC1 + misc_off,
 			setting->clip_min);
+		if (!(setting->clip_max == 0x3fffffff &&
+			setting->clip_min == 0x0)) {
+			WRITE_VCBUS_REG(VPP_VD1_CLIP_MISC0 + misc_off,
+				setting->clip_max);
+			WRITE_VCBUS_REG(VPP_VD1_CLIP_MISC1 + misc_off,
+				setting->clip_min);
+		}
 		break;
 	case 1:
 		misc_off = setting->misc_reg_offt;
@@ -4926,6 +4934,13 @@ static void vdx_clip_setting(u8 layer_id, struct clip_setting_s *setting)
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(VPP_VD2_CLIP_MISC1 + misc_off,
 			setting->clip_min);
+		if (!(setting->clip_max == 0x3fffffff &&
+			setting->clip_min == 0x0)) {
+			WRITE_VCBUS_REG(VPP_VD2_CLIP_MISC0 + misc_off,
+				setting->clip_max);
+			WRITE_VCBUS_REG(VPP_VD2_CLIP_MISC1 + misc_off,
+				setting->clip_min);
+		}
 		break;
 	case 2:
 		misc_off = setting->misc_reg_offt;
@@ -4935,6 +4950,13 @@ static void vdx_clip_setting(u8 layer_id, struct clip_setting_s *setting)
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(VPP_VD3_CLIP_MISC1 + misc_off,
 			setting->clip_min);
+		if (!(setting->clip_max == 0x3fffffff &&
+			setting->clip_min == 0x0)) {
+			WRITE_VCBUS_REG(VPP_VD3_CLIP_MISC0 + misc_off,
+				setting->clip_max);
+			WRITE_VCBUS_REG(VPP_VD3_CLIP_MISC1 + misc_off,
+				setting->clip_min);
+		}
 		break;
 	default:
 		break;
@@ -6238,19 +6260,41 @@ void vd_scaler_setting(struct video_layer_s *layer,
 		vdx_scaler_setting(layer, setting);
 }
 
-void vd_clip_setting(u8 layer_id,
+void vd_clip_setting(u8 vpp_index, u8 layer_id,
 	struct clip_setting_s *setting)
 {
 	if (setting->clip_done)
 		return;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
-		vd_clip_setting_s5(layer_id, setting);
+		vd_clip_setting_s5(vpp_index, layer_id, setting);
 		setting->clip_done = true;
 		return;
 	}
 #endif
 	vdx_clip_setting(layer_id, setting);
+	setting->clip_done = true;
+}
+
+void vpp_clip_setting(u8 vpp_index, struct clip_setting_s *setting)
+{
+	if (setting->clip_done)
+		return;
+	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
+		vpp_clip_setting_s5(vpp_index, setting);
+	}  else {
+		cur_dev->rdma_func[vpp_index].rdma_wr
+			(VPP_CLIP_MISC0,
+			setting->clip_max);
+		cur_dev->rdma_func[vpp_index].rdma_wr
+			(VPP_CLIP_MISC1,
+			setting->clip_min);
+		if (!(setting->clip_max == 0x3fffffff &&
+			setting->clip_min == 0x0)) {
+			WRITE_VCBUS_REG(VPP_CLIP_MISC0, setting->clip_max);
+			WRITE_VCBUS_REG(VPP_CLIP_MISC1, setting->clip_min);
+		}
+	}
 	setting->clip_done = true;
 }
 
@@ -6441,56 +6485,31 @@ static inline void mute_vpp(void)
 {
 	u32 black_val;
 	u8 vpp_index = VPP0;
+	struct clip_setting_s setting;
 
 	/*black_val = (0x0 << 20) | (0x0 << 10) | 0;*/ /* RGB */
 	black_val = (0x0 << 20) | (0x200 << 10) | 0x200; /* YUV */
-
-	if (is_tv_panel()) {
-		cur_dev->rdma_func[vpp_index].rdma_wr
-			(VPP_VD1_CLIP_MISC0,
-			black_val);
-		cur_dev->rdma_func[vpp_index].rdma_wr
-			(VPP_VD1_CLIP_MISC1,
-			black_val);
-		WRITE_VCBUS_REG(VPP_VD1_CLIP_MISC0, black_val);
-		WRITE_VCBUS_REG(VPP_VD1_CLIP_MISC1, black_val);
-	} else {
-		cur_dev->rdma_func[vpp_index].rdma_wr
-			(VPP_CLIP_MISC0,
-			black_val);
-		cur_dev->rdma_func[vpp_index].rdma_wr
-			(VPP_CLIP_MISC1,
-			black_val);
-		WRITE_VCBUS_REG(VPP_CLIP_MISC0, black_val);
-		WRITE_VCBUS_REG(VPP_CLIP_MISC1, black_val);
-	}
+	setting.clip_done = false;
+	setting.clip_max = black_val;
+	setting.clip_min = black_val;
+	if (is_tv_panel())
+		vd_clip_setting(vpp_index, 0, &setting);
+	else
+		vpp_clip_setting(vpp_index, &setting);
 }
 
 static inline void unmute_vpp(void)
 {
 	u8 vpp_index = VPP0;
+	struct clip_setting_s setting;
 
-	if (is_tv_panel()) {
-		cur_dev->rdma_func[vpp_index].rdma_wr
-			(VPP_VD1_CLIP_MISC0,
-			(0x3ff << 20) |
-			(0x3ff << 10) |
-			0x3ff);
-		cur_dev->rdma_func[vpp_index].rdma_wr
-			(VPP_VD1_CLIP_MISC1,
-			(0x0 << 20) |
-			(0x0 << 10) | 0x0);
-	} else {
-		cur_dev->rdma_func[vpp_index].rdma_wr
-			(VPP_CLIP_MISC0,
-			(0x3ff << 20) |
-			(0x3ff << 10) |
-			0x3ff);
-		cur_dev->rdma_func[vpp_index].rdma_wr
-			(VPP_CLIP_MISC1,
-			(0x0 << 20) |
-			(0x0 << 10) | 0x0);
-	}
+	setting.clip_done = false;
+	setting.clip_max = 0x3fffffff;
+	setting.clip_min = 0x0;
+	if (is_tv_panel())
+		vd_clip_setting(vpp_index, 0, &setting);
+	else
+		vpp_clip_setting(vpp_index, &setting);
 }
 
 static void check_video_mute(void)
@@ -6550,35 +6569,29 @@ static inline void mute_output(void)
 {
 	u32 black_val;
 	u8 vpp_index = VPP0;
+	struct clip_setting_s setting;
 
 	if (is_tv_panel())
 		black_val = (0x0 << 20) | (0x0 << 10) | 0;
 	else
 		black_val = (0x0 << 20) | (0x200 << 10) | 0x200; /* YUV */
 
-	cur_dev->rdma_func[vpp_index].rdma_wr
-		(VPP_CLIP_MISC0,
-		black_val);
-	cur_dev->rdma_func[vpp_index].rdma_wr
-		(VPP_CLIP_MISC1,
-		black_val);
-	WRITE_VCBUS_REG(VPP_CLIP_MISC0, black_val);
-	WRITE_VCBUS_REG(VPP_CLIP_MISC1, black_val);
+	setting.clip_done = false;
+	setting.clip_max = black_val;
+	setting.clip_min = black_val;
+	vpp_clip_setting(vpp_index, &setting);
 }
 
 static inline void unmute_output(void)
 {
 	u8 vpp_index = VPP0;
+	struct clip_setting_s setting;
 
-	cur_dev->rdma_func[vpp_index].rdma_wr
-		(VPP_CLIP_MISC0,
-		(0x3ff << 20) |
-		(0x3ff << 10) |
-		0x3ff);
-	cur_dev->rdma_func[vpp_index].rdma_wr
-		(VPP_CLIP_MISC1,
-		(0x0 << 20) |
-		(0x0 << 10) | 0x0);
+	setting.clip_done = false;
+	setting.clip_max = 0x3fffffff;
+	setting.clip_min = 0x0;
+
+	vpp_clip_setting(vpp_index, &setting);
 }
 
 static void check_output_mute(void)
@@ -6651,41 +6664,15 @@ static inline void vdx_test_pattern_output(u32 index, u32 on, u32 color)
 			pr_info("Y=%x, U=%x, V=%x\n", Y, U, V);
 			color = (Y << 22) | (U << 12) | V << 2; /* YUV */
 		}
-
-		if (cur_dev->display_module != S5_DISPLAY_MODULE) {
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(vdx_clip_misc0,
-				color);
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(vdx_clip_misc1,
-				color);
-			WRITE_VCBUS_REG(vdx_clip_misc0, color);
-			WRITE_VCBUS_REG(vdx_clip_misc1, color);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-		} else {
-			setting.clip_min = color;
-			setting.clip_max = color;
-			vd_clip_setting_s5(index, &setting);
-#endif
-		}
+		setting.clip_done = false;
+		setting.clip_min = color;
+		setting.clip_max = color;
+		vd_clip_setting(vpp_index, index, &setting);
 	} else {
-		if (cur_dev->display_module != S5_DISPLAY_MODULE) {
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(vdx_clip_misc0,
-				(0x3ff << 20) |
-				(0x3ff << 10) |
-				0x3ff);
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(vdx_clip_misc1,
-				(0x0 << 20) |
-				(0x0 << 10) | 0x0);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-		} else {
-			setting.clip_min = 0;
-			setting.clip_max = 0x3fffffff;
-			vd_clip_setting_s5(index, &setting);
-#endif
-		}
+		setting.clip_done = false;
+		setting.clip_min = 0;
+		setting.clip_max = 0x3fffffff;
+		vd_clip_setting(vpp_index, index, &setting);
 	}
 }
 
@@ -6716,6 +6703,7 @@ static inline void postblend_test_pattern_output(u32 on, u32 color)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	static u32 blend_din_en_save;
 #endif
+	struct clip_setting_s setting;
 
 	if (on) {
 		if (is_tv_panel()) {
@@ -6751,18 +6739,12 @@ static inline void postblend_test_pattern_output(u32 on, u32 color)
 			blend_din_en_save = READ_VCBUS_REG(VPU_VOUT_BLEND_CTRL);
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, color);
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL, 0x7);
-		} else if (cur_dev->display_module == S5_DISPLAY_MODULE) {
-			vpp_clip_setting_s5(on, color);
 #endif
 		} else {
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(VPP_CLIP_MISC0,
-				color);
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(VPP_CLIP_MISC1,
-				color);
-			WRITE_VCBUS_REG(VPP_CLIP_MISC0, color);
-			WRITE_VCBUS_REG(VPP_CLIP_MISC1, color);
+			setting.clip_done = false;
+			setting.clip_max = color;
+			setting.clip_min = color;
+			vpp_clip_setting(vpp_index, &setting);
 		}
 	} else {
 		if (cur_dev->display_module == C3_DISPLAY_MODULE) {
@@ -6770,19 +6752,12 @@ static inline void postblend_test_pattern_output(u32 on, u32 color)
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, 0x0);
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL,
 				blend_din_en_save);
-		} else if (cur_dev->display_module == S5_DISPLAY_MODULE) {
-			vpp_clip_setting_s5(on, 0);
 #endif
 		} else {
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(VPP_CLIP_MISC0,
-				(0x3ff << 20) |
-				(0x3ff << 10) |
-				0x3ff);
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(VPP_CLIP_MISC1,
-				(0x0 << 20) |
-				(0x0 << 10) | 0x0);
+			setting.clip_done = false;
+			setting.clip_max = 0x3fffffff;
+			setting.clip_min = 0x0;
+			vpp_clip_setting(vpp_index, &setting);
 		}
 	}
 }
@@ -7846,13 +7821,13 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 
 	if (cur_dev->display_module != C3_DISPLAY_MODULE) {
 		if (vd1_vd2_mux) {
-			vd_clip_setting(1, &vd_layer[0].clip_setting);
+			vd_clip_setting(VPP0, 1, &vd_layer[0].clip_setting);
 		} else {
-			vd_clip_setting(0, &vd_layer[0].clip_setting);
-			vd_clip_setting(1, &vd_layer[1].clip_setting);
+			vd_clip_setting(VPP0, 0, &vd_layer[0].clip_setting);
+			vd_clip_setting(VPP0, 1, &vd_layer[1].clip_setting);
 		}
 		if (cur_dev->max_vd_layers == 3)
-			vd_clip_setting(2, &vd_layer[2].clip_setting);
+			vd_clip_setting(VPP0, 2, &vd_layer[2].clip_setting);
 	}
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT

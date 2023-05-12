@@ -5707,7 +5707,7 @@ void vd_s5_hw_set(struct video_layer_s *layer,
 	if (cur_dev->display_module != S5_DISPLAY_MODULE)
 		return;
 
-	if (!layer || !dispbuf || !frame_par)
+	if (!dispbuf || !frame_par)
 		return;
 
 	if (layer->mosaic_mode)
@@ -11256,11 +11256,11 @@ void vd_set_alpha_s5(struct video_layer_s *layer,
 	}
 }
 
-static void vd1_clip_setting_s5(struct vd_proc_s *vd_proc,
+static void vd1_clip_setting_s5(u8 vpp_index, struct vd_proc_s *vd_proc,
 	struct clip_setting_s *setting)
 {
 	int slice = 0;
-	rdma_wr_op rdma_wr = cur_dev->rdma_func[VPP0].rdma_wr;
+	rdma_wr_op rdma_wr = cur_dev->rdma_func[vpp_index].rdma_wr;
 	struct vd_proc_slice_reg_s *vd_proc_slice_reg = NULL;
 	struct vd_proc_vd1_info_s *vd_proc_vd1_info = NULL;
 
@@ -11273,25 +11273,47 @@ static void vd1_clip_setting_s5(struct vd_proc_s *vd_proc,
 			setting->clip_max);
 		rdma_wr(vd_proc_slice_reg->vd1_s0_clip_misc1,
 			setting->clip_min);
+		if (!(setting->clip_max == 0x3fffffff &&
+			setting->clip_min == 0x0)) {
+			WRITE_VCBUS_REG(vd_proc_slice_reg->vd1_s0_clip_misc0,
+				setting->clip_max);
+			WRITE_VCBUS_REG(vd_proc_slice_reg->vd1_s0_clip_misc1,
+				setting->clip_min);
+		}
 	}
 }
 
-static void vd2_clip_setting_s5(struct vd_proc_s *vd_proc,
+static void vd2_clip_setting_s5(u8 vpp_index, struct vd_proc_s *vd_proc,
 	struct clip_setting_s *setting)
 {
+	rdma_wr_op rdma_wr = cur_dev->rdma_func[vpp_index].rdma_wr;
+	struct vd2_proc_misc_reg_s *vd2_proc_misc_reg = NULL;
+
 	if (!setting)
 		return;
+	vd2_proc_misc_reg = &vd_proc_reg.vd2_proc_misc_reg;
+	rdma_wr(vd2_proc_misc_reg->vd2_clip_misc0,
+		setting->clip_max);
+	rdma_wr(vd2_proc_misc_reg->vd2_clip_misc1,
+		setting->clip_min);
+	if (!(setting->clip_max == 0x3fffffff &&
+		setting->clip_min == 0x0)) {
+		WRITE_VCBUS_REG(vd2_proc_misc_reg->vd2_clip_misc0,
+			setting->clip_max);
+		WRITE_VCBUS_REG(vd2_proc_misc_reg->vd2_clip_misc1,
+			setting->clip_min);
+	}
 }
 
-void vd_clip_setting_s5(u8 layer_id,
+void vd_clip_setting_s5(u8 vpp_index, u8 layer_id,
 	struct clip_setting_s *setting)
 {
 	struct vd_proc_s *vd_proc = &g_vd_proc;
 
 	if (layer_id == 0)
-		vd1_clip_setting_s5(vd_proc, setting);
+		vd1_clip_setting_s5(vpp_index, vd_proc, setting);
 	else if (layer_id == 1)
-		vd2_clip_setting_s5(vd_proc, setting);
+		vd2_clip_setting_s5(vpp_index, vd_proc, setting);
 }
 
 void vpp_post_blend_update_s5(const struct vinfo_s *vinfo)

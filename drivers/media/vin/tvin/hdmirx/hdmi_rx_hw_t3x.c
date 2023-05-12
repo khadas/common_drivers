@@ -52,6 +52,7 @@ int tr_delay0 = 5;
 int tr_delay1 = 10;
 int frate_cnt = 100;
 enum frl_train_sts_e frl_train_sts = E_FRL_TRAIN_START;
+static int frate_flg;
 
 /* for T3X 2.0 */
 static const u32 phy_misc_t3x_20[][2] = {
@@ -4787,3 +4788,15 @@ void dump_aud21_param(u8 port)
 	rx_pr("ana 4x = 0x%x\n", hdmirx_rd_top_common_1(TOP_ACR_CNTL2_T3X));
 }
 
+void frate_monitor(u8 port)
+{
+	int frate = 0;
+
+	frate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
+	if (frate != frate_flg) {
+		frate_flg = frate;
+		if (frate)
+			rx[port].state = FSM_FRL_TRN;
+		rx_pr("port-%d frate change to %d\n", port, frate);
+	}
+}

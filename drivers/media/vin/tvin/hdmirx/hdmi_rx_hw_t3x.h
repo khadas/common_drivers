@@ -191,7 +191,7 @@ bool is_frl_train_finished(void);
 void rx_long_bist_t3x(void);
 void rx_t3x_prbs(void);
 void dump_aud21_param(u8 port);
-
+void frate_monitor(u8 port);
 //void reset_pcs(void);
 
 /*function declare end*/

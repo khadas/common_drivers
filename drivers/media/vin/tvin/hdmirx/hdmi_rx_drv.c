@@ -995,7 +995,7 @@ static bool is_it_vid_fmt(u8 port)
 	else
 		ret = false;
 
-	if (log_level & VIDEO_LOG)
+	if (log_level & DBG_LOG)
 		rx_pr("sw_vic: %d, it video format: %d\n", rx[port].pre.sw_vic, ret);
 	return ret;
 }

@@ -1671,10 +1671,14 @@ void rx_get_aud_info(struct aud_info_s *audio_info, u8 port)
 		tmp += hdmirx_rd_cor(RX_ACR_DBYTE3_DP2_IVCRX, port);
 		audio_info->cts = tmp;
 		//if (rx_info.chip_id >= CHIP_ID_T3) {
-		if (pkt->length == 10) //aif length is 10
-			audio_info->aud_packet_received = 1;
-		else
+		if (pkt->length == 10) { //aif length is 10
+			if (audio_info->aud_hbr_rcv)
+				audio_info->aud_packet_received = 8;
+			else
+				audio_info->aud_packet_received = 1;
+		} else {
 			audio_info->aud_packet_received = 0;
+		}
 		audio_info->ch_sts[0] = hdmirx_rd_cor(RX_CHST1_AUD_IVCRX, port);
 		audio_info->ch_sts[1] = hdmirx_rd_cor(RX_CHST2_AUD_IVCRX, port);
 		audio_info->ch_sts[2] = hdmirx_rd_cor(RX_CHST3a_AUD_IVCRX, port);
@@ -2886,17 +2890,20 @@ void control_reset(void)
 
 void rx_dig_clk_en(bool en)
 {
-	if (rx_info.chip_id >= CHIP_ID_T7)
-		return;
-	hdcp22_clk_en(en);
-	/* enable gate of cts_hdmirx_modet_clk */
-	/* enable gate of cts_hdmirx_cfg_clk */
-	if (rx_info.chip_id >= CHIP_ID_T5) {
-		hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL, MODET_CLK_EN, en);
-		hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL, CFG_CLK_EN, en);
+	if (rx_info.chip_id >= CHIP_ID_T7) {
+		hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL1, CFG_CLK_EN, en);
+		hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL3, METER_CLK_EN, en);
 	} else {
-		wr_reg_hhi_bits(HHI_HDMIRX_CLK_CNTL, MODET_CLK_EN, en);
-		wr_reg_hhi_bits(HHI_HDMIRX_CLK_CNTL, CFG_CLK_EN, en);
+		hdcp22_clk_en(en);
+		/* enable gate of cts_hdmirx_modet_clk */
+		/* enable gate of cts_hdmirx_cfg_clk */
+		if (rx_info.chip_id >= CHIP_ID_T5) {
+			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL, MODET_CLK_EN, en);
+			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL, CFG_CLK_EN, en);
+		} else {
+			wr_reg_hhi_bits(HHI_HDMIRX_CLK_CNTL, MODET_CLK_EN, en);
+			wr_reg_hhi_bits(HHI_HDMIRX_CLK_CNTL, CFG_CLK_EN, en);
+		}
 	}
 }
 

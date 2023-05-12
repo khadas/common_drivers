@@ -190,7 +190,6 @@ int clk_chg_max = 3;
 // 3. for hdcp1.4 cts. need to wait for hdcp start.
 // waiting time cannot be reduced 1S
 static int hdcp_none_wait_max = 80;
-static int frate_flg = 0xf;
 
 void hdmirx_phy_var_init(void)
 {
@@ -5943,6 +5942,7 @@ void rx_port2_main_state_machine(void)
 	int one_frame_cnt;
 	u8 port = E_PORT2;
 
+	frate_monitor(port);
 	if ((dbg_port - 1 != port) &&
 		dbg_port)
 		return;
@@ -7509,18 +7509,6 @@ void rx_hpd_monitor(void)
 	}
 }
 
-void frate_monitor(u8 port)
-{
-	int frate = 0;
-
-	frate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
-	if (frate != frate_flg) {
-		frate_flg = frate;
-		rx[port].state = FSM_FRL_TRN;
-		rx_pr("port-%d frate change to %d\n", port, frate);
-	}
-}
-
 void hdmirx_timer_handler(struct timer_list *t)
 {
 	struct hdmirx_dev_s *devp = from_timer(devp, t, timer);
@@ -7557,7 +7545,6 @@ void hdmirx_timer_handler(struct timer_list *t)
 					rx_port2_main_state_machine();
 					rx_port3_main_state_machine();
 				}
-				frate_monitor(rx_info.main_port);
 			}
 			/* rx_pkt_check_content(rx_info.main_port); */
 			#ifdef K_TEST_CHK_ERR_CNT

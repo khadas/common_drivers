@@ -114,7 +114,7 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			/* 1080p TV androidR size 36M */
-			size = <0x0 0x2400000>;
+			size = <0x0 0x1c00000>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x00000000 0x0 0x80000000>;
 		};
@@ -210,7 +210,7 @@
 			size = <0x0 0xac00000>;
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
-			/*alloc-ranges = <0x0 0x0 0x0 0x3f800000>;*/
+			alloc-ranges = <0x0 0x80000000 0x0 0x40000000>;
 		};
 
 		/* POST PROCESS MANAGER */

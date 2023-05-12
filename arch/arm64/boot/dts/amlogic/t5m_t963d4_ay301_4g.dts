@@ -202,7 +202,7 @@
 			size = <0x0 0xac00000>;
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
-			/*alloc-ranges = <0x0 0x0 0x0 0x3f800000>;*/
+			alloc-ranges = <0x0 0x80000000 0x0 0x40000000>;
 		};
 
 		/* POST PROCESS MANAGER */

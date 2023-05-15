@@ -824,7 +824,7 @@ export -f modules_install
 function rename_external_module_name() {
 	local external_coppied
 	local vendor_coppied
-	sed 's/^[\t ]*\|[\t ]*$//g' ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/module_rename.txt | sed '/^#/d;/^$/d' | sed 's/[[:space:]][[:space:]]*/ /g' | while read module_line; do
+	sed 's/^[\t ]*\|[\t ]*$//g' ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/modules_rename.txt | sed '/^#/d;/^$/d' | sed 's/[[:space:]][[:space:]]*/ /g' | while read module_line; do
 		target_module_name=`echo ${module_line%%:*} | sed '/^#/d;/^$/d'`
 		modules_name=`echo ${module_line##:*} | sed '/^#/d;/^$/d'`
 		[[ -f ${OUT_AMLOGIC_DIR}/ext_modules/${target_module_name} ]] && external_coppied=1

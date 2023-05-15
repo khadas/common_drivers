@@ -53,16 +53,16 @@ def define_common_amlogic(
         gki_modules_list = None,
         dist_dir = None,
         ext_modules = None):
-    """Define target for db845c.
+    """Define target for amlogic.
 
     Note: This is a mixed build.
 
     Requires [`define_common_kernels`](#define_common_kernels) to be called in the same package.
 
     Args:
-        name: name of target. Usually `"db845c"`.
+        name: name of target. Usually `"amlogic"`.
         build_config: See [kernel_build.build_config](#kernel_build-build_config). If `None`,
-          default to `"build.config.db845c"`.
+          default to `"common_drivers/build.config.amlogic.bazel"`.
         outs: See [kernel_build.outs](#kernel_build-outs).
         module_outs: See [kernel_build.module_outs](#kernel_build-module_outs). The list of
           in-tree kernel modules.
@@ -77,10 +77,10 @@ def define_common_amlogic(
     """
 
     if build_config == None:
-        build_config = "build.config.db845c"
+        build_config = "common_drivers/build.config.amlogic.bazel"
 
     if kmi_symbol_list == None:
-        kmi_symbol_list = "//common:android/abi_gki_aarch64_db845c" if define_abi_targets else None
+        kmi_symbol_list = "//common:android/abi_gki_aarch64_amlogic" if define_abi_targets else None
 
     if kmi_symbol_list_add_only == None:
         kmi_symbol_list_add_only = True if define_abi_targets else None

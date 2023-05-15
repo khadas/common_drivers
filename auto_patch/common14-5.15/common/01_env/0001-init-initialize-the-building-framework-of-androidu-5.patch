@@ -1,4 +1,4 @@
-From b7a6ffcc28f3802f0b5f77d6513ef6104e668b77 Mon Sep 17 00:00:00 2001
+From 36c1973ffd9416e73ac49d4ba5e391374175107f Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Thu, 2 Feb 2023 15:49:10 +0800
 Subject: [PATCH] init: initialize the building framework of androidu-5.15 for
@@ -18,21 +18,18 @@ sc2
 Change-Id: Icfbc29709af1545b802ed7794808a2ab560ed08a
 Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
 ---
- .gitignore                                    |   3 +
- Makefile                                      |  35 ++
- build.config.gki.aarch64                      |   4 +
- drivers/Kconfig                               |  52 +++
- .../greybus/tools/{Android.mk => Android_mk}  |   0
- kernel/Makefile                               |   3 +-
- scripts/amlogic/licence_check.pl              | 153 +++++++
- scripts/amlogic/licence_pre.pl                |  53 +++
- scripts/amlogic/merge_pre_check.pl            | 429 ++++++++++++++++++
- scripts/amlogic/pre-commit                    |  24 +
- scripts/amlogic/pre-commit-common_drivers     |  24 +
- scripts/checkpatch.pl                         | 158 +++----
- scripts/kconfig/Makefile                      |   9 +-
- 13 files changed, 866 insertions(+), 81 deletions(-)
- rename drivers/staging/greybus/tools/{Android.mk => Android_mk} (100%)
+ .gitignore                                |   3 +
+ Makefile                                  |  35 ++
+ build.config.gki.aarch64                  |   4 +
+ drivers/Kconfig                           |  52 +++
+ scripts/amlogic/licence_check.pl          | 153 ++++++++
+ scripts/amlogic/licence_pre.pl            |  53 +++
+ scripts/amlogic/merge_pre_check.pl        | 429 ++++++++++++++++++++++
+ scripts/amlogic/pre-commit                |  24 ++
+ scripts/amlogic/pre-commit-common_drivers |  24 ++
+ scripts/checkpatch.pl                     | 158 ++++----
+ scripts/kconfig/Makefile                  |   9 +-
+ 11 files changed, 864 insertions(+), 80 deletions(-)
  create mode 100755 scripts/amlogic/licence_check.pl
  create mode 100755 scripts/amlogic/licence_pre.pl
  create mode 100755 scripts/amlogic/merge_pre_check.pl
@@ -51,7 +48,7 @@ index 265959544978..0bbfe4cd37fc 100644
 +# amlogic drivers
 +/common_drivers/
 diff --git a/Makefile b/Makefile
-index 38945b41e976..3b2ad5a56ab5 100644
+index 7ecb05e9cbfd..3155ad560ad3 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -438,6 +438,14 @@ ifneq ($(SRCARCH),$(SUBARCH))
@@ -99,7 +96,7 @@ index 38945b41e976..3b2ad5a56ab5 100644
  
  ifeq ($(KBUILD_EXTMOD),)
  core-y			+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/
-@@ -2084,8 +2104,23 @@ endif # config-build
+@@ -2078,8 +2098,23 @@ endif # config-build
  endif # mixed-build
  endif # need-sub-make
  
@@ -124,7 +121,7 @@ index 38945b41e976..3b2ad5a56ab5 100644
  # Declare the contents of the PHONY variable as phony.  We keep that
  # information in a variable so we can use it in if_changed and friends.
 diff --git a/build.config.gki.aarch64 b/build.config.gki.aarch64
-index 574c9ebf2fca..60099374a68e 100644
+index b1fa073a529c..1ae08e5e8b3c 100644
 --- a/build.config.gki.aarch64
 +++ b/build.config.gki.aarch64
 @@ -2,6 +2,10 @@
@@ -199,19 +196,6 @@ index 67f44716797e..09c9fcfb9236 100644
 +endif
 +endif
  endmenu
-diff --git a/kernel/Makefile b/kernel/Makefile
-index ce5fc348b16a..f50bc5b8b494 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -175,7 +175,7 @@ $(obj)/gki_module_unprotected.h: $(ALL_KMI_SYMBOLS) \
- 	$(ALL_KMI_SYMBOLS)
- 
- # Generate symbol list with union of all symbol list for arm64; empty for others
--$(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_*),)
-+$(ALL_KMI_SYMBOLS): $(if $(filter arm64,$(ARCH)),$(wildcard $(srctree)/android/abi_gki_aarch64_* $(srctree)/$(COMMON_DRIVERS_DIR)/android/abi_gki_aarch64_*),)
- 	$(if $(strip $^),cat $^ > $(ALL_KMI_SYMBOLS), echo "" > $(ALL_KMI_SYMBOLS))
- 
- # ABI protected exports list file specific to ARCH if exists else empty
 diff --git a/scripts/amlogic/licence_check.pl b/scripts/amlogic/licence_check.pl
 new file mode 100755
 index 000000000000..2163ce102ab6

@@ -539,13 +539,13 @@
 				//power-domains = <&pwrdm PDID_IR>;
 			};
 
-			watchdog@100 {
-				compatible = "amlogic,meson-a1-wdt";
-				status = "okay";
+			watchdog {
+				compatible = "arm,smc-wdt";
+				arm,smc-id = <0x8200004f>;
 				/* 0:userspace, 1:kernel */
 				amlogic,feed_watchdog_mode = <1>;
-				reg = <0x0 0x100 0x0 0x10>;
-				clocks = <&xtal>;
+				timeout-sec = <60>;
+				status = "okay";
 			};
 
 			saradc: adc@2c00 {

@@ -240,14 +240,16 @@
 			//resets = <&reset RESET_SD_EMMC_C>;
 		};
 
-		nand: nfc@fe012800 {
-			compatible = "amlogic,meson-c1-nfc";
-			reg = <0x0 0xfe012800 0x0 0x100>;
-			interrupts = <GIC_SPI 87 IRQ_TYPE_EDGE_RISING>; //fixit
+		mtd_nand: nfc@fe012800 {
+			compatible = "amlogic,meson-nfc-single-ecc";
 			status = "disabled";
-			//power-domains = <&pwrdm PDID_SDEMMC_C>;
-			//clocks = <&clkc CLKID_SD_EMMC_C>;
-			clock-names = "core";
+			reg = <0x0 0xfe012800 0x0 0x100>;
+			interrupts = <GIC_SPI 58 IRQ_TYPE_EDGE_RISING>;
+			clocks = <&clkc CLKID_SD_EMMC_C>,
+					<&clkc CLKID_FCLK_DIV2>;
+			clock-names = "gate", "fdiv2pll";
+			nand_clk_ctrl = <0xfe012000>;
+			//power-domains = <&pwrdm PDID_CX_SDEMMC_C>;
 		};
 
 		aobus: bus@fe000000 {

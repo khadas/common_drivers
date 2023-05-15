@@ -1223,8 +1223,11 @@
 	vqmmc-supply = <&vcc_1v8>;
 };
 
-&nand {
+&mtd_nand {
 	status = "disabled";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
 	pinctrl-names = "nand_norb_mod", "nand_cs_only";
 	pinctrl-0 = <&all_nand_pins>;
 	pinctrl-1 = <&nand_cs_pins>;
@@ -1232,35 +1235,50 @@
 	bl_mode = <1>;
 	fip_copies = <4>;
 	fip_size = <0x200000>;
-	nand_clk_ctrl = <0xFE012000>;
-	nand_ext_clk_ctrl = <0xFE000920>;
-	partition = <&slc_partitions>;
-	slc_partitions: slc_partitions{
-			tpl{
-					offset=<0x0 0x0>;
-					size=<0x0 0x0>;
-			};
-			logo{
-					offset=<0x0 0x0>;
-					size=<0x0 0x200000>;
-			};
-			recovery{
-					offset=<0x0 0x0>;
-					size=<0x0 0x1000000>;
-			};
-			boot{
-					offset=<0x0 0x0>;
-					size=<0x0 0x1000000>;
-			};
-			system{
-					offset=<0x0 0x0>;
-					size=<0x0 0x4000000>;
-			};
-			data{
-					offset=<0xffffffff 0xffffffff>;
-					size=<0x0 0x0>;
-			};
+	ship_bad_block = <1>;
+	disa_irq_flag = <1>;
+	nand@bootloader {
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		nand-ecc-maximize;
+		partition@0 {
+			label = "bootloader";
+			reg = <0x0 0x00000000>;
+		};
 	};
+	nand@normal {
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		nand-ecc-maximize;
+
+		partition@0 {
+			label = "tpl";
+			reg = <0x0 0x00000000>;
+		};
+		partition@1 {
+			label = "logo";
+			reg = <0x0 0x00200000>;
+		};
+		partition@2 {
+			label = "recovery";
+			reg = <0x0 0x1000000>;
+		};
+		partition@3 {
+			label = "boot";
+			reg = <0x0 0x0F00000>;
+		};
+		partition@4 {
+			label = "system";
+			reg = <0x0 0x11800000>;
+		};
+		partition@5 {
+			label = "data";
+			reg = <0x0 0xffffffff>;
+		};
+	};
+
 };
 
 &dwc2_a {

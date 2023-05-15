@@ -1168,6 +1168,12 @@
 		analog_val = <0x20200000 0x0000c000 0x00000023>;
 	};
 
+	vrtc: rtc@0xfe005a88 {
+		compatible = "amlogic,meson-vrtc";
+		reg = <0x0 0xfe005a88 0x0 0x4>;	//SYSCTRL_STATUS_REG2
+		status = "okay";
+	};
+
 	mailbox_pl: mhu@ff680150 {
 		status = "okay";
 		compatible = "amlogic, meson_mhu_pl";

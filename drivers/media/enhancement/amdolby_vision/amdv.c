@@ -1828,11 +1828,11 @@ void amdv_init_receiver(void *pdev)
 				lut_dma_info[i].dma_paddr + top1_lut_num * LUT_SIZE;
 			lut_dma_info[i].dma_vaddr_top2 =
 				lut_dma_info[i].dma_vaddr + top1_lut_num * LUT_SIZE;
-			pr_dv_dbg("dma_vaddr %px %llx, size %ld, top2 %px %llx\n",
-					lut_dma_info[i].dma_vaddr,
-					lut_dma_info[i].dma_paddr, alloc_size,
-					lut_dma_info[i].dma_vaddr_top2,
-					lut_dma_info[i].dma_paddr_top2);
+			//pr_dv_dbg("dma_vaddr %px %llx, size %ld, top2 %px %llx\n",
+			//		lut_dma_info[i].dma_vaddr,
+			//		lut_dma_info[i].dma_paddr, alloc_size,
+			//		lut_dma_info[i].dma_vaddr_top2,
+			//		lut_dma_info[i].dma_paddr_top2);
 		}
 	}
 

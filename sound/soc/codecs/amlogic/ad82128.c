@@ -61,6 +61,7 @@ struct ad82128_data {
 	struct delayed_work fault_check_work;
 	struct work_struct work;
 	unsigned int last_fault;
+	int mute;
 	int reset_pin;
 	int init_done;
 	int vol;
@@ -169,6 +170,21 @@ static int ad82128_vol_info(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int ad82128_mute_info(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->access =
+	    (SNDRV_CTL_ELEM_ACCESS_TLV_READ | SNDRV_CTL_ELEM_ACCESS_READWRITE);
+	uinfo->count = 1;
+
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
+	uinfo->value.integer.step = 1;
+
+	return 0;
+}
+
 static int ad82128_vol_locked_get(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
 {
@@ -209,6 +225,27 @@ static void ad82128_set_volume(struct snd_soc_component *component, int vol)
 	snd_soc_component_write(component, AD82128_VOLUME_CTRL_REG, byte);
 }
 
+static int ad82128_mute(struct snd_soc_component *component, int mute)
+{
+	int ret;
+
+	if (mute) {
+		//mute master volume
+		ret = snd_soc_component_update_bits(component, AD82128_STATE_CTRL3_REG,
+			AD82128_MUTE, AD82128_MUTE);
+		if (ret < 0)
+			dev_err(component->dev, "failed to write MUTE register: %d\n", ret);
+	} else {
+		//unmute
+		ret = snd_soc_component_update_bits(component, AD82128_STATE_CTRL3_REG,
+			AD82128_MUTE, 0);
+		if (ret < 0)
+			dev_err(component->dev, "failed to write MUTE register: %d\n", ret);
+	}
+
+	return 0;
+}
+
 static int ad82128_vol_locked_put(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
 {
@@ -217,6 +254,29 @@ static int ad82128_vol_locked_put(struct snd_kcontrol *kcontrol,
 
 	ad82128->vol = ucontrol->value.integer.value[0];
 	ad82128_set_volume(component, ad82128->vol);
+
+	return 0;
+}
+
+static int ad82128_mute_locked_put(struct snd_kcontrol *kcontrol,
+				    struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct ad82128_data *ad82128 = snd_soc_component_get_drvdata(component);
+
+	ad82128->mute = ucontrol->value.integer.value[0];
+	ad82128_mute(component, ad82128->mute);
+
+	return 0;
+}
+
+static int ad82128_mute_locked_get(struct snd_kcontrol *kcontrol,
+				    struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct ad82128_data *ad82128 = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = ad82128->mute;
 
 	return 0;
 }
@@ -303,10 +363,7 @@ static void ad82128_init_func(struct work_struct *p_work)
 	}
 
 	/* Set device to mute */
-	ret = snd_soc_component_update_bits(component, AD82128_STATE_CTRL3_REG,
-		AD82128_MUTE, AD82128_MUTE);
-	if (ret < 0)
-		goto error_snd_soc_component_update_bits;
+	ad82128_mute(component, 1);
 
 	// Write register table
 	for (i = 0; i < AD82128_REGISTER_COUNT; i++) {
@@ -353,13 +410,10 @@ static void ad82128_init_func(struct work_struct *p_work)
 		regmap_write(ad82128->regmap, CFUD, 0x41);
 	}
 
-	mdelay(2);
+	usleep_range(2 * 1000, 3 * 1000);
 
 	/* Set device to unmute */
-	ret = snd_soc_component_update_bits(component, AD82128_STATE_CTRL3_REG,
-		AD82128_MUTE, 0);
-	if (ret < 0)
-		goto error_snd_soc_component_update_bits;
+	ad82128_mute(component, 0);
 	INIT_DELAYED_WORK(&ad82128->fault_check_work, ad82128_fault_check_work);
 	ad82128->init_done = 1;
 	return;
@@ -372,11 +426,12 @@ static int ad82128_codec_probe(struct snd_soc_component *component)
 	struct ad82128_data *ad82128 = snd_soc_component_get_drvdata(component);
 
 	ad82128->component = component;
+	ad82128->mute = 0;
 
 	// software reset amp
 	snd_soc_component_update_bits(component, AD82128_STATE_CTRL5_REG,
 		AD82128_SW_RESET, 0);
-	mdelay(5);
+	usleep_range(5 * 1000, 6 * 1000);
 	snd_soc_component_update_bits(component, AD82128_STATE_CTRL5_REG,
 		AD82128_SW_RESET, AD82128_SW_RESET);
 	msleep(20);
@@ -404,7 +459,7 @@ static int ad82128_dac_event(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_component *component = snd_soc_dapm_to_component(w->dapm);
 	struct ad82128_data *ad82128 = snd_soc_component_get_drvdata(component);
-	int ret;
+
 	// wait until codec ready
 	while (!ad82128->init_done) {
 		dev_err(component->dev, "wait for ad82128 init done\n");
@@ -421,11 +476,8 @@ static int ad82128_dac_event(struct snd_soc_dapm_widget *w,
 		 */
 		msleep(25);
 
-		ret = snd_soc_component_update_bits(component, AD82128_STATE_CTRL3_REG,
-			AD82128_MUTE, 0);
-		if (ret < 0)
-			dev_err(component->dev, "failed to write MUTE register: %d\n", ret);
-
+		if (!ad82128->mute)
+			ad82128_mute(component, 0);
 		/* Turn on AD82128 periodic fault checking/handling */
 		ad82128->last_fault = 0xFE;
 		schedule_delayed_work(&ad82128->fault_check_work,
@@ -435,10 +487,8 @@ static int ad82128_dac_event(struct snd_soc_dapm_widget *w,
 		cancel_delayed_work_sync(&ad82128->fault_check_work);
 
 		/* Place AD82128 in shutdown mode to minimize current draw */
-		ret = snd_soc_component_update_bits(component, AD82128_STATE_CTRL3_REG,
-			AD82128_MUTE, AD82128_MUTE);
-		if (ret < 0)
-			dev_err(component->dev, "failed to write MUTE register: %d\n", ret);
+		if (!ad82128->mute)
+			ad82128_mute(component, 1);
 
 		msleep(20);
 	}
@@ -487,6 +537,13 @@ static int ad82128_resume(struct snd_soc_component *component)
 		/* need delay before regcache for spec request */
 		msleep(20);
 	}
+	// software reset amp
+	snd_soc_component_update_bits(component, AD82128_STATE_CTRL5_REG,
+		AD82128_SW_RESET, 0);
+	usleep_range(5 * 1000, 6 * 1000);
+	snd_soc_component_update_bits(component, AD82128_STATE_CTRL5_REG,
+		AD82128_SW_RESET, AD82128_SW_RESET);
+	msleep(20);
 
 	regcache_cache_only(ad82128->regmap, false);
 
@@ -495,6 +552,7 @@ static int ad82128_resume(struct snd_soc_component *component)
 		dev_err(component->dev, "failed to sync regcache: %d\n", ret);
 		return ret;
 	}
+	ad82128_mute(component, ad82128->mute);
 
 	return 0;
 }
@@ -564,7 +622,13 @@ static const struct snd_kcontrol_new ad82128_snd_controls[] = {
 		0, 0xff, 1, chvol_tlv),
 	SOC_SINGLE_TLV("Speaker Driver Analog Gain", AD82128_ANALOG_CTRL_REG,
 		AD82128_ANALOG_GAIN_SHIFT, 3, 0, dac_analog_tlv),
-	SOC_SINGLE("Master Mute", AD82128_STATE_CTRL3_REG, 6, 1, 0),
+	{
+	 .iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	 .name = "Master Mute",
+	 .info = ad82128_mute_info,
+	 .get = ad82128_mute_locked_get,
+	 .put = ad82128_mute_locked_put,
+	},
 };
 
 static const struct snd_soc_dapm_widget ad82128_dapm_widgets[] = {

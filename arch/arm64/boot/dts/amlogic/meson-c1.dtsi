@@ -550,17 +550,16 @@
 
 			saradc: adc@2c00 {
 				compatible = "amlogic,meson-g12a-saradc",
-					"amlogic,meson-saradc";
-				//reg = <0x0 0x2c00 0x0 0x48>;
+					     "amlogic,meson-saradc";
+				reg = <0x0 0x2c00 0x0 0x48>;
 				#io-channel-cells = <1>;
-				//power-domains = <&pwrdm PDID_I2C>;
-				//interrupts = <GIC_SPI 35 IRQ_TYPE_EDGE_RISING>;
-				//clocks = <&xtal>,
-				//	<&clkc CLKID_SARADC>,
-				//	<&clkc CLKID_SARADC_GATE>,
-				//	<&clkc CLKID_SARADC_SEL>;
-				//clock-names = "clkin", "core",
-				//	"adc_clk", "adc_sel";
+				power-domains = <&pwrdm PDID_CX_I2C>;
+				interrupts = <GIC_SPI 35 IRQ_TYPE_EDGE_RISING>;
+				clocks = <&xtal>,
+					 <&clkc CLKID_SARADC>,
+					 <&clkc CLKID_SARADC_DIV>,
+					 <&clkc CLKID_SARADC_MUX>;
+				clock-names = "clkin", "core", "adc_clk", "adc_sel";
 				status = "disabled";
 			};
 

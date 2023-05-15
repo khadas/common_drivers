@@ -59,13 +59,13 @@ unsigned int pst_reg_ofst[4] = {
 };
 
 /*sr sharpness module slice0~slice1 offset*/
-unsigned int sr_sharp_reg_ofst[2] = {
-	0x0, 0x2500
+unsigned int sr_sharp_reg_ofst[4] = {
+	0x0, 0x2500, 0x0, 0x0
 };
 
 /*lc curve module slice0~slice1 offset*/
-unsigned int lc_reg_ofst[2] = {
-	0x0, 0x40
+unsigned int lc_reg_ofst[4] = {
+	0x0, 0x40, 0x0, 0x0
 };
 
 int get_slice_max(void)
@@ -312,19 +312,16 @@ void vpp_mtx_config_v2(struct matrix_coef_s *coef,
 	int reg_pre_offset0_1 = 0;
 	int reg_pre_offset2 = 0;
 	int reg_coef00_01 = 0;
-	int reg_coef02_10;
-	int reg_coef11_12;
-	int reg_coef20_21;
-	int reg_coef22;
+	int reg_coef02_10 = 0;
+	int reg_coef11_12 = 0;
+	int reg_coef20_21 = 0;
+	int reg_coef22 = 0;
 	int reg_offset0_1 = 0;
 	int reg_offset2 = 0;
 	int reg_en_ctl = 0;
 	int slice_max;
 
 	slice_max = get_slice_max();
-
-	if (slice >= slice_max)
-		return;
 
 	switch (slice) {
 	case SLICE0:
@@ -455,7 +452,7 @@ void vpp_mtx_config_v2(struct matrix_coef_s *coef,
 		}
 		break;
 	default:
-		break;
+		return;
 	}
 
 	switch (mode) {
@@ -502,27 +499,33 @@ void vpp_mtx_config_v2(struct matrix_coef_s *coef,
 
 void cm_top_ctl(enum wr_md_e mode, int en)
 {
-	int i;
-	int slice_max;
 	unsigned int reg = VPP_VE_ENABLE_CTRL;
 
 	if (chip_type_id == chip_t3x)
 		reg = VPP_SLICE1_VE_ENABLE_CTRL + ve_addr_offset;
 
-	slice_max = get_slice_max();
-
 	switch (mode) {
 	case WR_VCB:
 		WRITE_VPP_REG_BITS(reg, en, 4, 1);
-		for (i = SLICE1; i < slice_max; i++)
-			WRITE_VPP_REG_BITS(VPP_SLICE1_VE_ENABLE_CTRL + i - SLICE1,
+		WRITE_VPP_REG_BITS(VPP_SLICE1_VE_ENABLE_CTRL,
+			en, 4, 1);
+		if (chip_type_id == chip_s5) {
+			WRITE_VPP_REG_BITS(VPP_SLICE2_VE_ENABLE_CTRL,
 				en, 4, 1);
+			WRITE_VPP_REG_BITS(VPP_SLICE3_VE_ENABLE_CTRL,
+				en, 4, 1);
+		}
 		break;
 	case WR_DMA:
 		VSYNC_WRITE_VPP_REG_BITS(reg, en, 4, 1);
-		for (i = SLICE1; i < slice_max; i++)
-			VSYNC_WRITE_VPP_REG_BITS(VPP_SLICE1_VE_ENABLE_CTRL + i - SLICE1,
+		VSYNC_WRITE_VPP_REG_BITS(VPP_SLICE1_VE_ENABLE_CTRL,
+			en, 4, 1);
+		if (chip_type_id == chip_s5) {
+			VSYNC_WRITE_VPP_REG_BITS(VPP_SLICE2_VE_ENABLE_CTRL,
 				en, 4, 1);
+			VSYNC_WRITE_VPP_REG_BITS(VPP_SLICE3_VE_ENABLE_CTRL,
+				en, 4, 1);
+		}
 		break;
 	default:
 		break;
@@ -919,11 +922,16 @@ void vpp_luma_hist_init(void)
 
 		/*slice1*/
 		/*WRITE_VPP_REG(VI_HIST_GCLK_CTRL + 0x30, 0xffffffff);*/
-		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 1, 24, 8);*/
-		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 2, 5, 3);*/
-		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 2, 11, 3);*/
-		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 0, 2, 1);*/
 		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 0, 1, 1);*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 1, 2, 1);*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 2, 11, 3);*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 3, 18, 2);*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 1, 24, 8);*/
+		/*WRITE_VPP_REG(VI_HIST_H_START_END + 0x30, 0x2d0);*/
+		/*WRITE_VPP_REG(VI_HIST_V_START_END + 0x30, 0x1e0);*/
+		/*WRITE_VPP_REG(VI_HIST_PIC_SIZE + 0x30,*/
+		/*	0x2d0 | (0x1e0 << 16));*/
+		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 2, 5, 3);*/
 		/*WRITE_VPP_REG_BITS(VI_HIST_CTRL + 0x30, 1, 0, 1);*/
 	} else {
 		/*13:11 hist_din_sel, 0: from vdin0 dout, 1: vdin1, 2: nr dout,*/
@@ -1926,7 +1934,10 @@ static void _lc_blk_bdry_cfg(unsigned int height,
 	width /= h_num;
 	height /= v_num;
 
-	slice_max = get_slice_max();
+	if (multi_slice_case)
+		slice_max = get_slice_max();
+	else
+		slice_max = SLICE1;
 
 	/*lc curve mapping block IDX default 4k panel*/
 	for (i = SLICE0; i < slice_max; i++) {
@@ -2135,14 +2146,16 @@ void ve_lc_stts_en(int enable,
 	int data32;
 	int tmp = 0x1;
 
-	if (multi_slice_case)
+	if (multi_slice_case) {
 		tmp = 0x3;
-
-	slice_max = get_slice_max();
+		slice_max = get_slice_max();
+	} else {
+		slice_max = SLICE1;
+	}
 
 	WRITE_VPP_REG_S5(VPP_LC_STTS_GCLK_CTRL0, 0x0);
 
-	data32 = ((width - 1) << 16) | (height - 1);
+	data32 = ((height - 1) << 16) | (width - 1);
 	WRITE_VPP_REG_S5(VPP_LC_STTS1_WIDTHM1_HEIGHTM1,
 		data32);
 	WRITE_VPP_REG_S5(VPP_LC_STTS2_WIDTHM1_HEIGHTM1,
@@ -2194,7 +2207,7 @@ void ve_lc_stts_en(int enable,
 	if (multi_slice_case)
 		WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_BLACK_INFO2,
 			thd_black, 0, 8);
-	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL, enable, 0, 2);
+	WRITE_VPP_REG_BITS_S5(VPP_LC_STTS_CTRL, 0, 0, 3);
 }
 
 void ve_lc_blk_num_get(int *h_num, int *v_num,
@@ -2304,7 +2317,10 @@ void ve_lc_top_cfg(int enable, int h_num, int v_num,
 	int slice_max;
 	int lc_reg;
 
-	slice_max = get_slice_max();
+	if (multi_slice_case)
+		slice_max = get_slice_max();
+	else
+		slice_max = SLICE1;
 
 	/*lc curve mapping block IDX default 4k panel*/
 	for (i = SLICE0; i < slice_max; i++) {

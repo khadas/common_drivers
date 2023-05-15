@@ -2733,8 +2733,6 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 		if (chip_type_id == chip_s5 ||
 			chip_type_id == chip_t3x) {
-			ve_sharpness_ctl(md, pq_cfg.sharpness0_en,
-				pq_cfg.sharpness1_en);
 			ve_vadj_ctl(md, VE_VADJ1, pq_cfg.vadj1_en);
 			ve_vadj_ctl(md, VE_VADJ2, pq_cfg.vadj2_en);
 			ve_bs_ctl(md, 0);
@@ -2755,6 +2753,14 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 					lc_en = 1;
 				else
 					lc_en = 0;
+
+				ve_sharpness_ctl(md, pq_cfg.sharpness0_en,
+					pq_cfg.sharpness1_en);
+			} else {
+				WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
+					pq_cfg.sharpness0_en, 1, 1);
+				WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
+					pq_cfg.sharpness1_en, 1, 1);
 			}
 		} else {
 			WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
@@ -2839,8 +2845,6 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 		if (chip_type_id == chip_s5 ||
 			chip_type_id == chip_t3x) {
-			ve_sharpness_ctl(md, pq_cfg.sharpness0_en,
-				pq_cfg.sharpness1_en);
 			ve_vadj_ctl(md, VE_VADJ1, pq_cfg.vadj1_en);
 			ve_vadj_ctl(md, VE_VADJ2, pq_cfg.vadj2_en);
 			ve_bs_ctl(md, 0);
@@ -2859,6 +2863,14 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 					lc_en = 1;
 				else
 					lc_en = 0;
+
+				ve_sharpness_ctl(md, pq_cfg.sharpness0_en,
+					pq_cfg.sharpness1_en);
+			} else {
+				VSYNC_WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
+					pq_cfg.sharpness0_en, 1, 1);
+				VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
+					pq_cfg.sharpness1_en, 1, 1);
 			}
 		} else {
 			VSYNC_WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,

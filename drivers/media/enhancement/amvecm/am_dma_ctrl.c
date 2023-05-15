@@ -99,9 +99,6 @@ static void _set_vpu_lut_dma_mif_wr_unit(int enable,
 		offset = cfg_data->dma_wr_id - 8;
 	}
 
-	pr_info("%s: wr_sel = %d, offset = %d\n",
-		__func__, wr_sel, offset);
-
 	/*
 	 * Bit 31 ro_lut_wr_hs_r unsigned, RO, default = 0
 	 * Bit 30:27 ro_lut_wr_id unsigned, RO, default = 0
@@ -119,8 +116,6 @@ static void _set_vpu_lut_dma_mif_wr_unit(int enable,
 		dma_reg_cfg.reg_wrmif_sel);
 	val = 0xff0 + wr_sel;
 	WRITE_VPP_REG_S5(addr, val);
-	pr_info("%s: addr = %x, val = %x\n",
-		__func__, addr, val);
 
 	/*
 	 * Bit 31 reserved
@@ -145,8 +140,6 @@ static void _set_vpu_lut_dma_mif_wr_unit(int enable,
 		((enable & 0x1) << 16) |
 		(cfg_data->stride & 0x1fff);
 	WRITE_VPP_REG_S5(addr, val);
-	pr_info("%s: addr = %x, val = %x\n",
-		__func__, addr, val);
 
 	addr = ADDR_PARAM(dma_reg_cfg.page,
 		dma_reg_cfg.reg_wrmif0_badr0) + (offset << 1);
@@ -222,8 +215,6 @@ void am_dma_buffer_malloc(struct platform_device *pdev,
 			alloc_size[i] = dma_count[i] * UNIT_SIZE;
 			dma_vaddr[i] = dma_alloc_coherent(&vecm_dev,
 				alloc_size[i], &dma_paddr[i], GFP_KERNEL);
-			pr_info("%s get dma_vaddr[%d] %px %pad\n", __func__,
-				i, dma_vaddr[i], &dma_paddr[i]);
 			lut_dma_wr[i].dma_wr_id = i;
 			if (dma_vaddr[i])
 				lut_dma_wr[i].baddr0 =
@@ -233,8 +224,6 @@ void am_dma_buffer_malloc(struct platform_device *pdev,
 		alloc_size[dma_wr_id] = dma_count[dma_wr_id] * UNIT_SIZE;
 		dma_vaddr[dma_wr_id] = dma_alloc_coherent(&vecm_dev,
 			alloc_size[dma_wr_id], &dma_paddr[dma_wr_id], GFP_KERNEL);
-		pr_info("%s get dma_vaddr[%d] %px %pad\n", __func__,
-			dma_wr_id, dma_vaddr[dma_wr_id], &dma_paddr[dma_wr_id]);
 		lut_dma_wr[dma_wr_id].dma_wr_id = dma_wr_id;
 		if (dma_vaddr[dma_wr_id])
 			lut_dma_wr[dma_wr_id].baddr0 =
@@ -266,8 +255,6 @@ void am_dma_set_mif_wr_status(int enable)
 	addr = ADDR_PARAM(dma_reg_cfg.page,
 		dma_reg_cfg.reg_wrmif_ctrl);
 	WRITE_VPP_REG_BITS_S5(addr, enable, 13, 1);
-	pr_info("%s: addr = %x, enable = %d\n",
-		__func__, addr, enable);
 }
 
 void am_dma_set_mif_wr(enum lut_dma_wr_id_e dma_wr_id,
@@ -285,8 +272,6 @@ void am_dma_set_mif_wr(enum lut_dma_wr_id_e dma_wr_id,
 		if (dma_vaddr[dma_wr_id])
 			_set_vpu_lut_dma_mif_wr_unit(enable,
 				&lut_dma_wr[dma_wr_id]);
-		pr_info("%s: dma_vaddr[%d] %px %pad\n", __func__,
-			dma_wr_id, dma_vaddr[dma_wr_id], &lut_dma_wr[dma_wr_id].baddr0);
 	}
 }
 
@@ -299,6 +284,8 @@ void am_dma_get_mif_data_lc_stts(int index,
 	unsigned int tmp = 0;
 	unsigned int size = length;
 	unsigned int *val;
+	unsigned int offset = 0;
+	unsigned int min_max = 0;
 
 	if (!data || length == 0) {
 		pr_am_dma("%s: data or length not fit.\n",
@@ -326,10 +313,16 @@ void am_dma_get_mif_data_lc_stts(int index,
 			k++;
 
 			if (j == 3 || j == 7 || j == 11 || j == 15) {
-				tmp |= ((val[i * 16 + j] >> 24) & 0x1f);
+				tmp = (val[i * 16 + j] >> 24) & 0x1f;
+				min_max |= (tmp << offset);
+
 				if (j == 15) {
-					data[k] = tmp;
+					data[k] = min_max;
+					min_max = 0;
+					offset = 0;
 					k++;
+				} else {
+					offset += 5;
 				}
 			}
 

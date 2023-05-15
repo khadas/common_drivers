@@ -817,12 +817,16 @@ void lc_disable(void)
 	}
 
 	memset(lc_hist, 0, LC_HIST_SIZE * sizeof(int));
-	memset(lc_hist_slice1, 0, LC_HIST_SIZE * sizeof(int));
 	memset(lc_szcurve, 0, LC_CURV_SIZE * sizeof(int));
-	memset(lc_szcurve_slice1, 0, LC_CURV_SIZE * sizeof(int));
 	memset(curve_nodes_cur, 0, LC_CURV_SIZE * sizeof(int));
 	memset(curve_nodes_pre, 0, LC_CURV_SIZE * sizeof(int));
 	memset(curve_nodes_pre_raw, 0, LC_CURV_SIZE * sizeof(int64_t));
+
+	if (chip_type_id == chip_t3x) {
+		memset(lc_hist_slice1, 0, LC_HIST_SIZE * sizeof(int));
+		memset(lc_szcurve_slice1, 0, LC_CURV_SIZE * sizeof(int));
+	}
+
 	lc_en_chflg = 0x0;
 }
 
@@ -951,7 +955,7 @@ static void lc_config(int enable,
 		ve_lc_stts_blk_cfg(height, width,
 			h_num, v_num);
 		ve_lc_stts_en(enable, height, width,
-			0, 0, 0, 1, 0,
+			0, 0, 1, 1, 0,
 			bitdepth, flag, flag_full,
 			lc_tune_curve.lc_reg_thd_black);
 	}
@@ -1821,6 +1825,7 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 
 	if (chip_type_id != chip_t3x) {
 		_read_region(blk_vnum, blk_hnum);
+		data_hist = lc_hist;
 	} else {
 		if (slice == 0) {
 			data_curve = lc_szcurve;
@@ -1851,9 +1856,11 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 		}
 	}
 
-	if (amlc_debug == 0x8 && lc_hist_prcnt) /*print all hist data*/
+	if (amlc_debug == 0x8 && lc_hist_prcnt) {/*print all hist data*/
+		pr_info("slice = %d\n", slice);
 		for (i = 0; i < 8 * 12 * 17; i++)
-			pr_info("%x\n", data_hist[i]);
+			pr_info("[%d] %x\n", i, data_hist[i]);
+	}
 
 	if (lc_hist_prcnt > 0)
 		lc_hist_prcnt--;

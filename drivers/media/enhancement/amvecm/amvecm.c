@@ -11071,8 +11071,9 @@ void init_pq_setting(void)
 		pq_reg_wr_rdma = 1;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else if (chip_type_id == chip_s5) {
+		bitdepth = 12;
 		cm_top_ctl(WR_VCB, 1);
-		cm_init_config(12);
+		cm_init_config(bitdepth);
 		vpp_pq_ctrl_config(pq_cfg, WR_VCB);
 
 		pq_reg_wr_rdma = 1;
@@ -11192,14 +11193,14 @@ tvchip_pq_setting:
 	/*am_dma_ctrl init*/
 	if (chip_type_id == chip_t3x) {
 		am_dma_set_mif_wr_status(1);
-		/*am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_0, 1);*/
-		/*am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_1, 0);*/
 		am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_0, 1);
-		am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_1, 0);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_1, 1);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_0, 1);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_1, 1);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_0, 1);
+		am_dma_set_mif_wr(EN_DMA_WR_ID_LC_STTS_1, 1);
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_1, 0);*/
-		am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_0, 0);
-		am_dma_set_mif_wr(EN_DMA_WR_ID_VD1_HDR_1, 0);
 	}
 
 	pq_reg_wr_rdma = 1;
@@ -12374,7 +12375,7 @@ int __init aml_vecm_init(void)
 {
 	/*unsigned int hiu_reg_base;*/
 
-	pr_info("%s:module init_20230505\n", __func__);
+	pr_info("%s:module init_20230512-0\n", __func__);
 
 	if (platform_driver_register(&aml_vecm_driver)) {
 		pr_err("failed to register bl driver module\n");

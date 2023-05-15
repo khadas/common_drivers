@@ -124,9 +124,9 @@ static int gd5fxgqx_variant2_ooblayout_free(struct mtd_info *mtd, int section,
 	if (section)
 		return -ERANGE;
 
-	/* Reserve 1 bytes for the BBM. */
-	region->offset = 1;
-	region->length = 63;
+	/* Reserve 2 bytes for the BBM. */
+	region->offset = 2;
+	region->length = 62;
 
 	return 0;
 }

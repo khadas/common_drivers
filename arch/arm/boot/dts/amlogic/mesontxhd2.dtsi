@@ -230,27 +230,21 @@
 	};
 
 	ddr_bandwidth {
-		compatible = "amlogic,ddr-bandwidth-t5m";
-		status = "disabled";
-		reg = <0 0xfe036000 0 0x400
-		       0 0xfe034000 0 0x400
-		       0 0xfe0368a4 0 0x4>;
-		freq_reg = <0xfe0348a4>;
-		interrupts = <0 136 IRQ_TYPE_EDGE_RISING
-			      0 140 IRQ_TYPE_EDGE_RISING>;
+		compatible = "amlogic,ddr-bandwidth-txhd2";
+		status = "okay";
+		reg = <0xff638000 0x400
+		       0xff6388a4 0x4>;
+		interrupts = <0 52 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "ddr_bandwidth";
 	};
 
 	dmc_monitor {
-		compatible = "amlogic,dmc_monitor-t5m";
-		status = "disabled";
-		reg = <0 0xfe036000 0 0x400
-		       0 0xfe034000 0 0x400>;
-		reg_base = <0xfe036000>;
-		interrupts = <0 137 IRQ_TYPE_EDGE_RISING
-			      0 141 IRQ_TYPE_EDGE_RISING>;
+		compatible = "amlogic,dmc_monitor-txhd2";
+		status = "okay";
+		reg = <0xff638000 0x400>;
+		reg_base = <0xff639000>;
+		interrupts = <0 52 IRQ_TYPE_EDGE_RISING>;
 	};
-
 	galcore {
 		compatible = "amlogic, galcore";
 		dev_name = "galcore";

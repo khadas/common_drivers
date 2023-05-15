@@ -823,15 +823,27 @@ static ssize_t freq_store(struct class *cla,
 static ssize_t freq_show(struct class *cla,
 			 struct class_attribute *attr, char *buf)
 {
+	int i = 0;
+	size_t s = 0;
 	unsigned long clk = 0;
 
 	if (pxp_debug_freq) {
 		clk = pxp_debug_freq;
+		s += sprintf(buf + s, "%ld MHz\n", clk / 1000000);
 	} else {
 		if (aml_db->ops && aml_db->ops->get_freq)
 			clk = aml_db->ops->get_freq(aml_db);
+
+		if (dmc_is_asymmetry(aml_db)) {
+			for (i = 0; i < aml_db->dmc_number; i++) {
+				s += sprintf(buf + s, "DMC%d: %ld MHz\n", i,
+					aml_db->data_extern[i].freq / 1000000);
+			}
+		} else {
+			s += sprintf(buf + s, "%ld MHz\n", clk / 1000000);
+		}
 	}
-	return sprintf(buf, "%ld MHz\n", clk / 1000000);
+	return s;
 }
 static CLASS_ATTR_RW(freq);
 #else
@@ -1285,6 +1297,14 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 		band->mali_port[1] = -1;
 		break;
 #endif
+#ifdef CONFIG_AMLOGIC_DDR_BANDWIDTH_TXHD2
+	case DMC_TYPE_TXHD2:
+		band->ops = &txhd2_ddr_bw_ops;
+		aml_db->channels = 8;
+		aml_db->mali_port[0] = 1;
+		aml_db->mali_port[1] = 2;
+		break;
+#endif
 	default:
 		pr_err("%s, Can't find ops for chip:%x\n", __func__, cpu);
 		return -1;
@@ -1595,6 +1615,10 @@ static const struct of_device_id aml_ddr_bandwidth_dt_match[] = {
 	{
 		.compatible = "amlogic,ddr-bandwidth-t3x",
 		.data = (void *)DMC_TYPE_T3X,
+	},
+	{
+		.compatible = "amlogic,ddr-bandwidth-txhd2",
+		.data = (void *)DMC_TYPE_TXHD2,
 	},
 #endif
 	{}

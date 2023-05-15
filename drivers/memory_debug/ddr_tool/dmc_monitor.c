@@ -822,6 +822,11 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 		mon->mon_number = 2;
 		break;
 #endif
+#ifdef CONFIG_AMLOGIC_DMC_MONITOR_TXHD2
+	case DMC_TYPE_TXHD2:
+		mon->ops = &txhd2_dmc_mon_ops;
+		break;
+#endif
 	default:
 		pr_err("%s, Can't find ops for chip:%x\n", __func__, chip);
 		break;
@@ -1146,6 +1151,10 @@ static const struct of_device_id dmc_monitor_match[] = {
 	{
 		.compatible = "amlogic,dmc_monitor-t3x",
 		.data = (void *)DMC_TYPE_T3X,
+	},
+	{
+		.compatible = "amlogic,dmc_monitor-txhd2",
+		.data = (void *)DMC_TYPE_TXHD2,
 	},
 #endif
 	{}

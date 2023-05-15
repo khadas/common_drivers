@@ -123,10 +123,13 @@
 		resume_power = <0x8200009F>;
 	};
 
-	aml_reboot{
+	aml_reboot: reboot@0xfe005b08 {
 		compatible = "aml, reboot";
 		sys_reset = <0x84000009>;
 		sys_poweroff = <0x84000008>;
+		extend_reboot_reason; /* Support up to 128 reboot reasons*/
+		reg = <0x0 0xfe005b08 0x0 0x4>; /* SEC_AO_SEC_SD_CFG15 */
+		status = "okay";
 	};
 
 	arm_pmu {

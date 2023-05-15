@@ -20,7 +20,7 @@ static int pcpd_monitor_get_audio_type(struct pcpd_monitor *pc_pd)
 {
 	unsigned int pc;
 
-	if (!IS_ERR(pc_pd->reg_map)) {
+	if (IS_ERR(pc_pd->reg_map)) {
 		dev_err(pc_pd->dev, "Can't pcpd_reg regmap!!\n");
 		return 0;
 	}

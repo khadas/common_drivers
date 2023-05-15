@@ -968,13 +968,13 @@
 	};
 
 	usb2_phy_v2: usb2phy@fe004420 {
-		compatible = "amlogic,amlogic-new-usb2-v2";
+		compatible = "amlogic,amlogic-new-usb2-v2-c2";
 		status = "disable";
 		#phy-cells = <0>;
 		reg = <0x0 0xfe004420 0x0 0x60
 			0x0 0xfe000004 0x0 0x100
 			0x0 0xfe004000 0x0 0x2000>;
-		//clocks = <&clkc CLKID_USB_PHY>;
+		clocks = <&clkc CLKID_SYS_USB_PHY>;
 		clock-names = "usb_phy";
 		usb-clk-reg = <0xfe0008dc>;
 		usb-clkreg-size = <0x4>;
@@ -988,14 +988,14 @@
 		pll-setting-8 = <0xe000c>;
 		version = <2>;
 		pwr-ctl = <0>;
-		//power-domains = <&pwrdm PDID_USB>;
+		power-domains = <&pwrdm PDID_CX_USB>;
 		phy20-reset-level-bit = <4>;
 		usb-reset-bit = <3>;
 		usb-busclk_ctl_div = <0x509>;
 	};
 
 	usb3_phy_v2: usb3phy@fe004480 {
-		compatible = "amlogic,amlogic-new-usb3-v2";
+		compatible = "amlogic,amlogic-new-c2-usb3-v2";
 		status = "disable";
 		/*clocks = <&clkc CLKID_PCIE_PLL>;*/
 		/*clock-names = "pcie_refpll";*/
@@ -1008,34 +1008,24 @@
 		phy-reg-size = <0x2000>;
 		interrupts = <GIC_SPI 152 IRQ_TYPE_LEVEL_HIGH>;
 		pwr-ctl = <0>;
-		//power-domains = <&pwrdm PDID_USB>;
+		power-domains = <&pwrdm PDID_CX_USB>;
 	};
 
-	usb0: usb@ff400000 {
-		compatible = "amlogic,meson-g12a-dwc3";
+	dwc3: dwc3@ff400000 {
+		compatible = "snps,dwc3";
 		status = "disable";
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
-
-		//clocks = <&clkc CLKID_USB_CTRL>;
+		reg = <0x0 0xff400000 0x0 0x100000>;
+		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_HIGH>;
+		dr_mode = "host";
+		maximum-speed = "high-speed";
+		snps,dis_u2_susphy_quirk;
+		usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;
+		clocks = <&clkc CLKID_SYS_USB_CTRL>;
 		clock-names = "usb_general";
-
-		dwc3: dwc3@ff400000 {
-			compatible = "snps,dwc3";
-			reg = <0x0 0xff400000 0x0 0x100000>;
-			interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_HIGH>;
-			dr_mode = "host";
-			maximum-speed = "high-speed";
-			snps,dis_u2_susphy_quirk;
-			usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;
-			//clocks = <&clkc CLKID_USB_CTRL>;
-			clock-names = "usb_general";
-			//power-domains = <&pwrdm PDID_USB>;
-			/*usb5v-supply = <&vcc_5v>;*/
-			/*usb3v3-supply = <&vddao_3v3>;*/
-			/*usb1v8-supply = <&vddio_ao18>;*/
-		};
+		power-domains = <&pwrdm PDID_CX_USB>;
+		/*usb5v-supply = <&vcc_5v>;*/
+		/*usb3v3-supply = <&vddao_3v3>;*/
+		/*usb1v8-supply = <&vddio_ao18>;*/
 	};
 
 	dwc2_a: dwc2_a@ff500000 {
@@ -1059,10 +1049,10 @@
 		phy-reg-size = <0xa0>;
 		/** phy-interface: 0x0: amlogic phy, 0x1: synopsys phy **/
 		phy-interface = <0x2>;
-		//clocks = <&clkc CLKID_USB_CTRL>, <&clkc CLKID_USB_PHY>;
+		clocks = <&clkc CLKID_SYS_USB_CTRL>, <&clkc CLKID_SYS_USB_PHY>;
 		clock-names = "usb_general",
 				"usb1";
-		//power-domains = <&pwrdm PDID_USB>;
+		power-domains = <&pwrdm PDID_CX_USB>;
 	};
 
 	rng{

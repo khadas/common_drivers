@@ -1292,7 +1292,7 @@
 };
 
 &uart_C {
-	status = "okay";
+	status = "disabled";
 };
 
 &i2c3 {

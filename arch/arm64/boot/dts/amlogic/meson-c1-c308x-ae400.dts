@@ -1237,7 +1237,7 @@
 };
 
 &uart_C {
-	status = "okay";
+	status = "disabled";
 	rs485 = <0>;
 	rts-gpio = <&gpio GPIOA_0 GPIO_ACTIVE_HIGH>;
 };

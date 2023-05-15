@@ -13,7 +13,7 @@ if AMLOGIC_WIFI
 config AMLOGIC_PWM_32K
 	bool "amlogic soc pwm 32k support"
 	depends on AMLOGIC_PWM_MESON
-	default y
+	default n
 	help
 		WiFi usually needs a 32K frequency clock signal.
 		There are three possibilities:

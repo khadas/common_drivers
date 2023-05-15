@@ -9,7 +9,7 @@ config AMLOGIC_MEDIA_MODULE
 	tristate "Amlogic Multimedia compile support"
 	select VIDEOBUF_GEN
 	select VIDEOBUF_VMALLOC
-	default y
+	default n
 	help
 		media module compile support
 		select y for built-in

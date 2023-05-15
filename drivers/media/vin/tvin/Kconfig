@@ -27,6 +27,6 @@ endif
 config AMLOGIC_TVIN_USE_DEBUG_FILE
         tristate "Enable vdin debug file"
         depends on AMLOGIC_DEBUG_FILE
-        default y
+        default n
         help
             Debug file for vdin write buffer

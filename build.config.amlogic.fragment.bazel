@@ -15,10 +15,6 @@ function pre_defconfig_cmds() {
 		echo "CONFIG_AMLOGIC_SERIAL_EARLY_CONSOLE=y" >> ${temp_file}
 		echo "CONFIG_DEVTMPFS=y" >> ${temp_file}
 
-		echo "CONFIG_AMLOGIC_MEDIA_MODULE=n" >> ${temp_file}
-		echo "CONFIG_AMLOGIC_COMMON_CLK=n" >> ${temp_file}
-		echo "CONFIG_AMLOGIC_COMMON_CLK_G12A=n" >> ${temp_file}
-
 		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${temp_file}
 	else
 		echo "CONFIG_MODULE_SIG_ALL=y" > ${temp_file}

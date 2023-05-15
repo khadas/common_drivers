@@ -4,7 +4,7 @@ menu "Clock support for Amlogic platforms"
 
 config AMLOGIC_COMMON_CLK
 	tristate "Meson clock common API"
-	default y
+	default n
 	help
 	  provide meson clock common
 	  API and debuger tool
@@ -171,7 +171,7 @@ config AMLOGIC_COMMON_CLK_T5M
 config AMLOGIC_COMMON_CLK_G12A
 	tristate "G12 and SM1 SoC clock controllers support"
 	depends on ARM64
-	default y
+	default n
 	select AMLOGIC_COMMON_CLK_MESON_REGMAP
 	select AMLOGIC_COMMON_CLK_MESON_DUALDIV
 	select AMLOGIC_COMMON_CLK_MESON_MPLL

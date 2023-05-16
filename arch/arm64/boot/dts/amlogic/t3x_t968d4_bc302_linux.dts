@@ -1631,10 +1631,31 @@
 };
 
 &i2c2 {
-	status = "disabled";
+	status = "okay";
+	clock-frequency = <100000>;
 	pinctrl-names="default";
-	pinctrl-0=<&i2c2_pins2>;
-	clock-frequency = <300000>;
+	pinctrl-0=<&i2c2_pins3>;
+
+	lcd_extern_i2c0: lcd_extern_i2c@29 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_HV650LS";
+		reg = <0x29>;
+		status = "okay";
+	};
+
+	lcd_extern_i2c1: lcd_extern_i2c@33 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_CS602";
+		reg = <0x33>;
+		status = "okay";
+	};
+
+	lcd_extern_i2c2: lcd_extern_i2c@20 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_CS901";
+		reg = <0x20>;
+		status = "okay";
+	};
 };
 
 /* SDIO */

@@ -1699,13 +1699,6 @@
 	memory-region = <&camera_cma_reserved>;
 };
 
-&i2c2 {
-	status = "okay";
-	pinctrl-names="default";
-	pinctrl-0=<&i2c2_pins2>;
-	clock-frequency = <300000>;
-};
-
 /* SDIO */
 /* ref board pcie wifi */
 &sd_emmc_a {
@@ -1799,7 +1792,7 @@
 	status = "okay";
 	clock-frequency = <100000>;
 	pinctrl-names="default";
-	pinctrl-0=<&i2c2_pins2>;
+	pinctrl-0=<&i2c2_pins3>;
 
 	lcd_extern_i2c0: lcd_extern_i2c@29 {
 		compatible = "lcd_ext, i2c";

@@ -244,10 +244,6 @@ static int vpts_error_num;
 
 int register_tsync_callbackfunc(enum tysnc_func_type_e ntype, void *pfunc)
 {
-	if (new_arch) {
-		pr_debug("no need to register_tync_func.\n");
-		return -1;
-	}
 	if (ntype >= TSYNC_FUNC_TYPE_MAX) {
 		pr_debug("register_tync_func ntype is err.\n");
 		return -1;
@@ -288,6 +284,10 @@ int register_tsync_callbackfunc(enum tysnc_func_type_e ntype, void *pfunc)
 	case TSYNC_STBUF_SIZE:
 		stbuf_size_cb =
 				(pfun_stbuf_size)pfunc;
+		break;
+	case TSYNC_AMLDMX_PCR_GET:
+		amldemux_pcrscr_get_cb =
+			(pfun_amldemux_pcrscr_get)pfunc;
 		break;
 	default:
 		break;
@@ -587,33 +587,14 @@ u8 tsync_get_video_pid_valid(void)
 }
 EXPORT_SYMBOL(tsync_get_video_pid_valid);
 
-static int tsync_get_dmx_pcr(int demux_device_index, int index, u32 *pcr)
-{
-	u64 pcr_tmp;
-	u32 video_pts_bit32 = 0;
-	u32 pdts_status;
-
-	if (READ_DEMUX_REG(TS_HIU_CTL_2) & 0x80)
-		pcr_tmp = READ_DEMUX_REG(PCR_DEMUX_2);
-	else if (READ_DEMUX_REG(TS_HIU_CTL_3) & 0x80)
-		pcr_tmp = READ_DEMUX_REG(PCR_DEMUX_3);
-	else
-		pcr_tmp = READ_DEMUX_REG(PCR_DEMUX);
-	pcr_tmp &= 0x00000000FFFFFFFF;
-	pdts_status = READ_DEMUX_REG(STB_PTS_DTS_STATUS);
-	if ((pdts_status & (1 << VIDEO_PTS_READY)) && (pdts_status & 0x1000))
-		video_pts_bit32 = 1;
-	if (video_pts_bit32)
-		pcr_tmp = pcr_tmp | (1LL << 32);
-	// *pcr = pcr_tmp;
-	*pcr = pcr_tmp & 0xFFFFFFFF;
-	return 0;
-}
-
 void tsync_get_demux_pcr_for_newarch(void)
 {
-	tsync_get_dmx_pcr(demux_info.demux_device_id,
-			demux_info.index, &demux_pcrscr);
+	u64 pcr_u64 = -1;
+
+	if (amldemux_pcrscr_get_cb)
+		amldemux_pcrscr_get_cb(demux_info.demux_device_id,
+			demux_info.index, &pcr_u64);
+	demux_pcrscr = pcr_u64;
 	if (first_demux_pcrscr == 0)
 		first_demux_pcrscr = demux_pcrscr;
 	return;

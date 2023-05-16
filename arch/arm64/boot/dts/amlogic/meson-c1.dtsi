@@ -278,8 +278,8 @@
 					<GIC_SPI 33 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_I2C>;
-				//clocks = <&clkc CLKID_I2C_M_A>;
+				power-domains = <&pwrdm PDID_CX_I2C>;
+				clocks = <&clkc CLKID_SYS_I2C_M_A>;
 				status = "disabled";
 			};
 
@@ -290,8 +290,8 @@
 					<GIC_SPI 69 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_I2C>;
-				//clocks = <&clkc CLKID_I2C_M_B>;
+				power-domains = <&pwrdm PDID_CX_I2C>;
+				clocks = <&clkc CLKID_SYS_I2C_M_B>;
 				status = "disabled";
 			};
 
@@ -302,8 +302,8 @@
 					<GIC_SPI 77 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_I2C>;
-				//clocks = <&clkc CLKID_I2C_M_C>;
+				power-domains = <&pwrdm PDID_CX_I2C>;
+				clocks = <&clkc CLKID_SYS_I2C_M_C>;
 				status = "disabled";
 			};
 
@@ -314,8 +314,8 @@
 					<GIC_SPI 79 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_I2C>;
-				//clocks = <&clkc CLKID_I2C_M_D>;
+				power-domains = <&pwrdm PDID_CX_I2C>;
+				clocks = <&clkc CLKID_SYS_I2C_M_D>;
 				status = "disabled";
 			};
 
@@ -326,8 +326,8 @@
 					<GIC_SPI 146 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_I2C>;
-				//clocks = <&clkc CLKID_SYS_I2C_M_E>;
+				power-domains = <&pwrdm PDID_CX_I2C>;
+				clocks = <&clkc CLKID_SYS_I2C_M_E>;
 				status = "disabled";
 			};
 

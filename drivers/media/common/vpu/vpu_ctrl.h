@@ -55,7 +55,7 @@ static struct fclk_div_s fclk_div_table_c3[] = {
 	{FCLK_DIV_MAX, 8,    1},
 };
 
-static struct fclk_div_s fclk_div_table_t3x[] = {
+__maybe_unused static struct fclk_div_s fclk_div_table_t3x[] = {
 	/* id,         mux,  div */
 	{FCLK_DIV3,    0,    3},
 	{FCLK_DIV4,    1,    4},

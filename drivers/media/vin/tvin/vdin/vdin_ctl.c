@@ -3854,8 +3854,9 @@ void vdin_hw_disable(struct vdin_dev_s *devp)
 	else
 		wr(offset, VDIN_WR_CTRL, 0x0bc01000 | def_canvas);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vdin_wrmif2_enable(devp, 0, 0);
-
+#endif
 	/* disable clock of blackbar, histogram, histogram, line fifo1, matrix,
 	 * hscaler, pre hscaler, clock0
 	 */
@@ -3912,8 +3913,9 @@ void vdin_hw_close(struct vdin_dev_s *devp)
 	else
 		wr(offset, VDIN_WR_CTRL, 0x0bc01000 | def_canvas);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vdin_wrmif2_enable(devp, 0, 0);
-
+#endif
 	/* disable clock of blackbar, histogram, histogram, line fifo1, matrix,
 	 * hscaler, pre hscaler, clock0
 	 */
@@ -4133,6 +4135,7 @@ bool vdin_write_done_check(unsigned int offset, struct vdin_dev_s *devp)
 		}
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (devp->afbce_valid && devp->double_wr) { /* afbce */
 		if (vdin_afbce_read_write_down_flag(devp)) {
 			devp->stats.afbce_normal_cnt++;
@@ -4142,6 +4145,7 @@ bool vdin_write_done_check(unsigned int offset, struct vdin_dev_s *devp)
 			ret = false;
 		}
 	}
+#endif
 
 	if (vdin_isr_monitor & VDIN_ISR_MONITOR_WRITE_DONE)
 		pr_info("%s vdin%d irq:%d,check:%d,afbce:%d %d mif:%d %d\n",
@@ -4956,6 +4960,7 @@ void vdin_force_go_filed(struct vdin_dev_s *devp)
 		return;
 	}
 #endif
+
 	wr_bits(offset, VDIN_COM_CTRL0, 1, 28, 1);
 	wr_bits(offset, VDIN_COM_CTRL0, 0, 28, 1);
 }
@@ -6295,11 +6300,13 @@ void vdin_vs_proc_monitor(struct vdin_dev_s *devp)
 	if (color_range_force)
 		devp->prop.color_fmt_range =
 		tvin_get_force_fmt_range(devp->prop.color_format);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (devp->dtdata->hw_ver == VDIN_HW_T7 && devp->index == 0 &&
 	    (devp->irq_cnt == 1 || devp->irq_cnt == 10)) {
 		vdin_wrmif2_enable(devp, 0, devp->flags & VDIN_FLAG_RDMA_ENABLE);
 		vdin_wrmif2_enable(devp, 1, devp->flags & VDIN_FLAG_RDMA_ENABLE);
 	}
+#endif
 }
 
 void vdin_check_hdmi_hdr(struct vdin_dev_s *devp)
@@ -6381,8 +6388,11 @@ u32 vdin_get_curr_field_type(struct vdin_dev_s *devp)
 	case VDIN_FORMAT_CONVERT_YUV_RGB:
 	case VDIN_FORMAT_CONVERT_RGB_RGB:
 		type |= VIDTYPE_RGB_444;
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (devp->afbce_mode_pre && vdin_chk_is_comb_mode(devp))
 			type |= VIDTYPE_COMB_MODE;
+#endif
 		break;
 	case VDIN_FORMAT_CONVERT_YUV_NV21:
 	case VDIN_FORMAT_CONVERT_RGB_NV21:
@@ -6411,16 +6421,22 @@ u32 vdin_get_curr_field_type(struct vdin_dev_s *devp)
 
 		if (devp->afbce_flag & VDIN_AFBCE_EN_LOSSY)
 			type |= VIDTYPE_COMPRESS_LOSS;
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (vdin_chk_is_comb_mode(devp))
 			type |= VIDTYPE_COMB_MODE;
+#endif
 	} else if (devp->afbce_mode_pre) {
 		type |= VIDTYPE_COMPRESS;
 		type |= VIDTYPE_NO_DW;
 		type |= VIDTYPE_SCATTER;
 		if (devp->afbce_flag & VDIN_AFBCE_EN_LOSSY)
 			type |= VIDTYPE_COMPRESS_LOSS;
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (vdin_chk_is_comb_mode(devp))
 			type |= VIDTYPE_COMB_MODE;
+#endif
 	}
 
 #if IS_ENABLED(CONFIG_AMLOGIC_TEE)

@@ -1687,7 +1687,9 @@ void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 
 	if (module_sel == VD1_HDR) {
 		if (chip_type_id == chip_t3x) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			vd_proc_info = get_vd_proc_amvecm_info();
+#endif
 			hist_width = vd_proc_info->slice[0].hsize;
 			hist_height = vd_proc_info->slice[0].vsize;
 		} else {

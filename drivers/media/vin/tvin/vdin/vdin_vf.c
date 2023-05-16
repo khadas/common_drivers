@@ -886,8 +886,10 @@ void vdin_vf_put(struct vframe_s *vf, void *op_arg)
 		return;
 	p = (struct vf_pool *)op_arg;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	//vdin_vf_put can called from ISR,so below function only for debug!
 	vdin_sct_free_wr_list_idx(p, vf);
+#endif
 
 	receiver_vf_put(vf, p);
 	/*clean dv-buf-size*/

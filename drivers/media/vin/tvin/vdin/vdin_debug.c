@@ -609,6 +609,7 @@ static void vdin_dump_more_mem_df(char *path, struct vdin_dev_s *devp,
 	kfree(rec_dum_frame);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void vdin_dump_write_sct_mem_df(struct vdin_dev_s *devp,
 				    unsigned int buf_num, struct debug_file *df)
 {
@@ -898,8 +899,10 @@ static void vdin_dump_one_afbce_mem_df(char *path, struct vdin_dev_s *devp,
 		buf_num, devp->canvas_max_num, buff);
 	debug_file_close(df);
 }
+#endif
 #else
 #ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void vdin_dump_write_sct_mem(struct vdin_dev_s *devp,
 				    unsigned int buf_num, struct file *filp)
 {
@@ -968,7 +971,7 @@ static void vdin_dump_write_sct_mem(struct vdin_dev_s *devp,
 }
 #endif
 #endif
-
+#endif
 static void vdin_dump_more_mem(char *path, struct vdin_dev_s *devp,
 				unsigned int dump_num, int sel_start)
 {
@@ -1324,6 +1327,39 @@ static void vdin_dump_mem(char *path, struct vdin_dev_s *devp)
 #endif
 }
 
+static void dump_other_mem(struct vdin_dev_s *devp, char *path,
+			   unsigned int start, unsigned int offset)
+{
+#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
+	dump_other_mem_df(devp, path, start, offset);
+#else
+#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+	struct file *filp = NULL;
+	loff_t pos = 0;
+	void *buf = NULL;
+
+	if (devp->mem_protected) {
+		pr_err("can not capture picture in secure mode, return directly\n");
+		return;
+	}
+
+	filp = filp_open(path, O_RDWR | O_CREAT, 0666);
+
+	if (IS_ERR_OR_NULL(filp)) {
+		pr_info("create %s error or filp is NULL.\n", path);
+		return;
+	}
+	buf = phys_to_virt(start);
+	vfs_write(filp, buf, offset, &pos);
+	pr_info("write from 0x%x to 0x%x to %s.\n",
+		start, start + offset, path);
+	vfs_fsync(filp, 0);
+	filp_close(filp, NULL);
+#endif
+#endif
+}
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 				    unsigned int buf_num)
 {
@@ -1512,38 +1548,6 @@ static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 #endif
 }
 
-static void dump_other_mem(struct vdin_dev_s *devp, char *path,
-			   unsigned int start, unsigned int offset)
-{
-#if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
-	dump_other_mem_df(devp, path, start, offset);
-#else
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
-	struct file *filp = NULL;
-	loff_t pos = 0;
-	void *buf = NULL;
-
-	if (devp->mem_protected) {
-		pr_err("can not capture picture in secure mode, return directly\n");
-		return;
-	}
-
-	filp = filp_open(path, O_RDWR | O_CREAT, 0666);
-
-	if (IS_ERR_OR_NULL(filp)) {
-		pr_info("create %s error or filp is NULL.\n", path);
-		return;
-	}
-	buf = phys_to_virt(start);
-	vfs_write(filp, buf, offset, &pos);
-	pr_info("write from 0x%x to 0x%x to %s.\n",
-		start, start + offset, path);
-	vfs_fsync(filp, 0);
-	filp_close(filp, NULL);
-#endif
-#endif
-}
-
 static void vdin_dv_debug(struct vdin_dev_s *devp)
 {
 	struct vframe_s *dv_vf;
@@ -1593,6 +1597,22 @@ static void vdin_channel_order_status(unsigned int offset)
 	pr_info("vdin(%x) current channel order is: %d %d %d\n",
 		offset, c0, c1, c2);
 }
+
+void vdin_dump_vs_info(struct vdin_dev_s *devp)
+{
+	unsigned int cnt = devp->unreliable_vs_cnt;
+
+	if (devp->unreliable_vs_cnt > 10)
+		cnt = 10;
+	pr_info("unreliable_vs_cnt:%d\n", devp->unreliable_vs_cnt);
+	if (devp->unreliable_vs_cnt > 0) {
+		for (devp->unreliable_vs_idx = 0; devp->unreliable_vs_idx < cnt;
+		     devp->unreliable_vs_idx++)
+			pr_info("err t:%d\n",
+				devp->unreliable_vs_time[devp->unreliable_vs_idx]);
+	}
+}
+#endif
 
 const char *vdin_trans_matrix_str(enum vdin_matrix_csc_e csc_idx)
 {
@@ -1715,21 +1735,6 @@ const char *vdin_trans_irq_flag_to_str(enum vdin_irq_flg_e flag)
 		return "VDIN_IRQ_FLG_NO_NEXT_FE";
 	default:
 		return "VDIN_IRQ_FLAG_NULL";
-	}
-}
-
-void vdin_dump_vs_info(struct vdin_dev_s *devp)
-{
-	unsigned int cnt = devp->unreliable_vs_cnt;
-
-	if (devp->unreliable_vs_cnt > 10)
-		cnt = 10;
-	pr_info("unreliable_vs_cnt:%d\n", devp->unreliable_vs_cnt);
-	if (devp->unreliable_vs_cnt > 0) {
-		for (devp->unreliable_vs_idx = 0; devp->unreliable_vs_idx < cnt;
-		     devp->unreliable_vs_idx++)
-			pr_info("err t:%d\n",
-				devp->unreliable_vs_time[devp->unreliable_vs_idx]);
 	}
 }
 
@@ -1973,32 +1978,6 @@ static void vdin_dump_state(struct vdin_dev_s *devp)
 	/*vdin_dump_vs_info(devp);*/
 }
 
-static void vdin_dump_count(struct vdin_dev_s *devp)
-{
-	pr_info("irq_cnt: %d\n", devp->irq_cnt);
-	pr_info("vpu crash irq: %d\n", devp->vpu_crash_cnt);
-	pr_info("write done irq: %d,check:%d,afbce[%d %d],wmif[%d %d]\n",
-		devp->stats.wr_done_irq_cnt, devp->stats.write_done_check,
-		devp->stats.afbce_normal_cnt, devp->stats.afbce_abnormal_cnt,
-		devp->stats.wmif_normal_cnt, devp->stats.wmif_abnormal_cnt);
-	pr_info("put_frame_cnt:%d\n", devp->put_frame_cnt);
-	pr_info("frame_cnt:%d\n", devp->frame_cnt);
-	pr_info("ignore_frames:%d\n", devp->ignore_frames);
-	pr_info("frame_drop_num:%d\n", devp->frame_drop_num);
-	pr_info("vdin_drop_cnt: %d\n", vdin_drop_cnt);
-	pr_info("vdin_drop_num:%d\n", devp->vdin_drop_num);
-	pr_info("dbg_fr_ctl:%d,drop_ctl_cnt:%d\n", devp->dbg_fr_ctl, devp->vdin_drop_ctl_cnt);
-
-	vdin_dump_vs_info(devp);
-}
-
-static void vdin_dump_dts_config(struct vdin_dev_s *devp)
-{
-	pr_info("chk_write_done_en: %d\n", devp->dts_config.chk_write_done_en);
-	pr_info("urgent_en: %d\n", devp->dts_config.urgent_en);
-	pr_info("v4l_en:%d\n", devp->dts_config.v4l_en);
-}
-
 /*same as vdin_dump_state*/
 static int seq_file_vdin_state_show(struct seq_file *seq, void *v)
 {
@@ -2129,6 +2108,33 @@ static int seq_file_vdin_state_show(struct seq_file *seq, void *v)
 	seq_printf(seq, "Vdin driver version :  %s\n", VDIN_VER);
 
 	return 0;
+}
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void vdin_dump_count(struct vdin_dev_s *devp)
+{
+	pr_info("irq_cnt: %d\n", devp->irq_cnt);
+	pr_info("vpu crash irq: %d\n", devp->vpu_crash_cnt);
+	pr_info("write done irq: %d,check:%d,afbce[%d %d],wmif[%d %d]\n",
+		devp->stats.wr_done_irq_cnt, devp->stats.write_done_check,
+		devp->stats.afbce_normal_cnt, devp->stats.afbce_abnormal_cnt,
+		devp->stats.wmif_normal_cnt, devp->stats.wmif_abnormal_cnt);
+	pr_info("put_frame_cnt:%d\n", devp->put_frame_cnt);
+	pr_info("frame_cnt:%d\n", devp->frame_cnt);
+	pr_info("ignore_frames:%d\n", devp->ignore_frames);
+	pr_info("frame_drop_num:%d\n", devp->frame_drop_num);
+	pr_info("vdin_drop_cnt: %d\n", vdin_drop_cnt);
+	pr_info("vdin_drop_num:%d\n", devp->vdin_drop_num);
+	pr_info("dbg_fr_ctl:%d,drop_ctl_cnt:%d\n", devp->dbg_fr_ctl, devp->vdin_drop_ctl_cnt);
+
+	vdin_dump_vs_info(devp);
+}
+
+static void vdin_dump_dts_config(struct vdin_dev_s *devp)
+{
+	pr_info("chk_write_done_en: %d\n", devp->dts_config.chk_write_done_en);
+	pr_info("urgent_en: %d\n", devp->dts_config.urgent_en);
+	pr_info("v4l_en:%d\n", devp->dts_config.v4l_en);
 }
 
 static void vdin_dump_histgram(struct vdin_dev_s *devp)
@@ -2920,6 +2926,7 @@ int vdin_dbg_access_reg_in_vsync(struct vdin_dev_s *devp)
 
 	return 0;
 }
+#endif
 
 /*
  * 1.show the current frame rate
@@ -2941,13 +2948,17 @@ static ssize_t attr_store(struct device *dev,
 			  const char *buf, size_t len)
 {
 	unsigned int fps = 0;
-	char ret = 0, *buf_orig, *parm[47] = {NULL};
+	char *buf_orig, *parm[47] = {NULL};
 	struct vdin_dev_s *devp;
-	unsigned int time_start, time_end, time_delta;
 	long val = 0;
+	unsigned int offset;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	char ret = 0;
+	unsigned int time_start, time_end, time_delta;
 	unsigned int temp, addr = 0, val_tmp;
 	unsigned int mode = 0, flag = 0;
-	unsigned int offset;
+
+#endif
 
 	if (!buf)
 		return len;
@@ -2988,7 +2999,9 @@ static ssize_t attr_store(struct device *dev,
 				dump_num = val;
 			vdin_dump_more_mem(parm[1], devp, dump_num, 0);
 		}
-	} else if (!strcmp(parm[0], "vdin_recycle_num")) {
+	}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	else if (!strcmp(parm[0], "vdin_recycle_num")) {
 		if (!parm[1]) {
 			pr_err("miss parameters .\n");
 		} else if (kstrtoul(parm[1], 16, &val) == 0) {
@@ -3148,7 +3161,6 @@ start_chk:
 					  devp->irq_name, (void *)devp);
 			disable_irq(devp->irq);
 			/* for t7 meta data */
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (devp->dtdata->hw_ver == VDIN_HW_T7) {
 				ret = request_irq(devp->vdin2_meta_wr_done_irq,
 						  vdin_wrmif2_dv_meta_wr_done_isr,
@@ -3159,7 +3171,6 @@ start_chk:
 				pr_info("vdin%d req meta_wr_done_irq",
 					devp->index);
 			}
-#endif
 			devp->flags |= VDIN_FLAG_ISR_REQ;
 		}
 		vdin_start_dec(devp);
@@ -3384,8 +3395,6 @@ start_chk:
 			pr_info("dest_cfmt = %s\n",
 				tvin_color_fmt_str(devp->debug.dest_cfmt));
 		}
-	} else if (!strcmp(parm[0], "state")) {
-		vdin_dump_state(devp);
 	} else if (!strcmp(parm[0], "counter")) {
 		vdin_dump_count(devp);
 	} else if (!strcmp(parm[0], "histgram")) {
@@ -4161,6 +4170,10 @@ start_chk:
 				devp->cr_lossy_param.lossy_mode,
 				devp->cr_lossy_param.quant_diff_root_leave);
 		}
+	}
+#endif
+	else if (!strcmp(parm[0], "state")) {
+		vdin_dump_state(devp);
 	} else {
 		pr_info("unknown command:%s\n", parm[0]);
 	}
@@ -4170,6 +4183,7 @@ start_chk:
 }
 
 static DEVICE_ATTR_WO(attr);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 
 #ifdef VF_LOG_EN
 static ssize_t vf_log_show(struct device *dev,
@@ -4577,43 +4591,49 @@ static ssize_t sct_attr_store(struct device *dev,
 }
 
 static DEVICE_ATTR_RW(sct_attr);
+#endif
 
 int vdin_create_debug_files(struct device *dev)
 {
 	int ret = 0;
 
 	ret = device_create_file(dev, &dev_attr_sig_det);
+	ret = device_create_file(dev, &dev_attr_attr);
 	/* create sysfs attribute files */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	#ifdef VF_LOG_EN
 	ret = device_create_file(dev, &dev_attr_vf_log);
 	#endif
 	#ifdef ISR_LOG_EN
 	ret = device_create_file(dev, &dev_attr_isr_log);
 	#endif
-	ret = device_create_file(dev, &dev_attr_attr);
 	ret = device_create_file(dev, &dev_attr_sct_attr);
 	ret = device_create_file(dev, &dev_attr_cm2);
 	/*ret = device_create_file(dev, &dev_attr_debug_for_isp);*/
 	ret = device_create_file(dev, &dev_attr_crop);
 	ret = device_create_file(dev, &dev_attr_snow_flag);
+#endif
 	return ret;
 }
 
 void vdin_remove_debug_files(struct device *dev)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	#ifdef VF_LOG_EN
 	device_remove_file(dev, &dev_attr_vf_log);
 	#endif
 	#ifdef ISR_LOG_EN
 	device_remove_file(dev, &dev_attr_isr_log);
 	#endif
-	device_remove_file(dev, &dev_attr_attr);
+
 	device_remove_file(dev, &dev_attr_sct_attr);
 	device_remove_file(dev, &dev_attr_cm2);
 	/*device_remove_file(dev, &dev_attr_debug_for_isp);*/
 	device_remove_file(dev, &dev_attr_crop);
-	device_remove_file(dev, &dev_attr_sig_det);
 	device_remove_file(dev, &dev_attr_snow_flag);
+#endif
+	device_remove_file(dev, &dev_attr_attr);
+	device_remove_file(dev, &dev_attr_sig_det);
 }
 
 #ifdef DEBUG_SUPPORT
@@ -4917,7 +4937,9 @@ void vdin_debugfs_exit(struct vdin_dev_s *devp)
 void vdin_dump_frames(struct vdin_dev_s *devp)
 {
 	char file_path[32];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int  i;
+#endif
 
 	if (devp->dbg_dump_frames) {
 		/* todo:check path available */
@@ -4925,8 +4947,11 @@ void vdin_dump_frames(struct vdin_dev_s *devp)
 		pr_info("dir:%s\n", file_path);
 		if (devp->afbce_valid == 1) {
 			vdin_pause_dec(devp);
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			for (i = 0; i < devp->canvas_max_num; i++)
 				vdin_dump_one_afbce_mem(file_path, devp, i);
+#endif
 
 			vdin_resume_dec(devp);
 		} else {
@@ -4934,4 +4959,5 @@ void vdin_dump_frames(struct vdin_dev_s *devp)
 		}
 	}
 }
+
 /*------------------------------------------*/

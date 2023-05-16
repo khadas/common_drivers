@@ -77,7 +77,9 @@ void tvin_smr_init(int index);
 void reset_tvin_smr(unsigned int index);
 
 enum tvin_sm_status_e tvin_get_sm_status(int index);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void vdin_dump_vs_info(struct vdin_dev_s *devp);
+#endif
 void vdin_send_event(struct vdin_dev_s *devp, enum tvin_sg_chg_flg sts);
 void vdin_update_prop(struct vdin_dev_s *devp);
 

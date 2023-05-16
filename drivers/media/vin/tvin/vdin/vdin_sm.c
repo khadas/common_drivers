@@ -1187,8 +1187,11 @@ void tvin_smr(struct vdin_dev_s *devp)
 		/* check unreliable vsync interrupt */
 		if (devp->unreliable_vs_cnt != devp->unreliable_vs_cnt_pre) {
 			devp->unreliable_vs_cnt_pre = devp->unreliable_vs_cnt;
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (sm_debug_enable & 0x2)
 				vdin_dump_vs_info(devp);
+#endif
 		}
 		break;
 	}

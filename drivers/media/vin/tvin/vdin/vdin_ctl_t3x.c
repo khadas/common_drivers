@@ -3377,7 +3377,9 @@ void vdin_set_mpegin_t3x(struct vdin_dev_s *devp)
 //	wr(offset, VDIN_HIST_CTRL, 0x3);
 //	wr(offset, VDIN_HIST_H_START_END, devp->h_active - 1);
 //	wr(offset, VDIN_HIST_V_START_END, devp->v_active - 1);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vdin_output_ctl_t3x(offset, 1);
+#endif
 }
 
 void vdin_force_go_filed_t3x(struct vdin_dev_s *devp)

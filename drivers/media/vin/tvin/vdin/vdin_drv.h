@@ -1068,8 +1068,13 @@ char *vf_get_receiver_name(const char *provider_name);
 int start_tvin_service(int no, struct vdin_parm_s *para);
 int start_tvin_capture_ex(int dev_num, enum port_vpp_e port, struct vdin_parm_s  *para);
 int stop_tvin_service(int no);
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int vdin_reg_v4l2(struct vdin_v4l2_ops_s *v4l2_ops);
 void vdin_unregister_v4l2(void);
+int vdin_afbce_compression_ratio_monitor(struct vdin_dev_s *devp, struct vf_entry *vfe);
+#endif
+
 int vdin_create_class_files(struct class *vdin_class);
 void vdin_remove_class_files(struct class *vdin_class);
 int vdin_create_device_files(struct device *dev);
@@ -1083,7 +1088,11 @@ void vdin_stop_dec(struct vdin_dev_s *devp);
 void vdin_self_stop_dec(struct vdin_dev_s *devp);
 irqreturn_t vdin_isr_simple(int irq, void *dev_id);
 irqreturn_t vdin_isr(int irq, void *dev_id);
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 irqreturn_t vdin_v4l2_isr(int irq, void *dev_id);
+#endif
+
 void ldim_get_matrix(int *data, int reg_sel);
 void ldim_set_matrix(int *data, int reg_sel);
 void tvafe_snow_config(unsigned int on_off);
@@ -1118,9 +1127,12 @@ void vdin_vpu_clk_gate_on_off(struct vdin_dev_s *devp, unsigned int on);
 void vdin_vpu_clk_mem_pd(struct vdin_dev_s *devp, unsigned int on);
 void vdin_afbce_vpu_clk_mem_pd(struct vdin_dev_s *devp, unsigned int on);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int vdin_v4l2_probe(struct platform_device *pdev,
 		    struct vdin_dev_s *devp);
 int vdin_v4l2_if_isr(struct vdin_dev_s *pdev, struct vframe_s *vfp);
+#endif
+
 void vdin_frame_write_ctrl_set(struct vdin_dev_s *devp,
 				struct vf_entry *vfe, bool rdma_en);
 irqreturn_t vdin_write_done_isr(int irq, void *dev_id);
@@ -1128,7 +1140,6 @@ void vdin_game_mode_chg(struct vdin_dev_s *devp,
 	unsigned int old_mode, unsigned int new_mode);
 void vdin_frame_lock_check(struct vdin_dev_s *devp, int state);
 void vdin_v4l2_init(struct vdin_dev_s *devp, struct platform_device *pl_dev);
-int vdin_afbce_compression_ratio_monitor(struct vdin_dev_s *devp, struct vf_entry *vfe);
 void vdin_pause_hw_write(struct vdin_dev_s *devp, bool rdma_en);
 #endif /* __TVIN_VDIN_DRV_H */
 

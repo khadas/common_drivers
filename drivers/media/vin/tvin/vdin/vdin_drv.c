@@ -678,6 +678,37 @@ static inline void vdin_game_mode_dynamic_check(struct vdin_dev_s *devp)
 			devp->vdin_std_duration, devp->vinfo_std_duration, devp->cycle);
 }
 
+/* game mode changed while vdin dec have started
+ * game_mode,zero:OFF,non-zero:ON
+ */
+void vdin_game_mode_chg(struct vdin_dev_s *devp,
+	unsigned int old_mode, unsigned int new_mode)
+{
+	ulong flags = 0;
+
+	if (old_mode == new_mode)
+		return;
+
+	if (devp->flags & VDIN_FLAG_DEC_STARTED) {
+		spin_lock_irqsave(&devp->isr_lock, flags);
+		/* game_mode change */
+		if (!old_mode && new_mode)
+			devp->game_mode_chg = VDIN_GAME_MODE_OFF_TO_ON;
+		else if (old_mode && !new_mode)
+			devp->game_mode_chg = VDIN_GAME_MODE_ON_TO_OFF;
+		else
+			devp->game_mode_chg = VDIN_GAME_MODE_UN_CHG;
+		if (vdin_isr_monitor & VDIN_ISR_MONITOR_GAME)
+			pr_info("%s;game,old:%d,new:%d,chg:%d;game cur:%#x\n",
+				__func__, old_mode, new_mode,
+				devp->game_mode_chg, devp->game_mode);
+		game_mode = new_mode;
+		devp->game_mode_bak = devp->game_mode;
+		vdin_game_mode_check(devp);
+		spin_unlock_irqrestore(&devp->isr_lock, flags);
+	}
+}
+
 static void vdin_game_mode_transfer(struct vdin_dev_s *devp)
 {
 	unsigned int game_mode_backup;
@@ -769,37 +800,6 @@ static void vdin_game_mode_transfer(struct vdin_dev_s *devp)
 	vdin_game_mode_dynamic_chg(devp);
 }
 
-/* game mode changed while vdin dec have started
- * game_mode,zero:OFF,non-zero:ON
- */
-void vdin_game_mode_chg(struct vdin_dev_s *devp,
-	unsigned int old_mode, unsigned int new_mode)
-{
-	ulong flags = 0;
-
-	if (old_mode == new_mode)
-		return;
-
-	if (devp->flags & VDIN_FLAG_DEC_STARTED) {
-		spin_lock_irqsave(&devp->isr_lock, flags);
-		/* game_mode change */
-		if (!old_mode && new_mode)
-			devp->game_mode_chg = VDIN_GAME_MODE_OFF_TO_ON;
-		else if (old_mode && !new_mode)
-			devp->game_mode_chg = VDIN_GAME_MODE_ON_TO_OFF;
-		else
-			devp->game_mode_chg = VDIN_GAME_MODE_UN_CHG;
-		if (vdin_isr_monitor & VDIN_ISR_MONITOR_GAME)
-			pr_info("%s;game,old:%d,new:%d,chg:%d;game cur:%#x\n",
-				__func__, old_mode, new_mode,
-				devp->game_mode_chg, devp->game_mode);
-		game_mode = new_mode;
-		devp->game_mode_bak = devp->game_mode;
-		vdin_game_mode_check(devp);
-		spin_unlock_irqrestore(&devp->isr_lock, flags);
-	}
-}
-
 static void vdin_handle_game_mode_chg(struct vdin_dev_s *devp)
 {
 	if (devp->game_mode_chg == VDIN_GAME_MODE_OFF_TO_ON ||
@@ -851,6 +851,7 @@ static void vdin_handle_game_mode_chg(struct vdin_dev_s *devp)
  *5.init slave vframe
  *6.set slave vf source type & mode
  */
+
 static void vdin_vf_init(struct vdin_dev_s *devp)
 {
 	int i = 0;
@@ -1027,7 +1028,6 @@ __maybe_unused static void vdin_rdma_irq(void *arg)
 	devp->rdma_irq_cnt++;
 	return;
 }
-
 __maybe_unused static struct rdma_op_s vdin_rdma_op[VDIN_MAX_DEVS];
 #endif
 
@@ -1199,8 +1199,12 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 	devp->canvas_config_mode = canvas_config_mode;
 	/* h_active/v_active will be recalculated by bellow calling */
 	vdin_set_decimation(devp);
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/* check if need enable afbce */
 	vdin_afbce_mode_init(devp);
+#endif
+
 	vdin_double_write_confirm(devp);
 	vdin_set_double_write_regs(devp);
 
@@ -1229,8 +1233,10 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_TXL)
 		vdin_fix_nonstd_vsync(devp);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/* continuous or sct memory;should be located before vdin_set_to_vpp_parm */
 	vdin_mem_init(devp);
+#endif
 
 	/* reverse/non-reverse write buffer */
 	vdin_wr_reverse(devp->addr_offset, devp->parm.h_reverse, devp->parm.v_reverse);
@@ -1251,10 +1257,12 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 	else if (canvas_config_mode == 2)
 		vdin_canvas_auto_config(devp);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (devp->afbce_info && devp->afbce_valid) {
 		vdin_afbce_maptable_init(devp);
 		vdin_afbce_config(devp);
 	}
+#endif
 
 	vdin_get_duration_by_fps(devp);
 	devp->vfp->size = devp->vf_mem_max_cnt; /* canvas and afbce compatible */
@@ -1313,11 +1321,13 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 	/*		       VPU_VIU_VDIN0,*/
 	/*		       VPU_MEM_POWER_ON);*/
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (vdin_sct_start(devp)) { /* request one scatter buffer before start */
 		pr_err("%s vdin%d mem_type=%d,sct start failed!\n",
 			__func__, devp->index, devp->mem_type);
 		return -1;
 	}
+#endif
 
 	/* screenshot stress test vdin1 hw crash addr need adjust config */
 	vfe = provider_vf_peek(devp->vfp);
@@ -1331,7 +1341,9 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 	vdin_set_all_regs(devp);
 	vdin_hw_enable(devp);
 	vdin_set_dv_tunnel(devp);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vdin_write_mif_or_afbce_init(devp);
+#endif
 
 	sts = vdin_is_delay_vfe2rd_list(devp);
 	if (sts) {
@@ -1475,9 +1487,10 @@ void vdin_self_start_dec(struct vdin_dev_s *devp)
  */
 void vdin_stop_dec(struct vdin_dev_s *devp)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int afbc_write_down_timeout = 500; /* 50ms to cover a 24Hz vsync */
 	int i = 0;
-
+#endif
 	/* avoid null pointer oops */
 	if (!devp || !devp->frontend) {
 		pr_info("vdin err no frontend\n");
@@ -1537,6 +1550,7 @@ void vdin_stop_dec(struct vdin_dev_s *devp)
 		usleep_range(devp->dbg_stop_dec_delay, devp->dbg_stop_dec_delay + 1000);
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (devp->afbce_mode == 1 || devp->double_wr) {
 		while (i++ < afbc_write_down_timeout) {
 			if (vdin_afbce_read_write_down_flag(devp))
@@ -1548,6 +1562,7 @@ void vdin_stop_dec(struct vdin_dev_s *devp)
 				devp->index);
 		}
 	}
+#endif
 
 	vdin_dump_frames(devp);
 
@@ -1587,11 +1602,14 @@ void vdin_stop_dec(struct vdin_dev_s *devp)
 	}
 	vdin_dolby_addr_release(devp, devp->vfp->size);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/*only when stop vdin0, disable afbc*/
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1) && devp->hw_core == VDIN_HW_CORE_NORMAL)
 		vdin_afbce_soft_reset(devp);
 
 	vdin_mem_exit(devp);
+#endif
+
 #ifdef CONFIG_CMA
 	vdin_cma_release(devp);
 #endif
@@ -1905,8 +1923,10 @@ int start_tvin_service(int no, struct vdin_parm_s  *para)
 
 	if (devp->parm.port != TVIN_PORT_VIU1 || viu_hw_irq != 0) {
 		if (!(devp->flags & VDIN_FLAG_ISR_REQ)) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			ret = request_irq(devp->irq, vdin_v4l2_isr, IRQF_SHARED,
 				devp->irq_name, (void *)devp);
+#endif
 			devp->flags |= VDIN_FLAG_ISR_REQ;
 
 			if (ret != 0) {
@@ -2079,6 +2099,7 @@ void get_tvin_canvas_info(int *start, int *num)
 }
 EXPORT_SYMBOL(get_tvin_canvas_info);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int vdin_ioctl_fe(int no, struct fe_arg_s *parm)
 {
 	struct vdin_dev_s *devp = vdin_devp[no];
@@ -2224,6 +2245,7 @@ static struct vdin_v4l2_ops_s vdin_4v4l2_ops = {
 	.tvin_vdin_func	      = vdin_func,
 	.start_tvin_service_ex = start_tvin_capture_ex,
 };
+#endif
 
 /*call vdin_hw_disable to pause hw*/
 void vdin_pause_dec(struct vdin_dev_s *devp)
@@ -2392,6 +2414,12 @@ irqreturn_t vdin_isr_simple(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+static u64 func_div(u64 cur, u32 dividend)
+{
+	do_div(cur, dividend);
+	return cur;
+}
+
 static void vdin_backup_histgram(struct vframe_s *vf, struct vdin_dev_s *devp)
 {
 	unsigned int i = 0;
@@ -2403,12 +2431,7 @@ static void vdin_backup_histgram(struct vframe_s *vf, struct vdin_dev_s *devp)
 		devp->parm.histgram[i] = vf->prop.hist.gamma[i];
 }
 
-static u64 func_div(u64 cur, u32 dividend)
-{
-	do_div(cur, dividend);
-	return cur;
-}
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void vdin_hist_tgt(struct vdin_dev_s *devp, struct vframe_s *vf)
 {
 	int ave_luma;
@@ -2441,6 +2464,7 @@ static void vdin_hist_tgt(struct vdin_dev_s *devp, struct vframe_s *vf)
 
 	spin_unlock_irqrestore(&devp->hist_lock, flags);
 }
+#endif
 
 void vdin_drop_frame_info(struct vdin_dev_s *devp, char *info)
 {
@@ -2548,9 +2572,11 @@ int vdin_vframe_put_and_recycle(struct vdin_dev_s *devp, struct vf_entry *vfe,
 
 		/*put one frame to receiver*/
 		if (devp->work_mode == VDIN_WORK_MD_V4L) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			ret_v4l = vdin_v4l2_if_isr(devp,
 					&devp->vfp->last_last_vfe->vf);
 			/*v4l put fail, need recycle vframe to write list*/
+#endif
 			if (ret_v4l) {
 				receiver_vf_put(&devp->vfp->last_last_vfe->vf,
 						devp->vfp);
@@ -2598,11 +2624,15 @@ int vdin_vframe_put_and_recycle(struct vdin_dev_s *devp, struct vf_entry *vfe,
 						   VFRAME_EVENT_PROVIDER_VFRAME_READY,
 						   NULL);
 		}
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		/* debug:afbce compression ratio monitor start */
 		if (devp->dbg_afbce_monitor)
 			vdin_afbce_compression_ratio_monitor(devp,
 				devp->vfp->last_last_vfe);
 		/* debug:afbce compression ratio monitor end */
+#endif
+
 		if (devp->vdin_delay_vfe2rd_list == 1) {
 			devp->vfp->last_last_vfe = vfe;
 		} else if (devp->vdin_delay_vfe2rd_list == 2) {
@@ -2610,7 +2640,10 @@ int vdin_vframe_put_and_recycle(struct vdin_dev_s *devp, struct vf_entry *vfe,
 			devp->vfp->last_vfe = vfe;
 		}
 	}
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vdin_sct_read_mmu_num(devp, vfe);
+#endif
 
 	return ret;
 }
@@ -2653,17 +2686,20 @@ void vdin_frame_write_ctrl_set(struct vdin_dev_s *devp,
 		if (vfe->vf.plane_num == 2)
 			vdin_set_chroma_canvas_id(devp, rdma_en, vfe);
 	}
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (devp->afbce_mode == 1 || devp->double_wr)
 		vdin_afbce_set_next_frame(devp, rdma_en, vfe);
+#endif
 }
 
 void vdin_pause_hw_write(struct vdin_dev_s *devp, bool rdma_en)
 {
 	vdin_pause_mif_write(devp, rdma_en);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (devp->afbce_mode == 1 || devp->double_wr)
 		vdin_pause_afbce_write(devp, rdma_en);
+#endif
 }
 
 static inline void vdin_dynamic_switch_vrr(struct vdin_dev_s *devp)
@@ -2919,10 +2955,13 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 			devp->curr_wr_vfe->vf.ready_clock[0] = sched_clock();
 		}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (devp->curr_wr_vfe && devp->afbce_mode == 1)
 			vdin_afbce_set_next_frame(devp, (devp->flags &
 						  VDIN_FLAG_RDMA_ENABLE),
 						  devp->curr_wr_vfe);
+#endif
+
 		/*save the first field stamp*/
 		devp->stamp = stamp;
 		devp->vdin_irq_flag = VDIN_IRQ_FLG_NO_WR_FE;
@@ -2949,7 +2988,7 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 			schedule_delayed_work(&devp->dv.dv_dwork,
 				dv_work_dolby);
 		} else if (((dv_dbg_mask & DV_UPDATE_DATA_MODE_DOLBY_WORK) == 0) &&
-			   devp->dv.dv_config && !devp->dv.low_latency &&
+			devp->dv.dv_config && !devp->dv.low_latency &&
 			   (devp->prop.dolby_vision == 1)) {
 			vdin_dolby_buffer_update(devp,
 						 devp->last_wr_vfe->vf.index);
@@ -3056,9 +3095,11 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 
 	next_wr_vfe = provider_vf_peek(devp->vfp);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/* change afbce mode */
 	if (next_wr_vfe && devp->afbce_mode_pre != devp->afbce_mode)
 		vdin_afbce_mode_update(devp);
+#endif
 
 	/* change color matrix */
 	if (devp->csc_cfg != 0) {
@@ -3082,8 +3123,10 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 				     devp->prop.color_format, devp->h_active,
 				     devp->bt_path);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (devp->afbce_valid)
 				vdin_afbce_update(devp);
+#endif
 
 			/*vdin_drop_frame_info(devp, "dest fmt chg");*/
 		}
@@ -3142,10 +3185,12 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 		devp->ignore_frames++;
 		vdin_drop_cnt++;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (devp->afbce_mode == 1)
 			vdin_afbce_set_next_frame(devp, (devp->flags &
 						  VDIN_FLAG_RDMA_ENABLE),
 						  curr_wr_vfe);
+#endif
 
 		goto irq_handled;
 	}
@@ -3384,9 +3429,12 @@ irq_handled:
 			devp->flags_isr &= ~VDIN_FLAG_RDMA_DONE;
 	}
 #endif
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vdin_sct_queue_work(devp);
 	//for debug
 	vdin_dbg_access_reg_in_vsync(devp);
+#endif
 
 	isr_log(devp->vfp);
 
@@ -3417,6 +3465,7 @@ static struct vf_entry *check_vdin_read_list(struct vdin_dev_s *devp)
 	return vfe;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 irqreturn_t vdin_v4l2_isr(int irq, void *dev_id)
 {
 	ulong flags;
@@ -3583,9 +3632,10 @@ irqreturn_t vdin_v4l2_isr(int irq, void *dev_id)
 	curr_wr_vf->type_original = curr_wr_vf->type;
 
 	vdin_set_vframe_prop_info(curr_wr_vf, devp);
-	vdin_get_crc_val(curr_wr_vf, devp);
 	vdin_backup_histgram(curr_wr_vf, devp);
 	vdin_hist_tgt(devp, curr_wr_vf);
+
+	vdin_get_crc_val(curr_wr_vf, devp);
 
 	if (devp->frontend && devp->frontend->dec_ops) {
 		dec_ops = devp->frontend->dec_ops;
@@ -3679,6 +3729,7 @@ irq_handled:
 
 	return IRQ_HANDLED;
 }
+#endif
 
 static void vdin_dv_dwork(struct work_struct *work)
 {
@@ -3781,9 +3832,12 @@ static int vdin_open(struct inode *inode, struct file *file)
 		if (devp->index == 0)
 			ret = request_irq(devp->irq, vdin_isr, IRQF_SHARED,
 					devp->irq_name, (void *)devp);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		else
 			ret = request_irq(devp->irq, vdin_v4l2_isr, IRQF_SHARED,
 					devp->irq_name, (void *)devp);
+#endif
+
 		if (ret)
 			pr_err("err:req vs irq fail\n");
 		else
@@ -3812,6 +3866,7 @@ static int vdin_open(struct inode *inode, struct file *file)
 					devp->wr_done_irq);
 		}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		/* only for t7 meta data */
 		if (devp->vdin2_meta_wr_done_irq > 0) {
 			ret = request_irq(devp->vdin2_meta_wr_done_irq,
@@ -3825,6 +3880,7 @@ static int vdin_open(struct inode *inode, struct file *file)
 				pr_info("vdin%d req meta_wr_done_irq\n",
 					devp->index);
 		}
+#endif
 	}
 	devp->flags |= VDIN_FLAG_ISR_REQ;
 	devp->flags &= (~VDIN_FLAG_ISR_EN);
@@ -4522,6 +4578,7 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		for (i = 0; i < 64; i++)
 			vdin1_hist_temp.hist[i] = vdin1_hist.hist[i];
 		spin_unlock_irqrestore(&devp->hist_lock, flags);
+
 		if (vdin_dbg_en) {
 			if (pr_times++ > 10) {
 				pr_times = 0;
@@ -5103,8 +5160,9 @@ int vdin_create_dev_class_files(struct device *dev)
 
 	ret = vdin_create_debug_files(dev);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vdin_v4l2_create_device_files(dev);
-
+#endif
 	return ret;
 }
 
@@ -5114,7 +5172,9 @@ void vdin_rm_dev_class_files(struct device *dev)
 
 	vdin_remove_debug_files(dev);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vdin_v4l2_remove_device_files(dev);
+#endif
 }
 
 static int vdin_dec_support(struct tvin_frontend_s *fe, enum tvin_port_e port)
@@ -6015,9 +6075,11 @@ static int vdin_drv_probe(struct platform_device *pdev)
 	/* set max pixel clk of vdin */
 	vdin_set_config(devp);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/*probe v4l interface*/
 	if (devp->dts_config.v4l_en)
 		vdin_v4l2_probe(pdev, devp);
+#endif
 
 	/* vdin measure clock */
 	if (is_meson_gxbb_cpu()) {
@@ -6104,9 +6166,13 @@ static int vdin_drv_probe(struct platform_device *pdev)
 	/*vdin_extcon_register(pdev, devp);*/
 	/*init queue*/
 	init_waitqueue_head(&devp->queue);
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef T3X_PXP_BRINGUP
 	vdin_mif_config_init(devp); /* 2019-0425 add, ensure mif/afbc bit */
 #endif
+#endif
+
 	vdin_debugfs_init(devp);/*2018-07-18 add debugfs*/
 	if (devp->hw_core == VDIN_HW_CORE_LITE)
 		vd_signal_register_client(&vdin_signal_notifier);
@@ -6349,9 +6415,12 @@ int __init vdin_drv_init(void)
 		pr_err("%s: failed to register driver\n", __func__);
 		goto fail_pdrv_register;
 	}
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/*register vdin for v4l2 interface*/
 	if (vdin_reg_v4l2(&vdin_4v4l2_ops))
 		pr_err("[vdin] %s: register vdin v4l2 error.\n", __func__);
+#endif
 	pr_info("%s: vdin driver init done\n", __func__);
 	return 0;
 
@@ -6365,7 +6434,9 @@ fail_alloc_cdev_region:
 
 void __exit vdin_drv_exit(void)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vdin_unregister_v4l2();
+#endif
 #ifdef DEBUG_SUPPORT
 	vdin_remove_class_files(vdin_class);
 #endif

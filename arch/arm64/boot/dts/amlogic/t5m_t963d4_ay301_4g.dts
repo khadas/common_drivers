@@ -148,9 +148,8 @@
 			reusable;
 			/* up to 1920x1080 yuv422 8bit and 5 buffers
 			 * 1920x1080x2x5 = 20 M
-			 * size = <0x0 0x01400000>;
 			 */
-			size = <0x0 0x0>;
+			size = <0x0 0x01400000>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x00000000 0x0 0x80000000>;
 		};
@@ -1516,7 +1515,7 @@
 };
 
 &vdin1 {
-	/*memory-region = <&vdin1_cma_reserved>;*/
+	memory-region = <&vdin1_cma_reserved>;
 	status = "okay";
 };
 

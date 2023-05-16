@@ -88,6 +88,7 @@
 // frc_20221225 add powerdomain etc.
 // frc_20230301 frc add seamless mode
 // frc_20230411 frc add enable double buffer mc
+// frc_20230511 frc chg size for both support
 
 #define FRC_FW_VER			"2023-0404 frc t3x probe secure"
 #define FRC_KERDRV_VER                  2796

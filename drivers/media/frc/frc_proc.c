@@ -516,12 +516,18 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 
 	if (seamless_cnt) {
 		frc_input_init(devp, frc_top);
-		//tmpvalue = frc_top->hsize;
-		//tmpvalue |= (frc_top->vsize) << 16;
-		//WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
-		tmpvalue = (frc_top->hsize + 15) & 0xFFF0;
-		tmpvalue |= (frc_top->vsize) << 16;
-		WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
+		if (get_chip_type() == ID_T3X) {
+			if (frc_top->frc_ratio_mode == FRC_RATIO_1_2)
+				tmpvalue = (frc_top->hsize + 15) & 0xFFF0;
+			else
+				tmpvalue = frc_top->hsize;
+			tmpvalue |= (frc_top->vsize) << 16;
+			WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
+		} else {
+			tmpvalue = frc_top->hsize;
+			tmpvalue |= (frc_top->vsize) << 16;
+			WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
+		}
 		frc_top->is_me1mc4 = 1;/*me:mc 1:4*/
 		WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x3);   //16*16 align
 		WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,

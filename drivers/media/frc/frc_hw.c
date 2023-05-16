@@ -957,7 +957,10 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	pr_frc(log, "%s\n", __func__);
 	// Config frc input size & vpu register
 	if (chip == ID_T3X) {
-		tmpvalue = (frc_top->hsize + 15) & 0xFFF0;
+		if (frc_top->frc_ratio_mode == FRC_RATIO_1_2)
+			tmpvalue = (frc_top->hsize + 15) & 0xFFF0;
+		else
+			tmpvalue = frc_top->hsize;
 		tmpvalue |= (frc_top->vsize) << 16;
 		WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
 		frc_top->vfb =
@@ -2182,7 +2185,10 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	}
 
 	frc_inp_init();
-	frc_devp->ud_dbg.res2_time_en = 0;
+	if (frc_devp->in_out_ratio == FRC_RATIO_1_1)
+		frc_devp->ud_dbg.res2_time_en = 3;
+	else
+		frc_devp->ud_dbg.res2_time_en = 0;
 	// config_phs_lut(frc_top->frc_ratio_mode, frc_top->film_mode);
 	// config_phs_regs(frc_top->frc_ratio_mode, frc_top->film_mode);
 	config_me_top_hw_reg();

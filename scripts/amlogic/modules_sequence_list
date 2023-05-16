@@ -74,8 +74,6 @@ MODULES_SERVICE_LOAD_LIST=(
 GKI_MODULES_LOAD_WHITE_LIST=(
 	zsmalloc.ko
 	zram.ko
-	cfg80211.ko
-	mac80211.ko
 	libarc4.ko
 	rfkill.ko
 )

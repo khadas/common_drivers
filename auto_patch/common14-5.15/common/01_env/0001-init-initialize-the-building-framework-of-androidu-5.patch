@@ -1,4 +1,4 @@
-From 36c1973ffd9416e73ac49d4ba5e391374175107f Mon Sep 17 00:00:00 2001
+From c6893dd721f314978437c88876c6021e6652b947 Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Thu, 2 Feb 2023 15:49:10 +0800
 Subject: [PATCH] init: initialize the building framework of androidu-5.15 for
@@ -48,7 +48,7 @@ index 265959544978..0bbfe4cd37fc 100644
 +# amlogic drivers
 +/common_drivers/
 diff --git a/Makefile b/Makefile
-index 7ecb05e9cbfd..3155ad560ad3 100644
+index 00d8e4896fa5..2fafa3305cff 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -438,6 +438,14 @@ ifneq ($(SRCARCH),$(SUBARCH))
@@ -121,7 +121,7 @@ index 7ecb05e9cbfd..3155ad560ad3 100644
  # Declare the contents of the PHONY variable as phony.  We keep that
  # information in a variable so we can use it in if_changed and friends.
 diff --git a/build.config.gki.aarch64 b/build.config.gki.aarch64
-index b1fa073a529c..1ae08e5e8b3c 100644
+index 45c5199d471a..049b84c1440b 100644
 --- a/build.config.gki.aarch64
 +++ b/build.config.gki.aarch64
 @@ -2,6 +2,10 @@
@@ -132,9 +132,9 @@ index b1fa073a529c..1ae08e5e8b3c 100644
 +source ${ROOT_DIR}/${KERNEL_DIR}/common_drivers/project/build.config.gki10
 +fi
 +
- MAKE_GOALS="${MAKE_GOALS}
- Image.lz4
- Image.gz
+ FILES="${FILES}
+ arch/arm64/boot/Image.lz4
+ arch/arm64/boot/Image.gz
 diff --git a/drivers/Kconfig b/drivers/Kconfig
 index 67f44716797e..09c9fcfb9236 100644
 --- a/drivers/Kconfig

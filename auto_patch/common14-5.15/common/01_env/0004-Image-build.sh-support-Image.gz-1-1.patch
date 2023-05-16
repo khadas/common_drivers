@@ -1,0 +1,41 @@
+From 0eace24c342a096494a75cf49647ee114ca65407 Mon Sep 17 00:00:00 2001
+From: Qinglin Li <qinglin.li@amlogic.com>
+Date: Thu, 18 May 2023 14:33:51 +0800
+Subject: [PATCH] Image: build.sh support Image.gz [1/1]
+
+PD#SWPL-124098
+
+Problem:
+build.sh support Image.gz
+
+Solution:
+build.sh support Image.gz
+
+Verify:
+local
+
+Change-Id: Ibf6220717b394db4824e507f7e28bda3e4d91b76
+Signed-off-by: Qinglin Li <qinglin.li@amlogic.com>
+---
+ build.config.gki.aarch64 | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/build.config.gki.aarch64 b/build.config.gki.aarch64
+index 049b84c1440b..afe8be881e17 100644
+--- a/build.config.gki.aarch64
++++ b/build.config.gki.aarch64
+@@ -6,6 +6,11 @@ if [[ -f ${ROOT_DIR}/${KERNEL_DIR}/common_drivers/project/build.config.gki10 ]];
+ source ${ROOT_DIR}/${KERNEL_DIR}/common_drivers/project/build.config.gki10
+ fi
+ 
++MAKE_GOALS="${MAKE_GOALS}
++Image.lz4
++Image.gz
++"
++
+ FILES="${FILES}
+ arch/arm64/boot/Image.lz4
+ arch/arm64/boot/Image.gz
+-- 
+2.25.1
+

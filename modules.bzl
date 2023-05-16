@@ -115,6 +115,8 @@ AMLOGIC_COMMON_MODULES = [
     "drivers/regulator/gpio-regulator.ko",
     "drivers/regulator/pwm-regulator.ko",
     "fs/ntfs3/ntfs3.ko",
+    "net/mac80211/mac80211.ko",
+    "net/wireless/cfg80211.ko",
 ]
 
 AMLOGIC_GKIX_MODULES = AMLOGIC_GKI20_MODULES if GKI_CONFIG == "gki_20" else AMLOGIC_GKI10_MODULES

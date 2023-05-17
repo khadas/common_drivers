@@ -31,7 +31,7 @@ static void storage_boot_layout_debug_info(struct boot_layout *boot_layout)
 	int i;
 
 	pr_debug("boot area list:\n");
-	for (i = 0; i < MAX_BOOT_AREA_ENTRIES && boot_entry[i].size; i++) {
+	for (i = 0; i <= BOOT_AREA_DEVFIP; i++) {
 		pr_debug("%10s    ", boot_entry[i].name);
 		pr_debug("%10llx    ", boot_entry[i].offset);
 		pr_debug("%10llx\n", boot_entry[i].size);
@@ -98,7 +98,7 @@ int storage_boot_layout_general_setting(struct boot_layout *boot_layout)
 	pr_debug("align_size:0x%llx\n", align_size);
 	pr_debug("reserved_size:0x%llx\n", reserved_size);
 	align_size = ssp->sip.nsp.block_size;
-	for (i = 1; i < MAX_BOOT_AREA_ENTRIES && boot_entry[i - 1].size; i++) {
+	for (i = 1; i <= BOOT_AREA_DEVFIP; i++) {
 		boot_entry[i].size =
 		STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[i].size, align_size);
 		boot_entry[i].offset = boot_entry[i - 1].offset +

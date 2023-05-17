@@ -4915,10 +4915,8 @@ void rx_get_de_sts(u8 port)
 		rx[port].cur.vtotal = hdmirx_rd_bits_dwc(DWC_MD_VTL, VTOT_LIN);
 		rx[port].cur.hactive = hdmirx_rd_bits_dwc(DWC_MD_HACT_PX, HACT_PIX);
 		rx[port].cur.htotal = hdmirx_rd_bits_dwc(DWC_MD_HT1, HTOT_PIX);
-		rx[port].cur.hactive = rx[port].cur.hactive /
-			rx[port].cur.colordepth * 8;
-		rx[port].cur.htotal = rx[port].cur.htotal /
-			rx[port].cur.colordepth * 8;
+		rx[port].cur.hactive = rx[port].cur.hactive * 8 / rx[port].cur.colordepth;
+		rx[port].cur.htotal = rx[port].cur.htotal * 8 / rx[port].cur.colordepth;
 		if (rx[port].cur.repeat) {
 			rx[port].cur.hactive = rx[port].cur.hactive /
 				(rx[port].cur.repeat + 1);

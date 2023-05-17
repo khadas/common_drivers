@@ -93,7 +93,8 @@
 /* add aspect 4:3 */
 /* 2023.5.5 fix emp pkt parse error */
 /* 2023.05.09 core reset when afifo overflow */
-#define RX_VER2 "ver.2023/05/09"
+/* 2023.05.24 fix 1366*768 identify to 1360*768 */
+#define RX_VER2 "ver.2023/05/24"
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368

@@ -3133,6 +3133,7 @@ static struct vframe_s *video_toggle_frame
 {
 	u8 func_id = 0;
 	u8 path_index = 0;
+	struct vframe_s *new_frame = NULL;
 
 	if (layer_id == 0xff)
 		func_id = vd_fake_func[fake_layer_id].fake_func_id;
@@ -3140,25 +3141,25 @@ static struct vframe_s *video_toggle_frame
 		func_id = vd_layer[layer_id].func_path_id;
 	switch (func_id) {
 	case AMVIDEO:
-		amvideo_toggle_frame(vd_path_id);
+		new_frame = amvideo_toggle_frame(vd_path_id);
 		break;
 	case PIP1:
 	case PIP2:
 		path_index = func_id - AMVIDEO;
 		if (path_index < MAX_VD_LAYER)
-			do_pipx_toggle_frame(path_index, path_id);
+			new_frame = do_pipx_toggle_frame(path_index, path_id);
 		break;
 	case RENDER0:
 	case RENDER1:
 	case RENDER2:
 		path_index = func_id - RENDER0;
 		if (path_index < MAX_VD_LAYER)
-			do_renderx_toggle_frame(path_index, vd_path_id, path_id);
+			new_frame = do_renderx_toggle_frame(path_index, vd_path_id, path_id);
 		break;
 	default:
 		break;
 	}
-	return 0;
+	return new_frame;
 }
 
 static struct vframe_s *vdx_swap_frame(u8 layer_id,
@@ -4544,6 +4545,7 @@ void post_vsync_process(void)
 	path_id.vd1_path_id = vd_path_id[0];
 	path_id.vd2_path_id = vd_path_id[1];
 	path_id.vd3_path_id = vd_path_id[2];
+	go_exit = 0;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
 	/* Just a workaround to enable RDMA without any register config.
@@ -5535,7 +5537,6 @@ int _video_set_disable(u32 val)
 		return -EINVAL;
 
 	layer->disable_video = val;
-
 	if (layer->disable_video ==
 	     VIDEO_DISABLE_FORNEXT &&
 	    layer->dispbuf &&

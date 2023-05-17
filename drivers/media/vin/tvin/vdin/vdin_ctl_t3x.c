@@ -19,6 +19,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/dma-map-ops.h>
 #include <linux/sched/clock.h>
+#include <linux/arm-smccc.h>
 
 #include <linux/amlogic/media/video_sink/video.h>
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
@@ -2629,6 +2630,14 @@ inline int vdin_vsync_reset_mif_t3x(int index)
 	return 0;
 }
 
+void vdin_secure_reg0_cfg(void)
+{
+	struct arm_smccc_res res;
+
+	arm_smccc_smc(VDIN_SECURE_CFG, 0,
+		      0, 0, 0, 0, 0, 0, &res);
+}
+
 void vdin_enable_module_t3x(struct vdin_dev_s *devp, bool enable)
 {
 	//unsigned int offset = devp->addr_offset;
@@ -2651,6 +2660,7 @@ void vdin_enable_module_t3x(struct vdin_dev_s *devp, bool enable)
 		vdin_hw_disable_t3x(devp);
 		//todo vdin_dobly_mdata_write_en(offset, false);
 	}
+	vdin_secure_reg0_cfg();
 }
 
 bool vdin_write_done_check_t3x(unsigned int offset, struct vdin_dev_s *devp)

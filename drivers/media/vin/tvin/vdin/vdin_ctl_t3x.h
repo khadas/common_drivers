@@ -14,6 +14,8 @@
 
 #define CLKCTRL_DSC_CLK_CTRL	0xfe000100
 #define DSC_CLK_CTRL_OFFSET	0x0100
+/* smc cmd for setting vpu secure reg0 via bl31 */
+#define VDIN_SECURE_CFG	0x8200008d
 
 struct vdin_blkbar_s {
 	unsigned int gclk_ctrl;

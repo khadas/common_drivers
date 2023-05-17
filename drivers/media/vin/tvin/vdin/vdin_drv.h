@@ -141,7 +141,8 @@
 /* 20230427: fix screen cap stress test crash issue */
 /* 20230504: keystone interlace update dest value */
 /* 20230526: 2560x1440 set bit to 8 */
-#define VDIN_VER "20230526"
+/* 20230517: add vdin secure reg config interface */
+#define VDIN_VER "20230517"
 
 //#define T3X_PXP_BRINGUP
 //#define VDIN_BRINGUP_NO_VF

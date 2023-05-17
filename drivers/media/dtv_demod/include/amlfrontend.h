@@ -93,8 +93,9 @@
 /*  V1.1.99  fix init flow */
 /*  V1.1.100  bring up dump ADC data feature */
 /*  V3.1.101  fix dvb-s unicable blind scan miss TP */
-/*  V1.2.0  bring up dump ADC data feature */
-/*  V1.2.00  t3x bringup */
+/*  V3.1.102  bring up dump ADC data feature */
+/*  V3.2.103  t3x bringup */
+/*  V3.2.104  optimize isdbt stability of locking signal */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -111,8 +112,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.1.101"
-#define DTVDEMOD_VER	"2023/5/16: fix dvb-s unicable blind scan miss TP"
+#define AMLDTVDEMOD_VER "V3.1.102"
+#define DTVDEMOD_VER	"2023/5/17: optimize isdbt stability of locking signal"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

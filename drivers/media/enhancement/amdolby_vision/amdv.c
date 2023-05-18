@@ -12539,6 +12539,8 @@ int amdolby_vision_process(struct vframe_s *vf, u32 display_size,
 
 	if (!is_amdv_stb_mode() && !is_aml_tvmode())
 		return -1;
+	if (!module_installed)
+		return -1;
 
 	/* vd1 toggle_mode priority is high than vd2*/
 	toggle_mode = toggle_mode_1 ? toggle_mode_1 : toggle_mode_2;
@@ -14518,6 +14520,8 @@ unsigned int amdv_check_enable(void)
 					dolby_vision_ll_policy =
 						DOLBY_VISION_LL_YUV422;
 					last_dst_format = FORMAT_DOVI;
+					m_dovi_setting.dovi_ll_enable = 1;
+					dovi_setting.dovi_ll_enable = 1;
 					pr_info("dovi enable in uboot and mode is LL 422\n");
 				} else if ((uboot_dv_mode ==
 						dv_mode_table[2]) &&

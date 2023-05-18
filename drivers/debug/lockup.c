@@ -23,6 +23,7 @@
 #include <linux/kprobes.h>
 #include <linux/printk.h>
 #include <linux/amlogic/user_fault.h>
+#include <linux/amlogic/secmon.h>
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_TEST)
 #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_ALL
 #include <trace/events/meson_atrace.h>
@@ -620,14 +621,14 @@ void set_lockup_hook(void (*func)(int cpu))
 EXPORT_SYMBOL(set_lockup_hook);
 
 #ifdef CONFIG_AMLOGIC_ARMV8_AARCH32
-bool is_vmalloc_addr(const void *x)
+static bool is_vmalloc_addr_32(const void *x)
 {
 	unsigned long addr = (unsigned long)kasan_reset_tag(x);
 
 	return addr >= VMALLOC_START && addr < VMALLOC_END;
 }
 
-int is_vmalloc_or_module_addr(const void *x)
+static int is_vmalloc_or_module_addr_32(const void *x)
 {
 #if defined(CONFIG_MODULES) && defined(MODULES_VADDR)
 	unsigned long addr = (unsigned long)kasan_reset_tag(x);
@@ -635,16 +636,16 @@ int is_vmalloc_or_module_addr(const void *x)
 	if (addr >= MODULES_VADDR && addr < MODULES_END)
 		return 1;
 #endif
-	return is_vmalloc_addr(x);
+	return is_vmalloc_addr_32(x);
 }
 
-void show_vmalloc_pfn(struct pt_regs *regs)
+static void show_vmalloc_pfn_32(struct pt_regs *regs)
 {
 	int i;
 	struct page *page;
 
 	for (i = 0; i < 16; i++) {
-		if (is_vmalloc_or_module_addr((void *)regs->uregs[i])) {
+		if (is_vmalloc_or_module_addr_32((void *)regs->uregs[i])) {
 			page = vmalloc_to_page((void *)regs->uregs[i]);
 			if (!page)
 				continue;
@@ -852,7 +853,7 @@ static void show_user_extra_register_data(struct pt_regs *regs, int nbytes)
 	show_user_data(regs->ARM_r10 - nbytes, nbytes * 2, "R10");
 }
 
-void show_extra_reg_data(struct pt_regs *regs)
+static void show_extra_reg_data_32(struct pt_regs *regs)
 {
 	if (!user_mode(regs))
 		show_extra_register_data(regs, 128);
@@ -879,8 +880,8 @@ void show_regs_32(struct pt_regs *regs)
 		regs->ARM_r3, regs->ARM_r2,
 		regs->ARM_r1, regs->ARM_r0);
 
-	show_vmalloc_pfn(regs);
-	show_extra_reg_data(regs);
+	show_vmalloc_pfn_32(regs);
+	show_extra_reg_data_32(regs);
 }
 #endif
 
@@ -904,7 +905,7 @@ void fiq_debug_entry(void)
 	memcpy(&regs.regs[0], &fiq_regs.regs[0], 31 * sizeof(uint64_t));
 	regs.pc = fiq_regs.pc;
 	regs.pstate = fiq_regs.pstate;
-#elif CONFIG_AMLOGIC_ARMV8_AARCH32
+#elif defined(CONFIG_AMLOGIC_ARMV8_AARCH32)
 	regs.ARM_cpsr = (unsigned long)fiq_regs.pstate;
 	regs.ARM_pc = (unsigned long)fiq_regs.pc;
 	regs.ARM_sp = (unsigned long)fiq_regs.regs[19];
@@ -928,7 +929,7 @@ void fiq_debug_entry(void)
 	if (fiq_check_show_regs_en) {
 #ifdef CONFIG_ARM64
 		show_regs(&regs);
-#elif CONFIG_AMLOGIC_ARMV8_AARCH32
+#elif defined(CONFIG_AMLOGIC_ARMV8_AARCH32)
 		show_regs_32(&regs);
 #endif
 	}

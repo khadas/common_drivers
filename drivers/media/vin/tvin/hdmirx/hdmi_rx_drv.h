@@ -356,6 +356,7 @@ struct rx_var_param {
 	u32 avi_rcv_cnt;
 	bool force_pattern;
 	int frl_rate;
+	int fpll_stable_cnt;
 };
 
 struct rx_aml_phy {
@@ -677,6 +678,7 @@ struct phy_sts {
 	ulong timestap;
 	u32 err_sum;
 	u32 eq_data[256];
+	u32 aud_div_1;
 };
 
 struct clk_msr {

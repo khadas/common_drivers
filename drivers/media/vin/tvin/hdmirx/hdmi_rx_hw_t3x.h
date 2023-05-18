@@ -156,7 +156,8 @@ extern u32 odn_reg_n_mul;
 extern u32 ext_cnt;
 extern int tr_delay0;
 extern int tr_delay1;
-
+extern int fpll_sel;
+extern int fpll_chk_lvl;
 /*--------------------------function declare------------------*/
 /* T3X */
 void aml_phy_init_t3x(u8 port);
@@ -191,7 +192,11 @@ bool is_frl_train_finished(void);
 void rx_long_bist_t3x(void);
 void rx_t3x_prbs(void);
 void dump_aud21_param(u8 port);
-void frate_monitor(u8 port);
+void rx_21_fpll_cfg(int f_rate, u8 port);
+bool is_fpll_err(u8 port);
+void audio_setting_for_aud21(int frl_rate, u8 port);
+void frate_monitor(void);
+void frate_monitor1(void);
 //void reset_pcs(void);
 
 /*function declare end*/

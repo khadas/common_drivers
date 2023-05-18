@@ -905,6 +905,11 @@ void wr_reg_ana_ctl(u32 offset, u32 val)
 	spin_unlock_irqrestore(&reg_rw_lock, flags);
 }
 
+void wr_bits_reg_ana_ctl(u32 addr, u32 mask, u32 value)
+{
+	wr_reg_ana_ctl(addr, rx_set_bits(rd_reg_ana_ctl(addr), mask, value));
+}
+
 /*
  * rd_reg_hhi
  * @offset: offset address of hhi physical addr
@@ -4523,37 +4528,29 @@ void rx_aud_pll_ctl(bool en, u8 port)
 					tmp = rd_reg_clk_ctl(RX_CLK_CTRL2);
 					tmp |= (1 << 24);
 					wr_reg_clk_ctl(RX_CLK_CTRL2, tmp);
-					//hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL2, _BIT(8), 0);
-					wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL0_21, 0x40009540);
-					wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL1_21, 0x100);
-					tmp = 0;
-					tmp |= 2 << 2; /* 0:tmds_clk 1:ref_clk 2:mpll_clk */
-					wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL2_21, tmp);
-					wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL3_21,
+					wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0, 0x40009540);
+				    /* 0:tmds_clk 1:ref_clk 2:mpll_clk */
+					wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL1,
+					rx[port].phy.aud_div_1);
+					wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL3,
 						rx[port].phy.aud_div);
-					wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL0_21, 0x6000d540);
-					//frl to do
-					//if (frl_rate) {
-						//if (frl_rate == 1) {
-							//wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL1_21,
-							//0x400);
-							//wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL2_21,
-							//0x0008080b);
-						//} else if (frl_rate == 2 || frl_rate == 3) {
-							//wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL1_21,
-							//0x200);
-							//wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL2_21,
-							//0x0008080b);
-						//} else {
-							//wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL1_21,
-							//0x0);
-							//wr_reg_clk_ctl(ANACTL_AUD_PLL_CNTL2_21,
-							//0x0008080b);
-						//}
-					//}
-					tmp = hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2, port);
-					hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2,
-						(tmp | (1 << 30)), port);
+					if (rx[port].var.frl_rate)
+						audio_setting_for_aud21(rx[port].var.frl_rate,
+						port);
+					//wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0, 0x6000d540);
+					hdmirx_wr_bits_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0,
+						_BIT(14), 1);
+					hdmirx_wr_bits_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0,
+						_BIT(29), 1);
+					if (rx[E_PORT2].var.frl_rate || rx[E_PORT3].var.frl_rate) {
+						tmp = hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2,
+							port);
+						hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2,
+							(tmp | (1 << 30)), port);
+					} else {
+						hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PLL_CTRL2,
+							0, port);
+					}
 					rx_audio_pll_sw_update();
 					rx_pr("21 audio cfg\n");
 					return;
@@ -5139,7 +5136,11 @@ void hdmirx_config_video(u8 port)
 	rx_sw_reset_t7(2, port);
 	//frl_debug
 	if (rx_info.chip_id >= CHIP_ID_T3X && rx[port].var.frl_rate)
+		/* 2ppc */
 		hdmirx_wr_bits_cor(RX_PWD0_CLK_DIV_0, _BIT(0), 0, port);
+	else
+		/* 1ppc */
+		hdmirx_wr_bits_cor(RX_PWD0_CLK_DIV_0, _BIT(0), 1, port);
 }
 
 /*

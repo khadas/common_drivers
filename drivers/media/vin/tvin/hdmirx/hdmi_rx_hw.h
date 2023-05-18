@@ -336,6 +336,8 @@
 #define TOP_SHFT_PTTN_13				0x05d
 #define TOP_SHFT_ANA_CNTL				0x5e
 #define TOP_SHFT_ANA_STAT				0x5f
+#define TOP_FPLL21_STAT0				0x90
+#define TOP_FPLL21_STAT1				0x91
 
 #define	TOP_AXI_STAT_0					0x083
 #define	TOP_MISC_STAT0					0x084
@@ -3257,6 +3259,7 @@ void hdmirx_wr_bits_dwc(unsigned int addr,
 unsigned int hdmirx_wr_phy(unsigned int add,
 			   unsigned int data);
 unsigned int hdmirx_rd_phy(unsigned int addr);
+u32 hdmirx_rd_bits_clk_ctl(u32 addr, u32 mask);
 
 unsigned int rx_get_bits(unsigned int data,
 			 unsigned int mask);
@@ -3391,6 +3394,10 @@ u32 hdmirx_rd_bits_amlphy(u16 addr, u32 mask);
 u32 hdmirx_rd_bits_amlphy_t3x(u16 addr, u32 mask, u8 port);
 void wr_reg_clk_ctl(unsigned int offset, unsigned int val);
 unsigned int rd_reg_clk_ctl(unsigned int offset);
+void hdmirx_wr_bits_clk_ctl(u32 addr, u32 mask, u32 value);
+void wr_reg_clk_ctl(u32 offset, u32 val);
+u32 hdmirx_rd_bits_clk_ctl(u32 addr, u32 mask);
+u32 rd_reg_clk_ctl(u32 offset);
 
 unsigned int hdmirx_rd_amlphy(unsigned int addr);
 unsigned int hdmirx_rd_amlphy_t3x(unsigned int addr, u8 port);
@@ -3450,5 +3457,5 @@ void hdmirx_frl_config(u8 port);
 void rx_edid_module_reset(void);
 u32 hdmirx_rd_top_common_1(u32 addr);
 void hdmirx_wr_bits_top_common_1(u32 addr, u32 mask, u32 value);
-
+void cor_init(u8 port);
 #endif

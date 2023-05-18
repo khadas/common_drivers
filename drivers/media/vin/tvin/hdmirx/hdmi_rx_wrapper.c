@@ -67,6 +67,7 @@ static int clk_unstable_max;
 static int clk_stable_max;
 static int unnormal_wait_max = 200;
 static int wait_no_sig_max = 600;
+static int fpll_stable_max = 50;
 u32 vrr_func_en = 1;
 
 typedef void (*pf_callback)(int earc_port, bool st);
@@ -190,6 +191,7 @@ int clk_chg_max = 3;
 // 3. for hdcp1.4 cts. need to wait for hdcp start.
 // waiting time cannot be reduced 1S
 static int hdcp_none_wait_max = 80;
+int fpll_chk_cnt;
 
 void hdmirx_phy_var_init(void)
 {
@@ -3172,6 +3174,10 @@ static void signal_status_init(u8 port)
 	latency_info.allm_mode = 0;
 	latency_info.it_content = 0;
 	latency_info.cn_type = 0;
+	if (rx_info.chip_id >= CHIP_ID_T3X && port >= E_PORT2) {
+		rx_set_frl_train_sts(E_FRL_TRAIN_START);
+		rx[port].var.frl_rate = FRL_OFF;
+	}
 #ifdef CONFIG_AMLOGIC_HDMITX
 	if (rx_info.chip_id == CHIP_ID_T7)
 		hdmitx_update_latency_info(&latency_info);
@@ -3292,12 +3298,15 @@ void rx_dwc_reset(u8 port)
 		if (port >= E_PORT2) {
 			if (rx[port].var.frl_rate) {
 				hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x0, port);
+				/* for 2.1 hdcp */
+				hdmirx_wr_cor(CP2PA_AESCTL0_HDCP2X_IVCRX, 0xf0, port);
 				hdmirx_wr_bits_top(TOP_CLK_CNTL, _BIT(14), 1, port);
 			} else {
 				hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x10, port);
 				hdmirx_wr_cor(RX_H21_CTRL_PWD_IVCRX, 0, port);
 				hdmirx_wr_bits_top(TOP_CLK_CNTL, _BIT(14), 0, port);
 				hdmirx_wr_bits_cor(RX_VP_INPUT_FORMAT_LO, _BIT(0), 1, port);
+				hdmirx_wr_cor(CP2PA_AESCTL0_HDCP2X_IVCRX, 0x0, port);
 			}
 		}
 	}
@@ -3708,6 +3717,8 @@ void rx_get_global_variable(const char *buf)
 	pr_var(force_clk_stable, i++);
 	pr_var(audio_debug, i++);
 	pr_var(port_debug_en, i++);
+	pr_var(fpll_sel, i++);
+	pr_var(fpll_chk_lvl, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4223,6 +4234,12 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy_21.dfe_hold),
 		&rx_info.aml_phy_21.dfe_hold, value))
 		return pr_var(rx_info.aml_phy_21.dfe_hold, index);
+	if (set_pr_var(tmpbuf, var_to_str(fpll_sel),
+		&fpll_sel, value))
+		return pr_var(fpll_sel, index);
+	if (set_pr_var(tmpbuf, var_to_str(fpll_chk_lvl),
+		&fpll_chk_lvl, value))
+		return pr_var(fpll_chk_lvl, index);
 	return 0;
 }
 
@@ -5937,7 +5954,7 @@ void rx_port2_main_state_machine(void)
 	int one_frame_cnt;
 	u8 port = E_PORT2;
 
-	frate_monitor(port);
+	frate_monitor();
 	if ((dbg_port - 1 != port) &&
 		dbg_port)
 		return;
@@ -5983,6 +6000,7 @@ void rx_port2_main_state_machine(void)
 		break;
 	case FSM_FRL_TRN:
 		rx_frl_train();
+		rx[port].var.fpll_stable_cnt = 0;
 		if (hdmirx_get_frl_rate(port) == FRL_OFF)
 			rx[port].state = FSM_WAIT_CLK_STABLE;
 		else
@@ -5991,6 +6009,10 @@ void rx_port2_main_state_machine(void)
 	case FSM_WAIT_FRL_TRN_DONE:
 		if (!is_frl_train_finished())
 			break;
+		if (is_fpll_err(port)) {
+			if (rx[port].var.fpll_stable_cnt++ < fpll_stable_max)
+				break;
+		}
 		rx[port].state =  FSM_PCS_RESET;
 		rx[port].var.clk_stable_cnt = 0;
 		break;
@@ -6061,6 +6083,7 @@ void rx_port2_main_state_machine(void)
 		rx[port].var.pll_lock_cnt = 0;
 		rx[port].var.pll_unlock_cnt = 0;
 		rx[port].var.clk_chg_cnt = 0;
+		rx[port].var.fpll_stable_cnt = 0;
 		break;
 	case FSM_SIG_UNSTABLE:
 		if (!rx[port].cableclk_stb_flg) {
@@ -6411,6 +6434,7 @@ void rx_port3_main_state_machine(void)
 	int one_frame_cnt;
 	u8 port = E_PORT3;
 
+	frate_monitor1();
 	if ((dbg_port - 1 != port) &&
 		dbg_port)
 		return;
@@ -6457,6 +6481,7 @@ void rx_port3_main_state_machine(void)
 		break;
 	case FSM_FRL_TRN:
 		rx_frl_train();
+		rx[port].var.fpll_stable_cnt = 0;
 		if (hdmirx_get_frl_rate(port) == FRL_OFF)
 			rx[port].state = FSM_WAIT_CLK_STABLE;
 		else
@@ -6465,6 +6490,10 @@ void rx_port3_main_state_machine(void)
 	case FSM_WAIT_FRL_TRN_DONE:
 		if (!is_frl_train_finished())
 			break;
+		if (is_fpll_err(port)) {
+			if (rx[port].var.fpll_stable_cnt++ < fpll_stable_max)
+				break;
+		}
 		rx[port].state =  FSM_PCS_RESET;
 		rx[port].var.clk_stable_cnt = 0;
 		break;
@@ -6535,6 +6564,7 @@ void rx_port3_main_state_machine(void)
 		rx[port].var.pll_lock_cnt = 0;
 		rx[port].var.pll_unlock_cnt = 0;
 		rx[port].var.clk_chg_cnt = 0;
+		rx[port].var.fpll_stable_cnt = 0;
 		break;
 	case FSM_SIG_UNSTABLE:
 		if (!rx[port].cableclk_stb_flg) {
@@ -7039,7 +7069,7 @@ static void dump_clk_status(u8 port)
 		      rx[port].clk.mpll_clk);
 }
 
-static void dump_video_status(u8 port)
+void dump_video_status(u8 port)
 {
 	enum edid_ver_e edid_slt = (edid_select >> (4 * port)) & 0xF;
 	enum edid_ver_e edid_ver =
@@ -7433,10 +7463,12 @@ int hdmirx_debug(const char *buf, int size)
 		hdmi_tx_rx_frl_training_main(port);
 	} else if (strncmp(tmpbuf, "prbs", 4) == 0) {
 		rx_long_bist_t3x();
-	} else if (strncmp(tmpbuf, "lbist", 5) == 0) {
+	} else if (strncmp(tmpbuf, "l_bist", 6) == 0) {
 		rx_long_bist_t3x();
 	} else if (strncmp(tmpbuf, "aud21", 5) == 0) {
 		dump_aud21_param(E_PORT2);
+	} else if (strncmp(tmpbuf, "fpll", 4) == 0) {
+		rx_21_fpll_cfg(rx[port].var.frl_rate, port);
 	}
 	return 0;
 }

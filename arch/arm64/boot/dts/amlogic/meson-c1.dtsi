@@ -843,6 +843,11 @@
 		reserve_mem_size = <0x00300000>;
 	};
 
+	optee {
+		compatible = "linaro,optee-tz";
+		method = "smc";
+	};
+
 	amlogic_unifykey: unifykey{
 		compatible = "amlogic,unifykey";
 		status = "okay";

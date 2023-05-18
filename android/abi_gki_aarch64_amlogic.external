@@ -15,3 +15,5 @@
   mmc_cmdq_disable
   devm_blk_crypto_profile_init
   mmc_cqe_request_done
+  spi_finalize_current_message
+  strim

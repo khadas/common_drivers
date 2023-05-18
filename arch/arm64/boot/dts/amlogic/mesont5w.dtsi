@@ -651,7 +651,7 @@
 		reg=<0x0 0xff800228 0x0 0x4>;
 		memory-region = <&defendkey_reserved>;
 		mem_size = <0x100000>;
-		status = "okay";
+		status = "disabled";
 	};
 
 	provisionkey {

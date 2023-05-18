@@ -63,10 +63,7 @@
 
 		defendkey_reserved:linux,defendkey {
 			compatible = "amlogic, defendkey";
-			reusable;
-			size = <0x0 0x100000>;
-			alignment = <0x0 0x100000>;
-			alloc-ranges = <0x0 0x04F00000 0x0 0x100000>;
+			reg = <0x0 0x04e00000 0x0 0x100000>;
 		};
 
 		secmon_reserved: linux,secmon {
@@ -173,7 +170,7 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x8000000>;
+			size = <0x0 0x400000>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0x3f400000>;
 		};

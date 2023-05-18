@@ -339,7 +339,7 @@ static int defendkey_probe(struct platform_device *pdev)
 
 	reg_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!IS_ERR_OR_NULL(reg_mem)) {
-		reg_base = ioremap(reg_mem->start, reg_mem->end);
+		reg_base = ioremap(reg_mem->start, reg_mem->end - reg_mem->start);
 		if (IS_ERR(reg_base)) {
 			dev_err(&pdev->dev, "reg0: cannot obtain I/O memory region.\n");
 			return PTR_ERR(reg_base);

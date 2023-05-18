@@ -33,15 +33,16 @@ static void amlogic_crg_drd_usb3phy_shutdown(struct usb_phy *x)
 {
 	struct amlogic_usb_v2 *phy = phy_to_amlusb(x);
 
-	if (phy->phy.flags == AML_USB3_PHY_ENABLE) {
-		if (!(IS_ERR(phy->hcsl_clk)))
-			clk_disable_unprepare(phy->hcsl_clk);
+	if (phy->suspend_flag == 0) {
+		if (phy->phy.flags == AML_USB3_PHY_ENABLE) {
+			if (!(IS_ERR(phy->hcsl_clk)))
+				clk_disable_unprepare(phy->hcsl_clk);
 
-		clk_disable_unprepare(phy->clk);
+			clk_disable_unprepare(phy->clk);
 
-		writel(0xf5, phy->phy31_cfg);
+			writel(0xf5, phy->phy31_cfg);
+		}
 	}
-
 	phy->suspend_flag = 1;
 }
 

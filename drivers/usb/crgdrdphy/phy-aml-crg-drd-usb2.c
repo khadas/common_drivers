@@ -395,8 +395,9 @@ int amlogic_crg_device_usb2_shutdown(u32 phy_id)
 	writel((val & (~temp)), (void __iomem	*)
 		((unsigned long)phy->reset_regs + (phy->reset_level - mask)));
 
-	if (phy->phy.flags == AML_USB2_PHY_ENABLE)
-		clk_disable_unprepare(phy->clk);
+	if (phy->suspend_flag  == 0)
+		if (phy->phy.flags == AML_USB2_PHY_ENABLE)
+			clk_disable_unprepare(phy->clk);
 
 	phy->suspend_flag = 1;
 
@@ -423,8 +424,9 @@ static void amlogic_crg_drd_usb2phy_shutdown(struct usb_phy *x)
 	writel((val & (~temp)), (void __iomem	*)
 		((unsigned long)phy->reset_regs + (phy->reset_level - mask)));
 
-	if (phy->phy.flags == AML_USB2_PHY_ENABLE)
-		clk_disable_unprepare(phy->clk);
+	if (phy->suspend_flag  == 0)
+		if (phy->phy.flags == AML_USB2_PHY_ENABLE)
+			clk_disable_unprepare(phy->clk);
 
 	phy->suspend_flag = 1;
 }

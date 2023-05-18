@@ -953,7 +953,7 @@ int SC2_bufferid_set_sec_mem(struct chan_id *pchan,
  * \retval success: 0
  * \retval -1:fail.
  */
-int SC2_bufferid_set_enable(struct chan_id *pchan, int enable)
+int SC2_bufferid_set_enable(struct chan_id *pchan, int enable, int sid, int pid)
 {
 	unsigned int tmp;
 
@@ -970,7 +970,8 @@ int SC2_bufferid_set_enable(struct chan_id *pchan, int enable)
 			pchan->memdescs->bits.address,
 			pchan->memdescs->bits.byte_length);
 	//wdma_config_enable(pchan->id, enable, tmp, pchan->mem_size);
-	wdma_config_enable(pchan, enable, tmp, pchan->mem_size);
+	wdma_config_enable(pchan, enable, tmp, pchan->mem_size,
+		sid, pid, pchan->sec_level);
 
 	pr_dbg("######wdma start###########\n");
 	pr_dbg("err:0x%0x, active:%d\n", wdma_get_err(pchan->id),

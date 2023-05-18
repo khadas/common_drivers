@@ -537,7 +537,7 @@
 				pinctrl-0 = <&remote_pins>;
 				map = <&custom_maps>;
 				max_frame_time = <200>;
-				//power-domains = <&pwrdm PDID_IR>;
+				power-domains = <&pwrdm PDID_CX_IR>;
 			};
 
 			irblaster: meson-irblaster@110c {

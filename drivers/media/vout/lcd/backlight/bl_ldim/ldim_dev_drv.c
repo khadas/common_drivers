@@ -71,6 +71,7 @@ struct ldim_dev_driver_s ldim_dev_drv = {
 	.index = 0xff,
 	.type = LDIM_DEV_TYPE_NORMAL,
 	.dma_support = 0,
+	.spi_sync = 0,
 	.cs_hold_delay = 0,
 	.cs_clk_delay = 0,
 	.en_gpio = LCD_EXT_GPIO_INVALID,
@@ -935,7 +936,7 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 	char propname[20];
 	struct device_node *child;
 	const char *str;
-	unsigned int *temp, val;
+	unsigned int *temp, val, size;
 	struct bl_pwm_config_s *bl_pwm;
 	struct ldim_profile_s *profile;
 	struct ldim_fw_s *fw = aml_ldim_get_fw();
@@ -945,7 +946,8 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 		LDIMPR("load ldim_dev config from dts\n");
 
-	temp = kcalloc(LD_BLKREGNUM, sizeof(unsigned int), GFP_KERNEL);
+	size = (dev_drv->zone_num >= 10) ? dev_drv->zone_num : 10;
+	temp = kcalloc(size, sizeof(unsigned int), GFP_KERNEL);
 	if (!temp)
 		return -1;
 
@@ -1029,7 +1031,7 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 		if (ret) {
 			LDIMERR("failed to get spi_dma_support\n");
 		} else {
-			dev_drv->dma_support = val;
+			dev_drv->dma_support = (unsigned char)val;
 			if (ldim_debug_print) {
 				LDIMPR("spi_dma_support: %d\n",
 				       dev_drv->dma_support);
@@ -1327,11 +1329,14 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv,
 
 	key_len = LCD_UKEY_LDIM_DEV_SIZE;
 	para = kcalloc(key_len, (sizeof(unsigned char)), GFP_KERNEL);
-	if (!para)
+	if (!para) {
+		LDIMERR("para kcalloc failed!!\n");
 		return -1;
+	}
 
 	ret = lcd_unifykey_get("ldim_dev", para, &key_len);
 	if (ret < 0) {
+		LDIMERR("get ldim_dev unifykey failed!!\n");
 		kfree(para);
 		return -1;
 	}
@@ -2096,6 +2101,7 @@ static void ldim_dev_probe_func(struct work_struct *work)
 	ldim_drv->dev_drv = &ldim_dev_drv;
 	ldim_dev_drv.bl_row = ldim_drv->conf->seg_row;
 	ldim_dev_drv.bl_col = ldim_drv->conf->seg_col;
+	ldim_dev_drv.spi_sync = ldim_drv->data->spi_sync;
 	ldim_dev_drv.ldim_pwm_config.pwm_duty_max = 4095;
 	ldim_dev_drv.analog_pwm_config.pwm_duty_max = 4095;
 	val = ldim_dev_drv.bl_row * ldim_dev_drv.bl_col;

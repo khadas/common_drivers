@@ -562,7 +562,7 @@
 		pinctrl-0 = <&pwm_d_pins4>;
 		pinctrl-1 = <&bl_pwm_vs_on_pins>;
 		pinctrl-2 = <&bl_pwm_off_pins>;
-		interrupts-extended = <&gic 0 197 1>,<&gpio_intc 121 1>;
+		interrupts-extended = <&gic 0 115 1>,<&gpio_intc 122 1>;
 		interrupt-names = "vsync","ldim_pwm_vs";
 		bl_pwm_config = <&bl_pwm_conf>;
 		//memory-region = <&ldc_mem_reserved>;

@@ -72,11 +72,6 @@ static spinlock_t ldim_isr_lock;
 static spinlock_t rdma_ldim_isr_lock;
 static spinlock_t ldim_pwm_vs_isr_lock;
 
-static struct workqueue_struct *ldim_queue;
-static struct work_struct ldim_on_vs_work;
-static struct work_struct ldim_off_vs_work;
-static struct work_struct ldim_err_handle_work;
-
 static int ldim_on_init(void);
 static int ldim_power_on(void);
 static int ldim_power_off(void);
@@ -480,12 +475,7 @@ static void ldim_dev_smr(int update_flag, unsigned int size)
 			dev_drv->dev_smr_dummy(&ldim_driver);
 	}
 
-#ifdef LDIM_SPI_DUTY_VSYNC_DIRECT
-	/*schedule_work(&ldim_err_handle_work);*/
-	queue_work(ldim_queue, &ldim_err_handle_work);
-#else
 	ldim_dev_err_handler();
-#endif
 }
 
 static void ldim_on_vs_brightness(void)
@@ -577,21 +567,6 @@ static void ldim_off_vs_brightness(void)
 	ldim_time_sort_save(ldim_driver.xfer_time, local_time[2]);
 }
 
-static void ldim_on_update_brightness(struct work_struct *work)
-{
-	ldim_on_vs_brightness();
-}
-
-static void ldim_off_update_brightness(struct work_struct *work)
-{
-	ldim_off_vs_brightness();
-}
-
-static void ldim_err_handler(struct work_struct *work)
-{
-	ldim_dev_err_handler();
-}
-
 /* ******************************************************
  * local dimming dummy function for virtual ldim dev
  * ******************************************************
@@ -654,6 +629,11 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	if (bdrv->bconf.method != BL_CTRL_LOCAL_DIMMING) {
 		LDIMERR("%s: bconf.method is not ldim!!\n", __func__);
+		return -1;
+	}
+
+	if (ldim_driver.dev_drv->init_loaded == 0) {
+		LDIMERR("%s: dev_drv->init_loaded == 0!!\n", __func__);
 		return -1;
 	}
 
@@ -793,7 +773,7 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 		argp = (void __user *)ldim_buff.ptr;
 		LDIMPR("index =  0x%x, len=  0x%x\n", ldim_buff.index, ldim_buff.len);
-		if (ldim_buff.len == 0 || ldim_buff.len > 0xC0000) {
+		if (ldim_buff.len == 0) {
 			LDIMERR("profile bin size = %d is invalid!!\n",
 				ldim_buff.len);
 			return -EFAULT;
@@ -867,12 +847,8 @@ int aml_ldim_get_config_dts(struct device_node *child)
 			goto aml_ldim_get_config_dts_next;
 		}
 	}
-	if ((para[0] * para[1]) > LD_BLKREGNUM) {
-		LDIMERR("zone row*col(%d*%d) is out of support\n", para[0], para[1]);
-	} else {
-		ldim_config.seg_row = para[0];
-		ldim_config.seg_col = para[1];
-	}
+	ldim_config.seg_row = para[0];
+	ldim_config.seg_col = para[1];
 	LDIMPR("get bl_zone row = %d, col = %d\n",
 	       ldim_config.seg_row, ldim_config.seg_col);
 
@@ -939,7 +915,7 @@ void aml_ldim_rmem_info(void)
 		ldim_rmem.rsv_mem_size, ldim_rmem.flag);
 }
 
-static int aml_ldim_malloc_t7(struct platform_device *pdev, struct ldim_drv_data_s *data,
+static int aml_ldim_malloc(struct platform_device *pdev, struct ldim_drv_data_s *data,
 			      unsigned int row, unsigned int col)
 {
 	unsigned int zone_num = row * col;
@@ -1001,29 +977,43 @@ ldim_malloc_t7_err0:
 }
 
 static struct ldim_drv_data_s ldim_data_t7 = {
+	.ldc_chip_type = 0,
+	.spi_sync = 0,
+	.rsv_mem_size = 0x100000,
 	.h_zone_max = 48,
 	.v_zone_max = 32,
 	.total_zone_max = 1536,
-	.wr_mem_size = 0x400000,
-	.rd_mem_size = 0,
 
 	.vs_arithmetic = ldim_vs_arithmetic,
-
-	.memory_init = aml_ldim_malloc_t7,
+	.memory_init = aml_ldim_malloc,
 	.drv_init = NULL,
 	.func_ctrl = NULL,
 };
 
 static struct ldim_drv_data_s ldim_data_t3 = {
+	.ldc_chip_type = 1,
+	.spi_sync = 0,
+	.rsv_mem_size = 0x100000,
 	.h_zone_max = 48,
 	.v_zone_max = 32,
 	.total_zone_max = 1536,
-	.wr_mem_size = 0x400000,
-	.rd_mem_size = 0,
 
 	.vs_arithmetic = ldim_vs_arithmetic,
+	.memory_init = aml_ldim_malloc,
+	.drv_init = NULL,
+	.func_ctrl = NULL,
+};
 
-	.memory_init = aml_ldim_malloc_t7,
+static struct ldim_drv_data_s ldim_data_t3x = {
+	.ldc_chip_type = 2,
+	.spi_sync = 0,
+	.rsv_mem_size = 0x400000,
+	.h_zone_max = 96,
+	.v_zone_max = 64,
+	.total_zone_max = 6144,
+
+	.vs_arithmetic = ldim_vs_arithmetic,
+	.memory_init = aml_ldim_malloc,
 	.drv_init = NULL,
 	.func_ctrl = NULL,
 };
@@ -1087,6 +1077,10 @@ int aml_ldim_probe(struct platform_device *pdev)
 		devp->data = &ldim_data_t3;
 		ldim_driver.data = &ldim_data_t3;
 		break;
+	case LCD_CHIP_T3X:
+		devp->data = &ldim_data_t3x;
+		ldim_driver.data = &ldim_data_t3x;
+		break;
 	default:
 		devp->data = NULL;
 		LDIMERR("%s: don't support ldim for current chip\n", __func__);
@@ -1096,6 +1090,7 @@ int aml_ldim_probe(struct platform_device *pdev)
 	if (ret)
 		return -1;
 
+	ldim_rmem.rsv_mem_size = ldim_driver.data->rsv_mem_size;
 	ldim_driver.resolution_update = 0;
 	ldim_driver.in_vsync_flag = 0;
 	ldim_driver.level_update = 0;
@@ -1118,7 +1113,7 @@ int aml_ldim_probe(struct platform_device *pdev)
 		return -1;
 	}
 	ldim_driver.fw = fw;
-	ldim_driver.fw->chip_type = bdrv->data->chip_type;
+	ldim_driver.fw->chip_type = devp->data->ldc_chip_type;
 	ldim_driver.fw->seg_row = ldim_config.seg_row;
 	ldim_driver.fw->seg_col = ldim_config.seg_col;
 	ldim_driver.fw->rmem = &ldim_rmem;
@@ -1173,16 +1168,6 @@ int aml_ldim_probe(struct platform_device *pdev)
 		ret = PTR_ERR(devp->dev);
 		goto err4;
 	}
-
-	ldim_queue = create_workqueue("ldim workqueue");
-	if (!ldim_queue) {
-		LDIMERR("ldim_queue create failed\n");
-		ret = -1;
-		goto err4;
-	}
-	INIT_WORK(&ldim_on_vs_work, ldim_on_update_brightness);
-	INIT_WORK(&ldim_off_vs_work, ldim_off_update_brightness);
-	INIT_WORK(&ldim_err_handle_work, ldim_err_handler);
 
 	spin_lock_init(&ldim_isr_lock);
 	spin_lock_init(&rdma_ldim_isr_lock);

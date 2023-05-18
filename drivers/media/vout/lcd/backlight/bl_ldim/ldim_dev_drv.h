@@ -16,7 +16,7 @@ int ldim_spi_dma_cycle_align_byte(int size);
 /* ldim spi api*/
 int ldim_spi_write_async(struct spi_device *spi, unsigned char *tbuf,
 			 unsigned char *rbuf, int tlen, int dma_mode, int max_len);
-int ldim_spi_write(struct spi_device *spi, unsigned char *tbuf, int wlen);
+int ldim_spi_write(struct spi_device *spi, unsigned char *tbuf, int tlen);
 int ldim_spi_read(struct spi_device *spi, unsigned char *tbuf, int wlen,
 		  unsigned char *rbuf, int rlen);
 int ldim_spi_read_sync(struct spi_device *spi, unsigned char *tbuf,

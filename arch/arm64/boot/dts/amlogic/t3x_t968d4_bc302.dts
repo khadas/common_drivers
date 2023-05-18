@@ -266,6 +266,14 @@
 			linux,contiguous-region;
 			/*alloc-ranges = <0x0 0x0 0x0 0xB0000000>;*/
 		};
+
+		/* ldc_mem_reserved:linux,ldc_mem {
+		 *	compatible = "shared-dma-pool";
+		 *	reusable;
+		 *	size = <0x0 0x400000>;
+		 *	alignment = <0x0 0x400000>;
+		 *};
+		 */
 	};
 
 	smmu: aml_smmu {
@@ -370,7 +378,7 @@
 	unifykey{
 		compatible = "amlogic,unifykey";
 		status = "okay";
-		unifykey-num = <24>;
+		unifykey-num = <25>;
 		unifykey-index-0 = <&keysn_0>;
 		unifykey-index-1 = <&keysn_1>;
 		unifykey-index-2 = <&keysn_2>;
@@ -1815,7 +1823,7 @@
 };
 
 &spicc1 {	//for UWB/LocalDimm
-	status = "disabled";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc1_pins_h>;
 };

@@ -88,7 +88,8 @@ struct ldim_dev_driver_s {
 	char pinmux_name[LDIM_DEV_NAME_MAX];
 	unsigned char key_valid;
 	unsigned char type;
-	unsigned int dma_support;
+	unsigned char dma_support;
+	unsigned char spi_sync;/*1:spi_sync, 0:dirspi_async*/
 	int cs_hold_delay;
 	int cs_clk_delay;
 	int en_gpio;
@@ -147,14 +148,14 @@ struct ldim_dev_driver_s {
 };
 
 struct ldim_drv_data_s {
+	unsigned char ldc_chip_type;
+	unsigned char spi_sync;
+	unsigned int rsv_mem_size;
 	unsigned short h_zone_max;
 	unsigned short v_zone_max;
 	unsigned short total_zone_max;
-	unsigned int wr_mem_size;
-	unsigned int rd_mem_size;
 
 	void (*vs_arithmetic)(struct aml_ldim_driver_s *ldim_drv);
-
 	int (*memory_init)(struct platform_device *pdev,
 			   struct ldim_drv_data_s *data,
 			   unsigned int row, unsigned int col);

@@ -290,29 +290,31 @@ static int ldim_spi_dev_probe(struct spi_device *spi)
 {
 	struct aml_ldim_driver_s *ldim_drv = aml_ldim_get_driver();
 	struct ldim_dev_driver_s *dev_drv;
-	int ret;
+	int ret = 0;
 
 	if (ldim_debug_print)
 		LDIMPR("%s\n", __func__);
 
 	if (!ldim_drv->dev_drv)
 		return 0;
-	dev_drv = ldim_drv->dev_drv;
-	dev_drv->spi_dev = spi;
-
-	dev_set_drvdata(&spi->dev, dev_drv);
-	spi->bits_per_word = 8;
-
-	ret = spi_setup(spi);
-	if (ret)
-		LDIMERR("spi setup failed\n");
 
 	ldim_spi_async_busy = 0;
 	ldim_spi_async_busy_cnt = 0;
 
-	/* dummy for spi clktree init */
-	ldim_spi_write(spi, NULL, 0);
+	dev_drv = ldim_drv->dev_drv;
+	dev_drv->spi_dev = spi;
 
+	if (dev_drv->spi_sync) {
+		dev_set_drvdata(&spi->dev, dev_drv);
+		spi->bits_per_word = 8;
+
+		ret = spi_setup(spi);
+		if (ret)
+			LDIMERR("spi setup failed\n");
+
+		/* dummy for spi clktree init */
+		ldim_spi_write(spi, NULL, 0);
+	}
 	return ret;
 }
 

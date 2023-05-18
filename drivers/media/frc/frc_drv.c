@@ -72,6 +72,7 @@
 #include "frc_dbg.h"
 #include "frc_buf.h"
 #include "frc_hw.h"
+#include "frc_memc_dbg.h"
 // #ifdef CONFIG_AMLOGIC_MEDIA_FRC_RDMA
 #include "frc_rdma.h"
 // #endif
@@ -130,73 +131,14 @@ u32 sizeof_frc_fw_data_struct(void)
 }
 EXPORT_SYMBOL(sizeof_frc_fw_data_struct);
 
-ssize_t frc_reg_show(struct class *class,
-	struct class_attribute *attr,
-	char *buf)
-{
-	pr_frc(0, "read:  echo r reg > /sys/class/frc/reg\n");
-	pr_frc(0, "write: echo w reg value > /sys/class/frc/reg\n");
-	pr_frc(0, "dump:  echo d reg length > /sys/class/frc/reg\n");
-	return 0;
-}
-
-ssize_t frc_reg_store(struct class *class,
-	struct class_attribute *attr,
-	const char *buf,
-	size_t count)
-{
-	frc_reg_io(buf);
-	return count;
-}
-
-ssize_t frc_tool_debug_show(struct class *class,
-	struct class_attribute *attr,
-	char *buf)
-{
-	struct tool_debug_s *read_parm = NULL;
-	struct frc_dev_s *devp = get_frc_devp();
-
-	read_parm = &devp->tool_dbg;
-	return sprintf(buf, "[0x%x] = 0x%x\n",
-		read_parm->reg_read, read_parm->reg_read_val);
-}
-
-ssize_t frc_tool_debug_store(struct class *class,
-	struct class_attribute *attr,
-	const char *buf,
-	size_t count)
-{
-	struct frc_dev_s *devp = get_frc_devp();
-
-	frc_tool_dbg_store(devp, buf);
-	return count;
-}
-
-ssize_t frc_debug_show(struct class *class,
-	struct class_attribute *attr,
-	char *buf)
-{
-	struct frc_dev_s *devp = get_frc_devp();
-
-	return frc_debug_if_help(devp, buf);
-}
-
-ssize_t frc_debug_store(struct class *class,
-	struct class_attribute *attr,
-	const char *buf,
-	size_t count)
-{
-	struct frc_dev_s *devp = get_frc_devp();
-
-	frc_debug_if(devp, buf, count);
-
-	return count;
-}
-
 static struct class_attribute frc_class_attrs[] = {
 	__ATTR(debug, 0644, frc_debug_show, frc_debug_store),
 	__ATTR(reg, 0644, frc_reg_show, frc_reg_store),
 	__ATTR(tool_debug, 0644, frc_tool_debug_show, frc_tool_debug_store),
+	__ATTR(buf, 0644, frc_buf_show, frc_buf_store),
+	__ATTR(rdma, 0644, frc_rdma_show, frc_rdma_store),
+	__ATTR(parm, 0644, frc_parm_show, frc_parm_store),
+	__ATTR(other, 0644, frc_other_show, frc_other_store),
 	__ATTR(final_line_param, 0644, frc_bbd_final_line_param_show,
 		frc_bbd_final_line_param_store),
 	__ATTR(vp_ctrl_param, 0644, frc_vp_ctrl_param_show, frc_vp_ctrl_param_store),

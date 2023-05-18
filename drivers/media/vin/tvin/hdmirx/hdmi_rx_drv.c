@@ -1465,9 +1465,19 @@ void hdmirx_get_hdr_info(struct tvin_sig_property_s *prop, u8 port)
 /*
  * get hdmirx avi packet ext_colorimetry info
  */
+ #define E_EXTENDED_VALID 3
+ #define E_ADDITIONAL_VALID 7
 void hdmirx_get_avi_ext_colorimetry(struct tvin_sig_property_s *prop, u8 port)
 {
 	prop->avi_ec = rx[port].cur.ext_colorimetry;
+	if (rx[port].cur.colorimetry != E_EXTENDED_VALID) {
+		prop->avi_ec = rx[port].cur.colorimetry;
+	} else {
+		if (rx[port].cur.ext_colorimetry != E_ADDITIONAL_VALID)
+			prop->avi_ec = E_EXTENDED_VALID + rx[port].cur.ext_colorimetry;
+		else
+			prop->avi_ec = E_ADDITIONAL_VALID;//todo
+	}
 }
 
 /***************************************************

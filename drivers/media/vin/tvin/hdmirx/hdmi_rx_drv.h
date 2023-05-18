@@ -718,6 +718,22 @@ struct spkts_rcvd_sts {
 	u32 rsvd:28;
 };
 
+enum e_colorimetry {
+	E_NULL = 0,
+	E_SMPTE_ST_170,
+	E_BT_709,
+	E_XVYCC_601 = 3,
+	E_XVYCC_709,
+	E_SYCC_601,
+	E_OPYCC_601,
+	E_OP_RGB,
+	E_BT_2020_YCC,
+	E_BI_2020_RGBORYCC,
+	E_SMPTE_ST_2113_P3D65RGB = 10,
+	E_SMPTE_ST_2113_P3DCIRGB,
+	E_BT_2100,
+};
+
 enum hdmirx_event {
 	HDMIRX_NONE_EVENT = 0,
 };

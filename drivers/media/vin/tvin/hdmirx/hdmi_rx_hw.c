@@ -1721,10 +1721,10 @@ void rx_get_aud_info(struct aud_info_s *audio_info, u8 port)
 void rx_get_audio_status(struct rx_audio_stat_s *aud_sts)
 {
 	u8 port = rx_info.main_port;
+	enum tvin_sig_fmt_e fmt = hdmirx_hw_get_fmt(port);
 
 	if (rx[port].state == FSM_SIG_READY &&
-	    rx[port].pre.sw_vic != HDMI_UNKNOWN &&
-	    rx[port].pre.sw_vic != HDMI_UNSUPPORT &&
+	    fmt != TVIN_SIG_FMT_NULL &&
 	    rx[port].avmute_skip == 0) {
 		if (rx_info.chip_id < CHIP_ID_T7) {
 			aud_sts->aud_alloc = rx[port].aud_info.auds_ch_alloc;
@@ -5102,7 +5102,9 @@ void hdmirx_config_video(u8 port)
 		hdmirx_wr_cor(RX_VP_INPUT_FORMAT_HI, data8, port);
 	}
 	if (rx_info.chip_id >= CHIP_ID_T3) {
-		if (rx[port].pre.sw_vic >= HDMI_VESA_OFFSET)
+		if (rx[port].pre.sw_vic >= HDMI_VESA_OFFSET ||
+			rx[port].pre.sw_vic == HDMI_640x480p60 ||
+			rx[port].pre.sw_dvi)
 			hdmirx_wr_bits_top(TOP_VID_CNTL, _BIT(7), 1, port);
 		else//use auto de-repeat
 			hdmirx_wr_bits_top(TOP_VID_CNTL, _BIT(7), 0, port);

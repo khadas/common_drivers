@@ -60,7 +60,6 @@ unsigned int lcd_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
 	lcnt = lcd_venc_op.get_encl_line_cnt(pdrv);
 	return lcnt;
 }
-EXPORT_SYMBOL(lcd_get_encl_line_cnt);
 
 unsigned int lcd_get_max_line_cnt(struct aml_lcd_drv_s *pdrv)
 {
@@ -85,7 +84,6 @@ void lcd_gamma_debug_test_en(struct aml_lcd_drv_s *pdrv, int flag)
 
 	lcd_venc_op.gamma_test_en(pdrv, flag);
 }
-
 
 void lcd_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
 {
@@ -210,7 +208,6 @@ unsigned int lcd_get_encl_frm_cnt(struct aml_lcd_drv_s *pdrv)
 
 	return cnt;
 }
-EXPORT_SYMBOL(lcd_get_encl_frm_cnt);
 
 void lcd_venc_vrr_recovery(struct aml_lcd_drv_s *pdrv)
 {

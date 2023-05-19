@@ -1461,10 +1461,12 @@
 		get_max_cmd = <0x82000033>;
 		mem_in_base_cmd = <0x82000020>;
 		mem_out_base_cmd = <0x82000021>;
+		reg=<0x0 0xfe005060 0x0 0x4>;
+		secureboot_mask = <0x00000101>;
 		key = <&efusekey>;
 		//clocks = <&clkc CLKID_OTP>;
 		clock-names = "efuse_clk";
-		status = "disabled";
+		status = "okay";
 	};
 
 	efusekey: efusekey {

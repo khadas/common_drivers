@@ -33,11 +33,11 @@
 			compatible = "arm,cortex-a55", "arm,armv8";
 			reg = <0x0 0x0>;
 			enable-method = "psci";
-			//clocks = <&clkc CLKID_CPU_CLK>,
-			//	<&clkc CLKID_CPU_FCLK>,
-			//	<&clkc CLKID_SYS_PLL>,
-			//	<&clkc CLKID_DSU_CLK>,
-			//	<&clkc CLKID_DSU_PRE>;
+			clocks = <&clkc CLKID_CPU_CLK>,
+				<&clkc CLKID_CPU_DYN_CLK>,
+				<&clkc CLKID_SYS_PLL>,
+				<&clkc CLKID_DSU_CLK>,
+				<&clkc CLKID_DSU_PRE_CLK>;
 			clock-names = "core_clk",
 				"low_freq_clk_parent",
 				"high_freq_clk_parent",

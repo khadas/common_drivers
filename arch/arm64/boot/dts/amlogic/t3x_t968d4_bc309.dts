@@ -45,8 +45,8 @@
 
 	memory@00000000 {
 		device_type = "memory";
-		linux,usable-memory = <0x00000000 0x00000000 0x00000000 0xe0000000>,
-					<0x00000001 0x00000000 0x00000000 0x20000000>;
+		linux,usable-memory = <0x00000000 0x00000000 0x00000000 0xe0000000
+					0x00000001 0x00000000 0x00000000 0x20000000>;
 	};
 
 	reserved-memory {
@@ -235,7 +235,7 @@
 		pcie_dma_ops_mm:linux,pcie_dma_ops {
 			compatible = "shared-dma-pool";
 			reusable;
-			status = "disable";
+			status = "disabled";
 			size = <0x0 0x5000000>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
@@ -254,13 +254,13 @@
 			size = <0x0 0x15c00000>; // reserved 212M
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
-			/*alloc-ranges = <0x0 0x0 0x0 0x3f800000>;*/
+			/*alloc-ranges = <0x0 0x0 0x0 0xB0000000>;*/
 		};
 	};
 
 	smmu: aml_smmu {
 		compatible = "amlogic,smmu";
-		status = "disable";
+		status = "disabled";
 		#iommu-cells = <1>;
 		memory-region = <&pcie_dma_ops_mm>;
 	};
@@ -1433,6 +1433,7 @@
 		suspend-clk-off = <1>;
 		status = "okay";
 	};
+
 	vad:vad {
 		compatible = "amlogic, snd-vad";
 		#sound-dai-cells = <0>;
@@ -1652,7 +1653,7 @@
 &pcie {
 	reset-gpio = <&gpio GPIOP_4 GPIO_ACTIVE_HIGH>;
 	iommu-map = <0x100 &smmu 0x5 0x10>;
-	status = "disable";
+	status = "disabled";
 };
 
 &i2c4 {

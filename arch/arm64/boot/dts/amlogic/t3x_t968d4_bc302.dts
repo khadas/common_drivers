@@ -45,7 +45,7 @@
 
 	memory@00000000 {
 		device_type = "memory";
-		linux,usable-memory = <0x00000000 0x00000000 0x00000000 0xE0000000
+		linux,usable-memory = <0x00000000 0x00000000 0x00000000 0xe0000000
 					0x00000001 0x00000000 0x00000000 0x20000000>;
 	};
 
@@ -1021,7 +1021,6 @@
 		cma_mode = <1>;
 	};
 
-	/* for external keypad */
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
 		status = "okay";
@@ -1598,6 +1597,7 @@
 	pinctrl-0 = <&dcon_led_pins3>;
 	status = "disabled";
 };
+
 &i2c4 {
 	clock-frequency = <400000>;
 	pinctrl-names = "default";

@@ -2352,7 +2352,8 @@ int amvecm_on_vs(struct vframe_s *vf,
 		set_vpp_enh_clk(toggle_vf, vf);
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-	if (is_meson_s5_cpu() && !ai_color_enable)
+	if ((is_meson_s5_cpu() || is_meson_t3x_cpu()) &&
+		!ai_color_enable)
 		disable_ai_color();
 #endif
 

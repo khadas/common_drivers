@@ -24,6 +24,7 @@
 #include "arch/vpp_hdr_regs.h"
 #include "amve_v2.h"
 #include "am_dma_ctrl.h"
+#include "color/ai_color.h"
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static uint cpu_write_lut = 1;
@@ -727,8 +728,7 @@ void s5_set_hdr_matrix(enum hdr_module_sel module_sel,
 
 			hdr_ctrl = T3X_VDIN1_HDR2_CTRL;
 		} else {
-			//todo
-			//s5
+			return;
 		}
 
 		vpp_sel = 0xff;
@@ -1245,8 +1245,7 @@ void s5_set_eotf_lut(enum hdr_module_sel module_sel,
 			eotf_lut_data_port = T3X_VDIN1_EOTF_LUT_DATA_PORT;
 			hdr_ctrl = T3X_VDIN1_HDR2_CTRL;
 		} else {
-			//todo
-			//s5
+			return;
 		}
 		vpp_sel = 0xff;
 	} else if (module_sel == VDIN2_HDR) {
@@ -1334,8 +1333,7 @@ void s5_set_ootf_lut(enum hdr_module_sel module_sel,
 			ootf_lut_data_port = T3X_VDIN1_OGAIN_LUT_DATA_PORT;
 			hdr_ctrl = T3X_VDIN1_HDR2_CTRL;
 		} else {
-			//todo
-			//s5
+			return;
 		}
 		vpp_sel = 0xff;
 	} else if (module_sel == VDIN2_HDR) {
@@ -1426,8 +1424,7 @@ void s5_set_oetf_lut(enum hdr_module_sel module_sel,
 			oetf_lut_data_port = T3X_VDIN1_OETF_LUT_DATA_PORT;
 			hdr_ctrl = T3X_VDIN1_HDR2_CTRL;
 		} else {
-			//todo
-			//s5
+			return;
 		}
 		vpp_sel = 0xff;
 	} else if (module_sel == VDIN2_HDR) {
@@ -1540,8 +1537,7 @@ void s5_set_c_gain(enum hdr_module_sel module_sel,
 			hdr_ctrl = T3X_VDIN1_HDR2_CTRL;
 			cgain_coef1 = T3X_VDIN1_HDR2_CGAIN_COEF1;
 		} else {
-			//todo
-			//s5
+			return;
 		}
 		vpp_sel = 0xff;
 	} else if (module_sel == VDIN2_HDR) {
@@ -1615,14 +1611,17 @@ u32 s5_hist_maxrgb_luminance[128] = {
 /*AI color disable*/
 void disable_ai_color(void)
 {
-	WRITE_VPP_REG_BITS_S5(S5_VD1_HDR2_CTRL, 0, 14, 2);
-	WRITE_VPP_REG_BITS_S5(S5_VD1_SLICE1_HDR2_CTRL, 0, 14, 2);
-	WRITE_VPP_REG_BITS_S5(S5_VD1_SLICE2_HDR2_CTRL, 0, 14, 2);
-	WRITE_VPP_REG_BITS_S5(S5_VD1_SLICE3_HDR2_CTRL, 0, 14, 2);
-	WRITE_VPP_REG_BITS_S5(S5_VD2_HDR2_CTRL, 0, 14, 2);
-	WRITE_VPP_REG_BITS_S5(S5_OSD1_HDR2_CTRL, 0, 14, 2);
-	WRITE_VPP_REG_BITS_S5(S5_OSD3_HDR2_CTRL, 0, 14, 2);
-	WRITE_VPP_REG_BITS_S5(SA_CTRL, 0, 0, 1);
+	if (chip_type_id == chip_s5) {
+		WRITE_VPP_REG_BITS_S5(S5_VD1_SLICE2_HDR2_CTRL, 0, 14, 2);
+		WRITE_VPP_REG_BITS_S5(S5_VD1_SLICE3_HDR2_CTRL, 0, 14, 2);
+		WRITE_VPP_REG_BITS_S5(S5_OSD3_HDR2_CTRL, 0, 14, 2);
+		WRITE_VPP_REG_BITS_S5(S5_VD1_HDR2_CTRL, 0, 14, 2);
+		WRITE_VPP_REG_BITS_S5(S5_VD1_SLICE1_HDR2_CTRL, 0, 14, 2);
+		WRITE_VPP_REG_BITS_S5(S5_VD2_HDR2_CTRL, 0, 14, 2);
+		WRITE_VPP_REG_BITS_S5(S5_OSD1_HDR2_CTRL, 0, 14, 2);
+	}
+
+	ai_clr_config(0);
 }
 
 void s5_set_hist(enum hdr_module_sel module_sel, int enable,
@@ -1663,11 +1662,12 @@ void s5_get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 {
 	unsigned int hist_ctrl_port = 0;
 	unsigned int hist_height, hist_width, i;
-	u32 num_pixel, total_pixel;
-	int j;
+	u32 num_pixel = 0;
+	u32 total_pixel = 0;
+	int j = 0;
 	int k = 0;
 	enum hdr_module_sel module_sel = VD1_HDR;
-	unsigned int hdr2_hist_rd;
+	unsigned int hdr2_hist_rd = 0;
 
 	hist_width = 0;
 	hist_height = 0;
@@ -1855,8 +1855,7 @@ void s5_hdr_hist_config(enum hdr_module_sel module_sel,
 			hist_hs_he = T3X_VDIN1_HDR2_HIST_H_START_END;
 			hist_vs_ve = T3X_VDIN1_HDR2_HIST_V_START_END;
 		} else {
-			//todo
-			//s5
+			return;
 		}
 		vpp_sel = 0xff;
 	} else if (module_sel == VDIN2_HDR) {

@@ -80,7 +80,7 @@ MODULE_LICENSE("GPL v2");
 
 #define OV5640_DRIVER_VERSION "OV5640-COMMON-01-140717"
 
-static unsigned int video_nr = -1;
+static unsigned int video_nr = 50;
 
 static unsigned int debug;
 

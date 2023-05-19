@@ -498,6 +498,10 @@ static int section_process(struct out_elem *pout)
 			pr_sec_dbg("%s send:%d, w:%d wwwwww\n", __func__,
 			       ret, w_size);
 			remain_len = ret - w_size;
+			if (dump_other_cb)
+				dump_other_cb(pout->sid, pout->es_pes->pid,
+					DMX_DUMP_SECTION_TYPE, pread, w_size,
+					&dump_other_head);
 			if (remain_len) {
 				if (pout->pchan->sec_level)
 					pout->aucpu_read_offset =

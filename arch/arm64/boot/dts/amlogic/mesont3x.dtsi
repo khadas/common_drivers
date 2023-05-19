@@ -25,26 +25,8 @@
 	cpus:cpus {
 		#address-cells = <2>;
 		#size-cells = <0>;
-
-		cpu-map {
-			cluster0:cluster0 {
-				core0 {
-					cpu = <&CPU0>;
-				};
-				core1 {
-					cpu = <&CPU1>;
-				};
-				core2 {
-					cpu = <&CPU2>;
-				};
-				core3 {
-					cpu = <&CPU3>;
-				};
-				core4 {
-					cpu = <&CPU4>;
-				};
-			};
-		};
+		apu_id = <0x2>;
+		apu_hwid = <0x200>;
 
 		CPU0:cpu@0 {
 			device_type = "cpu";
@@ -85,39 +67,6 @@
 			reg = <0x0 0x100>;
 			enable-method = "psci";
 		    cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
-			#cooling-cells = <2>;
-			//clocks = <&clkc CLKID_CPU_CLK>,
-			//	<&clkc CLKID_CPU_DYN_CLK>,
-			//	<&clkc CLKID_SYS_PLL>,
-			//	<&clkc CLKID_DSU_CLK>,
-			//	<&clkc CLKID_DSU_DYN_CLK>,
-			//	<&clkc CLKID_GP1_PLL>;
-			//clock-names = "core_clk",
-			//	"low_freq_clk_parent",
-			//	"high_freq_clk_parent",
-			//	"dsu_clk",
-			//	"dsu_pre_parent",
-			//	"dsu_pre_parent2";
-			operating-points-v2 = <&a55_opp_table0>;
-			voltage-tolerance = <0>;
-			clock-latency = <50000>;
-			capacity-dmips-mhz = <512>;
-			dynamic-power-coefficient = <1024>;
-			cpu-supply = <&vddcpua>;
-			cpu_supply_external_used;
-			dsu-opp-table = <1200000 879000 1500000 939000>;
-			dsu_clock_shared;
-			dsu-low-rate = <1000000>;
-			dvfs_sibling_core_num = <4>;
-			dvfs_sibling_cores = <0 1 2 3>;
-		};
-
-		CPU2:cpu@2 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a55","arm,armv8";
-			reg = <0x0 0x200>;
-			enable-method = "psci";
-			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
 			#cooling-cells = <2>;
 			//clocks = <&clkc CLKID_CPU_CLK>,
 			//	<&clkc CLKID_CPU_DYN_CLK>,
@@ -229,13 +178,6 @@
 					min-residency-us = <0xffffffff>;
 			};
 		};
-	};
-
-	dsu-pmu-0 {
-		compatible = "arm,dsu-pmu";
-		status = "disabled";
-		cpus = <&CPU0>,<&CPU1>,<&CPU2>,<&CPU3>,<&CPU4>;
-		interrupts = <GIC_SPI 230 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	timer {

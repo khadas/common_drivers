@@ -792,9 +792,11 @@ static void lc_top_config(int enable, int h_num, int v_num,
 				lc_mtx_set(OUTP_MTX, LC_MTX_RGB_YUV709L, 1, bitdepth);
 			}
 		}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		ve_lc_top_cfg(enable, h_num, v_num,
 			height, width, bitdepth, 1, 0);
+#endif
 	}
 }
 
@@ -807,8 +809,10 @@ void lc_disable(void)
 		WRITE_VPP_REG_BITS(LC_CURVE_RAM_CTRL, 0, 0, 1);
 		/*lc hist stts enable*/
 		WRITE_VPP_REG_BITS(LC_STTS_HIST_REGION_IDX, 0, 31, 1);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		ve_lc_disable();
+#endif
 	}
 
 	if (!lc_malloc_ok) {
@@ -822,10 +826,12 @@ void lc_disable(void)
 	memset(curve_nodes_pre, 0, LC_CURV_SIZE * sizeof(int));
 	memset(curve_nodes_pre_raw, 0, LC_CURV_SIZE * sizeof(int64_t));
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		memset(lc_hist_slice1, 0, LC_HIST_SIZE * sizeof(int));
 		memset(lc_szcurve_slice1, 0, LC_CURV_SIZE * sizeof(int));
 	}
+#endif
 
 	lc_en_chflg = 0x0;
 }
@@ -949,6 +955,7 @@ static void lc_config(int enable,
 		lc_stts_en(enable, height, width,
 			0, 0, 1, 1, 4,
 			bitdepth, flag, flag_full);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		ve_lc_curve_ctrl_cfg(enable,
 			height, width, h_num, v_num);
@@ -958,6 +965,7 @@ static void lc_config(int enable,
 			0, 0, 1, 1, 0,
 			bitdepth, flag, flag_full,
 			lc_tune_curve.lc_reg_thd_black);
+#endif
 	}
 }
 
@@ -1816,9 +1824,12 @@ static void _read_region(int blk_vnum, int blk_hnum)
 void lc_read_region(int blk_vnum, int blk_hnum,
 	int slice)
 {
-	int i, j;
+	int i;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	int j;
 	unsigned int cur_block;
 	int *data_curve;
+#endif
 	int *data_hist;
 
 	pr_amlc_dbg("%s: slice = %d", __func__, slice);
@@ -1826,6 +1837,7 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 	if (chip_type_id != chip_t3x) {
 		_read_region(blk_vnum, blk_hnum);
 		data_hist = lc_hist;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		if (slice == 0) {
 			data_curve = lc_szcurve;
@@ -1854,6 +1866,7 @@ void lc_read_region(int blk_vnum, int blk_hnum,
 				}
 			}
 		}
+#endif
 	}
 
 	if (amlc_debug == 0x8 && lc_hist_prcnt) {/*print all hist data*/
@@ -1881,6 +1894,7 @@ static void lc_prt_curve(void)
 		pr_amlc_dbg("\n");
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x &&
 		ve_multi_slice_case_get()) {
 		for (i = 0; i < blk_hnum * blk_vnum; i++) {
@@ -1890,6 +1904,7 @@ static void lc_prt_curve(void)
 			pr_amlc_dbg("\n");
 		}
 	}
+#endif
 }
 
 void lc_init(int bitdepth)
@@ -1947,6 +1962,7 @@ void lc_init(int bitdepth)
 		return;
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		if (!lc_szcurve_slice1)
 			lc_szcurve_slice1 = kcalloc(LC_CURV_SIZE,
@@ -1973,6 +1989,7 @@ void lc_init(int bitdepth)
 			return;
 		}
 	}
+#endif
 
 	lc_malloc_ok = 1;
 	if (!lc_en)
@@ -2073,11 +2090,13 @@ void lc_init(int bitdepth)
 
 		if (set_lc_curve(1, 0))
 			pr_info("%s: init fail", __func__);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		ve_lc_base_init();
 		ve_lc_sat_lut_set(lc_satur_off);
 		ve_lc_curve_set(1, 0, NULL, 0);
 		ve_lc_curve_set(1, 0, NULL, 1);
+#endif
 	}
 }
 
@@ -2145,10 +2164,12 @@ void lc_process(struct vframe_s *vf,
 	if (lc_bypass_flag <= 0) {
 		if (chip_type_id != chip_t3x) {
 			set_lc_curve(1, 0);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			ve_lc_curve_set(1, 0, lc_szcurve, 0);
 			if (ve_multi_slice_case_get())
 				ve_lc_curve_set(1, 0, lc_szcurve_slice1, 1);
+#endif
 		}
 
 		lc_bypass_flag++;
@@ -2172,6 +2193,7 @@ void lc_process(struct vframe_s *vf,
 
 		if (set_lc_curve(0, 0))
 			pr_amlc_dbg("%s: set lc curve fail\n", __func__);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		ve_lc_blk_num_get(&blk_hnum, &blk_vnum, 0);
 
@@ -2202,6 +2224,7 @@ void lc_process(struct vframe_s *vf,
 			ve_lc_curve_set(0, 0, lc_szcurve, 0);
 			ve_lc_curve_set(0, 0, lc_szcurve_slice1, 1);
 		}
+#endif
 	}
 
 	pr_amlc_dbg("blk_hnum = %d, blk_vnum = %d",
@@ -2228,10 +2251,12 @@ void lc_free(void)
 	kfree(curve_nodes_pre_raw);
 	kfree(lc_hist);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		kfree(lc_szcurve_slice1);
 		kfree(lc_hist_slice1);
 	}
+#endif
 
 	lc_malloc_ok = 0;
 }

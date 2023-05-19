@@ -809,6 +809,7 @@ static const unsigned int reg_afbc_e[AFBC_ENC_NUB_V5][DIM_AFBCE_NUB] = {
 	},
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const unsigned int reg_afbc_t3x_e[AFBC_ENC_NUB_V5][DIM_AFBCE_NUB] = {
 	{
 		DI_T3X_AFBCE_ENABLE,		/*  0 */
@@ -923,6 +924,7 @@ static const unsigned int reg_afbc_t3x_e[AFBC_ENC_NUB_V5][DIM_AFBCE_NUB] = {
 		DI_T3X_AFBCE1_LOSS_BURST_NUM,
 	},
 };
+#endif
 
 static const unsigned int *afbc_get_addrp(enum EAFBC_DEC eidx)
 {
@@ -956,9 +958,11 @@ static void afbcd_reg_bwr(enum EAFBC_DEC eidx, enum EAFBC_REG adr_idx,
 
 static const unsigned int *afbce_get_addrp(enum EAFBC_ENC eidx)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (DIM_IS_IC(T3X))
 		return &reg_afbc_t3x_e[eidx][0];
 	else
+#endif
 		return &reg_afbc_e[eidx][0];
 }
 
@@ -3803,9 +3807,11 @@ void dbg_afe_reg_v3(struct seq_file *s, enum EAFBC_ENC eidx)
 	}
 
 	for (i = 0; i < DIM_AFBCE_NUB; i++) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (DIM_IS_IC(T3X))
 			addr = reg_afbc_t3x_e[eidx][i];
 		else
+#endif
 			addr = reg_afbc_e[eidx][i];
 		seq_printf(s, "reg[0x%x]=0x%x.\n", addr, reg_rd(addr));
 	}
@@ -4692,9 +4698,11 @@ static void afbce_update_level1_dvfm(struct dvfm_s *vf,
 	}
 	#endif
 #endif /* HIS_CODE */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (DIM_IS_IC(T3X))
 		reg = &reg_afbc_t3x_e[enc][0];
 	else
+#endif
 		reg = &reg_afbc_e[enc][0];
 	dim_print("afbce:up:%d\n", enc);
 
@@ -5203,9 +5211,11 @@ static void ori_afbce_cfg(struct enc_cfg_s *cfg,
 	vblksize_out	= (vsize_buf + 3) >> 2;
 
 	/***********************/
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (DIM_IS_IC(T3X))
 		reg = &reg_afbc_t3x_e[enc][0];
 	else
+#endif
 		reg = &reg_afbc_e[enc][0];
 
 #ifdef MARK_SC2
@@ -5430,9 +5440,11 @@ static void afbce_sw(enum EAFBC_ENC enc, bool on, const struct reg_acc *op)
 		PR_ERR("%s:no op\n", __func__);
 		return;
 	}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (DIM_IS_IC(T3X))
 		reg = &reg_afbc_t3x_e[enc][0];
 	else
+#endif
 		reg = &reg_afbc_e[enc][0];
 
 	if (on) {
@@ -5450,9 +5462,11 @@ unsigned int afbce_read_used(enum EAFBC_ENC enc)
 	const struct reg_acc *op = &di_normal_regset;
 	unsigned int nub;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (DIM_IS_IC(T3X))
 		reg = &reg_afbc_t3x_e[enc][0];
 	else
+#endif
 		reg = &reg_afbc_e[enc][0];
 
 	nub = op->rd(reg[EAFBCE_MMU_NUM]);
@@ -5645,9 +5659,11 @@ static void afbce_update_level1(struct vframe_s *vf,
 		       di_buf->afbc_adr, di_buf->afbct_adr, vf->type);
 	}
 	#endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (DIM_IS_IC(T3X))
 		reg = &reg_afbc_t3x_e[enc][0];
 	else
+#endif
 		reg = &reg_afbc_e[enc][0];
 	dim_print("afbce:up:%d\n", enc);
 

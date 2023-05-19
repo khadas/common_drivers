@@ -20,6 +20,7 @@
 #include <linux/of_device.h>
 #include "vdac_dev.h"
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct meson_vdac_ctrl_s vdac_ctrl_enable_g12ab[] = {
 	{HHI_VDAC_CNTL0_G12A, 0, 9, 1},
 	{HHI_VDAC_CNTL0_G12A, 2, 0, 3},
@@ -60,6 +61,7 @@ static struct meson_vdac_ctrl_s vdac_ctrl_enable_t5[] = {
 	{HHI_VDAC_CNTL1_G12A, 1, 7, 1}, /* cdac_pwd */
 	{VDAC_REG_MAX, 0, 0, 0},
 };
+#endif
 
 static struct meson_vdac_ctrl_s vdac_ctrl_enable_s4[] = {
 	{ANACTRL_VDAC_CTRL0, 0, 9, 1},
@@ -68,6 +70,7 @@ static struct meson_vdac_ctrl_s vdac_ctrl_enable_s4[] = {
 	{VDAC_REG_MAX, 0, 0, 0},
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct meson_vdac_ctrl_s vdac_ctrl_enable_t5m[] = {
 	{ANACTRL_VDAC_CTRL0, 1, 4, 1}, /* chopper_clk_h */
 	{ANACTRL_VDAC_CTRL1, 1, 7, 1}, /* cdac_en */
@@ -87,6 +90,7 @@ static struct meson_vdac_data meson_g12ab_vdac_data = {
 	.reg_vid2_clk_div = HHI_VIID_CLK_DIV,
 	.ctrl_table = vdac_ctrl_enable_g12ab,
 };
+#endif
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static struct meson_vdac_data meson_tl1_vdac_data = {
@@ -101,6 +105,7 @@ static struct meson_vdac_data meson_tl1_vdac_data = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct meson_vdac_data meson_sm1_vdac_data = {
 	.cpu_id = VDAC_CPU_SM1,
 	.name = "meson-sm1-vdac",
@@ -177,6 +182,7 @@ static struct meson_vdac_data meson_t3_vdac_data = {
 	.reg_vid2_clk_div = CLKCTRL_VIID_CLK_DIV,
 	.ctrl_table = vdac_ctrl_enable_s4,
 };
+#endif
 
 static struct meson_vdac_data meson_s4d_vdac_data = {
 	.cpu_id = VDAC_CPU_S4D,
@@ -189,6 +195,7 @@ static struct meson_vdac_data meson_s4d_vdac_data = {
 	.ctrl_table = vdac_ctrl_enable_s4,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct meson_vdac_data meson_t5w_vdac_data = {
 	.cpu_id = VDAC_CPU_T5W,
 	.name = "meson-t5w-vdac",
@@ -227,8 +234,10 @@ static struct meson_vdac_data meson_t3x_vdac_data = {
 	.bypass_cfg_cntl0 = 0x00416901, //vlsi suggestion value
 	.cvbsout_cfg_cntl0 = 0x00410a01, //vlsi suggestion value
 };
+#endif
 
 const struct of_device_id meson_vdac_dt_match[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, vdac-g12a",
 		.data		= &meson_g12ab_vdac_data,
@@ -236,12 +245,14 @@ const struct of_device_id meson_vdac_dt_match[] = {
 		.compatible = "amlogic, vdac-g12b",
 		.data		= &meson_g12ab_vdac_data,
 	},
+#endif
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
 		.compatible = "amlogic, vdac-tl1",
 		.data		= &meson_tl1_vdac_data,
 	},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, vdac-sm1",
 		.data		= &meson_sm1_vdac_data,
@@ -263,10 +274,14 @@ const struct of_device_id meson_vdac_dt_match[] = {
 	}, {
 		.compatible = "amlogic, vdac-t3",
 		.data		= &meson_t3_vdac_data,
-	}, {
+	},
+#endif
+	{
 		.compatible = "amlogic, vdac-s4d",
 		.data		= &meson_s4d_vdac_data,
-	}, {
+	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	{
 		.compatible = "amlogic, vdac-t5w",
 		.data		= &meson_t5w_vdac_data,
 	}, {
@@ -276,6 +291,7 @@ const struct of_device_id meson_vdac_dt_match[] = {
 		.compatible = "amlogic, vdac-t3x",
 		.data		= &meson_t3x_vdac_data,
 	},
+#endif
 	{}
 };
 

@@ -374,8 +374,10 @@ static void ve_dnlp_add_cm(unsigned int value)
 		reg_value = (reg_value & 0xf000ffff) | (value << 16);
 		VSYNC_WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x207);
 		VSYNC_WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, reg_value);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		ve_dnlp_sat_set(value);
+#endif
 	}
 }
 

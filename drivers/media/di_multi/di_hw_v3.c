@@ -1253,6 +1253,7 @@ static unsigned int set_afbcd_mult_simple(int index,
 	return 0;
 } /* set_afbcd_mult*/
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const unsigned int reg_afbc_t3x[AFBC_ENC_V3_NUB][DIM_AFBCE_V3_T3X_NUB] = {
 	{
 		DI_AFBCE_ENABLE,
@@ -1388,6 +1389,7 @@ static const unsigned int reg_afbc_t3x[AFBC_ENC_V3_NUB][DIM_AFBCE_V3_T3X_NUB] = 
 		DI_T3X_AFBCE1_LOSS_BURST_NUM,
 	},
 };
+#endif
 
 static const unsigned int reg_afbc_e_v3[AFBC_ENC_V3_NUB][DIM_AFBCE_V3_NUB] = {
 	{
@@ -1563,9 +1565,11 @@ static unsigned int set_afbce_cfg_v1(int index,
 		op = &di_pre_regset;
 	else
 		op = opin;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (DIM_IS_IC(T3X))
 		reg = &reg_afbc_t3x[index][0];
 	else
+#endif
 		reg = &reg_afbc_e_v3[index][0];
 
 	if (afbce->din_swt) {

@@ -54,7 +54,6 @@ static struct fclk_div_s fclk_div_table_c3[] = {
 	{FCLK_DIV7,    7,    7},
 	{FCLK_DIV_MAX, 8,    1},
 };
-#endif
 
 static struct fclk_div_s fclk_div_table_t3x[] = {
 	/* id,         mux,  div */
@@ -64,6 +63,7 @@ static struct fclk_div_s fclk_div_table_t3x[] = {
 	{FCLK_DIV2P5,  3,   25},
 	{FCLK_DIV_MAX, 8,    1},
 };
+#endif
 
 static struct vpu_clk_s vpu_clk_table[] = {
 	/* frequency   clk_mux       div */

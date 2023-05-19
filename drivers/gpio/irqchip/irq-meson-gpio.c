@@ -55,9 +55,11 @@
 #endif
 
 struct meson_gpio_irq_controller;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void meson8_gpio_irq_sel_pin(struct meson_gpio_irq_controller *ctl,
 				    unsigned int channel, unsigned long hwirq);
 static void meson_gpio_irq_init_dummy(struct meson_gpio_irq_controller *ctl);
+#endif
 static void meson_a1_gpio_irq_sel_pin(struct meson_gpio_irq_controller *ctl,
 				      unsigned int channel,
 				      unsigned long hwirq);
@@ -66,9 +68,11 @@ static void meson_a1_gpio_irq_sel_pin(struct meson_gpio_irq_controller *ctl,
 static unsigned int
 meson_sc2_gpio_irq_sel_type(struct meson_gpio_irq_controller *ctl,
 			    unsigned int idx, u32 val);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static unsigned int
 meson_p1_gpio_irq_sel_type(struct meson_gpio_irq_controller *ctl,
 			   unsigned int idx, u32 val);
+#endif
 #endif
 
 static void meson_a1_gpio_irq_init(struct meson_gpio_irq_controller *ctl);
@@ -127,6 +131,7 @@ struct meson_gpio_irq_params {
 	},
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define INIT_MESON8_COMMON_DATA(irqs)				\
 	INIT_MESON_COMMON(irqs, meson_gpio_irq_init_dummy,	\
 			  meson8_gpio_irq_sel_pin)		\
@@ -144,6 +149,8 @@ struct meson_gpio_irq_params {
 	.pin_sel_reg_base = 0x04,				\
 	.pin_sel_mask = 0x7f,					\
 
+#endif
+
 #ifdef CONFIG_AMLOGIC_MODIFY
 /* For sc2/t7 like platform */
 #define INIT_MESON_SC2_COMMON_DATA(irqs)			\
@@ -158,6 +165,7 @@ struct meson_gpio_irq_params {
 	.pin_sel_reg_base = 0x04,				\
 	.channel_num = 12,
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define INIT_MESON_P1_COMMON_DATA(irqs)			\
 	INIT_MESON_SC2_COMMON(irqs, meson_a1_gpio_irq_init,	\
 			      meson_a1_gpio_irq_sel_pin,	\
@@ -173,6 +181,7 @@ struct meson_gpio_irq_params {
 	.both_sel_reg =  0x0c,					\
 	.channel_num = 32,
 
+#endif
 #endif
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -193,6 +202,7 @@ static const struct meson_gpio_irq_params gxl_params = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct meson_gpio_irq_params a1_params = {
 	INIT_MESON_A1_COMMON_DATA(62)
 };
@@ -206,8 +216,10 @@ static const struct meson_gpio_irq_params sm1_params = {
 	.support_edge_both = true,
 	.edge_both_offset = 8,
 };
+#endif
 
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct meson_gpio_irq_params tm2_params = {
 	INIT_MESON8_COMMON_DATA(104)
 	.support_edge_both = true,
@@ -227,11 +239,13 @@ static const struct meson_gpio_irq_params t5d_params = {
 static const struct meson_gpio_irq_params t7_params = {
 	INIT_MESON_SC2_COMMON_DATA(157)
 };
+#endif
 
 static const struct meson_gpio_irq_params s4_params = {
 	INIT_MESON_SC2_COMMON_DATA(82)
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct meson_gpio_irq_params t3_params = {
 	INIT_MESON_SC2_COMMON_DATA(139)
 };
@@ -266,6 +280,7 @@ static const struct meson_gpio_irq_params t3x_params = {
 	INIT_MESON_SC2_COMMON_DATA(151)
 };
 #endif
+#endif
 
 static const struct of_device_id meson_irq_gpio_matches[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -275,15 +290,20 @@ static const struct of_device_id meson_irq_gpio_matches[] = {
 	{ .compatible = "amlogic,meson-gxl-gpio-intc", .data = &gxl_params },
 	{ .compatible = "amlogic,meson-axg-gpio-intc", .data = &axg_params },
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{ .compatible = "amlogic,meson-a1-gpio-intc", .data = &a1_params },
 	{ .compatible = "amlogic,meson-g12a-gpio-intc", .data = &axg_params },
 	{ .compatible = "amlogic,meson-sm1-gpio-intc", .data = &sm1_params },
+#endif
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{ .compatible = "amlogic,meson-tm2-gpio-intc", .data = &tm2_params },
 	{ .compatible = "amlogic,meson-sc2-gpio-intc", .data = &sc2_params },
 	{ .compatible = "amlogic,meson-t5d-gpio-intc", .data = &t5d_params },
 	{ .compatible = "amlogic,meson-t7-gpio-intc", .data = &t7_params },
+#endif
 	{ .compatible = "amlogic,meson-s4-gpio-intc", .data = &s4_params },
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{ .compatible = "amlogic,meson-t3-gpio-intc", .data = &t3_params },
 	{ .compatible = "amlogic,meson-p1-gpio-intc", .data = &p1_params },
 	{ .compatible = "amlogic,meson-t5w-gpio-intc", .data = &t5w_params },
@@ -292,6 +312,7 @@ static const struct of_device_id meson_irq_gpio_matches[] = {
 	{ .compatible = "amlogic,meson-t5m-gpio-intc", .data = &t5m_params },
 	{ .compatible = "amlogic,meson-s5-gpio-intc", .data = &s5_params },
 	{ .compatible = "amlogic,meson-t3x-gpio-intc", .data = &t3x_params },
+#endif
 #endif
 	{ }
 };
@@ -325,6 +346,7 @@ static void meson_gpio_irq_update_bits(struct meson_gpio_irq_controller *ctl,
 	writel_relaxed(tmp, ctl->base + reg);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void meson_gpio_irq_init_dummy(struct meson_gpio_irq_controller *ctl)
 {
 }
@@ -342,6 +364,7 @@ static void meson8_gpio_irq_sel_pin(struct meson_gpio_irq_controller *ctl,
 				   ctl->params->pin_sel_mask << bit_offset,
 				   hwirq << bit_offset);
 }
+#endif
 
 static void meson_a1_gpio_irq_sel_pin(struct meson_gpio_irq_controller *ctl,
 				      unsigned int channel,
@@ -403,6 +426,7 @@ meson_sc2_gpio_irq_sel_type(struct meson_gpio_irq_controller *ctl,
 	return 0;
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static unsigned int
 meson_p1_gpio_irq_sel_type(struct meson_gpio_irq_controller *ctl,
 			   unsigned int idx, unsigned int type)
@@ -442,6 +466,7 @@ meson_p1_gpio_irq_sel_type(struct meson_gpio_irq_controller *ctl,
 
 	return 0;
 };
+#endif
 #endif
 
 static int

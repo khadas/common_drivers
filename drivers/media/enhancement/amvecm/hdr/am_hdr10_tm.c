@@ -98,12 +98,15 @@ int time_iir(u32 *maxl)
 	max_lum[2] = *maxl;
 
 	for (i = 0; i < 128; i++) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x) {
 			sum += s5_hdr_hist[15][i];
 			diff = (s5_hdr_hist[15][i] > s5_hdr_hist[14][i]) ?
 				(s5_hdr_hist[15][i] - s5_hdr_hist[14][i]) :
 				(s5_hdr_hist[14][i] - s5_hdr_hist[15][i]);
-		} else {
+		} else
+#endif
+		{
 			sum += hdr_hist[15][i];
 			diff = (hdr_hist[15][i] > hdr_hist[14][i]) ?
 				(hdr_hist[15][i] - hdr_hist[14][i]) :
@@ -456,9 +459,11 @@ int hdr10_tm_dynamic_proc(struct vframe_master_display_colour_s *p)
 	primary_maxl = p->luminance[0];
 
 	/*use 95% maxl because of high percert flicker*/
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x)
 		tmp = s5_percentile[8];
 	else
+#endif
 		tmp = percentile[8];
 
 	maxl = (tmp > primary_maxl) ? primary_maxl : tmp;

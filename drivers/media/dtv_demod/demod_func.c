@@ -874,6 +874,7 @@ void dvbs_write_bits(u32 reg_addr, const u32 reg_data,
 	/*mutex_unlock(&mp);*/
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void t3_revb_set_ambus_state(bool enable, bool is_t2)
 {
 	unsigned int reg = 0;
@@ -943,6 +944,7 @@ void t5w_write_ambus_reg(u32 addr,
 		iounmap(vaddr);
 	}
 }
+#endif
 
 void atsc_write_reg(unsigned int reg_addr, unsigned int reg_data)
 {

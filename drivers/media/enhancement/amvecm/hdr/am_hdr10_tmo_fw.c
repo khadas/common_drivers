@@ -388,9 +388,11 @@ void hdr10_tmo_gen(u32 *oo_gain)
 	if (!pre_tmo_reg->pre_hdr10_tmo_alg) {
 		pr_tmo_dbg("%s: hdr10_tmo alg func is NULL\n", __func__);
 	} else {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x)
 			tmo_reg.pre_hdr10_tmo_alg(pre_tmo_reg, oo_gain, s5_hdr_hist[15]);
 		else
+#endif
 			tmo_reg.pre_hdr10_tmo_alg(pre_tmo_reg, oo_gain, hdr_hist[15]);
 	}
 }

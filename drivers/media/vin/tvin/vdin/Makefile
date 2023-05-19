@@ -20,7 +20,9 @@ $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VDIN) += vin/tvin/vdin/vdin_ctl.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VDIN) += vin/tvin/vdin/vdin_screen.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VDIN) += vin/tvin/vdin/vdin_sm.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VDIN) += vin/tvin/vdin/vdin_canvas.o
+ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VDIN) += vin/tvin/vdin/vdin_afbce_t3x.o
+endif
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VDIN) += vin/tvin/vdin/vdin_afbce.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VDIN) += vin/tvin/vdin/vdin_v4l2_if.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_VDIN) += vin/tvin/vdin/vdin_v4l2_dbg.o

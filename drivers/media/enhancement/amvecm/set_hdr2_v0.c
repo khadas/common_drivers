@@ -2966,7 +2966,9 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 	int *oft_post_out = bypass_pos;
 	bool always_full_func = false;
 	int vpp_sel;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	enum LUT_DMA_ID_e dma_id = HDR_DMA_ID;
+#endif
 
 	if (disable_flush_flag)
 		return hdr_process_select;
@@ -3527,9 +3529,11 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 				oft_pre_out = bypass_pre;
 				oft_post_out = bypass_pos;
 			} else {
+			#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 				if (is_meson_s5_cpu() || is_meson_t3x_cpu())
 					coeff_in = rgb2ycbcr_bt2020;
 				else
+			#endif
 					coeff_in = rgb2ycbcr_709;
 				oft_pre_in = rgb2yuvpre;
 				oft_post_in = rgb2yuvpos;
@@ -4078,6 +4082,7 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 		return hdr_process_select;
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu() || is_meson_t3x_cpu()) {
 		pr_csc(12, "%s: s5 update hdr core sel(%d).\n",
 			__func__,
@@ -4100,7 +4105,9 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 		else
 			dma_id = 9;
 		vpu_lut_dma(module_sel, &hdr_lut_param, dma_id);
-	} else {
+	} else
+#endif
+	{
 		/* enable hdr: first enable X_HDR2_CLK_GATE */
 		/* then enable hdr mode */
 		if (!(hdr_process_select & HDR_BYPASS))
@@ -4228,6 +4235,7 @@ int hdr10p_ebzcurve_update(enum hdr_module_sel module_sel,
 		hdr_mtx_param.gmt_bit_mode = 1;
 	hdr_mtx_param.mtx_on = MTX_ON;
 	hdr_mtx_param.p_sel = hdr_process_select;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu() || is_meson_t3x_cpu()) {
 		enum LUT_DMA_ID_e dma_id = HDR_DMA_ID;
 
@@ -4241,7 +4249,9 @@ int hdr10p_ebzcurve_update(enum hdr_module_sel module_sel,
 		else
 			dma_id = 9;
 		vpu_lut_dma(module_sel, &hdr_lut_param, dma_id);
-	} else {
+	} else
+#endif
+	{
 		set_hdr_matrix(module_sel, HDR_GAMUT_MTX,
 			&hdr_mtx_param, p_hdr10pgen_param,
 			&hdr_lut_param, vpp_index);
@@ -4297,6 +4307,7 @@ int hdr10_tm_update(enum hdr_module_sel module_sel,
 	} else {
 		return 0;
 	}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu() || is_meson_t3x_cpu()) {
 		enum LUT_DMA_ID_e dma_id = HDR_DMA_ID;
 
@@ -4307,7 +4318,9 @@ int hdr10_tm_update(enum hdr_module_sel module_sel,
 		else
 			dma_id = 9;
 		vpu_lut_dma(module_sel, &hdr_lut_param, dma_id);
-	} else {
+	} else
+#endif
+	{
 		set_ootf_lut(module_sel, &hdr_lut_param, vpp_index);
 	}
 	return 0;
@@ -4326,7 +4339,9 @@ enum hdr_process_sel hdr10p_func(enum hdr_module_sel module_sel,
 	int *coeff_in = bypass_coeff;
 	int *oft_pre_in = bypass_pre;
 	int *oft_post_in = bypass_pos;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	enum LUT_DMA_ID_e dma_id = HDR_DMA_ID;
+#endif
 
 	if (disable_flush_flag)
 		return hdr_process_select;
@@ -4572,6 +4587,7 @@ enum hdr_process_sel hdr10p_func(enum hdr_module_sel module_sel,
 			hdr_mtx_param.gmt_bit_mode = 1;
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu() || is_meson_t3x_cpu()) {
 		pr_csc(12, "%s: s5 update hdr core sel(%d).\n",
 			__func__,
@@ -4594,7 +4610,9 @@ enum hdr_process_sel hdr10p_func(enum hdr_module_sel module_sel,
 		else
 			dma_id = 9;
 		vpu_lut_dma(module_sel, &hdr_lut_param, dma_id);
-	} else {
+	} else
+#endif
+	{
 		/* enable hdr: first enable X_HDR2_CLK_GATE */
 		/* then enable hdr mode */
 		if (!(hdr_process_select & HDR_BYPASS))
@@ -4708,6 +4726,7 @@ int cuva_hdr_update(enum hdr_module_sel module_sel,
 	} else {
 		return 0;
 	}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu() || is_meson_t3x_cpu()) {
 		enum LUT_DMA_ID_e dma_id = HDR_DMA_ID;
 
@@ -4719,7 +4738,9 @@ int cuva_hdr_update(enum hdr_module_sel module_sel,
 		else
 			dma_id = 9;
 		vpu_lut_dma(module_sel, &hdr_lut_param, dma_id);
-	} else {
+	} else
+#endif
+	{
 		set_ootf_lut(module_sel, &hdr_lut_param, vpp_index);
 		set_c_gain(module_sel, &hdr_lut_param, vpp_index);
 	}
@@ -4750,11 +4771,13 @@ void mtx_setting(enum vpp_matrix_e mtx_sel,
 	if (disable_flush_flag)
 		return;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (get_cpu_type() == MESON_CPU_MAJOR_ID_T3X) {
 		ve_mtrx_setting(mtx_sel, mtx_csc, mtx_on, SLICE0);
 		ve_mtrx_setting(mtx_sel, mtx_csc, mtx_on, SLICE1);
 		return;
 	}
+#endif
 
 	if (mtx_sel == VPP2_POST2_MTX &&
 	    get_cpu_type() == MESON_CPU_MAJOR_ID_T7)

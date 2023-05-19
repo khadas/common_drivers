@@ -25,6 +25,7 @@
 #include "amve_v2.h"
 #include "am_dma_ctrl.h"
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static uint cpu_write_lut = 1;
 module_param(cpu_write_lut, uint, 0664);
 MODULE_PARM_DESC(cpu_write_lut, "\n cpu_write_lut\n");
@@ -2213,6 +2214,7 @@ struct dma_lut_address {
 	struct ootf_lut_s ootf_lut[19];
 	struct cgain_lut_s cgain_lut[7];
 };
+#endif
 
 enum dma_lut_off_enum {
 	OFFSET_VD1S0 = 0,
@@ -2236,18 +2238,20 @@ static const char *dma_lut_off_str[8] = {
 	"OSD3"
 };
 
-/*vd1s0+vd1s1+vd1s2+vd1s3+vd2+osd1+osd2+osd3*/
-/*each dma 128bit*/
-/*2 dma header + 65 body + 1 dma tail*/
-static struct dma_lut_address lut_addr;
-static dma_addr_t dma_paddr;
 static void *dma_vaddr;
+static dma_addr_t dma_paddr;
 #define DMA_LUT_BODY_COUNT 65
 #define DMA_HDR_COUNT 8
 #define DMA_COUNT_SINGLE_HDR (2 + DMA_LUT_BODY_COUNT + 1)
 #define DMA_COUNT_TOTAL_HDR (DMA_COUNT_SINGLE_HDR * DMA_HDR_COUNT)
 #define DMA_SIZE_SINGLE_HDR (DMA_COUNT_SINGLE_HDR * 128 / 8)
 #define DMA_SIZE_TOTAL_HDR (DMA_SIZE_SINGLE_HDR * DMA_HDR_COUNT)
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+/*vd1s0+vd1s1+vd1s2+vd1s3+vd2+osd1+osd2+osd3*/
+/*each dma 128bit*/
+/*2 dma header + 65 body + 1 dma tail*/
+static struct dma_lut_address lut_addr;
 
 void fill_dma_buffer(enum hdr_module_sel module_sel,
 	struct hdr_proc_lut_param_s *hdr_lut_param, struct dma_lut_address *dma_addr)
@@ -2588,6 +2592,7 @@ void fill_dma_tail(void *p_dma_vaddr, enum hdr_module_sel module_sel)
 		   module_sel, b[offset + 3], b[offset + 2],
 		   b[offset + 1], b[offset + 0], &b[offset]);
 }
+#endif
 
 //static struct platform_device vecm_pdev;
 struct device vecm_dev;
@@ -2608,6 +2613,7 @@ void hdr_lut_buffer_free(struct platform_device *pdev)
 	dma_free_coherent(&vecm_dev, alloc_size, dma_vaddr, dma_paddr);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void vpu_lut_dma(enum hdr_module_sel module_sel,
 	struct hdr_proc_lut_param_s *hdr_lut_param, enum LUT_DMA_ID_e dma_id)
 {
@@ -2818,6 +2824,7 @@ void s5_hdr_reg_dump(unsigned int offset)
 	pr_info("DMA_RDMIF7_BADR2[2776] 0x%x\n", READ_VPP_REG_S5(VPU_DMA_RDMIF7_BADR2));
 	pr_info("DMA_RDMIF7_BADR3[2777] 0x%x\n", READ_VPP_REG_S5(VPU_DMA_RDMIF7_BADR3));
 }
+#endif
 
 void read_dma_buf(void)
 {

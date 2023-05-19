@@ -1587,7 +1587,9 @@ static int dvbt_isdbt_set_frontend(struct dvb_frontend *fe)
 	/*struct aml_demod_sts demod_sts;*/
 	struct aml_demod_dvbt param;
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
+#endif
 
 	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d.\n",
 			__func__, demod->id, c->delivery_system, c->frequency, c->symbol_rate,
@@ -1609,6 +1611,7 @@ static int dvbt_isdbt_set_frontend(struct dvb_frontend *fe)
 	demod->last_lock = -1;
 	demod->last_status = 0;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t5w_cpu() || is_meson_t3_cpu() ||
 		demod_is_t5d_cpu(devp)) {
 		dvbt_isdbt_wr_reg((0x2 << 2), 0x111021b);
@@ -1621,13 +1624,16 @@ static int dvbt_isdbt_set_frontend(struct dvb_frontend *fe)
 		if (is_meson_t5w_cpu())
 			t5w_write_ambus_reg(0xe138, 0x1, 23, 1);
 	}
+#endif
 
 	tuner_set_params(fe);
 	msleep(20);
 	dvbt_isdbt_set_ch(demod, &param);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t5w_cpu())
 		t5w_write_ambus_reg(0x3c4e, 0x0, 23, 1);
+#endif
 
 	return 0;
 }
@@ -1667,7 +1673,9 @@ static int dvbt2_set_frontend(struct dvb_frontend *fe)
 {
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
+#endif
 
 	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d.\n",
 			__func__, demod->id, c->delivery_system, c->frequency, c->symbol_rate,
@@ -1679,6 +1687,7 @@ static int dvbt2_set_frontend(struct dvb_frontend *fe)
 	demod->p1_peak = 0;
 	real_para_clear(&demod->real_para);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t5w_cpu() || is_meson_t3_cpu() ||
 		demod_is_t5d_cpu(devp)) {
 		demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x182);
@@ -1696,6 +1705,7 @@ static int dvbt2_set_frontend(struct dvb_frontend *fe)
 		if (is_meson_t5w_cpu())
 			t5w_write_ambus_reg(0x3c4e, 0x1, 23, 1);
 	}
+#endif
 
 	tuner_set_params(fe);
 
@@ -1704,8 +1714,10 @@ static int dvbt2_set_frontend(struct dvb_frontend *fe)
 	dvbt2_set_ch(demod, fe);
 	demod->time_start = jiffies_to_msecs(jiffies);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t5w_cpu())
 		t5w_write_ambus_reg(0x3c4e, 0x0, 23, 1);
+#endif
 
 	return 0;
 }
@@ -3217,6 +3229,7 @@ static int gxtv_demod_dtmb_set_frontend(struct dvb_frontend *fe)
 
 	demod->last_lock = -1;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3_cpu()) {
 		PR_DTMB("dtmb set ddr\n");
 		dtmb_write_reg(0x7, 0x6ffffd);
@@ -3227,6 +3240,7 @@ static int gxtv_demod_dtmb_set_frontend(struct dvb_frontend *fe)
 		if (is_meson_t3_cpu() && is_meson_rev_b())
 			t3_revb_set_ambus_state(false, false);
 	}
+#endif
 
 	tuner_set_params(fe);
 	msleep(100);
@@ -5437,6 +5451,7 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 	unsigned int abus_en_dly = 0, polling_en = 0, top_saved = 0;
 	int retry_count = 2;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3_cpu() && ldelsys == SYS_DTMB) {
 		dtmb_write_reg(0x7, 0x6ffffd);
 		//dtmb_write_reg(0x47, 0xed33221);
@@ -5473,6 +5488,7 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 		if (is_meson_t5w_cpu())
 			t5w_write_ambus_reg(0x3c4e, 0x1, 23, 1);
 	}
+#endif
 
 	//disable demod output AMBUS LSB signal
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M) && (ldelsys == SYS_DTMB ||
@@ -5527,6 +5543,7 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 
 	leave_mode(demod, ldelsys);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t5w_cpu() &&
 		(ldelsys == SYS_DVBT2 || ldelsys == SYS_ISDBT)) {
 		msleep(20);
@@ -5540,6 +5557,7 @@ static void delsys_exit(struct aml_dtvdemod *demod, unsigned int ldelsys,
 
 		t3_revb_set_ambus_state(false, ldelsys == SYS_DVBT2);
 	}
+#endif
 }
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -5573,6 +5591,7 @@ const struct meson_ddemod_data  data_txlx = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 const struct meson_ddemod_data  data_tl1 = {
 	.dig_clk = {
 		.demod_clk_ctl = 0x74,
@@ -5687,6 +5706,7 @@ const struct meson_ddemod_data  data_t3 = {
 	},
 	.hw_ver = DTVDEMOD_HW_T3,
 };
+#endif
 
 const struct meson_ddemod_data  data_s4d = {
 	.dig_clk = {
@@ -5703,6 +5723,7 @@ const struct meson_ddemod_data  data_s4d = {
 	.hw_ver = DTVDEMOD_HW_S4D,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 const struct meson_ddemod_data  data_t5w = {
 	.dig_clk = {
 		.demod_clk_ctl = 0x74,
@@ -5759,6 +5780,7 @@ const struct meson_ddemod_data data_t3x = {
 	},
 	.hw_ver = DTVDEMOD_HW_T3X,
 };
+#endif
 
 static const struct of_device_id meson_ddemod_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -5782,6 +5804,7 @@ static const struct of_device_id meson_ddemod_match[] = {
 		.data		= &data_tl1,
 	},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, ddemod-tm2",
 		.data		= &data_tm2,
@@ -5800,10 +5823,14 @@ static const struct of_device_id meson_ddemod_match[] = {
 	}, {
 		.compatible = "amlogic, ddemod-t3",
 		.data		= &data_t3,
-	}, {
+	},
+#endif
+	{
 		.compatible = "amlogic, ddemod-s4d",
 		.data		= &data_s4d,
-	}, {
+	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	{
 		.compatible = "amlogic, ddemod-t5w",
 		.data		= &data_t5w,
 	}, {
@@ -5813,6 +5840,7 @@ static const struct of_device_id meson_ddemod_match[] = {
 		.compatible = "amlogic, ddemod-t3x",
 		.data		= &data_t3x,
 	},
+#endif
 	/* DO NOT remove, to avoid scan err of KASAN */
 	{}
 };

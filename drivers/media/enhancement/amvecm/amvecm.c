@@ -1139,16 +1139,20 @@ static void vpp_backup_histgram(struct vframe_s *vf)
 
 	for (i = 0; i < 64; i++) {
 		vpp_hist_param.vpp_histgram[i] = vf->prop.hist.vpp_gamma[i];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t5m ||
 			chip_type_id == chip_t3x)
 			vpp_hist_param.vpp_dark_hist[i] =
 				vf->prop.hist.vpp_dark_hist[i];
+#endif
 	}
 
 	for (i = 0; i < 128; i++) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x)
 			vpp_hist_param.hdr_histgram[i] = s5_hdr_hist[NUM_HDR_HIST - 1][i];
 		else
+#endif
 			vpp_hist_param.hdr_histgram[i] = hdr_hist[NUM_HDR_HIST - 1][i];
 	}
 
@@ -1196,6 +1200,7 @@ static void vpp_dump_histgram(void)
 	}
 	pr_info("\t dump_dnlp_hist done\n");
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t5m ||
 		chip_type_id == chip_t3x) {
 		pr_info("\n\t dump vpp dark hist\n");
@@ -1207,12 +1212,15 @@ static void vpp_dump_histgram(void)
 		}
 		pr_info("\n\t dump vpp dark hist done\n");
 	}
+#endif
 
 	pr_info("\t dump_hdr_hist begin\n");
 	for (i = 0; i < 128; i++) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x)
 			tmp = s5_hdr_hist[NUM_HDR_HIST - 1][i];
 		else
+#endif
 			tmp = hdr_hist[NUM_HDR_HIST - 1][i];
 		pr_info("[%d]0x%-8x\t", i, tmp);
 		if ((i + 1) % 8 == 0)
@@ -1286,19 +1294,23 @@ void get_cm_hist(struct vframe_s *vf)
 				vf->prop.hist.vpp_sat_gamma[i] =
 					READ_VPP_REG(data_port);
 			}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			cm_hist_get(vf, RO_CM_HUE_HIST_BIN0,
 				RO_CM_SAT_HIST_BIN0);
+#endif
 		}
 	}
 }
 
 void refresh_hist_info(struct vframe_s *vf)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		get_luma_hist(vf);
 		s5_get_hist(VD1_PATH, HIST_E_RGBMAX);
 	}
+#endif
 }
 
 void vpp_get_vframe_hist_info(struct vframe_s *vf)
@@ -7487,7 +7499,9 @@ static void dump_vpp_size_info(void)
 		postblend_hsize,
 		ve_hsize, ve_vsize, psr_hsize, psr_vsize,
 		cm_hsize, cm_vsize;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct cm_port_s cm_port;
+#endif
 
 	vpp_input_h = READ_VPP_REG_BITS(VPP_IN_H_V_SIZE, 16, 13);
 	vpp_input_v = READ_VPP_REG_BITS(VPP_IN_H_V_SIZE, 0, 13);
@@ -7524,11 +7538,14 @@ static void dump_vpp_size_info(void)
 	psr_hsize = READ_VPP_REG_BITS(VPP_PSR_H_V_SIZE, 16, 13);
 	psr_vsize = READ_VPP_REG_BITS(VPP_PSR_H_V_SIZE, 0, 13);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		cm_port = get_cm_port();
 		WRITE_VPP_REG(cm_port.cm_addr_port[0], 0x205);
 		cm_hsize = READ_VPP_REG(cm_port.cm_data_port[0]);
-	} else {
+	} else
+#endif
+	{
 		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, 0x205);
 		cm_hsize = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
 	}
@@ -7740,11 +7757,14 @@ static void amvecm_pq_enable(int enable)
 {
 	if (enable) {
 		lc_en = 1;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x) {
 			ve_vadj_ctl(WR_VCB, VE_VADJ1, 1);
 			ve_ble_ctl(WR_VCB, 1);
 			ve_cc_ctl(WR_VCB, 1);
-		} else {
+		} else
+#endif
+		{
 			/* black_ext_en */
 			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 1, 3, 1);
 			/* chroma_coring */
@@ -7873,11 +7893,14 @@ static void amvecm_pq_enable(int enable)
 		vecm_latch_flag |= FLAG_GAMMA_TABLE_EN;
 	} else {
 		lc_en = 0;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x) {
 			ve_vadj_ctl(WR_VCB, VE_VADJ1, 0);
 			ve_ble_ctl(WR_VCB, 0);
 			ve_cc_ctl(WR_VCB, 0);
-		} else {
+		} else
+#endif
+		{
 			/* black_ext_en */
 			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL, 0, 3, 1);
 			/* chroma_coring */
@@ -8574,9 +8597,10 @@ static void cm_hist_config(unsigned int en, unsigned int mode,
 	unsigned int wd2, unsigned int wd3)
 {
 	unsigned int value;
-	struct cm_port_s port;
 	unsigned int addr_port = VPP_CHROMA_ADDR_PORT;
 	unsigned int data_port = VPP_CHROMA_DATA_PORT;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	struct cm_port_s port;
 	int slice_max = 0;
 	int i;
 
@@ -8605,7 +8629,9 @@ static void cm_hist_config(unsigned int en, unsigned int mode,
 			WRITE_VPP_REG(addr_port, STA_WIN_XYXY1_REG);
 			WRITE_VPP_REG(data_port, wd2 | (wd3 << 16));
 		}
-	} else {
+	} else
+#endif
+	{
 		WRITE_VPP_REG(addr_port, STA_CFG_REG);
 		value = READ_VPP_REG(data_port);
 		value = (value & (~0xc0000000)) | (en << 30);
@@ -8630,9 +8656,10 @@ static void cm_sta_hist_range_thrd(int r, int ro_frame,
 	int thrd0, int thrd1)
 {
 	unsigned int value0, value1;
-	struct cm_port_s port;
 	unsigned int addr_port = VPP_CHROMA_ADDR_PORT;
 	unsigned int data_port = VPP_CHROMA_DATA_PORT;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	struct cm_port_s port;
 	int slice_max = 0;
 	int i;
 
@@ -8657,7 +8684,9 @@ static void cm_sta_hist_range_thrd(int r, int ro_frame,
 				WRITE_VPP_REG(data_port, thrd1);
 			}
 		}
-	} else {
+	} else
+#endif
+	{
 		if (r) {
 			WRITE_VPP_REG(addr_port, STA_SAT_HIST0_REG);
 			value0 = READ_VPP_REG(data_port);
@@ -8678,9 +8707,10 @@ static void cm_luma_bri_con(int r, int brightness, int contrast,
 	int blk_lel)
 {
 	int value;
-	struct cm_port_s port;
 	unsigned int addr_port = VPP_CHROMA_ADDR_PORT;
 	unsigned int data_port = VPP_CHROMA_DATA_PORT;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	struct cm_port_s port;
 	int slice_max = 0;
 	int i;
 
@@ -8712,7 +8742,9 @@ static void cm_luma_bri_con(int r, int brightness, int contrast,
 					(value & (~(0x1fff))) | brightness);
 			}
 		}
-	} else {
+	} else
+#endif
+	{
 		if (r) {
 			WRITE_VPP_REG(addr_port, LUMA_ADJ0_REG);
 			value = READ_VPP_REG(data_port);
@@ -8763,11 +8795,13 @@ static void pr_cm_hist(enum cm_hist_e hist_sel)
 				hist[i] = READ_VPP_REG(data_port);
 				pr_info("hue_hist[%d] = 0x%8x\n", i, hist[i]);
 			}
+	#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			cm_hist_by_type_get(hist_sel, hist, 32,
 				RO_CM_HUE_HIST_BIN0);
 			for (i = 0; i < 32; i++)
 				pr_info("hue_hist[%d] = 0x%8x\n", i, hist[i]);
+	#endif
 		}
 		break;
 	case CM_SAT_HIST:
@@ -8778,11 +8812,13 @@ static void pr_cm_hist(enum cm_hist_e hist_sel)
 				hist[i] = READ_VPP_REG(data_port);
 				pr_info("sat_hist[%d] = 0x%8x\n", i, hist[i]);
 			}
+	#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			cm_hist_by_type_get(hist_sel, hist, 32,
 				RO_CM_SAT_HIST_BIN0);
 			for (i = 0; i < 32; i++)
 				pr_info("sat_hist[%d] = 0x%8x\n", i, hist[i]);
+	#endif
 		}
 		break;
 	default:
@@ -8899,10 +8935,12 @@ static void sr_init_config(void)
 	am_set_regmap(&sr0_default);
 	am_set_regmap(&sr1_default);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		am_set_regmap(&s1_sr0_default);
 		am_set_regmap(&s1_sr1_default);
 	}
+#endif
 }
 
 void vlock_clk_config(struct amvecm_dev_s *devp, struct device *dev)
@@ -9041,6 +9079,7 @@ static ssize_t amvecm_debug_store(struct class *cla,
 			pr_info("pattern_mask is 0x%x\n", pattern_mask);
 		}
 	} else if (!strncmp(parm[0], "vadj1", 5)) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x) {
 			if (!strncmp(parm[1], "enable", 6)) {
 				ve_vadj_ctl(WR_VCB, VE_VADJ1, 1);
@@ -9050,7 +9089,9 @@ static ssize_t amvecm_debug_store(struct class *cla,
 				pr_info("disable vadj1\n");
 			}
 		}
+#endif
 	} else if (!strncmp(parm[0], "vadj2", 5)) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x) {
 			if (!strncmp(parm[1], "enable", 6)) {
 				ve_vadj_ctl(WR_VCB, VE_VADJ2, 1);
@@ -9060,6 +9101,7 @@ static ssize_t amvecm_debug_store(struct class *cla,
 				pr_info("disable vadj2\n");
 			}
 		}
+#endif
 	} else if (!strncmp(parm[0], "wb", 2)) {
 		if (!strncmp(parm[1], "enable", 6)) {
 			amvecm_wb_enable(1);
@@ -10975,8 +11017,10 @@ void hdr_hist_config_int(void)
 			WRITE_VPP_REG(OSD1_HDR2_HIST_H_START_END, 0x10000);
 			WRITE_VPP_REG(OSD1_HDR2_HIST_V_START_END, 0x0);
 		}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else {
 		s5_hdr_hist_config_int();
+#endif
 	}
 }
 
@@ -11100,8 +11144,10 @@ tvchip_pq_setting:
 		sr_init_config();
 		dnlp_init_config();
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x)
 			cm_top_ctl(WR_VCB, 1);
+#endif
 		cm_init_config(bitdepth);
 		/*lc init*/
 		lc_init(bitdepth);
@@ -11126,8 +11172,10 @@ tvchip_pq_setting:
 	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
 		if (chip_type_id != chip_t3x)
 			WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 0, 1);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		else
 			ve_vadj_ctl(WR_VCB, VE_VADJ1, 1);
+#endif
 	} else {
 		WRITE_VPP_REG(VPP_VADJ_CTRL, 0xd);
 	}
@@ -11139,8 +11187,10 @@ tvchip_pq_setting:
 		/*VPP_VADJ1_MISC bit1: minus black level enable for vadj1*/
 		if (chip_type_id != chip_t3x)
 			WRITE_VPP_REG_BITS(VPP_VADJ1_MISC, 1, 1, 1);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		else
 			ve_vadj_misc_set(0, WR_VCB, VE_VADJ1, SLICE0, 1, 1);
+#endif
 	} else {
 		WRITE_VPP_REG_BITS(VPP_SRSHARP1_CTRL, 1, 0, 1);
 	}
@@ -11168,6 +11218,7 @@ tvchip_pq_setting:
 		WRITE_VPP_REG(SRSHARP1_SHARP_SR2_CBIC_VCOEF0,
 			0x4000);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x) {
 			WRITE_VPP_REG_BITS(SRSHARP1_PK_FINALGAIN_HP_BP + SLICE_OFFSET_1,
 				2, 16, 2);
@@ -11180,6 +11231,7 @@ tvchip_pq_setting:
 			WRITE_VPP_REG(SRSHARP1_SHARP_SR2_CBIC_VCOEF0 + SLICE_OFFSET_1,
 				0x4000);
 		}
+#endif
 	}
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	if (is_meson_gxlx_cpu())
@@ -11191,6 +11243,7 @@ tvchip_pq_setting:
 	vpp_pq_ctrl_config(pq_cfg, WR_VCB);
 
 	/*am_dma_ctrl init*/
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		am_dma_set_mif_wr_status(1);
 		am_dma_set_mif_wr(EN_DMA_WR_ID_VI_HIST_SPL_0, 1);
@@ -11202,6 +11255,7 @@ tvchip_pq_setting:
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_0, 1);*/
 		/*am_dma_set_mif_wr(EN_DMA_WR_ID_CM2_HIST_1, 0);*/
 	}
+#endif
 
 	pq_reg_wr_rdma = 1;
 }
@@ -11290,7 +11344,9 @@ void amvecm_gamma_init(bool en)
 static void amvecm_wb_init(bool en)
 {
 	int *initcoef;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct tcon_rgb_ogo_s wb_data;
+#endif
 
 	initcoef = wb_init_bypass_coef;
 
@@ -11349,6 +11405,7 @@ static void amvecm_wb_init(bool en)
 				(en << 31) | (1024 << 16) | 1024);
 			WRITE_VPP_REG(VPP_GAINOFF_CTRL1,
 				(1024 << 16));
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else {
 			memset(&wb_data, 0,
 				sizeof(struct tcon_rgb_ogo_s));
@@ -11357,6 +11414,7 @@ static void amvecm_wb_init(bool en)
 			wb_data.g_gain = 1024;
 			wb_data.b_gain = 1024;
 			post_gainoff_set(&wb_data, WR_VCB);
+#endif
 		}
 	}
 }
@@ -12200,6 +12258,7 @@ static int aml_vecm_probe(struct platform_device *pdev)
 	hdr_init(&amvecm_dev.hdr_d);
 	aml_vecm_dt_parse(devp, pdev);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_LC_STTS_0);
 		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_LC_STTS_1);
@@ -12211,6 +12270,7 @@ static int aml_vecm_probe(struct platform_device *pdev)
 		am_dma_buffer_malloc(pdev, EN_DMA_WR_ID_VD1_HDR_1);
 		am_dma_init();
 	}
+#endif
 
 	init_pattern_detect();
 	vpp_get_hist_en();
@@ -12274,6 +12334,7 @@ static int __exit aml_vecm_remove(struct platform_device *pdev)
 
 	hdr_lut_buffer_free(pdev);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
 		am_dma_set_mif_wr_status(0);
 		am_dma_buffer_free(pdev, EN_DMA_WR_ID_LC_STTS_0);
@@ -12285,6 +12346,7 @@ static int __exit aml_vecm_remove(struct platform_device *pdev)
 		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VD1_HDR_0);
 		am_dma_buffer_free(pdev, EN_DMA_WR_ID_VD1_HDR_1);
 	}
+#endif
 
 	hdr_exit();
 	device_destroy(devp->clsp, devp->devno);

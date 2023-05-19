@@ -78,6 +78,7 @@ int get_slice_max(void)
 		return SLICE1;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void ve_brightness_cfg(int val,
 	enum wr_md_e mode, enum vadj_index_e vadj_idx,
 	enum vpp_slice_e slice)
@@ -115,7 +116,6 @@ static void ve_brightness_cfg(int val,
 	pr_amve_v2("brigtness: addr = %x\n", reg);
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void ve_contrast_cfg(int val,
 	enum wr_md_e mode, enum vadj_index_e vadj_idx,
 	enum vpp_slice_e slice)
@@ -153,7 +153,6 @@ static void ve_contrast_cfg(int val,
 	pr_amve_v2("contrast: val = %d, slice = %d\n", val, slice);
 	pr_amve_v2("contrast: addr = %x\n", reg);
 }
-#endif
 
 static void ve_sat_hue_mab_cfg(int mab,
 	enum wr_md_e mode, enum vadj_index_e vadj_idx,
@@ -246,7 +245,6 @@ void ve_brigtness_set(int val,
 		ve_brightness_cfg(val, mode, vadj_idx, i);
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void ve_contrast_set(int val,
 	enum vadj_index_e vadj_idx,
 	enum wr_md_e mode)
@@ -259,7 +257,6 @@ void ve_contrast_set(int val,
 	for (i = SLICE0; i < slice_max; i++)
 		ve_contrast_cfg(val, mode, vadj_idx, i);
 }
-#endif
 
 void ve_color_mab_set(int mab,
 	enum vadj_index_e vadj_idx,
@@ -882,6 +879,7 @@ void post_wb_ctl(enum wr_md_e mode, int en)
 
 	pr_amve_v2("wb_ctl: en = %d\n", en);
 }
+#endif
 
 void post_pre_gamma_ctl(enum wr_md_e mode, int en)
 {
@@ -903,6 +901,7 @@ void post_pre_gamma_ctl(enum wr_md_e mode, int en)
 	pr_amve_v2("pre_gamma_ctl: en = %d\n", en);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void vpp_luma_hist_init(void)
 {
 	if (chip_type_id == chip_t3x) {
@@ -1220,12 +1219,14 @@ void ve_multi_slice_case_set(int enable)
 	multi_slice_case = enable;
 	pr_amve_v2("%s: multi_slice_case = %d", __func__, enable);
 }
+#endif
 
 int ve_multi_slice_case_get(void)
 {
 	return multi_slice_case;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void ve_vadj_misc_set(int val,
 	enum wr_md_e mode, enum vadj_index_e vadj_idx,
 	enum vpp_slice_e slice, int start, int len)
@@ -1293,6 +1294,7 @@ int ve_vadj_misc_get(enum vadj_index_e vadj_idx,
 
 	return READ_VPP_REG_BITS(reg, start, len);
 }
+#endif
 
 void ve_mtrx_setting(enum vpp_matrix_e mtx_sel,
 	int mtx_csc, int mtx_on, enum vpp_slice_e slice)
@@ -1457,6 +1459,7 @@ void ve_mtrx_setting(enum vpp_matrix_e mtx_sel,
 	/*pr_info("mtx_sel:%d, mtx_csc:0x%x\n", mtx_sel, mtx_csc);*/
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void ve_sharpness_ctl(enum wr_md_e mode, int sr0_en, int sr1_en)
 {
 	int i;
@@ -3038,4 +3041,5 @@ void post_lut3d_section_read(int index, int section_len,
 
 	WRITE_VPP_REG(reg_ram_ctrl, 0);
 }
+#endif
 

@@ -102,6 +102,7 @@ void cm_wr_api(unsigned int addr, unsigned int data,
 	unsigned int temp;
 	int addr_port;
 	int data_port;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct cm_port_s cm_port;
 	int i;
 	int slice_max;
@@ -148,7 +149,9 @@ void cm_wr_api(unsigned int addr, unsigned int data,
 		default:
 			break;
 		}
-	} else {
+	} else
+#endif
+	{
 		addr_port = VPP_CHROMA_ADDR_PORT;
 		data_port = VPP_CHROMA_DATA_PORT;
 		switch (md) {
@@ -443,6 +446,7 @@ void am_set_regmap(struct am_regs_s *p)
 void amcm_disable(enum wr_md_e md)
 {
 	int temp;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int addr_port;
 	int data_port;
 	struct cm_port_s cm_port;
@@ -497,7 +501,9 @@ void amcm_disable(enum wr_md_e md)
 		default:
 			break;
 		}
-	} else {
+	} else
+#endif
+	{
 		WRITE_VPP_REG(VPP_CHROMA_ADDR_PORT, STA_CFG_REG);
 		temp = READ_VPP_REG(VPP_CHROMA_DATA_PORT);
 		temp = (temp & (~0xc0000000)) | (0 << 30);
@@ -557,6 +563,7 @@ void amcm_disable(enum wr_md_e md)
 void amcm_enable(enum wr_md_e md)
 {
 	int temp;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int addr_port;
 	int data_port;
 	struct cm_port_s cm_port;
@@ -635,7 +642,9 @@ void amcm_enable(enum wr_md_e md)
 		default:
 			break;
 		}
-	} else {
+	} else
+#endif
+	{
 		if (!(READ_VPP_REG(VPP_MISC) & (0x1 << 28)))
 			WRITE_VPP_REG_BITS(VPP_MISC, 1, 28, 1);
 
@@ -987,6 +996,7 @@ void cm2_frame_switch_patch(void)
 {
 	int addr_port;
 	int data_port;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct cm_port_s cm_port;
 
 	if (chip_type_id == chip_s5 ||
@@ -994,7 +1004,9 @@ void cm2_frame_switch_patch(void)
 		cm_port = get_cm_port();
 		addr_port = cm_port.cm_addr_port[SLICE0];
 		data_port = cm_port.cm_data_port[SLICE0];
-	} else {
+	} else
+#endif
+	{
 		addr_port = VPP_CHROMA_ADDR_PORT;
 		data_port = VPP_CHROMA_DATA_PORT;
 	}

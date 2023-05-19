@@ -290,6 +290,7 @@ static struct rdma_regadr_s rdma_regadr_tl1[] = {
 	}
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct rdma_regadr_s rdma_regadr_t7[] = {
 	{RDMA_AHB_START_ADDR_MAN,
 		RDMA_AHB_START_ADDR_MAN_MSB,
@@ -511,6 +512,7 @@ static struct rdma_regadr_s rdma_regadr_t3x[] = {
 		31, 19
 	}
 };
+#endif
 
 int rdma_register(struct rdma_op_s *rdma_op, void *op_arg, int table_size)
 {
@@ -1449,6 +1451,7 @@ u32 *rdma_get_read_back_addr(int handle)
 }
 EXPORT_SYMBOL(rdma_get_read_back_addr);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct rdma_device_data_s rdma_meson = {
 	.cpu_type = CPU_NORMAL,
 	.rdma_ver = RDMA_VER_1,
@@ -1476,6 +1479,7 @@ static struct rdma_device_data_s rdma_tl1 = {
 	.trigger_mask_len = 16,
 	.channel_num = 8
 };
+#endif
 
 static struct rdma_device_data_s rdma_sc2 = {
 	.cpu_type = CPU_SC2,
@@ -1484,6 +1488,7 @@ static struct rdma_device_data_s rdma_sc2 = {
 	.channel_num = 8
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct rdma_device_data_s rdma_t7 = {
 	.cpu_type = CPU_T7,
 	.rdma_ver = RDMA_VER_3,
@@ -1504,8 +1509,10 @@ static struct rdma_device_data_s rdma_t3x = {
 	.trigger_mask_len = 25,
 	.channel_num = 16
 };
+#endif
 
 static const struct of_device_id rdma_dt_match[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, meson, rdma",
 		.data = &rdma_meson,
@@ -1522,10 +1529,12 @@ static const struct of_device_id rdma_dt_match[] = {
 		.compatible = "amlogic, meson-tl1, rdma",
 		.data = &rdma_tl1,
 	},
+#endif
 	{
 		.compatible = "amlogic, meson-sc2, rdma",
 		.data = &rdma_sc2,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, meson-t7, rdma",
 		.data = &rdma_t7,
@@ -1538,6 +1547,7 @@ static const struct of_device_id rdma_dt_match[] = {
 		.compatible = "amlogic, meson-t3x, rdma",
 		.data = &rdma_t3x,
 	},
+#endif
 	{},
 };
 
@@ -2025,6 +2035,7 @@ static int __init rdma_probe(struct platform_device *pdev)
 			info->rdma_ins[i].rdma_regadr = &rdma_regadr[i];
 		} else if (rdma_meson_dev.rdma_ver == RDMA_VER_2) {
 			info->rdma_ins[i].rdma_regadr = &rdma_regadr_tl1[i];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else if (rdma_meson_dev.rdma_ver == RDMA_VER_3) {
 			info->rdma_ins[i].rdma_regadr = &rdma_regadr_t7[i];
 			support_64bit_addr = 1;
@@ -2037,6 +2048,7 @@ static int __init rdma_probe(struct platform_device *pdev)
 			info->rdma_ins[i].rdma_regadr = &rdma_regadr_t3x[i];
 			support_64bit_addr = 1;
 			has_multi_vpp = 1;
+#endif
 		} else {
 			info->rdma_ins[i].rdma_regadr = &rdma_regadr[i];
 		}

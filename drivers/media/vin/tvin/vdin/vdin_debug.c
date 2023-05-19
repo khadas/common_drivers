@@ -2560,6 +2560,7 @@ static void vdin_write_back_reg(struct vdin_dev_s *devp)
 		rd(devp->addr_offset, VDIN_ASFIFO_CTRL3));
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void vdin_dump_regs_t3x(struct vdin_dev_s *devp, u32 size)
 {
 	unsigned int reg;
@@ -2640,6 +2641,7 @@ void vdin_dump_regs_s5(struct vdin_dev_s *devp, u32 size)
 //	pr_info("VPP2,0x%04x = 0x%08x\n", (reg + offset), rd(offset, reg));
 //	pr_info("vdin%d regs loopback end----\n\n", devp->index);
 }
+#endif
 
 static void vdin_dump_regs(struct vdin_dev_s *devp, u32 size)
 {

@@ -879,9 +879,11 @@ void vframe_hdr_sei_s_init(struct hdr10_plus_sei_s *hdr10_plus_sei,
 	};
 
 	for (i = 0; i < 9; i++) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x)
 			percentilevalue_init[i] = s5_percentile[i];
 		else
+#endif
 			percentilevalue_init[i] = percentile[i];
 	}
 

@@ -1329,6 +1329,7 @@ bool is_bandwidth_policy_hit(u8 layer_id)
 			return true;
 		}
 	}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		const struct vinfo_s *vinfo = get_current_vinfo();
 
@@ -1344,6 +1345,7 @@ bool is_bandwidth_policy_hit(u8 layer_id)
 				return true;
 		}
 	}
+#endif
 	return false;
 }
 
@@ -6749,9 +6751,9 @@ static inline void postblend_test_pattern_output(u32 on, u32 color)
 			blend_din_en_save = READ_VCBUS_REG(VPU_VOUT_BLEND_CTRL);
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, color);
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL, 0x7);
-#endif
 		} else if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 			vpp_clip_setting_s5(on, color);
+#endif
 		} else {
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(VPP_CLIP_MISC0,
@@ -6768,9 +6770,9 @@ static inline void postblend_test_pattern_output(u32 on, u32 color)
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_DUMDATA, 0x0);
 			WRITE_VCBUS_REG(VPU_VOUT_BLEND_CTRL,
 				blend_din_en_save);
-#endif
 		} else if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 			vpp_clip_setting_s5(on, 0);
+#endif
 		} else {
 			cur_dev->rdma_func[vpp_index].rdma_wr
 				(VPP_CLIP_MISC0,

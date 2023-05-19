@@ -2140,10 +2140,12 @@ static inline void vdin_set_hist_mux(struct vdin_dev_s *devp)
 static void vdin_urgent_patch(unsigned int offset, unsigned int v,
 			      unsigned int h)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3x_cpu()) {
 		vdin_urgent_patch_t3x(offset, v, h);
 		return;
 	}
+#endif
 	if (h >= 1920 && v >= 1080) {
 		wr_bits(offset, VDIN_LFIFO_URG_CTRL, 1,
 			VDIN_LFIFO_URG_CTRL_EN_BIT, VDIN_LFIFO_URG_CTRL_EN_WID);
@@ -2380,11 +2382,13 @@ void vdin_set_wr_ctrl_vsync(struct vdin_dev_s *devp,
 	unsigned int swap_cbcr = 0;
 	unsigned int hconv_mode = 2, vconv_mode;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3x_cpu()) {
 		vdin_set_wr_ctrl_vsync_t3x(devp, offset, format_convert,
 			full_pack, source_bitdepth, rdma_enable);
 		return;
 	}
+#endif
 	switch (format_convert)	{
 	case VDIN_FORMAT_CONVERT_YUV_YUV422:
 	case VDIN_FORMAT_CONVERT_RGB_YUV422:
@@ -2547,8 +2551,10 @@ void vdin_set_mif_on_off(struct vdin_dev_s *devp, unsigned int rdma_enable)
 /***************************global function**********************************/
 unsigned int vdin_get_meas_h_cnt64(unsigned int offset)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3x_cpu())
 		return vdin_get_meas_h_cnt64_t3x(offset);
+#endif
 
 	return rd_bits(offset, VDIN_MEAS_HS_COUNT,
 		       MEAS_HS_CNT_BIT, MEAS_HS_CNT_WID);
@@ -2757,10 +2763,12 @@ void vdin_set_canvas_id(struct vdin_dev_s *devp, unsigned int rdma_enable,
 
 void vdin_pause_mif_write(struct vdin_dev_s *devp, unsigned int rdma_enable)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3x_cpu()) {
 		vdin_pause_mif_write_t3x(devp, rdma_enable);
 		return;
 	}
+#endif
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	if (rdma_enable)
 		rdma_write_reg_bits(devp->rdma_handle, VDIN_WR_CTRL + devp->addr_offset,
@@ -3391,12 +3399,15 @@ void vdin_set_dv_tunnel(struct vdin_dev_s *devp)
 		/*&& (devp->dv.low_latency)*/
 	    devp->prop.color_format == TVIN_YUV422) {
 		offset = devp->addr_offset;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if ((is_meson_t3x_cpu())) {
 			/*channel map*/
 			wr_bits(offset, VDIN0_CUTWIN_CTRL, vdin_data_bus_0, 0, 2);
 			wr_bits(offset, VDIN0_CUTWIN_CTRL, vdin_data_bus_1, 2, 2);
 			wr_bits(offset, VDIN0_CUTWIN_CTRL, vdin_data_bus_2, 4, 2);
-		} else {
+		} else
+#endif
+		{
 			/*channel map*/
 			wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_0,
 				COMP0_OUT_SWT_BIT, COMP0_OUT_SWT_WID);
@@ -3930,25 +3941,32 @@ void vdin_hw_close(struct vdin_dev_s *devp)
 /* get current vsync field type 0:top 1 bottom */
 unsigned int vdin_get_field_type(unsigned int offset)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3x_cpu())
 		return 0;
 	else
+#endif
 		return rd_bits(offset, VDIN_COM_STATUS0, 0, 1);
 }
 
 bool vdin_check_vdi6_afifo_overflow(unsigned int offset)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3x_cpu())
 		return 0;
 	else
+#endif
 		return rd_bits(offset, VDIN_COM_STATUS2, 15, 1);
 }
 
 void vdin_clear_vdi6_afifo_overflow_flg(unsigned int offset)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3x_cpu()) {
 		vdin_clear_vdi6_afifo_overflow_flg_t3x(offset);
-	} else {
+	} else
+#endif
+	{
 		wr_bits(offset, VDIN_ASFIFO_CTRL3, 0x1, 1, 1);
 		wr_bits(offset, VDIN_ASFIFO_CTRL3, 0x0, 1, 1);
 	}
@@ -4902,10 +4920,12 @@ void vdin_set_mpegin(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3x_cpu()) {
 		vdin_set_mpegin_t3x(devp);
 		return;
 	}
+#endif
 
 	/* set VDIN_MEAS_CLK_CNTL, select XTAL clock */
 	/* if (is_meson_gxbb_cpu()) */
@@ -4930,10 +4950,12 @@ void vdin_force_go_filed(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3x_cpu()) {
 		vdin_force_go_filed_t3x(devp);
 		return;
 	}
+#endif
 	wr_bits(offset, VDIN_COM_CTRL0, 1, 28, 1);
 	wr_bits(offset, VDIN_COM_CTRL0, 0, 28, 1);
 }
@@ -5379,8 +5401,10 @@ void vdin_dolby_buffer_update(struct vdin_dev_s *devp, unsigned int index)
 		} else {
 			if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
 				wr(offset, VDIN_DOLBY_DSC_CTRL2, 0xe800c0d5);
+		#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			else if (is_meson_t3x_cpu())
 				wr(offset, VDIN0_META_DSC_CTRL2, 0xe800c0d5);//todo:confirm
+		#endif
 			else
 				wr(offset, VDIN_DOLBY_DSC_CTRL2, 0xd180c0d5);
 			rpt_cnt = 0;
@@ -5390,9 +5414,11 @@ void vdin_dolby_buffer_update(struct vdin_dev_s *devp, unsigned int index)
 				if (devp->dtdata->hw_ver == VDIN_HW_T7) {
 					p[i] = src_meta[i];
 				} else {
+				#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 					if (is_meson_t3x_cpu())
 						meta32 = rd(offset, VDIN0_META_DSC_STATUS1);
 					else
+				#endif
 						meta32 = rd(offset, VDIN_DOLBY_DSC_STATUS1);
 					p[i] = swap32(meta32);
 				}

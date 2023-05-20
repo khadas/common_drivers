@@ -1,0 +1,3 @@
+  sg_pcopy_to_buffer
+  usb_hcd_is_primary_hcd
+  usb_hcd_map_urb_for_dma

@@ -22,6 +22,9 @@
 #include <linux/dma-map-ops.h>
 #include <linux/delay.h>
 #include <linux/mm.h>
+#include <linux/kthread.h>
+#include <linux/delay.h>
+#include <linux/sched/clock.h>
 
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/codec_mm/codec_mm_scatter.h>
@@ -275,6 +278,11 @@ static inline u32 codec_mm_align_up2n(u32 addr, u32 alg2n)
 	return ((addr + (1 << alg2n) - 1) & (~((1 << alg2n) - 1)));
 }
 
+static inline u64 codec_mm_get_current_ms(void)
+{
+	return div64_u64(local_clock(), 1000000);
+}
+
 /* dma_alloc_from_contiguous and dma_release_from_contiguous
  * not EXPORT_SYMBOL in kernel. To be consistent with 5.4,
  * copy them in here when media build as ko.
@@ -391,7 +399,9 @@ static u32 default_tvp_size;
 static u32 default_tvp_4k_size;
 static u32 default_cma_res_size;
 static u32 default_tvp_pool_segment_size[4];
+
 static u32 default_tvp_pool_size_0;
+static u32 tvp_pool_segment_maxsize_0;
 static u32 default_tvp_pool_size_1;
 static u32 default_tvp_pool_size_2;
 static u32 tvp_dynamic_increase_disable;
@@ -415,6 +425,7 @@ struct extpool_mgt_s {
 	int total_size;
 	/* mutex lock */
 	struct mutex pool_lock;
+	struct task_struct *tvp_kthread;
 };
 
 struct codec_mm_mgt_s {
@@ -1155,8 +1166,9 @@ struct codec_mm_s *codec_mm_alloc(const char *owner, int size,
 		}
 	} else { /*tvp not enabled*/
 		if (memflags & CODEC_MM_FLAGS_TVP) {
-			pr_err("TVP not enabled, when alloc from tvp %s need %d\n",
-			       owner, size);
+			if (tvp_dynamic_increase_disable)
+				pr_err("TVP not enabled, when alloc from tvp %s need %d\n",
+					owner, size);
 		}
 	}
 	if ((memflags & CODEC_MM_FLAGS_FROM_MASK) == 0)
@@ -1726,6 +1738,30 @@ static int codec_mm_tvp_pool_alloc_by_type(struct extpool_mgt_s *tvp_pool,
 	return 1;
 }
 
+static int codec_mm_try_alloc_more_tvp(void *param)
+{
+	int alloc_size = 0;
+	struct extpool_mgt_s *tvp_pool = (struct extpool_mgt_s *)param;
+
+	if (!tvp_pool)
+		return 0;
+
+	if (!kthread_should_stop()) {
+		mutex_lock(&tvp_pool->pool_lock);
+		if (tvp_pool->slot_num == 1) {
+			mutex_unlock(&tvp_pool->pool_lock);
+			alloc_size = codec_mm_tvp_pool_alloc_by_slot(tvp_pool, 0, 2);
+			if (alloc_size <= 0)
+				pr_err("Async alloc more tvp failed\n");
+		} else {
+			mutex_unlock(&tvp_pool->pool_lock);
+		}
+	}
+
+	tvp_pool->tvp_kthread = NULL;
+	return 0;
+}
+
 static int codec_mm_tvp_pool_alloc_by_slot(struct extpool_mgt_s *tvp_pool,
 	int memflags, int flags)
 {
@@ -1737,6 +1773,10 @@ static int codec_mm_tvp_pool_alloc_by_slot(struct extpool_mgt_s *tvp_pool,
 	int max_cma_free_size = 0;
 	int use_cma_pool_first = 0;
 	int retry_cnt = 0;
+	int alloc_more = 0;
+	u64 start_ms = codec_mm_get_current_ms();
+	u64 end_ms = 0;
+	u64 spend_ms = 0;
 
 	mutex_lock(&tvp_pool->pool_lock);
 	max_cma_reserved_free_size = mgt->cma_res_pool.total_size - mgt->cma_res_pool.alloced_size;
@@ -1756,6 +1796,16 @@ static int codec_mm_tvp_pool_alloc_by_slot(struct extpool_mgt_s *tvp_pool,
 	if (size <= 0) {
 		try_alloced_size = 0;
 		goto alloced_finished;
+	}
+
+	if (!tvp_dynamic_increase_disable && tvp_pool->slot_num == 0 &&
+		tvp_pool_segment_maxsize_0 >= DEFAULT_TVP_SEGMENT_MIN_SIZE) {
+		if (size - tvp_pool_segment_maxsize_0 >= DEFAULT_TVP_SEGMENT_MIN_SIZE) {
+			default_tvp_pool_segment_size[0] = tvp_pool_segment_maxsize_0;
+			default_tvp_pool_segment_size[1] = size - tvp_pool_segment_maxsize_0;
+			size = tvp_pool_segment_maxsize_0;
+			alloc_more = 1;
+		}
 	}
 
 	if (use_cma_pool_first) {
@@ -1851,7 +1901,22 @@ alloced_finished:
 		pr_info("Force enable tvp, please enable it by resource manager or secmem");
 		mgt->tvp_enable = 2;
 	}
+
+	if (alloc_more && try_alloced_size > 0 && !tvp_pool->tvp_kthread) {
+		tvp_pool->tvp_kthread = kthread_run(codec_mm_try_alloc_more_tvp,
+			(void *)tvp_pool, "tvp_alloc_more");
+		if (!tvp_pool->tvp_kthread)
+			pr_info("Create thread enable second segment error");
+	}
+
 	mutex_unlock(&tvp_pool->pool_lock);
+
+	end_ms = codec_mm_get_current_ms();
+	spend_ms = end_ms - start_ms;
+
+	pr_info("Enable tvp %d size %d MB spend %d ms\n", tvp_pool->slot_num,
+		try_alloced_size / 1024 / 1024, (u32)spend_ms);
+
 	return try_alloced_size;
 }
 
@@ -1866,6 +1931,9 @@ int codec_mm_extpool_pool_alloc(struct extpool_mgt_s *tvp_pool,
 	int retry_cnt = size / (4 * SZ_1M);
 	int slot_num = tvp_pool->slot_num;
 	int max_cma_reserved_free_size = 0;
+	u64 start_ms = codec_mm_get_current_ms();
+	u64 end_ms = 0;
+	u64 spend_ms = 0;
 
 	/*alloced from reserved*/
 	mutex_lock(&tvp_pool->pool_lock);
@@ -1987,6 +2055,13 @@ alloced_finished:
 	}
 alloced_finished1:
 	mutex_unlock(&tvp_pool->pool_lock);
+
+	end_ms = codec_mm_get_current_ms();
+	spend_ms = end_ms - start_ms;
+
+	pr_info("Enable segment for tvp %d %d size %d MB spend %d ms\n", for_tvp,
+		tvp_pool->slot_num, try_alloced_size / 1024 / 1024, (u32)spend_ms);
+
 	return alloced_size;
 }
 EXPORT_SYMBOL(codec_mm_extpool_pool_alloc);
@@ -2710,6 +2785,7 @@ int codec_mm_disable_tvp(void)
 		mutex_unlock(&mgt->tvp_protect_lock);
 		return ret;
 	}
+
 	if (atomic_dec_and_test(&mgt->tvp_user_count)) {
 		if (codec_mm_tvp_pool_unprotect_and_release(&mgt->tvp_pool) == 0) {
 			mgt->tvp_enable = 0;
@@ -3401,6 +3477,7 @@ static struct mconfig codec_mm_configs[] = {
 	MC_PI32("default_tvp_pool_size_0", &default_tvp_pool_size_0),
 	MC_PI32("default_tvp_pool_size_1", &default_tvp_pool_size_1),
 	MC_PI32("default_tvp_pool_size_2", &default_tvp_pool_size_2),
+	MC_PI32("tvp_pool_segment_maxsize_0", &tvp_pool_segment_maxsize_0),
 };
 
 static struct mconfig_node codec_mm_trigger_node;

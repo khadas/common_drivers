@@ -167,9 +167,9 @@
 			cal_coeff = <324 424 3159 9411>;
 			rtemp = <110000>;
 			interrupts = <GIC_SPI 57 IRQ_TYPE_LEVEL_HIGH>;
-			//clocks = <&clkc CLKID_TS>;
+			clocks = <&clkc CLKID_TS>;
 			clock-names = "ts_comp";
-			//power-domains = <&pwrdm PDID_I2C>;
+			power-domains = <&pwrdm PDID_CX_I2C>;
 			#thermal-sensor-cells = <1>;
 		};
 

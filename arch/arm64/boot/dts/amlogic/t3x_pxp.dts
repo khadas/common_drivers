@@ -66,6 +66,16 @@
 			status = "disabled";
 		};
 
+		debug_reserved:linux,iotrace {
+			compatible = "amlogic, iotrace";
+			reg = <0x0 0x04f00000 0x0 0x00100000>;
+			io-size = <0x1b000>;
+			sched-size = <0x2000>;
+			irq-size = <0x1000>;
+			smc-size = <0x1000>;
+			misc-size = <0x1000>;
+		};
+
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
 			/*reusable;*/

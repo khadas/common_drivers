@@ -102,7 +102,7 @@ static int aml_pcpd_monitor_src(struct pcpd_monitor *pc_pd)
 
 int aml_pcpd_monitor_init(struct pcpd_monitor *pc_pd)
 {
-	if (!IS_ERR(pc_pd->reg_map)) {
+	if (IS_ERR(pc_pd->reg_map)) {
 		dev_err(pc_pd->dev, "Can't pcpd_reg regmap!!\n");
 		return 0;
 	}

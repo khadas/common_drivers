@@ -2111,11 +2111,15 @@ static int smc_hw_get_status(struct smc_dev *smc, int *sret)
 
 #ifdef DET_FROM_PIO
 	cardin = _gpio_in(smc->detect_pin, OWNER_NAME);
+	usleep_range(500, 500 + 100);
+	cardin = _gpio_in(smc->detect_pin, OWNER_NAME);
 	//	pr_dbg("get_status: card detect: %d\n", smc->cardin);
 	if (!cardin) {
 		if (smc->use_enable_pin)
 			_gpio_out(smc->enable_pin,
 				  !smc->enable_level, SMC_ENABLE_PIN_NAME);
+		cardin = _gpio_in(smc->detect_pin, OWNER_NAME);
+		usleep_range(500, 500 + 100);
 		cardin = _gpio_in(smc->detect_pin, OWNER_NAME);
 	}
 #else
@@ -2414,12 +2418,14 @@ static int receive_chars(struct smc_dev *smc)
 static void smc_irq_bh_handler(unsigned long arg)
 {
 	struct smc_dev *smc = (struct smc_dev *)arg;
+	unsigned long flags;
 #ifndef DET_FROM_PIO
 	unsigned int sc_reg0;
 	struct smccard_hw_reg0 *sc_reg0_reg = (void *)&sc_reg0;
 #endif
 
 	/*Read card status */
+	spin_lock_irqsave(&smc->slock, flags);
 #ifndef DET_FROM_PIO
 	sc_reg0 = SMC_READ_REG(REG0);
 	smc->cardin = sc_reg0_reg->card_detect;
@@ -2428,6 +2434,8 @@ static void smc_irq_bh_handler(unsigned long arg)
 #endif
 	if (smc->detect_invert)
 		smc->cardin = !smc->cardin;
+
+	spin_unlock_irqrestore(&smc->slock, flags);
 
 	if (smc->recv_start != smc->recv_end) {
 		wake_up_interruptible(&smc->rd_wq);

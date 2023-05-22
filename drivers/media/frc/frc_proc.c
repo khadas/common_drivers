@@ -576,6 +576,14 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 			pr_frc(1, "out_chg-w(%d->%d)-h(%d->%d)\n",
 				devp->out_sts.vout_width, vinfo->width,
 				devp->out_sts.vout_height, vinfo->height);
+			if (devp->out_sts.vout_width == vinfo->width &&
+				devp->out_sts.vout_height == vinfo->height &&
+				devp->frc_sts.state == FRC_STATE_ENABLE &&
+				!devp->in_sts.size_chged) {
+				devp->frc_sts.re_cfg_cnt = 0;
+				pr_frc(1, "%s rate chg\n", __func__);
+			}
+
 			//devp->out_sts.vout_height = vinfo->height;
 			//devp->out_sts.vout_width = vinfo->width;
 		} else {

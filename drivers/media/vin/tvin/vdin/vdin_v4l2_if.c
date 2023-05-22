@@ -260,7 +260,7 @@ void vdin_fill_pix_format(struct vdin_dev_s *devp)
 			v4l2_fmt->fmt.pix_mp.plane_fmt[1].bytesperline =
 				v4l2_fmt->fmt.pix_mp.width;
 		} else if (v4l2_fmt->fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV12M ||
-				   v4l2_fmt->fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV12M) {
+				   v4l2_fmt->fmt.pix_mp.pixelformat == V4L2_PIX_FMT_NV21M) {
 			v4l2_fmt->fmt.pix_mp.plane_fmt[0].sizeimage =
 				v4l2_fmt->fmt.pix_mp.width * v4l2_fmt->fmt.pix_mp.height;
 			v4l2_fmt->fmt.pix_mp.plane_fmt[1].sizeimage =
@@ -1282,7 +1282,7 @@ static int vidioc_try_fmt_vid_cap_mplane(struct file *file, void *priv,
 			__func__, devp->index, f->type);
 		return -EINVAL;
 	}
-	if (f->fmt.pix_mp.width > 4096 || f->fmt.pix_mp.width > 2160) {
+	if (f->fmt.pix_mp.width > 4096 || f->fmt.pix_mp.height > 2160) {
 		dprintk(0, "%s vdin%d v4l2 do not support w=%d,h=%d\n",
 			__func__, devp->index, f->fmt.pix_mp.width, f->fmt.pix_mp.height);
 		return -EINVAL;

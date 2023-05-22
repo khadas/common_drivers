@@ -4794,7 +4794,6 @@ void rx_main_state_machine(void)
 				rx[port].var.esd_phy_rst_cnt = 0;
 				//reset_pcs_flag = 1;
 				rx[port].ddc_filter_en = false;
-				rx_set_color_bar(color_bar_lvl, port);
 			}
 		} else {
 			rx[port].var.sig_stable_cnt = 0;
@@ -5263,7 +5262,6 @@ void rx_port0_main_state_machine(void)
 				rx[port].var.esd_phy_rst_cnt = 0;
 				//reset_pcs_flag = 1;
 				rx[port].ddc_filter_en = false;
-				rx_set_color_bar(color_bar_lvl, port);
 			}
 		} else {
 			rx[port].var.sig_stable_cnt = 0;
@@ -5732,7 +5730,6 @@ void rx_port1_main_state_machine(void)
 				rx[port].var.esd_phy_rst_cnt = 0;
 				//reset_pcs_flag = 1;
 				rx[port].ddc_filter_en = false;
-				rx_set_color_bar(color_bar_lvl, port);
 			}
 		} else {
 			rx[port].var.sig_stable_cnt = 0;
@@ -6207,7 +6204,6 @@ void rx_port2_main_state_machine(void)
 				rx[port].var.esd_phy_rst_cnt = 0;
 				//reset_pcs_flag = 1;
 				rx[port].ddc_filter_en = false;
-				rx_set_color_bar(color_bar_lvl, port);
 			}
 		} else {
 			rx[port].var.sig_stable_cnt = 0;
@@ -6682,7 +6678,6 @@ void rx_port3_main_state_machine(void)
 				rx[port].var.esd_phy_rst_cnt = 0;
 				//reset_pcs_flag = 1;
 				rx[port].ddc_filter_en = false;
-				rx_set_color_bar(color_bar_lvl, port);
 			}
 		} else {
 			rx[port].var.sig_stable_cnt = 0;
@@ -7415,7 +7410,9 @@ int hdmirx_debug(const char *buf, int size)
 			set_video_mute(true);
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {
 		if (tmpbuf[4] == '1')
-			rx_set_color_bar(tmpbuf[5] - '0', port);
+			rx_set_color_bar(true, tmpbuf[5] - '0', port);
+		else if (tmpbuf[4] == '0')
+			rx_set_color_bar(false, tmpbuf[5] - '0', port);
 		else
 			rx_phy_short_bist(port);
 	} else if (strncmp(tmpbuf, "eye", 3) == 0) {

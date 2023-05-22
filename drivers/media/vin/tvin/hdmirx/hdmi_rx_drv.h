@@ -77,7 +77,8 @@
 /* 2023.5.12 fix silent issue, switch to FSM_HPD_LOW */
 /* 2023.05.15 optimize frl_rate monitor logic */
 /* 2023.5.22 modify edid delivery method */
-#define RX_VER1 "ver.2023/5/22"
+/* 2023.5.23 optimize color bar debug logic */
+#define RX_VER1 "ver.2023/5/23"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

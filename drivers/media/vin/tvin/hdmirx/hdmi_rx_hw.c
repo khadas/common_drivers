@@ -6815,12 +6815,12 @@ void rx_ddc_active_monitor(u8 port)
 	}
 }
 
-void rx_set_color_bar(u32 lvl, u8 port)
+void rx_set_color_bar(bool en, u32 lvl, u8 port)
 {
 	int data32;
 
 	data32 = 0;
-	data32 |= (color_bar_debug_en << 3);//reg_px1_bist2vpcout
+	data32 |= (en << 3);//reg_px1_bist2vpcout
 	data32 |= (0 << 2);//reg_px1_bist2vpcin_en
 	data32 |= (0 << 1);//reg_px1_bist_in_rpt_px1
 	data32 |= (0 << 0);//reg_px1_bist_in_vpc_sel

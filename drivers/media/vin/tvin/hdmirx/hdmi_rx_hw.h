@@ -3441,7 +3441,7 @@ int is_rx_hdcp22key_crc0_pass(void);
 int is_rx_hdcp22key_crc1_pass(void);
 void rx_hdcp_crc_check(void);
 int rx_get_hdcp_auth_sts(u8 port);
-void rx_set_color_bar(unsigned int lvl, u8 port);
+void rx_set_color_bar(bool en, unsigned int lvl, u8 port);
 void reset_pcs(u8 port);
 
 /* t3x  */

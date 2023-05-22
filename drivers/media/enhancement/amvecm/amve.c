@@ -489,7 +489,7 @@ void lcd_gamma_api(unsigned int index,
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t5m ||
-		chip_type_id == chip_t3x) {
+		chip_type_id == chip_t3x || chip_type_id == chip_txhd2) {
 		p_gm = get_gm_data();
 		auto_inc = p_gm->auto_inc;
 		max_idx = p_gm->max_idx;
@@ -609,7 +609,7 @@ void vpp_get_lcd_gamma_table(u32 rgb_mask)
 	if (cpu_after_eq_t7()) {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t5m ||
-			chip_type_id == chip_t3x) {
+			chip_type_id == chip_t3x || chip_type_id == chip_txhd2) {
 			p_gm = get_gm_data();
 			lcd_gamma_api(gamma_index,
 				p_gm->dbg_gm_tbl.gamma_r,
@@ -698,7 +698,7 @@ void amve_write_gamma_table(u16 *data, u32 rgb_mask)
 	if (cpu_after_eq_t7()) {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t5m ||
-			chip_type_id == chip_t3x) {
+			chip_type_id == chip_t3x || chip_type_id == chip_txhd2) {
 			p_gm = get_gm_data();
 			max_idx = p_gm->max_idx;
 			lcd_gamma_api(gamma_index, p_gm->dbg_gm_tbl.gamma_r,
@@ -1252,7 +1252,7 @@ void ve_lcd_gamma_process(void)
 		if (cpu_after_eq_t7()) {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (chip_type_id == chip_t5m ||
-				chip_type_id == chip_t3x) {
+				chip_type_id == chip_t3x || chip_type_id == chip_txhd2) {
 				p_gm = get_gm_data();
 				memcpy(p_gm->gm_tbl.gamma_r,
 					video_gamma_table_r.data,

@@ -11586,7 +11586,7 @@ void amvecm_gamma_init(bool en)
 		return;
 
 	if (chip_type_id == chip_t5m ||
-		chip_type_id == chip_t3x) {
+		chip_type_id == chip_t3x || chip_type_id == chip_txhd2) {
 		p_gm = get_gm_data();
 		p_gm->max_idx = 257;
 		p_gm->auto_inc = 1 << L_H_AUTO_INC_2;

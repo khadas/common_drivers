@@ -11,6 +11,7 @@
 #include <linux/platform_device.h>
 #include <linux/reset.h>
 #include <linux/of_gpio.h>
+#include <linux/amlogic/cpu_version.h>
 
 #include "amlogic-pcie-v3.h"
 
@@ -1094,6 +1095,16 @@ static int amlogic_pcie_init_port_for_m31_phy(struct amlogic_pcie *amlogic)
 	if (err)
 		return err;
 
+	/* XCFGI[706] value from vendor recommend for temperature compensation */
+	val = readl(amlogic->phy_base + 0x858);
+	val |= BIT(2);
+	writel(val, amlogic->phy_base + 0x858);
+
+	/* XCFGI[322:320] value from vendor recommend for temperature compensation */
+	val = readl(amlogic->phy_base + 0x828);
+	val |= 0x6;
+	writel(val, amlogic->phy_base + 0x828);
+
 	/*PHY_Register_XCFGD value from vendor recommend*/
 	regs = readl(amlogic->phy_base + 0x470);
 	regs |= (1 << 6);
@@ -1127,6 +1138,16 @@ static int amlogic_pcie_init_port_for_m31_combphy(struct amlogic_pcie *amlogic)
 	val |= BIT(11);
 	writel(val, amlogic->phy_base + 0x4);
 
+	/* XCFGI[706] value from vendor recommend for temperature compensation */
+	val = readl(amlogic->phy_base + 0x858);
+	val |= BIT(2);
+	writel(val, amlogic->phy_base + 0x858);
+
+	/* XCFGI[322:320] value from vendor recommend for temperature compensation */
+	val = readl(amlogic->phy_base + 0x828);
+	val |= 0x6;
+	writel(val, amlogic->phy_base + 0x828);
+
 	ret = amlogic_pcie_set_reset_for_m31_combphy(amlogic);
 	if (ret)
 		return ret;
@@ -1135,7 +1156,7 @@ static int amlogic_pcie_init_port_for_m31_combphy(struct amlogic_pcie *amlogic)
 	 * workaround pcie1 ctrl just for S5, S5 pcie0 no need
 	 * value recommend by VLSI
 	 */
-	if (amlogic->port_num == 1 && of_machine_is_compatible("amlogic, s5")) {
+	if (amlogic->port_num == 1 && is_meson_s5_cpu()) {
 		val = 0x73f << 2;
 		amlogic_pciectrl_write(amlogic, val, 0xb4);
 		val = amlogic_pciectrl_read(amlogic, 0xb8);

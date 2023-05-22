@@ -14,3 +14,29 @@ config AMLOGIC_ANDROID_LOGGER
 		Log reading and writing is performed via normal Linux reads and
 		optimized writes. This optimization avoids logging having too
 		much overhead in the system.
+
+config ANDROID_LOW_MEMORY_KILLER
+	bool "Android Low Memory Killer"
+	help
+		Registers processes to be killed when low memory conditions, this is useful
+		as there is no particular swap space on android.
+
+		The registered process will kill according to the priorities in android init
+		scripts (/init.rc), and it defines priority values with minimum free memory size
+		for each priority.
+
+config ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES
+	bool "Android Low Memory Killer: detect oom_adj values"
+	depends on ANDROID_LOW_MEMORY_KILLER
+	default y
+	help
+		Detect oom_adj values written to
+		/sys/module/lowmemorykiller/parameters/adj and convert them
+		to oom_score_adj values.
+
+config AMLOGIC_LMK
+	bool "Amlogic Low Memory Killer vendor"
+	help
+		Add file free page statistics, which also triggers lmkd
+		when there are many files in free.
+

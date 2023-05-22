@@ -58,4 +58,5 @@ source "$(COMMON_DRIVERS_DIR)/drivers/audiobridge/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/algorithm/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/firmware/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/timestamp/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/seckey/Kconfig"
 endmenu

@@ -78,6 +78,11 @@ struct meson_crypto_dev_data meson_s4d_data = {
 	.algo_cap = (CAP_AES | CAP_TDES | CAP_DES | CAP_S17),
 };
 
+struct meson_crypto_dev_data meson_s5_data = {
+	.status = TXLX_DMA_STS0,
+	.algo_cap = (CAP_AES | CAP_TDES | CAP_DES | CAP_SM4),
+};
+
 struct cipher_data {
 	int init; /* 0 if uninitialized */
 	int cipher;
@@ -187,6 +192,9 @@ static const struct of_device_id aml_crypto_dev_dt_match[] = {
 	},
 	{	.compatible = "amlogic,crypto_s4d",
 		.data = &meson_s4d_data,
+	},
+	{	.compatible = "amlogic,crypto_s5",
+		.data = &meson_s5_data,
 	},
 	{},
 };

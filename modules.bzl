@@ -89,6 +89,7 @@ AMLOGIC_COMMON_MODULES = [
     "common_drivers/drivers/usb/dwc_otg.ko",
     "common_drivers/drivers/watchdog/amlogic-watchdog.ko",
     "common_drivers/drivers/wireless/amlogic-wireless.ko",
+    "common_drivers/drivers/seckey/amlogic-seckey.ko",
     "common_drivers/sound/soc/amlogic/amlogic-snd-soc.ko",
     "common_drivers/sound/soc/codecs/amlogic/amlogic-snd-codec-ad82128.ko",
     "common_drivers/sound/soc/codecs/amlogic/amlogic-snd-codec-ad82584f.ko",

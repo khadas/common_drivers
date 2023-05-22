@@ -15,6 +15,7 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/meson_ir.h>
 #include <dt-bindings/power/cx-pd.h>
+#include <dt-bindings/mailbox/amlogic,mbox.h>
 #include "meson-ir-map.dtsi"
 
 / {
@@ -1190,16 +1191,16 @@
 		      <0x0 0xfe030190 0x0 0x4>,   /*to dspa clr registers */
 		      <0x0 0xffffd400 0x0 0x400>,   /*to dspa payload */
 		      <0x0 0xfe0401d0 0x0 0x4>,   /*from dspb sts registers */
-		      <0x0 0xfe040154 0x0 0x4>,   /* to dspb registers */
-		      <0x0 0xfe040190 0x0 0x4>,   /* to dspb registers */
-		      <0x0 0xffffd800 0x0 0x400>;   /*from dspb payload */
+		      <0x0 0xfe040154 0x0 0x4>,   /* to dspb set registers */
+		      <0x0 0xfe040190 0x0 0x4>,   /* to dspb clr registers */
+		      <0x0 0xffffd800 0x0 0x400>;   /*to dspb payload */
 		interrupts = <GIC_SPI 0 IRQ_TYPE_EDGE_RISING>,  /* DSPA Rcv */
 			     <GIC_SPI 2 IRQ_TYPE_EDGE_RISING>,  /* DSPA Snd */
 			     <GIC_SPI 4 IRQ_TYPE_EDGE_RISING>,  /* DSPB Rcv */
 			     <GIC_SPI 6 IRQ_TYPE_EDGE_RISING>;  /* DSPB Snd */
-		mbox-names = "dsp_dev",
+		mbox-names = "dspa_to_ap",
 			     "ap_to_dspa",
-			     "dspb_dev",
+			     "dspb_to_ap",
 			     "ap_to_dspb";
 		#mbox-cells = <1>;
 		mboxes = <&mailbox_pl 0>,
@@ -1207,6 +1208,24 @@
 			 <&mailbox_pl 2>,
 			 <&mailbox_pl 3>;
 		mbox-nums = <4>;
+	};
+
+	mbox_user: mbox-user@0 {
+		status = "okay";
+		compatible = "amlogic, meson-mbox-user";
+		mbox-nums = <4>;
+		mbox-names = "dsp_dev",
+			     "dspa2ree",
+			     "dspb_dev",
+			     "dspb2ree";
+		mboxes = <&mailbox_pl 1>,
+			 <&mailbox_pl 0>,
+			 <&mailbox_pl 3>,
+			 <&mailbox_pl 2>;
+		mbox-dests = <MAILBOX_DSP>,
+			     <MAILBOX_DSP>,
+			     <MAILBOX_DSP>,
+			     <MAILBOX_DSP>;
 	};
 
 	ion_dev {

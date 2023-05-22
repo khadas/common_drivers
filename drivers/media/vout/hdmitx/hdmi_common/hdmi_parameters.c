@@ -3151,7 +3151,7 @@ static struct hdmi_format_para *all_fmt_paras[] = {
 	NULL,
 };
 
-struct hdmi_format_para *hdmi_get_fmt_paras(enum hdmi_vic vic)
+const struct hdmi_format_para *hdmi_get_fmt_paras(enum hdmi_vic vic)
 {
 	int i;
 
@@ -3315,7 +3315,7 @@ static void hdmi_parse_attr(struct hdmi_format_para *para, char const *name)
  * or 3840x2160p60hz, 2160p60hz
  * or 3840x2160p60hz420, 2160p60hz420 (Y420 mode)
  */
-struct hdmi_format_para *hdmi_get_fmt_name(char const *name, char const *attr)
+const struct hdmi_format_para *hdmi_get_fmt_name(char const *name, char const *attr)
 {
 	int i;
 	char *lname;
@@ -3353,6 +3353,7 @@ struct hdmi_format_para *hdmi_get_fmt_name(char const *name, char const *attr)
 		hdmi_parse_attr(para, name);
 		hdmi_parse_attr(para, attr);
 	}
+
 	if (strstr(name, "420"))
 		para->cs = HDMI_COLORSPACE_YUV420;
 

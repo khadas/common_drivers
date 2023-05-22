@@ -918,15 +918,12 @@ int hdmitx_set_fr_hint(int rate, void *data)
 	struct vrr_conf_para para;
 	enum TARGET_FRAME_RATE tfr = TFR_QMSVRR_INACTIVE;
 	int tmp_rate;
+	struct hdmi_format_para *fmt_para = &hdev->tx_comm.fmt_para;
 
 	hdmitx_vrr_disable();
-	if (!hdev->para) {
-		para.vrr_enabled = 0;
-		return 0;
-	}
 
 	/* check current rate, should less or equal than current rate of BRR */
-	tmp_rate = hdev->para->timing.v_freq / 10;
+	tmp_rate = fmt_para->timing.v_freq / 10;
 	if (rate < 2397 || rate > 120000 || rate > tmp_rate) {
 		pr_info("vrr rate over range %d [2397~%d]\n", rate, tmp_rate);
 		return 0;
@@ -942,7 +939,7 @@ int hdmitx_set_fr_hint(int rate, void *data)
 	}
 
 	para.duration = rate;
-	para.brr_vic = hdev->para->timing.vic;
+	para.brr_vic = fmt_para->timing.vic;
 	if (para.type == T_VRR_QMS) {
 		tfr = vsync_match_to_tfr(rate);
 		if (tfr == TFR_QMSVRR_INACTIVE || tfr == TFR_MAX) {
@@ -1013,9 +1010,7 @@ static struct vinfo_s *hdmitx_get_curvinfo(void *data)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	if (!hdev->para)
-		return NULL;
-	return &hdev->para->hdmitx_vinfo;
+	return &hdev->tx_comm.fmt_para.hdmitx_vinfo;
 }
 
 void hdmitx_register_vrr(struct hdmitx_dev *hdev)

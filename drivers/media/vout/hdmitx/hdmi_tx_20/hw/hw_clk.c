@@ -922,8 +922,8 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 	int j = 0;
 	struct hw_enc_clk_val_group *p_enc = NULL;
 	enum hdmi_vic vic = hdev->tx_comm.cur_VIC;
-	enum hdmi_colorspace cs = hdev->para->cs;
-	enum hdmi_color_depth cd = hdev->para->cd;
+	enum hdmi_colorspace cs = hdev->tx_comm.fmt_para.cs;
+	enum hdmi_color_depth cd = hdev->tx_comm.fmt_para.cd;
 
 	if (!test_clk)
 		return;
@@ -1010,7 +1010,7 @@ next:
 	set_vid_clk_div(hdev, p_enc[j].vid_clk_div);
 	set_hdmi_tx_pixel_div(hdev, p_enc[j].hdmi_tx_pixel_div);
 
-	if (hdev->para->hdmitx_vinfo.viu_mux == VIU_MUX_ENCI) {
+	if (hdev->tx_comm.fmt_para.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI) {
 		set_enci_div(hdev, p_enc[j].enci_div);
 		hdmitx_enable_enci_clk(hdev);
 	} else {
@@ -1032,7 +1032,7 @@ static int likely_frac_rate_mode(char *m)
 static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 {
 	enum hdmi_vic vic = hdev->tx_comm.cur_VIC;
-	struct hdmi_format_para *para = NULL;
+	const struct hdmi_format_para *para = NULL;
 
 	frac_rate = hdev->tx_comm.frac_rate_policy;
 	para = hdmi_get_fmt_paras(vic);
@@ -1167,7 +1167,7 @@ void hdmitx_set_clk(struct hdmitx_dev *hdev)
 void hdmitx_disable_clk(struct hdmitx_dev *hdev)
 {
 	/* cts_encp/enci_clk */
-	if (hdev->para->hdmitx_vinfo.viu_mux == VIU_MUX_ENCI)
+	if (hdev->tx_comm.fmt_para.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI)
 		hdmitx_disable_enci_clk(hdev);
 	else
 		hdmitx_disable_encp_clk(hdev);

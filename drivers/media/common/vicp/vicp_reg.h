@@ -489,74 +489,74 @@ enum vicp_module_e {
 /* ************************* struct definitions **************************.*/
 /* *********************************************************************** */
 struct vicp_afbce_reg_s {
-	u32 afbce_enable; /* AFBCE_ENABLE */
-	u32 afbce_mode;/* AFBCE_MODE */
-	u32 afbce_size_in; /* AFBCE_SIZE_IN */
-	u32 afbce_block_size_in; /* AFBCE_BLK_SIZE_IN */
-	u32 afbce_head_baddr; /*AFBCE_HEAD_BADDR*/
-	u32 afbce_mif_size; /*AFBCE_MIF_SIZE */
-	u32 afbce_pixel_hor_scope;/* AFBCE_PIXEL_HOR_SCOPE */
-	u32 afbce_pixel_ver_scope;/* AFBCE_PIXEL_VER_SCOPE */
-	u32 afbce_conv_ctrl; /* AFBCE_CONV_CTRL */
-	u32 afbce_mif_hor_scope; /* AFBCE_MIF_HOR_SCOPE */
-	u32 afbce_mif_ver_scope; /* AFBCE_MIF_VER_SCOPE */
-	u32 afbce_stat1; /* AFBCE_STAT1 */
-	u32 afbce_stat2; /* AFBCE_STAT2 */
-	u32 afbce_format; /*AFBCE_FORMAT*/
-	u32 afbce_mode_en; /* AFBCE_MODE_EN */
-	u32 afbce_dwscalar; /* AFBCE_DWSCALAR */
-	u32 afbce_def_color1;/* AFBCE_DEF_COLOR1 */
-	u32 afbce_def_color2;/* AFBCE_DEF_COLOR1 */
-	u32 afbce_quant_enable; /* AFBCE_QUANT_ENABLE */
-	u32 afbce_iquant_lut_1; /* AFBCE_IQUANT_LUT_1 */
-	u32 afbce_iquant_lut_2; /* AFBCE_IQUANT_LUT_2 */
-	u32 afbce_iquant_lut_3; /* AFBCE_IQUANT_LUT_3 */
-	u32 afbce_iquant_lut_4; /* AFBCE_IQUANT_LUT_4 */
-	u32 afbce_rquant_lut_1; /* AFBCE_RQUANT_LUT_1 */
-	u32 afbce_rquant_lut_2; /* AFBCE_RQUANT_LUT_2 */
-	u32 afbce_rquant_lut_3; /* AFBCE_RQUANT_LUT_3 */
-	u32 afbce_rquant_lut_4; /* AFBCE_RQUANT_LUT_4 */
-	u32 afbce_yuv_format_conv_mode; /* AFBCE_YUV_FORMAT_CONV_MODE */
-	u32 afbce_dummy_data; /* AFBCE_DUMMY_DATA */
-	u32 afbce_clr_flag; /* AFBCE_CLR_FLAG */
-	u32 afbce_sta_flag; /* AFBCE_STA_FLAG */
-	u32 afbce_mmu_num; /* AFBCE_MMU_NUM */
-	u32 afbce_pip_ctrl; /*AFBCE_PIP_CTRL */
-	u32 afbce_rot_ctrl; /* AFBCE_ROT_CTRL */
-	u32 afbce_dimm_ctrl; /* AFBCE_DIMM_CTRL */
-	u32 afbce_bnd_dec_misc; /* AFBCE_BND_DEC_MISC */
-	u32 afbce_rd_arb_misc; /* AFBCE_RD_ARB_MISC */
-	u32 afbce_mmu_rmif_ctrl1; /* AFBCE_MMU_RMIF_CTRL1 */
-	u32 afbce_mmu_rmif_ctrl2; /* AFBCE_MMU_RMIF_CTRL2 */
-	u32 afbce_mmu_rmif_ctrl3; /* AFBCE_MMU_RMIF_CTRL3 */
-	u32 afbce_mmu_rmif_ctrl4; /* AFBCE_MMU_RMIF_CTRL4 */
-	u32 afbce_mmu_rmif_scope_x;/* AFBCE_MMU_RMIF_SCOPE_X */
-	u32 afbce_mmu_rmif_scope_y;/* AFBCE_MMU_RMIF_SCOPE_Y */
-	u32 afbce_mmu_rmif_ro_stat; /* AFBCE_MMU_RMIF_RO_STAT */
+	u32 afbce_enable;		/* VID_CMPR_AFBCE_ENABLE */
+	u32 afbce_mode;			/* VID_CMPR_AFBCE_MODE */
+	u32 afbce_size_in;		/* VID_CMPR_AFBCE_SIZE_IN */
+	u32 afbce_block_size_in;	/* VID_CMPR_AFBCE_BLK_SIZE_IN */
+	u32 afbce_head_baddr;		/* VID_CMPR_AFBCE_HEAD_BADDR*/
+	u32 afbce_mif_size;		/* VID_CMPR_AFBCE_MIF_SIZE */
+	u32 afbce_pixel_hor_scope;	/* VID_CMPR_AFBCE_PIXEL_HOR_SCOPE */
+	u32 afbce_pixel_ver_scope;	/* VID_CMPR_AFBCE_PIXEL_VER_SCOPE */
+	u32 afbce_conv_ctrl;		/* VID_CMPR_AFBCE_CONV_CTRL */
+	u32 afbce_mif_hor_scope;	/* VID_CMPR_AFBCE_MIF_HOR_SCOPE */
+	u32 afbce_mif_ver_scope;	/* VID_CMPR_AFBCE_MIF_VER_SCOPE */
+	u32 afbce_stat1;		/* VID_CMPR_AFBCE_STAT1 */
+	u32 afbce_stat2;		/* VID_CMPR_AFBCE_STAT2 */
+	u32 afbce_format;		/* VID_CMPR_AFBCE_FORMAT*/
+	u32 afbce_mode_en;		/* VID_CMPR_AFBCE_MODE_EN */
+	u32 afbce_dwscalar;		/* VID_CMPR_AFBCE_DWSCALAR */
+	u32 afbce_def_color1;		/* VID_CMPR_AFBCE_DEF_COLOR1 */
+	u32 afbce_def_color2;		/* VID_CMPR_AFBCE_DEF_COLOR1 */
+	u32 afbce_quant_enable;		/* VID_CMPR_AFBCE_QUANT_ENABLE */
+	u32 afbce_iquant_lut_1;		/* VID_CMPR_AFBCE_IQUANT_LUT_1 */
+	u32 afbce_iquant_lut_2;		/* VID_CMPR_AFBCE_IQUANT_LUT_2 */
+	u32 afbce_iquant_lut_3;		/* VID_CMPR_AFBCE_IQUANT_LUT_3 */
+	u32 afbce_iquant_lut_4;		/* VID_CMPR_AFBCE_IQUANT_LUT_4 */
+	u32 afbce_rquant_lut_1;		/* VID_CMPR_AFBCE_RQUANT_LUT_1 */
+	u32 afbce_rquant_lut_2;		/* VID_CMPR_AFBCE_RQUANT_LUT_2 */
+	u32 afbce_rquant_lut_3;		/* VID_CMPR_AFBCE_RQUANT_LUT_3 */
+	u32 afbce_rquant_lut_4;		/* VID_CMPR_AFBCE_RQUANT_LUT_4 */
+	u32 afbce_yuv_format_conv_mode;	/* VID_CMPR_AFBCE_YUV_FORMAT_CONV_MODE */
+	u32 afbce_dummy_data;		/* VID_CMPR_AFBCE_DUMMY_DATA */
+	u32 afbce_clr_flag;		/* VID_CMPR_AFBCE_CLR_FLAG */
+	u32 afbce_sta_flag;		/* VID_CMPR_AFBCE_STA_FLAG */
+	u32 afbce_mmu_num;		/* VID_CMPR_AFBCE_MMU_NUM */
+	u32 afbce_pip_ctrl;		/* VID_CMPR_AFBCE_PIP_CTRL */
+	u32 afbce_rot_ctrl;		/* VID_CMPR_AFBCE_ROT_CTRL */
+	u32 afbce_dimm_ctrl;		/* VID_CMPR_AFBCE_DIMM_CTRL */
+	u32 afbce_bnd_dec_misc;		/* VID_CMPR_AFBCE_BND_DEC_MISC */
+	u32 afbce_rd_arb_misc;		/* VID_CMPR_AFBCE_RD_ARB_MISC */
+	u32 afbce_mmu_rmif_ctrl1;	/* VID_CMPR_AFBCE_MMU_RMIF_CTRL1 */
+	u32 afbce_mmu_rmif_ctrl2;	/* VID_CMPR_AFBCE_MMU_RMIF_CTRL2 */
+	u32 afbce_mmu_rmif_ctrl3;	/* VID_CMPR_AFBCE_MMU_RMIF_CTRL3 */
+	u32 afbce_mmu_rmif_ctrl4;	/* VID_CMPR_AFBCE_MMU_RMIF_CTRL4 */
+	u32 afbce_mmu_rmif_scope_x;	/* VID_CMPR_AFBCE_MMU_RMIF_SCOPE_X */
+	u32 afbce_mmu_rmif_scope_y;	/* VID_CMPR_AFBCE_MMU_RMIF_SCOPE_Y */
+	u32 afbce_mmu_rmif_ro_stat;	/* VID_CMPR_AFBCE_MMU_RMIF_RO_STAT */
 };
 
 struct vicp_lossy_compress_reg_s {
-	u32 loss_ctrl; /* AFBCE_LOSS_CTRL */
-	u32 loss_burst_num; /* AFBCE_LOSS_BURST_NUM */
-	u32 loss_rc; /* AFBCE_LOSS_RC */
-	u32 loss_rc_fifo_thd; /* AFBCE_LOSS_RC_FIFO_THD */
-	u32 loss_rc_fifo_buget; /* AFBCE_LOSS_RC_FIFO_BUGET */
-	u32 loss_rc_accum_thd0; /* AFBCE_LOSS_RC_ACCUM_THD_0 */
-	u32 loss_rc_accum_thd1; /* AFBCE_LOSS_RC_ACCUM_THD_1 */
-	u32 loss_rc_accum_thd2; /* AFBCE_LOSS_RC_ACCUM_THD_2 */
-	u32 loss_rc_accum_thd3; /* AFBCE_LOSS_RC_ACCUM_THD_3 */
-	u32 loss_rc_accum_buget0; /* AFBCE_LOSS_RC_ACCUM_BUGET_0 */
-	u32 loss_rc_accum_buget1; /* AFBCE_LOSS_RC_ACCUM_BUGET_1 */
-	u32 loss_ro_error_l0; /* AFBCE_LOSS_RO_ERROR_L_0 */
-	u32 loss_ro_count0; /* AFBCE_LOSS_RO_COUNT_0 */
-	u32 loss_ro_error_l1; /* AFBCE_LOSS_RO_ERROR_L_1 */
-	u32 loss_ro_count1; /* AFBCE_LOSS_RO_COUNT_1 */
-	u32 loss_ro_error_l2; /* AFBCE_LOSS_RO_ERROR_L_2 */
-	u32 loss_ro_count2; /* AFBCE_LOSS_RO_COUNT_2 */
-	u32 loss_ro_error_h0; /* AFBCE_LOSS_RO_ERROR_H_0 */
-	u32 loss_ro_error_h1; /* AFBCE_LOSS_RO_ERROR_H_1 */
-	u32 loss_ro_max_error0; /* AFBCE_LOSS_RO_MAX_ERROR_0 */
-	u32 loss_ro_max_error1; /* AFBCE_LOSS_RO_MAX_ERROR_1 */
+	u32 loss_ctrl;			/* VID_CMPR_AFBCE_LOSS_CTRL */
+	u32 loss_burst_num;		/* VID_CMPR_AFBCE_LOSS_BURST_NUM */
+	u32 loss_rc;			/* VID_CMPR_AFBCE_LOSS_RC */
+	u32 loss_rc_fifo_thd;		/* VID_CMPR_AFBCE_LOSS_RC_FIFO_THD */
+	u32 loss_rc_fifo_buget;		/* VID_CMPR_AFBCE_LOSS_RC_FIFO_BUGET */
+	u32 loss_rc_accum_thd0;		/* VID_CMPR_AFBCE_LOSS_RC_ACCUM_THD_0 */
+	u32 loss_rc_accum_thd1;		/* VID_CMPR_AFBCE_LOSS_RC_ACCUM_THD_1 */
+	u32 loss_rc_accum_thd2;		/* VID_CMPR_AFBCE_LOSS_RC_ACCUM_THD_2 */
+	u32 loss_rc_accum_thd3;		/* VID_CMPR_AFBCE_LOSS_RC_ACCUM_THD_3 */
+	u32 loss_rc_accum_buget0;	/* VID_CMPR_AFBCE_LOSS_RC_ACCUM_BUGET_0 */
+	u32 loss_rc_accum_buget1;	/* VID_CMPR_AFBCE_LOSS_RC_ACCUM_BUGET_1 */
+	u32 loss_ro_error_l0;		/* VID_CMPR_AFBCE_LOSS_RO_ERROR_L_0 */
+	u32 loss_ro_count0;		/* VID_CMPR_AFBCE_LOSS_RO_COUNT_0 */
+	u32 loss_ro_error_l1;		/* VID_CMPR_AFBCE_LOSS_RO_ERROR_L_1 */
+	u32 loss_ro_count1;		/* VID_CMPR_AFBCE_LOSS_RO_COUNT_1 */
+	u32 loss_ro_error_l2;		/* VID_CMPR_AFBCE_LOSS_RO_ERROR_L_2 */
+	u32 loss_ro_count2;		/* VID_CMPR_AFBCE_LOSS_RO_COUNT_2 */
+	u32 loss_ro_error_h0;		/* VID_CMPR_AFBCE_LOSS_RO_ERROR_H_0 */
+	u32 loss_ro_error_h1;		/* VID_CMPR_AFBCE_LOSS_RO_ERROR_H_1 */
+	u32 loss_ro_max_error0;		/* VID_CMPR_AFBCE_LOSS_RO_MAX_ERROR_0 */
+	u32 loss_ro_max_error1;		/* VID_CMPR_AFBCE_LOSS_RO_MAX_ERROR_1 */
 };
 
 /* *********************************************************************** */

@@ -99,7 +99,6 @@ void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_s *afbce, bool rdma_en
 	int sblk_num;
 	int mmu_page_size;
 	struct vicp_afbce_mode_reg_s afbce_mode_reg;
-	struct vicp_afbce_color_format_reg_s color_format_reg;
 	struct vicp_afbce_mmu_rmif_control1_reg_s rmif_control1;
 	struct vicp_afbce_mmu_rmif_control3_reg_s rmif_control3;
 	struct vicp_afbce_pip_control_reg_s pip_control;
@@ -220,12 +219,6 @@ void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_s *afbce, bool rdma_en
 	set_afbce_mix_scope(1, blk_out_bgn_h, blk_out_end_h);
 	set_afbce_mix_scope(0, blk_out_bgn_v, blk_out_end_v);
 
-	memset(&color_format_reg, 0, sizeof(struct vicp_afbce_color_format_reg_s));
-	color_format_reg.format_mode = afbce->reg_format_mode;
-	color_format_reg.compbits_c = afbce->reg_compbits_c;
-	color_format_reg.compbits_y = afbce->reg_compbits_y;
-	set_afbce_colorfmt(color_format_reg);
-
 	set_afbce_default_color1(afbce->def_color_3, afbce->def_color_0);
 	set_afbce_default_color2(afbce->def_color_1, afbce->def_color_2);
 	set_afbce_mmu_rmif_control4(afbce->table_baddr);
@@ -312,8 +305,12 @@ void set_vid_cmpr_afbce(int enable, struct vid_cmpr_afbce_s *afbce, bool rdma_en
 	set_afbce_mif_size(mif_size_reg);
 
 	memset(&enable_reg, 0, sizeof(struct vicp_afbce_enable_reg_s));
-	enable_reg.pls_enc_frm_start = enable;
+	enable_reg.gclk_ctrl = 0;
+	enable_reg.afbce_sync_sel = 0;
+	enable_reg.enc_rst_mode = 0;
+	enable_reg.enc_en_mode = 1;
 	enable_reg.enc_enable = enable;
+	enable_reg.pls_enc_frm_start = 0;
 	set_afbce_enable(enable_reg);
 }
 
@@ -930,8 +927,8 @@ void set_vid_cmpr_afbcd(int hold_line_num, bool rdma_en, struct vid_cmpr_afbcd_s
 	cfmt_control.cfmt_v_phase_step = (16 >> vt_yc_ratio);
 	cfmt_control.cfmt_v_en = vfmt_en;
 	set_afbcd_colorformat_control(cfmt_control);
-	set_afbcd_colorformat_size(1, fmt_size_h, (fmt_size_h >> hz_yc_ratio));
-	set_afbcd_colorformat_size(0, uv_vsize_in, 0);
+	set_afbcd_colorformat_w(fmt_size_h, (fmt_size_h >> hz_yc_ratio));
+	set_afbcd_colorformat_h(uv_vsize_in);
 
 	memset(&quant_control, 0, sizeof(struct vicp_afbcd_quant_control_reg_s));
 	quant_control.lossy_chrm_en = lossy_chrm_en;
@@ -1595,6 +1592,8 @@ static void set_vid_cmpr_basic_param(struct vid_cmpr_top_s *vid_cmpr_top)
 		return;
 	}
 
+	vicp_print(VICP_INFO, "update basic vicp param.\n");
+
 	if (vid_cmpr_top->src_compress == 1) {
 		set_afbcd_headaddr(vid_cmpr_top->src_head_baddr);
 		set_afbcd_bodyaddr(vid_cmpr_top->src_body_baddr);
@@ -1620,7 +1619,7 @@ static void set_vid_cmpr_basic_param(struct vid_cmpr_top_s *vid_cmpr_top)
 	set_vid_cmpr_fgrain(fgrain);
 
 	if (vid_cmpr_top->wrmif_en == 1) {
-		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 1, 0, 1);
+		set_wrmif_path_enable(1);
 		if (vid_cmpr_top->out_shrk_en == 1) {
 			buf_h = vid_cmpr_top->out_hsize_bgnd >> (1 + vid_cmpr_top->out_shrk_mode);
 			buf_v = vid_cmpr_top->out_vsize_bgnd >> (1 + vid_cmpr_top->out_shrk_mode);
@@ -1631,11 +1630,11 @@ static void set_vid_cmpr_basic_param(struct vid_cmpr_top_s *vid_cmpr_top)
 		set_wrmif_base_addr(0, vid_cmpr_top->wrmif_canvas0_addr0);
 		set_wrmif_base_addr(1, vid_cmpr_top->wrmif_canvas0_addr0 + (buf_h * buf_v));
 	} else {
-		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 0, 0, 1);
+		set_wrmif_path_enable(0);
 	}
 
 	if (vid_cmpr_top->out_afbce_enable == 1) {
-		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 1, 1, 1);
+		set_afbce_path_enable(1);
 		set_afbce_head_addr(vid_cmpr_top->out_head_baddr);
 		set_afbce_mmu_rmif_control4(vid_cmpr_top->out_mmu_info_baddr);
 		if (vicp_dev.ddr16_support &&
@@ -1645,7 +1644,7 @@ static void set_vid_cmpr_basic_param(struct vid_cmpr_top_s *vid_cmpr_top)
 		else
 			set_afbce_ofset_burst4_en(0);
 	} else {
-		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 0, 0, 1);
+		set_afbce_path_enable(0);
 	}
 }
 
@@ -1669,6 +1668,8 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 		vicp_print(VICP_ERROR, "%s: invalid param,return.\n", __func__);
 		return;
 	}
+
+	vicp_print(VICP_INFO, "update all vicp param.\n");
 
 	if (vid_cmpr_top->src_compress == 1) {
 		set_rdmif_enable(0);
@@ -1879,6 +1880,7 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 
 	set_input_size(vid_cmpr_scaler.din_vsize, vid_cmpr_scaler.din_hsize);
 	set_vid_cmpr_scale(scaler_enable, &vid_cmpr_scaler);
+	set_output_size(vid_cmpr_top->out_vsize_in, vid_cmpr_top->out_hsize_in);
 
 	memset(&vid_cmpr_hdr, 0, sizeof(struct vid_cmpr_hdr_s));
 	if (!hdr_en)
@@ -1892,7 +1894,7 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 	set_vid_cmpr_hdr(vid_cmpr_hdr.hdr2_en);
 
 	if (vid_cmpr_top->wrmif_en == 1) {
-		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 1, 0, 1);
+		set_wrmif_path_enable(1);
 		memset(&vid_cmpr_wmif, 0, sizeof(struct vid_cmpr_mif_s));
 		output_begin_h = vid_cmpr_top->out_win_bgn_h;
 		output_begin_v = vid_cmpr_top->out_win_bgn_v;
@@ -1907,7 +1909,6 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 				(output_end_v - output_begin_v + 1);
 		shrink_mode = vid_cmpr_top->out_shrk_mode;
 		set_vid_cmpr_shrink(shrink_enable, shrink_size, shrink_mode, shrink_mode);
-		set_output_size(vid_cmpr_top->out_vsize_in, vid_cmpr_top->out_hsize_in);
 
 		if (shrink_enable == 1) {
 			vid_cmpr_wmif.luma_x_start0 = output_begin_h >> (1 + shrink_mode);
@@ -1956,12 +1957,12 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 
 		set_vid_cmpr_wmif(&vid_cmpr_wmif, vid_cmpr_top->wrmif_en);
 	} else {
-		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 0, 0, 1);
+		set_wrmif_path_enable(0);
 	}
 
 	memset(&vid_cmpr_afbce, 0, sizeof(struct vid_cmpr_afbce_s));
 	if (vid_cmpr_top->out_afbce_enable == 1) {
-		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 1, 1, 1);
+		set_afbce_path_enable(1);
 		vid_cmpr_afbce.head_baddr = vid_cmpr_top->out_head_baddr;
 		vid_cmpr_afbce.table_baddr = vid_cmpr_top->out_mmu_info_baddr;
 		vid_cmpr_afbce.reg_init_ctrl = vid_cmpr_top->out_reg_init_ctrl;
@@ -1990,7 +1991,7 @@ static void set_vid_cmpr_all_param(struct vid_cmpr_top_s *vid_cmpr_top)
 		vid_cmpr_afbce.mmu_page_size = vid_cmpr_top->src_mmu_page_size_mode;
 		set_vid_cmpr_afbce(1, &vid_cmpr_afbce, vid_cmpr_top->rdma_enable);
 	} else {
-		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 0, 0, 1);
+		set_afbce_path_enable(0);
 		set_vid_cmpr_afbce(0, &vid_cmpr_afbce, vid_cmpr_top->rdma_enable);
 	}
 
@@ -2295,11 +2296,13 @@ int vicp_process_task(struct vid_cmpr_top_s *vid_cmpr_top)
 	set_vid_cmpr_security(vid_cmpr_top->security_en);
 
 	if (vid_cmpr_top->rdma_enable) {
-		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 3, 0, 2);
+		set_wrmif_path_enable(1);
+		set_afbce_path_enable(1);
 		set_module_enable(1);
 		set_module_reset();
 		set_vid_cmpr_all_param(vid_cmpr_top);
 		set_module_start(1);
+		set_afbce_start(1);
 		vicp_rdma_end(get_current_vicp_rdma_buf());
 		if (vid_cmpr_top->src_num + 1 == vid_cmpr_top->src_count) {
 			init_completion(&vicp_rdma_done);
@@ -2381,6 +2384,7 @@ int vicp_process_task(struct vid_cmpr_top_s *vid_cmpr_top)
 				vid_cmpr_top->src_fmt_mode,
 				vid_cmpr_top->src_compbits,
 				vid_cmpr_top->src_compress);
+			pr_info("vicp: skip_mode: %d.\n", vid_cmpr_top->skip_mode);
 			pr_info("vicp: output: w:%d, h:%d.\n",
 				vid_cmpr_top->out_hsize_bgnd,
 				vid_cmpr_top->out_vsize_bgnd);
@@ -2399,7 +2403,8 @@ int vicp_process_task(struct vid_cmpr_top_s *vid_cmpr_top)
 		};
 
 		init_completion(&vicp_proc_done);
-		write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, 3, 0, 2);
+		set_wrmif_path_enable(1);
+		set_afbce_path_enable(1);
 		set_module_enable(1);
 		set_module_reset();
 		if (is_need_update_all)
@@ -2407,12 +2412,15 @@ int vicp_process_task(struct vid_cmpr_top_s *vid_cmpr_top)
 		else
 			set_vid_cmpr_basic_param(vid_cmpr_top);
 		set_module_start(1);
+		set_afbce_start(1);
 		time = wait_for_completion_timeout(&vicp_proc_done, msecs_to_jiffies(200));
 		if (!time) {
 			vicp_print(VICP_ERROR, "vicp_task wait isr timeout\n");
 			ret = -2;
 		}
 	}
+
+	vicp_print(VICP_DUMP_REG, "%s: set reg end.\n", __func__);
 
 	return ret;
 }

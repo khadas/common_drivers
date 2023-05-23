@@ -317,19 +317,17 @@ void set_afbcd_colorformat_control(struct vicp_afbcd_cfmt_control_reg_s cfmt_con
 	return write_vicp_reg(VID_CMPR_AFBCDM_VD_CFMT_CTRL, value);
 }
 
-void set_afbcd_colorformat_size(u32 w_or_h, u32 fmt_size_h, u32 fmt_size_v)
+void set_afbcd_colorformat_w(u32 hz_fmt_w, u32 vt_fmt_w)
 {
-	u32 value = 0, reg = 0;
+	u32 value = 0;
 
-	if (w_or_h == 1) {//width
-		reg = VID_CMPR_AFBCDM_VD_CFMT_W;
-		value = (fmt_size_h << 16) | (fmt_size_v << 0);
-	} else {//height
-		reg = VID_CMPR_AFBCDM_VD_CFMT_H;
-		value = fmt_size_h;
-	}
+	value = (hz_fmt_w << 16) | (vt_fmt_w << 0);
+	return write_vicp_reg(VID_CMPR_AFBCDM_VD_CFMT_W, value);
+}
 
-	return write_vicp_reg(reg, value);
+void set_afbcd_colorformat_h(u32 fmt_size_h)
+{
+	return write_vicp_reg(VID_CMPR_AFBCDM_VD_CFMT_H, fmt_size_h);
 }
 
 void set_afbcd_quant_control(struct vicp_afbcd_quant_control_reg_s quant_control)
@@ -391,6 +389,11 @@ void set_afbcd_loss_control(struct vicp_afbcd_lossy_ctrl_reg_s lossy_ctrl_reg)
 	return write_vicp_reg(VID_CMPR_AFBCD_LOSS_CTRL, value);
 }
 
+void set_afbce_path_enable(u32 is_enable)
+{
+	return write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, is_enable, 1, 1);
+}
+
 void set_afbcd_burst_control(struct vicp_afbcd_burst_ctrl_reg_s burst_ctrl_reg)
 {
 	u32 value = 0;
@@ -441,11 +444,6 @@ void set_afbce_lossy_brust_num(u32 num0, u32 num1, u32 num2, u32 num3)
 	return write_vicp_reg(lossy_compress_reg.loss_burst_num, value);
 }
 
-void set_afbce_ofset_burst4_en(u32 enable)
-{
-	return vicp_reg_set_bits(afbce_reg.afbce_format, enable, 11, 1);
-}
-
 void set_afbce_format(struct vicp_afbce_format_reg_s format_reg)
 {
 	u32 value = 0;
@@ -458,6 +456,11 @@ void set_afbce_format(struct vicp_afbce_format_reg_s format_reg)
 		((format_reg.compbits_y & 0xf) << 0);
 
 	return write_vicp_reg(afbce_reg.afbce_format, value);
+}
+
+void set_afbce_ofset_burst4_en(u32 enable)
+{
+	return vicp_reg_set_bits(afbce_reg.afbce_format, enable, 11, 1);
 }
 
 void set_afbce_input_size(u32 size_h, u32 size_v)
@@ -767,18 +770,6 @@ void set_afbce_mode(struct vicp_afbce_mode_reg_s afbce_mode_reg)
 	return write_vicp_reg(afbce_reg.afbce_mode, value);
 }
 
-void set_afbce_colorfmt(struct vicp_afbce_color_format_reg_s color_format_reg)
-{
-	u32 value = 0;
-
-	value = ((color_format_reg.ofset_burst4_en & 0x1) << 11) |
-		((color_format_reg.burst_length_add2_en & 0x1) << 10) |
-		((color_format_reg.format_mode & 0x3) << 8) |
-		((color_format_reg.compbits_c & 0xf) << 4) |
-		((color_format_reg.compbits_y & 0xf) << 0);
-	return write_vicp_reg(afbce_reg.afbce_format, value);
-}
-
 void set_afbce_default_color1(u32 def_color_a, u32 def_color_y)
 {
 	u32 value = 0;
@@ -880,6 +871,16 @@ void set_afbce_enable(struct vicp_afbce_enable_reg_s enable_reg)
 		((enable_reg.enc_enable & 0x1) << 8) |
 		((enable_reg.pls_enc_frm_start & 0x1) << 0);
 	return write_vicp_reg(afbce_reg.afbce_enable, value);
+}
+
+void set_afbce_start(u32 is_start)
+{
+	return write_vicp_reg_bits(afbce_reg.afbce_enable, is_start, 0, 1);
+}
+
+void set_wrmif_path_enable(u32 is_enable)
+{
+	return write_vicp_reg_bits(VID_CMPR_WR_PATH_CTRL, is_enable, 0, 1);
 }
 
 void set_wrmif_shrk_enable(u32 is_enable)
@@ -1005,7 +1006,7 @@ void set_hdr_enable(u32 is_enable)
 
 void set_top_holdline(void)
 {
-	write_vicp_reg_bits(VID_CMPR_AFBCE_MODE, 0x5, 16, 7);
+	write_vicp_reg_bits(afbce_reg.afbce_mode, 0x5, 16, 7);
 	write_vicp_reg_bits(VID_CMPR_HOLD_LINE, 0x5, 0, 16);
 }
 
@@ -1224,7 +1225,7 @@ void set_scaler_misc(struct vicp_scaler_misc_reg_s scaler_misc_reg)
 		((scaler_misc_reg.vsc_nonlinear_4region_en & 0x1) << 4) |
 		((scaler_misc_reg.vsc_bank_length & 0x7) << 0);
 
-	return write_vicp_reg(VID_CMPR_SC_MISC, 0x00078804);
+	return write_vicp_reg(VID_CMPR_SC_MISC, value);
 }
 
 void set_security_enable(u32 dma_en, u32 mmu_en, u32 input_en)
@@ -1306,6 +1307,7 @@ int read_vicp_reg(u32 reg)
 void write_vicp_reg(u32 reg, u32 val)
 {
 	struct rdma_buf_type_s *buf = NULL;
+	vicp_print(VICP_DUMP_REG, "%s: set reg 0x%04x with 0x%08x\n", __func__, reg, val);
 
 	if (rdma_enable_flag) {
 		buf = get_current_vicp_rdma_buf();
@@ -1319,6 +1321,8 @@ void write_vicp_reg(u32 reg, u32 val)
 void write_vicp_reg_bits(u32 reg, const u32 value, const u32 start, const u32 len)
 {
 	struct rdma_buf_type_s *buf = NULL;
+	vicp_print(VICP_DUMP_REG, "%s: set reg 0x%04x from %d to %d bit with 0x%08x\n",
+		__func__, reg, start, (start + len - 1), value);
 
 	if (rdma_enable_flag) {
 		buf = get_current_vicp_rdma_buf();

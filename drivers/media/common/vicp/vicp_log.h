@@ -33,6 +33,7 @@
 #define VICP_AFBCE		    0X100
 #define VICP_RDMA		    0X200
 #define VICP_FGRAIN		    0X400
+#define VICP_DUMP_REG		    0X800
 
 int vicp_print(int debug_flag, const char *fmt, ...);
 #endif

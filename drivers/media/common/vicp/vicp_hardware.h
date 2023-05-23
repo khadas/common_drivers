@@ -242,14 +242,6 @@ struct vicp_afbce_mode_reg_s {
 	u32 fmt444_comb;
 };
 
-struct vicp_afbce_color_format_reg_s {
-	u32 ofset_burst4_en;
-	u32 burst_length_add2_en;
-	u32 format_mode;
-	u32 compbits_c;
-	u32 compbits_y;
-};
-
 struct vicp_afbce_mif_size_reg_s {
 	u32 ddr_blk_size;	//Bit 29:28    default = 1
 	u32 cmd_blk_size;	//Bit 26:24    default = 3
@@ -416,18 +408,20 @@ void set_afbcd_mif_scope(u32 v_h_flag, u32 scope_begin, u32 scope_end);
 void set_afbcd_pixel_scope(u32 v_h_flag, u32 scope_begin, u32 scope_end);
 void set_afbcd_general(struct vicp_afbcd_general_reg_s reg);
 void set_afbcd_colorformat_control(struct vicp_afbcd_cfmt_control_reg_s cfmt_control);
-void set_afbcd_colorformat_size(u32 w_or_h, u32 fmt_size_h, u32 fmt_size_v);
+void set_afbcd_colorformat_w(u32 hz_fmt_w, u32 vt_fmt_w);
+void set_afbcd_colorformat_h(u32 fmt_size_h);
 void set_afbcd_quant_control(struct vicp_afbcd_quant_control_reg_s quant_control);
 void set_afbcd_rotate_control(struct vicp_afbcd_rotate_control_reg_s rotate_control);
 void set_afbcd_rotate_scope(struct vicp_afbcd_rotate_scope_reg_s rotate_scope);
 void set_afbcd_loss_control(struct vicp_afbcd_lossy_ctrl_reg_s lossy_ctrl_reg);
 void set_afbcd_burst_control(struct vicp_afbcd_burst_ctrl_reg_s burst_ctrl_reg);
+void set_afbce_path_enable(u32 is_enable);
 void set_afbce_lossy_luma_enable(u32 enable);
 void set_afbce_lossy_chrm_enable(u32 enable);
 void set_afbce_lossy_control(struct vicp_afbce_loss_ctrl_reg_s loss_ctrl_reg);
 void set_afbce_lossy_brust_num(u32 num0, u32 num1, u32 num2, u32 num3);
-void set_afbce_ofset_burst4_en(u32 enable);
 void set_afbce_format(struct vicp_afbce_format_reg_s format_reg);
+void set_afbce_ofset_burst4_en(u32 enable);
 void set_afbce_input_size(u32 size_h, u32 size_v);
 void set_afbce_blk_size(u32 size_h, u32 size_v);
 void set_afbce_head_addr(u64 head_addr);
@@ -436,7 +430,6 @@ void set_afbce_mix_scope(u32 h_or_v, u32 begin, u32 end);
 void set_afbce_conv_control(u32 fmt_ybuf_depth, u32 lbuf_depth);
 void set_afbce_pixel_in_scope(u32 h_or_v, u32 begin, u32 end);
 void set_afbce_mode(struct vicp_afbce_mode_reg_s afbce_mode_reg);
-void set_afbce_colorfmt(struct vicp_afbce_color_format_reg_s colorfmt_reg);
 void set_afbce_default_color1(u32 def_color_a, u32 def_color_y);
 void set_afbce_default_color2(u32 def_color_u, u32 def_color_v);
 void set_afbce_mmu_rmif_scope(u32 x_or_y, u32 start, u32 end);
@@ -447,6 +440,7 @@ void set_afbce_mmu_rmif_control4(u64 baddr);
 void set_afbce_pip_control(struct vicp_afbce_pip_control_reg_s pip_control);
 void set_afbce_rotation_control(u32 rotation_en, u32 step_v);
 void set_afbce_enable(struct vicp_afbce_enable_reg_s enable_reg);
+void set_afbce_start(u32 is_start);
 void set_rdmif_luma_fifo_size(u32 size);
 void set_rdmif_general_reg(struct vicp_rdmif_general_reg_s reg);
 void set_rdmif_general_reg2(struct vicp_rdmif_general_reg2_s reg);
@@ -461,6 +455,7 @@ void set_rdmif_color_format_control(struct vicp_rdmif_color_format_s color_forma
 void set_rdmif_color_format_width(u32 cfmt_width_h, u32 cfmt_width_v);
 void set_rdmif_luma_position(u32 index, u32 is_x, u32 start, u32 end);
 void set_rdmif_chroma_position(u32 index, u32 is_x, u32 start, u32 end);
+void set_wrmif_path_enable(u32 is_enable);
 void set_wrmif_shrk_enable(u32 is_enable);
 void set_wrmif_shrk_size(u32 size);
 void set_wrmif_shrk_mode_h(u32 mode);

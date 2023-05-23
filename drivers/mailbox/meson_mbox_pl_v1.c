@@ -24,6 +24,7 @@
 #include <linux/amlogic/aml_mbox.h>
 #include <dt-bindings/mailbox/c2-mbox.h>
 #include <dt-bindings/mailbox/a1-mbox.h>
+#include <dt-bindings/mailbox/c1-mbox.h>
 #include "meson_mbox_pl.h"
 #include "meson_mbox_comm.h"
 
@@ -452,6 +453,22 @@ static struct mbox_domain_data a1_mbox_domains_data __initdata = {
 	.domain_counts = ARRAY_SIZE(a1_mbox_domains),
 };
 
+struct mbox_domain c1_mbox_domains[] = {
+	[C1_DSPA2REE0] = MBOX_DOMAIN(C1_DSPA2REE0, C1_MBOX_DSPA2REE, 0),
+	[C1_REE2DSPA0] = MBOX_DOMAIN(C1_REE2DSPA0, C1_MBOX_REE2DSPA, 0),
+	[C1_REE2DSPA1] = MBOX_DOMAIN(C1_REE2DSPA1, C1_MBOX_REE2DSPA, 0),
+	[C1_REE2DSPA2] = MBOX_DOMAIN(C1_REE2DSPA2, C1_MBOX_REE2DSPA, 0),
+	[C1_DSPB2REE0] = MBOX_DOMAIN(C1_DSPB2REE0, C1_MBOX_DSPB2REE, 0),
+	[C1_REE2DSPB0] = MBOX_DOMAIN(C1_REE2DSPB0, C1_MBOX_REE2DSPB, 0),
+	[C1_REE2DSPB1] = MBOX_DOMAIN(C1_REE2DSPB1, C1_MBOX_REE2DSPB, 0),
+	[C1_REE2DSPB2] = MBOX_DOMAIN(C1_REE2DSPB2, C1_MBOX_REE2DSPB, 0),
+};
+
+static struct mbox_domain_data c1_mbox_domains_data __initdata = {
+	.mbox_domains = c1_mbox_domains,
+	.domain_counts = ARRAY_SIZE(c1_mbox_domains),
+};
+
 static const struct of_device_id mbox_of_match[] = {
 	{
 		.compatible = "amlogic, c2-mbox-pl",
@@ -460,6 +477,10 @@ static const struct of_device_id mbox_of_match[] = {
 	{
 		.compatible = "amlogic, a1-mbox-pl",
 		.data = &a1_mbox_domains_data,
+	},
+	{
+		.compatible = "amlogic, c1-mbox-pl",
+		.data = &c1_mbox_domains_data,
 	},
 	{}
 };

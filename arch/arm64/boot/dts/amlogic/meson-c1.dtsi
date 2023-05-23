@@ -15,7 +15,7 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/meson_ir.h>
 #include <dt-bindings/power/cx-pd.h>
-#include <dt-bindings/mailbox/amlogic,mbox.h>
+#include <dt-bindings/mailbox/c1-mbox.h>
 #include "meson-ir-map.dtsi"
 
 / {
@@ -1239,45 +1239,50 @@
 		status = "okay";
 	};
 
-	mailbox_pl: mhu@ff680150 {
+	mbox_pl: mbox_pl@0xffffd600 {
 		status = "okay";
-		compatible = "amlogic, meson_mhu_pl";
-		reg = <0x0 0xfe0301d0 0x0 0x4>,   /*from dspa sts registers */
-		      <0x0 0xfe030154 0x0 0x4>,   /*to dspa set registers */
-		      <0x0 0xfe030190 0x0 0x4>,   /*to dspa clr registers */
-		      <0x0 0xffffd400 0x0 0x400>,   /*to dspa payload */
-		      <0x0 0xfe0401d0 0x0 0x4>,   /*from dspb sts registers */
-		      <0x0 0xfe040154 0x0 0x4>,   /* to dspb set registers */
-		      <0x0 0xfe040190 0x0 0x4>,   /* to dspb clr registers */
-		      <0x0 0xffffd800 0x0 0x400>;   /*to dspb payload */
-		interrupts = <GIC_SPI 0 IRQ_TYPE_EDGE_RISING>,  /* DSPA Rcv */
-			     <GIC_SPI 2 IRQ_TYPE_EDGE_RISING>,  /* DSPA Snd */
-			     <GIC_SPI 4 IRQ_TYPE_EDGE_RISING>,  /* DSPB Rcv */
-			     <GIC_SPI 6 IRQ_TYPE_EDGE_RISING>;  /* DSPB Snd */
-		mbox-names = "dspa_to_ap",
-			     "ap_to_dspa",
-			     "dspb_to_ap",
-			     "ap_to_dspb";
+		compatible = "amlogic, c1-mbox-pl";
+		reg = <0x0 0xffffd600 0x0 0x200>,    // dspa tx buf
+		      <0x0 0xfe030154 0x0 0x4>,      // dspa tx set addr
+		      <0x0 0xfe030194 0x0 0x4>,      // dspa tx clr addr
+		      <0x0 0xfe0301d4 0x0 0x4>,      // dspa tx sts addr
+		      <0x0 0xffffd400 0x0 0x200>,    // dspa rx buf
+		      <0x0 0xfe030150 0x0 0x4>,      // dspa rx set addr
+		      <0x0 0xfe030190 0x0 0x4>,      // dspa rx clr addr
+		      <0x0 0xfe0301d0 0x0 0x4>,      // dspa rx sts addr
+		      <0x0 0xffffda00 0x0 0x200>,    // dspb tx buf
+		      <0x0 0xfe040154 0x0 0x4>,      // dspb tx set addr
+		      <0x0 0xfe040194 0x0 0x4>,      // dspb tx clr addr
+		      <0x0 0xfe0401d4 0x0 0x4>,      // dspb tx sts addr
+		      <0x0 0xffffd800 0x0 0x200>,    // dspb rx buf
+		      <0x0 0xfe040150 0x0 0x4>,      // dspb rx set addr
+		      <0x0 0xfe040190 0x0 0x4>,      // dspb rx clr addr
+		      <0x0 0xfe0401d0 0x0 0x4>;      // dspb rx sts addr
+		interrupts = <GIC_SPI 2 IRQ_TYPE_EDGE_RISING>,  // dspa send
+			     <GIC_SPI 0 IRQ_TYPE_EDGE_RISING>,  // dspa rev
+			     <GIC_SPI 6 IRQ_TYPE_EDGE_RISING>,  // dspb send
+			     <GIC_SPI 4 IRQ_TYPE_EDGE_RISING>;  // dspb rev
+		mbox-tx = "tx", "rx", "tx", "rx";
+		mbox-nums = <C1_MBOX_NUMS>;
+		mboxids = <C1_MBOX_REE2DSPA>,
+			  <C1_MBOX_DSPA2REE>,
+			  <C1_MBOX_REE2DSPB>,
+			  <C1_MBOX_DSPB2REE>;
 		#mbox-cells = <1>;
-		mboxes = <&mailbox_pl 0>,
-			 <&mailbox_pl 1>,
-			 <&mailbox_pl 2>,
-			 <&mailbox_pl 3>;
-		mbox-nums = <4>;
 	};
 
-	mbox_user: mbox-user@0 {
+	mbox_devfs {
 		status = "okay";
-		compatible = "amlogic, meson-mbox-user";
+		compatible = "amlogic, mbox-devfs";
 		mbox-nums = <4>;
 		mbox-names = "dsp_dev",
 			     "dspa2ree",
 			     "dspb_dev",
 			     "dspb2ree";
-		mboxes = <&mailbox_pl 1>,
-			 <&mailbox_pl 0>,
-			 <&mailbox_pl 3>,
-			 <&mailbox_pl 2>;
+		mboxes = <&mbox_pl C1_REE2DSPA_DEV>,
+			 <&mbox_pl C1_DSPA2REE_DEV>,
+			 <&mbox_pl C1_REE2DSPB_DEV>,
+			 <&mbox_pl C1_DSPB2REE_DEV>;
 		mbox-dests = <MAILBOX_DSP>,
 			     <MAILBOX_DSP>,
 			     <MAILBOX_DSP>,
@@ -1487,6 +1492,8 @@
 				<&pwrdm PDID_CX_DSP_B>;
 		power-domain-names = "dspa",
 				     "dspb";
+		mboxes = <&mbox_pl C1_REE2DSPA_DSP>,
+			 <&mbox_pl C1_REE2DSPB_DSP>;
 		status = "okay";
 	};
 

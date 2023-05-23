@@ -911,10 +911,7 @@ static ssize_t disp_mode_show(struct device *dev,
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 	struct hdmi_timing *timing = &para->timing;
-	struct vinfo_s *vinfo = &para->hdmitx_vinfo;
-
-	if (!para)
-		return pos;
+	struct vinfo_s *vinfo = &hdev->tx_comm.hdmitx_vinfo;
 
 	pos += snprintf(buf + pos, PAGE_SIZE, "cd/cs/cr: %d/%d/%d\n", para->cd,
 		para->cs, para->cr);
@@ -4577,7 +4574,7 @@ static struct vinfo_s *hdmitx_get_current_vinfo(void *data)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	return &hdev->tx_comm.fmt_para.hdmitx_vinfo;
+	return &hdev->tx_comm.hdmitx_vinfo;
 }
 
 static int hdmitx_set_current_vmode(enum vmode_e mode, void *data)
@@ -4639,8 +4636,8 @@ static enum vmode_e hdmitx_validate_vmode(char *_mode, u32 frac, void *data)
 		 *else
 		 *	hdev->frac_rate_policy = 0;
 		 */
-		para->hdmitx_vinfo.info_3d = NON_3D;
-		para->hdmitx_vinfo.vout_device = &hdmitx_vdev;
+		hdev->tx_comm.hdmitx_vinfo.info_3d = NON_3D;
+		hdev->tx_comm.hdmitx_vinfo.vout_device = &hdmitx_vdev;
 		return VMODE_HDMI;
 	}
 	return VMODE_MAX;
@@ -6722,7 +6719,7 @@ static bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr)
 	para = hdmitx21_tst_fmt_name(mode, attr);
 
 	if (para) {
-		pr_info("sname = %s\n", para->hdmitx_vinfo.name);
+		pr_info("sname = %s\n", hdmitx21_device.tx_comm.hdmitx_vinfo.name);
 		pr_info("char_clk = %d\n", para->tmds_clk);
 		pr_info("cd = %d\n", para->cd);
 		pr_info("cs = %d\n", para->cs);

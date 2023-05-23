@@ -1010,7 +1010,7 @@ static struct vinfo_s *hdmitx_get_curvinfo(void *data)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	return &hdev->tx_comm.fmt_para.hdmitx_vinfo;
+	return &hdev->tx_comm.hdmitx_vinfo;
 }
 
 void hdmitx_register_vrr(struct hdmitx_dev *hdev)

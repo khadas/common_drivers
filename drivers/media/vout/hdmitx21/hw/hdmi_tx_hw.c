@@ -1650,7 +1650,7 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 	unsigned long value = 0;
 	static enum hdmitx_event event_type = HDMITX_NONE_EVENT;
 	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
-	struct vinfo_s *vinfo;
+	struct vinfo_s *vinfo = &hdev->tx_comm.hdmitx_vinfo;
 
 	if (!buf)
 		return;
@@ -1721,7 +1721,6 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_I2C_REACTIVE, 0);
 		return;
 	} else if (strncmp(tmpbuf, "bist", 4) == 0) {
-		vinfo = &para->hdmitx_vinfo;
 		if (strncmp(tmpbuf + 4, "off", 3) == 0) {
 			if (vinfo->viu_mux == VIU_MUX_ENCI) {
 				hd21_write_reg(ENCI_TST_EN, 0);
@@ -1987,9 +1986,8 @@ static char *hdmitx_bist_str[] = {
 static void hdmitx_debug_bist(struct hdmitx_dev *hdev, u32 num)
 {
 	u32 h_active, video_start;
-	struct vinfo_s *vinfo;
+	struct vinfo_s *vinfo = &hdev->tx_comm.hdmitx_vinfo;
 
-	vinfo = &hdev->tx_comm.fmt_para.hdmitx_vinfo;
 	switch (num) {
 	case 1:
 	case 2:

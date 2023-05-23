@@ -1412,7 +1412,7 @@ void hdmitx21_set_clk(struct hdmitx_dev *hdev)
 void hdmitx21_disable_clk(struct hdmitx_dev *hdev)
 {
 	/* cts_encp/enci_clk */
-	if (hdev->tx_comm.fmt_para.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI)
+	if (hdev->tx_comm.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI)
 		hdmitx_disable_enci_clk(hdev);
 	else
 		hdmitx_disable_encp_clk(hdev);

@@ -765,8 +765,8 @@ static int set_disp_mode_auto(void)
 	vic = hdmitx_edid_get_VIC(hdev, mode, 1);
 	if (vic != HDMI_0_UNKNOWN && vic != para->vic) {
 		const struct hdmi_format_para *tmp = hdmi_get_fmt_paras(vic);
-		enum hdmi_color_depth cd = tx_comm->fmt_para.hdmitx_vinfo.cd;
-		enum hdmi_colorspace cs = tx_comm->fmt_para.hdmitx_vinfo.cs;
+		enum hdmi_color_depth cd = tx_comm->hdmitx_vinfo.cd;
+		enum hdmi_colorspace cs = tx_comm->hdmitx_vinfo.cs;
 
 		pr_info("%s update (%d) to new vic (%d-%s)\n",
 			__func__, para->vic, vic, tmp->sname);
@@ -1767,8 +1767,11 @@ static void update_current_para_from_mode(struct hdmitx_dev *hdev, const char *n
 		para->sname ? para->sname : para->name);
 
 	memcpy(&tx_comm->fmt_para, para, sizeof(struct hdmi_format_para));
-	tx_comm->fmt_para.hdmitx_vinfo.cs = para->cs;
-	tx_comm->fmt_para.hdmitx_vinfo.cd = para->cd;
+	memcpy(&tx_comm->hdmitx_vinfo, &para->deprecated_vinfo, sizeof(struct vinfo_s));
+
+	/*dynamic info, always need set.s*/
+	tx_comm->hdmitx_vinfo.cs = para->cs;
+	tx_comm->hdmitx_vinfo.cd = para->cd;
 }
 
 struct vsif_debug_save vsif_debug_info;
@@ -7826,11 +7829,11 @@ static int drm_hdmitx_get_timing_para(int vic, struct drm_hdmitx_timing_para *pa
 
 	timing = &hdmi_para->timing;
 
-	strncpy(para->name, hdmi_para->hdmitx_vinfo.name, DRM_DISPLAY_MODE_LEN);
-	para->sync_dura_num = hdmi_para->hdmitx_vinfo.sync_duration_num;
-	para->sync_dura_den = hdmi_para->hdmitx_vinfo.sync_duration_den;
-	if (hdmi_para->hdmitx_vinfo.field_height !=
-		hdmi_para->hdmitx_vinfo.height)
+	strncpy(para->name, hdmi_para->deprecated_vinfo.name, DRM_DISPLAY_MODE_LEN);
+	para->sync_dura_num = hdmi_para->deprecated_vinfo.sync_duration_num;
+	para->sync_dura_den = hdmi_para->deprecated_vinfo.sync_duration_den;
+	if (hdmi_para->deprecated_vinfo.field_height !=
+		hdmi_para->deprecated_vinfo.height)
 		para->pi_mode = 0;
 	else
 		para->pi_mode = 1;

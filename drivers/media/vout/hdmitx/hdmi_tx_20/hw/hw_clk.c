@@ -1010,7 +1010,7 @@ next:
 	set_vid_clk_div(hdev, p_enc[j].vid_clk_div);
 	set_hdmi_tx_pixel_div(hdev, p_enc[j].hdmi_tx_pixel_div);
 
-	if (hdev->tx_comm.fmt_para.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI) {
+	if (hdev->tx_comm.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI) {
 		set_enci_div(hdev, p_enc[j].enci_div);
 		hdmitx_enable_enci_clk(hdev);
 	} else {
@@ -1167,7 +1167,7 @@ void hdmitx_set_clk(struct hdmitx_dev *hdev)
 void hdmitx_disable_clk(struct hdmitx_dev *hdev)
 {
 	/* cts_encp/enci_clk */
-	if (hdev->tx_comm.fmt_para.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI)
+	if (hdev->tx_comm.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI)
 		hdmitx_disable_enci_clk(hdev);
 	else
 		hdmitx_disable_encp_clk(hdev);

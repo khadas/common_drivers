@@ -36,6 +36,7 @@ struct hdmitx_common {
 	u32 cur_VIC;
 	/*current format para.*/
 	struct hdmi_format_para fmt_para;
+	struct vinfo_s hdmitx_vinfo;
 
 	/* allm_mode: 1/on 0/off */
 	u32 allm_mode;

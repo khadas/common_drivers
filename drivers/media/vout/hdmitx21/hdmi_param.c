@@ -319,8 +319,7 @@ int hdmitx21_get_fmtpara(const char *mode, const char *attr, struct hdmi_format_
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-//	struct hdmi_format_para *para = &tx_comm->fmt_para;
-	struct vinfo_s *tx_vinfo = &para->hdmitx_vinfo;
+	struct vinfo_s *tx_vinfo = &tx_comm->hdmitx_vinfo;
 	const struct hdmi_timing *timing;
 
 	if (!mode || !attr)

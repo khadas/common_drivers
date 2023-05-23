@@ -8,7 +8,7 @@
 #include "meson-a1.dtsi"
 
 / {
-	amlogic-dt-id = "a1-a113l-ad403-spk";
+	amlogic-dt-id = "a1-a113l_ad403_spk";
 	compatible = "a1-a113l-ad403-spk";
 
 	aliases {

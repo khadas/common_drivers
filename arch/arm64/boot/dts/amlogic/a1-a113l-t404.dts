@@ -8,8 +8,8 @@
 #include "meson-a1.dtsi"
 
 / {
-	amlogic-dt-id = "a1-a113l_ad403_spk";
-	compatible = "a1-a113l-ad403-spk";
+	amlogic-dt-id = "a1-a113l_t404_spk";
+	compatible = "a1-a113l-t404";
 
 	aliases {
 		serial0 = &uart_B;
@@ -37,7 +37,6 @@
 		ranges;
 
 		dsp_fw_reserved:linux,dsp_fw {
-			status = "disabled";
 			compatible = "shared-dma-pool";
 			reusable;
 			size = <0x0 0x1400000>;
@@ -51,23 +50,121 @@
 			reg = <0x0 0x03d00000 0x0 0x00300000>;
 			no-map;
 		};
+
+		/* global autoconfigured region for contiguous allocations */
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x800000>;
+			alignment = <0x400000>;
+			linux,cma-default;
+		};
 	};
 
-	bat: battery {
-		compatible = "simple-battery";
-		charge-full-design-microamp-hours = <1900000>;
-		charge-term-current-microamp = <120000>;
-		constant_charge_voltage_max_microvolt = <4200000>;
-		factory-internal-resistance-micro-ohms = <98000>;
-		ocv-capacity-celsius = <20>;
-		ocv-capacity-table-0 =
-			<4115000 100>, <4088750 95>, <4052500 90>,
-			<4016250 85>, <3980000 80>, <3943750 75>,
-			<3907500 70>, <3871250 65>, <3835000 60>,
-			<3798750 55>, <3762500 50>, <3726250 45>,
-			<3690000 40>, <3653750 35>, <3617500 30>,
-			<3581250 25>, <3545000 20>, <3508750 15>,
-			<3472500 10>, <3436250 5>, <3400000 0>;
+	battery_4v2: regulator-battery_4v2 {
+		compatible = "regulator-fixed";
+		regulator-name = "4V2";
+		regulator-min-microvolt = <4200000>;
+		regulator-max-microvolt = <4200000>;
+		regulator-always-on;
+	};
+
+	vddq_1v35: regulator-vddq_1v35 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDDQ_1V35";
+		regulator-min-microvolt = <1350000>;
+		regulator-max-microvolt = <1350000>;
+		vin-supply = <&battery_4v2>;
+		regulator-always-on;
+	};
+
+	vddao_3v3: regulator-vddao_3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDDAO_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&battery_4v2>;
+		regulator-always-on;
+	};
+
+	vcc_3v3: regulator-vcc_3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&vddao_3v3>;
+		regulator-always-on;
+	};
+
+	vddio_1v8: regulator-vddio_1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDDIO_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vddao_3v3>;
+		regulator-always-on;
+	};
+
+	main_12v: regulator-main_12v {
+		compatible = "regulator-fixed";
+		regulator-name = "12V";
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+		regulator-always-on;
+	};
+
+	vcc_3v3: regulator-vcc_3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&main_12v>;
+		regulator-always-on;
+	};
+
+	vddio_3v3: regulator-vddio_3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDDIO_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&vcc_3v3>;
+		regulator-always-on;
+	};
+
+	vcc_1v8: regulator-vcc_1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vcc_3v3>;
+		regulator-always-on;
+	};
+
+	vcc_5v: regulator-vcc_5v {
+		compatible = "regulator-fixed";
+		regulator-name = "VCC_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		vin-supply = <&main_12v>;
+		regulator-always-on;
+	};
+
+	avddao_1v8: regulator-avddao_1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "AVDDAO_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vcc_5v>;
+		regulator-always-on;
+	};
+
+	vddio_ao_3v3: regulator-vddio_ao_3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDDIO_AO_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&vcc_5v>;
+		regulator-always-on;
 	};
 
 	/* Audio Related start */
@@ -89,7 +186,7 @@
 		 *0:single end output
 		 *1:differential output
 		 */
-		dacr_output_inv = <1>;
+		dacr_output_inv = <0>;
 		power-domains = <&pwrdm PDID_ACODEC>;
 	};
 
@@ -98,7 +195,7 @@
 		aml-audio-card,name = "AML-AUGESOUND";
 
 		/*avout mute gpio*/
-		avout_mute-gpios = <&gpio GPIOF_4 GPIO_ACTIVE_HIGH>;
+		avout_mute-gpios = <&gpio GPIOF_4 GPIO_ACTIVE_LOW>;
 
 		aml-audio-card,dai-link@0 {
 			format = "dsp_a";
@@ -214,44 +311,9 @@
 		frequency = <49000000>; /* pll */
 		dividor = <49>; /* locker's parent */
 		power-domains = <&pwrdm PDID_AUDIO>;
-		status = "disabled";
+		status = "okay";
 	};
 	/* Audio Related end */
-
-	adc_keypad {
-		compatible = "amlogic, adc_keypad";
-		status = "okay";
-		key_name = "mute", "vol-", "vol+", "play";
-		key_num = <4>;
-		io-channels = <&saradc 0>;
-		io-channel-names = "key-chan-0";
-		key_chan = <0 0 0 0>;
-		key_code = <113 114 115 207>;
-		key_val = <510 267 141 0>; //val=voltage/1800mV*1023
-		key_tolerance = <40 40 40 40>;
-	};
-
-	gpio_keypad{
-		compatible = "amlogic, gpio_keypad";
-		status = "okay";
-		scan_period = <20>;
-		key_num = <1>;
-		key_name = "power";
-		key_code = <116>;
-		key-gpios = <&gpio GPIOF_9 GPIO_ACTIVE_HIGH>;
-		detect_mode = <0>;/*0:polling mode, 1:irq mode*/
-	};
-
-	gpioleds {
-		compatible = "gpio-leds";
-		status = "okay";
-
-		spi_led_en {
-			label="spi_led_en";
-			gpios=<&gpio GPIOA_1 GPIO_ACTIVE_HIGH>;
-			default-state ="on";
-		};
-	};
 
 	pwmleds {
 		compatible = "pwm-leds";
@@ -365,7 +427,9 @@
 				&clkc CLKID_FCLK_DIV3>;
 		clock-names = "mclk", "mclk_pad", "clk_srcpll";
 		pinctrl-names = "tdm_pins";
-		pinctrl-0 = <&tdmb_mclk>;
+		pinctrl-0 = <&tdmb_mclk &tdmout_b>;
+
+		mclk_pad = <0>;  /* 0: mclk_0; 1: mclk_1 */
 
 		/* tdmin data comes from ACODEC adc */
 		acodec_adc = <1>;
@@ -658,16 +722,6 @@
 
 	/* Audio Related end */
 
-	/* spi-led */
-	spicc0_led_pins_a: spicc0_led_pins_a {
-		mux {
-			groups = "spi_a_mosi_a";
-			function = "spi_a";
-			bias-pull-down;
-			drive-strength = <2>;
-		};
-	};
-
 }; /* end of pinctrl_periphs */
 
 &uart_B {
@@ -729,11 +783,11 @@
 };
 
 &cpu0 {
-	cpu-supply = <&VDD_CORE>;
+	cpu-supply = <&vddcpu0>;
 };
 
 &cpu1 {
-	cpu-supply = <&VDD_CORE>;
+	cpu-supply = <&vddcpu0>;
 };
 
 &pwm_ef {
@@ -744,7 +798,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pwm_f_pins4>;
 	pwms = <&pwm_ef MESON_PWM_1 1500 0>;
-	status = "disable";
+	status = "okay";
 };
 
 &dwc2_a {
@@ -765,18 +819,18 @@
 &usb3_phy_v2 {
 	status = "okay";
 	portnum = <0>;
+	otg = <2>;
 };
 
 &aml_bt {
 	status = "okay";
-	hostwake-gpios = <&gpio       GPIOP_1       GPIO_ACTIVE_HIGH>;
-	bt_en-gpios = <&gpio       GPIOX_6       GPIO_ACTIVE_HIGH>;
+	//hostwake-gpios = <&gpio       GPIOX_10       GPIO_ACTIVE_HIGH>;
 
 };
 
 &aml_wifi {
 	status = "okay";
-	interrupt-gpios = <&gpio       GPIOP_0       GPIO_ACTIVE_HIGH>;
+	/* interrupt-gpios = <&gpio       GPIOX_9       GPIO_ACTIVE_HIGH>; */
 };
 
 &pwm_cd {
@@ -787,115 +841,8 @@
 	status = "okay";
 };
 
-&i2c0 {
-	status = "okay";
-	pinctrl-names="default", "sleep";
-	pinctrl-0 = <&i2c0_master_pins1>;
-	pinctrl-1 = <&i2c0_master_sleep_pins1>;
-	clock-frequency = <100000>; /* default 100k */
-
-	pmic@35 {
-		compatible = "amlogic,pmic6b";
-		status = "okay";
-		reg = <0x35>;
-		interrupt-parent = <&gpio_intc>;
-		//interrupts = <47 IRQ_TYPE_EDGE_RISING>;
-		pmic_irq-gpio = <&gpio GPIOF_10 GPIO_ACTIVE_HIGH>;
-		system-power-controller;
-		interrupt-controller;
-		#interrupt-cells = <2>;
-		gpio-controller;
-		#gpio-cells = <2>;
-
-		regulators {
-			VDD_CORE: DCDC1 {
-				regulator-name = "VDD_CORE";
-				regulator-min-microvolt = <500000>;
-				regulator-max-microvolt = <1200000>;
-				regulator-boot-on;
-				regulator-always-on;
-				regulator-state-mem {
-					regulator-on-in-suspend;
-				};
-			};
-
-			VDDQ: DCDC2 {
-				regulator-name = "VDDQ";
-				regulator-min-microvolt = <800000>;
-				regulator-max-microvolt = <1900000>;
-				regulator-boot-on;
-				regulator-always-on;
-				regulator-state-mem {
-					regulator-off-in-suspend;
-				};
-			};
-
-			VCC_3_3V: DCDC3 {
-				regulator-name = "VCC_3_3V";
-				regulator-min-microvolt = <3000000>;
-				regulator-max-microvolt = <3600000>;
-				regulator-boot-on;
-				regulator-always-on;
-				regulator-state-mem {
-					regulator-on-in-suspend;
-				};
-			};
-
-			AVDD_1_8V: LDO1 {
-				regulator-name = "AVDD_1_8V";
-				regulator-min-microvolt = <1660000>;
-				regulator-max-microvolt = <2200000>;
-				regulator-boot-on;
-				regulator-always-on;
-				regulator-state-mem {
-					regulator-off-in-suspend;
-				};
-			};
-
-			MIC_BIA_3_3V: LDO2 {
-				regulator-name = "MIC_BIA_3_3V";
-				regulator-min-microvolt = <700000>;
-				regulator-max-microvolt = <3800000>;
-				regulator-boot-on;
-				regulator-always-on;
-				regulator-state-mem {
-					regulator-off-in-suspend;
-				};
-			};
-
-			VCC_1_8V: LDO3 {
-				regulator-name = "VCC_1_8V";
-				regulator-min-microvolt = <800000>;
-				regulator-max-microvolt = <3800000>;
-				regulator-boot-on;
-				//regulator-always-on;
-				regulator-state-mem {
-					regulator-off-in-suspend;
-				};
-			};
-		};
-
-		gpio {
-			compatible = "amlogic,pmic6b-gpio";
-		};
-
-		pwrkey {
-			compatible = "amlogic,pmic6b-pwrkey";
-		};
-		charger {
-			status = "okay";
-			compatible = "amlogic,pmic6b-battery";
-			monitored-battery = <&bat>;
-		};
-
-		rtc {
-			compatible = "amlogic,pmic6b-rtc";
-		};
-	};
-};
-
 &i2c1 {
-	status = "disabled";
+	status = "okay";
 	pinctrl-names="default";
 	pinctrl-0=<&i2c1_master_pins2>;
 	clock-frequency = <100000>; /* default 100k */
@@ -903,7 +850,7 @@
 	csk05: csk05@15{
 		compatible = "hynitron, csk05_ts";
 		reg = <0x15>;
-		status = "disabled";
+		status = "okay";
 		reset_pin     = <&gpio GPIOF_11 GPIO_ACTIVE_HIGH>;
 		interrupt_pin = <&gpio GPIOF_10 IRQ_TYPE_LEVEL_LOW>;
 
@@ -934,31 +881,26 @@
 //	sd-uhs-sdr50;
 //	sd-uhs-sdr104;
 	non-removable;
-	keep-power-in-suspend;
 	max-frequency = <200000000>;
 	disable-wp;
 	cap-sdio-irq;
+	keep-power-in-suspend;
 	card_type = <3>;
 
-//	vmmc-supply = <&VCC_3_3V>;
-//	vqmmc-supply = <&VCC_1_8V>;
+	vmmc-supply = <&vcc_3v3>;
+	vqmmc-supply = <&vcc_1v8>;
 };
 
 &saradc {
 	status = "okay";
+	vref-supply = <&avddao_1v8>;
 };
 
 &spicc0 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
-	pinctrl-0 = <&spicc0_led_pins_a>;
-	//cs-gpios = <&gpio GPIOA_8 0>;
-	spidev@0 {
-		compatible = "rohm,dh2228fv";
-		status = "okay";
-		reg = <0>;
-		spi-max-frequency = <3340000>;
-	};
+	pinctrl-0 = <&spicc0_pins_a>;
+	cs-gpios = <&gpio GPIOA_8 0>;
 };
 
 &pwm_ab {

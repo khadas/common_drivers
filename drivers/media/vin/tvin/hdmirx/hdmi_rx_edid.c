@@ -499,7 +499,9 @@ void hdmirx_fill_edid_with_port_buf(const char *buf, int size)
 	u8 port_num;
 	u8 edid_type;
 	u32 i = 0;
-	bool err_chk = false;
+	u32 j = 0;
+	u32 k = 0;
+	unsigned char buff[512] = {0};
 
 	if (edid_delivery_mothed == EDID_DELIVERY_ALL_PORT)
 		rx_pr("!!Error, use 2 methods to delivery edid\n");
@@ -508,7 +510,7 @@ void hdmirx_fill_edid_with_port_buf(const char *buf, int size)
 	rx_pr("%s edid size %d", __func__, size);
 
 	port_num = (buf[0] & 0x0f) - 1;
-	edid_type = buf[0] >> 0xf;
+	edid_type = buf[0] >> 0x4;
 	if (hdmi_cec_en) {
 		port_hpd_rst_flag |= 1 << port_num;
 		rx_set_port_hpd(port_num, 0);
@@ -532,8 +534,10 @@ void hdmirx_fill_edid_with_port_buf(const char *buf, int size)
 		default:
 			rx_pr("port 0 err edid_type\n");
 		}
-		if (is_valid_edid_data(edid_buf1))
-			err_chk = true;
+		if (!is_valid_edid_data(edid_buf1))
+			rx_pr("1.4 edid error\n");
+		if (!is_valid_edid_data(edid_buf1 + 512))
+			rx_pr("2.0 edid error\n");
 	break;
 	case 1:
 		switch (edid_type) {
@@ -552,8 +556,10 @@ void hdmirx_fill_edid_with_port_buf(const char *buf, int size)
 		default:
 			rx_pr("port 1 err edid_type\n");
 		}
-		if (is_valid_edid_data(edid_buf2))
-			err_chk = true;
+		if (!is_valid_edid_data(edid_buf2))
+			rx_pr("1.4 edid error\n");
+		if (!is_valid_edid_data(edid_buf2 + 512))
+			rx_pr("2.0 edid error\n");
 	break;
 	case 2:
 		switch (edid_type) {
@@ -572,8 +578,10 @@ void hdmirx_fill_edid_with_port_buf(const char *buf, int size)
 		default:
 			rx_pr("port 2 err edid_type\n");
 		}
-		if (is_valid_edid_data(edid_buf3))
-			err_chk = true;
+		if (!is_valid_edid_data(edid_buf3))
+			rx_pr("1.4 edid error\n");
+		if (!is_valid_edid_data(edid_buf3 + 512))
+			rx_pr("2.0 edid error\n");
 	break;
 	case 3:
 		switch (edid_type) {
@@ -592,17 +600,19 @@ void hdmirx_fill_edid_with_port_buf(const char *buf, int size)
 		default:
 			rx_pr("port 3 err edid_type\n");
 		}
-		if (is_valid_edid_data(edid_buf4))
-			err_chk = true;
+		if (!is_valid_edid_data(edid_buf4))
+			rx_pr("1.4 edid error\n");
+		if (!is_valid_edid_data(edid_buf4 + 512))
+			rx_pr("2.0 edid error\n");
 	break;
 	}
 	rx_pr("EDID port%d - size %d\n", port_num, size);
-	if (err_chk && log_level & EDID_LOG) {
-		rx_pr("EDID size =%d\n", size);
-		for (i = 0; i < size; i++) {
-			if (i % 128)
-				rx_pr("\n");
-			pr_cont("%x", buf[i]);
+	if (log_level & EDID_LOG) {
+		for (i = 0; i * 16 < size; i++) {
+			for (j = 0; j < 16; j++)
+				k += sprintf(buff + k, "%02x", buf[i * 16 + j]);
+			pr_info("%s", buff);
+			k = 0;
 		}
 	}
 }
@@ -4754,8 +4764,10 @@ bool hdmi_rx_top_edid_update(void)
 	//rx_edid_module_reset();
 	for (i = 0; i < rx_info.port_num; i++) {
 		pedid = rx_get_cur_def_edid(i);
-		if (!is_valid_edid_data(pedid))
+		if (!is_valid_edid_data(pedid)) {
 			rx_pr("port-%d edid err!\n", i);
+			return false;
+		}
 
 		rx_edid_update_hdr_dv_info(pedid);
 		rx_edid_update_sad(pedid);

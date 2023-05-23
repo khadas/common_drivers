@@ -38,7 +38,8 @@
 //bring up sync to 5.15
 //2023.5.17
 //support filmmaker mode
-#define RX_VER0 "ver.2023/05/17"
+//fix no edid result in system crash
+#define RX_VER0 "ver.2023/05/23"
 
 /*print type*/
 #define COR1_LOG	0x10000

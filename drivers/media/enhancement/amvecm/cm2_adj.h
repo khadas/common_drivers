@@ -63,6 +63,7 @@ struct cm_color_md {
 	int color_value;
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /*H00 ~ H31*/
 #define CM2_ENH_COEF0_H00 0x100
 #define CM2_ENH_COEF1_H00 0x101
@@ -95,4 +96,4 @@ void cm2_sat(struct cm_color_md cm_color_mode, int sat_val, int lpf_en);
 void default_sat_param(unsigned int reg, unsigned int value);
 
 #endif
-
+#endif

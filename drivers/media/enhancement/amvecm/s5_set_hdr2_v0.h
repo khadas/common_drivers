@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef AM_S5_HDR2_V0
 #define AM_S5_HDR2_V0
 //#include <linux/types.h>
@@ -51,4 +52,5 @@ void write_dma_buf(u32 table_offset, u32 tbl_id, u32 value);
 void init_vpu_lut_dma(struct VPU_LUT_DMA_t       *vpu_lut_dma);
 void set_vpu_lut_dma(struct VPU_LUT_DMA_t *vpu_lut_dma);
 
+#endif
 #endif

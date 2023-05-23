@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include <linux/string.h>
 #include <linux/spinlock.h>
 #include <linux/module.h>
@@ -951,4 +952,5 @@ void ble_whe_param_update(struct ve_ble_whe_param_s *p)
 		pr_info("brt_start = %d\n", ble_whe_param->brt_start);
 	}
 }
+#endif
 

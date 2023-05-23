@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include <linux/types.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -681,3 +682,4 @@ int hdr10_tmo_dbg(char **parm)
 error:
 	return -1;
 }
+#endif

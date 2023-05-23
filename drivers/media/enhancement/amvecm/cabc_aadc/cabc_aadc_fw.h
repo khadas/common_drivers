@@ -15,6 +15,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef CABC_AADC_H
 #define CABC_AADC_H
 
@@ -30,4 +31,5 @@ int cabc_aad_debug(char **param);
 ssize_t cabc_aad_print(char *buf);
 int *vf_hist_get(void);
 int fw_en_get(void);
+#endif
 #endif

@@ -201,12 +201,14 @@ struct stvlock_frc_param {
 
 //void amve_vlock_process(struct vframe_s *vf);
 //void amve_vlock_resume(void);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void vlock_param_set(unsigned int val, enum vlock_param_e sel);
 void vlock_status(struct stvlock_sig_sts *pvlock);
 void vlock_reg_dump(struct stvlock_sig_sts *pvlock);
 void vlock_log_start(void);
 void vlock_log_stop(void);
 void vlock_log_print(void);
+#endif
 
 #define VLOCK_STATE_NULL 0
 #define VLOCK_STATE_ENABLE_STEP1_DONE 1
@@ -325,11 +327,13 @@ extern unsigned int vecm_latch_flag;
 extern unsigned int probe_ok;
 extern u32 phase_en_after_frqlock;
 extern u32 vlock_ss_en;
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void lcd_ss_enable(bool flag);
 unsigned int lcd_ss_status(void);
+#endif
 int amvecm_hiu_reg_read(unsigned int reg, unsigned int *val);
 int amvecm_hiu_reg_write(unsigned int reg, unsigned int val);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void vdin_vlock_input_sel(struct stvlock_sig_sts *vlock, unsigned int type,
 			  enum vframe_source_type_e source_type);
 void vlock_param_config(struct device_node *node);
@@ -361,4 +365,4 @@ int vlock_sync_frc_vporch(struct stvlock_frc_param frc_param);
 void vlock_set_sts_by_frame_lock(bool en);
 //void vlock_clk_config(struct device *dev);
 void vlock_hiu_reg_config(struct device *dev);
-
+#endif

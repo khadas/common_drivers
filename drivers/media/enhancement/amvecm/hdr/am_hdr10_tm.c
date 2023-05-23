@@ -15,6 +15,8 @@
  * more details.
  *
  */
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include <linux/types.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -522,4 +524,4 @@ int hdr10_tm_dynamic_proc(struct vframe_master_display_colour_s *p)
 
 	return 0;
 }
-
+#endif

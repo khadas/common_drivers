@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* Standard Linux headers */
 #include <linux/types.h>
 #include <linux/mm.h>
@@ -1222,3 +1223,4 @@ finish_detect:
 
 	return rc;
 }
+#endif

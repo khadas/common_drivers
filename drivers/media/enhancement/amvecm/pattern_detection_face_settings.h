@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __PATTERN_DETECTION_FACE_SETTINGS__
 #define __PATTERN_DETECTION_FACE_SETTINGS__
 
@@ -63,4 +64,4 @@ static struct setting_regs_s face_cvd2_settings[] = {
 };
 
 #endif
-
+#endif

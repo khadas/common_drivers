@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef AM_HDR10_PLUS_OOTF_H
 #define AM_HDR10_PLUS_OOTF_H
 
@@ -146,4 +147,4 @@ int hdr10_plus_ootf_gen(int panel_lumin,
 			int force_source_lumin,
 			struct hdr10pgen_param_s *hdr10pgen_param);
 #endif /* AM_HDR10_PLUS_OOTF_H */
-
+#endif

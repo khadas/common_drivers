@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __AM_CM_REGMAP_H
 #define __AM_CM_REGMAP_H
 
@@ -1628,4 +1629,4 @@ struct dejaggy_regs_s sr0_dej_setting[DEJAGGY_LEVEL] = {
 	},
 };
 #endif
-
+#endif

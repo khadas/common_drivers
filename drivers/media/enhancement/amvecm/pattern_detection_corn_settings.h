@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __PATTERN_DETECTION_CORN_SETTINGS__
 #define __PATTERN_DETECTION_CORN_SETTINGS__
 
@@ -51,4 +52,4 @@ static struct setting_regs_s corn_cvd2_settings[] = {
 };
 
 #endif
-
+#endif

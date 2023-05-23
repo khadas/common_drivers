@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include <linux/string.h>
 #include <linux/spinlock.h>
 #include <linux/module.h>
@@ -3042,4 +3043,4 @@ void post_lut3d_section_read(int index, int section_len,
 	WRITE_VPP_REG(reg_ram_ctrl, 0);
 }
 #endif
-
+#endif

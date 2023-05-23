@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __AM_VE_GAMMATABLE_H
 #define __AM_VE_GAMMATABLE_H
 
@@ -83,4 +84,4 @@ struct tcon_gamma_table_s video_curve_2d2 = {
 	},
 };
 #endif
-
+#endif

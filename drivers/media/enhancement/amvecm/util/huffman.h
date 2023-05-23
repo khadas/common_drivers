@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef ____HUFFMAN_H
 #define ____HUFFMAN_H
 
@@ -62,4 +63,5 @@ unsigned long huffman_decompress(const unsigned char *in, unsigned long inlen,
 				 unsigned char *out,
 				 unsigned long outlen, void *huffheap);
 
+#endif
 #endif

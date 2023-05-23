@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __PATTERN_DETECTION_COLORBAR_SETTINGS__
 #define __PATTERN_DETECTION_COLORBAR_SETTINGS__
 
@@ -283,4 +284,4 @@ static struct setting_regs_s colorbar_vpp_settings[] = {
 	 */
 };
 #endif
-
+#endif

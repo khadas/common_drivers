@@ -19,6 +19,7 @@
 #include <linux/amlogic/media/vfm/vframe.h>
 #include <linux/amlogic/media/video_common.h>
 #include <linux/amlogic/media/amvecm/amvecm.h>
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
 #endif
@@ -219,9 +220,11 @@ static void hdr_proc_multi_slices(struct vframe_s *vf,
 		hdr_proc(vf, S5_VD1_SLICE3, hdr_process_select, vinfo, gmt_mtx, vpp_index);
 	}
 }
+#endif
 
 void get_hdr_process_name(int id, char *name, char *output_fmt)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int index;
 
 	if (id > VD_PATH_MAX - 1)
@@ -230,9 +233,11 @@ void get_hdr_process_name(int id, char *name, char *output_fmt)
 	memcpy(name, process_str[index], strlen(process_str[index]) + 1);
 	memcpy(output_fmt, output_str[target_format[id]],
 	       strlen(output_str[target_format[id]]) + 1);
+#endif
 }
 EXPORT_SYMBOL(get_hdr_process_name);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifdef T7_BRINGUP_MULTI_VPP
 int hdr_policy_process_t7(struct vinfo_s *vinfo,
 		       enum hdr_type_e *source_format,
@@ -2743,3 +2748,4 @@ void video_post_process(struct vframe_s *vf,
 		cur_csc_type[vd_path] = csc_type;
 	}
 }
+#endif

@@ -23,6 +23,7 @@
 #include <linux/amlogic/media/amvecm/hdr2_ext.h>
 #include "hdr/am_hdr10_plus_ootf.h"
 #include "amcsc.h"
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 
 #ifndef MAX
 #define MAX(x1, x2) ({ \
@@ -205,4 +206,5 @@ struct VPU_LUT_DMA_t {
 	u32 chan_little_endian[16];
 	u32 chan_swap_64bit[16];
 };
+#endif
 #endif

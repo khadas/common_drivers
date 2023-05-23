@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __AML_FRAME_LOCK_POLICY_H__
 #define __AML_FRAME_LOCK_POLICY_H__
 #include <linux/amlogic/media/vrr/vrr.h>
@@ -57,4 +58,5 @@ u16 frame_lock_get_vrr_status(void);
 void frame_lock_set_vrr_support_flag(bool support_flag);
 void frame_lock_param_config(struct device_node *node);
 
+#endif
 #endif

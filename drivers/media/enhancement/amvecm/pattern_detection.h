@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __PATTERN_DETECTION__
 #define __PATTERN_DETECTION__
 #include <linux/amlogic/media/amvecm/cm.h>
@@ -85,4 +86,4 @@ int init_pattern_detect(void);
 int pattern_detect(struct vframe_s *vf);
 
 #endif
-
+#endif

@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __REG_DEFAULT_SETTING_H
 #define __REG_DEFAULT_SETTING_H
 
@@ -996,4 +997,4 @@ struct am_regs_s s1_sr1_default = {
 };
 
 #endif
-
+#endif

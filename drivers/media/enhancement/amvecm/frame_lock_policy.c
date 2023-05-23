@@ -10,6 +10,7 @@
 #include <linux/amlogic/media/video_sink/vpp.h>
 #include <linux/amlogic/media/registers/cpu_version.h>
 #include <linux/amlogic/media/amvecm/amvecm.h>
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include "reg_helper.h"
@@ -235,20 +236,24 @@ bool frame_lock_check_freerun_mode(struct vinfo_s *vinfo)
 
 	return ret;
 }
+#endif
 
 bool frame_lock_vrr_lock_status(void)
 {
 	int ret = false;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (aml_vrr_state()/*&& vrr_lcnt_variance <= 5*/)
 		ret = true;
 
 	if (frame_lock_debug & VRR_POLICY_LOCK_STATUS_DEBUG_FLAG)
 		framelock_pr_info("lock_status = %d\n", ret);
+#endif
 
 	return ret;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 bool frame_lock_lfc_mode_check(void)
 {
 	bool ret = false;
@@ -574,6 +579,7 @@ void vrrlock_process(struct vframe_s *vf,
 			frame_sts.vrr_policy_pre,
 			frame_sts.vrr_policy);
 }
+#endif
 
 /*
  * Summary:
@@ -589,6 +595,7 @@ void vrrlock_process(struct vframe_s *vf,
 void frame_lock_process(struct vframe_s *vf,
 		   struct vpp_frame_par_s *cur_video_sts)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (probe_ok == 0) {
 		return;
 	}
@@ -624,6 +631,7 @@ void frame_lock_process(struct vframe_s *vf,
 
 	frame_sts.vrr_frame_pre_sts = frame_sts.vrr_frame_lock_type;
 	frame_sts.vrr_policy_pre = frame_sts.vrr_policy;
+#endif
 }
 
 /* vrr/freesync signel and game mode vrr instead vlock low latency */
@@ -631,12 +639,15 @@ bool frame_lock_type_vrr_lock(void)
 {
 	bool ret = false;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (frame_sts.vrr_frame_lock_type == FRAMELOCK_VRRLOCK)
 		ret = true;
+#endif
 
 	return ret;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 ssize_t frame_lock_debug_store(struct class *cla,
 			  struct class_attribute *attr,
 		const char *buf, size_t count)
@@ -708,4 +719,4 @@ ssize_t frame_lock_debug_show(struct class *cla,
 
 	return len;
 }
-
+#endif

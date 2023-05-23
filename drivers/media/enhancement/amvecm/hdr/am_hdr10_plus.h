@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef AM_HDR_H
 #define AM_HDR_H
 
@@ -165,4 +166,4 @@ void cuva_hdr_vsif_pkt_update(struct cuva_hdr_vsif_para *vsif_para);
 void cuva_hdr_emds_pkt_update(struct cuva_hdr_vs_emds_para *edms_para);
 extern struct cuva_hdr_dynamic_metadata_s cuva_metadata;
 #endif /* AM_HDR_H */
-
+#endif

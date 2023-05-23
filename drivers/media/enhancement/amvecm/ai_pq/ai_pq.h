@@ -15,7 +15,7 @@
  * more details.
  *
  */
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef AI_PQ_H
 #define AI_PQ_H
 /*adaptive dnlp parameters for ai pq*/
@@ -64,4 +64,5 @@ int aipq_base_peaking_param(unsigned int reg,
 			    unsigned int mask,
 			    unsigned int value);
 int aipq_base_satur_param(int value);
+#endif
 #endif

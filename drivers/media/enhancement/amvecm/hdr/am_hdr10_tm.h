@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "../amcsc.h"
 #include "am_hdr10_tmo_fw.h"
 
@@ -31,4 +32,5 @@
 
 extern unsigned int panell;
 int hdr10_tm_dynamic_proc(struct vframe_master_display_colour_s *p);
+#endif
 #endif

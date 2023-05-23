@@ -27,7 +27,9 @@
 
 void amvecm_drm_init(u32 index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	amvecm_gamma_init(1);
+#endif
 }
 EXPORT_SYMBOL(amvecm_drm_init);
 
@@ -41,6 +43,7 @@ EXPORT_SYMBOL(amvecm_drm_get_gamma_size);
 /*get gamma table*/
 int amvecm_drm_gamma_get(u32 index, u16 *red, u16 *green, u16 *blue)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int i = 0;
 
 	for (i = 0; i < GAMMA_SIZE; i++) {
@@ -48,6 +51,7 @@ int amvecm_drm_gamma_get(u32 index, u16 *red, u16 *green, u16 *blue)
 		green[i] = video_gamma_table_g.data[i] << 6;
 		blue[i] = video_gamma_table_b.data[i] << 6;
 	}
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(amvecm_drm_gamma_get);
@@ -55,6 +59,7 @@ EXPORT_SYMBOL(amvecm_drm_gamma_get);
 /*set gamma table*/
 int amvecm_drm_gamma_set(u32 index, struct drm_color_lut *lut, int lut_size)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int i = 0;
 
 	if (lut_size != GAMMA_SIZE) {
@@ -71,6 +76,7 @@ int amvecm_drm_gamma_set(u32 index, struct drm_color_lut *lut, int lut_size)
 	vecm_latch_flag |= FLAG_GAMMA_TABLE_R;
 	vecm_latch_flag |= FLAG_GAMMA_TABLE_G;
 	vecm_latch_flag |= FLAG_GAMMA_TABLE_B;
+#endif
 
 	return 0;
 }
@@ -79,7 +85,9 @@ EXPORT_SYMBOL(amvecm_drm_gamma_set);
 /*gamma enable*/
 int amvecm_drm_gamma_enable(u32 index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vecm_latch_flag |= FLAG_GAMMA_TABLE_EN;
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(amvecm_drm_gamma_enable);
@@ -87,7 +95,9 @@ EXPORT_SYMBOL(amvecm_drm_gamma_enable);
 /*gamma disable*/
 int amvecm_drm_gamma_disable(u32 index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	vecm_latch_flag |= FLAG_GAMMA_TABLE_DIS;
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(amvecm_drm_gamma_disable);

@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 // drivers/amlogic/media/enhancement/amvecm/am_lut3d.c
 
 /* #include <mach/am_regs.h> */
@@ -49,3 +50,4 @@ void lut3d_set_api(void)
 	}
 }
 
+#endif

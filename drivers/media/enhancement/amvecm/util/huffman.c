@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "huffman.h"
 
 struct _huffman_node {
@@ -258,4 +259,4 @@ unsigned long huffman_decompress(const unsigned char *in,
 		out[outptr++] = (unsigned char)n->c;
 	}
 }
-
+#endif

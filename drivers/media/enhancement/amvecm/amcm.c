@@ -36,12 +36,14 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "amcsc.h"
 #include "local_contrast.h"
-#include "amve.h"
 #include "amve_v2.h"
 #include "ai_pq/ai_pq.h"
 #include "cm2_adj.h"
+#endif
+#include "amve.h"
 #include "reg_helper.h"
 
 #define pr_amcm_dbg(fmt, args...)\
@@ -58,22 +60,27 @@ static bool debug_regload;
 module_param(debug_regload, bool, 0664);
 MODULE_PARM_DESC(debug_regload, "\n debug_regload\n");
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int cm_level = 1;/* 0:optimize;1:enhancement */
 module_param(cm_level, int, 0664);
 MODULE_PARM_DESC(cm_level, "\n select cm lever\n");
+#endif
 
 int cm_en;/* 0:disable;1:enable */
 module_param(cm_en, int, 0664);
 MODULE_PARM_DESC(cm_en, "\n enable or disable cm\n");
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static unsigned int cm_width_limit = 50;/* vlsi adjust */
 module_param(cm_width_limit, uint, 0664);
 MODULE_PARM_DESC(cm_width_limit, "\n cm_width_limit\n");
+#endif
 
 int pq_reg_wr_rdma;/* 0:disable;1:enable */
 module_param(pq_reg_wr_rdma, int, 0664);
 MODULE_PARM_DESC(pq_reg_wr_rdma, "\n pq_reg_wr_rdma\n");
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int cm_force_flag;
 
 static int cm_level_last = 0xff;/* 0:optimize;1:enhancement */
@@ -186,6 +193,7 @@ void cm_wr_api(unsigned int addr, unsigned int data,
 		}
 	}
 }
+#endif
 
 void am_set_regmap(struct am_regs_s *p)
 {
@@ -195,12 +203,13 @@ void am_set_regmap(struct am_regs_s *p)
 	unsigned int val = 0;
 	unsigned int addr = 0;
 	unsigned int skip = 0;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct am_reg_s *dejaggy_reg;
 	unsigned int addr_tmp = 0;
 	unsigned int sr_addr_offset = 0x2500;
 
 	dejaggy_reg = sr0_dej_setting[DEJAGGY_LEVEL - 1].am_reg;
-
+#endif
 	for (i = 0; i < p->length; i++) {
 		mask = p->am_reg[i].mask;
 		val = p->am_reg[i].val;
@@ -259,6 +268,7 @@ void am_set_regmap(struct am_regs_s *p)
 			/* (p->am_reg[i].val & p->am_reg[i].mask)); */
 			break;
 		case REG_TYPE_INDEX_VPPCHROMA:
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			/*  add for vm2 demo frame size setting */
 			if (addr == 0x20f) {
 				if ((val & 0xff) != 0) {
@@ -317,12 +327,14 @@ void am_set_regmap(struct am_regs_s *p)
 				cm_wr_api(addr, val, mask, WR_VCB);
 
 			default_sat_param(addr, val);
+#endif
 			break;
 		case REG_TYPE_INDEX_GAMMA:
 			break;
 		case VALUE_TYPE_CONTRAST_BRIGHTNESS:
 			break;
 		case REG_TYPE_INDEX_VPP_COEF:
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			//if (((addr & 0xf) == 0) ||
 			//    ((addr & 0xf) == 0x8)) {
 			if (pq_reg_wr_rdma)
@@ -336,8 +348,10 @@ void am_set_regmap(struct am_regs_s *p)
 			//		cm_wr_api(addr, val, 0xffffffff, WR_VCB);
 			//}
 			default_sat_param(addr, val);
+#endif
 			break;
 		case REG_TYPE_VCBUS:
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			if (addr == offset_addr(SRSHARP0_DEJ_ALPHA)) {
 				dejaggy_reg[1].val = val & 0xff;
 				if (pd_detect_en)
@@ -349,6 +363,7 @@ void am_set_regmap(struct am_regs_s *p)
 				if (pd_detect_en)
 					mask &= ~(0x1);
 			}
+#endif
 
 			if (mask == 0xffffffff) {
 				if (pq_reg_wr_rdma)
@@ -357,6 +372,7 @@ void am_set_regmap(struct am_regs_s *p)
 					aml_write_vcbus_s(p->am_reg[i].addr,
 						p->am_reg[i].val);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 				/*for slice1 sr*/
 				if (chip_type_id == chip_t3x &&
 					addr >= 0x5000 &&
@@ -369,10 +385,12 @@ void am_set_regmap(struct am_regs_s *p)
 							sr_addr_offset,
 							p->am_reg[i].val);
 				}
+#endif
 			} else {
 				if (addr == VPP_MISC)
 					break;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 				if (addr == offset_addr(SRSHARP1_LC_TOP_CTRL)) {
 					if (!lc_en)
 						val = val & 0xffffffef;
@@ -382,6 +400,7 @@ void am_set_regmap(struct am_regs_s *p)
 					mask |= 0x1;
 					val |= 0x1;
 				}
+#endif
 
 				if (pq_reg_wr_rdma) {
 					temp = READ_VPP_REG(addr);
@@ -394,7 +413,7 @@ void am_set_regmap(struct am_regs_s *p)
 						(temp & (~mask)) |
 						(val & mask));
 				}
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 				/*for slice1 sr*/
 				if (chip_type_id == chip_t3x &&
 					addr >= 0x5000 &&
@@ -414,6 +433,7 @@ void am_set_regmap(struct am_regs_s *p)
 				}
 
 				aipq_base_peaking_param(addr, mask, val);
+#endif
 			}
 			break;
 		case REG_TYPE_OFFSET_VCBUS:
@@ -557,7 +577,9 @@ void amcm_disable(enum wr_md_e md)
 		}
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	cm_en_flag = false;
+#endif
 }
 
 void amcm_enable(enum wr_md_e md)
@@ -715,9 +737,12 @@ void amcm_enable(enum wr_md_e md)
 		WRITE_VPP_REG(VPP_CHROMA_DATA_PORT, 0);
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	cm_en_flag = true;
+#endif
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void pd_combing_fix_patch(enum pd_comb_fix_lvl_e level)
 {
 	int i, dejaggy_reg_count;
@@ -1193,4 +1218,4 @@ int cm_load_reg(struct am_regs_s *arg)
 
 	return ret;
 }
-
+#endif

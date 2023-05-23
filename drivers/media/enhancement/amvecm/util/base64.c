@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "base64.h"
 
 /* BASE 64 encode table */
@@ -196,3 +197,4 @@ unsigned long base64_decode(char *in, unsigned int inlen,
 	}
 	return counter;
 }
+#endif

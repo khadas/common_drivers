@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef BLUE_STRETCH_H
 #define BLUE_STRETCH_H
 
@@ -29,4 +29,5 @@ void set_blue_str_parm(struct blue_str_parm_s *parm);
 extern int bs_proc_en;
 void bls_set(void);
 void bs_reg_set(void);
+#endif
 #endif

@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef AM_CUVA_HDR_H
 #define AM_CUVA_HDR_H
 #include <linux/amlogic/media/amvecm/cuva_alg.h>
@@ -13,4 +14,5 @@ struct aml_gain_reg *get_gain_lut(void);
 int cuva_hdr_dbg(void);
 void cuva_tm_func(enum cuva_func_e tm_func,
 	struct vframe_master_display_colour_s *p);
+#endif
 #endif

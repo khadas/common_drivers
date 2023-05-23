@@ -39,13 +39,15 @@
 #include "arch/vpp_regs.h"
 #include "arch/ve_regs.h"
 #include "amve.h"
-#include "amve_gamma_table.h"
 #include <linux/io.h>
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+#include "amve_gamma_table.h"
 #include "dnlp_cal.h"
 #include "local_contrast.h"
+#include "amve_v2.h"
+#endif
 #include "amcm.h"
 #include "reg_helper.h"
-#include "amve_v2.h"
 
 #define pr_amve_dbg(fmt, args...)\
 	do {\
@@ -54,9 +56,10 @@
 	} while (0)\
 /* #define pr_amve_error(fmt, args...) */
 /* printk(KERN_##(KERN_INFO) "AMVECM: " fmt, ## args) */
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define GAMMA_RETRY        1000
 unsigned int gamma_loadprotect_en;
+#endif
 
 /* 0: Invalid */
 /* 1: Valid */
@@ -64,6 +67,7 @@ unsigned int gamma_loadprotect_en;
 /* 3: Updated in 3D mode */
 unsigned long flags;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* #if (MESON_CPU_TYPE>=MESON_CPU_TYPE_MESONG9TV) */
 #define NEW_DNLP_IN_SHARPNESS 2
 #define NEW_DNLP_IN_VPP 1
@@ -72,20 +76,24 @@ unsigned int dnlp_sel = NEW_DNLP_IN_SHARPNESS;
 module_param(dnlp_sel, int, 0664);
 MODULE_PARM_DESC(dnlp_sel, "dnlp_sel");
 /* #endif */
+#endif
 
 static int amve_debug;
 module_param(amve_debug, int, 0664);
 MODULE_PARM_DESC(amve_debug, "amve_debug");
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /*for fmeter en*/
 int fmeter_en = 1;
 module_param(fmeter_en, int, 0664);
 MODULE_PARM_DESC(fmeter_en, "fmeter_en");
 
 struct ve_hist_s video_ve_hist;
+#endif
 
 unsigned int vpp_log[128][10];
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct tcon_gamma_table_s video_gamma_table_r;
 struct tcon_gamma_table_s video_gamma_table_g;
 struct tcon_gamma_table_s video_gamma_table_b;
@@ -96,6 +104,7 @@ struct tcon_gamma_table_s video_gamma_table_ioctl_set;
 struct gm_tbl_s gt;
 unsigned int gamma_index;
 unsigned int gm_par_idx;
+#endif
 
 struct tcon_rgb_ogo_s video_rgb_ogo = {
 	0, /* wb enable */
@@ -112,6 +121,7 @@ struct tcon_rgb_ogo_s video_rgb_ogo = {
 
 #define FLAG_LVDS_FREQ_SW1       BIT(6)
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int dnlp_en;/* 0:disable;1:enable */
 module_param(dnlp_en, int, 0664);
 MODULE_PARM_DESC(dnlp_en, "\n enable or disable dnlp\n");
@@ -124,6 +134,7 @@ MODULE_PARM_DESC(dnlp_en_2, "\n enable or disable dnlp\n");
 int lut3d_en;/* lut3d_en enable/disable */
 int lut3d_order;/* 0 RGB 1 GBR */
 int lut3d_debug;
+#endif
 
 static int frame_lock_freq;
 module_param(frame_lock_freq, int, 0664);
@@ -149,6 +160,7 @@ static unsigned int assist_cnt;/* ASSIST_SPARE8_REG1; */
  */
 static int dv_pq_bypass;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* 3d sync parts begin */
 unsigned int sync_3d_h_start;
 unsigned int sync_3d_h_end;
@@ -160,6 +172,7 @@ unsigned int sync_3d_black_color = 0x008080;/* yuv black */
 /* 3d sync to v by one enable/disable */
 unsigned int sync_3d_sync_to_vbo;
 /* 3d sync parts end */
+#endif
 
 unsigned int contrast_adj_sel;/*0:vdj1, 1:vd1 mtx rgb contrast*/
 module_param(contrast_adj_sel, uint, 0664);
@@ -173,6 +186,7 @@ MODULE_PARM_DESC(sr_adapt_level, "\n sr_adapt_level\n");
 /* *********************************************************************** */
 /* *** VPP_FIQ-oriented functions **************************************** */
 /* *********************************************************************** */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void ve_hist_gamma_tgt(struct vframe_s *vf)
 {
 	int ave_luma;
@@ -722,6 +736,7 @@ void amve_write_gamma_table(u16 *data, u32 rgb_mask)
 
 	spin_unlock_irqrestore(&vpp_lcd_gamma_lock, flags);
 }
+#endif
 
 #define COEFF_NORM(a) ((int)((((a) * 2048.0) + 1) / 2))
 #define MATRIX_5x3_COEF_SIZE 24
@@ -947,6 +962,7 @@ void vpp_set_rgb_ogo(struct tcon_rgb_ogo_s *p)
 	}
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void ve_enable_dnlp(void)
 {
 	ve_en = 1;
@@ -1025,6 +1041,7 @@ void ve_set_dnlp_2(void)
 	/*ve_dnlp_load_reg();*/
 	ve_dnlp_load_def_reg();
 }
+#endif
 
 unsigned int ve_get_vs_cnt(void)
 {
@@ -1109,6 +1126,7 @@ void ve_frame_size_patch(unsigned int width, unsigned int height)
 		WRITE_VPP_REG(VPP_VE_H_V_SIZE, vpp_size);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void ve_dnlp_latch_process(void)
 {
 	if (vecm_latch_flag & FLAG_VE_NEW_DNLP) {
@@ -1241,6 +1259,7 @@ void ve_lcd_gamma_process(void)
 		}
 	}
 }
+#endif
 
 void lvds_freq_process(void)
 {
@@ -1276,6 +1295,7 @@ void lvds_freq_process(void)
 /* #endif */
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void ve_dnlp_param_update(void)
 {
 	vecm_latch_flag |= FLAG_VE_DNLP;
@@ -1356,6 +1376,7 @@ static void video_set_rgb_ogo(void)
 		video_gamma_table_b_adj.data[i] = b;
 	}
 }
+#endif
 
 void ve_ogo_param_update(void)
 {
@@ -1391,18 +1412,22 @@ void ve_ogo_param_update(void)
 		video_rgb_ogo.b_post_offset = 1023;
 	if (video_rgb_ogo.b_post_offset < -1024)
 		video_rgb_ogo.b_post_offset = -1024;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (video_rgb_ogo_mode_sw)
 		video_set_rgb_ogo();
+#endif
 
 	vecm_latch_flag |= FLAG_RGB_OGO;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* sharpness process begin */
 void sharpness_process(struct vframe_s *vf)
 {
 }
 
 /* sharpness process end */
+#endif
 
 /*for gxbbtv rgb contrast adj in vd1 matrix */
 void vpp_vd1_mtx_rgb_contrast(signed int cont_val, struct vframe_s *vf)
@@ -1771,6 +1796,7 @@ void amvecm_color_process(signed int sat_val,
 
 /* saturation/hue adjust process end */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* 3d process begin */
 void amvecm_3d_black_process(void)
 {
@@ -1913,6 +1939,7 @@ void amve_sharpness_init(void)
 {
 	am_set_regmap(&sr1reg_sd_scale);
 }
+#endif
 
 static int overscan_timing = TIMING_MAX;
 module_param(overscan_timing, uint, 0664);
@@ -2062,6 +2089,7 @@ void amvecm_reset_overscan(void)
 	}
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 unsigned int *plut3d;
 static int P3dlut_tab[289] = {0};
 static int P3dlut_regtab[291] = {0};
@@ -2651,6 +2679,7 @@ void vpp_pst_hist_sta_read(unsigned int *hist)
 	for (i = 0; i < 64; i++)
 		hist[i] = READ_VPP_REG(VPP_PST_STA_RO_HIST);
 }
+#endif
 
 void amvecm_wb_enable(int enable)
 {
@@ -2681,6 +2710,7 @@ void amvecm_wb_enable(int enable)
 	}
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /*frequence meter init*/
 void amve_fmeter_init(int enable)
 {
@@ -2762,11 +2792,13 @@ void amve_fmetersize_config(u32 sr0_w, u32 sr0_h, u32 sr1_w, u32 sr1_h)
 		pre_fm1_y_end = fm1_y_end;
 	}
 }
+#endif
 
 int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 {
 	switch (md) {
 	case WR_VCB:
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (pq_cfg.dnlp_en) {
 			ve_enable_dnlp();
 			dnlp_en = 1;
@@ -2783,7 +2815,6 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 			cm_en = 0;
 		}
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_s5 ||
 			chip_type_id == chip_t3x) {
 			ve_vadj_ctl(md, VE_VADJ1, pq_cfg.vadj1_en);
@@ -2815,15 +2846,13 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 				WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
 					pq_cfg.sharpness1_en, 1, 1);
 			}
-		} else
-#endif
-		{
+		} else {
 			WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
 				pq_cfg.sharpness0_en, 1, 1);
 
 			WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
 				pq_cfg.sharpness1_en, 1, 1);
-
+#endif
 			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
 				WRITE_VPP_REG_BITS(VPP_VADJ1_MISC,
 					pq_cfg.vadj1_en, 0, 1);
@@ -2846,6 +2875,7 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 			amvecm_wb_enable(pq_cfg.wb_en);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			gamma_en = pq_cfg.gamma_en;
 			if (gamma_en)
 				vecm_latch_flag |= FLAG_GAMMA_TABLE_EN;
@@ -2867,8 +2897,10 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
 				pq_cfg.chroma_cor_en, 4, 1);
 		}
+#endif
 		break;
 	case WR_DMA:
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (pq_cfg.dnlp_en) {
 			ve_enable_dnlp();
 			dnlp_en = 1;
@@ -2885,7 +2917,6 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 			cm_en = 0;
 		}
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_s5 ||
 			chip_type_id == chip_t3x) {
 			ve_vadj_ctl(md, VE_VADJ1, pq_cfg.vadj1_en);
@@ -2915,14 +2946,13 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 				VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
 					pq_cfg.sharpness1_en, 1, 1);
 			}
-		} else
-#endif
-		{
+		} else {
 			VSYNC_WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
 				pq_cfg.sharpness0_en, 1, 1);
 
 			VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
 				pq_cfg.sharpness1_en, 1, 1);
+#endif
 
 			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
 				VSYNC_WRITE_VPP_REG_BITS(VPP_VADJ1_MISC,
@@ -2946,6 +2976,7 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 			amvecm_wb_enable(pq_cfg.wb_en);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			gamma_en = pq_cfg.gamma_en;
 			if (gamma_en) {
 				if (is_meson_t7_cpu())
@@ -2974,6 +3005,7 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 			VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
 				pq_cfg.chroma_cor_en, 4, 1);
 		}
+#endif
 		break;
 	default:
 		break;
@@ -3000,6 +3032,7 @@ unsigned int skip_pq_ctrl_load(struct am_reg_s *p)
 		memcpy(&cfg, &pq_cfg, sizeof(struct pq_ctrl_s));
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (!cfg.sharpness0_en) {
 		if (p->addr == (SRSHARP0_PK_NR_ENABLE)) {
 			ret |= 1 << 1;
@@ -3023,6 +3056,7 @@ unsigned int skip_pq_ctrl_load(struct am_reg_s *p)
 			return ret;
 		}
 	}
+#endif
 
 	if (!cfg.vadj1_en) {
 		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A) {
@@ -3079,6 +3113,7 @@ unsigned int skip_pq_ctrl_load(struct am_reg_s *p)
 
 int dv_pq_ctl(enum dv_pq_ctl_e ctl)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct pq_ctrl_s cfg;
 
 	switch (ctl) {
@@ -3117,6 +3152,7 @@ int dv_pq_ctl(enum dv_pq_ctl_e ctl)
 	default:
 		break;
 	}
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(dv_pq_ctl);
@@ -3181,6 +3217,7 @@ int mtx_multi(int mtx_ep[][4], int (*mtx_out)[3])
 	return 0;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void eye_proc(int mtx_ep[][4], int mtx_on)
 {
 	unsigned int matrix_coef00_01 = 0;
@@ -3246,6 +3283,7 @@ void eye_proc(int mtx_ep[][4], int mtx_on)
 		((pre_offset[0] & 0x7ff) << 16) | (pre_offset[1] & 0x7ff));
 	VSYNC_WRITE_VPP_REG(matrix_pre_offset2, (pre_offset[2] & 0x7ff));
 }
+#endif
 
 /*t3 for power consumption, disable clock
  *modules only before post blend can be disable

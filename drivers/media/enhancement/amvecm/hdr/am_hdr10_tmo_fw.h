@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "../amcsc.h"
 
 void hdr10_tmo_gen(u32 *oo_gain);
@@ -11,4 +12,4 @@ void hdr10_tmo_parm_show(void);
 void hdr10_tmo_reg_set(struct hdr_tmo_sw *pre_tmo_reg);
 void hdr10_tmo_reg_get(struct hdr_tmo_sw *pre_tmo_reg_s);
 int hdr_tmo_adb_show(char *str);
-
+#endif

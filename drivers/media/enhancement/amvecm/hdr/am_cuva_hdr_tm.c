@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* Standard Linux headers */
 #include <linux/types.h>
 #include <linux/init.h>
@@ -376,4 +377,4 @@ int cuva_hdr_dbg(void)
 
 	return 0;
 }
-
+#endif

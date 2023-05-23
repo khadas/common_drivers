@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
@@ -173,3 +174,4 @@ unsigned long huff64_decode(char *in, unsigned int inlen,
 	kfree(testver12bit);
 	return counter;
 }
+#endif

@@ -28,6 +28,7 @@
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
 #endif
 #include "set_hdr2_v0.h"
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "s5_set_hdr2_v0.h"
 #include "arch/vpp_hdr_regs.h"
 #include "arch/vpp_regs.h"
@@ -4140,13 +4141,19 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 	}
 	return hdr_process_select;
 }
+#endif
 
 u32 hdr_set(u32 module_sel, u32 hdr_process_select, enum vpp_index_e vpp_index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	return hdr_func(module_sel, hdr_process_select, NULL, NULL, vpp_index);
+#else
+	return 0;
+#endif
 }
 EXPORT_SYMBOL(hdr_set);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int hdr10p_ebzcurve_update(enum hdr_module_sel module_sel,
 			   enum hdr_process_sel hdr_process_select,
 	struct hdr10pgen_param_s *p_hdr10pgen_param,
@@ -6290,6 +6297,7 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 	ret = 0;
 	return ret;
 }
+#endif
 
 int get_hdr_setting(enum hdr_module_sel module_sel,
 				enum hdr_process_sel hdr_process_select,
@@ -6298,6 +6306,7 @@ int get_hdr_setting(enum hdr_module_sel module_sel,
 {
 	int ret = -1;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (op == HDR_FULL_SETTING)
 		ret = create_hdr_full_setting(module_sel,
 			hdr_process_select, hdr_params);
@@ -6305,10 +6314,12 @@ int get_hdr_setting(enum hdr_module_sel module_sel,
 		; /* not ready */
 	else if (op == HDR_TM_SETTING)
 		; /* not ready */
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(get_hdr_setting);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void hdr_reg_dump(unsigned int offset)
 {
 	unsigned int val;
@@ -6366,3 +6377,4 @@ void hdr_reg_dump(unsigned int offset)
 		pr_info("[%04d] = 0x%08x\n", i, val);
 	}
 }
+#endif

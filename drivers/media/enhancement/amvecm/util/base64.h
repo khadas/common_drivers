@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef BASE64_H
 #define BASE64_H
 
@@ -34,3 +35,4 @@ unsigned long base64_decode(char *in, unsigned int inlen,
 			    unsigned char *out);
 
 #endif /* BASE64_H */
+#endif

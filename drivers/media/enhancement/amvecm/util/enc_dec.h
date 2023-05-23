@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef ENC_DEC_H
 #define ENC_DEC_H
 
@@ -32,3 +33,4 @@ unsigned long huff64_decode(char *in, unsigned int inlen,
 			    unsigned int *out, unsigned int outlen);
 
 #endif /* ENC_DEC_H */
+#endif

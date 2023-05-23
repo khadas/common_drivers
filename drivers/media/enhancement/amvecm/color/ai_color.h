@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef AI_COLOR_H
 #define AI_COLOR_H
 
@@ -51,4 +52,5 @@ void ai_color_proc(struct vframe_s *vf);
 int ai_color_debug_store(char **parm);
 void ai_clr_config(int enable);
 
+#endif
 #endif

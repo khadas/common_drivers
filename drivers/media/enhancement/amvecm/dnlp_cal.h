@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __AM_DNLP_CAL_H
 #define __AM_DNLP_CAL_H
 
@@ -162,5 +163,6 @@ extern int *dnlp_printk_copy;
 extern struct ve_ble_whe_param_s ble_whe_param_load;
 void ai_dnlp_param_update(int value);
 void ble_whe_param_update(struct ve_ble_whe_param_s *p);
+#endif
 #endif
 

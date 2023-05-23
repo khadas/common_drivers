@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* Standard Linux headers */
 #include <linux/types.h>
 #include <linux/init.h>
@@ -1057,4 +1058,4 @@ int hdr10_plus_ootf_gen(int panel_lumin,
 
 	return 0;
 }
-
+#endif

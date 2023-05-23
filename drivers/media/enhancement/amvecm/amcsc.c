@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* Standard Linux headers */
 #include <linux/types.h>
 #include <linux/init.h>
@@ -39,8 +40,10 @@
 
 /* use osd rdma reg w/r */
 #include "../../osd/osd_rdma.h"
+#endif
 
 #include "amcsc.h"
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "amcsc_pip.h"
 #include "set_hdr2_v0.h"
 #include "s5_set_hdr2_v0.h"
@@ -75,6 +78,7 @@ module_param(gamut_conv_enable, uint, 0664);
 MODULE_PARM_DESC(gamut_conv_enable, "\n gamut_conv_enable\n");
 
 static uint pre_gamut_conv_en;
+#endif
 signed int vd1_contrast_offset;
 
 signed int saturation_offset;
@@ -83,6 +87,7 @@ signed int saturation_offset;
 
 void hdr_osd_off(enum vpp_index_e vpp_index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	enum hdr_process_sel cur_hdr_process[3];
 
 	cur_hdr_process[0] =
@@ -96,10 +101,12 @@ void hdr_osd_off(enum vpp_index_e vpp_index)
 			 NULL, NULL, vpp_index);
 	pr_csc(8, "am_vecm: module=OSDn_HDR, process=HDR_BYPASS(%d, %d, %d, %d)\n",
 	       HDR_BYPASS, cur_hdr_process[0], cur_hdr_process[1], cur_hdr_process[2]);
+#endif
 }
 
 void hdr_osd2_off(enum vpp_index_e vpp_index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	enum hdr_process_sel cur_hdr_process;
 
 	cur_hdr_process =
@@ -107,8 +114,10 @@ void hdr_osd2_off(enum vpp_index_e vpp_index)
 			 NULL, NULL, vpp_index);
 	pr_csc(8, "am_vecm: module=OSD2_HDR, process=HDR_BYPASS(%d, %d)\n",
 	       HDR_BYPASS, cur_hdr_process);
+#endif
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void hdr_osd3_off(enum vpp_index_e vpp_index)
 {
 	enum hdr_process_sel cur_hdr_process;
@@ -119,9 +128,11 @@ void hdr_osd3_off(enum vpp_index_e vpp_index)
 	pr_csc(8, "am_vecm: module=OSD3_HDR, process=HDR_BYPASS(%d, %d)\n",
 	       HDR_BYPASS, cur_hdr_process);
 }
+#endif
 
 void hdr_vd1_off(enum vpp_index_e vpp_index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	enum hdr_process_sel cur_hdr_process;
 	int silce_mode = 1;
 
@@ -157,10 +168,12 @@ void hdr_vd1_off(enum vpp_index_e vpp_index)
 	}
 	pr_csc(8, "am_vecm: module=VD1_HDR, process=HDR_BYPASS(%d, %d)\n",
 		HDR_BYPASS, cur_hdr_process);
+#endif
 }
 
 void hdr_vd2_off(enum vpp_index_e vpp_index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	enum hdr_process_sel cur_hdr_process;
 
 	cur_hdr_process =
@@ -168,8 +181,10 @@ void hdr_vd2_off(enum vpp_index_e vpp_index)
 			 NULL, NULL, vpp_index);
 	pr_csc(8, "am_vecm: module=VD2_HDR, process=HDR_BYPASS(%d, %d)\n",
 	       HDR_BYPASS, cur_hdr_process);
+#endif
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void hdr_vd3_off(enum vpp_index_e vpp_index)
 {
 	enum hdr_process_sel cur_hdr_process;
@@ -180,9 +195,11 @@ void hdr_vd3_off(enum vpp_index_e vpp_index)
 	pr_csc(8, "am_vecm: module=VD3_HDR, process=HDR_BYPASS(%d, %d)\n",
 	       HDR_BYPASS, cur_hdr_process);
 }
+#endif
 
 void hdr_vd1_iptmap(enum vpp_index_e vpp_index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	enum hdr_process_sel cur_hdr_process;
 	int s5_silce_mode = get_s5_slice_mode();
 
@@ -213,8 +230,10 @@ void hdr_vd1_iptmap(enum vpp_index_e vpp_index)
 	}
 	pr_csc(8, "module=VD1_HDR, process=IPT_MAP(%d, %d)\n",
 	       IPT_MAP, cur_hdr_process);
+#endif
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct hdr_data_t *phdr;
 
 struct hdr_data_t *hdr_get_data(void)
@@ -350,8 +369,10 @@ void hdr_exit(void)
 /*-----------------------------------------*/
 static void vpp_set_mtx_en_read(void);
 static void vpp_set_mtx_en_write(void);
+#endif
 
 struct hdr_osd_reg_s hdr_osd_reg = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	0x00000001, /* VIU_OSD1_MATRIX_CTRL 0x1a90 */
 	0x00ba0273, /* VIU_OSD1_MATRIX_COEF00_01 0x1a91 */
 	0x003f1f9a, /* VIU_OSD1_MATRIX_COEF02_10 0x1a92 */
@@ -430,8 +451,10 @@ struct hdr_osd_reg_s hdr_osd_reg = {
 		}
 	},
 	-1 /* shadow mode */
+#endif
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define HDR_VERSION   "----gxl_20180830---hdrv2_20200106-----\n"
 
 static struct vframe_s *dbg_vf[VD_PATH_MAX] = {NULL, NULL};
@@ -478,22 +501,26 @@ static enum vframe_source_type_e pre_src_type[VD_PATH_MAX] = {
 	VFRAME_SOURCE_TYPE_COMP
 };
 
-static unsigned int vd_path_max = VD_PATH_MAX;
 static unsigned int vpp_top_max = VPP_TOP_MAX_S;
-
+#endif
+static unsigned int vd_path_max = VD_PATH_MAX;
 
 uint cur_csc_type[VD_PATH_MAX] = {0xffff, 0xffff, 0xffff};
 module_param_array(cur_csc_type, uint, &vd_path_max, 0444);
 MODULE_PARM_DESC(cur_csc_type, "\n current color space convert type\n");
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static uint hdmi_csc_type = 0xffff;
 module_param(hdmi_csc_type, uint, 0444);
 MODULE_PARM_DESC(hdmi_csc_type, "\n current color space convert type\n");
+#endif
 
 /* 0: follow sink, 1: follow source, 2: debug, 0xff: bootup default value */
 /* by default follow source to match default sdr_mode*/
 static uint hdr_policy;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static uint cur_hdr_policy = 0xff;
+#endif
 module_param(hdr_policy, uint, 0664);
 MODULE_PARM_DESC(hdr_policy, "\n current hdr_policy\n");
 
@@ -501,9 +528,12 @@ MODULE_PARM_DESC(hdr_policy, "\n current hdr_policy\n");
 /* 1: Auto: 601/709=709 P3/2020=P3 */
 /* 2: Native: 601/709=off P3/2020=2020 */
 static uint primary_policy;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static uint cur_primary_policy;
+#endif
 module_param(primary_policy, uint, 0664);
 MODULE_PARM_DESC(primary_policy, "\n current primary_policy\n");
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int boot_hdr_policy(char *str)
 {
 	if (strncmp("1", str, 1) == 0) {
@@ -553,6 +583,7 @@ int boot_hdr_debug(char *str)
 	return 0;
 }
 __setup("hdr_debug=", boot_hdr_debug);
+#endif
 
 /* when get_hdr_policy() == 0 */
 /* enum output_format_e */
@@ -577,6 +608,7 @@ EXPORT_SYMBOL(get_primary_policy);
 int get_hdr_policy(void)
 {
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int dv_policy = 0;
 	int dv_mode = 0;
 
@@ -592,31 +624,38 @@ int get_hdr_policy(void)
 		}
 	}
 #endif
+#endif
 	return hdr_policy;
 }
 EXPORT_SYMBOL(get_hdr_policy);
 
 void set_hdr_policy(int policy)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	if (is_amdv_enable())
 		set_amdv_policy(policy);
 	#endif
 	hdr_policy = policy;
+#endif
 }
 EXPORT_SYMBOL(set_hdr_policy);
 
 void set_cur_hdr_policy(uint policy)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	cur_hdr_policy = policy;
+#endif
 }
 EXPORT_SYMBOL(set_cur_hdr_policy);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 enum output_format_e get_force_output(void)
 {
 	return force_output;
 }
 EXPORT_SYMBOL(get_force_output);
+#endif
 
 void set_force_output(enum output_format_e output)
 {
@@ -624,6 +663,7 @@ void set_force_output(enum output_format_e output)
 }
 EXPORT_SYMBOL(set_force_output);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static uint hdr_mode = 2; /* 0: hdr->hdr, 1:hdr->sdr, 2:auto */
 module_param(hdr_mode, uint, 0664);
 MODULE_PARM_DESC(hdr_mode, "\n set hdr_mode\n");
@@ -720,6 +760,7 @@ MODULE_PARM_DESC(range_control, "\n range_control 0:limit 1:full\n");
 uint hdr_flag = (1 << 0) | (1 << 1) | (0 << 2) | (0 << 3) | (1 << 4);
 module_param(hdr_flag, uint, 0664);
 MODULE_PARM_DESC(hdr_flag, "\n set hdr_flag\n");
+#endif
 
 /* 0: off, 1: normal, 2: bypass */
 static int video_process_status[VD_PATH_MAX] = {2, 2, 2};
@@ -728,6 +769,7 @@ MODULE_PARM_DESC(video_process_status, "\n video_process_status\n");
 
 void set_hdr_module_status(enum vd_path_e vd_path, int status)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	video_process_status[vd_path] = status;
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
@@ -743,9 +785,11 @@ void set_hdr_module_status(enum vd_path_e vd_path, int status)
 	       __LINE__,
 	       vd_path + 1, status);
 #endif
+#endif
 }
 EXPORT_SYMBOL(set_hdr_module_status);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define PROC_FLAG_FORCE_PROCESS 1
 static uint video_process_flags[VD_PATH_MAX];
 module_param_array(video_process_flags, uint, &vd_path_max, 0664);
@@ -2816,9 +2860,11 @@ void set_vpp_matrix(int m_select, int *s, int on)
 		}
 	}
 }
+#endif
 
 void enable_osd_path(int on, int shadow_mode)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	static int *osd1_mtx_backup;
 	static u32 osd1_eotf_ctl_backup;
 	static u32 osd1_oetf_ctl_backup;
@@ -2838,9 +2884,11 @@ void enable_osd_path(int on, int shadow_mode)
 		hdr_osd_reg.viu_osd1_oetf_ctl = osd1_oetf_ctl_backup;
 		hdr_osd_reg.shadow_mode = shadow_mode;
 	}
+#endif
 }
 EXPORT_SYMBOL(enable_osd_path);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* coeff: pointer to target coeff array */
 /* bits: how many bits for target coeff, could be 10 ~ 12, default 10 */
 static s32 *post_mtx_backup;
@@ -2848,8 +2896,11 @@ static s32 post_on_backup;
 static bool restore_post_table;
 static s32 *vd1_mtx_backup;
 static s32 vd1_on_backup;
+#endif
+
 int enable_rgb_to_yuv_matrix_for_dvll(s32 on, u32 *coeff_orig, u32 bits)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	s32 i;
 	u32 coeff01, coeff23, coeff45, coeff67, coeff89;
 	u32 scale, shift, offset[3];
@@ -2939,10 +2990,12 @@ int enable_rgb_to_yuv_matrix_for_dvll(s32 on, u32 *coeff_orig, u32 bits)
 		vpp_set_mtx_en_write();
 		restore_post_table = false;
 	}
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(enable_rgb_to_yuv_matrix_for_dvll);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 const char lut_name[NUM_LUT][16] = {
 	"OSD_EOTF",
 	"OSD_OETF",
@@ -3835,9 +3888,11 @@ void get_cur_vd_signal_type(enum vd_path_e vd_path)
 {
 	cur_vd_signal_type = cur_signal_type[vd_path];
 }
+#endif
 
 int get_primaries_type(struct vframe_master_display_colour_s *p_mdc)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (!p_mdc->present_flag)
 		return 0;
 
@@ -3855,10 +3910,12 @@ int get_primaries_type(struct vframe_master_display_colour_s *p_mdc)
 		return 1;
 	}
 	/* source not usable, use standard bt2020 */
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(get_primaries_type);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int hdr10_primaries_changed(struct vframe_master_display_colour_s *p_mdc,
 			    struct vframe_master_display_colour_s *p_hdr10_param)
 {
@@ -4004,10 +4061,12 @@ uint32_t sink_dv_support(const struct vinfo_s *vinfo)
 	return 1; /* STD only */
 }
 EXPORT_SYMBOL(sink_dv_support);
+#endif
 
 uint32_t sink_hdr_support(const struct vinfo_s *vinfo)
 {
 	u32 hdr_cap = 0;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	u32 dv_cap = 0;
 
 	/* when policy == follow sink(0) or force output (2) */
@@ -4060,10 +4119,12 @@ uint32_t sink_hdr_support(const struct vinfo_s *vinfo)
 			vinfo->hdr_info.hdr10plus_info.application_version,
 			vinfo->mode,
 			hdr_cap);
+#endif
 	return hdr_cap;
 }
 EXPORT_SYMBOL(sink_hdr_support);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 int signal_type_changed(struct vframe_s *vf,
 			struct vinfo_s *vinfo, enum vd_path_e vd_path,
 			enum vpp_index_e vpp_index)
@@ -7072,6 +7133,7 @@ static int sink_support_hdr10_plus(const struct vinfo_s *vinfo)
 
 	return 0;
 }
+#endif
 
 bool is_vinfo_available(const struct vinfo_s *vinfo)
 {
@@ -7085,6 +7147,7 @@ bool is_vinfo_available(const struct vinfo_s *vinfo)
 }
 EXPORT_SYMBOL(is_vinfo_available);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static enum hdr_type_e get_source_type(enum vd_path_e vd_path,
 	enum vpp_index_e vpp_index)
 {
@@ -7140,19 +7203,25 @@ static enum hdr_type_e get_source_type(enum vd_path_e vd_path,
 		return HDRTYPE_SDR;
 	}
 }
+#endif
 
 enum hdr_type_e get_cur_source_type(enum vd_path_e vd_path,
 	enum vpp_index_e vpp_index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (vd_path >= VD_PATH_MAX)
 		return UNKNOWN_SOURCE;
 	return get_source_type(vd_path, vpp_index);
+#else
+	return HDRTYPE_SDR;
+#endif
 }
 EXPORT_SYMBOL(get_cur_source_type);
 
 int get_hdr_module_status(enum vd_path_e vd_path,
 	enum vpp_index_e vpp_index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	if (vd_path == VD1_PATH &&
 	    is_amdv_enable() &&
@@ -7180,10 +7249,12 @@ int get_hdr_module_status(enum vd_path_e vd_path,
 	pr_csc(16, "get video_process_status[VD%d] = %d\n",
 	       vd_path + 1, video_process_status[vd_path]);
 
+#endif
 	return video_process_status[vd_path];
 }
 EXPORT_SYMBOL(get_hdr_module_status);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static bool video_layer_wait_on[VD_PATH_MAX];
 bool is_video_layer_on(enum vd_path_e vd_path)
 {
@@ -8426,15 +8497,19 @@ static void video_process(struct vframe_s *vf,
 
 static int current_hdr_cap[VD_PATH_MAX] = {-1, -1, -1}; /* should set when probe */
 static int current_sink_available[VD_PATH_MAX] = {-1, -1, -1};
+#endif
+
 int is_sink_cap_changed(const struct vinfo_s *vinfo,
 			int *p_current_hdr_cap,
 			int *p_current_sink_available,
 			enum vpp_index_e vpp_index)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int hdr_cap;
 	int sink_available;
+#endif
 	int ret = 0;
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (vinfo && is_vinfo_available(vinfo)) {
 		hdr_cap = (1 << 0) |
 			(sink_support_dv(vinfo) << 1) |
@@ -8459,23 +8534,30 @@ int is_sink_cap_changed(const struct vinfo_s *vinfo,
 		*p_current_sink_available = sink_available;
 		ret |= 1;
 	}
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(is_sink_cap_changed);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static bool video_on[VD_PATH_MAX];
+#endif
+
 int is_video_turn_on(bool *vd_on, enum vd_path_e vd_path)
 {
 	int ret = 0;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (vd_on[vd_path] != is_video_layer_on(vd_path)) {
 		vd_on[vd_path] = is_video_layer_on(vd_path);
 		ret = vd_on[vd_path] ? 1 : -1;
 	}
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(is_video_turn_on);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int vpp_matrix_update(struct vframe_s *vf,
 			     struct vinfo_s *vinfo, int flags,
 			     enum vd_path_e vd_path, enum vpp_index_e vpp_index)
@@ -9621,4 +9703,4 @@ dbg_end:
 
 	return 0;
 }
-
+#endif

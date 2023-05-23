@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __AM_LC_H
 #define __AM_LC_H
 
@@ -130,4 +131,4 @@ void lc_disable(void);
 bool lc_curve_ctrl_reg_set_flag(unsigned int addr);
 
 #endif
-
+#endif

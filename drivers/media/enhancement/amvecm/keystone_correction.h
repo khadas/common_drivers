@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef _KEYSTONE_CORRECTION_H_
 #define _KEYSTONE_CORRECTION_H_
 
@@ -75,4 +76,4 @@ extern unsigned int reg_vks_obuf_mrgn1;
 extern unsigned int reg_vks_phs_qmode;
 
 #endif
-
+#endif

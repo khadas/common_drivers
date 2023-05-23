@@ -2,11 +2,12 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __AM_LUT3D_H
 #define __AM_LUT3D_H
 
 void lut3d_set_api(void);
 
+#endif
 #endif
 

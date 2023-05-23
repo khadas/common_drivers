@@ -15,7 +15,7 @@
  * more details.
  *
  */
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef __AMVECM_VLOCK_REGMAP_H
 #define __AMVECM_VLOCK_REGMAP_H
 
@@ -100,4 +100,4 @@ static struct vlock_regs_s vlock_encl_phase_setting[VLOCK_PHASE_REG_SIZE] = {
 };
 
 #endif
-
+#endif

@@ -15,7 +15,7 @@
  * more details.
  *
  */
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "../amcsc.h"
 
 #ifndef GAMUT_H
@@ -31,4 +31,5 @@ int gamut_convert_process(struct vinfo_s *vinfo,
 			  enum vd_path_e vd_path,
 			  struct matrix_s *mtx,
 			  int mtx_depth);
+#endif
 #endif

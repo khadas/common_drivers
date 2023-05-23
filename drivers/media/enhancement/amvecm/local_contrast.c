@@ -15,6 +15,8 @@
  * more details.
  *
  */
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define SKIP_IO_TRACE
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -2260,3 +2262,4 @@ void lc_free(void)
 
 	lc_malloc_ok = 0;
 }
+#endif

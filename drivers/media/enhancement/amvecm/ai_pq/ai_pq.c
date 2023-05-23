@@ -23,6 +23,7 @@
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>
 #include <linux/amlogic/media/amvecm/amvecm.h>
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "ai_pq.h"
 #include "../arch/vpp_regs.h"
 #include "../dnlp_cal.h"
@@ -50,6 +51,7 @@ MODULE_PARM_DESC(aipq_en, "\n aipq_en\n");
 			pr_info("AIPQ: " fmt, ## args);\
 	} while (0)\
 
+#endif
 #define DISABLE 0
 #define ENABLE 1
 struct single_scene_s detected_scenes[SCENE_MAX] = {
@@ -63,6 +65,7 @@ struct single_scene_s detected_scenes[SCENE_MAX] = {
 };
 EXPORT_SYMBOL(detected_scenes);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct adap_param_setting_s adaptive_param;
 struct adap_param_setting_s *adap_param;
 
@@ -631,4 +634,5 @@ int ai_detect_scene_init(void)
 
 	return 0;
 }
+#endif
 

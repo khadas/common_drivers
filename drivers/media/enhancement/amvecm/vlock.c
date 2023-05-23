@@ -39,6 +39,7 @@
 #include "amcm.h"
 #include "reg_helper.h"
 #include <linux/amlogic/gki_module.h>
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "frame_lock_policy.h"
 
 /* video lock */
@@ -208,6 +209,7 @@ struct vlk_reg_map_tab regmap_tab_t7[] = {
 	{.base = 0x00000000,	.size = 0x0000,},/*hiu*/
 	{.base = 0xfe008000,	.size = 0x0100,},/*anactrl*/
 };
+#endif
 
 int amvecm_hiu_reg_read(unsigned int reg, unsigned int *val)
 {
@@ -225,6 +227,7 @@ int amvecm_hiu_reg_write(unsigned int reg, unsigned int val)
 	return 0;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int vlock_hiu_reg_wt_bits(unsigned int reg, unsigned int value,
 				     unsigned int start, unsigned int len)
 {
@@ -2503,9 +2506,11 @@ bool vlock_get_vlock_flag_ex(struct stvlock_sig_sts *pvlock)
 	else
 		return false;
 }
+#endif
 
 bool vlock_get_phlock_flag(void)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct stvlock_sig_sts *pvlock;
 	enum vlock_enc_num_e enc_mux = VLOCK_ENC0;
 
@@ -2518,10 +2523,14 @@ bool vlock_get_phlock_flag(void)
 #endif
 
 	return vlock_get_phlock_flag_ex(pvlock);
+#else
+	return false;
+#endif
 }
 
 bool vlock_get_vlock_flag(void)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct stvlock_sig_sts *pvlock;
 	enum vlock_enc_num_e enc_mux = VLOCK_ENC0;
 
@@ -2534,8 +2543,12 @@ bool vlock_get_vlock_flag(void)
 #endif
 
 	return vlock_get_vlock_flag_ex(pvlock);
+#else
+	return false;
+#endif
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 u32 vlock_get_vlock_sts(void)
 {
 	struct stvlock_sig_sts *pvlock;
@@ -4024,4 +4037,4 @@ ssize_t vlock_debug_store(struct class *cla,
 	return count;
 }
 /*video lock end*/
-
+#endif

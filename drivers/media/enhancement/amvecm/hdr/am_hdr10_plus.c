@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* Standard Linux headers */
 #include <linux/types.h>
 #include <linux/init.h>
@@ -1668,4 +1669,4 @@ void hdr10_plus_debug(int csc_type)
 			dbg_cuva_emds_pkt.max_display_mastering_lum);
 	}
 }
-
+#endif

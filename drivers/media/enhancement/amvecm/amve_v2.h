@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifndef AMVE_V2_H
 #define AMVE_V2_H
 
@@ -110,4 +111,4 @@ void post_lut3d_section_read(int index, int section_len,
 	unsigned int *lut3d_data_out);
 
 #endif
-
+#endif

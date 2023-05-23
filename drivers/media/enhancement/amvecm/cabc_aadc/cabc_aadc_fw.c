@@ -14,6 +14,7 @@
  * more details.
  *
  */
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/io.h>
@@ -2120,3 +2121,4 @@ int cabc_aad_debug(char **param)
 error:
 	return -1;
 }
+#endif

@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include <linux/types.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -2960,3 +2961,4 @@ void write_dma_buf(u32 table_offset, u32 tbl_id, u32 value)
 	data32[data_offset + tbl_id] = value;
 }
 
+#endif

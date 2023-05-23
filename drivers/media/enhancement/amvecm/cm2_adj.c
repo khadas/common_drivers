@@ -9,6 +9,7 @@
  * the Free Software Foundation; version 2 of the License.
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* Standard Linux headers */
 #include <linux/types.h>
 #include <linux/mm.h>
@@ -1035,3 +1036,4 @@ void cm2_sat(struct cm_color_md cm_color_mode, int sat_val, int lpf_en)
 	}
 }
 
+#endif

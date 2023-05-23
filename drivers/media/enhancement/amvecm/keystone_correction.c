@@ -16,6 +16,7 @@
  *
  */
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include <linux/string.h>
 #include <linux/spinlock.h>
 #include <linux/module.h>
@@ -480,4 +481,4 @@ void keystone_correction_regs(void)
 	}
 	pr_info("----keystone regs end----\n");
 }
-
+#endif

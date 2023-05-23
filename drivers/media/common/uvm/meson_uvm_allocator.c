@@ -713,7 +713,7 @@ static long mua_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return -EFAULT;
 
 	switch (cmd) {
-	case UVM_IOC_ATTATCH:
+	case UVM_IOC_ATTACH:
 		MUA_PRINTK(MUA_INFO, "mua_ioctl_attach: shared_fd=%d, mode_type=%d\n",
 			data.hook_data.shared_fd,
 			data.hook_data.mode_type);
@@ -727,7 +727,7 @@ static long mua_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		if (copy_to_user((void __user *)arg, &data, _IOC_SIZE(cmd)))
 			return -EFAULT;
 		break;
-	case UVM_IOC_DETATCH:
+	case UVM_IOC_DETACH:
 		MUA_PRINTK(MUA_INFO, "mua_ioctl_detach: shared_fd=%d, mode_type=%d\n",
 			data.hook_data.shared_fd,
 			data.hook_data.mode_type);

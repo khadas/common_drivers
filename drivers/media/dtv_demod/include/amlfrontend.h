@@ -91,12 +91,12 @@
 /*  V1.1.97  optimize 8VSB CN */
 /*  V1.1.98  fix r842 atsc missing TP and scan slowly */
 /*  V1.1.99  fix init flow */
-/*  V1.1.100  bring up dump ADC data feature */
-/*  V3.1.101  fix dvb-s unicable blind scan miss TP */
-/*  V3.1.102  bring up dump ADC data feature */
-/*  V3.2.103  t3x bringup */
-/*  V3.2.104  optimize isdbt stability of locking signal */
-/*  V3.2.105  remove dtmb workaround for AMBUS issue */
+/*  V1.1.100 bring up dump ADC data feature */
+/*  V3.1.101 fix dvb-s unicable blind scan miss TP */
+/*  V3.1.102 bring up dump ADC data feature */
+/*  V3.2.00  t3x bringup */
+/*  V3.2.01  optimize isdbt stability of locking signal */
+/*  V3.2.02  fix dvbc aft test unstable */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -113,8 +113,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.2.105"
-#define DTVDEMOD_VER	"2023/5/23: remove dtmb workaround for AMBUS issue"
+#define AMLDTVDEMOD_VER "V3.2.02"
+#define DTVDEMOD_VER	"2023/5/24: fix dvbc aft test unstable"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

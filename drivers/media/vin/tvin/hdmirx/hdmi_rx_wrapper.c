@@ -3559,7 +3559,6 @@ void rx_get_global_variable(const char *buf)
 	pr_var(hdcp22_reauth_enable, i++);
 	pr_var(esm_recovery_mode, i++);
 	pr_var(unnormal_wait_max, i++);
-	pr_var(hdmi_yuv444_enable, i++);
 	pr_var(en_4k_2_2k, i++);
 	pr_var(en_4096_2_3840, i++);
 	pr_var(en_4k_timing, i++);
@@ -3833,8 +3832,6 @@ int rx_set_global_variable(const char *buf, int size)
 		return pr_var(unnormal_wait_max, index);
 	if (set_pr_var(tmpbuf, var_to_str(edid_update_delay), &edid_update_delay, value))
 		return pr_var(edid_update_delay, index);
-	if (set_pr_var(tmpbuf, var_to_str(hdmi_yuv444_enable), &hdmi_yuv444_enable, value))
-		return pr_var(hdmi_yuv444_enable, index);
 	if (set_pr_var(tmpbuf, var_to_str(en_4k_2_2k), &en_4k_2_2k, value))
 		return pr_var(en_4k_2_2k, index);
 	if (set_pr_var(tmpbuf, var_to_str(en_4096_2_3840), &en_4096_2_3840, value))

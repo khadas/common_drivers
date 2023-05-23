@@ -268,6 +268,7 @@ enum tvin_color_fmt_e {
 	TVIN_RGGB,		/* 10 raw data */
 	TVIN_GBRG,		/* 11 raw data */
 	TVIN_GRBG,		/* 12 raw data */
+	TVIN_YUV420,
 	TVIN_COLOR_FMT_MAX,
 };
 

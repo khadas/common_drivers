@@ -631,7 +631,6 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 
 	switch (input_cfmt) {
 	case TVIN_YVYU422:
-	//case TVIN_YUV444:
 		vdin_data_bus_1 = VDIN_MAP_RCR;
 		vdin_data_bus_2 = VDIN_MAP_BPB;
 		break;
@@ -645,12 +644,23 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 		vdin_data_bus_1 = VDIN_MAP_RCR;
 		vdin_data_bus_2 = VDIN_MAP_Y_G;
 		break;
+	case TVIN_YUV444:
+	case TVIN_YUV422:
+	case TVIN_YUV420:
+		vdin_data_bus_0 = VDIN_MAP_Y_G;
+		vdin_data_bus_1 = VDIN_MAP_BPB;
+		vdin_data_bus_2 = VDIN_MAP_RCR;
+		break;
 	case TVIN_RGB444:
 		/*RGB mapping*/
 		if (devp->set_canvas_manual == 1) {
 			vdin_data_bus_0 = VDIN_MAP_RCR;
 			vdin_data_bus_1 = VDIN_MAP_BPB;
 			vdin_data_bus_2 = VDIN_MAP_Y_G;
+		} else {
+			vdin_data_bus_0 = VDIN_MAP_Y_G;
+			vdin_data_bus_1 = VDIN_MAP_BPB;
+			vdin_data_bus_2 = VDIN_MAP_RCR;
 		}
 		break;
 	default:

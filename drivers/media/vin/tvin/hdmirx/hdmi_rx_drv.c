@@ -1052,16 +1052,16 @@ void hdmirx_get_color_fmt(struct tvin_sig_property_s *prop, u8 port)
 		format = E_COLOR_RGB;
 	switch (format) {
 	case E_COLOR_YUV422:
-	case E_COLOR_YUV420:
-		prop->color_format = TVIN_YUV422;
+		prop->color_format = TVIN_YUV444;
 		prop->dest_cfmt = TVIN_YUV422;
+		break;
+	case E_COLOR_YUV420:
+		prop->color_format = TVIN_YUV444;
+		prop->dest_cfmt = TVIN_YUV420;
 		break;
 	case E_COLOR_YUV444:
 		prop->color_format = TVIN_YUV444;
-		if (!hdmi_yuv444_enable)
-			prop->dest_cfmt = TVIN_YUV422;
-		else
-			prop->dest_cfmt = TVIN_YUV444;
+		prop->dest_cfmt = TVIN_YUV444;
 		break;
 	case E_COLOR_RGB:
 	default:
@@ -1075,6 +1075,7 @@ void hdmirx_get_color_fmt(struct tvin_sig_property_s *prop, u8 port)
 	switch (prop->color_format) {
 	case TVIN_YUV444:
 	case TVIN_YUV422:
+	case TVIN_YUV420:
 		/* Table 8-5 of hdmi1.4b spec */
 		if (rx[port].cur.yuv_quant_range == E_YCC_RANGE_LIMIT)
 			prop->color_fmt_range = TVIN_YUV_LIMIT;

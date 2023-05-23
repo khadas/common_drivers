@@ -928,7 +928,6 @@ extern bool dev_is_apple_tv_v2;
 extern u32 en_4096_2_3840;
 extern int en_4k_2_2k;
 extern bool hdmi_cec_en;
-extern int hdmi_yuv444_enable;
 extern int vdin_drop_frame_cnt;
 extern int rpt_edid_selection;
 extern int rpt_only_mode;

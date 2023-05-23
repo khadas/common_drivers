@@ -5044,7 +5044,7 @@ static void vd1_proc_unit_param_set_4s4p(struct vd_proc_s *vd_proc, u32 slice)
 				sr1_din_vsize = vd_proc_unit->vd_proc_sr1.v_scaleup_en ?
 					sr1_dout_vsize / 2 : sr1_dout_vsize;
 				sr0_din_vsize = s1_din_vsize_tmp;
-				sr0_dout_vsize = vd_proc_unit->vd_proc_sr1.v_scaleup_en ?
+				sr0_dout_vsize = vd_proc_unit->vd_proc_sr0.v_scaleup_en ?
 					sr0_din_vsize * 2 : sr0_din_vsize;
 				pps_dout_vsize = sr1_din_vsize;
 				pps_din_vsize = sr0_dout_vsize;

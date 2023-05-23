@@ -758,7 +758,7 @@ static int aml_atvdemod_probe(struct platform_device *pdev)
 		dev->audio_reg_base = ioremap(round_down(0xffd0d340, 0x3), 4);
 
 		pr_info("audio_reg_base = 0x%p.\n", dev->audio_reg_base);
-	}
+	} else
 #endif
 	if (is_meson_t3_cpu() || is_meson_t5m_cpu() ||
 		is_meson_t3x_cpu()) {

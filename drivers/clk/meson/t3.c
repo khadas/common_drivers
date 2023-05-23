@@ -988,10 +988,17 @@ static struct t3_sys_pll_nb_data t3_sys_pll_nb_data = {
 	.nb.notifier_call = t3_sys_pll_notifier_cb,
 };
 
+#ifdef CONFIG_ARM
+static const struct pll_params_table t3_hifi_pll_table[] = {
+	PLL_PARAMS(163, 1, 1), /* DCO = 3932.16M */
+	{ /* sentinel */  }
+};
+#else
 static const struct pll_mult_range t3_hifi_pll_m = {
 	.min = 125,
 	.max = 250,
 };
+#endif
 
 /*
  * Internal hifi pll emulation configuration parameters
@@ -1037,7 +1044,11 @@ static struct clk_regmap t3_hifi_pll_dco = {
 			.shift   = 29,
 			.width   = 1,
 		},
+#ifdef CONFIG_ARM
+		.table = t3_hifi_pll_table,
+#else
 		.range = &t3_hifi_pll_m,
+#endif
 		.init_regs = t3_hifi_init_regs,
 		.init_count = ARRAY_SIZE(t3_hifi_init_regs),
 		.flags = CLK_MESON_PLL_ROUND_CLOSEST | CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION,

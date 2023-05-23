@@ -75,9 +75,14 @@ module_param(check_ts_alignm, int, 0644);
 MODULE_PARM_DESC(dmc_keep_alive, "\n\t\t Enable keep dmc alive");
 static int dmc_keep_alive;
 module_param(dmc_keep_alive, int, 0644);
+
 MODULE_PARM_DESC(find_error_pack, "\n\t\t find error package default 2 package");
 static int find_error_pack = 2;
 module_param(find_error_pack, int, 0644);
+
+MODULE_PARM_DESC(write_timeout_ms, "\n\t\t write timeout default 1s");
+static int write_timeout_ms = 1000;
+module_param(write_timeout_ms, int, 0644);
 
 struct mem_cache {
 	unsigned long start_virt;
@@ -1320,6 +1325,8 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 	char *p_mem = (void *)pchan->mem;
 	int p_total = 0;
 	int total = 0;
+	s64 prev_time_nsec;
+	s64 max_timeout_nsec;
 
 	pr_dbg("%s start w:%d\n", __func__, r);
 	do {
@@ -1424,9 +1431,12 @@ int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
 			rdma_config_enable(pchan, 1, tmp,
 					   pchan->mem_size, total, pack_len);
 		}
-
+		prev_time_nsec = ktime_to_ns(ktime_get());
+		max_timeout_nsec = (s64)write_timeout_ms * 1000;
 		do {
-		} while (!rdma_get_done(pchan->id));
+			usleep_range(1, 10);
+		} while (!rdma_get_done(pchan->id) &&
+			(ktime_to_ns(ktime_get()) - prev_time_nsec) < max_timeout_nsec);
 
 		ret = rdma_get_rd_len(pchan->id);
 		if (ret != total)

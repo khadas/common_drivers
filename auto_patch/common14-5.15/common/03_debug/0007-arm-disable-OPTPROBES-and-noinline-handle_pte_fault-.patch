@@ -1,0 +1,56 @@
+From 62434ba472e063311fb3f46a7986a0153a727795 Mon Sep 17 00:00:00 2001
+From: Hanjie Lin <hanjie.lin@amlogic.com>
+Date: Thu, 25 May 2023 16:59:40 +0800
+Subject: [PATCH] arm: disable OPTPROBES and noinline handle_pte_fault [1/1]
+
+PD#SWPL-121806
+
+Problem:
+arm OPTPROBES will cause kprobe handler unexpected behavior
+memory atrace need kprobe at handle_pte_fault()
+
+Solution:
+disable HAVE_OPTPROBES and noinline handle_pte_fault
+
+Verify:
+sc2
+
+Change-Id: I4efbec5aeeb7b6fe56f6fbd0d413bae123549c5a
+Signed-off-by: Hanjie Lin <hanjie.lin@amlogic.com>
+---
+ arch/arm/Kconfig | 2 +-
+ mm/memory.c      | 4 ++++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 93d672099759..3d138c1a5445 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -106,7 +106,7 @@ config ARM
+ 	select HAVE_KRETPROBES if HAVE_KPROBES
+ 	select HAVE_MOD_ARCH_SPECIFIC
+ 	select HAVE_NMI
+-	select HAVE_OPTPROBES if !THUMB2_KERNEL
++	select HAVE_OPTPROBES if !THUMB2_KERNEL && (AMLOGIC_DEBUG != y && AMLOGIC_DEBUG != m)
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_PERF_REGS
+ 	select HAVE_PERF_USER_STACK_DUMP
+diff --git a/mm/memory.c b/mm/memory.c
+index 068a690cd5b5..f48e8ddc1972 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -4805,7 +4805,11 @@ static vm_fault_t wp_huge_pud(struct vm_fault *vmf, pud_t orig_pud)
+  * The mmap_lock may have been released depending on flags and our return value.
+  * See filemap_fault() and __lock_page_or_retry().
+  */
++#if (defined CONFIG_ARM) && IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
++vm_fault_t handle_pte_fault(struct vm_fault *vmf)
++#else
+ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
++#endif
+ {
+ 	pte_t entry;
+ 
+-- 
+2.29.0
+

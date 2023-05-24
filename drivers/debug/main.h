@@ -14,6 +14,7 @@ int cpu_mhz_init(void);
 int cpu_mhz_init(void)  { return 0; }
 #endif
 int aml_sched_init(void);
+int aml_kprobes_init(void);
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 int meson_atrace_init(void);

@@ -22,6 +22,7 @@ static int __init debug_main_init(void)
 	call_sub_init(gki_config_init);
 	call_sub_init(aml_hld_init);
 	call_sub_init(aml_sched_init);
+	call_sub_init(aml_kprobes_init);
 	pr_debug("### %s() end\n", __func__);
 	return 0;
 }

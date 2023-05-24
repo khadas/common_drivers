@@ -5068,6 +5068,22 @@ static struct osd_device_data_s osd_s4 = {
 	.osd0_sc_independ = 0,
 };
 
+static struct osd_device_data_s osd_s1a = {
+	.cpu_id = __MESON_CPU_MAJOR_ID_S1A,
+	.osd_ver = OSD_HIGH_ONE,
+	.afbc_type = NO_AFBC,
+	.osd_count = 2,
+	.has_deband = 1,
+	.has_lut = 1,
+	.has_rdma = 1,
+	.has_dolby_vision = 0,
+	.osd_fifo_len = 64, /* fifo len 64*8 = 512 */
+	.vpp_fifo_len = 0x7ff,/* 2048 */
+	.dummy_data = 0x00808000,
+	.has_viu2 = 0,
+	.osd0_sc_independ = 0,
+};
+
 static struct osd_device_data_s osd_t3 = {
 	.cpu_id = __MESON_CPU_MAJOR_ID_T3,
 	.osd_ver = OSD_HIGH_ONE,
@@ -5313,6 +5329,10 @@ static const struct of_device_id meson_fb_dt_match[] = {
 	{
 		.compatible = "amlogic, fb-s4",
 		.data = &osd_s4,
+	},
+	{
+		.compatible = "amlogic, fb-s1a",
+		.data = &osd_s1a,
 	},
 	{
 		.compatible = "amlogic, fb-t3",

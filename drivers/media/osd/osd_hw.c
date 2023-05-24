@@ -3888,6 +3888,7 @@ static u32 osd_get_hw_reset_flag(u32 output_index)
 	case __MESON_CPU_MAJOR_ID_T5D:
 	case __MESON_CPU_MAJOR_ID_S4:
 	case __MESON_CPU_MAJOR_ID_TXHD2:
+	case __MESON_CPU_MAJOR_ID_S1A:
 		{
 		int i, afbc_enable = 0;
 
@@ -8141,6 +8142,100 @@ static int afbc_pix_format(u32 fmt_mode)
 	return pix_format;
 }
 
+static void matrix_RGB2YUV(u32 index, int mtx_csc, int mtx_on)
+{
+	unsigned int matrix_coef00_01 = 0;
+	unsigned int matrix_coef02_10 = 0;
+	unsigned int matrix_coef11_12 = 0;
+	unsigned int matrix_coef20_21 = 0;
+	unsigned int matrix_coef22 = 0;
+	unsigned int matrix_coef13_14 = 0;
+	unsigned int matrix_coef23_24 = 0;
+	unsigned int matrix_coef15_25 = 0;
+	unsigned int matrix_clip = 0;
+	unsigned int matrix_offset0_1 = 0;
+	unsigned int matrix_offset2 = 0;
+	unsigned int matrix_pre_offset0_1 = 0;
+	unsigned int matrix_pre_offset2 = 0;
+	unsigned int matrix_en_ctrl = 0;
+
+	if (index == OSD1) {
+		matrix_coef00_01 = VPP_OSD1_MATRIX_COEF00_01;
+		matrix_coef02_10 = VPP_OSD1_MATRIX_COEF02_10;
+		matrix_coef11_12 = VPP_OSD1_MATRIX_COEF11_12;
+		matrix_coef20_21 = VPP_OSD1_MATRIX_COEF20_21;
+		matrix_coef22 = VPP_OSD1_MATRIX_COEF22;
+		matrix_coef13_14 = VPP_OSD1_MATRIX_COEF13_14;
+		matrix_coef23_24 = VPP_OSD1_MATRIX_COEF23_24;
+		matrix_coef15_25 = VPP_OSD1_MATRIX_COEF15_25;
+		matrix_clip = VPP_OSD1_MATRIX_CLIP;
+		matrix_offset0_1 = VPP_OSD1_MATRIX_OFFSET0_1;
+		matrix_offset2 = VPP_OSD1_MATRIX_OFFSET2;
+		matrix_pre_offset0_1 = VPP_OSD1_MATRIX_PRE_OFFSET0_1;
+		matrix_pre_offset2 = VPP_OSD1_MATRIX_PRE_OFFSET2;
+		matrix_en_ctrl = VPP_OSD1_MATRIX_EN_CTRL;
+	} else {
+		matrix_coef00_01 = VPP_OSD2_MATRIX_COEF00_01;
+		matrix_coef02_10 = VPP_OSD2_MATRIX_COEF02_10;
+		matrix_coef11_12 = VPP_OSD2_MATRIX_COEF11_12;
+		matrix_coef20_21 = VPP_OSD2_MATRIX_COEF20_21;
+		matrix_coef22 = VPP_OSD2_MATRIX_COEF22;
+		matrix_coef13_14 = VPP_OSD2_MATRIX_COEF13_14;
+		matrix_coef23_24 = VPP_OSD2_MATRIX_COEF23_24;
+		matrix_coef15_25 = VPP_OSD2_MATRIX_COEF15_25;
+		matrix_clip = VPP_OSD2_MATRIX_CLIP;
+		matrix_offset0_1 = VPP_OSD2_MATRIX_OFFSET0_1;
+		matrix_offset2 = VPP_OSD2_MATRIX_OFFSET2;
+		matrix_pre_offset0_1 = VPP_OSD2_MATRIX_PRE_OFFSET0_1;
+		matrix_pre_offset2 = VPP_OSD2_MATRIX_PRE_OFFSET2;
+		matrix_en_ctrl = VPP_OSD2_MATRIX_EN_CTRL;
+	}
+	if (mtx_on) {
+		VSYNCOSD_WR_MPEG_REG_BITS(matrix_en_ctrl, 1, 0, 1);
+	} else {
+		VSYNCOSD_WR_MPEG_REG_BITS(matrix_en_ctrl, 0, 0, 1);
+		return;
+	}
+
+	switch (mtx_csc) {
+	case MATRIX_RGB_YUV709:
+		VSYNCOSD_WR_MPEG_REG(matrix_coef00_01, 0x00bb0275);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef02_10, 0x003f1f99);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef11_12, 0x1ea601c2);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef20_21, 0x01c21e67);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef22, 0x00001fd7);
+		VSYNCOSD_WR_MPEG_REG(matrix_offset0_1, 0x00400200);
+		VSYNCOSD_WR_MPEG_REG(matrix_offset2, 0x00000200);
+		VSYNCOSD_WR_MPEG_REG(matrix_pre_offset0_1, 0x0);
+		VSYNCOSD_WR_MPEG_REG(matrix_pre_offset2, 0x0);
+		break;
+	case MATRIX_YUV709_RGB:
+		VSYNCOSD_WR_MPEG_REG(matrix_coef00_01, 0x04ac0000);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef02_10, 0x073104ac);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef11_12, 0x1f251ddd);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef20_21, 0x04ac0879);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef22, 0x0);
+		VSYNCOSD_WR_MPEG_REG(matrix_offset0_1, 0x0);
+		VSYNCOSD_WR_MPEG_REG(matrix_offset2, 0x0);
+		VSYNCOSD_WR_MPEG_REG(matrix_pre_offset0_1, 0x7c00600);
+		VSYNCOSD_WR_MPEG_REG(matrix_pre_offset2, 0x00000600);
+		break;
+	case MATRIX_YUV709F_RGB:/*full to full*/
+		VSYNCOSD_WR_MPEG_REG(matrix_coef00_01, 0x04000000);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef02_10, 0x064D0400);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef11_12, 0x1F411E21);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef20_21, 0x0400076D);
+		VSYNCOSD_WR_MPEG_REG(matrix_coef22, 0x0);
+		VSYNCOSD_WR_MPEG_REG(matrix_offset0_1, 0x0);
+		VSYNCOSD_WR_MPEG_REG(matrix_offset2, 0x0);
+		VSYNCOSD_WR_MPEG_REG(matrix_pre_offset0_1, 0x0000600);
+		VSYNCOSD_WR_MPEG_REG(matrix_pre_offset2, 0x00000600);
+		break;
+	default:
+		break;
+	}
+}
+
 static void osd_update_color_mode(u32 index)
 {
 	u32  data32 = 0;
@@ -8151,6 +8246,11 @@ static void osd_update_color_mode(u32 index)
 		enum color_index_e idx =
 			osd_hw.color_info[index]->color_index;
 
+		if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_S1A &&
+			idx != COLOR_INDEX_YUV_422)
+			matrix_RGB2YUV(index, MATRIX_RGB_YUV709, 1);
+		else
+			matrix_RGB2YUV(index, MATRIX_RGB_YUV709, 0);
 		data32 = (osd_hw.scan_mode[index] ==
 			SCAN_MODE_INTERLACE) ? 2 : 0;
 		data32 |= osd_hw.osd_rdma_func[output_index].osd_rdma_rd
@@ -14698,6 +14798,9 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 				      data32);
 		/* osd_reg_write(VIU_OSD2_FIFO_CTRL_STAT, data32_); */
 		if (osd_dev_hw.display_type != C3_DISPLAY) {
+			if (osd_hw.osd_meson_dev.cpu_id ==
+				__MESON_CPU_MAJOR_ID_S1A)
+				osd_reg_clr_mask(VPP_MISC, VPP_VD1_POSTBLEND);
 			osd_reg_set_mask(VPP_MISC, VPP_POSTBLEND_EN);
 			osd_reg_clr_mask(VPP_MISC, VPP_PREBLEND_EN);
 			if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL) {

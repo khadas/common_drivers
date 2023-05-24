@@ -2929,8 +2929,6 @@ static irqreturn_t meson_mmc_irq_thread(int irq, void *dev_id)
 	if (cmd->error) {
 		meson_mmc_wait_desc_stop(host);
 		meson_mmc_request_done(host->mmc, cmd->mrq);
-		writel(0x7fff, host->regs + SD_EMMC_STATUS);
-		//pr_info("thread irq:0x%x\n", readl(host->regs + SD_EMMC_STATUS));
 
 		return IRQ_HANDLED;
 	}

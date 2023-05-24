@@ -6280,20 +6280,23 @@ void vpp_clip_setting(u8 vpp_index, struct clip_setting_s *setting)
 {
 	if (setting->clip_done)
 		return;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
 		vpp_clip_setting_s5(vpp_index, setting);
-	}  else {
-		cur_dev->rdma_func[vpp_index].rdma_wr
-			(VPP_CLIP_MISC0,
-			setting->clip_max);
-		cur_dev->rdma_func[vpp_index].rdma_wr
-			(VPP_CLIP_MISC1,
-			setting->clip_min);
-		if (!(setting->clip_max == 0x3fffffff &&
-			setting->clip_min == 0x0)) {
-			WRITE_VCBUS_REG(VPP_CLIP_MISC0, setting->clip_max);
-			WRITE_VCBUS_REG(VPP_CLIP_MISC1, setting->clip_min);
-		}
+		setting->clip_done = true;
+		return;
+	}
+#endif
+	cur_dev->rdma_func[vpp_index].rdma_wr
+		(VPP_CLIP_MISC0,
+		setting->clip_max);
+	cur_dev->rdma_func[vpp_index].rdma_wr
+		(VPP_CLIP_MISC1,
+		setting->clip_min);
+	if (!(setting->clip_max == 0x3fffffff &&
+		setting->clip_min == 0x0)) {
+		WRITE_VCBUS_REG(VPP_CLIP_MISC0, setting->clip_max);
+		WRITE_VCBUS_REG(VPP_CLIP_MISC1, setting->clip_min);
 	}
 	setting->clip_done = true;
 }
@@ -6616,9 +6619,7 @@ static inline void vdx_test_pattern_output(u32 index, u32 on, u32 color)
 {
 	u8 vpp_index = VPP0;
 	u32 vdx_clip_misc0, vdx_clip_misc1;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct clip_setting_s setting;
-#endif
 
 	switch (index) {
 	case 0:

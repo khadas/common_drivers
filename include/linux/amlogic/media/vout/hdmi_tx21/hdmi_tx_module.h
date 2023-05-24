@@ -173,6 +173,10 @@ struct hdmitx_clk_tree_s {
 	struct clk *venci_1_gate;
 };
 
+struct st_debug_param {
+	unsigned int avmute_frame;
+};
+
 struct hdmitx_dev {
 	struct cdev cdev; /* The cdev structure */
 	dev_t hdmitx_id;
@@ -343,6 +347,7 @@ struct hdmitx_dev {
 	struct mutex hdmimode_mutex;
 	unsigned long up_hdcp_timeout_sec;
 	struct delayed_work work_up_hdcp_timeout;
+	struct st_debug_param debug_param;
 };
 
 /***********************************************************************

@@ -97,8 +97,9 @@
 /*  V3.2.00  t3x bringup */
 /*  V3.2.01  optimize isdbt stability of locking signal */
 /*  V3.2.02  fix dvbc aft test unstable */
-/*  V3.2.3  improve performance when atsc signal is weak */
-/*  V3.2.4  fix dvbc new driver to solve missing channel */
+/*  V3.2.03  improve performance when atsc signal is weak */
+/*  V3.2.04  fix dvbc new driver to solve missing channel */
+/*  V3.2.05  fix dvbs blind scan new miss 2150M */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -115,8 +116,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.2.4"
-#define DTVDEMOD_VER	"2023/5/30: fix dvbc new driver to solve missing channel"
+#define AMLDTVDEMOD_VER "V3.2.05"
+#define DTVDEMOD_VER	"2023/5/31: fix dvbs blind scan new miss 2150M"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

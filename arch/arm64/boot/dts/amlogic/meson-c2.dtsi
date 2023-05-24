@@ -343,7 +343,7 @@
 				clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
 						"clkin0", "clkin1";
 			mmc_debug_flag;
-			use_intf3_tuning;
+			//use_intf3_tuning;
 			resets = <&reset RESET_SD_EMMC_A>;
 		};
 

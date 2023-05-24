@@ -778,17 +778,15 @@ int tuner_attach_register_cb(const enum tuner_type type, tn_attach_cb funcb)
 			mod_num++;
 		}
 
-		if (ops->cfg.id == type) {
+		if (ops->cfg.id == type)
 			found = true;
-			break;
-		}
 	}
 
 	if (found)
 		tuner->cb_num++;
 
-	pr_info("%s: register type %d, current num %d\n",
-		__func__, type, tuner->cb_num);
+	pr_info("%s: register type %d, current num %d, modnum %d\n",
+		__func__, type, tuner->cb_num, mod_num);
 
 	if (tuner->cb_num == mod_num) {
 		mutex_unlock(&dvb_tuners_mutex);

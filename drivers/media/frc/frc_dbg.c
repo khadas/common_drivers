@@ -902,6 +902,7 @@ ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 		"inp_adj_en [0/1]\t: size adjust when input size not standard\n");
 	len += sprintf(buf + len, "crash_int_en\t:\n");
 	len += sprintf(buf + len, "del_120_pth\t:\n");
+	len += sprintf(buf + len, "pr_dbg 0/1\t: print reg table\n");
 	return len;
 }
 
@@ -959,6 +960,15 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			devp->ud_dbg.res2_dbg_en = val1;
+	} else if (!strcmp(parm[0], "pr_dbg")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0) {
+			if (devp->ud_dbg.pr_dbg)
+				pr_frc(2, "processing, try again later\n");
+			else
+				devp->ud_dbg.pr_dbg = (u8)val1;
+		}
 	}
 exit:
 	kfree(buf_orig);

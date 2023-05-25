@@ -278,6 +278,9 @@ irqreturn_t frc_output_isr(int irq, void *dev_id)
 	// rdma trigger 0 manual, 1-7 auto path
 	frc_rdma_config(0, 0);
 
+	if (devp->ud_dbg.pr_dbg)
+		frc_debug_print(devp);
+
 	return IRQ_HANDLED;
 }
 

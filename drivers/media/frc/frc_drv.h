@@ -517,6 +517,8 @@ struct frc_ud_s {
 	unsigned other2_err:1;
 	unsigned other1_err:1;
 	unsigned vp_undone_err:2;
+
+	u8 pr_dbg;
 };
 
 struct frc_force_size_s {
@@ -637,6 +639,8 @@ struct frc_dev_s {
 	//struct workqueue_struct *frc_wq;
 	//struct work_struct frc_work;
 	struct work_struct frc_clk_work;
+	struct work_struct frc_print_work;
+
 
 	struct st_frc_sts frc_sts;
 	struct st_frc_in_sts in_sts;

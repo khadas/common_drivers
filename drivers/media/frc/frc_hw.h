@@ -116,6 +116,8 @@ void frc_memc_120hz_patch(struct frc_dev_s *frc_devp);
 void frc_memc_120hz_patch_1(struct frc_dev_s *frc_devp);
 void frc_memc_120hz_patch_2(struct frc_dev_s *frc_devp);
 void frc_memc_120hz_patch_3(struct frc_dev_s *frc_devp);
+void frc_debug_table_print(struct work_struct *work);
+void frc_debug_print(struct frc_dev_s *devp);
 
 void frc_load_reg_table(struct frc_dev_s *frc_devp, u8 flag);
 #endif

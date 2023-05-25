@@ -1163,6 +1163,7 @@ static int frc_probe(struct platform_device *pdev)
 		PR_FRC("%s frc rdma init failed\n", __func__);
 // #endif
 	INIT_WORK(&frc_devp->frc_clk_work, frc_clock_workaround);
+	INIT_WORK(&frc_devp->frc_print_work, frc_debug_table_print);
 	frc_devp->clk_chg = 1;
 	frc_set_enter_forcefilm(frc_devp, 0);
 
@@ -1210,6 +1211,7 @@ static int __exit frc_remove(struct platform_device *pdev)
 	PR_FRC("%s:module remove\n", __func__);
 	// frc_devp = platform_get_drvdata(pdev);
 	cancel_work_sync(&frc_devp->frc_clk_work);
+	cancel_work_sync(&frc_devp->frc_print_work);
 	tasklet_kill(&frc_devp->input_tasklet);
 	tasklet_kill(&frc_devp->output_tasklet);
 	tasklet_disable(&frc_devp->input_tasklet);

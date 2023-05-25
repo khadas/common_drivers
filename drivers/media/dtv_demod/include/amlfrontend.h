@@ -97,6 +97,7 @@
 /*  V3.2.00  t3x bringup */
 /*  V3.2.01  optimize isdbt stability of locking signal */
 /*  V3.2.02  fix dvbc aft test unstable */
+/*  V3.2.3  improve performance when atsc signal is weak */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -113,8 +114,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.2.02"
-#define DTVDEMOD_VER	"2023/5/24: fix dvbc aft test unstable"
+#define AMLDTVDEMOD_VER "V3.2.3"
+#define DTVDEMOD_VER	"2023/5/29: improve performance when atsc signal is weak"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

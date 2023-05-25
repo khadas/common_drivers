@@ -2669,7 +2669,8 @@ static int set_aud_acr_pkt(struct hdmitx_dev *hdev,
 {
 	unsigned int data32;
 	unsigned int aud_n_para;
-	unsigned int char_rate;
+	unsigned int char_rate = 0;
+	struct hdmi_timing frac_timing;
 	static unsigned int pre_aud_n_para;
 	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 
@@ -2680,10 +2681,12 @@ static int set_aud_acr_pkt(struct hdmitx_dev *hdev,
 	    audio_param->type == CT_DTS_HD_MA)
 		hdmitx_wr_reg(HDMITX_DWC_AUD_INPUTCLKFS, 2);
 
-	if (hdev->tx_comm.frac_rate_policy && para->timing.frac_freq)
-		char_rate = para->timing.frac_freq;
+	frac_timing = para->timing;
+	if (hdev->tx_comm.frac_rate_policy && hdmitx_mode_update_timing(&frac_timing, true) >= 0)
+		char_rate = frac_timing.pixel_freq;
 	else
 		char_rate = para->timing.pixel_freq;
+
 	if (para->cs == HDMI_COLORSPACE_YUV422)
 		aud_n_para = hdmi_get_aud_n_paras(audio_param->sample_rate,
 						  COLORDEPTH_24B, char_rate);
@@ -6432,8 +6435,8 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 
 	data32  = 0;
 	data32 |= (1 << 7);
-	data32 |= t->vsync_polarity << 6;
-	data32 |= t->hsync_polarity << 5;
+	data32 |= t->v_pol << 6;
+	data32 |= t->h_pol << 5;
 	data32 |= (1 << 4);
 	data32 |= (1 << 3);
 	data32 |= (!(para->progress_mode) << 1);
@@ -6725,8 +6728,8 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 
 	/* Pixel repetition ratio the input and output video */
 	data32  = 0;
-	data32 |= ((para->pixel_repetition_factor + 1) << 4);
-	data32 |= (para->pixel_repetition_factor << 0);
+	data32 |= ((t->pixel_repetition_factor + 1) << 4);
+	data32 |= (t->pixel_repetition_factor << 0);
 	hdmitx_wr_reg(HDMITX_DWC_FC_PRCONF, data32);
 
 	/* Configure HDCP */
@@ -6746,9 +6749,9 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	/* Set hsync/vsync polarity to solve the
 	 * problem of timing continuing change
 	 */
-	if (t->hsync_polarity)
+	if (t->h_pol)
 		data32 |= (1 << 1);
-	if (t->vsync_polarity)
+	if (t->v_pol)
 		data32 |= (1 << 3);
 	hdmitx_wr_reg(HDMITX_DWC_A_VIDPOLCFG,   data32);
 

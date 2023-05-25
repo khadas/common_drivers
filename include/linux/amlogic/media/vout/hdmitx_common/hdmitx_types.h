@@ -15,6 +15,7 @@ struct hdmi_format_para {
 	enum hdmi_vic vic;
 	unsigned char *name;
 	unsigned char *sname;
+
 	char ext_name[32];
 
 	/*valid info*/

@@ -6700,14 +6700,6 @@ static int drm_hdmitx_get_timing_para(int vic, struct drm_hdmitx_timing_para *pa
 	else
 		return -1;
 
-	if (timing->v_freq % 1000 == 0) {
-		para->sync_dura_num = timing->v_freq / 1000;
-		para->sync_dura_den = 1;
-	} else {
-		para->sync_dura_num = timing->v_freq;
-		para->sync_dura_den = 1000;
-	}
-
 	para->pi_mode = timing->pi_mode;
 	para->pix_repeat_factor = timing->pixel_repetition_factor;
 

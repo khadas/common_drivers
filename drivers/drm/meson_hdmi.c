@@ -298,7 +298,6 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 	struct drm_hdmitx_timing_para para;
 	struct am_hdmi_tx *am_hdmitx = connector_to_am_hdmi(connector);
 	char *strp = NULL;
-	u32 num, den;
 
 	if (!am_hdmitx) {
 		DRM_ERROR("am_hdmitx is NULL!\n");
@@ -350,9 +349,6 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 			}
 
 			mode->type = DRM_MODE_TYPE_DRIVER;
-			num = para.sync_dura_num;
-			den = para.sync_dura_den;
-			//mode->vrefresh = (int)DIV_ROUND_CLOSEST(num, den);
 			mode->clock = para.pixel_freq;
 
 			mode->hdisplay = para.h_active;

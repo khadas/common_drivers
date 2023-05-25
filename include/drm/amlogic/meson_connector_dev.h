@@ -22,8 +22,6 @@ struct drm_hdmitx_timing_para {
 	u32 h_pol;
 	u32 v_pol;
 
-	u32 sync_dura_num;
-	u32 sync_dura_den;
 	u32 pixel_freq;
 	u32 h_active;
 	u32 h_front;

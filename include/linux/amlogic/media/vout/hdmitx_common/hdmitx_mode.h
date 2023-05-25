@@ -306,14 +306,8 @@ struct hdmi_timing {
 	unsigned short h_pixel;
 	unsigned short v_pixel;
 
-	/*Same as DRM_MODE_FLAG_DBLCLK, now only for 480i&576i*/
+	/*Same as DRM_MODE_FLAG_DBLCLK, only for 480i&576i*/
 	u32 pixel_repetition_factor:1;
-
-	/*hdmi_cea_timing for hdmitx20*/
-	unsigned int frac_freq; /* 1.001 shift */
-	unsigned int vsync; /* Unit: Hz, rough data */
-	unsigned int vsync_polarity:1;
-	unsigned int hsync_polarity:1;
 };
 
 enum hdmi_color_depth {
@@ -338,5 +332,17 @@ struct parse_cr {
 	enum hdmi_quantization_range cr;
 	const char *name;
 };
+
+bool hdmitx_mode_have_alternate_clock(const struct hdmi_timing *t);
+
+int hdmi_timing_vrefresh(const struct hdmi_timing *t);
+
+/**
+ * This function try to update hdmi_timing to alternate fraction_mode or not.
+ * return < 0: means this timing cannot support fraction_mode.
+ * return 0: current timing match frac_mode, nothing update.
+ * return > 0: current timing have modified to match frac_mode.
+ */
+int hdmitx_mode_update_timing(struct hdmi_timing *t, bool to_frac_mode);
 
 #endif

@@ -7237,6 +7237,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	struct hdmitx_common *tx_comm = &hdev->tx_comm;
 
 	pr_debug(SYS "%s start\n", __func__);
+	hdmi_format_list_init();
 	hdmitx_common_init(tx_comm);
 	amhdmitx_device_init(hdev, get_hdmitx_boot_params());
 
@@ -7851,18 +7852,19 @@ static int drm_hdmitx_get_timing_para(int vic, struct drm_hdmitx_timing_para *pa
 
 	timing = &hdmi_para->timing;
 
-	strncpy(para->name, hdmi_para->deprecated_vinfo.name, DRM_DISPLAY_MODE_LEN);
-	para->sync_dura_num = hdmi_para->deprecated_vinfo.sync_duration_num;
-	para->sync_dura_den = hdmi_para->deprecated_vinfo.sync_duration_den;
-	if (hdmi_para->deprecated_vinfo.field_height !=
-		hdmi_para->deprecated_vinfo.height)
-		para->pi_mode = 0;
-	else
-		para->pi_mode = 1;
+	if (timing->sname) {
+		memcpy(para->name, timing->sname, DRM_DISPLAY_MODE_LEN);
+	} else if (timing->name) {
+		memcpy(para->name, timing->name, DRM_DISPLAY_MODE_LEN);
+	} else {
+		pr_err(" func %s get vic %d without name\n", __func__, vic);
+		return -1;
+	}
 
-	para->pix_repeat_factor = hdmi_para->pixel_repetition_factor;
-	para->h_pol = timing->hsync_polarity;
-	para->v_pol = timing->vsync_polarity;
+	para->pi_mode = timing->pi_mode;
+	para->pix_repeat_factor = timing->pixel_repetition_factor;
+	para->h_pol = timing->h_pol;
+	para->v_pol = timing->v_pol;
 	para->pixel_freq = timing->pixel_freq;
 
 	para->h_active = timing->h_active;

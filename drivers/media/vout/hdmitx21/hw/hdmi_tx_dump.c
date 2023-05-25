@@ -298,8 +298,8 @@ static int dump_hdmivpfdet_show(struct seq_file *s, void *p)
 	val = hdmitx21_rd_reg(reg);
 	if (val) {
 		seq_printf(s, "status [%x] 0x%x %d\n", reg, val, val);
-		seq_printf(s, "  hsync_polarity %d\n", (val >> 0) & 1);
-		seq_printf(s, "  vsync_polarity %d\n", (val >> 1) & 1);
+		seq_printf(s, "  h_pol %d\n", (val >> 0) & 1);
+		seq_printf(s, "  v_pol %d\n", (val >> 1) & 1);
 		seq_printf(s, "  interlaced %d\n", (val >> 2) & 1);
 		seq_printf(s, "  video656 %d\n", (val >> 3) & 1);
 	}
@@ -388,8 +388,8 @@ static int dump_hdmivpfdet_show(struct seq_file *s, void *p)
 	if (val) {
 		seq_printf(s, "irq_mask [%x] 0x%x %d\n", reg, val, val);
 
-		PR_DETAIL(0, "hsync_polarity");
-		PR_DETAIL(1, "vsync_polarity");
+		PR_DETAIL(0, "h_pol");
+		PR_DETAIL(1, "v_pol");
 		PR_DETAIL(2, "interlaced");
 		PR_DETAIL(3, "video656");
 		PR_DETAIL(4, "frame_rate");
@@ -419,8 +419,8 @@ static int dump_hdmivpfdet_show(struct seq_file *s, void *p)
 	if (val) {
 		seq_printf(s, "irq_status [%x] 0x%x %d\n",
 			reg, val, val);
-		PR_DETAIL(0, "hsync_polarity");
-		PR_DETAIL(1, "vsync_polarity");
+		PR_DETAIL(0, "h_pol");
+		PR_DETAIL(1, "v_pol");
 		PR_DETAIL(2, "interlaced");
 		PR_DETAIL(3, "video656");
 		PR_DETAIL(4, "frame_rate");

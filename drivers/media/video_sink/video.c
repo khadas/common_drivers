@@ -12923,6 +12923,22 @@ static int video_attr_create(void)
 }
 
 #ifdef TV_REVERSE
+int screen_orientation(void)
+{
+	int ret = 0;
+
+	if (reverse)
+		ret = HV_MIRROR;
+	else if (video_mirror == H_MIRROR)
+		ret = H_MIRROR;
+	else if (video_mirror == V_MIRROR)
+		ret = V_MIRROR;
+	else
+		ret = NO_MIRROR;
+
+	return ret;
+}
+
 static int vpp_axis_reverse(char *str)
 {
 	char *ptr = str;
@@ -12944,10 +12960,10 @@ static int vpp_axis_reverse(char *str)
 		video_mirror = 0;
 	} else if (strstr(ptr, "2")) {
 		reverse = false;
-		video_mirror = 1;
+		video_mirror = H_MIRROR;
 	} else if (strstr(ptr, "3")) {
 		reverse = false;
-		video_mirror = 2;
+		video_mirror = V_MIRROR;
 	} else {
 		reverse = false;
 		video_mirror = 0;

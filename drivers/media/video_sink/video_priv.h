@@ -1022,6 +1022,11 @@ void vpp_trace_vframe(const char *name, void *vf, int arg1, int arg2, int id, in
 #ifdef ENABLE_PRE_LINK
 bool is_pre_link_available(struct vframe_s *vf);
 #endif
+
+#ifdef TV_REVERSE
+int screen_orientation(void);
+#endif
+
 void hdmi_in_delay_maxmin_old(struct vframe_s *vf);
 void hdmi_in_delay_maxmin_new(struct vframe_s *vf);
 int vpp_set_super_scaler_regs(struct video_layer_s *layer,

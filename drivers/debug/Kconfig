@@ -147,3 +147,11 @@ config AMLOGIC_APU
 	  this option is provide for AMLOGIC APU support, eg t3x/t5m
 	  has dedicated core for APU and should not used by other
 	  modules, and should enable
+
+config AMLOGIC_BGKI_SCHED_SYSCTL
+	bool "Amlogic sched sysctl"
+	default n
+	depends on AMLOGIC_BREAK_GKI_20
+	help
+	  this is for vts vts_kernel_proc_file_api_test support in
+	  android S.

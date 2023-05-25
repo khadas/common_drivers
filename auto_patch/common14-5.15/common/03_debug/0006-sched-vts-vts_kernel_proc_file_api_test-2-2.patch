@@ -1,0 +1,156 @@
+From f7c5762bff2825fc2714cc4f7aa92992e389ec40 Mon Sep 17 00:00:00 2001
+From: "qiankun.wang" <qiankun.wang@amlogic.com>
+Date: Fri, 19 May 2023 15:26:35 +0800
+Subject: [PATCH] sched: vts: vts_kernel_proc_file_api_test [2/2]
+
+PD#SWPL-124519
+
+Problem:
+vts_kernel_proc_file_api_test module 3 fail
+
+Solution:
+add 3 proc file interfaces 'sched_latency_ns',
+'sched_wakeup_granularity_ns',
+'sched_tunable_scaling'
+
+Verify:
+SC2
+
+Change-Id: I514cea758d73825252a14cb7c39e1f233d075f2e
+Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
+---
+ include/linux/sched/sysctl.h | 12 +++++++++++
+ kernel/sched/fair.c          | 25 +++++++++++++++++++++
+ kernel/sysctl.c              | 42 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 79 insertions(+)
+
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index d5ebdb6b79de..9b6ff6ac0e64 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -26,6 +26,11 @@ int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
+ enum { sysctl_hung_task_timeout_secs = 0 };
+ #endif
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_SCHED_SYSCTL)
++extern unsigned int sysctl_sched_latency;
++extern unsigned int sysctl_sched_min_granularity;
++extern unsigned int sysctl_sched_wakeup_granularity;
++#endif
+ extern unsigned int sysctl_sched_child_runs_first;
+ 
+ enum sched_tunable_scaling {
+@@ -35,6 +40,13 @@ enum sched_tunable_scaling {
+ 	SCHED_TUNABLESCALING_END,
+ };
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_SCHED_SYSCTL)
++extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
++
++int sched_proc_update_handler(struct ctl_table *table, int write,
++		void __user *buffer, size_t *length,
++		loff_t *ppos);
++#endif
+ /*
+  *  control realtime throttling:
+  *
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 87b1c7ecec3b..8297bd52e8f0 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -643,6 +643,31 @@ int sched_update_scaling(void)
+ 
+ 	return 0;
+ }
++
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_SCHED_SYSCTL)
++int sched_proc_update_handler(struct ctl_table *table, int write,
++				void __user *buffer, size_t *lenp,
++				loff_t *ppos)
++{
++	int ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
++	unsigned int factor = get_update_sysctl_factor();
++
++	if (ret || !write)
++		return ret;
++
++	sched_nr_latency = DIV_ROUND_UP(sysctl_sched_latency,
++		sysctl_sched_min_granularity);
++
++#define WRT_SYSCTL(name) \
++	(normalized_sysctl_##name = sysctl_##name / (factor))
++	WRT_SYSCTL(sched_min_granularity);
++	WRT_SYSCTL(sched_latency);
++	WRT_SYSCTL(sched_wakeup_granularity);
++#undef WRT_SYSCTL
++
++	return 0;
++}
++#endif
+ #endif
+ 
+ /*
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index be0caa71509d..bf3cb6803f61 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -183,6 +183,17 @@ static enum sysctl_writes_mode sysctl_writes_strict = SYSCTL_WRITES_STRICT;
+ int sysctl_legacy_va_layout;
+ #endif
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_SCHED_SYSCTL)
++static int min_sched_granularity_ns = 100000;           /* 100 usecs */
++static int max_sched_granularity_ns = NSEC_PER_SEC;     /* 1 second */
++static int min_wakeup_granularity_ns;                   /* 0 usecs */
++static int max_wakeup_granularity_ns = NSEC_PER_SEC;    /* 1 second */
++#ifdef CONFIG_SMP
++static int min_sched_tunable_scaling = SCHED_TUNABLESCALING_NONE;
++static int max_sched_tunable_scaling = SCHED_TUNABLESCALING_END - 1;
++#endif /* CONFIG_SMP */
++#endif
++
+ #ifdef CONFIG_COMPACTION
+ static int min_extfrag_threshold;
+ static int max_extfrag_threshold = 1000;
+@@ -1850,7 +1861,38 @@ static struct ctl_table kern_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= sched_rr_handler,
+ 	},
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_SCHED_SYSCTL)
++	{
++		.procname       = "sched_latency_ns",
++		.data           = &sysctl_sched_latency,
++		.maxlen         = sizeof(unsigned int),
++		.mode           = 0644,
++		.proc_handler   = sched_proc_update_handler,
++		.extra1         = &min_sched_granularity_ns,
++		.extra2         = &max_sched_granularity_ns,
++	},
++	{
++		.procname       = "sched_wakeup_granularity_ns",
++		.data           = &sysctl_sched_wakeup_granularity,
++		.maxlen         = sizeof(unsigned int),
++		.mode           = 0644,
++		.proc_handler   = sched_proc_update_handler,
++		.extra1         = &min_wakeup_granularity_ns,
++		.extra2         = &max_wakeup_granularity_ns,
++	},
++#endif
+ #ifdef CONFIG_SMP
++#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_SCHED_SYSCTL)
++	{
++		.procname       = "sched_tunable_scaling",
++		.data           = &sysctl_sched_tunable_scaling,
++		.maxlen         = sizeof(enum sched_tunable_scaling),
++		.mode           = 0644,
++		.proc_handler   = sched_proc_update_handler,
++		.extra1         = &min_sched_tunable_scaling,
++		.extra2         = &max_sched_tunable_scaling,
++	},
++#endif
+ 	{
+ 		.procname	= "sched_pelt_multiplier",
+ 		.data		= &sysctl_sched_pelt_multiplier,
+-- 
+2.25.1
+

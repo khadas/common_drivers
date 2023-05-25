@@ -151,7 +151,7 @@ void rx_emp_data_capture(u8 port);
 void rx_tmds_data_capture(u8 port);
 void dump_state(int enable, u8 port);
 void hdmirx_init_params(u8 port);
-void fs_mode_init(void);
+void edid_auto_mode_init(void);
 void set_video_mute(bool on);
 void rx_dwc_reset(u8 port);
 

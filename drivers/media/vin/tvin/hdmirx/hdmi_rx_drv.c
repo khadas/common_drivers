@@ -3650,7 +3650,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_emp1_resource_allocate(&pdev->dev);
 	//rx[rx_info.main_port].port = rx[rx_info.main_port].arc_port;
 	aml_phy_get_trim_val();
-	fs_mode_init();
+	edid_auto_mode_init();
 	hdmirx_hw_probe();
 	if (rx_info.chip_id >= CHIP_ID_TL1 && phy_tdr_en)
 		term_cal_en = (!is_ft_trim_done());

@@ -118,6 +118,9 @@
 #define EDID_DETECT_PORT  7
 #endif
 
+/* If HDCP_VERSION is 2.x, edid switch to 2.0 automatically */
+#define CONFIG_AMLOGIC_HDMIRX_EDID_AUTO
+
 enum chip_id_e {
 	CHIP_ID_NONE,
 	CHIP_ID_GXTVBB,
@@ -303,6 +306,7 @@ struct rx_var_param {
 	int err_cnt_sum_max;
 	//bool clk_debug_en;
 	int hpd_wait_cnt;
+	int special_wait_max;
 	/* increase time of hpd low, to avoid some source like */
 	/* MTK box/KaiboerH9 i2c communicate error */
 	int hpd_wait_max;
@@ -519,14 +523,14 @@ struct rx_video_info {
 #define EMP_BUFF_MAX_PKT_CNT	32
 #define TMDS_DATA_BUFFER_SIZE	0x200000
 
-struct rx_fastswitch_mode {
-	enum hdcp_version_e hdcp_ver[E_PORT_NUM];
+struct rx_edid_auto_mode {
+	enum hdcp_version_e hdcp_ver;
 	/* if edid ver is the same after switch
 	 * edid ver in UI, no need to update edid
 	 */
-	enum edid_ver_e	edid_ver[E_PORT_NUM];
-	u8 hdmi5v_sts[E_PORT_NUM];
-	/* u8 hpd_sts[E_PORT_NUM]; */
+	enum edid_ver_e edid_ver;
+	u8 hdmi5v_sts;
+	/* u8 hpd_sts; */
 };
 
 /**
@@ -767,7 +771,6 @@ struct rx_info_s {
 	struct hdmirx_dev_s *hdmirx_dev;
 	enum chip_id_e chip_id;
 	enum phy_ver_e phy_ver;
-	struct rx_fastswitch_mode fs_mode;
 	u8 port_num;
 	u8 main_port;
 	u8 sub_port;
@@ -851,6 +854,7 @@ struct rx_s {
 	struct rx_aml_phy aml_phy;
 	struct rx_aml_phy aml_phy_21;
 	//struct spkts_rcvd_sts pkts_sts;
+	struct rx_edid_auto_mode edid_auto_mode;
 };
 
 struct _hdcp_ksv {

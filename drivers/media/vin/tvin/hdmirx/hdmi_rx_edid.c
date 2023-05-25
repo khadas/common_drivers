@@ -942,7 +942,7 @@ enum edid_ver_e get_edid_selection(u8 port)
 	enum edid_ver_e edid_slt = EDID_V14;
 
 	if (tmp_slt & 0x2) {
-		if (rx_info.fs_mode.hdcp_ver[port] == HDCP_VER_22)
+		if (rx[port].edid_auto_mode.hdcp_ver == HDCP_VER_22)
 			edid_slt = EDID_V20;
 		else
 			edid_slt = EDID_V14;

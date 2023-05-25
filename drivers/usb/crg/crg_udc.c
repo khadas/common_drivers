@@ -422,6 +422,10 @@ module_param(dr_udc_debug, bool, 0644);
 MODULE_PARM_DESC(dr_udc_debug, "0 or 1");
 #endif
 
+static bool eltest_flag;
+module_param(eltest_flag, bool, 0644);
+MODULE_PARM_DESC(eltest_flag, "0 or 1");
+
 #ifdef CRG_UDC_DEBUG
 #define xdebug(fmt...)					\
 do {									\
@@ -4174,9 +4178,11 @@ int crg_handle_port_status(struct crg_gadget_dev *crg_udc, unsigned long flags)
 		}  else if (CRG_U3DC_PORTSC_PLS_GET(tmp) == 0x3) {
 			if (crg_udc->gadget_driver->disconnect) {
 				spin_unlock_irqrestore(&crg_udc->udc_lock, flags);
-				if (crg_udc->crg_gadget_lock.wakesrc)
-					crg_gadget_drop(&crg_udc->crg_gadget_lock);
-				crg_udc->gadget_driver->disconnect(&crg_udc->gadget);
+				if (eltest_flag == 0) {
+					if (crg_udc->crg_gadget_lock.wakesrc)
+						crg_gadget_drop(&crg_udc->crg_gadget_lock);
+					crg_udc->gadget_driver->disconnect(&crg_udc->gadget);
+				}
 				spin_lock_irqsave(&crg_udc->udc_lock, flags);
 			}
 		}

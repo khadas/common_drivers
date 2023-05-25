@@ -1,0 +1,249 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+/dts-v1/;
+
+#include "mesontxhd2.dtsi"
+#include "meson_txhd2-panel.dtsi"
+
+/ {
+	model = "Amlogic";
+	amlogic-dt-id = "txhd2_t950s_be319";
+	compatible = "txhd2_t950s_be319";
+	interrupt-parent = <&gic>;
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	aliases {
+		serial0 = &uart_AO;
+		i2c0 = &i2c0;
+		i2c1 = &i2c1;
+		i2c2 = &i2c2;
+		i2c3 = &i2c3;
+		i2c4 = &i2c_AO;
+	};
+
+	memory@00000000 {
+		device_type = "memory";
+		linux,usable-memory = <0x00000000 0x60000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+		secmon_reserved:linux,secmon {
+			compatible = "shared-dma-pool";
+			no-map;
+			alignment = <0x400000>;
+			reg = <0x05000000 0x400000>;
+		};
+
+		ion_cma_reserved:linux,ion-dev {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0000000>;
+			alignment = <0x400000>;
+			alloc-ranges = <0x0 0x3f000000>;
+		};
+
+		ion_fb_reserved:linux,ion-fb {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x1c00000>;
+			alignment = <0x400000>;
+			alloc-ranges = <0x0 0x3f000000>;
+		};
+
+		logo_reserved:linux,meson-fb {
+			compatible = "amlogic, meson-fb";
+			alignment = <0x400000>;
+			reg = <0x3f800000 0x800000>;
+		};
+
+		codec_mm_cma:linux,codec_mm_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* ion_codec_mm max can alloc size 80M */
+			size = <0xa800000>;
+			alignment = <0x400000>;
+			linux,contiguous-region;
+			alloc-ranges = <0x0 0x30000000>;
+		};
+
+		/* codec shared reserved */
+		codec_mm_reserved:linux,codec_mm_reserved {
+			compatible = "amlogic, codec-mm-reserved";
+			size = <0x0>;
+			alignment = <0x100000>;
+			//no-map;
+		};
+	};
+
+	codec_mm {
+		compatible = "amlogic, codec, mm";
+		memory-region = <&codec_mm_cma &codec_mm_reserved>;
+		dev_name = "codec_mm";
+		status = "okay";
+	};
+
+	unifykey{
+		compatible = "amlogic,unifykey";
+		status = "okay";
+		unifykey-num = <19>;
+		unifykey-index-0 = <&keysn_0>;
+		unifykey-index-1 = <&keysn_1>;
+		unifykey-index-2 = <&keysn_2>;
+		unifykey-index-3 = <&keysn_3>;
+		unifykey-index-4 = <&keysn_4>;
+		unifykey-index-5 = <&keysn_5>;
+		unifykey-index-6 = <&keysn_6>;
+		unifykey-index-7 = <&keysn_7>;
+		unifykey-index-8 = <&keysn_8>;
+		unifykey-index-9 = <&keysn_9>;
+		unifykey-index-10= <&keysn_10>;
+		unifykey-index-11= <&keysn_11>;
+		unifykey-index-12= <&keysn_12>;
+		unifykey-index-13= <&keysn_13>;
+		unifykey-index-14= <&keysn_14>;
+		unifykey-index-15= <&keysn_15>;
+		unifykey-index-16= <&keysn_16>;
+		unifykey-index-17= <&keysn_17>;
+		unifykey-index-18= <&keysn_18>;
+
+		keysn_0: key_0{
+			key-name = "usid";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_1:key_1{
+			key-name = "mac";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_2:key_2{
+			key-name = "hdcp";
+			key-device = "secure";
+			key-type = "sha1";
+			key-permit = "read","write","del";
+		};
+		keysn_3:key_3{
+			key-name = "secure_boot_set";
+			key-device = "efuse";
+			key-permit = "write";
+		};
+		keysn_4:key_4{
+			key-name = "mac_bt";
+			key-device = "normal";
+			key-permit = "read","write","del";
+			key-type  = "mac";
+		};
+		keysn_5:key_5{
+			key-name = "mac_wifi";
+			key-device = "normal";
+			key-permit = "read","write","del";
+			key-type = "mac";
+		};
+		keysn_6:key_6{
+			key-name = "hdcp2_tx";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_7:key_7{
+			key-name = "hdcp2_rx";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_8:key_8{
+			key-name = "widevinekeybox";
+			key-device = "secure";
+			key-permit = "read","write","del";
+		};
+		keysn_9:key_9{
+			key-name = "deviceid";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_10:key_10{
+			key-name = "hdcp22_fw_private";
+			key-device = "secure";
+			key-permit = "read","write","del";
+		};
+		keysn_11:key_11{
+			key-name = "PlayReadykeybox25";
+			key-device = "secure";
+			key-permit = "read","write","del";
+		};
+		keysn_12:key_12{
+			key-name = "prpubkeybox";// PlayReady
+			key-device = "secure";
+			key-permit = "read","write","del";
+		};
+		keysn_13:key_13{
+			key-name = "prprivkeybox";// PlayReady
+			key-device = "secure";
+			key-permit = "read","write","del";
+		};
+		keysn_14:key_14{
+			key-name = "attestationkeybox";// attestation key
+			key-device = "secure";
+			key-permit = "read","write","del";
+		};
+		keysn_15:key_15{
+			key-name = "region_code";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_16:key_16{
+			key-name = "netflix_mgkid";
+			key-device = "secure";
+			key-permit = "read","write","del";
+		};
+		keysn_17:key_17{
+			key-name = "attestationdevidbox";// attest dev id box
+			key-device = "secure";
+			key-permit = "read","write","del";
+		};
+		keysn_18:key_18{
+			key-name = "oemkey";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+	};//End unifykey
+}; /* end of / */
+
+&sd_emmc_c {
+	status = "okay";
+	pinctrl-0 = <&emmc_pins>, <&emmc_ds_pins>;
+	pinctrl-1 = <&emmc_clk_gate_pins>;
+	pinctrl-names = "default", "clk-gate";
+
+	bus-width = <4>;
+	cap-sd-highspeed;
+	cap-mmc-highspeed;
+//  mmc-ddr-1_8v;
+//  mmc-hs200-1_8v;
+//  mmc-hs400-1_8v;
+	max-frequency = <200000000>;
+	non-removable;
+	disable-wp;
+
+//  mmc-pwrseq = <&emmc_pwrseq>;
+//  vmmc-supply = <&vddao_3v3>;
+//  vqmmc-supply = <&vddao_1v8>;
+};
+
+&meson_fb {
+	status = "okay";
+	display_size_default = <1920 1080 1920 2160 32>;
+	mem_size = <0x00800000 0x1980000 0x100000>;
+	logo_addr = "0x3f800000";
+	mem_alloc = <0>;
+	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
+};
+
+&uart_AO {
+	status = "okay";
+};

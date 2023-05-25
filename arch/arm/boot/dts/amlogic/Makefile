@@ -39,3 +39,7 @@ dtb-y += s4d_s805c1a_bf201_256m.dtb
 dtb-y += txhd2_pxp.dtb
 dtb-y += t3_t965d4_ar321_2g_P.dtb
 dtb-y += t3_t982_ar301_2g_P.dtb
+dtb-y += txhd2_t950s_be301.dtb
+dtb-y += txhd2_t950s_be309.dtb
+dtb-y += txhd2_t950s_be311.dtb
+dtb-y += txhd2_t950s_be319.dtb

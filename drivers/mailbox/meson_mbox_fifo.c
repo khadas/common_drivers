@@ -31,6 +31,7 @@
 #include <dt-bindings/mailbox/t5m-mbox.h>
 #include <dt-bindings/mailbox/t3x-mbox.h>
 #include <dt-bindings/mailbox/s5-mbox.h>
+#include <dt-bindings/mailbox/s1a-mbox.h>
 #include "meson_mbox_fifo.h"
 #include "meson_mbox_comm.h"
 
@@ -657,6 +658,21 @@ static struct mbox_domain_data s5_mbox_domains_data __initdata = {
 	.domain_counts = ARRAY_SIZE(s5_mbox_domains),
 };
 
+struct mbox_domain s1a_mbox_domains[] = {
+	[S1A_AO2REE]    = MBOX_DOMAIN(S1A_AO2REE, S1A_MBOX_AO2REE, 0),
+	[S1A_REE2AO0]   = MBOX_DOMAIN(S1A_REE2AO0, S1A_MBOX_REE2AO, 0),
+	[S1A_REE2AO1]   = MBOX_DOMAIN(S1A_REE2AO1, S1A_MBOX_REE2AO, 0),
+	[S1A_REE2AO2]   = MBOX_DOMAIN(S1A_REE2AO2, S1A_MBOX_REE2AO, 0),
+	[S1A_REE2AO3]   = MBOX_DOMAIN(S1A_REE2AO3, S1A_MBOX_REE2AO, 0),
+	[S1A_REE2AO4]   = MBOX_DOMAIN(S1A_REE2AO4, S1A_MBOX_REE2AO, 0),
+	[S1A_REE2AO5]   = MBOX_DOMAIN(S1A_REE2AO5, S1A_MBOX_REE2AO, 0),
+};
+
+static struct mbox_domain_data s1a_mbox_domains_data __initdata = {
+	.mbox_domains = s1a_mbox_domains,
+	.domain_counts = ARRAY_SIZE(s1a_mbox_domains),
+};
+
 static const struct of_device_id mbox_of_match[] = {
 	{
 		.compatible = "amlogic, t3-mbox-fifo",
@@ -685,6 +701,10 @@ static const struct of_device_id mbox_of_match[] = {
 	{
 		.compatible = "amlogic, s5-mbox-fifo",
 		.data = &s5_mbox_domains_data,
+	},
+	{
+		.compatible = "amlogic, s1a-mbox-fifo",
+		.data = &s1a_mbox_domains_data,
 	},
 	{},
 };

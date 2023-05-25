@@ -86,8 +86,11 @@ static struct postblend_reg_s s5_postblend_reg = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void fix_vpu_clk2_default_regs(struct meson_vpu_block *vblk,
 				struct rdma_reg_ops *reg_ops, int crtc_index, u32 *crtcmask_osd);
+#endif
+
 static void postblend_osd2_def_conf(struct meson_vpu_block *vblk);
 
 /*vpp post&post blend for osd1 premult flag config as 0 default*/

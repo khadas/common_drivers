@@ -651,7 +651,7 @@ static const struct pwm_ops meson_pwm_ops = {
 };
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
-static char *pwm_meson8b_parent_names[] __initdata = {
+static char *pwm_meson8b_parent_names[] __refdata = {
 	"xtal", "vid_pll", "fclk_div4", "fclk_div3"
 };
 
@@ -663,7 +663,7 @@ static struct meson_pwm_data pwm_meson8b_data __refdata = {
 #endif
 };
 
-static char *pwm_gxbb_parent_names[] __initdata = {
+static char *pwm_gxbb_parent_names[] __refdata = {
 	"xtal", "hdmi_pll", "fclk_div4", "fclk_div3"
 };
 
@@ -679,7 +679,7 @@ static struct meson_pwm_data pwm_gxbb_data __refdata = {
  * Only the 2 first inputs of the GXBB AO PWMs are valid
  * The last 2 are grounded
  */
-static char *pwm_gxbb_ao_parent_names[] __initdata = {
+static char *pwm_gxbb_ao_parent_names[] __refdata = {
 	"xtal", "clk81"
 };
 
@@ -691,7 +691,7 @@ static struct meson_pwm_data pwm_gxbb_ao_data __refdata = {
 #endif
 };
 
-static char *pwm_axg_ee_parent_names[] __initdata = {
+static char *pwm_axg_ee_parent_names[] __refdata = {
 	"xtal", "fclk_div5", "fclk_div4", "fclk_div3"
 };
 
@@ -703,7 +703,7 @@ static struct meson_pwm_data pwm_axg_ee_data __refdata = {
 #endif
 };
 
-static char *pwm_axg_ao_parent_names[] __initdata = {
+static char *pwm_axg_ao_parent_names[] __refdata = {
 	"xtal", "aoclk81", "fclk_div4", "fclk_div5"
 };
 
@@ -716,7 +716,7 @@ static struct meson_pwm_data pwm_axg_ao_data __refdata = {
 };
 #endif
 
-static char *pwm_g12a_ao_ab_parent_names[] __initdata = {
+static char *pwm_g12a_ao_ab_parent_names[] __refdata = {
 	"xtal", "aoclk81", "fclk_div4", "fclk_div5"
 };
 
@@ -728,7 +728,7 @@ static struct meson_pwm_data pwm_g12a_ao_ab_data __refdata = {
 #endif
 };
 
-static char *pwm_g12a_ao_cd_parent_names[] __initdata = {
+static char *pwm_g12a_ao_cd_parent_names[] __refdata = {
 	"xtal", "aoclk81",
 };
 
@@ -740,7 +740,7 @@ static struct meson_pwm_data pwm_g12a_ao_cd_data __refdata = {
 #endif
 };
 
-static char *pwm_g12a_ee_parent_names[] __initdata = {
+static char *pwm_g12a_ee_parent_names[] __refdata = {
 	"xtal", "hdmi_pll", "fclk_div4", "fclk_div3"
 };
 
@@ -753,7 +753,7 @@ static struct meson_pwm_data pwm_g12a_ee_data __refdata = {
 };
 
 #ifdef CONFIG_AMLOGIC_MODIFY
-static  char *pwm_t5d_parent_names[] __initdata = {
+static  char *pwm_t5d_parent_names[] __refdata = {
 	"xtal", "clk81", "fclk_div4", "fclk_div5"
 };
 
@@ -763,7 +763,7 @@ static struct meson_pwm_data pwm_t5d_data __refdata = {
 	.double_channel = true,
 };
 
-static struct meson_pwm_data pwm_v2_data __initdata = {
+static struct meson_pwm_data pwm_v2_data __refdata = {
 	.double_channel = true,
 	.extern_clk = true,
 };

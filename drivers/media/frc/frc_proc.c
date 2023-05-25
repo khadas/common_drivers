@@ -1932,7 +1932,8 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, 0x0); // clear align mothod
 	WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,            // restore default fhd value
-			(0x438 & 0x3fff) << 16 | (0x780 & 0x3fff));
+			(devp->out_sts.vout_height & 0x3fff) << 16 |
+			(devp->out_sts.vout_width & 0x3fff));
 
 	if (reg_win_en && reg_auto_align_en && !reg_inp_padding_en) {
 		if (devp->out_sts.vout_width == 1920 &&

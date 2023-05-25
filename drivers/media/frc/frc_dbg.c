@@ -168,23 +168,23 @@ ssize_t frc_rdma_store(struct class *class,
 	return count;
 }
 
-ssize_t frc_parm_show(struct class *class,
+ssize_t frc_param_show(struct class *class,
 	struct class_attribute *attr,
 	char *buf)
 {
 	struct frc_dev_s *devp = get_frc_devp();
 
-	return frc_debug_parm_if_help(devp, buf);
+	return frc_debug_param_if_help(devp, buf);
 }
 
-ssize_t frc_parm_store(struct class *class,
+ssize_t frc_param_store(struct class *class,
 	struct class_attribute *attr,
 	const char *buf,
 	size_t count)
 {
 	struct frc_dev_s *devp = get_frc_devp();
 
-	frc_debug_parm_if(devp, buf, count);
+	frc_debug_param_if(devp, buf, count);
 
 	return count;
 }
@@ -649,7 +649,7 @@ exit:
 	kfree(buf_orig);
 }
 
-ssize_t frc_debug_parm_if_help(struct frc_dev_s *devp, char *buf)
+ssize_t frc_debug_param_if_help(struct frc_dev_s *devp, char *buf)
 {
 	ssize_t len = 0;
 
@@ -685,7 +685,7 @@ ssize_t frc_debug_parm_if_help(struct frc_dev_s *devp, char *buf)
 	return len;
 }
 
-void frc_debug_parm_if(struct frc_dev_s *devp, const char *buf, size_t count)
+void frc_debug_param_if(struct frc_dev_s *devp, const char *buf, size_t count)
 {
 	char *buf_orig, *parm[47] = {NULL};
 	int val1;
@@ -896,6 +896,7 @@ ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 	len += sprintf(buf + len,
 		"inp_adj_en [0/1]\t: size adjust when input size not standard\n");
 	len += sprintf(buf + len, "crash_int_en\t:\n");
+	len += sprintf(buf + len, "del_120_pth\t:\n");
 	return len;
 }
 
@@ -948,8 +949,12 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 		if (kstrtoint(parm[4], 10, &val1) == 0)
 			devp->frc_crc_data.frc_crc_pr = val1;
 		frc_crc_enable(devp);
+	} else if (!strcmp(parm[0], "del_120_pth")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			devp->ud_dbg.res2_dbg_en = val1;
 	}
-
 exit:
 	kfree(buf_orig);
 }

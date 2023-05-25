@@ -89,8 +89,9 @@
 // frc_20230301 frc add seamless mode
 // frc_20230411 frc add enable double buffer mc
 // frc_20230511 frc chg size for both support
+// frc_20230404 frc t3x probe secure
 
-#define FRC_FW_VER			"2023-0404 frc t3x probe secure"
+#define FRC_FW_VER			"2023-0526 frc fixed flashing once when enable"
 #define FRC_KERDRV_VER                  2796
 
 #define FRC_DEVNO	1
@@ -209,6 +210,17 @@ extern int frc_dbg_en;
 #define FRC_BUF_MCDW_Y_IDX	4
 #define FRC_BUF_MCDW_C_IDX	5
 #define FRC_BUF_MAX_IDX		6
+
+#define FRC_WIN_ALIGN_AUTO      0
+#define FRC_WIN_ALIGN_MANU      1
+#define FRC_WIN_ALIGN_DGB1      2
+#define FRC_WIN_ALIGN_DGB2      3
+
+#define FRC_RES_NONE	0
+#define FRC_RES_2K1K	1
+#define FRC_RES_4K2K	2
+#define FRC_RES_4K1K	3
+#define FRC_RES__MAX	4
 
 enum chip_id {
 	ID_NULL = 0,
@@ -482,8 +494,7 @@ struct frc_ud_s {
 	unsigned vpud_dbg_en:1;
 	unsigned res0_dbg_en:1;
 	unsigned res1_dbg_en:1;
-	unsigned res2_dbg_en:1;
-	unsigned res3_dbg_en:1;
+	unsigned res2_dbg_en:2;
 
 	unsigned inud_time_en:1;
 	unsigned outud_time_en:1;

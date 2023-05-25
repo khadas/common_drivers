@@ -199,10 +199,10 @@ void frc_clk_init(struct frc_dev_s *frc_devp)
 		frc_devp->clk_me_frq = clk_get_rate(frc_devp->clk_me);
 		pr_frc(0, "clk_me frq : %d Mhz\n", frc_devp->clk_me_frq / 1000000);
 	} else {
-		if (height == HEIGHT_4K && width == WIDTH_4K) {
+		if (height == HEIGHT_2K && width == WIDTH_4K) {
 			set_frc_div_clk(0, 0);
 			set_me_div_clk(2, 0);
-		} else if (height == HEIGHT_2K && width == WIDTH_2K) {
+		} else if (height == HEIGHT_1K && width == WIDTH_2K) {
 			set_frc_div_clk(0, 0);
 			set_me_div_clk(2, 0);
 		}
@@ -902,6 +902,19 @@ void frc_input_init(struct frc_dev_s *frc_devp,
 		frc_top->frc_prot_mode = frc_devp->prot_mode;
 		frc_top->frc_fb_num = FRC_TOTAL_BUF_NUM;
 	}
+
+	if (frc_top->out_vsize == HEIGHT_2K &&
+			frc_top->out_hsize == WIDTH_4K)
+		frc_top->panel_res = FRC_RES_4K2K;
+	else if (frc_top->out_vsize == HEIGHT_1K &&
+			frc_top->out_hsize == WIDTH_2K)
+		frc_top->panel_res = FRC_RES_2K1K;
+	else if (frc_top->out_vsize == HEIGHT_1K &&
+			frc_top->out_hsize == WIDTH_4K)
+		frc_top->panel_res = FRC_RES_4K1K;
+	else
+		frc_top->panel_res = FRC_RES_NONE;
+
 	pr_frc(2, "top in: hsize:%d, vsize:%d\n", frc_top->hsize, frc_top->vsize);
 	pr_frc(2, "top out: hsize:%d, vsize:%d\n", frc_top->out_hsize, frc_top->out_vsize);
 	if (frc_top->hsize == 0 || frc_top->vsize == 0)
@@ -992,6 +1005,12 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 		frc_top->is_me1mc4 = 1;/*me:mc 1:4*/
 		WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x3);   //16*16 align
 		pr_frc(log, "me:mc 1:4\n");
+		if (frc_top->hsize < WIDTH_2K)
+			frc_devp->ud_dbg.res2_dbg_en = 1;
+	} else if (chip == ID_T3X) {
+		frc_devp->ud_dbg.res2_dbg_en = 0;
+	} else {
+		frc_devp->ud_dbg.res2_dbg_en = 1;
 	}
 	/*The resolution of the input is not standard for test
 	 * input size adjust within 8 lines and output size > 1920 * 1080
@@ -2093,10 +2112,42 @@ void frc_set_val_from_reg(void)
 }
 EXPORT_SYMBOL(frc_set_val_from_reg);
 
+void frc_load_reg_table(struct frc_dev_s *frc_devp, u8 flag)
+{
+	enum chip_id chip;
+	int i;
+
+	if (!frc_devp)
+		return;
+
+	chip = get_chip_type();
+	if (chip == ID_T3) {
+		for (i = 0; i < T3_DRV_REG_NUM; i++)
+			WRITE_FRC_REG_BY_CPU(t3_drv_regs_table[i].addr, t3_drv_regs_table[i].value);
+		pr_frc(0, "t3_regs_table[%d] init done\n", T3_DRV_REG_NUM);
+		regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN + 0xA0);
+	} else if (chip == ID_T5M) {
+		for (i = 0; i < T5M_REG_NUM; i++)
+			WRITE_FRC_REG_BY_CPU(t5m_regs_table[i].addr, t5m_regs_table[i].value);
+		pr_frc(0, "t5m_regs_table[%d] init done\n", T5M_REG_NUM);
+		regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN);
+	} else if (chip == ID_T3X && flag == 0) {
+		for (i = 0; i < T3X_DRV_REG_NUM; i++)
+			WRITE_FRC_REG_BY_CPU(t3x_drv_regs_table[i].addr,
+				t3x_drv_regs_table[i].value);
+		pr_frc(0, "t3x_regs_table[%d] init done\n", T3X_DRV_REG_NUM);
+	} else if (chip == ID_T3X && flag == 1) {
+		for (i = 0; i < T3X_DRV_REG_NUM; i++)
+			WRITE_FRC_REG_BY_CPU(t3x_drv_regs_table_0[i].addr,
+				t3x_drv_regs_table_0[i].value);
+		pr_frc(0, "t3x_regs_table_0[%d] init done\n", T3X_DRV_REG_NUM);
+	}
+}
+
 /* driver probe call */
 void frc_internal_initial(struct frc_dev_s *frc_devp)
 {
-	int i;
+	// int i;
 	enum chip_id chip;
 	struct frc_fw_data_s *fw_data;
 	struct frc_top_type_s *frc_top;
@@ -2133,22 +2184,7 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
 
-	if (chip == ID_T3) {
-		for (i = 0; i < T3_DRV_REG_NUM; i++)
-			WRITE_FRC_REG_BY_CPU(t3_drv_regs_table[i].addr, t3_drv_regs_table[i].value);
-		pr_frc(0, "t3_regs_table[%d] init done\n", T3_DRV_REG_NUM);
-		regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN + 0xA0);
-	} else if (chip == ID_T5M) {
-		for (i = 0; i < T5M_REG_NUM; i++)
-			WRITE_FRC_REG_BY_CPU(t5m_regs_table[i].addr, t5m_regs_table[i].value);
-		pr_frc(0, "t5m_regs_table[%d] init done\n", T5M_REG_NUM);
-		regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN);
-	} else if (chip == ID_T3X) {
-		for (i = 0; i < T3X_DRV_REG_NUM; i++)
-			WRITE_FRC_REG_BY_CPU(t3x_drv_regs_table[i].addr,
-				t3x_drv_regs_table[i].value);
-		pr_frc(0, "t3x_regs_table[%d] init done\n", T3X_DRV_REG_NUM);
-	}
+	frc_load_reg_table(frc_devp, 0);
 	frc_set_val_from_reg();
 
 	frc_set_urgent_cfg(0, 0);
@@ -2671,6 +2707,10 @@ void frc_memc_120hz_patch_1(struct frc_dev_s *frc_devp)
 	if (chip != ID_T3X)
 		return;
 
+	if (frc_devp->ud_dbg.res2_dbg_en == 1 ||
+		frc_devp->ud_dbg.res2_dbg_en == 3)
+		return;
+
 	// h2v2 setting
 	tmp = READ_FRC_REG(FRC_MC_H2V2_SETTING);
 	tmp |= 0x7E000000;
@@ -2747,6 +2787,9 @@ void frc_memc_120hz_patch_2(struct frc_dev_s *frc_devp)
 
 	if (chip != ID_T3X)
 		return;
+	if (frc_devp->ud_dbg.res2_dbg_en == 1 ||
+		frc_devp->ud_dbg.res2_dbg_en == 3)
+		return;
 
 	// mcdw
 	tmp = READ_FRC_REG(FRC_INP_MCDW_CTRL);
@@ -2786,6 +2829,9 @@ void frc_memc_120hz_patch_3(struct frc_dev_s *frc_devp)
 	chip = get_chip_type();
 
 	if (chip != ID_T3X)
+		return;
+	if (frc_devp->ud_dbg.res2_dbg_en == 1 ||
+		frc_devp->ud_dbg.res2_dbg_en == 3)
 		return;
 
 	// TOP setting

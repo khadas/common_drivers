@@ -32,9 +32,9 @@ ssize_t frc_rdma_show(struct class *class,
 ssize_t frc_rdma_store(struct class *class,
 	struct class_attribute *attr,
 	const char *buf, size_t count);
-ssize_t frc_parm_show(struct class *class,
+ssize_t frc_param_show(struct class *class,
 	struct class_attribute *attr, char *buf);
-ssize_t frc_parm_store(struct class *class,
+ssize_t frc_param_store(struct class *class,
 	struct class_attribute *attr,
 	const char *buf, size_t count);
 ssize_t frc_other_show(struct class *class,
@@ -52,8 +52,8 @@ ssize_t frc_debug_buf_if_help(struct frc_dev_s *devp, char *buf);
 void frc_debug_buf_if(struct frc_dev_s *devp, const char *buf, size_t count);
 ssize_t frc_debug_rdma_if_help(struct frc_dev_s *devp, char *buf);
 void frc_debug_rdma_if(struct frc_dev_s *devp, const char *buf, size_t count);
-ssize_t frc_debug_parm_if_help(struct frc_dev_s *devp, char *buf);
-void frc_debug_parm_if(struct frc_dev_s *devp, const char *buf, size_t count);
+ssize_t frc_debug_param_if_help(struct frc_dev_s *devp, char *buf);
+void frc_debug_param_if(struct frc_dev_s *devp, const char *buf, size_t count);
 ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf);
 void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count);
 

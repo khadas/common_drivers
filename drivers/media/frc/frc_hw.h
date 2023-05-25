@@ -6,9 +6,9 @@
 #ifndef __FRC_CLK_H__
 #define __FRC_CLK_H__
 
-#define HEIGHT_4K 2160
+#define HEIGHT_2K 2160
 #define WIDTH_4K  3840
-#define HEIGHT_2K 1080
+#define HEIGHT_1K 1080
 #define WIDTH_2K  1920
 
 #define  HME_ME_OFFSET 0x100
@@ -117,4 +117,5 @@ void frc_memc_120hz_patch_1(struct frc_dev_s *frc_devp);
 void frc_memc_120hz_patch_2(struct frc_dev_s *frc_devp);
 void frc_memc_120hz_patch_3(struct frc_dev_s *frc_devp);
 
+void frc_load_reg_table(struct frc_dev_s *frc_devp, u8 flag);
 #endif

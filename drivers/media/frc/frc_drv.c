@@ -137,7 +137,7 @@ static struct class_attribute frc_class_attrs[] = {
 	__ATTR(tool_debug, 0644, frc_tool_debug_show, frc_tool_debug_store),
 	__ATTR(buf, 0644, frc_buf_show, frc_buf_store),
 	__ATTR(rdma, 0644, frc_rdma_show, frc_rdma_store),
-	__ATTR(parm, 0644, frc_parm_show, frc_parm_store),
+	__ATTR(param, 0644, frc_param_show, frc_param_store),
 	__ATTR(other, 0644, frc_other_show, frc_other_store),
 	__ATTR(final_line_param, 0644, frc_bbd_final_line_param_show,
 		frc_bbd_final_line_param_store),

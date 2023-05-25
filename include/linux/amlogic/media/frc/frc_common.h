@@ -183,7 +183,9 @@ struct frc_top_type_s {
 	enum frc_ratio_mode_type frc_ratio_mode;//frc_ratio_mode = frame rate of input : frame rate of output
 	enum en_film_mode    film_mode;//film_mode
 	u32       film_hwfw_sel;//0:hw 1:fw
-	u32       is_me1mc4;//1: me:mc=1/4, 0 : me:mc=1/2, default 0
+	u8        is_me1mc4;//1: me:mc=1/4, 0 : me:mc=1/2, default 0
+	u8	  panel_res;
+	u16       other_set;
 	u8        memc_loss_en;// bit0, mcloss, bit1:meloss, bit4:mcdw_loss
 	u8        chip;   // 1:T3, 2:T5M
 	u16       other_set1;

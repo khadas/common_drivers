@@ -733,19 +733,19 @@
 			};
 		};
 
-//		aml-audio-card,dai-link@7 {
-//			mclk-fs = <256>;
-//			suffix-name = "alsaPORT-earc";
-//			cpu {
-//				sound-dai = <&earc>;
-//				system-clock-frequency = <12288000>;
-//			};
-//			codec {
-//				sound-dai = <&dummy_codec>;
-//			};
-//		};
-
 		aml-audio-card,dai-link@7 {
+			mclk-fs = <256>;
+			suffix-name = "alsaPORT-earc";
+			cpu {
+				sound-dai = <&earc>;
+				system-clock-frequency = <12288000>;
+			};
+			codec {
+				sound-dai = <&dummy_codec>;
+			};
+		};
+
+		aml-audio-card,dai-link@8 {
 			mclk-fs = <256>;
 			continuous-clock;
 			suffix-name = "alsaPORT-loopback";
@@ -758,7 +758,7 @@
 			};
 		};
 
-		aml-audio-card,dai-link@8 {
+		aml-audio-card,dai-link@9 {
 			format = "i2s";
 			mclk-fs = <256>;
 			//continuous-clock;
@@ -1495,7 +1495,7 @@
 }; /* end of audiobus */
 
 &earc {
-	status = "disabled";
+	status = "okay";
 };
 
 &crg_udc_2 {

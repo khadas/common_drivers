@@ -25,12 +25,14 @@ extern u32 vsync_pts_inc_scale;
 extern u32 vsync_pts_inc_scale_base;
 extern atomic_t axis_changed;
 extern const char *src_fmt_str[10];
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 extern int ai_pq_disable;
 extern int ai_pq_value;
 extern int ai_pq_debug;
 extern int ai_pq_policy;
 extern struct ai_scenes_pq vpp_scenes[AI_SCENES_MAX];
 extern struct nn_value_t nn_scenes_value[AI_PQ_TOP];
+#endif
 extern atomic_t video_prop_change;
 extern wait_queue_head_t amvideo_prop_change_wait;
 extern u32 vpp_crc_en;
@@ -51,8 +53,10 @@ bool tvin_vf_is_keeped(struct vframe_s *vf);
 void _set_video_mirror(struct disp_info_s *layer, int mirror);
 void primary_swap_frame(struct video_layer_s *layer, struct vframe_s *vf1, int line);
 int dvel_swap_frame(struct vframe_s *vf);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void vf_pq_process(struct vframe_s *vf,
 		   struct ai_scenes_pq *vpp_scenes,
 		   int *pq_debug);
+#endif
 #endif
 /*VIDEO_LOW_LATENCTY_HH*/

@@ -118,7 +118,9 @@ static int lowlatency_vsync(u8 instance_id)
 	struct vframe_s *new_frame3 = NULL;
 	u32 cur_blackout;
 	enum vframe_signal_fmt_e fmt;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int pq_process_debug[4];
+#endif
 	int axis[4];
 	int crop[4];
 	int source_type = 0;
@@ -1619,7 +1621,7 @@ static int lowlatency_vsync(u8 instance_id)
 	vd_layer[0].new_frame = false;
 	vd_layer[1].new_frame = false;
 	vd_layer[2].new_frame = false;
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (vd_layer[0].dispbuf) {
 		pq_process_debug[0] = ai_pq_value;
 		pq_process_debug[1] = ai_pq_disable;
@@ -1637,6 +1639,7 @@ static int lowlatency_vsync(u8 instance_id)
 		memcpy(nn_scenes_value, vd_layer[0].dispbuf->nn_value,
 			   sizeof(nn_scenes_value));
 	}
+#endif
 exit:
 	vd_clip_setting(VPP0, 0, &vd_layer[0].clip_setting);
 	vd_clip_setting(VPP0, 1, &vd_layer[1].clip_setting);

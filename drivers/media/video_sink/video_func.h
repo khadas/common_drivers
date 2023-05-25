@@ -72,9 +72,11 @@ extern bool hist_test_flag;
 extern int vsync_enter_line_max;
 extern int vsync_exit_line_max;
 extern u32 video_notify_flag;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 extern struct ai_scenes_pq vpp_scenes[AI_SCENES_MAX];
 extern struct nn_value_t nn_scenes_value[AI_PQ_TOP];
 extern struct video_frame_aiface_s ai_face_value;
+#endif
 extern int vframe_walk_delay;
 extern u32  video_mirror;
 extern int tvin_source_type;

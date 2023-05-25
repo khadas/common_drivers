@@ -6,6 +6,7 @@
 #ifndef VPP_PQ_H
 #define VPP_PQ_H
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include <linux/amlogic/media/vfm/vframe.h>
 
 #define AI_SCENES_MAX 25
@@ -86,4 +87,5 @@ u32 get_color_th(void);
 extern int vpp_pq_data[AI_SCENES_MAX][SCENES_VALUE];
 extern int scene_prob[2];
 extern struct ai_pq_hist_data aipq_hist_data;
+#endif
 #endif

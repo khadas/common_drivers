@@ -49,7 +49,10 @@
 #include "video_receiver.h"
 
 /* #define ENABLE_DV */
-
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+atomic_t video_inirq_flag_vpp[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
+atomic_t video_unreg_flag_vpp[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
+#endif
 /*********************************************************
  * vframe APIs
  *********************************************************/
@@ -260,7 +263,7 @@ static void common_vf_unreg_provider(struct video_recv_s *ins)
 		ins->cur_buf = &ins->local_buf;
 	}
 	spin_unlock_irqrestore(&ins->lock, flags);
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (vpp1_used) {
 		if (vd_layer_vpp[0].vpp_index != VPP0 &&
 		    vd_layer_vpp[0].layer_id == 1) {
@@ -275,16 +278,17 @@ static void common_vf_unreg_provider(struct video_recv_s *ins)
 				&ins->cur_buf)
 				layer3_used = true;
 		}
-	} else { /* vpp0 */
-		if (vd_layer[0].dispbuf_mapping == &ins->cur_buf)
-			layer1_used = true;
-		if (vd_layer[1].dispbuf_mapping == &ins->cur_buf &&
-		    vd_layer[1].vpp_index == VPP0)
-			layer2_used = true;
-		if (vd_layer[2].dispbuf_mapping == &ins->cur_buf &&
-		    vd_layer[2].vpp_index == VPP0)
-			layer3_used = true;
 	}
+#endif
+	/* vpp0 */
+	if (vd_layer[0].dispbuf_mapping == &ins->cur_buf)
+		layer1_used = true;
+	if (vd_layer[1].dispbuf_mapping == &ins->cur_buf &&
+		vd_layer[1].vpp_index == VPP0)
+		layer2_used = true;
+	if (vd_layer[2].dispbuf_mapping == &ins->cur_buf &&
+		vd_layer[2].vpp_index == VPP0)
+		layer3_used = true;
 
 	if (layer1_used || !vd_layer[0].dispbuf_mapping)
 		atomic_set(&primary_src_fmt, VFRAME_SIGNAL_FMT_INVALID);
@@ -790,6 +794,7 @@ static s32 recv_common_late_proc(struct video_recv_s *ins)
 			vd_layer[2].vpp_index == VPP0)
 			ins->recv_vsync_cnt = cur_vsync_cnt;
 	}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (ins->vpp_id != VPP0 && ins->vpp_id < VPP_MAX) {
 		if (vd_layer_vpp[0].vpp_index == ins->vpp_id &&
 		    vd_layer_vpp[0].dispbuf_mapping == &ins->cur_buf)
@@ -798,6 +803,7 @@ static s32 recv_common_late_proc(struct video_recv_s *ins)
 			vd_layer_vpp[1].dispbuf_mapping == &ins->cur_buf)
 			ins->recv_vsync_cnt = cur_vsync_cnt;
 	}
+#endif
 	return 0;
 }
 

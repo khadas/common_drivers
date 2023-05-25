@@ -2868,13 +2868,14 @@ static void hdr_tone_mapping_get(enum lut_type_e lut_type,
 static int parse_aipq_ofst_table(int *table_ptr,
 				 unsigned int height, unsigned int width)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	unsigned int i;
 	unsigned int size = 0;
 
 	size = width * sizeof(int);
 	for (i = 0; i < height; i++)
 		memcpy(vpp_pq_data[i], table_ptr + (i * width), size);
-
+#endif
 	return 0;
 }
 

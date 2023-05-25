@@ -264,72 +264,6 @@ bool is_layer_aisr_supported(struct video_layer_s *layer)
 		return true;
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-static void dump_vout_blend_reg(void)
-{
-	u32 reg_addr, reg_val = 0;
-
-	if (cur_dev->display_module != C3_DISPLAY_MODULE)
-		return;
-	pr_info("vout blend reg:\n");
-	reg_addr = VPU_VOUT_BLEND_CTRL;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_BLEND_CTRL[0x%x] = 0x%X\n",
-		   reg_addr, reg_val);
-	reg_addr = VPU_VOUT_BLEND_DUMDATA;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_BLEND_DUMDATA[0x%x] = 0x%X\n",
-		   reg_addr, reg_val);
-	reg_addr = VPU_VOUT_BLEND_SIZE;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_BLEND_SIZE[0x%x] = 0x%X\n",
-		   reg_addr, reg_val);
-
-	reg_addr = VPU_VOUT_BLD_SRC0_HPOS;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_BLD_SRC0_HPOS[0x%x](vd1) = 0x%X\n",
-		   reg_addr, reg_val);
-	reg_addr = VPU_VOUT_BLD_SRC0_VPOS;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_BLD_SRC0_VPOS[0x%x](vd1) = 0x%X\n",
-		   reg_addr, reg_val);
-
-	reg_addr = VPU_VOUT_BLD_SRC1_HPOS;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_BLD_SRC1_HPOS[0x%x](osd) = 0x%X\n",
-		   reg_addr, reg_val);
-	reg_addr = VPU_VOUT_BLD_SRC1_VPOS;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_BLD_SRC1_VPOS[0x%x](osd) = 0x%X\n",
-		   reg_addr, reg_val);
-
-	pr_info("vout top reg:\n");
-	reg_addr = VPU_VOUT_TOP_CTRL;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_TOP_CTRL[0x%x] = 0x%X\n",
-		   reg_addr, reg_val);
-	reg_addr = VPU_VOUT_SECURE_BIT_NOR;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_SECURE_BIT_NOR[0x%x] = 0x%X\n",
-		   reg_addr, reg_val);
-	reg_addr = VPU_VOUT_SECURE_DATA;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_SECURE_DATA[0x%x] = 0x%X\n",
-		   reg_addr, reg_val);
-	reg_addr = VPU_VOUT_FRM_CTRL;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_FRM_CTRL[0x%x] = 0x%X\n",
-		   reg_addr, reg_val);
-	reg_addr = VPU_VOUT_IRQ_CTRL;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_IRQ_CTRL[0x%x] = 0x%X\n",
-		   reg_addr, reg_val);
-	reg_addr = VPU_VOUT_VLK_CTRL;
-	reg_val = READ_VCBUS_REG(reg_addr);
-	pr_info("VPU_VOUT_VLK_CTRL[0x%x] = 0x%X\n",
-		   reg_addr, reg_val);
-}
-
 static void dump_mif_reg(void)
 {
 	int i;
@@ -689,74 +623,70 @@ static void dump_vpp_blend_reg(void)
 	}
 }
 
-static void dump_vppx_blend_reg(void)
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void dump_vout_blend_reg(void)
 {
 	u32 reg_addr, reg_val = 0;
 
-	if (cur_dev->display_module == OLD_DISPLAY_MODULE)
+	if (cur_dev->display_module != C3_DISPLAY_MODULE)
 		return;
-	if (cur_dev->has_vpp1) {
-		pr_info("vpp1 blend regs:\n");
-		reg_addr = vppx_blend_reg_array[0].vpp_bld_din0_hscope;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_din0_hscope[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[0].vpp_bld_din0_vscope;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_din0_vscope[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[0].vpp_bld_out_size;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_out_size[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[0].vpp_bld_ctrl;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_ctrl[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[0].vpp_bld_dummy_data;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_dummy_data[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[0].vpp_bld_dummy_alpha;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_dummy_alpha[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[0].vpp_blend_ctrl;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_blend_ctrl[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-	}
-	if (cur_dev->has_vpp2) {
-		pr_info("vpp2 blend regs:\n");
-		reg_addr = vppx_blend_reg_array[1].vpp_bld_din0_hscope;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_din0_hscope[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[1].vpp_bld_din0_vscope;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_din0_vscope[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[1].vpp_bld_out_size;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_out_size[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[1].vpp_bld_ctrl;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_ctrl[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[1].vpp_bld_dummy_data;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_dummy_data[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[1].vpp_bld_dummy_alpha;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_bld_dummy_alpha[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-		reg_addr = vppx_blend_reg_array[1].vpp_blend_ctrl;
-		reg_val = READ_VCBUS_REG(reg_addr);
-		pr_info("vpp_blend_ctrl[0x%x] = 0x%X\n",
-			   reg_addr, reg_val);
-	}
+	pr_info("vout blend reg:\n");
+	reg_addr = VPU_VOUT_BLEND_CTRL;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_BLEND_CTRL[0x%x] = 0x%X\n",
+		   reg_addr, reg_val);
+	reg_addr = VPU_VOUT_BLEND_DUMDATA;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_BLEND_DUMDATA[0x%x] = 0x%X\n",
+		   reg_addr, reg_val);
+	reg_addr = VPU_VOUT_BLEND_SIZE;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_BLEND_SIZE[0x%x] = 0x%X\n",
+		   reg_addr, reg_val);
+
+	reg_addr = VPU_VOUT_BLD_SRC0_HPOS;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_BLD_SRC0_HPOS[0x%x](vd1) = 0x%X\n",
+		   reg_addr, reg_val);
+	reg_addr = VPU_VOUT_BLD_SRC0_VPOS;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_BLD_SRC0_VPOS[0x%x](vd1) = 0x%X\n",
+		   reg_addr, reg_val);
+
+	reg_addr = VPU_VOUT_BLD_SRC1_HPOS;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_BLD_SRC1_HPOS[0x%x](osd) = 0x%X\n",
+		   reg_addr, reg_val);
+	reg_addr = VPU_VOUT_BLD_SRC1_VPOS;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_BLD_SRC1_VPOS[0x%x](osd) = 0x%X\n",
+		   reg_addr, reg_val);
+
+	pr_info("vout top reg:\n");
+	reg_addr = VPU_VOUT_TOP_CTRL;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_TOP_CTRL[0x%x] = 0x%X\n",
+		   reg_addr, reg_val);
+	reg_addr = VPU_VOUT_SECURE_BIT_NOR;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_SECURE_BIT_NOR[0x%x] = 0x%X\n",
+		   reg_addr, reg_val);
+	reg_addr = VPU_VOUT_SECURE_DATA;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_SECURE_DATA[0x%x] = 0x%X\n",
+		   reg_addr, reg_val);
+	reg_addr = VPU_VOUT_FRM_CTRL;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_FRM_CTRL[0x%x] = 0x%X\n",
+		   reg_addr, reg_val);
+	reg_addr = VPU_VOUT_IRQ_CTRL;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_IRQ_CTRL[0x%x] = 0x%X\n",
+		   reg_addr, reg_val);
+	reg_addr = VPU_VOUT_VLK_CTRL;
+	reg_val = READ_VCBUS_REG(reg_addr);
+	pr_info("VPU_VOUT_VLK_CTRL[0x%x] = 0x%X\n",
+		   reg_addr, reg_val);
 }
 
 static void dump_fgrain_reg(void)
@@ -1202,6 +1132,76 @@ static void dump_zorder_reg(void)
 		   reg_addr, reg_val);
 }
 
+static void dump_vppx_blend_reg(void)
+{
+	u32 reg_addr, reg_val = 0;
+
+	if (cur_dev->display_module == OLD_DISPLAY_MODULE)
+		return;
+	if (cur_dev->has_vpp1) {
+		pr_info("vpp1 blend regs:\n");
+		reg_addr = vppx_blend_reg_array[0].vpp_bld_din0_hscope;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_din0_hscope[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[0].vpp_bld_din0_vscope;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_din0_vscope[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[0].vpp_bld_out_size;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_out_size[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[0].vpp_bld_ctrl;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_ctrl[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[0].vpp_bld_dummy_data;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_dummy_data[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[0].vpp_bld_dummy_alpha;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_dummy_alpha[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[0].vpp_blend_ctrl;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_blend_ctrl[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+	}
+	if (cur_dev->has_vpp2) {
+		pr_info("vpp2 blend regs:\n");
+		reg_addr = vppx_blend_reg_array[1].vpp_bld_din0_hscope;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_din0_hscope[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[1].vpp_bld_din0_vscope;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_din0_vscope[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[1].vpp_bld_out_size;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_out_size[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[1].vpp_bld_ctrl;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_ctrl[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[1].vpp_bld_dummy_data;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_dummy_data[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[1].vpp_bld_dummy_alpha;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_bld_dummy_alpha[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+		reg_addr = vppx_blend_reg_array[1].vpp_blend_ctrl;
+		reg_val = READ_VCBUS_REG(reg_addr);
+		pr_info("vpp_blend_ctrl[0x%x] = 0x%X\n",
+			   reg_addr, reg_val);
+	}
+}
+
 ssize_t reg_dump_store(struct class *cla,
 				 struct class_attribute *attr,
 				const char *buf, size_t count)
@@ -1235,6 +1235,29 @@ ssize_t reg_dump_store(struct class *cla,
 			if (cur_dev->aisr_support)
 				dump_aisr_reg();
 		}
+	}
+	return count;
+}
+
+#else
+ssize_t reg_dump_store(struct class *cla,
+				 struct class_attribute *attr,
+				const char *buf, size_t count)
+{
+	int res = 0;
+	int ret = 0;
+
+	ret = kstrtoint(buf, 0, &res);
+	if (ret) {
+		pr_err("kstrtoint err\n");
+		return -EINVAL;
+	}
+
+	if (res) {
+		dump_mif_reg();
+		dump_afbc_reg();
+		dump_pps_reg();
+		dump_vpp_blend_reg();
 	}
 	return count;
 }

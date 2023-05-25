@@ -59,6 +59,34 @@ MODULE_AMLOG(LOG_LEVEL_ERROR, 0, LOG_DEFAULT_LEVEL_DESC, LOG_MASK_DESC);
 #include <linux/math64.h>
 #include "video_receiver.h"
 
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+bool is_vpp0(u8 layer_id)
+{
+	return true;
+}
+
+bool is_vpp1(u8 layer_id)
+{
+	return false;
+}
+
+bool is_vpp2(u8 layer_id)
+{
+	return false;
+}
+
+int is_in_vsync_isr_viu2(void)
+{
+	return 0;
+}
+EXPORT_SYMBOL(is_in_vsync_isr_viu2);
+
+int is_in_vsync_isr_viu3(void)
+{
+	return 0;
+}
+EXPORT_SYMBOL(is_in_vsync_isr_viu3);
+#else
 struct video_layer_s vd_layer_vpp[2];
 atomic_t video_inirq_flag_vpp[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
 atomic_t video_unreg_flag_vpp[2] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
@@ -589,4 +617,4 @@ void viu3_hook(void)
 	}
 #endif
 }
-
+#endif

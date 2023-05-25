@@ -5322,7 +5322,7 @@ static void get_3d_vert_pos(struct video_layer_s *layer,
 			*re = layer->end_y_lines >> 1;
 		}
 	} else if (vpp_3d_mode == VPP_3D_MODE_FA) {
-		/*same width same heiht */
+		/*same width same height */
 		if ((process_3d_type & MODE_3D_TO_2D_MASK) ||
 		    (process_3d_type & MODE_3D_OUT_LR)) {
 			*ls = layer->start_y_lines;

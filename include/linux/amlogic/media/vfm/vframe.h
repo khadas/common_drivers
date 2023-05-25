@@ -813,8 +813,6 @@ struct video_composer_private {
 
 int get_current_frame_para(int *top, int *left, int *bottom, int *right);
 
-u8 is_vpp_postblend(void);
-
 void pause_video(unsigned char pause_flag);
 s32 update_vframe_src_fmt(struct vframe_s *vf,
 			  void *sei,

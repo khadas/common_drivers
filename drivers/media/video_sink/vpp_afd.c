@@ -17,6 +17,29 @@
 /* Local Headers */
 #include "video_priv.h"
 
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+bool is_afd_available(u8 id)
+{
+	return false;
+}
+
+int afd_process(u8 id, struct afd_in_param *in, struct afd_out_param *out)
+{
+	return 0;
+}
+
+int register_afd_function(struct VPP_AFD_Func_Ptr *func, const char *ver)
+{
+	return 0;
+}
+EXPORT_SYMBOL(register_afd_function);
+
+int unregister_afd_function(struct VPP_AFD_Func_Ptr *func)
+{
+	return 0;
+}
+EXPORT_SYMBOL(unregister_afd_function);
+#else
 static DEFINE_MUTEX(afd_mutex);
 static struct VPP_AFD_Func_Ptr *gfunc;
 static void *afd_handle[MAX_VD_LAYER];
@@ -116,4 +139,4 @@ int unregister_afd_function(struct VPP_AFD_Func_Ptr *func)
 	return ret;
 }
 EXPORT_SYMBOL(unregister_afd_function);
-
+#endif

@@ -135,9 +135,6 @@ do
 		;;
 	--upgrade)
 		UPGRADE_PROJECT=1
-		shift
-		;;
-	--android_version)
 		ANDROID_VERSION=$2
 		VA=1
 		shift

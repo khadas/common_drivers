@@ -1083,11 +1083,10 @@
 	hifi4dsp: hifi4dsp {
 		compatible = "amlogic, hifi4dsp";
 		memory-region = <&dsp_fw_reserved>;
-		reg	=	<0 0xfe030000 0 0x114>,	/*dspa base address*/
-				<0 0xfe040000 0 0x114>,	/*dspb base address*/
-				<0 0xfe000800 0 0xff>,
-				<0 0xfe005a84 0 0x4>,		/*dspa status counter*/
-				<0 0xfe005a98 0 0x4>;		/*dspb status counter*/
+		reg = <0 0xfe030000 0 0x114>,	/*dspa base address*/
+		      <0 0xfe040000 0 0x114>,	/*dspb base address*/
+		      <0 0xfe005a84 0 0x4>,	/*dspa status counter*/
+		      <0 0xfe005a98 0 0x4>;	/*dspb status counter*/
 		dsp-monitor-period-ms = <1000>;
 		reg-names = "dspa_top_reg", "dspb_top_reg";
 		clocks = <&clkc CLKID_DSPA_SEL>, <&clkc CLKID_DSPB_SEL>;

@@ -25,13 +25,21 @@ struct reg_test {
 	u32 value;
 };
 
+struct frc_rdma_irq_reg_s {
+	u32 reg;
+	u32 start;
+	u32 len;
+};
+
 struct frc_rdma_info {
 	ulong rdma_table_phy_addr;
 	u32 *rdma_table_addr;
 	int rdma_table_size;
 	u8 buf_status;
+	u8 is_64bit_addr;
 	int rdma_item_count;
 	int rdma_write_count;
+	struct rdma_regadr_s *rdma_regadr;
 };
 
 struct rdma_instance_s {
@@ -73,7 +81,7 @@ struct rdma_regadr_s {
 
 extern int frc_test;
 
-void frc_rdma_alloc_buf(void);
+void frc_rdma_alloc_buf(struct frc_dev_s *devp);
 void frc_rdma_release_buf(void);
 int frc_rdma_process(u32 val);
 irqreturn_t frc_rdma_isr(int irq, void *dev_id);

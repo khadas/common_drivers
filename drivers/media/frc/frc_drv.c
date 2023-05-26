@@ -1039,7 +1039,6 @@ int frc_buf_set(struct frc_dev_s *frc_devp)
 		return -1;
 	if (frc_buf_distribute(frc_devp) != 0)
 		return -1;
-	// frc_rdma_alloc_buf();
 	if (frc_buf_config(frc_devp) != 0)
 		return -1;
 	else

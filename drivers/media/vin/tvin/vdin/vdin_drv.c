@@ -1681,6 +1681,35 @@ void vdin_self_stop_dec(struct vdin_dev_s *devp)
 	devp->flags &= (~VDIN_FLAG_DEC_STARTED);
 }
 
+int vdin_loopback_parm_adjust(struct vdin_dev_s *devp, struct vdin_parm_s  *para)
+{
+	const struct vinfo_s *vinfo = NULL;
+
+	if (!is_meson_t3x_cpu() || !para)
+		return 0;
+
+	vinfo = get_current_vinfo();
+	if (!vinfo) {
+		pr_info("%s vinfo == NULL\n", __func__);
+		return -1;
+	}
+
+	if (vinfo->width * vinfo->height * vinfo->std_duration >
+		VDIN_LITE_CORE_MAX_PIXEL_CLOCK) {
+		pr_info("%s vdin%d,ppc:%d,[%dx%dp%dhz]->[%d %d]\n", __func__, devp->index,
+			vinfo->cur_enc_ppc, para->h_active, para->v_active, vinfo->std_duration,
+			para->dest_h_active, para->dest_v_active);
+		para->h_active = (para->h_active >> 1);
+		para->v_active = (para->v_active >> 1);
+		if (para->dest_h_active > para->h_active)
+			para->dest_h_active = para->h_active;
+		if (para->dest_v_active > para->v_active)
+			para->dest_v_active = para->v_active;
+	}
+
+	return 0;
+}
+
 /*
  *config the vdin use default regmap
  *call vdin_start_dec to start vdin
@@ -1728,7 +1757,9 @@ int start_tvin_service(int no, struct vdin_parm_s  *para)
 	}
 
 	mutex_lock(&devp->fe_lock);
+	vdin_loopback_parm_adjust(devp, para);
 	fmt = devp->parm.info.fmt;
+
 	pr_info("[%s]port:0x%x, cfmt:%d;dfmt:%d;dest_h_active:%d;",
 		__func__, para->port, para->cfmt,
 		para->dfmt, para->dest_h_active);

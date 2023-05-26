@@ -310,7 +310,7 @@ static void vdin_dump_one_buf_mem_df(char *path, struct vdin_dev_s *devp,
 			}
 			buf += devp->canvas_w;
 		}
-		/*vfs_write(filp, buf, devp->canvas_max_size, &pos);*/
+		/*kernel_write(filp, buf, devp->canvas_max_size, &pos);*/
 		pr_info("write buffer %2d of %2u  to %s.\n",
 			buf_num, devp->canvas_max_num, path);
 	} else {
@@ -419,7 +419,6 @@ static void vdin_dump_mem_df(char *path, struct vdin_dev_s *devp)
 				high_addr = phys + j * devp->canvas_w;
 				buf = vdin_vmap(high_addr, span);
 				if (!buf) {
-					//vfs_fsync(filp, 0);
 					//filp_close(filp, NULL);
 					pr_info("vdin_vmap error\n");
 					return;
@@ -427,7 +426,7 @@ static void vdin_dump_mem_df(char *path, struct vdin_dev_s *devp)
 
 				vdin_dma_flush(devp, buf, span,
 					       DMA_FROM_DEVICE);
-				//vfs_write(filp, buf, span, &pos);
+				//kernel_write(filp, buf, span, &pos);
 				ret = tvin_df_write(df, buf, span);
 				if (ret != DF_WRITE_RET_OK) {
 					pr_info("line:%d,write failed with %d\n", __LINE__, ret);
@@ -556,7 +555,7 @@ static void vdin_dump_more_mem_df(char *path, struct vdin_dev_s *devp,
 			/*only write active data*/
 			for (i = 0; i < count; i++) {
 				vdin_dma_flush(devp, buf, devp->canvas_w, DMA_FROM_DEVICE);
-				//vfs_write(filp, buf, devp->canvas_active_w, &pos);
+				//kernel_write(filp, buf, devp->canvas_active_w, &pos);
 				ret = tvin_df_write(df, buf, devp->canvas_active_w);
 				if (ret != DF_WRITE_RET_OK) {
 					pr_info("line:%d,write failed with %d\n", __LINE__, ret);
@@ -680,7 +679,7 @@ static void vdin_dump_write_sct_mem_df(struct vdin_dev_s *devp,
 		for (i = sc->page_cnt; i < devp->msct_top.mmu_4k_number; i++) {
 			pr_debug("[%d] Low phy_addr=0x%lx,buf_body=0x%lx,page:0x%lx\n", i,
 				phy_addr, (unsigned long)buf_body, PAGE_SIZE);
-			//vfs_write(filp, buf_body, PAGE_SIZE, &pos);
+			//kernel_write(filp, buf_body, PAGE_SIZE, &pos);
 			ret = tvin_df_write(df, buf_body, PAGE_SIZE);
 			if (ret != DF_WRITE_RET_OK) {
 				pr_info("line:%d,write failed with %d\n", __LINE__, ret);
@@ -901,7 +900,7 @@ static void vdin_dump_one_afbce_mem_df(char *path, struct vdin_dev_s *devp,
 }
 #endif
 #else
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void vdin_dump_write_sct_mem(struct vdin_dev_s *devp,
 				    unsigned int buf_num, struct file *filp)
@@ -942,18 +941,17 @@ static void vdin_dump_write_sct_mem(struct vdin_dev_s *devp,
 				phy_addr, (unsigned long)buf_body, PAGE_SIZE);
 			vdin_dma_flush(devp, buf_body, PAGE_SIZE,
 				       DMA_FROM_DEVICE);
-			vfs_write(filp, buf_body, PAGE_SIZE, &pos);
+			kernel_write(filp, buf_body, PAGE_SIZE, &pos);
 		} else {
 			buf_body = vdin_vmap(phy_addr, PAGE_SIZE);
 			if (!buf_body) {
-				vfs_fsync(filp, 0);
 				pr_info("[%d] vdin_vmap error\n", i);
 				return;
 			}
 			pr_debug("[%d] High phy_addr=0x%lx,buf_body=0x%lx,page:0x%lx\n", i,
 				phy_addr, (unsigned long)buf_body, PAGE_SIZE);
 			vdin_dma_flush(devp, buf_body, PAGE_SIZE, DMA_FROM_DEVICE);
-			vfs_write(filp, buf_body, PAGE_SIZE, &pos);
+			kernel_write(filp, buf_body, PAGE_SIZE, &pos);
 			vdin_unmap_phyaddr(buf_body);
 		}
 	}
@@ -963,7 +961,7 @@ static void vdin_dump_write_sct_mem(struct vdin_dev_s *devp,
 		for (i = sc->page_cnt; i < devp->msct_top.mmu_4k_number; i++) {
 			pr_debug("[%d] Low phy_addr=0x%lx,buf_body=0x%lx,page:0x%lx\n", i,
 				phy_addr, (unsigned long)buf_body, PAGE_SIZE);
-			vfs_write(filp, buf_body, PAGE_SIZE, &pos);
+			kernel_write(filp, buf_body, PAGE_SIZE, &pos);
 		}
 	}
 
@@ -978,7 +976,7 @@ static void vdin_dump_more_mem(char *path, struct vdin_dev_s *devp,
 #if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
 	vdin_dump_more_mem_df(path, devp, dump_num, sel_start);
 #else
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#if IS_ENABLED(CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA)
 	struct file *filp = NULL;
 	loff_t pos = 0;
 	loff_t mem_size = 0;
@@ -1006,7 +1004,6 @@ static void vdin_dump_more_mem(char *path, struct vdin_dev_s *devp,
 
 	filp = filp_open(path, O_RDWR | O_CREAT, 0666);
 	if (IS_ERR_OR_NULL(filp)) {
-		set_fs(old_fs);
 		pr_info("create %s error or filp is NULL.\n", path);
 		return;
 	}
@@ -1014,7 +1011,6 @@ static void vdin_dump_more_mem(char *path, struct vdin_dev_s *devp,
 	rec_dum_frame = kzalloc(sizeof(unsigned int) * dump_frame_count, GFP_KERNEL);
 	if (!rec_dum_frame) {
 		filp_close(filp, NULL);
-		set_fs(old_fs);
 		pr_info("kzalloc mem fail\n");
 		return;
 	}
@@ -1063,7 +1059,7 @@ static void vdin_dump_more_mem(char *path, struct vdin_dev_s *devp,
 			/*only write active data*/
 			for (i = 0; i < count; i++) {
 				vdin_dma_flush(devp, buf, devp->canvas_w, DMA_FROM_DEVICE);
-				vfs_write(filp, buf, devp->canvas_active_w, &pos);
+				kernel_write(filp, buf, devp->canvas_active_w, &pos);
 				buf += devp->canvas_w;
 			}
 		}
@@ -1084,16 +1080,14 @@ static void vdin_dump_more_mem(char *path, struct vdin_dev_s *devp,
 				high_addr = phys + i * devp->canvas_w;
 				buf = vdin_vmap(high_addr, devp->canvas_active_w);
 				if (!buf) {
-					vfs_fsync(filp, 0);
 					filp_close(filp, NULL);
-					set_fs(old_fs);
 					kfree(rec_dum_frame);
 					pr_info("vdin_vmap error\n");
 					return;
 				}
 
 				vdin_dma_flush(devp, buf, devp->canvas_active_w, DMA_FROM_DEVICE);
-				vfs_write(filp, buf, devp->canvas_active_w, &pos);
+				kernel_write(filp, buf, devp->canvas_active_w, &pos);
 				vdin_unmap_phyaddr(buf);
 			}
 		}
@@ -1106,9 +1100,7 @@ static void vdin_dump_more_mem(char *path, struct vdin_dev_s *devp,
 	else
 		pr_info("dump_num:%u start:%u end:%u not continuous\n", dump_num,
 			rec_dum_frame[0], rec_dum_frame[dump_frame_count - 1]);
-	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
-	set_fs(old_fs);
 	kfree(rec_dum_frame);
 	rec_dum_frame = NULL;
 #endif
@@ -1121,7 +1113,7 @@ static void vdin_dump_one_buf_mem(char *path, struct vdin_dev_s *devp,
 #if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
 	vdin_dump_one_buf_mem_df(path, devp, buf_num);
 #else
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#if IS_ENABLED(CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA)
 	struct file *filp = NULL;
 	loff_t pos = 0;
 	void *buf = NULL;
@@ -1149,7 +1141,6 @@ static void vdin_dump_one_buf_mem(char *path, struct vdin_dev_s *devp,
 	}
 
 	if (buf_num >= devp->canvas_max_num) {
-		vfs_fsync(filp, 0);
 		filp_close(filp, NULL);
 		pr_info("buf_num > canvas_max_num, vdin exit dump\n");
 		return;
@@ -1177,10 +1168,10 @@ static void vdin_dump_one_buf_mem(char *path, struct vdin_dev_s *devp,
 		for (i = 0; i < count; i++) {
 			vdin_dma_flush(devp, buf, devp->canvas_w,
 				       DMA_FROM_DEVICE);
-			vfs_write(filp, buf, devp->canvas_active_w, &pos);
+			kernel_write(filp, buf, devp->canvas_active_w, &pos);
 			buf += devp->canvas_w;
 		}
-		/*vfs_write(filp, buf, devp->canvas_max_size, &pos);*/
+		/*kernel_write(filp, buf, devp->canvas_max_size, &pos);*/
 		pr_info("write buffer %2d of %2u  to %s.\n",
 			buf_num, devp->canvas_max_num, path);
 	} else {
@@ -1193,20 +1184,18 @@ static void vdin_dump_one_buf_mem(char *path, struct vdin_dev_s *devp,
 			high_addr = phys + j * devp->canvas_w;
 			buf = vdin_vmap(high_addr, span);
 			if (!buf) {
-				vfs_fsync(filp, 0);
 				filp_close(filp, NULL);
 				pr_info("vdin_vmap error\n");
 				return;
 			}
 
 			vdin_dma_flush(devp, buf, span, DMA_FROM_DEVICE);
-			vfs_write(filp, buf, span, &pos);
+			kernel_write(filp, buf, span, &pos);
 			vdin_unmap_phyaddr(buf);
 		}
 		pr_info("high-mem write buffer %2d of %2u to %s.\n",
 			buf_num, devp->canvas_max_num, path);
 	}
-	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 #endif
 #endif
@@ -1217,7 +1206,7 @@ static void vdin_dump_mem(char *path, struct vdin_dev_s *devp)
 #if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
 	vdin_dump_mem_df(path, devp);
 #else
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#if IS_ENABLED(CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA)
 	struct file *filp = NULL;
 	loff_t pos = 0;
 	loff_t mem_size = 0;
@@ -1281,11 +1270,11 @@ static void vdin_dump_mem(char *path, struct vdin_dev_s *devp)
 				vdin_dma_flush(devp, buf, devp->canvas_w,
 					       DMA_FROM_DEVICE);
 				if (devp->cma_config_flag & 0x100) {
-					vfs_write(filp, vfbuf[i],
+					kernel_write(filp, vfbuf[i],
 						  devp->canvas_active_w, &pos);
 					vfbuf[i] += devp->canvas_w;
 				} else {
-					vfs_write(filp, buf,
+					kernel_write(filp, buf,
 						  devp->canvas_active_w, &pos);
 					buf += devp->canvas_w;
 				}
@@ -1306,7 +1295,6 @@ static void vdin_dump_mem(char *path, struct vdin_dev_s *devp)
 				high_addr = phys + j * devp->canvas_w;
 				buf = vdin_vmap(high_addr, span);
 				if (!buf) {
-					vfs_fsync(filp, 0);
 					filp_close(filp, NULL);
 					pr_info("vdin_vmap error\n");
 					return;
@@ -1314,14 +1302,13 @@ static void vdin_dump_mem(char *path, struct vdin_dev_s *devp)
 
 				vdin_dma_flush(devp, buf, span,
 					       DMA_FROM_DEVICE);
-				vfs_write(filp, buf, span, &pos);
+				kernel_write(filp, buf, span, &pos);
 				vdin_unmap_phyaddr(buf);
 			}
 			pr_info("high-mem write buffer %2d of %2u to %s.\n",
 				i, devp->canvas_max_num, path);
 		}
 	}
-	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 #endif
 #endif
@@ -1366,7 +1353,7 @@ static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 #if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
 	vdin_dump_one_afbce_mem_df(path, devp, buf_num);
 #else
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	#define K_PATH_BUFF_LENGTH	128
 	struct file *filp = NULL;
 	loff_t pos = 0;
@@ -1456,12 +1443,11 @@ static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 	vdin_dma_flush(devp, buf_head,
 		       devp->afbce_info->frame_head_size,
 		       DMA_FROM_DEVICE);
-	vfs_write(filp, buf_head, devp->afbce_info->frame_head_size, &pos);
+	kernel_write(filp, buf_head, devp->afbce_info->frame_head_size, &pos);
 	if (highmem_flag)
 		vdin_unmap_phyaddr(buf_head);
 	pr_info("write buffer %2d of %2u head to %s.\n",
 		buf_num, devp->canvas_max_num, buff);
-	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 
 	/*write table bin*/
@@ -1477,12 +1463,11 @@ static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 	vdin_dma_flush(devp, buf_table,
 		       devp->afbce_info->frame_table_size,
 		       DMA_FROM_DEVICE);
-	vfs_write(filp, buf_table, devp->afbce_info->frame_table_size, &pos);
+	kernel_write(filp, buf_table, devp->afbce_info->frame_table_size, &pos);
 	if (highmem_flag)
 		vdin_unmap_phyaddr(buf_table);
 	pr_info("write buffer %2d of %2u table to %s.\n",
 		buf_num, devp->canvas_max_num, buff);
-	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 
 	/*write body bin*/
@@ -1499,7 +1484,7 @@ static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 		if (devp->mem_type == VDIN_MEM_TYPE_SCT) {
 			vdin_dump_write_sct_mem(devp, buf_num, filp);
 		} else {
-			vfs_write(filp, buf_body,
+			kernel_write(filp, buf_body,
 				devp->afbce_info->frame_body_size, &pos);
 		}
 	} else {
@@ -1512,14 +1497,13 @@ static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 			high_addr = phys + j * span;
 			virt_buf = vdin_vmap(high_addr, span);
 			if (!virt_buf) {
-				vfs_fsync(filp, 0);
 				filp_close(filp, NULL);
 				pr_info("vdin_vmap error\n");
 				return;
 			}
 
 			vdin_dma_flush(devp, virt_buf, span, DMA_FROM_DEVICE);
-			vfs_write(filp, virt_buf, span, &pos);
+			kernel_write(filp, virt_buf, span, &pos);
 			vdin_unmap_phyaddr(virt_buf);
 		}
 
@@ -1528,20 +1512,18 @@ static void vdin_dump_one_afbce_mem(char *path, struct vdin_dev_s *devp,
 			high_addr = phys + span;
 			virt_buf = vdin_vmap(high_addr, remain);
 			if (!virt_buf) {
-				vfs_fsync(filp, 0);
 				filp_close(filp, NULL);
 				pr_info("vdin_vmap1 error\n");
 				return;
 			}
 
 			vdin_dma_flush(devp, virt_buf, remain, DMA_FROM_DEVICE);
-			vfs_write(filp, virt_buf, remain, &pos);
+			kernel_write(filp, virt_buf, remain, &pos);
 			vdin_unmap_phyaddr(virt_buf);
 		}
 	}
 	pr_info("write buffer %2d of %2u body to %s.\n",
 		buf_num, devp->canvas_max_num, buff);
-	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 	pr_info("%s done,write buffer %2d\n", __func__, buf_num);
 #endif
@@ -2153,14 +2135,10 @@ static void vdin_dump_histgram(struct vdin_dev_s *devp)
 static void vdin_write_afbce_mem(struct vdin_dev_s *devp, char *type,
 				 char *path)
 {
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	char md_path_head[100], md_path_body[100];
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	unsigned int i, j;
-#else
-	unsigned int i;
-#endif
 	int highmem_flag = 0;
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	unsigned int size = 0;
 	unsigned int span = 0;
 	unsigned int remain = 0;
@@ -2171,7 +2149,6 @@ static void vdin_write_afbce_mem(struct vdin_dev_s *devp, char *type,
 	loff_t pos = 0;
 	void *body_dts = NULL;
 	void *virt_buf = NULL;
-#endif
 	long val;
 	void *head_dts = NULL;
 
@@ -2223,7 +2200,6 @@ static void vdin_write_afbce_mem(struct vdin_dev_s *devp, char *type,
 				     devp->afbce_info->frame_head_size);
 	}
 
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
 	pr_info("head bin file path = %s\n", md_path_head);
 	filp = filp_open(md_path_head, O_RDONLY, 0);
 	if (IS_ERR_OR_NULL(filp)) {
@@ -2231,12 +2207,11 @@ static void vdin_write_afbce_mem(struct vdin_dev_s *devp, char *type,
 		return;
 	}
 
-	size = vfs_read(filp, head_dts,
+	size = kernel_read(filp, head_dts,
 			devp->afbce_info->frame_head_size, &pos);
 	if (highmem_flag)
 		vdin_unmap_phyaddr(head_dts);
 
-	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 	pos = 0;
 	pr_info("body bin file path = %s\n", md_path_body);
@@ -2250,7 +2225,7 @@ static void vdin_write_afbce_mem(struct vdin_dev_s *devp, char *type,
 		body_dts =
 		codec_mm_phys_to_virt(devp->afbce_info->fm_body_paddr[i]);
 
-		size = vfs_read(filp, body_dts,
+		size = kernel_read(filp, body_dts,
 				devp->afbce_info->frame_body_size, &pos);
 	} else {
 		span = SZ_1M;
@@ -2265,24 +2240,24 @@ static void vdin_write_afbce_mem(struct vdin_dev_s *devp, char *type,
 				pr_info("vdin_vmap error\n");
 				return;
 			}
-			vfs_read(filp, virt_buf, span, &pos);
+			kernel_read(filp, virt_buf, span, &pos);
 			vdin_unmap_phyaddr(virt_buf);
 		}
 	}
 
-	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
-#endif
+
 	provider_vf_put(devp->curr_wr_vfe, devp->vfp);
 	devp->curr_wr_vfe = NULL;
 	vf_notify_receiver(devp->name, VFRAME_EVENT_PROVIDER_VFRAME_READY,
 			   NULL);
+#endif
 }
 
 static void vdin_write_mem(struct vdin_dev_s *devp, char *type,
 			   char *path, char *md_path)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	unsigned int size = 0, val_type = 0;
 	struct file *filp = NULL,  *md_flip = NULL;
 	loff_t pos = 0;
@@ -2293,10 +2268,7 @@ static void vdin_write_mem(struct vdin_dev_s *devp, char *type,
 	unsigned long addr;
 	unsigned long high_addr;
 	struct vf_pool *p = devp->vfp;
-#else
-	long val;
-	unsigned int val_type = 0;
-#endif
+
 	/* vtype = simple_strtol(type, NULL, 10); */
 
 	if (kstrtol(type, 10, &val) < 0)
@@ -2310,7 +2282,7 @@ static void vdin_write_mem(struct vdin_dev_s *devp, char *type,
 			return;
 		}
 	}
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+
 	pr_info("bin file path = %s\n", path);
 	filp = filp_open(path, O_RDONLY, 0);
 	if (IS_ERR_OR_NULL(filp)) {
@@ -2353,10 +2325,9 @@ static void vdin_write_mem(struct vdin_dev_s *devp, char *type,
 		pr_info("low mem area,addr:%lx\n", addr);
 		dts = phys_to_virt(addr);
 		for (j = 0; j < devp->canvas_h; j++) {
-			vfs_read(filp, dts + (devp->canvas_w * j),
+			kernel_read(filp, dts + (devp->canvas_w * j),
 				 devp->canvas_active_w, &pos);
 		}
-		vfs_fsync(filp, 0);
 		iounmap(dts);
 		filp_close(filp, NULL);
 	} else {
@@ -2370,11 +2341,10 @@ static void vdin_write_mem(struct vdin_dev_s *devp, char *type,
 				pr_info("vdin_vmap error\n");
 				return;
 			}
-			vfs_read(filp, dts, span, &pos);
+			kernel_read(filp, dts, span, &pos);
 			vdin_dma_flush(devp, dts, span, DMA_TO_DEVICE);
 			vdin_unmap_phyaddr(dts);
 		}
-		vfs_fsync(filp, 0);
 		filp_close(filp, NULL);
 	}
 
@@ -2391,25 +2361,25 @@ static void vdin_write_mem(struct vdin_dev_s *devp, char *type,
 
 			pos = 0;
 			size = (unsigned int)
-			vfs_read(md_flip, devp->vfp->dv_buf_vmem[index],
+			kernel_read(md_flip, devp->vfp->dv_buf_vmem[index],
 				 4096, &pos);
 			p->dv_buf_size[index] = size;
 			devp->vfp->dv_buf[index] = &c[0];
 		}
-		vfs_fsync(md_flip, 0);
 		filp_close(md_flip, NULL);
 	}
-#endif
+
 	provider_vf_put(devp->curr_wr_vfe, devp->vfp);
 	devp->curr_wr_vfe = NULL;
 	vf_notify_receiver(devp->name, VFRAME_EVENT_PROVIDER_VFRAME_READY,
 			   NULL);
+#endif
 }
 
 static void vdin_write_cont_mem(struct vdin_dev_s *devp, char *type,
 				char *path, char *num)
 {
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#ifdef CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA
 	unsigned int size = 0, i = 0;
 	struct file *filp = NULL;
 	loff_t pos = 0;
@@ -2469,13 +2439,12 @@ static void vdin_write_cont_mem(struct vdin_dev_s *devp, char *type,
 		addr = canvas_get_addr(devp->curr_wr_vfe->vf.canvas0Addr);
 		/* real_size); */
 		dts = phys_to_virt(addr);
-		size = vfs_read(filp, dts, devp->canvas_max_size, &pos);
+		size = kernel_read(filp, dts, devp->canvas_max_size, &pos);
 		if (size < devp->canvas_max_size) {
 			pr_info("%s read %u < %u error.\n",
 				__func__, size, devp->canvas_max_size);
 			return;
 		}
-		vfs_fsync(filp, 0);
 		provider_vf_put(devp->curr_wr_vfe, devp->vfp);
 		devp->curr_wr_vfe = NULL;
 		vf_notify_receiver(devp->name,

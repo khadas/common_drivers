@@ -14,8 +14,13 @@
 
 #define CLKCTRL_DSC_CLK_CTRL	0xfe000100
 #define DSC_CLK_CTRL_OFFSET	0x0100
+
 /* smc cmd for setting vpu secure reg0 via bl31 */
 #define VDIN_SECURE_CFG	0x8200008d
+
+#define VDIN_LITE_CORE_MAX_W	4096
+#define VDIN_LITE_CORE_MAX_H	2160
+#define VDIN_LITE_CORE_MAX_PIXEL_CLOCK	(VDIN_LITE_CORE_MAX_W * VDIN_LITE_CORE_MAX_H * 60UL)
 
 struct vdin_blkbar_s {
 	unsigned int gclk_ctrl;

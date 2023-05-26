@@ -24,7 +24,7 @@ static struct clk *clk[MAX_CLUSTERS];
 static bool reg_use_buck[MAX_CLUSTERS];
 static struct cpufreq_frequency_table *freq_table[MAX_CLUSTERS];
 static struct cpumask cluster_cpus[MAX_CLUSTERS];
-//static struct thermal_cooling_device *cooldev[MAX_CLUSTERS];
+static int cluster_need_boost[MAX_CLUSTERS];
 
 /* Default voltage_tolerance */
 #define DEF_VOLT_TOL		0
@@ -60,6 +60,7 @@ struct meson_cpufreq_driver_data {
 	bool reg_external_used;
 	u32 *dsu_opp_table;
 	bool dsu_clock_shared;
+	bool hmp_boost_enable;
 	struct cpufreq_policy *policy;
 	/* voltage tolerance in percentage */
 	unsigned int volt_tol;

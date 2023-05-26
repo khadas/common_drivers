@@ -444,7 +444,14 @@ static int meson_cpufreq_set_target(struct cpufreq_policy *policy,
 
 	pr_debug("setting target for cpu %d, index =%d\n", policy->cpu, index);
 
-	freq_new = freq_table[cur_cluster][index].frequency * 1000;
+	freq_new = freq_table[cur_cluster][index].frequency;
+	if (cpufreq_data->hmp_boost_enable && freq_new >= policy->max)
+		cluster_need_boost[!cur_cluster] = 1;
+	else
+		cluster_need_boost[!cur_cluster] = 0;
+	if (cluster_need_boost[cur_cluster] && freq_new < mid_rate)
+		freq_new = mid_rate;
+	freq_new = freq_new * 1000;
 
 	if (!IS_ERR(cpu_reg)) {
 		opp = dev_pm_opp_find_freq_ceil(cpu_dev, &freq_new);
@@ -967,6 +974,8 @@ static int meson_cpufreq_init(struct cpufreq_policy *policy)
 							 "cpufreq_voltage_set_skip");
 	reg_use_buck[cur_cluster] = of_property_read_bool(np,
 		"cpu_reg_use_buck");
+	cpufreq_data->hmp_boost_enable = of_property_read_bool(np,
+		"hmp_boost_enable");
 	dsu_opp_table = kmalloc(sizeof(*dsu_opp_table) * 4, GFP_KERNEL);
 	if (IS_ERR(dsu_opp_table)) {
 		pr_err("failed to alloc dsu_opp_table.\n");

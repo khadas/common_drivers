@@ -2714,8 +2714,9 @@ void get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 		return;
 
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	     get_cpu_type() == MESON_CPU_MAJOR_ID_T5D) &&
-	    module_sel == VD2_HDR)
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		chip_type_id == chip_txhd2) &&
+		module_sel == VD2_HDR)
 		return;
 
 	if (module_sel == VD1_HDR) {
@@ -3024,8 +3025,9 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 	}
 
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	     get_cpu_type() == MESON_CPU_MAJOR_ID_T5D) &&
-	    (module_sel == VD2_HDR || module_sel == OSD1_HDR))
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		chip_type_id == chip_txhd2) &&
+		(module_sel == VD2_HDR || module_sel == OSD1_HDR))
 		return hdr_process_select;
 
 	if (((module_sel == OSD1_HDR && vpp_index == VPP_TOP1) ||
@@ -3101,7 +3103,8 @@ enum hdr_process_sel hdr_func(enum hdr_module_sel module_sel,
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
 		chip_type_id == chip_t5m ||
-		chip_type_id == chip_t3x)
+		chip_type_id == chip_t3x ||
+		chip_type_id == chip_txhd2)
 		bit_depth = 10;
 
 	/*lut parameters*/
@@ -4222,9 +4225,10 @@ int hdr10p_ebzcurve_update(enum hdr_module_sel module_sel,
 		eo_gmt_bit_mode = true;
 
 	if (is_meson_tl1_cpu() ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
-	    is_meson_s4_cpu())
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		is_meson_s4_cpu() ||
+		chip_type_id == chip_txhd2)
 		bit_depth = 10;
 
 	/*lut parameters*/
@@ -4331,9 +4335,10 @@ int hdr10_tm_update(enum hdr_module_sel module_sel,
 		return 0;
 
 	if (is_meson_tl1_cpu() ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
-	    is_meson_s4_cpu())
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		is_meson_s4_cpu() ||
+		chip_type_id == chip_txhd2)
 		bit_depth = 10;
 
 	if (hdr_process_select & HDR_SDR) {
@@ -4408,8 +4413,9 @@ enum hdr_process_sel hdr10p_func(enum hdr_module_sel module_sel,
 	}
 
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	     get_cpu_type() == MESON_CPU_MAJOR_ID_T5D) &&
-	    (module_sel == VD2_HDR || module_sel == OSD1_HDR))
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		chip_type_id == chip_txhd2) &&
+		(module_sel == VD2_HDR || module_sel == OSD1_HDR))
 		return hdr_process_select;
 
 	if (((module_sel == OSD1_HDR && vpp_index == VPP_TOP1) ||
@@ -4458,13 +4464,14 @@ enum hdr_process_sel hdr10p_func(enum hdr_module_sel module_sel,
 		return hdr_process_select;
 
 	if (is_meson_tl1_cpu() ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
-	    is_meson_s4_cpu() ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
-	    chip_type_id == chip_t5m ||
-		chip_type_id == chip_t3x)
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		is_meson_s4_cpu() ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+		chip_type_id == chip_t5m ||
+		chip_type_id == chip_t3x ||
+		chip_type_id == chip_txhd2)
 		bit_depth = 10;
 
 	/*lut parameters*/
@@ -4716,8 +4723,9 @@ int cuva_hdr_update(enum hdr_module_sel module_sel,
 	}
 
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	     get_cpu_type() == MESON_CPU_MAJOR_ID_T5D) &&
-	    (module_sel == VD2_HDR || module_sel == OSD1_HDR))
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		chip_type_id == chip_txhd2) &&
+		(module_sel == VD2_HDR || module_sel == OSD1_HDR))
 		return hdr_process_select;
 
 	cuva_gain = get_gain_lut();
@@ -4744,11 +4752,12 @@ int cuva_hdr_update(enum hdr_module_sel module_sel,
 		return hdr_process_select;
 
 	if (is_meson_tl1_cpu() ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
-	    is_meson_s4_cpu() ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W)
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		is_meson_s4_cpu() ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+		chip_type_id == chip_txhd2)
 		bit_depth = 10;
 
 	if (hdr_process_select & (CUVA_SDR | CUVA_HDR |
@@ -5013,8 +5022,9 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 		return ret;
 
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	     get_cpu_type() == MESON_CPU_MAJOR_ID_T5D) &&
-	    (module_sel == VD2_HDR || module_sel == OSD1_HDR))
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		chip_type_id == chip_txhd2) &&
+		(module_sel == VD2_HDR || module_sel == OSD1_HDR))
 		return ret;
 
 	mtx_param = &hdr_params->hdr_mtx_param;
@@ -5069,10 +5079,11 @@ static int create_hdr_full_setting(enum hdr_module_sel module_sel,
 		return ret;
 
 	if (is_meson_tl1_cpu() ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
-	    is_meson_s4_cpu() ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T3)
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		is_meson_s4_cpu() ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
+		chip_type_id == chip_txhd2)
 		bit_depth = 10;
 
 	/*lut parameters*/

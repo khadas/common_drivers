@@ -759,7 +759,8 @@ void pd_combing_fix_patch(enum pd_comb_fix_lvl_e level)
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
 		chip_type_id == chip_t5m ||
-		chip_type_id == chip_t3x))
+		chip_type_id == chip_t3x ||
+		chip_type_id == chip_txhd2))
 		return;
 
 	pr_amcm_dbg("\n[amcm..] pd fix lvl = %d\n", level);

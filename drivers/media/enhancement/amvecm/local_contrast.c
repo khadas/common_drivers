@@ -256,10 +256,11 @@ static void lc_mtx_set(enum lc_mtx_sel_e mtx_sel,
 		if (mtx_sel & (INP_MTX | OUTP_MTX)) {
 			if (bitdepth == 10) {
 				if (get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-				    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
-				    get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-				    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
-				    chip_type_id == chip_t5m) {
+					get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+					get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
+					get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+					chip_type_id == chip_t5m ||
+					chip_type_id == chip_txhd2) {
 					WRITE_VPP_REG(matrix_coef00_01,
 						      0x04A80000);
 					WRITE_VPP_REG(matrix_coef02_10,
@@ -359,10 +360,11 @@ static void lc_mtx_set(enum lc_mtx_sel_e mtx_sel,
 		if (mtx_sel & (INP_MTX | OUTP_MTX)) {
 			if (bitdepth == 10) {
 				if (get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-				    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
-				    get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-				    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
-				    chip_type_id == chip_t5m) {
+					get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+					get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
+					get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+					chip_type_id == chip_t5m ||
+					chip_type_id == chip_txhd2) {
 					WRITE_VPP_REG(matrix_coef00_01,
 						      0x04A80000);
 					WRITE_VPP_REG(matrix_coef02_10,
@@ -462,10 +464,11 @@ static void lc_mtx_set(enum lc_mtx_sel_e mtx_sel,
 		if (mtx_sel & (INP_MTX | OUTP_MTX)) {
 			if (bitdepth == 10) {
 				if (get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-				    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
-				    get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-				    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
-				    chip_type_id == chip_t5m) {
+					get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+					get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
+					get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+					chip_type_id == chip_t5m ||
+					chip_type_id == chip_txhd2) {
 					WRITE_VPP_REG(matrix_coef00_01,
 						      0x04000000);
 					WRITE_VPP_REG(matrix_coef02_10,

@@ -2318,7 +2318,8 @@ static int cabc_add_hist_proc(struct vframe_s *vf)
 
 	hist = vf_hist_get();
 
-	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T7)) {
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T7) &&
+		chip_type_id != chip_txhd2) {
 		vpp_pst_hist_sta_read(hist);
 		return 1;
 	}
@@ -6398,7 +6399,8 @@ static ssize_t amvecm_set_post_matrix_show(struct class *cla,
 	pr_info("40 : postblend output\n");
 	pr_info("48: osd1 output\n");
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T7) &&
-	    !is_meson_s4d_cpu() && !is_meson_s4_cpu()) {
+		!is_meson_s4d_cpu() && !is_meson_s4_cpu() &&
+		chip_type_id != chip_txhd2) {
 		val = READ_VPP_REG(VPP_PROBE_CTRL);
 		pr_info("current setting: %d\n", val & 0x3f);
 	} else {
@@ -6418,7 +6420,8 @@ static ssize_t amvecm_set_post_matrix_store(struct class *cla,
 	if (kstrtoint(buf, 10, &val) < 0)
 		return -EINVAL;
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T7) &&
-	    !is_meson_s4d_cpu() && !is_meson_s4_cpu()) {
+		!is_meson_s4d_cpu() && !is_meson_s4_cpu() &&
+		chip_type_id != chip_txhd2) {
 		reg_val = READ_VPP_REG(VPP_PROBE_CTRL);
 		reg_val = reg_val & 0xffffffc0;
 		/*reg_val |= 0x10000;*/
@@ -6456,7 +6459,8 @@ static ssize_t amvecm_post_matrix_pos_show(struct class *cla,
 	pr_info("echo x y > /sys/class/amvecm/matrix_pos\n");
 
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T7) &&
-	    !is_meson_s4d_cpu() && !is_meson_s4_cpu())
+	    !is_meson_s4d_cpu() && !is_meson_s4_cpu() &&
+	    chip_type_id != chip_txhd2)
 		val = READ_VPP_REG(VPP_PROBE_POS);
 	else
 		val = READ_VPP_REG(VPP_MATRIX_PROBE_POS);
@@ -6491,7 +6495,8 @@ static ssize_t amvecm_post_matrix_pos_store(struct class *cla,
 	val_y = val_y & 0x1fff;
 
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T7) &&
-	    !is_meson_s4d_cpu() && !is_meson_s4_cpu())
+		!is_meson_s4d_cpu() && !is_meson_s4_cpu() &&
+		chip_type_id != chip_txhd2)
 		reg_val = READ_VPP_REG(VPP_PROBE_POS);
 	else
 		reg_val = READ_VPP_REG(VPP_MATRIX_PROBE_POS);
@@ -6499,7 +6504,8 @@ static ssize_t amvecm_post_matrix_pos_store(struct class *cla,
 	reg_val = reg_val | (val_x << 16) | val_y;
 
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T7) &&
-	    !is_meson_s4d_cpu() && !is_meson_s4_cpu())
+		!is_meson_s4d_cpu() && !is_meson_s4_cpu() &&
+		chip_type_id != chip_txhd2)
 		WRITE_VPP_REG(VPP_PROBE_POS, reg_val);
 	else
 		WRITE_VPP_REG(VPP_MATRIX_PROBE_POS, reg_val);
@@ -6517,7 +6523,8 @@ static ssize_t amvecm_post_matrix_data_show(struct class *cla,
 	u32 probe_color, probe_color1;
 
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T7) &&
-		!is_meson_s4d_cpu() && !is_meson_s4_cpu()) {
+		!is_meson_s4d_cpu() && !is_meson_s4_cpu() &&
+		chip_type_id != chip_txhd2) {
 		probe_color = VPP_PROBE_COLOR;
 		probe_color1 = VPP_PROBE_COLOR1;
 	} else {
@@ -6526,12 +6533,13 @@ static ssize_t amvecm_post_matrix_data_show(struct class *cla,
 	}
 
 	if (is_meson_tl1_cpu() ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
-	    is_meson_s4_cpu() ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
-	    get_cpu_type() == MESON_CPU_MAJOR_ID_T5M)
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
+		is_meson_s4_cpu() ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
+		get_cpu_type() == MESON_CPU_MAJOR_ID_T5M ||
+		chip_type_id == chip_txhd2)
 		bit_depth = 10;
 
 	if (bit_depth == 10) {
@@ -11300,7 +11308,8 @@ void hdr_hist_config_int(void)
 		WRITE_VPP_REG(VD1_HDR2_HIST_V_START_END, 0x0);
 
 		if (get_cpu_type() != MESON_CPU_MAJOR_ID_T5 &&
-			get_cpu_type() != MESON_CPU_MAJOR_ID_T5D) {
+			get_cpu_type() != MESON_CPU_MAJOR_ID_T5D &&
+			chip_type_id != chip_txhd2) {
 			WRITE_VPP_REG(VD2_HDR2_HIST_CTRL, 0x5510);
 			WRITE_VPP_REG(VD2_HDR2_HIST_H_START_END, 0x10000);
 			WRITE_VPP_REG(VD2_HDR2_HIST_V_START_END, 0x0);
@@ -11377,7 +11386,8 @@ void init_pq_setting(void)
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
 		chip_type_id == chip_t5m ||
-		chip_type_id == chip_t3x)
+		chip_type_id == chip_t3x ||
+		chip_type_id == chip_txhd2)
 		goto tvchip_pq_setting;
 	else if (is_meson_g12a_cpu() || is_meson_g12b_cpu() ||
 		 is_meson_sm1_cpu() ||
@@ -11432,7 +11442,8 @@ tvchip_pq_setting:
 			get_cpu_type() == MESON_CPU_MAJOR_ID_T3 ||
 			get_cpu_type() == MESON_CPU_MAJOR_ID_T5W ||
 			chip_type_id == chip_t5m ||
-			chip_type_id == chip_t3x)
+			chip_type_id == chip_t3x ||
+			chip_type_id == chip_txhd2)
 			bitdepth = 10;
 		else if (is_meson_tm2_cpu())
 			bitdepth = 12;
@@ -11462,7 +11473,8 @@ tvchip_pq_setting:
 		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
 			hdr_hist_config_int();
 
-		if (cpu_after_eq(MESON_CPU_MAJOR_ID_T7))
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_T7) &&
+			chip_type_id != chip_txhd2)
 			vpp_pst_hist_sta_config(1, HIST_MAXRGB,
 				AFTER_POST2_MTX, vinfo);
 #endif
@@ -12087,6 +12099,18 @@ static const struct vecm_match_data_s vecm_dt_t3x = {
 	.vlk_pll_sel = vlock_pll_sel_tcon,
 	.vrr_support_flag = 1,
 };
+
+static const struct vecm_match_data_s vecm_dt_txhd2 = {
+	.chip_id = chip_txhd2,
+	.chip_cls = TV_CHIP,
+	.vlk_chip = vlock_chip_t5,
+	.vlk_support = true,
+	.vlk_new_fsm = 1,
+	.vlk_hwver = vlock_hw_tm2verb,
+	.vlk_phlock_en = true,
+	.vlk_pll_sel = vlock_pll_sel_tcon,
+	.vrr_support_flag = 0,
+};
 #endif
 
 static const struct of_device_id aml_vecm_dt_match[] = {
@@ -12144,6 +12168,10 @@ static const struct of_device_id aml_vecm_dt_match[] = {
 	{
 		.compatible = "amlogic, vecm-t3x",
 		.data = &vecm_dt_t3x,
+	},
+	{
+		.compatible = "amlogic, vecm-txhd2",
+		.data = &vecm_dt_txhd2,
 	},
 #endif
 	{},
@@ -12804,7 +12832,7 @@ int __init aml_vecm_init(void)
 {
 	/*unsigned int hiu_reg_base;*/
 
-	pr_info("%s:module init_20230512-0\n", __func__);
+	pr_info("%s:module init_20230526-0\n", __func__);
 
 	if (platform_driver_register(&aml_vecm_driver)) {
 		pr_err("failed to register bl driver module\n");

@@ -3025,6 +3025,11 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
 				pq_cfg.chroma_cor_en, 4, 1);
+
+			/*blue stretch*/
+			if (chip_type_id == chip_txhd2)
+				WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
+					0, 0, 1);
 		}
 #endif
 		break;
@@ -3124,7 +3129,7 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 			} else {
 				lc_en = 0;
 				if (is_meson_tl1_cpu() ||
-				    is_meson_tm2_cpu())
+					is_meson_tm2_cpu())
 					lc_disable();
 			}
 
@@ -3133,6 +3138,11 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 			VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
 				pq_cfg.chroma_cor_en, 4, 1);
+
+			/*blue stretch*/
+			if (chip_type_id == chip_txhd2)
+				VSYNC_WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
+					0, 0, 1);
 		}
 #endif
 		break;

@@ -1160,12 +1160,12 @@ void ve_lcd_gamma_process(void)
 	}
 	if (vecm_latch_flag & FLAG_GAMMA_TABLE_EN) {
 		vecm_latch_flag &= ~FLAG_GAMMA_TABLE_EN;
-		vpp_enable_lcd_gamma_table(viu_sel, 0);
+		vpp_enable_lcd_gamma_table(viu_sel, 1);
 		pr_amve_dbg("\n[amve..] set vpp_enable_lcd_gamma_table OK!!!\n");
 	}
 	if (vecm_latch_flag & FLAG_GAMMA_TABLE_DIS) {
 		vecm_latch_flag &= ~FLAG_GAMMA_TABLE_DIS;
-		vpp_disable_lcd_gamma_table(viu_sel, 0);
+		vpp_disable_lcd_gamma_table(viu_sel, 1);
 		pr_amve_dbg("\n[amve..] set vpp_disable_lcd_gamma_table OK!!!\n");
 	}
 	if ((vecm_latch_flag & FLAG_GAMMA_TABLE_R) &&
@@ -2765,8 +2765,6 @@ void amve_fmetersize_config(u32 sr0_w, u32 sr0_h, u32 sr1_w, u32 sr1_h)
 
 int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 {
-	/*unsigned int i;*/
-
 	switch (md) {
 	case WR_VCB:
 		if (pq_cfg.dnlp_en) {
@@ -2849,23 +2847,10 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 			amvecm_wb_enable(pq_cfg.wb_en);
 
 			gamma_en = pq_cfg.gamma_en;
-			if (gamma_en) {
-				if (is_meson_t7_cpu()) {
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_R;
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_G;
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_B;
-				} else {
-					vpp_enable_lcd_gamma_table(0, 0);
-				}
-			} else {
-				if (is_meson_t7_cpu()) {
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_R;
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_G;
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_B;
-				} else {
-					vpp_disable_lcd_gamma_table(0, 0);
-				}
-			}
+			if (gamma_en)
+				vecm_latch_flag |= FLAG_GAMMA_TABLE_EN;
+			else
+				vecm_latch_flag |= FLAG_GAMMA_TABLE_DIS;
 
 			if (pq_cfg.lc_en) {
 				lc_en = 1;
@@ -2963,21 +2948,15 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 
 			gamma_en = pq_cfg.gamma_en;
 			if (gamma_en) {
-				if (is_meson_t7_cpu()) {
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_R;
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_G;
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_B;
-				} else {
+				if (is_meson_t7_cpu())
+					vecm_latch_flag |= FLAG_GAMMA_TABLE_EN;
+				else
 					vpp_enable_lcd_gamma_table(0, 1);
-				}
 			} else {
-				if (is_meson_t7_cpu()) {
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_R;
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_G;
-					vecm_latch_flag |= FLAG_GAMMA_TABLE_B;
-				} else {
+				if (is_meson_t7_cpu())
+					vecm_latch_flag |= FLAG_GAMMA_TABLE_DIS;
+				else
 					vpp_disable_lcd_gamma_table(0, 1);
-				}
 			}
 
 			if (pq_cfg.lc_en) {

@@ -64,9 +64,9 @@
 			reg = <0x05200000 0x100000>;
 		};
 		secos_reserved:linux,secos {
-			 compatible = "amlogic, aml_secos_memory";
-			 status = "disabled";
-			 reg = <0x05300000 0x1800000>;
+			compatible = "amlogic, aml_secos_memory";
+			status = "okay";
+			reg = <0x05300000 0x800000>;
 		};
 		logo_reserved:linux,meson-fb {
 			compatible = "amlogic, meson-fb";

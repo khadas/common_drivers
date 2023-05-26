@@ -788,13 +788,13 @@
 		compatible = "amlogic, galcore";
 		dev_name = "galcore";
 		status = "okay";
-		//clocks = <&clkc CLKID_NNA_AXI_GATE>,
-		//	<&clkc CLKID_NNA_CORE_GATE>;
+		clocks = <&clkc CLKID_NNA_AXI>,
+			<&clkc CLKID_NNA_CORE>;
 		clock-names = "cts_vipnanoq_axi_clk_composite",
 			"cts_vipnanoq_core_clk_composite";
 		interrupts = <0 84 4>;
 		interrupt-names = "galcore";
-		//power-domains = <&pwrdm PDID_NNA>;
+		power-domains = <&pwrdm PDID_CX_NNA>;
 		reg = <0x0 0xff040000 0x0 0x800
 			0x0 0xffb80000 0x0 0x480000
 			0x0 0xfe0078a0 0x0 0x4

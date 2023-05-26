@@ -48,6 +48,7 @@
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include "../common/ion_dev/dev_ion.h"
+#include <linux/amlogic/meson_uvm_core.h>
 
 /* Local Headers */
 #include "osd.h"
@@ -782,6 +783,69 @@ int meson_ion_share_fd_to_phys(int fd, phys_addr_t *addr, size_t *len)
 }
 #endif
 
+#ifndef CONFIG_AMLOGIC_UVM_CORE
+static int meson_uvm_share_fd_to_phys(int fd, phys_addr_t *addr, size_t *len)
+{
+	return -1;
+}
+#else
+static int meson_uvm_share_fd_to_phys(int fd, phys_addr_t *addr, size_t *len)
+{
+	long ret = -1;
+	struct dma_buf *dbuf = NULL;
+	struct dma_buf_attachment *d_att = NULL;
+	struct sg_table *sg = NULL;
+	struct device *dev = &gp_fbdev_list[0]->dev->dev;
+	enum dma_data_direction dir = DMA_TO_DEVICE;
+	struct page *page;
+
+	if (fd < 0 || !dev) {
+		osd_log_err("error input param or dev is null\n");
+		return -EINVAL;
+	}
+
+	dbuf = dma_buf_get(fd);
+	if (IS_ERR(dbuf)) {
+		osd_log_err("failed to get dma buffer\n");
+		return -EINVAL;
+	}
+
+	if (!dmabuf_is_uvm(dbuf)) {
+		ret = -EINVAL;
+		goto dma_put;
+	}
+
+	*len = dbuf->size;
+	d_att = dma_buf_attach(dbuf, dev);
+	if (IS_ERR(d_att)) {
+		osd_log_err("failed to set dma attach\n");
+		ret = -EINVAL;
+		goto dma_put;
+	}
+
+	sg = dma_buf_map_attachment(d_att, dir);
+	if (IS_ERR(sg)) {
+		osd_log_err("failed to get dma sg\n");
+		ret = -EINVAL;
+		goto dma_detach;
+	} else {
+		page = sg_page(sg->sgl);
+		*addr = PFN_PHYS(page_to_pfn(page));
+		ret = 0;
+	}
+
+	dma_buf_unmap_attachment(d_att, sg, dir);
+
+dma_detach:
+	dma_buf_detach(dbuf, d_att);
+
+dma_put:
+	dma_buf_put(dbuf);
+
+	return ret;
+}
+#endif
+
 static int sync_render_add(struct fb_sync_request_s *sync_request,
 			   struct fb_info *info)
 {
@@ -796,9 +860,14 @@ static int sync_render_add(struct fb_sync_request_s *sync_request,
 
 		sync_request_render =
 			&sync_request->sync_req_render;
-		ret = meson_ion_share_fd_to_phys
+
+		ret = meson_uvm_share_fd_to_phys
 			(sync_request_render->shared_fd,
-			&addr, &len);
+			 &addr, &len);
+		if (ret != 0)
+			ret = meson_ion_share_fd_to_phys
+				(sync_request_render->shared_fd,
+				 &addr, &len);
 		if (ret == 0) {
 			if (sync_request_render->type ==
 				GE2D_COMPOSE_MODE) {

@@ -67,6 +67,12 @@ struct tcon_rmem_config_s {
 	phys_addr_t mem_paddr;
 	unsigned char *mem_vaddr;
 	unsigned int mem_size;
+};
+
+struct tcon_sec_mem_config_s {
+	phys_addr_t mem_paddr;
+	unsigned char *mem_vaddr;
+	unsigned int mem_size;
 	unsigned int sec_handle;
 	unsigned int sec_protect;
 };
@@ -84,6 +90,7 @@ struct tcon_rmem_s {
 	struct tcon_rmem_config_s *axi_rmem;
 	struct tcon_rmem_config_s bin_path_rmem;
 	struct tcon_rmem_config_s secure_cfg_rmem;
+	struct tcon_sec_mem_config_s secure_axi_rmem;
 
 	struct tcon_rmem_config_s vac_rmem;
 	struct tcon_rmem_config_s demura_set_rmem;
@@ -177,7 +184,7 @@ struct lcd_tcon_local_cfg_s {
 
 #if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 void lcd_tcon_mem_tee_get_status(void);
-int lcd_tcon_mem_tee_protect(int mem_flag, int protect_en);
+int lcd_tcon_mem_tee_protect(int protect_en);
 #endif
 
 struct lcd_tcon_config_s *get_lcd_tcon_config(void);

@@ -837,17 +837,10 @@ ssize_t lcd_tcon_debug_store(struct device *dev, struct device_attribute *attr,
 		if (strcmp(parm[1], "status") == 0) {
 			lcd_tcon_mem_tee_get_status();
 		} else if (strcmp(parm[1], "off") == 0) {
-			if (!parm[2])
-				goto lcd_tcon_debug_store_err;
-			ret = kstrtouint(parm[2], 10, &temp);
-			if (ret)
-				goto lcd_tcon_debug_store_err;
-			ret = lcd_tcon_mem_tee_protect(temp, 0);
+			ret = lcd_tcon_mem_tee_protect(0);
 			pr_info("%s: tcon tee unprotect ret %d\n", __func__, ret);
 		} else if (strcmp(parm[1], "on") == 0) {
-			if (!parm[2])
-				goto lcd_tcon_debug_store_err;
-			ret = lcd_tcon_mem_tee_protect(temp, 1);
+			ret = lcd_tcon_mem_tee_protect(1);
 			pr_info("%s: tcon tee protect ret %d\n", __func__, ret);
 		} else {
 			goto lcd_tcon_debug_store_err;

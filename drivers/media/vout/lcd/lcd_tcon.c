@@ -626,25 +626,23 @@ void lcd_tcon_multi_lut_print(void)
 
 static int lcd_tcon_axi_mem_print(char *buf, int offset)
 {
-	char sec_cfg[30];
 	int len = 0, n, i;
 
 	if (!tcon_rmem.axi_rmem)
 		return 0;
 
-	for (i = 0; i < lcd_tcon_conf->axi_bank; i++) {
-		memset(sec_cfg, 0, 30);
-		if (tcon_rmem.axi_rmem[i].sec_protect) {
-			sprintf(sec_cfg, "protect, handle: %d",
-				tcon_rmem.axi_rmem[i].sec_handle);
-		} else {
-			sprintf(sec_cfg, "unprotect");
+	if (tcon_rmem.secure_axi_rmem.sec_protect) {
+		n = lcd_debug_info_len(len + offset);
+		len += snprintf((buf + len), n, "axi secure mem paddr: 0x%lx, size:0x%x\n",
+			(unsigned long)tcon_rmem.secure_axi_rmem.mem_paddr,
+			tcon_rmem.secure_axi_rmem.mem_size);
 		}
+	for (i = 0; i < lcd_tcon_conf->axi_bank; i++) {
 		n = lcd_debug_info_len(len + offset);
 		len += snprintf((buf + len), n,
-			"axi_mem[%d] paddr: 0x%lx (%s)\n"
+			"axi_mem[%d] paddr: 0x%lx\n"
 			"axi_mem[%d] size:  0x%x\n",
-			i, (unsigned long)tcon_rmem.axi_rmem[i].mem_paddr, sec_cfg,
+			i, (unsigned long)tcon_rmem.axi_rmem[i].mem_paddr,
 			i, tcon_rmem.axi_rmem[i].mem_size);
 	}
 
@@ -2658,6 +2656,9 @@ static void lcd_tcon_axi_mem_config_tl1(void)
 		tcon_rmem.axi_rmem[i].mem_size = size[i];
 		temp_size += size[i];
 	}
+	tcon_rmem.secure_axi_rmem.mem_paddr = tcon_rmem.axi_rmem[0].mem_paddr;
+	tcon_rmem.secure_axi_rmem.mem_vaddr = tcon_rmem.axi_rmem[0].mem_vaddr;
+	tcon_rmem.secure_axi_rmem.mem_size = size[0];
 }
 
 static void lcd_tcon_axi_mem_config_t5(void)
@@ -2695,6 +2696,9 @@ static void lcd_tcon_axi_mem_config_t5(void)
 
 		lcd_tcon_conf->axi_reg[i] = reg[i];
 	}
+	tcon_rmem.secure_axi_rmem.mem_paddr = tcon_rmem.axi_rmem[0].mem_paddr;
+	tcon_rmem.secure_axi_rmem.mem_vaddr = tcon_rmem.axi_rmem[0].mem_vaddr;
+	tcon_rmem.secure_axi_rmem.mem_size = size[0];
 }
 
 static void lcd_tcon_axi_mem_config_t3x(void)
@@ -2732,6 +2736,9 @@ static void lcd_tcon_axi_mem_config_t3x(void)
 
 		lcd_tcon_conf->axi_reg[i] = reg[i];
 	}
+	tcon_rmem.secure_axi_rmem.mem_paddr = tcon_rmem.axi_rmem[0].mem_paddr;
+	tcon_rmem.secure_axi_rmem.mem_vaddr = tcon_rmem.axi_rmem[0].mem_vaddr;
+	tcon_rmem.secure_axi_rmem.mem_size = size[0] + size[1];
 }
 
 static void lcd_tcon_axi_mem_config_txhd2(void)
@@ -2769,6 +2776,9 @@ static void lcd_tcon_axi_mem_config_txhd2(void)
 
 		lcd_tcon_conf->axi_reg[i] = reg[i];
 	}
+	tcon_rmem.secure_axi_rmem.mem_paddr = tcon_rmem.axi_rmem[0].mem_paddr;
+	tcon_rmem.secure_axi_rmem.mem_vaddr = tcon_rmem.axi_rmem[0].mem_vaddr;
+	tcon_rmem.secure_axi_rmem.mem_size = size[0];
 }
 
 static void lcd_tcon_axi_rmem_update_t5(unsigned int *table)
@@ -2818,6 +2828,9 @@ static void lcd_tcon_axi_mem_config_t5d(void)
 	tcon_rmem.axi_rmem->mem_size = size;
 
 	*lcd_tcon_conf->axi_reg = reg;
+	tcon_rmem.secure_axi_rmem.mem_paddr = tcon_rmem.axi_rmem[0].mem_paddr;
+	tcon_rmem.secure_axi_rmem.mem_vaddr = tcon_rmem.axi_rmem[0].mem_vaddr;
+	tcon_rmem.secure_axi_rmem.mem_size = size;
 }
 
 static void lcd_tcon_axi_rmem_update_t5d(unsigned int *table)
@@ -2841,7 +2854,7 @@ static void lcd_tcon_axi_rmem_update_t5d(unsigned int *table)
 static void lcd_tcon_axi_mem_secure_tl1(void)
 {
 #if IS_ENABLED(CONFIG_AMLOGIC_TEE)
-	lcd_tcon_mem_tee_protect(0, 1);
+	lcd_tcon_mem_tee_protect(1);
 #endif
 }
 
@@ -2855,16 +2868,16 @@ static void lcd_tcon_axi_mem_secure_t3(void)
 
 	/* only default protect od mem */
 	data = (unsigned int *)tcon_rmem.secure_cfg_rmem.mem_vaddr;
-	tcon_rmem.axi_rmem[0].sec_protect = *data;
-	tcon_rmem.axi_rmem[0].sec_handle = *(data + 1);
-	if (tcon_rmem.axi_rmem[0].sec_protect == 0) {
+	tcon_rmem.secure_axi_rmem.sec_protect = *data;
+	tcon_rmem.secure_axi_rmem.sec_handle = *(data + 1);
+	if (tcon_rmem.secure_axi_rmem.sec_protect == 0) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 			LCDPR("%s: axi_rmem[0] is unprotect\n", __func__);
 		return;
 	}
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("%s: axi_rmem[0] protect handle: %d\n",
-			__func__, tcon_rmem.axi_rmem[0].sec_handle);
+			__func__, tcon_rmem.secure_axi_rmem.sec_handle);
 	}
 }
 
@@ -2884,7 +2897,7 @@ void lcd_tcon_mem_tee_get_status(void)
 	kfree(print_buf);
 }
 
-int lcd_tcon_mem_tee_protect(int mem_flag, int protect_en)
+int lcd_tcon_mem_tee_protect(int protect_en)
 {
 	int ret;
 
@@ -2892,44 +2905,41 @@ int lcd_tcon_mem_tee_protect(int mem_flag, int protect_en)
 		LCDERR("%s: axi_rmem is null\n", __func__);
 		return -1;
 	}
-	if (mem_flag > lcd_tcon_conf->axi_bank)
-		return 0;
 
-	/* mem_flag 0: od secure mem 1: demura_lut mem*/
 	if (protect_en) {
-		if (tcon_rmem.axi_rmem[mem_flag].sec_protect) {
-			LCDPR("%s: axi_mem[%d] is already protected\n", __func__, mem_flag);
+		if (tcon_rmem.secure_axi_rmem.sec_protect) {
+			LCDPR("%s: secure_rmem is already protected\n", __func__);
 			return 0;
 		}
 
 		ret = tee_protect_mem_by_type(TEE_MEM_TYPE_TCON,
-					      tcon_rmem.axi_rmem[mem_flag].mem_paddr,
-					      tcon_rmem.axi_rmem[mem_flag].mem_size,
-					      &tcon_rmem.axi_rmem[mem_flag].sec_handle);
+					      tcon_rmem.secure_axi_rmem.mem_paddr,
+					      tcon_rmem.secure_axi_rmem.mem_size,
+					      &tcon_rmem.secure_axi_rmem.sec_handle);
 
 		if (ret) {
-			LCDERR("%s: protect failed! axi_mem[%d] start:0x%08x, size:0x%x, ret:%d\n",
-			       __func__, mem_flag,
-			      (unsigned int)tcon_rmem.axi_rmem[mem_flag].mem_paddr,
-			       tcon_rmem.axi_rmem[mem_flag].mem_size, ret);
+			LCDERR("%s: protect failed! secure_rmem start:0x%08x, size:0x%x, ret:%d\n",
+			       __func__,
+			      (unsigned int)tcon_rmem.secure_axi_rmem.mem_paddr,
+			       tcon_rmem.secure_axi_rmem.mem_size, ret);
 			return -1;
 		}
-		tcon_rmem.axi_rmem[mem_flag].sec_protect = 1;
-		LCDPR("%s: protect OK. axi_mem[%d] start: 0x%08x, size: 0x%x\n",
-			__func__, mem_flag,
-			(unsigned int)tcon_rmem.axi_rmem[mem_flag].mem_paddr,
-			tcon_rmem.axi_rmem[mem_flag].mem_size);
+		tcon_rmem.secure_axi_rmem.sec_protect = 1;
+		LCDPR("%s: protect OK. secure_rmem start: 0x%08x, size: 0x%x\n",
+			__func__,
+			(unsigned int)tcon_rmem.secure_axi_rmem.mem_paddr,
+			tcon_rmem.secure_axi_rmem.mem_size);
 	} else {
-		if (tcon_rmem.axi_rmem[mem_flag].sec_protect == 0)
+		if (tcon_rmem.secure_axi_rmem.sec_protect == 0)
 			return 0;
 
-		tee_unprotect_mem(tcon_rmem.axi_rmem[mem_flag].sec_handle);
-		tcon_rmem.axi_rmem[mem_flag].sec_protect = 0;
-		tcon_rmem.axi_rmem[mem_flag].sec_handle = 0;
-		LCDPR("%s: unprotect OK. axi_mem[%d] start: 0x%08x, size: 0x%x\n",
-			__func__, mem_flag,
-			(unsigned int)tcon_rmem.axi_rmem[mem_flag].mem_paddr,
-			tcon_rmem.axi_rmem[mem_flag].mem_size);
+		tee_unprotect_mem(tcon_rmem.secure_axi_rmem.sec_handle);
+		tcon_rmem.secure_axi_rmem.sec_protect = 0;
+		tcon_rmem.secure_axi_rmem.sec_handle = 0;
+		LCDPR("%s: unprotect OK. secure_rmem start: 0x%08x, size: 0x%x\n",
+			__func__,
+			(unsigned int)tcon_rmem.secure_axi_rmem.mem_paddr,
+			tcon_rmem.secure_axi_rmem.mem_size);
 	}
 
 	return 0;

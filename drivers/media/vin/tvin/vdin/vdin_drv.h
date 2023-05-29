@@ -144,6 +144,7 @@
 /* 20230527: add vdin secure reg config interface */
 /* 20230527: update vdin dump buffer method on kernel 5.15 */
 /* 20230527: fix screencap abnormal under display 4k120 on t3x */
+/* 20230529: bringup for txhd2 */
 /* 20230608: vdin not clear ratio_control value */
 #define VDIN_VER "20230608"
 
@@ -197,6 +198,7 @@ enum vdin_hw_ver_e {
 	VDIN_HW_S5,
 	VDIN_HW_T5M,
 	VDIN_HW_T3X,
+	VDIN_HW_TXHD2,
 };
 
 /* 20230607: game mode optimize and add debug */

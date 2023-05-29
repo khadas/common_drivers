@@ -4444,7 +4444,8 @@ static void vdin_set_h_shrink(struct vdin_dev_s *devp)
  * vshrk_mode:0-->1:2; 1-->1:4; 2-->1:8
  * chip <= TL1, only vdin1 has this module.
  * chip >= TM2 && != T5, both vdin0 and vdin1 are supported.
- * chip == T5, only vdin0 support
+ * chip == T5/T5D, only vdin0 support
+ * chip == TXHD2, both vdin0 and vdin1 are not supported.
  */
 static void vdin_set_v_shrink(struct vdin_dev_s *devp)
 {
@@ -4618,7 +4619,7 @@ set_hv_shrink:
 		devp->h_shrink_times = H_SHRINK_TIMES_4k;
 		devp->v_shrink_times = V_SHRINK_TIMES_4k;
 	} else if (devp->double_wr && devp->h_active > 1280 &&
-		   devp->v_active > 720) {
+		devp->v_active > 720) {
 		devp->h_shrink_times = H_SHRINK_TIMES_1080;
 		devp->v_shrink_times = V_SHRINK_TIMES_1080;
 	} else {

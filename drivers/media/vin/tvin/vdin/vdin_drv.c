@@ -5550,6 +5550,15 @@ static const struct match_data_s vdin_dt_t3x = {
 	.vdin2_line_buff_size = 0x1000,
 	.vdin0_set_hdr = false, .vdin1_set_hdr = false,
 };
+
+static const struct match_data_s vdin_dt_txhd2 = {
+	.name = "vdin-txhd2",
+	.hw_ver = VDIN_HW_TXHD2,
+	.vdin0_en = 1,                  .vdin1_en = 1,
+	.de_tunnel_tunnel = 0, /*0,1*/  .ipt444_to_422_12bit = 0, /*0,1*/
+	.vdin0_line_buff_size = 0x780,	.vdin1_line_buff_size = 0x780,
+	.vdin0_max_w_h = VDIN_2K_SIZE,	.vdin1_set_hdr = false,
+};
 #endif
 
 static const struct of_device_id vdin_dt_match[] = {
@@ -5625,6 +5634,10 @@ static const struct of_device_id vdin_dt_match[] = {
 	{
 		.compatible = "amlogic, vdin-t3x",
 		.data = &vdin_dt_t3x,
+	},
+	{
+		.compatible = "amlogic, vdin-txhd2",
+		.data = &vdin_dt_txhd2,
 	},
 #endif
 	/* DO NOT remove to avoid scan error of KASAN */

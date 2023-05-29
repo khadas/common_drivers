@@ -36,6 +36,7 @@
 #include "amve_v2.h"
 
 bool ve_en;
+bool ve_en_pre;
 unsigned int ve_dnlp_rt;
 ulong ve_dnlp_lpf[64], ve_dnlp_reg[16];
 ulong ve_dnlp_reg_v2[32];
@@ -603,7 +604,6 @@ void ai_dnlp_param_update(int value)
 
 void ve_set_v3_dnlp(struct ve_dnlp_curve_param_s *p)
 {
-	ulong i = 0;
 	/* get command parameters */
 	/* general settings */
 	if (dnlp_insmod_ok == 0)
@@ -912,25 +912,15 @@ void ve_set_v3_dnlp(struct ve_dnlp_curve_param_s *p)
 
 	dnlp_dbg_node_copy();
 
-	if (ve_en) {
-		/* clear historic luma sum */
-		*ve_dnlp_luma_sum_copy = 0;
-		/* init tgt & lpf */
-		for (i = 0; i < 64; i++) {
-			ve_dnlp_tgt_copy[i] = i << 2;
-			ve_dnlp_tgt_10b_copy[i] = i << 4;
-			ve_dnlp_lpf[i] = (ulong)(ve_dnlp_tgt_copy[i]
-				<< ve_dnlp_rt);
+	if (ve_en != ve_en_pre) {
+		ve_en_pre = ve_en;
+		if (ble_whe_param) {
+			if (!ble_whe_param->blk_adj_en &&
+				!ble_whe_param->brt_adj_en)
+				ve_dnlp_ctrl_vsync(ve_en);
+		} else {
+			ve_dnlp_ctrl_vsync(ve_en);
 		}
-		/* calculate dnlp reg data */
-		ve_dnlp_calculate_reg();
-		/* load dnlp reg data */
-		ve_dnlp_load_reg();
-		/* enable dnlp */
-		ve_enable_dnlp();
-	} else {
-		/* disable dnlp */
-		ve_disable_dnlp();
 	}
 }
 
@@ -942,6 +932,10 @@ void ble_whe_param_update(struct ve_ble_whe_param_s *p)
 	ble_whe_param->brt_adj_en = p->brt_adj_en;
 	ble_whe_param->brt_slp = p->brt_slp;
 	ble_whe_param->brt_start = p->brt_start;
+
+	if (ble_whe_param->blk_adj_en ||
+		ble_whe_param->brt_adj_en)
+		ve_dnlp_ctrl_vsync(1);
 
 	if (dnlp_dbg_print & 4) {
 		pr_info("blk_adj_en = %d\n", ble_whe_param->blk_adj_en);

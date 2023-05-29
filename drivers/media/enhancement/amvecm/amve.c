@@ -156,9 +156,14 @@ module_param(dnlp_en, int, 0664);
 MODULE_PARM_DESC(dnlp_en, "\n enable or disable dnlp\n");
 static int dnlp_status = 1;/* 0:done;1:todo */
 
+int dnlp_en_2_pre = 1;
 int dnlp_en_2 = 1;/* 0:disable;1:enable */
 module_param(dnlp_en_2, int, 0664);
 MODULE_PARM_DESC(dnlp_en_2, "\n enable or disable dnlp\n");
+
+int dnlp_en_dsw = 1;/* 0:disable;1:enable */
+module_param(dnlp_en_dsw, int, 0664);
+MODULE_PARM_DESC(dnlp_en_dsw, "\n enable or disable dnlp_dsw\n");
 
 int lut3d_en;/* lut3d_en enable/disable */
 int lut3d_order;/* 0 RGB 1 GBR */
@@ -320,7 +325,7 @@ static void ve_dnlp_load_def_reg(void)
 
 void ve_on_vs(struct vframe_s *vf)
 {
-	if (dnlp_en_2) {
+	if (dnlp_en_dsw) {
 		/* calculate dnlp target data */
 		if (ve_dnlp_calculate_tgtx(vf)) {
 			/* calculate dnlp low-pass-filter data */
@@ -331,6 +336,26 @@ void ve_on_vs(struct vframe_s *vf)
 			ve_dnlp_load_reg();
 		}
 	}
+
+	if (dnlp_en_2_pre != dnlp_en_2) {
+		dnlp_en_2_pre = dnlp_en_2;
+
+		if (dnlp_sel == NEW_DNLP_IN_SHARPNESS) {
+			if (is_meson_gxlx_cpu() || is_meson_txlx_cpu())
+				VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_DNLP_EN, dnlp_en_2, 0, 1);
+			else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1))
+				if (!vinfo_lcd_support() || is_meson_t7_cpu())
+					VSYNC_WRITE_VPP_REG_BITS(SRSHARP0_DNLP_EN, dnlp_en_2, 0, 1);
+				else
+					VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_DNLP_EN, dnlp_en_2, 0, 1);
+			else
+				VSYNC_WRITE_VPP_REG_BITS(SRSHARP0_DNLP_EN, dnlp_en_2, 0, 1);
+		} else {
+			WRITE_VPP_REG_BITS(VPP_VE_ENABLE_CTRL,
+				dnlp_en_2, DNLP_EN_BIT, DNLP_EN_WID);
+		}
+	}
+
 	/* sharpness process */
 	sharpness_process(vf);
 }
@@ -1116,6 +1141,11 @@ void ve_disable_dnlp(void)
 		ve_dnlp_ctl(0);
 #endif
 	}
+}
+
+void ve_dnlp_ctrl_vsync(int enable)
+{
+	dnlp_en_2 = enable;
 }
 
 void ve_set_dnlp_2(void)

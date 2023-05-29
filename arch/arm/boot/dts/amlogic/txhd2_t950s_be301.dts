@@ -276,6 +276,72 @@
 		status = "okay";
 	};
 
+	wifi5v_reg: fixed@wifi5v_reg{
+		vin-supply = <&vcc5v_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "WIFI_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	usb5v_reg: fixed@usb5v_reg{
+		vin-supply = <&vcc5v_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "USB_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddio3v3_reg: fixed@vddio3v3_reg{
+		vin-supply = <&vddao3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDIO_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio_ao GPIOAO_2 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddio3v3_sd_reg: fixed@vddio3v3_sd_reg{
+		vin-supply = <&vddao3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDIO_3V3_SD";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio_test GPIO_TEST_N GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	afe1v8_reg: fixed@afe1v8_reg{
+		vin-supply = <&vddio3v3_sd_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "AFE_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	wifi3v3_reg: fixed@wifi3v3_reg{
+		vin-supply = <&vddio3v3_sd_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "WIFI_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio GPIOB_12 GPIO_ACTIVE_LOW>;
+		enable-active-low;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
 	unifykey{
 		compatible = "amlogic,unifykey";
 		status = "okay";

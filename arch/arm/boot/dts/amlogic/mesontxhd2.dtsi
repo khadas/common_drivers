@@ -444,11 +444,16 @@
 		status = "okay";
 	};
 
+	vdac {
+		compatible = "amlogic, vdac-txhd2";
+		status = "okay";
+	};
+
 	adc: adc {
-		compatible = "amlogic, adc-t3";
-		status = "disabled";
-		reg = <0x0 0xfe072000 0x0 0x2000/* afe reg base */
-			0x0 0xfe008000 0x0 0x2000/* ana base */
+		compatible = "amlogic, adc-txhd2";
+		status = "okay";
+		reg = <0xff654000 0x2000 /* afe reg base */
+			0xff63c000 0x2000 /* ana base */
 			>;
 	};
 

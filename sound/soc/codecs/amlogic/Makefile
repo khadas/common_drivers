@@ -62,6 +62,13 @@ obj-$(CONFIG_AMLOGIC_SND_SOC_TAS5805) += $(MODULE_NAME_TAS5805).o
 CFLAGS_tas5805.o += $(PR_FMT_DEFINE_TAS5805)
 $(MODULE_NAME_TAS5805)-y += tas5805.o
 
+MODULE_NAME_PA1 = amlogic-snd-codec-pa1
+PR_FMT_PA1 = $(subst amlogic-,,$(MODULE_NAME_PA1))
+PR_FMT_DEFINE_PA1 = "-Dpr_fmt(fmt)= \"[$(PR_FMT_PA1)]: \" fmt"
+obj-$(CONFIG_AMLOGIC_SND_SOC_PA1) += $(MODULE_NAME_PA1).o
+CFLAGS_aml_codec_pa1.o += $(PR_FMT_DEFINE_PA1)
+$(MODULE_NAME_PA1)-y += aml_codec_pa1.o
+
 MODULE_NAME_TAS5805M = amlogic-snd-codec-tas5805m
 PR_FMT_TAS5805M = $(subst amlogic-,,$(MODULE_NAME_TAS5805M))
 PR_FMT_DEFINE_TAS5805M = "-Dpr_fmt(fmt)= \"[$(PR_FMT_TAS5805M)]: \" fmt"

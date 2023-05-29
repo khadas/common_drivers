@@ -94,6 +94,7 @@ AMLOGIC_COMMON_MODULES = [
     "common_drivers/sound/soc/codecs/amlogic/amlogic-snd-codec-ad82128.ko",
     "common_drivers/sound/soc/codecs/amlogic/amlogic-snd-codec-ad82584f.ko",
     "common_drivers/sound/soc/codecs/amlogic/amlogic-snd-codec-dummy.ko",
+    "common_drivers/sound/soc/codecs/amlogic/amlogic-snd-codec-pa1.ko",
     "common_drivers/sound/soc/codecs/amlogic/amlogic-snd-codec-t9015.ko",
     "common_drivers/sound/soc/codecs/amlogic/amlogic-snd-codec-tas5707.ko",
     "common_drivers/sound/soc/codecs/amlogic/amlogic-snd-codec-tas5805.ko",

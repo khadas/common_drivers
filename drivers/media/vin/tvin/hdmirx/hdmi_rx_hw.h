@@ -344,6 +344,7 @@
 #define	TOP_MISC_STAT0_T3X				0x083
 #define TOP_OVID_OVERRIDE0				0x090
 #define TOP_OVID_OVERRIDE1				0x091
+#define TOP_OVID_OVERRIDE2				0x092
 
 #define TOP_EDID_ADDR_S					0x1000
 #define TOP_EDID_ADDR_E					0x11ff

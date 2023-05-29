@@ -510,6 +510,8 @@ void hdmirx_wr_top_common_1(u32 addr, u32 data)
 	ulong flags;
 	unsigned long dev_offset = 0;
 
+	if (rx_info.chip_id < CHIP_ID_T3X)
+		return;
 	if (addr >= TOP_EDID_ADDR_S &&
 		addr <= TOP_EDID_PORT4_ADDR_E)
 		rx_pr("err_%d\n", __LINE__);
@@ -4168,8 +4170,11 @@ void cor_init(u8 port)
 	hdmirx_wr_cor(RX_TDM_CTRL1_AUD_IVCRX, 0x00, port);
 	hdmirx_wr_cor(RX_TDM_CTRL2_AUD_IVCRX, 0x10, port);
 
-	//clr gcp wr; disable hw avmute
-	hdmirx_wr_cor(DEC_AV_MUTE_DP2_IVCRX, 0x20, port);
+	//clr gcp wr; disable hw avmute for [T7,T5M)
+	if (rx_info.chip_id >= CHIP_ID_T7 && rx_info.chip_id < CHIP_ID_T5M)
+		hdmirx_wr_cor(DEC_AV_MUTE_DP2_IVCRX, 0x20, port);
+	else
+		hdmirx_wr_cor(DEC_AV_MUTE_DP2_IVCRX, 0x00, port);
 
 	// hdcp 2x ECC detection enable  mode 3
 	hdmirx_wr_cor(HDCP2X_RX_ECC_CTRL, 3, port);
@@ -5025,8 +5030,23 @@ void hdmirx_set_vp_mapping(enum colorspace_e cs, u8 port)
 void hdmirx_set_video_mute(bool mute, u8 port)
 {
 	/* bluescreen cfg */
-	if (rx_info.chip_id >= CHIP_ID_T7) {
-		/* TODO */
+	if (rx_info.chip_id >= CHIP_ID_T5M) {
+		if (rx[port].pre.colorspace == E_COLOR_RGB) {
+			hdmirx_wr_top_common(TOP_OVID_OVERRIDE0, 0x0);
+			hdmirx_wr_top_common_1(TOP_OVID_OVERRIDE0, 0x0);
+		} else {
+			hdmirx_wr_top_common(TOP_OVID_OVERRIDE0, 0x80200);
+			hdmirx_wr_top_common_1(TOP_OVID_OVERRIDE0, 0x80200);
+			/* FRL mode */
+			if (rx_info.chip_id >= CHIP_ID_T3X) {
+				hdmirx_wr_top_common(TOP_OVID_OVERRIDE2, 0x80200);
+				hdmirx_wr_top_common_1(TOP_OVID_OVERRIDE2, 0x80200);
+			}
+		}
+		hdmirx_wr_bits_top_common(TOP_OVID_OVERRIDE0, _BIT(30), mute);
+		hdmirx_wr_bits_top_common_1(TOP_OVID_OVERRIDE0, _BIT(30), mute);
+	} else if (rx_info.chip_id >= CHIP_ID_T7 && rx_info.chip_id < CHIP_ID_T5M) {
+		/* not support black pattern */
 	} else {
 		if (rx[port].pre.colorspace == E_COLOR_RGB) {
 			hdmirx_wr_bits_dwc(DWC_HDMI_VM_CFG_CH2, MSK(16, 0), 0x00);

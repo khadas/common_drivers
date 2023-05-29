@@ -602,7 +602,7 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 			if (avmute_flag == 1) {
 				rx[port].avmute_skip += 1;
 				hdmirx_set_video_mute(1, port);
-				skip_frame(2, port);
+				//skip_frame(2, port);
 				/* return TVIN_BUF_SKIP; */
 			} else {
 				hdmirx_set_video_mute(0, port);

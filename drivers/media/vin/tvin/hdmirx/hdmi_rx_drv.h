@@ -79,7 +79,8 @@
 /* 2023.05.15 optimize frl_rate monitor logic */
 /* 2023.5.22 modify edid delivery method */
 /* 2023.5.23 optimize color bar debug logic */
-#define RX_VER1 "ver.2023/5/23"
+/* 2023.5.30 hdmirx cts and hdcp */
+#define RX_VER1 "ver.2023/5/30"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

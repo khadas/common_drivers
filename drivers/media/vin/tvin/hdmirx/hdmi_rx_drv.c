@@ -192,7 +192,7 @@ int disable_hdr;
 
 //vrr field VRRmin/max dynamic update enable
 int vrr_range_dynamic_update_en;
-int rx_phy_level;
+int rx_phy_level = 1;
 
 static struct notifier_block aml_hdcp22_pm_notifier = {
 	.notifier_call = aml_hdcp22_pm_notify,

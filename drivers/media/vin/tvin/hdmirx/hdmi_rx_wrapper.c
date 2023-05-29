@@ -87,8 +87,8 @@ int color_bar_debug_en;
 int color_bar_lvl;
 /* used in other module */
 //static int audio_sample_rate;
-int reset_pcs_flag = 10;
-int reset_pcs_cnt = 1;
+int reset_pcs_flag;
+int reset_pcs_cnt = 10;
 int port_debug_en = 1;
 //static int auds_rcv_sts;
 //module_param(auds_rcv_sts, int, 0664);
@@ -280,6 +280,14 @@ void hdmirx_phy_var_init(void)
 		rx_info.aml_phy.tap2_byp = 0;
 		rx_info.aml_phy.long_bist_en = 0;
 		rx_info.aml_phy.reset_pcs_en = 1;
+		rx_info.aml_phy.enhance_dfe_en_old = 1;
+		rx_info.aml_phy.enhance_dfe_en_new = 0;
+		rx_info.aml_phy.cdr_retry_en = 1;
+		rx_info.aml_phy.agc_enable = 0;
+		rx_info.aml_phy.enhance_eq = 0;
+		rx_info.aml_phy.cdr_fr_en_auto = 0;
+		rx_info.aml_phy.eq_en = 1;
+		rx_info.aml_phy.eye_height = 5;
 		// for t3x 2.1 phy
 		if (rx_info.phy_ver == PHY_VER_T3X) {
 			rx_info.aml_phy_21.phy_bwth = 1;

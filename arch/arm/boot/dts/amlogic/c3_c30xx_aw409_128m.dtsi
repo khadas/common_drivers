@@ -227,7 +227,7 @@
 
 	acodec:acodec {
 		#sound-dai-cells = <0>;
-		compatible = "amlogic, c3_acodec";
+		compatible = "amlogic, t3_acodec";
 		status = "okay";
 		reg = <0xFE01A000 0x20>;
 		tdmout_index = <0>;
@@ -235,6 +235,7 @@
 		dat0_ch_sel = <0>;
 		reset-names = "acodec";
 		resets = <&reset RESET_ACODEC>;
+		diff_input = <1>;
 		//power-domains = <&pwrdm PDID_CX_ACODEC>;
 	};
 

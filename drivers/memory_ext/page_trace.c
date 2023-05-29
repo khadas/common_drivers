@@ -115,7 +115,7 @@ static struct alloc_caller common_caller[COMMON_CALLER_SIZE];
  * be record in page trace, parse for back trace should keep from these
  * functions
  */
-static struct fun_symbol common_func[] __initdata = {
+static struct fun_symbol common_func[] = {
 	{"__alloc_pages",		1, 0},
 	{"kmem_cache_alloc",		1, 0},
 	{"__get_free_pages",		1, 0},
@@ -518,7 +518,7 @@ static inline int is_module_addr(unsigned long ip)
 /*
  * set up information for common caller in memory allocate API
  */
-static int __init __nocfi setup_common_caller(unsigned long kaddr)
+static int __nocfi setup_common_caller(unsigned long kaddr)
 {
 	unsigned long size, offset;
 	int i = 0, ret;
@@ -550,7 +550,7 @@ static int __init __nocfi setup_common_caller(unsigned long kaddr)
 	return -1;
 }
 
-static void __init dump_common_caller(void)
+static void dump_common_caller(void)
 {
 	int i;
 
@@ -565,7 +565,7 @@ static void __init dump_common_caller(void)
 	}
 }
 
-static int __init sym_cmp(const void *x1, const void *x2)
+static int  sym_cmp(const void *x1, const void *x2)
 {
 	struct alloc_caller *p1, *p2;
 
@@ -577,7 +577,7 @@ static int __init sym_cmp(const void *x1, const void *x2)
 }
 
 #if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
-static int __init match_common_caller(void *data, const char *name,
+static int match_common_caller(void *data, const char *name,
 				       struct module *module,
 				       unsigned long addr)
 {
@@ -613,7 +613,7 @@ static int __init match_common_caller(void *data, const char *name,
 /* kallsyms_sym_address/kallsyms_expand_symbol/kallsyms_for_each_symbol are
  * copied from kallsyms.c
  */
-static unsigned long __init kallsyms_sym_addr(int idx)
+static unsigned long kallsyms_sym_addr(int idx)
 {
 	if (!IS_ENABLED(CONFIG_KALLSYMS_BASE_RELATIVE))
 		return kallsyms_addresses[idx];
@@ -630,7 +630,7 @@ static unsigned long __init kallsyms_sym_addr(int idx)
 	return kallsyms_relative_base - 1 - kallsyms_offsets[idx];
 }
 
-static unsigned int __init kallsyms_expand_sym(unsigned int off,
+static unsigned int kallsyms_expand_sym(unsigned int off,
 					char *result, size_t maxlen)
 {
 	int len, skipped_first = 0;
@@ -679,7 +679,7 @@ tail:
 	return off;
 }
 
-static int __init kallsyms_for_each_symbol(int (*fn)(void *, const char *,
+static int kallsyms_for_each_symbol(int (*fn)(void *, const char *,
 						     struct module *,
 						     unsigned long),
 					   void *data)
@@ -716,7 +716,7 @@ static int __nocfi match_common_caller(void)
 }
 #endif
 
-static void __init find_static_common_symbol(void)
+static int find_static_common_symbol(void *data)
 {
 	memset(common_caller, 0, sizeof(common_caller));
 #if IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
@@ -727,6 +727,8 @@ static void __init find_static_common_symbol(void)
 	sort(common_caller, COMMON_CALLER_SIZE, sizeof(struct alloc_caller),
 		sym_cmp, NULL);
 	dump_common_caller();
+
+	return 0;
 }
 
 static int is_common_caller(struct alloc_caller *caller, unsigned long pc)
@@ -1928,7 +1930,7 @@ void __init page_trace_mem_init(void)
 	unsigned long total_page = 0;
 #endif
 
-	find_static_common_symbol();
+	find_static_common_symbol(NULL);
 #ifdef CONFIG_KASAN	/* open multi_shot for kasan */
 #if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
 #if IS_ENABLED(CONFIG_KASAN_KUNIT_TEST) || IS_ENABLED(CONFIG_KASAN_MODULE_TEST)
@@ -2030,7 +2032,8 @@ void __init page_trace_mem_init(void)
 	struct zone *zone;
 	unsigned long total_page = 0;
 
-	find_static_common_symbol();
+	/* find_static_common_symbol(); */
+	kthread_run(find_static_common_symbol, NULL, "PAGETRACE_TASK");
 
 	if (page_trace_disable)
 		return;

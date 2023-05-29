@@ -36,6 +36,7 @@
 /* 20230423: Set the default value of comp_level_adj to 3 */
 /* 20230423: white level detection is enabled by default */
 /* 20230509: adjust nostd_stable_cnt */
+/* 20230602: chip bringup */
 /* 20230607: optimized snow config */
 /* 20230609: chip bringup */
 #define TVAFE_VER "20230609: chip bringup"

@@ -62,4 +62,18 @@ static inline void meson_pmic6b_pwrkey_exit(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_CKS05_TOUCH_KEYPADS)
+int csk05_ts_init(void);
+void csk05_ts_exit(void);
+#else
+static inline int csk05_ts_init(void)
+{
+	return 0;
+}
+
+static inline void csk05_ts_exit(void)
+{
+}
+#endif
+
 #endif /*_INPUT_MAIN_H__*/

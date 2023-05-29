@@ -18,3 +18,11 @@ config AMLOGIC_ADC_KEYPADS
 	  you want to
 	  use the Meson ADC
 	  keypad.
+
+config AMLOGIC_CKS05_TOUCH_KEYPADS
+	bool "hynitron,csk05_ts"
+	default n
+	help
+	  Select Y if
+	  you want to use
+	  hynitron csk05_ts

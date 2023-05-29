@@ -860,9 +860,9 @@
 		noise = <80>;
 
 		key_num = <5>;
-		key_name = "play", "mic", "wakeup", "vol-", "vol+";
+		key_name = "play", "mute", "home", "vol-", "vol+";
 		key_code = <KEY_PLAY
-			    KEY_MENU
+			    KEY_MUTE
 			    KEY_HOME
 			    KEY_VOLUMEDOWN
 			    KEY_VOLUMEUP>;

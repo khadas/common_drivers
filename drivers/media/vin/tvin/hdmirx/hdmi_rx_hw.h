@@ -382,6 +382,8 @@
 #define T3X_PHY_OFFSET					0x400
 #define TOP_DONT_TOUCH0					0x0fe
 #define TOP_DONT_TOUCH1					0x0ff
+/* txhd2 */
+#define TOP_COR_BASE_OFFSET_TXHD2			0x68000
 
 //------------------------------------------------------------------------------
 // TOP-level wrapper registers addresses

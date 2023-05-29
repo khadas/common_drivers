@@ -198,6 +198,12 @@ static struct notifier_block aml_hdcp22_pm_notifier = {
 	.notifier_call = aml_hdcp22_pm_notify,
 };
 
+static struct meson_hdmirx_data rx_txhd2_data = {
+	.chip_id = CHIP_ID_TXHD2,
+	.phy_ver = PHY_VER_TXHD2,
+	.port_num = PORT_NUM_2,
+};
+
 static struct meson_hdmirx_data rx_t3x_data = {
 	.chip_id = CHIP_ID_T3X,
 	.phy_ver = PHY_VER_T3X,
@@ -285,6 +291,10 @@ static struct meson_hdmirx_data rx_gxtvbb_data = {
 #endif
 
 static const struct of_device_id hdmirx_dt_match[] = {
+	{
+		.compatible		= "amlogic, hdmirx_txhd2",
+		.data			= &rx_txhd2_data
+	},
 	{
 		.compatible		= "amlogic, hdmirx_t3x",
 		.data			= &rx_t3x_data
@@ -3677,7 +3687,6 @@ static int hdmirx_probe(struct platform_device *pdev)
 		input_dev->id.vendor = 0x0001;
 		input_dev->id.product = 0x0001;
 		input_dev->id.version = 0x0001;
-
 		ret = input_register_device(input_dev);
 		if (ret < 0) {
 			rx_pr("input_register_device failed: %d\n", ret);

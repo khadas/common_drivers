@@ -40,6 +40,7 @@
 #include "hdmi_rx_pktinfo.h"
 #include "hdmi_rx_hw_t5m.h"
 #include "hdmi_rx_hw_t3x.h"
+#include "hdmi_rx_hw_txhd2.h"
 #include "hdmi_rx_hw_t5.h"
 #include "hdmi_rx_hw_t7.h"
 #include "hdmi_rx_hw_tl1.h"
@@ -626,7 +627,7 @@ u32 hdmirx_rd_amlphy(u32 addr)
 
 	if (rx_info.chip_id >= CHIP_ID_T3X)
 		return 0;
-	else if (rx_info.chip_id >= CHIP_ID_T7 && rx_info.chip_id <= CHIP_ID_T5M)
+	else if (rx_info.chip_id >= CHIP_ID_T7)
 		base_ofst = TOP_AMLPHY_BASE_OFFSET_T7;
 	else
 		base_ofst = TOP_AMLPHY_BASE_OFFSET_T5;
@@ -688,7 +689,7 @@ void hdmirx_wr_amlphy(u32 addr, u32 data)
 	u32 base_ofst = 0;
 	if (rx_info.chip_id >= CHIP_ID_T3X)
 		return;
-	else if (rx_info.chip_id >= CHIP_ID_T7 && rx_info.chip_id <= CHIP_ID_T5M)
+	else if (rx_info.chip_id >= CHIP_ID_T7)
 		base_ofst = TOP_AMLPHY_BASE_OFFSET_T7;
 	else
 		base_ofst = TOP_AMLPHY_BASE_OFFSET_T5;
@@ -761,6 +762,8 @@ u8 hdmirx_rd_cor(u32 addr, u8 port)
 	need_wr_twice = ((((addr >> 8) & 0xff) == 0x1d) ||
 		(((addr >> 8) & 0xff) == 0x1e));
 	dev_offset = rx_reg_maps[MAP_ADDR_MODULE_TOP].phy_addr;
+	if (rx_info.chip_id == CHIP_ID_TXHD2)
+		dev_offset += TOP_COR_BASE_OFFSET_TXHD2;
 	if (rx_info.chip_id >= CHIP_ID_T3X) {
 		dev_offset = rx_reg_maps[MAP_ADDR_MODULE_TOP].phy_addr;
 		if ((addr >= 0x1800 && addr <= 0x1bff) ||
@@ -772,7 +775,8 @@ u8 hdmirx_rd_cor(u32 addr, u8 port)
 			dev_offset += TOP_COR_BASE_OFFSET_T3X + TOP_COR_REG_RANGE * port;
 		}
 	} else {
-		dev_offset += TOP_COR_BASE_OFFSET_T7;
+		if (rx_info.chip_id != CHIP_ID_TXHD2)
+			dev_offset += TOP_COR_BASE_OFFSET_T7;
 	}
 	spin_lock_irqsave(&reg_rw_lock, flags);
 	data = rd_reg_b(MAP_ADDR_MODULE_TOP, addr + dev_offset);
@@ -801,6 +805,8 @@ void hdmirx_wr_cor(u32 addr, u8 data, u8 port)
 	need_wr_twice = ((((addr >> 8) & 0xff) == 0x1d) ||
 		(((addr >> 8) & 0xff) == 0x1e));
 	dev_offset = rx_reg_maps[MAP_ADDR_MODULE_TOP].phy_addr;
+	if (rx_info.chip_id == CHIP_ID_TXHD2)
+		dev_offset += TOP_COR_BASE_OFFSET_TXHD2;
 	if (rx_info.chip_id >= CHIP_ID_T3X) {
 		if ((addr >= 0x1800 && addr <= 0x1bff) ||
 			(addr >= 0x1400 && addr <= 0x14ff)) {
@@ -811,7 +817,8 @@ void hdmirx_wr_cor(u32 addr, u8 data, u8 port)
 			dev_offset += TOP_COR_BASE_OFFSET_T3X + TOP_COR_REG_RANGE * port;
 		}
 	} else {
-		dev_offset += TOP_COR_BASE_OFFSET_T7;
+		if (rx_info.chip_id != CHIP_ID_TXHD2)
+			dev_offset += TOP_COR_BASE_OFFSET_T7;
 	}
 	spin_lock_irqsave(&reg_rw_lock, flags);
 	wr_reg_b(MAP_ADDR_MODULE_TOP,
@@ -1970,6 +1977,7 @@ void set_scdc_cfg(int hpdlow, int pwr_provided, u8 port)
 	case CHIP_ID_T3:
 	case CHIP_ID_T5W:
 	case CHIP_ID_T5M:
+	case CHIP_ID_TXHD2:
 	default:
 		//hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, pwr_provided);
 		break;
@@ -2729,7 +2737,7 @@ void rx_set_term_value(unsigned char port, bool value)
 {
 	if (rx_info.chip_id == CHIP_ID_T3X)
 		return;
-	if (rx_info.chip_id == CHIP_ID_T5M)
+	if (rx_info.chip_id == CHIP_ID_T5M || rx_info.chip_id == CHIP_ID_TXHD2)
 		rx_set_term_value_t5m(port, value);
 	else if (rx_info.chip_id >= CHIP_ID_T5 && rx_info.chip_id <= CHIP_ID_T5W)
 		rx_set_term_value_t5(port, value);
@@ -3585,6 +3593,9 @@ void aml_phy_offset_cal(void)
 		break;
 	case PHY_VER_T3X:
 		aml_phy_offset_cal_t3x();
+		break;
+	case PHY_VER_TXHD2:
+		aml_phy_offset_cal_txhd2();
 		break;
 	default:
 		break;
@@ -4493,7 +4504,8 @@ void rx_aud_pll_ctl(bool en, u8 port)
 				tmp &= ~(1 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
 				wr_reg_clk_ctl(RX_CLK_CTRL2, tmp);
 			}
-		} else if (rx_info.chip_id == CHIP_ID_T5W) {
+		} else if (rx_info.chip_id == CHIP_ID_T5W ||
+		rx_info.chip_id == CHIP_ID_TXHD2) {
 			if (en) {
 				tmp = rd_reg_clk_ctl(RX_CLK_CTRL2_T5W);
 				/* [    8] clk_en for cts_hdmirx_aud_pll_clk */
@@ -5272,6 +5284,7 @@ void rx_clkmsr_handler(struct work_struct *work)
 		}
 		break;
 	case CHIP_ID_T5W:
+	case CHIP_ID_TXHD2:
 		rx[E_PORT0].clk.cable_clk = meson_clk_measure_with_precision(30, 32);
 		rx[E_PORT0].clk.tmds_clk = meson_clk_measure_with_precision(63, 32);
 		rx[E_PORT0].clk.aud_pll = meson_clk_measure_with_precision(74, 32);
@@ -5575,6 +5588,8 @@ void dump_reg_phy(u8 port)
 		dump_reg_phy_t7();
 	else if (rx_info.phy_ver == PHY_VER_T5M)
 		dump_reg_phy_t5m();
+	else if (rx_info.phy_ver == PHY_VER_TXHD2)
+		dump_reg_phy_txhd2();
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		dump_reg_phy_t3x(port);
 	else
@@ -5906,12 +5921,15 @@ void aml_phy_get_trim_val(void)
 	else if (rx_info.chip_id >= CHIP_ID_T5 &&
 		rx_info.chip_id <= CHIP_ID_T5D)
 		aml_phy_get_trim_val_t5();
-	else if (rx_info.chip_id >= CHIP_ID_T7)
+	else if (rx_info.chip_id >= CHIP_ID_T7 &&
+		rx_info.chip_id <= CHIP_ID_T5W)
 		aml_phy_get_trim_val_t7();
 	else if (rx_info.chip_id == CHIP_ID_T5M)
 		aml_phy_get_trim_val_t5m();
 	else if (rx_info.chip_id == CHIP_ID_T3X)
 		aml_phy_get_trim_val_t3x();
+	else if (rx_info.chip_id == CHIP_ID_TXHD2)
+		aml_phy_get_trim_val_txhd2();
 }
 
 void rx_get_best_eq_setting(u8 port)
@@ -6013,6 +6031,8 @@ void aml_phy_init_handler_port0(struct work_struct *work)
 		aml_phy_init_t5m();
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		aml_phy_init_t3x(E_PORT0);
+	else if (rx_info.phy_ver == PHY_VER_TXHD2)
+		aml_phy_init_txhd2();
 	eq_sts[E_PORT0] = E_EQ_FINISH;
 }
 
@@ -6030,6 +6050,8 @@ void aml_phy_init_handler_port1(struct work_struct *work)
 		aml_phy_init_t5m();
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		aml_phy_init_t3x(E_PORT1);
+	else if (rx_info.phy_ver == PHY_VER_TXHD2)
+		aml_phy_init_txhd2();
 	eq_sts[E_PORT1] = E_EQ_FINISH;
 }
 
@@ -6047,6 +6069,8 @@ void aml_phy_init_handler_port2(struct work_struct *work)
 		aml_phy_init_t5m();
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		aml_phy_init_t3x(E_PORT2);
+	else if (rx_info.phy_ver == PHY_VER_TXHD2)
+		aml_phy_init_txhd2();
 	eq_sts[E_PORT2] = E_EQ_FINISH;
 }
 
@@ -6064,6 +6088,8 @@ void aml_phy_init_handler_port3(struct work_struct *work)
 		aml_phy_init_t5m();
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		aml_phy_init_t3x(E_PORT3);
+	else if (rx_info.phy_ver == PHY_VER_TXHD2)
+		aml_phy_init_txhd2();
 	eq_sts[E_PORT3] = E_EQ_FINISH;
 }
 
@@ -6105,6 +6131,8 @@ void rx_phy_short_bist(u8 port)
 		aml_phy_short_bist_t5m();
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		aml_phy_short_bist_t3x(port);
+	else if (rx_info.phy_ver == PHY_VER_TXHD2)
+		aml_phy_short_bist_txhd2();
 }
 
 u32 aml_phy_pll_lock_tm2(void)
@@ -6169,6 +6197,8 @@ u32 aml_phy_tmds_valid(u8 port)
 		return aml_get_tmds_valid_t5m();
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		return aml_get_tmds_valid_t3x(port);
+	else if (rx_info.phy_ver == PHY_VER_TXHD2)
+		return aml_get_tmds_valid_txhd2();
 	else
 		return false;
 }
@@ -6201,6 +6231,9 @@ void aml_phy_power_off(void)
 	} else if (rx_info.phy_ver == PHY_VER_T5M) {
 		/* pll power down */
 		aml_phy_power_off_t5m();
+	} else if (rx_info.phy_ver == PHY_VER_TXHD2) {
+		/* pll power down */
+		aml_phy_power_off_txhd2();
 	}
 	if (log_level & VIDEO_LOG)
 		rx_pr("%s\n", __func__);
@@ -6229,6 +6262,8 @@ void aml_phy_iq_skew_monitor(void)
 		aml_phy_iq_skew_monitor_t5m();
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		aml_phy_iq_skew_monitor_t3x();
+	else if (rx_info.phy_ver == PHY_VER_TXHD2)
+		aml_phy_iq_skew_monitor_txhd2();
 }
 
 void aml_eq_eye_monitor(u8 port)
@@ -6241,6 +6276,8 @@ void aml_eq_eye_monitor(u8 port)
 		aml_eq_eye_monitor_t5m();
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		aml_eq_eye_monitor_t3x(port);
+	else if (rx_info.phy_ver == PHY_VER_TXHD2)
+		aml_eq_eye_monitor_txhd2();
 }
 
 void rx_emp_to_ddr_init(u8 port)

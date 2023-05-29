@@ -131,6 +131,7 @@ enum chip_id_e {
 	CHIP_ID_T3,
 	CHIP_ID_T5W,
 	CHIP_ID_T5M,
+	CHIP_ID_TXHD2,
 	CHIP_ID_T3X,
 };
 
@@ -143,11 +144,13 @@ enum phy_ver_e {
 	PHY_VER_T3,
 	PHY_VER_T5W,
 	PHY_VER_T5M,
+	PHY_VER_TXHD2,
 	PHY_VER_T3X,
 };
 
 enum port_num_e {
-	PORT_NUM_3 = 3,
+	PORT_NUM_2 = 2,
+	PORT_NUM_3,
 	PORT_NUM_4,
 };
 

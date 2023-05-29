@@ -1556,6 +1556,26 @@
 				bias-pull-up;
 			};
 	};
+
+	hdmirx_a_mux:hdmirx_a_mux {
+		mux {
+			groups = "hdmirx_a_hpd",
+				"hdmirx_a_5vdet",
+				"hdmirx_a_sda",
+				"hdmirx_a_scl";
+			function = "hdmirx_a";
+		};
+	};
+
+	hdmirx_b_mux:hdmirx_b_mux {
+		mux {
+			groups = "hdmirx_b_hpd",
+				"hdmirx_b_5vdet",
+				"hdmirx_b_sda",
+				"hdmirx_b_scl";
+			function = "hdmirx_b";
+		};
+	};
 };
 
 &gpu{

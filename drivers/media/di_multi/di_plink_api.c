@@ -6,6 +6,7 @@
 #include <linux/semaphore.h>
 #include <linux/kfifo.h>
 #include <linux/spinlock.h>
+#include <linux/amlogic/tee.h>
 
 #include "deinterlace.h"
 #include "di_data_l.h"

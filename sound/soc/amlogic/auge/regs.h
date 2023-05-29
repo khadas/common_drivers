@@ -691,6 +691,7 @@ struct register_table {
 #define EE_AUDIO_SPDIFIN_LB_STAT0          0x1f7
 #define EE_AUDIO_SPDIFIN_LB_STAT1          0x1f8
 #define EE_AUDIO_SPDIFIN_LB_MUTE_VAL       0x1fa
+#define EE_AUDIO_SPDIFOUT_MUX              0x1ba
 
 #define EE_AUDIO_FRHDMIRX_CTRL0            0x200
 #define EE_AUDIO_FRHDMIRX_CTRL1            0x201

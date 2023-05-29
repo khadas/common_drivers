@@ -34,6 +34,7 @@ enum {
 	TL1_ARC = 1,
 	TM2_ARC = 2,
 	T7_ARC = 3,
+	TXHD2_ARC = 4,
 };
 
 void arc_source_enable(int src, bool enable);

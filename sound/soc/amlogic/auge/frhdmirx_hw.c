@@ -312,9 +312,19 @@ void arc_earc_source_select(int src)
 			aml_write_hiubus(HHI_HDMIRX_EARCTX_CNTL0, 0x14710490);
 			aml_write_hiubus(HHI_HDMIRX_EARCTX_CNTL1, 0x40011508);
 		} else {
-			hdmirx_arc_write_reg(HDMIRX_ARC_CNTL, 0xfffffff8 | src);
-			hdmirx_arc_write_reg(HDMIRX_EARCTX_CNTL0, 0x94830490);
-			hdmirx_arc_write_reg(HDMIRX_EARCTX_CNTL1, 0x40011508);
+			if (version == T7_ARC) {
+				hdmirx_arc_write_reg(HDMIRX_ARC_CNTL, 0xfffffff8 | src);
+				hdmirx_arc_write_reg(HDMIRX_EARCTX_CNTL0, 0x94830490);
+				hdmirx_arc_write_reg(HDMIRX_EARCTX_CNTL1, 0x40011508);
+			}
+			if (version == TXHD2_ARC) {
+				if (src == SPDIFA_TO_HDMIRX)
+					audiobus_update_bits(EE_AUDIO_SPDIFOUT_MUX,
+							0x1 << 1, 1 << 1);
+				if (src == SPDIFB_TO_HDMIRX)
+					audiobus_update_bits(EE_AUDIO_SPDIFOUT_MUX,
+							0x1 << 1, 0 << 1);
+			}
 		}
 	} else {
 		/* earctx_spdif*/
@@ -345,7 +355,7 @@ void arc_enable(bool enable, int version)
 	if (enable) {
 		if (version == TM2_ARC)
 			aml_hiubus_update_bits(HHI_HDMIRX_PHY_MISC2, 0x1 << 1, 0);
-		else if (version >= T7_ARC)
+		else if (version == T7_ARC)
 			hdmirx_arc_update_reg(HDMIRX_PHY_MISC2, 0x1 << 1, 0);
 	}
 
@@ -355,9 +365,12 @@ void arc_enable(bool enable, int version)
 		if (version == TM2_ARC)
 			aml_hiubus_update_bits(HHI_HDMIRX_EARCTX_CNTL0,
 				0x1 << 31, (enable ? 0x1 : 0) << 31);
-		else if (version >= T7_ARC)
+		else if (version == T7_ARC)
 			hdmirx_arc_update_reg(HDMIRX_EARCTX_CNTL0,
 				0x1 << 31, (enable ? 0x1 : 0) << 31);
 	}
+	if (version == TXHD2_ARC)
+		hdmirx_arc_update_reg(HDMIRX_ARC_CNTL,
+			0x1 << 0, (enable ? 0x1 : 0) << 0);
 }
 

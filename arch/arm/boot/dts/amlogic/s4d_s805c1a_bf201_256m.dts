@@ -1469,11 +1469,11 @@
 		};
 		partition@7 {
 			label = "recovery";
-			reg = <0x0 0x1400000>;
+			reg = <0x0 0x1200000>;
 		};
 		partition@8 {
 			label = "boot";
-			reg = <0x0 0xF00000>;
+			reg = <0x0 0xC00000>;
 		};
 		partition@9 {
 			label = "system";

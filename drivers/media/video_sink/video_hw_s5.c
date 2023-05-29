@@ -11512,7 +11512,7 @@ void set_video_slice_policy(struct video_layer_s *layer,
 				(vinfo->sync_duration_num /
 			    vinfo->sync_duration_den > 60)) {
 				slice_num = 2;
-				if (is_amdv_enable())
+				if (video_is_meson_s5_cpu() && is_amdv_enable())
 					vd1s1_vd2_prebld_en = 1;
 			} else {
 				slice_num = 1;
@@ -11528,11 +11528,14 @@ void set_video_slice_policy(struct video_layer_s *layer,
 		/* check output */
 		if (vinfo) {
 			/* output: (4k-8k], 4k120, input <= 4k */
-			if ((vinfo->width > 4096 && vinfo->height > 2160) ||
-				(vinfo->width > 1920 && vinfo->height > 1080 &&
-				(vinfo->sync_duration_num /
-			    vinfo->sync_duration_den > 60)))
-				pi_en = 1;
+			/* s5 has pilite, t3x no pilite */
+			if (video_is_meson_s5_cpu()) {
+				if ((vinfo->width > 4096 && vinfo->height > 2160) ||
+					(vinfo->width > 1920 && vinfo->height > 1080 &&
+					(vinfo->sync_duration_num /
+				    vinfo->sync_duration_den > 60)))
+					pi_en = 1;
+			}
 		}
 		slice_num = 1;
 		layer->slice_num = slice_num;
@@ -11555,6 +11558,7 @@ void adjust_video_slice_policy(u32 layer_id,
 	u32 src_width = 0;
 	u32 src_height = 0;
 	u32 slice_num = 1, pi_en = 0;
+	u32 vd1s1_vd2_prebld_en = 0;
 	const struct vinfo_s *vinfo = get_current_vinfo();
 	struct video_layer_s *layer = get_vd_layer(layer_id);
 
@@ -11581,7 +11585,8 @@ void adjust_video_slice_policy(u32 layer_id,
 				(vinfo->sync_duration_num /
 			    vinfo->sync_duration_den > 60)) {
 				slice_num = 2;
-				//if dv enable, vd1s1_vd2_prebld_en = 1;
+				if (video_is_meson_s5_cpu() && is_amdv_enable())
+					vd1s1_vd2_prebld_en = 1;
 			} else {
 				slice_num = 1;
 			}
@@ -11591,15 +11596,19 @@ void adjust_video_slice_policy(u32 layer_id,
 			slice_num = 4;
 		layer->slice_num = slice_num;
 		layer->pi_enable = pi_en;
+		layer->vd1s1_vd2_prebld_en = vd1s1_vd2_prebld_en;
 	} else {
 		/* check output */
 		if (vinfo) {
-			/* output: (4k-8k], 4k120, input <= 4k */
-			if ((vinfo->width > 4096 && vinfo->height > 2160) ||
-				(vinfo->width > 1920 && vinfo->height > 1080 &&
-				(vinfo->sync_duration_num /
-			    vinfo->sync_duration_den > 60)))
-				pi_en = 1;
+			/* s5 has pilite, t3x no pilite */
+			if (video_is_meson_s5_cpu()) {
+				/* output: (4k-8k], 4k120, input <= 4k */
+				if ((vinfo->width > 4096 && vinfo->height > 2160) ||
+					(vinfo->width > 1920 && vinfo->height > 1080 &&
+					(vinfo->sync_duration_num /
+				    vinfo->sync_duration_den > 60)))
+					pi_en = 1;
+			}
 		}
 		slice_num = 1;
 		layer->slice_num = slice_num;

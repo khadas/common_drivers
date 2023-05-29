@@ -3693,6 +3693,9 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 	struct vframe_s *vf;
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	struct vframe_s *dv_new_vf = NULL;
+	struct vframe_s *vf_top1 = NULL;
+	int ret;
+	static bool force_top1_once;
 #endif
 	struct vframe_s *cur_dispbuf_back = cur_dispbuf[0];
 	int toggle_cnt;
@@ -3846,11 +3849,22 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 			amlog_mask_if(toggle_cnt > 0, LOG_MASK_FRAMESKIP,
 				      "skipped\n");
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-			if ((vd_path_id[0] == VFM_PATH_AMVIDEO ||
+			ret = dolby_vision_need_wait(0);
+			if (((vd_path_id[0] == VFM_PATH_AMVIDEO ||
 			     vd_path_id[0] == VFM_PATH_DEF ||
-			     vd_path_id[0] == VFM_PATH_AUTO) &&
-			    dolby_vision_need_wait(0))
-				break;
+			     vd_path_id[0] == VFM_PATH_AUTO) && ret) ||
+			     force_top1_once) {
+			     /*first frame, only proc top1*/
+				if (ret == 5 || force_top1_once) {
+					if (debug_flag & DEBUG_FLAG_HDMI_DV_CRC)
+						pr_info("first frame for top1\n");
+					amdv_parse_metadata_hw5_top1(vf);
+					amdolby_vision_process_hw5(vf, NULL,
+						vf->compWidth << 16 | vf->compHeight, 1, 0);
+					force_top1_once = false;
+				}
+				break;/*wait metadata or step or top1*/
+			}
 #endif
 #if ENABLE_UPDATE_HDR_FROM_USER
 			set_hdr_to_frame(vf);
@@ -3925,6 +3939,22 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 				dv_vf_crc_check(vf)) {
 				break; // not render err crc frame
 			}
+			/*top1 enable, need check one more frame*/
+			if (is_amdv_enable() && get_top1_onoff()) {/*todo*/
+				vf_top1 = amvideo_vf_peek();
+				/*wait next new Fn+1 for top1, proc top2 Fn + top1 Fn+1*/
+				/*if no new frame, proc top2 Fn + repeat Top1 Fn cur vsync*/
+				/*then only do top1 Fn+1 next vsync*/
+				if (!vf_top1) {
+					if (debug_flag & DEBUG_FLAG_HDMI_DV_CRC)
+						pr_info("wait new frame for top1\n");
+					force_top1_once = true;
+				} else {
+					force_top1_once = false;
+				}
+				vf_top1 = vf;/*temporarily use cur vf for top1, no wait*/
+				force_top1_once = false;/*temporarily use cur vf for top1, no wait*/
+			}
 #endif
 			path0_new_frame = vsync_toggle_frame(vf, __LINE__);
 			/* The v4l2 capture needs a empty vframe to flush */
@@ -3937,8 +3967,14 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 			if (vd_path_id[0] == VFM_PATH_AMVIDEO ||
 			    vd_path_id[0] == VFM_PATH_DEF ||
-			    vd_path_id[0] == VFM_PATH_AUTO)
-				dv_new_vf = dv_toggle_frame(vf, VD1_PATH, true);
+				vd_path_id[0] == VFM_PATH_AUTO) {
+				if (!get_top1_onoff() || !vf_top1) {/*no top1*/
+					dv_new_vf = dv_toggle_frame(vf, VD1_PATH, true);
+				} else if (vf_top1) {/*top1 + top2*/
+					amdv_parse_metadata_hw5_top1(vf_top1);
+					dv_new_vf = dv_toggle_frame(vf, VD1_PATH, true);
+				}
+			}
 			if (hold_video)
 				dv_new_vf = NULL;
 #endif
@@ -4102,6 +4138,9 @@ SET_FILTER:
 		display_frame_count++;
 		drop_frame_count = receive_frame_count - display_frame_count;
 	}
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+	vd_layer[0].vf_top1 = vf_top1;
+#endif
 	return path0_new_frame;
 }
 

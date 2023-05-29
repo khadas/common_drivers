@@ -302,6 +302,58 @@ struct ambient_cfg_s ambient_test_cfg_3[AMBIENT_CFG_FRAMES] = {
 	{5, 65536, 6840, 17788, 3571, 28508, 1},
 };
 
+struct dynamic_cfg_s dynamic_test_cfg[AMBIENT_CFG_FRAMES] = {
+	/*update_flag, ambient, rear, front, whitex, whitey,dark_detail*/
+	/*precision_rendering_upd_mode,precision_rendering_strength*/
+	/*global_dimming_upd_mode,six_vector_upd_mode,l1l4_filtering_upd_mode*/
+	{ 12, 65536, 0, 0, 0, 0, 0},
+	{ 4, 0, 0, 0, 32768, 0, 0},
+	{ 4, 0, 0, 0, 0, 32768, 0},
+	{ 4, 0, 0, 0, 32768, 32768, 0},
+	{ 6, 0, 0, 0, 10246, 10780, 0},
+	{ 2, 0, 10000, 0, 0, 0, 0},
+	{ 3, 0, 5, 0, 0, 0, 0},
+	{ 1, 0, 0, 30000, 0, 0, 0},
+	{ 8, 0, 0, 0, 0, 0, 0},
+	{ 8, 65536, 0, 0, 0, 0, 0},
+	{ 7, 0, 2204, 23229, 589, 30638, 0},
+	{ 0, 0, 0, 0, 0, 0, 0},
+	{ 0, 0, 0, 0, 0, 0, 0},
+	{ 1, 0, 0, 24942, 0, 0, 0},
+	{ 7, 0, 4646, 25899, 31686, 9764, 0},
+	{ 0, 0, 0, 0, 0, 0, 0},
+	{ 4, 0, 0, 0, 491, 30113, 0},
+	{ 4, 0, 0, 0, 11632, 13402, 0},
+	{ 4, 0, 0, 0, 22282, 31162, 0},
+	{ 6, 0, 6276, 0, 98, 16056, 0},
+	{ 6, 0, 5276, 0, 8454, 6946, 0},
+	{ 2, 0, 6558, 0, 0, 0, 0},
+	{ 2, 0, 355, 0, 0, 0, 0},
+	{ 7, 0, 6898, 9651, 30539, 17104, 0},
+	{ 3, 0, 5558, 838, 0, 0, 0},
+	{ 5, 0, 0, 8462, 7438, 655, 0},
+	{ 8, 0, 0, 0, 0, 0, 0},
+	{ 0, 0, 0, 0, 0, 0, 0},
+	{ 0, 0, 0, 0, 0, 0, 0},
+	{ 9, 65536, 0, 12792, 0, 0, 0},
+	{ 4, 0, 0, 0, 30179, 14909, 0},
+	{ 3, 0, 1287, 16711, 0, 0, 0},
+	{ 7, 0, 991, 9667, 14450, 9699, 0},
+	{ 4, 0, 0, 0, 12746, 5636, 0},
+	{ 2, 0, 1382, 0, 0, 0, 0},
+	{ 1, 0, 0, 14647, 0, 0, 0},
+	{ 2, 0, 9080, 0, 0, 0, 0},
+	{ 4, 0, 0, 0, 21921, 16056, 0},
+	{ 3, 0, 6840, 13834, 0, 0, 0},
+	{ 5, 0, 0, 21597, 25755, 26673, 0},
+	{ 0, 0, 0, 0, 0, 0, 0},
+	{ 5, 0, 0, 19217, 17825, 17989, 0},
+	{ 6, 0, 2185, 0, 13828, 5406, 0},
+	{ 2, 0, 3587, 0, 0, 0, 0},
+	{ 5, 0, 0, 17788, 3571, 28508, 0},
+	{ 4, 0, 0, 0, 32636, 5799, 0},
+};
+
 struct target_config def_tgt_display_cfg_bestpq = {
 	36045,
 	2,
@@ -565,6 +617,82 @@ struct target_config def_tgt_display_cfg_ll = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0} /* padding */
+};
+
+/*cfg_0.005_500_bt1886 */
+struct target_config_dvp def_tgt_dvp_cfg = {
+	39322,
+	131072000,
+	1311,
+	{42949672, 22145926, 20132660, 40265320, 10066330, 4026532, 20984942, 22078816},
+	{
+		{5960, 20047, 2023},
+		{-3286, -11052, 14336},
+		{14336, -13022, -1316}
+	},
+	{2048, 16384, 16384},
+	15,
+	0,
+	0,
+	1,
+	1,
+	{4, 215, 163, 84, 217, 76, 153},
+	{-2458, -1638, -819, 0, 410, 819, 1229},
+	0,
+	0,
+	9830,
+	6554,
+	-6554,
+	26214,
+	3277,
+	0,
+	0,
+	0,
+	0,
+	{
+		{0}, 1, 0, 0, 0, 6553600, 32768, 32768, {0, 0, 0}
+	},
+	{
+		0, 0, {0, 0},
+		50, 16, 16384, 0, 4096, 5, 4096,
+		{50, 100, 300, 500, 800, 1000, 2000, 3000},
+		{32768, 32768, 32768, 32768, 32768, 32768, 32768, 32768},
+		0, 683, 683, 0, 105, 105,
+		{10247, 10781},
+		{0, 0, 0}
+	},
+	{
+		{0, 0, 0},
+		0, 24576, 369,
+		{1024, 1024, 1024, 1024, 1024, 1024, 256},
+		{1024, 1024, 1024, 1024, 1024, 1024, 1024},
+		24576, 0,
+		{0, 0}
+	},
+	{128, 180, 200, 230, 255},
+	{217, 304, 391, 435, 500},
+	32768,
+	0,
+	2,
+	{
+		0, 2884, -183501, -2883584, 64959, 133195, 104858, 262144, 10486, 0,
+		{0, 0, 0},
+		{0, 0, 0},
+	},
+	{0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0} /* padding */
 };
 
 void calculate_panel_max_pq(enum signal_format_enum src_format,
@@ -2155,242 +2283,254 @@ void get_dv_bin_config(void)
 	}
 }
 
+static void print_cfg(struct target_config_dvp *config)
+{
+	pr_info("gamma:                %d\n",
+		config->gamma);
+	pr_info("max:				   %d\n",
+		config->max);
+	pr_info("min:				   %d\n",
+		config->min);
+	pr_info("tPrimaries:		   %d,%d,%d,%d,%d,%d,%d,%d\n",
+		config->t_primaries[0],
+		config->t_primaries[1],
+		config->t_primaries[2],
+		config->t_primaries[3],
+		config->t_primaries[4],
+		config->t_primaries[5],
+		config->t_primaries[6],
+		config->t_primaries[7]);
+	pr_info("rgb_to_ycc:		   %d,%d,%d\n",
+		config->rgb_to_ycc[0][0],
+		config->rgb_to_ycc[0][1],
+		config->rgb_to_ycc[0][2]);
+	pr_info("                      %d,%d,%d\n",
+		config->rgb_to_ycc[1][0],
+		config->rgb_to_ycc[1][1],
+		config->rgb_to_ycc[1][2]);
+	pr_info("                      %d,%d,%d\n",
+		config->rgb_to_ycc[2][0],
+		config->rgb_to_ycc[2][1],
+		config->rgb_to_ycc[2][2]);
+	pr_info("rgb_to_ycc_off:	   %d,%d,%d\n",
+		config->rgb_to_ycc_off[0],
+		config->rgb_to_ycc_off[1],
+		config->rgb_to_ycc_off[2]);
+	pr_info("rgb_to_ycc_scale:      %d\n",
+		config->rgb_to_ycc_scale);
+	pr_info("range_spec:            %d\n",
+		config->range_spec);
+	pr_info("eotf:                  %d-%s\n",
+		config->eotf,
+		eotf_str[config->eotf]);
+	pr_info("total_viewing_modes:   %d\n",
+		config->total_viewing_modes_num);
+	pr_info("mode_valid:            %d\n",
+		config->mode_valid);
+	pr_info("vsvdb:                 %x %x %x %x %x %x %x\n",
+		config->vsvdb[0], config->vsvdb[1], config->vsvdb[2],
+		config->vsvdb[3], config->vsvdb[4], config->vsvdb[5],
+		config->vsvdb[6]);
+	pr_info("user_brightness_ui:    %d %d %d %d %d %d %d\n",
+		config->user_brightness_ui_lut[0], config->user_brightness_ui_lut[1],
+		config->user_brightness_ui_lut[2], config->user_brightness_ui_lut[3],
+		config->user_brightness_ui_lut[4], config->user_brightness_ui_lut[5],
+		config->user_brightness_ui_lut[6]);
+	pr_info("tuning_mode:           %d\n",
+		config->tuning_mode);
+	pr_info("d_brightness:			%d\n",
+		config->d_brightness);
+	pr_info("d_contrast:			%d\n",
+		config->d_contrast);
+	pr_info("d_color_shift:         %d\n",
+		config->d_color_shift);
+	pr_info("d_saturation:			%d\n",
+		config->d_saturation);
+	pr_info("d_backlight:			%d\n",
+		config->d_backlight);
+	pr_info("d_local_contrast:      %d\n",
+		config->d_local_contrast);
+	pr_info("dbg_exec_paramsprint:  %d\n",
+		config->dbg_exec_params_print_period);
+	pr_info("dbg_dm_md_print_period:%d\n",
+		config->dbg_dm_md_print_period);
+	pr_info("dbg_dmcfg_print_period:%d\n",
+		config->dbg_dm_cfg_print_period);
+	pr_info("d_brightness_pr_on:    %d\n",
+		config->d_brightness_pr_on);
+	pr_info("\n");
+	pr_info("------ Global Dimming configuration ------\n");
+	pr_info("global_dimming:	    %d\n",
+		config->gd_config.global_dimming);
+	pr_info("gd_delay_msec_hdmi:    %d\n",
+		config->gd_config.gd_delay_msec_hdmi);
+	pr_info("gd_delay_msec_ott:     %d\n",
+		config->gd_config.gd_delay_msec_ott);
+	pr_info("gd_delay_msec_ll:	    %d\n",
+		config->gd_config.gd_delay_msec_ll);
+	pr_info("gd_lowest_tmax:	    %d\n",
+		config->gd_config.gd_lowest_tmax);
+	pr_info("gd_rise_weight:	    %d\n",
+		config->gd_config.gd_rise_weight);
+	pr_info("gd_fall_weight:	    %d\n",
+		config->gd_config.gd_fall_weight);
+	pr_info("\n");
+
+	pr_info("------- Ambient light configuration ------\n");
+	pr_info("ambient:              %d\n",
+		config->ambient_config.ambient);
+	pr_info("dark_detail:          %d\n",
+		config->ambient_config.dark_detail);
+	pr_info("dark_detail_complum:  %d\n",
+		config->ambient_config.dark_detail_complum);
+	pr_info("t_screen_reflection:  %d\n",
+		config->ambient_config.t_screen_reflection);
+	pr_info("t_surround_reflection:%d\n",
+		config->ambient_config.t_surround_reflection);
+	pr_info("t_front_lux:          %d\n",
+		config->ambient_config.t_front_lux);
+	pr_info("t_front_lux_scale:    %d\n",
+		config->ambient_config.t_front_lux_scale);
+	pr_info("t_rear_lum:           %d\n",
+		config->ambient_config.t_rear_lum);
+	pr_info("t_rear_lum_scale:     %d\n",
+		config->ambient_config.t_rear_lum_scale);
+
+	pr_info("ambient_front_lux:    %d,%d,%d,%d,%d,%d,%d,%d\n",
+		config->ambient_config.ambient_front_lux[0],
+		config->ambient_config.ambient_front_lux[1],
+		config->ambient_config.ambient_front_lux[2],
+		config->ambient_config.ambient_front_lux[3],
+		config->ambient_config.ambient_front_lux[4],
+		config->ambient_config.ambient_front_lux[5],
+		config->ambient_config.ambient_front_lux[6],
+		config->ambient_config.ambient_front_lux[7]);
+
+	pr_info("ambient_comp_level: %d,%d,%d,%d,%d,%d,%d,%d\n",
+		config->ambient_config.ambient_comp_level[0],
+		config->ambient_config.ambient_comp_level[1],
+		config->ambient_config.ambient_comp_level[2],
+		config->ambient_config.ambient_comp_level[3],
+		config->ambient_config.ambient_comp_level[4],
+		config->ambient_config.ambient_comp_level[5],
+		config->ambient_config.ambient_comp_level[6],
+		config->ambient_config.ambient_comp_level[7]);
+
+	pr_info("al_delay:			 %d\n",
+		config->ambient_config.al_delay);
+	pr_info("al_rise:			 %d\n",
+		config->ambient_config.al_rise);
+	pr_info("al_fall:			 %d\n",
+		config->ambient_config.al_fall);
+	pr_info("ac_delay:			 %d\n",
+		config->ambient_config.ac_delay);
+	pr_info("ac_rise:			 %d\n",
+		config->ambient_config.ac_rise);
+	pr_info("ac_fall:			 %d\n",
+		config->ambient_config.ac_fall);
+	pr_info("t_whitexy:          %d, %d\n",
+		config->ambient_config.t_whitexy[0],
+		config->ambient_config.t_whitexy[1]);
+
+	pr_info("\n");
+	pr_info("---------------- pr_cfg --------------\n");
+	pr_info("supports_precision_rendering:%d\n",
+		config->pr_config.supports_precision_rendering);
+	pr_info("precision_rendering_strength:%d\n",
+		config->pr_config.precision_rendering_strength);
+	pr_info("pyramid_pad_value:           %d\n",
+		config->pr_config.pyramid_pad_value);
+	pr_info("pyramid_weights:             %d %d %d %d %d %d %d\n",
+		config->pr_config.pyramid_weights[0],
+		config->pr_config.pyramid_weights[1],
+		config->pr_config.pyramid_weights[2],
+		config->pr_config.pyramid_weights[3],
+		config->pr_config.pyramid_weights[4],
+		config->pr_config.pyramid_weights[5],
+		config->pr_config.pyramid_weights[6]);
+	pr_info("pyramid_alpha:               %d %d %d %d %d %d %d\n",
+		config->pr_config.pyramid_alpha[0],
+		config->pr_config.pyramid_alpha[1],
+		config->pr_config.pyramid_alpha[2],
+		config->pr_config.pyramid_alpha[3],
+		config->pr_config.pyramid_alpha[4],
+		config->pr_config.pyramid_alpha[5],
+		config->pr_config.pyramid_alpha[6]);
+	pr_info("local_mapping29_scalar:      %d\n",
+		config->pr_config.local_mapping29_scalar);
+
+	pr_info("\n");
+	pr_info("blu_pwm:                     %d %d %d %d %d\n",
+		config->blu_pwm[0],
+		config->blu_pwm[1],
+		config->blu_pwm[2],
+		config->blu_pwm[3],
+		config->blu_pwm[4]);
+	pr_info("blu_light                    %d %d %d %d %d\n",
+		config->blu_light[0],
+		config->blu_light[1],
+		config->blu_light[2],
+		config->blu_light[3],
+		config->blu_light[4]);
+	pr_info("l11_wp_response_rise_fall:   %d\n",
+		config->l11_wp_response_rise_fall);
+
+	pr_info("apply_l11_wp:                %d\n",
+		config->apply_l11_wp);
+	pr_info("ref_mode_dark_id:            %d\n",
+		config->ref_mode_dark_id);
+
+	pr_info("\n");
+
+	pr_info("---------------- ana_cfg --------------\n");
+	pr_info("analyzer_delay:              %d\n",
+		config->ana_config.analyzer_delay);
+	pr_info("l1_mid_sensitivity:          %d\n",
+		config->ana_config.l1_mid_sensitivity);
+	pr_info("l1_mid_slope:                %d\n",
+		config->ana_config.l1_mid_slope);
+
+	pr_info("l1_min_max_slope:            %d\n",
+		config->ana_config.l1_min_max_slope);
+	pr_info("l1_mid_bot_roll:             %d\n",
+		config->ana_config.l1_mid_bot_roll);
+	pr_info("l1_mid_top_roll:             %d\n",
+		config->ana_config.l1_mid_top_roll);
+	pr_info("l1_mid_bot_beta:             %d\n",
+		config->ana_config.l1_mid_bot_beta);
+	pr_info("l1_mid_top_beta:             %d\n",
+		config->ana_config.l1_mid_top_beta);
+	pr_info("l4_base_alpha:               %d\n",
+		config->ana_config.l4_base_alpha);
+	pr_info("enalbe_l1l4_gen:             %d\n",
+		config->ana_config.enalbe_l1l4_gen);
+
+	pr_info("\n");
+}
+
 void get_dv_bin_config_hw5(void)
 {
 	int mode = 0;
 	struct pq_config_dvp *pq_config_dvp = NULL;
 	struct target_config_dvp *config = NULL;
+	bool fixed_cfg = false;
 
 	if (!load_bin_config) {
 		pr_info("no load_bin_config\n");
-		return;
+		fixed_cfg = true;
 	}
-
-	pr_info("There are %d picture modes\n", num_picture_mode);
-	for (mode = 0; mode < num_picture_mode; mode++) {
-		pr_info("================ Picture Mode: %s =================\n",
-			cfg_info[mode].pic_mode_name);
-		pq_config_dvp = &bin_to_cfg_dvp[mode];
-		config = &pq_config_dvp->tdc;
-		pr_info("gamma:                %d\n",
-			config->gamma);
-		pr_info("max:                  %d\n",
-			config->max);
-		pr_info("min:                  %d\n",
-			config->min);
-		pr_info("tPrimaries:           %d,%d,%d,%d,%d,%d,%d,%d\n",
-			config->t_primaries[0],
-			config->t_primaries[1],
-			config->t_primaries[2],
-			config->t_primaries[3],
-			config->t_primaries[4],
-			config->t_primaries[5],
-			config->t_primaries[6],
-			config->t_primaries[7]);
-		pr_info("rgb_to_ycc:           %d,%d,%d\n",
-			config->rgb_to_ycc[0][0],
-			config->rgb_to_ycc[0][1],
-			config->rgb_to_ycc[0][2]);
-		pr_info("                      %d,%d,%d\n",
-			config->rgb_to_ycc[1][0],
-			config->rgb_to_ycc[1][1],
-			config->rgb_to_ycc[1][2]);
-		pr_info("rgb_to_ycc_off:       %d,%d,%d\n",
-			config->rgb_to_ycc_off[0],
-			config->rgb_to_ycc_off[1],
-			config->rgb_to_ycc_off[2]);
-		pr_info("rgb_to_ycc_scale:     %d\n",
-			config->rgb_to_ycc_scale);
-		pr_info("range_spec:           %d\n",
-			config->range_spec);
-		pr_info("eotf:                 %d-%s\n",
-			config->eotf,
-			eotf_str[config->eotf]);
-		pr_info("total_viewing_modes:  %d\n",
-			config->total_viewing_modes_num);
-		pr_info("mode_valid:           %d\n",
-			config->mode_valid);
-		pr_info("vsvdb:                %x %x %x %x %x %x %x\n",
-			config->vsvdb[0], config->vsvdb[1], config->vsvdb[2],
-			config->vsvdb[3], config->vsvdb[4], config->vsvdb[5],
-			config->vsvdb[6]);
-		pr_info("user_brightness_ui:   %d %d %d %d %d %d %d\n",
-			config->user_brightness_ui_lut[0], config->user_brightness_ui_lut[1],
-			config->user_brightness_ui_lut[2], config->user_brightness_ui_lut[3],
-			config->user_brightness_ui_lut[4], config->user_brightness_ui_lut[5],
-			config->user_brightness_ui_lut[6]);
-		pr_info("tuning_mode:      %d\n",
-			config->tuning_mode);
-		pr_info("d_brightness:          %d\n",
-			config->d_brightness);
-		pr_info("d_contrast:            %d\n",
-			config->d_contrast);
-		pr_info("d_color_shift:         %d\n",
-			config->d_color_shift);
-		pr_info("d_saturation:          %d\n",
-			config->d_saturation);
-		pr_info("d_backlight:           %d\n",
-			config->d_backlight);
-		pr_info("d_local_contrast:      %d\n",
-			config->d_local_contrast);
-		pr_info("dbg_exec_paramsprint:  %d\n",
-			config->dbg_exec_params_print_period);
-		pr_info("dbg_dm_md_print_period:%d\n",
-			config->dbg_dm_md_print_period);
-		pr_info("dbg_dmcfg_print_period:%d\n",
-			config->dbg_dm_cfg_print_period);
-		pr_info("d_brightness_pr_on:%d\n",
-			config->d_brightness_pr_on);
-		pr_info("\n");
-		pr_info("------ Global Dimming configuration ------\n");
-		pr_info("reserved1:            %d\n",
-			config->gd_config.reserved1[0]);
-		pr_info("global_dimming:       %d\n",
-			config->gd_config.global_dimming);
-		pr_info("gd_delay_msec_hdmi:   %d\n",
-			config->gd_config.gd_delay_msec_hdmi);
-		pr_info("gd_delay_msec_ott:    %d\n",
-			config->gd_config.gd_delay_msec_ott);
-		pr_info("gd_delay_msec_ll:     %d\n",
-			config->gd_config.gd_delay_msec_ll);
-		pr_info("gd_lowest_tmax:       %d\n",
-			config->gd_config.gd_lowest_tmax);
-		pr_info("gd_rise_weight:       %d\n",
-			config->gd_config.gd_rise_weight);
-		pr_info("gd_fall_weight:       %d\n",
-			config->gd_config.gd_fall_weight);
-		pr_info("\n");
-
-		pr_info("------- Ambient light configuration ------\n");
-		pr_info("ambient:            %d\n",
-			config->ambient_config.ambient);
-		pr_info("dark_detail:        %d\n",
-			config->ambient_config.dark_detail);
-		pr_info("dark_detail_complum:%d\n",
-			config->ambient_config.dark_detail_complum);
-		pr_info("t_screen_reflection:%d\n",
-			config->ambient_config.t_screen_reflection);
-		pr_info("t_surround_reflection:%d\n",
-			config->ambient_config.t_surround_reflection);
-		pr_info("t_front_lux:        %d\n",
-			config->ambient_config.t_front_lux);
-		pr_info("t_front_lux_scale:  %d\n",
-			config->ambient_config.t_front_lux_scale);
-		pr_info("t_rear_lum:         %d\n",
-			config->ambient_config.t_rear_lum);
-		pr_info("t_rear_lum_scale:   %d\n",
-			config->ambient_config.t_rear_lum_scale);
-
-		pr_info("ambient_front_lux:  %d,%d,%d,%d,%d,%d,%d,%d\n",
-			config->ambient_config.ambient_front_lux[0],
-			config->ambient_config.ambient_front_lux[1],
-			config->ambient_config.ambient_front_lux[2],
-			config->ambient_config.ambient_front_lux[3],
-			config->ambient_config.ambient_front_lux[4],
-			config->ambient_config.ambient_front_lux[5],
-			config->ambient_config.ambient_front_lux[6],
-			config->ambient_config.ambient_front_lux[7]);
-
-		pr_info("ambient_comp_level: %d,%d,%d,%d,%d,%d,%d,%d\n",
-			config->ambient_config.ambient_comp_level[0],
-			config->ambient_config.ambient_comp_level[1],
-			config->ambient_config.ambient_comp_level[2],
-			config->ambient_config.ambient_comp_level[3],
-			config->ambient_config.ambient_comp_level[4],
-			config->ambient_config.ambient_comp_level[5],
-			config->ambient_config.ambient_comp_level[6],
-			config->ambient_config.ambient_comp_level[7]);
-
-		pr_info("al_delay:           %d\n",
-			config->ambient_config.al_delay);
-		pr_info("al_rise:            %d\n",
-			config->ambient_config.al_rise);
-		pr_info("al_fall:            %d\n",
-			config->ambient_config.al_fall);
-		pr_info("ac_delay:           %d\n",
-			config->ambient_config.ac_delay);
-		pr_info("ac_rise:            %d\n",
-			config->ambient_config.ac_rise);
-		pr_info("ac_fall:            %d\n",
-			config->ambient_config.ac_fall);
-		pr_info("t_whitexy:          %d, %d\n",
-			config->ambient_config.t_whitexy[0],
-			config->ambient_config.t_whitexy[1]);
-
-		pr_info("\n");
-		pr_info("---------------- pr_cfg --------------\n");
-		pr_info("supports_precision_rendering:%d\n",
-			config->pr_config.supports_precision_rendering);
-		pr_info("precision_rendering_strength:%d\n",
-			config->pr_config.precision_rendering_strength);
-		pr_info("pyramid_pad_value:           %d\n",
-			config->pr_config.pyramid_pad_value);
-		pr_info("pyramid_weights:             %d %d %d %d %d %d %d\n",
-			config->pr_config.pyramid_weights[0],
-			config->pr_config.pyramid_weights[1],
-			config->pr_config.pyramid_weights[2],
-			config->pr_config.pyramid_weights[3],
-			config->pr_config.pyramid_weights[4],
-			config->pr_config.pyramid_weights[5],
-			config->pr_config.pyramid_weights[6]);
-		pr_info("pyramid_alpha:               %d %d %d %d %d %d %d\n",
-			config->pr_config.pyramid_alpha[0],
-			config->pr_config.pyramid_alpha[1],
-			config->pr_config.pyramid_alpha[2],
-			config->pr_config.pyramid_alpha[3],
-			config->pr_config.pyramid_alpha[4],
-			config->pr_config.pyramid_alpha[5],
-			config->pr_config.pyramid_alpha[6]);
-		pr_info("local_mapping29_scalar:     %d\n",
-			config->pr_config.local_mapping29_scalar);
-
-		pr_info("\n");
-		pr_info("blu_pwm:                  %d %d %d %d %d\n",
-			config->blu_pwm[0],
-			config->blu_pwm[1],
-			config->blu_pwm[2],
-			config->blu_pwm[3],
-			config->blu_pwm[4]);
-		pr_info("blu_light:                %d %d %d %d %d\n",
-			config->blu_light[0],
-			config->blu_light[1],
-			config->blu_light[2],
-			config->blu_light[3],
-			config->blu_light[4]);
-		pr_info("l11_wp_response_rise_fall:%d\n",
-			config->l11_wp_response_rise_fall);
-
-		pr_info("apply_l11_wp:%d\n",
-			config->apply_l11_wp);
-		pr_info("ref_mode_dark_id:%d\n",
-			config->ref_mode_dark_id);
-
-		pr_info("\n");
-
-		pr_info("---------------- ana_cfg --------------\n");
-		pr_info("analyzer_delay:%d\n",
-			config->ana_config.analyzer_delay);
-		pr_info("precision_rendering_strength:%d\n",
-			config->ana_config.l1_mid_sensitivity);
-		pr_info("pyramid_pad_value:           %d\n",
-			config->ana_config.l1_mid_slope);
-
-		pr_info("l1_min_max_slope:            %d\n",
-			config->ana_config.l1_min_max_slope);
-		pr_info("l1_mid_bot_roll:             %d\n",
-			config->ana_config.l1_mid_bot_roll);
-		pr_info("l1_mid_top_roll:             %d\n",
-			config->ana_config.l1_mid_top_roll);
-		pr_info("l1_mid_bot_beta:             %d\n",
-			config->ana_config.l1_mid_bot_beta);
-		pr_info("l1_mid_top_beta:             %d\n",
-			config->ana_config.l1_mid_top_beta);
-		pr_info("l4_base_alpha:               %d\n",
-			config->ana_config.l4_base_alpha);
-		pr_info("enalbe_l1l4_gen:             %d\n",
-			config->ana_config.enalbe_l1l4_gen);
-
-		pr_info("\n");
+	if (fixed_cfg) {
+		config = &def_tgt_dvp_cfg;
+		print_cfg(config);
+	} else {
+		pr_info("There are %d picture modes\n", num_picture_mode);
+		for (mode = 0; mode < num_picture_mode; mode++) {
+			pr_info("================ Picture Mode: %s =================\n",
+				cfg_info[mode].pic_mode_name);
+			pq_config_dvp = &bin_to_cfg_dvp[mode];
+			config = &pq_config_dvp->tdc;
+			print_cfg(config);
+		}
 	}
 }
 

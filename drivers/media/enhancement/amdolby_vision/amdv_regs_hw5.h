@@ -674,37 +674,38 @@
 //Bit 0      CRC enable   //RW, default = 0
 #define DOLBY5_CORE1B_CRC_IN_FRM    0x0bdb /*Input frame CRC*/
 
-#define DOLBY5_CORE2_CRC_CNTRL      0x0d3d /*top2 CRC control*/
-//Bit 1      crc_rst      //RW, default = 0
-//Bit 0      CRC enable   //RW, default = 0
-#define DOLBY5_CORE2_CRC_IN_FRM     0x0d3e /*Input frame CRC*/
-#define DOLBY5_CORE2_CRC_OUT_COMP   0x0d3f /*Composer output frame CRC*/
-#define DOLBY5_CORE2_CRC_OUT_FRM    0x0d40 /*Output frame CRC*/
-#define DOLBY5_CORE2_CRC_UPSCL_OUT_FRM   0x0d41 /*Upscaler Output frame CRC*/
-#define DOLBY5_CORE2_CRC_ICSC       0x0d42 /*iCSC LUT CRC*/
-#define DOLBY5_CORE2_CRC_OCSC       0x0d43 /*OCSC LUT CRC*/
-#define DOLBY5_CORE2_CRC_CVM_TAILUT       0x0d44 /*CVM TAI LUT CRC*/
-#define DOLBY5_CORE2_CRC_CVM_SMILUT       0x0d45 /*CVM SMI LUT CRC*/
-#define DOLBY5_CORE2_CRC_CVM_LITE_TAILUT  0x0d46 /*CVM Lite TAI LUT CRC*/
-#define DOLBY5_CORE2_CRC_CVM_LITE_SMILUT  0x0d47 /*CVM Lite SMI LUT CRC*/
-#define DOLBY5_CORE2_CRC_CVM_LITE_TMSLUT  0x0d48 /*CVM Lite TMS LUT CRC*/
-#define DOLBY5_CORE2_CRC_CVM_LITE_SMSLUT  0x0d49 /*CVM Lite SMS LUT CRC*/
-#define DOLBY5_CORE2_CRC_CVM_LITE_TMI2LUT  0x0d4a /*CVM Lite TMI2 LUT CRC*/
-#define DOLBY5_CORE2_CRC_CVM_LITE_SMI2LUT  0x0d4b /*CVM Lite SMI2 LUT CRC*/
-#define DOLBY5_CORE2_CRC_CVM_LITE_TMS2LUT  0x0d4c /*CVM Lite TMS2 LUT CRC*/
-#define DOLBY5_CORE2_CRC_CVM_LITE_SMS2LUT  0x0d4d /*CVM Lite SMS2 LUT CRC*/
+#define DOLBY5_CORE2_INP_FRM_ST     0x0f39/*input frame v-count and h-count*/
+#define DOLBY5_CORE2_OP_FRM_ST      0x0f3a/*output frame v-count and h-count*/
+#define DOLBY5_CORE2_L1_MINMAX      0x0f3b/*bit0-15 l1_min, bit16-31 l1_max*/
+#define DOLBY5_CORE2_L1_MID_L4_STD  0x0f3c/*bit0-15 l1_mid, bit16-31 l4_std*/
 
-#define DOLBY5_CORE2_INP_FRM_ST        0x0f39/*input frame v-count and h-count*/
-#define DOLBY5_CORE2_OP_FRM_ST         0x0f3a/*output frame v-count and h-count*/
-#define DOLBY5_CORE2_DEBUG_LUT_CNTRL   0x0f4e/*lut debug control*/
-#define DOLBY5_CORE2_CVM_TAILUT_RDADDR 0x0f4f/*addr for lut*/
-#define DOLBY5_CORE2_CVM_SMILUT_RDADDR 0x0f50/*addr for lut*/
-#define DOLBY5_CORE2_ICSCLUT_RDADDR    0x0f51/*addr for lut*/
-#define DOLBY5_CORE2_OCSCLUT_RDADDR    0x0f52/*addr for lut*/
-#define DOLBY5_CORE2_CVM_TAILUT_RDDATA 0x0f5b/*data for lut*/
-#define DOLBY5_CORE2_CVM_SMILUT_RDDATA 0x0f5c/*data for lut*/
-#define DOLBY5_CORE2_ICSCLUT_RDDATA    0x0f5d/*data for lut*/
-#define DOLBY5_CORE2_OCSCLUT_RDDATA    0x0f5e/*data for lut*/
+#define DOLBY5_CORE2_CRC_CNTRL      0x0f3d /*top2 CRC control*/
+#define DOLBY5_CORE2_CRC_IN_FRM     0x0f3e /*Input frame CRC*/
+#define DOLBY5_CORE2_CRC_OUT_COMP   0x0f3f /*Composer output frame CRC*/
+#define DOLBY5_CORE2_CRC_OUT_FRM    0x0f40 /*Output frame CRC*/
+#define DOLBY5_CORE2_CRC_UPSCL_OUT_FRM    0x0f41 /*Upscaler Output frame CRC*/
+#define DOLBY5_CORE2_CRC_ICSC             0x0f42 /*iCSC LUT CRC*/
+#define DOLBY5_CORE2_CRC_OCSC             0x0f43 /*OCSC LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_TAILUT       0x0f44 /*CVM TAI LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_SMILUT       0x0f45 /*CVM SMI LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_TAILUT  0x0f46 /*CVM Lite TAI LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_SMILUT  0x0f47 /*CVM Lite SMI LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_TMSLUT  0x0f48 /*CVM Lite TMS LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_SMSLUT  0x0f49 /*CVM Lite SMS LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_TMI2LUT 0x0f4a /*CVM Lite TMI2 LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_SMI2LUT 0x0f4b /*CVM Lite SMI2 LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_TMS2LUT 0x0f4c /*CVM Lite TMS2 LUT CRC*/
+#define DOLBY5_CORE2_CRC_CVM_LITE_SMS2LUT 0x0f4d /*CVM Lite SMS2 LUT CRC*/
+
+#define DOLBY5_CORE2_DEBUG_LUT_CNTRL      0x0f4e/*lut debug control*/
+#define DOLBY5_CORE2_CVM_TAILUT_RDADDR    0x0f4f/*addr for lut*/
+#define DOLBY5_CORE2_CVM_SMILUT_RDADDR    0x0f50/*addr for lut*/
+#define DOLBY5_CORE2_ICSCLUT_RDADDR       0x0f51/*addr for lut*/
+#define DOLBY5_CORE2_OCSCLUT_RDADDR       0x0f52/*addr for lut*/
+#define DOLBY5_CORE2_CVM_TAILUT_RDDATA    0x0f5b/*data for lut*/
+#define DOLBY5_CORE2_CVM_SMILUT_RDDATA    0x0f5c/*data for lut*/
+#define DOLBY5_CORE2_ICSCLUT_RDDATA       0x0f5d/*data for lut*/
+#define DOLBY5_CORE2_OCSCLUT_RDDATA       0x0f5e/*data for lut*/
 
 #define T3X_VD_PROC_BYPASS_CTRL     0x2811
 //Bit 5      reg_bypass_prebld1     //RW, default = 1, 0:use vd prebld 1:bypass vd prebld

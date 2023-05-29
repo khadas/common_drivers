@@ -95,6 +95,21 @@ struct ambient_cfg_s {
 	u32 dark_detail;
 } __aligned(8);
 
+struct dynamic_cfg_s {
+	int update_flag;
+	int ambient;
+	int t_rearLum;
+	int t_frontLux;
+	int t_whiteX; // x * (1<<15) + 0.5
+	int t_whiteY; // x * (1<<15) + 0.5
+	int dark_detail;
+	int precision_rendering_mode;
+	int precision_rendering_strength; // x * (1<<15) + 0.5
+	int global_dimming;
+	int sv_on;
+	int enable_l1l4_gen;
+} __aligned(8);
+
 #define DV_M 'D'
 
 /* get Number of Picture Mode */
@@ -305,6 +320,11 @@ bool is_multi_dv_mode(void);
 bool support_multi_core1(void);
 bool is_aml_hw5(void);
 void print_dv_ro(void);
+bool get_top1_onoff(void);
+int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
+			 struct vframe_s *vf_top2, u32 display_size,
+			 u8 toggle_mode, u8 pps_state);
+int amdv_parse_metadata_hw5_top1(struct vframe_s *vf);
 
 #define AMDV_UPDATE_OSD_MODE 0x00000001
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION

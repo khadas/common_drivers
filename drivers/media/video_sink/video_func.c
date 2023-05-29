@@ -526,13 +526,19 @@ bool dvel_status;
 int dolby_vision_need_wait(u8 path_index)
 {
 	struct vframe_s *vf;
+	int ret = 0;
 
 	if (!is_amdv_enable())
 		return 0;
 
 	vf = video_vf_peek(path_index);
-	if (!vf || (amdv_wait_metadata(vf, VD1_PATH) == 1))
+	if (!vf) {
 		return 1;
+	} else {
+		ret = amdv_wait_metadata(vf, VD1_PATH);
+		if (ret > 0)
+			return ret;
+	}
 	return 0;
 }
 
@@ -763,10 +769,16 @@ static void amdolby_vision_proc
 			}
 		}
 		/*************************************************/
-		amdolby_vision_process
-			(disp_vf_1, frame_size_1,
-			 disp_vf_2, frame_size_2,
-			 toggle_mode_1, toggle_mode_2, pps_state);
+		if (is_aml_hw5())
+			amdolby_vision_process_hw5
+				(layer_1->vf_top1,
+				 disp_vf_1, frame_size_1,
+				 toggle_mode_1, pps_state);
+		else
+			amdolby_vision_process
+				(disp_vf_1, frame_size_1,
+				 disp_vf_2, frame_size_2,
+				 toggle_mode_1, toggle_mode_2, pps_state);
 
 		/*update setting according to vd1*/
 		if (!is_aml_hw5())

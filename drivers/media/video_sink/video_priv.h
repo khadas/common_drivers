@@ -594,6 +594,7 @@ struct video_layer_s {
 	u32 vd1s1_vd2_prebld_en;
 	u32 mosaic_mode;
 	struct sub_slice_s sub_slice[SLICE_NUM - 1];
+	struct vframe_s *vf_top1;
 };
 
 enum {

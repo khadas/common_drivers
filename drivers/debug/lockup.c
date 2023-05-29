@@ -453,7 +453,9 @@ static void smc_in_hook(unsigned long smcid, unsigned long val, bool noret)
 
 	if (irq_check_en) {
 		memset(info->smc_enter_trace_entries, 0, sizeof(info->smc_enter_trace_entries));
+#ifdef CONFIG_STACKTRACE
 		info->smc_enter_trace_entries_nr = stack_trace_save(info->smc_enter_trace_entries, ENTRY, 0);
+#endif
 	}
 }
 
@@ -541,7 +543,9 @@ static void __maybe_unused irq_trace_start(unsigned long flags)
 	info->irq_disable_time = sched_clock();
 
 	memset(info->irq_disable_trace_entries, 0, sizeof(info->irq_disable_trace_entries));
+#ifdef CONFIG_STACKTRACE
 	info->irq_disable_trace_entries_nr = stack_trace_save(info->irq_disable_trace_entries, ENTRY, 0);
+#endif
 }
 
 static void __maybe_unused irq_trace_stop(unsigned long flags)
@@ -574,7 +578,9 @@ static void __maybe_unused irq_trace_stop(unsigned long flags)
 		pr_err("\n\nDisIRQ___ERR:%llums, disabled at: %llu.%06lu\n",
 		       div_u64(delta, ns2ms), ts, rem_nsec / 1000);
 
+#ifdef CONFIG_STACKTRACE
 		stack_trace_print(info->irq_disable_trace_entries, info->irq_disable_trace_entries_nr, 0);
+#endif
 		dump_stack();
 	}
 
@@ -1003,9 +1009,11 @@ void pr_lockup_info(int lock_cpu)
 			       ts, rem_nsec / 1000, info->curr_smc_a0, info->curr_smc_a1,
 			       info->smc_enter_task_pid, info->smc_enter_task_comm);
 
+#ifdef CONFIG_STACKTRACE
 			if (irq_check_en)
 				stack_trace_print(info->smc_enter_trace_entries,
 						  info->smc_enter_trace_entries_nr, 0);
+#endif
 		}
 
 		if (info->irq_disable_time) {
@@ -1016,7 +1024,9 @@ void pr_lockup_info(int lock_cpu)
 			pr_err("in irq, disabled at: %llu.%06lu for %llums\n",
 			       ts, rem_nsec / 1000, div_u64(delta, ns2ms));
 
+#ifdef CONFIG_STACKTRACE
 			stack_trace_print(info->irq_disable_trace_entries, info->irq_disable_trace_entries_nr, 0);
+#endif
 		}
 
 		__dump_cpu_task(cpu);

@@ -596,7 +596,9 @@ void aml_pstore_write(enum aml_pstore_type_id type, char *buf, unsigned long siz
 
 	local_irq_save(flags);
 	memset(buf_tmp, 0, sizeof(buf_tmp));
+#ifdef CONFIG_STACKTRACE
 	head.time = trace_clock_local();
+#endif
 	head.pid = current->pid;
 	head.magic = 0xabcdef;
 	head.size = roundup(size, 8); // round up to 8

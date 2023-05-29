@@ -1363,7 +1363,7 @@ static unsigned int aucpu_read_process(struct out_elem *pout,
 static int aucpu_bufferid_read(struct out_elem *pout,
 			       char **pread, unsigned int len, int is_pts)
 {
-	struct aml_aucpu_buf_upd upd;
+	struct aml_aucpu_buf_upd upd = {0};
 	unsigned int w_offset = 0;
 	s32 handle;
 	unsigned long mem_phy;
@@ -1392,7 +1392,7 @@ static int aucpu_bufferid_read(struct out_elem *pout,
 static int aucpu_bufferid_read_newest_pts(struct out_elem *pout,
 			       char **pread)
 {
-	struct aml_aucpu_buf_upd upd;
+	struct aml_aucpu_buf_upd upd = {0};
 	unsigned int w_offset = 0;
 	s32 handle;
 	unsigned long mem_phy;
@@ -3906,7 +3906,7 @@ int ts_output_set_decode_info(int sid, struct decoder_mem_info *info)
 
 static int aucpu_get_aud_free_size(struct out_elem *pout)
 {
-	struct aml_aucpu_buf_upd upd;
+	struct aml_aucpu_buf_upd upd = {0};
 	unsigned int w_offset = 0;
 	int free_size = -1;
 	unsigned int total_size = 0;

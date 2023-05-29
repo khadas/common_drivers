@@ -223,6 +223,7 @@ void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsign
 }
 EXPORT_SYMBOL(pstore_io_save);
 
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
 static void schedule_hook(void *data, struct task_struct *prev, struct task_struct *next,
 							struct rq *rq)
 {
@@ -237,6 +238,7 @@ static void schedule_hook(void *data, struct task_struct *prev, struct task_stru
 	aml_pstore_write(AML_PSTORE_TYPE_SCHED, buf, 0);
 
 }
+#endif
 
 static struct kprobe clk_disable_kp = {
 	.symbol_name = "clk_core_disable",

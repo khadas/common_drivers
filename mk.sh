@@ -145,6 +145,10 @@ do
 		;;
 	--patch)
 		ONLY_PATCH=1
+		PATCH_PARM=$2
+		if [[ "${PATCH_PARM}" == "lunch" ]]; then
+			VA=1
+		fi
 		shift
 		;;
 	--check_gki_20)
@@ -244,6 +248,7 @@ fi
 
 #first auto patch when param parse end
 if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
+	export PATCH_PARM
 	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ${FULL_KERNEL_VERSION}
 fi
 if [[ ${ONLY_PATCH} -eq "1" ]]; then

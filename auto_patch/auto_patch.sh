@@ -91,4 +91,30 @@ function traverse_patch_dir()
 	echo "Patch Finish: ${ROOT_DIR}"
 }
 
-traverse_patch_dir
+function handle_lunch_patch()
+{
+	echo "Auto Patch lunch's patch Start"
+
+	while read line_patch; do
+		local patch_dir=${line_patch%/*}
+		local patch_file=${line_patch##*/}
+		local file=${PATCHES_PATH}/${patch_dir}/${patch_file}
+
+		local file_name=${file%.*}
+		local resFile=`basename $file_name`
+		local dir_name1=${resFile//#/\/}
+		local dir_name=${dir_name1%/*}
+		local dir=$T/$dir_name
+
+		am_patch $file $dir
+	done < ${PATCHES_PATH}/lunch_patches.txt
+
+	echo
+	echo "Patch Finish: ${ROOT_DIR}"
+}
+
+if [[ "${PATCH_PARM}" == "lunch" ]]; then
+	handle_lunch_patch
+else
+	traverse_patch_dir
+fi

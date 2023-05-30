@@ -1,0 +1,5 @@
+tools/kernel#configs#0001-tool-bring-up-androidu-with-common14-5.15-1-5.patch
+tools/kernel#tests#0001-tool-bring-up-androidu-with-common14-5.15-2-5.patch
+tools/prebuilts#build-tools#0001-tool-bring-up-androidu-with-common14-5.15-3-5.patch
+tools/prebuilts#clang#host#linux-x86#0001-tool-bring-up-androidu-with-common14-5.15-4-5.patch
+tools/tools#mkbootimg#0001-tool-bring-up-androidu-with-common14-5.15-5-5.patch

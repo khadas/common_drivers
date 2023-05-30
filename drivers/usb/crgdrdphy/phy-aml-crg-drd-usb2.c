@@ -166,6 +166,38 @@ static void set_usb_pll(struct amlogic_usb_v2 *phy, void __iomem	*reg)
 	}
 }
 
+static void set_usb_pll_22nm(struct amlogic_usb_v2 *phy, void __iomem	*reg)
+{
+#define USBPLL_RESET_BIT 18
+#define USBPLL_LK_RESET_BIT 28
+#define USBPLL_EN_BIT 11
+	u32 retry = 5;
+	u32 pll_val0 = phy->pll_setting[0],
+		pll_val1 = phy->pll_setting[1];
+__retry:
+	writel(pll_val0, reg + 0x40);
+	writel(pll_val1, reg + 0x44);
+	usleep_range(4, 5);
+	writel(pll_val1 | (1 << USBPLL_RESET_BIT), reg + 0x44);
+	writel((pll_val0 | (1 << USBPLL_LK_RESET_BIT) | (1 << USBPLL_EN_BIT)), reg + 0x40);
+	usleep_range(49, 50);
+	writel(pll_val1, reg + 0x44);
+	usleep_range(49, 50);
+	writel((pll_val0 | (1 << USBPLL_EN_BIT)), reg + 0x40);
+
+	// wait for 200us
+	usleep_range(199, 200);
+	//check lock bit
+	if (readl(reg + 0x40) >> 31)
+		return;
+
+	retry--;
+	if (!retry)
+		return;
+
+	goto __retry;
+}
+
 static void amlogic_crg_drd_usb2_set_usb_vbus_power
 	(struct gpio_desc *usb_gd, int pin, char is_power_on)
 {
@@ -264,7 +296,17 @@ static int amlogic_crg_drd_usb2_init(struct usb_phy *x)
 
 	/* step 7: pll setting */
 	for (i = 0; i < phy->portnum; i++) {
-		set_usb_pll(phy, phy->phy_cfg[i]);
+		switch (phy->analog_process_nm) {
+		case 22:
+			set_usb_pll_22nm(phy, phy->phy_cfg[i]);
+			break;
+		case 12:
+			set_usb_pll(phy, phy->phy_cfg[i]);
+			break;
+		default:
+			dev_err(phy->dev, "Failed setting usbpll due to analog_process_nm mismatch.");
+			break;
+		}
 		set_trim_initvalue(phy, phy->phy_cfg[i], i);
 	}
 
@@ -454,6 +496,7 @@ static int amlogic_crg_drd_usb2_probe(struct platform_device *pdev)
 	int retval;
 	u32 pll_setting[8] = {0};
 	u32 pll_disconnect_enhance;
+	u32 analog_process_nm;
 	u32 phy_reset_level_bit[USB_PHY_MAX_NUMBER] = {-1};
 	u32 usb_reset_bit = 2;
 	u32 otg_phy_index = 1;
@@ -629,6 +672,11 @@ static int amlogic_crg_drd_usb2_probe(struct platform_device *pdev)
 	if (retval < 0)
 		pll_disconnect_enhance = 0;
 
+	retval = of_property_read_u32(dev->of_node,
+		"analog_process_nm", &analog_process_nm);
+	if (retval < 0)
+		analog_process_nm = 12;
+
 	dev_info(&pdev->dev, "USB2 phy probe:phy_mem:0x%lx, iomap phy_base:0x%lx\n",
 			(unsigned long)phy_mem->start, (unsigned long)phy_base);
 
@@ -652,6 +700,7 @@ static int amlogic_crg_drd_usb2_probe(struct platform_device *pdev)
 	phy->pll_setting[6] = pll_setting[6];
 	phy->pll_setting[7] = pll_setting[7];
 	phy->pll_dis_thred_enhance = pll_disconnect_enhance;
+	phy->analog_process_nm = analog_process_nm;
 	phy->suspend_flag = 0;
 	phy->phy_version = phy_version;
 	phy->otg_phy_index = otg_phy_index;

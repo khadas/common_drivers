@@ -280,3 +280,44 @@
 &uart_AO {
 	status = "okay";
 };
+
+&crg_phy_20 {
+	status = "okay";
+	portnum = <1>;
+};
+
+&crg3_phy_20 {
+	status = "okay";
+	portnum = <0>;
+};
+
+&crg20_otg {
+	status = "okay";
+	controller-type = <1>;
+};
+
+&crg20_drd {
+	compatible = "amlogic, crg-drd";
+	status = "okay";
+};
+
+&crg_udc_2 {
+	status = "okay";
+};
+
+&crg_phy_21 {
+	status = "okay";
+	portnum = <2>;
+	gpio-vbus-power = "GPIODV_7";
+	gpios = <&gpio GPIODV_7 GPIO_ACTIVE_HIGH>;
+};
+
+&crg3_phy_21 {
+	status = "okay";
+	portnum = <0>;
+};
+
+&crg2_drd {
+	compatible = "amlogic, crg-host-drd";
+	status = "okay";
+};

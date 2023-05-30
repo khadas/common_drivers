@@ -155,7 +155,7 @@ void vdin_set_wr_mif_t3x(struct vdin_dev_s *devp);
 void vdin_dolby_config_t3x(struct vdin_dev_s *devp);
 void vdin_dolby_buffer_update(struct vdin_dev_s *devp,
 			      unsigned int index);
-void vdin_dolby_addr_update(struct vdin_dev_s *devp, unsigned int index);
+void vdin_dolby_addr_update_t3x(struct vdin_dev_s *devp, unsigned int index);
 void vdin_dolby_addr_alloc(struct vdin_dev_s *devp, unsigned int size);
 void vdin_dolby_addr_release(struct vdin_dev_s *devp, unsigned int size);
 int vdin_event_cb(int type, void *data, void *op_arg);
@@ -228,10 +228,8 @@ void vdin_set_frame_mif_write_addr_t3x(struct vdin_dev_s *devp,
 void vdin_dv_pr_meta_data(void *addr, unsigned int size, unsigned int index);
 bool vdin_is_dv_meta_data_case(struct vdin_dev_s *devp);
 void vdin_dv_tunnel_set_t3x(struct vdin_dev_s *devp);
-void vdin_dv_de_tunnel_to_44410bit_t3x(struct vdin_dev_s *devp,
-				   unsigned int on_off);
-void vdin_dv_desc_to_4448bit(struct vdin_dev_s *devp,
-			       unsigned int on_off);
+void vdin_descramble_setting_t3x(struct vdin_dev_s *devp, unsigned int on_off);
+void vdin_scramble_setting_t3x(struct vdin_dev_s *devp, unsigned int on_off);
 void vdin_get_duration_by_fps(struct vdin_dev_s *devp);
 void vdin_set_to_vpp_parm(struct vdin_dev_s *devp);
 void vdin_dmc_ctrl(struct vdin_dev_s *devp, bool on_off);

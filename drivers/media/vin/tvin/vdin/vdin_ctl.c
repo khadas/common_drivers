@@ -3381,11 +3381,11 @@ void vdin_set_dv_tunnel(struct vdin_dev_s *devp)
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
-		vdin_set_dv_tunnel_s5(devp);
+		return;
+	} else if (is_meson_t3x_cpu()) {
+		vdin_set_dv_tunnel_t3x(devp);
 		return;
 	}
-	if (is_meson_s5_cpu())
-		return;
 #endif
 
 	/* avoid null pointer oops */
@@ -3404,23 +3404,13 @@ void vdin_set_dv_tunnel(struct vdin_dev_s *devp)
 		/*&& (devp->dv.low_latency)*/
 	    devp->prop.color_format == TVIN_YUV422) {
 		offset = devp->addr_offset;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-		if ((is_meson_t3x_cpu())) {
-			/*channel map*/
-			wr_bits(offset, VDIN0_CUTWIN_CTRL, vdin_data_bus_0, 0, 2);
-			wr_bits(offset, VDIN0_CUTWIN_CTRL, vdin_data_bus_1, 2, 2);
-			wr_bits(offset, VDIN0_CUTWIN_CTRL, vdin_data_bus_2, 4, 2);
-		} else
-#endif
-		{
-			/*channel map*/
-			wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_0,
-				COMP0_OUT_SWT_BIT, COMP0_OUT_SWT_WID);
-			wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_1,
-				COMP1_OUT_SWT_BIT, COMP1_OUT_SWT_WID);
-			wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_2,
-				COMP2_OUT_SWT_BIT, COMP2_OUT_SWT_WID);
-		}
+		/*channel map*/
+		wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_0,
+			COMP0_OUT_SWT_BIT, COMP0_OUT_SWT_WID);
+		wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_1,
+			COMP1_OUT_SWT_BIT, COMP1_OUT_SWT_WID);
+		wr_bits(offset, VDIN_COM_CTRL0, vdin_data_bus_2,
+			COMP2_OUT_SWT_BIT, COMP2_OUT_SWT_WID);
 		/*hdmi rx call back, 422 tunnel to 444*/
 		sm_ops->hdmi_dv_config(true, devp->frontend);
 		pr_info("dv rx tunnel mode\n");
@@ -5409,11 +5399,15 @@ void vdin_dolby_buffer_update(struct vdin_dev_s *devp, unsigned int index)
 			vdin_dolby_metadata_swap(devp, c);
 			/*vdin_dma_flush(devp, p, 128*max_pkt, DMA_TO_DEVICE);*/
 		} else {
+		#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+			if (is_meson_t3x_cpu())
+				//wr(offset, VDIN0_META_DSC_CTRL2, 0xe800c0d5);//todo:confirm
+				wr_bits(offset, VDIN0_META_DSC_CTRL2, 1, 31, 1);//reg_meta_rd_en
+			else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
+				wr(offset, VDIN_DOLBY_DSC_CTRL2, 0xe800c0d5);
+		#else
 			if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
 				wr(offset, VDIN_DOLBY_DSC_CTRL2, 0xe800c0d5);
-		#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-			else if (is_meson_t3x_cpu())
-				wr(offset, VDIN0_META_DSC_CTRL2, 0xe800c0d5);//todo:confirm
 		#endif
 			else
 				wr(offset, VDIN_DOLBY_DSC_CTRL2, 0xd180c0d5);
@@ -5593,6 +5587,12 @@ void vdin_dolby_addr_update(struct vdin_dev_s *devp, unsigned int index)
 	unsigned int offset = devp->addr_offset;
 	u32 *p;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	if (is_meson_t3x_cpu()) {
+		vdin_dolby_addr_update_t3x(devp, index);
+		return;
+	}
+#endif
 	if (index >= devp->canvas_max_num)
 		return;
 	devp->vfp->dv_buf[index] = NULL;
@@ -5702,6 +5702,12 @@ void vdin_dv_desc_to_4448bit(struct vdin_dev_s *devp,
 {
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	if (is_meson_t3x_cpu()) {
+		vdin_descramble_setting_t3x(devp, on_off);
+		return;
+	}
+#endif
 	/* only support vdin0
 	 * don't support in T5
 	 */
@@ -5776,6 +5782,12 @@ void vdin_dv_de_tunnel_to_44410bit(struct vdin_dev_s *devp,
 	u32 data32;
 	unsigned int offset = devp->addr_offset;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	if (is_meson_t3x_cpu()) {
+		vdin_scramble_setting_t3x(devp, on_off);
+		return;
+	}
+#endif
 	data32 = (3 << 18 |
 		  2 << 15 |
 		  0 << 12 |

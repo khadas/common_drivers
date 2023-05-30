@@ -2336,6 +2336,22 @@ void vdin_set_all_regs_t3x(struct vdin_dev_s *devp)
 
 void vdin_set_dv_tunnel_t3x(struct vdin_dev_s *devp)
 {
+	if (!IS_HDMI_SRC(devp->parm.port))
+		return;
+
+	if (devp->dv.dv_flag/* && is_amdv_enable()*/ &&
+	    (!(is_amdv_stb_mode() && cpu_after_eq(MESON_CPU_MAJOR_ID_TM2)) ||
+	    (is_amdv_stb_mode() && !is_hdmi_ll_as_hdr10())) &&
+		/*&& (devp->dv.low_latency)*/
+	    devp->prop.dest_cfmt == TVIN_YUV422) {
+		wr(0, VPU_VDIN_HDMI0_TUNNEL, 0x80304512);
+		if (vdin_dbg_en)
+			pr_info("vdin%d,enable hdmi_if tunnel\n", devp->index);
+	} else {
+		if (vdin_dbg_en)
+			pr_info("vdin%d,disable hdmi_if tunnel\n", devp->index);
+		wr(0, VPU_VDIN_HDMI0_TUNNEL, 0x0);
+	}
 }
 
 static void vdin_delay_line_t3x(struct vdin_dev_s *devp, unsigned short num)
@@ -3392,69 +3408,88 @@ void vdin_force_go_filed_t3x(struct vdin_dev_s *devp)
 
 void vdin_dolby_addr_update_t3x(struct vdin_dev_s *devp, unsigned int index)
 {
-//	unsigned int offset = devp->addr_offset;
-//	u32 *p;
-//
-//	if (index >= devp->canvas_max_num)
-//		return;
-//	devp->vfp->dv_buf[index] = NULL;
-//	devp->vfp->dv_buf_size[index] = 0;
-//	p = (u32 *)devp->vfp->dv_buf_vmem[index];
-//	p[0] = 0;
-//	p[1] = 0;
-//	if (dv_dbg_mask & DV_READ_MODE_AXI) {
-//		wr(offset, VDIN_DOLBY_AXI_CTRL1,
-//		   devp->vfp->dv_buf_mem[index]);
-//		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 1, 4, 1);
-//		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 0, 4, 1);
-//		if (dv_dbg_log & DV_DEBUG_NORMAL)
-//			pr_info("%s:index:%d dma:%x\n", __func__,
-//				index, devp->vfp->dv_buf_mem[index]);
-//	} else {
-//		wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x5180c0d5);
-//		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
-//			wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x6800c0d5);
-//		else
-//			wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x5180c0d5);
-//		wr(offset, VDIN_DOLBY_DSC_CTRL3, 0);
-//	}
+	unsigned int offset = devp->addr_offset;
+	u32 *p;
+	unsigned int value = 0;
+
+	if (index >= devp->canvas_max_num)
+		return;
+	devp->vfp->dv_buf[index] = NULL;
+	devp->vfp->dv_buf_size[index] = 0;
+	p = (u32 *)devp->vfp->dv_buf_vmem[index];
+	p[0] = 0;
+	p[1] = 0;
+	if (dv_dbg_mask & DV_READ_MODE_AXI) {
+		wr(offset, VDIN0_META_AXI_CTRL1,
+		   devp->vfp->dv_buf_mem[index]);
+		wr_bits(offset, VDIN0_META_AXI_CTRL0, 1, 4, 1);
+		wr_bits(offset, VDIN0_META_AXI_CTRL0, 0, 4, 1);
+		if (dv_dbg_log & DV_DEBUG_NORMAL)
+			pr_info("%s:index:%d dma:%x\n", __func__,
+				index, devp->vfp->dv_buf_mem[index]);
+	} else {
+		value  = 0;
+		value |= (0 << 31);/* reg_meta_rd_en */
+		value |= (1 << 30);/* reg_meta_rd_mode */
+		value |= (0x0c0d5 << 0); /* reg_meta_tunnel_sel */
+		if (devp->h_active_org >= 3840)
+			value |= (280 << 20);/* reg_meta_wr_sum */
+		else
+			value |= ((devp->h_active_org * 3 / 40) << 20);
+		wr(offset, VDIN0_META_DSC_CTRL2, value);
+		wr(offset, VDIN0_META_DSC_CTRL3, 0x0);
+	}
 }
 
 void vdin_dolby_config_t3x(struct vdin_dev_s *devp)
 {
-//	unsigned int offset = devp->addr_offset;
-//
-//	devp->dv.dv_config = 1;
-//	devp->dv.dv_path_idx = devp->index;
-//	devp->vfp->low_latency = devp->dv.low_latency;
-//	memcpy(&devp->vfp->dv_vsif,
-//	       &devp->dv.dv_vsif, sizeof(struct tvin_dv_vsif_s));
-//	wr_bits(offset, VDIN_DOLBY_DSC_CTRL0, 1, 30, 1);
-//	wr_bits(offset, VDIN_DOLBY_DSC_CTRL0, 1, 26, 1);
-//	wr_bits(offset, VDIN_DOLBY_DSC_CTRL0, 0, 26, 1);
-//	if (dv_dbg_mask & DV_READ_MODE_AXI) {
-//		wr(offset, VDIN_DOLBY_AXI_CTRL1, devp->vfp->dv_buf_mem[0]);
-//		/* hold line = 0 */
-//		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 0, 8, 8);
-//		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 1, 4, 1);
-//		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 1, 5, 1);
-//		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 0, 5, 1);
-//		wr_bits(offset, VDIN_DOLBY_AXI_CTRL0, 0, 4, 1);
-//		/*enable wr memory*/
-//		vdin_dobly_mdata_write_en(offset, 1);
-//	} else {
-//		/*disable wr memory*/
-//		vdin_dobly_mdata_write_en(offset, 0);
-//		wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x5180c0d5);
-//		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2))
-//			wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x6800c0d5);
-//		else
-//			wr(offset, VDIN_DOLBY_DSC_CTRL2, 0x5180c0d5);
-//		wr(offset, VDIN_DOLBY_DSC_CTRL3, 0x0);
-//	}
-//
-//	if (vdin_dbg_en)
-//		pr_info("%s %d\n", __func__, __LINE__);
+	unsigned int offset = devp->addr_offset;
+	unsigned int value = 0;
+
+	devp->dv.dv_config = 1;
+	devp->dv.dv_path_idx = devp->index;
+	devp->vfp->low_latency = devp->dv.low_latency;
+	memcpy(&devp->vfp->dv_vsif,
+	       &devp->dv.dv_vsif, sizeof(struct tvin_dv_vsif_s));
+	value  = 0;
+	value |= (1 << 31);/* reg_meta_dolby_check_en */
+	value |= (1 << 30);/* reg_meta_tunnel_swap_en */
+	value |= (1 << 17);/* reg_meta_frame_rst */
+	value |= (1 << 16);/* reg_meta_lsb */
+	value |= (128 << 0);/* reg_meta_lsb */
+	wr(offset, VDIN0_META_DSC_CTRL0, value);
+	wr_bits(offset, VDIN0_META_DSC_CTRL0, 0x4, 24, 6);
+	wr_bits(offset, VDIN0_META_DSC_CTRL0, 0x0, 24, 6);
+
+	wr(offset, VDIN0_META_DSC_CTRL1, 0x3);/* reg_meta_crc_ctrl */
+
+	if (dv_dbg_mask & DV_READ_MODE_AXI) {
+		wr(offset, VDIN0_META_AXI_CTRL1, devp->vfp->dv_buf_mem[0]);
+		/* hold line = 0 */
+		wr_bits(offset, VDIN0_META_AXI_CTRL0, 0, 8, 8);//ucode:0x10
+		wr_bits(offset, VDIN0_META_AXI_CTRL0, 1, 4, 1);
+		wr_bits(offset, VDIN0_META_AXI_CTRL0, 1, 5, 1);
+		wr_bits(offset, VDIN0_META_AXI_CTRL0, 0, 5, 1);
+		wr_bits(offset, VDIN0_META_AXI_CTRL0, 0, 4, 1);
+		/*enable wr memory*/
+		vdin_dolby_mdata_write_en_t3x(offset, 1);
+	} else {
+		/*disable wr memory*/
+		vdin_dolby_mdata_write_en_t3x(offset, 0);
+		value  = 0;
+		value |= (0 << 31);/* reg_meta_rd_en */
+		value |= (1 << 30);/* reg_meta_rd_mode */
+		value |= (0x0c0d5 << 0); /* reg_meta_tunnel_sel */
+		if (devp->h_active_org >= 3840)
+			value |= (280 << 20);/* reg_meta_wr_sum */
+		else
+			value |= ((devp->h_active_org * 3 / 40) << 20);
+		wr(offset, VDIN0_META_DSC_CTRL2, value);
+		wr(offset, VDIN0_META_DSC_CTRL3, 0x0);
+	}
+
+	if (vdin_dbg_en)
+		pr_info("%s %d\n", __func__, __LINE__);
 }
 
 void vdin_dolby_mdata_write_en_t3x(unsigned int offset, unsigned int en)
@@ -3462,158 +3497,117 @@ void vdin_dolby_mdata_write_en_t3x(unsigned int offset, unsigned int en)
 	/*printk("=========>> wr memory %d\n", en);*/
 	if (en) {
 		/* reg_dolby_en */
-		wr_bits(offset, VDIN0_CORE_CTRL, 1, 0, 1);
+		//wr_bits(offset, VDIN0_CORE_CTRL, 1, 0, 1);
 		/* reg_meta_en */
 		wr_bits(offset, VDIN0_CORE_CTRL, 1, 3, 1);
 		/* reg_metapath_en */
 		wr_bits(offset, VDIN0_CORE_CTRL, 1, 4, 1);
+		wr_bits(offset, VDIN0_META_AXI_CTRL0, 1, 30, 1);
 	} else {
 		/* reg_dolby_en */
 		wr_bits(offset, VDIN0_CORE_CTRL, 0, 0, 1);
 		/* reg_meta_en */
-		wr_bits(offset, VDIN0_CORE_CTRL, 0, 3, 1);
+		wr_bits(offset, VDIN0_CORE_CTRL, 1, 3, 1);
 		/* reg_metapath_en */
-		wr_bits(offset, VDIN0_CORE_CTRL, 0, 4, 1);
+		wr_bits(offset, VDIN0_CORE_CTRL, 1, 4, 1);
+		wr_bits(offset, VDIN0_META_AXI_CTRL0, 0, 30, 1);
 	}
 }
 
 /*
- * set dv de-scramble or scramble, and this function
- * need call after vdin_set_hv_scale if vdin scaling down
- * enable
- * parm: devp
+ * For shrink module working in amdolby mode,dw path
+ * detunnel
+ * 12bit_422--->12bit_444
+ * 12bit_444--->10bit_444
  * on:1 off:0
  */
-void vdin_dv_desc_to_4448bit_t3x(struct vdin_dev_s *devp,
+void vdin_descramble_setting_t3x(struct vdin_dev_s *devp,
 			       unsigned int on_off)
 {
-//	unsigned int offset = devp->addr_offset;
-//
-	/* only support vdin0
-	 * don't support in T5
-	 */
-//	if (devp->index == 1 ||
-//	    (devp->dtdata->hw_ver == VDIN_HW_T5 ||
-//	     devp->dtdata->hw_ver == VDIN_HW_T5D))
-//		return;
-//
-//	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TM2)) {
-//		if (on_off) {
-//			if (!devp->double_wr) {
-//				/* enable channel 1 for scramble */
-//				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 0,
-//					CH0_OUT_EN_BIT, CH_OUT_EN_WID);
-//				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 1,
-//					CH1_OUT_EN_BIT, CH_OUT_EN_WID);
-//				/* switch vdin 0 wr mif to small */
-//				wr_bits(0, VDIN_TOP_DOUBLE_CTRL,
-//					WR_SEL_VDIN0_SML,
-//					MIF0_OUT_SEL_BIT, VDIN_REORDER_SEL_WID);
-//			}
-//			wr(offset, VDIN_DSC_TUNNEL_SEL, 0x3d11);/*re-order*/
-//
-//			/*small path size in*/
-//			wr_bits(offset, VDIN_SCB_CTRL1, devp->v_shrink_out, 0, 13);
-//			wr_bits(offset, VDIN_SCB_CTRL1, devp->h_shrink_out, 16, 13);
-//			/*de-scramble enable*/
-//			wr_bits(offset, VDIN_VSHRK_CTRL, 0x1, 28, 1);
-//			/*small path scramble enable*/
-//			wr_bits(offset, VDIN_VSHRK_CTRL, 0x1, 29, 1);
-//			if (vdin_dbg_en)
-//				pr_info("vdin SC small in:(%d, %d)\n",
-//					devp->h_shrink_out, devp->v_shrink_out);
-//
-//			/* normal path size in */
-//			wr_bits(offset, VDIN_DSC2_HSIZE, devp->v_active, 0, 13);
-//			wr_bits(offset, VDIN_DSC2_HSIZE, devp->h_active, 16, 13);
-//			/* normal patch scramble enable */
-//			wr_bits(offset, VDIN_SCB_CTRL0, 0x1, 28, 1);
-//
-//			if (vdin_dbg_en)
-//				pr_info("vdin SC normal in:(%d, %d)\n",
-//					devp->h_active, devp->v_active);
-//
-//		} else {
-//			/* disable descramble & scramble */
-//			/*small patch disable*/
-//			/*de-scramble disable*/
-//			wr_bits(offset, VDIN_VSHRK_CTRL, 0x0, 28, 1);
-//			/*small path scramble enable*/
-//			wr_bits(offset, VDIN_VSHRK_CTRL, 0x0, 29, 1);
-//			/* normal path disable */
-//			wr_bits(offset, VDIN_SCB_CTRL0, 0x0, 28, 1);
-//
-//			if (!devp->double_wr) {
-//				/* enable channel 0 for normal TV path */
-//				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 1,
-//					CH0_OUT_EN_BIT, CH_OUT_EN_WID);
-//				wr_bits(offset, VDIN_PP_LFIFO_CTRL, 0,
-//					CH1_OUT_EN_BIT, CH_OUT_EN_WID);
-//			}
-//		}
-//	}
+	unsigned int offset = devp->addr_offset;
+
+	if (devp->index >= 2) /* vdin2 */
+		return;
+
+	if (vdin_dbg_en)
+		pr_info("vdin DSC in:(%d, %d)(%d, %d)(%d, %d)\n",
+			devp->h_active_org, devp->v_active_org,
+			devp->h_active,     devp->v_active,
+			devp->h_shrink_out, devp->v_shrink_out);
+
+	/* reg_dsc_cvfmt_w */
+	wr_bits(offset, VDIN0_DSC_CFMT_W, devp->h_active_org / 2, 0, 13);
+	/* reg_dsc_chfmt_w */
+	wr_bits(offset, VDIN0_DSC_CFMT_W, devp->h_active_org, 16, 13);
+	/* reg_dsc_detunnel_hsize */
+	wr_bits(offset, VDIN0_DSC_HSIZE, devp->h_active_org, 16, 13);
+	wr(offset, VDIN0_DSC_DETUNNEL_SEL, 0x152b);
+	wr(offset, VDIN0_DSC_CFMT_CTRL, 0x3);
+	wr(offset, VDIN0_DSC_CTRL, 0x125);
+	/* TODO:If reg_dolby_en = 1,we should set detunnel before dolby in vdin core */
+
+	if (on_off) {
+		/* reg_dsc_en */
+		wr_bits(offset, VDIN0_DW_CTRL, 1, 4, 1);
+		wr(offset, VDIN0_DSC_DETUNNEL_SEL, 0x152b);
+		/* reg_dsc_detunnel_en */
+		wr_bits(offset, VDIN0_DSC_CTRL, 0x1, 2, 1);
+	} else {
+		/* reg_dsc_en */
+		wr_bits(offset, VDIN0_DW_CTRL, 0, 4, 1);
+		/* reg_dsc_detunnel_en */
+		wr_bits(offset, VDIN0_DSC_CTRL, 0x0, 2, 1);
+	}
 }
 
 /*
- * yuv format, DV descramble 422 12bit TO 444 10bit
+ * yuv format, DV scramble setting for dw path
  */
-void vdin_dv_de_tunnel_to_44410bit_t3x(struct vdin_dev_s *devp,
+void vdin_scramble_setting_t3x(struct vdin_dev_s *devp,
 				   unsigned int on_off)
 {
-//	u32 data32;
-//	unsigned int offset = devp->addr_offset;
-//
-//	data32 = (3 << 18 |
-//		  2 << 15 |
-//		  0 << 12 |
-//		  5 << 9 |
-//		  4 << 6 |
-//		  1 << 3);/*1 << 2 0:off 1:on*/
-//
-//	if (on_off)
-//		wr(offset, VDIN_RO_WRMIF_STATUS, data32 | (1 << 2));
-//	else
-//		wr(offset, VDIN_RO_WRMIF_STATUS, data32);
-//
-//	wr(offset, VDIN_DSC_DETUNNEL_SEL, 0x2c2d0);
-//	/*de-scramble h size in*/
-//	wr_bits(offset, VDIN_CFMT_W, devp->h_active_org / 2,
-//		0, 13);
-//	wr_bits(offset, VDIN_CFMT_W, devp->h_active_org,
-//		16, 13);
-//	/**/
-//	wr_bits(offset, VDIN_DSC_HSIZE, devp->h_active_org,
-//		0, 13);
-//	wr_bits(offset, VDIN_DSC_HSIZE, devp->h_active_org,
-//		16, 13);
-//	if (vdin_dbg_en)
-//		pr_info("vdin DSC in:(%d, %d)\n",
-//			devp->h_active_org, devp->v_active_org);
+	unsigned int offset = devp->addr_offset;
+
+	wr(offset, VDIN0_SCB_CTRL, 0x10);
+	wr(offset, VDIN0_SCB_TUNNEL, 0x12221d9);
+	wr_bits(offset, VDIN0_SCB_SIZE, devp->v_active, 0, 13);
+	wr_bits(offset, VDIN0_SCB_SIZE, devp->h_active, 16, 13);
+	if (on_off) {
+		/* reg_tunnel_en */
+		wr_bits(offset, VDIN0_SCB_TUNNEL, 0x1, 0, 1);
+		/* reg_scb_en */
+		wr_bits(offset, VDIN0_DW_CTRL, 0x1, 3, 1);
+	} else {
+		/* reg_tunnel_en */
+		wr_bits(offset, VDIN0_SCB_TUNNEL, 0x0, 0, 1);
+		/* reg_scb_en */
+		wr_bits(offset, VDIN0_DW_CTRL, 0x0, 3, 1);
+	}
 }
 
 void vdin_dv_tunnel_set_t3x(struct vdin_dev_s *devp)
 {
-//	if (!vdin_is_dolby_signal_in(devp))
-//		return;
-//
-//	if (!devp->dtdata->de_tunnel_tunnel)
-//		return;
-//
-//	if (vdin_dbg_en) {
-//		pr_info("vdin dv tunel_set shrink:(%d, %d)\n",
-//			devp->h_active, devp->h_shrink_out);
-//	}
-//
-//	/* h shrink on*/
-//	if (devp->h_shrink_out < devp->h_active) {
-//		/*hw verify:de-tunnel 444 to 422 12bit*/
-//		vdin_dolby_de_tunnel_to_44410bit(devp, true);
-//		/*vdin de tunnel and tunnel for vdin scaling*/
-//		vdin_dolby_desc_to_4448bit(devp, true);
-//	} else {
-//		vdin_dolby_de_tunnel_to_44410bit(devp, false);
-//		vdin_dolby_desc_to_4448bit(devp, false);
-//	}
+	if (!vdin_is_dolby_signal_in(devp))
+		return;
+
+	if (!devp->dtdata->de_tunnel_tunnel)
+		return;
+
+	if (vdin_dbg_en) {
+		pr_info("vdin dv tunel_set shrink:(%d, %d)\n",
+			devp->h_active, devp->h_shrink_out);
+	}
+
+	/* h shrink on*/
+	if (devp->h_shrink_out < devp->h_active) {
+		/*hw verify:de-tunnel 444 to 422 12bit*/
+		vdin_descramble_setting_t3x(devp, true);
+		/*vdin de tunnel and tunnel for vdin scaling*/
+		vdin_scramble_setting_t3x(devp, true);
+	} else {
+		vdin_descramble_setting_t3x(devp, false);
+		vdin_scramble_setting_t3x(devp, false);
+	}
 }
 
 /*@20170905new add for support dynamic adj dest_format yuv422/yuv444,

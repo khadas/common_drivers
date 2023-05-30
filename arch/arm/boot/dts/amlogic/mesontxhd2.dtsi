@@ -780,6 +780,17 @@
 					status = "okay";
 				};
 			};
+
+			ir: ir@8000 {
+				compatible = "amlogic, meson-ir";
+				reg = <0x8040 0xA4>,
+					<0x8000 0x20>;
+				status = "disable";
+				protocol = <REMOTE_TYPE_NEC>;
+				interrupts = <GIC_SPI 196 IRQ_TYPE_EDGE_RISING>;
+				map = <&custom_maps>;
+				max_frame_time = <200>;
+			};
 		};/* end of aobus */
 
 		periphs: periphs@ff634000 {
@@ -997,6 +1008,16 @@
 		status = "okay";
 		interrupts = <GIC_SPI 3 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "vsync";
+	};
+};
+
+&pinctrl_aobus {
+	remote_pins: remote_pin {
+		mux {
+			groups = "remote_input_ao6";
+			function = "remote";
+			bias-disable;
+		};
 	};
 };
 

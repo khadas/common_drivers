@@ -232,6 +232,11 @@ static inline bool is_meson_tm2_cpu(void)
 	return get_cpu_type() == MESON_CPU_MAJOR_ID_TM2;
 }
 
+static inline bool is_meson_c1_cpu(void)
+{
+	return get_cpu_type() == MESON_CPU_MAJOR_ID_C1;
+}
+
 static inline bool is_meson_sc2_cpu(void)
 {
 	return get_cpu_type() == MESON_CPU_MAJOR_ID_SC2;

@@ -1185,10 +1185,10 @@
 		status = "okay";
 		interrupts = <GIC_SPI 70 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "ge2d";
-		//clocks = <&clkc CLKID_GE2D_GATE>;
+		clocks = <&clkc CLKID_GE2D>;
 		clock-names = "clk_ge2d_gate";
 		reg = <0x0 0xFE008C00 0x0 0x100>;
-		//power-domains = <&pwrdm PDID_GE2D>;
+		power-domains = <&pwrdm PDID_CX_GE2D>;
 	};
 
 	/* Audio Related start */
@@ -1286,6 +1286,13 @@
 			     <MAILBOX_DSP>;
 	};
 
+	canvas: canvas {
+		compatible = "amlogic, meson, canvas";
+		dev_name = "amlogic-canvas";
+		status = "okay";
+		reg = <0x0 0xfe036048 0x0 0x2000>;
+	};
+
 	ion_dev {
 		compatible = "amlogic, ion_dev";
 		memory-region = <&ion_cma_reserved>;
@@ -1301,11 +1308,11 @@
 			0 0xFE00789c 0 0x0000004>;
 		interrupts = <GIC_SPI 71 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "GDC";
-		//clocks = <&clkc CLKID_GDC_CORE_GATE
-		//	&clkc CLKID_GDC_AXI_GATE>;
+		clocks = <&clkc CLKID_GDC_CORE
+			&clkc CLKID_GDC_AXI>;
 		clock-names = "core","axi";
 		clk-rate = <666666666>;
-		//power-domains = <&pwrdm PDID_GDC>;
+		power-domains = <&pwrdm PDID_CX_GDC>;
 	};
 
 	freertos: freertos {
@@ -1401,12 +1408,22 @@
 		#address-cells=<2>;
 		#size-cells=<2>;
 		ranges;
-		io_cbus_base{
-			reg = <0x0 0x0 0x0 0x0>;
-		};
-		io_dos_base{
-			reg = <0x0 0xfe060000 0x0 0x10000>;
-		};
+		reg =   <0x0 0x0 0x0 0x0>,
+			<0x0 0xfe060000 0x0 0x10000>,
+			<0x0 0x0 0x0 0x0>,
+			<0x0 0x0 0x0 0x0>,
+			<0x0 0x0 0x0 0x0>,
+			<0x0 0x0 0x0 0x0>,
+			<0x0 0x0 0x0 0x0>,
+			<0x0 0x0 0x0 0x0>;
+		reg-names = "cbus",
+				"dosbus",
+				"hiubus",
+				"aobus",
+				"vcbus",
+				"dmcbus",
+				"efusebus",
+				"nocbus";
 	};
 
 	hifi4dsp: hifi4dsp {

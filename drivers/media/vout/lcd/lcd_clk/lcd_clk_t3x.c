@@ -958,9 +958,9 @@ static struct lcd_clk_data_s lcd_clk_data_t3x = {
 	.xd_out_fmax = ENCL_CLK_IN_MAX_TL1,
 
 	.vclk_sel = 0,
-	.enc_clk_msr_id = 222,
+	.enc_clk_msr_id = 62,
 	.fifo_clk_msr_id = LCD_CLK_MSR_INVALID,
-	.tcon_clk_msr_id = 119,
+	.tcon_clk_msr_id = LCD_CLK_MSR_INVALID,
 	.pll_ctrl_table = pll_ctrl_table_t3x,
 
 	.ss_support = 2,

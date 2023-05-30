@@ -1003,6 +1003,12 @@
 		status = "okay";
 	};
 
+	video_composer {
+		compatible = "amlogic, video_composer";
+		dev_name = "video_composer";
+		status = "okay";
+	};
+
 	vout: vout {
 		compatible = "amlogic, vout";
 		status = "okay";

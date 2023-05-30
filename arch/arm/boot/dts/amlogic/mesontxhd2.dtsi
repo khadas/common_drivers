@@ -900,12 +900,13 @@
 					<&clkc CLKID_FCLK_DIV2>;
 			clock-names = "core", "mux0", "mux1",
 					"clkin0", "clkin1", "clkin2";
+			no-sd;
 			no-sdio;
 			card_type = <1>;
 			ignore_desc_busy;
 			mmc_debug_flag;
 		//	tx_delay = <10>;
-		//	src_clk_rate = <1179648000>;
+		//	src_clk_rate = <1152000000>;
 		//  resets = <&reset RESET_SD_EMMC_C>;
 		};
 

@@ -258,11 +258,11 @@
 	pinctrl-1 = <&emmc_clk_gate_pins>;
 	pinctrl-names = "default", "clk-gate";
 
-	bus-width = <4>;
+	bus-width = <8>;
 	cap-sd-highspeed;
 	cap-mmc-highspeed;
-//  mmc-ddr-1_8v;
-//  mmc-hs200-1_8v;
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
 //  mmc-hs400-1_8v;
 	max-frequency = <200000000>;
 	non-removable;

@@ -986,7 +986,7 @@ int uvm_put_hook_mod(struct dma_buf *dmabuf, int type)
 	struct uvm_hook_mod *uhmod = NULL;
 	int ret = 0;
 
-	UVM_PRINTK(UVM_DBG, "%s, mod_type%d %s called.\n", __func__, type, current->comm);
+	UVM_PRINTK(MUA_INFO, "%s, mod_type%d %s called.\n", __func__, type, current->comm);
 
 	if (IS_ERR_OR_NULL(dmabuf) || !dmabuf_is_uvm(dmabuf)) {
 		UVM_PRINTK(UVM_ERROR, "dmabuf is not uvm. %s %d\n", __func__, __LINE__);
@@ -996,16 +996,21 @@ int uvm_put_hook_mod(struct dma_buf *dmabuf, int type)
 	handle = dmabuf->priv;
 
 	mutex_lock(&handle->lock);
+	UVM_PRINTK(MUA_INFO, "%s, handle->flags:%lu\n", __func__, handle->flags);
+	if (!(type & BIT(PROCESS_HWC)) ||
+		((type & BIT(PROCESS_HWC)) && (handle->flags & MUA_DETACH))) {
+		uhmod = uvm_find_hook_mod(handle, type);
 
-	uhmod = uvm_find_hook_mod(handle, type);
-
-	if (uhmod) {
-		UVM_PRINTK(UVM_DBG, "%s before kref_put uhmod:%p, dmabuf:%p ref:%u\n",
-			__func__, uhmod, dmabuf, kref_read(&uhmod->ref));
-		ret = kref_put(&uhmod->ref, uvm_hook_mod_release);
-	} else {
-		UVM_PRINTK(UVM_DBG, "%s, uhmod is NULL! can not find the match uhmod\n", __func__);
-		ret = -EINVAL;
+		if (uhmod) {
+			UVM_PRINTK(UVM_DBG, "%s before kref_put uhmod:%p, dmabuf:%p ref:%u\n",
+				__func__, uhmod, dmabuf, kref_read(&uhmod->ref));
+			ret = kref_put(&uhmod->ref, uvm_hook_mod_release);
+			handle->flags &= ~BIT(UVM_DETACH_FLAG);
+		} else {
+			UVM_PRINTK(UVM_DBG, "%s, uhmod is NULL! can not find the match uhmod\n",
+				__func__);
+			ret = -EINVAL;
+		}
 	}
 
 	mutex_unlock(&handle->lock);

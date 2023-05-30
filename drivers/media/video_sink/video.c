@@ -782,6 +782,16 @@ int get_video_debug_flags(void)
 	return debug_flag;
 }
 
+bool vf_source_from_vdin(struct vframe_s *vf)
+{
+	if (vf->source_type == VFRAME_SOURCE_TYPE_HDMI ||
+		vf->source_type == VFRAME_SOURCE_TYPE_CVBS ||
+		vf->source_type == VFRAME_SOURCE_TYPE_TUNER)
+		return true;
+	else
+		return false;
+}
+
 /* amvideo vf related api */
 void pre_process_for_3d(struct vframe_s *vf)
 {
@@ -3712,11 +3722,14 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 		vf = amvideo_vf_peek();
 		if (vf) {
 			if (hdmi_in_onvideo == 0) {
-				if (!nopostvideostart)
+				if (!nopostvideostart) {
+					if (vf_source_from_vdin(vf))
+						tsync_set_enable(0);
 					tsync_avevent_locked
 						(VIDEO_START,
 						(vf->pts) ? vf->pts :
 						timestamp_vpts_get());
+				}
 				video_start_post = true;
 			}
 

@@ -899,7 +899,7 @@
 		tuner0_i2c_addr = <0xF6>; // 8 bits
 		tuner0_xtal = <1>;       // 0: 16MHz, 1: 24MHz
 		tuner0_xtal_mode = <0>;  // NO_SHARE_XTAL(0), SLAVE_XTAL_SHARE(3)
-		tuner0_xtal_cap = <38>;
+		tuner0_xtal_cap = <20>;
 
 		tuner1_name = "rt710_tuner";
 		tuner1_i2c_adap = <&i2c0>;

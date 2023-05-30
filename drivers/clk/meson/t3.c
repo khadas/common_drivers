@@ -1006,7 +1006,7 @@ static const struct pll_mult_range t3_hifi_pll_m = {
  * Internal hifi pll emulation configuration parameters
  */
 static const struct reg_sequence t3_hifi_init_regs[] = {
-	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x00010e56 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x00014820 },
 	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00000000 },
 	{ .reg = ANACTRL_HIFIPLL_CTRL3,	.def = 0x6a285c00 },
 	{ .reg = ANACTRL_HIFIPLL_CTRL4,	.def = 0x65771290 },

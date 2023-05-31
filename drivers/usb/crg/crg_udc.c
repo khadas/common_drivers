@@ -4511,6 +4511,7 @@ static int crg_udc_probe(struct platform_device *pdev)
 	const void *prop;
 	int retval = 0;
 	u32 phy_id = 1;
+	u32 version = 0;
 	unsigned long flags = 0;
 	struct device		*sysdev;
 
@@ -4572,6 +4573,12 @@ static int crg_udc_probe(struct platform_device *pdev)
 			else
 				phy_id = 1;
 			crg_udc->phy_id = phy_id;
+
+			prop = of_get_property(of_node, "version", NULL);
+			if (prop)
+				version = of_read_ulong(prop, 1);
+			else
+				version = 0;
 		}
 	}
 
@@ -4613,6 +4620,12 @@ static int crg_udc_probe(struct platform_device *pdev)
 	/* set controller device role*/
 	reg_write(crg_udc->mmio_virt_base + 0x20FC,
 		(reg_read(crg_udc->mmio_virt_base + 0x20FC) | 0x1));
+
+	if (version == 1) {
+		dev_err(&pdev->dev, "disable vbus detect.\n");
+		reg_write(crg_udc->mmio_virt_base + 0x2110,
+			(reg_read(crg_udc->mmio_virt_base + 0x2110) & (~0x1f)));
+	}
 
 	for (i = 0; i < CRG_RING_NUM; i++) {
 		crg_udc->uicr[i] = crg_udc->mmio_virt_base +

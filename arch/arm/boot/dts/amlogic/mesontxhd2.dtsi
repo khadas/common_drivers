@@ -917,11 +917,11 @@
 			pll-setting-8 = <0xe000c>;
 			dis-thred-enhance = <0x2>;/**t7-0x38:bit[26-27]**/
 			analog_process_nm = <22>;
-			version = <3>;//?
+			version = <3>;
 			phy0-reset-level-bit = <16>;
 			usb-reset-bit = <2>;
-			reset-level = <0x44>;
-			pwr-ctl = <0>;//?
+			reset-level = <0x84>;
+			pwr-ctl = <0>;
 			clocks = <&clkc CLKID_CLK81_USB_GENERAL>;
 			clock-names = "crg_general";
 			phy-id = <0>;
@@ -937,7 +937,7 @@
 			phy1-reg-size = <0x2000>;
 			reset-reg = <0xFFD01008>;
 			reset-reg-size = <0x100>;
-			reset-level = <0x44>;
+			reset-level = <0x84>;
 			phy-id = <0>;
 		};
 
@@ -959,7 +959,6 @@
 			usb-phy = <&crg_phy_20>, <&crg3_phy_20>;
 			cpu-type = "gxl";
 			clock-src = "usb3.0";
-
 			clocks = <&clkc CLKID_CLK81_USB_GENERAL>;
 			clock-names = "crg_general";
 		};
@@ -986,8 +985,8 @@
 			#phy-cells = <0>;
 			reg = <0xFFE09020 0x40
 					0xFFD01008 0x100
-					 0xFF63A000 0x2000
-				   0xFF658000 0x2000>;
+					0xFF63A000 0x2000
+					0xFF658000 0x2000>;
 			pll-setting-1 = <0x040a06f4>;
 			pll-setting-2 = <0x00000022>;
 			pll-setting-3 = <0xac5f69e5>;
@@ -998,15 +997,15 @@
 			pll-setting-8 = <0xe000c>;
 			dis-thred-enhance = <0x2>;/**t7-0x38:bit[26-27]**/
 			analog_process_nm = <22>;
-			version = <3>;//?
+			version = <3>;
 			phy0-reset-level-bit = <17>;
 			phy1-reset-level-bit = <18>;
 			usb-reset-bit = <2>;
-			reset-level = <0x44>;
-			pwr-ctl = <0>;//?
+			reset-level = <0x84>;
+			pwr-ctl = <0>;
 			clocks = <&clkc CLKID_CLK81_USB_GENERAL>;
 			clock-names = "crg_general";
-			phy-id = <0>;
+			phy-id = <1>;
 			usb-phy-trim-reg = <0xFF800270>;
 		};
 
@@ -1019,7 +1018,7 @@
 			phy1-reg-size = <0x20>;
 			reset-reg = <0xFFD01008>;
 			reset-reg-size = <0x100>;
-			reset-level = <0x44>;
+			reset-level = <0x84>;
 			phy-id = <1>;
 		};
 
@@ -1030,7 +1029,6 @@
 			usb-phy = <&crg_phy_21>, <&crg3_phy_21>;
 			cpu-type = "gxl";
 			clock-src = "usb3.0";
-
 			clocks = <&clkc CLKID_CLK81_USB_GENERAL>;
 			clock-names = "crg_general";
 		};

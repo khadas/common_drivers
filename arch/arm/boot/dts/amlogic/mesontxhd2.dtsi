@@ -372,6 +372,20 @@
 		nn_power_version = <5>;
 	};
 
+	aml_bt: aml_bt {
+		compatible = "amlogic, aml-bt";
+		status = "okay";
+		reset-gpios = <&gpio_ao    GPIOAO_3 GPIO_ACTIVE_HIGH>;
+	};
+
+	aml_wifi: aml_wifi {
+		compatible = "amlogic, aml-wifi";
+		status = "okay";
+		interrupt-gpios = <&gpio_ao  GPIOAO_4  GPIO_ACTIVE_HIGH>;
+		power_on-gpios = <&gpio_ao   GPIOAO_5  GPIO_ACTIVE_HIGH>;
+		irq_trigger_type = "IRQF_TRIGGER_LOW";
+	};
+
 	vrtc: rtc@0xff8000a8 {
 		compatible = "amlogic,meson-vrtc";
 		reg = <0xff8000a8 0x4>;

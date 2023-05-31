@@ -189,10 +189,8 @@ static DEFINE_SPINLOCK(hdmi_avsync_lock);
 
 static unsigned long hist_buffer_addr;
 static u32 hist_print_count;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static u8 probe_id;
 static u32 probe_output;
-#endif
 static int receive_frame_count;
 static int tvin_delay_mode;
 static int debugflags;
@@ -4632,7 +4630,6 @@ static int dump_reg_show(struct seq_file *s, void *what)
 	u32 reg_addr, reg_val = 0;
 	struct sr_info_s *sr;
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cur_dev->display_module == C3_DISPLAY_MODULE) {
 		/* vd1 mif */
 		seq_puts(s, "\nvd1 mif registers:\n");
@@ -4678,9 +4675,7 @@ static int dump_reg_show(struct seq_file *s, void *what)
 				   reg_addr, reg_val);
 			reg_addr += 1;
 		}
-	} else
-#endif
-	{
+	} else {
 		/* viu top regs */
 		seq_puts(s, "\nviu top registers:\n");
 		reg_addr = 0x1a04;
@@ -5255,7 +5250,6 @@ static int printk_frame_done;
 MODULE_PARM_DESC(printk_frame_done, "\n printk_frame_done\n");
 module_param(printk_frame_done, int, 0664);
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static irqreturn_t mosaic_frame_done_isr(int irq, void *dev_id)
 {
 
@@ -5272,7 +5266,6 @@ static irqreturn_t mosaic_frame_done_isr(int irq, void *dev_id)
 	}
 	return IRQ_HANDLED;
 }
-#endif
 
 /*********************************************************
  * FIQ Routines
@@ -5286,11 +5279,9 @@ static void vsync_fiq_up(void)
 
 	r = request_irq(video_vsync, &vsync_isr,
 		IRQF_SHARED, "vsync", (void *)video_dev_id);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_S5_)
 		r = request_irq(mosaic_frame_done, &mosaic_frame_done_isr,
 			IRQF_SHARED, "frame_done", (void *)video_dev_id);
-#endif
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_SC2_ ||
 	    amvideo_meson_dev.has_vpp1)
 		r = request_irq(video_vsync_viu2, &vsync_isr_viu2,
@@ -5320,10 +5311,8 @@ static void vsync_fiq_down(void)
 	free_fiq(INT_VIU_VSYNC, &vsync_fisr);
 #else
 	free_irq(video_vsync, (void *)video_dev_id);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_S5_)
 		free_irq(mosaic_frame_done, (void *)video_dev_id);
-#endif
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_SC2_ ||
 	   amvideo_meson_dev.has_vpp1)
 		free_irq(video_vsync_viu2, (void *)video_dev_id);
@@ -7621,7 +7610,6 @@ static u32 eight2ten(u32 yuv)
 	int y = (yuv >> 16) & 0xff;
 	int cb = (yuv >> 8) & 0xff;
 	int cr = yuv & 0xff;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	u32 data32;
 
 	/* txlx need check vd1 path bit width by s2u registers */
@@ -7633,9 +7621,7 @@ static u32 eight2ten(u32 yuv)
 			((cb << 10) << 2) | (cr << 2);
 		else
 			return  (y << 20) | (cb << 10) | cr;
-	} else
-#endif
-	{
+	} else {
 		return  (y << 20) | (cb << 10) | cr;
 	}
 }
@@ -10304,14 +10290,12 @@ static ssize_t videopip2_state_show(struct class *cla,
 	return vdx_state_show(VD3_PATH, buf);
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static ssize_t video_vd_proc_state_show(struct class *cla,
 				struct class_attribute *attr,
 				char *buf)
 {
 	return video_vd_proc_state_dump(buf);
 }
-#endif
 
 static ssize_t path_select_show(struct class *cla,
 				struct class_attribute *attr,
@@ -11830,7 +11814,6 @@ static ssize_t frc_delay_show(struct class *class,
 static ssize_t vpu_module_urgent_show(struct class *cla,
 			     struct class_attribute *attr, char *buf)
 {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (video_is_meson_t3_cpu()) {
 		get_vpu_urgent_info_t3();
 	} else if (video_is_meson_t7_cpu()) {
@@ -11850,7 +11833,6 @@ static ssize_t vpu_module_urgent_show(struct class *cla,
 		pr_info("vpp_arb0: vd1, vd2, dolby0\n");
 		pr_info("vpp_arb1: osd1, osd2, osd3, mali-afbc\n");
 	}
-#endif
 	return 0;
 }
 
@@ -11901,7 +11883,6 @@ static ssize_t vpu_module_urgent_set(struct class *class,
 			struct class_attribute *attr,
 			const char *buf, size_t count)
 {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int parsed[3];
 	int ret = -1;
 
@@ -11928,7 +11909,6 @@ static ssize_t vpu_module_urgent_set(struct class *class,
 		else if (video_is_meson_t5m_cpu())
 			pr_info("%s", vpu_module_urgent_help_t5m);
 	}
-#endif
 	return count;
 }
 
@@ -12055,7 +12035,6 @@ static ssize_t tvin_source_type_store(struct class *cla,
 	return count;
 }
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static ssize_t bypass_module_s5_show(struct class *cla,
 			     struct class_attribute *attr, char *buf)
 {
@@ -12258,7 +12237,6 @@ static ssize_t mosaic_axis_pic_store(struct class *cla,
 	}
 	return strnlen(buf, count);
 }
-#endif
 
 static ssize_t aisr_info_show(struct class *cla,
 		struct class_attribute *attr, char *buf)
@@ -12698,12 +12676,10 @@ static struct class_attribute amvideo_class_attrs[] = {
 	       0664,
 	       NULL,
 	       load_pps_coefs_store),
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	__ATTR(reg_dump,
 	       0220,
 	       NULL,
 	       reg_dump_store),
-#endif
 	__ATTR(vd_attch_vpp,
 	       0664,
 	       vd_attach_vpp_show,
@@ -12834,7 +12810,6 @@ static struct class_attribute amvideo_class_attrs[] = {
 		0664,
 		tvin_source_type_show,
 		tvin_source_type_store),
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	__ATTR_RO(video_vd_proc_state),
 	__ATTR(bypass_module,
 		0664,
@@ -12855,7 +12830,6 @@ static struct class_attribute amvideo_class_attrs[] = {
 	__ATTR(mosaic_axis_pic, 0644,
 		mosaic_axis_pic_show,
 		mosaic_axis_pic_store),
-#endif
 	__ATTR_RO(cur_ai_face),
 	__ATTR(vsync_2to1_enable, 0664,
 		vsync_2to1_enable_show,
@@ -13247,7 +13221,6 @@ static struct early_suspend video_early_suspend_handler = {
 };
 #endif
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct amvideo_device_data_s amvideo = {
 	.cpu_type = MESON_CPU_MAJOR_ID_COMPATIBLE,
 	.sr_reg_offt = 0xff,
@@ -13556,7 +13529,7 @@ static struct amvideo_device_data_s amvideo_t7 = {
 	.has_vpp2 = 1,
 	.is_tv_panel = 1,
 };
-#endif
+
 static struct amvideo_device_data_s amvideo_s4 = {
 	.cpu_type = MESON_CPU_MAJOR_ID_S4_,
 	.sr_reg_offt = 0x1e00,
@@ -13608,7 +13581,6 @@ static struct amvideo_device_data_s amvideo_s4 = {
 	.is_tv_panel = 0,
 };
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct amvideo_device_data_s amvideo_t5d_revb = {
 	.cpu_type = MESON_CPU_MAJOR_ID_T5D_REVB_,
 	.sr_reg_offt = 0x1e00,
@@ -13975,7 +13947,6 @@ static struct amvideo_device_data_s amvideo_t3x = {
 	.has_vpp2 = 0,
 	.is_tv_panel = 1,
 };
-#endif
 
 static struct video_device_hw_s legcy_dev_property = {
 	.vd2_independ_blend_ctrl = 0,
@@ -13985,7 +13956,6 @@ static struct video_device_hw_s legcy_dev_property = {
 	.sr01_num = 1,
 };
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct video_device_hw_s t3_dev_property = {
 	.vd2_independ_blend_ctrl = 1,
 	.aisr_support = 1,
@@ -14047,10 +14017,8 @@ static struct video_device_hw_s t3x_dev_property = {
 	.cr_loss = 1,
 	.amdv_tvcore = 1,
 };
-#endif
 
 static const struct of_device_id amlogic_amvideom_dt_match[] = {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, amvideom",
 		.data = &amvideo,
@@ -14075,12 +14043,10 @@ static const struct of_device_id amlogic_amvideom_dt_match[] = {
 		.compatible = "amlogic, amvideom-t7",
 		.data = &amvideo_t7,
 	},
-#endif
 	{
 		.compatible = "amlogic, amvideom-s4",
 		.data = &amvideo_s4,
 	},
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, amvideom-t5d-revb",
 		.data = &amvideo_t5d_revb,
@@ -14109,7 +14075,6 @@ static const struct of_device_id amlogic_amvideom_dt_match[] = {
 		.compatible = "amlogic, amvideom-t3x",
 		.data = &amvideo_t3x,
 	},
-#endif
 	{}
 };
 
@@ -14284,7 +14249,6 @@ static void video_cap_set(struct amvideo_device_data_s *p_amvideo)
 				LAYER0_AFBC |
 				LAYER0_SCALER |
 				LAYER0_AVAIL;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		} else if (is_meson_tl1_cpu()) {
 			layer_cap =
 				LAYER1_AVAIL |
@@ -14298,7 +14262,6 @@ static void video_cap_set(struct amvideo_device_data_s *p_amvideo)
 				LAYER0_AFBC |
 				LAYER0_SCALER |
 				LAYER0_AVAIL;
-#endif
 		} else {
 			/* g12a, g12b, sm1 */
 			layer_cap =
@@ -14407,7 +14370,6 @@ static int amvideom_probe(struct platform_device *pdev)
 			return -ENODEV;
 		}
 	}
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_T3_) {
 		memcpy(&amvideo_meson_dev.dev_property, &t3_dev_property,
 		       sizeof(struct video_device_hw_s));
@@ -14444,9 +14406,7 @@ static int amvideom_probe(struct platform_device *pdev)
 		       sizeof(struct video_device_hw_s));
 		aisr_en = 1;
 		cur_dev->power_ctrl = true;
-	} else
-#endif
-	{
+	} else {
 		memcpy(&amvideo_meson_dev.dev_property, &legcy_dev_property,
 		       sizeof(struct video_device_hw_s));
 	}
@@ -14458,13 +14418,10 @@ static int amvideom_probe(struct platform_device *pdev)
 	if (vdtemp < 0)
 		vd1_vd2_mux_dts = 1;
 	set_rdma_func_handler();
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (amvideo_meson_dev.display_module == S5_DISPLAY_MODULE) {
 		video_early_init_s5(&amvideo_meson_dev);
 		video_hw_init_s5();
-	} else
-#endif
-	{
+	} else {
 		video_early_init(&amvideo_meson_dev);
 		video_hw_init();
 	}
@@ -14525,7 +14482,6 @@ static int amvideom_probe(struct platform_device *pdev)
 	}
 
 	pr_info("amvideom vsync irq: %d\n", video_vsync);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_S5_) {
 		mosaic_frame_done = platform_get_irq_byname(pdev, "frame_done");
 		if (mosaic_frame_done  == -ENXIO) {
@@ -14534,7 +14490,6 @@ static int amvideom_probe(struct platform_device *pdev)
 		}
 		pr_info("amvideom frame_done irq: %d\n", mosaic_frame_done);
 	}
-#endif
 	if (amvideo_meson_dev.cpu_type == MESON_CPU_MAJOR_ID_SC2_ ||
 	    amvideo_meson_dev.has_vpp1) {
 		/* get interrupt resource */

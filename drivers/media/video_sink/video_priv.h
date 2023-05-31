@@ -717,6 +717,7 @@ extern int vpp_in_size_threshold_8k;
 extern int vdec_out_size_threshold_4k;
 extern int vpp_in_size_threshold_4k;
 extern u64 vsync_cnt[VPP_MAX];
+extern struct vpu_venc_regs_s venc_regs[VPP_NUM];
 
 bool is_amdv_enable(void);
 bool is_amdv_on(void);

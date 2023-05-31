@@ -977,4 +977,3 @@ struct hw_aisr_reshape_reg_s aisr_reshape_reg = {
 	AISR_POST_SIZE,
 	SRSHARP1_NN_POST_TOP,
 };
-

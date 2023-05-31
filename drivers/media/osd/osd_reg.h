@@ -2240,6 +2240,9 @@
 #define S5_VPP_OFIFO_SIZE                   0x2504
 #define S5_VPP_OUT_H_V_SIZE                 0x2503
 
+/* for t3x */
+#define ENCL_VIDEO_VAVON_LN_RNG             0x14ca
+
 #define OSD_REG_UNSUPPORT                   0xffff
 
 #endif

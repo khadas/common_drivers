@@ -1497,6 +1497,61 @@ static struct viu2_osd_reg_item viu2_osd_reg_table[VIU2_OSD_REG_NUM] = {
 		{VIU2_OSD1_DIMM_CTRL, 0x0, 0x7fffffff},
 };
 
+static struct vpu_venc_regs venc_regs[3];
+static struct vpu_venc_regs venc_regs_t7[3] = {
+	{
+		VPU_VENCI_STAT,
+		VPU_VENCP_STAT,
+		VPU_VENCL_STAT,
+		ENCI_VFIFO2VD_LINE_TOP_START,
+		ENCP_VIDEO_VAVON_BLINE,
+		ENCL_VIDEO_VAVON_BLINE,
+	},
+	{
+		VPU_VENCI_STAT + 0x600,
+		VPU_VENCP_STAT + 0x600,
+		VPU_VENCL_STAT + 0x600,
+		ENCI_VFIFO2VD_LINE_TOP_START + 0x600,
+		ENCP_VIDEO_VAVON_BLINE + 0x600,
+		ENCL_VIDEO_VAVON_BLINE + 0x600,
+	},
+	{
+		VPU_VENCI_STAT + 0x800,
+		VPU_VENCP_STAT + 0x800,
+		VPU_VENCL_STAT + 0x800,
+		ENCI_VFIFO2VD_LINE_TOP_START + 0x800,
+		ENCP_VIDEO_VAVON_BLINE + 0x800,
+		ENCL_VIDEO_VAVON_BLINE + 0x800,
+	}
+};
+
+static struct vpu_venc_regs venc_regs_t3x[3] = {
+	{
+		VPU_VENCI_STAT,
+		VPU_VENCP_STAT,
+		VPU_VENCL_STAT,
+		ENCL_VIDEO_VAVON_LN_RNG,
+		ENCL_VIDEO_VAVON_LN_RNG,
+		ENCL_VIDEO_VAVON_LN_RNG,
+	},
+	{
+		VPU_VENCI_STAT + 0x100,
+		VPU_VENCP_STAT + 0x100,
+		VPU_VENCL_STAT + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+	},
+	{
+		VPU_VENCI_STAT + 0x100,
+		VPU_VENCP_STAT + 0x100,
+		VPU_VENCL_STAT + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+	}
+};
+
 struct affinity_info_s {
 	struct completion affinity_task_com;
 	struct cpumask cpu_mask;
@@ -2022,6 +2077,7 @@ static void f2v_get_vertical_phase(u32 zoom_ratio,
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
 static bool osd_hdr_on;
 #endif
+
 static bool is_encp(u32 viu_type)
 {
 	u32 viu = VIU1;
@@ -2078,7 +2134,6 @@ static int get_venc_type(u32 viu_type)
 static int get_active_begin_line(u32 viu_type)
 {
 	int active_line_begin = 0;
-	u32 offset = 0;
 	u32 reg = ENCL_VIDEO_VAVON_BLINE;
 
 	if (osd_dev_hw.display_type == T7_DISPLAY ||
@@ -2089,29 +2144,20 @@ static int get_active_begin_line(u32 viu_type)
 		venc_mux >>= (viu_type * 2);
 		venc_mux &= 0x3;
 
-		switch (venc_mux) {
-		case 0:
-			offset = 0;
-			break;
-		case 1:
-			offset = 0x600;
-			break;
-		case 2:
-			offset = 0x800;
-			break;
-		}
+		if (venc_mux >= 3)
+			return 0;
+
 		switch (get_venc_type(viu_type)) {
 		case 0:
-			reg = ENCI_VFIFO2VD_LINE_TOP_START;
+			reg = venc_regs[venc_mux].enci_vavon_bline;
 			break;
 		case 1:
-			reg = ENCP_VIDEO_VAVON_BLINE;
+			reg = venc_regs[venc_mux].encp_vavon_bline;
 			break;
 		case 2:
-			reg = ENCL_VIDEO_VAVON_BLINE;
+			reg = venc_regs[venc_mux].encl_vavon_bline;
 			break;
 		}
-
 	} else {
 		switch (get_venc_type(viu_type)) {
 		case 0:
@@ -2129,8 +2175,9 @@ static int get_active_begin_line(u32 viu_type)
 		}
 	}
 
-	active_line_begin = osd_reg_read(reg + offset);
-
+	active_line_begin = osd_reg_read(reg);
+	if (is_meson_t3x_cpu())
+		active_line_begin = (active_line_begin >> 16) & 0xfff;
 	return active_line_begin;
 }
 
@@ -2139,7 +2186,6 @@ int get_encp_line(u32 viu_type)
 	int enc_line = 0;
 	unsigned int reg = VPU_VENCI_STAT;
 	unsigned int reg_val = 0;
-	u32 offset = 0;
 	u32 venc_type = get_venc_type(viu_type);
 
 	if (osd_dev_hw.display_type == T7_DISPLAY ||
@@ -2149,26 +2195,19 @@ int get_encp_line(u32 viu_type)
 		venc_mux = osd_reg_read(VPU_VIU_VENC_MUX_CTRL) & 0x3f;
 		venc_mux >>= (viu_type * 2);
 		venc_mux &= 0x3;
-		switch (venc_mux) {
-		case 0:
-			offset = 0;
-			break;
-		case 1:
-			offset = 0x600;
-			break;
-		case 2:
-			offset = 0x800;
-			break;
-		}
+
+		if (venc_mux >= 3)
+			return 0;
+
 		switch (venc_type) {
 		case 0:
-			reg = VPU_VENCI_STAT;
+			reg = venc_regs[venc_mux].vpu_enci_stat;
 			break;
 		case 1:
-			reg = VPU_VENCP_STAT;
+			reg = venc_regs[venc_mux].vpu_encp_stat;
 			break;
 		case 2:
-			reg = VPU_VENCL_STAT;
+			reg = venc_regs[venc_mux].vpu_encl_stat;
 			break;
 		}
 	} else {
@@ -2188,7 +2227,7 @@ int get_encp_line(u32 viu_type)
 		}
 	}
 
-	reg_val = osd_reg_read(reg + offset);
+	reg_val = osd_reg_read(reg);
 
 	enc_line = (reg_val >> 16) & 0x1fff;
 
@@ -14472,6 +14511,16 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		memcpy(&hw_osd_reg_array[0], &hw_osd_reg_array_g12a[0],
 		       sizeof(struct hw_osd_reg_s) *
 		       osd_hw.osd_meson_dev.osd_count);
+	}
+	if (osd_dev_hw.display_type == T7_DISPLAY ||
+		osd_dev_hw.s5_display) {
+		if (osd_meson->cpu_id >= __MESON_CPU_MAJOR_ID_T3X) {
+			memcpy(&venc_regs[0], &venc_regs_t3x[0],
+				sizeof(struct vpu_venc_regs) * 3);
+		} else {
+			memcpy(&venc_regs[0], &venc_regs_t7[0],
+				sizeof(struct vpu_venc_regs) * 3);
+		}
 	}
 	if (osd_meson->cpu_id == __MESON_CPU_MAJOR_ID_GXTVBB) {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD

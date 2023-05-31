@@ -1070,4 +1070,13 @@ struct hw_para_s {
 	u32 pi_enable;
 	u32 slice2ppc_enable;
 };
+
+struct vpu_venc_regs {
+	u32 vpu_enci_stat;
+	u32 vpu_encp_stat;
+	u32 vpu_encl_stat;
+	u32 enci_vavon_bline;
+	u32 encp_vavon_bline;
+	u32 encl_vavon_bline;
+};
 #endif /* _OSD_H_ */

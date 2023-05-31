@@ -20,6 +20,7 @@
 #define VIDEO_REG_S5_HH
 #include <linux/string.h>
 #include <linux/ctype.h>
+#include "video_reg_common.h"
 
 #define SLICE_NUM 4
 #define MAX_VD_LAYER_S5 5
@@ -345,4 +346,7 @@ extern struct vd_mif_linear_reg_s vd_mif_linear_reg_s5_array[MAX_VD_LAYER_S5];
 extern struct vd_afbc_reg_s vd_afbc_reg_s5_array[MAX_VD_LAYER_S5];
 extern struct vd_pip_alpha_reg_s vd_pip_alpha_reg_s5[MAX_VD_CHAN_S5];
 extern struct vd_pip_alpha_reg_s vd_pip_alpha_reg_t3x[MAX_VD_CHAN_S5];
+
+extern struct vpu_venc_regs_s venc_regs_t7[3];
+extern struct vpu_venc_regs_s venc_regs_t3x[3];
 #endif

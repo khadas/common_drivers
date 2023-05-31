@@ -52,6 +52,7 @@
 #include "vpp_post_s5.h"
 #include "video_common.h"
 #include "video_hw.h"
+#include "video_reg_common.h"
 
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
 #include <linux/amlogic/media/amvecm/amvecm.h>
@@ -11786,7 +11787,6 @@ u32 get_cur_enc_line_s5(void)
 	int enc_line = 0;
 	unsigned int reg = VPU_VENCI_STAT;
 	unsigned int reg_val = 0;
-	u32 offset = 0;
 	u32 venc_type = get_venc_type_s5();
 
 	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
@@ -11794,30 +11794,23 @@ u32 get_cur_enc_line_s5(void)
 
 		venc_mux = READ_VCBUS_REG(S5_VPU_VIU_VENC_MUX_CTRL) & 0x3f;
 		venc_mux &= 0x3;
-		switch (venc_mux) {
-		case 0:
-			offset = 0;
-			break;
-		case 1:
-			offset = 0x600;
-			break;
-		case 2:
-			offset = 0x800;
-			break;
-		}
+		if (venc_mux >= VPP_NUM)
+			return 0;
+
 		switch (venc_type) {
 		case 0:
-			reg = S5_VPU_VENCI_STAT;
+			reg = venc_regs[venc_mux].vpu_enci_stat;
 			break;
 		case 1:
-			reg = S5_VPU_VENCP_STAT;
+			reg = venc_regs[venc_mux].vpu_encp_stat;
 			break;
 		case 2:
-			reg = S5_VPU_VENCL_STAT;
+			reg = venc_regs[venc_mux].vpu_encl_stat;
 			break;
 		}
 	}
-	reg_val = READ_VCBUS_REG(reg + offset);
+	reg_val = READ_VCBUS_REG(reg);
+
 	enc_line = (reg_val >> 16) & 0x1fff;
 	return enc_line;
 }
@@ -11827,7 +11820,6 @@ u32 get_cur_enc_num_s5(void)
 	u32 enc_num = 0;
 	unsigned int reg = S5_VPU_VENCI_STAT;
 	unsigned int reg_val = 0;
-	u32 offset = 0;
 	u32 venc_type = get_venc_type_s5();
 	u32 bit_offest = 0;
 
@@ -11837,30 +11829,21 @@ u32 get_cur_enc_num_s5(void)
 		bit_offest = 13;
 		venc_mux = READ_VCBUS_REG(S5_VPU_VIU_VENC_MUX_CTRL) & 0x3f;
 		venc_mux &= 0x3;
-		switch (venc_mux) {
-		case 0:
-			offset = 0;
-			break;
-		case 1:
-			offset = 0x600;
-			break;
-		case 2:
-			offset = 0x800;
-			break;
-		}
+		if (venc_mux >= 3)
+			return 0;
 		switch (venc_type) {
 		case 0:
-			reg = S5_VPU_VENCI_STAT;
+			reg = venc_regs[venc_mux].vpu_enci_stat;
 			break;
 		case 1:
-			reg = S5_VPU_VENCP_STAT;
+			reg = venc_regs[venc_mux].vpu_encp_stat;
 			break;
 		case 2:
-			reg = S5_VPU_VENCL_STAT;
+			reg = venc_regs[venc_mux].vpu_encl_stat;
 			break;
 		}
 	}
-	reg_val = READ_VCBUS_REG(reg + offset);
+	reg_val = READ_VCBUS_REG(reg);
 	enc_num = (reg_val >> bit_offest) & 0x7;
 	return enc_num;
 }
@@ -12424,6 +12407,14 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 		   &vpp1_post_blend_reg_t3x,
 		   sizeof(struct vpp1_post_blend_reg_s));
 	}
+	if (is_meson_s5_cpu()) {
+		memcpy(&venc_regs[0], &venc_regs_t7[0],
+			sizeof(struct vpu_venc_regs_s) * VPP_NUM);
+	} else {
+		memcpy(&venc_regs[0], &venc_regs_t3x[0],
+			sizeof(struct vpu_venc_regs_s) * VPP_NUM);
+	}
+
 	vd_layer[0].layer_alpha = 0x100;
 
 	/* g12a has no alpha overflow check in hardware */

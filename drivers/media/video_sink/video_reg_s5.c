@@ -19,6 +19,7 @@
 #include <linux/amlogic/media/registers/register.h>
 #include "vpp_regs_s5.h"
 #include "video_reg_s5.h"
+#include "video_reg_common.h"
 
 struct vd_mif_reg_s vd_mif_reg_s5_array[MAX_VD_LAYER_S5] = {
 	{
@@ -1099,4 +1100,58 @@ struct vd_aisr_reshape_reg_s aisr_reshape_reg_s5 = {
 	S5_AISR_POST_CTRL,
 	S5_AISR_POST_SIZE,
 	S5_SRSHARP1_NN_POST_TOP,
+};
+
+struct vpu_venc_regs_s venc_regs_t7[3] = {
+	{
+		VPU_VENCI_STAT,
+		VPU_VENCP_STAT,
+		VPU_VENCL_STAT,
+		ENCI_VFIFO2VD_LINE_TOP_START,
+		ENCP_VIDEO_VAVON_BLINE,
+		ENCL_VIDEO_VAVON_BLINE,
+	},
+	{
+		VPU_VENCI_STAT + 0x600,
+		VPU_VENCP_STAT + 0x600,
+		VPU_VENCL_STAT + 0x600,
+		ENCI_VFIFO2VD_LINE_TOP_START + 0x600,
+		ENCP_VIDEO_VAVON_BLINE + 0x600,
+		ENCL_VIDEO_VAVON_BLINE + 0x600,
+	},
+	{
+		VPU_VENCI_STAT + 0x800,
+		VPU_VENCP_STAT + 0x800,
+		VPU_VENCL_STAT + 0x800,
+		ENCI_VFIFO2VD_LINE_TOP_START + 0x800,
+		ENCP_VIDEO_VAVON_BLINE + 0x800,
+		ENCL_VIDEO_VAVON_BLINE + 0x800,
+	}
+};
+
+struct vpu_venc_regs_s venc_regs_t3x[3] = {
+	{
+		VPU_VENCI_STAT,
+		VPU_VENCP_STAT,
+		VPU_VENCL_STAT,
+		ENCL_VIDEO_VAVON_LN_RNG,
+		ENCL_VIDEO_VAVON_LN_RNG,
+		ENCL_VIDEO_VAVON_LN_RNG,
+	},
+	{
+		VPU_VENCI_STAT + 0x100,
+		VPU_VENCP_STAT + 0x100,
+		VPU_VENCL_STAT + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+	},
+	{
+		VPU_VENCI_STAT + 0x100,
+		VPU_VENCP_STAT + 0x100,
+		VPU_VENCL_STAT + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+		ENCL_VIDEO_VAVON_LN_RNG + 0x100,
+	}
 };

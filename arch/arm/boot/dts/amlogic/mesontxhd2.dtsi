@@ -1116,7 +1116,7 @@
 			reg-names = "mux","gpio";
 			gpio-controller;
 			#gpio-cells = <2>;
-			gpio-ranges = <&pinctrl_aobus 0 0 15>;
+			gpio-ranges = <&pinctrl_aobus 0 0 14>;
 		};
 		i2cAO_pins1:i2cAO_pins1 {
 			mux {
@@ -1236,6 +1236,22 @@
 			};
 		};
 
+	};
+
+	pinctrl_test: pinctrl@ff80035c {
+		compatible = "amlogic,meson-txhd2-testn-pinctrl";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		gpio_test: test-bank@ff80035c {
+			reg = <0xff80037c 0x004>,
+			      <0xff80035c 0x004>;
+			reg-names = "mux", "gpio";
+			gpio-controller;
+			#gpio-cells = <2>;
+			gpio-ranges = <&pinctrl_test 0 0 1>;
+		};
 	};
 
 	vclk_serve: vclk_serve {

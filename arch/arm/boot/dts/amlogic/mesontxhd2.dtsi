@@ -1561,9 +1561,24 @@
 	pmu_domain_config = <0x1 0x2 0x4 0x0 0x0 0x0 0x0 0x0 0x0 0x1 0x2 0x0>;
 	num_of_pp = <2> ;
 	sc_mpp = <2>;/* number of pp used most of time.*/
-	clocks = <&clkc CLKID_MALI>, <&clkc CLKID_GP0_PLL>;
-	clock-names = "gpu_mux", "gp0_pll";
+	clocks = <&clkc CLKID_MALI>, <&clkc CLKID_FCLK_DIV4>;
+	clock-names = "gpu_mux", "fclk_div4";
 
-	tbl = <&clk125_cfg &clk285_cfg &clk400_cfg
-	       &clk500_cfg &clk666_cfg &clk750_cfg &clk750_cfg>;
+	/*
+	 * Mali clocking is provided by two identical clock paths
+	 * MALI_0 and MALI_1 muxed to a single clock by a glitch
+	 * free mux to safely change frequency while running.
+	 */
+	assigned-clocks = <&clkc CLKID_MALI_0_SEL>,
+			  <&clkc CLKID_MALI_0>,
+			  <&clkc CLKID_MALI>; /* Glitch free mux */
+	assigned-clock-parents = <&clkc CLKID_FCLK_DIV4>,
+				 <0>, /* Do Nothing */
+				 <&clkc CLKID_MALI_0>;
+	assigned-clock-rates = <0>, /* Do Nothing */
+			       <500000000>,
+			       <0>; /* Do Nothing */
+
+	tbl = <&clk500_cfg &clk500_cfg &clk500_cfg
+	       &clk500_cfg &clk500_cfg &clk500_cfg &clk500_cfg>;
 };

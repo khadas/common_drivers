@@ -25,8 +25,7 @@ function show_help {
 	echo "                          for note: current can't use --gki_10, amlogic_gki.10 for optimize, amlogic_gki.debug for debug, and follow GKI1.0"
 	echo "                                    so build GKI1.0 Image need with --gki_debug, default parameter --gki_debug"
 	echo "  --fast_build            for fast build"
-	echo "  --upgrade               for android upgrade builtin module optimize vendor_boot size"
-	echo "  --android_version       for android version"
+	echo "  --upgrade               for android upgrade builtin module optimize vendor_boot size" following with android project name
 	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"
 	echo "  --patch                 for only am patches"
 	echo "  --check_gki_20          for gki 2.0 check kernel build"
@@ -34,141 +33,21 @@ function show_help {
 	echo "  --bazel                 for choose bazel tool to build"
 }
 
+# handle the dir parameters for amlogic_utils.sh
 VA=
 ARGS=()
 for i in "$@"
 do
 	case $i in
-	--arch)
-		ARCH=$2
-		VA=1
-		shift
-		;;
-	--abi)
-		ABI=1
-		shift
-		;;
-	--build_config)
-		BUILD_CONFIG=$2
-		VA=1
-		shift
-		;;
-	--lto)
-		LTO=$2
-		VA=1
-                shift
-		;;
-	--symbol_strict)
-		KMI_SYMBOL_LIST_STRICT_MODE=$2
-		VA=1
-                shift
-		;;
-	--menuconfig)
-		MENUCONFIG=1
-		shift
-		;;
-	--basicconfig)
-		if [ "$2" = "m" ] || [ "$2" = "n" ]; then
-			BASICCONFIG=$2
-		else
-			BASICCONFIG="m"
-		fi
-		VA=1
-		shift
-		;;
-	--image)
-		IMAGE=1
-		shift
-		;;
-	--modules)
-		MODULES=1
-		shift
-		break
-		;;
-	--dtbs)
-		DTB_BUILD=1
-		shift
-		;;
 	--kernel_dir)
 		KERNEL_DIR=$2
 		VA=1
-                shift
+		shift
 		;;
 	--common_drivers_dir)
 		COMMON_DRIVERS_DIR=$2
 		VA=1
-                shift
-		;;
-	--build_dir)
-		BUILD_DIR=$2
-		VA=1
-                shift
-		;;
-	--check_defconfig)
-		CHECK_DEFCONFIG=1
 		shift
-		;;
-	--modules_depend)
-		MODULES_DEPEND=1
-		shift
-		;;
-	--android_project)
-		ANDROID_PROJECT=$2
-		VA=1
-		shift
-		;;
-	--gki_20)
-		GKI_CONFIG=gki_20
-		shift
-		;;
-	--gki_10)
-		GKI_CONFIG=gki_10
-		shift
-		;;
-	--gki_debug)
-		GKI_CONFIG=gki_debug
-		shift
-		;;
-	--fast_build)
-		FAST_BUILD=1
-		shift
-		;;
-	--upgrade)
-		UPGRADE_PROJECT=1
-		ANDROID_VERSION=$2
-		VA=1
-		shift
-		;;
-	--manual_insmod_module)
-		MANUAL_INSMOD_MODULE=1
-		shift
-		;;
-	--patch)
-		ONLY_PATCH=1
-		PATCH_PARM=$2
-		if [[ "${PATCH_PARM}" == "lunch" ]]; then
-			VA=1
-		fi
-		shift
-		;;
-	--check_gki_20)
-		CHECK_GKI_20=1
-		GKI_CONFIG=gki_20
-		LTO=none
-		shift
-		;;
-	--dev_config)
-		DEV_CONFIGS=$2
-		VA=1
-		shift
-		;;
-	--bazel)
-		BAZEL=1
-		shift
-		;;
-	-h|--help)
-		show_help
-		exit 0
 		;;
 	*)
 		if [[ -n $1 ]];
@@ -184,28 +63,6 @@ do
 	esac
 done
 
-if [ "${ARCH}" = "arm" ]; then
-	ARGS+=("LOADADDR=0x108000")
-else
-	ARCH=arm64
-fi
-
-set -- "${ARGS[@]}"		# other parameters are used as script parameters of build_abi.sh or build.sh
-				# amlogic parameters default value
-if [[ ${ONLY_PATCH} -eq "1" ]]; then
-	CURRENT_DIR=`pwd`
-	cd $(dirname $0)
-fi
-
-if [[ -z "${ABI}" ]]; then
-	ABI=0
-fi
-if [[ -z "${LTO}" ]]; then
-	LTO=thin
-fi
-if [[ -n ${CHECK_GKI_20} && -z ${ANDROID_PROJECT} ]]; then
-	ANDROID_PROJECT=ohm
-fi
 if [[ -z "${KERNEL_DIR}" ]]; then
 	KERNEL_DIR=common
 fi
@@ -224,71 +81,18 @@ if [[ ! -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh ]]; then
 	echo "The directory of common_drivers does not exist";
 	exit
 fi
-if [[ -z "${BUILD_CONFIG}" ]]; then
-	if [ "${ARCH}" = "arm64" ]; then
-			BUILD_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic
-	elif [ "${ARCH}" = "arm" ]; then
-			BUILD_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic32
-	fi
-fi
-if [[ -z "${BUILD_DIR}" ]]; then
-	BUILD_DIR=build
-fi
-
-version_message=$(grep -rn BRANCH= ${KERNEL_DIR}/build.config.constants)
-version_message="common${version_message##*android}"
-if [[ -n ${FULL_KERNEL_VERSION} ]]; then
-	if [[ "${FULL_KERNEL_VERSION}" != "${version_message}" ]]; then
-		echo "kernel version is not match!!"
-		exit
-	fi
-else
-	FULL_KERNEL_VERSION=${version_message}
-fi
-
-if [[ -z ${BAZEL} ]]; then
-	[[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" == "arm64" ]] && BAZEL=1
-fi
-
-#first auto patch when param parse end
-if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
-	export PATCH_PARM
-	${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ${FULL_KERNEL_VERSION}
-fi
-if [[ ${ONLY_PATCH} -eq "1" ]]; then
-	cd ${CURRENT_DIR}
-	exit
-fi
-
-if [[ ! -f ${BUILD_DIR}/build_abi.sh ]]; then
-	echo "The directory of build does not exist";
-	exit
-fi
-
-ROOT_DIR=$(readlink -f $(dirname $0))
-if [[ ! -f ${ROOT_DIR}/${KERNEL_DIR}/init/main.c ]]; then
-	ROOT_DIR=`pwd`
-	if [[ ! -f ${ROOT_DIR}/${KERNEL_DIR}/init/main.c ]]; then
-		echo "the file path of $0 is incorrect"
-		exit
-	fi
-fi
-export ROOT_DIR
-
-CHECK_DEFCONFIG=${CHECK_DEFCONFIG:-0}
-MODULES_DEPEND=${MODULES_DEPEND:-0}
-if [[ ! -f ${KERNEL_BUILD_VAR_FILE} ]]; then
-	export KERNEL_BUILD_VAR_FILE=`mktemp /tmp/kernel.XXXXXXXXXXXX`
-	RM_KERNEL_BUILD_VAR_FILE=1
-fi
-
-GKI_CONFIG=${GKI_CONFIG:-gki_debug}
-
-export CROSS_COMPILE=
-
-set -e
 
 source "${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh"
+
+set -- "${ARGS[@]}" # other parameters are used as script parameters to handle_input_parameters
+
+handle_input_parameters "$@"
+
+set_default_parameters # set amlogic parameters default value
+
+set -- "${ARGS[@]}" # other parameters are used as script parameters of build_abi.sh or build.sh
+
+set -e
 
 export_env_variable
 

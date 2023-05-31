@@ -1216,3 +1216,507 @@ function export_env_variable () {
 }
 
 export -f export_env_variable
+
+function handle_input_parameters () {
+	VA=
+	ARGS=()
+	for i in "$@"
+	do
+		case $i in
+		--arch)
+			ARCH=$2
+			VA=1
+			shift
+			;;
+		--abi)
+			ABI=1
+			shift
+			;;
+		--build_config)
+			BUILD_CONFIG=$2
+			VA=1
+			shift
+			;;
+		--lto)
+			LTO=$2
+			VA=1
+			shift
+			;;
+		--symbol_strict)
+			KMI_SYMBOL_LIST_STRICT_MODE=$2
+			VA=1
+			shift
+			;;
+		--menuconfig)
+			MENUCONFIG=1
+			shift
+			;;
+		--basicconfig)
+			if [ "$2" = "m" ] || [ "$2" = "n" ]; then
+				BASICCONFIG=$2
+			else
+				BASICCONFIG="m"
+			fi
+			VA=1
+			shift
+			;;
+		--image)
+			IMAGE=1
+			shift
+			;;
+		--modules)
+			MODULES=1
+			shift
+			break
+			;;
+		--dtbs)
+			DTB_BUILD=1
+			shift
+			;;
+		--build_dir)
+			BUILD_DIR=$2
+			VA=1
+			shift
+			;;
+		--check_defconfig)
+			CHECK_DEFCONFIG=1
+			shift
+			;;
+		--modules_depend)
+			MODULES_DEPEND=1
+			shift
+			;;
+		--android_project)
+			ANDROID_PROJECT=$2
+			VA=1
+			shift
+			;;
+		--gki_20)
+			GKI_CONFIG=gki_20
+			shift
+			;;
+		--gki_10)
+			GKI_CONFIG=gki_10
+			shift
+			;;
+		--gki_debug)
+			GKI_CONFIG=gki_debug
+			shift
+			;;
+		--fast_build)
+			FAST_BUILD=1
+			shift
+			;;
+		--upgrade)
+			UPGRADE_PROJECT=1
+			ANDROID_VERSION=$2
+			VA=1
+			shift
+			;;
+		--manual_insmod_module)
+			MANUAL_INSMOD_MODULE=1
+			shift
+			;;
+		--patch)
+			ONLY_PATCH=1
+			PATCH_PARM=$2
+			if [[ "${PATCH_PARM}" == "lunch" ]]; then
+				VA=1
+			fi
+			shift
+			;;
+		--check_gki_20)
+			CHECK_GKI_20=1
+			GKI_CONFIG=gki_20
+			LTO=none
+			shift
+			;;
+		--dev_config)
+			DEV_CONFIGS=$2
+			VA=1
+			shift
+			;;
+		--bazel)
+			BAZEL=1
+			shift
+			;;
+		-h|--help)
+			show_help
+			exit 0
+			;;
+		*)
+			if [[ -n $1 ]];
+			then
+				if [[ -z ${VA} ]];
+				then
+					ARGS+=("$1")
+				fi
+			fi
+			VA=
+			shift
+			;;
+		esac
+	done
+}
+
+export -f handle_input_parameters
+
+function set_default_parameters () {
+	if [ "${ARCH}" = "arm" ]; then
+		ARGS+=("LOADADDR=0x108000")
+	else
+		ARCH=arm64
+	fi
+
+	if [[ -z "${ABI}" ]]; then
+		ABI=0
+	fi
+	if [[ -z "${LTO}" ]]; then
+		LTO=thin
+	fi
+	if [[ -n ${CHECK_GKI_20} && -z ${ANDROID_PROJECT} ]]; then
+		ANDROID_PROJECT=ohm
+	fi
+
+	if [[ -z "${BUILD_CONFIG}" ]]; then
+		if [ "${ARCH}" = "arm64" ]; then
+				BUILD_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic
+		elif [ "${ARCH}" = "arm" ]; then
+				BUILD_CONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic32
+		fi
+	fi
+	if [[ -z "${BUILD_DIR}" ]]; then
+		BUILD_DIR=build
+	fi
+
+	version_message=$(grep -rn BRANCH= ${KERNEL_DIR}/build.config.constants)
+	version_message="common${version_message##*android}"
+	if [[ -n ${FULL_KERNEL_VERSION} ]]; then
+		if [[ "${FULL_KERNEL_VERSION}" != "${version_message}" ]]; then
+			echo "kernel version is not match!!"
+			exit
+		fi
+	else
+		FULL_KERNEL_VERSION=${version_message}
+	fi
+
+	if [[ -z ${BAZEL} ]]; then
+		[[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" == "arm64" ]] && BAZEL=1
+	fi
+
+	auto_patch_to_common_dir
+
+	if [[ ! -f ${BUILD_DIR}/build_abi.sh ]]; then
+		echo "The directory of build does not exist";
+		exit
+	fi
+
+	ROOT_DIR=$(readlink -f $(dirname $0))
+	if [[ ! -f ${ROOT_DIR}/${KERNEL_DIR}/init/main.c ]]; then
+		ROOT_DIR=`pwd`
+		if [[ ! -f ${ROOT_DIR}/${KERNEL_DIR}/init/main.c ]]; then
+			echo "the file path of $0 is incorrect"
+			exit
+		fi
+	fi
+	export ROOT_DIR
+
+	CHECK_DEFCONFIG=${CHECK_DEFCONFIG:-0}
+	MODULES_DEPEND=${MODULES_DEPEND:-0}
+	if [[ ! -f ${KERNEL_BUILD_VAR_FILE} ]]; then
+		export KERNEL_BUILD_VAR_FILE=`mktemp /tmp/kernel.XXXXXXXXXXXX`
+		RM_KERNEL_BUILD_VAR_FILE=1
+	fi
+
+	GKI_CONFIG=${GKI_CONFIG:-gki_debug}
+
+	export CROSS_COMPILE=
+
+	if [ "${ABI}" -eq "1" ]; then
+		export OUT_DIR_SUFFIX="_abi"
+	else
+		OUT_DIR_SUFFIX=
+	fi
+}
+
+export -f set_default_parameters
+
+function auto_patch_to_common_dir () {
+	#first auto patch when param parse end
+	if [[ ${ONLY_PATCH} -eq "1" ]]; then
+		CURRENT_DIR=`pwd`
+		cd $(dirname $0)
+	fi
+
+	if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
+        	export PATCH_PARM
+		${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ${FULL_KERNEL_VERSION}
+	fi
+
+	if [[ ${ONLY_PATCH} -eq "1" ]]; then
+		cd ${CURRENT_DIR}
+		exit
+	fi
+}
+
+export -f auto_patch_to_common_dir
+
+
+# the follow functions are used for smarthome
+function handle_input_parameters_for_smarthome () {
+	VA=
+	ARGS=()
+	for i in "$@"
+	do
+		case $i in
+		--savedefconfig)
+			SAVEDEFCONFIG=1
+			shift
+			;;
+		--menuconfig)
+			MENUCONFIG=1
+			shift
+			;;
+		--dtb)
+			DTB=1
+			shift
+			;;
+		--manual_insmod_module)
+			MANUAL_INSMOD_MODULE=1
+			shift
+			;;
+		--patch)
+			ONLY_PATCH=1
+			shift
+			;;
+		-h|--help)
+			show_help
+			exit 0
+			;;
+		*)
+			if [[ -n $1 ]];
+			then
+				if [[ -z ${VA} ]];
+				then
+					ARGS+=("$1")
+				fi
+			fi
+			VA=
+			shift
+			;;
+		esac
+	done
+}
+
+export -f handle_input_parameters_for_smarthome
+
+function set_default_parameters_for_smarthome () {
+	version_message=$(grep -rn BRANCH= ${KERNEL_DIR}/build.config.constants)
+	version_message="common${version_message##*android}"
+	if [[ -n ${FULL_KERNEL_VERSION} ]]; then
+		if [[ "${FULL_KERNEL_VERSION}" != "${version_message}" ]]; then
+			echo "kernel version is not match!!"
+			exit
+		fi
+	else
+		FULL_KERNEL_VERSION=${version_message}
+	fi
+
+	tool_args=()
+	prebuilts_paths=(
+		CLANG_PREBUILT_BIN
+		#BUILDTOOLS_PREBUILT_BIN
+	)
+	echo CC_CLANG=$CC_CLANG
+	if [[ $CC_CLANG -eq "1" ]]; then
+		source ${ROOT_DIR}/${KERNEL_DIR}/build.config.common
+		if [[ -n "${LLVM}" ]]; then
+			tool_args+=("LLVM=1")
+		fi
+		#if [ -n "${DTC}" ]; then
+		#	tool_args+=("DTC=${DTC}")
+		#fi
+		for prebuilt_bin in "${prebuilts_paths[@]}"; do
+			prebuilt_bin=\${${prebuilt_bin}}
+			eval prebuilt_bin="${prebuilt_bin}"
+			if [ -n "${prebuilt_bin}" ]; then
+				PATH=${PATH//"${ROOT_DIR}\/${prebuilt_bin}:"}
+				PATH=${ROOT_DIR}/${prebuilt_bin}:${PATH} # add the clang tool to env PATH
+			fi
+		done
+		export PATH
+	elif [[ -n $CROSS_COMPILE_TOOL ]]; then
+		export CROSS_COMPILE=${CROSS_COMPILE_TOOL}
+	fi
+
+	if [[ $ARCH == arm64 ]]; then
+		OUTDIR=${ROOT_DIR}/out/kernel-5.15-64
+	elif [[ $ARCH == arm ]]; then
+		OUTDIR=${ROOT_DIR}/out/kernel-5.15-32
+		tool_args+=("LOADADDR=0x208000")
+	elif [[ $ARCH == riscv ]]; then
+		OUTDIR=${ROOT_DIR}/out/riscv-kernel-5.15-64
+	fi
+	TOOL_ARGS="${tool_args[@]}"
+
+	OUT_DIR=${OUTDIR}/common
+	mkdir -p ${OUT_DIR}
+	if [ "${SKIP_RM_OUTDIR}" != "1" ] ; then
+		rm -rf ${OUTDIR}
+	fi
+
+	echo "========================================================"
+	echo ""
+	export DIST_DIR=$(readlink -m ${OUTDIR}/dist)
+	export MODULES_STAGING_DIR=$(readlink -m ${OUTDIR}/staging)
+	export OUT_AMLOGIC_DIR=$(readlink -m ${OUTDIR}/amlogic)
+	echo OUTDIR=$OUTDIR DIST_DIR=$DIST_DIR MODULES_STAGING_DIR=$MODULES_STAGING_DIR KERNEL_DIR=$KERNEL_DIR
+
+
+	source ${ROOT_DIR}/build/kernel/build_utils.sh
+
+	DTS_EXT_DIR=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/boot/dts/amlogic
+	DTS_EXT_DIR=$(rel_path ${ROOT_DIR}/${DTS_EXT_DIR} ${KERNEL_DIR})
+	export dtstree=${DTS_EXT_DIR}
+	export DTC_INCLUDE=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/include
+
+	EXT_MODULES="
+		${EXT_MODULES}
+	"
+
+	EXT_MODULES_CONFIG="
+		${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/ext_modules_config
+	"
+
+	EXT_MODULES_PATH="
+		${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/ext_modules_path
+	"
+
+	POST_KERNEL_BUILD_CMDS="prepare_module_build"
+	EXTRA_CMDS="extra_cmds"
+
+	IN_KERNEL_MODULES=1
+}
+
+export -f set_default_parameters_for_smarthome
+
+function savedefconfig_cmd_for_smarthome () {
+	if [[ -n ${SAVEDEFCONFIG} ]]; then
+		set -x
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${DEFCONFIG}
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} savedefconfig
+		rm ${KERNEL_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
+		cp -f ${OUT_DIR}/defconfig  ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
+		set +x
+		exit
+	fi
+}
+
+export -f savedefconfig_cmd_for_smarthome
+
+function only_build_dtb_for_smarthome () {
+	if [[ -n ${DTB} ]]; then
+		set -x
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs || exit
+		set +x
+		exit
+	fi
+}
+
+export -f only_build_dtb_for_smarthome
+
+function make_menuconfig_cmd_for_smarthome () {
+	if [[ -n ${MENUCONFIG} ]]; then
+		set -x
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${DEFCONFIG}
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} menuconfig
+		set +x
+		exit
+	fi
+}
+
+export -f make_menuconfig_cmd_for_smarthome
+
+function build_kernel_for_different_cpu_architecture () {
+	set -x
+	if [[ $ARCH == arm64 ]]; then
+		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
+		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
+		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} Image -j12 &&
+		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
+		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} INSTALL_MOD_STRIP=1 modules_install -j12 &&
+		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
+		rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
+	elif [[ $ARCH == arm ]]; then
+		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
+		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
+		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} uImage -j12 &&
+		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
+		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} INSTALL_MOD_STRIP=1 modules_install -j12 &&
+		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
+		rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm/configs/${DEFCONFIG}
+	elif [[ $ARCH == riscv ]]; then
+		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
+		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
+		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} Image -j12 &&
+		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
+		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
+		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
+		rm ${ROOT_DIR}/${KERNEL_DIR}/arch/riscv/configs/${DEFCONFIG}
+	fi
+	cp ${OUT_DIR}/arch/${ARCH}/boot/Image* ${DIST_DIR}
+	cp ${OUT_DIR}/arch/${ARCH}/boot/uImage* ${DIST_DIR}
+	cp ${OUT_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/boot/dts/amlogic/*.dtb ${DIST_DIR}
+	cp ${OUT_DIR}/vmlinux ${DIST_DIR}
+	set +x
+}
+
+export -f build_kernel_for_different_cpu_architecture
+
+function build_ext_modules() {
+	for EXT_MOD in ${EXT_MODULES}; do
+		EXT_MOD_REL=$(rel_path ${ROOT_DIR}/${EXT_MOD} ${KERNEL_DIR})
+		mkdir -p ${OUT_DIR}/${EXT_MOD_REL}
+
+		set -x
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
+				O=${OUT_DIR} ${TOOL_ARGS} -j12 || exit
+		make ARCH=${ARCH} -C ${ROOT_DIR}/${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
+				O=${OUT_DIR} ${TOOL_ARGS} ${MODULE_STRIP_FLAG}		\
+				INSTALL_MOD_PATH=${MODULES_STAGING_DIR}			\
+				INSTALL_MOD_DIR="extra/${EXT_MOD}"			\
+				INSTALL_MOD_STRIP=1					\
+				modules_install -j12 || exit
+		set +x
+	done
+}
+
+export -f build_ext_modules
+
+function copy_modules_and_rebuild_rootfs_for_smarthome () {
+	MODULES=$(find ${MODULES_STAGING_DIR} -type f -name "*.ko")
+	if [ -n "${MODULES}" ]; then
+		if [ -n "${IN_KERNEL_MODULES}" -o -n "${EXT_MODULES}" -o -n "${EXT_MODULES_MAKEFILE}" ]; then
+			echo "========================================================"
+			echo " Copying modules files"
+			for module in ${MODULES}; do
+				cp ${module} ${DIST_DIR}
+			done
+			if [ "${COMPRESS_MODULES}" = "1" ]; then
+				echo " Archiving modules to ${MODULES_ARCHIVE}"
+				tar --transform="s,.*/,," -czf ${DIST_DIR}/${MODULES_ARCHIVE} ${MODULES[@]}
+			fi
+		fi
+
+		if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
+			echo "Rebuild rootfs in order to install modules!"
+			rebuild_rootfs ${ARCH}
+			echo "Build success!"
+		else
+			echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
+		fi
+	fi
+}
+
+export -f copy_modules_and_rebuild_rootfs_for_smarthome

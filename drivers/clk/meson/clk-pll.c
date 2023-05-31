@@ -40,6 +40,11 @@
 #endif
 
 #define FIXED_FRAC_WEIGHT_PRECISION	100000
+#define MESON_PLL_THRESHOLD_RATE	1500000000
+/*
+ * SoC list with threshold rate :
+ *	TXHD2
+ */
 
 static inline struct meson_clk_pll_data *
 meson_clk_pll_data(struct clk_regmap *clk)
@@ -71,8 +76,9 @@ static unsigned long __pll_params_to_rate(unsigned long parent_rate,
 {
 	u64 rate = (u64)parent_rate * m;
 	u64 frac_rate;
+	unsigned int tmp_n;
 
-	if (frac && MESON_PARM_APPLICABLE(&pll->frac)) {
+	if (frac && MESON_PARM_APPLICABLE(&pll->frac_hifi)) {
 		frac_rate = (u64)parent_rate * frac;
 		if (frac & (1 << (pll->frac.width - 1))) {
 			if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
@@ -89,13 +95,18 @@ static unsigned long __pll_params_to_rate(unsigned long parent_rate,
 		}
 	}
 
-	if (n == 0)
+	if (pll->flags & CLK_MESON_PLL_POWER_OF_TWO)
+		tmp_n = 1 << n;
+	else
+		tmp_n = n;
+
+	if (tmp_n == 0)
 		return 0;
 
 #if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
-	return DIV_ROUND_UP_ULL(rate, n) >> od;
+	return DIV_ROUND_UP_ULL(rate, tmp_n) >> od;
 #else
-	return DIV_ROUND_UP_ULL(rate, n);
+	return DIV_ROUND_UP_ULL(rate, tmp_n);
 #endif
 }
 
@@ -115,6 +126,11 @@ static unsigned long meson_clk_pll_recalc_rate(struct clk_hw *hw,
 
 	frac = MESON_PARM_APPLICABLE(&pll->frac) ?
 		meson_parm_read(clk->map, &pll->frac) :
+		0;
+
+	/* remove if frac is ok */
+	frac = MESON_PARM_APPLICABLE(&pll->frac_hifi) ?
+		meson_parm_read(clk->map, &pll->frac_hifi) :
 		0;
 
 	return __pll_params_to_rate(parent_rate, m, n, frac, pll, od);
@@ -236,8 +252,12 @@ static int meson_clk_get_pll_table_index(unsigned int index,
 					 struct meson_clk_pll_data *pll)
 #endif
 {
-	if (!pll->table[index].n)
+	/* In some SoCs, n = 0, so check m here */
+	if (!pll->table[index].m) {
+		pr_debug("%s, table idx = %u, m = %u\n", __func__,
+			index, pll->table[index].m);
 		return -EINVAL;
+	}
 
 	*m = pll->table[index].m;
 	*n = pll->table[index].n;
@@ -616,6 +636,12 @@ static int meson_clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	     meson_parm_read(clk->map, &pll->n) != n) && enabled)
 		meson_clk_pll_disable(hw);
 #endif
+	if (MESON_PARM_APPLICABLE(&pll->th)) {
+		if (rate >= MESON_PLL_THRESHOLD_RATE)
+			meson_parm_write(clk->map, &pll->th, 1);
+		else
+			meson_parm_write(clk->map, &pll->th, 0);
+	}
 
 	meson_parm_write(clk->map, &pll->n, n);
 	meson_parm_write(clk->map, &pll->m, m);

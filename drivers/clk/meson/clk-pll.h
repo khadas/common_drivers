@@ -49,14 +49,17 @@ struct pll_params_table {
 #define CLK_MESON_PLL_ROUND_CLOSEST			BIT(0)
 #define CLK_MESON_PLL_IGNORE_INIT			BIT(1)
 #define CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION	BIT(2)
+#define CLK_MESON_PLL_POWER_OF_TWO			BIT(3)
 
 struct meson_clk_pll_data {
 	struct parm en;
 	struct parm m;
 	struct parm n;
 	struct parm frac;
+	struct parm frac_hifi; /* remove it if frac is ok*/
 	struct parm l;
 	struct parm rst;
+	struct parm th; /* threshold */
 	/* for 32bit dco overflow */
 	struct parm od;
 	/*for pcie*/

@@ -144,16 +144,6 @@
 #define     HHI_DIF_CSI_PHY_CNTL15                         (0x093 << 2)
 #define     HHI_LVDS_TX_PHY_CNTL0                          (0x09a << 2)
 #define     HHI_LVDS_TX_PHY_CNTL1                          (0x09b << 2)
-#define     HHI_MPLL_CNTL0                                 (0x09e << 2)
-#define     HHI_MPLL_CNTL1                                 (0x09f << 2)
-#define     HHI_MPLL_CNTL2                                 (0x0a0 << 2)
-#define     HHI_MPLL_CNTL3                                 (0x0a1 << 2)
-#define     HHI_MPLL_CNTL4                                 (0x0a2 << 2)
-#define     HHI_MPLL_CNTL5                                 (0x0a3 << 2)
-#define     HHI_MPLL_CNTL6                                 (0x0a4 << 2)
-#define     HHI_MPLL_CNTL7                                 (0x0a5 << 2)
-#define     HHI_MPLL_CNTL8                                 (0x0a6 << 2)
-#define     HHI_MPLL_STS                                   (0x0a7 << 2)
 #define     HHI_FIX_PLL_CNTL0                              (0x0a8 << 2)
 #define     HHI_FIX_PLL_CNTL1                              (0x0a9 << 2)
 #define     HHI_FIX_PLL_CNTL2                              (0x0aa << 2)
@@ -176,10 +166,6 @@
 #define     HHI_SYS_PLL_CNTL1                              (0x0be << 2)
 #define     HHI_SYS_PLL_CNTL2                              (0x0bf << 2)
 #define     HHI_SYS_PLL_CNTL3                              (0x0c0 << 2)
-#define     HHI_SYS_PLL_CNTL4                              (0x0c1 << 2)
-#define     HHI_SYS_PLL_CNTL5                              (0x0c2 << 2)
-#define     HHI_SYS_PLL_CNTL6                              (0x0c3 << 2)
-#define     HHI_SYS_PLL_STS                                (0x0c4 << 2)
 #define     HHI_HDMI_PLL_CNTL0                             (0x0c8 << 2)
 #define     HHI_HDMI_PLL_CNTL1                             (0x0c9 << 2)
 #define     HHI_HDMI_PLL_CNTL2                             (0x0ca << 2)
@@ -211,18 +197,4 @@
 #define     HHI_DSP_CLK_CNTL                               (0x0fc << 2)
 #define     HHI_HDMIRX_AUD_PLL_CNTL_I                      (0x0fe << 2)
 
-#define SECURE_PLL_CLK	0x82000098
-
-enum sec_pll {
-	SECID_SYS0_DCO_PLL_DIS,
-	SECID_SYS1_DCO_PLL,
-	SECID_SYS1_PLL_OD,
-	SECID_CPU_CLK_RD,
-	SECID_DSU_PRE_CLK_SEL,
-	SECID_DSU_PRE_CLK_DYN,
-	SECID_DSU_CLK_RD,
-	SECID_FIX_DCO_PLL,
-	SECID_SYS_CLK_RD,
-	SECID_AXI_CLK_RD,
-};
 #endif /* __TXHD2_H */

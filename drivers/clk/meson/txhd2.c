@@ -20,10 +20,8 @@
 #include "txhd2.h"
 #include <dt-bindings/clock/txhd2-clkc.h>
 
-#define AT_PXP
 static const struct clk_ops meson_pll_clk_no_ops = {};
 
-#ifndef AT_PXP
 /*
  * the sys pll DCO value should be 3G~6G,
  * otherwise the sys pll can not lock.
@@ -32,34 +30,26 @@ static const struct clk_ops meson_pll_clk_no_ops = {};
 
 #ifdef CONFIG_ARM
 static const struct pll_params_table txhd2_sys_pll_params_table[] = {
-	PLL_PARAMS(42, 1, 0), /*DCO=1008M OD=1008M*/
-	PLL_PARAMS(46, 1, 0), /*DCO=1104M OD=1104M*/
-	PLL_PARAMS(50, 1, 0), /*DCO=4800M OD=1200M*/
-	PLL_PARAMS(54, 1, 0), /*DCO=1296M OD=1296M*/
-	PLL_PARAMS(58, 1, 0), /*DCO=1392M OD=1392M*/
-	PLL_PARAMS(62, 1, 0), /*DCO=1488M OD=1488M*/
-	PLL_PARAMS(66, 1, 0), /*DCO=1584M OD=1584M*/
-	PLL_PARAMS(70, 1, 0), /*DCO=1680M OD=1680M*/
-	PLL_PARAMS(74, 1, 0), /*DCO=1776M OD=1776M*/
-	PLL_PARAMS(76, 1, 0), /*DCO=1824 OD=1824M*/
-	PLL_PARAMS(78, 1, 0), /*DCO=1872M OD=1872M*/
-	PLL_PARAMS(80, 1, 0), /*DCO=1920M OD=1920M*/
+	PLL_PARAMS(42, 0, 0), /*DCO=1008M OD=1008M*/
+	PLL_PARAMS(50, 0, 0), /*DCO=1200M OD=1200M*/
+	PLL_PARAMS(54, 0, 0), /*DCO=1296M OD=1296M*/
+	PLL_PARAMS(58, 0, 0), /*DCO=1392M OD=1392M*/
+	PLL_PARAMS(59, 0, 0), /*DCO=1416M OD=1416M*/
+	PLL_PARAMS(62, 0, 0), /*DCO=1488M OD=1488M*/
+	PLL_PARAMS(63, 0, 0), /*DCO=1512M OD=1512M*/
+	PLL_PARAMS(67, 0, 0), /*DCO=1608M OD=1608M*/
 	{ /* sentinel */ },
 };
 #else
 static const struct pll_params_table txhd2_sys_pll_params_table[] = {
-	PLL_PARAMS(42, 1), /*DCO=1008M OD=1008M*/
-	PLL_PARAMS(46, 1), /*DCO=1104M OD=1104M*/
-	PLL_PARAMS(50, 1), /*DCO=4800M OD=1200M*/
-	PLL_PARAMS(54, 1), /*DCO=1296M OD=1296M*/
-	PLL_PARAMS(58, 1), /*DCO=1392M OD=1392M*/
-	PLL_PARAMS(62, 1), /*DCO=1488M OD=1488M*/
-	PLL_PARAMS(66, 1), /*DCO=1584M OD=1584M*/
-	PLL_PARAMS(70, 1), /*DCO=1680M OD=1680M*/
-	PLL_PARAMS(74, 1), /*DCO=1776M OD=1776M*/
-	PLL_PARAMS(76, 1), /*DCO=1824 OD=1824M*/
-	PLL_PARAMS(78, 1), /*DCO=1872M OD=1872M*/
-	PLL_PARAMS(80, 1), /*DCO=1920M OD=1920M*/
+	PLL_PARAMS(42, 0), /*DCO=1008M OD=1008M*/
+	PLL_PARAMS(50, 0), /*DCO=1200M OD=1200M*/
+	PLL_PARAMS(54, 0), /*DCO=1296M OD=1296M*/
+	PLL_PARAMS(58, 0), /*DCO=1392M OD=1392M*/
+	PLL_PARAMS(59, 0), /*DCO=1416M OD=1416M*/
+	PLL_PARAMS(62, 0), /*DCO=1488M OD=1488M*/
+	PLL_PARAMS(63, 0), /*DCO=1512M OD=1512M*/
+	PLL_PARAMS(67, 0), /*DCO=1608M OD=1608M*/
 	{ /* sentinel */ },
 };
 #endif
@@ -86,7 +76,7 @@ static struct clk_regmap txhd2_sys_pll_dco = {
 		.od = {
 			.reg_off = HHI_SYS_PLL_CNTL0,
 			.shift	 = 12,
-			.width	 = 3,
+			.width	 = 2,
 		},
 #endif
 		.table = txhd2_sys_pll_params_table,
@@ -100,6 +90,12 @@ static struct clk_regmap txhd2_sys_pll_dco = {
 			.shift   = 29,
 			.width   = 1,
 		},
+		.th = {
+			.reg_off = HHI_SYS_PLL_CNTL0,
+			.shift   = 24,
+			.width   = 1,
+		},
+		.flags = CLK_MESON_PLL_POWER_OF_TWO
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "sys_pll_dco",
@@ -174,7 +170,6 @@ static struct clk_regmap txhd2_sys_pll = {
 	},
 };
 #endif
-#endif /*not need on pxp*/
 
 static struct clk_regmap txhd2_fixed_pll_dco = {
 	.data = &(struct meson_clk_pll_data){
@@ -460,22 +455,54 @@ static struct clk_regmap txhd2_fclk_div2p5 = {
 	},
 };
 
+static struct clk_fixed_factor txhd2_mpll_50m_div = {
+	.mult = 1,
+	.div = 80,
+	.hw.init = &(struct clk_init_data){
+		.name = "mpll_50m_div",
+		.ops = &clk_fixed_factor_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&txhd2_fixed_pll_dco.hw
+		},
+		.num_parents = 1,
+	},
+};
+
+static const struct clk_parent_data txhd2_mpll_50m_sel[] = {
+	{ .fw_name = "xtal", },
+	{ .hw = &txhd2_mpll_50m_div.hw }
+};
+
+static struct clk_regmap txhd2_mpll_50m = {
+	.data = &(struct clk_regmap_mux_data){
+		.offset = HHI_FIX_PLL_CNTL1,
+		.mask = 0x1,
+		.shift = 4,
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "mpll_50m",
+		.ops = &clk_regmap_mux_ro_ops,
+		.parent_data = txhd2_mpll_50m_sel,
+		.num_parents = ARRAY_SIZE(txhd2_mpll_50m_sel),
+	},
+};
+
 #ifdef CONFIG_ARM
 static const struct pll_params_table txhd2_gp0_pll_table[] = {
-	PLL_PARAMS(35, 1, 0), /* DCO = 840M OD = 2 PLL = 840M */
-	PLL_PARAMS(33, 1, 0), /* DCO = 792M OD = 2 PLL = 792M */
-	PLL_PARAMS(31, 1, 0), /* DCO = 744M OD = 3 PLL = 744M */
-	PLL_PARAMS(32, 1, 0), /* DCO = 768M OD = 2 PLL = 768M */
-	PLL_PARAMS(48, 1, 0), /* DCO = 1152M OD = 4 PLL = 1152M */
+	PLL_PARAMS(35, 0, 0), /* DCO = 840M OD = 2 PLL = 840M */
+	PLL_PARAMS(33, 0, 0), /* DCO = 792M OD = 2 PLL = 792M */
+	PLL_PARAMS(31, 0, 0), /* DCO = 744M OD = 3 PLL = 744M */
+	PLL_PARAMS(32, 0, 0), /* DCO = 768M OD = 2 PLL = 768M */
+	PLL_PARAMS(48, 0, 0), /* DCO = 1152M OD = 4 PLL = 1152M */
 	{ /* sentinel */  }
 };
 #else
 static const struct pll_params_table txhd2_gp0_pll_table[] = {
-	PLL_PARAMS(35, 1), /* DCO = 840M OD = 2 PLL = 840M */
-	PLL_PARAMS(33, 1), /* DCO = 792M OD = 2 PLL = 792M */
-	PLL_PARAMS(31, 1), /* DCO = 744M OD = 3 PLL = 744M */
-	PLL_PARAMS(32, 1), /* DCO = 768M OD = 2 PLL = 768M */
-	PLL_PARAMS(48, 1), /* DCO = 1152M OD = 4 PLL = 1152M */
+	PLL_PARAMS(35, 0), /* DCO = 840M OD = 2 PLL = 840M */
+	PLL_PARAMS(33, 0), /* DCO = 792M OD = 2 PLL = 792M */
+	PLL_PARAMS(31, 0), /* DCO = 744M OD = 3 PLL = 744M */
+	PLL_PARAMS(32, 0), /* DCO = 768M OD = 2 PLL = 768M */
+	PLL_PARAMS(48, 0), /* DCO = 1152M OD = 4 PLL = 1152M */
 	{ /* sentinel */  }
 };
 #endif
@@ -528,9 +555,15 @@ static struct clk_regmap txhd2_gp0_pll_dco = {
 			.shift   = 29,
 			.width   = 1,
 		},
+		.th = {
+			.reg_off = HHI_GP0_PLL_CNTL0,
+			.shift   = 24,
+			.width   = 1,
+		},
 		.table = txhd2_gp0_pll_table,
 		.init_regs = txhd2_gp0_init_regs,
 		.init_count = ARRAY_SIZE(txhd2_gp0_init_regs),
+		.flags = CLK_MESON_PLL_POWER_OF_TWO
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "gp0_pll_dco",
@@ -586,12 +619,12 @@ static struct clk_regmap txhd2_gp0_pll = {
 
 #ifdef CONFIG_ARM
 static const struct pll_params_table txhd2_hifi_pll_table[] = {
-	PLL_PARAMS(150, 1, 1), /* DCO = 1806.336M OD = 1 */
+	PLL_PARAMS(36, 3, 0), /* DCO = 1806.336M */
 	{ /* sentinel */  }
 };
 #else
 static const struct pll_params_table txhd2_hifi_pll_table[] = {
-	PLL_PARAMS(150, 1), /* DCO = 1806.336M */
+	PLL_PARAMS(36, 3),
 	{ /* sentinel */  }
 };
 #endif
@@ -604,7 +637,7 @@ static const struct reg_sequence txhd2_hifi_init_regs[] = {
 	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x71030024 },
 	{ .reg = HHI_HIFI_PLL_CNTL1,	.def = 0x25002000 },
 	{ .reg = HHI_HIFI_PLL_CNTL2,	.def = 0x09001140 },
-	{ .reg = HHI_HIFI_PLL_CNTL3,	.def = 0x00091940, .delay_us = 20 },
+	{ .reg = HHI_HIFI_PLL_CNTL3,	.def = 0x00083180, .delay_us = 20 },
 	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x51030024, .delay_us = 20 },
 	{ .reg = HHI_HIFI_PLL_CNTL2,	.def = 0x09001100 },
 };
@@ -624,7 +657,20 @@ static struct clk_regmap txhd2_hifi_pll_dco = {
 		.n = {
 			.reg_off = HHI_HIFI_PLL_CNTL0,
 			.shift   = 16,
-			.width   = 3,
+			.width   = 2,
+		},
+#ifdef CONFIG_ARM
+		/* od for 32bit */
+		.od = {
+			.reg_off = HHI_HIFI_PLL_CNTL0,
+			.shift	 = 12,
+			.width	 = 2,
+		},
+#endif
+		.frac_hifi = {
+			.reg_off = HHI_HIFI_PLL_CNTL3,
+			.shift   = 0,
+			.width   = 19,
 		},
 		.l = {
 			.reg_off = HHI_HIFI_PLL_CNTL0,
@@ -636,16 +682,22 @@ static struct clk_regmap txhd2_hifi_pll_dco = {
 			.shift   = 29,
 			.width   = 1,
 		},
+		.th = {
+			.reg_off = HHI_HIFI_PLL_CNTL0,
+			.shift   = 24,
+			.width   = 1,
+		},
 		.table = txhd2_hifi_pll_table,
 		.init_regs = txhd2_hifi_init_regs,
 		.init_count = ARRAY_SIZE(txhd2_hifi_init_regs),
-		.flags = CLK_MESON_PLL_ROUND_CLOSEST,
+		.flags = CLK_MESON_PLL_ROUND_CLOSEST | CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION |
+			CLK_MESON_PLL_POWER_OF_TWO
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "hifi_pll_dco",
 		.ops = &meson_clk_pll_ops,
-		.parent_data = &(const struct clk_parent_data) {
-			.fw_name = "xtal",
+		.parent_hws = (const struct clk_hw *[]) {
+			&txhd2_fclk_div5.hw
 		},
 		.num_parents = 1,
 		/*
@@ -655,6 +707,25 @@ static struct clk_regmap txhd2_hifi_pll_dco = {
 	},
 };
 
+#ifdef CONFIG_ARM
+static struct clk_regmap txhd2_hifi_pll = {
+	.hw.init = &(struct clk_init_data){
+		.name = "hifi_pll",
+		.ops = &meson_pll_clk_no_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&txhd2_hifi_pll_dco.hw
+		},
+		.num_parents = 1,
+		/*
+		 * sys pll is used by cpu clock , it is initialized
+		 * to 1200M in bl2, CLK_IGNORE_UNUSED is needed to
+		 * prevent the system hang up which will be called
+		 * by clk_disable_unused
+		 */
+		.flags = CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED,
+	},
+};
+#else
 static struct clk_regmap txhd2_hifi_pll = {
 	.data = &(struct clk_regmap_div_data){
 		.offset = HHI_HIFI_PLL_CNTL0,
@@ -678,45 +749,14 @@ static struct clk_regmap txhd2_hifi_pll = {
 		.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
 	},
 };
-
-static struct clk_fixed_factor txhd2_mpll_50m_div = {
-	.mult = 1,
-	.div = 80,
-	.hw.init = &(struct clk_init_data){
-		.name = "mpll_50m_div",
-		.ops = &clk_fixed_factor_ops,
-		.parent_hws = (const struct clk_hw *[]) {
-			&txhd2_fixed_pll_dco.hw
-		},
-		.num_parents = 1,
-	},
-};
-
-static const struct clk_parent_data txhd2_mpll_50m_sel[] = {
-	{ .fw_name = "xtal", },
-	{ .hw = &txhd2_mpll_50m_div.hw }
-};
-
-static struct clk_regmap txhd2_mpll_50m = {
-	.data = &(struct clk_regmap_mux_data){
-		.offset = HHI_FIX_PLL_CNTL1,
-		.mask = 0x1,
-		.shift = 4,
-	},
-	.hw.init = &(struct clk_init_data){
-		.name = "mpll_50m",
-		.ops = &clk_regmap_mux_ro_ops,
-		.parent_data = txhd2_mpll_50m_sel,
-		.num_parents = ARRAY_SIZE(txhd2_mpll_50m_sel),
-	},
-};
+#endif
 
 static const struct cpu_dyn_table txhd2_cpu_dyn_table[] = {
 	CPU_LOW_PARAMS(100000000, 1, 1, 9),
 	CPU_LOW_PARAMS(250000000, 1, 1, 3),
-	CPU_LOW_PARAMS(333333333, 2, 1, 1),
+	//CPU_LOW_PARAMS(333333333, 2, 1, 1),
 	CPU_LOW_PARAMS(500000000, 1, 1, 1),
-	CPU_LOW_PARAMS(667000000, 2, 0, 0),
+	//CPU_LOW_PARAMS(667000000, 2, 0, 0),
 	CPU_LOW_PARAMS(1000000000, 1, 0, 0),
 };
 
@@ -726,38 +766,38 @@ static const struct clk_parent_data txhd2_cpu_dyn_clk_sel[] = {
 	{ .hw = &txhd2_fclk_div3.hw },
 };
 
-//static struct clk_regmap txhd2_cpu_dyn_clk = {
-//	.data = &(struct meson_sec_cpu_dyn_data){
-//		.table = txhd2_cpu_dyn_table,
-//		.table_cnt = ARRAY_SIZE(txhd2_cpu_dyn_table),
-//		.offset = HHI_SYS_CPU_CLK_CNTL,
-//	},
-//	.hw.init = &(struct clk_init_data){
-//		.name = "cpu_dyn_clk",
-//		.ops = &meson_sec_cpu_dyn_ops,
-//		.parent_data = txhd2_cpu_dyn_clk_sel,
-//		.num_parents = ARRAY_SIZE(txhd2_cpu_dyn_clk_sel),
-//	},
-//};
+static struct clk_regmap txhd2_cpu_dyn_clk = {
+	.data = &(struct meson_clk_cpu_dyn_data){
+		.table = txhd2_cpu_dyn_table,
+		.table_cnt = ARRAY_SIZE(txhd2_cpu_dyn_table),
+		.offset = HHI_SYS_CPU_CLK_CNTL,
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "cpu_dyn_clk",
+		.ops = &meson_clk_cpu_dyn_ops,
+		.parent_data = txhd2_cpu_dyn_clk_sel,
+		.num_parents = ARRAY_SIZE(txhd2_cpu_dyn_clk_sel),
+	},
+};
 
-//static struct clk_regmap txhd2_cpu_clk = {
-//	.data = &(struct clk_regmap_mux_data){
-//		.offset = HHI_SYS_CPU_CLK_CNTL,
-//		.mask = 0x1,
-//		.shift = 11,
-//		.flags = CLK_MUX_ROUND_CLOSEST,
-//	},
-//	.hw.init = &(struct clk_init_data){
-//		.name = "cpu_clk",
-//		.ops = &clk_regmap_mux_ops,
-//		.parent_hws = (const struct clk_hw *[]) {
-//			&txhd2_cpu_dyn_clk.hw,
-//			&txhd2_sys_pll.hw,
-//		},
-//		.num_parents = 2,
-//		.flags = CLK_SET_RATE_PARENT,
-//	},
-//};
+static struct clk_regmap txhd2_cpu_clk = {
+	.data = &(struct clk_regmap_mux_data){
+		.offset = HHI_SYS_CPU_CLK_CNTL,
+		.mask = 0x1,
+		.shift = 11,
+		.flags = CLK_MUX_ROUND_CLOSEST,
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "cpu_clk",
+		.ops = &clk_regmap_mux_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&txhd2_cpu_dyn_clk.hw,
+			&txhd2_sys_pll.hw,
+		},
+		.num_parents = 2,
+		.flags = CLK_SET_RATE_PARENT,
+	},
+};
 
 struct txhd2_sys_pll_nb_data {
 	struct notifier_block nb;
@@ -766,14 +806,14 @@ struct txhd2_sys_pll_nb_data {
 	struct clk_hw *cpu_dyn_clk;
 };
 
-//static int txhd2_sys_pll_notifier_cb(struct notifier_block *nb,
-//				   unsigned long event, void *data)
-//{
-//	struct txhd2_sys_pll_nb_data *nb_data =
-//		container_of(nb, struct txhd2_sys_pll_nb_data, nb);
+static int txhd2_sys_pll_notifier_cb(struct notifier_block *nb,
+				   unsigned long event, void *data)
+{
+	struct txhd2_sys_pll_nb_data *nb_data =
+		container_of(nb, struct txhd2_sys_pll_nb_data, nb);
 
-//	switch (event) {
-//	case PRE_RATE_CHANGE:
+	switch (event) {
+	case PRE_RATE_CHANGE:
 		/*
 		 * This notifier means sys_pll clock will be changed
 		 * to feed cpu_clk, this the current path :
@@ -783,8 +823,8 @@ struct txhd2_sys_pll_nb_data {
 		 */
 
 		/* Configure cpu_clk to use cpu_clk_dyn */
-//		clk_hw_set_parent(nb_data->cpu_clk,
-//				  nb_data->cpu_dyn_clk);
+		clk_hw_set_parent(nb_data->cpu_clk,
+				  nb_data->cpu_dyn_clk);
 
 		/*
 		 * Now, cpu_clk uses the dyn path
@@ -797,21 +837,21 @@ struct txhd2_sys_pll_nb_data {
 		 *                   \- xtal/fclk_div2/fclk_div3
 		 */
 
-//		udelay(5);
+		udelay(5);
 
-//		return NOTIFY_OK;
+		return NOTIFY_OK;
 
-//	case POST_RATE_CHANGE:
+	case POST_RATE_CHANGE:
 		/*
 		 * The sys_pll has ben updated, now switch back cpu_clk to
 		 * sys_pll
 		 */
 
 		/* Configure cpu_clk to use sys_pll */
-//		clk_hw_set_parent(nb_data->cpu_clk,
-//				  nb_data->sys_pll);
+		clk_hw_set_parent(nb_data->cpu_clk,
+				  nb_data->sys_pll);
 
-//		udelay(5);
+		udelay(5);
 
 		/* new path :
 		 * cpu_clk
@@ -819,18 +859,19 @@ struct txhd2_sys_pll_nb_data {
 		 *          \- sys_pll_dco
 		 */
 
-//		return NOTIFY_OK;
+		return NOTIFY_OK;
 
-//	default:
-//		return NOTIFY_DONE;
-//	}
-//}
+	default:
+		return NOTIFY_DONE;
+	}
+}
 
-//static struct txhd2_sys_pll_nb_data txhd2_sys_pll_nb_data = {
-//	.sys_pll = &txhd2_sys_pll.hw,
-//	.cpu_clk = &txhd2_cpu_clk.hw,
-//	.nb.notifier_call = txhd2_sys_pll_notifier_cb,
-//};
+static struct txhd2_sys_pll_nb_data txhd2_sys_pll_nb_data = {
+	.sys_pll = &txhd2_sys_pll.hw,
+	.cpu_clk = &txhd2_cpu_clk.hw,
+	.cpu_dyn_clk = &txhd2_cpu_dyn_clk.hw,
+	.nb.notifier_call = txhd2_sys_pll_notifier_cb,
+};
 
 /*peripheral bus*/
 static u32 mux_table_clk81[] = { 2, 5, 6, 7};
@@ -2891,13 +2932,7 @@ static MESON_TXHD2_SYS_GATE(txhd2_clk81_rsa,		HHI_GCLK_SP_MPEG, 5);
 static struct clk_hw_onecell_data txhd2_hw_onecell_data = {
 	.hws = {
 		[CLKID_FIXED_PLL_DCO]		= &txhd2_fixed_pll_dco.hw,
-		// [CLKID_SYS_PLL_DCO]		= &txhd2_sys_pll_dco.hw,
-		[CLKID_GP0_PLL_DCO]		= &txhd2_gp0_pll_dco.hw,
-		[CLKID_HIFI_PLL_DCO]		= &txhd2_hifi_pll_dco.hw,
 		[CLKID_FIXED_PLL]		= &txhd2_fixed_pll.hw,
-		// [CLKID_SYS_PLL]			= &txhd2_sys_pll.hw,
-		[CLKID_GP0_PLL]			= &txhd2_gp0_pll.hw,
-		[CLKID_HIFI_PLL]		= &txhd2_hifi_pll.hw,
 		[CLKID_FCLK_DIV2_DIV]		= &txhd2_fclk_div2_div.hw,
 		[CLKID_FCLK_DIV3_DIV]		= &txhd2_fclk_div3_div.hw,
 		[CLKID_FCLK_DIV4_DIV]		= &txhd2_fclk_div4_div.hw,
@@ -2912,8 +2947,14 @@ static struct clk_hw_onecell_data txhd2_hw_onecell_data = {
 		[CLKID_FCLK_DIV2P5]		= &txhd2_fclk_div2p5.hw,
 		[CLKID_MPLL_50M_DIV]		= &txhd2_mpll_50m_div.hw,
 		[CLKID_MPLL_50M]		= &txhd2_mpll_50m.hw,
-		// [CLKID_CPU_CLK_DYN]		= &txhd2_cpu_dyn_clk.hw,
-		// [CLKID_CPU_CLK]			= &txhd2_cpu_clk.hw,
+		[CLKID_SYS_PLL_DCO]		= &txhd2_sys_pll_dco.hw,
+		[CLKID_SYS_PLL]			= &txhd2_sys_pll.hw,
+		[CLKID_GP0_PLL_DCO]		= &txhd2_gp0_pll_dco.hw,
+		[CLKID_GP0_PLL]			= &txhd2_gp0_pll.hw,
+		[CLKID_HIFI_PLL_DCO]		= &txhd2_hifi_pll_dco.hw,
+		[CLKID_HIFI_PLL]		= &txhd2_hifi_pll.hw,
+		[CLKID_CPU_CLK_DYN]		= &txhd2_cpu_dyn_clk.hw,
+		[CLKID_CPU_CLK]			= &txhd2_cpu_clk.hw,
 		[CLKID_CLK81_DDR]		= &txhd2_clk81_ddr.hw,
 		[CLKID_CLK81_DOS]		= &txhd2_clk81_dos.hw,
 		[CLKID_CLK81_ETH_PHY]		= &txhd2_clk81_ethphy.hw,
@@ -3211,13 +3252,7 @@ static struct clk_regmap *const txhd2_clk_regmaps[] __initconst = {
 
 static struct clk_regmap *const txhd2_cpu_clk_regmaps[] __initconst = {
 	&txhd2_fixed_pll_dco,
-	// &txhd2_sys_pll_dco,
-	&txhd2_gp0_pll_dco,
-	&txhd2_hifi_pll_dco,
 	&txhd2_fixed_pll,
-	// &txhd2_sys_pll,
-	&txhd2_gp0_pll,
-	&txhd2_hifi_pll,
 	&txhd2_fclk_div2,
 	&txhd2_fclk_div3,
 	&txhd2_fclk_div4,
@@ -3225,8 +3260,14 @@ static struct clk_regmap *const txhd2_cpu_clk_regmaps[] __initconst = {
 	&txhd2_fclk_div7,
 	&txhd2_fclk_div2p5,
 	&txhd2_mpll_50m,
-	// &txhd2_cpu_dyn_clk,
-	// &txhd2_cpu_clk,
+	&txhd2_sys_pll_dco,
+	&txhd2_sys_pll,
+	&txhd2_gp0_pll_dco,
+	&txhd2_gp0_pll,
+	&txhd2_hifi_pll_dco,
+	&txhd2_hifi_pll,
+	&txhd2_cpu_dyn_clk,
+	&txhd2_cpu_clk,
 	&txhd2_clk81_ddr,
 	&txhd2_clk81_dos,
 	&txhd2_clk81_ethphy,
@@ -3302,14 +3343,14 @@ static struct clk_regmap *const txhd2_cpu_clk_regmaps[] __initconst = {
 
 static int meson_txhd2_dvfs_setup(struct platform_device *pdev)
 {
-	//int ret;
+	int ret;
 	/*Setup cluster 0 clock notifier for sys_pll */
-	//ret = clk_notifier_register(txhd2_sys_pll.hw.clk,
-	//			    &txhd2_sys_pll_nb_data.nb);
-	//if (ret) {
-	//	dev_err(&pdev->dev, "failed to register sys_pll notifier\n");
-	//	return ret;
-	//}
+	ret = clk_notifier_register(txhd2_sys_pll.hw.clk,
+				    &txhd2_sys_pll_nb_data.nb);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to register sys_pll notifier\n");
+		return ret;
+	}
 
 	return 0;
 }
@@ -3371,12 +3412,13 @@ static int __ref meson_txhd2_probe(struct platform_device *pdev)
 	for (i = 0; i < ARRAY_SIZE(txhd2_cpu_clk_regmaps); i++)
 		txhd2_cpu_clk_regmaps[i]->map = cpu_map;
 
-	// regmap_write(basic_map, HHI_MPLL_CNTL0, 0x00000543);
-
 	for (i = 0; i < txhd2_hw_onecell_data.num; i++) {
 		/* array might be sparse */
 		if (!txhd2_hw_onecell_data.hws[i])
 			continue;
+
+		dev_dbg(dev, "registering %d  %s\n", i,
+				txhd2_hw_onecell_data.hws[i]->init->name);
 
 		ret = devm_clk_hw_register(dev, txhd2_hw_onecell_data.hws[i]);
 		if (ret) {

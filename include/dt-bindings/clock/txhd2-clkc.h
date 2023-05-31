@@ -27,23 +27,14 @@
 #define CLKID_FCLK_DIV2P5		15
 #define CLKID_GP0_PLL_DCO		16
 #define CLKID_GP0_PLL			17
-#define CLKID_HIFI_PLL_DCO		20
-#define CLKID_HIFI_PLL			21
-#define CLKID_MPLL_50M_DIV		22
-#define CLKID_MPLL_50M			23
-#define CLKID_PRE_MPLL			24
-#define CLKID_MPLL0_DIV			25
-#define CLKID_MPLL0			26
-#define CLKID_MPLL1_DIV			27
-#define CLKID_MPLL1			28
-#define CLKID_MPLL2_DIV			29
-#define CLKID_MPLL2			30
-#define CLKID_MPLL3_DIV			31
-#define CLKID_MPLL3			32
-#define CLKID_CPU_CLK_DYN		33
-#define CLKID_CPU_CLK			34
+#define CLKID_HIFI_PLL_DCO		18
+#define CLKID_HIFI_PLL			19
+#define CLKID_MPLL_50M_DIV		20
+#define CLKID_MPLL_50M			21
+#define CLKID_CPU_CLK_DYN		22
+#define CLKID_CPU_CLK			23
 
-#define VIDEO_BASE			37
+#define VIDEO_BASE			24
 #define CLKID_VDEC_0_SEL		(VIDEO_BASE + 0)
 #define CLKID_VDEC_0_DIV		(VIDEO_BASE + 1)
 #define CLKID_VDEC_0			(VIDEO_BASE + 2)

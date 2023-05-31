@@ -83,6 +83,11 @@ static const struct of_device_id audio_clocks_of_match[] = {
 		.compatible = "amlogic, t3x-audio-clocks",
 		.data		= &t3x_audio_clks_init,
 	},
+	{
+		.compatible = "amlogic, txhd2-audio-clocks",
+		.data		= &txhd2_audio_clks_init,
+	},
+
 #endif
 	{},
 };

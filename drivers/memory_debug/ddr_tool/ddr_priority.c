@@ -15,6 +15,8 @@
 #include "ddr_port.h"
 #include "ddr_bandwidth.h"
 
+#define PRIORITY_NUM	(aml_db->ddr_priority_num & 0xffff)
+
 static struct ddr_priority ddr_priority_s4[] __initdata = {
 	{ .port_id = 0, .reg_base = 0xfe036000,
 		.reg_mode = 0, .reg_config = 0,
@@ -797,7 +799,7 @@ static int ddr_priority_get_info(unsigned char port_id)
 		return -EINVAL;
 	}
 
-	for (i = 0; i < aml_db->ddr_priority_num; i++) {
+	for (i = 0; i < PRIORITY_NUM; i++) {
 		if (aml_db->ddr_priority_desc[i].port_id == port_id)
 			return i;
 	}
@@ -974,7 +976,7 @@ int priority_display(char *buf)
 			"\tparm2: 'r' or 'w' priority (default set all)\n");
 
 	s += sprintf(buf + s, "\tid\t name \t\tw_current \tw_max \t\tr_current \tr_max\n");
-	for (i = 0; i < aml_db->ddr_priority_num; i++) {
+	for (i = 0; i < PRIORITY_NUM; i++) {
 		info =  aml_db->ddr_priority_desc[i];
 		ret = ddr_priority_rw(info.port_id, &priority_r, &priority_w, DMC_READ);
 

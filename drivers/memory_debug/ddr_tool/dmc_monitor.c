@@ -374,7 +374,8 @@ size_t dump_dmc_reg(char *buf)
 	sz += sprintf(buf + sz, "IO_BASE:%lx\n", dmc_mon->io_base);
 	sz += sprintf(buf + sz, "RANGE:%lx - %lx\n",
 		      dmc_mon->addr_start, dmc_mon->addr_end);
-	sz += sprintf(buf + sz, "MONITOR DEVICE:\n");
+	sz += sprintf(buf + sz, "MONITOR DEVICE(%s):\n",
+		dmc_mon->configs & POLICY_INCLUDE ? "include" : "exclude");
 	if (!dmc_mon->device)
 		return sz;
 
@@ -719,6 +720,7 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 	/* set default parameters */
 	mon->debug = 0x01;
 	mon->mon_number = 1;
+	mon->configs |= POLICY_INCLUDE;
 
 	switch (chip) {
 #ifdef CONFIG_AMLOGIC_DMC_MONITOR_G12
@@ -780,13 +782,11 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 	case DMC_TYPE_T7:
 	case DMC_TYPE_T3:
 		mon->ops = &t7_dmc_mon_ops;
-		mon->configs |= POLICY_INCLUDE;
 		mon->configs |= DMC_DEVICE_8BIT;
 		mon->mon_number = 2;
 		break;
 	case DMC_TYPE_P1:
 		mon->ops = &t7_dmc_mon_ops;
-		mon->configs |= POLICY_INCLUDE;
 		mon->configs |= DMC_DEVICE_8BIT;
 		mon->mon_number = 4;
 		break;
@@ -800,14 +800,12 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 #ifdef CONFIG_AMLOGIC_DMC_MONITOR_C3
 	case DMC_TYPE_C3:
 		mon->ops = &c3_dmc_mon_ops;
-		mon->configs |= POLICY_INCLUDE;
 		mon->configs |= DMC_DEVICE_8BIT;
 		break;
 #endif
 #ifdef CONFIG_AMLOGIC_DMC_MONITOR_T5M
 	case DMC_TYPE_T5M:
 		mon->ops = &t5m_dmc_mon_ops;
-		mon->configs |= POLICY_INCLUDE;
 		mon->configs |= DMC_DEVICE_8BIT;
 		mon->mon_number = 2;
 		break;
@@ -815,13 +813,11 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 #ifdef CONFIG_AMLOGIC_DMC_MONITOR_S5
 	case DMC_TYPE_S5:
 		mon->ops = &s5_dmc_mon_ops;
-		mon->configs |= POLICY_INCLUDE;
 		mon->configs |= DMC_DEVICE_8BIT;
 		mon->mon_number = 4;
 		break;
 	case DMC_TYPE_T3X:
 		mon->ops = &s5_dmc_mon_ops;
-		mon->configs |= POLICY_INCLUDE;
 		mon->configs |= DMC_DEVICE_8BIT;
 		mon->mon_number = 2;
 		break;

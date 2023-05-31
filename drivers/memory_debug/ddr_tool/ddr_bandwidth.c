@@ -76,6 +76,13 @@ static int dmc_dev_is_byte(struct ddr_bandwidth *db)
 	return 0;
 }
 
+static int ddr_width_is_16bit(struct ddr_bandwidth *db)
+{
+	if (db && (db->soc_feature & DDR_WIDTH_IS_16BIT))
+		return 1;
+	return 0;
+}
+
 static int dmc_is_asymmetry(struct ddr_bandwidth *db)
 {
 	if (db && (db->soc_feature & DMC_ASYMMETRY))
@@ -199,7 +206,7 @@ static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 			 * After s4 soc, not register to distinguish ddr data bus width,
 			 * default ereryone dmc bus width is 32, but p1 and s5 is 16.
 			 */
-			if (db->cpu_type == DMC_TYPE_P1 || db->cpu_type == DMC_TYPE_S5)
+			if (ddr_width_is_16bit(db))
 				mbw = (u64)freq * db->bytes_per_cycle * db->dmc_number / 2;
 			else
 				mbw = (u64)freq * db->bytes_per_cycle * db->dmc_number;
@@ -445,7 +452,7 @@ static ssize_t port_store(struct class *cla,
 			if (port < 0) /* clear port set */
 				aml_db->port[ch] = 0;
 			else
-				aml_db->port[ch] |= 1ULL << (port & 0x1f);
+				aml_db->port[ch] |= 1ULL << (port & 0x3f);
 			aml_db->ops->config_port(aml_db, ch, port);
 		}
 	}
@@ -1216,6 +1223,7 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 		band->channels     = 8;
 		band->dmc_number   = 4;
 		band->soc_feature |= DMC_DEVICE_8BIT;
+		band->soc_feature |= DDR_WIDTH_IS_16BIT;
 		band->mali_port[0] = 3; /* port3: mali */
 		band->mali_port[1] = 4;
 		break;
@@ -1264,6 +1272,7 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 		band->channels     = 8;
 		band->dmc_number   = 4;
 		band->soc_feature |= DMC_DEVICE_8BIT;
+		band->soc_feature |= DDR_WIDTH_IS_16BIT;
 		band->mali_port[0] = 4;
 		band->mali_port[1] = -1;
 		break;

@@ -599,10 +599,12 @@
 
 	jtag {
 		compatible = "amlogic, jtag";
-		status = "disabled";
-		select = "disable"; /* disable/jtag_a/jtag_b */
-		//pinctrl-names="jtag_a_pins";
-		//pinctrl-0=<&jtag_a_pins>;
+		status = "okay";
+		select = "disable"; /* disable/apao */
+		interrupts = <GIC_SPI 208 IRQ_TYPE_EDGE_RISING>;
+		pinctrl-names="jtag_a_pins", "jtag_b_pins";
+		pinctrl-0=<&jtag_apao_pins>;
+		pinctrl-1=<&jtag_apee_pins>;
 	};
 
 	canvas: canvas {
@@ -1470,9 +1472,29 @@
 				bias-pull-up;
 			};
 	};
+
+	jtag_apao_pins:jtag_apao_pin {
+		mux {
+			groups = "jtag_tdi_ao3",
+			"jtag_tdo_ao4",
+			"jtag_clk_ao5",
+			"jtag_tms_ao7";
+			function = "jtag_ao";
+		};
+	};
 };
 
 &pinctrl_periphs {
+	jtag_apee_pins:jtag_apee_pin {
+		mux {
+			groups = "jtag_tdi_c1",
+			"jtag_tdo_c0",
+			"jtag_clk_c4",
+			"jtag_tms_c5";
+			function = "jtag";
+		};
+	};
+
 	i2c0_pins1:i2c0_pins1 {
 		mux {
 			groups = "i2cm_a_sda_dv4",

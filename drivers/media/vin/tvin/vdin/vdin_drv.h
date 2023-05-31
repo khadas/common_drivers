@@ -210,8 +210,8 @@ enum vdin_hw_ver_e {
 /* 20230718: optimize get video format process */
 /* 20230725: notify fps change event when not game mode */
 /* 20230727: drop the first frame for vdin1 was not write finished */
-
-#define VDIN_VER_V1 "20230727: drop the first frame for vdin1"
+/* 20230803: pc and game mode switch optimization */
+#define VDIN_VER_V1 "20230803: pc and game mode switch optimization"
 
 enum vdin_irq_flg_e {
 	VDIN_IRQ_FLG_NO_END = 1,
@@ -347,6 +347,7 @@ struct match_data_s {
 #define DURATION_VALUE_23_97_FPS	4004
 // 23.97 Set this parameter to 23 to distinguish between 24
 #define FPS_23_97_SET_TO_23		23
+#define VDIN_SET_MODE_MAX_FRAME		60
 
 #define IS_HDMI_SRC(src)	\
 		({typeof(src) src_ = src; \
@@ -580,6 +581,8 @@ struct vdin_debug_s {
 	/* vdin1 hdr set bypass */
 	bool vdin1_set_hdr_bypass;
 	bool dbg_force_shrink_en;
+	bool force_pc_mode;
+	bool force_game_mode;
 	bool bypass_tunnel;
 	bool pause_mif_dec;
 	bool pause_afbce_dec;

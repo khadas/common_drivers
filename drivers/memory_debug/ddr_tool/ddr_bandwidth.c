@@ -103,7 +103,7 @@ static void cal_ddr_usage_single(struct ddr_bandwidth *db)
 		freq = db->data_extern[i].freq;
 		mbw = (u64)freq * db->data_extern[i].data_bus_width / 2;
 		mbw /= 1024;
-		mul  = db->data_extern[i].dg.all_grant + db->data_extern[i].dg.all_grant16;
+		mul  = db->data_extern[i].dg.all_grant;
 		mul *= freq;
 		mul /= 1024;
 		do_div(mul, cnt);
@@ -156,7 +156,7 @@ static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 
 	if (db->mode == MODE_AUTODETECT) { /* ignore mali bandwidth */
 		static int count;
-		unsigned int grant = dg->all_grant + dg->all_grant16;
+		unsigned int grant = dg->all_grant;
 
 		if (db->mali_port[0] >= 0)
 			grant -= dg->channel_grant[0];
@@ -221,13 +221,12 @@ static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 			for (i = 0; i < db->dmc_number; i++) {
 				freq = db->data_extern[i].freq;
 				mul_tmp = db->data_extern[i].dg.all_grant;
-				mul_tmp += db->data_extern[i].dg.all_grant16;
 				mul_tmp *= freq;
 				mul += mul_tmp;
 			}
 
 		} else {
-			mul = dg->all_grant + dg->all_grant16;
+			mul = dg->all_grant;
 			mul *= freq;
 		}
 		mul /= 1024;
@@ -1300,6 +1299,7 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 #ifdef CONFIG_AMLOGIC_DDR_BANDWIDTH_TXHD2
 	case DMC_TYPE_TXHD2:
 		band->ops = &txhd2_ddr_bw_ops;
+		band->soc_feature |= DDR_WIDTH_IS_16BIT;
 		aml_db->channels = 8;
 		aml_db->mali_port[0] = 1;
 		aml_db->mali_port[1] = 2;

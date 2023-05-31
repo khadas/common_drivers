@@ -117,44 +117,10 @@ static void txhd2_dmc_range_config(struct ddr_bandwidth *db, int channel,
 
 static unsigned long txhd2_get_dmc_freq_quick(struct ddr_bandwidth *db)
 {
-	unsigned int val;
-	unsigned int n, m, od1;
-	unsigned int od_div = 0xfff;
-	unsigned long freq = 0;
+	unsigned long freq;
 
-	val = readl(db->pll_reg);
-	val = val & 0xfffff;
-	switch ((val >> 16) & 7) {
-	case 0:
-		od_div = 2;
-		break;
-
-	case 1:
-		od_div = 3;
-		break;
-
-	case 2:
-		od_div = 4;
-		break;
-
-	case 3:
-		od_div = 6;
-		break;
-
-	case 4:
-		od_div = 8;
-		break;
-
-	default:
-		break;
-	}
-
-	m = val & 0x1ff;
-	n = ((val >> 10) & 0x1f);
-	od1 = (((val >> 19) & 0x1)) == 1 ? 2 : 1;
-	freq = DEFAULT_XTAL_FREQ / 1000;	/* avoid overflow */
-	if (n)
-		freq = ((((freq * m) / n) >> od1) / od_div) * 1000;
+	freq = readl(db->pll_reg) * 1000000;
+	freq = freq >> 1;
 
 	return freq;
 }

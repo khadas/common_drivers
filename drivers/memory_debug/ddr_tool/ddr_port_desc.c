@@ -1047,7 +1047,7 @@ static struct ddr_port_desc ddr_port_desc_t3x[] __initdata = {
 static struct ddr_port_desc ddr_port_desc_txhd2[] __initdata = {
 	{ .port_id =  0, .port_name = "ARM_A53"       },
 	{ .port_id =  1, .port_name = "MALI0"         },
-	{ .port_id =  2, .port_name = "MALI0"         },
+	{ .port_id =  2, .port_name = "MALI1"         },
 	{ .port_id =  3, .port_name = "HDMI"          },
 	{ .port_id =  4, .port_name = "HEVC"          },
 	{ .port_id =  7, .port_name = "DEVICE"        },
@@ -1058,7 +1058,7 @@ static struct ddr_port_desc ddr_port_desc_txhd2[] __initdata = {
 	{ .port_id = 19, .port_name = "VPU0 WRITE"    },
 	{ .port_id = 20, .port_name = "VPU1 WRITE"    },
 	{ .port_id = 21, .port_name = "VDEC"          },
-	{ .port_id = 21, .port_name = "GE2D"          },
+	{ .port_id = 23, .port_name = "GE2D"          },
 	/* start of each device */
 	{ .port_id = 34, .port_name = "DMA"           },
 	{ .port_id = 35, .port_name = "ARB0"          },

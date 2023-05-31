@@ -180,8 +180,10 @@ static int txhd2_dmc_mon_set(struct dmc_monitor *mon)
 	if (dmc_mon->debug & DMC_DEBUG_WRITE)
 		value |= (1 << 24);
 
-	if (dmc_mon->debug & DMC_DEBUG_READ)
-		value |= (1 << 26);
+	/* if set, will be crash when read access */
+	/* if (dmc_mon->debug & DMC_DEBUG_READ)
+	 *	value |= (1 << 26);
+	 */
 
 	dmc_prot_rw(dmc_mon->io_mem1, DMC_PROT0_CTRL1, value, DMC_WRITE);
 

@@ -479,7 +479,7 @@
 		compatible = "amlogic,ddr-bandwidth-txhd2";
 		status = "okay";
 		reg = <0xff638000 0x400
-		       0xff6388a4 0x4>;
+		       0xff6388a8 0x4>;
 		interrupts = <0 52 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "ddr_bandwidth";
 	};

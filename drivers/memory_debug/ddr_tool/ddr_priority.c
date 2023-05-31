@@ -742,6 +742,78 @@ static struct ddr_priority ddr_priority_t5m[] __initdata = {
 		.w_offset = (0x137 << 2), .w_bit_s = 0, .w_width = 0xf,
 		.r_offset = (0x137 << 2), .r_bit_s = 4, .r_width = 0xf	},
 };
+
+static struct ddr_priority ddr_priority_txhd2[] __initdata = {
+	{ .port_id = 0, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x80 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x80 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 1, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x84 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x84 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 2, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x88 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x88 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 3, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x8c << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x8c << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 4, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x90 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x90 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 7, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x9c << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x9c << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 8, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0xa0 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0xa0 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 16, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x60 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x60 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 17, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x64 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x64 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 18, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x68 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x68 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 19, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x6c << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x6c << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 20, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x70 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x70 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 21, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x74 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x74 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 23, .reg_base = 0xff638000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x7c << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x7c << 2), .r_bit_s = 16, .r_width = 0x7	}
+};
 #endif
 
 static struct ddr_priority *ddr_priority_list;
@@ -774,6 +846,10 @@ int __init ddr_find_port_priority(int cpu_type, struct ddr_priority **desc)
 	case DMC_TYPE_T5M:
 		*desc = ddr_priority_t5m;
 		desc_size = ARRAY_SIZE(ddr_priority_t5m);
+		break;
+	case DMC_TYPE_TXHD2:
+		*desc = ddr_priority_txhd2;
+		desc_size = ARRAY_SIZE(ddr_priority_txhd2);
 		break;
 #endif
 	default:

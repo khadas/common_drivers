@@ -849,13 +849,16 @@
 			#address-cells = <1>;
 			#size-cells = <1>;
 			ranges = <0x0 0xff634000 0x1000>;
-
-			rng {
-				compatible = "amlogic,meson-rng";
-				reg = <0x100 0x4>;
-				quality = /bits/ 16 <1000>;
-			};
 		};/* end of periphs */
+
+		rng {
+			compatible="amlogic,meson-rng";
+			status="okay";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			reg=<0xff630218 0x4>;
+			quality=/bits/ 16 <1000>;
+		};
 
 		hiubus: hiubus@ff63c000 {
 			compatible = "simple-bus";

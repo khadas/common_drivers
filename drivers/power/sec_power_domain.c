@@ -672,6 +672,8 @@ static struct sec_pm_private_domain txhd2_pm_domains[] __initdata = {
 				       GENPD_FLAG_ALWAYS_ON),
 	[PDID_DEMOD] = POWER_DOMAIN(demod, PDID_DEMOD, DOMAIN_INIT_ON,
 					  GENPD_FLAG_ALWAYS_ON),
+	[PDID_DOS_VDEC] = POWER_DOMAIN(vdec, PDID_DOS_VDEC, DOMAIN_INIT_ON,
+					  GENPD_FLAG_ALWAYS_ON),
 };
 
 static struct sec_pm_domain_data txhd2_pm_domain_data __initdata = {

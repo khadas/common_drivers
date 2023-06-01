@@ -3320,7 +3320,6 @@ int Gxtv_Demod_Dtmb_Init(struct aml_dtvdemod *demod)
 
 	demod->demod_status.ch_if = DEMOD_5M_IF;
 	demod->demod_status.tmp = ADC_MODE;
-	demod->demod_status.spectrum = devp->spectrum;
 	demod->demod_status.adc_freq = sys.adc_clk;
 	demod->demod_status.clk_freq = sys.demod_clk;
 
@@ -5782,6 +5781,19 @@ const struct meson_ddemod_data data_t3x = {
 	},
 	.hw_ver = DTVDEMOD_HW_T3X,
 };
+
+const struct meson_ddemod_data data_txhd2 = {
+	.dig_clk = {
+		.demod_clk_ctl = 0x74,
+		.demod_clk_ctl_1 = 0x75,
+	},
+	.regoff = {
+		.off_demod_top = 0xf000,
+		.off_dtmb = 0x0000,
+		.off_front = 0x3800,
+	},
+	.hw_ver = DTVDEMOD_HW_TXHD2,
+};
 #endif
 
 static const struct of_device_id meson_ddemod_match[] = {
@@ -5841,6 +5853,9 @@ static const struct of_device_id meson_ddemod_match[] = {
 	}, {
 		.compatible = "amlogic, ddemod-t3x",
 		.data		= &data_t3x,
+	}, {
+		.compatible = "amlogic, ddemod-txhd2",
+		.data		= &data_txhd2,
 	},
 #endif
 	/* DO NOT remove, to avoid scan err of KASAN */
@@ -5901,6 +5916,7 @@ static int dds_init_reg_map(struct platform_device *pdev)
 	case DTVDEMOD_HW_T5W:
 	case DTVDEMOD_HW_T5M:
 	case DTVDEMOD_HW_T3X:
+	case DTVDEMOD_HW_TXHD2:
 		break;
 
 	default:
@@ -5926,29 +5942,10 @@ int dtvdemod_set_iccfg_by_dts(struct platform_device *pdev)
 	if (ret != 0)
 		PR_INFO("no reserved mem.\n");
 
-	//Agc pin direction set
+	//dvb-s/s2 tuner agc pin direction set
 	//have "agc_pin_direction" agc_direction = 1;donot have agc_direction = 0
 	devp->agc_direction = of_property_read_bool(pdev->dev.of_node, "agc_pin_direction");
 	PR_INFO("agc_pin_direction:%d\n", devp->agc_direction);
-
-#ifdef CONFIG_OF
-	ret = of_property_read_u32(pdev->dev.of_node, "spectrum", &value);
-	if (!ret) {
-		devp->spectrum = value;
-		PR_INFO("spectrum: %d\n", value);
-	} else {
-		devp->spectrum = 2;
-	}
-#else
-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "spectrum");
-	if (res) {
-		int spectrum = res->start;
-
-		devp->spectrum = spectrum;
-	} else {
-		devp->spectrum = 0;
-	}
-#endif
 
 #ifdef CONFIG_OF
 	ret = of_property_read_u32(pdev->dev.of_node, "atsc_version", &value);
@@ -6597,7 +6594,8 @@ static int aml_dtvdemod_probe(struct platform_device *pdev)
 
 		/* delayed workqueue for dvbt2 fw downloading */
 		if (dtvdd_devp->data->hw_ver != DTVDEMOD_HW_S4 &&
-			dtvdd_devp->data->hw_ver != DTVDEMOD_HW_S4D) {
+			dtvdd_devp->data->hw_ver != DTVDEMOD_HW_S4D &&
+			dtvdd_devp->data->hw_ver != DTVDEMOD_HW_TXHD2) {
 			INIT_DELAYED_WORK(&devp->fw_dwork, dtvdemod_fw_dwork);
 			schedule_delayed_work(&devp->fw_dwork, 10 * HZ);
 		}
@@ -8266,6 +8264,13 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 #endif
 			strcpy(aml_dtvdm_ops.info.name,
 					"Aml DVB-C/T/T2/S/S2/ATSC/ISDBT/DTMB ddemod t3x");
+			break;
+
+		case DTVDEMOD_HW_TXHD2:
+			aml_dtvdm_ops.delsys[0] = SYS_DTMB;
+#ifdef CONFIG_AMLOGIC_DVB_COMPAT
+			aml_dtvdm_ops.delsys[1] = SYS_ANALOG;
+#endif
 			break;
 
 		default:

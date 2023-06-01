@@ -501,8 +501,8 @@ void demod_power_switch(int pwr_cntl)
 void demod_set_mode_ts(enum fe_delivery_system delsys)
 {
 	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
-	union demod_cfg0 cfg0;
-	unsigned int dvbt_mode = 0x11;
+	union demod_cfg0 cfg0 = { .d32 = 0, };
+	unsigned int dvbt_mode = 0x11; // demod_cfg3
 
 	cfg0.b.adc_format = 1;
 	cfg0.b.adc_regout = 1;
@@ -575,16 +575,13 @@ void demod_set_mode_ts(enum fe_delivery_system delsys)
 		break;
 	}
 
-	PR_INFO("%s: top wrW 0x%x=0x%x\n",
-		__func__, DEMOD_TOP_REG0, cfg0.d32);
-
 	demod_top_write_reg(DEMOD_TOP_REG0, cfg0.d32);
 	demod_top_write_reg(DEMOD_TOP_REGC, dvbt_mode);
 }
 
 int clocks_set_sys_defaults(struct aml_dtvdemod *demod, unsigned int adc_clk)
 {
-	union demod_cfg2 cfg2;
+	union demod_cfg2 cfg2 = { .d32 = 0, };
 	int sts_pll = 0;
 #ifdef CONFIG_AMLOGIC_MEDIA_ADC
 	struct dfe_adcpll_para ddemod_pll;
@@ -611,8 +608,6 @@ int clocks_set_sys_defaults(struct aml_dtvdemod *demod, unsigned int adc_clk)
 
 		return sts_pll;
 	}
-
-	PR_INFO("%s: 1111111\n", __func__);
 
 	demod_set_mode_ts(demod->demod_status.delsys);
 	cfg2.b.biasgen_en = 1;

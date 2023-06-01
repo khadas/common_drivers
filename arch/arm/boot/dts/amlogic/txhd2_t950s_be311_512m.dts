@@ -346,6 +346,52 @@
 		key_tolerance = <40 40 40 40 40 40 40>;
 	};
 
+	atv-demod {
+		compatible = "amlogic, atv-demod";
+		status = "okay";
+		btsc_sap_mode = <1>;
+		interrupts = <0 236 1>;
+		//pinctrl-names="atvdemod_agc_pins";
+		//pinctrl-0=<&atvdemod_agc_pins>;
+		reg = <0xff656000 0x2000    // demod reg
+				0xff646000 0x2000   // clktree reg
+				0x0 0x0             // periphs reg
+				0xff64a000 0x2000>; // adec reg
+		//common_agc = <1>;
+	};
+
+	aml_dtv_demod {
+		compatible = "amlogic, ddemod-txhd2";
+		dev_name = "aml_dtv_demod";
+		status = "okay";
+		//pinctrl-names="if_agc_pins";
+		//pinctrl-0=<&dtvdemod_if_agc_pins>;
+		power-domains = <&pwrdm PDID_DEMOD>;
+		reg = <0xff670000 0x10000 //dtv demod base
+				0xff646000 0x2000 //clktree reg base
+				0xff800000 0x1000 //io_aobus_base
+				0xffd01000 0x2000>; //system reset
+
+		cma_mem_size = <8>; // MB
+	};
+
+	dvb-extern {
+		compatible = "amlogic, dvb-extern";
+		dev_name = "dvb-extern";
+		status = "okay";
+
+		fe_num = <1>;
+		fe0_demod = "internal";
+
+		tuner_num = <1>; // tuner number, multi tuner support
+		tuner0_name = "atbm253_tuner";
+		tuner0_i2c_adap = <&i2c1>;
+		tuner0_i2c_addr = <0xC0>; // 8 bits
+		tuner0_xtal = <1>;       // 0: 16MHz, 1: 24MHz
+		tuner0_xtal_mode = <0>;  // atbm253 fixed to 0.
+		tuner0_xtal_cap = <8>;
+	};
+
 	dvb-demux {
 		compatible = "amlogic, dvb-demux";
 		dev_name = "dvb-demux";
@@ -371,6 +417,13 @@
 		//pinctrl-0 = <&dvb_p_ts2_pins>;
 	};
 }; /* end of / */
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <300000>;
+	pinctrl-names="default";
+	pinctrl-0=<&i2c1_pins1>;
+};
 
 &sd_emmc_c {
 	status = "okay";

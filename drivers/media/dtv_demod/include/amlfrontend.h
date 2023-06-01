@@ -108,6 +108,7 @@
 /*  V3.2.011 fix the sync of shutdown and tune */
 /*  V3.2.012 improved dvbc auto qam (t5w/t5m) */
 /*  V3.2.013 fixed dvbc 16/32 qam (t5d/t3) */
+/*  V3.3.00  txhd2 bringup */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -124,8 +125,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.2.013"
-#define DTVDEMOD_VER	"2023/06/26: fixed dvbc 16/32 qam (t5d/t3)"
+#define AMLDTVDEMOD_VER "V3.3.00"
+#define DTVDEMOD_VER	"2023/06/01 txhd2 bringup"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
@@ -231,7 +232,8 @@ enum dtv_demod_hw_ver_e {
 	DTVDEMOD_HW_S4D,
 	DTVDEMOD_HW_T5W,
 	DTVDEMOD_HW_T5M,
-	DTVDEMOD_HW_T3X
+	DTVDEMOD_HW_T3X,
+	DTVDEMOD_HW_TXHD2
 };
 
 struct ddemod_dig_clk_addr {
@@ -432,8 +434,6 @@ struct amldtvdemod_device_s {
 	unsigned int			cma_mem_alloc;
 #endif
 
-	/*for dtv spectrum*/
-	int			spectrum;
 	/*for atsc version*/
 	int			atsc_version;
 	/*for dtv priv*/

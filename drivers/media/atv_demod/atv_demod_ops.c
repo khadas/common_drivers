@@ -205,8 +205,6 @@ int atv_demod_enter_mode(struct dvb_frontend *fe)
 	return -1;
 #endif
 
-	adc_set_filter_ctrl(true, FILTER_ATV_DEMOD, NULL);
-
 	usleep_range(2000, 2100);
 	atvdemod_clk_init();
 	/* err_code = atvdemod_init(); */

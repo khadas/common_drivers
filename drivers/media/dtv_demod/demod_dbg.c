@@ -43,6 +43,10 @@ MODULE_PARM_DESC(testbus_read_only, "\n\t\t testbus_read_only");
 static unsigned int testbus_read_only;
 module_param(testbus_read_only, int, 0644);
 
+MODULE_PARM_DESC(testbus_test_mode, "\n\t\t testbus_test_mode");
+static unsigned char testbus_test_mode;
+module_param(testbus_test_mode, byte, 0644);
+
 static void get_chip_name(struct amldtvdemod_device_s *devp, char *str)
 {
 	switch (devp->data->hw_ver) {
@@ -104,6 +108,10 @@ static void get_chip_name(struct amldtvdemod_device_s *devp, char *str)
 
 	case DTVDEMOD_HW_T3X:
 		strcpy(str, "DTVDEMOD_HW_T3X");
+		break;
+
+	case DTVDEMOD_HW_TXHD2:
+		strcpy(str, "DTVDEMOD_HW_TXHD2");
 		break;
 
 	default:
@@ -797,11 +805,16 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 	front_write_bits(0x3a, 1, 10, 1);
 	/* Stop cap */
 	front_write_bits(0x3a, 1, 12, 1);
+
+	//tb_capture_en 0x39[28]: disable capture data to ddr enable
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M))
+		front_write_bits(0x39, 0, 28, 1);
+
 	/* testbus addr */
 	front_write_bits(0x39, addr, 0, 16);
 
 	/* disable test_mode */
-	if (test_mode)
+	if (test_mode || testbus_test_mode)
 		front_write_bits(0x3a, 1, 13, 1);
 	else
 		front_write_bits(0x3a, 0, 13, 1);
@@ -843,8 +856,10 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 	else
 		size = demod_ddr_size;
 
-	PR_INFO("%s: capture_mode:%d, test_mode:%d, addr offset:%dM, cap_size:%dM.\n",
-			__func__, capture_mode, test_mode, offset / SZ_1M, size / SZ_1M);
+	PR_INFO("%s: capture_mode:%d, test_mode:%d, start_addr:0x%x, offset:%dM, size:%dM.\n",
+			__func__, capture_mode, test_mode || testbus_test_mode,
+			start_addr, offset / SZ_1M, size / SZ_1M);
+
 	start_addr += offset;
 	front_write_reg(0x3c, start_addr);
 	front_write_reg(0x3d, start_addr + size);
@@ -912,11 +927,6 @@ unsigned int clear_ddr_bus_data(struct aml_dtvdemod *demod)
 	unsigned int top_saved = 0, polling_en = 0;
 	unsigned int offset = 0, size = 0;
 
-	if (unlikely(!devp)) {
-		PR_ERR("%s:devp is NULL\n", __func__);
-		return -1;
-	}
-
 	testbus_addr = 0x1000;
 	width = 9;
 	vld = 0x100000;
@@ -933,6 +943,11 @@ unsigned int clear_ddr_bus_data(struct aml_dtvdemod *demod)
 	front_write_bits(0x3a, 1, 10, 1);
 	/* Stop cap */
 	front_write_bits(0x3a, 1, 12, 1);
+
+	//tb_capture_en 0x39[28]: disable capture data to ddr enable
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M))
+		front_write_bits(0x39, 0, 28, 1);
+
 	/* testbus addr */
 	front_write_bits(0x39, testbus_addr, 0, 16);
 
@@ -959,9 +974,20 @@ unsigned int clear_ddr_bus_data(struct aml_dtvdemod *demod)
 	front_write_bits(0x3a, 0, 10, 1);
 	front_write_bits(0x39, 0, 31, 1);
 	front_write_bits(0x39, 1, 31, 1);
+
+	//tb_capture_en 0x39[28]: enable capture data to ddr enable
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M))
+		front_write_bits(0x39, 1, 28, 1);
+
 	/* go tb */
 	front_write_bits(0x3a, 0, 12, 1);
+
 	wait_capture(0x3f, tb_depth, start_addr);
+
+	//tb_capture_en 0x39[28]: disable capture data to ddr enable
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M))
+		front_write_bits(0x39, 0, 28, 1);
+
 	/* stop tb */
 	front_write_bits(0x3a, 1, 12, 1);
 	tb_start = front_read_reg(0x3f);

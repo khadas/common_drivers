@@ -64,7 +64,8 @@
 /* 2022/08/27 --- V2.35 --- Fix ripples. */
 /* 2022/12/15 --- V2.36 --- t5m ATVDemod/DTVDemod/Tuner bringup */
 /* 2022/12/15 --- V2.37 --- t3x bringup */
-#define AMLATVDEMOD_VER "V2.37"
+/* 2022/12/15 --- V3.00 --- txhd2 bringup */
+#define AMLATVDEMOD_VER "V3.00"
 
 struct aml_atvdemod_device *amlatvdemod_devp;
 
@@ -752,7 +753,7 @@ static int aml_atvdemod_probe(struct platform_device *pdev)
 					dev->audiodemod_reg_base);
 	}
 
-	/* add for audio system control */
+	/* atv audio source: ATV mono or ADEC, audio select input control */
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	if (is_meson_txlx_cpu() || is_meson_txhd_cpu()) {
 		dev->audio_reg_base = ioremap(round_down(0xffd0d340, 0x3), 4);

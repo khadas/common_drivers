@@ -1906,6 +1906,13 @@
 		interrupt-names =
 			"toddr_a", "toddr_b",
 			"frddr_a", "frddr_b", "frddr_c";
+
+		//Source of the input data of DACL and DACR:
+		//0 = The left channel data of I2S_DIN to left channel,
+		//	The right channel data of I2S_DIN to right channel.
+		//1 = The left channel data of I2S_DIN to right channel,
+		//	The right channel data of I2S_DIN to left channel.
+		acodec_LR_swap = <0>;
 	};
 
 	vpu: vpu {

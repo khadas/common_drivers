@@ -4760,9 +4760,7 @@ static void disable_vd2_blend(struct video_layer_s *layer)
 			gvideo_recv[1] ? &gvideo_recv[1]->local_buf : NULL);
 	cur_dev->rdma_func[vpp_index].rdma_wr(layer->vd_afbc_reg.afbc_enable, 0);
 	cur_dev->rdma_func[vpp_index].rdma_wr(layer->vd_mif_reg.vd_if0_gen_reg, 0);
-
 	vpu_module_clk_disable(vpp_index, VD2_SCALER, 0);
-
 	if (layer->dispbuf &&
 	    is_local_vf(layer->dispbuf)) {
 		layer->dispbuf = NULL;
@@ -8216,9 +8214,10 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 
 	post_blend_dummy_data_update(vpp_index);
 
-	if ((vd_layer[1].dispbuf && video2_off_req) ||
+	if (glayer_info[1].layer_support &&
+		((vd_layer[1].dispbuf && video2_off_req) ||
 	    (!vd_layer[1].dispbuf &&
-	     (video1_off_req || video2_off_req)))
+	     (video1_off_req || video2_off_req))))
 		disable_vd2_blend(&vd_layer[1]);
 
 	if (video1_off_req)

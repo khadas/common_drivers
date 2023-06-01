@@ -64,6 +64,7 @@ struct tl1_acodec_priv {
 	int dac_output_invert;
 	int lane_offset;
 	bool txhd2_version;
+	int analog_input;
 };
 
 static const struct reg_default tl1_acodec_init_list[] = {
@@ -166,7 +167,14 @@ static int tl1_acodec_reg_init(struct snd_soc_component *component)
 
 	if (aml_acodec && aml_acodec->diff_input == 1)
 		snd_soc_component_update_bits(component, ACODEC_1, 0xffff << 0, 0x6969 << 0);
-
+	if (aml_acodec && aml_acodec->txhd2_version) {
+		if (aml_acodec->analog_input == 1)
+			snd_soc_component_update_bits(component, ACODEC_1,
+							0xffff << 0, 0x5050 << 0);
+		else
+			snd_soc_component_update_bits(component, ACODEC_1,
+							0xffff << 0, 0x3030 << 0);
+	}
 	if (aml_acodec && aml_acodec->chipinfo && aml_acodec->dac_extra_12db == 1) {
 		u32 val = 0;
 
@@ -1086,6 +1094,11 @@ static int aml_tl1_acodec_probe(struct platform_device *pdev)
 			(pdev->dev.of_node,
 			"lane_offset",
 			&aml_acodec->lane_offset);
+
+	of_property_read_u32
+			(pdev->dev.of_node,
+			"analog_input",
+			&aml_acodec->analog_input);
 
 	aml_acodec->txhd2_version =
 			of_property_read_bool(pdev->dev.of_node, "txhd2_version");

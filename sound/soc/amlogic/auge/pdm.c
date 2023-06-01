@@ -855,7 +855,7 @@ static int aml_pdm_dai_set_sysclk(struct snd_soc_dai *cpu_dai,
 
 	sysclk_srcpll_freq = clk_get_rate(p_pdm->sysclk_srcpll);
 	dclk_srcpll_freq = clk_get_rate(p_pdm->dclk_srcpll);
-	clk_set_rate(p_pdm->clk_pdm_sysclk, 133333351);
+
 
 	clk_name = (char *)__clk_get_name(p_pdm->dclk_srcpll);
 	if (!strcmp(clk_name, "hifi_pll") || !strcmp(clk_name, "t5_hifi_pll")) {
@@ -878,11 +878,19 @@ static int aml_pdm_dai_set_sysclk(struct snd_soc_dai *cpu_dai,
 		if (dclk_srcpll_freq == 0)
 			clk_set_rate(p_pdm->dclk_srcpll, 24576000 * 20);
 	}
+
 	clk_set_rate(p_pdm->clk_pdm_dclk, pdm_dclkidx2rate(dclk_idx));
+	clk_set_rate(p_pdm->clk_pdm_sysclk, 133333351);
 
 	ret = clk_prepare_enable(p_pdm->clk_pdm_dclk);
 	if (ret) {
 		pr_err("Can't enable pcm clk_pdm_dclk clock: %d\n", ret);
+		return -EINVAL;
+	}
+
+	ret = clk_prepare_enable(p_pdm->clk_pdm_sysclk);
+	if (ret) {
+		pr_err("Can't enable pcm clk_pdm_sysclk clock: %d\n", ret);
 		return -EINVAL;
 	}
 

@@ -761,9 +761,11 @@ u8 hdmirx_rd_cor(u32 addr, u8 port)
 	/* addr bit[8:15] is 0x1d or 0x1e need write twice */
 	need_wr_twice = ((((addr >> 8) & 0xff) == 0x1d) ||
 		(((addr >> 8) & 0xff) == 0x1e));
-	dev_offset = rx_reg_maps[MAP_ADDR_MODULE_TOP].phy_addr;
 	if (rx_info.chip_id == CHIP_ID_TXHD2)
-		dev_offset += TOP_COR_BASE_OFFSET_TXHD2;
+		dev_offset = rx_reg_maps[MAP_ADDR_MODULE_COR].phy_addr;
+	else
+		dev_offset = rx_reg_maps[MAP_ADDR_MODULE_TOP].phy_addr;
+
 	if (rx_info.chip_id >= CHIP_ID_T3X) {
 		dev_offset = rx_reg_maps[MAP_ADDR_MODULE_TOP].phy_addr;
 		if ((addr >= 0x1800 && addr <= 0x1bff) ||
@@ -779,10 +781,16 @@ u8 hdmirx_rd_cor(u32 addr, u8 port)
 			dev_offset += TOP_COR_BASE_OFFSET_T7;
 	}
 	spin_lock_irqsave(&reg_rw_lock, flags);
-	data = rd_reg_b(MAP_ADDR_MODULE_TOP, addr + dev_offset);
-	if (need_wr_twice)
-		data = rd_reg_b(MAP_ADDR_MODULE_TOP,
-		      addr + dev_offset);
+	if (rx_info.chip_id == CHIP_ID_TXHD2)
+		data = rd_reg_b(MAP_ADDR_MODULE_COR, addr + dev_offset);
+	else
+		data = rd_reg_b(MAP_ADDR_MODULE_TOP, addr + dev_offset);
+	if (need_wr_twice) {
+		if (rx_info.chip_id == CHIP_ID_TXHD2)
+			data = rd_reg_b(MAP_ADDR_MODULE_COR, addr + dev_offset);
+		else
+			data = rd_reg_b(MAP_ADDR_MODULE_TOP, addr + dev_offset);
+	}
 	spin_unlock_irqrestore(&reg_rw_lock, flags);
 
 	return data;
@@ -804,9 +812,10 @@ void hdmirx_wr_cor(u32 addr, u8 data, u8 port)
 	/* addr bit[8:15] is 0x1d or 0x1e need write twice */
 	need_wr_twice = ((((addr >> 8) & 0xff) == 0x1d) ||
 		(((addr >> 8) & 0xff) == 0x1e));
-	dev_offset = rx_reg_maps[MAP_ADDR_MODULE_TOP].phy_addr;
 	if (rx_info.chip_id == CHIP_ID_TXHD2)
-		dev_offset += TOP_COR_BASE_OFFSET_TXHD2;
+		dev_offset = rx_reg_maps[MAP_ADDR_MODULE_COR].phy_addr;
+	else
+		dev_offset = rx_reg_maps[MAP_ADDR_MODULE_TOP].phy_addr;
 	if (rx_info.chip_id >= CHIP_ID_T3X) {
 		if ((addr >= 0x1800 && addr <= 0x1bff) ||
 			(addr >= 0x1400 && addr <= 0x14ff)) {
@@ -821,11 +830,20 @@ void hdmirx_wr_cor(u32 addr, u8 data, u8 port)
 			dev_offset += TOP_COR_BASE_OFFSET_T7;
 	}
 	spin_lock_irqsave(&reg_rw_lock, flags);
-	wr_reg_b(MAP_ADDR_MODULE_TOP,
-	       addr + dev_offset, data);
-	if (need_wr_twice)
+	if (rx_info.chip_id == CHIP_ID_TXHD2)
+		wr_reg_b(MAP_ADDR_MODULE_COR,
+		addr + dev_offset, data);
+	else
 		wr_reg_b(MAP_ADDR_MODULE_TOP,
-			addr + dev_offset, data);
+		addr + dev_offset, data);
+	if (need_wr_twice) {
+		if (rx_info.chip_id == CHIP_ID_TXHD2)
+			wr_reg_b(MAP_ADDR_MODULE_COR,
+				addr + dev_offset, data);
+		else
+			wr_reg_b(MAP_ADDR_MODULE_TOP,
+				addr + dev_offset, data);
+	}
 	spin_unlock_irqrestore(&reg_rw_lock, flags);
 }
 
@@ -3167,57 +3185,113 @@ void hdcp_22_on(void)
 void clk_init_cor(void)
 {
 	u32 data32;
-	//u8 port = rx_info.main_port;
+	u8 port = rx_info.main_port;
 
 	rx_pr("\n clk_init\n");
-	/* DWC clock enable */
-	/* Turn on clk_hdmirx_pclk, also = sysclk */
-	wr_reg_clk_ctl(CLKCTRL_SYS_CLK_EN0_REG2,
-		       rd_reg_clk_ctl(CLKCTRL_SYS_CLK_EN0_REG2) | (1 << 9));
+	if (rx_info.chip_id >= CHIP_ID_T7 && rx_info.chip_id != CHIP_ID_TXHD2) {
+		/* Turn on clk_hdmirx_pclk, also = sysclk */
+		wr_reg_clk_ctl(CLKCTRL_SYS_CLK_EN0_REG2,
+			       rd_reg_clk_ctl(CLKCTRL_SYS_CLK_EN0_REG2) | (1 << 9));
 
-	data32	= 0;
-	data32 |= (0 << 25);// [26:25] clk_sel for cts_hdmirx_2m_clk: 0=cts_oscin_clk
-	data32 |= (0 << 24);// [   24] clk_en for cts_hdmirx_2m_clk
-	data32 |= (11 << 16);// [22:16] clk_div for cts_hdmirx_2m_clk: 24/12=2M
-	data32 |= (3 << 9);// [10: 9] clk_sel for cts_hdmirx_5m_clk: 3=fclk_div5
-	data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_5m_clk
-	data32 |= (79 << 0);// [ 6: 0] clk_div for cts_hdmirx_5m_clk: fclk_dvi5/80=400/80=5M
-	wr_reg_clk_ctl(RX_CLK_CTRL, data32);
-	data32 |= (1 << 24);// [   24] clk_en for cts_hdmirx_2m_clk
-	data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_5m_clk
-	wr_reg_clk_ctl(RX_CLK_CTRL, data32);
+		data32	= 0;
+		data32 |= (0 << 25);// [26:25] clk_sel for cts_hdmirx_2m_clk: 0=cts_oscin_clk
+		data32 |= (0 << 24);// [   24] clk_en for cts_hdmirx_2m_clk
+		data32 |= (11 << 16);// [22:16] clk_div for cts_hdmirx_2m_clk: 24/12=2M
+		data32 |= (3 << 9);// [10: 9] clk_sel for cts_hdmirx_5m_clk: 3=fclk_div5
+		data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_5m_clk
+		data32 |= (79 << 0);// [ 6: 0] clk_div for cts_hdmirx_5m_clk: fclk_dvi5/80=400/80=5M
+		wr_reg_clk_ctl(RX_CLK_CTRL, data32);
+		data32 |= (1 << 24);// [   24] clk_en for cts_hdmirx_2m_clk
+		data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_5m_clk
+		wr_reg_clk_ctl(RX_CLK_CTRL, data32);
 
+		data32  = 0;
+		data32 |= (3 << 25);// [26:25] clk_sel for cts_hdmirx_hdcp2x_eclk: 3=fclk_div5
+		data32 |= (0 << 24);// [   24] clk_en for cts_hdmirx_hdcp2x_eclk
+		data32 |= (15 << 16);// [22:16] clk_div for cts_hdmirx_hdcp2x_eclk:
+		//fclk_dvi5/16=400/16=25M
+		data32 |= (3 << 9);// [10: 9] clk_sel for cts_hdmirx_cfg_clk: 3=fclk_div5
+		data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_cfg_clk
+		data32 |= (7 << 0);// [ 6: 0] clk_div for cts_hdmirx_cfg_clk: fclk_dvi5/8=400/8=50M
+		wr_reg_clk_ctl(RX_CLK_CTRL1, data32);
+		data32 |= (1 << 24);// [   24] clk_en for cts_hdmirx_hdcp2x_eclk
+		data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_cfg_clk
+		wr_reg_clk_ctl(RX_CLK_CTRL1, data32);
+
+		data32  = 0;
+		data32 |= (1 << 25);// [26:25] clk_sel for cts_hdmirx_acr_ref_clk: 1=fclk_div4
+		data32 |= (0 << 24);// [   24] clk_en for cts_hdmirx_acr_ref_clk
+		data32 |= (0 << 16);// [22:16] clk_div for cts_hdmirx_acr_ref_clk://fclk_div4/1=500M
+		data32 |= (0 << 9);// [10: 9] clk_sel for cts_hdmirx_aud_pll_clk
+		data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
+		data32 |= (0 << 0);// [ 6: 0] clk_div for cts_hdmirx_aud_pll_clk
+		wr_reg_clk_ctl(RX_CLK_CTRL2, data32);
+		data32 |= (1 << 24);// [   24] clk_en for cts_hdmirx_acr_ref_clk
+		data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
+		wr_reg_clk_ctl(RX_CLK_CTRL2, data32);
+
+		data32  = 0;
+		data32 |= (0 << 9);// [10: 9] clk_sel for cts_hdmirx_meter_clk: 0=cts_oscin_clk
+		data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_meter_clk
+		data32 |= (0 << 0);// [ 6: 0] clk_div for cts_hdmirx_meter_clk: 24M
+		wr_reg_clk_ctl(RX_CLK_CTRL3, data32);
+		data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_meter_clk
+		wr_reg_clk_ctl(RX_CLK_CTRL3, data32);
+	} else if (rx_info.chip_id == CHIP_ID_TXHD2) {
+		data32  = 0;
+	    data32 |= (0 << 25);     // [26:25] clk_sel for cts_hdmirx_2m_clk: 0=cts_oscin_clk
+	    data32 |= (0 << 24);     // [   24] clk_en for cts_hdmirx_2m_clk
+	    data32 |= (11 << 16);     // [22:16] clk_div for cts_hdmirx_2m_clk: 24/12=2M
+	    data32 |= (3 << 9);     // [10: 9] clk_sel for cts_hdmirx_5m_clk: 3=fclk_div5
+	    data32 |= (0 << 8);     // [    8] clk_en for cts_hdmirx_5m_clk
+	    data32 |= (79 << 0);     // [ 6: 0] clk_div for cts_hdmirx_5m_clk: fclk_dvi5/80
+	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL0, data32);
+	    data32 |= (1 << 24);     // [   24] clk_en for cts_hdmirx_2m_clk
+	    data32 |= (1 << 8);     // [    8] clk_en for cts_hdmirx_5m_clk
+	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL0, data32);
+
+	    data32  = 0;
+	    data32 |= (3 << 25);     // [26:25] clk_sel for cts_hdmirx_hdcp2x_eclk: 3=fclk_div5
+	    data32 |= (0 << 24);     // [   24] clk_en for cts_hdmirx_hdcp2x_eclk
+	    data32 |= (15 << 16);     // [22:16] clk_div for cts_hdmirx_hdcp2x_eclk: fclk_dvi5/16
+	    data32 |= (1 << 9);     // [10: 9] clk_sel for cts_hdmirx_cfg_clk: 3=fclk_div5
+	    data32 |= (0 << 8);     // [    8] clk_en for cts_hdmirx_cfg_clk
+	    data32 |= (7 << 0);     // [ 6: 0] clk_div for cts_hdmirx_cfg_clk: fclk_dvi5/8=400/8=50M
+	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL1, data32);
+	    data32 |= (1 << 24);     // [   24] clk_en for cts_hdmirx_hdcp2x_eclk
+	    data32 |= (1 << 8);     // [    8] clk_en for cts_hdmirx_cfg_clk
+	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL1, data32);
+
+	    data32  = 0;
+	    data32 |= (1 << 25);     // [26:25] clk_sel for cts_hdmirx_acr_ref_clk: 1=fclk_div4
+	    data32 |= (0 << 24);     // [   24] clk_en for cts_hdmirx_acr_ref_clk
+	    data32 |= (0 << 16);     // [22:16] clk_div for cts_hdmirx_acr_ref_clk: fclk_div4/1=500M
+	    data32 |= (0 << 9);     // [10: 9] clk_sel for cts_hdmirx_aud_pll_clk: 0=aud_pll_clk
+	    data32 |= (0 << 8);     // [    8] clk_en for cts_hdmirx_aud_pll_clk
+	    data32 |= (0 << 0);     // [ 6: 0] clk_div for cts_hdmirx_aud_pll_clk
+	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL2, data32);
+	    data32 |= (1 << 24);     // [   24] clk_en for cts_hdmirx_acr_ref_clk
+	    data32 |= (1 << 8);     // [    8] clk_en for cts_hdmirx_aud_pll_clk
+	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL2, data32);
+
+	    data32  = 0;
+	    data32 |= (0 << 9);     // [10: 9] clk_sel for cts_hdmirx_meter_clk: 0=cts_oscin_clk
+	    data32 |= (0 << 8);     // [    8] clk_en for cts_hdmirx_meter_clk
+	    data32 |= (0 << 0);     // [ 6: 0] clk_div for cts_hdmirx_meter_clk: 24M
+	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL3, data32);
+	    data32 |= (1 << 8);     // [    8] clk_en for cts_hdmirx_meter_clk
+	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL3, data32);
+	}
 	data32  = 0;
-	data32 |= (3 << 25);// [26:25] clk_sel for cts_hdmirx_hdcp2x_eclk: 3=fclk_div5
-	data32 |= (0 << 24);// [   24] clk_en for cts_hdmirx_hdcp2x_eclk
-	data32 |= (15 << 16);// [22:16] clk_div for cts_hdmirx_hdcp2x_eclk: fclk_dvi5/16=400/16=25M
-	data32 |= (3 << 9);// [10: 9] clk_sel for cts_hdmirx_cfg_clk: 3=fclk_div5
-	data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_cfg_clk
-	data32 |= (7 << 0);// [ 6: 0] clk_div for cts_hdmirx_cfg_clk: fclk_dvi5/8=400/8=50M
-	wr_reg_clk_ctl(RX_CLK_CTRL1, data32);
-	data32 |= (1 << 24);// [   24] clk_en for cts_hdmirx_hdcp2x_eclk
-	data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_cfg_clk
-	wr_reg_clk_ctl(RX_CLK_CTRL1, data32);
-
-	data32  = 0;
-	data32 |= (1 << 25);// [26:25] clk_sel for cts_hdmirx_acr_ref_clk: 1=fclk_div4
-	data32 |= (0 << 24);// [   24] clk_en for cts_hdmirx_acr_ref_clk
-	data32 |= (0 << 16);// [22:16] clk_div for cts_hdmirx_acr_ref_clk: fclk_div4/1=500M
-	data32 |= (0 << 9);// [10: 9] clk_sel for cts_hdmirx_aud_pll_clk: 0=hdmirx_aud_pll_clk
-	data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
-	data32 |= (0 << 0);// [ 6: 0] clk_div for cts_hdmirx_aud_pll_clk
-	wr_reg_clk_ctl(RX_CLK_CTRL2, data32);
-	data32 |= (1 << 24);// [   24] clk_en for cts_hdmirx_acr_ref_clk
-	data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
-	wr_reg_clk_ctl(RX_CLK_CTRL2, data32);
-
-	data32  = 0;
-	data32 |= (0 << 9);// [10: 9] clk_sel for cts_hdmirx_meter_clk: 0=cts_oscin_clk
-	data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_meter_clk
-	data32 |= (0 << 0);// [ 6: 0] clk_div for cts_hdmirx_meter_clk: 24M
-	wr_reg_clk_ctl(RX_CLK_CTRL3, data32);
-	data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_meter_clk
-	wr_reg_clk_ctl(RX_CLK_CTRL3, data32);
+	data32 |= (0 << 31);// [31]	  free_clk_en
+	data32 |= (0 << 15);// [15]	  hbr_spdif_en
+	data32 |= (0 << 8);// [8]	  tmds_ch2_clk_inv
+	data32 |= (0 << 7);// [7]	  tmds_ch1_clk_inv
+	data32 |= (0 << 6);// [6]	  tmds_ch0_clk_inv
+	data32 |= (0 << 5);// [5]	  pll4x_cfg
+	data32 |= (0 << 4);// [4]	  force_pll4x
+	data32 |= (0 << 3);// [3]	  phy_clk_inv
+	hdmirx_wr_top(TOP_CLK_CNTL, data32, port);
 }
 
 void clk_init_dwc(void)

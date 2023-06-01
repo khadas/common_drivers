@@ -1186,6 +1186,12 @@
 #define HHI_HDMIRX_PHY_MISC_STAT		(0xee << 2)
 #define HHI_HDMIRX_PHY_DCHD_STAT		(0xef << 2)
 
+#define HHI_HDMIRX_CLK_CNTL0			(0x07c << 2)
+#define HHI_VAPBCLK_CNTL			(0x07d << 2)
+#define HHI_HDMIRX_CLK_CNTL1			(0x080 << 2)
+#define HHI_HDMIRX_CLK_CNTL2			(0x081 << 2)
+#define HHI_AUDPLL_CLK_OUT_CNTL			(0x08c << 2)
+#define HHI_HDMIRX_CLK_CNTL3			(0x08d << 2)
 /* T5 HIU apll register */
 
 /* T7 HIU PHY register */
@@ -1552,6 +1558,7 @@
 #define PXL_BIST_CTRL_PWD_IVCRX        0x000010be
 #define BIST_CTRL_PBIST_IVCRX          0x00001c48
 #define BIST_CTRL2_PBIST_IVCRX         0x00001c65
+#define BIST_TIMING_CTRL_IVCRX         0x00001c66
 #define BIST_VIDEO_MODE_PBIST_IVCRX    0x00001c4d
 #define PWD0_CLK_BYP_4_PWD_IVCRX        0x000010bf
 #define PWD0_CLK_EN_5_PWD_IVCRX        0x000010c0

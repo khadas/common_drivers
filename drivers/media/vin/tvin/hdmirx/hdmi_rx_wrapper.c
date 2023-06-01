@@ -41,7 +41,7 @@
 #include "hdmi_rx_hw_tm2.h"
 #include "hdmi_rx_hw_t5m.h"
 #include "hdmi_rx_hw_t3x.h"
-
+#include "hdmi_rx_hw_txhd2.h"
 static int pow5v_max_cnt = 2;
 
 static int pll_unlock_max;

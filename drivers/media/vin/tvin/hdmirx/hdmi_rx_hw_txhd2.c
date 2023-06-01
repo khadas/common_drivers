@@ -2222,3 +2222,46 @@ void hdcp_init_txhd2(void)
 	hdmirx_wr_cor(RX_PWD_SRST2_PWD_IVCRX, 0x2, port);
 }
 
+void txhd2_pbist(void)
+{
+	u32 data32;
+
+	data32 = 0;
+	data32 |= (1 << 3);
+	data32 |= (0 << 2);
+	data32 |= (0 << 1);
+	data32 |= (0 << 0);
+	hdmirx_wr_cor(PXL_BIST_CTRL_PWD_IVCRX, data32 & 0xff, 0);
+
+	data32 = 0;
+	data32 |= (1 << 1);
+	hdmirx_wr_cor(BIST_CTRL_PBIST_IVCRX, data32 & 0xff, 0);
+
+	data32 = 0;
+	data32 |= (1 << 4);
+	data32 |= (1 << 3);
+	data32 |= (1 << 2);
+	data32 |= (0 << 1);
+	data32 |= (1 << 0);
+	hdmirx_wr_cor(BIST_CTRL_PBIST_IVCRX, data32 & 0xff, 0);
+
+	data32 = 0;
+	data32 |= (0 << 5);
+	data32 |= (0 << 4);
+	data32 |= (0 << 3);
+	data32 |= (0 << 2);
+	data32 |= (0 << 1);
+	data32 |= (0 << 0);
+	hdmirx_wr_cor(BIST_CTRL2_PBIST_IVCRX, data32 & 0xff, 0);
+
+	data32 = 0;
+	data32 |= (3 << 4);
+	data32 |= (1 << 2);
+	hdmirx_wr_cor(BIST_TIMING_CTRL_IVCRX, data32 & 0xff, 0);
+
+	data32 = 0;
+	data32 |= (7 << 4);
+	data32 |= (0 << 3);
+	data32 |= (5 << 0);
+	hdmirx_wr_cor(BIST_VIDEO_MODE_PBIST_IVCRX, data32 & 0xff, 0);
+}

@@ -34,13 +34,14 @@
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0 &SYSTEM_SLEEP_0>;
 			#cooling-cells = <2>;
-//			clocks = <&clkc CLKID_CPU_CLK>,
-//				<&clkc CLKID_CPU_DYN_CLK>,
-//				<&clkc CLKID_SYS1_PLL>;
-//			clock-names = "core_clk",
-//				"low_freq_clk_parent",
-//				"high_freq_clk_parent";
-//			operating-points-v2 = <&cpu_opp_table1>;
+			clocks = <&clkc CLKID_CPU_CLK>,
+				<&clkc CLKID_CPU_CLK_DYN>,
+				<&clkc CLKID_SYS_PLL>;
+			clock-names = "core_clk",
+				"low_freq_clk_parent",
+				"high_freq_clk_parent";
+			operating-points-v2 = <&cpu_opp_table0>;
+			cpu-supply = <&vddcpu0>;
 			voltage-tolerance = <0>;
 			clock-latency = <50000>;
 			dynamic-power-coefficient = <230>;
@@ -476,6 +477,54 @@
 			};
 		};
 	}; /*thermal zone end*/
+
+	cpu_opp_table0: cpu_opp_table0 {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp00 {
+			opp-hz = /bits/ 64 <100000000>;
+			opp-microvolt = <870000>;
+		};
+		opp01 {
+			opp-hz = /bits/ 64 <250000000>;
+			opp-microvolt = <870000>;
+		};
+		opp02 {
+			opp-hz = /bits/ 64 <500000000>;
+			opp-microvolt = <870000>;
+		};
+		opp04 {
+			opp-hz = /bits/ 64 <1000000000>;
+			opp-microvolt = <940000>;
+		};
+		opp05 {
+			opp-hz = /bits/ 64 <1200000000>;
+			opp-microvolt = <970000>;
+		};
+		opp06 {
+			opp-hz = /bits/ 64 <1296000000>;
+			opp-microvolt = <990000>;
+		};
+		opp07 {
+			opp-hz = /bits/ 64 <1416000000>;
+			opp-microvolt = <1010000>;
+		};
+		opp08 {
+			opp-hz = /bits/ 64 <1512000000>;
+			opp-microvolt = <1060000>;
+		};
+		opp09 {
+			opp-hz = /bits/ 64 <1608000000>;
+			opp-microvolt = <1120000>;
+		};
+	};
+
+	cpufreq-meson {
+		compatible = "amlogic, cpufreq-meson";
+		status = "okay";
+	};
+
 	ddr_bandwidth {
 		compatible = "amlogic,ddr-bandwidth-txhd2";
 		status = "okay";

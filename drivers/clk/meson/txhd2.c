@@ -2888,12 +2888,15 @@ static MESON_TXHD2_SYS_GATE(txhd2_clk81_spi,		HHI_GCLK_MPEG0, 30);
 
 static MESON_TXHD2_SYS_GATE(txhd2_clk81_audio,		HHI_GCLK_MPEG1, 0);
 static MESON_TXHD2_SYS_GATE(txhd2_clk81_eth,		HHI_GCLK_MPEG1, 3);
+static MESON_TXHD2_SYS_GATE(txhd2_clk81_dmux,		HHI_GCLK_MPEG1, 4);
 static MESON_TXHD2_SYS_GATE(txhd2_clk81_clk_rst,		HHI_GCLK_MPEG1, 5);
 static MESON_TXHD2_SYS_GATE(txhd2_clk81_aififo,		HHI_GCLK_MPEG1, 11);
 static MESON_TXHD2_SYS_GATE(txhd2_clk81_uart1,		HHI_GCLK_MPEG1, 16);
 static MESON_TXHD2_SYS_GATE(txhd2_clk81_g2d,		HHI_GCLK_MPEG1, 20);
 static MESON_TXHD2_SYS_GATE(txhd2_clk81_reset,		HHI_GCLK_MPEG1, 23);
+static MESON_TXHD2_SYS_GATE(txhd2_clk81_parser,		HHI_GCLK_MPEG1, 25);
 static MESON_TXHD2_SYS_GATE(txhd2_clk81_usb_gene,		HHI_GCLK_MPEG1, 26);
+static MESON_TXHD2_SYS_GATE(txhd2_clk81_parser1,		HHI_GCLK_MPEG1, 28);
 static MESON_TXHD2_SYS_GATE(txhd2_clk81_ahb_arb0,		HHI_GCLK_MPEG1, 29);
 
 static MESON_TXHD2_SYS_GATE(txhd2_clk81_ahb_data,		HHI_GCLK_MPEG2, 1);
@@ -2990,6 +2993,9 @@ static struct clk_hw_onecell_data txhd2_hw_onecell_data = {
 		[CLKID_CLK81_AUDIO]		= &txhd2_clk81_audio.hw,
 		[CLKID_CLK81_ETH_CORE]		= &txhd2_clk81_eth.hw,
 		[CLKID_CLK81_CLK_RST]		= &txhd2_clk81_clk_rst.hw,
+		[CLKID_CLK81_DMUX]		= &txhd2_clk81_dmux.hw,
+		[CLKID_CLK81_PARSER]		= &txhd2_clk81_parser.hw,
+		[CLKID_CLK81_PARSER1]		= &txhd2_clk81_parser1.hw,
 		[CLKID_CLK81_AIFIFO]		= &txhd2_clk81_aififo.hw,
 		[CLKID_CLK81_UART1]		= &txhd2_clk81_uart1.hw,
 		[CLKID_CLK81_G2D]		= &txhd2_clk81_g2d.hw,
@@ -3303,6 +3309,9 @@ static struct clk_regmap *const txhd2_cpu_clk_regmaps[] __initconst = {
 	&txhd2_clk81_spi,
 	&txhd2_clk81_audio,
 	&txhd2_clk81_eth,
+	&txhd2_clk81_dmux,
+	&txhd2_clk81_parser,
+	&txhd2_clk81_parser1,
 	&txhd2_clk81_clk_rst,
 	&txhd2_clk81_aififo,
 	&txhd2_clk81_uart1,

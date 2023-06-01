@@ -1334,6 +1334,38 @@
 		status = "okay";
 	};
 
+	aocec: aocec {
+		compatible = "amlogic, aocec-txhd2";
+		dev_name = "aocec";
+		status = "okay";
+		vendor_name = "Amlogic"; /* Max Chars: 8     */
+		/* Refer to the following URL at:
+		 * http://standards.ieee.org/develop/regauth/oui/oui.txt
+		 */
+		vendor_id = <0x000000>;
+		product_desc = "TXHD2"; /* Max Chars: 16    */
+		cec_osd_string = "AML_TV"; /* Max Chars: 14    */
+		cec_version = <5>;/*5:1.4;6:2.0*/
+		port_num = <2>;
+		output = <0>;
+		cec_sel = <1>;/*1:use one ip, 2:use 2 ip*/
+		ee_cec; /*use cec a or b*/
+		arc_port_mask = <0x2>;
+		interrupts = <GIC_SPI 203 IRQ_TYPE_EDGE_RISING>;/*0:snps*/
+		interrupt-names = "hdmi_aocecb";
+		pinctrl-names = "default","hdmitx_aocecb","cec_pin_sleep";
+		pinctrl-0=<&cec_b>;
+		pinctrl-1=<&cec_b>;
+		pinctrl-2=<&cec_b>;
+		clocks = <&clkc_AO CLKID_CECB_32K_CLKOUT>;
+		clock-names = "cecb_clk";
+		reg = <0xff800000 0x2000
+		       0xff634400 0x2000
+		       0xff646000 0x2000
+		       0xff634400 0x2000>;
+		reg-names = "ao","periphs","clock", "pad";
+	};
+
 	pinctrl_aobus: pinctrl@ff800014{
 		compatible = "amlogic,meson-txhd2-aobus-pinctrl";
 		#address-cells = <1>;
@@ -1465,7 +1497,6 @@
 				bias-pull-down;
 			};
 		};
-
 	};
 
 	pinctrl_test: pinctrl@ff80035c {
@@ -1569,6 +1600,13 @@
 			"jtag_clk_ao5",
 			"jtag_tms_ao7";
 			function = "jtag_ao";
+		};
+	};
+
+	cec_b: cec_b {
+		mux {
+			groups = "cec_ao_b_ao7";
+			function = "cec_ao_b";
 		};
 	};
 };

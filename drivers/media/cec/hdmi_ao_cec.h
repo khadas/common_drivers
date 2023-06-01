@@ -9,7 +9,7 @@
 #include <linux/clk.h>
 #include "hdmi_tx_cec_20.h"
 
-#define CEC_DRIVER_VERSION     "2023/04/04: t3x bringup"
+#define CEC_DRIVER_VERSION     "2023/06/01: txhd2 bringup"
 
 #define CEC_DEV_NAME		"cec"
 
@@ -49,6 +49,7 @@ enum cec_chip_ver {
 	CEC_CHIP_T5M, /* base on T3, only have cec_b */
 	CEC_CHIP_S5,
 	CEC_CHIP_T3X, /* base on T3, only have cec_b */
+	CEC_CHIP_TXHD2, /* base on T5M, only have cec_b */
 };
 
 enum cecaver {
@@ -262,6 +263,9 @@ struct cec_msg_last {
 
 /* T3X #define PADCTRL_GPIOW_I ((0x0090 << 2) + 0xfe004000) */
 #define PADCTRL_GPIOW_I_T3X (0x0090 << 2)
+
+/* T3X #define PADCTRL_GPIOA_I ((0x0005 << 2) + 0xff800000) */
+#define PADCTRL_GPIOAO_I_TXHD2 (0x0005 << 2)
 
 enum cec_reg_group {
 	cec_reg_group_old = 0,

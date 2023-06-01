@@ -2548,6 +2548,11 @@ inline unsigned int get_pin_status(void)
 		reg = read_pad_reg(PADCTRL_GPIOW_I_T3X);
 		reg = (reg >> 28) & 0x1;
 		break;
+	case CEC_CHIP_TXHD2:
+		/* GPIOA_7 */
+		reg = read_ao(PADCTRL_GPIOAO_I_TXHD2);
+		reg = (reg >> 28) & 0x2;
+		break;
 #endif
 	default:
 		/* means not implemented */

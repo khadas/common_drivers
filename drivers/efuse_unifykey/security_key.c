@@ -13,6 +13,14 @@
 #include <linux/kallsyms.h>
 #include "security_key.h"
 
+#if IS_ENABLED(CONFIG_ARM)
+#include <linux/of.h>
+#include <linux/of_fdt.h>
+
+static struct device_node *ofdts_node;
+static int pfn_valid_flag;
+#endif
+
 static DEFINE_SPINLOCK(storage_lock);
 static int storage_init_status;
 static struct bl31_storage_share_mem *share_mem;
@@ -253,6 +261,17 @@ int __init security_key_init(struct platform_device *pdev)
 		return -EOPNOTSUPP;
 	}
 
+#if IS_ENABLED(CONFIG_ARM)
+	ofdts_node = of_find_node_by_name(NULL, "linux,secmon");
+	if (!ofdts_node)
+		return -EINVAL;
+
+	if (of_property_read_bool(ofdts_node, "no-map"))
+		pfn_valid_flag = 0;
+	else
+		pfn_valid_flag = 1;
+#endif
+
 	/*
 	 * The BL31 shared mem for key storage is
 	 * part of secure monitor, and all of the
@@ -262,7 +281,7 @@ int __init security_key_init(struct platform_device *pdev)
 #ifdef CONFIG_ARM64
 	if (pfn_is_map_memory(__phys_to_pfn(phy_in))) {
 #else
-	if (pfn_valid(__phys_to_pfn(phy_in))) {
+	if (pfn_valid_flag) {
 #endif
 		share_mem->in = (void __iomem *)phys_to_virt(phy_in);
 		share_mem->out = (void __iomem *)phys_to_virt(phy_out);

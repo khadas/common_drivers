@@ -191,7 +191,10 @@
 #define HHI_TCON_PLL_CNTL1                         0x021
 #define HHI_TCON_PLL_CNTL2                         0x022
 #define HHI_TCON_PLL_CNTL3                         0x023
+#define HHI_TCON_PLL_STS						   0x024
 #define HHI_TCON_PLL_CNTL4                         0x0df
+#define HHI_TCON_PLL_CNTL5						   0x0e0
+#define HHI_TCON_PLL_CNTL6                         0x0e1
 
 #define HHI_DSI_LVDS_EDP_CNTL0                     0xd1
 #define HHI_DSI_LVDS_EDP_CNTL1                     0xd2
@@ -1779,6 +1782,7 @@ extern int lcd_reg_t5[];
 extern int lcd_reg_t7[];
 extern int lcd_reg_c3[];
 extern int lcd_reg_t3x[];
+extern int lcd_reg_txhd2[];
 
 int lcd_ioremap(struct aml_lcd_drv_s *pdrv, struct platform_device *pdev);
 unsigned int lcd_vcbus_read(unsigned int reg);

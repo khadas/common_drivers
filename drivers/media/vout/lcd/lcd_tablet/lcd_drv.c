@@ -191,12 +191,14 @@ static void lcd_lvds_clk_util_set(struct aml_lcd_drv_s *pdrv)
 	unsigned int reg_phy_tx_ctrl0, reg_phy_tx_ctrl1;
 	unsigned int bit_data_in_lvds, bit_data_in_edp, bit_lane_sel;
 	unsigned int phy_div, val_lane_sel, len_lane_sel;
+	unsigned int dual_port;
 
 	if (pdrv->config.control.lvds_cfg.dual_port)
 		phy_div = 2;
 	else
 		phy_div = 1;
 
+	dual_port = (pdrv->config.control.lvds_cfg.dual_port) & 0x1;
 	if (pdrv->data->chip_type == LCD_CHIP_T7) {
 		switch (pdrv->index) {
 		case 0: /* lane0~lane4 */
@@ -272,6 +274,18 @@ static void lcd_lvds_clk_util_set(struct aml_lcd_drv_s *pdrv)
 		lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, (1 << 30) | (1 << 24));
 		/* decoupling fifo write enable after fifo enable */
 		lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 1, 31, 1);
+	} else if (pdrv->data->chip_type == LCD_CHIP_TXHD2) {
+		reg_phy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0;
+		reg_phy_tx_ctrl1 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1;
+		lcd_combo_dphy_write(pdrv, COMBO_DPHY_CNTL0, 0x55555);
+
+		/* set fifo_clk_sel: div 7 */
+		lcd_combo_dphy_write(pdrv, reg_phy_tx_ctrl0, (1 << 6));
+		/* set cntl_ser_en:  8-channel */
+		lcd_combo_dphy_setb(pdrv, reg_phy_tx_ctrl0, dual_port ? 0xfff : 0x3f, 16, 12);
+
+		/* decoupling fifo enable, gated clock enable */
+		lcd_combo_dphy_write(pdrv, reg_phy_tx_ctrl1, 0xc1000000);
 	} else {
 		/* set fifo_clk_sel: div 7 */
 		lcd_ana_write(HHI_LVDS_TX_PHY_CNTL0, (1 << 6));

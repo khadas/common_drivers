@@ -1377,8 +1377,9 @@
 	vclk_serve: vclk_serve {
 		compatible = "amlogic, vclk_serve";
 		status = "okay";
-		mode = <0>;
-		reg = <0xff63c000 0x400>; /* hiu reg */
+		mode = <1>;
+		reg = <0xff63c000 0x400 /* hiu reg */
+			0xff646000 0x4a0>; /* clk reg */
 	};
 
 	vout_mux: vout_mux {

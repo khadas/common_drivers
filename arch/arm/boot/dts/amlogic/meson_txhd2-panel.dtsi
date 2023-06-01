@@ -8,8 +8,8 @@
 		compatible = "amlogic, lcd-txhd2";
 		status = "okay";
 		index = <0>;
-		pxp = <1>;
-		mode = "tablet";
+		pxp = <0>;
+		mode = "tv";
 		fr_auto_policy = <0>; /* 0=disable, 1=60/50hz, 2=60/50/48hz */
 		key_valid = <0>;
 		/*
@@ -20,21 +20,108 @@
 		 *	"dsi_phy_gate",
 		 *	"dsi_meas";
 		 */
-		reg = <0x0 0xff64c000 0x0 0x400   /* mipi_dsi_a host */
-			0x0 0xff64800 0x0 0x200>;   /* mipi_dsi_a phy */
-		interrupts = <0 57 1>;
+		reg = <0xff64c000 0x400 /* dsi_host */
+			0xff648000 0x80    /* dsi_phy */
+			0xff660000 0xd000  /* tcon */
+			0xff634400 0x70    /* periphs */
+			0xffd01000 0xa0    /* reset */
+			0xff648000 0x100>;  /* combo_dphy */
+		interrupts = <0 3 1>;
 		interrupt-names = "vsync";
 
 		/* power type:(0=cpu_gpio, 2=signal, 3=extern, 0xff=ending) */
 		/* power index:(gpios_index, or extern_index, 0xff=invalid) */
 		/* power value:(0=output low, 1=output high, 2=input) */
 		/* power delay:(unit in ms) */
-		/*
-		 *	lcd_cpu-gpios = <&gpio GPIOY_0 GPIO_ACTIVE_HIGH
-		 *	&gpio GPIOY_4 GPIO_ACTIVE_HIGH
-		 *	&gpio GPIOY_6 GPIO_ACTIVE_HIGH>;
-		 *	lcd_cpu_gpio_names = "GPIOY_0","GPIOY_4","GPIOY_6";
-		 */
+
+		 lcd_cpu-gpios = <&gpio GPIOZ_3 GPIO_ACTIVE_HIGH>;
+		 lcd_cpu_gpio_names = "GPIOZ_3";
+
+		lvds_0{
+			model_name = "1080p-vfreq";
+			interface = "lvds"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				1920 1080 /*h_active, v_active*/
+				2200 1125 /*h_period, v_period*/
+				8      /*lcd_bits */
+				16 9>; /*screen_widht, screen_height*/
+			range_setting = <
+				2060 2650  /*h_period_min,max*/
+				1100 1480  /*v_period_min,max*/
+				120000000 160000000>; /*pclk_min,max*/
+			lcd_timing = <
+				44 148 0  /*hs_width, hs_bp, hs_pol*/
+				5  30 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				2 /*fr_adj_type
+				   *(0=clk, 1=htotal, 2=vtotal, 3=auto_range,
+				   * 4=hdmi_mode)
+				   */
+				0 /*clk_ss_level*/
+				1 /*clk_auto_generate*/
+				0>; /*pixel_clk(unit in Hz)*/
+			lvds_attr = <
+				1  /*lvds_repack*/
+				1  /*dual_port*/
+				0  /*pn_swap*/
+				0  /*port_swap*/
+				0>; /*lane_reverse*/
+			phy_attr=<0x3 0>; /*vswing_level, preem_level*/
+			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 50   /*panel power*/
+				2 0 0 0   /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 10  /*signal disable*/
+				0 0 0 500   /*panel power*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
+		lvds_1{
+			model_name = "1080p-hfreq_hdmi";
+			interface = "lvds"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				1920 1080 /*h_active, v_active*/
+				2200 1125 /*h_period, v_period*/
+				8      /*lcd_bits*/
+				16 9>; /*screen_widht, screen_height*/
+			range_setting = <
+				2080 2720 /*h_period min, max*/
+				1100 1380 /*v_period min, max*/
+				133940000 156000000>; /*pclk_min, max*/
+			lcd_timing = <
+				44 148 0   /*hs_width, hs_bp, hs_pol*/
+				5  30  0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				4 /*fr_adj_type
+				   *(0=clk, 1=htotal, 2=vtotal, 3=auto_range,
+				   * 4=hdmi_mode)
+				   */
+				0 /*clk_ss_level */
+				1 /*clk_auto_generate*/
+				0>; /*pixel_clk(unit in Hz)*/
+			lvds_attr = <
+				1 /*lvds_repack*/
+				1 /*dual_port*/
+				0 /*pn_swap*/
+				0 /*port_swap*/
+				0>; /*lane_reverse*/
+			phy_attr=<0x3 0>; /*vswing_level, preem_level*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 50   /*panel power*/
+				2 0 0 0   /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 10  /*signal disable*/
+				0 0 0 500   /*panel power*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0xff>;
+		};
 		mipi_0{
 			model_name = "MIPI-1080P";
 			interface = "mipi";

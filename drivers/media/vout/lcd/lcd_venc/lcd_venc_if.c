@@ -240,6 +240,7 @@ int lcd_venc_probe(struct aml_lcd_drv_s *pdrv)
 	case LCD_CHIP_T3X:
 		ret = lcd_venc_op_init_t3x(pdrv, &lcd_venc_op);
 		break;
+	case LCD_CHIP_TXHD2:
 	default:
 		ret = lcd_venc_op_init_dft(pdrv, &lcd_venc_op);
 		break;

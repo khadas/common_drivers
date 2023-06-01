@@ -584,6 +584,15 @@
 					<64 65 66 67 68 69 70 71>;
 			};
 
+			wdt: watchdog@0f0d0 {
+				compatible = "amlogic,meson-gxbb-wdt";
+				status = "okay";
+				/* 0:userspace, 1:kernel */
+				amlogic,feed_watchdog_mode = <1>;
+				reg = <0xf0d0 0x10>;
+				clocks = <&xtal>;
+			};
+
 			meson_clk_msr@18000 {
 				compatible = "amlogic,meson-txhd2-clk-measure";
 				reg = <0x18000 0x1c>;

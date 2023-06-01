@@ -246,6 +246,10 @@ else
 	FULL_KERNEL_VERSION=${version_message}
 fi
 
+if [[ -z ${BAZEL} ]]; then
+	[[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" == "arm64" ]] && BAZEL=1
+fi
+
 #first auto patch when param parse end
 if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
 	export PATCH_PARM

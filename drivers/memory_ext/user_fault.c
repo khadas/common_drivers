@@ -98,6 +98,8 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	int	i, j;
 	int	nlines;
 	u32	*p;
+	char	buf[128] = {0};
+	int	len = 0;
 
 	/*
 	 * don't attempt to dump non-kernel addresses or
@@ -147,18 +149,18 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 		 * just display low 16 bits of address to keep
 		 * each line of the dump < 80 characters
 		 */
-		printk("%04lx ", (unsigned long)p & 0xffff);
+		len = 0;
+		len += snprintf(buf + len, sizeof(buf) - len, "%04lx ", (unsigned long)p & 0xffff);
 		for (j = 0; j < 8; j++) {
 			u32 data = 0;
 
-			if (get_kernel_nofault(data, p)) {
-				pr_cont(" ********");
-			} else {
-				pr_cont(" %08x", data);
-			}
+			if (get_kernel_nofault(data, p))
+				len += snprintf(buf + len, sizeof(buf) - len, " ********");
+			else
+				len += snprintf(buf + len, sizeof(buf) - len, " %08x", data);
 			++p;
 		}
-		pr_cont("\n");
+		pr_info("%s\n", buf);
 	}
 }
 
@@ -171,6 +173,8 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 	int	i, j;
 	int	nlines;
 	u32	*p;
+	char	buf[128] = {0};
+	int	len = 0;
 
 	if (!access_ok((void *)addr, nbytes))
 		return;
@@ -200,19 +204,20 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 		 * just display low 16 bits of address to keep
 		 * each line of the dump < 80 characters
 		 */
-		pr_info("%04lx ", (unsigned long)p & 0xffff);
+		len = 0;
+		len += snprintf(buf + len, sizeof(buf) - len, "%04lx ", (unsigned long)p & 0xffff);
 		for (j = 0; j < 8; j++) {
 			u32	data;
 			int bad;
 
 			bad = __get_user(data, p);
 			if (bad)
-				pr_cont(" ********");
+				len += snprintf(buf + len, sizeof(buf) - len, " ********");
 			else
-				pr_cont(" %08x", data);
+				len += snprintf(buf + len, sizeof(buf) - len, " %08x", data);
 			++p;
 		}
-		pr_cont("\n");
+		pr_info("%s\n", buf);
 	}
 }
 #endif
@@ -263,6 +268,8 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 	int	i, j;
 	int	nlines;
 	u32	*p;
+	char	buf[128] = {0};
+	int	len = 0;
 
 	if (!access_ok((void *)addr, nbytes))
 		return;
@@ -318,25 +325,20 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 		 * just display low 16 bits of address to keep
 		 * each line of the dump < 80 characters
 		 */
-		pr_info("%04lx ", (unsigned long)p & 0xffff);
+		len = 0;
+		len += snprintf(buf + len, sizeof(buf) - len, "%04lx ", (unsigned long)p & 0xffff);
 		for (j = 0; j < 8; j++) {
 			u32 data;
 			int bad;
 
 			bad = __get_user(data, p);
-			if (bad) {
-				if (j != 7)
-					pr_cont(" ********");
-				else
-					pr_cont(" ********\n");
-			} else {
-				if (j != 7)
-					pr_cont(" %08x", data);
-				else
-					pr_cont(" %08x\n", data);
-			}
+			if (bad)
+				len += snprintf(buf + len, sizeof(buf) - len, " ********");
+			else
+				len += snprintf(buf + len, sizeof(buf) - len, " %08x", data);
 			++p;
 		}
+		pr_info("%s\n", buf);
 	}
 }
 #elif defined CONFIG_RISCV
@@ -666,25 +668,41 @@ void show_all_pfn(struct task_struct *task, struct pt_regs *regs)
 	long pfn1, far;
 	char s1[10];
 	int top;
+	char buf[128] = {0};
+	int len = 0;
 
 	if (compat_user_mode(regs))
 		top = 15;
 	else
 		top = 31;
-	pr_info("reg              value       pfn  ");
-	pr_cont("reg              value       pfn\n");
+
+	len += snprintf(buf + len, sizeof(buf) - len, "reg              value       pfn  ");
+	len += snprintf(buf + len, sizeof(buf) - len, "reg              value       pfn");
+	pr_info("%s\n", buf);
+
+	len = 0;
+	memset(buf, 0, sizeof(buf));
+
 	for (i = 0; i < top; i++) {
 		pfn1 = get_user_pfn(task->mm, regs->regs[i]);
 		if (pfn1 >= 0)
 			sprintf(s1, "%8lx", pfn1);
 		else
 			sprintf(s1, "--------");
-		if (i % 2 == 1)
-			pr_cont("r%-2d:  %016llx  %s\n", i, regs->regs[i], s1);
-		else
-			pr_info("r%-2d:  %016llx  %s  ", i, regs->regs[i], s1);
+		if (i % 2 == 1) {
+			len += snprintf(buf + len, sizeof(buf) - len,
+					"r%-2d:  %016llx  %s", i, regs->regs[i], s1);
+			pr_info("%s\n", buf);
+			len = 0;
+		} else {
+			len += snprintf(buf + len, sizeof(buf) - len,
+					"r%-2d:  %016llx  %s  ", i, regs->regs[i], s1);
+		}
 	}
-	pr_cont("\n");
+
+	if (len > 0)
+		pr_info("%s\n", buf);
+
 	pfn1 = get_user_pfn(task->mm, regs->pc);
 	if (pfn1 >= 0)
 		sprintf(s1, "%8lx", pfn1);
@@ -722,23 +740,37 @@ void show_all_pfn(struct task_struct *task, struct pt_regs *regs)
 	long pfn1;
 	char s1[10];
 	int top;
+	char buf[128] = {0};
+	int len = 0;
 
 	top = 16;
-	pr_info("reg     value       pfn   ");
-	pr_cont("reg     value       pfn\n");
+	len += snprintf(buf + len, sizeof(buf) - len, "reg     value       pfn   ");
+	len += snprintf(buf + len, sizeof(buf) - len, "reg     value       pfn");
+	pr_info("%s\n", buf);
+
+	len = 0;
+	memset(buf, 0, sizeof(buf));
+
 	for (i = 0; i < top; i++) {
 		pfn1 = get_user_pfn(task->mm, regs->uregs[i]);
 		if (pfn1 >= 0)
 			sprintf(s1, "%8lx", pfn1);
 		else
 			sprintf(s1, "--------");
-		if (i % 2 == 0)
-			pr_info("%s:  %08lx  %s  ", regidx_to_name[i],
-				regs->uregs[i], s1);
-		else
-			pr_cont("%s:  %08lx  %s\n", regidx_to_name[i],
-				regs->uregs[i], s1);
+		if (i % 2 == 0) {
+			len += snprintf(buf + len, sizeof(buf) - len, "%s:  %08lx  %s  ",
+				       regidx_to_name[i], regs->uregs[i], s1);
+		} else {
+			len += snprintf(buf + len, sizeof(buf) - len, "%s:  %08lx  %s",
+				       regidx_to_name[i], regs->uregs[i], s1);
+
+			pr_info("%s\n", buf);
+			len = 0;
+		}
 	}
+
+	if (len > 0)
+		pr_info("%s\n", buf);
 }
 
 void show_debug_ratelimited(struct pt_regs *regs, unsigned int reg_en)

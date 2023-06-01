@@ -676,6 +676,8 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	int	i, j;
 	int	nlines;
 	u32	*p;
+	char	buf[128] = {0};
+	int	len = 0;
 
 	/*
 	 * don't attempt to dump non-kernel addresses or
@@ -721,17 +723,18 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 		 * just display low 16 bits of address to keep
 		 * each line of the dump < 80 characters
 		 */
-		pr_cont("%04lx ", (unsigned long)p & 0xffff);
+		len = 0;
+		len += snprintf(buf + len, sizeof(buf) - len, "%04lx ", (unsigned long)p & 0xffff);
 		for (j = 0; j < 8; j++) {
 			u32 data = 0;
 
 			if (get_kernel_nofault(data, p))
-				pr_cont(" ********");
+				len += snprintf(buf + len, sizeof(buf) - len, " ********");
 			else
-				pr_cont(" %08x", data);
+				len += snprintf(buf + len, sizeof(buf) - len, " %08x", data);
 			++p;
 		}
-		pr_cont("\n");
+		pr_info("%s\n", buf);
 	}
 }
 
@@ -740,6 +743,8 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 	int	i, j;
 	int	nlines;
 	u32	*p;
+	char	buf[128] = {0};
+	int	len = 0;
 
 	if (!access_ok((void *)addr, nbytes))
 		return;
@@ -791,25 +796,22 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 		 * just display low 16 bits of address to keep
 		 * each line of the dump < 80 characters
 		 */
-		pr_info("%04lx ", (unsigned long)p & 0xffff);
+		len = 0;
+		len += snprintf(buf + len, sizeof(buf) - len, "%04lx ", (unsigned long)p & 0xffff);
+
 		for (j = 0; j < 8; j++) {
 			u32 data;
 			int bad;
 
 			bad = __get_user(data, p);
-			if (bad) {
-				if (j != 7)
-					pr_cont(" ********");
-				else
-					pr_cont(" ********\n");
-			} else {
-				if (j != 7)
-					pr_cont(" %08x", data);
-				else
-					pr_cont(" %08x\n", data);
-			}
+			if (bad)
+				len += snprintf(buf + len, sizeof(buf) - len, " ********");
+			else
+				len += snprintf(buf + len, sizeof(buf) - len, " %08x", data);
+
 			++p;
 		}
+		pr_info("%s\n", buf);
 	}
 }
 

@@ -1738,8 +1738,19 @@
 	};
 };
 
+&amvideom {
+	display_device_cnt = <2>;
+	vpp0_layer_count = <2>;
+	/* number of video layer display on vpp1 */
+	vpp1_layer_count = <1>;
+};
+
 &amhdmitx {
 	status = "okay";
+	repeater_tx = <0>;
+	enc_idx = <0>;
+	vrr_type = <2>; /* 1: GAME-VRR, 2: QMS-VRR */
+	tv_usage = <1>;
 };
 
 /*if you want to use vdin just modify status to "ok"*/

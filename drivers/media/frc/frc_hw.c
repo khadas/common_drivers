@@ -921,6 +921,524 @@ void frc_input_init(struct frc_dev_s *frc_devp,
 		pr_frc(0, "err: size in hsize:%d, vsize:%d !!!!\n", frc_top->hsize, frc_top->vsize);
 }
 
+void frc_drv_bbd_init_xyxy(struct frc_fw_data_s *pfw_data)
+{
+	u32     reg_data;
+	u32     me_width;
+	u32     me_height;
+	u32     me_blk_xsize;
+	u32     me_blk_ysize;
+	u32     me_dsx;
+	u32     me_dsy;
+	u32     me_blksize_dsx;
+	u32     me_blksize_dsy;
+	u32     hsize_align, vsize_align;
+	struct frc_top_type_s *gst_frc_top_item;
+
+	if (!pfw_data)
+		return;
+
+	gst_frc_top_item = &pfw_data->frc_top_type;
+	// regdata_hme_scale_012d = READ_FRC_REG(FRC_REG_ME_HME_SCALE);
+	reg_data = regdata_hme_scale_012d;
+	me_dsx  = (reg_data >> 6) & 0x3;
+	me_dsy  = (reg_data >> 4) & 0x3;
+	// regdata_blksizexy_012b = READ_FRC_REG(FRC_REG_BLK_SIZE_XY);
+	reg_data = regdata_blksizexy_012b;
+	me_blksize_dsx = (reg_data >> 19) & 0x7;
+	me_blksize_dsy = (reg_data >> 16) & 0x7;
+
+	//me  me_blksize_dsx me_blksize_dsy-> FRC_REG_BLK_SIZE_XY
+	if (gst_frc_top_item->is_me1mc4 == 0) {
+		hsize_align = (gst_frc_top_item->hsize + 7) / 8 * 8;
+		vsize_align = (gst_frc_top_item->vsize + 7) / 8 * 8;
+	} else {
+		hsize_align = (gst_frc_top_item->hsize + 15) / 16 * 16;
+		vsize_align = (gst_frc_top_item->vsize + 15) / 16 * 16;
+	}
+	me_width      = (hsize_align + (1 << me_dsx) - 1) / (1 << me_dsx);/*960*/
+	me_height     = (vsize_align + (1 << me_dsy) - 1) / (1 << me_dsy);/*540*/
+	me_blk_xsize  = (me_width + (1 << me_blksize_dsx) - 1) / (1 << me_blksize_dsx);/*240*/
+	me_blk_ysize  = (me_height + (1 << me_blksize_dsy) - 1) / (1 << me_blksize_dsy);/*135*/
+
+	reg_data = me_height - 1;
+	reg_data |= (me_width - 1) << 16;
+	frc_config_reg_value(reg_data, 0xfff0fff, &regdata_me_bbpixed_1108);
+	WRITE_FRC_REG_BY_CPU(FRC_ME_BB_PIX_ED, regdata_me_bbpixed_1108);
+
+	reg_data = (me_blk_ysize - 1);
+	reg_data |= (me_blk_xsize - 1) << 16;
+	frc_config_reg_value(reg_data, 0xfff0fff, &regdata_me_bbblked_110a);
+	WRITE_FRC_REG_BY_CPU(FRC_ME_BB_BLK_ED, regdata_me_bbblked_110a);// 240*135
+
+	/*reg_me_stat_region_hend 0*/
+	frc_config_reg_value(0, 0x3ff, &regdata_me_stat12rhst_110b);
+	WRITE_FRC_REG_BY_CPU(FRC_ME_STAT_12R_HST, regdata_me_stat12rhst_110b);
+
+	reg_data = (me_blk_xsize * 2 / 4);
+	reg_data |= me_blk_xsize * 1 / 4 << 16;
+	frc_config_reg_value(reg_data, 0x3ff03ff, &regdata_me_stat12rh_110c);
+	WRITE_FRC_REG_BY_CPU(FRC_ME_STAT_12R_H01, regdata_me_stat12rh_110c);
+	reg_data = (me_blk_xsize * 4 / 4 - 1);
+	reg_data |= (me_blk_xsize * 3 / 4) << 16;
+	frc_config_reg_value(reg_data, 0xfff0fff, &regdata_me_stat12rh_110d);
+	WRITE_FRC_REG_BY_CPU(FRC_ME_STAT_12R_H23, regdata_me_stat12rh_110d);
+
+	/*reg_me_stat_region_vend[0]: 45*/
+	/*reg_me_stat_region_vend[1]: 90*/
+	/*reg_me_stat_region_vend[2]: 135*/
+	frc_config_reg_value(me_blk_ysize * 1 / 3, 0x3ff03ff, &regdata_me_stat12rv_110e);
+	frc_config_reg_value((me_blk_ysize * 2 / 3) << 16, 0x3ff0000, &regdata_me_stat12rv_110f);
+	frc_config_reg_value((me_blk_ysize * 3 / 3 - 1), 0x3ff, &regdata_me_stat12rv_110f);
+	WRITE_FRC_REG_BY_CPU(FRC_ME_STAT_12R_V0, regdata_me_stat12rv_110e);
+	WRITE_FRC_REG_BY_CPU(FRC_ME_STAT_12R_V1, regdata_me_stat12rv_110f);
+
+	//vp
+	/*reg_vp_bb_xyxy[2] 240*/
+	/*reg_vp_bb_xyxy[3] 135*/
+	frc_config_reg_value((me_blk_ysize - 1) << 16, 0xffff0000, &regdata_vpbb2_1e04);
+	frc_config_reg_value((me_blk_xsize - 1), 0xffff, &regdata_vpbb2_1e04);
+	WRITE_FRC_REG_BY_CPU(FRC_VP_BB_1, 0x0);
+	WRITE_FRC_REG_BY_CPU(FRC_VP_BB_2, regdata_vpbb2_1e04);
+
+	/*reg_vp_me_bb_blk_xyxy[2] 240*/
+	/*reg_vp_me_bb_blk_xyxy[3] 135*/
+	frc_config_reg_value((me_blk_ysize - 1) << 16, 0xffff0000, &regdata_vpmebb2_1e06);
+	frc_config_reg_value((me_blk_xsize - 1), 0xffff, &regdata_vpmebb2_1e06);
+	WRITE_FRC_REG_BY_CPU(FRC_VP_ME_BB_1, 0x0);
+	WRITE_FRC_REG_BY_CPU(FRC_VP_ME_BB_2, regdata_vpmebb2_1e06);
+
+	frc_config_reg_value((me_blk_xsize * 1 / 4) << 8, 0xfffff, &regdata_vp_win1_1e58);
+	frc_config_reg_value((me_blk_xsize * 2 / 4) << 20, 0xfff00000, &regdata_vp_win1_1e58);
+	frc_config_reg_value((me_blk_xsize * 3 / 4) << 12, 0xfffff000, &regdata_vp_win2_1e59);
+	frc_config_reg_value((me_blk_xsize * 4 / 4 - 1), 0xfff, &regdata_vp_win2_1e59);
+	frc_config_reg_value((me_blk_ysize * 1 / 3), 0x0ff, &regdata_vp_win3_1e5a);
+	frc_config_reg_value((me_blk_ysize * 2 / 3) << 8, 0xfff00, &regdata_vp_win3_1e5a);
+	frc_config_reg_value((me_blk_ysize * 3 / 3 - 1) << 20, 0xfff00000, &regdata_vp_win3_1e5a);
+	WRITE_FRC_REG_BY_CPU(FRC_VP_REGION_WINDOW_1, regdata_vp_win1_1e58);
+	WRITE_FRC_REG_BY_CPU(FRC_VP_REGION_WINDOW_2, regdata_vp_win2_1e59);
+	WRITE_FRC_REG_BY_CPU(FRC_VP_REGION_WINDOW_3, regdata_vp_win3_1e5a);
+
+	//mc:
+	WRITE_FRC_REG_BY_CPU(FRC_MC_BB_HANDLE_ME_BLK_BB_XYXY_RIT_AND_BOT,
+			((me_blk_xsize - 1) << 16) | (me_blk_ysize - 1));
+
+	//melogo:
+	/*reg_melogo_bb_blk_xyxy[2] 240*/
+	/*reg_melogo_bb_blk_xyxy[3] 135*/
+	WRITE_FRC_REG_BY_CPU(FRC_MELOGO_BB_BLK_ST, 0x0);
+	WRITE_FRC_REG_BY_CPU(FRC_MELOGO_BB_BLK_ED,
+			((me_blk_xsize - 1) << 16) | (me_blk_ysize - 1));
+
+	/*reg_melogo_stat_region_hend[0] 60*/
+	/*reg_melogo_stat_region_hend[1] 120*/
+	/*reg_melogo_stat_region_hend[2] 180*/
+	/*reg_melogo_stat_region_hend[3] 240*/
+	reg_data = me_blk_xsize * 1 / 4;
+	reg_data |= (me_blk_xsize * 2 / 4) << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_MELOGO_REGION_HWINDOW_0, 0x0);
+	WRITE_FRC_REG_BY_CPU(FRC_MELOGO_REGION_HWINDOW_1, reg_data);
+	reg_data = me_blk_xsize * 3 / 4;
+	reg_data |= (me_blk_xsize * 4 / 4 - 1) << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_MELOGO_REGION_HWINDOW_2, reg_data);
+
+	/*reg_melogo_stat_region_vend[0] 45*/
+	/*reg_melogo_stat_region_vend[1] 90*/
+	/*reg_melogo_stat_region_vend[2] 135*/
+	reg_data = me_blk_ysize * 1 / 3 << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_MELOGO_REGION_VWINDOW_0, reg_data);
+	reg_data = (me_blk_ysize * 2 / 3);
+	reg_data |= (me_blk_ysize * 3 / 3 - 1) << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_MELOGO_REGION_VWINDOW_1, reg_data);
+
+	//IPLOGO
+	/*reg_iplogo_bb_xyxy[2] 960*/
+	/*reg_iplogo_bb_xyxy[3] 540*/
+	WRITE_FRC_REG_BY_CPU(FRC_IPLOGO_BB_PIX_ST, 0x0);
+	WRITE_FRC_REG_BY_CPU(FRC_IPLOGO_BB_PIX_ED,
+			((me_width - 1) << 16) | (me_height - 1));
+	/*reg_iplogo_stat_region_hend[0] 240*/
+	/*reg_iplogo_stat_region_hend[1] 480*/
+	/*reg_iplogo_stat_region_hend[2] 720*/
+	/*reg_iplogo_stat_region_hend[3] 960*/
+	reg_data = me_blk_xsize * 1 / 4;
+	reg_data |= (me_blk_xsize * 2 / 4) << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_IPLOGO_REGION_HWINDOW_0, 0x0);
+	WRITE_FRC_REG_BY_CPU(FRC_IPLOGO_REGION_HWINDOW_1, reg_data);
+	reg_data = me_blk_xsize * 3 / 4;
+	reg_data |= (me_blk_xsize * 4 / 4 - 1) << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_IPLOGO_REGION_HWINDOW_2, reg_data);
+	/*reg_iplogo_stat_region_vend[0] 180*/
+	/*reg_iplogo_stat_region_vend[1] 360*/
+	/*reg_iplogo_stat_region_vend[2] 540*/
+	reg_data = me_blk_ysize * 1 / 3 << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_IPLOGO_REGION_VWINDOW_0, reg_data);
+	reg_data = (me_blk_ysize * 2 / 3);
+	reg_data |= (me_blk_ysize * 3 / 3 - 1) << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_IPLOGO_REGION_VWINDOW_1, reg_data);
+
+	WRITE_FRC_REG_BY_CPU(FRC_LOGO_BB_RIT_BOT,
+		gst_frc_top_item->vsize | (gst_frc_top_item->hsize << 16));
+}
+
+void frc_drv_fw_param_init(u32 frm_hsize, u32 frm_vsize, u32 is_me1mc4)
+{
+	u32 reg_me_mvx_div_mode;
+	u32 reg_me_mvy_div_mode;
+	u32 reg_demo_window1_en;
+	u32 reg_demo_window2_en;
+	u32 reg_demo_window3_en;
+	u32 reg_demo_window4_en;
+	u32 mc_org_me_bb_2;
+	u32 mc_org_me_bb_3;
+	u32 mc_org_me_blk_bb_2;
+	u32 mc_org_me_blk_bb_3;
+	u32 reg_me_dsx_scale;
+	u32 reg_me_dsy_scale;
+	u32 reg_mc_blksize_xscale;
+	u32 reg_mc_blksize_yscale;
+	u32 reg_mc_mvx_scale;
+	u32 reg_mc_mvy_scale;
+	u32 reg_mc_fetch_size;
+	u32 reg_mc_blk_x;
+	u32 reg_data;
+	// u32 reg_data1;
+	u32 reg_bb_det_top;
+	u32 reg_bb_det_bot;
+	u32 reg_bb_det_lft;
+	u32 reg_bb_det_rit;
+	u32 reg_bb_det_motion_top;
+	u32 reg_bb_det_motion_bot;
+	u32 reg_bb_det_motion_lft;
+	u32 reg_bb_det_motion_rit;
+	u32 bb_mo_ds_2;
+	u32 bb_mo_ds_3;
+	u32 bb_oob_v_2;
+	u32 tmp_reg_value, tmp_reg_value_2;
+	u32 me_mc_x_ratio;
+	u32 me_mc_y_ratio;
+	u32 logo_mc_x_ratio;
+	u32 logo_mc_y_ratio;
+	u32 osd_mc_x_ratio;
+	u32 osd_mc_y_ratio;
+	u32 regdata_bb_xy_st_0119;	 // FRC_REG_BLACKBAR_XYXY_ST 0x0119
+	u32 regdata_bb_xy_ed_011a;	 // FRC_REG_BLACKBAR_XYXY_ED	0x011a
+	u32 regdata_bb_xy_me_st_011b;	 // FRC_REG_BLACKBAR_XYXY_ME_ST  0x011b
+	u32 regdata_bb_xy_me_ed_011c;	// FRC_REG_BLACKBAR_XYXY_ME_ED	0x011c
+
+	if (is_me1mc4 == 0) {
+		reg_me_dsx_scale = 1;
+		reg_me_dsy_scale = 1;
+		me_mc_x_ratio = 1;
+		me_mc_y_ratio = 1;
+		logo_mc_x_ratio = 1;
+		logo_mc_y_ratio = 1;
+	} else if (is_me1mc4 == 1) {
+		reg_me_dsx_scale = 2;
+		reg_me_dsy_scale = 2;
+		me_mc_x_ratio = 2;
+		me_mc_y_ratio = 2;
+		logo_mc_x_ratio = 2;
+		logo_mc_y_ratio = 2;
+	} else if (is_me1mc4 == 2) {
+		reg_me_dsx_scale = 2;
+		reg_me_dsy_scale = 1;
+		me_mc_x_ratio = 2;
+		me_mc_y_ratio = 1;
+		logo_mc_x_ratio = 2;
+		logo_mc_y_ratio = 1;
+	} else {
+		reg_me_dsx_scale = 1;
+		reg_me_dsy_scale = 2;
+		me_mc_x_ratio = 1;
+		me_mc_y_ratio = 2;
+		logo_mc_x_ratio = 1;
+		logo_mc_y_ratio = 2;
+	}
+	osd_mc_x_ratio = 0;
+	osd_mc_y_ratio = 0;
+
+	frc_config_reg_value((reg_me_dsx_scale << 6 | reg_me_dsy_scale << 4),
+		0xf0, &regdata_hme_scale_012d);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_ME_SCALE, regdata_hme_scale_012d);
+
+	frc_config_reg_value((logo_mc_x_ratio << 4 | logo_mc_y_ratio << 2),
+		0xf << 2, &regdata_blkscale_012c); //reg_logo_mc_dsx_ratio | reg_logo_mc_dsy_ratio
+
+	frc_config_reg_value((logo_mc_x_ratio - osd_mc_x_ratio) << 20 |
+		(logo_mc_y_ratio - osd_mc_y_ratio) << 18,
+		0xf << 18, &regdata_blkscale_012c); //reg_osd_logo_dsx_ratio  reg_osd_logo_dsy_ratio
+
+	frc_config_reg_value(0x1 << 14, 0x3 << 14, &regdata_blkscale_012c);//reg_osd_logo_ratio_th
+
+	WRITE_FRC_REG_BY_CPU(FRC_REG_BLK_SCALE, regdata_blkscale_012c);
+
+	//reg_me_logo_dsx_ratio    reg_me_logo_dsy_ratio
+	// tmp_reg_value = logo_mc_ratio - me_mc_ratio;
+	// tmp_reg_value |= (logo_mc_ratio - me_mc_ratio) << 1;
+	frc_config_reg_value((logo_mc_x_ratio - me_mc_x_ratio) << 25 |
+		(logo_mc_y_ratio - me_mc_y_ratio) << 24, 0x3 << 24, &regdata_blksizexy_012b);
+	// frc_config_reg_value(tmp_reg_value<<24, 0x03000000, &regdata_blksizexy_012b);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_BLK_SIZE_XY, regdata_blksizexy_012b);
+
+	reg_me_mvx_div_mode = (regdata_me_en_1100 >> 4) & 0x3;
+	reg_me_mvy_div_mode = (regdata_me_en_1100 >> 0) & 0x3;
+
+	tmp_reg_value =
+	((ME_MVY_BIT - 2 + reg_me_mvy_div_mode) - (ME_FINER_HIST_BIT + ME_ROUGH_Y_HIST_BIT)) & 0x7;
+	tmp_reg_value |=
+	((ME_MVX_BIT - 2 + reg_me_mvx_div_mode) - (ME_FINER_HIST_BIT + ME_ROUGH_X_HIST_BIT)) << 4;
+	WRITE_FRC_REG_BY_CPU(FRC_ME_GMV_CTRL, tmp_reg_value | 0xc00);
+
+	//reg_region_rp_gmv_mvx_sft
+	//reg_region_rp_gmv_mvy_sft
+	tmp_reg_value = (reg_me_mvy_div_mode + 2) << 14 & 0x8c000;
+	tmp_reg_value |= (reg_me_mvy_div_mode + 2) << 17 & 0xe0000;
+	WRITE_FRC_REG_BY_CPU(FRC_ME_REGION_RP_GMV_2, tmp_reg_value | 0x90400);
+
+	/* because me_mc_ratio only equal 1 or 2
+	 *if (me_mc_ratio == 2) {
+	 *	reg_mc_blksize_xscale = 4;
+	 *	reg_mc_blksize_yscale = 4;
+	 *	reg_mc_mvx_scale =  2;
+	 *	reg_mc_mvy_scale =  2;
+	 *	reg_mc_fetch_size = 9;
+	 *	reg_mc_blk_x      = 16;
+	 *} else {
+	 *	reg_mc_blksize_xscale = 3;
+	 *	reg_mc_blksize_yscale = 3;
+	 *	reg_mc_mvx_scale =  1;
+	 *	reg_mc_mvy_scale =  1;
+	 *	reg_mc_fetch_size = 5;
+	 *	reg_mc_blk_x      = 8;
+	 *}
+	 */
+	if (me_mc_x_ratio == 2) {
+		reg_mc_blksize_xscale = 4;
+		reg_mc_mvx_scale = 2;
+		reg_mc_fetch_size = 9;
+		reg_mc_blk_x = 16;
+	} else {  // if (me_mc_x_ratio == 1)
+		reg_mc_blksize_xscale = 3;
+		reg_mc_mvx_scale = 1;
+		reg_mc_fetch_size = 5;
+		reg_mc_blk_x = 8;
+	}
+	/*
+	 *else if (me_mc_x_ratio == 0) {
+	 *	reg_mc_blksize_xscale = 2;
+	 *	reg_mc_mvx_scale = 0;
+	 *	reg_mc_fetch_size = 3;
+	 *	reg_mc_blk_x = 4;
+	 *} else if (me_mc_x_ratio == 3) {
+	 *	reg_mc_blksize_xscale = 5;
+	 *	reg_mc_mvx_scale = 3;
+	 *	reg_mc_fetch_size = 17;
+	 *	reg_mc_blk_x = 32;
+	 *}
+	 */
+
+	if (me_mc_y_ratio == 2) {
+		reg_mc_blksize_yscale = 4;
+		reg_mc_mvy_scale = 2;
+	} else {  // if (me_mc_y_ratio == 1)
+		reg_mc_blksize_yscale = 3;
+		reg_mc_mvy_scale = 1;
+	}
+	/*
+	 *else if (me_mc_y_ratio == 0) {
+	 *	reg_mc_blksize_yscale = 2;
+	 *	reg_mc_mvy_scale = 0;
+	 *} else if (me_mc_y_ratio == 3) {
+	 *	reg_mc_blksize_yscale = 5;
+	 *	reg_mc_mvy_scale = 3;
+	 *}
+	 */
+	tmp_reg_value = reg_mc_blksize_yscale << 6 & 0x01c0;
+	tmp_reg_value |= reg_mc_blksize_xscale << 9 & 0xe00;
+	frc_config_reg_value(tmp_reg_value, 0xfc0, &regdata_blkscale_012c);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_BLK_SCALE, regdata_blkscale_012c);
+
+	tmp_reg_value = reg_mc_mvy_scale & 0xf;
+	tmp_reg_value |= (reg_mc_mvx_scale << 8) & 0xf00;
+	frc_config_reg_value(tmp_reg_value, 0xf0f, &regdata_mcset1_3000);
+	WRITE_FRC_REG_BY_CPU(FRC_MC_SETTING1, regdata_mcset1_3000);
+	tmp_reg_value = reg_mc_blk_x & 0x3f;
+	tmp_reg_value |= (reg_mc_fetch_size << 8) & 0x3f00;
+	frc_config_reg_value(tmp_reg_value, 0x3f3f, &regdata_mcset2_3001);
+	WRITE_FRC_REG_BY_CPU(FRC_MC_SETTING2, regdata_mcset2_3001);
+
+	//  MC
+	//reg_mc_vsrch_rng_luma  reg_mc_vsrch_rng_chrm
+	tmp_reg_value = MAX_MC_C_VRANG;
+	tmp_reg_value |= (MAX_MC_Y_VRANG << 8) & 0xff00;
+	WRITE_FRC_REG_BY_CPU(FRC_NOW_SRCH_REG, tmp_reg_value | 0x20200000);  // 0x308e, 0x2020a0a0
+
+	// bbd
+	reg_bb_det_top  = 0;
+	reg_bb_det_bot  = frm_vsize - 1;
+	reg_bb_det_lft  = 0;
+	reg_bb_det_rit  = frm_hsize - 1;
+
+	regdata_bbd_t2b_0604 = reg_bb_det_bot;
+	regdata_bbd_t2b_0604 |= reg_bb_det_top << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_DETECT_REGION_TOP2BOT, regdata_bbd_t2b_0604);
+	regdata_bbd_l2r_0605 = reg_bb_det_rit;
+	regdata_bbd_l2r_0605 |= reg_bb_det_lft << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_DETECT_REGION_LFT2RIT, regdata_bbd_l2r_0605);
+
+	reg_bb_det_motion_top  = reg_bb_det_top >> reg_me_dsy_scale;
+	reg_bb_det_motion_bot  = ((reg_bb_det_bot + 1) >> reg_me_dsy_scale) - 1;
+	reg_bb_det_motion_lft  = reg_bb_det_lft >> reg_me_dsx_scale;
+	reg_bb_det_motion_rit  = ((reg_bb_det_rit + 1) >> reg_me_dsx_scale) - 1;
+
+	// reg_bb_det_motion_top _bot _lft _rit
+	tmp_reg_value = reg_bb_det_motion_bot;
+	tmp_reg_value |= reg_bb_det_motion_top << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_DETECT_MOTION_REGION_TOP2BOT, tmp_reg_value);
+	tmp_reg_value_2 = reg_bb_det_motion_rit;
+	tmp_reg_value_2 |= reg_bb_det_motion_lft << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_DETECT_MOTION_REGION_LFT2RIT, tmp_reg_value_2);
+
+	// TODO....
+	//reg_bb_det_detail_h_top  _h_bot _h_lft _h_rit
+	// pr_frc(0, "FRC_BBD_DETECT_DETAIL_H_TOP2BOT(0x0606):%08x\n", regdata_bbd_t2b_0604);
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_DETECT_DETAIL_H_TOP2BOT, regdata_bbd_t2b_0604);
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_DETECT_DETAIL_H_LFT2RIT, regdata_bbd_l2r_0605);
+
+	// reg_bb_det_detail_v_top  _v_bot _v_lft   _v_rit
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_DETECT_DETAIL_V_TOP2BOT, regdata_bbd_t2b_0604);
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_DETECT_DETAIL_V_LFT2RIT, tmp_reg_value_2);  // to check
+
+	//reg_debug_top/bot/lft/rit_motion_posi2
+	WRITE_FRC_REG_BY_CPU(FRC_REG_DEBUG_PATH_TOP_BOT_MOTION_POSI2, regdata_bbd_t2b_0604);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_DEBUG_PATH_LFT_RIT_MOTION_POSI2, regdata_bbd_l2r_0605);
+
+	//reg_debug_top/bot/lft/rit_motion_posi1
+	WRITE_FRC_REG_BY_CPU(FRC_REG_DEBUG_PATH_TOP_BOT_MOTION_POSI1, regdata_bbd_t2b_0604);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_DEBUG_PATH_LFT_RIT_MOTION_POSI1, regdata_bbd_l2r_0605);
+
+	//reg_debug_top/bot/lft/rit_edge_posi2
+	WRITE_FRC_REG_BY_CPU(FRC_REG_DEBUG_PATH_TOP_BOT_EDGE_POSI2, regdata_bbd_t2b_0604);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_DEBUG_PATH_LFT_RIT_EDGE_POSI2, regdata_bbd_l2r_0605);
+
+	//reg_debug_top/bot/lft/rit_edge_posi1
+	WRITE_FRC_REG_BY_CPU(FRC_REG_DEBUG_PATH_TOP_BOT_EDGE_POSI1, regdata_bbd_t2b_0604);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_DEBUG_PATH_LFT_RIT_EDGE_POSI1, regdata_bbd_l2r_0605);
+
+	// black bar location  (will be changed oframe base by fw algorithm)
+	//reg_blackbar_xyxy_0 _xyxy_1 _xyxy_2 _xyxy_3
+	regdata_bb_xy_st_0119 = reg_bb_det_top;
+	regdata_bb_xy_st_0119 |= (reg_bb_det_lft << 16);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_BLACKBAR_XYXY_ST, regdata_bb_xy_st_0119);
+	regdata_bb_xy_ed_011a = reg_bb_det_bot;
+	regdata_bb_xy_ed_011a |= (reg_bb_det_rit << 16);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_BLACKBAR_XYXY_ED, regdata_bb_xy_ed_011a);
+
+	//reg_blackbar_xyxy_me_0
+	regdata_bb_xy_me_st_011b = reg_bb_det_top;
+	regdata_bb_xy_me_st_011b |= (reg_bb_det_lft << 16);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_BLACKBAR_XYXY_ME_ST, regdata_bb_xy_me_st_011b);
+	regdata_bb_xy_me_ed_011c = reg_bb_det_bot;
+	regdata_bb_xy_me_ed_011c |= (reg_bb_det_rit << 16);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_BLACKBAR_XYXY_ME_ED, regdata_bb_xy_me_ed_011c);
+
+	// TODO: related to mc registers??
+	// reg_data = READ_FRC_REG(FRC_MC_DEMO_WINDOW);
+	reg_data = regdata_mcdemo_win_3200;
+	reg_demo_window1_en = (reg_data >> 3) & 0x1;
+	reg_demo_window2_en = (reg_data >> 2) & 0x1;
+	reg_demo_window3_en = (reg_data >> 1) & 0x1;
+	reg_demo_window4_en = reg_data & 0x1;
+	if (reg_demo_window1_en) {
+	// WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW1_XYXY_ST, (frm_hsize>>1)<<16);
+	// WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW1_XYXY_ED,  (frm_vsize-1) | (frm_hsize-1)<<16);
+	}
+	if (reg_demo_window2_en) {
+	//reg_demowindow2_xyxy_0
+	// WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW2_XYXY_ST, (frm_hsize>>1)<<16);
+	// WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW2_XYXY_ED,  (frm_vsize-1) | (frm_hsize-1)<<16);
+	}
+	if (reg_demo_window3_en) {
+	//reg_demowindow3_xyxy_0
+	//WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW3_XYXY_ST, (frm_hsize>>1)<<16);
+	// WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW3_XYXY_ED,  (frm_vsize-1) | (frm_hsize-1)<<16);
+	}
+	if (reg_demo_window4_en) {
+	//reg_demowindow4_xyxy_0
+	// WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW4_XYXY_ST, (frm_hsize>>1)<<16);
+	// WRITE_FRC_REG_BY_CPU(FRC_REG_DEMOWINDOW4_XYXY_ED,  (frm_vsize-1) | (frm_hsize-1)<<16);
+	}
+	//reg_bb_ds_xyxy_0 _xyxy_1
+	WRITE_FRC_REG_BY_CPU(FRC_REG_DS_WIN_SETTING_LFT_TOP,  0);
+	//reg_bb_ds_xyxy_2 xyxy_3
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_DS_WIN_SETTING_RIT_BOT,
+			(frm_vsize - 1) | (frm_hsize - 1) << 16);
+
+	//reg_mc_org_me_bb_xyxy_0  xyxy_1
+	WRITE_FRC_REG_BY_CPU(FRC_MC_BB_HANDLE_ORG_ME_BB_XYXY_LEFT_TOP,  0);
+
+	regdata_hme_scale_012d = READ_FRC_REG(FRC_REG_ME_SCALE);
+	mc_org_me_bb_2 = (regdata_hme_scale_012d >> 6) & 0x3;
+	mc_org_me_bb_3 = (regdata_hme_scale_012d >> 4) & 0x3;
+	//reg_mc_org_me_bb_xyxy_2 xyxy_3
+	tmp_reg_value = (frm_vsize >> mc_org_me_bb_3) - 1;
+	tmp_reg_value |= ((tmp_reg_value >> mc_org_me_bb_2) - 1) << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_MC_BB_HANDLE_ORG_ME_BB_XYXY_RIGHT_BOT,  tmp_reg_value);
+	//reg_mc_org_me_blk_bb_xyxy_0/1
+	WRITE_FRC_REG_BY_CPU(FRC_MC_BB_HANDLE_ORG_ME_BLK_BB_XYXY_LFT_AND_TOP,  0);
+
+	regdata_blksizexy_012b = READ_FRC_REG(FRC_REG_BLK_SIZE_XY);
+	mc_org_me_blk_bb_2 = (regdata_blksizexy_012b >> 19) & 0x7;
+	mc_org_me_blk_bb_3 = (regdata_blksizexy_012b >> 16) & 0x7;
+	//reg_mc_org_me_blk_bb_xyxy_2/3
+	tmp_reg_value = ((frm_vsize >> mc_org_me_bb_3) >> mc_org_me_blk_bb_3) - 1;
+	tmp_reg_value |= (((frm_hsize >> mc_org_me_bb_2) >> mc_org_me_blk_bb_2) - 1) << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_MC_BB_HANDLE_ORG_ME_BLK_BB_XYXY_RIT_AND_BOT,  tmp_reg_value);
+
+	tmp_reg_value = reg_bb_det_top;
+	tmp_reg_value |= (reg_bb_det_lft << 16);
+	tmp_reg_value_2 = reg_bb_det_bot;
+	tmp_reg_value_2 |= (reg_bb_det_rit << 16);
+
+	//reg_bb_apl_hist_xyxy_0/1/2/3
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_APL_HIST_WIN_LFT_TOP, tmp_reg_value);
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_APL_HIST_WIN_RIT_BOT, tmp_reg_value_2);
+
+	//reg_bb_oob_apl_xyxy_0/1/2/3
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_OOB_APL_CAL_LFT_TOP_RANGE, tmp_reg_value);
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_OOB_APL_CAL_RIT_BOT_RANGE, tmp_reg_value_2);
+
+	//reg_bb_oob_h_detail_xyxy_0/1/2/3
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_OOB_DETAIL_WIN_LFT_TOP, tmp_reg_value);
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_OOB_DETAIL_WIN_RIT_BOT, tmp_reg_value_2);
+
+	bb_mo_ds_2 = MIN((frm_hsize >> mc_org_me_bb_2) - 1, (reg_bb_det_rit >> mc_org_me_bb_2));
+	bb_mo_ds_3 = MIN((frm_vsize >> mc_org_me_bb_3) - 1, (reg_bb_det_bot >> mc_org_me_bb_3));
+	//reg_bb_motion_xyxy_ds_0/1/2/3
+	tmp_reg_value = reg_bb_det_top >> mc_org_me_bb_3;
+	tmp_reg_value |= (reg_bb_det_lft >> mc_org_me_bb_2) << 16;
+	tmp_reg_value_2 = bb_mo_ds_3;
+	tmp_reg_value_2 |= bb_mo_ds_2 << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_MOTION_DETEC_REGION_LFT_TOP_DS,  tmp_reg_value);
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_MOTION_DETEC_REGION_RIT_BOT_DS,  tmp_reg_value_2);
+
+	bb_oob_v_2 = MIN((frm_hsize >> mc_org_me_bb_2) - 1, (reg_bb_det_rit >> mc_org_me_bb_2));
+	//reg_bb_oob_v_detail_xyxy_0/1/2/3
+	tmp_reg_value = reg_bb_det_top;
+	tmp_reg_value |= (reg_bb_det_lft >> mc_org_me_bb_2) << 16;
+	tmp_reg_value_2 = reg_bb_det_bot;
+	tmp_reg_value_2 |= bb_oob_v_2 << 16;
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_OOB_V_DETAIL_WIN_LFT_TOP,  tmp_reg_value);
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_OOB_V_DETAIL_WIN_RIT_BOT,  tmp_reg_value_2);
+
+	//reg_bb_flat_xyxy_0/1/2/3
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_FLATNESS_DETEC_REGION_LFT_TOP,
+			reg_bb_det_top | (reg_bb_det_lft << 16));
+	WRITE_FRC_REG_BY_CPU(FRC_BBD_FLATNESS_DETEC_REGION_RIT_BOT,
+			reg_bb_det_bot | (reg_bb_det_rit << 16));
+}
+
 void frc_top_init(struct frc_dev_s *frc_devp)
 {
 	////Config frc ctrl timming
@@ -985,6 +1503,9 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 		frc_top->vfb = vpu_reg_read(ENCL_VIDEO_VAVON_BLINE);
 	}
 	pr_frc(log, "ENCL_VIDEO_VAVON_BLINE:%d\n", frc_top->vfb);
+
+	// frc_win_align_apply(frc_devp, frc_top);
+
 	//(frc_top->vfb / 4) * 3; 3/4 point of front vblank, default
 	reg_mc_out_line = frc_init_out_line();
 	adj_mc_dly = frc_devp->out_line;    // from user debug
@@ -1053,6 +1574,8 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 		mevp_frm_dly = frc_devp->frm_dly_set[2].mevp_frm_dly;
 		mc_frm_dly  = frc_devp->frm_dly_set[2].mc_frm_dly;
 		pr_frc(log, "4k1k_mc_frm_dly:%d\n", mc_frm_dly);
+		if (chip == ID_T3X)
+			frc_top->is_me1mc4 = 2;
 	} else {
 		//mevp_frm_dly = 140;
 		//mc_frm_dly = 10;
@@ -1172,32 +1695,13 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	pr_frc(log, "reg_mc_dly_vofst1 = %d\n", reg_mc_dly_vofst1);
 	pr_frc(log, "frc_ratio_mode = %d\n", frc_top->frc_ratio_mode);
 	pr_frc(log, "frc_fb_num = %d\n", frc_top->frc_fb_num);
-/*
-	regdata_outholdctl_0003 = READ_FRC_REG(FRC_OUT_HOLD_CTRL);
-	regdata_inpholdctl_0002 = READ_FRC_REG(FRC_INP_HOLD_CTRL);
-	frc_config_reg_value(me_hold_line, 0xff, &regdata_outholdctl_0003);
-	frc_config_reg_value(mc_hold_line << 8, 0xff00, &regdata_outholdctl_0003);
-	WRITE_FRC_REG_BY_CPU(FRC_OUT_HOLD_CTRL, regdata_outholdctl_0003);
-	frc_config_reg_value(inp_hold_line, 0x1fff, &regdata_inpholdctl_0002);
-	WRITE_FRC_REG_BY_CPU(FRC_INP_HOLD_CTRL, regdata_inpholdctl_0002);
 
-	// sys_fw_param_frc_init(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
-	// init_bb_xyxy(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
-
-	// protect mode, enable: memc delay 2 frame
-	// disable: memc delay n frame, n depend on cadence, for debug
-	if (frc_top->frc_prot_mode) {
-		regdata_top_ctl_0009 = READ_FRC_REG(FRC_REG_TOP_CTRL9);
-		regdata_top_ctl_0011 = READ_FRC_REG(FRC_REG_TOP_CTRL17);
-		frc_config_reg_value(0x01000000, 0x0F000000, &regdata_top_ctl_0009);
-		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL9, regdata_top_ctl_0009); //dly_num =1
-		frc_config_reg_value(0x100, 0x100, &regdata_top_ctl_0011);
-		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL17, regdata_top_ctl_0011); //buf prot open
-		WRITE_FRC_REG_BY_CPU(FRC_MODE_OPT, 0x6); // set bit1/bit2
-	} else {
-		WRITE_FRC_REG_BY_CPU(FRC_MODE_OPT, 0x0); // clear bit1/bit2
+	if (chip >= ID_T3X && frc_devp->no_ko_mode == 1) {
+		// sys_fw_param_frc_init(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
+		// init_bb_xyxy(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
+		frc_drv_fw_param_init(frc_top->hsize, frc_top->vsize, frc_top->is_me1mc4);
+		frc_drv_bbd_init_xyxy(fw_data);
 	}
-*/
 }
 
 /*buffer number can dynamic kmalloc,  film_hwfw_sel ????*/
@@ -1251,8 +1755,9 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		//phs_st plog_dif clog_dif pfrm_dif cfrm_dif nfrm_dif mc_ph me_ph film_ph frc_ph
 		//phs_lut_table[0] = {1'h1,4'h3,4'h2,4'h3,4'h2,4'h1,8'h00,8'h40,8'h00,8'h00};
 		//phs_lut_table[1] = {1'h0,4'h3,4'h2,4'h3,4'h2,4'h1,8'h40,8'h40,8'h00,8'h01};
-		phs_lut_table[0] = 0x13232100400000;
-		phs_lut_table[1] = 0x03232140400001;
+		//phs_lut_table[0] = 0x13232100400000;
+		//phs_lut_table[1] = 0x03232140400001;
+		//cadence = 22_1/2
 		//phs_lut_table[0] = {1'h1,4'h4,4'h3,4'h4,4'h3,4'h1,8'h00,8'h20,8'h01,8'h00};
 		//phs_lut_table[1] = {1'h0,4'h4,4'h3,4'h4,4'h3,4'h1,8'h20,8'h20,8'h02,8'h01};
 		//phs_lut_table[2] = {1'h0,4'h5,4'h3,4'h5,4'h3,4'h2,8'h40,8'h40,8'h03,8'h00};
@@ -1261,6 +1766,28 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		//phs_lut_table[1] = 0x04343120200201;
 		//phs_lut_table[2] = 0x05353240400300;
 		//phs_lut_table[3] = 0x05353260600001;
+		//cadence = 32_1/2,table_cnt=   10,match_data=0x14
+		//phs_st plog_dif clog_dif pfrm_dif cfrm_dif nfrm_dif mc_ph me_ph film_ph frc_ph
+		//mem[0]={ 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd1, 8'd0,   8'd25,  8'd1, 8'd0};
+		//mem[1]={ 1'd0, 4'd3, 4'd2, 4'd5, 4'd4, 4'd1, 8'd25,  8'd25,  8'd1, 8'd1};
+		//mem[2]={ 1'd0, 4'd4, 4'd3, 4'd6, 4'd4, 4'd2, 8'd51,  8'd51,  8'd2, 8'd0};
+		//mem[3]={ 1'd0, 4'd4, 4'd3, 4'd6, 4'd4, 4'd2, 8'd76,  8'd76,  8'd2, 8'd1};
+		//mem[4]={ 1'd0, 4'd4, 4'd3, 4'd7, 4'd5, 4'd3, 8'd102, 8'd102, 8'd3, 8'd0};
+		//mem[5]={ 1'd1, 4'd3, 4'd2, 4'd5, 4'd3, 4'd1, 8'd0,   8'd25,  8'd3, 8'd1};
+		//mem[6]={ 1'd0, 4'd3, 4'd2, 4'd6, 4'd3, 4'd2, 8'd25,  8'd25,  8'd4, 8'd0};
+		//mem[7]={ 1'd0, 4'd3, 4'd2, 4'd6, 4'd3, 4'd2, 8'd51,  8'd51,  8'd4, 8'd1};
+		//mem[8]={ 1'd0, 4'd4, 4'd3, 4'd7, 4'd4, 4'd3, 8'd76,  8'd76,  8'd0, 8'd0};
+		//mem[9]={ 1'd0, 4'd4, 4'd3, 4'd7, 4'd4, 4'd3, 8'd102, 8'd102, 8'd0, 8'd1};
+		phs_lut_table[0] = 0x13254100190100;
+		phs_lut_table[1] = 0x03254119190101;
+		phs_lut_table[2] = 0x04364233330200;
+		phs_lut_table[3] = 0x0436424c4c0201;
+		phs_lut_table[4] = 0x04375366660300;
+		phs_lut_table[5] = 0x13253100190301;
+		phs_lut_table[6] = 0x03263219190400;
+		phs_lut_table[7] = 0x03263233330401;
+		phs_lut_table[8] = 0x0437434c4c0000;
+		phs_lut_table[9] = 0x04374366660001;
 		input_n          = 1;
 		output_m         = 2;
 	}

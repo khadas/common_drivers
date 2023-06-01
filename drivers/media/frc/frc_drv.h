@@ -620,7 +620,12 @@ struct frc_dev_s {
 	//u32 loss_en;
 	u32 loss_ratio;
 
-	u32 prot_mode;/*0:memc prefetch acorrding mode frame 1:memc prefetch 1 frame*/
+	// u32 prot_mode;/*0:memc prefetch acorrding mode frame 1:memc prefetch 1 frame*/
+	u8  prot_mode;
+	u8  no_ko_mode;
+	u8  other1_flag;
+	u8  other2_flag;
+
 	u32 film_mode;
 	u32 film_mode_det;/*0: hw detect, 1: sw detect*/
 	u32 auto_n2m;

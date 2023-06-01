@@ -1814,27 +1814,40 @@
 //Bit  2           reg_iplogo_blk_dil_en     // unsigned ,    RW, default = 1  dft=1;  0: ip blklogo dilate disable, 1: ip blklogo dilate enable
 //Bit  1           reg_iplogo_blk_ero_en     // unsigned ,    RW, default = 1  dft=1;  0: ip blklogo erosion disable, 1: ip blklogo erosion enable
 //Bit  0           reg_iplogo_lpf_en         // unsigned ,    RW, default = 0  dft=0;  0: ip pxllogo glpf disable, 1: ip pxllogo glpf enable
+#define FRC_IPLOGO_REGION_HWINDOW_2                0x0586
+#define FRC_IPLOGO_REGION_HWINDOW_1                0x0587
+#define FRC_IPLOGO_REGION_HWINDOW_0                0x0588
+#define FRC_IPLOGO_REGION_VWINDOW_1                0x0589
+#define FRC_IPLOGO_REGION_VWINDOW_0                0x058a
+#define FRC_BBD_DETECT_DETAIL_H_TOP2BOT            0x0606
+#define FRC_BBD_DETECT_DETAIL_H_LFT2RIT            0x0607
+#define FRC_BBD_DETECT_DETAIL_V_TOP2BOT            0x0608
+#define FRC_BBD_DETECT_DETAIL_V_LFT2RIT            0x0609
+#define FRC_BBD_DETECT_MOTION_REGION_TOP2BOT       0x060a
+#define FRC_BBD_DETECT_MOTION_REGION_LFT2RIT       0x060b
 #define FRC_BBD_DETECT_REGION_TOP2BOT              0x0604
-//Bit 31:16        reg_bb_det_top            // unsigned ,    RW, default = 0  detection range top start,   dft0
-//Bit 15: 0        reg_bb_det_bot            // unsigned ,    RW, default = 1079  detection range bot end,  dft ysize-1
 #define FRC_BBD_DETECT_REGION_LFT2RIT              0x0605
-//Bit 31:16        reg_bb_det_lft            // unsigned ,    RW, default = 0  detection range lft start,   dft0
-//Bit 15: 0        reg_bb_det_rit            // unsigned ,    RW, default = 1919  detection range rit end,  dft xsize-1
-
+#define FRC_BBD_DETECT_MOTION_REGION_TOP2BOT       0x060a
+#define FRC_BBD_DETECT_MOTION_REGION_LFT2RIT       0x060b
+#define FRC_IPLOGO_BB_PIX_ST                       0x0501
+#define FRC_IPLOGO_BB_PIX_ED                       0x0502
+#define FRC_BBD_APL_HIST_WIN_LFT_TOP               0x062b
+#define FRC_BBD_APL_HIST_WIN_RIT_BOT               0x062c
+#define FRC_BBD_OOB_APL_CAL_LFT_TOP_RANGE          0x0611
+#define FRC_BBD_OOB_APL_CAL_RIT_BOT_RANGE          0x0612
+#define FRC_BBD_OOB_DETAIL_WIN_LFT_TOP             0x0614
+#define FRC_BBD_OOB_DETAIL_WIN_RIT_BOT             0x0615
+#define FRC_BBD_OOB_V_DETAIL_WIN_LFT_TOP           0x0616
+#define FRC_BBD_OOB_V_DETAIL_WIN_RIT_BOT           0x0617
+#define FRC_BBD_MOTION_DETEC_REGION_LFT_TOP_DS     0x0619
+#define FRC_BBD_MOTION_DETEC_REGION_RIT_BOT_DS     0x061a
+#define FRC_BBD_FLATNESS_DETEC_REGION_LFT_TOP      0x061e
+#define FRC_BBD_FLATNESS_DETEC_REGION_RIT_BOT      0x061f
 #define FRC_BBD_RO_HIST_IDX                        0x0694
-//Bit 31:24        reserved
-//Bit 23:16        ro_bb_max1_hist_idx       // unsigned ,    RO, default = 0  index for the first most max num hist,  dft0
-//Bit 15: 8        ro_bb_max2_hist_idx       // unsigned ,    RO, default = 0  index for the second most max num hist, dft0
-//Bit  7: 0        ro_bb_min1_hist_idx       // unsigned ,    RO, default = 0  index for the most min num hist,    dft0
 #define FRC_BBD_RO_MAX1_HIST_CNT                   0x0695
-//Bit 31: 0        ro_bb_max1_hist_cnt       // unsigned ,    RO, default = 0  number in the first most max num hist,  dft0
 #define FRC_BBD_RO_MAX2_HIST_CNT                   0x0696
-//Bit 31: 0        ro_bb_max2_hist_cnt       // unsigned ,    RO, default = 0  number in the second most max num hist, dft0
 #define FRC_BBD_RO_MIN1_HIST_CNT                   0x0697
-//Bit 31: 0        ro_bb_min1_hist_cnt       // unsigned ,    RO, default = 0  number in the most min num hist,    dft0
 #define FRC_BBD_RO_APL_GLB_SUM                     0x0698
-//Bit 31: 0        ro_bb_apl_glb_sum         // unsigned ,    RO, default = 0  apl value in active region, dft0
-
 #define FRC_FD_DIF_GL                              0x071e
 //Bit 31: 0        ro_fd_glb_mot_all         // unsigned ,    RO, default = 0  global ,difference of cur and pre
 #define FRC_FD_DIF_COUNT_GL                        0x071f
@@ -1845,7 +1858,6 @@
 #define FRC_FD_DIF_COUNT_GL_FILM                   0x0721
 //Bit 31:20        reserved
 //Bit 19: 0        ro_fd_mot_count_all_film  // unsigned ,    RO, default = 0  global ,count of difference of cur and pre
-
 #define FRC_NR_MISC                                0x0800
 //Bit 31: 0        reg_nr_misc               // unsigned ,    RW, default = 0  register
 
@@ -1920,7 +1932,9 @@
 #define FRC_ME_CMV_CTRL                            0x11a1
 //Bit 31           reg_me_cmv_rand_pulse    // unsigned ,    RW, default = 0         cmv_misc
 //Bit 30:0         reg_me_cmv_ctrl          // unsigned ,    RW, default = 255       cmv_misc 10:max_mv_sel 7:fs_en 6:proj_en 5:zmv_en 4:gmv_en 3:hier_en 2:rand_en 1:st1_en 0:st0_en
-
+#define FRC_ME_REGION_RP_GMV_2                     0x1708
+#define FRC_NOW_SRCH_REG                           0x308e
+#define FRC_ME_GMV_CTRL                            0x1702
 #define FRC_VP_BB_1                                0x1e03
 //Bit 31:16        reg_vp_bb_xyxy_1          // unsigned ,    RW, default = 0  black bar block index of top
 //Bit 15: 0        reg_vp_bb_xyxy_0          // unsigned ,    RW, default = 0  black bar block index of left
@@ -1928,72 +1942,23 @@
 //Bit 31:16        reg_vp_bb_xyxy_3          // unsigned ,    RW, default = 134  black bar block index of bottom
 //Bit 15: 0        reg_vp_bb_xyxy_2          // unsigned ,    RW, default = 239  black bar block index of right
 #define FRC_VP_ME_BB_1                             0x1e05
-//Bit 31:16        reg_vp_me_bb_blk_xyxy_1   // unsigned ,    RW, default = 0  black bar block index of top
-//Bit 15: 0        reg_vp_me_bb_blk_xyxy_0   // unsigned ,    RW, default = 0  black bar block index of left
 #define FRC_VP_ME_BB_2                             0x1e06
-//Bit 31:16        reg_vp_me_bb_blk_xyxy_3   // unsigned ,    RW, default = 134  black bar block index of bottom
-//Bit 15: 0        reg_vp_me_bb_blk_xyxy_2   // unsigned ,    RW, default = 239  black bar block index of right
-
 #define FRC_VP_REGION_WINDOW_1                     0x1e58
-//Bit 31:20        reg_vp_stat_region_hend_1 // unsigned ,    RW, default = 118  vp statistic region horizontal end1
-//Bit 19: 8        reg_vp_stat_region_hend_0 // unsigned ,    RW, default = 59  vp statistic region horizontal end0
-//Bit  7: 0        reg_vp_stat_region_hstart // unsigned ,    RW, default = 0  vp statistic region horizontal start
 #define FRC_VP_REGION_WINDOW_2                     0x1e59
-//Bit 31:24        reg_vp_stat_region_vstart // unsigned ,    RW, default = 0  vp statistic region vertical start
-//Bit 23:12        reg_vp_stat_region_hend_3 // unsigned ,    RW, default = 239  vp statistic region horizontal end3
-//Bit 11: 0        reg_vp_stat_region_hend_2 // unsigned ,    RW, default = 177  vp statistic region horizontal end2
 #define FRC_VP_REGION_WINDOW_3                     0x1e5a
-//Bit 31:20        reg_vp_stat_region_vend_2 // unsigned ,    RW, default = 134  vp statistic region vertical end2
-//Bit 19: 8        reg_vp_stat_region_vend_1 // unsigned ,    RW, default = 88  vp statistic region vertical end1
-//Bit  7: 0        reg_vp_stat_region_vend_0 // unsigned ,    RW, default = 44  vp statistic region vertical end0
 #define FRC_VP_REGION_WINDOW_4                     0x1e5b
-//Bit 31:13        reserved
-//Bit 12           reg_dehalo_region_en_11   // unsigned ,    RW, default = 1  enable signal for region 11 dehalo
-//Bit 11           reg_dehalo_region_en_10   // unsigned ,    RW, default = 1  enable signal for region 10 dehalo
-//Bit 10           reg_dehalo_region_en_9    // unsigned ,    RW, default = 1  enable signal for region 9 dehalo
-//Bit  9           reg_dehalo_region_en_8    // unsigned ,    RW, default = 1  enable signal for region 8 dehalo
-//Bit  8           reg_dehalo_region_en_7    // unsigned ,    RW, default = 1  enable signal for region 7 dehalo
-//Bit  7           reg_dehalo_region_en_6    // unsigned ,    RW, default = 1  enable signal for region 6 dehalo
-//Bit  6           reg_dehalo_region_en_5    // unsigned ,    RW, default = 1  enable signal for region 5 dehalo
-//Bit  5           reg_dehalo_region_en_4    // unsigned ,    RW, default = 1  enable signal for region 4 dehalo
-//Bit  4           reg_dehalo_region_en_3    // unsigned ,    RW, default = 1  enable signal for region 3 dehalo
-//Bit  3           reg_dehalo_region_en_2    // unsigned ,    RW, default = 1  enable signal for region 2 dehalo
-//Bit  2           reg_dehalo_region_en_1    // unsigned ,    RW, default = 1  enable signal for region 1 dehalo
-//Bit  1           reg_dehalo_region_en_0    // unsigned ,    RW, default = 1  enable signal for region 0 dehalo
-//Bit  0            reserved
-
+#define FRC_MELOGO_REGION_HWINDOW_2                0x1f11
+#define FRC_MELOGO_REGION_HWINDOW_1                0x1f12
+#define FRC_MELOGO_REGION_HWINDOW_0                0x1f13
+#define FRC_MELOGO_REGION_VWINDOW_1                0x1f14
+#define FRC_MELOGO_REGION_VWINDOW_0                0x1f15
 #define FRC_VP_TOP_STAT                            0x1ef7
-//Bit 31:2          reserved
-//Bit 1             ro_vp2_undone_flag         // unsigned ,    RO, default = 0     ro_vp2_undone_flag 1:vp2 undone flag
-//Bit 0             ro_vp1_undone_flag         // unsigned ,    RO, default = 0     ro_vp1_undone_flag 1:vp1 undone flag
 #define FRC_VP_TOP_CLR_STAT                        0x1ef8
-//Bit 31:2          reserved
-//Bit 1             pls_clr_vp2_flag           // unsigned ,    WO, default = 0     clr_flag of ro_vp2_undone_flag  1: clr ro_vp2_undone_flag
-//Bit 0             pls_clr_vp1_flag           // unsigned ,    WO, default = 0     clr_flag of ro_vp1_undone_flag  1: clr ro_vp1_undone_flag
-
+#define FRC_MELOGO_BB_BLK_ST                       0x1f02
+#define FRC_MELOGO_BB_BLK_ED                       0x1f03
 #define FRC_MC_SETTING1                            0x3000
-//Bit 31:29        reserved
-//Bit 28           reg_mc_en                 // unsigned ,    RW, default = 1  mc_en
-//Bit 27:25        reserved
-//Bit 24           reg_mc_bb_inner_en        // unsigned ,    RW, default = 0  me handle bb inner en
-//Bit 23:21        reserved
-//Bit 20           reg_mc_greedy_mode_en     // unsigned ,    RW, default = 0  mc greedy mode en
-//Bit 19:18        reserved
-//Bit 17:16        reg_mc_obmc_mode          // unsigned ,    RW, default = 1  obmc mode, 0 no obmc, only use cur block do mc 1 force obmc 2: adaptive obmc based on occ
-//Bit 15:12        reserved
-//Bit 11: 8        reg_mc_mvx_scale          // unsigned ,    RW, default = 2  upscale of mvx from vector of MEandVP to get the vector under MC full scale, 0 no upscale, 1 2x upscale, 2 4xupscale, should be set to equal of reg_me_dsx_scale
-//Bit  7: 4        reserved
-//Bit  3: 0        reg_mc_mvy_scale          // unsigned ,    RW, default = 2  upscale of mvy from vector of MEandVP to get the vector under MC full scale; 0: no upscale; 1:2x upscale; 2:4xupscale, should be set to equal of reg_me_dsy_scale
 #define FRC_MC_SETTING2                            0x3001
-//Bit 31:16        reserved
-//Bit 15:14        reserved
-//Bit 13: 8        reg_mc_fetch_size         // unsigned ,    RW, default = 5  MC FETCH SIZE based on ME_MC_RATIO
-//Bit  7: 0        reg_mc_blk_x              // unsigned ,    RW, default = 8  MC BLKSIZE based on ME_MC_RATIO
-
 #define FRC_MC_LOSS_SLICE_SEC                      0x3905
-//Bit 31:1       reserved
-//Bit 0          reg_mc_loss_slice_sec        // unsigned , RW, default = 0,1:same as lossy-body 0:non_security
-
 #define FRC_MC_PRB_CTRL1                           0x3989
 //Bit 31            reserved
 //Bit 30            reg_mc_probe_en           // unsigned ,    RW, default = 0    reg_mc_probe_en
@@ -2069,6 +2034,12 @@
 // synopsys translate_on
 //
 // Closing file:  ./frc_inc/frc_mc_csc_regs.h
+#define FRC_MC_BB_HANDLE_ORG_ME_BB_XYXY_LEFT_TOP   0x3005
+#define FRC_MC_BB_HANDLE_ORG_ME_BB_XYXY_RIGHT_BOT  0x3006
+#define FRC_MC_BB_HANDLE_ORG_ME_BLK_BB_XYXY_LFT_AND_TOP 0x3007
+#define FRC_MC_BB_HANDLE_ORG_ME_BLK_BB_XYXY_RIT_AND_BOT 0x3008
+#define FRC_MC_BB_HANDLE_ME_BLK_BB_XYXY_LFT_AND_TOP 0x3009
+#define FRC_MC_BB_HANDLE_ME_BLK_BB_XYXY_RIT_AND_BOT 0x300a
 #define FRC_MC_DEMO_WINDOW                         0x3200
 //Bit 31: 5        reserved
 //Bit  4           reg_mc_demo_window_inverse // unsigned ,    RW, default = 0  enable of inverse-demo-window:  0:do memc in demo-window;     1:dont do memc in demo-window

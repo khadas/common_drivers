@@ -184,7 +184,8 @@ __retry:
 	writel(pll_val1, reg + 0x44);
 	usleep_range(49, 50);
 	writel((pll_val0 | (1 << USBPLL_EN_BIT)), reg + 0x40);
-
+	usleep_range(49, 50);
+	writel(phy->pll_setting[3], reg + 0x50);
 	// wait for 200us
 	usleep_range(199, 200);
 	//check lock bit

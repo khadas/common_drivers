@@ -174,29 +174,30 @@
 			#thermal-sensor-cells = <1>;
 		};
 
-		sd_emmc_a: sdio@fe010000 {
+		sd_emmc_c: emmc@fe012000 {
 			compatible = "amlogic,meson-axg-mmc";
-			reg = <0x0 0xfe010000 0x0 0x800>,
-				<0x0 0xfe0008e0 0x0 0x4>,
-				<0x0 0xfe000418 0x0 0x4>;
-			interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-			//power-domains = <&pwrdm PDID_SDEMMC_A>;
-			clocks = <&clkc CLKID_SYS_SD_EMMC_A>,
-				<&clkc CLKID_SD_EMMC_A_PRE_MUX>,
-				<&clkc CLKID_SD_EMMC_A>,
-				<&clkc CLKID_SD_EMMC_A_MUX>,
-				<&clkc CLKID_SD_EMMC_A_PRE_DIV>,
+			reg = <0x0 0xfe012000 0x0 0x800>,
+				<0x0 0xfe000920 0x0 0x4>,
+				<0x0 0xfe00040c 0x0 0x4>;
+			interrupts = <GIC_SPI 87 IRQ_TYPE_EDGE_RISING>;
+			status = "okay";
+			//power-domains = <&pwrdm PDID_SDEMMC_C>;
+			clocks = <&clkc CLKID_SYS_SD_EMMC_C>,
+				<&clkc CLKID_SD_EMMC_C_PRE_MUX>,
+				<&clkc CLKID_SD_EMMC_C>,
+				<&clkc CLKID_SD_EMMC_C_MUX>,
+				<&clkc CLKID_SD_EMMC_C_PRE_DIV>,
 				<&xtal>,
 				<&clkc CLKID_FCLK_DIV2>;
-			clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
+			clock-names = "core", "mux0", "mux1", "mux2","mux_div",
 					"clkin0", "clkin1";
-			//clk_tree_base= <0xfe0008e0>;
-			//pin_mux_reg = <0xfe000418>;
+			tx_delay = <16>;
+			//clk_tree_base= <0xfe000920>;
+			//pin_mux_reg = <0xfe00040c>;
 			mmc_debug_flag;
 			fixadj_have_hole;
-			//resets = <&reset RESET_SD_EMMC_A>;
-			no-mmc;
+			//resets = <&reset RESET_SD_EMMC_C>;
+			no-sdio;
 			no-sd;
 		};
 
@@ -224,30 +225,29 @@
 			no-mmc;
 		};
 
-		sd_emmc_c: emmc@fe012000 {
+		sd_emmc_a: sdio@fe010000 {
 			compatible = "amlogic,meson-axg-mmc";
-			reg = <0x0 0xfe012000 0x0 0x800>,
-				<0x0 0xfe000920 0x0 0x4>,
-				<0x0 0xfe00040c 0x0 0x4>;
-			interrupts = <GIC_SPI 87 IRQ_TYPE_EDGE_RISING>;
-			status = "okay";
-			//power-domains = <&pwrdm PDID_SDEMMC_C>;
-			clocks = <&clkc CLKID_SYS_SD_EMMC_C>,
-				<&clkc CLKID_SD_EMMC_C_PRE_MUX>,
-				<&clkc CLKID_SD_EMMC_C>,
-				<&clkc CLKID_SD_EMMC_C_MUX>,
-				<&clkc CLKID_SD_EMMC_C_PRE_DIV>,
+			reg = <0x0 0xfe010000 0x0 0x800>,
+				<0x0 0xfe0008e0 0x0 0x4>,
+				<0x0 0xfe000418 0x0 0x4>;
+			interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
+			status = "disabled";
+			//power-domains = <&pwrdm PDID_SDEMMC_A>;
+			clocks = <&clkc CLKID_SYS_SD_EMMC_A>,
+				<&clkc CLKID_SD_EMMC_A_PRE_MUX>,
+				<&clkc CLKID_SD_EMMC_A>,
+				<&clkc CLKID_SD_EMMC_A_MUX>,
+				<&clkc CLKID_SD_EMMC_A_PRE_DIV>,
 				<&xtal>,
 				<&clkc CLKID_FCLK_DIV2>;
-			clock-names = "core", "mux0", "mux1", "mux2","mux_div",
+			clock-names = "core", "mux0", "mux1", "mux2", "mux_div",
 					"clkin0", "clkin1";
-			tx_delay = <16>;
-			//clk_tree_base= <0xfe000920>;
-			//pin_mux_reg = <0xfe00040c>;
+			//clk_tree_base= <0xfe0008e0>;
+			//pin_mux_reg = <0xfe000418>;
 			mmc_debug_flag;
 			fixadj_have_hole;
-			//resets = <&reset RESET_SD_EMMC_C>;
-			no-sdio;
+			//resets = <&reset RESET_SD_EMMC_A>;
+			no-mmc;
 			no-sd;
 		};
 

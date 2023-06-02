@@ -1481,6 +1481,10 @@
 		interrupts = <GIC_SPI 3 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "vsync";
 	};
+
+	chosen {
+		bootargs = "usbcore.autosuspend=-1";
+	};
 };
 
 &pinctrl_aobus {

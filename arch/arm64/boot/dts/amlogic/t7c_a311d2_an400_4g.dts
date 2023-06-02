@@ -2142,7 +2142,7 @@
 	tdm_d5_pins: tdm_d5_pin {
 		mux {
 			groups = "tdm_d5";
-			function = "tdmoutb_lane1";
+			function = "tdmoutb_lane0";
 		};
 	};
 

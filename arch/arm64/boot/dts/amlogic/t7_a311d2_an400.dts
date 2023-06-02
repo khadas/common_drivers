@@ -12,8 +12,8 @@
 #include "mesont7_drm.dtsi"
 
 / {
-	amlogic-dt-id = "t7_a311d2_an400-4g";
-	compatible = "t7_a311d2_an400-4g";
+	amlogic-dt-id = "t7_a311d2_an400";
+	compatible = "t7_a311d2_an400";
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;
 	#size-cells = <2>;

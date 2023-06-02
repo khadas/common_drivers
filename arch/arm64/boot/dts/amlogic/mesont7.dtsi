@@ -2839,6 +2839,8 @@
 		interrupts = <GIC_SPI 22 IRQ_TYPE_EDGE_RISING>;
 		map = <&custom_maps>;
 		max_frame_time = <200>;
+		vendor = <0x1B8E>;	//AMLOGIC USB: DNL_VENDORID
+		product = <0x0001>;
 	};
 
 	a73_tsensor: a73_tsensor@fe020000 {

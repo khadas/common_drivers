@@ -383,3 +383,26 @@
 	compatible = "amlogic, crg-host-drd";
 	status = "okay";
 };
+
+&amlvecm {
+	status = "okay";
+	gamma_en = <1>;/*1:enable ;0:disable*/
+	wb_en = <1>;/*1:enable ;0:disable*/
+	cm_en = <1>;/*1:enable ;0:disable*/
+	wb_sel = <0>;/*1:mtx ;0:gainoff*/
+	vlock_en = <0>;/*1:enable;0:disable*/
+	vlock_mode = <0x8>;
+	vrr_priority = <1>;/*1:game mode vrr always on;0:vrr on depend on vrr signal*/
+	/*vlock work mode:
+	 *bit0:auto ENC
+	 *bit1:auto PLL
+	 *bit2:manual PLL
+	 *bit3:manual ENC
+	 *bit4:manual soft ENC
+	 *bit5:manual MIX PLL ENC
+	 */
+	vlock_pll_m_limit = <1>;
+	vlock_line_limit = <2>;
+	interrupts = <0 87 1>;
+	interrupt-names = "lc_curve";
+};

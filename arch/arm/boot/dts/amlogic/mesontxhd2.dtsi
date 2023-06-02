@@ -607,6 +607,13 @@
 		interrupt-names = "vsync";
 	};
 
+	amlvecm: amlvecm {
+		compatible = "amlogic, vecm-txhd2";
+		dev_name = "aml_vecm";
+		clocks = <&clkc CLKID_VID_LOCK>;
+		clock-names = "cts_vid_lock_clk";
+	};
+
 	soc {
 		compatible = "simple-bus";
 		#address-cells = <1>;

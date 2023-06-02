@@ -156,9 +156,5 @@ static int __init meson_cpuinfo_init(void)
 	return  platform_driver_register(&cpuinfo_platform_driver);
 }
 
-#ifdef MODULE
 module_init(meson_cpuinfo_init);
 MODULE_LICENSE("GPL v2");
-#else
-subsys_initcall(meson_cpuinfo_init);
-#endif

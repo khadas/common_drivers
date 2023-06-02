@@ -607,10 +607,20 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 	clk_prepare_enable(src_clk);
 	writel(cfg, host->regs + SD_EMMC_CFG);
 	host->src_clk = src_clk;
-	if (host->mux_div && (!strcmp(__clk_get_name(src_clk), "xtal")))
-		ret = clk_set_parent(host->mux[2], src_clk);
-	else
+	if (host->mux_div) { // C1/C2
+		if (!strcmp(__clk_get_name(src_clk), "xtal")) {
+			ret = clk_set_parent(host->mux[2], src_clk);
+		} else {
+			ret = clk_set_parent(host->mux[0], src_clk);
+			if (!ret) {
+				clk_set_rate(host->mux_div, clk_get_rate((src_clk)));
+				ret = clk_set_parent(host->mux[2], host->mux_div);
+			}
+		}
+	} else { // other soc
 		ret = clk_set_parent(host->mux[0], src_clk);
+	}
+
 	if (ret) {
 		dev_err(host->dev, "set parent error\n");
 		return ret;

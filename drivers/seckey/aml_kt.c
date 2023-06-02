@@ -421,14 +421,24 @@ static int aml_kt_config(struct file *filp, struct amlkt_cfg_param key_cfg)
 		}
 	}
 
+	KT_LOGD("--------------------------------------------------------------\n");
+	KT_LOGD("flag:%d, algo:%d, uid:%d, src:%d\n", key_cfg.key_flag, key_cfg.key_algo,
+	     key_cfg.key_userid, key_cfg.key_source);
+
 	/* Conversion T5W key algorithm */
 	if (dev->algo_cap == 0x407 && dev->user_cap == 0x600) {
-		if (key_cfg.key_algo == AML_KT_ALGO_AES)
+		if (key_cfg.key_algo == AML_KT_ALGO_AES) {
 			key_cfg.key_algo = 2;
-		if (key_cfg.key_algo == AML_KT_ALGO_DES)
+			KT_LOGD("AES conversion\n");
+		} else if (key_cfg.key_algo == AML_KT_ALGO_DES) {
 			key_cfg.key_algo = 0;
-		if (key_cfg.key_algo == AML_KT_ALGO_CSA2)
+			KT_LOGD("DES conversion\n");
+		} else if (key_cfg.key_algo == AML_KT_ALGO_CSA2) {
 			key_cfg.key_algo = 0;
+			KT_LOGD("CSA2 conversion\n");
+		} else {
+			KT_LOGD("No need conversion\n");
+		}
 	}
 
 	/* Check Invalid key algorithm */

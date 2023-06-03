@@ -489,20 +489,20 @@ static struct clk_regmap txhd2_mpll_50m = {
 
 #ifdef CONFIG_ARM
 static const struct pll_params_table txhd2_gp0_pll_table[] = {
-	PLL_PARAMS(35, 0, 0), /* DCO = 840M OD = 2 PLL = 840M */
-	PLL_PARAMS(33, 0, 0), /* DCO = 792M OD = 2 PLL = 792M */
-	PLL_PARAMS(31, 0, 0), /* DCO = 744M OD = 3 PLL = 744M */
-	PLL_PARAMS(32, 0, 0), /* DCO = 768M OD = 2 PLL = 768M */
-	PLL_PARAMS(48, 0, 0), /* DCO = 1152M OD = 4 PLL = 1152M */
+	PLL_PARAMS(48, 0, 2), /* DCO = 1152M OD = 2 PLL = 288M */
+	PLL_PARAMS(62, 0, 1), /* DCO = 1488M OD = 1 PLL = 744M */
+	PLL_PARAMS(48, 0, 0), /* DCO = 1152M OD = 0 PLL = 1152M */
+	PLL_PARAMS(62, 0, 0), /* DCO = 1488M OD = 0 PLL = 1488M */
+
 	{ /* sentinel */  }
 };
 #else
 static const struct pll_params_table txhd2_gp0_pll_table[] = {
-	PLL_PARAMS(35, 0), /* DCO = 840M OD = 2 PLL = 840M */
-	PLL_PARAMS(33, 0), /* DCO = 792M OD = 2 PLL = 792M */
-	PLL_PARAMS(31, 0), /* DCO = 744M OD = 3 PLL = 744M */
-	PLL_PARAMS(32, 0), /* DCO = 768M OD = 2 PLL = 768M */
-	PLL_PARAMS(48, 0), /* DCO = 1152M OD = 4 PLL = 1152M */
+	PLL_PARAMS(35, 0), /* DCO = 840M OD = 0 PLL = 840M */
+	PLL_PARAMS(33, 0), /* DCO = 792M OD = 0 PLL = 792M */
+	PLL_PARAMS(31, 0), /* DCO = 744M OD = 0 PLL = 744M */
+	PLL_PARAMS(32, 0), /* DCO = 768M OD = 0 PLL = 768M */
+	PLL_PARAMS(48, 0), /* DCO = 1152M OD = 0 PLL = 1152M */
 	{ /* sentinel */  }
 };
 #endif
@@ -511,12 +511,12 @@ static const struct pll_params_table txhd2_gp0_pll_table[] = {
  * Internal gp0 pll emulation configuration parameters
  */
 static const struct reg_sequence txhd2_gp0_init_regs[] = {
-	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x61001053 },
-	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x71001053 },
+	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x60000030 },
+	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x70000030 },
 	{ .reg = HHI_GP0_PLL_CNTL1,	.def = 0x39002000 },
 	{ .reg = HHI_GP0_PLL_CNTL2,	.def = 0x00001140 },
 	{ .reg = HHI_GP0_PLL_CNTL3,	.def = 0x00000000, .delay_us = 20 },
-	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x51001053, .delay_us = 20 },
+	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x50000030, .delay_us = 20 },
 	{ .reg = HHI_GP0_PLL_CNTL2,	.def = 0x00001100 }
 };
 
@@ -931,15 +931,7 @@ static struct clk_regmap txhd2_clk81 = {
 	},
 };
 
-static u32 mux_table_ge2d_sel[] = {0, 1, 2, 3, 7};
-
-static const struct clk_hw *txhd2_ge2d_parent_hws[] = {
-	&txhd2_fclk_div4.hw,
-	&txhd2_fclk_div3.hw,
-	&txhd2_fclk_div5.hw,
-	&txhd2_fclk_div7.hw,
-	&txhd2_fclk_div2p5.hw
-};
+static u32 mux_table_vdec_sel[] = {0, 1, 2, 3, 4, 5, 7};
 
 /* cts_vdec_clk */
 static const struct clk_parent_data txhd2_dec_parent_hws[] = {
@@ -949,7 +941,7 @@ static const struct clk_parent_data txhd2_dec_parent_hws[] = {
 	{ .hw = &txhd2_fclk_div5.hw },
 	{ .hw = &txhd2_fclk_div7.hw },
 	{ .hw = &txhd2_hifi_pll.hw },
-	{ .hw = &txhd2_gp0_pll.hw },
+	// { .hw = &txhd2_gp0_pll.hw },
 	{ .fw_name = "xtal", }
 };
 
@@ -958,7 +950,7 @@ static struct clk_regmap txhd2_vdec_0_sel = {
 		.offset = HHI_VDEC_CLK_CNTL,
 		.mask = 0x7,
 		.shift = 9,
-		.table = mux_table_ge2d_sel,
+		.table = mux_table_vdec_sel,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "vdec_0_sel",
@@ -1006,7 +998,7 @@ static struct clk_regmap txhd2_vdec_1_sel = {
 		.offset = HHI_VDEC3_CLK_CNTL,
 		.mask = 0x7,
 		.shift = 9,
-		.table = mux_table_ge2d_sel,
+		.table = mux_table_vdec_sel,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "vdec_1_sel",
@@ -1072,6 +1064,7 @@ static struct clk_regmap txhd2_hevcf_0_sel = {
 		.offset = HHI_VDEC2_CLK_CNTL,
 		.mask = 0x7,
 		.shift = 9,
+		.table = mux_table_vdec_sel,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hevcf_0_sel",
@@ -1119,6 +1112,7 @@ static struct clk_regmap txhd2_hevcf_1_sel = {
 		.offset = HHI_VDEC4_CLK_CNTL,
 		.mask = 0x7,
 		.shift = 9,
+		.table = mux_table_vdec_sel,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "hevcf_1_sel",
@@ -1179,11 +1173,22 @@ static struct clk_regmap txhd2_hevcf = {
 	},
 };
 
+static u32 mux_table_ge2d_sel[] = {0, 1, 2, 3, 7};
+
+static const struct clk_hw *txhd2_ge2d_parent_hws[] = {
+	&txhd2_fclk_div4.hw,
+	&txhd2_fclk_div3.hw,
+	&txhd2_fclk_div5.hw,
+	&txhd2_fclk_div7.hw,
+	&txhd2_fclk_div2p5.hw
+};
+
 static struct clk_regmap txhd2_vapb_0_sel = {
 	.data = &(struct clk_regmap_mux_data){
 		.offset = HHI_VAPBCLK_CNTL,
 		.mask = 0x7,
 		.shift = 9,
+		.table = mux_table_ge2d_sel,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "vapb_0_sel",
@@ -1329,10 +1334,11 @@ static struct clk_regmap txhd2_ge2d = {
  * 1.gp0 pll only support the 846M, avoid other rate 500/400M from it
  * 2.hifi pll is used for other module, skip it, avoid some rate from it
  */
-static u32 mux_table_mali[] = { 0, 3, 4, 5, 6, 7};
+static u32 mux_table_mali[] = { 0, 1, 3, 4, 5, 6, 7};
 
 static const struct clk_parent_data txhd2_mali_0_1_parent_data[] = {
 	{ .fw_name = "xtal", },
+	{ .hw = &txhd2_gp0_pll.hw },
 	{ .hw = &txhd2_fclk_div2p5.hw },
 	{ .hw = &txhd2_fclk_div3.hw },
 	{ .hw = &txhd2_fclk_div4.hw },
@@ -1497,7 +1503,7 @@ static const struct clk_parent_data txhd2_sd_emmc_parent_data[] = {
 	{ .hw = &txhd2_fclk_div3.hw },
 	{ .hw = &txhd2_fclk_div5.hw },
 	{ .hw = &txhd2_fclk_div7.hw },
-	{ .hw = &txhd2_gp0_pll.hw }
+	// { .hw = &txhd2_gp0_pll.hw }
 };
 
 static struct clk_regmap txhd2_sd_emmc_c_sel = {
@@ -2017,13 +2023,14 @@ static struct clk_regmap txhd2_cts_tcon_pll_clk = {
 };
 
 /*adc extclk in clkl*/
+static u32 mux_table_adc_ext_sel[] = {0, 1, 2, 3, 4, 6};
 static const struct clk_parent_data txhd2_adc_extclk_parent_data[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &txhd2_fclk_div4.hw },
 	{ .hw = &txhd2_fclk_div3.hw },
 	{ .hw = &txhd2_fclk_div5.hw },
 	{ .hw = &txhd2_fclk_div7.hw },
-	{ .hw = &txhd2_gp0_pll.hw },
+	// { .hw = &txhd2_gp0_pll.hw },
 	{ .hw = &txhd2_hifi_pll.hw }
 };
 
@@ -2032,6 +2039,7 @@ static struct clk_regmap txhd2_adc_extclk_sel = {
 		.offset = HHI_DEMOD_CLK_CNTL,
 		.mask = 0x7,
 		.shift = 25,
+		.table = mux_table_adc_ext_sel,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "adc_extclk_sel",

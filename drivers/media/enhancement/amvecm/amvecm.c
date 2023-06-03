@@ -9206,7 +9206,9 @@ static void dnlp_init_config(void)
 static void sr_init_config(void)
 {
 	am_set_regmap(&sr0_default);
-	am_set_regmap(&sr1_default);
+
+	if (chip_type_id != chip_txhd2)
+		am_set_regmap(&sr1_default);
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (chip_type_id == chip_t3x) {
@@ -9266,8 +9268,8 @@ static const char *amvecm_debug_usage_str = {
 	"echo sr dejaggy_dis > /sys/class/amvecm/debug\n"
 	"echo sr dering_en > /sys/class/amvecm/debug\n"
 	"echo sr dering_dis > /sys/class/amvecm/debug\n"
-	"echo sr direc_en > /sys/class/amvecm/debug\n"
-	"echo sr direc_dis > /sys/class/amvecm/debug\n"
+	"echo sr drlpf_en > /sys/class/amvecm/debug\n"
+	"echo sr drlpf_dis > /sys/class/amvecm/debug\n"
 	"echo sr theta_en > /sys/class/amvecm/debug\n"
 	"echo sr theta_dis > /sys/class/amvecm/debug\n"
 	"echo sr deband_en > /sys/class/amvecm/debug\n"
@@ -9332,6 +9334,7 @@ static ssize_t amvecm_debug_store(struct class *cla,
 	struct vinfo_s *vinfo = get_current_vinfo();
 #endif
 	unsigned int i = 0;
+	enum vd_path_e vd_path = VD1_PATH;
 
 	if (!buf)
 		return count;
@@ -9341,6 +9344,13 @@ static ssize_t amvecm_debug_store(struct class *cla,
 	parse_param_amvecm(buf_orig, (char **)&parm);
 	if (!strncmp(parm[0], "vpp_size", 8)) {
 		dump_vpp_size_info();
+	} else if (!strncmp(parm[0], "refresh_hdr_hist", 16)) {
+		if (kstrtoul(parm[1], 10, &val) < 0)
+			goto free_buf;
+		if (val > 0)
+			vd_path = VD2_PATH;
+		get_hist(vd_path, HIST_E_RGBMAX);
+		pr_info("amvecm refresh_hdr_hist path %d\n", vd_path);
 	} else if (!strncmp(parm[0], "vpp_state", 9)) {
 		pr_info("amvecm driver version :  %s\n", AMVECM_VER);
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -11590,15 +11600,26 @@ void amvecm_gamma_init(bool en)
 {
 	unsigned int i, j, k;
 	unsigned short data[256];
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	unsigned short temp;
 	struct gamma_data_s *p_gm;
 
 	if (chip_cls_id == STB_CHIP)
 		return;
 
+	for (i = 0; i < 256; i++) {
+		data[i] = i << 2;
+		video_gamma_table_r.data[i] = data[i];
+		video_gamma_table_g.data[i] = data[i];
+		video_gamma_table_b.data[i] = data[i];
+
+		for (k = 0; k < FREESYNC_DYNAMIC_GAMMA_NUM; k++)
+			for (j = 0; j < FREESYNC_DYNAMIC_GAMMA_CHANNEL; j++)
+				gt.gm_tb[k][j].data[i] = data[i];
+	}
+
 	if (chip_type_id == chip_t5m ||
-		chip_type_id == chip_t3x || chip_type_id == chip_txhd2) {
+		chip_type_id == chip_t3x ||
+		chip_type_id == chip_txhd2) {
 		p_gm = get_gm_data();
 		p_gm->max_idx = 257;
 		p_gm->auto_inc = 1 << L_H_AUTO_INC_2;
@@ -11617,18 +11638,6 @@ void amvecm_gamma_init(bool en)
 				p_gm->gm_tbl.gamma_b,
 				WR_VCB, WR_MOD);
 		return;
-	}
-#endif
-
-	for (i = 0; i < 256; i++) {
-		data[i] = i << 2;
-		video_gamma_table_r.data[i] = data[i];
-		video_gamma_table_g.data[i] = data[i];
-		video_gamma_table_b.data[i] = data[i];
-
-		for (k = 0; k < FREESYNC_DYNAMIC_GAMMA_NUM; k++)
-			for (j = 0; j < FREESYNC_DYNAMIC_GAMMA_CHANNEL; j++)
-				gt.gm_tb[k][j].data[i] = data[i];
 	}
 
 	if (cpu_after_eq_t7()) {
@@ -12832,7 +12841,7 @@ int __init aml_vecm_init(void)
 {
 	/*unsigned int hiu_reg_base;*/
 
-	pr_info("%s:module init_20230526-0\n", __func__);
+	pr_info("%s:module init_20230604-0\n", __func__);
 
 	if (platform_driver_register(&aml_vecm_driver)) {
 		pr_err("failed to register bl driver module\n");

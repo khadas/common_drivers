@@ -158,6 +158,11 @@ static inline u32 get_sr1_dnlp2_offset(void)
 
 static u32 offset_addr(u32 addr)
 {
+	unsigned int lc_offset = 0;
+
+	if (chip_type_id == chip_txhd2)
+		lc_offset = 0x200;
+
 	if (is_sr0_reg(addr))
 		return addr + get_sr0_offset();
 	else if (is_sr1_reg(addr))
@@ -167,7 +172,7 @@ static u32 offset_addr(u32 addr)
 	else if (is_sr1_dnlpv2_reg(addr))
 		return addr + get_sr1_dnlp2_offset();
 	else if (is_lc_reg(addr))
-		return addr + get_lc_offset();
+		return addr + get_lc_offset() - lc_offset;
 
 	return addr;
 }

@@ -2647,7 +2647,7 @@ u32 hist_maxrgb_luminance[128] = {
 };
 
 void set_hist(enum hdr_module_sel module_sel, int enable,
-	      enum hdr_hist_sel hist_sel,
+	enum hdr_hist_sel hist_sel,
 	unsigned int hist_width, unsigned int hist_height)
 {
 	unsigned int hist_ctrl_port = 0;
@@ -2661,7 +2661,7 @@ void set_hist(enum hdr_module_sel module_sel, int enable,
 		WRITE_VPP_REG(hist_ctrl_port + 1, hist_width - 1);
 		WRITE_VPP_REG(hist_ctrl_port + 2, hist_height - 1);
 		WRITE_VPP_REG(hist_ctrl_port,
-			      (1 << 4) | (hist_sel << 0));
+			(1 << 4) | (hist_sel << 0));
 	} else if (READ_VPP_REG_BITS(hist_ctrl_port, 4, 1)) {
 		WRITE_VPP_REG_BITS(hist_ctrl_port, 0, 4, 1);
 		hdr_max_rgb = 0;
@@ -2705,19 +2705,28 @@ void get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 		hdr2_hist_rd = VD3_HDR2_HIST_RD_2;
 	}
 
-	if (get_cpu_type() < MESON_CPU_MAJOR_ID_G12A)
+	if (get_cpu_type() < MESON_CPU_MAJOR_ID_G12A) {
+		if (hdr2_debug == 66)
+			pr_info("G12A return\n");
 		return;
+	}
 
 	/*no vd2 in TL1*/
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_TL1) &&
-	    module_sel == VD2_HDR)
+		module_sel == VD2_HDR) {
+		if (hdr2_debug == 66)
+			pr_info("TL1&VD2 return\n");
 		return;
+	}
 
 	if ((get_cpu_type() == MESON_CPU_MAJOR_ID_T5 ||
 		get_cpu_type() == MESON_CPU_MAJOR_ID_T5D ||
 		chip_type_id == chip_txhd2) &&
-		module_sel == VD2_HDR)
+		module_sel == VD2_HDR) {
+		if (hdr2_debug == 66)
+			pr_info("T5/T5D/TXHD2&VD2 return\n");
 		return;
+	}
 
 	if (module_sel == VD1_HDR) {
 		hist_width = READ_VPP_REG_BITS(VPP_PREBLEND_H_SIZE, 0, 13);
@@ -2730,14 +2739,22 @@ void get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 		hist_height = READ_VPP_REG_BITS(VPP_VD3_HDR_IN_SIZE, 16, 13);
 	}
 
-	if (!hist_width || !hist_height)
+	if (!hist_width || !hist_height) {
+		if (hdr2_debug == 66)
+			pr_info("h/w = %d/%d return\n",
+				hist_width, hist_height);
 		return;
+	}
 
 	if ((hist_height != READ_VPP_REG(hist_ctrl_port + 2) + 1) ||
 	    (hist_width != READ_VPP_REG(hist_ctrl_port + 1) + 1) ||
 	    /*(READ_VPP_REG_BITS(hist_ctrl_port, 4, 1) == 0) ||*/
 	    (READ_VPP_REG_BITS(hist_ctrl_port, 0, 3) != hist_sel)) {
 		set_hist(module_sel, 1, hist_sel, hist_width, hist_height);
+
+		if (hdr2_debug == 66)
+			pr_info("set_hist return\n");
+
 		return;
 	}
 
@@ -2752,6 +2769,22 @@ void get_hist(enum vd_path_e vd_path, enum hdr_hist_sel hist_sel)
 		hdr_hist[NUM_HDR_HIST - 1][i] = num_pixel;
 	}
 	num_pixel = 0;
+
+	if (hdr2_debug == 66) {
+		pr_info("hist_ctrl_port/hdr2_hist_rd = %d/%d\n",
+			hist_ctrl_port, hdr2_hist_rd);
+		for (i = 0; i < 16; i++)
+			pr_info("hist[%d..] = %d %d %d %d %d %d %d %d\n",
+				i * 8,
+				hdr_hist[NUM_HDR_HIST - 1][i * 8],
+				hdr_hist[NUM_HDR_HIST - 1][i * 8 + 1],
+				hdr_hist[NUM_HDR_HIST - 1][i * 8 + 2],
+				hdr_hist[NUM_HDR_HIST - 1][i * 8 + 3],
+				hdr_hist[NUM_HDR_HIST - 1][i * 8 + 4],
+				hdr_hist[NUM_HDR_HIST - 1][i * 8 + 5],
+				hdr_hist[NUM_HDR_HIST - 1][i * 8 + 6],
+				hdr_hist[NUM_HDR_HIST - 1][i * 8 + 7]);
+	}
 
 	if (total_pixel) {
 		for (i = 0; i < 128; i++) {

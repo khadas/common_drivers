@@ -1321,6 +1321,11 @@ static const struct meson_sar_adc_data meson_sar_adc_c2_data = {
 	.name = "meson-c2-saradc",
 };
 
+static const struct meson_sar_adc_data meson_sar_adc_txhd2_data = {
+	.param = &meson_sar_adc_txhd2_param,
+	.name = "meson-txhd2-saradc",
+};
+
 static const struct of_device_id meson_sar_adc_of_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -1360,6 +1365,10 @@ static const struct of_device_id meson_sar_adc_of_match[] = {
 	{
 		.compatible = "amlogic,meson-c2-saradc",
 		.data = &meson_sar_adc_c2_data,
+	},
+	{
+		.compatible = "amlogic,meson-txhd2-saradc",
+		.data = &meson_sar_adc_txhd2_data,
 	},
 	{},
 };

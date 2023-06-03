@@ -81,6 +81,7 @@ struct meson_sar_adc_param {
 	u8					has_bl30_integration;
 	unsigned long				clock_rate;
 	u32                                     bandgap_reg;
+	u32					bandgap_en_mask;
 	unsigned int				resolution;
 	const struct regmap_config		*regmap_config;
 	u8					temperature_trimming_bits;
@@ -131,3 +132,4 @@ extern const struct meson_sar_adc_param meson_sar_adc_gxl_param __initconst;
 extern const struct meson_sar_adc_param meson_sar_adc_txlx_param __initconst;
 extern const struct meson_sar_adc_param meson_sar_adc_g12a_param __initconst;
 extern const struct meson_sar_adc_param meson_sar_adc_c2_param __initconst;
+extern const struct meson_sar_adc_param meson_sar_adc_txhd2_param __initconst;

@@ -307,6 +307,23 @@
 		amlvideo2_id = <1>;
 		cma_mode = <1>;
 	};
+
+	/* for external keypad */
+	adc_keypad {
+		compatible = "amlogic, adc_keypad";
+		status = "okay";
+		key_name = "power", "vol-", "vol+", "ok", "menu", "source", "exit";
+		key_num = <7>;
+		io-channels = <&saradc SARADC_CH2>, <&saradc SARADC_CH3>;
+		io-channel-names = "key-chan-2", "key-chan-3";
+		key_chan = <SARADC_CH2 SARADC_CH2 SARADC_CH2 SARADC_CH2 SARADC_CH2
+			    SARADC_CH3 SARADC_CH3>;
+		key_code = <KEY_POWER KEY_VOLUMEDOWN KEY_VOLUMEUP KEY_ENTER KEY_MENU
+			    KEY_FN_F1 KEY_EXIT>;
+		/* key_val = voltage / 1800mV * 1023 */
+		key_val = <0 143 266 389 507 143 266>;
+		key_tolerance = <40 40 40 40 40 40 40>;
+	};
 }; /* end of / */
 
 &sd_emmc_c {
@@ -381,6 +398,10 @@
 
 &crg2_drd {
 	compatible = "amlogic, crg-host-drd";
+	status = "okay";
+};
+
+&saradc {
 	status = "okay";
 };
 

@@ -19,7 +19,6 @@
 	#define MESON_SAR_ADC_DELTA_10_CHAN1_DELTA_VALUE_MASK	GENMASK(25, 16)
 	#define MESON_SAR_ADC_DELTA_10_TS_REVE0			BIT(15)
 	#define MESON_SAR_ADC_DELTA_10_TS_C_MASK		GENMASK(14, 11)
-	#define MESON_SAR_ADC_DELTA_10_TS_VBG_EN		BIT(10)
 	#define MESON_SAR_ADC_DELTA_10_CHAN0_DELTA_VALUE_MASK	GENMASK(9, 0)
 /*
  * NOTE: registers from here are undocumented (the vendor Linux kernel driver
@@ -34,7 +33,6 @@
 	#define MESON_SAR_ADC_REG11_TEMP_SEL			BIT(21)
 	#define MESON_SAR_ADC_REG11_CHNL_REGS_EN		BIT(30)
 	#define MESON_SAR_ADC_REG11_FIFO_EN			BIT(31)
-	#define MESON_SAR_ADC_REG11_BANDGAP_EN			BIT(13)
 
 #define MESON_SAR_ADC_REG13					0x34
 	#define MESON_SAR_ADC_REG13_12BIT_CALIBRATION_MASK	GENMASK(13, 8)
@@ -263,16 +261,11 @@ static int meson_m8_sar_adc_read_chnl(struct iio_dev *indio_dev,
 
 static void meson_m8_sar_adc_set_bandgap(struct iio_dev *indio_dev, bool on_off)
 {
-	u32 enable_mask;
 	struct meson_sar_adc_priv *priv = iio_priv(indio_dev);
 
-	if (priv->param->bandgap_reg == MESON_SAR_ADC_REG11)
-		enable_mask = MESON_SAR_ADC_REG11_BANDGAP_EN;
-	else
-		enable_mask = MESON_SAR_ADC_DELTA_10_TS_VBG_EN;
-
-	regmap_update_bits(priv->regmap, priv->param->bandgap_reg, enable_mask,
-			   on_off ? enable_mask : 0);
+	regmap_update_bits(priv->regmap, priv->param->bandgap_reg,
+			   priv->param->bandgap_en_mask,
+			   on_off ? priv->param->bandgap_en_mask : 0);
 }
 
 static void meson_m8_sar_adc_select_temp(struct iio_dev *indio_dev,
@@ -345,6 +338,7 @@ const struct meson_sar_adc_param meson_sar_adc_meson8b_param __initconst = {
 	.has_bl30_integration = false,
 	.clock_rate = 1150000,
 	.bandgap_reg = MESON_SAR_ADC_DELTA_10,
+	.bandgap_en_mask = BIT(10),
 	.regmap_config = &meson_sar_adc_regmap_config_meson8,
 	.resolution = 10,
 	.calib_enable = true,
@@ -357,6 +351,7 @@ const struct meson_sar_adc_param meson_sar_adc_gxbb_param __initconst = {
 	.has_bl30_integration = true,
 	.clock_rate = 1200000,
 	.bandgap_reg = MESON_SAR_ADC_REG11,
+	.bandgap_en_mask = BIT(13),
 	.regmap_config = &meson_sar_adc_regmap_config_gxbb,
 	.resolution = 10,
 	.vrefp_select = 1,
@@ -371,6 +366,7 @@ const struct meson_sar_adc_param meson_sar_adc_gxl_param __initconst = {
 	.has_bl30_integration = true,
 	.clock_rate = 1200000,
 	.bandgap_reg = MESON_SAR_ADC_REG11,
+	.bandgap_en_mask = BIT(13),
 	.regmap_config = &meson_sar_adc_regmap_config_gxbb,
 	.resolution = 12,
 	.disable_ring_counter = 1,
@@ -386,6 +382,7 @@ const struct meson_sar_adc_param meson_sar_adc_txlx_param __initconst = {
 	.has_bl30_integration = true,
 	.clock_rate = 1200000,
 	.bandgap_reg = MESON_SAR_ADC_REG11,
+	.bandgap_en_mask = BIT(13),
 	.regmap_config = &meson_sar_adc_regmap_config_gxbb,
 	.resolution = 12,
 	.vref_is_optional = true,
@@ -402,6 +399,7 @@ const struct meson_sar_adc_param meson_sar_adc_g12a_param __initconst = {
 	.has_bl30_integration = false,
 	.clock_rate = 1200000,
 	.bandgap_reg = MESON_SAR_ADC_REG11,
+	.bandgap_en_mask = BIT(13),
 	.regmap_config = &meson_sar_adc_regmap_config_g12a,
 	.resolution = 12,
 	.vref_is_optional = true,
@@ -409,6 +407,24 @@ const struct meson_sar_adc_param meson_sar_adc_g12a_param __initconst = {
 	.has_chnl_regs = true,
 	.vrefp_select = 0,
 	.cmv_select = 0,
+	.adc_eoc = 1,
+	.dops = &meson_m8_diff_ops,
+	.channels = meson_m8_sar_adc_iio_channels,
+	.num_channels = ARRAY_SIZE(meson_m8_sar_adc_iio_channels),
+};
+
+const struct meson_sar_adc_param meson_sar_adc_txhd2_param __initconst = {
+	.has_bl30_integration = false,
+	.clock_rate = 1200000,
+	.bandgap_reg = MESON_SAR_ADC_REG11,
+	.bandgap_en_mask = BIT(12),
+	.regmap_config = &meson_sar_adc_regmap_config_g12a,
+	.resolution = 12,
+	.vref_is_optional = true,
+	.disable_ring_counter = 1,
+	.has_chnl_regs = true,
+	.vrefp_select = 1,
+	.cmv_select = 1,
 	.adc_eoc = 1,
 	.dops = &meson_m8_diff_ops,
 	.channels = meson_m8_sar_adc_iio_channels,

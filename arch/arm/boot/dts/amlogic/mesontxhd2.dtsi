@@ -1403,6 +1403,19 @@
 	chosen {
 		bootargs = "usbcore.autosuspend=-1";
 	};
+
+	saradc: saradc {
+		compatible = "amlogic,meson-txhd2-saradc";
+		status = "disabled";
+		#io-channel-cells = <1>;
+		clocks = <&xtal>,
+			 <&clkc_AO CLKID_AO_SAR_ADC>,
+			 <&clkc_AO CLKID_SARADC_GATE>,
+			 <&clkc_AO CLKID_SARADC_MUX>;
+		clock-names = "clkin", "core", "adc_clk", "adc_sel";
+		interrupts = <GIC_SPI 200 IRQ_TYPE_EDGE_RISING>;
+		reg = <0xff809000 0x48>;
+	};
 };
 
 &pinctrl_aobus {

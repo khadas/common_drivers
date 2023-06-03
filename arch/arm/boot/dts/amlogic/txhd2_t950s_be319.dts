@@ -777,7 +777,7 @@
 	wb_en = <1>;/*1:enable ;0:disable*/
 	cm_en = <1>;/*1:enable ;0:disable*/
 	wb_sel = <0>;/*1:mtx ;0:gainoff*/
-	vlock_en = <0>;/*1:enable;0:disable*/
+	vlock_en = <1>;/*1:enable;0:disable*/
 	vlock_mode = <0x8>;
 	vrr_priority = <1>;/*1:game mode vrr always on;0:vrr on depend on vrr signal*/
 	/*vlock work mode:

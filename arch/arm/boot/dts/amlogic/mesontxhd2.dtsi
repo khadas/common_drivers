@@ -174,6 +174,151 @@
 			<0xff6345cc 0x4>; /*SYSCTRL_STICKY_REG3*/
 	};
 
+	vddcpu0: pwm_a-regulator {
+		compatible = "pwm-regulator";
+		pwms = <&pwm_ab MESON_PWM_0 1500 0>;
+		regulator-name = "vddcpu0";
+		regulator-min-microvolt = <790000>;
+		regulator-max-microvolt = <1150000>;
+		regulator-always-on;
+		max-duty-cycle = <1500>;
+		/* Voltage Duty-Cycle */
+		voltage-table = //<1150000 0>,//low:0x0024
+				<1140000 0>,//0022
+				<1130000 6>,//10021
+				<1120000 8>,//20020
+				<1110000 11>,//3001f
+				<1100000 14>,//4001e
+				<1090000 17>,//5001d
+				<1080000 19>,//0006001c//
+				<1070000 22>,//7001b
+				<1060000 25>,//8001a
+				<1050000 28>,//90019
+				<1040000 31>,//a0018
+				<1030000 33>,//b0017
+				<1020000 36>,//c0016
+				<1010000 39>,//0x00d00015
+				<1000000 42>,//0x00e00014
+				<990000 44>,//0x00f00013
+				<980000 47>,//0x00100012
+				<970000 50>,//0x00110011
+				<960000 53>,//0x00120010
+				<950000 56>,//0x0013000f
+				<940000 58>,//0x0014000E
+				<930000 61>,//0x0015000d
+				<920000 64>,//0x0016000c
+				<910000 67>,//0x0017000b
+				<900000 69>,//0x0018000a
+				<890000 72>,//0x00190009
+				<880000 75>,//0x001a0008
+				<870000 78>,//0x001b0007
+				<860000 81>,//0x001c0006
+				<850000 83>,//0x001d0005
+				<840000 86>,//1e0004
+				<830000 89>,//1f0003
+				<820000 92>,//200002
+				<810000 94>,//210001
+				<800000 100>;//220000
+				//<790000 100>;//high:0x240000
+		status = "okay";
+	};
+
+	vddee: pwm_ao_b-regulator {
+		compatible = "pwm-regulator";
+		pwms = <&pwm_AO_ab MESON_PWM_1 1250 0>;
+		regulator-name = "vddee";
+		regulator-min-microvolt = <799000>;
+		regulator-max-microvolt = <1099000>;
+		regulator-always-on;
+		max-duty-cycle = <1250>;
+		/* Voltage Duty-Cycle */
+		voltage-table = <1099000 0>,
+				<1089000 3>,
+				<1079000 7>,
+				<1069000 10>,
+				<1059000 13>,
+				<1049000 17>,
+				<1039000 20>,
+				<1029000 23>,
+				<1019000 27>,
+				<1009000 30>,
+				<999000 33>,
+				<989000 37>,
+				<979000 40>,
+				<969000 43>,
+				<959000 47>,
+				<949000 50>,
+				<939000 53>,
+				<929000 57>,
+				<919000 60>,
+				<909000 63>,
+				<899000 67>,
+				<889000 70>,
+				<879000 73>,
+				<869000 77>,
+				<859000 80>,
+				<849000 83>,
+				<839000 87>,
+				<829000 90>,
+				<819000 93>,
+				<809000 97>,
+				<799000 100>;
+		status = "okay";
+	};
+
+	v_12v: fixedregulator0 {
+		compatible = "regulator-fixed";
+		regulator-name = "POWER_12V";
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc5v_reg: fixed@vcc5v_reg{
+		vin-supply = <&v_12v>;
+		compatible = "regulator-fixed";
+		regulator-name = "VCC5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio_ao GPIOAO_10 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddao3v3_reg: fixed@vddao3v3_reg{
+		vin-supply = <&v_12v>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDAO_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddao1v8_reg: fixed@vddao1v8_reg{
+		vin-supply = <&vddao3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDAO_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddq_reg: fixed@vddq_reg{
+		compatible = "regulator-fixed";
+		vin-supply = <&v_12v>;
+		regulator-name = "VDDQ";
+		regulator-min-microvolt = <1218000>;
+		regulator-max-microvolt = <1218000>;
+		gpio = <&gpio_test GPIO_TEST_N GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
 	ram-dump {
 		compatible = "amlogic, ram_dump";
 		status = "disabled";
@@ -873,7 +1018,7 @@
 				/* default xtal 24m  clkin0-clkin2 and
 				 * clkin1-clkin3 should be set the same
 				 */
-				status = "disabled";
+				status = "okay";
 			};
 
 			pwm_cd: pwm@1a000 {
@@ -1043,7 +1188,7 @@
 				/* default xtal 24m  clkin0-clkin2 and
 				 * clkin1-clkin3 should be set the same
 				 */
-				status = "disabled";
+				status = "okay";
 			};
 
 			pwm_AO_cd: pwm@2000 {

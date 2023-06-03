@@ -9387,7 +9387,8 @@ static void set_blend_mode(struct hw_osd_blending_s *blending)
 		break;
 	case 2:
 		/* select blend_din1, blend_din4 always */
-		if (osd_hw.hdr_used)
+		if (osd_hw.hdr_used &&
+			osd_hw.osd_meson_dev.cpu_id != __MESON_CPU_MAJOR_ID_TXHD2)
 			osd_blend_mode = OSD_BLEND_AC;
 		else
 			osd_blend_mode = OSD_BLEND_A_C;
@@ -12234,8 +12235,8 @@ static void set_osd_blend_reg(struct osd_blend_reg_s *osd_blend_reg)
 			     ((osd2_alpha_div & 0x1) << 12) |
 			     (3 << 16));
 	if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_TXHD2) {
-		VSYNCOSD_WR_MPEG_REG_BITS(VIU_OSD_BLEND_CTRL, 0, 0, 1);
-		VSYNCOSD_WR_MPEG_REG_BITS(VIU_OSD_BLEND_CTRL1, 0, 0, 1);
+		VSYNCOSD_WR_MPEG_REG_BITS(hw_osd_reg_blend.osd_blend_ctrl, 0, 0, 1);
+		VSYNCOSD_WR_MPEG_REG_BITS(hw_osd_reg_blend.osd_blend_ctrl1, 0, 0, 1);
 	}
 
 	VSYNCOSD_WR_MPEG_REG(hw_osd_reg_blend.osd_blend_blend0_size,
@@ -12977,6 +12978,10 @@ static void osd_setting_default_hwc(void)
 				    blend_vsize);
 		/* vpp input mux */
 		VSYNCOSD_WR_MPEG_REG_BITS(OSD_PATH_MISC_CTRL, VPP_OSD1, 16, 4);
+	}
+	if (osd_hw.osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_TXHD2) {
+		VSYNCOSD_WR_MPEG_REG_BITS(hw_osd_reg_blend.osd_blend_ctrl, 0, 0, 1);
+		VSYNCOSD_WR_MPEG_REG_BITS(hw_osd_reg_blend.osd_blend_ctrl1, 0, 0, 1);
 	}
 }
 
@@ -14811,7 +14816,9 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 			}
 		}
 		osd_set_basic_urgent(true);
-		osd_set_two_ports(true);
+		if (osd_hw.osd_meson_dev.cpu_id !=
+			__MESON_CPU_MAJOR_ID_TXHD2)
+			osd_set_two_ports(true);
 		if (osd_dev_hw.prevsync_support) {
 			u32 vpp0_pre_go_field = 0;
 			u32 vpp0_post_go_field = 3;
@@ -15482,8 +15489,8 @@ void  osd_suspend_hw(void)
 			osd_reg_read(hw_osd_reg_blend.osd_blend_ctrl);
 		osd_hw.reg_status_save1 =
 			osd_reg_read(hw_osd_reg_blend.osd1_blend_src_ctrl);
-
-		if (!osd_dev_hw.multi_afbc_core)
+		if (!osd_dev_hw.multi_afbc_core &&
+			osd_hw.osd_meson_dev.afbc_type != NO_AFBC)
 			osd_hw.reg_status_save4 =
 				osd_reg_read(VPU_MAFBC_SURFACE_CFG);
 		osd_reg_clr_mask(hw_osd_reg_blend.osd_blend_ctrl, 0xf0000);
@@ -15587,7 +15594,8 @@ void osd_resume_hw(void)
 			osd_reg_write(VPP_RDARB_REQEN_SLV,
 				      osd_hw.reg_status_save3[0]);
 		}
-		if (!osd_dev_hw.multi_afbc_core)
+		if (!osd_dev_hw.multi_afbc_core &&
+			osd_hw.osd_meson_dev.afbc_type != NO_AFBC)
 			osd_reg_write(VPU_MAFBC_SURFACE_CFG,
 				      osd_hw.reg_status_save4);
 		for (i = 0; i < osd_hw.osd_meson_dev.osd_count; i++)

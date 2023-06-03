@@ -119,6 +119,7 @@
 #endif
 
 enum chip_id_e {
+	CHIP_ID_NONE,
 	CHIP_ID_GXTVBB,
 	CHIP_ID_TXL,
 	CHIP_ID_TXLX,

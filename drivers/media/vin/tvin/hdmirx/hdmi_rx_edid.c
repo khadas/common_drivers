@@ -1061,6 +1061,8 @@ u_char rx_edid_get_aud_sad(u_char *sad_data)
 {
 	u8 port = rx_info.main_port; //todo
 
+	if (rx_info.chip_id == CHIP_ID_NONE)
+		return 0;
 	u_char *pedid = rx_get_cur_used_edid(port);
 	u_char offset = rx_get_cea_tag_offset(pedid, AUDIO_TAG);
 	u_char len = 0;
@@ -1079,6 +1081,8 @@ EXPORT_SYMBOL(rx_edid_get_aud_sad);
  */
 bool rx_edid_set_aud_sad(u_char *sad, u_char len)
 {
+	if (rx_info.chip_id == CHIP_ID_NONE)
+		return false;
 	if (len > 30 || len % 3 != 0) {
 		if (log_level & AUDIO_LOG)
 			rx_pr("err sad length: %d\n", len);
@@ -1112,6 +1116,8 @@ EXPORT_SYMBOL(rx_edid_set_aud_sad);
 
 void rx_earc_hpd_cntl(void)
 {
+	if (rx_info.chip_id == CHIP_ID_NONE)
+		return;
 	if (rx_info.open_fg && rx_info.main_port == rx_info.arc_port) {
 		rx_send_hpd_pulse(rx_info.main_port);
 		if (log_level & AUDIO_LOG)
@@ -3156,6 +3162,8 @@ unsigned char rx_edid_total_free_size(unsigned char *cur_edid,
 
 bool rx_set_earc_cap_ds(unsigned char *data, unsigned int len)
 {
+	if (rx_info.chip_id == CHIP_ID_NONE)
+		return false;
 	new_earc_cap_ds = true;
 	memset(recv_earc_cap_ds, 0, sizeof(recv_earc_cap_ds));
 	if (!data || len > EARC_CAP_DS_MAX_LENGTH)
@@ -3188,6 +3196,8 @@ bool rx_set_vsvdb(unsigned char *data, unsigned int len)
 	 * len = 0xFF, revert to original VSVDB in edid
 	 * len = 12/15/26, replace VSVDB with param[data]
 	 */
+	if (rx_info.chip_id == CHIP_ID_NONE)
+		return false;
 	if (len > VSVDB_LEN && len != 0xFF) {
 		rx_pr("err: invalid vsvdb length:%d\n", len);
 		return false;
@@ -3212,6 +3222,8 @@ EXPORT_SYMBOL(rx_set_vsvdb);
 #ifdef CONFIG_AMLOGIC_HDMITX
 bool rx_update_tx_edid_with_audio_block(unsigned char *edid_data, unsigned char *audio_block)
 {
+	if (rx_info.chip_id == CHIP_ID_NONE)
+		return false;
 	if (!edid_data) {
 		memset(edid_tx, 0, EDID_SIZE);
 		return false;

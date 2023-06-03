@@ -1755,6 +1755,8 @@ void rx_get_audio_status(struct rx_audio_stat_s *aud_sts)
 	u8 port = rx_info.main_port;
 	enum tvin_sig_fmt_e fmt = hdmirx_hw_get_fmt(port);
 
+	if (rx_info.chip_id == CHIP_ID_NONE)
+		return;
 	if (rx[port].state == FSM_SIG_READY &&
 	    fmt != TVIN_SIG_FMT_NULL &&
 	    rx[port].avmute_skip == 0) {
@@ -1796,6 +1798,8 @@ int rx_set_audio_param(u32 param)
 {
 	u8 port = rx_info.main_port;
 
+	if (rx_info.chip_id == CHIP_ID_NONE)
+		return 0;
 	if (rx_info.chip_id < CHIP_ID_T7)
 		hbr_force_8ch = param & 1;
 	else if (rx_info.chip_id < CHIP_ID_T3X)

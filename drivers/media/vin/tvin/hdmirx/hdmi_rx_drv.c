@@ -908,6 +908,8 @@ EXPORT_SYMBOL(hdmirx_get_connect_info);
  */
 int hdmirx_set_cec_cfg(u32 cfg)
 {
+	if (rx_info.chip_id == CHIP_ID_NONE)
+		return 0;
 	switch (cfg) {
 	case 1:
 		hdmi_cec_en = 1;
@@ -1626,6 +1628,8 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		pr_err("%s invalid command: %u\n", __func__, cmd);
 		return -EINVAL;
 	}
+	if (rx_info.chip_id == CHIP_ID_NONE)
+		return -ENOIOCTLCMD;
 	src_buff = &pkt_info;
 	devp = file->private_data;
 	switch (cmd) {

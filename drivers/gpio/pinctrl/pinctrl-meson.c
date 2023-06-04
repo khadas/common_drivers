@@ -826,6 +826,11 @@ static int meson_pinctrl_parse_dt(struct meson_pinctrl *pc,
 				  struct device_node *node)
 {
 	struct device_node *np, *gpio_np = NULL;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	int num, idx;
+	struct meson_pmx_expand_reg *pmx_expand_reg;
+	u32 val;
+#endif
 
 	for_each_child_of_node(node, np) {
 		if (!of_find_property(np, "gpio-controller", NULL))
@@ -884,6 +889,43 @@ static int meson_pinctrl_parse_dt(struct meson_pinctrl *pc,
 #ifdef CONFIG_AMLOGIC_MODIFY
 	if (of_property_read_bool(node, "amlogic,vin-threshold-support"))
 		pc->reg_vthx = pc->reg_gpio;
+
+	/*
+	 * There is a secondary selection mux on TXHD2,
+	 * so this register needs to be used.
+	 */
+	num = of_property_count_strings(gpio_np, "mux-expand-name");
+	if (num > 0) {
+		pc->mux_expand_num = (unsigned int)num;
+		pc->mux_expand_reg = devm_kcalloc(pc->dev, pc->mux_expand_num,
+						  sizeof(struct meson_pmx_expand_reg),
+						  GFP_KERNEL);
+		if (!pc->mux_expand_reg)
+			return -ENOMEM;
+
+		pmx_expand_reg = pc->mux_expand_reg;
+		for (idx = 0; idx < num; idx++) {
+			if (of_property_read_string_index(gpio_np, "mux-expand-name",
+							  idx, &pmx_expand_reg->name)) {
+				dev_err(pc->dev, "invalid mux expand name @ %pOFn\n", gpio_np);
+				return -EINVAL;
+			}
+
+			if (of_property_read_u32_index(gpio_np, "mux-expand-reg",
+						       idx, &val)) {
+				dev_err(pc->dev, "invalid mux expand reg @ %pOFn\n", gpio_np);
+				return -EINVAL;
+			}
+
+			pmx_expand_reg->reg = devm_ioremap(pc->dev, val, 0x4);
+			if (!pmx_expand_reg->reg) {
+				dev_err(pc->dev, "failed to remap mux expand space\n");
+				return -EINVAL;
+			}
+
+			pmx_expand_reg++;
+		}
+	}
 #endif
 
 	if (pc->data->parse_dt)

@@ -1411,6 +1411,18 @@ static struct meson_axg_pmx_data meson_txhd2_test_pmx_banks_data = {
 	.num_pmx_banks	= ARRAY_SIZE(meson_txhd2_test_pmx_banks),
 };
 
+static struct meson_pmx_expand meson_txhd2_periphs_pmx_expand[] = {
+	/* pin  func  reg_name  value   mask */
+	PMX_EXPAND(GPIOC_2,   6, "mux_e", 0, GENMASK(8, 8)),
+	PMX_EXPAND(GPIODV_6,  4, "mux_e", 0, GENMASK(8, 8)),
+};
+
+static struct meson_pmx_expand meson_txhd2_aobus_pmx_expand[] = {
+	/* pin  func  reg_name  value   mask */
+	PMX_EXPAND(GPIOAO_5,  5, "mux_e", BIT(8), GENMASK(8, 8)),
+	PMX_EXPAND(GPIOAO_12, 6, "mux_e", BIT(8), GENMASK(8, 8)),
+};
+
 static struct meson_pinctrl_data meson_txhd2_periphs_pinctrl_data __refdata = {
 	.name		= "periphs-banks",
 	.pins		= meson_txhd2_periphs_pins,
@@ -1423,6 +1435,8 @@ static struct meson_pinctrl_data meson_txhd2_periphs_pinctrl_data __refdata = {
 	.num_banks	= ARRAY_SIZE(meson_txhd2_periphs_banks),
 	.pmx_ops	= &meson_axg_pmx_ops,
 	.pmx_data	= &meson_txhd2_periphs_pmx_banks_data,
+	.pmx_expand	= meson_txhd2_periphs_pmx_expand,
+	.pmx_expand_num	= ARRAY_SIZE(meson_txhd2_periphs_pmx_expand),
 };
 
 static struct meson_pinctrl_data meson_txhd2_aobus_pinctrl_data __refdata = {
@@ -1438,6 +1452,8 @@ static struct meson_pinctrl_data meson_txhd2_aobus_pinctrl_data __refdata = {
 	.pmx_ops	= &meson_axg_pmx_ops,
 	.pmx_data	= &meson_txhd2_aobus_pmx_banks_data,
 	.parse_dt	= meson_g12a_aobus_parse_dt_extra,
+	.pmx_expand	= meson_txhd2_aobus_pmx_expand,
+	.pmx_expand_num	= ARRAY_SIZE(meson_txhd2_aobus_pmx_expand),
 };
 
 static struct meson_pinctrl_data meson_txhd2_test_pinctrl_data __refdata = {

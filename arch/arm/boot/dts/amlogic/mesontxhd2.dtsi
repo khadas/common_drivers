@@ -1397,6 +1397,8 @@
 			gpio-controller;
 			#gpio-cells = <2>;
 			gpio-ranges = <&pinctrl_aobus 0 0 14>;
+			mux-expand-reg = <0xff6346f8>;
+			mux-expand-name = "mux_e";
 		};
 		i2cAO_pins1:i2cAO_pins1 {
 			mux {
@@ -1476,6 +1478,8 @@
 			gpio-controller;
 			#gpio-cells = <2>;
 			gpio-ranges = <&pinctrl_periphs 0 0 66>;
+			mux-expand-reg = <0xff6346f8>;
+			mux-expand-name = "mux_e";
 		};
 
 		emmc_pins: emmc_pins {

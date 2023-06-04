@@ -1763,24 +1763,42 @@ static void vd1_path_select(struct video_layer_s *layer,
 			/* afbc0 gclk ctrl */
 			(0 << 0),
 			0, 22);
-		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1))
-			cur_dev->rdma_func[vpp_index].rdma_wr_bits
-				(VD1_AFBCD0_MISC_CTRL,
-				/* Vd1_afbc0_mem_sel */
-				(afbc ? 1 : 0),
-				22, 1);
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
+			if (video_is_meson_txhd2_cpu())
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
+					(VD1_AFBCD0_MISC_CTRL,
+					/* txhd2 is two memory, this ram always to afbcd */
+					1, 22, 1);
+			else
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
+					(VD1_AFBCD0_MISC_CTRL,
+					/* Vd1_afbc0_mem_sel */
+					(afbc ? 1 : 0),
+					22, 1);
+		}
 		if (di_post || di_pre_link) {
-			/* check di_vpp_out_en bit */
-			cur_dev->rdma_func[vpp_index].rdma_wr_bits
-				(VD1_AFBCD0_MISC_CTRL,
-				/* vd1 mif to di */
-				1,
-				8, 2);
-			cur_dev->rdma_func[vpp_index].rdma_wr_bits
-				(VD1_AFBCD0_MISC_CTRL,
-				/* go field select di post */
-				1,
-				20, 2);
+			if (video_is_meson_txhd2_cpu()) {
+				/* bit10 must set to 0 */
+				/* bit9: 0: afbc0 to vd1, 1: afbc0 to di */
+				/* bit8: vd1 input is afbc, 1 vd1 input is di*/
+				/* bit8 = 1, bit9 = 1 */
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
+					(VD1_AFBCD0_MISC_CTRL,
+					/* vd1 mif to di */
+					3, 8, 3);
+				/* txhd2 not need set go filed*/
+			} else {
+				/* check di_vpp_out_en bit */
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
+					(VD1_AFBCD0_MISC_CTRL,
+					/* vd1 mif to di(vd1 input is afbc, 1 vd1 input is di) */
+					1, 8, 2);
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
+					(VD1_AFBCD0_MISC_CTRL,
+					/* go field select di post */
+					1,
+					20, 2);
+			}
 		}
 	} else {
 		if (!di_post)
@@ -2092,7 +2110,7 @@ static void vd1_set_dcu(struct video_layer_s *layer,
 
 	type = vf->type;
 #ifdef ENABLE_PRE_LINK
-	if (video_is_meson_t5d_revb_cpu() &&
+	if ((video_is_meson_t5d_revb_cpu() || video_is_meson_txhd2_cpu()) &&
 	    !layer->vd1_vd2_mux &&
 	    !is_local_vf(vf) &&
 	    is_pre_link_on(layer) &&
@@ -2141,8 +2159,10 @@ static void vd1_set_dcu(struct video_layer_s *layer,
  */
 /*coverity[dead_error_line:SUPPRESS]*/
 	if (skip_afbc && (type & VIDTYPE_COMPRESS)) {
+		/* t5d_revb, txhd2 will set afbc */
 		vd1_path_select(layer, true, false, di_post, di_pre_link);
-		cur_dev->rdma_func[vpp_index].rdma_wr_bits
+		if (video_is_meson_t5d_revb_cpu())
+			cur_dev->rdma_func[vpp_index].rdma_wr_bits
 			(VD1_AFBCD0_MISC_CTRL,
 			/* vd1 afbc to di */
 			1, 1, 1);

@@ -294,4 +294,13 @@ void di_prelink_force_dmc_priority(bool urgent, bool wait);
  *********************************************************/
 int di_s_bypass_ch(int index, bool on);
 
+/*********************************************************
+ * @brief  dim_txhd2_afbcd_en afbcd cfg
+ *
+ * @param[in]  on  0:enable; 1: disable
+ *
+ * @return      number or fail type
+ *********************************************************/
+bool dim_txhd2_afbcd_cfg(void);
+
 #endif	/*__DI_INTERLACE_H__*/

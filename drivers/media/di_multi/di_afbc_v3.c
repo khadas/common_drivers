@@ -3391,27 +3391,31 @@ void disable_afbcd_t5dvb(void)
 void afbcd_enable_only_t5dvb(const struct reg_acc *op, bool vpp_link)
 {
 	unsigned int val;
-	bool en = false;
+	unsigned int en = 0;
 
 	if (!DIM_IS_IC(T5DB))
 		return;
 	if (vpp_link && afbc_is_supported_for_plink())
-		en = true;
+		en = 1;
 	else if (!vpp_link && afbc_is_supported())
-		en = true;
+		en = 2;
 
 	if (en) {
 		PR_INF("t5dvb afbcd on\n");
 		/* afbcd is shared */
-		val = op->rd(VD1_AFBCD0_MISC_CTRL);
-		val |= (DI_BIT1 | DI_BIT10 | DI_BIT12 | DI_BIT22);
-		op->wr(VD1_AFBCD0_MISC_CTRL, val);
-#ifdef HIS_CODE
-		op->bwr(VD1_AFBCD0_MISC_CTRL, 0x01, 22, 1);
-		op->bwr(VD1_AFBCD0_MISC_CTRL, 0x01, 10, 1);
-		op->bwr(VD1_AFBCD0_MISC_CTRL, 0x01, 12, 1);
-		op->bwr(VD1_AFBCD0_MISC_CTRL, 0x01, 1, 1);
-#endif
+		if (DIM_IS_IC_TXHD2) {
+			if (en == 1) {
+			/* afbcd is shared */
+				op->wr(VD1_AFBCD0_MISC_CTRL, 0x401300);
+			} else if (en == 2) {
+				/* afbcd is shared */
+				op->wr(VD1_AFBCD0_MISC_CTRL, 0x401200);
+			}
+		} else {
+			val = op->rd(VD1_AFBCD0_MISC_CTRL);
+			val |= (DI_BIT1 | DI_BIT10 | DI_BIT12 | DI_BIT22);
+			op->wr(VD1_AFBCD0_MISC_CTRL, val);
+		}
 		dbg_reg("%s:t5d vb on\n 0x%x,0x%x\n",
 			__func__,
 			VD1_AFBCD0_MISC_CTRL,

@@ -7305,6 +7305,7 @@ static void dpvpph_prelink_sw(const struct reg_acc *op, bool p_link)
 		/* set on*/
 		ext_vpp_prelink_real_sw(true, false);
 		val = op->rd(VD1_AFBCD0_MISC_CTRL);
+		//WR(VD1_AFBCD0_MISC_CTRL,0X401300);//cqq
 		if (DIM_IS_IC_EF(SC2)) {
 			/* ? */
 			op->bwr(DI_TOP_CTRL, 1, 0, 1);// 1:pre link vpp  0:post link vpp
@@ -7313,8 +7314,12 @@ static void dpvpph_prelink_sw(const struct reg_acc *op, bool p_link)
 		} else {
 			op->bwr(DI_AFBCE_CTRL, 1, 3, 1);
 			//op->wr(VD1_AFBCD0_MISC_CTRL, 0x100100);
-			op->bwr(VD1_AFBCD0_MISC_CTRL, 1, 8, 1);
-			op->bwr(VD1_AFBCD0_MISC_CTRL, 1, 20, 1);
+			if (DIM_IS_IC_TXHD2) {
+				op->bwr(VD1_AFBCD0_MISC_CTRL, 3, 8, 2);
+			} else {
+				op->bwr(VD1_AFBCD0_MISC_CTRL, 1, 8, 1);
+				op->bwr(VD1_AFBCD0_MISC_CTRL, 1, 20, 1);
+			}
 		}
 		dbg_plink1("c_sw:ak:from[0x%x]\n",
 			val);
@@ -7352,7 +7357,10 @@ static void dpvpph_prelink_polling_check(const struct reg_acc *op, bool p_link)
 		/* check bit 8 / 16*/
 		if ((val & 0x10100) != 0x00100)
 			flg_set = true;
-
+	} else if (DIM_IS_IC_TXHD2) {
+		/* check bit 8 / 20 */
+		if ((val & 0x100100) != 0x000100)
+			flg_set = true;
 	} else {
 		/* check bit 8 / 20 */
 		if ((val & 0x100100) != 0x100100)

@@ -13525,6 +13525,8 @@ int video_early_init(struct amvideo_device_data_s *p_amvideo)
 	vd_layer[0].dummy_alpha = 0x7fffffff;
 	cur_dev->has_vpp1 = p_amvideo->has_vpp1;
 	cur_dev->has_vpp2 = p_amvideo->has_vpp2;
+	cur_dev->sr0_support = p_amvideo->sr0_support;
+	cur_dev->sr1_support = p_amvideo->sr1_support;
 	cur_dev->is_tv_panel = p_amvideo->is_tv_panel;
 	cur_dev->mif_linear = p_amvideo->mif_linear;
 	cur_dev->display_module = p_amvideo->display_module;

@@ -278,6 +278,8 @@ struct video_dev_s {
 	struct vpp_frame_par_s aisr_frame_parms;
 	struct rdma_fun_s rdma_func[RDMA_INTERFACE_NUM];
 	u32 sr_in_size;
+	u8 sr0_support;
+	u8 sr1_support;
 	u8 is_tv_panel;
 	u8 prevsync_support;
 	u8 pre_vsync_enable;

@@ -970,6 +970,13 @@
 				amlogic,has-chip-id;
 			};
 
+			dcon_led: dcon_led@0x1000 {
+				compatible = "amlogic,led_unipolar_ctrl";
+				reg = <0x1000 0x88>;
+				interrupts = <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>;
+				status = "disabled";
+			};
+
 			uart_AO: serial@3000 {
 				compatible = "amlogic, meson-uart";
 				reg = <0x3000 0x18>;
@@ -1462,6 +1469,33 @@
 				function = "pwm_ao_d";
 			};
 		};
+
+		dcon_led_pins1:dcon_led_pins1 {
+			mux {
+				groups = "dcon_led_ao6";
+				function = "dcon_led";
+				drive-strength-microamp = <3000>;
+				bias-disable;
+			};
+		};
+
+		dcon_led_pins2:dcon_led_pins2 {
+			mux {
+				groups = "dcon_led_ao7";
+				function = "dcon_led";
+				drive-strength-microamp = <3000>;
+				bias-disable;
+			};
+		};
+
+		dcon_led_pins3:dcon_led_pins3 {
+			mux {
+				groups = "dcon_led_ao8";
+				function = "dcon_led";
+				drive-strength-microamp = <3000>;
+				bias-disable;
+			};
+		};
 	};
 
 	pinctrl_periphs: pinctrl@ff6346c0{
@@ -1826,6 +1860,15 @@
 		mux {
 			groups = "pwm_f";
 			function = "pwm_f";
+		};
+	};
+
+	dcon_led_pins4:dcon_led_pins4 {
+		mux {
+			groups = "dcon_led_z5";
+			function = "dcon_led";
+			drive-strength-microamp = <3000>;
+			bias-disable;
 		};
 	};
 

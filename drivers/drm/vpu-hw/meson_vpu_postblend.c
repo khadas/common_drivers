@@ -367,10 +367,12 @@ static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 		if (crtc_index == 0)
 			postblend_osd2_def_conf(vblk);
 
+		if (!postblend->postblend_path_mask)
+			fix_vpu_clk2_default_regs(vblk, reg_ops, crtc_index,
+						  crtcmask_osd);
+
 		vblk->init_done = 1;
 	}
-
-	fix_vpu_clk2_default_regs(vblk, reg_ops, crtc_index, crtcmask_osd);
 
 	if (crtc_index == 0) {
 		vpp_osd1_blend_scope_set(vblk, reg_ops, reg, scope);

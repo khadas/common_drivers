@@ -443,10 +443,10 @@
 			"mailbox_1",
 			"mailbox_2",
 			"parser_b";
-		power-domains = <&pwrdm PDID_DOS_HEVC>,
+		power-domains = <&pwrdm PDID_DOS_VDEC>,
 			<&pwrdm PDID_DOS_HEVC>;
-		power-domain-names = "pwrc-hevc",
-			"pwrc-dummy";
+		power-domain-names = "pwrc-vdec",
+			"pwrc-hevc";
 	};
 
 	aml_reboot {

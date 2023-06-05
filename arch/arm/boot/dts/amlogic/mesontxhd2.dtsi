@@ -999,10 +999,10 @@
 			i2c_AO: i2c@5000 {
 				compatible = "amlogic,meson-i2c";
 				reg = <0x5000 0x48>;
-				interrupts = <GIC_SPI 3 IRQ_TYPE_EDGE_RISING>;
+				interrupts = <GIC_SPI 195 IRQ_TYPE_EDGE_RISING>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				clocks = <&clkc CLKID_CLK81_I2C>;
+				clocks = <&clkc_AO CLKID_AO_I2C_MASTER>;
 				clock-frequency = <100000>;
 				status = "disabled";
 			};

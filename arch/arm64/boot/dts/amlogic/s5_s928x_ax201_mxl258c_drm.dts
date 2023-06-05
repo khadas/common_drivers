@@ -7,6 +7,7 @@
 
 #include "mesons5.dtsi"
 #include "partition_mbox_ab.dtsi"
+#include "mesons5_drm.dtsi"
 #include <dt-bindings/input/input.h>
 //#include "mesont7_pxp-panel.dtsi"
 
@@ -136,7 +137,7 @@
 			 * 10x4736064=45.2M(0x2e) support 12bit
 			 * 10x4074560=40M(0x28) support 10bit
 			 */
-			size = <0x0 0x400000>;
+			//size = <0x0 0x0B000000>;
 			//size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
 		};
@@ -219,7 +220,6 @@
 			 */
 			size = <0x0 0x01400000>;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 
 		mfh_fw_reserved:linux,mfh_fw {
@@ -232,8 +232,8 @@
 
 		pcie_dma_ops_mm:linux,pcie_dma_ops {
 			compatible = "shared-dma-pool";
-			reusable;
 			status = "okay";
+			reusable;
 			size = <0x0 0x5000000>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
@@ -334,7 +334,6 @@
 		 * 1: enable
 		 ***************************************************/
 		//hf = <1>;
-		tb = <2>;
 	};
 
 	provisionkey {
@@ -815,34 +814,85 @@
 		/*GPIOT-19 conflict with audio speaker */
 		status = "okay";
 
-		fe_num = <2>;
-		fe0_demod = "cxd2856";
-		fe0_i2c_adap_id = <&i2c2>;
-		fe0_demod_i2c_addr = <0xD8>;
+		fe_num = <4>; /* total ts-fe device,  */
+
+		/* header: max 12 bytes, not require in NO_MUX_4 mode, set to 0 */
+		/* data: The same as demux, not require in NO_MUX_4 mode */
+		fe0_ts_header_bytes = <4>;
+		fe0_ts_header_data = <0x4b 0x20 0x0 0x0>;
+
+		fe1_ts_header_bytes = <4>;
+		fe1_ts_header_data = <0x4b 0x21 0x0 0x0>;
+
+		fe2_ts_header_bytes = <4>;
+		fe2_ts_header_data = <0x4b 0x22 0x0 0x0>;
+
+		fe3_ts_header_bytes = <4>;
+		fe3_ts_header_data = <0x4b 0x23 0x0 0x0>;
+
+		fe0_demod = "MXL258C"; /* demod driver name */
+		fe0_i2c_adap_id = <&i2c2>; /* matching hardware design */
+		fe0_demod_i2c_addr = <0x50>; /* matching hardware design */
+		fe0_demod_code = <0x254c>; /* the actual demod IC */
+
+		/* 0: NO_MUX_4, 1: MUX_1, 2: MUX_2, 3: MUX_3. */
+		/* 4: MUX_4, 5: MUX_2_B, 6: NO_MUX_2.*/
+		/* not require in parallel mode. */
+		fe0_ts_mux_mode = <1>;
+		fe0_ts_clk = <56>;  /* 10, 21, 25, 28, 42, 56, 84, 112 (MHz). */
 		fe0_reset_value = <0>;
-		fe0_reset_gpio = <&gpio GPIOT_22 GPIO_ACTIVE_LOW>;
-		fe0_reset_dir = <0>; /* 0: out, 1: in. */
-		//fe0_ant_poweron_value = <0>;
-		//fe0_ant_power_gpio = <&gpio GPIOT_18 GPIO_ACTIVE_HIGH>;
-		fe0_ts  = <0>;
-		fe0_tuner0 = <0>; /* T/C */
-		fe0_tuner1 = <1>; /* S */
+		fe0_reset_gpio = <&gpio GPIOT_22 GPIO_ACTIVE_LOW>; /* matching hardware design */
+		fe0_reset_dir = <0>; /* 0:out, 1:in */
+		fe0_ts = <1>; /* select tsin port */  /* matching hardware design */
+		fe0_ts_out_mode = <1>; /* 0: serial, 1: parallel. */
 
-		fe1_demod = "cxd2856";
-		fe1_i2c_adap_id = <&i2c2>;
-		fe1_demod_i2c_addr = <0xCA>;
+		fe1_demod = "MXL258C"; /* demod driver name, include mxl214c/ml254c/mxl258c */
+		fe1_i2c_adap_id = <&i2c2>; /* matching hardware design */
+		fe1_demod_i2c_addr = <0x50>; /* matching hardware design */
+		fe1_demod_code = <0x254c>; /* the actual demod IC */
+
+		/* 0: NO_MUX_4, 1: MUX_1, 2: MUX_2, 3: MUX_3. */
+		/* 4: MUX_4, 5: MUX_2_B, 6: NO_MUX_2.*/
+		/* not require in parallel mode. */
+		fe1_ts_mux_mode = <1>;
+		fe1_ts_clk = <56>;  /* 10, 21, 25, 28, 42, 56, 84, 112 (MHz). */
 		fe1_reset_value = <0>;
-		fe1_reset_gpio = <&gpio GPIOT_22 GPIO_ACTIVE_LOW>;
-		fe1_reset_dir = <0>; /* 0: out, 1: in. */
-		//fe1_ant_poweron_value = <0>;
-		//fe1_ant_power_gpio = <&gpio GPIOT_18 GPIO_ACTIVE_HIGH>;
-		fe1_ts  = <1>;
-		fe1_tuner0 = <0>; /* T/C */
-		fe1_tuner1 = <1>; /* S */
+		fe1_reset_gpio = <&gpio GPIOT_22 GPIO_ACTIVE_LOW>; /* matching hardware design */
+		fe1_reset_dir = <0>; /* 0:out, 1:in */
+		fe1_ts = <1>; /* select tsin port */  /* matching hardware design */
+		fe1_ts_out_mode = <1>; /* 0: serial, 1: parallel. */
 
-		tuner_num = <2>; /* for extern demod use tuner */
-		tuner0_name = "r836_tuner";
-		tuner1_name = "av2018_tuner";
+		fe2_demod = "MXL258C"; /* demod driver name */
+		fe2_i2c_adap_id = <&i2c2>; /* matching hardware design */
+		fe2_demod_i2c_addr = <0x50>; /* matching hardware design */
+		fe2_demod_code = <0x254c>; /* the actual demod IC */
+
+		/* 0: NO_MUX_4, 1: MUX_1, 2: MUX_2, 3: MUX_3. */
+		/* 4: MUX_4, 5: MUX_2_B, 6: NO_MUX_2.*/
+		/* not require in parallel mode. */
+		fe2_ts_mux_mode = <1>;
+		fe2_ts_clk = <56>; /* 10, 21, 25, 28, 42, 56, 84, 112 (MHz). */
+		fe2_reset_value = <0>;
+		fe2_reset_gpio = <&gpio GPIOT_22 GPIO_ACTIVE_LOW>; /* matching hardware design */
+		fe2_reset_dir = <0>; /* 0:out, 1:in */
+		fe2_ts = <1>; /* select tsin port */  /* matching hardware design */
+		fe2_ts_out_mode = <1>; /* 0: serial, 1: parallel. */
+
+		fe3_demod = "MXL258C"; /* demod driver name */
+		fe3_i2c_adap_id = <&i2c2>; /* matching hardware design */
+		fe3_demod_i2c_addr = <0x50>; /* matching hardware design */
+		fe3_demod_code = <0x254c>; /* the actual demod IC */
+
+		/* 0: NO_MUX_4, 1: MUX_1, 2: MUX_2, 3: MUX_3. */
+		/* 4: MUX_4, 5: MUX_2_B, 6: NO_MUX_2.*/
+		/* not require in parallel mode. */
+		fe3_ts_mux_mode = <1>;
+		fe3_ts_clk = <56>;  /* 10, 21, 25, 28, 42, 56, 84, 112 (MHz). */
+		fe3_reset_value = <0>;
+		fe3_reset_gpio = <&gpio GPIOT_22 GPIO_ACTIVE_LOW>; /* matching hardware design */
+		fe3_reset_dir = <0>; /* 0:out, 1:in */
+		fe3_ts = <1>; /* select tsin port */  /* matching hardware design */
+		fe3_ts_out_mode = <1>; /* 0: serial, 1: parallel. */
 	};
 
 	dvb-demux {
@@ -857,19 +907,54 @@
 		tsn_from = "demod";
 
 		/*single demod setting */
-		ts0_sid = <0x20>;
+		//ts0_sid = <0x20>;
 		ts0 = "serial-4wire"; /* tsinA: serial-4wire, serial-3wire */
 		ts0_control = <0x0>;
-		ts0_invert = <0>;
 
-		ts1_sid = <0x21>;
-		ts1 = "serial-4wire";
+		/* tsinB: parallel, serial-4wire, serial-3wire */
+		//ts1_sid = <0x21>;
+		ts1 = "parallel";
 		ts1_control = <0x0>;
-		ts1_invert = <0>;
 
-		pinctrl-names = "s_ts0", "s_ts1";
-		pinctrl-0 = <&dvb_s_ts0_pins>;
-		pinctrl-1 = <&dvb_s_ts1_pins>;
+		//ts2_sid = <0x22>;
+		ts2 = "serial-4wire"; /* tsinC: serial-4wire, serial-3wire */
+		ts2_control = <0x0>;
+
+		//ts3_sid = <0x23>;
+		ts3 = "serial-4wire"; /* tsinD: serial-4wire, serial-3wire */
+		ts3_control = <0x0>;
+
+		/*multi demod setting, such as maxlinear demod*/
+		/*attention: ts how to bind to dmx device
+		 * it should set sid in maxlinear driver
+		 * sid list:
+		 * dmx0 sid:0x20
+		 * dmx1 sid:0x21
+		 * ...
+		 * dmx31 sid:0x2F
+		 */
+		ts0_header_len = <4>;
+		ts0_header = <0x4b 0x20 0x0 0x0>;
+		ts0_sid_offset = <1>;
+
+		ts1_header_len = <4>;
+		ts1_header = <0x4b 0x21 0x0 0x0>;
+		ts1_sid_offset = <1>;
+
+		ts2_header_len = <4>;
+		ts2_header = <0x4b 0x22 0x0 0x0>;
+		ts2_sid_offset = <1>;
+
+		ts3_header_len = <4>;
+		ts3_header = <0x4b 0x23 0x0 0x0>;
+		ts3_sid_offset = <1>;
+
+		pinctrl-names = "p_ts1";
+		pinctrl-0 = <&dvb_p_ts1_pins>;
+
+		//pinctrl-names = "s_ts0", "s_ts1";
+		//pinctrl-0 = <&dvb_s_ts0_pins>;
+		//pinctrl-1 = <&dvb_s_ts1_pins>;
 	};
 
 	ionvideo {
@@ -1852,12 +1937,17 @@
 };
 
 &fb {
-	status = "okay";
+	status = "disabled";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1980000 0x100000>;
 	logo_addr = "0x3e800000";
 	mem_alloc = <0>;
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
+};
+
+&drm_vpu {
+	status = "okay";
+	logo_addr = "0x3e800000";
 };
 
 &amhdmitx {
@@ -1886,7 +1976,7 @@
 
 &vdin1 {
 	memory-region = <&vdin1_cma_reserved>;
-	status = "okay";
+	status = "disabled";
 };
 
 &periphs_pinctrl {
@@ -1965,22 +2055,40 @@
 			function = "tdm";
 		};
 	};
-	dvb_s_ts0_pins: dvb_s_ts0_pins {
-		tsin_a {
-			groups = "tsin_a_sop",
-				   "tsin_a_valid",
-				   "tsin_a_clk",
-				   "tsin_a_din0";
-			function = "tsin_a";
-		};
-	};
 
-	dvb_s_ts1_pins: dvb_s_ts1_pins {
+    //dvb_s_ts0_pins: dvb_s_ts0_pins {
+	//	tsin_a {
+	//		groups = "tsin_a_sop_t",
+	//			   "tsin_a_valid_t",
+	//			   "tsin_a_clk_t",
+	//			   "tsin_a_din0_t";
+	//		function = "tsin_a";
+	//	};
+	//};
+
+	//dvb_s_ts1_pins: dvb_s_ts1_pins {
+	//	tsin_b {
+	//		groups = "tsin_b_sop",
+	//			   "tsin_b_valid",
+	//			   "tsin_b_clk",
+	//			   "tsin_b_din0";
+	//		function = "tsin_b";
+	//	};
+	//};
+	dvb_p_ts1_pins: dvb_p_ts1_pins {
 		tsin_b {
 			groups = "tsin_b_sop",
-				   "tsin_b_valid",
-				   "tsin_b_clk",
-				   "tsin_b_din0";
+			"tsin_b_valid",
+			"tsin_b_clk",
+			"tsin_b_fail",
+			"tsin_b_din0",
+			"tsin_b_din1",
+			"tsin_b_din2",
+			"tsin_b_din3",
+			"tsin_b_din4",
+			"tsin_b_din5",
+			"tsin_b_din6",
+			"tsin_b_din7";
 			function = "tsin_b";
 		};
 	};
@@ -2077,6 +2185,13 @@
 	 */
 	 vlock_pll_m_limit = <1>;
 	 vlock_line_limit = <2>;
+};
+
+&i2c2 {
+	status = "okay";
+	pinctrl-names="default";
+	pinctrl-0=<&i2c2_pins2>;
+	clock-frequency = <300000>;
 };
 
 &aml_wifi{

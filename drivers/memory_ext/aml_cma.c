@@ -46,6 +46,12 @@
 #include <asm/pgtable.h>
 #include <linux/page_pinner.h>
 #include <trace/events/page_isolation.h>
+#if IS_MODULE(CONFIG_AMLOGIC_CMA)
+#include <linux/debugfs.h>
+#include <linux/delay.h>
+#include <linux/jump_label.h>
+#include <linux/types.h>
+#endif
 #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
 #include <trace/hooks/iommu.h>
 #endif
@@ -95,6 +101,150 @@ static atomic_t cma_allocate;
 #ifdef CONFIG_AMLOGIC_CMA_DIS
 unsigned long ion_cma_allocated;
 #endif
+
+#if IS_MODULE(CONFIG_AMLOGIC_CMA)
+struct dummy_cma {
+	unsigned long   base_pfn;
+	unsigned long   count;
+	unsigned long   *bitmap;
+	unsigned int order_per_bit; /* Order of pages represented by one bit */
+	spinlock_t	lock;
+#ifdef CONFIG_CMA_DEBUGFS
+	struct hlist_head mem_head;
+	spinlock_t mem_head_lock; /* for cma debugfs */
+	struct debugfs_u32_array dfs_bitmap;
+#endif
+	char name[CMA_MAX_NAME];
+#ifdef CONFIG_CMA_SYSFS
+	/* the number of CMA page successful allocations */
+	atomic64_t nr_pages_succeeded;
+	/* the number of CMA page allocation failures */
+	atomic64_t nr_pages_failed;
+	/* kobject requires dynamic object */
+	struct cma_kobject *cma_kobj;
+#endif
+};
+
+static inline unsigned long cma_bitmap_maxno(struct dummy_cma *cma)
+{
+	return cma->count >> cma->order_per_bit;
+}
+
+#ifdef CONFIG_CMA_SYSFS
+static void cma_sysfs_account_success_pages(struct dummy_cma *cma, unsigned long nr_pages)
+{
+	atomic64_add(nr_pages, &cma->nr_pages_succeeded);
+}
+
+static void cma_sysfs_account_fail_pages(struct dummy_cma *cma, unsigned long nr_pages)
+{
+	atomic64_add(nr_pages, &cma->nr_pages_failed);
+}
+#else
+static inline void cma_sysfs_account_success_pages(struct dummy_cma *cma,
+						   unsigned long nr_pages) {};
+static inline void cma_sysfs_account_fail_pages(struct dummy_cma *cma,
+						unsigned long nr_pages) {};
+#endif
+
+static unsigned long cma_bitmap_aligned_mask(const struct dummy_cma *cma,
+					     unsigned int align_order)
+{
+	if (align_order <= cma->order_per_bit)
+		return 0;
+	return (1UL << (align_order - cma->order_per_bit)) - 1;
+}
+
+/*
+ * Find the offset of the base PFN from the specified align_order.
+ * The value returned is represented in order_per_bits.
+ */
+static unsigned long cma_bitmap_aligned_offset(const struct dummy_cma *cma,
+					       unsigned int align_order)
+{
+	return (cma->base_pfn & ((1UL << align_order) - 1))
+		>> cma->order_per_bit;
+}
+
+static unsigned long cma_bitmap_pages_to_bits(const struct dummy_cma *cma,
+					      unsigned long pages)
+{
+	return ALIGN(pages, 1UL << cma->order_per_bit) >> cma->order_per_bit;
+}
+
+static void cma_clear_bitmap(struct dummy_cma *cma, unsigned long pfn,
+			     unsigned long count)
+{
+	unsigned long bitmap_no, bitmap_count;
+	unsigned long flags;
+
+	bitmap_no = (pfn - cma->base_pfn) >> cma->order_per_bit;
+	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+
+	spin_lock_irqsave(&cma->lock, flags);
+	bitmap_clear(cma->bitmap, bitmap_no, bitmap_count);
+	spin_unlock_irqrestore(&cma->lock, flags);
+}
+
+unsigned long aml_totalcma_pages;
+
+void (*aml_lru_cache_disable)(void);
+
+#ifdef CONFIG_PAGE_PINNER
+static void __nocfi aml_page_pinner_failure_detect(struct page *page)
+{
+	/*
+	 *if (!static_branch_unlikely(&page_pinner_inited))
+	 *	return;
+	 *
+	 *if (!static_branch_unlikely(&failure_tracking))
+	 *	return;
+	 */
+
+	__page_pinner_failure_detect(page);
+}
+#else
+static void aml_page_pinner_failure_detect(struct page *page)
+{
+}
+#endif /* CONFIG_PAGE_PINNER */
+
+void (*aml_lru_cache_enable)(void);
+
+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+void (*aml_prep_huge_page)(struct page *page);
+#else /* CONFIG_TRANSPARENT_HUGEPAGE */
+static inline void aml_prep_huge_page(struct page *page) {}
+#endif
+
+unsigned int (*aml_reclaim_clean_pages_from_list)(struct zone *zone,
+					    struct list_head *page_list);
+int (*aml_isolate_pages_range)(struct compact_control *cc, unsigned long start_pfn,
+							unsigned long end_pfn);
+void (*aml_rmap_walk)(struct page *page, struct rmap_walk_control *rwc);
+void (*aml_undo_isolate_page_range)(unsigned long start_pfn, unsigned long end_pfn,
+			    unsigned int migratetype);
+unsigned long (*aml_iso_free_range)(struct compact_control *cc,
+			unsigned long start_pfn, unsigned long end_pfn);
+void (*aml_drain_all_pages)(struct zone *zone);
+void (*aml_lru_add_drain)(void);
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+int (*aml_start_isolate_page_range)(unsigned long start_pfn, unsigned long end_pfn,
+			     unsigned int migratetype, int flags,
+			     unsigned long *failed_pfn);
+#else
+int (*aml_start_isolate_page_range)(unsigned long start_pfn, unsigned long end_pfn,
+			     unsigned int migratetype, int flags);
+#endif
+
+unsigned long (*aml_kallsyms_lookup_name)(const char *name);
+
+/* For each probe you need to allocate a kprobe structure */
+static struct kprobe kp_lookup_name = {
+	.symbol_name	= "kallsyms_lookup_name",
+};
+#endif
+
 /*
  * We insert a none-mapping vm area to vmalloc space
  * and dynamic adjust it's size according nr_cma_allocated.
@@ -102,11 +252,6 @@ unsigned long ion_cma_allocated;
  * into KernelUsed item for dumpsys meminfo command on Android
  * layer
  */
-
-static int cma_alloc_ref(void)
-{
-	return atomic_read(&cma_allocate);
-}
 
 static void get_cma_alloc_ref(void)
 {
@@ -123,6 +268,12 @@ unsigned long get_cma_allocated(void)
 	return atomic_long_read(&nr_cma_allocated);
 }
 EXPORT_SYMBOL(get_cma_allocated);
+
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
+static int cma_alloc_ref(void)
+{
+	return atomic_read(&cma_allocate);
+}
 
 static bool cma_first_wm_low __read_mostly;
 
@@ -243,6 +394,7 @@ bool cma_page(struct page *page)
 	return false;
 }
 EXPORT_SYMBOL(cma_page);
+#endif
 
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE
 static void update_cma_page_trace(struct page *page, unsigned long cnt)
@@ -258,7 +410,11 @@ static void update_cma_page_trace(struct page *page, unsigned long cnt)
 		pr_info("c a p:%lx, c:%ld, f:%ps\n",
 			page_to_pfn(page), cnt, (void *)fun);
 	for (i = 0; i < cnt; i++) {
+	#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 		set_page_trace(page, 0, __GFP_NO_CMA, (void *)fun);
+	#else
+		set_page_trace(page, 0, 0, (void *)fun);
+	#endif
 		page++;
 	}
 }
@@ -273,7 +429,8 @@ void aml_cma_alloc_pre_hook(int *dummy, int count, unsigned long *tick)
 	*tick  = sched_clock();
 	if (count >= (pageblock_nr_pages / 2))
 		set_user_nice(current, -18);
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS) && defined(CONFIG_ARM64)
+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS) && \
+	defined(CONFIG_ARM64) && IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	trace_android_vh_iommu_iovad_free_iova((struct iova_domain *)mte_sync_tags,
 			0, (size_t)&init_mm);
 #endif
@@ -295,6 +452,7 @@ void aml_cma_alloc_post_hook(int *dummy, int count, struct page *page,
 #endif /* CONFIG_AMLOGIC_PAGE_TRACE */
 }
 
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 void check_water_mark(long free_pages, unsigned long mark)
 {
 	/* already set */
@@ -516,6 +674,7 @@ struct page *get_compact_page(struct page *migratepage,
 	}
 	return page;
 }
+#endif
 
 /* cma alloc/free interface */
 
@@ -525,13 +684,11 @@ static unsigned long pfn_max_align_down(unsigned long pfn)
 			     pageblock_nr_pages) - 1);
 }
 
-#if CONFIG_AMLOGIC_KERNEL_VERSION < 14515
-static unsigned long pfn_max_align_up(unsigned long pfn)
+static unsigned long aml_pfn_max_align_up(unsigned long pfn)
 {
 	return ALIGN(pfn, max_t(unsigned long, MAX_ORDER_NR_PAGES,
 				pageblock_nr_pages));
 }
-#endif
 
 static struct page *get_migrate_page(struct page *page, unsigned long private)
 {
@@ -543,7 +700,11 @@ static struct page *get_migrate_page(struct page *page, unsigned long private)
 	int zidx;
 
 	mtc = (struct migration_target_control *)private;
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	gfp_mask = mtc->gfp_mask | __GFP_NO_CMA;
+#else
+	gfp_mask = mtc->gfp_mask;
+#endif
 	nid = mtc->nid;
 	if (nid == NUMA_NO_NODE)
 		nid = page_to_nid(page);
@@ -584,7 +745,11 @@ static struct page *get_migrate_page(struct page *page, unsigned long private)
 	new_page = __alloc_pages(gfp_mask, order, nid, mtc->nmask);
 
 	if (new_page && PageTransHuge(new_page))
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 		prep_transhuge_page(new_page);
+#else
+		aml_prep_huge_page(new_page);
+#endif
 
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE
 	replace_page_trace(new_page, page);
@@ -614,7 +779,7 @@ static inline void alloc_contig_dump_pages(struct list_head *page_list)
 #endif
 
 /* [start, end) must belong to a single zone. */
-static int aml_alloc_contig_migrate_range(struct compact_control *cc,
+static int __nocfi aml_alloc_contig_migrate_range(struct compact_control *cc,
 					  unsigned long start,
 					  unsigned long end, bool boost,
 					  struct task_struct *host)
@@ -629,7 +794,11 @@ static int aml_alloc_contig_migrate_range(struct compact_control *cc,
 		.gfp_mask = GFP_USER | __GFP_MOVABLE | __GFP_RETRY_MAYFAIL,
 	};
 
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	lru_cache_disable();
+#else
+	aml_lru_cache_disable();
+#endif
 	while (pfn < end || !list_empty(&cc->migratepages)) {
 		if (fatal_signal_pending(host)) {
 			ret = -EINTR;
@@ -638,7 +807,11 @@ static int aml_alloc_contig_migrate_range(struct compact_control *cc,
 
 		if (list_empty(&cc->migratepages)) {
 			cc->nr_migratepages = 0;
+		#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 			ret = isolate_migratepages_range(cc, pfn, end);
+		#else
+			ret = aml_isolate_pages_range(cc, pfn, end);
+		#endif
 			if (ret && ret != -EAGAIN) {
 				cma_debug(1, NULL, " iso migrate page fail, ret:%d\n",
 					ret);
@@ -651,8 +824,13 @@ static int aml_alloc_contig_migrate_range(struct compact_control *cc,
 			break;
 		}
 
+	#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 		nr_reclaimed = reclaim_clean_pages_from_list(cc->zone,
 							     &cc->migratepages);
+	#else
+		nr_reclaimed = aml_reclaim_clean_pages_from_list(cc->zone,
+							     &cc->migratepages);
+	#endif
 		cc->nr_migratepages -= nr_reclaimed;
 
 		ret = migrate_pages(&cc->migratepages, get_migrate_page,
@@ -666,7 +844,11 @@ static int aml_alloc_contig_migrate_range(struct compact_control *cc,
 			break;
 	}
 
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	lru_cache_enable();
+#else
+	aml_lru_cache_enable();
+#endif
 	if (ret < 0) {
 		if (ret == -EBUSY) {
 			struct page *page;
@@ -676,7 +858,11 @@ static int aml_alloc_contig_migrate_range(struct compact_control *cc,
 				/* The page will be freed by putback_movable_pages soon */
 				if (page_count(page) == 1)
 					continue;
+			#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 				page_pinner_failure_detect(page);
+			#else
+				aml_page_pinner_failure_detect(page);
+			#endif
 			}
 		}
 		putback_movable_pages(&cc->migratepages);
@@ -685,7 +871,7 @@ static int aml_alloc_contig_migrate_range(struct compact_control *cc,
 	return 0;
 }
 
-static int cma_boost_work_func(void *cma_data)
+static int __nocfi cma_boost_work_func(void *cma_data)
 {
 	struct cma_pcp *c_work;
 	struct work_cma *job;
@@ -728,7 +914,11 @@ static int cma_boost_work_func(void *cma_data)
 		spin_unlock(&c_work->list_lock);
 
 		INIT_LIST_HEAD(&cc.migratepages);
+	#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 		lru_add_drain();
+	#else
+		aml_lru_add_drain();
+	#endif
 		pfn      = job->pfn;
 		cc.zone  = page_zone(pfn_to_page(pfn));
 		end      = pfn + job->count;
@@ -779,7 +969,10 @@ static int __init init_cma_boost_task(void)
 	can_boost = 1;
 	return 0;
 }
+
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 module_init(init_cma_boost_task);
+#endif
 
 int cma_alloc_contig_boost(unsigned long start_pfn, unsigned long count)
 {
@@ -885,7 +1078,17 @@ static int __aml_check_pageblock_isolate(unsigned long pfn,
 	return pfn;
 }
 
-static inline struct page *
+#if IS_MODULE(CONFIG_AMLOGIC_CMA)
+#define aml_pfn_to_online_page(pfn)			\
+({						\
+	struct page *___page = NULL;		\
+	if (pfn_valid(pfn))			\
+		___page = pfn_to_page(pfn);	\
+	___page;				\
+ })
+#endif
+
+static inline struct page * __nocfi
 check_page_valid(unsigned long pfn, unsigned long nr_pages)
 {
 	int i;
@@ -893,7 +1096,11 @@ check_page_valid(unsigned long pfn, unsigned long nr_pages)
 	for (i = 0; i < nr_pages; i++) {
 		struct page *page;
 
+	#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 		page = pfn_to_online_page(pfn + i);
+	#else
+		page = aml_pfn_to_online_page(pfn + i);
+	#endif
 		if (!page)
 			continue;
 		return page;
@@ -901,7 +1108,7 @@ check_page_valid(unsigned long pfn, unsigned long nr_pages)
 	return NULL;
 }
 
-int aml_check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
+int __nocfi aml_check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
 			     int isol_flags)
 {
 	unsigned long pfn, flags;
@@ -933,9 +1140,15 @@ int aml_check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
 	ret = pfn < end_pfn ? -EBUSY : 0;
 
 out:
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	trace_test_pages_isolated(start_pfn, end_pfn, pfn);
+#endif
 	if (pfn < end_pfn)
+	#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 		page_pinner_failure_detect(pfn_to_page(pfn));
+	#else
+		aml_page_pinner_failure_detect(pfn_to_page(pfn));
+	#endif
 
 	return ret;
 }
@@ -956,7 +1169,7 @@ int in_cma_allocating(struct page *page)
 	return 0;
 }
 
-int aml_cma_alloc_range(unsigned long start, unsigned long end,
+int __nocfi aml_cma_alloc_range(unsigned long start, unsigned long end,
 			unsigned int migrate_type, gfp_t gfp_mask)
 {
 	unsigned long outer_start, outer_end;
@@ -979,15 +1192,26 @@ int aml_cma_alloc_range(unsigned long start, unsigned long end,
 	};
 	INIT_LIST_HEAD(&cc.migratepages);
 
-	mutex_lock(&cma_mutex);
 	cma_debug(0, NULL, " range [%lx-%lx]\n", start, end);
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
+	mutex_lock(&cma_mutex);
 #if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
 	ret = start_isolate_page_range(pfn_max_align_down(start),
-				       pfn_max_align_up(end), migrate_type,
+				       aml_pfn_max_align_up(end), migrate_type,
 				       0, &failed_pfn);
 #else
 	ret = start_isolate_page_range(pfn_max_align_down(start),
-				       pfn_max_align_up(end), migrate_type, 0);
+				       aml_pfn_max_align_up(end), migrate_type, 0);
+#endif
+#else
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	ret = aml_start_isolate_page_range(pfn_max_align_down(start),
+				       aml_pfn_max_align_up(end), migrate_type,
+				       0, &failed_pfn);
+#else
+	ret = aml_start_isolate_page_range(pfn_max_align_down(start),
+				       aml_pfn_max_align_up(end), migrate_type, 0);
+#endif
 #endif
 	if (ret < 0) {
 		cma_debug(1, NULL, "ret:%d\n", ret);
@@ -996,10 +1220,15 @@ int aml_cma_alloc_range(unsigned long start, unsigned long end,
 
 	cur_alloc_start = start;
 	cur_alloc_end = end;
-	cma_isolated += (pfn_max_align_up(end) - pfn_max_align_down(start));
+	cma_isolated += (aml_pfn_max_align_up(end) - pfn_max_align_down(start));
 try_again:
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	lru_add_drain();
 	drain_all_pages(cc.zone);
+#else
+	aml_lru_add_drain();
+	aml_drain_all_pages(cc.zone);
+#endif
 	/*
 	 * try to use more cpu to do this job when alloc count is large
 	 */
@@ -1055,7 +1284,11 @@ try_again:
 	}
 
 	/* Grab isolated pages from freelists. */
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	outer_end = isolate_freepages_range(&cc, outer_start, end);
+#else
+	outer_end = aml_iso_free_range(&cc, outer_start, end);
+#endif
 	if (!outer_end) {
 		ret = -EBUSY;
 		cma_debug(1, NULL, "iso free range(%lx, %lx) failed\n",
@@ -1070,12 +1303,19 @@ try_again:
 		aml_cma_free(end, outer_end - end, 0);
 
 done:
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	undo_isolate_page_range(pfn_max_align_down(start),
-				pfn_max_align_up(end), migrate_type);
-	cma_isolated -= (pfn_max_align_up(end) - pfn_max_align_down(start));
+				aml_pfn_max_align_up(end), migrate_type);
+#else
+	aml_undo_isolate_page_range(pfn_max_align_down(start),
+				aml_pfn_max_align_up(end), migrate_type);
+#endif
+	cma_isolated -= (aml_pfn_max_align_up(end) - pfn_max_align_down(start));
 	cur_alloc_start = 0;
 	cur_alloc_end = 0;
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	mutex_unlock(&cma_mutex);
+#endif
 
 	return ret;
 }
@@ -1158,7 +1398,7 @@ void aml_cma_free(unsigned long pfn, unsigned int nr_pages, int update)
 static bool cma_vma_show(struct page *page, struct vm_area_struct *vma,
 			 unsigned long addr, void *arg)
 {
-#ifdef CONFIG_AMLOGIC_USER_FAULT
+#if defined(CONFIG_AMLOGIC_USER_FAULT) && IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	struct mm_struct *mm = vma->vm_mm;
 
 	show_vma(mm, addr);
@@ -1177,7 +1417,11 @@ void rmap_walk_vma(struct page *page)
 		page->mapping, page_count(page));
 	if (!page_mapping(page))
 		return;
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	rmap_walk(page, &rwc);
+#else
+	aml_rmap_walk(page, &rwc);
+#endif
 }
 
 void show_page(struct page *page)
@@ -1205,8 +1449,13 @@ static int cma_debug_show(struct seq_file *m, void *arg)
 {
 	seq_printf(m, "level=%d, alloc trace:%d, allow task:%d\n",
 		   cma_debug_level, cma_alloc_trace, allow_cma_tasks);
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 	seq_printf(m, "driver used:%lu isolated:%d total:%lu\n",
 		   get_cma_allocated(), 0, totalcma_pages);
+#else
+	seq_printf(m, "driver used:%lu isolated:%d total:%lu\n",
+		   get_cma_allocated(), 0, aml_totalcma_pages);
+#endif
 	return 0;
 }
 
@@ -1288,6 +1537,7 @@ static const struct proc_ops cma_dbg_file_ops = {
 	.proc_release	= single_release,
 };
 
+#if IS_BUILTIN(CONFIG_AMLOGIC_CMA)
 static int __init aml_cma_init(void)
 {
 	atomic_set(&cma_allocate, 0);
@@ -1301,4 +1551,316 @@ static int __init aml_cma_init(void)
 	return 0;
 }
 arch_initcall(aml_cma_init);
+#else
+/**
+ * cma_alloc() - allocate pages from contiguous area
+ * @cma:   Contiguous memory region for which the allocation is performed.
+ * @count: Requested number of pages.
+ * @align: Requested alignment of pages (in PAGE_SIZE order).
+ * @no_warn: Avoid printing message about failed allocation
+ *
+ * This function allocates part of contiguous memory on specific
+ * contiguous memory area.
+ */
+struct page *aml_cma_alloc(struct dummy_cma *cma, unsigned long count,
+		       unsigned int align, bool no_warn)
+{
+	unsigned long mask, offset;
+	unsigned long pfn = -1;
+	unsigned long start = 0;
+	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
+	unsigned long i;
+	struct page *page = NULL;
+	int ret = -ENOMEM;
+	int num_attempts = 0;
+	int max_retries = 5;
+	int dummy;
+	unsigned long tick = 0;
+	unsigned long long in_tick, timeout;
+
+	in_tick = sched_clock();
+
+	if (!cma || !cma->count || !cma->bitmap)
+		goto out;
+
+	pr_info("%s(cma %p, count %lu, align %d)\n", __func__, (void *)cma,
+		 count, align);
+
+	cma_debug(0, NULL, "(cma %p, count %lu, align %d)\n",
+		  (void *)cma, count, align);
+	in_tick = sched_clock();
+	timeout = 2ULL * 1000000 * (1 + ((count * PAGE_SIZE) >> 20));
+
+	if (!count)
+		goto out;
+
+	//trace_cma_alloc_start(cma->name, count, align);
+
+	mask = cma_bitmap_aligned_mask(cma, align);
+	offset = cma_bitmap_aligned_offset(cma, align);
+	bitmap_maxno = cma_bitmap_maxno(cma);
+	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+
+	if (bitmap_count > bitmap_maxno)
+		goto out;
+
+	aml_cma_alloc_pre_hook(&dummy, count, &tick);
+	//trace_android_vh_cma_alloc_retry(cma->name, &max_retries);
+	for (;;) {
+		spin_lock_irq(&cma->lock);
+		bitmap_no = bitmap_find_next_zero_area_off(cma->bitmap,
+				bitmap_maxno, start, bitmap_count, mask,
+				offset);
+		if (bitmap_no >= bitmap_maxno) {
+			if ((num_attempts < max_retries) && (ret == -EBUSY)) {
+				spin_unlock_irq(&cma->lock);
+
+				if (fatal_signal_pending(current)) {
+					ret = -EINTR;
+					break;
+				}
+
+				/*
+				 * Page may be momentarily pinned by some other
+				 * process which has been scheduled out, e.g.
+				 * in exit path, during unmap call, or process
+				 * fork and so cannot be freed there. Sleep
+				 * for 100ms and retry the allocation.
+				 */
+				start = 0;
+				ret = -ENOMEM;
+				schedule_timeout_killable(msecs_to_jiffies(100));
+				num_attempts++;
+				continue;
+			} else {
+				spin_unlock_irq(&cma->lock);
+				break;
+			}
+		}
+		bitmap_set(cma->bitmap, bitmap_no, bitmap_count);
+		/*
+		 * It's safe to drop the lock here. We've marked this region for
+		 * our exclusive use. If the migration fails we will take the
+		 * lock again and unmark it.
+		 */
+		spin_unlock_irq(&cma->lock);
+
+		pfn = cma->base_pfn + (bitmap_no << cma->order_per_bit);
+		mutex_lock(&cma_mutex);
+		ret = aml_cma_alloc_range(pfn, pfn + count, MIGRATE_CMA,
+				     GFP_KERNEL | (no_warn ? __GFP_NOWARN : 0));
+		mutex_unlock(&cma_mutex);
+		if (ret == 0) {
+			page = pfn_to_page(pfn);
+			break;
+		}
+
+		cma_clear_bitmap(cma, pfn, count);
+		if (ret != -EBUSY)
+			break;
+
+		pr_info("%s(): memory range at %p is busy, retrying\n",
+			 __func__, pfn_to_page(pfn));
+
+		//trace_cma_alloc_busy_retry(cma->name, pfn, pfn_to_page(pfn),
+		//			   count, align);
+		/* try again with a bit different memory target */
+		//start = bitmap_no + mask + 1;
+		/*
+		 * CMA allocation time out, for example:
+		 * 1. set isolation failed.
+		 * 2. refcout and mapcount mismatch.
+		 * may blocked on some pages, relax CPU and try later.
+		 */
+		if ((sched_clock() - in_tick) >= timeout)
+			usleep_range(1000, 2000);
+	}
+
+	//trace_cma_alloc_finish(cma->name, pfn, page, count, align);
+
+	/*
+	 * CMA can allocate multiple page blocks, which results in different
+	 * blocks being marked with different tags. Reset the tags to ignore
+	 * those page blocks.
+	 */
+	if (page) {
+		for (i = 0; i < count; i++)
+			page_kasan_tag_reset(page + i);
+	}
+
+	if (ret && !no_warn) {
+		pr_err_ratelimited("%s: %s: alloc failed, req-size: %lu pages, ret: %d\n",
+				   __func__, cma->name, count, ret);
+		//cma_debug_show_areas(cma);
+	}
+
+	pr_debug("%s(): returned %p\n", __func__, page);
+out:
+	if (page) {
+		count_vm_event(CMA_ALLOC_SUCCESS);
+		cma_sysfs_account_success_pages(cma, count);
+	} else {
+		count_vm_event(CMA_ALLOC_FAIL);
+		if (cma)
+			cma_sysfs_account_fail_pages(cma, count);
+	}
+	aml_cma_alloc_post_hook(&dummy, count, page, tick, ret);
+
+	return page;
+}
+
+/**
+ * cma_release() - release allocated pages
+ * @cma:   Contiguous memory region for which the allocation is performed.
+ * @pages: Allocated pages.
+ * @count: Number of allocated pages.
+ *
+ * This function releases memory allocated by cma_alloc().
+ * It returns false when provided pages do not belong to contiguous area and
+ * true otherwise.
+ */
+bool aml_cma_release(struct dummy_cma *cma, const struct page *pages,
+		 unsigned long count)
+{
+	unsigned long pfn;
+
+	if (!cma || !pages)
+		return false;
+
+	pr_debug("%s(page %p, count %lu)\n", __func__, (void *)pages, count);
+
+	pfn = page_to_pfn(pages);
+
+	if (pfn < cma->base_pfn || pfn >= cma->base_pfn + cma->count)
+		return false;
+
+	VM_BUG_ON(pfn + count > cma->base_pfn + cma->count);
+
+	aml_cma_free(pfn, count, 1);
+	cma_clear_bitmap(cma, pfn, count);
+	//trace_cma_release(cma->name, pfn, pages, count);
+
+	return true;
+}
+
+static int __nocfi __kprobes cma_alloc_pre_handler(struct kprobe *p, struct pt_regs *regs)
+{
+	//restore to origin context
+	instruction_pointer_set(regs, (unsigned long)aml_cma_alloc);
+
+	//no need continue do single-step
+	return 1;
+}
+
+struct kprobe kp_cma_alloc = {
+	.symbol_name  = "cma_alloc",
+	.pre_handler = cma_alloc_pre_handler,
+};
+
+static int __nocfi __kprobes cma_release_pre_handler(struct kprobe *p, struct pt_regs *regs)
+{
+	//restore to origin context
+	instruction_pointer_set(regs, (unsigned long)aml_cma_release);
+
+	//no need continue do single-step
+	return 1;
+}
+
+struct kprobe kp_cma_release = {
+	.symbol_name  = "cma_release",
+	.pre_handler = cma_release_pre_handler,
+};
+
+static void *get_symbol_addr(const char *symbol_name)
+{
+	struct kprobe kp;
+	int ret;
+
+	kp.symbol_name = symbol_name;
+
+	ret = register_kprobe(&kp);
+	if (ret < 0) {
+		pr_err("register_kprobe:%s failed, returned %d\n", symbol_name, ret);
+		return NULL;
+	}
+	pr_info("symbol_name:%s addr=%px\n", symbol_name, kp.addr);
+	unregister_kprobe(&kp);
+
+	return kp.addr;
+}
+
+static int __init aml_cma_module_init(void)
+{
+	int ret;
+
+	ret = register_kprobe(&kp_lookup_name);
+	if (ret < 0) {
+		pr_err("register_kprobe failed, returned %d\n", ret);
+		return ret;
+	}
+	pr_debug("kprobe lookup offset at %px\n", kp_lookup_name.addr);
+
+	aml_kallsyms_lookup_name = (unsigned long (*)(const char *name))kp_lookup_name.addr;
+
+	aml_totalcma_pages = *(unsigned long *)aml_kallsyms_lookup_name("totalcma_pages");
+	aml_lru_cache_disable = (void (*)(void))get_symbol_addr("lru_cache_disable");
+	aml_lru_cache_enable = (void (*)(void))aml_kallsyms_lookup_name("lru_cache_enable");
+	aml_prep_huge_page = (void (*)(struct page *page))get_symbol_addr("prep_transhuge_page");
+	aml_reclaim_clean_pages_from_list = (unsigned int (*)(struct zone *zone,
+		struct list_head *page_list))get_symbol_addr("reclaim_clean_pages_from_list");
+	aml_isolate_pages_range = (int (*)(struct compact_control *cc, unsigned long start_pfn,
+			unsigned long end_pfn))get_symbol_addr("isolate_migratepages_range");
+	aml_rmap_walk = (void (*)(struct page *page,
+			struct rmap_walk_control *rwc))get_symbol_addr("rmap_walk");
+	aml_undo_isolate_page_range = (void (*)(unsigned long start_pfn, unsigned long end_pfn,
+		unsigned int migratetype))get_symbol_addr("undo_isolate_page_range");
+	aml_iso_free_range = (unsigned long (*)(struct compact_control *cc, unsigned long start_pfn,
+		unsigned long end_pfn))get_symbol_addr("isolate_freepages_range");
+	aml_drain_all_pages = (void (*)(struct zone *zone))get_symbol_addr("drain_all_pages");
+	aml_lru_add_drain = (void (*)(void))get_symbol_addr("lru_add_drain");
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+	aml_start_isolate_page_range = (int (*)(unsigned long start_pfn, unsigned long end_pfn,
+			unsigned int migratetype, int flags,
+			unsigned long *failed_pfn))get_symbol_addr("start_isolate_page_range");
+#else
+	aml_start_isolate_page_range = (int (*)(unsigned long start_pfn, unsigned long end_pfn,
+		unsigned int migratetype, int flags))get_symbol_addr("start_isolate_page_range");
+#endif
+
+	atomic_set(&cma_allocate, 0);
+	atomic_long_set(&nr_cma_allocated, 0);
+
+	dentry = proc_create("cma_debug", 0644, NULL, &cma_dbg_file_ops);
+	if (IS_ERR_OR_NULL(dentry)) {
+		pr_err("%s, create sysfs failed\n", __func__);
+		return -1;
+	}
+
+	init_cma_boost_task();
+
+	ret = register_kprobe(&kp_cma_alloc);
+	if (ret < 0) {
+		pr_err("register_kprobe:%s failed, returned %d\n",
+		       kp_cma_alloc.symbol_name, ret);
+		return 1;
+	}
+
+	ret = register_kprobe(&kp_cma_release);
+	if (ret < 0) {
+		pr_err("register_kprobe:%s failed, returned %d\n",
+		       kp_cma_release.symbol_name, ret);
+		return 1;
+	}
+
+	return 0;
+}
+
+static void __exit aml_cma_module_exit(void)
+{
+}
+
+module_init(aml_cma_module_init);
+module_exit(aml_cma_module_exit);
+MODULE_LICENSE("GPL v2");
+#endif
 

@@ -51,9 +51,7 @@ config AMLOGIC_SLAB_TRACE
 		information of each caller functions from /proc/slabtrace
 
 config AMLOGIC_CMA
-	bool "Amlogic CMA change"
-	depends on AMLOGIC_BREAK_GKI_20
-	depends on AMLOGIC_MEMORY_EXTEND
+	tristate "Amlogic CMA change"
 	depends on CMA
 	default n
 	help

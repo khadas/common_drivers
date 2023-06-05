@@ -100,6 +100,7 @@
 /*  V3.2.03  improve performance when atsc signal is weak */
 /*  V3.2.04  fix dvbc new driver to solve missing channel */
 /*  V3.2.05  fix dvbs blind scan new miss 2150M */
+/*  V3.2.06  support for identifying rt720 by name */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -116,8 +117,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.2.05"
-#define DTVDEMOD_VER	"2023/5/31: fix dvbs blind scan new miss 2150M"
+#define AMLDTVDEMOD_VER "V3.2.06"
+#define DTVDEMOD_VER	"2023/06/08: support for identifying rt720 by name"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

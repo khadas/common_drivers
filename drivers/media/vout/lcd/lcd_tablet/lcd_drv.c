@@ -96,10 +96,9 @@ static void lcd_mipi_control_set(struct aml_lcd_drv_s *pdrv)
 		return;
 	}
 
-	if (pdrv->data->chip_type == LCD_CHIP_T7) {
+	if (pdrv->data->chip_type == LCD_CHIP_T7 || pdrv->data->chip_type == LCD_CHIP_TXHD2) {
 		// sel dphy lane
-		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_CNTL1,
-				    0x0, bit_lane_sel, 10);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_CNTL1, 0x0, bit_lane_sel, 10);
 	}
 
 	mipi_dsi_tx_ctrl(pdrv, 1);

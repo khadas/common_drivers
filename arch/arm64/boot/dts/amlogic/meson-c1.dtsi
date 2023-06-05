@@ -523,11 +523,10 @@
 				reg = <0x0 0x3800 0x0 0x44>;
 				interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
 				clock-names = "core", "async";
-				//clocks = <&clkc CLKID_SPICC_A>,
-				//	 <&clkc CLKID_SPICC_A_GATE>;
+				clocks = <&clkc CLKID_SYS_SPICC_A>,
+					 <&clkc CLKID_SPICC_A>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_SPICC>;
 				status = "disabled";
 			};
 
@@ -536,11 +535,10 @@
 				reg = <0x0 0x3c00 0x0 0x44>;
 				interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
 				clock-names = "core", "async";
-				//clocks = <&clkc CLKID_SPICC_B>,
-				//	 <&clkc CLKID_SPICC_B_GATE>;
+				clocks = <&clkc CLKID_SYS_SPICC_B>,
+					 <&clkc CLKID_SPICC_B>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				//power-domains = <&pwrdm PDID_SPICC_B>;
 				status = "disabled";
 			};
 

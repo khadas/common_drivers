@@ -147,7 +147,8 @@ static struct sec_pm_private_domain c1_pm_domains[] __initdata = {
 	[PDID_CX_ETH] = POWER_DOMAIN(eth, PDID_CX_ETH, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
 	[PDID_CX_GIC] = POWER_DOMAIN(gic, PDID_CX_GIC, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
 	[PDID_CX_DDR] = POWER_DOMAIN(ddr, PDID_CX_DDR, DOMAIN_INIT_ON, GENPD_FLAG_ALWAYS_ON),
-	[PDID_CX_SPICC_B] = POWER_DOMAIN(spicc_b, PDID_CX_SPICC_B, DOMAIN_INIT_OFF, 0),
+	[PDID_CX_SPICC_B] = POWER_DOMAIN(spicc_b, PDID_CX_SPICC_B, DOMAIN_INIT_ON,
+									 GENPD_FLAG_ALWAYS_ON),
 };
 
 static struct sec_pm_domain_data c1_pm_domain_data __initdata = {

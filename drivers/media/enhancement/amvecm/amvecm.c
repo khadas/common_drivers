@@ -103,6 +103,12 @@
 #define pr_amvecm_error(fmt, args...)\
 	pr_error("AMVECM: " fmt, ## args)
 
+#define pr_amvecm_bringup_dbg(fmt, args...)\
+	do {\
+		if (debug_amvecm_bringup)\
+			pr_info("amvecm_bringup: " fmt, ## args);\
+	} while (0)
+
 #define AMVECM_NAME               "amvecm"
 #define AMVECM_DRIVER_NAME        "amvecm"
 #define AMVECM_MODULE_NAME        "amvecm"
@@ -270,6 +276,10 @@ static int debug_amvecm;
 module_param(debug_amvecm, int, 0664);
 MODULE_PARM_DESC(debug_amvecm, "\n debug_amvecm\n");
 
+static int debug_amvecm_bringup;
+module_param(debug_amvecm_bringup, int, 0664);
+MODULE_PARM_DESC(debug_amvecm_bringup, "\n debug_amvecm_bringup\n");
+
 unsigned int vecm_latch_flag;
 module_param(vecm_latch_flag, uint, 0664);
 MODULE_PARM_DESC(vecm_latch_flag, "\n vecm_latch_flag\n");
@@ -278,7 +288,7 @@ unsigned int vecm_latch_flag2;
 module_param(vecm_latch_flag2, uint, 0664);
 MODULE_PARM_DESC(vecm_latch_flag2, "\n vecm_latch_flag2\n");
 
-unsigned int pq_load_en;/* = 1; load pq table enable/disable*/
+unsigned int pq_load_en = 1; /*load pq table enable/disable*/
 module_param(pq_load_en, uint, 0664);
 MODULE_PARM_DESC(pq_load_en, "\n pq_load_en\n");
 
@@ -2220,27 +2230,22 @@ void amvecm_video_latch(void)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	unsigned int temp;
 	pc_mode_process();
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] pc_mode done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] pc_mode done.\n");
 	cm_latch_process();
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] cm_latch done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] cm_latch done.\n");
 	/*amvecm_size_patch();*/
 	ve_dnlp_latch_process();
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] dnlp_latch done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] dnlp_latch done.\n");
 	/*venc*/
 	if (cpu_after_eq_t7())
 		temp = vpp_get_vout_viu_mux();
 	else
 		temp = vpp_get_encl_viu_mux();
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] viu_mux done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] viu_mux done.\n");
 
 	if (temp)
 		ve_lcd_gamma_process();
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] lcd_gamma done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] lcd_gamma done.\n");
 #endif
 	lvds_freq_process();
 
@@ -2253,33 +2258,28 @@ void amvecm_video_latch(void)
 #endif
 /* #endif */
 	pq_user_latch_process();
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] user_latch done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] user_latch done.\n");
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1))
 		ve_lc_latch_process();
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] lc_latch done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] lc_latch done.\n");
 #endif
+
 	/* ioc vadj1/2 switch */
 	amvecm_vadj_latch_process();
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] vadj_latch done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] vadj_latch done.\n");
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/*matrix wr & rd latch */
 	vpp_mtx_update(&mtx_info);
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] mtx_update done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] mtx_update done.\n");
 	pre_gma_update(&pre_gamma);
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] pre_gma done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] pre_gma done.\n");
 	eye_prot_update(&eye_protect);
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] eye_prot done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] eye_prot done.\n");
 
 	bs_ct_update();
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] bs_ct done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] bs_ct done.\n");
 #endif
 }
 
@@ -2414,8 +2414,7 @@ int amvecm_on_vs(struct vframe_s *vf,
 	}
 #endif
 	amvecm_overscan_process(vf, toggle_vf, flags, vd_path);
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] overscan_process done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] overscan_process done.\n");
 
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	if (for_amdv_certification() && vd_path == VD1_PATH)
@@ -2425,50 +2424,42 @@ int amvecm_on_vs(struct vframe_s *vf,
 	if (!dnlp_insmod_ok && vd_path == VD1_PATH)
 		dnlp_alg_param_init();
 
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] dnlp_alg done %d, %d.\n",
-			dnlp_insmod_ok, flags);
+	pr_amvecm_bringup_dbg("[on_vs] dnlp_alg done %d, %d.\n",
+		dnlp_insmod_ok, flags);
 
 	if (flags & CSC_FLAG_CHECK_OUTPUT) {
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] CSC_FLAG_CHECK_OUTPUT\n");
+		pr_amvecm_bringup_dbg("[on_vs] CSC_FLAG_CHECK_OUTPUT\n");
 		/* to test if output will change */
 		return amvecm_matrix_process(toggle_vf, vf, flags, vd_path, vpp_index);
 	} else if (vd_path == VD1_PATH) {
 		send_hdr10_plus_pkt(vd_path, vpp_index);
 		send_cuva_pkt(vd_path, vpp_index);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] VD1_PATH\n");
+		pr_amvecm_bringup_dbg("[on_vs] VD1_PATH\n");
 	}
 
 	if ((toggle_vf) || (vf)) {
 		/* matrix adjust */
 		result = amvecm_matrix_process(toggle_vf, vf, flags, vd_path, vpp_index);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] matrix_process done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] matrix_process done.\n");
 
 		if (toggle_vf) {
 			ioctrl_get_hdr_metadata(toggle_vf);
 			vf_state = cabc_add_hist_proc(toggle_vf);
 		}
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] cabc_add done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] cabc_add done.\n");
 
 		if (vd_path == VD1_PATH)
 			amvecm_size_patch(toggle_vf ? toggle_vf : vf, cm_in_w, cm_in_h);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] size_patch done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] size_patch done.\n");
 
 		if (toggle_vf && vd_path == VD1_PATH) {
 			lc_process(toggle_vf, sps_h_en, sps_v_en,
 				sps_w_in, sps_h_in);
-			if (debug_amvecm == 66)
-				pr_info("[on_vs] lc_proc done.\n");
+			pr_amvecm_bringup_dbg("[on_vs] lc_proc done.\n");
 			/*1080i pulldown combing workaround*/
 			amvecm_dejaggy_patch(toggle_vf);
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-			if (debug_amvecm == 66)
-				pr_info("[on_vs] dejaggy_patch done.\n");
+			pr_amvecm_bringup_dbg("[on_vs] dejaggy_patch done.\n");
 			if ((get_cpu_type() == MESON_CPU_MAJOR_ID_T3) ||
 				(get_cpu_type() == MESON_CPU_MAJOR_ID_T5W) ||
 				chip_type_id == chip_t5m) {
@@ -2487,36 +2478,28 @@ int amvecm_on_vs(struct vframe_s *vf,
 				vf_state = cabc_add_hist_proc(vf);
 			}
 		}
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] refresh vframe done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] refresh vframe done.\n");
 
 		vpp_demo_func(toggle_vf ? toggle_vf : vf,
 			sps_w_in, sps_h_in, cm_in_w, cm_in_h);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] demo_func done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] demo_func done.\n");
 	} else {
 		result = amvecm_matrix_process(NULL, NULL, flags, vd_path, vpp_index);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] matrix_process else done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] matrix_process else done.\n");
 		if (vd_path == VD1_PATH) {
 			lc_process(NULL, sps_h_en, sps_v_en,
 				sps_w_in, sps_h_in);
-			if (debug_amvecm == 66)
-				pr_info("[on_vs] lc_proc else done.\n");
+			pr_amvecm_bringup_dbg("[on_vs] lc_proc else done.\n");
 			/*1080i pulldown combing workaround*/
 			amvecm_dejaggy_patch(NULL);
-			if (debug_amvecm == 66)
-				pr_info("[on_vs] dejaggy_patch else done.\n");
+			pr_amvecm_bringup_dbg("[on_vs] dejaggy_patch else done.\n");
 			amvecm_size_patch(NULL, 0, 0);
-			if (debug_amvecm == 66)
-				pr_info("[on_vs] size_patch else done.\n");
+			pr_amvecm_bringup_dbg("[on_vs] size_patch else done.\n");
 			vpp_demo_func(NULL, 0, 0, 0, 0);
-			if (debug_amvecm == 66)
-				pr_info("[on_vs] demo_func else done.\n");
+			pr_amvecm_bringup_dbg("[on_vs] demo_func else done.\n");
 		}
 		vf_state = cabc_add_hist_proc(NULL);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] cabc_add done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] cabc_add done.\n");
 	}
 #endif
 
@@ -2535,24 +2518,20 @@ int amvecm_on_vs(struct vframe_s *vf,
 #endif
 		amvecm_bricon_process(vd1_brightness,
 			vd1_contrast + vd1_contrast_offset, vf);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] bc_proc done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] bc_proc done.\n");
 
 		amvecm_color_process(saturation_pre + saturation_offset,
 			hue_pre, vf);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] color_proc done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] color_proc done.\n");
 	}
 
 	/* pq latch process */
 	amvecm_video_latch();
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] video_latch done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] video_latch done.\n");
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/*wq for cacb and aad*/
 	cabc_aad_on_vs(vf_state);
-	if (debug_amvecm == 66)
-		pr_info("[on_vs] cabc_aad done.\n");
+	pr_amvecm_bringup_dbg("[on_vs] cabc_aad done.\n");
 #endif
 	return result;
 }
@@ -2575,28 +2554,23 @@ void refresh_on_vs(struct vframe_s *vf, struct vframe_s *rpt_vf)
 
 	if (vf || rpt_vf) {
 		vpp_get_vframe_hist_info(vf ? vf : rpt_vf);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] refresh get_vframe_hist_info done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] refresh get_vframe_hist_info done.\n");
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 		if (!for_amdv_certification())
 #endif
 			ve_on_vs(vf ? vf : rpt_vf);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] ve_on_vs done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] ve_on_vs done.\n");
 		if (is_video_layer_on(VD1_PATH)) {
 			ve_hist_gamma_tgt(vf ? vf : rpt_vf);
 			vpp_backup_histgram(vf ? vf : rpt_vf);
-			if (debug_amvecm == 66)
-				pr_info("[on_vs] hist related done.\n");
+			pr_amvecm_bringup_dbg("[on_vs] hist related done.\n");
 		}
 		pattern_detect(vf ? vf : rpt_vf);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] pattern_detect done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] pattern_detect done.\n");
 	} else {
 		ve_hist_gamma_reset();
 		set_lum_ave(ave);
-		if (debug_amvecm == 66)
-			pr_info("[on_vs] hist reset done.\n");
+		pr_amvecm_bringup_dbg("[on_vs] hist reset done.\n");
 	}
 #endif
 }
@@ -12841,7 +12815,7 @@ int __init aml_vecm_init(void)
 {
 	/*unsigned int hiu_reg_base;*/
 
-	pr_info("%s:module init_20230604-0\n", __func__);
+	pr_info("%s:module init_20230605-0\n", __func__);
 
 	if (platform_driver_register(&aml_vecm_driver)) {
 		pr_err("failed to register bl driver module\n");

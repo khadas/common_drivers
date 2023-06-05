@@ -56,6 +56,13 @@
 	} while (0)\
 /* #define pr_amve_error(fmt, args...) */
 /* printk(KERN_##(KERN_INFO) "AMVECM: " fmt, ## args) */
+
+#define pr_amve_bringup_dbg(fmt, args...)\
+	do {\
+		if (amve_bringup_debug & 0x1)\
+			pr_info("amve_bringup: " fmt, ## args);\
+	} while (0)
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define GAMMA_RETRY        1000
 unsigned int gamma_loadprotect_en;
@@ -83,6 +90,10 @@ module_param(amve_debug, int, 0664);
 MODULE_PARM_DESC(amve_debug, "amve_debug");
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static int amve_bringup_debug;
+module_param(amve_bringup_debug, int, 0664);
+MODULE_PARM_DESC(amve_bringup_debug, "amve_bringup_debug");
+
 /*for fmeter en*/
 int fmeter_en = 1;
 module_param(fmeter_en, int, 0664);
@@ -412,9 +423,8 @@ void vpp_enable_lcd_gamma_table(int viu_sel, int rdma_write)
 			rdma_write = 1;
 		}
 
-		if (amve_debug == 66)
-			pr_info("%s: reg_ctrl = %d, rdma_write/offset = %d/%d\n",
-				__func__, reg_ctrl, rdma_write, offset);
+		pr_amve_bringup_dbg("%s: reg_ctrl = %d, rdma_write/offset = %d/%d\n",
+			__func__, reg_ctrl, rdma_write, offset);
 
 		if (rdma_write)
 			VSYNC_WRITE_VPP_REG_BITS(reg_ctrl + offset,
@@ -454,9 +464,8 @@ void vpp_disable_lcd_gamma_table(int viu_sel, int rdma_write)
 			rdma_write = 1;
 		}
 
-		if (amve_debug == 66)
-			pr_info("%s: reg_ctrl = %d, rdma_write/offset = %d/%d\n",
-				__func__, reg_ctrl, rdma_write, offset);
+		pr_amve_bringup_dbg("%s: reg_ctrl = %d, rdma_write/offset = %d/%d\n",
+			__func__, reg_ctrl, rdma_write, offset);
 
 		if (rdma_write)
 			VSYNC_WRITE_VPP_REG_BITS(reg_ctrl + offset,
@@ -529,9 +538,8 @@ void lcd_gamma_api(unsigned int index,
 		reg_data = L_GAMMA_DATA_PORT;
 	}
 
-	if (amve_debug == 66)
-		pr_info("%s: addr/data = %d/%d, auto_inc/offset = %d/%d\n",
-			__func__, reg_addr, reg_data, auto_inc, offset);
+	pr_amve_bringup_dbg("%s: addr/data = %d/%d, auto_inc/offset = %d/%d\n",
+		__func__, reg_addr, reg_data, auto_inc, offset);
 
 	if (rw_mod == RD_MOD) {
 		WRITE_VPP_REG(reg_addr + offset,

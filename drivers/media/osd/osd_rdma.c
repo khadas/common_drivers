@@ -87,6 +87,13 @@ static int rdma_done_line[VPP_NUM];
 module_param_array(rdma_reject_cnt, uint, &num_reject, 0664);
 MODULE_PARM_DESC(rdma_reject_cnt, "\n rdma_reject_cnt\n");
 
+static int g_osd_rdma_item_count;
+static int g_osd_rdma_item_count_max;
+MODULE_PARM_DESC(g_osd_rdma_item_count, "\n g_osd_rdma_item_count\n");
+module_param(g_osd_rdma_item_count, uint, 0664);
+MODULE_PARM_DESC(g_osd_rdma_item_count_max, "\n g_osd_rdma_item_count_max\n");
+module_param(g_osd_rdma_item_count_max, uint, 0664);
+
 void *memcpy(void *dest, const void *src, size_t len);
 
 static inline void spin_lock_irqsave_vpp(u32 vpp_index, unsigned long *flags)
@@ -565,6 +572,10 @@ static inline void reset_rdma_table(u32 vpp_index)
 				(rdma_temp_tbl[vpp_index][j - i - 1].addr,
 				rdma_temp_tbl[vpp_index][j - i - 1].val);
 		}
+		g_osd_rdma_item_count = item_count[vpp_index];
+		if (g_osd_rdma_item_count >= g_osd_rdma_item_count_max)
+			g_osd_rdma_item_count_max = g_osd_rdma_item_count;
+
 		item_count[vpp_index] = j + 2;
 		osd_rdma_mem_cpy(rdma_table[vpp_index], &reset_item[vpp_index][0], 8);
 		osd_rdma_mem_cpy(&rdma_table[vpp_index][item_count[vpp_index] - 1],

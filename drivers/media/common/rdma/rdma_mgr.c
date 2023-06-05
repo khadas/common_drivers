@@ -72,6 +72,14 @@ static int rdma_trace_enable;
 static u32 rdma_trace_reg[MAX_TRACE_NUM];
 static int rdma_table_size = RDMA_TABLE_SIZE;
 
+static int g_vsync_rdma_item_count;
+static int g_vsync_rdma_item_count_max;
+MODULE_PARM_DESC(g_vsync_rdma_item_count, "\n g_vsync_rdma_item_count\n");
+module_param(g_vsync_rdma_item_count, uint, 0664);
+
+MODULE_PARM_DESC(g_vsync_rdma_item_count_max, "\n g_vsync_rdma_item_count_max\n");
+module_param(g_vsync_rdma_item_count_max, uint, 0664);
+
 struct rdma_irq_reg_s {
 	u32 reg;
 	u32 start;
@@ -986,8 +994,14 @@ int rdma_config(int handle, u32 trigger_type)
 
 	/* don't reset rdma_item_count for read function */
 	if (handle != get_rdma_handle(VSYNC_RDMA_READ) &&
-		!buffer_lock)
+		!buffer_lock) {
+		if (handle == get_rdma_handle(VSYNC_RDMA)) {
+			g_vsync_rdma_item_count = ins->rdma_item_count;
+			if (g_vsync_rdma_item_count >= g_vsync_rdma_item_count_max)
+				g_vsync_rdma_item_count_max = g_vsync_rdma_item_count;
+		}
 		ins->rdma_item_count = 0;
+	}
 	spin_unlock_irqrestore(&rdma_lock, flags);
 
 	if (debug_flag & 2)

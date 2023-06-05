@@ -30,6 +30,140 @@
 static DEFINE_PER_CPU(int, en);
 
 #define IRQ_D	1
+#define MAX_DETECT_REG 10
+
+static unsigned int check_reg[MAX_DETECT_REG];
+static unsigned int check_mask[MAX_DETECT_REG];
+static unsigned int *virt_addr[MAX_DETECT_REG];
+unsigned long old_val_reg[MAX_DETECT_REG];
+
+int reg_check_panic;
+
+static int reg_check_panic_setup(char *buf)
+{
+	if (!buf)
+		return -EINVAL;
+
+	if (kstrtoint(buf, 0, &reg_check_panic)) {
+		pr_err("reg_check_panic error: %s\n", buf);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+__setup("reg_check_panic=", reg_check_panic_setup);
+
+void reg_check_init(void)
+{
+	int i;
+	unsigned int *virt_tmp[MAX_DETECT_REG] = {NULL};
+
+	memcpy(virt_tmp, virt_addr, sizeof(virt_addr));
+
+	for (i = 0; i < MAX_DETECT_REG; i++)
+		rcu_assign_pointer(virt_addr[i], NULL);
+
+	synchronize_rcu();
+
+	for (i = 0; i < MAX_DETECT_REG; i++) {
+		if (virt_tmp[i])
+			iounmap(virt_tmp[i]);
+		else
+			break;
+	}
+
+	for (i = 0; i < MAX_DETECT_REG; i++) {
+		if (check_reg[i]) {
+			virt_addr[i] = (unsigned int *)ioremap(check_reg[i], sizeof(unsigned long));
+			if (!virt_addr[i]) {
+				pr_err("Unable to map reg 0x%x\n", check_reg[i]);
+				return;
+			}
+			pr_info("reg 0x%x has been mapped to 0x%px\n", check_reg[i], virt_addr[i]);
+		} else {
+			break;
+		}
+	}
+}
+
+void reg_check_func(void)
+{
+	unsigned int val;
+	unsigned long tmp;
+	unsigned int i = 0;
+	unsigned int *tmp_addr;
+
+	rcu_read_lock();
+	while (i < MAX_DETECT_REG && virt_addr[i]) {
+		tmp_addr = rcu_dereference(virt_addr[i]);
+		if (old_val_reg[i] != -1) {
+			val = *tmp_addr;
+			if ((val & check_mask[i]) != (old_val_reg[i] & check_mask[i])) {
+				tmp = old_val_reg[i];
+				old_val_reg[i] = val;
+				pr_err("phys_addr:0x%x new_val=0x%x old_val=0x%lx\n",
+					check_reg[i], val, tmp);
+				if (!reg_check_panic)
+					dump_stack();
+				else
+					panic("reg_check_panic");
+			}
+		} else {
+			old_val_reg[i] = *tmp_addr;
+		}
+		i++;
+	}
+	rcu_read_unlock();
+}
+
+static int check_reg_setup(char *ptr)
+{
+	char *str_entry;
+	char *str = (char *)ptr;
+	unsigned int tmp;
+	unsigned int i = 0, ret;
+
+	do {
+		str_entry = strsep(&str, ",");
+		if (str_entry) {
+			ret = kstrtou32(str_entry, 16, &tmp);
+			if (ret)
+				return -1;
+			pr_info("check_reg: 0x%x\n", tmp);
+			check_reg[i] = tmp;
+			old_val_reg[i++] = -1;
+		}
+	} while (str_entry && i < MAX_DETECT_REG);
+
+	reg_check_init();
+
+	return 0;
+}
+
+__setup("check_reg=", check_reg_setup);
+
+static int check_mask_setup(char *ptr)
+{
+	char *str_entry;
+	char *str = (char *)ptr;
+	unsigned int tmp;
+	unsigned int i = 0, ret;
+
+	do {
+		str_entry = strsep(&str, ",");
+		if (str_entry) {
+			ret = kstrtou32(str_entry, 16, &tmp);
+			if (ret)
+				return -1;
+			pr_info("check_mask: 0x%x\n", tmp);
+			check_mask[i++] = tmp;
+		}
+	} while (str_entry && i < MAX_DETECT_REG);
+
+	return 0;
+}
+
+__setup("check_mask=", check_mask_setup);
 
 void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsigned int flag,
 									unsigned long *irq_flags)
@@ -47,6 +181,9 @@ void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsign
 	data.reg = (unsigned int)page_to_phys(vmalloc_to_page((const void *)reg)) +
 				offset_in_page(reg);
 	data.val = (unsigned int)val;
+
+	if (flag == PSTORE_FLAG_IO_W_END)
+		reg_check_func();
 
 	switch (ramoops_io_skip) {
 	case 1:
@@ -66,6 +203,8 @@ void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsign
 		data.parent_ip = CALLER_ADDR1;
 		break;
 	}
+
+	data.val = reg;
 
 	cpu = raw_smp_processor_id();
 	if (unlikely(oops_in_progress) || unlikely(per_cpu(en, cpu))) {

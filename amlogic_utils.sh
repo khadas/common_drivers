@@ -284,6 +284,7 @@ function extra_cmds() {
 		echo "DIST_GKI_DIR=${DIST_GKI_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "FULL_KERNEL_VERSION=${FULL_KERNEL_VERSION}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "GKI_MODULES_LOAD_WHITE_LIST=\"${GKI_MODULES_LOAD_WHITE_LIST[*]}\"" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "BAZEL=${BAZEL}" >> ${KERNEL_BUILD_VAR_FILE}
 	fi
 
 	for module_path in ${PREBUILT_MODULES_PATH}; do
@@ -303,6 +304,7 @@ function bazel_extra_cmds() {
 		echo "DIST_DIR=${DIST_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "OUT_AMLOGIC_DIR=${OUT_AMLOGIC_DIR}" >> ${KERNEL_BUILD_VAR_FILE}
 		echo "GKI_MODULES_LOAD_WHITE_LIST=\"${GKI_MODULES_LOAD_WHITE_LIST[*]}\"" >> ${KERNEL_BUILD_VAR_FILE}
+		echo "BAZEL=${BAZEL}" >> ${KERNEL_BUILD_VAR_FILE}
 	fi
 
 	if [[ ${GKI_CONFIG} != gki_20 ]]; then

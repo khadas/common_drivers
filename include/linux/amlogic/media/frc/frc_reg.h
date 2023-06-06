@@ -1923,7 +1923,8 @@
 //Bit 25:16        reg_me_stat_region_vend_1 // unsigned ,    RW, default = 88  me statistic region vertical end1, relative to vstart, updated by fw
 //Bit 15:10        reserved
 //Bit  9: 0        reg_me_stat_region_vend_2 // unsigned ,    RW, default = 134  me statistic region vertical end2, relative to vstart, updated by fw
-
+#define FRC_ME_GCV_EN                              0x1119
+#define FRC_ME_GCV2_EN                             0x113b
 #define FRC_ME_CMV_MAX_MV                          0x11a0
 //Bit 31:28        reserved
 //Bit 27:16        reg_me_cmv_max_mvx       // unsigned ,    RW, default = 511         cmv max_mvx

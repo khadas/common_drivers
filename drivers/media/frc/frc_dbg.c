@@ -222,7 +222,8 @@ void frc_status(struct frc_dev_s *devp)
 		devp->probe_ok, devp->power_on_flag, devp->frc_hw_pos, devp->frc_fw_pause);
 	pr_frc(0, "frs state:%d (%s) new:%d\n", devp->frc_sts.state,
 	       frc_state_ary[devp->frc_sts.state], devp->frc_sts.new_state);
-	pr_frc(0, "vendor = %d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u8vendor);
+	pr_frc(0, "chip = %d  vendor = %d\n", fw_data->frc_top_type.chip,
+			fw_data->frc_fw_alg_ctrl.frc_algctrl_u8vendor);
 	pr_frc(0, "auto_ctrl = %d\n", devp->frc_sts.auto_ctrl);
 	pr_frc(0, "frc_memc_level=%d(%d)\n", fw_data->frc_top_type.frc_memc_level,
 					fw_data->frc_top_type.frc_memc_level_1);
@@ -266,28 +267,17 @@ void frc_status(struct frc_dev_s *devp)
 	pr_frc(0, "vout sync_duration_num:%d sync_duration_den:%d out_hz:%d\n",
 		vinfo->sync_duration_num, vinfo->sync_duration_den,
 		vinfo->sync_duration_num / vinfo->sync_duration_den);
-	// pr_frc(0, "vout out_framerate:%d\n", devp->out_sts.out_framerate);
-
 	pr_frc(0, "film_mode = %d\n", frc_check_film_mode(devp));
 	pr_frc(0, "mc_fb = %d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u8mcfb);
 	pr_frc(0, "frc_fb_num = %d\n", fw_data->frc_top_type.frc_fb_num);
 	pr_frc(0, "frc_ratio_mode = %d\n", devp->in_out_ratio);
 	pr_frc(0, "frc_rdma_en:%d\n", fw_data->frc_top_type.rdma_en);
-
 	pr_frc(0, "frc_in hsize=%d vsize=%d\n",
 			devp->in_sts.in_hsize, devp->in_sts.in_vsize);
-	// pr_frc(0, "frc in hsize = %d\n", fw_data->frc_top_type.hsize);
-	// pr_frc(0, "frc in vsize = %d\n", fw_data->frc_top_type.vsize);
 	pr_frc(0, "frc_out hsize:%d vsize:%d\n",
 			devp->out_sts.vout_width, devp->out_sts.vout_height);
-	// pr_frc(0, "frc out_hsize = %d\n", fw_data->frc_top_type.out_hsize);
-	// pr_frc(0, "frc out_vsize = %d\n", fw_data->frc_top_type.out_vsize);
 	pr_frc(0, "vfb(0x1cb4/0x14ca) = %d\n", fw_data->frc_top_type.vfb);
-
-	//pr_frc(0, "film_mode = %d\n", fw_data->frc_top_type.film_mode);
-	//pr_frc(0, "film_hwfw_sel = %d\n", fw_data->frc_top_type.film_hwfw_sel);
 	pr_frc(0, "is_me1mc4 = %d\n", fw_data->frc_top_type.is_me1mc4);
-
 	pr_frc(0, "me_hold_line = %d\n", fw_data->holdline_parm.me_hold_line);
 	pr_frc(0, "mc_hold_line = %d\n", fw_data->holdline_parm.mc_hold_line);
 	pr_frc(0, "inp_hold_line = %d\n", fw_data->holdline_parm.inp_hold_line);
@@ -969,6 +959,11 @@ void frc_debug_other_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			else
 				devp->ud_dbg.pr_dbg = (u8)val1;
 		}
+	} else if (!strcmp(parm[0], "clr_mv_buf")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			devp->other1_flag = val1;
 	}
 exit:
 	kfree(buf_orig);

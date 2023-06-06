@@ -90,8 +90,10 @@
 // frc_20230411 frc add enable double buffer mc
 // frc_20230511 frc chg size for both support
 // frc_20230404 frc t3x probe secure
+// frc_20230526 frc fixed flashing once when enable
+// frc_20230602 frc add ctrl for ko load or not
 
-#define FRC_FW_VER			"2023-0526 frc fixed flashing once when enable"
+#define FRC_FW_VER			"2023-0607 frc fixed input framerate"
 #define FRC_KERDRV_VER                  2796
 
 #define FRC_DEVNO	1

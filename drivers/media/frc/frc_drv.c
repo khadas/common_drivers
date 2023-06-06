@@ -926,6 +926,7 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	devp->in_sts.vf_sts = 0;/*initial to no*/
 	devp->dbg_force_en = 0;
 	devp->auto_n2m = 1;
+	devp->other1_flag = 0;
 
 	/*input sts initial*/
 	devp->in_sts.have_vf_cnt = 0;
@@ -961,6 +962,8 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	fw_data->holdline_parm.inp_hold_line = 4;
 	fw_data->holdline_parm.reg_post_dly_vofst = 0;/*fixed*/
 	fw_data->holdline_parm.reg_mc_dly_vofst0 = 1;/*fixed*/
+
+	fw_data->frc_top_type.frc_fb_num = FRC_TOTAL_BUF_NUM;
 
 	if (fw_data->frc_top_type.chip != 0)
 		memcpy(&devp->frm_dly_set[0],
@@ -1289,6 +1292,8 @@ static void frc_shutdown(struct platform_device *pdev)
 		pwr_ctrl_psci_smc(PDID_T3_FRCMC, PWR_OFF);
 	} else if (chip == ID_T5M) {
 		pwr_ctrl_psci_smc(PDID_T5M_FRC_TOP, PWR_OFF);
+	} else if (chip == ID_T3X) {
+		pwr_ctrl_psci_smc(PDID_T3X_FRC_TOP, PWR_OFF);
 	}
 	PR_FRC("%s:module shutdown done with powerdomain\n", __func__);
 

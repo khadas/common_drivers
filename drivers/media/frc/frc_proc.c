@@ -412,9 +412,14 @@ int frc_update_in_sts(struct frc_dev_s *devp, struct st_frc_in_sts *frc_in_sts,
 		pfw_data->frc_top_type.frc_in_frm_rate =
 			(1000000 / devp->in_sts.vs_duration);
 		pfw_data->frc_top_type.video_duration = (u16)(frc_in_sts->duration);
+	} else if (frc_in_sts->duration > 0 &&
+				devp->in_out_ratio == FRC_RATIO_1_1) {
+		pfw_data->frc_top_type.frc_in_frm_rate =
+				pfw_data->frc_top_type.frc_out_frm_rate;
 	} else {
 		pfw_data->frc_top_type.frc_in_frm_rate = 0;
 	}
+
 	if (!frc_in_sts->vf_sts) {
 		frc_in_sts->in_hsize = 0;
 		frc_in_sts->in_vsize = 0;
@@ -1327,6 +1332,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					if (pfw_data->frc_input_cfg)
 						pfw_data->frc_input_cfg(devp->fw_data);
 					//second: set frc enable on
+					frc_memc_clr_vbuffer(devp, 1);
 					set_frc_enable(ON);
 					pr_frc(log, "frc_bypass_cnt:%d,freeze_cnt:%d\n",
 							bypasscnt, freezecnt);
@@ -1361,6 +1367,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 						freezecnt + bypasscnt + 1) {
 				frc_frame_forcebuf_enable(0);
 				frc_memc_120hz_patch_3(devp);
+				frc_memc_clr_vbuffer(devp, 0);
 				pr_frc(log, "d-e_freezed to open, frm:%d\n",
 					devp->frc_sts.frame_cnt);
 				// frc_state_change_finish(devp);
@@ -1457,6 +1464,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					devp->buf.cma_mem_alloced) {
 					//first frame set bypass off
 					frc_mm_secure_set(devp);
+					frc_memc_clr_vbuffer(devp, 1);
 					get_vout_info(devp);
 					frc_hw_initial(devp);
 					set_frc_bypass(OFF);
@@ -1511,6 +1519,7 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					bypasscnt + freezecnt + 2) {
 				frc_frame_forcebuf_enable(0);
 				frc_memc_120hz_patch_3(devp);
+				frc_memc_clr_vbuffer(devp, 0);
 				pr_frc(log, "b-e_freezed to open, frm:%d\n",
 					devp->frc_sts.frame_cnt);
 				// frc_state_change_finish(devp);

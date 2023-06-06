@@ -33,8 +33,10 @@
 #define CLKID_MPLL_50M			21
 #define CLKID_CPU_CLK_DYN		22
 #define CLKID_CPU_CLK			23
+#define CLKID_HIFI1_PLL_DCO		24
+#define CLKID_HIFI1_PLL			25
 
-#define VIDEO_BASE			24
+#define VIDEO_BASE			26
 #define CLKID_VDEC_0_SEL		(VIDEO_BASE + 0)
 #define CLKID_VDEC_0_DIV		(VIDEO_BASE + 1)
 #define CLKID_VDEC_0			(VIDEO_BASE + 2)

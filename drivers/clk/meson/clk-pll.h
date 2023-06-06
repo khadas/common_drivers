@@ -50,13 +50,13 @@ struct pll_params_table {
 #define CLK_MESON_PLL_IGNORE_INIT			BIT(1)
 #define CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION	BIT(2)
 #define CLK_MESON_PLL_POWER_OF_TWO			BIT(3)
+#define CLK_MESON_PLL_FIXED_N				BIT(4)
 
 struct meson_clk_pll_data {
 	struct parm en;
 	struct parm m;
 	struct parm n;
 	struct parm frac;
-	struct parm frac_hifi; /* remove it if frac is ok*/
 	struct parm l;
 	struct parm rst;
 	struct parm th; /* threshold */
@@ -73,6 +73,7 @@ struct meson_clk_pll_data {
 	u8 flags;
 	u8 secid_disable;
 	u8 secid;
+	u8 fixed_n;
 };
 
 extern const struct clk_ops meson_clk_pll_ro_ops;

@@ -76,9 +76,8 @@ static unsigned long __pll_params_to_rate(unsigned long parent_rate,
 {
 	u64 rate = (u64)parent_rate * m;
 	u64 frac_rate;
-	unsigned int tmp_n;
 
-	if (frac && MESON_PARM_APPLICABLE(&pll->frac_hifi)) {
+	if (frac && MESON_PARM_APPLICABLE(&pll->frac)) {
 		frac_rate = (u64)parent_rate * frac;
 		if (frac & (1 << (pll->frac.width - 1))) {
 			if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
@@ -96,17 +95,15 @@ static unsigned long __pll_params_to_rate(unsigned long parent_rate,
 	}
 
 	if (pll->flags & CLK_MESON_PLL_POWER_OF_TWO)
-		tmp_n = 1 << n;
-	else
-		tmp_n = n;
+		n = 1 << n;
 
-	if (tmp_n == 0)
+	if (n == 0)
 		return 0;
 
 #if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
-	return DIV_ROUND_UP_ULL(rate, tmp_n) >> od;
+	return DIV_ROUND_UP_ULL(rate, n) >> od;
 #else
-	return DIV_ROUND_UP_ULL(rate, tmp_n);
+	return DIV_ROUND_UP_ULL(rate, n);
 #endif
 }
 
@@ -126,11 +123,6 @@ static unsigned long meson_clk_pll_recalc_rate(struct clk_hw *hw,
 
 	frac = MESON_PARM_APPLICABLE(&pll->frac) ?
 		meson_parm_read(clk->map, &pll->frac) :
-		0;
-
-	/* remove if frac is ok */
-	frac = MESON_PARM_APPLICABLE(&pll->frac_hifi) ?
-		meson_parm_read(clk->map, &pll->frac_hifi) :
 		0;
 
 	return __pll_params_to_rate(parent_rate, m, n, frac, pll, od);
@@ -172,15 +164,22 @@ static unsigned int __pll_params_with_frac(unsigned long rate,
 					   struct meson_clk_pll_data *pll)
 {
 	unsigned int frac_max;
-	u64 val = (u64)rate * n;
+	u64 val;
 
+	if (pll->flags & CLK_MESON_PLL_POWER_OF_TWO) {
+		val = (u64)rate << n;
+		if (rate < ((parent_rate >> n) * m >> od))
+			return 0;
+	} else {
+		val = (u64)rate * n;
+		/* Bail out if we are already over the requested rate */
+		if (rate < (div_u64((u64)parent_rate * m, n) >> od))
+			return 0;
+	}
 	if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
 		frac_max = FIXED_FRAC_WEIGHT_PRECISION;
 	else
 		frac_max = (1 << (pll->frac.width - 2));
-	/* Bail out if we are already over the requested rate */
-	if (rate < parent_rate * m / n)
-		return 0;
 
 	val = val * (1 << od);
 	if (pll->flags & CLK_MESON_PLL_ROUND_CLOSEST)
@@ -268,7 +267,63 @@ static int meson_clk_get_pll_table_index(unsigned int index,
 	return 0;
 }
 
+static unsigned int meson_clk_get_pll_range_m(unsigned long long rate,
+					      unsigned long parent_rate,
+					      unsigned int n,
+					      struct meson_clk_pll_data *pll)
+{
+	u64 val;
+
+	if (pll->flags & CLK_MESON_PLL_POWER_OF_TWO)
+		val = rate << n;
+	else
+		val = rate * n;
+	if (__pll_round_closest_mult(pll))
+		return DIV_ROUND_CLOSEST_ULL(val, parent_rate);
+
+	return div_u64(val,  parent_rate);
+}
+
 #if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+static int meson_clk_get_pll_range_index(unsigned long rate,
+					 unsigned long parent_rate,
+					 unsigned int index,
+					 unsigned int *m,
+					 unsigned int *n,
+					 struct meson_clk_pll_data *pll,
+					 unsigned int *od)
+{
+	*od = index;
+	if (*od >= (1 << pll->od.width))/*n fixed only check od*/
+		return -EINVAL;
+
+	if (pll->flags & CLK_MESON_PLL_FIXED_N) {
+		*n = pll->fixed_n;
+	} else {
+		if (pll->flags & CLK_MESON_PLL_POWER_OF_TWO)
+			*n = 0;
+		else
+			*n = 1;
+	}
+	if (rate > __pll_params_to_rate(parent_rate,
+		pll->range->max, *n, 0, pll, 0)) {
+		*m = pll->range->max;
+		*od = 0;
+		return -ENODATA;
+	} else if (rate < __pll_params_to_rate(parent_rate,
+			pll->range->min, *n, 0, pll, ((1 << pll->od.width) - 1))) {
+		*m = pll->range->min;
+		*od = (1 << pll->od.width) - 1;
+		return -ENODATA;
+	}
+	/*cal param according to dco rate range, rate must be dco out*/
+	*m = meson_clk_get_pll_range_m((u64)rate << *od, parent_rate, *n, pll);
+	if (*m > pll->range->max || *m < pll->range->min)
+		return -EAGAIN;/*if m out of range,should try again according next od*/
+
+	return 0;
+}
+
 static int meson_clk_get_pll_get_index(unsigned long rate,
 				       unsigned long parent_rate,
 				       unsigned int index,
@@ -277,26 +332,15 @@ static int meson_clk_get_pll_get_index(unsigned long rate,
 				       struct meson_clk_pll_data *pll,
 				       unsigned int *od)
 {
-	/* only support table in arm32 */
-	if (pll->table)
+	if (pll->range)
+		return meson_clk_get_pll_range_index(rate, parent_rate,
+						     index, m, n, pll, od);
+	else if (pll->table)
 		return meson_clk_get_pll_table_index(index, m, n, pll, od);
 
 	return -EINVAL;
 }
 #else
-static unsigned int meson_clk_get_pll_range_m(unsigned long rate,
-					      unsigned long parent_rate,
-					      unsigned int n,
-					      struct meson_clk_pll_data *pll)
-{
-	u64 val = (u64)rate * n;
-
-	if (__pll_round_closest_mult(pll))
-		return DIV_ROUND_CLOSEST_ULL(val, parent_rate);
-
-	return div_u64(val,  parent_rate);
-}
-
 static int meson_clk_get_pll_range_index(unsigned long rate,
 					 unsigned long parent_rate,
 					 unsigned int index,
@@ -359,19 +403,19 @@ static int meson_clk_get_pll_settings(unsigned long rate,
 	unsigned int i, m, n, od;
 	int ret;
 
-	for (i = 0, ret = 0; !ret; i++) {
+	for (i = 0, ret = 0; (ret == 0 || ret == -EAGAIN); i++) {
 		ret = meson_clk_get_pll_get_index(rate, parent_rate,
 						  i, &m, &n, pll, &od);
 		if (ret == -EINVAL)
 			break;
-
+		if (ret == -EAGAIN)
+			continue;
 		now = __pll_params_to_rate(parent_rate, m, n, 0, pll, od);
 		if (meson_clk_pll_is_better(rate, best, now, pll)) {
 			best = now;
 			*best_m = m;
 			*best_n = n;
 			*best_od = od;
-
 			if (now == rate)
 				break;
 		}
@@ -636,13 +680,6 @@ static int meson_clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	     meson_parm_read(clk->map, &pll->n) != n) && enabled)
 		meson_clk_pll_disable(hw);
 #endif
-	if (MESON_PARM_APPLICABLE(&pll->th)) {
-		if (rate >= MESON_PLL_THRESHOLD_RATE)
-			meson_parm_write(clk->map, &pll->th, 1);
-		else
-			meson_parm_write(clk->map, &pll->th, 0);
-	}
-
 	meson_parm_write(clk->map, &pll->n, n);
 	meson_parm_write(clk->map, &pll->m, m);
 #if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
@@ -810,6 +847,7 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
 	struct parm *pm = &pll->m;
 	struct parm *pn = &pll->n;
+	struct parm *pth = &pll->th;
 	struct parm *pfrac = &pll->frac;
 	unsigned int enabled, m, n, frac;
 	unsigned long old_rate;
@@ -847,8 +885,11 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 		 * if just change frac and pll to enable.
 		 */
 		if (meson_parm_read(clk->map, &pll->m) == m &&
-		    meson_parm_read(clk->map, &pll->n) == n &&
-		    meson_parm_read(clk->map, &pll->en)) {
+		meson_parm_read(clk->map, &pll->n) == n &&
+#if defined CONFIG_ARM
+		meson_parm_read(clk->map, &pll->od) == od &&
+#endif
+		meson_parm_read(clk->map, &pll->en)) {
 			regmap_read(clk->map, pfrac->reg_off, &val);
 			/* Clear Frac bits and Update frac value */
 			val &= CLRPMASK(pfrac->width, pfrac->shift);
@@ -869,6 +910,18 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 			if (pn->reg_off == init_regs[i].reg) {
 				/* Clear M N bits and Update M N value */
 				val = init_regs[i].def;
+				if (MESON_PARM_APPLICABLE(&pll->th)) {
+					val &= CLRPMASK(pth->width, pth->shift);
+#if defined CONFIG_ARM
+					if (__pll_params_to_rate(parent_rate, m, n, frac, pll, 0)
+						>= MESON_PLL_THRESHOLD_RATE)
+						val |= 1 << pth->shift;
+#else
+					if (__pll_params_to_rate(parent_rate, m, n, frac, pll)
+						>= MESON_PLL_THRESHOLD_RATE)
+						val |= 1 << pth->shift;
+#endif
+				}
 				val &= CLRPMASK(pn->width, pn->shift);
 				val &= CLRPMASK(pm->width, pm->shift);
 				val |= n << pn->shift;

@@ -551,6 +551,12 @@
 		sensor-name = "sc4238"; /*sc2335;sc4238*/
 	};
 
+	lens: lens {
+		compatible = "soc, lens";
+		status = "okay";
+		sensor-name = "imx307"; /*imx290;os08a10;imx227*/
+	};
+
 	ircut: ircut {
 		compatible = "amlogic, aml-ircut";
 		status = "okay";

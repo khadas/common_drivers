@@ -825,12 +825,11 @@
 		isp-efuse = <0xFE005000 0x4000>;
 		interrupts = <GIC_SPI 121 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "ISP";
-		clk-level = <6>;
-		//clocks = <&clkc CLKID_MIPI_ISP_GATE>,
-		//	<&clkc CLKID_MIPI_CSI_PHY_GATE>;
+		temper-buf-size = <24>;
+		clocks = <&clkc CLKID_MIPI_ISP>,
+			<&clkc CLKID_MIPI_CSI_PHY>;
 		clock-names = "cts_mipi_isp_clk",
 			"cts_mipi_csi_phy_clk0";
-		//power-domains = <&pwrdm PDID_MIPI_ISP>;
 		link-device = <&isp_sc>;
 		att-device = <&isp_md>;
 	};

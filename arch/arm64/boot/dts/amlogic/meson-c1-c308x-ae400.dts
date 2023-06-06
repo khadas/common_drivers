@@ -536,8 +536,8 @@
 		pinctrl-names= "default", "mclk37_pin";
 		pinctrl-0= <&clk12_24_m13_pins>;
 		pinctrl-1= <&cmclkout2_pins>;
-		//clocks = <&clkc CLKID_24M
-		//			&clkc CLKID_GP_PLL_DIV2_GATE>;
+		clocks = <&clkc CLKID_24M
+					&clkc CLKID_GP_DIV2_DIV>;
 		clock-names = "g12a_24m","mclk_0";
 		pwdn = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
 		reset = <&gpio GPIOM_12 GPIO_ACTIVE_HIGH>;
@@ -549,6 +549,12 @@
 
 	iq: iq {
 		compatible = "soc, iq";
+		status = "okay";
+		sensor-name = "imx307"; /*imx290;os08a10;imx227*/
+	};
+
+	lens: lens {
+		compatible = "soc, lens";
 		status = "okay";
 		sensor-name = "imx307"; /*imx290;os08a10;imx227*/
 	};
@@ -956,9 +962,8 @@
 
 &i2c2 {
 	status = "okay";
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&i2c2_master_pins2>;
-	pinctrl-1 = <&i2c2_master_sleep_pins2>;
+	pinctrl-names="default";
+	pinctrl-0=<&i2c2_master_pins2>;
 	clock-frequency = <100000>; /* default 100k */
 	sensor-i2c@6c {
 		compatible = "arm, i2c-sensor";

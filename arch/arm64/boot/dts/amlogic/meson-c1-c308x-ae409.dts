@@ -508,20 +508,49 @@
 	sensor: sensor {
 		compatible = "soc, sensor";
 		status = "okay";
-		sensor-name = "os08a10"; /*imx290;os08a10;imx227*/
-		pinctrl-names= "default";
+		sensor-name = "imx307"; /*imx290;os08a10;imx227*/
+		pinctrl-names= "default", "mclk37_pin";
 		pinctrl-0= <&clk12_24_m13_pins>;
-		//clocks = <&clkc CLKID_24M>;
-		clock-names = "g12a_24m";
+		//pinctrl-1= <&cmclkout2_pins>;
+		//clocks = <&clkc CLKID_24M
+		//			&clkc CLKID_GP_DIV2_DIV>;
+		clock-names = "g12a_24m","mclk_0";
+		pwdn = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
 		reset = <&gpio GPIOM_12 GPIO_ACTIVE_HIGH>;
+#if 0
 		ir_cut_gpio = <&gpio GPIOA_10 GPIO_ACTIVE_HIGH
 				&gpio GPIOA_12 GPIO_ACTIVE_HIGH>;
+#endif
 	};
 
 	iq: iq {
 		compatible = "soc, iq";
 		status = "okay";
-		sensor-name = "os08a10"; /*imx290;os08a10;imx227*/
+		sensor-name = "imx307"; /*imx290;os08a10;imx227*/
+	};
+
+	lens: lens {
+		compatible = "soc, lens";
+		status = "okay";
+		sensor-name = "imx307"; /*imx290;os08a10;imx227*/
+	};
+
+	ircut: ircut {
+		compatible = "amlogic, aml-ircut";
+		status = "okay";
+		ircut-gpio = <&gpio GPIOA_10 GPIO_ACTIVE_HIGH
+				&gpio GPIOA_12 GPIO_ACTIVE_HIGH>;
+		ir-led-gpio = <&gpio GPIOM_8 GPIO_ACTIVE_HIGH>;
+		ldr-gpio = <&gpio GPIOM_5 GPIO_ACTIVE_LOW>;
+		// sequence description
+		//  0: port 0(GPIOA_10), 0=0, set port 0 to Low
+		// w: wait mseconds
+		ircut-sequence = "init: 1=1,w=200,1=0,w=1000,0=1,w=200,0=0,w=1000",
+				"enable: 1=1,w=200,1=0,w=1000,0=0",
+				"disable: 0=1,w=200,0=0,w=1000,1=0";
+		ir-led-sequence = "init: 0=0",
+				"enable: 0=1",
+				"disable: 0=0";
 	};
 
 	cpu_opp_table0: cpu_opp_table0 {
@@ -909,9 +938,8 @@
 
 &i2c2 {
 	status = "okay";
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&i2c2_master_pins2>;
-	pinctrl-1 = <&i2c2_master_sleep_pins2>;
+	pinctrl-names="default";
+	pinctrl-0=<&i2c2_master_pins2>;
 	clock-frequency = <100000>; /* default 100k */
 	sensor-i2c@6c {
 		compatible = "arm, i2c-sensor";
@@ -926,11 +954,16 @@
 
 &isp {
 	status = "okay";
+	temper-line-offset = <0x1680>;
+	temper-buf-size = <12>;
+	temper-frame-num = <1>;
+	temper-frame-size = <0xBDD800>;
 	memory-region = <&isp_cma_reserved>;
 };
 
 &adapter {
 	status = "okay";
+	mem_alloc = <24>;
 	memory-region = <&adapt_cma_reserved>;
 };
 

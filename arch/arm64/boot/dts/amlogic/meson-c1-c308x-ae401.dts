@@ -537,7 +537,7 @@
 		pinctrl-0= <&clk12_24_m13_pins>;
 		pinctrl-1= <&cmclkout2_pins>;
 		//clocks = <&clkc CLKID_24M
-		//			&clkc CLKID_GP_PLL_DIV2_GATE>;
+		//			&clkc CLKID_GP_DIV2_DIV>;
 		clock-names = "g12a_24m","mclk_0";
 		pwdn = <&gpio GPIOM_11 GPIO_ACTIVE_HIGH>;
 		reset = <&gpio GPIOM_12 GPIO_ACTIVE_HIGH>;
@@ -551,6 +551,12 @@
 		compatible = "soc, iq";
 		status = "okay";
 		sensor-name = "os08a10"; /*imx290;os08a10;imx227*/
+	};
+
+	lens: lens {
+		compatible = "soc, lens";
+		status = "okay";
+		sensor-name = "imx307"; /*imx290;os08a10;imx227*/
 	};
 
 	ircut: ircut {
@@ -972,10 +978,10 @@
 
 &isp {
 	status = "okay";
-	temper-line-offset = <0x2D00>;
-	temper-buf-size = <48>;
+	temper-line-offset = <0x1680>;
+	temper-buf-size = <12>;
 	temper-frame-num = <1>;
-	temper-frame-size = <0x2F76000>;
+	temper-frame-size = <0xBDD800>;
 	memory-region = <&isp_cma_reserved>;
 };
 

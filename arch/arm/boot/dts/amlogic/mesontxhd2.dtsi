@@ -1400,7 +1400,7 @@
 		output = <0>;
 		cec_sel = <1>;/*1:use one ip, 2:use 2 ip*/
 		ee_cec; /*use cec a or b*/
-		arc_port_mask = <0x2>;
+		arc_port_mask = <0x1>;
 		interrupts = <GIC_SPI 203 IRQ_TYPE_EDGE_RISING>;/*0:snps*/
 		interrupt-names = "hdmi_aocecb";
 		pinctrl-names = "default","hdmitx_aocecb","cec_pin_sleep";

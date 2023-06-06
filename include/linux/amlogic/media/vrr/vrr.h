@@ -128,5 +128,6 @@ static inline int aml_vrr_atomic_notifier_call_chain(unsigned long event,
 }
 #endif
 bool frame_lock_type_vrr_lock(void);
+unsigned int vrr_check_frame_rate_min_hz(void);
 
 #endif

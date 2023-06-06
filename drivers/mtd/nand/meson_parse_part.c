@@ -22,8 +22,9 @@ static bool node_has_compatible(struct device_node *pp)
 static int adjust_part_offset(struct mtd_info *master, u8 nr_parts,
 			      struct mtd_partition *parts)
 {
-	u8 i = 0, bl_mode, reserved_part_blk_num = NAND_RSV_BLOCK_NUM;
+	u8 i = 0, bl_mode;
 	u8 internal_part_count = 0;
+	u8 reserved_part_blk_num = meson_rsv_get_block_cnt(NAND_RSV_INDEX);
 	u64 part_size, start_blk = 0, part_blk = 0;
 	loff_t offset;
 	int phys_erase_shift, error = 0;

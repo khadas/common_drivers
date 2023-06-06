@@ -214,6 +214,7 @@ int spinand_set_info_page(struct mtd_info *mtd, void *buf)
 	u32 page_per_blk;
 	struct mtd_oob_region region;
 	struct spinand_info_page *info_page = (struct spinand_info_page *)buf;
+	u32 rsv_block_num = meson_rsv_get_block_cnt(NAND_RSV_INDEX);
 
 	page_per_blk = mtd->erasesize / mtd->writesize;
 	memcpy(info_page->magic, SPINAND_MAGIC, strlen(SPINAND_MAGIC));
@@ -224,7 +225,7 @@ int spinand_set_info_page(struct mtd_info *mtd, void *buf)
 	info_page->fip_num = SPI_NAND_TPL_COPY_NUM;
 	info_page->dev.s.rd_max = SPI_NAND_NBITS;
 	info_page->dev.s.fip_start =
-		SPI_NAND_BOOT_TOTAL_PAGES + NAND_RSV_BLOCK_NUM * page_per_blk;
+		SPI_NAND_BOOT_TOTAL_PAGES + rsv_block_num * page_per_blk;
 	info_page->dev.s.fip_pages = SPI_NAND_TPL_SIZE_PER_COPY / mtd->writesize;
 	info_page->dev.s.page_size = mtd->writesize;
 	info_page->dev.s.page_per_blk = page_per_blk;
@@ -388,6 +389,7 @@ int meson_add_mtd_partitions(struct mtd_info *mtd)
 	struct meson_partition_platform_data *pdata;
 	struct mtd_partition *part;
 	loff_t offset;
+	u32 rsv_block_num = meson_rsv_get_block_cnt(NAND_RSV_INDEX);
 	int i = 0;
 
 	pdata = meson_partition_parse_platform_data(mtd_get_of_node(mtd));
@@ -425,7 +427,7 @@ int meson_add_mtd_partitions(struct mtd_info *mtd)
 		part += 4;
 	} else if (pdata->bl_mode == NAND_FIPMODE_DISCRETE) {
 		/* skip rsv */
-		offset += NAND_RSV_BLOCK_NUM * (loff_t)mtd->erasesize;
+		offset += rsv_block_num * (loff_t)mtd->erasesize;
 
 		/* tpl, support NAND_FIPMODE_DISCRETE only */
 		part++;

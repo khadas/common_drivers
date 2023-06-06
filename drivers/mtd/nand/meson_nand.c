@@ -606,6 +606,8 @@ static void meson_info_page0_prepare(struct nand_chip *nand, u8 *page0_buf)
 	u32 pages_per_blk_shift, bbt_size;
 	int each_boot_pages, boot_num, bbt_pages;
 	u32 configure_data;
+	u32 rsv_blocks_num = meson_rsv_get_block_cnt(NAND_RSV_INDEX);
+	u32 rsv_gap_blocks_num = meson_rsv_get_block_cnt(NAND_GAP_INDEX);
 	struct _nand_page0 *p_nand_page0 = NULL;
 	struct _nand_page0_sc2 *p_nand_page0_sc2 = NULL;
 	struct _ext_info *p_ext_info = NULL;
@@ -668,12 +670,12 @@ static void meson_info_page0_prepare(struct nand_chip *nand, u8 *page0_buf)
 	p_ext_info->bbt_occupy_pages = bbt_pages;
 	p_ext_info->bbt_start_block =
 		(BOOT_TOTAL_PAGES >> pages_per_blk_shift) +
-		NAND_GAP_BLOCK_NUM;
+		rsv_gap_blocks_num;
 	if (nfc->param_from_dts.bl_mode) {
 		p_fip_info->version = 1;
 		p_fip_info->mode = NAND_FIPMODE_DISCRETE;
 		p_fip_info->fip_start = BOOT_TOTAL_PAGES +
-			NAND_RSV_BLOCK_NUM * p_ext_info->pages_per_blk;
+			rsv_blocks_num * p_ext_info->pages_per_blk;
 		pr_info("fip ver %d, mode %d fip start 0x%x\n",
 			p_fip_info->version, p_fip_info->mode,
 			p_fip_info->fip_start);
@@ -1639,9 +1641,12 @@ meson_nfc_nand_chip_init(struct device *dev,
 			goto exit_err2;
 		}
 
-		meson_rsv_check(nfc->rsv->env);
-		meson_rsv_check(nfc->rsv->key);
-		meson_rsv_check(nfc->rsv->dtb);
+		if (meson_rsv_get_block_cnt(NAND_ENV_INDEX))
+			meson_rsv_check(nfc->rsv->env);
+		if (meson_rsv_get_block_cnt(NAND_KEY_INDEX))
+			meson_rsv_check(nfc->rsv->key);
+		if (meson_rsv_get_block_cnt(NAND_DTB_INDEX))
+			meson_rsv_check(nfc->rsv->dtb);
 	}
 	ret = mtd_device_parse_register(mtd, meson_types, NULL, NULL, 0);
 	if (ret) {

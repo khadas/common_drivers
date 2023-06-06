@@ -8,6 +8,7 @@
 #include <linux/amlogic/aml_mtd_nand.h>
 #include <linux/moduleparam.h>
 #include <linux/amlogic/gki_module.h>
+#include <linux/amlogic/aml_rsv.h>
 
 static char *cmdline;
 struct storage_startup_parameter g_ssp;
@@ -44,6 +45,7 @@ static int storage_get_and_parse_ssp(struct mtd_info *mtd)
 {
 	struct storage_startup_parameter *ssp;
 	union storage_independent_parameter *sip;
+	u32 rsv_block_num = meson_rsv_get_block_cnt(NAND_RSV_INDEX);
 
 	ssp = &g_ssp;
 	memset(ssp, 0, sizeof(struct storage_startup_parameter));
@@ -51,6 +53,8 @@ static int storage_get_and_parse_ssp(struct mtd_info *mtd)
 
 	if (of_property_read_bool(mtd->dev.parent->of_node, "bl2ex_8_copies"))
 		ssp->boot_backups = 8;
+	else if (of_property_read_bool(mtd->dev.parent->of_node, "bl2ex_2_copies"))
+		ssp->boot_backups = 2;
 	else
 		ssp->boot_backups = 4;
 
@@ -59,7 +63,7 @@ static int storage_get_and_parse_ssp(struct mtd_info *mtd)
 	sip->nsp.pages_per_block = mtd->erasesize /
 		mtd->writesize;
 	sip->nsp.layout_reserve_size =
-		NAND_RSV_BLOCK_NUM * sip->nsp.block_size;
+		rsv_block_num * sip->nsp.block_size;
 
 	pr_debug("boot_device:%d\n", ssp->boot_device);
 	pr_debug("boot_seq:%d\n", ssp->boot_seq);

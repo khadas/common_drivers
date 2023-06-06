@@ -1411,11 +1411,20 @@
 	pinctrl-0 = <&all_nand_pins>;
 	pinctrl-1 = <&nand_cs_pins>;
 	bl_mode = <1>;
-	fip_copies = <4>;
-	fip_size = <0x200000>;
+	fip_copies = <2>;
+	fip_size = <0x280000>;
+	bl2ex_2_copies;
+
+	rsv_board_config;
+	rsv_block_num = <14>;
+	rsv_gap_block_num = <4>;
+	rsv_bbt_block_num = <4>;
+	rsv_env_block_num = <0>;
+	rsv_key_block_num = <4>;
+	rsv_dtb_block_num = <0>;
+
 	ship_bad_block = <1>;
 	disa_irq_flag = <1>;
-	bl2ex_8_copies;
 	nand@bootloader {
 		reg = <0>;
 		#address-cells = <1>;
@@ -1449,35 +1458,39 @@
 			reg = <0x0 0x00000000>;
 		};
 		partition@4 {
+			label = "ENV";
+			reg = <0x0 0x40000>;
+		};
+		partition@5 {
 			/* Do not modify before the factory partition */
 			label = "factory";
 			reg = <0x0 0x0300000>;
 		};
-		partition@5 {
+		partition@6 {
 			label = "tee";
 			reg = <0x0 0x300000>;
 		};
-		partition@6 {
+		partition@7 {
 			label = "logo";
 			reg = <0x0 0x40000>;
 		};
-		partition@7 {
+		partition@8 {
 			label = "recovery";
 			reg = <0x0 0x1200000>;
 		};
-		partition@8 {
+		partition@9 {
 			label = "boot";
 			reg = <0x0 0xC00000>;
 		};
-		partition@9 {
+		partition@10 {
 			label = "system";
 			reg = <0x0 0x3000000>;
 		};
-		partition@10 {
+		partition@11 {
 			label = "vbmeta";
 			reg = <0x0 0x40000>;
 		};
-		partition@11 {
+		partition@12 {
 			label = "data";
 			reg = <0x0 0xffffffff>;
 		};

@@ -3663,6 +3663,13 @@ static void do_vd1_swap_frame(u8 layer_id,
 		vd_layer[0].keep_frame_id = 0xff;
 
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
+	struct vpp_frame_par_s *frame_par = NULL;
+
+	if (vd_layer[0].next_frame_par)
+		frame_par = vd_layer[0].next_frame_par;
+	else
+		frame_par = vd_layer[0].cur_frame_par;
+
 	refresh_on_vs(new_frame, vd_layer[0].dispbuf);
 
 	amvecm_on_vs
@@ -3670,23 +3677,23 @@ static void do_vd1_swap_frame(u8 layer_id,
 		? vd_layer[0].dispbuf : NULL,
 		new_frame,
 		new_frame ? CSC_FLAG_TOGGLE_FRAME : 0,
-		cur_frame_par[0] ?
-		cur_frame_par[0]->supsc1_hori_ratio :
+		frame_par ?
+		frame_par->supsc1_hori_ratio :
 		0,
-		cur_frame_par[0] ?
-		cur_frame_par[0]->supsc1_vert_ratio :
+		frame_par ?
+		frame_par->supsc1_vert_ratio :
 		0,
-		cur_frame_par[0] ?
-		cur_frame_par[0]->spsc1_w_in :
+		frame_par ?
+		frame_par->spsc1_w_in :
 		0,
-		cur_frame_par[0] ?
-		cur_frame_par[0]->spsc1_h_in :
+		frame_par ?
+		frame_par->spsc1_h_in :
 		0,
-		cur_frame_par[0] ?
-		cur_frame_par[0]->cm_input_w :
+		frame_par ?
+		frame_par->cm_input_w :
 		0,
-		cur_frame_par[0] ?
-		cur_frame_par[0]->cm_input_h :
+		frame_par ?
+		frame_par->cm_input_h :
 		0,
 		VD1_PATH,
 		VPP_TOP0);
@@ -3800,28 +3807,35 @@ static void do_vdx_swap_frame(u8 layer_id,
 	}
 
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
+	struct vpp_frame_par_s *frame_par = NULL;
+
+	if (vd_layer[layer_id].next_frame_par)
+		frame_par = vd_layer[layer_id].next_frame_par;
+	else
+		frame_par = vd_layer[layer_id].cur_frame_par;
+
 	amvecm_on_vs
 		(!is_local_vf(vd_layer[layer_id].dispbuf)
 		? vd_layer[layer_id].dispbuf : NULL,
 		new_frame,
 		new_frame ? CSC_FLAG_TOGGLE_FRAME : 0,
-		cur_frame_par[layer_id] ?
-		cur_frame_par[layer_id]->supsc1_hori_ratio :
+		frame_par ?
+		frame_par->supsc1_hori_ratio :
 		0,
-		cur_frame_par[layer_id] ?
-		cur_frame_par[layer_id]->supsc1_vert_ratio :
+		frame_par ?
+		frame_par->supsc1_vert_ratio :
 		0,
-		cur_frame_par[layer_id] ?
-		cur_frame_par[layer_id]->spsc1_w_in :
+		frame_par ?
+		frame_par->spsc1_w_in :
 		0,
-		cur_frame_par[layer_id] ?
-		cur_frame_par[layer_id]->spsc1_h_in :
+		frame_par ?
+		frame_par->spsc1_h_in :
 		0,
-		cur_frame_par[layer_id] ?
-		cur_frame_par[layer_id]->cm_input_w :
+		frame_par ?
+		frame_par->cm_input_w :
 		0,
-		cur_frame_par[layer_id] ?
-		cur_frame_par[layer_id]->cm_input_h :
+		frame_par ?
+		frame_par->cm_input_h :
 		0,
 		layer_id,
 		VPP_TOP0);

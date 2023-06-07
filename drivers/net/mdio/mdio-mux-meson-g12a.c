@@ -214,6 +214,8 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 	unsigned int st_mode = 0;
 	unsigned int phy_mode = 0;
 	unsigned int rx_R = 0;
+	unsigned int tx_R = 0;
+	unsigned int efuse_get_tmp = 0;
 
 	if (of_property_read_u32(np, "tx_amp_src", &tx_amp_addr) != 0)
 		pr_info("no amp setting\n");
@@ -229,11 +231,15 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 		else /*efuse not set use default*/
 			tx_amp_bl2 = (0x180018 & 0x3f);
 
-		/*default 0, 1 means voltage phy*/
+		/* default 0
+		 * 1 means voltage phy t3
+		 * 2 means voltage phy txhd2
+		 */
 		if (of_property_read_u32(np, "phy_mode", &phy_mode) == 0) {
 			pr_info("phy_mode %d\n", phy_mode);
 			voltage_phy = phy_mode;
-			if (phy_mode) {
+			/*t3x*/
+			if (phy_mode == 1) {
 				/*bit[20:16] bit20 valid, bit[19:16] rx value*/
 				rx_R = (readl(tx_amp_src) & 0x1f0000);
 		//		rx_R = (0x180018 & 0x1f0000);
@@ -246,9 +252,29 @@ static int g12a_enable_internal_mdio(struct g12a_mdio_mux *priv)
 						| (readl(priv->regs + ETH_PLL_CTL3) & 0xffff),
 						priv->regs + ETH_PLL_CTL3);
 				} else { /*efuse not set use default value*/
-					pr_info("no efuse setting use default\n");
+					pr_debug("no efuse setting use default\n");
 					writel(0xe8fe0000, priv->regs + ETH_PLL_CTL3);
 				}
+			}
+
+			/*txhd2*/
+			if (phy_mode == 2) {
+				/*bit[24:16]: bit24 valid, bit[23:20] tx, bit[19:16] rx*/
+				efuse_get_tmp = (readl(tx_amp_src) & 0x1ff0000);
+//				efuse_get_tmp = 0x1990019;
+				if (efuse_get_tmp >> 0x18) { /*bit24 is valid*/
+					tx_R = (efuse_get_tmp & 0xf00000) >> 20;
+					rx_R = (efuse_get_tmp & 0x0f0000) >> 16;
+					writel(((tx_R << 28) | (rx_R << 20))
+						| (0x0a02c001),
+						priv->regs + ETH_PLL_CTL6);
+				} else {
+					pr_debug("no efuse setting use default\n");
+					writel(0x8a82c001, priv->regs + ETH_PLL_CTL6);
+				}
+				writel(0x20220000, priv->regs + ETH_PLL_CTL5);
+				/*writel(0x8a82c001, priv->regs + ETH_PLL_CTL6);*/
+				writel(0x00000023, priv->regs + ETH_PLL_CTL7);
 			}
 		}
 	}

@@ -338,11 +338,17 @@ static int custom_internal_config(struct phy_device *phydev)
 	}
 
 	/*voltage phy*/
-	if (voltage_phy) {
+	/*t3x*/
+	if (voltage_phy == 1) {
 	//	phy_tst_write(phydev, 0x18, 0x8);
 		/*set A4 bit[12:14] as 0, all the setting from mail 2023-4-7 title:T3X Ethernet */
 		phy_tst_write(phydev, 0x15, phy_tst_read(phydev, 0x15) & 0x8fff);
 		pr_info("setup voltage phy %x\n", phy_tst_read(phydev, 0x15));
+	}
+	/*txhd2*/
+	if (voltage_phy == 2) {
+		phy_tst_write(phydev, 0x16, 0x8400);
+		pr_debug("setup voltage phy %x\n", phy_tst_read(phydev, 0x16));
 	}
 
 	return 0;

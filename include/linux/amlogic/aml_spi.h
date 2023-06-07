@@ -14,6 +14,18 @@ struct spicc_controller_data {
 	unsigned	tx_tuning:4;
 	unsigned	rx_tuning:4;
 	unsigned	dummy_ctl:1;
+	void (*dirspi_start)(struct spi_device *spi);
+	void (*dirspi_stop)(struct spi_device *spi);
+	int (*dirspi_async)(struct spi_device *spi,
+			    u8 *tx_buf,
+			    u8 *rx_buf,
+			    int len,
+			    void (*complete)(void *context),
+			    void *context);
+	int (*dirspi_sync)(struct spi_device *spi,
+			   u8 *tx_buf,
+			   u8 *rx_buf,
+			   int len);
 };
 
 struct spicc_transfer {

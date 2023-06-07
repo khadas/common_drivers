@@ -26,6 +26,8 @@
 #include <asm/cacheflush.h>
 #include <linux/amlogic/aml_spi.h>
 
+#define MESON_SPICC_HW_IF
+
 /* Register Map */
 #define SPICC_REG_CFG_READY		0x00
 #define SPICC_REG_CFG_SPI		0x04
@@ -184,6 +186,15 @@ struct spicc_device {
 	struct spi_message		*test_msg;
 	int				test_nxfers_max;
 	int				test_nxfers;
+#ifdef MESON_SPICC_HW_IF
+	int				test_api;
+	int				test_busy;
+	void (*dirspi_complete)(void *context);
+	void *dirspi_context;
+	dma_addr_t			dirspi_tx_dma;
+	dma_addr_t			dirspi_rx_dma;
+	int				dirspi_len;
+#endif
 };
 
 #define spicc_info(fmt, args...) \
@@ -207,6 +218,19 @@ struct spicc_device {
 	 writel(_val, (_spicc)->base + (_offset))
 #define spicc_readl(_spicc, _offset) \
 	readl((_spicc)->base + (_offset))
+
+static void dirspi_start(struct spi_device *spi);
+static void dirspi_stop(struct spi_device *spi);
+static int dirspi_async(struct spi_device *spi,
+			u8 *tx_buf,
+			u8 *rx_buf,
+			int len,
+			void (*complete)(void *context),
+			void *context);
+static int dirspi_sync(struct spi_device *spi,
+			u8 *tx_buf,
+			u8 *rx_buf,
+			int len);
 
 static inline int spicc_sem_down_read(struct spicc_device *spicc)
 {
@@ -546,14 +570,33 @@ static irqreturn_t meson_spicc_irq(int irq, void *data)
 		   SPICC_WCH_DATA_RESP |
 		   SPICC_DESC_ERR)) {
 		spicc->status = sts;
-		complete(&spicc->completion);
 	}
 
 	else if (sts & SPICC_DESC_CHAIN_DONE) {
 		spicc_writel(spicc, sts, SPICC_REG_IRQ_STS);
 		spicc->status = 0;
-		complete(&spicc->completion);
 	}
+
+#ifdef MESON_SPICC_HW_IF
+	if (spicc->dirspi_complete) {
+		if (spicc->dirspi_tx_dma)
+			dma_unmap_single(spicc->controller->dev.parent,
+					spicc->dirspi_tx_dma,
+					spicc->dirspi_len,
+					DMA_TO_DEVICE);
+		if (spicc->dirspi_rx_dma)
+			dma_unmap_single(spicc->controller->dev.parent,
+					spicc->dirspi_rx_dma,
+					spicc->dirspi_len,
+					DMA_FROM_DEVICE);
+		spicc->dirspi_complete(spicc->dirspi_context);
+		spicc->dirspi_complete = NULL;
+		spicc_sem_up_write(spicc);
+		return IRQ_HANDLED;
+	}
+#endif
+
+	complete(&spicc->completion);
 
 	return IRQ_HANDLED;
 }
@@ -622,6 +665,7 @@ static int meson_spicc_setup(struct spi_device *spi)
 		return -EINVAL;
 	}
 
+	spicc_set_speed(spicc, spi->max_speed_hz);
 	spicc->bytes_per_word = spi->bits_per_word >> 3;
 	spicc->cfg_start.b.block_size = spicc->bytes_per_word & 0x7;
 	spicc->cfg_spi.b.ss = spi->chip_select;
@@ -655,6 +699,13 @@ static int meson_spicc_setup(struct spi_device *spi)
 		spicc->cfg_bus.b.dummy_ctl = 0;
 	}
 
+	if (cdata) {
+		cdata->dirspi_start = dirspi_start;
+		cdata->dirspi_stop = dirspi_stop;
+		cdata->dirspi_async = dirspi_async;
+		cdata->dirspi_sync = dirspi_sync;
+	}
+
 	spicc_dbg("set mode 0x%x\n", spi->mode);
 
 	return 0;
@@ -675,6 +726,136 @@ static int meson_spicc_slave_abort(struct spi_controller *ctlr)
 
 	return 0;
 }
+
+#ifdef MESON_SPICC_HW_IF
+static int spicc_wait_complete(struct spicc_device *spicc, u32 flags,
+				unsigned long long wait_us)
+{
+	u32 sts;
+
+	do {
+		sts = spicc_readl(spicc, SPICC_REG_IRQ_STS);
+		if (sts & (SPICC_RCH_DESC_INVALID |
+			   SPICC_RCH_DESC_RESP |
+			   SPICC_RCH_DATA_RESP |
+			   SPICC_WCH_DESC_INVALID |
+			   SPICC_WCH_DESC_RESP |
+			   SPICC_WCH_DATA_RESP |
+			   SPICC_DESC_ERR)) {
+			spicc_err("controller error sts=0x%x\n", sts);
+			return -EIO;
+		}
+
+		if (sts & flags) {
+			spicc_writel(spicc, sts, SPICC_REG_IRQ_STS);
+			return 0;
+		}
+		udelay(1);
+	} while (wait_us--);
+
+	spicc_err("timedout, sts=0x%x\n", sts);
+	return -ETIMEDOUT;
+}
+
+static void dirspi_start(struct spi_device *spi)
+{
+	if (spi->controller->auto_runtime_pm)
+		pm_runtime_get_sync(spi->controller->dev.parent);
+}
+
+static void dirspi_stop(struct spi_device *spi)
+{
+}
+
+static int dirspi_async(struct spi_device *spi,
+			u8 *tx_buf,
+			u8 *rx_buf,
+			int len,
+			void (*complete)(void *context),
+			void *context)
+{
+	struct spicc_device *spicc = spi_controller_get_devdata(spi->controller);
+	struct device *dev = spicc->controller->dev.parent;
+	dma_addr_t tx_dma = 0, rx_dma = 0;
+	int ret = -EINVAL;
+	unsigned long long time;
+
+	if (tx_buf) {
+		tx_dma = dma_map_single(dev, (void *)tx_buf, len, DMA_TO_DEVICE);
+		ret = dma_mapping_error(dev, tx_dma);
+		if (ret)
+			goto end;
+		spicc->cfg_start.b.tx_data_mode = SPICC_DATA_MODE_MEM;
+		spicc->cfg_start.b.op_mode = SPICC_OP_MODE_WRITE;
+	} else {
+		tx_dma = 0;
+		spicc->cfg_start.b.tx_data_mode = SPICC_DATA_MODE_NONE;
+	}
+
+	if (rx_buf) {
+		rx_dma = dma_map_single(dev, (void *)rx_buf, len, DMA_FROM_DEVICE);
+		ret = dma_mapping_error(dev, rx_dma);
+		if (ret)
+			goto end;
+		spicc->cfg_start.b.rx_data_mode = SPICC_DATA_MODE_MEM;
+		spicc->cfg_start.b.op_mode = SPICC_OP_MODE_READ;
+	} else {
+		rx_dma = 0;
+		spicc->cfg_start.b.rx_data_mode = SPICC_DATA_MODE_NONE;
+	}
+
+	spicc->cfg_bus.b.lane = SPICC_SINGLE_SPI;
+	spicc->cfg_start.b.block_size = (spi->bits_per_word >> 3) & 7;
+	spicc->cfg_start.b.block_num = len / (spi->bits_per_word >> 3);
+	spicc->cfg_bus.b.null_ctl = 0;
+
+	spicc->dirspi_complete = complete;
+	spicc->dirspi_context = context;
+	spicc->dirspi_tx_dma = tx_dma;
+	spicc->dirspi_rx_dma = rx_dma;
+	spicc->dirspi_len = len;
+
+	if (!spicc_sem_down_read(spicc)) {
+		spicc_err("controller busy\n");
+		ret = -EBUSY;
+		goto end;
+	}
+
+	spicc_writel(spicc, complete ? SPICC_DESC_DONE : 0, SPICC_REG_IRQ_ENABLE);
+	spicc_writel(spicc, tx_dma, SPICC_REG_MEM_TX_ADDR_L);
+	spicc_writel(spicc, 0, SPICC_REG_MEM_TX_ADDR_H);
+	spicc_writel(spicc, rx_dma, SPICC_REG_MEM_RX_ADDR_L);
+	spicc_writel(spicc, 0, SPICC_REG_MEM_RX_ADDR_H);
+	spicc_writel(spicc, spicc->cfg_spi.d32, SPICC_REG_CFG_SPI);
+	spicc_writel(spicc, spicc->cfg_bus.d32, SPICC_REG_CFG_BUS);
+	spicc_writel(spicc, spicc->cfg_start.d32 | SPICC_DESC_PENDING, SPICC_REG_CFG_START);
+
+	if (complete)
+		return 0;
+
+	time = 8LL * 1000LL * len / spicc->effective_speed_hz;
+	time += 20; /* some tolerance */
+	time <<= 10; /* us */
+	ret = spicc_wait_complete(spicc, SPICC_DESC_DONE, time);
+	spicc_sem_up_write(spicc);
+
+end:
+	if (rx_dma)
+		dma_unmap_single(dev, rx_dma, len, DMA_FROM_DEVICE);
+	if (tx_dma)
+		dma_unmap_single(dev, tx_dma, len, DMA_TO_DEVICE);
+
+	return ret;
+}
+
+static int dirspi_sync(struct spi_device *spi,
+			u8 *tx_buf,
+			u8 *rx_buf,
+			int len)
+{
+	return dirspi_async(spi, tx_buf, rx_buf, len, NULL, NULL);
+}
+#endif	/* end of MESON_SPICC_HW_IF */
 
 static int make_argv(char *s, int argvsz, char *argv[], char *delim)
 {
@@ -828,8 +1009,16 @@ static ssize_t test_dev_store(struct device *dev,
 		goto exit;
 	}
 
-	ret = spicc_getopt(argc, argv, "cs", &v, NULL, 10);
+#ifdef MESON_SPICC_HW_IF
+	ret = spicc_getopt(argc, argv, "api", &v, NULL, 10);
+	spicc->test_api = ret ? 0 : v;
+#endif
+
+	ret = spicc_getopt(argc, argv, "cs_gpio", &v, NULL, 10);
 	spi->cs_gpio = (ret || !v) ? -ENOENT : v;
+
+	ret = spicc_getopt(argc, argv, "cs", &v, NULL, 10);
+	spi->chip_select = ret ? 0 : v;
 
 	ret = spicc_getopt(argc, argv, "speed", &v, NULL, 10);
 	spi->max_speed_hz = ret ? 10000000 : v;
@@ -983,6 +1172,15 @@ exit:
 }
 
 #define TEST_PARAM_NUM 5
+#ifdef MESON_SPICC_HW_IF
+static void test_callback(void *context)
+{
+	struct spicc_device *spicc = (struct spicc_device *)context;
+
+	spicc->test_busy = 0;
+}
+#endif
+
 static ssize_t test_store(struct device *dev, struct device_attribute *attr,
 			  const char *buf, size_t count)
 {
@@ -993,6 +1191,7 @@ static ssize_t test_store(struct device *dev, struct device_attribute *attr,
 	int ret;
 	struct spi_transfer t;
 	struct spi_message m;
+	struct spicc_controller_data *cdata = &spicc->test_cdata;
 
 	if (sscanf(buf, "%d%d%x%d%d", &cs_gpio, &speed,
 		   &mode, &bits_per_word, &num) != TEST_PARAM_NUM) {
@@ -1018,6 +1217,7 @@ static ssize_t test_store(struct device *dev, struct device_attribute *attr,
 		goto test_end;
 	}
 
+	m.spi->controller_data = cdata;
 	m.spi->cs_gpio = (cs_gpio > 0) ? cs_gpio : -ENOENT;
 	m.spi->max_speed_hz = speed;
 	m.spi->mode = mode & 0xffff;
@@ -1032,8 +1232,26 @@ static ssize_t test_store(struct device *dev, struct device_attribute *attr,
 	t.rx_buf = (void *)rx_buf;
 	t.len = num;
 	spi_message_add_tail(&t, &m);
-	ret = spi_sync(m.spi, &m);
 
+#ifdef MESON_SPICC_HW_IF
+	cdata = m.spi->controller_data;
+	if (cdata && cdata->dirspi_sync && spicc->test_api == 1) {
+		dev_info(dev, "dirspi_sync test ...\n");
+		ret = cdata->dirspi_sync(m.spi, tx_buf, rx_buf, num);
+	} else if (cdata && cdata->dirspi_async && spicc->test_api == 2) {
+		dev_info(dev, "dirspi_async test ...\n");
+		spicc->test_busy = 0x12345678;
+		ret = cdata->dirspi_async(m.spi, tx_buf, rx_buf, num,
+				test_callback, (void *)spicc);
+		while (spicc->test_busy)
+			cpu_relax();
+	} else {
+		dev_info(dev, "spi_sync test ...\n");
+		ret = spi_sync(m.spi, &m);
+	}
+#else
+	ret = spi_sync(m.spi, &m);
+#endif
 	if (!ret && (mode & (SPI_LOOP | (1 << 16)))) {
 		ret = spicc_compare(tx_buf, rx_buf, num);
 		dev_info(dev, "total %d, failed %d\n", num, ret);

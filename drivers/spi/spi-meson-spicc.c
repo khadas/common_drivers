@@ -29,6 +29,7 @@
 #include <linux/reset.h>
 #include <linux/gpio.h>
 #include <linux/delay.h>
+#include <linux/amlogic/aml_spi.h>
 
 /*
  * The Meson SPICC controller could support DMA based transfers, but is not
@@ -335,6 +336,18 @@ struct meson_spicc_device {
 static int meson_spicc_runtime_suspend(struct device *dev);
 static int meson_spicc_runtime_resume(struct device *dev);
 static void dirspi_set_cs(struct spi_device *spi, bool enable);
+static void dirspi_start(struct spi_device *spi);
+static void dirspi_stop(struct spi_device *spi);
+static int dirspi_async(struct spi_device *spi,
+			u8 *tx_buf,
+			u8 *rx_buf,
+			int len,
+			void (*complete)(void *context),
+			void *context);
+static int dirspi_sync(struct spi_device *spi,
+			u8 *tx_buf,
+			u8 *rx_buf,
+			int len);
 
 static int xLimitRange(int val, int min, int max)
 {
@@ -992,6 +1005,15 @@ static int meson_spicc_setup(struct spi_device *spi)
 	struct meson_spicc_device *spicc = spi_controller_get_devdata(spi->controller);
 #endif
 	int ret = 0;
+	struct  spicc_controller_data *cdata;
+
+	cdata = (struct spicc_controller_data *)spi->controller_data;
+	if (cdata) {
+		cdata->dirspi_start = dirspi_start;
+		cdata->dirspi_stop = dirspi_stop;
+		cdata->dirspi_async = dirspi_async;
+		cdata->dirspi_sync = dirspi_sync;
+	}
 
 	if (!spi->controller_state)
 		spi->controller_state = spi_controller_get_devdata(spi->controller);
@@ -1124,13 +1146,11 @@ void dirspi_start(struct spi_device *spi)
 
 	dirspi_set_cs(spi, true);
 }
-EXPORT_SYMBOL(dirspi_start);
 
 void dirspi_stop(struct spi_device *spi)
 {
 	dirspi_set_cs(spi, false);
 }
-EXPORT_SYMBOL(dirspi_stop);
 
 int dirspi_async(struct spi_device *spi, u8 *tx_buf, u8 *rx_buf, int len,
 		 void (*complete)(void *context), void *context)
@@ -1153,7 +1173,6 @@ int dirspi_async(struct spi_device *spi, u8 *tx_buf, u8 *rx_buf, int len,
 
 	return 0;
 }
-EXPORT_SYMBOL(dirspi_async);
 
 static void dirspi_complete(void *arg)
 {
@@ -1170,7 +1189,6 @@ int dirspi_sync(struct spi_device *spi, u8 *tx_buf, u8 *rx_buf, int len)
 
 	return ret ? 0 : -ETIMEDOUT;
 }
-EXPORT_SYMBOL(dirspi_sync);
 
 #endif
 

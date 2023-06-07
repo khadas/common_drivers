@@ -16,6 +16,7 @@
 #include <linux/of_platform.h>
 #include <linux/of_address.h>
 #include <linux/amlogic/media/vout/lcd/aml_ldim.h>
+#include <linux/amlogic/aml_spi.h>
 #include "ldim_drv.h"
 #include "ldim_dev_drv.h"
 
@@ -120,7 +121,11 @@ static void ldim_spi_async_callback(void *arg)
 int ldim_spi_write_async(struct spi_device *spi, unsigned char *tbuf,
 			 unsigned char *rbuf, int tlen, int dma_mode, int max_len)
 {
+	struct spicc_controller_data *cdata = spi->controller_data;
 	int xlen, ret;
+
+	if (!cdata || !cdata->dirspi_async)
+		return -EIO;
 
 	xlen = tlen;
 	if (dma_mode) {
@@ -151,7 +156,7 @@ int ldim_spi_write_async(struct spi_device *spi, unsigned char *tbuf,
 
 	ldim_spi_async_busy_cnt = 0;
 	ldim_spi_async_busy = 1;
-	ret = dirspi_async(spi, tbuf, rbuf, xlen,
+	ret = cdata->dirspi_async(spi, tbuf, rbuf, xlen,
 		ldim_spi_async_callback, (void *)&ldim_spi_async_busy);
 	if (ret)
 		LDIMERR("%s\n", __func__);

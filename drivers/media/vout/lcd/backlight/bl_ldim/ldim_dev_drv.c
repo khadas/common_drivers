@@ -25,6 +25,7 @@
 #include <linux/amlogic/media/vout/lcd/aml_ldim.h>
 #include <linux/amlogic/media/vout/lcd/aml_bl.h>
 #include <linux/amlogic/media/vout/lcd/lcd_unifykey.h>
+#include <linux/amlogic/aml_spi.h>
 #include "ldim_drv.h"
 #include "ldim_dev_drv.h"
 #include "../../lcd_reg.h"
@@ -45,13 +46,23 @@ struct bl_gpio_s ldim_gpio[BL_GPIO_NUM_MAX] = {
 	{.probe_flag = 0, .register_flag = 0,},
 };
 
+static struct spicc_controller_data ldim_spi_controller_data = {
+	.ccxfer_en = 0,
+	.timing_en = 1,
+	.ss_leading_gap = 1,
+	.ss_trailing_gap = 0,
+	.tx_tuning = 0,
+	.rx_tuning = 7,
+	.dummy_ctl = 0,
+};
+
 static struct spi_board_info ldim_spi_info = {
 	.modalias = "ldim_dev",
 	.mode = SPI_MODE_0,
 	.max_speed_hz = 1000000, /* 1MHz */
 	.bus_num = 0, /* SPI bus No. */
 	.chip_select = 0, /* the cs pin index on the spi bus */
-	.controller_data = NULL,
+	.controller_data = &ldim_spi_controller_data,
 };
 
 static int ldim_dev_probe_flag;

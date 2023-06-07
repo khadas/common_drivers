@@ -122,6 +122,7 @@
 		jpegenc_cma_reserved:linux,jpegenc_cma {
 			compatible = "shared-dma-pool";
 			reusable;
+			status = "disabled";
 			size = <0x0 0x2400000>;
 			alignment = <0x0 0x400000>;
 		};

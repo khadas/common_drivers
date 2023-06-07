@@ -138,6 +138,7 @@
 		jpegenc_cma_reserved:linux,jpegenc_cma {
 			compatible = "shared-dma-pool";
 			reusable;
+			status = "disabled";
 			size = <0x0 0x800000>;
 			alignment = <0x0 0x400000>;
 		};
@@ -528,32 +529,6 @@
 		status = "okay";
 	};
 	/* Audio Related end */
-	aml_enc {
-		compatible = "cnm, MultiEnc";
-		dev_name = "amvenc_multi";
-		status = "okay";
-		config_mm_sz_mb = <80>;
-		//clocks = <&clkc CLKID_SYS_DOS
-		//	&clkc CLKID_DOS_APB
-		//	&clkc CLKID_WAVE_A_GATE
-		//	&clkc CLKID_WAVE_B_GATE
-		//	&clkc CLKID_WAVE_C_GATE>;
-		clock-names = "clk_dos",
-			"clk_apb_dos",
-			"clk_MultiEnc_A",
-			"clk_MultiEnc_B",
-			"clk_MultiEnc_C";
-		interrupts = <0 82 1
-			0 83 1>;
-		interrupt-names = "multienc_irq",
-			"multienc_idle_irq";
-		#address-cells=<2>;
-		#size-cells=<2>;
-		ranges;
-		io_reg_base {
-			reg = <0x0 0xfe070000 0x0 0x10000>;
-		};
-	};
 	sensor: sensor {
 		compatible = "soc, sensor";
 		status = "okay";

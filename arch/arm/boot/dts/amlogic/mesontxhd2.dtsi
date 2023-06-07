@@ -597,6 +597,8 @@
 	mesonstream {
 		compatible = "amlogic, codec, streambuf";
 		dev_name = "mesonstream";
+		clocks = <&clkc CLKID_CLK81>;
+		clock-names = "clk_81";
 		status = "okay";
 	};
 
@@ -608,10 +610,16 @@
 			<0xff638000 0x2000>;
 		reg-names = "dosbus",
 			"dmcbus";
-		clocks = <&clkc CLKID_CLK81
+		clocks = <&clkc CLKID_CLK81_PARSER
+			&clkc CLKID_CLK81_DMUX
+			&clkc CLKID_CLK81_AHB_ARB0
+			&clkc CLKID_CLK81_DOS
 			&clkc CLKID_VDEC
 			&clkc CLKID_HEVCF>;
-		clock-names = "clk_81",
+		clock-names = "parser_top",
+			"demux",
+			"ahbarb0",
+			"vdec",
 			"clk_vdec_mux",
 			"clk_hevc_mux";
 		assigned-clock-parents = <&clkc CLKID_VDEC_0>,

@@ -1728,6 +1728,15 @@ static struct meson_tvafe_data meson_t3x_tvafe_data = {
 	.atv_dmd_sys_clk = T3X_ATV_DMD_SYS_CLK_CNTL,
 };
 
+static struct meson_tvafe_data meson_txhd2_tvafe_data = {
+	.cpu_id = TVAFE_CPU_TYPE_TXHD2,
+	.name = "meson-txhd2-tvafe",
+
+	.cvbs_pq_conf = NULL,
+	.rf_pq_conf = NULL,
+	.atv_dmd_sys_clk = HHI_ANA_CLK_BASE,
+};
+
 static const struct of_device_id meson_tvafe_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -1759,6 +1768,9 @@ static const struct of_device_id meson_tvafe_dt_match[] = {
 	}, {
 		.compatible = "amlogic, tvafe-t3x",
 		.data		= &meson_t3x_tvafe_data,
+	}, {
+		.compatible = "amlogic, tvafe-txhd2",
+		.data		= &meson_txhd2_tvafe_data,
 	},
 	{}
 };

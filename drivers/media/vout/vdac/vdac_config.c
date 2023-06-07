@@ -90,6 +90,12 @@ static struct meson_vdac_data meson_g12ab_vdac_data = {
 	.reg_vid2_clk_div = HHI_VIID_CLK_DIV,
 	.ctrl_table = vdac_ctrl_enable_g12ab,
 };
+
+static struct meson_vdac_ctrl_s vdac_ctrl_enable_txhd2[] = {
+	{HHI_VDAC_CNTL0_G12A, 1, 4, 1}, /* chopper_clk_h */
+	{HHI_VDAC_CNTL1_G12A, 1, 7, 1}, /* cdac_en */
+	{VDAC_REG_MAX, 0, 0, 0},
+};
 #endif
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -234,6 +240,20 @@ static struct meson_vdac_data meson_t3x_vdac_data = {
 	.bypass_cfg_cntl0 = 0x00416901, //vlsi suggestion value
 	.cvbsout_cfg_cntl0 = 0x00410a01, //vlsi suggestion value
 };
+
+static struct meson_vdac_data meson_txhd2_vdac_data = {
+	.cpu_id = VDAC_CPU_TXHD2,
+	.name = "meson-txhd2-vdac",
+
+	.reg_cntl0 = HHI_VDAC_CNTL0_G12A,
+	.reg_cntl1 = HHI_VDAC_CNTL1_G12A,
+	.reg_vid_clk_ctrl2 = HHI_VID_CLK_CNTL2,
+	.reg_vid2_clk_div = HHI_VIID_CLK_DIV,
+	.ctrl_table = vdac_ctrl_enable_txhd2,
+	.cdac_disable = 1,
+	.bypass_cfg_cntl0 = 0x00411982, //vlsi suggestion value
+	.cvbsout_cfg_cntl0 = 0x00411a82, //vlsi suggestion value
+};
 #endif
 
 const struct of_device_id meson_vdac_dt_match[] = {
@@ -290,6 +310,9 @@ const struct of_device_id meson_vdac_dt_match[] = {
 	}, {
 		.compatible = "amlogic, vdac-t3x",
 		.data		= &meson_t3x_vdac_data,
+	}, {
+		.compatible = "amlogic, vdac-txhd2",
+		.data		= &meson_txhd2_vdac_data,
 	},
 #endif
 	{}

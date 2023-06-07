@@ -54,18 +54,9 @@ static unsigned int avin_detect_flag;
 
 #define AVIN_FUNCTION_WHITE0	  BIT(0)
 
-/*0:670mv; 1:727mv; 2:777mv; 3:823mv; 4:865mv; 5:904mv; 6:940mv; 7:972mv*/
-static unsigned int dc_level_adj = 4;
-
-/*0:635mv; 1:686mv; 2:733mv; 3:776mv; 4:816mv; 5:853mv; 6:887mv; 7:919mv*/
-static unsigned int comp_level_adj = 3;
-
 /*0:use internal VDC to bias CVBS_in*/
 /*1:use ground to bias CVBS_in*/
 static unsigned int detect_mode;
-
-/*0:460mv; 1:0.225mv*/
-static unsigned int vdc_level = 1;
 
 /*0:50mv; 1:100mv; 2:150mv; 3:200mv; 4:250mv; 6:300mv; 7:310mv*/
 static unsigned int sync_level = 1;
@@ -490,9 +481,9 @@ static void tvafe_avin_detect_anlog_config(void)
 {
 	if (meson_data) {
 		/*ch1 config*/
-		W_HIU_BIT(meson_data->detect_cntl, dc_level_adj,
+		W_HIU_BIT(meson_data->detect_cntl, meson_data->dc_level_adj,
 			AFE_CH1_DC_LEVEL_ADJ_BIT, AFE_CH1_DC_LEVEL_ADJ_WIDTH);
-		W_HIU_BIT(meson_data->detect_cntl, comp_level_adj,
+		W_HIU_BIT(meson_data->detect_cntl, meson_data->comp_level_adj,
 		AFE_CH1_COMP_LEVEL_ADJ_BIT, AFE_CH1_COMP_LEVEL_ADJ_WIDTH);
 		W_HIU_BIT(meson_data->detect_cntl, 0,
 			AFE_CH1_COMP_HYS_ADJ_BIT, AFE_CH1_COMP_HYS_ADJ_WIDTH);
@@ -506,21 +497,17 @@ static void tvafe_avin_detect_anlog_config(void)
 			W_HIU_BIT(meson_data->detect_cntl, 1,
 				  AFE_T5_CH2_EN_DC_BIAS_BIT,
 				  AFE_T5_CH2_EN_DC_BIAS_WIDTH);
-			if (!av_dev &&
-			    (av_dev->function_select & AVIN_FUNCTION_WHITE0)) {
-				W_HIU_BIT(meson_data->detect_cntl, 3,
-					  AFE_CH1_COMP_LEVEL_ADJ_BIT,
-					  AFE_CH1_COMP_LEVEL_ADJ_WIDTH);
-			}
+			W_HIU_BIT(HHI_CVBS_DETECT_CNTL, meson_data->vdc_level,
+				AFE_DETECT_RSV_BIT, AFE_DETECT_RSV_WIDTH);
 		} else {
 			/*ch config*/
 			W_HIU_BIT(meson_data->detect_cntl, 1,
 				  AFE_CH2_EN_DC_BIAS_BIT,
 				  AFE_CH2_EN_DC_BIAS_WIDTH);
-			W_HIU_BIT(meson_data->detect_cntl, dc_level_adj,
+			W_HIU_BIT(meson_data->detect_cntl, 4,
 				  AFE_CH2_DC_LEVEL_ADJ_BIT,
 				  AFE_CH2_DC_LEVEL_ADJ_WIDTH);
-			W_HIU_BIT(meson_data->detect_cntl, comp_level_adj,
+			W_HIU_BIT(meson_data->detect_cntl, meson_data->comp_level_adj,
 				  AFE_CH2_COMP_LEVEL_ADJ_BIT,
 				  AFE_CH2_COMP_LEVEL_ADJ_WIDTH);
 			W_HIU_BIT(meson_data->detect_cntl, 0,
@@ -547,7 +534,7 @@ static void tvafe_avin_detect_anlog_config(void)
 		AFE_CH1_SYNC_LEVEL_ADJ_BIT, AFE_CH1_SYNC_LEVEL_ADJ_WIDTH);
 		W_HIU_BIT(HHI_CVBS_DETECT_CNTL, sync_hys_adj,
 			AFE_CH1_SYNC_HYS_ADJ_BIT, AFE_CH1_SYNC_HYS_ADJ_WIDTH);
-		W_HIU_BIT(HHI_CVBS_DETECT_CNTL, vdc_level,
+		W_HIU_BIT(HHI_CVBS_DETECT_CNTL, 0,
 			AFE_DETECT_RSV0_BIT, AFE_DETECT_RSV0_WIDTH);
 		/*after adc and afe is enable,this bit must be set to "0"*/
 		W_HIU_BIT(HHI_CVBS_DETECT_CNTL, 1, AFE_CH1_EN_SYNC_TIP_BIT,
@@ -558,7 +545,7 @@ static void tvafe_avin_detect_anlog_config(void)
 		AFE_CH2_SYNC_LEVEL_ADJ_BIT, AFE_CH2_SYNC_LEVEL_ADJ_WIDTH);
 		W_HIU_BIT(HHI_CVBS_DETECT_CNTL, sync_hys_adj,
 			AFE_CH2_SYNC_HYS_ADJ_BIT, AFE_CH2_SYNC_HYS_ADJ_WIDTH);
-		W_HIU_BIT(HHI_CVBS_DETECT_CNTL, vdc_level,
+		W_HIU_BIT(HHI_CVBS_DETECT_CNTL, 0,
 			AFE_DETECT_RSV2_BIT, AFE_DETECT_RSV2_WIDTH);
 		W_HIU_BIT(HHI_CVBS_DETECT_CNTL, 1, AFE_CH2_EN_SYNC_TIP_BIT,
 			AFE_CH2_EN_SYNC_TIP_WIDTH);
@@ -718,10 +705,10 @@ static void tvafe_avin_detect_state(struct tvafe_avin_det_s *av_dev)
 		meson_data->irq0_cntl,
 		tvafe_avin_irq_reg_read(meson_data->irq0_cntl));
 	tvafe_pr_info("\t*****global param*****\n");
-	tvafe_pr_info("dc_level_adj: %d\n", dc_level_adj);
-	tvafe_pr_info("comp_level_adj: %d\n", comp_level_adj);
+	tvafe_pr_info("dc_level_adj: %d\n", meson_data->dc_level_adj);
+	tvafe_pr_info("comp_level_adj: %d\n", meson_data->comp_level_adj);
 	tvafe_pr_info("detect_mode: %d\n", detect_mode);
-	tvafe_pr_info("vdc_level: %d\n", vdc_level);
+	tvafe_pr_info("vdc_level: %d\n", meson_data->vdc_level);
 	tvafe_pr_info("sync_level: %d\n", sync_level);
 	tvafe_pr_info("sync_hys_adj: %d\n", sync_hys_adj);
 	tvafe_pr_info("irq_mode: %d\n", irq_mode);
@@ -826,38 +813,29 @@ static ssize_t debug_store(struct device *dev,
 	/*tvafe_pr_info("[%s]:param0:%s.\n", __func__, parm[0]);*/
 	if (!strcmp(parm[0], "dc_level_adj")) {
 		if (parm[1]) {
-			if (kstrtouint(parm[1], 10, &dc_level_adj)) {
+			if (kstrtouint(parm[1], 10, &meson_data->dc_level_adj)) {
 				tvafe_pr_info("[%s]:invalid parameter\n",
 					__func__);
 				goto tvafe_avin_detect_store_err;
 			} else {
-				W_HIU_BIT(meson_data->detect_cntl, dc_level_adj,
-					  AFE_CH1_DC_LEVEL_ADJ_BIT,
-					  AFE_CH1_DC_LEVEL_ADJ_WIDTH);
-				W_HIU_BIT(meson_data->detect_cntl, dc_level_adj,
-					  AFE_CH2_DC_LEVEL_ADJ_BIT,
-					  AFE_CH2_DC_LEVEL_ADJ_WIDTH);
+				W_HIU_BIT(meson_data->detect_cntl, meson_data->dc_level_adj,
+					  AFE_CH1_DC_LEVEL_ADJ_BIT, AFE_CH1_DC_LEVEL_ADJ_WIDTH);
 			}
 		}
-		tvafe_pr_info("[%s]: dc_level_adj: %d\n",
-			__func__, dc_level_adj);
+		tvafe_pr_info("[%s]: dc_level_adj: %d\n", __func__, meson_data->dc_level_adj);
 	} else if (!strcmp(parm[0], "comp_level_adj")) {
 		if (parm[1]) {
-			if (kstrtouint(parm[1], 10, &comp_level_adj)) {
+			if (kstrtouint(parm[1], 10, &meson_data->comp_level_adj)) {
 				tvafe_pr_info("[%s]:invalid parameter\n",
 					__func__);
 				goto tvafe_avin_detect_store_err;
 			} else {
-				W_HIU_BIT(meson_data->detect_cntl, comp_level_adj,
+				W_HIU_BIT(meson_data->detect_cntl, meson_data->comp_level_adj,
 					  AFE_CH1_COMP_LEVEL_ADJ_BIT,
 					  AFE_CH1_COMP_LEVEL_ADJ_WIDTH);
-				W_HIU_BIT(meson_data->detect_cntl, comp_level_adj,
-					  AFE_CH2_COMP_LEVEL_ADJ_BIT,
-					  AFE_CH2_COMP_LEVEL_ADJ_WIDTH);
 			}
 		}
-		tvafe_pr_info("[%s]: comp_level_adj: %d\n",
-			__func__, comp_level_adj);
+		tvafe_pr_info("[%s]: comp_level_adj: %d\n", __func__, meson_data->comp_level_adj);
 	} else if (!strcmp(parm[0], "detect_mode")) {
 		if (parm[1]) {
 			if (kstrtouint(parm[1], 10, &detect_mode)) {
@@ -870,14 +848,14 @@ static ssize_t debug_store(struct device *dev,
 			__func__, detect_mode);
 	} else if (!strcmp(parm[0], "vdc_level")) {
 		if (parm[1]) {
-			if (kstrtouint(parm[1], 10, &vdc_level)) {
+			if (kstrtouint(parm[1], 10, &meson_data->vdc_level)) {
 				tvafe_pr_info("[%s]:invalid parameter\n",
 					__func__);
 				goto tvafe_avin_detect_store_err;
 			}
 		}
 		tvafe_pr_info("[%s]: vdc_level: %d\n",
-			__func__, vdc_level);
+			__func__, meson_data->vdc_level);
 	} else if (!strcmp(parm[0], "sync_level")) {
 		if (parm[1]) {
 			if (kstrtouint(parm[1], 10, &sync_level)) {
@@ -1358,6 +1336,9 @@ struct meson_avin_data tl1_data = {
 	.irq1_cntl = CVBS_IRQ1_CNTL,
 	.irq0_cnt  = CVBS_IRQ0_COUNTER,
 	.irq1_cnt  = CVBS_IRQ1_COUNTER,
+	.dc_level_adj = 4,
+	.vdc_level = 0,
+	.comp_level_adj = 3,
 };
 #endif
 
@@ -1370,6 +1351,9 @@ struct meson_avin_data tm2_data = {
 	.irq1_cntl = CVBS_IRQ1_CNTL,
 	.irq0_cnt  = CVBS_IRQ0_COUNTER,
 	.irq1_cnt  = CVBS_IRQ1_COUNTER,
+	.dc_level_adj = 4,
+	.vdc_level = 0,
+	.comp_level_adj = 3,
 };
 
 struct meson_avin_data t5_data = {
@@ -1381,6 +1365,9 @@ struct meson_avin_data t5_data = {
 	.irq1_cntl = CVBS_IRQ1_CNTL,
 	.irq0_cnt  = CVBS_IRQ0_COUNTER,
 	.irq1_cnt  = CVBS_IRQ1_COUNTER,
+	.dc_level_adj = 4,
+	.vdc_level = 0,
+	.comp_level_adj = 3,
 };
 
 struct meson_avin_data t5d_data = {
@@ -1392,6 +1379,9 @@ struct meson_avin_data t5d_data = {
 	.irq1_cntl = CVBS_IRQ1_CNTL,
 	.irq0_cnt  = CVBS_IRQ0_COUNTER,
 	.irq1_cnt  = CVBS_IRQ1_COUNTER,
+	.dc_level_adj = 4,
+	.vdc_level = 0,
+	.comp_level_adj = 3,
 };
 
 struct meson_avin_data t3_data = {
@@ -1403,6 +1393,9 @@ struct meson_avin_data t3_data = {
 	.irq1_cntl = IRQCTRL_CVBS_IRQ1_CNTL,
 	.irq0_cnt  = IRQCTRL_CVBS_IRQ0_COUNTER,
 	.irq1_cnt  = IRQCTRL_CVBS_IRQ1_COUNTER,
+	.dc_level_adj = 4,
+	.vdc_level = 0,
+	.comp_level_adj = 3,
 };
 
 struct meson_avin_data t5w_data = {
@@ -1414,6 +1407,9 @@ struct meson_avin_data t5w_data = {
 	.irq1_cntl = CVBS_IRQ1_CNTL,
 	.irq0_cnt  = CVBS_IRQ0_COUNTER,
 	.irq1_cnt  = CVBS_IRQ1_COUNTER,
+	.dc_level_adj = 4,
+	.vdc_level = 0,
+	.comp_level_adj = 3,
 };
 
 struct meson_avin_data t5m_data = {
@@ -1425,6 +1421,9 @@ struct meson_avin_data t5m_data = {
 	.irq1_cntl = IRQCTRL_CVBS_IRQ1_CNTL,
 	.irq0_cnt  = IRQCTRL_CVBS_IRQ0_COUNTER,
 	.irq1_cnt  = IRQCTRL_CVBS_IRQ1_COUNTER,
+	.dc_level_adj = 4,
+	.vdc_level = 0,
+	.comp_level_adj = 3,
 };
 
 struct meson_avin_data t3x_data = {
@@ -1436,6 +1435,23 @@ struct meson_avin_data t3x_data = {
 	.irq1_cntl = PADCTRL_ANALOG_EN,
 	.irq0_cnt  = PADCTRL_ANALOG_I,
 	.irq1_cnt  = PADCTRL_ANALOG_I,
+	.dc_level_adj = 4,
+	.vdc_level = 0,
+	.comp_level_adj = 3,
+};
+
+struct meson_avin_data txhd2_data = {
+	.cpu_id = AVIN_CPU_TYPE_TXHD2,
+	.name = "meson-txhd2-avin-detect",
+
+	.detect_cntl = HHI_CVBS_DETECT_CNTL,
+	.irq0_cntl = CVBS_IRQ0_CNTL,
+	.irq1_cntl = CVBS_IRQ1_CNTL,
+	.irq0_cnt  = CVBS_IRQ0_COUNTER,
+	.irq1_cnt  = CVBS_IRQ1_COUNTER,
+	.dc_level_adj = 3,
+	.vdc_level = 3,
+	.comp_level_adj = 3,
 };
 
 static const struct of_device_id tvafe_avin_dt_match[] = {
@@ -1466,6 +1482,9 @@ static const struct of_device_id tvafe_avin_dt_match[] = {
 	},
 	{	.compatible = "amlogic, t3x_tvafe_avin_detect",
 		.data = &t3x_data,
+	},
+	{	.compatible = "amlogic, txhd2_tvafe_avin_detect",
+		.data = &txhd2_data,
 	},
 	{},
 };

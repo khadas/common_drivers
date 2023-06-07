@@ -744,7 +744,7 @@ static int tvafe_dumpmem_save_buf(struct tvafe_dev_s *devp, const char *str)
 #if IS_ENABLED(CONFIG_AMLOGIC_TVIN_USE_DEBUG_FILE)
 	return tvafe_dumpmem_save_buf_df(devp, str);
 #else
-#ifdef CONFIG_AMLOGIC_ENABLE_MEDIA_FILE
+#if IS_ENABLED(CONFIG_AMLOGIC_ENABLE_VIDEO_PIPELINE_DUMP_DATA)
 	unsigned int highmem_flag = 0;
 	unsigned long high_addr;
 	struct file *filp = NULL;
@@ -771,14 +771,13 @@ static int tvafe_dumpmem_save_buf(struct tvafe_dev_s *devp, const char *str)
 			}
 			pr_info("buf:0x%p\n", buf);
 /*vdin_dma_flush(devp, buf, SZ_1M, DMA_FROM_DEVICE);*/
-			vfs_write(filp, buf, SZ_1M, &pos);
+			kernel_write(filp, buf, SZ_1M, &pos);
 			vdin_unmap_phyaddr(buf);
 		}
 	} else {
 		buf = phys_to_virt(devp->mem.start);
-		vfs_write(filp, buf, devp->mem.size, &pos);
+		kernel_write(filp, buf, devp->mem.size, &pos);
 	}
-	vfs_fsync(filp, 0);
 	filp_close(filp, NULL);
 
 	tvafe_pr_info("write mem 0x%x (size 0x%x) to %s done\n",

@@ -147,6 +147,7 @@ enum avin_cpu_type {
 	AVIN_CPU_TYPE_T5W   = 8,
 	AVIN_CPU_TYPE_T5M   = 9,
 	AVIN_CPU_TYPE_T3X   = 10,
+	AVIN_CPU_TYPE_TXHD2   = 11,
 	AVIN_CPU_TYPE_MAX,
 };
 
@@ -160,6 +161,12 @@ struct meson_avin_data {
 	unsigned int irq1_cntl;
 	unsigned int irq0_cnt;
 	unsigned int irq1_cnt;
+	/*0:670mv; 1:727mv; 2:777mv; 3:823mv; 4:865mv; 5:904mv; 6:940mv; 7:972mv*/
+	unsigned int dc_level_adj;
+	/*0:460mv; 1:0.225mv*/
+	unsigned int vdc_level;
+	/*0:635mv; 1:686mv; 2:733mv; 3:776mv; 4:816mv; 5:853mv; 6:887mv; 7:919mv*/
+	unsigned int comp_level_adj;
 };
 
 void tvafe_cha1_SYNCTIP_close_config(void);

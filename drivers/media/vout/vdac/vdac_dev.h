@@ -44,7 +44,6 @@
 
 /* 20220419:adjust cvbsout clk delay */
 /* 20230426:add vdac control node */
-#define VDIN_VER "20230426:add vdac control node"
 /* 20230325:t3x bringup */
 #define VDAC_VER "20230325:t3x bringup"
 

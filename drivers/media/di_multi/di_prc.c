@@ -850,7 +850,7 @@ const struct di_mp_uit_s di_mp_ui_top[] = {
 
 	/******deinterlace_hw.c**********/
 	[edi_mp_pq_load_dbg]  = {"pq_load_dbg:uint",
-			edi_mp_pq_load_dbg, 1},
+			edi_mp_pq_load_dbg, 0},
 	[edi_mp_lmv_lock_win_en]  = {"lmv_lock_win_en:bool",
 			edi_mp_lmv_lock_win_en, 0},
 	[edi_mp_lmv_dist]  = {"lmv_dist:short:5",

@@ -8063,6 +8063,8 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 
 	if (!legacy_vpp) {
 		u32 set_value = 0;
+		u32 set_value1 = 0;
+		u32 set_value2 = 0;
 
 		/* for sr core0, put it between prebld & pps as default */
 		if (vd1_frame_par &&
@@ -8201,9 +8203,21 @@ void vpp_blend_update(const struct vinfo_s *vinfo)
 			/* t5d bit 9:11 used by wm ctrl, chip after g12 not used bit 9:11, mask it*/
 			set_value &= 0xfffff1ff;
 			set_value |= (vpp_misc_save & 0xe00);
-			cur_dev->rdma_func[vpp_index].rdma_wr
-				(VPP_MISC + vpp_off,
-				set_value);
+			if (!is_meson_txhd2_cpu()) {
+				cur_dev->rdma_func[vpp_index].rdma_wr
+					(VPP_MISC + vpp_off,
+					set_value);
+			} else {
+				/*for txhd2 keystone,VPP_MISC bit27 set in uboot by vout*/
+				set_value1 = set_value & 0x7ffffff;
+				set_value2 = set_value & 0xf0000000;
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
+					(VPP_MISC + vpp_off,
+					set_value1, 0, 27);
+				cur_dev->rdma_func[vpp_index].rdma_wr_bits
+					(VPP_MISC + vpp_off,
+					set_value2 >> 28, 28, 4);
+			}
 		}
 	} else if (vpp_misc_save != vpp_misc_set) {
 		cur_dev->rdma_func[vpp_index].rdma_wr

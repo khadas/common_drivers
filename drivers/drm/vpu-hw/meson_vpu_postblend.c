@@ -729,6 +729,17 @@ static void postblend_hw_disable(struct meson_vpu_block *vblk,
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void g12b_postblend_hw_disable(struct meson_vpu_block *vblk,
+		struct meson_vpu_block_state *state)
+{
+	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
+
+	if (vblk->index == 0)
+		vpp_osd1_postblend_mux_set(vblk, state->sub->reg_ops, postblend->reg, VPP_NULL);
+
+	DRM_DEBUG("%s disable called.\n", postblend->base.name);
+}
+
 static void s5_postblend_hw_disable(struct meson_vpu_block *vblk,
 				    struct meson_vpu_block_state *state)
 {
@@ -947,6 +958,15 @@ struct meson_vpu_block_ops postblend_ops = {
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+struct meson_vpu_block_ops g12b_postblend_ops = {
+	.check_state = postblend_check_state,
+	.update_state = postblend_set_state,
+	.enable = postblend_hw_enable,
+	.disable = g12b_postblend_hw_disable,
+	.dump_register = postblend_dump_register,
+	.init = postblend_hw_init,
+};
+
 struct meson_vpu_block_ops t7_postblend_ops = {
 	.check_state = postblend_check_state,
 	.update_state = t7_postblend_set_state,

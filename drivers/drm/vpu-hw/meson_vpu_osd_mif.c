@@ -125,6 +125,97 @@ static struct osd_mif_reg_s osd_mif_reg[HW_OSD_MIF_NUM] = {
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static struct osd_mif_reg_s g12b_osd_mif_reg[HW_OSD_MIF_NUM] = {
+	{
+		VIU_OSD1_CTRL_STAT,
+		VIU_OSD1_CTRL_STAT2,
+		VIU_OSD1_COLOR_ADDR,
+		VIU_OSD1_COLOR,
+		VIU_OSD1_TCOLOR_AG0,
+		VIU_OSD1_TCOLOR_AG1,
+		VIU_OSD1_TCOLOR_AG2,
+		VIU_OSD1_TCOLOR_AG3,
+		VIU_OSD1_BLK0_CFG_W0,
+		VIU_OSD1_BLK0_CFG_W1,
+		VIU_OSD1_BLK0_CFG_W2,
+		VIU_OSD1_BLK0_CFG_W3,
+		VIU_OSD1_BLK0_CFG_W4,
+		VIU_OSD1_BLK1_CFG_W4,
+		VIU_OSD1_BLK2_CFG_W4,
+		VIU_OSD1_FIFO_CTRL_STAT,
+		VIU_OSD1_TEST_RDDATA,
+		VIU_OSD1_PROT_CTRL,
+		VIU_OSD1_MALI_UNPACK_CTRL,
+		VIU_OSD1_DIMM_CTRL,
+	},
+	{
+		VIU_OSD2_CTRL_STAT,
+		VIU_OSD2_CTRL_STAT2,
+		VIU_OSD2_COLOR_ADDR,
+		VIU_OSD2_COLOR,
+		VIU_OSD2_TCOLOR_AG0,
+		VIU_OSD2_TCOLOR_AG1,
+		VIU_OSD2_TCOLOR_AG2,
+		VIU_OSD2_TCOLOR_AG3,
+		VIU_OSD2_BLK0_CFG_W0,
+		VIU_OSD2_BLK0_CFG_W1,
+		VIU_OSD2_BLK0_CFG_W2,
+		VIU_OSD2_BLK0_CFG_W3,
+		VIU_OSD2_BLK0_CFG_W4,
+		VIU_OSD2_BLK1_CFG_W4,
+		VIU_OSD2_BLK2_CFG_W4,
+		VIU_OSD2_FIFO_CTRL_STAT,
+		VIU_OSD2_TEST_RDDATA,
+		VIU_OSD2_PROT_CTRL,
+		VIU_OSD2_MALI_UNPACK_CTRL,
+		VIU_OSD2_DIMM_CTRL,
+	},
+	{
+		VIU_OSD3_CTRL_STAT,
+		VIU_OSD3_CTRL_STAT2,
+		VIU_OSD3_COLOR_ADDR,
+		VIU_OSD3_COLOR,
+		VIU_OSD3_TCOLOR_AG0,
+		VIU_OSD3_TCOLOR_AG1,
+		VIU_OSD3_TCOLOR_AG2,
+		VIU_OSD3_TCOLOR_AG3,
+		VIU_OSD3_BLK0_CFG_W0,
+		VIU_OSD3_BLK0_CFG_W1,
+		VIU_OSD3_BLK0_CFG_W2,
+		VIU_OSD3_BLK0_CFG_W3,
+		VIU_OSD3_BLK0_CFG_W4,
+		VIU_OSD3_BLK1_CFG_W4,
+		VIU_OSD3_BLK2_CFG_W4,
+		VIU_OSD3_FIFO_CTRL_STAT,
+		VIU_OSD3_TEST_RDDATA,
+		VIU_OSD3_PROT_CTRL,
+		VIU_OSD3_MALI_UNPACK_CTRL,
+		VIU_OSD3_DIMM_CTRL,
+	},
+	{
+		VIU2_OSD1_CTRL_STAT,
+		VIU2_OSD1_CTRL_STAT2,
+		VIU2_OSD1_COLOR_ADDR,
+		VIU2_OSD1_COLOR,
+		VIU2_OSD1_TCOLOR_AG0,
+		VIU2_OSD1_TCOLOR_AG1,
+		VIU2_OSD1_TCOLOR_AG2,
+		VIU2_OSD1_TCOLOR_AG3,
+		VIU2_OSD1_BLK0_CFG_W0,
+		VIU2_OSD1_BLK0_CFG_W1,
+		VIU2_OSD1_BLK0_CFG_W2,
+		VIU2_OSD1_BLK0_CFG_W3,
+		VIU2_OSD1_BLK0_CFG_W4,
+		VIU2_OSD1_BLK1_CFG_W4,
+		VIU2_OSD1_BLK2_CFG_W4,
+		VIU2_OSD1_FIFO_CTRL_STAT,
+		VIU2_OSD1_TEST_RDDATA,
+		VIU2_OSD1_PROT_CTRL,
+		VIU2_OSD1_MALI_UNPACK_CTRL,
+		VIU2_OSD1_DIMM_CTRL,
+	}
+};
+
 static struct osd_mif_reg_s s5_osd_mif_reg[HW_OSD_MIF_NUM] = {
 	{
 		VIU_OSD1_CTRL_STAT_S5,
@@ -221,8 +312,8 @@ static struct osd_mif_reg_s s5_osd_mif_reg[HW_OSD_MIF_NUM] = {
 };
 #endif
 
-static unsigned int osd_canvas[3][2];
-static u32 osd_canvas_index[3] = {0, 0, 0};
+static unsigned int osd_canvas[4][2];
+static u32 osd_canvas_index[4] = {0, 0, 0, 0};
 static u32 osd_secure_input_index[] = {OSD1_INPUT_SECURE,
 	OSD2_INPUT_SECURE, OSD3_INPUT_SECURE};
 
@@ -1304,6 +1395,79 @@ static void osd_hw_init(struct meson_vpu_block *vblk)
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+
+#define OSD_GLOBAL_ALPHA_DEF 0x100
+static void g12b_osd_hw_init(struct meson_vpu_block *vblk)
+{
+	struct meson_vpu_pipeline *pipeline;
+	struct meson_vpu_osd *osd = to_osd_block(vblk);
+	u32 data32;
+
+	if (!vblk || !osd) {
+		DRM_DEBUG("hw_init break for NULL.\n");
+		return;
+	}
+
+	pipeline = osd->base.pipeline;
+	if (!pipeline) {
+		DRM_DEBUG("hw_init break for NULL.\n");
+		return;
+	}
+
+	meson_drm_osd_canvas_alloc();
+
+	osd->reg = &g12b_osd_mif_reg[vblk->index];
+	//osd_ctrl_init(vblk, pipeline->subs[0].reg_ops, osd->reg);
+	osd->mif_acc_mode = CANVAS_MODE;
+
+	if (vblk->index == MESON_VIU2_OSD1) {
+		DRM_INFO("%s hw_init for %s, index:%d.\n", __func__,
+				osd->base.name, vblk->index);
+		meson_drm_write_reg_bits(VIU2_OSD1_MATRIX_EN_CTRL, 0, 0, 1);
+		/* power and clock of viu2 */
+		data32 = meson_drm_read_reg(VPU_CLK_GATE);
+		data32 =  data32 | 0x30000;
+		meson_drm_write_reg(VPU_CLK_GATE, data32);
+
+		meson_drm_write_reg(VPP2_OFIFO_SIZE, 0x7ff00800);
+		data32 = 0x1 << 0;
+		data32 |= OSD_GLOBAL_ALPHA_DEF << 12;
+		meson_drm_write_reg(osd->reg->viu_osd_ctrl_stat, data32);
+
+		meson_drm_write_reg_bits(osd->reg->viu_osd_fifo_ctrl_stat,
+			1, 31, 1);
+		meson_drm_write_reg_bits(osd->reg->viu_osd_fifo_ctrl_stat,
+			1, 10, 2);
+
+		data32 = 0;
+		data32 = meson_drm_read_reg(osd->reg->viu_osd_ctrl_stat);
+		data32 |= 0x80000000;
+		meson_drm_write_reg(osd->reg->viu_osd_ctrl_stat, data32);
+
+		data32 = 1;
+		data32 |= VIU2_DEFAULT_HOLD_LINE << 5;  /* hold_fifo_lines */
+
+		data32 |= 1 << 10;
+		data32 |= 1 << 31;
+		/*
+		 * bit 23:22, fifo_ctrl
+		 * 00 : for 1 word in 1 burst
+		 * 01 : for 2 words in 1 burst
+		 * 10 : for 4 words in 1 burst
+		 * 11 : reserved
+		 */
+		data32 |= 2 << 22;
+		/* bit 28:24, fifo_lim */
+		data32 |= 2 << 24;
+		data32 |= (64
+			& 0xfffffff) << 12;
+		meson_drm_write_reg(osd->reg->viu_osd_fifo_ctrl_stat, data32);
+		DRM_INFO("%s hw_init end for %s, index:%d.\n", __func__,
+				osd->base.name, vblk->index);
+	}
+	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
+}
+
 static void t7_osd_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_pipeline *pipeline;
@@ -1392,6 +1556,16 @@ struct meson_vpu_block_ops osd_ops = {
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+struct meson_vpu_block_ops g12b_osd_ops = {
+	.check_state = osd_check_state,
+	.update_state = osd_set_state,
+	.enable = osd_hw_enable,
+	.disable = osd_hw_disable,
+	.dump_register = osd_dump_register,
+	.init = g12b_osd_hw_init,
+	.fini = osd_hw_fini,
+};
+
 struct meson_vpu_block_ops t7_osd_ops = {
 	.check_state = osd_check_state,
 	.update_state = osd_set_state,

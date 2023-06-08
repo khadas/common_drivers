@@ -6,8 +6,8 @@
 /dts-v1/;
 
 #include "mesonsm1.dtsi"
-#include "mesonsm1_drm.dtsi"
 #include "mesonsm1_ac200-panel.dtsi"
+#include "mesonsm1_drm_dual_disp.dtsi"
 #include "partition_debian_linux.dtsi"
 
 / {
@@ -84,7 +84,7 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x3400000>;
+			size = <0x0 0x4000000>;
 			alignment = <0x0 0x400000>;
 			no-kernel-map;
 		};

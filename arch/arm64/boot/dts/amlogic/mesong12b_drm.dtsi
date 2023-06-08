@@ -16,7 +16,7 @@
  *
  */
 #include <dt-bindings/display/meson-drm-ids.h>
-#include "mesong12b.dtsi"
+//#include "mesong12b.dtsi"
 
 / {
 	drm_amcvbsout: drm-amcvbsout {
@@ -65,6 +65,10 @@
 				reg = <2>;
 				remote-endpoint = <&dummyl_to_drm>;
 			};
+			drm_to_lcd0: endpoint@3 {
+				reg = <3>;
+				remote-endpoint = <0>;
+			};
 		};
 	};
 
@@ -76,8 +80,9 @@
 		osd_ver = /bits/ 8 <0x2>;
 		memory-region = <&logo_reserved>;
 		vfm_mode = <1>; /** 0:drm mode 1:composer mode */
-		primary_plane_index = <0>; /* primary plane index for crtcs */
-		crtc_masks = <1 1 1>; /*for encoder: 0:hdmi 1:lcd 2:cvbs*/
+		crtcmask_of_osd = <0 0 0>; /* indicate the crtc mask of osd plane */
+		crtcmask_of_video = <0 0>; /* indicate the crtc mask of video plane */
+		crtc_masks = <1 2 1>; /*for encoder: 0:hdmi 1:lcd 2:cvbs*/
 		vpu_topology: vpu_topology {
 			vpu_blocks {
 				osd1_block: block@0 {
@@ -190,6 +195,7 @@
 				};
 				vpp_postblend_block: block@12 {
 					id = /bits/ 8  <VPP_POSTBLEND_BLOCK>;
+					index = /bits/ 8  <0>;
 					block_name = "vpp_postblend_block";
 					type = /bits/ 8  <6>;
 					num_in_links = /bits/ 8  <0x2>;

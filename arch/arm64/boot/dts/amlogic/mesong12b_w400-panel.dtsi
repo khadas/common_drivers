@@ -96,6 +96,18 @@
 				0xff 0 0 0>; /*ending*/
 			backlight_index = <0x0>;
 		};
+
+		ports {
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				lcd0_to_drm: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <0>;
+				};
+			};
+		};
+
 	};
 
 	backlight{

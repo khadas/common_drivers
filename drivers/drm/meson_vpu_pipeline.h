@@ -18,6 +18,7 @@
 #define MESON_OSD2 1
 #define MESON_OSD3 2
 #define MESON_OSD4 3
+#define MESON_VIU2_OSD1 3
 #define MESON_MAX_OSDS 4
 #define MESON_MAX_VIDEOS 3
 #define MESON_MAX_OSD_BLEND 3
@@ -676,7 +677,8 @@ int vpu_video_pipeline_check_block(struct meson_vpu_pipeline_state *mvps,
 				   struct drm_atomic_state *state);
 void vpu_pipeline_check_finish_reg(int crtc_index);
 
-void meson_rdma_ops_init(struct meson_vpu_pipeline *pipeline, int num_crtc);
+extern struct rdma_reg_ops t7_reg_ops[3];
+extern struct rdma_reg_ops g12b_reg_ops[2];
 
 extern struct meson_vpu_block_ops video_ops;
 extern struct meson_vpu_block_ops osd_ops;
@@ -687,6 +689,8 @@ extern struct meson_vpu_block_ops hdr_ops;
 extern struct meson_vpu_block_ops db_ops;
 extern struct meson_vpu_block_ops postblend_ops;
 
+extern struct meson_vpu_block_ops g12b_osd_ops;
+extern struct meson_vpu_block_ops g12b_postblend_ops;
 extern struct meson_vpu_block_ops t7_osd_ops;
 extern struct meson_vpu_block_ops t7_afbc_ops;
 extern struct meson_vpu_block_ops t3_afbc_ops;

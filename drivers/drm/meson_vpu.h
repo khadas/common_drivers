@@ -15,12 +15,15 @@ struct am_vout_mode {
 	unsigned int flags;
 };
 
+struct meson_vpu_pipeline;
+
 struct meson_vpu_crtc_func {
+	struct rdma_reg_ops *reg_ops;
 	void (*init_default_reg)(void);
 };
 
 struct meson_vpu_data {
-	struct meson_vpu_crtc_func *crtc_func;
+	struct meson_vpu_crtc_func crtc_func;
 	struct meson_vpu_pipeline_ops *pipe_ops;
 	struct meson_vpu_block_ops *osd_ops;
 	struct meson_vpu_block_ops *afbc_ops;

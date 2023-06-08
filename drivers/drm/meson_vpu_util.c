@@ -175,6 +175,23 @@ int meson_vpu1_write_reg_bits(u32 addr, u32 val, u32 start, u32 len)
 #endif
 }
 
+static u32 meson_vpu1_read_reg_non_rdma(u32 addr)
+{
+	return aml_read_vcbus(addr);
+}
+
+static int meson_vpu1_write_reg_non_rdma(u32 addr, u32 val)
+{
+	aml_write_vcbus(addr, val);
+	return 0;
+}
+
+int meson_vpu1_write_reg_bits_non_rdma(u32 addr, u32 val, u32 start, u32 len)
+{
+	aml_vcbus_update_bits(addr, ((1 << len) - 1) << start, val << start);
+	return 0;
+}
+
 static u32 meson_vpu2_read_reg(u32 addr)
 {
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
@@ -204,7 +221,7 @@ int meson_vpu2_write_reg_bits(u32 addr, u32 val, u32 start, u32 len)
 #endif
 }
 
-static struct rdma_reg_ops t7_reg_ops[3] = {
+struct rdma_reg_ops t7_reg_ops[3] = {
 	{
 		.rdma_read_reg = meson_vpu_read_reg,
 		.rdma_write_reg = meson_vpu_write_reg,
@@ -223,13 +240,18 @@ static struct rdma_reg_ops t7_reg_ops[3] = {
 	},
 };
 
-void meson_rdma_ops_init(struct meson_vpu_pipeline *pipeline, int num_crtc)
-{
-	int i;
-
-	for (i = 0; i < num_crtc; i++)
-		pipeline->subs[i].reg_ops = &t7_reg_ops[i];
-}
+struct rdma_reg_ops g12b_reg_ops[2] = {
+	{
+		.rdma_read_reg = meson_vpu_read_reg,
+		.rdma_write_reg = meson_vpu_write_reg,
+		.rdma_write_reg_bits = meson_vpu_write_reg_bits,
+	},
+	{
+		.rdma_read_reg = meson_vpu1_read_reg_non_rdma,
+		.rdma_write_reg = meson_vpu1_write_reg_non_rdma,
+		.rdma_write_reg_bits = meson_vpu1_write_reg_bits_non_rdma,
+	},
+};
 
 /** reg direct access without rdma **/
 u32 meson_drm_read_reg(u32 addr)

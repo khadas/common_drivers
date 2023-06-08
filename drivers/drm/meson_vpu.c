@@ -181,7 +181,15 @@ static void am_meson_vpu_power_config(bool en)
 	meson_vpu_power_config(VPU_VIU2_OSD_ROT, en);
 }
 
+static void vpu_pipeline_pre_init(struct meson_vpu_pipeline *pipeline, struct device *dev)
+{
+	struct meson_drm *private = pipeline->priv;
+	struct meson_vpu_data *vpu_data = private->vpu_data;
+	int i;
 
+	for (i = 0; i < pipeline->num_postblend; i++)
+		pipeline->subs[i].reg_ops = &vpu_data->crtc_func.reg_ops[i];
+}
 
 static int am_meson_vpu_bind(struct device *dev,
 			     struct device *master, void *data)
@@ -237,12 +245,12 @@ static int am_meson_vpu_bind(struct device *dev,
 		disable_irq(amcrtc->irq);
 	}
 
-	meson_rdma_ops_init(pipeline, pipeline->num_postblend);
+	vpu_pipeline_pre_init(pipeline, dev);
 	vpu_pipeline_init(pipeline);
 
 	/* HW config for different VPUs */
-	if (vpu_data && vpu_data->crtc_func)
-		vpu_data->crtc_func->init_default_reg();
+	if (vpu_data && vpu_data->crtc_func.init_default_reg)
+		vpu_data->crtc_func.init_default_reg();
 
 	if (0)
 		am_meson_vpu_power_config(1);
@@ -279,6 +287,9 @@ static const struct component_ops am_meson_vpu_component_ops = {
 };
 
 static const struct meson_vpu_data vpu_g12a_data = {
+	.crtc_func = {
+		.reg_ops = t7_reg_ops,
+	},
 	.pipe_ops = &g12a_vpu_pipeline_ops,
 	.osd_ops = &osd_ops,
 	.afbc_ops = &afbc_ops,
@@ -291,7 +302,25 @@ static const struct meson_vpu_data vpu_g12a_data = {
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static const struct meson_vpu_data vpu_g12b_data = {
+	.crtc_func = {
+		.reg_ops = g12b_reg_ops,
+	},
+	.pipe_ops = &g12a_vpu_pipeline_ops,
+	.osd_ops = &g12b_osd_ops,
+	.afbc_ops = &afbc_ops,
+	.scaler_ops = &scaler_ops,
+	.osdblend_ops = &osdblend_ops,
+	.hdr_ops = &hdr_ops,
+	.dv_ops = &db_ops,
+	.postblend_ops = &g12b_postblend_ops,
+	.video_ops = &video_ops,
+};
+
 static const struct meson_vpu_data vpu_t7_data = {
+	.crtc_func = {
+		.reg_ops = t7_reg_ops,
+	},
 	.pipe_ops = &t7_vpu_pipeline_ops,
 	.osd_ops = &t7_osd_ops,
 	.afbc_ops = &t7_afbc_ops,
@@ -305,6 +334,9 @@ static const struct meson_vpu_data vpu_t7_data = {
 };
 
 static const struct meson_vpu_data vpu_t3_data = {
+	.crtc_func = {
+		.reg_ops = t7_reg_ops,
+	},
 	.pipe_ops = &t7_vpu_pipeline_ops,
 	.osd_ops = &t7_osd_ops,
 	.afbc_ops = &t3_afbc_ops,
@@ -318,6 +350,9 @@ static const struct meson_vpu_data vpu_t3_data = {
 };
 
 static const struct meson_vpu_data vpu_t5w_data = {
+	.crtc_func = {
+		.reg_ops = t7_reg_ops,
+	},
 	.pipe_ops = &t7_vpu_pipeline_ops,
 	.osd_ops = &t7_osd_ops,
 	.afbc_ops = &t3_afbc_ops,
@@ -331,6 +366,9 @@ static const struct meson_vpu_data vpu_t5w_data = {
 };
 
 static const struct meson_vpu_data vpu_s5_data = {
+	.crtc_func = {
+		.reg_ops = t7_reg_ops,
+	},
 	.pipe_ops = &s5_vpu_pipeline_ops,
 	.osd_ops = &s5_osd_ops,
 	.afbc_ops = &s5_afbc_ops,
@@ -346,6 +384,9 @@ static const struct meson_vpu_data vpu_s5_data = {
 };
 
 static const struct meson_vpu_data vpu_t3x_data = {
+	.crtc_func = {
+		.reg_ops = t7_reg_ops,
+	},
 	.pipe_ops = &s5_vpu_pipeline_ops,
 	.osd_ops = &s5_osd_ops,
 	.afbc_ops = &t3x_afbc_ops,
@@ -387,9 +428,9 @@ static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
 	{ .compatible = "amlogic, meson-g12a-vpu",
 	  .data = &vpu_g12a_data,},
 	{ .compatible = "amlogic, meson-g12b-vpu",
-	  .data = &vpu_g12a_data,},
+	  .data = &vpu_g12b_data,},
 	{.compatible = "amlogic, meson-sm1-vpu",
-	  .data = &vpu_g12a_data,},
+	  .data = &vpu_g12b_data,},
 	{.compatible = "amlogic, meson-tm2-vpu",
 	  .data = &vpu_g12a_data,},
 	{.compatible = "amlogic, meson-t5-vpu",

@@ -1675,7 +1675,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 			break;
 		}
 		port_idx = hdmi_idx - 1;
-		if (port_idx >= 3) {
+		if (port_idx > 3) {
 			rx_pr("port_idx error\n");
 			ret = -EFAULT;
 			mutex_unlock(&devp->rx_lock);

@@ -39,7 +39,8 @@
 //2023.5.17
 //support filmmaker mode
 //fix no edid result in system crash
-#define RX_VER0 "ver.2023/05/23"
+//fix switch fail between edid 1.4 and 2.0.
+#define RX_VER0 "ver.2023/06/12"
 
 /*print type*/
 #define COR1_LOG	0x10000

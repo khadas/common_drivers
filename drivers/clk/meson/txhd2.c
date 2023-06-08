@@ -2673,14 +2673,14 @@ static struct clk_regmap txhd2_eth_125m = {
 };
 
 /*spicc clk*/
-static u32 txhd2_spicc_mux_table[] = { 0, 1, 2, 3, 4, 5, 6};
+static u32 txhd2_spicc_mux_table[] = { 0, 1, 2, 4, 6};
 static const struct clk_parent_data txhd2_spicc_parent_hws[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &txhd2_clk81.hw },
 	{ .hw = &txhd2_fclk_div4.hw },
-	{ .hw = &txhd2_fclk_div3.hw },
+	//{ .hw = &txhd2_fclk_div3.hw },
 	{ .hw = &txhd2_fclk_div2.hw },
-	{ .hw = &txhd2_fclk_div5.hw },
+	//{ .hw = &txhd2_fclk_div5.hw },
 	{ .hw = &txhd2_fclk_div7.hw },
 };
 

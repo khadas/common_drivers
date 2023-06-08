@@ -956,6 +956,19 @@
 				pinctrl-names = "default";
 				pinctrl-0 = <&c_uart_pins>;
 			};
+
+			spicc0: spi@13000 {
+				compatible = "amlogic,meson-g12-spicc";
+				reg = <0x13000 0x58>;
+				interrupts = <GIC_SPI 81 IRQ_TYPE_LEVEL_HIGH>;
+				clocks = <&clkc CLKID_CLK81_SPICC0>,
+					 <&clkc CLKID_SPICC0>;
+				clock-names = "core", "async";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				status = "disabled";
+			};
+
 		}; /* end of cbus */
 
 		aobus: aobus@ff800000 {
@@ -1578,6 +1591,28 @@
 				groups = "GPIOB_8";
 				function = "gpio_periphs";
 				bias-pull-down;
+			};
+		};
+
+		spicc0_pins_c: spicc0_pins_c {
+			mux {
+				groups = "spi_mosi_a_c8",
+					"spi_miso_a_c9",
+					//"spi_ss0_a_c7",used as GPIOC_7
+					"spi_clk_a_c10";
+				function = "spi";
+				drive-strength-microamp = <3000>;
+			};
+		};
+
+		spicc0_pins_dv: spicc0_pins_dv {
+			mux {
+				groups = "spi_miso_a_dv7",
+					"spi_mosi_a_dv8",
+					//"spi_ss0_a_dv6",used as GPIODV_6
+					"spi_clk_a_dv9";
+				function = "spi";
+				drive-strength-microamp = <3000>;
 			};
 		};
 	};

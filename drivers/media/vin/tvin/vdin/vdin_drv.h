@@ -144,7 +144,8 @@
 /* 20230527: add vdin secure reg config interface */
 /* 20230527: update vdin dump buffer method on kernel 5.15 */
 /* 20230527: fix screencap abnormal under display 4k120 on t3x */
-#define VDIN_VER "20230527"
+/* 20230608: vdin not clear ratio_control value */
+#define VDIN_VER "20230608"
 
 //#define T3X_PXP_BRINGUP
 //#define VDIN_BRINGUP_NO_VF

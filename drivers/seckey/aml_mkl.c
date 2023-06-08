@@ -31,8 +31,8 @@
 #define DEVICE_INSTANCES 1
 
 /* kl type */
-#define KL_TYPE_T5W (0)
-#define KL_TYPE_NO_T5W (1)
+#define KL_TYPE_OLD (0)
+#define KL_TYPE_NEW (1)
 
 /* kl offset */
 #define KL_PENDING_OFFSET (31U)
@@ -84,9 +84,6 @@
 #define KL_STATUS_ERROR_TIMEOUT (4)
 #define KL_STATUS_ERROR_BAD_PARAM (5)
 #define KL_STATUS_ERROR_BAD_STATE (6)
-
-#define KT_IV_FLAG_OFFSET (31)
-#define HANDLE_TO_ENTRY(h) ((h) & ~(1 << KT_IV_FLAG_OFFSET))
 
 struct aml_mkl_dev {
 	struct cdev cdev;
@@ -170,29 +167,34 @@ static int aml_mkl_program_key(void __iomem *base_addr, u32 offset, const u8 *da
 static int aml_mkl_lock(struct aml_mkl_dev *dev)
 {
 	int cnt = 0;
+	int ret = KL_STATUS_OK;
 
-	if (dev->kl_type == KL_TYPE_T5W) {
+	mutex_lock(&dev->lock);
+	if (dev->kl_type == KL_TYPE_OLD) {
 		while ((ioread32((char *)dev->base_addr + dev->t5w_reg.start0_offset) >> 31) & 1) {
 			if (cnt++ > KL_PENDING_WAIT_TIMEOUT) {
 				KL_LOGE("Error: wait KL ready timeout\n");
-				return KL_STATUS_ERROR_TIMEOUT;
+				ret = KL_STATUS_ERROR_TIMEOUT;
 			}
 		}
 	} else {
 		while (ioread32((char *)dev->base_addr + dev->reg.rdy_offset) != 1) {
 			if (cnt++ > KL_PENDING_WAIT_TIMEOUT) {
 				KL_LOGE("Error: wait KL ready timeout\n");
-				return KL_STATUS_ERROR_TIMEOUT;
+				ret = KL_STATUS_ERROR_TIMEOUT;
 			}
 		}
 	}
 
-	return KL_STATUS_OK;
+	mutex_unlock(&dev->lock);
+	return ret;
 }
 
 static void aml_mkl_unlock(struct aml_mkl_dev *dev)
 {
+	mutex_lock(&dev->lock);
 	iowrite32(1, (char *)dev->base_addr + dev->reg.rdy_offset);
+	mutex_unlock(&dev->lock);
 }
 
 static int aml_mkl_read_pending(struct aml_mkl_dev *dev)
@@ -234,15 +236,13 @@ static int aml_mkl_read_pending(struct aml_mkl_dev *dev)
 
 static int aml_mkl_etsi_run(struct file *filp, struct amlkl_params *param)
 {
-	int ret;
+	int ret = KL_STATUS_OK;
 	int i;
 	int tee_priv = 0;
 	u32 reg_val = 0;
 	u32 reg_offset = 0;
 	struct amlkl_usage *pu;
 	struct aml_mkl_dev *dev = filp->private_data;
-
-	mutex_lock(&dev->lock);
 
 	if (!param) {
 		KL_LOGE("Error: param data has Null\n");
@@ -306,7 +306,7 @@ static int aml_mkl_etsi_run(struct file *filp, struct amlkl_params *param)
 		   param->usage.crypto << KL_FLAG_OFFSET |
 		   param->usage.algo << KL_KEYALGO_OFFSET |
 		   param->usage.uid << KL_USERID_OFFSET |
-		   (HANDLE_TO_ENTRY(param->kt_handle)) << KL_KTE_OFFSET |
+		   param->kt_handle << KL_KTE_OFFSET |
 		   param->mrk_cfg_index << KL_MRK_OFFSET | param->func_id);
 	iowrite32(reg_val, (char *)dev->base_addr + reg_offset);
 
@@ -316,14 +316,13 @@ static int aml_mkl_etsi_run(struct file *filp, struct amlkl_params *param)
 		KL_LOGI("ETSI Key Ladder run success\n");
 
 exit:
-	mutex_unlock(&dev->lock);
 	aml_mkl_unlock(dev);
 	return ret;
 }
 
 static int aml_mkl_etsi_t5w_run(struct file *filp, struct amlkl_params *param)
 {
-	int ret;
+	int ret = KL_STATUS_OK;
 	int i;
 	u32 reg_val = 0;
 	u32 reg_offset = 0;
@@ -331,11 +330,9 @@ static int aml_mkl_etsi_t5w_run(struct file *filp, struct amlkl_params *param)
 	u8 zero[16] = {0};
 	struct aml_mkl_dev *dev = filp->private_data;
 
-	mutex_lock(&dev->lock);
 	if (!param) {
 		KL_LOGE("Error: param data has Null\n");
-		ret = KL_STATUS_ERROR_BAD_PARAM;
-		goto exit;
+		return KL_STATUS_ERROR_BAD_PARAM;
 	}
 
 	KL_LOGD("kte:%d, levels:%d, kl_num:%d\n", param->kt_handle, param->levels, param->kl_num);
@@ -344,8 +341,7 @@ static int aml_mkl_etsi_t5w_run(struct file *filp, struct amlkl_params *param)
 		param->levels > AML_KL_LEVEL_6 ||
 	    param->kl_num > 10) {
 		KL_LOGE("Error: param data has bad parameter\n");
-		ret = KL_STATUS_ERROR_BAD_PARAM;
-		goto exit;
+		return KL_STATUS_ERROR_BAD_PARAM;
 	}
 
 	key_addrs[0] = dev->t5w_reg.key1_offset;
@@ -366,15 +362,14 @@ static int aml_mkl_etsi_t5w_run(struct file *filp, struct amlkl_params *param)
 		ret = aml_mkl_program_key(dev->base_addr, key_addrs[i], zero);
 	if (ret != 0) {
 		KL_LOGE("Error: Ek data has bad parameter\n");
-		ret = KL_STATUS_ERROR_BAD_PARAM;
-		goto exit;
+		return KL_STATUS_ERROR_BAD_PARAM;
 	}
 
 	/* 2. Program KL_REE_CFG */
 	reg_val = 0;
 	reg_offset = dev->t5w_reg.start0_offset;
 	reg_val = (param->kl_num << 24 | 0 << 22 |
-		   (HANDLE_TO_ENTRY(param->kt_handle)) << 16 |
+		   param->kt_handle << 16 |
 		   param->reserved[1] << 8 | param->reserved[0]);
 	iowrite32(reg_val, (char *)dev->base_addr + reg_offset);
 
@@ -388,13 +383,14 @@ static int aml_mkl_etsi_t5w_run(struct file *filp, struct amlkl_params *param)
 	KL_LOGI("ETSI T5W Key Ladder run success\n");
 
 exit:
-	mutex_unlock(&dev->lock);
+	aml_mkl_unlock(dev);
+
 	return ret;
 }
 
 static int aml_mkl_run(struct file *filp, struct amlkl_params *param)
 {
-	int ret;
+	int ret = KL_STATUS_OK;
 	int i;
 	int tee_priv = 0;
 	u32 reg_val = 0;
@@ -402,12 +398,9 @@ static int aml_mkl_run(struct file *filp, struct amlkl_params *param)
 	struct amlkl_usage *pu;
 	struct aml_mkl_dev *dev = filp->private_data;
 
-	mutex_lock(&dev->lock);
-
 	if (!param) {
 		KL_LOGE("Error: param data has Null\n");
-		ret = KL_STATUS_ERROR_BAD_PARAM;
-		goto exit;
+		return KL_STATUS_ERROR_BAD_PARAM;
 	}
 
 	pu = &param->usage;
@@ -426,8 +419,7 @@ static int aml_mkl_run(struct file *filp, struct amlkl_params *param)
 	    (pu->algo > AML_KT_ALGO_HMAC && pu->algo < KL_KEYALGO_MASK) ||
 	    pu->crypto & ~KL_FLAG_MASK || param->kl_algo > AML_KL_ALGO_AES) {
 		KL_LOGE("Error: param data has bad parameter\n");
-		ret = KL_STATUS_ERROR_BAD_PARAM;
-		goto exit;
+		return KL_STATUS_ERROR_BAD_PARAM;
 	}
 
 	/* 1. Read KL_REE_RDY to lock KL */
@@ -464,7 +456,7 @@ static int aml_mkl_run(struct file *filp, struct amlkl_params *param)
 		   param->usage.crypto << KL_FLAG_OFFSET |
 		   param->usage.algo << KL_KEYALGO_OFFSET |
 		   param->usage.uid << KL_USERID_OFFSET |
-		   (HANDLE_TO_ENTRY(param->kt_handle)) << KL_KTE_OFFSET |
+		   param->kt_handle << KL_KTE_OFFSET |
 		   param->mrk_cfg_index << KL_MRK_OFFSET |
 		   (param->func_id << KL_FUNC_ID_OFFSET));
 	iowrite32(reg_val, (char *)dev->base_addr + reg_offset);
@@ -475,14 +467,14 @@ static int aml_mkl_run(struct file *filp, struct amlkl_params *param)
 		KL_LOGI("AML Key Ladder run success\n");
 
 exit:
-	mutex_unlock(&dev->lock);
 	aml_mkl_unlock(dev);
+
 	return ret;
 }
 
 static int aml_mkl_msr_run(struct file *filp, struct amlkl_params *param)
 {
-	int ret;
+	int ret = KL_STATUS_OK;
 	int i;
 	int tee_priv = 0;
 	u32 reg_val = 0;
@@ -490,12 +482,9 @@ static int aml_mkl_msr_run(struct file *filp, struct amlkl_params *param)
 	struct amlkl_usage *pu;
 	struct aml_mkl_dev *dev = filp->private_data;
 
-	mutex_lock(&dev->lock);
-
 	if (!param) {
 		KL_LOGE("Error: param data has Null\n");
-		ret = KL_STATUS_ERROR_BAD_PARAM;
-		goto exit;
+		return KL_STATUS_ERROR_BAD_PARAM;
 	}
 
 	pu = &param->usage;
@@ -514,8 +503,7 @@ static int aml_mkl_msr_run(struct file *filp, struct amlkl_params *param)
 	    pu->crypto & ~KL_FLAG_MASK ||
 	    param->kl_algo > AML_KL_ALGO_AES) {
 		KL_LOGE("Error: param data has bad parameter\n");
-		ret = KL_STATUS_ERROR_BAD_PARAM;
-		goto exit;
+		return KL_STATUS_ERROR_BAD_PARAM;
 	}
 
 	if (param->func_id == MSR_KL_FUNC_ID_CWUK ||
@@ -529,8 +517,7 @@ static int aml_mkl_msr_run(struct file *filp, struct amlkl_params *param)
 		param->levels = MSR_KL_LEVEL_1;
 	} else {
 		KL_LOGE("Error: func_id data has bad parameter\n");
-		ret = KL_STATUS_ERROR_BAD_PARAM;
-		goto exit;
+		return KL_STATUS_ERROR_BAD_PARAM;
 	}
 
 	/* 1. Read KL_REE_RDY to lock KL */
@@ -567,7 +554,7 @@ static int aml_mkl_msr_run(struct file *filp, struct amlkl_params *param)
 		   param->usage.crypto << KL_FLAG_OFFSET |
 		   param->usage.algo << KL_KEYALGO_OFFSET |
 		   param->usage.uid << KL_USERID_OFFSET |
-		   (HANDLE_TO_ENTRY(param->kt_handle)) << KL_KTE_OFFSET |
+		   param->kt_handle << KL_KTE_OFFSET |
 		   (tee_priv << KL_TEE_PRIV_OFFSET) |
 		   0 << KL_MSR_BUFLEVEL_OFFSET);
 	iowrite32(reg_val, (char *)dev->base_addr + reg_offset);
@@ -578,8 +565,8 @@ static int aml_mkl_msr_run(struct file *filp, struct amlkl_params *param)
 		KL_LOGI("AML MSR Key Ladder run success\n");
 
 exit:
-	mutex_unlock(&dev->lock);
 	aml_mkl_unlock(dev);
+
 	return ret;
 }
 
@@ -604,7 +591,7 @@ static long aml_mkl_ioctl(struct file *filp, unsigned int cmd,
 		}
 
 		if (kl_param.kl_mode == AML_KL_MODE_ETSI) {
-			if (dev->kl_type == KL_TYPE_T5W)
+			if (dev->kl_type == KL_TYPE_OLD)
 				ret = aml_mkl_etsi_t5w_run(filp, &kl_param);
 			else
 				ret = aml_mkl_etsi_run(filp, &kl_param);
@@ -614,7 +601,7 @@ static long aml_mkl_ioctl(struct file *filp, unsigned int cmd,
 				return -EFAULT;
 			}
 		} else if (kl_param.kl_mode == AML_KL_MODE_AML) {
-			if (dev->kl_type == KL_TYPE_T5W) {
+			if (dev->kl_type == KL_TYPE_OLD) {
 				KL_LOGE("MKL: t5w aml_mkl_run failed. not support.\n");
 				return -EFAULT;
 			}
@@ -626,7 +613,7 @@ static long aml_mkl_ioctl(struct file *filp, unsigned int cmd,
 				return -EFAULT;
 			}
 		} else if (kl_param.kl_mode == AML_KL_MODE_MSR) {
-			if (dev->kl_type == KL_TYPE_T5W) {
+			if (dev->kl_type == KL_TYPE_OLD) {
 				KL_LOGE("MKL: t5w aml_mkl_msr_run failed. not support.\n");
 				return -EFAULT;
 			}
@@ -672,7 +659,7 @@ static int aml_mkl_get_dts_info(struct aml_mkl_dev *dev, struct platform_device 
 	}
 
 	/* kl register offset */
-	if (dev->kl_type == KL_TYPE_T5W) {
+	if (dev->kl_type == KL_TYPE_OLD) {
 		if (of_property_read_u32_array(pdev->dev.of_node, "kl_offset", t5w_offset,
 			ARRAY_SIZE(t5w_offset)) == 0) {
 			dev->t5w_reg.start0_offset = t5w_offset[0];

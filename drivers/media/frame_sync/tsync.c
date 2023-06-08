@@ -2633,7 +2633,8 @@ int __init tsync_module_init(void)
 	 */
 	if (chip >= MESON_CPU_MAJOR_ID_SC2 &&
 	    chip != MESON_CPU_MAJOR_ID_T5 &&
-	    chip != MESON_CPU_MAJOR_ID_T5D)
+	    chip != MESON_CPU_MAJOR_ID_T5D &&
+		chip != MESON_CPU_MAJOR_ID_TXHD2)
 		new_arch = true;
 	else
 		new_arch = false;

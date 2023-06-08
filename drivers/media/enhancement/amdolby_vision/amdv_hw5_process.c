@@ -210,7 +210,7 @@ int parse_sei_and_meta_ext_hw5(struct vframe_s *vf,
 			//top1_v_info.metadata_parser = NULL;
 
 			if (p_funcs_tv && p_funcs_tv->multi_mp_reset)/*idk5.1*/
-				p_funcs_tv->multi_mp_reset(&top1_v_info.metadata_parser, 1);
+				p_funcs_tv->multi_mp_reset(top1_v_info.metadata_parser, 1);
 		}
 		if (top2_v_info.metadata_parser) {
 			//if (p_funcs_tv && p_funcs_tv->multi_mp_release)/*idk5.1*/
@@ -218,7 +218,7 @@ int parse_sei_and_meta_ext_hw5(struct vframe_s *vf,
 			//top2_v_info.metadata_parser = NULL;
 
 			if (p_funcs_tv && p_funcs_tv->multi_mp_reset)/*idk5.1*/
-				p_funcs_tv->multi_mp_reset(&top2_v_info.metadata_parser, 1);
+				p_funcs_tv->multi_mp_reset(top2_v_info.metadata_parser, 1);
 			amdv_clear_buf(0);
 			pr_dv_dbg("new play, release parser\n");
 		}
@@ -1949,26 +1949,14 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 			pr_info("controlpath time: %5ld us\n", time_use);
 		}
 		if (flag >= 0) {
-			if (input_mode == IN_MODE_HDMI) {
-				//if (h > 1080)//todo
-				//	tv_hw5_setting->core1_reg_lut[1] =
-				//		0x0000000100000043;
-				//else
-				//	tv_hw5_setting->core1_reg_lut[1] =
-				//		0x0000000100000042;
-			} else {
-				//if (src_format == FORMAT_HDR10)
-				//	tv_dovi_setting->core1_reg_lut[1] =
-				//		0x000000010000404c;
-				//else
-				//	tv_dovi_setting->core1_reg_lut[1] =
-				//		0x0000000100000044;
-			}
 			/* enable CRC */
 			if ((dolby_vision_flags & FLAG_CERTIFICATION) &&
-				!(dolby_vision_flags & FLAG_DISABLE_CRC))
+				!(dolby_vision_flags & FLAG_DISABLE_CRC)) {
+				tv_hw5_setting->top2_reg[3] =
+				0x000008f400000001;//enable crc in front of regs,necessary?
 				tv_hw5_setting->top2_reg[574] =
-					0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
+				0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
+			}
 
 			v_inst_info->tv_dovi_setting_change_flag = true;
 			top2_info.amdv_setting_video_flag = video_frame;
@@ -1993,17 +1981,14 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 			pr_dv_error("tv_hw5_control_path() failed\n");
 		}
 	} else { /*for cert: vf no change, not run cp*/
-		//if (h > 1080)//todo
-		//	tv_hw5_setting->core1_reg_lut[1] =
-		//		0x0000000100000043;
-		//else
-		//	tv_hw5_setting->core1_reg_lut[1] =
-		//		0x0000000100000042;
-
 		/* enable CRC */
 		if ((dolby_vision_flags & FLAG_CERTIFICATION) &&
-			!(dolby_vision_flags & FLAG_DISABLE_CRC))
-			tv_hw5_setting->top2_reg[573] = 0x0000023d00000001;
+			!(dolby_vision_flags & FLAG_DISABLE_CRC)) {
+			tv_hw5_setting->top2_reg[3] =
+				0x000008f400000001;//enable crc ctrl in front of regs, necessary?
+			tv_hw5_setting->top2_reg[574] =
+				0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
+		}
 		v_inst_info->tv_dovi_setting_change_flag = true;
 		top2_info.amdv_setting_video_flag = video_frame;
 		ret = 0;
@@ -2493,8 +2478,7 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 			}
 		}
 		dolby_vision_flags &= ~FLAG_TOGGLE_FRAME;
-	} else if (top2_info.top2_on &&
-		!(dolby_vision_flags & FLAG_CERTIFICATION)) {
+	} else if (top2_info.top2_on) {
 		if (force_set || force_update_top2) {
 			if (force_set)
 				reset_flag = true;

@@ -58,9 +58,9 @@ u32 histogram[L1L4_MD_COUNT][HISTOGRAM_SIZE];
 u32 l1l4_wr_index;
 u32 l1l4_rd_index;
 
-static int last_int_top1 = 0x8;
-static int last_int_top1b = 0x8;
-static int last_int_top2 = 0x10;
+static int last_int_top1 = 0x8;/*bit3 intensity_frm_wr_done*/
+static int last_int_top1b = 0x8;/*bit3 pyramid_frm_wr_done*/
+static int last_int_top2 = 0x10;/*bit4 out_frm_wr_done*/
 
 static u32 last_py_level = NO_LEVEL;
 static u32 py_level = NO_LEVEL;/*todo*/
@@ -730,7 +730,6 @@ void enable_amdv_hw5(int enable)
 				bypass_pps_sr_gamma_gainoff(3);
 				/* bypass all video effect */
 				video_effect_bypass(1);
-				WRITE_VPP_DV_REG(DOLBY5_CORE2_CRC_CNTRL, 1);//todo
 			} else {
 				/* bypass all video effect */
 				if (dolby_vision_flags & FLAG_BYPASS_VPP)
@@ -994,9 +993,9 @@ int tv_top2_set(u64 *reg_data,
 	//	reset = true;
 
 	if (debug_dolby & 1)
-		pr_dv_dbg("video %d,dv on %d,top2 %d,reset %d %d, run %d\n",
+		pr_dv_dbg("video %d,dv on %d,top2 %d,reset %d, toggle %d\n",
 				  video_enable, dolby_vision_on, top2_info.top2_on, reset,
-				  toggle, top2_info.run_mode_count);
+				  toggle);
 
 	if (reset) {/*hw reset*/
 		amdv_core_reset(AMDV_HW5);
@@ -1017,6 +1016,7 @@ int tv_top2_set(u64 *reg_data,
 			vd1_slice0_vsize = vd_proc_info->slice[0].vsize;
 		}
 	}
+	py_level = NO_LEVEL;//todo
 	if (hw5_reg_from_file)
 		py_level = SIX_LEVEL;//temp debug, case0 frame1, 6 level
 	if (test_dv & 2)

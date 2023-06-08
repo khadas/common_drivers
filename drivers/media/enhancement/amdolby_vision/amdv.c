@@ -1075,6 +1075,10 @@ void dump_tv_setting(void *p_setting,
 				READ_VPP_DV_REG(T3X_VD1_S1_DV_BYPASS_CTRL));
 			pr_info("t3x reg: dv wrap ctrl 0901(bit31, 1:top2 bypass) = 0x%x\n",
 				READ_VPP_DV_REG(VPU_DOLBY_WRAP_CTRL));
+			pr_info("t3x reg: dv core1 base %x, core1b base %x, core2 base %x\n",
+				READ_VPP_DV_REG(DOLBY5_CORE1_REG_BASE),
+				READ_VPP_DV_REG(DOLBY5_CORE1B_REG_BASE),
+				READ_VPP_DV_REG(DOLBY5_CORE2_REG_BASE0));
 		}
 		if (is_aml_hw5() && hw5_setting) {
 			if (enable_top1) {
@@ -1597,7 +1601,8 @@ int amdv_update_setting(struct vframe_s *vf)
 		size = 8 * STB_DMA_TBL_SIZE;
 		memcpy(dma_vaddr, dma_data, size);
 	} else if (is_aml_hw5()) {//todo
-		if (lut_dma_info[cur_dmabuf_id].dma_vaddr && tv_hw5_setting) {
+		if (lut_dma_info[cur_dmabuf_id].dma_vaddr && tv_hw5_setting &&
+			!hw5_reg_from_file) {
 			if (enable_top1) {
 				dma_data = tv_hw5_setting->top1_lut;
 				size = TOP1_LUT_NUM * LUT_SIZE;
@@ -10636,6 +10641,8 @@ int amdv_wait_metadata(struct vframe_s *vf, enum vd_path_e vd_path)
 		ret = amdv_wait_metadata_hw5(vf);
 	else
 		ret = amdv_wait_metadata_v1(vf);
+	if (debug_dolby & 0x1000)
+		pr_dv_dbg("wait return %d\n", ret);
 	return ret;
 }
 
@@ -13853,7 +13860,7 @@ void amdv_insert_crc(bool print)
 	}
 	if (is_aml_tvmode()) {
 		if (is_aml_t3x()) {
-			crc_enable = (READ_VPP_DV_REG(DOLBY5_CORE2_CRC_CNTRL) == 1);//todo
+			crc_enable = true;//todo
 			crc = READ_VPP_DV_REG(DOLBY5_CORE2_CRC_OUT_FRM);
 		} else {
 			crc_enable = (READ_VPP_DV_REG(AMDV_TV_DIAG_CTRL) == 0xb);

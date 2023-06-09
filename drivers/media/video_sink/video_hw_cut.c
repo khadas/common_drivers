@@ -850,7 +850,7 @@ bool is_pre_link_source(struct vframe_s *vf)
 	return false;
 }
 
-bool is_pre_link_on(struct video_layer_s *layer, struct vframe_s *vf)
+bool is_pre_link_on(struct video_layer_s *layer)
 {
 	if (!layer)
 		return false;
@@ -1510,7 +1510,7 @@ static void vd1_set_dcu(struct video_layer_s *layer,
 	if (video_is_meson_t5d_revb_cpu() &&
 	    !layer->vd1_vd2_mux &&
 	    !is_local_vf(vf) &&
-	    is_pre_link_on(layer, vf) &&
+	    is_pre_link_on(layer) &&
 	    is_pre_link_source(vf)) {
 		struct vframe_s *dec_vf;
 
@@ -1544,7 +1544,7 @@ static void vd1_set_dcu(struct video_layer_s *layer,
 	if (is_di_post_mode(vf) && is_di_post_on())
 		di_post = true;
 #ifdef ENABLE_PRE_LINK
-	if (is_pre_link_on(layer, vf))
+	if (is_pre_link_on(layer))
 		di_pre_link = true;
 #endif
 #endif
@@ -6881,7 +6881,7 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 			update_mif = false;
 
 #ifdef ENABLE_PRE_LINK
-		if (is_pre_link_on(layer, vf) &&
+		if (is_pre_link_on(layer) &&
 		    !layer->need_disable_prelink)
 			update_mif = false;
 #endif
@@ -7080,13 +7080,18 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 		return ret;
 
 	if (!layer->need_disable_prelink &&
-	    is_pre_link_on(layer, vf)) {
-		if (layer->dispbuf &&
+	    is_pre_link_on(layer)) {
+		if (!layer->dispbuf ||
 		    layer->dispbuf->di_instance_id !=
-		    vf->di_instance_id &&
-		    vf->di_instance_id ==
-		    di_api_get_plink_instance_id())
+		    vf->di_instance_id ||
+		    vf->di_instance_id !=
+		    di_api_get_plink_instance_id()) {
 			layer->need_disable_prelink = true;
+			if (layer->global_debug & DEBUG_FLAG_PRELINK)
+				pr_info("pre-link: vf instance_id changed: %d->%d, cur:%d\n",
+					layer->dispbuf ? layer->dispbuf->di_instance_id : -1,
+					vf->di_instance_id, di_api_get_plink_instance_id());
+		}
 		if (!IS_DI_POST(vf->type))
 			layer->need_disable_prelink = true;
 		if (layer->need_disable_prelink && (layer->global_debug & DEBUG_FLAG_PRELINK))
@@ -7097,7 +7102,7 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 	}
 	/* for new pipeline and front-end already unreg->reg */
 	if (layer->need_disable_prelink &&
-	    !is_pre_link_on(layer, vf)) {
+	    !is_pre_link_on(layer)) {
 		bool trig_flag = false;
 
 		if (!layer->dispbuf ||
@@ -7119,7 +7124,7 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 		} else if (vf->vf_ext) {
 			/* is_pre_link_source maybe invalid here */
 			/* check if vf is remained and same instance as before */
-			if (is_pre_link_on(layer, vf) &&
+			if (is_pre_link_on(layer) &&
 			    is_pre_link_source(vf) &&
 			    layer->dispbuf &&
 			    vf->di_instance_id ==
@@ -7150,7 +7155,7 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 						is_pre_link_available(vf) ? 1 : 0);
 			}
 		}
-		if (is_pre_link_on(layer, vf)) {
+		if (is_pre_link_on(layer)) {
 			memset(&di_in_p, 0, sizeof(struct pvpp_dis_para_in_s));
 			di_in_p.dmode = EPVPP_DISPLAY_MODE_BYPASS;
 			di_in_p.unreg_bypass = 1;
@@ -7163,6 +7168,7 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 			layer->prelink_bypass_check = false;
 			layer->last_di_instance = vf->di_instance_id;
 			layer->prelink_skip_cnt = 0;
+			atomic_set(&vd_layer[0].disable_prelink_done, 1);
 		}
 		if (!layer->dispbuf ||
 		    layer->dispbuf->di_instance_id !=
@@ -7181,14 +7187,14 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 				vf->di_instance_id, layer->last_di_instance);
 	} else {
 		if (layer->next_frame_par->vscale_skip_count > 0 &&
-		    is_pre_link_on(layer, vf) &&
+		    is_pre_link_on(layer) &&
 		    !is_local_vf(vf) && !vf->vf_ext)
 			pr_info("Error, no vf_ext to switch for pre-link\n");
 
 		/* dynamic switch when di is in active */
 		if ((layer->next_frame_par->vscale_skip_count > 0 ||
 		     layer->prelink_bypass_check) &&
-		    is_pre_link_on(layer, vf) && vf->vf_ext) {
+		    is_pre_link_on(layer) && vf->vf_ext) {
 			memset(&di_in_p, 0, sizeof(struct pvpp_dis_para_in_s));
 			di_in_p.dmode = EPVPP_DISPLAY_MODE_BYPASS;
 			di_in_p.unreg_bypass = 0;
@@ -7205,7 +7211,7 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 			} else {
 				pr_info("Bypass pre-link fail %d\n", iret);
 			}
-		} else if (!is_pre_link_on(layer, vf) &&
+		} else if (!is_pre_link_on(layer) &&
 				!is_local_vf(vf) &&
 				is_pre_link_available(vf) &&
 				!layer->next_frame_par->vscale_skip_count) {
@@ -7233,6 +7239,7 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 				if (iret > 0) {
 					layer->pre_link_en = true;
 					layer->prelink_skip_cnt = 1;
+					atomic_set(&vd_layer[0].disable_prelink_done, 0);
 				} else {
 					/* force config in next frame swap */
 					if (ret == 0)
@@ -7246,14 +7253,14 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 				ret = true;
 				pr_info("Enable pre-link but pvpp_sw fail ret %d\n", iret);
 			}
-		} else if (!is_pre_link_on(layer, vf) &&
+		} else if (!is_pre_link_on(layer) &&
 				!is_local_vf(vf) &&
 				!layer->next_frame_par->vscale_skip_count &&
 				is_pre_link_source(vf)) {
 			ret = true;
 			if (layer->global_debug & DEBUG_FLAG_PRELINK_MORE)
 				pr_info("Do not enable pre-link yet\n");
-		} else if (is_pre_link_on(layer, vf) &&
+		} else if (is_pre_link_on(layer) &&
 				vf->vf_ext &&
 				layer->need_disable_prelink) {
 			/* is_pre_link_source maybe invalid here */
@@ -7266,14 +7273,15 @@ static bool update_pre_link_state(struct video_layer_s *layer,
 			layer->prelink_bypass_check = false;
 			layer->last_di_instance = vf->di_instance_id;
 			layer->prelink_skip_cnt = 0;
-		} else if (!is_pre_link_on(layer, vf) &&
+			/* atomic_set(&vd_layer[0].disable_prelink_done, 1); */
+		} else if (!is_pre_link_on(layer) &&
 				vf->vf_ext &&
 				!IS_DI_POSTWRTIE(vf->type)) {
 			/* Just test the exception case */
 			if (IS_DI_POST(vf->type) &&
 			    layer->next_frame_par->vscale_skip_count > 0) {
 				ret = true;
-			} else if (vf->di_flag & DI_FLAG_DI_PVPPLINK) {
+			} else if (IS_DI_PRELINK(vf->di_flag)) {
 				ret = true;
 				if (layer->global_debug & DEBUG_FLAG_PRELINK)
 					pr_info("can't enable pre-link, force switch: vf %px vf_ext:%px uvm_vf:%px type:%x flag:%x di_flag:%x\n",

@@ -1611,7 +1611,7 @@ s32 primary_render_frame(struct video_layer_s *layer,
 		dispbuf = layer->dispbuf;
 
 #ifdef ENABLE_PRE_LINK
-	if (is_pre_link_on(layer, dispbuf) &&
+	if (is_pre_link_on(layer) &&
 	    dispbuf && !is_local_vf(dispbuf)) {
 		int iret;
 		struct pvpp_dis_para_in_s di_in_p;
@@ -1636,7 +1636,7 @@ s32 primary_render_frame(struct video_layer_s *layer,
 		} else {
 			layer->prelink_skip_cnt--;
 		}
-	} else if (is_pre_link_on(layer, dispbuf) &&
+	} else if (is_pre_link_on(layer) &&
 			layer->need_disable_prelink && !dispbuf) {
 		int iret;
 		struct pvpp_dis_para_in_s di_in_p;
@@ -1654,6 +1654,7 @@ s32 primary_render_frame(struct video_layer_s *layer,
 		iret = pvpp_sw(false);
 		if (layer->global_debug & DEBUG_FLAG_PRELINK)
 			pr_info("%s: Disable pre-link mode ret %d\n", __func__, iret);
+		atomic_set(&vd_layer[0].disable_prelink_done, 1);
 	}
 #endif
 
@@ -3515,7 +3516,7 @@ static struct vframe_s *vdx_swap_frame(u8 layer_id,
 		} else if (vd_layer[layer_id].dispbuf) {
 			if ((layer_id == 0 &&
 				!is_di_post_mode(vd_layer[layer_id].dispbuf) &&
-				!is_pre_link_on(&vd_layer[layer_id], vd_layer[layer_id].dispbuf)) ||
+				!is_pre_link_on(&vd_layer[layer_id])) ||
 				layer_id != 0) {
 				if (vd_layer[layer_id].switch_vf &&
 					vd_layer[layer_id].vf_ext)
@@ -4900,6 +4901,11 @@ exit:
 	    is_di_post_on())
 		DI_POST_UPDATE_MC();
 #endif
+#ifdef ENABLE_PRE_LINK
+	if (!vd_layer[0].need_disable_prelink || !is_pre_link_on(&vd_layer[0]))
+		atomic_set(&vd_layer[0].disable_prelink_done, 1);
+#endif
+
 	/* update alpha win */
 	if (cur_dev->pre_vsync_enable)
 		alpha_win_set(&vd_layer[0]);
@@ -5528,7 +5534,10 @@ EXPORT_SYMBOL(di_unreg_notify);
 
 void di_disable_prelink_notify(bool async)
 {
-	u32 sleep_time = 40;
+	u32 sleep_time = 20;
+	u32 vsync_time;
+	u32 sleep_cycle = 0;
+	u32 skip_cycle = 0;
 
 	while (atomic_read(&video_inirq_flag) > 0)
 		schedule();
@@ -5537,19 +5546,32 @@ void di_disable_prelink_notify(bool async)
 			schedule();
 
 	vd_layer[0].need_disable_prelink = true;
+	atomic_set(&vd_layer[0].disable_prelink_done, 0);
 	vd_layer[0].property_changed = true;
 
 	if (vinfo && !async) {
-		sleep_time = vinfo->sync_duration_den * 1000;
+		vsync_time = vinfo->sync_duration_den * 1000;
 		if (vinfo->sync_duration_num) {
-			sleep_time /= vinfo->sync_duration_num;
+			vsync_time /= vinfo->sync_duration_num;
 			/* need two vsync */
-			sleep_time = (sleep_time + 1) * 2;
-		} else {
-			sleep_time = 40;
+			vsync_time = vsync_time + 1;
+			sleep_time = vsync_time >> 1;
 		}
+		while (vd_layer[0].need_disable_prelink &&
+		    !atomic_read(&vd_layer[0].disable_prelink_done) &&
+		    skip_cycle < 20) {
+			skip_cycle++;
+			msleep(sleep_time);
+		}
+		/* need one more vsync for rdma config */
+		msleep(vsync_time);
+		sleep_cycle = 2;
+	} else {
+		sleep_cycle = 2;
+		msleep(sleep_time * 2);
 	}
-	msleep(sleep_time);
+	if (debug_flag & DEBUG_FLAG_PRELINK)
+		pr_info("%s: wait %dx(%d+%d) ms\n", __func__, sleep_time, sleep_cycle, skip_cycle);
 }
 EXPORT_SYMBOL(di_disable_prelink_notify);
 

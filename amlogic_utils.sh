@@ -207,10 +207,12 @@ function prepare_module_build() {
 
 	rm ${temp_file}
 }
-
 export -f prepare_module_build
 
 function extra_cmds() {
+	echo "========================================================"
+	echo " Running extra build command(s):"
+
 	if [[ ${AUTO_ADD_EXT_SYMBOLS} -eq "1" ]]; then
 		for ext_module in ${EXT_MODULES}; do
 			sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ext_module}/Makefile
@@ -313,7 +315,6 @@ function extra_cmds() {
 		find ${module_path} -type f -name "*.ko" -exec cp {} ${DIST_DIR} \;
 	done
 }
-
 export -f extra_cmds
 
 function bazel_extra_cmds() {
@@ -1230,7 +1231,6 @@ function build_part_of_kernel () {
 		exit
 	fi
 }
-
 export -f build_part_of_kernel
 
 function export_env_variable () {
@@ -1244,7 +1244,6 @@ function export_env_variable () {
 	echo FULL_KERNEL_VERSION=${FULL_KERNEL_VERSION} BAZEL=${BAZEL}
 	echo MENUCONFIG=${MENUCONFIG} BASICCONFIG=${BASICCONFIG} IMAGE=${IMAGE} MODULES=${MODULES} DTB_BUILD=${DTB_BUILD}
 }
-
 export -f export_env_variable
 
 function handle_input_parameters () {
@@ -1380,7 +1379,6 @@ function handle_input_parameters () {
 		esac
 	done
 }
-
 export -f handle_input_parameters
 
 function set_default_parameters () {
@@ -1460,7 +1458,6 @@ function set_default_parameters () {
 		OUT_DIR_SUFFIX=
 	fi
 }
-
 export -f set_default_parameters
 
 function auto_patch_to_common_dir () {
@@ -1476,11 +1473,8 @@ function auto_patch_to_common_dir () {
 		exit
 	fi
 }
-
 export -f auto_patch_to_common_dir
 
-
-# the follow functions are used for smarthome
 function handle_input_parameters_for_smarthome () {
 	VA=
 	ARGS=()
@@ -1571,7 +1565,7 @@ function set_default_parameters_for_smarthome () {
 		OUTDIR=${ROOT_DIR}/out/kernel-5.15-64
 	elif [[ $ARCH == arm ]]; then
 		OUTDIR=${ROOT_DIR}/out/kernel-5.15-32
-		tool_args+=("LOADADDR=0x208000")
+		tool_args+=("LOADADDR=0x108000")
 	elif [[ $ARCH == riscv ]]; then
 		OUTDIR=${ROOT_DIR}/out/riscv-kernel-5.15-64
 	fi
@@ -1623,13 +1617,12 @@ function savedefconfig_cmd_for_smarthome () {
 		set -x
 		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${DEFCONFIG}
 		make ARCH=${ARCH} -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} savedefconfig
-		rm ${KERNEL_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
+		rm ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
 		cp -f ${OUT_DIR}/defconfig  ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEFCONFIG}
 		set +x
 		exit
 	fi
 }
-
 export -f savedefconfig_cmd_for_smarthome
 
 function only_build_dtb_for_smarthome () {
@@ -1641,7 +1634,6 @@ function only_build_dtb_for_smarthome () {
 		exit
 	fi
 }
-
 export -f only_build_dtb_for_smarthome
 
 function make_menuconfig_cmd_for_smarthome () {
@@ -1653,7 +1645,6 @@ function make_menuconfig_cmd_for_smarthome () {
 		exit
 	fi
 }
-
 export -f make_menuconfig_cmd_for_smarthome
 
 function build_kernel_for_different_cpu_architecture () {
@@ -1665,7 +1656,6 @@ function build_kernel_for_different_cpu_architecture () {
 		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
 		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} INSTALL_MOD_STRIP=1 modules_install -j12 &&
 		make ARCH=arm64 -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
-		rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
 	elif [[ $ARCH == arm ]]; then
 		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
 		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
@@ -1673,7 +1663,6 @@ function build_kernel_for_different_cpu_architecture () {
 		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
 		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} INSTALL_MOD_STRIP=1 modules_install -j12 &&
 		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
-		rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm/configs/${DEFCONFIG}
 	elif [[ $ARCH == riscv ]]; then
 		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} ${DEFCONFIG}
 		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} headers_install &&
@@ -1681,7 +1670,6 @@ function build_kernel_for_different_cpu_architecture () {
 		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
 		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install -j12 &&
 		make ARCH=riscv -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
-		rm ${ROOT_DIR}/${KERNEL_DIR}/arch/riscv/configs/${DEFCONFIG}
 	fi
 	cp ${OUT_DIR}/arch/${ARCH}/boot/Image* ${DIST_DIR}
 	cp ${OUT_DIR}/arch/${ARCH}/boot/uImage* ${DIST_DIR}
@@ -1689,7 +1677,6 @@ function build_kernel_for_different_cpu_architecture () {
 	cp ${OUT_DIR}/vmlinux ${DIST_DIR}
 	set +x
 }
-
 export -f build_kernel_for_different_cpu_architecture
 
 function build_ext_modules() {
@@ -1709,10 +1696,24 @@ function build_ext_modules() {
 		set +x
 	done
 }
-
 export -f build_ext_modules
 
 function copy_modules_and_rebuild_rootfs_for_smarthome () {
+
+	copy_modules_files_to_dist_dir
+
+	if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
+		echo "========================================================"
+		echo "Rebuild rootfs in order to install modules!"
+		rebuild_rootfs ${ARCH}
+		echo "Build success!"
+	else
+		echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
+	fi
+}
+export -f copy_modules_and_rebuild_rootfs_for_smarthome
+
+function copy_modules_files_to_dist_dir () {
 	MODULES=$(find ${MODULES_STAGING_DIR} -type f -name "*.ko")
 	if [ -n "${MODULES}" ]; then
 		if [ -n "${IN_KERNEL_MODULES}" -o -n "${EXT_MODULES}" -o -n "${EXT_MODULES_MAKEFILE}" ]; then
@@ -1726,15 +1727,245 @@ function copy_modules_and_rebuild_rootfs_for_smarthome () {
 				tar --transform="s,.*/,," -czf ${DIST_DIR}/${MODULES_ARCHIVE} ${MODULES[@]}
 			fi
 		fi
-
-		if [ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot ]; then
-			echo "Rebuild rootfs in order to install modules!"
-			rebuild_rootfs ${ARCH}
-			echo "Build success!"
-		else
-			echo "There's no file ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/rootfs_base.cpio.gz.uboot, so don't rebuild rootfs!"
-		fi
 	fi
 }
+export -f copy_modules_files_to_dist_dir
 
-export -f copy_modules_and_rebuild_rootfs_for_smarthome
+function copy_files_to_dist_dir () {
+	echo "========================================================"
+	echo " Copying files"
+	for FILE in ${FILES}; do
+		if [ -f ${OUT_DIR}/${FILE} ]; then
+			echo "  $FILE"
+			cp -p ${OUT_DIR}/${FILE} ${DIST_DIR}/
+		elif [[ "${FILE}" =~ \.dtb|\.dtbo ]]  && \
+		[ -n "${DTS_EXT_DIR}" ] && [ -f "${OUT_DIR}/${DTS_EXT_DIR}/${FILE}" ] ; then
+			# DTS_EXT_DIR is recalculated before to be relative to KERNEL_DIR
+			echo "  $FILE"
+			cp -p "${OUT_DIR}/${DTS_EXT_DIR}/${FILE}" "${DIST_DIR}/"
+		else
+			echo "  $FILE is not a file, skipping"
+		fi
+	done
+}
+export -f copy_files_to_dist_dir
+
+function make_dtbo() {
+	if [[ -n "${BUILD_DTBO_IMG}" ]]; then
+		echo "========================================================"
+		echo " Creating dtbo image at ${DIST_DIR}/dtbo.img"
+		(
+			cd ${OUT_DIR}
+			mkdtimg create "${DIST_DIR}"/dtbo.img ${MKDTIMG_FLAGS} ${MKDTIMG_DTBOS}
+		)
+	fi
+}
+export -f make_dtbo
+
+function installing_UAPI_kernel_headers () {
+	if [ -z "${SKIP_CP_KERNEL_HDR}" ]; then
+		echo "========================================================"
+		echo " Installing UAPI kernel headers:"
+		mkdir -p "${KERNEL_UAPI_HEADERS_DIR}/usr"
+		make -C ${OUT_DIR} O=${OUT_DIR} ${TOOL_ARGS}                                \
+				INSTALL_HDR_PATH="${KERNEL_UAPI_HEADERS_DIR}/usr" "${MAKE_ARGS[@]}" \
+				headers_install
+		# The kernel makefiles create files named ..install.cmd and .install which
+		# are only side products. We don't want those. Let's delete them.
+		find ${KERNEL_UAPI_HEADERS_DIR} \( -name ..install.cmd -o -name .install \) -exec rm '{}' +
+		KERNEL_UAPI_HEADERS_TAR=${DIST_DIR}/kernel-uapi-headers.tar.gz
+		echo " Copying kernel UAPI headers to ${KERNEL_UAPI_HEADERS_TAR}"
+		tar -czf ${KERNEL_UAPI_HEADERS_TAR} --directory=${KERNEL_UAPI_HEADERS_DIR} usr/
+	fi
+}
+export -f installing_UAPI_kernel_headers
+
+function copy_kernel_headers_to_compress () {
+	if [ -z "${SKIP_CP_KERNEL_HDR}" ] ; then
+		echo "========================================================"
+		KERNEL_HEADERS_TAR=${DIST_DIR}/kernel-headers.tar.gz
+		echo " Copying kernel headers to ${KERNEL_HEADERS_TAR}"
+		pushd $ROOT_DIR/$KERNEL_DIR
+			find arch include $OUT_DIR -name *.h -print0               \
+				| tar -czf $KERNEL_HEADERS_TAR                     \
+				--absolute-names                                 \
+				--dereference                                    \
+				--transform "s,.*$OUT_DIR,,"                     \
+				--transform "s,^,kernel-headers/,"               \
+				--null -T -
+		popd
+	fi
+}
+export -f copy_kernel_headers_to_compress
+
+function set_default_parameters_for_32bit () {
+	tool_args=()
+	prebuilts_paths=(
+		CLANG_PREBUILT_BIN
+		CLANGTOOLS_PREBUILT_BIN
+		RUST_PREBUILT_BIN
+		LZ4_PREBUILTS_BIN
+		DTC_PREBUILTS_BIN
+		LIBUFDT_PREBUILTS_BIN
+		BUILDTOOLS_PREBUILT_BIN
+	)
+	echo CC_CLANG=$CC_CLANG
+	if [[ $CC_CLANG -eq "1" ]]; then
+		source ${ROOT_DIR}/${KERNEL_DIR}/build.config.common
+		if [[ -n "${LLVM}" ]]; then
+			tool_args+=("LLVM=1")
+			# Reset a bunch of variables that the kernel's top level Makefile does, just
+			# in case someone tries to use these binaries in this script such as in
+			# initramfs generation below.
+			HOSTCC=clang
+			HOSTCXX=clang++
+			CC=clang
+			LD=ld.lld
+			AR=llvm-ar
+			NM=llvm-nm
+			OBJCOPY=llvm-objcopy
+			OBJDUMP=llvm-objdump
+			OBJSIZE=llvm-size
+			READELF=llvm-readelf
+			STRIP=llvm-strip
+		else
+			if [ -n "${HOSTCC}" ]; then
+				tool_args+=("HOSTCC=${HOSTCC}")
+			fi
+
+			if [ -n "${CC}" ]; then
+				tool_args+=("CC=${CC}")
+				if [ -z "${HOSTCC}" ]; then
+				tool_args+=("HOSTCC=${CC}")
+				fi
+			fi
+
+			if [ -n "${LD}" ]; then
+				tool_args+=("LD=${LD}" "HOSTLD=${LD}")
+			fi
+
+			if [ -n "${NM}" ]; then
+				tool_args+=("NM=${NM}")
+			fi
+
+			if [ -n "${OBJCOPY}" ]; then
+				tool_args+=("OBJCOPY=${OBJCOPY}")
+			fi
+		fi
+
+		if [ -n "${DTC}" ]; then
+			tool_args+=("DTC=${DTC}")
+		fi
+		for prebuilt_bin in "${prebuilts_paths[@]}"; do
+			prebuilt_bin=\${${prebuilt_bin}}
+			eval prebuilt_bin="${prebuilt_bin}"
+			if [ -n "${prebuilt_bin}" ]; then
+				PATH=${PATH//"${ROOT_DIR}\/${prebuilt_bin}:"}
+				PATH=${ROOT_DIR}/${prebuilt_bin}:${PATH} # add the clang tool to env PATH
+			fi
+		done
+		export PATH
+	elif [[ -n $CROSS_COMPILE_TOOL ]]; then
+		export CROSS_COMPILE=${CROSS_COMPILE_TOOL}
+	fi
+
+	# Have host compiler use LLD and compiler-rt.
+	LLD_COMPILER_RT="-fuse-ld=lld --rtlib=compiler-rt"
+	if [[ -n "${NDK_TRIPLE}" ]]; then
+		NDK_DIR=${ROOT_DIR}/prebuilts/ndk-r23
+
+		if [[ ! -d "${NDK_DIR}" ]]; then
+			# Kleaf/Bazel will checkout the ndk to a different directory than
+			# build.sh.
+			NDK_DIR=${ROOT_DIR}/external/prebuilt_ndk
+			if [[ ! -d "${NDK_DIR}" ]]; then
+			echo "ERROR: NDK_TRIPLE set, but unable to find prebuilts/ndk." 1>&2
+			echo "Did you forget to checkout prebuilts/ndk?" 1>&2
+			exit 1
+			fi
+		fi
+		USERCFLAGS="--target=${NDK_TRIPLE} "
+		USERCFLAGS+="--sysroot=${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/sysroot "
+		# Some kernel headers trigger -Wunused-function for unused static functions
+		# with clang; GCC does not warn about unused static inline functions. The
+		# kernel sets __attribute__((maybe_unused)) on such functions when W=1 is
+		# not set.
+		USERCFLAGS+="-Wno-unused-function "
+		# To help debug these flags, consider commenting back in the following, and
+		# add `echo $@ > /tmp/log.txt` and `2>>/tmp/log.txt` to the invocation of $@
+		# in scripts/cc-can-link.sh.
+		#USERCFLAGS+=" -Wl,--verbose -v"
+		# We need to set -fuse-ld=lld for Android's build env since AOSP LLVM's
+		# clang is not configured to use LLD by default, and BFD has been
+		# intentionally removed. This way CC_CAN_LINK can properly link the test in
+		# scripts/cc-can-link.sh.
+		USERLDFLAGS="${LLD_COMPILER_RT} "
+		USERLDFLAGS+="--target=${NDK_TRIPLE} "
+	else
+		USERCFLAGS="--sysroot=/dev/null"
+	fi
+
+	#setting_the_default_output_dir
+	export COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
+	export OUT_DIR=$(readlink -m ${COMMON_OUT_DIR}/${KERNEL_DIR})
+	export DIST_DIR=$(readlink -m ${DIST_DIR:-${COMMON_OUT_DIR}/dist})
+	export UNSTRIPPED_DIR=${DIST_DIR}/unstripped
+	export UNSTRIPPED_MODULES_ARCHIVE=unstripped_modules.tar.gz
+	export MODULES_ARCHIVE=modules.tar.gz
+	export MODULES_STAGING_DIR=$(readlink -m ${COMMON_OUT_DIR}/staging)
+	export MODULES_PRIVATE_DIR=$(readlink -m ${COMMON_OUT_DIR}/private)
+	export KERNEL_UAPI_HEADERS_DIR=$(readlink -m ${COMMON_OUT_DIR}/kernel_uapi_headers)
+	export INITRAMFS_STAGING_DIR=${MODULES_STAGING_DIR}/initramfs_staging
+	export SYSTEM_DLKM_STAGING_DIR=${MODULES_STAGING_DIR}/system_dlkm_staging
+	export VENDOR_DLKM_STAGING_DIR=${MODULES_STAGING_DIR}/vendor_dlkm_staging
+	export MKBOOTIMG_STAGING_DIR="${MODULES_STAGING_DIR}/mkbootimg_staging"
+	export OUT_AMLOGIC_DIR=$(readlink -m ${COMMON_OUT_DIR}/amlogic)
+
+	tool_args+=("LOADADDR=0x108000")
+	tool_args+=("DEPMOD=depmod")
+	TOOL_ARGS="${tool_args[@]}"
+
+	mkdir -p ${OUT_DIR}
+	if [ "${SKIP_RM_OUTDIR}" != "1" ] ; then
+		rm -rf ${COMMON_OUT_DIR}
+	fi
+
+	source ${ROOT_DIR}/build/kernel/build_utils.sh
+
+	DTS_EXT_DIR=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/boot/dts/amlogic
+	DTS_EXT_DIR=$(rel_path ${ROOT_DIR}/${DTS_EXT_DIR} ${KERNEL_DIR})
+	export dtstree=${DTS_EXT_DIR}
+	export DTC_INCLUDE=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/include
+
+	EXT_MODULES="
+		${EXT_MODULES}
+	"
+
+	EXT_MODULES_CONFIG="
+		${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/ext_modules_config
+	"
+
+	EXT_MODULES_PATH="
+		${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/ext_modules_path
+	"
+
+	POST_KERNEL_BUILD_CMDS="prepare_module_build"
+	EXTRA_CMDS="extra_cmds"
+
+	IN_KERNEL_MODULES=1
+}
+export -f set_default_parameters_for_32bit
+
+function generating_test_mappings_zip () {
+	echo "========================================================"
+	echo " Generating test_mappings.zip"
+	TEST_MAPPING_FILES=${OUT_DIR}/test_mapping_files.txt
+	find ${ROOT_DIR} -name TEST_MAPPING \
+	  -not -path "${ROOT_DIR}/\.git*" \
+	  -not -path "${ROOT_DIR}/\.repo*" \
+	  -not -path "${ROOT_DIR}/out*" \
+	  > ${TEST_MAPPING_FILES}
+	soong_zip -o ${DIST_DIR}/test_mappings.zip -C ${ROOT_DIR} -l ${TEST_MAPPING_FILES}
+}
+export -f generating_test_mappings_zip
+

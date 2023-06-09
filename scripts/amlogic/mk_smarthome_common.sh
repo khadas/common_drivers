@@ -71,13 +71,11 @@ handle_input_parameters_for_smarthome "$@"
 
 export KERNEL_DIR COMMON_DRIVERS_DIR MANUAL_INSMOD_MODULE
 
-auto_patch_to_common_dir
-
 set_default_parameters_for_smarthome
 
-mkdir -p ${DIST_DIR} ${MODULES_STAGING_DIR}
+auto_patch_to_common_dir
 
-cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/arch/${ARCH}/configs/
+mkdir -p ${DIST_DIR} ${MODULES_STAGING_DIR}
 
 savedefconfig_cmd_for_smarthome
 

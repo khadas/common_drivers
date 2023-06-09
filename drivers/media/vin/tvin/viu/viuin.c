@@ -78,6 +78,8 @@
 #define VPU_VIU_VDIN_IF_MUX_CTRL_T3X	0x2783
 #define VPU_VIU2VDIN0_BUF_SIZE_T3X	0x2784
 #define VDIN_LITE_CORE_MAX_PIXEL_CLOCK	(4096 * 2160 * 60UL)
+/* txhd2 for keystone dump vdin1 */
+#define VPP_MISC									0x1d26
 
 static unsigned int vsync_enter_line_curr;
 module_param(vsync_enter_line_curr, uint, 0664);
@@ -517,12 +519,16 @@ static void viuin_set_wr_bak_ctrl(enum tvin_port_e port)
 		break;
 	case TVIN_PORT_VIU1_WB0_OSD1:
 		wr_bits_viu(VPP_WR_BAK_CTRL, 3, 0, 4);
+		if (is_meson_txhd2_cpu() && rd_bits_viu(VPP_MISC, 27, 1))
+			wr_bits_viu(VPP_WR_BAK_CTRL, 1, 11, 1);
 		break;
 	case TVIN_PORT_VIU1_WB0_OSD2:
 		wr_bits_viu(VPP_WR_BAK_CTRL, 4, 0, 4);
 		break;
 	case TVIN_PORT_VIU1_WB0_POST_BLEND:
 		wr_bits_viu(VPP_WR_BAK_CTRL, 5, 0, 4);
+		if (is_meson_txhd2_cpu() && rd_bits_viu(VPP_MISC, 27, 1))
+			wr_bits_viu(VPP_WR_BAK_CTRL, 1, 11, 1);
 		break;
 	case TVIN_PORT_VIU1_WB0_VPP:
 		wr_bits_viu(VPP_WR_BAK_CTRL, 6, 0, 4);
@@ -532,6 +538,8 @@ static void viuin_set_wr_bak_ctrl(enum tvin_port_e port)
 		 * tm2_revb increased 4bits, all 12bit
 		 */
 		wr_bits_viu(VPP_WR_BAK_CTRL, 0xff, 16, 8);
+		if (is_meson_txhd2_cpu() && rd_bits_viu(VPP_MISC, 27, 1))
+			wr_bits_viu(VPP_WR_BAK_CTRL, 1, 11, 1);
 		break;
 	case TVIN_PORT_VIU1_VIDEO:
 		wr_bits_viu(VPP_WR_BAK_CTRL, 7, 0, 4);
@@ -766,6 +774,9 @@ static void viuin_stop(struct tvin_frontend_s *fe, enum tvin_port_e port)
 		pr_info("[viuin..]%s viu in dec isn't start.\n", __func__);
 	//pr_info("%s %d Disable VIU to VDIN\n", __func__, __LINE__);
 	wr_viu(VPU_VIU_VDIN_IF_MUX_CTRL, 0);
+	/* txhd2 keystone path close */
+	if (is_meson_txhd2_cpu() && rd_bits_viu(VPP_WR_BAK_CTRL, 11, 1))
+		wr_bits_viu(VPP_WR_BAK_CTRL, 0, 11, 1);
 }
 
 static int viuin_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)

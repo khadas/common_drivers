@@ -462,6 +462,7 @@ static unsigned char adc_freq[64];
 
 static inline void am_init_tst_mode(void)
 {
+	phy_write(c_phy_dev, 20, 0x0000);
 	phy_write(c_phy_dev, 20, 0x0400);
 	phy_write(c_phy_dev, 20, 0x0000);
 	phy_write(c_phy_dev, 20, 0x0400);

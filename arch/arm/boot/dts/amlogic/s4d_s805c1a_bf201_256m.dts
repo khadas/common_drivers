@@ -747,28 +747,44 @@
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
 		status = "okay";
-		key_name = "standby", "vol+", "vol-";
-		key_num = <3>;
+		key_name = "vol+", "vol-";
+		key_num = <2>;
 		io-channels = <&saradc 0>;
 		io-channel-names = "key-chan-0";
-		key_chan = <0 0 0>;
-		key_code = <116 115 114>;
-		key_val = <20 910 630>; //val=voltage/1800mV*1023
-		key_tolerance = <40 40 40>;
+		key_chan = <0 0>;
+		key_code = <115 114>;
+		key_val = <910 510>; //val=voltage/1800mV*1023
+		key_tolerance = <40 40>;
 	};
 
 	gpio_keypad{
 		compatible = "amlogic, gpio_keypad";
 		status = "okay";
 		scan_period = <20>;
-		key_num = <2>;
-		key_name = "bluetooth", "mute";
-		key_code = <600 SW_MUTE_DEVICE>;
-		key_type = <EV_KEY EV_SW>;
-		key-gpios = <&gpio  GPIOD_2  GPIO_ACTIVE_HIGH
-			     &gpio  GPIOD_3  GPIO_ACTIVE_HIGH>;
+		key_num = <1>;
+		key_name = "power";
+		key_code = <116>;
+		key_type = <EV_KEY>;
+		key-gpios = <&gpio  GPIOC_5  GPIO_ACTIVE_HIGH>;
 		detect_mode = <0>;/*0:polling mode, 1:irq mode*/
 	};
+
+	gpioleds {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		red_led_en {
+			label="red_led_en";
+			gpios=<&gpio GPIOC_3 GPIO_ACTIVE_LOW>;
+			default-state ="off";
+		};
+		blue_led_en {
+			label="blue_led_en";
+			gpios=<&gpio GPIOC_2 GPIO_ACTIVE_LOW>;
+			default-state ="on";
+		};
+	};
+
 };
 
 &pwm_ij {
@@ -1306,7 +1322,7 @@
 &dwc2_a {
 	status = "okay";
 	/** 0: normal, 1: otg+dwc3 host only, 2: otg+dwc3 device only*/
-	controller-type = <3>;
+	controller-type = <1>;
 };
 
 &crg {
@@ -1321,7 +1337,7 @@
 &usb3_phy_v2 {
 	status = "okay";
 	portnum = <0>;
-	otg = <1>;
+	otg = <0>;
 	/*gpio-vbus-power = "GPIOH_6";*/
 	/*gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;*/
 };

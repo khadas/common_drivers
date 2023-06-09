@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "2023000529"
+#define DRIVER_VER "202300609"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"

@@ -278,10 +278,10 @@ struct pq_config_dvp {
 struct dv_cfg_info_s {
 	int id;
 	char pic_mode_name[32];
-	s16  brightness;        /*Brightness */
-	s16  contrast;          /*Contrast */
-	s16  colorshift;        /*ColorShift or Tint*/
-	s16  saturation;        /*Saturation or color */
+	s32  brightness;        /*Brightness */
+	s32  contrast;          /*Contrast */
+	s32  colorshift;        /*ColorShift or Tint*/
+	s32  saturation;        /*Saturation or color */
 	u8  vsvdb[7];
 	int dark_detail;        /*dark detail, on or off*/
 };
@@ -294,8 +294,8 @@ struct dv_pq_center_value_s {
 };
 
 struct dv_pq_range_s {
-	s16  left;
-	s16  right;
+	s32  left;
+	s32  right;
 };
 
 extern struct pq_config *bin_to_cfg;

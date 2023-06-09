@@ -42,7 +42,7 @@ struct pq_config_dvp *bin_to_cfg_dvp;
 
 struct dv_cfg_info_s cfg_info[MAX_DV_PICTUREMODES];
 
-static s16 pq_center[MAX_DV_PICTUREMODES][4];
+static s32 pq_center[MAX_DV_PICTUREMODES][4];
 static struct dv_pq_range_s pq_range[4];
 
 #define USE_CENTER_0 0
@@ -57,6 +57,8 @@ static const s16 EXTER_MIN_PQ = -256;
 static const s16 EXTER_MAX_PQ = 256;
 static const s16 INTER_MIN_PQ = -4096;
 static const s16 INTER_MAX_PQ = 4095;
+static const s32 INTER_MIN_PQ_HW5 = -32768;
+static const s32 INTER_MAX_PQ_HW5 = 32768;
 
 #define LEFT_RANGE_BRIGHTNESS  (-3074) /*limit the range*/
 #define RIGHT_RANGE_BRIGHTNESS (3074)
@@ -66,6 +68,14 @@ static const s16 INTER_MAX_PQ = 4095;
 #define RIGHT_RANGE_COLORSHIFT (3074)
 #define LEFT_RANGE_SATURATION  (-3074)
 #define RIGHT_RANGE_SATURATION (3074)
+#define LEFT_RANGE_BRIGHTNESS_HW5  (-24576) /*limit the range*/
+#define RIGHT_RANGE_BRIGHTNESS_HW5 (24576)
+#define LEFT_RANGE_CONTRAST_HW5    (-24576)
+#define RIGHT_RANGE_CONTRAST_HW5   (24576)
+#define LEFT_RANGE_COLORSHIFT_HW5  (-24576)
+#define RIGHT_RANGE_COLORSHIFT_HW5 (24576)
+#define LEFT_RANGE_SATURATION_HW5  (-24576)
+#define RIGHT_RANGE_SATURATION_HW5 (24576)
 
 const char *pq_item_str[] = {"brightness",
 			     "contrast",
@@ -619,16 +629,16 @@ struct target_config def_tgt_display_cfg_ll = {
 	0, 0, 0, 0} /* padding */
 };
 
-/*cfg_0.005_500_bt1886 */
+/*cfg_0.034_890_v2*/
 struct target_config_dvp def_tgt_dvp_cfg = {
-	39322,
-	131072000,
-	1311,
-	{42949672, 22145926, 20132660, 40265320, 10066330, 4026532, 20984942, 22078816},
+	36045,
+	233308160,
+	8913,
+	{42781900, 22434494, 20179636, 41016936, 10153572, 3684277, 20984942, 22078816},
 	{
-		{5960, 20047, 2023},
-		{-3286, -11052, 14336},
-		{14336, -13022, -1316}
+		{5961, 20053, 2024},
+		{-3287, -11053, 14340},
+		{14340, -13026, -1313}
 	},
 	{2048, 16384, 16384},
 	15,
@@ -636,21 +646,21 @@ struct target_config_dvp def_tgt_dvp_cfg = {
 	0,
 	1,
 	1,
-	{4, 215, 163, 84, 217, 76, 153},
+	{72, 63, 122, 154, 56, 31, 182},
 	{-2458, -1638, -819, 0, 410, 819, 1229},
 	0,
-	0,
 	9830,
-	6554,
-	-6554,
-	26214,
-	3277,
+	0,
+	0,
+	0,
+	32768,
+	0,
 	0,
 	0,
 	0,
 	0,
 	{
-		{0}, 1, 0, 0, 0, 6553600, 32768, 32768, {0, 0, 0}
+		{0}, 0, 0, 0, 0, 6553600, 32768, 32768, {0, 0, 0}
 	},
 	{
 		0, 0, {0, 0},
@@ -669,8 +679,8 @@ struct target_config_dvp def_tgt_dvp_cfg = {
 		24576, 0,
 		{0, 0}
 	},
-	{128, 180, 200, 230, 255},
-	{217, 304, 391, 435, 500},
+	{1, 64, 128, 192, 255},
+	{1, 2500, 5000, 7500, 10000},
 	32768,
 	0,
 	2,
@@ -952,14 +962,25 @@ static void set_dv_pq_center(void)
 
 static void set_dv_pq_range(void)
 {
-	pq_range[PQ_BRIGHTNESS].left = LEFT_RANGE_BRIGHTNESS;
-	pq_range[PQ_BRIGHTNESS].right = RIGHT_RANGE_BRIGHTNESS;
-	pq_range[PQ_CONTRAST].left = LEFT_RANGE_CONTRAST;
-	pq_range[PQ_CONTRAST].right = RIGHT_RANGE_CONTRAST;
-	pq_range[PQ_COLORSHIFT].left = LEFT_RANGE_COLORSHIFT;
-	pq_range[PQ_COLORSHIFT].right = RIGHT_RANGE_COLORSHIFT;
-	pq_range[PQ_SATURATION].left = LEFT_RANGE_SATURATION;
-	pq_range[PQ_SATURATION].right = RIGHT_RANGE_SATURATION;
+	if (is_aml_hw5()) {
+		pq_range[PQ_BRIGHTNESS].left = LEFT_RANGE_BRIGHTNESS_HW5;
+		pq_range[PQ_BRIGHTNESS].right = RIGHT_RANGE_BRIGHTNESS_HW5;
+		pq_range[PQ_CONTRAST].left = LEFT_RANGE_CONTRAST_HW5;
+		pq_range[PQ_CONTRAST].right = RIGHT_RANGE_CONTRAST_HW5;
+		pq_range[PQ_COLORSHIFT].left = LEFT_RANGE_COLORSHIFT_HW5;
+		pq_range[PQ_COLORSHIFT].right = RIGHT_RANGE_COLORSHIFT_HW5;
+		pq_range[PQ_SATURATION].left = LEFT_RANGE_SATURATION_HW5;
+		pq_range[PQ_SATURATION].right = RIGHT_RANGE_SATURATION_HW5;
+	} else {
+		pq_range[PQ_BRIGHTNESS].left = LEFT_RANGE_BRIGHTNESS;
+		pq_range[PQ_BRIGHTNESS].right = RIGHT_RANGE_BRIGHTNESS;
+		pq_range[PQ_CONTRAST].left = LEFT_RANGE_CONTRAST;
+		pq_range[PQ_CONTRAST].right = RIGHT_RANGE_CONTRAST;
+		pq_range[PQ_COLORSHIFT].left = LEFT_RANGE_COLORSHIFT;
+		pq_range[PQ_COLORSHIFT].right = RIGHT_RANGE_COLORSHIFT;
+		pq_range[PQ_SATURATION].left = LEFT_RANGE_SATURATION;
+		pq_range[PQ_SATURATION].right = RIGHT_RANGE_SATURATION;
+	}
 }
 
 static void remove_comments(char *p_buf)
@@ -1404,7 +1425,7 @@ LOAD_END:
 #endif
 }
 
-static inline s16 clamps(s16 value, s16 v_min, s16 v_max)
+static inline s32 clamps(s32 value, s32 v_min, s32 v_max)
 {
 	if (value > v_max)
 		return v_max;
@@ -1416,19 +1437,19 @@ static inline s16 clamps(s16 value, s16 v_min, s16 v_max)
 /*internal range -> external range*/
 static s16 map_pq_inter_to_exter
 	(enum pq_item_e pq_item,
-	 s16 inter_value)
+	 s32 inter_value)
 {
-	s16 inter_pq_min;
-	s16 inter_pq_max;
-	s16 exter_pq_min;
-	s16 exter_pq_max;
-	s16 exter_value;
-	s16 inter_range;
-	s16 exter_range;
-	s16 tmp;
-	s16 left_range = pq_range[pq_item].left;
-	s16 right_range = pq_range[pq_item].right;
-	s16 center = pq_center[cur_pic_mode][pq_item];
+	s32 inter_pq_min;
+	s32 inter_pq_max;
+	s32 exter_pq_min;
+	s32 exter_pq_max;
+	s32 exter_value;
+	s32 inter_range;
+	s32 exter_range;
+	s32 tmp;
+	s32 left_range = pq_range[pq_item].left;
+	s32 right_range = pq_range[pq_item].right;
+	s32 center = pq_center[cur_pic_mode][pq_item];
 
 	if (inter_value >= center) {
 		exter_pq_min = 0;
@@ -1441,15 +1462,23 @@ static s16 map_pq_inter_to_exter
 		inter_pq_min = left_range;
 		inter_pq_max = center;
 	}
-	inter_pq_min = clamps(inter_pq_min, INTER_MIN_PQ, INTER_MAX_PQ);
-	inter_pq_max = clamps(inter_pq_max, INTER_MIN_PQ, INTER_MAX_PQ);
+	if (is_aml_hw5()) {
+		inter_pq_min = clamps(inter_pq_min, INTER_MIN_PQ_HW5, INTER_MAX_PQ_HW5);
+		inter_pq_max = clamps(inter_pq_max, INTER_MIN_PQ_HW5, INTER_MAX_PQ_HW5);
+	} else {
+		inter_pq_min = clamps(inter_pq_min, INTER_MIN_PQ, INTER_MAX_PQ);
+		inter_pq_max = clamps(inter_pq_max, INTER_MIN_PQ, INTER_MAX_PQ);
+	}
 	tmp = clamps(inter_value, inter_pq_min, inter_pq_max);
 
 	inter_range = inter_pq_max - inter_pq_min;
 	exter_range = exter_pq_max - exter_pq_min;
 
 	if (inter_range == 0) {
-		inter_range = INTER_MAX_PQ;
+		if (is_aml_hw5())
+			inter_range = INTER_MAX_PQ_HW5;
+		else
+			inter_range = INTER_MAX_PQ;
 		pr_info("invalid inter_range, set to INTER_MAX_PQ\n");
 	}
 
@@ -1464,21 +1493,21 @@ static s16 map_pq_inter_to_exter
 }
 
 /*external range -> internal range*/
-static s16 map_pq_exter_to_inter
+static s32 map_pq_exter_to_inter
 	(enum pq_item_e pq_item,
 	 s16 exter_value)
 {
-	s16 inter_pq_min;
-	s16 inter_pq_max;
-	s16 exter_pq_min;
-	s16 exter_pq_max;
-	s16 inter_value;
-	s16 inter_range;
-	s16 exter_range;
-	s16 tmp;
-	s16 left_range = pq_range[pq_item].left;
-	s16 right_range = pq_range[pq_item].right;
-	s16 center = pq_center[cur_pic_mode][pq_item];
+	s32 inter_pq_min;
+	s32 inter_pq_max;
+	s32 exter_pq_min;
+	s32 exter_pq_max;
+	s32 inter_value;
+	s32 inter_range;
+	s32 exter_range;
+	s32 tmp;
+	s32 left_range = pq_range[pq_item].left;
+	s32 right_range = pq_range[pq_item].right;
+	s32 center = pq_center[cur_pic_mode][pq_item];
 
 	if (exter_value >= 0) {
 		exter_pq_min = 0;
@@ -1491,9 +1520,13 @@ static s16 map_pq_exter_to_inter
 		inter_pq_min = left_range;
 		inter_pq_max = center;
 	}
-
-	inter_pq_min = clamps(inter_pq_min, INTER_MIN_PQ, INTER_MAX_PQ);
-	inter_pq_max = clamps(inter_pq_max, INTER_MIN_PQ, INTER_MAX_PQ);
+	if (is_aml_hw5()) {
+		inter_pq_min = clamps(inter_pq_min, INTER_MIN_PQ_HW5, INTER_MAX_PQ_HW5);
+		inter_pq_max = clamps(inter_pq_max, INTER_MIN_PQ_HW5, INTER_MAX_PQ_HW5);
+	} else {
+		inter_pq_min = clamps(inter_pq_min, INTER_MIN_PQ, INTER_MAX_PQ);
+		inter_pq_max = clamps(inter_pq_max, INTER_MIN_PQ, INTER_MAX_PQ);
+	}
 	tmp = clamps(exter_value, exter_pq_min, exter_pq_max);
 
 	inter_range = inter_pq_max - inter_pq_min;
@@ -1529,11 +1562,19 @@ static bool is_valid_pq_exter_value(s16 exter_value)
 
 static bool is_valid_pq_inter_value(s16 exter_value)
 {
-	if (exter_value <= INTER_MAX_PQ && exter_value >= INTER_MIN_PQ)
-		return true;
+	if (is_aml_hw5()) {
+		if (exter_value <= INTER_MAX_PQ_HW5 && exter_value >= INTER_MIN_PQ_HW5)
+			return true;
 
-	pr_info("pq %d is out of range[%d, %d]\n",
-		exter_value, INTER_MIN_PQ, INTER_MAX_PQ);
+		pr_info("pq %d is out of range[%d, %d]\n",
+			exter_value, INTER_MIN_PQ_HW5, INTER_MAX_PQ_HW5);
+	} else {
+		if (exter_value <= INTER_MAX_PQ && exter_value >= INTER_MIN_PQ)
+			return true;
+
+		pr_info("pq %d is out of range[%d, %d]\n",
+			exter_value, INTER_MIN_PQ, INTER_MAX_PQ);
+	}
 	return false;
 }
 
@@ -1681,8 +1722,12 @@ void set_single_pq_value(int mode, enum pq_item_e item, s16 value)
 	} else {
 		inter_value = value;
 		if (!is_valid_pq_inter_value(inter_value)) {
-			inter_value =
-				clamps(inter_value, INTER_MIN_PQ, INTER_MAX_PQ);
+			if (is_aml_hw5())
+				inter_value =
+					clamps(inter_value, INTER_MIN_PQ_HW5, INTER_MAX_PQ_HW5);
+			else
+				inter_value =
+					clamps(inter_value, INTER_MIN_PQ, INTER_MAX_PQ);
 			pr_info("clamps %s to %d\n",
 				pq_item_str[item], inter_value);
 		}
@@ -1749,8 +1794,12 @@ void set_full_pq_value(struct dv_full_pq_info_s full_pq_info)
 	} else {
 		inter_value = full_pq_info.brightness;
 		if (!is_valid_pq_inter_value(inter_value)) {
-			inter_value =
-				clamps(inter_value, INTER_MIN_PQ, INTER_MAX_PQ);
+			if (is_aml_hw5())
+				inter_value =
+					clamps(inter_value, INTER_MIN_PQ_HW5, INTER_MAX_PQ_HW5);
+			else
+				inter_value =
+					clamps(inter_value, INTER_MIN_PQ, INTER_MAX_PQ);
 			pr_info("clamps brightness from %d to %d\n",
 				full_pq_info.brightness, inter_value);
 		}
@@ -1770,8 +1819,12 @@ void set_full_pq_value(struct dv_full_pq_info_s full_pq_info)
 	} else {
 		inter_value = full_pq_info.contrast;
 		if (!is_valid_pq_inter_value(inter_value)) {
-			inter_value =
-				clamps(inter_value, INTER_MIN_PQ, INTER_MAX_PQ);
+			if (is_aml_hw5())
+				inter_value =
+				clamps(inter_value, INTER_MIN_PQ_HW5, INTER_MAX_PQ_HW5);
+			else
+				inter_value =
+					clamps(inter_value, INTER_MIN_PQ, INTER_MAX_PQ);
 			pr_info("clamps contrast from %d to %d\n",
 				full_pq_info.contrast, inter_value);
 		}
@@ -1791,8 +1844,12 @@ void set_full_pq_value(struct dv_full_pq_info_s full_pq_info)
 	} else {
 		inter_value = full_pq_info.colorshift;
 		if (!is_valid_pq_inter_value(inter_value)) {
-			inter_value =
-				clamps(inter_value, INTER_MIN_PQ, INTER_MAX_PQ);
+			if (is_aml_hw5())
+				inter_value =
+					clamps(inter_value, INTER_MIN_PQ_HW5, INTER_MAX_PQ_HW5);
+			else
+				inter_value =
+					clamps(inter_value, INTER_MIN_PQ, INTER_MAX_PQ);
 			pr_info("clamps colorshift from %d to %d\n",
 				full_pq_info.colorshift, inter_value);
 		}
@@ -1812,8 +1869,12 @@ void set_full_pq_value(struct dv_full_pq_info_s full_pq_info)
 	} else {
 		inter_value = full_pq_info.saturation;
 		if (!is_valid_pq_inter_value(inter_value)) {
-			inter_value =
-				clamps(inter_value, INTER_MIN_PQ, INTER_MAX_PQ);
+			if (is_aml_hw5())
+				inter_value =
+					clamps(inter_value, INTER_MIN_PQ_HW5, INTER_MAX_PQ_HW5);
+			else
+				inter_value =
+					clamps(inter_value, INTER_MIN_PQ, INTER_MAX_PQ);
 			pr_info("clamps saturation from %d to %d\n",
 				full_pq_info.saturation, inter_value);
 		}

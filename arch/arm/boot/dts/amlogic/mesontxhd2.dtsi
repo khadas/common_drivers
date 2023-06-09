@@ -1174,7 +1174,7 @@
 		sd_emmc_c: mmc@ffe07000 {
 			compatible = "amlogic,meson-axg-mmc";
 			reg = <0xffe07000 0x800>,
-				<0xff63c25c 0x4>,
+				<0xff64625c 0x4>,
 				<0xff6346c0 0x4>;
 			interrupts = <GIC_SPI 191 IRQ_TYPE_EDGE_RISING>;
 			status = "disabled";
@@ -1191,7 +1191,7 @@
 			card_type = <1>;
 			ignore_desc_busy;
 			mmc_debug_flag;
-		//	tx_delay = <10>;
+			tx_delay = <32>;
 		//	src_clk_rate = <1152000000>;
 		//  resets = <&reset RESET_SD_EMMC_C>;
 		};

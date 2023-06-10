@@ -913,6 +913,29 @@ int tv_top1_set(u64 *top1_reg, u64 *top1b_reg, bool reset, bool toggle)
 	return 0;
 }
 
+/*hsize: real data width, maybe smaller than ori data*/
+void update_top2_reg(int hsize, int vsize)
+{
+	u64 ori_size = tv_hw5_setting->top2_reg[281];
+	u32 new_size = vsize << 16 | hsize;
+	int reg_addr;
+
+	if (hw5_reg_from_file)
+		return;
+
+	reg_addr = ori_size >> 32;
+	reg_addr = reg_addr & 0xffffffff;
+	if ((ori_size & 0xffffffff) != new_size && reg_addr == 0x460) {
+		//tv_hw5_setting->top2_reg[89] = 0x00000160040c0000;/*AOI todo*/
+		//tv_hw5_setting->top2_reg[94] = 0x00000174072b0000;/*AOI todo*/
+		tv_hw5_setting->top2_reg[281] =
+		0x0000046000000000 | new_size;//0x460 VDR_RES_REGADDR
+		if (debug_dolby & 2)
+			pr_info("RES from 0x%llx=>0x%llx\n",
+			ori_size, tv_hw5_setting->top2_reg[281]);
+	}
+}
+
 /*toggle:true——update all reg. false——only update dolby inside reg*/
 int tv_top2_set(u64 *reg_data,
 			     int hsize,
@@ -945,8 +968,22 @@ int tv_top2_set(u64 *reg_data,
 	struct vd_proc_info_t *vd_proc_info;
 
 	if (dolby_vision_on &&
-		(dolby_vision_flags & FLAG_DISABE_CORE_SETTING))
+		(dolby_vision_flags & FLAG_DISABE_CORE_SETTING)) {
+		if (top2_info.top2_on) {/*set every vsync*/
+			if (lut_trigger_by_reg) {
+				/*use reg to trigger lut, should after DOLBY_TOP2_RDMA set */
+				top_misc = VSYNC_RD_DV_REG(VPU_TOP_MISC);
+				top_misc |= 1 << 10;
+				VSYNC_WR_DV_REG(VPU_TOP_MISC, top_misc);
+				top_misc &= ~(1 << 10);
+				VSYNC_WR_DV_REG(VPU_TOP_MISC, top_misc);
+			}
+			VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + 2, 1);/*Metadata Program start*/
+			VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + 3, 1);/*Metadata Program end */
+			VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + 4, last_int_top2);/*clear int*/
+		}
 		return 0;
+	}
 
 	//if (force_update_reg & 1)
 		//reset = true;
@@ -1016,6 +1053,7 @@ int tv_top2_set(u64 *reg_data,
 			vd1_slice0_vsize = vd_proc_info->slice[0].vsize;
 		}
 	}
+	update_top2_reg(hsize, vsize);
 	py_level = NO_LEVEL;//todo
 	if (hw5_reg_from_file)
 		py_level = SIX_LEVEL;//temp debug, case0 frame1, 6 level

@@ -1954,8 +1954,9 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 				!(dolby_vision_flags & FLAG_DISABLE_CRC)) {
 				//tv_hw5_setting->top2_reg[3] =
 				//0x000008f400000001;//enable crc in front of regs,necessary?
-				tv_hw5_setting->top2_reg[574] =
-				0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
+				if (tv_hw5_setting->top2_reg[574] == 0x000008f400000000)
+					tv_hw5_setting->top2_reg[574] =
+					0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
 			}
 
 			v_inst_info->tv_dovi_setting_change_flag = true;
@@ -1986,8 +1987,9 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 			!(dolby_vision_flags & FLAG_DISABLE_CRC)) {
 			//tv_hw5_setting->top2_reg[3] =
 			//	0x000008f400000001;//enable crc ctrl in front of regs, necessary?
-			tv_hw5_setting->top2_reg[574] =
-				0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
+			if (tv_hw5_setting->top2_reg[574] == 0x000008f400000000)
+				tv_hw5_setting->top2_reg[574] =
+					0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
 		}
 		v_inst_info->tv_dovi_setting_change_flag = true;
 		top2_info.amdv_setting_video_flag = video_frame;
@@ -2271,9 +2273,9 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 	}
 
 	if (vf && (debug_dolby & 0x8))
-		pr_dv_dbg("%s: vf %p(index %d),mode %d,top2_on %d\n",
+		pr_dv_dbg("%s: vf %p(index %d),mode %d,top2_on %d,size %d %d\n",
 			     __func__, vf, vf->omx_index,
-			     dolby_vision_mode, top2_info.top2_on);
+			     dolby_vision_mode, top2_info.top2_on, h_size, v_size);
 
 	if (dolby_vision_flags & FLAG_TOGGLE_FRAME) {
 		h_size = (display_size >> 16) & 0xffff;

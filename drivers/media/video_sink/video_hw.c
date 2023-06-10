@@ -962,7 +962,8 @@ bool is_dovi_tv_on(void)
 		is_meson_t7_cpu() ||
 		is_meson_t3_cpu() ||
 		is_meson_t5w_cpu() ||
-		is_meson_t5m_cpu()) &&
+		is_meson_t5m_cpu() ||
+		is_meson_t3x_cpu()) &&
 		!is_amdv_stb_mode() && is_amdv_on());
 #endif
 }

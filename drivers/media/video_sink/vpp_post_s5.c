@@ -859,21 +859,30 @@ static int vpp_blend_param_set(struct vpp_post_input_s *vpp_input,
 static int vpp1_blend_param_set(struct vpp_post_input_s *vpp1_input,
 	struct vpp1_post_blend_s *vpp1_post_blend)
 {
+	int vpp1_osd_en = osd_vpp1_bld_ctrl;
+
 	if (!vpp1_input || !vpp1_post_blend)
 		return -1;
 	memset(vpp1_post_blend, 0x0, sizeof(struct vpp1_post_blend_s));
 	vpp1_post_blend->bld_dummy_data = 0x008080;
 
-	/* 1:din0(vd3)  2:din1(osd3) 3:din2 4:din3 5:din4 else :close */
-	if (vd_layer_vpp[0].vppx_blend_en) {
+	if (vd_layer_vpp[0].vppx_blend_en || vpp1_osd_en) {
 		vpp1_post_blend->bld_out_en = 1;
-		vpp1_post_blend->bld_src1_sel = 1;
 		vpp1_post_blend->vd3_dpath_sel = 1;
 	} else {
 		vpp1_post_blend->bld_out_en = 0;
 		vpp1_post_blend->vd3_dpath_sel = 0;
-		vpp1_post_blend->bld_src1_sel = 0;
 	}
+	/* 1:din0(vd3)  2:din1(osd3) 3:din2 4:din3 5:din4 else :close */
+	if (vd_layer_vpp[0].vppx_blend_en)
+		vpp1_post_blend->bld_src1_sel = 1;
+	else
+		vpp1_post_blend->bld_src1_sel = 0;
+
+	if (vpp1_osd_en)
+		vpp1_post_blend->bld_src2_sel = 2;
+	else
+		vpp1_post_blend->bld_src2_sel = 0;
 
 	vpp1_post_blend->bld_out_w = vpp1_input->bld_out_hsize;
 	vpp1_post_blend->bld_out_h = vpp1_input->bld_out_vsize;

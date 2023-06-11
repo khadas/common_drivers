@@ -1816,6 +1816,14 @@
 #define VPP2_BLEND_BLEND_DUMMY_DATA                0x59e9
 #define VPP2_BLEND_DUMMY_ALPHA                     0x59ea
 
+#define T3X_VPP1_OSD3_BLD_H_SCOPE                  0x1d1c
+#define T3X_VPP1_OSD3_BLD_V_SCOPE                  0x1d1d
+#define T3X_VPP1_BLD_CTRL                          0x1d1b
+#define T3X_VPP1_BLEND_H_V_SIZE                    0x1d1a
+#define T3X_VPP1_BLEND_BLEND_DUMMY_DATA            0x1d51
+#define T3X_VPP1_BLEND_DUMMY_ALPHA                 0x1d52
+#define T3X_VPP1_BLEND_DUMMY_ALPHA1                0x1d54
+
 /* c3 osd */
 #define VOUT_OSD1_CTRL_STAT                        0x0240
 #define VOUT_OSD1_CTRL_STAT2                       0x0241

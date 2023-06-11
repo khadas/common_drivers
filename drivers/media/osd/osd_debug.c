@@ -513,6 +513,7 @@ static void osd_debug_dump_register_all(void)
 	}
 
 	if (osd_dev_hw.display_type == T7_DISPLAY) {
+		osd_log_info("--- vpp1 osd ---\n");
 		for (reg = VPP1_BLD_CTRL; reg <= VPP1_BLD_DIN2_VSCOPE; reg++)
 			osd_log_info("reg[0x%x]: 0x%08x\n",
 				     reg, osd_reg_read(reg));
@@ -557,6 +558,22 @@ static void osd_debug_dump_register_all(void)
 		reg = VPU_VOUT_BLD_SRC1_VPOS;
 		osd_log_info("reg[0x%x]: 0x%08x\n",
 					 reg, osd_reg_read(reg));
+	} else if (osd_dev_hw.display_type == S5_DISPLAY ||
+		   osd_hw.osd_meson_dev.has_vpp1) {
+		osd_log_info("--- vpp1 osd ---\n");
+		for (reg = T3X_VPP1_BLEND_H_V_SIZE;
+		     reg <= T3X_VPP1_OSD3_BLD_V_SCOPE; reg++)
+			osd_log_info("reg[0x%x]: 0x%08x\n",
+				     reg, osd_reg_read(reg));
+		reg = T3X_VPP1_BLEND_BLEND_DUMMY_DATA;
+		osd_log_info("reg[0x%x]: 0x%08x\n",
+			     reg, osd_reg_read(reg));
+		reg = T3X_VPP1_BLEND_DUMMY_ALPHA;
+		osd_log_info("reg[0x%x]: 0x%08x\n\n",
+			     reg, osd_reg_read(reg));
+		reg = T3X_VPP1_BLEND_DUMMY_ALPHA1;
+		osd_log_info("reg[0x%x]: 0x%08x\n\n",
+			     reg, osd_reg_read(reg));
 	}
 
 	if (osd_hw.osd_meson_dev.has_slice2ppc) {

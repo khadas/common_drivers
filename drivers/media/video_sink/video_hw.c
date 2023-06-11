@@ -8427,6 +8427,7 @@ static void vpp1_blend_update_s5(const struct vinfo_s *vinfo, u32 vpp_index)
 	int videox_off_req = 0;
 	bool force_flush = false;
 	static u32 blend_en_status_save;
+	static u32 osd_en_status_save;
 
 	if (vd_layer_vpp[0].vpp_index != VPP0) {
 		if (likely(vd_layer_vpp[0].onoff_state != VIDEO_ENABLE_STATE_IDLE)) {
@@ -8496,6 +8497,14 @@ static void vpp1_blend_update_s5(const struct vinfo_s *vinfo, u32 vpp_index)
 	if (vd_layer_vpp[0].vpp_index != VPP0 &&
 		blend_en_status_save != vd_layer_vpp[0].vppx_blend_en)
 		force_flush = true;
+
+	/* check vpp1 osd */
+	if (update_osd_vpp1_bld_ctrl) {
+		if (osd_vpp1_bld_ctrl != osd_en_status_save)
+			force_flush = true;
+		osd_en_status_save = osd_vpp1_bld_ctrl;
+	}
+
 	force_flush |= update_vpp1_input_info(vinfo);
 
 	if (force_flush)

@@ -5321,7 +5321,8 @@ static void config_osd_table(u32 display_device_cnt)
 		osd_hw.viu_osd_table[i] = 0xffffffff;
 
 	/* 2. set viu osd table */
-	if (osd_dev_hw.display_type == T7_DISPLAY) {
+	if (osd_dev_hw.display_type == T7_DISPLAY ||
+	    osd_dev_hw.display_type == S5_DISPLAY) {
 		switch (display_device_cnt) {
 		case 1:
 			osd_hw.viu_osd_table[VIU1] = OSD_TABLE_1;

@@ -81,7 +81,8 @@
 /* 2023.5.23 optimize color bar debug logic */
 /* 2023.5.30 hdmirx cts and hdcp */
 /* 2023.6.8  support black pattern for AV mute */
-#define RX_VER1 "ver.2023/6/8"
+/* I2C edid communication is stopped at 0x2 */
+#define RX_VER1 "ver.2023/6/12"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

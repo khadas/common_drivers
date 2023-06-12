@@ -6843,7 +6843,6 @@ void rx_ddc_active_monitor(u8 port)
 	 */
 	if (temp < 0x3f &&
 		temp != 0x1 &&
-		temp != 0x2 &&
 		temp != 0x3 &&
 		temp != 0x8 &&
 		temp != 0xa &&

@@ -669,6 +669,10 @@
 #define DOLBY5_CORE1_L1_MINMAX      0x0bcc
 #define DOLBY5_CORE1_L1_MID_L4      0x0bcd
 
+#define DOLBY5_CORE1_ICSCLUT_DBG_RD 0x0bce/*addr for lut*/
+#define DOLBY5_CORE1_ICSCLUT_RDADDR 0x0bcf/*addr for lut*/
+#define DOLBY5_CORE1_ICSCLUT_RDDATA 0x0bd0/*addr for lut*/
+
 #define DOLBY5_CORE1B_CRC_CNTRL     0x0bda /*top1b CRC control*/
 //Bit 1      crc_rst      //RW, default = 0
 //Bit 0      CRC enable   //RW, default = 0

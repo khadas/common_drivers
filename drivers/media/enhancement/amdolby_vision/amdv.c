@@ -48,6 +48,7 @@
 #include "amdv_regs_s5.h"
 #include "amdv_regs_hw5.h"
 #include "md_config.h"
+#include "amdv_hw5.h"
 #include <linux/device.h>
 #include <linux/cdev.h>
 #include <linux/of.h>
@@ -330,6 +331,15 @@ u32 top2_lut_num = TOP2_LUT_NUM;/*read file from vlsi*/
 struct lut_dma_info_s lut_dma_info[DMA_BUF_CNT];
 bool lut_dma_support;
 int cur_dmabuf_id;
+struct top1_pyramid_addr py_addr;
+u32 py1_size = 737280;/*1024*576*10/8 = 737280 64byte align*/
+u32 py2_size = 184320;/*512*288*10/8 = 184320 64byte align*/
+u32 py3_size = 46080;/*256*144*10/8 = 46080 64byte align*/
+u32 py4_size = 13824;/*128*10/8 = 160 64byte align 192*72 = 13824*/
+u32 py5_size = 4608;/*64*10/8 = 80 64byte align 128*36 = 4608*/
+u32 py6_size = 1152;/*32*10/8 = 40 64byte align 64 *18 = 1152*/
+u32 py7_size = 576;/*16*10/8 = 20 64byte align 64*9 = 576*/
+struct dolby5_top1_md_hist dv5_md_hist;
 
 static unsigned int amdv_target_min = 50; /* 0.0001 */
 static unsigned int amdv_target_max[3][3] = {
@@ -589,6 +599,10 @@ static u32 inst_res_debug[4];/*force set inst0 w/h inst1 w/h*/
 static int force_two_valid;
 module_param(force_two_valid, int, 0664);
 MODULE_PARM_DESC(force_two_valid,    "\n force_two_valid\n");
+
+int force_top1_enable;
+module_param(force_top1_enable, int, 0664);
+MODULE_PARM_DESC(force_top1_enable,    "\n force_top1_enable\n");
 
 static int dv_core1_detunnel = 1;
 static bool update_control_path_flag;
@@ -2022,6 +2036,50 @@ void amdv_init_receiver(void *pdev)
 					//lut_dma_info[i].dma_vaddr_top2,
 					//lut_dma_info[i].dma_paddr_top2);
 		}
+
+		py_addr.top1_py1_size = py1_size;
+		alloc_size = (py_addr.top1_py1_size + ((1 << 6) - 1)) & ~((1 << 6) - 1);
+		py_addr.py1_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
+				alloc_size, &py_addr.top1_py1_paddr, GFP_KERNEL);
+
+		py_addr.top1_py2_size = py2_size;
+		alloc_size = (py_addr.top1_py2_size + ((1 << 6) - 1)) & ~((1 << 6) - 1);
+		py_addr.py2_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
+				alloc_size, &py_addr.top1_py2_paddr, GFP_KERNEL);
+
+		py_addr.top1_py3_size = py3_size;
+		alloc_size = (py_addr.top1_py3_size + ((1 << 6) - 1)) & ~((1 << 6) - 1);
+		py_addr.py3_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
+				alloc_size, &py_addr.top1_py3_paddr, GFP_KERNEL);
+
+		py_addr.top1_py4_size = py4_size;
+		alloc_size = (py_addr.top1_py4_size + ((1 << 6) - 1)) & ~((1 << 6) - 1);
+		py_addr.py4_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
+				alloc_size, &py_addr.top1_py4_paddr, GFP_KERNEL);
+
+		py_addr.top1_py5_size = py5_size;
+		alloc_size = (py_addr.top1_py5_size + ((1 << 6) - 1)) & ~((1 << 6) - 1);
+		py_addr.py5_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
+				alloc_size, &py_addr.top1_py5_paddr, GFP_KERNEL);
+
+		py_addr.top1_py6_size = py6_size;
+		alloc_size = (py_addr.top1_py6_size + ((1 << 6) - 1)) & ~((1 << 6) - 1);
+		py_addr.py6_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
+				alloc_size, &py_addr.top1_py6_paddr, GFP_KERNEL);
+
+		py_addr.top1_py7_size = py7_size;
+		alloc_size = (py_addr.top1_py7_size + ((1 << 6) - 1)) & ~((1 << 6) - 1);
+		py_addr.py7_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
+				alloc_size, &py_addr.top1_py7_paddr, GFP_KERNEL);
+
+		dv5_md_hist.hist_size = 256;
+		alloc_size = dv5_md_hist.hist_size;
+		dv5_md_hist.hist_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
+				alloc_size, &dv5_md_hist.hist_paddr, GFP_KERNEL);
+
+		/*debug fix data, alloc memory, default disable*/
+		if (0)
+			fixed_buf_config();
 	}
 	if (!is_aml_hw5() && !multi_dv_mode) {
 		for (i = 0; i < 2; i++) {
@@ -14460,6 +14518,23 @@ static ssize_t amdolby_vision_debug_store
 	} else if (!strcmp(parm[0], "force_unmap")) {
 		pr_info("force unmap\n");
 		force_unmap_all_inst();
+	} else if (!strcmp(parm[0], "dv5_bypass")) {
+		if (kstrtoul(parm[1], 10, &val) < 0)
+			return -EINVAL;
+		dolby5_bypass_ctrl((uint)val);
+	} else if (!strcmp(parm[0], "dv5_version")) {
+		pr_info(HW5_DRIVER_VER);
+		pr_info("\n");
+	} else if (!strcmp(parm[0], "dump_pyramid")) {
+		if (kstrtoul(parm[1], 10, &val) < 0)
+			return -EINVAL;
+		dump_pyramid = (uint)val;
+		pr_info("set dump_pyramid %d\n", dump_pyramid);
+		dump_pyramid_buf(dump_pyramid);
+		dump_pyramid = 0;
+	} else if (!strcmp(parm[0], "top1_crc_ro")) {
+		top1_crc_rd = 1;
+		pr_info("set top1_crc_rd %d\n", top1_crc_rd);
 	} else {
 		pr_info("unsupport cmd\n");
 	}

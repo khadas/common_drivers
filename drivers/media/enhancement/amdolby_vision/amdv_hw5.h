@@ -7,9 +7,17 @@
 #define _AMDV_HW5_H_
 
 /*  driver version */
-#define HW5_DRIVER_VER "20230302"
+#define HW5_DRIVER_VER "20230612"
 
 #include <linux/types.h>
+
+struct dolby5_top1_md_hist {
+	u32 metadata[2][4];
+	u8 hist[2][256];
+	void *hist_vaddr;
+	dma_addr_t hist_paddr;
+	u32 hist_size;
+};
 
 struct dolby5_top1_type {
 	int core1_hsize;
@@ -17,7 +25,7 @@ struct dolby5_top1_type {
 	int rdma_num;
 	int rdma_size;
 	int py_level;
-	unsigned int py_baddr[7];
+	dma_addr_t py_baddr[7];
 	int py_stride[7];
 	unsigned int wdma_baddr;
 
@@ -26,7 +34,7 @@ struct dolby5_top1_type {
 
 	int bit_mode;//0:8bit 1:10bit
 	int fmt_mode;//0:444 1:422 2:420
-	unsigned int rdmif_baddr[3];
+	dma_addr_t rdmif_baddr[3];
 	int rdmif_stride[3];
 
 	u32 *core1_ahb_baddr;
@@ -35,4 +43,7 @@ struct dolby5_top1_type {
 	u32 core1b_ahb_num;
 };
 
+void dump_pyramid_buf(unsigned int idx);
+extern u32 dump_pyramid;
+extern u32 top1_crc_rd;
 #endif

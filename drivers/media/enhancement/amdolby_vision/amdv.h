@@ -711,13 +711,27 @@ enum top2_source {
 };
 
 struct top1_pyramid_addr {
-	u32 top1_py0;
-	u32 top1_py1;
-	u32 top1_py2;
-	u32 top1_py3;
-	u32 top1_py4;
-	u32 top1_py5;
-	u32 top1_py6;
+	void *py1_vaddr;
+	void *py2_vaddr;
+	void *py3_vaddr;
+	void *py4_vaddr;
+	void *py5_vaddr;
+	void *py6_vaddr;
+	void *py7_vaddr;
+	dma_addr_t top1_py1_paddr;
+	dma_addr_t top1_py2_paddr;
+	dma_addr_t top1_py3_paddr;
+	dma_addr_t top1_py4_paddr;
+	dma_addr_t top1_py5_paddr;
+	dma_addr_t top1_py6_paddr;
+	dma_addr_t top1_py7_paddr;
+	u32 top1_py1_size;
+	u32 top1_py2_size;
+	u32 top1_py3_size;
+	u32 top1_py4_size;
+	u32 top1_py5_size;
+	u32 top1_py6_size;
+	u32 top1_py7_size;
 };
 
 struct ovlp_win_para {
@@ -864,6 +878,9 @@ extern struct tv_hw5_setting_s *invalid_hw5_setting;
 extern u32 hw5_reg_from_file;
 extern struct video_inst_s top1_v_info;/*video info*/
 extern struct video_inst_s top2_v_info;/*video info*/
+extern struct top1_pyramid_addr py_addr;
+extern struct dolby5_top1_md_hist dv5_md_hist;
+extern int force_top1_enable;
 /************/
 
 #define pr_dv_dbg(fmt, args...)\
@@ -981,6 +998,22 @@ struct tv_hw5_setting_s {
 	/*reserved*/
 	u32 reserved[128];
 };
+
+struct dv5_top1_vd_info {
+	u32 width;
+	u32 height;
+	u32 compWidth;
+	u32 compHeight;
+	int bitdepth;
+	int type;
+
+	u32 plane;
+	ulong canvasaddr[3];
+	ulong compHeadAddr;
+	ulong compBodyAddr;
+};
+
+extern struct dv5_top1_vd_info top1_vd_info;
 
 int tv_hw5_control_path(struct tv_hw5_setting_s *cp_para);
 int tv_hw5_control_path_analyzer(struct tv_hw5_setting_s *cp_para);
@@ -1196,6 +1229,7 @@ int tv_top_set(u64 *top1_reg,
 			     bool hdr10,
 			     bool reset,
 			     bool toggle);
+void dolby5_bypass_ctrl(unsigned int en);
 int load_reg_and_lut_file(char *fw_name, void **dst_buf);
 void read_txt_to_buf(char *reg_txt, void *reg_buf, int reg_num, bool is_reg);
 int dma_lut_init(void);
@@ -1220,4 +1254,7 @@ int parse_sei_and_meta_ext_hw5(struct vframe_s *vf,
 					 char *md_buf,
 					 char *comp_buf,
 					 int id);
+void update_top1_onoff(struct vframe_s *vf);
+bool get_top1_onoff(void);
+void fixed_buf_config(void);
 #endif

@@ -53,6 +53,8 @@ u32 force_update_top2 = true;
 module_param(force_update_top2, uint, 0664);
 MODULE_PARM_DESC(force_update_top2, "\n force_update_top2\n");
 
+struct dv5_top1_vd_info top1_vd_info;
+
 #define signal_cuva ((vf->signal_type >> 31) & 1)
 #define signal_color_primaries ((vf->signal_type >> 16) & 0xff)
 #define signal_transfer_characteristic ((vf->signal_type >> 8) & 0xff)
@@ -60,22 +62,59 @@ MODULE_PARM_DESC(force_update_top2, "\n force_update_top2\n");
 struct dynamic_cfg_s dynamic_config_new;
 struct dynamic_cfg_s dynamic_darkdetail = {16, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
 
+static void get_top1_vd_info(struct vframe_s *vf,
+	struct dv5_top1_vd_info *top1_vd_info)
+{
+	top1_vd_info->width = vf->width;
+	top1_vd_info->height = vf->height;
+	top1_vd_info->compWidth = vf->compWidth;
+	top1_vd_info->compHeight = vf->compHeight;
+	top1_vd_info->type = vf->type;
+	top1_vd_info->bitdepth = vf->canvas0_config[0].bit_depth;
+	top1_vd_info->plane = vf->plane_num;
+	top1_vd_info->canvasaddr[0] = vf->canvas0_config[0].phy_addr;
+	top1_vd_info->canvasaddr[1] = vf->canvas0_config[1].phy_addr;
+	top1_vd_info->canvasaddr[2] = vf->canvas0_config[2].phy_addr;
+
+	if (debug_dolby & 0x80000) {
+		pr_info("w,h: %d, %d, cw,ch: %d, %d, type: 0x%x, bdp: %d, plane : %d, c addr: 0x%lx, 0x%lx, 0x%lx\n",
+			top1_vd_info->width,
+			top1_vd_info->height,
+			top1_vd_info->compWidth,
+			top1_vd_info->compHeight,
+			top1_vd_info->type,
+			top1_vd_info->bitdepth,
+			top1_vd_info->plane,
+			top1_vd_info->canvasaddr[0],
+			top1_vd_info->canvasaddr[1],
+			top1_vd_info->canvasaddr[2]);
+	}
+}
+
 //todo
 void update_top1_onoff(struct vframe_s *vf)
 {
 	if (vf) {
 		if (vf->width < 480)
 			enable_top1 = false;
+		//else
+		//	enable_top1 = true;
+
 		if (!(vf->type & VIDTYPE_COMPRESS))
 			enable_top1 = false;
+
+		if (force_top1_enable)
+			enable_top1 = true;
+
+		get_top1_vd_info(vf, &top1_vd_info);
 	}
 }
 
 //todo
 bool get_top1_onoff(void)
 {
-	return false;
-	//return is_amdv_enable()  && is_aml_hw5() && enable_top1;
+	//return enable_top1;
+	return is_amdv_enable() && is_aml_hw5() && enable_top1;
 }
 
 static bool prepare_parser(int reset_flag, struct video_inst_s *v_inst_info)

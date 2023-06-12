@@ -204,8 +204,6 @@ void notrace __nocfi pstore_io_save(unsigned long reg, unsigned long val, unsign
 		break;
 	}
 
-	data.val = reg;
-
 	cpu = raw_smp_processor_id();
 	if (unlikely(oops_in_progress) || unlikely(per_cpu(en, cpu))) {
 		if ((flag == PSTORE_FLAG_IO_R || flag == PSTORE_FLAG_IO_W) && IRQ_D)

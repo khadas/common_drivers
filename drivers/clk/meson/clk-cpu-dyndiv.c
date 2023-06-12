@@ -90,6 +90,41 @@ static long meson_clk_cpu_dyn_round_rate(struct clk_hw *hw,
 	return min;
 }
 
+static int meson_clk_cpu_dyn_determine_rate(struct clk_hw *hw,
+					    struct clk_rate_request *req)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_cpu_dyn_data *data = meson_clk_cpu_dyn_data(clk);
+	struct cpu_dyn_table *table = (struct cpu_dyn_table *)data->table;
+	unsigned long min, max;
+	unsigned int i, cnt = data->table_cnt;
+
+	min = table[0].rate;
+	max = table[cnt - 1].rate;
+
+	if (req->rate < min) {
+		i = 0;
+		goto out;
+	}
+
+	if (req->rate > max) {
+		i = cnt - 1;
+		goto out;
+	}
+
+	for (i = 0; i < cnt; i++) {
+		if (req->rate <= table[i].rate)
+			break;
+	}
+
+out:
+	req->best_parent_hw = clk_hw_get_parent_by_index(hw, table[i].dyn_pre_mux);
+	req->best_parent_rate = table[i].rate;
+	req->rate = table[i].rate;
+
+	return 0;
+}
+
 static int meson_cpu_dyn_set(struct clk_hw *hw, u16 dyn_pre_mux, u16 dyn_post_mux, u16 dyn_div)
 {
 	struct clk_regmap *clk = to_clk_regmap(hw);
@@ -201,11 +236,36 @@ static u8 meson_clk_cpu_dyn_get_parent(struct clk_hw *hw)
 	return val;
 }
 
+static int meson_clk_cpu_dyn_set_parent(struct clk_hw *hw, u8 index)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_cpu_dyn_data *data = meson_clk_cpu_dyn_data(clk);
+	struct arm_smccc_res res;
+
+	if (data->smc_id)
+		arm_smccc_smc(data->smc_id, data->secid_dyn,
+			      index, 0, 0, 0, 0, 0, &res);
+	else
+		meson_cpu_dyn_set(hw, index, 0, 0);
+
+	return 0;
+}
+
+static int meson_clk_cpu_dyn_set_rate_and_parent(struct clk_hw *hw,
+						 unsigned long rate,
+						 unsigned long parent_rate,
+						 u8 index)
+{
+	return meson_clk_cpu_dyn_set_rate(hw, rate, parent_rate);
+}
+
 /* set the cpu fixed clk as one level clk */
 const struct clk_ops meson_clk_cpu_dyn_ops = {
 	.recalc_rate = meson_clk_cpu_dyn_recalc_rate,
-	.round_rate = meson_clk_cpu_dyn_round_rate,
 	.set_rate = meson_clk_cpu_dyn_set_rate,
+	.determine_rate = meson_clk_cpu_dyn_determine_rate,
+	.set_rate_and_parent = meson_clk_cpu_dyn_set_rate_and_parent,
+	.set_parent = meson_clk_cpu_dyn_set_parent,
 	.get_parent = meson_clk_cpu_dyn_get_parent
 };
 EXPORT_SYMBOL_GPL(meson_clk_cpu_dyn_ops);

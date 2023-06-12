@@ -13,7 +13,7 @@
 #ifndef _TVOUT_CM_H
 #define _TVOUT_CM_H
 
-#include <uapi/amlogic/amvecm.h>
+#include <uapi/amlogic/amvecm_ext.h>
 
 /* ******************************************************************* */
 /* *** enum definitions ********************************************* */

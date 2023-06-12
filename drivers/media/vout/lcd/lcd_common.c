@@ -2618,6 +2618,30 @@ void lcd_mlvds_config_set(struct aml_lcd_drv_s *pdrv)
 				pi_clk_sel |= (1 << (i + 8));
 		}
 		break;
+	case LCD_CHIP_TXHD2:
+		/* mlvds channel:    //tx 10 channels
+		 *    0: d0_a
+		 *    1: d1_a
+		 *    2: d2_a
+		 *    3: clk_a
+		 *    4: d3_a
+		 *    5: d0_b
+		 *    6: d1_b
+		 *    7: clk_b
+		 *    8: d2_b
+		 *    9: d3_b
+		 */
+		for (i = 0; i < 8; i++) {
+			temp = (channel_sel0 >> (i * 4)) & 0xf;
+			if (temp == 3 || temp == 7)
+				pi_clk_sel |= (1 << i);
+		}
+		for (i = 0; i < 2; i++) {
+			temp = (channel_sel1 >> (i * 4)) & 0xf;
+			if (temp == 3 || temp == 7)
+				pi_clk_sel |= (1 << (i + 8));
+		}
+		break;
 	case LCD_CHIP_T5:
 	case LCD_CHIP_T5D:
 	case LCD_CHIP_T3:

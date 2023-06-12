@@ -278,6 +278,12 @@
 			reg = <0x3f800000 0x800000>;
 		};
 
+		lcd_tcon_reserved:linux,lcd_tcon {
+			compatible = "amlogic, lcd_tcon";
+			reg = <0x3f000000 0x00800000>;
+			no-map;
+		};
+
 		/*  vdin0 CMA pool */
 		/*vdin0_cma_reserved:linux,vdin0_cma {*/
 		/*	compatible = "shared-dma-pool";*/
@@ -453,7 +459,7 @@
 	unifykey{
 		compatible = "amlogic,unifykey";
 		status = "okay";
-		unifykey-num = <19>;
+		unifykey-num = <24>;
 		unifykey-index-0 = <&keysn_0>;
 		unifykey-index-1 = <&keysn_1>;
 		unifykey-index-2 = <&keysn_2>;
@@ -473,6 +479,11 @@
 		unifykey-index-16= <&keysn_16>;
 		unifykey-index-17= <&keysn_17>;
 		unifykey-index-18= <&keysn_18>;
+		unifykey-index-19= <&keysn_19>;
+		unifykey-index-20= <&keysn_20>;
+		unifykey-index-21= <&keysn_21>;
+		unifykey-index-22= <&keysn_22>;
+		unifykey-index-23= <&keysn_23>;
 
 		keysn_0: key_0{
 			key-name = "usid";
@@ -569,6 +580,31 @@
 		};
 		keysn_18:key_18{
 			key-name = "oemkey";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_19:key_19{
+			key-name = "lcd";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_20:key_20{
+			key-name = "lcd_extern";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_21:key_21{
+			key-name = "backlight";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_22:key_22{
+			key-name = "lcd_tcon";
+			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_23:key_23{
+			key-name = "lcd_tcon_spi";
 			key-device = "normal";
 			key-permit = "read","write","del";
 		};

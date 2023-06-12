@@ -11,23 +11,30 @@
 		pxp = <0>;
 		mode = "tv";
 		fr_auto_policy = <0>; /* 0=disable, 1=60/50hz, 2=60/50/48hz */
-		key_valid = <0>;
-		/*
-		 *clocks = <&clkc CLKID_MIPI_DSI_A
-		 *	&clkc CLKID_DSI0_PHY_GATE
-		 *	&clkc CLKID_DSI_A_MEAS_GATE>;
-		 *clock-names = "dsi_host_gate",
-		 *	"dsi_phy_gate",
-		 *	"dsi_meas";
-		 */
+		key_valid = <1>;
+		clocks = <&clkc CLKID_CLK81_VCLK2_ENCL
+			&clkc CLKID_CLK81_VCLK2_VENCL
+			&clkc CLKID_CLK81_TCON
+			&clkc CLKID_FCLK_DIV5
+			&clkc CLKID_CTS_TCON_PLL_CLK>;
+		clock-names = "encl_top_gate",
+			"encl_int_gate",
+			"tcon_gate",
+			"fclk_div5",
+			"clk_tcon";
 		reg = <0xff64c000 0x400 /* dsi_host */
 			0xff648000 0x80    /* dsi_phy */
 			0xff660000 0xd000  /* tcon */
 			0xff634400 0x70    /* periphs */
 			0xffd01000 0xa0    /* reset */
 			0xff648000 0x100>;  /* combo_dphy */
-		interrupts = <0 3 1>;
-		interrupt-names = "vsync";
+		interrupts = <0 3 1
+			0 88 1>;
+		interrupt-names = "vsync","tcon";
+		pinctrl-names = "tcon_mlvds","tcon_mlvds_off";
+		pinctrl-0 = <&lcd_tcon_mlvds_pins>;
+		pinctrl-1 = <&lcd_tcon_mlvds_off_pins>;
+		memory-region = <&lcd_tcon_reserved>;
 
 		/* power type:(0=cpu_gpio, 2=signal, 3=extern, 0xff=ending) */
 		/* power index:(gpios_index, or extern_index, 0xff=invalid) */
@@ -160,6 +167,47 @@
 				2 0 0 50
 				0xff 0 0 0>; /*ending*/
 			backlight_index = <0xff>;
+		};
+	};
+
+	lcd_extern{
+		compatible = "amlogic, lcd_extern";
+		status = "okay";
+		index = <0>;
+		key_valid = <1>;
+		i2c_bus = "i2c_bus_3";
+
+		extern_0{
+			index = <0>;
+			extern_name = "ext_default";
+			status = "okay";
+			type = <0>; /*0=i2c, 1=spi, 2=mipi*/
+			i2c_address = <0x33>; /*7bit i2c_addr*/
+			i2c_address2 = <0xff>;
+			cmd_size = <0xff>; /*dynamic cmd_size*/
+
+			/* init on/off:
+			 *  fixed cmd_size: (type, value...);
+			 *                  cmd_size include all data.
+			 *  dynamic cmd_size: (type, cmd_size, value...);
+			 *                    cmd_size include value.
+			 */
+			/* type: 0x00=cmd with delay(bit[3:0]=1 for address2),
+			 *       0xc0=cmd(bit[3:0]=1 for address2),
+			 *       0xf0=gpio,
+			 *       0xfd=delay,
+			 *       0xff=ending
+			 */
+			/* value: i2c or spi cmd, or gpio index & level */
+			/* delay: unit ms */
+			init_on = <
+				0xc0 43 0x00
+					0x48 0x19 0xa4 0x00 0x00 0x23 0xfc 0x66 0xfb 0x2b 0x28 0x00
+					0x10 0x10 0x07 0x07 0x3e 0xc3 0xd3 0x33 0xa2 0xde 0x2b 0x02
+					0x3d 0x21 0xa1 0xbf 0x1a 0x71 0x33 0x0f 0xd0 0xa1 0x01 0x70
+					0x0e 0x1a 0x11 0xb5 0xcd 0xf9
+				0xff 0>; /*ending*/
+			init_off = <0xff 0>; /*ending*/
 		};
 	};
 };

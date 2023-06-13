@@ -15514,7 +15514,8 @@ void  osd_suspend_hw(void)
 					 rdarb_reqen_slv);
 		}
 
-		if (!osd_dev_hw.multi_afbc_core) {
+		if (!osd_dev_hw.multi_afbc_core  &&
+			osd_hw.osd_meson_dev.afbc_type != NO_AFBC) {
 			osd_reg_write(VPU_MAFBC_SURFACE_CFG, 0);
 			osd_reg_write(VPU_MAFBC_COMMAND, 1);
 		}

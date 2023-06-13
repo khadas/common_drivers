@@ -315,19 +315,21 @@ static void recalc_vinfo_sync_duration(struct vinfo_s *info, u32 frac)
  * 3840x2160p60hz, etc
  * attr strings likes as '444,8bit'
  */
-int hdmitx21_get_fmtpara(const char *mode, const char *attr, struct hdmi_format_para *para)
+struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
+	const char *attr)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-	struct vinfo_s *tx_vinfo = &tx_comm->hdmitx_vinfo;
 	const struct hdmi_timing *timing;
+	struct vinfo_s *tx_vinfo = &hdev->para->hdmitx_vinfo;
+	struct hdmi_format_para *para = hdev->para;
 
 	if (!mode || !attr)
-		return -EINVAL;
+		return NULL;
 
 	timing = hdmitx21_gettiming_from_name(mode);
 	if (!timing)
-		return -EINVAL;
+		return NULL;
 
 	para->timing = *timing;
 	_parse_hdmi_attr(attr, &para->cs, &para->cd, &para->cr);
@@ -367,10 +369,8 @@ int hdmitx21_get_fmtpara(const char *mode, const char *attr, struct hdmi_format_
 	if (strstr(timing->name, "1080i"))
 		tx_vinfo->viu_mux = VIU_MUX_ENCP;
 	tx_vinfo->viu_mux |= hdev->enc_idx << 4;
-	tx_vinfo->cd = para->cd;
-	tx_vinfo->cs = para->cs;
 
-	return 0;
+	return hdev->para;
 }
 
 /* For check all format parameters only */

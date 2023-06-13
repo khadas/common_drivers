@@ -2520,7 +2520,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 		if (para->cs != HDMI_COLORSPACE_RGB)
 			return 0;
 		for (i = 0; vesa_t[i] && i < VESA_MAX_TIMING; i++) {
-			const struct hdmi_format_para *param = NULL;
+			struct hdmi_format_para *param = NULL;
 
 			param = hdmi_get_fmt_paras(vesa_t[i]);
 			if (param) {
@@ -2688,7 +2688,7 @@ enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdev,
 	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 	int  j;
 	enum hdmi_vic vic = hdmitx_edid_vic_tab_map_vic(disp_mode);
-	const struct hdmi_format_para *para = NULL;
+	struct hdmi_format_para *para = NULL;
 	enum hdmi_vic *vesa_t = &hdev->tx_comm.rxcap.vesa_timing[0];
 	enum hdmi_vic vesa_vic;
 

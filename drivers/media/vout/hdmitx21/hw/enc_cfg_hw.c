@@ -48,7 +48,10 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	bool y420_mode = 0;
 	int hpara_div = 1;
 
-	if (hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV420)
+	if (!hdev || !hdev->para)
+		return;
+
+	if (hdev->para->cs == HDMI_COLORSPACE_YUV420)
 		y420_mode = 1;
 	tp = hdmitx21_gettiming_from_vic(vic);
 	if (!tp) {
@@ -399,6 +402,9 @@ void set_tv_encp_new(struct hdmitx_dev *hdev, u32 enc_index, enum hdmi_vic vic,
 	// VENC2A 0x23
 	reg_offset = enc_index == 0 ? 0 : enc_index == 1 ? 0x600 : 0x800;
 
+	if (!hdev || !hdev->para)
+		return;
+
 	switch (vic) {
 	case HDMI_5_1920x1080i60_16x9:
 	case HDMI_46_1920x1080i120_16x9:
@@ -411,7 +417,7 @@ void set_tv_encp_new(struct hdmitx_dev *hdev, u32 enc_index, enum hdmi_vic vic,
 		break;
 	}
 
-	if (hdev->frl_rate && hdev->tx_comm.fmt_para.cs != HDMI_COLORSPACE_YUV420)
+	if (hdev->frl_rate && hdev->para->cs != HDMI_COLORSPACE_YUV420)
 		hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 1, 0, 3);
 	else
 		hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 0, 0, 3);

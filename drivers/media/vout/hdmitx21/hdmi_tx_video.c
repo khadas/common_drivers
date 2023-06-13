@@ -30,7 +30,7 @@ static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 static void construct_avi_packet(struct hdmitx_dev *hdev)
 {
 	struct hdmi_avi_infoframe *info = &hdev->infoframes.avi.avi;
-	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
+	struct hdmi_format_para *para = hdev->para;
 
 	hdmi_avi_infoframe_init(info);
 
@@ -88,7 +88,7 @@ static int is_dvi_device(struct rx_cap *prxcap)
 
 int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 {
-	struct hdmi_format_para *param = &hdev->tx_comm.fmt_para;
+	struct hdmi_format_para *param = NULL;
 	enum hdmi_vic vic;
 	int ret = -1;
 
@@ -99,6 +99,12 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 		vic, videocode);
 	if (vic != HDMI_0_UNKNOWN && vic == videocode)
 		hdev->tx_comm.cur_VIC = vic;
+
+	param = hdev->para;
+	if (!param) {
+		pr_info("%s[%d]\n", __func__, __LINE__);
+		return ret;
+	}
 
 	if (param->cs == HDMI_COLORSPACE_YUV444)
 		if (!(hdev->tx_comm.rxcap.native_Mode & (1 << 5))) {
@@ -126,8 +132,8 @@ int hdmitx21_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 		pr_info(VID "rx edid only support RGB format\n");
 
 	if (videocode >= HDMITX_VESA_OFFSET) {
-		param->cs = HDMI_COLORSPACE_RGB;
-		param->cd = COLORDEPTH_24B;
+		hdev->para->cs = HDMI_COLORSPACE_RGB;
+		hdev->para->cd = COLORDEPTH_24B;
 		pr_info("hdmitx: VESA only support RGB format\n");
 	}
 

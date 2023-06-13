@@ -12,9 +12,26 @@
 
 #include <drm/amlogic/meson_connector_dev.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_types.h>
 
 #define HDMI_INFOFRAME_TYPE_VENDOR2 (0x81 | 0x100)
+
+enum hdmi_color_depth {
+	COLORDEPTH_24B = 4,
+	COLORDEPTH_30B = 5,
+	COLORDEPTH_36B = 6,
+	COLORDEPTH_48B = 7,
+	COLORDEPTH_RESERVED,
+};
+
+struct hdmi_format_para_new {
+	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
+	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */
+	enum hdmi_quantization_range cr; /* limit, full */
+
+	u32 scrambler_en:1;
+	u32 tmds_clk_div40:1;
+	u32 tmds_clk; /* Unit: 1000 */
+};
 
 struct hdmitx_common {
 	/* When hdr_priority is 1, then dv_info will be all 0;
@@ -34,9 +51,6 @@ struct hdmitx_common {
 
 	/*current mode vic.*/
 	u32 cur_VIC;
-	/*current format para.*/
-	struct hdmi_format_para fmt_para;
-	struct vinfo_s hdmitx_vinfo;
 
 	/* allm_mode: 1/on 0/off */
 	u32 allm_mode;

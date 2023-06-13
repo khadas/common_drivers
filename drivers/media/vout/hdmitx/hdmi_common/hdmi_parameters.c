@@ -38,7 +38,7 @@ static struct hdmi_format_para fmt_para_1920x1080p60_16x9 = {
 		.v_back = 36,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1080p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -88,7 +88,7 @@ static struct hdmi_format_para fmt_para_1920x1080p120_16x9 = {
 		.v_back = 36,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1080p120hz",
 		.mode              = VMODE_HDMI,
 		.width             = 1920,
@@ -137,7 +137,7 @@ static struct hdmi_format_para fmt_para_1920x1080p30_16x9 = {
 		.v_back = 36,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1080p30hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -186,7 +186,7 @@ static struct hdmi_format_para fmt_para_1920x1080p50_16x9 = {
 		.v_back = 36,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1080p50hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -235,7 +235,7 @@ static struct hdmi_format_para fmt_para_1920x1080p25_16x9 = {
 		.v_back = 36,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1080p25hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -285,7 +285,7 @@ static struct hdmi_format_para fmt_para_1920x1080p24_16x9 = {
 		.v_back = 36,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1080p24hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -335,7 +335,7 @@ static struct hdmi_format_para fmt_para_3840x2160p30_16x9 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2160p30hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -385,7 +385,7 @@ static struct hdmi_format_para fmt_para_3840x2160p60_16x9 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2160p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -434,7 +434,7 @@ static struct hdmi_format_para fmt_para_3840x2160p50_16x9 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2160p50hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -483,7 +483,7 @@ static struct hdmi_format_para fmt_para_3840x2160p25_16x9 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2160p25hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -533,7 +533,7 @@ static struct hdmi_format_para fmt_para_3840x2160p24_16x9 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2160p24hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -582,7 +582,7 @@ static struct hdmi_format_para fmt_para_4096x2160p24_256x135 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "smpte24hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -631,7 +631,7 @@ static struct hdmi_format_para fmt_para_4096x2160p25_256x135 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "smpte25hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -681,7 +681,7 @@ static struct hdmi_format_para fmt_para_4096x2160p30_256x135 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "smpte30hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -730,7 +730,7 @@ static struct hdmi_format_para fmt_para_4096x2160p50_256x135 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "smpte50hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -780,7 +780,7 @@ static struct hdmi_format_para fmt_para_4096x2160p60_256x135 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "smpte60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -830,7 +830,7 @@ static struct hdmi_format_para fmt_para_1920x1080i60_16x9 = {
 		.v_back = 15,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1080i60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -879,7 +879,7 @@ static struct hdmi_format_para fmt_para_1920x1080i50_16x9 = {
 		.v_back = 15,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1080i50hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -929,7 +929,7 @@ static struct hdmi_format_para fmt_para_1280x720p60_16x9 = {
 		.v_back = 20,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "720p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -978,7 +978,7 @@ static struct hdmi_format_para fmt_para_1280x720p50_16x9 = {
 		.v_back = 20,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "720p50hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1028,7 +1028,7 @@ static struct hdmi_format_para fmt_para_720x480p60_4x3 = {
 		.v_back = 30,
 		.v_sync_ln = 7,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "480p60hz_4x3",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1078,7 +1078,7 @@ static struct hdmi_format_para fmt_para_720x480p60_16x9 = {
 		.v_back = 30,
 		.v_sync_ln = 7,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "480p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1128,7 +1128,7 @@ static struct hdmi_format_para fmt_para_720x480i60_4x3 = {
 		.v_back = 15,
 		.v_sync_ln = 4,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "480i60hz_4x3",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1178,7 +1178,7 @@ static struct hdmi_format_para fmt_para_720x480i60_16x9 = {
 		.v_back = 15,
 		.v_sync_ln = 4,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "480i60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1227,7 +1227,7 @@ static struct hdmi_format_para fmt_para_720x576p50_4x3 = {
 		.v_back = 39,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "576p50hz_4x3",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1276,7 +1276,7 @@ static struct hdmi_format_para fmt_para_720x576p50_16x9 = {
 		.v_back = 39,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "576p50hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1325,7 +1325,7 @@ static struct hdmi_format_para fmt_para_720x576i50_4x3 = {
 		.v_back = 19,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "576i50hz_4x3",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1374,7 +1374,7 @@ static struct hdmi_format_para fmt_para_720x576i50_16x9 = {
 		.v_back = 19,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "576i50hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1425,7 +1425,7 @@ static struct hdmi_format_para fmt_para_3840x2160p50_16x9_y420 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2160p50hz420",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1474,7 +1474,7 @@ static struct hdmi_format_para fmt_para_4096x2160p50_256x135_y420 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "smpte50hz420",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1524,7 +1524,7 @@ static struct hdmi_format_para fmt_para_3840x2160p60_16x9_y420 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2160p60hz420",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1574,7 +1574,7 @@ static struct hdmi_format_para fmt_para_4096x2160p60_256x135_y420 = {
 		.v_back = 72,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "smpte60hz420",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1598,7 +1598,7 @@ static struct hdmi_format_para fmt_para_non_hdmi_fmt = {
 	.vic = HDMI_UNKNOWN,
 	.name = "invalid",
 	.sname = "invalid",
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "invalid",
 		.mode              = VMODE_MAX,
 		.width             = 1920,
@@ -1646,7 +1646,7 @@ static struct hdmi_format_para fmt_para_2560x1080p50_64x27 = {
 		.v_back = 36,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2560x1080p50hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1694,7 +1694,7 @@ static struct hdmi_format_para fmt_para_2560x1080p60_64x27 = {
 		.v_back = 11,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2560x1080p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1745,7 +1745,7 @@ static struct hdmi_format_para fmt_para_vesa_640x480p60_4x3 = {
 		.v_back = 33,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "640x480p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1794,7 +1794,7 @@ static struct hdmi_format_para fmt_para_vesa_800x480p60_4x3 = {
 		.v_back = 10,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "800x480p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1843,7 +1843,7 @@ static struct hdmi_format_para fmt_para_vesa_800x600p60_4x3 = {
 		.v_back = 23,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "800x600p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1892,7 +1892,7 @@ static struct hdmi_format_para fmt_para_vesa_852x480p60_213x120 = {
 		.v_back = 40,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "852x480p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1941,7 +1941,7 @@ static struct hdmi_format_para fmt_para_vesa_854x480p60_427x240 = {
 		.v_back = 39,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "854x480p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -1990,7 +1990,7 @@ static struct hdmi_format_para fmt_para_vesa_1024x600p60_17x10 = {
 		.v_back = 29,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1024x600p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2039,7 +2039,7 @@ static struct hdmi_format_para fmt_para_vesa_1024x768p60_4x3 = {
 		.v_back = 29,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1024x768p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2087,7 +2087,7 @@ static struct hdmi_format_para fmt_para_vesa_1152x864p75_4x3 = {
 		.v_sync = 3,
 		.v_back = 32,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1152x864p75hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2135,7 +2135,7 @@ static struct hdmi_format_para fmt_para_vesa_1280x768p60_5x3 = {
 		.v_sync = 7,
 		.v_back = 20,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1280x768p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2184,7 +2184,7 @@ static struct hdmi_format_para fmt_para_vesa_1280x800p60_8x5 = {
 		.v_back = 14,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1280x800p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2232,7 +2232,7 @@ static struct hdmi_format_para fmt_para_vesa_1280x960p60_4x3 = {
 		.v_sync = 3,
 		.v_back = 36,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1280x960p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2281,7 +2281,7 @@ static struct hdmi_format_para fmt_para_vesa_1280x1024p60_5x4 = {
 		.v_back = 38,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1280x1024p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2330,7 +2330,7 @@ static struct hdmi_format_para fmt_para_vesa_1360x768p60_16x9 = {
 		.v_back = 18,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1360x768p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2379,7 +2379,7 @@ static struct hdmi_format_para fmt_para_vesa_1366x768p60_16x9 = {
 		.v_back = 24,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1366x768p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2428,7 +2428,7 @@ static struct hdmi_format_para fmt_para_vesa_1400x1050p60_4x3 = {
 		.v_back = 32,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1400x1050p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2477,7 +2477,7 @@ static struct hdmi_format_para fmt_para_vesa_1440x900p60_8x5 = {
 		.v_back = 25,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1440x900p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2527,7 +2527,7 @@ static struct hdmi_format_para fmt_para_vesa_1440x2560p60_9x16 = {
 		.v_back = 16,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1440x2560p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2576,7 +2576,7 @@ static struct hdmi_format_para fmt_para_vesa_1600x900p60_16x9 = {
 		.v_back = 96,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1600x900p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2625,7 +2625,7 @@ static struct hdmi_format_para fmt_para_vesa_1600x1200p60_4x3 = {
 		.v_back = 46,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1600x1200p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2674,7 +2674,7 @@ static struct hdmi_format_para fmt_para_vesa_1680x1050p60_8x5 = {
 		.v_back = 30,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1680x1050p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2723,7 +2723,7 @@ static struct hdmi_format_para fmt_para_vesa_1920x1200p60_8x5 = {
 		.v_back = 36,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "1920x1200p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2772,7 +2772,7 @@ static struct hdmi_format_para fmt_para_vesa_2048x1080p24_256x135 = {
 		.v_back = 36,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2048x1080p24hz",
 		.mode              = VMODE_HDMI,
 		.width             = 2048,
@@ -2820,7 +2820,7 @@ static struct hdmi_format_para fmt_para_vesa_2160x1200p90_9x5 = {
 		.v_back = 3,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2160x1200p90hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2869,7 +2869,7 @@ static struct hdmi_format_para fmt_para_vesa_2560x1440p60_16x9 = {
 		.v_back = 33,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2560x1440p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2918,7 +2918,7 @@ static struct hdmi_format_para fmt_para_vesa_2560x1600p60_8x5 = {
 		.v_back = 49,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2560x1600p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -2966,7 +2966,7 @@ static struct hdmi_format_para fmt_para_vesa_3440x1440p60_43x18 = {
 		.v_back = 28,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name = "3440x1440p60hz",
 		.mode = VMODE_HDMI,
 		.frac = 0,
@@ -3015,7 +3015,7 @@ static struct hdmi_format_para fmt_para_vesa_2400x1200p90_2x1 = {
 		.v_back = 30,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "2400x1200p90hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -3064,7 +3064,7 @@ static struct hdmi_format_para fmt_para_vesa_3840x1080p60_32x9 = {
 		.v_back = 36,
 		.v_sync_ln = 1,
 	},
-	.deprecated_vinfo = {
+	.hdmitx_vinfo = {
 		.name              = "3840x1080p60hz",
 		.mode              = VMODE_HDMI,
 		.frac              = 0,
@@ -3151,7 +3151,7 @@ static struct hdmi_format_para *all_fmt_paras[] = {
 	NULL,
 };
 
-const struct hdmi_format_para *hdmi_get_fmt_paras(enum hdmi_vic vic)
+struct hdmi_format_para *hdmi_get_fmt_paras(enum hdmi_vic vic)
 {
 	int i;
 
@@ -3315,7 +3315,7 @@ static void hdmi_parse_attr(struct hdmi_format_para *para, char const *name)
  * or 3840x2160p60hz, 2160p60hz
  * or 3840x2160p60hz420, 2160p60hz420 (Y420 mode)
  */
-const struct hdmi_format_para *hdmi_get_fmt_name(char const *name, char const *attr)
+struct hdmi_format_para *hdmi_get_fmt_name(char const *name, char const *attr)
 {
 	int i;
 	char *lname;
@@ -3353,7 +3353,6 @@ const struct hdmi_format_para *hdmi_get_fmt_name(char const *name, char const *a
 		hdmi_parse_attr(para, name);
 		hdmi_parse_attr(para, attr);
 	}
-
 	if (strstr(name, "420"))
 		para->cs = HDMI_COLORSPACE_YUV420;
 
@@ -3478,11 +3477,11 @@ struct vinfo_s *hdmi_get_valid_vinfo(char *mode)
 				mode_[i] = 0;
 
 		for (i = 0; all_fmt_paras[i]; i++) {
-			if (all_fmt_paras[i]->deprecated_vinfo.mode == VMODE_MAX)
+			if (all_fmt_paras[i]->hdmitx_vinfo.mode == VMODE_MAX)
 				continue;
-			if (strncmp(all_fmt_paras[i]->deprecated_vinfo.name, mode_,
+			if (strncmp(all_fmt_paras[i]->hdmitx_vinfo.name, mode_,
 				    strlen(mode_)) == 0) {
-				info = &all_fmt_paras[i]->deprecated_vinfo;
+				info = &all_fmt_paras[i]->hdmitx_vinfo;
 				break;
 			}
 		}

@@ -8,7 +8,6 @@
 
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
-#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
 
 /************************************************************************************
  * hdmitx_dev_common only define api which will use hdmitx_common&hdmitx_hw_common.

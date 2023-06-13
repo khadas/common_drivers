@@ -203,11 +203,11 @@ void set21_s5_htxpll_clk_out(const u32 clk, const u32 div)
 	enum hdmi_colorspace cs = HDMI_COLORSPACE_YUV444;
 	enum hdmi_color_depth cd = COLORDEPTH_24B;
 
-	if (!hdev)
+	if (!hdev || !hdev->para)
 		return;
 
-	cs = hdev->tx_comm.fmt_para.cs;
-	cd = hdev->tx_comm.fmt_para.cd;
+	cs = hdev->para->cs;
+	cd = hdev->para->cd;
 
 	pr_info("%s[%d] htxpll vco %d div %d\n", __func__, __LINE__, clk, div);
 
@@ -357,12 +357,12 @@ void hdmitx_set_s5_gp2pll(u32 clk, u32 div)
 
 void hdmitx_set_s5_clkdiv(struct hdmitx_dev *hdev)
 {
-	if (!hdev)
+	if (!hdev && !hdev->para)
 		return;
 
 	/* cts_htx_tmds_clk selects the htx_tmds20_clk or fll_tmds_clk */
 	hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, hdev->frl_rate ? 1 : 0, 25, 2);
-	if (!hdev->frl_rate && hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV420)
+	if (!hdev->frl_rate && hdev->para->cs == HDMI_COLORSPACE_YUV420)
 		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, 1, 16, 7);
 	else
 		hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, 0, 16, 7);

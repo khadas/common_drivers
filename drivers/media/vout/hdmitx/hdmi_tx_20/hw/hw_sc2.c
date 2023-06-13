@@ -41,7 +41,6 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 {
 	int ret = 0;
 	struct hdmitx_dev *hdev = get_hdmitx_device();
-	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 
 	hd_write_reg(P_ANACTRL_HDMIPLL_CTRL0, 0x0b3a0400 | (m & 0xff));
 	hd_set_reg_bits(P_ANACTRL_HDMIPLL_CTRL0, 0x3, 28, 2);
@@ -49,11 +48,11 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 	hd_write_reg(P_ANACTRL_HDMIPLL_CTRL2, 0x00000000);
 
 	if (frac_val == 0x8148) {
-		if ((para->vic == HDMI_3840x2160p50_16x9 ||
-		     para->vic == HDMI_3840x2160p60_16x9 ||
-		     para->vic == HDMI_3840x2160p50_64x27 ||
-		     para->vic == HDMI_3840x2160p60_64x27) &&
-		     para->cs != HDMI_COLORSPACE_YUV420) {
+		if ((hdev->para->vic == HDMI_3840x2160p50_16x9 ||
+		     hdev->para->vic == HDMI_3840x2160p60_16x9 ||
+		     hdev->para->vic == HDMI_3840x2160p50_64x27 ||
+		     hdev->para->vic == HDMI_3840x2160p60_64x27) &&
+		     hdev->para->cs != HDMI_COLORSPACE_YUV420) {
 			hd_write_reg(P_ANACTRL_HDMIPLL_CTRL3, 0x6a685c00);
 			hd_write_reg(P_ANACTRL_HDMIPLL_CTRL4, 0x11551293);
 		} else {
@@ -62,13 +61,13 @@ static bool set_hpll_hclk_v1(unsigned int m, unsigned int frac_val)
 		}
 	} else {
 		if (hdmitx_find_vendor_6g(hdev) &&
-		    (para->vic == HDMI_3840x2160p50_16x9 ||
-		    para->vic == HDMI_3840x2160p60_16x9 ||
-		    para->vic == HDMI_3840x2160p50_64x27 ||
-		    para->vic == HDMI_3840x2160p60_64x27 ||
-		    para->vic == HDMI_4096x2160p50_256x135 ||
-		    para->vic == HDMI_4096x2160p60_256x135) &&
-		    para->cs != HDMI_COLORSPACE_YUV420) {
+		    (hdev->para->vic == HDMI_3840x2160p50_16x9 ||
+		    hdev->para->vic == HDMI_3840x2160p60_16x9 ||
+		    hdev->para->vic == HDMI_3840x2160p50_64x27 ||
+		    hdev->para->vic == HDMI_3840x2160p60_64x27 ||
+		    hdev->para->vic == HDMI_4096x2160p50_256x135 ||
+		    hdev->para->vic == HDMI_4096x2160p60_256x135) &&
+		    hdev->para->cs != HDMI_COLORSPACE_YUV420) {
 			hd_write_reg(P_ANACTRL_HDMIPLL_CTRL3, 0x6a685c00);
 			hd_write_reg(P_ANACTRL_HDMIPLL_CTRL4, 0x11551293);
 		} else {

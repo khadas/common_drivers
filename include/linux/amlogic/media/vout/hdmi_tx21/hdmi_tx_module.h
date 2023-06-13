@@ -187,6 +187,7 @@ struct hdmitx_dev {
 	struct workqueue_struct *cedst_wq;
 	struct device *hdtx_dev;
 	struct device *pdev; /* for pinctrl*/
+	struct hdmi_format_para *para;
 	struct pinctrl_state *pinctrl_i2c;
 	struct pinctrl_state *pinctrl_default;
 	struct amhdmitx_data_s *data;

@@ -802,17 +802,19 @@ static void set_hdmitx_s5_htx_pll(struct hdmitx_dev *hdev)
 	u32 base_pixel_clk = 25200;
 	u32 htx_vco = 5940000;
 	u32 div = 1;
-	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 
-	vic = para->timing.vic;
-	cs = para->cs;
-	cd = para->cd;
+	if (!hdev || !hdev->para)
+		return;
+
+	vic = hdev->para->timing.vic;
+	cs = hdev->para->cs;
+	cd = hdev->para->cd;
 	if (vic == HDMI_0_UNKNOWN) {
 		pr_err("%s[%d] not valid vic %d\n", __func__, __LINE__, vic);
 		return;
 	}
 
-	base_pixel_clk = para->timing.pixel_freq;
+	base_pixel_clk = hdev->para->timing.pixel_freq;
 	if (base_pixel_clk < 25175 || base_pixel_clk > 5940000) {
 		pr_err("%s[%d] not valid pixel clock %d\n", __func__, __LINE__, base_pixel_clk);
 		return;
@@ -903,10 +905,9 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev,
 	int i = 0;
 	int j = 0;
 	struct hw_enc_clk_val_group *p_enc = NULL;
-	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
-	enum hdmi_vic vic = para->timing.vic;
-	enum hdmi_colorspace cs = para->cs;
-	enum hdmi_color_depth cd = para->cd;
+	enum hdmi_vic vic = hdev->para->timing.vic;
+	enum hdmi_colorspace cs = hdev->para->cs;
+	enum hdmi_color_depth cd = hdev->para->cd;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	u8 clk_div_val = VID_PLL_DIV_5;
 #endif
@@ -1077,43 +1078,41 @@ static void hdmitx_set_fpll_without_dsc(struct hdmitx_dev *hdev)
 	u32 tmp_clk = 0;
 	u32 pixel_od = 0;
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
-	struct hdmi_format_para *para;
 
-	if (!hdev)
+	if (!hdev && !hdev->para)
 		return;
 
-	para = &hdev->tx_comm.fmt_para;
-	vic = para->timing.vic;
-	tmp_clk = para->timing.pixel_freq;
+	vic = hdev->para->timing.vic;
+	tmp_clk = hdev->para->timing.pixel_freq;
 	if (hdev->frl_rate)
 		tmp_clk /= 2;
-	switch (para->cs) {
+	switch (hdev->para->cs) {
 	case HDMI_COLORSPACE_RGB:
 	case HDMI_COLORSPACE_YUV444:
-		if (para->cd == COLORDEPTH_30B) {
+		if (hdev->para->cd == COLORDEPTH_30B) {
 			tmp_clk = tmp_clk * 5 / 4;
 			pixel_od = 1;
 		}
-		if (para->cd == COLORDEPTH_36B) {
+		if (hdev->para->cd == COLORDEPTH_36B) {
 			tmp_clk = tmp_clk * 3 / 2;
 			pixel_od = 2;
 		}
-		if (para->cd == COLORDEPTH_48B) {
+		if (hdev->para->cd == COLORDEPTH_48B) {
 			tmp_clk = tmp_clk * 2;
 			pixel_od = 4;
 		}
 		break;
 	case HDMI_COLORSPACE_YUV420:
 		tmp_clk /= 2;
-		if (para->cd == COLORDEPTH_30B) {
+		if (hdev->para->cd == COLORDEPTH_30B) {
 			tmp_clk = tmp_clk * 5 / 4;
 			pixel_od = 1;
 		}
-		if (para->cd == COLORDEPTH_36B) {
+		if (hdev->para->cd == COLORDEPTH_36B) {
 			tmp_clk = tmp_clk * 3 / 2;
 			pixel_od = 2;
 		}
-		if (para->cd == COLORDEPTH_48B) {
+		if (hdev->para->cd == COLORDEPTH_48B) {
 			tmp_clk *= 1;
 			pixel_od = 4;
 		}
@@ -1157,7 +1156,7 @@ static void hdmitx_set_fpll_with_dsc(struct hdmitx_dev *hdev)
 	u32 tmp_clk = 0;
 	u32 pixel_od = 0;
 
-	if (!hdev)
+	if (!hdev && !hdev->para)
 		return;
 
 	/* HARD CODE, FRL8G4L 4320p60 y420 8bit, HDMI 2.1 Spec, Page 281 */
@@ -1197,32 +1196,30 @@ void hdmitx_set_gp2pll(struct hdmitx_dev *hdev)
 	u32 gp2pll_vco = 2376000;
 	u32 div = 1;
 	u32 tmp_clk = 0;
-	struct hdmi_format_para *para;
 
-	if (!hdev)
+	if (!hdev && !hdev->para)
 		return;
 
-	para = &hdev->tx_comm.fmt_para;
-	tmp_clk = para->timing.pixel_freq;
+	tmp_clk = hdev->para->timing.pixel_freq;
 	if (hdev->frl_rate)
 		tmp_clk /= 2;
-	switch (para->cs) {
+	switch (hdev->para->cs) {
 	case HDMI_COLORSPACE_RGB:
 	case HDMI_COLORSPACE_YUV444:
-		if (para->cd == COLORDEPTH_30B)
+		if (hdev->para->cd == COLORDEPTH_30B)
 			tmp_clk = tmp_clk * 5 / 4;
-		if (para->cd == COLORDEPTH_36B)
+		if (hdev->para->cd == COLORDEPTH_36B)
 			tmp_clk = tmp_clk * 3 / 2;
-		if (para->cd == COLORDEPTH_48B)
+		if (hdev->para->cd == COLORDEPTH_48B)
 			tmp_clk = tmp_clk * 2;
 		break;
 	case HDMI_COLORSPACE_YUV420:
 		tmp_clk /= 2;
-		if (para->cd == COLORDEPTH_30B)
+		if (hdev->para->cd == COLORDEPTH_30B)
 			tmp_clk = tmp_clk * 5 / 4;
-		if (para->cd == COLORDEPTH_36B)
+		if (hdev->para->cd == COLORDEPTH_36B)
 			tmp_clk = tmp_clk * 3 / 2;
-		if (para->cd == COLORDEPTH_48B)
+		if (hdev->para->cd == COLORDEPTH_48B)
 			tmp_clk *= 1;
 		break;
 	case HDMI_COLORSPACE_YUV422:
@@ -1259,7 +1256,7 @@ void hdmitx_set_clkdiv(struct hdmitx_dev *hdev)
 
 static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 {
-	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
+	struct hdmi_format_para *para = hdev->para;
 
 	frac_rate = hdev->tx_comm.frac_rate_policy;
 	if (para && para->timing.name && likely_frac_rate_mode(para->timing.name)) {
@@ -1412,7 +1409,7 @@ void hdmitx21_set_clk(struct hdmitx_dev *hdev)
 void hdmitx21_disable_clk(struct hdmitx_dev *hdev)
 {
 	/* cts_encp/enci_clk */
-	if (hdev->tx_comm.hdmitx_vinfo.viu_mux == VIU_MUX_ENCI)
+	if (hdev->para->hdmitx_vinfo.viu_mux == VIU_MUX_ENCI)
 		hdmitx_disable_enci_clk(hdev);
 	else
 		hdmitx_disable_encp_clk(hdev);

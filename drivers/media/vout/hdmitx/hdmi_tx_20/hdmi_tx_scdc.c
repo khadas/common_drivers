@@ -24,7 +24,7 @@ void scdc_config(struct hdmitx_dev *hdev)
 	/* if change to > 3.4Gbps mode, or change from > 3.4Gbps
 	 * to < 3.4Gbps mode, need to forcely update clk ratio
 	 */
-	if (hdev->tx_comm.fmt_para.tmds_clk_div40)
+	if (hdev->para->tmds_clk_div40)
 		scdc_wr_sink(TMDS_CFG, 3);
 	else if (hdev->tx_comm.rxcap.scdc_present ||
 		hdev->pre_tmds_clk_div40)

@@ -367,6 +367,7 @@ struct hdmitx_dev {
 	/* For some un-well-known TVs, no edid at all */
 	unsigned int tv_no_edid;
 	unsigned int hpd_lock;
+	struct hdmi_format_para *para;
 	/* 0: RGB444  1: Y444  2: Y422  3: Y420 */
 	/* 4: 24bit  5: 30bit  6: 36bit  7: 48bit */
 	/* if equals to 1, means current video & audio output are blank */

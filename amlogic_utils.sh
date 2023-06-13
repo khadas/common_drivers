@@ -1325,14 +1325,6 @@ function handle_input_parameters () {
 			MANUAL_INSMOD_MODULE=1
 			shift
 			;;
-		--patch)
-			ONLY_PATCH=1
-			PATCH_PARM=$2
-			if [[ "${PATCH_PARM}" == "lunch" ]]; then
-				VA=1
-			fi
-			shift
-			;;
 		--check_gki_20)
 			CHECK_GKI_20=1
 			GKI_CONFIG=gki_20
@@ -1451,10 +1443,6 @@ export -f set_default_parameters
 
 function auto_patch_to_common_dir () {
 	#first auto patch when param parse end
-	if [[ ${ONLY_PATCH} -eq "1" ]]; then
-		CURRENT_DIR=`pwd`
-		cd $(dirname $0)
-	fi
 
 	if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
         	export PATCH_PARM

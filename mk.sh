@@ -49,6 +49,16 @@ do
 		VA=1
 		shift
 		;;
+	--patch)
+		ONLY_PATCH=1
+		PATCH_PARM=$2
+		if [[ "${PATCH_PARM}" == "lunch" ]]; then
+			VA=1
+		fi
+		CURRENT_DIR=`pwd`
+		cd $(dirname $0)
+		shift
+		;;
 	*)
 		if [[ -n $1 ]];
 		then
@@ -82,9 +92,9 @@ if [[ ! -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh ]]; then
 	exit
 fi
 
-source "${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh"
-
 set -- "${ARGS[@]}" # other parameters are used as script parameters to handle_input_parameters
+
+source "${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh"
 
 handle_input_parameters "$@"
 

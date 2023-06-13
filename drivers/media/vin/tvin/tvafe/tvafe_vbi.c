@@ -1252,16 +1252,19 @@ static int vbi_slicer_free(struct vbi_dev_s *vbi_dev,
 }
 
 static void vbi_ringbuffer_init(struct vbi_ringbuffer_s *rbuf,
-			void *data, size_t len)
+			struct vbi_dev_s *dev, void *data, size_t len)
 {
+	void *tmp_data = data;
+
 	if (!data)
-		rbuf->data = vzalloc(len * sizeof(struct vbi_data_s));
-	else
-		rbuf->data = data;
+		tmp_data = vzalloc(len * sizeof(struct vbi_data_s));
+	spin_lock_irq(&dev->lock);
+	rbuf->data = tmp_data;
 	rbuf->size = len * sizeof(struct vbi_data_s);
 	rbuf->data_num = len;
 
 	vbi_ringbuffer_flush(rbuf);
+	spin_unlock_irq(&dev->lock);
 }
 
 static int vbi_set_buffer_size(struct vbi_dev_s *dev,
@@ -1576,7 +1579,7 @@ static int vbi_open(struct inode *inode, struct file *file)
 			__func__);
 		return -ERESTARTSYS;
 	}
-	vbi_ringbuffer_init(&vbi_dev->slicer->buffer, NULL,
+	vbi_ringbuffer_init(&vbi_dev->slicer->buffer, vbi_dev, NULL,
 		VBI_DEFAULT_BUFFER_PACKAGE_NUM);
 	vbi_dev->slicer->type = VBI_TYPE_NULL;
 	vbi_slicer_state_set(vbi_dev, VBI_STATE_ALLOCATED);
@@ -2143,7 +2146,7 @@ static ssize_t debug_store(struct device *dev,
 		tvafe_pr_info(" set slicer type to %d\n",
 			vbi_slicer->type);
 	} else if (!strncmp(parm[0], "open", strlen("open"))) {
-		vbi_ringbuffer_init(vbi_buffer, NULL,
+		vbi_ringbuffer_init(vbi_buffer, devp, NULL,
 			VBI_DEFAULT_BUFFER_PACKAGE_NUM);
 		devp->slicer->type = VBI_TYPE_NULL;
 		vbi_slicer_state_set(devp, VBI_STATE_ALLOCATED);

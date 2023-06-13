@@ -1838,6 +1838,11 @@
 	};
 };
 
+&ambilight {
+	status = "okay";
+	zone_h_v = <32 20>;
+};
+
 &amhdmitx {
 	status = "disabled";
 	pxp_mode = <1>; /* run on pxp */

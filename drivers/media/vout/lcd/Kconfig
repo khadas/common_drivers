@@ -37,6 +37,7 @@ config AMLOGIC_LCD_TABLET
 if AMLOGIC_LCD
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/backlight/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/lcd_extern/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/ambilight/Kconfig"
 endif
 
 endmenu

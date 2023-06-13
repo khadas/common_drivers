@@ -2251,6 +2251,14 @@
 		interrupt-names = "vsync";
 	};
 
+	ambilight: ambilight {
+		compatible = "amlogic, ambilight-t3x";
+		status = "disabled";
+		interrupts = <0 115 1>;
+		interrupt-names = "vsync";
+		zone_h_v = <32 20>;
+	};
+
 	ir: ir@8000 {
 		compatible = "amlogic, meson-ir";
 		reg = <0x0 0xfe084040 0x0 0x44>,

@@ -19,10 +19,12 @@ include $(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/lcd_tv/Makefile
 
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/lcd_tablet/Makefile
 
+include $(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/lcd_clk/Makefile
+
+include $(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/lcd_phy/Makefile
+
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/lcd_extern/Makefile
 
 include $(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/backlight/Makefile
 
-include $(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/lcd_clk/Makefile
-
-include $(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/lcd_phy/Makefile
+include $(COMMON_DRIVERS_DIR)/drivers/media/vout/lcd/ambilight/Makefile

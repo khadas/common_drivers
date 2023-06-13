@@ -103,6 +103,11 @@ static unsigned int vcbus_test_reg_s5[VCBUS_REG_CNT_MAX] = {
 	S5_VPU_VPU_PWM_V0
 };
 
+static struct vpu_clk_s vpu_clk_suspend = {
+	/* frequency   clk_mux       div */
+	50000000,    FCLK_DIV5,      7
+};
+
 /* ******************************************************* */
 /*              VPU_HDMI power: before reset             */
 /* ******************************************************* */

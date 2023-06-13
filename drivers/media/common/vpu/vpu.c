@@ -17,6 +17,9 @@
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
 #include <linux/amlogic/power_domain.h>
+#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+#include <linux/amlogic/pm.h>
+#endif
 #include <linux/amlogic/media/vpu/vpu.h>
 #include "vpu_reg.h"
 #include "vpu.h"
@@ -40,6 +43,8 @@ static DEFINE_MUTEX(vpu_dev_mutex);
 #define VPU_DEV_MAX     255
 static struct vpu_dev_s *vpu_dev_local[VPU_DEV_MAX];
 static unsigned int vpu_dev_num;
+static u32 vpu_clk_level_saved;
+static u32 vapb_clk_level_saved;
 
 struct vpu_conf_s vpu_conf = {
 	.data = NULL,
@@ -50,6 +55,7 @@ struct vpu_conf_s vpu_conf = {
 	.vpu_clk0 = NULL,
 	.vpu_clk1 = NULL,
 	.vpu_clk = NULL,
+	.vapb_clk = NULL,
 
 	.clk_vmod = NULL,
 };
@@ -62,6 +68,71 @@ int vpu_chip_valid_check(void)
 		VPUERR("invalid VPU in current chip\n");
 		ret = -1;
 	}
+	return ret;
+}
+
+static int vapb_clk_switch(unsigned int flag)
+{
+	unsigned int clk;
+	int ret = 0;
+
+	ret = vpu_chip_valid_check();
+	if (ret)
+		return -1;
+
+	if ((IS_ERR_OR_NULL(vpu_conf.vapb_clk0)) ||
+		(IS_ERR_OR_NULL(vpu_conf.vapb_clk1)) ||
+		(IS_ERR_OR_NULL(vpu_conf.vapb_clk))) {
+		VPUERR("%s: vapb_clk\n", __func__);
+		return -1;
+	}
+
+	if (flag) {
+		/* step 1:  switch to 2nd vpu clk patch */
+		clk = vapb_clk_level_saved;
+		ret = clk_set_rate(vpu_conf.vapb_clk1, clk);
+		if (ret)
+			return ret;
+		ret = clk_set_parent(vpu_conf.vapb_clk, vpu_conf.vapb_clk1);
+		if (ret)
+			return ret;
+		usleep_range(10, 15);
+		/* step 2:  adjust 1st vpu clk frequency */
+		clk = vapb_clk_level_saved;
+		ret = clk_set_rate(vpu_conf.vapb_clk0, clk);
+		if (ret)
+			return ret;
+		usleep_range(20, 25);
+		/* step 3:  switch back to 1st vpu clk patch */
+		ret = clk_set_parent(vpu_conf.vapb_clk, vpu_conf.vapb_clk0);
+		if (ret)
+			return ret;
+		clk = clk_get_rate(vpu_conf.vapb_clk);
+	} else {
+		/* step 1:  switch to 2nd vpu clk patch */
+		clk = vapb_clk_level_saved;
+		ret = clk_set_rate(vpu_conf.vapb_clk1, clk);
+		if (ret)
+			return ret;
+		ret = clk_set_parent(vpu_conf.vapb_clk, vpu_conf.vapb_clk1);
+		if (ret)
+			return ret;
+		usleep_range(10, 15);
+		/* step 2:  adjust 1st vpu clk frequency */
+		clk = 50000000;
+		ret = clk_set_rate(vpu_conf.vapb_clk0, clk);
+		if (ret)
+			return ret;
+		usleep_range(20, 25);
+		/* step 3:  switch back to 1st vpu clk patch */
+		ret = clk_set_parent(vpu_conf.vapb_clk, vpu_conf.vapb_clk0);
+		if (ret)
+			return ret;
+		clk = clk_get_rate(vpu_conf.vapb_clk);
+	}
+	VPUPR("switch vapb_clk: %uHz(0x%x)\n",
+		clk, (vpu_clk_read(vpu_conf.data->vapb_clk_reg)));
+
 	return ret;
 }
 
@@ -132,9 +203,9 @@ static int vpu_vmod_clk_request(unsigned int vclk, unsigned int vmod)
 
 	clk_level = get_vpu_clk_level_max_vmod();
 	if (clk_level != vpu_conf.clk_level) {
-		mutex_lock(&vpu_clk_mutex);
+		//mutex_lock(&vpu_clk_mutex);
 		set_vpu_clk(clk_level);
-		mutex_unlock(&vpu_clk_mutex);
+		//mutex_unlock(&vpu_clk_mutex);
 	}
 
 	mutex_unlock(&vpu_clk_mutex);
@@ -171,9 +242,9 @@ static int vpu_vmod_clk_release(unsigned int vmod)
 
 	clk_level = get_vpu_clk_level_max_vmod();
 	if (clk_level != vpu_conf.clk_level) {
-		mutex_lock(&vpu_clk_mutex);
+		//mutex_lock(&vpu_clk_mutex);
 		set_vpu_clk(clk_level);
-		mutex_unlock(&vpu_clk_mutex);
+		//mutex_unlock(&vpu_clk_mutex);
 	}
 
 	mutex_unlock(&vpu_clk_mutex);
@@ -940,6 +1011,7 @@ static const char *vpu_usage_str = {
 "	vclk level & frequency:\n"
 "		0: 100M    1: 167M    2: 200M    3: 250M\n"
 "		4: 333M    5: 400M    6: 500M    7: 667M\n"
+"		8: 800M\n"
 "\n"
 "	echo <0|1> > /sys/class/vpu/print ; set debug print flag\n"
 };
@@ -2246,6 +2318,32 @@ static const struct of_device_id vpu_of_table[] = {
 	{}
 };
 
+#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+static void vpu_early_suspend(struct early_suspend *h)
+{
+	if (!vpu_conf.data)
+		return;
+
+	VPUPR("early_suspend clk: %uHz(0x%x)\n",
+	      vpu_clk_get(), (vpu_clk_read(vpu_conf.data->vpu_clk_reg)));
+}
+
+static void vpu_late_resume(struct early_suspend *h)
+{
+	if (!vpu_conf.data)
+		return;
+
+	VPUPR("late_resume clk: %uHz(0x%x)\n",
+	      vpu_clk_get(), (vpu_clk_read(vpu_conf.data->vpu_clk_reg)));
+}
+
+static struct early_suspend vpu_early_suspend_handler = {
+	.level = 255, //lowest level
+	.suspend = vpu_early_suspend,
+	.resume = vpu_late_resume,
+};
+#endif
+
 static int vpu_probe(struct platform_device *pdev)
 {
 	const struct of_device_id *match;
@@ -2294,12 +2392,20 @@ static int vpu_probe(struct platform_device *pdev)
 	creat_vpu_debug_class();
 #endif
 
+#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+	register_early_suspend(&vpu_early_suspend_handler);
+#endif
+
 	VPUPR("%s OK\n", __func__);
 	return 0;
 }
 
 static int vpu_remove(struct platform_device *pdev)
 {
+#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+	unregister_early_suspend(&vpu_early_suspend_handler);
+#endif
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	remove_vpu_debug_class();
 #endif
@@ -2314,7 +2420,19 @@ static int vpu_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	if (!vpu_conf.data)
 		return 0;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	if (vpu_conf.data->chip_type >= VPU_CHIP_T5M) {
+		unsigned int clk;
 
+		/* down vpu clk when suspend */
+		vpu_clk_level_saved = vpu_conf.clk_level;
+		vapb_clk_level_saved = clk_get_rate(vpu_conf.vapb_clk);
+
+		clk = vpu_clk_suspend.freq;
+		vapb_clk_switch(0);
+		set_vpu_clk(clk);
+	}
+#endif
 	VPUPR("suspend clk: %uHz(0x%x)\n",
 	      vpu_clk_get(), (vpu_clk_read(vpu_conf.data->vpu_clk_reg)));
 	return 0;
@@ -2322,12 +2440,21 @@ static int vpu_suspend(struct platform_device *pdev, pm_message_t state)
 
 static int vpu_resume(struct platform_device *pdev)
 {
+	unsigned int clk;
+
 	if (!vpu_conf.data)
 		return 0;
 
-	mutex_lock(&vpu_clk_mutex);
-	set_vpu_clk(vpu_conf.clk_level);
-	mutex_unlock(&vpu_clk_mutex);
+	if (vpu_conf.data->chip_type >= VPU_CHIP_T5M) {
+		clk = vpu_clk_level_saved;
+
+		vapb_clk_switch(1);
+		set_vpu_clk(clk);
+	} else {
+		mutex_lock(&vpu_clk_mutex);
+		set_vpu_clk(vpu_conf.clk_level);
+		mutex_unlock(&vpu_clk_mutex);
+	}
 	VPUPR("resume clk: %uHz(0x%x)\n",
 	      vpu_clk_get(), (vpu_clk_read(vpu_conf.data->vpu_clk_reg)));
 	return 0;

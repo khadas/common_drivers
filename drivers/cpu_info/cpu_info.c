@@ -29,6 +29,8 @@
 
 static unsigned char cpuinfo_chip_id[CHIPID_LEN];
 
+extern const char *machine_model;
+
 void cpuinfo_get_chipid(unsigned char *cid, unsigned int size)
 {
 	memcpy(&cid[0], cpuinfo_chip_id, size);
@@ -44,7 +46,7 @@ static int cpu_chipid_show(struct seq_file *m, void *arg)
 	for (i = 0; i < CHIPID_LEN; i++)
 		seq_printf(m, "%02x", cpuinfo_chip_id[i]);
 	seq_puts(m, "\n");
-	seq_printf(m, "Hardware:\t %s\n", "Amlogic");
+	seq_printf(m, "Hardware:\t %s\n", machine_model);
 
 	return 0;
 }

@@ -12,6 +12,7 @@
 #include "mesont7_an400-panel-debian.dtsi"
 
 / {
+	model = "Khadas VIM4";
 	amlogic-dt-id = "t7c_a311d2_kvim4n";
 	compatible = "t7c_a311d2_kvim4n";
 	interrupt-parent = <&gic>;

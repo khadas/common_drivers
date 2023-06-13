@@ -13,10 +13,8 @@ KCONFIG_CONFIG=${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/${DEFCONFI
 export KCONFIG_CONFIG
 
 ${ROOT_DIR}/common/scripts/kconfig/merge_config.sh -m -r \
-	${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/gki_defconfig  \
-	${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/amlogic_gki.fragment  \
-	${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/amlogic_gki.10  \
-	${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/amlogic_gki.debug \
+	${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/a32_base_defconfig  \
+	${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/amlogic_a32.fragment  \
 	${ROOT_DIR}/common/common_drivers/arch/${ARCH}/configs/amlogic_gcc32_defconfig\
 
 export -n KCONFIG_CONFIG

@@ -22,6 +22,7 @@
 #include <linux/gpio.h>
 #include <linux/amlogic/cpu_version.h>
 #include <linux/io.h>
+#include <linux/amlogic/pm.h>
 #include <linux/uaccess.h>
 #include <linux/pci.h>
 #include <linux/amlogic/aml_sd.h>
@@ -946,7 +947,7 @@ static int wifi_dev_probe(struct platform_device *pdev)
 		ret = PTR_ERR(wifi_mac_devp);
 		goto error4;
 	}
-
+	device_init_wakeup(&pdev->dev, true);
 	return 0;
 error4:
 	cdev_del(wifi_mac_cdev);
@@ -967,6 +968,19 @@ static int wifi_dev_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int wifi_suspend(struct platform_device *pdev,
+		pm_message_t state)
+{
+	return 0;
+}
+
+static int wifi_resume(struct platform_device *pdev)
+{
+	if (get_resume_method() == WIFI_WAKEUP)
+		pm_wakeup_event(&pdev->dev, 5000);
+	return 0;
+}
+
 static struct platform_driver wifi_plat_driver = {
 	.probe = wifi_dev_probe,
 	.remove = wifi_dev_remove,
@@ -975,6 +989,8 @@ static struct platform_driver wifi_plat_driver = {
 	.owner = THIS_MODULE,
 	.of_match_table = wifi_match
 	},
+	.suspend = wifi_suspend,
+	.resume = wifi_resume,
 };
 
 int __init wifi_dt_init(void)

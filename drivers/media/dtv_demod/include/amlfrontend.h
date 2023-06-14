@@ -104,6 +104,7 @@
 /*  V3.2.7  increase the speed of isdb-t re-lock */
 /*  V3.2.8  fix significant fluctuations of dvbs snr */
 /*  V3.2.09  support dump demod ddr data */
+/*  V3.2.10  improve compatibility with dvb-t signals */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -120,8 +121,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.2.09"
-#define DTVDEMOD_VER	"2023/06/14: support dump demod ddr data"
+#define AMLDTVDEMOD_VER "V3.2.10"
+#define DTVDEMOD_VER	"2023/06/20: improve compatibility with dvb-t signals"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

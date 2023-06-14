@@ -123,7 +123,7 @@ void init_vicp_module_reg(enum meson_cpuid_type_e cpuid)
 		vicp_reg_array_init(VICP_SUPPORT_CHIP_t3X, VICP_MODULE_LOSSY_COMPRESS,
 			&lossy_compress_reg);
 	} else {
-		vicp_print(VICP_ERROR, "[%s]: this chip don't support vicp.\n", __func__);
+		vicp_print(VICP_ERROR, "%s: this chip don't support vicp.\n", __func__);
 	}
 }
 
@@ -997,11 +997,6 @@ void set_crop_scope_v(u32 begain, u32 end)
 	value = ((end & 0x1fff) << 16) | ((begain & 0x1fff) << 0);
 
 	return write_vicp_reg(VID_CMPR_CROP_VSCOPE, value);
-}
-
-void set_hdr_enable(u32 is_enable)
-{
-	return write_vicp_reg_bits(VID_CMPR_HDR2_CTRL, is_enable, 13, 1);
 }
 
 void set_top_holdline(void)

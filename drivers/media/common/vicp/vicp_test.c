@@ -105,7 +105,6 @@ int vicp_test_config(struct vid_cmpr_top_s *vid_cmpr_top)
 	}
 	vid_cmpr_top->rdmif_canvas0_addr2 = 0;
 
-	vid_cmpr_top->hdr_en = 0;
 	vid_cmpr_top->out_afbce_enable = 0;
 	vid_cmpr_top->out_head_baddr = 0;
 	vid_cmpr_top->out_mmu_info_baddr = 0;

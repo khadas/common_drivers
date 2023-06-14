@@ -1515,7 +1515,11 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	reg_me_dly_vofst = reg_mc_dly_vofst0;  // change for keep me first run
 	if (frc_top->hsize <= 1920 && (frc_top->hsize * frc_top->vsize <= 1920 * 1080)) {
 		frc_top->is_me1mc4 = 0;/*me:mc 1:2*/
-		WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x0);  //8*8 align
+		if (frc_top->hsize * frc_top->vsize == 1920 * 1080) {
+			WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x0);  //8*8 align
+		} else {
+			WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x3);   //16*16 align
+		}
 	} else {
 		frc_top->is_me1mc4 = 1;/*me:mc 1:4*/
 		WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x3);   //16*16 align
@@ -1530,7 +1534,10 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 		if (frc_top->hsize < WIDTH_2K)
 			frc_devp->ud_dbg.res2_dbg_en = 1;
 	} else if (chip == ID_T3X) {
-		frc_devp->ud_dbg.res2_dbg_en = 0;
+		if (frc_devp->out_sts.out_framerate > 80)
+			frc_devp->ud_dbg.res2_dbg_en = 0;
+		else
+			frc_devp->ud_dbg.res2_dbg_en = 1;
 	} else {
 		frc_devp->ud_dbg.res2_dbg_en = 1;
 	}
@@ -2463,7 +2470,7 @@ void recfg_memc_mif_base_addr(u32 base_ofst)
 	}
 }
 
-static const struct dbg_dump_tab frc_reg_tab[] = {
+static const struct dbg_dump_tab frc_reg_tab[FRC_DBG_DUMP_TABLE_NUM] = {
 	{"FRC_TOP_CTRL->reg_frc_en_in", FRC_TOP_CTRL, 0, 1},
 	{"FRC_REG_INP_MODULE_EN_T5M", FRC_REG_INP_MODULE_EN, 0, 0},
 	{"FRC_REG_INP_MODULE_EN_T3", FRC_REG_INP_MODULE_EN + 0xA0, 0, 0},
@@ -2489,8 +2496,6 @@ static const struct dbg_dump_tab frc_reg_tab[] = {
 	{"FRC_REG_ME_DS_COEF_1", FRC_REG_ME_DS_COEF_1,	0, 0},
 	{"FRC_REG_ME_DS_COEF_2", FRC_REG_ME_DS_COEF_2,	0, 0},
 	{"FRC_REG_ME_DS_COEF_3", FRC_REG_ME_DS_COEF_3,	0, 0},
-
-	{"NULL", 0xffffffff, 0, 0},
 };
 
 void frc_dump_reg_tab(void)
@@ -2523,10 +2528,7 @@ void frc_dump_reg_tab(void)
 			ENCL_VIDEO_VAVON_BLINE,
 				vpu_reg_read(ENCL_VIDEO_VAVON_BLINE) & 0xffff);
 	}
-	while (frc_reg_tab[i].addr < 0x3fff) {
-		if (frc_reg_tab[i].addr == 0xffffffff)
-			break;
-
+	for (i = 0; i < FRC_DBG_DUMP_TABLE_NUM; i++) {
 		if (frc_reg_tab[i].len != 0) {
 			pr_frc(0, "%s (0x%x) val:0x%x\n",
 			frc_reg_tab[i].name, frc_reg_tab[i].addr,
@@ -2537,7 +2539,6 @@ void frc_dump_reg_tab(void)
 			frc_reg_tab[i].name, frc_reg_tab[i].addr,
 			READ_FRC_REG(frc_reg_tab[i].addr));
 		}
-		i++;
 	}
 }
 

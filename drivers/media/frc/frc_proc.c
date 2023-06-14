@@ -94,7 +94,10 @@ void frc_hw_initial(struct frc_dev_s *devp)
 	frc_mtx_set(devp);
 	frc_top_init(devp);
 	frc_input_size_align_check(devp);
-	frc_memc_120hz_patch_1(devp);
+	if (devp->ud_dbg.res2_dbg_en == 1)
+		frc_memc_120hz_patch(devp);
+	else
+		frc_memc_120hz_patch_1(devp);
 	return;
 }
 

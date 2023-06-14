@@ -52,6 +52,7 @@
 #define FORCE_INPUT_BUFIDX         0x10000000
 
 #define FRAME_RATE_CNT      13
+#define FRC_DBG_DUMP_TABLE_NUM       18
 
 extern void __iomem *frc_clk_base;
 extern void __iomem *vpu_base;

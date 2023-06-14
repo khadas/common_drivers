@@ -9403,6 +9403,33 @@ static ssize_t amvecm_debug_store(struct class *cla,
 		} else if (!strncmp(parm[1], "load_protect_dis", 16)) {
 			gamma_loadprotect_en = 0;
 			pr_info("loading new gamma without protect");
+		} else if (!strncmp(parm[1], "rdma_wr", 7)) {
+			if (!parm[2])
+				goto free_buf;
+
+			if (!strncmp(parm[2], "r", 1)) {
+				memset(&video_gamma_table_r, 0,
+					sizeof(struct tcon_gamma_table_s));
+				pr_info("r curve to 0\n");
+			} else if (!strncmp(parm[2], "g", 1)) {
+				memset(&video_gamma_table_g, 0,
+					sizeof(struct tcon_gamma_table_s));
+				pr_info("g curve to 0\n");
+			} else if (!strncmp(parm[2], "b", 1)) {
+				memset(&video_gamma_table_b, 0,
+					sizeof(struct tcon_gamma_table_s));
+				pr_info("b curve to 0\n");
+			} else if (!strncmp(parm[2], "linear", 6)) {
+				for (i = 0; i < 256; i++) {
+					video_gamma_table_r.data[i] = i << 2;
+					video_gamma_table_g.data[i] = i << 2;
+					video_gamma_table_b.data[i] = i << 2;
+				}
+				pr_info("all curve to linear\n");
+			}
+			vecm_latch_flag |= FLAG_GAMMA_TABLE_R;
+			vecm_latch_flag |= FLAG_GAMMA_TABLE_G;
+			vecm_latch_flag |= FLAG_GAMMA_TABLE_B;
 		}
 	} else if (!strncmp(parm[0], "sr", 2)) {
 		if (!strncmp(parm[1], "peaking_en", 10)) {
@@ -12815,7 +12842,7 @@ int __init aml_vecm_init(void)
 {
 	/*unsigned int hiu_reg_base;*/
 
-	pr_info("%s:module init_20230605-0\n", __func__);
+	pr_info("%s:module init_20230615-0\n", __func__);
 
 	if (platform_driver_register(&aml_vecm_driver)) {
 		pr_err("failed to register bl driver module\n");

@@ -3030,8 +3030,9 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 			WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
 				pq_cfg.sharpness0_en, 1, 1);
 
-			WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
-				pq_cfg.sharpness1_en, 1, 1);
+			if (chip_type_id != chip_txhd2)
+				WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
+					pq_cfg.sharpness1_en, 1, 1);
 #endif
 			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)
 				WRITE_VPP_REG_BITS(VPP_VADJ1_MISC,
@@ -3135,8 +3136,9 @@ int vpp_pq_ctrl_config(struct pq_ctrl_s pq_cfg, enum wr_md_e md)
 			VSYNC_WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE,
 				pq_cfg.sharpness0_en, 1, 1);
 
-			VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
-				pq_cfg.sharpness1_en, 1, 1);
+			if (chip_type_id != chip_txhd2)
+				VSYNC_WRITE_VPP_REG_BITS(SRSHARP1_PK_NR_ENABLE,
+					pq_cfg.sharpness1_en, 1, 1);
 #endif
 
 			if (get_cpu_type() >= MESON_CPU_MAJOR_ID_G12A)

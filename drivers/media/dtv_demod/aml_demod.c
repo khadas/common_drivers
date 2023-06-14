@@ -340,9 +340,9 @@ static long aml_demod_ioctl(struct file *file,
 			PR_ERR("Error user param\n");
 			return -EINVAL;
 		}
-		PR_INFO("%s dump_param %d\n", __func__, dump_param);
-		capture_adc_data_once(NULL, dump_param, 0, priv);
-		PR_INFO("%s %#x %d\n", __func__, priv->data, priv->size);
+		PR_DBG("%s dump_param %#x\n", __func__, dump_param);
+		capture_adc_data_once(NULL, dump_param & 0xf, (dump_param & 0xf0) >> 4, priv);
+		PR_DBG("%s %#x %d\n", __func__, priv->data, priv->size);
 
 		ret = copy_to_user(argp, &priv->size, sizeof(unsigned int));
 		if (ret < 0) {
@@ -358,9 +358,25 @@ static long aml_demod_ioctl(struct file *file,
 			PR_ERR("Error user param\n");
 			return -EINVAL;
 		}
-		PR_INFO("%s dump_param %d\n", __func__, dump_param);
+		PR_DBG("%s dump_param %d\n", __func__, dump_param);
 		break;
 	case DEMOD_IOC_STOP_DUMP_TS:
+		break;
+	case DEMOD_IOC_START_DUMP_MEM:
+		if (!devp->mem_start || !devp->mem_size) {
+			PR_ERR("%s: invalid mem_start or mem_size!!\n", __func__);
+			return -EINVAL;
+		}
+		priv->size = devp->mem_size;
+		priv->data = devp->mem_start;
+		PR_DBG("%s %#x %d\n", __func__, priv->data, priv->size);
+		ret = copy_to_user(argp, &priv->size, sizeof(unsigned int));
+		if (ret < 0) {
+			PR_ERR("Error user param\n");
+			return -EINVAL;
+		}
+		break;
+	case DEMOD_IOC_STOP_DUMP_MEM:
 		break;
 
 	default:

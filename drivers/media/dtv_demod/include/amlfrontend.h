@@ -103,6 +103,7 @@
 /*  V3.2.06  support for identifying rt720 by name */
 /*  V3.2.7  increase the speed of isdb-t re-lock */
 /*  V3.2.8  fix significant fluctuations of dvbs snr */
+/*  V3.2.09  support dump demod ddr data */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -119,8 +120,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.2.8"
-#define DTVDEMOD_VER	"2023/06/15: fix significant fluctuations of dvbs snr"
+#define AMLDTVDEMOD_VER "V3.2.09"
+#define DTVDEMOD_VER	"2023/06/14: support dump demod ddr data"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

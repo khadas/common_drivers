@@ -233,6 +233,8 @@ struct demod_device_t {
 #define DEMOD_IOC_STOP_DUMP_ADC		_IOW(DEMOD_DUMP_IOC_MAGIC, 0x51, unsigned int)
 #define DEMOD_IOC_START_DUMP_TS		_IOWR(DEMOD_DUMP_IOC_MAGIC, 0x52, unsigned int)
 #define DEMOD_IOC_STOP_DUMP_TS		_IOW(DEMOD_DUMP_IOC_MAGIC, 0x53, unsigned int)
+#define DEMOD_IOC_START_DUMP_MEM	_IOWR(DEMOD_DUMP_IOC_MAGIC, 0x54, unsigned int)
+#define DEMOD_IOC_STOP_DUMP_MEM		_IOW(DEMOD_DUMP_IOC_MAGIC, 0x55, unsigned int)
 //#define DEMOD_IOC_GET_ADC_PARAM		_IOR(DEMOD_DUMP_IOC_MAGIC, 0x54, unsigned int)
 
 extern unsigned int get_symbol_rate(void);

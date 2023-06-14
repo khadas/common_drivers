@@ -108,8 +108,9 @@
 /*  V3.2.011 fix the sync of shutdown and tune */
 /*  V3.2.012 improved dvbc auto qam (t5w/t5m) */
 /*  V3.2.013 fixed dvbc 16/32 qam (t5d/t3) */
-/*  V3.3.00  txhd2 bringup */
-/*  V3.3.001 ix dvbt signaling buf overflow when bw 6M and GI 1/4 */
+/*  V3.3.001  txhd2 bringup */
+/*  V3.3.002 fix dvbt signaling buf overflow when bw 6M and GI 1/4 */
+/*  V3.3.003 add t2 ddr clock reset and arbit control when tune (t5m/t3x) */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -126,8 +127,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.3.001"
-#define DTVDEMOD_VER	"2023/06/28: ix dvbt signaling buf overflow when bw 6M and GI 1/4"
+#define AMLDTVDEMOD_VER "V3.3.003"
+#define DTVDEMOD_VER	"2023/07/03: add t2 ddr clock reset and arbit control when tune (t5m/t3x)"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

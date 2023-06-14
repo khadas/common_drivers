@@ -1701,6 +1701,8 @@ static int dvbt2_set_frontend(struct dvb_frontend *fe)
 	struct aml_dtvdemod *demod = (struct aml_dtvdemod *)fe->demodulator_priv;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
+	unsigned int abus_en_dly = 0, top_saved = 0;
+	int retry_count = 2;
 #endif
 
 	PR_INFO("%s [id %d]: delsys:%d, freq:%d, symbol_rate:%d, bw:%d, modul:%d, invert:%d.\n",
@@ -1730,6 +1732,33 @@ static int dvbt2_set_frontend(struct dvb_frontend *fe)
 
 		if (is_meson_t5w_cpu())
 			t5w_write_ambus_reg(0x3c4e, 0x1, 23, 1);
+	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5M)) {
+		//set f040 = 0x0, disable t/t2 mode, stop to
+		top_saved = demod_top_read_reg(DEMOD_TOP_CFG_REG_4);
+		demod_top_write_reg(DEMOD_TOP_CFG_REG_4, 0x0);
+
+		//0x38e4[29], enable abus_en delay logic
+		front_write_bits(DEMOD_FRONT_REG39, 0x1, 29, 1);
+		//0x38e4[30], set dc_arb_enable = 0
+		front_write_bits(DEMOD_FRONT_REG39, 0x0, 30, 1);
+
+		//0x38e0[31], when read abus_en_dly = 0,
+		//then continue the following flow of closing demod.
+		abus_en_dly = front_read_reg(DEMOD_FRONT_REG38) & 0x80000000;
+		PR_DVBT("abus_en_dly %d\n", abus_en_dly);
+
+		while (abus_en_dly && retry_count--) {
+			msleep(20);
+			abus_en_dly = front_read_reg(DEMOD_FRONT_REG38) & 0x80000000;
+			PR_DVBT("retry_count %d abus_en_dly %#x\n",
+					retry_count, abus_en_dly);
+		}
+
+		if (abus_en_dly)
+			PR_ERR("abus_en_dly ERROR!\n");
+
+		//f040 = 0x182: host only can access top regs and t2 regs
+		demod_top_write_reg(DEMOD_TOP_CFG_REG_4, top_saved);
 	}
 #endif
 
@@ -5913,13 +5942,13 @@ static int dds_init_reg_map(struct platform_device *pdev)
 		break;
 
 	case DTVDEMOD_HW_T3:
+	case DTVDEMOD_HW_T5M:
+	case DTVDEMOD_HW_T3X:
 		devp->ddr_phy_addr = 0xfe000000;
 		devp->ddr_v_addr = devm_ioremap(&pdev->dev, 0xfe000000, 0x2000);
 		break;
 
 	case DTVDEMOD_HW_T5W:
-	case DTVDEMOD_HW_T5M:
-	case DTVDEMOD_HW_T3X:
 	case DTVDEMOD_HW_TXHD2:
 		break;
 

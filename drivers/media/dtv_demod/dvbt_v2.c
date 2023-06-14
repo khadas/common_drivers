@@ -1190,6 +1190,8 @@ void dvbt2_riscv_init(struct aml_dtvdemod *demod, struct dvb_frontend *fe)
 		break;
 
 	case DTVDEMOD_HW_T3:
+	case DTVDEMOD_HW_T5M:
+	case DTVDEMOD_HW_T3X:
 		dtvdemod_ddr_reg_write(0x44, dtvdemod_ddr_reg_read(0x44) & 0xffffffdf);
 		dtvdemod_ddr_reg_write(0x54, dtvdemod_ddr_reg_read(0x54) & 0xffffffdf);
 		usleep_range(8000, 9000);

@@ -547,6 +547,23 @@
 	};
 }; /* end of / */
 
+&pinctrl_periphs {
+	/*backlight*/
+	bl_pwm_vs_on_pins:bl_pwm_vs_on_pin {
+		mux {
+			groups = "pwm_vs_z1";
+			function = "pwm_vs";
+		};
+	};
+	bl_pwm_off_pins:bl_pwm_off_pin {
+		mux {
+			groups = "GPIOZ_1";
+			function = "gpio_periphs";
+			output-low;
+		};
+	};
+};
+
 &i2c1 {
 	status = "okay";
 	clock-frequency = <300000>;

@@ -698,14 +698,15 @@
 		/* Audio Related start */
 		clkaudio: audio_clocks {
 			compatible = "amlogic, a1-audio-clocks";
-			status = "disabled";
 			#clock-cells = <1>;
 			reg = <0x0 0xFE050000 0x0 0xb0>,
 				<0x0 0xFE054800 0x0 0x20>;
+			reg-names = "audio_bus", "audio_vad_top";
+			status = "okay";
 		};
 		audiobus: audiobus@0xFE050000 {
 			compatible = "amlogic, audio-controller", "simple-bus";
-			status = "disabled";
+			status = "okay";
 
 			reg = <0x0 0xFE050000 0x0 0x1000>,
 				<0x0 0xFE054800 0x0 0x400>;
@@ -1198,8 +1199,8 @@
 
 	/* Sound iomap */
 	aml_snd_iomap {
-//		compatible = "amlogic, snd-iomap";
-		status = "disabled";
+		compatible = "amlogic, snd-iomap";
+		status = "okay";
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;

@@ -40,7 +40,8 @@
 //support filmmaker mode
 //fix no edid result in system crash
 //fix switch fail between edid 1.4 and 2.0.
-#define RX_VER0 "ver.2023/06/12"
+//hdmi hbr no sound
+#define RX_VER0 "ver.2023/06/15"
 
 /*print type*/
 #define COR1_LOG	0x10000

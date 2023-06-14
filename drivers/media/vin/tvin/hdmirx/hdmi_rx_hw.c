@@ -2253,6 +2253,61 @@ void top_common_init(void)
 		data32 |= 1 << 5;
 	/* pull down all the hpd */
 	hdmirx_wr_top_common(TOP_HPD_PWR5V, data32);
+	data32 = 0;
+	if (rx_info.chip_id >= CHIP_ID_T7 &&
+		rx_info.chip_id < CHIP_ID_T3X) {
+		/*420to444_en*/
+		data32 |= 1	<< 21;
+		/*422to444_en*/
+		data32 |= 1	<< 20;
+	}
+	/* conversion mode of 422 to 444 */
+	data32 |= 0	<< 19;
+	/* pixel_repeat_ovr 0=auto  1 only for T7!!! */
+	if (rx_info.chip_id == CHIP_ID_T7)
+		data32 |= 1 << 7;
+	/* !!!!dolby vision 422 to 444 ctl bit */
+	data32 |= 0	<< 0;
+	hdmirx_wr_top_common(TOP_VID_CNTL, data32);//to do
+
+	if (rx_info.chip_id != CHIP_ID_TXHD &&
+		rx_info.chip_id != CHIP_ID_T5D) {
+		data32 = 0;
+		data32 |= 0	<< 20;
+		data32 |= 0	<< 8;
+		data32 |= 0x0a	<< 0;
+		hdmirx_wr_top_common(TOP_VID_CNTL2, data32);//to do
+	}
+
+	data32 = 0;
+	data32 |= 7	<< 13;
+	data32 |= 0	<< 12;
+	data32 |= 1	<< 11;
+	data32 |= 0	<< 10;
+	data32 |= 0	<< 9;
+	data32 |= 1	<< 8;
+	data32 |= 1	<< 6;
+	data32 |= 3	<< 4;
+	data32 |= 0	<< 3;
+	data32 |= acr_mode  << 2;
+	data32 |= acr_mode  << 1;
+	data32 |= acr_mode  << 0;
+	hdmirx_wr_top_common(TOP_ACR_CNTL_STAT, data32);
+
+	if (rx_info.chip_id >= CHIP_ID_TL1) {
+		data32 = 0;
+		data32 |= 0	<< 2;/*meas_mode*/
+		data32 |= 1	<< 1;/*enable*/
+		data32 |= 1	<< 0;/*reset*/
+		if (acr_mode)
+			data32 |= 2 << 16;/*aud pll*/
+		else
+			data32 |= 500 << 16;/*acr*/
+		hdmirx_wr_top_common(TOP_AUDMEAS_CTRL, data32);//to do
+		hdmirx_wr_top_common(TOP_AUDMEAS_CYCLES_M1, 65535);//to do
+		/*start messure*/
+		hdmirx_wr_top_common(TOP_AUDMEAS_CTRL, data32 & (~0x1));//to do
+	}
 
 	if (rx_info.chip_id < CHIP_ID_T3X)
 		return;
@@ -2283,31 +2338,7 @@ static int top_init(u8 port)
 	rx_i2c_div_init();
 	rx_i2c_hdcp_cfg();
 	rx_i2c_edid_cfg_with_port(0xf, true);
-	data32 = 0;
-	if (rx_info.chip_id >= CHIP_ID_T7 &&
-		rx_info.chip_id < CHIP_ID_T3X) {
-		/*420to444_en*/
-		data32 |= 1	<< 21;
-		/*422to444_en*/
-		data32 |= 1	<< 20;
-	}
-	/* conversion mode of 422 to 444 */
-	data32 |= 0	<< 19;
-	/* pixel_repeat_ovr 0=auto  1 only for T7!!! */
-	if (rx_info.chip_id == CHIP_ID_T7)
-		data32 |= 1 << 7;
-	/* !!!!dolby vision 422 to 444 ctl bit */
-	data32 |= 0	<< 0;
-	hdmirx_wr_top_common(TOP_VID_CNTL, data32);//to do
 
-	if (rx_info.chip_id != CHIP_ID_TXHD &&
-		rx_info.chip_id != CHIP_ID_T5D) {
-		data32 = 0;
-		data32 |= 0	<< 20;
-		data32 |= 0	<< 8;
-		data32 |= 0x0a	<< 0;
-		hdmirx_wr_top_common(TOP_VID_CNTL2, data32);//to do
-	}
 	data32 = 0;
 	if (rx_info.chip_id >= CHIP_ID_TL1) {
 		/* n_cts_auto_mode: */
@@ -2320,7 +2351,7 @@ static int top_init(u8 port)
 	if (rx_info.chip_id >= CHIP_ID_TL1)
 		hdmirx_wr_top(TOP_TL1_ACR_CNTL2, data32, port);// to do
 	else
-		hdmirx_wr_top_common(TOP_ACR_CNTL2, data32);//change
+		hdmirx_wr_top(TOP_ACR_CNTL2, data32, port);//change
 
 	if (rx_info.chip_id >= CHIP_ID_TL1) {
 		/* Configure channel switch */
@@ -2363,35 +2394,17 @@ static int top_init(u8 port)
 	data32 |= (8192 << 0); /* [23: 0] ref_cycles */
 	hdmirx_wr_top(TOP_METER_HDMI_CNTL, data32, port);
 
-	data32 |= 7	<< 13;
-	data32 |= 0	<< 12;
-	data32 |= 1	<< 11;
-	data32 |= 0	<< 10;
+	data32  = 0;
+	data32 |= (0 << 31);// [31]	  free_clk_en
+	data32 |= (0 << 15);// [15]	  hbr_spdif_en
+	data32 |= (0 << 8);// [8]	  tmds_ch2_clk_inv
+	data32 |= (0 << 7);// [7]	  tmds_ch1_clk_inv
+	data32 |= (0 << 6);// [6]	  tmds_ch0_clk_inv
+	data32 |= (0 << 5);// [5]	  pll4x_cfg
+	data32 |= (0 << 4);// [4]	  force_pll4x
+	data32 |= (0 << 3);// [3]	  phy_clk_inv
+	hdmirx_wr_top(TOP_CLK_CNTL, data32, port);
 
-	data32 |= 0	<< 9;
-	data32 |= 1	<< 8;
-	data32 |= 1	<< 6;
-	data32 |= 3	<< 4;
-	data32 |= 0	<< 3;
-	data32 |= acr_mode  << 2;
-	data32 |= acr_mode  << 1;
-	data32 |= acr_mode  << 0;
-	hdmirx_wr_top_common(TOP_ACR_CNTL_STAT, data32);
-
-	if (rx_info.chip_id >= CHIP_ID_TL1) {
-		data32 = 0;
-		data32 |= 0	<< 2;/*meas_mode*/
-		data32 |= 1	<< 1;/*enable*/
-		data32 |= 1	<< 0;/*reset*/
-		if (acr_mode)
-			data32 |= 2 << 16;/*aud pll*/
-		else
-			data32 |= 500 << 16;/*acr*/
-		hdmirx_wr_top_common(TOP_AUDMEAS_CTRL, data32);//to do
-		hdmirx_wr_top_common(TOP_AUDMEAS_CYCLES_M1, 65535);//to do
-		/*start messure*/
-		hdmirx_wr_top_common(TOP_AUDMEAS_CTRL, data32 & (~0x1));//to do
-	}
 	return err;
 }
 
@@ -3146,7 +3159,7 @@ void hdcp_22_on(void)
 void clk_init_cor(void)
 {
 	u32 data32;
-	u8 port = rx_info.main_port;
+	//u8 port = rx_info.main_port;
 
 	rx_pr("\n clk_init\n");
 	/* DWC clock enable */
@@ -3197,17 +3210,6 @@ void clk_init_cor(void)
 	wr_reg_clk_ctl(RX_CLK_CTRL3, data32);
 	data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_meter_clk
 	wr_reg_clk_ctl(RX_CLK_CTRL3, data32);
-
-	data32  = 0;
-	data32 |= (0 << 31);// [31]	  free_clk_en
-	data32 |= (0 << 15);// [15]	  hbr_spdif_en
-	data32 |= (0 << 8);// [8]	  tmds_ch2_clk_inv
-	data32 |= (0 << 7);// [7]	  tmds_ch1_clk_inv
-	data32 |= (0 << 6);// [6]	  tmds_ch0_clk_inv
-	data32 |= (0 << 5);// [5]	  pll4x_cfg
-	data32 |= (0 << 4);// [4]	  force_pll4x
-	data32 |= (0 << 3);// [3]	  phy_clk_inv
-	hdmirx_wr_top(TOP_CLK_CNTL, data32, port);
 }
 
 void clk_init_dwc(void)
@@ -4270,6 +4272,7 @@ void hdmirx_hw_probe(void)
 	hdmirx_wr_top(TOP_SW_RESET, 0, 1);
 	hdmirx_wr_top(TOP_SW_RESET, 0, 2);
 	hdmirx_wr_top(TOP_SW_RESET, 0, 3);
+	clk_init();
 	top_common_init();
 	hdmirx_top_sw_reset();
 	if (rx_info.chip_id >= CHIP_ID_T3X) {

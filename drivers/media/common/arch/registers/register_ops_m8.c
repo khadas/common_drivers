@@ -79,7 +79,8 @@ int __init vdec_reg_ops_init(void)
 				if (t >= MESON_CPU_MAJOR_ID_SC2 &&
 					t != MESON_CPU_MAJOR_ID_T5 &&
 					t != MESON_CPU_MAJOR_ID_T5D &&
-					t != MESON_CPU_MAJOR_ID_T5W)
+					t != MESON_CPU_MAJOR_ID_T5W &&
+					t != MESON_CPU_MAJOR_ID_TXHD2)
 					m8_ops[i].ext_offset = 0;
 				else
 					m8_ops[i].ext_offset = -0xd00;

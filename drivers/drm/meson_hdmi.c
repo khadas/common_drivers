@@ -50,6 +50,25 @@ char attr_debugfs[16];
 /*for hw limitation, limit to 1080p/720p for recovery ui.*/
 static bool hdmitx_set_smaller_pref = true;
 
+/*TODO:will remove later.*/
+static struct drm_display_mode dummy_mode = {
+	.name = "dummy_l",
+	.type = DRM_MODE_TYPE_USERDEF,
+	.status = MODE_OK,
+	.clock = 25000,
+	.hdisplay = 720,
+	.hsync_start = 736,
+	.hsync_end = 798,
+	.htotal = 858,
+	.hskew = 0,
+	.vdisplay = 480,
+	.vsync_start = 489,
+	.vsync_end = 495,
+	.vtotal = 525,
+	.vscan = 0,
+	.flags =  DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
+};
+
 struct hdmitx_color_attr dv_color_attr_list[] = {
 	{HDMI_COLORSPACE_YUV444, 8}, //"444,8bit"
 	{HDMI_COLORSPACE_RESERVED6, COLORDEPTH_RESERVED}
@@ -404,6 +423,17 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 		DRM_ERROR("get vic_list from hdmitx dev return 0.\n");
 	}
 
+	/*TODO:add dummy mode temp.*/
+	if (am_hdmitx->base.drm_priv->dummyl_from_hdmitx) {
+		mode = drm_mode_duplicate(connector->dev, &dummy_mode);
+		if (!mode) {
+			DRM_INFO("[%s:%d]dup dummy mode failed.\n", __func__,
+				 __LINE__);
+		} else {
+			drm_mode_probed_add(connector, mode);
+			count++;
+		}
+	}
 	return count;
 }
 

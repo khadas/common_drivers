@@ -181,8 +181,13 @@ int meson_dummyl_dev_bind(struct drm_device *drm,
 	u32 i;
 	int ret = 0;
 
-	DRM_INFO("[%s]-[%d] called\n", __func__, __LINE__);
+	if (priv->dummyl_from_hdmitx) {
+		DRM_INFO("[%s]-[%d] dummy from hdmitx, skip register dummyl connector.\n",
+			__func__, __LINE__);
+		return 0;
+	}
 
+	DRM_INFO("[%s]-[%d] called\n", __func__, __LINE__);
 	am_dummyl = kzalloc(sizeof(*am_dummyl), GFP_KERNEL);
 	if (!am_dummyl) {
 		DRM_ERROR("[%s]: alloc drm_dummyl failed\n", __func__);

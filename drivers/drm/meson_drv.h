@@ -106,6 +106,7 @@ struct meson_drm {
 	bool compat_mode;
 	bool logo_show_done;
 	u32 osd_occupied_index;
+	u8 dummyl_from_hdmitx;
 };
 
 /*component bind functions*/

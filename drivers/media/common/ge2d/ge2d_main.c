@@ -1543,6 +1543,22 @@ static struct ge2d_device_data_s ge2d_t3x = {
 };
 #endif
 
+static struct ge2d_device_data_s ge2d_s1a = {
+	.ge2d_rate = 500000000,
+	.src2_alp = 1,
+	.canvas_status = 2,
+	.deep_color = 1,
+	.hang_flag = 1,
+	.fifo = 1,
+	.has_self_pwr = 1,
+	.poweron_table = &runtime_poweron_table,
+	.poweroff_table = &runtime_poweroff_table,
+	.chip_type = MESON_CPU_MAJOR_ID_S1A,
+	.adv_matrix = 1,
+	.src2_repeat = 1,
+	.cmd_queue_mode = 1,
+};
+
 static const struct of_device_id ge2d_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
@@ -1630,6 +1646,10 @@ static const struct of_device_id ge2d_dt_match[] = {
 		.data = &ge2d_t3x,
 	},
 #endif
+	{
+		.compatible = "amlogic, ge2d-s1a",
+		.data = &ge2d_s1a,
+	},
 	{},
 };
 
@@ -1767,14 +1787,16 @@ static int ge2d_probe(struct platform_device *pdev)
 				ge2d_log_info("ge2d init clock is %d HZ, VPU clock is %d HZ\n",
 					      vapb_rate, vpu_rate);
 
-				if (vpu_rate >= ge2d_meson_dev.ge2d_rate)
-					vapb_rate = ge2d_meson_dev.ge2d_rate;
-				else if (vpu_rate == 333330000)
-					vapb_rate = 333333333;
-				else if (vpu_rate == 166660000)
-					vapb_rate = 166666667;
-				else if (vpu_rate > 0 && vapb_rate > vpu_rate)
-					vapb_rate = vpu_rate;
+				if (ge2d_meson_dev.chip_type < MESON_CPU_MAJOR_ID_S1A) {
+					if (vpu_rate >= ge2d_meson_dev.ge2d_rate)
+						vapb_rate = ge2d_meson_dev.ge2d_rate;
+					else if (vpu_rate == 333330000)
+						vapb_rate = 333333333;
+					else if (vpu_rate == 166660000)
+						vapb_rate = 166666667;
+					else if (vpu_rate > 0 && vapb_rate > vpu_rate)
+						vapb_rate = vpu_rate;
+				}
 				clk_set_rate(clk_vapb0, vapb_rate);
 				clk_prepare_enable(clk_vapb0);
 				vapb_rate = clk_get_rate(clk_vapb0);

@@ -628,6 +628,7 @@ enum cpu_type_e {
 	MESON_CPU_MAJOR_ID_T5M_,
 	MESON_CPU_MAJOR_ID_T3X_,
 	MESON_CPU_MAJOR_ID_TXHD2_,
+	MESON_CPU_MAJOR_ID_S1A_,
 	MESON_CPU_MAJOR_ID_UNKNOWN_,
 };
 
@@ -971,6 +972,7 @@ bool video_is_meson_t5w_cpu(void);
 bool video_is_meson_s5_cpu(void);
 bool video_is_meson_t5m_cpu(void);
 bool video_is_meson_txhd2_cpu(void);
+bool video_is_meson_s1a_cpu(void);
 void alpha_win_set(struct video_layer_s *layer);
 void fgrain_config(struct video_layer_s *layer,
 		   struct vpp_frame_par_s *frame_par,

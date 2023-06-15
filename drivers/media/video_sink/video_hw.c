@@ -13687,7 +13687,8 @@ int video_early_init(struct amvideo_device_data_s *p_amvideo)
 				  sizeof(struct hw_vd_linear_reg_s));
 			}
 	} else if (video_is_meson_sc2_cpu() ||
-			video_is_meson_s4_cpu()) {
+			video_is_meson_s4_cpu() ||
+			video_is_meson_s1a_cpu()) {
 		for (i = 0; i < cur_dev->max_vd_layers; i++) {
 			memcpy(&vd_layer[i].vd_afbc_reg,
 			       &vd_afbc_reg_sc2_array[i],
@@ -13698,7 +13699,8 @@ int video_early_init(struct amvideo_device_data_s *p_amvideo)
 			memcpy(&vd_layer[i].fg_reg,
 			       &fg_reg_sc2_array[i],
 			       sizeof(struct hw_fg_reg_s));
-			if (video_is_meson_s4_cpu())
+			if (video_is_meson_s4_cpu() ||
+			video_is_meson_s1a_cpu())
 				memcpy(&vd_layer[i].pps_reg,
 				       &pps_reg_array_t5d[i],
 				       sizeof(struct hw_pps_reg_s));

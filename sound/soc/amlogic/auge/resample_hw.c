@@ -420,7 +420,7 @@ int resample_set_hw_param(enum resample_idx id,
 {
 	int i, reg, offset;
 
-	if (rate_index < RATE_32K) {
+	if (rate_index < RATE_32K || rate_index == RATE_16K) {
 		pr_info("%s(), inval index %d", __func__, rate_index);
 		return -EINVAL;
 	}

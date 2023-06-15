@@ -911,16 +911,15 @@ static int resample_platform_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct resample_chipinfo *p_chipinfo;
 	unsigned int resample_module;
-	int ret;
+	int ret = 0;
 
 	pr_info("%s\n", __func__);
 
-	p_resample = devm_kzalloc(&pdev->dev,
-			sizeof(struct audioresample),
-			GFP_KERNEL);
+	p_resample = kzalloc(sizeof(*p_resample), GFP_KERNEL);
 	if (!p_resample) {
 		/*dev_err(&pdev->dev, "Can't allocate pcm_p\n");*/
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto err;
 	}
 
 	/* match data */
@@ -928,7 +927,8 @@ static int resample_platform_probe(struct platform_device *pdev)
 		of_device_get_match_data(dev);
 	if (!p_chipinfo) {
 		dev_warn_once(dev, "check whether to update resample chipinfo\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto err;
 	}
 
 	p_resample->id = p_chipinfo->id;
@@ -939,7 +939,8 @@ static int resample_platform_probe(struct platform_device *pdev)
 					   &resample_module);
 		if (ret < 0) {
 			dev_err(&pdev->dev, "Can't retrieve resample_module\n");
-			return -EINVAL;
+			ret = -EINVAL;
+			goto err;
 		}
 	} else {
 		resample_module = LOOPBACK_A;
@@ -974,21 +975,21 @@ static int resample_platform_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev,
 			"Can't retrieve resample_pll clock\n");
 		ret = PTR_ERR(p_resample->pll);
-		return ret;
+		goto err;
 	}
 	p_resample->sclk = devm_clk_get(&pdev->dev, "resample_src");
 	if (IS_ERR(p_resample->sclk)) {
 		dev_err(&pdev->dev,
 			"Can't retrieve resample_src clock\n");
 		ret = PTR_ERR(p_resample->sclk);
-		return ret;
+		goto err;
 	}
 	p_resample->clk = devm_clk_get(&pdev->dev, "resample_clk");
 	if (IS_ERR(p_resample->clk)) {
 		dev_err(&pdev->dev,
 			"Can't retrieve resample_clk clock\n");
 		ret = PTR_ERR(p_resample->clk);
-		return ret;
+		goto err;
 	}
 
 	ret = clk_set_parent(p_resample->sclk, p_resample->pll);
@@ -996,14 +997,14 @@ static int resample_platform_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev,
 			"Can't set resample_src parent clock\n");
 		ret = PTR_ERR(p_resample->sclk);
-		return ret;
+		goto err;
 	}
 	ret = clk_set_parent(p_resample->clk, p_resample->sclk);
 	if (ret) {
 		dev_err(&pdev->dev,
 			"Can't set resample_clk parent clock\n");
 		ret = PTR_ERR(p_resample->clk);
-		return ret;
+		goto err;
 	}
 	if ((!IS_ERR(p_resample->pll)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
 		p_resample->clk_nb.notifier_call = aml_resample_clock_notifier;
@@ -1033,7 +1034,7 @@ static int resample_platform_probe(struct platform_device *pdev)
 	if (ret) {
 		pr_err("Can't enable resample_clk clock: %d\n",
 			ret);
-		return ret;
+		goto err;
 	}
 	aml_set_resample(p_resample->id, p_resample->enable,
 			 p_resample->resample_module);
@@ -1041,8 +1042,20 @@ static int resample_platform_probe(struct platform_device *pdev)
 	pr_info("resample id = %d, new resample = %d, resample_module = %d\n",
 		p_chipinfo->id, p_chipinfo->resample_version,
 		p_resample->resample_module);
-
 	return 0;
+err:
+	if (!IS_ERR_OR_NULL(p_resample)) {
+		if (!IS_ERR_OR_NULL(p_resample->chipinfo)) {
+			if (p_resample->chipinfo && p_resample->chipinfo->id == 0)
+				s_resample_a = NULL;
+			else if (p_resample->chipinfo && p_resample->chipinfo->id == 1)
+				s_resample_b = NULL;
+			else if (p_resample->chipinfo && p_resample->chipinfo->id == 2)
+				s_resample_c = NULL;
+			}
+		kfree(p_resample);
+	}
+	return ret;
 }
 
 static void resample_platform_shutdown(struct platform_device *pdev)
@@ -1057,6 +1070,25 @@ static void resample_platform_shutdown(struct platform_device *pdev)
 	}
 }
 
+/*don't use devm_kzalloc, when use global pointer*/
+int resample_platform_remove(struct platform_device *pdev)
+{
+	struct audioresample *p_resample = dev_get_drvdata(&pdev->dev);
+
+	if (!IS_ERR_OR_NULL(p_resample)) {
+		if (!IS_ERR_OR_NULL(p_resample->chipinfo)) {
+			if (p_resample->chipinfo && p_resample->chipinfo->id == 0)
+				s_resample_a = NULL;
+			else if (p_resample->chipinfo && p_resample->chipinfo->id == 1)
+				s_resample_b = NULL;
+			else if (p_resample->chipinfo && p_resample->chipinfo->id == 2)
+				s_resample_c = NULL;
+		}
+		kfree(p_resample);
+	}
+	return 0;
+}
+
 static struct platform_driver resample_platform_driver = {
 	.driver = {
 		.name  = DRV_NAME,
@@ -1064,6 +1096,7 @@ static struct platform_driver resample_platform_driver = {
 		.of_match_table = of_match_ptr(resample_device_id),
 	},
 	.probe  = resample_platform_probe,
+	.remove = resample_platform_remove,
 	.suspend = resample_platform_suspend,
 	.resume  = resample_platform_resume,
 	.shutdown = resample_platform_shutdown,

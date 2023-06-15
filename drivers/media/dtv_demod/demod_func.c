@@ -676,7 +676,7 @@ void dvbt_isdbt_wr_reg(unsigned int addr, unsigned int data)
 	/*mutex_unlock(&mp);*/
 }
 
-void dvbt_isdtb_wr_reg_new(unsigned int addr, unsigned int data)
+void dvbt_isdbt_wr_reg_new(unsigned int addr, unsigned int data)
 {
 	if (!get_dtvpll_init_flag())
 		return;
@@ -1248,7 +1248,7 @@ void demod_set_reg(struct aml_dtvdemod *demod, struct aml_demod_reg *demod_reg)
 
 		case REG_MODE_DVBT_ISDBT:
 			if (demod_reg->access_mode == ACCESS_WORD)
-				dvbt_isdtb_wr_reg_new(demod_reg->addr, demod_reg->val);
+				dvbt_isdbt_wr_reg_new(demod_reg->addr, demod_reg->val);
 			else if (demod_reg->access_mode == ACCESS_BITS)
 				dvbt_isdbt_wr_bits_new(demod_reg->addr, demod_reg->val,
 						    demod_reg->start_bit, demod_reg->bit_width);

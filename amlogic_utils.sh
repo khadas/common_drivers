@@ -908,13 +908,13 @@ function rebuild_rootfs() {
 	gunzip rootfs_base.cpio.gz
 	mkdir rootfs
 	cd rootfs
-	cpio -i -F ../rootfs_base.cpio
+	fakeroot cpio -i -F ../rootfs_base.cpio
 	if [ -d ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/customer ]; then
 		cp ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/customer . -rf
 	fi
 	cp -rf ../../modules .
 
-	find . | cpio -o -H newc | gzip > ../rootfs_new.cpio.gz
+	find . | fakeroot cpio -o -H newc | gzip > ../rootfs_new.cpio.gz
 	cd ../
 	mkimage -A ${ARCH} -O linux -T ramdisk -C none -d rootfs_new.cpio.gz rootfs_new.cpio.gz.uboot
 	mv rootfs_new.cpio.gz.uboot ../

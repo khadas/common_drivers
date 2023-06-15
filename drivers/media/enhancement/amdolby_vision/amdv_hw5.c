@@ -1391,6 +1391,22 @@ int tv_top2_set(u64 *reg_data,
 		VSYNC_WR_DV_REG_BITS(DOLBY_TOP2_RDMA_CTRL, 1, 30, 1);//open top2 rdma
 	}
 
+	if (reset || toggle) {
+		top2_ahb_ini(reg_data);
+	} else { /*set every vsync*/
+		VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + 2, 1);/*Metadata Program start*/
+		VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + 4, last_int_top2);/*clear interrupt*/
+		VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + 3, 1);/*Metadata Program end */
+	}
+	if ((dolby_vision_flags & FLAG_CERTIFICATION) && is_amdv_on())/*set every vsync*/
+		VSYNC_WR_DV_REG(DOLBY5_CORE2_CRC_CNTRL, 1);
+
+	if (reset || toggle) {/*no need update lut data when no toggle*/
+		set_dovi_setting_update_flag(true);
+		amdv_update_setting(NULL);
+		dma_lut_write();
+	}
+
 	if (lut_trigger_by_reg) {/*set every vsync*/
 		/*use reg to trigger lut, should after DOLBY_TOP2_RDMA set */
 		top_misc = VSYNC_RD_DV_REG(VPU_TOP_MISC);
@@ -1398,20 +1414,6 @@ int tv_top2_set(u64 *reg_data,
 		VSYNC_WR_DV_REG(VPU_TOP_MISC, top_misc);
 		top_misc &= ~(1 << 10);
 		VSYNC_WR_DV_REG(VPU_TOP_MISC, top_misc);
-	}
-
-	if (reset || toggle) {
-		top2_ahb_ini(reg_data);
-	} else { /*set every vsync*/
-		VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + 2, 1);/*Metadata Program start*/
-		VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + 3, 1);/*Metadata Program end */
-		VSYNC_WR_DV_REG(DOLBY5_CORE2_REG_BASE0 + 4, last_int_top2);/*clear interrupt*/
-	}
-
-	if (reset || toggle) {/*no need update lut data when no toggle*/
-		set_dovi_setting_update_flag(true);
-		amdv_update_setting(NULL);
-		dma_lut_write();
 	}
 
 	return 0;

@@ -11068,6 +11068,11 @@ void calculate_crc(void)
 
 			}
 		}
+	} else if ((dolby_vision_flags & FLAG_CERTIFICATION) && is_aml_hw5()) {
+		if (debug_dolby & 0x2000)
+			pr_info("CRC input 0x%x, output 0x%x\n",
+					READ_VPP_DV_REG(DOLBY5_CORE2_CRC_IN_FRM),
+					READ_VPP_DV_REG(DOLBY5_CORE2_CRC_OUT_FRM));
 	}
 }
 
@@ -13951,7 +13956,8 @@ void amdv_insert_crc(bool print)
 
 	if ((debug_dolby & 0x10000) && is_aml_tvmode()) {
 		if (is_aml_t3x())
-			pr_info("tvcore crc 0x%x, ctrl 0x%x\n",
+			pr_info("tvcore crc 0x%x, 0x%x, ctrl 0x%x\n",
+				READ_VPP_DV_REG(DOLBY5_CORE2_CRC_IN_FRM),
 				READ_VPP_DV_REG(DOLBY5_CORE2_CRC_OUT_FRM),
 				READ_VPP_DV_REG(DOLBY5_CORE2_CRC_CNTRL));
 		else

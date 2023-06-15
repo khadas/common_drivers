@@ -1991,11 +1991,10 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 			/* enable CRC */
 			if ((dolby_vision_flags & FLAG_CERTIFICATION) &&
 				!(dolby_vision_flags & FLAG_DISABLE_CRC)) {
-				//tv_hw5_setting->top2_reg[3] =
-				//0x000008f400000001;//enable crc in front of regs,necessary?
-				if (tv_hw5_setting->top2_reg[574] == 0x000008f400000000)
-					tv_hw5_setting->top2_reg[574] =
-					0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
+				//move to tv_top2_set
+				//if (tv_hw5_setting->top2_reg[574] == 0x000008f400000000)
+				//	tv_hw5_setting->top2_reg[574] =
+				//	0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
 			}
 
 			v_inst_info->tv_dovi_setting_change_flag = true;
@@ -2024,11 +2023,9 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 		/* enable CRC */
 		if ((dolby_vision_flags & FLAG_CERTIFICATION) &&
 			!(dolby_vision_flags & FLAG_DISABLE_CRC)) {
-			//tv_hw5_setting->top2_reg[3] =
-			//	0x000008f400000001;//enable crc ctrl in front of regs, necessary?
-			if (tv_hw5_setting->top2_reg[574] == 0x000008f400000000)
-				tv_hw5_setting->top2_reg[574] =
-					0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
+			//if (tv_hw5_setting->top2_reg[574] == 0x000008f400000000)
+			//	tv_hw5_setting->top2_reg[574] =
+			//		0x000008f400000001;//0x8F4 CRC_CNTRL_REGADDR
 		}
 		v_inst_info->tv_dovi_setting_change_flag = true;
 		top2_info.amdv_setting_video_flag = video_frame;

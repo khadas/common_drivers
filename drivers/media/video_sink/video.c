@@ -655,6 +655,7 @@ u32 trickmode_fffb;
 atomic_t trickmode_framedone = ATOMIC_INIT(0);
 atomic_t video_prop_change = ATOMIC_INIT(0);
 atomic_t status_changed = ATOMIC_INIT(0);
+atomic_t fmm_changed = ATOMIC_INIT(0);
 atomic_t video_unreg_flag = ATOMIC_INIT(0);
 atomic_t vt_unreg_flag = ATOMIC_INIT(0);
 atomic_t vt_disable_video_done = ATOMIC_INIT(0);

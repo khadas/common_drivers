@@ -96,6 +96,8 @@
 #define VIDEO_PROP_CHANGE_ENABLE	0x4
 #define VIDEO_PROP_CHANGE_DISABLE	0x8
 #define VIDEO_PROP_CHANGE_AXIS		0x10
+#define VIDEO_PROP_CHANGE_FMM		0x20
+#define VIDEO_PROP_CHANGE_FMM_DISABLE	0x40
 
 #define MAX_ZOOM_RATIO 300
 
@@ -912,6 +914,7 @@ extern uint load_pps_coef;
 extern atomic_t gafbc_request;
 extern atomic_t video_unreg_flag;
 extern atomic_t video_pause_flag;
+extern atomic_t fmm_changed;
 extern bool video_suspend;
 extern u32 video_suspend_cycle;
 extern int log_out;

@@ -3707,6 +3707,39 @@ static void do_vd1_swap_frame(u8 layer_id,
 	prime_sl_process(vd_layer[0].dispbuf);
 #endif
 
+	if (new_frame || vd_layer[0].dispbuf) {
+		if (new_frame) {
+			if (new_frame->ext_signal_type & 0x1) {
+				if (!atomic_read(&fmm_changed)) {
+					video_prop_status |= VIDEO_PROP_CHANGE_FMM;
+					atomic_set(&fmm_changed, 1);
+					if (debug_flag & DEBUG_FLAG_TRACE_EVENT)
+						pr_info("VD1 FMM changed: %d->. cur:%p, new:%p\n",
+						new_frame ?
+						(new_frame->ext_signal_type & 0x1) :
+						(vd_layer[0].dispbuf->ext_signal_type & 0x1),
+						vd_layer[0].dispbuf, new_frame);
+				}
+			} else {
+				if (atomic_read(&fmm_changed)) {
+					video_prop_status |= VIDEO_PROP_CHANGE_FMM_DISABLE;
+					atomic_set(&fmm_changed, 0);
+					if (debug_flag & DEBUG_FLAG_TRACE_EVENT)
+						pr_info("VD1 FMM changed: %d->. cur:%p, new:%p\n",
+						new_frame ?
+						(new_frame->ext_signal_type & 0x1) :
+						(vd_layer[0].dispbuf->ext_signal_type & 0x1),
+						vd_layer[0].dispbuf, new_frame);
+				}
+			}
+		}
+	} else {
+		if (atomic_read(&fmm_changed)) {
+			video_prop_status |= VIDEO_PROP_CHANGE_FMM_DISABLE;
+			atomic_set(&fmm_changed, 0);
+		}
+	}
+
 	/* work around which dec/vdin don't call update src_fmt function */
 	if (vd_layer[0].dispbuf && !is_local_vf(vd_layer[0].dispbuf)) {
 		int new_src_fmt = -1;

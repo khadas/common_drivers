@@ -7,6 +7,7 @@
 #define __HDMITX_HW_COMMON_H
 
 #include <linux/types.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
 
 /*hw cntl cmd define, abstract from hdmi_tx_module.h*/
 #define CMD_DDC_OFFSET          (0x10 << 24)
@@ -70,7 +71,6 @@
 #define STAT_AUDIO_CLK_STABLE	(CMD_STAT_OFFSET + 0x12)
 #define STAT_AUDIO_PACK			(CMD_STAT_OFFSET + 0x13)
 #define STAT_HDR_TYPE			(CMD_STAT_OFFSET + 0x20)
-
 #define STAT_TX_PHY				(CMD_STAT_OFFSET + 0x30)
 
 /***********************************************************************

@@ -7,21 +7,12 @@
 
 #include <linux/types.h>
 #include <linux/amlogic/media/vout/vinfo.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
 
 #define EDID_MAX_BLOCK		8
 #define VESA_MAX_TIMING		64
 #define AUD_MAX_NUM			60
 #define MAX_RAW_LEN			64
-
-/*  VIC_MAX_VALID_MODE and VIC_MAX_NUM are associated with
- *	HDMITX_VIC_MASK in hdmi_common.h
- */
-#define VIC_MAX_VALID_MODE	256 /* consider 4k2k */
-/* half for valid vic, half for vic with y420*/
-#define VIC_MAX_NUM 512
-
-#define VESA_MAX_TIMING 64
-#define Y420_VIC_MAX_NUM 6 /* only 6 4k mode for y420 */
 
 enum frl_rate_enum {
 	FRL_NONE = 0,

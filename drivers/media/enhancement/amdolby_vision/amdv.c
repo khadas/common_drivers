@@ -1502,14 +1502,14 @@ bool is_hdr10_src_primary_changed(void)
 
 static bool is_match_amdv_attr(void)
 {
-	struct hdmitx_dev *hdev = get_hdmitx_device();
+	const struct vinfo_s *vinfo = get_current_vinfo();
 
 	if ((dolby_vision_ll_policy == DOLBY_VISION_LL_DISABLE &&
-		hdev->para->cs == HDMI_COLORSPACE_YUV444 &&
-		hdev->para->cd == COLORDEPTH_24B) ||
+		vinfo->cs == HDMI_COLORSPACE_YUV444 &&
+		vinfo->cd == COLORDEPTH_24B) ||
 		(dolby_vision_ll_policy == DOLBY_VISION_LL_YUV422 &&
-		hdev->para->cs == HDMI_COLORSPACE_YUV422 &&
-		hdev->para->cd == COLORDEPTH_36B))
+		vinfo->cs == HDMI_COLORSPACE_YUV422 &&
+		vinfo->cd == COLORDEPTH_36B))
 		return true;
 	else
 		return false;

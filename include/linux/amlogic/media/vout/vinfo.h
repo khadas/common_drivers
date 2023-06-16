@@ -6,6 +6,8 @@
 #ifndef _VINFO_H_
 #define _VINFO_H_
 #include <linux/amlogic/media/video_common.h>
+#include <linux/hdmi.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
 #include <linux/types.h>
 
 /* the MSB is represent vmode set by vmode_init */
@@ -416,6 +418,10 @@ struct vinfo_s {
 	 * the default value is 0 or 1.
 	 */
 	u8 cur_enc_ppc;
+
+	/*dv need get the cd/cd of hdmitx.*/
+	enum hdmi_color_depth cd;
+	enum hdmi_colorspace cs;
 };
 
 #ifdef CONFIG_AMLOGIC_MEDIA_FB

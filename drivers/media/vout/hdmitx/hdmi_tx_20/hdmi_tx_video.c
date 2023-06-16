@@ -931,6 +931,7 @@ static int is_dvi_device(struct rx_cap *prxcap)
 
 int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 {
+	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 	struct hdmitx_vidpara *param = NULL;
 	enum hdmi_vic vic;
 	int i, ret = -1;
@@ -982,13 +983,13 @@ int hdmitx_set_display(struct hdmitx_dev *hdev, enum hdmi_vic videocode)
 		}
 
 		if (param->color == HDMI_COLORSPACE_RGB) {
-			hdev->para->cs = hdev->cur_video_param->color;
+			para->cs = hdev->cur_video_param->color;
 			pr_info(VID "rx edid only support RGB format\n");
 		}
 
 		if (videocode >= HDMITX_VESA_OFFSET) {
-			hdev->para->cs = HDMI_COLORSPACE_RGB;
-			hdev->para->cd = COLORDEPTH_24B;
+			para->cs = HDMI_COLORSPACE_RGB;
+			para->cd = COLORDEPTH_24B;
 			pr_info("hdmitx: VESA only support RGB format\n");
 		}
 

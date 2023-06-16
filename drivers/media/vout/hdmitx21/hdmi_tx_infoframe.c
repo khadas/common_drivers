@@ -160,7 +160,7 @@ void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	struct hdmi_avi_infoframe *info = &hdev->infoframes.avi.avi;
-	struct hdmi_format_para *para = hdev->para;
+	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
 
 	switch (conf) {
 	case CONF_AVI_CS:

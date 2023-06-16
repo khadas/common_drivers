@@ -125,13 +125,15 @@ static struct clk_regmap _name = {					\
 	},								\
 }
 
-#define __MESON_CLK_CPU_DYN_SEC(_name, _secid_dyn, _secid_dyn_rd,	\
-				_table, _table_cnt,			\
+#define __MESON_CLK_DYN(_name, _offset, _smc_id, _secid_dyn,		\
+				_secid_dyn_rd, _table, _table_cnt,	\
 				_ops, _pname, _pdata, _phw, _pnub,	\
 				_iflags)				\
 static struct clk_regmap _name = {					\
-	.data = &(struct meson_sec_cpu_dyn_data){			\
+	.data = &(struct meson_clk_cpu_dyn_data){			\
 		.table = _table,					\
+		.offset = _offset,					\
+		.smc_id = _smc_id,					\
 		.table_cnt = _table_cnt,				\
 		.secid_dyn_rd = _secid_dyn_rd,				\
 		.secid_dyn = _secid_dyn,				\
@@ -310,13 +312,13 @@ static struct clk_regmap _od_name = {					\
 			 &clk_regmap_gate_ro_ops, NULL, NULL,		\
 			 (const struct clk_hw *[]) { _phw }, _iflags)
 
-#define MESON_CLK_CPU_DYN_SEC_RW(_name, _secid_dyn, _secid_dyn_rd,	\
-				 _table, _pdata, _iflags)		\
-	__MESON_CLK_CPU_DYN_SEC(_name, _secid_dyn, _secid_dyn_rd,	\
-				_table, ARRAY_SIZE(_table),		\
-				&meson_sec_cpu_dyn_ops,			\
-				NULL, _pdata, NULL, ARRAY_SIZE(_pdata),	\
-				_iflags)
+#define MESON_CLK_DYN_RW(_name, _offset, _smc_id, _secid_dyn,		\
+			 _secid_dyn_rd, _table, _pdata, _iflags)	\
+	__MESON_CLK_DYN(_name, _offset, _smc_id, _secid_dyn,		\
+			 _secid_dyn_rd, _table, ARRAY_SIZE(_table),	\
+			 &meson_clk_cpu_dyn_ops,			\
+			 NULL, _pdata, NULL, ARRAY_SIZE(_pdata),	\
+			 _iflags)
 
 #define MESON_CLK_FIXED_FACTOR(_name, _mult, _div, _phw, _iflags)	\
 	__MESON_CLK_FIXED_FACTOR(_name, _mult, _div,			\
@@ -871,45 +873,24 @@ MESON_CLK_PLL_RW(hifi_pll, ANACTRL_HIFIPLL_CTRL0, 28, 1,  /* en */
 __MESON_CLK_GATE(aud_dds, ANACTRL_AUDDDS_CTRL0, 30, 0, &clk_regmap_gate_ops,
 		 NULL, &pll_dco_parent, NULL, 0);
 
-static const struct clk_parent_data cpu_dsu_pre_parent_data[] = {
+static const struct cpu_dyn_table cpu_dsu_dyn_table[] = {
+	CPU_LOW_PARAMS(24000000, 0, 0, 0),
+	CPU_LOW_PARAMS(100000000, 1, 1, 9),
+	CPU_LOW_PARAMS(250000000, 1, 1, 3),
+	CPU_LOW_PARAMS(333333333, 2, 1, 1),
+	CPU_LOW_PARAMS(500000000, 1, 1, 1),
+	CPU_LOW_PARAMS(666666666, 2, 0, 0),
+	CPU_LOW_PARAMS(1000000000, 1, 0, 0)
+};
+
+static const struct clk_parent_data cpu_dsu_dyn_clk_sel[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &fclk_div2.hw },
 	{ .hw = &fclk_div3.hw }
 };
 
-MESON_CLK_MUX_RW(cpu_pre_mux_0, CPUCTRL_CLK_CTRL0, 0x3, 0, NULL, 0,
-		 cpu_dsu_pre_parent_data, 0);
-MESON_CLK_DIV_RW(cpu_pre_div_0, CPUCTRL_CLK_CTRL0, 4, 6, NULL, 0,
-		 &cpu_pre_mux_0.hw, CLK_SET_RATE_PARENT);
-
-static const struct clk_parent_data cpu_post_0_parent_data[] = {
-	{ .hw = &cpu_pre_mux_0.hw },
-	{ .hw = &cpu_pre_div_0.hw }
-};
-
-MESON_CLK_MUX_RW(cpu_post_mux_0, CPUCTRL_CLK_CTRL0, 0x1, 2, NULL, 0,
-		 cpu_post_0_parent_data, CLK_SET_RATE_PARENT);
-
-MESON_CLK_MUX_RW(cpu_pre_mux_1, CPUCTRL_CLK_CTRL0, 0x3, 16, NULL, 0,
-		 cpu_dsu_pre_parent_data, 0);
-MESON_CLK_DIV_RW(cpu_pre_div_1, CPUCTRL_CLK_CTRL0, 20, 6, NULL, 0,
-		 &cpu_pre_mux_1.hw, CLK_SET_RATE_PARENT);
-
-static const struct clk_parent_data cpu_post_1_parent_data[] = {
-	{ .hw = &cpu_pre_mux_1.hw },
-	{ .hw = &cpu_pre_div_1.hw }
-};
-
-MESON_CLK_MUX_RW(cpu_post_mux_1, CPUCTRL_CLK_CTRL0, 0x1, 18, NULL, 0,
-		 cpu_post_1_parent_data, CLK_SET_RATE_PARENT);
-
-static const struct clk_parent_data cpu_dyn_parent_data[] = {
-	{ .hw = &cpu_post_mux_0.hw },
-	{ .hw = &cpu_post_mux_1.hw }
-};
-
-MESON_CLK_MUX_RW(cpu_dyn_clk, CPUCTRL_CLK_CTRL0, 0x1, 10, NULL, 0,
-		 cpu_dyn_parent_data, CLK_SET_RATE_PARENT);
+MESON_CLK_DYN_RW(cpu_dyn_clk, CPUCTRL_CLK_CTRL0, 0, 0, 0,
+		 cpu_dsu_dyn_table, cpu_dsu_dyn_clk_sel, 0);
 
 static const struct clk_parent_data cpu_parent_data[] = {
 	{ .hw = &cpu_dyn_clk.hw },
@@ -919,39 +900,8 @@ static const struct clk_parent_data cpu_parent_data[] = {
 MESON_CLK_MUX_RW(cpu_clk, CPUCTRL_CLK_CTRL0, 0x1, 11, NULL, 0,
 		 cpu_parent_data, CLK_SET_RATE_PARENT);
 
-MESON_CLK_MUX_RW(dsu_pre_mux_0, CPUCTRL_CLK_CTRL5, 0x3, 0, NULL, 0,
-		 cpu_dsu_pre_parent_data, 0);
-MESON_CLK_DIV_RW(dsu_pre_div_0, CPUCTRL_CLK_CTRL5, 4, 6, NULL, 0,
-		 &dsu_pre_mux_0.hw, CLK_SET_RATE_PARENT);
-
-static const struct clk_parent_data dsu_post_0_parent_data[] = {
-	{ .hw = &dsu_pre_mux_0.hw },
-	{ .hw = &dsu_pre_div_0.hw }
-};
-
-MESON_CLK_MUX_RW(dsu_post_mux_0, CPUCTRL_CLK_CTRL5, 0x1, 2, NULL, 0,
-		 dsu_post_0_parent_data, CLK_SET_RATE_PARENT);
-
-MESON_CLK_MUX_RW(dsu_pre_mux_1, CPUCTRL_CLK_CTRL5, 0x3, 16, NULL, 0,
-		 cpu_dsu_pre_parent_data, 0);
-MESON_CLK_DIV_RW(dsu_pre_div_1, CPUCTRL_CLK_CTRL5, 20, 6, NULL, 0,
-		 &dsu_pre_mux_1.hw, CLK_SET_RATE_PARENT);
-
-static const struct clk_parent_data dsu_post_1_parent_data[] = {
-	{ .hw = &dsu_pre_mux_1.hw },
-	{ .hw = &dsu_pre_div_1.hw }
-};
-
-MESON_CLK_MUX_RW(dsu_post_mux_1, CPUCTRL_CLK_CTRL5, 0x1, 18, NULL, 0,
-		 dsu_post_1_parent_data, CLK_SET_RATE_PARENT);
-
-static const struct clk_parent_data dsu_dyn_parent_data[] = {
-	{ .hw = &dsu_post_mux_0.hw },
-	{ .hw = &dsu_post_mux_1.hw }
-};
-
-MESON_CLK_MUX_RW(dsu_dyn_clk, CPUCTRL_CLK_CTRL5, 0x1, 10, NULL, 0,
-		 dsu_dyn_parent_data, CLK_SET_RATE_PARENT);
+MESON_CLK_DYN_RW(dsu_dyn_clk, CPUCTRL_CLK_CTRL5, 0, 0, 0,
+		 cpu_dsu_dyn_table, cpu_dsu_dyn_clk_sel, 0);
 
 static const struct clk_parent_data dsu_pre_parent_data[] = {
 	{ .hw = &dsu_dyn_clk.hw },
@@ -1745,20 +1695,9 @@ static struct clk_hw_onecell_data c1_hw_onecell_data = {
 		[CLKID_HIFI_PLL]		= &hifi_pll.hw,
 		[CLKID_AUD_DDS]			= &aud_dds.hw,
 
-		[CLKID_CPU_PRE_0_MUX]		= &cpu_pre_mux_0.hw,
-		[CLKID_CPU_PRE_0_DIV]		= &cpu_pre_div_0.hw,
-		[CLKID_CPU_POST_0_MUX]		= &cpu_post_mux_0.hw,
-		[CLKID_CPU_PRE_1_MUX]		= &cpu_pre_mux_1.hw,
-		[CLKID_CPU_PRE_1_DIV]		= &cpu_pre_div_1.hw,
-		[CLKID_CPU_POST_1_MUX]		= &cpu_post_mux_1.hw,
 		[CLKID_CPU_DYN_CLK]		= &cpu_dyn_clk.hw,
 		[CLKID_CPU_CLK]			= &cpu_clk.hw,
-		[CLKID_DSU_PRE_0_MUX]		= &dsu_pre_mux_0.hw,
-		[CLKID_DSU_PRE_0_DIV]		= &dsu_pre_div_0.hw,
-		[CLKID_DSU_POST_0_MUX]		= &dsu_post_mux_0.hw,
-		[CLKID_DSU_PRE_1_MUX]		= &dsu_pre_mux_1.hw,
-		[CLKID_DSU_PRE_1_DIV]		= &dsu_pre_div_1.hw,
-		[CLKID_DSU_POST_1_MUX]		= &dsu_post_mux_1.hw,
+
 		[CLKID_DSU_DYN_CLK]		= &dsu_dyn_clk.hw,
 		[CLKID_DSU_PRE_CLK]		= &dsu_pre_clk.hw,
 		[CLKID_DSU_CLK]			= &dsu_clk.hw,
@@ -2238,20 +2177,8 @@ static struct clk_regmap *const c1_clk_regmaps[] = {
 };
 
 static struct clk_regmap *const c1_cpu_clk_regmaps[] = {
-	&cpu_pre_mux_0,
-	&cpu_pre_div_0,
-	&cpu_post_mux_0,
-	&cpu_pre_mux_1,
-	&cpu_pre_div_1,
-	&cpu_post_mux_1,
 	&cpu_dyn_clk,
 	&cpu_clk,
-	&dsu_pre_mux_0,
-	&dsu_pre_div_0,
-	&dsu_post_mux_0,
-	&dsu_pre_mux_1,
-	&dsu_pre_div_1,
-	&dsu_post_mux_1,
 	&dsu_dyn_clk,
 	&dsu_pre_clk,
 	&dsu_clk,
@@ -2288,84 +2215,11 @@ static struct clk_regmap *const c1_pll_regmaps[] = {
 	&aud_dds,
 };
 
-struct c1_nb_data {
-	struct notifier_block nb;
-	struct clk_hw_onecell_data *onecell_data;
-};
-
-static int c1_cpu_dyn_clk_notifier_cb(struct notifier_block *nb,
-					unsigned long event, void *data)
-{
-	struct clk_notifier_data *ndata = data;
-	struct clk *cpu_fixed_clk, *parent_clk;
-	int ret;
-
-	switch (event) {
-	case PRE_RATE_CHANGE:
-	parent_clk = cpu_post_mux_1.hw.clk;
-	ret = clk_set_rate(parent_clk, ndata->new_rate);
-	if (ret)
-		pr_err("set fixed sel1 to new rate failed\n");
-		break;
-	case POST_RATE_CHANGE:
-	parent_clk = cpu_post_mux_0.hw.clk;
-		break;
-	default:
-		return NOTIFY_DONE;
-	}
-
-	cpu_fixed_clk = cpu_dyn_clk.hw.clk;
-	ret = clk_set_parent(cpu_fixed_clk, parent_clk);
-	if (ret)
-		return notifier_from_errno(ret);
-
-	return NOTIFY_OK;
-}
-
-static struct c1_nb_data c1_cpu_dyn_nb_data = {
-	.nb.notifier_call = c1_cpu_dyn_clk_notifier_cb,
-	.onecell_data = &c1_hw_onecell_data,
-};
-
-static int c1_dsu_dyn_clk_notifier_cb(struct notifier_block *nb,
-					unsigned long event, void *data)
-{
-	struct clk_notifier_data *ndata = data;
-	struct clk *cpu_fixed_clk, *parent_clk;
-	int ret;
-
-	switch (event) {
-	case PRE_RATE_CHANGE:
-	parent_clk = dsu_post_mux_1.hw.clk;
-	ret = clk_set_rate(parent_clk, ndata->new_rate);
-	if (ret)
-		pr_err("set fixed sel1 to new rate failed\n");
-		break;
-	case POST_RATE_CHANGE:
-	parent_clk = dsu_post_mux_0.hw.clk;
-		break;
-	default:
-		return NOTIFY_DONE;
-	}
-
-	cpu_fixed_clk = dsu_dyn_clk.hw.clk;
-	ret = clk_set_parent(cpu_fixed_clk, parent_clk);
-	if (ret)
-		return notifier_from_errno(ret);
-
-	return NOTIFY_OK;
-}
-
-static struct c1_nb_data c1_dsu_dyn_nb_data = {
-	.nb.notifier_call = c1_dsu_dyn_clk_notifier_cb,
-	.onecell_data = &c1_hw_onecell_data,
-};
-
 struct sys_pll_nb_data {
 	struct notifier_block nb;
 	struct clk_hw *sys_pll;
 	struct clk_hw *cpu_clk;
-	struct clk_hw *cpu_clk_dyn;
+	struct clk_hw *cpu_dyn_clk;
 };
 
 static int sys_pll_notifier_cb(struct notifier_block *nb,
@@ -2385,19 +2239,19 @@ static int sys_pll_notifier_cb(struct notifier_block *nb,
 		 */
 
 		/* make sure cpu_clk 1G*/
-		if (clk_set_rate(nb_data->cpu_clk_dyn->clk, 1000000000))
+		if (clk_set_rate(nb_data->cpu_dyn_clk->clk, 1000000000))
 			pr_err("%s in %d\n", __func__, __LINE__);
-		/* Configure cpu_clk to use cpu_clk_dyn */
+		/* Configure cpu_clk to use cpu_dyn_clk */
 		clk_hw_set_parent(nb_data->cpu_clk,
-				  nb_data->cpu_clk_dyn);
+				  nb_data->cpu_dyn_clk);
 
 		/*
 		 * Now, cpu_clk uses the dyn path
 		 * cpu_clk
-		 *    \- cpu_clk_dyn
-		 *          \- cpu_clk_dynX
-		 *                \- cpu_clk_dynX_sel
-		 *		     \- cpu_clk_dynX_div
+		 *    \- cpu_dyn_clk
+		 *          \- cpu_dyn_clkX
+		 *                \- cpu_dyn_clkX_sel
+		 *		     \- cpu_dyn_clkX_div
 		 *                      \- xtal/fclk_div2/fclk_div3
 		 *                   \- xtal/fclk_div2/fclk_div3
 		 */
@@ -2430,7 +2284,7 @@ static int sys_pll_notifier_cb(struct notifier_block *nb,
 static struct sys_pll_nb_data sys_pll_nb_data = {
 	.sys_pll = &sys_pll.hw,
 	.cpu_clk = &cpu_clk.hw,
-	.cpu_clk_dyn = &cpu_dyn_clk.hw,
+	.cpu_dyn_clk = &cpu_dyn_clk.hw,
 	.nb.notifier_call = sys_pll_notifier_cb,
 };
 
@@ -2445,20 +2299,6 @@ static int meson_c1_dvfs_setup(struct platform_device *pdev)
 				    &sys_pll_nb_data.nb);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register sys_pll notifier\n");
-		return ret;
-	}
-
-	ret = clk_notifier_register(cpu_post_mux_0.hw.clk,
-				    &c1_cpu_dyn_nb_data.nb);
-	if (ret) {
-		dev_err(&pdev->dev, "failed to register cpu_dyn_clk notifier\n");
-		return ret;
-	}
-
-	ret = clk_notifier_register(dsu_post_mux_0.hw.clk,
-				    &c1_dsu_dyn_nb_data.nb);
-	if (ret) {
-		dev_err(&pdev->dev, "failed to register dsu_dyn_clk notifier\n");
 		return ret;
 	}
 

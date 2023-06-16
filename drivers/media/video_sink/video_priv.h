@@ -289,6 +289,7 @@ struct video_dev_s {
 	u8 cr_loss;
 	u8 amdv_tvcore;
 	u8 vsync_2to1_enable;
+	u8 vpp_in_padding_support;
 	u8 has_vpp1;
 	u8 has_vpp2;
 };
@@ -639,6 +640,7 @@ struct video_device_hw_s {
 	u8 sr01_num;
 	u8 cr_loss;
 	u8 amdv_tvcore;
+	u8 vpp_in_padding_support;
 };
 
 struct amvideo_device_data_s {

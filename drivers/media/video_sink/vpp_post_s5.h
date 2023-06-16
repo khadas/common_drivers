@@ -140,6 +140,29 @@ struct vpp_post_hwin_s {
 	u32 vpp_post_dout_vsize;
 };
 
+struct vpp_post_in_pad_s {
+	u32 pad_en;
+	/* padding out size */
+	u32 pad_hsize;
+	u32 pad_vsize;
+	u32 pad_h_bgn;
+	u32 pad_h_end;
+	u32 pad_v_bgn;
+	u32 pad_v_end;
+	u32 pad_dummy;
+	/* 1: padding with last colum */
+	/* 0: padding with vpp_post_pad_dummy val */
+	u32 pad_rpt_lcol;
+};
+
+struct vpp_post_in_wincut_s {
+	u32 win_en;
+	u32 win_in_hsize;
+	u32 win_in_vsize;
+	u32 win_out_hsize;
+	u32 win_out_vsize;
+};
+
 struct vpp_post_proc_slice_s {
 	u32 hsize[POST_SLICE_NUM];
 	u32 vsize[POST_SLICE_NUM];
@@ -166,12 +189,17 @@ struct vpp_post_proc_s {
 struct vpp0_post_s {
 	u32 slice_num;
 	u32 overlap_hsize;
+	/* pad before to vpp post blend */
+	struct vpp_post_in_pad_s vd_pad[VPP_POST_VD_NUM];
+	struct vpp_post_in_pad_s osd_pad[VPP_POST_OSD_NUM];
+	struct vpp_post_in_wincut_s vd_cut[VPP_POST_VD_NUM];
+	struct vpp_post_in_wincut_s osd_cut[VPP_POST_OSD_NUM];
 	struct vd1_hwin_s vd1_hwin;
 	struct vpp_post_blend_s vpp_post_blend;
 	struct vpp_post_pad_s vpp_post_pad;
 	struct vpp_post_hwin_s vpp_post_hwin;
 	struct vpp_post_proc_s vpp_post_proc;
-	struct vpp1_post_blend_s vpp1_post_blend;
+	//struct vpp1_post_blend_s vpp1_post_blend;
 };
 
 struct vpp1_post_s {
@@ -196,6 +224,10 @@ struct vpp_post_input_s {
 	u32 din_y_start[VPP_POST_NUM];
 	u32 bld_out_hsize;
 	u32 bld_out_vsize;
+	u32 vpp_post_in_pad_en;
+	/* > 0 right padding, < 0 left padding */
+	int vpp_post_in_pad_hsize;
+	int vpp_post_in_pad_vsize;
 	/* means vd1 4s4p padding */
 	u32 vd1_padding_en;
 	u32 vd1_size_before_padding;
@@ -203,7 +235,15 @@ struct vpp_post_input_s {
 	u32 vd1_proc_slice;
 };
 
+struct vpp_post_in_padding_s {
+	u32 vpp_post_in_pad_en;
+	/* > 0 right padding, < 0 left padding */
+	int vpp_post_in_pad_hsize;
+	int vpp_post_in_pad_vsize;
+};
+
 struct vpp_post_reg_s {
+	struct vpp_post_in_pad_reg_s vpp_post_in_pad_reg[5];
 	struct vpp_post_blend_reg_s vpp_post_blend_reg;
 	struct vpp_post_misc_reg_s vpp_post_misc_reg;
 	struct vpp1_post_blend_reg_s vpp1_post_blend_reg;
@@ -221,4 +261,6 @@ struct vpp_post_input_s *get_vpp_input_info(void);
 struct vpp_post_input_s *get_vpp1_input_info(void);
 void dump_vpp_post_reg(void);
 void vpp_clip_setting_s5(u8 vpp_index, struct clip_setting_s *setting);
+void get_vpp_in_padding_axis(u32 *enable, int *h_padding, int *v_padding);
+void set_vpp_in_padding_axis(u32 enable, int h_padding, int v_padding);
 #endif

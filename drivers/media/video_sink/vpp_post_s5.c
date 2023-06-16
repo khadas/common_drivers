@@ -93,7 +93,7 @@ static struct vpp_post_input_s g_vpp_input;
 static struct vpp_post_input_s g_vpp_input_pre;
 static struct vpp_post_input_s g_vpp1_input;
 static struct vpp_post_input_s g_vpp1_input_pre;
-
+static struct vpp_post_in_padding_s g_vpp_in_padding;
 #define SIZE_ALIG32(frm_hsize)   ((((frm_hsize) + 31) >> 5) << 5)
 #define SIZE_ALIG16(frm_hsize)   ((((frm_hsize) + 15) >> 4) << 4)
 #define SIZE_ALIG8(frm_hsize)    ((((frm_hsize) + 7) >> 3) << 3)
@@ -384,6 +384,68 @@ static void wr_reg_bits_slice_vpost(u8 vpp_index,
 };
 
 /* hw reg info set */
+static void vpp_post_in_pad_set(u32 vpp_index,
+	struct vpp0_post_s *vpp_post)
+{
+	rdma_wr_op rdma_wr = cur_dev->rdma_func[vpp_index].rdma_wr;
+	struct vpp_post_in_pad_reg_s *vpp_reg = NULL;
+	u32 slice_num;
+	int i;
+
+	slice_num = vpp_post->slice_num;
+
+	for (i = 0; i < VPP_POST_VD_NUM; i++) {
+		vpp_reg = &vpp_post_reg.vpp_post_in_pad_reg[i];
+		vpp_post->vd_pad[i].pad_rpt_lcol  = 1;
+		rdma_wr(vpp_reg->vpp_post_pad_ctrl,
+			(vpp_post->vd_pad[i].pad_en & 1) << 31 |
+			(vpp_post->vd_pad[i].pad_rpt_lcol & 1) << 30 |
+			(vpp_post->vd_pad[i].pad_vsize & 0x1fff) << 16 |
+			(((vpp_post->vd_pad[i].pad_hsize + slice_num - 1) /
+			slice_num) & 0x1ffff) << 0);
+		if (vpp_post->vd_pad[i].pad_en) {
+			rdma_wr(vpp_reg->vpp_post_pad_hsize,
+				(((vpp_post->vd_pad[i].pad_h_end + 1 + slice_num - 1) /
+				slice_num) & 0x1ffff) << 16 |
+				(((vpp_post->vd_pad[i].pad_h_bgn + slice_num - 1) /
+				slice_num) & 0x1ffff) << 0);
+			rdma_wr(vpp_reg->vpp_post_pad_vsize,
+				(vpp_post->vd_pad[i].pad_v_end & 0x1ffff) << 16 |
+					(vpp_post->vd_pad[i].pad_v_bgn & 0x1ffff) << 0);
+		}
+		rdma_wr(vpp_reg->vpp_post_win_cut_ctrl,
+			vpp_post->vd_cut[i].win_en << 31 |
+			(vpp_post->vd_cut[i].win_in_vsize & 0x1fff) << 16 |
+			(((vpp_post->vd_cut[i].win_in_hsize + slice_num - 1) /
+			slice_num) & 0x1ffff) << 0);
+	}
+	for (i = 0; i < VPP_POST_OSD_NUM; i++) {
+		vpp_reg = &vpp_post_reg.vpp_post_in_pad_reg[i + VPP_POST_VD_NUM];
+		vpp_post->osd_pad[i].pad_rpt_lcol = 1;
+		rdma_wr(vpp_reg->vpp_post_pad_ctrl,
+			(vpp_post->osd_pad[i].pad_en & 1) << 31 |
+			(vpp_post->osd_pad[i].pad_rpt_lcol & 1) << 30 |
+			(vpp_post->osd_pad[i].pad_vsize & 0x1fff) << 16 |
+			(((vpp_post->osd_pad[i].pad_hsize + slice_num - 1) /
+			slice_num) & 0x1ffff) << 0);
+		if (vpp_post->osd_pad[i].pad_en) {
+			rdma_wr(vpp_reg->vpp_post_pad_hsize,
+				(((vpp_post->osd_pad[i].pad_h_end + 1 + slice_num - 1) /
+					slice_num) & 0x1ffff) << 16 |
+				(((vpp_post->osd_pad[i].pad_h_bgn  + slice_num - 1) /
+					slice_num) & 0x1ffff) << 0);
+			rdma_wr(vpp_reg->vpp_post_pad_vsize,
+				(vpp_post->osd_pad[i].pad_v_end & 0x1ffff) << 16 |
+				(vpp_post->osd_pad[i].pad_v_bgn & 0x1ffff) << 0);
+		}
+		rdma_wr(vpp_reg->vpp_post_win_cut_ctrl,
+			vpp_post->osd_cut[i].win_en << 31 |
+			(vpp_post->osd_cut[i].win_in_vsize & 0x1fff) << 16 |
+			(((vpp_post->osd_cut[i].win_in_hsize + slice_num - 1) /
+			slice_num) & 0x1ffff) << 0);
+	}
+}
+
 static void vpp_post_blend_set(u32 vpp_index,
 	struct vpp_post_blend_s *vpp_blend)
 {
@@ -597,6 +659,9 @@ static void vpp_vd1_hwin_set(u32 vpp_index,
 	struct vpp_post_misc_reg_s *vpp_reg = &vpp_post_reg.vpp_post_misc_reg;
 	u32 vd1_win_in_hsize = 0, vd1_slice_num = 0;
 
+	/* t3x vpp_in_padding_support skip this */
+	if (cur_dev->vpp_in_padding_support && vpp_post->vd_pad[0].pad_en)
+		return;
 	if (vpp_post->vd1_hwin.vd1_hwin_en) {
 		vd1_slice_num = vpp_post->vd1_hwin.slice_num;
 		vd1_win_in_hsize = (vpp_post->vd1_hwin.vd1_hwin_in_hsize +
@@ -699,6 +764,8 @@ void vpp_post_set(u32 vpp_index, struct vpp_post_s *vpp_post)
 		struct vpp0_post_s *vpp0_post;
 
 		vpp0_post = &vpp_post->vpp0_post;
+		/* vpp post in padding for oled */
+		vpp_post_in_pad_set(vpp_index, vpp0_post);
 		/* cfg slice mode */
 		vpp_post_slice_set(vpp_index, vpp0_post);
 		/* cfg vd1 hwin cut */
@@ -737,7 +804,154 @@ void vpp_post_set(u32 vpp_index, struct vpp_post_s *vpp_post)
 	}
 }
 
+static void vpp_post_get_osd_insize(u32 index, u32 *h_size, u32 *v_size)
+{
+	struct vpp_post_blend_reg_s *vpp_post_blend_reg = NULL;
+	u32 h_begin, h_end, v_begin, v_end;
+	u32 osd_bld_h_scope = 0, osd_bld_v_scope = 0;
+
+	vpp_post_blend_reg = &vpp_post_reg.vpp_post_blend_reg;
+	if (index == 0) {
+		osd_bld_h_scope = vpp_post_blend_reg->vpp_osd1_bld_h_scope;
+		osd_bld_v_scope = vpp_post_blend_reg->vpp_osd1_bld_v_scope;
+	} else if (index == 1) {
+		osd_bld_h_scope = vpp_post_blend_reg->vpp_osd2_bld_h_scope;
+		osd_bld_v_scope = vpp_post_blend_reg->vpp_osd2_bld_v_scope;
+	}
+	h_end = READ_VCBUS_REG(osd_bld_h_scope) & 0x1fff;
+	h_begin = (READ_VCBUS_REG(osd_bld_h_scope) >> 16) & 0x1fff;
+
+	v_end = READ_VCBUS_REG(osd_bld_v_scope) & 0x1fff;
+	v_begin = (READ_VCBUS_REG(osd_bld_v_scope) >> 16) & 0x1fff;
+
+	*h_size = h_end - h_begin + 1;
+	*v_size = v_end - v_begin + 1;
+	pr_info("index = %d, reg: %x, %x, h: %d, %d, v=%d, %d\n",
+		index, osd_bld_h_scope, osd_bld_v_scope,
+		h_end, h_begin, v_end, v_begin);
+}
+
 /* hw reg param info set */
+static int vpp_post_in_pad_param_set(struct vpp_post_input_s *vpp_input,
+	struct vpp0_post_s *vpp_post)
+{
+	u32 osd_h_size, osd_v_size;
+	int i;
+
+	if (!vpp_input || !vpp_post)
+		return -1;
+	/* need check padding or not */
+	if (vd_layer[0].vpp_index == VPP0) {
+		if (vd_layer[0].post_blend_en) {
+			vpp_post->vd_pad[0].pad_en = vpp_input->vpp_post_in_pad_en;
+			vpp_post->vd_cut[0].win_en = vpp_input->vpp_post_in_pad_en;
+		} else {
+			vpp_post->vd_pad[0].pad_en = 0;
+			vpp_post->vd_cut[0].win_en = 0;
+		}
+		if (vd_layer[1].post_blend_en) {
+			vpp_post->vd_pad[2].pad_en = vpp_input->vpp_post_in_pad_en;
+			vpp_post->vd_cut[2].win_en = vpp_input->vpp_post_in_pad_en;
+		} else {
+			vpp_post->vd_pad[2].pad_en = 0;
+			vpp_post->vd_cut[2].win_en = 0;
+		}
+		vpp_post->vd_pad[1].pad_en = vpp_input->vpp_post_in_pad_en;
+		vpp_post->vd_cut[1].win_en = vpp_input->vpp_post_in_pad_en;
+		if (vpp_input->vpp_post_in_pad_hsize >= 0) {
+			vpp_post->vd_pad[0].pad_h_bgn = vpp_input->vpp_post_in_pad_hsize;
+			vpp_post->vd_pad[2].pad_h_bgn = vpp_input->vpp_post_in_pad_hsize;
+		} else {
+			vpp_post->vd_pad[0].pad_h_bgn = 0;
+			vpp_post->vd_pad[2].pad_h_bgn = 0;
+		}
+		vpp_post->vd_pad[0].pad_hsize =
+			vpp_input->din_hsize[0] + vpp_input->vpp_post_in_pad_hsize;
+		vpp_post->vd_pad[0].pad_h_end = vpp_post->vd_pad[0].pad_hsize - 1;
+		vpp_post->vd_pad[2].pad_hsize =
+			vpp_input->din_hsize[2] + vpp_input->vpp_post_in_pad_hsize;
+		vpp_post->vd_pad[2].pad_h_end = vpp_post->vd_pad[2].pad_hsize - 1;
+
+		vpp_post->vd_cut[0].win_in_hsize = vpp_post->vd_pad[0].pad_hsize;
+		vpp_post->vd_cut[2].win_in_hsize = vpp_post->vd_pad[2].pad_hsize;
+		if (vpp_input->vpp_post_in_pad_vsize >= 0) {
+			vpp_post->vd_pad[0].pad_v_bgn = vpp_input->vpp_post_in_pad_vsize;
+			vpp_post->vd_pad[2].pad_v_bgn = vpp_input->vpp_post_in_pad_vsize;
+		} else {
+			vpp_post->vd_pad[0].pad_v_bgn = 0;
+			vpp_post->vd_pad[2].pad_v_bgn = 0;
+		}
+		vpp_post->vd_pad[0].pad_vsize =
+			vpp_input->din_vsize[0] + vpp_input->vpp_post_in_pad_vsize;
+		vpp_post->vd_pad[0].pad_v_end = vpp_post->vd_pad[0].pad_vsize - 1;
+		vpp_post->vd_pad[2].pad_vsize =
+			vpp_input->din_vsize[2] + vpp_input->vpp_post_in_pad_vsize;
+		vpp_post->vd_pad[2].pad_v_end = vpp_post->vd_pad[2].pad_vsize - 1;
+
+		vpp_post->vd_cut[0].win_in_vsize = vpp_post->vd_pad[0].pad_vsize;
+		vpp_post->vd_cut[2].win_in_vsize = vpp_post->vd_pad[2].pad_vsize;
+
+		for (i = 0; i < VPP_POST_VD_NUM; i++)
+			if (debug_flag_s5 & DEBUG_VPP_POST) {
+				pr_info("vpp_post_in_padd vd_pad(%d):en: %d,pad_h/vsize: %d, %d, pad_axis: %d, %d, %d, %d\n",
+					i,
+					vpp_post->vd_pad[i].pad_en,
+					vpp_post->vd_pad[i].pad_hsize,
+					vpp_post->vd_pad[i].pad_vsize,
+					vpp_post->vd_pad[i].pad_h_bgn,
+					vpp_post->vd_pad[i].pad_h_end,
+					vpp_post->vd_pad[i].pad_v_bgn,
+					vpp_post->vd_pad[i].pad_v_end);
+				pr_info("vpp_post_in_padd vd_cut(%d):en: %d,win_in_hsize: %d, %d\n",
+					i,
+					vpp_post->vd_cut[i].win_en,
+					vpp_post->vd_cut[i].win_in_hsize,
+					vpp_post->vd_cut[i].win_in_vsize);
+			}
+
+		for (i = 0; i < VPP_POST_OSD_NUM; i++) {
+			vpp_post_get_osd_insize(i, &osd_h_size, &osd_v_size);
+			vpp_post->osd_pad[i].pad_en = vpp_input->vpp_post_in_pad_en;
+			vpp_post->osd_cut[i].win_en = vpp_input->vpp_post_in_pad_en;
+			if (vpp_input->vpp_post_in_pad_hsize >= 0)
+				vpp_post->osd_pad[i].pad_h_bgn = vpp_input->vpp_post_in_pad_hsize;
+			else
+				vpp_post->osd_pad[i].pad_h_bgn = 0;
+			if (vpp_input->vpp_post_in_pad_vsize >= 0)
+				vpp_post->osd_pad[i].pad_v_bgn = vpp_input->vpp_post_in_pad_vsize;
+			else
+				vpp_post->osd_pad[i].pad_v_bgn = 0;
+			vpp_post->osd_pad[i].pad_hsize = osd_h_size +
+				vpp_input->vpp_post_in_pad_hsize;
+			vpp_post->osd_pad[i].pad_h_end = vpp_post->osd_pad[i].pad_hsize - 1;
+			vpp_post->osd_pad[i].pad_vsize = osd_v_size +
+				vpp_input->vpp_post_in_pad_vsize;
+			vpp_post->osd_pad[i].pad_v_end = vpp_post->osd_pad[i].pad_vsize - 1;
+			vpp_post->osd_cut[i].win_in_hsize = vpp_post->osd_pad[i].pad_hsize;
+			vpp_post->osd_cut[i].win_in_vsize = vpp_post->osd_pad[i].pad_vsize;
+			if (debug_flag_s5 & DEBUG_VPP_POST) {
+				pr_info("vpp_post_in_padd osd_pad(%d) %d, %d:en: %d,pad_h/vsize: %d, %d, pad_axis: %d, %d, %d, %d\n",
+					i,
+					osd_h_size,
+					osd_v_size,
+					vpp_post->osd_pad[i].pad_en,
+					vpp_post->osd_pad[i].pad_hsize,
+					vpp_post->osd_pad[i].pad_vsize,
+					vpp_post->osd_pad[i].pad_h_bgn,
+					vpp_post->osd_pad[i].pad_h_end,
+					vpp_post->osd_pad[i].pad_v_bgn,
+					vpp_post->osd_pad[i].pad_v_end);
+				pr_info("vpp_post_in_padd osd_cut(%d):en: %d,win_in_hsize: %d, %d\n",
+					i,
+					vpp_post->osd_cut[i].win_en,
+					vpp_post->osd_cut[i].win_in_hsize,
+					vpp_post->osd_cut[i].win_in_vsize);
+			}
+		}
+	}
+	return 0;
+}
+
 static int vpp_post_hwincut_param_set(struct vpp_post_input_s *vpp_input,
 	struct vpp0_post_s *vpp_post)
 {
@@ -1124,6 +1338,7 @@ int vpp_post_param_set(struct vpp_post_input_s *vpp_input,
 	ret = vpp_post_proc_param_set(vpp_post);
 	if (ret < 0)
 		return ret;
+	vpp_post_in_pad_param_set(vpp_input, vpp_post);
 
 	return 0;
 }
@@ -1215,6 +1430,25 @@ static int check_vpp_info_changed(struct vpp_post_input_s *vpp_input)
 				g_vpp_input_pre.slice_num,
 				g_vpp_input_pre.bld_out_hsize,
 				g_vpp_input_pre.bld_out_vsize);
+		}
+	}
+	/* check padding pram */
+	if (cur_dev->vpp_in_padding_support) {
+		if (vpp_input->vpp_post_in_pad_en !=
+			g_vpp_input_pre.vpp_post_in_pad_en ||
+			vpp_input->vpp_post_in_pad_hsize !=
+			g_vpp_input_pre.vpp_post_in_pad_hsize ||
+			vpp_input->vpp_post_in_pad_vsize !=
+			g_vpp_input_pre.vpp_post_in_pad_vsize) {
+			changed = 1;
+			if (debug_flag_s5 & DEBUG_VPP_POST)
+				pr_info("hit vpp_input->vpp_post_in_pad_en=%d, %d, %d, %d, %d, %d\n",
+					vpp_input->vpp_post_in_pad_en,
+					vpp_input->vpp_post_in_pad_hsize,
+					vpp_input->vpp_post_in_pad_vsize,
+					g_vpp_input_pre.vpp_post_in_pad_en,
+					g_vpp_input_pre.vpp_post_in_pad_hsize,
+					g_vpp_input_pre.vpp_post_in_pad_vsize);
 		}
 	}
 	memcpy(&g_vpp_input, vpp_input, sizeof(struct vpp_post_input_s));
@@ -1320,6 +1554,10 @@ int update_vpp_input_info(const struct vinfo_s *info)
 		vpp_input.vd1_size_before_padding = vpp_input.din_hsize[0];
 		vpp_input.vd1_size_after_padding = vpp_input.din_hsize[0];
 	}
+	/* vpp post in padding */
+	vpp_input.vpp_post_in_pad_en = g_vpp_in_padding.vpp_post_in_pad_en;
+	vpp_input.vpp_post_in_pad_hsize = g_vpp_in_padding.vpp_post_in_pad_hsize;
+	vpp_input.vpp_post_in_pad_vsize = g_vpp_in_padding.vpp_post_in_pad_vsize;
 	update = check_vpp_info_changed(&vpp_input);
 	return update;
 }
@@ -1405,6 +1643,20 @@ int update_vpp1_input_info(const struct vinfo_s *info)
 
 	update = check_vpp1_info_changed(&vpp1_input);
 	return update;
+}
+
+void get_vpp_in_padding_axis(u32 *enable, int *h_padding, int *v_padding)
+{
+	*enable = g_vpp_in_padding.vpp_post_in_pad_en;
+	*h_padding = g_vpp_in_padding.vpp_post_in_pad_hsize;
+	*v_padding = g_vpp_in_padding.vpp_post_in_pad_vsize;
+}
+
+void set_vpp_in_padding_axis(u32 enable, int h_padding, int v_padding)
+{
+	g_vpp_in_padding.vpp_post_in_pad_en = enable;
+	g_vpp_in_padding.vpp_post_in_pad_hsize = h_padding;
+	g_vpp_in_padding.vpp_post_in_pad_vsize = v_padding;
 }
 
 void vpp_clip_setting_s5(u8 vpp_index, struct clip_setting_s *setting)

@@ -12364,6 +12364,36 @@ static ssize_t vsync_2to1_enable_store(struct class *cla,
 	return count;
 }
 
+static ssize_t vpp_in_padding_enable_show(struct class *cla,
+				struct class_attribute *attr,
+				char *buf)
+{
+	int padding_enable, h_padding, v_padding;
+
+	get_vpp_in_padding_axis(&padding_enable, &h_padding, &v_padding);
+	return snprintf(buf, 40, "vpp_in_padding_enable:%d, h/v padding: %d, %d\n",
+		padding_enable,
+		h_padding, v_padding);
+}
+
+static ssize_t vpp_in_padding_enable_store(struct class *cla,
+				 struct class_attribute *attr,
+				 const char *buf, size_t count)
+{
+	int parsed[3];
+
+	if (likely(parse_para(buf, 3, parsed) == 3)) {
+		if (cur_dev->display_module == S5_DISPLAY_MODULE &&
+			cur_dev->vpp_in_padding_support)
+			set_vpp_in_padding_axis(parsed[0], parsed[1], parsed[2]);
+		else
+			pr_err("%s: padding not support\n", __func__);
+	} else {
+		pr_err("%s: err\n", __func__);
+	}
+	return strnlen(buf, count);
+}
+
 static struct class_attribute amvideo_class_attrs[] = {
 	__ATTR(axis,
 	       0664,
@@ -12917,6 +12947,10 @@ static struct class_attribute amvideo_class_attrs[] = {
 	__ATTR(vsync_2to1_enable, 0664,
 		vsync_2to1_enable_show,
 		vsync_2to1_enable_store),
+	__ATTR(vpp_in_padding, 0664,
+		vpp_in_padding_enable_show,
+		vpp_in_padding_enable_store),
+
 };
 
 static struct class_attribute amvideo_poll_class_attrs[] = {
@@ -14148,6 +14182,7 @@ static struct video_device_hw_s t3x_dev_property = {
 	.sr01_num = 2,
 	.cr_loss = 1,
 	.amdv_tvcore = 1,
+	.vpp_in_padding_support = 1,
 };
 
 static const struct of_device_id amlogic_amvideom_dt_match[] = {

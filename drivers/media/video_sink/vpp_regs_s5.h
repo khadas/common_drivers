@@ -696,6 +696,30 @@
 //Bit 31     reg_vd1_win_en                   //unsigned, RW, default = 0
 //Bit 30:13  reserved
 //Bit 12:0   reg_vd1_win_hsize                //unsigned, RW, default = 0
+#define T3X_VPP_POST_VD2_WIN_CUT_CTRL                  0x1d22
+//Bit 31     reg_vd2_win_en                   //unsigned, RW, default = 0
+//Bit 30:29  reserved
+//Bit 28:16  reg_vd2_win_vsize                //unsigned, RW, default = 1080
+//Bit 15:13  reserved
+//Bit 12:0   reg_vd2_win_hsize                //unsigned, RW, default = 1920
+#define T3X_VPP_POST_VD3_WIN_CUT_CTRL                  0x1d23
+//Bit 31     reg_vd3_win_en                   //unsigned, RW, default = 0
+//Bit 30:29  reserved
+//Bit 28:16  reg_vd3_win_vsize                //unsigned, RW, default = 1080
+//Bit 15:13  reserved
+//Bit 12:0   reg_vd3_win_hsize                //unsigned, RW, default = 1920
+#define T3X_VPP_POST_OSD1_WIN_CUT_CTRL                 0x1d24
+//Bit 31     reg_osd1_win_en                  //unsigned, RW, default = 0
+//Bit 30:29  reserved
+//Bit 28:16  reg_osd1_win_vsize               //unsigned, RW, default = 1080
+//Bit 15:13  reserved
+//Bit 12:0   reg_osd1_win_hsize               //unsigned, RW, default = 1920
+#define T3X_VPP_POST_OSD2_WIN_CUT_CTRL                 0x1d25
+//Bit 31     reg_osd2_win_en                  //unsigned, RW, default = 0
+//Bit 30:29  reserved
+//Bit 28:16  reg_osd2_win_vsize               //unsigned, RW, default = 1080
+//Bit 15:13  reserved
+//Bit 12:0   reg_osd2_win_hsize               //unsigned, RW, default = 1920
 #define T3X_VPP_POST_PAD_CTRL                          0x1d26
 //Bit 31     reg_pad_enable                   //unsigned, RW, default = 0
 //Bit 30     reg_pad_rpt_lcol                 //unsigned, RW, default = 0
@@ -705,6 +729,117 @@
 #define T3X_VPP_POST_PAD_HSIZE                         0x1d27
 //Bit 31:14  reserved
 //Bit 13:0   reg_pad_hsize                    //unsigned, RW, default = 0
+#define T3X_VPP_POST_VD1_PAD_CTRL                      0x1d28
+//Bit 31     reg_vd1_pad_en                   //unsigned, RW, default = 0
+//Bit 30     reg_vd1_pad_rpt_lcol             //unsigned, RW, default = 0
+//Bit 29     reserved
+//Bit 28:16  reg_vd1_pad_vsize                //unsigned, RW, default = 1080
+//Bit 15:13  reserved
+//Bit 12:0   reg_vd1_pad_hsize                //unsigned, RW, default = 1920
+#define T3X_VPP_POST_VD1_PAD_H                         0x1d29
+//Bit 31:29   reserved
+//Bit 28:16   reg_vd1_pad_end_h               //unsigned, RW, default = 1919
+//Bit 15:13   reserved
+//Bit 12:0    reg_vd1_pad_bgn_h               //unsigned, RW, default = 0
+#define T3X_VPP_POST_VD1_PAD_V                         0x1d2a
+//Bit 31:29   reserved
+//Bit 28:16   reg_vd1_pad_end_v               //unsigned, RW, default = 1079
+//Bit 15:13   reserved
+//Bit 12:0    reg_vd1_pad_bgn_v               //unsigned, RW, default = 0
+#define T3X_VPP_POST_VD1_DUMMY_DATA                    0x1d2b
+//Bit 31:24   reserved
+//Bit 23:16   reg_vd1_pad_dummy_y             //unsigned, RW, default = 8'h00
+//Bit 15:8    reg_vd1_pad_dummy_cb            //unsigned, RW, default = 8'h80
+//Bit  7:0    reg_vd1_pad_dummy_cr            //unsigned, RW, default = 8'h80
+#define T3X_VPP_POST_VD2_PAD_CTRL                      0x1d2c
+//Bit 31     reg_vd2_pad_en                   //unsigned, RW, default = 0
+//Bit 30     reg_vd2_pad_rpt_lcol             //unsigned, RW, default = 0
+//Bit 29     reserved
+//Bit 28:16  reg_vd2_pad_vsize                //unsigned, RW, default = 1080
+//Bit 15:13  reserved
+//Bit 12:0   reg_vd2_pad_hsize                //unsigned, RW, default = 1920
+#define T3X_VPP_POST_VD2_PAD_H                         0x1d2d
+//Bit 31:29   reserved
+//Bit 28:16   reg_vd2_pad_end_h               //unsigned, RW, default = 1919
+//Bit 15:13   reserved
+//Bit 12:0    reg_vd2_pad_bgn_h               //unsigned, RW, default = 0
+#define T3X_VPP_POST_VD2_PAD_V                         0x1d2e
+//Bit 31:29   reserved
+//Bit 28:16   reg_vd2_pad_end_v               //unsigned, RW, default = 1079
+//Bit 15:13   reserved
+//Bit 12:0    reg_vd2_pad_bgn_v               //unsigned, RW, default = 0
+#define T3X_VPP_POST_VD2_DUMMY_DATA                    0x1d2f
+//Bit 31:24   reserved
+//Bit 23:16   reg_vd2_pad_dummy_y             //unsigned, RW, default = 8'h00
+//Bit 15:8    reg_vd2_pad_dummy_cb            //unsigned, RW, default = 8'h80
+//Bit  7:0    reg_vd2_pad_dummy_cr            //unsigned, RW, default = 8'h80
+#define T3X_VPP_POST_VD3_PAD_CTRL                      0x1d30
+//Bit 31     reg_vd3_pad_en                   //unsigned, RW, default = 0
+//Bit 30     reg_vd3_pad_rpt_lcol             //unsigned, RW, default = 0
+//Bit 29     reserved
+//Bit 28:16  reg_vd3_pad_vsize                //unsigned, RW, default = 1080
+//Bit 15:13  reserved
+//Bit 12:0   reg_vd3_pad_hsize                //unsigned, RW, default = 1920
+#define T3X_VPP_POST_VD3_PAD_H                         0x1d31
+//Bit 31:29   reserved
+//Bit 28:16   reg_vd3_pad_end_h               //unsigned, RW, default = 1919
+//Bit 15:13   reserved
+//Bit 12:0    reg_vd3_pad_bgn_h               //unsigned, RW, default = 0
+#define T3X_VPP_POST_VD3_PAD_V                         0x1d32
+//Bit 31:29   reserved
+//Bit 28:16   reg_vd3_pad_end_v               //unsigned, RW, default = 1079
+//Bit 15:13   reserved
+//Bit 12:0    reg_vd3_pad_bgn_v               //unsigned, RW, default = 0
+#define T3X_VPP_POST_VD3_DUMMY_DATA                    0x1d33
+//Bit 31:24   reserved
+//Bit 23:16   reg_vd3_pad_dummy_y             //unsigned, RW, default = 8'h00
+//Bit 15:8    reg_vd3_pad_dummy_cb            //unsigned, RW, default = 8'h80
+//Bit  7:0    reg_vd3_pad_dummy_cr            //unsigned, RW, default = 8'h80
+#define T3X_VPP_POST_OSD1_PAD_CTRL                     0x1d34
+//Bit 31     reg_osd1_pad_en                  //unsigned, RW, default = 0
+//Bit 30     reg_osd1_pad_rpt_lcol            //unsigned, RW, default = 0
+//Bit 29     reserved
+//Bit 28:16  reg_osd1_pad_vsize               //unsigned, RW, default = 1080
+//Bit 15:13  reserved
+//Bit 12:0   reg_osd1_pad_hsize               //unsigned, RW, default = 1920
+#define T3X_VPP_POST_OSD1_PAD_H                        0x1d35
+//Bit 31:29   reserved
+//Bit 28:16   reg_osd1_pad_end_h              //unsigned, RW, default = 1919
+//Bit 15:13   reserved
+//Bit 12:0    reg_osd1_pad_bgn_h              //unsigned, RW, default = 0
+#define T3X_VPP_POST_OSD1_PAD_V                        0x1d36
+//Bit 31:29   reserved
+//Bit 28:16   reg_osd1_pad_end_v              //unsigned, RW, default = 1079
+//Bit 15:13   reserved
+//Bit 12:0    reg_osd1_pad_bgn_v              //unsigned, RW, default = 0
+#define T3X_VPP_POST_OSD1_DUMMY_DATA                   0x1d37
+//Bit 31:24   reserved
+//Bit 23:16   reg_osd1_pad_dummy_y            //unsigned, RW, default = 8'h00
+//Bit 15:8    reg_osd1_pad_dummy_cb           //unsigned, RW, default = 8'h80
+//Bit  7:0    reg_osd1_pad_dummy_cr           //unsigned, RW, default = 8'h80
+#define T3X_VPP_POST_OSD2_PAD_CTRL                     0x1d38
+//Bit 31     reg_osd2_pad_en                  //unsigned, RW, default = 0
+//Bit 30     reg_osd2_pad_rpt_lcol            //unsigned, RW, default = 0
+//Bit 29     reserved
+//Bit 28:16  reg_osd2_pad_vsize               //unsigned, RW, default = 1080
+//Bit 15:13  reserved
+//Bit 12:0   reg_osd2_pad_hsize               //unsigned, RW, default = 1920
+#define T3X_VPP_POST_OSD2_PAD_H                        0x1d39
+//Bit 31:29   reserved
+//Bit 28:16   reg_osd2_pad_end_h              //unsigned, RW, default = 1919
+//Bit 15:13   reserved
+//Bit 12:0    reg_osd2_pad_bgn_h              //unsigned, RW, default = 0
+#define T3X_VPP_POST_OSD2_PAD_V                        0x1d3a
+//Bit 31:29   reserved
+//Bit 28:16   reg_osd2_pad_end_v              //unsigned, RW, default = 1079
+//Bit 15:13   reserved
+//Bit 12:0    reg_osd2_pad_bgn_v              //unsigned, RW, default = 0
+#define T3X_VPP_POST_OSD2_DUMMY_DATA                   0x1d3b
+//Bit 31:24   reserved
+//Bit 23:16   reg_osd2_pad_dummy_y            //unsigned, RW, default = 8'h00
+//Bit 15:8    reg_osd2_pad_dummy_cb           //unsigned, RW, default = 8'h80
+//Bit  7:0    reg_osd2_pad_dummy_cr           //unsigned, RW, default = 8'h80
+
 //====================postblend====================
 #define T3X_VPP_POST_BLEND_CTRL                        0x1d40
 //Bit 31:28  reserved

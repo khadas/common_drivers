@@ -12175,6 +12175,8 @@ int video_hw_init_s5(void)
 	WRITE_VCBUS_REG(S5_VPP_RDARB_MODE, 0x9a205000);
 	/* VPU_RDARB_MODE_L2C1 */
 	WRITE_VCBUS_REG(S5_VPU_RDARB_MODE_L2C1, 0x924000);
+	/* set vpu read super urgent default */
+	WRITE_VCBUS_REG(S5_VPU_RDARB_UGT_L2C1, 0xffff);
 	save_vd_pps_reg();
 #ifdef CONFIG_AMLOGIC_MEDIA_LUT_DMA
 	int i;
@@ -12258,6 +12260,7 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 	cur_dev->prevsync_support = p_amvideo->dev_property.prevsync_support;
 	cur_dev->has_vpp1 = p_amvideo->has_vpp1;
 	cur_dev->has_vpp2 = p_amvideo->has_vpp2;
+	cur_dev->vpp_in_padding_support = p_amvideo->dev_property.vpp_in_padding_support;
 	for (i = 0; i < cur_dev->max_vd_layers; i++) {
 		vd_layer[i].layer_id = i;
 		vd_layer[i].cur_canvas_id = 0;
@@ -12449,6 +12452,9 @@ int video_early_init_s5(struct amvideo_device_data_s *p_amvideo)
 		memcpy(&vpp_post_reg.vpp1_post_blend_reg,
 		   &vpp1_post_blend_reg_t3x,
 		   sizeof(struct vpp1_post_blend_reg_s));
+		memcpy(&vpp_post_reg.vpp_post_in_pad_reg,
+			&vpp_post_in_pad_regs,
+			sizeof(struct vpp_post_in_pad_reg_s) * 5);
 	}
 	if (is_meson_s5_cpu()) {
 		memcpy(&venc_regs[0], &venc_regs_t7[0],

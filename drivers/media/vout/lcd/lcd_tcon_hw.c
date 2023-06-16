@@ -21,17 +21,84 @@
 #include <linux/amlogic/tee.h>
 #endif
 
+struct lcd_tcon_dma_info_s {
+	phys_addr_t paddr;
+	unsigned int size;
+	struct list_head list;
+};
+
+static struct  list_head *lcd_tcon_dma_list_head;
+static atomic_t lcd_tcon_dma_ref = ATOMIC_INIT(-1);
+
+int lcd_tcon_get_dma_ref(void)
+{
+	return atomic_read(&lcd_tcon_dma_ref);
+}
+
+void lcd_tcon_set_dma_ref(int i)
+{
+	atomic_set(&lcd_tcon_dma_ref, i);
+}
+
+static void lcd_tcon_dma_update_add(phys_addr_t paddr, unsigned int size)
+{
+	struct lcd_tcon_dma_info_s *dma_info;
+
+	dma_info = kzalloc(sizeof(*dma_info), GFP_KERNEL);
+	if (!dma_info)
+		return;
+
+	dma_info->paddr = paddr;
+	dma_info->size = size;
+	if (lcd_tcon_dma_list_head) {
+		list_add_tail(&dma_info->list, lcd_tcon_dma_list_head);
+	} else {
+		dma_info->list.prev = &dma_info->list;
+		dma_info->list.next = &dma_info->list;
+		lcd_tcon_dma_list_head = &dma_info->list;
+	}
+
+	if (atomic_read(&lcd_tcon_dma_ref) < 0)
+		atomic_set(&lcd_tcon_dma_ref, 0);
+	atomic_inc(&lcd_tcon_dma_ref);
+}
+
+void lcd_tcon_dma_update(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_tcon_dma_info_s *dma_info;
+	struct list_head *list_temp;
+
+	lcd_tcon_lut_dma_disable(pdrv);
+	if (!lcd_tcon_dma_list_head)
+		return;
+
+	dma_info = list_entry(lcd_tcon_dma_list_head, struct lcd_tcon_dma_info_s, list);
+	if (lcd_debug_print_flag & LCD_DBG_PR_ISR)
+		LCDPR("%s,  dma_info: paddr:0x%llx, size:0x%x\n", __func__,
+			(unsigned long long)dma_info->paddr, dma_info->size);
+	lcd_tcon_lut_dma_mif_set(dma_info->paddr, dma_info->size);
+	lcd_tcon_lut_dma_enable(pdrv);
+
+	if (lcd_tcon_dma_list_head->next != lcd_tcon_dma_list_head) {
+		list_temp = lcd_tcon_dma_list_head->next;
+		__list_del(lcd_tcon_dma_list_head->prev, lcd_tcon_dma_list_head->next);
+		lcd_tcon_dma_list_head = list_temp;
+	} else {
+		lcd_tcon_dma_list_head = NULL;
+	}
+	kfree(dma_info);
+
+	atomic_dec(&lcd_tcon_dma_ref);
+}
+
+/*
+ * must check addr and size before called
+ * paddr: 16bytes aligned
+ * size: 16bytes aligned
+ */
 void lcd_tcon_lut_dma_mif_set(phys_addr_t paddr, unsigned int size)
 {
 	unsigned int cmd_cnt = 0;
-
-	/* paddr should be 16 byte align*/
-	if (!paddr || (paddr & 0xf))
-		return;
-
-	/* size must be 128bit align*/
-	if (size & 0xf)
-		return;
 
 	/* 128 bits per cmd */
 	cmd_cnt = size >> 4;
@@ -58,6 +125,9 @@ void lcd_tcon_lut_dma_enable(struct aml_lcd_drv_s *pdrv)
 
 	lcd_tcon_setb(pdrv, 0x367, 1, 0, 14); //  intr trig pixel
 	lcd_tcon_setb(pdrv, 0x367, 1, 16, 1); // enale tcon intr
+	lcd_tcon_setb(pdrv, 0x367, 1, 16, 1); // enale tcon intr
+	lcd_tcon_setb(pdrv, 0x367, 1, 16, 1); // enale tcon intr
+	lcd_tcon_setb(pdrv, 0x367, 1, 16, 1); // enale tcon intr
 	lcd_tcon_setb(pdrv, 0x207, 1, 31, 1); //enable dma clk
 }
 
@@ -66,6 +136,9 @@ void lcd_tcon_lut_dma_disable(struct aml_lcd_drv_s *pdrv)
 	if (!pdrv)
 		return;
 
+	lcd_tcon_setb(pdrv, 0x367, 0, 16, 1); // disable tcon intr
+	lcd_tcon_setb(pdrv, 0x367, 0, 16, 1); // disable tcon intr
+	lcd_tcon_setb(pdrv, 0x367, 0, 16, 1); // disable tcon intr
 	lcd_tcon_setb(pdrv, 0x367, 0, 16, 1); // disable tcon intr
 	lcd_tcon_setb(pdrv, 0x207, 0, 31, 1); //disable dma
 }
@@ -539,20 +612,21 @@ static int lcd_tcon_wr_n_data_write(struct aml_lcd_drv_s *pdrv,
 }
 
 int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv,
-				   unsigned char *data_buf, int init_flag)
+				   unsigned char *data_buf, phys_addr_t paddr, int init_flag)
 {
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 	struct lcd_tcon_data_block_header_s *block_header;
 	struct lcd_tcon_data_block_ext_header_s *ext_header;
-	unsigned char *p;
+	unsigned char *p, *part_start;
 	unsigned short part_cnt;
 	unsigned char part_type;
 	unsigned int size, reg, data, mask, temp, reg_base = 0;
 	union lcd_tcon_data_part_u data_part;
-	unsigned int data_offset, offset, i, j, k, d, m, n, step = 0;
+	unsigned int data_offset = 0, offset, i, j, k, d, m, n, step = 0;
 	unsigned int reg_cnt, reg_byte, data_cnt, data_byte;
 	unsigned short block_ctrl_flag;
 	unsigned char exe_in_isr = 0, exe_ignore = 0;
+	unsigned int *part_pos, part_start_offset, ext_header_size;
 	int ret;
 
 	if (tcon_conf)
@@ -566,12 +640,16 @@ int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv,
 	    (lcd_debug_print_flag & LCD_DBG_PR_ADV)) {
 		LCDPR("%s: %s, part_cnt: %d\n", __func__, block_header->name, part_cnt);
 	}
+	part_pos = (unsigned int *)(p + LCD_TCON_DATA_BLOCK_EXT_HEADER_SIZE_PRE);
+	ext_header_size = block_header->ext_header_size;
 
 	block_ctrl_flag = block_header->block_ctrl;
-	data_offset = LCD_TCON_DATA_BLOCK_HEADER_SIZE + block_header->ext_header_size;
+	part_start = data_buf + LCD_TCON_DATA_BLOCK_HEADER_SIZE + ext_header_size;
 	size = 0;
+	part_start_offset = LCD_TCON_DATA_BLOCK_HEADER_SIZE + ext_header_size;
 	for (i = 0; i < part_cnt; i++) {
-		p = data_buf + data_offset;
+		p = part_start + part_pos[i];
+		data_offset = part_start_offset + part_pos[i];
 		part_type = p[LCD_TCON_DATA_PART_NAME_SIZE + 3];
 		exe_in_isr = p[LCD_TCON_DATA_PART_NAME_SIZE + 2];
 		exe_ignore = (exe_in_isr & LCD_TCON_DATA_PART_FLAG_CMD_IGNORE_ISR) &&
@@ -901,6 +979,32 @@ int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv,
 				break;
 			}
 			break;
+		case LCD_TCON_DATA_PART_TYPE_DMA:
+			if (block_ctrl_flag)
+				goto lcd_tcon_data_common_parse_set_ctrl_err;
+			data_part.dma = (struct lcd_tcon_data_part_dma_s *)p;
+
+			size = LCD_TCON_DATA_PART_DMA_SIZE_PRE + data_part.dma->dma_data_size;
+			if ((size + data_offset) > block_header->block_size)
+				goto lcd_tcon_data_common_parse_set_err_size;
+
+			offset = p - data_buf + LCD_TCON_DATA_PART_DMA_SIZE_PRE;
+			if ((lcd_debug_print_flag & LCD_DBG_PR_ADV))
+				LCDPR("%s: vaddr:0x%px, paddr:0x%llx,\n"
+					"offset:0x%x, size:0x%x\n",
+					__func__, data_buf, (unsigned long long)paddr,
+					offset, data_part.dma->dma_data_size);
+			paddr += offset;
+			if (!paddr || paddr & 0xf || data_part.dma->dma_data_size & 0xf)
+				break;
+
+			lcd_tcon_dma_update_add(paddr, data_part.dma->dma_data_size);
+			if (exe_ignore) {
+				if ((lcd_debug_print_flag & LCD_DBG_PR_ADV))
+					LCDPR("%s step %d ignored\n", __func__, step);
+				break;
+			}
+			break;
 		default:
 			if (block_ctrl_flag)
 				goto lcd_tcon_data_common_parse_set_ctrl_err;
@@ -914,7 +1018,6 @@ int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv,
 			LCDPR("%s: end step %d, %s, type=0x%02x, size=%d\n",
 			      __func__, step, p, part_type, size);
 		}
-		data_offset += size;
 		step++;
 	}
 
@@ -942,6 +1045,7 @@ static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
 	unsigned char *data_buf;
 	unsigned int temp_crc32;
 	unsigned int i, index, chk_size;
+	phys_addr_t paddr = 0;
 	int ret;
 
 	if (!mm_table->data_mem_vaddr) {
@@ -967,6 +1071,7 @@ static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
 			continue;
 		}
 		data_buf = mm_table->data_mem_vaddr[index];
+		paddr = mm_table->data_mem_paddr[index];
 		block_header = (struct lcd_tcon_data_block_header_s *)data_buf;
 		if (block_header->block_size < sizeof(struct lcd_tcon_data_block_header_s)) {
 			LCDERR("%s: block_size[%d] 0x%x is invalid\n",
@@ -994,22 +1099,22 @@ static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
 		}
 
 		/* apply data */
-		if (block_header->block_type == LCD_TCON_DATA_BLOCK_TYPE_BASIC_INIT) {
+		if (is_block_type_basic_init(block_header->block_type)) {
 			lcd_tcon_data_init_set(pdrv, data_buf);
 			continue;
 		}
 
-		if (block_header->block_ctrl == LCD_TCON_DATA_CTRL_FLAG_MULTI) {
+		if (is_block_ctrl_multi(block_header->block_ctrl)) {
 			ret = lcd_tcon_data_multi_match_find(pdrv, data_buf);
 			if (ret == 0) {
-				ret = lcd_tcon_data_common_parse_set(pdrv, data_buf, 1);
+				ret = lcd_tcon_data_common_parse_set(pdrv, data_buf, paddr,  1);
 				if (ret == 0) {
 					lcd_tcon_data_multi_current_update(mm_table,
 						block_header, index);
 				}
 			}
 		} else {
-			lcd_tcon_data_common_parse_set(pdrv, data_buf, 1);
+			lcd_tcon_data_common_parse_set(pdrv, data_buf, paddr,  1);
 		}
 	}
 

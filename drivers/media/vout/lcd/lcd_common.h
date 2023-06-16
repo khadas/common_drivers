@@ -43,7 +43,8 @@
 /* 20230815: add full-link-training and EDID-timing for eDP */
 /* 20230816: optimize clk accuracy*/
 /* 20230821: update clk ss support*/
-#define LCD_DRV_VERSION    "20230821"
+/* 20230823: add dma driver for tcon lut*/
+#define LCD_DRV_VERSION    "20230823"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;
@@ -67,6 +68,8 @@ int lcd_type_str_to_type(const char *str);
 char *lcd_type_type_to_str(int type);
 unsigned char lcd_mode_str_to_mode(const char *str);
 char *lcd_mode_mode_to_str(int mode);
+void *lcd_alloc_dma_buffer(struct aml_lcd_drv_s *pdrv,
+		unsigned int size, dma_addr_t *paddr);
 u8 *lcd_vmap(ulong addr, u32 size);
 void lcd_unmap_phyaddr(u8 *vaddr);
 void lcd_debug_parse_param(char *buf_orig, char **parm);

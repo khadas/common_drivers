@@ -100,6 +100,7 @@ struct tcon_data_list_s {
 	unsigned int *ctrl_data;
 	char *block_name;
 	unsigned char *block_vaddr;
+	phys_addr_t block_paddr;
 	struct tcon_data_list_s *next;
 };
 
@@ -147,6 +148,7 @@ struct tcon_mem_map_table_s {
 	struct tcon_data_priority_s *data_priority;
 	unsigned int *data_size;
 	unsigned char **data_mem_vaddr;
+	dma_addr_t *data_mem_paddr;
 
 	unsigned int multi_lut_update;
 	unsigned int data_multi_cnt;
@@ -249,6 +251,10 @@ void lcd_tcon_fw_base_timing_update(struct aml_lcd_drv_s *pdrv);
  * **********************************
  */
 /* internal */
+
+int lcd_tcon_get_dma_ref(void);
+void lcd_tcon_set_dma_ref(int i);
+void lcd_tcon_dma_update(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_lut_dma_mif_set(phys_addr_t paddr, unsigned int size);
 void lcd_tcon_lut_dma_enable(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_lut_dma_disable(struct aml_lcd_drv_s *pdrv);
@@ -281,7 +287,7 @@ void lcd_tcon_data_multi_current_update(struct tcon_mem_map_table_s *mm_table,
 void lcd_tcon_data_multi_bypass_set(struct tcon_mem_map_table_s *mm_table,
 				    unsigned int block_type, int flag);
 int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv,
-				   unsigned char *data_buf, int init_flag);
+				   unsigned char *data_buf, phys_addr_t paddr, int init_flag);
 void lcd_tcon_init_data_version_update(char *data_buf);
 int lcd_tcon_data_load(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf, int index);
 int lcd_tcon_bin_load(struct aml_lcd_drv_s *pdrv);

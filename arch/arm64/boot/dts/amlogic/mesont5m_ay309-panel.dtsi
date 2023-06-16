@@ -42,7 +42,8 @@
 		pinctrl-9 = <&ST5461D18_2_pins>;
 		pinctrl-10 = <&ST5461D18_2_off_pins>;
 		pinctrl_version = <2>; /* for uboot */
-		memory-region = <&lcd_tcon_reserved>;
+		memory-region = <&lcd_tcon_reserved &lcd_cma_reserved>;
+		memory-region-names = "lcd_tcon_reserved", "lcd_cma_reserved";
 
 		/* power type:(0=cpu_gpio, 2=signal, 3=extern, 0xff=ending) */
 		/* power index:(gpios_index, or extern_index, 0xff=invalid) */

@@ -2193,6 +2193,7 @@ static int lcd_probe(struct platform_device *pdev)
 	pdrv->data = pdata;
 	//pdrv->of_node = pdev->dev.of_node;
 	platform_set_drvdata(pdev, pdrv);
+	pdrv->pdev = pdev;
 
 #ifdef CONFIG_AMLOGIC_VPU
 	/*vpu dev register for lcd*/
@@ -2212,6 +2213,7 @@ static int lcd_probe(struct platform_device *pdev)
 	ret = lcd_cdev_add(pdrv, &pdev->dev);
 	if (ret)
 		goto lcd_probe_err_2;
+
 	ret = lcd_config_probe(pdrv, pdev);
 	if (ret)
 		goto lcd_probe_err_2;

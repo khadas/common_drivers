@@ -1009,6 +1009,7 @@ int lcd_tcon_enable(struct aml_lcd_drv_s *pdrv)
 void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_tcon_fw_s *tcon_fw = aml_lcd_tcon_get_fw();
+	struct lcd_tcon_data_block_header_s *block_header;
 	unsigned int i;
 	int ret;
 
@@ -1028,8 +1029,21 @@ void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv)
 			tcon_mm_table.block_bit_flag = 0;
 			lcd_tcon_data_multi_remvoe(&tcon_mm_table);
 			for (i = 0; i < tcon_mm_table.block_cnt; i++) {
-				kfree(tcon_mm_table.data_mem_vaddr[i]);
-				tcon_mm_table.data_mem_vaddr[i] = NULL;
+				if (!tcon_mm_table.data_mem_vaddr[i])
+					continue;
+				block_header = (struct lcd_tcon_data_block_header_s *)
+						tcon_mm_table.data_mem_vaddr[i];
+
+				if (!is_block_type_basic_init(block_header->block_type) &&
+					is_block_ctrl_dma(block_header->block_ctrl)) {
+					dma_free_coherent(&pdrv->pdev->dev,
+						block_header->block_size,
+						tcon_mm_table.data_mem_vaddr[i],
+						tcon_mm_table.data_mem_paddr[i]);
+				} else {
+					kfree(tcon_mm_table.data_mem_vaddr[i]);
+					tcon_mm_table.data_mem_vaddr[i] = NULL;
+				}
 			}
 		} else {
 			lcd_tcon_data_multi_reset(&tcon_mm_table);
@@ -1066,6 +1080,7 @@ static int lcd_tcon_data_multi_match_policy(struct aml_lcd_drv_s *pdrv, unsigned
 	switch (data_list->ctrl_method) {
 	case LCD_TCON_DATA_CTRL_MULTI_VFREQ_DIRECT:
 	case LCD_TCON_DATA_CTRL_MULTI_VFREQ_NOTIFY:
+
 		if (frame_rate < data_list->min || frame_rate > data_list->max)
 			goto lcd_tcon_data_multi_match_policy_exit;
 		if (!data_multi)
@@ -1154,7 +1169,7 @@ static int lcd_tcon_data_multi_match_init(struct aml_lcd_drv_s *pdrv,
 
 	if (!ctrl_part)
 		return -1;
-	if (ctrl_part->ctrl_data_flag != LCD_TCON_DATA_CTRL_FLAG_MULTI)
+	if (!(ctrl_part->ctrl_data_flag & LCD_TCON_DATA_CTRL_FLAG_MULTI))
 		return -1;
 
 	data_byte = ctrl_part->data_byte_width;
@@ -1266,7 +1281,7 @@ static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
 
 	if (!ctrl_part)
 		return -1;
-	if (ctrl_part->ctrl_data_flag != LCD_TCON_DATA_CTRL_FLAG_MULTI)
+	if (!(ctrl_part->ctrl_data_flag & LCD_TCON_DATA_CTRL_FLAG_MULTI))
 		return -1;
 
 	data_byte = ctrl_part->data_byte_width;
@@ -1383,8 +1398,9 @@ static int lcd_tcon_data_multi_list_init(struct aml_lcd_drv_s *pdrv,
 	struct lcd_tcon_data_block_header_s *block_header;
 	struct lcd_tcon_data_block_ext_header_s *ext_header;
 	struct lcd_tcon_data_part_ctrl_s *ctrl_part;
-	unsigned char *data_buf, *p, part_type;
+	unsigned char *data_buf, *p, *part_start, part_type;
 	unsigned int size, data_offset, offset, i;
+	unsigned int *part_pos, ext_header_size;
 	unsigned short part_cnt;
 	int ret;
 
@@ -1393,11 +1409,14 @@ static int lcd_tcon_data_multi_list_init(struct aml_lcd_drv_s *pdrv,
 	p = data_buf + LCD_TCON_DATA_BLOCK_HEADER_SIZE;
 	ext_header = (struct lcd_tcon_data_block_ext_header_s *)p;
 	part_cnt = ext_header->part_cnt;
+	ext_header_size = block_header->ext_header_size;
 
-	data_offset = LCD_TCON_DATA_BLOCK_HEADER_SIZE + block_header->ext_header_size;
+	part_pos = (unsigned int *)(p + LCD_TCON_DATA_BLOCK_EXT_HEADER_SIZE_PRE);
+	part_start = data_buf + LCD_TCON_DATA_BLOCK_HEADER_SIZE + ext_header_size;
 	size = 0;
 	for (i = 0; i < part_cnt; i++) {
-		p = data_buf + data_offset;
+		p = part_start + part_pos[i];
+		data_offset = part_pos[i];
 		part_type = p[LCD_TCON_DATA_PART_NAME_SIZE + 3];
 
 		switch (part_type) {
@@ -1405,8 +1424,10 @@ static int lcd_tcon_data_multi_list_init(struct aml_lcd_drv_s *pdrv,
 			offset = LCD_TCON_DATA_PART_CTRL_SIZE_PRE;
 			ctrl_part = (struct lcd_tcon_data_part_ctrl_s *)p;
 			size = offset + (ctrl_part->data_cnt * ctrl_part->data_byte_width);
-			if (ctrl_part->ctrl_data_flag != LCD_TCON_DATA_CTRL_FLAG_MULTI)
+			if (!(ctrl_part->ctrl_data_flag & LCD_TCON_DATA_CTRL_FLAG_MULTI))
 				break;
+			if ((size + data_offset) > block_header->block_size)
+				return -1;
 			ret = lcd_tcon_data_multi_match_init(pdrv, data_list,
 				ctrl_part, (p + offset));
 			if (ret == 0)
@@ -1417,7 +1438,6 @@ static int lcd_tcon_data_multi_list_init(struct aml_lcd_drv_s *pdrv,
 		default:
 			return -1;
 		}
-		data_offset += size;
 	}
 
 	return -1;
@@ -1456,7 +1476,7 @@ int lcd_tcon_data_multi_match_find(struct aml_lcd_drv_s *pdrv, unsigned char *da
 			ctrl_part = (struct lcd_tcon_data_part_ctrl_s *)p;
 			size = offset + (ctrl_part->data_cnt *
 					 ctrl_part->data_byte_width);
-			if (ctrl_part->ctrl_data_flag != LCD_TCON_DATA_CTRL_FLAG_MULTI)
+			if (!(ctrl_part->ctrl_data_flag & LCD_TCON_DATA_CTRL_FLAG_MULTI))
 				break;
 			ret = lcd_tcon_data_multi_match_check(pdrv, frame_rate,
 				ctrl_part, (p + offset));
@@ -1562,7 +1582,7 @@ static int lcd_tcon_data_multi_update(struct aml_lcd_drv_s *pdrv,
 	for (i = 0; i < mm_table->data_multi_cnt; i++) {
 		data_multi = &mm_table->data_multi[i];
 		/* bypass LCD_TCON_DATA_BLOCK_TYPE_BASIC_INIT for multi lut switch */
-		if (data_multi->block_type == LCD_TCON_DATA_BLOCK_TYPE_BASIC_INIT)
+		if (is_block_type_basic_init(data_multi->block_type))
 			continue;
 		/* bypass_flag for debug */
 		if (data_multi->bypass_flag)
@@ -1686,7 +1706,7 @@ static int lcd_tcon_data_multi_set(struct aml_lcd_drv_s *pdrv,
 		data_multi = &mm_table->data_multi[i];
 		/* bypass LCD_TCON_DATA_BLOCK_TYPE_BASIC_INIT for multi lut switch */
 		/* bypass LCD_TCON_DATA_BLOCK_TYPE_ACC_LUT for soc gamma update */
-		if (data_multi->block_type == LCD_TCON_DATA_BLOCK_TYPE_BASIC_INIT)
+		if (is_block_type_basic_init(data_multi->block_type))
 			continue;
 		/* bypass_flag for debug */
 		if (data_multi->bypass_flag)
@@ -1696,7 +1716,9 @@ static int lcd_tcon_data_multi_set(struct aml_lcd_drv_s *pdrv,
 
 		lut_hit++;
 		ret = lcd_tcon_data_common_parse_set(pdrv,
-			data_multi->list_update->block_vaddr, 0);
+				data_multi->list_update->block_vaddr,
+				data_multi->list_update->block_paddr, 0);
+
 		if (ret) //list update failed
 			continue;
 		data_multi->list_cur = data_multi->list_update;
@@ -1725,6 +1747,13 @@ void lcd_tcon_vsync_isr(struct aml_lcd_drv_s *pdrv)
 
 	if (lcd_tcon_conf->tcon_is_busy)
 		return;
+
+	lcd_tcon_lut_dma_disable(pdrv);
+	if (lcd_tcon_get_dma_ref() > 0) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_ISR)
+			LCDPR("%s, dma update\n", __func__);
+		lcd_tcon_dma_update(pdrv);
+	}
 
 	if (tcon_mm_table.version) {
 		if (tcon_mm_table.multi_lut_update) {
@@ -2008,7 +2037,9 @@ static int lcd_tcon_data_multi_add(struct aml_lcd_drv_s *pdrv,
 	data_list = kzalloc(sizeof(*data_list), GFP_KERNEL);
 	if (!data_list)
 		return -1;
+	spin_lock_irqsave(&tcon_local_cfg.multi_list_lock, flags);
 	data_list->block_vaddr = mm_table->data_mem_vaddr[index];
+	data_list->block_paddr = mm_table->data_mem_paddr[index];
 	data_list->next = NULL;
 	data_list->id = index;
 	data_list->block_name = block_header->name;
@@ -2020,7 +2051,6 @@ static int lcd_tcon_data_multi_add(struct aml_lcd_drv_s *pdrv,
 		}
 	}
 
-	spin_lock_irqsave(&tcon_local_cfg.multi_list_lock, flags);
 	if (!data_multi) { /* create new list */
 		data_multi = &mm_table->data_multi[mm_table->data_multi_cnt];
 		mm_table->data_multi_cnt++;
@@ -2180,7 +2210,7 @@ int lcd_tcon_data_load(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf, int 
 		return -1;
 	}
 
-	if (block_header->block_type != LCD_TCON_DATA_BLOCK_TYPE_BASIC_INIT) {
+	if (!is_block_type_basic_init(block_header->block_type)) {
 		tcon_mm_table.valid_flag |= block_header->block_flag;
 		if (block_header->block_flag == LCD_TCON_DATA_VALID_DEMURA)
 			tcon_mm_table.demura_cnt++;
@@ -2225,7 +2255,8 @@ int lcd_tcon_data_load(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf, int 
 	tcon_mm_table.data_size[index] = block_header->block_size;
 
 	/* add data multi list */
-	if (block_header->block_ctrl & LCD_TCON_DATA_CTRL_FLAG_MULTI)
+	if (!is_block_type_basic_init(block_header->block_type) &&
+		is_block_ctrl_multi(block_header->block_ctrl))
 		lcd_tcon_data_multi_add(pdrv, &tcon_mm_table, block_header, index);
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
@@ -2333,8 +2364,16 @@ int lcd_tcon_bin_load(struct aml_lcd_drv_s *pdrv)
 				goto lcd_tcon_bin_load_next;
 			}
 
-			tcon_mm_table.data_mem_vaddr[i] =
-				kcalloc(size, sizeof(unsigned char), GFP_KERNEL);
+			if (!is_block_type_basic_init(block_header.block_type) &&
+				is_block_ctrl_dma(block_header.block_ctrl)) {
+				tcon_mm_table.data_mem_vaddr[i] =
+					lcd_alloc_dma_buffer(pdrv, size,
+						tcon_mm_table.data_mem_paddr[i]);
+			} else {
+				tcon_mm_table.data_mem_vaddr[i] =
+					kcalloc(size, sizeof(unsigned char), GFP_KERNEL);
+				tcon_mm_table.data_mem_paddr[i] = 0;
+			}
 			if (!tcon_mm_table.data_mem_vaddr[i]) {
 				LCDERR("%s: Not enough memory\n", __func__);
 				goto lcd_tcon_bin_load_next;
@@ -2355,8 +2394,16 @@ int lcd_tcon_bin_load(struct aml_lcd_drv_s *pdrv)
 			}
 			ret = lcd_tcon_data_load(pdrv, tcon_mm_table.data_mem_vaddr[i], i);
 			if (ret) {
-				kfree(tcon_mm_table.data_mem_vaddr[i]);
-				tcon_mm_table.data_mem_vaddr[i] = NULL;
+				if (!is_block_type_basic_init(block_header.block_type) &&
+					is_block_ctrl_dma(block_header.block_ctrl)) {
+					dma_free_coherent(&pdrv->pdev->dev,
+						block_header.block_size,
+						tcon_mm_table.data_mem_vaddr[i],
+						tcon_mm_table.data_mem_paddr[i]);
+				} else {
+					kfree(tcon_mm_table.data_mem_vaddr[i]);
+					tcon_mm_table.data_mem_vaddr[i] = NULL;
+				}
 			}
 
 lcd_tcon_bin_load_next:
@@ -2520,7 +2567,8 @@ static int lcd_tcon_mm_table_config_v1(void)
 
 	cnt = tcon_mm_table.block_cnt;
 	tcon_mm_table.data_mem_vaddr = kcalloc(cnt, sizeof(unsigned char *), GFP_KERNEL);
-	if (!tcon_mm_table.data_mem_vaddr)
+	tcon_mm_table.data_mem_paddr = kcalloc(cnt, sizeof(dma_addr_t), GFP_KERNEL);
+	if (!tcon_mm_table.data_mem_vaddr || !tcon_mm_table.data_mem_paddr)
 		return -1;
 
 	tcon_mm_table.data_priority =
@@ -3565,6 +3613,7 @@ int lcd_tcon_probe(struct aml_lcd_drv_s *pdrv)
 int lcd_tcon_remove(struct aml_lcd_drv_s *pdrv)
 {
 	int i;
+	struct lcd_tcon_data_block_header_s *block_header;
 
 	lcd_tcon_debug_file_remove(&tcon_local_cfg);
 
@@ -3578,11 +3627,28 @@ int lcd_tcon_remove(struct aml_lcd_drv_s *pdrv)
 		lcd_tcon_data_multi_remvoe(&tcon_mm_table);
 		if (tcon_mm_table.data_mem_vaddr) {
 			for (i = 0; i < tcon_mm_table.block_cnt; i++) {
-				kfree(tcon_mm_table.data_mem_vaddr[i]);
+				if (!tcon_mm_table.data_mem_vaddr[i])
+					continue;
+
+				block_header = (struct lcd_tcon_data_block_header_s *)
+							tcon_mm_table.data_mem_vaddr[i];
+				if (!is_block_type_basic_init(block_header->block_type) &&
+					is_block_ctrl_dma(block_header->block_ctrl)) {
+					dma_free_coherent(&pdrv->pdev->dev,
+						block_header->block_size,
+						tcon_mm_table.data_mem_vaddr[i],
+						tcon_mm_table.data_mem_paddr[i]);
+				} else {
+					kfree(tcon_mm_table.data_mem_vaddr[i]);
+				}
 				tcon_mm_table.data_mem_vaddr[i] = NULL;
+				tcon_mm_table.data_mem_paddr[i] = 0;
 			}
 			kfree(tcon_mm_table.data_mem_vaddr);
 			tcon_mm_table.data_mem_vaddr = NULL;
+
+			kfree(tcon_mm_table.data_mem_paddr);
+			tcon_mm_table.data_mem_paddr = NULL;
 		}
 	}
 

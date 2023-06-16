@@ -1275,9 +1275,11 @@ long lcd_tcon_ioctl_handler(struct aml_lcd_drv_s *pdrv, int mcd_nr, unsigned lon
 	struct aml_lcd_tcon_bin_s lcd_tcon_buff;
 	struct tcon_rmem_s *tcon_rmem = get_lcd_tcon_rmem();
 	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
-	struct lcd_tcon_data_block_header_s block_header;
-	unsigned int size = 0, temp, m = 0;
-	unsigned char *mem_vaddr = NULL;
+	struct lcd_tcon_data_block_header_s block_header, block_header_old;
+	unsigned int size = 0, old_size, temp, m = 0, header_size = 0;
+	struct device *dev;
+	phys_addr_t paddr = 0, paddr_old = 0;
+	unsigned char *mem_vaddr = NULL, *vaddr = NULL, *vaddr_old = NULL;
 	char *str = NULL;
 	int index = 0;
 	int ret = 0;
@@ -1360,44 +1362,63 @@ long lcd_tcon_ioctl_handler(struct aml_lcd_drv_s *pdrv, int mcd_nr, unsigned lon
 		str = (char *)&mem_vaddr[m + 4];
 		temp = *(unsigned int *)&mem_vaddr[m];
 
-		memset(&block_header, 0, sizeof(struct lcd_tcon_data_block_header_s));
+		header_size = sizeof(struct lcd_tcon_data_block_header_s);
+		memset(&block_header, 0, header_size);
+		memset(&block_header_old, 0, header_size);
+		vaddr_old = mm_table->data_mem_vaddr[index];
+		paddr_old = mm_table->data_mem_paddr[index];
+		if (vaddr_old)
+			memcpy(&block_header_old, vaddr_old, header_size);
+
 		argp = (void __user *)lcd_tcon_buff.ptr;
-		if (copy_from_user(&block_header, argp,
-			sizeof(struct lcd_tcon_data_block_header_s))) {
+		if (copy_from_user(&block_header, argp, header_size)) {
 			ret = -EFAULT;
 			break;
 		}
+
+		dev = &pdrv->pdev->dev;
+		old_size = block_header_old.block_size;
 		size = block_header.block_size;
-		if (size > lcd_tcon_buff.size ||
-		    size < sizeof(struct lcd_tcon_data_block_header_s)) {
+		if (size > lcd_tcon_buff.size || size < header_size) {
 			LCDERR("%s: block[%d] size 0x%x error\n", __func__, index, size);
 			ret = -EFAULT;
 			break;
 		}
 
-		kfree(mm_table->data_mem_vaddr[index]);
-		mm_table->data_mem_vaddr[index] =
-			kcalloc(size, sizeof(unsigned char), GFP_KERNEL);
-		if (!mm_table->data_mem_vaddr[index]) {
-			ret = -EFAULT;
-			break;
-		}
-		if (copy_from_user(mm_table->data_mem_vaddr[index], argp, size)) {
-			kfree(mm_table->data_mem_vaddr[index]);
-			mm_table->data_mem_vaddr[index] = NULL;
-			ret = -EFAULT;
-			break;
+		if (is_block_ctrl_dma(block_header.block_ctrl)) {
+			vaddr = lcd_alloc_dma_buffer(pdrv, size, &paddr);
+			if (lcd_debug_print_flag)
+				LCDPR("alloc for tcon mm_table[%d] form lcd_cma_pool\n"
+					"pa:0x%llx, va:%p, size:0x%x\n",
+					index, (unsigned long long)paddr, vaddr, size);
+		} else {
+			vaddr = kcalloc(size, sizeof(unsigned char), GFP_KERNEL);
+			paddr = virt_to_phys(vaddr);
 		}
 
-		LCDPR("tcon: load bin_path[%d]: %s, size: 0x%x -> 0x%x\n",
-		      index, str, temp, size);
+		if (unlikely(!vaddr))
+			goto set_tcon_bin_error_break;
 
-		ret = lcd_tcon_data_load(pdrv, mm_table->data_mem_vaddr[index], index);
-		if (ret) {
-			kfree(mm_table->data_mem_vaddr[index]);
-			mm_table->data_mem_vaddr[index] = NULL;
-			ret = -EFAULT;
-		}
+		if (unlikely(copy_from_user(vaddr, argp, size)))
+			goto set_tcon_bin_error_break;
+
+		LCDPR("tcon: load bin_path[%d]: %s, size: 0x%x -> 0x%x\n", index, str, temp, size);
+
+		mm_table->data_mem_vaddr[index] = vaddr;
+		mm_table->data_mem_paddr[index] = paddr;
+		ret = lcd_tcon_data_load(pdrv, vaddr, index);
+		if (unlikely(ret))
+			goto set_tcon_bin_error_break;
+
+		break;
+set_tcon_bin_error_break:
+		mm_table->data_mem_vaddr[index] = vaddr_old;
+		mm_table->data_mem_paddr[index] = paddr_old;
+		if (is_block_ctrl_dma(block_header.block_ctrl))
+			dma_free_coherent(dev, size, vaddr, paddr);
+		else
+			kfree(vaddr);
+		ret = -EFAULT;
 		break;
 	default:
 		LCDERR("tcon: don't support ioctl cmd_nr: 0x%x\n", mcd_nr);

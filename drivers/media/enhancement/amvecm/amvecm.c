@@ -12636,7 +12636,7 @@ static int aml_vecm_probe(struct platform_device *pdev)
 	spin_lock_init(&vpp_lcd_gamma_lock);
 	mutex_init(&vpp_lut3d_lock);
 #ifdef CONFIG_AMLOGIC_LCD
-	ret = aml_lcd_notifier_register(&aml_lcd_gamma_nb);
+	ret = aml_lcd_atomic_notifier_register(&aml_lcd_gamma_nb);
 	if (ret)
 		pr_info("register aml_lcd_gamma_notifier failed\n");
 

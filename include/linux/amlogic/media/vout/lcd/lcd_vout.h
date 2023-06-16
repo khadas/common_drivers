@@ -679,6 +679,7 @@ struct aml_lcd_drv_s {
 	unsigned char gamma_en_flag;
 	unsigned char projection_en;
 	unsigned char vsync_none_timer_flag;
+	signed char lcd_cma_ready;
 	char vsync_isr_name[3][15];
 	char vbyone_isr_name[10];
 	char output_name[30];
@@ -687,6 +688,7 @@ struct aml_lcd_drv_s {
 	struct lcd_data_s *data;
 	struct cdev cdev;
 	struct device *dev;
+	struct platform_device *pdev;
 	struct lcd_config_s config;
 	struct lcd_duration_s *std_duration;
 	struct lcd_duration_s cur_duration;

@@ -199,12 +199,15 @@ static int lcd_venc_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
 
 static void lcd_venc_gamma_init(struct aml_lcd_drv_s *pdrv)
 {
+	unsigned int data[2];
 	int index = pdrv->index;
 
 	if (pdrv->lcd_pxp)
 		return;
 
-	aml_lcd_notifier_call_chain(LCD_EVENT_GAMMA_UPDATE, &index);
+	data[0] = index;
+	data[1] = 0xff; //default gamma lut
+	aml_lcd_atomic_notifier_call_chain(LCD_EVENT_GAMMA_UPDATE, (void *)data);
 	lcd_venc_gamma_check_en(pdrv);
 }
 

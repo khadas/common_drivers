@@ -96,6 +96,14 @@
 			no-map;
 		};
 
+		lcd_cma_reserved:linux,lcd-cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* 512k for lcd dma data */
+			size = <0x0 0x00080000>;
+			reg = <0x0 0x3ea80000 0x0 0x00080000>;
+		};
+
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;

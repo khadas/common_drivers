@@ -513,24 +513,6 @@ static int meson_ir_get_custom_tables(struct device_node *node,
 		chip->version = value;
 		ptable->tab.version = chip->version;
 
-		if (DECIDE_VENDOR_CHIP_ID) {
-			if (cnt == 0 || cnl != chip->vendor) {
-				chip->r_dev->input_device_ots[cnt] =
-					devm_input_allocate_device(chip->dev);
-				input_set_drvdata(chip->r_dev->input_device_ots[cnt], chip->r_dev);
-				meson_ir_input_device_ots_init(chip->r_dev->input_device_ots[cnt],
-					chip->dev, chip, "ir_keypad1", cnt);
-				meson_ir_input_ots_configure(chip->r_dev, cnt);
-				chip->input_cnt = cnt;
-				chip->search_id[cnt] = chip->vendor;
-				ret = input_register_device(chip->r_dev->input_device_ots[cnt]);
-				if (ret < 0)
-					return ret;
-			}
-			cnl = chip->vendor;
-			cnt++;
-		}
-
 		ret = of_property_read_u32_array(map, "keymap",
 						 (u32 *)&ptable->tab.codemap[0],
 						 ptable->tab.map_size);
@@ -539,8 +521,28 @@ static int meson_ir_get_custom_tables(struct device_node *node,
 			goto err;
 		}
 
+		if (DECIDE_VENDOR_CHIP_ID) {
+			if (cnt == 0 || cnl != chip->vendor) {
+				chip->r_dev->input_device_ots[cnt] =
+					devm_input_allocate_device(chip->dev);
+				input_set_drvdata(chip->r_dev->input_device_ots[cnt], chip->r_dev);
+				meson_ir_input_device_ots_init(chip->r_dev->input_device_ots[cnt],
+					chip->dev, chip, "ir_keypad1", cnt);
+				meson_ir_input_ots_configure(chip->r_dev, cnt,
+							     &ptable->tab);
+				chip->input_cnt = cnt;
+				chip->search_id[cnt] = chip->vendor;
+				ret = input_register_device(chip->r_dev->input_device_ots[cnt]);
+				if (ret < 0)
+					goto err;
+			}
+			cnl = chip->vendor;
+			cnt++;
+		}
+
 		memset(&ptable->tab.cursor_code, 0xff,
 		       sizeof(struct cursor_codemap));
+		meson_ir_input_configure(chip->r_dev, &ptable->tab);
 		meson_ir_scancode_sort(&ptable->tab);
 		/*insert list*/
 		spin_lock_irqsave(&chip->slock, flags);
@@ -647,14 +649,13 @@ static int meson_ir_get_devtree_pdata(struct platform_device *pdev)
 
 	meson_ir_input_device_init(chip->r_dev->input_device,
 				   &pdev->dev, "ir_keypad");
-	meson_ir_input_configure(chip->r_dev);
-
-	ret = input_register_device(chip->r_dev->input_device);
-	if (ret < 0)
-		return ret;
 
 	/*create map table */
 	ret = meson_ir_get_custom_tables(pdev->dev.of_node, chip);
+	if (ret < 0)
+		return ret;
+
+	ret = input_register_device(chip->r_dev->input_device);
 	if (ret < 0)
 		return ret;
 

@@ -118,7 +118,7 @@ static ssize_t codec_fatal_err_store(struct class *cla,
 	else if (buf[0] == '2')
 		priv->decode_fatal_err = 2;
 
-	pr_info("codec_fatal_err value:%d\n ", priv->decode_fatal_err);
+	pr_debug("codec_fatal_err value:%d\n ", priv->decode_fatal_err);
 	return count;
 }
 

@@ -318,7 +318,7 @@ void arc_earc_source_select(int src)
 				hdmirx_arc_write_reg(HDMIRX_EARCTX_CNTL1, 0x40011508);
 			}
 			if (version == TXHD2_ARC) {
-				hdmirx_arc_write_reg(HDMIRX_ARC_CNTL, 0x00000020);
+				hdmirx_arc_write_reg(HDMIRX_ARC_CNTL, 0x00000046);
 				if (src == SPDIFA_TO_HDMIRX)
 					audiobus_update_bits(EE_AUDIO_SPDIFOUT_MUX,
 							0x1 << 1, 1 << 1);

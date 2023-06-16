@@ -1634,7 +1634,7 @@
 		status = "okay";
 		reg_base = <0xfe037000>;
 		reg = <0xfe036000 0x400>;
-		interrupts = <0 62 IRQ_TYPE_EDGE_RISING>;
+		interrupts = <0 62 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	adla: adla@0xfe04a000 {

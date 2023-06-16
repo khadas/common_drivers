@@ -1896,7 +1896,7 @@
 		compatible = "amlogic,dmc_monitor-g12b";
 		status = "okay";
 		reg_base = <0xff639000>;
-		interrupts = <0 51 1>;
+		interrupts = <0 51 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	isp_sc: isp-sc@ff655400 {

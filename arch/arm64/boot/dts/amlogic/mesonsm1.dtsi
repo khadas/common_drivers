@@ -1812,7 +1812,7 @@
 		compatible = "amlogic,dmc_monitor-sm1";
 		status = "okay";
 		reg_base = <0xff639000>;
-		interrupts = <0 51 1>;
+		interrupts = <0 51 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	defendkey: defendkey {

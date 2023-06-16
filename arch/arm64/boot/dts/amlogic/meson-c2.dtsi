@@ -1393,7 +1393,7 @@
 		       0x0 0xfe024c00 0x0 0x100>;
 		sec_base = <0xfe025000>;
 		freq_reg = <0xfd000128>;
-		interrupts = <GIC_SPI 153 IRQ_TYPE_EDGE_RISING>;
+		interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "ddr_bandwidth";
 	};
 
@@ -1402,7 +1402,7 @@
 		status = "okay";
 		reg_base = <0xfe024180>;
 		reg = <0x0 0xFE024180 0x0 0x100>;
-		interrupts = <GIC_SPI 153 IRQ_TYPE_EDGE_RISING>;
+		interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
 	};
 	galcore {
 		compatible = "amlogic, galcore";

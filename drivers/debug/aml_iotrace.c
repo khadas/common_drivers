@@ -302,11 +302,34 @@ static inline size_t buffer_start(struct aml_persistent_ram_zone *prz)
 	return atomic_read(&prz->buffer->start);
 }
 
+static char reboot_mode[16];
+static int reboot_mode_setup(char *s)
+{
+	if (s)
+		snprintf(reboot_mode, sizeof(reboot_mode), "%s", s);
+
+	return 0;
+}
+__setup("reboot_mode=", reboot_mode_setup);
+
+static bool is_shutdown_reboot(void)
+{
+	return !strcmp(reboot_mode, "shutdown_reboot");
+}
+
+static bool is_cold_boot(void)
+{
+	return !strcmp(reboot_mode, "cold_boot");
+}
+
 static void aml_persistent_ram_save_old(struct aml_persistent_ram_zone *prz)
 {
 	struct aml_persistent_ram_buffer *buffer = prz->buffer;
 	size_t size = buffer_size(prz);
 	size_t start = buffer_start(prz);
+
+	if (is_shutdown_reboot() || is_cold_boot())
+		return;
 
 	if (!size)
 		return;

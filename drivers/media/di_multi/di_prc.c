@@ -914,6 +914,8 @@ const struct di_mp_uit_s di_mp_ui_top[] = {
 	//0~7coef0,8~15coef1,16~23coef2,24~27haa,28~31blendmode
 	[edi_mp_tb_dump]  = {"edi_mp_tb_dump:uint:1",
 				edi_mp_tb_dump, 0},//1400
+	[edi_mp_prelink_hold_line]	= {"pre_hold_line:ushort:8",
+				edi_mp_prelink_hold_line, 8},
 	[EDI_MP_SUB_DI_E]  = {"di end-------",
 				EDI_MP_SUB_DI_E, 0},
 	/**************************************/

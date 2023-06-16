@@ -1626,6 +1626,7 @@ s32 primary_render_frame(struct video_layer_s *layer,
 			di_in_p.win.y_size = di_in_p.win.y_end - di_in_p.win.y_st + 1;
 			di_in_p.dmode = EPVPP_DISPLAY_MODE_NR;
 			di_in_p.unreg_bypass = 0;
+			di_in_p.follow_hold_line = vpp_hold_line;
 			iret = pvpp_display(dispbuf, &di_in_p, NULL);
 			if (iret <= 0) {
 				vd_layer[0].property_changed = true;
@@ -1645,6 +1646,7 @@ s32 primary_render_frame(struct video_layer_s *layer,
 		memset(&di_in_p, 0, sizeof(struct pvpp_dis_para_in_s));
 		di_in_p.dmode = EPVPP_DISPLAY_MODE_BYPASS;
 		di_in_p.unreg_bypass = 1;
+		di_in_p.follow_hold_line = vpp_hold_line;
 		iret = pvpp_display(NULL, &di_in_p, NULL);
 		if (layer->global_debug & DEBUG_FLAG_PRELINK)
 			pr_info("%s: unreg_bypass pre-link mode ret %d\n", __func__, iret);

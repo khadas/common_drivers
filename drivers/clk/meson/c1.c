@@ -924,16 +924,18 @@ MESON_CLK_DIV_RW(dsu_axi_clk, CPUCTRL_CLK_CTRL6, 4, 3, NULL, 0,
 
 /*
  *rtc 32k clock
- *
- *                                                  |\
- * xtal--+----------------------------------------->| \
- *       |    ______       ______       ______      |  |
- *	 |   |      |     |      |     |      |     |  | rtc_clk
- *	 +-->| GATE |---->| DUAL |---->| GATE |---->|  |--------->
- *	     |______|     |______|     |______|     |  |
- *	                                            |  |
- * PAD--------------------------------------------->| /
- *	                                            |/
+ *                                                         |\
+ * xtal--+------------------------------------------------>| \
+ *       |   ______       ________                         |  |
+ *	 |  |      |     |        |    |\       ______     |  |
+ *	 +->| GATE |---->| divN/M |--->| \     |      |    |  |
+ *	    |______|  |  |________|    |  |--->| GATE |--->|  | rtc_clk
+ *                    |                |  |    |______|    |  |--------->
+ *                    +--------------->| /                 |  |
+ *                                     |/                  |  |
+ *                                                         |  |
+ * PAD---------------------------------------------------->| /
+ *	                                                   |/
  **/
 static const struct clk_parent_data rtc_xtal_clkin_parent = {
 	.fw_name = "xtal",
@@ -955,22 +957,23 @@ MESON_CLK_DUALDIV_RW(rtc_32k_div, RTC_BY_OSCIN_CTRL0, 0,  12,
 		     &rtc_32k_clkin.hw, 0);
 
 static const struct clk_parent_data rtc_32k_mux_parent_data[] = {
-	{ .hw = &rtc_32k_clkin.hw },
-	{ .hw = &rtc_32k_div.hw }
+	{ .hw = &rtc_32k_div.hw },
+	{ .hw = &rtc_32k_clkin.hw }
 };
 
-MESON_CLK_MUX_RW(rtc_32k_mux, RTC_CTRL, 0x3, 0, NULL, 0,
+MESON_CLK_MUX_RW(rtc_32k_mux, RTC_BY_OSCIN_CTRL1, 0x1, 24, NULL, 0,
 		 rtc_32k_mux_parent_data, CLK_SET_RATE_PARENT);
 
 MESON_CLK_GATE_RW(rtc_32k, RTC_BY_OSCIN_CTRL0, 30, 0,
 		  &rtc_32k_mux.hw, CLK_SET_RATE_PARENT);
 
 static const struct clk_parent_data rtc_clk_mux_parent_data[] = {
+	{ .fw_name = "xtal" },
 	{ .hw = &rtc_32k.hw },
-	{ .fw_name = "xtal" }
+	{ .fw_name = "pad" }
 };
 
-MESON_CLK_MUX_RW(rtc_clk, RTC_BY_OSCIN_CTRL1, 0x1, 24, NULL, 0,
+MESON_CLK_MUX_RW(rtc_clk, RTC_CTRL, 0x3, 0, NULL, 0,
 		 rtc_clk_mux_parent_data, CLK_SET_RATE_PARENT);
 
 /*

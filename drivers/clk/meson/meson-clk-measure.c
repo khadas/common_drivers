@@ -3055,7 +3055,6 @@ static struct meson_msr_id clk_msr_t3x[] __initdata = {
 	CLK_MSR_ID(246, "alocker_in_clk"),
 	CLK_MSR_ID(247, "resample_c_clk"),
 };
-#endif
 
 static struct meson_msr_id clk_msr_c1[] __initdata = {
 	CLK_MSR_ID(0, "tdmout_b_sclk"),
@@ -3143,7 +3142,7 @@ static struct meson_msr_id clk_msr_c1[] __initdata = {
 	CLK_MSR_ID(91, "mod_eth_phy_ref_clk"),
 	CLK_MSR_ID(92, "ddr_dpll_pt_clk"),
 };
-
+#endif
 static int meson_measure_id(struct meson_msr_id *clk_msr_id,
 			    unsigned int duration)
 {

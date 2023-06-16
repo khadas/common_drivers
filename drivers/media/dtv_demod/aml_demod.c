@@ -242,7 +242,7 @@ static long aml_demod_ioctl(struct file *file,
 
 		/*demod_get_sys(&demod_i2c, (struct aml_demod_sys *)arg); */
 		break;
-
+#ifdef AML_DEMOD_SUPPORT_DVBC
 	case AML_DEMOD_DVBC_SET_CH:
 		pr_dbg("Ioctl DVB-C Set Channel.\n");
 		dvbc_set_ch(demod, (struct aml_demod_dvbc *)arg,
@@ -252,22 +252,24 @@ static long aml_demod_ioctl(struct file *file,
 	case AML_DEMOD_DVBC_GET_CH:
 		dvbc_status(demod, (struct aml_demod_sts *)arg, NULL);
 		break;
-
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBT
 	case AML_DEMOD_DVBT_SET_CH:
 		pr_dbg("Ioctl DVB-T Set Channel\n");
-		dvbt_isdbt_set_ch(demod, (struct aml_demod_dvbt *)arg);
+		dvbt_dvbt_set_ch(demod, (struct aml_demod_dvbt *)arg);
 		break;
-
+#endif
 	case AML_DEMOD_DVBT_GET_CH:
 		pr_dbg("Ioctl DVB-T Get Channel\n");
 		/*dvbt_status(&demod_sta, &demod_i2c,*/
 		/* (struct aml_demod_sts *)arg); */
 		break;
-
+#ifdef AML_DEMOD_SUPPORT_DTMB
 	case AML_DEMOD_DTMB_SET_CH:
 		dtmb_set_ch(demod, (struct aml_demod_dtmb *)arg);
 		break;
-
+#endif
+#ifdef AML_DEMOD_SUPPORT_ATSC
 	case AML_DEMOD_ATSC_SET_CH:
 		atsc_set_ch(demod, (struct aml_demod_atsc *)arg);
 		break;
@@ -275,7 +277,7 @@ static long aml_demod_ioctl(struct file *file,
 	case AML_DEMOD_ATSC_GET_CH:
 		check_atsc_fsm_status();
 		break;
-
+#endif
 	case AML_DEMOD_SET_REG:
 		if (copy_from_user(&arg_t, (void __user *)arg,
 			sizeof(struct aml_demod_reg))) {
@@ -305,10 +307,11 @@ static long aml_demod_ioctl(struct file *file,
 		/* } */
 		mem_read((struct aml_demod_mem *)arg);
 		break;
-
+#ifdef AML_DEMOD_SUPPORT_ATSC
 	case AML_DEMOD_ATSC_IRQ:
 		atsc_read_iqr_reg();
 		break;
+#endif
 	case AML_DEMOD_GET_PLL_INIT:
 		val = get_dtvpll_init_flag();
 

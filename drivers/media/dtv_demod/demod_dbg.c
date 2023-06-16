@@ -11,17 +11,36 @@
 #if IS_ENABLED(CONFIG_AMLOGIC_DMC_DEV_ACCESS)
 #include <linux/amlogic/dmc_dev_access.h>
 #endif
-#include "dvbs.h"
+
 #include "demod_func.h"
 #include "amlfrontend.h"
 #include "demod_dbg.h"
+#ifdef AML_DEMOD_SUPPORT_DVBT
 #include "dvbt_func.h"
-#include "isdbt_func.h"
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBS
+#include "dvbs.h"
 #include "dvbs_diseqc.h"
+#endif
 #include "aml_demod.h"
 
+#ifdef AML_DEMOD_SUPPORT_DTMB
 static unsigned int dtmb_mode;
+#endif
+
 static unsigned int atsc_mode_para;
+
+#ifdef AML_DEMOD_SUPPORT_ISDBT
+#include "isdbt_func.h"
+#endif
+
+#ifdef AML_DEMOD_SUPPORT_DVBC
+#include "dvbc_frontend.h"
+#endif
+
+#ifdef AML_DEMOD_SUPPORT_ATSC
+#include "atsc_frontend.h"
+#endif
 
 static unsigned long demod_dmc_id;
 static unsigned int demod_ddr_addr;
@@ -120,6 +139,7 @@ static void get_chip_name(struct amldtvdemod_device_s *devp, char *str)
 	}
 }
 
+#ifdef AML_DEMOD_SUPPORT_DVBC
 static int dvbc_fast_search_open(struct inode *inode, struct file *file)
 {
 	PR_DVBC("dvbc fast channel search Open\n");
@@ -188,6 +208,7 @@ static const struct file_operations __name ## _fops = {	\
 
 /*echo fast_search on > /sys/kernel/debug/demod/dvbc_channel_fast*/
 DEFINE_SHOW_STORE_DEMOD(dvbc_fast_search);
+#endif
 
 static void seq_dump_regs(struct seq_file *seq)
 {
@@ -213,6 +234,7 @@ static void seq_dump_regs(struct seq_file *seq)
 	list_for_each_entry(demod, &devp->demod_list, list) {
 		seq_printf(seq, "demod regs [id %d]:\n", demod->id);
 		switch (demod->last_delsys) {
+#ifdef AML_DEMOD_SUPPORT_ATSC
 		case SYS_ATSC:
 		case SYS_ATSCMH:
 			if (is_meson_txlx_cpu()) {
@@ -225,7 +247,7 @@ static void seq_dump_regs(struct seq_file *seq)
 						   reg_start, atsc_read_reg_v4(reg_start));
 			}
 			break;
-
+#endif
 		case SYS_DVBC_ANNEX_A:
 		case SYS_DVBC_ANNEX_C:
 		case SYS_DVBC_ANNEX_B:
@@ -263,26 +285,26 @@ static void seq_dump_regs(struct seq_file *seq)
 
 			devp->demod_thread = polling_en;
 			break;
-
+#ifdef AML_DEMOD_SUPPORT_DTMB
 		case SYS_DTMB:
 			for (reg_start = 0x0; reg_start <= 0xff; reg_start++)
 				seq_printf(seq, "[0x%x] = 0x%x\n",
 					   reg_start, dtmb_read_reg(reg_start));
 			break;
-
+#endif
 		case SYS_ISDBT:
 			for (reg_start = 0x0; reg_start <= 0xff; reg_start++)
 				seq_printf(seq, "[0x%x] = 0x%x\n",
 					   reg_start, dvbt_isdbt_rd_reg_new(reg_start));
 			break;
-
+#ifdef AML_DEMOD_SUPPORT_DVBS
 		case SYS_DVBS:
 		case SYS_DVBS2:
 			for (reg_start = 0x0; reg_start <= 0xfbf; reg_start++)
 				seq_printf(seq, "[0x%x] = 0x%x\n",
 					   reg_start, dvbs_rd_byte(reg_start));
 			break;
-
+#endif
 		default:
 			seq_puts(seq, "current mode is unknown\n");
 			break;
@@ -296,12 +318,19 @@ static void seq_dump_status(struct seq_file *seq)
 {
 	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
 	struct aml_dtvdemod *demod = NULL;
-	int snr, lock_status, agc_if_gain[3];
+#ifdef AML_DEMOD_SUPPORT_DTMB
+	int agc_if_gain[3];
+#endif
+#ifdef AML_DEMOD_SUPPORT_ATSC
 	unsigned int ser;
+	int snr, lock_status;
+#endif
 	int strength = 0;
 	char chip_name[30];
 	struct aml_demod_sts demod_sts;
+#ifdef AML_DEMOD_SUPPORT_DVBT
 	unsigned int polling_en = 1;
+#endif
 
 	seq_printf(seq, "version:%s\n", DTVDEMOD_VER);
 	seq_printf(seq, "AMLDTVDEMOD_VER:%s\nAMLDTVDEMOD_T2_FW_VER:%s\n",
@@ -317,12 +346,18 @@ static void seq_dump_status(struct seq_file *seq)
 		seq_printf(seq, "freq: %d\n", demod->freq);
 
 		switch (demod->last_delsys) {
+#ifdef AML_DEMOD_SUPPORT_DVBC
 		case SYS_DVBC_ANNEX_A:
 		case SYS_DVBC_ANNEX_C:
-		case SYS_DVBC_ANNEX_B:
 			dvbc_status(demod, &demod_sts, seq);
 			break;
-
+#endif
+#ifdef AML_DEMOD_SUPPORT_J83B
+		case SYS_DVBC_ANNEX_B:
+			atsc_j83b_status(demod, &demod_sts, seq);
+			break;
+#endif
+#ifdef AML_DEMOD_SUPPORT_DTMB
 		case SYS_DTMB:
 			dtmb_information(seq);
 			if (strength <= -56) {
@@ -330,10 +365,10 @@ static void seq_dump_status(struct seq_file *seq)
 				strength = dtmb_get_power_strength(agc_if_gain[0]);
 			}
 			break;
-
+#endif
 		case SYS_ISDBT:
 			break;
-
+#ifdef AML_DEMOD_SUPPORT_ATSC
 		case SYS_ATSC:
 		case SYS_ATSCMH:
 			if (demod->atsc_mode != VSB_8)
@@ -352,7 +387,8 @@ static void seq_dump_status(struct seq_file *seq)
 			ser = atsc_read_ser();
 			seq_printf(seq, "ser: %d\n", ser);
 			break;
-
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBT
 		case SYS_DVBT:
 			dvbt_info(demod, seq);
 			break;
@@ -368,13 +404,14 @@ static void seq_dump_status(struct seq_file *seq)
 
 			devp->demod_thread = polling_en;
 			break;
-
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBS
 		case SYS_DVBS:
 		case SYS_DVBS2:
 			seq_printf(seq, "lock: %d.\n", (dvbs_rd_byte(0x160) >> 3) & 0x1);
 			dvbs_check_status(seq);
 			break;
-
+#endif
 		default:
 			break;
 		}
@@ -420,7 +457,9 @@ DEFINE_SHOW_DEMOD(demod_version_info);
 static struct demod_debugfs_files_t demod_debug_files[] = {
 	{"dump_info", S_IFREG | 0644, &demod_dump_info_fops},
 	{"version_info", S_IFREG | 0644, &demod_version_info_fops},
+#ifdef AML_DEMOD_SUPPORT_DVBC
 	{"dvbc_channel_fast", S_IFREG | 0644, &dvbc_fast_search_fops},
+#endif
 };
 
 static void dtv_dmd_parse_param(char *buf_orig, char **parm)
@@ -1004,13 +1043,20 @@ unsigned int clear_ddr_bus_data(struct aml_dtvdemod *demod)
 
 static void info_show(void)
 {
-	int snr, lock_status, agc_if_gain[3];
+#ifdef AML_DEMOD_SUPPORT_DTMB
+	int agc_if_gain[3];
+#endif
+#ifdef AML_DEMOD_SUPPORT_ATSC
+	int snr, lock_status;
 	unsigned int ser;
+#endif
 	int strength = 0;
 	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
 	struct dtv_frontend_properties *c = NULL;
 	struct aml_dtvdemod *demod = NULL;
+#ifdef AML_DEMOD_SUPPORT_DVBT
 	unsigned int debug_mode = aml_demod_debug;
+#endif
 	char chip_name[30];
 	struct aml_demod_sts demod_sts;
 
@@ -1020,8 +1066,9 @@ static void info_show(void)
 	PR_INFO("hw version chip: %d, %s.\n", devp->data->hw_ver, chip_name);
 	PR_INFO("version: %s-%s, T2 FW ver: %s.\n", AMLDTVDEMOD_VER,
 			DTVDEMOD_VER, AMLDTVDEMOD_T2_FW_VER);
+#ifdef AML_DEMOD_SUPPORT_DVBS
 	aml_diseqc_status(&devp->diseqc);
-
+#endif
 	list_for_each_entry(demod, &devp->demod_list, list) {
 		strength = tuner_get_ch_power(&demod->frontend);
 
@@ -1034,12 +1081,18 @@ static void info_show(void)
 				c->bandwidth_hz, c->modulation, c->inversion);
 
 		switch (demod->last_delsys) {
+#ifdef AML_DEMOD_SUPPORT_DVBC
 		case SYS_DVBC_ANNEX_A:
 		case SYS_DVBC_ANNEX_C:
-		case SYS_DVBC_ANNEX_B:
 			dvbc_status(demod, &demod_sts, NULL);
 			break;
-
+#endif
+#ifdef AML_DEMOD_SUPPORT_J83B
+		case SYS_DVBC_ANNEX_B:
+			atsc_j83b_status(demod, &demod_sts, NULL);
+			break;
+#endif
+#ifdef AML_DEMOD_SUPPORT_DTMB
 		case SYS_DTMB:
 			dtmb_information(NULL);
 			if (strength <= -56) {
@@ -1047,10 +1100,10 @@ static void info_show(void)
 				strength = dtmb_get_power_strength(agc_if_gain[0]);
 			}
 			break;
-
+#endif
 		case SYS_ISDBT:
 			break;
-
+#ifdef AML_DEMOD_SUPPORT_ATSC
 		case SYS_ATSC:
 		case SYS_ATSCMH:
 			if (demod->atsc_mode != VSB_8)
@@ -1071,7 +1124,8 @@ static void info_show(void)
 
 			PR_INFO("atsc rst done: %d.\n", demod->atsc_rst_done);
 			break;
-
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBT
 		case SYS_DVBT:
 			aml_demod_debug |= DBG_DVBT;
 			dvbt_info(demod, NULL);
@@ -1089,13 +1143,14 @@ static void info_show(void)
 			devp->demod_thread = 1;
 			aml_demod_debug = debug_mode;
 			break;
-
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBS
 		case SYS_DVBS:
 		case SYS_DVBS2:
 			PR_INFO("lock: %d.\n", (dvbs_rd_byte(0x160) >> 3) & 0x1);
 			dvbs_check_status(NULL);
 			break;
-
+#endif
 		default:
 			break;
 		}
@@ -1123,6 +1178,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 	}
 
 	switch (delsys) {
+#ifdef AML_DEMOD_SUPPORT_ATSC
 	case SYS_ATSC:
 	case SYS_ATSCMH:
 		pr_info("atsc start\n");
@@ -1138,7 +1194,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 		}
 		pr_info("atsc end\n");
 		break;
-
+#endif
 	case SYS_DVBC_ANNEX_A:
 	case SYS_DVBC_ANNEX_C:
 	case SYS_DVBC_ANNEX_B:
@@ -1179,7 +1235,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 		}
 		pr_info("dvbt/t2 end\n");
 		break;
-
+#ifdef AML_DEMOD_SUPPORT_DTMB
 	case SYS_DTMB:
 		pr_info("dtmb start\n");
 		for (reg_start = 0x0; reg_start <= 0xff; reg_start++)
@@ -1187,7 +1243,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 
 		pr_info("dtmb end\n");
 		break;
-
+#endif
 	case SYS_ISDBT:
 		pr_info("isdbt start\n");
 		for (reg_start = 0x0; reg_start <= 0xff; reg_start++)
@@ -1195,7 +1251,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 
 		pr_info("isdbt end\n");
 		break;
-
+#ifdef AML_DEMOD_SUPPORT_DVBS
 	case SYS_DVBS:
 	case SYS_DVBS2:
 		pr_info("dvbs start\n");
@@ -1204,7 +1260,7 @@ static void dump_regs(struct aml_dtvdemod *demod)
 
 		pr_info("dvbs end\n");
 		break;
-
+#endif
 	default:
 		break;
 	}
@@ -1216,7 +1272,9 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 	char *buf_orig, *parm[47] = {NULL};
 	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
 	struct aml_dtvdemod *demod = NULL, *tmp = NULL;
+#ifdef AML_DEMOD_SUPPORT_ISDBT
 	struct isdbt_tmcc_info tmcc_info;
+#endif
 	unsigned int capture_start = 0;
 	unsigned int val = 0;
 	unsigned int addr = 0;
@@ -1352,8 +1410,10 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 		if (parm[1] && (kstrtouint(parm[1], 10, &val)) == 0)
 			demod->timeout_atsc_ms = val;
 	} else if (!strcmp(parm[0], "timeout_dvbt")) {
+#ifdef AML_DEMOD_SUPPORT_DVBT
 		if (parm[1] && (kstrtouint(parm[1], 10, &val)) == 0)
 			demod->timeout_dvbt_ms = val;
+#endif
 	} else if (!strcmp(parm[0], "timeout_dvbs")) {
 		if (parm[1] && (kstrtouint(parm[1], 10, &val)) == 0)
 			demod->timeout_dvbs_ms = val;
@@ -1363,10 +1423,15 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 	} else if (!strcmp(parm[0], "dump_reg")) {
 		dump_regs(demod);
 	} else if (!strcmp(parm[0], "get_plp")) {
+#ifdef AML_DEMOD_SUPPORT_DVBT
 		dtvdemod_get_plp_dbg();
+#endif
 	} else if (!strcmp(parm[0], "set_plp")) {
+#ifdef AML_DEMOD_SUPPORT_DVBT
 		if (parm[1] && (kstrtouint(parm[1], 10, &val)) == 0)
 			dtvdemod_set_plpid(val);
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBS
 	} else if (!strcmp(parm[0], "lnb_en")) {
 	} else if (!strcmp(parm[0], "lnb_sel")) {
 		if (parm[1] && (kstrtouint(parm[1], 10, &val)) == 0)
@@ -1395,6 +1460,7 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 			aml_diseqc_tone_on(&devp->diseqc, val);
 			PR_INFO("continuous_tone %d\n", val);
 		}
+#endif
 	} else if (!strcmp(parm[0], "monitor")) {
 		if (parm[1] && (kstrtouint(parm[1], 10, &val)) == 0)
 			devp->print_on = val;
@@ -1464,17 +1530,21 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 			}
 		}
 	} else if (!strcmp(parm[0], "atscr")) {
+#ifdef AML_DEMOD_SUPPORT_ATSC
 		if (parm[1] && (kstrtouint(parm[1], 16, &addr)) == 0) {
 			val = atsc_read_reg_v4(addr);
 			PR_INFO("atsc rd addr:0x%x, val:0x%x\n", addr, val);
 		}
+#endif
 	} else if (!strcmp(parm[0], "atscw")) {
+#ifdef AML_DEMOD_SUPPORT_ATSC
 		if (parm[1] && (kstrtouint(parm[1], 16, &addr)) == 0) {
 			if (parm[2] && (kstrtouint(parm[2], 16, &val)) == 0) {
 				atsc_write_reg_v4(addr, val);
 				PR_INFO("atsc wr addr:0x%x, val:0x%x\n", addr, val);
 			}
 		}
+#endif
 	} else if (!strcmp(parm[0], "dvbcr")) {
 		if (parm[1] && (kstrtouint(parm[1], 16, &addr)) == 0) {
 			val = qam_read_reg(demod, addr);
@@ -1488,17 +1558,21 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 			}
 		}
 	} else if (!strcmp(parm[0], "dtmbr")) {
+#ifdef AML_DEMOD_SUPPORT_DTMB
 		if (parm[1] && (kstrtouint(parm[1], 16, &addr)) == 0) {
 			val = dtmb_read_reg(addr);
 			PR_INFO("dtmb rd addr:0x%x, val:0x%x\n", addr, val);
 		}
+#endif
 	} else if (!strcmp(parm[0], "dtmbw")) {
+#ifdef AML_DEMOD_SUPPORT_DTMB
 		if (parm[1] && (kstrtouint(parm[1], 16, &addr)) == 0) {
 			if (parm[2] && (kstrtouint(parm[2], 16, &val)) == 0) {
 				dtmb_write_reg(addr, val);
 				PR_INFO("dtmb wr addr:0x%x, val:0x%x\n", addr, val);
 			}
 		}
+#endif
 	} else if (!strcmp(parm[0], "isdbtr")) {
 		if (parm[1] && (kstrtouint(parm[1], 16, &addr)) == 0) {
 			val = dvbt_isdbt_rd_reg_new(addr);
@@ -1554,7 +1628,9 @@ static ssize_t attr_store(struct class *cls, struct class_attribute *attr,
 	} else if (!strcmp(parm[0], "register_dmc")) {
 		demod_dmc_notifier();
 	} else if (!strcmp(parm[0], "tmcc")) {
+#ifdef AML_DEMOD_SUPPORT_ISDBT
 		isdbt_get_tmcc_info(&tmcc_info);
+#endif
 	} else {
 		PR_INFO("invalid command: %s.\n", parm[0]);
 	}
@@ -1599,6 +1675,7 @@ static ssize_t attr_show(struct class *cls,
 	return len;
 }
 
+#ifdef AML_DEMOD_SUPPORT_DTMB
 static ssize_t dtmb_para_show(struct class *cls,
 			      struct class_attribute *attr, char *buf)
 {
@@ -1658,12 +1735,16 @@ static ssize_t dtmb_para_store(struct class *cls, struct class_attribute *attr,
 
 	return count;
 }
+#endif
 
 static ssize_t atsc_para_show(struct class *cls,
 		struct class_attribute *attr, char *buf)
 {
+#ifdef AML_DEMOD_SUPPORT_ATSC
 	int snr, lock_status;
-	unsigned int ser, ck;
+	unsigned int ck;
+#endif
+	unsigned int ser;
 	int strength = 0;
 	struct amldtvdemod_device_s *devp = dtvdemod_get_dev();
 	struct aml_dtvdemod *demod = NULL, *tmp = NULL;
@@ -1680,18 +1761,21 @@ static ssize_t atsc_para_show(struct class *cls,
 
 	if (demod->atsc_mode == QAM_64 || demod->atsc_mode == QAM_256 ||
 		demod->atsc_mode == QAM_AUTO) {
+#ifdef AML_DEMOD_SUPPORT_J83B
 		if (atsc_mode_para == ATSC_READ_STRENGTH) {
 			strength = tuner_get_ch_power(&demod->frontend);
 			return sprintf(buf, "strength is %d\n", strength);
 		} else if (atsc_mode_para == ATSC_READ_SER) {
-			ser = (unsigned int)dvbc_get_per(demod);
+			ser = (unsigned int)atsc_j83b_get_per(demod);
 			return sprintf(buf, "ser is %d\n", ser);
 		} else if (atsc_mode_para == ATSC_READ_FREQ) {
 			return sprintf(buf, "freq is %d\n", demod->freq);
 		} else {
 			return sprintf(buf, "atsc_para_shows can't match mode\n");
 		}
+#endif
 	} else if (demod->atsc_mode == VSB_8) {
+#ifdef AML_DEMOD_SUPPORT_ATSC
 		if (atsc_mode_para == ATSC_READ_STRENGTH) {
 			strength = tuner_get_ch_power(&demod->frontend);
 			return sprintf(buf, "strength is %d\n", strength);
@@ -1712,6 +1796,7 @@ static ssize_t atsc_para_show(struct class *cls,
 		} else {
 			return sprintf(buf, "atsc_para_shows can't match mode\n");
 		}
+#endif
 	} else {
 		return sprintf(buf, "atsc_para_shows can't match mode.\n");
 	}
@@ -1738,6 +1823,7 @@ static ssize_t atsc_para_store(struct class *cls, struct class_attribute *attr,
 	return count;
 }
 
+#ifdef AML_DEMOD_SUPPORT_DVBS
 static ssize_t diseq_cmd_store(struct class *cla, struct class_attribute *attr,
 		const char *bu, size_t count)
 {
@@ -1796,28 +1882,44 @@ static ssize_t diseq_cmd_show(struct class *cla,
 }
 
 static CLASS_ATTR_RW(diseq_cmd);
+#endif
 static CLASS_ATTR_RW(attr);
+#ifdef AML_DEMOD_SUPPORT_DTMB
 static CLASS_ATTR_RW(dtmb_para);
+#endif
+#if defined AML_DEMOD_SUPPORT_ATSC || defined AML_DEMOD_SUPPORT_J83B
 static CLASS_ATTR_RW(atsc_para);
+#endif
 
 int dtvdemod_create_class_files(struct class *clsp)
 {
 	int ret = 0;
 
+#ifdef AML_DEMOD_SUPPORT_DTMB
 	ret = class_create_file(clsp, &class_attr_dtmb_para);
+#endif
+#if defined AML_DEMOD_SUPPORT_ATSC || defined AML_DEMOD_SUPPORT_J83B
 	ret |= class_create_file(clsp, &class_attr_atsc_para);
+#endif
 	ret |= class_create_file(clsp, &class_attr_attr);
+#ifdef AML_DEMOD_SUPPORT_DVBS
 	ret |= class_create_file(clsp, &class_attr_diseq_cmd);
-
+#endif
 	return ret;
 }
 
 void dtvdemod_remove_class_files(struct class *clsp)
 {
+#ifdef AML_DEMOD_SUPPORT_DTMB
 	class_remove_file(clsp, &class_attr_dtmb_para);
+#endif
+#if defined AML_DEMOD_SUPPORT_ATSC || defined AML_DEMOD_SUPPORT_J83B
 	class_remove_file(clsp, &class_attr_atsc_para);
+#endif
 	class_remove_file(clsp, &class_attr_attr);
+#ifdef AML_DEMOD_SUPPORT_DVBS
 	class_remove_file(clsp, &class_attr_diseq_cmd);
+#endif
 }
 
 void aml_demod_dbg_init(void)

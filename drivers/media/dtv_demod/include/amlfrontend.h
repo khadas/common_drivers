@@ -7,8 +7,13 @@
 #define _AMLFRONTEND_H
 
 #include "depend.h"
-#include "dvbc_func.h"
+#ifdef AML_DEMOD_SUPPORT_DVBS
 #include "dvbs_diseqc.h"
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBC
+#include "dvbc_func.h"
+#endif
+
 #include <linux/amlogic/cpu_version.h>
 #include <linux/amlogic/aml_dtvdemod.h>
 
@@ -113,6 +118,7 @@
 /*  V3.3.003 add t2 ddr clock reset and arbit control when tune (t5m/t3x) */
 /*  V3.3.004 add ATSC Monitor call for r842 */
 /*  V3.3.005 fix no signal after system resume */
+/*  V3.4.000 standard isolation and optimization*/
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -129,8 +135,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.3.005"
-#define DTVDEMOD_VER	"2023/07/06: fix no signal after system resume"
+#define AMLDTVDEMOD_VER "V3.4.000"
+#define DTVDEMOD_VER	"2023/07/10: standard isolation and optimization"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
@@ -151,6 +157,16 @@
 #define TIMEOUT_DVBT2		5000
 #define TIMEOUT_DDR_LEAVE	50
 #define TIMEOUT_ISDBT		3000
+
+enum qam_md_e {
+	QAM_MODE_16,
+	QAM_MODE_32,
+	QAM_MODE_64,
+	QAM_MODE_128,
+	QAM_MODE_256,
+	QAM_MODE_AUTO,
+	QAM_MODE_NUM
+};
 
 enum DEMOD_TUNER_IF {
 	DEMOD_4M_IF = 4000,
@@ -349,7 +365,6 @@ struct aml_dtvdemod {
 
 	unsigned int times;
 	unsigned int no_sig_cnt;
-
 	enum qam_md_e auto_qam_mode;
 	enum qam_md_e auto_qam_list[5];
 	enum qam_md_e last_qam_mode;
@@ -455,7 +470,9 @@ struct amldtvdemod_device_s {
 	struct work_struct blind_scan_work;
 
 	/* diseqc */
+#ifdef AML_DEMOD_SUPPORT_DVBS
 	struct aml_diseqc diseqc;
+#endif
 
 	unsigned int print_on;
 	int tuner_strength_limit;
@@ -627,24 +644,15 @@ static inline unsigned int gphybase_hiu(void)
 	return devp->reg_p[ES_MAP_ADDR_IOHIU].phy_addr;
 }
 
-/*poll*/
-void dtmb_poll_start(struct aml_dtvdemod *demod);
-void dtmb_poll_stop(struct aml_dtvdemod *demod);
-unsigned int dtmb_is_update_delay(struct aml_dtvdemod *demod);
-unsigned int dtmb_get_delay_clear(struct aml_dtvdemod *demod);
+//int amdemod_stat_islock(struct aml_dtvdemod *demod, enum fe_delivery_system delsys);
+
 unsigned int dtmb_is_have_check(void);
-void dtmb_poll_v3(struct aml_dtvdemod *demod);
-unsigned int demod_dvbc_get_fast_search(void);
-void demod_dvbc_set_fast_search(unsigned int en);
-unsigned int dtvdemod_get_atsc_lock_sts(struct aml_dtvdemod *demod);
 const char *dtvdemod_get_cur_delsys(enum fe_delivery_system delsys);
 void aml_dtv_demode_isr_en(struct amldtvdemod_device_s *devp, u32 en);
-u32 dvbc_get_symb_rate(struct aml_dtvdemod *demod);
-u32 dvbc_get_snr(struct aml_dtvdemod *demod);
-u32 dvbc_get_per(struct aml_dtvdemod *demod);
 unsigned int demod_is_t5d_cpu(struct amldtvdemod_device_s *devp);
+#ifdef AML_DEMOD_SUPPORT_DTMB
 int dtmb_information(struct seq_file *seq);
-
+#endif
 #ifdef MODULE
 struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config);
 #endif

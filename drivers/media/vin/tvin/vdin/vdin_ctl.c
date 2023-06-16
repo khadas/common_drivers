@@ -2130,8 +2130,12 @@ static inline void vdin_set_hist_mux(struct vdin_dev_s *devp)
 	 * AV, HDMI all set 3
 	 */
 	/* use 11: form matrix1 din */
-	wr_bits(devp->addr_offset, VDIN_HIST_CTRL, 3,
-		HIST_HIST_DIN_SEL_BIT, HIST_HIST_DIN_SEL_WID);
+	if (is_meson_txhd2_cpu())
+		wr_bits(0, VDIN_HIST_CTRL, 3,
+			HIST_HIST_DIN_SEL_BIT, HIST_HIST_DIN_SEL_WID);
+	else
+		wr_bits(devp->addr_offset, VDIN_HIST_CTRL, 3,
+			HIST_HIST_DIN_SEL_BIT, HIST_HIST_DIN_SEL_WID);
 
 	/*for project get vdin1 hist*/
 	//if (devp->index == 1)
@@ -3036,6 +3040,12 @@ void vdin_set_vframe_prop_info(struct vframe_s *vf,
 	/* vf->prop.hist.luma_sum   = READ_CBUS_REG_BITS(VDIN_HIST_SPL_VAL,
 	 * HIST_LUMA_SUM_BIT,    HIST_LUMA_SUM_WID   );
 	 */
+	 /* The txhd2 hist function of vdin1 uses the vdin0 register
+	  * When both vdin0 and vdin1 are started,
+	  * the vdin1 histgram function is used by default
+	  */
+	if (is_meson_txhd2_cpu())
+		offset = 0;
 	vf->prop.hist.hist_pow   = rd_bits(offset, VDIN_HIST_CTRL,
 					   HIST_POW_BIT, HIST_POW_WID);
 	vf->prop.hist.luma_sum   = rd(offset, VDIN_HIST_SPL_VAL);
@@ -3346,8 +3356,12 @@ void vdin_set_all_regs(struct vdin_dev_s *devp)
 			       VDIN_LDIM_BLK_HNUM, VDIN_LDIM_BLK_VNUM);
 #endif
 	/* hist sub-module */
-	vdin_set_histogram(devp->addr_offset, 0,
-			   devp->h_active - 1, 0, devp->v_active - 1);
+	if (is_meson_txhd2_cpu())
+		vdin_set_histogram(0, 0,
+				devp->h_active - 1, 0, devp->v_active - 1);
+	else
+		vdin_set_histogram(devp->addr_offset, 0,
+				devp->h_active - 1, 0, devp->v_active - 1);
 	/* hist mux select */
 	vdin_set_hist_mux(devp);
 	/* write sub-module */
@@ -3727,7 +3741,16 @@ void vdin_set_default_regmap(struct vdin_dev_s *devp)
 	/* [ 3: 2] hist.mux = 0/(matrix_out, hsc_out, phsc_in) */
 	/* [    1] hist.win_en           = 1 */
 	/* [    0] hist.read_en          = 1 */
-	wr(offset, VDIN_HIST_CTRL, 0x00000003);
+	if (is_meson_txhd2_cpu()) {
+		wr(offset, VDIN_ASFIFO_CTRL1, 0x80e4);
+		if (devp->vdin_function_sel & VDIN_MUX_VDIN0_HIST)
+			wr_bits(0, VDIN_TOP_MISC, 1, 24, 1);
+		else
+			wr_bits(0, VDIN_TOP_MISC, 0, 24, 1);
+		wr(0, VDIN_HIST_CTRL, 0x00000003);
+	} else {
+		wr(offset, VDIN_HIST_CTRL, 0x00000003);
+		}
 	/* [28:16] hist.win_hs           = 0 */
 	/* [12: 0] hist.win_he           = 0 */
 	wr(offset, VDIN_HIST_H_START_END, 0x00000000);

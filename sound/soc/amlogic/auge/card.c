@@ -968,6 +968,7 @@ static int aml_card_parse_gpios(struct device_node *node,
 	int gpio;
 	bool active_low;
 	unsigned int sleep_time = 500;
+	unsigned int spk_mute_sleep_time = 200;
 
 	gpio = of_get_named_gpio_flags(node, "spk_mute-gpios", 0, &flags);
 	priv->spk_mute_gpio = gpio;
@@ -986,7 +987,11 @@ static int aml_card_parse_gpios(struct device_node *node,
 				(active_low) ? GPIOF_OUT_INIT_LOW :
 				GPIOF_OUT_INIT_HIGH);
 		} else {
-			msleep(200);
+			if (!of_property_read_u32(node,
+				"spk_mute_sleep_time", &spk_mute_sleep_time))
+				msleep(spk_mute_sleep_time);
+			else
+				msleep(200);
 			if (!priv->spk_mute_flag)
 				gpio_set_value(priv->spk_mute_gpio,
 					(active_low) ? GPIOF_OUT_INIT_HIGH :

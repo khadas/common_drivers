@@ -41,6 +41,7 @@
 		aml-audio-card,name = "AML-AUGESOUND";
 		/*spk mute gpio*/
 		spk_mute-gpios = <&gpio GPIODV_6 GPIO_ACTIVE_LOW>;
+		spk_mute_sleep_time = <800>;
 		/*avout mute gpio*/
 		avout_mute-gpios = <&gpio GPIODV_5 GPIO_ACTIVE_HIGH>;
 		/* headphone insert det */

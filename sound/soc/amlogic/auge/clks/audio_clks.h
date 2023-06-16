@@ -64,6 +64,22 @@ do { \
 			&_name##_gate.hw, &clk_gate_ops, \
 			CLK_SET_RATE_NO_REPARENT)
 
+#define REGISTER_CLK1_COM(_name) \
+		clk_register_composite(NULL, #_name, \
+				mclk_parent1_names, ARRAY_SIZE(mclk_parent1_names), \
+				&_name##_mux.hw, &clk_mux_ops, \
+				&_name##_div.hw, &clk_divider_ops, \
+				&_name##_gate.hw, &clk_gate_ops, \
+				CLK_SET_RATE_NO_REPARENT)
+
+#define REGISTER_CLK2_COM(_name) \
+		clk_register_composite(NULL, #_name, \
+				mclk_parent2_names, ARRAY_SIZE(mclk_parent2_names), \
+				&_name##_mux.hw, &clk_mux_ops, \
+				&_name##_div.hw, &clk_divider_ops, \
+				&_name##_gate.hw, &clk_gate_ops, \
+				CLK_SET_RATE_NO_REPARENT)
+
 #define REGISTER_AUDIOCLK_COM(_name) \
 	clk_register_composite(NULL, #_name, \
 			audioclk_parent_names, \

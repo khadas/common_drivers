@@ -255,6 +255,8 @@ static const struct soc_enum pdm_lowpower_enum =
 
 static void pdm_set_lowpower_mode(struct aml_pdm *p_pdm, bool islowpower, int id)
 {
+	int ret;
+
 	if (p_pdm->islowpower == islowpower)
 		return;
 
@@ -265,15 +267,19 @@ static void pdm_set_lowpower_mode(struct aml_pdm *p_pdm, bool islowpower, int id
 		pdm_force_sysclk_to_oscin(p_pdm->islowpower, id, p_pdm->chipinfo->vad_top);
 
 		if (p_pdm->islowpower) {
-			/* set dclk clk_sel is oscin,and set rate is 3M */
-			pdm_force_dclk_to_oscin(id, p_pdm->chipinfo->vad_top);
 			pdm_set_channel_ctrl(3, id);
+			if (!IS_ERR(p_pdm->xtal_clk)) {
+				ret = clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->xtal_clk);
+				if (ret)
+					pr_err("Can't set xtal parent clock %d\n", ret);
+			} else {
+				/* set dclk clk_sel is oscin,and set rate is 3M */
+				pdm_force_dclk_to_oscin(id, p_pdm->chipinfo->vad_top);
+			}
 		} else {
-			int ret;
-
 			ret = clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->dclk_srcpll);
 			if (ret) {
-				pr_err("Can't set clk_pdm_dclk parent clock\n");
+				pr_err("Can't set clk_pdm_dclk parent clock %d\n", ret);
 				return;
 			}
 			clk_set_rate(p_pdm->clk_pdm_dclk, pdm_dclkidx2rate(p_pdm->dclk_idx));
@@ -1227,6 +1233,12 @@ static int aml_pdm_platform_probe(struct platform_device *pdev)
 			"Can't set clk_pdm_sysclk parent clock\n");
 		ret = PTR_ERR(p_pdm->clk_pdm_sysclk);
 		goto err;
+	}
+
+	p_pdm->xtal_clk = devm_clk_get(&pdev->dev, "xtal");
+	if (IS_ERR(p_pdm->xtal_clk)) {
+		dev_info(&pdev->dev,
+			"Can't retrieve xtal_clk clock\n");
 	}
 
 	ret = clk_set_parent(p_pdm->clk_pdm_dclk, p_pdm->dclk_srcpll);

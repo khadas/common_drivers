@@ -66,6 +66,7 @@ struct aml_pdm {
 	struct clk *dclk_srcpll;
 	struct clk *clk_pdm_sysclk;
 	struct clk *clk_pdm_dclk;
+	struct clk *xtal_clk;
 	struct toddr *tddr;
 
 	struct pdm_chipinfo *chipinfo;

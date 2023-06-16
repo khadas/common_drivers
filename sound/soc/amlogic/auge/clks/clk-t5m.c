@@ -12,7 +12,15 @@
 #include "../regs.h"
 
 static const char *const mclk_parent_names[] = {
-	"hifi1_pll", "rtc_pll", "mpll2", "mpll3", "hifi_pll",
+	"hifi1_pll", "rtc_pll", "null", "null", "hifi_pll",
+	"fclk_div3", "fclk_div4", "xtal"};
+
+static const char *const mclk_parent1_names[] = {
+	"hifi1_pll", "rtc_pll", "null", "null", "hifi_pll",
+	"fclk_div3", "fclk_div4", "fclk_div5"};
+
+static const char *const mclk_parent2_names[] = {
+	"xtal", "rtc_pll", "hifi1_pll", "null", "hifi_pll",
 	"fclk_div3", "fclk_div4", "fclk_div5"};
 
 static const char *const audioclk_parent_names[] = {
@@ -309,7 +317,7 @@ static int t5m_clks_init(struct clk **clks, void __iomem *iobase)
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_MCLK_F]));
 
 	IOMAP_COM_CLK(spdifin, iobase);
-	clks[CLKID_AUDIO_SPDIFIN] = REGISTER_CLK_COM(spdifin);
+	clks[CLKID_AUDIO_SPDIFIN] = REGISTER_CLK1_COM(spdifin);
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_SPDIFIN]));
 
 	IOMAP_COM_CLK(spdifout, iobase);
@@ -333,7 +341,7 @@ static int t5m_clks_init(struct clk **clks, void __iomem *iobase)
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_PDMIN0]));
 
 	IOMAP_COM_CLK(pdmin1, iobase);
-	clks[CLKID_AUDIO_PDMIN1] = REGISTER_CLK_COM(pdmin1);
+	clks[CLKID_AUDIO_PDMIN1] = REGISTER_CLK2_COM(pdmin1);
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_PDMIN1]));
 
 	IOMAP_COM_CLK(spdifout_b, iobase);
@@ -349,19 +357,19 @@ static int t5m_clks_init(struct clk **clks, void __iomem *iobase)
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_SPDIFIN_LB]));
 
 	IOMAP_COM_CLK(eqdrc, iobase);
-	clks[CLKID_AUDIO_EQDRC] = REGISTER_CLK_COM(eqdrc);
+	clks[CLKID_AUDIO_EQDRC] = REGISTER_CLK2_COM(eqdrc);
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_EQDRC]));
 
 	IOMAP_COM_CLK(vad, iobase);
-	clks[CLKID_AUDIO_VAD] = REGISTER_CLK_COM(vad);
+	clks[CLKID_AUDIO_VAD] = REGISTER_CLK2_COM(vad);
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_AUDIO_VAD]));
 
 	IOMAP_COM_CLK(earctx_cmdc, iobase);
-	clks[CLKID_EARCTX_CMDC] = REGISTER_CLK_COM(earctx_cmdc);
+	clks[CLKID_EARCTX_CMDC] = REGISTER_CLK2_COM(earctx_cmdc);
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_EARCTX_CMDC]));
 
 	IOMAP_COM_CLK(earctx_dmac, iobase);
-	clks[CLKID_EARCTX_DMAC] = REGISTER_CLK_COM(earctx_dmac);
+	clks[CLKID_EARCTX_DMAC] = REGISTER_CLK2_COM(earctx_dmac);
 	WARN_ON(IS_ERR_OR_NULL(clks[CLKID_EARCTX_DMAC]));
 
 	IOMAP_COM_CLK(mclk_pad0, iobase);

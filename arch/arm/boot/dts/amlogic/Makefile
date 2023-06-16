@@ -67,3 +67,7 @@ dtb-y += txhd2_reva_t950s_be319_512m.dtb
 dtb-y += s1a_pxp.dtb
 dtb-y += s1a_s805c1_bg201_256m.dtb
 dtb-y += s1a_s805c1_bg209_256m.dtb
+dtb-y += t5d_t950d4_am301_1.5g.dtb
+dtb-y += t5d_t950d4_am301_1g.dtb
+dtb-y += t5d_t950x4_am311_1.5g.dtb
+dtb-y += t5d_t950x4_am311_1g.dtb

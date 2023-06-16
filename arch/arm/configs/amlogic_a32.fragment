@@ -82,6 +82,12 @@ CONFIG_AMLOGIC_COMMON_CLK_TXHD2=m
 # amlogic-aoclk-soc-ao-txhd2.ko
 CONFIG_AMLOGIC_COMMON_AO_CLK_TXHD2=m
 
+# amlogic-clk-soc-t5d.ko
+CONFIG_AMLOGIC_COMMON_CLK_T5D=m
+
+# amlogic-aoclk-soc-t5d.ko
+CONFIG_AMLOGIC_COMMON_AO_CLK_T5D=m
+
 # amlogic-pinctrl-soc-s4.ko
 CONFIG_AMLOGIC_PINCTRL_MESON_S4=m
 

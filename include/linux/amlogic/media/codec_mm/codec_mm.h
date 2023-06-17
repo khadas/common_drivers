@@ -169,7 +169,12 @@ void v4l_freebufs_back_to_codec_mm(const char *owner, struct codec_mm_s *mem);
 void codec_mm_get_default_tvp_size(int *tvp_fhd, int *tvp_uhd);
 void codec_mm_memset(ulong phys, u32 val, u32 size);
 int codec_mm_alloc_cma_size(void);
-#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
 int cma_mmu_op(struct page *page, int count, bool set);
+#else
+static inline int cma_mmu_op(struct page *page, int count, bool set)
+{
+	return 0;
+}
 #endif
 #endif

@@ -36,9 +36,6 @@
 #endif
 #include <linux/swap.h>
 #include <linux/swapops.h>
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
-#include <trace/hooks/iommu.h>
-#endif
 
 #if IS_ENABLED(CONFIG_AMLOGIC_CPU_INFO)
 #include <linux/amlogic/media/registers/cpu_version.h>
@@ -105,7 +102,7 @@ u32 tee_register_mem(u32 type, phys_addr_t pa, size_t size)
 }
 #endif
 
-#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
 /* aml_media is ko can't use cma_mmu_op() func */
 void (*aml_mte_sync_tags)(pte_t old_pte, pte_t pte);
 
@@ -184,7 +181,7 @@ int cma_mmu_op(struct page *page, int count, bool set)
 		return -EINVAL;
 	}
 
-	if (!aml_init_mm) {
+	if (!aml_init_mm || !aml_mte_sync_tags) {
 		pr_debug("%s, no cma mmu operation.\n", __func__);
 		return -EINVAL;
 	}
@@ -3581,8 +3578,7 @@ static struct mconfig codec_mm_trigger[] = {
 	MC_FUN("debug", codec_mm_trigger_help_fun, codec_mm_trigger_fun),
 };
 
-#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
 #ifdef CONFIG_ARM64
 static int tvp_clear_cma_pagemap(unsigned long pfn, unsigned long count)
 {
@@ -3655,16 +3651,35 @@ static int tvp_setup_cma_full_pagemap(unsigned long pfn, unsigned long count)
 #endif
 }
 
-void get_mte_sync_tags_hook(void *data, struct iova_domain *iovad, dma_addr_t iova, size_t size)
+#if defined(CONFIG_ARM64)
+unsigned long (*aml_syms_lookup)(const char *name);
+
+/* For each probe you need to allocate a kprobe structure */
+static struct kprobe kp_lookup_name = {
+	.symbol_name	= "kallsyms_lookup_name",
+};
+#endif
+
+void __nocfi get_mte_sync_tags_hook(void)
 {
-	unsigned long flags;
+	static DEFINE_MUTEX(lock);
 	struct cma *cma = NULL;
+#if defined(CONFIG_ARM64)
+	int ret;
 
-	if (aml_init_mm)
+	ret = register_kprobe(&kp_lookup_name);
+	if (ret < 0) {
+		pr_err("register_kprobe failed, returned %d\n", ret);
 		return;
+	}
+	pr_info("kprobe lookup offset at %px\n", kp_lookup_name.addr);
 
-	aml_mte_sync_tags = (void (*)(pte_t old_pte, pte_t pte))iovad;
-	aml_init_mm = (struct mm_struct *)size;
+	aml_syms_lookup = (unsigned long (*)(const char *name))kp_lookup_name.addr;
+
+	aml_init_mm = (struct mm_struct *)aml_syms_lookup("init_mm");
+	aml_mte_sync_tags = (void (*)(pte_t old_pte, pte_t pte))aml_syms_lookup("mte_sync_tags");
+	pr_info("aml_init_mm: %px, aml_mte_sync_tags: %px\n", aml_init_mm, aml_mte_sync_tags);
+#endif
 
 	cma = dev_get_cma_area(codec_dev);
 	if (!cma) {
@@ -3672,11 +3687,13 @@ void get_mte_sync_tags_hook(void *data, struct iova_domain *iovad, dma_addr_t io
 		return;
 	}
 	pr_info("%s, %s, %lx, %lx\n", __func__, cma_get_name(cma), cma->base_pfn, cma->count);
-	spin_lock_irqsave(&cma->lock, flags);
-	tvp_setup_cma_full_pagemap(cma->base_pfn, cma->count);
-	spin_unlock_irqrestore(&cma->lock, flags);
+	/* spin_lock_irqsave(&cma->lock, flags); */
+	mutex_lock(&lock);
+	if (aml_init_mm)
+		tvp_setup_cma_full_pagemap(cma->base_pfn, cma->count);
+	/* spin_unlock_irqrestore(&cma->lock, flags); */
+	mutex_unlock(&lock);
 }
-#endif
 #endif
 
 static int codec_mm_probe(struct platform_device *pdev)
@@ -3726,7 +3743,7 @@ static int codec_mm_probe(struct platform_device *pdev)
 
 	pr_info("%s ok\n", __func__);
 
-#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
 	codec_dev = &pdev->dev;
 #endif
 	codec_mm_scatter_mgt_init(&pdev->dev);
@@ -3737,10 +3754,8 @@ static int codec_mm_probe(struct platform_device *pdev)
 	INIT_REG_NODE_CONFIGS(CONFIG_PATH, &codec_mm_trigger_node,
 				  "trigger", codec_mm_trigger,
 				  CONFIG_FOR_RW | CONFIG_FOR_T);
-#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE)
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
-	register_trace_android_vh_iommu_iovad_free_iova(get_mte_sync_tags_hook, NULL);
-#endif
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_MODULE) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
+	get_mte_sync_tags_hook();
 #endif
 	return 0;
 }

@@ -52,9 +52,6 @@
 #include <linux/jump_label.h>
 #include <linux/types.h>
 #endif
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS)
-#include <trace/hooks/iommu.h>
-#endif
 
 /* from mm/ path */
 #include <internal.h>
@@ -429,11 +426,6 @@ void aml_cma_alloc_pre_hook(int *dummy, int count, unsigned long *tick)
 	*tick  = sched_clock();
 	if (count >= (pageblock_nr_pages / 2))
 		set_user_nice(current, -18);
-#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_ANDROID_VENDOR_HOOKS) && \
-	defined(CONFIG_ARM64) && IS_BUILTIN(CONFIG_AMLOGIC_CMA)
-	trace_android_vh_iommu_iovad_free_iova((struct iova_domain *)mte_sync_tags,
-			0, (size_t)&init_mm);
-#endif
 }
 
 void aml_cma_alloc_post_hook(int *dummy, int count, struct page *page,

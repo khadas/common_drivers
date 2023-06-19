@@ -611,6 +611,10 @@ void tso_set(int path)
 		data &= ~(0xF);
 		data |= 3;
 		break;
+	/*close ts out*/
+	case 0xff:
+		data &= ~(0xF);
+		break;
 	default:
 		//ts2
 		data &= ~(0xF);

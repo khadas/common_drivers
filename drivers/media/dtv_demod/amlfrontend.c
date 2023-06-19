@@ -2325,7 +2325,10 @@ static int aml_dtvdm_read_status(struct dvb_frontend *fe,
 #ifdef AML_DEMOD_SUPPORT_DVBC
 	case SYS_DVBC_ANNEX_A:
 	case SYS_DVBC_ANNEX_C:
-		ret = gxtv_demod_dvbc_read_status_timer(fe, status);
+		if (dvbc_new_driver)
+			*status = demod->last_status;
+		else
+			ret = gxtv_demod_dvbc_read_status_timer(fe, status);
 		break;
 #endif
 	case SYS_DVBT:

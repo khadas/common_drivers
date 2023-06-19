@@ -880,7 +880,7 @@
 		lane-mask-in = <1 1 0 0>;
 		src-clk-freq = <24576000>;
 		power-domains = <&pwrdm PDID_CX_PDM>;
-
+		train_sample_count = <10>;
 		status = "okay";
 	};
 
@@ -901,9 +901,6 @@
 	loopback: loopback {
 		compatible = "amlogic, a1-loopbacka";
 		#sound-dai-cells = <0>;
-
-		original-src = <&tdmb>;
-		//tdmin_lb-src = <&tdmin_lb>;
 
 		clocks = <&clkaudio CLKID_AUDIO2_GATE_PDM
 			&clkc CLKID_FCLK_DIV2
@@ -927,9 +924,9 @@
 		 * 3: spdifin;
 		 * 4: pdmin;
 		 */
-		datain_src = <1>;
-		datain_chnum = <1>;
-		datain_chmask = <0x1>;
+		datain_src = <4>;
+		datain_chnum = <2>;
+		datain_chmask = <0x3>;
 		/* config which data pin for loopback */
 		datain-lane-mask-in = <1 0 0 0>;
 
@@ -949,7 +946,7 @@
 		/* if tdmin_lb >= 3, use external loopback */
 		datalb_src = <1>;
 		datalb_chnum = <2>;
-		datalb_chmask = <0x1>;
+		datalb_chmask = <0x3>;
 		/* config which data pin as loopback */
 		datalb-lane-mask-in = <1 0 0 0>;
 		src-clk-freq = <24576000>;
@@ -1043,7 +1040,7 @@
 	};
 
 	pdmin: pdmin {
-		mux { /* GPIOA_6, GPIOA_7, GPIOA_8, GPIOA_9 */
+		mux { /* GPIOM_2, GPIOM_3, GPIOM_4 */
 			groups =
 				"pdm_din1_m",
 				"pdm_din0_m",

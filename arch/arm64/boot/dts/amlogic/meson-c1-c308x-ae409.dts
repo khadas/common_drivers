@@ -856,7 +856,7 @@
 		lane-mask-in = <1 1 0 0>;
 		src-clk-freq = <24576000>;
 		power-domains = <&pwrdm PDID_CX_PDM>;
-
+		train_sample_count = <10>;
 		status = "okay";
 	};
 
@@ -877,9 +877,6 @@
 	loopback: loopback {
 		compatible = "amlogic, a1-loopbacka";
 		#sound-dai-cells = <0>;
-
-		original-src = <&tdmb>;
-		//tdmin_lb-src = <&tdmin_lb>;
 
 		clocks = <&clkaudio CLKID_AUDIO2_GATE_PDM
 			&clkc CLKID_FCLK_DIV2

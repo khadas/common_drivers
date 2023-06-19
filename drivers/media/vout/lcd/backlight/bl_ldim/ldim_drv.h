@@ -20,7 +20,8 @@
 /*20220815: correct ldim spi dma config */
 /*20221115: new driver architecture */
 /*20230208: update local dimming reserved memory init method */
-#define LDIM_DRV_VER    "20230208"
+/*20230619: optimize reserved memory alloc and vaddr usage */
+#define LDIM_DRV_VER    "20230619"
 
 #define LDIM_SPI_DUTY_VSYNC_DIRECT
 
@@ -37,8 +38,6 @@ extern unsigned int ldc_dither_lut[32][16];
 #define AML_LDIM_CLASS_NAME  "aml_ldim"
 
 /*ldim mem*/
-void aml_ldim_rmem_unmap(unsigned char *vaddr, unsigned int flag);
-unsigned char *aml_ldim_rmem_map(unsigned long paddr, unsigned int mem_size, unsigned int *flag);
 void aml_ldim_rmem_info(void);
 
 void ldc_mem_dump(unsigned char *vaddr, unsigned int size);

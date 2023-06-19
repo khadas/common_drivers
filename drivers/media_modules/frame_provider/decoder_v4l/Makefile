@@ -1,0 +1,16 @@
+obj-y	+=	mpeg12/
+obj-y	+=	mpeg4/
+obj-y	+=	h264_multi/
+obj-y	+=	h265/
+obj-y	+=	vp9/
+obj-y	+=	mjpeg/
+obj-y	+=	avs2/
+obj-y	+=	avs_multi/
+obj-y	+=	vav1/
+obj-y	+=	avs3/
+obj-y	+=	vp9_fb/
+obj-y	+=	h265_fb/
+obj-y	+=	vav1_fb/
+obj-y	+=	vav1_t5d/
+obj-y	+=	avs2_fb/
+obj-y	+=	vc1/

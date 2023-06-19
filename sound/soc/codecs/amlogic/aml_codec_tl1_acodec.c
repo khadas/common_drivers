@@ -65,6 +65,7 @@ struct tl1_acodec_priv {
 	int lane_offset;
 	bool txhd2_version;
 	int analog_input;
+	int adc_pga_gain;
 };
 
 static const struct reg_default tl1_acodec_init_list[] = {
@@ -143,6 +144,11 @@ static int tl1_acodec_reg_init(struct snd_soc_component *component)
 			snd_soc_component_write(component,
 					ACODEC_3,
 					0x00001212);
+		if (aml_acodec->txhd2_version) {
+			snd_soc_component_write(component,
+					ACODEC_4,
+					0x00020000);
+		}
 	}
 
 	if (aml_acodec && aml_acodec->chipinfo && aml_acodec->diff_output == 1) {
@@ -168,12 +174,32 @@ static int tl1_acodec_reg_init(struct snd_soc_component *component)
 	if (aml_acodec && aml_acodec->diff_input == 1)
 		snd_soc_component_update_bits(component, ACODEC_1, 0xffff << 0, 0x6969 << 0);
 	if (aml_acodec && aml_acodec->txhd2_version) {
-		if (aml_acodec->analog_input == 1)
+		if (aml_acodec->analog_input == 0) {
+			/*PGAR_IN source AIR1*/
 			snd_soc_component_update_bits(component, ACODEC_1,
-							0xffff << 0, 0x5050 << 0);
+					0x3 << 5, 0x1 << 5);
+			/*PGAL_IN source AIL1*/
+			snd_soc_component_update_bits(component, ACODEC_1,
+					0x3 << 13, 0x1 << 13);
+		} else {
+			/*PGAR_IN source AIR2*/
+			snd_soc_component_update_bits(component, ACODEC_1,
+							0x3 << 5, 0x2 << 5);
+			/*PGAL_IN source AIL2*/
+			snd_soc_component_update_bits(component, ACODEC_1,
+							0x3 << 13, 0x2 << 13);
+		}
+		if (aml_acodec->adc_pga_gain > 0)
+			/*pga gain = -12db + (adc_pga_gain -1)* 1.5 */
+			snd_soc_component_update_bits(component, ACODEC_1,
+							0x1f << 8 | 0x1f,
+							aml_acodec->adc_pga_gain << 8 |
+							aml_acodec->adc_pga_gain);
 		else
+			/*default pga gain 6db*/
 			snd_soc_component_update_bits(component, ACODEC_1,
-							0xffff << 0, 0x3030 << 0);
+							0x1f << 8 | 0x1f,
+							0xd << 8 | 0xd);
 	}
 	if (aml_acodec && aml_acodec->chipinfo && aml_acodec->dac_extra_12db == 1) {
 		u32 val = 0;
@@ -1102,6 +1128,10 @@ static int aml_tl1_acodec_probe(struct platform_device *pdev)
 
 	aml_acodec->txhd2_version =
 			of_property_read_bool(pdev->dev.of_node, "txhd2_version");
+	of_property_read_u32
+			(pdev->dev.of_node,
+			"adc_pga_gain",
+			&aml_acodec->adc_pga_gain);
 
 	pr_info("aml_tl1_acodec tdmout_index %d tdmin_index %d dat0_ch_sel %d dat1_ch_sel %d\n",
 		aml_acodec->tdmout_index, aml_acodec->tdmin_index,

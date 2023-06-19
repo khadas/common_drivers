@@ -771,6 +771,14 @@
 	pinctrl-1 = <&spdifout_a_mute_dv3_pins>;
 };
 
+&acodec {
+	diff_output = <1>;
+	dac_extra_12db = <1>;
+	/*-12db+ (0xe -1)* 1.5db = 7.5 db*/
+	adc_pga_gain = <0xe>;
+	analog_input = <0>;
+};
+
 &aed {
 	status = "disabled";
 };

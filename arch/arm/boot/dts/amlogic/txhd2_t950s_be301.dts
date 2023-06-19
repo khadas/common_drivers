@@ -736,6 +736,14 @@
 	pinctrl-0=<&i2c1_pins1>;
 };
 
+&acodec {
+	diff_output = <1>;
+	dac_extra_12db = <1>;
+	/*-12db+ (0xe -1)* 1.5db = 7.5 db*/
+	adc_pga_gain = <0xe>;
+	analog_input = <0>;
+};
+
 &tdmb {
 	pinctrl-names = "tdm_pins","tdmout_a_gpio";
 	pinctrl-0 =

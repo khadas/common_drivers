@@ -20,8 +20,6 @@
 			tdmin_index = <1>;
 			dat0_ch_sel = <0>;
 			txhd2_version;
-			diff_output = <1>;
-			analog_input = <0>;
 			lane_offset = <4>;
 			reset-names = "acodec";
 			resets = <&reset RESET_AUDIO_CODEC>;
@@ -284,7 +282,7 @@
 		#sound-dai-cells = <0>;
 
 		clocks = <&clkaudio CLKID_AUDIO_GATE_EQDRC
-			&clkc CLKID_FCLK_DIV5
+			&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_EQDRC>;
 		clock-names = "gate", "srcpll", "eqdrc";
 

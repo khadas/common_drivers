@@ -114,13 +114,6 @@ static int eqdrc_clk_set(struct audioeffect *p_effect)
 	int ret = 0;
 	char *clk_name = NULL;
 
-	ret = clk_prepare_enable(p_effect->clk);
-	if (ret) {
-		pr_err("Can't enable eqdrc clock: %d\n",
-			ret);
-		return -EINVAL;
-	}
-
 	clk_name = (char *)__clk_get_name(p_effect->srcpll);
 	if (!strcmp(clk_name, "hifi_pll") || !strcmp(clk_name, "t5_hifi_pll")) {
 		if (p_effect->syssrc_clk_rate)
@@ -137,6 +130,12 @@ static int eqdrc_clk_set(struct audioeffect *p_effect)
 
 	/* default clk */
 	clk_set_rate(p_effect->clk, 200000000);
+	ret = clk_prepare_enable(p_effect->clk);
+	if (ret) {
+		pr_err("Can't enable eqdrc clock: %d\n",
+			ret);
+		return -EINVAL;
+	}
 
 	pr_debug("%s, src pll:%lu, clk:%lu\n",
 		__func__,

@@ -94,17 +94,18 @@
 /*  V1.1.100 bring up dump ADC data feature */
 /*  V3.1.101 fix dvb-s unicable blind scan miss TP */
 /*  V3.1.102 bring up dump ADC data feature */
-/*  V3.2.00  t3x bringup */
-/*  V3.2.01  optimize isdbt stability of locking signal */
-/*  V3.2.02  fix dvbc aft test unstable */
-/*  V3.2.03  improve performance when atsc signal is weak */
-/*  V3.2.04  fix dvbc new driver to solve missing channel */
-/*  V3.2.05  fix dvbs blind scan new miss 2150M */
-/*  V3.2.06  support for identifying rt720 by name */
-/*  V3.2.7  increase the speed of isdb-t re-lock */
-/*  V3.2.8  fix significant fluctuations of dvbs snr */
-/*  V3.2.09  support dump demod ddr data */
-/*  V3.2.10  improve compatibility with dvb-t signals */
+/*  V3.2.000 t3x bringup */
+/*  V3.2.001 optimize isdbt stability of locking signal */
+/*  V3.2.002 fix dvbc aft test unstable */
+/*  V3.2.003 improve performance when atsc signal is weak */
+/*  V3.2.004 fix dvbc new driver to solve missing channel */
+/*  V3.2.005 fix dvbs blind scan new miss 2150M */
+/*  V3.2.006 support for identifying rt720 by name */
+/*  V3.2.007 increase the speed of isdb-t re-lock */
+/*  V3.2.008 fix significant fluctuations of dvbs snr */
+/*  V3.2.009 support dump demod ddr data */
+/*  V3.2.010 improve compatibility with dvb-t signals */
+/*  V3.2.011 fix the sync of shutdown and tune */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -121,8 +122,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.2.10"
-#define DTVDEMOD_VER	"2023/06/20: improve compatibility with dvb-t signals"
+#define AMLDTVDEMOD_VER "V3.2.011"
+#define DTVDEMOD_VER	"2023/06/21: fix the sync of shutdown and tune"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
@@ -240,11 +241,6 @@ struct meson_ddemod_data {
 	struct ddemod_dig_clk_addr dig_clk;
 	struct ddemod_reg_off regoff;
 	enum dtv_demod_hw_ver_e hw_ver;
-};
-enum DTVDEMOD_ST {
-	DTVDEMOD_ST_NOT_INI,	/*driver is not init or init failed*/
-	DTVDEMOD_ST_IDLE,	/*leave mode*/
-	DTVDEMOD_ST_WORK,	/*enter_mode*/
 };
 
 /*polling*/
@@ -395,7 +391,6 @@ struct amldtvdemod_device_s {
 
 	struct class *clsp;
 	struct device *dev;
-	enum DTVDEMOD_ST state;
 	struct mutex lock;	/*aml_lock*/
 	struct ss_reg_phy reg_p[ES_MAP_ADDR_NUM];
 	struct ss_reg_vt reg_v[ES_MAP_ADDR_NUM];

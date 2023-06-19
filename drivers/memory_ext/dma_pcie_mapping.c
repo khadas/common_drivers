@@ -36,7 +36,7 @@ enum dma_sync_target {
 			((val) & ((align) - 1)))
 
 /* default to 32MB */
-#define AML_IO_TLB_DEFAULT_SIZE (64UL << 20)
+#define AML_IO_TLB_DEFAULT_SIZE (256UL << 20)
 
 /*
  * Maximum allowable number of contiguous slabs to map,
@@ -47,7 +47,7 @@ enum dma_sync_target {
 #ifdef IO_TLB_SEGSIZE
 #undef IO_TLB_SEGSIZE
 #endif
-#define IO_TLB_SEGSIZE	2048
+#define IO_TLB_SEGSIZE	8192
 
 /*
  * log of the size of each IO TLB slab.  The number of slabs is command line

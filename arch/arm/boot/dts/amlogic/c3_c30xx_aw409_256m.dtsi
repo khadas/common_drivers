@@ -1230,3 +1230,7 @@
 &freertos {
 	status = "disabled";
 };
+
+&lcd {
+	status = "disabled";
+};

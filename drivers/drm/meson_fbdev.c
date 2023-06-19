@@ -527,8 +527,14 @@ static int am_meson_drm_fbdev_modeset_create(struct drm_fb_helper *helper)
 {
 	struct drm_device *dev = helper->dev;
 	struct meson_drm_fbdev *fbdev = container_of(helper, struct meson_drm_fbdev, base);
+	struct am_osd_plane *amp = to_am_osd_plane(fbdev->plane);
+	struct meson_drm *private = dev->dev_private;
+	int crtc_id = private->of_conf.crtcmask_osd[amp->plane_index];
 
-	fbdev->modeset.crtc = drm_crtc_from_index(dev, 0);
+	fbdev->modeset.crtc = drm_crtc_from_index(dev, crtc_id);
+	DRM_INFO("%s in, plane_index = %d, crtc_id = %d\n",
+		__func__, amp->plane_index, crtc_id);
+
 	return 0;
 }
 
@@ -711,7 +717,7 @@ int am_meson_drm_fbdev_init(struct drm_device *dev)
 	struct meson_drm *drmdev = dev->dev_private;
 	struct meson_drm_fbdev *fbdev;
 	struct am_osd_plane *osd_plane;
-	int i, fbdev_cnt = 1;
+	int i, fbdev_cnt = 0;
 	int ret = 0;
 
 	DRM_INFO("%s in\n", __func__);
@@ -722,25 +728,22 @@ int am_meson_drm_fbdev_init(struct drm_device *dev)
 		return ret;
 	}
 
-	if (drmdev->primary_plane) {
-		fbdev = am_meson_create_drm_fbdev(dev, drmdev->primary_plane);
-		fbdev->zorder = OSD_PLANE_BEGIN_ZORDER;
-		DRM_INFO("create fbdev for primary plane [%p]\n", fbdev);
-	}
-
-	/*only create fbdev for viu1*/
 	for (i = 0; i < MESON_MAX_OSD; i++) {
 		osd_plane = drmdev->osd_planes[i];
 		if (!osd_plane)
 			break;
 
-		if (osd_plane->base.type == DRM_PLANE_TYPE_PRIMARY)
-			continue;
-
 		fbdev = am_meson_create_drm_fbdev(dev, &osd_plane->base);
-		fbdev->zorder = OSD_PLANE_BEGIN_ZORDER + fbdev_cnt;
-		fbdev_cnt++;
-		DRM_INFO("create fbdev for plane [%d]-[%p]\n", osd_plane->plane_index, fbdev);
+		if (fbdev) {
+			fbdev->zorder = OSD_PLANE_BEGIN_ZORDER + fbdev_cnt;
+			fbdev_cnt++;
+			DRM_INFO("create fbdev(FB:%d) for plane (%d %d %d %s)\n",
+				fbdev->base.fb->base.id, i, osd_plane->plane_index,
+				osd_plane->base.base.id, osd_plane->base.name);
+		} else {
+			DRM_ERROR("create fbdev for plane %d failed\n", i);
+			break;
+		}
 	}
 
 	DRM_INFO("%s create %d out\n", __func__, fbdev_cnt);

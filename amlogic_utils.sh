@@ -1401,7 +1401,7 @@ function set_default_parameters () {
 	fi
 
 	if [[ -z ${BAZEL} ]]; then
-		[[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" == "arm64" ]] && BAZEL=1
+		[[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" == "arm64" && -z ${UPGRADE_PROJECT} ]] && BAZEL=1
 	fi
 
 	auto_patch_to_common_dir

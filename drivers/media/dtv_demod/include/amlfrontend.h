@@ -109,6 +109,7 @@
 /*  V3.2.012 improved dvbc auto qam (t5w/t5m) */
 /*  V3.2.013 fixed dvbc 16/32 qam (t5d/t3) */
 /*  V3.3.00  txhd2 bringup */
+/*  V3.3.001 ix dvbt signaling buf overflow when bw 6M and GI 1/4 */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -125,8 +126,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.3.00"
-#define DTVDEMOD_VER	"2023/06/01 txhd2 bringup"
+#define AMLDTVDEMOD_VER "V3.3.001"
+#define DTVDEMOD_VER	"2023/06/28: ix dvbt signaling buf overflow when bw 6M and GI 1/4"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

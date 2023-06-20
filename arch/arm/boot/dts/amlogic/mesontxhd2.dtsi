@@ -1293,6 +1293,14 @@
 				map = <&custom_maps>;
 				max_frame_time = <200>;
 			};
+
+			irblaster: meson-irblaster@14C {
+				compatible = "amlogic, meson_irblaster";
+				status = "disabled";
+				reg = <0x14c 0x10>;
+				#irblaster-cells = <2>;
+				interrupts = <GIC_SPI 198 IRQ_TYPE_EDGE_RISING>;
+			};
 		};/* end of aobus */
 
 		demux: demux {
@@ -1941,6 +1949,20 @@
 			groups = "remote_input_ao6";
 			function = "remote";
 			bias-disable;
+		};
+	};
+
+	remote_out_pins: remote_out_pins {
+		mux {
+			groups = "remote_out_ao6";
+			function = "remote";
+		};
+	};
+
+	remote_out_pins1: remote_out_pins1 {
+		mux {
+			groups = "remote_out_ao11";
+			function = "remote";
 		};
 	};
 

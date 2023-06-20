@@ -21,6 +21,9 @@
 #include <linux/amlogic/media/codec_mm/codec_mm.h>
 #include <linux/amlogic/media/codec_mm/dmabuf_manage.h>
 #include <linux/amlogic/media/codec_mm/configs.h>
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+#include <linux/amlogic/tee_drv.h>
+#endif
 #include <uapi/linux/dvb/aml_dmx_ext.h>
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
 #include <media/aml_demux_ext.h>
@@ -35,12 +38,18 @@
 static int dmabuf_manage_debug = 1;
 module_param(dmabuf_manage_debug, int, 0644);
 
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+static u32 secure_heap_version = SECURE_HEAP_USER_TA_VERSION;
+#else
 static u32 secure_heap_version = SECURE_HEAP_DYNAMIC_ALLOC_VERSION;
+#endif
+
 static u32 secure_pool_max_block_count = 8;
 static u32 secure_vdec_def_size_bytes;
 static u32 secure_hd_pool_size_mb = 4;
 static u32 secure_uhd_pool_size_mb = 12;
 static u32 secure_fuhd_pool_size_mb = 32;
+static u32 secure_vdec_config = 0x7C;
 
 #define  DEVICE_NAME "secmem"
 #define  CLASS_NAME  "dmabuf_manage"
@@ -62,6 +71,22 @@ static u32 secure_fuhd_pool_size_mb = 32;
 #define POOL_SIZE_MB (1024 * 1024)
 #define DMABUF_MANAGE_POOL_ALIGN_2N		20
 #define DMABUF_MANAGE_POOL_SIZE_MB		32
+
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+#define DMABUF_MANAGE_BLOCK_MIN_SIZE_KB				(256 * 1024)
+
+#define TA_SECMEM_V2_CMD_INIT						294
+#define TA_SECMEM_V2_CMD_MEM_CREATE					251
+#define TA_SECMEM_V2_CMD_MEM_FREE					258
+#define TA_SECMEM_V2_CMD_CLOSE						266
+
+#define TA_SECMEM_V2_SHM_SIZE						4096
+#define TEE_CMD_PARAM_NUM							4
+#define PARAM_ALIGN									32
+
+#define SECMEM_TA_UUID UUID_INIT(0x2c1a33c0, 0x44cc, 0x11e5, \
+		0xbc, 0x3b, 0x00, 0x02, 0xa5, 0xd5, 0xc5, 0x1b)
+#endif
 
 struct kdmabuf_attachment {
 	struct sg_table sgt;
@@ -88,6 +113,10 @@ struct secure_pool_info {
 	u32 block_size;
 	u32 max_frame_size;
 	u32 channel_register;
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+	struct tee_ioctl_open_session_arg secmem_session;
+	struct tee_shm *shm_pool;
+#endif
 };
 
 typedef int (*decode_info)(struct dmx_demux *demux, void *info);
@@ -106,6 +135,71 @@ static struct list_head dmx_filter_list;
 static int dev_no;
 static struct device *dmabuf_manage_dev;
 static DEFINE_MUTEX(g_secure_pool_mutex);
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+static struct tee_context *g_secmem_context;
+
+enum TEE_CMD_PARAMTYPE {
+	TEE_CMD_PARAMTYPE_BUF,
+	TEE_CMD_PARAMTYPE_UINT32,
+	TEE_CMD_PARAMTYPE_UINT64,
+	TEE_CMD_PARAMTYPE_VOID,
+};
+
+struct tee_cmdparam {
+	u32 type;
+	union {
+		struct { /* type == tee_cmdparamType_Buf */
+			u32 buflen;
+			u32 pbuf;
+		} buf;
+		u32 u32_value; /* type == TEE_CMD_PARAMTYPE_UINT32 */
+	} param;
+};
+
+static int dmabuf_manage_tee_pack_u32(char *shm_data, const u32 num, u32 *poff)
+{
+	struct tee_cmdparam p;
+	u32 off = 0;
+
+	if (!shm_data || !poff)
+		return -1;
+
+	off = *poff;
+	if (off > TA_SECMEM_V2_SHM_SIZE - sizeof(struct tee_cmdparam))
+		return -1;
+
+	p.type = TEE_CMD_PARAMTYPE_UINT32;
+	p.param.u32_value = num;
+	memcpy((void *)(shm_data + off), &p, sizeof(struct tee_cmdparam));
+	*poff = (off + sizeof(struct tee_cmdparam) + PARAM_ALIGN) & ~(PARAM_ALIGN - 1);
+
+	return 0;
+}
+
+static int dmabuf_manage_tee_unpack_u32(const char *shm, u32 *num, u32 *poff)
+{
+	struct tee_cmdparam p;
+	u32 off = 0;
+
+	if (!shm || !poff || !num)
+		return -1;
+
+	off = *poff;
+	if (off > TA_SECMEM_V2_SHM_SIZE - sizeof(struct tee_cmdparam))
+		return -1;
+
+	memcpy((void *)&p, (void *)(shm + off), sizeof(struct tee_cmdparam));
+	if (p.type != TEE_CMD_PARAMTYPE_UINT32) {
+		pr_error("error param type %d", p.type);
+		return -1;
+	}
+
+	*num = p.param.u32_value;
+	*poff = (off + sizeof(struct tee_cmdparam) + PARAM_ALIGN) & ~(PARAM_ALIGN - 1);
+
+	return 0;
+}
+#endif
 
 static int dmabuf_manage_attach(struct dma_buf *dbuf, struct dma_buf_attachment *attachment)
 {
@@ -864,7 +958,7 @@ static inline u32 secure_pool_align_up2n(u32 size, u32 alg2n)
 	return ((size + (1 << alg2n) - 1) & (~((1 << alg2n) - 1)));
 }
 
-static int dmabuf_manage_secure_pool_init(u32 id_high, u32 id_low, u32 block_size,
+static int dmabuf_manage_secure_genpool_init(u32 id_high, u32 id_low, u32 block_size,
 	u32 *pool_addr, u32 *pool_size, u32 version)
 {
 	int res = 1;
@@ -962,6 +1056,288 @@ error:
 	return 1;
 }
 
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+static int dmabuf_manage_secmem_ctx_match(struct tee_ioctl_version_data *ver,
+	const void *data)
+{
+	return (ver && ver->impl_id == TEE_IMPL_ID_OPTEE);
+}
+
+static int dmabuf_manage_secure_v2_init(struct secure_pool_info *pool, u32 flags)
+{
+	int res = 0;
+	u32 in_len = 0;
+	u32 config = 0;
+	u32 tvp_flag = flags & 0x0F;
+	u32 decoder_flag = (flags >> 4) & 0x0F;
+	u32 vd_index = (flags >> 9) & 0x0F;
+	char *shm_data = NULL;
+	struct tee_param param[TEE_CMD_PARAM_NUM] = { 0 };
+	struct tee_ioctl_invoke_arg inv_arg = { 0 };
+
+	if (!pool || !g_secmem_context)
+		return -1;
+
+	if (!pool->shm_pool)
+		return -1;
+
+	config = secure_vdec_config;
+	if ((decoder_flag & 0x3) == 0x3)
+		config |= 0x400000;
+
+	if ((decoder_flag & 0x8) == 0x8)
+		config |= 0x2;
+
+	if (tvp_flag == 0x2)
+		config |= 0x100;
+
+	config |= (vd_index << 11);
+	config |= 0x10000;
+
+	shm_data = tee_shm_get_va(pool->shm_pool, 0);
+	if (IS_ERR(shm_data)) {
+		pr_error("%s tee_shm_get_va failed\n", __func__);
+		res = -EBUSY;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, TA_SECMEM_V2_CMD_INIT, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, 1, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, config, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, 0, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, 0, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, pool->version, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, pool->id_high, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, pool->id_low, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INOUT;
+	param[0].u.memref.shm = pool->shm_pool;
+	param[0].u.memref.size = in_len;
+	param[0].u.memref.shm_offs = 0;
+	param[3].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT;
+
+	inv_arg.func = TA_SECMEM_V2_CMD_INIT;
+	inv_arg.session = pool->secmem_session.session;
+	inv_arg.num_params = TEE_CMD_PARAM_NUM;
+	res = tee_client_invoke_func(g_secmem_context, &inv_arg, param);
+	if (res < 0 || inv_arg.ret != TEEC_SUCCESS) {
+		pr_error("%s invoke func failed, res %d, res 0x%x,origin = 0x%x\n",
+			__func__, res, inv_arg.ret, inv_arg.ret_origin);
+		res = inv_arg.ret;
+	}
+
+error:
+	return res;
+}
+
+static int dmabuf_manage_secmem_pool_init(u32 id_high, u32 id_low, u32 block_size,
+	u32 *pool_addr, u32 *pool_size, u32 version)
+{
+	int res = 1;
+	struct secure_pool_info *pool = NULL;
+	uuid_t uuid = SECMEM_TA_UUID;
+	unsigned int tvp_set = 0;
+	unsigned int codec_flags = 0;
+	unsigned int vd_index = 1;
+
+	if (!pool_addr || !pool_size || version != SECURE_HEAP_USER_TA_VERSION)
+		goto error;
+
+	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
+	if (!pool)
+		goto error;
+
+	pool->version = version;
+	pool->id_high = id_high;
+	pool->id_low = id_low;
+	pool->block_size = block_size;
+	if (block_size <= DMABUF_MANAGE_BLOCK_MIN_SIZE_KB) {
+		codec_flags = 0x3;
+		codec_flags |= 0x8;
+	} else if (block_size <= 2 * POOL_SIZE_MB) {
+		tvp_set = 1;
+		pool->pool_size = secure_hd_pool_size_mb * POOL_SIZE_MB;
+	} else if (block_size <= 6 * POOL_SIZE_MB) {
+		tvp_set = 2;
+		pool->pool_size = secure_uhd_pool_size_mb * POOL_SIZE_MB;
+	} else {
+		tvp_set = 2;
+		pool->pool_size = secure_uhd_pool_size_mb * POOL_SIZE_MB;
+	}
+
+	pool->pool_addr = 0;
+
+	if (!g_secmem_context) {
+		g_secmem_context = tee_client_open_context(NULL,
+			dmabuf_manage_secmem_ctx_match, NULL, NULL);
+		if (IS_ERR(g_secmem_context)) {
+			pr_error("%s open context failed\n", __func__);
+			goto error_alloc;
+		}
+	}
+
+	memcpy(pool->secmem_session.uuid, uuid.b, TEE_IOCTL_UUID_LEN);
+	pool->secmem_session.clnt_login = TEE_IOCTL_LOGIN_PUBLIC;
+	pool->secmem_session.num_params = 0;
+
+	res = tee_client_open_session(g_secmem_context, &pool->secmem_session, NULL);
+	if (res < 0 || pool->secmem_session.ret != TEEC_SUCCESS) {
+		pr_error("%s open session ret %d, res 0x%x, origin 0x%x\n",
+			__func__, res, pool->secmem_session.ret, pool->secmem_session.ret_origin);
+		res = pool->secmem_session.ret;
+		goto error_alloc;
+	}
+
+	pool->shm_pool = tee_shm_alloc_kernel_buf(g_secmem_context,
+		TA_SECMEM_V2_SHM_SIZE);
+	if (IS_ERR(pool->shm_pool)) {
+		pr_error("%s tee_shm_alloc failed\n", __func__);
+		res = -ENOMEM;
+		goto error_alloc_shm;
+	}
+
+	res = dmabuf_manage_secure_v2_init(pool,
+		tvp_set | (codec_flags << 4) | (vd_index << 9));
+	if (res) {
+		pr_error("%s secure v2 init failed\n", __func__);
+		goto error_open_session;
+	}
+
+	*pool_addr = pool->pool_addr;
+	*pool_size = pool->pool_size;
+	INIT_LIST_HEAD(&pool->block_node);
+	list_add_tail(&pool->node, &pool_list);
+	return 0;
+error_open_session:
+	tee_shm_free(pool->shm_pool);
+error_alloc_shm:
+	tee_client_close_session(g_secmem_context, pool->secmem_session.session);
+error_alloc:
+	kfree(pool);
+error:
+	return res;
+}
+
+static void dmabuf_manage_destroy_secmem_pool(struct secure_pool_info *pool)
+{
+	int res = 0;
+	u32 in_len = 0;
+	char *shm_data = NULL;
+	struct tee_param param[TEE_CMD_PARAM_NUM] = { 0 };
+	struct tee_ioctl_invoke_arg inv_arg = { 0 };
+
+	if (!pool)
+		return;
+
+	if (list_empty(&pool->block_node)) {
+		if (pool->shm_pool) {
+			shm_data = tee_shm_get_va(pool->shm_pool, 0);
+			if (IS_ERR(shm_data)) {
+				pr_error("%s tee_shm_get_va failed\n", __func__);
+				return;
+			}
+
+			res = dmabuf_manage_tee_pack_u32(shm_data, TA_SECMEM_V2_CMD_CLOSE, &in_len);
+			if (res) {
+				pr_error("%s pass tee parameter failed\n", __func__);
+				return;
+			}
+
+			param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INOUT;
+			param[0].u.memref.shm = pool->shm_pool;
+			param[0].u.memref.size = in_len;
+			param[0].u.memref.shm_offs = 0;
+			param[3].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT;
+
+			inv_arg.func = TA_SECMEM_V2_CMD_CLOSE;
+			inv_arg.session = pool->secmem_session.session;
+			inv_arg.num_params = TEE_CMD_PARAM_NUM;
+			res = tee_client_invoke_func(g_secmem_context, &inv_arg, param);
+			if (res < 0 || inv_arg.ret != TEEC_SUCCESS) {
+				pr_error("%s invoke func failed, res %d, res 0x%x, origin = 0x%x\n",
+					__func__, res, inv_arg.ret, inv_arg.ret_origin);
+				res = inv_arg.ret;
+				return;
+			}
+			tee_shm_free(pool->shm_pool);
+			res = tee_client_close_session(g_secmem_context,
+				pool->secmem_session.session);
+			if (res)
+				pr_error("close secmem session error 0x%x", res);
+		}
+
+		list_del(&pool->node);
+		kfree(pool);
+	}
+}
+#endif
+
+static int dmabuf_manage_secure_pool_init(u32 id_high, u32 id_low, u32 block_size,
+	u32 *pool_addr, u32 *pool_size, u32 version)
+{
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+	int ret = 0;
+
+	if (version < SECURE_HEAP_USER_TA_VERSION)
+		ret = dmabuf_manage_secure_genpool_init(id_high, id_low, block_size,
+			pool_addr, pool_size, version);
+	else
+		ret = dmabuf_manage_secmem_pool_init(id_high, id_low, block_size,
+			pool_addr, pool_size, version);
+	return ret;
+#else
+	return dmabuf_manage_secure_genpool_init(id_high, id_low, block_size,
+			pool_addr, pool_size, version);
+#endif
+}
+
 int dmabuf_manage_secure_pool_create(u32 id_high, u32 id_low, u32 block_size,
 	u32 *pool_addr, u32 *pool_size, u32 version)
 {
@@ -986,7 +1362,7 @@ int dmabuf_manage_secure_pool_create(u32 id_high, u32 id_low, u32 block_size,
 	return res;
 }
 
-static void dmabuf_manage_destroy_secure_pool(struct secure_pool_info *pool)
+static void dmabuf_manage_destroy_secure_gen_pool(struct secure_pool_info *pool)
 {
 	int res = 0;
 
@@ -1026,6 +1402,9 @@ static long dmabuf_manage_register_channel(unsigned long args)
 
 	mutex_lock(&g_secure_pool_mutex);
 	pr_enter();
+
+	if (secure_heap_version == SECURE_HEAP_USER_TA_VERSION)
+		goto error_alloc_channel;
 
 	channel = (struct secure_vdec_channel *)
 		kzalloc(sizeof(*channel), GFP_KERNEL);
@@ -1092,12 +1471,16 @@ static long dmabuf_manage_release_channel(u32 id_high, u32 id_low)
 	mutex_lock(&g_secure_pool_mutex);
 	pr_enter();
 
+	if (secure_heap_version == SECURE_HEAP_USER_TA_VERSION)
+		goto error;
+
 	pool = dmabuf_manage_get_secure_vdec_pool(id_high, id_low);
 	if (pool) {
 		pool->channel_register = 0;
-		dmabuf_manage_destroy_secure_pool(pool);
+		dmabuf_manage_destroy_secure_gen_pool(pool);
 	}
 
+error:
 	mutex_unlock(&g_secure_pool_mutex);
 	return 0;
 }
@@ -1129,7 +1512,7 @@ static void dmabuf_manage_dump_secure_pool(struct secure_pool_info *pool)
 				block = list_entry(pos, struct block_node, node);
 				if (block) {
 					s = snprintf(pbuf, size - tsize,
-						"Block %d addr %d size %d\n", block_count,
+						"Block %x addr %x size %x\n", block_count,
 						block->addr, block->size);
 					tsize += s;
 					pbuf += s;
@@ -1143,11 +1526,11 @@ static void dmabuf_manage_dump_secure_pool(struct secure_pool_info *pool)
 }
 
 int dmabuf_manage_secure_pool_status(u32 id_high, u32 id_low, u32 frame_size,
-	u32 *block_count, u32 *block_free_slot)
+	u32 *block_count, u32 *block_free_slot, u32 version)
 {
 	struct secure_pool_info *pool = NULL;
 
-	if (!block_count || !block_free_slot)
+	if (!block_count || !block_free_slot || version == SECURE_HEAP_USER_TA_VERSION)
 		return 0;
 
 	mutex_lock(&g_secure_pool_mutex);
@@ -1165,7 +1548,117 @@ int dmabuf_manage_secure_pool_status(u32 id_high, u32 id_low, u32 frame_size,
 	return 0;
 }
 
-phys_addr_t dmabuf_manage_secure_block_alloc(u32 id_high, u32 id_low, u32 size)
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+static int dmabuf_manage_secure_v2_block_alloc(struct secure_pool_info *pool, u32 size, u32 *handle)
+{
+	int res = 0;
+	u32 in_len = 0;
+	u32 out_off = 0;
+	char *shm_data = NULL;
+	struct tee_param param[TEE_CMD_PARAM_NUM] = { 0 };
+	struct tee_ioctl_invoke_arg inv_arg = { 0 };
+
+	if (!pool || !g_secmem_context || !handle)
+		return -1;
+
+	if (!pool->shm_pool)
+		return -1;
+
+	shm_data = tee_shm_get_va(pool->shm_pool, 0);
+	if (IS_ERR(shm_data)) {
+		pr_error("%s tee_shm_get_va failed\n", __func__);
+		res = -EBUSY;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, TA_SECMEM_V2_CMD_MEM_CREATE, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INOUT;
+	param[0].u.memref.shm = pool->shm_pool;
+	param[0].u.memref.size = in_len;
+	param[0].u.memref.shm_offs = 0;
+	param[3].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT;
+
+	inv_arg.func = TA_SECMEM_V2_CMD_MEM_CREATE;
+	inv_arg.session = pool->secmem_session.session;
+	inv_arg.num_params = TEE_CMD_PARAM_NUM;
+	res = tee_client_invoke_func(g_secmem_context, &inv_arg, param);
+	if (res < 0 || inv_arg.ret != TEEC_SUCCESS) {
+		pr_error("%s invoke func failed, res %d, res 0x%x,origin = 0x%x\n",
+			__func__, res, inv_arg.ret, inv_arg.ret_origin);
+		res = inv_arg.ret;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_unpack_u32(shm_data, handle, &out_off);
+
+error:
+	return res;
+}
+
+static int dmabuf_manage_secure_v2_block_free(struct secure_pool_info *pool, u32 handle)
+{
+	int res = 0;
+	u32 in_len = 0;
+	char *shm_data = NULL;
+	struct tee_param param[TEE_CMD_PARAM_NUM] = { 0 };
+	struct tee_ioctl_invoke_arg inv_arg = { 0 };
+
+	if (!pool || !g_secmem_context)
+		return -1;
+
+	if (!pool->shm_pool)
+		return -1;
+
+	shm_data = tee_shm_get_va(pool->shm_pool, 0);
+	if (IS_ERR(shm_data)) {
+		pr_error("%s tee_shm_get_va failed\n", __func__);
+		res = -EBUSY;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, TA_SECMEM_V2_CMD_MEM_FREE, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	res = dmabuf_manage_tee_pack_u32(shm_data, handle, &in_len);
+	if (res) {
+		pr_error("%s pass tee parameter failed\n", __func__);
+		res = -EFAULT;
+		goto error;
+	}
+
+	param[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INOUT;
+	param[0].u.memref.shm = pool->shm_pool;
+	param[0].u.memref.size = in_len;
+	param[0].u.memref.shm_offs = 0;
+	param[3].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT;
+
+	inv_arg.func = TA_SECMEM_V2_CMD_MEM_FREE;
+	inv_arg.session = pool->secmem_session.session;
+	inv_arg.num_params = TEE_CMD_PARAM_NUM;
+	res = tee_client_invoke_func(g_secmem_context, &inv_arg, param);
+	if (res < 0 || inv_arg.ret != TEEC_SUCCESS) {
+		pr_error("%s invoke func failed, res %d, res 0x%x, origin = 0x%x\n",
+			 __func__, res, inv_arg.ret, inv_arg.ret_origin);
+		res = inv_arg.ret;
+	}
+
+error:
+	return res;
+}
+#endif
+
+phys_addr_t dmabuf_manage_secure_block_alloc(u32 id_high, u32 id_low, u32 size,
+	u32 version)
 {
 	struct secure_pool_info *pool = NULL;
 	phys_addr_t addr = 0;
@@ -1174,7 +1667,16 @@ phys_addr_t dmabuf_manage_secure_block_alloc(u32 id_high, u32 id_low, u32 size)
 	mutex_lock(&g_secure_pool_mutex);
 	pool = dmabuf_manage_get_secure_vdec_pool(id_high, id_low);
 	if (pool) {
-		addr = gen_pool_alloc(pool->gen_pool, size);
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+		if (version == SECURE_HEAP_USER_TA_VERSION)
+			dmabuf_manage_secure_v2_block_alloc(pool, size, (u32 *)&addr);
+		else
+			addr = gen_pool_alloc(pool->gen_pool, size);
+#else
+		if (version != SECURE_HEAP_USER_TA_VERSION)
+			addr = gen_pool_alloc(pool->gen_pool, size);
+#endif
+
 		if (addr) {
 			block = kzalloc(sizeof(*block), GFP_KERNEL);
 			if (block) {
@@ -1196,7 +1698,7 @@ phys_addr_t dmabuf_manage_secure_block_alloc(u32 id_high, u32 id_low, u32 size)
 }
 
 int dmabuf_manage_secure_block_free(u32 id_high, u32 id_low, u32 release,
-	phys_addr_t addr, u32 size)
+	phys_addr_t addr, u32 size, u32 version)
 {
 	struct secure_pool_info *pool = NULL;
 	struct list_head *pos = NULL;
@@ -1208,7 +1710,15 @@ int dmabuf_manage_secure_block_free(u32 id_high, u32 id_low, u32 release,
 
 	if (pool) {
 		if (addr && size > 0) {
-			gen_pool_free(pool->gen_pool, addr, size);
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+			if (version == SECURE_HEAP_USER_TA_VERSION)
+				dmabuf_manage_secure_v2_block_free(pool, addr);
+			else
+				gen_pool_free(pool->gen_pool, addr, size);
+#else
+			if (version != SECURE_HEAP_USER_TA_VERSION)
+				gen_pool_free(pool->gen_pool, addr, size);
+#endif
 
 			if (!list_empty(&pool->block_node)) {
 				list_for_each_safe(pos, tmp, &pool->block_node) {
@@ -1221,8 +1731,17 @@ int dmabuf_manage_secure_block_free(u32 id_high, u32 id_low, u32 release,
 			}
 		}
 
-		if (release)
-			dmabuf_manage_destroy_secure_pool(pool);
+		if (release) {
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+			if (version == SECURE_HEAP_USER_TA_VERSION)
+				dmabuf_manage_destroy_secmem_pool(pool);
+			else
+				dmabuf_manage_destroy_secure_gen_pool(pool);
+#else
+			if (version != SECURE_HEAP_USER_TA_VERSION)
+				dmabuf_manage_destroy_secure_gen_pool(pool);
+#endif
+		}
 	}
 
 	mutex_unlock(&g_secure_pool_mutex);
@@ -1376,6 +1895,7 @@ static struct mconfig dmabuf_manage_configs[] = {
 	MC_PI32("secure_uhd_pool_size_mb", &secure_uhd_pool_size_mb),
 	MC_PI32("secure_fuhd_pool_size_mb", &secure_fuhd_pool_size_mb),
 	MC_PI32("secure_pool_max_block_count", &secure_pool_max_block_count),
+	MC_PI32("secure_vdec_config", &secure_vdec_config),
 	MC_PI32("secure_heap_version", &secure_heap_version)
 };
 

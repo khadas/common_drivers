@@ -42,6 +42,7 @@ module_param(dma_buf_debug, int, 0644);
 #define AML_SECURE_DMABUF_HEAP_BLOCK_INIT			0
 #define AML_SECURE_DMABUF_HEAP_BLOCK_REALLOC		1
 #define AML_SECURE_DMABUF_HEAP_QUERY_POOL_STATE		2
+#define AML_SECURE_DMABUF_HEAP_SETTING_PHYADDR		3
 
 struct secure_block_info {
 	__u32 version;
@@ -233,6 +234,8 @@ static int secure_heap_mmap(struct dma_buf *dmabuf,
 	if (block->version > SECURE_HEAP_DEFAULT_VERSION) {
 		switch (block->state) {
 		case AML_SECURE_DMABUF_HEAP_BLOCK_REALLOC:
+			if (block->version == SECURE_HEAP_USER_TA_VERSION)
+				break;
 			if (block->allocsize < AML_SECURE_DMABUF_HEAP_BLOCK_MIN_SIZE)
 				len = AML_SECURE_DMABUF_HEAP_BLOCK_MIN_SIZE;
 			else
@@ -246,14 +249,14 @@ static int secure_heap_mmap(struct dma_buf *dmabuf,
 				if (block->block_size && block->block_addr) {
 					if (dmabuf_manage_secure_block_free(block->id_high,
 						block->id_low, 0, block->block_addr,
-						block->block_size))
+						block->block_size, block->version))
 						pr_err("Secure buffer free err please fix it");
 					block->block_addr = 0;
 					block->block_size = 0;
 				}
 
 				paddr = dmabuf_manage_secure_block_alloc(block->id_high,
-					block->id_low, len);
+					block->id_low, len, block->version);
 				if (!paddr) {
 					pr_err("No mem alloc %d %d %ld", block->id_high,
 						block->id_low, len);
@@ -271,20 +274,31 @@ static int secure_heap_mmap(struct dma_buf *dmabuf,
 			block->state = AML_SECURE_DMABUF_HEAP_BLOCK_INIT;
 			break;
 		case AML_SECURE_DMABUF_HEAP_QUERY_POOL_STATE:
+			if (block->version == SECURE_HEAP_USER_TA_VERSION)
+				break;
 			paddr = block->block_addr;
 			len = block->block_size;
 			if (len && paddr) {
 				if (dmabuf_manage_secure_block_free(block->id_high, block->id_low,
-					0, paddr, len))
+					0, paddr, len, block->version))
 					pr_err("Secure buffer free err please fix it");
 				block->block_addr = 0;
 				block->block_size = 0;
 			}
 			dmabuf_manage_secure_pool_status(block->id_high, block->id_low,
-				block->frame_size, &block->block_count, &block->block_free_slot);
+				block->frame_size, &block->block_count, &block->block_free_slot,
+				block->version);
 			block->frame_size = 0;
 			block->state = AML_SECURE_DMABUF_HEAP_BLOCK_INIT;
 			break;
+		case AML_SECURE_DMABUF_HEAP_SETTING_PHYADDR:
+			if (block->version != SECURE_HEAP_USER_TA_VERSION)
+				break;
+			sg_set_page(buffer->sg_table.sgl, pfn_to_page(PFN_DOWN(block->pool_addr)),
+				PAGE_ALIGN(block->pool_size), 0);
+			block->pool_addr = 0;
+			block->pool_size = 0;
+			block->state = 0;
 		default:
 			break;
 		}
@@ -322,7 +336,7 @@ static void secure_heap_dma_buf_release(struct dma_buf *dmabuf)
 	block = buffer->block;
 	if (block) {
 		if (dmabuf_manage_secure_block_free(block->id_high, block->id_low,
-			1, block->block_addr, block->block_size))
+			1, block->block_addr, block->block_size, block->version))
 			pr_err("Secure vdec block free error please fix it");
 	}
 	sg_free_table(&buffer->sg_table);
@@ -385,10 +399,12 @@ static struct dma_buf *secure_heap_do_allocate(struct dma_heap *heap,
 	if (sg_alloc_table(table, 1, GFP_KERNEL))
 		goto free_priv_buffer;
 
-	if (len <= AML_SECURE_DMABUF_HEAP_BLOCK_SIZE)
-		block->version = SECURE_HEAP_DEFAULT_VERSION;
-	else
-		block->version = dmabuf_manage_get_secure_heap_version();
+	block->version = dmabuf_manage_get_secure_heap_version();
+
+	if (block->version < SECURE_HEAP_USER_TA_VERSION) {
+		if (len <= AML_SECURE_DMABUF_HEAP_BLOCK_SIZE)
+			block->version = SECURE_HEAP_DEFAULT_VERSION;
+	}
 
 	block->id_high = current->tgid;
 	block->id_low = current->pid;
@@ -398,14 +414,17 @@ static struct dma_buf *secure_heap_do_allocate(struct dma_heap *heap,
 		&block->pool_addr, &block->pool_size, block->version))
 		goto free_tables;
 
-	if (block->version == SECURE_HEAP_DEFAULT_VERSION) {
+	if (block->version == SECURE_HEAP_DEFAULT_VERSION ||
+		block->version == SECURE_HEAP_USER_TA_VERSION) {
 		block->block_addr = dmabuf_manage_secure_block_alloc(block->id_high,
-			block->id_low, len);
+			block->id_low, len, block->version);
 		if (!block->block_addr)
 			goto free_tables;
+
 		block->block_size = len;
-		sg_set_page(table->sgl, pfn_to_page(PFN_DOWN(block->block_addr)),
-			len, 0);
+		if (block->version == SECURE_HEAP_DEFAULT_VERSION)
+			sg_set_page(table->sgl, pfn_to_page(PFN_DOWN(block->block_addr)),
+				len, 0);
 	}
 
 	/* create the dmabuf */

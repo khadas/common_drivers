@@ -79,11 +79,6 @@ struct g12a_ephy_pll {
 	struct clk_hw hw;
 };
 
-#if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
-/*0 for 12nm, 1 for 22nm*/
-unsigned int phy_pll_mode;
-#endif
-
 #define g12a_ephy_pll_to_dev(_hw)			\
 	container_of(_hw, struct g12a_ephy_pll, hw)
 

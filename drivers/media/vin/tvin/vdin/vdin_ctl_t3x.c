@@ -667,9 +667,7 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 	default:
 		break;
 	}
-	if (devp->dv.dv_flag && !(is_amdv_stb_mode() &&
-	    cpu_after_eq(MESON_CPU_MAJOR_ID_TM2)) &&
-	    devp->prop.color_format == TVIN_YUV422) {
+	if (vdin_dv_is_need_tunnel(devp)) {
 		vdin_data_bus_0 = VDIN_MAP_BPB;
 		vdin_data_bus_1 = VDIN_MAP_Y_G;
 		vdin_data_bus_2 = VDIN_MAP_RCR;
@@ -2339,11 +2337,7 @@ void vdin_set_dv_tunnel_t3x(struct vdin_dev_s *devp)
 	if (!IS_HDMI_SRC(devp->parm.port))
 		return;
 
-	if (devp->dv.dv_flag/* && is_amdv_enable()*/ &&
-	    (!(is_amdv_stb_mode() && cpu_after_eq(MESON_CPU_MAJOR_ID_TM2)) ||
-	    (is_amdv_stb_mode() && !is_hdmi_ll_as_hdr10())) &&
-		/*&& (devp->dv.low_latency)*/
-	    devp->prop.dest_cfmt == TVIN_YUV422) {
+	if (vdin_dv_is_need_tunnel(devp)) {
 		wr(0, VPU_VDIN_HDMI0_TUNNEL, 0x80304512);
 		if (vdin_dbg_en)
 			pr_info("vdin%d,enable hdmi_if tunnel\n", devp->index);

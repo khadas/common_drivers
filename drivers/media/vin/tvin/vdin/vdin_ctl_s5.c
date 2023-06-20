@@ -472,6 +472,7 @@ void vdin_get_format_convert_s5(struct vdin_dev_s *devp)
 		case TVIN_YVYU422:
 		case TVIN_UYVY422:
 		case TVIN_VYUY422:
+		case TVIN_YUV420:
 			format_convert = VDIN_FORMAT_CONVERT_YUV_YUV422;
 			break;
 		case TVIN_YUV444:
@@ -491,6 +492,7 @@ void vdin_get_format_convert_s5(struct vdin_dev_s *devp)
 		case TVIN_YVYU422:
 		case TVIN_UYVY422:
 		case TVIN_VYUY422:
+		case TVIN_YUV420:
 			if (devp->prop.dest_cfmt == TVIN_NV21) {
 				format_convert = VDIN_FORMAT_CONVERT_YUV_NV21;
 			} else if (devp->prop.dest_cfmt == TVIN_NV12) {
@@ -590,7 +592,8 @@ void vdin_get_format_convert_s5(struct vdin_dev_s *devp)
 		 *	format_convert = VDIN_FORMAT_CONVERT_YUV_YUV444;
 		 *}
 		 */
-		if (devp->prop.color_format == TVIN_YUV422) {
+		if (devp->prop.color_format == TVIN_YUV422 ||
+		    devp->prop.color_format == TVIN_YUV420) {
 			/*rx will tunneled to 444*/
 			format_convert = VDIN_FORMAT_CONVERT_YUV_YUV444;
 		} else if (devp->prop.color_format == TVIN_RGB444) {
@@ -694,6 +697,7 @@ vdin_get_format_convert_matrix1_s5(struct vdin_dev_s *devp)
 	case TVIN_UYVY422:
 	case TVIN_VYUY422:
 	case TVIN_YUV444:
+	case TVIN_YUV420:
 		format_convert = VDIN_FORMAT_CONVERT_YUV_RGB;
 	break;
 	case TVIN_RGB444:
@@ -990,9 +994,7 @@ void vdin_set_top_s5(struct vdin_dev_s *devp, enum tvin_port_e port,
 	default:
 		break;
 	}
-	if (devp->dv.dv_flag && !(is_amdv_stb_mode() &&
-	    cpu_after_eq(MESON_CPU_MAJOR_ID_TM2)) &&
-	    devp->prop.color_format == TVIN_YUV422) {
+	if (vdin_dv_is_need_tunnel(devp)) {
 		vdin_data_bus_0 = VDIN_MAP_BPB;
 		vdin_data_bus_1 = VDIN_MAP_Y_G;
 		vdin_data_bus_2 = VDIN_MAP_RCR;
@@ -3877,7 +3879,8 @@ bool vdin_is_dolby_tunnel_444_input_s5(struct vdin_dev_s *devp)
 {
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	if (vdin_is_dolby_signal_in(devp) &&
-	    devp->prop.color_format == TVIN_YUV422)
+	    (devp->prop.color_format == TVIN_YUV422 ||
+	     devp->prop.color_format == TVIN_YUV420))
 		return true;
 #endif
 	return false;

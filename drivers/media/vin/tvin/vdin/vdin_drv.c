@@ -558,8 +558,7 @@ static void vdin_game_mode_check(struct vdin_dev_s *devp)
 	}
 
 	/* dv is auto game not support manual set game */
-	if (devp->dv.dv_flag && !devp->prop.latency.allm_mode &&
-	    !devp->prop.low_latency && !devp->vrr_data.vrr_mode)
+	if (vdin_dv_not_manual_game(devp))
 		devp->game_mode = 0;
 
 	if (vdin_force_game_mode)
@@ -610,6 +609,7 @@ static inline void vdin_game_mode_dynamic_chg(struct vdin_dev_s *devp)
 		pr_info("%s %d,game:pre(%#x)cur(%#x)chg:%d\n",
 			__func__, __LINE__, devp->game_mode_pre,
 			devp->game_mode, devp->game_mode_chg);
+
 	devp->game_mode_bak = devp->game_mode_pre;
 	devp->game_mode_pre = devp->game_mode;
 }
@@ -668,9 +668,11 @@ static inline void vdin_game_mode_dynamic_check(struct vdin_dev_s *devp)
 	}
 
 	/* dv is auto game not support manual set game */
-	if (devp->dv.dv_flag && !devp->prop.latency.allm_mode &&
-	    !devp->prop.low_latency && !devp->vrr_data.vrr_mode)
+	if (vdin_dv_not_manual_game(devp))
 		devp->game_mode = 0;
+
+	if (vdin_force_game_mode)
+		devp->game_mode = vdin_force_game_mode;
 
 	if (vdin_isr_monitor & VDIN_ISR_MONITOR_GAME)
 		pr_info("%s vrr_mode:%d,game:pre(%#x)cur(%#x)in fps:%d out fps:%d cycle:%#x\n",
@@ -3032,9 +3034,7 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 			devp->dv.dv_next_index = devp->curr_wr_vfe->vf.index;
 			schedule_delayed_work(&devp->dv.dv_dwork,
 				dv_work_dolby);
-		} else if (((dv_dbg_mask & DV_UPDATE_DATA_MODE_DOLBY_WORK) == 0) &&
-			devp->dv.dv_config && !devp->dv.low_latency &&
-			   (devp->prop.dolby_vision == 1)) {
+		} else if (vdin_dv_is_visf_data(devp)) {
 			vdin_dolby_buffer_update(devp,
 						 devp->last_wr_vfe->vf.index);
 			vdin_dolby_addr_update(devp,
@@ -3399,10 +3399,7 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 			devp->dv.dv_next_index = next_wr_vfe->vf.index;
 			schedule_delayed_work(&devp->dv.dv_dwork,
 					      dv_work_dolby);
-		} else if (((dv_dbg_mask &
-			      DV_UPDATE_DATA_MODE_DOLBY_WORK) == 0) &&
-			   devp->dv.dv_config && !devp->dv.low_latency &&
-			   (devp->prop.dolby_vision == 1)) {
+		} else if (vdin_dv_is_visf_data(devp)) {
 			vdin_dolby_buffer_update(devp, curr_wr_vfe->vf.index);
 			vdin_dolby_addr_update(devp, next_wr_vfe->vf.index);
 		} else {
@@ -3786,8 +3783,7 @@ static void vdin_dv_dwork(struct work_struct *work)
 		pr_info("%s, dwork error !!!\n", __func__);
 		return;
 	}
-	if (devp->dv.dv_config && devp->prop.dolby_vision == 1 &&
-	    !devp->dv.low_latency) {
+	if (vdin_dv_is_visf_data(devp)) {
 		vdin_dolby_buffer_update(devp, devp->dv.dv_cur_index);
 		vdin_dolby_addr_update(devp, devp->dv.dv_next_index);
 	}

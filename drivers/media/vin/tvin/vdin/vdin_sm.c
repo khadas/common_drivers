@@ -175,7 +175,8 @@ enum tvin_color_fmt_range_e
 	u32 fmt_range = TVIN_YUV_FULL;
 
 	if (color_fmt == TVIN_YUV444 ||
-	    color_fmt == TVIN_YUV422) {
+	    color_fmt == TVIN_YUV422 ||
+	    color_fmt == TVIN_YUV420) {
 		if (color_range_force == COLOR_RANGE_FULL)
 			fmt_range = TVIN_YUV_FULL;
 		else if (color_range_force == COLOR_RANGE_LIMIT)

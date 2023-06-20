@@ -551,6 +551,7 @@ struct vdin_debug_s {
 	/* vdin1 hdr set bypass */
 	bool vdin1_set_hdr_bypass;
 	bool dbg_force_shrink_en;
+	bool bypass_tunnel;
 	unsigned int sar_width;
 	unsigned int sar_height;
 	unsigned int ratio_control;

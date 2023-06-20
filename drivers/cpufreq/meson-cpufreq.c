@@ -32,6 +32,7 @@
 #include <linux/arm-smccc.h>
 #include <linux/proc_fs.h>
 #include <linux/amlogic/gki_module.h>
+#include <linux/reboot.h>
 
 #define CREATE_TRACE_POINTS
 /*whether use different tables or not*/
@@ -1236,6 +1237,18 @@ static void meson_get_cluster_cores(void)
 	}
 }
 
+static int cpufreq_notifier_handler(struct notifier_block *this, unsigned long code,
+				    void *unused)
+{
+	cpufreq_unregister_driver(&meson_cpufreq_driver);
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block cpufreq_notifier = {
+	.notifier_call = cpufreq_notifier_handler,
+	.priority = INT_MAX, /* do early */
+};
+
 static int meson_cpufreq_probe(struct platform_device *pdev)
 {
 	struct device *cpu_dev;
@@ -1290,6 +1303,10 @@ static int meson_cpufreq_probe(struct platform_device *pdev)
 		pr_err("%s: Failed registering platform driver, err: %d\n",
 				__func__, ret);
 	}
+
+	ret = register_reboot_notifier(&cpufreq_notifier);
+	if (ret)
+		pr_err("%s: failed register_reboot_notifier, err:%d\n", __func__, ret);
 
 	return ret;
 }

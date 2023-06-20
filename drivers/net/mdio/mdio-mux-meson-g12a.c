@@ -18,6 +18,9 @@
 #include <linux/amlogic/aml_phy_debug.h>
 void __iomem *phy_analog_config_addr;
 EXPORT_SYMBOL_GPL(phy_analog_config_addr);
+/*0 for 12nm, 1 for 22nm*/
+unsigned int phy_pll_mode;
+EXPORT_SYMBOL_GPL(phy_pll_mode);
 #endif
 
 #define ETH_PLL_STS		0x40

@@ -80,6 +80,7 @@ config AMLOGIC_VMAP
 	depends on AMLOGIC_BREAK_GKI_20
 	depends on AMLOGIC_MEMORY_EXTEND
 	depends on AMLOGIC_STACKPROTECTOR
+	depends on !AMLOGIC_ARM_KASAN
 	default n
 	help
 		This config is used to enable amlogic kernel stack
@@ -176,4 +177,12 @@ config AMLOGIC_FAKE_SMMU
 	default n
 	help
 		Register a fake smmu device to replace ops for 64bit
+
+config AMLOGIC_ARM_KASAN
+	bool "support arm kasan"
+	depends on KASAN
+	depends on ARM
+	default y
+	help
+		Support enable kasan on arm32
 

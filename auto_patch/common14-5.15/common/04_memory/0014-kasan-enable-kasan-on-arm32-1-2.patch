@@ -1,0 +1,57 @@
+From cfa8dfef2bb7d1936708c2cae4d5fb44bce68e4e Mon Sep 17 00:00:00 2001
+From: "song.han" <song.han@amlogic.com>
+Date: Tue, 20 Jun 2023 15:59:42 +0800
+Subject: [PATCH] kasan: enable kasan on arm32 [1/2]
+
+PD#SWPL-128513
+
+Problem:
+enable kasan on arm32 will crash
+
+Solution:
+disable AMLOGIC_VMAP when kasan enabled
+increase modules region form 16M to 32M
+
+Verify:
+TXHD2
+
+Change-Id: Ia909a2f3522f5d994a6b74f2e853f10d0a7ac6ca
+Signed-off-by: song.han <song.han@amlogic.com>
+---
+ arch/arm/Kconfig              | 3 ++-
+ arch/arm/include/asm/memory.h | 4 ++++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index f1b1174a81ef..e0664fc1e12f 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1284,7 +1284,8 @@ config KASAN_SHADOW_OFFSET
+ 	depends on KASAN
+ 	default 0x1f000000 if PAGE_OFFSET=0x40000000
+ 	default 0x5f000000 if PAGE_OFFSET=0x80000000
+-	default 0x9f000000 if PAGE_OFFSET=0xC0000000
++	default 0x9e000000 if PAGE_OFFSET=0xC0000000 && AMLOGIC_ARM_KASAN=y
++	default 0x9f000000 if PAGE_OFFSET=0xC0000000 && AMLOGIC_ARM_KASAN=n
+ 	default 0x8f000000 if PAGE_OFFSET=0xB0000000
+ 	default 0xffffffff
+ 
+diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+index ee7ae5e14340..b3241a51d934 100644
+--- a/arch/arm/include/asm/memory.h
++++ b/arch/arm/include/asm/memory.h
+@@ -64,7 +64,11 @@
+ #define MODULES_VADDR           (PAGE_OFFSET - SZ_64M)
+ #else
+ #ifndef CONFIG_THUMB2_KERNEL
++#ifdef CONFIG_AMLOGIC_ARM_KASAN
++#define MODULES_VADDR		(PAGE_OFFSET - SZ_32M)
++#else
+ #define MODULES_VADDR		(PAGE_OFFSET - SZ_16M)
++#endif
+ #else
+ /* smaller range for Thumb-2 symbols relocation (2^24)*/
+ #define MODULES_VADDR		(PAGE_OFFSET - SZ_8M)
+-- 
+2.25.1
+

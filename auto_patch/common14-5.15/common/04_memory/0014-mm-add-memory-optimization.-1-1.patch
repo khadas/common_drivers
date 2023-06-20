@@ -1,0 +1,174 @@
+From cd3f8df10d48d44dd5333f46202aaf70aca9203d Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Tue, 20 Jun 2023 19:32:11 +0800
+Subject: [PATCH] mm: add memory optimization. [1/1]
+
+PD#SWPL-128561
+
+Problem:
+add memory optimization.
+
+Solution:
+add memory optimization.
+
+Verify:
+local.
+
+Change-Id: I28b07555f88ce0c395edd384d7664217f6ddc329
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ include/linux/android_kabi.h   |  5 ++++-
+ include/linux/android_vendor.h | 10 ++++++++++
+ include/linux/printk.h         |  4 ++++
+ include/linux/scs.h            |  4 ++++
+ init/init_task.c               |  2 ++
+ kernel/Makefile                |  2 ++
+ kernel/fork.c                  |  2 ++
+ mm/slab_common.c               |  4 ++++
+ 8 files changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/android_kabi.h b/include/linux/android_kabi.h
+index f6dd7f00b386..ee6b29e8d796 100644
+--- a/include/linux/android_kabi.h
++++ b/include/linux/android_kabi.h
+@@ -83,12 +83,15 @@
+  *   number: the "number" of the padding variable in the structure.  Start with
+  *   1 and go up.
+  */
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++#define ANDROID_KABI_RESERVE(number)
++#else
+ #ifdef CONFIG_ANDROID_KABI_RESERVE
+ #define ANDROID_KABI_RESERVE(number)	_ANDROID_KABI_RESERVE(number)
+ #else
+ #define ANDROID_KABI_RESERVE(number)
+ #endif
+-
++#endif /* CONFIG_AMLOGIC_OPT */
+ 
+ /*
+  * Macros to use _after_ the ABI is frozen
+diff --git a/include/linux/android_vendor.h b/include/linux/android_vendor.h
+index af3014ccc82e..f5bce42c8d0d 100644
+--- a/include/linux/android_vendor.h
++++ b/include/linux/android_vendor.h
+@@ -26,6 +26,15 @@
+  *   Same as ANDROID_VENDOR_DATA but allocates an array of u64 with
+  *   the specified size
+  */
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++#define ANDROID_VENDOR_DATA(n)
++#define ANDROID_VENDOR_DATA_ARRAY(n, s)
++#define ANDROID_OEM_DATA(n)
++#define ANDROID_OEM_DATA_ARRAY(n, s)
++
++#define android_init_vendor_data(p, n)
++#define android_init_oem_data(p, n)
++#else
+ #ifdef CONFIG_ANDROID_VENDOR_OEM_DATA
+ #define ANDROID_VENDOR_DATA(n)		u64 android_vendor_data##n
+ #define ANDROID_VENDOR_DATA_ARRAY(n, s)	u64 android_vendor_data##n[s]
+@@ -46,5 +55,6 @@
+ #define android_init_vendor_data(p, n)
+ #define android_init_oem_data(p, n)
+ #endif
++#endif
+ 
+ #endif /* _ANDROID_VENDOR_H */
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 9497f6b98339..83e8cfd192e8 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -336,6 +336,10 @@ extern int kptr_restrict;
+  * would prefix all pr_info, pr_emerg... messages in the file with the module
+  * name.
+  */
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++#undef pr_fmt
++#endif
++
+ #ifndef pr_fmt
+ #define pr_fmt(fmt) fmt
+ #endif
+diff --git a/include/linux/scs.h b/include/linux/scs.h
+index 4ab5bdc898cf..db157506346d 100644
+--- a/include/linux/scs.h
++++ b/include/linux/scs.h
+@@ -16,7 +16,11 @@
+ #ifdef CONFIG_SHADOW_CALL_STACK
+ 
+ #define SCS_ORDER		0
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++#define SCS_SIZE		SZ_1K
++#else
+ #define SCS_SIZE		(PAGE_SIZE << SCS_ORDER)
++#endif
+ #define GFP_SCS			(GFP_KERNEL | __GFP_ZERO)
+ 
+ /* An illegal pointer value to mark the end of the shadow stack. */
+diff --git a/init/init_task.c b/init/init_task.c
+index 559eff84a620..dfe427268949 100644
+--- a/init/init_task.c
++++ b/init/init_task.c
+@@ -214,10 +214,12 @@ struct task_struct init_task
+ #ifdef CONFIG_SECCOMP_FILTER
+ 	.seccomp	= { .filter_count = ATOMIC_INIT(0) },
+ #endif
++#ifndef CONFIG_AMLOGIC_MEMORY_OPT
+ #ifdef CONFIG_ANDROID_VENDOR_OEM_DATA
+ 	.android_vendor_data1 = {0, },
+ 	.android_oem_data1 = {0, },
+ #endif
++#endif
+ };
+ EXPORT_SYMBOL(init_task);
+ 
+diff --git a/kernel/Makefile b/kernel/Makefile
+index ce5fc348b16a..27790124a651 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -81,7 +81,9 @@ obj-$(CONFIG_UTS_NS) += utsname.o
+ obj-$(CONFIG_USER_NS) += user_namespace.o
+ obj-$(CONFIG_PID_NS) += pid_namespace.o
+ obj-$(CONFIG_IKCONFIG) += configs.o
++ifndef CONFIG_AMLOGIC_MEMORY_OPT
+ obj-$(CONFIG_IKHEADERS) += kheaders.o
++endif
+ obj-$(CONFIG_SMP) += stop_machine.o
+ obj-$(CONFIG_KPROBES_SANITY_TEST) += test_kprobes.o
+ obj-$(CONFIG_AUDIT) += audit.o auditfilter.o
+diff --git a/kernel/fork.c b/kernel/fork.c
+index abc1fd6c19c4..936f8162c4e4 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1019,9 +1019,11 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
+ #ifdef CONFIG_MEMCG
+ 	tsk->active_memcg = NULL;
+ #endif
++#ifndef CONFIG_AMLOGIC_MEMORY_OPT
+ #ifdef CONFIG_ANDROID_VENDOR_OEM_DATA
+ 	memset(&tsk->android_vendor_data1, 0, sizeof(tsk->android_vendor_data1));
+ 	memset(&tsk->android_oem_data1, 0, sizeof(tsk->android_oem_data1));
++#endif
+ #endif
+ 	trace_android_vh_dup_task_struct(tsk, orig);
+ 	return tsk;
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 8cf667b3065e..1a05fbf0e817 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -64,7 +64,11 @@ static DECLARE_WORK(slab_caches_to_rcu_destroy_work,
+ /*
+  * Merge control. If this is set then no merging of slab caches will occur.
+  */
++#ifdef CONFIG_AMLOGIC_MEMORY_OPT
++static bool slab_nomerge = true;
++#else
+ static bool slab_nomerge = !IS_ENABLED(CONFIG_SLAB_MERGE_DEFAULT);
++#endif
+ 
+ static int __init setup_slab_nomerge(char *str)
+ {
+-- 
+2.25.1
+

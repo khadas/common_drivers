@@ -8,7 +8,7 @@
 #include "mesonsm1.dtsi"
 #include "mesonsm1_drm.dtsi"
 #include "mesonsm1_ac200-panel.dtsi"
-#include "partition_mbox_normal_P_32.dtsi"
+#include "partition_mbox_normal_dynamic.dtsi"
 
 / {
 	amlogic-dt-id = "sm1_ac214_2g";

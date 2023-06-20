@@ -263,7 +263,7 @@ static int meson_hdmitx_decide_color_attr
 		}
 	} while (attr_list++);
 	if (attr_list->colorformat == HDMI_COLORSPACE_RESERVED6) {
-		DRM_ERROR("%s no attr found, reset to 444,8bit.\n", __func__);
+		DRM_INFO("%s no attr found, reset to 444,8bit.\n", __func__);
 		attr->colorformat = HDMI_COLORSPACE_RGB;
 		attr->bitdepth = 8;
 	}
@@ -1153,7 +1153,7 @@ static void meson_hdmitx_hdcp_notify(void *data, int type, int result)
 		goto end;
 
 	if (type == HDCP_KEY_UPDATE && result == HDCP_AUTH_UNKNOWN) {
-		DRM_ERROR("HDCP statue changed, need re-run hdcp\n");
+		DRM_INFO("HDCP statue changed, need re-run hdcp\n");
 		meson_hdmitx_update_hdcp();
 		goto end;
 	}
@@ -1171,7 +1171,7 @@ static void meson_hdmitx_hdcp_notify(void *data, int type, int result)
 			meson_hdmitx_set_hdcp_result(HDCP_AUTH_FAIL);
 		} else if (type == HDCP_MODE22) {
 			if (am_hdmi_info.hdcp_request_content_type == DRM_MODE_HDCP_CONTENT_TYPE0) {
-				DRM_ERROR("ContentType0 hdcp 22 -> hdcp14.\n");
+				DRM_INFO("ContentType0 hdcp 22 -> hdcp14.\n");
 				meson_hdmitx_stop_hdcp();
 				meson_hdmitx_start_hdcp(HDCP_MODE14);
 			} else {
@@ -1217,7 +1217,7 @@ static int meson_hdmitx_update_dv_eotf(struct drm_display_mode *mode,
 	if (dvcap->ieeeoui != DV_IEEE_OUI || dvcap->block_flag != CORRECT)
 		return -ENODEV;
 
-	DRM_ERROR("Mode %s,%d\n", mode->name, mode->flags);
+	DRM_INFO("Mode %s,%d\n", mode->name, mode->flags);
 	if (mode->flags & DRM_MODE_FLAG_INTERLACE)
 		return -EINVAL;
 
@@ -1418,7 +1418,7 @@ static int meson_hdmitx_choose_preset_mode(struct am_hdmi_tx *hdmitx,
 	vout_mode = vout_func_validate_vmode(amcrtc->vout_index, modename, 0);
 	DRM_INFO(" %s validate vmode %s, %x\n", __func__, modename, vout_mode);
 	if (vout_mode != VMODE_HDMI) {
-		DRM_ERROR("no matched hdmi mode\n");
+		DRM_INFO("no matched hdmi mode\n");
 		return -EINVAL;
 	}
 

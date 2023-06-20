@@ -7,7 +7,7 @@
 
 #include "mesont5w.dtsi"
 #include "partition_normal_linux.dtsi"
-#include "mesont5w_at301-panel.dtsi"
+#include "mesont5w_at301_linux-panel.dtsi"
 #include "mesont5w_drm.dtsi"
 
 / {

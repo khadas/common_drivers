@@ -10,7 +10,7 @@
 		index = <0>;
 		mode = "tv";
 		fr_auto_policy = <1>; /* 0=disable, 1=60/50hz, 2=60/50/48hz */
-		key_valid = <1>;
+		key_valid = <0>;
 		clocks = <&clkc CLKID_CLK81_VCLK2_ENCL
 			&clkc CLKID_CLK81_VCLK2_VENCL
 			&clkc CLKID_CLK81_TCON
@@ -572,7 +572,7 @@
 		compatible = "amlogic, lcd_extern";
 		status = "okay";
 		index = <0>;
-		key_valid = <1>;
+		key_valid = <0>;
 		i2c_bus = "i2c_bus_2";
 
 		extern_0{
@@ -613,7 +613,7 @@
 		compatible = "amlogic, backlight-t5w";
 		status = "okay";
 		index = <0>;
-		key_valid = <1>;
+		key_valid = <0>;
 		pinctrl-names = "pwm_on","pwm_vs_on",
 				"pwm_combo_0_1_on",
 				"pwm_combo_0_vs_1_on",

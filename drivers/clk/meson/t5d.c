@@ -534,21 +534,33 @@ static struct clk_regmap t5d_gp0_pll = {
 };
 #endif
 
+#ifdef CONFIG_ARM
+static const struct pll_params_table t5w_hifi_pll_table[] = {
+	PLL_PARAMS(150, 1, 3), /* DCO = 450M OD = 3 */
+	PLL_PARAMS(150, 1, 2), /* DCO = 900M OD = 2 */
+	PLL_PARAMS(150, 1, 1), /* DCO = 1806.336M OD = 1 */
+	PLL_PARAMS(125, 1, 3), /* DCO = 375M OD = 1 */
+	{ /* sentinel */  }
+};
+#else
+static const struct pll_mult_range t5d_hifi_pll_mult_range = {
+	.min = 128,
+	.max = 250,
+};
+#endif
 /*
  * Internal hifi pll emulation configuration parameters
  */
 static const struct reg_sequence t5d_hifi_init_regs[] = {
+	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x0803047d },
+	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x3803047d },
 	{ .reg = HHI_HIFI_PLL_CNTL1,	.def = 0x00000000 },
 	{ .reg = HHI_HIFI_PLL_CNTL2,	.def = 0x00000000 },
 	{ .reg = HHI_HIFI_PLL_CNTL3,	.def = 0x6a285c00 },
 	{ .reg = HHI_HIFI_PLL_CNTL4,	.def = 0x65771290 },
 	{ .reg = HHI_HIFI_PLL_CNTL5,	.def = 0x39272000 },
 	{ .reg = HHI_HIFI_PLL_CNTL6,	.def = 0x56540000 },
-};
-
-static const struct pll_mult_range t5d_hifi_pll_mult_range = {
-	.min = 128,
-	.max = 250,
+	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x1803047d },
 };
 
 static struct clk_regmap t5d_hifi_pll_dco = {
@@ -583,10 +595,20 @@ static struct clk_regmap t5d_hifi_pll_dco = {
 			.shift   = 29,
 			.width   = 1,
 		},
+#ifdef CONFIG_ARM
+		.od = {
+			.reg_off = HHI_HIFI_PLL_CNTL0,
+			.shift	 = 16,
+			.width	 = 2,
+		},
+		.table = t5w_hifi_pll_table,
+#else
 		.range = &t5d_hifi_pll_mult_range,
+#endif
 		.init_regs = t5d_hifi_init_regs,
 		.init_count = ARRAY_SIZE(t5d_hifi_init_regs),
-		.flags = CLK_MESON_PLL_ROUND_CLOSEST,
+		.flags = CLK_MESON_PLL_ROUND_CLOSEST |
+			 CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "hifi_pll_dco",
@@ -598,6 +620,19 @@ static struct clk_regmap t5d_hifi_pll_dco = {
 	},
 };
 
+#ifdef CONFIG_ARM
+static struct clk_regmap t5d_hifi_pll = {
+	.hw.init = &(struct clk_init_data){
+		.name = "hifi_pll",
+		.ops = &meson_pll_clk_no_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&t5d_hifi_pll_dco.hw
+		},
+		.num_parents = 1,
+		.flags = CLK_SET_RATE_PARENT,
+	},
+};
+#else
 static struct clk_regmap t5d_hifi_pll = {
 	.data = &(struct clk_regmap_div_data){
 		.offset = HHI_HIFI_PLL_CNTL0,
@@ -616,6 +651,7 @@ static struct clk_regmap t5d_hifi_pll = {
 		.flags = CLK_SET_RATE_PARENT,
 	},
 };
+#endif
 
 static struct clk_fixed_factor t5d_mpll_50m_div = {
 	.mult = 1,
@@ -2968,30 +3004,30 @@ static struct clk_hw_onecell_data t5d_hw_onecell_data = {
 		[CLKID_CLK81_RESET_SEC]		= &t5d_clk81_reset_sec.hw,
 		[CLKID_CLK81_SEC_AHB]		= &t5d_clk81_sec_ahb.hw,
 		[CLKID_CLK81_RSA]		= &t5d_clk81_rsa.hw,
-		[CLKID_MPEG_SEL]	= &t5d_mpeg_clk_sel.hw,
-		[CLKID_MPEG_DIV]	= &t5d_mpeg_clk_div.hw,
-		[CLKID_CLK81]		= &t5d_clk81.hw,
-		[CLKID_GPU_P0_MUX]	= &t5d_gpu_p0_mux.hw,
-		[CLKID_GPU_P0_DIV]	= &t5d_gpu_p0_div.hw,
-		[CLKID_GPU_P0_GATE]	= &t5d_gpu_p0_gate.hw,
-		[CLKID_GPU_P1_MUX]	= &t5d_gpu_p1_mux.hw,
-		[CLKID_GPU_P1_DIV]	= &t5d_gpu_p1_div.hw,
-		[CLKID_GPU_P1_GATE]	= &t5d_gpu_p1_gate.hw,
-		[CLKID_GPU_MUX]		= &t5d_gpu_mux.hw,
-		[CLKID_VPU_P0_MUX]	= &t5d_vpu_p0_mux.hw,
-		[CLKID_VPU_P0_DIV]	= &t5d_vpu_p0_div.hw,
-		[CLKID_VPU_P0_GATE]	= &t5d_vpu_p0_gate.hw,
-		[CLKID_VPU_P1_MUX]	= &t5d_vpu_p1_mux.hw,
-		[CLKID_VPU_P1_DIV]	= &t5d_vpu_p1_div.hw,
-		[CLKID_VPU_P1_GATE]	= &t5d_vpu_p1_gate.hw,
-		[CLKID_VPU_MUX]		= &t5d_vpu_mux.hw,
-		[CLKID_VPU_CLKC_P0_MUX]	= &t5d_vpu_clkc_p0_mux.hw,
-		[CLKID_VPU_CLKC_P0_DIV]	= &t5d_vpu_clkc_p0_div.hw,
+		[CLKID_MPEG_SEL]		= &t5d_mpeg_clk_sel.hw,
+		[CLKID_MPEG_DIV]		= &t5d_mpeg_clk_div.hw,
+		[CLKID_CLK81]			= &t5d_clk81.hw,
+		[CLKID_GPU_P0_MUX]		= &t5d_gpu_p0_mux.hw,
+		[CLKID_GPU_P0_DIV]		= &t5d_gpu_p0_div.hw,
+		[CLKID_GPU_P0_GATE]		= &t5d_gpu_p0_gate.hw,
+		[CLKID_GPU_P1_MUX]		= &t5d_gpu_p1_mux.hw,
+		[CLKID_GPU_P1_DIV]		= &t5d_gpu_p1_div.hw,
+		[CLKID_GPU_P1_GATE]		= &t5d_gpu_p1_gate.hw,
+		[CLKID_GPU_MUX]			= &t5d_gpu_mux.hw,
+		[CLKID_VPU_P0_MUX]		= &t5d_vpu_p0_mux.hw,
+		[CLKID_VPU_P0_DIV]		= &t5d_vpu_p0_div.hw,
+		[CLKID_VPU_P0_GATE]		= &t5d_vpu_p0_gate.hw,
+		[CLKID_VPU_P1_MUX]		= &t5d_vpu_p1_mux.hw,
+		[CLKID_VPU_P1_DIV]		= &t5d_vpu_p1_div.hw,
+		[CLKID_VPU_P1_GATE]		= &t5d_vpu_p1_gate.hw,
+		[CLKID_VPU_MUX]			= &t5d_vpu_mux.hw,
+		[CLKID_VPU_CLKC_P0_MUX]		= &t5d_vpu_clkc_p0_mux.hw,
+		[CLKID_VPU_CLKC_P0_DIV]		= &t5d_vpu_clkc_p0_div.hw,
 		[CLKID_VPU_CLKC_P0_GATE]	= &t5d_vpu_clkc_p0_gate.hw,
-		[CLKID_VPU_CLKC_P1_MUX]	= &t5d_vpu_clkc_p1_mux.hw,
-		[CLKID_VPU_CLKC_P1_DIV]	= &t5d_vpu_clkc_p1_div.hw,
+		[CLKID_VPU_CLKC_P1_MUX]		= &t5d_vpu_clkc_p1_mux.hw,
+		[CLKID_VPU_CLKC_P1_DIV]		= &t5d_vpu_clkc_p1_div.hw,
 		[CLKID_VPU_CLKC_P1_GATE]	= &t5d_vpu_clkc_p1_gate.hw,
-		[CLKID_VPU_CLKC_MUX]	= &t5d_vpu_clkc_mux.hw,
+		[CLKID_VPU_CLKC_MUX]		= &t5d_vpu_clkc_mux.hw,
 		[CLKID_ADC_EXTCLK_IN_MUX]	= &t5d_adc_extclk_in_mux.hw,
 		[CLKID_ADC_EXTCLK_IN_DIV]	= &t5d_adc_extclk_in_div.hw,
 		[CLKID_ADC_EXTCLK_IN]		= &t5d_adc_extclk_in.hw,

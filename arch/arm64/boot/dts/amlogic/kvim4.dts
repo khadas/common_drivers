@@ -12,6 +12,7 @@
 #include "mesont7_drm.dtsi"
 
 / {
+	model = "Khadas VIM4";
 	amlogic-dt-id = "t7_a311d2_vim4";
 	compatible = "t7_a311d2_vim4";
 	interrupt-parent = <&gic>;

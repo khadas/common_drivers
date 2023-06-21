@@ -177,7 +177,9 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 	echo "]"					>> ${PROJECT_DIR}/dtb.bzl
 
 	echo args=${args}
-	if [ "${ABI}" -eq "1" ]; then
+	if [[ -n ${GOOGLE_BAZEL_BUILD_COMMAND_LINE} ]]; then
+		${GOOGLE_BAZEL_BUILD_COMMAND_LINE}
+	elif [ "${ABI}" -eq "1" ]; then
 		tools/bazel run //common:amlogic_abi_update_symbol_list --sandbox_debug --verbose_failures ${args}
 		tools/bazel run //common:kernel_aarch64_abi_dist --sandbox_debug --verbose_failures ${args}
 		exit

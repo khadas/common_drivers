@@ -6,7 +6,9 @@
 #include <drm/amlogic/meson_drm_bind.h>
 #include "meson_hdmi.h"
 #include "meson_cvbs.h"
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #include "meson_lcd.h"
+#endif
 #include "meson_dummyl.h"
 
 int meson_connector_dev_bind(struct drm_device *drm,
@@ -15,7 +17,12 @@ int meson_connector_dev_bind(struct drm_device *drm,
 	/*amlogic extend lcd*/
 	if (type > DRM_MODE_MESON_CONNECTOR_PANEL_START &&
 		type < DRM_MODE_MESON_CONNECTOR_PANEL_END) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		return meson_panel_dev_bind(drm, type, intf);
+#else
+		pr_err("Panel connector is not supported!\n");
+		return -1;
+#endif
 	}
 
 	switch (type) {
@@ -26,10 +33,12 @@ int meson_connector_dev_bind(struct drm_device *drm,
 	case DRM_MODE_CONNECTOR_TV:
 		return meson_cvbs_dev_bind(drm, type, intf);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DRM_MODE_CONNECTOR_LVDS:
 	case DRM_MODE_CONNECTOR_DSI:
 	case DRM_MODE_CONNECTOR_eDP:
 		return meson_panel_dev_bind(drm, type, intf);
+#endif
 
 	case DRM_MODE_CONNECTOR_MESON_DUMMY_L:
 		return meson_dummyl_dev_bind(drm, type, intf);
@@ -49,7 +58,12 @@ int meson_connector_dev_unbind(struct drm_device *drm,
 	/*amlogic extend lcd*/
 	if (type > DRM_MODE_MESON_CONNECTOR_PANEL_START &&
 		type < DRM_MODE_MESON_CONNECTOR_PANEL_END) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		return meson_panel_dev_unbind(drm, type, connector_id);
+#else
+		pr_err("Panel connector is not supported!\n");
+		return -1;
+#endif
 	}
 
 	switch (type) {
@@ -60,10 +74,12 @@ int meson_connector_dev_unbind(struct drm_device *drm,
 	case DRM_MODE_CONNECTOR_TV:
 		return meson_cvbs_dev_unbind(drm, type, connector_id);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DRM_MODE_CONNECTOR_LVDS:
 	case DRM_MODE_CONNECTOR_DSI:
 	case DRM_MODE_CONNECTOR_eDP:
 		return meson_panel_dev_unbind(drm, type, connector_id);
+#endif
 
 	case DRM_MODE_CONNECTOR_MESON_DUMMY_L:
 		return meson_dummyl_dev_unbind(drm, type, connector_id);

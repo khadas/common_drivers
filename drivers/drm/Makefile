@@ -29,7 +29,7 @@ $(MESON_DRM_MODULE_NAME)-y += meson_drv.o meson_plane.o \
                               meson_crtc.o meson_vpu_pipeline.o \
                               meson_vpu_pipeline_private.o \
                               meson_debugfs.o meson_vpu_util.o \
-                              meson_drm_bind.o meson_lcd.o\
+                              meson_drm_bind.o\
                               meson_hdmi.o meson_cvbs.o\
                               meson_dummyl.o \
                               vpu-hw/meson_vpu_video_wrapper.o \
@@ -41,3 +41,6 @@ $(MESON_DRM_MODULE_NAME)-y += meson_drv.o meson_plane.o \
                               vpu-hw/meson_vpu_hdr_dv.o \
                               vpu-hw/meson_vpu_postblend.o \
 
+ifeq ($(CONFIG_AMLOGIC_ZAPPER_CUT),)
+        $(MESON_DRM_MODULE_NAME)-y += meson_lcd.o
+endif

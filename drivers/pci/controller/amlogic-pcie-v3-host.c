@@ -506,10 +506,13 @@ static int __maybe_unused amlogic_pcie_suspend_noirq(struct device *dev)
 	u32 value;
 
 	err = readl_poll_timeout(amlogic->pcictrl_base + PCIE_A_CTRL5, value,
-				 PCIE_LINK_STATE_CHECK(value, LTSSM_L1_IDLE), 20,
-				 jiffies_to_msecs(10 * HZ));
+				 PCIE_LINK_STATE_CHECK(value, LTSSM_L1_IDLE) |
+				 PCIE_LINK_STATE_CHECK(value, LTSSM_L2_IDLE) |
+				 PCIE_LINK_STATE_CHECK(value, LTSSM_L0), 20,
+				 jiffies_to_msecs(5 * HZ));
 	if (err) {
-		dev_err(amlogic->dev, "PCIe link enter L1 timeout!\n");
+		dev_dbg(amlogic->dev, "PCIe link enter LP timeout!,LTSSM=0x%lx\n",
+			((((value) >> 18)) & GENMASK(4, 0)));
 		return err;
 	}
 

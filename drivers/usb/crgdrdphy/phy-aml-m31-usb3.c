@@ -145,6 +145,7 @@ static int amlogic_usb3_m31_probe(struct platform_device *pdev)
 	const char *gpio_name = NULL;
 	int gpio_vbus_power_pin = -1;
 	struct gpio_desc *usb_gd = NULL;
+	u32 version = 0;
 
 	gpio_name = of_get_property(dev->of_node, "gpio-vbus-power", NULL);
 	if (gpio_name) {
@@ -239,6 +240,12 @@ static int amlogic_usb3_m31_probe(struct platform_device *pdev)
 	} else {
 		u3_combx0_reset_bit = 0;
 	}
+
+	prop = of_get_property(dev->of_node, "version", NULL);
+	if (prop)
+		version = of_read_ulong(prop, 1);
+	else
+		version = 0;
 
 	phy->dev		= dev;
 	phy->portnum      = portnum;
@@ -336,6 +343,13 @@ static int amlogic_usb3_m31_probe(struct platform_device *pdev)
 
 		writel(r0.d32, phy->phy3_cfg);
 		usleep_range(90, 100);
+
+		if (version == 1) {
+			val = readl(phy->phy3_cfg + 0x81c);
+			val = (val & ~(0x7 << 13)) | (5 << 13);
+			writel(val, phy->phy3_cfg + 0x81c);
+			usleep_range(90, 100);
+		}
 
 		phy->phy.flags = AML_USB3_PHY_ENABLE;
 	} else {

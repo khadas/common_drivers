@@ -2134,6 +2134,7 @@
 		m31-utmi-reset-level-bit = <42>;
 		//u3-combx0-reset-bit = <53>;
 		uncomposite = <1>;
+		version = <1>;
 	};
 
 	crg_phy_20: crgphy20@fe03e000 {

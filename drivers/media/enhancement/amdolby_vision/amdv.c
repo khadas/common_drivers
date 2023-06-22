@@ -311,8 +311,8 @@ int copy_core1a;
 int core2_sel = 1;
 
 /*for hw5*/
-bool top1_on;
-struct top2_inst_s top2_info;/*core info*/
+struct core_inst_s top1_info;/*core info*/
+struct core_inst_s top2_info;/*core info*/
 struct video_inst_s top1_v_info;/*video info*/
 struct video_inst_s top2_v_info;/*video info*/
 
@@ -600,6 +600,7 @@ static int force_two_valid;
 module_param(force_two_valid, int, 0664);
 MODULE_PARM_DESC(force_two_valid,    "\n force_two_valid\n");
 
+/*1:force enable;2:force disable*/
 int force_top1_enable;
 module_param(force_top1_enable, int, 0664);
 MODULE_PARM_DESC(force_top1_enable,    "\n force_top1_enable\n");
@@ -1411,7 +1412,7 @@ void update_graphic_width_height(unsigned int width,
 		new_osd_graphic_height[index] = height;
 	}
 
-	if (debug_dolby & 2)
+	if (debug_dolby & 20)
 		pr_dv_dbg("update osd%d %d_%d\n", index + 1, width, height);
 }
 EXPORT_SYMBOL(update_graphic_width_height);
@@ -1619,13 +1620,19 @@ int amdv_update_setting(struct vframe_s *vf)
 			!hw5_reg_from_file) {
 			if (enable_top1) {
 				dma_data = tv_hw5_setting->top1_lut;
+				if (test_dv & DEBUG_FIXED_LUT) /*fixed lut*/
+					dma_data = top1_lut_buf;
 				size = TOP1_LUT_NUM * LUT_SIZE;
 				memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr, dma_data, size);
 				dma_data = tv_hw5_setting->top2_lut;
+				if (test_dv & DEBUG_FIXED_LUT) /*fixed lut*/
+					dma_data = top2_lut_buf;
 				size = TOP2_LUT_NUM * LUT_SIZE;
 				memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr_top2, dma_data, size);
 			} else {
 				dma_data = tv_hw5_setting->top2_lut;
+				if (test_dv & DEBUG_FIXED_LUT) /*fixed lut*/
+					dma_data = top2_lut_buf;
 				size = TOP2_LUT_NUM * LUT_SIZE;
 				memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr, dma_data, size);
 			}
@@ -1784,13 +1791,19 @@ void reset_dv_param(void)
 		}
 		amdv_core2_on_cnt = 0;
 	} else if (is_aml_hw5()) {
-		top2_info.top2_on = false;
+		top1_info.core_on = false;
+		top1_info.amdv_setting_video_flag = false;
+		top1_info.core_on_cnt = 0;
+		top1_info.run_mode_count = 0;
+		top1_info.core_disp_hsize = 0;
+		top1_info.core_disp_vsize = 0;
+		top2_info.core_on = false;
 		top2_info.amdv_setting_video_flag = false;
-		top2_info.top2_on_cnt = 0;
+		top2_info.core_on_cnt = 0;
 		top2_info.run_mode_count = 0;
-		top2_info.top2_disp_hsize = 0;
-		top2_info.top2_disp_vsize = 0;
-		top1_on = 0;
+		top2_info.core_disp_hsize = 0;
+		top2_info.core_disp_vsize = 0;
+		top1_done = false;
 
 		top1_v_info.amdv_src_format = 0;
 		top1_v_info.amdv_wait_init = false;
@@ -1813,7 +1826,6 @@ void reset_dv_param(void)
 		amdv_core1_on_cnt = 0;
 		amdv_core2_on_cnt = 0;
 	}
-	top1_done = false;
 }
 
 void update_dma_buf(void)
@@ -2078,7 +2090,7 @@ void amdv_init_receiver(void *pdev)
 				alloc_size, &dv5_md_hist.hist_paddr, GFP_KERNEL);
 
 		/*debug fix data, alloc memory, default disable*/
-		if (0)
+		if (fix_data)
 			fixed_buf_config();
 	}
 	if (!is_aml_hw5() && !multi_dv_mode) {
@@ -2174,12 +2186,20 @@ void amdv_create_inst(void)
 		dv_core1[i].core1_on_cnt = 0;
 		dv_core1[i].run_mode_count = 0;
 	}
-	top2_info.top2_disp_hsize = 0;
-	top2_info.top2_disp_vsize = 0;
-	top2_info.amdv_setting_video_flag = false;
-	top2_info.top2_on = false;
-	top2_info.top2_on_cnt = false;
-	top2_info.run_mode_count = false;
+	if (is_aml_hw5()) {
+		top1_info.core_disp_hsize = 0;
+		top1_info.core_disp_vsize = 0;
+		top1_info.amdv_setting_video_flag = false;
+		top1_info.core_on = false;
+		top1_info.core_on_cnt = 0;
+		top1_info.run_mode_count = 0;
+		top2_info.core_disp_hsize = 0;
+		top2_info.core_disp_vsize = 0;
+		top2_info.amdv_setting_video_flag = false;
+		top2_info.core_on = false;
+		top2_info.core_on_cnt = 0;
+		top2_info.run_mode_count = 0;
+	}
 
 	graphic_md_buf = vmalloc(MD_BUF_SIZE);
 	if (graphic_md_buf)
@@ -4590,7 +4610,10 @@ void amdv_vf_put(struct vframe_s *vf)
 	int i;
 	int dv_id = 0;
 
-	if (multi_dv_mode && vf) {
+	if (!vf)
+		return;
+
+	if (multi_dv_mode) {
 		if (vf && dv_inst_valid(vf->src_fmt.dv_id))
 			dv_id = vf->src_fmt.dv_id;
 		for (i = 0; i < 16; i++) {
@@ -4605,7 +4628,25 @@ void amdv_vf_put(struct vframe_s *vf)
 				dv_inst[dv_id].dv_vf[i][1] = NULL;
 			}
 		}
-	} else if (!multi_dv_mode && vf) {
+	} else if (is_aml_hw5()) {
+		for (i = 0; i < 16; i++) {
+			if (top2_v_info.dv_vf[i][0] == vf) {
+				if (top2_v_info.dv_vf[i][1]) {
+					if (debug_dolby & 2)
+						pr_dv_dbg("--- put bl(%p-%lld) with el(%p-%lld) ---\n",
+							vf, vf->pts_us64,
+							top2_v_info.dv_vf[i][1],
+							top2_v_info.dv_vf[i][1]->pts_us64);
+					dvel_vf_put(top2_v_info.dv_vf[i][1]);
+				} else if (debug_dolby & 2) {
+					pr_dv_dbg("--- put bl(%p-%lld) ---\n",
+						vf, vf->pts_us64);
+				}
+				top2_v_info.dv_vf[i][0] = NULL;
+				top2_v_info.dv_vf[i][1] = NULL;
+			}
+		}
+	} else {
 		for (i = 0; i < 16; i++) {
 			if (dv_vf[i][0] == vf) {
 				if (dv_vf[i][1]) {
@@ -10238,10 +10279,14 @@ int amdv_parse_metadata(struct vframe_s *vf,
 	int ret = -1;
 
 	if (is_aml_hw5() && hw5_reg_from_file) { /*for debug hw5, return ok*/
-		if (vf)
+		if (vf) {
 			top2_info.amdv_setting_video_flag = true;
-		else
+			if (enable_top1)
+				top1_info.amdv_setting_video_flag = true;
+		} else {
+			top1_info.amdv_setting_video_flag = false;
 			top2_info.amdv_setting_video_flag = false;
+		}
 		top2_v_info.tv_dovi_setting_change_flag = true;
 		return 0;
 	}
@@ -12854,7 +12899,7 @@ bool is_amdv_video_on(void)
 		return (dv_core1[0].core1_on ||
 			dv_core1[1].core1_on);
 	else if (is_aml_hw5())
-		return top2_info.top2_on;
+		return top2_info.core_on;
 	else
 		return amdv_core1_on;
 }
@@ -13294,6 +13339,8 @@ static ssize_t amdolby_vision_load_reg_file_store
 	void *top2_reg_txt = NULL;
 	void *top1_lut_txt = NULL;
 	void *top2_lut_txt = NULL;
+	void *top1_pic_txt = NULL;
+	void *top1_pic_uv_txt = NULL;
 
 	if (!buf)
 		return count;
@@ -13342,7 +13389,89 @@ static ssize_t amdolby_vision_load_reg_file_store
 				return count;
 		}
 		read_txt_to_buf(top2_lut_txt, top2_lut_buf, top2_lut_num, false);
+	} else if (!strcmp(parm[0], "case0_top1")) {/*420-8bit uv interleaved, 2plane*/
+		load_reg_and_lut_file(parm[1], &top1_pic_txt);
+		if (y_vaddr && fix_data == CASE0_TOP1_READFROM_FILE) {
+			read_top1_pic_to_buf(top1_pic_txt, y_vaddr, 17280, true);
+			u32 *p_buf = (u32 *)y_vaddr;
+			u64 *p_buf_64 = (u64 *)y_vaddr;
+
+			pr_info("p_8bit %x %x %x %x %x %x %x %x %x %x %x %x\n",
+				y_vaddr[0], y_vaddr[1], y_vaddr[2], y_vaddr[3],
+				y_vaddr[4], y_vaddr[5], y_vaddr[6], y_vaddr[7],
+				y_vaddr[8], y_vaddr[9], y_vaddr[10], y_vaddr[11]);
+			pr_info("p_32bit %x %x %x %x, end: %x %x\n",
+				p_buf[0], p_buf[1], p_buf[2], p_buf[3],
+				p_buf[34560 - 2], p_buf[34560 - 1]);
+			pr_info("p_64bit %llx %llx %llx\n",
+				p_buf_64[0], p_buf_64[1], p_buf_64[2]);
+			codec_mm_dma_flush(y_vaddr, 512 * 270, DMA_TO_DEVICE);
+			//codec_mm_unmap_phyaddr(y_vaddr);
+		}
+
+		load_reg_and_lut_file(parm[2], &top1_pic_uv_txt);
+		if (uv_vaddr && fix_data == CASE0_TOP1_READFROM_FILE) {
+			read_top1_pic_to_buf(top1_pic_uv_txt, uv_vaddr, 8640, true);
+			u32 *p_buf = (u32 *)uv_vaddr;
+			u64 *p_buf_64 = (u64 *)uv_vaddr;
+
+			pr_info("p_8bit %x %x %x %x %x %x %x %x %x %x %x %x\n",
+				uv_vaddr[0], uv_vaddr[1], uv_vaddr[2], uv_vaddr[3],
+				uv_vaddr[4], uv_vaddr[5], uv_vaddr[6], uv_vaddr[7],
+				uv_vaddr[8], uv_vaddr[9], uv_vaddr[10], uv_vaddr[11]);
+			pr_info("p_32bit %x %x %x %x, end: %x %x\n",
+				p_buf[0], p_buf[1], p_buf[2], p_buf[3],
+				p_buf[17280 - 2], p_buf[17280 - 1]);
+			pr_info("p_buf_64bit %llx %llx %llx\n",
+				p_buf_64[0], p_buf_64[1], p_buf_64[2]);
+
+			codec_mm_dma_flush(uv_vaddr, 512 * 135, DMA_TO_DEVICE);
+			//codec_mm_unmap_phyaddr(uv_vaddr);
+		}
+	} else if (!strcmp(parm[0], "case5433_top1_64")) {
+		/*444-10bit interlaved, one pixel yuv share 32bit*/
+		load_reg_and_lut_file(parm[1], &top1_pic_txt);
+		if (y_vaddr && fix_data == CASE5344_TOP1_READFROM_FILE) {
+			read_top1_pic_to_buf(top1_pic_txt, y_vaddr, 1920 * 1080 / 2, true);
+			u32 *p_buf = (u32 *)y_vaddr;
+			u64 *p_buf_64 = (u64 *)y_vaddr;
+
+			pr_info("p_8bit %x %x %x %x %x %x %x %x %x %x %x %x\n",
+				y_vaddr[0], y_vaddr[1], y_vaddr[2], y_vaddr[3],
+				y_vaddr[4], y_vaddr[5], y_vaddr[6], y_vaddr[7],
+				y_vaddr[8], y_vaddr[9], y_vaddr[10], y_vaddr[11]);
+			pr_info("p_32bit %x %x %x %x, end: %x %x\n",
+				p_buf[0], p_buf[1], p_buf[2], p_buf[3],
+				p_buf[2073600 - 2], p_buf[2073600 - 1]);
+			pr_info("p_64bit %llx %llx %llx\n",
+				p_buf_64[0], p_buf_64[1], p_buf_64[2]);
+
+			codec_mm_dma_flush(y_vaddr, 1920 * 1080 * 4, DMA_TO_DEVICE);
+			//codec_mm_unmap_phyaddr(y_vaddr);
+		}
+	} else if (!strcmp(parm[0], "case5433_top1")) {
+		/*444-10bit interlaved, one pixel yuv share 32bit*/
+		load_reg_and_lut_file(parm[1], &top1_pic_txt);
+		if (y_vaddr && fix_data == CASE5344_TOP1_READFROM_FILE) {
+			read_top1_pic_to_buf(top1_pic_txt, y_vaddr, 1920 * 1080, false);
+			u32 *p_buf = (u32 *)y_vaddr;
+			u64 *p_buf_64 = (u64 *)y_vaddr;
+
+			pr_info("p_8bit %x %x %x %x %x %x %x %x %x %x %x %x\n",
+				y_vaddr[0], y_vaddr[1], y_vaddr[2], y_vaddr[3],
+				y_vaddr[4], y_vaddr[5], y_vaddr[6], y_vaddr[7],
+				y_vaddr[8], y_vaddr[9], y_vaddr[10], y_vaddr[11]);
+			pr_info("p_32bit %x %x %x %x, end: %x %x\n",
+				p_buf[0], p_buf[1], p_buf[2], p_buf[3],
+				p_buf[2073600 - 2], p_buf[2073600 - 1]);
+			pr_info("p_64bit %llx %llx %llx\n",
+				p_buf_64[0], p_buf_64[1], p_buf_64[2]);
+
+			codec_mm_dma_flush(y_vaddr, 1920 * 1080 * 4, DMA_TO_DEVICE);
+			//codec_mm_unmap_phyaddr(y_vaddr);
+		}
 	}
+
 	if (top1_reg_txt)
 		vfree(top1_reg_txt);
 	if (top1b_reg_txt)
@@ -13353,7 +13482,10 @@ static ssize_t amdolby_vision_load_reg_file_store
 		vfree(top2_reg_txt);
 	if (top2_lut_txt)
 		vfree(top2_lut_txt);
-
+	if (top1_pic_txt)
+		vfree(top1_pic_txt);
+	if (top1_pic_uv_txt)
+		vfree(top1_pic_uv_txt);
 	return count;
 }
 
@@ -13941,7 +14073,7 @@ void amdv_insert_crc(bool print)
 	if (crc_count < crc_bypass_count)
 		crc_bypass_count = crc_count;
 	memset(str, 0, sizeof(str));
-	snprintf(str, 64, "crc(%d) = 0x%08x",
+	snprintf(str, 64, "crc(%d)=%08x",
 		crc_count - crc_bypass_count, crc);
 	len = strlen(str);
 	str[len] = 0xa;
@@ -15526,8 +15658,21 @@ static ssize_t amdolby_vision_inst_status_show
 	char *str1 = {"dv inst status:"};
 	char *str2 = {"dv core status:"};
 
-	if (!multi_dv_mode)
+	if (!multi_dv_mode) {
+		if (is_aml_hw5()) {
+			len += sprintf(buf + len, "top1 enable: %d\n", enable_top1);
+			len += sprintf(buf + len, "top1 on: %d\n", top1_info.core_on);
+			len += sprintf(buf + len, "top1 on cnt: %d\n", top1_info.core_on_cnt);
+			len += sprintf(buf + len, "top1 video: %d\n",
+				top1_info.amdv_setting_video_flag);
+			len += sprintf(buf + len, "top2 on: %d\n", top2_info.core_on);
+			len += sprintf(buf + len, "top2 on cnt: %d\n", top2_info.core_on_cnt);
+			len += sprintf(buf + len, "top2 video: %d\n",
+				top2_info.amdv_setting_video_flag);
+			return len;
+		}
 		return 0;
+	}
 
 	len += sprintf(buf + len, "enable multi core1: %d\n", enable_multi_core1);
 	len += sprintf(buf + len, "valid num %d, pri_input: %d\n",

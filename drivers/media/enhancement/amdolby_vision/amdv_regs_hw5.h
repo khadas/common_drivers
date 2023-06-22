@@ -752,5 +752,6 @@
 //Bit  1: 0        reg_line_int_sel                     // unsigned ,    RW, default = 0
 
 #define VPU_TOP_MISC               0x2709
+#define T3X_VD1_BLEND_SRC_CTRL     0x1d0d
 
 #endif

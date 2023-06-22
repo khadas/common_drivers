@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "202300609"
+#define DRIVER_VER "202300625"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"
@@ -83,12 +83,20 @@
 
 #define DMA_BUF_CNT 2
 #define TOP1_REG_NUM 211 /*real reg 209*/
-#define TOP1B_REG_NUM 13 /*real reg 11*/
+#define TOP1B_REG_NUM 12 /*real reg 11*/
 #define TOP2_REG_NUM 617 /*real reg 615*/
 #define TOP1_LUT_NUM 149
 #define TOP2_LUT_NUM 424
 
 #define PYRAMID_SW_RST 1 /*NO need set pylevel before vsync*/
+
+#define DEBUG_HW5_RESET_EACH_VSYNC  0x1
+#define DEBUG_HW5_TOGGLE_EACH_VSYNC 0x2
+#define DEBUG_HW5_NO_LEVEL          0x4
+#define DEBUG_HW5_SEVEN_LEVEL       0x8
+#define DEBUG_ENABLE_TOP2_INT       0x10
+#define DEBUG_FIXED_LUT             0x20
+#define DEBUG_FIXED_REG             0x40
 
 enum core1_switch_type {
 	NO_SWITCH = 0,
@@ -413,6 +421,10 @@ struct dovi_setting_s {
 #define OUTPUT_CONTROL_DATA_SIZE 0x1000
 #define TOP2_NUM_MAX 1
 
+#define CASE0_TOP1_READFROM_ARRAY 1
+#define CASE0_TOP1_READFROM_FILE 2
+#define CASE5344_TOP1_READFROM_FILE 3
+
 struct dovi_setting_video_s {
 	struct composer_reg_ipcore comp_reg;
 	struct dm_reg_ipcore1 dm_reg;
@@ -617,13 +629,13 @@ struct dv_core1_inst_s {
 	u32 core1_disp_vsize;
 };
 
-struct top2_inst_s {
-	bool top2_on;
+struct core_inst_s {
+	bool core_on;
 	bool amdv_setting_video_flag;
-	u32 top2_on_cnt;
+	u32 core_on_cnt;
 	u32 run_mode_count;
-	u32 top2_disp_hsize;
-	u32 top2_disp_vsize;
+	u32 core_disp_hsize;
+	u32 core_disp_vsize;
 };
 
 struct tv_input_info_s {
@@ -871,16 +883,21 @@ extern bool lut_dma_support;
 extern int cur_dmabuf_id;
 extern bool enable_top1;//todo
 extern bool top1_done;
-extern struct top2_inst_s top2_info;
-extern bool top1_on;
+extern struct core_inst_s top1_info;
+extern struct core_inst_s top2_info;
 extern struct tv_hw5_setting_s *tv_hw5_setting;
 extern struct tv_hw5_setting_s *invalid_hw5_setting;
 extern u32 hw5_reg_from_file;
+extern u32 test_dv;
 extern struct video_inst_s top1_v_info;/*video info*/
 extern struct video_inst_s top2_v_info;/*video info*/
 extern struct top1_pyramid_addr py_addr;
 extern struct dolby5_top1_md_hist dv5_md_hist;
 extern int force_top1_enable;
+extern u32 fix_data;
+extern u8 *y_vaddr;
+extern u8 *uv_vaddr;
+
 /************/
 
 #define pr_dv_dbg(fmt, args...)\
@@ -1232,6 +1249,7 @@ int tv_top_set(u64 *top1_reg,
 void dolby5_bypass_ctrl(unsigned int en);
 int load_reg_and_lut_file(char *fw_name, void **dst_buf);
 void read_txt_to_buf(char *reg_txt, void *reg_buf, int reg_num, bool is_reg);
+void read_top1_pic_to_buf(char *reg_txt, void *buf, int num, bool flag_64bit);
 int dma_lut_init(void);
 void dma_lut_uninit(void);
 int dma_lut_write(void);

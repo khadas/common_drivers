@@ -3871,8 +3871,8 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 			     vd_path_id[0] == VFM_PATH_AUTO) && ret) ||
 			     force_top1_once) {
 			     /*first frame, only proc top1*/
-				if (ret == 5 || force_top1_once) {
-					if (debug_flag & DEBUG_FLAG_HDMI_DV_CRC)
+				if (ret == 4 || force_top1_once) {
+					if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
 						pr_info("first frame for top1\n");
 					amdv_parse_metadata_hw5_top1(vf);
 					amdolby_vision_process_hw5(vf, NULL,
@@ -3962,7 +3962,7 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 				/*if no new frame, proc top2 Fn + repeat Top1 Fn cur vsync*/
 				/*then only do top1 Fn+1 next vsync*/
 				if (!vf_top1) {
-					if (debug_flag & DEBUG_FLAG_HDMI_DV_CRC)
+					if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
 						pr_info("wait new frame for top1\n");
 					force_top1_once = true;
 				} else {

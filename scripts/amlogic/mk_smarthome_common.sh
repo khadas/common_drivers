@@ -65,6 +65,8 @@ fi
 
 source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
 
+autotest
+
 handle_input_parameters_for_smarthome "$@"
 
 export KERNEL_DIR COMMON_DRIVERS_DIR MANUAL_INSMOD_MODULE

@@ -106,6 +106,8 @@ set -e
 
 export_env_variable
 
+autotest
+
 adjust_config_action
 
 build_part_of_kernel

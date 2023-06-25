@@ -52,7 +52,7 @@ static inline u8 __raw_readb(const volatile void __iomem *addr)
 				 "ldarb %w0, [%1]",
 				 ARM64_WORKAROUND_DEVICE_LOAD_ACQUIRE)
 		     : "=r" (val) : "r" (addr));
-	pstore_ftrace_io_rd_end((unsigned long)addr);
+	pstore_ftrace_io_rd_end((unsigned long)addr, (unsigned long)val);
 	return val;
 }
 
@@ -66,7 +66,7 @@ static inline u16 __raw_readw(const volatile void __iomem *addr)
 				 "ldarh %w0, [%1]",
 				 ARM64_WORKAROUND_DEVICE_LOAD_ACQUIRE)
 		     : "=r" (val) : "r" (addr));
-	pstore_ftrace_io_rd_end((unsigned long)addr);
+	pstore_ftrace_io_rd_end((unsigned long)addr, (unsigned long)val);
 	return val;
 }
 
@@ -80,7 +80,7 @@ static __always_inline u32 __raw_readl(const volatile void __iomem *addr)
 				 "ldar %w0, [%1]",
 				 ARM64_WORKAROUND_DEVICE_LOAD_ACQUIRE)
 		     : "=r" (val) : "r" (addr));
-	pstore_ftrace_io_rd_end((unsigned long)addr);
+	pstore_ftrace_io_rd_end((unsigned long)addr, (unsigned long)val);
 	return val;
 }
 
@@ -94,7 +94,7 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
 				 "ldar %0, [%1]",
 				 ARM64_WORKAROUND_DEVICE_LOAD_ACQUIRE)
 		     : "=r" (val) : "r" (addr));
-	pstore_ftrace_io_rd_end((unsigned long)addr);
+	pstore_ftrace_io_rd_end((unsigned long)addr, (unsigned long)val);
 	return val;
 }
 

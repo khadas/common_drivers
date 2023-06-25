@@ -26,7 +26,7 @@ static inline u16 __raw_readw(const volatile void __iomem *addr)
 	asm volatile("ldrh %0, %1"
 		     : "=r" (val)
 		     : "Q" (*(volatile u16 __force *)addr));
-	pstore_ftrace_io_rd_end((unsigned long)addr);
+	pstore_ftrace_io_rd_end((unsigned long)addr, (unsigned long)val);
 	return val;
 }
 
@@ -57,7 +57,7 @@ static inline u8 __raw_readb(const volatile void __iomem *addr)
 	asm volatile("ldrb %0, %1"
 		     : "=r" (val)
 		     : "Qo" (*(volatile u8 __force *)addr));
-	pstore_ftrace_io_rd_end((unsigned long)addr);
+	pstore_ftrace_io_rd_end((unsigned long)addr, (unsigned long)val);
 	return val;
 }
 
@@ -70,7 +70,7 @@ static inline u32 __raw_readl(const volatile void __iomem *addr)
 	asm volatile("ldr %0, %1"
 		     : "=r" (val)
 		     : "Qo" (*(volatile u32 __force *)addr));
-	pstore_ftrace_io_rd_end((unsigned long)addr);
+	pstore_ftrace_io_rd_end((unsigned long)addr, (unsigned long)val);
 	return val;
 }
 #endif /* __AMLOGIC_ASM_IO_32_H */

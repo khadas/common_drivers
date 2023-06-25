@@ -32,14 +32,14 @@ pstore_io_save(reg, val, PSTORE_FLAG_IO_W_END, &irqflg)
 unsigned long irqflg;					\
 pstore_io_save(reg, 0, PSTORE_FLAG_IO_R, &irqflg)
 
-#define pstore_ftrace_io_rd_end(reg)	\
-pstore_io_save(reg, 0, PSTORE_FLAG_IO_R_END, &irqflg)
+#define pstore_ftrace_io_rd_end(reg, val)	\
+pstore_io_save(reg, val, PSTORE_FLAG_IO_R_END, &irqflg)
 
 #else
 #define pstore_ftrace_io_wr(reg, val)                   do {    } while (0)
 #define pstore_ftrace_io_rd(reg)                        do {    } while (0)
 #define pstore_ftrace_io_wr_end(reg, val)               do {    } while (0)
-#define pstore_ftrace_io_rd_end(reg)                    do {    } while (0)
+#define pstore_ftrace_io_rd_end(reg, val)               do {    } while (0)
 #define pstore_ftrace_io_tag(reg, val)                  do {    } while (0)
 
 #endif /*CONFIG_AMLOGIC_DEBUG_IOTRACE && !SKIP_IO_TRACE */

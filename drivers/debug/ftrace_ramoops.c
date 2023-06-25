@@ -335,10 +335,10 @@ static int regmap_read_ret_handler(struct kretprobe_instance *ri, struct pt_regs
 	unsigned long irqflg = data.flag;
 
 	/*
-	 * #define pstore_ftrace_io_rd_end(reg)	\
+	 * #define pstore_ftrace_io_rd_end(reg, val)	\
 	 * pstore_io_save(reg, 0, PSTORE_FLAG_IO_R_END, &irqflg)
 	 */
-	pstore_ftrace_io_rd_end(data.reg);
+	pstore_ftrace_io_rd_end(data.reg, data.val);
 
 	return 0;
 }

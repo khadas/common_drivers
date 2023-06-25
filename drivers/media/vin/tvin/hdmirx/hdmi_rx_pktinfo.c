@@ -655,6 +655,20 @@ u32 rx_pkt_type_mapping(enum pkt_type_e pkt_type)
 	return rt;
 }
 
+void rx_em_pkt_initial(void)
+{
+	int i = 0;
+	int j = 0;
+
+	for (i = 0; i < E_PORT_NUM; i++) {
+		//memset(&rxpktsts[i], 0, sizeof(struct rxpkt_st));
+		memset(&rx_pkt[i].emp_info, 0, sizeof(struct pd_infoframe_s));
+		j = 0;
+		while (j < VSI_TYPE_MAX)
+			memset(&rx_pkt[i].multi_vs_info[j++], 0, sizeof(struct pd_infoframe_s));
+	}
+}
+
 void rx_pkt_initial(void)
 {
 	int i = 0;
@@ -662,6 +676,7 @@ void rx_pkt_initial(void)
 
 	for (i = 0; i < E_PORT_NUM; i++) {
 		memset(&rxpktsts[i], 0, sizeof(struct rxpkt_st));
+		j = 0;
 		while (j < VSI_TYPE_MAX)
 			memset(&rx_pkt[i].multi_vs_info[j++], 0, sizeof(struct pd_infoframe_s));
 		memset(&rx_pkt[i].avi_info, 0, sizeof(struct pd_infoframe_s));

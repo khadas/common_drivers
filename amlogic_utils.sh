@@ -39,19 +39,17 @@ function pre_defconfig_cmds() {
 		fi
 	fi
 
-	if [[ -n ${UPGRADE_PROJECT} ]]; then
-		if [[ ${ANDROID_VERSION} == r || ${ANDROID_VERSION} == R ]]; then
-			KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_R}
-		fi
-		if [[ ${ANDROID_VERSION} == p || ${ANDROID_VERSION} == P ]]; then
-			KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_P}
-		fi
-		if [[ ${ANDROID_VERSION} == s || ${ANDROID_VERSION} == S ]]; then
-			KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_S}
-		fi
-		if [[ ${ANDROID_VERSION} == u || ${ANDROID_VERSION} == U ]]; then
-			KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_U}
-		fi
+	if [[ ${UPGRADE_PROJECT} == r || ${UPGRADE_PROJECT} == R ]]; then
+		KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_R}
+	fi
+	if [[ ${UPGRADE_PROJECT} == p || ${UPGRADE_PROJECT} == P ]]; then
+		KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_P}
+	fi
+	if [[ ${UPGRADE_PROJECT} == s || ${UPGRADE_PROJECT} == S ]]; then
+		KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_S}
+	fi
+	if [[ ${UPGRADE_PROJECT} == u || ${UPGRADE_PROJECT} == U ]]; then
+		KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_U}
 	fi
 
 	if [[ ${IN_BUILD_GKI_10} == 1 ]]; then
@@ -1359,8 +1357,9 @@ function handle_input_parameters () {
 			shift
 			;;
 		--upgrade)
-			UPGRADE_PROJECT=1
+			UPGRADE_PROJECT=$2
 			ANDROID_VERSION=$2
+			GKI_CONFIG=
 			VA=1
 			shift
 			;;
@@ -1444,7 +1443,7 @@ function set_default_parameters () {
 	fi
 
 	if [[ -z ${BAZEL} ]]; then
-		[[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" == "arm64" && -z ${UPGRADE_PROJECT} ]] && BAZEL=1
+		[[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" == "arm64" ]] && BAZEL=1
 	fi
 
 	auto_patch_to_common_dir

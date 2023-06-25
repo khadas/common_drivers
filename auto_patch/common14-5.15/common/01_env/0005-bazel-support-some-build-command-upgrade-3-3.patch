@@ -1,0 +1,40 @@
+From da9adf87fc206c231cbceb566393c34880e99e2f Mon Sep 17 00:00:00 2001
+From: "qinglin.li" <qinglin.li@amlogic.com>
+Date: Thu, 6 Jul 2023 18:16:54 +0800
+Subject: [PATCH] bazel: support some build command --upgrade [3/3]
+
+PD#SWPL-127872
+
+Problem:
+remove modules in gki modules out
+
+Solution:
+remove modules in gki modules out
+
+Verify:
+local
+
+Change-Id: I04147350fa64fdb2f58c0ffd62ed37a2a911bada
+Signed-off-by: qinglin.li <qinglin.li@amlogic.com>
+---
+ BUILD.bazel | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/BUILD.bazel b/BUILD.bazel
+index 9d129e836499a..84e02e71cda05 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -15,6 +15,10 @@ load(
+     "merged_kernel_uapi_headers",
+ )
+ load(":modules.bzl", "COMMON_GKI_MODULES_LIST")
++load("//common:common_drivers/modules.bzl", "ALL_MODULES_REMOVE")
++remove_modules_items = {module: None for module in depset(ALL_MODULES_REMOVE).to_list()}
++COMMON_GKI_MODULES_LIST = [module for module in depset(COMMON_GKI_MODULES_LIST).to_list() if module not in remove_modules_items] \
++			if remove_modules_items else COMMON_GKI_MODULES_LIST
+ 
+ package(
+     default_visibility = [
+-- 
+2.25.1
+

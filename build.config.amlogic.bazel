@@ -26,6 +26,34 @@ function pre_defconfig_cmds() {
 		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.fragment ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.10 ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.debug ${temp_file}
 	fi
 
+	if [[ ${UPGRADE_PROJECT} == r || ${UPGRADE_PROJECT} == R ]]; then
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_upgrade_r.defconfig
+	fi
+	if [[ ${UPGRADE_PROJECT} == p || ${UPGRADE_PROJECT} == P ]]; then
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_upgrade_p.defconfig
+	fi
+	if [[ ${UPGRADE_PROJECT} == s || ${UPGRADE_PROJECT} == S ]]; then
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_upgrade_s.defconfig
+	fi
+	if [[ ${UPGRADE_PROJECT} == u || ${UPGRADE_PROJECT} == U ]]; then
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_upgrade_u.defconfig
+	fi
+
+	if [[ -n ${DEV_CONFIGS} ]]; then
+		config_list=$(echo ${DEV_CONFIGS}|sed 's/+/ /g')
+		#verify the extra config is in the right path and merge the config
+		for config_name in ${config_list[@]}
+		do
+			if [[ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${config_name} ]]; then
+				KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${config_name}
+			elif [[ -f ${config_name} ]]; then
+				KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${KCONFIG_DEFCONFIG} ${config_name}
+			else
+				echo "ERROR: config file ${config_name} is not in the right path!!"
+			fi
+		done
+	fi
+
 	rm ${temp_file}
 }
 export -f pre_defconfig_cmds

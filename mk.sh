@@ -114,6 +114,8 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 	PROJECT_DIR=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/project
 	[[ -d ${PROJECT_DIR} ]] || mkdir -p ${PROJECT_DIR}
 
+	[[ -z ${GKI_CONFIG} ]] && args="$@ --notrim  --lto=none --nokmi_symbol_list_strict_mode"
+
 	pushd ${ROOT_DIR}/${KERNEL_DIR}
 	git checkout android/abi_gki_aarch64_amlogic
 	cat ${COMMON_DRIVERS_DIR}/android/${FULL_KERNEL_VERSION}_abi_gki_aarch64_amlogic >> android/abi_gki_aarch64_amlogic
@@ -135,6 +137,8 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 	echo "ANDROID_PROJECT=${ANDROID_PROJECT}"	>> ${PROJECT_DIR}/build.config.gki10
 	echo "GKI_BUILD_CONFIG_FRAGMENT=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic.fragment.bazel" >> ${PROJECT_DIR}/build.config.gki10
 	echo "COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR}" >> ${PROJECT_DIR}/build.config.gki10
+	echo "UPGRADE_PROJECT=${UPGRADE_PROJECT}"	>> ${PROJECT_DIR}/build.config.gki10
+	echo "DEV_CONFIGS=${DEV_CONFIGS}"		>> ${PROJECT_DIR}/build.config.gki10
 
 	if [[ ${GKI_CONFIG} == gki_20 ]]; then
 		[[ -n ${ANDROID_PROJECT} ]] && sed -i "/GKI_BUILD_CONFIG_FRAGMENT/d" ${PROJECT_DIR}/build.config.gki10
@@ -147,23 +151,28 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 		echo "# SPDX-License-Identifier: GPL-2.0" 	>  ${PROJECT_DIR}/project.bzl
 		echo 						>> ${PROJECT_DIR}/project.bzl
 
-		echo "AMLOGIC_MODULES_ANDROID = [" 		>> ${PROJECT_DIR}/project.bzl
-		echo "    \"common_drivers/drivers/tty/serial/amlogic-uart.ko\","	>> ${PROJECT_DIR}/project.bzl
-		echo "]" 					>> ${PROJECT_DIR}/project.bzl
-
 		echo 						>> ${PROJECT_DIR}/project.bzl
 		echo "EXT_MODULES_ANDROID = [" 			>> ${PROJECT_DIR}/project.bzl
 		echo "]" 					>> ${PROJECT_DIR}/project.bzl
+
+		echo 						>> ${PROJECT_DIR}/project.bzl
+		echo "VENDOR_MODULES_REMOVE = [" 		>> ${PROJECT_DIR}/project.bzl
+		echo "]" 					>> ${PROJECT_DIR}/project.bzl
+
+		echo 						>> ${PROJECT_DIR}/project.bzl
+		echo "VENDOR_MODULES_ADD = [" 			>> ${PROJECT_DIR}/project.bzl
+		echo "]" 					>> ${PROJECT_DIR}/project.bzl
 	fi
 
-	if [[ -z ${ANDROID_PROJECT} ]]; then
-		sed -i "/amlogic-uart.ko/d" ${PROJECT_DIR}/project.bzl
-	else
-		echo 						>> ${PROJECT_DIR}/project.bzl
-		echo "ANDROID_PROJECT = \"${ANDROID_PROJECT}\"" >> ${PROJECT_DIR}/project.bzl
-	fi
+	echo 						>> ${PROJECT_DIR}/project.bzl
+	sed -i "/ANDROID_PROJECT/d" ${PROJECT_DIR}/project.bzl
+	echo "ANDROID_PROJECT = \"${ANDROID_PROJECT}\"" >> ${PROJECT_DIR}/project.bzl
+
 	sed -i "/GKI_CONFIG/d" ${PROJECT_DIR}/project.bzl
-	echo "GKI_CONFIG = \"${GKI_CONFIG}\""			>> ${PROJECT_DIR}/project.bzl
+	echo "GKI_CONFIG = \"${GKI_CONFIG}\""		>> ${PROJECT_DIR}/project.bzl
+
+	sed -i "/UPGRADE_PROJECT/d" ${PROJECT_DIR}/project.bzl
+	echo "UPGRADE_PROJECT = \"${UPGRADE_PROJECT}\"" >> ${PROJECT_DIR}/project.bzl
 
 	[[ -f ${PROJECT_DIR}/dtb.bzl ]] || touch ${PROJECT_DIR}/dtb.bzl
 	echo "# SPDX-License-Identifier: GPL-2.0" 	>  ${PROJECT_DIR}/dtb.bzl

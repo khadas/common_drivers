@@ -3595,6 +3595,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(esm_recovery_mode, i++);
 	pr_var(unnormal_wait_max, i++);
 	pr_var(en_4k_2_2k, i++);
+	pr_var(ops_port, i++);
 	pr_var(en_4096_2_3840, i++);
 	pr_var(en_4k_timing, i++);
 	pr_var(acr_mode, i++);
@@ -3873,6 +3874,8 @@ int rx_set_global_variable(const char *buf, int size)
 		return pr_var(en_4k_2_2k, index);
 	if (set_pr_var(tmpbuf, var_to_str(en_4096_2_3840), &en_4096_2_3840, value))
 		return pr_var(en_4096_2_3840, index);
+	if (set_pr_var(tmpbuf, var_to_str(ops_port), &ops_port, value))
+		return pr_var(ops_port, index);
 	if (set_pr_var(tmpbuf, var_to_str(en_4k_timing), &en_4k_timing, value))
 		return pr_var(en_4k_timing, index);
 	if (set_pr_var(tmpbuf, var_to_str(acr_mode), &acr_mode, value))
@@ -4323,10 +4326,13 @@ void hdmirx_open_port(enum tvin_port_e port)
 		//rx[rx_info.main_port].hdcp.repeat = repeat_plug;
 	//else
 		//rx[rx_info.main_port].hdcp.repeat = 0;
-	if (is_special_func_en()) {
+	if (rx_sw_scramble_en())
+		force_clk_rate |= 0x10;
+	else
+		force_clk_rate &= ~(_BIT(4));
+	if (rx_special_func_en()) {
 		rx[rx_info.main_port].state = FSM_HPD_HIGH;
-	} else if (!rx_need_support_fastswitch() &&
-		(pre_port != rx_info.main_port ||
+	} else if ((pre_port != rx_info.main_port ||
 	    (rx_get_cur_hpd_sts(rx_info.main_port) == 0) ||
 	    /* when open specific port, force to enable it */
 	    (disable_port_en && rx_info.main_port == disable_port_num))) {
@@ -4625,8 +4631,7 @@ void rx_main_state_machine(void)
 			if (rx_hpd_keep_low(port))
 				break;
 			hdmirx_hw_config(port);
-		} else if ((pre_port != port) &&
-			(!rx_need_support_fastswitch())) {
+		} else if (pre_port != port) {
 			hdmirx_hw_config(port);
 		}
 		rx[port].var.hpd_wait_cnt = 0;
@@ -4736,6 +4741,14 @@ void rx_main_state_machine(void)
 			}
 			if (rx[port].err_rec_mode == ERR_REC_EQ_RETRY) {
 				rx[port].state = FSM_WAIT_CLK_STABLE;
+				if (rx_sw_scramble_en() &&
+					force_clk_rate > 1) {
+					if (force_clk_rate & 1)
+						force_clk_rate = 0x10;
+					else
+						force_clk_rate = 0x11;
+					rx_pr("force_clk=%x\n", force_clk_rate);
+				}
 				if (rx[port].var.esd_phy_rst_cnt++ < esd_phy_rst_max) {
 					rx[port].phy.cablesel++;
 					//rx[port].clk.cable_clk = 0;
@@ -5096,8 +5109,7 @@ void rx_port0_main_state_machine(void)
 			if (rx_hpd_keep_low(port))
 				break;
 			hdmirx_hw_config(port);
-		} else if ((pre_port != port) &&
-			(!rx_need_support_fastswitch())) {
+		} else if (pre_port != port) {
 			hdmirx_hw_config(port);
 		}
 		rx[port].var.hpd_wait_cnt = 0;
@@ -5573,8 +5585,7 @@ void rx_port1_main_state_machine(void)
 			if (rx_hpd_keep_low(port))
 				break;
 			hdmirx_hw_config(port);
-		} else if ((pre_port != port) &&
-			(!rx_need_support_fastswitch())) {
+		} else if (pre_port != port) {
 			hdmirx_hw_config(port);
 		}
 		rx[port].var.hpd_wait_cnt = 0;

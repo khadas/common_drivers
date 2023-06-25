@@ -946,6 +946,7 @@ extern int cec_dev_en;
 extern bool dev_is_apple_tv_v2;
 extern u32 en_4096_2_3840;
 extern int en_4k_2_2k;
+extern u32 ops_port;
 extern bool hdmi_cec_en;
 extern int vdin_drop_frame_cnt;
 extern int rpt_edid_selection;

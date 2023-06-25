@@ -403,6 +403,7 @@ struct rx_aml_phy {
 	int cdr_retry_en;
 	int cdr_retry_max;
 	int cdr_fr_en_auto;
+	int hyper_gain_en;
 };
 
 struct rx_aml_phy_21 {

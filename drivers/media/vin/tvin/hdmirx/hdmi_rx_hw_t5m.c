@@ -1224,7 +1224,8 @@ void aml_eq_cfg_t5m(void)
 	if (rx[port].phy.phy_bw >= PHY_BW_2 &&
 		rx_info.aml_phy.enhance_eq)
 		aml_enhance_eq_t5m();
-	if (rx[port].phy.phy_bw >= PHY_BW_1)
+	if (rx[port].phy.phy_bw == PHY_BW_2 || rx[port].phy.phy_bw == PHY_BW_1 ||
+		rx_info.aml_phy.hyper_gain_en)
 		aml_hyper_gain_tuning_t5m();
 	usleep_range(200, 210);
 	/*tmds valid det*/

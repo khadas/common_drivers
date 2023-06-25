@@ -1239,7 +1239,8 @@ void aml_eq_cfg_t3x_20(u8 port)
 	//can do enhance_eq one more time after enhance_dfe finished.
 	if (rx[port].phy.phy_bw >= PHY_BW_2 && rx_info.aml_phy.enhance_eq)
 		aml_enhance_eq_t3x_20(port);
-	if (rx[port].phy.phy_bw >= PHY_BW_1)
+	if (rx[port].phy.phy_bw == PHY_BW_2 || rx[port].phy.phy_bw == PHY_BW_1 ||
+		rx_info.aml_phy.hyper_gain_en)
 		aml_hyper_gain_tuning_t3x_20(port);
 	usleep_range(200, 210);
 	/*tmds valid det*/

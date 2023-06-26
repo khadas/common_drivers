@@ -9298,6 +9298,7 @@ static ssize_t amvecm_debug_store(struct class *cla,
 {
 	char *buf_orig, *parm[8] = {NULL};
 	long val = 0;
+	unsigned int i = 0;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	long tmp_val[4] = {0};
 	enum vpp_matrix_e mtx_sel;
@@ -9306,9 +9307,8 @@ static ssize_t amvecm_debug_store(struct class *cla,
 	enum vpp_slice_e slice;
 	unsigned int mode_sel, color, color_mode;
 	struct vinfo_s *vinfo = get_current_vinfo();
-#endif
-	unsigned int i = 0;
 	enum vd_path_e vd_path = VD1_PATH;
+#endif
 
 	if (!buf)
 		return count;
@@ -9318,6 +9318,9 @@ static ssize_t amvecm_debug_store(struct class *cla,
 	parse_param_amvecm(buf_orig, (char **)&parm);
 	if (!strncmp(parm[0], "vpp_size", 8)) {
 		dump_vpp_size_info();
+	} else if (!strncmp(parm[0], "vpp_state", 9)) {
+		pr_info("amvecm driver version :  %s\n", AMVECM_VER);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else if (!strncmp(parm[0], "refresh_hdr_hist", 16)) {
 		if (kstrtoul(parm[1], 10, &val) < 0)
 			goto free_buf;
@@ -9325,9 +9328,6 @@ static ssize_t amvecm_debug_store(struct class *cla,
 			vd_path = VD2_PATH;
 		get_hist(vd_path, HIST_E_RGBMAX);
 		pr_info("amvecm refresh_hdr_hist path %d\n", vd_path);
-	} else if (!strncmp(parm[0], "vpp_state", 9)) {
-		pr_info("amvecm driver version :  %s\n", AMVECM_VER);
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	} else if (!strncmp(parm[0], "checkpattern", 12)) {
 		if (!strncmp(parm[1], "enable", 6)) {
 			pattern_detect_debug = 1;
@@ -9349,7 +9349,6 @@ static ssize_t amvecm_debug_store(struct class *cla,
 			pr_info("pattern_mask is 0x%x\n", pattern_mask);
 		}
 	} else if (!strncmp(parm[0], "vadj1", 5)) {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x) {
 			if (!strncmp(parm[1], "enable", 6)) {
 				ve_vadj_ctl(WR_VCB, VE_VADJ1, 1);
@@ -9359,9 +9358,7 @@ static ssize_t amvecm_debug_store(struct class *cla,
 				pr_info("disable vadj1\n");
 			}
 		}
-#endif
 	} else if (!strncmp(parm[0], "vadj2", 5)) {
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (chip_type_id == chip_t3x) {
 			if (!strncmp(parm[1], "enable", 6)) {
 				ve_vadj_ctl(WR_VCB, VE_VADJ2, 1);
@@ -9371,7 +9368,6 @@ static ssize_t amvecm_debug_store(struct class *cla,
 				pr_info("disable vadj2\n");
 			}
 		}
-#endif
 #endif
 	} else if (!strncmp(parm[0], "wb", 2)) {
 		if (!strncmp(parm[1], "enable", 6)) {

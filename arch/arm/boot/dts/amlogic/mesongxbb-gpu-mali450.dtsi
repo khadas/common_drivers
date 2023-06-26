@@ -64,16 +64,6 @@
 			/*109 = 250*(125/285)*/
 		};
 
-		clk288_cfg:clk288_cfg {
-			clk_freq = <288000000>;
-			clk_parent = "gp0_pll";
-			clkp_freq = <744000000>;
-			voltage = <1150>;
-			keep_count = <5>;
-			threshold = <100 190>;
-			/*109 = 250*(125/285)*/
-		};
-
 		clk400_cfg:clk400_cfg {
 			clk_freq = <400000000>;
 			clk_parent = "fclk_div5";

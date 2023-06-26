@@ -150,6 +150,7 @@ struct hifi4dsp_dsp {
 	u32 suspend_resume_support;
 	void __iomem *status_reg;
 	u32 optimize_longcall;
+	unsigned int bootlocation;
 	u32 sram_remap_addr[2];
 	struct dsp_ring_buffer *logbuff;
 	struct dentry *debug_dir;

@@ -48,7 +48,6 @@
 #include "dsp_top.h"
 
 struct reg_iomem_t g_regbases;
-unsigned int bootlocation;
 static unsigned int boot_sram_addr, boot_sram_size;
 static struct mutex hifi4dsp_flock;
 
@@ -667,6 +666,7 @@ static int hifi4dsp_driver_dsp_start(struct hifi4dsp_dsp *dsp)
 	pr_debug("%s\n", __func__);
 	info = (struct  hifi4dsp_info_t *)dsp->info;
 	pr_debug("dsp_id: %d\n", dsp->id);
+	pr_debug("dsp_bootlocation: %d\n", dsp->bootlocation);
 	pr_debug("dsp_frequence: %d Hz\n", dsp->freq);
 	pr_debug("dsp_start_addr: 0x%llx\n",
 		 (unsigned long long)dsp->dsp_fw->paddr);
@@ -684,9 +684,9 @@ static int hifi4dsp_driver_dsp_start(struct hifi4dsp_dsp *dsp)
 	clk_set_rate(dsp->dsp_clk, dsp->freq);
 	clk_prepare_enable(dsp->dsp_clk);
 
-	if (bootlocation == 1)
+	if (dsp->bootlocation == 1)
 		soc_dsp_bootup(dsp->id, dsp->dsp_fw->paddr, dsp->freq);
-	else if (bootlocation == 2)
+	else if (dsp->bootlocation == 2)
 		soc_dsp_bootup(dsp->id, boot_sram_addr, dsp->freq);
 
 	dsp->info = NULL;
@@ -1084,6 +1084,32 @@ void get_dsp_baseaddr(struct platform_device *pdev)
 	}
 	//g_regbases.hiu_addr = devm_ioremap_resource(&pdev->dev, res);
 	g_regbases.hiu_addr = ioremap(res->start, resource_size(res));
+}
+
+void get_dsp_sramaddr(struct platform_device *pdev, struct hifi4dsp_dsp *dsp)
+{
+	int ret;
+
+	if (dsp->bootlocation == 1) {
+		pr_debug("Dsp boot from DDR !\n");
+	} else if (dsp->bootlocation == 2) {
+		ret = of_property_read_u32(pdev->dev.of_node, "boot_sram_addr",
+					   &boot_sram_addr);
+		if (ret < 0) {
+			dev_err(&pdev->dev, "Can't retrieve boot_sram_addr\n");
+			return;
+		}
+		ret = of_property_read_u32(pdev->dev.of_node, "boot_sram_size",
+					   &boot_sram_size);
+		if (ret < 0) {
+			dev_err(&pdev->dev, "Can't retrieve boot_sram_size\n");
+			return;
+		}
+		pr_debug("Dsp boot from SRAM !boot addr : 0x%08x, allocate size: 0x%08x\n",
+			boot_sram_addr, boot_sram_size);
+		g_regbases.sram_base = ioremap(boot_sram_addr,
+						       boot_sram_size);
+	}
 }
 
 void get_dsp_statusreg(struct platform_device *pdev, int dsp_cnt,
@@ -1493,6 +1519,7 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 
 	struct hifi4dsp_info_t *hifi_info = NULL;
 	unsigned int dsp_freqs[2];
+	unsigned int bootlocation[2];
 
 	np = pdev->dev.of_node;
 
@@ -1530,33 +1557,11 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Can't retrieve dsp-monitor-period-ms\n");
 
 	/*boot from DDR or SRAM or ...*/
-	ret = of_property_read_u32(np, "bootlocation", &bootlocation);
-	if (ret < 0) {
+	ret = of_property_read_u32_array(np, "bootlocation", &bootlocation[0], dsp_cnt);
+	if (ret) {
 		dev_err(&pdev->dev, "Can't retrieve bootlocation\n");
 		goto err1;
 	}
-	pr_debug("%s of read dsp bootlocation=%x\n", __func__, bootlocation);
-	if (bootlocation == 1) {
-		pr_debug("Dsp boot from DDR !\n");
-	} else if (bootlocation == 2) {
-		ret = of_property_read_u32(np, "boot_sram_addr",
-					   &boot_sram_addr);
-		if (ret < 0) {
-			dev_err(&pdev->dev, "Can't retrieve boot_sram_addr\n");
-			goto err1;
-		}
-		ret = of_property_read_u32(np, "boot_sram_size",
-					   &boot_sram_size);
-		if (ret < 0) {
-			dev_err(&pdev->dev, "Can't retrieve boot_sram_size\n");
-			goto err1;
-		}
-		pr_debug("Dsp boot from SRAM !boot addr : 0x%08x, allocate size: 0x%08x\n",
-			boot_sram_addr, boot_sram_size);
-		g_regbases.sram_base = ioremap(boot_sram_addr,
-						       boot_sram_size);
-	}
-
 	ret = of_property_read_u32_array(np, "optimize_longcall", &optimize_longcall[0], 2);
 	if (ret && ret != -EINVAL)
 		pr_debug("can't get optimize_longcall\n");
@@ -1726,11 +1731,14 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 		mutex_init(&dsp->mutex);
 		spin_lock_init(&dsp->spinlock);
 		spin_lock_init(&dsp->fw_spinlock);
+
 		INIT_LIST_HEAD(&dsp->fw_list);
 		dsp->dsp_clk = dsp_clk;
 		dsp->fw = fw;
 		dsp->dsp_fw = dsp_firmware;
+
 		dsp->id = id;
+
 		dsp->freq = pdata->clk_freq;
 		dsp->irq = pdata->irq;
 		dsp->major_id = MAJOR(priv->dev->devt);
@@ -1742,11 +1750,11 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 		dsp->start_mode = startmode;
 		dsp->dsphang = 0;
 		dsp->optimize_longcall = optimize_longcall[id];
+		dsp->bootlocation = bootlocation[id];
 		dsp->sram_remap_addr[0] = sram_remap_addr[2 * id];
 		dsp->sram_remap_addr[1] = sram_remap_addr[2 * id + 1];
 		dsp->suspend_resume_support = pm_support[id];
 		priv->dsp = dsp;
-
 		hifi4dsp_p[i] = priv;
 
 		if (dsp_cnt > 1)
@@ -1754,10 +1762,12 @@ static int hifi4dsp_platform_probe(struct platform_device *pdev)
 		else
 			pm_runtime_enable(dsp->pd_dsp);
 
+		get_dsp_sramaddr(pdev, dsp);
 		device_init_wakeup(dsp->pd_dsp, 1);
 		create_hifi_debugfs_files(dsp);
 		pr_info("register dsp-%d done\n", id);
 	}
+
 	get_dsp_statusreg(pdev, dsp_cnt, hifi4dsp_p);
 	device_create_file(&pdev->dev, &dev_attr_suspend);
 	device_create_file(&pdev->dev, &dev_attr_resume);

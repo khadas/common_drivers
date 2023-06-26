@@ -8,6 +8,8 @@
 
 /*#define DEBUG*/
 
+#include <linux/module.h>
+#include <linux/kernel.h>
 #include <linux/of.h>
 #include <linux/io.h>
 #include <linux/of_address.h>

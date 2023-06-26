@@ -597,10 +597,12 @@ u32 pic_axis[4][4];
  * Utils APIs
  *********************************************************/
 #ifndef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_VIDEO)
 bool is_amdv_enable(void)
 {
 	return false;
 }
+#endif
 
 bool is_amdv_on(void)
 {
@@ -653,6 +655,7 @@ bool is_hdmi_ll_as_hdr10(void)
 	return false;
 }
 
+#if IS_MODULE(CONFIG_AMLOGIC_MEDIA_VIDEO)
 int get_amdv_mode(void)
 {
 	return false;
@@ -661,6 +664,7 @@ int get_amdv_mode(void)
 void set_amdv_mode(int mode)
 {
 }
+#endif
 #endif
 
 bool is_dovi_tv_on(void)

@@ -1737,6 +1737,7 @@
 &drm_subsystem {
 		crtc_masks = <3 7 1>;
 		dummyl_from_hdmitx = /bits/ 8  <1>;
+		crtcmask_of_video = <0 1 0>; /* 1st output with 2*video plane */
 };
 
 &lcd {

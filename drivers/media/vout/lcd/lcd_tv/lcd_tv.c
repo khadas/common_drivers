@@ -321,6 +321,7 @@ static void lcd_cus_ctrl_parm_change(struct aml_lcd_drv_s *pdrv)
 			pdrv->config.basic.v_period_max = pdrv->config.basic.v_period_max_dft;
 			pdrv->config.timing.base_v_period = 2250;
 		}
+		pdrv->config.timing.base_frame_rate = lcd_vmode_cur_info->base_fr;
 		lcd_vrr_config_update(pdrv);
 	}
 }
@@ -835,7 +836,6 @@ static int lcd_vout_get_state(void *data)
 
 static int lcd_vout_get_disp_cap(char *buf, void *data)
 {
-	struct aml_lcd_drv_s *pdrv = (struct aml_lcd_drv_s *)data;
 	struct lcd_vmode_list_s *temp_list;
 	unsigned int frame_rate;
 	int ret = 0, i;
@@ -853,7 +853,7 @@ static int lcd_vout_get_disp_cap(char *buf, void *data)
 			frame_rate = temp_list->info->duration[i].frame_rate;
 			if (frame_rate == 0)
 				break;
-			if (frame_rate > pdrv->config.timing.base_frame_rate)
+			if (frame_rate > temp_list->info->base_fr)
 				continue;
 			ret += sprintf(buf + ret, "%s%dhz\n",
 				temp_list->info->name, frame_rate);

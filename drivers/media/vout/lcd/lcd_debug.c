@@ -624,7 +624,7 @@ static int lcd_info_basic_print(struct aml_lcd_drv_s *pdrv, char *buf, int offse
 	len += snprintf((buf + len), n,
 		"base_pixel_clk   %d\n"
 		"base_h_period    %d\n"
-		"base_h_period    %d\n"
+		"base_v_period    %d\n"
 		"base_frame_rate  %d\n\n",
 		pconf->timing.base_pixel_clk,
 		pconf->timing.base_h_period,

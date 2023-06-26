@@ -6,10 +6,10 @@
 /dts-v1/;
 
 #include "mesont7.dtsi"
-#include "mesont7_drm.dtsi"
 #include "partition_debian_linux.dtsi"
 #include <dt-bindings/input/input.h>
 #include "mesont7_an400-panel-debian.dtsi"
+#include "mesont7_drm.dtsi"
 
 / {
 	amlogic-dt-id = "t7_a311d2_an400";
@@ -50,7 +50,8 @@
 
 	memory@00000000 {
 		device_type = "memory";
-		linux,usable-memory = <0x0 0x000000 0x0 0x80000000>;
+		linux,usable-memory = <0x00000000 0x00000000 0x00000000 0xE0000000
+				       0x00000001 0x00000000 0x00000000 0x20000000>;
 	};
 
 	reserved-memory {
@@ -85,11 +86,11 @@
 
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
-			reusable;
+			/*reusable;*/
+			no-map;
 			size = <0x0 0x3400000>;
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x05000000 0x0 0x3400000>;
-			clear-map;
 		};
 
 		dsp_fw_reserved:linux,dsp_fw {
@@ -118,9 +119,10 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			/* ion_codec_mm max can alloc size 80M*/
-			size = <0x0 0x1b000000>;
+			size = <0x0 0x1fc00000>;
 			alignment = <0x0 0x400000>;
 			linux,contiguous-region;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 			clear-map;
 		};
 
@@ -138,12 +140,14 @@
 			//size = <0x0 0x0B000000>;
 			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 
 		/*  POST PROCESS MANAGER */
 		ppmgr_reserved:linux,ppmgr {
 			compatible = "shared-dma-pool";
 			size = <0x0 0x0>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 
 		isp_cma_reserved:linux,isp_cma {
@@ -152,6 +156,7 @@
 			status = "okay";
 			size = <0x0 0x8000000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 
 		adapt_cma_reserved:linux,adapt_cma {
@@ -160,13 +165,15 @@
 			status = "okay";
 			size = <0x0 0x1800000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x9800000>;
+			size = <0x0 0x5400000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 		/* secure ion for gpu,advice size is 0x8000000 */
 		ion_secure_reserved:linux,ion-secure {
@@ -174,20 +181,37 @@
 			no-map;
 			size = <0x0 0x0>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 		ion_fb_reserved:linux,ion-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			/* 1920x1080x4x3 round up 4M align */
-			size = <0x0 0x12000000>;
+			/* 1920x1080x4x6+3840x2160x4x3 round up 4M align */
+			size = <0x0 0x20000000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 		/* codec shared reserved */
 		codec_mm_reserved:linux,codec_mm_reserved {
 			compatible = "amlogic, codec-mm-reserved";
 			size = <0x0 0x0>;
 			alignment = <0x0 0x100000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 			//no-map;
+		};
+		dmaheap_cma_reserved:heap-gfx {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* 4k STB androidT size 4M */
+			size = <0x0 0x400000>;
+			alignment = <0x0 0x400000>;
+		};
+		dmaheap_fb_reserved:heap-fb {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* 4k STB androidT size 160M */
+			size = <0x0 0xa000000>;
+			alignment = <0x0 0x400000>;
 		};
 
 		/*  vdin0 CMA pool */
@@ -209,6 +233,7 @@
 			 */
 			size = <0x0 0x01400000>;
 			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
 		};
 
 		ldc_mem_reserved:linux,ldc_mem {
@@ -217,6 +242,31 @@
 			size = <0x0 0x400000>;
 			alignment = <0x0 0x400000>;
 		};
+
+		/* global autoconfigured region for contiguous allocations */
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x800000>;
+			alignment = <0x0 0x400000>;
+			linux,cma-default;
+		};
+
+		pcie_dma_ops_mm:linux,pcie_dma_ops {
+			compatible = "shared-dma-pool";
+			status = "disable";
+			reusable;
+			size = <0x0 0x5000000>;
+			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x0 0x0 0xe0000000>;
+		};
+	};
+
+	smmu: aml_smmu {
+		compatible = "amlogic,smmu";
+		status = "disable";
+		#iommu-cells = <1>;
+		memory-region = <&pcie_dma_ops_mm>;
 	};
 
 	codec_mm {
@@ -278,9 +328,9 @@
 		/***************************************************
 		 * en_4k: t5d not support 4k
 		 ***************************************************/
-		//en_4k = <1>;
+		en_4k = <0>;
 		//keep_dec_vf = <2>;
-		//po_fmt = <6>;
+		po_fmt = <0>;
 		/***************************************************
 		 * post_nub: default is 11 (T7/T3/SC2/S4 new path)
 		 * local 7*4075520 = 28
@@ -292,7 +342,7 @@
 		 * bit 0: for 4k
 		 * bit 1: for 1080p
 		 ***************************************************/
-		//alloc_sct = <1>;
+		alloc_sct = <0>;
 		/***************************************************
 		 * hf: default is 0 (T7/T3/SC2/S4 new path)
 		 * 0:not enable;
@@ -300,6 +350,15 @@
 		 ***************************************************/
 		//hf = <0>;
 	};
+
+	provisionkey {
+		compatible = "amlogic, provisionkey";
+		status = "okay";
+		key-permit-default = "write";
+		//new key not need add dts if started with KEY_PROVISION_
+		KEY_PROVISION_XXX { };
+		//test_my_added_keyname { };
+	};//End provisionkey
 
 	unifykey{
 		compatible = "amlogic,unifykey";
@@ -468,6 +527,11 @@
 		sensor-name = "imx290"; /*imx290;os08a10;imx227*/
 	};
 
+	lens: lens {
+		compatible = "soc, lens";
+		status = "okay";
+	};
+
 	hdmirx {
 		compatible = "amlogic, hdmirx_t7";
 		#address-cells=<1>;
@@ -500,7 +564,7 @@
 				"fclk_div5";
 		hdmirx_id = <0>;
 		en_4k_2_2k = <0>;
-		hpd_low_cec_off = <0>;
+		hpd_low_cec_off = <1>;
 		arc_port = <1>;
 		/* bit4: enable feature, bit3~0: port number */
 		disable_port = <0x0>;
@@ -537,6 +601,34 @@
 		status = "okay";
 
 		aml-audio-card,dai-link@0 {
+			format = "i2s";
+			mclk-fs = <256>;
+			continuous-clock;
+			//bitclock-inversion;
+			//frame-inversion;
+			/* master mode */
+			bitclock-master = <&tdmb>;
+			frame-master = <&tdmb>;
+			/* slave mode */
+			//bitclock-master = <&tdmbcodec>;
+			//frame-master = <&tdmbcodec>;
+			/* suffix-name, sync with android audio hal used for */
+			suffix-name = "alsaPORT-i2s-i2s4hdmirx";
+			cpu {
+				sound-dai = <&tdmb>;
+				dai-tdm-slot-tx-mask = <1 1>;
+				dai-tdm-slot-rx-mask = <1 1>;
+				dai-tdm-slot-num = <2>;
+				dai-tdm-slot-width = <32>;
+				system-clock-frequency = <12288000>;
+			};
+			tdmbcodec: codec {
+				prefix-names = "AMP", "AMP1";
+				sound-dai = <&tas5707_36 &tas5707_3a &acodec>;
+			};
+		};
+
+		aml-audio-card,dai-link@1 {
 			format = "dsp_a";
 			mclk-fs = <64>;
 			continuous-clock;
@@ -564,34 +656,6 @@
 			};
 			tdmacodec: codec {
 				sound-dai = <&dummy_codec>;
-			};
-		};
-
-		aml-audio-card,dai-link@1 {
-			format = "i2s";
-			mclk-fs = <256>;
-			continuous-clock;
-			//bitclock-inversion;
-			//frame-inversion;
-			/* master mode */
-			bitclock-master = <&tdmb>;
-			frame-master = <&tdmb>;
-			/* slave mode */
-			//bitclock-master = <&tdmbcodec>;
-			//frame-master = <&tdmbcodec>;
-			/* suffix-name, sync with android audio hal used for */
-			suffix-name = "alsaPORT-i2s-i2s4hdmirx";
-			cpu {
-				sound-dai = <&tdmb>;
-				dai-tdm-slot-tx-mask = <1 1>;
-				dai-tdm-slot-rx-mask = <1 1>;
-				dai-tdm-slot-num = <2>;
-				dai-tdm-slot-width = <32>;
-				system-clock-frequency = <12288000>;
-			};
-			tdmbcodec: codec {
-				prefix-names = "AMP", "AMP1";
-				sound-dai = <&tas5707_36 &tas5707_3a &acodec>;
 			};
 		};
 
@@ -699,6 +763,12 @@
 		status = "okay";
 	};
 
+	video_queue {
+		compatible = "amlogic, video_queue";
+		dev_name = "videoqueue";
+		status = "okay";
+	};
+
 	amdolby_vision {
 		compatible = "amlogic, dolby_vision_t7";
 		dev_name = "aml_amdolby_vision_driver";
@@ -784,7 +854,7 @@
 
 		reg = <0x0 0xfe000000 0x0 0x480000>;
 
-		dmxdev_num = <3>;
+		dmxdev_num = <0x11>;
 
 		tsn_from = "demod";
 
@@ -958,7 +1028,7 @@
 		pinctrl-names = "pdm_pins";
 		pinctrl-0 = <&pdmin_pins>;
 
-		/* mode 0~4, defalut:1 */
+		/* mode 0~4, default:1 */
 		filter_mode = <1>;
 
 		train_sample_count = <0xb>;
@@ -1286,6 +1356,7 @@
 
 &pcie {
 	reset-gpio = <&gpio GPIOH_3 GPIO_ACTIVE_HIGH>;
+	iommu-map = <0x100 &smmu 0x5 0x10>;
 	status = "disable";
 };
 
@@ -1294,15 +1365,6 @@
 	pinctrl-names="default";
 	pinctrl-0=<&i2c1_pins1>;
 	clock-frequency = <100000>; /* default 100k */
-	sensor-i2c@6c {
-		compatible = "arm, i2c-sensor-ssub";
-		reg = <0x6c>;
-		reg-names = "i2c-sensor";
-		slave-addr = <0x6c>;
-		reg-type = <2>;
-		reg-data-type = <1>;
-		link-device = <&phycsi>;
-	};
 
 	tas5707_36: tas5707_36@1b {
 		compatible = "ti,tas5707";
@@ -1495,8 +1557,10 @@
 
 &fb {
 	status = "disabled";
-	display_size_default = <1920 1080 1920 2160 32>;
-	mem_size = <0x00800000 0x1980000 0x100000 0x100000 0x100000>;
+	display_size_default = <3840 2160 3840 4320 32>;
+	mem_size = <0x00800000 0x4000000 0x100000 0x100000 0x100000>;
+	4k2k_fb = <1>;
+	display_device_cnt = <2>;
 	logo_addr = "0x3f800000";
 	mem_alloc = <0>;
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
@@ -1531,6 +1595,7 @@
 
 &drm_subsystem {
 		crtc_masks = <3 7 1>;
+		dummyl_from_hdmitx = /bits/ 8  <1>;
 };
 
 &lcd {
@@ -1570,7 +1635,10 @@
 
 &amhdmitx {
 	status = "okay";
+	repeater_tx = <0>;
 	enc_idx = <0>;
+	vrr_type = <2>; /* 1: GAME-VRR, 2: QMS-VRR */
+	tv_usage = <1>;
 	/* hdcp ctrl 0: sysctrl, 1: drv, 2: linux app */
 	hdcp_ctl_lvl = <1>;
 };
@@ -1592,12 +1660,12 @@
 	 */
 	cma_size = <280>;
 	frame_buff_num = <10>;
+	vdin_function_sel = <0x101>;
 };
 
 &vdin1 {
 	memory-region = <&vdin1_cma_reserved>;
 	status = "okay";
-	rdma_not_register;
 };
 
 &periphs_pinctrl {
@@ -1796,6 +1864,7 @@
 	status = "okay";
 	reset-gpios = <&gpio    GPIOX_17 GPIO_ACTIVE_HIGH>;
 	hostwake-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;
+	power_down_disable = <1>;
 };
 
 &pwm_ab {
@@ -1804,8 +1873,12 @@
 	status = "okay";
 };
 
+&pwm_ef {
+	status = "okay";
+};
+
 &irblaster {
-	status = "disabled";
+	status = "okay";
 };
 
 &uart_C {

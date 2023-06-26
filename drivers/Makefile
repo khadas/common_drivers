@@ -65,6 +65,7 @@ obj-y                       += amlisp/
 obj-y                       += armisp/
 obj-y                       += armisp-g12b/
 obj-$(CONFIG_AMLOGIC_NPU) += npu/
+obj-y                       += adla/
 
 KBUILD_CFLAGS_MODULE += $(GKI_EXT_KERNEL_MODULE_PREDEFINE)
 all:

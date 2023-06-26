@@ -535,6 +535,7 @@ void rx_tasklet_handler(unsigned long arg)
 {
 	struct rx_s *prx = (struct rx_s *)arg;
 	u8 irq_flag = prx->irq_flag;
+	u8 port = E_PORT0;
 
 	/* prx->irq_flag = 0; /
 	 * if (irq_flag & IRQ_PACKET_FLAG)
@@ -547,7 +548,7 @@ void rx_tasklet_handler(unsigned long arg)
 	}
 
 	if (irq_flag & IRQ_AUD_FLAG) {
-		hdmirx_audio_fifo_rst();
+		hdmirx_audio_fifo_rst(port);
 		irq_flag &= ~IRQ_AUD_FLAG;
 	}
 	prx->irq_flag = irq_flag;
@@ -766,7 +767,7 @@ static int rx_dwc_irq_handler(void)
 			else
 				rx_afifo_store_all_subpkt(false);
 			//if (rx[port].aud_info.real_sr != 0)
-			error |= hdmirx_audio_fifo_rst();
+			error |= hdmirx_audio_fifo_rst(port);
 		}
 		if (rx_get_bits(intr_aud_fifo, UNDERFL) != 0) {
 			if (log_level & 0x100)
@@ -774,7 +775,7 @@ static int rx_dwc_irq_handler(void)
 			/* rx[port].irq_flag |= IRQ_AUD_FLAG; */
 			rx_afifo_store_all_subpkt(false);
 			//if (rx[port].aud_info.real_sr != 0)
-			error |= hdmirx_audio_fifo_rst();
+			error |= hdmirx_audio_fifo_rst(port);
 		}
 	}
 	if (vsi_handle_flag)
@@ -4842,7 +4843,7 @@ void rx_main_state_machine(void)
 				hdmirx_config_audio(port);
 				rx_aud_pll_ctl(1, port);
 				rx_afifo_store_all_subpkt(false);
-				hdmirx_audio_fifo_rst();
+				hdmirx_audio_fifo_rst(port);
 				rx[port].hdcp.hdcp_pre_ver = rx[port].hdcp.hdcp_version;
 				rx[port].stable_timestamp = rx[port].timestamp;
 				rx_pr("Sig ready\n");
@@ -5009,7 +5010,7 @@ void rx_main_state_machine(void)
 			if (log_level & AUDIO_LOG)
 				dump_state(RX_DUMP_AUDIO, port);
 			hdmirx_config_audio(port);
-			hdmirx_audio_fifo_rst();
+			hdmirx_audio_fifo_rst(port);
 			rx_audio_pll_sw_update();
 		}
 		if (is_aud_pll_error()) {
@@ -5038,7 +5039,7 @@ void rx_main_state_machine(void)
 		} else if (is_aud_fifo_error()) {
 			rx[port].aud_sr_unstable_cnt++;
 			if (rx[port].aud_sr_unstable_cnt > aud_sr_stb_max) {
-				hdmirx_audio_fifo_rst();
+				hdmirx_audio_fifo_rst(port);
 				rx[port].aud_sr_unstable_cnt = 0;
 			}
 		} else {
@@ -5319,7 +5320,7 @@ void rx_port0_main_state_machine(void)
 				hdmirx_config_audio(port);
 				rx_aud_pll_ctl(1, port);
 				rx_afifo_store_all_subpkt(false);
-				hdmirx_audio_fifo_rst();
+				hdmirx_audio_fifo_rst(port);
 				rx[port].hdcp.hdcp_pre_ver = rx[port].hdcp.hdcp_version;
 				rx[port].stable_timestamp = rx[port].timestamp;
 				rx_pr("Sig ready\n");
@@ -5486,7 +5487,7 @@ void rx_port0_main_state_machine(void)
 			if (log_level & AUDIO_LOG)
 				dump_state(RX_DUMP_AUDIO, port);
 			hdmirx_config_audio(port);
-			hdmirx_audio_fifo_rst();
+			hdmirx_audio_fifo_rst(port);
 			rx_audio_pll_sw_update();
 		}
 		if (is_aud_pll_error()) {
@@ -5515,7 +5516,7 @@ void rx_port0_main_state_machine(void)
 		} else if (is_aud_fifo_error()) {
 			rx[port].aud_sr_unstable_cnt++;
 			if (rx[port].aud_sr_unstable_cnt > aud_sr_stb_max) {
-				hdmirx_audio_fifo_rst();
+				hdmirx_audio_fifo_rst(port);
 				rx[port].aud_sr_unstable_cnt = 0;
 			}
 		} else {
@@ -5796,7 +5797,7 @@ void rx_port1_main_state_machine(void)
 				hdmirx_config_audio(port);
 				rx_aud_pll_ctl(1, port);
 				rx_afifo_store_all_subpkt(false);
-				hdmirx_audio_fifo_rst();
+				//hdmirx_audio_fifo_rst(port);
 				rx[port].hdcp.hdcp_pre_ver = rx[port].hdcp.hdcp_version;
 				rx[port].stable_timestamp = rx[port].timestamp;
 				rx_pr("Sig ready\n");
@@ -5963,7 +5964,7 @@ void rx_port1_main_state_machine(void)
 			if (log_level & AUDIO_LOG)
 				dump_state(RX_DUMP_AUDIO, port);
 			hdmirx_config_audio(port);
-			hdmirx_audio_fifo_rst();
+			hdmirx_audio_fifo_rst(port);
 			rx_audio_pll_sw_update();
 		}
 		if (is_aud_pll_error()) {
@@ -5992,7 +5993,7 @@ void rx_port1_main_state_machine(void)
 		} else if (is_aud_fifo_error()) {
 			rx[port].aud_sr_unstable_cnt++;
 			if (rx[port].aud_sr_unstable_cnt > aud_sr_stb_max) {
-				hdmirx_audio_fifo_rst();
+				hdmirx_audio_fifo_rst(port);
 				rx[port].aud_sr_unstable_cnt = 0;
 			}
 		} else {
@@ -6285,7 +6286,7 @@ void rx_port2_main_state_machine(void)
 				hdmirx_config_audio(port);
 				rx_aud_pll_ctl(1, port);
 				rx_afifo_store_all_subpkt(false);
-				hdmirx_audio_fifo_rst();
+				hdmirx_audio_fifo_rst(port);
 				rx[port].hdcp.hdcp_pre_ver = rx[port].hdcp.hdcp_version;
 				rx[port].stable_timestamp = rx[port].timestamp;
 				rx_pr("Sig ready\n");
@@ -6452,7 +6453,7 @@ void rx_port2_main_state_machine(void)
 			if (log_level & AUDIO_LOG)
 				dump_state(RX_DUMP_AUDIO, port);
 			hdmirx_config_audio(port);
-			hdmirx_audio_fifo_rst();
+			hdmirx_audio_fifo_rst(port);
 			rx_audio_pll_sw_update();
 		}
 		if (is_aud_pll_error()) {
@@ -6481,7 +6482,7 @@ void rx_port2_main_state_machine(void)
 		} else if (is_aud_fifo_error()) {
 			rx[port].aud_sr_unstable_cnt++;
 			if (rx[port].aud_sr_unstable_cnt > aud_sr_stb_max) {
-				hdmirx_audio_fifo_rst();
+				hdmirx_audio_fifo_rst(port);
 				rx[port].aud_sr_unstable_cnt = 0;
 			}
 		} else {
@@ -6775,7 +6776,7 @@ void rx_port3_main_state_machine(void)
 				hdmirx_config_audio(port);
 				rx_aud_pll_ctl(1, port);
 				rx_afifo_store_all_subpkt(false);
-				hdmirx_audio_fifo_rst();
+				hdmirx_audio_fifo_rst(port);
 				rx[port].hdcp.hdcp_pre_ver = rx[port].hdcp.hdcp_version;
 				rx[port].stable_timestamp = rx[port].timestamp;
 				rx_pr("Sig ready\n");
@@ -6942,7 +6943,7 @@ void rx_port3_main_state_machine(void)
 			if (log_level & AUDIO_LOG)
 				dump_state(RX_DUMP_AUDIO, port);
 			hdmirx_config_audio(port);
-			hdmirx_audio_fifo_rst();
+			hdmirx_audio_fifo_rst(port);
 			rx_audio_pll_sw_update();
 		}
 		if (is_aud_pll_error()) {
@@ -6971,7 +6972,7 @@ void rx_port3_main_state_machine(void)
 		} else if (is_aud_fifo_error()) {
 			rx[port].aud_sr_unstable_cnt++;
 			if (rx[port].aud_sr_unstable_cnt > aud_sr_stb_max) {
-				hdmirx_audio_fifo_rst();
+				hdmirx_audio_fifo_rst(port);
 				rx[port].aud_sr_unstable_cnt = 0;
 			}
 		} else {
@@ -7501,7 +7502,7 @@ int hdmirx_debug(const char *buf, int size)
 		find_best_eq = 0x1111;
 		rx[port].phy.err_sum = 0xffffff;
 	} else if (strncmp(tmpbuf, "audio", 5) == 0) {
-		hdmirx_audio_fifo_rst();
+		hdmirx_audio_fifo_rst(port);
 	} else if (strncmp(tmpbuf, "eqcal", 5) == 0) {
 		rx_phy_rt_cal();
 	} else if (strncmp(tmpbuf, "empbuf", 5) == 0) {

@@ -67,9 +67,9 @@ void frc_top_init(struct frc_dev_s *frc_devp);
 // void frc_inp_init(u32 frc_fb_num, u32 film_hwfw_sel);
 void frc_inp_init(void);
 void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
-	enum en_film_mode film_mode);
+	enum en_drv_film_mode film_mode);
 void config_phs_regs(enum frc_ratio_mode_type frc_ratio_mode,
-	enum en_film_mode film_mode);
+	enum en_drv_film_mode film_mode);
 void config_me_top_hw_reg(void);
 void sys_fw_param_frc_init(u32 frm_hsize, u32 frm_vsize, u32 is_me1mc4);
 void config_loss_out(u32 fmt422);

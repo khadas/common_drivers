@@ -95,7 +95,7 @@
 // frc_20230602 frc add ctrl for ko load or not
 
 #define FRC_FW_VER			"2023-0607 frc fixed input framerate"
-#define FRC_KERDRV_VER                  2796
+#define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1
 #define FRC_NAME	"frc"

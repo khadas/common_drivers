@@ -983,8 +983,8 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	devp->in_out_ratio = FRC_RATIO_1_1;
 	// devp->in_out_ratio = FRC_RATIO_2_5;
 	// devp->in_out_ratio = FRC_RATIO_1_2;
-	// devp->film_mode = EN_FILM32;
-	devp->film_mode = EN_VIDEO;
+	// devp->film_mode = EN_DRV_FILM32;
+	devp->film_mode = EN_DRV_VIDEO;
 	devp->film_mode_det = 0;
 
 	fw_data = (struct frc_fw_data_s *)devp->fw_data;

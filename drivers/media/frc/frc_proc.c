@@ -93,7 +93,7 @@ void frc_hw_initial(struct frc_dev_s *devp)
 	frc_fw_initial(devp);
 	frc_mtx_set(devp);
 	frc_top_init(devp);
-	frc_input_size_align_check(devp);
+	// frc_input_size_align_check(devp);
 	if (devp->ud_dbg.res2_dbg_en == 1)
 		frc_memc_120hz_patch(devp);
 	else
@@ -1977,7 +1977,7 @@ u16 frc_check_film_mode(struct frc_dev_s *frc_devp)
 	if (frc_devp->frc_sts.state == FRC_STATE_ENABLE)
 		frc_top->film_mode  = READ_FRC_REG(FRC_REG_PHS_TABLE) >> 8 & 0xFF;
 	else
-		frc_top->film_mode  = EN_VIDEO;
+		frc_top->film_mode  = EN_DRV_VIDEO;
 	return (u16)(frc_top->film_mode);
 }
 
@@ -2024,12 +2024,15 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 	u8 reg_win_en;
 	u8 reg_auto_align_en;
 	u8 reg_inp_padding_en;
-	u16 in_vsize = 0;
-	u16 in_hsize = 0;
+	struct frc_fw_data_s *fw_data;
+	struct frc_top_type_s *frc_top;
 
 	/*only for T5M*/
 	if (get_chip_type() == ID_T3 || devp->in_sts.frc_seamless_en)
 		return;
+
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+	frc_top = &fw_data->frc_top_type;
 
 	reg_win_en = (READ_FRC_REG(FRC_INP_HOLD_CTRL) >> 20) & 0x1; // bit:20
 	reg_auto_align_en = READ_FRC_REG(FRC_TOP_MISC_CTRL) & 0x1; // bit:0
@@ -2039,40 +2042,18 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 		reg_win_en, reg_auto_align_en, reg_inp_padding_en);
 	pr_frc(2, "in_sts.in_hsize:%d devp->in_sts.in_vsize:%d\n",
 		devp->in_sts.in_hsize, devp->in_sts.in_vsize);
-	pr_frc(2, "devp->out_sts.vout_width:%d devp->out_sts.vout_height:%d\n",
-		devp->out_sts.vout_width, devp->out_sts.vout_height);
 
-	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, 0x0); // clear align mothod
-	WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,            // restore default fhd value
+	WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,
 			(devp->out_sts.vout_height & 0x3fff) << 16 |
 			(devp->out_sts.vout_width & 0x3fff));
 
 	if (reg_win_en && reg_auto_align_en && !reg_inp_padding_en) {
-		if (devp->out_sts.vout_width == 1920 &&
-			devp->out_sts.vout_height == 1080) {
-			if (devp->in_sts.in_hsize > IN_W_SIZE_FHD_90 &&
-				devp->in_sts.in_hsize < devp->out_sts.vout_width &&
-				devp->in_sts.in_hsize % 8)
-				in_hsize = 8 - (devp->in_sts.in_hsize % 8);
-			if (devp->in_sts.in_vsize > IN_H_SIZE_FHD_90 &&
-				devp->in_sts.in_vsize < devp->out_sts.vout_height &&
-				devp->in_sts.in_vsize % 8)
-				in_vsize = 8 - (devp->in_sts.in_vsize % 8);
-		} else if (devp->out_sts.vout_width == 3840 &&
-			devp->out_sts.vout_height == 2160) {
-			if (devp->in_sts.in_hsize > IN_W_SIZE_UHD_90 &&
-				devp->in_sts.in_hsize < devp->out_sts.vout_width &&
-				devp->in_sts.in_hsize % 16)
-				in_hsize = 16 - (devp->in_sts.in_hsize % 16);
-			if (devp->in_sts.in_vsize > IN_H_SIZE_UHD_90 &&
-				devp->in_sts.in_vsize < devp->out_sts.vout_height &&
-				devp->in_sts.in_vsize % 16)
-				in_vsize = 16 - (devp->in_sts.in_vsize % 16);
-		}
-		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
-			(in_hsize & 0x1fff) << 13 | (in_vsize & 0x1ff));
+		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, 0x0); // clear align mothod
+		frc_top->inp_padding_xofst = 0;
+		frc_top->inp_padding_xofst = 0;
+		//WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
+		//	(in_hsize & 0x1fff) << 13 | (in_vsize & 0x1ff));
 	}
-	pr_frc(2, "align_vsize:%d align_hsize:%d\n", in_vsize, in_hsize);
 }
 
 void frc_set_seamless_proc(u32 seamless)
@@ -2092,7 +2073,6 @@ void frc_set_seamless_proc(u32 seamless)
 		WRITE_FRC_BITS(FRC_TOP_MISC_CTRL, 1, 0, 1);
 		WRITE_FRC_BITS(FRC_REG_TOP_CTRL25, 0, 31, 1);
 	}
-
 	devp->in_sts.frc_seamless_en = (u8)seamless;
 
 	pr_frc(2, "seamless is %d.\n", seamless);

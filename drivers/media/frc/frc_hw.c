@@ -1196,7 +1196,7 @@ void frc_drv_fw_param_init(u32 frm_hsize, u32 frm_vsize, u32 is_me1mc4)
 
 	//reg_region_rp_gmv_mvx_sft
 	//reg_region_rp_gmv_mvy_sft
-	tmp_reg_value = (reg_me_mvy_div_mode + 2) << 14 & 0x8c000;
+	tmp_reg_value = (reg_me_mvy_div_mode + 2) << 14 & 0x1c000;
 	tmp_reg_value |= (reg_me_mvy_div_mode + 2) << 17 & 0xe0000;
 	WRITE_FRC_REG_BY_CPU(FRC_ME_REGION_RP_GMV_2, tmp_reg_value | 0x90400);
 
@@ -1597,8 +1597,14 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	frc_vporch_cal    = memc_frm_dly - reg_mc_out_line;
 
 	/*bug only for T3*/
-	if (chip == ID_T3)
+	if (chip == ID_T3) {
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, frc_vporch_cal);
+		/*only for T5M*/
+	} else if (!frc_devp->in_sts.frc_seamless_en) {
+		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, 0x0);
+		frc_top->inp_padding_xofst = 0;
+		frc_top->inp_padding_xofst = 0;
+	}
 
 	if (chip == ID_T3 && is_meson_rev_a()) {
 		if ((frc_top->out_hsize > 1920 && frc_top->out_vsize > 1080) ||
@@ -1741,7 +1747,7 @@ void frc_inp_init(void)
 }
 
 void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
-	enum en_film_mode film_mode)
+	enum en_drv_film_mode film_mode)
 {
 	#define lut_ary_size	18
 	u32 input_n;
@@ -1753,14 +1759,14 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 	for (i = 0; i < lut_ary_size; i++)
 		phs_lut_table[i] =  0xffffffffffffffff;
 
-	if(frc_ratio_mode == FRC_RATIO_1_2) {
-		//phs_st plog_dif clog_dif pfrm_dif cfrm_dif nfrm_dif mc_ph me_ph film_ph frc_ph
-		if (film_mode == EN_VIDEO) {
+	if (frc_ratio_mode == FRC_RATIO_1_2) {
+	//phs_st plog_dif clog_dif pfrm_dif cfrm_dif nfrm_dif mc_ph me_ph film_ph frc_ph
+		if (film_mode == EN_DRV_VIDEO) {
 		//phs_lut_table[0] = {1'h1,4'h3,4'h2,4'h3,4'h2,4'h1,8'h00,8'h40,8'h00,8'h00};
 		//phs_lut_table[1] = {1'h0,4'h3,4'h2,4'h3,4'h2,4'h1,8'h40,8'h40,8'h00,8'h01};
 			phs_lut_table[0] = 0x13232100400000;
 			phs_lut_table[1] = 0x03232140400001;
-		} else if (film_mode == EN_FILM22) {
+		} else if (film_mode == EN_DRV_FILM22) {
 		//cadence = 22_1/2
 		//phs_lut_table[0] = {1'h1,4'h4,4'h3,4'h4,4'h3,4'h1,8'h00,8'h20,8'h01,8'h00};
 		//phs_lut_table[1] = {1'h0,4'h4,4'h3,4'h4,4'h3,4'h1,8'h20,8'h20,8'h02,8'h01};
@@ -1770,7 +1776,7 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 			phs_lut_table[1] = 0x04343120200201;
 			phs_lut_table[2] = 0x05353240400300;
 			phs_lut_table[3] = 0x05353260600001;
-		} else if (film_mode == EN_FILM32) {
+		} else if (film_mode == EN_DRV_FILM32) {
 		//cadence = 32_1/2,table_cnt=   10,match_data=0x14
 		//mem[0]={ 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd1, 8'd0,   8'd25,  8'd1, 8'd0};
 		//mem[1]={ 1'd0, 4'd3, 4'd2, 4'd5, 4'd4, 4'd1, 8'd25,  8'd25,  8'd1, 8'd1};
@@ -1795,25 +1801,21 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		}
 		input_n          = 1;
 		output_m         = 2;
-	}
-	else if(frc_ratio_mode == FRC_RATIO_2_3) {
-				 //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//phs_lut_table[0] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h00   ,8'h55   ,8'h00     ,8'h00};
-		//phs_lut_table[1] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h55   ,8'h55   ,8'h00     ,8'h01};
-		//phs_lut_table[2] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h2a   ,8'h2a   ,8'h00     ,8'h02};
+	} else if (frc_ratio_mode == FRC_RATIO_2_3) {
+	//phs_lut_table[0] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h00   ,8'h55   ,8'h00, 8'h00};
+	//phs_lut_table[1] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h55   ,8'h55   ,8'h00, 8'h01};
+	//phs_lut_table[2] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h2a   ,8'h2a   ,8'h00, 8'h02};
 		phs_lut_table[0] = 0x13232100550000;
 		phs_lut_table[1] = 0x03232155550001;
 		phs_lut_table[2] = 0x1323212a2a0002;
 		input_n          = 2;
 		output_m         = 3;
-	}
-	else if(frc_ratio_mode == FRC_RATIO_2_5) {
-				  //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//phs_lut_table[0] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h00   ,8'h33   ,8'h00     ,8'h00};
-		//phs_lut_table[1] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h33   ,8'h33   ,8'h00     ,8'h01};
-		//phs_lut_table[2] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h66   ,8'h66   ,8'h00     ,8'h02};
-		//phs_lut_table[3] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h19   ,8'h19   ,8'h00     ,8'h03};
-		//phs_lut_table[4] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h4c   ,8'h4c   ,8'h00     ,8'h04};
+	} else if (frc_ratio_mode == FRC_RATIO_2_5) {
+	//phs_lut_table[0] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h00   ,8'h33   ,8'h00, 8'h00};
+	//phs_lut_table[1] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h33   ,8'h33   ,8'h00, 8'h01};
+	//phs_lut_table[2] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h66   ,8'h66   ,8'h00, 8'h02};
+	//phs_lut_table[3] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h19   ,8'h19   ,8'h00, 8'h03};
+	//phs_lut_table[4] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h4c   ,8'h4c   ,8'h00, 8'h04};
 		phs_lut_table[0] = 0x13232100330000;
 		phs_lut_table[1] = 0x03232133330001;
 		phs_lut_table[2] = 0x03232166660002;
@@ -1821,15 +1823,13 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		phs_lut_table[4] = 0x0323214c4c0004;
 		input_n          = 2;
 		output_m         = 5;
-	}
-	else if(frc_ratio_mode == FRC_RATIO_5_6) {
-				 //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//phs_lut_table[0] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h00   ,8'h6a   ,8'h00     ,8'h00};
-		//phs_lut_table[1] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h6a   ,8'h6a   ,8'h00     ,8'h01};
-		//phs_lut_table[2] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h55   ,8'h55   ,8'h00     ,8'h02};
-		//phs_lut_table[3] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h40   ,8'h40   ,8'h00     ,8'h03};
-		//phs_lut_table[4] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h2a   ,8'h2a   ,8'h00     ,8'h04};
-		//phs_lut_table[5] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h15   ,8'h15   ,8'h00     ,8'h05};
+	} else if (frc_ratio_mode == FRC_RATIO_5_6) {
+	//phs_lut_table[0] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h00   ,8'h6a   ,8'h00, 8'h00};
+	//phs_lut_table[1] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h6a   ,8'h6a   ,8'h00, 8'h01};
+	//phs_lut_table[2] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h55   ,8'h55   ,8'h00, 8'h02};
+	//phs_lut_table[3] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h40   ,8'h40   ,8'h00, 8'h03};
+	//phs_lut_table[4] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h2a   ,8'h2a   ,8'h00, 8'h04};
+	//phs_lut_table[5] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h15   ,8'h15   ,8'h00, 8'h05};
 		phs_lut_table[0] = 0x132321006a0000;
 		phs_lut_table[1] = 0x0323216a6a0001;
 		phs_lut_table[2] = 0x13232155550002;
@@ -1838,21 +1838,19 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		phs_lut_table[5] = 0x13232115150005;
 		input_n          = 5;
 		output_m         = 6;
-	}
-	else if(frc_ratio_mode == FRC_RATIO_5_12) {
-				 //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//phs_lut_table[0] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h00   ,8'h35   ,8'h00     ,8'h00};
-		//phs_lut_table[1] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h35   ,8'h35   ,8'h00     ,8'h01};
-		//phs_lut_table[2] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h6a   ,8'h6a   ,8'h00     ,8'h02};
-		//phs_lut_table[3] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h20   ,8'h20   ,8'h00     ,8'h03};
-		//phs_lut_table[4] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h55   ,8'h55   ,8'h00     ,8'h04};
-		//phs_lut_table[5] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h0a   ,8'h0a   ,8'h00     ,8'h05};
-		//phs_lut_table[6] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h40   ,8'h40   ,8'h00     ,8'h06};
-		//phs_lut_table[7] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h75   ,8'h75   ,8'h00     ,8'h07};
-		//phs_lut_table[8] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h2a   ,8'h2a   ,8'h00     ,8'h08};
-		//phs_lut_table[9] = {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h60   ,8'h60   ,8'h00     ,8'h09};
-		//phs_lut_table[10]= {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h15   ,8'h15   ,8'h00     ,8'h0a};
-		//phs_lut_table[11]= {1'h0     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h4a   ,8'h4a   ,8'h00     ,8'h0b};
+	} else if (frc_ratio_mode == FRC_RATIO_5_12) {
+	//phs_lut_table[0] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h00   ,8'h35   ,8'h00, 8'h00};
+	//phs_lut_table[1] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h35   ,8'h35   ,8'h00, 8'h01};
+	//phs_lut_table[2] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h6a   ,8'h6a   ,8'h00, 8'h02};
+	//phs_lut_table[3] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h20   ,8'h20   ,8'h00, 8'h03};
+	//phs_lut_table[4] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h55   ,8'h55   ,8'h00, 8'h04};
+	//phs_lut_table[5] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h0a   ,8'h0a   ,8'h00, 8'h05};
+	//phs_lut_table[6] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h40   ,8'h40   ,8'h00, 8'h06};
+	//phs_lut_table[7] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h75   ,8'h75   ,8'h00, 8'h07};
+	//phs_lut_table[8] = {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h2a   ,8'h2a   ,8'h00, 8'h08};
+	//phs_lut_table[9] = {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h60   ,8'h60   ,8'h00, 8'h09};
+	//phs_lut_table[10]= {1'h1, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h15   ,8'h15   ,8'h00, 8'h0a};
+	//phs_lut_table[11]= {1'h0, 4'h3, 4'h2, 4'h3, 4'h2, 4'h1, 8'h4a   ,8'h4a   ,8'h00, 8'h0b};
 		phs_lut_table[0] = 0x13232100350000;
 		phs_lut_table[1] = 0x03232135350001;
 		phs_lut_table[2] = 0x0323216a6a0002;
@@ -1867,232 +1865,212 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 		phs_lut_table[11]= 0x0323214a4a000b;
 		input_n          = 5;
 		output_m         = 12;
-	}
-	else if(frc_ratio_mode == FRC_RATIO_1_1) {
-		if(film_mode == EN_VIDEO) {
-					  //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-			//phs_lut_table[0] = {1'h1     ,4'h3      ,4'h2      ,4'h3     ,4'h2     ,4'h1     ,8'h00   ,8'h00  ,8'h00     ,8'h00};
+	} else if (frc_ratio_mode == FRC_RATIO_1_1) {
+		if (film_mode == EN_DRV_VIDEO) {
+	//phs_lut_table[0] = {1'h1, 4'h3,4'h2, 4'h3, 4'h2, 4'h1, 8'h00   ,8'h00  ,8'h00, 8'h00};
 			phs_lut_table[0] = 0x13232100000000;
 		}
 		//else if(film_mode == EN_FILM22) {
-		//             //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//    phs_lut_table[0] = {1'h1     ,4'h3      ,4'h2      ,4'h4     ,4'h3     ,4'h1     ,8'd0   ,8'd64   ,8'h01     ,8'h00};
-		//    phs_lut_table[1] = {1'h0     ,4'h3      ,4'h2      ,4'h5     ,4'h3     ,4'h2     ,8'd64  ,8'd64   ,8'h00     ,8'h00};
+	//phs_lut_table[0] = {1'h1, 4'h3, 4'h2, 4'h4, 4'h3, 4'h1, 8'd0   ,8'd64   ,8'h01, 8'h00};
+	//phs_lut_table[1] = {1'h0, 4'h3, 4'h2, 4'h5, 4'h3, 4'h2, 8'd64  ,8'd64   ,8'h00, 8'h00};
 		//}
-		else if(film_mode == EN_FILM32) {
-					 //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-			//phs_lut_table[0] = {1'h1     ,4'h3      ,4'h2      ,4'h5     ,4'h4     ,4'h1     ,8'h00   ,8'h33   ,8'h01     ,8'h00};
-			//phs_lut_table[1] = {1'h0     ,4'h3      ,4'h2      ,4'h6     ,4'h4     ,4'h2     ,8'h33   ,8'h33   ,8'h02     ,8'h00};
-			//phs_lut_table[2] = {1'h0     ,4'h4      ,4'h3      ,4'h7     ,4'h4     ,4'h3     ,8'h66   ,8'h66   ,8'h03     ,8'h00};
-			//phs_lut_table[3] = {1'h1     ,4'h3      ,4'h2      ,4'h5     ,4'h4     ,4'h2     ,8'h19   ,8'h19   ,8'h04     ,8'h00};
-			//phs_lut_table[4] = {1'h0     ,4'h3      ,4'h2      ,4'h6     ,4'h4     ,4'h3     ,8'h4c   ,8'h4c   ,8'h00     ,8'h00};
+		else if (film_mode == EN_DRV_FILM32) {
+	//phs_lut_table[0] = {1'h1, 4'h3, 4'h2, 4'h5, 4'h4, 4'h1, 8'h00   ,8'h33   ,8'h01, 8'h00};
+	//phs_lut_table[1] = {1'h0, 4'h3, 4'h2, 4'h6, 4'h4, 4'h2, 8'h33   ,8'h33   ,8'h02, 8'h00};
+	//phs_lut_table[2] = {1'h0, 4'h4, 4'h3, 4'h7, 4'h4, 4'h3, 8'h66   ,8'h66   ,8'h03, 8'h00};
+	//phs_lut_table[3] = {1'h1, 4'h3, 4'h2, 4'h5, 4'h4, 4'h2, 8'h19   ,8'h19   ,8'h04, 8'h00};
+	//phs_lut_table[4] = {1'h0, 4'h3, 4'h2, 4'h6, 4'h4, 4'h3, 8'h4c   ,8'h4c   ,8'h00, 8'h00};
 			phs_lut_table[0] = 0x13254100330100;
 			phs_lut_table[1] = 0x03264233330200;
 			phs_lut_table[2] = 0x04374366660300;
 			phs_lut_table[3] = 0x13254219190400;
 			phs_lut_table[4] = 0x0326434c4c0000;
 		}
-		//else if(film_mode == EN_FILM3223) {
-		//             //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//    phs_lut_table[0] = { 1'd1,   4'd3,      4'd2,      4'd6,     4'd4,      4'd1,     8'd0,   8'd51,     8'd1,    8'h00};
-		//    phs_lut_table[1] = { 1'd0,   4'd3,      4'd2,      4'd7,     4'd4,      4'd2,     8'd51,  8'd51,     8'd2,    8'h00};
-		//    phs_lut_table[2] = { 1'd0,   4'd4,      4'd3,      4'd8,     4'd4,      4'd3,     8'd102, 8'd102,    8'd3,    8'h00};
-		//    phs_lut_table[3] = { 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,      4'd2,     8'd25,  8'd25,     8'd4,    8'h00};
-		//    phs_lut_table[4] = { 1'd0,   4'd4,      4'd3,      4'd6,     4'd4,      4'd3,     8'd76,  8'd76,     8'd5,    8'h00};
-		//    phs_lut_table[5] = { 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,      4'd2,     8'd0,   8'd51,     8'd6,    8'h00};
-		//    phs_lut_table[6] = { 1'd0,   4'd3,      4'd2,      4'd6,     4'd4,      4'd3,     8'd51,  8'd51,     8'd7,    8'h00};
-		//    phs_lut_table[7] = { 1'd0,   4'd4,      4'd3,      4'd7,     4'd5,      4'd4,     8'd102, 8'd102,    8'd8,    8'h00};
-		//    phs_lut_table[8] = { 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,      4'd2,     8'd25,  8'd25,     8'd9,    8'h00};
-		//    phs_lut_table[9] = { 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,      4'd3,     8'd76,  8'd76,     8'd0,    8'h00};
-		//}
-		//else if(film_mode == EN_FILM2224) {
-		//             //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//    phs_lut_table[0] = { 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,     4'd1,    8'd0,    8'd51,     8'd1,    8'h00};
-		//    phs_lut_table[1] = { 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,     4'd2,    8'd51,   8'd51,     8'd2,    8'h00};
-		//    phs_lut_table[2] = { 1'd0,   4'd4,      4'd3,      4'd8,     4'd5,     4'd3,    8'd102,  8'd102,    8'd3,    8'h00};
-		//    phs_lut_table[3] = { 1'd1,   4'd3,      4'd2,      4'd6,     4'd4,     4'd2,    8'd25,   8'd25,     8'd4,    8'h00};
-		//    phs_lut_table[4] = { 1'd0,   4'd4,      4'd3,      4'd7,     4'd4,     4'd3,    8'd76,   8'd76,     8'd5,    8'h00};
-		//    phs_lut_table[5] = { 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,     4'd2,    8'd0,    8'd51,     8'd6,    8'h00};
-		//    phs_lut_table[6] = { 1'd0,   4'd4,      4'd3,      4'd6,     4'd4,     4'd3,    8'd51,   8'd51,     8'd7,    8'h00};
-		//    phs_lut_table[7] = { 1'd0,   4'd4,      4'd3,      4'd7,     4'd5,     4'd4,    8'd102,  8'd102,    8'd8,    8'h00};
-		//    phs_lut_table[8] = { 1'd1,   4'd4,      4'd3,      4'd6,     4'd5,     4'd3,    8'd25,   8'd25,     8'd9,    8'h00};
-		//    phs_lut_table[9] = { 1'd0,   4'd4,      4'd3,      4'd7,     4'd5,     4'd4,    8'd76,   8'd76,     8'd0,    8'h00};
-		//}
-		//else if(film_mode == EN_FILM32322) {
-		//             //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//    phs_lut_table[0] =  { 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,    4'd1,     8'd0,   8'd53,     8'd1,      8'h00};
-		//    phs_lut_table[1] =  { 1'd0,   4'd3,      4'd2,      4'd6,     4'd4,    4'd2,     8'd53,   8'd53,     8'd2,     8'h00};
-		//    phs_lut_table[2] =  { 1'd0,   4'd4,      4'd3,      4'd7,     4'd4,    4'd3,     8'd106,   8'd106,     8'd3,   8'h00};
-		//    phs_lut_table[3] =  { 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,    4'd2,     8'd32,   8'd32,     8'd4,     8'h00};
-		//    phs_lut_table[4] =  { 1'd0,   4'd4,      4'd3,      4'd6,     4'd4,    4'd3,     8'd85,   8'd85,     8'd5,     8'h00};
-		//    phs_lut_table[5] =  { 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,    4'd2,     8'd10,   8'd10,     8'd6,     8'h00};
-		//    phs_lut_table[6] =  { 1'd0,   4'd3,      4'd2,      4'd6,     4'd4,    4'd3,     8'd64,   8'd64,     8'd7,     8'h00};
-		//    phs_lut_table[7] =  { 1'd0,   4'd4,      4'd3,      4'd7,     4'd5,    4'd4,     8'd117,   8'd117,     8'd8,   8'h00};
-		//    phs_lut_table[8] =  { 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd2,     8'd42,   8'd42,     8'd9,     8'h00};
-		//    phs_lut_table[9] =  { 1'd0,   4'd4,      4'd3,      4'd7,     4'd5,    4'd3,     8'd96,   8'd96,     8'd10,    8'h00};
-		//    phs_lut_table[10] = { 1'd1,   4'd3,      4'd2,      4'd6,     4'd4,    4'd2,     8'd21,   8'd21,     8'd11,    8'h00};
-		//    phs_lut_table[11] = { 1'd0,   4'd3,      4'd2,      4'd7,     4'd4,    4'd3,     8'd74,   8'd74,     8'd0,     8'h00};
-		//}
-		//else if(film_mode == EN_FILM44) {
-		//             //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//    phs_lut_table[0] =  { 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd1,     8'd0,   8'd32,     8'd1,    8'h00};
-		//    phs_lut_table[1] =  { 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,    4'd2,     8'd32,   8'd32,     8'd2,   8'h00};
-		//    phs_lut_table[2] =  { 1'd0,   4'd3,      4'd2,      4'd8,     4'd5,    4'd3,     8'd64,   8'd64,     8'd3,   8'h00};
-		//    phs_lut_table[3] =  { 1'd0,   4'd3,      4'd2,      4'd9,     4'd5,    4'd4,     8'd96,   8'd96,     8'd0,   8'h00};
-		//}
-		//else if(film_mode == EN_FILM21111) {
-		//             //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//    phs_lut_table[0] =  { 1'd1,   4'd3,      4'd2,      4'd4,     4'd3,    4'd1,     8'd0,   8'd106,     8'd1,     8'h00};
-		//    phs_lut_table[1] =  { 1'd0,   4'd4,      4'd3,      4'd5,     4'd3,    4'd2,     8'd106,   8'd106,     8'd2,   8'h00};
-		//    phs_lut_table[2] =  { 1'd1,   4'd4,      4'd3,      4'd4,     4'd3,    4'd2,     8'd85,   8'd85,     8'd3,     8'h00};
-		//    phs_lut_table[3] =  { 1'd1,   4'd4,      4'd3,      4'd4,     4'd3,    4'd2,     8'd64,   8'd64,     8'd4,     8'h00};
-		//    phs_lut_table[4] =  { 1'd1,   4'd4,      4'd3,      4'd4,     4'd3,    4'd2,     8'd42,   8'd42,     8'd5,     8'h00};
-		//    phs_lut_table[5] =  { 1'd1,   4'd3,      4'd2,      4'd4,     4'd3,    4'd2,     8'd21,   8'd21,     8'd0,     8'h00};
-		//}
-		//else if(film_mode == EN_FILM23322) {
-		//             //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//    phs_lut_table[0] =  { 1'd1,   4'd3,      4'd2,      4'd6,     4'd4,    4'd1,     8'd0,   8'd53,     8'd1,       8'h00};
-		//    phs_lut_table[1] =  { 1'd0,   4'd3,      4'd2,      4'd7,     4'd4,    4'd2,     8'd53,   8'd53,     8'd2,      8'h00};
-		//    phs_lut_table[2] =  { 1'd0,   4'd4,      4'd3,      4'd8,     4'd4,    4'd3,     8'd106,   8'd106,     8'd3,    8'h00};
-		//    phs_lut_table[3] =  { 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,    4'd2,     8'd32,   8'd32,     8'd4,      8'h00};
-		//    phs_lut_table[4] =  { 1'd0,   4'd4,      4'd3,      4'd6,     4'd4,    4'd3,     8'd85,   8'd85,     8'd5,      8'h00};
-		//    phs_lut_table[5] =  { 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,    4'd2,     8'd10,   8'd10,     8'd6,      8'h00};
-		//    phs_lut_table[6] =  { 1'd0,   4'd4,      4'd3,      4'd6,     4'd4,    4'd3,     8'd64,   8'd64,     8'd7,      8'h00};
-		//    phs_lut_table[7] =  { 1'd0,   4'd4,      4'd3,      4'd7,     4'd5,    4'd4,     8'd117,   8'd117,     8'd8,    8'h00};
-		//    phs_lut_table[8] =  { 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd3,     8'd42,   8'd42,     8'd9,      8'h00};
-		//    phs_lut_table[9] =  { 1'd0,   4'd4,      4'd3,      4'd7,     4'd5,    4'd4,     8'd96,   8'd96,     8'd10,     8'h00};
-		//    phs_lut_table[10] = { 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd2,     8'd21,   8'd21,     8'd11,     8'h00};
-		//    phs_lut_table[11] = { 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,    4'd3,     8'd74,   8'd74,     8'd0,      8'h00};
-		//}
-		//else if(film_mode == EN_FILM2111) {
-		//             //      phs_start plogo_diff clogo_diff pfrm_diff cfrm_diff nfrm_diff mc_phase me_phase film_phase frc_phase
-		//    phs_lut_table[0] =  { 1'd1,   4'd3,      4'd2,      4'd4,     4'd3,    4'd1,     8'd0,   8'd102,     8'd1,      8'h00};
-		//    phs_lut_table[1] =  { 1'd0,   4'd4,      4'd3,      4'd5,     4'd3,    4'd2,     8'd102,   8'd102,     8'd2,    8'h00};
-		//    phs_lut_table[2] =  { 1'd1,   4'd4,      4'd3,      4'd4,     4'd3,    4'd2,     8'd76,   8'd76,     8'd3,      8'h00};
-		//    phs_lut_table[3] =  { 1'd1,   4'd4,      4'd3,      4'd4,     4'd3,    4'd2,     8'd51,   8'd51,     8'd4,      8'h00};
-		//    phs_lut_table[4] =  { 1'd1,   4'd3,      4'd2,      4'd4,     4'd3,    4'd2,     8'd25,   8'd25,     8'd0,      8'h00};
-		//}
+	//else if(film_mode == EN_DRV_FILM3223) {
+	//phs_lut_table[0] = { 1'd1, 4'd3, 4'd2, 4'd6, 4'd4, 4'd1, 8'd0,   8'd51, 8'd1, 8'h00};
+	//phs_lut_table[1] = { 1'd0, 4'd3, 4'd2, 4'd7, 4'd4, 4'd2, 8'd51,  8'd51, 8'd2, 8'h00};
+	//phs_lut_table[2] = { 1'd0, 4'd4, 4'd3, 4'd8, 4'd4, 4'd3, 8'd102, 8'd102, 8'd3, 8'h00};
+	//phs_lut_table[3] = { 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd2, 8'd25,  8'd25, 8'd4, 8'h00};
+	//phs_lut_table[4] = { 1'd0, 4'd4, 4'd3, 4'd6, 4'd4, 4'd3, 8'd76,  8'd76, 8'd5, 8'h00};
+	//phs_lut_table[5] = { 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd2, 8'd0,   8'd51, 8'd6, 8'h00};
+	//phs_lut_table[6] = { 1'd0, 4'd3, 4'd2, 4'd6, 4'd4, 4'd3, 8'd51,  8'd51, 8'd7, 8'h00};
+	//phs_lut_table[7] = { 1'd0, 4'd4, 4'd3, 4'd7, 4'd5, 4'd4, 8'd102, 8'd102, 8'd8, 8'h00};
+	//phs_lut_table[8] = { 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd2, 8'd25,  8'd25, 8'd9, 8'h00};
+	//phs_lut_table[9] = { 1'd0, 4'd3, 4'd2, 4'd7, 4'd5, 4'd3, 8'd76,  8'd76, 8'd0, 8'h00};
+	//}
+	//else if(film_mode == EN_DRV_FILM2224) {
+	//phs_lut_table[0] = { 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd1, 8'd0, 8'd51, 8'd1, 8'h00};
+	//phs_lut_table[1] = { 1'd0, 4'd3, 4'd2, 4'd7, 4'd5, 4'd2, 8'd51,   8'd51, 8'd2, 8'h00};
+	//phs_lut_table[2] = { 1'd0, 4'd4, 4'd3, 4'd8, 4'd5, 4'd3, 8'd102,  8'd102, 8'd3, 8'h00};
+	//phs_lut_table[3] = { 1'd1, 4'd3, 4'd2, 4'd6, 4'd4, 4'd2, 8'd25,   8'd25, 8'd4, 8'h00};
+	//phs_lut_table[4] = { 1'd0, 4'd4, 4'd3, 4'd7, 4'd4, 4'd3, 8'd76,   8'd76, 8'd5, 8'h00};
+	//phs_lut_table[5] = { 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd2, 8'd0, 8'd51, 8'd6, 8'h00};
+	//phs_lut_table[6] = { 1'd0, 4'd4, 4'd3, 4'd6, 4'd4, 4'd3, 8'd51,   8'd51, 8'd7, 8'h00};
+	//phs_lut_table[7] = { 1'd0, 4'd4, 4'd3, 4'd7, 4'd5, 4'd4, 8'd102,  8'd102, 8'd8, 8'h00};
+	//phs_lut_table[8] = { 1'd1, 4'd4, 4'd3, 4'd6, 4'd5, 4'd3, 8'd25,   8'd25, 8'd9, 8'h00};
+	//phs_lut_table[9] = { 1'd0, 4'd4, 4'd3, 4'd7, 4'd5, 4'd4, 8'd76,   8'd76, 8'd0, 8'h00};
+	//}
+	//else if(film_mode == EN_DRV_FILM32322) {
+	//phs_lut_table[0] =  { 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd1, 8'd0,   8'd53, 8'd1,  8'h00};
+	//phs_lut_table[1] =  { 1'd0, 4'd3, 4'd2, 4'd6, 4'd4, 4'd2, 8'd53,   8'd53, 8'd2, 8'h00};
+	//phs_lut_table[2] =  { 1'd0, 4'd4, 4'd3, 4'd7, 4'd4, 4'd3, 8'd106,   8'd106, 8'd3, 8'h00};
+	//phs_lut_table[3] =  { 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd2, 8'd32,   8'd32, 8'd4, 8'h00};
+	//phs_lut_table[4] =  { 1'd0, 4'd4, 4'd3, 4'd6, 4'd4, 4'd3, 8'd85,   8'd85, 8'd5, 8'h00};
+	//phs_lut_table[5] =  { 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd2, 8'd10,   8'd10, 8'd6, 8'h00};
+	//phs_lut_table[6] =  { 1'd0, 4'd3, 4'd2, 4'd6, 4'd4, 4'd3, 8'd64,   8'd64, 8'd7, 8'h00};
+	//phs_lut_table[7] =  { 1'd0, 4'd4, 4'd3, 4'd7, 4'd5, 4'd4, 8'd117,   8'd117, 8'd8, 8'h00};
+	//phs_lut_table[8] =  { 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd2, 8'd42,   8'd42, 8'd9, 8'h00};
+	//phs_lut_table[9] =  { 1'd0, 4'd4, 4'd3, 4'd7, 4'd5, 4'd3, 8'd96,   8'd96, 8'd10, 8'h00};
+	//phs_lut_table[10] = { 1'd1, 4'd3, 4'd2, 4'd6, 4'd4, 4'd2, 8'd21,   8'd21, 8'd11, 8'h00};
+	//phs_lut_table[11] = { 1'd0, 4'd3, 4'd2, 4'd7, 4'd4, 4'd3, 8'd74,   8'd74, 8'd0, 8'h00};
+	//}
+	//else if(film_mode == EN_DRV_FILM44) {
+	//phs_lut_table[0] =  { 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd1, 8'd0,   8'd32, 8'd1, 8'h00};
+	//phs_lut_table[1] =  { 1'd0, 4'd3, 4'd2, 4'd7, 4'd5, 4'd2, 8'd32,   8'd32, 8'd2, 8'h00};
+	//phs_lut_table[2] =  { 1'd0, 4'd3, 4'd2, 4'd8, 4'd5, 4'd3, 8'd64,   8'd64, 8'd3, 8'h00};
+	//phs_lut_table[3] =  { 1'd0, 4'd3, 4'd2, 4'd9, 4'd5, 4'd4, 8'd96,   8'd96, 8'd0, 8'h00};
+	//}
+	//else if(film_mode == EN_FILM21111) {
+	//phs_lut_table[0] =  { 1'd1, 4'd3, 4'd2, 4'd4, 4'd3, 4'd1, 8'd0,   8'd106, 8'd1, 8'h00};
+	//phs_lut_table[1] =  { 1'd0, 4'd4, 4'd3, 4'd5, 4'd3, 4'd2, 8'd106,   8'd106, 8'd2, 8'h00};
+	//phs_lut_table[2] =  { 1'd1, 4'd4, 4'd3, 4'd4, 4'd3, 4'd2, 8'd85,   8'd85, 8'd3, 8'h00};
+	//phs_lut_table[3] =  { 1'd1, 4'd4, 4'd3, 4'd4, 4'd3, 4'd2, 8'd64,   8'd64, 8'd4, 8'h00};
+	//phs_lut_table[4] =  { 1'd1, 4'd4, 4'd3, 4'd4, 4'd3, 4'd2, 8'd42,   8'd42, 8'd5, 8'h00};
+	//phs_lut_table[5] =  { 1'd1, 4'd3, 4'd2, 4'd4, 4'd3, 4'd2, 8'd21,   8'd21, 8'd0, 8'h00};
+	//}
+	//else if(film_mode == EN_DRV_FILM23322) {
+	//phs_lut_table[0] =  { 1'd1, 4'd3, 4'd2, 4'd6, 4'd4, 4'd1, 8'd0,   8'd53, 8'd1, 8'h00};
+	//phs_lut_table[1] =  { 1'd0, 4'd3, 4'd2, 4'd7, 4'd4, 4'd2, 8'd53,   8'd53, 8'd2,   8'h00};
+	//phs_lut_table[2] =  { 1'd0, 4'd4, 4'd3, 4'd8, 4'd4, 4'd3, 8'd106,   8'd106, 8'd3, 8'h00};
+	//phs_lut_table[3] =  { 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd2, 8'd32,   8'd32, 8'd4,   8'h00};
+	//phs_lut_table[4] =  { 1'd0, 4'd4, 4'd3, 4'd6, 4'd4, 4'd3, 8'd85,   8'd85, 8'd5,   8'h00};
+	//phs_lut_table[5] =  { 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd2, 8'd10,   8'd10, 8'd6,   8'h00};
+	//phs_lut_table[6] =  { 1'd0, 4'd4, 4'd3, 4'd6, 4'd4, 4'd3, 8'd64,   8'd64, 8'd7,   8'h00};
+	//phs_lut_table[7] =  { 1'd0, 4'd4, 4'd3, 4'd7, 4'd5, 4'd4, 8'd117,   8'd117, 8'd8, 8'h00};
+	//phs_lut_table[8] =  { 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd3, 8'd42,   8'd42, 8'd9,   8'h00};
+	//phs_lut_table[9] =  { 1'd0, 4'd4, 4'd3, 4'd7, 4'd5, 4'd4, 8'd96,   8'd96, 8'd10, 8'h00};
+	//phs_lut_table[10] = { 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd2, 8'd21,   8'd21, 8'd11, 8'h00};
+	//phs_lut_table[11] = { 1'd0, 4'd3, 4'd2, 4'd7, 4'd5, 4'd3, 8'd74,   8'd74, 8'd0,  'h00};
+	//}
+	//else if(film_mode == EN_DRV_FILM2111) {
+	//phs_lut_table[0] =  { 1'd1, 4'd3, 4'd2, 4'd4, 4'd3, 4'd1, 8'd0,   8'd102, 8'd1,   8'h00};
+	//phs_lut_table[1] =  { 1'd0, 4'd4, 4'd3, 4'd5, 4'd3, 4'd2, 8'd102,   8'd102, 8'd2, 8'h00};
+	//phs_lut_table[2] =  { 1'd1, 4'd4, 4'd3, 4'd4, 4'd3, 4'd2, 8'd76,   8'd76, 8'd3,   8'h00};
+	//phs_lut_table[3] =  { 1'd1, 4'd4, 4'd3, 4'd4, 4'd3, 4'd2, 8'd51,   8'd51, 8'd4,   8'h00};
+	//phs_lut_table[4] =  { 1'd1, 4'd3, 4'd2, 4'd4, 4'd3, 4'd2, 8'd25,   8'd25, 8'd0,   8'h00};
+	//}
 
-		//else if(film_mode == EN_FILM22224) {
-		//    //cadence=22224(10),table_cnt=  12,match_data=0xaa8
-		//    //    pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
-		//    phs_lut_table[0]={ 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd1,     8'd0,   8'd53,     8'd1,       8'd0};
-		//    phs_lut_table[1]={ 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,    4'd2,     8'd53,   8'd53,     8'd2,       8'd0};
-		//    phs_lut_table[2]={ 1'd0,   4'd4,      4'd3,      4'd8,     4'd5,    4'd3,     8'd106,   8'd106,     8'd3,       8'd0};
-		//    phs_lut_table[3]={ 1'd1,   4'd3,      4'd2,      4'd6,     4'd4,    4'd2,     8'd32,   8'd32,     8'd4,       8'd0};
-		//    phs_lut_table[4]={ 1'd0,   4'd4,      4'd3,      4'd7,     4'd4,    4'd3,     8'd85,   8'd85,     8'd5,       8'd0};
-		//    phs_lut_table[5]={ 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,    4'd2,     8'd10,   8'd10,     8'd6,       8'd0};
-		//    phs_lut_table[6]={ 1'd0,   4'd4,      4'd3,      4'd6,     4'd4,    4'd3,     8'd64,   8'd64,     8'd7,       8'd0};
-		//    phs_lut_table[7]={ 1'd0,   4'd4,      4'd3,      4'd7,     4'd5,    4'd4,     8'd117,   8'd117,     8'd8,       8'd0};
-		//    phs_lut_table[8]={ 1'd1,   4'd4,      4'd3,      4'd6,     4'd5,    4'd3,     8'd42,   8'd42,     8'd9,       8'd0};
-		//    phs_lut_table[9]={ 1'd0,   4'd4,      4'd3,      4'd7,     4'd5,    4'd4,     8'd96,   8'd96,     8'd10,       8'd0};
-		//    phs_lut_table[10]={ 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd3,     8'd21,   8'd21,     8'd11,       8'd0};
-		//    phs_lut_table[11]={ 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,    4'd4,     8'd74,   8'd74,     8'd0,       8'd0};
-		//}
-		//else if(film_mode == EN_FILM33) {
-		//    //cadence=33(11),table_cnt=   3,match_data=0x4
-		//    //    pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
-		//    phs_lut_table[0]={ 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,    4'd1,     8'd0,   8'd42,     8'd1,       8'd0};
-		//    phs_lut_table[1]={ 1'd0,   4'd3,      4'd2,      4'd6,     4'd4,    4'd2,     8'd42,   8'd42,     8'd2,       8'd0};
-		//    phs_lut_table[2]={ 1'd0,   4'd3,      4'd2,      4'd7,     4'd4,    4'd3,     8'd85,   8'd85,     8'd0,       8'd0};
-		//}
-		//else if(film_mode == EN_FILM334) {
-		//    //cadence=334(12),table_cnt=  10,match_data=0x248
-		//    //    pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
-		//    phs_lut_table[0]={ 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd1,     8'd0,   8'd38,     8'd1,       8'd0};
-		//    phs_lut_table[1]={ 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,    4'd2,     8'd38,   8'd38,     8'd2,       8'd0};
-		//    phs_lut_table[2]={ 1'd0,   4'd3,      4'd2,      4'd8,     4'd5,    4'd3,     8'd76,   8'd76,     8'd3,       8'd0};
-		//    phs_lut_table[3]={ 1'd0,   4'd4,      4'd3,      4'd9,     4'd5,    4'd4,     8'd115,   8'd115,     8'd4,       8'd0};
-		//    phs_lut_table[4]={ 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd2,     8'd25,   8'd25,     8'd5,       8'd0};
-		//    phs_lut_table[5]={ 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,    4'd3,     8'd64,   8'd64,     8'd6,       8'd0};
-		//    phs_lut_table[6]={ 1'd0,   4'd4,      4'd3,      4'd8,     4'd5,    4'd4,     8'd102,   8'd102,     8'd7,       8'd0};
-		//    phs_lut_table[7]={ 1'd1,   4'd3,      4'd2,      4'd6,     4'd5,    4'd2,     8'd12,   8'd12,     8'd8,       8'd0};
-		//    phs_lut_table[8]={ 1'd0,   4'd3,      4'd2,      4'd7,     4'd5,    4'd3,     8'd51,   8'd51,     8'd9,       8'd0};
-		//    phs_lut_table[9]={ 1'd0,   4'd3,      4'd2,      4'd8,     4'd5,    4'd4,     8'd89,   8'd89,     8'd0,       8'd0};
-		//
-		//}
-		//else if(film_mode == EN_FILM55) {
-		//    //cadence=55(13),table_cnt=   5,match_data=0x10
-		//    //               pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
-		//    phs_lut_table[0]={ 1'd1,      4'd3,      4'd2,      4'd7,     4'd6,    4'd1,     8'd0,    8'd25,     8'd1,     8'd0};
-		//    phs_lut_table[1]={ 1'd0,      4'd3,      4'd2,      4'd8,     4'd6,    4'd2,     8'd25,   8'd25,     8'd2,     8'd0};
-		//    phs_lut_table[2]={ 1'd0,      4'd3,      4'd2,      4'd9,     4'd6,    4'd3,     8'd51,   8'd51,     8'd3,     8'd0};
-		//    phs_lut_table[3]={ 1'd0,      4'd3,      4'd2,      4'd10,    4'd6,    4'd4,     8'd76,   8'd76,     8'd4,     8'd0};
-		//    phs_lut_table[4]={ 1'd0,      4'd3,      4'd2,      4'd11,    4'd6,    4'd5,     8'd102,  8'd102,    8'd0,     8'd0};
-		//
-		//}
-		//else if(film_mode == EN_FILM64) {
-		//    //cadence=64(14),table_cnt=  10,match_data=0x220
-		//    //               pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
-		//    phs_lut_table[0]={ 1'd1,      4'd3,      4'd2,      4'd8,     4'd7,    4'd1,     8'd0,    8'd25,     8'd1,       8'd0};
-		//    phs_lut_table[1]={ 1'd0,      4'd3,      4'd2,      4'd9,     4'd7,    4'd2,     8'd25,   8'd25,     8'd2,       8'd0};
-		//    phs_lut_table[2]={ 1'd0,      4'd3,      4'd2,      4'd10,    4'd7,    4'd3,     8'd51,   8'd51,     8'd3,       8'd0};
-		//    phs_lut_table[3]={ 1'd0,      4'd3,      4'd2,      4'd11,    4'd7,    4'd4,     8'd76,   8'd76,     8'd4,       8'd0};
-		//    phs_lut_table[4]={ 1'd0,      4'd4,      4'd3,      4'd12,    4'd7,    4'd5,     8'd102,  8'd102,    8'd5,       8'd0};
-		//    phs_lut_table[5]={ 1'd1,      4'd3,      4'd2,      4'd8,     4'd6,    4'd2,     8'd0,    8'd25,     8'd6,       8'd0};
-		//    phs_lut_table[6]={ 1'd0,      4'd3,      4'd2,      4'd9,     4'd6,    4'd3,     8'd25,   8'd25,     8'd7,       8'd0};
-		//    phs_lut_table[7]={ 1'd0,      4'd3,      4'd2,      4'd10,    4'd6,    4'd4,     8'd51,   8'd51,     8'd8,       8'd0};
-		//    phs_lut_table[8]={ 1'd0,      4'd3,      4'd2,      4'd11,    4'd6,    4'd5,     8'd76,   8'd76,     8'd9,       8'd0};
-		//    phs_lut_table[9]={ 1'd0,      4'd3,      4'd2,      4'd12,    4'd7,    4'd6,     8'd102,  8'd102,    8'd0,       8'd0};
-		//}
-		//else if(film_mode == EN_FILM66) {
-		//    //cadence=66(15),table_cnt=   6,match_data=0x20
-		//    //    pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
-		//    phs_lut_table[0]={ 1'd1,   4'd3,      4'd2,      4'd8,     4'd7,    4'd1,     8'd0,   8'd21,     8'd1,       8'd0};
-		//    phs_lut_table[1]={ 1'd0,   4'd3,      4'd2,      4'd9,     4'd7,    4'd2,     8'd21,   8'd21,     8'd2,       8'd0};
-		//    phs_lut_table[2]={ 1'd0,   4'd3,      4'd2,      4'd10,     4'd7,    4'd3,     8'd42,   8'd42,     8'd3,       8'd0};
-		//    phs_lut_table[3]={ 1'd0,   4'd3,      4'd2,      4'd11,     4'd7,    4'd4,     8'd64,   8'd64,     8'd4,       8'd0};
-		//    phs_lut_table[4]={ 1'd0,   4'd3,      4'd2,      4'd12,     4'd7,    4'd5,     8'd85,   8'd85,     8'd5,       8'd0};
-		//    phs_lut_table[5]={ 1'd0,   4'd3,      4'd2,      4'd13,     4'd7,    4'd6,     8'd106,   8'd106,     8'd0,       8'd0};
-		//}
-		//else if(film_mode == EN_FILM87) {
-		//    //cadence=87(16),table_cnt=  15,match_data=0x4080
-		//    //              pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
-		//    //phs_lut_table[0]= { 1'd1,   4'd3,      4'd2,      4'd4,      4'd10,    4'd0,     8'd0,    8'd17,    8'd1,     8'd0};
-		//    //phs_lut_table[1]= { 1'd0,   4'd3,      4'd2,      4'd4,      4'd1,     4'd0,     8'd17,   8'd17,    8'd2,     8'd0};
-		//    //phs_lut_table[2]= { 1'd0,   4'd3,      4'd2,      4'd4,      4'd11,    4'd0,     8'd34,   8'd34,    8'd3,     8'd0};
-		//    //phs_lut_table[3]= { 1'd0,   4'd3,      4'd2,      4'd4,      4'd5,     4'd0,     8'd51,   8'd51,    8'd4,     8'd0};
-		//    //phs_lut_table[4]= { 1'd0,   4'd3,      4'd2,      4'd4,      4'd14,    4'd0,     8'd68,   8'd68,    8'd5,     8'd0};
-		//    //phs_lut_table[5]= { 1'd0,   4'd3,      4'd2,      4'd13,     4'd2,     4'd9,     8'd85,   8'd85,    8'd6,     8'd0};
-		//    //phs_lut_table[6]= { 1'd0,   4'd3,      4'd2,      4'd7,      4'd6,     4'd3,     8'd102,  8'd102,   8'd7,     8'd0};
-		//    //phs_lut_table[7]= { 1'd0,   4'd4,      4'd3,      4'd1,      4'd11,    4'd12,    8'd119,  8'd119,   8'd8,     8'd0};
-		//    //phs_lut_table[8]= { 1'd1,   4'd3,      4'd2,      4'd1,      4'd2,     4'd14,    8'd8,    8'd8,     8'd9,     8'd0};
-		//    //phs_lut_table[9]= { 1'd0,   4'd3,      4'd2,      4'd7,      4'd8,     4'd5,     8'd25,   8'd25,    8'd10,    8'd0};
-		//    //phs_lut_table[10]={ 1'd0,   4'd3,      4'd2,      4'd13,     4'd14,    4'd11,    8'd42,   8'd42,    8'd11,    8'd0};
-		//    //phs_lut_table[11]={ 1'd0,   4'd3,      4'd2,      4'd4,      4'd5,     4'd2,     8'd59,   8'd59,    8'd12,    8'd0};
-		//    //phs_lut_table[12]={ 1'd0,   4'd3,      4'd2,      4'd9,      4'd10,    4'd7,     8'd76,   8'd76,    8'd13,    8'd0};
-		//    //phs_lut_table[13]={ 1'd0,   4'd3,      4'd2,      4'd13,     4'd14,    4'd11,    8'd93,   8'd93,    8'd14,    8'd0};
-		//    //phs_lut_table[14]={ 1'd0,   4'd3,      4'd12,     4'd12,     4'd4,     4'd10,    8'd110,  8'd110,   8'd0,     8'd0};
-		//
-		//    phs_lut_table[0]= { 1'd1,   4'd3,      4'd2,      4'd8,     4'd5,     4'd2,     8'd0,    8'd17,    8'd1,     8'd0};
-		//    phs_lut_table[1]= { 1'd0,   4'd3,      4'd2,      4'd10,    4'd7,     4'd4,     8'd17,   8'd17,    8'd2,     8'd0};
-		//    phs_lut_table[2]= { 1'd0,   4'd3,      4'd2,      4'd12,    4'd9,     4'd6,     8'd34,   8'd34,    8'd3,     8'd0};
-		//    phs_lut_table[3]= { 1'd0,   4'd3,      4'd2,      4'd14,    4'd11,    4'd8,     8'd51,   8'd51,    8'd4,     8'd0};
-		//    phs_lut_table[4]= { 1'd0,   4'd3,      4'd2,      4'd1,     4'd14,    4'd11,    8'd68,   8'd68,    8'd5,     8'd0};
-		//    phs_lut_table[5]= { 1'd0,   4'd3,      4'd2,      4'd5,     4'd2,     4'd15,    8'd85,   8'd85,    8'd6,     8'd0};
-		//    phs_lut_table[6]= { 1'd0,   4'd3,      4'd2,      4'd8,     4'd5,     4'd2,     8'd102,  8'd102,   8'd7,     8'd0};
-		//    phs_lut_table[7]= { 1'd0,   4'd4,      4'd3,      4'd10,    4'd7,     4'd4,     8'd119,  8'd119,   8'd8,     8'd0};
-		//    phs_lut_table[8]= { 1'd1,   4'd3,      4'd2,      4'd9,     4'd7,     4'd4,     8'd8,    8'd8,     8'd9,     8'd0};
-		//    phs_lut_table[9]= { 1'd0,   4'd3,      4'd2,      4'd11,    4'd9,     4'd6,     8'd25,   8'd25,    8'd10,    8'd0};
-		//    phs_lut_table[10]={ 1'd0,   4'd3,      4'd2,      4'd13,    4'd11,    4'd8,     8'd42,   8'd42,    8'd11,    8'd0};
-		//    phs_lut_table[11]={ 1'd0,   4'd3,      4'd2,      4'd15,    4'd13,    4'd10,    8'd59,   8'd59,    8'd12,    8'd0};
-		//    phs_lut_table[12]={ 1'd0,   4'd3,      4'd2,      4'd3,     4'd1,     4'd14,    8'd76,   8'd76,    8'd13,    8'd0};
-		//    phs_lut_table[13]={ 1'd0,   4'd3,      4'd2,      4'd5,     4'd3,     4'd2,     8'd93,   8'd93,    8'd14,    8'd0};
-		//    phs_lut_table[14]={ 1'd0,   4'd3,      4'd12,     4'd8,     4'd6,     4'd3,     8'd110,  8'd110,   8'd0,     8'd0};
-		//}
-		//else if(film_mode == EN_FILM212) {
-		//    //cadence=212(17),table_cnt=   5,match_data=0x1a
-		//    //pha_start,plogo_diff,clogo_diff,pfrm_diff,cfrm_diff,nfrm_diff,mc_phase,me_phase,film_phase,frc_phase
-		//    phs_lut_table[0]={ 1'd1,   4'd3,      4'd2,      4'd5,     4'd3,    4'd1,     8'd0,   8'd76,      8'd1,       8'd0};
-		//    phs_lut_table[1]={ 1'd0,   4'd4,      4'd3,      4'd6,     4'd3,    4'd2,     8'd76,   8'd76,     8'd2,       8'd0};
-		//    phs_lut_table[2]={ 1'd1,   4'd3,      4'd2,      4'd4,     4'd3,    4'd2,     8'd25,   8'd25,     8'd3,       8'd0};
-		//    phs_lut_table[3]={ 1'd0,   4'd4,      4'd3,      4'd5,     4'd4,    4'd3,     8'd102,   8'd102,   8'd4,       8'd0};
-		//    phs_lut_table[4]={ 1'd1,   4'd3,      4'd2,      4'd5,     4'd4,    4'd2,     8'd51,   8'd51,     8'd0,       8'd0};
-		//}
-		//else {
-		//      stimulus_print ("==== USE ERROR CADENCE ====");
-		//}
-
+	//else if(film_mode == EN_DRV_FILM22224) {
+	//    //cadence=22224(10),table_cnt=  12,match_data=0xaa8
+	//phs_lut_table[0]={ 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd1, 8'd0,  8'd53, 8'd1, 8'd0};
+	//phs_lut_table[1]={ 1'd0, 4'd3, 4'd2, 4'd7, 4'd5, 4'd2, 8'd53, 8'd53, 8'd2, 8'd0};
+	//phs_lut_table[2]={ 1'd0, 4'd4, 4'd3, 4'd8, 4'd5, 4'd3, 8'd106, 8'd106, 8'd3, 8'd0};
+	//phs_lut_table[3]={ 1'd1, 4'd3, 4'd2, 4'd6, 4'd4, 4'd2, 8'd32, 8'd32, 8'd4, 8'd0};
+	//phs_lut_table[4]={ 1'd0, 4'd4, 4'd3, 4'd7, 4'd4, 4'd3, 8'd85, 8'd85, 8'd5, 8'd0};
+	//phs_lut_table[5]={ 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd2, 8'd10, 8'd10, 8'd6, 8'd0};
+	//phs_lut_table[6]={ 1'd0, 4'd4, 4'd3, 4'd6, 4'd4, 4'd3, 8'd64, 8'd64, 8'd7, 8'd0};
+	//phs_lut_table[7]={ 1'd0, 4'd4, 4'd3, 4'd7, 4'd5, 4'd4, 8'd117, 8'd117, 8'd8, 8'd0};
+	//phs_lut_table[8]={ 1'd1, 4'd4, 4'd3, 4'd6, 4'd5, 4'd3, 8'd42, 8'd42, 8'd9, 8'd0};
+	//phs_lut_table[9]={ 1'd0, 4'd4, 4'd3, 4'd7, 4'd5, 4'd4, 8'd96, 8'd96, 8'd10, 8'd0};
+	//phs_lut_table[10]={ 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd3, 8'd21, 8'd21, 8'd11, 8'd0};
+	//phs_lut_table[11]={ 1'd0, 4'd3, 4'd2, 4'd7, 4'd5, 4'd4, 8'd74, 8'd74, 8'd0, 8'd0};
+	//}
+	//else if(film_mode == EN_DRV_FILM33) {
+	//    //cadence=33(11),table_cnt=   3,match_data=0x4
+	//phs_lut_table[0]={ 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd1, 8'd0, 8'd42, 8'd1, 8'd0};
+	//phs_lut_table[1]={ 1'd0, 4'd3, 4'd2, 4'd6, 4'd4, 4'd2, 8'd42, 8'd42, 8'd2, 8'd0};
+	//phs_lut_table[2]={ 1'd0, 4'd3, 4'd2, 4'd7, 4'd4, 4'd3, 8'd85, 8'd85, 8'd0, 8'd0};
+	//}
+	//else if(film_mode == EN_DRV_FILM334) {
+	//    //cadence=334(12),table_cnt=  10,match_data=0x248
+	//phs_lut_table[0]={ 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd1, 8'd0,   8'd38, 8'd1, 8'd0};
+	//phs_lut_table[1]={ 1'd0, 4'd3, 4'd2, 4'd7, 4'd5, 4'd2, 8'd38,   8'd38, 8'd2, 8'd0};
+	//phs_lut_table[2]={ 1'd0, 4'd3, 4'd2, 4'd8, 4'd5, 4'd3, 8'd76,   8'd76, 8'd3, 8'd0};
+	//phs_lut_table[3]={ 1'd0, 4'd4, 4'd3, 4'd9, 4'd5, 4'd4, 8'd115,   8'd115, 8'd4, 8'd0};
+	//phs_lut_table[4]={ 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd2, 8'd25,   8'd25, 8'd5, 8'd0};
+	//phs_lut_table[5]={ 1'd0, 4'd3, 4'd2, 4'd7, 4'd5, 4'd3, 8'd64,   8'd64, 8'd6, 8'd0};
+	//phs_lut_table[6]={ 1'd0, 4'd4, 4'd3, 4'd8, 4'd5, 4'd4, 8'd102,   8'd102, 8'd7, 8'd0};
+	//phs_lut_table[7]={ 1'd1, 4'd3, 4'd2, 4'd6, 4'd5, 4'd2, 8'd12,   8'd12, 8'd8, 8'd0};
+	//phs_lut_table[8]={ 1'd0, 4'd3, 4'd2, 4'd7, 4'd5, 4'd3, 8'd51,   8'd51, 8'd9, 8'd0};
+	//phs_lut_table[9]={ 1'd0, 4'd3, 4'd2, 4'd8, 4'd5, 4'd4, 8'd89,   8'd89, 8'd0, 8'd0};
+	//
+	//}
+	//else if(film_mode == EN_DRV_FILM55) {
+	//    //cadence=55(13),table_cnt=   5,match_data=0x10
+	//phs_lut_table[0]={ 1'd1, 4'd3, 4'd2, 4'd7, 4'd6, 4'd1, 8'd0, 8'd25, 8'd1, 8'd0};
+	//phs_lut_table[1]={ 1'd0, 4'd3, 4'd2, 4'd8, 4'd6, 4'd2, 8'd25,   8'd25, 8'd2, 8'd0};
+	//phs_lut_table[2]={ 1'd0, 4'd3, 4'd2, 4'd9, 4'd6, 4'd3, 8'd51,   8'd51, 8'd3, 8'd0};
+	//phs_lut_table[3]={ 1'd0, 4'd3, 4'd2, 4'd10, 4'd6, 4'd4, 8'd76,   8'd76, 8'd4, 8'd0};
+	//phs_lut_table[4]={ 1'd0, 4'd3, 4'd2, 4'd11, 4'd6, 4'd5, 8'd102,  8'd102, 8'd0, 8'd0};
+	//
+	//}
+	//else if(film_mode == EN_DRV_FILM64) {
+	//    //cadence=64(14),table_cnt=  10,match_data=0x220
+	//phs_lut_table[0]={ 1'd1, 4'd3, 4'd2, 4'd8, 4'd7, 4'd1, 8'd0, 8'd25, 8'd1, 8'd0};
+	//phs_lut_table[1]={ 1'd0, 4'd3, 4'd2, 4'd9, 4'd7, 4'd2, 8'd25,   8'd25, 8'd2, 8'd0};
+	//phs_lut_table[2]={ 1'd0, 4'd3, 4'd2, 4'd10, 4'd7, 4'd3, 8'd51,   8'd51, 8'd3, 8'd0};
+	//phs_lut_table[3]={ 1'd0, 4'd3, 4'd2, 4'd11, 4'd7, 4'd4, 8'd76,   8'd76, 8'd4, 8'd0};
+	//phs_lut_table[4]={ 1'd0, 4'd4, 4'd3, 4'd12, 4'd7, 4'd5, 8'd102,  8'd102, 8'd5, 8'd0};
+	//phs_lut_table[5]={ 1'd1, 4'd3, 4'd2, 4'd8, 4'd6, 4'd2, 8'd0, 8'd25, 8'd6, 8'd0};
+	//phs_lut_table[6]={ 1'd0, 4'd3, 4'd2, 4'd9, 4'd6, 4'd3, 8'd25,   8'd25, 8'd7, 8'd0};
+	//phs_lut_table[7]={ 1'd0, 4'd3, 4'd2, 4'd10, 4'd6, 4'd4, 8'd51,   8'd51, 8'd8, 8'd0};
+	//phs_lut_table[8]={ 1'd0, 4'd3, 4'd2, 4'd11, 4'd6, 4'd5, 8'd76,   8'd76, 8'd9, 8'd0};
+	//phs_lut_table[9]={ 1'd0, 4'd3, 4'd2, 4'd12, 4'd7, 4'd6, 8'd102,  8'd102, 8'd0, 8'd0};
+	//}
+	//else if(film_mode == EN_DRV_FILM66) {
+	//    //cadence=66(15),table_cnt=   6,match_data=0x20
+	//phs_lut_table[0]={ 1'd1, 4'd3, 4'd2, 4'd8, 4'd7, 4'd1, 8'd0,   8'd21, 8'd1, 8'd0};
+	//phs_lut_table[1]={ 1'd0, 4'd3, 4'd2, 4'd9, 4'd7, 4'd2, 8'd21,   8'd21, 8'd2, 8'd0};
+	//phs_lut_table[2]={ 1'd0, 4'd3, 4'd2, 4'd10, 4'd7, 4'd3, 8'd42,   8'd42, 8'd3, 8'd0};
+	//phs_lut_table[3]={ 1'd0, 4'd3, 4'd2, 4'd11, 4'd7, 4'd4, 8'd64,   8'd64, 8'd4, 8'd0};
+	//phs_lut_table[4]={ 1'd0, 4'd3, 4'd2, 4'd12, 4'd7, 4'd5, 8'd85,   8'd85, 8'd5, 8'd0};
+	//phs_lut_table[5]={ 1'd0, 4'd3, 4'd2, 4'd13, 4'd7, 4'd6, 8'd106,   8'd106, 8'd0, 8'd0};
+	//}
+	//else if(film_mode == EN_DRV_FILM87) {
+	//    //cadence=87(16),table_cnt=  15,match_data=0x4080
+	//phs_lut_table[0]= { 1'd1, 4'd3, 4'd2, 4'd4, 4'd10, 4'd0, 8'd0, 8'd17, 8'd1, 8'd0};
+	//phs_lut_table[1]= { 1'd0, 4'd3, 4'd2, 4'd4, 4'd1, 4'd0, 8'd17,   8'd17, 8'd2, 8'd0};
+	//phs_lut_table[2]= { 1'd0, 4'd3, 4'd2, 4'd4, 4'd11, 4'd0, 8'd34,   8'd34, 8'd3, 8'd0};
+	//phs_lut_table[3]= { 1'd0, 4'd3, 4'd2, 4'd4, 4'd5, 4'd0, 8'd51,   8'd51, 8'd4, 8'd0};
+	//phs_lut_table[4]= { 1'd0, 4'd3, 4'd2, 4'd4, 4'd14, 4'd0, 8'd68,   8'd68, 8'd5, 8'd0};
+	//phs_lut_table[5]= { 1'd0, 4'd3, 4'd2, 4'd13, 4'd2, 4'd9, 8'd85,   8'd85, 8'd6, 8'd0};
+	//phs_lut_table[6]= { 1'd0, 4'd3, 4'd2, 4'd7, 4'd6, 4'd3, 8'd102,  8'd102,   8'd7, 8'd0};
+	//phs_lut_table[7]= { 1'd0, 4'd4, 4'd3, 4'd1, 4'd11, 4'd12, 8'd119,  8'd119,   8'd8, 8'd0};
+	//phs_lut_table[8]= { 1'd1, 4'd3, 4'd2, 4'd1, 4'd2, 4'd14, 8'd8, 8'd8, 8'd9, 8'd0};
+	//phs_lut_table[9]= { 1'd0, 4'd3, 4'd2, 4'd7, 4'd8, 4'd5, 8'd25,   8'd25, 8'd10, 8'd0};
+	//phs_lut_table[10]={ 1'd0, 4'd3, 4'd2, 4'd13, 4'd14, 4'd11, 8'd42,   8'd42, 8'd11, 8'd0};
+	//phs_lut_table[11]={ 1'd0, 4'd3, 4'd2, 4'd4, 4'd5, 4'd2, 8'd59,   8'd59, 8'd12, 8'd0};
+	//phs_lut_table[12]={ 1'd0, 4'd3, 4'd2, 4'd9, 4'd10, 4'd7, 8'd76,   8'd76, 8'd13, 8'd0};
+	//phs_lut_table[13]={ 1'd0, 4'd3, 4'd2, 4'd13, 4'd14, 4'd11, 8'd93,   8'd93, 8'd14, 8'd0};
+	//phs_lut_table[14]={ 1'd0, 4'd3, 4'd12, 4'd12, 4'd4, 4'd10, 8'd110,  8'd110,   8'd0, 8'd0};
+	//
+	//phs_lut_table[0]= { 1'd1, 4'd3, 4'd2, 4'd8, 4'd5, 4'd2, 8'd0, 8'd17, 8'd1, 8'd0};
+	//phs_lut_table[1]= { 1'd0, 4'd3, 4'd2, 4'd10, 4'd7, 4'd4, 8'd17,   8'd17, 8'd2, 8'd0};
+	//phs_lut_table[2]= { 1'd0, 4'd3, 4'd2, 4'd12, 4'd9, 4'd6, 8'd34,   8'd34, 8'd3, 8'd0};
+	//phs_lut_table[3]= { 1'd0, 4'd3, 4'd2, 4'd14, 4'd11, 4'd8, 8'd51,   8'd51, 8'd4, 8'd0};
+	//phs_lut_table[4]= { 1'd0, 4'd3, 4'd2, 4'd1, 4'd14, 4'd11, 8'd68,   8'd68, 8'd5, 8'd0};
+	//phs_lut_table[5]= { 1'd0, 4'd3, 4'd2, 4'd5, 4'd2, 4'd15, 8'd85,   8'd85, 8'd6, 8'd0};
+	//phs_lut_table[6]= { 1'd0, 4'd3, 4'd2, 4'd8, 4'd5, 4'd2, 8'd102,  8'd102,   8'd7, 8'd0};
+	//phs_lut_table[7]= { 1'd0, 4'd4, 4'd3, 4'd10, 4'd7, 4'd4, 8'd119,  8'd119,   8'd8, 8'd0};
+	//phs_lut_table[8]= { 1'd1, 4'd3, 4'd2, 4'd9, 4'd7, 4'd4, 8'd8, 8'd8, 8'd9, 8'd0};
+	//phs_lut_table[9]= { 1'd0, 4'd3, 4'd2, 4'd11, 4'd9, 4'd6, 8'd25,   8'd25, 8'd10, 8'd0};
+	//phs_lut_table[10]={ 1'd0, 4'd3, 4'd2, 4'd13, 4'd11, 4'd8, 8'd42,   8'd42, 8'd11, 8'd0};
+	//phs_lut_table[11]={ 1'd0, 4'd3, 4'd2, 4'd15, 4'd13, 4'd10, 8'd59,   8'd59, 8'd12, 8'd0};
+	//phs_lut_table[12]={ 1'd0, 4'd3, 4'd2, 4'd3, 4'd1, 4'd14, 8'd76,   8'd76, 8'd13, 8'd0};
+	//phs_lut_table[13]={ 1'd0, 4'd3, 4'd2, 4'd5, 4'd3, 4'd2, 8'd93,   8'd93, 8'd14, 8'd0};
+	//phs_lut_table[14]={ 1'd0, 4'd3, 4'd12, 4'd8, 4'd6, 4'd3, 8'd110,  8'd110,   8'd0, 8'd0};
+	//}
+	//else if(film_mode == EN_DRV_FILM212) {
+	//    //cadence=212(17),table_cnt=   5,match_data=0x1a
+	//phs_lut_table[0]={ 1'd1, 4'd3, 4'd2, 4'd5, 4'd3, 4'd1, 8'd0,   8'd76,      8'd1, 8'd0};
+	//phs_lut_table[1]={ 1'd0, 4'd4, 4'd3, 4'd6, 4'd3, 4'd2, 8'd76,   8'd76, 8'd2, 8'd0};
+	//phs_lut_table[2]={ 1'd1, 4'd3, 4'd2, 4'd4, 4'd3, 4'd2, 8'd25,   8'd25, 8'd3, 8'd0};
+	//phs_lut_table[3]={ 1'd0, 4'd4, 4'd3, 4'd5, 4'd4, 4'd3, 8'd102,   8'd102,   8'd4, 8'd0};
+	//phs_lut_table[4]={ 1'd1, 4'd3, 4'd2, 4'd5, 4'd4, 4'd2, 8'd51,   8'd51, 8'd0, 8'd0};
+	//}
+	//else {
+	//      stimulus_print ("==== USE ERROR CADENCE ====");
+	//}
 		input_n          = 1;
 		output_m         = 1;
 	}
@@ -2122,7 +2100,7 @@ void config_phs_lut(enum frc_ratio_mode_type frc_ratio_mode,
 
 /*get new frame mode*/
 void config_phs_regs(enum frc_ratio_mode_type frc_ratio_mode,
-	enum en_film_mode film_mode)
+	enum en_drv_film_mode film_mode)
 {
 	u32            reg_out_frm_dly_num = 3;
 	u32            reg_frc_pd_pat_num  = 1;
@@ -2134,124 +2112,98 @@ void config_phs_regs(enum frc_ratio_mode_type frc_ratio_mode,
 	if(frc_ratio_mode == FRC_RATIO_1_1) {
 		inp_frm_vld_lut = 1;
 
-		if(film_mode == EN_VIDEO) {
+		if (film_mode == EN_DRV_VIDEO) {
 			reg_ip_film_end     = 1;
 			reg_frc_pd_pat_num  = 1;
 			reg_out_frm_dly_num = 3;   // 10
-		}
-		else if(film_mode == EN_FILM22) {
+		} else if (film_mode == EN_DRV_FILM22) {
 			reg_ip_film_end    = 0x2;
 			reg_frc_pd_pat_num = 2;
 			reg_out_frm_dly_num = 7;
-		}
-		else if(film_mode == EN_FILM32) {
+		} else if (film_mode == EN_DRV_FILM32) {
 			reg_ip_film_end    = 0x12;
 			reg_frc_pd_pat_num = 5;
 			reg_out_frm_dly_num = 10;
-		}
-		else if(film_mode == EN_FILM3223) {
+		} else if (film_mode == EN_DRV_FILM3223) {
 			reg_ip_film_end    = 0x24a;
 			reg_frc_pd_pat_num = 10;
 			reg_out_frm_dly_num = 15;
-		}
-		else if(film_mode == EN_FILM2224) {
+		} else if (film_mode == EN_DRV_FILM2224) {
 			reg_ip_film_end    = 0x22a;
 			reg_frc_pd_pat_num = 10;
 			reg_out_frm_dly_num = 15;
-		}
-		else if(film_mode == EN_FILM32322) {
+		} else if (film_mode == EN_DRV_FILM32322) {
 			reg_ip_film_end    = 0x94a;
 			reg_frc_pd_pat_num = 12;
 			reg_out_frm_dly_num = 15;
-		}
-		else if(film_mode == EN_FILM44) {
+		} else if (film_mode == EN_DRV_FILM44) {
 			reg_ip_film_end    = 0x8;
 			reg_frc_pd_pat_num = 4;
 			reg_out_frm_dly_num = 14;
-		}
-		else if(film_mode == EN_FILM21111) {
+		} else if (film_mode == EN_DRV_FILM21111) {
 			reg_ip_film_end    = 0x2f;
 			reg_frc_pd_pat_num = 6;
 			reg_out_frm_dly_num = 10;
-		}
-		else if(film_mode == EN_FILM23322) {
+		} else if (film_mode == EN_DRV_FILM23322) {
 			reg_ip_film_end    = 0x92a;
 			reg_frc_pd_pat_num = 12;
 			reg_out_frm_dly_num = 15;
-		}
-		else if(film_mode == EN_FILM2111) {
+		} else if (film_mode == EN_DRV_FILM2111) {
 			reg_ip_film_end    = 0x17;
 			reg_frc_pd_pat_num = 5;
 			reg_out_frm_dly_num = 10;
-		}
-		else if(film_mode == EN_FILM22224) {
+		} else if (film_mode == EN_DRV_FILM22224) {
 			reg_ip_film_end    = 0x8aa;
 			reg_frc_pd_pat_num = 12;
 			reg_out_frm_dly_num = 15;
-		}
-		else if(film_mode == EN_FILM33) {
+		} else if (film_mode == EN_DRV_FILM33) {
 			reg_ip_film_end    = 0x4;
 			reg_frc_pd_pat_num = 3;
 			reg_out_frm_dly_num = 11;
-		}
-		else if(film_mode == EN_FILM334) {
+		} else if (film_mode == EN_DRV_FILM334) {
 			reg_ip_film_end    = 0x224;
 			reg_frc_pd_pat_num = 10;
 			reg_out_frm_dly_num = 15;
-		}
-		else if(film_mode == EN_FILM55) {
+		} else if (film_mode == EN_DRV_FILM55) {
 			reg_ip_film_end    = 0x10;
 			reg_frc_pd_pat_num = 5;
 			reg_out_frm_dly_num = 15;
-		}
-		else if(film_mode == EN_FILM64) {
+		} else if (film_mode == EN_DRV_FILM64) {
 			reg_ip_film_end    = 0x208;
 			reg_frc_pd_pat_num = 10;
 			reg_out_frm_dly_num = 15;
-		}
-		else if(film_mode == EN_FILM66) {
+		} else if (film_mode == EN_DRV_FILM66) {
 			reg_ip_film_end    = 0x20;
 			reg_frc_pd_pat_num = 6;
 			reg_out_frm_dly_num = 15;
-		}
-		else if(film_mode == EN_FILM87) {
+		} else if (film_mode == EN_DRV_FILM87) {
 			 //memc need pre-load 3 different frames, so at least input 8+7+8=23 frames,
 			 //but memc lbuf number max is 16<23, so skip some repeated frames
 			reg_ip_film_end     = 0x4040;
 			reg_frc_pd_pat_num  = 15;
 			reg_out_frm_dly_num = 15;
-		}
-		else if(film_mode == EN_FILM212) {
+		} else if (film_mode == EN_DRV_FILM212) {
 			reg_ip_film_end    = 0x15;
 			reg_frc_pd_pat_num = 5;
 			reg_out_frm_dly_num = 15;
-		} else if (film_mode == EN_FILM_MAX) {
+		} else if (film_mode == EN_DRV_FILM_MAX) {
 			reg_ip_film_end = 0xffff;  // fix deadcode
-		}
-		else {
+		} else {
 			pr_frc(0, "==== USE ERROR CADENCE ====\n");
 		}
-	}
-	else {
+	} else {
 		reg_ip_film_end    = 0x1;
 		reg_frc_pd_pat_num = 1;
-
-		if(frc_ratio_mode == FRC_RATIO_1_2) {
+		if (frc_ratio_mode == FRC_RATIO_1_2)
 			inp_frm_vld_lut = 0x2;
-		}
-		else if(frc_ratio_mode == FRC_RATIO_2_3) {
+		else if (frc_ratio_mode == FRC_RATIO_2_3)
 			inp_frm_vld_lut = 0x6;
-		}
-		else if(frc_ratio_mode == FRC_RATIO_2_5) {
+		else if (frc_ratio_mode == FRC_RATIO_2_5)
 			inp_frm_vld_lut = 0x14;
-		}
-		else if(frc_ratio_mode == FRC_RATIO_5_6) {
+		else if (frc_ratio_mode == FRC_RATIO_5_6)
 			inp_frm_vld_lut = 0x3e;
-		}
-		else if(frc_ratio_mode == FRC_RATIO_5_12) {
+		else if (frc_ratio_mode == FRC_RATIO_5_12)
 			inp_frm_vld_lut = 0xa94;
-		}
-
 	}
 	// input [63:0] reg_inp_frm_vld_lut;
 	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL18, (inp_frm_vld_lut >> 0) & 0xffffffff);
@@ -2306,7 +2258,7 @@ void config_phs_regs(enum frc_ratio_mode_type frc_ratio_mode,
 		record_value |= 0x00000008;
 	frc_config_reg_value(record_value, 0x08080808,	&regdata_loadorgframe[3]);
 
-	if (film_mode == EN_FILM87 && frc_ratio_mode == FRC_RATIO_1_1) {
+	if (film_mode == EN_DRV_FILM87 && frc_ratio_mode == FRC_RATIO_1_1) {
 		frc_config_reg_value(reg_ip_incr[0] << 28, 0xF0000000, &regdata_loadorgframe[0]);
 		frc_config_reg_value(reg_ip_incr[1] << 20, 0x00F00000, &regdata_loadorgframe[0]);
 		frc_config_reg_value(reg_ip_incr[2] << 12, 0x0000F000, &regdata_loadorgframe[0]);
@@ -2379,7 +2331,6 @@ void config_me_top_hw_reg(void)
 void config_loss_out(u32 fmt422)
 {
 #ifdef LOSS_TEST
-   // #include "rand_seed_reg_acc.sv"  //?????????????
 	WRITE_FRC_BITS(CLOSS_MISC, 1, 0, 1); //reg_enable
 	WRITE_FRC_BITS(CLOSS_MISC, fmt422, 1, 1); //reg_inp_422;   1: 422, 0:444
 
@@ -2712,14 +2663,12 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 		frc_cfg_mcdw_loss((frc_top->memc_loss_en >> 4) & 0x01);
 		out_frm_dly_num = 0x0;
 		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x17, 0, 8);
-		// frc_memc_120hz_patch(frc_devp);
 		frc_memc_120hz_patch_1(frc_devp);
 	} else {
 		out_frm_dly_num = 0x03000000;
 		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x14, 0, 8);
 	}
 	// protect mode, enable: memc delay 2 frame
-	// disable: memc delay n frame, n depend on cadence, for debug
 	if (frc_devp->prot_mode) {
 		regdata_top_ctl_0009 = READ_FRC_REG(FRC_REG_TOP_CTRL9);
 		regdata_top_ctl_0011 = READ_FRC_REG(FRC_REG_TOP_CTRL17);
@@ -2732,7 +2681,9 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	} else {
 		WRITE_FRC_REG_BY_CPU(FRC_MODE_OPT, 0x0); // clear bit1/bit2
 	}
-
+	WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,
+			(frc_devp->out_sts.vout_height & 0x3fff) << 16 |
+			(frc_devp->out_sts.vout_width & 0x3fff));
 	pr_frc(0, "%s\n", __func__);
 	return;
 }
@@ -2799,7 +2750,7 @@ void frc_get_film_base_vf(struct frc_dev_s *frc_devp)
 	// u32 vf_duration = frc_devp->in_sts.duration;
 
 	pfw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
-	pfw_data->frc_top_type.film_mode = EN_VIDEO;
+	pfw_data->frc_top_type.film_mode = EN_DRV_VIDEO;
 	pfw_data->frc_top_type.vfp &= 0xFFFFFFF0;
 	if (frc_devp->in_sts.frc_is_tvin)  // HDMI_src no inform alg
 		return;
@@ -2810,50 +2761,50 @@ void frc_get_film_base_vf(struct frc_dev_s *frc_devp)
 	switch (in_frame_rate) {
 	case FRC_VD_FPS_24:
 		if (outfrmrate == 50) {
-			pfw_data->frc_top_type.film_mode = EN_FILM1123;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM1123;
 		} else if (outfrmrate == 60 || outfrmrate == 59) {
-			pfw_data->frc_top_type.film_mode = EN_FILM32;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM32;
 			pfw_data->frc_top_type.vfp |= 0x07;
 		} else if (outfrmrate == 120) {
-			pfw_data->frc_top_type.film_mode = EN_FILM55;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM55;
 		}
 		break;
 	case FRC_VD_FPS_25:
 		if (outfrmrate == 50) {
-			pfw_data->frc_top_type.film_mode = EN_FILM22;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM22;
 			pfw_data->frc_top_type.vfp |= 0x04;
 		} else if (outfrmrate == 60 || outfrmrate == 59) {
-			pfw_data->frc_top_type.film_mode = EN_FILM32322;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM32322;
 		} else if (outfrmrate == 100) {
-			pfw_data->frc_top_type.film_mode = EN_FILM44;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM44;
 		}
 		break;
 	case FRC_VD_FPS_30:
 		if (outfrmrate == 50) {
-			pfw_data->frc_top_type.film_mode = EN_FILM212;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM212;
 		} else if (outfrmrate == 60 || outfrmrate == 59) {
-			pfw_data->frc_top_type.film_mode = EN_FILM22;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM22;
 			pfw_data->frc_top_type.vfp |= 0x04;
 		} else if (outfrmrate == 120) {
-			pfw_data->frc_top_type.film_mode = EN_FILM44;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM44;
 		}
 		break;
 	case FRC_VD_FPS_50:
 		if (outfrmrate == 60 || outfrmrate == 59) {
-			pfw_data->frc_top_type.film_mode = EN_FILM21111;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM21111;
 		} else if (outfrmrate == 100) {
-			pfw_data->frc_top_type.film_mode = EN_FILM22;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM22;
 			pfw_data->frc_top_type.vfp |= 0x04;
 		}
 		break;
 	case FRC_VD_FPS_60:
 		if (outfrmrate == 120) {
-			pfw_data->frc_top_type.film_mode = EN_FILM22;
+			pfw_data->frc_top_type.film_mode = EN_DRV_FILM22;
 			pfw_data->frc_top_type.vfp |= 0x04;
 		}
 		break;
 	default:
-		pfw_data->frc_top_type.film_mode = EN_VIDEO;
+		pfw_data->frc_top_type.film_mode = EN_DRV_VIDEO;
 		break;
 	}
 }

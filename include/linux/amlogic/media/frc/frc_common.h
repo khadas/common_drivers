@@ -136,33 +136,27 @@ enum frc_ratio_mode_type {
 	FRC_RATIO_1_1
 };
 
-enum en_film_mode {
-	EN_VIDEO=0,
-	EN_FILM22,
-	EN_FILM32,
-	EN_FILM3223,
-	EN_FILM2224,
-	EN_FILM32322,
-	EN_FILM44,
-	EN_FILM21111,
-	EN_FILM23322,
-	EN_FILM2111,
-	EN_FILM22224,
-	EN_FILM33,
-	EN_FILM334,
-	EN_FILM55,
-	EN_FILM64,
-	EN_FILM66,
-	EN_FILM87,
-	EN_FILM212,
-	EN_FILM1123,
-	EN_FILM7231313,
-	EN_FILM31,
-	EN_FILM6446,
-	EN_FILM64644,
-	EN_FILM1010,
-	EN_FILM128,
-	EN_FILM_MAX = 0xFF,
+enum en_drv_film_mode {
+	EN_DRV_VIDEO = 0,
+	EN_DRV_FILM22,
+	EN_DRV_FILM32,
+	EN_DRV_FILM3223,
+	EN_DRV_FILM2224,
+	EN_DRV_FILM32322,
+	EN_DRV_FILM44,
+	EN_DRV_FILM21111,
+	EN_DRV_FILM23322,
+	EN_DRV_FILM2111,
+	EN_DRV_FILM22224,
+	EN_DRV_FILM33,
+	EN_DRV_FILM334,
+	EN_DRV_FILM55,
+	EN_DRV_FILM64,
+	EN_DRV_FILM66,
+	EN_DRV_FILM87,
+	EN_DRV_FILM212,
+	EN_DRV_FILM1123,
+	EN_DRV_FILM_MAX = 0xFF,
 };
 
 struct frc_holdline_s {
@@ -175,13 +169,16 @@ struct frc_holdline_s {
 
 struct frc_top_type_s {
 	/*input*/
-	u32       hsize;
-	u32       vsize;
+	u16       hsize;
+	u16       vsize;
+	u16       inp_padding_xofst;
+	u16       inp_padding_yofst;
+
 	u32       vfp;//line num before vsync,VIDEO_VSO_BLINE
 	u32       vfb;//line num before de   ,VIDEO_VAVON_BLINE
 	u32       frc_fb_num;//buffer num for frc loop
 	enum frc_ratio_mode_type frc_ratio_mode;//frc_ratio_mode = frame rate of input : frame rate of output
-	enum en_film_mode    film_mode;//film_mode
+	enum en_drv_film_mode    film_mode;//film_mode
 	u32       film_hwfw_sel;//0:hw 1:fw
 	u8        is_me1mc4;//1: me:mc=1/4, 0 : me:mc=1/2, default 0
 	u8	  panel_res;
@@ -251,7 +248,7 @@ struct frc_fw_data_s {
 extern int frc_dbg_en;
 extern int frc_kerdrv_ver;
 void config_phs_regs(enum frc_ratio_mode_type frc_ratio_mode,
-	enum en_film_mode film_mode);
+	enum en_drv_film_mode film_mode);
 
 
 #define pr_frc(level, fmt, arg...)			\

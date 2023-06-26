@@ -404,9 +404,11 @@ void amdv_core_reset(enum core_type type)
 		break;
 	case AMDV_HW5:
 		if (is_aml_t3x()) {
-			/*VPU_DOLBY_WRAP_GCLK bit16 reset core, bit19 need always=1 for overlap*/
-			VSYNC_WR_DV_REG(VPU_DOLBY_WRAP_GCLK, 1 << 16 | 1 << 19);
-			VSYNC_WR_DV_REG(VPU_DOLBY_WRAP_GCLK, 1 << 19);
+			/*VPU_DOLBY_WRAP_GCLK bit16 reset core*/
+			/* bit19 need always=1 for overlap*/
+			/* bit17 need always=1 for detunnel*/
+			VSYNC_WR_DV_REG(VPU_DOLBY_WRAP_GCLK, 1 << 16 | 1 << 17 | 1 << 19);
+			VSYNC_WR_DV_REG(VPU_DOLBY_WRAP_GCLK, 1 << 17 | 1 << 19);
 		}
 		break;
 	default:

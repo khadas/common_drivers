@@ -466,6 +466,7 @@
 //Bit 31:24         reserved                          // unsigned
 //Bit 23:16         reg_sw_rst                        // unsigned ,    RW, default = 0
 //Bit 19            reg_sw_rst  for ovlp              // unsigned ,    RW, default = 0
+//Bit 17            reg_sw_rst  for detunnel          // unsigned ,    RW, default = 0
 //Bit 15:0          reg_gclk_ctrl                     // unsigned ,    RW, default = 0
 
 #define VPU_DOLBY_WRAP_CTRL                           0X0901

@@ -1348,8 +1348,8 @@ int tv_top2_set(u64 *reg_data,
 		/*	VPU_MEM_POWER_DOWN)*/
 		/*	dv_mem_power_on(VPU_DOLBY0);*/
 
-		/*bit0-15 gclk_ctrl, bit19 sw_rst_overlap*/
-		VSYNC_WR_DV_REG(VPU_DOLBY_WRAP_GCLK, 1 << 19);
+		/*bit0-15 gclk_ctrl,bit17 detunnel sw_rst,bit19 sw_rst_overlap*/
+		VSYNC_WR_DV_REG(VPU_DOLBY_WRAP_GCLK, 1 << 17 | 1 << 19);
 	}
 	if (video_enable)
 		tmp_cnt++;

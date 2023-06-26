@@ -1,4 +1,4 @@
-From 0a7fef0226aa23701f803c6c896708f50fdb74b2 Mon Sep 17 00:00:00 2001
+From 1c8ea5cfec886d58eb040c8038f65b359315f947 Mon Sep 17 00:00:00 2001
 From: "qiankun.wang" <qiankun.wang@amlogic.com>
 Date: Thu, 11 May 2023 15:08:24 +0800
 Subject: [PATCH] iotrace: support iotrace driver [1/1]
@@ -91,14 +91,14 @@ index 3995652daf81..aff15597d672 100644
  /* IO barriers */
  #define __iormb(v)							\
 diff --git a/arch/arm64/kernel/image-vars.h b/arch/arm64/kernel/image-vars.h
-index 41a068e9ce5e..dda0961a7382 100644
+index 41a068e9ce5e..c58f5d1bf0fd 100644
 --- a/arch/arm64/kernel/image-vars.h
 +++ b/arch/arm64/kernel/image-vars.h
 @@ -138,6 +138,11 @@ KVM_NVHE_ALIAS(kvm_protected_mode_initialized);
  KVM_NVHE_ALIAS(pkvm_force_nc);
  #endif
  
-+#if IS_BUILTIN(CONFIG_AMLOGIC_BGKI_DEBUG_IOTRACE)
++#if IS_BUILTIN(CONFIG_AMLOGIC_DEBUG_IOTRACE)
 +KVM_NVHE_ALIAS(pstore_io_save);
 +KVM_NVHE_ALIAS(vabits_actual);
 +#endif

@@ -53,6 +53,9 @@ function pre_defconfig_cmds() {
 		if [[ ${ANDROID_VERSION} == s || ${ANDROID_VERSION} == S ]]; then
 			KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_S}
 		fi
+		if [[ ${ANDROID_VERSION} == u || ${ANDROID_VERSION} == U ]]; then
+			KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_UPGRADE_U}
+		fi
 	fi
 
 	if [[ ${IN_BUILD_GKI_10} == 1 ]]; then

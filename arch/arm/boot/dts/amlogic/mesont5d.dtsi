@@ -1280,10 +1280,8 @@
 		clock-names = "clk_uart";
 		xtal_tick_en = <2>;
 		fifosize = < 64 >;
-		//pinctrl-names = "default";
-		//pinctrl-0 = <&ao_a_uart_pins>;
 		/* 0 not support; 1 support */
-		support-sysrq = <0>;
+		support-sysrq = <1>;
 	};
 
 	uart_C: serial@ffd22000 {
@@ -2529,14 +2527,18 @@
 				"uart_a_cts",
 				"uart_a_rts";
 			function = "uart_a";
+			bias-pull-up;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
 	b_uart_pins:b_uart {
 		mux {
-			groups = "uart_b_tx",
-				"uart_b_rx";
+			groups = "uart_b_tx_w2",
+				"uart_b_rx_w3";
 			function = "uart_b";
+			bias-pull-up;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -2545,6 +2547,8 @@
 			groups = "uart_b_tx_w6",
 				"uart_b_tx_w7";
 			function = "uart_b";
+			bias-pull-up;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -2553,6 +2557,8 @@
 			groups = "uart_b_tx_w10",
 				"uart_b_tx_w11";
 			function = "uart_b";
+			bias-pull-up;
+			drive-strength-microamp = <3000>;
 		};
 	};
 
@@ -2561,6 +2567,8 @@
 			groups = "uart_c_tx_h",
 				"uart_c_rx_h";
 			function = "uart_c";
+			bias-pull-up;
+			drive-strength-microamp = <3000>;
 		};
 	};
 

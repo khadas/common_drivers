@@ -538,6 +538,9 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 	u32 cfg = readl(host->regs + SD_EMMC_CFG);
 
 	dev_dbg(host->dev, "[%s]set rate:%lu\n", __func__, rate);
+	if (host->src_clk)
+		clk_disable_unprepare(host->src_clk);
+
 	switch (ios->timing) {
 	case MMC_TIMING_MMC_HS400:
 		if (host->clk[2])
@@ -588,9 +591,7 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 				ret = clk_set_parent(host->mux[2], src_clk);
 			else
 				ret = clk_set_parent(host->mux[0], src_clk);
-			if (host->src_clk)
-				clk_disable_unprepare(host->src_clk);
-
+			host->src_clk = src_clk;
 			clk_disable_unprepare(src_clk);
 			cfg |= CFG_AUTO_CLK;
 			writel(cfg, host->regs + SD_EMMC_CFG);
@@ -603,8 +604,8 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 		break;
 	}
 
-	writel(cfg, host->regs + SD_EMMC_CFG);
 	clk_prepare_enable(src_clk);
+	writel(cfg, host->regs + SD_EMMC_CFG);
 	host->src_clk = src_clk;
 	if (host->mux_div && (!strcmp(__clk_get_name(src_clk), "xtal")))
 		ret = clk_set_parent(host->mux[2], src_clk);

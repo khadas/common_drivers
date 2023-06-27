@@ -36,7 +36,8 @@
 /* 20230510: support tcon fw*/
 /* 20230525: update tcon debug support */
 /* 20230615: txhd2 support */
-#define LCD_DRV_VERSION    "20230615"
+/* 20230705: t3x fix tconless phy setting */
+#define LCD_DRV_VERSION    "20230705"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

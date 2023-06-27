@@ -498,7 +498,15 @@ function adjust_sequence_modules_loading() {
 	GKI_MODULES_LOAD_BLACK_LIST=()
 	if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" ]]; then
 		gki_modules_temp_file=`mktemp /tmp/config.XXXXXXXXXXXX`
-		cp ${ROOT_DIR}/${KERNEL_DIR}/android/gki_system_dlkm_modules ${gki_modules_temp_file}
+		if [[ ${BAZEL} == "1" ]]; then
+			cp $DIST_DIR/system_dlkm.modules.load ${gki_modules_temp_file}
+		else
+			rm -f ${gki_modules_temp_file}
+			cat ${ROOT_DIR}/${KERNEL_DIR}/modules.bzl |grep ko | while read LINE
+			do
+				echo $LINE | sed 's/^[^"]*"//' | sed 's/".*$//' >> ${gki_modules_temp_file}
+			done
+		fi
 
 		for module in ${GKI_MODULES_LOAD_WHITE_LIST[@]}; do
 			sed -i "/\/${module}/d" ${gki_modules_temp_file}
@@ -1420,7 +1428,7 @@ function set_default_parameters () {
 
 	auto_patch_to_common_dir
 
-	if [[ ! -f ${BUILD_DIR}/build_abi.sh ]]; then
+	if [[ ! -f ${BUILD_DIR}/build_abi.sh && ${BAZEL} == 0 ]]; then
 		echo "The directory of build does not exist";
 		exit
 	fi

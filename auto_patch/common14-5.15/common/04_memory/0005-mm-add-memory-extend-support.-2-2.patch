@@ -1,7 +1,7 @@
-From b38fcd1b330a27354ae87ecbcfb1350e85ae2563 Mon Sep 17 00:00:00 2001
+From 45eb88852f5cc724afb0462d7f5e4a919278daa3 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Thu, 24 Feb 2022 19:30:46 +0800
-Subject: [PATCH 05/11] mm: add memory extend support. [2/2]
+Subject: [PATCH] mm: add memory extend support. [2/2]
 
 PD#SWPL-73189
 
@@ -177,7 +177,7 @@ index f53c8036f44a..9f0fddec5624 100644
  {
  	if (!str)
 diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index f297b7adf218..00043460669d 100644
+index 82e0d15ec6c0..30b7c36d4b43 100644
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
 @@ -107,8 +107,19 @@ extern int page_group_by_mobility_disabled;
@@ -226,7 +226,7 @@ index da70a24d1b7a..349996aa9f13 100644
  	return 0;
  }
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 18ab492b83a2..eab66b481a57 100644
+index d0609fb4d4f4..69a1d1367dc8 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
 @@ -87,6 +87,9 @@
@@ -239,9 +239,9 @@ index 18ab492b83a2..eab66b481a57 100644
  
  /* Free Page Internal flags: for internal, non-pcp variants of free_pages(). */
  typedef int __bitwise fpi_t;
-@@ -980,6 +983,10 @@ static inline void add_to_free_list(struct page *page, struct zone *zone,
+@@ -1058,6 +1061,10 @@ static inline void add_to_free_list(struct page *page, struct zone *zone,
  
- 	list_add(&page->lru, &area->free_list[migratetype]);
+ 	list_add(&page->buddy_list, &area->free_list[migratetype]);
  	area->nr_free++;
 +#ifdef CONFIG_AMLOGIC_MEMORY_STAT
 +	count_free_migrate(area, page,
@@ -250,9 +250,9 @@ index 18ab492b83a2..eab66b481a57 100644
  }
  
  /* Used for pages not on another list */
-@@ -990,6 +997,10 @@ static inline void add_to_free_list_tail(struct page *page, struct zone *zone,
+@@ -1068,6 +1075,10 @@ static inline void add_to_free_list_tail(struct page *page, struct zone *zone,
  
- 	list_add_tail(&page->lru, &area->free_list[migratetype]);
+ 	list_add_tail(&page->buddy_list, &area->free_list[migratetype]);
  	area->nr_free++;
 +#ifdef CONFIG_AMLOGIC_MEMORY_STAT
 +	count_free_migrate(area, page,
@@ -261,10 +261,10 @@ index 18ab492b83a2..eab66b481a57 100644
  }
  
  /*
-@@ -1003,6 +1014,10 @@ static inline void move_to_free_list(struct page *page, struct zone *zone,
+@@ -1081,6 +1092,10 @@ static inline void move_to_free_list(struct page *page, struct zone *zone,
  	struct free_area *area = &zone->free_area[order];
  
- 	list_move_tail(&page->lru, &area->free_list[migratetype]);
+ 	list_move_tail(&page->buddy_list, &area->free_list[migratetype]);
 +#ifdef CONFIG_AMLOGIC_MEMORY_STAT
 +	count_free_migrate(area, page,
 +		&area->free_list[migratetype], FREE_LIST_MOVE);
@@ -272,7 +272,7 @@ index 18ab492b83a2..eab66b481a57 100644
  }
  
  static inline void del_page_from_free_list(struct page *page, struct zone *zone,
-@@ -1016,6 +1031,9 @@ static inline void del_page_from_free_list(struct page *page, struct zone *zone,
+@@ -1094,6 +1109,9 @@ static inline void del_page_from_free_list(struct page *page, struct zone *zone,
  	__ClearPageBuddy(page);
  	set_page_private(page, 0);
  	zone->free_area[order].nr_free--;
@@ -282,7 +282,7 @@ index 18ab492b83a2..eab66b481a57 100644
  }
  
  /*
-@@ -5680,6 +5698,9 @@ struct page *__alloc_pages(gfp_t gfp, unsigned int order, int preferred_nid,
+@@ -5765,6 +5783,9 @@ struct page *__alloc_pages(gfp_t gfp, unsigned int order, int preferred_nid,
  	 */
  	alloc_flags |= alloc_flags_nofragment(ac.preferred_zoneref->zone, gfp);
  
@@ -292,7 +292,7 @@ index 18ab492b83a2..eab66b481a57 100644
  	/* First allocation attempt */
  	page = get_page_from_freelist(alloc_gfp, order, alloc_flags, &ac);
  	if (likely(page))
-@@ -6359,6 +6380,9 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+@@ -6444,6 +6465,9 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
  		unsigned int order;
  		unsigned long nr[MAX_ORDER], flags, total = 0;
  		unsigned char types[MAX_ORDER];
@@ -302,7 +302,7 @@ index 18ab492b83a2..eab66b481a57 100644
  
  		if (show_mem_node_skip(filter, zone_to_nid(zone), nodemask))
  			continue;
-@@ -6375,6 +6399,9 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+@@ -6460,6 +6484,9 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
  
  			types[order] = 0;
  			for (type = 0; type < MIGRATE_TYPES; type++) {
@@ -312,7 +312,7 @@ index 18ab492b83a2..eab66b481a57 100644
  				if (!free_area_empty(area, type))
  					types[order] |= 1 << type;
  			}
-@@ -6387,6 +6414,12 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+@@ -6472,6 +6499,12 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
  				show_migration_types(types[order]);
  		}
  		printk(KERN_CONT "= %lukB\n", K(total));
@@ -325,7 +325,7 @@ index 18ab492b83a2..eab66b481a57 100644
  	}
  
  	hugetlb_show_meminfo();
-@@ -9831,6 +9864,41 @@ bool take_page_off_buddy(struct page *page)
+@@ -9936,6 +9969,41 @@ bool take_page_off_buddy(struct page *page)
  }
  #endif
  
@@ -429,10 +429,10 @@ index 8cf667b3065e..f578c80c3666 100644
  	trace_android_vh_cache_show(m, &sinfo, s);
  	seq_putc(m, '\n');
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 95c05350d1de..3f9d4e569050 100644
+index 9a343d5e78cc..1fe863ea5d61 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2133,8 +2133,10 @@ static int too_many_isolated(struct pglist_data *pgdat, int file,
+@@ -2136,8 +2136,10 @@ static int too_many_isolated(struct pglist_data *pgdat, int file,
  	 * won't get blocked by normal direct-reclaimers, forming a circular
  	 * deadlock.
  	 */

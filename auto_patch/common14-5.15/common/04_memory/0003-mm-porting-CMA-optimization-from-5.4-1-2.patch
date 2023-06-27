@@ -1,7 +1,7 @@
-From ff71fb6cc566e55b8c83a77fb00982a7646a0571 Mon Sep 17 00:00:00 2001
+From 795d6946a0f82287cf881fccb79be915bf6b7e7d Mon Sep 17 00:00:00 2001
 From: Tao Zeng <tao.zeng@amlogic.com>
 Date: Wed, 26 Jan 2022 16:04:08 +0800
-Subject: [PATCH 03/11] mm: porting CMA optimization from 5.4 [1/2]
+Subject: [PATCH] mm: porting CMA optimization from 5.4 [1/2]
 
 PD#SWPL-70022
 
@@ -75,10 +75,10 @@ index 18abafb135e0..e38a86cdee11 100644
  	bdev = I_BDEV(inode);
  	mutex_init(&bdev->bd_fsfreeze_mutex);
 diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 3ff72f4244a3..4fcb22328101 100644
+index 1fd2f6a850eb..93b1abf7daa0 100644
 --- a/drivers/usb/host/xhci.c
 +++ b/drivers/usb/host/xhci.c
-@@ -2059,7 +2059,11 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+@@ -2057,7 +2057,11 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
  	 * process context, not interrupt context (or so documenation
  	 * for usb_set_interface() and usb_set_configuration() claim).
  	 */
@@ -549,7 +549,7 @@ index 255bd4888d60..f9b263775a3d 100644
  		bool split;
  
 diff --git a/mm/memory.c b/mm/memory.c
-index de45717e3a72..5148c66d91c3 100644
+index 63e98bac29f5..939eb3445e2e 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
 @@ -3173,13 +3173,25 @@ static vm_fault_t wp_page_copy(struct vm_fault *vmf)
@@ -578,7 +578,7 @@ index de45717e3a72..5148c66d91c3 100644
  		if (!new_page)
  			goto out;
  
-@@ -4896,6 +4908,12 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
+@@ -4900,6 +4912,12 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
  	p4d_t *p4d;
  	vm_fault_t ret;
  
@@ -719,7 +719,7 @@ index 6ed8c744f091..804686ccb64c 100644
  			}
  		}
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9540bfaf9c3a..18ab492b83a2 100644
+index 30947b22a772..d0609fb4d4f4 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
 @@ -84,6 +84,9 @@
@@ -732,7 +732,7 @@ index 9540bfaf9c3a..18ab492b83a2 100644
  
  /* Free Page Internal flags: for internal, non-pcp variants of free_pages(). */
  typedef int __bitwise fpi_t;
-@@ -3080,6 +3083,18 @@ __rmqueue(struct zone *zone, unsigned int order, int migratetype,
+@@ -3155,6 +3158,18 @@ __rmqueue(struct zone *zone, unsigned int order, int migratetype,
  {
  	struct page *page;
  
@@ -751,7 +751,7 @@ index 9540bfaf9c3a..18ab492b83a2 100644
  retry:
  	page = __rmqueue_smallest(zone, order, migratetype);
  
-@@ -3092,6 +3107,31 @@ __rmqueue(struct zone *zone, unsigned int order, int migratetype,
+@@ -3167,6 +3182,31 @@ __rmqueue(struct zone *zone, unsigned int order, int migratetype,
  	return page;
  }
  
@@ -783,7 +783,7 @@ index 9540bfaf9c3a..18ab492b83a2 100644
  #ifdef CONFIG_CMA
  static struct page *__rmqueue_cma(struct zone *zone, unsigned int order,
  				  int migratetype,
-@@ -3765,6 +3805,12 @@ struct page *__rmqueue_pcplist(struct zone *zone, unsigned int order,
+@@ -3868,6 +3908,12 @@ struct page *__rmqueue_pcplist(struct zone *zone, unsigned int order,
  {
  	struct page *page = NULL;
  	struct list_head *list = NULL;
@@ -796,10 +796,10 @@ index 9540bfaf9c3a..18ab492b83a2 100644
  
  	do {
  		/* First try to get CMA pages */
-@@ -3782,6 +3828,48 @@ struct page *__rmqueue_pcplist(struct zone *zone, unsigned int order,
+@@ -3885,6 +3931,48 @@ struct page *__rmqueue_pcplist(struct zone *zone, unsigned int order,
  		}
  
- 		page = list_first_entry(list, struct page, lru);
+ 		page = list_first_entry(list, struct page, pcp_list);
 +	#ifdef CONFIG_AMLOGIC_CMA
 +		/*
 +		 * USING CMA FIRST POLICY situations:
@@ -842,12 +842,12 @@ index 9540bfaf9c3a..18ab492b83a2 100644
 +		}
 +use_pcp:
 +	#endif /* CONFIG_AMLOGIC_CMA */
- 		list_del(&page->lru);
+ 		list_del(&page->pcp_list);
  		pcp->count -= 1 << order;
  	} while (check_new_pcp(page));
-@@ -3828,6 +3916,12 @@ struct page *rmqueue(struct zone *preferred_zone,
+@@ -3940,6 +4028,12 @@ struct page *rmqueue(struct zone *preferred_zone,
+ 			int migratetype)
  {
- 	unsigned long flags;
  	struct page *page;
 +#ifdef CONFIG_AMLOGIC_CMA
 +	bool cma = can_use_cma(gfp_flags);
@@ -858,7 +858,7 @@ index 9540bfaf9c3a..18ab492b83a2 100644
  
  	if (likely(pcp_allowed_order(order))) {
  		page = rmqueue_pcplist(preferred_zone, zone, order,
-@@ -4021,6 +4115,9 @@ bool __zone_watermark_ok(struct zone *z, unsigned int order, unsigned long mark,
+@@ -4099,6 +4193,9 @@ bool __zone_watermark_ok(struct zone *z, unsigned int order, unsigned long mark,
  			min -= min / 4;
  	}
  
@@ -868,7 +868,7 @@ index 9540bfaf9c3a..18ab492b83a2 100644
  	/*
  	 * Check watermarks for an order-0 allocation request. If these
  	 * are not met, then a high-order request also cannot go ahead
-@@ -5551,6 +5648,9 @@ struct page *__alloc_pages(gfp_t gfp, unsigned int order, int preferred_nid,
+@@ -5636,6 +5733,9 @@ struct page *__alloc_pages(gfp_t gfp, unsigned int order, int preferred_nid,
  	gfp_t alloc_gfp; /* The gfp_t that was actually used for allocation */
  	struct alloc_context ac = { };
  
@@ -953,7 +953,7 @@ index 122a37cbc081..816b746cb0d8 100644
  			return NULL;
  
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0aade6f48285..95c05350d1de 100644
+index 5968e19e9441..9a343d5e78cc 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
 @@ -74,6 +74,10 @@
@@ -967,7 +967,7 @@ index 0aade6f48285..95c05350d1de 100644
  EXPORT_TRACEPOINT_SYMBOL_GPL(mm_vmscan_direct_reclaim_begin);
  EXPORT_TRACEPOINT_SYMBOL_GPL(mm_vmscan_direct_reclaim_end);
  
-@@ -1872,13 +1876,21 @@ unsigned int reclaim_clean_pages_from_list(struct zone *zone,
+@@ -1875,13 +1879,21 @@ unsigned int reclaim_clean_pages_from_list(struct zone *zone,
  	struct page *page, *next;
  	LIST_HEAD(clean_pages);
  	unsigned int noreclaim_flag;
@@ -989,7 +989,7 @@ index 0aade6f48285..95c05350d1de 100644
  		}
  	}
  
-@@ -1894,6 +1906,9 @@ unsigned int reclaim_clean_pages_from_list(struct zone *zone,
+@@ -1897,6 +1909,9 @@ unsigned int reclaim_clean_pages_from_list(struct zone *zone,
  	memalloc_noreclaim_restore(noreclaim_flag);
  
  	list_splice(&clean_pages, page_list);
@@ -999,7 +999,7 @@ index 0aade6f48285..95c05350d1de 100644
  	mod_node_page_state(zone->zone_pgdat, NR_ISOLATED_FILE,
  			    -(long)nr_reclaimed);
  	/*
-@@ -2121,6 +2136,9 @@ static int too_many_isolated(struct pglist_data *pgdat, int file,
+@@ -2124,6 +2139,9 @@ static int too_many_isolated(struct pglist_data *pgdat, int file,
  	if ((sc->gfp_mask & (__GFP_IO | __GFP_FS)) == (__GFP_IO | __GFP_FS))
  		inactive >>= 3;
  
@@ -1009,7 +1009,7 @@ index 0aade6f48285..95c05350d1de 100644
  	return isolated > inactive;
  }
  
-@@ -7368,6 +7386,9 @@ int kswapd(void *p)
+@@ -7343,6 +7361,9 @@ int kswapd(void *p)
  
  	WRITE_ONCE(pgdat->kswapd_order, 0);
  	WRITE_ONCE(pgdat->kswapd_highest_zoneidx, MAX_NR_ZONES);

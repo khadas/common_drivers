@@ -1,7 +1,7 @@
-From 64231e18413b145307bc03349dafdf86218b8cb5 Mon Sep 17 00:00:00 2001
+From d0a79420799e9289dd70c58ca53f8a99f30ebdb2 Mon Sep 17 00:00:00 2001
 From: "he.he" <he.he@amlogic.com>
 Date: Thu, 28 Jul 2022 17:07:40 +0800
-Subject: [PATCH 36/95] usb: A separate macro contains USB modifications [1/2]
+Subject: [PATCH] usb: A separate macro contains USB modifications [1/2]
 
 PD#SWPL-89165
 
@@ -81,7 +81,7 @@ index 32b09c1dd7b2..60218ef84f79 100644
  #endif
  
 diff --git a/drivers/usb/gadget/configfs.c b/drivers/usb/gadget/configfs.c
-index 155fda95e690..33a507df0dc5 100644
+index 75746b0028c8..b67b0c8935dc 100644
 --- a/drivers/usb/gadget/configfs.c
 +++ b/drivers/usb/gadget/configfs.c
 @@ -25,7 +25,7 @@ static struct device *android_device;
@@ -93,7 +93,7 @@ index 155fda95e690..33a507df0dc5 100644
  static struct gadget_info *gi_backup;
  #endif
  
-@@ -1873,7 +1873,7 @@ static struct config_group *gadgets_make(
+@@ -1885,7 +1885,7 @@ static struct config_group *gadgets_make(
  	if (android_device_create(gi) < 0)
  		goto err;
  
@@ -102,7 +102,7 @@ index 155fda95e690..33a507df0dc5 100644
  	gi_backup = gi;
  #endif
  
-@@ -1923,7 +1923,7 @@ void unregister_gadget_item(struct config_item *item)
+@@ -1935,7 +1935,7 @@ void unregister_gadget_item(struct config_item *item)
  }
  EXPORT_SYMBOL_GPL(unregister_gadget_item);
  
@@ -156,7 +156,7 @@ index 0148e1787b25..817ed4fb85a6 100644
  #endif
  	unsigned use_generic_driver:1;
 diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-index fd76e8492a6a..fd0f13ba9e65 100644
+index f93bb3ef87a1..e92f8ed84a93 100644
 --- a/include/linux/usb/phy.h
 +++ b/include/linux/usb/phy.h
 @@ -157,10 +157,6 @@ struct usb_phy {
@@ -169,8 +169,8 @@ index fd76e8492a6a..fd0f13ba9e65 100644
 -#endif
  
  	ANDROID_VENDOR_DATA(1);
- 	ANDROID_KABI_RESERVE(1);
-@@ -222,15 +218,6 @@ usb_phy_vbus_off(struct usb_phy *x)
+ 
+@@ -233,15 +229,6 @@ usb_phy_vbus_off(struct usb_phy *x)
  	return x->set_vbus(x, false);
  }
  

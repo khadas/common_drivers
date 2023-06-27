@@ -1,7 +1,7 @@
-From e70b0e4236b3d02fcdfbc27ccedab266abb96d75 Mon Sep 17 00:00:00 2001
+From 7cbfb84e3b5cb93985a38efcfa1f5fa70d20bca7 Mon Sep 17 00:00:00 2001
 From: Jianxiong Pan <jianxiong.pan@amlogic.com>
 Date: Mon, 28 Feb 2022 16:29:38 +0800
-Subject: [PATCH 07/11] mm: save wasted memory by slab [1/2]
+Subject: [PATCH] mm: save wasted memory by slab [1/2]
 
 PD#SWPL-73422
 
@@ -72,10 +72,10 @@ index b37c79530923..6cae0a8a0403 100644
  		     KASAN_PAGE_REDZONE, false);
  
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index eab66b481a57..98862b858755 100644
+index 69a1d1367dc8..deb57a82ba17 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1168,7 +1168,15 @@ static inline void __free_one_page(struct page *page,
+@@ -1246,7 +1246,15 @@ static inline void __free_one_page(struct page *page,
  	else if (is_shuffle_order(order))
  		to_tail = shuffle_pick_tail();
  	else
@@ -91,18 +91,18 @@ index eab66b481a57..98862b858755 100644
  
  	if (to_tail)
  		add_to_free_list_tail(page, zone, order, migratetype);
-@@ -3580,7 +3588,15 @@ static void free_unref_page_commit(struct page *page, unsigned long pfn,
+@@ -3614,7 +3622,15 @@ static void free_unref_page_commit(struct zone *zone, struct per_cpu_pages *pcp,
+ 
  	__count_vm_event(PGFREE);
- 	pcp = this_cpu_ptr(zone->per_cpu_pageset);
  	pindex = order_to_pindex(migratetype, order);
 +#if defined(CONFIG_AMLOGIC_MEMORY_EXTEND) && defined(CONFIG_KASAN)
 +	/*
 +	 * always put freed page to tail of buddy system, in  order to
 +	 * increase probability of use-after-free for KASAN check.
 +	 */
-+	list_add_tail(&page->lru, &pcp->lists[pindex]);
++	list_add_tail(&page->pcp_list, &pcp->lists[pindex]);
 +#else
- 	list_add(&page->lru, &pcp->lists[pindex]);
+ 	list_add(&page->pcp_list, &pcp->lists[pindex]);
 +#endif
  	pcp->count += 1 << order;
  	high = nr_pcp_high(pcp, zone);

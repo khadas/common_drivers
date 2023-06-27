@@ -1,7 +1,7 @@
-From 7fe20d0d0d9792974d745b820f09d7e87d6e9902 Mon Sep 17 00:00:00 2001
+From 2735f84c939b1ca028273b2ba13f98e6295eaef8 Mon Sep 17 00:00:00 2001
 From: "he.he" <he.he@amlogic.com>
 Date: Mon, 28 Feb 2022 18:44:17 +0800
-Subject: [PATCH 22/95] usb: support USB for C2 [1/1]
+Subject: [PATCH] usb: support USB for C2 [1/1]
 
 PD#SWPL-71865
 
@@ -21,7 +21,7 @@ Signed-off-by: he.he <he.he@amlogic.com>
  1 file changed, 13 insertions(+)
 
 diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-index fd0f13ba9e65..fd76e8492a6a 100644
+index e92f8ed84a93..f93bb3ef87a1 100644
 --- a/include/linux/usb/phy.h
 +++ b/include/linux/usb/phy.h
 @@ -157,6 +157,10 @@ struct usb_phy {
@@ -34,8 +34,8 @@ index fd0f13ba9e65..fd76e8492a6a 100644
 +#endif
  
  	ANDROID_VENDOR_DATA(1);
- 	ANDROID_KABI_RESERVE(1);
-@@ -218,6 +222,15 @@ usb_phy_vbus_off(struct usb_phy *x)
+ 
+@@ -229,6 +233,15 @@ usb_phy_vbus_off(struct usb_phy *x)
  	return x->set_vbus(x, false);
  }
  

@@ -1,0 +1,73 @@
+From 9ea33002162ae37104a639f26e2b94d133b843f9 Mon Sep 17 00:00:00 2001
+From: Zhuo Wang <zhuo.wang@amlogic.com>
+Date: Tue, 20 Jun 2023 17:46:37 +0800
+Subject: [PATCH] eth: txhd2 resume eth0 link down [1/2]
+
+PD#SWPL-128836
+
+Problem:
+txhd2 resume eth0 down
+
+Solution:
+txhd2 use new pll
+
+Verify:
+be311
+
+Change-Id: Iaf079569e3d25006aaa3dcd824658be383d35b9f
+Signed-off-by: Zhuo Wang <zhuo.wang@amlogic.com>
+---
+ .../ethernet/stmicro/stmmac/dwmac-meson8b.c    | 18 ++++++++++++++++--
+ .../ethernet/stmicro/stmmac/stmmac_platform.h  |  1 +
+ 2 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+index e65db981b932..a181f22954b9 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+@@ -646,14 +646,28 @@ static int dwmac_suspend(struct meson8b_dwmac *dwmac)
+ 	writel(0x00000000, phy_analog_config_addr + 0x10);
+ 	writel(0x031d161c, phy_analog_config_addr + 0x14);
+ 	writel(0x00001683, phy_analog_config_addr + 0x18);
+-	writel(0x09c0040a, phy_analog_config_addr + 0x44);
++	if (phy_pll_mode == 1)
++		writel(0x608200a0, phy_analog_config_addr + 0x44);
++	else
++		writel(0x09c0040a, phy_analog_config_addr + 0x44);
+ 	return 0;
+ }
+ 
+ static void dwmac_resume(struct meson8b_dwmac *dwmac)
+ {
+ 	pr_info("recover analog\n");
+-	writel(0x19c0040a, phy_analog_config_addr + 0x44);
++	if (phy_pll_mode == 1) {
++		writel(0x608200a0, phy_analog_config_addr + 0x44);
++		writel(0xea002000, phy_analog_config_addr + 0x48);
++		writel(0x00000150, phy_analog_config_addr + 0x4c);
++		writel(0x00000000, phy_analog_config_addr + 0x50);
++		writel(0x708200a0, phy_analog_config_addr + 0x44);
++		usleep_range(100, 200);
++		writel(0x508200a0, phy_analog_config_addr + 0x44);
++		writel(0x00000110, phy_analog_config_addr + 0x4c);
++	} else {
++		writel(0x19c0040a, phy_analog_config_addr + 0x44);
++	}
+ 	writel(0x0, phy_analog_config_addr + 0x4);
+ }
+ 
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h
+index e29408eda06c..897a3ce7024b 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h
+@@ -23,6 +23,7 @@ int stmmac_pltfr_remove(struct platform_device *pdev);
+ extern const struct dev_pm_ops stmmac_pltfr_pm_ops;
+ #if IS_ENABLED(CONFIG_AMLOGIC_ETH_PRIVE)
+ extern void __iomem *phy_analog_config_addr;
++extern unsigned int phy_pll_mode;
+ #endif
+ static inline void *get_stmmac_bsp_priv(struct device *dev)
+ {
+-- 
+2.25.1
+

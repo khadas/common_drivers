@@ -249,6 +249,7 @@ extern int frc_dbg_en;
 extern int frc_kerdrv_ver;
 void config_phs_regs(enum frc_ratio_mode_type frc_ratio_mode,
 	enum en_drv_film_mode film_mode);
+int frc_drv_get_1st_frm(void);
 
 
 #define pr_frc(level, fmt, arg...)			\

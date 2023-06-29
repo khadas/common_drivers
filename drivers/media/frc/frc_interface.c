@@ -204,3 +204,19 @@ int frc_set_seg_display(u8 enable, u8 seg1, u8 seg2, u8 seg3)
 	return 1;
 }
 EXPORT_SYMBOL(frc_set_seg_display);
+
+int frc_drv_get_1st_frm(void)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (!devp)
+		return 1;
+	if (!devp->probe_ok)
+		return 1;
+	if (devp->frc_sts.state != FRC_STATE_ENABLE)
+		return 1;
+	else
+		return ((READ_FRC_REG(FRC_REG_PAT_POINTER) >> 12) & 0x1);
+}
+EXPORT_SYMBOL(frc_drv_get_1st_frm);
+

@@ -30,5 +30,6 @@ int frc_fpp_memc_set_level(u8 level, u8 num);
 int frc_set_seg_display(u8 enable, u8 seg1, u8 seg2, u8 seg3);
 int frc_lge_memc_set_level(struct v4l2_ext_memc_motion_comp_info comp_info);
 void frc_lge_memc_get_level(struct v4l2_ext_memc_motion_comp_info *comp_info);
+int frc_drv_get_1st_frm(void);
 
 #endif

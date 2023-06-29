@@ -3965,12 +3965,12 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 				if (!vf_top1) {
 					if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
 						pr_info("wait new frame for top1\n");
-					force_top1_once = true;
+					//force_top1_once = true;
+					force_top1_once = false;
+					vf_top1 = vf;/*temporarily use cur vf for top1, no wait*/
 				} else {
 					force_top1_once = false;
 				}
-				vf_top1 = vf;/*temporarily use cur vf for top1, no wait*/
-				force_top1_once = false;/*temporarily use cur vf for top1, no wait*/
 			}
 #endif
 			path0_new_frame = vsync_toggle_frame(vf, __LINE__);

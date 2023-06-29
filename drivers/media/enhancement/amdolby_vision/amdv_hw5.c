@@ -49,6 +49,7 @@
 #endif
 
 bool lut_trigger_by_reg = true;/*false: dma lut trigger by vsync*/
+bool force_enable_top12_lut = true;
 
 struct top1_pyramid_addr top1_py_addr;
 struct dolby5_top1_type top1_type;
@@ -1163,6 +1164,9 @@ int tv_top1_set(u64 *top1_reg,
 		vpu_module_clk_enable(0, DV_TVCORE, 0);
 	}
 
+	//first frame only top1, need disable top2 rdma
+	if (!top2_info.core_on && !force_enable_top12_lut)
+		VSYNC_WR_DV_REG_BITS(DOLBY_TOP2_RDMA_CTRL, 0, 30, 1);
 	top1_type.core1_ahb_baddr = (u32 *)top1_reg;
 	top1_type.core1b_ahb_baddr = (u32 *)top1b_reg;
 	top1_type.core1_ahb_num = TOP1_REG_NUM;
@@ -1239,7 +1243,7 @@ int tv_top1_set(u64 *top1_reg,
 	VSYNC_WR_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 1, 0, 1); //top1 dolby int, pulse
 	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_RDMA_CTRL, 1, 30, 1);//open top1 rdma //todo
 
-	if (!top1_info.core_on) {/*no need update lut data when no toggle*/
+	if (!top1_info.core_on) {/*update lut data when top2 not on*/
 		set_dovi_setting_update_flag(true);
 		amdv_update_setting(NULL);
 		dma_lut_write();
@@ -1376,9 +1380,9 @@ int tv_top2_set(u64 *reg_data,
 		amdv_core_reset(AMDV_HW5);
 	}
 
-	if (!enable_top1) {/**/
-		//WRITE_VPP_DV_REG_BITS(DOLBY_TOP1_RDMA_CTRL, 0, 30, 1);/*disable top1 rdma*/
-		VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_RDMA_CTRL, 0, 30, 1);
+	if (!enable_top1) {
+		if (!force_enable_top12_lut)
+			VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_RDMA_CTRL, 0, 30, 1);
 	}
 
 	vd_proc_info = get_vd_proc_amdv_info();
@@ -1496,7 +1500,11 @@ int tv_top2_set(u64 *reg_data,
 
 		//VSYNC_WR_DV_REG_BITS(DOLBY_TOP2_RDMA_CTRL, 1, 28, 1);//shadow_en
 	    //VSYNC_WR_DV_REG_BITS(DOLBY_TOP2_RDMA_CTRL, 1, 29, 1);//shadow_rst
-
+		if (force_enable_top12_lut) {
+			VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_RDMA_CTRL, 0x1, 16, 3);
+			VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_RDMA_CTRL, 0x95, 0, 16);
+			VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_RDMA_CTRL, 1, 30, 1);//open top1 rdma
+		}
 		VSYNC_WR_DV_REG_BITS(DOLBY_TOP2_RDMA_CTRL, 1, 30, 1);//open top2 rdma
 	}
 
@@ -1625,18 +1633,25 @@ int dma_lut_write(void)
 	if (!lut_dma_support)
 		return 0;
 
-	if (enable_top1) {
-		if (!top1_info.core_on) {
-			dma_size = lut_dma_info[0].dma_total_size - lut_dma_info[0].dma_top2_size;
-			phy_addr = (ulong)(lut_dma_info[cur_dmabuf_id].dma_paddr);
+	if (force_enable_top12_lut) {
+		dma_size = lut_dma_info[0].dma_total_size;
+		phy_addr = (ulong)(lut_dma_info[cur_dmabuf_id].dma_paddr);
+	} else {
+		if (enable_top1) {
+			if (!top1_info.core_on) {
+				dma_size = lut_dma_info[0].dma_total_size -
+					lut_dma_info[0].dma_top2_size;
+				phy_addr = (ulong)(lut_dma_info[cur_dmabuf_id].dma_paddr);
+			} else {
+				dma_size = lut_dma_info[0].dma_total_size;
+				phy_addr = (ulong)(lut_dma_info[cur_dmabuf_id].dma_paddr);
+			}
 		} else {
-			dma_size = lut_dma_info[0].dma_total_size;
+			dma_size = lut_dma_info[0].dma_top2_size;
 			phy_addr = (ulong)(lut_dma_info[cur_dmabuf_id].dma_paddr);
 		}
-	} else {
-		dma_size = lut_dma_info[0].dma_top2_size;
-		phy_addr = (ulong)(lut_dma_info[cur_dmabuf_id].dma_paddr);
 	}
+
 	cur_dmabuf_id = cur_dmabuf_id ^ 1;
 	lut_dma_write_phy_addr(channel,
 			       phy_addr,
@@ -1750,7 +1765,7 @@ irqreturn_t amdv_isr(int irq, void *dev_id)
 
 void print_dv_ro(void)
 {
-	if (is_aml_t3x() && enable_top1) {
+	if (is_aml_t3x() && (enable_top1 || force_enable_top12_lut)) {
 		if (debug_dolby & 0x4000)
 			pr_info("vysnc-top1: RO %x %x %x %x %x %x, %x\n",
 					READ_VPP_DV_REG(DOLBY_TOP1_RO_6),

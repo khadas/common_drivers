@@ -1618,17 +1618,21 @@ int amdv_update_setting(struct vframe_s *vf)
 	} else if (is_aml_hw5()) {//todo
 		if (lut_dma_info[cur_dmabuf_id].dma_vaddr && tv_hw5_setting &&
 			!hw5_reg_from_file) {
-			if (enable_top1) {
+			if (enable_top1 || force_enable_top12_lut) {
 				dma_data = tv_hw5_setting->top1_lut;
 				if (test_dv & DEBUG_FIXED_LUT) /*fixed lut*/
 					dma_data = top1_lut_buf;
 				size = TOP1_LUT_NUM * LUT_SIZE;
-				memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr, dma_data, size);
+				if (dma_data)
+					memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr,
+					dma_data, size);
 				dma_data = tv_hw5_setting->top2_lut;
 				if (test_dv & DEBUG_FIXED_LUT) /*fixed lut*/
 					dma_data = top2_lut_buf;
 				size = TOP2_LUT_NUM * LUT_SIZE;
-				memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr_top2, dma_data, size);
+				if (dma_data)
+					memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr_top2,
+					dma_data, size);
 			} else {
 				dma_data = tv_hw5_setting->top2_lut;
 				if (test_dv & DEBUG_FIXED_LUT) /*fixed lut*/
@@ -1637,13 +1641,17 @@ int amdv_update_setting(struct vframe_s *vf)
 				memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr, dma_data, size);
 			}
 		} else if (lut_dma_info[cur_dmabuf_id].dma_vaddr && hw5_reg_from_file) {
-			if (enable_top1) {
+			if (enable_top1 || force_enable_top12_lut) {
 				dma_data = top1_lut_buf;
 				size = TOP1_LUT_NUM * LUT_SIZE;
-				memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr, dma_data, size);
+				if (dma_data)
+					memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr,
+					dma_data, size);
 				dma_data = top2_lut_buf;
 				size = TOP2_LUT_NUM * LUT_SIZE;
-				memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr_top2, dma_data, size);
+				if (dma_data)
+					memcpy(lut_dma_info[cur_dmabuf_id].dma_vaddr_top2,
+					dma_data, size);
 			} else {
 				dma_data = top2_lut_buf;
 				size = TOP2_LUT_NUM * LUT_SIZE;
@@ -1653,7 +1661,7 @@ int amdv_update_setting(struct vframe_s *vf)
 	}
 	if (size && (debug_dolby & 0x8000)) {
 		if (is_aml_hw5()) {
-			if (enable_top1) {
+			if (enable_top1 || force_enable_top12_lut) {
 				p = (uint64_t *)lut_dma_info[cur_dmabuf_id].dma_vaddr;
 				size = TOP1_LUT_NUM * LUT_SIZE;
 				pr_info("top1 dma_vaddr %px, dma size %dx4 int, size %d\n",

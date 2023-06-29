@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "202300625"
+#define DRIVER_VER "202300627"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"
@@ -897,7 +897,7 @@ extern int force_top1_enable;
 extern u32 fix_data;
 extern u8 *y_vaddr;
 extern u8 *uv_vaddr;
-
+extern bool force_enable_top12_lut;
 /************/
 
 #define pr_dv_dbg(fmt, args...)\

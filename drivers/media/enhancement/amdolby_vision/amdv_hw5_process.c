@@ -2079,7 +2079,7 @@ int amdv_wait_metadata_hw5(struct vframe_s *vf)
 				pr_dv_dbg("wait top1 and need to do top1\n");
 			return 4;
 		}
-		if (top1_info.core_on && (!top1_done && !temp_done)) {//todo
+		if (top1_info.core_on && (!top1_done /*&& !temp_done*/)) {//todo
 			if (vf && (debug_dolby & 8))
 				pr_dv_dbg("wait top1\n");
 			return 5;

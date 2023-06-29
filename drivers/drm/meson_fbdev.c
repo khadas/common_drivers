@@ -456,8 +456,7 @@ fail:
 	if (ret == -EDEADLK)
 		goto backoff;
 
-	if (ret != 0)
-		drm_atomic_state_put(state);
+	drm_atomic_state_put(state);
 
 unlock_exit:
 	drm_modeset_unlock_all(dev);

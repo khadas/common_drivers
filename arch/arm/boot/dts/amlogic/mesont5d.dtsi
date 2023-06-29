@@ -18,6 +18,7 @@
 #include <dt-bindings/reset/amlogic,meson-t5d-reset.h>
 #include <dt-bindings/power/t5-pd.h>
 #include "meson-ir-map.dtsi"
+#include <dt-bindings/mailbox/amlogic,mbox.h>
 
 / {
 	interrupt-parent = <&gic>;
@@ -260,6 +261,15 @@
 			 <&mailbox_pl 1>;
 		mbox-nums = <2>;
 		mbox-mb = <1>;
+	};
+
+	mbox_user: mbox-user@0 {
+		status = "okay";
+		compatible = "amlogic, meson-mbox-user";
+		mbox-nums = <1>;
+		mbox-names = "ree2aocpu";
+		mboxes = <&mailbox_pl 1>;
+		mbox-dests = <MAILBOX_AOCPU>;
 	};
 
 	cpu_iomap {

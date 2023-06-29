@@ -476,9 +476,9 @@
 		/* MAP_ADDR_MODULE_SEC_AHB2 */
 		/* MAP_ADDR_MODULE_APB4 */
 		/* MAP_ADDR_MODULE_TOP */
-		/* MAP_ADDR_MODULE_COR */
 		/* MAP_ADDR_MODULE_CLK_CTRL */
 		/* MAP_ADDR_MODULE_ANA_CTRL */
+		/* MAP_ADDR_MODULE_COR */
 		reg = < 0x0 0x0
 			0xff63C000 0x2000
 			0x0 0x0
@@ -486,9 +486,9 @@
 			0x0 0x0
 			0x0 0x0
 			0xff618000 0x7fff
-			0xff680000 0xffff
 			0xff646000 0x1fff
-			0x0 0x0>;
+			0x0 0x0
+			0xff680000 0xffff>;
 	};
 
 	unifykey{

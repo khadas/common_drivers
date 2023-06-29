@@ -41,7 +41,8 @@
 //fix no edid result in system crash
 //fix switch fail between edid 1.4 and 2.0.
 //hdmi hbr no sound
-#define RX_VER0 "ver.2023/06/15"
+//fix txhd2 merge to trunk problem
+#define RX_VER0 "ver.2023/06/29"
 
 /*print type*/
 #define COR1_LOG	0x10000
@@ -286,9 +287,9 @@ enum map_addr_module_e {
 	MAP_ADDR_MODULE_SEC_AHB2,
 	MAP_ADDR_MODULE_APB4,
 	MAP_ADDR_MODULE_TOP,
-	MAP_ADDR_MODULE_COR,
 	MAP_ADDR_MODULE_CLK_CTRL,
 	MAP_ADDR_MODULE_ANA_CTRL,
+	MAP_ADDR_MODULE_COR,
 	MAP_ADDR_MODULE_NUM
 };
 

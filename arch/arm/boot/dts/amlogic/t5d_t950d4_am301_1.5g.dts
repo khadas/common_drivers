@@ -1619,19 +1619,20 @@
 &sd_emmc_c {
 	status = "okay";
 	pinctrl-names = "default", "clk-gate";
-	pinctrl-0 = <&emmc_clk_cmd_pins>;
-	pinctrl-1 = <&emmc_conf_pull_up &emmc_conf_pull_done>;
-	pinctrl-2 = <&emmc_pins_sleep>;
+	pinctrl-0 = <&emmc_conf_pull_up &emmc_conf_pull_done>;
+	pinctrl-1 = <&emmc_clk_gate_pins>;
 
 	bus-width = <8>;
 	cap-mmc-highspeed;
 	//mmc-ddr-1_8v;
-	mmc-hs200-1_8v;
-	mmc-hs400-1_8v;
-	max-frequency = <200000000>;
+	//mmc-hs200-1_8v;
+	//mmc-hs400-1_8v;
+	max-frequency = <50000000>;
 	non-removable;
 	disable-wp;
-
+	hs4_core_phase = <0>;
+	hs2_core_phase = <2>;
+	init_core_phase = <3>;
 //	mmc-pwrseq = <&emmc_pwrseq>;
 //	vmmc-supply = <&vddao_3v3>;
 //	vqmmc-supply = <&vddao_1v8>;

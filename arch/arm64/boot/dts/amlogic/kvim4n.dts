@@ -1692,20 +1692,10 @@
 };
 
 &spicc0 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc0_pins>;
 	cs-gpios = <&gpio GPIOT_21 GPIO_ACTIVE_HIGH>;
-	#address-cells = <1>;
-	#size-cells = <0>;
-
-	spidev@0 {
-		status = "okay";
-		compatible = "linux,spidev";
-		/* spi default max clock 100Mhz */
-		spi-max-frequency = <100000000>;
-		reg = <0>;
-	};
 };
 
 &spicc2 {	//for UWB/LocalDimm

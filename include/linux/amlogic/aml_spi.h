@@ -38,6 +38,10 @@ struct spicc_transfer {
 #define DC_MODE_NONE	0
 #define DC_MODE_PIN	1
 #define DC_MODE_9BIT	2
+	void		*tx_ccsg;
+	void		*rx_ccsg;
+	int		tx_ccsg_len;
+	int		rx_ccsg_len;
 };
 
 #endif

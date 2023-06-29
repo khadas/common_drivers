@@ -274,18 +274,6 @@ static struct platform_driver t5d_aoclkc_driver = {
 	},
 };
 
-#ifndef MODULE
-static int t5d_aoclkc_init(void)
-{
-	return platform_driver_register(&t5d_aoclkc_driver);
-}
-
-arch_initcall_sync(t5d_aoclkc_init);
-#else
-int __init meson_t5d_aoclkc_init(void)
-{
-	return platform_driver_register(&t5d_aoclkc_driver);
-}
-#endif
+builtin_platform_driver(t5d_aoclkc_driver);
 
 MODULE_LICENSE("GPL v2");

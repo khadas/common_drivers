@@ -183,6 +183,8 @@ int frc_set_seg_display(u8 enable, u8 seg1, u8 seg2, u8 seg3)
 		return 0;
 	if (!devp->probe_ok)
 		return 0;
+	if (devp->clk_state == FRC_CLOCK_OFF)
+		return 0;
 	if (enable) {
 		UPDATE_FRC_REG_BITS(FRC_MC_SEVEN_FLAG_POSI_AND_NUM41_NUM42, 0xE1 << 24, 0xFF000000);
 		UPDATE_FRC_REG_BITS(FRC_MC_SEVEN_FLAG_NUM43_NUM44_NUM45_NUM46, 1 << 31, BIT_31);
@@ -214,6 +216,8 @@ int frc_drv_get_1st_frm(void)
 	if (!devp->probe_ok)
 		return 1;
 	if (devp->frc_sts.state != FRC_STATE_ENABLE)
+		return 1;
+	else if ((READ_FRC_REG(FRC_TOP_CTRL) & 0x01) == 0)
 		return 1;
 	else
 		return ((READ_FRC_REG(FRC_REG_PAT_POINTER) >> 12) & 0x1);

@@ -93,8 +93,9 @@
 // frc_20230404 frc t3x probe secure
 // frc_20230526 frc fixed flashing once when enable
 // frc_20230602 frc add ctrl for ko load or not
+// frc_20230607 frc fixed input framerate
 
-#define FRC_FW_VER			"2023-0607 frc fixed input framerate"
+#define FRC_FW_VER			"2023-0706 frc clk new flow"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1
@@ -165,13 +166,23 @@ extern int frc_dbg_en;
 //------------------------------------------------------- buf define end
 //------------------------------------------------------- clock defined start
 #define FRC_CLOCK_OFF                0
-#define FRC_CLOCK_2MIN               1
+#define FRC_CLOCK_OFF2MIN            1
 #define FRC_CLOCK_MIN                2
-#define FRC_CLOCK_2NOR               3
+#define FRC_CLOCK_MIN2NOR            3
 #define FRC_CLOCK_NOR                4
-#define FRC_CLOCK_2MAX               5
-#define FRC_CLOCK_MAX                6
-#define FRC_CLOCK_2OFF               7
+#define FRC_CLOCK_NOR2MIN            5
+#define FRC_CLOCK_MIN2OFF            6
+#define FRC_CLOCK_OFF2NOR            7
+#define FRC_CLOCK_NOR2OFF            8
+
+#define FRC_CLOCK_XXX2NOR            9
+#define FRC_CLOCK_NOR2XXX            10
+
+#define FRC_CLOCK_MAX	             11
+
+#define FRC_CLOCK_FIXED              0
+#define FRC_CLOCK_DYNAMIC_0	     1
+#define FRC_CLOCK_DYNAMIC_1          2
 
 #define FRC_CLOCK_RATE_333                333333333
 #define FRC_CLOCK_RATE_667                667000000

@@ -453,7 +453,6 @@ void frc_power_domain_ctrl(struct frc_dev_s *devp, u32 onoff)
 		set_frc_bypass(true);
 		frc_state_change_finish(devp);
 		devp->power_on_flag = false;
-		// devp->power_off_flag = 0;
 	}
 
 	if (chip == ID_T3) {
@@ -512,6 +511,7 @@ void frc_power_domain_ctrl(struct frc_dev_s *devp, u32 onoff)
 			if (!devp->buf.cma_mem_alloced)
 				frc_buf_alloc(devp);
 			devp->power_on_flag = true;
+			set_frc_clk_disable(devp, 0);
 			frc_init_config(devp);
 			frc_buf_config(devp);
 			frc_internal_initial(devp);
@@ -519,6 +519,7 @@ void frc_power_domain_ctrl(struct frc_dev_s *devp, u32 onoff)
 			if (pfw_data->frc_fw_reinit)
 				pfw_data->frc_fw_reinit();
 		} else {
+			set_frc_clk_disable(devp, 1);
 #ifdef K_MEMC_CLK_DIS
 			pwr_ctrl_psci_smc(PDID_T3X_FRC_TOP, PWR_OFF);
 
@@ -713,6 +714,8 @@ int frc_notify_callback(struct notifier_block *block, unsigned long cmd, void *p
 
 	if (!devp)
 		return -1;
+	if (devp->clk_state == FRC_CLOCK_OFF)
+		return 0;
 
 	pr_frc(1, "%s cmd: 0x%lx\n", __func__, cmd);
 	switch (cmd) {
@@ -740,6 +743,8 @@ int frc_vd_notify_callback(struct notifier_block *block, unsigned long cmd, void
 	u32 flags;
 
 	if (!devp)
+		return -1;
+	if (devp->clk_state == FRC_CLOCK_OFF)
 		return -1;
 
 	info = (struct vd_info_s *)para;
@@ -911,6 +916,8 @@ static void frc_clock_workaround(struct work_struct *work)
 {
 	struct frc_dev_s *devp = container_of(work,
 		struct frc_dev_s, frc_clk_work);
+	int default_me_clk, default_mc_clk;
+	int default_min_me_clk, default_min_mc_clk;
 
 	if (unlikely(!devp)) {
 		PR_ERR("%s err, devp is NULL\n", __func__);
@@ -920,13 +927,58 @@ static void frc_clock_workaround(struct work_struct *work)
 		return;
 	if (!devp->power_on_flag)
 		return;
-	// pr_frc(1, "%s, clk_state:%d\n", __func__, devp->clk_state);
-	if (devp->clk_state == FRC_CLOCK_2MIN) {
-		clk_set_rate(devp->clk_frc, 333333333);
+
+	if (get_chip_type() == ID_T3X) {
+		default_min_me_clk = FRC_CLOCK_RATE_333;
+		default_min_mc_clk = FRC_CLOCK_RATE_333;
+		default_me_clk = FRC_CLOCK_RATE_667;
+		default_mc_clk = FRC_CLOCK_RATE_667;
+	} else {
+		default_min_me_clk = FRC_CLOCK_RATE_333;
+		default_min_mc_clk = FRC_CLOCK_RATE_333;
+		default_me_clk = FRC_CLOCK_RATE_333;
+		default_mc_clk = FRC_CLOCK_RATE_667;
+	}
+
+	if (devp->clk_chg == FRC_CLOCK_FIXED) {
+		clk_set_rate(devp->clk_me, default_me_clk);
+		clk_set_rate(devp->clk_frc, default_mc_clk);
+		if (devp->clk_state != FRC_CLOCK_OFF)
+			set_frc_clk_disable(devp, 1);
+		if (devp->clk_state != FRC_CLOCK_NOR)
+			set_frc_clk_disable(devp, 0);
+	} else if (devp->clk_chg == FRC_CLOCK_DYNAMIC_0) {
+		if (devp->clk_state == FRC_CLOCK_XXX2NOR)
+			devp->clk_state = FRC_CLOCK_OFF2NOR;
+		else if (devp->clk_state == FRC_CLOCK_NOR2XXX)
+			devp->clk_state = FRC_CLOCK_NOR2OFF;
+	} else if (devp->clk_chg == FRC_CLOCK_DYNAMIC_1) {
+		if (devp->clk_state == FRC_CLOCK_XXX2NOR)
+			devp->clk_state = FRC_CLOCK_MIN2NOR;
+		else if (devp->clk_state == FRC_CLOCK_NOR2XXX)
+			devp->clk_state = FRC_CLOCK_NOR2MIN;
+	}
+
+	if (devp->clk_state == FRC_CLOCK_NOR2OFF) {
+		set_frc_clk_disable(devp, 1);
+	} else if (devp->clk_state == FRC_CLOCK_OFF2NOR) {
+		set_frc_clk_disable(devp, 0);
+	} else if (devp->clk_state == FRC_CLOCK_NOR2MIN) {
+		clk_set_rate(devp->clk_me, default_min_me_clk);
+		clk_set_rate(devp->clk_frc, default_min_mc_clk);
 		devp->clk_state = FRC_CLOCK_MIN;
-	} else if (devp->clk_state == FRC_CLOCK_2NOR) {
-		clk_set_rate(devp->clk_frc, 667000000);
+	} else if (devp->clk_state == FRC_CLOCK_MIN2NOR) {
+		clk_set_rate(devp->clk_me, default_me_clk);
+		clk_set_rate(devp->clk_frc, default_mc_clk);
 		devp->clk_state = FRC_CLOCK_NOR;
+	} else if (devp->clk_state == FRC_CLOCK_MIN2OFF) {
+		set_frc_clk_disable(devp, 1);
+		devp->clk_state = FRC_CLOCK_OFF;
+	} else if (devp->clk_state == FRC_CLOCK_OFF2MIN) {
+		clk_set_rate(devp->clk_me, default_min_me_clk);
+		clk_set_rate(devp->clk_frc, default_min_mc_clk);
+		set_frc_clk_disable(devp, 0);
+		devp->clk_state = FRC_CLOCK_MIN;
 	}
 	pr_frc(1, "%s, clk_new state:%d\n", __func__, devp->clk_state);
 }
@@ -1211,7 +1263,7 @@ static int frc_probe(struct platform_device *pdev)
 	INIT_WORK(&frc_devp->frc_clk_work, frc_clock_workaround);
 	INIT_WORK(&frc_devp->frc_print_work, frc_debug_table_print);
 	INIT_WORK(&frc_devp->frc_secure_work, frc_secure_workaround);
-	frc_devp->clk_chg = 1;
+	frc_devp->clk_chg = FRC_CLOCK_DYNAMIC_0;
 	frc_set_enter_forcefilm(frc_devp, 0);
 
 	frc_devp->probe_ok = true;
@@ -1277,10 +1329,7 @@ static int __exit frc_remove(struct platform_device *pdev)
 	cdev_del(&frc_devp->cdev);
 	class_destroy(frc_devp->clsp);
 	unregister_chrdev_region(frc_devp->devno, FRC_DEVNO);
-	//destroy_workqueue(frc_devp->frc_wq);
-	set_frc_clk_disable();
-	//if (frc_devp->dbg_buf)
-	//	kfree(frc_devp->dbg_buf);
+	set_frc_clk_disable(frc_devp, 1);
 	frc_buf_release(frc_devp);
 	kfree(frc_devp->data);
 	frc_devp->data = NULL;
@@ -1301,7 +1350,6 @@ static void frc_shutdown(struct platform_device *pdev)
 	if (!frc_devp || !frc_devp->probe_ok)
 		return;
 	PR_FRC("%s:module shutdown\n", __func__);
-	// frc_devp = platform_get_drvdata(pdev);
 	chip = get_chip_type();
 	frc_devp->power_on_flag = false;
 	tasklet_kill(&frc_devp->input_tasklet);
@@ -1320,10 +1368,7 @@ static void frc_shutdown(struct platform_device *pdev)
 	cdev_del(&frc_devp->cdev);
 	class_destroy(frc_devp->clsp);
 	unregister_chrdev_region(frc_devp->devno, FRC_DEVNO);
-	//destroy_workqueue(frc_devp->frc_wq);
-	set_frc_clk_disable();
-	//if (frc_devp->dbg_buf)
-	//	kfree(frc_devp->dbg_buf);
+	set_frc_clk_disable(frc_devp, 1);
 	frc_buf_release(frc_devp);
 	kfree(frc_devp->data);
 	frc_devp->data = NULL;
@@ -1402,7 +1447,6 @@ static int frc_pm_resume(struct device *dev)
 	frc_power_domain_ctrl(devp, 1);
 	if (!devp->power_on_flag)
 		devp->power_on_flag = true;
-
 	set_frc_bypass(ON);
 	devp->frc_sts.auto_ctrl = true;
 	devp->frc_sts.re_config = true;

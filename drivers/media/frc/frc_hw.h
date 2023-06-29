@@ -57,7 +57,7 @@
 extern void __iomem *frc_clk_base;
 extern void __iomem *vpu_base;
 void frc_clk_init(struct frc_dev_s *frc_devp);
-void set_frc_clk_disable(void);
+void set_frc_clk_disable(struct frc_dev_s *frc_devp,  u8 disable);
 void frc_init_config(struct frc_dev_s *devp);
 void set_frc_enable(u32 en);
 void set_frc_bypass(u32 en);

@@ -156,17 +156,35 @@ void set_me_div_clk(int sel, int div)
 	}
 }
 
-void set_frc_clk_disable(void)
+void set_frc_clk_disable(struct frc_dev_s *frc_devp,  u8 disable)
 {
-	unsigned int val = 0;
-	unsigned int reg, reg1;
-
-	reg = CLKCTRL_FRC_CLK_CNTL;
-	reg1 = CLKCTRL_ME_CLK_CNTL;
-	val = readl(frc_clk_base + (reg << 2));
-	val &= ~(1 << 30);
-	writel(val, (frc_clk_base + (reg << 2)));
-	writel(val, (frc_clk_base + (reg1 << 2)));
+	if (disable == 1) {
+		if (frc_devp->clk_state == FRC_CLOCK_OFF)
+			return;
+		if (IS_ERR(frc_devp->clk_me))
+			PR_ERR("%s: frc_devp->clk_me to disable", __func__);
+		else
+			clk_disable_unprepare(frc_devp->clk_me);
+		if (IS_ERR(frc_devp->clk_frc))
+			PR_ERR("%s: frc_devp->clk_me to disable", __func__);
+		else
+			clk_disable_unprepare(frc_devp->clk_frc);
+		frc_devp->clk_state = FRC_CLOCK_OFF;
+		pr_frc(0, "dis frc_clk\n");
+	} else {
+		if (frc_devp->clk_state == FRC_CLOCK_NOR)
+			return;
+		if (IS_ERR(frc_devp->clk_me))
+			PR_ERR("%s: frc_devp->clk_me to enable", __func__);
+		else
+			clk_prepare_enable(frc_devp->clk_me);
+		if (IS_ERR(frc_devp->clk_frc))
+			PR_ERR("%s: frc_devp->clk_frc to enable", __func__);
+		else
+			clk_prepare_enable(frc_devp->clk_frc);
+		frc_devp->clk_state = FRC_CLOCK_NOR;
+		pr_frc(0, "en frc_clk\n");
+	}
 }
 
 void frc_clk_init(struct frc_dev_s *frc_devp)
@@ -176,7 +194,7 @@ void frc_clk_init(struct frc_dev_s *frc_devp)
 
 	height = frc_devp->out_sts.vout_height;
 	width = frc_devp->out_sts.vout_width;
-
+	frc_devp->clk_state = FRC_CLOCK_OFF;
 	if (get_chip_type() == ID_T3X) {
 		me_clk = FRC_CLOCK_RATE_667;
 		mc_clk = FRC_CLOCK_RATE_667;
@@ -184,26 +202,16 @@ void frc_clk_init(struct frc_dev_s *frc_devp)
 		me_clk = FRC_CLOCK_RATE_333;
 		mc_clk = FRC_CLOCK_RATE_667;
 	}
-
-	if (1) /*(frc_devp->clk_frc && frc_devp->clk_me)*/ {
-		clk_set_rate(frc_devp->clk_frc, mc_clk);
-		clk_prepare_enable(frc_devp->clk_frc);
-		frc_devp->clk_frc_frq = clk_get_rate(frc_devp->clk_frc);
-		pr_frc(0, "clk_frc frq : %d Mhz\n", frc_devp->clk_frc_frq / 1000000);
-		frc_devp->clk_state = FRC_CLOCK_NOR;
-		clk_set_rate(frc_devp->clk_me, me_clk);
-		clk_prepare_enable(frc_devp->clk_me);
-		frc_devp->clk_me_frq = clk_get_rate(frc_devp->clk_me);
-		pr_frc(0, "clk_me frq : %d Mhz\n", frc_devp->clk_me_frq / 1000000);
-	} else {
-		if (height == HEIGHT_2K && width == WIDTH_4K) {
-			set_frc_div_clk(0, 0);
-			set_me_div_clk(2, 0);
-		} else if (height == HEIGHT_1K && width == WIDTH_2K) {
-			set_frc_div_clk(0, 0);
-			set_me_div_clk(2, 0);
-		}
-	}
+	clk_set_rate(frc_devp->clk_frc, mc_clk);
+	clk_prepare_enable(frc_devp->clk_frc);
+	frc_devp->clk_frc_frq = clk_get_rate(frc_devp->clk_frc);
+	pr_frc(0, "clk_frc frq : %d Mhz\n",
+			frc_devp->clk_frc_frq / 1000000);
+	clk_set_rate(frc_devp->clk_me, me_clk);
+	clk_prepare_enable(frc_devp->clk_me);
+	frc_devp->clk_me_frq = clk_get_rate(frc_devp->clk_me);
+	pr_frc(0, "clk_me frq : %d Mhz\n", frc_devp->clk_me_frq / 1000000);
+	frc_devp->clk_state = FRC_CLOCK_NOR;
 }
 
 void frc_osdbit_setfalsecolor(struct frc_dev_s *devp, u32 falsecolor)

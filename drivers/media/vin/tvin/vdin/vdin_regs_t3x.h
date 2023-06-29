@@ -437,8 +437,10 @@ enum vdin_vdi_x_t3x_e {
 //Bit 11           reserved
 //Bit 10: 4        reg_hold_lines                       // unsigned ,    RW, default = 0
 //Bit  3           reserved
-//Bit  2           reg_hsync_mask_en                    // unsigned ,    RW, default = 0
-//Bit  1           reg_vsync_mask_en                    // unsigned ,    RW, default = 0
+#define HSYNC_MASK_EN_BIT	2			// unsigned ,    RW, default = 0
+#define HSYNC_MASK_EN_WID	1
+#define VSYNC_MASK_EN_BIT	1			// unsigned ,    RW, default = 0
+#define VSYNC_MASK_EN_WID	1
 //Bit  0           reg_frm_rst_en                       // unsigned ,    RW, default = 1
 #define VDIN0_SYNC_CONVERT_SYNC_CTRL1              0x0153
 //Bit 31:16        reg_clk_cyc_line_widthm1             // unsigned ,    RW, default = 0
@@ -2217,7 +2219,8 @@ enum vdin_vdi_x_t3x_e {
 //Bit 25      reg_no_clk_gate               // unsigned ,    RW, default = 0
 //disable vid_wr_mif clock gating function.
 //Bit 24      reg_clr_wrrsp                 // unsigned ,    RW, default = 0
-//Bit 23      reg_eol_sel                   // unsigned ,    RW, default = 1
+#define T3X_EOL_SEL_BIT		23	// unsigned ,    RW, default = 1
+#define T3X_EOL_SEL_WID		1
 //eol_sel, 1: use eol as the line end indication,
 //0: use width as line end indication in the vdin write memory interface
 //Bit 22:20   reserved
@@ -2237,7 +2240,8 @@ enum vdin_vdi_x_t3x_e {
 //Bit 11      reg_wr_canvas_dbuf_en         // unsigned ,    RW, default = 0
 //write canvas double buffer enable, means the canvas address will be latched
 //by vsync before using
-//Bit 10      reg_dis_ctrl_reg_w_pulse       // unsigned ,    RW, default = 0
+#define T3X_DIS_CTRL_REG_W_PULSE_BIT		10	// unsigned ,    RW, default = 0
+#define T3X_DIS_CTRL_REG_W_PULSE_WID		1
 //disable ctrl_reg write pulse which will reset internal counter. when bit 11 is 1,
 //this bit should be 1.
 //Bit  9      reg_wr_req_urgent             // unsigned ,    RW, default = 0
@@ -2255,11 +2259,14 @@ enum vdin_vdi_x_t3x_e {
 //Bit 21      reg_wr_h_rev                  // unsigned ,    RW, default = 0
 //Bit 20      reg_wr_v_rev                  // unsigned ,    RW, default = 0
 //Bit 19      reg_wr_bit10_mode             // unsigned ,    RW, default = 0
-//Bit 18      reg_wr_data_ext_en            // unsigned ,    RW, default = 0
-//Bit 17:14   reg_wr_words_lim              // unsigned ,    RW, default = 1
+#define T3X_WR_DATA_EXT_EN_BIT		18	// unsigned ,    RW, default = 0
+#define T3X_WR_DATA_EXT_EN_WID		1
+#define T3X_WR_WORDS_LIM_BIT		14	// unsigned ,    RW, default = 1
+#define T3X_WR_WORDS_LIM_WID		4
 //Bit 13:10   reg_wr_burst_lim              // unsigned ,    RW, default = 2
 //Bit  9: 8   reserved
-//Bit  7: 0   reg_wr_canvas_direct_chroma   // unsigned ,    RW, default = 0
+#define WR_CANVAS_DIRECT_CHROMA_BIT	0	// unsigned ,    RW, default = 0
+#define WR_CANVAS_DIRECT_CHROMA_WID	8
 //Write chroma canvas address
 #define VDIN0_WRMIF_H_START_END                    0x03f2
 //Bit 31:29   reserved
@@ -2287,6 +2294,12 @@ enum vdin_vdi_x_t3x_e {
 //Bit 18: 0   reg_descramble_ctrl           // unsigned ,    RW, default = 0
 #define VDIN0_WRMIF_CTRL3                          0x03fa
 //Bit 31: 0   reg_wrmif_ctrl3               // unsigned ,    RW, default = 0
+#define VDIN0_WRMIF_CTRL3_1_BIT		1	// unsigned ,    RW, default = 0
+#define VDIN0_WRMIF_CTRL3_1_WID		1
+#define VDIN0_WRMIF_CTRL3_3_BIT		3	// unsigned ,    RW, default = 0
+#define VDIN0_WRMIF_CTRL3_3_WID		2
+#define VDIN0_WRMIF_CTRL3_31_BIT	31	// unsigned ,    RW, default = 0
+#define VDIN0_WRMIF_CTRL3_31_WID	1
 #define VDIN0_WRMIF_DBG_AXI_CMD_CNT                0x03fb
 //Bit 31: 0   reg_dbg_axi_cmd_cnt           // unsigned ,    RO, default = 0
 #define VDIN0_WRMIF_DBG_AXI_DAT_CNT                0x03fc

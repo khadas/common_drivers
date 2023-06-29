@@ -309,8 +309,13 @@
 //Bit 12: 0 reg_y_start default = 0, the canvas ver start pixel position
 
 #define AFBCE_MMU_RMIF_RO_STAT    0x41c6
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 void vdin_write_mif_or_afbce_init(struct vdin_dev_s *devp);
+#else
+static inline void vdin_write_mif_or_afbce_init(struct vdin_dev_s *devp)
+{
+}
+#endif
 void vdin_write_mif_or_afbce(struct vdin_dev_s *devp,
 			     enum vdin_output_mif_e sel);
 void vdin_afbce_update(struct vdin_dev_s *devp);

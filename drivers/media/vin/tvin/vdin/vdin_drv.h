@@ -204,7 +204,8 @@ enum vdin_hw_ver_e {
 
 /* 20230607: game mode optimize and add debug */
 /* 20230609: add get vdin status */
-#define VDIN_VER_V1 "20230609: add get vdin status"
+/* 20230710: bc302 filter unstable vsync and add debug */
+#define VDIN_VER_V1 "20230710: bc302 filter unstable vsync and add debug"
 
 enum vdin_irq_flg_e {
 	VDIN_IRQ_FLG_NO_END = 1,
@@ -538,6 +539,17 @@ struct vdin_vf_info {
 #define DBG_SCT_CTL_DIS			(BIT(0)) /* disable sct memory */
 #define DBG_SCT_CTL_NO_FREE_TAIL	(BIT(1)) /* do not free tail */
 #define DBG_SCT_CTL_NO_FREE_WR_LIST	(BIT(2)) /* do not free vf mem in wr list */
+#define DBG_REG_LENGTH			10
+#define DBG_REG_START_READ		(BIT(0))
+#define DBG_REG_START_WRITE		(BIT(1))
+#define DBG_REG_START_SET_BIT		(BIT(2))
+#define DBG_REG_START_READ_WRITE	(BIT(3))
+#define DBG_REG_ISR_READ		(BIT(4))
+#define DBG_REG_ISR_WRITE		(BIT(5))
+#define DBG_REG_ISR_SET_BIT		(BIT(6))
+#define DBG_REG_ISR_READ_WRITE		(BIT(7))
+#define DBG_REG_TOP_FUNCTION		(BIT(8))
+#define DBG_REG_CONVERT_SYNC		(BIT(9))
 
 /*******for debug **********/
 struct vdin_debug_s {
@@ -558,12 +570,16 @@ struct vdin_debug_s {
 	bool vdin1_set_hdr_bypass;
 	bool dbg_force_shrink_en;
 	bool bypass_tunnel;
+	bool pause_mif_dec;
+	bool pause_afbce_dec;
+	bool bypass_filter_vsync;
 	unsigned int sar_width;
 	unsigned int sar_height;
 	unsigned int ratio_control;
 	unsigned int dbg_rw_reg_en;
-	unsigned int dbg_reg_addr;
-	unsigned int dbg_reg_val;
+	unsigned int dbg_reg_addr[DBG_REG_LENGTH];
+	unsigned int dbg_reg_val[DBG_REG_LENGTH];
+	unsigned int dbg_reg_bit[DBG_REG_LENGTH];
 };
 
 struct vdin_dv_s {
@@ -1058,8 +1074,6 @@ struct vdin_dev_s {
 	unsigned int vdin_drop_ctl_cnt;/* drop frames casued by dbg_drop_ctl */
 	unsigned int vdin_function_sel;
 	unsigned int self_stop_start;
-	unsigned int vdin1_stop_write;
-	unsigned int vdin1_stop_write_count;
 	unsigned int quit_flag;
 	unsigned int vdin_stable_cnt;
 	struct task_struct *kthread;
@@ -1124,14 +1138,20 @@ void tvafe_snow_config(unsigned int on_off);
 void tvafe_snow_config_clamp(unsigned int on_off);
 void vdin_vf_reg(struct vdin_dev_s *devp);
 void vdin_vf_unreg(struct vdin_dev_s *devp);
-void vdin_pause_dec(struct vdin_dev_s *devp);
-void vdin_resume_dec(struct vdin_dev_s *devp);
+void vdin_pause_dec(struct vdin_dev_s *devp, unsigned int type);
+void vdin_resume_dec(struct vdin_dev_s *devp, unsigned int type);
 bool is_amdv_enable(void);
 
 void vdin_debugfs_init(struct vdin_dev_s *devp);
 void vdin_debugfs_exit(struct vdin_dev_s *devp);
 void vdin_dump_frames(struct vdin_dev_s *devp);
-int vdin_dbg_access_reg_in_vsync(struct vdin_dev_s *devp);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+void vdin_dbg_access_reg(struct vdin_dev_s *devp, unsigned int update_site);
+#else
+static inline void vdin_dbg_access_reg(struct vdin_dev_s *devp, unsigned int update_site)
+{
+}
+#endif
 
 bool vlock_get_phlock_flag(void);
 bool vlock_get_vlock_flag(void);

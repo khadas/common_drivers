@@ -453,7 +453,7 @@ void vdin_afbce_set_next_frame_t3x(struct vdin_dev_s *devp,
 		rdma_write_reg_bits(devp->rdma_handle,
 				    VDIN0_AFBCE_ENABLE + devp->addr_offset, 1,
 				    AFBCE_START_PULSE_BIT, AFBCE_START_PULSE_WID);
-		if (devp->pause_dec) {
+		if (devp->pause_dec || devp->debug.pause_afbce_dec) {
 			rdma_write_reg_bits(devp->rdma_handle,
 					    VDIN0_CORE_CTRL + devp->addr_offset, 0,
 					    AFBCE_EN_BIT, AFBCE_EN_WID);

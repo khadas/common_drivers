@@ -1937,7 +1937,7 @@ void vdin_set_frame_mif_write_addr_t3x(struct vdin_dev_s *devp,
 				       VDIN0_WRMIF_STRIDE_CHROMA + devp->addr_offset,
 				       stride_chroma);
 		}
-		if (devp->pause_dec)
+		if (devp->pause_dec || devp->debug.pause_mif_dec)
 			rdma_write_reg_bits(devp->rdma_handle,
 				VDIN0_WRMIF_CTRL + devp->addr_offset,
 				0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
@@ -1955,7 +1955,7 @@ void vdin_set_frame_mif_write_addr_t3x(struct vdin_dev_s *devp,
 			wr(devp->addr_offset, VDIN0_WRMIF_STRIDE_CHROMA,
 			   stride_chroma);
 		}
-		if (devp->pause_dec)
+		if (devp->pause_dec || devp->debug.pause_mif_dec)
 			wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL,
 				0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
 		else
@@ -2016,7 +2016,7 @@ void vdin_set_canvas_id_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable,
 				    VDIN0_WRMIF_CTRL + devp->addr_offset,
 				    canvas_id, WR_CANVAS_BIT, WR_CANVAS_WID);
 
-		if (devp->pause_dec)
+		if (devp->pause_dec || devp->debug.pause_mif_dec)
 			rdma_write_reg_bits(devp->rdma_handle, VDIN0_WRMIF_CTRL + devp->addr_offset,
 					    0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
 		else
@@ -2027,7 +2027,7 @@ void vdin_set_canvas_id_t3x(struct vdin_dev_s *devp, unsigned int rdma_enable,
 		wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL, canvas_id,
 			WR_CANVAS_BIT, WR_CANVAS_WID);
 
-		if (devp->pause_dec)
+		if (devp->pause_dec || devp->debug.pause_mif_dec)
 			wr_bits(devp->addr_offset, VDIN0_WRMIF_CTRL, 0,
 				WR_REQ_EN_BIT, WR_REQ_EN_WID);
 		else
@@ -2453,6 +2453,26 @@ void vdin_set_default_regmap_t3x(struct vdin_dev_s *devp)
 	vdin_delay_line_t3x(devp, delay_line_num);
 }
 
+/*
+ * this config for filter unstable vysnc especially atv unplug
+ */
+static void filter_unstable_vsync_t3x(struct vdin_dev_s *devp)
+{
+	unsigned int offset = devp->addr_offset;
+
+	if (devp->index || devp->debug.bypass_filter_vsync)
+		return;
+
+	wr_bits(offset, VDIN0_SYNC_CONVERT_SYNC_CTRL0, 1, HSYNC_MASK_EN_BIT, HSYNC_MASK_EN_WID);
+	wr_bits(offset, VDIN0_SYNC_CONVERT_SYNC_CTRL0, 1, VSYNC_MASK_EN_BIT, VSYNC_MASK_EN_WID);
+	wr_bits(offset, VDIN0_WRMIF_CTRL2, 1, T3X_WR_DATA_EXT_EN_BIT, T3X_WR_DATA_EXT_EN_WID);
+	wr_bits(offset, VDIN0_WRMIF_CTRL2, 7, T3X_WR_WORDS_LIM_BIT, T3X_WR_WORDS_LIM_WID);
+	wr_bits(offset, VDIN0_WRMIF_CTRL3, 1, VDIN0_WRMIF_CTRL3_31_BIT, VDIN0_WRMIF_CTRL3_31_WID);
+	wr_bits(offset, VDIN0_WRMIF_CTRL3, 1, VDIN0_WRMIF_CTRL3_1_BIT, VDIN0_WRMIF_CTRL3_1_WID);
+	wr_bits(offset, VDIN0_WRMIF_CTRL3, 0, VDIN0_WRMIF_CTRL3_3_BIT, VDIN0_WRMIF_CTRL3_3_WID);
+	wr_bits(offset, VDIN0_WRMIF_CTRL, 0, T3X_EOL_SEL_BIT, T3X_EOL_SEL_WID);
+}
+
 void vdin_hw_enable_t3x(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
@@ -2463,8 +2483,9 @@ void vdin_hw_enable_t3x(struct vdin_dev_s *devp)
 	//	VDIN_COMMON_INPUT_EN_BIT, VDIN_COMMON_INPUT_EN_WID);
 
 	vdin_clk_on_off_t3x(devp, true);
+	filter_unstable_vsync_t3x(devp);
 	/* req_en */
-	wr_bits(offset, VDIN0_WRMIF_CTRL, 1, WR_REQ_EN_BIT, WR_REQ_EN_WID);
+	wr_bits(offset, VDIN0_WRMIF_CTRL, 0, WR_REQ_EN_BIT, WR_REQ_EN_WID);
 	/* reg_enable */
 	wr_bits(devp->index * VDIN_TOP_OFFSET, VDIN0_SYNC_CONVERT_CTRL, 1, 0, 1);
 	/* reg_secure_sel */

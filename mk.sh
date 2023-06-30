@@ -30,7 +30,7 @@ function show_help {
 	echo "  --patch                 for only am patches"
 	echo "  --check_gki_20          for gki 2.0 check kernel build"
 	echo "  --dev_config            for use the config specified by oem instead of amlogic like ./mk.sh --dev_config a_config+b_config+c_config"
-	echo "  --bazel                 for choose bazel tool to build"
+	echo "  --use_prebuilt_gki      for use prebuilt gki, require parameter value, https://ci.android.com/builds/submitted/10412065/kernel_aarch64/latest, --use_prebuilt_gki 10412065"
 }
 
 # handle the dir parameters for amlogic_utils.sh
@@ -113,7 +113,7 @@ adjust_config_action
 build_part_of_kernel
 
 if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BAZEL} == 1 ]]; then
-	args="$@ --lto=${LTO}"
+	[[ -z ${PREBUILT_GKI} ]] && args="$@ --lto=${LTO}"
 	PROJECT_DIR=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/project
 	[[ -d ${PROJECT_DIR} ]] || mkdir -p ${PROJECT_DIR}
 
@@ -177,15 +177,19 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 	echo "]"					>> ${PROJECT_DIR}/dtb.bzl
 
 	echo args=${args}
+	set -x
 	if [[ -n ${GOOGLE_BAZEL_BUILD_COMMAND_LINE} ]]; then
 		${GOOGLE_BAZEL_BUILD_COMMAND_LINE}
-	elif [ "${ABI}" -eq "1" ]; then
+	elif [[ "${ABI}" -eq "1" ]]; then
 		tools/bazel run //common:amlogic_abi_update_symbol_list --sandbox_debug --verbose_failures ${args}
 		tools/bazel run //common:kernel_aarch64_abi_dist --sandbox_debug --verbose_failures ${args}
 		exit
+	elif [[ -n ${PREBUILT_GKI} ]]; then
+		tools/bazel run --use_prebuilt_gki=${PREBUILT_GKI} //common:amlogic_dist --sandbox_debug --verbose_failures ${args}
 	else
 		tools/bazel run //common:amlogic_dist --sandbox_debug --verbose_failures ${args}
 	fi
+	set +x
 
 	sed -i "/GKI_BUILD_CONFIG_FRAGMENT/d" ${PROJECT_DIR}/build.config.gki10
 

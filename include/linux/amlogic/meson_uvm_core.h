@@ -30,6 +30,7 @@ enum uvm_alloc_flag {
 	UVM_SKIP_REALLOC,
 	UVM_USAGE_CACHED,
 	UVM_FBC_DEC,
+	UVM_SIZE_SKIP,
 	UVM_DETACH_FLAG = 30
 };
 

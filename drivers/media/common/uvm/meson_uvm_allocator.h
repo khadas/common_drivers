@@ -28,6 +28,8 @@
 #define MUA_SKIP_REALLOC     BIT(UVM_SKIP_REALLOC)
 #define MUA_BUFFER_CACHED    BIT(UVM_USAGE_CACHED)
 #define MUA_DETACH           BIT(UVM_DETACH_FLAG)
+/* don't calc uvm size, use size sync form gralloc directly */
+#define MUA_SIZE_SKIP        BIT(UVM_SIZE_SKIP)
 #define ION_FLAG_PROTECTED   BIT(31)
 #define META_DATA_SIZE       (512)
 
@@ -48,6 +50,7 @@ struct mua_buffer {
 	struct uvm_buf_obj base;
 	struct mua_device *dev;
 	size_t size;
+	size_t origin_size;
 	struct ion_buffer *ibuffer[2];
 	struct dma_buf *idmabuf[2];
 	struct sg_table *sg_table;

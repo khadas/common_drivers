@@ -175,7 +175,10 @@ static int mua_process_gpu_realloc(struct dma_buf *dmabuf,
 		pre_size = buffer->idmabuf[1]->size;
 	else
 		pre_size = dmabuf->size;
-	new_size = mua_calc_real_dmabuf_size(buffer);
+	if (buffer->ion_flags & MUA_SIZE_SKIP)
+		new_size = buffer->origin_size;
+	else
+		new_size = mua_calc_real_dmabuf_size(buffer);
 	MUA_PRINTK(MUA_INFO, "buffer(0x%p)->size:%zu realloc new_size=%zu, pre_size = %zu\n",
 			buffer, buffer->size, new_size, pre_size);
 	if (new_size < pre_size)
@@ -454,6 +457,9 @@ static int mua_handle_alloc(struct dma_buf *dmabuf, struct uvm_alloc_data *data,
 	buffer->height = data->height;
 	buffer->ion_flags = data->flags;
 	buffer->align = data->align;
+
+	if (data->flags & MUA_SIZE_SKIP)
+		buffer->origin_size = data->size;
 
 	if (data->flags & MUA_IMM_ALLOC) {
 		if (data->flags & MUA_USAGE_PROTECTED)
@@ -784,7 +790,8 @@ static long mua_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		data.alloc_data.size = PAGE_ALIGN(data.alloc_data.size);
 		data.alloc_data.scaled_buf_size =
 				PAGE_ALIGN(data.alloc_data.scaled_buf_size);
-		if (data.alloc_data.scalar > 1)
+		if (data.alloc_data.scalar > 1 ||
+		    (data.alloc_data.flags & MUA_SIZE_SKIP))
 			alloc_buf_size = data.alloc_data.scaled_buf_size;
 		else
 			alloc_buf_size = data.alloc_data.size;

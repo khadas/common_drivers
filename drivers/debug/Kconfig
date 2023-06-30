@@ -163,3 +163,11 @@ config AMLOGIC_ARM_UNWIND
 	help
 	 This option enable Amlogic arm unwind function
 	 If in doubt, say "Y"
+
+config AMLOGIC_DEBUG_ISOLCPUS
+	bool "Amlogic isolate APU"
+	default n
+	depends on AMLOGIC_DEBUG
+	help
+	  this option is provided for AMLOGIC isolate CPU5 modifications.
+

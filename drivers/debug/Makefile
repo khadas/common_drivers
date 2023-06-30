@@ -12,6 +12,7 @@ ccflags-y += "-DGKI_CONFIG=\"$(srctree)/$(COMMON_DRIVERS_DIR)/arch/arm64/configs
 
 obj-$(CONFIG_AMLOGIC_DEBUG) = $(MODULE_NAME).o
 $(MODULE_NAME)-y = main.o lockup.o sched.o kprobes.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_ISOLCPUS) += isolcpus.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_MHZ) += cpu_mhz.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_ATRACE) += atrace.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DEBUG_FILE) += debug_file.o

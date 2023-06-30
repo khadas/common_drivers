@@ -16,6 +16,15 @@ int cpu_mhz_init(void)  { return 0; }
 int aml_sched_init(void);
 int aml_kprobes_init(void);
 
+#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ISOLCPUS)
+int aml_isolcpus_init(void);
+#else
+static inline int aml_isolcpus_init(void)
+{
+	return 0;
+}
+#endif
+
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_ATRACE)
 int meson_atrace_init(void);
 #else

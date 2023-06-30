@@ -259,6 +259,14 @@
 			size = <0x0 0x0>;
 		};
 
+		picdec_cma_reserved:linux,picdec {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0>;
+			alignment = <0x0>;
+			linux,contiguous-region;
+		};
+
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -649,6 +657,13 @@
 		compatible = "amlogic, ppmgr";
 		memory-region = <&ppmgr_reserved>;
 		dev_name = "ppmgr";
+		status = "okay";
+	};
+
+	picdec {
+		compatible = "amlogic, picdec";
+		memory-region = <&picdec_cma_reserved>;
+		dev_name = "picdec";
 		status = "okay";
 	};
 

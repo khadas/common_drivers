@@ -628,7 +628,8 @@ static void meson_info_page0_prepare(struct nand_chip *nand, u8 *page0_buf)
 	}
 
 	memset(page0_buf, 0x0, mtd->writesize);
-	dir = 0;
+	/* must be 1, rom will do security check */
+	dir = 1;
 
 	configure_data = CMDRWGEN(DMA_DIR(dir),
 				  nand->options & NAND_NEED_SCRAMBLING,
@@ -745,7 +746,6 @@ static int meson_nfc_boot_write_page_hwecc(struct nand_chip *nand,
 		}
 		memcpy(meson_chip->data_buf, nand->data_buf, mtd->writesize);
 		meson_nfc_write_page_sub(nand, page, 0);
-
 		nand->ecc.size = ecc_size;
 		meson_chip->bch_mode = bch_mode;
 		nand->options &= ~NAND_NEED_SCRAMBLING;
@@ -759,12 +759,15 @@ WRITE_BAD_BLOCK:
 	div_u64_rem(tmp, mtd->erasesize, &remainder);
 	if (!remainder) {
 		//todo nand bb ckeck
+		nand_release_device(nand);
 		if (mtd->_block_isbad(mtd, ofs)) {
+			nand_get_device(nand);
 			page +=
 				1 << (nand->phys_erase_shift -
 				nand->page_shift);
 			goto WRITE_BAD_BLOCK;
 		}
+		nand_get_device(nand);
 	}
 	memcpy(meson_chip->data_buf, buf, mtd->writesize);
 	meson_nfc_write_page_sub(nand, page, 0);//fixed it
@@ -1001,12 +1004,15 @@ READ_BAD_BLOCK:
 	tmp = ofs;
 	div_u64_rem(tmp, mtd->erasesize, &remainder);
 	if (!remainder) {
+		nand_release_device(nand);
 		if (mtd->_block_isbad(mtd, ofs)) {
+			nand_get_device(nand);
 			real_page +=
 				1 << (nand->phys_erase_shift -
 				nand->page_shift);
 			goto READ_BAD_BLOCK;
 		}
+		nand_get_device(nand);
 	}
 
 	memset(buf, 0xff, (1 << nand->page_shift));
@@ -1473,6 +1479,11 @@ int meson_nand_bbt_check(struct nand_chip *nand)
 		       mtd->size >> phys_erase_shift);
 		meson_nand_scan_shipped_bbt(nand);
 		meson_rsv_bbt_write((u_char *)buf, nfc->rsv->bbt->size);
+	}
+
+	if (nand->options & NAND_SKIP_BBTSCAN) {
+		nand->bbt = nfc->block_status;
+		mtd_to_nand(aml_mtd_info[0])->bbt = nfc->block_status;
 	}
 
 	return 0;

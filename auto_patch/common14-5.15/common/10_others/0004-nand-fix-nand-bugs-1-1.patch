@@ -1,21 +1,30 @@
-From 148435976561a993df3fffd98d30867230c40b2e Mon Sep 17 00:00:00 2001
+From 8b1b20b33019e3693ed6017eb55f2578dbdc12ff Mon Sep 17 00:00:00 2001
 From: Bichao Zheng <bichao.zheng@amlogic.com>
 Date: Thu, 20 Apr 2023 16:23:24 +0800
-Subject: [PATCH] nand: get onfi mode from id table [1/2]
+Subject: [PATCH] nand: fix nand bugs  [1/1]
 
 PD#SWPL-120491
+PD#SWPL-129754
 
 Problem:
-wrong select onfi mode
+1.wrong select onfi mode
+2.erase flash error during OTA upgrade
 
 Solution:
-get onfi mode from id table
+1.get onfi mode from id table
+2.change the check way of badblock
 
 Verify:
-s4
+1-2:s4
 
 Change-Id: Ie747ceb95f1045c2acaaf2afb6862c9b05d36d8b
 Signed-off-by: Bichao Zheng <bichao.zheng@amlogic.com>
+---
+ drivers/mtd/nand/raw/nand_base.c    |  8 +++++++-
+ drivers/mtd/nand/raw/nand_bbt.c     | 12 +++++++++++-
+ drivers/mtd/nand/raw/nand_timings.c |  4 ++++
+ include/linux/mtd/rawnand.h         | 17 +++++++++++++++++
+ 4 files changed, 39 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mtd/nand/raw/nand_base.c b/drivers/mtd/nand/raw/nand_base.c
 index 881e768f636f..86849348fb70 100644
@@ -43,6 +52,46 @@ index 881e768f636f..86849348fb70 100644
  	nand_legacy_adjust_cmdfunc(chip);
  
  	pr_info("device found, Manufacturer ID: 0x%02x, Chip ID: 0x%02x\n",
+diff --git a/drivers/mtd/nand/raw/nand_bbt.c b/drivers/mtd/nand/raw/nand_bbt.c
+index b7ad030225f8..f3fbd736c748 100644
+--- a/drivers/mtd/nand/raw/nand_bbt.c
++++ b/drivers/mtd/nand/raw/nand_bbt.c
+@@ -75,9 +75,16 @@
+ 
+ static inline uint8_t bbt_get_entry(struct nand_chip *chip, int block)
+ {
++#if !IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND)
+ 	uint8_t entry = chip->bbt[block >> BBT_ENTRY_SHIFT];
+ 	entry >>= (block & BBT_ENTRY_MASK) * 2;
+ 	return entry & BBT_ENTRY_MASK;
++#else
++	if (chip->bbt)
++		return	chip->bbt[block];
++
++	return 1;
++#endif
+ }
+ 
+ static inline void bbt_mark_entry(struct nand_chip *chip, int block,
+@@ -1454,7 +1461,7 @@ int nand_isbad_bbt(struct nand_chip *this, loff_t offs, int allowbbt)
+ 
+ 	pr_debug("nand_isbad_bbt(): bbt info for offs 0x%08x: (block %d) 0x%02x\n",
+ 		 (unsigned int)offs, block, res);
+-
++#if !IS_ENABLED(CONFIG_AMLOGIC_MTD_NAND)
+ 	switch (res) {
+ 	case BBT_BLOCK_GOOD:
+ 		return 0;
+@@ -1464,6 +1471,9 @@ int nand_isbad_bbt(struct nand_chip *this, loff_t offs, int allowbbt)
+ 		return allowbbt ? 0 : 1;
+ 	}
+ 	return 1;
++#else
++	return res ? 1 : 0;
++#endif
+ }
+ 
+ /**
 diff --git a/drivers/mtd/nand/raw/nand_timings.c b/drivers/mtd/nand/raw/nand_timings.c
 index 7b41afc372d2..0b8e90d3aa99 100644
 --- a/drivers/mtd/nand/raw/nand_timings.c

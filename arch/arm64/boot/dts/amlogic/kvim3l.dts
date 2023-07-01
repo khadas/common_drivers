@@ -460,7 +460,7 @@
 	unifykey{
 		compatible = "amlogic,unifykey";
 		status = "ok";
-		unifykey-num = <17>;
+		unifykey-num = <18>;
 		unifykey-index-0 = <&keysn_0>;
 		unifykey-index-1 = <&keysn_1>;
 		unifykey-index-2 = <&keysn_2>;
@@ -478,6 +478,7 @@
 		unifykey-index-14= <&keysn_14>;
 		unifykey-index-15= <&keysn_15>;
 		unifykey-index-16= <&keysn_16>;
+		unifykey-index-17= <&keysn_17>;
 
 		keysn_0: key_0{
 			key-name = "usid";
@@ -565,6 +566,11 @@
 		keysn_16:key_16{
 			key-name = "netflix_mgkid";
 			key-device = "secure";
+			key-permit = "read","write","del";
+		};
+		keysn_17:key_17{
+			key-name = "eth_exphy_para";
+			key-device = "normal";
 			key-permit = "read","write","del";
 		};
 	};//End unifykey
@@ -1855,10 +1861,28 @@
 	gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
 };
 
+&ext_mdio {
+	external_phy: ethernet-phy@0 {
+		reg = <0>;
+		max-speed = <1000>;
+		reset-assert-us = <20000>;
+		reset-deassert-us = <50000>;
+	};
+};
+
 &ethmac {
 	status = "okay";
-	phy-handle = <&internal_ephy>;
-	phy-mode = "rmii";
+	pinctrl-names = "default";
+	pinctrl-0 = <&external_eth_pins>;
+	phy-mode = "rgmii";
+	phy-handle = <&external_phy>;
+	internal_phy = <2>;
+
+	mc_val = <0x1621>;
+	cali_val = <0x00000>;
+	rx_delay = <1>;
+	auto_cali_idx = <0>;
+	amlogic,tx-delay-ns = <2>;
 };
 
 &uart_A {

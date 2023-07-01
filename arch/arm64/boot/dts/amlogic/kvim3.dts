@@ -10,6 +10,7 @@
 #include "partition_debian_linux.dtsi"
 
 / {
+	model = "Khadas VIM3";
 	amlogic-dt-id = "g12b_kvim3";
 	compatible = "g12b_kvim3";
 	interrupt-parent = <&gic>;

@@ -32,6 +32,9 @@
 		tsensor1 = &d_tsensor;
 		spi1 = &spicc0;
 		spi2 = &spicc1;
+		mmc0 = &sd_emmc_c;
+		mmc1 = &sd_emmc_b;
+		mmc2 = &sd_emmc_a;
 	};
 
 	memory@00000000 {

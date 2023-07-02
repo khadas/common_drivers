@@ -15,9 +15,7 @@ function pre_defconfig_cmds() {
 		else
 			if [[ ${GKI_CONFIG} == gki_20 ]]; then
 				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${temp_file}
-			elif [[ ${GKI_CONFIG} == gki_10 ]]; then
-				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_GKI10} ${temp_file}
-			elif [[ ${GKI_CONFIG} == gki_debug ]]; then
+			else
 				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_GKI10} ${ROOT_DIR}/${FRAGMENT_CONFIG_DEBUG} ${temp_file}
 			fi
 		fi
@@ -35,9 +33,7 @@ function pre_defconfig_cmds() {
 				else
 					KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG}
 				fi
-			elif [[ ${GKI_CONFIG} == gki_10 ]]; then
-				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_GKI10}
-			elif [[ ${GKI_CONFIG} == gki_debug ]]; then
+			else
 				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${GKI_BASE_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG} ${ROOT_DIR}/${FRAGMENT_CONFIG_GKI10} ${ROOT_DIR}/${FRAGMENT_CONFIG_DEBUG}
 			fi
 		fi
@@ -1328,10 +1324,6 @@ function handle_input_parameters () {
 			GKI_CONFIG=gki_10
 			shift
 			;;
-		--gki_debug)
-			GKI_CONFIG=gki_debug
-			shift
-			;;
 		--fast_build)
 			FAST_BUILD=1
 			shift
@@ -1448,8 +1440,6 @@ function set_default_parameters () {
 		export KERNEL_BUILD_VAR_FILE=`mktemp /tmp/kernel.XXXXXXXXXXXX`
 		RM_KERNEL_BUILD_VAR_FILE=1
 	fi
-
-	GKI_CONFIG=${GKI_CONFIG:-gki_debug}
 
 	export CROSS_COMPILE=
 

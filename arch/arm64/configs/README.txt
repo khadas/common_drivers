@@ -54,7 +54,7 @@ This file describes the configs using in building different project.
 
     (7) Building with mk.sh with aarch64:
         ./mk.sh                 gki_defconfig + amlogic_gki.fragment + amlogic_gki.10 + amlogic_gki.debug
-        ./mk.sh --gki_debug     gki_defconfig + amlogic_gki.fragment + amlogic_gki.10 + amlogic_gki.debug
+        ./mk.sh --gki_10        gki_defconfig + amlogic_gki.fragment + amlogic_gki.10 + amlogic_gki.debug
         ./mk.sh --gki_20        gki_defconfig + amlogic_gki.fragment
         config path:            common/arch/arm64/configs/gki_defconfig
                                 common_drivers/arch/arm64/configs/amlogic_gki.fragment or amlogic_gki.10 or amlogic_gki.debug

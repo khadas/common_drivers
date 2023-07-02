@@ -20,10 +20,7 @@ function show_help {
 	echo "  --modules_depend        for check modules depend"
 	echo "  --android_project       for android project build"
 	echo "  --gki_20                for build gki 2.0 kernel:   gki_defconfig + amlogic_gki.fragment"
-	echo "  --gki_10                for build gki 1.0 kernel:   gki_defconfig + amlogic_gki.fragment + amlogic_gki.10"
-	echo "  --gki_debug             for build gki debug kernel: gki_defconfig + amlogic_gki.fragment + amlogic_gki.10 + amlogic_gki.debug"
-	echo "                          for note: current can't use --gki_10, amlogic_gki.10 for optimize, amlogic_gki.debug for debug, and follow GKI1.0"
-	echo "                                    so build GKI1.0 Image need with --gki_debug, default parameter --gki_debug"
+	echo "  --gki_10                for build gki 1.0 kernel:   gki_defconfig + amlogic_gki.fragment + amlogic_gki.10 + amlogic_gki.debug"
 	echo "  --fast_build            for fast build"
 	echo "  --upgrade               for android upgrade builtin module optimize vendor_boot size" following with android project name
 	echo "  --manual_insmod_module  for insmod ko manually when kernel is booting.It's usually used in debug test"

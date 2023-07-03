@@ -650,13 +650,14 @@ int aml_tdm_hw_setting_init(struct aml_tdm *p_tdm,
 	if (ret)
 		return ret;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/* Must enabe channel number for VAD */
 	if (p_tdm->chipinfo->chnum_en &&
 	    stream == SNDRV_PCM_STREAM_CAPTURE &&
 	    vad_tdm_is_running(p_tdm->id))
 		tdmin_set_chnum_en(p_tdm->actrl, p_tdm->id, true,
 				   p_tdm->chipinfo->use_vadtop);
-
+#endif
 	if (!p_tdm->contns_clk && !IS_ERR(p_tdm->mclk)) {
 		pr_debug("%s(), enable mclk for tdm-%d\n", __func__, p_tdm->id);
 		ret = clk_prepare_enable(p_tdm->mclk);
@@ -885,6 +886,7 @@ static int tdmin_src_enum_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct soc_enum hdmi_audio_type_enum =
 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0, ARRAY_SIZE(audio_type_texts),
 			audio_type_texts);
@@ -929,6 +931,7 @@ static int tdm_port_pcpd_detect_set(struct snd_kcontrol *kcontrol,
 
 	return 0;
 }
+#endif
 
 static const struct snd_kcontrol_new snd_tdm_b_controls[] = {
 	/*TDMOUT_B gain, enable data * gain*/
@@ -970,6 +973,7 @@ static const struct snd_kcontrol_new snd_tdm_d_controls[] = {
 			    tdmout_set_mute_enum),
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct snd_kcontrol_new snd_pcpd_controls[] = {
 	SOC_SINGLE_EXT("Pc_Pd_Monitor_A Detect enable",
 		       0, 0, 1, 0,
@@ -993,6 +997,7 @@ static const struct snd_kcontrol_new snd_hdmirx_type_controls[] = {
 				hdmiin_audio_type_get_enum,
 				NULL),
 };
+#endif
 
 static irqreturn_t aml_tdm_ddr_isr(int irq, void *devid)
 {
@@ -1189,11 +1194,13 @@ static int aml_tdm_open(struct snd_soc_component *component, struct snd_pcm_subs
 		dev, TDM_BUFFER_BYTES / 2, TDM_BUFFER_BYTES);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		int dst_id = get_aed_dst();
 		bool aed_dst_status = false;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+		int dst_id = get_aed_dst();
 
 		if (dst_id == p_tdm->id && is_aed_reserve_frddr())
 			aed_dst_status = true;
+#endif
 		p_tdm->fddr = aml_audio_register_frddr(dev,
 			p_tdm->actrl, aml_tdm_ddr_isr,
 			substream, aed_dst_status);
@@ -1554,12 +1561,14 @@ static int aml_dai_tdm_prepare(struct snd_pcm_substream *substream,
 		fmt.rate      = runtime->rate;
 		aml_toddr_select_src(to, src);
 		aml_toddr_set_format(to, &fmt);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (p_tdm->pcpd_monitor_src) {
 			struct pcpd_monitor *pc_pd = (struct pcpd_monitor *)p_tdm->pcpd_monitor_src;
 
 			pc_pd->tddr = p_tdm->tddr;
 			aml_pcpd_monitor_init(pc_pd);
 		}
+#endif
 	}
 
 	return 0;
@@ -1575,6 +1584,7 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE &&
 		    p_tdm->tdm_trigger_state == TRIGGER_START_VAD_BUF) {
 			/* VAD switch to alsa buffer */
@@ -1583,7 +1593,7 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 			p_tdm->tdm_trigger_state = TRIGGER_START_ALSA_BUF;
 			break;
 		}
-
+#endif
 		/* reset fifo here.
 		 * If not, xrun will cause channel mapping mismatch
 		 */
@@ -1602,7 +1612,9 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 				 "TDM[%d] Playback enable\n",
 				 p_tdm->id);
 			/*don't change this flow*/
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			aml_aed_top_enable(p_tdm->fddr, true);
+#endif
 			aml_tdm_enable(p_tdm->actrl,
 				substream->stream, p_tdm->id, true, p_tdm->tdm_fade_out_enable,
 				p_tdm->chipinfo->use_vadtop);
@@ -1633,6 +1645,7 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE &&
 		    vad_tdm_is_running(p_tdm->id) &&
 		    pm_audio_is_suspend() &&
@@ -1643,7 +1656,7 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 			p_tdm->tdm_trigger_state = TRIGGER_START_VAD_BUF;
 			break;
 		}
-
+#endif
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			/* output STOP sequence:
 			 * 1. TDMOUT->muteval
@@ -1659,7 +1672,9 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 					p_tdm->chipinfo->gain_ver);
 			if (p_tdm->samesource_sel != SHAREBUFFER_NONE)
 				tdm_sharebuffer_mute(p_tdm, true);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 			aml_aed_top_enable(p_tdm->fddr, false);
+#endif
 			aml_tdm_enable(p_tdm->actrl,
 				substream->stream, p_tdm->id, false, p_tdm->tdm_fade_out_enable,
 				p_tdm->chipinfo->use_vadtop);
@@ -1713,13 +1728,14 @@ static int aml_dai_tdm_hw_free(struct snd_pcm_substream *substream,
 {
 	struct aml_tdm *p_tdm = snd_soc_dai_get_drvdata(cpu_dai);
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/* Disable channel number for VAD */
 	if (p_tdm->chipinfo->chnum_en &&
 	    substream->stream == SNDRV_PCM_STREAM_CAPTURE &&
 	    vad_tdm_is_running(p_tdm->id))
 		tdmin_set_chnum_en(p_tdm->actrl, p_tdm->id, false,
 				   p_tdm->chipinfo->use_vadtop);
-
+#endif
 	/* share buffer free */
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		if (p_tdm->samesource_sel != SHAREBUFFER_NONE)
@@ -1879,7 +1895,7 @@ static int aml_dai_tdm_probe(struct snd_soc_dai *cpu_dai)
 		if (ret < 0)
 			pr_err("failed add snd tdmD controls\n");
 	}
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (p_tdm->pcpd_monitor_src) {
 		struct pcpd_monitor *pc_pd = (struct pcpd_monitor *)p_tdm->pcpd_monitor_src;
 
@@ -1895,7 +1911,7 @@ static int aml_dai_tdm_probe(struct snd_soc_dai *cpu_dai)
 		if (ret < 0)
 			pr_err("failed add snd hdmirx_type controls\n");
 	}
-
+#endif
 	return 0;
 }
 

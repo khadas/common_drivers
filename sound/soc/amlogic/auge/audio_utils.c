@@ -26,7 +26,9 @@ struct snd_elem_info {
 	u32 mask;
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static unsigned int audio_inskew;
+#endif
 /* For S4 HIFI used by EMMC/audio, we need force mpll in DTV */
 static bool force_mpll_clk;
 
@@ -334,6 +336,7 @@ static int spdifout_channel_status_set(struct snd_kcontrol *kcontrol,
 	.private_value = (unsigned long)&(xenum) \
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const char *const audio_locker_texts[] = {
 	"Disable",
 	"Enable",
@@ -410,7 +413,7 @@ static int audio_inskew_set_enum(struct snd_kcontrol *kcontrol,
 
 	return 0;
 }
-
+#endif
 static const char *const tdmout_c_binv_texts[] = {
 	"0",
 	"1",
@@ -490,6 +493,7 @@ static const struct snd_kcontrol_new snd_auge_controls[] = {
 	SPDIFOUT_CHSTATUS("SPDIFOUT Channel Status",
 			  spdif_channel_status_enum),
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/* audio locker */
 	SOC_ENUM_EXT("audio locker enable",
 		     audio_locker_enum,
@@ -501,6 +505,7 @@ static const struct snd_kcontrol_new snd_auge_controls[] = {
 		     audio_inskew_enum,
 		     audio_inskew_get_enum,
 		     audio_inskew_set_enum),
+#endif
 	/* tdmc out binv */
 	SOC_ENUM_EXT("tdmout_c binv set",
 		     tdmout_c_binv_enum,
@@ -514,6 +519,7 @@ static const struct snd_kcontrol_new snd_auge_controls[] = {
 
 int snd_card_add_kcontrols(struct snd_soc_card *card)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int ret;
 
 	pr_info("%s card:%p\n", __func__, card);
@@ -539,7 +545,7 @@ int snd_card_add_kcontrols(struct snd_soc_card *card)
 	ret = card_add_vad_kcontrols(card);
 	if (ret < 0)
 		pr_warn_once("Failed to add VAD controls\n");
-
+#endif
 	return snd_soc_add_card_controls(card,
 					 snd_auge_controls,
 					 ARRAY_SIZE(snd_auge_controls));

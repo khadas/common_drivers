@@ -85,6 +85,7 @@ struct frddr_enum_table frddr_src_table[FRDDR_MAX] = {
 
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define RESAMPLE_MAX_NUM 3
 /* resample */
 static struct toddr_attach attach_resample[RESAMPLE_MAX_NUM];
@@ -102,6 +103,7 @@ static void aml_check_vad(struct toddr *to, bool enable);
 
 /* Audio EQ DRC */
 static struct frddr_attach attach_aed;
+#endif
 
 static irqreturn_t aml_ddr_isr(int irq, void *devid)
 {
@@ -369,7 +371,7 @@ void aml_toddr_enable(struct toddr *to, bool enable)
 
 	reg = calc_toddr_address(EE_AUDIO_TODDR_A_CTRL0, reg_base);
 	aml_audiobus_update_bits(actrl,	reg, 1 << 31, enable << 31);
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/* check resample */
 	aml_check_resample(to, enable);
 
@@ -382,7 +384,7 @@ void aml_toddr_enable(struct toddr *to, bool enable)
 			/* check VAD */
 			aml_check_vad(to, enable);
 	}
-
+#endif
 	if (!enable) {
 		aml_audiobus_write(actrl, reg, 0x0);
 		/* clear ctrl1 register */
@@ -534,8 +536,10 @@ void aml_toddr_set_format(struct toddr *to, struct toddr_fmt *fmt)
 	if (to->chipinfo && to->chipinfo->chnum_sync) {
 		bool chsync_enable = true;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (to->src == EARCRX_DMAC && !get_earcrx_chnum_mult_mode() && fmt->ch_num > 2)
 			chsync_enable = false;
+#endif
 		aml_toddr_chsync_enable(to->fifo_id,
 					fmt->ch_num - 1,
 					chsync_enable);
@@ -861,6 +865,7 @@ unsigned int toddr_vad_get_status2(struct toddr *to)
 	return vad_top_read(reg);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 /* not for tl1 */
 static void aml_toddr_set_resample(struct toddr *to, bool enable)
 {
@@ -1179,6 +1184,7 @@ static void aml_check_vad(struct toddr *to, bool enable)
 		aml_vad_enable(p_attach_vad, enable);
 	}
 }
+#endif
 
 /* from DDRS */
 static struct frddr *register_frddr_l(struct device *dev,
@@ -1729,6 +1735,7 @@ void aml_frddr_set_format(struct frddr *fr,
 	fr->type     = frddr_type;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static void aml_aed_enable(struct frddr_attach *p_attach_aed, bool enable)
 {
 	struct frddr *fr = fetch_frddr_by_src(p_attach_aed->attach_module);
@@ -1830,6 +1837,7 @@ void get_toddr_bits_config(enum toddr_src src,
 		break;
 	}
 }
+#endif
 
 void aml_frddr_check(struct frddr *fr)
 {
@@ -2538,9 +2546,10 @@ static int aml_ddr_mngr_platform_probe(struct platform_device *pdev)
 			return -ENXIO;
 		}
 	}
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	for (i = 0; i < get_resample_module_num(); i++)
 		mutex_init(&attach_resample[i].lock);
-
+#endif
 	ret = register_pm_notifier(&ddr_pm_notifier_block);
 	if (ret)
 		pr_warn("[%s] failed to register PM notifier %d\n",

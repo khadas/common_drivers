@@ -1392,8 +1392,9 @@ static int aml_card_probe(struct platform_device *pdev)
 		goto err;
 	}
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	card_add_effects_init(&priv->snd_card);
-
+#endif
 	if (priv->hp_det_enable == 1 || priv->mic_det_enable == 1) {
 		priv->hp_detect_flag = -1;
 		priv->hp_last_state = -1;

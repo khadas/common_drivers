@@ -1416,13 +1416,14 @@ static int aml_dai_spdif_prepare(struct snd_pcm_substream *substream,
 
 		msb = 28 - 1;
 		lsb = (bit_depth <= 24) ? 28 - bit_depth : 4;
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (get_resample_version() >= T5_RESAMPLE &&
 		    (get_resample_source(RESAMPLE_A) == SPDIFIN ||
 			get_resample_source(RESAMPLE_C) == SPDIFIN)) {
 			msb = 31;
 			lsb = 32 - bit_depth;
 		}
+#endif
 		// to ddr spdifin
 		fmt.type       = toddr_type;
 		fmt.msb        = msb;

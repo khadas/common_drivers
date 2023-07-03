@@ -36,11 +36,14 @@
 
 static int __init sound_soc_init(void)
 {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	call_sub_init(auge_hdmirx_arc_iomap_init);
+#endif
 	call_sub_init(auge_snd_iomap_init);
 	call_sub_init(audio_clocks_init);
 	call_sub_init(audio_controller_init);
 	call_sub_init(audio_ddr_init);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	call_sub_init(pcpd_monitor_init);
 	call_sub_init(earc_init);
 	call_sub_init(effect_platform_init);
@@ -48,15 +51,20 @@ static int __init sound_soc_init(void)
 	call_sub_init(audio_locker_init);
 	call_sub_init(pdm_init);
 	call_sub_init(resample_drv_init);
+#endif
 	call_sub_init(spdif_init);
 	call_sub_init(audio_pinctrl_init);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	call_sub_init(sm1_audio_pinctrl_init);
 	call_sub_init(g12a_audio_pinctrl_init);
+#endif
 	call_sub_init(tdm_init);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	call_sub_init(loopback_init);
 	call_sub_init(vad_drv_init);
 	call_sub_init(vad_dev_init);
 	call_sub_init(aud_sram_init);
+#endif
 	call_sub_init(aml_card_init);
 
 	call_sub_init(audiodsp_init_module);
@@ -73,27 +81,36 @@ static __exit void sound_soc_exit(void)
 	call_sub_exit(audiodsp_exit_module);
 
 	call_sub_exit(aml_card_exit);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	call_sub_exit(aud_sram_exit);
 	call_sub_exit(vad_dev_exit);
 	call_sub_exit(vad_drv_exit);
 	call_sub_exit(loopback_exit);
+#endif
 	call_sub_exit(tdm_exit);
 	call_sub_exit(audio_pinctrl_exit);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	call_sub_exit(sm1_audio_pinctrl_exit);
 	call_sub_exit(g12a_audio_pinctrl_exit);
+#endif
 	call_sub_exit(spdif_exit);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	call_sub_exit(resample_drv_exit);
 	call_sub_exit(pdm_exit);
 	call_sub_exit(audio_locker_exit);
 	call_sub_exit(extn_exit);
 	call_sub_exit(effect_platform_exit);
 	call_sub_exit(earc_exit);
-	call_sub_exit(audio_ddr_exit);
 	call_sub_exit(pcpd_monitor_exit);
+#endif
+	call_sub_exit(audio_ddr_exit);
+
 	call_sub_exit(audio_controller_exit);
 	call_sub_exit(audio_clocks_exit);
 	call_sub_exit(auge_snd_iomap_exit);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	call_sub_exit(auge_hdmirx_arc_iomap_exit);
+#endif
 }
 
 module_init(sound_soc_init);

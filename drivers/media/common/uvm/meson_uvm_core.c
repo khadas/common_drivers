@@ -23,7 +23,7 @@
 #include <linux/pagemap.h>
 #include <linux/amlogic/meson_uvm_core.h>
 #include "meson_uvm_nn_processor.h"
-#include "meson_uvm_allocator.h"
+#include <linux/amlogic/media/meson_uvm_allocator.h>
 #include "linux/amlogic/media/dmabuf_heaps/amlogic_dmabuf_heap.h"
 
 static int uvm_debug_level = UVM_ERROR;

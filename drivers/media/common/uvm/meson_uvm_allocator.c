@@ -25,7 +25,7 @@
 #include <linux/dma-direction.h>
 #include <uapi/linux/dma-heap.h>
 
-#include "meson_uvm_allocator.h"
+#include <linux/amlogic/media/meson_uvm_allocator.h>
 #include "meson_uvm_nn_processor.h"
 #include "meson_uvm_aipq_processor.h"
 #include "meson_uvm_aiface_processor.h"

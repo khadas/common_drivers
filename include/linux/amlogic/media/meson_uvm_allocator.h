@@ -69,7 +69,7 @@ struct mua_device {
 	struct miscdevice dev;
 	struct rb_root root;
 
-	struct mutex buffer_lock;
+	struct mutex buffer_lock; /* dev mutex */
 	int pid;
 };
 

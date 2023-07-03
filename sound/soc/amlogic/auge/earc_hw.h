@@ -233,7 +233,9 @@ enum pll_rst_src {
 	RST_BY_DMACRX, /* earcrx_dmac_rx_sqvalid */
 };
 
+void aml_earc_auto_gain_enable(struct regmap *dmac_map, int value);
 void earctx_dmac_mute(struct regmap *dmac_map, bool enable);
+int earctx_get_dmac_mute(struct regmap *dmac_map);
 void earcrx_pll_refresh(struct regmap *top_map,
 			enum pll_rst_src rst_src,
 			bool level);
@@ -300,6 +302,7 @@ void earctx_compressed_enable(struct regmap *dmac_map,
 			      enum attend_type type,
 			      enum audio_coding_types coding_type,
 			      bool enable);
+void earctx_biphase_work_clear(struct regmap *dmac_map);
 void earctx_enable(struct regmap *top_map,
 		   struct regmap *cmdc_map,
 		   struct regmap *dmac_map,
@@ -327,4 +330,5 @@ bool earxrx_get_pll_valid(struct regmap *top_map);
 bool earxrx_get_pll_valid_auto(struct regmap *top_map);
 u8 earcrx_cmdc_get_rx_stat_bits(struct regmap *cmdc_map);
 void earctx_cmdc_earc_mode(struct regmap *cmdc_map, bool enable);
+void earctx_dmac_hold_bus_and_mute(struct regmap *dmac_map, bool enable);
 #endif

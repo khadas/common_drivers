@@ -8246,6 +8246,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DVB-S dtv demod s4d");
 			break;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		case DTVDEMOD_HW_T5W:
 			/* max delsys is 8, index: 0~7 */
 			aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
@@ -8305,6 +8306,7 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[1] = SYS_ANALOG;
 #endif
 			break;
+#endif //end of CONFIG_AMLOGIC_ZAPPER_CUT
 
 		default:
 			ic_is_supportted = 0;

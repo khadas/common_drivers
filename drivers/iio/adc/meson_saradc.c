@@ -1316,6 +1316,7 @@ static const struct meson_sar_adc_data meson_sar_adc_g12a_data = {
 	.name = "meson-g12a-saradc",
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct meson_sar_adc_data meson_sar_adc_c2_data = {
 	.param = &meson_sar_adc_c2_param,
 	.name = "meson-c2-saradc",
@@ -1325,6 +1326,7 @@ static const struct meson_sar_adc_data meson_sar_adc_txhd2_data = {
 	.param = &meson_sar_adc_txhd2_param,
 	.name = "meson-txhd2-saradc",
 };
+#endif
 
 static const struct of_device_id meson_sar_adc_of_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
@@ -1362,6 +1364,7 @@ static const struct of_device_id meson_sar_adc_of_match[] = {
 		.compatible = "amlogic,meson-g12a-saradc",
 		.data = &meson_sar_adc_g12a_data,
 	},
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,meson-c2-saradc",
 		.data = &meson_sar_adc_c2_data,
@@ -1370,6 +1373,7 @@ static const struct of_device_id meson_sar_adc_of_match[] = {
 		.compatible = "amlogic,meson-txhd2-saradc",
 		.data = &meson_sar_adc_txhd2_data,
 	},
+#endif
 	{},
 };
 MODULE_DEVICE_TABLE(of, meson_sar_adc_of_match);

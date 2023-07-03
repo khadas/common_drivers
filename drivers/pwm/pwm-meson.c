@@ -716,6 +716,7 @@ static struct meson_pwm_data pwm_axg_ao_data __refdata = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static char *pwm_g12a_ao_ab_parent_names[] __refdata = {
 	"xtal", "aoclk81", "fclk_div4", "fclk_div5"
 };
@@ -751,8 +752,10 @@ static struct meson_pwm_data pwm_g12a_ee_data __refdata = {
 	.double_channel = true,
 #endif
 };
+#endif //end of CONFIG_AMLOGIC_ZAPPER_CUT
 
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static  char *pwm_t5d_parent_names[] __refdata = {
 	"xtal", "clk81", "fclk_div4", "fclk_div5"
 };
@@ -762,6 +765,7 @@ static struct meson_pwm_data pwm_t5d_data __refdata = {
 	.num_parents = ARRAY_SIZE(pwm_t5d_parent_names),
 	.double_channel = true,
 };
+#endif //end of CONFIG_AMLOGIC_ZAPPER_CUT
 
 static struct meson_pwm_data pwm_v2_data __refdata = {
 	.double_channel = true,
@@ -792,6 +796,7 @@ static const struct of_device_id meson_pwm_matches[] = {
 		.data = &pwm_axg_ao_data
 	},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,meson-g12a-ee-pwm",
 		.data = &pwm_g12a_ee_data
@@ -804,7 +809,9 @@ static const struct of_device_id meson_pwm_matches[] = {
 		.compatible = "amlogic,meson-g12a-ao-pwm-cd",
 		.data = &pwm_g12a_ao_cd_data
 	},
+#endif
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,meson-tm2-ee-pwm",
 		.data = &pwm_g12a_ee_data
@@ -821,6 +828,7 @@ static const struct of_device_id meson_pwm_matches[] = {
 		.compatible = "amlogic,meson-t5d-ee-pwm",
 		.data = &pwm_t5d_data
 	},
+#endif //end of CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,meson-v2-pwm",
 		.data = &pwm_v2_data

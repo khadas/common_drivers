@@ -827,9 +827,11 @@ static int meson_pinctrl_parse_dt(struct meson_pinctrl *pc,
 {
 	struct device_node *np, *gpio_np = NULL;
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	int num, idx;
 	struct meson_pmx_expand_reg *pmx_expand_reg;
 	u32 val;
+#endif
 #endif
 
 	for_each_child_of_node(node, np) {
@@ -889,7 +891,7 @@ static int meson_pinctrl_parse_dt(struct meson_pinctrl *pc,
 #ifdef CONFIG_AMLOGIC_MODIFY
 	if (of_property_read_bool(node, "amlogic,vin-threshold-support"))
 		pc->reg_vthx = pc->reg_gpio;
-
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/*
 	 * There is a secondary selection mux on TXHD2,
 	 * so this register needs to be used.
@@ -926,6 +928,7 @@ static int meson_pinctrl_parse_dt(struct meson_pinctrl *pc,
 			pmx_expand_reg++;
 		}
 	}
+#endif
 #endif
 
 	if (pc->data->parse_dt)

@@ -103,11 +103,15 @@
 #define pr_amvecm_error(fmt, args...)\
 	pr_error("AMVECM: " fmt, ## args)
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #define pr_amvecm_bringup_dbg(fmt, args...)\
 	do {\
 		if (debug_amvecm_bringup)\
 			pr_info("amvecm_bringup: " fmt, ## args);\
 	} while (0)
+#else
+#define pr_amvecm_bringup_dbg(fmt, args...)
+#endif
 
 #define AMVECM_NAME               "amvecm"
 #define AMVECM_DRIVER_NAME        "amvecm"
@@ -276,9 +280,11 @@ static int debug_amvecm;
 module_param(debug_amvecm, int, 0664);
 MODULE_PARM_DESC(debug_amvecm, "\n debug_amvecm\n");
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int debug_amvecm_bringup;
 module_param(debug_amvecm_bringup, int, 0664);
 MODULE_PARM_DESC(debug_amvecm_bringup, "\n debug_amvecm_bringup\n");
+#endif
 
 unsigned int vecm_latch_flag;
 module_param(vecm_latch_flag, uint, 0664);

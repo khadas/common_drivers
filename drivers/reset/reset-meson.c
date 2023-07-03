@@ -88,6 +88,7 @@ static const struct reset_control_ops meson_reset_ops = {
 	.deassert	= meson_reset_deassert,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct meson_reset_param meson8b_param = {
 	.reg_count	= 8,
 	.level_offset	= 0x7c,
@@ -97,6 +98,7 @@ static const struct meson_reset_param meson_a1_param = {
 	.reg_count	= 3,
 	.level_offset	= 0x40,
 };
+#endif
 
 #ifdef CONFIG_AMLOGIC_MODIFY
 static const struct meson_reset_param meson_sc2_param = {
@@ -104,6 +106,7 @@ static const struct meson_reset_param meson_sc2_param = {
 	.level_offset	= 0x40,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct meson_reset_param meson_t7_param = {
 	.reg_count	= 7,
 	.level_offset	= 0x40,
@@ -113,6 +116,7 @@ static const struct meson_reset_param meson_p1_param = {
 	.reg_count	= 8,
 	.level_offset	= 0x40,
 };
+#endif //CONFIG_AMLOGIC_ZAPPER_CUT
 #endif
 
 static const struct of_device_id meson_reset_dt_ids[] = {
@@ -121,14 +125,17 @@ static const struct of_device_id meson_reset_dt_ids[] = {
 	 { .compatible = "amlogic,meson-gxbb-reset", .data = &meson8b_param},
 #endif
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	 { .compatible = "amlogic,meson-a1-reset",   .data = &meson_a1_param},
 	 { .compatible = "amlogic,meson-axg-reset",  .data = &meson8b_param},
-	 { .compatible = "amlogic,meson-sc2-reset",  .data = &meson_sc2_param},
 	 { .compatible = "amlogic,meson-t5d-reset",  .data = &meson8b_param},
 	 { .compatible = "amlogic,meson-t7-reset",  .data = &meson_t7_param},
 	 { .compatible = "amlogic,meson-p1-reset",  .data = &meson_p1_param},
 	 { .compatible = "amlogic,meson-c2-reset",   .data = &meson_a1_param},
 	 { .compatible = "amlogic,meson-t5m-reset",  .data = &meson_t7_param},
+#endif
+	 // zapper use sc2
+	 { .compatible = "amlogic,meson-sc2-reset",  .data = &meson_sc2_param},
 #endif
 	 { /* sentinel */ },
 };

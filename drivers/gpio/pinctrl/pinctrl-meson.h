@@ -108,6 +108,7 @@ struct meson_bank {
 };
 
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 struct meson_pmx_expand {
 	unsigned int pin;
 	unsigned int func;
@@ -130,6 +131,7 @@ struct meson_pmx_expand_reg {
 	unsigned int __iomem *reg;
 };
 #endif
+#endif
 
 struct meson_pinctrl_data {
 	const char *name;
@@ -145,8 +147,10 @@ struct meson_pinctrl_data {
 	void *pmx_data;
 	int (*parse_dt)(struct meson_pinctrl *pc);
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct meson_pmx_expand *pmx_expand;
 	unsigned int pmx_expand_num;
+#endif
 #endif
 };
 
@@ -165,8 +169,10 @@ struct meson_pinctrl {
 #ifdef CONFIG_AMLOGIC_MODIFY
 	struct regmap *reg_vthx;
 	struct device_node *of_irq;
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	struct meson_pmx_expand_reg *mux_expand_reg;
 	unsigned int mux_expand_num;
+#endif
 #endif
 };
 

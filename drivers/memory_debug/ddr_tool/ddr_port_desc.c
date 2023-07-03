@@ -388,6 +388,7 @@ static struct ddr_port_desc ddr_port_desc_c1[] __initdata = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct ddr_port_desc ddr_port_desc_a1[] __initdata = {
 	{ .port_id =  0, .port_name = "ARM"           },
 	{ .port_id =  1, .port_name = "DSPA"          },
@@ -715,6 +716,7 @@ static struct ddr_port_desc ddr_port_desc_t3[] __initdata = {
 	{ .port_id = 84, .port_name = "FRC1"          },
 	{ .port_id = 85, .port_name = "FRC2"          }
 };
+#endif
 
 static struct ddr_port_desc ddr_port_desc_s4[] __initdata = {
 	{ .port_id =  0, .port_name = "ARM"           },
@@ -747,6 +749,7 @@ static struct ddr_port_desc ddr_port_desc_s4[] __initdata = {
 	{ .port_id = 47, .port_name = "DEMOD"         }
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct ddr_port_desc ddr_port_desc_sc2[] __initdata = {
 	{ .port_id =  0, .port_name = "ARM"           },
 	{ .port_id =  1, .port_name = "MALI"          },
@@ -1072,7 +1075,7 @@ static struct ddr_port_desc ddr_port_desc_txhd2[] __initdata = {
 	{ .port_id = 45, .port_name = "ETH"           },
 	{ .port_id = 47, .port_name = "DEMOD"         }
 };
-
+#endif
 static struct ddr_port_desc *chip_ddr_port;
 static unsigned int chip_ddr_port_num __initdata;
 
@@ -1144,6 +1147,7 @@ int __init ddr_find_port_desc_type(int cpu_type, struct ddr_port_desc **desc, in
 		break;
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DMC_TYPE_A1:
 		*desc = ddr_port_desc_a1;
 		desc_size = ARRAY_SIZE(ddr_port_desc_a1);
@@ -1189,12 +1193,13 @@ int __init ddr_find_port_desc_type(int cpu_type, struct ddr_port_desc **desc, in
 		*desc = ddr_port_desc_t3;
 		desc_size = ARRAY_SIZE(ddr_port_desc_t3);
 		break;
-
+#endif
 	case DMC_TYPE_S4:
 		*desc = ddr_port_desc_s4;
 		desc_size = ARRAY_SIZE(ddr_port_desc_s4);
 		break;
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DMC_TYPE_SC2:
 		*desc = ddr_port_desc_sc2;
 		desc_size = ARRAY_SIZE(ddr_port_desc_sc2);
@@ -1239,7 +1244,7 @@ int __init ddr_find_port_desc_type(int cpu_type, struct ddr_port_desc **desc, in
 		*desc = ddr_port_desc_txhd2;
 		desc_size = ARRAY_SIZE(ddr_port_desc_txhd2);
 		break;
-
+#endif
 	default:
 		return -EINVAL;
 	}

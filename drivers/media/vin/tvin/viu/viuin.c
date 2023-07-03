@@ -519,16 +519,20 @@ static void viuin_set_wr_bak_ctrl(enum tvin_port_e port)
 		break;
 	case TVIN_PORT_VIU1_WB0_OSD1:
 		wr_bits_viu(VPP_WR_BAK_CTRL, 3, 0, 4);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (is_meson_txhd2_cpu() && rd_bits_viu(VPP_MISC, 27, 1))
 			wr_bits_viu(VPP_WR_BAK_CTRL, 1, 11, 1);
+#endif
 		break;
 	case TVIN_PORT_VIU1_WB0_OSD2:
 		wr_bits_viu(VPP_WR_BAK_CTRL, 4, 0, 4);
 		break;
 	case TVIN_PORT_VIU1_WB0_POST_BLEND:
 		wr_bits_viu(VPP_WR_BAK_CTRL, 5, 0, 4);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (is_meson_txhd2_cpu() && rd_bits_viu(VPP_MISC, 27, 1))
 			wr_bits_viu(VPP_WR_BAK_CTRL, 1, 11, 1);
+#endif
 		break;
 	case TVIN_PORT_VIU1_WB0_VPP:
 		wr_bits_viu(VPP_WR_BAK_CTRL, 6, 0, 4);
@@ -538,8 +542,10 @@ static void viuin_set_wr_bak_ctrl(enum tvin_port_e port)
 		 * tm2_revb increased 4bits, all 12bit
 		 */
 		wr_bits_viu(VPP_WR_BAK_CTRL, 0xff, 16, 8);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		if (is_meson_txhd2_cpu() && rd_bits_viu(VPP_MISC, 27, 1))
 			wr_bits_viu(VPP_WR_BAK_CTRL, 1, 11, 1);
+#endif
 		break;
 	case TVIN_PORT_VIU1_VIDEO:
 		wr_bits_viu(VPP_WR_BAK_CTRL, 7, 0, 4);
@@ -774,9 +780,11 @@ static void viuin_stop(struct tvin_frontend_s *fe, enum tvin_port_e port)
 		pr_info("[viuin..]%s viu in dec isn't start.\n", __func__);
 	//pr_info("%s %d Disable VIU to VDIN\n", __func__, __LINE__);
 	wr_viu(VPU_VIU_VDIN_IF_MUX_CTRL, 0);
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	/* txhd2 keystone path close */
 	if (is_meson_txhd2_cpu() && rd_bits_viu(VPP_WR_BAK_CTRL, 11, 1))
 		wr_bits_viu(VPP_WR_BAK_CTRL, 0, 11, 1);
+#endif
 }
 
 static int viuin_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)

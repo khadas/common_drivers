@@ -57,6 +57,7 @@ static int meson_pmx_calc_reg_and_offset(struct meson_pmx_bank *bank,
 }
 
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static int meson_pmx_expand_update(struct meson_pinctrl *pc,
 				   unsigned int pin,
 				   unsigned int func)
@@ -101,6 +102,7 @@ static int meson_pmx_expand_update(struct meson_pinctrl *pc,
 	return 0;
 }
 #endif
+#endif
 
 static int meson_axg_pmx_update_function(struct meson_pinctrl *pc,
 					 unsigned int pin,
@@ -120,8 +122,10 @@ static int meson_axg_pmx_update_function(struct meson_pinctrl *pc,
 	ret = regmap_update_bits(pc->reg_mux, reg << 2,
 				 0xf << offset, (func & 0xf) << offset);
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (!ret)
 		ret = meson_pmx_expand_update(pc, pin, func);
+#endif
 #endif
 
 	return ret;

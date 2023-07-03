@@ -1928,6 +1928,10 @@
 		//pwm_config = <&wifi_pwm_conf>;
 	};
 
+	chosen {
+		bootargs = "usbcore.autosuspend=-1";
+	};
+
 }; /* end of / */
 
 &pinctrl_aobus {

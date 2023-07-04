@@ -643,7 +643,7 @@ struct frc_dev_s {
 	//struct work_struct frc_work;
 	struct work_struct frc_clk_work;
 	struct work_struct frc_print_work;
-
+	struct work_struct frc_secure_work;
 
 	struct st_frc_sts frc_sts;
 	struct st_frc_in_sts in_sts;

@@ -931,6 +931,19 @@ static void frc_clock_workaround(struct work_struct *work)
 	pr_frc(1, "%s, clk_new state:%d\n", __func__, devp->clk_state);
 }
 
+static void frc_secure_workaround(struct work_struct *work)
+{
+	struct frc_dev_s *devp = container_of(work,
+		struct frc_dev_s, frc_secure_work);
+
+	if (unlikely(!devp)) {
+		PR_ERR("%s err, devp is NULL\n", __func__);
+		return;
+	}
+
+	frc_mm_secure_set(devp);
+}
+
 static void frc_drv_initial(struct frc_dev_s *devp)
 {
 	struct vinfo_s *vinfo = get_current_vinfo();
@@ -1197,6 +1210,7 @@ static int frc_probe(struct platform_device *pdev)
 // #endif
 	INIT_WORK(&frc_devp->frc_clk_work, frc_clock_workaround);
 	INIT_WORK(&frc_devp->frc_print_work, frc_debug_table_print);
+	INIT_WORK(&frc_devp->frc_secure_work, frc_secure_workaround);
 	frc_devp->clk_chg = 1;
 	frc_set_enter_forcefilm(frc_devp, 0);
 
@@ -1245,6 +1259,7 @@ static int __exit frc_remove(struct platform_device *pdev)
 	// frc_devp = platform_get_drvdata(pdev);
 	cancel_work_sync(&frc_devp->frc_clk_work);
 	cancel_work_sync(&frc_devp->frc_print_work);
+	cancel_work_sync(&frc_devp->frc_secure_work);
 	tasklet_kill(&frc_devp->input_tasklet);
 	tasklet_kill(&frc_devp->output_tasklet);
 	tasklet_disable(&frc_devp->input_tasklet);

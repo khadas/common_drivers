@@ -6255,9 +6255,9 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 	} else {
 		bit_mode = 0;
 	}
-	/* for 10bit yuv p010 mode */
+	/* for 10bit yuv p010 mode, used high 10bit, if used low 10 bit, bit_mode = 1 */
 	if (bit16_mode)
-		bit_mode = 1;
+		bit_mode = 0;
 	cur_dev->rdma_func[vpp_index].rdma_wr_bits
 		(vd_mif_reg->vd_if0_gen_reg3,
 		(bit_mode & 0x3), 8, 2);

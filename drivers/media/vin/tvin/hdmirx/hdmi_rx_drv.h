@@ -85,9 +85,9 @@
 /* 2023.5.30 hdmirx cts and hdcp */
 /* 2023.6.8  support black pattern for AV mute */
 /* I2C edid communication is stopped at 0x2 */
-/* clear dv packet when no emp */
 /* play next song no sound */
-#define RX_VER1 "ver.2023/6/28"
+/* 2023.7.5 clear dv packet when no emp */
+#define RX_VER1 "ver.2023/7/5"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

@@ -657,20 +657,6 @@ u32 rx_pkt_type_mapping(enum pkt_type_e pkt_type)
 	return rt;
 }
 
-void rx_em_pkt_initial(void)
-{
-	int i = 0;
-	int j = 0;
-
-	for (i = 0; i < E_PORT_NUM; i++) {
-		//memset(&rxpktsts[i], 0, sizeof(struct rxpkt_st));
-		memset(&rx_pkt[i].emp_info, 0, sizeof(struct pd_infoframe_s));
-		j = 0;
-		while (j < VSI_TYPE_MAX)
-			memset(&rx_pkt[i].multi_vs_info[j++], 0, sizeof(struct pd_infoframe_s));
-	}
-}
-
 void rx_pkt_initial(void)
 {
 	int i = 0;
@@ -1145,7 +1131,11 @@ u32 rx_pkt_chk_attach_vsi(u8 port)
 //todo
 void rx_pkt_clr_attach_vsi(u8 port)
 {
+	u8 i = 0;
+
 	rxpktsts[port].pkt_attach_vsi = 0;
+	while (i < VSI_TYPE_MAX)
+		memset(&rx_pkt[port].multi_vs_info[i++], 0, sizeof(struct pd_infoframe_s));
 }
 
 u32 rx_pkt_chk_updated_spd(u8 port)
@@ -1172,6 +1162,13 @@ u32 rx_pkt_chk_attach_drm(u8 port)
 void rx_pkt_clr_attach_drm(u8 port)
 {
 	rxpktsts[port].pkt_attach_drm = 0;
+}
+
+void rx_check_pkt_flag(u8 port)
+{
+	if (!(rxpktsts[port].pkt_op_flag & PKT_OP_VSI))
+		rx_pkt_clr_attach_vsi(port);
+	//other pkts, todo
 }
 
 u32 rx_pkt_chk_busy_vsi(u8 port)
@@ -1356,6 +1353,7 @@ void rx_get_vsi_info(u8 port)
 	emp_info_p->emp_tagid = 0;
 	/* pkt->ieee = 0; */
 	/* memset(&rx_pkt.vs_info, 0, sizeof(struct pd_infoframe_s)); */
+	rxpktsts[port].pkt_op_flag &= ~PKT_OP_VSI;
 }
 
 void rx_pkt_buffclear(enum pkt_type_e pkt_type, u8 port)
@@ -1803,6 +1801,7 @@ int rx_pkt_fifodecode(struct packet_info_s *prx,
 	case PKT_TYPE_INFOFRAME_VSI:
 		if (log_level & PACKET_LOG && rx[port].new_emp_pkt)
 			rx_pr("ieee_type:0x%x\n", pktdata->vsi_infoframe.ieee);
+		pktsts->pkt_op_flag |= PKT_OP_VSI;
 		switch (pktdata->vsi_infoframe.ieee) {
 		case IEEE_DV15:
 			memcpy(&prx->multi_vs_info[DV15], pktdata,
@@ -1837,7 +1836,6 @@ int rx_pkt_fifodecode(struct packet_info_s *prx,
 		default:
 			break;
 		}
-		pktsts->pkt_op_flag &= ~PKT_OP_VSI;
 		break;
 	case PKT_TYPE_INFOFRAME_AVI:
 		pktsts->pkt_cnt_avi++;

@@ -1382,6 +1382,7 @@ void rx_set_sig_info(void)
 
 void rx_update_sig_info(u8 port)
 {
+	rx_check_pkt_flag(port);
 	rx_get_vsi_info(port);
 	rx_get_em_info(port);
 	//rx_get_aif_info(port);

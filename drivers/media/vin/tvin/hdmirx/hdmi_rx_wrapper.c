@@ -2018,13 +2018,10 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT, port);
 			need_check = false;
 			if (rx[port].state >= FSM_SIG_STABLE) {
 				rx_emp_field_done_irq(port);
-				rx_em_pkt_initial();
 				rx_pkt_handler(PKT_BUFF_SET_EMP, port);
 			}
 			if (log_level & 0x400)
 				rx_pr("[isr] emp_field_done\n");
-		} else {
-			rx_em_pkt_initial();
 		}
 		if (hdmirx_top_intr_stat & (1 << 24))
 			if (log_level & 0x100)

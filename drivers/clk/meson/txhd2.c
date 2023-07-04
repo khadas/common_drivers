@@ -501,9 +501,9 @@ static struct clk_regmap txhd2_mpll_50m = {
 
 #ifdef CONFIG_ARM
 static const struct pll_params_table txhd2_gp0_pll_table[] = {
-	PLL_PARAMS(48, 0, 2), /* DCO = 1152M OD = 2 PLL = 288M */
-	PLL_PARAMS(62, 0, 1), /* DCO = 1488M OD = 1 PLL = 744M */
-	PLL_PARAMS(48, 0, 0), /* DCO = 1152M OD = 0 PLL = 1152M */
+	// PLL_PARAMS(48, 0, 2), /* DCO = 1152M OD = 2 PLL = 288M */
+	// PLL_PARAMS(62, 0, 1), /* DCO = 1488M OD = 1 PLL = 744M */
+	// PLL_PARAMS(48, 0, 0), /* DCO = 1152M OD = 0 PLL = 1152M */
 	PLL_PARAMS(62, 0, 0), /* DCO = 1488M OD = 0 PLL = 1488M */
 
 	{ /* sentinel */  }
@@ -523,12 +523,12 @@ static const struct pll_params_table txhd2_gp0_pll_table[] = {
  * Internal gp0 pll emulation configuration parameters
  */
 static const struct reg_sequence txhd2_gp0_init_regs[] = {
-	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x60000030 },
-	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x70000030 },
+	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x6100003e },
+	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x7100003e },
 	{ .reg = HHI_GP0_PLL_CNTL1,	.def = 0x39002000 },
 	{ .reg = HHI_GP0_PLL_CNTL2,	.def = 0x00001140 },
 	{ .reg = HHI_GP0_PLL_CNTL3,	.def = 0x00000000, .delay_us = 20 },
-	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x50000030, .delay_us = 20 },
+	{ .reg = HHI_GP0_PLL_CNTL0,	.def = 0x5100003e, .delay_us = 20 },
 	{ .reg = HHI_GP0_PLL_CNTL2,	.def = 0x00001100 }
 };
 
@@ -575,7 +575,7 @@ static struct clk_regmap txhd2_gp0_pll_dco = {
 		.table = txhd2_gp0_pll_table,
 		.init_regs = txhd2_gp0_init_regs,
 		.init_count = ARRAY_SIZE(txhd2_gp0_init_regs),
-		.flags = CLK_MESON_PLL_POWER_OF_TWO | CLK_MESON_PLL_IGNORE_INIT,
+		.flags = CLK_MESON_PLL_POWER_OF_TWO,//| CLK_MESON_PLL_IGNORE_INIT,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "gp0_pll_dco",
@@ -880,9 +880,9 @@ static struct clk_regmap txhd2_hifi1_pll = {
 static const struct cpu_dyn_table txhd2_cpu_dyn_table[] = {
 	CPU_LOW_PARAMS(100000000, 1, 1, 9),
 	CPU_LOW_PARAMS(250000000, 1, 1, 3),
-	//CPU_LOW_PARAMS(333333333, 2, 1, 1),
+	CPU_LOW_PARAMS(333333333, 2, 1, 1),
 	CPU_LOW_PARAMS(500000000, 1, 1, 1),
-	//CPU_LOW_PARAMS(667000000, 2, 0, 0),
+	CPU_LOW_PARAMS(667000000, 2, 0, 0),
 	CPU_LOW_PARAMS(1000000000, 1, 0, 0),
 };
 
@@ -1623,13 +1623,15 @@ static struct clk_regmap txhd2_ts_clk = {
 	},
 };
 
+static u32 txhd2_sd_emmc_table[] = {0, 1, 2, 3, 4, 7};
+
 static const struct clk_parent_data txhd2_sd_emmc_parent_data[] = {
 	{ .fw_name = "xtal", },
 	{ .hw = &txhd2_fclk_div2.hw },
 	{ .hw = &txhd2_fclk_div3.hw },
 	{ .hw = &txhd2_fclk_div5.hw },
-	{ .hw = &txhd2_fclk_div7.hw },
-	// { .hw = &txhd2_gp0_pll.hw }
+	{ .hw = &txhd2_fclk_div2p5.hw },
+	{ .hw = &txhd2_gp0_pll.hw },
 };
 
 static struct clk_regmap txhd2_sd_emmc_c_sel = {
@@ -1637,6 +1639,7 @@ static struct clk_regmap txhd2_sd_emmc_c_sel = {
 		.offset = HHI_NAND_CLK_CNTL,
 		.mask = 0x7,
 		.shift = 9,
+		.table = txhd2_sd_emmc_table,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "sd_emmc_c_sel",

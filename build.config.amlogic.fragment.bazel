@@ -1,30 +1,49 @@
+. ${ROOT_DIR}/${KERNEL_DIR}/build.config.gki.aarch64
+
+COMMON_DRIVERS=common_drivers
+. ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS}/project/build.config.project
+. ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS}/project/build.config.gki10
+
 DEFCONFIG=amlogic_gki_defconfig
+PRE_DEFCONFIG_CMDS=pre_defconfig_cmds
+POST_DEFCONFIG_CMDS="rm ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${DEFCONFIG}"
+
+[[ -n ${KASAN} ]] && LTO=none
+
+echo "Base Kernel parm: LTO=${LTO} GKI_CONFIG=${GKI_CONFIG} ANDROID_PROJECT=${ANDROID_PROJECT} KASAN=${KASAN} CHECK_GKI_20=${CHECK_GKI_20}"
 
 function pre_defconfig_cmds() {
 	KCONFIG_DEFCONFIG=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${DEFCONFIG}
 	local temp_file=`mktemp /tmp/config.XXXXXXXXXXXX`
 
 	if [[ ${GKI_CONFIG} == gki_20 ]]; then
-		echo "CONFIG_AMLOGIC_DRIVER=y" > ${temp_file}
-		#echo "CONFIG_AMLOGIC_BREAK_GKI=y" >> ${temp_file}
-		echo "CONFIG_AMLOGIC_MODIFY=y" >> ${temp_file}
-		echo "CONFIG_AMLOGIC_IN_KERNEL_MODULES=y" >> ${temp_file}
+		if [[ -z ${ANDROID_PROJECT} ]]; then
+			echo "CONFIG_AMLOGIC_DRIVER=y" > ${temp_file}
+			#echo "CONFIG_AMLOGIC_BREAK_GKI=y" >> ${temp_file}
+			echo "CONFIG_AMLOGIC_MODIFY=y" >> ${temp_file}
+			echo "CONFIG_AMLOGIC_IN_KERNEL_MODULES=y" >> ${temp_file}
 
-		echo "CONFIG_AMLOGIC_SERIAL_MESON=y" >> ${temp_file}
-		echo "CONFIG_AMLOGIC_SERIAL_MESON_CONSOLE=y" >> ${temp_file}
-		echo "CONFIG_AMLOGIC_SERIAL_EARLY_CONSOLE=y" >> ${temp_file}
-		echo "CONFIG_DEVTMPFS=y" >> ${temp_file}
-
-		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${temp_file}
+			echo "CONFIG_AMLOGIC_SERIAL_MESON=y" >> ${temp_file}
+			echo "CONFIG_AMLOGIC_SERIAL_MESON_CONSOLE=y" >> ${temp_file}
+			echo "CONFIG_AMLOGIC_SERIAL_EARLY_CONSOLE=y" >> ${temp_file}
+			echo "CONFIG_DEVTMPFS=y" >> ${temp_file}
+		fi
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r \
+				${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig \
+				${temp_file}
 	else
 		echo "CONFIG_MODULE_SIG_ALL=y" > ${temp_file}
-
 		if [[ -z ${ANDROID_PROJECT} ]]; then
 			echo "CONFIG_AMLOGIC_SERIAL_MESON=y" >> ${temp_file}
 			echo "CONFIG_DEVTMPFS=y" >> ${temp_file}
 		fi
 
-		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.fragment ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.10 ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.debug ${temp_file}
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r \
+				${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig \
+				${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.fragment \
+				${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.10 \
+				${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/amlogic_gki.debug \
+				${temp_file}
 	fi
 
 	if [[ ${UPGRADE_PROJECT} == r || ${UPGRADE_PROJECT} == R ]]; then
@@ -55,9 +74,18 @@ function pre_defconfig_cmds() {
 		done
 	fi
 
+	if [[ -n ${KASAN} ]]; then
+		echo "CONFIG_KASAN_GENERIC=y" > ${temp_file}
+		# echo "CONFIG_KASAN_MODULE_TEST=m" >> ${temp_file}
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r \
+				 ${KCONFIG_DEFCONFIG} \
+				${temp_file}
+	fi
+
+	if [[ -n ${CHECK_GKI_20} ]]; then
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r \
+				${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig
+	fi
+
 	rm ${temp_file}
 }
-export -f pre_defconfig_cmds
-PRE_DEFCONFIG_CMDS=pre_defconfig_cmds
-
-POST_DEFCONFIG_CMDS="rm ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${DEFCONFIG}"

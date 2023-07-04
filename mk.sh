@@ -28,6 +28,7 @@ function show_help {
 	echo "  --check_gki_20          for gki 2.0 check kernel build"
 	echo "  --dev_config            for use the config specified by oem instead of amlogic like ./mk.sh --dev_config a_config+b_config+c_config"
 	echo "  --use_prebuilt_gki      for use prebuilt gki, require parameter value, https://ci.android.com/builds/submitted/10412065/kernel_aarch64/latest, --use_prebuilt_gki 10412065"
+	echo "  --kasan                 for build kernel with config kasan"
 }
 
 # handle the dir parameters for amlogic_utils.sh
@@ -135,16 +136,11 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 	echo 						>> ${PROJECT_DIR}/build.config.gki10
 	echo "GKI_CONFIG=${GKI_CONFIG}"			>> ${PROJECT_DIR}/build.config.gki10
 	echo "ANDROID_PROJECT=${ANDROID_PROJECT}"	>> ${PROJECT_DIR}/build.config.gki10
-	echo "GKI_BUILD_CONFIG_FRAGMENT=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/build.config.amlogic.fragment.bazel" >> ${PROJECT_DIR}/build.config.gki10
 	echo "COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR}" >> ${PROJECT_DIR}/build.config.gki10
 	echo "UPGRADE_PROJECT=${UPGRADE_PROJECT}"	>> ${PROJECT_DIR}/build.config.gki10
 	echo "DEV_CONFIGS=${DEV_CONFIGS}"		>> ${PROJECT_DIR}/build.config.gki10
-
-	if [[ ${GKI_CONFIG} == gki_20 ]]; then
-		[[ -n ${ANDROID_PROJECT} ]] && sed -i "/GKI_BUILD_CONFIG_FRAGMENT/d" ${PROJECT_DIR}/build.config.gki10
-	else
-		args="${args} --allow_undeclared_modules"
-	fi
+	echo "KASAN=${KASAN}"				>> ${PROJECT_DIR}/build.config.gki10
+	echo "CHECK_GKI_20=${CHECK_GKI_20}"		>> ${PROJECT_DIR}/build.config.gki10
 
 	if [[ ! -f ${PROJECT_DIR}/project.bzl ]]; then
 		touch ${PROJECT_DIR}/project.bzl
@@ -182,9 +178,28 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 	cat  ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/boot/dts/amlogic/Makefile | grep -n "dtb" | cut -d "=" -f 2 | sed 's/[[:space:]][[:space:]]*/ /g' | sed 's/^[ ]*//' | sed 's/[ ]*$//' | sed '/^#/d;/^$/d' | sed 's/^/    "/' | sed 's/$/",/' >> ${PROJECT_DIR}/dtb.bzl
 	echo "]"					>> ${PROJECT_DIR}/dtb.bzl
 
+	if [[ "${GKI_CONFIG}" != "gki_20" || -n ${KASAN} || -z ${ANDROID_PROJECT} ]]; then
+		args="${args} --gki_build_config_fragment=//common:common_drivers/build.config.amlogic.fragment.bazel"
+	fi
+
+	if [[ ${GKI_CONFIG} != gki_20 || -n ${KASAN} || -n ${CHECK_GKI_20} ]]; then
+		args="${args} --allow_undeclared_modules"
+	fi
+
+	[[ -n ${KASAN} ]] && args="${args} --kasan"
+
+	if [[ -n ${CHECK_GKI_20} ]]; then
+		args="${args} --lto=none --notrim --nokmi_symbol_list_strict_mode"
+	fi
+
 	echo args=${args}
 	set -x
 	if [[ -n ${GOOGLE_BAZEL_BUILD_COMMAND_LINE} ]]; then
+		if [[${GOOGLE_BAZEL_BUILD_COMMAND_LINE} =~ "--kasan" ]]; then
+			GOOGLE_BAZEL_BUILD_COMMAND_LINE="${GOOGLE_BAZEL_BUILD_COMMAND_LINE} \
+								--gki_build_config_fragment=//common:common_drivers/build.config.amlogic.fragment.bazel \
+								--allow_undeclared_modules"
+		fi
 		${GOOGLE_BAZEL_BUILD_COMMAND_LINE}
 	elif [[ "${ABI}" -eq "1" ]]; then
 		tools/bazel run //common:amlogic_abi_update_symbol_list --sandbox_debug --verbose_failures ${args}

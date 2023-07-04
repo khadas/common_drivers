@@ -57,6 +57,8 @@ POST_DEFCONFIG_CMDS="post_defconfig_cmds"
 
 MAKE_GOALS="
 	${MAKE_GOALS}
+	Image.lz4
+	Image.gz
 "
 
 FILES="

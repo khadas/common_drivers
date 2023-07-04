@@ -10,3 +10,9 @@ CONFIG_AMLOGIC_BREAK_GKI_20=y
 
 # amlogic APU
 CONFIG_AMLOGIC_APU=y
+
+# amlogic-thermal.ko(dvfs need)
+CONFIG_THERMAL_DEFAULT_GOV_POWER_ALLOCATOR=y
+
+#amlogic-pcie.ko(if not ,default usb3.0)
+CONFIG_PCIE_DW_PLAT_HOST=y

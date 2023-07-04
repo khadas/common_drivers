@@ -2330,5 +2330,6 @@
 	clocks = <&clkc CLKID_MALI>, <&clkc CLKID_GP0_PLL>;
 	clock-names = "gpu_mux", "gp0_pll";
 
-	tbl = <&clk125_cfg &clk500_cfg &clk750_cfg &clk750_cfg>;
+	tbl = <&clk125_cfg &clk285_cfg &clk400_cfg
+		&clk500_cfg &clk666_cfg &clk744_cfg &clk744_cfg>;
 };

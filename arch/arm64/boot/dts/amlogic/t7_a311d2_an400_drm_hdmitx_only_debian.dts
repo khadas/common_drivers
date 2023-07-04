@@ -1518,6 +1518,7 @@
 	overwrite_crtcmask_of_osd = <0 0 0 0>;
 	/* overwrite the crtc mask of video plane */
 	overwrite_crtcmask_of_video = <0 0 0>;
+	dummyl_from_hdmitx = /bits/ 8  <1>;
 };
 
 &drm_vpu {

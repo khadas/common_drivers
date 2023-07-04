@@ -723,10 +723,6 @@
 	};
 };
 
-&pwm_ij {
-	status = "disabled";
-};
-
 &i2c2 {
 	status = "disabled";
 	pinctrl-names="default";
@@ -1481,12 +1477,6 @@
 	//reset-gpios = <&gpio    GPIOX_17 GPIO_ACTIVE_HIGH>;
 	//btwakeup-gpios = <&gpio    GPIOX_18 GPIO_ACTIVE_HIGH>;
 	//hostwake-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_HIGH>;
-};
-
-&pwm_ef {
-	pinctrl-0 = <&pwm_e_pins1>;
-	pinctrl-names = "default";
-	status = "disabled";
 };
 
 &uart_A {

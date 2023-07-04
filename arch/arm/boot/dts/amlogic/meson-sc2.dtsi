@@ -1185,7 +1185,7 @@
 				reg = <0xfde00000 0x100000>;
 				interrupts = <GIC_SPI 130 IRQ_TYPE_LEVEL_HIGH>;
 				dr_mode = "host";
-				maximum-speed = "high-speed";
+				maximum-speed = "super-speed";
 				snps,dis_u2_susphy_quirk;
 				snps,quirk-frame-length-adjustment;
 				usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;

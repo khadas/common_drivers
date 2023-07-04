@@ -3346,7 +3346,7 @@
 			"cicam_cen", "cicam_oen",
 			"cicam_wen", "cicam_iordn",
 			"cicam_iowrn",
-			"cicam_reset", "cicam_waitn_m";
+			"cicam_reset";
 			function = "cicam";
 		};
 	};
@@ -3367,12 +3367,12 @@
 	};
 	ci_addr_pins: ci_addr_pins {
 		mux {
-			groups = "cicam_a2_c",
-			"cicam_a3_c", "cicam_a4_c",
-			"cicam_a5_c", "cicam_a6_c",
-			"cicam_a7_c", "cicam_a8_c",
-			"cicam_a9_c",
-			"cicam_a10_c", "cicam_a11_c";
+			groups = "cicam_a2_z",
+			"cicam_a3_z", "cicam_a4_z",
+			"cicam_a5_z", "cicam_a6_z",
+			"cicam_a7_z", "cicam_a8_z",
+			"cicam_a9_z",
+			"cicam_a10_z", "cicam_a11_z";
 			function = "cicam";
 		};
 	};

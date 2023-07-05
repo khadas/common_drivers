@@ -6528,12 +6528,12 @@ void rx_emp_field_done_irq(u8 port)
 
 	if (rx[port].emp_vid_idx == 0) {
 		/*emp data start physical address*/
-		p_addr = hdmirx_rd_top_common(TOP_EMP_DDR_PTR_S_BUF) << 2;
+		p_addr = (u64)hdmirx_rd_top_common(TOP_EMP_DDR_PTR_S_BUF) << 2;
 		/*buffer number*/
 		recv_pkt_cnt = hdmirx_rd_top_common(TOP_EMP_RCV_CNT_BUF);
 		emp_buf_p = &rx_info.emp_buff_a;
 	} else if (rx[port].emp_vid_idx == 1) {
-		p_addr = hdmirx_rd_top_common(TOP_EMP1_DDR_PTR_S_BUF) << 2;
+		p_addr = (u64)hdmirx_rd_top_common(TOP_EMP1_DDR_PTR_S_BUF) << 2;
 		recv_pkt_cnt = hdmirx_rd_top_common(TOP_EMP1_RCV_CNT_BUF);
 		emp_buf_p = &rx_info.emp_buff_b;
 	}

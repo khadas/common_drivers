@@ -15,7 +15,8 @@
 /* 20230315: add get adc status interface */
 /* 20230331: change atv_demod_afc_do_work status judge */
 /* 20230615: solved demod not adc clock will crash */
-#define ADC_VER "20230615:solved demod not adc clock will crash"
+/* 20230705: change be311 config value */
+#define ADC_VER "20230705:change be311 config value"
 
 #define ADC_CLK_24M       24000
 #define ADC_CLK_25M       25000
@@ -161,6 +162,11 @@ struct adc_platform_data_s {
 	bool is_tv_chip;
 };
 
+/*******for debug **********/
+struct adc_debug_s {
+	unsigned int afe_vafe_ctrl2;
+};
+
 struct tvin_adc_dev {
 	struct device_node *node;
 	struct device *dev;
@@ -173,6 +179,7 @@ struct tvin_adc_dev {
 	struct mutex ioctl_mutex;/* avoid re-entry of ioctl calling */
 	struct mutex pll_mutex; /* protect pll setting for multi modules */
 	struct mutex filter_mutex;
+	struct adc_debug_s debug;
 	unsigned int pll_flg;
 	unsigned int filter_flg;
 	unsigned int print_en;

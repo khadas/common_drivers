@@ -594,7 +594,7 @@ static void adc_av_filter_config(struct tvin_adc_dev *devp)
 	if (devp->plat_data->chip_id == ADC_CHIP_TXHD2) {
 		adc_wr_afe(AFE_VAFE_CTRL0, 0x00490710);
 		adc_wr_afe(AFE_VAFE_CTRL1, 0x110e);
-		adc_wr_afe(AFE_VAFE_CTRL2, 0x1fe20fd1);
+		adc_wr_afe(AFE_VAFE_CTRL2, 0x1fe20fd3);
 	} else if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1)) {
 		adc_wr_afe(AFE_VAFE_CTRL0, 0x00490710);
 		adc_wr_afe(AFE_VAFE_CTRL1, 0x0000110e);
@@ -738,6 +738,12 @@ void adc_set_ddemod_default(enum fe_delivery_system delsys)
 }
 EXPORT_SYMBOL(adc_set_ddemod_default);
 
+static inline void adc_debug_filter_config(struct tvin_adc_dev *devp)
+{
+	if (devp->debug.afe_vafe_ctrl2)
+		adc_wr_afe(AFE_VAFE_CTRL2, devp->debug.afe_vafe_ctrl2);
+}
+
 int adc_set_filter_ctrl(bool on, enum filter_sel module_sel, void *data)
 {
 	int ret = 0;
@@ -815,6 +821,7 @@ int adc_set_filter_ctrl(bool on, enum filter_sel module_sel, void *data)
 					__func__, module_sel);
 		break;
 	}
+	adc_debug_filter_config(devp);
 	if (devp->print_en & ADC_DBG_EN)
 		pr_info("%s: on:%d, module:0x%x, filter_flg:0x%x\n",
 			__func__, on, module_sel, devp->filter_flg);
@@ -1391,6 +1398,19 @@ static void adc_dump_regs(void)
 	pr_info("version : %s\n", ADC_VER);
 }
 
+static inline void adc_dump_status(void)
+{
+	if (IS_ERR_OR_NULL(adc_devp) || IS_ERR_OR_NULL(adc_devp->plat_data)) {
+		pr_info("adc_devp is NULL, it's not initialized yet\n");
+
+		return;
+	}
+
+	/* debug begin */
+	pr_info("afe_vafe_ctrl2:%#x\n", adc_devp->debug.afe_vafe_ctrl2);
+	/* debug end */
+}
+
 static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
 			       const char *buf, size_t count)
 {
@@ -1409,6 +1429,7 @@ static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
 
 	if (parm[0] && !strcmp(parm[0], "state")) {
 		adc_dump_regs();
+		adc_dump_status();
 	} else if (parm[0] && !strcmp(parm[0], "down")) {
 		adc_pll_down();
 	} else if (parm[0] && !strcmp(parm[0], "dump_reg")) {
@@ -1493,6 +1514,16 @@ static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
 			adc_set_filter_ctrl(false, FILTER_DTV_DEMOD, NULL);
 			adc_set_pll_cntl(false, ADC_DTV_DEMOD, &p_dtv_para);
 		}
+	} else if (parm[0] && !strcmp(parm[0], "debug_value")) {
+		if (kstrtouint(parm[2], 16, &reg_val) < 0) {
+			pr_err("reg addr error\n");
+			goto tvin_adc_store_err;
+		}
+
+		if (!strcmp(parm[1], "afe_vafe_ctrl2"))
+			devp->debug.afe_vafe_ctrl2 = reg_val;
+		else
+			pr_info("string not match\n");
 	} else if (parm[0] && parm[1] && parm[2]) {
 		if (kstrtouint(parm[1], 16, &reg_addr) < 0) {
 			pr_err("reg addr error\n");

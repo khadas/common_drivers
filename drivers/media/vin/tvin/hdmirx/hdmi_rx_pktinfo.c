@@ -1207,6 +1207,7 @@ void rx_get_vsi_info(u8 port)
 	rx[port].vs_info_details.vsi_state = E_VSI_NULL;
 	rx[port].vs_info_details._3d_structure = 0;
 	rx[port].vs_info_details._3d_ext_data = 0;
+	rx[port].threed_info.meta_data_flag = false;
 	rx[port].vs_info_details.low_latency = false;
 	rx[port].vs_info_details.backlt_md_bit = false;
 	rx[port].vs_info_details.dv_allm = false;
@@ -1311,14 +1312,25 @@ void rx_get_vsi_info(u8 port)
 				rx[port].vs_info_details.dolby_vision_flag = DV_NULL;
 			} else {
 				if (pkt->sbpkt.vsi_3dext.vdfmt == VSI_FORMAT_3D_FORMAT) {
+					rx[port].vs_info_details.vd_fmt = VSI_FORMAT_3D_FORMAT;
 					rx[port].vs_info_details._3d_structure =
 						pkt->sbpkt.vsi_3dext.threed_st;
 					rx[port].vs_info_details._3d_ext_data =
 						pkt->sbpkt.vsi_3dext.threed_ex;
-				if (log_level & VSI_LOG)
-					rx_pr("struct_3d:%d, struct_3d_ext:%d\n",
-					      pkt->sbpkt.vsi_3dext.threed_st,
-					      pkt->sbpkt.vsi_3dext.threed_ex);
+					rx[port].threed_info.meta_data_flag =
+						pkt->sbpkt.vsi_3dext.threed_meta_pre;
+					rx[port].threed_info.meta_data_type =
+						pkt->sbpkt.vsi_3dext.threed_meta_type;
+					rx[port].threed_info.meta_data_length =
+						pkt->sbpkt.vsi_3dext.threed_meta_length;
+					memcpy(rx[port].threed_info.meta_data,
+						pkt->sbpkt.vsi_3dext.threed_meta_data,
+						sizeof(rx[port].threed_info.meta_data));
+					if (log_level & VSI_LOG)
+						rx_pr("3d:%d, 3d_ext:%d, mete_data:%d\n",
+							pkt->sbpkt.vsi_3dext.threed_st,
+							pkt->sbpkt.vsi_3dext.threed_ex,
+							pkt->sbpkt.vsi_3dext.threed_meta_pre);
 				}
 				rx[port].vs_info_details.dolby_vision_flag = DV_NULL;
 			}

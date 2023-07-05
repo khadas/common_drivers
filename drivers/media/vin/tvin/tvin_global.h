@@ -504,6 +504,13 @@ struct tvin_hdr10plus_info_s {
 	struct tvin_hdr10p_data_s hdr10p_data;
 };
 
+struct tvin_3d_meta_data_s {
+	bool meta_data_flag;
+	u8 meta_data_type;
+	u8 meta_data_length;
+	u8 meta_data[20];
+};
+
 struct tvin_cuva_data_s {
 	u8 vsif_type;		//hb0
 	u8 visf_version;	//hb1
@@ -559,6 +566,7 @@ struct tvin_sig_property_s {
 	struct tvin_dv_vsif_s dv_vsif;/*dolby vsi info*/
 	struct tvin_cuva_vsif_s cuva_info; /* cuva hdr info */
 	struct tvin_dv_vsif_raw_s dv_vsif_raw;
+	struct tvin_3d_meta_data_s threed_info;
 	u8 dolby_vision;/*is signal dolby version 1:vsif 2:emp */
 	bool low_latency;/*is low latency dolby mode*/
 	u8 fps;

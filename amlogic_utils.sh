@@ -1457,6 +1457,10 @@ function auto_patch_to_common_dir () {
 	if [[ -f ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ]]; then
         	export PATCH_PARM
 		${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/auto_patch/auto_patch.sh ${FULL_KERNEL_VERSION}
+		if [[ $? -ne 0 ]]; then
+			echo "auto patch error!"
+			exit 1
+		fi
 	fi
 
 	if [[ ${ONLY_PATCH} -eq "1" ]]; then

@@ -805,12 +805,91 @@ static struct clk_regmap t3x_gp0_pll_dco = {
 };
 
 #ifdef CONFIG_ARM
+static const struct pll_params_table t3x_gp1_pll_table[] = {
+	PLL_PARAMS(124, 1, 2), /* DCO = 2976M OD = 2 PLL = 744M */
+	{ /* sentinel */  }
+};
+#else
+static const struct pll_params_table t3x_gp1_pll_table[] = {
+	PLL_PARAMS(124, 1), /* DCO = 2976M OD = 2 PLL = 744M */
+	{ /* sentinel */  }
+};
+#endif
+
+static const struct reg_sequence t3x_gp1_init_regs[] = {
+	{ .reg = CLKCTRL_GP1PLL_CTRL1,	.def = 0x03a00000 },
+	{ .reg = CLKCTRL_GP1PLL_CTRL2,	.def = 0x00040000 },
+	{ .reg = CLKCTRL_GP1PLL_CTRL3,	.def = 0x090da200 },
+};
+
+static struct clk_regmap t3x_gp1_pll_dco = {
+	.data = &(struct meson_clk_pll_data){
+		.en = {
+			.reg_off = CLKCTRL_GP1PLL_CTRL0,
+			.shift   = 28,
+			.width   = 1,
+		},
+		.m = {
+			.reg_off = CLKCTRL_GP1PLL_CTRL0,
+			.shift   = 0,
+			.width   = 9,
+		},
+		.n = {
+			.reg_off = CLKCTRL_GP1PLL_CTRL0,
+			.shift   = 16,
+			.width   = 5,
+		},
+#ifdef CONFIG_ARM
+		/* for 32bit */
+		.od = {
+			.reg_off = CLKCTRL_GP1PLL_CTRL0,
+			.shift	 = 10,
+			.width	 = 3,
+		},
+#endif
+		.l = {
+			.reg_off = CLKCTRL_GP1PLL_CTRL0,
+			.shift   = 31,
+			.width   = 1,
+		},
+		.rst = {
+			.reg_off = CLKCTRL_GP1PLL_CTRL0,
+			.shift   = 29,
+			.width   = 1,
+		},
+		.table = t3x_gp1_pll_table,
+		.init_regs = t3x_gp1_init_regs,
+		.init_count = ARRAY_SIZE(t3x_gp1_init_regs),
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "gp1_pll_dco",
+		.ops = &meson_clk_pll_ops,
+		.parent_data = &(const struct clk_parent_data) {
+			.fw_name = "xtal",
+		},
+		.num_parents = 1,
+	},
+};
+
+#ifdef CONFIG_ARM
 static struct clk_regmap t3x_gp0_pll = {
 	.hw.init = &(struct clk_init_data){
 		.name = "gp0_pll",
 		.ops = &meson_pll_clk_no_ops,
 		.parent_hws = (const struct clk_hw *[]) {
 			&t3x_gp0_pll_dco.hw
+		},
+		.num_parents = 1,
+		.flags = CLK_SET_RATE_PARENT,
+	},
+};
+
+static struct clk_regmap t3x_gp1_pll = {
+	.hw.init = &(struct clk_init_data){
+		.name = "gp1_pll",
+		.ops = &meson_pll_clk_no_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&t3x_gp1_pll_dco.hw
 		},
 		.num_parents = 1,
 		.flags = CLK_SET_RATE_PARENT,
@@ -838,6 +917,25 @@ static struct clk_regmap t3x_gp0_pll = {
 		 * Register has the risk of being directly operated.
 		 */
 		.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
+	},
+};
+
+static struct clk_regmap t3x_gp1_pll = {
+	.data = &(struct clk_regmap_div_data){
+		.offset = CLKCTRL_GP1PLL_CTRL0,
+		.shift = 10,
+		.width = 3,
+		.table = t3x_pll_od_tab,
+		.flags = CLK_DIVIDER_ROUND_CLOSEST,
+	},
+	.hw.init = &(struct clk_init_data){
+		.name = "gp1_pll",
+		.ops = &clk_regmap_divider_ops,
+		.parent_hws = (const struct clk_hw *[]) {
+			&t3x_gp1_pll_dco.hw
+		},
+		.num_parents = 1,
+		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 #endif
@@ -2854,20 +2952,25 @@ static const struct clk_hw *t3x_vpu_parent_hws[] = {
 	&t3x_fclk_div3.hw,
 	&t3x_fclk_div4.hw,
 	&t3x_fclk_div5.hw,
-	&t3x_fclk_div2p5.hw
+	&t3x_fclk_div2p5.hw,
+	&t3x_gp1_pll.hw
 };
+
+static u32 t3x_vpu_table[] = {0, 1, 2, 3, 4};
 
 static struct clk_regmap t3x_vpu_0_sel = {
 	.data = &(struct clk_regmap_mux_data){
 		.offset = CLKCTRL_VPU_CLK_CTRL,
-		.mask = 0x3,
+		.mask = 0x7,
 		.shift = 9,
+		.table = t3x_vpu_table
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "vpu_0_sel",
 		.ops = &clk_regmap_mux_ops,
 		.parent_hws = t3x_vpu_parent_hws,
 		.num_parents = ARRAY_SIZE(t3x_vpu_parent_hws),
+		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -2903,14 +3006,16 @@ static struct clk_regmap t3x_vpu_0 = {
 static struct clk_regmap t3x_vpu_1_sel = {
 	.data = &(struct clk_regmap_mux_data){
 		.offset = CLKCTRL_VPU_CLK_CTRL,
-		.mask = 0x3,
+		.mask = 0x7,
 		.shift = 25,
+		.table = t3x_vpu_table
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "vpu_1_sel",
 		.ops = &clk_regmap_mux_ops,
 		.parent_hws = t3x_vpu_parent_hws,
 		.num_parents = ARRAY_SIZE(t3x_vpu_parent_hws),
+		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -6277,6 +6382,8 @@ static struct clk_hw_onecell_data t3x_hw_onecell_data = {
 		[CLKID_FCLK_DIV2P5]			= &t3x_fclk_div2p5.hw,
 		[CLKID_GP0_PLL_DCO]			= &t3x_gp0_pll_dco.hw,
 		[CLKID_GP0_PLL]				= &t3x_gp0_pll.hw,
+		[CLKID_GP1_PLL_DCO]			= &t3x_gp1_pll_dco.hw,
+		[CLKID_GP1_PLL]				= &t3x_gp1_pll.hw,
 		[CLKID_CPU_DYN_CLK]			= &t3x_cpu_dyn_clk.hw,
 		[CLKID_CPU_CLK]				= &t3x_cpu_clk.hw,
 		[CLKID_A76_DYN_CLK]			= &t3x_a76_dyn_clk.hw,
@@ -6999,6 +7106,8 @@ static struct clk_regmap *const t3x_clk_regmaps[] = {
 	&t3x_fclk_div2p5,
 	&t3x_gp0_pll_dco,
 	&t3x_gp0_pll,
+	&t3x_gp1_pll_dco,
+	&t3x_gp1_pll,
 	&t3x_hifi_pll_dco,
 	&t3x_hifi_pll,
 	&t3x_hifi1_pll_dco,

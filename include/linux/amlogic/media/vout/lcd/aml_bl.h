@@ -118,13 +118,15 @@ struct bl_pwm_config_s {
 	struct pwm_data_s pwm_data;
 	enum bl_pwm_method_e pwm_method;
 	enum bl_pwm_port_e pwm_port;
-	unsigned int level_max;
-	unsigned int level_min;
+	unsigned int bl_level_max;
+	unsigned int bl_level_min;
+	unsigned int bl_level;
 	unsigned int pwm_freq; /* pwm_vs: 1~4(vfreq), pwm: freq(unit: Hz) */
 	unsigned int pwm_duty; /* unit: % */
 	unsigned int pwm_duty_save; /* unit: %, for power on recovery */
 	unsigned int pwm_duty_max; /* unit: % */
 	unsigned int pwm_duty_min; /* unit: % */
+	unsigned int pwm_duty_range; /* internal used for pwm control */
 	unsigned int pwm_cnt; /* internal used for pwm control */
 	unsigned int pwm_pre_div; /* internal used for pwm control */
 	unsigned int pwm_max; /* internal used for pwm control */
@@ -182,12 +184,19 @@ struct bl_metrics_config_s {
 /* backlight_properties: state */
 /* Flags used to signal drivers of state changes */
 /* Upper 4 bits in bl props are reserved for driver internal use */
-#define BL_STATE_DEBUG_FORCE_EN       BIT(8)
 #define BL_STATE_GD_EN                BIT(4)
 #define BL_STATE_LCD_ON               BIT(3)
 #define BL_STATE_BL_INIT_ON           BIT(2)
 #define BL_STATE_BL_POWER_ON          BIT(1)
 #define BL_STATE_BL_ON                BIT(0)
+
+#define BL_DEBUG_BYPASS_VS_UPDATE       BIT(0)
+#define BL_DEBUG_BYPASS_DEV_BRT_UPDATE  BIT(1)  //standard api
+#define BL_DEBUG_BYPASS_VOUT_BRT_DIM    BIT(2)
+#define BL_DEBUG_BYPASS_GD_DIM          BIT(3)
+#define BL_DEBUG_BYPASS_BRT_DIM         BIT(4)
+#define BL_DEBUG_FORCE_LEVEL            BIT(7)
+
 /* #define BL_POWER_ON_DELAY_WORK */
 struct aml_bl_drv_s {
 	unsigned int index;
@@ -207,7 +216,7 @@ struct aml_bl_drv_s {
 	unsigned char off_policy_cnt; /* bl_off_policy support */
 	unsigned char pwm_bypass; /*debug flag*/
 	unsigned char pwm_duty_free; /*debug flag*/
-	unsigned char debug_force;
+	unsigned char debug_flag;
 
 	struct bl_metrics_config_s bl_metrics_conf;
 	struct bl_config_s        bconf;
@@ -222,6 +231,7 @@ struct aml_bl_drv_s {
 	struct resource *res_ldim_pwm_vs_irq;
 	struct resource *res_vsync_irq[3];
 	/*struct resource *res_ldim_rdma_irq;*/
+	spinlock_t pwm_vs_lock;
 
 	struct pinctrl *pin;
 	unsigned int pinmux_flag;
@@ -235,6 +245,8 @@ unsigned int aml_bl_get_level_brightness(struct aml_bl_drv_s *bdrv);
 
 void bl_pwm_config_init(struct bl_pwm_config_s *bl_pwm);
 enum bl_pwm_port_e bl_pwm_str_to_pwm(const char *str);
+void bl_pwm_duty_to_pwm_level(struct bl_pwm_config_s *bl_pwm);
+void bl_level_to_pwm_level(struct bl_pwm_config_s *bl_pwm);
 void bl_pwm_ctrl(struct bl_pwm_config_s *bl_pwm, int status);
 
 #define BL_GPIO_OUTPUT_LOW		0

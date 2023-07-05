@@ -565,6 +565,15 @@ struct vf_aiface_t {
 	struct timeval start_time;
 };
 
+#define AI_COLOR_COUNT 120
+struct vf_aicolor_t {
+	u8 color_value[AI_COLOR_COUNT];
+	s32 aicolor_buf_index;
+	s32 aicolor_value_index;
+	u32 nn_status;
+	struct timeval start_time;
+};
+
 #define VF_UD_MAX_SIZE 5120 /* 5K size */
 #define UD_MAGIC_CODE 0x55445020 /* UDP */
 #define is_ud_param_valid(ud) ((ud.magic_code) == UD_MAGIC_CODE)
@@ -810,6 +819,7 @@ struct video_composer_private {
 	void (*unlock_buffer_cb)(void *arg);
 	struct vf_dalton_t *dalton_info;
 	struct vf_aiface_t *aiface_info;
+	struct vf_aicolor_t *aicolor_info;
 	struct vframe_s *mosaic_vf[4];
 	struct vframe_s *mosaic_src_vf[4];
 	struct vframe_s mosaic_dst_vf[4];

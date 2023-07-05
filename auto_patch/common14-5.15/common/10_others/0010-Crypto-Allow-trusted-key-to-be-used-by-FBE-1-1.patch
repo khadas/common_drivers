@@ -1,0 +1,83 @@
+From f7dcef46d665cc1376cd6a92feb2783646c333d6 Mon Sep 17 00:00:00 2001
+From: Mingyen Hung <mingyen.hung@amlogic.com>
+Date: Wed, 31 Aug 2022 21:23:45 -0700
+Subject: [PATCH] Crypto: Allow trusted key to be used by FBE [1/1]
+
+PD#SWPL-130061
+
+Problem:
+Need to support trusted key for FBE.
+
+Solution:
+Hook trusted key to fscrypt
+
+Verify:
+1. fscryptctl(add_key)
+2. on SC2(ah212)
+
+Change-Id: Ie40df4ec2506f4fc4d6f7c2a52863db6e3bc661c
+Signed-off-by: Mingyen Hung <mingyen.hung@amlogic.com>
+---
+ fs/crypto/keyring.c | 31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
+index c11f052bffe3..cc2ecbda5e1f 100644
+--- a/fs/crypto/keyring.c
++++ b/fs/crypto/keyring.c
+@@ -21,6 +21,9 @@
+ #include <asm/unaligned.h>
+ #include <crypto/skcipher.h>
+ #include <linux/key-type.h>
++#if IS_ENABLED(CONFIG_AMLOGIC_LINUX_FBE)
++#include <keys/trusted-type.h>
++#endif
+ #include <linux/random.h>
+ #include <linux/seq_file.h>
+
+@@ -654,7 +657,33 @@ static int get_keyring_key(u32 key_id, u32 type,
+ 	if (IS_ERR(ref))
+ 		return PTR_ERR(ref);
+ 	key = key_ref_to_ptr(ref);
++#if IS_ENABLED(CONFIG_AMLOGIC_LINUX_FBE)
++	if (key->type == &key_type_fscrypt_provisioning) {
++		payload = key->payload.data[0];
+
++		/* Don't allow fscrypt v1 keys to be used as v2 keys and vice versa. */
++		if (payload->type != type)
++			goto bad_key;
++
++		secret->size = key->datalen - sizeof(*payload);
++		memcpy(secret->raw, payload->raw, secret->size);
++		err = 0;
++		goto out_put;
++	} else if (!strncmp(key->type->name, "trusted", strlen(key->type->name))) {
++		struct trusted_key_payload *payload = NULL;
++
++		payload = key->payload.rcu_data0;
++
++		//dump_payload(payload);
++
++		secret->size = payload->key_len;
++		memcpy(secret->raw, payload->key, secret->size);
++		err = 0;
++		goto out_put;
++	} else {
++		goto bad_key;
++	}
++#else
+ 	if (key->type != &key_type_fscrypt_provisioning)
+ 		goto bad_key;
+ 	payload = key->payload.data[0];
+@@ -667,7 +696,7 @@ static int get_keyring_key(u32 key_id, u32 type,
+ 	memcpy(secret->raw, payload->raw, secret->size);
+ 	err = 0;
+ 	goto out_put;
+-
++#endif
+ bad_key:
+ 	err = -EKEYREJECTED;
+ out_put:
+--
+2.31.1
+

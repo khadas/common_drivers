@@ -33,7 +33,7 @@
 /* T3X */
 /* freq max=800M, default=800M */
 #define CLK_LEVEL_DFT_T3X    8
-#define CLK_LEVEL_MAX_T3X    9
+#define CLK_LEVEL_MAX_T3X    11
 
 /* vpu clk setting */
 static struct fclk_div_s fclk_div_table_g12a[] = {
@@ -76,8 +76,9 @@ static struct vpu_clk_s vpu_clk_table[] = {
 	{500000000,    FCLK_DIV4,    0}, /* 6 */
 	{666666667,    FCLK_DIV3,    0}, /* 7 */
 	{800000000,    FCLK_DIV2P5,  0}, /* 8 */
-	{696000000,    GPLL_CLK,     0}, /* 9 */
-	{850000000,    FCLK_DIV_MAX, 0}, /* 10 */ /* invalid */
+	{744000000,    GPLL_CLK,     0}, /* 9 */
+	{768000000,    GPLL_CLK,     0}, /* 10 */
+	{850000000,    FCLK_DIV_MAX, 0}, /* 11 */ /* invalid */
 };
 
 /* ******************************************************* */

@@ -12049,6 +12049,24 @@ void set_vd_pi_input_size(void)
 	}
 }
 
+u32 get_vpu_venc_error_status(void)
+{
+	u32 status = 0;
+
+	if (cur_dev->display_module == S5_DISPLAY_MODULE)
+		status = (READ_VCBUS_REG(T3X_VPU_VENC_ERROR) & 0xff00) >> 8;
+	return status;
+}
+
+void clear_vpu_venc_error(void)
+{
+	if (cur_dev->display_module == S5_DISPLAY_MODULE) {
+		WRITE_VCBUS_REG_BITS(T3X_VPU_VENC_ERROR, 0x1, 0, 1);
+		WRITE_VCBUS_REG_BITS(T3X_VPU_VENC_ERROR, 0x0, 0, 1);
+		pr_info("T3X_VPU_VENC_ERROR(0x1cea=0x%x)\n", READ_VCBUS_REG(T3X_VPU_VENC_ERROR));
+	}
+}
+
 static void save_vd_pps_reg(void)
 {
 	int i;

@@ -1011,7 +1011,7 @@ static const char *vpu_usage_str = {
 "	vclk level & frequency:\n"
 "		0: 100M    1: 167M    2: 200M    3: 250M\n"
 "		4: 333M    5: 400M    6: 500M    7: 667M\n"
-"		8: 800M\n"
+"		8: 800M    9: 744M    10:768M\n"
 "\n"
 "	echo <0|1> > /sys/class/vpu/print ; set debug print flag\n"
 };
@@ -2177,7 +2177,7 @@ static struct vpu_data_s vpu_data_t3x = {
 	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 
-	.gp_pll_valid = 0,
+	.gp_pll_valid = 1,
 	.mem_pd_reg[0] = PWRCTRL_MEM_PD5_SC2,
 	.mem_pd_reg[1] = PWRCTRL_MEM_PD6_SC2,
 	.mem_pd_reg[2] = PWRCTRL_MEM_PD7_SC2,

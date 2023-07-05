@@ -12395,6 +12395,32 @@ static ssize_t vpp_in_padding_enable_store(struct class *cla,
 	return strnlen(buf, count);
 }
 
+static ssize_t vpu_venc_status_show(struct class *cla, struct class_attribute *attr, char *buf)
+{
+	u32 status;
+
+	/* 0 is normal */
+	status = get_vpu_venc_error_status();
+	return snprintf(buf, 40, "vpu_venc_status:%x\n", status);
+}
+
+static ssize_t vpu_venc_status_store(struct class *cla,
+				 struct class_attribute *attr,
+				 const char *buf, size_t count)
+{
+	int res = 0;
+	int ret = 0;
+
+	ret = kstrtoint(buf, 0, &res);
+	if (ret) {
+		pr_err("kstrtoint err\n");
+		return -EINVAL;
+	}
+	if (res)
+		clear_vpu_venc_error();
+	return count;
+}
+
 static struct class_attribute amvideo_class_attrs[] = {
 	__ATTR(axis,
 	       0664,
@@ -12951,7 +12977,9 @@ static struct class_attribute amvideo_class_attrs[] = {
 	__ATTR(vpp_in_padding, 0664,
 		vpp_in_padding_enable_show,
 		vpp_in_padding_enable_store),
-
+	__ATTR(vpu_venc_status, 0664,
+		vpu_venc_status_show,
+		vpu_venc_status_store),
 };
 
 static struct class_attribute amvideo_poll_class_attrs[] = {

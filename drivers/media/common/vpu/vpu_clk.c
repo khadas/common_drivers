@@ -118,7 +118,10 @@ unsigned int vpu_clk_get(void)
 			clk_source = get_fclk_div_freq(mux_id);
 			break;
 		case GPLL_CLK:
-			clk_source = vpu_conf.data->clk_table[8].freq;
+			if (IS_ERR_OR_NULL(vpu_conf.gp_pll))
+				clk_source = vpu_conf.data->clk_table[vpu_conf.clk_level].freq;
+			else
+				clk_source = clk_get_rate(vpu_conf.gp_pll);
 			break;
 		default:
 			clk_source = 0;
@@ -137,7 +140,7 @@ unsigned int vpu_clk_get(void)
 }
 EXPORT_SYMBOL(vpu_clk_get);
 
-static int switch_gp_pll(int flag)
+static int switch_gp_pll(int flag, unsigned int clk_level)
 {
 	unsigned int clk;
 	int ret = 0;
@@ -148,7 +151,7 @@ static int switch_gp_pll(int flag)
 	}
 
 	if (flag) { /* enable */
-		clk = vpu_conf.data->clk_table[8].freq;
+		clk = vpu_conf.data->clk_table[clk_level].freq;
 		ret = clk_set_rate(vpu_conf.gp_pll, clk);
 		if (ret)
 			return ret;
@@ -180,7 +183,7 @@ int vpu_clk_apply_dft(unsigned int clk_level)
 			return -1;
 		}
 
-		ret = switch_gp_pll(1);
+		ret = switch_gp_pll(1, clk_level);
 		if (ret)
 			return ret;
 	}
@@ -270,7 +273,7 @@ int set_vpu_clk(unsigned int vclk)
 		return ret;
 	}
 #endif
-	if (clk_level >= 9) {
+	if (clk_level >= 11) {
 		ret = 7;
 		VPUERR("clk_level %d is invalid\n", clk_level);
 		return ret;
@@ -319,6 +322,7 @@ void vpu_clktree_init_dft(struct device *dev)
 		vpu_conf.gp_pll = devm_clk_get(dev, "gp_pll");
 		if (IS_ERR_OR_NULL(vpu_conf.gp_pll))
 			VPUERR("%s: gp_pll\n", __func__);
+		clk_prepare_enable(vpu_conf.gp_pll);
 	}
 
 	/* init & enable vpu_clk */

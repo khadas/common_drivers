@@ -1,0 +1,1260 @@
+From 7c96daa3ba79d9dca44b51c2667b5b9aa1889300 Mon Sep 17 00:00:00 2001
+From: Jianxiong Pan <jianxiong.pan@amlogic.com>
+Date: Mon, 17 Apr 2023 16:01:34 +0800
+Subject: [PATCH] zapper: disable unnecessary configs of zapper. [1/2]
+
+PD#SWPL-116862
+
+Problem:
+memory optimization.
+
+Solution:
+disable unnecessary configs.
+
+Verify:
+t215.
+
+Change-Id: Ia2f39b1c9d55986522c763c2a40960ad3a6cc09f
+Signed-off-by: Jianxiong Pan <jianxiong.pan@amlogic.com>
+---
+ arch/arm/Kconfig                      | 24 +++++------
+ arch/arm/mm/Kconfig                   |  2 +-
+ drivers/gpio/Kconfig                  |  1 +
+ drivers/gpu/drm/Makefile              | 14 +++++++
+ drivers/gpu/drm/bridge/Kconfig        |  2 +-
+ drivers/media/dvb-core/Kconfig        |  2 +-
+ drivers/media/dvb-core/Makefile       |  9 +++-
+ drivers/mtd/spi-nor/Makefile          |  2 +
+ drivers/mtd/spi-nor/core.c            |  2 +
+ drivers/net/loopback.c                |  2 +
+ drivers/usb/gadget/function/u_ether.c |  2 +
+ include/linux/slub_def.h              | 13 ++++++
+ include/linux/tracepoint.h            |  2 +-
+ init/Kconfig                          |  5 ++-
+ init/Kconfig.gki                      | 14 +++----
+ kernel/trace/trace_events.c           |  6 +++
+ mm/rmap.c                             |  5 +++
+ mm/slub.c                             | 10 +++++
+ net/Kconfig                           |  7 ++--
+ net/Makefile                          |  7 +++-
+ net/core/Makefile                     | 21 +++++++---
+ net/core/dev.c                        | 59 ++++++++++++++++++---------
+ net/core/dev_ioctl.c                  |  3 +-
+ net/core/filter.c                     | 13 ++++--
+ net/core/net-sysfs.c                  |  6 ++-
+ net/core/rtnetlink.c                  | 12 ++++--
+ net/core/sock.c                       |  9 ++--
+ net/core/sysctl_net_core.c            |  4 ++
+ net/core/utils.c                      |  4 ++
+ net/ethernet/eth.c                    |  6 ++-
+ security/Kconfig                      |  2 +-
+ 31 files changed, 197 insertions(+), 73 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index e0664fc1e12f..b6f462587baf 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -16,8 +16,8 @@ config ARM
+ 	select ARCH_HAS_PHYS_TO_DMA
+ 	select ARCH_HAS_SETUP_DMA_OPS
+ 	select ARCH_HAS_SET_MEMORY
+-	select ARCH_HAS_STRICT_KERNEL_RWX if MMU && !XIP_KERNEL
+-	select ARCH_HAS_STRICT_MODULE_RWX if MMU
++	select ARCH_HAS_STRICT_KERNEL_RWX if MMU && !XIP_KERNEL && !AMLOGIC_ZAPPER_CUT
++	select ARCH_HAS_STRICT_MODULE_RWX if MMU && !AMLOGIC_ZAPPER_CUT
+ 	select ARCH_HAS_SYNC_DMA_FOR_DEVICE if SWIOTLB || !MMU
+ 	select ARCH_HAS_SYNC_DMA_FOR_CPU if SWIOTLB || !MMU
+ 	select ARCH_HAS_TEARDOWN_DMA_OPS if MMU
+@@ -67,28 +67,28 @@ config ARM
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select HANDLE_DOMAIN_IRQ
+ 	select HARDIRQS_SW_RESEND
+-	select HAVE_ARCH_AUDITSYSCALL if AEABI && !OABI_COMPAT
++	select HAVE_ARCH_AUDITSYSCALL if AEABI && !OABI_COMPAT && !AMLOGIC_ZAPPER_CUT
+ 	select HAVE_ARCH_BITREVERSE if (CPU_32v7M || CPU_32v7) && !CPU_32v6
+ 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL && !CPU_ENDIAN_BE32 && MMU
+ 	select HAVE_ARCH_KGDB if !CPU_ENDIAN_BE32 && MMU
+-	select HAVE_ARCH_KASAN if MMU && !XIP_KERNEL
++	select HAVE_ARCH_KASAN if MMU && !XIP_KERNEL && !AMLOGIC_ZAPPER_CUT
+ 	select HAVE_ARCH_KASAN_VMALLOC if HAVE_ARCH_KASAN
+ 	select HAVE_ARCH_MMAP_RND_BITS if MMU
+ 	select HAVE_ARCH_PFN_VALID
+-	select HAVE_ARCH_SECCOMP
++	select HAVE_ARCH_SECCOMP if !AMLOGIC_ZAPPER_CUT
+ 	select HAVE_ARCH_SECCOMP_FILTER if AEABI && !OABI_COMPAT
+ 	select HAVE_ARCH_THREAD_STRUCT_WHITELIST
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE if ARM_LPAE
+ 	select HAVE_ARM_SMCCC if CPU_V7
+-	select HAVE_EBPF_JIT if !CPU_ENDIAN_BE32
++	select HAVE_EBPF_JIT if !CPU_ENDIAN_BE32 && !AMLOGIC_ZAPPER_CUT
+ 	select HAVE_CONTEXT_TRACKING
+ 	select HAVE_C_RECORDMCOUNT
+ 	select HAVE_DEBUG_KMEMLEAK if !XIP_KERNEL
+ 	select HAVE_DMA_CONTIGUOUS if MMU
+ 	select HAVE_DYNAMIC_FTRACE if !XIP_KERNEL && !CPU_ENDIAN_BE32 && MMU
+ 	select HAVE_DYNAMIC_FTRACE_WITH_REGS if HAVE_DYNAMIC_FTRACE
+-	select HAVE_EFFICIENT_UNALIGNED_ACCESS if (CPU_V6 || CPU_V6K || CPU_V7) && MMU
++	select HAVE_EFFICIENT_UNALIGNED_ACCESS if (CPU_V6 || CPU_V6K || CPU_V7) && MMU && !AMLOGIC_ZAPPER_CUT
+ 	select HAVE_EXIT_THREAD
+ 	select HAVE_FAST_GUP if ARM_LPAE
+ 	select HAVE_FTRACE_MCOUNT_RECORD if !XIP_KERNEL
+@@ -98,11 +98,11 @@ config ARM
+ 	select HAVE_GCC_PLUGINS
+ 	select HAVE_HW_BREAKPOINT if PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7)
+ 	select HAVE_IRQ_TIME_ACCOUNTING
+-	select HAVE_KERNEL_GZIP
+-	select HAVE_KERNEL_LZ4
+-	select HAVE_KERNEL_LZMA
++	select HAVE_KERNEL_GZIP if !AMLOGIC_ZAPPER_CUT
++	select HAVE_KERNEL_LZ4 if !AMLOGIC_ZAPPER_CUT
++	select HAVE_KERNEL_LZMA if !AMLOGIC_ZAPPER_CUT
+ 	select HAVE_KERNEL_LZO
+-	select HAVE_KERNEL_XZ
++	select HAVE_KERNEL_XZ if !AMLOGIC_ZAPPER_CUT
+ 	select HAVE_KPROBES if !XIP_KERNEL && !CPU_ENDIAN_BE32 && !CPU_V7M
+ 	select HAVE_KRETPROBES if HAVE_KPROBES
+ 	select HAVE_MOD_ARCH_SPECIFIC
+@@ -569,7 +569,7 @@ endmenu
+ config ARCH_VIRT
+ 	bool "Dummy Virtual Machine"
+ 	depends on ARCH_MULTI_V7
+-	select ARM_AMBA
++	select ARM_AMBA if !AMLOGIC_ZAPPER_CUT
+ 	select ARM_GIC
+ 	select ARM_GIC_V2M if PCI && !AMLOGIC_LINUX_S_OPTIMIZE
+ 	select ARM_GIC_V3 if !AMLOGIC_LINUX_S_OPTIMIZE
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index d24d71b8dcbe..5a855588b6ba 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -713,7 +713,7 @@ config ARM_VIRT_EXT
+ config SWP_EMULATE
+ 	bool "Emulate SWP/SWPB instructions" if !SMP
+ 	depends on CPU_V7
+-	default y if SMP
++	default y if SMP && !AMLOGIC_ZAPPER_CUT
+ 	select HAVE_PROC_CPU if PROC_FS
+ 	help
+ 	  ARMv6 architecture deprecates use of the SWP/SWPB instructions.
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 7b9def6b1004..960b01247fb0 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -468,6 +468,7 @@ config GPIO_PL061
+ 	depends on ARM_AMBA
+ 	select IRQ_DOMAIN
+ 	select GPIOLIB_IRQCHIP
++	default n if AMLOGIC_ZAPPER_CUT
+ 	help
+ 	  Say yes here to support the PrimeCell PL061 GPIO device
+ 
+diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
+index ad1112154898..2a1415981ef9 100644
+--- a/drivers/gpu/drm/Makefile
++++ b/drivers/gpu/drm/Makefile
+@@ -41,6 +41,17 @@ obj-$(CONFIG_DRM_VRAM_HELPER) += drm_vram_helper.o
+ drm_ttm_helper-y := drm_gem_ttm_helper.o
+ obj-$(CONFIG_DRM_TTM_HELPER) += drm_ttm_helper.o
+ 
++ifdef CONFIG_AMLOGIC_ZAPPER_CUT
++drm_kms_helper-y := drm_bridge_connector.o drm_crtc_helper.o\
++		drm_dsc.o drm_probe_helper.o \
++		drm_plane_helper.o drm_atomic_helper.o \
++		drm_kms_helper_common.o \
++		drm_simple_kms_helper.o drm_modeset_helper.o \
++		drm_scdc_helper.o drm_gem_atomic_helper.o \
++		drm_gem_framebuffer_helper.o \
++		drm_atomic_state_helper.o drm_damage_helper.o \
++		drm_format_helper.o drm_self_refresh_helper.o
++else
+ drm_kms_helper-y := drm_bridge_connector.o drm_crtc_helper.o drm_dp_helper.o \
+ 		drm_dsc.o drm_probe_helper.o \
+ 		drm_plane_helper.o drm_dp_mst_topology.o drm_atomic_helper.o \
+@@ -50,6 +61,7 @@ drm_kms_helper-y := drm_bridge_connector.o drm_crtc_helper.o drm_dp_helper.o \
+ 		drm_gem_framebuffer_helper.o \
+ 		drm_atomic_state_helper.o drm_damage_helper.o \
+ 		drm_format_helper.o drm_self_refresh_helper.o
++endif
+ 
+ drm_kms_helper-$(CONFIG_DRM_PANEL_BRIDGE) += bridge/panel.o
+ drm_kms_helper-$(CONFIG_DRM_FBDEV_EMULATION) += drm_fb_helper.o
+@@ -62,7 +74,9 @@ obj-$(CONFIG_DRM_DEBUG_SELFTEST) += selftests/
+ 
+ obj-$(CONFIG_DRM)	+= drm.o
+ obj-$(CONFIG_DRM_MIPI_DBI) += drm_mipi_dbi.o
++ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ obj-$(CONFIG_DRM_MIPI_DSI) += drm_mipi_dsi.o
++endif
+ obj-$(CONFIG_DRM_PANEL_ORIENTATION_QUIRKS) += drm_panel_orientation_quirks.o
+ obj-y			+= arm/
+ obj-$(CONFIG_DRM_TTM)	+= ttm/
+diff --git a/drivers/gpu/drm/bridge/Kconfig b/drivers/gpu/drm/bridge/Kconfig
+index 68ec45abc1fb..ad08b27bc493 100644
+--- a/drivers/gpu/drm/bridge/Kconfig
++++ b/drivers/gpu/drm/bridge/Kconfig
+@@ -6,7 +6,7 @@ config DRM_BRIDGE
+ 	  Bridge registration and lookup framework.
+ 
+ config DRM_PANEL_BRIDGE
+-	def_bool y
++	def_bool y if !AMLOGIC_ZAPPER_CUT
+ 	depends on DRM_BRIDGE
+ 	select DRM_PANEL
+ 	help
+diff --git a/drivers/media/dvb-core/Kconfig b/drivers/media/dvb-core/Kconfig
+index 6ffac618417b..5288d33a55e5 100644
+--- a/drivers/media/dvb-core/Kconfig
++++ b/drivers/media/dvb-core/Kconfig
+@@ -18,7 +18,7 @@ config DVB_MMAP
+ 
+ config DVB_NET
+ 	bool "DVB Network Support"
+-	default (NET && INET)
++	default (NET && INET) if !AMLOGIC_ZAPPER_CUT
+ 	depends on NET && INET && DVB_CORE
+ 	help
+ 	  This option enables DVB Network Support which is a part of the DVB
+diff --git a/drivers/media/dvb-core/Makefile b/drivers/media/dvb-core/Makefile
+index 62b028ded9f7..d4c27ac3a8f7 100644
+--- a/drivers/media/dvb-core/Makefile
++++ b/drivers/media/dvb-core/Makefile
+@@ -6,8 +6,13 @@
+ dvb-net-$(CONFIG_DVB_NET) := dvb_net.o
+ dvb-vb2-$(CONFIG_DVB_MMAP) := dvb_vb2.o
+ 
+-dvb-core-objs := dvbdev.o dmxdev.o dvb_demux.o			\
++ifndef AMLOGIC_ZAPPER_CUT
++dvb-core-objs := dvbdev.o dmxdev.o dvb_demux.o	\
+ 		 dvb_ca_en50221.o dvb_frontend.o		\
+ 		 $(dvb-net-y) dvb_ringbuffer.o $(dvb-vb2-y) dvb_math.o
+-
++else
++dvb-core-objs := dvbdev.o dmxdev.o 	\
++		 dvb_ca_en50221.o dvb_frontend.o		\
++		 $(dvb-net-y) dvb_ringbuffer.o $(dvb-vb2-y) dvb_math.o
++endif
+ obj-$(CONFIG_DVB_CORE) += dvb-core.o
+diff --git a/drivers/mtd/spi-nor/Makefile b/drivers/mtd/spi-nor/Makefile
+index 6b904e439372..d6ac7b69780f 100644
+--- a/drivers/mtd/spi-nor/Makefile
++++ b/drivers/mtd/spi-nor/Makefile
+@@ -1,6 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0
+ 
+ spi-nor-objs			:= core.o sfdp.o swp.o otp.o sysfs.o
++ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ spi-nor-objs			+= atmel.o
+ spi-nor-objs			+= catalyst.o
+ spi-nor-objs			+= eon.o
+@@ -17,6 +18,7 @@ spi-nor-objs			+= sst.o
+ spi-nor-objs			+= winbond.o
+ spi-nor-objs			+= xilinx.o
+ spi-nor-objs			+= xmc.o
++endif
+ obj-$(CONFIG_MTD_SPI_NOR)	+= spi-nor.o
+ 
+ obj-$(CONFIG_MTD_SPI_NOR)	+= controllers/
+diff --git a/drivers/mtd/spi-nor/core.c b/drivers/mtd/spi-nor/core.c
+index 1e61c2364622..88953ed75465 100644
+--- a/drivers/mtd/spi-nor/core.c
++++ b/drivers/mtd/spi-nor/core.c
+@@ -1840,6 +1840,7 @@ int spi_nor_sr2_bit7_quad_enable(struct spi_nor *nor)
+ }
+ 
+ static const struct spi_nor_manufacturer *manufacturers[] = {
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	&spi_nor_atmel,
+ 	&spi_nor_catalyst,
+ 	&spi_nor_eon,
+@@ -1857,6 +1858,7 @@ static const struct spi_nor_manufacturer *manufacturers[] = {
+ 	&spi_nor_winbond,
+ 	&spi_nor_xilinx,
+ 	&spi_nor_xmc,
++#endif
+ };
+ 
+ static const struct flash_info *
+diff --git a/drivers/net/loopback.c b/drivers/net/loopback.c
+index 498e5c8013ef..9f72efd34ee4 100644
+--- a/drivers/net/loopback.c
++++ b/drivers/net/loopback.c
+@@ -135,7 +135,9 @@ static u32 always_on(struct net_device *dev)
+ 
+ static const struct ethtool_ops loopback_ethtool_ops = {
+ 	.get_link		= always_on,
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	.get_ts_info		= ethtool_op_get_ts_info,
++#endif
+ };
+ 
+ static int loopback_dev_init(struct net_device *dev)
+diff --git a/drivers/usb/gadget/function/u_ether.c b/drivers/usb/gadget/function/u_ether.c
+index 83d137b3f086..73a23c641d4d 100644
+--- a/drivers/usb/gadget/function/u_ether.c
++++ b/drivers/usb/gadget/function/u_ether.c
+@@ -159,7 +159,9 @@ static void eth_get_drvinfo(struct net_device *net, struct ethtool_drvinfo *p)
+ 
+ static const struct ethtool_ops ops = {
+ 	.get_drvinfo = eth_get_drvinfo,
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	.get_link = ethtool_op_get_link,
++#endif
+ };
+ 
+ static void defer_kevent(struct eth_dev *dev, int flag)
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index 4c24ab681149..20dca01109ae 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -117,9 +117,11 @@ struct kmem_cache {
+ 	unsigned int red_left_pad;	/* Left redzone padding size */
+ 	const char *name;	/* Name (only for display!) */
+ 	struct list_head list;	/* List of slab caches */
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ #ifdef CONFIG_SYSFS
+ 	struct kobject kobj;	/* For sysfs */
+ #endif
++#endif
+ #ifdef CONFIG_SLAB_FREELIST_HARDENED
+ 	unsigned long random;
+ #endif
+@@ -156,6 +158,7 @@ struct kmem_cache {
+ #define slub_set_cpu_partial(s, n)
+ #endif /* CONFIG_SLUB_CPU_PARTIAL */
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ #ifdef CONFIG_SYSFS
+ #define SLAB_SUPPORTS_SYSFS
+ void sysfs_slab_unlink(struct kmem_cache *);
+@@ -164,6 +167,16 @@ void sysfs_slab_release(struct kmem_cache *);
+ static inline void sysfs_slab_unlink(struct kmem_cache *s)
+ {
+ }
++
++static inline void sysfs_slab_release(struct kmem_cache *s)
++{
++}
++#endif
++#else
++static inline void sysfs_slab_unlink(struct kmem_cache *s)
++{
++}
++
+ static inline void sysfs_slab_release(struct kmem_cache *s)
+ {
+ }
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index d86e9b27dd5a..80a3ea6d8cb0 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -56,7 +56,7 @@ extern void
+ for_each_kernel_tracepoint(void (*fct)(struct tracepoint *tp, void *priv),
+ 		void *priv);
+ 
+-#ifdef CONFIG_MODULES
++#if defined(CONFIG_MODULES) && defined(CONFIG_TRACEPOINTS)
+ struct tp_module {
+ 	struct list_head list;
+ 	struct module *mod;
+diff --git a/init/Kconfig b/init/Kconfig
+index 57a8e6746a42..6ab973ecc5c6 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -544,7 +544,7 @@ config HAVE_SCHED_AVG_IRQ
+ 
+ config SCHED_THERMAL_PRESSURE
+ 	bool
+-	default y if ARM && ARM_CPU_TOPOLOGY
++	default y if ARM && ARM_CPU_TOPOLOGY && !AMLOGIC_ZAPPER_CUT
+ 	default y if ARM64
+ 	depends on SMP
+ 	depends on CPU_FREQ_THERMAL
+@@ -2117,6 +2117,7 @@ config MODULE_FORCE_LOAD
+ 
+ config MODULE_UNLOAD
+ 	bool "Module unloading"
++	default n if AMLOGIC_ZAPPER_CUT
+ 	help
+ 	  Without this option you will not be able to unload any
+ 	  modules (note that some modules may not be unloadable
+@@ -2380,7 +2381,7 @@ config UNUSED_KSYMS_WHITELIST
+ endif # MODULES
+ 
+ config MODULES_TREE_LOOKUP
+-	def_bool y
++	def_bool y if !AMLOGIC_ZAPPER_CUT
+ 	depends on PERF_EVENTS || TRACING || CFI_CLANG
+ 
+ config INIT_ALL_POSSIBLE
+diff --git a/init/Kconfig.gki b/init/Kconfig.gki
+index ce622014516e..f985b4b73c85 100644
+--- a/init/Kconfig.gki
++++ b/init/Kconfig.gki
+@@ -4,10 +4,10 @@ config GKI_HIDDEN_DRM_CONFIGS
+ 	select DRM_GEM_SHMEM_HELPER if (DRM)
+ 	select DRM_GEM_CMA_HELPER
+ 	select DRM_KMS_CMA_HELPER
+-	select DRM_MIPI_DSI
++	select DRM_MIPI_DSI if !AMLOGIC_ZAPPER_CUT
+ 	select DRM_TTM if (HAS_IOMEM && DRM)
+ 	select VIDEOMODE_HELPERS
+-	select WANT_DEV_COREDUMP
++	select WANT_DEV_COREDUMP if !AMLOGIC_ZAPPER_CUT
+ 	select INTERVAL_TREE
+ 	help
+ 	  Dummy config option used to enable hidden DRM configs.
+@@ -69,7 +69,7 @@ config GKI_HIDDEN_MMC_CONFIGS
+ config GKI_HIDDEN_GPIO_CONFIGS
+ 	bool "Hidden GPIO configs needed for GKI"
+ 	select PINCTRL_SINGLE if (PINCTRL && OF && HAS_IOMEM)
+-	select GPIO_PL061 if (HAS_IOMEM && ARM_AMBA && GPIOLIB)
++	select GPIO_PL061 if (HAS_IOMEM && ARM_AMBA && GPIOLIB && !AMLOGIC_ZAPPER_CUT)
+ 	help
+ 	  Dummy config option used to enable hidden GPIO configs.
+ 	  These are normally selected implicitly when a module
+@@ -89,14 +89,14 @@ config GKI_HIDDEN_QCOM_CONFIGS
+ config GKI_HIDDEN_MEDIA_CONFIGS
+ 	bool "Hidden Media configs needed for GKI"
+ 	select VIDEOBUF2_CORE
+-	select V4L2_MEM2MEM_DEV
++	select V4L2_MEM2MEM_DEV if ! AMLOGIC_ZAPPER_CUT
+ 	select MEDIA_CONTROLLER
+ 	select MEDIA_CONTROLLER_REQUEST_API
+ 	select MEDIA_SUPPORT
+ 	select FRAME_VECTOR
+-	select CEC_CORE
+-	select CEC_NOTIFIER
+-	select CEC_PIN
++	select CEC_CORE if !AMLOGIC_ZAPPER_CUT
++	select CEC_NOTIFIER if !AMLOGIC_ZAPPER_CUT
++	select CEC_PIN if !AMLOGIC_ZAPPER_CUT
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	select VIDEOBUF2_DMA_SG
+ 	help
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 1aadc9a6487b..67169a50f92a 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -510,6 +510,7 @@ EXPORT_SYMBOL_GPL(trace_event_buffer_reserve);
+ int trace_event_reg(struct trace_event_call *call,
+ 		    enum trace_reg type, void *data)
+ {
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	struct trace_event_file *file = data;
+ 
+ 	WARN_ON(!(call->flags & TRACE_EVENT_FL_TRACEPOINT));
+@@ -541,6 +542,7 @@ int trace_event_reg(struct trace_event_call *call,
+ 		return 0;
+ #endif
+ 	}
++#endif
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(trace_event_reg);
+@@ -761,10 +763,12 @@ event_filter_pid_sched_process_fork(void *data,
+ void trace_event_follow_fork(struct trace_array *tr, bool enable)
+ {
+ 	if (enable) {
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 		register_trace_prio_sched_process_fork(event_filter_pid_sched_process_fork,
+ 						       tr, INT_MIN);
+ 		register_trace_prio_sched_process_free(event_filter_pid_sched_process_exit,
+ 						       tr, INT_MAX);
++#endif
+ 	} else {
+ 		unregister_trace_sched_process_fork(event_filter_pid_sched_process_fork,
+ 						    tr);
+@@ -1914,6 +1918,7 @@ static void register_pid_events(struct trace_array *tr)
+ 	 * Register a probe this is called after all other probes
+ 	 * to only keep ignore_pid set if next pid matches.
+ 	 */
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	register_trace_prio_sched_switch(event_filter_pid_sched_switch_probe_pre,
+ 					 tr, INT_MAX);
+ 	register_trace_prio_sched_switch(event_filter_pid_sched_switch_probe_post,
+@@ -1933,6 +1938,7 @@ static void register_pid_events(struct trace_array *tr)
+ 					 tr, INT_MAX);
+ 	register_trace_prio_sched_waking(event_filter_pid_sched_wakeup_probe_post,
+ 					 tr, 0);
++#endif
+ }
+ 
+ static ssize_t
+diff --git a/mm/rmap.c b/mm/rmap.c
+index e2e606453f06..17f69c62babe 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1697,6 +1697,11 @@ static bool try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 	mmu_notifier_invalidate_range_end(&range);
+ 	trace_android_vh_try_to_unmap_one(vma, page, address, ret);
+ 
++#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
++	if (ret && page_mapping(page) && vma->vm_file && vma->vm_file->f_mapping)
++		vma->vm_file->f_mapping->gfp_mask |= __GFP_NO_CMA;
++#endif
++
+ 	return ret;
+ }
+ 
+diff --git a/mm/slub.c b/mm/slub.c
+index 024873afd4d4..6a419af51560 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -261,6 +261,7 @@ static inline bool kmem_cache_has_cpu_partial(struct kmem_cache *s)
+ /* Use cmpxchg_double */
+ #define __CMPXCHG_DOUBLE	((slab_flags_t __force)0x40000000U)
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ #ifdef CONFIG_SYSFS
+ static int sysfs_slab_add(struct kmem_cache *);
+ static int sysfs_slab_alias(struct kmem_cache *, const char *);
+@@ -269,6 +270,11 @@ static inline int sysfs_slab_add(struct kmem_cache *s) { return 0; }
+ static inline int sysfs_slab_alias(struct kmem_cache *s, const char *p)
+ 							{ return 0; }
+ #endif
++#else
++static inline int sysfs_slab_add(struct kmem_cache *s) { return 0; }
++static inline int sysfs_slab_alias(struct kmem_cache *s, const char *p)
++							{ return 0; }
++#endif
+ 
+ #if defined(CONFIG_DEBUG_FS) && defined(CONFIG_SLUB_DEBUG)
+ static void debugfs_slab_add(struct kmem_cache *);
+@@ -5037,6 +5043,7 @@ void *__kmalloc_node_track_caller(size_t size, gfp_t gfpflags,
+ EXPORT_SYMBOL(__kmalloc_node_track_caller);
+ #endif
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ #ifdef CONFIG_SYSFS
+ static int count_inuse(struct page *page)
+ {
+@@ -5048,6 +5055,7 @@ static int count_total(struct page *page)
+ 	return page->objects;
+ }
+ #endif
++#endif
+ 
+ #ifdef CONFIG_SLUB_DEBUG
+ static void validate_slab(struct kmem_cache *s, struct page *page,
+@@ -5279,6 +5287,7 @@ static void process_slab(struct loc_track *t, struct kmem_cache *s,
+ #endif  /* CONFIG_DEBUG_FS   */
+ #endif	/* CONFIG_SLUB_DEBUG */
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ #ifdef CONFIG_SYSFS
+ enum slab_stat_type {
+ 	SL_ALL,			/* All slabs */
+@@ -6118,6 +6127,7 @@ static int __init slab_sysfs_init(void)
+ 
+ __initcall(slab_sysfs_init);
+ #endif /* CONFIG_SYSFS */
++#endif
+ 
+ #if defined(CONFIG_SLUB_DEBUG) && defined(CONFIG_DEBUG_FS)
+ static int slab_debugfs_show(struct seq_file *seq, void *v)
+diff --git a/net/Kconfig b/net/Kconfig
+index fb13460c6dab..53b67066e4b2 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -256,13 +256,13 @@ config PCPU_DEV_REFCNT
+ config RPS
+ 	bool
+ 	depends on SMP && SYSFS
+-	default y
++	default y if !AMLOGIC_ZAPPER_CUT
+ 
+ config RFS_ACCEL
+ 	bool
+ 	depends on RPS
+ 	select CPU_RMAP
+-	default y
++	default y if !AMLOGIC_ZAPPER_CUT
+ 
+ config SOCK_RX_QUEUE_MAPPING
+ 	bool
+@@ -271,7 +271,7 @@ config XPS
+ 	bool
+ 	depends on SMP
+ 	select SOCK_RX_QUEUE_MAPPING
+-	default y
++	default y if !AMLOGIC_ZAPPER_CUT
+ 
+ config HWBM
+ 	bool
+@@ -418,6 +418,7 @@ config SOCK_VALIDATE_XMIT
+ config NET_SELFTESTS
+ 	def_tristate PHYLIB
+ 	depends on PHYLIB && INET
++	default n if AMLOGIC_ZAPPER_CUT
+ 
+ config NET_SOCK_MSG
+ 	bool
+diff --git a/net/Makefile b/net/Makefile
+index fbfeb8a0bb37..a700164b6275 100644
+--- a/net/Makefile
++++ b/net/Makefile
+@@ -12,13 +12,18 @@ obj-$(CONFIG_COMPAT)		+= compat.o
+ 
+ # LLC has to be linked before the files in net/802/
+ obj-$(CONFIG_LLC)		+= llc/
+-obj-y				+= ethernet/ 802/ sched/ netlink/ bpf/ ethtool/
++ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++obj-y				+= ethtool/
++endif
++obj-y				+= ethernet/ 802/ sched/ netlink/ bpf/
+ obj-$(CONFIG_NETFILTER)		+= netfilter/
+ obj-$(CONFIG_INET)		+= ipv4/
+ obj-$(CONFIG_TLS)		+= tls/
+ obj-$(CONFIG_XFRM)		+= xfrm/
+ obj-$(CONFIG_UNIX_SCM)		+= unix/
++ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ obj-y				+= ipv6/
++endif
+ obj-$(CONFIG_BPFILTER)		+= bpfilter/
+ obj-$(CONFIG_PACKET)		+= packet/
+ obj-$(CONFIG_NET_KEY)		+= key/
+diff --git a/net/core/Makefile b/net/core/Makefile
+index 4268846f2f47..ed7de6f18d93 100644
+--- a/net/core/Makefile
++++ b/net/core/Makefile
+@@ -2,18 +2,25 @@
+ #
+ # Makefile for the Linux networking core.
+ #
+-
+-obj-y := sock.o request_sock.o skbuff.o datagram.o stream.o scm.o \
+-	 gen_stats.o gen_estimator.o net_namespace.o secure_seq.o flow_dissector.o
++ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++obj-y := flow_dissector.o secure_seq.o
++endif
++obj-y += sock.o request_sock.o skbuff.o datagram.o stream.o scm.o \
++	 gen_stats.o gen_estimator.o net_namespace.o
+ 
+ obj-$(CONFIG_SYSCTL) += sysctl_net_core.o
+ 
++ifndef CONFIG_AMLOGIC_ZAPPER_CUT
++obj-y += tso.o fib_notifier.o flow_offload.o xdp.o neighbour.o
++endif
++
+ obj-y		     += dev.o dev_addr_lists.o dst.o netevent.o \
+-			neighbour.o rtnetlink.o utils.o link_watch.o filter.o \
+-			sock_diag.o dev_ioctl.o tso.o sock_reuseport.o \
+-			fib_notifier.o xdp.o flow_offload.o
++			 rtnetlink.o utils.o link_watch.o filter.o \
++			sock_diag.o dev_ioctl.o  sock_reuseport.o \
+ 
++ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ obj-y += net-sysfs.o
++endif
+ obj-$(CONFIG_PAGE_POOL) += page_pool.o
+ obj-$(CONFIG_PROC_FS) += net-procfs.o
+ obj-$(CONFIG_NET_PKTGEN) += pktgen.o
+@@ -36,4 +43,6 @@ obj-$(CONFIG_FAILOVER) += failover.o
+ obj-$(CONFIG_NET_SOCK_MSG) += skmsg.o
+ obj-$(CONFIG_BPF_SYSCALL) += sock_map.o
+ obj-$(CONFIG_BPF_SYSCALL) += bpf_sk_storage.o
++ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ obj-$(CONFIG_OF)	+= of_net.o
++endif
+diff --git a/net/core/dev.c b/net/core/dev.c
+index f05fe5e3120c..052a22ac4d18 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2911,8 +2911,9 @@ EXPORT_SYMBOL(netdev_set_sb_channel);
+ int netif_set_real_num_tx_queues(struct net_device *dev, unsigned int txq)
+ {
+ 	bool disabling;
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	int rc;
+-
++#endif
+ 	disabling = txq < dev->real_num_tx_queues;
+ 
+ 	if (txq < 1 || txq > dev->num_tx_queues)
+@@ -2921,12 +2922,13 @@ int netif_set_real_num_tx_queues(struct net_device *dev, unsigned int txq)
+ 	if (dev->reg_state == NETREG_REGISTERED ||
+ 	    dev->reg_state == NETREG_UNREGISTERING) {
+ 		ASSERT_RTNL();
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 		rc = netdev_queue_update_kobjects(dev, dev->real_num_tx_queues,
+ 						  txq);
++
+ 		if (rc)
+ 			return rc;
+-
++#endif
+ 		if (dev->num_tc)
+ 			netif_setup_tc(dev, txq);
+ 
+@@ -2962,18 +2964,21 @@ EXPORT_SYMBOL(netif_set_real_num_tx_queues);
+  */
+ int netif_set_real_num_rx_queues(struct net_device *dev, unsigned int rxq)
+ {
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	int rc;
+-
++#endif
+ 	if (rxq < 1 || rxq > dev->num_rx_queues)
+ 		return -EINVAL;
+ 
+ 	if (dev->reg_state == NETREG_REGISTERED) {
+ 		ASSERT_RTNL();
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 		rc = net_rx_queue_update_kobjects(dev, dev->real_num_rx_queues,
+ 						  rxq);
++
+ 		if (rc)
+ 			return rc;
++#endif
+ 	}
+ 
+ 	dev->real_num_rx_queues = rxq;
+@@ -3159,6 +3164,7 @@ void netif_device_attach(struct net_device *dev)
+ }
+ EXPORT_SYMBOL(netif_device_attach);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ /*
+  * Returns a Tx hash based on the given packet descriptor a Tx queues' number
+  * to be used as a distribution range.
+@@ -3195,7 +3201,7 @@ static u16 skb_tx_hash(const struct net_device *dev,
+ 
+ 	return (u16) reciprocal_scale(skb_get_hash(skb), qcount) + qoffset;
+ }
+-
++#endif
+ static void skb_warn_bad_offload(const struct sk_buff *skb)
+ {
+ 	static const netdev_features_t null_features;
+@@ -4077,10 +4083,10 @@ u16 netdev_pick_tx(struct net_device *dev, struct sk_buff *skb,
+ 	if (queue_index < 0 || skb->ooo_okay ||
+ 	    queue_index >= dev->real_num_tx_queues) {
+ 		int new_index = get_xps_queue(dev, sb_dev, skb);
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 		if (new_index < 0)
+ 			new_index = skb_tx_hash(dev, sb_dev, skb);
+-
++#endif
+ 		if (queue_index != new_index && sk &&
+ 		    sk_fullsock(sk) &&
+ 		    rcu_access_pointer(sk->sk_dst_cache))
+@@ -4416,6 +4422,7 @@ set_rps_cpu(struct net_device *dev, struct sk_buff *skb,
+ 	return rflow;
+ }
+ 
++#ifdef CONFIG_RPS
+ /*
+  * get_rps_cpu is called from netif_receive_skb and returns the target
+  * CPU from the RPS map of the receiving queue for a given skb.
+@@ -4515,7 +4522,7 @@ static int get_rps_cpu(struct net_device *dev, struct sk_buff *skb,
+ done:
+ 	return cpu;
+ }
+-
++#endif
+ #ifdef CONFIG_RFS_ACCEL
+ 
+ /**
+@@ -5640,6 +5647,7 @@ static int generic_xdp_install(struct net_device *dev, struct netdev_bpf *xdp)
+ 	return ret;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ static int netif_receive_skb_internal(struct sk_buff *skb)
+ {
+ 	int ret;
+@@ -5666,7 +5674,7 @@ static int netif_receive_skb_internal(struct sk_buff *skb)
+ 	rcu_read_unlock();
+ 	return ret;
+ }
+-
++#endif
+ static void netif_receive_skb_list_internal(struct list_head *head)
+ {
+ 	struct sk_buff *skb, *next;
+@@ -5700,6 +5708,7 @@ static void netif_receive_skb_list_internal(struct list_head *head)
+ 	rcu_read_unlock();
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ /**
+  *	netif_receive_skb - process receive buffer from network
+  *	@skb: buffer to process
+@@ -5727,7 +5736,7 @@ int netif_receive_skb(struct sk_buff *skb)
+ 	return ret;
+ }
+ EXPORT_SYMBOL(netif_receive_skb);
+-
++#endif
+ /**
+  *	netif_receive_skb_list - process many receive buffers from network
+  *	@head: list of skbs to process.
+@@ -10127,18 +10136,22 @@ static int netif_alloc_rx_queues(struct net_device *dev)
+ 
+ 	for (i = 0; i < count; i++) {
+ 		rx[i].dev = dev;
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 		/* XDP RX-queue setup */
+ 		err = xdp_rxq_info_reg(&rx[i].xdp_rxq, dev, i, 0);
++#endif
+ 		if (err < 0)
+ 			goto err_rxq_info;
++
+ 	}
+ 	return 0;
+ 
+ err_rxq_info:
+ 	/* Rollback successful reg's and free other resources */
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	while (i--)
+ 		xdp_rxq_info_unreg(&rx[i].xdp_rxq);
++#endif
+ 	kvfree(dev->_rx);
+ 	dev->_rx = NULL;
+ 	return err;
+@@ -10146,15 +10159,16 @@ static int netif_alloc_rx_queues(struct net_device *dev)
+ 
+ static void netif_free_rx_queues(struct net_device *dev)
+ {
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	unsigned int i, count = dev->num_rx_queues;
+-
++#endif
+ 	/* netif_alloc_rx_queues alloc failed, resources have been unreg'ed */
+ 	if (!dev->_rx)
+ 		return;
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	for (i = 0; i < count; i++)
+ 		xdp_rxq_info_unreg(&dev->_rx[i].xdp_rxq);
+-
++#endif
+ 	kvfree(dev->_rx);
+ }
+ 
+@@ -10242,10 +10256,11 @@ int register_netdevice(struct net_device *dev)
+ 	/* When net_device's are persistent, this will be fatal. */
+ 	BUG_ON(dev->reg_state != NETREG_UNINITIALIZED);
+ 	BUG_ON(!net);
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	ret = ethtool_check_ops(dev->ethtool_ops);
+ 	if (ret)
+ 		return ret;
++#endif
+ 
+ 	spin_lock_init(&dev->addr_list_lock);
+ 	netdev_set_addr_lockdep_class(dev);
+@@ -10330,14 +10345,14 @@ int register_netdevice(struct net_device *dev)
+ 	ret = notifier_to_errno(ret);
+ 	if (ret)
+ 		goto err_uninit;
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	ret = netdev_register_kobject(dev);
+ 	write_lock(&dev_base_lock);
+ 	dev->reg_state = ret ? NETREG_UNREGISTERED : NETREG_REGISTERED;
+ 	write_unlock(&dev_base_lock);
+ 	if (ret)
+ 		goto err_uninit;
+-
++#endif
+ 	__netdev_update_features(dev);
+ 
+ 	/*
+@@ -11094,9 +11109,10 @@ void unregister_netdevice_many(struct list_head *head)
+ 		/* Notifier chain MUST detach us all upper devices. */
+ 		WARN_ON(netdev_has_any_upper_dev(dev));
+ 		WARN_ON(netdev_has_any_lower_dev(dev));
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 		/* Remove entries from kobject tree */
+ 		netdev_unregister_kobject(dev);
++#endif
+ #ifdef CONFIG_XPS
+ 		/* Remove XPS queueing entries */
+ 		netif_reset_xps_queues_gt(dev, 0);
+@@ -11254,8 +11270,10 @@ int __dev_change_net_namespace(struct net_device *dev, struct net *net,
+ 	/* Adapt owner in case owning user namespace of target network
+ 	 * namespace is different from the original one.
+ 	 */
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	err = netdev_change_owner(dev, net_old, net);
+ 	WARN_ON(err);
++#endif
+ 
+ 	/* Add the device back in the hashes */
+ 	list_netdevice(dev);
+@@ -11626,9 +11644,10 @@ static int __init net_dev_init(void)
+ 
+ 	if (dev_proc_init())
+ 		goto out;
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	if (netdev_kobject_init())
+ 		goto out;
++#endif
+ 
+ 	INIT_LIST_HEAD(&ptype_all);
+ 	for (i = 0; i < PTYPE_HASH_SIZE; i++)
+diff --git a/net/core/dev_ioctl.c b/net/core/dev_ioctl.c
+index 0e87237fd871..0824de49648f 100644
+--- a/net/core/dev_ioctl.c
++++ b/net/core/dev_ioctl.c
+@@ -515,7 +515,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
+ 		if (colon)
+ 			*colon = ':';
+ 		return ret;
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	case SIOCETHTOOL:
+ 		dev_load(net, ifr->ifr_name);
+ 		rtnl_lock();
+@@ -524,6 +524,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
+ 		if (colon)
+ 			*colon = ':';
+ 		return ret;
++#endif
+ 
+ 	/*
+ 	 *	These ioctl calls:
+diff --git a/net/core/filter.c b/net/core/filter.c
+index 519315a1acf3..baa888cd9131 100644
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -156,12 +156,12 @@ int sk_filter_trim_cap(struct sock *sk, struct sk_buff *skb, unsigned int cap)
+ 	return err;
+ }
+ EXPORT_SYMBOL(sk_filter_trim_cap);
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ BPF_CALL_1(bpf_skb_get_pay_offset, struct sk_buff *, skb)
+ {
+ 	return skb_get_poff(skb);
+ }
+-
++#endif
+ BPF_CALL_3(bpf_skb_get_nlattr, struct sk_buff *, skb, u32, a, u32, x)
+ {
+ 	struct nlattr *nla;
+@@ -428,7 +428,9 @@ static bool convert_bpf_extensions(struct sock_filter *fp,
+ 		/* Emit call(arg1=CTX, arg2=A, arg3=X) */
+ 		switch (fp->k) {
+ 		case SKF_AD_OFF + SKF_AD_PAY_OFFSET:
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 			*insn = BPF_EMIT_CALL(bpf_skb_get_pay_offset);
++#endif
+ 			break;
+ 		case SKF_AD_OFF + SKF_AD_NLATTR:
+ 			*insn = BPF_EMIT_CALL(bpf_skb_get_nlattr);
+@@ -3067,6 +3069,7 @@ static const struct bpf_func_proto bpf_get_route_realm_proto = {
+ 	.arg1_type      = ARG_PTR_TO_CTX,
+ };
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ BPF_CALL_1(bpf_get_hash_recalc, struct sk_buff *, skb)
+ {
+ 	/* If skb_clear_hash() was called due to mangling, we can
+@@ -3083,7 +3086,7 @@ static const struct bpf_func_proto bpf_get_hash_recalc_proto = {
+ 	.ret_type	= RET_INTEGER,
+ 	.arg1_type	= ARG_PTR_TO_CTX,
+ };
+-
++#endif
+ BPF_CALL_1(bpf_set_hash_invalid, struct sk_buff *, skb)
+ {
+ 	/* After all direct packet write, this can be used once for
+@@ -7434,8 +7437,10 @@ tc_cls_act_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ 		return &bpf_redirect_peer_proto;
+ 	case BPF_FUNC_get_route_realm:
+ 		return &bpf_get_route_realm_proto;
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	case BPF_FUNC_get_hash_recalc:
+ 		return &bpf_get_hash_recalc_proto;
++#endif
+ 	case BPF_FUNC_set_hash_invalid:
+ 		return &bpf_set_hash_invalid_proto;
+ 	case BPF_FUNC_set_hash:
+@@ -7705,8 +7710,10 @@ lwt_out_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
+ 		return &bpf_get_cgroup_classid_proto;
+ 	case BPF_FUNC_get_route_realm:
+ 		return &bpf_get_route_realm_proto;
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	case BPF_FUNC_get_hash_recalc:
+ 		return &bpf_get_hash_recalc_proto;
++#endif
+ 	case BPF_FUNC_perf_event_output:
+ 		return &bpf_skb_event_output_proto;
+ 	case BPF_FUNC_get_smp_processor_id:
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index e9ea0695efb4..6d0ab0bd6e0a 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -216,9 +216,10 @@ static ssize_t speed_show(struct device *dev,
+ 
+ 	if (netif_running(netdev) && netif_device_present(netdev)) {
+ 		struct ethtool_link_ksettings cmd;
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 		if (!__ethtool_get_link_ksettings(netdev, &cmd))
+ 			ret = sprintf(buf, fmt_dec, cmd.base.speed);
++#endif
+ 	}
+ 	rtnl_unlock();
+ 	return ret;
+@@ -241,8 +242,8 @@ static ssize_t duplex_show(struct device *dev,
+ 		return restart_syscall();
+ 
+ 	if (netif_running(netdev)) {
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 		struct ethtool_link_ksettings cmd;
+-
+ 		if (!__ethtool_get_link_ksettings(netdev, &cmd)) {
+ 			const char *duplex;
+ 
+@@ -259,6 +260,7 @@ static ssize_t duplex_show(struct device *dev,
+ 			}
+ 			ret = sprintf(buf, "%s\n", duplex);
+ 		}
++#endif
+ 	}
+ 	rtnl_unlock();
+ 	return ret;
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 8c85e93daa73..689dfb20582c 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -3877,6 +3877,7 @@ void rtmsg_ifinfo_newnet(int type, struct net_device *dev, unsigned int change,
+ 			   new_nsid, new_ifindex);
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ static int nlmsg_populate_fdb_fill(struct sk_buff *skb,
+ 				   struct net_device *dev,
+ 				   u8 *addr, u16 vid, u32 pid, u32 seq,
+@@ -3912,7 +3913,7 @@ static int nlmsg_populate_fdb_fill(struct sk_buff *skb,
+ 	nlmsg_cancel(skb, nlh);
+ 	return -EMSGSIZE;
+ }
+-
++#endif
+ static inline size_t rtnl_fdb_nlmsg_size(void)
+ {
+ 	return NLMSG_ALIGN(sizeof(struct ndmsg)) +
+@@ -3921,6 +3922,7 @@ static inline size_t rtnl_fdb_nlmsg_size(void)
+ 	       0;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ static void rtnl_fdb_notify(struct net_device *dev, u8 *addr, u16 vid, int type,
+ 			    u16 ndm_state)
+ {
+@@ -3944,7 +3946,7 @@ static void rtnl_fdb_notify(struct net_device *dev, u8 *addr, u16 vid, int type,
+ errout:
+ 	rtnl_set_sk_err(net, RTNLGRP_NEIGH, err);
+ }
+-
++#endif
+ /*
+  * ndo_dflt_fdb_add - default netdevice operation to add an FDB entry
+  */
+@@ -3982,6 +3984,7 @@ int ndo_dflt_fdb_add(struct ndmsg *ndm,
+ }
+ EXPORT_SYMBOL(ndo_dflt_fdb_add);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ static int fdb_vid_parse(struct nlattr *vlan_attr, u16 *p_vid,
+ 			 struct netlink_ext_ack *extack)
+ {
+@@ -4603,7 +4606,7 @@ static int rtnl_fdb_get(struct sk_buff *in_skb, struct nlmsghdr *nlh,
+ 	kfree_skb(skb);
+ 	return err;
+ }
+-
++#endif
+ static int brport_nla_put_flag(struct sk_buff *skb, u32 flags, u32 mask,
+ 			       unsigned int attrnum, unsigned int flag)
+ {
+@@ -5698,10 +5701,11 @@ void __init rtnetlink_init(void)
+ 	rtnl_register(PF_UNSPEC, RTM_NEWLINKPROP, rtnl_newlinkprop, NULL, 0);
+ 	rtnl_register(PF_UNSPEC, RTM_DELLINKPROP, rtnl_dellinkprop, NULL, 0);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	rtnl_register(PF_BRIDGE, RTM_NEWNEIGH, rtnl_fdb_add, NULL, 0);
+ 	rtnl_register(PF_BRIDGE, RTM_DELNEIGH, rtnl_fdb_del, NULL, 0);
+ 	rtnl_register(PF_BRIDGE, RTM_GETNEIGH, rtnl_fdb_get, rtnl_fdb_dump, 0);
+-
++#endif
+ 	rtnl_register(PF_BRIDGE, RTM_GETLINK, NULL, rtnl_bridge_getlink, 0);
+ 	rtnl_register(PF_BRIDGE, RTM_DELLINK, rtnl_bridge_dellink, NULL, 0);
+ 	rtnl_register(PF_BRIDGE, RTM_SETLINK, rtnl_bridge_setlink, NULL, 0);
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 9356cdb250d9..341efb30cff2 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -819,9 +819,11 @@ static int sock_timestamping_bind_phc(struct sock *sk, int phc_index)
+ {
+ 	struct net *net = sock_net(sk);
+ 	struct net_device *dev = NULL;
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	bool match = false;
+ 	int *vclock_index;
+ 	int i, num;
++#endif
+ 
+ 	if (sk->sk_bound_dev_if)
+ 		dev = dev_get_by_index(net, sk->sk_bound_dev_if);
+@@ -830,10 +832,11 @@ static int sock_timestamping_bind_phc(struct sock *sk, int phc_index)
+ 		pr_err("%s: sock not bind to device\n", __func__);
+ 		return -EOPNOTSUPP;
+ 	}
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	num = ethtool_get_phc_vclocks(dev, &vclock_index);
++#endif
+ 	dev_put(dev);
+-
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	for (i = 0; i < num; i++) {
+ 		if (*(vclock_index + i) == phc_index) {
+ 			match = true;
+@@ -846,7 +849,7 @@ static int sock_timestamping_bind_phc(struct sock *sk, int phc_index)
+ 
+ 	if (!match)
+ 		return -EINVAL;
+-
++#endif
+ 	sk->sk_bind_phc = phc_index;
+ 
+ 	return 0;
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index ed20cbdd1931..96f496d89845 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -251,6 +251,7 @@ static int proc_do_dev_weight(struct ctl_table *table, int write,
+ 	return ret;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ static int proc_do_rss_key(struct ctl_table *table, int write,
+ 			   void *buffer, size_t *lenp, loff_t *ppos)
+ {
+@@ -262,6 +263,7 @@ static int proc_do_rss_key(struct ctl_table *table, int write,
+ 	fake_table.maxlen = sizeof(buf);
+ 	return proc_dostring(&fake_table, write, buffer, lenp, ppos);
+ }
++#endif
+ 
+ #ifdef CONFIG_BPF_JIT
+ static int proc_dointvec_minmax_bpf_enable(struct ctl_table *table, int write,
+@@ -373,6 +375,7 @@ static struct ctl_table net_core_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	{
+ 		.procname	= "netdev_rss_key",
+ 		.data		= &netdev_rss_key,
+@@ -380,6 +383,7 @@ static struct ctl_table net_core_table[] = {
+ 		.mode		= 0444,
+ 		.proc_handler	= proc_do_rss_key,
+ 	},
++#endif
+ #ifdef CONFIG_BPF_JIT
+ 	{
+ 		.procname	= "bpf_jit_enable",
+diff --git a/net/core/utils.c b/net/core/utils.c
+index 1f31a39236d5..41c3b5501cb1 100644
+--- a/net/core/utils.c
++++ b/net/core/utils.c
+@@ -317,6 +317,7 @@ static int inet4_pton(const char *src, u16 port_num,
+ 	return 0;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ static int inet6_pton(struct net *net, const char *src, u16 port_num,
+ 		struct sockaddr_storage *addr)
+ {
+@@ -355,6 +356,7 @@ static int inet6_pton(struct net *net, const char *src, u16 port_num,
+ 
+ 	return 0;
+ }
++#endif
+ 
+ /**
+  * inet_pton_with_scope - convert an IPv4/IPv6 and port to socket address
+@@ -383,6 +385,7 @@ int inet_pton_with_scope(struct net *net, __kernel_sa_family_t af,
+ 	case AF_INET:
+ 		ret = inet4_pton(src, port_num, addr);
+ 		break;
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ 	case AF_INET6:
+ 		ret = inet6_pton(net, src, port_num, addr);
+ 		break;
+@@ -391,6 +394,7 @@ int inet_pton_with_scope(struct net *net, __kernel_sa_family_t af,
+ 		if (ret)
+ 			ret = inet6_pton(net, src, port_num, addr);
+ 		break;
++#endif
+ 	default:
+ 		pr_err("unexpected address family %d\n", af);
+ 	}
+diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
+index 73fce9467467..ee9ae20fd640 100644
+--- a/net/ethernet/eth.c
++++ b/net/ethernet/eth.c
+@@ -112,6 +112,7 @@ int eth_header(struct sk_buff *skb, struct net_device *dev,
+ }
+ EXPORT_SYMBOL(eth_header);
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ /**
+  * eth_get_headlen - determine the length of header for an ethernet frame
+  * @dev: pointer to network device
+@@ -141,7 +142,7 @@ u32 eth_get_headlen(const struct net_device *dev, const void *data, u32 len)
+ 	return min_t(u32, __skb_get_poff(NULL, data, &keys, len), len);
+ }
+ EXPORT_SYMBOL(eth_get_headlen);
+-
++#endif
+ /**
+  * eth_type_trans - determine the packet's protocol ID.
+  * @skb: received socket data
+@@ -503,6 +504,7 @@ unsigned char * __weak arch_get_platform_mac_address(void)
+ 	return NULL;
+ }
+ 
++#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+ int eth_platform_get_mac_address(struct device *dev, u8 *mac_addr)
+ {
+ 	unsigned char *addr;
+@@ -521,7 +523,7 @@ int eth_platform_get_mac_address(struct device *dev, u8 *mac_addr)
+ 	return 0;
+ }
+ EXPORT_SYMBOL(eth_platform_get_mac_address);
+-
++#endif
+ /**
+  * nvmem_get_mac_address - Obtain the MAC address from an nvmem cell named
+  * 'mac-address' associated with given device.
+diff --git a/security/Kconfig b/security/Kconfig
+index 5d412b3ddc49..1084e8c9fe82 100644
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -264,7 +264,7 @@ choice
+ 		bool "AppArmor" if SECURITY_APPARMOR=y
+ 
+ 	config DEFAULT_SECURITY_DAC
+-		bool "Unix Discretionary Access Controls"
++		bool "Unix Discretionary Access Controls" if !AMLOGIC_ZAPPER_CUT
+ 
+ endchoice
+ 
+-- 
+2.25.1
+

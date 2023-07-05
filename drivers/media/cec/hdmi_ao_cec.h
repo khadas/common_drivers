@@ -9,7 +9,7 @@
 #include <linux/clk.h>
 #include "hdmi_tx_cec_20.h"
 
-#define CEC_DRIVER_VERSION     "2023/08/05: s1a bringup"
+#define CEC_DRIVER_VERSION     "2023/08/06: add protection for store buffer"
 
 #define CEC_DEV_NAME		"cec"
 

@@ -261,4 +261,5 @@ int frc_drv_get_1st_frm(void);
 #define PR_ERR(fmt, args ...)		pr_info("frc_Err: " fmt, ##args)
 #define PR_FRC(fmt, args ...)		pr_info("frc: " fmt, ##args)
 
+int frc_drv_get_1st_frm(void);
 #endif

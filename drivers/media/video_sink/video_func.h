@@ -130,7 +130,6 @@ extern atomic_t cur_over_field_state;
 extern u32 config_vsync_num;
 extern ulong config_timeinfo;
 extern bool vsync_count_start;
-extern u32 vsync_frame_count;
 extern u32 new_frame_cnt;
 extern u32 new_frame_count;
 extern atomic_t vt_disable_video_done;

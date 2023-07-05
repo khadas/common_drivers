@@ -544,9 +544,7 @@ int debug_flag;
 
 /* for vd1 vsync 2to1 */
 bool vsync_count_start;
-u32 vsync_frame_count;
 u32 new_frame_cnt;
-
 u32 new_frame_count;
 u32 vd1_vd2_mux_dts;
 u32 osd_vpp_misc;

@@ -579,8 +579,12 @@ int vpp_in_size_threshold_4k = 9;
 
 /* for vd1 vsync 2to1 */
 bool vsync_count_start;
-u32 vsync_frame_count;
 u32 new_frame_cnt;
+MODULE_PARM_DESC(new_frame_cnt, "\n new_frame_cnt\n");
+module_param(new_frame_cnt, uint, 0664);
+
+MODULE_PARM_DESC(vsync_count_start, "\n vsync_count_start\n");
+module_param(vsync_count_start, bool, 0664);
 
 u32 new_frame_count;
 u32 vd1_vd2_mux_dts;
@@ -4558,10 +4562,7 @@ void clear_vsync_2to1_info(void)
 {
 	if (cur_dev->vsync_2to1_enable) {
 		vsync_count_start = false;
-		vsync_frame_count = 0;
 		new_frame_cnt = 0;
-		pr_info("%s， vsync_frame_count=%d\n", __func__,
-			vsync_frame_count);
 	}
 }
 EXPORT_SYMBOL(clear_vsync_2to1_info);

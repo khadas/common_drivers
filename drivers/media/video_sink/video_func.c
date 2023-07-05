@@ -65,7 +65,9 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_MSYNC
 #include <uapi/amlogic/msync.h>
 #endif
-
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+#include <linux/amlogic/media/frc/frc_common.h>
+#endif
 #include "video_hw_s5.h"
 #include "vpp_post_s5.h"
 #include "video_receiver.h"
@@ -1571,12 +1573,14 @@ s32 primary_render_frame(struct video_layer_s *layer,
 		ret = -1;
 		goto render_exit;
 	}
+
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (cur_dev->vsync_2to1_enable && vsync_count_start) {
-		/* odd not handle */
-		if (vsync_frame_count % 2)
+		/* not prevsync not handle */
+		if (!frc_drv_get_1st_frm())
 			return 0;
 	}
-
+#endif
 	local_vd2_mif.p_vd_mif_reg = &vd_layer[1].vd_mif_reg;
 	local_vd2_mif.p_vd_afbc_reg = &vd_layer[1].vd_afbc_reg;
 	/* filter setting management */
@@ -2811,14 +2815,15 @@ static int video_early_proc(u8 layer_id, u8 fake_layer_id)
 {
 	u8 func_id = 0, path_index = 0;
 
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (cur_dev->vsync_2to1_enable &&
 		layer_id == 0 &&
 		vsync_count_start) {
-		/* odd not handle */
-		if (vsync_frame_count % 2)
+		/* not prevsync not handle */
+		if (!frc_drv_get_1st_frm())
 			return 0;
 	}
-
+#endif
 	if (layer_id == 0xff)
 		func_id = vd_fake_func[fake_layer_id].fake_func_id;
 	else if (layer_id < MAX_VD_LAYER)
@@ -2858,14 +2863,15 @@ static int video_late_proc(u8 layer_id, u8 fake_layer_id)
 	u8 func_id = 0;
 	u8 path_index = 0;
 
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (cur_dev->vsync_2to1_enable &&
 		layer_id == 0 &&
 		vsync_count_start) {
-		/* odd not handle */
-		if (vsync_frame_count % 2)
+		/* not prevsync not handle */
+		if (!frc_drv_get_1st_frm())
 			return 0;
 	}
-
+#endif
 	if (layer_id == 0xff)
 		func_id = vd_fake_func[fake_layer_id].fake_func_id;
 	else if (layer_id < MAX_VD_LAYER)
@@ -2896,14 +2902,15 @@ static int vdx_misc_early_proc(u8 layer_id,
 	bool pre_vsync_notify = false;
 	bool post_vsync_notify = false;
 
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (cur_dev->vsync_2to1_enable &&
 		layer_id == 0 &&
 		vsync_count_start) {
-		/* odd not handle */
-		if (vsync_frame_count % 2)
+		/* not prevsync not handle */
+		if (!frc_drv_get_1st_frm())
 			return 0;
 	}
-
+#endif
 	/* prevsync + postvsync case */
 	if (cur_dev->pre_vsync_enable) {
 		if (layer_id == 0) {
@@ -2969,14 +2976,15 @@ static int vdx_misc_early_proc(u8 layer_id,
 
 static void vdx_misc_late_proc(u8 layer_id)
 {
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (cur_dev->vsync_2to1_enable &&
 		layer_id == 0 &&
 		vsync_count_start) {
-		/* odd not handle */
-		if (vsync_frame_count % 2)
+		/* not prevsync not handle */
+		if (!frc_drv_get_1st_frm())
 			return;
 	}
-
+#endif
 	if  (layer_id == 0) {
 		if (vd_layer[0].dispbuf &&
 		    (vd_layer[0].dispbuf->type & VIDTYPE_MVC))
@@ -3166,14 +3174,15 @@ static struct vframe_s *video_toggle_frame
 	u8 path_index = 0;
 	struct vframe_s *path_new_frame = NULL;
 
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (cur_dev->vsync_2to1_enable &&
 		layer_id == 0 &&
 		vsync_count_start) {
-		vsync_frame_count++;
-		/* odd not handle */
-		if (vsync_frame_count % 2)
+		/* not prevsync not handle */
+		if (!frc_drv_get_1st_frm())
 			return NULL;
 	}
+#endif
 	if (layer_id == 0xff)
 		func_id = vd_fake_func[fake_layer_id].fake_func_id;
 	else if (layer_id < MAX_VD_LAYER)
@@ -3200,13 +3209,8 @@ static struct vframe_s *video_toggle_frame
 	}
 	if (cur_dev->vsync_2to1_enable &&
 		layer_id == 0 &&
-		path_new_frame) {
+		path_new_frame)
 		new_frame_cnt++;
-		if (new_frame_cnt == 1) {
-			vsync_count_start = true;
-			pr_info("%s, vsync_count_started\n", __func__);
-		}
-	}
 	return path_new_frame;
 }
 
@@ -3590,14 +3594,15 @@ static void do_vd1_swap_frame(u8 layer_id,
 	enum vframe_signal_fmt_e fmt;
 	int source_type = 0;
 
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (cur_dev->vsync_2to1_enable &&
 		layer_id == 0 &&
 		vsync_count_start) {
-		/* odd not handle */
-		if (vsync_frame_count % 2)
+		/* not prevsync not handle */
+		if (!frc_drv_get_1st_frm())
 			return;
 	}
-
+#endif
 	new_frame = vdx_swap_frame(0, vd1_path_id,
 				  cur_vd1_path_id,
 				  path_new_frame);
@@ -4977,6 +4982,11 @@ LATE_PROC:
 	misc_late_proc();
 	for (i = 0; i < MAX_VD_LAYER; i++)
 		cur_vd_path_id[i] = vd_path_id[i];
+	if (new_frame_cnt == 1 && !vsync_count_start) {
+		vsync_count_start = true;
+		pr_info("%s, vsync_count_started\n", __func__);
+	}
+
 #endif
 }
 

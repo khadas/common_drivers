@@ -1043,8 +1043,15 @@ function adjust_config_action () {
 	if [[ -n ${MENUCONFIG} ]] || [[ -n ${BASICCONFIG} ]] || [[ ${CHECK_DEFCONFIG} -eq "1" ]]; then
 		# ${ROOT_DIR}/${BUILD_DIR}/config.sh menuconfig
 		HERMETIC_TOOLCHAIN=0
-		source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
-		source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
+
+		if [[ "${FULL_KERNEL_VERSION}" = "common13-5.15" ]]; then
+			source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
+			source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
+		else
+			source ${ROOT_DIR}/${BUILD_CONFIG}
+			export COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
+			export OUT_DIR=$(readlink -m ${COMMON_OUT_DIR}/${KERNEL_DIR})
+		fi
 
 		orig_config=$(mktemp)
 		orig_defconfig=$(mktemp)

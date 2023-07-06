@@ -391,7 +391,7 @@
 			<0xff800268 0x4>;
 		tsensor_id = <0>;
 		cal_type = <0x1>;
-		cal_coeff = <324 424 3159 9411>;
+		cal_coeff = <361 461 2610 7243>;
 		rtemp = <120000>;
 		interrupts = <GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&clkc CLKID_TS_CLK>; // CLKID_TS_COMP>;

@@ -122,6 +122,9 @@ MODULE_AMLOG(LOG_LEVEL_ERROR, 0, LOG_DEFAULT_LEVEL_DESC, LOG_MASK_DESC);
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_PRIME_SL
 #include <linux/amlogic/media/amprime_sl/prime_sl.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+#include <linux/amlogic/media/frc/frc_common.h>
+#endif
 
 #include <linux/math64.h>
 #include "video_receiver.h"
@@ -5942,14 +5945,22 @@ u32 video_get_layer_capability(void)
 
 int get_output_pcrscr_info(s32 *inc, u32 *base)
 {
+	u32 n2m_setting;
+
 	if (IS_ERR_OR_NULL(inc) || IS_ERR_OR_NULL(base)) {
 		pr_info("%s: param is NULL.\n", __func__);
 		return -1;
 	}
 
-	*inc = vsync_pts_inc_scale;
-	*base = vsync_pts_inc_scale_base;
-
+	n2m_setting = frc_get_n2m_setting();
+	/* frc_get_n2m_setting 1 : n2m is 1:1; 2 :n2m is 1:2 */
+	if (n2m_setting == 2) {
+		*inc = vsync_pts_inc_scale;
+		*base = vsync_pts_inc_scale_base / 2;
+	} else {
+		*inc = vsync_pts_inc_scale;
+		*base = vsync_pts_inc_scale_base;
+	}
 	return 0;
 }
 EXPORT_SYMBOL(get_output_pcrscr_info);

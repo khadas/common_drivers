@@ -88,6 +88,10 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
 #include <linux/amlogic/media/di/di_interface.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+#include <linux/amlogic/media/frc/frc_common.h>
+#endif
+
 #include "vpp_regs_s5.h"
 
 static u32 g_viu0_hold_line;
@@ -11547,6 +11551,7 @@ void set_video_slice_policy(struct video_layer_s *layer,
 	u32 src_height = 0;
 	u32 slice_num = 1, pi_en = 0;
 	u32 vd1s1_vd2_prebld_en = 0;
+	u32 n2m_setting;
 	const struct vinfo_s *vinfo = get_current_vinfo();
 
 	if (cur_dev->display_module != S5_DISPLAY_MODULE)
@@ -11561,6 +11566,7 @@ void set_video_slice_policy(struct video_layer_s *layer,
 	}
 	update_vd_src_info(layer->layer_id,
 		src_width, src_height, vf->compWidth, vf->compHeight);
+	n2m_setting = frc_get_n2m_setting();
 	if (layer->layer_id == 0) {
 		/* check output */
 		if (vinfo) {
@@ -11571,7 +11577,9 @@ void set_video_slice_policy(struct video_layer_s *layer,
 			/* 4k 120hz */
 			} else if (vinfo->width > 1920 && vinfo->height > 1080 &&
 				(vinfo->sync_duration_num /
-			    vinfo->sync_duration_den > 60)) {
+			    vinfo->sync_duration_den > 60) && n2m_setting != 2) {
+			    /* frc_get_n2m_setting 1 : n2m is 1:1; 2 :n2m is 1:2 */
+				/* 4k120hz and n2m 1:1, enalbe 2 slice, others 1 slice */
 				slice_num = 2;
 				if (video_is_meson_s5_cpu() && is_amdv_enable())
 					vd1s1_vd2_prebld_en = 1;
@@ -12065,6 +12073,22 @@ void clear_vpu_venc_error(void)
 		WRITE_VCBUS_REG_BITS(T3X_VPU_VENC_ERROR, 0x0, 0, 1);
 		pr_info("T3X_VPU_VENC_ERROR(0x1cea=0x%x)\n", READ_VCBUS_REG(T3X_VPU_VENC_ERROR));
 	}
+}
+
+void update_frc_in_size(struct video_layer_s *layer)
+{
+	if (!layer || !layer->next_frame_par)
+		return;
+
+	if (layer->slice_num == 4)
+		layer->next_frame_par->frc_h_size =
+			SIZE_ALIG32(layer->next_frame_par->nnhf_input_w);
+	else if (layer->slice_num == 2)
+		layer->next_frame_par->frc_h_size =
+			SIZE_ALIG16(layer->next_frame_par->nnhf_input_w);
+	else
+		layer->next_frame_par->frc_h_size = layer->next_frame_par->nnhf_input_w;
+	layer->next_frame_par->frc_v_size = layer->next_frame_par->nnhf_input_h;
 }
 
 static void save_vd_pps_reg(void)

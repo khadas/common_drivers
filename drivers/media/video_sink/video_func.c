@@ -2918,13 +2918,13 @@ static int vdx_misc_early_proc(u8 layer_id,
 		if (layer_id == 0) {
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 			vsync_notify_video_composer(layer_id,
-				vsync_pts_inc_scale / 2,
-				vsync_pts_inc_scale_base);
+				vsync_pts_inc_scale,
+				vsync_pts_inc_scale_base / 2);
 #endif
 #ifdef CONFIG_AMLOGIC_VIDEOQUEUE
 			vsync_notify_videoqueue(layer_id,
-				vsync_pts_inc_scale / 2,
-				vsync_pts_inc_scale_base);
+				vsync_pts_inc_scale,
+				vsync_pts_inc_scale_base / 2);
 #endif
 			pre_vsync_notify = true;
 		}
@@ -3669,6 +3669,7 @@ static void do_vd1_swap_frame(u8 layer_id,
 	}
 
 #if defined(CONFIG_AMLOGIC_MEDIA_FRC)
+	update_frc_in_size(&vd_layer[0]);
 	frc_input_handle(vd_layer[0].dispbuf, vd_layer[0].next_frame_par);
 #endif
 	if (atomic_read(&axis_changed)) {
@@ -4558,13 +4559,13 @@ void pre_vsync_process(void)
 	if (cur_dev->vsync_2to1_enable) {
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 		vsync_notify_video_composer(0,
-			vsync_pts_inc_scale / 2,
-			vsync_pts_inc_scale_base);
+			vsync_pts_inc_scale,
+			vsync_pts_inc_scale_base / 2);
 #endif
 #ifdef CONFIG_AMLOGIC_VIDEOQUEUE
 		vsync_notify_videoqueue(0,
-			vsync_pts_inc_scale / 2,
-			vsync_pts_inc_scale_base);
+			vsync_pts_inc_scale,
+			vsync_pts_inc_scale_base / 2);
 #endif
 	}
 	set_cur_line_info();

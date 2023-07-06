@@ -47,6 +47,9 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
 #include <linux/amlogic/media/di/di.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+#include <linux/amlogic/media/frc/frc_common.h>
+#endif
 
 #include "video_priv.h"
 #include "video_hw_s5.h"
@@ -2947,7 +2950,7 @@ static int check_reshape_speed(s32 width_in,
 	u32 sync_duration_den = 1;
 	u64 calc_clk = 0;
 	u32 cur_super_debug = 0;
-	u32 pi_enable;
+	u32 pi_enable, n2m_setting;
 
 	if (vpp_flags & VPP_FLAG_MORE_LOG)
 		cur_super_debug = super_debug;
@@ -2962,6 +2965,8 @@ static int check_reshape_speed(s32 width_in,
 	else
 		vtotal = vinfo->vtotal;
 	pi_enable = get_pi_enabled(0);
+	/* 1 : n2m is 1:1; 2 :n2m is 1:2 */
+	n2m_setting = frc_get_n2m_setting();
 #ifdef CONFIG_AMLOGIC_VPU
 	clk_in_pps = vpu_clk_get();
 #endif
@@ -2971,7 +2976,7 @@ static int check_reshape_speed(s32 width_in,
 		(u64)vtotal,
 		height_out *
 		sync_duration_den);
-	if (pi_enable)
+	if (pi_enable || n2m_setting == 2)
 		calc_clk /= 2;
 	if (cur_super_debug)
 		pr_info("%s, calc_clk=%lld, clk_in_pps=%d\n",

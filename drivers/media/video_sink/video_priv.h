@@ -1138,5 +1138,8 @@ static inline bool tsync_check_vpts_discontinuity(unsigned int vpts)
 struct vinfo_s *get_current_vinfo(void);
 #endif
 
+#ifndef CONFIG_AMLOGIC_MEDIA_FRC
+static inline int frc_get_n2m_setting(void) { return 1; }
+#endif
 #endif
 /*VIDEO_PRIV_HEADER_HH*/

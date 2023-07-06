@@ -507,4 +507,6 @@ int get_output_pcrscr_info(s32 *inc, u32 *base);
 void update_over_field_states(u32 new_state, bool force);
 #endif
 u32 get_slice_num(u32 layer_id);
+void get_vysnc_pts_in_scale(u32 *vsync_inc_scale,
+	u32 *vsync_inc_scale_base);
 #endif /* VIDEO_H */

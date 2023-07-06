@@ -224,3 +224,19 @@ int frc_drv_get_1st_frm(void)
 }
 EXPORT_SYMBOL(frc_drv_get_1st_frm);
 
+int frc_get_n2m_setting(void)
+{
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (!devp)
+		return 0;
+	if (!devp->probe_ok)
+		return 0;
+	if (devp->in_out_ratio == FRC_RATIO_1_1)
+		return 1;
+	else if (devp->in_out_ratio == FRC_RATIO_1_2)
+		return 2;
+	else
+		return 0;
+}
+EXPORT_SYMBOL(frc_get_n2m_setting);

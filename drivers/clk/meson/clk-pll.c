@@ -769,18 +769,15 @@ static int meson_secure_pll_v2_set_rate(struct clk_hw *hw, unsigned long rate,
 	struct clk_regmap *clk = to_clk_regmap(hw);
 	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
 	struct arm_smccc_res res;
-	unsigned int enabled, m, n, ret = 0;
-	unsigned long old_rate;
-#if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+	unsigned int m, n, ret = 0;
+#ifdef CONFIG_ARM
 	unsigned int od;
 #endif
 
 	if (parent_rate == 0 || rate == 0)
 		return -EINVAL;
 
-	old_rate = rate;
-
-#if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+#ifdef CONFIG_ARM
 	ret = meson_clk_get_pll_settings(rate, parent_rate, &m, &n, pll, &od);
 #else
 	ret = meson_clk_get_pll_settings(rate, parent_rate, &m, &n, pll);
@@ -788,11 +785,10 @@ static int meson_secure_pll_v2_set_rate(struct clk_hw *hw, unsigned long rate,
 	if (ret)
 		return ret;
 
-	enabled = meson_parm_read(clk->map, &pll->en);
-	if (enabled)
+	if (meson_parm_read(clk->map, &pll->en))
 		meson_secure_pll_v2_disable(hw);
-	/*Send m,n for arm64 */
-#if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+
+#ifdef CONFIG_ARM
 	arm_smccc_smc(pll->smc_id, pll->secid,
 		      m, n, od, 0, 0, 0, &res);
 #else
@@ -819,9 +815,9 @@ static int meson_secure_pll_v2_enable(struct clk_hw *hw)
 	/* If PLL is not enabled because setting the same rate,
 	 * Enable it again, CCF will return when set the same rate
 	 */
-
 	n = meson_parm_read(clk->map, &pll->n);
 	m = meson_parm_read(clk->map, &pll->m);
+	/* od is required in arm64 and arm */
 	od = meson_parm_read(clk->map, &pll->od);
 
 	arm_smccc_smc(pll->smc_id, pll->secid,
@@ -849,12 +845,11 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 	struct parm *pn = &pll->n;
 	struct parm *pth = &pll->th;
 	struct parm *pfrac = &pll->frac;
-	unsigned int enabled, m, n, frac;
-	unsigned long old_rate;
+	unsigned int m, n, frac;
 	unsigned int val;
 	const struct reg_sequence *init_regs = pll->init_regs;
 	int i, ret = 0, retry = 10;
-#if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+#ifdef CONFIG_ARM
 	unsigned int od;
 	struct parm *pod = &pll->od;
 #endif
@@ -862,10 +857,8 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 	if (parent_rate == 0 || rate == 0)
 		return -EINVAL;
 
-	old_rate = rate;
-
 	/* calculate M, N, OD*/
-#if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+#ifdef CONFIG_ARM
 	ret = meson_clk_get_pll_settings(rate, parent_rate, &m, &n, pll, &od);
 #else
 	ret = meson_clk_get_pll_settings(rate, parent_rate, &m, &n, pll);
@@ -875,7 +868,7 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 
 	/* calute frac */
 	if (MESON_PARM_APPLICABLE(&pll->frac)) {
-#if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+#ifdef CONFIG_ARM
 		frac = __pll_params_with_frac(rate, parent_rate, m, n, od, pll);
 #else
 		frac = __pll_params_with_frac(rate, parent_rate, m, n, pll);
@@ -886,7 +879,7 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 		 */
 		if (meson_parm_read(clk->map, &pll->m) == m &&
 		meson_parm_read(clk->map, &pll->n) == n &&
-#if defined CONFIG_ARM
+#ifdef CONFIG_ARM
 		meson_parm_read(clk->map, &pll->od) == od &&
 #endif
 		meson_parm_read(clk->map, &pll->en)) {
@@ -901,8 +894,7 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 		}
 	}
 
-	enabled = meson_parm_read(clk->map, &pll->en);
-	if (enabled)
+	if (meson_parm_read(clk->map, &pll->en))
 		meson_clk_pll_disable(hw);
 
 	do {
@@ -912,7 +904,7 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 				val = init_regs[i].def;
 				if (MESON_PARM_APPLICABLE(&pll->th)) {
 					val &= CLRPMASK(pth->width, pth->shift);
-#if defined CONFIG_ARM
+#ifdef CONFIG_ARM
 					if (__pll_params_to_rate(parent_rate, m, n, frac, pll, 0)
 						>= MESON_PLL_THRESHOLD_RATE)
 						val |= 1 << pth->shift;
@@ -926,7 +918,7 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 				val &= CLRPMASK(pm->width, pm->shift);
 				val |= n << pn->shift;
 				val |= m << pm->shift;
-#if defined CONFIG_AMLOGIC_MODIFY && defined CONFIG_ARM
+#ifdef CONFIG_ARM
 				val &= CLRPMASK(pod->width, pod->shift);
 				val |= od << pod->shift;
 #endif
@@ -977,7 +969,9 @@ static int meson_clk_pll_v3_enable(struct clk_hw *hw)
 }
 
 const struct clk_ops meson_clk_pll_v3_ops = {
-	.init		= meson_clk_pll_init,
+	/* walk the init regs each time when set a new rate,
+	 * init callback is not useful for v3 ops
+	 */
 	.recalc_rate	= meson_clk_pll_recalc_rate,
 	.round_rate	= meson_clk_pll_round_rate,
 	.set_rate	= meson_clk_pll_v3_set_rate,

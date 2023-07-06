@@ -37,7 +37,6 @@ static const struct pll_params_table t3x_sys_pll_params_table[] = {
 	PLL_PARAMS(75, 1, 0), /*DCO=1800M OD=1800M*/
 	PLL_PARAMS(79, 1, 0), /*DCO=1896M OD=1896M*/
 	PLL_PARAMS(167, 2, 0), /*DCO=2004M OD=2004M*/
-	PLL_PARAMS(84, 1, 0), /*DCO=2016M OD=2016M*/
 	{ /* sentinel */ }
 };
 #else
@@ -85,14 +84,12 @@ static struct clk_regmap t3x_sys_pll_dco = {
 			.shift   = 16,
 			.width   = 5,
 		},
-#ifdef CONFIG_ARM
-		/* od for 32bit */
+		/* od is required when setting the same rate during STR */
 		.od = {
 			.reg_off = CLKCTRL_SYS0PLL_CTRL0,
 			.shift	 = 12,
 			.width	 = 3,
 		},
-#endif
 		.table = t3x_sys_pll_params_table,
 		.l = {
 			.reg_off = CLKCTRL_SYS0PLL_CTRL0,
@@ -119,7 +116,7 @@ static struct clk_regmap t3x_sys_pll_dco = {
 		 * This clock feeds the CPU, avoid disabling it
 		 * Register has the risk of being directly operated
 		 */
-		.flags = CLK_IS_CRITICAL | CLK_GET_RATE_NOCACHE,
+		.flags = CLK_IS_CRITICAL
 	},
 };
 
@@ -988,9 +985,6 @@ static struct clk_regmap t3x_pcie_hcsl = {
 
 /* a55 cpu_clk, get the table from ucode */
 static const struct cpu_dyn_table t3x_cpu_dyn_table[] = {
-	CPU_LOW_PARAMS(100000000, 1, 1, 9),
-	CPU_LOW_PARAMS(250000000, 1, 1, 3),
-	CPU_LOW_PARAMS(333333333, 2, 1, 1),
 	CPU_LOW_PARAMS(500000000, 1, 1, 1),
 	CPU_LOW_PARAMS(666666666, 2, 0, 0),
 	CPU_LOW_PARAMS(1000000000, 1, 0, 0)
@@ -1023,7 +1017,6 @@ static struct clk_regmap t3x_cpu_clk = {
 	.data = &(struct clk_regmap_mux_data){
 		.mask = 0x1,
 		.shift = 11,
-		.flags = CLK_MUX_ROUND_CLOSEST,
 		.smc_id = SECURE_CPU_CLK,
 		.secid = SECID_CPU_CLK_SEL,
 		.secid_rd = SECID_CPU_CLK_RD
@@ -1036,11 +1029,7 @@ static struct clk_regmap t3x_cpu_clk = {
 			&t3x_sys_pll.hw,
 		},
 		.num_parents = 2,
-		/*
-		 * This clock feeds the CPU, avoid disabling it
-		 * Register has the risk of being directly operated
-		 */
-		.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
+		.flags = CLK_SET_RATE_PARENT
 	},
 };
 
@@ -1076,7 +1065,7 @@ static struct clk_regmap t3x_a76_clk = {
 			&t3x_sys1_pll.hw,
 		},
 		.num_parents = 2,
-		.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
+		.flags = CLK_SET_RATE_PARENT
 	},
 };
 
@@ -1158,14 +1147,6 @@ static int t3x_sys_pll_notifier_cb(struct notifier_block *nb,
 		 *    \- sys_pll
 		 *          \- sys_pll_dco
 		 */
-
-		/*
-		 * Configure cpu_clk to use cpu_clk_dyn
-		 * Make sure cpu clk is 1G, cpu_clk_dyn may equal 24M
-		 */
-		if (clk_set_rate(nb_data->cpu_dyn_clk->clk, 1000000000))
-			pr_err("%s: set CPU dyn clock to 1G failed\n", __func__);
-
 		clk_hw_set_parent(nb_data->cpu_clk,
 				  nb_data->cpu_dyn_clk);
 
@@ -1179,9 +1160,6 @@ static int t3x_sys_pll_notifier_cb(struct notifier_block *nb,
 		 *                      \- xtal/fclk_div2/fclk_div3
 		 *                   \- xtal/fclk_div2/fclk_div3
 		 */
-
-		udelay(5);
-
 		return NOTIFY_OK;
 
 	case POST_RATE_CHANGE:
@@ -1193,9 +1171,6 @@ static int t3x_sys_pll_notifier_cb(struct notifier_block *nb,
 		/* Configure cpu_clk to use sys_pll */
 		clk_hw_set_parent(nb_data->cpu_clk,
 				  nb_data->sys_pll);
-
-		udelay(5);
-
 		/* new path :
 		 * cpu_clk
 		 *    \- sys_pll
@@ -1209,19 +1184,21 @@ static int t3x_sys_pll_notifier_cb(struct notifier_block *nb,
 	}
 }
 
-static struct t3x_sys_pll_nb_data t3x_sys_pll_nb_data = {
-	.sys_pll = &t3x_sys_pll.hw,
-	.cpu_clk = &t3x_cpu_clk.hw,
-	.cpu_dyn_clk = &t3x_cpu_dyn_clk.hw,
-	.nb.notifier_call = t3x_sys_pll_notifier_cb,
-};
-
-static struct t3x_sys_pll_nb_data t3x_sys1_pll_nb_data = {
-	.sys_pll = &t3x_sys1_pll.hw,
-	.cpu_clk = &t3x_a76_clk.hw,
-	.cpu_dyn_clk = &t3x_a76_dyn_clk.hw,
-	.nb.notifier_call = t3x_sys_pll_notifier_cb,
-};
+/*
+ *static struct t3x_sys_pll_nb_data t3x_sys_pll_nb_data = {
+ *	.sys_pll = &t3x_sys_pll.hw,
+ *	.cpu_clk = &t3x_cpu_clk.hw,
+ *	.cpu_dyn_clk = &t3x_cpu_dyn_clk.hw,
+ *	.nb.notifier_call = t3x_sys_pll_notifier_cb,
+ *};
+ *
+ *static struct t3x_sys_pll_nb_data t3x_sys1_pll_nb_data = {
+ *	.sys_pll = &t3x_sys1_pll.hw,
+ *	.cpu_clk = &t3x_a76_clk.hw,
+ *	.cpu_dyn_clk = &t3x_a76_dyn_clk.hw,
+ *	.nb.notifier_call = t3x_sys_pll_notifier_cb,
+ *};
+ */
 
 static struct t3x_sys_pll_nb_data t3x_sys3_pll_nb_data = {
 	.sys_pll = &t3x_sys3_pll.hw,
@@ -7136,20 +7113,28 @@ static int meson_t3x_dvfs_setup(struct platform_device *pdev)
 {
 	int ret;
 
+	/* avoid cpu/dsu run at 24M in dvfs, remove it here.
+	 * cpu or a76 do it in dvfs init
+	 */
+	if (clk_set_rate(t3x_dsu_dyn_clk.hw.clk, 1000000000))
+		pr_err("%s: set dsu dyn clock to 1G failed\n", __func__);
 	/* Setup cluster 0 clock notifier for sys_pll */
-	ret = clk_notifier_register(t3x_sys_pll.hw.clk,
-				    &t3x_sys_pll_nb_data.nb);
-	if (ret) {
-		dev_err(&pdev->dev, "failed to register sys_pll notifier\n");
-		return ret;
-	}
+/*
+ *	ret = clk_notifier_register(t3x_sys_pll.hw.clk,
+ *				    &t3x_sys_pll_nb_data.nb);
+ *	if (ret) {
+ *		dev_err(&pdev->dev, "failed to register sys_pll notifier\n");
+ *		return ret;
+ *	}
+ */
 	/* Setup cluster 1 clock notifier for sys1_pll */
-	ret = clk_notifier_register(t3x_sys1_pll.hw.clk,
-				    &t3x_sys1_pll_nb_data.nb);
-	if (ret) {
-		dev_err(&pdev->dev, "failed to register sys1_pll notifier\n");
-		return ret;
-	}
+ /*	ret = clk_notifier_register(t3x_sys1_pll.hw.clk,
+  *				    &t3x_sys1_pll_nb_data.nb);
+  *	if (ret) {
+  *		dev_err(&pdev->dev, "failed to register sys1_pll notifier\n");
+  *		return ret;
+  *	}
+  */
 	/* Setup DSU clock notifier for sys3_pll */
 	ret = clk_notifier_register(t3x_sys3_pll.hw.clk,
 				    &t3x_sys3_pll_nb_data.nb);

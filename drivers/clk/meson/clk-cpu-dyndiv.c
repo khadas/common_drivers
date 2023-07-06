@@ -150,7 +150,7 @@ static int meson_clk_cpu_dyn_set_rate(struct clk_hw *hw, unsigned long rate,
 	nrate = table->rate;
 
 	/* For set more than 1G, need to set additional parent frequency */
-	if (!strcmp(clk_hw_get_name(hw), "dsu_dyn_clk") && nrate > 1000000000) {
+	if (nrate > 1000000000 && !strcmp(clk_hw_get_name(hw), "dsu_dyn_clk")) {
 		if (clk_get_rate(hw->clk) > 1000000000) {
 			/* switch dsu to fix div2 */
 			if (data->smc_id)

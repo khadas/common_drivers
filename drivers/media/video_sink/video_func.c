@@ -4053,6 +4053,9 @@ RUN_FIRST_RDMA:
 	if (debug_flag & DEBUG_FLAG_GET_COUNT)
 		pr_info("count=%d pip=%d, pip2=%d\n",
 			get_count_pip[0], get_count_pip[1], get_count_pip[2]);
+
+	/* clear the delay video flag of HDMI-IN AV SYNC Control */
+	go_exit = 0;
 }
 
 static int do_vd1_path_select(void)

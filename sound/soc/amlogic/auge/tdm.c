@@ -34,7 +34,10 @@
 #include <linux/amlogic/media/vout/hdmi_tx_ext.h>
 #include <linux/amlogic/media/sound/aout_notify.h>
 #include <linux/amlogic/cpu_version.h>
-
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+#include <asm/div64.h>
+#include <linux/math64.h>
+#endif
 #include "ddr_mngr.h"
 #include "tdm_hw.h"
 #include "sharebuffer.h"
@@ -143,6 +146,10 @@ struct aml_tdm {
 	struct regulator *regulator_vcc5v;
 	int suspend_clk_off;
 	int tdm_in_src;
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+	unsigned char *temp_buffer;
+	unsigned int vol_index;
+#endif
 };
 
 #define to_aml_tdm(x)   container_of(x, struct aml_tdm, clk_nb)
@@ -805,6 +812,34 @@ static int tdmout_gain_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+static int tdmout_softgain_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_dai *cpu_dai = snd_kcontrol_chip(kcontrol);
+	struct aml_tdm *p_tdm = snd_soc_dai_get_drvdata(cpu_dai);
+
+	ucontrol->value.enumerated.item[0] = p_tdm->vol_index;
+
+	return 0;
+}
+
+static int tdmout_softgain_set(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_dai *cpu_dai = snd_kcontrol_chip(kcontrol);
+	struct aml_tdm *p_tdm = snd_soc_dai_get_drvdata(cpu_dai);
+
+	int value = ucontrol->value.enumerated.item[0];
+
+	if (value < 0 || value > 100)
+		value = 100;
+	p_tdm->vol_index = value;
+
+	return 0;
+}
+#endif
+
 static int tdmout_get_mute_enum(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
@@ -947,6 +982,12 @@ static const struct snd_kcontrol_new snd_tdm_b_controls[] = {
 				tdmin_source_enum,
 				tdmin_src_enum_get,
 				tdmin_src_enum_put),
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+	SOC_SINGLE_EXT("TDMOUT_B Software Gain",
+		       0, 0, 100, 0,
+		       tdmout_softgain_get,
+		       tdmout_softgain_set),
+#endif
 };
 
 static const struct snd_kcontrol_new snd_tdm_c_controls[] = {
@@ -1254,6 +1295,13 @@ static int aml_tdm_hw_params(struct snd_soc_component *component,
 
 static int aml_tdm_hw_free(struct snd_soc_component *component, struct snd_pcm_substream *substream)
 {
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct aml_tdm *p_tdm = runtime->private_data;
+
+	kfree(p_tdm->temp_buffer);
+	p_tdm->temp_buffer = NULL;
+#endif
 	return snd_pcm_lib_free_pages(substream);
 }
 
@@ -1404,6 +1452,145 @@ static const struct snd_kcontrol_new tdm_fade_out_controls[] = {
 		       tdm_underrun_threshold_put),
 };
 
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+
+#define AUDIO_VOLUME_INDEX 101
+
+/*db_to_vol * 10^6*/
+static unsigned int vol_coefficient[AUDIO_VOLUME_INDEX] = {
+	0,
+	1000, 2238, 4216, 6683, 11220, 15848, 19952, 25118, 31622, 39810,
+	44668, 50118, 56234, 63095, 70794, 77624, 84139, 89125, 93325, 96605,
+	101157, 105925, 112201, 116144, 120226, 123026, 125892, 128824, 133352, 136458,
+	141253, 144543, 149623, 154881, 160324, 165958, 169824, 173780, 179887, 184077,
+	190546, 197242, 201836, 206538, 211348, 216271, 221309, 226464, 231739, 239883,
+	248313, 257039, 263026, 269153, 275422, 281838, 288403, 295120, 305492, 316227,
+	323593, 331131, 338844, 346736, 354813, 367282, 380189, 393550, 407380, 421696,
+	436515, 451855, 462381, 478630, 495450, 512861, 530884, 549540, 562341, 575439,
+	582103, 595662, 609536, 623734, 645654, 660693, 683911, 707945, 732824, 749894,
+	776247, 794328, 812830, 841395, 860993, 891250, 912010, 944060, 966050, 1000000
+};
+
+static inline int16_t clamp16(int32_t sample)
+{
+	if ((sample >> 15) ^ (sample >> 31))
+		sample = 0x7FFF ^ (sample >> 31);
+	return sample;
+}
+
+static inline int32_t clamp32(int64_t sample)
+{
+	if ((sample >> 31) ^ (sample >> 63))
+		sample = 0x7FFFFFFF ^ (sample >> 63);
+	return sample;
+}
+
+static inline int snd_pcm_volume_set(void *buf,
+			snd_pcm_uframes_t frames, int bit_depth,
+			int channel, unsigned int vol_index)
+{
+	s16 *input16 = (s16 *)buf;
+	s32 *input32 = (s32 *)buf;
+	int i, j = 0;
+
+	if (bit_depth == 16) {
+		for (i = 0; i < frames; i++) {
+			for (j = 0; j < channel; j++) {
+				s64 tmp = (s64)input16[i * channel + j];
+
+				input16[i * channel + j] =
+				clamp16((int32_t)(div_s64(tmp * vol_coefficient[vol_index],
+						1000000)));
+			}
+		}
+	} else if (bit_depth == 32) {
+		for (i = 0; i < frames; i++) {
+			for (j = 0; j < channel; j++) {
+				s64 tmp = (s64)input32[i * channel + j];
+
+				input32[i * channel + j] =
+				clamp32((int64_t)(div_s64(tmp * vol_coefficient[vol_index],
+						1000000)));
+			}
+		}
+	}
+	return 0;
+}
+
+/* calculate the target DMA-buffer position to be written/read */
+static void *aml_get_dma_ptr(struct snd_pcm_runtime *runtime,
+			   int channel, unsigned long hwoff)
+{
+	return runtime->dma_area + hwoff +
+		channel * (runtime->dma_bytes / runtime->channels);
+}
+
+/* default copy_kernel ops for write */
+static int aml_write_copy_kernel(struct snd_pcm_substream *substream,
+				     int channel, unsigned long hwoff,
+				     void *buf, unsigned long bytes)
+{
+	memcpy(aml_get_dma_ptr(substream->runtime, channel, hwoff), buf, bytes);
+	return 0;
+}
+
+/* default copy_user ops for write; used for both interleaved and non- modes */
+static int aml_write_copy(struct snd_pcm_substream *substream,
+			      int channel, unsigned long hwoff,
+			      void *buf, unsigned long bytes)
+{
+	if (copy_from_user(aml_get_dma_ptr(substream->runtime, channel, hwoff),
+				(void __user *)buf, bytes))
+		return -EFAULT;
+	return 0;
+}
+
+/* default copy_user ops for read; used for both interleaved and non- modes */
+static int aml_default_read_copy(struct snd_pcm_substream *substream,
+			     int channel, unsigned long hwoff,
+			     void *buf, unsigned long bytes)
+{
+	if (copy_to_user((void __user *)buf,
+			aml_get_dma_ptr(substream->runtime, channel, hwoff), bytes))
+		return -EFAULT;
+	return 0;
+}
+
+static int tdm_copy_user(struct snd_soc_component *component,
+	struct snd_pcm_substream *substream, int channel,
+	unsigned long pos, void __user *buf,
+	unsigned long bytes)
+{
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct aml_tdm *p_tdm = runtime->private_data;
+	int bit_depth;
+	int ret = 0;
+	int temp_buffer_max_len;
+
+	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+		ret = aml_default_read_copy(substream, 0, pos, buf, bytes);
+	} else {
+		if (p_tdm->vol_index == 100) {
+			ret = aml_write_copy(substream, 0, pos, (void __force *)buf, bytes);
+		} else {
+			bit_depth = snd_pcm_format_width(runtime->format);
+			temp_buffer_max_len = frames_to_bytes(runtime, runtime->buffer_size);
+			/*only malloc one time*/
+			if (!p_tdm->temp_buffer)
+				p_tdm->temp_buffer = kzalloc(temp_buffer_max_len, GFP_KERNEL);
+			else
+				memset(p_tdm->temp_buffer, 0x00, temp_buffer_max_len);
+			if (copy_from_user(p_tdm->temp_buffer, (void __user *)buf, bytes))
+				return -EFAULT;
+			snd_pcm_volume_set(p_tdm->temp_buffer, bytes_to_frames(runtime, bytes),
+				bit_depth, runtime->channels, p_tdm->vol_index);
+			ret = aml_write_copy_kernel(substream, 0, pos, p_tdm->temp_buffer, bytes);
+		}
+	}
+	return ret;
+}
+#endif
+
 static const struct snd_soc_component_driver aml_tdm_component = {
 	.name           = DRV_NAME,
 
@@ -1415,6 +1602,9 @@ static const struct snd_soc_component_driver aml_tdm_component = {
 	.prepare = aml_tdm_prepare,
 	.pointer = aml_tdm_pointer,
 	.mmap = aml_tdm_mmap,
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+	.copy_user = tdm_copy_user,
+#endif
 };
 
 static void set_aud_param_ch_status(struct iec958_chsts *chsts,
@@ -2501,7 +2691,9 @@ static int aml_tdm_platform_probe(struct platform_device *pdev)
 			}
 		}
 	}
-
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+	p_tdm->vol_index = 100;
+#endif
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	tdm_register_early_suspend_hdr(p_tdm->id, pdev);
 #endif

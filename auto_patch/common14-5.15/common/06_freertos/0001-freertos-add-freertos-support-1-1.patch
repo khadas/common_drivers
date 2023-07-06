@@ -1,15 +1,18 @@
-From 4ff747f526bdd8f2c5ce5a53f5bc23a12410a15b Mon Sep 17 00:00:00 2001
+From 1c4024c165189cb04ef85ed6df143e13e9f01793 Mon Sep 17 00:00:00 2001
 From: "wanwei.jiang" <wanwei.jiang@amlogic.com>
 Date: Mon, 28 Feb 2022 09:54:55 +0800
 Subject: [PATCH] freertos: add freertos support [1/1]
 
 PD#SWPL-71741
+PD#SWPL-128739
 
 Problem:
-add freertos support
+1 add freertos support
+2 rtos mipi irq miss frequently when booting kernel
 
 Solution:
-add freertos support
+1 add freertos support
+2 mark gic distributor disable
 
 Verify:
 C2 T7
@@ -20,11 +23,11 @@ Signed-off-by: wanwei.jiang <wanwei.jiang@amlogic.com>
  arch/arm/kernel/smp.c            | 11 ++++++++++
  arch/arm64/kernel/smp.c          | 23 ++++++++++++++++++++
  drivers/irqchip/irq-gic-common.c | 36 ++++++++++++++++++++++++++++++++
- drivers/irqchip/irq-gic.c        | 16 +++++++++++++-
- 4 files changed, 85 insertions(+), 1 deletion(-)
+ drivers/irqchip/irq-gic.c        | 20 +++++++++++++++++-
+ 4 files changed, 89 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 083662ead0a8..61bc8f52a7a3 100644
+index f46317f6d8ce..d1678f770a4c 100644
 --- a/arch/arm/kernel/smp.c
 +++ b/arch/arm/kernel/smp.c
 @@ -48,6 +48,10 @@
@@ -48,7 +51,7 @@ index 083662ead0a8..61bc8f52a7a3 100644
  	/*
  	 * CPU_BACKTRACE is special and not included in NR_IPI
  	 * or tracable with trace_ipi_*
-@@ -670,6 +677,10 @@ static void do_handle_IPI(int ipinr)
+@@ -679,6 +686,10 @@ static void do_handle_IPI(int ipinr)
  		break;
  
  	case IPI_CPU_BACKTRACE:
@@ -200,7 +203,7 @@ index a610821c8ff2..496d591d54f2 100644
  	if (sync_access)
  		sync_access();
 diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 13039ec336b1..70417398d139 100644
+index 50041c044a1a..2a879a249758 100644
 --- a/drivers/irqchip/irq-gic.c
 +++ b/drivers/irqchip/irq-gic.c
 @@ -51,6 +51,10 @@
@@ -214,7 +217,7 @@ index 13039ec336b1..70417398d139 100644
  #ifdef CONFIG_ARM64
  #include <asm/cpufeature.h>
  
-@@ -469,13 +473,15 @@ static void gic_cpu_if_up(struct gic_chip_data *gic)
+@@ -469,15 +473,21 @@ static void gic_cpu_if_up(struct gic_chip_data *gic)
  	writel_relaxed(bypass | mode | GICC_ENABLE, cpu_base + GIC_CPU_CTRL);
  }
  
@@ -229,9 +232,15 @@ index 13039ec336b1..70417398d139 100644
 +	u32 tmp;
 +#endif
  
++#if IS_ENABLED(CONFIG_AMLOGIC_FREERTOS)
++	/*disable gic distributor will result in freertos lost interrupt*/
++#else
  	writel_relaxed(GICD_DISABLE, base + GIC_DIST_CTRL);
++#endif
  
-@@ -485,8 +491,16 @@ static void gic_dist_init(struct gic_chip_data *gic)
+ 	/*
+ 	 * Set all global interrupts to this CPU only.
+@@ -485,8 +495,16 @@ static void gic_dist_init(struct gic_chip_data *gic)
  	cpumask = gic_get_cpumask(gic);
  	cpumask |= cpumask << 8;
  	cpumask |= cpumask << 16;

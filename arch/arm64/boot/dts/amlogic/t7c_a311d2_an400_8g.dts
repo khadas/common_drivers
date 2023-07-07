@@ -1078,7 +1078,8 @@
 		regulator-name = "VDD_DDR";
 		regulator-min-microvolt = <800000>;
 		regulator-max-microvolt = <800000>;
-		gpio = <&gpio GPIOE_6 GPIO_ACTIVE_HIGH>;
+		// use by vdd_ddr pwm
+		//gpio = <&gpio GPIOE_6 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <70000>;
 		enable-active-high;
 		regulator-boot-on;

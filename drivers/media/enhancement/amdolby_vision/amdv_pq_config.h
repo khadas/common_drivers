@@ -313,6 +313,7 @@ extern struct target_config_dvp def_tgt_dvp_cfg;
 
 void restore_dv_pq_setting(enum pq_reset_e pq_reset);
 bool load_dv_pq_config_data(char *bin_path, char *txt_path);
+bool cp_dv_pq_config_data(void);
 void set_pic_mode(int mode);
 int get_pic_mode_num(void);
 int get_pic_mode(void);

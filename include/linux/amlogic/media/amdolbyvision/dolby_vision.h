@@ -110,6 +110,15 @@ struct dynamic_cfg_s {
 	int enable_l1l4_gen;
 } __aligned(8);
 
+struct dv_config_data_s {
+	unsigned int file_name;  // 0:cfg 1:bin
+	unsigned int file_size;
+	union {
+		void *file_data;
+		long long file_table;
+	};
+} __aligned(8);
+
 #define DV_M 'D'
 
 /* get Number of Picture Mode */
@@ -151,7 +160,14 @@ struct dynamic_cfg_s {
 /*1: enable dv dark detail, 0: disable dv GD*/
 #define DV_IOC_SET_DV_DARK_DETAIL _IOW((DV_M), 0xc, int)
 
+/* set Amlogic_cfg.txt and dv_config.bin data */
+#define DV_IOC_SET_DV_CONFIG_DATA _IOW((DV_M), 0xd, struct dv_config_data_s)
+
 extern unsigned int debug_dolby;
+extern char *cfg_data;
+extern char *bin_data;
+extern int cfg_size;
+extern int bin_size;
 
 struct composer_reg_ipcore {
 	/* offset 0xc8 */

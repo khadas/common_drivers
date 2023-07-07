@@ -448,7 +448,7 @@ MODULE_PARM_DESC(ambient_test_mode, "\n ambient_test_mode\n");
 
 struct ambient_cfg_s ambient_darkdetail = {16, 0, 0, 0, 0, 0, 1};
 
-static int content_fps = 24;
+u32 content_fps = 24;
 int gd_rf_adjust;
 int enable_vf_check;
 static u32 last_vf_valid_crc;

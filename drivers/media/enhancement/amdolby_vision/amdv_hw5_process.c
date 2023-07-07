@@ -1218,12 +1218,12 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 
 	v_inst_info->src_format = src_format;
 	v_inst_info->input_mode = input_mode;
-	v_inst_info->video_width = w;
-	v_inst_info->video_height = h;
+	v_inst_info->video_width = w;//top1_vd_info.width;
+	v_inst_info->video_height = h;//top1_vd_info.height;
 
 	tv_hw5_setting->top1.src_format = src_format;
-	tv_hw5_setting->top1.video_width = w;
-	tv_hw5_setting->top1.video_height = h;
+	tv_hw5_setting->top1.video_width = w;//top1_vd_info.width;
+	tv_hw5_setting->top1.video_height = h;//top1_vd_info.height;
 
 	tv_hw5_setting->top1.input_mode = input_mode;
 	tv_hw5_setting->top1.in_md = v_inst_info->md_buf[v_inst_info->current_id];
@@ -1244,9 +1244,9 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 	tv_hw5_setting->enable_debug = debug_ko;
 	tv_hw5_setting->dither_bdp = 0;//dither bitdepth,0=>no dither
 	tv_hw5_setting->L1L4_distance = -1;
-	tv_hw5_setting->num_ext_downsamplers = 0;//todo
+	tv_hw5_setting->num_ext_downsamplers = 1;//todo
 	tv_hw5_setting->force_num_slices = 0;
-	tv_hw5_setting->frame_rate = 23976;
+	tv_hw5_setting->frame_rate = content_fps;//24000
 
 	if (run_control_path) {
 		/*step1: top1 frame N*/
@@ -1974,9 +1974,9 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 	tv_hw5_setting->enable_debug = debug_ko;
 	tv_hw5_setting->dither_bdp = 0;//dither bitdepth,0=>no dither
 	tv_hw5_setting->L1L4_distance = -1;
-	tv_hw5_setting->num_ext_downsamplers = 0;//todo
+	tv_hw5_setting->num_ext_downsamplers = 1;//todo
 	tv_hw5_setting->force_num_slices = 0;
-	tv_hw5_setting->frame_rate = 23976;
+	tv_hw5_setting->frame_rate = content_fps;
 
 	if (run_control_path) {
 		/*step2: top2 frame N-1*/

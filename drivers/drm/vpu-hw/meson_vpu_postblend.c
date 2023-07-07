@@ -687,14 +687,12 @@ static void fix_vpu_clk2_default_regs(struct meson_vpu_block *vblk,
 		reg_ops->rdma_write_reg_bits(VPP_VD3_DSC_CTRL, 0x0, 5, 1);
 		reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0x0, 15, 1);
 		reg_ops->rdma_write_reg_bits(MALI_AFBCD_TOP_CTRL, 0x0, 20, 1);
-		/* OSD3  uses VPP1*/
-		osd_set_vpp_path_default(vblk, reg_ops, 3, 1);
-		/* OSD4  uses VPP2*/
-		osd_set_vpp_path_default(vblk, reg_ops, 4, 2);
 	}
 
 	for (i = 0; i < MESON_MAX_OSDS; i++) {
 		if (crtcmask_osd[i] == crtc_index) {
+			/* OSD use the corresponding VPP according to crtcmask_osd */
+			osd_set_vpp_path_default(vblk, reg_ops, i + 1, crtcmask_osd[i]);
 			if (i == 0) {
 				reg_ops->rdma_write_reg_bits(VPP_OSD1_SCALE_CTRL, 0x2, 0, 3);
 			} else if (i == 1) {

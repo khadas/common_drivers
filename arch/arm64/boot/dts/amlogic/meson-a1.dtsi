@@ -1435,8 +1435,8 @@
 
 	remote_pins:remote_pin {
 		mux {
-			groups = "ir_remote_in_f";
-			function = "ir_remote_in";
+			groups = "remote_input_f";
+			function = "remote_input";
 		};
 	};
 

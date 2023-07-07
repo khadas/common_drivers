@@ -86,6 +86,16 @@ struct tdm_chipinfo {
 {	.name = (_name), .val = (_val)}
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+/* for A1 */
+struct src_table tdmin_srcs_v0[] = {
+	TDMIN_SRC_CONFIG(SRC_TDMIN_A, 0),
+	TDMIN_SRC_CONFIG(SRC_TDMIN_B, 1),
+	TDMIN_SRC_CONFIG(SRC_ACODEC, 3),
+	TDMIN_SRC_CONFIG(SRC_TDMIND_A, 4),
+	TDMIN_SRC_CONFIG(SRC_TDMIND_B, 5),
+	{ /* sentinel */ }
+};
+
 struct src_table tdmin_srcs_v1[] = {
 	TDMIN_SRC_CONFIG(SRC_TDMIN_A, 0),
 	TDMIN_SRC_CONFIG(SRC_TDMIN_B, 1),
@@ -672,7 +682,7 @@ struct tdm_chipinfo a1_tdma_chipinfo = {
 	.out_reset_reg_offset = 0xa,
 	.out_reset_reg_shift = 5,
 	.async_fifo  = true,
-	.tdmin_srcs = &tdmin_srcs_v1[0],
+	.tdmin_srcs = &tdmin_srcs_v0[0],
 	.chnum_en = true,
 	.gain_ver = GAIN_VER2,
 	.use_arb = true,
@@ -688,7 +698,7 @@ struct tdm_chipinfo a1_tdmb_chipinfo = {
 	.out_reset_reg_offset = 0xa,
 	.out_reset_reg_shift = 6,
 	.async_fifo  = true,
-	.tdmin_srcs = &tdmin_srcs_v1[0],
+	.tdmin_srcs = &tdmin_srcs_v0[0],
 	.chnum_en = true,
 	.gain_ver = GAIN_VER2,
 	.use_arb = true,

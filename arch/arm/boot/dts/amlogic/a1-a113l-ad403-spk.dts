@@ -368,7 +368,7 @@
 		pinctrl-0 = <&tdmb_mclk>;
 
 		/* tdmin data comes from ACODEC adc */
-		acodec_adc = <1>;
+		tdmin-src-name = "acodec_adc";
 
 		/*
 		 * 0: tdmout_a;

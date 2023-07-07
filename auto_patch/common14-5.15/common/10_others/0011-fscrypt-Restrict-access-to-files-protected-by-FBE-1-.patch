@@ -1,0 +1,123 @@
+From 201c97719b0236309fa1ec41b2e6fa40c4c78067 Mon Sep 17 00:00:00 2001
+From: Mingyen Hung <mingyen.hung@amlogic.com>
+Date: Tue, 8 Nov 2022 01:35:29 -0800
+Subject: [PATCH] fscrypt: Restrict access to files protected by FBE [1/1]
+
+PD#SWPL-130061
+
+Problem:
+RDK reference design wants to restrict accessing to files
+protected by FBE
+
+Solution:
+Only owner of master key is allowed to access encrypted file
+
+Verify:
+1. on SC2(ah212) + RDK(firebolt-dunfell) + kernel 5.15
+
+Change-Id: I136bf11ee8ae6e81fb8f6dab2af801a7ff984697
+Signed-off-by: Mingyen Hung <mingyen.hung@amlogic.com>
+---
+ fs/crypto/fscrypt_private.h |  8 +++++++-
+ fs/crypto/hooks.c           |  8 ++++++++
+ fs/crypto/keyring.c         | 25 +++++++++++++++++++++++++
+ 3 files changed, 40 insertions(+), 1 deletion(-)
+
+diff --git a/fs/crypto/fscrypt_private.h b/fs/crypto/fscrypt_private.h
+index 0d246bf672dc..7167bdf98c20 100644
+--- a/fs/crypto/fscrypt_private.h
++++ b/fs/crypto/fscrypt_private.h
+@@ -667,6 +667,9 @@ int fscrypt_derive_dirhash_key(struct fscrypt_info *ci,
+ void fscrypt_hash_inode_number(struct fscrypt_info *ci,
+ 			       const struct fscrypt_master_key *mk);
+
++#if IS_ENABLED(CONFIG_AMLOGIC_LINUX_FBE_RDK)
++int fscrypt_check_accessibility(struct inode *inode);
++#endif
+ int fscrypt_get_encryption_info(struct inode *inode, bool allow_unsupported);
+
+ /**
+@@ -686,11 +689,14 @@ static inline int fscrypt_require_key(struct inode *inode)
+ {
+ 	if (IS_ENCRYPTED(inode)) {
+ 		int err = fscrypt_get_encryption_info(inode, false);
+-
+ 		if (err)
+ 			return err;
+ 		if (!fscrypt_has_encryption_key(inode))
+ 			return -ENOKEY;
++#if IS_ENABLED(CONFIG_AMLOGIC_LINUX_FBE_RDK)
++		if (fscrypt_check_accessibility(inode))
++			return -EPERM;
++#endif
+ 	}
+ 	return 0;
+ }
+diff --git a/fs/crypto/hooks.c b/fs/crypto/hooks.c
+index 9e786ae66a13..2b8ea0dda270 100644
+--- a/fs/crypto/hooks.c
++++ b/fs/crypto/hooks.c
+@@ -143,7 +143,15 @@ EXPORT_SYMBOL_GPL(fscrypt_prepare_lookup_partial);
+
+ int __fscrypt_prepare_readdir(struct inode *dir)
+ {
++#if IS_ENABLED(CONFIG_AMLOGIC_LINUX_FBE_RDK)
++	int ret = fscrypt_get_encryption_info(dir, true);
++
++	if (fscrypt_check_accessibility(dir))
++		return -EPERM;
++	return ret;
++#else
+ 	return fscrypt_get_encryption_info(dir, true);
++#endif
+ }
+ EXPORT_SYMBOL_GPL(__fscrypt_prepare_readdir);
+
+diff --git a/fs/crypto/keyring.c b/fs/crypto/keyring.c
+index cc2ecbda5e1f..fbf315bae9d2 100644
+--- a/fs/crypto/keyring.c
++++ b/fs/crypto/keyring.c
+@@ -131,6 +131,25 @@ static inline bool valid_key_spec(const struct fscrypt_key_specifier *spec)
+ 	return master_key_spec_len(spec) != 0;
+ }
+
++#if IS_ENABLED(CONFIG_AMLOGIC_LINUX_FBE_RDK)
++int fscrypt_check_accessibility(struct inode *inode)
++{
++	struct fscrypt_info *ci = inode->i_crypt_info;
++	int ret = 0;
++
++	if (ci && ci->ci_policy.version == FSCRYPT_POLICY_V2) {
++		ret = fscrypt_verify_key_added(inode->i_sb,
++			ci->ci_policy.v2.master_key_identifier);
++		if (ret) {
++			fscrypt_err(inode,
++				"Not owner of master key. Access denied!(%d)", ret);
++			return -EPERM;
++		}
++	}
++	return ret;
++}
++#endif
++
+ static int fscrypt_user_key_instantiate(struct key *key,
+ 					struct key_preparsed_payload *prep)
+ {
+@@ -901,8 +920,14 @@ int fscrypt_verify_key_added(struct super_block *sb,
+ 	up_read(&mk->mk_sem);
+ 	fscrypt_put_master_key(mk);
+ out:
++
++#if IS_ENABLED(CONFIG_AMLOGIC_LINUX_FBE_RDK)
++	/* Make root(uid 0) unable to access other users' file */
++	/* NOP */
++#else
+ 	if (err == -ENOKEY && capable(CAP_FOWNER))
+ 		err = 0;
++#endif
+ 	return err;
+ }
+
+--
+2.31.1
+

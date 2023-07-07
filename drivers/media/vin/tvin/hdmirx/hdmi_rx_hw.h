@@ -40,6 +40,8 @@
 #define HHI_ADC_PLL_CNTL4		(0xad * 4)
 #define HHI_HDCP22_CLK_CNTL		(0x7c * 4)
 #define HHI_GCLK_MPEG2			(0x52 * 4)
+#define CLK_MUX_TXHD2			(0x81 * 4)
+#define TXHD2_PWR_CTL			(0x2a * 4)
 
 /* T7 0xfe008280*/
 #define HHI_AUD_PLL_CNTL_T7		(0x20 * 4)

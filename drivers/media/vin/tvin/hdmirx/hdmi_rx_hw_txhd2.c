@@ -41,22 +41,22 @@ u32 rterm_trim_val_txhd2;
 static const u32 phy_misc_txhd2[][2] = {
 		/*  0x18	0x1c	*/
 	{	 /* 24~35M */
-		0xffe000c0, 0x11c73003,
+		0xffe400c0, 0x11e73003,
 	},
 	{	 /* 37~75M */
-		0xffe000c0, 0x11c73003,
+		0xffe400c0, 0x11e73003,
 	},
 	{	 /* 75~150M */
-		0xffe00080, 0x11c73002,
+		0xffe40080, 0x11e73002,
 	},
 	{	 /* 150~340M */
-		0xffe00040, 0x11c73001,
+		0xffe40040, 0x11e73001,
 	},
 	{	 /* 340~525M */
-		0xffe00000, 0x11c73000,
+		0xffe40000, 0x11e73000,
 	},
 	{	 /* 525~600M */
-		0xffe00000, 0x11c73000,
+		0xffe40100, 0x11e73000,
 	},
 };
 
@@ -64,22 +64,22 @@ static const u32 phy_dcha_txhd2[][2] = {
 		 /* 0x08	 0x0c*/
 		/* some bits default close,reopen when pll stable */
 	{	 /* 24~45M */
-		0x00f77ccc, 0x40100c59,
+		0x00f77ccc, 0x40000b59,
 	},
 	{	 /* 35~75M */
-		0x00f77666, 0x40100c59,
+		0x00f77666, 0x40000b59,
 	},
 	{	 /* 75~150M */
-		0x00f77666, 0x40100459,
+		0x00f77666, 0x40000359,
 	},
 	{	 /* 150~340M */
-		0x00f77666, 0x7ff00459,
+		0x00f77666, 0x61f01359,
 	},
 	{	 /* 340~525M */
-		0x00f73666, 0x7ff00459,
+		0x00f73666, 0x61f01359,
 	},
 	{	 /* 525~600M */
-		0x02821666, 0x7ff00459,
+		0x02821666, 0x61f01359,
 	},
 };
 
@@ -100,10 +100,10 @@ static const u32 phy_dchd_txhd2[][2] = {
 		0x04080093, 0x30880069,
 	},
 	{	 /* 340~525M */
-		0x04080091, 0x30e00469,
+		0x04080091, 0x30e00069,
 	},
 	{	 /* 525~600M */
-		0x04080091, 0x30e0046f,
+		0x04080091, 0x30e0006f,
 	},
 };
 
@@ -149,40 +149,40 @@ void txhd2_480p_pll_cfg(void)
 //	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45305007);
 //	usleep_range(10, 20);
 	/*the times of pll = 160 */
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x0530a000);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x050a0010);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x01481236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x0530a001);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x050a0011);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x0530a003);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x050a0013);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x21401236);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x01401236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x0530a007);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x050a0017);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x4530a007);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x450a0017);
 	usleep_range(10, 20);
-	rx[port].phy.aud_div = 3;
+	rx[port].phy.aud_div = 0;
 }
 
 void txhd2_720p_pll_cfg(void)
 {
 	u8 port = rx_info.main_port;
 
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05305000);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05050010);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x01481236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05305001);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05050011);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05305003);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05050013);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x61401236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05305007);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05050017);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45305007);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45050017);
 	usleep_range(10, 20);
 	rx[port].phy.aud_div = 0;
 }
@@ -191,19 +191,17 @@ void txhd2_1080p_pll_cfg(void)
 {
 	u8 port = rx_info.main_port;
 
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302800);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028010);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x01481236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302801);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028011);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302803);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028013);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x41401236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302807);
-	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45302807);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45028017);
 	usleep_range(10, 20);
 	rx[port].phy.aud_div = 0;
 }
@@ -212,19 +210,19 @@ void txhd2_4k30_pll_cfg(void)
 {
 	u8 port = rx_info.main_port;
 
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302810);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028020);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x01481236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302811);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028021);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302813);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028023);
 	usleep_range(10, 20);
 	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x21401236);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302817);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028027);
 	usleep_range(10, 20);
-	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45302817);
+	hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45028027);
 	usleep_range(10, 20);
 	rx[port].phy.aud_div = 0;
 }
@@ -235,35 +233,35 @@ void txhd2_4k60_pll_cfg(void)
 
 	if (rx[port].clk.cable_clk > 300 &&
 		rx[port].clk.cable_clk < 340) {
-		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302820);
+		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028040);
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x01481236);
 		usleep_range(10, 20);
-		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302821);
+		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028041);
 		usleep_range(10, 20);
-		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302823);
+		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028043);
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x21401236);
 		usleep_range(10, 20);
-		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302827);
+		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028047);
 		usleep_range(10, 20);
-		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45302827);
+		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45028047);
 		usleep_range(10, 20);
 		rx[port].phy.aud_div = 0;
 	} else {
-		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302800);
+		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028010);
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x01481236);
 		usleep_range(10, 20);
-		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302801);
+		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028011);
 		usleep_range(10, 20);
-		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45302803);
+		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028013);
 		usleep_range(10, 20);
 		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_1, 0x01401236);
 		usleep_range(10, 20);
-		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05302807);
+		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x05028017);
 		usleep_range(10, 20);
-		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45302807);
+		hdmirx_wr_amlphy(TXHD2_RG_RX20PLL_0, 0x45028017);
 		rx[port].phy.aud_div = 0;
 	}
 	usleep_range(10, 20);
@@ -1933,7 +1931,7 @@ void aml_phy_switch_port_txhd2(void)
 	data32 &= (~(0xf << 24));
 	data32 |= ((1 << port) << 24);
 	hdmirx_wr_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC2, data32);
-	hdmirx_wr_bits_top(TOP_PORT_SEL, MSK(4, 0), (1 << port), port);
+	hdmirx_wr_bits_top(TOP_PORT_SEL, MSK(2, 0), (1 << port), port);
 }
 
 void dump_vsi_reg_txhd2(u8 port)

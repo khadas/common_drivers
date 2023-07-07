@@ -42,7 +42,8 @@
 //fix switch fail between edid 1.4 and 2.0.
 //hdmi hbr no sound
 //fix txhd2 merge to trunk problem
-#define RX_VER0 "ver.2023/06/29"
+//2023.7.10 txhd2 bring up
+#define RX_VER0 "ver.2023/07/10"
 
 /*print type*/
 #define COR1_LOG	0x10000

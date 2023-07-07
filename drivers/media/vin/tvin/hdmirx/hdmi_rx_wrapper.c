@@ -2487,6 +2487,7 @@ static const struct freq_ref_s freq_ref[] = {
 	{1,	0,	0,	1920,	1103,	HDMI_1080i_ALTERNATIVE},
 	{1,	0,	0,	1920,	2228,	HDMI_1080i_FRAMEPACKING},
 	{0,	0,	0,	1440,	240,	HDMI_1440x240p60},
+	{0,	0,	0,	720,	240,	HDMI_1440x240p60},
 	{0,	0,	0,	2880,	240,	HDMI_2880x240p60},
 	{0,	0,	0,	1440,	288,	HDMI_1440x288p50},
 	{0,	0,	0,	2880,	288,	HDMI_2880x288p50},
@@ -2508,6 +2509,7 @@ static const struct freq_ref_s freq_ref[] = {
 	{0,	0,	0,	1920,	2205,	HDMI_1080p_FRAMEPACKING},
 
 	{1,	0,	0,	2880,	240,	HDMI_2880x480i60},
+	{1,	0,	0,	1440,	240,	HDMI_2880x480i60},
 	{1,	0,	0,	2880,	288,	HDMI_2880x576i50},
 	{0,	0,	0,	2880,	480,	HDMI_2880x480p60},
 	{0,	0,	0,	2880,	576,	HDMI_2880x576p50},
@@ -7136,6 +7138,8 @@ static void dump_phy_status(u8 port)
 		dump_aml_phy_sts_t7();
 	else if (rx_info.phy_ver == PHY_VER_T5M)
 		dump_aml_phy_sts_t5m();
+	else if (rx_info.phy_ver == PHY_VER_TXHD2)
+		dump_aml_phy_sts_txhd2();
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		dump_aml_phy_sts_t3x(port);
 	else

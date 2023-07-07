@@ -4582,8 +4582,7 @@ void rx_aud_pll_ctl(bool en, u8 port)
 				tmp &= ~(1 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
 				wr_reg_clk_ctl(RX_CLK_CTRL2, tmp);
 			}
-		} else if (rx_info.chip_id == CHIP_ID_T5W ||
-		rx_info.chip_id == CHIP_ID_TXHD2) {
+		} else if (rx_info.chip_id == CHIP_ID_T5W) {
 			if (en) {
 				tmp = rd_reg_clk_ctl(RX_CLK_CTRL2_T5W);
 				/* [    8] clk_en for cts_hdmirx_aud_pll_clk */
@@ -4619,6 +4618,48 @@ void rx_aud_pll_ctl(bool en, u8 port)
 				/* [    8] clk_en for cts_hdmirx_aud_pll_clk */
 				tmp &= ~(1 << 8);
 				wr_reg_clk_ctl(RX_CLK_CTRL2, tmp);
+			}
+		} else if (rx_info.chip_id == CHIP_ID_TXHD2) {
+			if (en) {
+				wr_reg_hhi(HHI_VDAC_CNTL0, 0x00000880);
+				wr_reg_hhi(TXHD2_PWR_CTL, 0x2);
+
+				tmp = rd_reg_clk_ctl(CLK_MUX_TXHD2);
+				/* [    8] clk_en for cts_hdmirx_aud_pll_clk */
+				tmp |= (1 << 8);
+				wr_reg_clk_ctl(CLK_MUX_TXHD2, tmp);
+
+				/* AUD_CLK=N/CTS*TMDS_CLK */
+				wr_reg_hhi(HHI_AUD_PLL_CNTL, 0x60001540);
+				/* use mpll */
+				tmp = 0;
+				/* 2:tmds_clk 1:ref_clk 0:mpll_clk */
+				if (rx[port].phy.pll_bw == 0)
+					tmp = 0xc80;
+				else
+					tmp = 0x88;
+				wr_reg_hhi(HHI_AUD_PLL_CNTL2, tmp);
+				/* cntl3 2:0 0=1*cts 1=2*cts */
+				/* 010=4*cts 011=8*cts */
+				wr_reg_hhi(HHI_AUD_PLL_CNTL3, rx[port].phy.aud_div);
+				if (log_level & AUDIO_LOG)
+					rx_pr("aud div=%d\n",
+					rd_reg_hhi(HHI_AUD_PLL_CNTL3));
+				wr_reg_hhi(HHI_AUD_PLL_CNTL, 0x40005540);
+				if (log_level & AUDIO_LOG) {
+					/* pll lock bit:*/
+					/*top reg acr_cntl_stat bit'31 */
+					tmp = hdmirx_rd_top_common(TOP_ACR_CNTL_STAT);
+					rx_pr("apll lock:0x%x\n", (tmp >> 31));
+				}
+				rx_audio_pll_sw_update();
+				hdmirx_audio_fifo_rst(port);
+			} else {
+				hdmirx_audio_disabled(port);
+				tmp = rd_reg_clk_ctl(CLK_MUX_TXHD2);
+				/* [    8] clk_en for cts_hdmirx_aud_pll_clk */
+				tmp &= ~(1 << 8);
+				wr_reg_clk_ctl(CLK_MUX_TXHD2, tmp);
 			}
 		} else if (rx_info.chip_id >= CHIP_ID_T3X) {
 			if (en) {
@@ -5183,6 +5224,7 @@ void hdmirx_config_video(u8 port)
 	u8 data8;
 	u8 pixel_rpt_cnt;
 	int reg_clk_vp_core_div, reg_clk_vp_out_div;
+	u32 data32;
 	if (dbg_cs & 0x10)
 		temp = dbg_cs & 0x0f;
 	else
@@ -5232,6 +5274,15 @@ void hdmirx_config_video(u8 port)
 		data8 &= (~0x7);
 		data8 |= ((pixel_rpt_cnt & 0x3) << 0);
 		hdmirx_wr_cor(RX_VP_INPUT_FORMAT_HI, data8, port);
+	}
+	if (rx_info.chip_id == CHIP_ID_TXHD2) {
+		if (rx[port].cur.hactive > 3800) {
+			data32 = hdmirx_rd_top(TOP_VID_CNTL, port);
+			data32 |= 1 << 30;
+			hdmirx_wr_top(TOP_VID_CNTL, data32, port);
+		} else {
+			hdmirx_wr_bits_top(TOP_VID_CNTL, _BIT(30), 0, port);
+		}
 	}
 	if (rx_info.chip_id >= CHIP_ID_T3) {
 		if (rx[port].pre.sw_vic >= HDMI_VESA_OFFSET ||
@@ -5972,6 +6023,8 @@ void aml_phy_switch_port(u8 port)
 		aml_phy_switch_port_t7();
 	else if (rx_info.chip_id == CHIP_ID_T5M)
 		aml_phy_switch_port_t5m();
+	else if (rx_info.chip_id == CHIP_ID_TXHD2)
+		aml_phy_switch_port_txhd2();
 	else if (rx_info.chip_id == CHIP_ID_T3X)
 		aml_phy_switch_port_t3x(port);
 }

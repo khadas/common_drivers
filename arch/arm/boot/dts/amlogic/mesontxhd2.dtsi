@@ -963,7 +963,7 @@
 			<&clkc CLKID_VPU>;
 		clock-names = "t5_vpu_clkb_tmp_gate",
 			"t5_vpu_clkb_gate";
-		clock-range = <334 334>;
+		clock-range = <334 400>;
 		/* buffer-size = <3621952>;(yuv422 8bit) */
 		buffer-size = <4074560>;/*yuv422 fullpack*/
 		/* reserve-iomap = "true"; */

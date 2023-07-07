@@ -729,6 +729,7 @@ extern int vdec_out_size_threshold_4k;
 extern int vpp_in_size_threshold_4k;
 extern u64 vsync_cnt[VPP_MAX];
 extern struct vpu_venc_regs_s venc_regs[VPP_NUM];
+extern u32 vpp_hold_line[VPP_MAX];
 
 bool is_amdv_enable(void);
 bool is_amdv_on(void);
@@ -932,7 +933,6 @@ extern u32 force_switch_vf_mode;
 extern u32 video_info_change_status;
 extern u32 reference_zorder;
 extern u32 pi_enable;
-extern u32 vpp_hold_line;
 
 bool black_threshold_check(u8 id);
 bool black_threshold_check_s5(u8 id);

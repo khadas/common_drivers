@@ -1568,12 +1568,14 @@ s32 primary_render_frame(struct video_layer_s *layer,
 	int count = 0, k = 0, l = 0;
 #endif
 	int ret = 0;
+	u8 vpp_index;
 
 	if (!layer) {
 		ret = -1;
 		goto render_exit;
 	}
 
+	vpp_index = layer->vpp_index;
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	if (cur_dev->vsync_2to1_enable && vsync_count_start) {
 		/* not prevsync not handle */
@@ -1632,7 +1634,7 @@ s32 primary_render_frame(struct video_layer_s *layer,
 			di_in_p.plink_hv_mirror = glayer_info[0].mirror;
 			di_in_p.dmode = EPVPP_DISPLAY_MODE_NR;
 			di_in_p.unreg_bypass = 0;
-			di_in_p.follow_hold_line = vpp_hold_line;
+			di_in_p.follow_hold_line = vpp_hold_line[vpp_index];
 			iret = pvpp_display(dispbuf, &di_in_p, NULL);
 			if (iret <= 0) {
 				vd_layer[0].property_changed = true;
@@ -1652,7 +1654,7 @@ s32 primary_render_frame(struct video_layer_s *layer,
 		memset(&di_in_p, 0, sizeof(struct pvpp_dis_para_in_s));
 		di_in_p.dmode = EPVPP_DISPLAY_MODE_BYPASS;
 		di_in_p.unreg_bypass = 1;
-		di_in_p.follow_hold_line = vpp_hold_line;
+		di_in_p.follow_hold_line = vpp_hold_line[vpp_index];
 		iret = pvpp_display(NULL, &di_in_p, NULL);
 		if (layer->global_debug & DEBUG_FLAG_PRELINK)
 			pr_info("%s: unreg_bypass pre-link mode ret %d\n", __func__, iret);

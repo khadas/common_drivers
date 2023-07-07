@@ -558,7 +558,8 @@ EXPORT_SYMBOL(get_dv_vpu_mem_power_status);
 /*********************************************************/
 static struct vframe_pic_mode_s gpic_info[MAX_VD_LAYERS];
 u32 reference_zorder = 128;
-u32 vpp_hold_line = 8;
+static int param_vpp_num = VPP_MAX;
+u32 vpp_hold_line[VPP_MAX] = {8, 8, 8};
 static u32 cur_vpp_num = MAX_VPP_NUM;
 static unsigned int cur_vf_flag[MAX_VPP_NUM];
 static u32 vpp_ofifo_size = 0x1000;
@@ -1572,7 +1573,7 @@ static void vd1_set_dcu(struct video_layer_s *layer,
 		if (!legacy_vpp || is_meson_txlx_cpu())
 			burst_len = 2;
 		r = (3 << 24) |
-			(vpp_hold_line << 16) |
+			(vpp_hold_line[vpp_index] << 16) |
 			(burst_len << 14) | /* burst1 */
 			(vf->bitdepth & BITDEPTH_MASK);
 
@@ -1813,13 +1814,13 @@ static void vd1_set_dcu(struct video_layer_s *layer,
 
 	if (cur_dev->display_module != C3_DISPLAY_MODULE)
 		r = (3 << VDIF_URGENT_BIT) |
-			(vpp_hold_line << VDIF_HOLD_LINES_BIT) |
+			(vpp_hold_line[vpp_index] << VDIF_HOLD_LINES_BIT) |
 			VDIF_FORMAT_SPLIT |
 			VDIF_CHRO_RPT_LAST | VDIF_ENABLE;
 	else
 		r = (3 << VDIF_URGENT_BIT) |
 			VDIF_LUMA_END_AT_LAST_LINE |
-			(vpp_hold_line << VDIF_HOLD_LINES_BIT) |
+			(vpp_hold_line[vpp_index] << VDIF_HOLD_LINES_BIT) |
 			VDIF_LAST_LINE |
 			VDIF_FORMAT_SPLIT |
 			(2 << VDIF_BURSTSIZE_Y_BIT) |
@@ -2124,7 +2125,7 @@ static void vdx_set_dcu(struct video_layer_s *layer,
 		if (!legacy_vpp || is_meson_txlx_cpu())
 			burst_len = 2;
 		r = (3 << 24) |
-		    (vpp_hold_line << 16) |
+		    (vpp_hold_line[vpp_index] << 16) |
 		    (burst_len << 14) | /* burst1 */
 		    (vf->bitdepth & BITDEPTH_MASK);
 
@@ -2317,7 +2318,7 @@ static void vdx_set_dcu(struct video_layer_s *layer,
 			(vd_afbc_reg->afbc_enable, 0);
 
 	r = (3 << VDIF_URGENT_BIT) |
-		(vpp_hold_line << VDIF_HOLD_LINES_BIT) |
+		(vpp_hold_line[vpp_index] << VDIF_HOLD_LINES_BIT) |
 		VDIF_FORMAT_SPLIT |
 		VDIF_CHRO_RPT_LAST | VDIF_ENABLE;
 	/*  | VDIF_RESET_ON_GO_FIELD;*/
@@ -8723,9 +8724,9 @@ int video_hw_init(void)
 		cur_hold_line = 4;
 	}
 	if (cur_hold_line > 0x1f)
-		vpp_hold_line = 0x1f;
+		vpp_hold_line[0] = 0x1f;
 	else
-		vpp_hold_line = cur_hold_line;
+		vpp_hold_line[0] = cur_hold_line;
 
 	/* Temp force set dmc */
 	if (!legacy_vpp) {
@@ -9100,7 +9101,7 @@ int video_late_uninit(void)
 }
 
 MODULE_PARM_DESC(vpp_hold_line, "\n vpp_hold_line\n");
-module_param(vpp_hold_line, uint, 0664);
+module_param_array(vpp_hold_line, uint, &param_vpp_num, 0664);
 
 MODULE_PARM_DESC(bypass_cm, "\n bypass_cm\n");
 module_param(bypass_cm, bool, 0664);

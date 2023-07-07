@@ -14529,6 +14529,7 @@ static int amvideom_probe(struct platform_device *pdev)
 	const void *prop;
 	int display_device_cnt = 1;
 	int ex_rdma = 0;
+	char propname[16];
 
 	if (pdev->dev.of_node) {
 		const struct of_device_id *match;
@@ -14643,6 +14644,13 @@ static int amvideom_probe(struct platform_device *pdev)
 			ex_vsync_rdma_register();
 		else
 			pr_info("ex_vsync_rdma_register function can not be used\n");
+	}
+
+	for (i = 0; i < VPP_MAX; i++) {
+		snprintf(propname, sizeof(propname), "vpp%d_hold_line", i);
+		prop = of_get_property(pdev->dev.of_node, propname, NULL);
+		if (prop)
+			vpp_hold_line[i] = of_read_ulong(prop, 1);
 	}
 
 	video_cap_set(&amvideo_meson_dev);

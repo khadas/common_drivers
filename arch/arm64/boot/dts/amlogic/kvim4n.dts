@@ -9,7 +9,7 @@
 #include "mesont7c_drm.dtsi"
 #include "partition_debian_linux.dtsi"
 #include <dt-bindings/input/input.h>
-#include "mesont7_an400-panel-debian.dtsi"
+#include "khadas-panel.dtsi"
 
 / {
 	model = "Khadas VIM4";

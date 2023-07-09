@@ -395,6 +395,9 @@ void aml_tdm_set_format(struct aml_audio_controller *actrl,
 		aml_clk_set_tdmin_by_id(actrl, id, 14, 14, use_vadtop);
 	else
 		aml_clk_set_tdmin_by_id(actrl, id, valb, valf, use_vadtop);
+
+	if (is_meson_txhd2_cpu() && tdmin_src_hdmirx)
+		aml_clk_set_tdmin_by_id(actrl, id, 10, 10, use_vadtop);
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
 		if (p_config->sclk_ws_inv) {

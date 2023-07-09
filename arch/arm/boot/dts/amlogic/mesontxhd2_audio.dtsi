@@ -129,8 +129,9 @@
 		dai-tdm-lane-slot-mask-out = <1 1>;
 		dai-tdm-clk-sel = <0>;
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_A
-				&clkc CLKID_HIFI_PLL>;
-		clock-names = "mclk", "clk_srcpll";
+				&clkc CLKID_HIFI_PLL
+				&clkc CLKID_HIFI1_PLL>;
+		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
 
 		/* enable control gain */
 		ctrl_gain = <1>;
@@ -146,8 +147,9 @@
 		dai-tdm-clk-sel = <1>;
 
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_B
-				&clkc CLKID_HIFI_PLL>;
-		clock-names = "mclk", "clk_srcpll";
+				&clkc CLKID_HIFI_PLL
+				&clkc CLKID_HIFI1_PLL>;
+		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
 		/*
 		 * 0: tdmout_a;
 		 * 1: tdmout_b;
@@ -188,8 +190,9 @@
 		dai-tdm-clk-sel = <2>;
 
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_C
-				&clkc CLKID_HIFI_PLL>;
-		clock-names = "mclk", "clk_srcpll";
+				&clkc CLKID_HIFI_PLL
+				&clkc CLKID_HIFI1_PLL>;
+		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
 
 		/* enable control gain */
 		tdmin-src-name = "hdmirx";
@@ -202,7 +205,7 @@
 		#sound-dai-cells = <0>;
 
 		clocks = <&clkaudio CLKID_AUDIO_GATE_PDM
-			&clkc CLKID_HIFI_PLL
+			&clkc CLKID_FCLK_DIV3
 			&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_PDMIN0
 			&clkaudio CLKID_AUDIO_PDMIN1>;
@@ -213,7 +216,7 @@
 			"pdm_sysclk";
 
 		train_sample_count = <10>;
-
+		src-clk-freq = <491520000>;
 		/* mode 0~4, defalut:1 */
 		filter_mode = <1>;
 
@@ -225,12 +228,13 @@
 		#sound-dai-cells = <0>;
 
 		clocks = <&clkc CLKID_HIFI_PLL
+				&clkc CLKID_HIFI1_PLL
 				&clkc CLKID_FCLK_DIV4
 				&clkaudio CLKID_AUDIO_GATE_SPDIFIN
 				&clkaudio CLKID_AUDIO_GATE_SPDIFOUT_A
 				&clkaudio CLKID_AUDIO_SPDIFIN
 				&clkaudio CLKID_AUDIO_SPDIFOUT_A>;
-		clock-names = "sysclk", "fixed_clk", "gate_spdifin",
+		clock-names = "sysclk", "clk_src_cd", "fixed_clk", "gate_spdifin",
 				"gate_spdifout", "clk_spdifin", "clk_spdifout";
 
 		interrupts =
@@ -246,7 +250,7 @@
 		 */
 
 		samesource_sel = <5>;
-
+		src-clk-freq = <491520000>;
 		/*spdif clk tuning enable*/
 		clk_tuning_enable = <1>;
 		suspend-clk-off = <1>;
@@ -258,10 +262,12 @@
 		#sound-dai-cells = <0>;
 
 		clocks = <&clkc CLKID_HIFI_PLL /*CLKID_HIFI_PLL*/
+				&clkc CLKID_HIFI1_PLL
 				&clkaudio CLKID_AUDIO_GATE_SPDIFOUT_B
 				&clkaudio CLKID_AUDIO_SPDIFOUT_B>;
-		clock-names = "sysclk",
+		clock-names = "sysclk", "clk_src_cd",
 				"gate_spdifout", "clk_spdifout";
+		src-clk-freq = <491520000>;
 		suspend-clk-off = <1>;
 		status = "okay";
 	};
@@ -282,7 +288,7 @@
 		#sound-dai-cells = <0>;
 
 		clocks = <&clkaudio CLKID_AUDIO_GATE_EQDRC
-			&clkc CLKID_HIFI_PLL
+			&clkc CLKID_FCLK_DIV5
 			&clkaudio CLKID_AUDIO_EQDRC>;
 		clock-names = "gate", "srcpll", "eqdrc";
 
@@ -323,6 +329,7 @@
 		 *	SPDIFIN_LB, 10
 		 *	EARC_RX,    11
 		 */
+		src-clk-freq = <491520000>;
 		resample_module = <8>;
 		suspend-clk-off = <1>;
 		status = "okay";
@@ -334,6 +341,7 @@
 			&clkaudio CLKID_AUDIO_MCLK_F
 			&clkaudio CLKID_AUDIO_RESAMPLE_B>;
 		clock-names = "resample_pll", "resample_src", "resample_clk";
+		src-clk-freq = <491520000>;
 		/*this resample is only used for loopback_A.*/
 		suspend-clk-off = <1>;
 		status = "okay";
@@ -343,7 +351,7 @@
 		#sound-dai-cells = <0>;
 
 		clocks = <&clkaudio CLKID_AUDIO_GATE_PDM
-			&clkc CLKID_HIFI_PLL
+			&clkc CLKID_FCLK_DIV3
 			&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_PDMIN0
 			&clkaudio CLKID_AUDIO_PDMIN1

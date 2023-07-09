@@ -1124,6 +1124,13 @@ function adjust_config_action () {
 }
 export -f adjust_config_action
 
+if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" ]]; then
+	function rel_path() {
+		echo "WARNING: rel_path is deprecated. For Kleaf builds, use 'realpath $1 --relative-to $2' instead." >&2
+		${ROOT_DIR}/build/kernel/build-tools/path/linux-x86/realpath "$1" --relative-to="$2"
+	}
+fi
+
 # function build_part_of_kernel can only build part of kernel such as image modules or dtbs
 # parameter:
 #	--image:   only build image
@@ -1132,8 +1139,17 @@ export -f adjust_config_action
 function build_part_of_kernel () {
 	if [[ -n ${IMAGE} ]] || [[ -n ${MODULES} ]] || [[ -n ${DTB_BUILD} ]]; then
 		old_path=${PATH}
-		source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
-		source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
+		if [[ "${FULL_KERNEL_VERSION}" = "common13-5.15" ]]; then
+			source "${ROOT_DIR}/${BUILD_DIR}/build_utils.sh"
+			source "${ROOT_DIR}/${BUILD_DIR}/_setup_env.sh"
+		else
+			source ${ROOT_DIR}/${BUILD_CONFIG}
+			export COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out${OUT_DIR_SUFFIX}/${BRANCH}})
+			export OUT_DIR=$(readlink -m ${COMMON_OUT_DIR}/${KERNEL_DIR})
+			export DIST_DIR=$(readlink -m ${DIST_DIR:-${COMMON_OUT_DIR}/dist})
+			tool_args+=("LLVM=1")
+			tool_args+=("DEPMOD=${DEPMOD}")
+		fi
 
 		if [[ ! -f ${OUT_DIR}/.config ]]; then
 			pre_defconfig_cmds

@@ -1331,6 +1331,14 @@ void vdin_set_decimation(struct vdin_dev_s *devp)
 			(devp->prop.decimation_ratio + 1);
 	devp->v_active = devp->fmt_info_p->v_active;
 
+	if (is_meson_txhd2_cpu()) {
+		devp->prop.scaling4w = 1920;
+		devp->prop.scaling4h = 1080;
+		/* if hdmi input size >= 4k, h_active/2 */
+		if (devp->h_active >= 3840)
+			devp->h_active = devp->h_active / 2;
+	}
+
 	if (devp->prop.decimation_ratio && !decimation_in_frontend)	{
 		/* ratio */
 		wr_bits(offset, VDIN_ASFIFO_CTRL2,

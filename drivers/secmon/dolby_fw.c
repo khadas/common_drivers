@@ -226,7 +226,7 @@ static int dolby_fw_verify(struct dolby_fw_args *info)
 				__func__, __LINE__);
 		goto err2;
 	}
-	ret = dolby_fw_smc_call(DOLBY_FW_VERIFY_CRITICAL, info->arg2, 0, 0);
+	ret = dolby_fw_smc_call(DOLBY_FW_VERIFY_CRITICAL, info->arg2, 0, info->arg3);
 	if (ret) {
 		pr_err("%s:%d: verify critical fail!\n",
 				__func__, __LINE__);
@@ -289,7 +289,7 @@ static int dolby_fw_verify_lib_resp(struct dolby_fw_args *info)
 					__func__, __LINE__);
 		goto err1;
 	}
-	ret = dolby_fw_smc_call(DOLBY_FW_VERIFY_LIB_RESP, 0, 0, 0);
+	ret = dolby_fw_smc_call(DOLBY_FW_VERIFY_LIB_RESP, 0, 0, info->arg3);
 	if (ret) {
 		pr_err("%s:%d: verify lib resp fail %d!\n",
 					__func__, __LINE__, ret);
@@ -381,7 +381,7 @@ static int dolby_fw_critical_query(struct dolby_fw_args *info)
 	}
 
 	size = dolby_fw_smc_call(DOLBY_FW_CRITICAL_DATA_QUERY,
-			info->src_len, 0, 0);
+			info->src_len, 0, info->arg3);
 	if (!size) {
 		pr_err("%s:%d: query critical fail!\n",
 				__func__, __LINE__);

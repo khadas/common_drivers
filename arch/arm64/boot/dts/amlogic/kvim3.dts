@@ -195,14 +195,14 @@
 	};
 	gpioleds {
 		compatible = "gpio-leds";
-		status = "disable";
+		status = "okay";
 
 		sys_led {
 			label="sys_led";
-			gpios=<&gpio_ao GPIOAO_11 GPIO_ACTIVE_HIGH>;
+			gpios=<&gpio_ao GPIOAO_4 GPIO_ACTIVE_HIGH>;
 			default-state ="on";
 			retain-state-suspended;
-			linux,default-trigger="cpu0";
+			linux,default-trigger="default-on";
 		};
 	};
 

@@ -1,12 +1,15 @@
 """Functions that are useful in the common kernel package (usually `//common`)."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_flag")
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load(
     "//build/kernel/kleaf:kernel.bzl",
     "kernel_abi",
     "kernel_abi_dist",
     "kernel_build",
+    "kernel_build_config",
     "kernel_compile_commands",
     "kernel_filegroup",
     "kernel_images",
@@ -16,23 +19,7 @@ load(
     "merged_kernel_uapi_headers",
 )
 load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
-load("//build/kernel/kleaf/artifact_tests:kernel_test.bzl", "initramfs_modules_options_test")
-load("//build/kernel/kleaf/artifact_tests:device_modules_test.bzl", "device_modules_test")
-load("//build/kernel/kleaf/impl:gki_artifacts.bzl", "gki_artifacts")
-load("//build/kernel/kleaf/impl:out_headers_allowlist_archive.bzl", "out_headers_allowlist_archive")
-load(
-    "//build/kernel/kleaf/impl:constants.bzl",
-    "MODULE_OUTS_FILE_OUTPUT_GROUP",
-    "MODULE_OUTS_FILE_SUFFIX",
-    "TOOLCHAIN_VERSION_FILENAME",
-)
-load(
-    "//build/kernel/kleaf:constants.bzl",
-    "CI_TARGET_MAPPING",
-    "DEFAULT_GKI_OUTS",
-    "GKI_DOWNLOAD_CONFIGS",
-    "X86_64_OUTS",
-)
+load("//build/kernel/kleaf/impl:gki_artifacts.bzl", "gki_artifacts", "gki_artifacts_prebuilts")
 load("//build/kernel/kleaf:print_debug.bzl", "print_debug")
 load("@kernel_toolchain_info//:dict.bzl", "BRANCH", "common_kernel_package")
 
@@ -45,12 +32,12 @@ def define_common_amlogic(
         dtbo_srcs,
         build_config = None,
         module_outs = None,
+        make_goals = None,
         define_abi_targets = None,
         kmi_symbol_list = None,
         kmi_symbol_list_add_only = None,
         module_grouping = None,
         unstripped_modules_archive = None,
-        gki_modules_list = None,
         dist_dir = None,
         ext_modules = None):
     """Define target for amlogic.
@@ -66,6 +53,8 @@ def define_common_amlogic(
         outs: See [kernel_build.outs](#kernel_build-outs).
         module_outs: See [kernel_build.module_outs](#kernel_build-module_outs). The list of
           in-tree kernel modules.
+        make_goals: See [kernel_build.make_goals](#kernel_build-make_goals).  A list of strings
+          defining targets for the kernel build.
         define_abi_targets: See [kernel_abi.define_abi_targets](#kernel_abi-define_abi_targets).
         kmi_symbol_list: See [kernel_build.kmi_symbol_list](#kernel_build-kmi_symbol_list).
         kmi_symbol_list_add_only: See [kernel_abi.kmi_symbol_list_add_only](#kernel_abi-kmi_symbol_list_add_only).
@@ -101,11 +90,12 @@ def define_common_amlogic(
         kmi_symbol_list = kmi_symbol_list,
         collect_unstripped_modules = _COLLECT_UNSTRIPPED_MODULES,
         strip_modules = True,
+        make_goals = make_goals,
     )
 
     # enable ABI Monitoring
     # based on the instructions here:
-    # https://android.googlesource.com/kernel/build/+/refs/heads/master/kleaf/docs/abi_device.md
+    # https://android.googlesource.com/kernel/build/+/refs/heads/main/kleaf/docs/abi_device.md
     # https://android-review.googlesource.com/c/kernel/build/+/2308912
     kernel_abi(
         name = name + "_abi",

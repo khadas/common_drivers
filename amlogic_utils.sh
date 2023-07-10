@@ -1009,10 +1009,17 @@ function reorganized_abi_symbol_list_file() { # delete the extra information but
 export -f reorganized_abi_symbol_list_file
 
 function abi_symbol_list_detect () { # detect symbol information that should be submitted or fix
-	symbol_file1=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic
-	symbol_file2=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.10
-	symbol_file3=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.debug
-	symbol_file4=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.illegal
+	if [[ "${FULL_KERNEL_VERSION}" = "common13-5.15" ]]; then
+		symbol_file1=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic
+		symbol_file2=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.10
+		symbol_file3=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.debug
+		symbol_file4=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/abi_gki_aarch64_amlogic.illegal
+	else
+		symbol_file1=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/${FULL_KERNEL_VERSION}_abi_gki_aarch64_amlogic
+		symbol_file2=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/${FULL_KERNEL_VERSION}_abi_gki_aarch64_amlogic.10
+		symbol_file3=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/${FULL_KERNEL_VERSION}_abi_gki_aarch64_amlogic.debug
+		symbol_file4=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/android/${FULL_KERNEL_VERSION}_abi_gki_aarch64_amlogic.illegal
+	fi
 
 	file_list=("${symbol_file1} ${symbol_file2} ${symbol_file3} ${symbol_file4}")
 	for file in ${file_list}

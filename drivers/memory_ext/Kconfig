@@ -168,8 +168,6 @@ config AMLOGIC_PCIE_DMA_OPS
 
 config AMLOGIC_FAKE_SMMU
 	tristate "Amlogic fake smmu"
-	depends on AMLOGIC_PCIE_DMA_OPS
-	depends on AMLOGIC_MEMORY_EXTEND
 	default n
 	help
 		Register a fake smmu device to replace ops for 64bit

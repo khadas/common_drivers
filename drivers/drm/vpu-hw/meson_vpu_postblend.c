@@ -102,6 +102,17 @@ static void osd1_blend_premult_set(struct meson_vpu_block *vblk,
 	reg_ops->rdma_write_reg_bits(reg->osd1_blend_src_ctrl, 0, 16, 1);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+/*vpp post&post blend for osd1 premult flag config as 0 default*/
+static void osd2_blend_premult_set(struct meson_vpu_block *vblk,
+				   struct rdma_reg_ops *reg_ops,
+				   struct postblend_reg_s *reg)
+{
+	reg_ops->rdma_write_reg_bits(reg->osd2_blend_src_ctrl, 0, 4, 1);
+	reg_ops->rdma_write_reg_bits(reg->osd2_blend_src_ctrl, 0, 16, 1);
+}
+#endif
+
 /*vpp osd1 blend sel*/
 static void osd1_blend_switch_set(struct meson_vpu_block *vblk,
 				  struct rdma_reg_ops *reg_ops,
@@ -177,6 +188,20 @@ static void vpp_osd1_blend_scope_set(struct meson_vpu_block *vblk,
 	reg_ops->rdma_write_reg(reg->vpp_osd1_bld_v_scope,
 				(scope.v_start << 16) | scope.v_end);
 }
+
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+/*vpp osd2 blend scope set*/
+static void vpp_osd2_blend_scope_set(struct meson_vpu_block *vblk,
+				     struct rdma_reg_ops *reg_ops,
+				     struct postblend_reg_s *reg,
+				     struct osd_scope_s scope)
+{
+	reg_ops->rdma_write_reg(reg->vpp_osd2_bld_h_scope,
+				(scope.h_start << 16) | scope.h_end);
+	reg_ops->rdma_write_reg(reg->vpp_osd2_bld_v_scope,
+				(scope.v_start << 16) | scope.v_end);
+}
+#endif
 
 static int drm_postblend_notify_amvideo(void)
 {
@@ -333,6 +358,91 @@ static void postblend_set_state(struct meson_vpu_block *vblk,
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void txhd2_postblend_set_state(struct meson_vpu_block *vblk,
+				struct meson_vpu_block_state *state,
+				struct meson_vpu_block_state *old_state)
+{
+	int i, crtc_index;
+	struct am_meson_crtc *amc;
+	struct meson_vpu_pipeline_state *mvps;
+	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
+	struct meson_vpu_pipeline *pipeline = postblend->base.pipeline;
+	struct postblend_reg_s *reg = postblend->reg;
+	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
+	int hardware_layer[MESON_MAX_OSDS] = {VPP_NULL, VPP_NULL, VPP_NULL, VPP_NULL};
+	struct osd_scope_s scope[MESON_MAX_OSDS] = {{0, 1919, 0, 1079}, {0, 1919, 0, 1079},
+							{0, 1919, 0, 1079}, {0, 1919, 0, 1079}};
+	struct postblend_din din[MESON_MAX_OSDS] = {0};
+	struct postblend_din din_zorder_max;
+	int m = 0;
+	int n = 0;
+
+	crtc_index = vblk->index;
+	amc = vblk->pipeline->priv->crtcs[crtc_index];
+
+	DRM_DEBUG("%s set_state called.\n", postblend->base.name);
+	mvps = priv_to_pipeline_state(pipeline->obj.state);
+	for (i = 0; i < MESON_MAX_OSDS; i++) {
+		if (mvps->plane_info[i].enable &&
+			mvps->plane_info[i].crtc_index == crtc_index) {
+			scope[i].h_start = mvps->plane_info[i].dst_x;
+			scope[i].h_end = scope[i].h_start + mvps->scaler_param[i].output_width - 1;
+			scope[i].v_start = mvps->plane_info[i].dst_y;
+			scope[i].v_end = scope[i].v_start + mvps->scaler_param[i].output_height - 1;
+			din[m].plane_index = mvps->plane_info[i].plane_index;
+			din[m].zorder = mvps->plane_info[i].zorder;
+			m++;
+			DRM_DEBUG("scope[%d] h/v start/end [%d,%d,%d,%d].\n", i, scope[i].h_start,
+					  scope[i].h_end, scope[i].v_start, scope[i].v_end);
+		}
+	}
+
+#ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
+	secure_config(OSD_MODULE, mvps->sec_src, crtc_index);
+#endif
+
+	for (i = 1; i < m; i++) {
+		din_zorder_max = din[i];
+		n = i - 1;
+		while (n >= 0 && din[n].zorder > din_zorder_max.zorder) {
+			din[n + 1] = din[n];
+			n--;
+		}
+		din[n + 1] = din_zorder_max;
+	}
+
+	for (i = 0; i < m; i++)
+		hardware_layer[i] = din[i].plane_index + VPP_OSD1;
+
+	if (crtc_index == 0) {
+		vpp_osd1_blend_scope_set(vblk, reg_ops, reg, scope[din[0].plane_index]);
+		if (amc->blank_enable) {
+			vpp_osd1_postblend_mux_set(vblk, reg_ops,
+						postblend->reg, VPP_NULL);
+		} else {
+			/*dout switch config*/
+			osd1_blend_switch_set(vblk, reg_ops, postblend->reg,
+						VPP_POSTBLEND);
+			vpp_osd1_postblend_mux_set(vblk, reg_ops,
+						postblend->reg, hardware_layer[0]);
+		}
+
+		vpp_osd2_blend_scope_set(vblk, reg_ops, reg, scope[din[1].plane_index]);
+		if (amc->blank_enable) {
+			vpp_osd2_postblend_mux_set(vblk, reg_ops,
+						postblend->reg, VPP_NULL);
+		} else {
+			/*dout switch config*/
+			osd2_blend_switch_set(vblk, reg_ops, postblend->reg,
+						VPP_POSTBLEND);
+			vpp_osd2_postblend_mux_set(vblk, reg_ops,
+						postblend->reg, hardware_layer[1]);
+		}
+
+		vpp_chk_crc(vblk, reg_ops, amc);
+	}
+}
+
 static void t7_postblend_set_state(struct meson_vpu_block *vblk,
 				struct meson_vpu_block_state *state,
 				struct meson_vpu_block_state *old_state)
@@ -766,6 +876,20 @@ static void postblend_hw_init(struct meson_vpu_block *vblk)
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void txhd2_postblend_hw_init(struct meson_vpu_block *vblk)
+{
+	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
+
+	postblend->reg = &postblend_reg;
+	postblend_osd2_def_conf(vblk);
+	osd2_blend_premult_set(vblk, vblk->pipeline->subs[0].reg_ops, postblend->reg);
+
+	vpp_osd1_preblend_mux_set(vblk, vblk->pipeline->subs[0].reg_ops,
+							  postblend->reg, VPP_NULL);
+	osd1_blend_premult_set(vblk, vblk->pipeline->subs[0].reg_ops, postblend->reg);
+	DRM_DEBUG("%s hw_init called.\n", postblend->base.name);
+}
+
 static void t7_postblend_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_postblend *postblend = to_postblend_block(vblk);
@@ -857,6 +981,15 @@ struct meson_vpu_block_ops t3x_postblend_ops = {
 	.disable = s5_postblend_hw_disable,
 	.dump_register = postblend_dump_register,
 	.init = s5_postblend_hw_init,
+};
+
+struct meson_vpu_block_ops txhd2_postblend_ops = {
+	.check_state = postblend_check_state,
+	.update_state = txhd2_postblend_set_state,
+	.enable = postblend_hw_enable,
+	.disable = postblend_hw_disable,
+	.dump_register = postblend_dump_register,
+	.init = txhd2_postblend_hw_init,
 };
 
 #endif

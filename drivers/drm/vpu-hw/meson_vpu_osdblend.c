@@ -578,6 +578,14 @@ static int s5_osdblend_check_state(struct meson_vpu_block *vblk,
 {
 	return 0;
 }
+
+static int txhd2_osdblend_check_state(struct meson_vpu_block *vblk,
+				      struct meson_vpu_block_state *state,
+				      struct meson_vpu_pipeline_state *mvps)
+{
+	return 0;
+}
+
 #endif
 
 static void osdblend_set_state(struct meson_vpu_block *vblk,
@@ -1023,6 +1031,19 @@ static void t3x_osdblend_set_state(struct meson_vpu_block *vblk,
 
 	DRM_DEBUG("%s set_state done.\n", osdblend->base.name);
 }
+
+static void txhd2_osdblend_set_state(struct meson_vpu_block *vblk,
+				     struct meson_vpu_block_state *state,
+				     struct meson_vpu_block_state *old_state)
+{
+	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
+	/*osd path dout alpha divider, default = 0*/
+	reg_ops->rdma_write_reg_bits(VIU_OSD_BLEND_CTRL, 0, 0, 1);
+	reg_ops->rdma_write_reg_bits(VIU_OSD_BLEND_CTRL1, 0, 0, 1);
+
+	DRM_DEBUG("%s set_state done.\n", vblk->name);
+}
+
 #endif
 
 static void osdblend_hw_enable(struct meson_vpu_block *vblk,
@@ -1125,6 +1146,11 @@ static void osdblend_hw_init(struct meson_vpu_block *vblk)
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void txhd2_osdblend_hw_init(struct meson_vpu_block *vblk)
+{
+	DRM_DEBUG("%s hw_init called.\n", vblk->name);
+}
+
 static void s5_osdblend_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_osdblend *osdblend = to_osdblend_block(vblk);
@@ -1158,6 +1184,15 @@ struct meson_vpu_block_ops osdblend_ops = {
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+struct meson_vpu_block_ops txhd2_osdblend_ops = {
+	.check_state = txhd2_osdblend_check_state,
+	.update_state = txhd2_osdblend_set_state,
+	.enable = osdblend_hw_enable,
+	.disable = osdblend_hw_disable,
+	.dump_register = osdblend_dump_register,
+	.init = txhd2_osdblend_hw_init,
+};
+
 struct meson_vpu_block_ops s5_osdblend_ops = {
 	.check_state = s5_osdblend_check_state,
 	.update_state = s5_osdblend_set_state,

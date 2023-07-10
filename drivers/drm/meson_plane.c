@@ -767,6 +767,11 @@ static void meson_plane_destroy_state(struct drm_plane *plane,
 static void meson_plane_reset(struct drm_plane *plane)
 {
 	struct am_meson_plane_state *meson_plane_state;
+	int min_zpos = OSD_PLANE_BEGIN_ZORDER;
+	int zpos = 0;
+	struct am_osd_plane *osd_plane = to_am_osd_plane(plane);
+
+	zpos = osd_plane->plane_index + min_zpos;
 
 	if (plane->state) {
 		meson_plane_destroy_state(plane, plane->state);
@@ -779,6 +784,9 @@ static void meson_plane_reset(struct drm_plane *plane)
 
 	__drm_atomic_helper_plane_reset(plane, &meson_plane_state->base);
 	meson_plane_state->base.pixel_blend_mode = DRM_MODE_BLEND_COVERAGE;
+	/*reset zpos property unless it set by hwc*/
+	if (meson_plane_state->base.zpos == 0)
+		meson_plane_state->base.zpos = zpos;
 }
 
 bool am_meson_vpu_check_format_mod(struct drm_plane *plane,

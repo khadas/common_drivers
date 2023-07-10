@@ -344,6 +344,18 @@ static const struct meson_vpu_data vpu_t3x_data = {
 	.enc_method = 1,
 	.slice_mode = 1,
 };
+
+static const struct meson_vpu_data vpu_txhd2_data = {
+	.pipe_ops = &g12a_vpu_pipeline_ops,
+	.osd_ops = &osd_ops,
+	.afbc_ops = &afbc_ops,
+	.scaler_ops = &scaler_ops,
+	.osdblend_ops = &txhd2_osdblend_ops,
+	.hdr_ops = &hdr_ops,
+	.dv_ops = &db_ops,
+	.postblend_ops = &txhd2_postblend_ops,
+	.video_ops = &video_ops,
+};
 #endif
 
 static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
@@ -383,6 +395,8 @@ static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
 	 .data = &vpu_s5_data,},
 	{.compatible = "amlogic, meson-t3x-vpu",
 	 .data = &vpu_t3x_data,},
+	{.compatible = "amlogic, meson-txhd2-vpu",
+	  .data = &vpu_txhd2_data,},
 #endif
 	{}
 };

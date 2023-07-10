@@ -148,6 +148,11 @@ struct postblend1_reg_s {
 	u32 vpp_bld_dummy_alpha;
 };
 
+struct postblend_din {
+	int zorder;
+	int plane_index;
+};
+
 enum vpp_blend_5mux_e {
 	VPP_5MUX_NULL = 0,
 	VPP_5MUX_VD1,

@@ -128,6 +128,7 @@ extern u32 dbg_cs;
 extern int color_bar_debug_en;
 extern int port_debug_en;
 enum tvin_sig_fmt_e hdmirx_hw_get_fmt(u8 port);
+void rx_mute_vpp(void);
 void rx_main_state_machine(void);
 void rx_nosig_monitor(u8 port);
 bool rx_is_nosig(u8 port);

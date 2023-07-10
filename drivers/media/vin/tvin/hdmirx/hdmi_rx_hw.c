@@ -2636,6 +2636,11 @@ bool rx_clr_tmds_valid(u8 port)
 
 	if (rx[port].state >= FSM_SIG_STABLE) {
 		rx[port].state = FSM_WAIT_CLK_STABLE;
+		if (vpp_mute_enable) {
+			rx_mute_vpp();
+			set_video_mute(true);
+			rx_pr("vpp mute\n");
+		}
 		hdmirx_output_en(false);
 		hdmirx_top_irq_en(0, 0, port);
 		if (log_level & VIDEO_LOG)
@@ -3740,8 +3745,9 @@ bool rx_clk_rate_monitor(u8 port)
 		rx[port].phy.clk_rate = clk_rate;
 	}
 	if (changed) {
-		if (rx[port].state >= FSM_WAIT_CLK_STABLE)
-			rx[port].state = FSM_WAIT_CLK_STABLE;
+		rx[port].cableclk_stb_flg = false;
+		//if (rx[port].state >= FSM_WAIT_CLK_STABLE)
+			//rx[port].state = FSM_WAIT_CLK_STABLE;
 		i2c_err_cnt[port] = 0;
 	}
 	return changed;

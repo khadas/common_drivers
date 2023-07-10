@@ -3384,6 +3384,8 @@ void aml_phy_iq_skew_monitor(void);
 void aml_eq_eye_monitor(u8 port);
 void aml_phy_power_off(void);
 void rx_dig_clk_en(bool en);
+void rx_mute_vpp(void);
+
 /* tl1 tl2 extern */
 void dump_reg_phy_tl1_tm2(void);
 void aml_phy_get_trim_val_tl1_tm2(void);

@@ -509,21 +509,16 @@ EXPORT_SYMBOL(unregister_cec_callback);
 
 static bool video_mute_enabled(u8 port)
 {
-	bool ret = false;
-
 	if (rx[port].state != FSM_SIG_READY)
-		return ret;
+		return false;
 
-	if (!vpp_mute_enable)
-		return ret;
-
-	if ((rx[port].cur.it_content && rx[port].cur.cn_type == 3) ||
-		rx[port].vs_info_details.hdmi_allm ||
-		rx[port].vs_info_details.dv_allm ||
-		rx[port].vtem_info.vrr_en)
-		ret = true;
-
-	return ret;
+	/* for debug with flicker issues, especially
+	 * unplug or switch timing under game mode
+	 */
+	if (vpp_mute_enable)
+		return true;
+	else
+		return false;
 }
 
 /*
@@ -1913,6 +1908,11 @@ irqreturn_t irq0_handler(int irq, void *params)
 		irq_err_cnt = 0;
 	if (irq_err_cnt >= irq_err_max) {
 		rx_pr("DE ERR\n");
+		if (video_mute_enabled(port)) {
+			rx_mute_vpp();
+			set_video_mute(true);
+			rx_pr("vpp mute\n");
+		}
 		irq_err_cnt = 0;
 		hdmirx_top_irq_en(0, 0, port);
 		hdmirx_output_en(false);
@@ -2096,6 +2096,11 @@ irqreturn_t irq1_handler(int irq, void *params)
 		irq_err_cnt = 0;
 	if (irq_err_cnt >= irq_err_max) {
 		rx_pr("DE ERR\n");
+		if (video_mute_enabled(E_PORT1)) {
+			rx_mute_vpp();
+			set_video_mute(true);
+			rx_pr("vpp mute\n");
+		}
 		irq_err_cnt = 0;
 		hdmirx_top_irq_en(0, 0, E_PORT1);
 		hdmirx_output_en(false);
@@ -2219,6 +2224,11 @@ irqreturn_t irq2_handler(int irq, void *params)
 		irq_err_cnt = 0;
 	if (irq_err_cnt >= irq_err_max) {
 		rx_pr("DE ERR\n");
+		if (video_mute_enabled(E_PORT2)) {
+			rx_mute_vpp();
+			set_video_mute(true);
+			rx_pr("vpp mute\n");
+		}
 		irq_err_cnt = 0;
 		hdmirx_top_irq_en(0, 0, E_PORT2);
 		hdmirx_output_en(false);
@@ -2342,6 +2352,11 @@ irqreturn_t irq3_handler(int irq, void *params)
 		irq_err_cnt = 0;
 	if (irq_err_cnt >= irq_err_max) {
 		rx_pr("DE ERR\n");
+		if (video_mute_enabled(E_PORT3)) {
+			rx_mute_vpp();
+			set_video_mute(true);
+			rx_pr("vpp mute\n");
+		}
 		irq_err_cnt = 0;
 		hdmirx_top_irq_en(0, 0, E_PORT3);
 		hdmirx_output_en(false);
@@ -4914,6 +4929,7 @@ void rx_main_state_machine(void)
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
 				set_video_mute(true);
+				rx_mute_vpp();
 				rx[port].vpp_mute = true;
 				rx[port].var.mute_cnt = 0;
 				if (log_level & 0x100)
@@ -5390,6 +5406,7 @@ void rx_port0_main_state_machine(void)
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
 				set_video_mute(true);
+				rx_mute_vpp();
 				rx[port].vpp_mute = true;
 				rx[port].var.mute_cnt = 0;
 				if (log_level & 0x100)
@@ -5866,6 +5883,7 @@ void rx_port1_main_state_machine(void)
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
 				set_video_mute(true);
+				rx_mute_vpp();
 				rx[port].vpp_mute = true;
 				rx[port].var.mute_cnt = 0;
 				if (log_level & 0x100)
@@ -6355,6 +6373,7 @@ void rx_port2_main_state_machine(void)
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
 				set_video_mute(true);
+				rx_mute_vpp();
 				rx[port].vpp_mute = true;
 				rx[port].var.mute_cnt = 0;
 				if (log_level & 0x100)
@@ -6845,6 +6864,7 @@ void rx_port3_main_state_machine(void)
 		if (!is_tmds_valid(port)) {
 			if (video_mute_enabled(port)) {
 				set_video_mute(true);
+				rx_mute_vpp();
 				rx[port].vpp_mute = true;
 				rx[port].var.mute_cnt = 0;
 				if (log_level & 0x100)

@@ -2809,6 +2809,41 @@ static void vdin_set_vfe_info(struct vdin_dev_s *devp, struct vf_entry *vfe)
 		vfe->vf.type_ext &= ~VIDTYPE_EXT_VDIN_SCATTER;
 }
 
+static bool vdin_isneed_pcs_reset(struct vdin_dev_s *devp)
+{
+	struct tvin_state_machine_ops_s *sm_ops = NULL;
+	unsigned int get_hactive = 0, get_vactive = 0;
+
+	if (!IS_HDMI_SRC(devp->parm.port))
+		return FALSE;
+
+	get_hactive = vdin_get_active_h(devp);
+	get_vactive = vdin_get_active_v(devp);
+
+	if (devp->frontend)
+		sm_ops = devp->frontend->sm_ops;
+
+	if ((get_hactive > (devp->h_active_org + devp->vdin_pcs_reset_threshold)) ||
+	    (get_hactive < (devp->h_active_org - devp->vdin_pcs_reset_threshold)) ||
+	    (get_vactive > (devp->v_active_org + devp->vdin_pcs_reset_threshold)) ||
+	    (get_vactive < (devp->v_active_org - devp->vdin_pcs_reset_threshold))) {
+		devp->err_active++;
+		if (vdin_isr_monitor & VDIN_ISR_MONITOR_PCS_RESET)
+			pr_info("active err, report hv_active:%dx%d, org_hv_active:%dx%d\n",
+				get_hactive, get_vactive, devp->h_active_org, devp->v_active_org);
+		if (devp->err_active >= VDIN_RESET_PCS_CNT) {
+			if (sm_ops && sm_ops->hdmi_reset_pcs)
+				sm_ops->hdmi_reset_pcs(devp->frontend);
+			else
+				pr_err("hdmi_reset_pcs is NULL\n");
+			devp->err_active = 0;
+		}
+		return TRUE;
+	}
+	devp->err_active = 0;
+	return FALSE;
+}
+
 /*
  *VDIN_FLAG_RDMA_ENABLE=1
  *	provider_vf_put(devp->last_wr_vfe, devp->vfp);
@@ -2917,6 +2952,13 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 			return IRQ_HANDLED;
 		}
 		devp->drop_hdr_set_sts = 0;
+	}
+
+	if (is_meson_txhd2_cpu() && vdin_isneed_pcs_reset(devp)) {
+		devp->vdin_irq_flag = VDIN_IRQ_FLG_FAKE_IRQ;
+		vdin_pause_hw_write(devp, 0);
+		vdin_drop_frame_info(devp, "report active abnormal");
+		return IRQ_HANDLED;
 	}
 
 	vdin_dynamic_switch_vrr(devp);
@@ -6249,6 +6291,9 @@ static int vdin_drv_probe(struct platform_device *pdev)
 		/* avoid abnormal image */
 		devp->dbg_stop_dec_delay = 50000;
 	}
+
+	devp->vdin_pcs_reset_threshold = VDIN_INPUT_ABNORMAL_SIZE_THRESHOLD;
+	devp->err_active = 0;
 
 	INIT_DELAYED_WORK(&devp->dv.dv_dwork, vdin_dv_dwork);
 	INIT_DELAYED_WORK(&devp->vlock_dwork, vdin_vlock_dwork);

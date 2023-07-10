@@ -1618,6 +1618,14 @@ bool hdmirx_clr_vsync(struct tvin_frontend_s *fe)
 	return rx_clr_tmds_valid(port);
 }
 
+void hdmirx_pcs_reset(struct tvin_frontend_s *fe)
+{
+	u8 port = rx_info.main_port;
+
+	rx[port].state = FSM_SIG_WAIT_STABLE;
+	reset_pcs(port);
+}
+
 static struct tvin_state_machine_ops_s hdmirx_sm_ops = {
 	.nosig            = hdmirx_is_nosig,
 	.fmt_changed      = hdmirx_fmt_chg,
@@ -1632,6 +1640,7 @@ static struct tvin_state_machine_ops_s hdmirx_sm_ops = {
 	.check_frame_skip = hdmirx_check_frame_skip,
 	.hdmi_dv_config   = hdmirx_dv_config,
 	.hdmi_clr_vsync	= hdmirx_clr_vsync,
+	.hdmi_reset_pcs = hdmirx_pcs_reset,
 };
 
 /*

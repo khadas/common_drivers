@@ -157,6 +157,7 @@
 #define K_FORCE_HV_SHRINK	0
 #define VDIN_V4L2_INPUT_MAX	7
 #define VDIN_DROP_FRAME_NUM_DEF	2
+#define VDIN_RESET_PCS_CNT     5
 
 enum vdin_work_mode_e {
 	VDIN_WORK_MD_NORMAL = 0,
@@ -328,7 +329,7 @@ struct match_data_s {
 #define VDIN_INTERLACE_GAME_MODE	BIT(12)
 #define VDIN_SACALE_4096_2_3840		BIT(13)
 #define VDIN_CUTWIN_4096_2_3840		BIT(14)
-#define VDIN_MUX_VDIN0_HIST		BIT(14) //sel vdin0 hist for txhd2
+#define VDIN_MUX_VDIN0_HIST		BIT(15) //sel vdin0 hist for txhd2
 /* vdin_function_sel control bits end */
 
 #define VDIN_2K_SIZE			0x07800438 /* 0x780 = 1920 0x438 = 1080 */
@@ -414,6 +415,7 @@ enum vdin_vf_put_md {
 #define VDIN_ISR_MONITOR_SCATTER_MEM	BIT(15)
 #define VDIN_ISR_MONITOR_BLACK_BAR	BIT(16)
 #define VDIN_ISR_MONITOR_HIST_INFO	BIT(17)
+#define VDIN_ISR_MONITOR_PCS_RESET	BIT(18)
 
 #define DBG_RX_UPDATE_VDIN_PROP		BIT(20)
 
@@ -1083,6 +1085,8 @@ struct vdin_dev_s {
 	struct vdin_dts_config_s dts_config;
 	unsigned int common_divisor;
 	unsigned int vrr_frame_rate_min;
+	unsigned int err_active;
+	unsigned int vdin_pcs_reset_threshold;
 };
 
 extern unsigned int max_ignore_frame_cnt;

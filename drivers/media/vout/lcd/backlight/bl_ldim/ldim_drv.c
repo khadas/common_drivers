@@ -178,6 +178,10 @@ static int ldim_on_init(void)
 
 static int ldim_power_on(void)
 {
+	if (ldim_driver.init_on_flag) {
+		LDIMPR("%s: already power on, exit\n", __func__);
+		return 0;
+	}
 	LDIMPR("%s\n", __func__);
 
 	ldim_driver.init_on_flag = 1;
@@ -193,6 +197,10 @@ static int ldim_power_on(void)
 
 static int ldim_power_off(void)
 {
+	if (ldim_driver.init_on_flag == 0) {
+		LDIMPR("%s: already power off, exit\n", __func__);
+		return 0;
+	}
 	LDIMPR("%s\n", __func__);
 
 	ldim_driver.state &= ~LDIM_STATE_POWER_ON;

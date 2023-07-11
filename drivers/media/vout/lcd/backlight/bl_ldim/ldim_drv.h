@@ -23,7 +23,8 @@
 /*20230208: update local dimming reserved memory init method */
 /*20230619: optimize reserved memory alloc and vaddr usage */
 /*20230620: add t3x support */
-#define LDIM_DRV_VER    "20230620"
+/*20230710: add power on/off state protect */
+#define LDIM_DRV_VER    "20230710"
 
 extern unsigned char ldim_debug_print;
 

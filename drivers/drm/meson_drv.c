@@ -109,6 +109,8 @@ static const struct drm_ioctl_desc meson_ioctls[] = {
 	#if IS_ENABLED(CONFIG_SYNC_FILE)
 	DRM_IOCTL_DEF_DRV(MESON_DMABUF_EXPORT_SYNC_FILE, am_meson_dmabuf_export_sync_file_ioctl,
 			  DRM_MASTER),
+	DRM_IOCTL_DEF_DRV(MESON_CREAT_PRESENT_FENCE,
+			meson_crtc_creat_present_fence_ioctl, 0),
 	#endif
 };
 

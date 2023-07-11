@@ -71,6 +71,11 @@ struct drm_meson_dma_buf_export_sync_file {
 	__s32 fd;
 };
 
+struct drm_meson_present_fence {
+	__u32 crtc_idx;
+	__u32 fd;
+};
+
 /*Memory related.*/
 #define DRM_IOCTL_MESON_GEM_CREATE	DRM_IOWR(DRM_COMMAND_BASE + \
 		0x00, struct drm_meson_gem_create)
@@ -80,5 +85,7 @@ struct drm_meson_dma_buf_export_sync_file {
 /*KMS related.*/
 #define DRM_IOCTL_MESON_ASYNC_ATOMIC    DRM_IOWR(DRM_COMMAND_BASE + \
 		0x10, struct drm_mode_atomic)
+#define DRM_IOCTL_MESON_CREAT_PRESENT_FENCE	DRM_IOWR(DRM_COMMAND_BASE + \
+		0x20, struct drm_meson_present_fence)
 
 #endif /* _MESON_DRM_H_ */

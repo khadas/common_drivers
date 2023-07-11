@@ -17,6 +17,9 @@
 #include <linux/amlogic/media/utils/am_com.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/media/dmabuf_heaps/amlogic_dmabuf_heap.h>
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
+#include <linux/amlogic/media/video_sink/video.h>
+#endif
 
 #include "meson_uvm_nn_processor.h"
 
@@ -227,6 +230,7 @@ int attach_nn_hook_mod_info(int shared_fd,
 	bool attached = false;
 	int src_interlace_flag = 0;
 	struct vframe_s *vf = NULL;
+	int output_fps, output_pts_inc_scale = 0, output_pts_inc_scale_base = 0;
 	memset(&nn_sr_t, 0, sizeof(struct vf_nn_sr_t));
 
 	if (!uvm_open_nn) {
@@ -240,6 +244,21 @@ int attach_nn_hook_mod_info(int shared_fd,
 		ai_sr_info->hf_width = nn_sr_t.hf_width;
 		ai_sr_info->hf_height = nn_sr_t.hf_height;
 		ai_sr_info->need_do_aisr = 1;
+
+		get_output_pcrscr_info(&output_pts_inc_scale, &output_pts_inc_scale_base);
+		if (!output_pts_inc_scale_base) {
+			nn_print(PRINT_OTHER, "get output pcrscr info failed.\n");
+			output_fps = 0;
+		} else {
+			output_fps = 90000 * 16 * (u64)output_pts_inc_scale;
+			output_fps = div64_u64(output_fps, output_pts_inc_scale_base);
+		}
+		nn_print(PRINT_OTHER, "output_fps is %d.\n", output_fps);
+		if (output_fps > 24000) {
+			nn_print(PRINT_OTHER, "output fps more than 60, bypass ai_sr.\n");
+			ai_sr_info->need_do_aisr = 0;
+		}
+
 		vf = nn_get_vframe(shared_fd);
 		if (vf) {
 			if (vf->flag & VFRAME_FLAG_GAME_MODE) {

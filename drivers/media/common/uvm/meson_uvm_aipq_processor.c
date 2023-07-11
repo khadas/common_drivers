@@ -20,6 +20,9 @@
 #include <linux/amlogic/media/ge2d/ge2d_func.h>
 #include <linux/amlogic/media/video_processor/video_pp_common.h>
 #include <linux/amlogic/media/dmabuf_heaps/amlogic_dmabuf_heap.h>
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
+#include <linux/amlogic/media/video_sink/video.h>
+#endif
 
 #include "meson_uvm_aipq_processor.h"
 
@@ -407,6 +410,7 @@ int attach_aipq_hook_mod_info(int shared_fd,
 	struct vframe_s *vf = NULL;
 	int ret = 0;
 	bool enable_aipq = true;
+	int output_fps, output_pts_inc_scale = 0, output_pts_inc_scale_base = 0;
 
 	aipq_info->need_do_aipq = 1;
 	aipq_info->dw_height = 0;
@@ -416,6 +420,22 @@ int attach_aipq_hook_mod_info(int shared_fd,
 		aipq_info->need_do_aipq = 0;
 		enable_aipq = false;
 	} else {
+		get_output_pcrscr_info(&output_pts_inc_scale, &output_pts_inc_scale_base);
+		if (!output_pts_inc_scale_base) {
+			aipq_print(PRINT_OTHER, "get output pcrscr info failed.\n");
+			output_fps = 0;
+		} else {
+			output_fps = 90000 * 16 * (u64)output_pts_inc_scale;
+			output_fps = div64_u64(output_fps, output_pts_inc_scale_base);
+		}
+		aipq_print(PRINT_OTHER, "output_fps is %d.\n", output_fps);
+		if (output_fps > 24000) {
+			aipq_print(PRINT_OTHER,
+				"output_fps more than 60, ai_pq bypass.\n");
+			aipq_info->need_do_aipq = 0;
+			enable_aipq = false;
+		}
+
 		vf = aipq_get_dw_vf(aipq_info);
 		if (IS_ERR_OR_NULL(vf)) {
 			aipq_print(PRINT_OTHER, "get no vf\n");

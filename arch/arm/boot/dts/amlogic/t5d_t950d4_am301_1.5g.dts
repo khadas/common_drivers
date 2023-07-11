@@ -8,6 +8,7 @@
 #include "mesont5d.dtsi"
 #include "partition_mbox_ab.dtsi"
 #include "mesont5d_am301-panel.dtsi"
+#include "mesont5_drm.dtsi"
 
 / {
 	amlogic-dt-id = "t5d_t950d4_am301-1.5g";
@@ -1752,12 +1753,37 @@
 };
 
 &meson_fb {
-	status = "okay";
+	status = "disabled";
 	display_size_default = <1920 1080 1920 2160 32>;
 	mem_size = <0x00800000 0x1980000 0x100000 0x800000>;
 	logo_addr = "0x3f800000";
 	mem_alloc = <0>;
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
+};
+
+&drm_vpu {
+	status = "okay";
+	logo_addr = "0x3f800000";
+
+	connectors_dev: port@0 {
+		drm_to_lcd0: endpoint@0 {
+			reg = <0>;
+			remote-endpoint = <&lcd0_to_drm>;
+		};
+	};
+};
+
+&lcd {
+	ports {
+		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			lcd0_to_drm: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&drm_to_lcd0>;
+			};
+		};
+	};
 };
 
 &vdac {

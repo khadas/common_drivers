@@ -524,7 +524,6 @@ static void lcd_clk_set_txhd2(struct aml_lcd_drv_s *pdrv)
 {
 	lcd_clk_setb(HHI_VIID_CLK_CNTL, 0, VCLK2_EN, 1);
 	lcd_set_pll_txhd2(pdrv);
-	lcd_set_tcon_clk_txhd2(pdrv);
 	lcd_set_vid_pll_div_txhd2(pdrv);
 }
 
@@ -979,7 +978,7 @@ static struct lcd_clk_data_s lcd_clk_data_txhd2 = {
 	.clk_disable = lcd_clk_disable_dft,
 	.clk_gate_switch = lcd_clk_gate_switch_dft,
 	.clk_gate_optional_switch = lcd_clk_gate_optional_switch_dft,
-	.clktree_set = lcd_set_tcon_clk_t5,
+	.clktree_set = lcd_set_tcon_clk_txhd2,
 	.clktree_probe = lcd_clktree_probe_tl1,
 	.clktree_remove = lcd_clktree_remove_tl1,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,

@@ -1437,6 +1437,7 @@
 
 //==================== PWD ===============
 #define   RX_PWD_CTRL_PWD_IVCRX        0x00001001
+#define   RX_AUDIO_FIFO_RST            0x00001003
 #define  RX_PWD_SRST3_PWD_IVCRX        0x00001004
 #define   RX_PWD_SRST_PWD_IVCRX        0x00001005
 #define  RX_STATE_PWD_PWD_IVCRX        0x00001006

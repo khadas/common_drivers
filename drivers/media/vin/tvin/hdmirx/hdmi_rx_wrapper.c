@@ -373,10 +373,11 @@ void hdmirx_fsm_var_init(void)
 		clk_stable_max = 3;
 		break;
 	case CHIP_ID_T5M:
+	case CHIP_ID_TXHD2:
 		hbr_force_8ch = 1; //use it to enable hdr2spdif
 		sig_stable_err_max = 5;
 		sig_stable_max = 10;
-		dwc_rst_wait_cnt_max = 15;
+		dwc_rst_wait_cnt_max = 30;
 		clk_unstable_max = 50;
 		esd_phy_rst_max = 16;
 		pll_unlock_max = 30;
@@ -1951,7 +1952,7 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT, port);
 			if (hdmirx_top_intr_stat & (1 << 20))
 				need_check = true;
 		} else if (rx_info.chip_id >= CHIP_ID_T7 &&
-				   rx_info.chip_id <= CHIP_ID_T5M) {//todo
+				   rx_info.chip_id <= CHIP_ID_TXHD2) {//todo
 			if (hdmirx_top_intr_stat & (1 << 29))
 				need_check = true;
 		}
@@ -1976,7 +1977,7 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT, port);
 			if (hdmirx_top_intr_stat & (1 << 23))
 				need_check = true;
 		} else if (rx_info.chip_id >= CHIP_ID_T7 &&
-				   rx_info.chip_id <= CHIP_ID_T5M) {//todo
+				   rx_info.chip_id <= CHIP_ID_TXHD2) {//todo
 			if (hdmirx_top_intr_stat & (1 << 27))
 				need_check = true;
 		}
@@ -1987,7 +1988,7 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT, port);
 			if (rx[port].state >= FSM_SIG_STABLE) {
 				rx[port].vsync_cnt++;
 				if (rx_spd_type[port]) {
-					rx_pkt_handler(PKT_BUFF_SET_SPD, E_PORT0);
+					rx_pkt_handler(PKT_BUFF_SET_SPD, port);
 					rx_spd_type[port] = 0;
 				}
 				if (rx_emp_type[port] & EMP_TYPE_VTEM) {
@@ -2010,7 +2011,7 @@ reisr:hdmirx_top_intr_stat = hdmirx_rd_top(TOP_INTR_STAT, port);
 			if (hdmirx_top_intr_stat & (1 << 21))
 				need_check = true;
 		} else if (rx_info.chip_id >= CHIP_ID_T7 &&
-				   rx_info.chip_id <= CHIP_ID_T5M) {//todo
+				   rx_info.chip_id <= CHIP_ID_TXHD2) {//todo
 			if (hdmirx_top_intr_stat & (1 << 25))
 				need_check = true;
 		}
@@ -4637,7 +4638,7 @@ void rx_main_state_machine(void)
 		rx[port].var.clk_unstable_cnt = 0;
 		rx[port].var.esd_phy_rst_cnt = 0;
 		rx[port].var.downstream_hpd_flag = 0;
-		rx[port].var.edid_update_flag = 0;
+		//rx[port].var.edid_update_flag = 0;
 		pre_port = port;
 		rx_set_cur_hpd(1, 0, port);
 		rx[port].clk.cable_clk = 0;

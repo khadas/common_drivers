@@ -89,7 +89,8 @@
 /* I2C edid communication is stopped at 0x2 */
 /* play next song no sound */
 /* 2023.7.5 clear dv packet when no emp */
-#define RX_VER1 "ver.2023/7/5"
+/* 2023.7.12 txhd2 bring up debug */
+#define RX_VER1 "ver.2023/7/12"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

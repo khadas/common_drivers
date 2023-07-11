@@ -1604,7 +1604,7 @@ void hdmirx_top_irq_en(int en, int lvl, u8 port)
 		data32 |= (0    << 0);
 		top_intr_maskn_value = data32;
 	} else if (rx_info.chip_id >= CHIP_ID_T7 &&
-		rx_info.chip_id <= CHIP_ID_T5M) {
+		rx_info.chip_id <= CHIP_ID_TXHD2) {
 		data32  = 0;
 		data32 |= (0    << 30); // [   30] aud_chg;
 		data32 |= (1    << 29); // [   29] hdmirx_sqofclk_fall;
@@ -1953,6 +1953,11 @@ u32 hdmirx_audio_fifo_rst(u8 port)
 	int error = 0;
 
 	if (rx_info.chip_id >= CHIP_ID_T7) {
+		if (rx_info.chip_id >= CHIP_ID_T5M) {
+			hdmirx_wr_cor(RX_AUDIO_FIFO_RST, 0xff, port);
+			udelay(1);
+			hdmirx_wr_cor(RX_AUDIO_FIFO_RST, 0x0, port);
+		}
 		hdmirx_wr_bits_cor(RX_PWD_SRST_PWD_IVCRX, _BIT(1), 1, port);
 		udelay(1);
 		hdmirx_wr_bits_cor(RX_PWD_SRST_PWD_IVCRX, _BIT(1), 0, port);
@@ -5276,7 +5281,8 @@ void hdmirx_config_video(u8 port)
 		hdmirx_wr_cor(RX_VP_INPUT_FORMAT_HI, data8, port);
 	}
 	if (rx_info.chip_id == CHIP_ID_TXHD2) {
-		if (rx[port].cur.hactive > 3800) {
+		if (rx[port].cur.hactive > 2500 ||
+			(rx[port].cur.colorspace == 3 && rx[port].cur.hactive > 1900)) {
 			data32 = hdmirx_rd_top(TOP_VID_CNTL, port);
 			data32 |= 1 << 30;
 			hdmirx_wr_top(TOP_VID_CNTL, data32, port);

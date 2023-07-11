@@ -1971,6 +1971,7 @@ static void rx_parse_dsf(unsigned char *src_addr, u8 port)
 {
 	bool first, last;
 	u8 sequence_index;
+	u8 i;
 
 	first = *(src_addr + 1) >> 7;
 	last = (*(src_addr + 1) >> 6) & 0x1;
@@ -1985,6 +1986,11 @@ static void rx_parse_dsf(unsigned char *src_addr, u8 port)
 		rx[port].emp_dsf_info[rx[port].emp_dsf_cnt].pkt_cnt =
 			sequence_index + 1;
 		rx[port].emp_dsf_cnt++;
+	}
+	if (rx[port].emp_dsf_cnt >= EMP_DSF_CNT_MAX) {
+		rx[port].emp_dsf_cnt = 0;
+		for (i = 0; i < EMP_DSF_CNT_MAX; i++)
+			memset(&rx[port].emp_dsf_info[i], 0, sizeof(struct emp_dsf_st));
 	}
 }
 

@@ -1063,11 +1063,11 @@ static int likely_frac_rate_mode(char *m)
 static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 {
 	enum hdmi_vic vic = hdev->tx_comm.cur_VIC;
-	const struct hdmi_format_para *para = NULL;
+	const struct hdmi_timing *timing = NULL;
 
 	frac_rate = hdev->tx_comm.frac_rate_policy;
-	para = hdmi_get_fmt_paras(vic);
-	if (para && para->name && likely_frac_rate_mode(para->name)) {
+	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+	if (timing && timing->name && likely_frac_rate_mode(timing->name)) {
 		;
 	} else {
 		pr_info("this mode doesn't have frac_rate\n");

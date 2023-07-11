@@ -283,6 +283,36 @@ struct hdmi_timing {
 	u32 pixel_repetition_factor:1;
 };
 
+/* Refer CEA861-D Page 116 Table 55 */
+struct dtd {
+	unsigned short pixel_clock;
+	unsigned short h_active;
+	unsigned short h_blank;
+	unsigned short v_active;
+	unsigned short v_blank;
+	unsigned short h_sync_offset;
+	unsigned short h_sync;
+	unsigned short v_sync_offset;
+	unsigned short v_sync;
+	unsigned short h_image_size;
+	unsigned short v_image_size;
+	unsigned char h_border;
+	unsigned char v_border;
+	unsigned char flags;
+
+	u32 vic;
+};
+
+struct vesa_standard_timing {
+	unsigned short hactive;
+	unsigned short vactive;
+	unsigned short hblank;
+	unsigned short vblank;
+	unsigned short vsync;
+	unsigned short tmds_clk; /* Value = Pixel clock ?? 10,000 */
+	enum hdmi_vic vesa_timing;
+};
+
 enum hdmi_color_depth {
 	COLORDEPTH_24B = 4,
 	COLORDEPTH_30B = 5,
@@ -306,7 +336,22 @@ struct parse_cr {
 	const char *name;
 };
 
-bool hdmitx_mode_have_alternate_clock(const struct hdmi_timing *t);
+/**************************APIs to get search hdmi_timing**************************/
+/* always return valid struct hdmi_timing.
+ * for invalid vic, return timing with vic=1.
+ */
+const struct hdmi_timing *hdmitx_mode_vic_to_hdmi_timing(enum hdmi_vic vic);
+/* always return valid struct hdmi_timing.
+ * when failed, return timing with invalid vic(0).
+ */
+const struct hdmi_timing *hdmitx_mode_match_dtd_timing(struct dtd *t);
+/* always return valid struct hdmi_timing.
+ * when failed, return timing with invalid vic(0).
+ */
+const struct hdmi_timing *hdmitx_mode_match_vesa_timing(struct vesa_standard_timing *t);
+
+void hdmitx_mode_print_hdmi_timing(const struct hdmi_timing *timing);
+void hdmitx_mode_print_all_mode_table(void);
 
 int hdmi_timing_vrefresh(const struct hdmi_timing *t);
 

@@ -115,7 +115,6 @@ int hdmitx21_get_fmtpara(const char *mode, const char *attr, struct hdmi_format_
 u32 hdmi21_get_aud_n_paras(enum hdmi_audio_fs fs,
 				  enum hdmi_color_depth cd,
 				  u32 tmds_clk);
-
 void check21_detail_fmt(void);
 
 struct size_map {
@@ -233,16 +232,6 @@ struct hdmi_audio_fs_ncts {
 		u32 cts_48bit;
 	} array[AUDIO_PARA_MAX_NUM];
 	u32 def_n;
-};
-
-struct vesa_standard_timing {
-	unsigned short hactive;
-	unsigned short vactive;
-	unsigned short hblank;
-	unsigned short vblank;
-	unsigned short vsync;
-	unsigned short tmds_clk; /* Value = Pixel clock ?? 10,000 */
-	enum hdmi_vic vesa_timing;
 };
 
 #endif

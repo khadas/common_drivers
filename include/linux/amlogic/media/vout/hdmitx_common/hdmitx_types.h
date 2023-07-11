@@ -34,8 +34,6 @@ struct hdmi_format_para {
 	/*valid info end*/
 
 	struct hdmi_timing timing;
-	/*TODO:will removed later, dont use anymore.*/
-	struct vinfo_s deprecated_vinfo;
 
 	/*valid info*/
 	u32 frac_mode;

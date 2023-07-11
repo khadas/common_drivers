@@ -238,7 +238,7 @@ static void edid_standard_timing_iii(struct rx_cap *prxcap, unsigned char *data)
 
 static void calc_timing(unsigned char *data, struct vesa_standard_timing *t)
 {
-	struct hdmi_format_para *para = NULL;
+	const struct hdmi_timing *timing = NULL;
 
 	if (data[0] < 2 && data[1] < 2)
 		return;
@@ -259,19 +259,19 @@ static void calc_timing(unsigned char *data, struct vesa_standard_timing *t)
 		break;
 	}
 	t->vsync = (data[1] & 0x3f) + 60;
-	para = hdmi_get_vesa_paras(t);
-	if (para) {
+	timing = hdmitx_mode_match_vesa_timing(t);
+	if (timing) {
 		struct hdmitx_dev *hdev = get_hdmitx_device();
 		struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 
 		/* prefer 16x9 mode */
-		if (para->vic == HDMI_720x480i60_4x3 ||
-			para->vic == HDMI_720x480p60_4x3 ||
-			para->vic == HDMI_720x576i50_4x3 ||
-			para->vic == HDMI_720x576p50_4x3)
-			t->vesa_timing = para->vic + 1;
+		if (timing->vic == HDMI_720x480i60_4x3 ||
+			timing->vic == HDMI_720x480p60_4x3 ||
+			timing->vic == HDMI_720x576i50_4x3 ||
+			timing->vic == HDMI_720x576p50_4x3)
+			t->vesa_timing = timing->vic + 1;
 		else
-			t->vesa_timing = para->vic;
+			t->vesa_timing = timing->vic;
 
 		if (t->vesa_timing < HDMITX_VESA_OFFSET)
 			store_cea_idx(prxcap, t->vesa_timing);
@@ -1707,7 +1707,7 @@ static void dump_dtd_info(struct dtd *t)
 
 static void edid_dtd_parsing(struct rx_cap *prxcap, unsigned char *data)
 {
-	struct hdmi_format_para *para = NULL;
+	const struct hdmi_timing *timing = NULL;
 	struct dtd *t = &prxcap->dtd[prxcap->dtd_idx];
 
 	/* if data[0-2] are zeroes, no need parse, and skip*/
@@ -1748,21 +1748,21 @@ next:
 		t->v_blank = t->v_blank / 2;
 	}
 /*
- * call hdmi_match_dtd_paras() to check t is matched with VIC
+ * call hdmitx_mode_match_dtd_timing() to check t is matched with VIC
  */
-	para = hdmi_match_dtd_paras(t);
-	if (para) {
+	timing = hdmitx_mode_match_dtd_timing(t);
+	if (timing->vic != HDMI_0_UNKNOWN) {
 		/* diff 4x3 and 16x9 mode */
-		if (para->vic == HDMI_720x480i60_4x3 ||
-			para->vic == HDMI_720x480p60_4x3 ||
-			para->vic == HDMI_720x576i50_4x3 ||
-			para->vic == HDMI_720x576p50_4x3) {
+		if (timing->vic == HDMI_720x480i60_4x3 ||
+			timing->vic == HDMI_720x480p60_4x3 ||
+			timing->vic == HDMI_720x576i50_4x3 ||
+			timing->vic == HDMI_720x576p50_4x3) {
 			if (abs(t->v_image_size * 100 / t->h_image_size - 3 * 100 / 4) <= 2)
-				t->vic = para->vic;
+				t->vic = timing->vic;
 			else
-				t->vic = para->vic + 1;
+				t->vic = timing->vic + 1;
 		} else {
-			t->vic = para->vic;
+			t->vic = timing->vic;
 		}
 		prxcap->preferred_mode = prxcap->dtd[0].vic; /* Select dtd0 */
 		pr_debug(EDID "get dtd%d vic: %d\n",
@@ -1826,43 +1826,45 @@ static void edid_descriptor_pmt(struct rx_cap *prxcap,
 				struct vesa_standard_timing *t,
 				unsigned char *data)
 {
-	struct hdmi_format_para *para = NULL;
+	const struct hdmi_timing *timing = NULL;
 
 	t->tmds_clk = data[0] + (data[1] << 8);
 	t->hactive = data[2] + (((data[4] >> 4) & 0xf) << 8);
 	t->hblank = data[3] + ((data[4] & 0xf) << 8);
 	t->vactive = data[5] + (((data[7] >> 4) & 0xf) << 8);
 	t->vblank = data[6] + ((data[7] & 0xf) << 8);
-	para = hdmi_get_vesa_paras(t);
-	if (para && (para->vic < (HDMI_3840x2160p60_64x27 + 1))) {
-		prxcap->native_vic = para->vic;
-		pr_debug("hdmitx: get PMT vic: %d\n", para->vic);
+
+	timing = hdmitx_mode_match_vesa_timing(t);
+	if (timing && (timing->vic < (HDMI_3840x2160p60_64x27 + 1))) {
+		prxcap->native_vic = timing->vic;
+		pr_debug("hdmitx: get PMT vic: %d\n", timing->vic);
 	}
-	if (para && para->vic >= HDMITX_VESA_OFFSET)
-		store_vesa_idx(prxcap, para->vic);
+	if (timing && timing->vic >= HDMITX_VESA_OFFSET)
+		store_vesa_idx(prxcap, timing->vic);
 }
 
 static void edid_descriptor_pmt2(struct rx_cap *prxcap,
 				 struct vesa_standard_timing *t,
 				 unsigned char *data)
 {
-	struct hdmi_format_para *para = NULL;
+	const struct hdmi_timing *timing = NULL;
 
 	t->tmds_clk = data[0] + (data[1] << 8);
 	t->hactive = data[2] + (((data[4] >> 4) & 0xf) << 8);
 	t->hblank = data[3] + ((data[4] & 0xf) << 8);
 	t->vactive = data[5] + (((data[7] >> 4) & 0xf) << 8);
 	t->vblank = data[6] + ((data[7] & 0xf) << 8);
-	para = hdmi_get_vesa_paras(t);
-	if (para && para->vic >= HDMITX_VESA_OFFSET)
-		store_vesa_idx(prxcap, para->vic);
+
+	timing = hdmitx_mode_match_vesa_timing(t);
+	if (timing && timing->vic >= HDMITX_VESA_OFFSET)
+		store_vesa_idx(prxcap, timing->vic);
 }
 
 static void edid_cvt_timing_3bytes(struct rx_cap *prxcap,
 				   struct vesa_standard_timing *t,
 				   const unsigned char *data)
 {
-	struct hdmi_format_para *para = NULL;
+	const struct hdmi_timing *timing = NULL;
 
 	t->hactive = ((data[0] + (((data[1] >> 4) & 0xf) << 8)) + 1) * 2;
 	switch ((data[1] >> 2) & 0x3) {
@@ -1895,9 +1897,9 @@ static void edid_cvt_timing_3bytes(struct rx_cap *prxcap,
 		t->vsync = 85;
 		break;
 	}
-	para = hdmi_get_vesa_paras(t);
-	if (para)
-		t->vesa_timing = para->vic;
+	timing = hdmitx_mode_match_vesa_timing(t);
+	if (timing->vic != HDMI_0_UNKNOWN)
+		t->vesa_timing = timing->vic;
 }
 
 static void edid_cvt_timing(struct rx_cap *prxcap, unsigned char *data)
@@ -2505,7 +2507,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 
 	/* target mode is not contained at RX SVD */
 	for (i = 0; (i < prxcap->VIC_count) && (i < VIC_MAX_NUM); i++) {
-		if ((para->vic & 0xff) == (prxcap->VIC[i] & 0xff)) {
+		if (para->vic == prxcap->VIC[i]) {
 			svd_flag = 1;
 			break;
 		} else if (hdmitx_check_4x3_16x9_mode(hdev, para->vic & 0xff)) {
@@ -2513,18 +2515,19 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 			break;
 		}
 	}
+
 	if (para->vic >= HDMITX_VESA_OFFSET) {
 		if (para->cd != COLORDEPTH_24B)
 			return 0;
 		if (para->cs != HDMI_COLORSPACE_RGB)
 			return 0;
 		for (i = 0; vesa_t[i] && i < VESA_MAX_TIMING; i++) {
-			const struct hdmi_format_para *param = NULL;
+			const struct hdmi_timing *timing =
+				hdmitx_mode_vic_to_hdmi_timing(vesa_t[i]);
 
-			param = hdmi_get_fmt_paras(vesa_t[i]);
-			if (param) {
-				if (param->vic >= HDMITX_VESA_OFFSET &&
-					para->vic == param->vic) {
+			if (timing) {
+				if (timing->vic >= HDMITX_VESA_OFFSET &&
+					para->vic == timing->vic) {
 					svd_flag = 1;
 					break;
 				}
@@ -2685,7 +2688,6 @@ enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdev,
 	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 	int  j;
 	enum hdmi_vic vic = hdmitx_edid_vic_tab_map_vic(disp_mode);
-	const struct hdmi_format_para *para = NULL;
 	enum hdmi_vic *vesa_t = &hdev->tx_comm.rxcap.vesa_timing[0];
 	enum hdmi_vic vesa_vic;
 
@@ -2709,11 +2711,13 @@ enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdev,
 	}
 	if (vic == HDMI_UNKNOWN && vesa_vic != HDMI_UNKNOWN) {
 		for (j = 0; vesa_t[j] && j < VESA_MAX_TIMING; j++) {
-			para = hdmi_get_fmt_paras(vesa_t[j]);
-			if (para) {
-				if (para->vic >= HDMITX_VESA_OFFSET &&
-					vesa_vic == para->vic) {
-					vic = para->vic;
+			const struct hdmi_timing *timing =
+				hdmitx_mode_vic_to_hdmi_timing(vesa_t[j]);
+
+			if (timing) {
+				if (timing->vic >= HDMITX_VESA_OFFSET &&
+					vesa_vic == timing->vic) {
+					vic = timing->vic;
 					break;
 				}
 			}

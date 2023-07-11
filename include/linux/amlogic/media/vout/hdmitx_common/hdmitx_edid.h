@@ -78,27 +78,6 @@ struct raw_block {
 	char raw[MAX_RAW_LEN];
 };
 
-/* Refer CEA861-D Page 116 Table 55 */
-struct dtd {
-	unsigned short pixel_clock;
-	unsigned short h_active;
-	unsigned short h_blank;
-	unsigned short v_active;
-	unsigned short v_blank;
-	unsigned short h_sync_offset;
-	unsigned short h_sync;
-	unsigned short v_sync_offset;
-	unsigned short v_sync;
-	unsigned short h_image_size;
-	unsigned short v_image_size;
-	unsigned char h_border;
-	unsigned char v_border;
-	unsigned char flags;
-
-	/*hdmi_vic have different define for tx20&tx21,use u32 instead here.*/
-	u32 vic;
-};
-
 struct rx_audiocap {
 	u8 audio_format_code;
 	u8 channel_num_max;

@@ -1385,22 +1385,21 @@ static void hdmi_tvenc_vesa_set(struct hdmitx_vidpara *param)
 	unsigned long vs_adjust = 0;
 	unsigned long vs_bline_evn = 0, vs_eline_evn = 0;
 	unsigned long vso_begin_evn = 0;
-	const struct hdmi_format_para *vpara = NULL;
-	const struct hdmi_cea_timing *vtiming = NULL;
+	const struct hdmi_timing *vtiming = NULL;
 
-	vpara = hdmi_get_fmt_paras(param->VIC);
-	if (!vpara) {
+	vtiming = hdmitx_mode_vic_to_hdmi_timing(param->VIC);
+	if (!vtiming) {
 		pr_info("hdmitx: don't find Paras for VESA %d\n", param->VIC);
 		return;
 	}
-
-	vtiming = &vpara->timing;
 
 	INTERLACE_MODE = 0;
 	PIXEL_REPEAT_VENC = 0;
 	PIXEL_REPEAT_HDMI = 0;
 	ACTIVE_PIXELS = vtiming->h_active;
 	ACTIVE_LINES = vtiming->v_active;
+	if (vtiming->pi_mode == 0)
+		ACTIVE_LINES = ACTIVE_LINES >> 1;
 	LINES_F0 = vtiming->v_total;
 	LINES_F1 = vtiming->v_total;
 	FRONT_PORCH = vtiming->h_front;
@@ -1509,8 +1508,7 @@ static void hdmi_tvenc_set(struct hdmitx_vidpara *param)
 	unsigned long vs_adjust = 0;
 	unsigned long vs_bline_evn = 0, vs_eline_evn = 0;
 	unsigned long vso_begin_evn = 0;
-	const struct hdmi_format_para *hdmi_encp_para = NULL;
-	const struct hdmi_cea_timing *hdmi_encp_timing = NULL;
+	const struct hdmi_timing *hdmi_encp_timing = NULL;
 
 	if ((param->VIC & HDMITX_VESA_OFFSET) == HDMITX_VESA_OFFSET) {
 		/* VESA modes setting */
@@ -1518,11 +1516,10 @@ static void hdmi_tvenc_set(struct hdmitx_vidpara *param)
 		return;
 	}
 
-	hdmi_encp_para = hdmi_get_fmt_paras(param->VIC);
-	if (!hdmi_encp_para) {
+	hdmi_encp_timing = hdmitx_mode_vic_to_hdmi_timing(param->VIC);
+	if (!hdmi_encp_timing) {
 		pr_info("hdmitx: don't find Paras for VIC : %d\n", param->VIC);
 	} else {
-		hdmi_encp_timing = &hdmi_encp_para->timing;
 
 	switch (param->VIC) {
 	case HDMI_3840x1080p120hz:
@@ -3226,7 +3223,7 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 			hdev->hwop.cntlddc(hdev, DDC_HDCP_OP, HDCP14_ON);
 		return;
 	} else if (strncmp(tmpbuf, "chkfmt", 6) == 0) {
-		check_detail_fmt();
+		hdmitx_mode_print_all_mode_table();
 		return;
 	} else if (strncmp(tmpbuf, "ss", 2) == 0) {
 		pr_info("hdev->output_blank_flag: 0x%x\n",
@@ -6130,12 +6127,16 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 			     unsigned char output_color_format)
 {
 	struct hdmi_format_para *para = &hdev->tx_comm.fmt_para;
-	struct hdmi_cea_timing *t = &para->timing;
+	struct hdmi_timing *t = &para->timing;
 	unsigned long   data32;
 	unsigned char   vid_map;
 	unsigned char   csc_en;
 	unsigned char   default_phase = 0;
 	unsigned int tmp = 0;
+	unsigned short v_active = t->v_active;
+
+	if (t->pi_mode == 0)
+		v_active = v_active >> 1;
 
 	/* Enable hdmitx_sys_clk */
 	hdmitx_set_cts_sys_clk(hdev);
@@ -6405,13 +6406,13 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	hdmitx_wr_reg(HDMITX_DWC_FC_INHBLANK1,  data32);
 
 	if (hdev->flag_3dfp) {
-		data32 = t->v_active * 2 + t->v_blank;
+		data32 = v_active * 2 + t->v_blank;
 		hdmitx_wr_reg(HDMITX_DWC_FC_INVACTV0, data32 & 0xff);
 		hdmitx_wr_reg(HDMITX_DWC_FC_INVACTV1, (data32 >> 8) & 0x1f);
 	} else {
-		data32 = t->v_active & 0xff;
+		data32 = v_active & 0xff;
 		hdmitx_wr_reg(HDMITX_DWC_FC_INVACTV0, data32);
-		data32 = (t->v_active >> 8) & 0x1f;
+		data32 = (v_active >> 8) & 0x1f;
 		hdmitx_wr_reg(HDMITX_DWC_FC_INVACTV1, data32);
 	}
 	data32  = t->v_blank & 0xff;
@@ -6646,9 +6647,9 @@ static void config_hdmi20_tx(enum hdmi_vic vic,
 	data32 |= (0 << 0);
 	hdmitx_wr_reg(HDMITX_DWC_FC_ACTSPC_HDLR_CFG, data32);
 
-	data32  = t->v_active & 0xff;
+	data32  = v_active & 0xff;
 	hdmitx_wr_reg(HDMITX_DWC_FC_INVACT_2D_0,	data32);
-	data32  = (t->v_active >> 8) & 0xf;
+	data32  = (v_active >> 8) & 0xf;
 	hdmitx_wr_reg(HDMITX_DWC_FC_INVACT_2D_1,	data32);
 
 	/* Do not enable these interrupt below, we can check them at RX side. */

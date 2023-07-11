@@ -8,6 +8,8 @@
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_common.h>
 #include <linux/string.h>
 
+extern const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
+
 static struct hdmi_format_para fmt_para_1920x1080p60_16x9 = {
 	.timing = {
 		.vic = HDMI_1920x1080p60_16x9,
@@ -76,7 +78,7 @@ static struct hdmi_format_para fmt_para_1920x1080p30_16x9 = {
 		.pixel_repetition_factor = 0,
 		.pi_mode = 1,
 		.pixel_freq = 74250,
-		.h_freq = 67500,
+		.h_freq = 33750,
 		.v_freq = 30000,
 		.v_pol = 1,
 		.h_pol = 1,
@@ -350,8 +352,8 @@ static struct hdmi_format_para fmt_para_4096x2160p24_256x135 = {
 		.v_freq = 24000,
 		.v_pol = 1,
 		.h_pol = 1,
-		.h_pict = 16,
-		.v_pict = 9,
+		.h_pict = 256,
+		.v_pict = 135,
 		.h_active = 4096,
 		.h_total = 5500,
 		.h_blank = 1404,
@@ -380,8 +382,8 @@ static struct hdmi_format_para fmt_para_4096x2160p25_256x135 = {
 		.v_freq = 25000,
 		.v_pol = 1,
 		.h_pol = 1,
-		.h_pict = 16,
-		.v_pict = 9,
+		.h_pict = 256,
+		.v_pict = 135,
 		.h_active = 4096,
 		.h_total = 5280,
 		.h_blank = 1184,
@@ -410,8 +412,8 @@ static struct hdmi_format_para fmt_para_4096x2160p30_256x135 = {
 		.v_freq = 30000,
 		.v_pol = 1,
 		.h_pol = 1,
-		.h_pict = 16,
-		.v_pict = 9,
+		.h_pict = 256,
+		.v_pict = 135,
 		.h_active = 4096,
 		.h_total = 4400,
 		.h_blank = 304,
@@ -440,8 +442,8 @@ static struct hdmi_format_para fmt_para_4096x2160p50_256x135 = {
 		.v_freq = 50000,
 		.v_pol = 1,
 		.h_pol = 1,
-		.h_pict = 16,
-		.v_pict = 9,
+		.h_pict = 256,
+		.v_pict = 135,
 		.h_active = 4096,
 		.h_total = 5280,
 		.h_blank = 1184,
@@ -470,8 +472,8 @@ static struct hdmi_format_para fmt_para_4096x2160p60_256x135 = {
 		.v_freq = 60000,
 		.v_pol = 1,
 		.h_pol = 1,
-		.h_pict = 16,
-		.v_pict = 9,
+		.h_pict = 256,
+		.v_pict = 135,
 		.h_active = 4096,
 		.h_total = 4400,
 		.h_blank = 304,
@@ -615,7 +617,7 @@ static struct hdmi_format_para fmt_para_720x480p60_4x3 = {
 		.sname = "480p60hz_4x3",
 		.pixel_repetition_factor = 0,
 		.pi_mode = 1,
-		.pixel_freq = 27027,
+		.pixel_freq = 27000,
 		.h_freq = 31469,
 		.v_freq = 59940,
 		.v_pol = 0,
@@ -645,9 +647,9 @@ static struct hdmi_format_para fmt_para_720x480p60_16x9 = {
 		.sname = "480p60hz",
 		.pixel_repetition_factor = 0,
 		.pi_mode = 1,
-		.pixel_freq = 27027,
+		.pixel_freq = 27000,
 		.h_freq = 31469,
-		.v_freq = 60000,
+		.v_freq = 59940,
 		.v_pol = 0,
 		.h_pol = 0,
 		.h_pict = 16,
@@ -675,9 +677,9 @@ static struct hdmi_format_para fmt_para_720x480i60_4x3 = {
 		.sname = "480i60hz_4x3",
 		.pixel_repetition_factor = 1,
 		.pi_mode = 0,
-		.pixel_freq = 27027,
+		.pixel_freq = 27000,
 		.h_freq = 15734,
-		.v_freq = 60000,
+		.v_freq = 59940,
 		.v_pol = 0,
 		.h_pol = 0,
 		.h_pict = 4,
@@ -705,9 +707,9 @@ static struct hdmi_format_para fmt_para_720x480i60_16x9 = {
 		.sname = "480i60hz",
 		.pixel_repetition_factor = 1,
 		.pi_mode = 0,
-		.pixel_freq = 27027,
+		.pixel_freq = 27000,
 		.h_freq = 15734,
-		.v_freq = 60000,
+		.v_freq = 59940,
 		.v_pol = 0,
 		.h_pol = 0,
 		.h_pict = 16,
@@ -850,30 +852,13 @@ static struct hdmi_format_para fmt_para_720x576i50_16x9 = {
 
 static struct hdmi_format_para fmt_para_non_hdmi_fmt = {
 	.timing = {
-		.vic = HDMI_UNKNOWN,
-		.name = "invalid",
-		.sname = "invalid",
-		.pixel_repetition_factor = 0,
-		.pi_mode = 1,
-		.h_pict = 16,
-		.v_pict = 9,
-	},
-	.deprecated_vinfo = {
-		.name              = "invalid",
-		.mode              = VMODE_MAX,
-		.width             = 1920,
-		.height            = 1080,
-		.field_height      = 1080,
-		.aspect_ratio_num  = 16,
-		.aspect_ratio_den  = 9,
-		.sync_duration_num = 60,
-		.sync_duration_den = 1,
-		.video_clk         = 148500000,
-		.htotal            = 2200,
-		.vtotal            = 1125,
-		.fr_adj_type       = VOUT_FR_ADJ_HDMI,
-		.viu_color_fmt     = COLOR_FMT_YUV444,
-		.viu_mux           = VIU_MUX_ENCP,
+			.vic = HDMI_UNKNOWN,
+			.name = "invalid",
+			.sname = "invalid",
+			.pixel_repetition_factor = 0,
+			.pi_mode = 1,
+			.h_pict = 16,
+			.v_pict = 9,
 	},
 };
 
@@ -1813,39 +1798,6 @@ static struct hdmi_format_para *all_fmt_paras[] = {
 	NULL,
 };
 
-int calc_vinfo_from_hdmi_timing(struct hdmi_timing *timing, struct vinfo_s *tx_vinfo)
-{
-	/* manually assign hdmitx_vinfo from timing */
-	tx_vinfo->name = timing->sname ? timing->sname : timing->name;
-	tx_vinfo->mode = VMODE_HDMI;
-	tx_vinfo->frac = 0;
-	if (timing->pixel_repetition_factor)
-		tx_vinfo->width = timing->h_active >> 1;
-	else
-		tx_vinfo->width = timing->h_active;
-
-	tx_vinfo->height = timing->pi_mode ? timing->v_active : (timing->v_active << 1);
-	tx_vinfo->field_height = timing->v_active;
-
-	tx_vinfo->aspect_ratio_num = timing->h_pict;
-	tx_vinfo->aspect_ratio_den = timing->v_pict;
-
-	tx_vinfo->sync_duration_num = hdmi_timing_vrefresh(timing);
-	tx_vinfo->sync_duration_den = 1;
-	tx_vinfo->video_clk = timing->pixel_freq;
-	tx_vinfo->htotal = timing->h_total;
-	tx_vinfo->vtotal = timing->v_total;
-	tx_vinfo->fr_adj_type = VOUT_FR_ADJ_HDMI;
-	tx_vinfo->viu_color_fmt = COLOR_FMT_YUV444;
-
-	tx_vinfo->viu_mux = timing->pi_mode ? VIU_MUX_ENCP : VIU_MUX_ENCI;
-	/* 1080i use the ENCP, not ENCI */
-	if (strstr(timing->name, "1080i"))
-		tx_vinfo->viu_mux = VIU_MUX_ENCP;
-
-	return 0;
-}
-
 int hdmi_format_list_init(void)
 {
 	int i;
@@ -1853,221 +1805,83 @@ int hdmi_format_list_init(void)
 
 	pr_info("function %s enter\n", __func__);
 
-	/*sync to struct hdmi_format_para*/
+/*test struct timing list*/
 	for (i = 0; all_fmt_paras[i]; i++) {
+		int line_err = 0;
+		const struct hdmi_timing *new_timing;
+
 		t = &all_fmt_paras[i]->timing;
-		all_fmt_paras[i]->pixel_repetition_factor = t->pixel_repetition_factor;
-		all_fmt_paras[i]->progress_mode = t->pi_mode;
-		all_fmt_paras[i]->sname =  t->sname;
-		all_fmt_paras[i]->name = t->name;
-		all_fmt_paras[i]->vic = t->vic;
+		if (t->vic == HDMI_0_UNKNOWN)
+			break;
 
-		all_fmt_paras[i]->tmds_clk = t->pixel_freq;
-		if (t->vic == HDMIV_2560x1600p60hz) {
-			all_fmt_paras[i]->tmds_clk_div40 = 0;
-			all_fmt_paras[i]->scrambler_en = 0;
+		pr_info("compare timing vic %d\n", t->vic);
+		new_timing = hdmitx_mode_vic_to_hdmi_timing(all_fmt_paras[i]->vic);
+		if (new_timing && new_timing->vic != HDMI_0_UNKNOWN) {
+			if (t->vic != new_timing->vic)
+				line_err = __LINE__;
+			else if (t->pixel_freq != new_timing->pixel_freq)
+				line_err = __LINE__;
+			else if (t->pi_mode != new_timing->pi_mode)
+				line_err = __LINE__;
+			else if (t->h_freq != new_timing->h_freq)
+				line_err = __LINE__;
+			else if (t->v_freq != new_timing->v_freq)
+				line_err = __LINE__;
+			else if (t->h_total != new_timing->h_total)
+				line_err = __LINE__;
+			else if (t->h_blank != new_timing->h_blank)
+				line_err = __LINE__;
+			else if (t->h_front != new_timing->h_front)
+				line_err = __LINE__;
+			else if (t->h_sync != new_timing->h_sync)
+				line_err = __LINE__;
+			else if (t->h_back != new_timing->h_back)
+				line_err = __LINE__;
+			else if (t->h_active != new_timing->h_active)
+				line_err = __LINE__;
+			else if (t->v_total != new_timing->v_total)
+				line_err = __LINE__;
+			else if (t->v_blank != new_timing->v_blank)
+				line_err = __LINE__;
+			else if (t->v_front != new_timing->v_front)
+				line_err = __LINE__;
+			else if (t->v_sync != new_timing->v_sync)
+				line_err = __LINE__;
+			else if (t->v_back != new_timing->v_back)
+				line_err = __LINE__;
+			else if (t->v_active != new_timing->v_active)
+				line_err = __LINE__;
+			else if (t->v_sync_ln != new_timing->v_sync_ln)
+				line_err = __LINE__;
+			else if (t->h_pol != new_timing->h_pol)
+				line_err = __LINE__;
+			else if (t->v_pol != new_timing->v_pol)
+				line_err = __LINE__;
+			else if (t->h_pict != new_timing->h_pict)
+				line_err = __LINE__;
+			else if (t->v_pict != new_timing->v_pict)
+				line_err = __LINE__;
+			else if (t->pixel_repetition_factor !=
+				new_timing->pixel_repetition_factor)
+				line_err = __LINE__;
+
+			if (t->sname && new_timing->sname &&
+				strncmp(t->sname, new_timing->sname, strlen(t->sname)) != 0)
+				pr_err("sname compare fail %d vs %d\n", t->vic, new_timing->vic);
+
+			if (t->name && new_timing->name &&
+				strncmp(t->name, new_timing->name, strlen(t->name)) != 0)
+				pr_err("name compare fail %s vs %s\n", t->name, new_timing->name);
+
+			if (line_err != 0)
+				pr_err("mode vinfo mismatch [%d-%d][%s]-line[%d]\n",
+					t->vic, new_timing->vic, t->name, line_err);
 		} else {
-			if (t->pixel_freq > 340000) {
-				all_fmt_paras[i]->tmds_clk_div40 = 1;
-				all_fmt_paras[i]->scrambler_en = 1;
-			} else {
-				all_fmt_paras[i]->tmds_clk_div40 = 0;
-				all_fmt_paras[i]->scrambler_en = 0;
-			}
+			pr_err("no timing found for mode %d\n", t->vic);
 		}
-
-		/*get vinfo from struct hdmi_timig*/
-		calc_vinfo_from_hdmi_timing(t, &all_fmt_paras[i]->deprecated_vinfo);
 	}
-
-/*test vinfo*/
-/*	pr_err("test vinfo\n");
- *	struct vinfo_s vinfo_calculate;
- *	struct vinfo_s *vinfo_preset;
- *	for (i = 0; all_fmt_paras[i]; i++) {
- *		if (all_fmt_paras[i]->vic == HDMI_UNKNOWN)
- *			continue;
- *
- *		t = &all_fmt_paras[i]->timing;
- *		vinfo_preset = &all_fmt_paras[i]->deprecated_vinfo;
- *		calc_vinfo_from_hdmi_timing(t, &vinfo_calculate);
- *		int line_err = 0;
- *
- *		if (vinfo_preset->mode != vinfo_calculate.mode)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->mode != vinfo_calculate.mode)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->frac != vinfo_calculate.frac)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->width != vinfo_calculate.width) {
- *			pr_err("width:[%d]vs[%d]\n",
- *				vinfo_preset->width, vinfo_calculate.width);
- *			line_err = __LINE__;
- *		} else if (vinfo_preset->height != vinfo_calculate.height)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->aspect_ratio_num != vinfo_calculate.aspect_ratio_num)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->aspect_ratio_den != vinfo_calculate.aspect_ratio_den)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->sync_duration_num != vinfo_calculate.sync_duration_num)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->sync_duration_den != vinfo_calculate.sync_duration_den)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->htotal != vinfo_calculate.htotal)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->vtotal != vinfo_calculate.vtotal)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->viu_color_fmt != vinfo_calculate.viu_color_fmt)
- *			line_err = __LINE__;
- *		else if (vinfo_preset->viu_mux != vinfo_calculate.viu_mux)
- *			line_err = __LINE__;
- *		else if (strncmp(vinfo_preset->name, vinfo_calculate.name,
- *			strlen(vinfo_preset->name)) != 0)
- *			line_err = __LINE__;
- *
- *		if (line_err != 0)
- *			pr_err("mode vinfo mismatch [%s]-line[%d]\n",
- *				all_fmt_paras[i]->name, line_err);
- *	}
- */
-/*test tmds_clk*/
-/*	pr_err("test tmds_clk\n");
- *	for (i = 0; all_fmt_paras[i]; i++) {
- *		t = &all_fmt_paras[i]->timing;
- *
- *		if (t->pixel_freq != all_fmt_paras[i]->tmds_clk) {
- *			pr_err("mode tmdsclk mismatch[%s]-[%d v %d]\n",
- *				all_fmt_paras[i]->name, t->pixel_freq, all_fmt_paras[i]->tmds_clk);
- *		}
- *
- *		if (t->pixel_freq > 340000) {
- *			if (all_fmt_paras[i]->tmds_clk_div40 != 1 ||
- *					all_fmt_paras[i]->scrambler_en != 1) {
- *				pr_err("mode tmds_clk_div40 mismatch[%s]-[%d v %d]\n",
- *					all_fmt_paras[i]->name,
- *					all_fmt_paras[i]->tmds_clk_div40,
- *					all_fmt_paras[i]->scrambler_en);
- *			}
- *		} else {
- *			if (all_fmt_paras[i]->tmds_clk_div40 == 1 ||
- *					all_fmt_paras[i]->scrambler_en == 1) {
- *				pr_err("mode tmds_clk_div40 mismatch2 [%s]-[%d v %d]\n",
- *					all_fmt_paras[i]->name,
- *					all_fmt_paras[i]->tmds_clk_div40,
- *					all_fmt_paras[i]->scrambler_en);
- *			}
- *		}
- *
- *		if (all_fmt_paras[i]->tmds_clk_div40 != all_fmt_paras[i]->scrambler_en) {
- *			pr_err("mode tmds_clk_div40 mismatch3 [%s]-[%d v %d]\n",
- *				all_fmt_paras[i]->name,
- *				all_fmt_paras[i]->tmds_clk_div40,
- *				all_fmt_paras[i]->scrambler_en);
- *		}
- *	}
- */
-/*test vsync*/
-/*
- *	for (i = 0; all_fmt_paras[i]; i++) {
- *		t = &all_fmt_paras[i]->timing;
- *		test_vsync = hdmi_timing_vrefresh(&all_fmt_paras[i]->timing);
- *
- *		source_vsync = t->deprecated_vsync;
- *		if (source_vsync == 0)
- *			source_vsync = DIV_ROUND_CLOSEST(all_fmt_paras[i]->timing.v_freq, 1000);
- *
- *		if (test_vsync != source_vsync) {
- *			pr_err("mode vsync mismatch[%s]-[%d v %d]\n",
- *				all_fmt_paras[i]->name, test_vsync, source_vsync);
- *		}
- *	}
- */
-/*test frac mode*/
-/*	for (i = 0; all_fmt_paras[i]; i++) {
- *			t = &all_fmt_paras[i]->timing;
- *			copy_t = *t;
- *
- *			if (hdmitx_mode_update_timing(&copy_t, true) >= 0) {
- *				if (t->deprecated_fracfreq == 0 ||
- *					t->deprecated_fracfreq != copy_t.pixel_freq) {
- *				pr_err("mode frac mismatch[%s]-[%d v %d]\n",
- *						all_fmt_paras[i]->name,
- *						t->deprecated_fracfreq, copy_t.pixel_freq);
- *				}
- *			} else {
- *				if (t->deprecated_fracfreq != 0) {
- *				pr_err("mode frac mismatch[%s]-[%d v %d]\n",
- *					all_fmt_paras[i]->name, t->deprecated_fracfreq, 0);
- *			}
- *		}
- *	}
- */
 
 	return 0;
-}
-
-const struct hdmi_format_para *hdmi_get_fmt_paras(enum hdmi_vic vic)
-{
-	int i;
-
-	for (i = 0; all_fmt_paras[i]; i++) {
-		if (vic == all_fmt_paras[i]->vic)
-			return all_fmt_paras[i];
-	}
-	return &fmt_para_non_hdmi_fmt;
-}
-EXPORT_SYMBOL(hdmi_get_fmt_paras);
-
-struct hdmi_format_para *hdmi_match_dtd_paras(struct dtd *t)
-{
-	int i;
-
-	if (!t)
-		return NULL;
-	for (i = 0; all_fmt_paras[i]; i++) {
-		if ((abs(all_fmt_paras[i]->timing.pixel_freq / 10
-		    - t->pixel_clock) <= (t->pixel_clock + 1000) / 1000) &&
-		    t->h_active == all_fmt_paras[i]->timing.h_active &&
-		    t->h_blank == all_fmt_paras[i]->timing.h_blank &&
-		    t->v_active == all_fmt_paras[i]->timing.v_active &&
-		    t->v_blank == all_fmt_paras[i]->timing.v_blank &&
-		    t->h_sync_offset == all_fmt_paras[i]->timing.h_front &&
-		    t->h_sync == all_fmt_paras[i]->timing.h_sync &&
-		    t->v_sync_offset == all_fmt_paras[i]->timing.v_front &&
-		    t->v_sync == all_fmt_paras[i]->timing.v_sync
-		    )
-			return all_fmt_paras[i];
-	}
-
-	return NULL;
-}
-
-struct hdmi_format_para *hdmi_get_vesa_paras(struct vesa_standard_timing *t)
-{
-	int i;
-
-	if (!t)
-		return NULL;
-	for (i = 0; all_fmt_paras[i]; i++) {
-		if (t->hactive == all_fmt_paras[i]->timing.h_active &&
-		    t->vactive == all_fmt_paras[i]->timing.v_active) {
-			if (t->vsync) {
-				unsigned int vsync;
-
-				vsync = hdmi_timing_vrefresh(&all_fmt_paras[i]->timing);
-				if (t->vsync == vsync)
-					return all_fmt_paras[i];
-			}
-			if (t->hblank &&
-			    t->hblank == all_fmt_paras[i]->timing.h_blank &&
-			    t->vblank &&
-			    t->vblank == all_fmt_paras[i]->timing.v_blank &&
-			    t->tmds_clk &&
-			    t->tmds_clk == all_fmt_paras[i]->tmds_clk / 10)
-				return all_fmt_paras[i];
-		}
-	}
-	return NULL;
 }
 
 static struct parse_cd parse_cd_[] = {
@@ -2161,255 +1975,82 @@ static void hdmi_parse_attr(struct hdmi_format_para *para, char const *name)
 		para->cr = HDMI_QUANTIZATION_RANGE_FULL;
 }
 
+int hdmitx_construct_format_para_from_timing(const struct hdmi_timing *timing,
+	struct hdmi_format_para *para)
+{
+	para->vic = timing->vic;
+	para->name = timing->name;
+	para->sname = timing->sname;
+
+	para->pixel_repetition_factor = timing->pixel_repetition_factor;
+	para->progress_mode = timing->pi_mode;
+	para->tmds_clk = timing->pixel_freq;
+
+	para->timing = *timing;
+
+	if (timing->vic == HDMIV_2560x1600p60hz) {
+		para->tmds_clk_div40 = 0;
+		para->scrambler_en = 0;
+	} else {
+		if (timing->pixel_freq > 340000) {
+			para->tmds_clk_div40 = 1;
+			para->scrambler_en = 1;
+		} else {
+			para->tmds_clk_div40 = 0;
+			para->scrambler_en = 0;
+		}
+	}
+
+	para->frac_mode = 0;
+
+	return 0;
+}
+
 /*
  * Parameter 'name' can be 1080p60hz, or 1920x1080p60hz
  * or 3840x2160p60hz, 2160p60hz
  */
-const struct hdmi_format_para *hdmi_get_fmt_name(char const *name, char const *attr)
+int hdmi_get_fmt_para(enum hdmi_vic vic,
+	char const *name, char const *attr, struct hdmi_format_para *para)
 {
-	int i;
-	char *lname;
-	enum hdmi_vic vic = HDMI_UNKNOWN;
-	struct hdmi_format_para *para = &fmt_para_non_hdmi_fmt;
-	unsigned int copy_len;
+	const struct hdmi_timing *timing = NULL;
+	int copy_len = 0;
+
+	memcpy(para, &fmt_para_non_hdmi_fmt, sizeof(struct hdmi_format_para));
 
 	if (!name)
-		return para;
+		return -EINVAL;
 
-	for (i = 0; all_fmt_paras[i]; i++) {
-		lname = all_fmt_paras[i]->name;
-		if (lname && (strncmp(name, lname, strlen(lname)) == 0)) {
-			vic = all_fmt_paras[i]->vic;
-			break;
-		}
-		lname = all_fmt_paras[i]->sname;
-		if (lname && (strncmp(name, lname, strlen(lname)) == 0)) {
-			vic = all_fmt_paras[i]->vic;
-			break;
-		}
-	}
-	if (vic != HDMI_UNKNOWN && (i != sizeof(all_fmt_paras) /
-		sizeof(struct hdmi_format_para *))) {
-		para = all_fmt_paras[i];
-		memset(&para->ext_name[0], 0, sizeof(para->ext_name));
-		copy_len = strlen(name);
-		if (copy_len >= sizeof(para->ext_name))
-			copy_len = sizeof(para->ext_name) - 1;
-		memcpy(&para->ext_name[0], name, copy_len);
-		hdmi_parse_attr(para, name);
-		hdmi_parse_attr(para, attr);
-	} else {
-		para = &fmt_para_non_hdmi_fmt;
-		hdmi_parse_attr(para, name);
-		hdmi_parse_attr(para, attr);
+	if (!para) {
+		pr_err("%s should pass valid para pointer to save\n", __func__);
+		return -EINVAL;
 	}
 
-	if (strstr(name, "420"))
-		para->cs = HDMI_COLORSPACE_YUV420;
-
-	/* only 2160p60/50hz smpte60/50hz have Y420 mode */
-	if (para->cs == HDMI_COLORSPACE_YUV420) {
-		switch ((para->vic) & 0xff) {
-		case HDMI_3840x2160p50_16x9:
-		case HDMI_3840x2160p60_16x9:
-		case HDMI_4096x2160p50_256x135:
-		case HDMI_4096x2160p60_256x135:
-		case HDMI_3840x2160p50_64x27:
-		case HDMI_3840x2160p60_64x27:
-			break;
-		default:
-			para = &fmt_para_non_hdmi_fmt;
-			break;
-		}
+	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+	if (!timing || timing->vic == HDMI_0_UNKNOWN) {
+		pr_err("%s: get timing from vic (%d) fail\n", __func__, vic);
+		return -EINVAL;
 	}
 
-	return para;
+	hdmitx_construct_format_para_from_timing(timing, para);
+	memset(&para->ext_name[0], 0, sizeof(para->ext_name));
+	copy_len = strlen(name);
+	if (copy_len >= sizeof(para->ext_name))
+		copy_len = sizeof(para->ext_name) - 1;
+	memcpy(&para->ext_name[0], name, copy_len);
+
+	hdmi_parse_attr(para, name);
+	hdmi_parse_attr(para, attr);
+
+	return 0;
 }
 
-static struct hdmi_format_para tst_para;
 static inline void copy_para(struct hdmi_format_para *des,
 			     struct hdmi_format_para *src)
 {
 	if (!des || !src)
 		return;
 	memcpy(des, src, sizeof(struct hdmi_format_para));
-}
-
-struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr)
-{
-	int i;
-	char *lname;
-	enum hdmi_vic vic = HDMI_UNKNOWN;
-	unsigned int copy_len;
-
-	copy_para(&tst_para, &fmt_para_non_hdmi_fmt);
-	if (!name)
-		return &tst_para;
-
-	for (i = 0; all_fmt_paras[i]; i++) {
-		lname = all_fmt_paras[i]->name;
-		if (lname && (strncmp(name, lname, strlen(lname)) == 0)) {
-			vic = all_fmt_paras[i]->vic;
-			break;
-		}
-		lname = all_fmt_paras[i]->sname;
-		if (lname && (strncmp(name, lname, strlen(lname)) == 0)) {
-			vic = all_fmt_paras[i]->vic;
-			break;
-		}
-	}
-	if (vic != HDMI_UNKNOWN && (i != sizeof(all_fmt_paras) /
-		sizeof(struct hdmi_format_para *))) {
-		copy_para(&tst_para, all_fmt_paras[i]);
-		memset(&tst_para.ext_name[0], 0, sizeof(tst_para.ext_name));
-		copy_len = strlen(name);
-		if (copy_len >= sizeof(tst_para.ext_name))
-			copy_len = sizeof(tst_para.ext_name) - 1;
-		memcpy(&tst_para.ext_name[0], name, copy_len);
-		hdmi_parse_attr(&tst_para, name);
-		hdmi_parse_attr(&tst_para, attr);
-	} else {
-		copy_para(&tst_para, &fmt_para_non_hdmi_fmt);
-		hdmi_parse_attr(&tst_para, name);
-		hdmi_parse_attr(&tst_para, attr);
-	}
-	if (strstr(name, "420"))
-		tst_para.cs = HDMI_COLORSPACE_YUV420;
-
-	/* only 2160p60/50hz smpte60/50hz have Y420 mode */
-	if (tst_para.cs == HDMI_COLORSPACE_YUV420) {
-		switch ((tst_para.vic) & 0xff) {
-		case HDMI_3840x2160p50_16x9:
-		case HDMI_3840x2160p60_16x9:
-		case HDMI_4096x2160p50_256x135:
-		case HDMI_4096x2160p60_256x135:
-		case HDMI_3840x2160p50_64x27:
-		case HDMI_3840x2160p60_64x27:
-			break;
-		default:
-			copy_para(&tst_para, &fmt_para_non_hdmi_fmt);
-			break;
-		}
-	}
-
-	return &tst_para;
-}
-
-struct vinfo_s *hdmi_get_valid_vinfo(char *mode)
-{
-	int i;
-	struct vinfo_s *info = NULL;
-	const char *name = NULL;
-	const struct hdmi_timing *timing = NULL;
-	char mode_[32];
-
-	if (strlen(mode)) {
-		/* the string of mode contains char NF */
-		memset(mode_, 0, sizeof(mode_));
-		strncpy(mode_, mode, sizeof(mode_));
-
-		/* skip "f", 1080fp60hz -> 1080p60hz for 3d */
-		mode_[31] = '\0';
-		if (strstr(mode_, "fp")) {
-			int i = 0;
-
-			for (; mode_[i]; i++) {
-				if (mode_[i] == 'f' &&
-				    mode_[i + 1] == 'p') {
-					do {
-						mode_[i] = mode_[i + 1];
-						i++;
-					} while (mode_[i]);
-					break;
-				}
-			}
-		}
-
-		for (i = 0; i < sizeof(mode_); i++)
-			if (mode_[i] == 10)
-				mode_[i] = 0;
-
-		for (i = 0; all_fmt_paras[i]; i++) {
-			if (all_fmt_paras[i]->timing.vic == HDMI_UNKNOWN)
-				continue;
-
-			timing = &all_fmt_paras[i]->timing;
-			name = timing->sname ? timing->sname : timing->name;
-
-			if (strncmp(name, mode_, strlen(mode_)) == 0) {
-				info = &all_fmt_paras[i]->deprecated_vinfo;
-				break;
-			}
-		}
-	}
-	return info;
-}
-
-/* For check all format parameters only */
-void check_detail_fmt(void)
-{
-	int i;
-	struct hdmi_format_para *p;
-	struct hdmi_cea_timing *t;
-
-	pr_warn("VIC Hactive Vactive I/P Htotal Hblank Vtotal Vblank Hfreq Vfreq Pfreq\n");
-	for (i = 0; all_fmt_paras[i]; i++) {
-		p = all_fmt_paras[i];
-		t = &p->timing;
-		pr_warn("%s[%d] %d %d %c %d %d %d %d %d %d %d\n",
-			all_fmt_paras[i]->name, all_fmt_paras[i]->vic,
-			t->h_active, t->v_active,
-			(p->progress_mode) ? 'P' : 'I',
-			t->h_total, t->h_blank, t->v_total, t->v_blank,
-			t->h_freq, t->v_freq, t->pixel_freq);
-	}
-
-	pr_warn("\nVIC Hfront Hsync Hback Hpol Vfront Vsync Vback Vpol Ln\n");
-	for (i = 0; all_fmt_paras[i]; i++) {
-		p = all_fmt_paras[i];
-		t = &p->timing;
-	pr_warn("%s[%d] %d %d %d %c %d %d %d %c %d\n",
-		all_fmt_paras[i]->name, all_fmt_paras[i]->vic,
-		t->h_front, t->h_sync, t->h_back,
-		(t->h_pol) ? 'P' : 'N',
-		t->v_front, t->v_sync, t->v_back,
-		(t->v_pol) ? 'P' : 'N',
-		t->v_sync_ln);
-	}
-
-	pr_warn("\nCheck Horizon parameter\n");
-	for (i = 0; all_fmt_paras[i]; i++) {
-		p = all_fmt_paras[i];
-		t = &p->timing;
-	if (t->h_total != (t->h_active + t->h_blank))
-		pr_warn("VIC[%d] Ht[%d] != (Ha[%d] + Hb[%d])\n",
-			all_fmt_paras[i]->vic, t->h_total,
-			t->h_active, t->h_blank);
-	if (t->h_blank != (t->h_front + t->h_sync + t->h_back))
-		pr_warn("VIC[%d] Hb[%d] != (Hf[%d] + Hs[%d] + Hb[%d])\n",
-			all_fmt_paras[i]->vic, t->h_blank,
-			t->h_front, t->h_sync, t->h_back);
-	}
-
-	pr_warn("\nCheck Vertical parameter\n");
-	for (i = 0; all_fmt_paras[i]; i++) {
-		p = all_fmt_paras[i];
-		t = &p->timing;
-		if (t->v_total != (t->v_active + t->v_blank))
-			pr_warn("VIC[%d] Vt[%d] != (Va[%d] + Vb[%d]\n",
-				all_fmt_paras[i]->vic, t->v_total, t->v_active,
-				t->v_blank);
-	if ((t->v_blank != (t->v_front + t->v_sync + t->v_back)) &&
-	    p->progress_mode == 1)
-		pr_warn("VIC[%d] Vb[%d] != (Vf[%d] + Vs[%d] + Vb[%d])\n",
-			all_fmt_paras[i]->vic, t->v_blank,
-			t->v_front, t->v_sync, t->v_back);
-	if ((t->v_blank / 2 != (t->v_front + t->v_sync + t->v_back)) &&
-	    p->progress_mode == 0)
-		pr_warn("VIC[%d] Vb[%d] != (Vf[%d] + Vs[%d] + Vb[%d])\n",
-			all_fmt_paras[i]->vic, t->v_blank, t->v_front,
-			t->v_sync, t->v_back);
-	}
 }
 
 /* Recommended N and Expected CTS for 32kHz */

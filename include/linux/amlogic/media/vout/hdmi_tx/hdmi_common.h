@@ -267,25 +267,23 @@ enum hdmi_aspect_ratio {
 
 struct vesa_standard_timing;
 
-const struct hdmi_format_para *hdmi_get_fmt_paras(enum hdmi_vic vic);
-struct hdmi_format_para *hdmi_match_dtd_paras(struct dtd *t);
-void check_detail_fmt(void);
 unsigned int hdmi_get_csc_coef(unsigned int input_format,
 			       unsigned int output_format,
 			       unsigned int color_depth,
 			       unsigned int color_format,
 			       const unsigned char **coef_array,
 			       unsigned int *coef_length);
-const struct hdmi_format_para *hdmi_get_fmt_name(char const *name, char const *attr);
-struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr);
-struct vinfo_s *hdmi_get_valid_vinfo(char *mode);
+int hdmi_get_fmt_para(enum hdmi_vic vic,
+		char const *name, char const *attr, struct hdmi_format_para *para);
+int hdmitx_construct_format_para_from_timing(const struct hdmi_timing *timing,
+	struct hdmi_format_para *para);
 const char *hdmi_get_str_cd(struct hdmi_format_para *para);
 const char *hdmi_get_str_cs(struct hdmi_format_para *para);
 const char *hdmi_get_str_cr(struct hdmi_format_para *para);
 unsigned int hdmi_get_aud_n_paras(enum hdmi_audio_fs fs,
 				  enum hdmi_color_depth cd,
 				  unsigned int tmds_clk);
-struct hdmi_format_para *hdmi_get_vesa_paras(struct vesa_standard_timing *t);
+int hdmitx_format_list_init(void);
 
 struct size_map {
 	unsigned int sample_bits;
@@ -402,16 +400,6 @@ struct hdmi_audio_fs_ncts {
 		unsigned int cts_48bit;
 	} array[AUDIO_PARA_MAX_NUM];
 	unsigned int def_n;
-};
-
-struct vesa_standard_timing {
-	unsigned short hactive;
-	unsigned short vactive;
-	unsigned short hblank;
-	unsigned short vblank;
-	unsigned short vsync;
-	unsigned short tmds_clk; /* Value = Pixel clock ?? 10,000 */
-	enum hdmi_vic vesa_timing;
 };
 
 #endif

@@ -366,15 +366,8 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 			mode->flags |= para.v_pol ?
 				DRM_MODE_FLAG_PVSYNC : DRM_MODE_FLAG_NVSYNC;
 
-			/* use logical display timing for drm. vdisplay
-			 * while amlogic vout use half value.
-			 */
-			if (!para.pi_mode) {
+			if (!para.pi_mode)
 				mode->flags |= DRM_MODE_FLAG_INTERLACE;
-				mode->vdisplay = mode->vdisplay << 1;
-				mode->vsync_start = mode->vsync_start << 1;
-				mode->vsync_end = mode->vsync_end << 1;
-			}
 
 			/*for recovery ui*/
 			if (hdmitx_set_smaller_pref) {

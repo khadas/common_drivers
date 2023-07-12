@@ -334,6 +334,10 @@
 #define COMBO_DPHY_RO_EDP_LVDS_TX_PHY1_CNTL1       0x0011
 #define COMBO_DPHY_RO_EDP_LVDS_TX_PHY2_CNTL1       0x0012
 
+#define COMBO_DPHY_CNTL0_TXHD2                           0x0020
+#define COMBO_DPHY_VID_PLL0_DIV_TXHD2                    0x0021
+#define COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2          0x0022
+#define COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1_TXHD2          0x0023
 /*  Global control:  RESET_CBUS_BASE = 0x11 */
 #define VERSION_CTRL                               0x1100
 #define RESET0_REGISTER                            0x1101

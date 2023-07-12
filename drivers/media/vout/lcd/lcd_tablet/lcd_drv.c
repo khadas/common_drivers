@@ -275,9 +275,9 @@ static void lcd_lvds_clk_util_set(struct aml_lcd_drv_s *pdrv)
 		/* decoupling fifo write enable after fifo enable */
 		lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 1, 31, 1);
 	} else if (pdrv->data->chip_type == LCD_CHIP_TXHD2) {
-		reg_phy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0;
-		reg_phy_tx_ctrl1 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1;
-		lcd_combo_dphy_write(pdrv, COMBO_DPHY_CNTL0, 0x55555);
+		reg_phy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2;
+		reg_phy_tx_ctrl1 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1_TXHD2;
+		lcd_combo_dphy_write(pdrv, COMBO_DPHY_CNTL0_TXHD2, 0x55555);
 
 		/* set fifo_clk_sel: div 7 */
 		lcd_combo_dphy_write(pdrv, reg_phy_tx_ctrl0, (1 << 6));
@@ -401,6 +401,7 @@ static void lcd_lvds_control_set(struct aml_lcd_drv_s *pdrv)
 		break;
 	case LCD_CHIP_T5:
 	case LCD_CHIP_T5D:
+	case LCD_CHIP_TXHD2:
 		/* lvds channel:    //tx 12 channels
 		 *    0: d0_a
 		 *    1: d1_a
@@ -579,6 +580,13 @@ static void lcd_lvds_disable(struct aml_lcd_drv_s *pdrv)
 		lcd_clk_setb(HHI_LVDS_TX_PHY_CNTL1, 0, 30, 2);
 		/* disable lane */
 		lcd_clk_setb(HHI_LVDS_TX_PHY_CNTL0, 0, 16, 12);
+	} else if (pdrv->data->chip_type == LCD_CHIP_TXHD2) {
+		reg_dphy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2;
+		reg_dphy_tx_ctrl1 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1_TXHD2;
+		lcd_vcbus_setb(LVDS_GEN_CNTL, 0, 3, 1);
+		lcd_vcbus_setb(LVDS_GEN_CNTL, 0, 0, 2);
+		lcd_combo_dphy_setb(pdrv, reg_dphy_tx_ctrl1, 0, 30, 2);
+		lcd_combo_dphy_setb(pdrv, reg_dphy_tx_ctrl0, 0, 16, 16);
 	} else {
 		/* disable lvds fifo */
 		lcd_vcbus_setb(LVDS_GEN_CNTL, 0, 3, 1);

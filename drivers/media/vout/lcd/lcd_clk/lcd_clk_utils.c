@@ -1252,8 +1252,8 @@ void lcd_set_vid_pll_div_txhd2(struct aml_lcd_drv_s *pdrv)
 	udelay(5);
 
 	/* Disable the div output clock */
-	lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, 0, 19, 1);
-	lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, 0, 15, 1);
+	lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 0, 19, 1);
+	lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 0, 15, 1);
 
 	i = 0;
 	while (lcd_clk_div_table[i][0] != CLK_DIV_SEL_MAX) {
@@ -1267,18 +1267,18 @@ void lcd_set_vid_pll_div_txhd2(struct aml_lcd_drv_s *pdrv)
 	shift_sel = lcd_clk_div_table[i][2];
 
 	if (shift_val == 0xffff) { /* if divide by 1 */
-		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, 1, 18, 1);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 1, 18, 1);
 	} else {
-		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, 0, 16, 2);
-		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, 0, 15, 1);
-		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, 0, 0, 14);
-		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, shift_sel, 16, 2);
-		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, 1, 15, 1);
-		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, shift_val, 0, 14);
-		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, 0, 15, 1);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 0, 16, 2);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 0, 15, 1);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 0, 0, 14);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, shift_sel, 16, 2);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 1, 15, 1);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, shift_val, 0, 14);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 0, 15, 1);
 	}
 	/* Enable the final output clock */
-	lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV, 1, 19, 1);
+	lcd_combo_dphy_setb(pdrv, COMBO_DPHY_VID_PLL0_DIV_TXHD2, 1, 19, 1);
 }
 
 void lcd_clk_config_init_print_dft(struct aml_lcd_drv_s *pdrv)

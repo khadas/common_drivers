@@ -83,4 +83,9 @@ struct osd_dummy_data_s {
 	unsigned int channel1;/*cb*/
 	unsigned int channel2;/*cr*/
 };
+
+struct osdblend_din_s {
+	int plane_index;
+	int zorder;
+};
 #endif

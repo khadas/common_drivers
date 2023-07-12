@@ -1446,8 +1446,8 @@ static int cp_cfg_data(void)
 	int ret = 0;
 	char *txt_buf = NULL;
 
-	txt_buf = vmalloc(cfg_size);
-	memset(txt_buf, 0, cfg_size);
+	txt_buf = vmalloc(cfg_size + 2);
+	memset(txt_buf, 0, cfg_size + 2);
 
 	if (!txt_buf) {
 		ret = -ENOMEM;

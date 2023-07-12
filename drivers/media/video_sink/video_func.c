@@ -5649,6 +5649,8 @@ void di_prelink_force_dmc_priority(bool urgent, bool wait)
 {
 #define DI_READ_DMC_AM1_CHAN_CTRL 0x0064
 #define DI_WRTIE_DMC_AM4_CHAN_CTRL 0x0070
+#define DI_RDARB_UGT_L1C1 0x205b
+#define DI_WRARB_UGT_L1C1 0x205d
 
 	bool valid = false;
 
@@ -5658,7 +5660,7 @@ void di_prelink_force_dmc_priority(bool urgent, bool wait)
 	/* check priority adjustment function valid or not */
 	if (!legacy_vpp) {
 		if (cur_dev->display_module == OLD_DISPLAY_MODULE ||
-			video_is_meson_t5w_cpu())
+			video_is_meson_t5w_cpu() || video_is_meson_t5m_cpu())
 			valid = true;
 	}
 	if (!legacy_vpp) {
@@ -5699,6 +5701,24 @@ void di_prelink_force_dmc_priority(bool urgent, bool wait)
 					DI_READ_DMC_AM1_CHAN_CTRL,
 					DI_WRTIE_DMC_AM4_CHAN_CTRL,
 					urgent ? 0xCFF403C4 : 0xCFF203C4,
+					urgent ? "super urgent" : "not urgent",
+					wait ? "true" : "false",
+					sleep_time);
+		}
+		if (video_is_meson_t5m_cpu()) {
+			WRITE_VCBUS_REG
+				(DI_RDARB_UGT_L1C1,
+				 urgent ? 0x3ffff : 0x15555);
+			WRITE_VCBUS_REG
+				(DI_WRARB_UGT_L1C1,
+				 urgent ? 0xfff : 0x555);
+			if (debug_flag & DEBUG_FLAG_PRELINK)
+				pr_info("%s: port:0x%x 0x%x to 0x%x 0x%x (%s) wait:%s time %dms\n",
+					__func__,
+					DI_RDARB_UGT_L1C1,
+					DI_WRARB_UGT_L1C1,
+					urgent ? 0x3ffff : 0x15555,
+					urgent ? 0xfff : 0x555,
 					urgent ? "super urgent" : "not urgent",
 					wait ? "true" : "false",
 					sleep_time);

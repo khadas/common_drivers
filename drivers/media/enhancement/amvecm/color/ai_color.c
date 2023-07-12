@@ -310,25 +310,24 @@ void ai_color_proc(struct vframe_s *vf)
 		sa_adj_parm.reg_sat_l_gain_en == 0)
 		return;
 
-	/*
-	 *if (!vf->vc_private->aicolor_info) {
-	 *	if (ai_clr_dbg) {
-	 *		pr_info("no aicolor_info\n");
-	 *		ai_clr_dbg--;
-	 *	}
-	 *	return;
-	 *}
+	if (!vf->vc_private->aicolor_info) {
+		if (ai_clr_dbg) {
+			pr_info("no aicolor_info\n");
+			ai_clr_dbg--;
+		}
+		return;
+	}
 
-	 *for (i = 0; i < 120; i++)
-	 *	sa_adj_parm.reg_s_gain_lut[i] =
-	 *		(int)vf->vc_private->aicolor_info->color_value[i];
+	for (i = 0; i < 120; i++)
+		sa_adj_parm.reg_s_gain_lut[i] =
+			(int)vf->vc_private->aicolor_info->color_value[i];
 
-	 *if (ai_clr_dbg > 0) {
-	 *	for (i = 0; i < 120; i++)
-	 *		pr_info("input: reg_s_gain_lut[%d] = %d\n", i,
-	 *			sa_adj_parm.reg_s_gain_lut[i]);
-	 *}
-	 */
+	if (ai_clr_dbg > 0) {
+		for (i = 0; i < 120; i++)
+			pr_info("input: reg_s_gain_lut[%d] = %d\n", i,
+				sa_adj_parm.reg_s_gain_lut[i]);
+	}
+
 	SLut_gen(&sa_adj_parm, &sa_fw_parm);
 	ai_color_cfg(&sa_adj_parm);
 

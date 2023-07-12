@@ -2762,7 +2762,11 @@ static int aml_tdm_platform_resume(struct platform_device *pdev)
 			if (ret)
 				dev_warn(&pdev->dev, "can't set tdm parent clock\n");
 		}
-
+		/*resume need enable mclk for active stream if no mclk pad*/
+		aml_set_tdm_mclk(p_tdm, p_tdm->setting.sysclk, false);
+		ret = clk_prepare_enable(p_tdm->mclk);
+		if (ret)
+			return ret;
 		if (!IS_ERR(p_tdm->mclk2pad)) {
 			ret = clk_set_parent(p_tdm->mclk2pad, NULL);
 			if (ret)
@@ -2794,7 +2798,7 @@ static int aml_tdm_platform_resume(struct platform_device *pdev)
 	}
 
 	/*set default clk for output*/
-	if (p_tdm->start_clk_enable == 1)
+	if (!IS_ERR(p_tdm->mclk2pad) && p_tdm->start_clk_enable == 1)
 		aml_set_default_tdm_clk(p_tdm);
 
 	if (!IS_ERR_OR_NULL(p_tdm->pin_ctl)) {

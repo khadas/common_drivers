@@ -15,6 +15,7 @@
 #include <linux/clk-provider.h>
 #include <linux/amlogic/iomap.h>
 #include <linux/timer.h>
+#include <linux/amlogic/pm.h>
 
 #include <sound/soc.h>
 #include <sound/tlv.h>
@@ -833,12 +834,16 @@ static int resample_platform_suspend(struct platform_device *pdev,
 {
 	struct audioresample *p_resample = dev_get_drvdata(&pdev->dev);
 
-	if (p_resample->suspend_clk_off) {
-		if (!IS_ERR(p_resample->clk)) {
-			while (__clk_is_enabled(p_resample->clk))
-				clk_disable_unprepare(p_resample->clk);
+	if (p_resample->suspend_clk_off && !is_pm_s2idle_mode()) {
+		/*warning:parent clk already close */
+		if (__clk_is_enabled(p_resample->sclk)) {
+			if (!IS_ERR(p_resample->clk)) {
+				while (__clk_is_enabled(p_resample->clk))
+					clk_disable_unprepare(p_resample->clk);
+			}
 		}
 	}
+	pr_info("%s resample:(%d)\n", __func__, p_resample->id);
 	return 0;
 }
 
@@ -847,7 +852,7 @@ static int resample_platform_resume(struct platform_device *pdev)
 	struct audioresample *p_resample = dev_get_drvdata(&pdev->dev);
 	int ret = 0;
 
-	if (p_resample->suspend_clk_off) {
+	if (p_resample->suspend_clk_off && !is_pm_s2idle_mode()) {
 		if (!IS_ERR(p_resample->sclk) && !IS_ERR(p_resample->pll)) {
 			ret = clk_set_parent(p_resample->sclk, p_resample->pll);
 			if (ret)
@@ -857,12 +862,13 @@ static int resample_platform_resume(struct platform_device *pdev)
 			ret = clk_set_parent(p_resample->clk, p_resample->sclk);
 			if (ret)
 				dev_err(p_resample->dev, "Can't resume set p_resample->clk clock\n");
+			resample_clk_set(p_resample, DEFAULT_SPK_SAMPLERATE);
 			ret = clk_prepare_enable(p_resample->clk);
 			if (ret)
 				dev_err(p_resample->dev, "Can't resume enable earc clk_tx_dmac\n");
 		}
 	}
-
+	pr_info("%s resample:(%d)\n", __func__, p_resample->id);
 	return 0;
 }
 

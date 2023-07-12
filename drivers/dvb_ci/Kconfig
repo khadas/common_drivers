@@ -5,7 +5,6 @@ menu "AMLOGIC DVB CI support"
 
 config AMLOGIC_DVB_CI
    tristate "AMLOGIC DVB CI"
-   depends on (AMLOGIC_DVB_DMX)
    default n
    help
      support dvb ci driver.

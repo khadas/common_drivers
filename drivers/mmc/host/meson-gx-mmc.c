@@ -591,8 +591,7 @@ static int no_pxp_clk_set(struct meson_host *host, struct mmc_ios *ios,
 				ret = clk_set_parent(host->mux[2], src_clk);
 			else
 				ret = clk_set_parent(host->mux[0], src_clk);
-			host->src_clk = src_clk;
-			clk_disable_unprepare(src_clk);
+			host->src_clk = NULL;
 			cfg |= CFG_AUTO_CLK;
 			writel(cfg, host->regs + SD_EMMC_CFG);
 			return ret;

@@ -1651,8 +1651,8 @@ struct page *aml_cma_alloc(struct dummy_cma *cma, unsigned long count,
 		if (ret != -EBUSY)
 			break;
 
-		pr_info("%s(): memory range at %p is busy, retrying\n",
-			 __func__, pfn_to_page(pfn));
+		cma_debug(0, NULL, "memory range at %p is busy, retrying\n",
+				pfn_to_page(pfn));
 
 		//trace_cma_alloc_busy_retry(cma->name, pfn, pfn_to_page(pfn),
 		//			   count, align);

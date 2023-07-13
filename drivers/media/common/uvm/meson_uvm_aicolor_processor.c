@@ -473,7 +473,6 @@ static void dump_vf(struct vframe_s *vf, phys_addr_t addr, struct uvm_aicolor_in
 	char name_buf[32];
 	int write_size;
 	u8 *data;
-	mm_segment_t fs;
 	loff_t pos;
 
 	if (IS_ERR_OR_NULL(vf) || IS_ERR_OR_NULL(info)) {

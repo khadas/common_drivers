@@ -44,6 +44,7 @@
 #include "vdin_canvas.h"
 #include "vdin_afbce.h"
 #include "vdin_dv.h"
+#include "vdin_hw.h"
 
 #define VDIN_V_SHRINK_H_LIMIT 1280
 #define TVIN_MAX_PIX_CLK 20000
@@ -804,8 +805,8 @@ void vdin_get_format_convert(struct vdin_dev_s *devp)
 		devp->mif_fmt = MIF_FMT_NV12_21;
 	else
 		devp->mif_fmt = MIF_FMT_YUV422;
-	pr_info("%s pc mode:%d(%d), man_md:0x%x, cfmt:%d, dst cfmt:%d convert md:%d mif_fmt:%d\n",
-		__func__, vdin_pc_mode, devp->vdin_pc_mode, manual_md,
+	pr_info("%s pc mode:%d(%d) game:%d man_md:%d, cfmt:%d, dst cfmt:%d convert md:%d mif_fmt:%d\n",
+		__func__, vdin_pc_mode, devp->vdin_pc_mode, game_mode, manual_md,
 		devp->prop.color_format, devp->prop.dest_cfmt, format_convert,
 		devp->mif_fmt);
 }
@@ -3963,17 +3964,6 @@ void vdin_hw_close(struct vdin_dev_s *devp)
 		vdin_dv_desc_to_4448bit(devp, 0);
 		vdin_dv_de_tunnel_to_44410bit(devp, 0);
 	}
-}
-
-/* get current vsync field type 0:top 1 bottom */
-unsigned int vdin_get_field_type(unsigned int offset)
-{
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
-	if (is_meson_t3x_cpu())
-		return 0;
-	else
-#endif
-		return rd_bits(offset, VDIN_COM_STATUS0, 0, 1);
 }
 
 bool vdin_check_vdi6_afifo_overflow(unsigned int offset)

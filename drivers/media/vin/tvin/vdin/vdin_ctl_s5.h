@@ -45,7 +45,6 @@ void vdin_set_default_regmap_s5(struct vdin_dev_s *devp);
 void vdin_set_def_wr_canvas(struct vdin_dev_s *devp);
 void vdin_hw_enable_s5(struct vdin_dev_s *devp);
 void vdin_hw_disable_s5(struct vdin_dev_s *devp);
-unsigned int vdin_get_field_type(unsigned int offset);
 int vdin_vsync_reset_mif(int index);
 bool vdin_check_vdi6_afifo_overflow(unsigned int offset);
 void vdin_clear_vdi6_afifo_overflow_flg(unsigned int offset);

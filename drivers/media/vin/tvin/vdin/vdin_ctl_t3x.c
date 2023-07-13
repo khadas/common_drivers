@@ -2559,13 +2559,6 @@ void vdin_hw_disable_t3x(struct vdin_dev_s *devp)
 	}
 }
 
-/* get current vsync field type 0:top 1 bottom */
-unsigned int vdin_get_field_type_t3x(unsigned int offset)
-{
-	//return rd_bits(offset, VDIN_COM_STATUS0, 0, 1);
-	return 0;
-}
-
 bool vdin_check_vdi6_afifo_overflow_t3x(unsigned int offset)
 {
 	//return rd_bits(offset, VDIN_COM_STATUS2, 15, 1);

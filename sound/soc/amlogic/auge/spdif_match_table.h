@@ -43,6 +43,8 @@ struct spdif_chipinfo {
 	int out_reset_reg_offset;
 	/* offset by the spec */
 	int out_reset_reg_shift;
+	/* for input only */
+	bool only_capture;
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -205,6 +207,7 @@ struct spdif_chipinfo a1_spdif_in_chipinfo = {
 	.async_fifo   = true,
 	.spdifout_lane_mask = SPDIFOUT_LANE_MASK_V1,
 	.use_arb      = true,
+	.only_capture = true,
 };
 #endif
 

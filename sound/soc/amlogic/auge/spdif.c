@@ -1741,6 +1741,8 @@ static void aml_set_spdifclk(struct aml_spdif *p_spdif, int freq, bool tune)
 {
 	char *clk_name = (char *)__clk_get_name(p_spdif->sysclk);
 
+	if (!clk_name)
+		return;
 	/* S4: audio share HIFI clk with EMMC, need special method */
 	if (get_cpu_type() == MESON_CPU_MAJOR_ID_S4 && !strcmp(clk_name, "hifi_pll"))
 		aml_set_spdifclk_s4(p_spdif, freq, tune);
@@ -1967,24 +1969,25 @@ static int aml_spdif_parse_of(struct platform_device *pdev)
 
 	/* clock for spdif out */
 	/* clock gate */
-	p_spdif->gate_spdifout = devm_clk_get(dev, "gate_spdifout");
-	if (IS_ERR(p_spdif->gate_spdifout)) {
-		dev_err(dev, "Can't get spdifout gate\n");
-		return PTR_ERR(p_spdif->gate_spdifout);
+	if (p_spdif->chipinfo && !p_spdif->chipinfo->only_capture) {
+		p_spdif->gate_spdifout = devm_clk_get(dev, "gate_spdifout");
+		if (IS_ERR(p_spdif->gate_spdifout)) {
+			dev_err(dev, "Can't get spdifout gate\n");
+			return PTR_ERR(p_spdif->gate_spdifout);
+		}
+		/* pll */
+		p_spdif->sysclk = devm_clk_get(dev, "sysclk");
+		if (IS_ERR(p_spdif->sysclk)) {
+			dev_err(dev, "Can't retrieve sysclk clock\n");
+			return PTR_ERR(p_spdif->sysclk);
+		}
+		/* spdif out clock */
+		p_spdif->clk_spdifout = devm_clk_get(dev, "clk_spdifout");
+		if (IS_ERR(p_spdif->clk_spdifout)) {
+			dev_err(dev, "Can't retrieve spdifout clock\n");
+			return PTR_ERR(p_spdif->clk_spdifout);
+		}
 	}
-	/* pll */
-	p_spdif->sysclk = devm_clk_get(dev, "sysclk");
-	if (IS_ERR(p_spdif->sysclk)) {
-		dev_err(dev, "Can't retrieve sysclk clock\n");
-		return PTR_ERR(p_spdif->sysclk);
-	}
-	/* spdif out clock */
-	p_spdif->clk_spdifout = devm_clk_get(dev, "clk_spdifout");
-	if (IS_ERR(p_spdif->clk_spdifout)) {
-		dev_err(dev, "Can't retrieve spdifout clock\n");
-		return PTR_ERR(p_spdif->clk_spdifout);
-	}
-
 	if ((!IS_ERR(p_spdif->sysclk)) && (aml_return_chip_id() == CLK_NOTIFY_CHIP_ID)) {
 		p_spdif->clk_nb.notifier_call = aml_spdif_clock_notifier;
 		ret = clk_notifier_register(p_spdif->sysclk, &p_spdif->clk_nb);

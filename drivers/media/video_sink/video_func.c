@@ -2749,8 +2749,8 @@ static int amvideo_early_proc(u8 layer_id)
 		(vd1_path_id == VFM_PATH_AMVIDEO ||
 		vd1_path_id == VFM_PATH_DEF)) {
 		/*need call every vsync*/
-		if (vf)
-			frame_lock_process(vf, cur_frame_par[0]);
+		if (vf_tmp)
+			frame_lock_process(vf_tmp, cur_frame_par[0]);
 		else
 			frame_lock_process(NULL, cur_frame_par[0]);
 	}

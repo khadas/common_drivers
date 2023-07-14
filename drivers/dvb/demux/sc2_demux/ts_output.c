@@ -541,6 +541,7 @@ static int dvr_process(struct out_elem *pout)
 	int len = 0;
 	char *pread;
 	int flag = 0;
+	int overflow = 0;
 
 	if (pout->pchan->sec_level)
 		flag = 1;
@@ -550,7 +551,7 @@ static int dvr_process(struct out_elem *pout)
 	if (ret != 0) {
 		if (flag == 0) {
 			if (pout->cb_ts_list)
-				out_ts_cb_list(pout, pread, ret, 0, 0);
+				out_ts_cb_list(pout, pread, ret, ret, &overflow);
 			if (dump_other_cb)
 				dump_other_cb(pout->sid, -1,
 				DMX_DUMP_DVR_TYPE,

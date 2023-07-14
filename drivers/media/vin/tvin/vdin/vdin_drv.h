@@ -146,8 +146,9 @@
 /* 20230527: fix screencap abnormal under display 4k120 on t3x */
 /* 20230529: bringup for txhd2 */
 /* 20230608: vdin not clear ratio_control value */
+/* 20230720: set vdin urgent for txhd2 */
 
-#define VDIN_VER "2023/06/24"
+#define VDIN_VER "2023/07/20"
 
 //#define T3X_PXP_BRINGUP
 //#define VDIN_BRINGUP_NO_VF

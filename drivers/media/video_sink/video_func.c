@@ -5781,41 +5781,21 @@ void di_prelink_force_dmc_priority(bool urgent, bool wait)
 
 		if (cur_dev->display_module == OLD_DISPLAY_MODULE ||
 			video_is_meson_t5w_cpu()) {
-			if (video_is_meson_txhd2_cpu()) {
-				//di_arb_urgent rd:0x205b   wr:0x205d
-				WRITE_VCBUS_REG
-					(DI_RDARB_UGT_L1C1,
-					urgent ? 0x3ffff : 0x15555);
-				WRITE_VCBUS_REG
-					(DI_WRARB_UGT_L1C1,
-					urgent ? 0xfff : 0x555);
-				if (debug_flag & DEBUG_FLAG_PRELINK)
-					pr_info("%s: port:0x%x 0x%x to 0x%x 0x%x (%s) wait:%s time %dms\n ",
-						__func__,
-						DI_RDARB_UGT_L1C1,
-						DI_WRARB_UGT_L1C1,
-						urgent ? 0x3ffff : 0x15555,
-						urgent ? 0xfff : 0x555,
-						urgent ? "super urgent" : "not urgent",
-						wait ? "true" : "false",
-						sleep_time);
-			} else {
-				WRITE_DMCREG
-					(DI_READ_DMC_AM1_CHAN_CTRL,
-					urgent ? 0xCFF403C4 : 0xCFF203C4);
-				WRITE_DMCREG
-					(DI_READ_DMC_AM1_CHAN_CTRL,
-					urgent ? 0xCFF403C4 : 0xCFF203C4);
-				if (debug_flag & DEBUG_FLAG_PRELINK)
-					pr_info("%s: port:0x%x 0x%x to 0x%x (%s) wait:%s time %dms\n",
-						__func__,
-						DI_READ_DMC_AM1_CHAN_CTRL,
-						DI_WRTIE_DMC_AM4_CHAN_CTRL,
-						urgent ? 0xCFF403C4 : 0xCFF203C4,
-						urgent ? "super urgent" : "not urgent",
-						wait ? "true" : "false",
-						sleep_time);
-			}
+			WRITE_DMCREG
+				(DI_READ_DMC_AM1_CHAN_CTRL,
+				urgent ? 0xCFF403C4 : 0xCFF203C4);
+			WRITE_DMCREG
+				(DI_READ_DMC_AM1_CHAN_CTRL,
+				urgent ? 0xCFF403C4 : 0xCFF203C4);
+			if (debug_flag & DEBUG_FLAG_PRELINK)
+				pr_info("%s: port:0x%x 0x%x to 0x%x (%s) wait:%s time %dms\n",
+					__func__,
+					DI_READ_DMC_AM1_CHAN_CTRL,
+					DI_WRTIE_DMC_AM4_CHAN_CTRL,
+					urgent ? 0xCFF403C4 : 0xCFF203C4,
+					urgent ? "super urgent" : "not urgent",
+					wait ? "true" : "false",
+					sleep_time);
 		}
 		if (video_is_meson_t5m_cpu()) {
 			WRITE_VCBUS_REG

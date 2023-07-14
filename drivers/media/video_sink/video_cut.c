@@ -9515,15 +9515,6 @@ bool video_is_meson_s4_cpu(void)
 		return false;
 }
 
-bool video_is_meson_txhd2_cpu(void)
-{
-	if (amvideo_meson_dev.cpu_type ==
-		MESON_CPU_MAJOR_ID_TXHD2_)
-		return true;
-	else
-		return false;
-}
-
 bool video_is_meson_s1a_cpu(void)
 {
 	if (amvideo_meson_dev.cpu_type ==

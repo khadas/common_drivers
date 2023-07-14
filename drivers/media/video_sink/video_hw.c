@@ -13384,11 +13384,6 @@ int video_hw_init(void)
 		/* VPU[0x279d]=0x00920000 */
 		/* vpp_arb0, vpp_arb1 super urgent */
 		WRITE_VCBUS_REG(VPU_RDARB_UGT_L2C1, 0xffff);
-	} else if (video_is_meson_txhd2_cpu()) {
-		/* vpu set 2R1W ,VPU_INTF_CTRL 0x270a bit22 =1 */
-		/* VPU_WRARB_UGT_L2C1 di urgent is 1,tcon urgent is 3,vdin urgent is 1 */
-		WRITE_VCBUS_REG_BITS(VPU_INTF_CTRL, 1, 22, 1);
-		WRITE_VCBUS_REG(VPU_WRARB_UGT_L2C1, 0x1c1);
 	}
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 	secure_register(VIDEO_MODULE, 0, video_secure_op, vpp_secure_cb);

@@ -7102,7 +7102,8 @@ void vdin_dmc_ctrl(struct vdin_dev_s *devp, bool on_off)
 		 */
 		if (devp->dtdata->hw_ver == VDIN_HW_T5 ||
 		    devp->dtdata->hw_ver == VDIN_HW_T5D ||
-		    devp->dtdata->hw_ver == VDIN_HW_T5W) {
+		    devp->dtdata->hw_ver == VDIN_HW_T5W ||
+		    devp->dtdata->hw_ver == VDIN_HW_TXHD2) {
 			reg = READ_DMCREG(0x6c) & (~(1 << 17));
 			if (!(reg & (1 << 18)))
 				WRITE_DMCREG(0x6c, reg | (1 << 18));
@@ -7116,7 +7117,8 @@ void vdin_dmc_ctrl(struct vdin_dev_s *devp, bool on_off)
 		 */
 		if (devp->dtdata->hw_ver == VDIN_HW_T5 ||
 		    devp->dtdata->hw_ver == VDIN_HW_T5D ||
-		    devp->dtdata->hw_ver == VDIN_HW_T5W) {
+		    devp->dtdata->hw_ver == VDIN_HW_T5W ||
+		    devp->dtdata->hw_ver == VDIN_HW_TXHD2) {
 			reg = READ_DMCREG(0x6c) & (~(1 << 18));
 			WRITE_DMCREG(0x6c, reg | (1 << 17));
 		} else if (devp->dtdata->hw_ver == VDIN_HW_T5M) {

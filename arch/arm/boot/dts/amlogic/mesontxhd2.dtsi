@@ -2143,7 +2143,7 @@
 	};
 
 	vout_mux: vout_mux {
-		compatible = "amlogic, vout_mux";
+		compatible = "amlogic, vout_mux-txhd2";
 		status = "okay";
 		clocks = <&clkc CLKID_FCLK_DIV5>, <&clkc CLKID_VDIN_MEAS>;
 		clock-names = "fclk_div5", "vdin_meas_clk";
@@ -2170,6 +2170,16 @@
 		status = "okay";
 		interrupts = <GIC_SPI 3 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "vsync";
+	};
+
+	vout2: vout2 {
+		compatible = "amlogic, vout2";
+		status = "okay";
+	};
+
+	dummy_venc: dummy_venc {
+		compatible = "amlogic, dummy_venc_txhd2";
+		status = "okay";
 	};
 
 	chosen {

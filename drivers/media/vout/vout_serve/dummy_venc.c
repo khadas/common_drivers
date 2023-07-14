@@ -42,6 +42,7 @@ enum dummy_venc_chip_e {
 	DUMMY_VENC_T5W,	/* 3 */
 	DUMMY_VENC_S5,  /* 4, stb new single display */
 	DUMMY_VENC_S1A, /* 5 */
+	DUMMY_VENC_TXHD2, /* 6 */
 	DUMMY_VENC_MAX,
 };
 
@@ -491,24 +492,28 @@ static int dummy_encp_set_current_vmode(enum vmode_e mode, void *data)
 
 	dummy_encp_vinfo_update(venc_drv);
 
-	if (venc_drv->projection_state == 0) {
+	if (venc_drv->vdata->venc_type != VENC_TYPE_ENCL) {
+		if (venc_drv->projection_state == 0) {
 #ifdef CONFIG_AMLOGIC_VPU
-		vpu_dev_clk_request(venc_drv->vpu_dev, venc_drv->vinfo->video_clk);
-		vpu_dev_mem_power_on(venc_drv->vpu_dev);
+			vpu_dev_clk_request(venc_drv->vpu_dev, venc_drv->vinfo->video_clk);
+			vpu_dev_mem_power_on(venc_drv->vpu_dev);
 #endif
-		if (venc_drv->vdata->encp_clk_gate_switch)
-			venc_drv->vdata->encp_clk_gate_switch(venc_drv, 1);
+			if (venc_drv->vdata->encp_clk_gate_switch)
+				venc_drv->vdata->encp_clk_gate_switch(venc_drv, 1);
 
-		dummy_encp_clk_ctrl(venc_drv, 1);
-		dummy_encp_venc_set(venc_drv);
+			dummy_encp_clk_ctrl(venc_drv, 1);
+			dummy_encp_venc_set(venc_drv);
+		}
+
+		if (venc_drv->vinfo_index == 1)
+			dummy_panel_clear_mute(venc_drv);
+	} else {
+		vout_vcbus_setb(VPP_MISC_TXHD2, 1, 27, 1);
+		VOUTPR("%s txhd2 enable keystone\n", __func__);
 	}
-
-	if (venc_drv->vinfo_index == 1)
-		dummy_panel_clear_mute(venc_drv);
 
 	venc_drv->status = 1;
 	venc_drv->vout_valid = 1;
-	VOUTPR("%s finished\n", __func__);
 
 	return 0;
 }
@@ -533,6 +538,8 @@ static enum vmode_e dummy_encp_validate_vmode(char *name, unsigned int frac, voi
 		for (i = 0; i < 2; i++) {
 			if (strcmp(dummy_encp_vinfo_t7[i].name, name) == 0) {
 				venc_drv->vinfo = &dummy_encp_vinfo_t7[i];
+				if (venc_drv->vdata->venc_type == VENC_TYPE_ENCL)
+					venc_drv->vinfo->viu_mux = VIU_MUX_ENCL;
 				vmode = venc_drv->vinfo->mode;
 				venc_drv->vinfo_index = i;
 				find_mode = 1;
@@ -583,23 +590,29 @@ static int dummy_encp_disable(enum vmode_e cur_vmod, void *data)
 	venc_drv = (struct dummy_venc_driver_s *)data;
 	if (!venc_drv || !venc_drv->vdata)
 		return 0;
-	if (!venc_drv->vdata->vconf)
+	if (!venc_drv->vdata->vconf && venc_drv->vdata->venc_type != VENC_TYPE_ENCL)
 		return 0;
 
-	offset = venc_drv->vdata->vconf->venc_offset;
+	if (venc_drv->vdata->venc_type != VENC_TYPE_ENCL)
+		offset = venc_drv->vdata->vconf->venc_offset;
 
 	venc_drv->status = 0;
 	venc_drv->vout_valid = 0;
 
-	if (venc_drv->projection_state == 0) {
-		vout_vcbus_write(ENCP_VIDEO_EN + offset, 0); /* disable encp */
-		dummy_encp_clk_ctrl(venc_drv, 0);
-		if (venc_drv->vdata->encp_clk_gate_switch)
-			venc_drv->vdata->encp_clk_gate_switch(venc_drv, 0);
+	if (venc_drv->vdata->venc_type != VENC_TYPE_ENCL) {
+		if (venc_drv->projection_state == 0) {
+			vout_vcbus_write(ENCP_VIDEO_EN + offset, 0); /* disable encp */
+			dummy_encp_clk_ctrl(venc_drv, 0);
+			if (venc_drv->vdata->encp_clk_gate_switch)
+				venc_drv->vdata->encp_clk_gate_switch(venc_drv, 0);
 #ifdef CONFIG_AMLOGIC_VPU
-		vpu_dev_mem_power_down(venc_drv->vpu_dev);
-		vpu_dev_clk_release(venc_drv->vpu_dev);
+			vpu_dev_mem_power_down(venc_drv->vpu_dev);
+			vpu_dev_clk_release(venc_drv->vpu_dev);
 #endif
+		}
+	} else {
+		vout_vcbus_setb(VPP_MISC_TXHD2, 0, 27, 1);
+		VOUTPR("%s disable txhd2 projector func\n", __func__);
 	}
 
 	venc_drv->vinfo_index = 0xff;
@@ -2082,6 +2095,21 @@ static struct dummy_venc_data_s dummy_venc_match_data_s5 = {
 	.enci_clk_gate_switch = NULL,
 	.encl_clk_gate_switch = NULL,
 };
+
+static struct dummy_venc_data_s dummy_venc_match_data_txhd2 = {
+	.vconf = NULL,
+
+	.chip_type = DUMMY_VENC_TXHD2,
+	.default_venc_index = 0,
+	.projection_valid = 1,
+	.venc_type = VENC_TYPE_ENCL,
+
+	.clktree_probe = NULL,
+	.clktree_remove = NULL,
+	.encp_clk_gate_switch = NULL,
+	.enci_clk_gate_switch = NULL,
+	.encl_clk_gate_switch = NULL,
+};
 #endif
 
 static const struct of_device_id dummy_venc_dt_match_table[] = {
@@ -2123,6 +2151,10 @@ static const struct of_device_id dummy_venc_dt_match_table[] = {
 	{
 		.compatible = "amlogic, dummy_venc_s5",
 		.data = &dummy_venc_match_data_s5,
+	},
+	{
+		.compatible = "amlogic, dummy_venc_txhd2",
+		.data = &dummy_venc_match_data_txhd2,
 	},
 #endif
 	{}

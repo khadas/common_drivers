@@ -321,6 +321,7 @@
 #define HHI_VID_CLK0_DIV                           0x0a2
 #define HHI_VID_CLK0_CTRL                          0x0a3
 #define HHI_VID_CLK0_CTRL2                         0x0a4
+#define VPP_MISC_TXHD2				   0x1d26
 
 unsigned int vout_clk_read(unsigned int _reg);
 void vout_clk_write(unsigned int _reg, unsigned int _value);

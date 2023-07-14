@@ -305,6 +305,12 @@ static void vout_viu_mux_update_default(int index, unsigned int mux_sel)
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void vout_viu_mux_update_default_txhd2(int index, unsigned int mux_sel)
+{
+	vout_vcbus_setb(VPU_VIU_VENC_MUX_CTRL, 0, 0, 4);
+	vout_vcbus_setb(VPU_VENCX_CLK_CTRL, 0, 0, 3);
+}
+
 static void vout_viu_mux_update_t7(int index, unsigned int mux_sel)
 {
 	unsigned int viu_bit = 0xff, venc_idx;
@@ -444,6 +450,14 @@ static struct vout_mux_data_s vout_mux_match_data = {
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static struct vout_mux_data_s vout_mux_match_data_txhd2 = {
+	.msr_clk = NULL,
+	.vs_measure = vout_vs_measure_dft,
+	.msr_ctrl_init = vout_meas_ctrl_init_dft,
+	.update_viu_mux = vout_viu_mux_update_default_txhd2,
+	.clear_viu_mux = NULL,
+};
+
 static struct vout_mux_data_s vout_mux_match_data_t7 = {
 	.msr_clk = NULL,
 	.vs_measure = vout_vs_measure_dft,
@@ -510,6 +524,10 @@ static const struct of_device_id vout_mux_dt_match_table[] = {
 	{
 		.compatible = "amlogic, vout_mux-t3x",
 		.data = &vout_mux_match_data_s5,
+	},
+	{
+		.compatible = "amlogic, vout_mux-txhd2",
+		.data = &vout_mux_match_data_txhd2,
 	},
 #endif
 	{}

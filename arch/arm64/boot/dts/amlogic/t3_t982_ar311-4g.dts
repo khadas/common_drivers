@@ -1123,7 +1123,7 @@
 		tdmin-src-name = "hdmirx";
 		/*enable default mclk(12.288M), before extern codec start*/
 		start_clk_enable = <1>;
-
+		suspend-clk-off = <1>;
 		ctrl_gain = <1>;
 		/*tdm clk tuning enable*/
 		clk_tuning_enable = <1>;
@@ -1200,7 +1200,7 @@
 		pinctrl-names = "spdif_pins", "spdif_pins_mute";
 		pinctrl-0 = <&spdifout_z>;
 		pinctrl-1 = <&spdifout_z_mute>;
-
+		suspend-clk-off = <1>;
 		samesource_sel = <5>;
 
 		/*spdif clk tuning enable*/
@@ -1219,6 +1219,7 @@
 		clock-names = "sysclk", "clk_src_cd",
 				"gate_spdifout", "clk_spdifout";
 		src-clk-freq = <491520000>;
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1254,7 +1255,7 @@
 		lane_mask = <0x1>;
 		/* max 0xff, each bit for one channel */
 		channel_mask = <0xff>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1280,7 +1281,7 @@
 		 *	EARC_RX,    11
 		 */
 		resample_module = <8>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1292,7 +1293,7 @@
 		clock-names = "resample_pll", "resample_src", "resample_clk";
 
 		/*this resample is only used for loopback_A.*/
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1446,6 +1447,7 @@
 }; /* end of audiobus */
 
 &earc {
+	suspend-clk-off = <1>;
 	status = "okay";
 };
 

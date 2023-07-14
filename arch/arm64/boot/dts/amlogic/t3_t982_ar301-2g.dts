@@ -1101,7 +1101,7 @@
 				&clkc CLKID_MPLL0>;
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
 		src-clk-freq = <491520000>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1134,7 +1134,7 @@
 		 * 4: spdifout_b;
 		 */
 		samesource_sel = <3>;
-
+		suspend-clk-off = <1>;
 		/* In for ACODEC_ADC */
 		/* tdmin-src-name = "acodec_adc"; */
 		tdmin-src-name = "hdmirx";
@@ -1166,6 +1166,7 @@
 				&clkc CLKID_MPLL2>;
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
 		src-clk-freq = <491520000>;
+		suspend-clk-off = <1>;
 		tdmin-src-name = "hdmirx";
 		status = "okay";
 	};
@@ -1219,7 +1220,7 @@
 		pinctrl-1 = <&spdifout_z_mute>;
 
 		samesource_sel = <5>;
-
+		suspend-clk-off = <1>;
 		/*spdif clk tuning enable*/
 		clk_tuning_enable = <1>;
 		status = "okay";
@@ -1236,6 +1237,7 @@
 		clock-names = "sysclk", "clk_src_cd",
 				"gate_spdifout", "clk_spdifout";
 		src-clk-freq = <491520000>;
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1271,13 +1273,13 @@
 		lane_mask = <0x1>;
 		/* max 0xff, each bit for one channel */
 		channel_mask = <0xff>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
 	asrca:resample@0 {
 		compatible = "amlogic, t5-resample-a";
-		clocks = <&clkc CLKID_MPLL1
+		clocks = <&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_MCLK_B
 			&clkaudio CLKID_AUDIO_RESAMPLE_A>;
 		clock-names = "resample_pll", "resample_src", "resample_clk";
@@ -1297,19 +1299,19 @@
 		 *	EARC_RX,    11
 		 */
 		resample_module = <8>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
 	asrcb:resample@1 {
 		compatible = "amlogic, t5-resample-b";
-		clocks = <&clkc CLKID_MPLL3
+		clocks = <&clkc CLKID_HIFI_PLL
 			&clkaudio CLKID_AUDIO_MCLK_F
 			&clkaudio CLKID_AUDIO_RESAMPLE_B>;
 		clock-names = "resample_pll", "resample_src", "resample_clk";
 
 		/*this resample is only used for loopback_A.*/
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1463,6 +1465,7 @@
 }; /* end of audiobus */
 
 &earc {
+	suspend-clk-off = <1>;
 	status = "okay";
 };
 

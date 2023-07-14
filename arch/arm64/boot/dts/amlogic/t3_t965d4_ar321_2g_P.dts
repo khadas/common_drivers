@@ -1192,7 +1192,7 @@
 				&clkc CLKID_MPLL0>;
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
 		src-clk-freq = <491520000>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1235,7 +1235,7 @@
 		/*tdm clk tuning enable*/
 		clk_tuning_enable = <1>;
 		status = "okay";
-
+		suspend-clk-off = <1>;
 		/* !!!For --TV platform-- ONLY */
 		Channel_Mask {
 			/*i2s has 4 pins, 8channel, mux output*/
@@ -1257,6 +1257,7 @@
 		clock-names = "mclk", "clk_srcpll", "clk_src_cd";
 		src-clk-freq = <491520000>;
 		tdmin-src-name = "hdmirx";
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1282,7 +1283,7 @@
 
 		/* mode 0~4, default:1 */
 		filter_mode = <1>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1309,7 +1310,7 @@
 		pinctrl-1 = <&spdifout_z_mute>;
 
 		samesource_sel = <5>;
-
+		suspend-clk-off = <1>;
 		/*spdif clk tuning enable*/
 		clk_tuning_enable = <1>;
 		status = "okay";
@@ -1327,6 +1328,7 @@
 				"gate_spdifout", "clk_spdifout";
 		src-clk-freq = <491520000>;
 		status = "okay";
+		suspend-clk-off = <1>;
 	};
 
 	extn:extn {
@@ -1361,7 +1363,7 @@
 		lane_mask = <0x1>;
 		/* max 0xff, each bit for one channel */
 		channel_mask = <0xff>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1387,7 +1389,7 @@
 		 *	EARC_RX,    11
 		 */
 		resample_module = <8>;
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1399,7 +1401,7 @@
 		clock-names = "resample_pll", "resample_src", "resample_clk";
 
 		/*this resample is only used for loopback_A.*/
-
+		suspend-clk-off = <1>;
 		status = "okay";
 	};
 
@@ -1552,6 +1554,7 @@
 
 &earc {
 	status = "okay";
+	suspend-clk-off = <1>;
 };
 
 &audio_data {

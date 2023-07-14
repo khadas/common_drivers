@@ -504,6 +504,10 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 	devp->in_sts.duration = cur_in_sts->duration;
 	devp->in_sts.signal_type = cur_in_sts->signal_type;
 	devp->in_sts.source_type = cur_in_sts->source_type;
+	devp->in_sts.frc_vsc_startp = cur_in_sts->frc_vsc_startp;
+	devp->in_sts.frc_hsc_startp = cur_in_sts->frc_hsc_startp;
+	frc_top->inp_padding_xofst = devp->in_sts.frc_hsc_startp;
+	frc_top->inp_padding_yofst = devp->in_sts.frc_vsc_startp;
 
 	/* check size change */
 	devp->in_sts.size_chged = 0;
@@ -535,53 +539,52 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 		}
 	}
 
-	if (seamless_cnt) {
-		frc_input_init(devp, frc_top);
-		if (get_chip_type() == ID_T3X) {
-			if (frc_top->frc_ratio_mode == FRC_RATIO_1_2)
-				tmpvalue = (frc_top->hsize + 15) & 0xFFF0;
-			else
+	if (devp->in_sts.frc_seamless_en && !devp->in_sts.frc_is_tvin) {
+		if (seamless_cnt == 1) {
+			frc_input_init(devp, frc_top);
+			if (get_chip_type() == ID_T3X) {
+				if (frc_top->frc_ratio_mode == FRC_RATIO_1_2)
+					tmpvalue = (frc_top->hsize + 15) & 0xFFF0;
+				else
+					tmpvalue = frc_top->hsize;
+				tmpvalue |= (frc_top->vsize) << 16;
+				WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
+			} else {
 				tmpvalue = frc_top->hsize;
-			tmpvalue |= (frc_top->vsize) << 16;
-			WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
-		} else {
-			tmpvalue = frc_top->hsize;
-			tmpvalue |= (frc_top->vsize) << 16;
-			WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
+				tmpvalue |= (frc_top->vsize) << 16;
+				WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
+			}
+			frc_top->is_me1mc4 = 1;/*me:mc 1:4*/
+			WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x3);   //16*16 align
+			WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
+				(cur_in_sts->frc_hsc_startp) << 13 |
+				(cur_in_sts->frc_vsc_startp));
+
+			pr_frc(2, "manual set frc size:v(x):0x%x, h(y)0x%x\n",
+				cur_in_sts->frc_hd_start_lines, cur_in_sts->frc_vd_start_lines);
+
+			if (pfw_data->frc_input_cfg)
+				pfw_data->frc_input_cfg(devp->fw_data);
+			devp->in_sts.size_chged = 0;
+			pr_frc(2, " %s size changed, frc not reopen\n", __func__);
+
+			seamless_cnt = 0;
+			pr_frc(2, "seamless frm 2\n");
+			return sts_change;
+		} else if (devp->in_sts.size_chged) {
+			if (!seamless_cnt || seamless_cnt > 1)
+				seamless_cnt = 1; // frame cnt 1
+			pr_frc(2, "seamless frm 1 seamless_cnt:%d\n", seamless_cnt);
+		} else if (!devp->in_sts.size_chged) {
+			WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
+				(cur_in_sts->frc_hsc_startp) << 13 |
+				(cur_in_sts->frc_vsc_startp));
+			seamless_cnt = 0;
+			// pr_frc(2, "seamless frm 3\n");
 		}
-		frc_top->is_me1mc4 = 1;/*me:mc 1:4*/
-		WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x3);   //16*16 align
-		WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,
-			(devp->out_sts.vout_height) << 16 | (devp->out_sts.vout_width));
-		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
-			(cur_in_sts->frc_hsc_startp) << 13 |
-			(cur_in_sts->frc_vsc_startp));
-
-		WRITE_FRC_BITS(0x1119, 1, 0, 1);
-		WRITE_FRC_BITS(0x1119, 1, 16, 1);
-		pr_frc(2, "clear vbuffer start.!!!!\n");
-		pr_frc(1, "manual set frc size:v(x):0x%x, h(y)0x%x\n",
-			cur_in_sts->frc_hd_start_lines, cur_in_sts->frc_vd_start_lines);
-
-		if (pfw_data->frc_input_cfg)
-			pfw_data->frc_input_cfg(devp->fw_data);
-		devp->in_sts.size_chged = 0;
-		pr_frc(2, " %s size changed, frc not reopen\n", __func__);
-
-		seamless_cnt = 0;
-		return sts_change;
-	}
-
-	if (devp->in_sts.size_chged && devp->in_sts.frc_seamless_en) {
-		seamless_cnt++;
-	} else if (devp->in_sts.frc_seamless_en && !devp->in_sts.size_chged) {
-		WRITE_FRC_REG_BY_CPU(FRC_PROC_SIZE,
-			(devp->out_sts.vout_height) << 16 | (devp->out_sts.vout_width));
-		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27,
-			(cur_in_sts->frc_hsc_startp) << 13 |
-			(cur_in_sts->frc_vsc_startp));
-		WRITE_FRC_BITS(0x1119, 0, 0, 1);
-		WRITE_FRC_BITS(0x1119, 0, 16, 1);
+	} else {
+		frc_top->inp_padding_xofst = 0;
+		frc_top->inp_padding_yofst = 0;
 	}
 
 	if (devp->frc_sts.out_put_mode_changed || devp->frc_sts.re_config) {
@@ -821,6 +824,8 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 			frc_chk_vd_sts_chg(devp, vf);
 			if (!devp->in_sts.frc_is_tvin)
 				frc_char_flash_check();
+			else
+				frc_set_seamless_proc(0); // tvin close seamless
 		}
 	}
 
@@ -1948,6 +1953,11 @@ void frc_chk_vd_sts_chg(struct frc_dev_s *devp, struct vframe_s *vf)
 
 	if (frc_is_tvin_s != devp->in_sts.frc_is_tvin) {
 		frc_is_tvin_s = devp->in_sts.frc_is_tvin;
+		if (devp->in_sts.frc_is_tvin) {
+			WRITE_FRC_BITS(FRC_TOP_MISC_CTRL, 1, 0, 1);
+			WRITE_FRC_BITS(FRC_REG_TOP_CTRL25, 0, 31, 1);
+			WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, 0);
+		}
 		pr_frc(1, "input change %d. (1:tvin)\n", frc_is_tvin_s);
 	}
 
@@ -2087,9 +2097,10 @@ void frc_input_size_align_check(struct frc_dev_s *devp)
 
 void frc_set_seamless_proc(u32 seamless)
 {
+	static u32 cur_status;
 	struct frc_dev_s *devp = get_frc_devp();
 
-	if (get_chip_type() == ID_T3 || !devp)
+	if (!devp || get_chip_type() == ID_T3 || cur_status == seamless)
 		return;
 
 	if (devp->frc_sts.state == FRC_STATE_ENABLE)
@@ -2103,7 +2114,7 @@ void frc_set_seamless_proc(u32 seamless)
 		WRITE_FRC_BITS(FRC_REG_TOP_CTRL25, 0, 31, 1);
 	}
 	devp->in_sts.frc_seamless_en = (u8)seamless;
-
+	cur_status = seamless;
 	pr_frc(2, "seamless is %d.\n", seamless);
 }
 

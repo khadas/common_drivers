@@ -165,6 +165,8 @@ static unsigned int lcd_std_frame_rate[] = {
 };
 
 static unsigned int lcd_std_frame_rate_high[] = {
+	288,
+	240,
 	144,
 	120,
 	119,
@@ -290,6 +292,94 @@ static void lcd_drm_vmode_update(struct aml_lcd_drv_s *pdrv, struct drm_display_
 	}
 }
 
+static int lcd_drm_update_hsr_mode(struct aml_lcd_drv_s *pdrv,
+				   struct drm_display_mode **modes,
+				   struct drm_display_mode *nmodes,
+				   struct drm_display_mode *native_mode,
+				   int hsr_flag)
+{
+	int mode_idx, i, num_0 = 0, num_1 = 0;
+	unsigned int *fr_table = NULL;
+
+	num_0 = ARRAY_SIZE(lcd_std_frame_rate);
+	num_1 = ARRAY_SIZE(lcd_std_frame_rate_high);
+	if (hsr_flag) {
+		mode_idx = 0;
+		fr_table = lcd_std_frame_rate_high;
+		//support 3840x1080p240 or 288 hz
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: %s add HSR mode\n", pdrv->index, __func__);
+		native_mode = &tv_lcd_mode_ref[4];
+		for (i = 0; i < num_1; i++) {
+			if (fr_table[i] == 0)
+				break;
+			if (fr_table[i] < 240)
+				continue;
+			if (mode_idx >= 10)
+				break;
+			memcpy(&nmodes[mode_idx], native_mode, sizeof(struct drm_display_mode));
+			memset(nmodes[mode_idx].name, 0, DRM_DISPLAY_MODE_LEN);
+			sprintf(nmodes[mode_idx].name, "%s%dhz", native_mode->name, fr_table[i]);
+			//nmodes[mode_idx].vrefresh = fr_table[j];
+			lcd_drm_vmode_update(pdrv, &nmodes[mode_idx], fr_table[i]);
+			mode_idx++;
+		}
+		native_mode = &tv_lcd_mode_ref[5];
+		for (i = 0; i < num_1; i++) {
+			if (fr_table[i] == 0)
+				break;
+			if (fr_table[i] > 144)
+				continue;
+			if (mode_idx >= 10)
+				break;
+			memcpy(&nmodes[mode_idx], native_mode, sizeof(struct drm_display_mode));
+			memset(nmodes[mode_idx].name, 0, DRM_DISPLAY_MODE_LEN);
+			sprintf(nmodes[mode_idx].name, "%s%dhz", native_mode->name, fr_table[i]);
+			//nmodes[mode_idx].vrefresh = fr_table[j];
+			lcd_drm_vmode_update(pdrv, &nmodes[mode_idx], fr_table[i]);
+			mode_idx++;
+		}
+		*modes = nmodes;
+		return 0;
+	}
+
+	mode_idx = 0;
+	fr_table = lcd_std_frame_rate;
+	native_mode = &tv_lcd_mode_ref[3];
+	for (i = 0; i < num_0; i++) {
+		if (fr_table[i] == 0)
+			break;
+		memcpy(&nmodes[mode_idx], native_mode, sizeof(struct drm_display_mode));
+		memset(nmodes[mode_idx].name, 0, DRM_DISPLAY_MODE_LEN);
+		sprintf(nmodes[mode_idx].name, "%s%dhz",
+			native_mode->name, fr_table[i]);
+		//nmodes[mode_idx].vrefresh = fr_table[i];
+		lcd_drm_vmode_update(pdrv, &nmodes[mode_idx], fr_table[i]);
+		mode_idx++;
+	}
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s add dlg mode\n", pdrv->index, __func__);
+	fr_table = lcd_std_frame_rate_high;
+	native_mode = &tv_lcd_mode_ref[5];
+	for (i = 0; i < num_1; i++) {
+		if (fr_table[i] == 0)
+			break;
+		if (fr_table[i] > 120)
+			continue;
+		if (mode_idx >= 10)
+			break;
+		memcpy(&nmodes[mode_idx], native_mode, sizeof(struct drm_display_mode));
+		memset(nmodes[mode_idx].name, 0, DRM_DISPLAY_MODE_LEN);
+		sprintf(nmodes[mode_idx].name, "%s%dhz", native_mode->name, fr_table[i]);
+		//nmodes[mode_idx].vrefresh = fr_table[j];
+		lcd_drm_vmode_update(pdrv, &nmodes[mode_idx], fr_table[i]);
+		mode_idx++;
+	}
+	*modes = nmodes;
+
+	return 0;
+}
+
 static int get_lcd_tv_modes(struct meson_panel_dev *panel,
 		struct drm_display_mode **modes, int *num)
 {
@@ -299,7 +389,7 @@ static int get_lcd_tv_modes(struct meson_panel_dev *panel,
 	struct drm_display_mode *nmodes;
 	unsigned int *fr_table;
 	int i, num_0, num_1, cnt, mode_idx;
-	int find_high = 0;
+	int find_high = 0, hsr_flag = 0;
 
 	if (!pdrv)
 		return -ENODEV;
@@ -315,16 +405,24 @@ static int get_lcd_tv_modes(struct meson_panel_dev *panel,
 		break;
 	case 1080:
 		if (pdrv->config.basic.h_active == 3840) {
-			if (pdrv->config.timing.base_frame_rate >= 120)
+			if (pdrv->config.timing.base_frame_rate == 240 ||
+			    pdrv->config.timing.base_frame_rate == 288) {
 				find_high = 1;
+				hsr_flag = 1;
+			} else if (pdrv->config.timing.base_frame_rate == 120) {
+				find_high = 1;
+			}
+
 			native_mode = &tv_lcd_mode_ref[4];
 		} else {
 			native_mode = &tv_lcd_mode_ref[2];
 		}
 		break;
 	case 2160:
-		if (pdrv->config.timing.base_frame_rate >= 120) {
+		if (pdrv->config.timing.base_frame_rate == 120 ||
+		    pdrv->config.timing.base_frame_rate == 144) {
 			find_high = 1;
+			hsr_flag = 1;
 			native_mode = &tv_lcd_mode_ref[5];
 		} else {
 			native_mode = &tv_lcd_mode_ref[3];
@@ -343,8 +441,10 @@ static int get_lcd_tv_modes(struct meson_panel_dev *panel,
 
 	num_0 = ARRAY_SIZE(lcd_std_frame_rate);
 	num_1 = ARRAY_SIZE(lcd_std_frame_rate_high);
-
-	if (pdrv->config.cus_ctrl.dlg_flag) {
+	if (pdrv->config.cus_ctrl.ufr_flag) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("%s, ufr_flag = %d, hsr_flag: %d\n",
+			      __func__, pdrv->config.cus_ctrl.ufr_flag, hsr_flag);
 		*num = 10;
 		nmodes = kmalloc_array(*num, sizeof(struct drm_display_mode), GFP_KERNEL);
 		if (!nmodes) {
@@ -352,40 +452,8 @@ static int get_lcd_tv_modes(struct meson_panel_dev *panel,
 			return -ENOMEM;
 		}
 
-		mode_idx = 0;
-		fr_table = lcd_std_frame_rate;
-		native_mode = &tv_lcd_mode_ref[3];
-		for (i = 0; i < num_0; i++) {
-			if (fr_table[i] == 0)
-				break;
-			if (mode_idx >= 10)
-				break;
-			memcpy(&nmodes[mode_idx], native_mode, sizeof(struct drm_display_mode));
-			memset(nmodes[mode_idx].name, 0, DRM_DISPLAY_MODE_LEN);
-			sprintf(nmodes[mode_idx].name, "%s%dhz", native_mode->name, fr_table[i]);
-			//nmodes[mode_idx].vrefresh = fr_table[i];
-			lcd_drm_vmode_update(pdrv, &nmodes[mode_idx], fr_table[i]);
-			mode_idx++;
-		}
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-			LCDPR("[%d]: %s add dlg mode\n", pdrv->index, __func__);
-		fr_table = lcd_std_frame_rate_high;
-		native_mode = &tv_lcd_mode_ref[5];
-		for (i = 0; i < num_1; i++) {
-			if (fr_table[i] == 0)
-				break;
-			if (fr_table[i] > 120)
-				continue;
-			if (mode_idx >= 10)
-				break;
-			memcpy(&nmodes[mode_idx], native_mode, sizeof(struct drm_display_mode));
-			memset(nmodes[mode_idx].name, 0, DRM_DISPLAY_MODE_LEN);
-			sprintf(nmodes[mode_idx].name, "%s%dhz", native_mode->name, fr_table[i]);
-			//nmodes[mode_idx].vrefresh = fr_table[j];
-			lcd_drm_vmode_update(pdrv, &nmodes[mode_idx], fr_table[i]);
-			mode_idx++;
-		}
-		*modes = nmodes;
+		lcd_drm_update_hsr_mode(pdrv, modes, nmodes, native_mode,
+					hsr_flag);
 		return 0;
 	}
 

@@ -482,10 +482,10 @@ static void lcd_dlg_power_if_on(struct aml_lcd_drv_s *pdrv)
 {
 	mutex_lock(&lcd_vout_mutex);
 	if (!(pdrv->status & LCD_STATUS_IF_ON)) {
-		if (pdrv->config.cus_ctrl.dlg_flag) {
-			if (pdrv->config.cus_ctrl.dlg_flag == 1)
+		if (pdrv->config.cus_ctrl.ufr_flag) {
+			if (pdrv->config.cus_ctrl.ufr_flag == 1)
 				lcd_power_ctrl(pdrv, 1);
-			else if (pdrv->config.cus_ctrl.dlg_flag == 2)
+			else if (pdrv->config.cus_ctrl.ufr_flag == 2)
 				lcd_dlg_power_ctrl(pdrv, 1);
 		} else {
 			lcd_power_ctrl(pdrv, 1);
@@ -502,10 +502,10 @@ static void lcd_dlg_power_if_off(struct aml_lcd_drv_s *pdrv)
 	mutex_lock(&lcd_vout_mutex);
 	if (pdrv->status & LCD_STATUS_IF_ON) {
 		pdrv->status &= ~LCD_STATUS_IF_ON;
-		if (pdrv->config.cus_ctrl.dlg_flag) {
-			if (pdrv->config.cus_ctrl.dlg_flag == 1)
+		if (pdrv->config.cus_ctrl.ufr_flag) {
+			if (pdrv->config.cus_ctrl.ufr_flag == 1)
 				lcd_power_ctrl(pdrv, 0);
-			else if (pdrv->config.cus_ctrl.dlg_flag == 2)
+			else if (pdrv->config.cus_ctrl.ufr_flag == 2)
 				lcd_dlg_power_ctrl(pdrv, 0);
 		} else {
 			lcd_power_ctrl(pdrv, 0);

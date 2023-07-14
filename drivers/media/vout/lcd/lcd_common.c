@@ -2115,10 +2115,10 @@ static int lcd_config_load_from_unifykey_v2(struct lcd_config_s *pconf,
 	if (cus_ctrl->flag & 0x1) {
 		temp = (*(p + LCD_UKEY_CUS_CTRL_ATTR_0) |
 			*(p + LCD_UKEY_CUS_CTRL_ATTR_0 + 1) << 8);
-		cus_ctrl->dlg_flag = temp & 0xf;
+		cus_ctrl->ufr_flag = temp & 0xf;
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-			LCDPR("%s: cus_ctrl dlg_flag=%d\n",
-			      __func__, cus_ctrl->dlg_flag);
+			LCDPR("%s: cus_ctrl ultra refresh rate flag=%d\n",
+			      __func__, cus_ctrl->ufr_flag);
 		}
 		temp = (*(p + LCD_UKEY_CUS_CTRL_ATTR_0_PARM0) |
 			*(p + LCD_UKEY_CUS_CTRL_ATTR_0_PARM0 + 1) << 8);

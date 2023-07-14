@@ -517,7 +517,7 @@ enum lcd_phy_set_status {
 
 struct cus_ctrl_config_s {
 	unsigned int flag;
-	unsigned char dlg_flag;
+	unsigned char ufr_flag;
 	unsigned long long mute_time;
 	unsigned long long unmute_time;
 	unsigned long long switch_time;

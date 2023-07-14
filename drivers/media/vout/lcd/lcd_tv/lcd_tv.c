@@ -52,6 +52,8 @@ static struct lcd_duration_s lcd_std_fr[] = {
 };
 
 static struct lcd_duration_s lcd_std_fr_high[] = {
+	{288, 288,    1,    0},
+	{240, 240,    1,    0},
 	{144, 144,    1,    0},
 	{120, 120,    1,    0},
 	{119, 120000, 1001, 1},
@@ -258,16 +260,61 @@ static int lcd_output_vmode_init(struct aml_lcd_drv_s *pdrv)
 		return -1;
 
 	lcd_vmode_remove_list();
-	if (pdrv->config.cus_ctrl.dlg_flag) {
+	switch (pdrv->config.timing.base_frame_rate) {
+	case 144:
+	case 288:
+		lcd_vmode_info[4].type = 2;
+		lcd_vmode_info[5].type = 2;
+		break;
+	case 240:
+		lcd_vmode_info[4].type = 1;
+		lcd_vmode_info[5].type = 1;
+		break;
+	case 120:
+		if (pdrv->config.basic.h_active == 3840 &&
+		    pdrv->config.basic.v_active == 2160) {
+			lcd_vmode_info[4].type = 1;
+			lcd_vmode_info[5].type = 1;
+		} else {
+			lcd_vmode_info[4].type = 0;
+			lcd_vmode_info[5].type = 0;
+		}
+		break;
+	case 60:
+	default:
+		break;
+	}
+
+	if (pdrv->config.cus_ctrl.ufr_flag) {
 		for (i = 0; i < count; i++) {
 			if (lcd_vmode_info[i].width != 3840)
 				continue;
 			if (lcd_vmode_info[i].height == 2160) {
-				if (lcd_vmode_info[i].type)
-					continue;
-				lcd_vmode_info[i].base_fr = 60;
+				switch (lcd_vmode_info[i].type) {
+				case 1:
+					lcd_vmode_info[i].base_fr = 120;
+					break;
+				case 2:
+					lcd_vmode_info[i].base_fr = 144;
+					break;
+				case 0:
+				default:
+					lcd_vmode_info[i].base_fr = 60;
+					break;
+				}
 			} else if (lcd_vmode_info[i].height == 1080) {
-				lcd_vmode_info[i].base_fr = 120;
+				switch (lcd_vmode_info[i].type) {
+				case 1:
+					lcd_vmode_info[i].base_fr = 240;
+					break;
+				case 2:
+					lcd_vmode_info[i].base_fr = 288;
+					break;
+				case 0:
+				default:
+					lcd_vmode_info[i].base_fr = 120;
+					break;
+				}
 			}
 			lcd_vmode_add_list(&lcd_vmode_info[i]);
 			if (pdrv->config.basic.h_active == lcd_vmode_info[i].width &&
@@ -305,7 +352,7 @@ static int lcd_output_vmode_init(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_cus_ctrl_parm_change(struct aml_lcd_drv_s *pdrv)
 {
-	if (pdrv->config.cus_ctrl.dlg_flag) {
+	if (pdrv->config.cus_ctrl.ufr_flag) {
 		if (pdrv->config.basic.v_active == 1080) {
 			if (pdrv->config.cus_ctrl.attr_0_para0) {
 				pdrv->config.basic.v_period_min =
@@ -390,8 +437,9 @@ static int lcd_outputmode_to_frame_rate(struct aml_lcd_drv_s *pdrv, const char *
 	*p = '\0';
 	ret = kstrtoint(temp, 10, &frame_rate);
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("[%d]: %s: outputmode=%s, frame_rate=%d\n",
-			pdrv->index, __func__, mode, frame_rate);
+		LCDPR("[%d]: %s: outputmode=%s, frame_rate=%d, base_frame_rate=%d\n",
+		      pdrv->index, __func__, mode, frame_rate,
+		      pdrv->config.timing.base_frame_rate);
 	}
 
 	if (frame_rate > pdrv->config.timing.base_frame_rate)
@@ -623,7 +671,7 @@ static inline void lcd_vmode_switch(struct aml_lcd_drv_s *pdrv, int flag)
 	if (pdrv->vmode_update == 0)
 		return;
 
-	if (pdrv->config.cus_ctrl.dlg_flag == 3) {
+	if (pdrv->config.cus_ctrl.ufr_flag == 3) {
 		if (!flag) {
 			//mute
 			lcd_screen_black(pdrv);
@@ -870,6 +918,8 @@ struct lcd_vframe_match_s {
 };
 
 static struct lcd_vframe_match_s lcd_vframe_match_table_1[] = {
+	{28800, 288},
+	{24000, 240},
 	{14400, 144},
 	{12000, 120},
 	{11988, 119},
@@ -880,6 +930,8 @@ static struct lcd_vframe_match_s lcd_vframe_match_table_1[] = {
 };
 
 static struct lcd_vframe_match_s lcd_vframe_match_table_2[] = {
+	{28800, 288},
+	{24000, 240},
 	{14400, 144},
 	{12000, 120},
 	{11988, 119},

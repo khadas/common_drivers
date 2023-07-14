@@ -168,6 +168,7 @@ void lcd_tcon_od_pre_disable(unsigned char *table)
 	else
 		table8[reg] &= ~(1 << bit);
 }
+
 static void lcd_tcon_core_reg_pre_od(struct lcd_tcon_config_s *tcon_conf,
 				     struct tcon_mem_map_table_s *mm_table)
 {

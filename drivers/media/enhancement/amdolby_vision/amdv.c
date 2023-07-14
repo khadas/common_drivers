@@ -2169,7 +2169,7 @@ void amdv_create_inst(void)
 {
 	int i;
 
-	if (!multi_dv_mode && !is_aml_hw5())
+	if (!enable_multi_core1 && !is_aml_hw5())
 		return;
 	for (i = 0; i < NUM_INST; i++) {
 		dv_inst[i].md_buf[0] = vmalloc(MD_BUF_SIZE);
@@ -13696,7 +13696,8 @@ int register_dv_functions(const struct dolby_vision_func_s *func)
 		} else if (func->multi_control_path && !p_funcs_stb) {
 			pr_info("*** register_dv_stb2.6_functions.***\n");
 
-			if (!is_aml_tm2revb() && !is_aml_t7_stbmode() && !is_aml_s5() &&
+			if (!is_aml_tm2revb() && !is_aml_t7_stbmode() &&
+				!is_aml_s5() && !is_aml_sc2() && !is_aml_s4d() &&
 				enable_multi_core1) {
 				enable_multi_core1 = false;
 				pr_info("*** only has one core1. please check***\n");

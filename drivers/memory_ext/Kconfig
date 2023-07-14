@@ -89,9 +89,7 @@ config AMLOGIC_VMAP
 		on 64 bit platform.
 
 config AMLOGIC_USER_FAULT
-	bool "Amlogic user fault helper"
-	depends on AMLOGIC_BREAK_GKI_20
-	depends on AMLOGIC_MEMORY_EXTEND
+	tristate "Amlogic user fault helper"
 	default n
 	help
 		show more information when catch user fault. Including:

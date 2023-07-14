@@ -349,6 +349,7 @@ function mod_probe() {
 	local ko=$1
 	local loop
 	for loop in `grep "^$ko:" modules.dep | sed 's/.*://'`; do
+		[[ `grep $loop __install.sh` ]] && continue
 		mod_probe $loop
 		echo insmod $loop >> __install.sh
 	done
@@ -358,6 +359,7 @@ function mod_probe_recovery() {
 	local ko=$1
 	local loop
 	for loop in `grep "^$ko:" modules_recovery.dep | sed 's/.*://'`; do
+		[[ `grep $loop __install_recovery.sh` ]] && continue
 		mod_probe_recovery $loop
 		echo insmod $loop >> __install_recovery.sh
 	done
@@ -491,7 +493,8 @@ function adjust_sequence_modules_loading() {
 	fi
 
 	GKI_MODULES_LOAD_BLACK_LIST=()
-	if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" ]]; then
+	if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" == "arm64" ]]; then
+	#if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" ]]; then
 		gki_modules_temp_file=`mktemp /tmp/config.XXXXXXXXXXXX`
 		if [[ ${BAZEL} == "1" ]]; then
 			cp $DIST_DIR/system_dlkm.modules.load ${gki_modules_temp_file}
@@ -523,7 +526,7 @@ function adjust_sequence_modules_loading() {
 	cat modules.dep.temp | cut -d ':' -f 2 > modules.dep.temp1
 	delete_modules=(${delete_soc_module[@]} ${delete_clk_soc_modules[@]} ${delete_pinctrl_soc_modules[@]} ${delete_type_modules[@]} ${black_modules[@]} ${GKI_MODULES_LOAD_BLACK_LIST[@]})
 	for module in ${delete_modules[@]}; do
-		if [[ ! `ls $module` ]]; then
+		if [[ ! -f $module ]]; then
 			continue
 		fi
 		match=`sed -n "/${module}/=" modules.dep.temp1`
@@ -723,7 +726,7 @@ function modules_install() {
 		while read module
 		do
 			module_name=${module##*/}
-			if [[ `echo ${module} | grep "^kernel\/"` ]]; then
+			if [[ -z ${ANDROID_PROJECT} || `echo ${module} | grep "^kernel\/"` ]]; then
 				if [[ -f ${DIST_DIR}/${module_name} ]]; then
 					cp ${DIST_DIR}/${module_name} ${OUT_AMLOGIC_DIR}/modules
 				else
@@ -731,7 +734,19 @@ function modules_install() {
 					cp ${module} ${OUT_AMLOGIC_DIR}/modules
 				fi
 			elif [[ `echo ${module} | grep "^extra\/"` ]]; then
-				cp ${DIST_DIR}/${module_name} ${OUT_AMLOGIC_DIR}/ext_modules
+				module=${module#*/}
+				local match=
+				for ext_module in ${EXT_MODULES_ANDROID_AUTO_LOAD}; do
+					if [[ "${module}" =~ "${ext_module}" ]]; then
+						match=1
+						break
+					fi
+				done
+				if [[ ${match} == 1 ]]; then
+					cp ${DIST_DIR}/${module_name} ${OUT_AMLOGIC_DIR}/modules
+				else
+					cp ${DIST_DIR}/${module_name} ${OUT_AMLOGIC_DIR}/ext_modules
+				fi
 			else
 				echo "warning unrecognized module: ${module}"
 			fi
@@ -739,13 +754,27 @@ function modules_install() {
 
 		dep_file=`find ${digit_output}/execroot/ -name *.dep | grep "amlogic"`
 		cp ${dep_file} ${OUT_AMLOGIC_DIR}/modules/full_modules.dep
-		grep -E "^kernel\/" ${dep_file} > ${OUT_AMLOGIC_DIR}/modules/modules.dep
-		touch ${module} ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
-		for order_file in `find ${digit_output}/execroot/ -name "modules.order.*" | grep "amlogic"`; do
-			echo "# ${order_file}" >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
-			cat ${order_file} >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
-			echo >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
-		done
+		if [[ -n ${ANDROID_PROJECT} ]]; then
+			grep -E "^kernel\/" ${dep_file} > ${OUT_AMLOGIC_DIR}/modules/modules.dep
+			for ext_module in ${EXT_MODULES_ANDROID_AUTO_LOAD}; do
+				cat ${dep_file} | cut -d ':' -f 1 | grep -n "${ext_module}" | cut -d ':' -f 1 | while read line; do
+					sed -n ${line}p ${dep_file} >> ${OUT_AMLOGIC_DIR}/modules/modules.dep
+				done
+			done
+
+			touch ${module} ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
+			for order_file in `find ${digit_output}/execroot/ -name "modules.order.*" | grep "amlogic"`; do
+				order_file_dir=${order_file#*/extra/}
+				order_file_dir=${order_file_dir%/modules.order.*}
+				if [[ ! "${EXT_MODULES_ANDROID_AUTO_LOAD}" =~ "${order_file_dir}" ]]; then
+					echo "# ${order_file}" >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
+					cat ${order_file} >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
+					echo >> ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
+				fi
+			done
+		else
+			cp ${dep_file} ${OUT_AMLOGIC_DIR}/modules/modules.dep
+		fi
 	else
 		local MODULES_ROOT_DIR=$(echo ${MODULES_STAGING_DIR}/lib/modules/*)
 		pushd ${MODULES_ROOT_DIR}
@@ -756,15 +785,32 @@ function modules_install() {
 				if [[ `echo ${module} | grep -E "\.\/kernel\/|\/${common_drivers}\/"` ]]; then
 					cp ${module} ${OUT_AMLOGIC_DIR}/modules/
 				else
-					cp ${module} ${OUT_AMLOGIC_DIR}/ext_modules/
+					local match=
+					for ext_module in ${EXT_MODULES_ANDROID_AUTO_LOAD}; do
+						if [[ "${module}" =~ "${ext_module}" ]]; then
+							match=1
+							break
+						fi
+					done
+					if [[ ${match} == 1 ]]; then
+						cp ${module} ${OUT_AMLOGIC_DIR}/modules/
+					else
+						cp ${module} ${OUT_AMLOGIC_DIR}/ext_modules/
+					fi
 				fi
-			else							# copy all modules, include external modules
+			else
 				cp ${module} ${OUT_AMLOGIC_DIR}/modules/
 			fi
 		done
 
 		if [[ -n ${ANDROID_PROJECT} ]]; then				# internal build modules
 			grep -E "^kernel\/|^${common_drivers}\/" modules.dep > ${OUT_AMLOGIC_DIR}/modules/modules.dep
+			dep_file=modules.dep
+			for ext_module in ${EXT_MODULES_ANDROID_AUTO_LOAD}; do
+				cat ${dep_file} | cut -d ':' -f 1 | grep -n "${ext_module}" | cut -d ':' -f 1 | while read line; do
+					sed -n ${line}p ${dep_file} >> ${OUT_AMLOGIC_DIR}/modules/modules.dep
+				done
+			done
 		else								# all modules, include external modules
 			cp modules.dep ${OUT_AMLOGIC_DIR}/modules
 		fi
@@ -778,8 +824,9 @@ function modules_install() {
 	touch __install.sh
 	touch modules.order
 	for loop in `cat modules.dep | sed 's/:.*//'`; do
-	        mod_probe $loop
 		echo $loop >> modules.order
+		[[ `grep $loop __install.sh` ]] && continue
+	        mod_probe $loop
 	        echo insmod $loop >> __install.sh
 	done
 
@@ -797,8 +844,9 @@ function modules_install() {
 		touch __install_recovery.sh
 		touch modules_recovery.order
 		for loop in `cat modules_recovery.dep | sed 's/:.*//'`; do
-		        mod_probe_recovery $loop
 			echo $loop >> modules_recovery.order
+			[[ `grep $loop __install_recovery.sh` ]] && continue
+		        mod_probe_recovery $loop
 		        echo insmod $loop >> __install_recovery.sh
 		done
 
@@ -809,6 +857,7 @@ function modules_install() {
 			}
 		}' > __install_recovery.sh.tmp
 
+		cp modules_recovery.order modules_recovery.order.back
 		cut -d ' ' -f 2 __install_recovery.sh.tmp > modules_recovery.order
 	fi
 	create_ramdisk_vendor_recovery __install.sh.tmp __install_recovery.sh.tmp
@@ -855,13 +904,11 @@ export -f modules_install
 
 function rename_external_module_name() {
 	local external_coppied
-	local vendor_coppied
 	sed 's/^[\t ]*\|[\t ]*$//g' ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/modules_rename.txt | sed '/^#/d;/^$/d' | sed 's/[[:space:]][[:space:]]*/ /g' | while read module_line; do
 		target_module_name=`echo ${module_line%%:*} | sed '/^#/d;/^$/d'`
 		modules_name=`echo ${module_line##:*} | sed '/^#/d;/^$/d'`
 		[[ -f ${OUT_AMLOGIC_DIR}/ext_modules/${target_module_name} ]] && external_coppied=1
-		[[ -f ${OUT_AMLOGIC_DIR}/modules/vendor/${target_module_name} ]] && vendor_coppied=1
-		echo target_module_name=$target_module_name modules_name=$modules_name external_coppied=$external_coppied vendor_coppied=$vendor_coppied
+		echo target_module_name=$target_module_name modules_name=$modules_name external_coppied=$external_coppied
 		for module in ${modules_name}; do
 			echo module=$module
 			if [[ -f ${OUT_AMLOGIC_DIR}/ext_modules/${module} ]]; then
@@ -871,16 +918,8 @@ function rename_external_module_name() {
 				fi
 				rm -f ${OUT_AMLOGIC_DIR}/ext_modules/${module}
 			fi
-			if [[ -f ${OUT_AMLOGIC_DIR}/modules/vendor/${module} ]]; then
-				if [[ -z ${vendor_coppied} ]]; then
-					cp ${OUT_AMLOGIC_DIR}/modules/vendor/${module} ${OUT_AMLOGIC_DIR}/modules/vendor/${target_module_name}
-					vendor_coppied=1
-				fi
-				rm -f ${OUT_AMLOGIC_DIR}/modules/vendor/${module}
-			fi
 		done
 		external_coppied=
-		vendor_coppied=
 	done
 }
 export -f rename_external_module_name

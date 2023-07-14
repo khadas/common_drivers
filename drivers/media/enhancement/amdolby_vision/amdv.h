@@ -592,7 +592,7 @@ struct dv_inst_s {
 	enum input_mode_enum input_mode;
 };
 
-/*hw5 vido info*/
+/*hw5 video info*/
 struct video_inst_s {
 	char *md_buf[2];
 	char *comp_buf[2];
@@ -618,6 +618,7 @@ struct video_inst_s {
 	int set_bit_depth;
 	enum input_mode_enum input_mode;
 	bool tv_dovi_setting_change_flag;
+	u32 last_play_id;
 };
 
 struct dv_core1_inst_s {
@@ -899,6 +900,8 @@ extern u8 *y_vaddr;
 extern u8 *uv_vaddr;
 extern bool force_enable_top12_lut;
 extern u32 content_fps;
+extern u32 num_downsamplers;
+extern u32 force_sdr10;
 /************/
 
 #define pr_dv_dbg(fmt, args...)\

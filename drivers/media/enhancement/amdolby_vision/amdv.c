@@ -414,6 +414,8 @@ int force_priority;
 /*1:HDR10, 2:HLG, 3: DV LL*/
 int force_hdmin_fmt;
 
+u32 force_sdr10;
+
 /*1: force bypass 1d93 bit0=1; 2: force not bypass 1d93 bit0=0;*/
 static int force_bypass_pps_sr_cm;
 
@@ -449,6 +451,7 @@ MODULE_PARM_DESC(ambient_test_mode, "\n ambient_test_mode\n");
 struct ambient_cfg_s ambient_darkdetail = {16, 0, 0, 0, 0, 0, 1};
 
 u32 content_fps = 24;
+u32 num_downsamplers;
 int gd_rf_adjust;
 int enable_vf_check;
 static u32 last_vf_valid_crc;
@@ -2000,16 +2003,18 @@ static int dvel_receiver_event_fun(int type, void *data, void *arg)
 	char *provider_name = (char *)data;
 
 	if (type == VFRAME_EVENT_PROVIDER_UNREG) {
-		pr_info("%s, provider %s unregistered\n",
-			__func__, provider_name);
+		if ((debug_dolby & 1) || (debug_dolby & 0x100))
+			pr_dv_dbg("%s, provider %s unregistered\n",
+				__func__, provider_name);
 		if (!multi_dv_mode)/*dvel is not used for multi-mode*/
 			dv_vf_light_unreg_provider();
 		return -1;
 	} else if (type == VFRAME_EVENT_PROVIDER_QUREY_STATE) {
 		return RECEIVER_ACTIVE;
 	} else if (type == VFRAME_EVENT_PROVIDER_REG) {
-		pr_info("%s, provider %s registered\n",
-			__func__, provider_name);
+		if ((debug_dolby & 1) || (debug_dolby & 0x100))
+			pr_dv_dbg("%s, provider %s registered\n",
+				__func__, provider_name);
 		if (!multi_dv_mode)/*dvel is not used for multi-mode*/
 			dv_vf_light_reg_provider();
 	}
@@ -3179,8 +3184,8 @@ void update_pwm_control(void)
 			else
 				gd_en = 0;
 		}
-
-		pr_dv_dbg("%s: %s, src %d, gd_en %d, bl %d\n",
+		if ((debug_dolby & 1) || (debug_dolby & 0x100))
+			pr_dv_dbg("%s: %s, src %d, gd_en %d, bl %d\n",
 			     __func__, get_cur_pic_mode_name(),
 			     amdv_src_format, gd_en, tv_backlight);
 
@@ -10982,25 +10987,28 @@ void update_amdv_status(enum signal_format_enum src_format)
 {
 	if ((src_format == FORMAT_DOVI || src_format == FORMAT_DOVI_LL) &&
 	    dolby_vision_status != DV_PROCESS) {
-		pr_dv_dbg("Dolby Vision mode changed to DV_PROCESS %d\n",
+		if ((debug_dolby & 1) || (debug_dolby & 0x100))
+			pr_dv_dbg("Dolby Vision mode changed to DV_PROCESS %d\n",
 			     src_format);
 		dolby_vision_status = DV_PROCESS;
 	} else if (src_format == FORMAT_HDR10 &&
 		   dolby_vision_status != HDR_PROCESS) {
-		pr_dv_dbg("Dolby Vision mode changed to HDR_PROCESS %d\n",
+		if ((debug_dolby & 1) || (debug_dolby & 0x100))
+			pr_dv_dbg("Dolby Vision mode changed to HDR_PROCESS %d\n",
 			     src_format);
 		dolby_vision_status = HDR_PROCESS;
 	} else if (src_format == FORMAT_HLG &&
 		   (is_aml_tvmode() || is_multi_dv_mode()) &&
 		   (dolby_vision_status != HLG_PROCESS)) {
-		pr_dv_dbg
-			("Dolby Vision mode changed to HLG_PROCESS %d\n",
+		if ((debug_dolby & 1) || (debug_dolby & 0x100))
+			pr_dv_dbg("Dolby Vision mode changed to HLG_PROCESS %d\n",
 			src_format);
 		dolby_vision_status = HLG_PROCESS;
 
 	} else if ((src_format == FORMAT_SDR || src_format == FORMAT_INVALID) &&
 		   dolby_vision_status != SDR_PROCESS) {
-		pr_dv_dbg("Dolby Vision mode changed to SDR_PROCESS %d\n",
+		if ((debug_dolby & 1) || (debug_dolby & 0x100))
+			pr_dv_dbg("Dolby Vision mode changed to SDR_PROCESS %d\n",
 			     src_format);
 		dolby_vision_status = SDR_PROCESS;
 	}
@@ -13102,7 +13110,8 @@ void amdv_update_backlight(void)
 			    set_backlight_delay_vsync == bl_delay_cnt) {
 				new_bl = use_12b_bl ? tv_backlight << 4 :
 					tv_backlight;
-				pr_dv_dbg("dv set backlight %d\n", new_bl);
+				if ((debug_dolby & 1) || (debug_dolby & 0x100))
+					pr_dv_dbg("dv set backlight %d\n", new_bl);
 				aml_lcd_atomic_notifier_call_chain
 					(LCD_EVENT_BACKLIGHT_GD_DIM,
 					 &new_bl);
@@ -14727,6 +14736,11 @@ static ssize_t amdolby_vision_debug_store
 	} else if (!strcmp(parm[0], "top1_crc_ro")) {
 		top1_crc_rd = 1;
 		pr_info("set top1_crc_rd %d\n", top1_crc_rd);
+	} else if (!strcmp(parm[0], "force_sdr10")) {
+		if (kstrtoul(parm[1], 10, &val) < 0)
+			return -EINVAL;
+		force_sdr10 = val;
+		pr_info("set force_sdr10 %d\n", force_sdr10);
 	} else {
 		pr_info("unsupport cmd\n");
 	}
@@ -14796,6 +14810,30 @@ static ssize_t	amdolby_vision_dv_provider_show
 		return sprintf(buf, "%s %s\n", dv_provider[0], dv_provider[1]);
 	else
 		return sprintf(buf, "%s\n", dv_provider[0]);
+}
+
+static ssize_t	amdolby_vision_num_downsamplers_show
+	(struct class *cla,
+	struct class_attribute *attr, char *buf)
+{
+	return sprintf(buf, "num_downsamplers: %d\n", num_downsamplers);
+}
+
+static ssize_t amdolby_vision_num_downsamplers_store
+	(struct class *cla,
+	struct class_attribute *attr,
+	const char *buf, size_t count)
+{
+	size_t r;
+
+	if (!buf)
+		return count;
+
+	r = kstrtoint(buf, 0, &num_downsamplers);
+	if (r != 0)
+		return -EINVAL;
+
+	return count;
 }
 
 static ssize_t	amdolby_vision_content_fps_show
@@ -15714,11 +15752,15 @@ static ssize_t amdolby_vision_inst_status_show
 
 	if (!multi_dv_mode) {
 		if (is_aml_hw5()) {
+			len += sprintf(buf + len, "dolby_vision_enable: %d %d\n",
+				dolby_vision_enable, dolby_vision_on);
+			len += sprintf(buf + len, "==========TOP1=========\n");
 			len += sprintf(buf + len, "top1 enable: %d\n", enable_top1);
 			len += sprintf(buf + len, "top1 on: %d\n", top1_info.core_on);
 			len += sprintf(buf + len, "top1 on cnt: %d\n", top1_info.core_on_cnt);
 			len += sprintf(buf + len, "top1 video: %d\n",
 				top1_info.amdv_setting_video_flag);
+			len += sprintf(buf + len, "==========TOP2=========\n");
 			len += sprintf(buf + len, "top2 on: %d\n", top2_info.core_on);
 			len += sprintf(buf + len, "top2 on cnt: %d\n", top2_info.core_on_cnt);
 			len += sprintf(buf + len, "top2 video: %d\n",
@@ -16112,6 +16154,9 @@ static struct class_attribute amdolby_vision_class_attrs[] = {
 	__ATTR(load_reg_file, 0644,
 	       amdolby_vision_load_reg_file_show,
 	       amdolby_vision_load_reg_file_store),
+	__ATTR(num_downsamplers, 0644,
+	       amdolby_vision_num_downsamplers_show,
+	       amdolby_vision_num_downsamplers_store),
 	__ATTR_NULL
 };
 

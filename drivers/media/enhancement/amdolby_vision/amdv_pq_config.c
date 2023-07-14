@@ -364,6 +364,7 @@ struct dynamic_cfg_s dynamic_test_cfg[AMBIENT_CFG_FRAMES] = {
 	{ 96, 0, 0, 0, 0, 0, 0, 1, 19661, 0, 0, 0},
 };
 
+/*5305*/
 struct dynamic_cfg_s dynamic_test_cfg_2[AMBIENT_CFG_FRAMES] = {
 	/* update_flag, ambient, rear, front, whitex, whitey,dark_detail */
 	/*precision_rendering_upd_mode,precision_rendering_strength*/
@@ -416,6 +417,7 @@ struct dynamic_cfg_s dynamic_test_cfg_2[AMBIENT_CFG_FRAMES] = {
 	{5, 1, 6840, 17788, 3572, 28508, 1, 0, 0, 0, 0, 0},
 };
 
+/*5306*/
 struct dynamic_cfg_s dynamic_test_cfg_3[AMBIENT_CFG_FRAMES] = {
 	/* update_flag, ambient, rear, front, whitex, whitey,dark_detail */
 	/*precision_rendering_upd_mode,precision_rendering_strength*/

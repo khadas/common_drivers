@@ -62,10 +62,6 @@ struct meson_clk_pll_data {
 	struct parm th; /* threshold */
 	/* for 32bit dco overflow */
 	struct parm od;
-#ifdef CONFIG_AMLOGIC_MODIFY
-	/* Enable hf bit when the pll_dco output frequency exceeds 1.5G */
-	struct parm hf;
-#endif
 	/*for pcie*/
 	struct parm pcie_hcsl;
 	struct parm pcie_exen;

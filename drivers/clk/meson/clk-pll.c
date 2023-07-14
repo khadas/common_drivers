@@ -46,11 +46,6 @@
  *	TXHD2
  */
 
-#ifdef CONFIG_AMLOGIC_MODIFY
-/* Enable hf bit when the pll_dco output frequency exceeds 1.5G */
-#define PLL_HF_RATE_THRESHOLD		1500000000ull
-#endif
-
 static inline struct meson_clk_pll_data *
 meson_clk_pll_data(struct clk_regmap *clk)
 {
@@ -858,10 +853,6 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 	unsigned int od;
 	struct parm *pod = &pll->od;
 #endif
-#ifdef CONFIG_AMLOGIC_MODIFY
-	struct parm *phf = &pll->hf;
-	u64 dco_rate = 0;
-#endif
 
 	if (parent_rate == 0 || rate == 0)
 		return -EINVAL;
@@ -930,22 +921,6 @@ static int meson_clk_pll_v3_set_rate(struct clk_hw *hw, unsigned long rate,
 #ifdef CONFIG_ARM
 				val &= CLRPMASK(pod->width, pod->shift);
 				val |= od << pod->shift;
-#endif
-#ifdef CONFIG_AMLOGIC_MODIFY
-				if (MESON_PARM_APPLICABLE(phf)) {
-					val &= CLRPMASK(phf->width, phf->shift);
-#ifdef CONFIG_ARM
-					dco_rate = __pll_params_to_rate(parent_rate,
-									 m, n, frac,
-									 pll, 0);
-#else
-					dco_rate = __pll_params_to_rate(parent_rate,
-									 m, n, frac,
-									 pll);
-#endif
-					if (dco_rate > PLL_HF_RATE_THRESHOLD)
-						val |= 1 << phf->shift;
-				}
 #endif
 				regmap_write(clk->map, pn->reg_off, val);
 			} else if (pfrac->reg_off == init_regs[i].reg &&

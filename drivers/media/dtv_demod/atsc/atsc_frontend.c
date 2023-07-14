@@ -233,12 +233,11 @@ int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 			c->bandwidth_hz, c->modulation, c->inversion);
 
 	memset(&param_atsc, 0, sizeof(param_atsc));
-	if (!devp->demod_thread)
-		return 0;
 
 	demod->freq = c->frequency / 1000;
 	demod->last_lock = -1;
 	demod->atsc_mode = c->modulation;
+	demod->last_qam_mode = QAM_MODE_NUM;
 
 	if (c->modulation > QAM_AUTO) {
 		if (fe->ops.tuner_ops.get_if_frequency)

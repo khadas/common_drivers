@@ -102,12 +102,11 @@ int gxtv_demod_atsc_j83b_set_frontend(struct dvb_frontend *fe)
 			c->bandwidth_hz, c->modulation, c->inversion);
 
 	memset(&param_j83b, 0, sizeof(param_j83b));
-	if (!devp->demod_thread)
-		return 0;
 
 	demod->freq = c->frequency / 1000;
 	demod->last_lock = -1;
 	demod->atsc_mode = c->modulation;
+	demod->last_qam_mode = QAM_MODE_NUM;
 
 	tuner_set_params(fe);
 
@@ -159,6 +158,9 @@ int gxtv_demod_atsc_j83b_set_frontend(struct dvb_frontend *fe)
 			qam_write_reg(demod, 0x12, 0x50e1000);
 			qam_write_reg(demod, 0x30, 0x41f2f69);
 		}
+
+		demod_dvbc_store_qam_cfg(demod);
+		demod_dvbc_set_qam(demod, param_j83b.mode, false);
 	}
 
 	PR_DBG("atsc_mode is %d\n", demod->atsc_mode);

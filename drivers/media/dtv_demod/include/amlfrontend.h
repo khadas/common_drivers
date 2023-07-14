@@ -119,6 +119,7 @@
 /*  V3.3.004 add ATSC Monitor call for r842 */
 /*  V3.3.005 fix no signal after system resume */
 /*  V3.4.000 standard isolation and optimization*/
+/*  V3.4.001 fix dvbc qam instability or lock time is too long */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -135,8 +136,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.4.000"
-#define DTVDEMOD_VER	"2023/07/10: standard isolation and optimization"
+#define AMLDTVDEMOD_VER "V3.4.001"
+#define DTVDEMOD_VER	"2023/07/14: fix dvbc qam instability or lock time is too long"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
@@ -363,17 +364,16 @@ struct aml_dtvdemod {
 	int auto_flags_trig;
 	unsigned int p1_peak;
 
-	unsigned int times;
-	unsigned int no_sig_cnt;
 	enum qam_md_e auto_qam_mode;
 	enum qam_md_e auto_qam_list[5];
 	enum qam_md_e last_qam_mode;
 	unsigned int auto_times;
 	unsigned int auto_done_times;
 	bool auto_qam_done;
+	bool fsm_reset;
 	unsigned int auto_qam_index;
 	unsigned int auto_no_sig_cnt;
-	unsigned int fast_search_finish;
+	bool fast_search_finish;
 
 	enum fe_status atsc_dbg_lst_status;
 

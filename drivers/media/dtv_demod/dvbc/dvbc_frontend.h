@@ -23,8 +23,6 @@ int gxtv_demod_dvbc_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks);
 int gxtv_demod_dvbc_init(struct aml_dtvdemod *demod, int mode);
 int gxtv_demod_dvbc_set_frontend(struct dvb_frontend *fe);
 int gxtv_demod_dvbc_get_frontend(struct dvb_frontend *fe);
-unsigned int demod_dvbc_get_fast_search(void);
-void demod_dvbc_set_fast_search(unsigned int en);
 enum qam_md_e dvbc_switch_qam(enum qam_md_e qam_mode);
 unsigned int dvbc_auto_fast(struct dvb_frontend *fe, unsigned int *delay, bool re_tune);
 unsigned int dvbc_fast_search(struct dvb_frontend *fe, unsigned int *delay, bool re_tune);

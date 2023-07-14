@@ -21,14 +21,6 @@
 #include <linux/amlogic/media/frame_provider/tvin/tvin.h>
 #include "acf_filter_coefficient.h"
 
-MODULE_PARM_DESC(debug_demod, "\n\t\t Enable frontend debug information");
-static int debug_demod;
-module_param(debug_demod, int, 0644);
-
-MODULE_PARM_DESC(demod_mobile_power, "\n\t\t demod_mobile_power debug information");
-static int demod_mobile_power = 100;
-module_param(demod_mobile_power, int, 0644);
-
 /* protect register access */
 static struct mutex mp;
 static struct mutex dtvpll_init_lock;

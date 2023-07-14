@@ -2880,14 +2880,6 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 		return IRQ_HANDLED;
 	}
 
-	if (vdin_get_active_h(devp) < VDIN_INPUT_DATA_THRESHOLD ||
-	    vdin_get_active_v(devp) < VDIN_INPUT_DATA_THRESHOLD) {
-		devp->vdin_irq_flag = VDIN_IRQ_FLG_FAKE_IRQ;
-		vdin_drop_frame_info(devp, "abnormal data input");
-		vdin_pause_hw_write(devp, 0);
-		return IRQ_HANDLED;
-	}
-
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	if (for_amdv_certification())
 		vdin_set_crc_pulse(devp);

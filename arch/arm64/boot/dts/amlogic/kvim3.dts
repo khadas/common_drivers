@@ -1588,6 +1588,10 @@
 	uart_for_bt = <1>;
 };
 
+&uart_C {
+	status = "disabled";
+};
+
 &pcie_A {
 	reset-gpio = <&gpio GPIOX_7 GPIO_ACTIVE_HIGH>;
 	status = "disable";

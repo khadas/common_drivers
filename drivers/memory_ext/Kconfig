@@ -59,9 +59,7 @@ config AMLOGIC_CMA
 		Including policy change of CMA usage
 
 config AMLOGIC_MEM_DEBUG
-	bool "Amlogic debug mem"
-	depends on AMLOGIC_BREAK_GKI_20
-	depends on AMLOGIC_MEMORY_EXTEND
+	tristate "Amlogic debug mem"
 	default n
 	help
 		Memory debug which hacking to kernel mm source.

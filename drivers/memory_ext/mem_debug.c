@@ -37,6 +37,9 @@
 #ifdef CONFIG_AMLOGIC_VMAP
 #include <linux/amlogic/vmap_stack.h>
 #endif
+#if IS_MODULE(CONFIG_AMLOGIC_MEM_DEBUG)
+#include <linux/module.h>
+#endif
 
 static int pagemap_en;
 unsigned long mlock_fault_size;
@@ -59,6 +62,16 @@ void dump_mem_layout(char *buf)
 		MLM(MODULES_VADDR, MODULES_END));
 	pos += sprintf(buf + pos, "    vmalloc : 0x%16lx - 0x%16lx   (%6ld GB)\n",
 		MLG(VMALLOC_START, VMALLOC_END));
+#if IS_MODULE(CONFIG_AMLOGIC_MEM_DEBUG)
+	pos += sprintf(buf + pos, "    fixed   : 0x%16lx - 0x%16lx   (%6ld KB)\n",
+		MLK(FIXADDR_START, FIXADDR_TOP));
+	pos += sprintf(buf + pos, "    PCI I/O : 0x%16lx - 0x%16lx   (%6ld MB)\n",
+		MLM(PCI_IO_START, PCI_IO_END));
+#ifdef CONFIG_SPARSEMEM_VMEMMAP
+	pos += sprintf(buf + pos, "    vmemmap : 0x%16lx - 0x%16lx   (%6ld GB maximum)\n",
+		MLG(VMEMMAP_START, VMEMMAP_START + VMEMMAP_SIZE));
+#endif
+#else
 	pos += sprintf(buf + pos, "      .text : 0x%px" " - 0x%px" "   (%6ld KB) 0x%lx\n",
 		MLK_ROUNDUP(_text, _etext), (unsigned long)__pa_symbol(_text));
 	pos += sprintf(buf + pos, "    .rodata : 0x%px" " - 0x%px" "   (%6ld KB) 0x%lx\n",
@@ -88,6 +101,7 @@ void dump_mem_layout(char *buf)
 		MLM(__phys_to_virt(memblock_start_of_DRAM()),
 		    (unsigned long)high_memory), (unsigned long)memblock_start_of_DRAM());
 	pos += sprintf(buf + pos, "     offset : 0x%lx\n", kaslr_offset());
+#endif
 #elif defined CONFIG_ARM
 		sprintf(buf, "Virtual kernel memory layout:\n"
 #ifdef CONFIG_KASAN
@@ -207,6 +221,21 @@ int pagemap_enabled(void)
 	return pagemap_en;
 }
 
+#if !IS_MODULE(CONFIG_AMLOGIC_MEM_DEBUG)
+/*
+ * These information will auto inject to /proc/meminfo sysfs
+ */
+void arch_report_meminfo(struct seq_file *m)
+{
+#ifdef CONFIG_AMLOGIC_CMA
+	seq_printf(m, "DriverCma:      %8ld kB\n",
+		   get_cma_allocated() * (1 << (PAGE_SHIFT - 10)));
+#endif
+#ifdef CONFIG_AMLOGIC_VMAP
+	vmap_report_meminfo(m);
+#endif
+}
+
 static int early_pagemap(char *buf)
 {
 	if (!buf)
@@ -222,6 +251,7 @@ static int early_pagemap(char *buf)
 	return 0;
 }
 __setup("buildvariant=", early_pagemap);
+#endif
 
 static ssize_t mdebug_write(struct file *file, const char __user *buffer,
 			    size_t count, loff_t *ppos)
@@ -307,19 +337,23 @@ static int __init memory_debug_init(void)
 
 	return 0;
 }
-rootfs_initcall(memory_debug_init);
 
-/*
- * These information will auto inject to /proc/meminfo sysfs
- */
-void arch_report_meminfo(struct seq_file *m)
+#if IS_MODULE(CONFIG_AMLOGIC_MEM_DEBUG)
+static int __init mem_debug_module_init(void)
 {
-#ifdef CONFIG_AMLOGIC_CMA
-	seq_printf(m, "DriverCma:      %8ld kB\n",
-		   get_cma_allocated() * (1 << (PAGE_SHIFT - 10)));
-#endif
-#ifdef CONFIG_AMLOGIC_VMAP
-	vmap_report_meminfo(m);
-#endif
+	memory_debug_init();
+	dump_mem_layout_boot_phase();
+
+	return 0;
 }
 
+static void __exit mem_debug_module_exit(void)
+{
+}
+
+module_init(mem_debug_module_init);
+module_exit(mem_debug_module_exit);
+MODULE_LICENSE("GPL v2");
+#else
+rootfs_initcall(memory_debug_init);
+#endif

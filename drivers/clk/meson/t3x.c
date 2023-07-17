@@ -807,11 +807,13 @@ static struct clk_regmap t3x_gp0_pll_dco = {
 #ifdef CONFIG_ARM
 static const struct pll_params_table t3x_gp1_pll_table[] = {
 	PLL_PARAMS(124, 1, 2), /* DCO = 2976M OD = 2 PLL = 744M */
+	PLL_PARAMS(128, 1, 2), /* DCO = 3072M OD = 2 PLL = 768M */
 	{ /* sentinel */  }
 };
 #else
 static const struct pll_params_table t3x_gp1_pll_table[] = {
 	PLL_PARAMS(124, 1), /* DCO = 2976M OD = 2 PLL = 744M */
+	PLL_PARAMS(128, 1), /* DCO = 3072M OD = 2 PLL = 768M */
 	{ /* sentinel */  }
 };
 #endif

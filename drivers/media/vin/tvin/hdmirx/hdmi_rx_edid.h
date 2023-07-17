@@ -805,6 +805,7 @@ extern u32 earc_cap_ds_update_hpd_en;
 extern unsigned int edid_select;
 extern u32 vsvdb_update_hpd_en;
 extern enum edid_delivery_mothed_e edid_delivery_mothed;
+extern unsigned int edid_reset_max;
 #ifdef CONFIG_AMLOGIC_HDMITX
 extern u32 tx_hdr_priority;
 #endif

@@ -79,6 +79,7 @@ u32 en_take_dtd_space = 1;
 u32 earc_cap_ds_update_hpd_en = 1;
 
 unsigned int edid_select;
+unsigned int edid_reset_max = 500;
 
 /* hdmi1.4 edid */
 static unsigned char edid_dbg[] = {
@@ -4772,8 +4773,12 @@ bool hdmi_rx_top_edid_update(void)
 	u_char *pedid = NULL;
 	u_int i = 0;
 	u_int j = 0;
+	static int edid_reset_cnt;
 
-	//rx_edid_module_reset();
+	rx_edid_module_reset();
+	while (edid_reset_cnt <= edid_reset_max)
+		edid_reset_cnt++;
+	edid_reset_cnt = 0;
 	for (i = 0; i < rx_info.port_num; i++) {
 		pedid = rx_get_cur_def_edid(i);
 		if (!is_valid_edid_data(pedid)) {

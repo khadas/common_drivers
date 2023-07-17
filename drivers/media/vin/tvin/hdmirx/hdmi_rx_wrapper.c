@@ -3763,6 +3763,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(fpll_sel, i++);
 	pr_var(fpll_chk_lvl, i++);
 	pr_var(rx_info.aml_phy.hyper_gain_en, i++);
+	pr_var(edid_reset_max, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4289,6 +4290,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy.hyper_gain_en),
 		&rx_info.aml_phy.hyper_gain_en, value))
 		return pr_var(rx_info.aml_phy.hyper_gain_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(edid_reset_max),
+		&edid_reset_max, value))
+		return pr_var(edid_reset_max, index);
 	return 0;
 }
 

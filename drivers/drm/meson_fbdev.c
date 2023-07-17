@@ -737,8 +737,8 @@ int am_meson_drm_fbdev_init(struct drm_device *dev)
 		if (fbdev) {
 			fbdev->zorder = OSD_PLANE_BEGIN_ZORDER + fbdev_cnt;
 			fbdev_cnt++;
-			DRM_INFO("create fbdev(FB:%d) for plane (%d %d %d %s)\n",
-				fbdev->base.fb->base.id, i, osd_plane->plane_index,
+			DRM_INFO("create fbdev for plane (%d %d %d %s)\n",
+				i, osd_plane->plane_index,
 				osd_plane->base.base.id, osd_plane->base.name);
 		} else {
 			DRM_ERROR("create fbdev for plane %d failed\n", i);

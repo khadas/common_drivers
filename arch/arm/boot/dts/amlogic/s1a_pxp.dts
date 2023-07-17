@@ -6,7 +6,7 @@
 /dts-v1/;
 
 #include "meson-s1a.dtsi"
-//#include "mesons4d_drm.dtsi"
+#include "mesons1a_drm.dtsi"
 #include <dt-bindings/input/input.h>
 
 / {
@@ -1398,13 +1398,10 @@
 	pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 };
 
-/*
- *&drm_vpu {
- *	status = "disabled";
- *	logo_addr = "0x0fc00000";
- *
- *};
- */
+&drm_vpu {
+	status = "disabled";
+	logo_addr = "0x0fc00000";
+};
 
 &amhdmitx {
 	res_1080p = <1>;
@@ -1414,20 +1411,9 @@
 	pxp_mode = <1>;
 };
 
-/*
- *&drm_amhdmitx {
- *	status = "disabled";
- *	hdcp = "disabled";
- *};
- *
- *&drm_amcvbsout {
- *	status = "disabled";
- *};
- *
- *&drm_lcd {
- *	status = "disabled";
- *};
- */
+&drm_amcvbsout {
+	status = "disabled";
+};
 
 &vpu {
 	clk_level = <5>;

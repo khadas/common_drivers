@@ -46,7 +46,9 @@ struct am_osd_plane {
 
 	struct drm_property *occupied_property;
 	struct drm_property *prop_sec_en;
+	struct drm_property *palette;
 	bool osd_occupied;
+	u32 palette_id;
 	/*max fb property*/
 	struct drm_property *max_fb_property;
 
@@ -57,6 +59,7 @@ struct am_osd_plane {
 	void *vir_addr;
 	u32 dump_size;
 	bool bflg;
+	u32 *receive_palette;
 };
 
 struct am_video_plane {

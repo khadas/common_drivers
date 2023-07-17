@@ -479,6 +479,101 @@ const struct meson_drm_format_info *__meson_drm_format_info_t3x(u32 format)
 
 	return NULL;
 }
+
+const struct meson_drm_format_info *__meson_drm_format_info_s1a(u32 format)
+{
+	static const struct meson_drm_format_info formats[] = {
+		{ .format = DRM_FORMAT_XRGB8888,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_ARGB8888,
+			.alpha_replace = 1 },
+		{ .format = DRM_FORMAT_XBGR8888,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_ABGR8888,
+			.alpha_replace = 1 },
+		{ .format = DRM_FORMAT_RGBX8888,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_RGBA8888,
+			.alpha_replace = 1 },
+		{ .format = DRM_FORMAT_BGRX8888,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_BGRA8888,
+			.alpha_replace = 1 },
+		{ .format = DRM_FORMAT_ARGB8888,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_ARGB8888,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_ABGR8888,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_ABGR8888,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_RGBA8888,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_RGBA8888,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_BGRA8888,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_BGRA8888,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_RGBA1010102,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_RGBA1010102,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_ARGB2101010,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_ARGB2101010,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_ABGR2101010,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_ABGR2101010,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_BGRA1010102,
+			.hw_blkmode = BLOCK_MODE_32BIT,
+			.hw_colormat = COLOR_MATRIX_BGRA1010102,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_RGB888,
+			.hw_blkmode = BLOCK_MODE_24BIT,
+			.hw_colormat = COLOR_MATRIX_RGB888,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_BGR888,
+			.hw_blkmode = BLOCK_MODE_24BIT,
+			.hw_colormat = COLOR_MATRIX_BGR888,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_RGB565,
+			.hw_blkmode = BLOCK_MODE_16BIT,
+			.hw_colormat = 2,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_RGBA4444,
+			.hw_blkmode = BLOCK_MODE_16BIT,
+			.hw_colormat = 4,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_ARGB4444,
+			.hw_blkmode = BLOCK_MODE_16BIT,
+			.hw_colormat = 5,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_RGBA5551,
+			.hw_blkmode = BLOCK_MODE_16BIT,
+			.hw_colormat = 6,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_ARGB1555,
+			.hw_blkmode = BLOCK_MODE_16BIT,
+			.hw_colormat = 7,
+			.alpha_replace = 0 },
+		{ .format = DRM_FORMAT_C8,
+			.hw_blkmode = BLOCK_MODE_8BIT_PER_PIXEL,
+			.hw_colormat = 0,
+			.alpha_replace = 0 },
+	};
+
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(formats); ++i) {
+		if (formats[i].format == format)
+			return &formats[i];
+	}
+
+	return NULL;
+}
 #endif
 
 const struct meson_drm_format_info *__meson_drm_afbc_format_info(u32 format)
@@ -566,6 +661,19 @@ const struct meson_drm_format_info *meson_drm_format_info_t3x(u32 format,
 	WARN_ON(!info);
 	return info;
 }
+
+const struct meson_drm_format_info *meson_drm_format_info_s1a(u32 format,
+							  bool afbc_en)
+{
+	const struct meson_drm_format_info *info = NULL;
+
+	if (!afbc_en)
+		info = __meson_drm_format_info_s1a(format);
+	else
+		DRM_INFO("s1a didn't have afbc\n");
+	WARN_ON(!info);
+	return info;
+}
 #endif
 
 /**
@@ -589,6 +697,14 @@ static u8 meson_drm_format_hw_blkmode_t3x(u32 format, bool afbc_en)
 	const struct meson_drm_format_info *info;
 
 	info = meson_drm_format_info_t3x(format, afbc_en);
+	return info ? info->hw_blkmode : 0;
+}
+
+static u8 meson_drm_format_hw_blkmode_s1a(u32 format, bool afbc_en)
+{
+	const struct meson_drm_format_info *info;
+
+	info = meson_drm_format_info_s1a(format, afbc_en);
 	return info ? info->hw_blkmode : 0;
 }
 #endif
@@ -616,6 +732,14 @@ static u8 meson_drm_format_hw_colormat_t3x(u32 format, bool afbc_en)
 	info = meson_drm_format_info_t3x(format, afbc_en);
 	return info ? info->hw_colormat : 0;
 }
+
+static u8 meson_drm_format_hw_colormat_s1a(u32 format, bool afbc_en)
+{
+	const struct meson_drm_format_info *info;
+
+	info = meson_drm_format_info_s1a(format, afbc_en);
+	return info ? info->hw_colormat : 0;
+}
 #endif
 
 /**
@@ -639,6 +763,14 @@ static u8 meson_drm_format_alpha_replace_t3x(u32 format, bool afbc_en)
 	const struct meson_drm_format_info *info;
 
 	info = meson_drm_format_info_t3x(format, afbc_en);
+	return info ? info->alpha_replace : 0;
+}
+
+static u8 meson_drm_format_alpha_replace_s1a(u32 format, bool afbc_en)
+{
+	const struct meson_drm_format_info *info;
+
+	info = meson_drm_format_info_s1a(format, afbc_en);
 	return info ? info->alpha_replace : 0;
 }
 #endif
@@ -841,6 +973,11 @@ static void osd_color_config(struct meson_vpu_block *vblk,
 			reg_ops->rdma_write_reg(reg->viu_osd_normal_swap, 0x1230);
 			reg_ops->rdma_write_reg_bits(reg->viu_osd_fifo_ctrl_stat, 1, 30, 1);
 		}
+	} else if (is_meson_s1a_cpu()) {
+		blk_mode = meson_drm_format_hw_blkmode_s1a(pixel_format, afbc_en);
+		color = meson_drm_format_hw_colormat_s1a(pixel_format, afbc_en);
+		alpha_replace = (pixel_blend == DRM_MODE_BLEND_PIXEL_NONE) ||
+		meson_drm_format_alpha_replace_s1a(pixel_format, afbc_en);
 	} else
 #endif
 	{
@@ -853,7 +990,6 @@ static void osd_color_config(struct meson_vpu_block *vblk,
 					blk_mode, 8, 4);
 	reg_ops->rdma_write_reg_bits(reg->viu_osd_blk0_cfg_w0,
 					color, 2, 4);
-
 
 	if (alpha_replace)
 		/*replace alpha    : bit 14 enable, 6~13 alpha val.*/
@@ -1037,6 +1173,7 @@ static int osd_check_state(struct meson_vpu_block *vblk,
 	mvos->crtc_index = plane_info->crtc_index;
 	mvos->read_ports = plane_info->read_ports;
 	mvos->sec_en = plane_info->sec_en;
+	mvos->palette_arry = plane_info->palette_arry;
 
 	return 0;
 }
@@ -1053,6 +1190,7 @@ static u32 line_stride_calc(u32 drm_format,
 	switch (drm_format) {
 	/* 8-bit */
 	case DRM_FORMAT_R8:
+	case DRM_FORMAT_C8:
 	case DRM_FORMAT_RGB332:
 	case DRM_FORMAT_BGR233:
 		line_stride = ((hsize << 3) + 127) >> 7;
@@ -1119,6 +1257,16 @@ static u32 line_stride_calc(u32 drm_format,
 		line_stride = line_stride_64bytes;
 
 	return line_stride;
+}
+
+static void osd_set_palette(struct osd_mif_reg_s *reg, u32 *palette)
+{
+	int regno;
+
+	for (regno = 0; regno < 256; regno++) {
+		meson_vpu_write_reg(reg->viu_osd_color_addr, regno);
+		meson_vpu_write_reg(reg->viu_osd_color, palette[regno]);
+	}
 }
 
 static void osd_set_state(struct meson_vpu_block *vblk,
@@ -1254,6 +1402,8 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	osd_set_dimm_ctrl(vblk, reg_ops, reg, 0);
 	ods_hold_line_config(vblk, reg_ops, reg, hold_line);
 	osd_set_two_ports(mvos->read_ports);
+	if (mvos->palette_arry)
+		osd_set_palette(reg, mvos->palette_arry);
 
 	DRM_DEBUG("plane_index=%d,HW-OSD=%d\n",
 		  mvos->plane_index, vblk->index);

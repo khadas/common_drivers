@@ -414,6 +414,18 @@ static const struct meson_vpu_data vpu_txhd2_data = {
 };
 #endif
 
+static const struct meson_vpu_data vpu_s1a_data = {
+	.pipe_ops = &g12a_vpu_pipeline_ops,
+	.osd_ops = &osd_ops,
+	.afbc_ops = &afbc_ops,
+	.scaler_ops = &scaler_ops,
+	.osdblend_ops = &osdblend_ops,
+	.hdr_ops = &hdr_ops,
+	.dv_ops = &db_ops,
+	.postblend_ops = &postblend_ops,
+	.video_ops = &video_ops,
+};
+
 static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{ .compatible = "amlogic, meson-gxbb-vpu",},
@@ -454,6 +466,8 @@ static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
 	{.compatible = "amlogic, meson-txhd2-vpu",
 	  .data = &vpu_txhd2_data,},
 #endif
+	{.compatible = "amlogic, meson-s1a-vpu",
+	  .data = &vpu_s1a_data,},
 	{}
 };
 

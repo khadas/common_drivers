@@ -113,6 +113,27 @@ static const u32 supported_drm_formats_v3[] = {
 	DRM_FORMAT_RGB565,
 };
 
+static const u32 supported_drm_formats_v4[] = {
+	DRM_FORMAT_XRGB8888,
+	DRM_FORMAT_XBGR8888,
+	DRM_FORMAT_RGBX8888,
+	DRM_FORMAT_BGRX8888,
+	DRM_FORMAT_RGB565,
+	DRM_FORMAT_RGBA4444,
+	DRM_FORMAT_ARGB4444,
+	DRM_FORMAT_RGBA5551,
+	DRM_FORMAT_ARGB1555,
+	DRM_FORMAT_RGB888,
+	DRM_FORMAT_BGR888,
+	DRM_FORMAT_RGBA8888,
+	DRM_FORMAT_ABGR8888,
+	DRM_FORMAT_ARGB8888,
+	DRM_FORMAT_BGRA8888,
+	DRM_FORMAT_RGBA1010102,
+	DRM_FORMAT_ABGR2101010,
+	DRM_FORMAT_C8,
+};
+
 static u64 video_fbc_modifier[] = {
 	DRM_FORMAT_MOD_AMLOGIC_FBC(AMLOGIC_FBC_LAYOUT_BASIC, 0),
 	DRM_FORMAT_MOD_AMLOGIC_FBC(AMLOGIC_FBC_LAYOUT_BASIC,
@@ -708,6 +729,9 @@ static int meson_plane_atomic_get_property(struct drm_plane *plane,
 	} else if (property == osd_plane->prop_sec_en) {
 		*val = plane_state->sec_en;
 		ret = 0;
+	} else if (property == osd_plane->palette) {
+		*val = osd_plane->palette_id;
+		ret = 0;
 	}
 
 	return ret;
@@ -720,6 +744,7 @@ static int meson_plane_atomic_set_property(struct drm_plane *plane,
 {
 	struct am_osd_plane *osd_plane = to_am_osd_plane(plane);
 	struct am_meson_plane_state *plane_state;
+	struct drm_property_blob *new_blob = NULL;
 	int ret = 0;
 
 	plane_state = to_am_meson_plane_state(state);
@@ -729,6 +754,14 @@ static int meson_plane_atomic_set_property(struct drm_plane *plane,
 		return 0;
 	} else if (property == osd_plane->prop_sec_en) {
 		plane_state->sec_en = val;
+		ret = 0;
+	} else if (property == osd_plane->palette) {
+		osd_plane->palette_id = val;
+		new_blob = drm_property_lookup_blob(osd_plane->drv->drm, val);
+		if (!new_blob)
+			return ret;
+		osd_plane->receive_palette = new_blob->data;
+		drm_property_blob_put(new_blob);
 		ret = 0;
 	}
 
@@ -1131,6 +1164,8 @@ static int meson_plane_atomic_check(struct drm_plane *plane,
 	plane_info->pixel_blend = state->pixel_blend_mode;
 	plane_info->global_alpha = state->alpha;
 	plane_info->scaling_filter = (u32)state->scaling_filter;
+	if (osd_plane->receive_palette)
+		plane_info->palette_arry = osd_plane->receive_palette;
 
 	mvps->plane_index[osd_plane->plane_index] = osd_plane->plane_index;
 	meson_plane_position_calc(plane_info, state, mvps->pipeline);
@@ -1564,6 +1599,20 @@ static void meson_plane_add_occupied_property(struct drm_device *drm_dev,
 	}
 }
 
+static void meson_plane_add_palette_property(struct drm_device *drm_dev,
+						  struct am_osd_plane *osd_plane)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create(drm_dev, DRM_MODE_PROP_BLOB, "palette", 1);
+	if (prop) {
+		osd_plane->palette = prop;
+		drm_object_attach_property(&osd_plane->base.base, prop, 12);
+	} else {
+		DRM_ERROR("Failed to palette property\n");
+	}
+}
+
 static const u32 meson_plane_fb_size_list[] = {
 	1080 << 16 | 1920,
 	2160 << 16 | 3840,
@@ -1680,6 +1729,9 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 		} else if (conf->osd_formats_group == 2) {
 			formats_group = supported_drm_formats_v3;
 			num_formats = ARRAY_SIZE(supported_drm_formats_v3);
+		} else if (conf->osd_formats_group == 3) {
+			formats_group = supported_drm_formats_v4;
+			num_formats = ARRAY_SIZE(supported_drm_formats_v4);
 		}
 	} else {
 		formats_group = supported_drm_formats;
@@ -1732,6 +1784,7 @@ static struct am_osd_plane *am_osd_plane_create(struct meson_drm *priv,
 	DRM_INFO("osd plane %d create done, occupied-%d crtc_mask-%d type-%d\n",
 		i, osd_plane->osd_occupied, crtc_mask, type);
 	meson_plane_create_security_en_property(priv->drm, osd_plane);
+	meson_plane_add_palette_property(priv->drm, osd_plane);
 	return osd_plane;
 }
 

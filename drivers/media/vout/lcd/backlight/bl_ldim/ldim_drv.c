@@ -625,6 +625,7 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	unsigned char *buf;
 	struct aml_ldim_bin_s ldim_buff;
 	struct aml_bl_drv_s *bdrv = aml_bl_get_driver(0);
+	unsigned int temp = 0;
 
 	mcd_nr = _IOC_NR(cmd);
 	LDIMPR("%s: cmd_dir = 0x%x, cmd_nr = 0x%x\n",
@@ -716,7 +717,15 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 		LDIMPR("%s ldim_driver.demo_mode=%d!\n", __func__, ldim_driver.demo_mode);
 		break;
+	case AML_LDIM_IOC_NR_GET_ZONENUM:
+		temp = (ldim_config.seg_col << 8) | ldim_config.seg_row;
+		if (copy_to_user(argp, &temp, sizeof(unsigned int)))
+			ret = -EFAULT;
+		break;
 	case AML_LDIM_IOC_NR_GET_BL_MATRIX:
+		temp = ldim_config.seg_col * ldim_config.seg_row;
+		if (copy_to_user(argp, ldim_driver.bl_matrix_cur, temp * sizeof(unsigned int)))
+			ret = -EFAULT;
 		break;
 	case AML_LDIM_IOC_NR_GET_BL_MAPPING_PATH:
 		LDIMPR("get bl_mapping_path is(%s)\n", ldim_driver.dev_drv->bl_mapping_path);

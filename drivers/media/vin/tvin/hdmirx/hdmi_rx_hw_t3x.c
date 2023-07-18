@@ -47,7 +47,7 @@ int phy_rate;
 u32 frl_sync_cnt = 100;
 u32 odn_reg_n_mul = 6;
 int vpcore_debug = 3;
-u32 ext_cnt = 10;
+u32 ext_cnt = 2000;
 int tr_delay0 = 10;
 int tr_delay1 = 10;
 int frate_cnt = 100;
@@ -1385,40 +1385,40 @@ static const u32 phy_misc_t3x_21[][3] = {
 		/* misc0	misc1		misc2 */
 		/* 0x114	0x118		0x11c */
 	{	 /* 24~35M */
-		0x1ff777f, 0x10f7000f, 0x00005a00,
+		0x1ff777f, 0x10f7000f, 0x00001a00,
 	},
 	{	 /* 37~75M */
-		0x1ff777f, 0x10f7000f, 0x00005a00,
+		0x1ff777f, 0x10f7000f, 0x00001a00,
 	},
 	{	 /* 75~150M */
-		0x1ff777f, 0x10f7000f, 0x00005a00,
+		0x1ff777f, 0x10f7000f, 0x00001a00,
 	},
 	{	 /* 150~340M */
-		0x1ff777f, 0x10f7000f, 0x00005a00,
+		0x1ff777f, 0x10f7000f, 0x00001a00,
 	},
 	{	 /* 340~525M */
-		0x1ff777f, 0x10f7000f, 0x00005a00,
+		0x1ff777f, 0x10f7000f, 0x00001a00,
 	},
 	{	 /* 525~600M */
-		0x1ff777f, 0x10f7000f, 0x00005a00,
+		0x1ff777f, 0x10f7000f, 0x00001a00,
 	},
 	{	 /* FRL 3G */
-		0x01fcffff, 0x30f7000f, 0x00005a00,
+		0x01fcffff, 0x30f7000f, 0x00001a00,
 	},
 	{	 /* FRL 6G3L */
-		0x01fcffff, 0x30f7000f, 0x00005a00,
+		0x01fcffff, 0x30f7000f, 0x00001a00,
 	},
 	{	 /* FRL 6G4L */
-		0x01fcffff, 0x30f7000f, 0x00005a00,
+		0x01fcffff, 0x30f7000f, 0x00001a00,
 	},
 	{	 /* FRL 8G */
-		0x01fcffff, 0x30f7000f, 0x00005a00,
+		0x01fcffff, 0x30f7000f, 0x00001a00,
 	},
 	{	 /* FRL 10G */
-		0x01fcffff, 0x30f7000f, 0x00005a00,
+		0x01fcffff, 0x30f7000f, 0x00001a00,
 	},
 	{	 /* FRL 12G */
-		0x01fcffff, 0x30f7000f, 0x00005a00,
+		0x01fcffff, 0x30f7000f, 0x00001a00,
 	},
 };
 
@@ -1438,10 +1438,10 @@ static const u32 phy_dcha_t3x_21[][4] = {
 		0x0370ffff, 0x05ff1a05, 0x51030020, 0x07f06555,
 	},
 	{	 /* 340~525M */
-		0x0320ffff, 0x05ff1a05, 0x51000010, 0x07f06555,
+		0x2320ffff, 0x05ff1a05, 0x51000010, 0x07f06555,
 	},
 	{	 /* 525~600M */
-		0x0320ffff, 0x05ff1a05, 0x51000010, 0x07f06555,
+		0x2320ffff, 0x05ff1a05, 0x51000010, 0x07f06555,
 	},
 	{	 /* FRL 3G */
 		0x0370ffff, 0x05ff1a05, 0x51030010, 0x07f06555,
@@ -1453,13 +1453,13 @@ static const u32 phy_dcha_t3x_21[][4] = {
 		0x2320ffff, 0x05ff1a05, 0x51001010, 0x07f06555,
 	},
 	{	 /* FRL 8G */
-		0x2320ffff, 0x05ff1a05, 0x51102000, 0x07f06555,
+		0x2340ffff, 0x05ff1a05, 0x51102000, 0x07f06555,
 	},
 	{	 /* FRL 10G */
 		0x2320ffff, 0x05ff1a05, 0x51102000, 0x07f06555,
 	},
 	{	 /* FRL 12G */
-		0x2300ffff, 0x05ff1a05, 0x51102000, 0x07f06555,
+		0x2310bbbb, 0x05ff1a05, 0x51102000, 0x07f06555,
 	},
 };
 
@@ -1467,40 +1467,40 @@ static const u32 phy_dchd_t3x_21[][2] = {
 		/* dchd_cdr	 dchd_eq */
 		/*  0x130	 0x134 */
 	{	 /* 24~35M */
-		0x04007ec2, 0x301b3060,
+		0x04407ec2, 0x301b3060,
 	},
 	{	 /* 35~75M */
-		0x04007dc2, 0x301b3060,
+		0x04407dc2, 0x301b3060,
 	},
 	{	 /* 75~150M */
-		0x04007cc2, 0x30133069,
+		0x04407cc2, 0x30133069,
 	},
 	{	 /* 140~340M */
-		0x040078c2, 0x30133049,
+		0x044078c2, 0x30133049,
 	},
 	{	 /* 340~525M */
-		0x040074c2, 0x3013304f,
+		0x044074c2, 0x3013304f,
 	},
 	{	 /* 525~600M */
-		0x040074c2, 0x3013304f,
+		0x044074c2, 0x3013304f,
 	},
 	{	 /* FRL 3G */
-		0x040074c2, 0x3013304f,
+		0x044074c2, 0x3013304f,
 	},
 	{	 /* FRL 6G3L */
-		0x040074c2, 0x3013304f,
+		0x044074c2, 0x3013304f,
 	},
 	{	 /* FRL 6G4L */
-		0x040074c2, 0x3013304f,
+		0x044074c2, 0x3013304f,
 	},
 	{	 /* FRL 8G */
-		0x040070c2, 0x3013304f,
+		0x044070c2, 0x3013304f,
 	},
 	{	 /* FRL 10G */
-		0x040070c2, 0x3013304f,
+		0x044070c2, 0x3013304f,
 	},
 	{	 /* FRL12G */
-		0x040070c2, 0x3013304f,
+		0x044070c2, 0x3013304f,
 	},
 };
 
@@ -1519,7 +1519,7 @@ void aml_phy_offset_cal_t3x_21(int port)
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_PI,  0x51102000, port);
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_CTRL,  0x07f06555, port);
 	/* cdr lkdet reset = 0*/
-	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR,  0x040010c2, port);
+	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR,  0x044010c2, port);
 	hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ,  0x3011104f, port);
 	usleep_range(10, 20);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, DCH_RSTN, 0xf, port);
@@ -1568,7 +1568,7 @@ void rx_21_frl_phy_cfg(u8 port)
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_DFE, DFE_H1_PD, 0x0, port);
 	//rterm todo,use default setting
 	//rterm_trim(dcha_misc2[3:0]) = $efuse
-	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_MISC2, MSK(3, 0), 0x0, port);
+	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_MISC2, MSK(4, 0), 0x0, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, _BIT(22), 0x1, port);
 	//rterm_en(dcha_misc0[22]) = 0x1
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, CDR_FR_EN, 0x0, port);
@@ -1771,8 +1771,12 @@ void aml_pll_bw_cfg_t3x_21(int f_rate, u8 port)
 			0x1, port);
 	}
 	if (rx_info.aml_phy_21.eq_stg2 <= 0x7)
-		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ, BUF_BST,
+		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE, BUF_BST,
 			rx_info.aml_phy_21.eq_stg2, port);
+	if (rx_info.aml_phy_21.eq_pole <= 0x7)
+		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE, LEQ_POLE,
+			rx_info.aml_phy_21.eq_pole, port);
+
 }
 
 void rx_21_frl_pll_cfg(int f_rate, u8 port)
@@ -2013,14 +2017,14 @@ unsigned long rx_get_flclk(u8 port)
 	return 0;
 }
 
-static const u32 fpll_t3x[] = {
+const u32 fpll_t3x[] = {
 	0x21200035,
 	0x30200035,
 	0x83afa82a,
 	0x00040000,
-	0x0b09a001,
+	0x0b0da001, //0x0b0da001
 	0x10200035,
-	0x0b09a201,
+	0x0b0da201, //0x0b0da201
 };
 
 void rx_dump_reg_d_f_sts(u8 port)
@@ -2028,7 +2032,7 @@ void rx_dump_reg_d_f_sts(u8 port)
 	u32 data32;
 
 	data32 = hdmirx_rd_top(TOP_FPLL21_STAT1, port);
-	rx_pr("req_f=%d\n", (data32 << 12) & 0x7fffff);
+	rx_pr("req_f=%d\n", (data32 >> 12) & 0x7fffff);
 	rx_pr("req_d=%d\n", data32 & 0x1ff);
 }
 
@@ -2045,24 +2049,27 @@ bool rx_get_clkready_sts(u8 port)
 
 bool is_fpll_err(u8 port)
 {
-	bool ret = false;
+	bool ret = true;
 
 	rx_21_fpll_cfg(rx[port].var.frl_rate, port);
 	mdelay(1);
-	if (fpll_chk_lvl & 0x1)
-		ret = !rx_get_clkready_sts(port);
-	if (fpll_chk_lvl & 0x2)
-		ret = rx_get_overlap_sts(port);
+	if (rx_get_clkready_sts(port)) {
+		if (fpll_chk_lvl & 0x1)
+			ret = rx_get_overlap_sts(port);
+		else
+			ret = false;
+	}
 	return ret;
 }
 
 void rx_21_fpll_calculation(int f_rate, u8 port)
 {
 	u8 reg_valid_m;
-	unsigned long o_req_m, flclk, tclk;
-	u32 min, max;
+	unsigned long o_req_m, flclk, tclk, temp;
+	//u32 min, max;
 	u8 pre_div;
 	int cnt = 0;
+	unsigned long data = 0;
 
 	if (log_level & FRL_LOG)
 		rx_pr("fpll cal,port=%d\n", port);
@@ -2127,10 +2134,20 @@ void rx_21_fpll_calculation(int f_rate, u8 port)
 		rx_pr("port-%d m valid\n", port);
 	//or get flclk based on frl_rate!!! todo
 	flclk = rx_get_flclk(port);
+	if (!flclk) {
+		if (log_level & FRL_LOG)
+			rx_pr("flclk invalid\n");
+		return;
+	}
 	o_req_m = ((hdmirx_rd_cor(H21RXSB_REQM2_M42H_IVCRX, port) & 0Xf) << 16) |
 		(hdmirx_rd_cor(H21RXSB_REQM1_M42H_IVCRX, port) << 8) |
 		hdmirx_rd_cor(H21RXSB_REQM0_M42H_IVCRX, port);
 
+	if (reg_valid_m && o_req_m == 0) {
+		if (log_level & FRL_LOG)
+			rx_pr("port-%d m not really valid\n", port);
+		return;
+	}
 	/* tclk = flclk * o_req_m / give_n / post_div */
 	tclk = flclk * o_req_m / 8192 / 2;
 	//rx_pr("flclk * o_req_m=%ld\n", flclk * o_req_m);
@@ -2140,43 +2157,69 @@ void rx_21_fpll_calculation(int f_rate, u8 port)
 		rx_pr("flclk = %ld, tclk=%ld\n", flclk, tclk);
 
 	/*
-	 * 2. get reg_n_mul
-	 */
-	/* fpll ctrl0[20:16] */
-	switch (f_rate) {
-	case FRL_3G_3LANE:
-		odn_reg_n_mul = 4;
-		break;
-	case FRL_6G_3LANE:
-	case FRL_6G_4LANE:
-		odn_reg_n_mul = 6;
-		break;
-	case FRL_8G_4LANE:
-		odn_reg_n_mul = 8;
-		break;
-	case FRL_10G_4LANE:
-		odn_reg_n_mul = 8;
-		break;
-	case FRL_12G_4LANE:
-		odn_reg_n_mul = 10;
-		break;
-	default:
-		odn_reg_n_mul = 6;
-		break;
-	}
-	hdmirx_wr_cor(H21RXSB_NMUL_M42H_IVCRX, odn_reg_n_mul, port);
-
-	/*
 	 * 3. get pre_div
 	 */
-	min = 800 * MHz / tclk;
-	max = 1600 * MHz / tclk;
-	pre_div = (min + max) / 2;
+	//min = 800 * MHz / tclk;
+	//max = 1600 * MHz / tclk;
+	temp = (800 + 1600) * KHz * 10 / 2 / (tclk / KHz);
+	if (temp % 10)
+		pre_div = (temp / 10) + 1;
+	else
+		pre_div = (temp / 10);
 	if (log_level & FRL_LOG)
-		rx_pr("min=%d,max=%d,pre_div=0x%x\n", min, max, pre_div);
+		rx_pr("temp=%lu,pre_div=0x%x\n", temp, pre_div);
+	/* check vco */
+	if (tclk * pre_div * 2 / KHz < 1600 * KHz) {
+		pre_div += 1;
+		if (log_level & FRL_LOG)
+			rx_pr("error,vco<1.6G!\n");
+	}
+	if (tclk * pre_div * 2 / KHz > 3200 * KHz) {
+		pre_div -= 1;
+		if (log_level & FRL_LOG)
+			rx_pr("error,vco>3.2G!\n");
+	}
 	/* fpll cntl2[9:4]*/
 	hdmirx_wr_cor(H21RXSB_PREDIV_M42H_IVCRX, pre_div, port);
 
+	data = hdmirx_rd_cor(H21RXSB_NMUL_M42H_IVCRX, port);
+	data = data * tclk * pre_div * 2;
+	data = data / flclk;
+	data = data & 0x1ff;
+	if (log_level & FRL_LOG)
+		rx_pr("data:%lu\n", data);
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, (fpll_t3x[0] & 0xfffffe00) | data |
+		(odn_reg_n_mul << 16));
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, (fpll_t3x[1] & 0xfffffe00) | data |
+		(odn_reg_n_mul << 16));
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL1, (fpll_t3x[2] & 0xfff00000) | 0xb9000);
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL2, fpll_t3x[3] |
+		(pre_div << 4));
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, fpll_t3x[4] | (1 << 7));
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, (fpll_t3x[5] & 0xfffffe00) | data |
+		(odn_reg_n_mul << 16));
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, fpll_t3x[6] | (1 << 7) | (1 << 19));
+	udelay(10);
+	hdmirx_wr_bits_cor(RX_PWD_SRST2_PWD_IVCRX, _BIT(7), 1, port);
+	udelay(1);
+	hdmirx_wr_bits_cor(RX_PWD_SRST2_PWD_IVCRX, _BIT(7), 0, port);
+	udelay(100);
+	//wait valid_m
+	while (cnt < 200) {
+		cnt++;
+		reg_valid_m = hdmirx_rd_bits_cor(H21RXSB_STATUS_M42H_IVCRX, _BIT(0), port);
+
+		if (reg_valid_m)
+			break;
+		udelay(5);
+	}
+	cnt = 0;
+	if (!reg_valid_m) {
+		if (log_level & FRL_LOG)
+			rx_pr("m not valid!-0x%x\n",
+				hdmirx_rd_cor(H21RXSB_STATUS_M42H_IVCRX, port));
+		return;
+	}
 	/*
 	 * 4. fpll config
 	 */
@@ -2219,10 +2262,11 @@ void rx_21_fpll_calculation(int f_rate, u8 port)
 void rx_21_fpll_calculation1(int f_rate, u8 port)
 {
 	u8 reg_valid_m;
-	unsigned long o_req_m, flclk, tclk;
-	u32 min, max;
+	unsigned long o_req_m, flclk, tclk, temp;
+	//u32 min, max;
 	u8 pre_div;
 	int cnt = 0;
+	unsigned long data = 0;
 
 	if (log_level & FRL_LOG)
 		rx_pr("fpll cal,port=%d\n", port);
@@ -2287,10 +2331,19 @@ void rx_21_fpll_calculation1(int f_rate, u8 port)
 		rx_pr("port-%d m valid\n", port);
 	//or get flclk based on frl_rate!!! todo
 	flclk = rx_get_flclk(port);
+	if (!flclk) {
+		if (log_level & FRL_LOG)
+			rx_pr("flclk invalid\n");
+		return;
+	}
 	o_req_m = ((hdmirx_rd_cor(H21RXSB_REQM2_M42H_IVCRX, port) & 0Xf) << 16) |
 		(hdmirx_rd_cor(H21RXSB_REQM1_M42H_IVCRX, port) << 8) |
 		hdmirx_rd_cor(H21RXSB_REQM0_M42H_IVCRX, port);
-
+	if (reg_valid_m && o_req_m == 0) {
+		if (log_level & FRL_LOG)
+			rx_pr("port-%d m not really valid\n", port);
+		return;
+	}
 	/* tclk = flclk * o_req_m / give_n / post_div */
 	tclk = flclk * o_req_m / 8192 / 2;
 	//rx_pr("flclk * o_req_m=%ld\n", flclk * o_req_m);
@@ -2300,42 +2353,68 @@ void rx_21_fpll_calculation1(int f_rate, u8 port)
 		rx_pr("flclk = %ld, tclk=%ld\n", flclk, tclk);
 
 	/*
-	 * 2. get reg_n_mul
-	 */
-	/* fpll ctrl0[20:16] */
-	switch (f_rate) {
-	case FRL_3G_3LANE:
-		odn_reg_n_mul = 4;
-		break;
-	case FRL_6G_3LANE:
-	case FRL_6G_4LANE:
-		odn_reg_n_mul = 6;
-		break;
-	case FRL_8G_4LANE:
-		odn_reg_n_mul = 8;
-		break;
-	case FRL_10G_4LANE:
-		odn_reg_n_mul = 8;
-		break;
-	case FRL_12G_4LANE:
-		odn_reg_n_mul = 10;
-		break;
-	default:
-		odn_reg_n_mul = 6;
-		break;
-	}
-	hdmirx_wr_cor(H21RXSB_NMUL_M42H_IVCRX, odn_reg_n_mul, port);
-
-	/*
 	 * 3. get pre_div
 	 */
-	min = 800 * MHz / tclk;
-	max = 1600 * MHz / tclk;
-	pre_div = (min + max) / 2;
+	//min = 800 * MHz / tclk;
+	//max = 1600 * MHz / tclk;
+	temp = (800 + 1600) * KHz * 10 / 2 / (tclk / KHz);
+	if (temp % 10)
+		pre_div = (temp / 10) + 1;
+	else
+		pre_div = (temp / 10);
 	if (log_level & FRL_LOG)
-		rx_pr("min=%d,max=%d,pre_div=0x%x\n", min, max, pre_div);
+		rx_pr("temp=%lu,pre_div=0x%x\n", temp, pre_div);
+	/* check vco */
+	if (tclk * pre_div * 2 / KHz < 1600 * KHz) {
+		pre_div += 1;
+		if (log_level & FRL_LOG)
+			rx_pr("error,vco<1.6G!\n");
+	}
+	if (tclk * pre_div * 2 / KHz > 3200 * KHz) {
+		pre_div -= 1;
+		if (log_level & FRL_LOG)
+			rx_pr("error,vco>3.2G!\n");
+	}
 	/* fpll cntl2[9:4]*/
 	hdmirx_wr_cor(H21RXSB_PREDIV_M42H_IVCRX, pre_div, port);
+
+	/* dbg0606 */
+	data = hdmirx_rd_cor(H21RXSB_NMUL_M42H_IVCRX, port);
+	data = data * tclk * pre_div * 2;
+	data = data / flclk;
+	data = data & 0x1ff;
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, (fpll_t3x[0] & 0xfffffe00) | data |
+		(odn_reg_n_mul << 16));
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, (fpll_t3x[1] & 0xfffffe00) | data |
+		(odn_reg_n_mul << 16));
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL1, (fpll_t3x[2] & 0xfff00000) | 0xb9000);
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL2, fpll_t3x[3] |
+		(pre_div << 4));
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, fpll_t3x[4] | (1 << 7));
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, (fpll_t3x[5] & 0xfffffe00) | data |
+		(odn_reg_n_mul << 16));
+	wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, fpll_t3x[6] | (1 << 7) | (1 << 19));
+	udelay(10);
+	hdmirx_wr_bits_cor(RX_PWD_SRST2_PWD_IVCRX, _BIT(7), 1, port);
+	udelay(1);
+	hdmirx_wr_bits_cor(RX_PWD_SRST2_PWD_IVCRX, _BIT(7), 0, port);
+	udelay(100);
+	//wait valid_m
+	while (cnt < 200) {
+		cnt++;
+		reg_valid_m = hdmirx_rd_bits_cor(H21RXSB_STATUS_M42H_IVCRX, _BIT(0), port);
+
+		if (reg_valid_m)
+			break;
+		udelay(5);
+	}
+	cnt = 0;
+	if (!reg_valid_m) {
+		if (log_level & FRL_LOG)
+			rx_pr("m not valid!-0x%x\n",
+				hdmirx_rd_cor(H21RXSB_STATUS_M42H_IVCRX, port));
+		return;
+	}
 
 	/*
 	 * 4. fpll config
@@ -2392,7 +2471,7 @@ void rx_21_fpll_cfg_0(int f_rate, u8 port)
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, 0x30240035);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL1, 0x83afa82a);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL2, 0x000400c0);
-			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, 0x0b09a001);
+			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, 0x0b0da001);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, 0x10240035);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, 0x0b09a201);
 			hdmirx_wr_cor(H21RXSB_POSTDIV_M42H_IVCRX, 0x2, port);
@@ -2405,7 +2484,7 @@ void rx_21_fpll_cfg_0(int f_rate, u8 port)
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, 0x30280035);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL1, 0x83afa82a);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL2, 0x00040020);
-			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, 0x0b09a001);
+			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, 0x0b0da001);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, 0x10280035);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, 0x0b09a201);
 			hdmirx_wr_cor(H21RXSB_POSTDIV_M42H_IVCRX, 0x2, port);
@@ -2418,7 +2497,7 @@ void rx_21_fpll_cfg_0(int f_rate, u8 port)
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, 0x302a0035);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL1, 0x83afa82a);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL2, 0x00040020);
-			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, 0x0b09a001);
+			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, 0x0b0da001);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL0, 0x102a0035);
 			wr_reg_clk_ctl(T3X_CLKCTRL_HDMI_PLL0_CTRL3, 0x0b09a201);
 			hdmirx_wr_cor(H21RXSB_POSTDIV_M42H_IVCRX, 0x2, port);
@@ -2580,7 +2659,7 @@ void aml_phy_init_t3x_20(u8 port)
 void aml_phy_init_t3x_21(u8 port)
 {
 	rx_21_frl_phy_cfg(port);
-	if (rx[port].state <= FSM_HPD_HIGH)
+	if (rx[port].state <= FSM_HPD_HIGH || rx[port].state == FSM_WAIT_CLK_STABLE)
 		return;
 	aml_pll_bw_cfg_t3x_21(rx[port].var.frl_rate, port);
 	rx_21_frl_pll_cfg(rx[port].var.frl_rate, port);
@@ -2631,7 +2710,7 @@ void dump_reg_phy_t3x_21(u8 port)
 		hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_MISC2, port));
 	rx_pr("RX21PHY_DCHA_AFE-0x120=0x%x\n",
 		hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE, port));
-	rx_pr("RX21PHY_DCHA_DFE-0x24=0x%x\n",
+	rx_pr("RX21PHY_DCHA_DFE-0x124=0x%x\n",
 		hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_DFE, port));
 	rx_pr("RX21PHY_DCHA_PI-0x128=0x%x\n",
 		hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_PI, port));
@@ -2901,15 +2980,15 @@ void dump_aml_phy_sts_t3x_20(u8 port)
 	rx_pr("eq_err=[%d,%d,%d]\n",
 	      ch0_eq_err, ch1_eq_err, ch2_eq_err);
 
-	comb_val_t3x(get_val_t3x, "	 dfe_tap0", dfe0_tap0, dfe1_tap0, dfe2_tap0, 7);
-	comb_val_t3x(get_val_t3x, "	 dfe_tap1", dfe0_tap1, dfe1_tap1, dfe2_tap1, 6);
-	comb_val_t3x(get_val_t3x, "	 dfe_tap2", dfe0_tap2, dfe1_tap2, dfe2_tap2, 5);
-	comb_val_t3x(get_val_t3x, "	 dfe_tap3", dfe0_tap3, dfe1_tap3, dfe2_tap3, 4);
-	comb_val_t3x(get_val_t3x, "	 dfe_tap4", dfe0_tap4, dfe1_tap4, dfe2_tap4, 4);
-	comb_val_t3x(get_val_t3x, "	 dfe_tap5", dfe0_tap5, dfe1_tap5, dfe2_tap5, 4);
-	comb_val_t3x(get_val_t3x, "	 dfe_tap6", dfe0_tap6, dfe1_tap6, dfe2_tap6, 4);
-	comb_val_t3x(get_val_t3x, "	 dfe_tap7", dfe0_tap7, dfe1_tap7, dfe2_tap7, 4);
-	comb_val_t3x(get_val_t3x, "	 dfe_tap8", dfe0_tap8, dfe1_tap8, dfe2_tap8, 4);
+	comb_val_t3x(get_val_t3x, "dfe_tap0", dfe0_tap0, dfe1_tap0, dfe2_tap0, 7);
+	comb_val_t3x(get_val_t3x, "dfe_tap1", dfe0_tap1, dfe1_tap1, dfe2_tap1, 6);
+	comb_val_t3x(get_val_t3x, "dfe_tap2", dfe0_tap2, dfe1_tap2, dfe2_tap2, 5);
+	comb_val_t3x(get_val_t3x, "dfe_tap3", dfe0_tap3, dfe1_tap3, dfe2_tap3, 4);
+	comb_val_t3x(get_val_t3x, "dfe_tap4", dfe0_tap4, dfe1_tap4, dfe2_tap4, 4);
+	comb_val_t3x(get_val_t3x, "dfe_tap5", dfe0_tap5, dfe1_tap5, dfe2_tap5, 4);
+	comb_val_t3x(get_val_t3x, "dfe_tap6", dfe0_tap6, dfe1_tap6, dfe2_tap6, 4);
+	comb_val_t3x(get_val_t3x, "dfe_tap7", dfe0_tap7, dfe1_tap7, dfe2_tap7, 4);
+	comb_val_t3x(get_val_t3x, "dfe_tap8", dfe0_tap8, dfe1_tap8, dfe2_tap8, 4);
 
 	comb_val_t3x(get_val_t3x, "slicer_ofst0", sli0_ofst0, sli1_ofst0, sli2_ofst0, 5);
 	comb_val_t3x(get_val_t3x, "slicer_ofst1", sli0_ofst1, sli1_ofst1, sli2_ofst1, 5);
@@ -4367,7 +4446,7 @@ void rx_lts_p_syn_detect(u8 frl_rate, u8 port)
 		rx_pr("[FRL TRAINING] Polling sr_sync Done ************\n");
 
 	hdmirx_wr_cor(H21RXSB_CTRL3_M42H_IVCRX, 0x81, port); //
-	hdmirx_wr_cor(H21RXSB_CTRL3_M42H_IVCRX, 0x01, port); //
+	hdmirx_wr_cor(H21RXSB_CTRL3_M42H_IVCRX, 0x09, port); //
 	//
 	//----hal_flt_rx_dpll_reset_toggle(port)
 	hdmirx_wr_cor(DPLL_CTRL2_DPLL_IVCRX, 0x2, port);
@@ -4513,16 +4592,26 @@ void hdmirx_frl_config(u8 port)
 	/* new for t3x */
 	data32  = 0;
 	data32 |= (0 << 31); //[   31] update_man
-	data32 |= (2 << 27); //[29:27] delay cycle of update
-	data32 |= (2 << 13); //[26:13] update wide
-	data32 |= (200 << 0); //[12:0]  update hold width
+	data32 |= (1 << 30); //[30] load reverse
+	data32 |= (7 << 27); //[29:27] delay cycle of update
+	data32 |= (1 << 13); //[26:13] update wide
+	data32 |= (1500 << 0); //[12:0]  update hold width
 	hdmirx_wr_top(TOP_TCR_CNTL, data32, port);
+
+	hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x0, port);
+	hdmirx_wr_cor(H21RXSB_D2TH_M42H_IVCRX, 0x20, port);
+	//clk ready threshold
+	hdmirx_wr_cor(H21RXSB_DIFF1T_M42H_IVCRX, 0x20, port);
 
 	//step adjust
 	hdmirx_wr_cor(H21RXSB_STEPF1_M42H_IVCRX, 0x18, port); //fast step 0x1800
 	hdmirx_wr_cor(H21RXSB_STEPFL1_IVCRX, 0x18, port);     //slow step 0x1800
 
-	hdmirx_wr_cor(H21RXSB_CTH2_M42H_IVCRX, 0x01, port);   //clk en th
+	hdmirx_wr_cor(H21RXSB_RST_CTRL_M42H_IVCRX, 0x2, port);
+	hdmirx_wr_cor(H21RXSB_CTH2_M42H_IVCRX, 0x60, port);   //clk en th
+	hdmirx_wr_cor(H21RXSB_INTR2_MASK_M42H_IVCRX, 0x10, port); //rs error detect
+
+	//hdmirx_wr_cor(H21RXSB_INTR3_MASK_M42H_IVCRX, 0x2, port);
 	/* end */
 	//used for debug,manual config mode
 	hdmirx_wr_cor(SCDCS_CONFIG1_SCDC_IVCRX, rx[port].var.frl_rate, port);
@@ -4530,7 +4619,7 @@ void hdmirx_frl_config(u8 port)
 	data8  = 0;
 	data8 |= (0 << 7);  //[7]   ri_en_clr_ecc_src
 	data8 |= (0 << 6);  //[6]   ri_rs_sel_sync
-	data8 |= (0 << 3);  //[5:3] ri_rs_misc_ctrl
+	data8 |= (1 << 3);  //[5:3] ri_rs_misc_ctrl
 	data8 |= (0 << 2);  //[2]   ri_rs_chk_en
 	data8 |= (0 << 0);  //[1:0] ri_rs_err_cnt_sel1
 	hdmirx_wr_cor(H21RXSB_CTRL3_M42H_IVCRX, data8, port);
@@ -4547,7 +4636,7 @@ void hdmirx_frl_config(u8 port)
 	data8 |= (1 << 7);  //[7] pace_clk_en buf fixed
 	data8 |= (0 << 2);  //[2] ri_rs_blk_ln_er
 	data8 |= (0 << 1);  //[1] ri_read_rs_err
-	data8 |= (0 << 0);  //[0] ri_rs_errcnt_en
+	data8 |= (1 << 0);  //[0] ri_rs_errcnt_en
 	hdmirx_wr_cor(H21RXSB_CTRL1_M42H_IVCRX, data8, port);
 	//=============H21RXSB_CTRL2=================
 	data8  = 0;

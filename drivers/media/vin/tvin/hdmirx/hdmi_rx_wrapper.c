@@ -87,8 +87,8 @@ int color_bar_debug_en;
 int color_bar_lvl;
 /* used in other module */
 //static int audio_sample_rate;
-int reset_pcs_flag;
-int reset_pcs_cnt = 10;
+int reset_pcs_flag = 10;
+int reset_pcs_cnt = 1;
 int port_debug_en = 1;
 //static int auds_rcv_sts;
 //module_param(auds_rcv_sts, int, 0664);
@@ -290,17 +290,18 @@ void hdmirx_phy_var_init(void)
 		rx_info.aml_phy.eye_height = 5;
 		rx_info.aml_phy.hyper_gain_en = 0;
 		// for t3x 2.1 phy
-		if (rx_info.phy_ver == PHY_VER_T3X) {
+		if (rx_info.phy_ver == PHY_VER_T3X && !rx_info.aml_phy.phy_debug_en) {
 			rx_info.aml_phy_21.phy_bwth = 1;
 			rx_info.aml_phy_21.vga_gain = 0x10000;
 			rx_info.aml_phy_21.eq_stg1 = 0x1f;
 			rx_info.aml_phy_21.eq_stg2 = 0x8;
+			rx_info.aml_phy_21.eq_pole = 0x8;
 			rx_info.aml_phy_21.cdr_fr_en = 0;//0x1f4
 			rx_info.aml_phy_21.eq_hold = 0x3;
 			rx_info.aml_phy_21.eq_retry = 0x1;
 			rx_info.aml_phy_21.dfe_en = 0x1;
 			rx_info.aml_phy_21.dfe_hold = 0;//0x3
-			rx_info.aml_phy.phy_debug_en = 0;//0x1
+			rx_info.aml_phy.phy_debug_en = 0x1;//0x1
 		}
 	}
 }
@@ -2207,7 +2208,7 @@ irqreturn_t irq2_handler(int irq, void *params)
 	static unsigned long long last_clks;
 	static u32 irq_err_cnt;
 	int error = 0;
-	u8 tmp = 0;
+	u32 tmp = 0;
 
 	if (params == 0) {
 		rx_pr("%s: %s\n", __func__,
@@ -2319,9 +2320,14 @@ irqreturn_t irq2_handler(int irq, void *params)
 	if (hdmirx_top_intr_stat & (1 << 2))
 		if (log_level & COR_LOG)
 			rx_pr("[isr] phy dig\n");
-	if (hdmirx_top_intr_stat & (1 << 1))
-		if (log_level & COR_LOG)
-			rx_pr("[isr] ctrl pwd\n");
+	if (hdmirx_top_intr_stat & (1 << 1)) {
+		tmp = hdmirx_rd_cor(H21RXSB_INTR2_M42H_IVCRX, E_PORT2);
+		if (tmp & 0x10) {
+			hdmirx_wr_cor(H21RXSB_INTR2_M42H_IVCRX, 0xff, E_PORT2);
+			rx_pr("overlap!!! 0x152f:0x%x, 0x1563:0x%x\n", tmp,
+				hdmirx_rd_cor(H21RXSB_INTR3_M42H_IVCRX, E_PORT2));
+		}
+	}
 	if (hdmirx_top_intr_stat & (1 << 0))
 		if (log_level & COR_LOG)
 			rx_pr("[isr] ctrl aon\n");
@@ -2335,7 +2341,7 @@ irqreturn_t irq3_handler(int irq, void *params)
 	static unsigned long long last_clks;
 	static u32 irq_err_cnt;
 	int error = 0;
-	u8 tmp = 0;
+	u32 tmp = 0;
 
 	if (params == 0) {
 		rx_pr("%s: %s\n", __func__,
@@ -2447,9 +2453,14 @@ irqreturn_t irq3_handler(int irq, void *params)
 	if (hdmirx_top_intr_stat & (1 << 2))
 		if (log_level & COR_LOG)
 			rx_pr("[isr] phy dig\n");
-	if (hdmirx_top_intr_stat & (1 << 1))
-		if (log_level & COR_LOG)
-			rx_pr("[isr] ctrl pwd\n");
+	if (hdmirx_top_intr_stat & (1 << 1)) {
+		tmp = hdmirx_rd_cor(H21RXSB_INTR2_M42H_IVCRX, E_PORT3);
+		if (tmp & 0x10) {
+			hdmirx_wr_cor(H21RXSB_INTR2_M42H_IVCRX, 0xff, E_PORT3);
+			rx_pr("overlap!!! 0x152f:0x%x, 0x1563:0x%x\n", tmp,
+				hdmirx_rd_cor(H21RXSB_INTR3_M42H_IVCRX, E_PORT3));
+		}
+	}
 	if (hdmirx_top_intr_stat & (1 << 0))
 		if (log_level & COR_LOG)
 			rx_pr("[isr] ctrl aon\n");
@@ -3743,6 +3754,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(rx_info.aml_phy_21.vga_gain, i++);
 	pr_var(rx_info.aml_phy_21.eq_stg1, i++);
 	pr_var(rx_info.aml_phy_21.eq_stg2, i++);
+	pr_var(rx_info.aml_phy_21.eq_pole, i++);
 	pr_var(rx_info.aml_phy_21.cdr_fr_en, i++);
 	pr_var(rx_info.aml_phy_21.eq_hold, i++);
 	pr_var(rx_info.aml_phy_21.eq_retry, i++);
@@ -4266,6 +4278,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy_21.eq_stg2),
 		&rx_info.aml_phy_21.eq_stg2, value))
 		return pr_var(rx_info.aml_phy_21.eq_stg2, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy_21.eq_pole),
+		&rx_info.aml_phy_21.eq_pole, value))
+		return pr_var(rx_info.aml_phy_21.eq_pole, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy_21.cdr_fr_en),
 		&rx_info.aml_phy_21.cdr_fr_en, value))
 		return pr_var(rx_info.aml_phy_21.cdr_fr_en, index);
@@ -4538,6 +4553,64 @@ void rx_monitor_error_cnt_start(u8 port)
 	rx[port].phy.timestap = ktime_get_real_seconds();//get_seconds();
 }
 
+static void rx_get_ecc_err_cnt(u8 port)
+{
+	u32 ecc_err;
+
+	/* enable ecc err read, bit0:enable and clear*/
+	hdmirx_wr_cor(RX_ECC_CTRL_DP2_IVCRX, _BIT(0), port);
+	udelay(1);
+	ecc_err = hdmirx_rd_cor(RX_BCH_ERR_DP2_IVCRX, port) |
+			(((u32)hdmirx_rd_cor(RX_BCH_ERR2_DP2_IVCRX, port)     & 0x7f) << 8);
+	if (ecc_err)
+		if (log_level & FRL_LOG)
+			rx_pr("ecc_err:0x%x-0x%x-%d\n",
+				hdmirx_rd_cor(RX_BCH_ERR_DP2_IVCRX, port),
+				hdmirx_rd_cor(RX_BCH_ERR2_DP2_IVCRX, port),
+				ecc_err);
+	hdmirx_wr_cor(RX_ECC_CTRL_DP2_IVCRX, 0x0, port);
+}
+
+static void rx_get_rs_err_cnt(u8 port)
+{
+	u32 rs_err, rs_err_po, ecc_fixed_lsb, rs_cnt;
+	u32 rs_err_fixed;
+	u32 data;
+
+	rs_err = hdmirx_rd_cor(SCDCS_RS_CORR_L_SCDC_IVCRX, port) |
+			(((u32)hdmirx_rd_cor(SCDCS_RS_CORR_H_SCDC_IVCRX, port)     & 0x7f) << 8);
+	/* 0x1532 bit1 0->1 pulse to read */
+	data = hdmirx_rd_cor(H21RXSB_CTRL1_M42H_IVCRX, port);
+	hdmirx_wr_cor(H21RXSB_CTRL1_M42H_IVCRX, data & (~(_BIT(1))), port);
+	udelay(1);
+	hdmirx_wr_cor(H21RXSB_CTRL1_M42H_IVCRX, data | _BIT(1), port);
+
+	/* read 0x1533 before read rs error */
+	ecc_fixed_lsb = hdmirx_rd_cor(H21RXSB_ECC_CNT_FIXED_LSB_RS0_M42H_IVCRX, port);
+	rs_cnt = hdmirx_rd_cor(H21RXSB_RS_CNT_LSB_M42H_IVCRX, port) |
+		(((u32)hdmirx_rd_cor(H21RXSB_RS_CNT_MSB_M42H_IVCRX, port) & 0x7f) << 8);
+	rs_err_po = hdmirx_rd_cor(H21RXSB_RS_ERR_CNT_PO_LSB_M42H_IVCRX, port) |
+		(((u32)hdmirx_rd_cor(H21RXSB_RS_ERR_CNT_PO_MSB_M42H_IVCRX, port) & 0x7f) << 8);
+	rs_err_fixed = hdmirx_rd_cor(H21RXSB_RSERRCNT_FIXED_LSB_M42H_IVCRX, port) |
+		((u32)hdmirx_rd_cor(H21RXSB_RSERRCNT_FIXED_LSB1_M42H_IVCRX, port) << 8) |
+		((u32)hdmirx_rd_cor(H21RXSB_RSERRCNT_FIXED_MSB_M42H_IVCRX, port) << 16);
+	if (rs_err) {
+		if (log_level & FRL_LOG) {
+			rx_pr("rs_err:%d, rs_cnt:%d\n", rs_err, rs_cnt);
+			rx_pr("rs_err_last:%d--rs_err_po(%d)-rs_err_fixed(%d)\n",
+				rs_err_po - rs_err_fixed, rs_err_po, rs_err_fixed);
+		}
+		hdmirx_wr_bits_cor(H21RXSB_RST_CTRL_M42H_IVCRX, _BIT(0), 0x1, port);
+		udelay(1);
+		hdmirx_wr_bits_cor(H21RXSB_RST_CTRL_M42H_IVCRX, _BIT(0), 0x0, port);
+	}
+	/* 0x1532 bit0 1->0 clear cnt */
+	data = hdmirx_rd_cor(H21RXSB_CTRL1_M42H_IVCRX, port) & (~(_BIT(0)));
+	hdmirx_wr_cor(H21RXSB_CTRL1_M42H_IVCRX,     data, port);
+	udelay(1);
+	hdmirx_wr_cor(H21RXSB_CTRL1_M42H_IVCRX,     data | _BIT(0), port);
+}
+
 /*
  * function:
  *	1min error counter check for tl1 aml phy
@@ -4557,10 +4630,11 @@ void rx_monitor_error_counter(u8 port)
 		rx_get_error_cnt(&ch0, &ch1, &ch2, &ch3, port);
 		if (rx_info.chip_id >= CHIP_ID_T3X && rx[port].var.frl_rate) {
 			if (ch0 || ch1 || ch2 || ch3)
-				rx_pr("err cnt:%d,%d,%d,%d\n", ch0, ch1, ch2, ch3);
-			if (ch0 || ch1 || ch2)
-				rx_pr("err cnt:%d,%d,%d\n", ch0, ch1, ch2);
+				if (log_level & FRL_LOG)
+					rx_pr("err cnt:%d,%d,%d,%d\n", ch0, ch1, ch2, ch3);
 		}
+		rx_get_rs_err_cnt(port);
+		rx_get_ecc_err_cnt(port);
 	}
 }
 

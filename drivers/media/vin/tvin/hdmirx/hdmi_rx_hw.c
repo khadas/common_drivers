@@ -1590,10 +1590,11 @@ void hdmirx_top_irq_en(int en, int lvl, u8 port)
 		data32 |= (0    << 16); // [   16] hdcp_enc_state_fall
 		data32 |= (0    << 15); // [   15] hdcp_enc_state_rise
 		data32 |= (0    << 14); // [   14] hdcp_auth_start_fall
-		data32 |= (0    << 13); // [   13] hdcp_auth_start_rise
+		data32 |= (0    << 13); // [   13] clk1618 chg
 		data32 |= (0    << 12); // [   12] meter_stable_chg_hdmi
 		data32 |= (0    << 11); // [   11] vid_colour_depth_chg
 		data32 |= (0    << 10); // [   10] vid_fmt_chg
+		data32 |= (0    << 9);  // [    9] tmds21clk chg
 		data32 |= (0x0  << 4);  // [ 8: 6] hdmirx_5v_fall
 		data32 |= (0x0  << 3);  // [ 5: 3] hdmirx_5v_rise
 		// [    2] sherman_phy_intr: phy digital interrupt
@@ -5949,7 +5950,7 @@ u32 aml_cable_clk_band(u32 cable_clk, u32 clk_rate)
 		cab_clk = cable_clk << 2;
 
 	/* 1:10 */
-	if (rx_info.chip_id >= CHIP_ID_T5M) {
+	if (rx_info.chip_id == CHIP_ID_T5M) {
 		if (cab_clk < (37 * MHz))
 			bw = PHY_BW_0;
 		else if (cab_clk < (75 * MHz))
@@ -5992,7 +5993,7 @@ u32 aml_phy_pll_band(u32 cable_clk, u32 clk_rate)
 		cab_clk = cable_clk << 2;
 
 	/* 1:10 */
-	if (rx_info.chip_id >= CHIP_ID_T5M) {
+	if (rx_info.chip_id == CHIP_ID_T5M) {
 		if (cab_clk < (37 * MHz))
 			bw = PLL_BW_0;
 		else if (cab_clk < (75 * MHz))
@@ -6844,11 +6845,11 @@ void rx_get_error_cnt(u32 *ch0, u32 *ch1, u32 *ch2, u32 *ch3, u8 port)
 		/* use cor register to get err cnt,t3 fix it */
 		hdmirx_wr_bits_cor(DPLL_CTRL0_DPLL_IVCRX, MSK(3, 0), 0x0, port);
 		*ch0 = hdmirx_rd_cor(SCDCS_CED0_L_SCDC_IVCRX, port) |
-			((hdmirx_rd_cor(SCDCS_CED0_H_SCDC_IVCRX & 0x7f, port) << 8));
+			(((u32)hdmirx_rd_cor(SCDCS_CED0_H_SCDC_IVCRX, port) & 0x7f) << 8);
 		*ch1 = hdmirx_rd_cor(SCDCS_CED1_L_SCDC_IVCRX, port) |
-			((hdmirx_rd_cor(SCDCS_CED1_H_SCDC_IVCRX & 0x7f, port) << 8));
+			(((u32)hdmirx_rd_cor(SCDCS_CED1_H_SCDC_IVCRX, port) & 0x7f) << 8);
 		*ch2 = hdmirx_rd_cor(SCDCS_CED2_L_SCDC_IVCRX, port) |
-			((hdmirx_rd_cor(SCDCS_CED2_H_SCDC_IVCRX & 0x7f, port) << 8));
+			(((u32)hdmirx_rd_cor(SCDCS_CED2_H_SCDC_IVCRX, port) & 0x7f) << 8);
 		*ch3 = 0;
 		udelay(1);
 		hdmirx_wr_bits_cor(DPLL_CTRL0_DPLL_IVCRX, MSK(3, 0), 0x7, port);

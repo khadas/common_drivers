@@ -377,6 +377,7 @@ struct rx_aml_phy {
 	u32 vga_gain;
 	u32 eq_stg1;
 	u32 eq_stg2;
+	u8 eq_pole;
 	u32 dfe_hold;
 	u32 eq_hold;
 	int eye_delay;

@@ -37,19 +37,16 @@
 #define PCIE_CFG_STATUS17		0x44
 #define PM_CURRENT_STATE(x)		(((x) >> 7) & 0x1)
 
-#define WAIT_LINKUP_TIMEOUT		9000
+#define WAIT_LINKUP_TIMEOUT		100000
 #define MAX_PAYLOAD_SIZE		256
 #define MAX_READ_REQ_SIZE		256
 #define PCIE_RESET_DELAY		500
 #define PCIE_SHARED_RESET		1
 #define PCIE_NORMAL_RESET		0
 
-enum pcie_data_rate {
-	PCIE_GEN1,
-	PCIE_GEN2,
-	PCIE_GEN3,
-	PCIE_GEN4
-};
+static int link_times = WAIT_LINKUP_TIMEOUT - 10;
+module_param(link_times, int, 0644);
+MODULE_PARM_DESC(link_times, "select pcie link speed ");
 
 enum pcie_phy_type {
 	DW_PHY,
@@ -624,35 +621,45 @@ static int amlogic_pcie_rd_own_conf(struct pci_bus *bus, u32 devfn,
 	return PCIBIOS_SUCCESSFUL;
 }
 
+static void __iomem *amlogic_pcie_own_conf_map_bus(struct pci_bus *bus,
+						   unsigned int devfn, int where)
+{
+	struct pcie_port *pp = bus->sysdata;
+	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
+	u32 val;
+
+	val = dw_pcie_readl_dbi(pci, PCIE_PORT_DEBUG1);
+	if (!(val & PCIE_PORT_DEBUG1_LINK_UP)) {
+		dev_err(pci->dev, "LTSSM link down, pls check HW design, maybe HW interference\n");
+		return NULL;
+	}
+
+	if (PCI_SLOT(devfn) > 0)
+		return NULL;
+
+	return pci->dbi_base + where;
+}
+
 static struct pci_ops amlogic_pci_ops = {
-	.map_bus = dw_pcie_own_conf_map_bus,
+	.map_bus = amlogic_pcie_own_conf_map_bus,
 	.read = amlogic_pcie_rd_own_conf,
 	.write = pci_generic_config_write,
 };
 
-static int amlogic_pcie_link_up(struct dw_pcie *pci)
+static int amlogic_pcie_start_link(struct dw_pcie *pci)
 {
 	struct amlogic_pcie *aml_pcie = to_amlogic_pcie(pci);
 	struct device *dev = pci->dev;
-	u32 speed_okay = 0;
-	u32 cnt = 0, val;
-	u32 state12, state17, smlh_up = 0, ltssm_up = 0, rdlh_up = 0;
+	u32 tmp, state12, smlh_up = 0, ltssm_up = 0, rdlh_up = 0, cnt = 0;
+	u8 offset;
 
-	val = readl(pci->dbi_base + PCIE_PORT_DEBUG1);
-	if (((val & PCIE_PORT_DEBUG1_LINK_UP) &&
-		(!(val & PCIE_PORT_DEBUG1_LINK_IN_TRAINING))))
-		return 1;
+	amlogic_pcie_ltssm_enable(aml_pcie);
 
 	do {
 		state12 = amlogic_cfg_readl(aml_pcie, PCIE_CFG_STATUS12);
-		state17 = amlogic_cfg_readl(aml_pcie, PCIE_CFG_STATUS17);
 		smlh_up = IS_SMLH_LINK_UP(state12);
 		rdlh_up = IS_RDLH_LINK_UP(state12);
 		ltssm_up = IS_LTSSM_UP(state12) ? 1 : 0;
-		dev_dbg(dev, "ltssm_up = 0x%x\n", ((state12 >> 10) & 0x1f));
-
-		if (PM_CURRENT_STATE(state17) < PCIE_GEN3)
-			speed_okay = 1;
 
 		if (smlh_up)
 			dev_dbg(dev, "smlh_link_up is on\n");
@@ -660,33 +667,31 @@ static int amlogic_pcie_link_up(struct dw_pcie *pci)
 			dev_dbg(dev, "rdlh_link_up is on\n");
 		if (ltssm_up)
 			dev_dbg(dev, "ltssm_up is on\n");
-		if (speed_okay)
-			dev_dbg(dev, "speed_okay\n");
 
-		if (cnt > WAIT_LINKUP_TIMEOUT)
+		if (cnt > WAIT_LINKUP_TIMEOUT) {
+			dev_err(dev, "Error: Wait linkup timeout. Pls check pcie device\n");
 			goto err_linkup;
+		} else if (unlikely(cnt >= link_times)) {
+			dev_info(dev, "ltssm_up = 0x%x\n", ((state12 >> 10) & 0x1f));
+		}
 
 		cnt++;
 
-		udelay(20);
-	} while (smlh_up == 0 || rdlh_up == 0 || ltssm_up == 0 || speed_okay == 0);
+		udelay(2);
+	} while (smlh_up == 0 || rdlh_up == 0 || ltssm_up == 0);
 
-	return 1;
+	offset = dw_pcie_find_capability(pci, PCI_CAP_ID_EXP);
+	tmp = dw_pcie_readw_dbi(pci, offset + PCI_EXP_LNKSTA);
+	dev_info(dev, "Link up, GEN%i,link width is x%d\n", tmp & PCI_EXP_LNKSTA_CLS,
+		(tmp & PCI_EXP_LNKSTA_NLW) >> PCI_EXP_LNKSTA_NLW_SHIFT);
+
+	return 0;
 
 err_linkup:
-	dev_dbg(dev, "PHY DEBUG_R0=0x%08x DEBUG_R1=0x%08x\n",
+	dev_err(dev, "PHY DEBUG_R0=0x%08x DEBUG_R1=0x%08x\n",
 		dw_pcie_readl_dbi(pci, PCIE_PORT_DEBUG0),
 		dw_pcie_readl_dbi(pci, PCIE_PORT_DEBUG1));
-	return 0;
-}
-
-static int amlogic_pcie_start_link(struct dw_pcie *pci)
-{
-	struct amlogic_pcie *aml_pcie = to_amlogic_pcie(pci);
-
-	amlogic_pcie_ltssm_enable(aml_pcie);
-
-	return 0;
+	return -ETIMEDOUT;
 }
 
 static int amlogic_pcie_host_init(struct pcie_port *pp)
@@ -719,7 +724,6 @@ static const struct dw_pcie_host_ops amlogic_pcie_host_ops = {
 
 static const struct dw_pcie_ops dw_pcie_ops = {
 	.start_link = amlogic_pcie_start_link,
-	.link_up = amlogic_pcie_link_up,
 };
 
 static int amlogic_pcie_probe(struct platform_device *pdev)
@@ -727,9 +731,7 @@ static int amlogic_pcie_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct dw_pcie *pci;
 	struct amlogic_pcie *aml_pcie;
-	u8 offset;
 	int ret;
-	u32 tmp;
 
 	aml_pcie = devm_kzalloc(dev, sizeof(*aml_pcie), GFP_KERNEL);
 	if (!aml_pcie)
@@ -760,11 +762,6 @@ static int amlogic_pcie_probe(struct platform_device *pdev)
 		goto err_disable_clk;
 	}
 
-	offset = dw_pcie_find_capability(pci, PCI_CAP_ID_EXP);
-	tmp = dw_pcie_readw_dbi(pci, offset + PCI_EXP_LNKSTA);
-	dev_info(dev, "Link up, GEN%i,link width is x%d\n", tmp & PCI_EXP_LNKSTA_CLS,
-		(tmp & PCI_EXP_LNKSTA_NLW) >> PCI_EXP_LNKSTA_NLW_SHIFT);
-
 	return 0;
 
 err_disable_clk:
@@ -773,10 +770,20 @@ err_disable_clk:
 }
 
 #ifdef CONFIG_PM_SLEEP
+static void amlogic_pcie_ltssm_disable(struct amlogic_pcie *aml_pcie)
+{
+	u32 val;
+
+	val = amlogic_cfg_readl(aml_pcie, PCIE_CFG0);
+	val &= ~APP_LTSSM_ENABLE;
+	amlogic_cfg_writel(aml_pcie, val, PCIE_CFG0);
+}
+
 static int amlogic_pcie_suspend_noirq(struct device *dev)
 {
 	struct amlogic_pcie *aml_pcie = dev_get_drvdata(dev);
 
+	amlogic_pcie_ltssm_disable(aml_pcie);
 	amlogic_pcie_disable_clocks(aml_pcie);
 	amlogic_pcie_phy_power_off(aml_pcie);
 
@@ -801,7 +808,7 @@ static int amlogic_pcie_resume_noirq(struct device *dev)
 
 	dw_pcie_setup_rc(pp);
 
-	ret = dw_pcie_wait_for_link(&aml_pcie->pci);
+	ret = amlogic_pcie_start_link(&aml_pcie->pci);
 	if (ret < 0)
 		goto err_resume_host_init;
 
@@ -860,6 +867,7 @@ static struct platform_driver amlogic_pcie_driver = {
 		.name = "amlogic-pcie-v2",
 		.of_match_table = amlogic_pcie_of_match,
 		.pm = &aml_pcie_pm_ops,
+		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
 	},
 	.shutdown = amlogic_pcie_shutdown,
 };

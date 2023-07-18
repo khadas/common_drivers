@@ -1417,6 +1417,10 @@
 	};
 }; /* end of audiobus */
 
+&adla {
+	nn_regulator = "gpio_regulator";
+};
+
 &earc {
 	status = "disabled";
 };

@@ -1564,6 +1564,7 @@
 
 &uart_A {
 	status = "okay";
+	uart_for_bt = <1>;
 };
 
 &pcie_A {

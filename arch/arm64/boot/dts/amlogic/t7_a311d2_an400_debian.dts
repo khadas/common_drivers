@@ -1891,6 +1891,7 @@
 &uart_C {
 	status = "okay";
 	uart-has-rtscts;
+	uart_for_bt = <1>;
 };
 
 &pwmao_ab {

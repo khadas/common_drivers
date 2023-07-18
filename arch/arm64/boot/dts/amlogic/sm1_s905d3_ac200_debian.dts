@@ -1870,6 +1870,7 @@
 
 &uart_A {
 	status = "okay";
+	uart_for_bt = <1>;
 };
 
 /*if you want to use vdin just modify status to "okay"*/

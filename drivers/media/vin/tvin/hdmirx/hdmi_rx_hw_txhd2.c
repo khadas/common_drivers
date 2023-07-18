@@ -56,7 +56,7 @@ static const u32 phy_misc_txhd2[][2] = {
 		0xffe40000, 0x11e73000,
 	},
 	{	 /* 525~600M */
-		0xffe40100, 0x11e73000,
+		0xffe4010e, 0x11e73000,
 	},
 };
 
@@ -79,7 +79,7 @@ static const u32 phy_dcha_txhd2[][2] = {
 		0x00f73666, 0x61f01359,
 	},
 	{	 /* 525~600M */
-		0x02821666, 0x61f01359,
+		0x03831666, 0x61f01359,
 	},
 };
 
@@ -1216,7 +1216,7 @@ void aml_eq_cfg_txhd2(void)
 	if (rx[port].phy.phy_bw >= PHY_BW_2 &&
 		rx_info.aml_phy.enhance_eq)
 		aml_enhance_eq_txhd2();
-	if (rx[port].phy.phy_bw >= PHY_BW_1)
+	if (rx[port].phy.phy_bw <= PHY_BW_2 || rx_info.aml_phy.hyper_gain_en)
 		aml_hyper_gain_tuning_txhd2();
 	usleep_range(200, 210);
 	/*tmds valid det*/

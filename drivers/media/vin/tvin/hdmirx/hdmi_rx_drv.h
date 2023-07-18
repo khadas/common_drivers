@@ -46,6 +46,7 @@
 //2023.7.10 txhd2 bring up
 //2023.7.21 fix phy/pll clk band
 //2023.7.25 hdmirx suspend
+//2023.7.27 phy setting and control pcs reset
 #define RX_VER0 "ver.2023/07/25"
 
 /*print type*/
@@ -948,6 +949,7 @@ extern int esm_recovery_mode;
 extern u32 dbg_pkt;
 extern int disable_hdr;
 extern int rx_phy_level;
+extern int vdin_reset_pcs_en;
 #ifdef CONFIG_AMLOGIC_MEDIA_VRR
 extern struct notifier_block vrr_notify;
 #endif

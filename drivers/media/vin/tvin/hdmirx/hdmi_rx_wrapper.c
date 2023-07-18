@@ -3776,6 +3776,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(fpll_chk_lvl, i++);
 	pr_var(rx_info.aml_phy.hyper_gain_en, i++);
 	pr_var(edid_reset_max, i++);
+	pr_var(vdin_reset_pcs_en, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4308,6 +4309,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(edid_reset_max),
 		&edid_reset_max, value))
 		return pr_var(edid_reset_max, index);
+	if (set_pr_var(tmpbuf, var_to_str(vdin_reset_pcs_en),
+		&vdin_reset_pcs_en, value))
+		return pr_var(vdin_reset_pcs_en, index);
 	return 0;
 }
 
@@ -4628,11 +4632,8 @@ void rx_monitor_error_counter(u8 port)
 	if ((timestap - rx[port].phy.timestap) > 1) {
 		rx[port].phy.timestap = timestap;
 		rx_get_error_cnt(&ch0, &ch1, &ch2, &ch3, port);
-		if (rx_info.chip_id >= CHIP_ID_T3X && rx[port].var.frl_rate) {
-			if (ch0 || ch1 || ch2 || ch3)
-				if (log_level & FRL_LOG)
-					rx_pr("err cnt:%d,%d,%d,%d\n", ch0, ch1, ch2, ch3);
-		}
+		if (ch0 || ch1 || ch2 || ch3)
+			rx_pr("err cnt:%d,%d,%d,%d\n", ch0, ch1, ch2, ch3);
 		rx_get_rs_err_cnt(port);
 		rx_get_ecc_err_cnt(port);
 	}

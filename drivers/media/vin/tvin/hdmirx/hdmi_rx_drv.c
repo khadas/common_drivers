@@ -153,6 +153,7 @@ bool dev_is_apple_tv_v2;
 bool hdmi_cec_en;
 static bool tv_auto_power_on;
 int vdin_drop_frame_cnt = 1;
+int vdin_reset_pcs_en;
 /* suspend_pddq_sel:
  * 0: keep phy on when suspend(don't need phy init when
  *   resume), it doesn't work now because phy VDD_IO_3.3V
@@ -1622,8 +1623,10 @@ void hdmirx_pcs_reset(struct tvin_frontend_s *fe)
 {
 	u8 port = rx_info.main_port;
 
-	rx[port].state = FSM_SIG_WAIT_STABLE;
-	reset_pcs(port);
+	if (vdin_reset_pcs_en == 1) {
+		rx[port].state = FSM_SIG_WAIT_STABLE;
+		reset_pcs(port);
+	}
 }
 
 static struct tvin_state_machine_ops_s hdmirx_sm_ops = {
@@ -3528,7 +3531,7 @@ static int hdmirx_probe(struct platform_device *pdev)
 					   &phy_term_lel);
 		if (ret) {
 			rx_pr("term_lvl not found.\n");
-			phy_term_lel = 0;
+			phy_term_lel = 0x0;
 		}
 	} else {
 		hdevp->audmeas_clk = clk_get(&pdev->dev, "hdmirx_audmeas_clk");

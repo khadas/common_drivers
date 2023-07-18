@@ -12471,12 +12471,12 @@ int get_hdr_conversion_cap(void)
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_hdr_stb_mode()) {
 		hdr_cap = 0x7fff;
-		if (is_amdv_enable() && is_amdv_on()) {
+		if (get_dv_support_info() == 7) {
 			hdr_cap = 0xfffff;
-			};
+		};
 	} else if (is_hdr_tv_mode()) {
 		hdr_cap = (1 << 3) | (1 << 5) | (1 << 8) | (1 << 10) | (1 << 13);
-		if (is_amdv_enable() && is_amdv_on()) {
+		if (get_dv_support_info() == 15) {
 			hdr_cap |= 1 << 16;
 		};
 	}

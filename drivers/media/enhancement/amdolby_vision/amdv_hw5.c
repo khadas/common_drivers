@@ -888,6 +888,11 @@ void enable_amdv_hw5(int enable)
 			set_amdv_wait_on();
 			if (is_aml_t3x()) {
 				update_dma_buf();
+				/* common flow should */
+				/* stop hdr core before */
+				/* start dv core */
+				if (dolby_vision_flags & FLAG_CERTIFICATION)
+					hdr_vd1_off(VPP_TOP0);
 				if (!top2_info.core_on)
 					set_frame_count(0);
 				if (enable_top1 && (amdv_mask & 1) &&

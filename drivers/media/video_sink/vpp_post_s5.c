@@ -518,12 +518,13 @@ static void vpp_post_blend_set(u32 vpp_index,
 		port_val[vd1_port] = postbld_src1_sel;
 	if (vd_layer[1].post_blend_en)
 		port_val[vd2_port] = postbld_src2_sel;
-	pr_info("%s:vd1_port:%d, vd2_port:%d, val:0x%x, 0x%x\n",
-		__func__,
-		vd1_port,
-		vd2_port,
-		port_val[vd1_port],
-		port_val[vd2_port]);
+	if (debug_flag_s5 & DEBUG_VPP_POST)
+		pr_info("%s:vd1_port:%d, vd2_port:%d, val:0x%x, 0x%x\n",
+			__func__,
+			vd1_port,
+			vd2_port,
+			port_val[vd1_port],
+			port_val[vd2_port]);
 	rdma_wr(vpp_reg->vd1_blend_src_ctrl,
 		(port_val[0] & 0xf) |
 		(postbld_vd1_premult & 0x1) << 4);
@@ -826,9 +827,10 @@ static void vpp_post_get_osd_insize(u32 index, u32 *h_size, u32 *v_size)
 
 	*h_size = h_end - h_begin + 1;
 	*v_size = v_end - v_begin + 1;
-	pr_info("index = %d, reg: %x, %x, h: %d, %d, v=%d, %d\n",
-		index, osd_bld_h_scope, osd_bld_v_scope,
-		h_end, h_begin, v_end, v_begin);
+	if (debug_flag_s5 & DEBUG_VPP_POST)
+		pr_info("index = %d, reg: %x, %x, h: %d, %d, v=%d, %d\n",
+			index, osd_bld_h_scope, osd_bld_v_scope,
+			h_end, h_begin, v_end, v_begin);
 }
 
 /* hw reg param info set */

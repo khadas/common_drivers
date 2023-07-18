@@ -13846,6 +13846,30 @@ int register_dv_functions(const struct dolby_vision_func_s *func)
 					memset(top2_v_info.comp_buf[i], 0, COMP_BUF_SIZE);
 			}
 
+			tv_hw5_setting->top1_ext = vmalloc(EXT_DM_SIZE);
+			if (tv_hw5_setting->top1_ext) {
+				memset(tv_hw5_setting->top1_ext, 0, EXT_DM_SIZE);
+			} else {
+				vfree(pq_config_dvp_fake);
+				pq_config_dvp_fake = NULL;
+				p_funcs_tv = NULL;
+				vfree(tv_hw5_setting);
+				tv_hw5_setting = NULL;
+				return -ENOMEM;
+			}
+			tv_hw5_setting->top2_ext = vmalloc(EXT_DM_SIZE);
+			if (tv_hw5_setting->top2_ext) {
+				memset(tv_hw5_setting->top2_ext, 0, EXT_DM_SIZE);
+			} else {
+				vfree(pq_config_dvp_fake);
+				pq_config_dvp_fake = NULL;
+				p_funcs_tv = NULL;
+				vfree(tv_hw5_setting->top1_ext);
+				vfree(tv_hw5_setting);
+				tv_hw5_setting = NULL;
+				return -ENOMEM;
+			}
+
 			top1_v_info.current_id = 0;
 			top2_v_info.current_id = 0;
 
@@ -14050,7 +14074,8 @@ void amdv_crc_clear(int flag)
 	}
 	if (!crc_output_buf)
 		crc_output_buf = vmalloc(CRC_BUFF_SIZE);
-	pr_info("clear crc_output_buf\n");
+	if (debug_dolby & 0x100)
+		pr_info("clear crc_output_buf\n");
 	if (crc_output_buf)
 		memset(crc_output_buf, 0, CRC_BUFF_SIZE);
 	strcpy(cur_crc, "invalid");

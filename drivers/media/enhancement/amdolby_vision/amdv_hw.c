@@ -3983,7 +3983,8 @@ void set_force_reset_core2(bool flag)
 /*flag bit2: bypass from dolby3 to vkeystone, skip vajd2/post/mtx/gainoff*/
 void bypass_pps_sr_gamma_gainoff(int flag)
 {
-	pr_dv_dbg("%s: %d\n", __func__, flag);
+	if (debug_dolby & 0x100)
+		pr_dv_dbg("%s: %d\n", __func__, flag);
 
 	if (is_aml_s5()) {
 		/*from s5, no VPP_DOLBY_CTRL 1d93 bit0*/

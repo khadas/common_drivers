@@ -754,7 +754,8 @@ void vpu_dev_mem_power_on(struct vpu_dev_s *vpu_dev)
 		return;
 
 	if (!vpu_dev) {
-		VPUERR("%s: vpu_dev is null\n", __func__);
+		if (vpu_debug_print_flag)
+			VPUERR("%s: vpu_dev is null\n", __func__);
 		return;
 	}
 	if (!vpu_conf.data->mempd_switch) {

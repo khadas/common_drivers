@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "202300705"
+#define DRIVER_VER "202300719"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"
@@ -87,6 +87,8 @@
 #define TOP2_REG_NUM 617 /*real reg 615*/
 #define TOP1_LUT_NUM 149
 #define TOP2_LUT_NUM 424
+
+#define EXT_DM_SIZE 80812
 
 #define PYRAMID_SW_RST 1 /*NO need set pylevel before vsync*/
 
@@ -1014,6 +1016,8 @@ struct tv_hw5_setting_s {
 	u64 top2_reg[TOP2_REG_NUM];
 	u64 top1_lut[TOP1_LUT_NUM * 2];
 	u64 top2_lut[TOP2_LUT_NUM * 2];
+	u8 *top1_ext;
+	u8 *top2_ext;
 	u16 backlight;
 
 	/*reserved*/

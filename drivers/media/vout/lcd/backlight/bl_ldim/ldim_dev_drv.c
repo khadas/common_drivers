@@ -282,12 +282,16 @@ unsigned int ldim_gpio_get(struct ldim_dev_driver_s *dev_drv, int index)
 
 void ldim_set_duty_pwm(struct bl_pwm_config_s *bl_pwm)
 {
+	unsigned long long temp;
+
 	if (bl_pwm->pwm_port >= BL_PWM_MAX)
 		return;
 	if (bl_pwm->pwm_duty_max == 0)
 		return;
 
-	bl_pwm_duty_to_pwm_level(bl_pwm);
+	temp = bl_pwm->pwm_cnt;
+	bl_pwm->pwm_level = bl_do_div(((temp * bl_pwm->pwm_duty) +
+		((bl_pwm->pwm_duty_max + 1) >> 1)), bl_pwm->pwm_duty_max);
 
 	if (ldim_debug_print == 2) {
 		LDIMPR("pwm port %d: duty= %d / %d, pwm_max=%d, pwm_min=%d, pwm_level=%d\n",

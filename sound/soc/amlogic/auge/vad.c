@@ -42,6 +42,7 @@
 #include "pdm.h"
 #include "pdm_hw.h"
 #include "aud_sram.h"
+#include <linux/vmalloc.h>
 
 #define DRV_NAME "VAD"
 
@@ -285,6 +286,8 @@ static int vad_engine_check(struct vad *p_vad, bool init)
 	int frame_count = VAD_READ_FRAME_COUNT;
 	unsigned int timeout_cnt = 0;
 	unsigned int timeout_max_cnt = 20;
+	if (!p_vad)
+		return -EINVAL;
 
 	if (!p_vad->tddr || !p_vad->tddr->actrl ||
 		!p_vad->tddr->in_use)
@@ -307,12 +310,28 @@ static int vad_engine_check(struct vad *p_vad, bool init)
 	if (init) {
 		int frame_count1 = p_vad->dma_buffer.bytes / chnum / bytes_per_sample;
 		int send_size = frame_count1 * chnum * bytes_per_sample;
+		int count = 0;
 
-		curr_addr = aml_toddr_get_position(p_vad->tddr);
+		for (;;) {
+			count++;
+			if (count > 200) {
+				pr_info("%s:wait vad buffer time out!\n", __func__);
+				return 0;
+			}
+			/*not in vad buffer*/
+			if (!p_vad || !p_vad->en || /*!p_vad->callback ||*/
+				!p_vad->tddr || !p_vad->a2v_buf) {
+				msleep_interruptible(5);
+				pr_info("%s:wait switch to vad buffer!\n", __func__);
+				continue;
+			}
+			curr_addr = aml_toddr_get_position(p_vad->tddr);
+			if (curr_addr < start || start > end || curr_addr > end)
+				continue;
+			break;
+		}
 		pr_info("%s copy vad whole buffer, start:%x, end:%x, curr_addr:%x, last_addr:%x\n",
 			__func__, start, end, curr_addr, last_addr);
-		if (curr_addr < start || start > end)
-			return 0;
 		memcpy(p_vad->vad_whole_buf, hwbuf + curr_addr - start, end - curr_addr);
 		memcpy(p_vad->vad_whole_buf + end - curr_addr, hwbuf, curr_addr - start);
 
@@ -414,7 +433,7 @@ static int vad_freeze_thread(void *data)
 		return 0;
 
 	current->flags |= PF_NOFREEZE;
-	p_vad->vad_whole_buf = kzalloc(p_vad->dma_buffer.bytes, GFP_KERNEL);
+	p_vad->vad_whole_buf = vmalloc(p_vad->dma_buffer.bytes);
 	dev_info(p_vad->dev, "vad: freeze thread start\n");
 
 	for (;;) {
@@ -447,7 +466,7 @@ static int vad_freeze_thread(void *data)
 		schedule();
 	}
 
-	kfree(p_vad->vad_whole_buf);
+	vfree(p_vad->vad_whole_buf);
 	dev_info(p_vad->dev, "vad: freeze thread exit\n");
 	return 0;
 }
@@ -624,13 +643,15 @@ void vad_set_lowerpower_mode(bool islowpower)
 	vad_force_clk_to_oscin(islowpower, vad_top);
 }
 
+static DEFINE_SPINLOCK(audio_vad_lock);
 void vad_update_buffer(bool isvadbuf)
 {
 	struct vad *p_vad = get_vad();
 	unsigned int start, end, curr_addr;
 	unsigned int rd_th;
 	int i = 0;
-
+	unsigned long flags;
+	bool toddr_stopped = false;
 	if (!p_vad || !p_vad->tddr ||
 		!p_vad->tddr->in_use || !p_vad->tddr->actrl) {
 		pr_err("%s, happened error\n", __func__);
@@ -642,6 +663,7 @@ void vad_update_buffer(bool isvadbuf)
 			__func__, p_vad->a2v_buf, isvadbuf);
 		return;
 	}
+	spin_lock_irqsave(&audio_vad_lock, flags);
 
 	if (isvadbuf) {	/* switch to vad buffer */
 		struct toddr *tddr = p_vad->tddr;
@@ -705,13 +727,18 @@ void vad_update_buffer(bool isvadbuf)
 			toddr_vad_enable(false);
 		}
 	} else {
+		if (isvadbuf) {
+			toddr_stopped = aml_toddr_burst_finished(p_vad->tddr);
+			if (toddr_stopped)
+				aml_vad_toddr_enable(p_vad->tddr, false);
+		}
 		aml_toddr_set_buf_startaddr(p_vad->tddr, start);
 		aml_toddr_force_finish(p_vad->tddr);
 
 		/* make sure DMA point is in new buffer */
 		curr_addr = aml_toddr_get_position(p_vad->tddr);
 		while (curr_addr < start || curr_addr > end) {
-			if (i++ > 10000) {
+			if (i++ > 20000) {
 				pr_err("break\n");
 				break;
 			}
@@ -722,9 +749,12 @@ void vad_update_buffer(bool isvadbuf)
 		aml_toddr_set_buf_endaddr(p_vad->tddr, end);
 
 		aml_toddr_set_fifos(p_vad->tddr, rd_th);
+		if (isvadbuf)
+			aml_vad_toddr_enable(p_vad->tddr, true);
 	}
 	p_vad->a2v_buf = isvadbuf;
 	p_vad->addr = 0;
+	spin_unlock_irqrestore(&audio_vad_lock, flags);
 }
 
 int vad_transfer_chunk_data(unsigned long data, int frames)

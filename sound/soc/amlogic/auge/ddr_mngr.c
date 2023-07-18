@@ -393,6 +393,16 @@ void aml_toddr_enable(struct toddr *to, bool enable)
 	}
 }
 
+void aml_vad_toddr_enable(struct toddr *to, bool enable)
+{
+	struct aml_audio_controller *actrl = to->actrl;
+	unsigned int reg_base = to->reg_base;
+	unsigned int reg;
+
+	reg = calc_toddr_address(EE_AUDIO_TODDR_A_CTRL0, reg_base);
+	aml_audiobus_update_bits(actrl,	reg, 1 << 31, enable << 31);
+}
+
 static char *toddr_src2str(enum toddr_src tsrc)
 {
 	if (tsrc >= TODDR_SRC_MAX)

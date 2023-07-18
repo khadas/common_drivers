@@ -309,6 +309,7 @@ void aml_toddr_write1(struct toddr *to, unsigned int val);
 unsigned int aml_toddr_read_status2(struct toddr *to);
 bool aml_toddr_burst_finished(struct toddr *to);
 
+void aml_vad_toddr_enable(struct toddr *to, bool enable);
 void toddr_vad_enable(bool enable);
 void toddr_vad_set_buf(unsigned int start, unsigned int end);
 void toddr_vad_set_intrpt(unsigned int intrpt);

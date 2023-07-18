@@ -1,7 +1,7 @@
-From a27abe5bd83dde56ed2f621b3ccbea1d2eddc3f6 Mon Sep 17 00:00:00 2001
+From da2463c09a9de7a049085781f6f2f1e1d35ae226 Mon Sep 17 00:00:00 2001
 From: "qiankun.wang" <qiankun.wang@amlogic.com>
 Date: Fri, 12 May 2023 15:09:23 +0800
-Subject: [PATCH] misc: misc modifications [1/1]
+Subject: [PATCH] debug: misc modifications [1/1]
 
 PD#SWPL-114632
 
@@ -17,36 +17,15 @@ s4
 Change-Id: I4561d2c235baacaf73fd82e5b850dda74148724e
 Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
 ---
- drivers/Kconfig         |  9 +++++++++
  drivers/base/dd.c       | 14 ++++++++++++++
  init/main.c             | 37 +++++++++++++++++++++++++++++++++++++
  kernel/module.c         | 38 ++++++++++++++++++++++++++++++++++++++
  kernel/sched/topology.c |  8 +++++++-
  kernel/workqueue.c      | 19 +++++++++++++++++++
- 6 files changed, 124 insertions(+), 1 deletion(-)
+ 5 files changed, 115 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 09c9fcfb9236..ab7c3cfea329 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -249,6 +249,15 @@ config AMLOGIC_DRIVER
- 	  Note: All amlogic driver should be placed in
- 	  directory $(COMMON_DRIVERS_DIR)/drivers/
- 
-+config AMLOGIC_BREAK_GKI_20
-+	bool "Amlogic Break GKI 2.0"
-+	depends on AMLOGIC_BREAK_GKI
-+	default n
-+	help
-+	  this option is provide for control Break GKI 2.0,
-+	  if you want to break gki2.0 rule, should enable it,
-+	  all break gki2.0 modify should be depends on this option
-+
- if AMLOGIC_DRIVER
- config AMLOGIC_BREAK_GKI
- 	bool "Amlogic Break GKI"
 diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 9cbf086fe552..3a3719471066 100644
+index ab0b2eb5fa07..bfe0370b67a4 100644
 --- a/drivers/base/dd.c
 +++ b/drivers/base/dd.c
 @@ -57,6 +57,11 @@ static LIST_HEAD(deferred_probe_active_list);
@@ -292,5 +271,5 @@ index de9441696fab..70cf59b5e27e 100644
  	/* ensure we're on the correct CPU */
  	WARN_ON_ONCE(!(pool->flags & POOL_DISASSOCIATED) &&
 -- 
-2.25.1
+2.29.0
 

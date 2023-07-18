@@ -3,7 +3,6 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#if defined(CONFIG_ANDROID_VENDOR_HOOKS) && defined(CONFIG_FAIR_GROUP_SCHED)
 
 #include <linux/stacktrace.h>
 #include <linux/export.h>
@@ -26,8 +25,10 @@
 #include <sched.h>
 
 #include <trace/hooks/sched.h>
+#include <trace/hooks/dtask.h>
 #include <trace/events/meson_atrace.h>
 
+#if defined(CONFIG_ANDROID_VENDOR_HOOKS) && defined(CONFIG_FAIR_GROUP_SCHED)
 static int sched_big_weight = 10; // * NICE_0_LOAD
 module_param(sched_big_weight, int, 0644);
 
@@ -150,11 +151,9 @@ static void aml_select_rt_nice(void *data, struct task_struct *p,
 	if (task_may_not_preempt(curr, prev_cpu) || rt_task(curr)) {
 		test = 1;
 	} else if (curr->prio <= sched_rt_nice_prio) {
-#ifdef CONFIG_FAIR_GROUP_SCHED
 		if (curr->se.depth == 1 &&
 		    curr->se.parent->my_q->tg->shares < sched_big_weight * NICE_0_LOAD)
 			goto out_unlock;
-#endif
 
 		//high prio normal interactive task
 		if (curr->se.avg.util_avg >= sched_interactive_task_util)
@@ -188,7 +187,6 @@ static void aml_select_rt_nice(void *data, struct task_struct *p,
 			goto out_unlock;
 		}
 
-#ifdef CONFIG_FAIR_GROUP_SCHED
 		if (task && task->se.depth == 1 &&
 		    task->se.parent->my_q->tg->shares < sched_big_weight * NICE_0_LOAD) {
 			if (sched_rt_nice_debug)
@@ -200,7 +198,6 @@ static void aml_select_rt_nice(void *data, struct task_struct *p,
 			*new_cpu = tmp_cpu;
 			goto out_unlock;
 		}
-#endif
 
 		if (task && task->prio > lowest_prio) {
 			lowest_prio = task->prio;
@@ -232,7 +229,6 @@ static void aml_check_preempt_wakeup(void *data, struct rq *rq, struct task_stru
 	if (!sched_check_preempt_wakeup_enable)
 		return;
 
-#ifdef CONFIG_FAIR_GROUP_SCHED
 	if (p->se.depth == 1 &&
 	    p->se.parent->my_q->tg->shares < sched_big_weight * NICE_0_LOAD) {
 		if (sched_check_preempt_wakeup_debug)
@@ -252,7 +248,6 @@ static void aml_check_preempt_wakeup(void *data, struct rq *rq, struct task_stru
 		 *preempt = 1;
 		return;
 	}
-#endif
 
 	if (p->prio >= sched_task_low_prio) {
 		if (sched_check_preempt_wakeup_debug)
@@ -494,10 +489,6 @@ static void aml_place_entity(void *data, struct cfs_rq *cfs_rq, struct sched_ent
 				      task_of(se)->sched_task_group->css.cgroup->kn->name,
 				      se->vruntime, cfs_rq->min_vruntime, vruntime_new);
 	}
-
-	//task_struct.android_kabi_reserved1: last wakeup time
-	if (entity_is_task(se))
-		task_of(se)->android_kabi_reserved1 = rq_clock(rq_of(cfs_rq));
 }
 
 static void aml_check_preempt_tick(void *data, struct task_struct *p, unsigned long *ideal_runtime,
@@ -556,47 +547,92 @@ static void aml_check_preempt_tick(void *data, struct task_struct *p, unsigned l
 		se = __pick_next_entity(se);
 	}
 }
+#endif
 
-static int cpupri_check_rt_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+static void __maybe_unused sched_show_task_hook(void *data, struct task_struct *p)
 {
-	//overwrite function check_rt_ret() return value
-	regs->regs[0] = 0;
-
-	return 0;
+	pr_info("task:%s/%d on_cpu=%d prio=%d sum_exec_runtime=%llu runnable_avg=%lu util_avg=%lu wake=%llu in_cpu=%llu off_cpu=%llu sleep=%llu tick=%llu rcu_neset=%d\n",
+		p->comm, p->pid, p->on_cpu, p->prio,
+		p->se.sum_exec_runtime,
+		p->se.avg.runnable_avg,
+		p->se.avg.util_avg,
+		p->android_kabi_reserved1,
+		p->android_kabi_reserved2,
+		p->android_kabi_reserved3,
+		p->android_kabi_reserved4,
+		p->android_kabi_reserved5,
+		p->rcu_read_lock_nesting);
 }
 
-NOKPROBE_SYMBOL(cpupri_check_rt_ret_handler);
+static void sched_switch_hook(void *data, bool mode, struct task_struct *prev,
+			      struct task_struct *next)
+{
+	unsigned long long now;
 
-static struct kretprobe cpupri_check_rt_kretprobe = {
-	.handler		= cpupri_check_rt_ret_handler,
-	/* Probe up to 20 instances concurrently. */
-	.maxactive		= 20,
+	now = sched_clock();
+	next->android_kabi_reserved2 = now; //last in cpu time
+	prev->android_kabi_reserved3 = now; //last off cpu time
+	if (prev->__state & TASK_INTERRUPTIBLE || prev->__state & TASK_UNINTERRUPTIBLE)
+		prev->android_kabi_reserved4 = now; //last sleep time
+}
+
+static void enqueue_task_hook(void *data, struct rq *rq, struct task_struct *p, int flags)
+{
+	if (p->__state == TASK_WAKING)
+		p->android_kabi_reserved1 = sched_clock(); //last wakeup time
+}
+
+static void tick_entry_hook(void *data, struct rq *rq)
+{
+	current->android_kabi_reserved5 = sched_clock(); //last tick time
+}
+#endif
+
+#if defined(CONFIG_ARM64) || defined(CONFIG_ARM)
+/* let cpupri_check_rt() directly return 0 */
+static int __kprobes cpupri_check_rt_pre_handler(struct kprobe *p, struct pt_regs *regs)
+{
+#ifdef CONFIG_ARM64
+	regs->regs[0] = 0;
+	instruction_pointer_set(regs, regs->regs[30]);
+#endif
+#ifdef CONFIG_ARM
+	regs->ARM_r0 = 0;
+	instruction_pointer_set(regs, regs->ARM_lr);
+#endif
+
+	//no need continue do single-step
+	return 1;
+}
+
+static struct kprobe kp_cpupri_check_rt = {
+	.symbol_name = "cpupri_check_rt",
+	.pre_handler = cpupri_check_rt_pre_handler,
 };
+#endif
 
 int aml_sched_init(void)
 {
-	int ret;
-
+#if defined(CONFIG_ANDROID_VENDOR_HOOKS) && defined(CONFIG_FAIR_GROUP_SCHED)
 	register_trace_android_rvh_select_task_rq_rt(aml_select_rt_nice, NULL);
 	register_trace_android_rvh_check_preempt_wakeup(aml_check_preempt_wakeup, NULL);
 	register_trace_android_rvh_replace_next_task_fair(aml_pick_next_task, NULL);
 	register_trace_android_rvh_place_entity(aml_place_entity, NULL);
 	register_trace_android_rvh_check_preempt_tick(aml_check_preempt_tick, NULL);
-
-	cpupri_check_rt_kretprobe.kp.symbol_name = "cpupri_check_rt";
-	ret = register_kretprobe(&cpupri_check_rt_kretprobe);
-
-	if (ret < 0)
-		pr_err("register_kretprobe failed, returned %d\n", ret);
-
-	pr_debug("Planted return probe at %s: %px\n",
-		cpupri_check_rt_kretprobe.kp.symbol_name, cpupri_check_rt_kretprobe.kp.addr);
-
-	return 0;
-}
-#else
-int aml_sched_init(void)
-{
-	return 0;
-}
 #endif
+
+#ifdef CONFIG_ANDROID_VENDOR_HOOKS
+	register_trace_sched_switch(sched_switch_hook, NULL);
+	register_trace_android_rvh_enqueue_task(enqueue_task_hook, NULL);
+	register_trace_android_rvh_tick_entry(tick_entry_hook, NULL);
+	register_trace_android_vh_sched_show_task(sched_show_task_hook, NULL);
+#endif
+
+#if defined(CONFIG_ARM64) || defined(CONFIG_ARM)
+	if (register_kprobe(&kp_cpupri_check_rt))
+		pr_err("register_kprobe cpupri_check_rt failed\n");
+#endif
+
+	return 0;
+}

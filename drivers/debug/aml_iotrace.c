@@ -1125,7 +1125,8 @@ int __init aml_iotrace_init(void)
 
 	if (ramoops_io_dump) {
 		INIT_DELAYED_WORK(&iotrace_work, iotrace_work_func);
-		schedule_delayed_work(&iotrace_work, ramoops_io_dump_delay_secs * HZ);
+		queue_delayed_work(system_unbound_wq, &iotrace_work,
+				   ramoops_io_dump_delay_secs * HZ);
 	}
 
 	return 0;

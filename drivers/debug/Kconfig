@@ -155,3 +155,11 @@ config AMLOGIC_BGKI_SCHED_SYSCTL
 	help
 	  this is for vts vts_kernel_proc_file_api_test support in
 	  android S.
+
+config AMLOGIC_ARM_UNWIND
+	bool "Amlogic modify in arm unwind"
+	depends on ARM_UNWIND
+	default n
+	help
+	 This option enable Amlogic arm unwind function
+	 If in doubt, say "Y"

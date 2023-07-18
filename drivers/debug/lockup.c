@@ -60,7 +60,6 @@
 #define LONG_SMC		(500 * 1000000)		/* 500 ms*/
 #define ENTRY			10
 #define INVALID_IRQ	     -1
-#define INVALID_SIRQ	    -1
 
 static unsigned long long isr_long_thr = LONG_ISR;
 module_param(isr_long_thr, ullong, 0644);
@@ -68,46 +67,17 @@ module_param(isr_long_thr, ullong, 0644);
 static unsigned long isr_ratio_thr = 50;
 module_param(isr_ratio_thr, ulong, 0644);
 
-static unsigned long long sirq_thr = LONG_SIRQ;
-module_param(sirq_thr, ullong, 0644);
-
 static unsigned long long idle_thr = LONG_IDLE;
 module_param(idle_thr, ullong, 0644);
 
-static unsigned long long smc_thr = LONG_SMC;
-module_param(smc_thr, ullong, 0644);
-
 static int isr_check_en = 1;
 module_param(isr_check_en, int, 0644);
-
-static int sirq_check_en = 1;
-module_param(sirq_check_en, int, 0644);
 
 static int idle_check_en = 1;
 module_param(idle_check_en, int, 0644);
 
 static int smc_check_en = 1;
 module_param(smc_check_en, int, 0644);
-
-static unsigned long long irq_disable_thr = LONG_IRQDIS;
-module_param(irq_disable_thr, ullong, 0644);
-
-static int irq_check_en;
-module_param(irq_check_en, int, 0644);
-
-static int irq_check_en_setup(char *str)
-{
-	if (!strcmp(str, "1")) {
-		irq_check_en = 1;
-		return 0;
-	}
-	if (!strcmp(str, "0")) {
-		irq_check_en = 0;
-		return 0;
-	}
-	return 1;
-}
-__setup("irq_check_en=", irq_check_en_setup);
 
 #if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
 #define FIQ_DEBUG_SMC_CMD	0x820000f1
@@ -169,12 +139,6 @@ static int initialized;
 
 static void (*lockup_hook)(int cpu);
 
-irq_trace_fn_t irq_trace_start_hook;
-EXPORT_SYMBOL(irq_trace_start_hook);
-
-irq_trace_fn_t irq_trace_stop_hook;
-EXPORT_SYMBOL(irq_trace_stop_hook);
-
 struct isr_check_info {
 	unsigned long long period_start_time;
 	unsigned long long exec_start_time;
@@ -188,10 +152,6 @@ struct lockup_info {
 	int curr_irq;
 	struct irqaction *curr_irq_action;
 
-	/* sirq check */
-	unsigned long long sirq_enter_time;
-	int curr_sirq;
-
 	/* idle check */
 	unsigned long long idle_enter_time;
 
@@ -203,11 +163,6 @@ struct lockup_info {
 	unsigned long curr_smc_a1;
 	unsigned long smc_enter_trace_entries[ENTRY];
 	int smc_enter_trace_entries_nr;
-
-	/* irq disable check */
-	unsigned long long irq_disable_time;
-	unsigned long irq_disable_trace_entries[ENTRY];
-	int irq_disable_trace_entries_nr;
 };
 
 static struct lockup_info __percpu *infos;
@@ -313,45 +268,6 @@ static void __maybe_unused isr_out_hook(void *data, int irq, struct irqaction *a
 	isr_info->cnt = 0;
 }
 
-static void __maybe_unused softirq_in_hook(void *data, unsigned int vec_nr)
-{
-	int cpu;
-	struct lockup_info *info;
-
-	if (!sirq_check_en)
-		return;
-
-	cpu = smp_processor_id();
-	info = per_cpu_ptr(infos, cpu);
-
-	info->curr_sirq = vec_nr;
-	info->sirq_enter_time = sched_clock();
-}
-
-static void __maybe_unused softirq_out_hook(void *data, unsigned int vec_nr)
-{
-	int cpu;
-	unsigned long long delta;
-	struct lockup_info *info;
-
-	if (!sirq_check_en)
-		return;
-
-	cpu = smp_processor_id();
-	info = per_cpu_ptr(infos, cpu);
-
-	info->curr_sirq = INVALID_SIRQ;
-	if (!info->sirq_enter_time)
-		return;
-
-	delta = sched_clock() - info->sirq_enter_time;
-	if (delta > sirq_thr)
-		pr_err("SIRQLong___ERR. sirq:%d exec_time:%llu ms\n",
-		       vec_nr, div_u64(delta, ns2ms));
-
-	info->sirq_enter_time = 0;
-}
-
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_TEST)
 int idle_long_debug;
 EXPORT_SYMBOL(idle_long_debug);
@@ -450,13 +366,6 @@ static void smc_in_hook(unsigned long smcid, unsigned long val, bool noret)
 	memcpy(info->smc_enter_task_comm, current->comm, TASK_COMM_LEN);
 	info->curr_smc_a0 = smcid;
 	info->curr_smc_a1 = val;
-
-	if (irq_check_en) {
-		memset(info->smc_enter_trace_entries, 0, sizeof(info->smc_enter_trace_entries));
-#ifdef CONFIG_STACKTRACE
-		info->smc_enter_trace_entries_nr = stack_trace_save(info->smc_enter_trace_entries, ENTRY, 0);
-#endif
-	}
 }
 
 static void smc_out_hook(unsigned long smcid, unsigned long val)
@@ -518,93 +427,6 @@ void __arm_smccc_smc_glue(unsigned long a0, unsigned long a1,
 		preempt_enable_notrace();
 }
 EXPORT_SYMBOL(__arm_smccc_smc_glue);
-
-static void __maybe_unused irq_trace_start(unsigned long flags)
-{
-	int cpu, softirq;
-	struct lockup_info *info;
-
-	if (!irq_check_en || oops_in_progress)
-		return;
-
-	if (arch_irqs_disabled_flags(flags))
-		return;
-
-	cpu = smp_processor_id();
-	info = per_cpu_ptr(infos, cpu);
-
-	softirq = task_thread_info(current)->preempt_count & SOFTIRQ_MASK;
-	if ((!current->pid && !softirq) ||
-	    info->idle_enter_time ||
-	    cpu_is_offline(cpu) ||
-	    (softirq_count() && info->sirq_enter_time))
-		return;
-
-	info->irq_disable_time = sched_clock();
-
-	memset(info->irq_disable_trace_entries, 0, sizeof(info->irq_disable_trace_entries));
-#ifdef CONFIG_STACKTRACE
-	info->irq_disable_trace_entries_nr = stack_trace_save(info->irq_disable_trace_entries, ENTRY, 0);
-#endif
-}
-
-static void __maybe_unused irq_trace_stop(unsigned long flags)
-{
-	int cpu, softirq;
-	struct lockup_info *info;
-	unsigned long long ts, delta;
-	unsigned long rem_nsec;
-
-	if (!irq_check_en || oops_in_progress)
-		return;
-
-	if (arch_irqs_disabled_flags(flags))
-		return;
-
-	cpu = smp_processor_id();
-	info = per_cpu_ptr(infos, cpu);
-
-	if (!info->irq_disable_time || !arch_irqs_disabled_flags(arch_local_save_flags()))
-		return;
-
-	softirq =  task_thread_info(current)->preempt_count & SOFTIRQ_MASK;
-	delta = sched_clock() - info->irq_disable_time;
-
-	if (delta > irq_disable_thr &&
-	    !(!current->pid && !softirq) &&
-	    !(softirq_count() && info->sirq_enter_time)) {
-		ts = info->irq_disable_time;
-		rem_nsec = do_div(ts, 1000000000);
-		pr_err("\n\nDisIRQ___ERR:%llums, disabled at: %llu.%06lu\n",
-		       div_u64(delta, ns2ms), ts, rem_nsec / 1000);
-
-#ifdef CONFIG_STACKTRACE
-		stack_trace_print(info->irq_disable_trace_entries, info->irq_disable_trace_entries_nr, 0);
-#endif
-		dump_stack();
-	}
-
-	info->irq_disable_time = 0;
-}
-
-static void __maybe_unused sched_show_task_hook(void *data, struct task_struct *p)
-{
-	unsigned long long ts;
-	unsigned long rem_nsec;
-
-	ts = p->se.exec_start;
-	rem_nsec = do_div(ts, 1000000000);
-
-	pr_info("task:%s/%d on_cpu=%d prio=%d exec_start=%llu.%06lu sum_exec_runtime=%llums load_avg=%lu runnable_avg=%lu util_avg=%lu\n",
-		p->comm, p->pid,
-		p->on_cpu,
-		p->prio,
-		ts, rem_nsec / 1000,
-		div_u64(p->se.sum_exec_runtime, ns2ms),
-		p->se.avg.load_avg,
-		p->se.avg.runnable_avg,
-		p->se.avg.util_avg);
-}
 
 static void __dump_cpu_task(int cpu)
 {
@@ -953,7 +775,7 @@ void pr_lockup_info(int lock_cpu)
 	int cpu;
 	unsigned long flags;
 	struct lockup_info *info;
-	unsigned long long delta, ts;
+	unsigned long long ts;
 	unsigned long rem_nsec;
 
 	local_irq_save(flags);
@@ -961,11 +783,9 @@ void pr_lockup_info(int lock_cpu)
 
 	pr_err("\n");
 	pr_err("\n");
-	pr_err("%s: lock_cpu=[%d] irq_check_en=%d -------- START --------\n",
-	       __func__, lock_cpu, irq_check_en);
-	irq_check_en = 0;
+	pr_err("%s: lock_cpu=[%d] -------- START --------\n",
+	       __func__, lock_cpu);
 	isr_check_en = 0;
-	sirq_check_en = 0;
 	idle_check_en = 0;
 	smc_check_en = 0;
 
@@ -985,15 +805,6 @@ void pr_lockup_info(int lock_cpu)
 			       ts, rem_nsec / 1000);
 		}
 
-		if (info->curr_sirq != INVALID_SIRQ) {
-			ts = info->sirq_enter_time;
-			rem_nsec = do_div(ts, 1000000000);
-
-			pr_err("curr_sirq:%d sirq_enter_time=%llu.%06lu\n",
-				info->curr_sirq,
-				ts, rem_nsec / 1000);
-		}
-
 		if (info->idle_enter_time) {
 			ts = info->idle_enter_time;
 			rem_nsec = do_div(ts, 1000000000);
@@ -1009,24 +820,6 @@ void pr_lockup_info(int lock_cpu)
 			       ts, rem_nsec / 1000, info->curr_smc_a0, info->curr_smc_a1,
 			       info->smc_enter_task_pid, info->smc_enter_task_comm);
 
-#ifdef CONFIG_STACKTRACE
-			if (irq_check_en)
-				stack_trace_print(info->smc_enter_trace_entries,
-						  info->smc_enter_trace_entries_nr, 0);
-#endif
-		}
-
-		if (info->irq_disable_time) {
-			delta = sched_clock() - info->irq_disable_time;
-			ts = info->irq_disable_time;
-			rem_nsec = do_div(ts, 1000000000);
-
-			pr_err("in irq, disabled at: %llu.%06lu for %llums\n",
-			       ts, rem_nsec / 1000, div_u64(delta, ns2ms));
-
-#ifdef CONFIG_STACKTRACE
-			stack_trace_print(info->irq_disable_trace_entries, info->irq_disable_trace_entries_nr, 0);
-#endif
 		}
 
 		__dump_cpu_task(cpu);
@@ -1068,34 +861,10 @@ rt_throttle_func(void *data, int cpu, u64 clock, ktime_t rt_period, u64 rt_runti
 		rq->curr->prio, exec_runtime);
 }
 
-static void __maybe_unused
-debug_hook_func(void *data, struct irq_data *magic, const struct cpumask *arg1,
-			    u64 *arg2, bool force, void __iomem *base,
-			    void __iomem *rbase, u64 redist_stride)
-{
-	if ((unsigned long)magic != DEBUG_HOOK_MAGIC)
-		return;
-
-	switch ((enum debug_hook_type)arg1) {
-	case DEBUG_HOOK_IRQ_START:
-		irq_trace_start((unsigned long)arg2);
-		break;
-	case DEBUG_HOOK_IRQ_STOP:
-		irq_trace_stop((unsigned long)arg2);
-		break;
-	default:
-		pr_err("bad debug_hook_type:%d\n", (enum debug_hook_type)arg1);
-		break;
-	}
-}
-
-//todo after submit abi:__traceiter_android_vh_ftrace_format_check
-/*
-static void ftrace_format_check_hook(void *data, bool *ftrace_check)
+static void __maybe_unused ftrace_format_check_hook(void *data, bool *ftrace_check)
 {
 	*ftrace_check = 0;
 }
-*/
 
 #if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
 static void fiq_debug_addr_init(void)
@@ -1117,15 +886,15 @@ static void fiq_debug_addr_init(void)
 	fiq_percpu_size = res.result.percpu_size;
 
 	/* Current ATF version does not support FIQ DEBUG */
-	if (fiq_phy_addr == 0 || fiq_phy_addr == 0xFFFFFFFF) {
-		pr_err("invalid fiq_phy_addr\n");
+	if (fiq_phy_addr == 0 || fiq_phy_addr == -1) {
+		WARN(1, "invalid fiq_phy_addr\n");
 		return;
 	}
 
 	fiq_virt_addr = ioremap_cache(fiq_phy_addr,
 					fiq_buf_size);
 	if (!fiq_virt_addr) {
-		pr_err("failed to map fiq_virt_addr space\n");
+		WARN(1, "failed to map fiq_virt_addr space\n");
 		return;
 	}
 
@@ -1153,41 +922,19 @@ int debug_lockup_init(void)
 		info = per_cpu_ptr(infos, cpu);
 		memset(info, 0, sizeof(*info));
 		info->curr_irq = INVALID_IRQ;
-		info->curr_sirq = INVALID_SIRQ;
 	}
 #ifdef CONFIG_ANDROID_VENDOR_HOOKS
 	register_trace_irq_handler_entry(isr_in_hook, NULL);
 	register_trace_irq_handler_exit(isr_out_hook, NULL);
 
-//	register_trace_softirq_entry(softirq_in_hook, NULL);
-//	register_trace_softirq_exit(softirq_out_hook, NULL);
-
 	register_trace_android_vh_cpu_idle_enter(idle_in_hook, NULL);
 	register_trace_android_vh_cpu_idle_exit(idle_out_hook, NULL);
 
-	register_trace_android_vh_sched_show_task(sched_show_task_hook, NULL);
-
 	register_trace_android_vh_dump_throttled_rt_tasks(rt_throttle_func, NULL);
 
-	irq_trace_start_hook = irq_trace_start;
-	irq_trace_stop_hook = irq_trace_stop;
-
-#ifndef CONFIG_FUNCTION_GRAPH_TRACER
-	register_trace_android_rvh_gic_v3_set_affinity(debug_hook_func, NULL);
-#endif
-
-	/* CONFIG_IRQSOFF_TRACER is not enabled, can't use below function */
-	//register_trace_android_rvh_irqs_disable(irq_trace_start, NULL);
-	//register_trace_android_rvh_irqs_enable(irq_trace_stop, NULL);
-
-	//todo after submit abi:__traceiter_android_vh_ftrace_format_check
-	//register_trace_android_vh_ftrace_format_check(ftrace_format_check_hook, NULL);
+	register_trace_android_vh_ftrace_format_check(ftrace_format_check_hook, NULL);
 #endif
 	initialized = 1;
-
-#if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_TEST)
-	irq_check_en = 1;
-#endif
 
 #if (defined CONFIG_ARM64) || (defined CONFIG_AMLOGIC_ARMV8_AARCH32)
 	fiq_debug_addr_init();

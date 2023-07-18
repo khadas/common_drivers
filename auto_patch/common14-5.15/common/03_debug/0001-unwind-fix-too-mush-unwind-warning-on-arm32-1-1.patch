@@ -1,4 +1,4 @@
-From 98fa48de655bff95138760d8d1b6dfa9d854e2df Mon Sep 17 00:00:00 2001
+From c0b92f6b4a63e1445795af18654a682b18cbef1d Mon Sep 17 00:00:00 2001
 From: "qiankun.wang" <qiankun.wang@amlogic.com>
 Date: Fri, 12 May 2023 14:33:37 +0800
 Subject: [PATCH] unwind: fix too mush unwind warning on arm32 [1/1]
@@ -17,38 +17,18 @@ C3
 Change-Id: I53bc7739e2909818c04d6e50b2172a06984bd883
 Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
 ---
- arch/arm/Kconfig.debug   |  8 ++++++++
  arch/arm/kernel/unwind.c | 10 ++++++++++
- 2 files changed, 18 insertions(+)
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 644875d73ba1..3423063f1321 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -81,6 +81,14 @@ endchoice
- config ARM_UNWIND
- 	bool
- 
-+config AMLOGIC_ARM_UNWIND
-+	bool "Amlogic modify in arm unwind"
-+	depends on ARM_UNWIND
-+	default n
-+	help
-+	  This option enable Amlogic arm unwind function
-+	  If in doubt, say "Y"
-+
- config FRAME_POINTER
- 	bool
- 
 diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
-index 59fdf257bf8b..55d03d7b9678 100644
+index 59fdf257bf8b..8553eda4b6f9 100644
 --- a/arch/arm/kernel/unwind.c
 +++ b/arch/arm/kernel/unwind.c
 @@ -390,10 +390,20 @@ int unwind_frame(struct stackframe *frame)
  		return -URC_FAILURE;
  
  	idx = unwind_find_idx(frame->pc);
-+#if IS_ENABLED(CONFIG_AMLOGIC_BGKI_DEBUG_MISC)
++#if IS_ENABLED(CONFIG_AMLOGIC_ARM_UNWIND)
 +	if (!idx)
 +		idx = unwind_find_idx(frame->lr);
 +	if (!idx) {
@@ -66,5 +46,5 @@ index 59fdf257bf8b..55d03d7b9678 100644
  	ctrl.vrs[FP] = frame->fp;
  	ctrl.vrs[SP] = frame->sp;
 -- 
-2.25.1
+2.29.0
 

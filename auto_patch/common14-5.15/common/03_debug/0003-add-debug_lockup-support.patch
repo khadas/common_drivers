@@ -1,0 +1,78 @@
+From 7d38cab7c1eb8b0be9b2d83ea29606f1abe2bb8a Mon Sep 17 00:00:00 2001
+From: "qiankun.wang" <qiankun.wang@amlogic.com>
+Date: Thu, 11 May 2023 15:11:51 +0800
+Subject: [PATCH] debug_lockup:add lockup support [1/1]
+
+PD#SWPL-114632
+
+Problem:
+add lockup support
+
+Solution:
+add lockup support
+
+Verify:
+s4
+
+Change-Id: I05a407250655338b7bd128ca918275331c040e52
+Signed-off-by: qiankun.wang <qiankun.wang@amlogic.com>
+---
+ include/linux/arm-smccc.h | 12 ++++++++++++
+ include/linux/sched.h     |  8 ++++++++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/include/linux/arm-smccc.h b/include/linux/arm-smccc.h
+index b23906d0652f..99b8b2aaa2a1 100644
+--- a/include/linux/arm-smccc.h
++++ b/include/linux/arm-smccc.h
+@@ -414,9 +414,21 @@ asmlinkage void __arm_smccc_hvc(unsigned long a0, unsigned long a1,
+ 			unsigned long a5, unsigned long a6, unsigned long a7,
+ 			struct arm_smccc_res *res, struct arm_smccc_quirk *quirk);
+ 
++/* gki mode build with module or buitlin mode */
++#if ((defined(CONFIG_AMLOGIC_DEBUG_MODULE) && defined(MODULE)) || (defined(CONFIG_AMLOGIC_DEBUG))) && (!defined(SKIP_LOCKUP_CHECK))
++void __arm_smccc_smc_glue(unsigned long a0, unsigned long a1,
++			unsigned long a2, unsigned long a3, unsigned long a4,
++			unsigned long a5, unsigned long a6, unsigned long a7,
++			struct arm_smccc_res *res, struct arm_smccc_quirk *quirk);
++
++#define arm_smccc_smc(...) __arm_smccc_smc_glue(__VA_ARGS__, NULL)
++
++#define arm_smccc_smc_quirk(...) __arm_smccc_smc_glue(__VA_ARGS__)
++#else
+ #define arm_smccc_smc(...) __arm_smccc_smc(__VA_ARGS__, NULL)
+ 
+ #define arm_smccc_smc_quirk(...) __arm_smccc_smc(__VA_ARGS__)
++#endif
+ 
+ #define arm_smccc_hvc(...) __arm_smccc_hvc(__VA_ARGS__, NULL)
+ 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e763dc6065ff..8568261d98c4 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1512,6 +1512,13 @@ struct task_struct {
+ 	struct callback_head		l1d_flush_kill;
+ #endif
+ 
++#if IS_ENABLED(CONFIG_AMLOGIC_MEMORY_OPT) && IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
++	unsigned long long android_kabi_reserved1;
++	unsigned long long android_kabi_reserved2;
++	unsigned long long android_kabi_reserved3;
++	unsigned long long android_kabi_reserved4;
++	unsigned long long android_kabi_reserved5;
++#else
+ 	ANDROID_KABI_RESERVE(1);
+ 	ANDROID_KABI_RESERVE(2);
+ 	ANDROID_KABI_RESERVE(3);
+@@ -1520,6 +1527,7 @@ struct task_struct {
+ 	ANDROID_KABI_RESERVE(6);
+ 	ANDROID_KABI_RESERVE(7);
+ 	ANDROID_KABI_RESERVE(8);
++#endif
+ 
+ 	/*
+ 	 * New fields for task_struct should be added above here, so that
+-- 
+2.29.0
+

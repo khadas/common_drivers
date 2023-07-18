@@ -281,14 +281,12 @@ void tvin_update_vdin_prop(void)
 	struct tvin_state_machine_ops_s *sm_ops;
 	struct vframe_s *update_wr_vf = NULL;
 	struct vdin_dev_s *vdin0_devp = vdin_devp[0];
-	ulong flags;
 
 	if (!vdin0_devp || !vdin0_devp->frontend ||
 	    !(vdin0_devp->flags & VDIN_FLAG_ISR_EN))
 		return;
 
 	sm_ops = vdin0_devp->frontend->sm_ops;
-	spin_lock_irqsave(&vdin0_devp->isr_lock, flags);
 	if (!vdin0_devp->last_wr_vfe &&
 	    vdin0_devp->game_mode & VDIN_GAME_MODE_1 &&
 	    vdin0_devp->vdin_function_sel & VDIN_PROP_RX_UPDATE)
@@ -306,7 +304,6 @@ void tvin_update_vdin_prop(void)
 		vdin_set_vframe_prop_info(update_wr_vf, vdin0_devp);
 		vdin_set_freesync_data(vdin0_devp, update_wr_vf);
 	}
-	spin_unlock_irqrestore(&vdin0_devp->isr_lock, flags);
 
 	if (vdin_isr_monitor & DBG_RX_UPDATE_VDIN_PROP && update_wr_vf)
 		pr_info("tvin update prop index:%d game(%d)\n",
@@ -1411,8 +1408,6 @@ int vdin_start_dec(struct vdin_dev_s *devp)
 	/* write vframe as default */
 	devp->vframe_wr_en = 1;
 	devp->vframe_wr_en_pre = 1;
-	/* avoiding display abnormal */
-	devp->dbg_stop_dec_delay = 50000;
 	memset(&devp->stats, 0, sizeof(devp->stats));
 	if (vdin_time_en)
 		pr_info("vdin.%d start time: %ums, run time:%ums.\n",
@@ -4433,8 +4428,9 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		mutex_lock(&devp->fe_lock);
 		if (!devp || !devp->fmt_info_p ||
-		    !(devp->flags & VDIN_FLAG_DEC_STARTED)) {
-			pr_info("get frontend failure vdin not start\n");
+		    devp->parm.info.status != TVIN_SIG_STATUS_STABLE) {
+			pr_err("get frontend failure vdin not stable(%d:%d)\n",
+				!devp->fmt_info_p, devp->parm.info.status);
 			ret = -EFAULT;
 			mutex_unlock(&devp->fe_lock);
 			break;
@@ -4445,14 +4441,15 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		info.fps = devp->parm.info.fps;
 		info.colordepth = devp->prop.colordepth;
 		info.scan_mode = devp->fmt_info_p->scan_mode;
-		info.height = devp->v_active;
-		info.width = devp->h_active;
+		info.height = devp->fmt_info_p->v_active;
+		info.width = devp->fmt_info_p->h_active;
 		if (copy_to_user(argp, &info,
 				 sizeof(struct tvin_frontend_info_s)))
 			ret = -EFAULT;
 		mutex_unlock(&devp->fe_lock);
 		if (vdin_dbg_en)
-			pr_info("TVIN_IOC_G_FRONTEND_INFO(%d)\n", devp->index);
+			pr_info("TVIN_IOC_G_FRONTEND_INFO(%d:%#x)\n",
+				devp->index, devp->parm.info.fmt);
 		break;
 	}
 	case TVIN_IOC_G_BUF_INFO: {

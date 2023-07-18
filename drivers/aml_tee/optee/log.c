@@ -138,7 +138,7 @@ static void do_log_timer(struct work_struct *work)
 		pr_err("%s:%d Failed to join the workqueue\n", __func__, __LINE__);
 }
 
-int optee_log_init(void *va)
+int optee_log_init(void)
 {
 	int rc = 0;
 	size_t size = 0;
@@ -147,34 +147,43 @@ int optee_log_init(void *va)
 	struct arm_smccc_res smccc = { 0 };
 	struct loopbuffer_ctl_s *log_ctl = NULL;
 
-	arm_smccc_smc(OPTEE_SMC_ENABLE_LOGGER, 1, 0, 0, 0, 0, 0, 0,
-			&smccc);
+	arm_smccc_smc(OPTEE_SMC_GET_LOGGER_CONFIG, 0, 0, 0, 0, 0, 0, 0, &smccc);
+	if (smccc.a0 == TEEC_SUCCESS) {
+		/* v3, get log buffer config from BL32 */
+		begin = roundup(smccc.a1, PAGE_SIZE);
+		end = rounddown(smccc.a1 + smccc.a2, PAGE_SIZE);
+		size = end - begin;
+	} else if (smccc.a0 == OPTEE_SMC_RETURN_UNKNOWN_FUNCTION) {
+		/* v1 & v2, can not get log buffer config, use log buffer in share memory */
+		memset(&smccc, 0, sizeof(smccc));
+		arm_smccc_smc(OPTEE_SMC_GET_SHM_CONFIG, 0, 0, 0, 0, 0, 0, 0, &smccc);
+		if (smccc.a0 != TEEC_SUCCESS) {
+			pr_err("tee get share memory config failed, res = 0x%lx\n", smccc.a0);
+			rc = -EACCES;
+			goto err;
+		}
 
-	if (smccc.a0 != TEEC_SUCCESS) {
-		pr_err("smc enable logger failed, res = 0x%lx\n", smccc.a0);
+		begin = rounddown(smccc.a1 + smccc.a2, PAGE_SIZE) - DEF_LOGGER_SHM_SIZE;
+		size = DEF_LOGGER_SHM_SIZE;
+	} else {
+		/* Logger disabled */
 		rc = -EACCES;
 		goto err;
 	}
 
-	if (smccc.a1 == LOGGER_SHM_ADDR_MAGIC) {
-		/*
-		 * for new logger solution
-		 * a1: logger get flags
-		 * a2: logger start address
-		 * a3: logger size
-		 */
-		begin = roundup(smccc.a2, PAGE_SIZE);
-		end = rounddown(smccc.a2 + smccc.a3, PAGE_SIZE);
-		size = end - begin;
-		log_buf_va = memremap(begin, size, MEMREMAP_WB);
-	} else {
-		/* for previous logger solution */
-		log_buf_va = va;
+	log_buf_va = memremap(begin, size, MEMREMAP_WB);
+	if (!log_buf_va) {
+		pr_err("tee log buffer memremap failed\n");
+		rc = -ENOMEM;
+		goto err;
 	}
 
-	if (!log_buf_va) {
-		pr_err("shared memory logger ioremap failed\n");
-		return -ENOMEM;
+	memset(&smccc, 0, sizeof(smccc));
+	arm_smccc_smc(OPTEE_SMC_ENABLE_LOGGER, 1, 0, 0, 0, 0, 0, 0, &smccc);
+	if (smccc.a0 != TEEC_SUCCESS) {
+		pr_err("tee log buffer enable failed, res = 0x%lx\n", smccc.a0);
+		rc = -EACCES;
+		goto err;
 	}
 
 	log_ctl = (struct loopbuffer_ctl_s *)log_buf_va;

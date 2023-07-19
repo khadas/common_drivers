@@ -259,7 +259,6 @@ struct hdmitx_dev {
 	struct device *pdev; /* for pinctrl*/
 	struct pinctrl_state *pinctrl_i2c;
 	struct pinctrl_state *pinctrl_default;
-	struct vinfo_s *vinfo;
 	struct kfifo *log_kfifo;
 	const char *log_str;
 	int previous_error_event;

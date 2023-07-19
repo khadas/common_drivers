@@ -4457,8 +4457,10 @@ static char *hdmitx_bist_str[] = {
 static void hdmitx_debug_bist(struct hdmitx_dev *hdev, unsigned int num)
 {
 	unsigned int h_active, video_start;
+	/*TODO: remove vinfo later, it is for outer modules.*/
+	struct vinfo_s *vinfo = &hdev->tx_comm.hdmitx_vinfo;
 
-	if (!hdev->vinfo)
+	if (hdev->tx_comm.cur_VIC == 0)
 		return;
 
 	/*hdev->bist_lock = 1;*/
@@ -4473,7 +4475,7 @@ static void hdmitx_debug_bist(struct hdmitx_dev *hdev, unsigned int num)
 	case 1:
 	case 2:
 	case 3:
-		if (hdev->vinfo->viu_mux == VIU_MUX_ENCI) {
+		if (vinfo->viu_mux == VIU_MUX_ENCI) {
 			hd_write_reg(P_ENCI_TST_CLRBAR_STRT, 0x112);
 			hd_write_reg(P_ENCI_TST_CLRBAR_WIDTH, 0xb4);
 			hd_write_reg(P_ENCI_TST_MDSEL, num);
@@ -4483,7 +4485,7 @@ static void hdmitx_debug_bist(struct hdmitx_dev *hdev, unsigned int num)
 			hd_write_reg(P_ENCI_TST_EN, 1);
 		} else {
 			video_start = hd_read_reg(P_ENCP_VIDEO_HAVON_BEGIN);
-			h_active = hdev->vinfo->width;
+			h_active = vinfo->width;
 			hd_write_reg(P_VENC_VIDEO_TST_MDSEL, num);
 			hd_write_reg(P_VENC_VIDEO_TST_CLRBAR_STRT, video_start);
 			hd_write_reg(P_VENC_VIDEO_TST_CLRBAR_WIDTH,
@@ -4498,7 +4500,7 @@ static void hdmitx_debug_bist(struct hdmitx_dev *hdev, unsigned int num)
 			num, hdmitx_bist_str[num]);
 		break;
 	case 4:
-		if (hdev->vinfo->viu_mux == VIU_MUX_ENCI) {
+		if (vinfo->viu_mux == VIU_MUX_ENCI) {
 			hd_write_reg(P_ENCI_TST_MDSEL, 0);
 			hd_write_reg(P_ENCI_TST_Y, 0x3ff);
 			hd_write_reg(P_ENCI_TST_CB, 0x200);
@@ -4516,7 +4518,7 @@ static void hdmitx_debug_bist(struct hdmitx_dev *hdev, unsigned int num)
 			num, hdmitx_bist_str[num]);
 		break;
 	case 5:
-		if (hdev->vinfo->viu_mux == VIU_MUX_ENCI) {
+		if (vinfo->viu_mux == VIU_MUX_ENCI) {
 			hd_write_reg(P_ENCI_TST_MDSEL, 0);
 			hd_write_reg(P_ENCI_TST_Y, 0x200);
 			hd_write_reg(P_ENCI_TST_CB, 0x0);
@@ -4534,7 +4536,7 @@ static void hdmitx_debug_bist(struct hdmitx_dev *hdev, unsigned int num)
 			num, hdmitx_bist_str[num]);
 		break;
 	case 6:
-		if (hdev->vinfo->viu_mux == VIU_MUX_ENCI) {
+		if (vinfo->viu_mux == VIU_MUX_ENCI) {
 			hd_write_reg(P_ENCI_TST_MDSEL, 0);
 			hd_write_reg(P_ENCI_TST_Y, 0x200);
 			hd_write_reg(P_ENCI_TST_CB, 0x0);
@@ -4552,7 +4554,7 @@ static void hdmitx_debug_bist(struct hdmitx_dev *hdev, unsigned int num)
 			num, hdmitx_bist_str[num]);
 		break;
 	case 7:
-		if (hdev->vinfo->viu_mux == VIU_MUX_ENCI) {
+		if (vinfo->viu_mux == VIU_MUX_ENCI) {
 			hd_write_reg(P_ENCI_TST_MDSEL, 0);
 			hd_write_reg(P_ENCI_TST_Y, 0x200);
 			hd_write_reg(P_ENCI_TST_CB, 0x3ff);
@@ -4570,7 +4572,7 @@ static void hdmitx_debug_bist(struct hdmitx_dev *hdev, unsigned int num)
 			num, hdmitx_bist_str[num]);
 		break;
 	case 8:
-		if (hdev->vinfo->viu_mux == VIU_MUX_ENCI) {
+		if (vinfo->viu_mux == VIU_MUX_ENCI) {
 			hd_write_reg(P_ENCI_TST_MDSEL, 0);
 			hd_write_reg(P_ENCI_TST_Y, 0x0);
 			hd_write_reg(P_ENCI_TST_CB, 0x200);
@@ -4590,7 +4592,7 @@ static void hdmitx_debug_bist(struct hdmitx_dev *hdev, unsigned int num)
 	case 0:
 	default:
 		/*hdev->bist_lock = 0;*/
-		if (hdev->vinfo->viu_mux == VIU_MUX_ENCI) {
+		if (vinfo->viu_mux == VIU_MUX_ENCI) {
 			hd_write_reg(P_ENCI_TST_EN, 0);
 		} else {
 			hd_set_reg_bits(P_ENCP_VIDEO_MODE_ADV, 1, 3, 1);

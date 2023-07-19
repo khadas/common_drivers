@@ -613,7 +613,9 @@ static ssize_t vout_vinfo_show(struct class *class,
 		       "    viu_color_fmt:         %d\n"
 		       "    viu_mux:               0x%x\n"
 		       "    cur_enc_ppc:           %d\n"
-		       "    3d_info:               %d\n\n",
+		       "    3d_info:               %d\n"
+		       "    cs:                    %d\n"
+		       "    cd:                    %d\n\n",
 		       info->name, info->mode, info->frac,
 		       info->width, info->height, info->field_height,
 		       info->aspect_ratio_num, info->aspect_ratio_den,
@@ -623,7 +625,8 @@ static ssize_t vout_vinfo_show(struct class *class,
 		       info->vfreq_max, info->vfreq_min,
 		       info->htotal, info->vtotal, info->video_clk,
 		       info->fr_adj_type, info->viu_color_fmt,
-		       info->viu_mux, info->cur_enc_ppc, info->info_3d);
+		       info->viu_mux, info->cur_enc_ppc, info->info_3d,
+		       info->cs, info->cd);
 	len += sprintf(buf + len, "master_display_info:\n"
 		       "    present_flag          %d\n"
 		       "    features              0x%x\n"

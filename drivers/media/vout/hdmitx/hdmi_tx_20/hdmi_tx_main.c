@@ -98,7 +98,8 @@ static void clear_rx_vinfo(struct hdmitx_dev *hdev);
 static void edidinfo_attach_to_vinfo(struct hdmitx_dev *hdev);
 static void edidinfo_detach_to_vinfo(struct hdmitx_dev *hdev);
 static void update_current_para(struct hdmitx_dev *hdev);
-static void update_current_para_from_mode(struct hdmitx_dev *hdev, const char *name);
+static void update_para_from_mode(struct hdmitx_dev *hdev,
+	const char *name, const char *fmt_attr, struct hdmi_format_para *update_para);
 static bool is_cur_tmds_div40(struct hdmitx_dev *hdev);
 static void hdmitx_resend_div40(struct hdmitx_dev *hdev);
 static unsigned int hdmitx_get_frame_duration(void);
@@ -721,7 +722,8 @@ static int set_disp_mode_auto(void)
 		hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CLR_VSDB_PACKET, 0);
 		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 
-		update_current_para_from_mode(hdev, "invalid");
+		update_para_from_mode(hdev, "invalid",
+			hdev->tx_comm.fmt_attr, &hdev->tx_comm.fmt_para);
 
 		if (hdev->cedst_policy)
 			cancel_delayed_work(&hdev->work_cedst);
@@ -755,7 +757,8 @@ static int set_disp_mode_auto(void)
 			strcat(mode, "420");
 	}
 
-	update_current_para_from_mode(hdev, mode);
+	update_para_from_mode(hdev, mode,
+		hdev->tx_comm.fmt_attr, &hdev->tx_comm.fmt_para);
 	if (!hdmitx_edid_check_valid_mode(hdev, para)) {
 		pr_err("check failed vic: %d\n", para->vic);
 		mutex_unlock(&hdmimode_mutex);
@@ -1738,14 +1741,39 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 	spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
 }
 
+static void update_para_from_mode(struct hdmitx_dev *hdev,
+	const char *name, const char *fmt_attr,
+	struct hdmi_format_para *update_para)
+{
+	const struct hdmi_format_para *para;
+	struct vinfo_s *vinfo = &hdev->tx_comm.hdmitx_vinfo;
+
+	para = hdmi_get_fmt_name(name, fmt_attr);
+	pr_info("get_fmt_para from %s -> %d,%s\n", name, para->vic,
+		para->sname ? para->sname : para->name);
+
+	memcpy(update_para, para, sizeof(struct hdmi_format_para));
+
+	/*update vinfo for out device.*/
+	memcpy(vinfo, &para->deprecated_vinfo, sizeof(struct vinfo_s));
+	vinfo->info_3d = NON_3D;
+	if (hdmitx_device.flag_3dfp)
+		vinfo->info_3d = FP_3D;
+	if (hdmitx_device.flag_3dtb)
+		vinfo->info_3d = TB_3D;
+	if (hdmitx_device.flag_3dss)
+		vinfo->info_3d = SS_3D;
+	vinfo->vout_device = &hdmitx_vdev;
+
+	/*dynamic info, always need set.s*/
+	vinfo->cs = para->cs;
+	vinfo->cd = para->cd;
+}
+
 static void update_current_para(struct hdmitx_dev *hdev)
 {
-	struct vinfo_s *info = NULL;
 	unsigned char mode[32];
-
-	info = hdmitx_get_current_vinfo(NULL);
-	if (!info)
-		return;
+	struct vinfo_s *info = hdmitx_get_current_vinfo(NULL);
 
 	memset(mode, 0, sizeof(mode));
 	strncpy(mode, info->name, sizeof(mode) - 1);
@@ -1754,24 +1782,8 @@ static void update_current_para(struct hdmitx_dev *hdev)
 			strncat(mode, "420", sizeof(mode) - strlen("420") - 1);
 	}
 
-	update_current_para_from_mode(hdev, mode);
-}
-
-static void update_current_para_from_mode(struct hdmitx_dev *hdev, const char *name)
-{
-	struct hdmitx_common *tx_comm = &hdev->tx_comm;
-	const struct hdmi_format_para *para;
-
-	para = hdmi_get_fmt_name(name, tx_comm->fmt_attr);
-	pr_info("get_fmt_para from %s -> %d,%s\n", name, para->vic,
-		para->sname ? para->sname : para->name);
-
-	memcpy(&tx_comm->fmt_para, para, sizeof(struct hdmi_format_para));
-	memcpy(&tx_comm->hdmitx_vinfo, &para->deprecated_vinfo, sizeof(struct vinfo_s));
-
-	/*dynamic info, always need set.s*/
-	tx_comm->hdmitx_vinfo.cs = para->cs;
-	tx_comm->hdmitx_vinfo.cd = para->cd;
+	update_para_from_mode(hdev, mode,
+		hdev->tx_comm.fmt_attr, &hdev->tx_comm.fmt_para);
 }
 
 struct vsif_debug_save vsif_debug_info;
@@ -5692,7 +5704,7 @@ static DEVICE_ATTR_WO(hdcp22_top_reset);
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
 static struct vinfo_s *hdmitx_get_current_vinfo(void *data)
 {
-	return hdmitx_device.vinfo;
+	return &hdmitx_device.tx_comm.hdmitx_vinfo;
 }
 
 /* fr_tab[]
@@ -5769,30 +5781,15 @@ static int hdmitx_set_current_vmode(enum vmode_e mode, void *data)
 static enum vmode_e hdmitx_validate_vmode(char *mode, unsigned int frac,
 					  void *data)
 {
-	struct vinfo_s *info = hdmi_get_valid_vinfo(mode);
+	struct hdmitx_dev *hdev = &hdmitx_device;
+	struct hdmi_format_para fmt_para;
 
-	if (info) {
-		/* //remove frac support for vout api
-		 *if (frac)
-		 *	hdmitx_device.frac_rate_policy = 1;
-		 *else
-		 *	hdmitx_device.frac_rate_policy = 0;
-		 */
-
-		hdmitx_device.vinfo = info;
-		hdmitx_device.vinfo->info_3d = NON_3D;
-		if (hdmitx_device.flag_3dfp)
-			hdmitx_device.vinfo->info_3d = FP_3D;
-
-		if (hdmitx_device.flag_3dtb)
-			hdmitx_device.vinfo->info_3d = TB_3D;
-
-		if (hdmitx_device.flag_3dss)
-			hdmitx_device.vinfo->info_3d = SS_3D;
-
-		hdmitx_device.vinfo->vout_device = &hdmitx_vdev;
+	update_para_from_mode(hdev, mode,
+		hdev->tx_comm.fmt_attr, &fmt_para);
+	if (fmt_para.vic != HDMI_0_UNKNOWN)
 		return VMODE_HDMI;
-	}
+
+	pr_err("%s validate (%s,%s) fail\n", __func__, mode, hdev->tx_comm.fmt_attr);
 	return VMODE_MAX;
 }
 
@@ -5812,7 +5809,8 @@ static int hdmitx_module_disable(enum vmode_e cur_vmod, void *data)
 	hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CLR_VSDB_PACKET, 0);
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 
-	update_current_para_from_mode(hdev, "invalid");
+	update_para_from_mode(hdev, "invalid",
+		hdev->tx_comm.fmt_attr, &hdev->tx_comm.fmt_para);
 
 	hdmitx_validate_vmode("null", 0, NULL);
 	if (hdev->cedst_policy)
@@ -6905,7 +6903,8 @@ static int amhdmitx_device_init(struct hdmitx_dev *hdmi_dev, struct hdmitx_boot_
 
 	hdmitx_device.physical_addr = 0xffff;
 	/* init para for NULL protection */
-	update_current_para_from_mode(hdmi_dev, "invalid");
+	update_para_from_mode(hdmi_dev, "invalid",
+		hdmi_dev->tx_comm.fmt_attr, &hdmi_dev->tx_comm.fmt_para);
 
 	hdmitx_device.hdmi_last_hdr_mode = 0;
 	hdmitx_device.hdmi_current_hdr_mode = 0;

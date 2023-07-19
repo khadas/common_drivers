@@ -594,6 +594,83 @@
 		reg = <0xff809000 0x48>;
 	};
 
+	v_12v: fixed@v_12v {
+		compatible = "regulator-fixed";
+		regulator-name = "v_12v";
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+		regulator-always-on;
+	};
+
+	vddq_reg: fixed@vddq_reg{
+		compatible = "regulator-fixed";
+		vin-supply = <&v_12v>;
+		regulator-name = "VDDQ";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		gpio = <&gpio GPIOD_4 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	v_5v_reg: fixed@v_5v_reg{
+		compatible = "regulator-fixed";
+		vin-supply = <&v_12v>;
+		regulator-name = "5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		// k5.4 without GPIO_TEST_N for addr err
+		//gpio = <&gpio GPIO_TEST_N GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddao3v3_reg: fixed@vddao3v3_reg{
+		vin-supply = <&v_12v>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDAO_3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddio3v3_reg: fixed@vddio3v3_reg{
+		compatible = "regulator-fixed";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-name = "VDDIO_3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio GPIOD_10 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddio_b_reg: fixed@vddio_b_reg{
+		compatible = "regulator-fixed";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-name = "VDDIO_B";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	afe1v8_reg: fixed@afe1v8_reg{
+		vin-supply = <&vddio3v3_reg>;
+		compatible = "regulator-fixed";
+		regulator-name = "AFE_1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
 	vddcpu0: pwmb-regulator {
 		compatible = "pwm-regulator";
 		pwms = <&pwm_ab MESON_PWM_1 1500 0>;

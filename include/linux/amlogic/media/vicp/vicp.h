@@ -72,6 +72,14 @@ struct vicp_device_data_s {
 	bool ddr16_support;
 };
 
+struct vicp_clock_config_s {
+	int clk_count;
+	struct clk *clk_gate;
+	int gate_rate;
+	struct clk *clk_vapb0;
+	int vapb0_rate;
+};
+
 struct output_axis_s {
 	u32 left;
 	u32 top;

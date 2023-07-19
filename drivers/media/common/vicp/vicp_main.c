@@ -88,6 +88,7 @@ struct vicp_device_s {
 	unsigned int dbg_enable;
 	struct class *cla;
 	struct device *dev;
+	struct vicp_clock_config_s clock_cfg;
 };
 
 static struct vicp_device_s vicp_device;
@@ -1011,16 +1012,73 @@ static void vicp_param_uninit(void)
 	vicp_hdr_remove(vicp_hdr);
 }
 
+static int vicp_clock_config(int is_enable)
+{
+	int ret = 0;
+	struct vicp_clock_config_s config;
+
+	config = vicp_device.clock_cfg;
+	if (config.clk_count < 0) {
+		pr_err("count clock-names err.\n");
+		return -1;
+	}
+
+	if (is_enable) {
+		if (IS_ERR_OR_NULL(config.clk_gate)) {
+			pr_err("vicp gate clock is null.\n");
+			ret = -1;
+		} else {
+			clk_set_rate(config.clk_gate, config.gate_rate);
+			clk_prepare_enable(config.clk_gate);
+			pr_debug("vicp gate clock is %luMHZ.\n",
+				clk_get_rate(config.clk_gate) / 1000000);
+			ret = 0;
+		}
+
+		if (IS_ERR_OR_NULL(config.clk_vapb0)) {
+			pr_err("vicp vapb0 clock is null.\n");
+			ret = -1;
+		} else {
+			clk_set_rate(config.clk_vapb0, config.vapb0_rate);
+			clk_prepare_enable(config.clk_vapb0);
+			pr_debug("vicp vapb0 clock is %luMHZ.\n",
+				clk_get_rate(config.clk_vapb0) / 1000000);
+			ret = 0;
+		}
+	} else {
+		if (IS_ERR_OR_NULL(config.clk_gate)) {
+			pr_err("vicp gate clock is null.\n");
+			ret = -1;
+		} else {
+			clk_disable_unprepare(config.clk_gate);
+			pr_debug("disable vicp gate clock.\n");
+			ret = 0;
+		}
+
+		if (IS_ERR_OR_NULL(config.clk_vapb0)) {
+			pr_err("vicp vapb0 clock is null.\n");
+			ret = -1;
+		} else {
+			clk_disable_unprepare(config.clk_vapb0);
+			pr_debug("disable vicp vapb0 clock.\n");
+			ret = 0;
+		}
+	}
+
+	return ret;
+}
+
 static int vicp_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	int irq = 0;
 	struct resource res;
 	int clk_cnt = 0;
-	struct clk *clk_gate;
-	struct clk *clk_vapb0;
-	struct clk *clk;
+	struct clk *clk_gate = NULL;
+	struct clk *clk_vapb0 = NULL;
 	struct vicp_device_data_s *vicp_meson;
+
+	init_vicp_device();
 
 	if (pdev->dev.of_node) {
 		const struct of_device_id *match;
@@ -1038,8 +1096,6 @@ static int vicp_probe(struct platform_device *pdev)
 		}
 	}
 
-	init_vicp_device();
-
 	/* get interrupt resource */
 	irq = platform_get_irq_byname(pdev, "vicp_proc");
 	if (irq  == -ENXIO) {
@@ -1048,7 +1104,7 @@ static int vicp_probe(struct platform_device *pdev)
 		goto error;
 	}
 
-	pr_info("vicp driver probe: irq-1:%d.\n", irq);
+	pr_debug("vicp driver probe: irq-1:%d.\n", irq);
 	ret = request_irq(irq, &vicp_isr_handle, IRQF_SHARED, "vicp_proc", (void *)"vicp-dev");
 	if (ret < 0) {
 		pr_err("cannot get vicp irq resource.\n");
@@ -1063,7 +1119,7 @@ static int vicp_probe(struct platform_device *pdev)
 		goto error;
 	}
 
-	pr_info("vicp driver probe: irq-2:%d.\n", irq);
+	pr_debug("vicp driver probe: irq-2:%d.\n", irq);
 	ret = request_irq(irq, &vicp_rdma_handle, IRQF_SHARED, "vicp_rdma", (void *)"vicp-dev");
 	if (ret < 0) {
 		pr_err("cannot get vicp rdma resource.\n");
@@ -1071,75 +1127,54 @@ static int vicp_probe(struct platform_device *pdev)
 		goto error;
 	}
 
+	/* clock config */
 	clk_cnt = of_property_count_strings(pdev->dev.of_node, "clock-names");
 	if (clk_cnt < 0) {
-		pr_info("count clock-names err.\n");
+		pr_err("count clock-names err.\n");
 		ret = -ENOENT;
 		goto error;
 	}
 
-	if (clk_cnt == 3 || clk_cnt == 2) {
+	if (clk_cnt == 2) {
 		clk_gate = devm_clk_get(&pdev->dev, "clk_vicp_gate");
 		if (IS_ERR_OR_NULL(clk_gate)) {
-			pr_err("cannot get clock.\n");
+			pr_err("cannot get clock_gate.\n");
 			clk_gate = NULL;
 			ret = -ENOENT;
 			goto error;
 		}
-		pr_info("clock source clk_vicp_gate %p.\n", clk_gate);
-		if (clk_cnt == 2) {
-			clk_set_rate(clk_gate, vicp_meson->rate);
-			pr_info("vicp gate clock is %lu MHZ.\n", clk_get_rate(clk_gate) / 1000000);
-		}
-		clk_prepare_enable(clk_gate);
-
-		if (clk_cnt == 3) {
-			clk = devm_clk_get(&pdev->dev, "clk_vicp");
-			if (IS_ERR_OR_NULL(clk)) {
-				pr_err("cannot get clock.\n");
-				clk = NULL;
-				ret = -ENOENT;
-				goto error;
-			}
-			pr_info("clock clk_vicp source %p.\n", clk);
-			clk_prepare_enable(clk);
-		}
+		pr_debug("clock source clk_vicp_gate %p.\n", clk_gate);
 
 		clk_vapb0 = devm_clk_get(&pdev->dev, "clk_vapb_0");
-		if (PTR_ERR(clk_vapb0) != -ENOENT) {
-			int vapb_rate, vpu_rate;
-
-			if (!IS_ERR_OR_NULL(clk_vapb0)) {
-				pr_info("clock source clk_vapb_0 %p.\n", clk_vapb0);
-				vpu_rate = vicp_meson->rate;
-				vapb_rate = vicp_meson->rate;
-
-				pr_info("vicp init clock is %d HZ, VPU clock is %d HZ.\n",
-					vapb_rate, vpu_rate);
-				clk_set_rate(clk_vapb0, vapb_rate);
-				clk_prepare_enable(clk_vapb0);
-				vapb_rate = clk_get_rate(clk_vapb0);
-				pr_info("vicp clock is %d MHZ.\n", vapb_rate / 1000000);
-			}
+		if (IS_ERR_OR_NULL(clk_vapb0)) {
+			pr_err("cannot get clk_vapb0.\n");
+			clk_vapb0 = NULL;
+			ret = -ENOENT;
+			goto error;
 		}
+		pr_debug("clock source clk_vapb0 %p.\n", clk_vapb0);
 	} else if (clk_cnt == 1) {
-		pr_info("vicp only one clock.\n");
 		clk_gate = devm_clk_get(&pdev->dev, "clk_vicp");
-			if (!IS_ERR_OR_NULL(clk_gate)) {
-				int clk_rate = vicp_meson->rate;
-
-				clk_set_rate(clk_gate, clk_rate);
-				clk_prepare_enable(clk_gate);
-				clk_rate = clk_get_rate(clk_gate);
-				pr_info("vicp clock is %d MHZ.\n", clk_rate / 1000000);
-			} else {
-				pr_err("cannot get clock.\n");
-				clk_gate = NULL;
-				ret = -ENOENT;
-				goto error;
-			}
+		if (IS_ERR_OR_NULL(clk_gate)) {
+			pr_err("cannot get clock_gate.\n");
+			clk_gate = NULL;
+			ret = -ENOENT;
+			goto error;
+		}
+		pr_debug("clock source clk_vicp %p.\n", clk_gate);
 	} else {
 		pr_err("unsupported clk cnt.\n");
+		ret = -EINVAL;
+		goto error;
+	}
+
+	vicp_device.clock_cfg.clk_count = clk_cnt;
+	vicp_device.clock_cfg.clk_gate = clk_gate;
+	vicp_device.clock_cfg.gate_rate = vicp_meson->rate;
+	vicp_device.clock_cfg.clk_vapb0 = clk_vapb0;
+	vicp_device.clock_cfg.vapb0_rate = vicp_meson->rate;
+	ret = vicp_clock_config(1);
+	if (ret < 0) {
 		ret = -EINVAL;
 		goto error;
 	}
@@ -1149,28 +1184,27 @@ static int vicp_probe(struct platform_device *pdev)
 		if (res.start != 0) {
 			vicp_reg_map = ioremap(res.start, resource_size(&res));
 			if (vicp_reg_map) {
-				pr_info("map io source 0x%p,size=%d to 0x%p.\n",
+				pr_debug("map io source 0x%p,size=%d to 0x%p.\n",
 						(void *)res.start,
 						(int)resource_size(&res),
 						vicp_reg_map);
 			}
 		} else {
 			vicp_reg_map = 0;
-			pr_info("ignore io source start %p, size=%d.\n",
+			pr_debug("ignore io source start %p, size=%d.\n",
 					  (void *)res.start,
 					  (int)resource_size(&res));
 		}
 	}
 	ret = of_reserved_mem_device_init(&pdev->dev);
 	if (ret < 0)
-		pr_info("reserved mem is not used.\n");
+		pr_debug("reserved mem is not used.\n");
 
 	pm_runtime_enable(&pdev->dev);
 	ret = pm_runtime_get_sync(&pdev->dev);
 	if (ret < 0)
 		pr_err("runtime get power error.\n");
 
-	//clk_disable_unprepare(clk_gate);
 	vicp_param_init(*vicp_meson);
 	return 0;
 error:
@@ -1184,16 +1218,60 @@ static int vicp_remove(struct platform_device *pdev)
 	vicp_param_uninit();
 	pm_runtime_put_sync(&pdev->dev);
 	uninit_vicp_device();
+	vicp_clock_config(0);
 
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int vicp_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	vicp_clock_config(0);
+
+	return 0;
+}
+
+static int vicp_resume(struct platform_device *pdev)
+{
+	vicp_clock_config(1);
+
+	return 0;
+}
+
+static int vicp_pm_suspend(struct device *dev)
+{
+	vicp_clock_config(0);
+
+	return 0;
+}
+
+static int vicp_pm_resume(struct device *dev)
+{
+	vicp_clock_config(1);
+
+	return 0;
+}
+
+#endif
+
+static const struct dev_pm_ops vicp_dev_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(vicp_pm_suspend, vicp_pm_resume)
+};
+
 static struct platform_driver vicp_driver = {
 	.probe = vicp_probe,
 	.remove = vicp_remove,
+#ifdef CONFIG_PM
+	.suspend = vicp_suspend,
+	.resume = vicp_resume,
+#endif
 	.driver = {
+		.owner = THIS_MODULE,
 		.name = "amlogic-vicp",
 		.of_match_table = vicp_dt_match,
+#ifdef CONFIG_PM
+		.pm = &vicp_dev_pm_ops,
+#endif
 	}
 };
 

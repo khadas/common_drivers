@@ -1341,8 +1341,11 @@ static long tvafe_ioctl(struct file *file,
 			ret = -EINVAL;
 			break;
 		}
-		if (enable_db_reg)
+		if (enable_db_reg) {
 			tvafe_set_regmap(&tvafe_regs);
+			tvafe->cvd2.cvd_chroma_saturation =
+				R_APB_REG(CVD2_CHROMA_SATURATION_ADJUSTMENT);
+		}
 
 		break;
 		}

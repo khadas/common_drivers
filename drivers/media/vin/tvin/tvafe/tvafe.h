@@ -39,7 +39,8 @@
 /* 20230602: chip bringup */
 /* 20230607: optimized snow config */
 /* 20230609: chip bringup */
-#define TVAFE_VER "20230609: chip bringup"
+/* 20230804: atv add filter format and set saturation fail */
+#define TVAFE_VER "20230804: atv add filter format and set saturation fail"
 
 /* used to set the flag of tvafe_dev_s */
 #define TVAFE_FLAG_DEV_OPENED 0x00000010

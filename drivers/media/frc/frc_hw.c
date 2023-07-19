@@ -1497,10 +1497,11 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	pr_frc(log, "%s\n", __func__);
 	// Config frc input size & vpu register
 	if (chip == ID_T3X) {
-		if (frc_top->frc_ratio_mode == FRC_RATIO_1_2)
-			tmpvalue = (frc_top->hsize + 15) & 0xFFF0;
-		else
-			tmpvalue = frc_top->hsize;
+		//if (frc_top->frc_ratio_mode == FRC_RATIO_1_2)
+		//	tmpvalue = (frc_top->hsize + 15) & 0xFFF0;
+		//else
+		//	tmpvalue = frc_top->hsize;
+		tmpvalue = frc_top->hsize;
 		tmpvalue |= (frc_top->vsize) << 16;
 		WRITE_FRC_REG_BY_CPU(FRC_FRAME_SIZE, tmpvalue);
 		frc_top->vfb =

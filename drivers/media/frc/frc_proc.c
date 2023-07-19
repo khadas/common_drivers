@@ -445,8 +445,10 @@ int frc_update_in_sts(struct frc_dev_s *devp, struct st_frc_in_sts *frc_in_sts,
 			frc_in_sts->in_hsize = devp->out_sts.vout_width;
 			frc_in_sts->in_vsize = devp->out_sts.vout_height;
 		} else {
-			frc_in_sts->in_hsize = cur_video_sts->nnhf_input_w;
-			frc_in_sts->in_vsize = cur_video_sts->nnhf_input_h;
+			//frc_in_sts->in_hsize = cur_video_sts->nnhf_input_w;
+			//frc_in_sts->in_vsize = cur_video_sts->nnhf_input_h;
+			frc_in_sts->in_hsize = cur_video_sts->frc_h_size;
+			frc_in_sts->in_vsize = cur_video_sts->frc_v_size;
 		}
 
 	}
@@ -472,13 +474,10 @@ int frc_update_in_sts(struct frc_dev_s *devp, struct st_frc_in_sts *frc_in_sts,
 		frc_in_sts->frc_hsc_startp = cur_video_sts->VPP_hsc_startp;
 	}
 
-	//pr_frc(dbg_sts, "in size(%d,%d) sr_out(%d,%d) dbg(%d,%d)\n",
-	//	frc_in_sts->in_hsize, frc_in_sts->in_vsize,
-	//	cur_video_sts->nnhf_input_w, cur_video_sts->nnhf_input_h,
-	//	devp->dbg_input_hsize, devp->dbg_input_vsize);
 	pr_frc(4, "in size(%d,%d) vd_sr_out(%d,%d)\n",
 		frc_in_sts->in_hsize, frc_in_sts->in_vsize,
-		cur_video_sts->nnhf_input_w, cur_video_sts->nnhf_input_h);
+		// cur_video_sts->nnhf_input_w, cur_video_sts->nnhf_input_h);
+		cur_video_sts->frc_h_size, cur_video_sts->frc_v_size);
 
 	return 0;
 }
@@ -786,8 +785,8 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 		if (!cur_video_sts) {
 			pr_frc(1, "vpp_frame_par_s is NULL");
 			no_input = true;
-		} else if (cur_video_sts->nnhf_input_w == 0 ||
-				cur_video_sts->nnhf_input_h == 0) {
+		} else if (cur_video_sts->frc_h_size == 0 ||
+				cur_video_sts->frc_v_size == 0) {
 			if ((devp->in_sts.st_flag & FRC_FLAG_INSIZE_ERR) !=
 						FRC_FLAG_INSIZE_ERR) {
 				devp->in_sts.st_flag =
@@ -795,8 +794,8 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 				pr_frc(1, "video = err_insize");
 			}
 			no_input = true;
-		} else if (cur_video_sts->nnhf_input_w > 3840 + 8 ||
-				cur_video_sts->nnhf_input_h > 2160 + 8) {
+		} else if (cur_video_sts->frc_h_size > 3840 + 8 ||
+				cur_video_sts->frc_v_size > 2160 + 8) {
 			if ((devp->in_sts.st_flag & FRC_FLAG_INSIZE_ERR) !=
 						FRC_FLAG_INSIZE_ERR) {
 				devp->in_sts.st_flag =

@@ -171,7 +171,6 @@ static int aml_mkl_lock(struct aml_mkl_dev *dev)
 	int cnt = 0;
 	int ret = KL_STATUS_OK;
 
-	mutex_lock(&dev->lock);
 	if (dev->kl_type == KL_TYPE_OLD) {
 		while ((ioread32((char *)dev->base_addr + dev->old_reg.start0_offset) >> 31) & 1) {
 			if (cnt++ > KL_PENDING_WAIT_TIMEOUT) {
@@ -188,15 +187,12 @@ static int aml_mkl_lock(struct aml_mkl_dev *dev)
 		}
 	}
 
-	mutex_unlock(&dev->lock);
 	return ret;
 }
 
 static void aml_mkl_unlock(struct aml_mkl_dev *dev)
 {
-	mutex_lock(&dev->lock);
 	iowrite32(1, (char *)dev->base_addr + dev->reg.rdy_offset);
-	mutex_unlock(&dev->lock);
 }
 
 static int aml_mkl_read_pending(struct aml_mkl_dev *dev)
@@ -248,8 +244,7 @@ static int aml_mkl_etsi_run(struct file *filp, struct amlkl_params *param)
 
 	if (!param) {
 		KL_LOGE("Error: param data has Null\n");
-		ret = KL_STATUS_ERROR_BAD_PARAM;
-		goto exit;
+		return KL_STATUS_ERROR_BAD_PARAM;
 	}
 
 	pu = &param->usage;
@@ -270,15 +265,15 @@ static int aml_mkl_etsi_run(struct file *filp, struct amlkl_params *param)
 	    param->levels < AML_KL_LEVEL_3 || param->levels > AML_KL_LEVEL_6 ||
 	    param->kl_algo > AML_KL_ALGO_AES ||
 	    param->mrk_cfg_index > AML_KL_MRK_ETSI_3) {
-		ret = KL_STATUS_ERROR_BAD_PARAM;
-		goto exit;
+		return KL_STATUS_ERROR_BAD_PARAM;
 	}
 
 	/* 1. Read KL_REE_RDY to lock KL */
+	mutex_lock(&dev->lock);
 	if (aml_mkl_lock(dev) != KL_STATUS_OK) {
 		KL_LOGE("key ladder not ready\n");
 		ret = KL_STATUS_ERROR_BAD_STATE;
-		goto exit;
+		goto unlock_mutex;
 	}
 
 	/* 2. Program Eks */
@@ -288,7 +283,7 @@ static int aml_mkl_etsi_run(struct file *filp, struct amlkl_params *param)
 		if (ret != 0) {
 			KL_LOGE("Error: Ek data has bad parameter\n");
 			ret = KL_STATUS_ERROR_BAD_PARAM;
-			goto exit;
+			goto unlock_mkl;
 		}
 	}
 
@@ -317,8 +312,11 @@ static int aml_mkl_etsi_run(struct file *filp, struct amlkl_params *param)
 	if (ret == KL_STATUS_OK)
 		KL_LOGI("ETSI Key Ladder run success\n");
 
-exit:
+unlock_mkl:
 	aml_mkl_unlock(dev);
+unlock_mutex:
+	mutex_unlock(&dev->lock);
+
 	return ret;
 }
 
@@ -376,16 +374,18 @@ static int aml_mkl_etsi_old_run(struct file *filp, struct amlkl_params *param)
 	iowrite32(reg_val, (char *)dev->base_addr + reg_offset);
 
 	/* 3. Wait Busy Done */
+	mutex_lock(&dev->lock);
 	if (aml_mkl_lock(dev) != KL_STATUS_OK) {
 		KL_LOGE("key ladder is busy\n");
 		ret = KL_STATUS_ERROR_BAD_STATE;
-		goto exit;
+		goto unlock_mutex;
 	}
 
+	aml_mkl_unlock(dev);
 	KL_LOGI("ETSI Key Ladder run success\n");
 
-exit:
-	aml_mkl_unlock(dev);
+unlock_mutex:
+	mutex_unlock(&dev->lock);
 
 	return ret;
 }
@@ -425,10 +425,11 @@ static int aml_mkl_run(struct file *filp, struct amlkl_params *param)
 	}
 
 	/* 1. Read KL_REE_RDY to lock KL */
+	mutex_lock(&dev->lock);
 	if (aml_mkl_lock(dev) != KL_STATUS_OK) {
 		KL_LOGE("key ladder not ready\n");
 		ret = KL_STATUS_ERROR_BAD_STATE;
-		goto exit;
+		goto unlock_mutex;
 	}
 
 	/* 2. Program Eks, fixed level to 3 */
@@ -439,7 +440,7 @@ static int aml_mkl_run(struct file *filp, struct amlkl_params *param)
 		if (ret != 0) {
 			KL_LOGE("Error: Ek data has bad parameter\n");
 			ret = KL_STATUS_ERROR_BAD_PARAM;
-			goto exit;
+			goto unlock_mkl;
 		}
 	}
 
@@ -468,8 +469,10 @@ static int aml_mkl_run(struct file *filp, struct amlkl_params *param)
 	if (ret == KL_STATUS_OK)
 		KL_LOGI("AML Key Ladder run success\n");
 
-exit:
+unlock_mkl:
 	aml_mkl_unlock(dev);
+unlock_mutex:
+	mutex_unlock(&dev->lock);
 
 	return ret;
 }
@@ -523,10 +526,11 @@ static int aml_mkl_msr_run(struct file *filp, struct amlkl_params *param)
 	}
 
 	/* 1. Read KL_REE_RDY to lock KL */
+	mutex_lock(&dev->lock);
 	if (aml_mkl_lock(dev) != KL_STATUS_OK) {
 		KL_LOGE("key ladder not ready\n");
 		ret = KL_STATUS_ERROR_BAD_STATE;
-		goto exit;
+		goto unlock_mutex;
 	}
 
 	/* 2. Program Eks */
@@ -536,7 +540,7 @@ static int aml_mkl_msr_run(struct file *filp, struct amlkl_params *param)
 		if (ret != 0) {
 			KL_LOGE("Error: Ek data has bad parameter\n");
 			ret = KL_STATUS_ERROR_BAD_PARAM;
-			goto exit;
+			goto unlock_mkl;
 		}
 	}
 
@@ -566,8 +570,10 @@ static int aml_mkl_msr_run(struct file *filp, struct amlkl_params *param)
 	if (ret == KL_STATUS_OK)
 		KL_LOGI("AML MSR Key Ladder run success\n");
 
-exit:
+unlock_mkl:
 	aml_mkl_unlock(dev);
+unlock_mutex:
+	mutex_unlock(&dev->lock);
 
 	return ret;
 }

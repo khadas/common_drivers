@@ -4868,13 +4868,6 @@ static void vdx_clip_setting(u8 layer_id, struct clip_setting_s *setting)
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(VPP_VD1_CLIP_MISC1 + misc_off,
 			setting->clip_min);
-		if (!(setting->clip_max == 0x3fffffff &&
-			setting->clip_min == 0x0)) {
-			WRITE_VCBUS_REG(VPP_VD1_CLIP_MISC0 + misc_off,
-				setting->clip_max);
-			WRITE_VCBUS_REG(VPP_VD1_CLIP_MISC1 + misc_off,
-				setting->clip_min);
-		}
 		break;
 	case 1:
 		misc_off = setting->misc_reg_offt;

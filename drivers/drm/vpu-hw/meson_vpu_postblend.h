@@ -110,6 +110,10 @@
 
 #define VPP_POST_BLEND_REF_ZORDER                  128
 
+/* txhd2 loopback register */
+#define VPP_PROJECTOR                      0x1d26
+#define VPP_OSD2_MATRIX_EN_CTRL             0x392d
+
 struct postblend_reg_s {
 	u32 vpp_osd1_bld_h_scope;
 	u32 vpp_osd1_bld_v_scope;

@@ -207,6 +207,11 @@ struct meson_vpu_osd {
 	int mif_acc_mode;
 };
 
+struct osd_zorder_s {
+	int plane_index;
+	int zorder;
+};
+
 struct meson_vpu_osd_state {
 	struct meson_vpu_block_state base;
 
@@ -679,6 +684,7 @@ int vpu_pipeline_check_osdblend(u32 *out_port, int num_planes,
 int vpu_video_pipeline_check_block(struct meson_vpu_pipeline_state *mvps,
 				   struct drm_atomic_state *state);
 void vpu_pipeline_check_finish_reg(int crtc_index);
+void sort_osd_by_zorder(struct osd_zorder_s *din, u32 osd_num);
 
 extern struct rdma_reg_ops t7_reg_ops[3];
 extern struct rdma_reg_ops g12b_reg_ops[2];

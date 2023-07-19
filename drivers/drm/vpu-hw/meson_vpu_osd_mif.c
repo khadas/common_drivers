@@ -827,6 +827,14 @@ void osd_canvas_config(struct meson_vpu_block *vblk,
 				     canvas_index, 16, 8);
 }
 
+static void osd_rpt_y_config(struct meson_vpu_block *vblk,
+			struct rdma_reg_ops *reg_ops,
+			struct osd_mif_reg_s *reg)
+{
+	reg_ops->rdma_write_reg_bits(reg->viu_osd_blk0_cfg_w0,
+				     0, 14, 0);
+}
+
 /*osd mali afbc src en
  * 1: read data from mali afbcd;0: read data from DDR directly
  */
@@ -1420,6 +1428,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 		osd_canvas_index[vblk->index] ^= 1;
 	}
 
+	osd_rpt_y_config(vblk, reg_ops, reg);
 	osd_input_size_config(vblk, reg_ops, reg, scope_src);
 	osd_color_config(vblk, reg_ops, reg, pixel_format, mvos->pixel_blend, afbc_en);
 

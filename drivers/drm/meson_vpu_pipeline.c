@@ -1011,3 +1011,22 @@ void vpu_pipeline_finish_update(struct meson_vpu_pipeline *pipeline, int crtc_in
 #endif
 }
 EXPORT_SYMBOL(vpu_pipeline_finish_update);
+
+void sort_osd_by_zorder(struct osd_zorder_s *din, u32 osd_num)
+{
+	int i, j, tmp_zorder, tmp_index;
+
+	for (i = 0; i < osd_num - 1; i++) {
+		for (j = 0; j < osd_num - 1 - i; j++) {
+			if (din[j].zorder > din[j + 1].zorder) {
+				tmp_zorder = din[j].zorder;
+				tmp_index = din[j].plane_index;
+				din[j].zorder = din[j + 1].zorder;
+				din[j].plane_index =
+						din[j + 1].plane_index;
+				din[j + 1].zorder = tmp_zorder;
+				din[j + 1].plane_index = tmp_index;
+			}
+		}
+	}
+}

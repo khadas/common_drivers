@@ -341,25 +341,6 @@ void osdblend_premult_config(struct meson_vpu_block *vblk,
 	osd_blend_dout1_div_config(vblk, reg_ops, reg);
 }
 
-void sort_osd_by_zorder(struct osdblend_din_s *osdblend_din)
-{
-	int i, j, tmp_zorder, tmp_index;
-
-	for (i = 0; i < MESON_MAX_OSDS - 1; i++) {
-		for (j = 0; j < MESON_MAX_OSDS - 1 - i; j++) {
-			if (osdblend_din[j].zorder > osdblend_din[j + 1].zorder) {
-				tmp_zorder = osdblend_din[j].zorder;
-				tmp_index = osdblend_din[j].plane_index;
-				osdblend_din[j].zorder = osdblend_din[j + 1].zorder;
-				osdblend_din[j].plane_index =
-							osdblend_din[j + 1].plane_index;
-				osdblend_din[j + 1].zorder = tmp_zorder;
-				osdblend_din[j + 1].plane_index = tmp_index;
-			}
-		}
-	}
-}
-
 enum osd_channel_e osd2channel(u8 osd_index)
 {
 	u8 din_channel_seq[MAX_DIN_NUM] = {OSD_CHANNEL1, OSD_CHANNEL2,
@@ -843,7 +824,7 @@ static void t3x_osdblend_set_state(struct meson_vpu_block *vblk,
 				   struct meson_vpu_block_state *old_state)
 {
 	int i, idx, mask = 0;
-	u32 max_height = 0, max_width = 0;
+	u32 max_height = 0, max_width = 0, osd_num = 0;
 	struct meson_vpu_osdblend_state *mvobs;
 	struct meson_vpu_pipeline_state *mvps;
 	struct meson_vpu_sub_pipeline_state *mvsps;
@@ -852,7 +833,7 @@ static void t3x_osdblend_set_state(struct meson_vpu_block *vblk,
 	struct osdblend_reg_s *reg = osdblend->reg;
 	struct rdma_reg_ops *reg_ops = state->sub->reg_ops;
 	struct osd_scope_s scope_default = {0xffff, 0xffff, 0xffff, 0xffff};
-	struct osdblend_din_s osdblend_t3x_din[MESON_MAX_OSDS] = {
+	struct osd_zorder_s osdblend_t3x_din[MESON_MAX_OSDS] = {
 		{-1, -1}, {-1, -1}, {-1, -1}, {-1, -1}
 	};
 
@@ -898,26 +879,23 @@ static void t3x_osdblend_set_state(struct meson_vpu_block *vblk,
 				mvps->plane_info[i].crtc_index == state->sub->index) {
 				osdblend_t3x_din[i].zorder = mvps->plane_info[i].zorder;
 				osdblend_t3x_din[i].plane_index = i;
+				osd_num++;
 			}
 		}
-		sort_osd_by_zorder(osdblend_t3x_din);
+		sort_osd_by_zorder(osdblend_t3x_din, osd_num);
 
-		for (i = 0; i < MESON_MAX_OSDS; i++) {
-			if (osdblend_t3x_din[i].plane_index == -1) {
-				continue;
-			} else {
-				if (mask == MAX_DIN_NUM - 1)
-					break;
-				/*set corresponding osd path index (2/3/4) for din_channel_mux*/
-				idx = osdblend_t3x_din[i].plane_index + 2;
-				mvobs->din_channel_mux[mask] = idx;
-				mvobs->input_mask |= 1 << mask;
-				idx = osdblend_t3x_din[i].plane_index + 1;
-				memcpy(&mvobs->din_channel_scope[idx],
-					&mvps->osd_scope_pre[osdblend_t3x_din[i].plane_index],
-					sizeof(struct osd_scope_s));
-				mask++;
-			}
+		for (i = 0; i < osd_num; i++) {
+			if (mask == MAX_DIN_NUM - 1)
+				break;
+			/*set corresponding osd path index (2/3/4) for din_channel_mux*/
+			idx = osdblend_t3x_din[i].plane_index + 2;
+			mvobs->din_channel_mux[mask] = idx;
+			mvobs->input_mask |= 1 << mask;
+			idx = osdblend_t3x_din[i].plane_index + 1;
+			memcpy(&mvobs->din_channel_scope[idx],
+			&mvps->osd_scope_pre[osdblend_t3x_din[i].plane_index],
+			sizeof(struct osd_scope_s));
+			mask++;
 		}
 	}
 
@@ -1298,8 +1276,6 @@ struct meson_vpu_block_ops txhd2_osdblend_ops = {
 	.update_state = txhd2_osdblend_set_state,
 	.enable = osdblend_hw_enable,
 	.disable = osdblend_hw_disable,
-	.dump_register = osdblend_dump_register,
-	.sysfs_dump_register = sysfs_osdblend_dump_register,
 	.init = txhd2_osdblend_hw_init,
 };
 

@@ -122,6 +122,7 @@
 /*  V3.4.001 fix dvbc qam instability or lock time is too long */
 /*  V3.4.002 fix dvbt overflow by new methods when bw 6M GI 1/4 */
 /*  V3.4.003 improve the stability of new dvbc driver scanning */
+/*  V3.4.004 fix dvbc qam config and flow */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -138,8 +139,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.4.003"
-#define DTVDEMOD_VER	"2023/07/21: improve the stability of new dvbc driver scanning"
+#define AMLDTVDEMOD_VER "V3.4.004"
+#define DTVDEMOD_VER	"2023/08/02: fix dvbc qam config and flow"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

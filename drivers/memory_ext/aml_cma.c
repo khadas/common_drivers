@@ -1575,9 +1575,6 @@ struct page *aml_cma_alloc(struct dummy_cma *cma, unsigned long count,
 	if (!cma || !cma->count || !cma->bitmap)
 		goto out;
 
-	pr_info("%s(cma %p, count %lu, align %d)\n", __func__, (void *)cma,
-		 count, align);
-
 	cma_debug(0, NULL, "(cma %p, count %lu, align %d)\n",
 		  (void *)cma, count, align);
 	in_tick = sched_clock();

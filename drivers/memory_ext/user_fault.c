@@ -1006,10 +1006,11 @@ static void __kprobes __nocfi arm64_show_signal_handler_post(struct kprobe *p,
 	struct pt_regs *regs = task_pt_regs(tsk);
 	int signo = (int)param_regs->regs[0];
 
-	pr_info("signo: %d\n", signo);
-	show_all_pfn(current, regs);
-	if (regs && aml_kexec_crash(current) && (aml_show_unhandled_signals & 4))
+	if (regs && aml_kexec_crash(current) && (aml_show_unhandled_signals & 4)) {
+		pr_info("signo: %d\n", signo);
+		show_all_pfn(current, regs);
 		aml_crash_kexec(regs);
+	}
 }
 
 static int __init user_fault_module_init(void)

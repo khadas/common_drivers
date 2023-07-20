@@ -39,7 +39,9 @@ def define_common_amlogic(
         module_grouping = None,
         unstripped_modules_archive = None,
         dist_dir = None,
-        ext_modules = None):
+        ext_modules = None,
+	kconfig_ext = None,
+	kconfig_ext_srcs = None):
     """Define target for amlogic.
 
     Note: This is a mixed build.
@@ -81,7 +83,7 @@ def define_common_amlogic(
     kernel_build(
         name = name,
         outs = outs,
-        srcs = [":common_kernel_sources"],
+        srcs = [":common_kernel_sources"] + kconfig_ext_srcs,
         # List of in-tree kernel modules.
         module_outs = module_outs,
         build_config = build_config,
@@ -91,6 +93,7 @@ def define_common_amlogic(
         collect_unstripped_modules = _COLLECT_UNSTRIPPED_MODULES,
         strip_modules = True,
         make_goals = make_goals,
+	kconfig_ext = kconfig_ext,
     )
 
     # enable ABI Monitoring

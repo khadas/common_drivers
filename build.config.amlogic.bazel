@@ -6,6 +6,8 @@ KERNEL_DIR=common
 . ${COMMON_DRIVERS}/project/build.config.project
 . ${COMMON_DRIVERS}/project/build.config.gki10
 
+KCONFIG_EXT_MODULES_PREFIX=$(realpath ${ROOT_DIR} --relative-to ${KERNEL_DIR})/
+
 BUILD_INITRAMFS=1
 LZ4_RAMDISK=1
 DEFCONFIG=amlogic_gki10_defconfig

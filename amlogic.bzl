@@ -3,7 +3,7 @@
 load("//build/kernel/kleaf:common_kernels.bzl", "define_common_kernels")
 load("//common:common_drivers/amlogic_utils.bzl", "define_common_amlogic")
 load("//common:common_drivers/modules.bzl", "AMLOGIC_MODULES")
-load("//common:common_drivers/project/project.bzl", "EXT_MODULES_ANDROID", "GKI_CONFIG")
+load("//common:common_drivers/project/project.bzl", "EXT_MODULES_ANDROID", "GKI_CONFIG", "KCONFIG_EXT_SRCS")
 load("//common:common_drivers/project/dtb.bzl", "AMLOGIC_DTBS")
 
 _AMLOGIC_DTBOS = [
@@ -31,4 +31,6 @@ def define_amlogic():
         module_outs = _AMLOGIC_MODULES,
         ext_modules = _EXT_MODULES,
         module_grouping = False,
+        kconfig_ext = "common_drivers/Kconfig.ext",
+        kconfig_ext_srcs = KCONFIG_EXT_SRCS,
     )

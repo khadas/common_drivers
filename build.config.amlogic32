@@ -2,6 +2,11 @@
 . ${ROOT_DIR}/${KERNEL_DIR}/build.config.arm
 . ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
 
+if [[ -n ${ANDROID_PROJECT} ]]; then
+	KCONFIG_EXT_MODULES_PREFIX=$(realpath ${MAIN_FOLDER} --relative-to ${KERNEL_DIR})/
+	KCONFIG_EXT_PREFIX=${COMMON_DRIVERS_DIR}/
+fi
+
 DO_NOT_STRIP_MODULES=		#strip modules
 # TOP_EXT_MODULE_COPY_BUILD=1
 # AUTO_ADD_EXT_SYMBOLS=1

@@ -142,7 +142,13 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 	echo "KASAN=${KASAN}"				>> ${PROJECT_DIR}/build.config.gki10
 	echo "CHECK_GKI_20=${CHECK_GKI_20}"		>> ${PROJECT_DIR}/build.config.gki10
 
-	if [[ ! -f ${PROJECT_DIR}/project.bzl ]]; then
+	if [[ -z ${ANDROID_PROJECT} ]]; then
+		[[ -f ${PROJECT_DIR}/Kconfig.ext_modules ]] && rm -rf ${PROJECT_DIR}/Kconfig.ext_modules
+		touch ${PROJECT_DIR}/Kconfig.ext_modules
+		echo "# SPDX-License-Identifier: GPL-2.0" 	>  ${PROJECT_DIR}/Kconfig.ext_modules
+		echo 						>> ${PROJECT_DIR}/Kconfig.ext_modules
+
+		[[ -f ${PROJECT_DIR}/project.bzl ]] && rm -f ${PROJECT_DIR}/project.bzl
 		touch ${PROJECT_DIR}/project.bzl
 		echo "# SPDX-License-Identifier: GPL-2.0" 	>  ${PROJECT_DIR}/project.bzl
 		echo 						>> ${PROJECT_DIR}/project.bzl
@@ -157,6 +163,10 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 
 		echo 						>> ${PROJECT_DIR}/project.bzl
 		echo "VENDOR_MODULES_ADD = [" 			>> ${PROJECT_DIR}/project.bzl
+		echo "]" 					>> ${PROJECT_DIR}/project.bzl
+
+		echo 						>> ${PROJECT_DIR}/project.bzl
+		echo "KCONFIG_EXT_SRCS = [" 			>> ${PROJECT_DIR}/project.bzl
 		echo "]" 					>> ${PROJECT_DIR}/project.bzl
 	fi
 

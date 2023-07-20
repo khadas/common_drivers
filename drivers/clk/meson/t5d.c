@@ -85,11 +85,6 @@ static struct clk_regmap t5d_fixed_pll = {
 	},
 };
 
-static const struct pll_mult_range t5d_sys_pll_mult_range = {
-	.min = 128,
-	.max = 250,
-};
-
 static const struct clk_ops meson_pll_clk_no_ops = {};
 
 /*
@@ -114,6 +109,24 @@ static const struct pll_params_table t5d_sys_pll_params_table[] = {
 	PLL_PARAMS(159, 1, 1), /*DCO=3816M OD=1908*/
 	PLL_PARAMS(160, 1, 1), /*DCO=3840M OD=1920M*/
 	PLL_PARAMS(168, 1, 1), /*DCO=4032M OD=2016M*/
+	{ /* sentinel */ },
+};
+#else
+static const struct pll_params_table t5d_sys_pll_params_table[] = {
+	PLL_PARAMS(168, 1), /*DCO=4032M OD=1008M*/
+	PLL_PARAMS(184, 1), /*DCO=4416M OD=1104M*/
+	PLL_PARAMS(200, 1), /*DCO=4800M OD=1200M*/
+	PLL_PARAMS(216, 1), /*DCO=5184M OD=1296M*/
+	PLL_PARAMS(233, 1), /*DCO=5592M OD=1398M*/
+	PLL_PARAMS(249, 1), /*DCO=5976M OD=1494M*/
+	PLL_PARAMS(126, 1), /*DCO=3024M OD=1512M*/
+	PLL_PARAMS(134, 1), /*DCO=3216M OD=1608M*/
+	PLL_PARAMS(142, 1), /*DCO=3408M OD=1704M*/
+	PLL_PARAMS(150, 1), /*DCO=3600M OD=1800M*/
+	PLL_PARAMS(158, 1), /*DCO=3792M OD=1896M*/
+	PLL_PARAMS(159, 1), /*DCO=3816M OD=1908*/
+	PLL_PARAMS(160, 1), /*DCO=3840M OD=1920M*/
+	PLL_PARAMS(168, 1), /*DCO=4032M OD=2016M*/
 	{ /* sentinel */ },
 };
 #endif
@@ -142,8 +155,8 @@ static struct clk_regmap t5d_sys_pll_dco = {
 			.shift	 = 16,
 			.width	 = 3,
 		},
-		.table = t5d_sys_pll_params_table,
 #endif
+		.table = t5d_sys_pll_params_table,
 		.l = {
 			.reg_off = HHI_SYS_PLL_CNTL0,
 			.shift   = 31,
@@ -154,7 +167,6 @@ static struct clk_regmap t5d_sys_pll_dco = {
 			.shift   = 29,
 			.width   = 1,
 		},
-		.range = &t5d_sys_pll_mult_range,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "sys_pll_dco",

@@ -2036,3 +2036,45 @@ function generating_test_mappings_zip () {
 }
 export -f generating_test_mappings_zip
 
+function setting_up_for_build () {
+	echo "========================================================"
+	echo " Setting up for build"
+	if [ "${SKIP_MRPROPER}" != "1" ] ; then
+		set -x
+		(cd ${KERNEL_DIR} && make ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" mrproper)
+		set +x
+	fi
+}
+export -f setting_up_for_build
+
+function build_kernel_for_32bit () {
+	set -x
+	if [ "${SKIP_DEFCONFIG}" != "1" ] ; then
+  		(cd ${KERNEL_DIR} && make ARCH=arm ${TOOL_ARGS} O=${OUT_DIR} "${MAKE_ARGS[@]}" ${DEFCONFIG})
+	fi
+
+	echo "========================================================"
+	echo " Building kernel"
+
+	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} uImage -j12 &&
+	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} modules -j12 &&
+	if [[ -n ${ANDROID_PROJECT} ]]; then
+		make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} android_overlay_dt.dtbo -j12
+	fi
+	make ARCH=arm -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR} ${TOOL_ARGS} dtbs -j12 || exit
+	set +x
+}
+export -f build_kernel_for_32bit
+
+function modules_install_for_32bit () {
+	set -x
+	if [ "${BUILD_INITRAMFS}" = "1" -o  -n "${IN_KERNEL_MODULES}" ]; then
+		echo "========================================================"
+		echo " Installing kernel modules into staging directory"
+
+		(cd ${OUT_DIR} && make ARCH=arm O=${OUT_DIR} ${TOOL_ARGS} INSTALL_MOD_STRIP=1	\
+			INSTALL_MOD_PATH=${MODULES_STAGING_DIR} modules_install)
+	fi
+	set +x
+}
+export -f modules_install_for_32bit

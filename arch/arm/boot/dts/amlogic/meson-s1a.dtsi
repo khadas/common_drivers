@@ -284,52 +284,104 @@
 			     <MAILBOX_AOCPU>;
 	};
 
+	v_12v: fixed@v_12v {
+		compatible = "regulator-fixed";
+		regulator-name = "v_12v";
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+		regulator-always-on;
+	};
+
+	vddq_reg: fixed@vddq_reg{
+		compatible = "regulator-fixed";
+		vin-supply = <&v_12v>;
+		regulator-name = "VDDQ";
+		regulator-min-microvolt = <1370000>;
+		regulator-max-microvolt = <1370000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vcc5v_reg: fixed@v_5v_reg{
+		compatible = "regulator-fixed";
+		vin-supply = <&v_12v>;
+		regulator-name = "VCC5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio GPIOZ_6 GPIO_ACTIVE_HIGH>;
+		// up 5v power 1.5ms and down 5v power 1s.
+		startup-delay-us = <7000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddao3v3_reg: fixed@vddao3v3_reg{
+		vin-supply = <&v_12v>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDDAO_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vddio_ao18_reg: fixed@vddio_ao18_reg{
+		compatible = "regulator-fixed";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-name = "VDDIO_AO18";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
 	vddcpu0: pwm_j-regulator {
 		compatible = "pwm-regulator";
-		// pwms = <&pwm_ij MESON_PWM_1 1500 0>;
+		pwms = <&pwm_ab MESON_PWM_0 1500 0>;
 		regulator-name = "vddcpu0";
-		regulator-min-microvolt = <689000>;
-		regulator-max-microvolt = <1049000>;
+		regulator-min-microvolt = <789000>;
+		regulator-max-microvolt = <1149000>;
 		regulator-always-on;
 		max-duty-cycle = <1500>;
 		/* Voltage Duty-Cycle */
-		voltage-table = <1049000 0>,
-				<1039000 3>,
-				<1029000 6>,
-				<1019000 9>,
-				<1009000 12>,
-				<999000 14>,
-				<989000 17>,
-				<979000 20>,
-				<969000 23>,
-				<959000 26>,
-				<949000 29>,
-				<939000 31>,
-				<929000 34>,
-				<919000 37>,
-				<909000 40>,
-				<899000 43>,
-				<889000 45>,
-				<879000 48>,
-				<869000 51>,
-				<859000 54>,
-				<849000 56>,
-				<839000 59>,
-				<829000 62>,
-				<819000 65>,
-				<809000 68>,
-				<799000 70>,
-				<789000 73>,
-				<779000 76>,
-				<769000 79>,
-				<759000 81>,
-				<749000 84>,
-				<739000 87>,
-				<729000 89>,
-				<719000 92>,
-				<709000 95>,
-				<699000 98>,
-				<689000 100>;
+		voltage-table = <1149000 0>,
+				<1139000 3>,
+				<1129000 6>,
+				<1119000 8>,
+				<1109000 11>,
+				<1099000 14>,
+				<1089000 17>,
+				<1079000 19>,
+				<1069000 22>,
+				<1059000 25>,
+				<1049000 28>,
+				<1039000 31>,
+				<1029000 33>,
+				<1019000 36>,
+				<1009000 39>,
+				<999000 42>,
+				<989000 44>,
+				<979000 47>,
+				<969000 50>,
+				<959000 53>,
+				<949000 56>,
+				<939000 58>,
+				<929000 61>,
+				<919000 64>,
+				<909000 67>,
+				<899000 69>,
+				<889000 72>,
+				<879000 75>,
+				<869000 78>,
+				<859000 81>,
+				<849000 83>,
+				<839000 86>,
+				<829000 89>,
+				<819000 92>,
+				<809000 94>,
+				<799000 97>,
+				<789000 100>;
 		status = "disabled";
 	};
 

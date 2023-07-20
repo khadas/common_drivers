@@ -527,6 +527,20 @@
 			size = <16>;
 		};
 	};//End efusekey
+
+	vcc3v3_reg: fixed@vcc3v3_reg{
+		compatible = "regulator-fixed";
+		vin-supply = <&vddao3v3_reg>;
+		regulator-name = "VCC3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio GPIO_TEST_N GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
 	/* Audio Related start */
 	auge_sound {
 		compatible = "amlogic, auge-sound-card";
@@ -737,9 +751,8 @@
 	clock-frequency = <300000>;
 };
 
-
 &vddcpu0 {
-	status = "disabled";
+	status = "okay";
 };
 
 &audiobus {

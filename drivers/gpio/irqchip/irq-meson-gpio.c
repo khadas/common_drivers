@@ -282,6 +282,8 @@ static const struct meson_gpio_irq_params t3x_params = {
 
 static const struct meson_gpio_irq_params txhd2_params = {
 	INIT_MESON8_COMMON_DATA(80)
+	.support_edge_both = true,
+	.edge_both_offset = 8,
 };
 #endif
 #endif

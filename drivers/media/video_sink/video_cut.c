@@ -173,11 +173,8 @@ static DEFINE_SPINLOCK(hdmi_avsync_lock);
 static unsigned long hist_buffer_addr;
 static u32 hist_print_count;
 static int receive_frame_count;
-static int tvin_delay_mode;
 static int debugflags;
 static int output_fps;
-static u32 cur_width;
-static u32 cur_height;
 static u32 layer_cap;
 
 /* omx related */
@@ -232,13 +229,6 @@ static bool av_discontinue;
 static u32 avsync_count;
 #endif
 
-#ifdef PTS_TRACE_DEBUG
-static int pts_trace_his[16];
-static u32 pts_his[16];
-static u32 scr_his[16];
-static int pts_trace_his_rd;
-#endif
-
 #if defined(PTS_LOGGING)
 #define PTS_32_PATTERN_DETECT_RANGE 10
 #define PTS_22_PATTERN_DETECT_RANGE 10
@@ -288,12 +278,6 @@ static s32 vsync_pts_align;
 /* dv related */
 static bool dovi_drop_flag;
 static int dovi_drop_frame_num;
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-/*dv instance id, used for tunnel mode*/
-static int dv_inst = -1;
-int dv_inst_pip;
-#endif
-
 #ifdef INTERLACE_FIELD_MATCH_PROCESS
 #define FIELD_MATCH_THRESHOLD  10
 static int field_matching_count;
@@ -302,7 +286,6 @@ static int field_matching_count;
 /* other avsync, frame drop etc */
 static u32 underflow;
 static u32 next_peek_underflow;
-static u32 frame_skip_check_cnt;
 /*frame_detect_flag: 1 enable, 0 disable */
 /*frame_detect_time: */
 /*	How often "frame_detect_receive_count" and */
@@ -339,21 +322,16 @@ static DEFINE_SPINLOCK(omx_hdr_lock);
 static bool show_first_frame_nosync;
 static bool show_first_picture;
 /* video frame repeat count */
-static u32 frame_repeat_count;
 /* test screen*/
 static u32 test_screen;
 /* rgb screen*/
 static u32 rgb_screen;
-static u32 hold_video;
 
 /* frame rate calculate */
 static u32 last_frame_count;
 static u32 frame_count;
 static u32 first_frame_toggled;
 static u32 last_frame_time;
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-static u64 last_frame_duration;
-#endif
 
 /* video freerun mode */
 #define FREERUN_NONE    0	/* no freerun mode */
@@ -365,12 +343,9 @@ static u32 slowsync_repeat_enable;
 /* hdmin related */
 static int hdmin_delay_start;
 static int hdmin_delay_start_time;
-static int hdmin_delay_duration;
 static int hdmin_delay_min_ms;
 static int hdmin_delay_max_ms = 128;
 static int hdmin_dv_flag;
-static int hdmin_delay_done = true;
-static int hdmin_need_drop_count;
 
 static int last_required_total_delay;
 static int hdmi_vframe_count;
@@ -392,13 +367,6 @@ static u32 vpts_ref;
 static u32 video_frame_repeat_count;
 static u32 smooth_sync_enable;
 static u32 hdmi_in_onvideo;
-
-#ifdef VIDEO_PTS_CHASE
-static int vpts_chase;
-static int av_sync_flag;
-static int vpts_chase_counter;
-static int vpts_chase_pts_diff;
-#endif
 
 static int step_enable;
 static int step_flag;
@@ -497,10 +465,7 @@ u32 over_field_case1_cnt;
 u32 over_field_case2_cnt;
 u32 video_notify_flag;
 int tvin_source_type;
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-bool dvel_changed;
-u32 dvel_size;
-#endif
+
 DEFINE_SPINLOCK(lock);
 atomic_t cur_over_field_state = ATOMIC_INIT(OVER_FIELD_NORMAL);
 u32 config_vsync_num;
@@ -510,7 +475,7 @@ bool go_exit;
 /* pts related */
 u32 vsync_pts_inc_scale;
 u32 vsync_pts_inc_scale_base = 1;
-#if defined(PTS_LOGGING) || defined(PTS_TRACE_DEBUG)
+#if defined(PTS_LOGGING)
 int pts_trace;
 #endif
 int vframe_walk_delay;
@@ -677,14 +642,7 @@ MODULE_PARM_DESC(vdin_err_crc_cnt, "\n vdin_err_crc_cnt\n");
 module_param(vdin_err_crc_cnt, uint, 0664);
 #define ERR_CRC_COUNT 6
 
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-static bool dv_mute_vpp_flag;
-#endif
-
 static unsigned int video_3d_format;
-#ifdef CONFIG_AMLOGIC_MEDIA_TVIN
-static unsigned int mvc_flag;
-#endif
 unsigned int force_3d_scaler = 3;
 int last_mode_3d;
 #endif
@@ -957,49 +915,6 @@ void pre_process_for_3d(struct vframe_s *vf)
 		frame_width = vf->width;
 		frame_height = vf->height;
 	}
-
-#if defined(TV_3D_FUNCTION_OPEN) && defined(CONFIG_AMLOGIC_MEDIA_TVIN)
-	/*can be moved to h264mvc.c */
-	if ((vf->type & VIDTYPE_MVC) &&
-	    (process_3d_type & MODE_3D_ENABLE) && vf->trans_fmt) {
-		vf->type = VIDTYPE_PROGRESSIVE | VIDTYPE_VIU_FIELD;
-		process_3d_type |= MODE_3D_MVC;
-		mvc_flag = 1;
-	} else {
-		process_3d_type &= (~MODE_3D_MVC);
-		mvc_flag = 0;
-	}
-	if (((process_3d_type & MODE_FORCE_3D_TO_2D_LR) ||
-	     (process_3d_type & MODE_FORCE_3D_LR) ||
-	     (process_3d_type & MODE_FORCE_3D_FA_LR)) &&
-	    (!(vf->type & VIDTYPE_MVC)) &&
-	    vf->trans_fmt != TVIN_TFMT_3D_FP) {
-		vf->trans_fmt = TVIN_TFMT_3D_DET_LR;
-		vf->left_eye.start_x = 0;
-		vf->left_eye.start_y = 0;
-		vf->left_eye.width = frame_width / 2;
-		vf->left_eye.height = frame_height;
-		vf->right_eye.start_x = frame_width / 2;
-		vf->right_eye.start_y = 0;
-		vf->right_eye.width = frame_width / 2;
-		vf->right_eye.height = frame_height;
-	}
-	if (((process_3d_type & MODE_FORCE_3D_TO_2D_TB) ||
-	     (process_3d_type & MODE_FORCE_3D_TB) ||
-	     (process_3d_type & MODE_FORCE_3D_FA_TB)) &&
-	    (!(vf->type & VIDTYPE_MVC)) &&
-	    vf->trans_fmt != TVIN_TFMT_3D_FP) {
-		vf->trans_fmt = TVIN_TFMT_3D_TB;
-		vf->left_eye.start_x = 0;
-		vf->left_eye.start_y = 0;
-		vf->left_eye.width = frame_width;
-		vf->left_eye.height = frame_height / 2;
-		vf->right_eye.start_x = 0;
-		vf->right_eye.start_y = frame_height / 2;
-		vf->right_eye.width = frame_width;
-		vf->right_eye.height = frame_height / 2;
-	}
-#endif
 }
 
 inline struct vframe_s *amvideo_vf_peek(void)
@@ -1038,11 +953,6 @@ inline struct vframe_s *amvideo_vf_peek(void)
 		}
 	}
 	#endif
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-	/*tunnel mode, add dv_inst to vf*/
-	if (vf && dv_inst >= 0)
-		vf->src_fmt.dv_id = dv_inst;
-#endif
 	return vf;
 }
 
@@ -1089,11 +999,6 @@ inline struct vframe_s *amvideo_vf_get(void)
 		}
 		pre_process_for_3d(vf);
 		receive_frame_count++;
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-		/*tunnel mode, add dv_inst to vf*/
-		if (dv_inst >= 0)
-			vf->src_fmt.dv_id = dv_inst;
-#endif
 	}
 	return vf;
 }
@@ -1134,10 +1039,6 @@ inline int amvideo_vf_put(struct vframe_s *vf)
 				vf->compHeadAddr, vf->compBodyAddr);
 		if (IS_DI_POSTWRTIE(vf->type))
 			put_di_count++;
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-		if (is_amdv_enable())
-			amdv_vf_put(vf);
-#endif
 		video_notify_flag |= VIDEO_NOTIFY_PROVIDER_PUT;
 	} else {
 		return -EINVAL;
@@ -1578,12 +1479,6 @@ static int video_receiver_event_fun(int type, void *data, void *private_data)
 		drop_frame_count = 0;
 		receive_frame_count = 0;
 		display_frame_count = 0;
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-#ifdef AVSYNC_COUNT
-		avsync_count = 0;
-		timestamp_avsync_counter_set(avsync_count);
-#endif
-#endif
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		nn_scenes_value[0].maxprob = 0;
 #endif
@@ -1596,15 +1491,6 @@ static int video_receiver_event_fun(int type, void *data, void *private_data)
 		dovi_drop_frame_num = 0;
 		mutex_unlock(&omx_mutex);
 		atomic_dec(&video_recv_cnt);
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-		if (is_amdv_enable()) {
-			dv_vf_light_unreg_provider();
-			if (dv_inst >= 0) {/*tunnel mode*/
-				dv_inst_unmap(dv_inst);
-				dv_inst = -1;
-			}
-		}
-#endif
 		update_process_hdmi_avsync_flag(false);
 	} else if (type == VFRAME_EVENT_PROVIDER_RESET) {
 		video_vf_light_unreg_provider(1);
@@ -1623,12 +1509,6 @@ static int video_receiver_event_fun(int type, void *data, void *private_data)
 		drop_frame_count = 0;
 		receive_frame_count = 0;
 		display_frame_count = 0;
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-#ifdef AVSYNC_COUNT
-		avsync_count = 0;
-		timestamp_avsync_counter_set(avsync_count);
-#endif
-#endif
 		mutex_lock(&omx_mutex);
 		omx_run = false;
 		omx_pts_set_from_hwc_count = 0;
@@ -1648,25 +1528,7 @@ static int video_receiver_event_fun(int type, void *data, void *private_data)
 		//init_hdr_info();
 /*notify di 3d mode is frame*/
 /*alternative mode,passing two buffer in one frame */
-#ifdef CONFIG_AMLOGIC_MEDIA_TVIN
-		if ((process_3d_type & MODE_3D_FA) &&
-		    cur_dispbuf[0] &&
-		    !cur_dispbuf[0]->trans_fmt)
-			vf_notify_receiver_by_name
-			("deinterlace",
-			VFRAME_EVENT_PROVIDER_SET_3D_VFRAME_INTERLEAVE,
-			(void *)1);
-#endif
 		video_vf_light_unreg_provider(0);
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-		if (is_amdv_enable()) {
-			dv_vf_light_reg_provider();
-			if (is_tunnel_mode(RECEIVER_NAME)) {
-				dv_inst_map(&dv_inst);
-				pr_info("video receiver map dv_inst %d\n", dv_inst);
-			}
-		}
-#endif
 		update_process_hdmi_avsync_flag(true);
 	} else if (type == VFRAME_EVENT_PROVIDER_FORCE_BLACKOUT) {
 		force_blackout = 1;
@@ -1722,42 +1584,7 @@ static struct vframe_receiver_s video_vf_recv;
 static struct vframe_receiver_s videopip_vf_recv;
 static struct vframe_receiver_s videopip2_vf_recv;
 
-/* other amvideo related api */
-static void dump_vframe_status(const char *name)
-{
-	int ret = -1;
-	struct vframe_states states;
-	struct vframe_provider_s *vfp;
 
-	memset(&states, 0, sizeof(struct vframe_states));
-
-	vfp = vf_get_provider_by_name(name);
-	if (vfp && vfp->ops && vfp->ops->vf_states)
-		ret = vfp->ops->vf_states(&states, vfp->op_arg);
-
-	if (ret == 0) {
-		ret += pr_info("%s_pool_size=%d\n",
-			name, states.vf_pool_size);
-		ret += pr_info("%s buf_free_num=%d\n",
-			name, states.buf_free_num);
-		ret += pr_info("%s buf_avail_num=%d\n",
-			name, states.buf_avail_num);
-	} else {
-		ret += pr_info("%s vframe no states\n", name);
-	}
-}
-
-static void dump_vdin_reg(void)
-{
-	unsigned int reg001 = 0, reg002 = 0;
-
-	if (cur_dev->display_module != S5_DISPLAY_MODULE) {
-		reg001 = READ_VCBUS_REG(0x1204);
-		reg002 = READ_VCBUS_REG(0x1205);
-	}
-	pr_info("VDIN_LCNT_STATUS:0x%x,VDIN_COM_STATUS0:0x%x\n",
-		reg001, reg002);
-}
 
 #ifdef CONFIG_AMLOGIC_MEDIA_VIDEOCAPTURE
 static int ext_get_cur_video_frame(struct vframe_s **vf, int *canvas_index)
@@ -2118,13 +1945,6 @@ static inline bool vpts_expire(struct vframe_s *cur_vf,
 			       int toggled_cnt)
 {
 	u32 pts;
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-	u32 pts_temp = 0;
-#endif
-#ifdef VIDEO_PTS_CHASE
-	u32 vid_pts, scr_pts;
-	int aud_start = 0;
-#endif
 	u32 systime;
 	u32 adjust_pts, org_vpts;
 	bool expired;
@@ -2194,9 +2014,6 @@ static inline bool vpts_expire(struct vframe_s *cur_vf,
 	    av_discontinue) {
 		avsync_count++;
 		av_discontinue = false;
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-		timestamp_avsync_counter_set(avsync_count);
-#endif
 	}
 #endif
 	if ((pts == 0 && ((cur_dispbuf[0] && cur_dispbuf[0] != &vf_local[0]) ||
@@ -2209,104 +2026,6 @@ static inline bool vpts_expire(struct vframe_s *cur_vf,
 			hold_property_changed = 0;
 	}
 	/* check video PTS discontinuity */
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-	if ((enable_video_discontinue_report) &&
-	    (first_frame_toggled) &&
-	    (AM_ABSSUB(systime, pts) > tsync_vpts_discontinuity_margin()) &&
-	    ((next_vf->flag & VFRAME_FLAG_NO_DISCONTINUE) == 0)) {
-		/*
-		 * if paused ignore discontinue
-		 */
-		if (!timestamp_pcrscr_enable_state() &&
-		    tsync_get_mode() != TSYNC_MODE_PCRMASTER) {
-			/*pr_info("video pts discontinue,
-			 * but pcrscr is disabled,
-			 * return false\n");
-			 */
-			return false;
-		}
-		pts_temp = cur_vf ? vf_get_pts(cur_vf) : 0;
-		pts = timestamp_vpts_get() + pts_temp;
-		if (debug_flag & DEBUG_FLAG_OMX_DEBUG_DROP_FRAME) {
-			pr_info("system=0x%x ,dur:%d,pts:0x%x,align:%d\n",
-				systime,
-				pts_temp, pts,
-				vsync_pts_align);
-		}
-		/* pr_info("system=0x%x vpts=0x%x\n", systime,*/
-		/*timestamp_vpts_get()); */
-		/* [SWPL-21116] If pts and systime diff is smaller than
-		 * vsync_pts_align, will return true at end of this
-		 * function and show this frame. In this bug, next_vf->pts
-		 * is not 0 and have large diff with systime, need get into
-		 * discontinue process and shouldn't send out this frame.
-		 */
-		if (((int)(systime - pts) >= 0) ||
-		    (next_vf->pts > 0 &&
-		    ((int)(systime + vsync_pts_align - pts) >= 0))) {
-			if (next_vf->pts != 0)
-				tsync_avevent_locked(VIDEO_TSTAMP_DISCONTINUITY,
-						     next_vf->pts);
-			else if (next_vf->pts == 0 &&
-				 (tsync_get_mode() != TSYNC_MODE_PCRMASTER))
-				tsync_avevent_locked(VIDEO_TSTAMP_DISCONTINUITY,
-						     pts);
-
-			/* pr_info("discontinue,
-			 *   systime=0x%x vpts=0x%x next_vf->pts = 0x%x\n",
-			 *	systime,
-			 *	pts,
-			 *	next_vf->pts);
-			 */
-
-			/* pts==0 is a keep frame maybe. */
-			if (systime > next_vf->pts || next_vf->pts == 0 ||
-			    (systime < pts &&
-			    (pts > 0xFFFFFFFF - TIME_UNIT90K)))
-				return true;
-			if (omx_secret_mode &&
-			    cur_omx_index >= next_vf->omx_index)
-				return true;
-
-			return false;
-		} else if (omx_secret_mode &&
-			cur_omx_index >= next_vf->omx_index) {
-			return true;
-		} else if (tsync_check_vpts_discontinuity(pts) &&
-			tsync_get_mode() == TSYNC_MODE_PCRMASTER) {
-			/* in pcrmaster mode and pcr clk was used by tync,
-			 * when the stream was replayed, the pcr clk was
-			 * changed to the head of the stream. in this case,
-			 * we send the "VIDEO_TSTAMP_DISCONTINUITY" signal
-			 *  to notify tsync and adjust the sysclock to
-			 * make playback smooth.
-			 */
-			if (next_vf->pts != 0)
-				tsync_avevent_locked(VIDEO_TSTAMP_DISCONTINUITY,
-						     next_vf->pts);
-			else if (next_vf->pts == 0) {
-				tsync_avevent_locked(VIDEO_TSTAMP_DISCONTINUITY,
-						     pts);
-				return true;
-			}
-		} else {
-			/* +[SE] [BUG][SWPL-21070][zihao.ling]
-			 *when vdiscontinue, not displayed
-			 */
-			return false;
-		}
-	} else if (omx_run &&
-		omx_secret_mode &&
-		(omx_pts + omx_pts_interval_upper < next_vf->pts) &&
-		(omx_pts_set_index >= next_vf->omx_index)) {
-		pr_info("omx, omx_pts=%d omx_pts_set_index=%d pts=%d omx_index=%d\n",
-			omx_pts,
-			omx_pts_set_index,
-			next_vf->pts,
-			next_vf->omx_index);
-		return true;
-	}
-#endif
 	if (vsync_pts_inc_upint && !freerun_mode) {
 		struct vframe_states frame_states;
 		u32 delayed_ms, t1, t2;
@@ -2353,54 +2072,6 @@ static inline bool vpts_expire(struct vframe_s *cur_vf,
 		}
 	}
 
-#ifdef VIDEO_PTS_CHASE
-	vid_pts = timestamp_vpts_get();
-	scr_pts = timestamp_pcrscr_get();
-	vid_pts += vsync_pts_inc;
-
-	if (av_sync_flag) {
-		if (vpts_chase) {
-			if ((abs(vid_pts - scr_pts) < 6000) ||
-			    (abs(vid_pts - scr_pts) > 90000)) {
-				vpts_chase = 0;
-				pr_info("leave vpts chase mode, diff:%d\n",
-					vid_pts - scr_pts);
-			}
-		} else if ((abs(vid_pts - scr_pts) > 9000) &&
-			(abs(vid_pts - scr_pts) < 90000)) {
-			vpts_chase = 1;
-			if (vid_pts < scr_pts)
-				vpts_chase_pts_diff = 50;
-			else
-				vpts_chase_pts_diff = -50;
-			vpts_chase_counter =
-			    ((int)(scr_pts - vid_pts)) / vpts_chase_pts_diff;
-			pr_info("enter vpts chase mode, diff:%d\n",
-				vid_pts - scr_pts);
-		} else if (abs(vid_pts - scr_pts) >= 90000) {
-			pr_info("video pts discontinue, diff:%d\n",
-				vid_pts - scr_pts);
-		}
-	} else {
-		vpts_chase = 0;
-	}
-	if (vpts_chase) {
-		u32 curr_pts =
-		    scr_pts - vpts_chase_pts_diff * vpts_chase_counter;
-
-	/* pr_info("vchase pts %d, %d, %d, %d, %d\n",*/
-	/*curr_pts, scr_pts, curr_pts-scr_pts, vid_pts, vpts_chase_counter); */
-		return ((int)(curr_pts - pts)) >= 0;
-	}
-	aud_start = (timestamp_apts_get() != -1);
-
-	if (!av_sync_flag && aud_start && (abs(scr_pts - pts) < 9000) &&
-	    ((int)(scr_pts - pts) < 0)) {
-		av_sync_flag = 1;
-		pr_info("av sync ok\n");
-	}
-	return ((int)(scr_pts - pts)) >= 0;
-#else
 	if (smooth_sync_enable) {
 		org_vpts = timestamp_vpts_get();
 		if ((abs(org_vpts + vsync_pts_inc - systime) <
@@ -2468,7 +2139,6 @@ static inline bool vpts_expire(struct vframe_s *cur_vf,
 	}
 #endif
 	return expired;
-#endif
 }
 
 #ifdef PTS_LOGGING
@@ -2588,25 +2258,6 @@ static void set_omx_pts(u32 *p)
 
 		while (try_cnt--) {
 			vf = vf_peek(RECEIVER_NAME);
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-			if (is_amdv_enable() &&
-			    vf && is_amdv_frame(vf)) {
-				if (debug_flag &
-					DEBUG_FLAG_OMX_DV_DROP_FRAME)
-					pr_info("dovi will drop %d in vsync\n",
-						frame_num);
-				dovi_drop_flag = true;
-				dovi_drop_frame_num = frame_num;
-
-				if (disable_dv_drop) {
-					omx_run = true;
-					dovi_drop_flag = false;
-					dovi_drop_frame_num = 0;
-					omx_drop_done = true;
-				}
-				break;
-			}
-#endif
 			if (vf) {
 				pr_debug("drop frame_num=%d, vf->omx_index=%d\n",
 					 frame_num, vf->omx_index);
@@ -2737,218 +2388,7 @@ static inline bool is_valid_drop_count(int drop_count)
 	return false;
 }
 
-static void process_hdmi_video_sync(struct vframe_s *vf)
-{
-	char *provider_name = vf_get_provider_name(RECEIVER_NAME);
-	int update_value = 0;
-	unsigned long flags;
-	int vsync_dur = 16;
-	int need_drop = 0;
-	int hdmin_delay_min_ms = vsync_dur * HDMI_VIDEO_MIN_DELAY;
 
-	if ((!hdmi_delay_first_check && !hdmi_delay_normal_check &&
-	     hdmin_delay_start == 0) || !vf || last_required_total_delay <= 0)
-		return;
-
-	if (vf->flag & VFRAME_FLAG_GAME_MODE) {
-		if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-			pr_info("game mode, not do avsync\n");
-		return;
-	}
-
-	hdmin_delay_duration = 0;
-	while (provider_name) {
-		if (!vf_get_provider_name(provider_name))
-			break;
-		provider_name =
-			vf_get_provider_name(provider_name);
-	}
-	if (provider_name && (!strcmp(provider_name, "dv_vdin") ||
-		!strcmp(provider_name, "vdin0"))) {
-		if (vf->duration > 0) {
-			vsync_dur = (int)(vf->duration / 96);
-			hdmin_delay_min_ms = vsync_dur *
-				HDMI_VIDEO_MIN_DELAY;
-		}
-		spin_lock_irqsave(&hdmi_avsync_lock, flags);
-
-		if (last_required_total_delay > vframe_walk_delay) { /*delay video*/
-			vframe_walk_delay = (int)div_u64(((jiffies_64 -
-			vf->ready_jiffies64) * 1000), HZ);
-#ifdef CONFIG_AMLOGIC_MEDIA_FRC
-			vframe_walk_delay += frc_get_video_latency();
-#endif
-			/*check hdmi max delay*/
-			if (last_required_total_delay > hdmin_delay_max_ms) {
-				if (hdmin_delay_max_ms > vframe_walk_delay)
-					update_value = hdmin_delay_max_ms -
-					vframe_walk_delay;
-			} else {
-				update_value = last_required_total_delay -
-					vframe_walk_delay;
-			}
-			/*set only if delay bigger than half vsync*/
-			if (update_value > vsync_dur / 2) {
-				hdmin_delay_duration = update_value;
-				hdmin_delay_start_time = -1;
-				hdmin_delay_count_debug++;
-				hdmin_delay_done = false;
-				hdmin_need_drop_count = 0;
-			}
-		} else { /*drop video*/
-			/*check hdmi min delay*/
-			if (last_required_total_delay >= hdmin_delay_min_ms)
-				update_value = vframe_walk_delay -
-					last_required_total_delay;
-			else
-				update_value = vframe_walk_delay -
-					hdmin_delay_min_ms;
-
-			/*drop only if diff bigger than half vsync*/
-			if (update_value > vsync_dur / 2) {
-				need_drop = update_value / vsync_dur;
-				/*check if drop need_drop + 1 is closer to*/
-				/*required than need_drop*/
-				if ((update_value - need_drop * vsync_dur) >
-					vsync_dur / 2) {
-					if ((vframe_walk_delay -
-						(need_drop + 1) * vsync_dur) >=
-						hdmin_delay_min_ms)
-						need_drop = need_drop + 1;
-				}
-				hdmin_delay_duration = -update_value;
-				hdmin_delay_done = true;
-				if (is_valid_drop_count(need_drop))
-					hdmin_need_drop_count = need_drop;
-			}
-		}
-
-		//if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("required delay:%d, current %d, extra %d, delay %s, drop cnt %d, normal_check:0x%02x\n",
-			last_required_total_delay,
-			vframe_walk_delay,
-			hdmin_delay_duration,
-			hdmin_delay_done ? "false" : "true",
-			need_drop, hdmi_delay_normal_check);
-
-		/* retry n times after vfm path reg and first check */
-		if (hdmi_delay_normal_check > 0 &&
-		    hdmi_delay_normal_check != 0xff &&
-		    !hdmi_delay_first_check)
-			hdmi_delay_normal_check--;
-
-		/* retry n times after audio require new delay and no more check */
-		if (hdmin_delay_start && hdmi_delay_normal_check == 0)
-			hdmi_delay_normal_check = enable_hdmi_delay_normal_check;
-		spin_unlock_irqrestore(&hdmi_avsync_lock, flags);
-	}
-}
-
-/*ret = 0: no need delay*/
-/*ret = 1: need to delay*/
-static int hdmi_in_delay_check(struct vframe_s *vf)
-{
-	int expire;
-	int vsync_duration = 0;
-	u64 pts = 0;
-	u64 us;
-	unsigned long flags;
-	int expire_align = 0;
-
-	char *provider_name = vf_get_provider_name(RECEIVER_NAME);
-
-	if (hdmin_delay_done)
-		return 0;
-
-	if (!vf || vf->duration == 0)
-		return 0;
-
-	while (provider_name) {
-		if (!vf_get_provider_name(provider_name))
-			break;
-		provider_name =
-			vf_get_provider_name(provider_name);
-	}
-	if (!provider_name || (strcmp(provider_name, "dv_vdin") &&
-		strcmp(provider_name, "vdin0"))) {
-		return 0;
-	}
-
-	spin_lock_irqsave(&hdmi_avsync_lock, flags);
-	/* update duration */
-	vsync_duration = (int)(vf->duration / 96);
-
-	if (hdmin_delay_start_time == -1) {
-		hdmin_delay_start_time = jiffies_to_msecs(jiffies);
-		/*this function lead to one vsync delay */
-		/*hdmin_delay_start_time -= vsync_duration;*/
-
-		if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-			pr_info("vsync_duration %d, hdmin_delay_start_time %d\n",
-				vsync_duration, hdmin_delay_start_time);
-		spin_unlock_irqrestore(&hdmi_avsync_lock, flags);
-		return 1;
-	}
-
-	expire = jiffies_to_msecs(jiffies) -
-		hdmin_delay_start_time;
-
-	if (last_required_total_delay >= hdmin_delay_max_ms) {
-		/*when required more than hdmin_delay_max_ms, */
-		expire_align = -vsync_duration;
-	} else {
-		/*delay one more vsync? select the one that closer to required*/
-		expire_align = -vsync_duration / 2;
-	}
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("expire %d, hdmin_delay_duration %d, expire_align %d\n",
-			expire, hdmin_delay_duration, expire_align);
-
-	if (expire - hdmin_delay_duration <= expire_align) {
-		spin_unlock_irqrestore(&hdmi_avsync_lock, flags);
-		return 1;
-	}
-	hdmin_delay_done = true;
-
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("hdmi video delay done! expire %d\n", expire);
-
-	/*reset vpts=pcr will lead vpts_expire delay 1 vsync - vsync_pts_align*/
-	timestamp_vpts_set(timestamp_pcrscr_get() - (vf_get_pts(vf) - vsync_pts_align));
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-	timestamp_vpts_set_u64((u64)(timestamp_pcrscr_get() -
-		(vf_get_pts(vf) - vsync_pts_align)));
-	pts = (u64)timestamp_pcrscr_get_u64();
-#endif
-	pts = pts - (vf_get_pts(vf) - vsync_pts_align);
-	us = div64_u64(pts * 100, 9);
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-	timestamp_vpts_set_u64(us);
-#endif
-	spin_unlock_irqrestore(&hdmi_avsync_lock, flags);
-
-	return 0;
-}
-
-static void hdmi_in_drop_frame(void)
-{
-	struct vframe_s *vf;
-
-	while (hdmin_need_drop_count > 0) {
-		vf = amvideo_vf_get();
-		if (!vf) { /*no video frame, drop done*/
-			/*hdmi_need_drop_count = 0;*/
-			break;
-		}
-		if (amvideo_vf_put(vf) < 0)
-			check_dispbuf(0, vf, true);
-
-		if (debug_flag & DEBUG_FLAG_PRINT_DROP_FRAME)
-			pr_info("#line %d: drop %p\n", __LINE__, vf);
-		video_drop_vf_cnt[0]++;
-		--hdmin_need_drop_count;
-	}
-}
 
 static inline bool video_vf_disp_mode_check(struct vframe_s *vf)
 {
@@ -3006,489 +2446,27 @@ static inline bool video_vf_disp_mode_check(struct vframe_s *vf)
 	return true;
 }
 
-static enum vframe_disp_mode_e video_vf_disp_mode_get(struct vframe_s *vf)
-{
-	struct provider_disp_mode_req_s req;
-	char *provider_name = vf_get_provider_name(RECEIVER_NAME);
-
-	req.vf = vf;
-	req.disp_mode = VFRAME_DISP_MODE_NULL;
-	req.req_mode = 0;
-
-	while (provider_name) {
-		if (!vf_get_provider_name(provider_name))
-			break;
-		provider_name =
-			vf_get_provider_name(provider_name);
-	}
-	if (provider_name)
-		vf_notify_provider_by_name(provider_name,
-			VFRAME_EVENT_RECEIVER_DISP_MODE, (void *)&req);
-	return req.disp_mode;
-}
 
 static inline bool video_vf_dirty_put(struct vframe_s *vf)
 {
 	if (!vf->frame_dirty)
 		return false;
-	if (cur_dispbuf[0] != vf) {
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-		if (vf->pts != 0) {
-			amlog_mask(LOG_MASK_TIMESTAMP,
-				   "vpts to vf->pts:0x%x,scr:0x%x,abs_scr: 0x%x\n",
-			vf->pts, timestamp_pcrscr_get(),
-			READ_MPEG_REG(SCR_HIU));
-			timestamp_vpts_set(vf->pts);
-			timestamp_vpts_set_u64(vf->pts_us64);
-		} else if (cur_dispbuf[0]) {
-			amlog_mask(LOG_MASK_TIMESTAMP,
-				   "vpts inc:0x%x,scr: 0x%x, abs_scr: 0x%x\n",
-			timestamp_vpts_get() +
-			vf_get_pts(cur_dispbuf[0]),
-			timestamp_pcrscr_get(),
-			READ_MPEG_REG(SCR_HIU));
-			timestamp_vpts_inc
-				(vf_get_pts(cur_dispbuf[0]));
-			timestamp_vpts_inc_u64
-				(vf_get_pts(cur_dispbuf[0]));
 
-			vpts_remainder +=
-				vf_get_pts_rm(cur_dispbuf[0]);
-			if (vpts_remainder >= 0xf) {
-				vpts_remainder -= 0xf;
-				timestamp_vpts_inc(-1);
-				timestamp_vpts_inc_u64(-1);
-			}
-		}
-#endif
-	}
 	if (amvideo_vf_put(vf) < 0)
 		check_dispbuf(0, vf, true);
 	return true;
 }
 
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-/*SDK test: check metadata crc*/
-/*frame crc error ---> drop err frame and repeat last frame*/
-/*err count >= 6 ---> mute*/
-static inline bool dv_vf_crc_check(struct vframe_s *vf)
-{
-	bool crc_err = false;
-	char *provider_name = vf_get_provider_name(RECEIVER_NAME);
-
-	while (provider_name) {
-		if (!vf_get_provider_name(provider_name))
-			break;
-		provider_name =
-			vf_get_provider_name(provider_name);
-	}
-	if (provider_name && (!strcmp(provider_name, "dv_vdin") ||
-			      !strcmp(provider_name, "vdin0"))) {
-		if (!vf->dv_crc_sts) {
-			/*drop err crc frame*/
-			vdin_err_crc_cnt++;
-			if (debug_flag & DEBUG_FLAG_HDMI_DV_CRC)
-				pr_info("vdin_err_crc_cnt %d\n",
-					vdin_err_crc_cnt);
-
-			/*need set video vpts when drop frame*/
-			if (cur_dispbuf[0] != vf) {
-				if (vf->pts != 0) {
-					amlog_mask(LOG_MASK_TIMESTAMP,
-						   "vpts to vf->pts:0x%x,scr:0x%x,abs_scr: 0x%x\n",
-					vf->pts, timestamp_pcrscr_get(),
-					READ_MPEG_REG(SCR_HIU));
-					timestamp_vpts_set(vf->pts);
-				} else if (cur_dispbuf[0]) {
-					amlog_mask(LOG_MASK_TIMESTAMP,
-						   "vpts inc:0x%x,scr: 0x%x, abs_scr: 0x%x\n",
-					timestamp_vpts_get() +
-					vf_get_pts(cur_dispbuf[0]),
-					timestamp_pcrscr_get(),
-					READ_MPEG_REG(SCR_HIU));
-					timestamp_vpts_inc(vf_get_pts(cur_dispbuf[0]));
-
-					vpts_remainder +=
-					vf_get_pts_rm(cur_dispbuf[0]);
-					if (vpts_remainder >= 0xf) {
-						vpts_remainder -= 0xf;
-						timestamp_vpts_inc(-1);
-					}
-				}
-			}
-			if (amvideo_vf_put(vf) < 0)
-				check_dispbuf(0, vf, true);
-			crc_err = true;
-		} else {
-			vdin_err_crc_cnt = 0;
-		}
-
-	} else {
-		vdin_err_crc_cnt = 0;
-	}
-
-	/*mute when err crc > = 6*/
-	if (vdin_err_crc_cnt >= ERR_CRC_COUNT) {
-		set_video_mute(true);
-		dv_mute_vpp_flag = true;
-	} else if (dv_mute_vpp_flag) {
-		set_video_mute(false);
-		dv_mute_vpp_flag = false;
-	}
-	return crc_err;
-}
-
-struct vframe_s *dv_toggle_frame(struct vframe_s *vf, enum vd_path_e vd_path, bool new_frame)
-{
-	struct vframe_s *toggle_vf = NULL;
-
-	if (!is_amdv_enable()) {
-		cur_dispbuf2 = NULL;
-		dvel_size = 0;
-		dvel_changed = false;
-		return NULL;
-	}
-
-	if (new_frame) {
-		int ret = amdv_update_metadata(vf, vd_path, false);
-
-		if ((!is_amdv_el_disable() ||
-		    for_amdv_certification()) &&
-		    !is_multi_dv_mode())
-			cur_dispbuf2 = amdv_vf_peek_el(vf);
-		if (ret == 0) {
-			/* setting generated for this frame */
-			/* or DOVI in bypass mode */
-			toggle_vf = vf;
-			amdv_set_toggle_flag(1);
-		} else if (ret == 1) {
-			/* both dolby and hdr module bypass */
-			toggle_vf = vf;
-			amdv_set_toggle_flag(0);
-		} else {
-			/* fail generating setting for this frame */
-			toggle_vf = NULL;
-			amdv_set_toggle_flag(0);
-		}
-	} else {
-		/* FIXME: if need the is on condition */
-		/* if (is_amdv_on() && get_video_enabled(0)) */
-		if (!amdv_parse_metadata(vf, vd_path, 2, false, false))
-			amdv_set_toggle_flag(1);
-	}
-	return toggle_vf;
-}
-
-/* 1: drop fail; 0: drop success*/
-static int dolby_vision_drop_frame(void)
-{
-	struct vframe_s *vf;
-
-	if (dolby_vision_need_wait(0)) {
-		if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
-			pr_info("drop frame need wait!\n");
-		return 1;
-	}
-	vf = amvideo_vf_get();
-	if (!vf)
-		return 1;
-
-	if (vf && (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME))
-		pr_info("drop vf %p, index %d, pts %d\n",
-			vf, vf->omx_index, vf->pts);
-
-	amdv_update_metadata(vf, VD1_PATH, true);
-	if (amvideo_vf_put(vf) < 0)
-		check_dispbuf(0, vf, true);
-
-	if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
-		pr_info("drop vf %p done\n", vf);
-
-	return 0;
-}
-#endif
-
 void do_frame_detect(void)
 {
-	static u32 interrupt_count;
-
-	if (frame_detect_flag == 1 &&
-	    receive_frame_count &&
-		frame_detect_time &&
-		atomic_read(&video_unreg_flag)) {
-		struct vinfo_s *video_info;
-
-		video_info = get_current_vinfo();
-		if (video_frame_detect.interrupt_count == 0) {
-			interrupt_count = 0;
-#ifdef CONFIG_AMLOGIC_VOUT
-			video_frame_detect.interrupt_count =
-				frame_detect_time *
-				video_info->sync_duration_num /
-			    video_info->sync_duration_den;
-			if (debug_flag & DEBUG_FLAG_FRAME_DETECT) {
-				pr_info("sync_duration_num = %d\n",
-					video_info->sync_duration_num);
-				pr_info("sync_duration_den = %d\n",
-					video_info->sync_duration_den);
-			}
-#endif
-			video_frame_detect.start_receive_count =
-				receive_frame_count;
-		}
-
-		interrupt_count++;
-
-		if (interrupt_count == video_frame_detect.interrupt_count + 1) {
-			u32 receive_count;
-			u32 expect_frame_count = 0;
-
-			receive_count = receive_frame_count -
-				video_frame_detect.start_receive_count;
-			expect_frame_count =
-				video_frame_detect.interrupt_count *
-				frame_detect_fps *
-				video_info->sync_duration_den /
-				video_info->sync_duration_num /
-				1000;
-
-			if (receive_count < expect_frame_count) {
-				frame_detect_drop_count +=
-					expect_frame_count -
-					receive_count;
-				if (debug_flag & DEBUG_FLAG_FRAME_DETECT) {
-					pr_info("drop_count = %d\n",
-						expect_frame_count -
-						receive_count);
-				}
-				frame_detect_receive_count +=
-					expect_frame_count;
-			} else {
-				frame_detect_receive_count += receive_count;
-			}
-			if (debug_flag & DEBUG_FLAG_FRAME_DETECT) {
-				pr_info("expect count = %d\n",
-					expect_frame_count);
-				pr_info("receive_count = %d, time = %ds\n",
-					receive_count,
-					frame_detect_time);
-				pr_info("interrupt_count = %d\n",
-					video_frame_detect.interrupt_count);
-				pr_info("frame_detect_drop_count = %d\n",
-					frame_detect_drop_count);
-				pr_info("frame_detect_receive_count = %d\n",
-					frame_detect_receive_count);
-			}
-			interrupt_count = 0;
-			memset(&video_frame_detect, 0,
-			       sizeof(struct video_frame_detect_s));
-		}
-	}
 }
 
 void frame_drop_process(void)
 {
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-	if (is_amdv_enable() && dovi_drop_flag) {
-		struct vframe_s *vf = NULL;
-		unsigned int cnt = 10;
-		int max_drop_index;
-
-		if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
-			pr_info("dovi_drop_frame_num %d, omx_run %d\n",
-				dovi_drop_frame_num, omx_run);
-		while (cnt--) {
-			vf = amvideo_vf_peek();
-			if (vf && is_amdv_frame(vf)) {
-				max_drop_index = omx_run ?
-				omx_need_drop_frame_num : dovi_drop_frame_num;
-
-				if (max_drop_index >= vf->omx_index) {
-					if (dolby_vision_drop_frame() == 1)
-						break;
-					continue;
-				} else if (omx_run &&
-					   (vf->omx_index >
-					   omx_need_drop_frame_num)) {
-					/* all drop done*/
-					dovi_drop_flag = false;
-					omx_drop_done = true;
-					if (debug_flag &
-					    DEBUG_FLAG_OMX_DV_DROP_FRAME)
-						pr_info("dolby vision drop done\n");
-					break;
-				}
-				break;
-			}
-			break;
-		}
-	}
-#endif
-	if (omx_need_drop_frame_num > 0 && !omx_drop_done && omx_secret_mode) {
-		struct vframe_s *vf = NULL;
-
-		while (1) {
-			vf = amvideo_vf_peek();
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-			if (is_amdv_enable() &&
-			    vf && is_amdv_frame(vf)) {
-				break;
-			}
-#endif
-			if (!vf)
-				break;
-			if (omx_need_drop_frame_num >= vf->omx_index) {
-				vf = amvideo_vf_get();
-				if (amvideo_vf_put(vf) < 0)
-					check_dispbuf(0, vf, true);
-				video_drop_vf_cnt[0]++;
-				if (debug_flag & DEBUG_FLAG_PRINT_DROP_FRAME)
-					pr_info("drop frame: drop count %d\n",
-						video_drop_vf_cnt[0]);
-			} else {
-				omx_drop_done = true;
-				break;
-			}
-		}
-	}
 }
 
 void pts_process(void)
 {
-	if (vsync_pts_inc_upint) {
-		if (vsync_pts_inc_adj) {
-			/* pr_info("adj %d, org %d\n",*/
-			/*vsync_pts_inc_adj, vsync_pts_inc); */
-			timestamp_pcrscr_inc(vsync_pts_inc_adj);
-			timestamp_apts_inc(vsync_pts_inc_adj);
-#ifdef CONFIG_AMLOGIC_VIDEOSYNC
-			videosync_pcrscr_inc(vsync_pts_inc_adj);
-#endif
-		} else {
-			timestamp_pcrscr_inc(vsync_pts_inc + 1);
-			timestamp_apts_inc(vsync_pts_inc + 1);
-#ifdef CONFIG_AMLOGIC_VIDEOSYNC
-			videosync_pcrscr_inc(vsync_pts_inc + 1);
-#endif
-		}
-	} else {
-		if (vsync_slow_factor == 0) {
-			pr_info("invalid vsync_slow_factor, set to 1\n");
-			vsync_slow_factor = 1;
-		}
-
-		if (vsync_slow_factor == 1) {
-			timestamp_pcrscr_inc_scale(vsync_pts_inc_scale,
-						   vsync_pts_inc_scale_base);
-			timestamp_apts_inc(vsync_pts_inc / vsync_slow_factor);
-#ifdef CONFIG_AMLOGIC_VIDEOSYNC
-			videosync_pcrscr_update(vsync_pts_inc_scale,
-						vsync_pts_inc_scale_base);
-#endif
-#ifdef CONFIG_AMLOGIC_VIDEOQUEUE
-			videoqueue_pcrscr_update(vsync_pts_inc_scale,
-						vsync_pts_inc_scale_base);
-#endif
-
-		} else if (vsync_slow_factor > 1000) {
-			u32 inc = (vsync_slow_factor / 1000)
-				* vsync_pts_inc / 1000;
-
-			timestamp_pcrscr_inc(inc);
-			timestamp_apts_inc(inc);
-#ifdef CONFIG_AMLOGIC_VIDEOSYNC
-			videosync_pcrscr_inc(inc);
-#endif
-		} else {
-			timestamp_pcrscr_inc(vsync_pts_inc / vsync_slow_factor);
-			timestamp_apts_inc(vsync_pts_inc / vsync_slow_factor);
-#ifdef CONFIG_AMLOGIC_VIDEOSYNC
-			videosync_pcrscr_inc(vsync_pts_inc / vsync_slow_factor);
-#endif
-		}
-	}
-	if (omx_secret_mode) {
-		u32 system_time = timestamp_pcrscr_get();
-		int diff = 0;
-		unsigned long delta1 = 0;
-		unsigned long time_setomxpts_delta = 0;
-
-		diff = system_time - omx_pts;
-		if (time_setomxpts > 0 && time_setomxpts_last > 0) {
-			/* time_setomxpts record hwc setomxpts time, */
-			/* when check  diff between pcr and  omx_pts, */
-			/* add compensation will let omx_pts and pcr */
-			/* is at the some time, more accurate. Also */
-			/* remove the compensation when omx_pts */
-			/* is not update for a while, in case when */
-			/* paused, pcr is not paused */
-			delta1 = func_div(sched_clock() - time_setomxpts, 1000);
-			time_setomxpts_delta = func_div(time_setomxpts -
-				time_setomxpts_last, 1000);
-			if ((time_setomxpts_delta >
-				((ulong)(4 * vsync_pts_inc) * 1000 / 90)) ||
-				((diff - omx_pts_interval_upper * 3 / 2) > 0) ||
-				((diff - omx_pts_interval_lower * 3 / 2)
-				< 0)) {
-				time_setomxpts = 0;
-				time_setomxpts_last = 0;
-				if (debug_flag & DEBUG_FLAG_PTS_TRACE)
-					pr_info("omxpts is not update for a while,do not need compensate\n");
-			} else {
-				diff -=  delta1 * 90 / 1000;
-			}
-		}
-
-		if (((diff - omx_pts_interval_upper) > 0 ||
-		     (diff - omx_pts_interval_lower) < 0 ||
-		    omx_pts_set_from_hwc_count <
-		    OMX_MAX_COUNT_RESET_SYSTEMTIME) &&
-		    video_start_post) {
-			timestamp_pcrscr_enable(1);
-			if (debug_flag & DEBUG_FLAG_PTS_TRACE)
-				pr_info("system_time=%d, omx_pts=%d, diff=%d\n",
-					system_time, omx_pts, diff);
-			/*add  greatest common divisor of duration*/
-			/*1500(60fps) 3000(30fps) 3750(24fps) for some video*/
-			/*that pts is not evenly*/
-			if (debug_flag & DEBUG_FLAG_OMX_DEBUG_DROP_FRAME) {
-				pr_info("pcrscr_set sys_time=%d, omx_pts=%d, diff=%d",
-					system_time, omx_pts, diff);
-			}
-			timestamp_pcrscr_set(omx_pts + DURATION_GCD);
-		} else if (((diff - omx_pts_interval_upper / 2) > 0 ||
-			(diff - omx_pts_interval_lower / 2) < 0) &&
-			(omx_pts_set_from_hwc_count_begin <
-			OMX_MAX_COUNT_RESET_SYSTEMTIME_BEGIN) &&
-			video_start_post) {
-			timestamp_pcrscr_enable(1);
-			if (debug_flag & DEBUG_FLAG_PTS_TRACE)
-				pr_info("begin-system_time=%d, omx_pts=%d, diff=%d\n",
-					system_time, omx_pts, diff);
-			timestamp_pcrscr_set(omx_pts + DURATION_GCD);
-		} else if (is_amdv_enable() &&
-			((diff - omx_pts_dv_upper) > 0 ||
-			(diff - omx_pts_dv_lower) < 0) &&
-			video_start_post) {
-			timestamp_pcrscr_set(omx_pts + DURATION_GCD);
-		}
-	} else {
-		omx_pts = 0;
-	}
-	if (trickmode_duration_count > 0)
-		trickmode_duration_count -= vsync_pts_inc;
-#ifdef VIDEO_PTS_CHASE
-	if (vpts_chase)
-		vpts_chase_counter--;
-#endif
-
-	if (slowsync_repeat_enable)
-		frame_repeat_count++;
-
-	if (smooth_sync_enable) {
-		if (video_frame_repeat_count)
-			video_frame_repeat_count++;
-	}
 }
 
 #if ENABLE_UPDATE_HDR_FROM_USER
@@ -3591,21 +2569,6 @@ static struct vframe_s *vsync_toggle_frame(struct vframe_s *vf, int line)
 	frame_count++;
 	toggle_count++;
 
-#ifdef PTS_TRACE_DEBUG
-#ifdef PTS_TRACE_START
-		if (pts_trace_his_rd < 16) {
-#endif
-			pts_trace_his[pts_trace_his_rd] = pts_trace;
-			pts_his[pts_trace_his_rd] = vf->pts;
-			scr_his[pts_trace_his_rd] = timestamp_pcrscr_get();
-			pts_trace_his_rd++;
-			if (pts_trace_his_rd >= 16)
-				pts_trace_his_rd = 0;
-#ifdef PTS_TRACE_START
-		}
-#endif
-#endif
-
 #ifdef PTS_LOGGING
 	if (pts_escape_vsync == 1) {
 		pts_trace++;
@@ -3615,7 +2578,7 @@ static struct vframe_s *vsync_toggle_frame(struct vframe_s *vf, int line)
 	pre_pts_trace = pts_trace;
 #endif
 
-#if defined(PTS_LOGGING) || defined(PTS_TRACE_DEBUG)
+#if defined(PTS_LOGGING)
 	pts_trace = 0;
 #endif
 
@@ -3661,65 +2624,6 @@ static struct vframe_s *vsync_toggle_frame(struct vframe_s *vf, int line)
 			"Video: invalid frame dimension\n");
 		ATRACE_COUNTER(__func__,  __LINE__);
 		return vf;
-	}
-
-	if (hold_video) {
-		if (cur_dispbuf[0] != vf) {
-			u32 old_w, old_h;
-
-			new_frame_count++;
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-			if (vf->pts != 0) {
-				amlog_mask
-					(LOG_MASK_TIMESTAMP,
-					"vpts to: 0x%x, scr: 0x%x, abs_scr: 0x%x\n",
-					vf->pts, timestamp_pcrscr_get(),
-					READ_MPEG_REG(SCR_HIU));
-
-				timestamp_vpts_set(vf->pts);
-				timestamp_vpts_set_u64(vf->pts_us64);
-				last_frame_duration = vf->duration;
-			} else if (last_frame_duration) {
-				amlog_mask
-					(LOG_MASK_TIMESTAMP,
-					"vpts inc: 0x%x, scr: 0x%x, abs_scr: 0x%x\n",
-					timestamp_vpts_get() +
-					vf_get_pts(cur_dispbuf[0]),
-					timestamp_pcrscr_get(),
-					READ_MPEG_REG(SCR_HIU));
-
-				timestamp_vpts_inc
-					(DUR2PTS(last_frame_duration));
-				timestamp_vpts_inc_u64
-					(DUR2PTS(last_frame_duration));
-
-				vpts_remainder +=
-					DUR2PTS_RM(last_frame_duration);
-				if (vpts_remainder >= 0xf) {
-					vpts_remainder -= 0xf;
-					timestamp_vpts_inc(-1);
-					timestamp_vpts_inc_u64(-1);
-				}
-			}
-#endif
-
-			old_w = cur_width;
-			old_h = cur_height;
-			if (vf->type & VIDTYPE_COMPRESS) {
-				cur_width = vf->compWidth;
-				cur_height = vf->compHeight;
-			} else {
-				cur_width = vf->width;
-				cur_height = vf->height;
-			}
-			if (old_w != cur_width ||
-			    old_h != cur_height)
-				video_prop_status |= VIDEO_PROP_CHANGE_SIZE;
-			if (amvideo_vf_put(vf) < 0)
-				check_dispbuf(layer_id, vf, true);
-			ATRACE_COUNTER(__func__,  __LINE__);
-			return NULL;
-		}
 	}
 
 	if (cur_dispbuf[0] != vf) {
@@ -3794,50 +2698,10 @@ static struct vframe_s *vsync_toggle_frame(struct vframe_s *vf, int line)
 	if ((debug_flag & DEBUG_FLAG_BASIC_INFO) && first_picture)
 		pr_info("[vpp-kpi] first toggle picture {%d,%d} pts:%x\n",
 			vf->width, vf->height, vf->pts);
-	vframe_walk_delay = (int)div_u64(((jiffies_64 -
-		vf->ready_jiffies64) * 1000), HZ);
 
 	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("toggle vf %p, ready_jiffies64 %d, walk_delay %d\n",
-			vf, jiffies_to_msecs(vf->ready_jiffies64),
-			vframe_walk_delay);
-
-	/* set video PTS */
-	if (cur_dispbuf[0] != vf) {
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-		if (vf->pts != 0) {
-			amlog_mask
-				(LOG_MASK_TIMESTAMP,
-				"vpts to: 0x%x, scr: 0x%x, abs_scr: 0x%x\n",
-				vf->pts, timestamp_pcrscr_get(),
-				READ_MPEG_REG(SCR_HIU));
-				timestamp_vpts_set(vf->pts);
-				timestamp_vpts_set_u64(vf->pts_us64);
-		} else if (cur_dispbuf[0]) {
-			amlog_mask
-				(LOG_MASK_TIMESTAMP,
-				"vpts inc: 0x%x, scr: 0x%x, abs_scr: 0x%x\n",
-				timestamp_vpts_get() +
-				vf_get_pts(cur_dispbuf[0]),
-				timestamp_pcrscr_get(),
-				READ_MPEG_REG(SCR_HIU));
-
-			timestamp_vpts_inc
-				(vf_get_pts(cur_dispbuf[0]));
-			timestamp_vpts_inc_u64
-				(vf_get_pts(cur_dispbuf[0]));
-
-			vpts_remainder +=
-				vf_get_pts_rm(cur_dispbuf[0]);
-			if (vpts_remainder >= 0xf) {
-				vpts_remainder -= 0xf;
-				timestamp_vpts_inc(-1);
-				timestamp_vpts_inc_u64(-1);
-			}
-		}
-#endif
-		vf->type_backup = vf->type;
-	}
+		pr_info("toggle vf %p, ready_jiffies64 %d\n",
+			vf, jiffies_to_msecs(vf->ready_jiffies64));
 
 	cur_dispbuf[0] = vf;
 
@@ -3846,30 +2710,8 @@ static struct vframe_s *vsync_toggle_frame(struct vframe_s *vf, int line)
 
 	if (first_picture) {
 		first_frame_toggled = 1;
-#ifdef VIDEO_PTS_CHASE
-		av_sync_flag = 0;
-#endif
 	}
 
-	if (vf != &vf_local[0] && vf && !vsync_pts_aligned) {
-#ifdef PTS_TRACE_DEBUG
-		pr_info("####timestamp_pcrscr_get() = 0x%x, vf->pts = 0x%x, vsync_pts_inc = %d\n",
-			timestamp_pcrscr_get(), vf->pts, vsync_pts_inc);
-#endif
-#ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
-		if ((abs(timestamp_pcrscr_get() - vf->pts) <= vsync_pts_inc) &&
-		    ((int)(timestamp_pcrscr_get() - vf->pts) >= 0)) {
-			vsync_pts_align =  vsync_pts_inc / 4 -
-				(timestamp_pcrscr_get() - vf->pts);
-			vsync_pts_aligned = true;
-#ifdef PTS_TRACE_DEBUG
-			pts_trace_his_rd = 0;
-			pr_info("####vsync_pts_align set to %d\n",
-				vsync_pts_align);
-#endif
-		}
-#endif
-	}
 	ATRACE_COUNTER(__func__,  0);
 	return cur_dispbuf[0];
 }
@@ -3878,9 +2720,6 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 {
 	struct vframe_s *path0_new_frame = NULL;
 	struct vframe_s *vf;
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-	struct vframe_s *dv_new_vf = NULL;
-#endif
 	struct vframe_s *cur_dispbuf_back = cur_dispbuf[0];
 	int toggle_cnt;
 	bool show_nosync = false;
@@ -3889,173 +2728,19 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 	toggle_cnt = 0;
 
 	over_field = false;
-	if (!cur_dispbuf[0] || cur_dispbuf[0] == &vf_local[0]) {
-		vf = amvideo_vf_peek();
-		if (vf) {
-			if (hdmi_in_onvideo == 0) {
-				if (!nopostvideostart)
-					tsync_avevent_locked
-						(VIDEO_START,
-						(vf->pts) ? vf->pts :
-						timestamp_vpts_get());
-				video_start_post = true;
-			}
-
-			if (show_first_frame_nosync || show_first_picture)
-				show_nosync = true;
-
-			if (slowsync_repeat_enable)
-				frame_repeat_count = 0;
-		} else {
-			goto SET_FILTER;
-		}
-	}
-
-	vf = amvideo_vf_peek();
-	/*process hdmi in video sync*/
-	if (vf) {
-		/*step 1: audio required*/
-		if (hdmin_delay_start > 0) {
-			process_hdmi_video_sync(vf);
-			hdmin_delay_start = 0;
-			hdmi_vframe_count = 0;
-		}
-		/*step 2: recheck video sync after hdmi-in start*/
-		if (hdmi_delay_first_check) {
-			hdmi_vframe_count++;
-			if (hdmi_vframe_count > HDMI_DELAY_FIRST_CHECK_COUNT) {
-				process_hdmi_video_sync(vf);
-				hdmi_vframe_count = 0;
-				hdmi_delay_first_check = false;
-			}
-		/*step 3: re-check video sync every 5s by n times */
-		} else if (hdmi_delay_normal_check) {
-			hdmi_vframe_count++;
-			if (hdmi_vframe_count > HDMI_DELAY_NORMAL_CHECK_COUNT) {
-				process_hdmi_video_sync(vf);
-				hdmi_vframe_count = 0;
-			}
-		}
-
-		/* HDMI-IN AV SYNC Control, delay video*/
-		if (!hdmin_delay_done) {
-			if (hdmi_in_delay_check(vf) > 0) {
-				go_exit = 1;
-				return NULL;
-			}
-		}
-		/*HDMI-IN AV SYNC Control, drop video*/
-		if (hdmin_need_drop_count > 0)
-			hdmi_in_drop_frame();
-	}
 
 	/* buffer switch management */
 	vf = amvideo_vf_peek();
-
-	/*debug info for skip & repeate vframe case*/
-	if (!vf) {
+	if (!vf)
 		underflow++;
-		/* video master mode, reduce pcrscr */
-		if (tsync_get_mode() == TSYNC_MODE_VMASTER) {
-			s32 pts_inc = 0 - vsync_pts_inc;
-
-			timestamp_pcrscr_inc(pts_inc);
-		}
-		ATRACE_COUNTER("underflow",  1);
-		if (video_dbg_vf & (1 << 0))
-			dump_vframe_status("vdin0");
-		if (video_dbg_vf & (1 << 1))
-			dump_vframe_status("deinterlace");
-		if (video_dbg_vf & (1 << 2))
-			dump_vframe_status("amlvideo2");
-		if (video_dbg_vf & (1 << 3))
-			dump_vframe_status("ppmgr");
-		if (video_dbg_vf & (1 << 4))
-			dump_vdin_reg();
-	} else {
-		ATRACE_COUNTER("underflow",  0);
-	}
 
 	video_get_vf_cnt[0] = 0;
 
 	while (vf && !video_suspend) {
-		if (debug_flag & DEBUG_FLAG_OMX_DEBUG_DROP_FRAME) {
-			pr_info("next pts= %d,index %d,pcr = %d,vpts = %d\n",
-				vf->pts, vf->omx_index,
-				timestamp_pcrscr_get(), timestamp_vpts_get());
-		}
-		if ((omx_continuous_drop_flag && omx_run)) {
-			if (is_amdv_enable() && vf &&
-			    is_amdv_frame(vf)) {
-				if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
-					pr_info("dovi ignore continuous drop\n");
-				/* if (omx_run)
-				 *	dolby_vision_drop_frame();
-				 */
-			} else {
-				if (debug_flag &
-					DEBUG_FLAG_OMX_DEBUG_DROP_FRAME) {
-					pr_info("drop omx_index %d, pts %d\n",
-						vf->omx_index, vf->pts);
-				}
-				vf = vf_get(RECEIVER_NAME);
-				if (vf) {
-					vf_put(vf, RECEIVER_NAME);
-					video_drop_vf_cnt[0]++;
-					if (debug_flag &
-					    DEBUG_FLAG_PRINT_DROP_FRAME)
-						pr_info("drop frame: drop count %d\n",
-							video_drop_vf_cnt[0]);
-				}
-				vf = amvideo_vf_peek();
-				continue;
-			}
-		}
-
 		if (vpts_expire(cur_dispbuf[0], vf, toggle_cnt) || show_nosync) {
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
 			int iret1 = 0, iret2 = 0, iret3 = 0;
 #endif
-
-			ATRACE_COUNTER(MODULE_NAME,  __LINE__);
-			if (debug_flag & DEBUG_FLAG_PTS_TRACE) {
-				pr_info("vpts = 0x%x, c.dur=0x%x, n.pts=0x%x, scr = 0x%x, pcr-pts-diff=%d, ptstrace=%d\n",
-					timestamp_vpts_get(),
-					(cur_dispbuf[0]) ?
-					cur_dispbuf[0]->duration : 0,
-					vf->pts, timestamp_pcrscr_get(),
-					timestamp_pcrscr_get() - vf->pts +
-					vsync_pts_align,
-					pts_trace);
-				if (pts_trace > 4)
-					pr_info("smooth trace:%d\n", pts_trace);
-			}
-			amlog_mask_if(toggle_cnt > 0, LOG_MASK_FRAMESKIP,
-				      "skipped\n");
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-			if ((vd_path_id[0] == VFM_PATH_AMVIDEO ||
-			     vd_path_id[0] == VFM_PATH_DEF ||
-			     vd_path_id[0] == VFM_PATH_AUTO) &&
-			    dolby_vision_need_wait(0))
-				break;
-#endif
-#if ENABLE_UPDATE_HDR_FROM_USER
-			set_hdr_to_frame(vf);
-#endif
-			/*
-			 *two special case:
-			 *case1:4k display case,input buffer not enough &
-			 *	quickly for display
-			 *case2:input buffer all not OK
-			 */
-			if (vf &&
-			    (vf->source_type == VFRAME_SOURCE_TYPE_HDMI ||
-			     vf->source_type == VFRAME_SOURCE_TYPE_CVBS) &&
-			    (video_vf_disp_mode_get(vf) ==
-			     VFRAME_DISP_MODE_UNKNOWN) &&
-			    (frame_skip_check_cnt++ < 10))
-				break;
-			frame_skip_check_cnt = 0;
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
 			if (vd_path_id[0] == VFM_PATH_AMVIDEO ||
 			    vd_path_id[0] == VFM_PATH_DEF)
@@ -4100,19 +2785,7 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 					last_mode_3d =
 						vf->mode_3d_enable;
 				}
-#ifdef CONFIG_AMLOGIC_MEDIA_TVIN
-				video_3d_format = vf->trans_fmt;
-#endif
 			}
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-			/*check metadata crc*/
-			if (vf &&
-			    (vf->source_type == VFRAME_SOURCE_TYPE_HDMI ||
-			    vf->source_type == VFRAME_SOURCE_TYPE_CVBS) &&
-				dv_vf_crc_check(vf)) {
-				break; // not render err crc frame
-			}
-#endif
 			path0_new_frame = vsync_toggle_frame(vf, __LINE__);
 			/* The v4l2 capture needs a empty vframe to flush */
 			if (has_receive_dummy_vframe())
@@ -4121,36 +2794,9 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 			if (performance_debug & DEBUG_FLAG_VSYNC_PROCESS_TIME)
 				do_gettimeofday(&cur_line_info->end3);
 
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-			if (vd_path_id[0] == VFM_PATH_AMVIDEO ||
-			    vd_path_id[0] == VFM_PATH_DEF ||
-			    vd_path_id[0] == VFM_PATH_AUTO)
-				dv_new_vf = dv_toggle_frame(vf, VD1_PATH, true);
-			if (hold_video)
-				dv_new_vf = NULL;
-#endif
 			if (performance_debug & DEBUG_FLAG_VSYNC_PROCESS_TIME)
 				do_gettimeofday(&cur_line_info->end4);
 
-			if (trickmode_fffb == 1) {
-				trickmode_vpts = vf->pts;
-#ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
-				/* FIXME: replace is_di_on */
-				if (is_di_post_mode(vf)) {
-					atomic_set(&trickmode_framedone, 1);
-					video_notify_flag |=
-					    VIDEO_NOTIFY_TRICK_WAIT;
-				} else {
-					to_notify_trick_wait = true;
-				}
-#else
-				atomic_set(&trickmode_framedone, 1);
-				video_notify_flag |= VIDEO_NOTIFY_TRICK_WAIT;
-#endif
-				break;
-			}
-			if (slowsync_repeat_enable)
-				frame_repeat_count = 0;
 			vf = amvideo_vf_peek();
 			if (vf) {
 				if ((vf->flag & VFRAME_FLAG_VIDEO_COMPOSER) &&
@@ -4163,14 +2809,6 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 
 			if (!vf)
 				next_peek_underflow++;
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-			if ((vd_path_id[0] == VFM_PATH_AMVIDEO ||
-			     vd_path_id[0] == VFM_PATH_DEF ||
-			     vd_path_id[0] == VFM_PATH_AUTO) &&
-			    for_amdv_certification() &&
-			    dv_new_vf)
-				break;
-#endif
 			if (debug_flag & DEBUG_FLAG_TOGGLE_FRAME_PER_VSYNC)
 				break;
 			video_get_vf_cnt[0]++;
@@ -4182,91 +2820,6 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 					pr_info("drop frame: drop count %d\n",
 						video_drop_vf_cnt[0]);
 			}
-		} else {
-			ATRACE_COUNTER(MODULE_NAME,  __LINE__);
-			/* check if current frame's duration has expired,
-			 *in this example
-			 * it compares current frame display duration
-			 * with 1/1/1/1.5 frame duration
-			 * every 4 frames there will be one frame play
-			 * longer than usual.
-			 * you can adjust this array for any slow sync
-			 * control as you want.
-			 * The playback can be smoother than previous method.
-			 */
-			if (slowsync_repeat_enable) {
-				ATRACE_COUNTER(MODULE_NAME,  __LINE__);
-				if (duration_expire
-					(cur_dispbuf[0], vf,
-					frame_repeat_count
-					* vsync_pts_inc) &&
-					timestamp_pcrscr_enable_state()) {
-#if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
-					int iret1 = 0, iret2 = 0, iret3 = 0;
-#endif
-
-					amlog_mask(LOG_MASK_SLOWSYNC,
-						   "slow sync toggle,repeat_count = %d\n",
-					frame_repeat_count);
-					amlog_mask(LOG_MASK_SLOWSYNC,
-						   "sys.time = 0x%x, video time = 0x%x\n",
-					timestamp_pcrscr_get(),
-					timestamp_vpts_get());
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-					if ((vd_path_id[0] == VFM_PATH_AMVIDEO ||
-					     vd_path_id[0] == VFM_PATH_DEF ||
-					     vd_path_id[0] == VFM_PATH_AUTO) &&
-					    dolby_vision_need_wait(0))
-						break;
-#endif
-
-#if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
-					if (vd_path_id[0] == VFM_PATH_AMVIDEO ||
-						vd_path_id[0] == VFM_PATH_DEF)
-						iret1 = amvecm_update(VD1_PATH, 0, vf);
-					if (vd_path_id[1] == VFM_PATH_AMVIDEO)
-						iret2 = amvecm_update(VD2_PATH, 0, vf);
-					if (vd_path_id[2] == VFM_PATH_AMVIDEO)
-						iret3 = amvecm_update(VD3_PATH, 0, vf);
-					if (iret1 == 1 || iret2 == 1 || iret3 == 1)
-						break;
-#endif
-					vf = amvideo_vf_get();
-					if (!vf) {
-						ATRACE_COUNTER(MODULE_NAME,
-							       __LINE__);
-						break;
-					}
-					path0_new_frame = vsync_toggle_frame(vf, __LINE__);
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-					if (vd_path_id[0] == VFM_PATH_AMVIDEO ||
-					    vd_path_id[0] == VFM_PATH_DEF ||
-					    vd_path_id[0] == VFM_PATH_AUTO)
-						dv_new_vf =
-						dv_toggle_frame(vf, VD1_PATH, true);
-					if (hold_video)
-						dv_new_vf = NULL;
-#endif
-					frame_repeat_count = 0;
-
-					vf = amvideo_vf_peek();
-				} else if ((cur_dispbuf[0]) &&
-					(cur_dispbuf[0]->duration_pulldown >
-					vsync_pts_inc)) {
-					frame_count++;
-					cur_dispbuf[0]->duration_pulldown -=
-					    PTS2DUR(vsync_pts_inc);
-				}
-			} else {
-				if (cur_dispbuf[0] &&
-				    cur_dispbuf[0]->duration_pulldown >
-				     vsync_pts_inc) {
-					frame_count++;
-					cur_dispbuf[0]->duration_pulldown -=
-					    PTS2DUR(vsync_pts_inc);
-				}
-			}
-			break;
 		}
 		toggle_cnt++;
 	}
@@ -4282,7 +2835,6 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 		field_matching_count = 0;
 	}
 #endif
-SET_FILTER:
 	/* toggle_3d_fa_frame*/
 	/* determine the out frame is L or R or blank */
 	judge_3d_fa_out_mode();
@@ -4294,389 +2846,21 @@ SET_FILTER:
 	return path0_new_frame;
 }
 
-#define VDIN_KEEP_COUNT 1
-#define DI_KEEP_COUNT_P 1
-#define DI_KEEP_COUNT_I 2
-#define DIS_PATH_DELAY_COUNT 2
-#define VDIN_BUF_COUNT 11
-#define DI_MAX_OUT_COUNT 9
-#define VLOCL_DELAY 7  /*vdin vsync before vpp vsync about 7ms*/
-
 static void hdmi_in_delay_maxmin_reset(void)
 {
-	hdmin_dv_flag = 0;
-	hdmin_delay_min_ms = 0;
-	hdmin_delay_max_ms = 0;
 }
 
 void hdmi_in_delay_maxmin_old(struct vframe_s *vf)
 {
-	u64 vdin_vsync = 0;
-	u64 vpp_vsync = 0;
-	u32 vdin_count = 0;
-	int di_keep_count = 0;
-	u64 hdmin_delay_min = 0;
-	u64 hdmin_delay_max = 0;
-	int buf_cnt;
-	struct vinfo_s *video_info;
-	u64 memc_delay = 0;
-	int vdin_keep_count = VDIN_KEEP_COUNT;
-
-	if (vf->source_type != VFRAME_SOURCE_TYPE_HDMI &&
-		vf->source_type != VFRAME_SOURCE_TYPE_CVBS &&
-		vf->source_type != VFRAME_SOURCE_TYPE_TUNER)
-		return;
-
-	if (vf->type & VIDTYPE_DI_PW) {
-		if (vf->type_original & VIDTYPE_INTERLACE)
-			di_keep_count = DI_KEEP_COUNT_I;
-		else
-			di_keep_count = DI_KEEP_COUNT_P;
-	}
-
-#ifdef CONFIG_AMLOGIC_MEDIA_VDIN
-	vdin_keep_count += get_vdin_add_delay_num();
-#endif
-
-	video_info = get_current_vinfo();
-	if (!video_info || video_info->mode == VMODE_INVALID)
-		return;
-	if (video_info->sync_duration_num > 0) {
-		vpp_vsync = video_info->sync_duration_den;
-		vpp_vsync = vpp_vsync * 1000000;
-		vpp_vsync = div64_u64(vpp_vsync,
-			video_info->sync_duration_num);
-	}
-
-	vdin_vsync = vf->duration;
-	vdin_vsync = vdin_vsync * 1000;
-	vdin_vsync = div64_u64(vdin_vsync, 96);
-
-#ifdef CONFIG_AMLOGIC_MEDIA_FRC
-	memc_delay = frc_get_video_latency();
-#endif
-
-	/*pre: vdin keep 1, di keep 1/2(one process,one for I frame), total 2/3
-	 *rdma one vpp vsync, one for next vsync to peek
-	 *if do di: count = (1 + 1/2) * vdin_vsync + vpp_vsync * 2;
-	 *if no di: count = (1 + 0) * vdin_vsync + vpp_vsync * 2;
-	 */
-	hdmin_delay_min = (vdin_keep_count + di_keep_count) * vdin_vsync
-			+ vpp_vsync * 2;
-	hdmin_delay_min_ms = div64_u64(hdmin_delay_min, 1000);
-	hdmin_delay_min_ms += memc_delay;
-
-	/*vdin total 10 buf, one for vdin next write, one is on display, 8 left
-	 */
-	buf_cnt = video_vdin_buf_info_get();
-	if (buf_cnt <= 2)
-		return;
-	vdin_count = buf_cnt - 1 - 1;
-
-	hdmin_delay_max = vdin_count * vdin_vsync;
-	hdmin_delay_max_ms = div64_u64(hdmin_delay_max, 1000);
-	hdmin_delay_max_ms += memc_delay;
-
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("%s: range(%d, %d).\n",
-			__func__, hdmin_delay_min_ms, hdmin_delay_max_ms);
 }
 
 void hdmi_in_delay_maxmin_new(struct vframe_s *vf)
 {
-	u64 vdin_vsync = 0;
-	u64 vpp_vsync = 0;
-	u32 vdin_count = 0;
-	u32 vpp_count = 0;
-	int di_keep_count = 0;
-	bool do_di = false;
-	bool di_has_vdin_vf = false;
-	u64 hdmin_delay_min = 0;
-	u64 hdmin_delay_max = 0;
-	u64 memc_delay = 0;
-	int vdin_keep_count = VDIN_KEEP_COUNT;
-	unsigned int ret_hz = 0;
-	u64 ext_delay = 0;
-	u32 vdin_buf_count = 0;
-	u32 dv_flag = 0;
-
-	if (!tvin_delay_mode)
-		return;
-
-	if (vf->source_type != VFRAME_SOURCE_TYPE_HDMI &&
-		vf->source_type != VFRAME_SOURCE_TYPE_CVBS &&
-		vf->source_type != VFRAME_SOURCE_TYPE_TUNER)
-		return;
-
-	if (vf->type & VIDTYPE_DI_PW) {
-		if (vf->type_original & VIDTYPE_INTERLACE)
-			di_keep_count = DI_KEEP_COUNT_I;
-		else
-			di_keep_count = DI_KEEP_COUNT_P;
-		do_di = true;
-		if (vf->flag & VFRAME_FLAG_DOUBLE_FRAM)
-			di_has_vdin_vf = true;
-	}
-
-	dv_flag = vf->dv_input ? 1 : 0;
-	if (dv_flag != hdmin_dv_flag) {
-		hdmin_dv_flag = dv_flag;
-		pr_info("dv_flag changed, new flag is %d.\n", dv_flag);
-	}
-
-#ifdef CONFIG_AMLOGIC_MEDIA_VDIN
-	vdin_keep_count += get_vdin_add_delay_num();
-#endif
-
-	vdin_vsync = vf->duration;
-	vdin_vsync = vdin_vsync * 1000;
-	vdin_vsync = div64_u64(vdin_vsync, 96);
-
-	vpp_vsync = vsync_pts_inc_scale;
-	vpp_vsync = vpp_vsync * 1000000;
-	vpp_vsync = div64_u64(vpp_vsync, vsync_pts_inc_scale_base);
-
-#ifdef CONFIG_AMLOGIC_MEDIA_FRC
-	memc_delay = frc_get_video_latency();
-#endif
-
-	if (vf->duration != 0)
-		ret_hz = (96000 + vf->duration / 2) / vf->duration;
-
-	if (ret_hz >= 25)
-		ext_delay = VLOCL_DELAY * 1000;
-	else
-		ext_delay = vpp_vsync;
-
-	/*pre: vdin keep 1, di keep 1/2(p:1; I:2, one process), total 2/3
-	 *I frame di will keep two, P frame keep one,
-	 *post:disp path 2 buf delay(vq->vpp 1 buf, rdma one buf),
-	 *if do di: count = (1 + 1/2) * vdin_vsync + 2 * vpp_vsync;
-	 *if no di: count = (1 + 0) * vdin_vsync + 2* vpp_vsync;
-	 *vdin vsync before vpp vsync about 7ms
-	 */
-	hdmin_delay_min = (vdin_keep_count + di_keep_count) * vdin_vsync +
-		DIS_PATH_DELAY_COUNT * vpp_vsync + ext_delay;
-	hdmin_delay_min_ms = div64_u64(hdmin_delay_min, 1000);
-	hdmin_delay_min_ms += memc_delay;
-
-	/*case 1:vdin vf sent to vpp:
-	 *vdin total 11 buf, one for vdin next write, one vdin write, 9 left
-	 *one is on display, 8 left
-	 *disp path 2 buf delay(vq->vpp 1 buf, rdma one buf),
-	 *one for vq next vsync to get, 5 left
-	 *count = VDIN_BUF_COUNT - 1 -1 -1 -DIS_PATH_DELAY_COUNT - 1 = 5;
-	 *total delay = 5 * vdin_vsync + 3 * vpp_vsync;
-	 *
-	 * case 2:vdin vf not sent to vpp:
-	 *2.1:di max out 9,one on display, one for vq next vsync to get, 7 left
-	 *2.2:vdin total 11, one for vdin next write, one vdin write, 9 left
-	 *di keep 1/2 buf, 8/7 left
-	 *count = (7 + 8/7) * vdin_vsync+ 3 * vpp_vsync;
-	 */
-
-#ifdef CONFIG_AMLOGIC_MEDIA_VIN
-	vdin_buf_count = get_vdin_buffer_num();
-	if (vdin_buf_count <= 0) {
-		pr_info("%s:Get count failed, use default value.\n", __func__);
-		vdin_buf_count = VDIN_BUF_COUNT;
-	}
-#endif
-	if (di_has_vdin_vf || !do_di) {
-		vdin_count = vdin_buf_count - 3 - DIS_PATH_DELAY_COUNT - 1;
-		vpp_count = DIS_PATH_DELAY_COUNT + 1;
-	} else {
-		vdin_count = DI_MAX_OUT_COUNT - 2 +
-			vdin_buf_count - 2 - di_keep_count;
-		vpp_count = DIS_PATH_DELAY_COUNT + 1;
-	}
-	hdmin_delay_max = vdin_count * vdin_vsync + vpp_count * vpp_vsync;
-	hdmin_delay_max_ms = div64_u64(hdmin_delay_max, 1000);
-	hdmin_delay_max_ms += memc_delay;
-
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("%s: range(%d, %d).\n",
-			__func__, hdmin_delay_min_ms, hdmin_delay_max_ms);
-}
-
-#ifdef CONFIG_AMLOGIC_MEDIA_VIN
-static void hdmi_in_delay_maxmin_new1(struct tvin_to_vpp_info_s *tvin_info)
-{
-	u64 vdin_vsync = 0;
-	u64 vpp_vsync = 0;
-	u32 vdin_count = 0;
-	u32 vpp_count = 0;
-	int di_keep_count = 0;
-	bool do_di = false;
-	bool di_has_vdin_vf = false;
-	u64 hdmin_delay_min = 0;
-	u64 hdmin_delay_max = 0;
-	u64 memc_delay = 0;
-	int vdin_keep_count = VDIN_KEEP_COUNT;
-	u64 ext_delay = 0;
-	u32 vdin_buf_count = 0;
-
-	if (!tvin_info->is_dv && tvin_info->width <= 3840 &&
-		tvin_info->cfmt == TVIN_YUV422) {
-		do_di = true;
-		if (tvin_info->width > 1920 && tvin_info->width <= 3840)
-			di_has_vdin_vf = true;
-		if (tvin_info->scan_mode == TVIN_SCAN_MODE_INTERLACED)
-			di_keep_count = DI_KEEP_COUNT_I;
-		else
-			di_keep_count = DI_KEEP_COUNT_P;
-	}
-
-	hdmin_dv_flag = tvin_info->is_dv;
-
-#ifdef CONFIG_AMLOGIC_MEDIA_VDIN
-	vdin_keep_count += get_vdin_add_delay_num();
-#endif
-
-	vdin_vsync = div64_u64(1000 * 1000, tvin_info->fps);
-
-	if (tvin_info->fps == 50 || tvin_info->fps == 25)
-		vpp_vsync = div64_u64(1000 * 1000, 50);
-	else
-		vpp_vsync = div64_u64(1000 * 1000, 60);
-
-#ifdef CONFIG_AMLOGIC_MEDIA_FRC
-	memc_delay = frc_get_video_latency();
-#endif
-
-	if (tvin_info->fps >= 25)
-		ext_delay = VLOCL_DELAY * 1000;
-	else
-		ext_delay = vpp_vsync;
-
-	/*pre: vdin keep 1, di keep 1/2(p:1; I:2, one process), total 2/3
-	 *I frame di will keep two, P frame keep one,
-	 *post:disp path 2 buf delay(vq->vpp 1 buf, rdma one buf),
-	 *if do di: count = (1 + 1/2) * vdin_vsync + 2 * vpp_vsync;
-	 *if no di: count = (1 + 0) * vdin_vsync + 2* vpp_vsync;
-	 *vdin vsync before vpp vsync about 7ms
-	 */
-	hdmin_delay_min = (vdin_keep_count + di_keep_count) * vdin_vsync +
-		DIS_PATH_DELAY_COUNT * vpp_vsync + ext_delay;
-	hdmin_delay_min_ms = div64_u64(hdmin_delay_min, 1000);
-	hdmin_delay_min_ms += memc_delay;
-
-	/*case 1:vdin vf sent to vpp:
-	 *vdin total 11 buf, one for vdin next write, one vdin write, 9 left
-	 *one is on display, 8 left
-	 *disp path 2 buf delay(vq->vpp 1 buf, rdma one buf),
-	 *one for vq next vsync to get, 5 left
-	 *count = VDIN_BUF_COUNT - 1 -1 -1 -DIS_PATH_DELAY_COUNT - 1 = 5;
-	 *total delay = 5 * vdin_vsync + 3 * vpp_vsync;
-	 *
-	 * case 2:vdin vf not sent to vpp:
-	 *2.1:di max out 9,one on display, one for vq next vsync to get, 7 left
-	 *2.2:vdin total 11, one for vdin next write, one vdin write, 9 left
-	 *di keep 1/2 buf, 8/7 left
-	 *count = (7 + 8/7) * vdin_vsync+ 3 * vpp_vsync;
-	 */
-	vdin_buf_count = get_vdin_buffer_num();
-	if (vdin_buf_count <= 0) {
-		pr_info("%s:Get count failed, use default value.\n", __func__);
-		vdin_buf_count = VDIN_BUF_COUNT;
-	}
-	if (di_has_vdin_vf || !do_di) {
-		vdin_count = vdin_buf_count - 3 - DIS_PATH_DELAY_COUNT - 1;
-		vpp_count = DIS_PATH_DELAY_COUNT + 1;
-	} else {
-		vdin_count = DI_MAX_OUT_COUNT - 2 +
-			vdin_buf_count - 2 - di_keep_count;
-		vpp_count = DIS_PATH_DELAY_COUNT + 1;
-	}
-	hdmin_delay_max = vdin_count * vdin_vsync + vpp_count * vpp_vsync;
-	hdmin_delay_max_ms = div64_u64(hdmin_delay_max, 1000);
-	hdmin_delay_max_ms += memc_delay;
-	pr_info("cfmt=%d, scan=%d,%d*%d_%dhz, isdv=%d.\n",
-		tvin_info->cfmt,
-		tvin_info->scan_mode,
-		tvin_info->width,
-		tvin_info->height,
-		tvin_info->fps,
-		tvin_info->is_dv);
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("%s: range(%d, %d).\n",
-			__func__, hdmin_delay_min_ms, hdmin_delay_max_ms);
 }
 
 void vdin_start_notify_vpp(struct tvin_to_vpp_info_s *tvin_info)
 {
-	tvin_delay_mode = 1;
-	if (vf_check_node("videoqueue.0"))
-		hdmi_in_delay_maxmin_new1(tvin_info);
 }
-EXPORT_SYMBOL(vdin_start_notify_vpp);
-#endif
-
-u32 get_tvin_delay_start(void)
-{
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("%s: start value = %d.\n",
-			__func__, hdmin_delay_start);
-
-	return hdmin_delay_start;
-}
-EXPORT_SYMBOL(get_tvin_delay_start);
-
-void set_tvin_delay_start(u32 start)
-{
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("%s: start value = %d.\n", __func__, start);
-
-	hdmin_delay_start = start;
-}
-EXPORT_SYMBOL(set_tvin_delay_start);
-
-u32 get_tvin_delay_duration(void)
-{
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("%s: last required total_delay %d ms.\n",
-			__func__, last_required_total_delay);
-
-	return last_required_total_delay;
-}
-EXPORT_SYMBOL(get_tvin_delay_duration);
-
-void set_tvin_delay_duration(u32 time)
-{
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("%s: audio want vpp delay %d ms.\n", __func__, time);
-
-	last_required_total_delay = time;
-}
-EXPORT_SYMBOL(set_tvin_delay_duration);
-
-u32 get_tvin_delay(void)
-{
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("%s: vframe walk delay%d ms.\n",
-			__func__, vframe_walk_delay);
-
-	return vframe_walk_delay;
-}
-EXPORT_SYMBOL(get_tvin_delay);
-
-u32 get_tvin_delay_max_ms(void)
-{
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("%s: max delay %d ms.\n", __func__, hdmin_delay_max_ms);
-
-	return hdmin_delay_max_ms;
-}
-EXPORT_SYMBOL(get_tvin_delay_max_ms);
-
-u32 get_tvin_delay_min_ms(void)
-{
-	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)
-		pr_info("%s: min delay %d ms.\n", __func__, hdmin_delay_min_ms);
-
-	return hdmin_delay_min_ms;
-}
-EXPORT_SYMBOL(get_tvin_delay_min_ms);
 
 u32 get_tvin_dv_flag(void)
 {
@@ -5257,7 +3441,7 @@ EXPORT_SYMBOL(di_request_afbc_hw);
 
 u32 get_video_hold_state(void)
 {
-	return hold_video;
+	return 0;
 }
 EXPORT_SYMBOL(get_video_hold_state);
 /*********************************************************/
@@ -5700,12 +3884,6 @@ s32 update_vframe_src_fmt(struct vframe_s *vf,
 				   void *sei, u32 size, bool dual_layer,
 				   char *prov_name, char *recv_name)
 {
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-#if PARSE_MD_IN_ADVANCE
-	int src_fmt = -1;
-	int ret = 0;
-#endif
-#endif
 	int i;
 	char *p;
 
@@ -5751,43 +3929,6 @@ s32 update_vframe_src_fmt(struct vframe_s *vf,
 			if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
 				pr_info("ignore nonstandard dv\n");
 		}
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-		else if (dual_layer || check_media_sei(sei, size, FMT_TYPE_DV, NULL) ||
-			   check_media_sei(sei, size, FMT_TYPE_DV_AV1, NULL)) {
-			vf->src_fmt.fmt = VFRAME_SIGNAL_FMT_DOVI;
-			vf->src_fmt.dual_layer = dual_layer;
-#if PARSE_MD_IN_ADVANCE
-			if (vf->src_fmt.md_buf && vf->src_fmt.comp_buf) {
-				if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
-					pr_info("parse vf %p, sei %p, size %d, md_buf %p\n",
-						vf, sei, size, vf->src_fmt.md_buf);
-				ret = parse_sei_and_meta_ext
-					(vf, sei, size,
-					 &vf->src_fmt.comp_size,
-					 &vf->src_fmt.md_size,
-					 &src_fmt,
-					 &vf->src_fmt.parse_ret_flags,
-					 vf->src_fmt.md_buf,
-					 vf->src_fmt.comp_buf);
-				if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
-					pr_info("parse ret %d, %d, %d %d, %d\n",
-						ret,
-						src_fmt,
-						vf->src_fmt.md_size,
-						vf->src_fmt.comp_size,
-						vf->src_fmt.parse_ret_flags);
-
-				if (ret) {
-					/* mark size -1 as parser failed */
-					vf->src_fmt.md_size = -1;
-					vf->src_fmt.comp_size = -1;
-				}
-			}
-#else
-			clear_vframe_dovi_md_info(vf);
-#endif
-		}
-#endif
 	}
 
 	if (vf->src_fmt.fmt == VFRAME_SIGNAL_FMT_INVALID) {
@@ -5938,17 +4079,6 @@ char *find_vframe_sei(struct vframe_s *vf,
 		return NULL;
 
 	ret_sei = NULL;
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-	if (!vf->discard_dv_data) {
-		ret_sei = check_media_sei(sei, size, FMT_TYPE_DV, &cur_sei_size);
-		if (!ret_sei) {
-			cur_sei_size = 0;
-			ret_sei = check_media_sei(sei, size, FMT_TYPE_DV_AV1, &cur_sei_size);
-		}
-		if (ret_sei && cur_sei_size)
-			dv_src = true;
-	}
-#endif
 	if (!dv_src) {
 		if ((signal_transfer_characteristic == 14 ||
 		     signal_transfer_characteristic == 18) &&
@@ -6477,31 +4607,6 @@ static long amvideo_ioctl(struct file *file, unsigned int cmd, ulong arg)
 	 */
 	case AMSTREAM_IOC_SET_3D_TYPE:
 		{
-#if defined(TV_3D_FUNCTION_OPEN) && defined(CONFIG_AMLOGIC_MEDIA_TVIN)
-			unsigned int set_3d =
-				VFRAME_EVENT_PROVIDER_SET_3D_VFRAME_INTERLEAVE;
-			unsigned int type = (unsigned int)arg;
-			struct vframe_s *dispbuf = NULL;
-
-			if (type != process_3d_type) {
-				process_3d_type = type;
-				if (mvc_flag)
-					process_3d_type |= MODE_3D_MVC;
-				vd_layer[0].property_changed = true;
-				dispbuf = get_dispbuf(0);
-				if ((process_3d_type & MODE_3D_FA) &&
-				    dispbuf &&
-				    !dispbuf->trans_fmt)
-					/*notify di 3d mode is frame*/
-					  /*alternative mode,passing two*/
-					  /*buffer in one frame */
-					vf_notify_receiver_by_name
-					("deinterlace", set_3d, (void *)1);
-				else
-					vf_notify_receiver_by_name
-					("deinterlace", set_3d, (void *)0);
-			}
-#endif
 			break;
 		}
 	case AMSTREAM_IOC_GET_3D_TYPE:
@@ -6511,20 +4616,6 @@ static long amvideo_ioctl(struct file *file, unsigned int cmd, ulong arg)
 #endif
 		break;
 	case AMSTREAM_IOC_GET_SOURCE_VIDEO_3D_TYPE:
-#if defined(TV_3D_FUNCTION_OPEN) && defined(CONFIG_AMLOGIC_MEDIA_TVIN)
-	{
-		u32 source_video_3d_type = VPP_3D_MODE_NULL;
-
-		if (!cur_frame_par[0])
-			source_video_3d_type = VPP_3D_MODE_NULL;
-		else
-			get_vpp_3d_mode
-				(process_3d_type,
-				cur_frame_par[0]->trans_fmt,
-				&source_video_3d_type);
-		put_user(source_video_3d_type, (u32 __user *)argp);
-	}
-#endif
 		break;
 	case AMSTREAM_IOC_SET_VSYNC_UPINT:
 		vsync_pts_inc_upint = arg;
@@ -7200,34 +5291,6 @@ static ssize_t video_seek_flag_store(struct class *cla,
 
 	return count;
 }
-
-#ifdef PTS_TRACE_DEBUG
-static ssize_t pts_trace_show(struct class *cla,
-			      struct class_attribute *attr,
-			      char *buf)
-{
-	return sprintf(buf, "%d %d %d %d %d %d %d %d\n"
-				"%d %d %d %d %d %d %d %d\n"
-				"%0x %0x %0x %0x %0x %0x %0x %0x\n"
-				"%0x %0x %0x %0x %0x %0x %0x %0x\n"
-				"%0x %0x %0x %0x %0x %0x %0x %0x\n"
-				"%0x %0x %0x %0x %0x %0x %0x %0x\n",
-		pts_trace_his[0], pts_trace_his[1], pts_trace_his[2],
-		pts_trace_his[3], pts_trace_his[4], pts_trace_his[5],
-		pts_trace_his[6], pts_trace_his[7], pts_trace_his[8],
-		pts_trace_his[9], pts_trace_his[10], pts_trace_his[11],
-		pts_trace_his[12], pts_trace_his[13], pts_trace_his[14],
-		pts_trace_his[15],
-		pts_his[0], pts_his[1], pts_his[2], pts_his[3],
-		pts_his[4], pts_his[5], pts_his[6], pts_his[7],
-		pts_his[8], pts_his[9], pts_his[10], pts_his[11],
-		pts_his[12], pts_his[13], pts_his[14], pts_his[15],
-		scr_his[0], scr_his[1], scr_his[2], scr_his[3],
-		scr_his[4], scr_his[5], scr_his[6], scr_his[7],
-		scr_his[8], scr_his[9], scr_his[10], scr_his[11],
-		scr_his[12], scr_his[13], scr_his[14], scr_his[15]);
-}
-#endif
 
 static ssize_t video_brightness_show(struct class *cla,
 				     struct class_attribute *attr, char *buf)
@@ -7954,41 +6017,6 @@ static ssize_t video_global_output_store(struct class *cla,
 	return count;
 }
 
-static ssize_t video_hold_show(struct class *cla,
-			       struct class_attribute *attr,
-			       char *buf)
-{
-	return sprintf(buf, "%d\n", hold_video);
-}
-
-static ssize_t video_hold_store(struct class *cla,
-				struct class_attribute *attr,
-				const char *buf, size_t count)
-{
-	int r;
-	int value;
-
-	cur_width = 0;
-	cur_height = 0;
-	if (debug_flag & DEBUG_FLAG_BASIC_INFO)
-		pr_info("%s(%s)\n", __func__, buf);
-
-	r = kstrtoint(buf, 0, &value);
-	if (r < 0)
-		return -EINVAL;
-
-	while (atomic_read(&video_inirq_flag) > 0)
-		schedule();
-	if (cur_dev->pre_vsync_enable)
-		while (atomic_read(&video_prevsync_inirq_flag) > 0)
-			schedule();
-	if (value == 0 && hold_video == 1)
-		hold_property_changed = 1;
-
-	hold_video = value;
-	return count;
-}
-
 static ssize_t video_freerun_mode_show(struct class *cla,
 				       struct class_attribute *attr, char *buf)
 {
@@ -8035,37 +6063,6 @@ static ssize_t threedim_mode_store(struct class *cla,
 				   struct class_attribute *attr,
 				   const char *buf, size_t len)
 {
-#if defined(TV_3D_FUNCTION_OPEN) && defined(CONFIG_AMLOGIC_MEDIA_TVIN)
-	u32 type;
-	int r;
-	struct vframe_s *dispbuf = NULL;
-
-	r = kstrtouint(buf, 0, &type);
-	if (r < 0)
-		return -EINVAL;
-
-	if (type != process_3d_type) {
-		process_3d_type = type;
-		if (mvc_flag)
-			process_3d_type |= MODE_3D_MVC;
-		vd_layer[0].property_changed = true;
-
-		dispbuf = get_dispbuf(0);
-		if ((process_3d_type & MODE_3D_FA) &&
-		    dispbuf && !dispbuf->trans_fmt)
-			/*notify di 3d mode is frame alternative mode,1*/
-			/*passing two buffer in one frame */
-			vf_notify_receiver_by_name
-			("deinterlace",
-			VFRAME_EVENT_PROVIDER_SET_3D_VFRAME_INTERLEAVE,
-			(void *)1);
-		else
-			vf_notify_receiver_by_name
-			("deinterlace",
-			VFRAME_EVENT_PROVIDER_SET_3D_VFRAME_INTERLEAVE,
-			(void *)0);
-	}
-#endif
 	return len;
 }
 
@@ -8210,16 +6207,9 @@ static ssize_t hdmin_delay_duration_store(struct class *class,
 	last_required_total_delay = value;
 	spin_unlock_irqrestore(&hdmi_avsync_lock, flags);
 
-	pr_info("[%s]current delay %d, total require %d\n",
-		__func__, vframe_walk_delay, last_required_total_delay);
+	pr_info("[%s]total require %d\n",
+		__func__, last_required_total_delay);
 	return count;
-}
-
-static ssize_t vframe_walk_delay_show(struct class *class,
-				      struct class_attribute *attr,
-				      char *buf)
-{
-	return sprintf(buf, "%d\n", vframe_walk_delay);
 }
 
 static ssize_t last_required_total_delay_show(struct class *class,
@@ -8288,12 +6278,6 @@ static ssize_t frame_width_show(struct class *cla,
 
 	dispbuf = get_dispbuf(0);
 
-	if (hold_video == 1 &&
-	    (glayer_info[0].display_path_id ==
-	     VFM_PATH_AMVIDEO ||
-	     glayer_info[0].display_path_id ==
-	     VFM_PATH_DEF))
-		return sprintf(buf, "%d\n", cur_width);
 	if (dispbuf) {
 		if (dispbuf->type & VIDTYPE_COMPRESS)
 			return sprintf(buf, "%d\n", dispbuf->compWidth);
@@ -8308,13 +6292,6 @@ static ssize_t frame_height_show(struct class *cla,
 				 struct class_attribute *attr, char *buf)
 {
 	struct vframe_s *dispbuf = NULL;
-
-	if (hold_video == 1 &&
-	    (glayer_info[0].display_path_id ==
-	     VFM_PATH_AMVIDEO ||
-	     glayer_info[0].display_path_id ==
-	     VFM_PATH_DEF))
-		return sprintf(buf, "%d\n", cur_height);
 
 	dispbuf = get_dispbuf(0);
 	if (dispbuf) {
@@ -11039,10 +9016,6 @@ static struct class_attribute amvideo_class_attrs[] = {
 	       0664,
 	       video_global_output_show,
 	       video_global_output_store),
-	__ATTR(hold_video,
-	       0664,
-	       video_hold_show,
-	       video_hold_store),
 	__ATTR(zoom,
 	       0664,
 	       video_zoom_show,
@@ -11160,9 +9133,6 @@ static struct class_attribute amvideo_class_attrs[] = {
 	       0664,
 	       hdmin_delay_max_ms_show,
 	       hdmin_delay_max_ms_store),
-	__ATTR(vframe_walk_delay,
-	       0664,
-	       vframe_walk_delay_show, NULL),
 	__ATTR(last_required_total_delay,
 	       0664,
 	       last_required_total_delay_show, NULL),
@@ -11171,9 +9141,6 @@ static struct class_attribute amvideo_class_attrs[] = {
 	       free_cma_buffer_store),
 #ifdef CONFIG_AM_VOUT
 	__ATTR_RO(device_resolution),
-#endif
-#ifdef PTS_TRACE_DEBUG
-	__ATTR_RO(pts_trace),
 #endif
 	__ATTR(video_inuse,
 	       0664,
@@ -11545,18 +9512,6 @@ int vout_notify_callback(struct notifier_block *block, unsigned long cmd,
 		spin_unlock_irqrestore(&lock, flags);
 		if (vinfo->name)
 			strncpy(new_vmode, vinfo->name, sizeof(new_vmode) - 1);
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-		pr_info("DOLBY: %s: VOUT_EVENT_MODE_CHANGE\n",
-			__func__);
-		/* force send hdmi pkt in dv code */
-		/* to workaround pkt cleaned during hotplug */
-		if (is_amdv_enable())
-			amdv_set_toggle_flag(2);
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
-		else
-			set_cur_hdr_policy(0xff);
-#endif
-#endif
 		break;
 	case VOUT_EVENT_OSD_PREBLEND_ENABLE:
 		break;

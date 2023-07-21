@@ -144,6 +144,13 @@
 #define WSS_480I_MVSN_START			0x0
 #define WSS_480I_MVSN_LENGTH			0x1
 #define WSS_480I_MVSN_MASK			0x1
+
+#define WSS_MVSN_EN_BIT				BIT(0)
+#define WSS_480I_CGMS_A_EN_BIT			BIT(1)
+#define WSS_576I_CGMS_A_EN_BIT			BIT(2)
+#define WSS_CC_EN_BIT				BIT(3)
+#define WSS_OTHER_BIT				BIT(4)
+
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 /* common struct for 480i/576i wss */
 

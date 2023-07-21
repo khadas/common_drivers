@@ -1436,20 +1436,23 @@ static struct clk_regmap sm1_gp1_pll = {
 #endif
 
 static const struct pll_mult_range g12a_hifi_pll_mult_range = {
-	.min = 55,
-	.max = 255,
+	.min = 125,
+	.max = 250,
 };
 
 /*
  * Internal hifi pll emulation configuration parameters
  */
 static const struct reg_sequence g12a_hifi_init_regs[] = {
-	{ .reg = HHI_HIFI_PLL_CNTL1,	.def = 0x0001374c },
+	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x08010496 },
+	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x38010496 },
+	{ .reg = HHI_HIFI_PLL_CNTL1,	.def = 0x00010e56 },
 	{ .reg = HHI_HIFI_PLL_CNTL2,	.def = 0x00000000 },
 	{ .reg = HHI_HIFI_PLL_CNTL3,	.def = 0x6a285c00 },
 	{ .reg = HHI_HIFI_PLL_CNTL4,	.def = 0x65771290 },
 	{ .reg = HHI_HIFI_PLL_CNTL5,	.def = 0x39272000 },
 	{ .reg = HHI_HIFI_PLL_CNTL6,	.def = 0x56540000 },
+	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x18010496 },
 };
 
 static struct clk_regmap g12a_hifi_pll_dco = {
@@ -1487,7 +1490,8 @@ static struct clk_regmap g12a_hifi_pll_dco = {
 		.range = &g12a_hifi_pll_mult_range,
 		.init_regs = g12a_hifi_init_regs,
 		.init_count = ARRAY_SIZE(g12a_hifi_init_regs),
-		.flags = CLK_MESON_PLL_ROUND_CLOSEST,
+		.fixed_n = 1,
+		.flags = CLK_MESON_PLL_ROUND_CLOSEST | CLK_MESON_PLL_FIXED_N,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "hifi_pll_dco",
@@ -2442,6 +2446,8 @@ static struct clk_regmap g12a_vid_pll = {
 
 /* VPU Clock */
 
+static u32 g12a_vpu_mux_table[] = {0, 1, 2, 3, 4, 5, 7};
+
 static const struct clk_hw *g12a_vpu_parent_hws[] = {
 	&g12a_fclk_div3.hw,
 	&g12a_fclk_div4.hw,
@@ -2449,7 +2455,6 @@ static const struct clk_hw *g12a_vpu_parent_hws[] = {
 	&g12a_fclk_div7.hw,
 	&g12a_mpll1.hw,
 	&g12a_vid_pll.hw,
-	&g12a_hifi_pll.hw,
 	&g12a_gp0_pll.hw,
 };
 
@@ -2458,13 +2463,13 @@ static struct clk_regmap g12a_vpu_0_sel = {
 		.offset = HHI_VPU_CLK_CNTL,
 		.mask = 0x7,
 		.shift = 9,
+		.table = g12a_vpu_mux_table,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "vpu_0_sel",
 		.ops = &clk_regmap_mux_ops,
 		.parent_hws = g12a_vpu_parent_hws,
 		.num_parents = ARRAY_SIZE(g12a_vpu_parent_hws),
-		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -2502,13 +2507,13 @@ static struct clk_regmap g12a_vpu_1_sel = {
 		.offset = HHI_VPU_CLK_CNTL,
 		.mask = 0x7,
 		.shift = 25,
+		.table = g12a_vpu_mux_table,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "vpu_1_sel",
 		.ops = &clk_regmap_mux_ops,
 		.parent_hws = g12a_vpu_parent_hws,
 		.num_parents = ARRAY_SIZE(g12a_vpu_parent_hws),
-		.flags = CLK_SET_RATE_NO_REPARENT,
 	},
 };
 

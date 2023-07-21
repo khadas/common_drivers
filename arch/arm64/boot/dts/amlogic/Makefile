@@ -75,3 +75,7 @@ dtb-y += meson-c1-c308x-ae401-nand.dtb
 dtb-y += meson-c1-c308x-ae402.dtb
 dtb-y += meson-c1-c308x-ae409.dtb
 dtb-y += meson-c1-c308x-ae409-nand.dtb
+dtb-y += t7_a311d2_an400_bluebell.dtb
+dtb-y += t7c_a311d2_an400_bluebell_4g.dtb
+dtb-y += t7c_a311d2_an400_bluebell_8g.dtb
+dtb-y += t7c_a311d2_an400_bluebell-hdmitx-only-4g.dtb

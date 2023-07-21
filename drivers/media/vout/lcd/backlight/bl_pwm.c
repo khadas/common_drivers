@@ -519,9 +519,12 @@ void bl_pwm_mapping_init(struct aml_bl_drv_s *bdrv)
 			bl_pwm->pwm_mapping[3] = bl_pwm->level_min +
 				3 * ((bl_pwm->level_max - bl_pwm->level_min + 2) / 4);
 			bl_pwm->pwm_mapping[4] = bl_pwm->level_max;
-			BLPR("pwm curve: %d  %d  %d  %d  %d", bl_pwm->pwm_mapping[0],
+			bl_pwm->pwm_mapping[5] = bl_pwm->level_max;
+			bl_pwm->pwm_mapping[6] = bl_pwm->level_max;
+			BLPR("pwm curve: %d  %d  %d  %d  %d tp:%d %d", bl_pwm->pwm_mapping[0],
 				bl_pwm->pwm_mapping[1], bl_pwm->pwm_mapping[2],
-				bl_pwm->pwm_mapping[3], bl_pwm->pwm_mapping[4]);
+				bl_pwm->pwm_mapping[3], bl_pwm->pwm_mapping[4],
+				bl_pwm->pwm_mapping[5], bl_pwm->pwm_mapping[6]);
 		}
 		break;
 	case BL_CTRL_PWM_COMBO:
@@ -535,9 +538,12 @@ void bl_pwm_mapping_init(struct aml_bl_drv_s *bdrv)
 			bl_pwm->pwm_mapping[3] = bl_pwm->level_min +
 				3 * ((bl_pwm->level_max - bl_pwm->level_min + 2) / 4);
 			bl_pwm->pwm_mapping[4] = bl_pwm->level_max;
-			BLPR("pwm0 curve: %d  %d  %d  %d  %d", bl_pwm->pwm_mapping[0],
+			bl_pwm->pwm_mapping[5] = bl_pwm->level_max;
+			bl_pwm->pwm_mapping[6] = bl_pwm->level_max;
+			BLPR("pwm curve: %d  %d  %d  %d  %d tp:%d %d", bl_pwm->pwm_mapping[0],
 				bl_pwm->pwm_mapping[1], bl_pwm->pwm_mapping[2],
-				bl_pwm->pwm_mapping[3], bl_pwm->pwm_mapping[4]);
+				bl_pwm->pwm_mapping[3], bl_pwm->pwm_mapping[4],
+				bl_pwm->pwm_mapping[5], bl_pwm->pwm_mapping[6]);
 		}
 
 		bl_pwm = bdrv->bconf.bl_pwm_combo1;
@@ -550,9 +556,12 @@ void bl_pwm_mapping_init(struct aml_bl_drv_s *bdrv)
 			bl_pwm->pwm_mapping[3] = bl_pwm->level_min +
 				3 * ((bl_pwm->level_max - bl_pwm->level_min + 2) / 4);
 			bl_pwm->pwm_mapping[4] = bl_pwm->level_max;
-			BLPR("pwm1 curve: %d  %d  %d  %d  %d", bl_pwm->pwm_mapping[0],
+			bl_pwm->pwm_mapping[5] = bl_pwm->level_max;
+			bl_pwm->pwm_mapping[6] = bl_pwm->level_max;
+			BLPR("pwm curve: %d  %d  %d  %d  %d tp:%d %d", bl_pwm->pwm_mapping[0],
 				bl_pwm->pwm_mapping[1], bl_pwm->pwm_mapping[2],
-				bl_pwm->pwm_mapping[3], bl_pwm->pwm_mapping[4]);
+				bl_pwm->pwm_mapping[3], bl_pwm->pwm_mapping[4],
+				bl_pwm->pwm_mapping[5], bl_pwm->pwm_mapping[6]);
 		}
 		break;
 	default:
@@ -565,36 +574,57 @@ static unsigned int bl_pwm_set_mapping(struct bl_pwm_config_s *bl_pwm, unsigned 
 	unsigned int levelout;
 	unsigned int p0, p1, p2, p3, p4, delta, step, step2, step3, step4;
 	unsigned long long levelin;
+	unsigned int tp[2];
 
 	p0 = bl_pwm->pwm_mapping[0];
 	p1 = bl_pwm->pwm_mapping[1];
 	p2 = bl_pwm->pwm_mapping[2];
 	p3 = bl_pwm->pwm_mapping[3];
 	p4 = bl_pwm->pwm_mapping[4];
+	tp[0] = bl_pwm->pwm_mapping[5];
+	tp[1] = bl_pwm->pwm_mapping[6];
 	levelin = level;
 
 	if (p0 < bl_pwm->level_min || p4 > bl_pwm->level_max)
 		BLERR("pwm mapping curve is out of pwm level range!!!");
 
-	step = (bl_pwm->level_max - bl_pwm->level_min + 2) / 4;
-	delta = step / 2;
-	step2 = 2 * step;
-	step3 = 3 * step;
-	step4 = bl_pwm->level_max - step3 - bl_pwm->level_min;
+	if (tp[1] < p4) {
+		if (tp[bl_pwm->index] == p4) { /*pdim*/
+			if (levelin >= tp[1] && levelin <= bl_pwm->level_max) {
+				levelout = p4;
+			} else {
+				levelout = bl_do_div(((levelin - bl_pwm->level_min) * (p4 - p0)),
+				(tp[1] - bl_pwm->level_min)) + p0;
+			}
+		} else { /*adim*/
+			if (levelin < tp[1]) {
+				levelout = p0;
+			} else {
+				levelout = bl_do_div(((levelin - tp[1]) * (p4 - p0)),
+				(bl_pwm->level_max - tp[1])) + p0;
+			}
+		}
+	} else {
+		step = (bl_pwm->level_max - bl_pwm->level_min + 2) / 4;
+		delta = step / 2;
+		step2 = 2 * step;
+		step3 = 3 * step;
+		step4 = bl_pwm->level_max - step3 - bl_pwm->level_min;
 
-	/*pwm curve mapping*/
-	if (levelin < (step + bl_pwm->level_min))
-		levelout = bl_do_div(((p1 - p0) * (levelin - bl_pwm->level_min)
-			+ delta), step) + p0;
-	else if (levelin < (step2 + bl_pwm->level_min))
-		levelout = bl_do_div(((p2 - p1) * (levelin - step - bl_pwm->level_min)
-			+ delta), step) + p1;
-	else if (levelin < (step3 + bl_pwm->level_min))
-		levelout = bl_do_div(((p3 - p2) * (levelin - step2 - bl_pwm->level_min)
-			+ delta), step) + p2;
-	else
-		levelout = bl_do_div(((p4 - p3) * (levelin - step3 - bl_pwm->level_min)
-			+ (step4 / 2)), step4) + p3;
+		/*pwm curve mapping*/
+		if (levelin < (step + bl_pwm->level_min))
+			levelout = bl_do_div(((p1 - p0) * (levelin - bl_pwm->level_min)
+				+ delta), step) + p0;
+		else if (levelin < (step2 + bl_pwm->level_min))
+			levelout = bl_do_div(((p2 - p1) * (levelin - step - bl_pwm->level_min)
+				+ delta), step) + p1;
+		else if (levelin < (step3 + bl_pwm->level_min))
+			levelout = bl_do_div(((p3 - p2) * (levelin - step2 - bl_pwm->level_min)
+				+ delta), step) + p2;
+		else
+			levelout = bl_do_div(((p4 - p3) * (levelin - step3 - bl_pwm->level_min)
+				+ (step4 / 2)), step4) + p3;
+	}
 
 	if (levelout < bl_pwm->level_min)
 		levelout = bl_pwm->level_min;
@@ -602,8 +632,8 @@ static unsigned int bl_pwm_set_mapping(struct bl_pwm_config_s *bl_pwm, unsigned 
 		levelout = bl_pwm->level_max;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_ADV)
-		BLPR("curve: %d %d %d %d %d: levelin=%d, levelout=%d",
-			p0, p1, p2, p3, p4, level, levelout);
+		BLPR("curve: %d %d %d %d %d, tp=%d_%d, levelin=%d, levelout=%d",
+			p0, p1, p2, p3, p4, tp[0], tp[1], level, levelout);
 
 	return levelout;
 }

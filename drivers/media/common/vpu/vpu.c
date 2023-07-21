@@ -58,6 +58,7 @@ struct vpu_conf_s vpu_conf = {
 	.vapb_clk = NULL,
 
 	.clk_vmod = NULL,
+	.switch_gpl = false,
 };
 
 int vpu_chip_valid_check(void)

@@ -155,9 +155,17 @@ static int switch_gp_pll(int flag, unsigned int clk_level)
 		ret = clk_set_rate(vpu_conf.gp_pll, clk);
 		if (ret)
 			return ret;
-		clk_prepare_enable(vpu_conf.gp_pll);
+		if (!vpu_conf.switch_gpl) {
+			clk_prepare_enable(vpu_conf.gp_pll);
+			VPUPR("%s: gp_pll enable\n", __func__);
+		}
+		vpu_conf.switch_gpl = true;
 	} else { /* disable */
-		clk_disable_unprepare(vpu_conf.gp_pll);
+		if (vpu_conf.switch_gpl) {
+			clk_disable_unprepare(vpu_conf.gp_pll);
+			VPUPR("%s: gp_pll disable\n", __func__);
+		}
+		vpu_conf.switch_gpl = false;
 	}
 
 	return 0;
@@ -184,8 +192,20 @@ int vpu_clk_apply_dft(unsigned int clk_level)
 		}
 
 		ret = switch_gp_pll(1, clk_level);
+		VPUPR("set vpu clk: %uHz(%d), readback: (0x%x)\n",
+			  vpu_conf.data->clk_table[clk_level].freq, clk_level,
+			   (vpu_clk_read(vpu_conf.data->vpu_clk_reg)));
 		if (ret)
 			return ret;
+	} else {
+		if (vpu_conf.switch_gpl) {
+			switch_gp_pll(0, clk_level);
+			if (!vpu_conf.vpu_clk_en) {
+				clk_prepare_enable(vpu_conf.vpu_clk);
+				VPUPR("%s: vpu_clk enable\n", __func__);
+				vpu_conf.vpu_clk_en = true;
+			}
+		}
 	}
 
 	if ((IS_ERR_OR_NULL(vpu_conf.vpu_clk0)) ||
@@ -210,6 +230,13 @@ int vpu_clk_apply_dft(unsigned int clk_level)
 	usleep_range(20, 25);
 	/* step 3:  switch back to 1st vpu clk patch */
 	clk_set_parent(vpu_conf.vpu_clk, vpu_conf.vpu_clk0);
+	if (vpu_conf.switch_gpl) {
+		if (vpu_conf.vpu_clk_en) {
+			clk_disable_unprepare(vpu_conf.vpu_clk);
+			VPUPR("%s: vpu_clk disable\n", __func__);
+			vpu_conf.vpu_clk_en = false;
+		}
+	}
 
 	clk = clk_get_rate(vpu_conf.vpu_clk);
 	VPUPR("set vpu clk: %uHz(%d), readback: %uHz(0x%x)\n",
@@ -322,7 +349,6 @@ void vpu_clktree_init_dft(struct device *dev)
 		vpu_conf.gp_pll = devm_clk_get(dev, "gp_pll");
 		if (IS_ERR_OR_NULL(vpu_conf.gp_pll))
 			VPUERR("%s: gp_pll\n", __func__);
-		clk_prepare_enable(vpu_conf.gp_pll);
 	}
 
 	/* init & enable vpu_clk */
@@ -336,6 +362,7 @@ void vpu_clktree_init_dft(struct device *dev)
 	} else {
 		clk_set_parent(vpu_conf.vpu_clk, vpu_conf.vpu_clk0);
 		clk_prepare_enable(vpu_conf.vpu_clk);
+		vpu_conf.vpu_clk_en = true;
 	}
 }
 

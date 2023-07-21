@@ -147,6 +147,8 @@ struct vpu_conf_s {
 	struct clk *vapb_clk;
 
 	unsigned int *clk_vmod;
+	bool switch_gpl;
+	bool vpu_clk_en;
 };
 
 /* VPU memory power down */

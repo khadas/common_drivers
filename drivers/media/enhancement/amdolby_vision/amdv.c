@@ -1420,7 +1420,7 @@ void update_graphic_width_height(unsigned int width,
 		new_osd_graphic_height[index] = height;
 	}
 
-	if (debug_dolby & 20)
+	if (debug_dolby & 0x2)
 		pr_dv_dbg("update osd%d %d_%d\n", index + 1, width, height);
 }
 EXPORT_SYMBOL(update_graphic_width_height);
@@ -14302,6 +14302,11 @@ static long amdolby_vision_ioctl(struct file *file,
 
 	if (!module_installed) {
 		pr_info("[DV] module not install\n");
+		return ret;
+	}
+	if (dolby_vision_flags & FLAG_CERTIFICATION) {
+		if (debug_dolby & 0x200)
+			pr_info("IDK cert mode, ignore user setting\n");
 		return ret;
 	}
 

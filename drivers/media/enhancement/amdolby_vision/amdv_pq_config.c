@@ -1393,7 +1393,7 @@ static int load_cfg_by_name(char *fw_name)
 	memcpy(txt_buf, (char *)fw->data, fw->size);
 	get_picture_mode_info(txt_buf);
 
-	pr_dv_dbg("load bin size: %zd, name: %s.\n",
+	pr_dv_dbg("load cfg size: %zd, name: %s.\n",
 		fw->size, name);
 
 release:

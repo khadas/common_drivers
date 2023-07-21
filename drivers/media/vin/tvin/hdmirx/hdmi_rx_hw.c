@@ -5950,7 +5950,7 @@ u32 aml_cable_clk_band(u32 cable_clk, u32 clk_rate)
 		cab_clk = cable_clk << 2;
 
 	/* 1:10 */
-	if (rx_info.chip_id == CHIP_ID_T5M) {
+	if (rx_info.chip_id >= CHIP_ID_T5M) {
 		if (cab_clk < (37 * MHz))
 			bw = PHY_BW_0;
 		else if (cab_clk < (75 * MHz))
@@ -5993,7 +5993,7 @@ u32 aml_phy_pll_band(u32 cable_clk, u32 clk_rate)
 		cab_clk = cable_clk << 2;
 
 	/* 1:10 */
-	if (rx_info.chip_id == CHIP_ID_T5M) {
+	if (rx_info.chip_id >= CHIP_ID_T5M) {
 		if (cab_clk < (37 * MHz))
 			bw = PLL_BW_0;
 		else if (cab_clk < (75 * MHz))

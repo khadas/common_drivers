@@ -6013,6 +6013,12 @@ int is_in_pre_vsync_isr(void)
 }
 EXPORT_SYMBOL(is_in_pre_vsync_isr);
 
+int is_video_process_in_thread(void)
+{
+	return 0;
+}
+EXPORT_SYMBOL(is_video_process_in_thread);
+
 void set_video_angle(u32 s_value)
 {
 	struct disp_info_s *layer = &glayer_info[0];

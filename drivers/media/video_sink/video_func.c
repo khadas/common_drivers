@@ -2619,6 +2619,32 @@ static bool check_sideband_type(struct vframe_s *vf, bool *need_force_black)
 	}
 }
 
+static void vd_dispbuf_to_put(int layer_id)
+{
+#ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
+	int i;
+
+	/* if mode is video_process_in_thread,
+	 * toggle/swap/render in thread and put_buf in vsync isr, skip this func.
+	 */
+	if (is_video_process_in_thread())
+		return;
+
+	if (over_field)
+		return;
+
+	for (i = 0; i < DISPBUF_TO_PUT_MAX; i++) {
+		if (dispbuf_to_put[layer_id][i]) {
+			dispbuf_to_put[layer_id][i]->rendered = true;
+			if (!video_vf_put(layer_id, dispbuf_to_put[layer_id][i])) {
+				dispbuf_to_put[layer_id][i] = NULL;
+				dispbuf_to_put_num[layer_id]--;
+			}
+		}
+	}
+#endif
+}
+
 static void vd_dispbuf_init(u8 layer_id)
 {
 	int i;
@@ -2667,19 +2693,6 @@ static void vd_dispbuf_init(u8 layer_id)
 			vd_layer[i].dispbuf != gvideo_recv[path_index]->cur_buf)
 			vd_layer[i].dispbuf = gvideo_recv[path_index]->cur_buf;
 	}
-#ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
-	if (!over_field) {
-		for (i = 0; i < DISPBUF_TO_PUT_MAX; i++) {
-			if (dispbuf_to_put[layer_id][i]) {
-				dispbuf_to_put[layer_id][i]->rendered = true;
-				if (!video_vf_put(layer_id, dispbuf_to_put[layer_id][i])) {
-					dispbuf_to_put[layer_id][i] = NULL;
-					dispbuf_to_put_num[layer_id]--;
-				}
-			}
-		}
-	}
-#endif
 }
 
 static inline int recvx_early_proc(u8 path_index)
@@ -2707,6 +2720,7 @@ static int amvideo_early_proc(u8 layer_id)
 	s32 vd1_path_id = glayer_info[0].display_path_id;
 	struct cur_line_info_t *cur_line_info = get_cur_line_info();
 
+	vd_dispbuf_to_put(layer_id);
 	get_count_pip[0] = 0;
 
 	if (!hist_test_flag && cur_dispbuf[0] == &hist_test_vf)
@@ -2817,6 +2831,7 @@ static int amvideo_early_proc(u8 layer_id)
 
 static int pipx_early_proc(u8 path_index)
 {
+	vd_dispbuf_to_put(path_index);
 	get_count_pip[path_index] = 0;
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 	/* for pip */

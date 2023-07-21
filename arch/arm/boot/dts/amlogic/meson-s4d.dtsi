@@ -2071,8 +2071,9 @@
 		compatible = "amlogic, amvideom-s4";
 		dev_name = "amvideom";
 		status = "okay";
-		interrupts = <GIC_SPI 197 IRQ_TYPE_EDGE_RISING>;
-		interrupt-names = "vsync";
+		interrupts = <GIC_SPI 197 IRQ_TYPE_EDGE_RISING
+				GIC_SPI 195 IRQ_TYPE_EDGE_RISING>;
+		interrupt-names = "vsync", "line_n";
 	};
 
 	video_composer {

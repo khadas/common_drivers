@@ -1270,7 +1270,8 @@ int rdma_write_reg(int handle, u32 adr, u32 val)
 	if (ins->rdma_table_size == 0)
 		return -1;
 #ifdef CONFIG_AMLOGIC_BL_LDIM
-	if ((((smp_processor_id() == 0) &&
+	if (!is_video_process_in_thread() &&
+		(((smp_processor_id() == 0) &&
 		!is_in_vsync_isr() &&
 		!is_in_pre_vsync_isr() &&
 		!is_in_vsync_isr_viu2() &&
@@ -1278,7 +1279,8 @@ int rdma_write_reg(int handle, u32 adr, u32 val)
 		!is_in_ldim_vsync_isr()) || (smp_processor_id() != 0)) &&
 		get_rdma_handle(VSYNC_RDMA) == handle) {
 #else
-	if ((((smp_processor_id() == 0) &&
+	if (!is_video_process_in_thread() &&
+		(((smp_processor_id() == 0) &&
 		!is_in_vsync_isr() &&
 		!is_in_pre_vsync_isr() &&
 		!is_in_vsync_isr_viu2() &&

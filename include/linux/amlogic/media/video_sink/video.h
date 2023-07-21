@@ -333,6 +333,24 @@ enum vpu_module_e {
 	DV_TVCORE,
 };
 
+enum mediasync_parameter_e {
+	SET_VSYNC_PARAMETER,
+	GET_VSYNC_PARAMETER
+};
+
+struct mediasync_parameter {
+	u32 vsync_period;
+	s64 vsync_timestamp;
+};
+
+struct mediasync_ptr {
+	int (*mediasync)(unsigned long instance_id,
+			 enum mediasync_parameter_e type, void *arg);
+	int (*reserved0)(void);
+	int (*reserved1)(void);
+	int (*reserved2)(void);
+};
+
 #define AMVIDEO_UPDATE_OSD_MODE	0x00000001
 #define AMVIDEO_UPDATE_PREBLEND_MODE	0x00000002
 #define AMVIDEO_UPDATE_SIGNAL_MODE      0x00000003
@@ -516,4 +534,5 @@ void update_over_field_states(u32 new_state, bool force);
 u32 get_slice_num(u32 layer_id);
 void get_vysnc_pts_in_scale(u32 *vsync_inc_scale,
 	u32 *vsync_inc_scale_base);
+int register_mediasync_funcs(struct mediasync_ptr *func_ptr, char *version);
 #endif /* VIDEO_H */

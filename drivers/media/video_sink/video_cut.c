@@ -48,6 +48,7 @@
 #include "video_reg.h"
 #define KERNEL_ATRACE_TAG KERNEL_ATRACE_TAG_VIDEO
 #include <trace/events/meson_atrace.h>
+#include <uapi/linux/sched/types.h>
 
 #ifdef CONFIG_AMLOGIC_MEDIA_FRAME_SYNC
 #include <linux/amlogic/media/frame_sync/ptsserv.h>
@@ -163,6 +164,7 @@ static struct amvideo_device_data_s amvideo_meson_dev;
 static struct dentry *video_debugfs_root;
 
 static int video_vsync = -ENXIO;
+static int video_line_n_int = -ENXIO;
 static DEFINE_MUTEX(video_layer_mutex);
 static DEFINE_MUTEX(video_module_mutex);
 static DEFINE_MUTEX(video_inuse_mutex);
@@ -690,6 +692,213 @@ int last_mode_3d;
 static void update_process_hdmi_avsync_flag(bool flag);
 static void hdmi_in_delay_maxmin_reset(void);
 
+static u32 lowlatency_enable = 1;
+MODULE_PARM_DESC(lowlatency_enable, "\n lowlatency_enable\n");
+
+static u32 thread_vsync_in;
+MODULE_PARM_DESC(thread_vsync_in, "\n thread_vsync_in\n");
+module_param(thread_vsync_in, uint, 0664);
+
+static u32 thread_frame_in;
+MODULE_PARM_DESC(thread_frame_in, "\n thread_frame_in\n");
+module_param(thread_frame_in, uint, 0664);
+
+static int line_n_in, frame_in;
+static struct task_struct *video_thread;
+static wait_queue_head_t frame_process_wq;
+static irqreturn_t vsync_isr_in(int irq, void *dev_id);
+
+static u32 lowlatency_proc_drop;
+static u32 lowlatency_err_drop;
+static u32 lowlatency_proc_frame_cnt;
+static u32 lowlatency_skip_frame_cnt;
+static u32 lowlatency_proc_done;
+static u32 lowlatency_overflow_cnt;
+static u32 lowlatency_overrun_cnt;
+u32 lowlatency_overrun_recovery_cnt;
+static u32 lowlatency_max_proc_lines;
+static u32 lowlatency_max_enter_lines;
+static u32 lowlatency_max_exit_lines;
+static u32 lowlatency_min_enter_lines = 0xffffffff;
+static u32 lowlatency_min_exit_lines = 0xffffffff;
+static u32 vsync_proc_done;
+static u32 line_threshold = 10;
+struct mediasync_ptr *g_media_sync_funcs;
+
+u32 vsync_proc_drop;
+ulong lowlatency_vsync_count;
+bool overrun_flag;
+
+static void update_mediasync_param(u32 vsync_period, s64 vsync_timestamp);
+
+static irqreturn_t line_n_isr(int irq, void *dev_id)
+{
+	u32 vsync_period;
+	s64 vsync_timestamp;
+	static s64 vsync_timestamp_pre;
+
+	if (lowlatency_enable) {
+		vsync_timestamp = ktime_get();
+		vsync_period = vsync_timestamp - vsync_timestamp_pre;
+		vsync_timestamp_pre = vsync_timestamp;
+		update_mediasync_param(vsync_period, vsync_timestamp);
+		if (debug_flag & DEBUG_FLAG_LATENCY)
+			pr_info("line_n isr\n");
+		line_n_in = 1;
+		wake_up_interruptible(&frame_process_wq);
+	}
+	return IRQ_HANDLED;
+}
+
+static int process_frame(void)
+{
+	u32 enc_line1, enc_line2, last_line;
+	u32 min_line, max_line, start_line, vinfo_height;
+	const struct vinfo_s *cur_vinfo;
+	bool err_flag = false;
+	static ulong last_vsync_count;
+	int irq = 0;
+	void *dev_id = NULL;
+
+	if (legacy_vpp)
+		return 0;
+
+	cur_vinfo = get_current_vinfo();
+	if (!cur_vinfo) {
+		lowlatency_err_drop++;
+		return -1;
+	}
+
+	if (debug_flag & DEBUG_FLAG_LATENCY)
+		pr_info("process frame start\n");
+	if (cur_vinfo->field_height != cur_vinfo->height)
+		vinfo_height = cur_vinfo->field_height;
+	else
+		vinfo_height = cur_vinfo->height;
+
+	start_line = get_active_start_line();
+	min_line = (vinfo_height * line_threshold) / 100 + start_line;
+	max_line = (vinfo_height * (100 - line_threshold)) / 100 + start_line;
+	enc_line1 = get_cur_enc_line();
+	if (enc_line1 >= max_line || overrun_flag) {
+		lowlatency_proc_drop++;
+		return -2;
+	}
+
+	if (atomic_inc_return(&video_proc_lock) > 1) {
+		lowlatency_proc_drop++;
+		atomic_dec(&video_proc_lock);
+		return -3;
+	}
+
+	if (lowlatency_vsync_count == last_vsync_count) {
+		lowlatency_overflow_cnt++;
+		atomic_dec(&video_proc_lock);
+		return -4;
+	}
+
+	last_line = enc_line1;
+	while (enc_line1 < min_line) {
+		usleep_range(500, 600);
+		enc_line1 = get_cur_enc_line();
+		if (last_line == enc_line1) {
+			/* active line no change */
+			err_flag = true;
+			break;
+		}
+		last_line = enc_line1;
+	}
+	if (err_flag) {
+		lowlatency_err_drop++;
+		atomic_dec(&video_proc_lock);
+		return -5;
+	}
+
+	atomic_set(&video_inirq_flag, 1);
+	enc_line1 = get_cur_enc_line();
+
+	if (lowlatency_max_enter_lines < enc_line1)
+		lowlatency_max_enter_lines = enc_line1;
+	if (lowlatency_min_enter_lines > enc_line1)
+		lowlatency_min_enter_lines = enc_line1;
+
+	last_vsync_count = lowlatency_vsync_count;
+	vsync_isr_in(irq, dev_id);
+	lowlatency_proc_done++;
+	enc_line2 = get_cur_enc_line();
+	if (enc_line2 < enc_line1) {
+		lowlatency_overrun_cnt++;
+		overrun_flag = true;
+	}
+	if (lowlatency_min_exit_lines > enc_line2 && !overrun_flag)
+		lowlatency_min_exit_lines = enc_line2;
+	if (lowlatency_max_exit_lines < enc_line2)
+		lowlatency_max_exit_lines = enc_line2;
+	enc_line2 -= enc_line1;
+	if (lowlatency_max_proc_lines < enc_line2)
+		lowlatency_max_proc_lines = enc_line2;
+	atomic_set(&video_inirq_flag, 0);
+	atomic_dec(&video_proc_lock);
+	if (debug_flag & DEBUG_FLAG_LATENCY)
+		pr_info("process frame end\n");
+
+	return 0;
+}
+
+static int threadfunc(void *data)
+{
+	int ret = -1;
+
+	while (1) {
+		if (kthread_should_stop())
+			break;
+		ret = wait_event_interruptible(frame_process_wq,
+						line_n_in || frame_in);
+		if (ret)
+			pr_err("wait for the event failed, ret: %d\n", ret);
+
+		if (line_n_in) {
+			thread_vsync_in++;
+			line_n_in = 0;
+		}
+		if (frame_in) {
+			thread_frame_in++;
+			frame_in = 0;
+		}
+		process_frame();
+	}
+	return 0;
+}
+
+static void video_start_monitor(void)
+{
+	int err;
+	struct sched_param param = {.sched_priority = 2};
+
+	if (!lowlatency_enable)
+		return;
+	init_waitqueue_head(&frame_process_wq);
+
+	video_thread = kthread_create(threadfunc, NULL, "video_monitor");
+	if (IS_ERR(video_thread)) {
+		err = PTR_ERR(video_thread);
+		pr_err("Unable to start kernel thread, %d.", err);
+		video_thread = NULL;
+		return;
+	}
+	if (sched_setscheduler(video_thread, SCHED_FIFO, &param))
+		pr_err("VID: Could not set realtime priority.\n");
+	wake_up_process(video_thread);
+}
+
+static void video_stop_monitor(void)
+{
+	if (video_thread) {
+		kthread_stop(video_thread);
+		video_thread = NULL;
+	}
+}
+
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM1)
 static unsigned int det_stb_cnt = 30;
 static unsigned int det_unstb_cnt = 20;
@@ -849,6 +1058,12 @@ inline struct vframe_s *amvideo_vf_get(void)
 
 	vf = vf_get(RECEIVER_NAME);
 	if (vf) {
+		if (debug_flag & DEBUG_FLAG_PRINT_FRAME_DETAIL)
+			pr_info("%s:vf=%p, vf->type=0x%x, vf->flag=0x%x,canvas adr:0x%lx, canvas0:%x, pnum:%d, afbc:0x%lx-0x%lx,\n",
+				__func__,
+				vf, vf->type, vf->flag,
+				vf->canvas0_config[0].phy_addr, vf->canvas0Addr, vf->plane_num,
+				vf->compHeadAddr, vf->compBodyAddr);
 		get_count_pip[0]++;
 		vpp_trace_vframe("amvideo_vf_peek",
 			(void *)vf, vf->type, vf->flag, 0, vsync_cnt[VPP0]);
@@ -911,6 +1126,12 @@ inline int amvideo_vf_put(struct vframe_s *vf)
 			(void *)vf, vf->type, vf->flag, 0, vsync_cnt[VPP0]);
 		if (vf_put(vf, RECEIVER_NAME) < 0)
 			return -EFAULT;
+		if (debug_flag & DEBUG_FLAG_PRINT_FRAME_DETAIL)
+			pr_info("%s:vf=%p, vf->type=0x%x, vf->flag=0x%x,canvas adr:0x%lx, canvas0:%x, pnum:%d, afbc:0x%lx-0x%lx,\n",
+				__func__,
+				vf, vf->type, vf->flag,
+				vf->canvas0_config[0].phy_addr, vf->canvas0Addr, vf->plane_num,
+				vf->compHeadAddr, vf->compBodyAddr);
 		if (IS_DI_POSTWRTIE(vf->type))
 			put_di_count++;
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
@@ -1474,6 +1695,13 @@ static int video_receiver_event_fun(int type, void *data, void *private_data)
 	} else if (type == VFRAME_EVENT_PROVIDER_PROPERTY_CHANGED) {
 		vd_layer[0].property_changed = true;
 		vd_layer[1].property_changed = true;
+	} else if (type == VFRAME_EVENT_PROVIDER_VFRAME_READY) {
+		if (lowlatency_enable) {
+			if (vf_peek(RECEIVER_NAME)) {
+				frame_in = 1;
+				wake_up_interruptible(&frame_process_wq);
+			}
+		}
 	}
 	return 0;
 }
@@ -3946,8 +4174,10 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 			if (debug_flag & DEBUG_FLAG_TOGGLE_FRAME_PER_VSYNC)
 				break;
 			video_get_vf_cnt[0]++;
+			lowlatency_proc_frame_cnt++;
 			if (video_get_vf_cnt[0] >= 2) {
 				video_drop_vf_cnt[0]++;
+				lowlatency_skip_frame_cnt++;
 				if (debug_flag & DEBUG_FLAG_PRINT_DROP_FRAME)
 					pr_info("drop frame: drop count %d\n",
 						video_drop_vf_cnt[0]);
@@ -5119,6 +5349,28 @@ u32 get_force_skip_cnt(enum vd_path_e path)
 		return 0;
 }
 
+static void vd_dispbuf_to_put(void)
+{
+#ifdef CONFIG_AMLOGIC_MEDIA_VSYNC_RDMA
+	int i, layer_id;
+
+	if (over_field)
+		return;
+
+	for (layer_id = 0; layer_id < MAX_VD_LAYERS; layer_id++) {
+		for (i = 0; i < DISPBUF_TO_PUT_MAX; i++) {
+			if (dispbuf_to_put[layer_id][i]) {
+				dispbuf_to_put[layer_id][i]->rendered = true;
+				if (!amvideo_vf_put(dispbuf_to_put[layer_id][i])) {
+					dispbuf_to_put[layer_id][i] = NULL;
+					dispbuf_to_put_num[layer_id]--;
+				}
+			}
+		}
+	}
+#endif
+}
+
 #ifdef FIQ_VSYNC
 void vsync_fisr_in(void)
 #else
@@ -5151,7 +5403,14 @@ static irqreturn_t vsync_isr(int irq, void *dev_id)
 {
 	irqreturn_t ret;
 
+	if (debug_flag & DEBUG_FLAG_LATENCY)
+		pr_info("vsync isr\n");
 	lowlatency_vsync_count++;
+	if (lowlatency_enable) {
+		vd_dispbuf_to_put();
+		return IRQ_HANDLED;
+	}
+
 	if (atomic_inc_return(&video_proc_lock) > 1) {
 		vsync_proc_drop++;
 		atomic_dec(&video_proc_lock);
@@ -5184,6 +5443,13 @@ static void vsync_fiq_up(void)
 #else
 	int r;
 
+	if (video_line_n_int >= 0) {
+		r = request_irq(video_line_n_int, &line_n_isr,
+			IRQF_SHARED, "line_n", (void *)video_dev_id);
+		if (r < 0)
+			pr_info("request line_n irq fail, %d\n", r);
+	}
+
 	r = request_irq(video_vsync, &vsync_isr,
 		IRQF_SHARED, "vsync", (void *)video_dev_id);
 	if (r < 0)
@@ -5201,6 +5467,11 @@ static void vsync_fiq_down(void)
 #ifdef FIQ_VSYNC
 	free_fiq(INT_VIU_VSYNC, &vsync_fisr);
 #else
+	if (video_line_n_int >= 0) {
+		free_irq(video_line_n_int, NULL);
+		video_line_n_int = -ENXIO;
+	}
+
 	free_irq(video_vsync, (void *)video_dev_id);
 #endif
 }
@@ -5796,6 +6067,11 @@ int is_in_pre_vsync_isr(void)
 		return 0;
 }
 EXPORT_SYMBOL(is_in_pre_vsync_isr);
+
+int is_video_process_in_thread(void)
+{
+	return lowlatency_enable ? 1 : 0;
+}
 
 void set_video_angle(u32 s_value)
 {
@@ -10547,6 +10823,96 @@ static ssize_t vpu_module_urgent_set(struct class *class,
 	return count;
 }
 
+ssize_t lowlatency_states_show(struct class *cla,
+				      struct class_attribute *attr,
+				      char *buf)
+{
+	ssize_t len = 0;
+
+	len += sprintf(buf + len,
+		"low latency process done count: %d\n",
+		lowlatency_proc_done);
+	len += sprintf(buf + len,
+		"low latency process frame count: %d\n",
+		lowlatency_proc_frame_cnt);
+	len += sprintf(buf + len,
+		"low latency skip frame count: %d\n",
+		lowlatency_skip_frame_cnt);
+	len += sprintf(buf + len,
+		"low latency overflow count: %d\n",
+		lowlatency_overflow_cnt);
+	len += sprintf(buf + len,
+		"low latency process drop count: %d\n",
+		lowlatency_proc_drop);
+	len += sprintf(buf + len,
+		"low latency process err count: %d\n",
+		lowlatency_err_drop);
+	len += sprintf(buf + len,
+		"low latency process overrun count: %d\n",
+		lowlatency_overrun_cnt);
+	len += sprintf(buf + len,
+		"low latency process overrun recovery count: %d\n",
+		lowlatency_overrun_recovery_cnt);
+	len += sprintf(buf + len,
+		"low latency process max proc lines: %d\n",
+		lowlatency_max_proc_lines);
+	len += sprintf(buf + len,
+		"low latency process max enter lines: %d\n",
+		lowlatency_max_enter_lines);
+	len += sprintf(buf + len,
+		"low latency process max exit lines: %d\n",
+		lowlatency_max_exit_lines);
+	len += sprintf(buf + len,
+		"low latency process min enter lines: %d\n",
+		lowlatency_min_enter_lines);
+	len += sprintf(buf + len,
+		"low latency process min exit lines: %d\n",
+		lowlatency_min_exit_lines);
+	len += sprintf(buf + len,
+		"vsync process done count: %d\n",
+		vsync_proc_done);
+	len += sprintf(buf + len,
+		"vsync process drop count: %d\n",
+		vsync_proc_drop);
+	len += sprintf(buf + len,
+		"video_receiver cnt: %d\n",
+		atomic_read(&video_recv_cnt));
+	len += sprintf(buf + len,
+		"line threshold %d\n",
+		line_threshold);
+	return len;
+}
+
+ssize_t lowlatency_states_store(struct class *cla,
+				       struct class_attribute *attr,
+				       const char *buf, size_t count)
+{
+	int ret;
+	u32 val = 0;
+
+	ret = kstrtoint(buf, 0, &val);
+	if (ret < 0)
+		return -EINVAL;
+
+	lowlatency_err_drop = 0;
+	lowlatency_proc_done = 0;
+	lowlatency_overrun_cnt = 0;
+	lowlatency_overrun_recovery_cnt = 0;
+	lowlatency_max_enter_lines = 0;
+	lowlatency_max_proc_lines = 0;
+	lowlatency_max_exit_lines = 0;
+	lowlatency_min_enter_lines = 0xffffffff;
+	lowlatency_min_exit_lines = 0xffffffff;
+	lowlatency_proc_drop = 0;
+	lowlatency_overflow_cnt = 0;
+	lowlatency_proc_frame_cnt = 0;
+	lowlatency_skip_frame_cnt = 0;
+	vsync_proc_drop = 0;
+	vsync_proc_done = 0;
+	pr_info("Clear the lowlatency states information!\n");
+	return count;
+}
+
 static ssize_t video_test_pattern_show(struct class *cla,
 			     struct class_attribute *attr, char *buf)
 {
@@ -11139,6 +11505,23 @@ struct vframe_s *get_cur_dispbuf(void)
 	return cur_dispbuf[0];
 }
 
+static void set_line_n_num(void)
+{
+	const struct vinfo_s *info = get_current_vinfo();
+
+	if (!info || info->mode == VMODE_INVALID) {
+		if (debug_flag & DEBUG_FLAG_BASIC_INFO)
+			pr_info("%s invalid vinfo:%p vinfo->mode:%d\n",
+				__func__, info, info ? info->mode : 0);
+		return;
+	}
+
+	WRITE_VCBUS_REG(VPP_INT_LINE_NUM, info->height * 2 / 3);
+	if (debug_flag & DEBUG_FLAG_BASIC_INFO)
+		pr_info("%s info->height:%d VPP_INT_LINE_NUM:%d\n", __func__,
+			info->height, READ_VCBUS_REG(VPP_INT_LINE_NUM));
+}
+
 #ifdef CONFIG_AM_VOUT
 int vout_notify_callback(struct notifier_block *block, unsigned long cmd,
 			 void *para)
@@ -11148,6 +11531,7 @@ int vout_notify_callback(struct notifier_block *block, unsigned long cmd,
 
 	switch (cmd) {
 	case VOUT_EVENT_MODE_CHANGE:
+		set_line_n_num();
 		info = get_current_vinfo();
 		if (!info || info->mode == VMODE_INVALID)
 			return 0;
@@ -11808,9 +12192,17 @@ static int amvideom_probe(struct platform_device *pdev)
 
 		return video_vsync;
 	}
-
 	pr_info("amvideom vsync irq: %d\n", video_vsync);
 
+	if (lowlatency_enable) {
+		video_line_n_int = platform_get_irq_byname(pdev, "line_n");
+		if (video_line_n_int < 0) {
+			pr_info("cannot get video_line_n irq resource\n");
+			return video_line_n_int;
+		}
+		pr_info("amvideom line_n irq: %d\n", video_line_n_int);
+		set_line_n_num();
+	}
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	register_early_suspend(&video_early_suspend_handler);
 #endif
@@ -11835,6 +12227,36 @@ static struct platform_driver amvideom_driver = {
 		.of_match_table = amlogic_amvideom_dt_match,
 	},
 };
+
+static void update_mediasync_param(u32 vsync_period, s64 vsync_timestamp)
+{
+	struct mediasync_parameter param;
+
+	if (!g_media_sync_funcs || !g_media_sync_funcs->mediasync) {
+		if (debug_flag & DEBUG_FLAG_BASIC_INFO)
+			pr_info("callback function is NULL\n");
+		return;
+	}
+	param.vsync_period = vsync_period;
+	param.vsync_timestamp = vsync_timestamp;
+
+	g_media_sync_funcs->mediasync(0, SET_VSYNC_PARAMETER, &param);
+}
+
+int register_mediasync_funcs(struct mediasync_ptr *func_ptr, char *version)
+{
+	if (!func_ptr) {
+		amlog_level(LOG_LEVEL_ERROR, "func_ptr:%p version:%p\n",
+			    func_ptr, version);
+		return -EINVAL;
+	}
+
+	pr_info("%s, func_ptr:%p version:%s\n", __func__, func_ptr, version);
+	g_media_sync_funcs = func_ptr;
+
+	return 0;
+}
+EXPORT_SYMBOL(register_mediasync_funcs);
 
 int __init video_init(void)
 {
@@ -11973,6 +12395,8 @@ int __init video_init(void)
 
 	REG_PATH_CONFIGS("media.video", video_configs);
 	video_debugfs_init();
+	video_start_monitor();
+
 	return 0;
  err5:
 	device_destroy(amvideo_class, MKDEV(AMVIDEO_MAJOR, 0));
@@ -11999,6 +12423,7 @@ int __init video_init(void)
 
 void __exit video_exit(void)
 {
+	video_stop_monitor();
 	video_debugfs_exit();
 	vf_unreg_receiver(&video_vf_recv);
 	vf_unreg_receiver(&videopip_vf_recv);

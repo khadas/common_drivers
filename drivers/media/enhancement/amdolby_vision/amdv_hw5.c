@@ -235,8 +235,8 @@ static void dolby5_top1_rdmif
 
 	unsigned int cntl_bits_mode;
 	unsigned int cntl_pixel_bytes;
-	unsigned int cntl_color_map = 0; //420 nv12/21
-
+	unsigned int cntl_color_map = 0; //1 or 2, 420 nv12 or nv21
+	unsigned int cntl_bit16_mode = 0;
 	unsigned int cvfmt_en = 0; //420
 	unsigned int chfmt_en = 0; //420/422
 	unsigned int yc_ratio = 0;
@@ -248,7 +248,7 @@ static void dolby5_top1_rdmif
 		yuv444 = 1;
 	} else if (fmt_mode == 2) {
 		yuv420 = 1;
-		cntl_color_map = 1;
+		cntl_color_map = 2;//2 for h265 dw 420-10
 		cvfmt_en = 1;
 		chfmt_en = 1;
 	} else {
@@ -290,8 +290,14 @@ static void dolby5_top1_rdmif
 		cntl_pixel_bytes = 1;
 		break; //10bit 422
 	case 0x02:
-		cntl_bits_mode = 3;
+		cntl_bits_mode = 0;//p010 mode(10bit valid data + 6bit padding0)
 		cntl_pixel_bytes = 1;
+		cntl_bit16_mode = 1;//p010,16bit
+		if (fix_data == CASE5344_TOP1_READFROM_FILE) {
+			cntl_bits_mode = 3;
+			cntl_pixel_bytes = 1;
+			cntl_bit16_mode = 0;
+		}
 		break; //10bit 420
 	case 0x10:
 		cntl_bits_mode = 0;
@@ -311,13 +317,13 @@ static void dolby5_top1_rdmif
 		break; //10bit 444
 	}
 
-	if (debug_rdmif & 1)
+	if ((debug_rdmif & 1))
 		VSYNC_WR_DV_REG(DOLBY_TOP1_GEN_REG,
 			(1 << 25) |                //luma last line end mode
 			(0 << 19) |                //cntl hold lines
 			(yuv444 << 16) |           //demux_mode
 			(cntl_pixel_bytes << 14) | //cntl_pixel_bytes
-			(1 << 4) |                 //little endian 128bit read
+			(0 << 4) |                 //little endian 128bit read
 			(separate_en << 1) |       //separate_en
 			1);
 	else
@@ -326,16 +332,18 @@ static void dolby5_top1_rdmif
 			(0 << 19) |                //cntl hold lines
 			(yuv444 << 16) |           //demux_mode
 			(cntl_pixel_bytes << 14) | //cntl_pixel_bytes
-			(0 << 4) |                 //little endian 128bit read
+			(1 << 4) |                 //little endian 128bit read
 			(separate_en << 1) |       //separate_en
 			1);                        //cntl_enable
 
 	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG2, cntl_color_map, 0, 2);
 	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, cntl_bits_mode, 8, 2);
-	if (debug_rdmif & 2)
-		VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, 0, 0, 1);//cntl_64bit_rev
-	else
+	VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, cntl_bit16_mode, 7, 1);
+
+	if ((debug_rdmif & 2))
 		VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, 1, 0, 1);//cntl_64bit_rev 2x64 bit revert
+	else
+		VSYNC_WR_DV_REG_BITS(DOLBY_TOP1_GEN_REG3, 0, 0, 1);//cntl_64bit_rev
 
 	VSYNC_WR_DV_REG(DOLBY_TOP1_FMT_CTRL,
 		(1 << 28) | //hfmt repeat
@@ -1154,6 +1162,7 @@ int tv_top1_set(u64 *top1_reg,
 				bool toggle)
 {
 	int i;
+	int plane_bits = 8;
 
 	if (debug_dolby & 1)
 		pr_dv_dbg("top1_set:top1 on %d %d,reset %d,toggle %d,video %d\n",
@@ -1186,7 +1195,12 @@ int tv_top1_set(u64 *top1_reg,
 	top1_type.rdmif_baddr[2] = top1_vd_info.canvasaddr[2];
 
 	for (i = 0; i < 2; i++) {
-		top1_type.rdmif_stride[i] = top1_stride_rdmif(top1_vd_info.width, 8);
+		if (top1_vd_info.bitdepth == 8)
+			plane_bits = 8;
+		else if (top1_vd_info.bitdepth == 10)
+			plane_bits = 16;
+
+		top1_type.rdmif_stride[i] = top1_stride_rdmif(top1_vd_info.width, plane_bits);
 		if (fix_data == CASE5344_TOP1_READFROM_FILE)
 			top1_type.rdmif_stride[i] = 480;
 	}
@@ -1678,9 +1692,11 @@ void update_l1l4_hist_setting(void)
 	for (i = 0; i < 256 / 2; i++)
 		histogram[index][i] = dv5_md_hist.hist[0][i * 2 + 0] |
 				(dv5_md_hist.hist[0][i * 2 + 1] << 8);
-	for (i = 0; i < 128 / 8; i++) {
-		if (debug_dolby & 0x100000)
-			pr_info("top1 hist:%d, %d, %d, %d, %d, %d, %d, %d\n",
+
+	if (debug_dolby & 0x100000) {
+		pr_info("top1 hist:\n");
+		for (i = 0; i < 128 / 8; i++)
+			pr_info("%d, %d, %d, %d, %d, %d, %d, %d\n",
 				histogram[index][i * 8],
 				histogram[index][i * 8 + 1],
 				histogram[index][i * 8 + 2],
@@ -1755,7 +1771,7 @@ irqreturn_t amdv_isr(int irq, void *dev_id)
 		//top1_output_hist_update();
 		update_l1l4_hist_setting();
 
-		if (debug_dolby & 0x4000)
+		if (debug_dolby & 0x100000)
 			pr_info("meta0: 0x%x, meta1: 0x%x\n", metadata0, metadata1);
 		WRITE_VPP_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 1, 8, 1); //top1 int, clear
 		WRITE_VPP_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 0, 8, 1);

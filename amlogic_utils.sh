@@ -60,13 +60,12 @@ function pre_defconfig_cmds() {
 	fi
 
 	if [[ -n ${DEV_CONFIGS} ]]; then
-		config_list=$(echo ${DEV_CONFIGS}|sed 's/+/ /g')
-		#verify the extra config is in the right path and merge the config
-		CONFIG_DIR=arch/${ARCH}/configs
+		local config_list=$(echo ${DEV_CONFIGS}|sed 's/+/ /g')
 		for config_name in ${config_list[@]}
 		do
-			if [[ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/${CONFIG_DIR}/${config_name} ]]; then
-				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/${CONFIG_DIR}/${config_name}
+			if [[ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${config_name} ]]; then
+				config_file=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${config_name}
+				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${config_file}
 			elif [[ -f ${config_name} ]]; then
 				KCONFIG_CONFIG=${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${ROOT_DIR}/${KCONFIG_DEFCONFIG} ${config_name}
 			else
@@ -370,7 +369,6 @@ function adjust_sequence_modules_loading() {
 		chips=$1
 	fi
 
-	source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list
 	cp modules.dep modules.dep.temp
 
 	soc_module=()
@@ -423,6 +421,7 @@ function adjust_sequence_modules_loading() {
 
 	in_line_i=a
 	delete_type_modules=()
+	[[ -z ${TYPE_MODULE_SELECT_MODULE} ]] && TYPE_MODULE_SELECT_MODULE=${TYPE_MODULE_SELECT_MODULE_ANDROID}
 	echo "TYPE_MODULE_SELECT_MODULE=${TYPE_MODULE_SELECT_MODULE}"
 	mkdir temp_dir
 	cd temp_dir
@@ -535,7 +534,7 @@ function adjust_sequence_modules_loading() {
 		done
 		if [[ ${#match_count[@]} != 0 ]]; then
 			echo "Error ${#match_count[@]} modules depend on ${module}, please modify:"
-			echo ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list:MODULES_LOAD_BLACK_LIST
+			echo ${MODULES_SEQUENCE_LIST}:MODULES_LOAD_BLACK_LIST
 			exit
 		fi
 		if [[ -n ${ANDROID_PROJECT} ]]; then
@@ -621,7 +620,6 @@ create_ramdisk_vendor_recovery() {
 	if [[ -n ${ANDROID_PROJECT} ]]; then
 		recovery_install_temp=$2
 	fi
-	source ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list
 	ramdisk_module_i=${#RAMDISK_MODULES_LOAD_LIST[@]}
 	while [ ${ramdisk_module_i} -gt 0 ]; do
 		let ramdisk_module_i--
@@ -706,6 +704,11 @@ create_ramdisk_vendor_recovery() {
 function modules_install() {
 	arg1=$1
 
+	if [[ ! -f ${MODULES_SEQUENCE_LIST} ]]; then
+		MODULES_SEQUENCE_LIST=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/scripts/amlogic/modules_sequence_list
+	fi
+	source ${MODULES_SEQUENCE_LIST}
+
 	export OUT_AMLOGIC_DIR=${OUT_AMLOGIC_DIR:-$(readlink -m ${COMMON_OUT_DIR}/amlogic)}
 	echo $OUT_AMLOGIC_DIR
 	rm -rf ${OUT_AMLOGIC_DIR}
@@ -715,14 +718,7 @@ function modules_install() {
 	mkdir -p ${OUT_AMLOGIC_DIR}/symbols
 
 	if [[ ${BAZEL} == "1" ]]; then
-		local output="out/bazel/output_user_root"
-		for dir in `ls ${output}`; do
-			if [[ ${dir} =~ ^[0-9A-Fa-f]*$ ]]; then
-				digit_output=${output}/${dir}
-				break
-			fi
-		done
-
+		BAZEL_OUT=bazel-out/
 		while read module
 		do
 			module_name=${module##*/}
@@ -730,7 +726,7 @@ function modules_install() {
 				if [[ -f ${DIST_DIR}/${module_name} ]]; then
 					cp ${DIST_DIR}/${module_name} ${OUT_AMLOGIC_DIR}/modules
 				else
-					module=`find ${digit_output}/execroot/ -name ${module_name} | grep "amlogic"`
+					module=`find ${BAZEL_OUT} -name ${module_name} | grep "amlogic_modules_install"`
 					cp ${module} ${OUT_AMLOGIC_DIR}/modules
 				fi
 			elif [[ `echo ${module} | grep "^extra\/"` ]]; then
@@ -752,7 +748,7 @@ function modules_install() {
 			fi
 		done < ${DIST_DIR}/modules.load
 
-		dep_file=`find ${digit_output}/execroot/ -name *.dep | grep "amlogic"`
+		dep_file=`find ${BAZEL_OUT} -name *.dep | grep "amlogic"`
 		cp ${dep_file} ${OUT_AMLOGIC_DIR}/modules/full_modules.dep
 		if [[ -n ${ANDROID_PROJECT} ]]; then
 			grep -E "^kernel\/" ${dep_file} > ${OUT_AMLOGIC_DIR}/modules/modules.dep
@@ -763,7 +759,7 @@ function modules_install() {
 			done
 
 			touch ${module} ${OUT_AMLOGIC_DIR}/ext_modules/ext_modules.order
-			for order_file in `find ${digit_output}/execroot/ -name "modules.order.*" | grep "amlogic"`; do
+			for order_file in `find ${BAZEL_OUT} -name "modules.order.*" | grep "amlogic"`; do
 				order_file_dir=${order_file#*/extra/}
 				order_file_dir=${order_file_dir%/modules.order.*}
 				if [[ ! "${EXT_MODULES_ANDROID_AUTO_LOAD}" =~ "${order_file_dir}" ]]; then
@@ -887,7 +883,7 @@ function modules_install() {
 	if [[ ${BAZEL} == "1" ]]; then
 		cp ${DIST_DIR}/vmlinux ${OUT_AMLOGIC_DIR}/symbols
 
-		find ${digit_output}/execroot -name *.ko | grep "unstripped" | while read module; do
+		find ${BAZEL_OUT} -name *.ko | grep "unstripped" | while read module; do
 		        cp ${module} ${OUT_AMLOGIC_DIR}/symbols
 			chmod +w ${OUT_AMLOGIC_DIR}/symbols/$(basename ${module})
 		done

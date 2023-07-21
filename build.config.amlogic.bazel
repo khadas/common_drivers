@@ -52,16 +52,15 @@ function pre_defconfig_cmds() {
 	fi
 
 	if [[ -n ${DEV_CONFIGS} ]]; then
-		config_list=$(echo ${DEV_CONFIGS}|sed 's/+/ /g')
-		#verify the extra config is in the right path and merge the config
+		local config_list=$(echo ${DEV_CONFIGS}|sed 's/+/ /g')
 		for config_name in ${config_list[@]}
 		do
 			if [[ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${config_name} ]]; then
-				KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${config_name}
-			elif [[ -f ${config_name} ]]; then
-				KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${KCONFIG_DEFCONFIG} ${config_name}
+				config_file=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${config_name}
+				KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${KCONFIG_DEFCONFIG} ${config_file}
 			else
 				echo "ERROR: config file ${config_name} is not in the right path!!"
+				exit
 			fi
 		done
 	fi
@@ -81,7 +80,25 @@ function pre_defconfig_cmds() {
 }
 export -f pre_defconfig_cmds
 PRE_DEFCONFIG_CMDS=pre_defconfig_cmds
-POST_DEFCONFIG_CMDS="rm ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}"
+
+function post_defconfig_cmds() {
+	rm -f ${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}
+
+	if [[ -n ${DEV_CONFIGS} ]]; then
+		local config_list=$(echo ${DEV_CONFIGS}|sed 's/+/ /g')
+		for config_name in ${config_list[@]}
+		do
+			if [[ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${config_name} ]]; then
+				rm -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/arm64/configs/${config_name}
+			else
+				echo "ERROR: config file ${config_name} is not in the right path!!"
+				exit
+			fi
+		done
+	fi
+}
+export -f post_defconfig_cmds
+POST_DEFCONFIG_CMDS=post_defconfig_cmds
 
 MAKE_GOALS="
 modules

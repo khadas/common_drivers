@@ -112,10 +112,10 @@ build_part_of_kernel
 
 if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BAZEL} == 1 ]]; then
 	[[ -z ${PREBUILT_GKI} ]] && args="$@ --lto=${LTO}"
+	[[ -z ${GKI_CONFIG} ]] && args="$@ --notrim  --lto=none --nokmi_symbol_list_strict_mode"
+
 	PROJECT_DIR=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/project
 	[[ -d ${PROJECT_DIR} ]] || mkdir -p ${PROJECT_DIR}
-
-	[[ -z ${GKI_CONFIG} ]] && args="$@ --notrim  --lto=none --nokmi_symbol_list_strict_mode"
 
 	pushd ${ROOT_DIR}/${KERNEL_DIR}
 	git checkout android/abi_gki_aarch64_amlogic
@@ -138,7 +138,7 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 	echo "ANDROID_PROJECT=${ANDROID_PROJECT}"	>> ${PROJECT_DIR}/build.config.gki10
 	echo "COMMON_DRIVERS_DIR=${COMMON_DRIVERS_DIR}" >> ${PROJECT_DIR}/build.config.gki10
 	echo "UPGRADE_PROJECT=${UPGRADE_PROJECT}"	>> ${PROJECT_DIR}/build.config.gki10
-	echo "DEV_CONFIGS=${DEV_CONFIGS}"		>> ${PROJECT_DIR}/build.config.gki10
+	echo "DEV_CONFIGS=\"${DEV_CONFIGS}\""		>> ${PROJECT_DIR}/build.config.gki10
 	echo "KASAN=${KASAN}"				>> ${PROJECT_DIR}/build.config.gki10
 	echo "CHECK_GKI_20=${CHECK_GKI_20}"		>> ${PROJECT_DIR}/build.config.gki10
 
@@ -232,6 +232,16 @@ if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" && "${ARCH}" = "arm64" && ${BA
 	source ${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/amlogic_utils.sh
 
 	bazel_extra_cmds
+	if [[ -n ${COPY_DEV_CONFIGS} ]]; then
+		for config_name in ${COPY_DEV_CONFIGS}; do
+			if [[ -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${config_name} ]]; then
+				rm -f ${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/configs/${config_name}
+			else
+				echo "ERROR: config file ${config_name} is not in the right path!!"
+				exit
+			fi
+		done
+	fi
 else
 	if [ "${ABI}" -eq "1" ]; then
 		export OUT_DIR_SUFFIX="_abi"

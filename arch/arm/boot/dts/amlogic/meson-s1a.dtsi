@@ -1665,14 +1665,14 @@
 
 	vclk_serve: vclk_serve {
 		compatible = "amlogic, vclk_serve";
-		status = "disabled";
+		status = "okay";
 		reg = <0xfe008000 0x300    /* ana reg */
 			0xfe000000 0x4a0>; /* clk reg */
 	};
 
 	vdac {
-		compatible = "amlogic, vdac-s4d";
-		status = "disabled";
+		compatible = "amlogic, vdac-s1a";
+		status = "ok";
 	};
 
 	vout: vout {
@@ -1698,10 +1698,10 @@
 	};
 
 	adc: adc {
-		compatible = "amlogic, adc-s4d";
-		status = "disabled";
+		compatible = "amlogic, adc-s1a";
+		status = "ok";
 		reg = <0xff654000 0x2000/* afe reg base */
-			0xfe008000 0x2000/* hiu base */
+			0xfe008000 0x2000/* ana base */
 			>;
 	};
 

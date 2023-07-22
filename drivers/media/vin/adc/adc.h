@@ -77,6 +77,17 @@
 		.vdac_cntl_1 = 0xb1,\
 	}
 
+#define ADC_ADDR_BOX	.adc_addr = {\
+		.dadc_cntl = 0x90,\
+		.dadc_cntl_2 = 0x91,\
+		.dadc_cntl_3 = 0x92,\
+		.dadc_cntl_4 = 0x93,\
+		.s2_dadc_cntl = 0xd0,\
+		.s2_dadc_cntl_2 = 0xd1,\
+		.vdac_cntl_0 = 0xb0,\
+		.vdac_cntl_1 = 0xb1,\
+	}
+
 #define ADC_PLL_ADDR_TL1	.pll_addr = {\
 		.adc_pll_cntl_0 = 0xb0,\
 		.adc_pll_cntl_1 = 0xb1,\
@@ -97,6 +108,17 @@
 		.adc_pll_cntl_5 = 0x9c,\
 		.adc_pll_cntl_6 = 0x9d,\
 		.adc_pll_cntl_7 = 0x9e,\
+	}
+
+#define ADC_PLL_ADDR_BOX	.pll_addr = {\
+		.adc_pll_cntl_0 = 0xc0,\
+		.adc_pll_cntl_1 = 0xc1,\
+		.adc_pll_cntl_2 = 0xc2,\
+		.adc_pll_cntl_3 = 0xc3,\
+		.adc_pll_cntl_4 = 0xc4,\
+		.adc_pll_cntl_5 = 0xc5,\
+		.adc_pll_cntl_6 = 0xc6,\
+		.adc_pll_cntl_7 = 0xc7,\
 	}
 
 enum adc_map_addr {
@@ -126,6 +148,7 @@ enum adc_chip_ver {
 	ADC_CHIP_T5M,
 	ADC_CHIP_T3X,
 	ADC_CHIP_TXHD2,
+	ADC_CHIP_S1A,
 };
 
 struct adc_reg_phy {

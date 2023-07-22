@@ -62,6 +62,7 @@ enum vdac_cpu_type {
 	VDAC_CPU_T5M,
 	VDAC_CPU_T3X,
 	VDAC_CPU_TXHD2,
+	VDAC_CPU_S1A,
 	VDAC_CPU_MAX,
 };
 

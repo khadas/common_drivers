@@ -256,6 +256,19 @@ static struct meson_vdac_data meson_txhd2_vdac_data = {
 };
 #endif
 
+static struct meson_vdac_data meson_s1a_vdac_data = {
+	.cpu_id = VDAC_CPU_S1A,
+	.name = "meson-s1a-vdac",
+
+	.reg_cntl0 = ANACTRL_VDAC_CTRL0,
+	.reg_cntl1 = ANACTRL_VDAC_CTRL1,
+	.reg_vid_clk_ctrl2 = CLKCTRL_VID_CLK_CTRL2,
+	.reg_vid2_clk_div = CLKCTRL_VIID_CLK_DIV,
+	.ctrl_table = vdac_ctrl_enable_s4,
+	.bypass_cfg_cntl0 = 0x00418982, //vlsi suggestion value
+	.cvbsout_cfg_cntl0 = 0x00418982, //vlsi suggestion value
+};
+
 const struct of_device_id meson_vdac_dt_match[] = {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
@@ -315,6 +328,10 @@ const struct of_device_id meson_vdac_dt_match[] = {
 		.data		= &meson_txhd2_vdac_data,
 	},
 #endif
+	{
+		.compatible = "amlogic, vdac-s1a",
+		.data		= &meson_s1a_vdac_data,
+	},
 	{}
 };
 

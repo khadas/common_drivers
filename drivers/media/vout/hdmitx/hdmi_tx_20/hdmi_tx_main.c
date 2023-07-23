@@ -7234,7 +7234,6 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	struct hdmitx_common *tx_comm = &hdev->tx_comm;
 
 	pr_debug(SYS "%s start\n", __func__);
-	hdmi_format_list_init();
 	hdmitx_common_init(tx_comm);
 	amhdmitx_device_init(hdev, get_hdmitx_boot_params());
 

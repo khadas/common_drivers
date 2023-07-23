@@ -504,9 +504,6 @@ extern unsigned int hsty_hdmiaud_config_loc, hsty_hdmiaud_config_num;
 int hdmitx_construct_vsif(struct hdmitx_common *tx_comm,
 	enum vsif_type type, int on, void *param);
 
-/*TODO: temp for refact, will remove later.*/
-int hdmi_format_list_init(void);
-
 /* if vic is 93 ~ 95, or 98 (HDMI14 4K), return 1 */
 bool is_hdmi14_4k(enum hdmi_vic vic);
 

@@ -169,20 +169,6 @@ enum hdmi_tf_type {
 #define HDMI_1080p120           HDMI_1920x1080p120_16x9
 #define HDMI_480p60_16x9_rpt    HDMI_2880x480p60_16x9
 #define HDMI_576p50_16x9_rpt    HDMI_2880x576p50_16x9
-#define HDMI_4k2k_24            HDMI_3840x2160p24_16x9
-#define HDMI_4k2k_25            HDMI_3840x2160p25_16x9
-#define HDMI_4k2k_30            HDMI_3840x2160p30_16x9
-#define HDMI_4k2k_50            HDMI_3840x2160p50_16x9
-#define HDMI_4k2k_60            HDMI_3840x2160p60_16x9
-#define HDMI_4k2k_smpte_24      HDMI_4096x2160p24_256x135
-#define HDMI_4k2k_smpte_50      HDMI_4096x2160p50_256x135
-#define HDMI_4k2k_smpte_60      HDMI_4096x2160p60_256x135
-
-/* for Y420 modes*/
-#define HDMI_4k2k_50_y420       HDMI_3840x2160p50_16x9_Y420
-#define HDMI_4k2k_60_y420       HDMI_3840x2160p60_16x9_Y420
-#define HDMI_4k2k_smpte_50_y420 HDMI_4096x2160p50_256x135_Y420
-#define HDMI_4k2k_smpte_60_y420 HDMI_4096x2160p60_256x135_Y420
 
 enum hdmi_phy_para {
 	HDMI_PHYPARA_6G = 1, /* 2160p60hz 444 8bit */

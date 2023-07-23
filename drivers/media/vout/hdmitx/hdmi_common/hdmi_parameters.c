@@ -848,128 +848,6 @@ static struct hdmi_format_para fmt_para_720x576i50_16x9 = {
 	},
 };
 
-/* the following are for Y420 mode*/
-
-static struct hdmi_format_para fmt_para_3840x2160p50_16x9_y420 = {
-	.timing = {
-		.vic = HDMI_3840x2160p50_16x9_Y420,
-		.name = "3840x2160p50hz420",
-		.sname = "2160p50hz420",
-		.pixel_repetition_factor = 0,
-		.pi_mode = 1,
-		.pixel_freq = 594000,
-		.h_freq = 112500,
-		.v_freq = 50000,
-		.v_pol = 1,
-		.h_pol = 1,
-		.h_pict = 16,
-		.v_pict = 9,
-		.h_active = 3840,
-		.h_total = 5280,
-		.h_blank = 1440,
-		.h_front = 1056,
-		.h_sync = 88,
-		.h_back = 296,
-		.v_active = 2160,
-		.v_total = 2250,
-		.v_blank = 90,
-		.v_front = 8,
-		.v_sync = 10,
-		.v_back = 72,
-		.v_sync_ln = 1,
-	},
-};
-
-static struct hdmi_format_para fmt_para_4096x2160p50_256x135_y420 = {
-	.timing = {
-		.vic = HDMI_4096x2160p50_256x135_Y420,
-		.name = "4096x2160p50hz420",
-		.sname = "smpte50hz420",
-		.pixel_repetition_factor = 0,
-		.pi_mode = 1,
-		.pixel_freq = 594000,
-		.h_freq = 112500,
-		.v_freq = 50000,
-		.v_pol = 1,
-		.h_pol = 1,
-		.h_pict = 16,
-		.v_pict = 9,
-		.h_active = 4096,
-		.h_total = 5280,
-		.h_blank = 1184,
-		.h_front = 968,
-		.h_sync = 88,
-		.h_back = 296,
-		.v_active = 2160,
-		.v_total = 2250,
-		.v_blank = 90,
-		.v_front = 8,
-		.v_sync = 10,
-		.v_back = 72,
-		.v_sync_ln = 1,
-	},
-};
-
-static struct hdmi_format_para fmt_para_3840x2160p60_16x9_y420 = {
-	.timing = {
-		.vic = HDMI_3840x2160p60_16x9_Y420,
-		.name = "3840x2160p60hz420",
-		.sname = "2160p60hz420",
-		.pixel_repetition_factor = 0,
-		.pi_mode = 1,
-		.pixel_freq = 594000,
-		.h_freq = 135000,
-		.v_freq = 60000,
-		.v_pol = 1,
-		.h_pol = 1,
-		.h_pict = 16,
-		.v_pict = 9,
-		.h_active = 3840,
-		.h_total = 4400,
-		.h_blank = 560,
-		.h_front = 176,
-		.h_sync = 88,
-		.h_back = 296,
-		.v_active = 2160,
-		.v_total = 2250,
-		.v_blank = 90,
-		.v_front = 8,
-		.v_sync = 10,
-		.v_back = 72,
-		.v_sync_ln = 1,
-	},
-};
-
-static struct hdmi_format_para fmt_para_4096x2160p60_256x135_y420 = {
-	.timing = {
-		.vic = HDMI_4096x2160p60_256x135_Y420,
-		.name = "4096x2160p60hz420",
-		.sname = "smpte60hz420",
-		.pixel_repetition_factor = 0,
-		.pi_mode = 1,
-		.pixel_freq = 594000,
-		.h_freq = 135000,
-		.v_freq = 60000,
-		.v_pol = 1,
-		.h_pol = 1,
-		.h_pict = 16,
-		.v_pict = 9,
-		.h_active = 4096,
-		.h_total = 4400,
-		.h_blank = 304,
-		.h_front = 88,
-		.h_sync = 88,
-		.h_back = 128,
-		.v_active = 2160,
-		.v_total = 2250,
-		.v_blank = 90,
-		.v_front = 8,
-		.v_sync = 10,
-		.v_back = 72,
-		.v_sync_ln = 1,
-	},
-};
-
 static struct hdmi_format_para fmt_para_non_hdmi_fmt = {
 	.timing = {
 		.vic = HDMI_UNKNOWN,
@@ -1901,10 +1779,6 @@ static struct hdmi_format_para *all_fmt_paras[] = {
 	&fmt_para_720x480i60_4x3,
 	&fmt_para_720x576p50_4x3,
 	&fmt_para_720x576i50_4x3,
-	&fmt_para_3840x2160p60_16x9_y420,
-	&fmt_para_4096x2160p60_256x135_y420,
-	&fmt_para_3840x2160p50_16x9_y420,
-	&fmt_para_4096x2160p50_256x135_y420,
 	&fmt_para_2560x1080p50_64x27,
 	&fmt_para_2560x1080p60_64x27,
 	&fmt_para_vesa_640x480p60_4x3,
@@ -1989,11 +1863,7 @@ int hdmi_format_list_init(void)
 		all_fmt_paras[i]->vic = t->vic;
 
 		all_fmt_paras[i]->tmds_clk = t->pixel_freq;
-		if (t->vic == HDMIV_2560x1600p60hz ||
-			t->vic == HDMI_3840x2160p60_16x9_Y420 ||
-			t->vic == HDMI_4096x2160p60_256x135_Y420 ||
-			t->vic == HDMI_3840x2160p50_16x9_Y420 ||
-			t->vic == HDMI_4096x2160p50_256x135_Y420) {
+		if (t->vic == HDMIV_2560x1600p60hz) {
 			all_fmt_paras[i]->tmds_clk_div40 = 0;
 			all_fmt_paras[i]->scrambler_en = 0;
 		} else {
@@ -2294,7 +2164,6 @@ static void hdmi_parse_attr(struct hdmi_format_para *para, char const *name)
 /*
  * Parameter 'name' can be 1080p60hz, or 1920x1080p60hz
  * or 3840x2160p60hz, 2160p60hz
- * or 3840x2160p60hz420, 2160p60hz420 (Y420 mode)
  */
 const struct hdmi_format_para *hdmi_get_fmt_name(char const *name, char const *attr)
 {
@@ -3027,10 +2896,14 @@ bool is_hdmi14_4k(enum hdmi_vic vic)
 	return ret;
 }
 
-bool is_hdmi4k_420(enum hdmi_vic vic)
+bool is_hdmi4k_support_420(enum hdmi_vic vic)
 {
-	if ((vic & HDMITX_VIC420_OFFSET) == HDMITX_VIC420_OFFSET)
-		return 1;
-	return 0;
+	if (vic == HDMI_4096x2160p60_256x135 ||
+		vic == HDMI_4096x2160p50_256x135 ||
+		vic == HDMI_3840x2160p60_16x9 ||
+		vic == HDMI_3840x2160p50_16x9)
+		return true;
+
+	return false;
 }
 

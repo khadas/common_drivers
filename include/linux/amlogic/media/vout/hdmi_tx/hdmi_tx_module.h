@@ -510,8 +510,11 @@ int hdmi_format_list_init(void);
 /* if vic is 93 ~ 95, or 98 (HDMI14 4K), return 1 */
 bool is_hdmi14_4k(enum hdmi_vic vic);
 
-/* if 4k is Y420, return 1 */
-bool is_hdmi4k_420(enum hdmi_vic vic);
+/* if 4k can support Y420, return 1.
+ * when current cs == 420, and vic can support 420,
+ * current output is 4k420 mode.
+ */
+bool is_hdmi4k_support_420(enum hdmi_vic vic);
 
 /* the hdmitx output limits to 1080p */
 bool hdmitx_limited_1080p(void);

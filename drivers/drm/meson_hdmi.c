@@ -292,7 +292,7 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 	bool vrr_cap;
 	struct edid *edid;
 	int *vics;
-	int count = 0, i = 0, len = 0;
+	int count = 0, i = 0;
 	int ret;
 	struct drm_display_mode *mode, *pref_mode = NULL;
 	struct drm_hdmitx_timing_para para;
@@ -337,16 +337,6 @@ int meson_hdmitx_get_modes(struct drm_connector *connector)
 			strp = strstr(mode->name, "_4x3");
 			if (strp)
 				*strp = '\0';
-			/*
-			 * filter 4k420 mode, 4k420 mode end with "420"
-			 * 2160p60hz420 to 2160p60hz
-			 */
-			strp = strstr(mode->name, "420");
-			if (strp) {
-				len = strlen(mode->name) - strlen("420");
-				if (!strcmp(mode->name + len, "420"))
-					*strp = '\0';
-			}
 
 			mode->type = DRM_MODE_TYPE_DRIVER;
 			mode->clock = para.pixel_freq;

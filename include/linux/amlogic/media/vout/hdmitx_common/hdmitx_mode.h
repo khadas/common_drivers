@@ -11,19 +11,10 @@
 
 /* half for valid vic, half for vic with y420*/
 #define VIC_MAX_NUM 512
-
 #define VESA_MAX_TIMING 64
 #define Y420_VIC_MAX_NUM 6 /* only 6 4k mode for y420 */
 
-/* HDMITX_VIC_MASK are associated with
- * VIC_MAX_VALID_MODE and VIC_MAX_NUM in hdmi_tx_module.h
- */
 #define HDMITX_VESA_OFFSET	0x300
-
-/* HDMITX_VIC420_OFFSET and HDMITX_VIC_MASK are associated with
- * VIC_MAX_VALID_MODE and VIC_MAX_NUM in hdmi_tx_module.h
- */
-#define HDMITX_VIC_MASK			0xff
 
 enum hdmi_vic {
 	/* Refer to CEA 861-D */
@@ -184,24 +175,6 @@ enum hdmi_vic {
 	HDMI_218_4096x2160p100_256x135	= 218,
 	HDMI_219_4096x2160p120_256x135	= 219,
 	HDMI_CEA_VIC_END,
-
-	/* !!!DONT USE IT ANYMORE, WILL REMOVE LATER.
-	 * start from 0x200, the following vic is for those y420 mode
-	 * and they has same vic with normal vic in the lower bytes.
-	 */
-	HDMITX_VIC420_OFFSET			= 0x100,
-	HDMI_3840x2160p50_16x9_Y420		=
-		HDMITX_VIC420_OFFSET + HDMI_96_3840x2160p50_16x9,
-	HDMI_3840x2160p60_16x9_Y420		=
-		HDMITX_VIC420_OFFSET + HDMI_97_3840x2160p60_16x9,
-	HDMI_4096x2160p50_256x135_Y420	=
-		HDMITX_VIC420_OFFSET + HDMI_101_4096x2160p50_256x135,
-	HDMI_4096x2160p60_256x135_Y420	=
-		HDMITX_VIC420_OFFSET + HDMI_102_4096x2160p60_256x135,
-	HDMI_3840x2160p50_64x27_Y420	=
-		HDMITX_VIC420_OFFSET + HDMI_106_3840x2160p50_64x27,
-	HDMI_3840x2160p60_64x27_Y420	=
-		HDMITX_VIC420_OFFSET + HDMI_107_3840x2160p60_64x27,
 
 	/*FAKE VIC*/
 	HDMI_VIC_FAKE = 0X200,

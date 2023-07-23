@@ -668,12 +668,6 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_24[] = {
 	  HDMI_4096x2160p50_256x135,
 	  HDMI_VIC_END},
 		5940000, 1, 1, 2, VID_PLL_DIV_5, 1, 1, 1, -1},
-	{{HDMI_4096x2160p60_256x135_Y420,
-	  HDMI_4096x2160p50_256x135_Y420,
-	  HDMI_3840x2160p60_16x9_Y420,
-	  HDMI_3840x2160p50_16x9_Y420,
-	  HDMI_VIC_END},
-		5940000, 2, 1, 1, VID_PLL_DIV_5, 1, 2, 1, -1},
 	{{HDMI_VIC_FAKE,
 	  HDMI_VIC_END},
 		3450000, 1, 2, 2, VID_PLL_DIV_5, 1, 1, 1, -1},
@@ -754,6 +748,15 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_24[] = {
 		4830000, 2, 1, 1, VID_PLL_DIV_5, 2, 1, 1, -1},
 };
 
+static struct hw_enc_clk_val_group setting_enc_clk_val_420_24[] = {
+	{{HDMI_4096x2160p60_256x135,
+	  HDMI_4096x2160p50_256x135,
+	  HDMI_3840x2160p60_16x9,
+	  HDMI_3840x2160p50_16x9,
+	  HDMI_VIC_END},
+		5940000, 2, 1, 1, VID_PLL_DIV_5, 1, 2, 1, -1},
+};
+
 /* For colordepth 10bits */
 static struct hw_enc_clk_val_group setting_enc_clk_val_30[] = {
 	{{HDMI_720x480i60_16x9, HDMI_720x480i60_4x3,
@@ -787,10 +790,10 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_30[] = {
 	{{HDMI_2560x1080p60_64x27,
 	  HDMI_VIC_END},
 		4950000, 1, 2, 2, VID_PLL_DIV_6p25, 1, 1, 1, -1},
-	{{HDMI_4096x2160p60_256x135_Y420,
-	  HDMI_4096x2160p50_256x135_Y420,
-	  HDMI_3840x2160p60_16x9_Y420,
-	  HDMI_3840x2160p50_16x9_Y420,
+	{{HDMI_4096x2160p60_256x135,
+	  HDMI_4096x2160p50_256x135,
+	  HDMI_3840x2160p60_16x9,
+	  HDMI_3840x2160p50_16x9,
 	  HDMI_VIC_END},
 		3712500, 1, 1, 1, VID_PLL_DIV_6p25, 1, 2, 1, -1},
 	{{HDMI_3840x2160p24_16x9,
@@ -840,10 +843,10 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_36[] = {
 	  HDMI_1920x1080p25_16x9,
 	  HDMI_VIC_END},
 		4455000, 2, 2, 2, VID_PLL_DIV_7p5, 1, 1, 1, -1},
-	{{HDMI_4096x2160p60_256x135_Y420,
-	  HDMI_4096x2160p50_256x135_Y420,
-	  HDMI_3840x2160p60_16x9_Y420,
-	  HDMI_3840x2160p50_16x9_Y420,
+	{{HDMI_4096x2160p60_256x135,
+	  HDMI_4096x2160p50_256x135,
+	  HDMI_3840x2160p60_16x9,
+	  HDMI_3840x2160p50_16x9,
 	  HDMI_VIC_END},
 		4455000, 1, 1, 2, VID_PLL_DIV_3p25, 1, 2, 1, -1},
 	{{HDMI_3840x2160p24_16x9,
@@ -944,10 +947,23 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_3dfp_enc_clk_val)
 			/ sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("Not find VIC = %d for hpll setting\n", vic);
+			pr_info("%d:Not find VIC = %d for hpll setting\n",
+				__LINE__, vic);
 			return;
 		}
 	} else if (cd == COLORDEPTH_24B) {
+		if (cs == HDMI_COLORSPACE_YUV420) {
+			p_enc = &setting_enc_clk_val_420_24[0];
+			for (j = 0; j < sizeof(setting_enc_clk_val_420_24)
+				/ sizeof(struct hw_enc_clk_val_group); j++) {
+				for (i = 0; ((i < GROUP_MAX) && (p_enc[j].group[i]
+					!= HDMI_VIC_END)); i++) {
+					if (vic == p_enc[j].group[i])
+						goto next;
+				}
+			}
+		}
+
 		p_enc = &setting_enc_clk_val_24[0];
 		for (j = 0; j < sizeof(setting_enc_clk_val_24)
 			/ sizeof(struct hw_enc_clk_val_group); j++) {
@@ -959,10 +975,17 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_enc_clk_val_24)
 			/ sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("Not find VIC = %d for hpll setting\n", vic);
+			pr_info("%d:Not find VIC = %d for hpll setting\n",
+				__LINE__, vic);
 			return;
 		}
 	} else if (cd == COLORDEPTH_30B) {
+		if (is_hdmi4k_support_420(vic) && cs != HDMI_COLORSPACE_YUV420) {
+			pr_err("%s:%d got non420 4k (%d, %d, 30B)\n",
+				__func__, __LINE__, vic, cs);
+			return;
+		}
+
 		p_enc = &setting_enc_clk_val_30[0];
 		for (j = 0; j < sizeof(setting_enc_clk_val_30)
 			/ sizeof(struct hw_enc_clk_val_group); j++) {
@@ -974,10 +997,17 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_enc_clk_val_30) /
 			sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("Not find VIC = %d for hpll setting\n", vic);
+			pr_info("%d:Not find VIC = %d for hpll setting\n",
+				__LINE__, vic);
 			return;
 		}
 	} else if (cd == COLORDEPTH_36B) {
+		if (is_hdmi4k_support_420(vic) && cs != HDMI_COLORSPACE_YUV420) {
+			pr_err("%s:%d got non420 4k (%d, %d, 36B)\n",
+				__func__, __LINE__, vic, cs);
+			return;
+		}
+
 		p_enc = &setting_enc_clk_val_36[0];
 		for (j = 0; j < sizeof(setting_enc_clk_val_36)
 			/ sizeof(struct hw_enc_clk_val_group); j++) {
@@ -989,7 +1019,8 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev,
 		}
 		if (j == sizeof(setting_enc_clk_val_36) /
 			sizeof(struct hw_enc_clk_val_group)) {
-			pr_info("Not find VIC = %d for hpll setting\n", vic);
+			pr_info("%d:Not find VIC = %d for hpll setting\n",
+				__LINE__, vic);
 			return;
 		}
 	} else {

@@ -182,6 +182,28 @@ static void store_cea_idx(struct rx_cap *prxcap, enum hdmi_vic vic)
 	}
 }
 
+static void store_y420_idx(struct rx_cap *prxcap, enum hdmi_vic vic)
+{
+	int i;
+	int already = 0;
+
+	/* Y420 is claimed in Y420VDB, y420_vic[] will list in dc_cap */
+	for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
+		if (vic == prxcap->y420_vic[i]) {
+			already = 1;
+			break;
+		}
+	}
+	if (!already) {
+		for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
+			if (prxcap->y420_vic[i] == 0) {
+				prxcap->y420_vic[i] = vic;
+				break;
+			}
+		}
+	}
+}
+
 static void edid_established_timings(struct rx_cap *prxcap, unsigned char *data)
 {
 	if (data[0] & (1 << 5))
@@ -611,7 +633,6 @@ static int edid_parsingy420vdb(struct rx_cap *prxcap,
 {
 	unsigned char tag = 0, ext_tag = 0, data_end = 0;
 	unsigned int pos = 0;
-	int i = 0, found = 0;
 
 	tag = (buf[pos] >> 5) & 0x7;
 	data_end = (buf[pos] & 0x1f) + 1;
@@ -624,22 +645,9 @@ static int edid_parsingy420vdb(struct rx_cap *prxcap,
 	pos++;
 	while (pos < data_end) {
 		if (prxcap->VIC_count < VIC_MAX_NUM) {
-			for (i = 0; i < prxcap->VIC_count; i++) {
-				if (prxcap->VIC[i] == buf[pos] &&
-				    Y420VicRight(buf[pos])) {
-					prxcap->VIC[i] =
-					HDMITX_VIC420_OFFSET + buf[pos];
-					found = 1;
-					/* Here we do not break,because
-					 *	some EDID may have the same
-					 *	repeated VICs
-					 */
-				}
-			}
-			if (found == 0) {
-				prxcap->VIC[prxcap->VIC_count] =
-				HDMITX_VIC420_OFFSET + buf[pos];
-				prxcap->VIC_count++;
+			if (Y420VicRight(buf[pos])) {
+				store_cea_idx(prxcap, buf[pos]);
+				store_y420_idx(prxcap, buf[pos]);
 			}
 		}
 		pos++;
@@ -929,6 +937,7 @@ static int edid_y420cmdb_postprocess(struct hdmitx_dev *hdmitx_device)
 	struct rx_cap *rxcap = &hdmitx_device->tx_comm.rxcap;
 	struct hdmitx_info *info = &hdmitx_device->hdmi_info;
 	unsigned char *p = NULL;
+	u32 vic;
 
 	if (info->y420_all_vic == 1)
 		edid_y420cmdb_fill_all_vic(hdmitx_device);
@@ -940,11 +949,11 @@ static int edid_y420cmdb_postprocess(struct hdmitx_dev *hdmitx_device)
 		p = &info->y420cmdb_bitmap[i];
 		for (j = 0; j < 8; j++) {
 			valid = ((*p >> j) & 0x1);
+			vic = rxcap->VIC[i * 8 + j];
 			if (valid != 0 &&
 			    Y420VicRight(rxcap->VIC[i * 8 + j])) {
-				rxcap->VIC[rxcap->VIC_count] =
-				HDMITX_VIC420_OFFSET + rxcap->VIC[i * 8 + j];
-				rxcap->VIC_count++;
+				store_cea_idx(rxcap, vic);
+				store_y420_idx(rxcap, vic);
 			}
 		}
 	}
@@ -1072,13 +1081,13 @@ static void hdmitx_edid_4k2k_parse(struct rx_cap *prxcap, unsigned char *dat,
 	}
 	while (size--) {
 		if (*dat == 1)
-			prxcap->VIC[prxcap->VIC_count] = HDMI_4k2k_30;
+			prxcap->VIC[prxcap->VIC_count] = HDMI_3840x2160p30_16x9;
 		else if (*dat == 2)
-			prxcap->VIC[prxcap->VIC_count] = HDMI_4k2k_25;
+			prxcap->VIC[prxcap->VIC_count] = HDMI_3840x2160p25_16x9;
 		else if (*dat == 3)
-			prxcap->VIC[prxcap->VIC_count] = HDMI_4k2k_24;
+			prxcap->VIC[prxcap->VIC_count] = HDMI_3840x2160p24_16x9;
 		else if (*dat == 4)
-			prxcap->VIC[prxcap->VIC_count] = HDMI_4k2k_smpte_24;
+			prxcap->VIC[prxcap->VIC_count] = HDMI_4096x2160p24_256x135;
 		else
 			;
 		dat++;
@@ -2277,20 +2286,16 @@ static struct dispmode_vic dispmode_vic_tab[] = {
 	{"1080p120hz", HDMI_1080p120},
 	{"2560x1080p50hz", HDMI_2560x1080p50_64x27},
 	{"2560x1080p60hz", HDMI_2560x1080p60_64x27},
-	{"2160p30hz", HDMI_4k2k_30},
-	{"2160p25hz", HDMI_4k2k_25},
-	{"2160p24hz", HDMI_4k2k_24},
-	{"smpte24hz", HDMI_4k2k_smpte_24},
+	{"2160p30hz", HDMI_3840x2160p30_16x9},
+	{"2160p25hz", HDMI_3840x2160p25_16x9},
+	{"2160p24hz", HDMI_3840x2160p24_16x9},
+	{"smpte24hz", HDMI_4096x2160p24_256x135},
 	{"smpte25hz", HDMI_4096x2160p25_256x135},
 	{"smpte30hz", HDMI_4096x2160p30_256x135},
-	{"smpte50hz420", HDMI_4096x2160p50_256x135_Y420},
-	{"smpte60hz420", HDMI_4096x2160p60_256x135_Y420},
-	{"2160p60hz420", HDMI_3840x2160p60_16x9_Y420},
-	{"2160p50hz420", HDMI_3840x2160p50_16x9_Y420},
 	{"smpte50hz", HDMI_4096x2160p50_256x135},
 	{"smpte60hz", HDMI_4096x2160p60_256x135},
-	{"2160p60hz", HDMI_4k2k_60},
-	{"2160p50hz", HDMI_4k2k_50},
+	{"2160p60hz", HDMI_3840x2160p60_16x9},
+	{"2160p50hz", HDMI_3840x2160p50_16x9},
 	{"640x480p60hz", HDMIV_640x480p60hz},
 	{"800x480p60hz", HDMIV_800x480p60hz},
 	{"800x600p60hz", HDMIV_800x600p60hz},
@@ -2384,25 +2389,20 @@ const char *hdmitx_edid_vic_to_string(enum hdmi_vic vic)
 	return disp_str;
 }
 
-static bool is_rx_support_y420(struct hdmitx_dev *hdev)
+static bool is_rx_support_y420(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 {
-	enum hdmi_vic vic = HDMI_UNKNOWN;
+	int i;
+	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
 
-	vic = hdmitx_edid_get_VIC(hdev, "2160p60hz420", 0);
-	if (vic != HDMI_UNKNOWN)
-		return 1;
+	if (!is_hdmi4k_support_420(vic))
+		return 0;
 
-	vic = hdmitx_edid_get_VIC(hdev, "2160p50hz420", 0);
-	if (vic != HDMI_UNKNOWN)
-		return 1;
+	for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
+		if (prxcap->y420_vic[i] == vic)
+			return 1;
+	}
 
-	vic = hdmitx_edid_get_VIC(hdev, "smpte60hz420", 0);
-	if (vic != HDMI_UNKNOWN)
-		return 1;
-
-	vic = hdmitx_edid_get_VIC(hdev, "smpte50hz420", 0);
-	if (vic != HDMI_UNKNOWN)
-		return 1;
+	/*ToDo: sync with tx21 is_rx_support_y420() function later.*/
 
 	return 0;
 }
@@ -2616,7 +2616,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 		return valid;
 	}
 	if (para->cs == HDMI_COLORSPACE_YUV420) {
-		if (!is_rx_support_y420(hdev))
+		if (!is_rx_support_y420(hdev, para->vic))
 			return 0;
 		if (!prxcap->dc_30bit_420)
 			if (para->cd == COLORDEPTH_30B)

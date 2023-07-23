@@ -519,13 +519,13 @@ static  int  set_disp_mode(const char *mode)
 
 	vic = hdmitx_edid_get_VIC(&hdmitx_device, mode, 1);
 	if (strncmp(mode, "2160p30hz", strlen("2160p30hz")) == 0)
-		vic = HDMI_4k2k_30;
+		vic = HDMI_3840x2160p30_16x9;
 	else if (strncmp(mode, "2160p25hz", strlen("2160p25hz")) == 0)
-		vic = HDMI_4k2k_25;
+		vic = HDMI_3840x2160p25_16x9;
 	else if (strncmp(mode, "2160p24hz", strlen("2160p24hz")) == 0)
-		vic = HDMI_4k2k_24;
+		vic = HDMI_3840x2160p24_16x9;
 	else if (strncmp(mode, "smpte24hz", strlen("smpte24hz")) == 0)
-		vic = HDMI_4k2k_smpte_24;
+		vic = HDMI_4096x2160p24_256x135;
 	else
 		;/* nothing */
 
@@ -747,16 +747,6 @@ static int set_disp_mode_auto(void)
 		}
 	}
 
-	/* In the file hdmi_common/hdmi_parameters.c,
-	 * the data array all_fmt_paras[] treat 2160p60hz and 2160p60hz420
-	 * as two different modes, such Scrambler
-	 * So if node "attr" contains 420, need append 420 to mode.
-	 */
-	if (strstr(tx_comm->fmt_attr, "420")) {
-		if (!strstr(mode, "420"))
-			strcat(mode, "420");
-	}
-
 	update_para_from_mode(hdev, mode,
 		hdev->tx_comm.fmt_attr, &hdev->tx_comm.fmt_para);
 	if (!hdmitx_edid_check_valid_mode(hdev, para)) {
@@ -779,16 +769,16 @@ static int set_disp_mode_auto(void)
 	}
 
 	if (strncmp(info->name, "2160p30hz", strlen("2160p30hz")) == 0) {
-		vic = HDMI_4k2k_30;
+		vic = HDMI_3840x2160p30_16x9;
 	} else if (strncmp(info->name, "2160p25hz",
 		strlen("2160p25hz")) == 0) {
-		vic = HDMI_4k2k_25;
+		vic = HDMI_3840x2160p25_16x9;
 	} else if (strncmp(info->name, "2160p24hz",
 		strlen("2160p24hz")) == 0) {
-		vic = HDMI_4k2k_24;
+		vic = HDMI_3840x2160p24_16x9;
 	} else if (strncmp(info->name, "smpte24hz",
 		strlen("smpte24hz")) == 0) {
-		vic = HDMI_4k2k_smpte_24;
+		vic = HDMI_4096x2160p24_256x135;
 	} else {
 	/* nothing */
 	}
@@ -796,7 +786,7 @@ static int set_disp_mode_auto(void)
 	hdmitx_pre_display_init();
 
 	hdev->tx_comm.cur_VIC = HDMI_UNKNOWN;
-/* if vic is HDMI_UNKNOWN, hdmitx_set_display will disable HDMI */
+	/* if vic is HDMI_UNKNOWN, hdmitx_set_display will disable HDMI */
 	ret = hdmitx_set_display(hdev, vic);
 
 	if (ret >= 0) {
@@ -3435,39 +3425,26 @@ static int hdmi_hdr_status_to_drm(void)
 static ssize_t dc_cap_show(struct device *dev,
 			   struct device_attribute *attr, char *buf)
 {
-	enum hdmi_vic vic = HDMI_UNKNOWN;
 	int pos = 0;
 	struct rx_cap *prxcap = &hdmitx_device.tx_comm.rxcap;
 	const struct dv_info *dv = &hdmitx_device.tx_comm.rxcap.dv_info;
 	const struct dv_info *dv2 = &hdmitx_device.tx_comm.rxcap.dv_info2;
 	struct hdmitx_dev *hdev = &hdmitx_device;
+	int i;
 
 	if (prxcap->dc_36bit_420)
 		pos += snprintf(buf + pos, PAGE_SIZE, "420,12bit\n");
 	if (prxcap->dc_30bit_420)
 		pos += snprintf(buf + pos, PAGE_SIZE, "420,10bit\n");
 
-	vic = hdmitx_edid_get_VIC(&hdmitx_device, "2160p60hz420", 0);
-	if (vic != HDMI_UNKNOWN) {
-		pos += snprintf(buf + pos, PAGE_SIZE, "420,8bit\n");
-		goto next444;
+	for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
+		if (prxcap->y420_vic[i]) {
+			pos += snprintf(buf + pos, PAGE_SIZE,
+				"420,8bit\n");
+			break;
+		}
 	}
-	vic = hdmitx_edid_get_VIC(&hdmitx_device, "2160p50hz420", 0);
-	if (vic != HDMI_UNKNOWN) {
-		pos += snprintf(buf + pos, PAGE_SIZE, "420,8bit\n");
-		goto next444;
-	}
-	vic = hdmitx_edid_get_VIC(&hdmitx_device, "smpte60hz420", 0);
-	if (vic != HDMI_UNKNOWN) {
-		pos += snprintf(buf + pos, PAGE_SIZE, "420,8bit\n");
-		goto next444;
-	}
-	vic = hdmitx_edid_get_VIC(&hdmitx_device, "smpte50hz420", 0);
-	if (vic != HDMI_UNKNOWN) {
-		pos += snprintf(buf + pos, PAGE_SIZE, "420,8bit\n");
-		goto next444;
-	}
-next444:
+
 	if (prxcap->native_Mode & (1 << 5)) {
 		if (prxcap->dc_y444) {
 			if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2 ||

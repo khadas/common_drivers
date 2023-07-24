@@ -1725,6 +1725,34 @@ static ssize_t dummy_encp_debug_store(struct class *class,
 	return count;
 }
 
+static ssize_t dummy_encp_projector_fps_store(struct class *class,
+				      struct class_attribute *attr,
+				      const char *buf, size_t count)
+{
+	int ret;
+	int projector_fps_ctl;
+
+	ret = kstrtoint(buf, 10, &projector_fps_ctl);
+	if (ret)
+		return -EINVAL;
+
+	if (projector_fps_ctl == 1) {
+		pr_info("split vs change 60fps/60fps to 30fps/60fps\n");
+		vout_vcbus_setb(VIU_MISC_CTRL0, 1, 12, 1);
+	} else {
+		pr_info("split vs change 30fps/60fps to 60fps/60fps\n");
+		vout_vcbus_setb(VIU_MISC_CTRL0, 0, 12, 1);
+	}
+
+	return count;
+}
+
+static ssize_t dummy_encp_projector_fps_show(struct class *class,
+				     struct class_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", vout_vcbus_getb(VIU_MISC_CTRL0, 12, 1));
+}
+
 static ssize_t dummy_enci_debug_store(struct class *class,
 				      struct class_attribute *attr,
 				      const char *buf, size_t count)
@@ -1798,6 +1826,8 @@ static ssize_t dummy_encl_debug_store(struct class *class,
 static struct class_attribute dummy_venc_class_attrs[] = {
 	__ATTR(encp, 0644,
 	       dummy_venc_debug_show, dummy_encp_debug_store),
+	__ATTR(encp_projector_fps, 0644,
+	       dummy_encp_projector_fps_show, dummy_encp_projector_fps_store),
 	__ATTR(enci, 0644,
 	       dummy_venc_debug_show, dummy_enci_debug_store),
 	__ATTR(encl, 0644,

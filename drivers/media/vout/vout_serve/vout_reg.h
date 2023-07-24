@@ -231,6 +231,7 @@
 #define ENCP_VIDEO_MATRIX_CB                       0x1bbb
 #define ENCP_VIDEO_MATRIX_CR                       0x1bbc
 #define ENCP_VIDEO_RGBIN_CTRL                      0x1bbd
+#define VIU_MISC_CTRL0				   0x1a06
 
 #define VPU_VENC_CTRL                              0x1cef
 

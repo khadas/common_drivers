@@ -332,6 +332,8 @@ static void secure_heap_dma_buf_release(struct dma_buf *dmabuf)
 	if (!buffer)
 		return;
 
+	pr_dbg("<%s %d> thread (%s, %d) %d\n", __func__, __LINE__,
+		current->comm, current->pid, current->tgid);
 	mutex_lock(&buffer->lock);
 	block = buffer->block;
 	if (block) {

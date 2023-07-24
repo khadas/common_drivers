@@ -121,6 +121,7 @@ struct secure_pool_info {
 
 typedef int (*decode_info)(struct dmx_demux *demux, void *info);
 static long dmabuf_manage_release_channel(u32 id_high, u32 id_low);
+static int dmabuf_manage_release_dmabufheap_resource(struct secure_pool_info *release_pool);
 
 struct dmx_filter_info {
 	struct list_head list;
@@ -220,6 +221,7 @@ static int dmabuf_manage_attach(struct dma_buf *dbuf, struct dma_buf_attachment 
 		pr_error("kzalloc failed\n");
 		goto error;
 	}
+
 	if (block->type == DMA_BUF_TYPE_DMX_ES) {
 		es = (struct dmabuf_dmx_sec_es_data *)block->priv;
 		if (es->data_end < es->data_start)
@@ -1252,6 +1254,7 @@ static int dmabuf_manage_secmem_pool_init(u32 id_high, u32 id_low, u32 block_siz
 
 	*pool_addr = pool->pool_addr;
 	*pool_size = pool->pool_size;
+
 	INIT_LIST_HEAD(&pool->block_node);
 	list_add_tail(&pool->node, &pool_list);
 	return 0;
@@ -1403,9 +1406,6 @@ static long dmabuf_manage_register_channel(unsigned long args)
 	mutex_lock(&g_secure_pool_mutex);
 	pr_enter();
 
-	if (secure_heap_version == SECURE_HEAP_USER_TA_VERSION)
-		goto error_alloc_channel;
-
 	channel = (struct secure_vdec_channel *)
 		kzalloc(sizeof(*channel), GFP_KERNEL);
 	if (!channel) {
@@ -1467,20 +1467,19 @@ error_alloc_channel:
 static long dmabuf_manage_release_channel(u32 id_high, u32 id_low)
 {
 	struct secure_pool_info *pool = NULL;
-
-	mutex_lock(&g_secure_pool_mutex);
 	pr_enter();
 
-	if (secure_heap_version == SECURE_HEAP_USER_TA_VERSION)
-		goto error;
+	mutex_lock(&g_secure_pool_mutex);
 
 	pool = dmabuf_manage_get_secure_vdec_pool(id_high, id_low);
 	if (pool) {
 		pool->channel_register = 0;
-		dmabuf_manage_destroy_secure_gen_pool(pool);
+		if (secure_heap_version == SECURE_HEAP_USER_TA_VERSION)
+			dmabuf_manage_release_dmabufheap_resource(pool);
+		else
+			dmabuf_manage_destroy_secure_gen_pool(pool);
 	}
 
-error:
 	mutex_unlock(&g_secure_pool_mutex);
 	return 0;
 }
@@ -1656,6 +1655,31 @@ error:
 	return res;
 }
 #endif
+
+static int dmabuf_manage_release_dmabufheap_resource(struct secure_pool_info *pool)
+{
+#if IS_ENABLED(CONFIG_AML_OPTEE)
+	struct block_node *block = NULL;
+	struct list_head *pos = NULL, *tmp = NULL;
+
+	if (pool) {
+		if (!list_empty(&pool->block_node)) {
+			list_for_each_safe(pos, tmp, &pool->block_node) {
+				block = list_entry(pos, struct block_node, node);
+				if (block && block->addr) {
+					dmabuf_manage_secure_v2_block_free(pool, block->addr);
+					list_del(&block->node);
+					kfree(block);
+				}
+			}
+		}
+
+		dmabuf_manage_destroy_secmem_pool(pool);
+	}
+#endif
+
+	return 0;
+}
 
 phys_addr_t dmabuf_manage_secure_block_alloc(u32 id_high, u32 id_low, u32 size,
 	u32 version)

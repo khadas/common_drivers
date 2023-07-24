@@ -251,6 +251,7 @@ void config_phs_regs(enum frc_ratio_mode_type frc_ratio_mode,
 	enum en_drv_film_mode film_mode);
 int frc_drv_get_1st_frm(void);
 int frc_get_n2m_setting(void);
+int frc_is_on(void);
 
 #define pr_frc(level, fmt, arg...)			\
 	do {						\

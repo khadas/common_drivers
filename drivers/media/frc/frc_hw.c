@@ -1606,14 +1606,8 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 	frc_vporch_cal    = memc_frm_dly - reg_mc_out_line;
 
 	/*bug only for T3*/
-	if (chip == ID_T3) {
+	if (chip == ID_T3)
 		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, frc_vporch_cal);
-		/*only for T5M*/
-	} else if (!frc_devp->in_sts.frc_seamless_en) {
-		WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL27, 0x0);
-		frc_top->inp_padding_xofst = 0;
-		frc_top->inp_padding_xofst = 0;
-	}
 
 	if (chip == ID_T3 && is_meson_rev_a()) {
 		if ((frc_top->out_hsize > 1920 && frc_top->out_vsize > 1080) ||

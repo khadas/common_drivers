@@ -875,8 +875,12 @@ void frc_debug_param_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			devp->no_ko_mode = val1;
+	} else if (!strcmp(parm[0], "tell_ready")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			devp->other2_flag = val1;
 	}
-
 exit:
 	kfree(buf_orig);
 }

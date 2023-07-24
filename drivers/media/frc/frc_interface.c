@@ -141,24 +141,19 @@ EXPORT_SYMBOL(frc_get_video_latency);
 
 int frc_is_on(void)
 {
-	enum chip_id chip;
 	struct frc_dev_s *devp = get_frc_devp();
-	struct frc_data_s *frc_data;
 
 	if (!devp)
 		return 0;
-
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return 0;
-
-	frc_data = (struct frc_data_s *)devp->data;
-	chip = frc_data->match_data->chip;
-
-	if (chip == ID_T3 && is_meson_rev_a() &&
-		(READ_FRC_REG(FRC_TOP_CTRL) & 0x01) == FRC_STATE_ENABLE)
+	if (devp->clk_state == FRC_CLOCK_OFF)
+		return 0;
+	if ((READ_FRC_REG(FRC_TOP_CTRL) & 0x01) == FRC_STATE_ENABLE &&
+		devp->in_sts.vs_cnt >= devp->other2_flag)
 		return 1;
-
-	return 0;
+	else
+		return 0;
 }
 EXPORT_SYMBOL(frc_is_on);
 

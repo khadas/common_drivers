@@ -23,7 +23,6 @@ enum frc_state_e {
 int frc_input_handle(struct vframe_s *vf, struct vpp_frame_par_s *cur_video_sts);
 int frc_set_mode(enum frc_state_e state);
 int frc_get_video_latency(void);
-int frc_is_on(void);
 int frc_is_supported(void);
 int frc_memc_set_level(u8 level);
 int frc_fpp_memc_set_level(u8 level, u8 num);

@@ -942,10 +942,6 @@ static struct kprobe kp_bad_el0_sync = {
 	.symbol_name	= "bad_el0_sync",
 };
 
-static struct kprobe kp_show_signal = {
-	.symbol_name  = "arm64_show_signal",
-};
-
 static void __kprobes show_regs_handler_post(struct kprobe *p,
 				struct pt_regs *param_regs, unsigned long flags)
 {
@@ -972,47 +968,6 @@ static void __kprobes bad_el0_sync_handler_post(struct kprobe *p,
 	show_all_pfn(current, regs);
 }
 
-int aml_show_unhandled_signals;
-#ifdef CONFIG_KEXEC_CORE
-int (*aml_kexec_crash)(struct task_struct *p);
-void (*aml_crash_kexec)(struct pt_regs *regs);
-
-static void *get_symbol_addr(const char *symbol_name)
-{
-	struct kprobe kp;
-	int ret;
-
-	kp.symbol_name = symbol_name;
-
-	ret = register_kprobe(&kp);
-	if (ret < 0) {
-		pr_err("register_kprobe:%s failed, returned %d\n", symbol_name, ret);
-		return NULL;
-	}
-	pr_info("symbol_name:%s addr=%px\n", symbol_name, kp.addr);
-	unregister_kprobe(&kp);
-
-	return kp.addr;
-}
-#else /* !CONFIG_KEXEC_CORE */
-static inline void aml_crash_kexec(struct pt_regs *regs) { }
-static inline int aml_kexec_crash(struct task_struct *p) { return 0; }
-#endif
-
-static void __kprobes __nocfi arm64_show_signal_handler_post(struct kprobe *p,
-				struct pt_regs *param_regs, unsigned long flags)
-{
-	struct task_struct *tsk = current;
-	struct pt_regs *regs = task_pt_regs(tsk);
-	int signo = (int)param_regs->regs[0];
-
-	if (regs && aml_kexec_crash(current) && (aml_show_unhandled_signals & 4)) {
-		pr_info("signo: %d\n", signo);
-		show_all_pfn(current, regs);
-		aml_crash_kexec(regs);
-	}
-}
-
 static int __init user_fault_module_init(void)
 {
 	int ret;
@@ -1028,13 +983,6 @@ static int __init user_fault_module_init(void)
 
 	aml_init_mm = (struct mm_struct *)aml_syms_lookup("init_mm");
 	pr_info("aml_init_mm: %px\n", aml_init_mm);
-
-	aml_show_unhandled_signals = *(int *)aml_syms_lookup("show_unhandled_signals");
-
-#ifdef CONFIG_KEXEC_CORE
-	aml_kexec_crash = (int (*)(struct task_struct *p))get_symbol_addr("kexec_should_crash");
-	aml_crash_kexec = (void (*)(struct pt_regs *regs))get_symbol_addr("crash_kexec");
-#endif
 
 	kp_show_regs.post_handler = show_regs_handler_post;
 	ret = register_kprobe(&kp_show_regs);
@@ -1052,14 +1000,6 @@ static int __init user_fault_module_init(void)
 		return -1;
 	}
 
-	kp_show_signal.post_handler = arm64_show_signal_handler_post;
-	ret = register_kprobe(&kp_show_signal);
-	if (ret < 0) {
-		pr_err("register_kprobe:%s failed, returned %d\n",
-		       kp_show_signal.symbol_name, ret);
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -1068,7 +1008,6 @@ static void __exit user_fault_module_exit(void)
 	unregister_kprobe(&kp_lookup_name);
 	unregister_kprobe(&kp_show_regs);
 	unregister_kprobe(&kp_bad_el0_sync);
-	unregister_kprobe(&kp_show_signal);
 }
 
 module_init(user_fault_module_init);

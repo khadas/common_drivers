@@ -5376,7 +5376,8 @@ static void config_osd_table(u32 display_device_cnt)
 
 	/* 2. set viu osd table */
 	if (osd_dev_hw.display_type == T7_DISPLAY ||
-	    osd_dev_hw.display_type == S5_DISPLAY) {
+	    osd_dev_hw.display_type == S5_DISPLAY ||
+	    osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_TXHD2) {
 		switch (display_device_cnt) {
 		case 1:
 			osd_hw.viu_osd_table[VIU1] = OSD_TABLE_1;
@@ -5385,6 +5386,9 @@ static void config_osd_table(u32 display_device_cnt)
 			if (osd_meson_dev.osd_count == 3) {
 				osd_hw.viu_osd_table[VIU1] = OSD_TABLE_3_1;
 				osd_hw.viu_osd_table[VIU2] = OSD_TABLE_3_2;
+			} else if (osd_meson_dev.osd_count == 2) {
+				osd_hw.viu_osd_table[VIU1] = OSD_TABLE_4_1;
+				osd_hw.viu_osd_table[VIU2] = OSD_TABLE_4_2;
 			} else {
 				osd_hw.viu_osd_table[VIU1] = OSD_TABLE_2_1;
 				osd_hw.viu_osd_table[VIU2] = OSD_TABLE_2_2;
@@ -5440,6 +5444,7 @@ static int __init osd_probe(struct platform_device *pdev)
 	#endif
 	int i;
 	int ret = 0;
+	int exchange_viu_vsync;
 	int display_device_cnt = 1;
 	struct device_node *mem_node;
 	const char *compatible;
@@ -5493,6 +5498,22 @@ static int __init osd_probe(struct platform_device *pdev)
 	else
 		memcpy(&osd_dev_hw, &legcy_dev_property,
 		       sizeof(struct osd_device_hw_s));
+
+	prop = of_get_property(pdev->dev.of_node, "display_device_cnt", NULL);
+	if (prop)
+		display_device_cnt = of_read_ulong(prop, 1);
+
+	osd_meson_dev.viu1_osd_count = osd_meson_dev.osd_count;
+	if (osd_meson_dev.has_viu2) {
+		/* set viu1 osd count */
+		osd_meson_dev.viu1_osd_count--;
+		osd_meson_dev.viu2_index = osd_meson_dev.viu1_osd_count;
+	}
+
+	config_osd_table(display_device_cnt);
+	if (display_device_cnt == 2 &&
+		osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_TXHD2)
+		osd_meson_dev.has_vpp1 = 1;
 	/* get interrupt resource */
 	int_viu_vsync = platform_get_irq_byname(pdev, "viu-vsync");
 	if (int_viu_vsync  == -ENXIO) {
@@ -5537,18 +5558,17 @@ static int __init osd_probe(struct platform_device *pdev)
 			goto failed1;
 		}
 	}
-	osd_meson_dev.viu1_osd_count = osd_meson_dev.osd_count;
-	if (osd_meson_dev.has_viu2) {
-		/* set viu1 osd count */
-		osd_meson_dev.viu1_osd_count--;
-		osd_meson_dev.viu2_index = osd_meson_dev.viu1_osd_count;
+	/*
+	 * for keystone enable when osd count is 2
+	 * osd1 loop back use viu2_vsync
+	 * osd2 display use viu1_vsync
+	 */
+	if (osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_TXHD2 &&
+		osd_meson_dev.has_vpp1) {
+		exchange_viu_vsync = int_viu_vsync;
+		int_viu_vsync = int_viu2_vsync;
+		int_viu2_vsync = exchange_viu_vsync;
 	}
-
-	prop = of_get_property(pdev->dev.of_node, "display_device_cnt", NULL);
-	if (prop)
-		display_device_cnt = of_read_ulong(prop, 1);
-
-	config_osd_table(display_device_cnt);
 
 	ret = osd_io_remap(osd_meson_dev.cpu_id == __MESON_CPU_MAJOR_ID_AXG);
 	if (!ret) {

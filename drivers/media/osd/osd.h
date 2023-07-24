@@ -172,6 +172,8 @@ enum osd_index_e {
 #define OSD_TABLE_3_1 (0xffffff00 | (OSD2 << 4) | OSD1)
 #define OSD_TABLE_3_2 (0xfffffff0 | OSD3)
 #define OSD_TABLE_3_3 (0xfffffff0 | OSD4)
+#define OSD_TABLE_4_1 (0xfffffff0 | OSD1)
+#define OSD_TABLE_4_2 (0xfffffff0 | OSD2)
 
 enum osd_enable_e {
 	DISABLE = 0,

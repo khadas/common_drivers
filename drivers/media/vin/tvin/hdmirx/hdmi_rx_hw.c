@@ -137,6 +137,7 @@ u32 ddc_dbg_en;
 int dual_port_en;
 int force_clk_stable;//t3x frl todo
 
+bool earc_hpd_low_flag;
 /*------------------------variable define end------------------------------*/
 
 static int check_regmap_flag(u32 addr)
@@ -2639,6 +2640,7 @@ bool rx_clr_tmds_valid(u8 port)
 		rx[port].state = FSM_WAIT_CLK_STABLE;
 		if (vpp_mute_enable) {
 			rx_mute_vpp();
+			rx[port].vpp_mute = true;
 			set_video_mute(true);
 			rx_pr("vpp mute\n");
 		}
@@ -2834,6 +2836,7 @@ void rx_set_cur_hpd(u8 val, u8 func, u8 port)
 {
 	rx_pr("func-%d to", func);
 	rx_set_port_hpd(port, val);
+	port_hpd_rst_flag |= (1 << port);
 }
 
 /*
@@ -3757,6 +3760,7 @@ bool rx_clk_rate_monitor(u8 port)
 		rx[port].cableclk_stb_flg = false;
 		//if (rx[port].state >= FSM_WAIT_CLK_STABLE)
 			//rx[port].state = FSM_WAIT_CLK_STABLE;
+		rx[port].cableclk_stb_flg = false;
 		i2c_err_cnt[port] = 0;
 	}
 	return changed;
@@ -5532,12 +5536,22 @@ void rx_clkmsr_handler(struct work_struct *work)
 				//meson_clk_measure_with_precision(27, 32);
 }
 
+bool is_earc_hpd_low(void)
+{
+	return earc_hpd_low_flag;
+}
+
 void rx_earc_hpd_handler(struct work_struct *work)
 {
+	earc_hpd_low_flag = true;
+	usleep_range(30000, 40000);
 	cancel_delayed_work(&eq_dwork);
+	skip_frame(2, rx_info.main_port);
+	rx_pr("earc call hpd\n");
 	rx_set_port_hpd(rx_info.arc_port, 0);
 	usleep_range(600000, 650000);
 	rx_set_port_hpd(rx_info.arc_port, 1);
+	earc_hpd_low_flag = false;
 }
 
 static const u32 wr_only_register[] = {
@@ -6008,7 +6022,8 @@ u32 aml_phy_pll_band(u32 cable_clk, u32 clk_rate)
 	} else {
 		if (cab_clk < (35 * MHz))
 			bw = PLL_BW_0;
-		else if (cab_clk < (77 * MHz))
+		//CVT 1280X720 is 77M
+		else if (cab_clk < (75 * MHz))
 			bw = PLL_BW_1;
 		else if (cab_clk < (155 * MHz))
 			bw = PLL_BW_2;
@@ -7170,7 +7185,7 @@ void rx_hdcp_crc_check(void)
 
 void reset_pcs(u8 port)
 {
-	hdmirx_wr_top(TOP_SW_RESET, 0x80, port);
+	hdmirx_wr_top(TOP_SW_RESET, 0x2080, port);
 	hdmirx_wr_top(TOP_SW_RESET, 0, port);
 }
 

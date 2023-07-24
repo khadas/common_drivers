@@ -168,7 +168,7 @@ int vdin_reset_pcs_en;
  */
 int suspend_pddq_sel = 1;
 /* as cvt required, set hpd low if cec off when boot */
-static int hpd_low_cec_off = 1;
+int hpd_low_cec_off = 1;
 int disable_port_num;
 int disable_port_en;
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
@@ -569,6 +569,10 @@ void hdmirx_dec_close(struct tvin_frontend_s *fe)
 	rx_info.open_fg = 0;
 	devp = container_of(fe, struct hdmirx_dev_s, frontend);
 	parm = &devp->param;
+	if (rx_info.arc_port == port && rx[port].state < FSM_SIG_STABLE) {
+		rx_set_cur_hpd(1, 4, port);
+		pre_port = 0xff;
+	}
 	rx[port].vs_info_details.hdmi_allm = 0;
 	rx[port].cur.cn_type = 0;
 	rx[port].cur.it_content = 0;
@@ -613,10 +617,12 @@ int hdmirx_dec_isr(struct tvin_frontend_s *fe, unsigned int hcnt64)
 			avmute_flag = rx_get_avmute_sts(port);
 			if (avmute_flag == 1) {
 				rx[port].avmute_skip += 1;
+				set_video_mute(true);
 				hdmirx_set_video_mute(1, port);
 				//skip_frame(2, port);
 				/* return TVIN_BUF_SKIP; */
 			} else {
+				set_video_mute(false);
 				hdmirx_set_video_mute(0, port);
 				rx[port].avmute_skip = 0;
 			}
@@ -901,6 +907,16 @@ int hdmirx_get_connect_info(void)
 	return pwr_sts;
 }
 EXPORT_SYMBOL(hdmirx_get_connect_info);
+
+/*
+ * hdmirx_get_connect_info - get hpd info
+ */
+unsigned int hdmirx_get_hpd_info(void)
+{
+	//rx_pr("only for debug\n");
+	return (rx_get_hpd_sts() >> rx_info.main_port) & 1;
+}
+EXPORT_SYMBOL(hdmirx_get_hpd_info);
 
 /*
  * hdmirx_set_cec_cfg - cec set sts
@@ -1566,6 +1582,15 @@ void hdmirx_get_sig_prop(struct tvin_frontend_s *fe,
 	hdmirx_get_hw_vic(prop, rx_info.main_port);
 	hdmirx_get_avi_ext_colorimetry(prop, rx_info.main_port);
 	prop->skip_vf_num = vdin_drop_frame_cnt;
+	if (log_level & SIG_PROP_LOG) {
+		rx_pr("dvi:%#x,color[%d,%#x,%#x,%#x],fps:%d,spd[%#x,%#x]\n",
+			prop->dvi_info, prop->colordepth, prop->color_format, prop->dest_cfmt,
+			prop->color_fmt_range, prop->fps,
+			prop->spd_data.data[5], prop->spd_data.data[7]);
+		rx_pr("lat:[%#x,%#x,%#x],vic:%d,ec:%d\n",
+			prop->latency.allm_mode, prop->latency.cn_type,
+			prop->latency.it_content, prop->hw_vic, prop->avi_ec);
+	}
 }
 
 void hdmirx_get_sig_prop2(struct tvin_frontend_s *fe,
@@ -1590,6 +1615,15 @@ void hdmirx_get_sig_prop2(struct tvin_frontend_s *fe,
 	hdmirx_get_hw_vic(prop, rx_info.sub_port);
 	hdmirx_get_avi_ext_colorimetry(prop, rx_info.sub_port);
 	prop->skip_vf_num = vdin_drop_frame_cnt;
+	if (log_level & SIG_PROP_LOG) {
+		rx_pr("dvi:%#x,color[%d,%#x,%#x,%#x],fps:%d,spd[%#x,%#x]\n",
+			prop->dvi_info, prop->colordepth, prop->color_format, prop->dest_cfmt,
+			prop->color_fmt_range, prop->fps,
+			prop->spd_data.data[5], prop->spd_data.data[7]);
+		rx_pr("lat:[%#x,%#x,%#x],vic:%d,ec:%d\n",
+			prop->latency.allm_mode, prop->latency.cn_type,
+			prop->latency.it_content, prop->hw_vic, prop->avi_ec);
+	}
 }
 
 /*
@@ -1693,8 +1727,8 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 	u8 sad_data[30];
 	u8 len = 0;
 	u8 i = 0;
+	enum tvin_port_e hdmi_idx = 0;
 	u8 port_idx = 0;
-	u8 hdmi_idx = 0;
 
 	if (_IOC_TYPE(cmd) != HDMI_IOC_MAGIC) {
 		pr_err("%s invalid command: %u\n", __func__, cmd);
@@ -1738,25 +1772,28 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		/* ref board ui can only be set in current hdmi port */
 		if (edid_delivery_mothed == EDID_DELIVERY_ALL_PORT) {
 			rx_irq_en(false, rx_info.main_port);
-			rx_set_cur_hpd(0, 4, rx_info.main_port);
+			if (rx_info.open_fg)
+				rx_set_cur_hpd(0, 4, rx_info.main_port);
 			port_hpd_rst_flag |= (1 << rx_info.main_port);
 			rx[rx_info.main_port].var.edid_update_flag = 1;
 		}
 		fsm_restart(rx_info.main_port);
+		if (hdmi_cec_en && rx_info.boot_flag)
+			rx_force_hpd_rxsense_cfg(1);
 		rx_pr("*update edid*\n");
 		break;
 	case HDMI_IOC_EDID_UPDATE_WITH_PORT:
 		if (!argp)
 			return -EINVAL;
 		mutex_lock(&devp->rx_lock);
-		if (copy_from_user(&hdmi_idx, argp, sizeof(unsigned char))) {
+		if (copy_from_user(&hdmi_idx, argp, sizeof(enum tvin_port_e))) {
 			ret = -EFAULT;
 			mutex_unlock(&devp->rx_lock);
 			break;
 		}
-		port_idx = hdmi_idx - 1;
-		if (port_idx > 3) {
-			rx_pr("port_idx error\n");
+		port_idx = ((hdmi_idx - TVIN_PORT_HDMI0) & 0xf);
+		if (port_idx >= 3) {
+			rx_pr("port_idx illegal\n");
 			ret = -EFAULT;
 			mutex_unlock(&devp->rx_lock);
 			break;
@@ -1764,6 +1801,8 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 
 		rx_set_port_hpd(port_idx, 0);
 		rx_pr("port%d_hpd_low\n", port_idx);
+		if (rx_info.main_port == port_idx)
+			pre_port = 0xff;
 
 		if (!rx_info.open_fg) {
 			port_hpd_rst_flag |= (1 << port_idx);
@@ -2306,13 +2345,15 @@ static ssize_t cec_store(struct device *dev,
 		/* fix source can't get edid if cec off */
 		if (rx_info.boot_flag) {
 			if (hpd_low_cec_off == 0)
-				rx_force_hpd_rxsense_cfg(1);
+				if (is_valid_edid_data(edid_cur))
+					rx_force_hpd_rxsense_cfg(1);
 		}
 	} else if ((val & 0xF) == 1) {
 		hdmi_cec_en = 1;
 	} else if ((val & 0xF) == 2) {
 		hdmi_cec_en = 1;
-		rx_force_hpd_rxsense_cfg(1);
+		if (is_valid_edid_data(edid_cur))
+			rx_force_hpd_rxsense_cfg(1);
 	}
 	rx_info.boot_flag = false;
 	tv_auto_power_on = (val >> 4) & 0xF;
@@ -3201,7 +3242,8 @@ static void hdmirx_late_resume(struct early_suspend *h)
 		return;
 
 	early_suspend_flag = false;
-	rx_phy_resume();
+	if (!rx[rx_info.main_port].resume_flag)
+		rx_phy_resume();
 	rx_pr("%s- ok\n", __func__);
 };
 
@@ -3993,12 +4035,14 @@ static int hdmirx_resume(struct platform_device *pdev)
 	hdevp = platform_get_drvdata(pdev);
 	add_timer(&hdevp->timer);
 	rx_dig_clk_en(1);
-#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+//#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	/* if early suspend not called, need to pw up phy here */
-	if (!early_suspend_flag)
-#endif
-		rx_phy_resume();
+	//if (!early_suspend_flag)
+//#endif
+	rx_phy_resume();
 	rx_set_suspend_edid_clk(false);
+	rx[rx_info.main_port].resume_flag = true;
+	rx[rx_info.main_port].state = FSM_HPD_LOW;
 	rx_pr("hdmirx: resume\n");
 	/* for wakeup by pwr5v pin, only available on T7 for now */
 	if (get_resume_method() == HDMI_RX_WAKEUP &&

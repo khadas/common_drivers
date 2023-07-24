@@ -3459,6 +3459,8 @@ void rx_hdcp_crc_check(void);
 int rx_get_hdcp_auth_sts(u8 port);
 void rx_set_color_bar(bool en, unsigned int lvl, u8 port);
 void reset_pcs(u8 port);
+bool is_earc_hpd_low(void);
+void rx_mute_vpp(void);
 
 /* t3x  */
 void hdmi_tx_rx_frl_training_main(u8 port);

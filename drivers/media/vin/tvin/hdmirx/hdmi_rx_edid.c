@@ -29,7 +29,7 @@ static char edid_buf1[EDID_BUF_SIZE] = {0};
 static char edid_buf2[EDID_BUF_SIZE] = {0};
 static char edid_buf3[EDID_BUF_SIZE] = {0};
 static char edid_buf4[EDID_BUF_SIZE] = {0};
-static char edid_cur[EDID_SIZE] = {0};
+char edid_cur[EDID_SIZE] = {0};
 #ifdef CONFIG_AMLOGIC_HDMITX
 //0: hdmi repeater
 //1: use tx edid directly
@@ -644,6 +644,12 @@ void rx_edid_update_vrr_info(unsigned char *p_edid)
 	hf_vsdb_start = rx_get_cea_tag_offset(p_edid, HF_VENDOR_DB_TAG);
 	if (!hf_vsdb_start)
 		return;
+	tag_len = (p_edid[hf_vsdb_start] & 0xf);
+	if (log_level & EDID_LOG)
+		rx_pr("tag_len = %d", tag_len);
+	if (tag_len < 9)
+		return;
+
 	if (vrr_func_en) {
 		if (rx_info.vrr_min == 0 || rx_info.vrr_max == 0)
 			return;

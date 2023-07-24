@@ -62,6 +62,7 @@
 #define EDID_LOG	0x100
 #define PHY_LOG		0x200
 #define VSI_LOG		0x800
+#define SIG_PROP_LOG	0x400
 #define DBG_LOG		0x1000
 #define IRQ_LOG		0x2000
 #define COR_LOG		0x4000
@@ -726,6 +727,7 @@ enum e_colorimetry {
 	E_NULL = 0,
 	E_SMPTE_ST_170,
 	E_BT_709,
+	E_EXTENDED_VALID = 3,
 	E_XVYCC_601 = 3,
 	E_XVYCC_709,
 	E_SYCC_601,
@@ -840,6 +842,8 @@ struct rx_s {
 	struct rx_aml_phy aml_phy_21;
 	//struct spkts_rcvd_sts pkts_sts;
 	struct rx_edid_auto_mode edid_auto_mode;
+	bool resume_flag;
+	bool spec_vendor_id;
 };
 
 struct reg_map {
@@ -950,6 +954,7 @@ extern u32 dbg_pkt;
 extern int disable_hdr;
 extern int rx_phy_level;
 extern int vdin_reset_pcs_en;
+extern char edid_cur[EDID_SIZE];
 #ifdef CONFIG_AMLOGIC_MEDIA_VRR
 extern struct notifier_block vrr_notify;
 #endif
@@ -983,7 +988,6 @@ bool hdmirx_repeat_support(void);
 
 /* edid-hdcp14 */
 extern unsigned int downstream_hpd_flag;
-
 void hdmirx_fill_edid_buf(const char *buf, int size);
 void hdmirx_fill_edid_with_port_buf(const char *buf, int size);
 void hdmirx_fill_key_buf(const char *buf, int size);

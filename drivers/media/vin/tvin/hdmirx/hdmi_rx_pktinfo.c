@@ -415,7 +415,7 @@ int rx_is_specific_20_dev(u8 port)
 		rx_pr("source info: 0x%x\n", spdpkt->des_u.spddata.source_info);
 	}
 	for (i = 0; i < SPEC_DEV_CNT; i++) {
-		if (!memcmp((char *)spdpkt + 5, spd_white_list[i], WHITE_LIST_SIZE)) {
+		if (!memcmp((char *)spdpkt + 4, spd_white_list[i], WHITE_LIST_SIZE)) {
 			if (log_level & 0x1000)
 				rx_pr("white dev=%d\n", i);
 			return i;

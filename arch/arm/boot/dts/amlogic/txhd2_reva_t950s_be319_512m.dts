@@ -144,6 +144,13 @@
 			alignment = <0x100000>;
 			//no-map;
 		};
+
+		secure_vdec_reserved:linux,secure_vdec_reserved {
+			compatible = "amlogic, secure-vdec-reserved";
+			no-map;
+			size = <0x400000>;
+			alignment = <0x100000>;
+		};
 	};
 
 	usb_b5v_reg: fixed@usb_b5v_reg{
@@ -244,7 +251,7 @@
 
 	codec_mm {
 		compatible = "amlogic, codec, mm";
-		memory-region = <&codec_mm_cma &codec_mm_reserved>;
+		memory-region = <&codec_mm_cma &codec_mm_reserved &secure_vdec_reserved>;
 		dev_name = "codec_mm";
 		status = "okay";
 	};

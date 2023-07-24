@@ -2961,8 +2961,16 @@ void control_reset(void)
 void rx_dig_clk_en(bool en)
 {
 	if (rx_info.chip_id >= CHIP_ID_T7) {
-		hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL1, CFG_CLK_EN, en);
-		hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL3, METER_CLK_EN, en);
+		if (rx_info.chip_id == CHIP_ID_TXHD2) {
+			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL3, METER_CLK_EN, en);
+			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL1, CFG_CLK_EN, en);
+			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL1, MODET_CLK_EN, en);
+			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL0, _BIT(24), en);
+			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL0, _BIT(8), en);
+		} else {
+			hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL1, CFG_CLK_EN, en);
+			hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL3, METER_CLK_EN, en);
+		}
 	} else {
 		hdcp22_clk_en(en);
 		/* enable gate of cts_hdmirx_modet_clk */

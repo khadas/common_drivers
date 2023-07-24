@@ -45,7 +45,8 @@
 //fix txhd2 merge to trunk problem
 //2023.7.10 txhd2 bring up
 //2023.7.21 fix phy/pll clk band
-#define RX_VER0 "ver.2023/07/21"
+//2023.7.25 hdmirx suspend
+#define RX_VER0 "ver.2023/07/25"
 
 /*print type*/
 #define COR1_LOG	0x10000

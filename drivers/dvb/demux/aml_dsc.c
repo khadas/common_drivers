@@ -533,6 +533,13 @@ static int handle_desc_ext(struct aml_dsc *dsc, struct ca_sc2_descr_ex *d)
 				break;
 			}
 
+			if (!get_demux_feature(SUPPORT_TSE) &&
+				d->params.alloc_params.dsc_type == CA_DSC_TSE_TYPE) {
+				dprint("s1a tse removed\n");
+				ret = -EINVAL;
+				break;
+			}
+
 			ret = _dsc_chan_alloc(dsc,
 					      d->params.alloc_params.pid & 0x1FFF,
 					      d->params.alloc_params.algo + 1,

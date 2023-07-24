@@ -79,6 +79,8 @@ static void demux_config_pipeline(int cfg_demod_tsn, int cfg_tsn_out)
 	value = cfg_demod_tsn;
 	value += cfg_tsn_out << 1;
 
+	if (cpu_type == MESON_CPU_MAJOR_ID_S1A)
+		WRITE_CBUS_REG(CFG_DEMUX_OFFSET, value);
 	if (cpu_type == MESON_CPU_MAJOR_ID_T5W)
 		ret = tee_write_reg_bits(0xff610320, value, 0, 2);
 	else
@@ -253,10 +255,15 @@ ssize_t tsn_source_show(struct class *class,
 	buf += r;
 	total += r;
 
-	if (cpu_type == MESON_CPU_MAJOR_ID_T5W)
+	if (cpu_type == MESON_CPU_MAJOR_ID_S1A) {
+		value = READ_CBUS_REG(CFG_DEMUX_OFFSET);
+		value &= 0x02;
+	} else if (cpu_type == MESON_CPU_MAJOR_ID_T5W) {
 		ret = tee_read_reg_bits(0xff610320, &value, 0, 2);
-	else
+	} else {
 		ret = tee_read_reg_bits(0xfe440320, &value, 0, 2);
+	}
+
 	if (ret != 0)
 		dprint("tee_read_reg_bits value:%d, ret:%d\n", value, ret);
 
@@ -358,10 +365,15 @@ ssize_t tsn_loop_show(struct class *class,
 	u32 val = 0;
 	int ret = 0;
 
-	if (cpu_type == MESON_CPU_MAJOR_ID_T5W)
+	if (cpu_type == MESON_CPU_MAJOR_ID_S1A) {
+		val = READ_CBUS_REG(CFG_DEMUX_OFFSET);
+		val = ((val >> 2) & 0x01);
+	} else if (cpu_type == MESON_CPU_MAJOR_ID_T5W) {
 		ret = tee_read_reg_bits(0xff610320, &val, 2, 1);
-	else
+	} else {
 		ret = tee_read_reg_bits(0xfe440320, &val, 2, 1);
+	}
+
 	r = sprintf(buf, "loop:%d, reg val:%d, ret:%d\n", advb->loop_tsn,
 		val, ret);
 
@@ -473,10 +485,14 @@ ssize_t demod_out_show(struct class *class,
 	u32 val = 0;
 	int ret = 0;
 
-	if (cpu_type == MESON_CPU_MAJOR_ID_T5W)
+	if (cpu_type == MESON_CPU_MAJOR_ID_S1A) {
+		val = READ_CBUS_REG(CFG_DEMUX_OFFSET);
+		val = ((val >> 3) & 0x01);
+	} else if (cpu_type == MESON_CPU_MAJOR_ID_T5W) {
 		ret = tee_read_reg_bits(0xff610320, &val, 3, 1);
-	else
+	} else {
 		ret = tee_read_reg_bits(0xfe440320, &val, 3, 1);
+	}
 
 	r = sprintf(buf, "demod out:%d, ret:%d\n", val, ret);
 	buf += r;
@@ -490,7 +506,7 @@ ssize_t demod_out_store(struct class *class,
 {
 	unsigned int version = get_dmx_version();
 	unsigned int value;
-	int ret;
+	int ret = 0;
 
 	if (version < 5) {
 		dprint("can't set demod out version:%d\n", version);
@@ -498,11 +514,27 @@ ssize_t demod_out_store(struct class *class,
 	}
 	if (buf[0] == '0') {
 		value = 0;
-		ret = tee_write_reg_bits(0xfe440320, value, 3, 1);
+		if (cpu_type == MESON_CPU_MAJOR_ID_S1A) {
+			value = READ_CBUS_REG(CFG_DEMUX_OFFSET);
+			value &= ~(0x01 << 3);
+			WRITE_CBUS_REG(CFG_DEMUX_OFFSET, value);
+		} else if (cpu_type == MESON_CPU_MAJOR_ID_T5W) {
+			ret = tee_write_reg_bits(0xff610320, value, 3, 1);
+		} else {
+			ret = tee_write_reg_bits(0xfe440320, value, 3, 1);
+		}
 		pr_dbg("value:0x%0x, ret:%d\n", value, ret);
 	} else if (buf[0] == '1') {
 		value = 1;
-		ret = tee_write_reg_bits(0xfe440320, value, 3, 1);
+		if (cpu_type == MESON_CPU_MAJOR_ID_S1A) {
+			value = READ_CBUS_REG(CFG_DEMUX_OFFSET);
+			value |= (0x01 << 3);
+			WRITE_CBUS_REG(CFG_DEMUX_OFFSET, value);
+		} else if (cpu_type == MESON_CPU_MAJOR_ID_T5W) {
+			ret = tee_write_reg_bits(0xff610320, value, 3, 1);
+		} else {
+			ret = tee_write_reg_bits(0xfe440320, value, 3, 1);
+		}
 		pr_dbg("value:0x%0x, ret:%d\n", value, ret);
 	}
 	return count;
@@ -692,6 +724,11 @@ int get_demux_feature(int support_feature)
 			return 0;
 	} else if (support_feature == SUPPORT_PES_HEADER) {
 		return 0;
+	} else if (support_feature == SUPPORT_TSE) {
+		if (cpu_type == MESON_CPU_MAJOR_ID_S1A)
+			return 0;
+		else
+			return 1;
 	} else {
 		return 0;
 	}
@@ -814,6 +851,7 @@ void set_dvb_loop_tsn(int flag)
 {
 	struct aml_dvb *advb;
 	int ret = 0;
+	unsigned int value = 0;
 
 	advb = &aml_dvb_device;
 
@@ -822,10 +860,19 @@ void set_dvb_loop_tsn(int flag)
 
 	// set loop_tsn in tee
 	advb->loop_tsn = flag;
-	if (cpu_type == MESON_CPU_MAJOR_ID_T5W)
+	if (cpu_type == MESON_CPU_MAJOR_ID_S1A) {
+		value = READ_CBUS_REG(CFG_DEMUX_OFFSET);
+		if (flag)
+			value |= (0x01 << 2);
+		else
+			value &= ~(0x01 << 2);
+
+		WRITE_CBUS_REG(CFG_DEMUX_OFFSET, value);
+	} else if (cpu_type == MESON_CPU_MAJOR_ID_T5W) {
 		ret = tee_write_reg_bits(0xff610320, (u32)flag, 2, 1);
-	else
+	} else {
 		ret = tee_write_reg_bits(0xfe440320, (u32)flag, 2, 1);
+	}
 }
 
 int get_dvb_loop_tsn(void)

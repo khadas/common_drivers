@@ -82,6 +82,7 @@ enum {
 	SUPPORT_PSCP,
 	SUPPORT_TEMI,
 	SUPPORT_PES_HEADER,
+	SUPPORT_TSE,
 };
 
 int get_demux_feature(int support_feature);

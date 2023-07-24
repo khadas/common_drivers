@@ -10,6 +10,9 @@
 #include <linux/amlogic/cpu_version.h>
 #include <linux/platform_device.h>
 
+/* S1A move the demux configuration register to the REE side */
+#define CFG_DEMUX_OFFSET					0x320
+
 void aml_write_self(unsigned int reg, unsigned int val);
 int aml_read_self(unsigned int reg);
 int init_demux_addr(struct platform_device *pdev);

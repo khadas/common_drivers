@@ -7,7 +7,7 @@
 
 / {
     partitions: partitions{
-		parts = <25>;
+		parts = <27>;
 		part-0 = <&frp>;
 		part-1 = <&factory>;
 		part-2 = <&vendor_boot_a>;
@@ -25,14 +25,16 @@
 		part-14 = <&oem_b>;
 		part-15 = <&boot_a>;
 		part-16 = <&boot_b>;
-		part-17 = <&rsv>;
-		part-18 = <&metadata>;
-		part-19 = <&vbmeta_a>;
-		part-20 = <&vbmeta_b>;
-		part-21 = <&vbmeta_system_a>;
-		part-22 = <&vbmeta_system_b>;
-		part-23 = <&super>;
-		part-24 = <&userdata>;
+		part-17 = <&init_boot_a>;
+		part-18 = <&init_boot_b>;
+		part-19 = <&rsv>;
+		part-20 = <&metadata>;
+		part-21 = <&vbmeta_a>;
+		part-22 = <&vbmeta_b>;
+		part-23 = <&vbmeta_system_a>;
+		part-24 = <&vbmeta_system_b>;
+		part-25 = <&super>;
+		part-26 = <&userdata>;
 
 		frp:frp{
 			pname = "frp";
@@ -46,12 +48,12 @@
 		};
 		vendor_boot_a:vendor_boot_a{
 			pname = "vendor_boot_a";
-			size = <0x0 0x1800000>;
+			size = <0x0 0x4000000>;
 			mask = <1>;
 		};
 		vendor_boot_b:vendor_boot_b{
 			pname = "vendor_boot_b";
-			size = <0x0 0x1800000>;
+			size = <0x0 0x4000000>;
 			mask = <1>;
 		};
 		tee:tee{
@@ -154,6 +156,18 @@
 		{
 			pname = "boot_b";
 			size = <0x0 0x4000000>;
+			mask = <1>;
+		};
+		init_boot_a:init_boot_a
+		{
+			pname = "init_boot_a";
+			size = <0x0 0x800000>;
+			mask = <1>;
+		};
+		init_boot_b:init_boot_b
+		{
+			pname = "init_boot_b";
+			size = <0x0 0x800000>;
 			mask = <1>;
 		};
 		super:super

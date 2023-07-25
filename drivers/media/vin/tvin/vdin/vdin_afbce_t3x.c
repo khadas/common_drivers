@@ -431,25 +431,37 @@ void vdin_afbce_config_t3x(struct vdin_dev_s *devp)
 void vdin_afbce_set_next_frame_t3x(struct vdin_dev_s *devp,
 			       unsigned int rdma_enable, struct vf_entry *vfe)
 {
-	unsigned char i;
+	unsigned char vf_idx;
+	unsigned long compHeadAddr;
+	unsigned long compTableAddr;
+	unsigned long compBodyAddr;
 
 	if (!devp->afbce_info)
 		return;
 
-	i = vfe->af_num;
-	vfe->vf.compHeadAddr = devp->afbce_info->fm_head_paddr[i];
-	vfe->vf.compBodyAddr = devp->afbce_info->fm_body_paddr[i];
+	if ((vfe->flag & VF_FLAG_ONE_BUFFER_MODE) &&
+	     devp->af_num < VDIN_CANVAS_MAX_CNT)
+		vf_idx = devp->af_num; //one buffer mode
+	else
+		vf_idx = vfe->af_num;
+
+	compHeadAddr	= devp->afbce_info->fm_head_paddr[vf_idx];
+	compTableAddr	= devp->afbce_info->fm_table_paddr[vf_idx];
+	compBodyAddr	= devp->afbce_info->fm_body_paddr[vf_idx];
+
+	vfe->vf.compHeadAddr = compHeadAddr;
+	vfe->vf.compBodyAddr = compBodyAddr;
+
 	vdin_set_lossy_param(devp, &vfe->vf);
 
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	if (rdma_enable) {
 		rdma_write_reg(devp->rdma_handle,
-				VDIN0_AFBCE_HEAD_BADDR + devp->addr_offset,
-			       devp->afbce_info->fm_head_paddr[i] >> 4);
-		rdma_write_reg_bits(devp->rdma_handle,
-				    VDIN0_AFBCE_MMU_RMIF_CTRL4 + devp->addr_offset,
-				    devp->afbce_info->fm_table_paddr[i] >> 4,
-				    0, 32);
+			VDIN0_AFBCE_HEAD_BADDR + devp->addr_offset,
+			compHeadAddr >> 4);
+		rdma_write_reg(devp->rdma_handle,
+			VDIN0_AFBCE_MMU_RMIF_CTRL4 + devp->addr_offset,
+			compTableAddr >> 4);
 		rdma_write_reg_bits(devp->rdma_handle,
 				    VDIN0_AFBCE_ENABLE + devp->addr_offset, 1,
 				    AFBCE_START_PULSE_BIT, AFBCE_START_PULSE_WID);
@@ -470,9 +482,9 @@ void vdin_afbce_set_next_frame_t3x(struct vdin_dev_s *devp,
 		}
 	} else {
 		W_VCBUS(VDIN0_AFBCE_HEAD_BADDR + devp->addr_offset,
-			devp->afbce_info->fm_head_paddr[i] >> 4);
+			compHeadAddr >> 4);
 		W_VCBUS(VDIN0_AFBCE_MMU_RMIF_CTRL4 + devp->addr_offset,
-			devp->afbce_info->fm_table_paddr[i] >> 4);
+			compTableAddr >> 4);
 		W_VCBUS_BIT(VDIN0_AFBCE_ENABLE + devp->addr_offset, 1,
 			AFBCE_START_PULSE_BIT, AFBCE_START_PULSE_WID);
 		W_VCBUS_BIT(VDIN0_AFBCE_ENABLE + devp->addr_offset, 0,

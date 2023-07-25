@@ -2735,7 +2735,7 @@ enum tvin_sig_fmt_e hdmirx_hw_get_fmt(u8 port)
 	case HDMI_480i240:	/* 58 */
 	case HDMI_480i240_16x9:	/* 59 */
 	case HDMI_720x480i:
-		fmt = TVIN_SIG_FMT_HDMI_1440X480I_60HZ;
+		fmt = TVIN_SIG_FMT_HDMI_720X480I_60HZ;
 		break;
 	case HDMI_1080p24:	/* 32 */
 	case HDMI_1080p24_64x27: /* 72 */
@@ -2791,7 +2791,7 @@ enum tvin_sig_fmt_e hdmirx_hw_get_fmt(u8 port)
 	case HDMI_576i100_16x9:	/* 45 */
 	case HDMI_576i200:	/* 54 */
 	case HDMI_576i200_16x9:	/* 55 */
-		fmt = TVIN_SIG_FMT_HDMI_1440X576I_50HZ;
+		fmt = TVIN_SIG_FMT_HDMI_720X576I_50HZ;
 		break;
 	case HDMI_1440x240p60:	/* 8 */
 	case HDMI_1440x240p60_16x9:	/* 9 */

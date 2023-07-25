@@ -565,6 +565,7 @@ struct vdin_debug_s {
 	unsigned int vdin_recycle_num;/* debug for vdin recycle frame by self */
 	unsigned int dbg_print_cntl;/* debug for vdin print control */
 	unsigned int dbg_pattern;
+	unsigned int dbg_device_id;
 	unsigned int dbg_sct_ctl;
 	unsigned int dbg_de_interlanced_ctl;
 	unsigned short scaling4h;/* for vertical scaling */
@@ -955,6 +956,8 @@ struct vdin_dev_s {
 	enum vdin_game_mode_chg_e game_mode_chg;
 	/* game mode state before ioctl change game mode */
 	unsigned int game_mode_bak;
+	unsigned char af_num;/* for one buffer mode */
+
 	int game_chg_drop_frame_cnt;
 	unsigned int vdin_pc_mode;
 	unsigned int vrr_mode;
@@ -1076,7 +1079,8 @@ struct vdin_dev_s {
 	unsigned int vinfo_std_duration; /* get vinfo out fps value */
 	unsigned int vdin_std_duration; /* get in fps value */
 	unsigned int dbg_no_swap_en:1;
-	unsigned int dbg_force_one_buffer:1;
+	/* 0:auto;1:force on;2:force off */
+	unsigned int dbg_force_one_buffer;
 	unsigned int dbg_afbce_monitor:8;
 	unsigned int dbg_no_wr_check:1;/* disable write done check */
 	unsigned int dbg_fr_ctl:7;/* disable write done check */
@@ -1198,5 +1202,7 @@ void vdin_game_mode_chg(struct vdin_dev_s *devp,
 void vdin_frame_lock_check(struct vdin_dev_s *devp, int state);
 void vdin_v4l2_init(struct vdin_dev_s *devp, struct platform_device *pl_dev);
 void vdin_pause_hw_write(struct vdin_dev_s *devp, bool rdma_en);
+void vdin_reg_dmc_notifier(unsigned int index);
+void vdin_unreg_dmc_notifier(unsigned int index);
 #endif /* __TVIN_VDIN_DRV_H */
 

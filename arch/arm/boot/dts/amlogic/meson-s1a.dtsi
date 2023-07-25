@@ -1902,8 +1902,8 @@
 
 	sd_iso7816_pins:sd_iso7816_pins {
 		mux {
-			groups = "iso7816_clk_h",
-				"iso7816_data_h";
+			groups = "iso7816_clk_d7",
+				"iso7816_data_d8";
 			function = "iso7816";
 			input-enable;
 			bias-pull-down;

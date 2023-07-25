@@ -540,7 +540,7 @@ static int sc2_smc_addr(struct platform_device *pdev)
 		return -1;
 	}
 
-	pr_error("%s addr:0x%x\n", __func__, (unsigned int)res->start);
+	pr_info("%s addr:0x%x\n", __func__, (unsigned int)res->start);
 
 	if (res->start == 0xfe000000) {
 		cpu_type = get_cpu_type();
@@ -550,9 +550,9 @@ static int sc2_smc_addr(struct platform_device *pdev)
 		if (cpu_type == MESON_CPU_MAJOR_ID_T3X)
 			sys_addr_offset = 0x40000;
 		p_smc_hw_base += sys_addr_offset;
-		pr_error("sc2 smartcard\n");
+		pr_info("sc2 smartcard\n");
 	} else {
-		pr_error("t5w smartcard\n");
+		pr_info("t5w smartcard\n");
 		t5w_smartcard = 1;
 	}
 	return 0;
@@ -608,7 +608,7 @@ static ssize_t ctrl_5v3v_store(struct class *class,
 	if (smc->enable_5v3v_pin) {
 		_gpio_out(smc->enable_5v3v_pin,
 			  smc->enable_5v3v_level, SMC_ENABLE_5V3V_PIN_NAME);
-		pr_error("enable_pin: -->(%d)\n",
+		pr_info("enable_pin: -->(%d)\n",
 			 (smc->enable_5v3v_level) ? 1 : 0);
 	}
 	mutex_unlock(&smc_lock);
@@ -1129,7 +1129,7 @@ static void smc_mp0_clk_set(int clk)
 			data |= 0x500 + 400000 / clk - 1;
 
 		sc2_write_sys(SMARTCARD_CLK_CTRL, data);
-		pr_error("%s S5 data:0x%0x\n", __func__, data);
+		pr_info("%s S5 data:0x%0x\n", __func__, data);
 		return;
 	} else if (cpu_type == MESON_CPU_MAJOR_ID_T5M) {
 		data &= 0xFFF00000;
@@ -1143,7 +1143,7 @@ static void smc_mp0_clk_set(int clk)
 			data |= 0x500 + 400000 / clk - 1;
 
 		sc2_write_sys(SMARTCARD_CLK_CTRL, data);
-		pr_error("%s T5M data:0x%0x\n", __func__, data);
+		pr_info("%s T5M data:0x%0x\n", __func__, data);
 		return;
 	}
 	data &= 0xFFFFF900;
@@ -1157,7 +1157,7 @@ static void smc_mp0_clk_set(int clk)
 		data |= 500000 / clk - 1;
 
 	sc2_write_sys(SMARTCARD_CLK_CTRL, data);
-	pr_error("%s other data:0x%0x\n", __func__, data);
+	pr_info("%s other data:0x%0x\n", __func__, data);
 }
 
 static void smc_clk_enable(int enable)
@@ -1186,7 +1186,7 @@ static int smc_hw_set_param(struct smc_dev *smc)
 	struct smccard_hw_reg5 *reg5;
 	unsigned long freq_cpu = 0;
 
-	pr_error("hw set param\n");
+	pr_info("hw set param\n");
 	if (smc->param.freq == 0 || smc->param.d == 0) {
 		pr_error("hw set param, freq or d = 0 invalid\n");
 		return 0;
@@ -1226,13 +1226,13 @@ static int smc_hw_set_param(struct smc_dev *smc)
 	reg0->etu_divider = smc->param.f / smc->param.d - 1;
 #endif
 	SMC_WRITE_REG(REG0, v);
-	pr_error("REG0: 0x%08lx\n", v);
-	pr_error("f	  :%d\n", smc->param.f);
-	pr_error("d	  :%d\n", smc->param.d);
-	pr_error("freq	:%d\n", smc->param.freq);
+	pr_info("REG0: 0x%08lx\n", v);
+	pr_info("f	  :%d\n", smc->param.f);
+	pr_info("d	  :%d\n", smc->param.d);
+	pr_info("freq	:%d\n", smc->param.freq);
 
 	v = SMC_READ_REG(REG1);
-	pr_error("REG1: 0x%08lx\n", v);
+	pr_info("REG1: 0x%08lx\n", v);
 
 	v = SMC_READ_REG(REG2);
 	reg2 = (struct smccard_hw_reg2 *)&v;
@@ -1253,25 +1253,25 @@ static int smc_hw_set_param(struct smc_dev *smc)
 		reg2->clk_sel = clock_source;
 	/*reg2->pulse_irq = 0; */
 	SMC_WRITE_REG(REG2, v);
-	pr_error("REG2: 0x%08lx\n", v);
-	pr_error("recv_inv:%d\n", smc->param.recv_invert);
-	pr_error("recv_lsb:%d\n", smc->param.recv_lsb_msb);
-	pr_error("recv_par:%d\n", smc->param.recv_parity);
-	pr_error("recv_npa:%d\n", smc->param.recv_no_parity);
-	pr_error("xmit_inv:%d\n", smc->param.xmit_invert);
-	pr_error("xmit_lsb:%d\n", smc->param.xmit_lsb_msb);
-	pr_error("xmit_par:%d\n", smc->param.xmit_parity);
-	pr_error("xmit_rep:%d\n", smc->param.xmit_repeat_dis);
-	pr_error("xmit_try:%d\n", smc->param.xmit_retries);
+	pr_info("REG2: 0x%08lx\n", v);
+	pr_info("recv_inv:%d\n", smc->param.recv_invert);
+	pr_info("recv_lsb:%d\n", smc->param.recv_lsb_msb);
+	pr_info("recv_par:%d\n", smc->param.recv_parity);
+	pr_info("recv_npa:%d\n", smc->param.recv_no_parity);
+	pr_info("xmit_inv:%d\n", smc->param.xmit_invert);
+	pr_info("xmit_lsb:%d\n", smc->param.xmit_lsb_msb);
+	pr_info("xmit_par:%d\n", smc->param.xmit_parity);
+	pr_info("xmit_rep:%d\n", smc->param.xmit_repeat_dis);
+	pr_info("xmit_try:%d\n", smc->param.xmit_retries);
 	if (t5w_smartcard)
-		pr_error("clk_tcnt:%d freq_cpu:%ld\n", reg2->clk_tcnt, freq_cpu);
+		pr_info("clk_tcnt:%d freq_cpu:%ld\n", reg2->clk_tcnt, freq_cpu);
 
 	v = SMC_READ_REG(REG5);
 	reg5 = (struct smccard_hw_reg5 *)&v;
 	reg5->cwt_detect_en = cwt_det_en;
 	reg5->bwt_base_time_gnt = bwt_time;
 	SMC_WRITE_REG(REG5, v);
-	pr_error("REG5: 0x%08lx\n", v);
+	pr_info("REG5: 0x%08lx\n", v);
 
 	v = SMC_READ_REG(REG6);
 	reg6 = (struct smccard_hw_reg6 *)&v;
@@ -1281,11 +1281,11 @@ static int smc_hw_set_param(struct smc_dev *smc)
 	reg6->N_parameter = smc->param.n;
 
 	SMC_WRITE_REG(REG6, v);
-	pr_error("REG6: 0x%08lx\n", v);
-	pr_error("N	  :%d\n", smc->param.n);
-	pr_error("cwi	 :%d\n", smc->param.cwi);
-	pr_error("bgt	 :%d\n", smc->param.bgt);
-	pr_error("bwi	 :%d\n", smc->param.bwi);
+	pr_inf("REG6: 0x%08lx\n", v);
+	pr_inf("N	  :%d\n", smc->param.n);
+	pr_inf("cwi	 :%d\n", smc->param.cwi);
+	pr_inf("bgt	 :%d\n", smc->param.bgt);
+	pr_inf("bwi	 :%d\n", smc->param.bwi);
 
 	return 0;
 }
@@ -1344,7 +1344,7 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 			freq_cpu = 500000;
 			break;
 		}
-		pr_error("SMC CLK SOURCE - %luKHz\n", freq_cpu);
+		pr_info("SMC CLK SOURCE - %luKHz\n", freq_cpu);
 	} else {
 		if (!smartcard_mpll0)
 			clk_set_rate(aml_smartcard_clk, smc->param.freq * 1000);
@@ -1381,10 +1381,10 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 	if (smartcard_mpll0)
 		smc_mp0_clk_set(smc->param.freq);
 
-	pr_error("REG0: 0x%08lx\n", v);
-	pr_error("f	  :%d\n", smc->param.f);
-	pr_error("d	  :%d\n", smc->param.d);
-	pr_error("freq	:%d\n", smc->param.freq);
+	pr_info("REG0: 0x%08lx\n", v);
+	pr_info("f	  :%d\n", smc->param.f);
+	pr_info("d	  :%d\n", smc->param.d);
+	pr_info("freq	:%d\n", smc->param.freq);
 
 	v = SMC_READ_REG(REG1);
 	reg1 = (struct smc_answer_t0_rst *)&v;
@@ -1395,7 +1395,7 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 	reg1->etu_clk_sel = ETU_CLK_SEL;
 	reg1->atr_reset = atr_reset;
 	SMC_WRITE_REG(REG1, v);
-	pr_error("REG1: 0x%08lx\n", v);
+	pr_info("REG1: 0x%08lx\n", v);
 
 	v = SMC_READ_REG(REG2);
 	reg2 = (struct smccard_hw_reg2 *)&v;
@@ -1416,18 +1416,18 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 		reg2->clk_sel = clock_source;
 	/*reg2->pulse_irq = 0; */
 	SMC_WRITE_REG(REG2, v);
-	pr_error("REG2: 0x%08lx\n", v);
-	pr_error("recv_inv:%d\n", smc->param.recv_invert);
-	pr_error("recv_lsb:%d\n", smc->param.recv_lsb_msb);
-	pr_error("recv_par:%d\n", smc->param.recv_parity);
-	pr_error("recv_npa:%d\n", smc->param.recv_no_parity);
-	pr_error("xmit_inv:%d\n", smc->param.xmit_invert);
-	pr_error("xmit_lsb:%d\n", smc->param.xmit_lsb_msb);
-	pr_error("xmit_par:%d\n", smc->param.xmit_parity);
-	pr_error("xmit_rep:%d\n", smc->param.xmit_repeat_dis);
-	pr_error("xmit_try:%d\n", smc->param.xmit_retries);
+	pr_info("REG2: 0x%08lx\n", v);
+	pr_info("recv_inv:%d\n", smc->param.recv_invert);
+	pr_info("recv_lsb:%d\n", smc->param.recv_lsb_msb);
+	pr_info("recv_par:%d\n", smc->param.recv_parity);
+	pr_info("recv_npa:%d\n", smc->param.recv_no_parity);
+	pr_info("xmit_inv:%d\n", smc->param.xmit_invert);
+	pr_info("xmit_lsb:%d\n", smc->param.xmit_lsb_msb);
+	pr_info("xmit_par:%d\n", smc->param.xmit_parity);
+	pr_info("xmit_rep:%d\n", smc->param.xmit_repeat_dis);
+	pr_info("xmit_try:%d\n", smc->param.xmit_retries);
 	if (t5w_smartcard)
-		pr_error("clk_tcnt:%d freq_cpu:%ld\n", reg2->clk_tcnt, freq_cpu);
+		pr_info("clk_tcnt:%d freq_cpu:%ld\n", reg2->clk_tcnt, freq_cpu);
 
 	v = SMC_READ_REG(INTR);
 	reg_int = (struct smc_interrupt_reg *)&v;
@@ -1442,7 +1442,7 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 	reg_int->rst_expired_int_mask = 1;
 	reg_int->card_detect_int_mask = 0;
 	SMC_WRITE_REG(INTR, v | 0x03FF);
-	pr_error("INTR: 0x%08lx\n", v);
+	pr_info("INTR: 0x%08lx\n", v);
 
 	v = SMC_READ_REG(REG5);
 	reg5 = (struct smccard_hw_reg5 *)&v;
@@ -1451,7 +1451,7 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 	reg5->etu_msr_en = etu_msr_en;
 	reg5->bwt_base_time_gnt = bwt_time;
 	SMC_WRITE_REG(REG5, v);
-	pr_error("REG5: 0x%08lx\n", v);
+	pr_info("REG5: 0x%08lx\n", v);
 
 	v = SMC_READ_REG(REG6);
 	reg6 = (struct smccard_hw_reg6 *)&v;
@@ -1461,11 +1461,11 @@ static int smc_hw_setup(struct smc_dev *smc, int clk_out)
 	reg6->bwi = smc->param.bwi;
 
 	SMC_WRITE_REG(REG6, v);
-	pr_error("REG6: 0x%08lx\n", v);
-	pr_error("N	  :%d\n", smc->param.n);
-	pr_error("cwi	 :%d\n", smc->param.cwi);
-	pr_error("bgt	 :%d\n", smc->param.bgt);
-	pr_error("bwi	 :%d\n", smc->param.bwi);
+	pr_info("REG6: 0x%08lx\n", v);
+	pr_info("N	  :%d\n", smc->param.n);
+	pr_info("cwi	 :%d\n", smc->param.cwi);
+	pr_info("bgt	 :%d\n", smc->param.bgt);
+	pr_info("bwi	 :%d\n", smc->param.bwi);
 
 	/*use new recv_fifo_count(8bits) to void overflow(4bits) issue*/
 	v = SMC_READ_REG(REG8);
@@ -1524,7 +1524,7 @@ static void disable_smc_clk(struct smc_dev *smc)
 		 */
 		//usleep_range(1000, 1200);
 	} else {
-		pr_error("no reg/bit or pin");
+		pr_info("no reg/bit or pin");
 	}
 }
 
@@ -2588,11 +2588,11 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 					_gpio_out(smc->enable_pin,
 						smc->enable_level,
 						SMC_ENABLE_PIN_NAME);
-					pr_error("enable_pin: -->(%d)\n",
+					pr_info("enable_pin: -->(%d)\n",
 						 (!smc->enable_level) ? 1 : 0);
 				}
 			} else {
-				pr_error("cannot find resource \"%s\"\n", buf);
+				pr_info("cannot find resource \"%s\"\n", buf);
 			}
 		}
 	}
@@ -2601,7 +2601,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 	ret = _set_gpio(smc, &smc->reset_pin, "reset_pin",
 		OUTPUT, OUTLEVEL_HIGH);
 	if (ret) {
-		pr_dbg("smc reset pin request failed, we can not work now\n");
+		pr_error("smc reset pin request failed, we can not work now\n");
 		return -1;
 	}
 	ret = of_property_read_u32(smc->pdev->dev.of_node,
@@ -2626,7 +2626,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 	ret = of_property_read_u32(smc->pdev->dev.of_node, buf, &value);
 	if (!ret) {
 		smc->pin_clk_pinmux_reg = value;
-		pr_error("%s: 0x%x\n", buf, smc->pin_clk_pinmux_reg);
+		pr_info("%s: 0x%x\n", buf, smc->pin_clk_pinmux_reg);
 	} else {
 		pr_error("cannot find resource \"%s\"\n", buf);
 	}
@@ -2635,7 +2635,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 	ret = of_property_read_u32(smc->pdev->dev.of_node, buf, &value);
 	if (!ret) {
 		smc->pin_clk_pinmux_bit = value;
-		pr_error("%s: 0x%x\n", buf, smc->pin_clk_pinmux_bit);
+		pr_info("%s: 0x%x\n", buf, smc->pin_clk_pinmux_bit);
 	} else {
 		pr_error("cannot find resource \"%s\"\n", buf);
 	}
@@ -2644,7 +2644,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 	ret = of_property_read_u32(smc->pdev->dev.of_node, buf, &value);
 	if (!ret) {
 		smc->pin_clk_oen_reg = value;
-		pr_error("%s: 0x%x\n", buf, smc->pin_clk_oen_reg);
+		pr_info("%s: 0x%x\n", buf, smc->pin_clk_oen_reg);
 	} else {
 		pr_error("cannot find resource \"%s\"\n", buf);
 	}
@@ -2654,7 +2654,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 	ret = of_property_read_u32(smc->pdev->dev.of_node, buf, &value);
 	if (!ret) {
 		smc->pin_clk_out_reg = value;
-		pr_error("%s: 0x%x\n", buf, smc->pin_clk_out_reg);
+		pr_info("%s: 0x%x\n", buf, smc->pin_clk_out_reg);
 	} else {
 		pr_error("cannot find resource \"%s\"\n", buf);
 	}
@@ -2664,7 +2664,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 	ret = of_property_read_u32(smc->pdev->dev.of_node, buf, &value);
 	if (!ret) {
 		smc->pin_clk_oebit = value;
-		pr_error("%s: 0x%x\n", buf, smc->pin_clk_oebit);
+		pr_info("%s: 0x%x\n", buf, smc->pin_clk_oebit);
 	} else {
 		pr_error("cannot find resource \"%s\"\n", buf);
 	}
@@ -2673,7 +2673,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 	ret = of_property_read_u32(smc->pdev->dev.of_node, buf, &value);
 	if (!ret) {
 		smc->pin_clk_oubit = value;
-		pr_error("%s: 0x%x\n", buf, smc->pin_clk_oubit);
+		pr_info("%s: 0x%x\n", buf, smc->pin_clk_oubit);
 	} else {
 		pr_error("cannot find resource \"%s\"\n", buf);
 	}
@@ -2682,7 +2682,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 	if (!smc->detect_pin) {
 		ret = _set_gpio(smc, &smc->detect_pin, "detect_pin", INPUT, 0);
 		if (ret) {
-			pr_dbg("smc detect_pin failed, we can not work\n");
+			pr_error("smc detect_pin failed, we can not work\n");
 			return -1;
 		}
 	}
@@ -2700,7 +2700,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 	ret = of_property_read_u32(smc->pdev->dev.of_node, buf, &value);
 	if (!ret) {
 		clock_source = value;
-		pr_error("%s: %d\n", buf, clock_source);
+		pr_info("%s: %d\n", buf, clock_source);
 	} else {
 		pr_error("cannot find resource \"%s\"\n", buf);
 	}
@@ -2710,7 +2710,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 	ret = of_property_read_u32(smc->pdev->dev.of_node, buf, &value);
 	if (!ret) {
 		smc->detect_invert = value;
-		pr_error("%s: %d\n", buf, smc->detect_invert);
+		pr_info("%s: %d\n", buf, smc->detect_invert);
 	} else {
 		pr_error("cannot find resource \"%s\"\n", buf);
 	}
@@ -2732,7 +2732,7 @@ static int smc_dev_init(struct smc_dev *smc, int id)
 			_gpio_out(smc->enable_5v3v_pin,
 				  smc->enable_5v3v_level,
 				  SMC_ENABLE_5V3V_PIN_NAME);
-			pr_error("5v3v_pin: -->(%d)\n",
+			pr_info("5v3v_pin: -->(%d)\n",
 				 (smc->enable_5v3v_level) ? 1 : 0);
 		}
 	} else {

@@ -142,7 +142,10 @@ struct smc_status_reg {
 	unsigned send_error_status:1;	/* Bit 7*/
 	unsigned rst_expired_status:1;	/* Bit 8*/
 	unsigned card_detect_status:1;	/* Bit 9*/
-	unsigned unused:6;		/* Bit 15:10*/
+	unsigned fifo_trigger:1;        /* Bit 10 */
+	unsigned unused:1;		/* Bit 11*/
+	unsigned xmit_fifo_count_h:2;	/* Bit 13:12*/
+	unsigned version:2;		/* Bit 15:14*/
 	unsigned recv_fifo_count:4;	/* Bit 19:16*/
 	unsigned recv_fifo_empty:1;	/* Bit 20*/
 	unsigned recv_fifo_full:1;	/* Bit 21*/
@@ -164,7 +167,10 @@ struct smc_status_reg {
 	unsigned recv_fifo_full:1;	/* Bit 21*/
 	unsigned recv_fifo_empty_:1;	/* Bit 20*/
 	unsigned recv_fifo_count:4;	/* Bit 19:16*/
-	unsigned unused:6;		/* Bit 15:10*/
+	unsigned version:2;		/* Bit 15:14*/
+	unsigned xmit_fifo_count_h:2;	/* Bit 13:12*/
+	unsigned unused:1;		/* Bit 11*/
+	unsigned fifo_trigger:1;        /* Bit 10 */
 	unsigned card_detect_status:1;	/* Bit 9*/
 	unsigned rst_expired_status:1;	/* Bit 8*/
 	unsigned send_error_status:1;	/* Bit 7*/
@@ -190,7 +196,8 @@ struct smc_interrupt_reg {
 	unsigned send_error_int:1;		/* Bit 7*/
 	unsigned rst_expired_int:1;		/* Bit 8*/
 	unsigned card_detect_int:1;		/* Bit 9*/
-	unsigned unused1:6;		/* Bit 15:10*/
+	unsigned fifo_trigger_int:1;		/* Bit 10 */
+	unsigned unused1:5;		/* Bit 15:11*/
 	unsigned recv_fifo_bytes_threshold_int_mask:1;	/* Bit 16*/
 	unsigned send_fifo_last_byte_int_mask:1;	/* Bit 17*/
 	unsigned cwt_expired_int_mask:1;	/* Bit 18*/
@@ -201,9 +208,11 @@ struct smc_interrupt_reg {
 	unsigned send_error_int_mask:1;	/* Bit 23*/
 	unsigned rst_expired_int_mask:1;	/* Bit 24*/
 	unsigned card_detect_int_mask:1;	/* Bit 25*/
-	unsigned unused2:6;		/* Bit 31:26*/
+	unsigned fifo_trigger_int_mask:1;   /* Bit 26 */
+	unsigned unused2:5;		/* Bit 31:27*/
 #else
-	unsigned unused2:6;		/* Bit 31:26*/
+	unsigned unused2:5;		/* Bit 31:27*/
+	unsigned fifo_trigger_mask:1;   /* Bit 26 */
 	unsigned card_detect_int_mask:1;	/* Bit 25*/
 	unsigned rst_expired_int_mask:1;	/* Bit 24*/
 	unsigned send_error_int_mask:1;	/* Bit 23*/
@@ -214,7 +223,8 @@ struct smc_interrupt_reg {
 	unsigned cwt_expired_int_mask:1;	/* Bit 18*/
 	unsigned send_fifo_last_byte_int_mask:1;	/* Bit 17*/
 	unsigned recv_fifo_bytes_threshold_int_mask:1;	/* Bit 16*/
-	unsigned unused1:6;		/* Bit 15:10*/
+	unsigned unused1:5;		/* Bit 15:11*/
+	unsigned fifo_trigger_int:1		/* Bit 10 */
 	unsigned card_detect_int:1;		/* Bit 9*/
 	unsigned rst_expired_int:1;		/* Bit 8*/
 	unsigned send_error_int:1;		/* Bit 7*/
@@ -271,9 +281,13 @@ struct smccard_hw_reg8 {
 	unsigned use_lrg_fifo_recv:1;	/* Bit 8*/
 	unsigned unused1:7;	/* Bit 15:9*/
 	unsigned recv_fifo_count:8;	/* Bit 23:16*/
-	unsigned unused2:8;	/* Bit 31:24*/
+	unsigned fifo_trigger_level:6; /* Bit 29:24*/
+	unsigned parity_error_check:1; /* Bit 30 */
+	unsigned ignore_n_for_last_bit:1; /* Bit 31 */
 #else
-	unsigned unused2:8;	/* Bit 31:24*/
+	unsigned ignore_n_for_last_bit:1; /* Bit 31 */
+	unsigned parity_error_check:1; /* Bit 30 */
+	unsigned fifo_trigger_level:6; /* Bit 29:24*/
 	unsigned recv_fifo_count:8;	/* Bit 23:16*/
 	unsigned unused1:7;				/* Bit 15:9*/
 	unsigned use_lrg_fifo_recv:1;	/* Bit 8*/

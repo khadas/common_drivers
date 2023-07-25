@@ -3820,6 +3820,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(rx_info.aml_phy.hyper_gain_en, i++);
 	pr_var(edid_reset_max, i++);
 	pr_var(vdin_reset_pcs_en, i++);
+	pr_var(rx_5v_wake_up_en, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4357,6 +4358,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(vdin_reset_pcs_en),
 		&vdin_reset_pcs_en, value))
 		return pr_var(vdin_reset_pcs_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx_5v_wake_up_en),
+		&rx_5v_wake_up_en, value))
+		return pr_var(rx_5v_wake_up_en, index);
 	return 0;
 }
 
@@ -7728,6 +7732,8 @@ int hdmirx_debug(const char *buf, int size)
 		dump_aud21_param(E_PORT2);
 	} else if (strncmp(tmpbuf, "fpll", 4) == 0) {
 		rx_21_fpll_cfg(rx[port].var.frl_rate, port);
+	} else if (strncmp(tmpbuf, "wake", 4) == 0) {
+		hdmirx_wr_bits_top_common(TOP_EDID_RAM_OVR0_DATA, _BIT(0), 1);
 	}
 	return 0;
 }

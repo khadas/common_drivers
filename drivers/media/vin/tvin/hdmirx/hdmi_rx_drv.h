@@ -94,6 +94,7 @@
 /* play next song no sound */
 /* 2023.7.5 clear dv packet when no emp */
 /* 2023.7.12 txhd2 bring up debug */
+/* 2023.8.1 add ctrl of 5v wake up */
 #define RX_VER1 "ver.2023/7/12"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
@@ -954,6 +955,7 @@ extern u32 dbg_pkt;
 extern int disable_hdr;
 extern int rx_phy_level;
 extern int vdin_reset_pcs_en;
+extern int rx_5v_wake_up_en;
 extern char edid_cur[EDID_SIZE];
 #ifdef CONFIG_AMLOGIC_MEDIA_VRR
 extern struct notifier_block vrr_notify;

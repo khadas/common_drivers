@@ -171,6 +171,7 @@ int suspend_pddq_sel = 1;
 int hpd_low_cec_off = 1;
 int disable_port_num;
 int disable_port_en;
+int rx_5v_wake_up_en;
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 static bool early_suspend_flag;
 #endif
@@ -1972,6 +1973,12 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		}
 		mutex_unlock(&devp->rx_lock);
 		break;
+	case HDMI_IOC_5V_WAKE_UP_ON:
+		hdmirx_wr_bits_top_common(TOP_EDID_RAM_OVR0_DATA, _BIT(0), 1);
+		break;
+	case HDMI_IOC_5V_WAKE_UP_OFF:
+		hdmirx_wr_bits_top_common(TOP_EDID_RAM_OVR0_DATA, _BIT(0), 0);
+		break;
 	default:
 		ret = -ENOIOCTLCMD;
 		break;
@@ -3761,9 +3768,19 @@ static int hdmirx_probe(struct platform_device *pdev)
 		disable_hdr = 0;
 		rx_pr("not find disable_hdr, hdr enable by default\n");
 	}
+	ret = of_property_read_u32(pdev->dev.of_node,
+				   "rx_5v_wake_up_en",
+				   &rx_5v_wake_up_en);
+	if (ret) {
+		rx_5v_wake_up_en = 0;
+		rx_pr("not find rx_5v_wake_up_en, soundbar by default\n");
+	}
 	ret = of_reserved_mem_device_init(&pdev->dev);
 	if (ret != 0)
 		rx_pr("warning: no rev cmd mem\n");
+	hdmirx_wr_bits_top_common(TOP_EDID_RAM_OVR0_DATA, _BIT(0), 0);
+	if (rx_5v_wake_up_en)
+		hdmirx_wr_bits_top_common(TOP_EDID_RAM_OVR0_DATA, _BIT(0), 1);
 	rx_emp_resource_allocate(&pdev->dev);
 	if (rx_info.chip_id >= CHIP_ID_T3X)
 		rx_emp1_resource_allocate(&pdev->dev);

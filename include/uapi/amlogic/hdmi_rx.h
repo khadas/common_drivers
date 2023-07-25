@@ -102,6 +102,7 @@ struct spd_infoframe_st {
 #define HDMI_IOC_GET_SPD_SRC_INFO	_IOR(HDMI_IOC_MAGIC, 0x11, struct spd_infoframe_st)
 #define HDMI_5V_PIN_STATUS		_IOR(HDMI_IOC_MAGIC, 0x12, unsigned int)
 #define HDMI_IOC_EDID_UPDATE_WITH_PORT  _IOW(HDMI_IOC_MAGIC, 0x13, unsigned char)
-
+#define HDMI_IOC_5V_WAKE_UP_ON _IO(HDMI_IOC_MAGIC, 0x13)
+#define HDMI_IOC_5V_WAKE_UP_OFF _IO(HDMI_IOC_MAGIC, 0x14)
 #endif
 

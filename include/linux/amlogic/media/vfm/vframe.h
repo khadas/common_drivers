@@ -364,6 +364,7 @@ struct vframe_src_fmt_s {
 	int parse_ret_flags;
 	u32 play_id;
 	int dv_id;
+	bool top1_missed;
 };
 
 enum pic_mode_provider_e {

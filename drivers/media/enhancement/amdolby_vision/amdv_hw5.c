@@ -69,7 +69,9 @@ static int last_int_top1b = 0x8;/*bit3 pyramid_frm_wr_done*/
 static int last_int_top2 = 0x10;/*bit4 out_frm_wr_done*/
 
 static u32 last_py_level = NO_LEVEL;
-static u32 py_level = NO_LEVEL;/*todo*/
+u32 py_level = NO_LEVEL;/*todo*/
+
+struct vd_proc_info_t *vd_proc_info;
 
 u32 test_dv;
 module_param(test_dv, uint, 0664);
@@ -140,57 +142,59 @@ void dump_pyramid_buf(unsigned int idx)
 	char name_buf[32];
 	struct file *fp = NULL;
 	loff_t pos;
+	int i;
 
 	if (idx < 1 || idx > 7) {
 		pr_info("pyramid index error : %d\n", idx);
 		return;
 	}
+	for (i = 0; i < 2; i++) {
+		switch (idx) {
+		case 1:
+			data_addr = (u8 *)py_addr[i].py_vaddr[0];
+			data_size = py_addr[i].top1_py_size[0];
+			break;
+		case 2:
+			data_addr = (u8 *)py_addr[i].py_vaddr[1];
+			data_size = py_addr[i].top1_py_size[1];
+			break;
+		case 3:
+			data_addr = (u8 *)py_addr[i].py_vaddr[2];
+			data_size = py_addr[i].top1_py_size[2];
+			break;
+		case 4:
+			data_addr = (u8 *)py_addr[i].py_vaddr[3];
+			data_size = py_addr[i].top1_py_size[3];
+			break;
+		case 5:
+			data_addr = (u8 *)py_addr[i].py_vaddr[4];
+			data_size = py_addr[i].top1_py_size[4];
+			break;
+		case 6:
+			data_addr = (u8 *)py_addr[i].py_vaddr[5];
+			data_size = py_addr[i].top1_py_size[5];
+			break;
+		case 7:
+			data_addr = (u8 *)py_addr[i].py_vaddr[6];
+			data_size = py_addr[i].top1_py_size[6];
+			break;
+		default:
+			break;
+		}
 
-	switch (idx) {
-	case 1:
-		data_addr = (u8 *)py_addr.py1_vaddr;
-		data_size = py_addr.top1_py1_size;
-		break;
-	case 2:
-		data_addr = (u8 *)py_addr.py2_vaddr;
-		data_size = py_addr.top1_py2_size;
-		break;
-	case 3:
-		data_addr = (u8 *)py_addr.py3_vaddr;
-		data_size = py_addr.top1_py3_size;
-		break;
-	case 4:
-		data_addr = (u8 *)py_addr.py4_vaddr;
-		data_size = py_addr.top1_py4_size;
-		break;
-	case 5:
-		data_addr = (u8 *)py_addr.py5_vaddr;
-		data_size = py_addr.top1_py5_size;
-		break;
-	case 6:
-		data_addr = (u8 *)py_addr.py6_vaddr;
-		data_size = py_addr.top1_py6_size;
-		break;
-	case 7:
-		data_addr = (u8 *)py_addr.py7_vaddr;
-		data_size = py_addr.top1_py7_size;
-		break;
-	default:
-		break;
+		snprintf(name_buf, sizeof(name_buf), "/mnt/pyramid_%d_%d.yuv", idx, i);
+		fp = filp_open(name_buf, O_CREAT | O_RDWR, 0644);
+		if (IS_ERR(fp)) {
+			pr_info("%s: fp dump failed.\n", __func__);
+			return;
+		}
+
+		pos = fp->f_pos;
+		kernel_write(fp, data_addr, data_size, &pos);
+		fp->f_pos = pos;
+		pr_info("%s: write %d, %u size.\n", __func__, idx, data_size);
+		filp_close(fp, NULL);
 	}
-
-	snprintf(name_buf, sizeof(name_buf), "/mnt/pyramid_%d.yuv", idx);
-	fp = filp_open(name_buf, O_CREAT | O_RDWR, 0644);
-	if (IS_ERR(fp)) {
-		pr_info("%s: fp dump failed.\n", __func__);
-		return;
-	}
-
-	pos = fp->f_pos;
-	kernel_write(fp, data_addr, data_size, &pos);
-	fp->f_pos = pos;
-	pr_info("%s: write %d, %u size.\n", __func__, idx, data_size);
-	filp_close(fp, NULL);
 #endif
 }
 
@@ -903,6 +907,7 @@ void enable_amdv_hw5(int enable)
 					hdr_vd1_off(VPP_TOP0);
 				if (!top2_info.core_on)
 					set_frame_count(0);
+				vd_proc_info = get_vd_proc_amdv_info();
 				if (enable_top1 && (amdv_mask & 1) &&
 					top1_info.amdv_setting_video_flag) {
 					VSYNC_WR_DV_REG_BITS
@@ -917,6 +922,11 @@ void enable_amdv_hw5(int enable)
 						(T3X_VD1_S0_DV_BYPASS_CTRL,
 						 1,
 						 0, 1); /* dv path enable */
+					if (vd_proc_info && vd_proc_info->slice_num == 2)
+						VSYNC_WR_DV_REG_BITS
+							(T3X_VD1_S1_DV_BYPASS_CTRL,
+							 1,
+							 0, 1); /* dv path enable */
 					top2_info.core_on = true;
 				}
 				if (!(amdv_mask & 1) ||
@@ -1165,9 +1175,9 @@ int tv_top1_set(u64 *top1_reg,
 	int plane_bits = 8;
 
 	if (debug_dolby & 1)
-		pr_dv_dbg("top1_set:top1 on %d %d,reset %d,toggle %d,video %d\n",
+		pr_dv_dbg("top1_set:on %d %d,reset %d,toggle %d,video %d,wr %d\n",
 				   top1_info.core_on, top1_info.core_on_cnt,
-				   reset, toggle, video_enable);
+				   reset, toggle, video_enable, py_wr_id);
 
 	if (reset) /*hw reset*/
 		amdv_core_reset(AMDV_HW5);
@@ -1206,13 +1216,8 @@ int tv_top1_set(u64 *top1_reg,
 	}
 	top1_type.rdmif_stride[2] = 0;
 
-	top1_type.py_baddr[0] = py_addr.top1_py1_paddr;
-	top1_type.py_baddr[1] = py_addr.top1_py2_paddr;
-	top1_type.py_baddr[2] = py_addr.top1_py3_paddr;
-	top1_type.py_baddr[3] = py_addr.top1_py4_paddr;
-	top1_type.py_baddr[4] = py_addr.top1_py5_paddr;
-	top1_type.py_baddr[5] = py_addr.top1_py6_paddr;
-	top1_type.py_baddr[6] = py_addr.top1_py7_paddr;
+	for (i = 0; i < 7; i++)
+		top1_type.py_baddr[i] = py_addr[py_wr_id].top1_py_paddr[i];
 
 	if (top1_type.core1_hsize >= 512 && top1_type.core1_vsize >= 288)
 		top1_type.py_level = SEVEN_LEVEL;
@@ -1247,11 +1252,12 @@ int tv_top1_set(u64 *top1_reg,
 	}
 
 	if (debug_dolby & 0x80000)
-		pr_dv_dbg("top1 fmt %d,bit %d,stride %d,level %d\n",
+		pr_dv_dbg("top1 fmt %d,bit %d,stride %d,level %d,py_wr_id %d\n",
 					top1_type.fmt_mode,
 					top1_type.bit_mode,
 					top1_type.rdmif_stride[0],
-					top1_type.py_level);
+					top1_type.py_level,
+					py_wr_id);
 
 	top1_type.vsync_sel = 1;
 	top1_type.reg_frm_rst = 1;
@@ -1303,16 +1309,18 @@ int tv_top2_set(u64 *reg_data,
 			     bool hdmi,
 			     bool hdr10,
 			     bool reset,
-			     bool toggle)
+			     bool toggle,
+			     bool top1_missed)
 {
+	int i;
 	bool bypass_tvcore = (!hsize || !vsize || !(amdv_mask & 1));
-	dma_addr_t py_baddr[7] = {py_addr.top1_py1_paddr,
-					py_addr.top1_py2_paddr,
-					py_addr.top1_py3_paddr,
-					py_addr.top1_py4_paddr,
-					py_addr.top1_py5_paddr,
-					py_addr.top1_py6_paddr,
-					py_addr.top1_py7_paddr};
+	dma_addr_t py_baddr[7] = {py_addr[py_rd_id].top1_py_paddr[0],
+					py_addr[py_rd_id].top1_py_paddr[1],
+					py_addr[py_rd_id].top1_py_paddr[2],
+					py_addr[py_rd_id].top1_py_paddr[3],
+					py_addr[py_rd_id].top1_py_paddr[4],
+					py_addr[py_rd_id].top1_py_paddr[5],
+					py_addr[py_rd_id].top1_py_paddr[6]};
 
 	u32 py_stride[7] = {128, 128, 128, 128, 128, 128, 128};
 
@@ -1323,7 +1331,6 @@ int tv_top2_set(u64 *reg_data,
 	static int tmp_cnt;
 	u32 pyrd_crtl;
 	u32 top_misc;
-	struct vd_proc_info_t *vd_proc_info;
 
 	if (dolby_vision_on &&
 		(dolby_vision_flags & FLAG_DISABE_CORE_SETTING)) {
@@ -1391,9 +1398,9 @@ int tv_top2_set(u64 *reg_data,
 	//	reset = true;
 
 	if (debug_dolby & 1)
-		pr_dv_dbg("top2_set:top2 on %d %d,reset %d,toggle %d,video %d\n",
+		pr_dv_dbg("top2_set:on %d %d,reset %d,toggle %d,video %d,rd %d\n",
 				  top2_info.core_on, top2_info.core_on_cnt,
-				  reset, toggle, video_enable);
+				  reset, toggle, video_enable, py_rd_id);
 
 	if (reset) {/*hw reset*/
 		amdv_core_reset(AMDV_HW5);
@@ -1412,7 +1419,7 @@ int tv_top2_set(u64 *reg_data,
 			vd1_slice0_vsize = vd_proc_info->slice[0].vsize;
 		}
 	}
-	update_top2_reg(hsize, vsize);
+	//update_top2_reg(vd1_slice0_hsize, vsize);
 	py_level = NO_LEVEL;//todo
 	if (enable_top1)
 		py_level = top1_type.py_level;
@@ -1514,6 +1521,14 @@ int tv_top2_set(u64 *reg_data,
 		py_stride[5] = top1_stride_rdmif(32, 10);
 		py_stride[6] = top1_stride_rdmif(16, 10);
 
+		/*if not get a frame in advance,there will no pyramid.use zero pyramid*/
+		if (enable_top1 && top1_missed) {
+			for (i = 0; i < 7; i++)
+				py_baddr[i] = py_addr[2].top1_py_paddr[i];
+			if (debug_dolby & 1)
+				pr_dv_dbg("missed top1\n");
+		}
+
 		dolby5_top2_ini(vd1_slice0_hsize, vd1_slice0_vsize,
 				py_baddr, py_stride);
 
@@ -1566,13 +1581,25 @@ int tv_top_set(u64 *top1_reg,
 			     bool hdmi,
 			     bool hdr10,
 			     bool reset,
-			     bool toggle)
+			     bool toggle,
+			     bool top1_missed)
 {
 	u32 top_misc;
 
 	if (enable_top1) {
-		if (!top1_info.core_on)
+		if (!top1_info.core_on) {
 			reset = true;/*first frame with top1, reset*/
+			/*reset pyramid index*/
+			py_wr_id = 0;
+			py_rd_id = 0;
+		}
+
+		/*update pyramid write index when toggle new frame, except first frame*/
+		if (top1_info.core_on_cnt != 0) {
+			if (reset || toggle)
+				py_wr_id = py_wr_id ^ 1;
+		}
+
 		tv_top1_set(top1_reg, top1b_reg, reset,
 			video_enable, toggle);
 		if (!top1_info.core_on)
@@ -1589,8 +1616,15 @@ int tv_top_set(u64 *top1_reg,
 		if (/*top1_info.core_on_cnt == 0 &&*/
 			top2_info.core_on_cnt == 0)
 			reset = true;/*first frame with top2, reset*/
+
+		/*update pyramid read index when toggle new frame, except first frame*/
+		if (top1_info.core_on && top2_info.core_on_cnt != 0) {
+			if (reset || toggle)
+				py_rd_id = py_rd_id ^ 1;
+		}
+
 		tv_top2_set(top2_reg, hsize, vsize, video_enable,
-				src_chroma_format, hdmi, hdr10, reset, toggle);
+				src_chroma_format, hdmi, hdr10, reset, toggle, top1_missed);
 		if (video_enable && toggle)
 			++top2_info.core_on_cnt;
 	}
@@ -1678,20 +1712,60 @@ int dma_lut_write(void)
 	return 1;
 }
 
-void update_l1l4_hist_setting(void)
+void get_l1l4_hist(void)
+{
+	u32 index;
+
+	if (!tv_hw5_setting)
+		return;
+
+	if (!enable_top1) {
+		tv_hw5_setting->top1_stats.enable = false;
+		return;
+	}
+
+	tv_hw5_setting->top1_stats.enable = true;
+
+	index = (l1l4_rd_index) % L1L4_MD_COUNT;
+	memcpy(tv_hw5_setting->top1_stats.hist, histogram[index], HISTOGRAM_SIZE);
+	tv_hw5_setting->top1_stats.top1_l1l4.l1_min = l1l4_md[index][0];
+	tv_hw5_setting->top1_stats.top1_l1l4.l1_max = l1l4_md[index][1];
+	tv_hw5_setting->top1_stats.top1_l1l4.l1_mid = l1l4_md[index][2];
+	tv_hw5_setting->top1_stats.top1_l1l4.l4_std = l1l4_md[index][3];
+
+	++l1l4_rd_index;
+
+	if (debug_dolby & 0x100000)
+		pr_info("l1l4 index %d %d\n", l1l4_rd_index, l1l4_wr_index);
+}
+
+void set_l1l4_hist(void)
 {
 	u32 index;
 	u32 i;
+	u32 metadata0;
+	u32 metadata1;
 
 	if (!tv_hw5_setting || !enable_top1)
 		return;
 
+	metadata0 = READ_VPP_DV_REG(DOLBY5_CORE1_L1_MINMAX);
+	metadata1 = READ_VPP_DV_REG(DOLBY5_CORE1_L1_MID_L4);
+
+	index = (l1l4_wr_index) % L1L4_MD_COUNT;
+	l1l4_md[index][0] = metadata0 & 0xffff;
+	l1l4_md[index][1] = metadata0 >> 16;
+	l1l4_md[index][2] = metadata1 & 0xffff;
+	l1l4_md[index][3] = metadata1 >> 16;
+
 	memcpy(&dv5_md_hist.hist[0][0], dv5_md_hist.hist_vaddr, 256);
 
-	index = (l1l4_rd_index) % L1L4_MD_COUNT;
+	index = (l1l4_wr_index) % L1L4_MD_COUNT;
 	for (i = 0; i < 256 / 2; i++)
 		histogram[index][i] = dv5_md_hist.hist[0][i * 2 + 0] |
 				(dv5_md_hist.hist[0][i * 2 + 1] << 8);
+
+	++l1l4_wr_index;
 
 	if (debug_dolby & 0x100000) {
 		pr_info("top1 hist:\n");
@@ -1705,21 +1779,8 @@ void update_l1l4_hist_setting(void)
 				histogram[index][i * 8 + 5],
 				histogram[index][i * 8 + 6],
 				histogram[index][i * 8 + 7]);
-	}
-	memcpy(tv_hw5_setting->top1_stats.hist, histogram[index], HISTOGRAM_SIZE);
-
-	tv_hw5_setting->top1_stats.top1_l1l4.l1_min = l1l4_md[index][0];
-	tv_hw5_setting->top1_stats.top1_l1l4.l1_max = l1l4_md[index][1];
-	tv_hw5_setting->top1_stats.top1_l1l4.l1_mid = l1l4_md[index][2];
-	tv_hw5_setting->top1_stats.top1_l1l4.l1_std = l1l4_md[index][3];
-
-	if (debug_dolby & 0x2)
-		pr_info("update l1l4 hist %d %d %d\n",
-			top1_done, l1l4_rd_index, l1l4_wr_index);
-
-	if (top1_done) {
-		if (l1l4_rd_index < l1l4_wr_index)
-			++l1l4_rd_index;
+		pr_info("meta0: 0x%x, meta1: 0x%x, l1l4_index %d/%d\n",
+			metadata0, metadata1, l1l4_rd_index, l1l4_wr_index);
 	}
 }
 
@@ -1747,9 +1808,7 @@ void top1_output_hist_update(void)
 irqreturn_t amdv_isr(int irq, void *dev_id)
 {
 	/*1:top1 done;2+3:top1+top2 done;4+5:top1+top2 done*/
-	u32 metadata0;
-	u32 metadata1;
-	u32 index;
+
 	//bool reset = false;
 
 	isr_cnt++;
@@ -1758,21 +1817,9 @@ irqreturn_t amdv_isr(int irq, void *dev_id)
 
 	if (enable_top1) {
 		top1_done = true;
-		metadata0 = READ_VPP_DV_REG(DOLBY5_CORE1_L1_MINMAX);
-		metadata1 = READ_VPP_DV_REG(DOLBY5_CORE1_L1_MID_L4);
 
-		index = (l1l4_wr_index) % L1L4_MD_COUNT;
-		l1l4_md[index][0] = metadata0 & 0xffff;
-		l1l4_md[index][1] = metadata0 >> 16;
-		l1l4_md[index][2] = metadata1 & 0xffff;
-		l1l4_md[index][3] = metadata1 >> 16;
-		++l1l4_wr_index;
+		set_l1l4_hist();
 
-		//top1_output_hist_update();
-		update_l1l4_hist_setting();
-
-		if (debug_dolby & 0x100000)
-			pr_info("meta0: 0x%x, meta1: 0x%x\n", metadata0, metadata1);
 		WRITE_VPP_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 1, 8, 1); //top1 int, clear
 		WRITE_VPP_DV_REG_BITS(VPU_DOLBY_WRAP_IRQ, 0, 8, 1);
 

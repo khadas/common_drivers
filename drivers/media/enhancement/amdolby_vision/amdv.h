@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "202300719"
+#define DRIVER_VER "202300725"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"
@@ -91,6 +91,8 @@
 #define EXT_DM_SIZE 80812
 
 #define PYRAMID_SW_RST 1 /*NO need set pylevel before vsync*/
+
+#define PYRAMID_BUF_CNT 3
 
 #define DEBUG_HW5_RESET_EACH_VSYNC  0x1
 #define DEBUG_HW5_TOGGLE_EACH_VSYNC 0x2
@@ -654,13 +656,14 @@ struct l1l4_stats {
 	u16 l1_min;
 	u16 l1_max;
 	u16 l1_mid;
-	u16 l1_std;
+	u16 l4_std;
 };
 
 /* top1 output L1/L4 and Histogram */
 struct top1_stats_info {
 	struct l1l4_stats top1_l1l4;
 	u16 hist[128];
+	bool enable;
 };
 
 #define PREFIX_SEI_NUT_NAL 39
@@ -726,27 +729,9 @@ enum top2_source {
 };
 
 struct top1_pyramid_addr {
-	void *py1_vaddr;
-	void *py2_vaddr;
-	void *py3_vaddr;
-	void *py4_vaddr;
-	void *py5_vaddr;
-	void *py6_vaddr;
-	void *py7_vaddr;
-	dma_addr_t top1_py1_paddr;
-	dma_addr_t top1_py2_paddr;
-	dma_addr_t top1_py3_paddr;
-	dma_addr_t top1_py4_paddr;
-	dma_addr_t top1_py5_paddr;
-	dma_addr_t top1_py6_paddr;
-	dma_addr_t top1_py7_paddr;
-	u32 top1_py1_size;
-	u32 top1_py2_size;
-	u32 top1_py3_size;
-	u32 top1_py4_size;
-	u32 top1_py5_size;
-	u32 top1_py6_size;
-	u32 top1_py7_size;
+	void *py_vaddr[7];
+	dma_addr_t top1_py_paddr[7];
+	u32 top1_py_size[7];
 };
 
 struct ovlp_win_para {
@@ -894,7 +879,10 @@ extern u32 hw5_reg_from_file;
 extern u32 test_dv;
 extern struct video_inst_s top1_v_info;/*video info*/
 extern struct video_inst_s top2_v_info;/*video info*/
-extern struct top1_pyramid_addr py_addr;
+extern struct top1_pyramid_addr py_addr[PYRAMID_BUF_CNT];
+extern u8 py_wr_id;
+extern u8 py_rd_id;
+extern u32 py_level;
 extern struct dolby5_top1_md_hist dv5_md_hist;
 extern int force_top1_enable;
 extern u32 fix_data;
@@ -1253,7 +1241,8 @@ int tv_top_set(u64 *top1_reg,
 			     bool hdmi,
 			     bool hdr10,
 			     bool reset,
-			     bool toggle);
+			     bool toggle,
+			     bool top1_missed);
 void dolby5_bypass_ctrl(unsigned int en);
 int load_reg_and_lut_file(char *fw_name, void **dst_buf);
 void read_txt_to_buf(char *reg_txt, void *reg_buf, int reg_num, bool is_reg);
@@ -1262,7 +1251,7 @@ int dma_lut_init(void);
 void dma_lut_uninit(void);
 int dma_lut_write(void);
 irqreturn_t amdv_isr(int irq, void *dev_id);
-void update_l1l4_hist_setting(void);
+void get_l1l4_hist(void);
 void update_src_format_hw5(enum signal_format_enum src_format, struct vframe_s *vf);
 int amdv_update_src_format_hw5(struct vframe_s *vf, u8 toggle_mode);
 int amdv_wait_metadata_hw5(struct vframe_s *vf);

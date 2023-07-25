@@ -1222,7 +1222,6 @@ int amdv_parse_metadata_hw5_top1(struct vframe_s *vf)
 			     tdc.ambient_config.dark_detail,
 			     cfg_info[cur_pic_mode].dark_detail);
 
-	update_l1l4_hist_setting();
 
 	v_inst_info->src_format = src_format;
 	v_inst_info->input_mode = input_mode;
@@ -1341,6 +1340,7 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 	struct dynamic_cfg_s *p_ambient = NULL;
 	u32 cur_id = 0;
 	struct video_inst_s *v_inst_info = &top2_v_info;
+	struct vd_proc_info_t *vd_proc_info;
 
 	if (!p_funcs_tv || !p_funcs_tv->tv_hw5_control_path || !tv_hw5_setting)
 		return -1;
@@ -1959,7 +1959,7 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 			     tdc.ambient_config.dark_detail,
 			     cfg_info[cur_pic_mode].dark_detail);
 
-	update_l1l4_hist_setting();
+	get_l1l4_hist();
 
 	v_inst_info->src_format = src_format;
 	v_inst_info->input_mode = input_mode;
@@ -1995,8 +1995,12 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 	tv_hw5_setting->dither_bdp = 0;//dither bitdepth,0=>no dither
 	tv_hw5_setting->L1L4_distance = -1;
 	tv_hw5_setting->num_ext_downsamplers = num_downsamplers;//todo
-	tv_hw5_setting->force_num_slices = 0;
 	tv_hw5_setting->frame_rate = content_fps;
+	tv_hw5_setting->force_num_slices = 0;
+
+	vd_proc_info = get_vd_proc_amdv_info();
+	if (vd_proc_info && vd_proc_info->slice_num == 2)
+		tv_hw5_setting->force_num_slices = 2;
 
 	if (run_control_path) {
 		/*step2: top2 frame N-1*/
@@ -2275,7 +2279,7 @@ int amdolby_vision_process_hw5_top1(struct vframe_s *vf_top1,
 		 top1_info.amdv_setting_video_flag, /* video enable */
 		 src_chroma_format,
 		 tv_hw5_setting->top1.input_mode == IN_MODE_HDMI,
-		 src_is_42210bit, reset_flag, true);
+		 src_is_42210bit, reset_flag, true, false);
 	else if (hw5_reg_from_file)
 		tv_top_set
 		(NULL, NULL, NULL,
@@ -2283,7 +2287,7 @@ int amdolby_vision_process_hw5_top1(struct vframe_s *vf_top1,
 		 top1_info.amdv_setting_video_flag, /* video enable */
 		 src_chroma_format,
 		 false,
-		 src_is_42210bit, reset_flag, true);
+		 src_is_42210bit, reset_flag, true, false);
 
 	enable_amdv(1);
 	return 0;
@@ -2312,6 +2316,7 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 	static u8 last_toggle_mode;
 	static struct vframe_s *last_vf;
 	struct vframe_s *vf;
+	bool top1_missed = false;
 
 	if (!is_aml_tvmode())
 		return -1;
@@ -2483,6 +2488,8 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 		return 0;
 	}
 
+	top1_missed = vf ?  vf->src_fmt.top1_missed : false;
+
 	if (dolby_vision_flags & FLAG_TOGGLE_FRAME) {
 		if (!(dolby_vision_flags & FLAG_CERTIFICATION))
 			reset_flag =
@@ -2512,7 +2519,7 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 				 top2_info.amdv_setting_video_flag, /* video enable */
 				 src_chroma_format,
 				 tv_hw5_setting->top2.input_mode == IN_MODE_HDMI,
-				 src_is_42210bit, reset_flag, true);
+				 src_is_42210bit, reset_flag, true, top1_missed);
 			else if (hw5_reg_from_file)
 				tv_top_set
 				(NULL, NULL, NULL,
@@ -2520,7 +2527,7 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 				 top2_info.amdv_setting_video_flag, /* video enable */
 				 src_chroma_format,
 				 false,
-				 src_is_42210bit, reset_flag, true);
+				 src_is_42210bit, reset_flag, true, top1_missed);
 
 			if (!h_size || !v_size)
 				top2_info.amdv_setting_video_flag = false;
@@ -2574,7 +2581,7 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 				 top2_info.amdv_setting_video_flag, /* BL enable */
 				 src_chroma_format,
 				 tv_hw5_setting->top2.input_mode == IN_MODE_HDMI,
-				 src_is_42210bit, reset_flag, toggle_mode);
+				 src_is_42210bit, reset_flag, toggle_mode, top1_missed);
 			else if (hw5_reg_from_file)
 				tv_top_set
 				(NULL, NULL, NULL,
@@ -2582,7 +2589,7 @@ int amdolby_vision_process_hw5(struct vframe_s *vf_top1,
 				 top2_info.amdv_setting_video_flag, /* BL enable */
 				 src_chroma_format,
 				 false,
-				 src_is_42210bit, reset_flag, toggle_mode);
+				 src_is_42210bit, reset_flag, toggle_mode, top1_missed);
 		}
 	}
 	if (top2_info.core_on) {

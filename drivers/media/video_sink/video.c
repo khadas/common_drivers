@@ -3717,6 +3717,7 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 	struct vframe_s *vf_top1 = NULL;
 	int ret;
 	static bool force_top1_once;
+	static bool next_frame_miss_top1;
 #endif
 	struct vframe_s *cur_dispbuf_back = cur_dispbuf[0];
 	int toggle_cnt;
@@ -3963,6 +3964,12 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 				dv_vf_crc_check(vf)) {
 				break; // not render err crc frame
 			}
+			if (next_frame_miss_top1)
+				vf->src_fmt.top1_missed = true;
+			else
+				vf->src_fmt.top1_missed = false;
+
+			next_frame_miss_top1 = false;
 			/*top1 enable, need check one more frame*/
 			if (is_amdv_enable() && get_top1_onoff()) {/*todo*/
 				vf_top1 = amvideo_vf_peek();
@@ -3975,6 +3982,7 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 					//force_top1_once = true;
 					force_top1_once = false;
 					vf_top1 = vf;/*temporarily use cur vf for top1, no wait*/
+					next_frame_miss_top1 = true;
 				} else {
 					force_top1_once = false;
 				}

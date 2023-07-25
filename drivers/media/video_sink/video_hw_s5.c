@@ -11551,7 +11551,9 @@ void set_video_slice_policy(struct video_layer_s *layer,
 	u32 src_height = 0;
 	u32 slice_num = 1, pi_en = 0;
 	u32 vd1s1_vd2_prebld_en = 0;
-	u32 n2m_setting;
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+	u32 n2m_setting = 0;
+#endif
 	const struct vinfo_s *vinfo = get_current_vinfo();
 
 	if (cur_dev->display_module != S5_DISPLAY_MODULE)
@@ -11566,7 +11568,9 @@ void set_video_slice_policy(struct video_layer_s *layer,
 	}
 	update_vd_src_info(layer->layer_id,
 		src_width, src_height, vf->compWidth, vf->compHeight);
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
 	n2m_setting = frc_get_n2m_setting();
+#endif
 	if (layer->layer_id == 0) {
 		/* check output */
 		if (vinfo) {
@@ -11577,9 +11581,8 @@ void set_video_slice_policy(struct video_layer_s *layer,
 			/* 4k 120hz */
 			} else if (vinfo->width > 1920 && vinfo->height > 1080 &&
 				(vinfo->sync_duration_num /
-			    vinfo->sync_duration_den > 60) && n2m_setting != 2) {
-			    /* frc_get_n2m_setting 1 : n2m is 1:1; 2 :n2m is 1:2 */
-				/* 4k120hz and n2m 1:1, enalbe 2 slice, others 1 slice */
+			    vinfo->sync_duration_den > 60) && (!frc_n2m_1st_frame_worked(layer))) {
+				/* 4k120hz and !frc_n2m_worked, enalbe 2 slice, others 1 slice */
 				slice_num = 2;
 				if (video_is_meson_s5_cpu() && is_amdv_enable())
 					vd1s1_vd2_prebld_en = 1;
@@ -11590,6 +11593,15 @@ void set_video_slice_policy(struct video_layer_s *layer,
 		if (src_width > 4096 && src_height > 2160)
 			/* input: (4k-8k] */
 			slice_num = 4;
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+		if (n2m_setting == 2 &&
+			slice_num != layer->slice_num) {
+			layer->property_changed = true;
+			if (debug_flag)
+				pr_info("%s n2m_setting=%d, slice_num=%d-> %d\n",
+					__func__, n2m_setting, layer->slice_num, slice_num);
+		}
+#endif
 		layer->slice_num = slice_num;
 		layer->pi_enable = pi_en;
 		layer->vd1s1_vd2_prebld_en = vd1s1_vd2_prebld_en;

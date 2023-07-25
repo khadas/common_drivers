@@ -122,9 +122,6 @@ MODULE_AMLOG(LOG_LEVEL_ERROR, 0, LOG_DEFAULT_LEVEL_DESC, LOG_MASK_DESC);
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_PRIME_SL
 #include <linux/amlogic/media/amprime_sl/prime_sl.h>
 #endif
-#ifdef CONFIG_AMLOGIC_MEDIA_FRC
-#include <linux/amlogic/media/frc/frc_common.h>
-#endif
 
 #include <linux/math64.h>
 #include "video_receiver.h"
@@ -4571,6 +4568,7 @@ EXPORT_SYMBOL(get_tvin_dv_flag);
 
 void clear_vsync_2to1_info(void)
 {
+	vd_layer[0].frc_n2m_1st_frame = false;
 	if (cur_dev->vsync_2to1_enable) {
 		vsync_count_start = false;
 		new_frame_cnt = 0;
@@ -5953,16 +5951,12 @@ u32 video_get_layer_capability(void)
 
 int get_output_pcrscr_info(s32 *inc, u32 *base)
 {
-	u32 n2m_setting;
-
 	if (IS_ERR_OR_NULL(inc) || IS_ERR_OR_NULL(base)) {
 		pr_info("%s: param is NULL.\n", __func__);
 		return -1;
 	}
 
-	n2m_setting = frc_get_n2m_setting();
-	/* frc_get_n2m_setting 1 : n2m is 1:1; 2 :n2m is 1:2 */
-	if (n2m_setting == 2) {
+	if (frc_n2m_worked()) {
 		*inc = vsync_pts_inc_scale;
 		*base = vsync_pts_inc_scale_base / 2;
 	} else {

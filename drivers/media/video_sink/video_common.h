@@ -36,4 +36,6 @@ bool is_layer_aisr_supported(struct video_layer_s *layer);
 ssize_t reg_dump_store(struct class *cla,
 				 struct class_attribute *attr,
 				const char *buf, size_t count);
+bool frc_n2m_worked(void);
+bool frc_n2m_1st_frame_worked(struct video_layer_s *layer);
 #endif

@@ -84,6 +84,9 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
 #include <linux/amlogic/media/di/di_interface.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+#include <linux/amlogic/media/frc/frc_common.h>
+#endif
 
 u32 is_crop_left_odd(struct vpp_frame_par_s *frame_par)
 {
@@ -1305,3 +1308,39 @@ ssize_t reg_dump_store(struct class *cla,
 	return count;
 }
 #endif
+
+bool frc_n2m_worked(void)
+{
+	bool ret = false;
+
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+		/* frc_get_n2m_setting 1 : n2m is 1:1; 2 :n2m is 1:2 */
+		/* frc_is_on() 1: means frc really worked */
+		if ((frc_get_n2m_setting() == 2) && frc_is_on())
+			ret = true;
+#endif
+	return ret;
+}
+
+bool frc_n2m_1st_frame_worked(struct video_layer_s *layer)
+{
+	static int last_status;
+	bool ret = false;
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+	if (!frc_is_on())
+		return ret;
+#endif
+	if (layer->frc_n2m_1st_frame)
+		return last_status;
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+		/* frc_get_n2m_setting 1 : n2m is 1:1; 2 :n2m is 1:2 */
+		/* frc_is_on() 1: means frc really worked */
+		if ((frc_get_n2m_setting() == 2) && frc_is_on() &&
+			frc_drv_get_1st_frm()) {
+			layer->frc_n2m_1st_frame = true;
+			ret = true;
+			last_status = ret;
+		}
+#endif
+	return ret;
+}

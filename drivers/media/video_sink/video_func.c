@@ -68,6 +68,7 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 #include <linux/amlogic/media/frc/frc_common.h>
 #endif
+#include "video_common.h"
 #include "video_hw_s5.h"
 #include "vpp_post_s5.h"
 #include "video_receiver.h"
@@ -2917,7 +2918,7 @@ static int vdx_misc_early_proc(u8 layer_id,
 #endif
 	/* prevsync + postvsync case */
 	if (cur_dev->pre_vsync_enable) {
-		if (layer_id == 0) {
+		if (layer_id == 0 && frc_n2m_worked()) {
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 			vsync_notify_video_composer(layer_id,
 				vsync_pts_inc_scale,
@@ -2944,9 +2945,34 @@ static int vdx_misc_early_proc(u8 layer_id,
 			post_vsync_notify = true;
 		}
 	} else {
-		/* postvsync case, only notify once per vsync*/
-		if (!post_vsync_notify &&
-			!(cur_dev->vsync_2to1_enable && layer_id == 0)) {
+		if (cur_dev->vsync_2to1_enable) {
+			/* postvsync case for n2m(only for vd1) */
+			if (layer_id == 0 && frc_n2m_worked()) {
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
+				vsync_notify_video_composer(layer_id,
+					vsync_pts_inc_scale,
+					vsync_pts_inc_scale_base / 2);
+#endif
+#ifdef CONFIG_AMLOGIC_VIDEOQUEUE
+				vsync_notify_videoqueue(layer_id,
+					vsync_pts_inc_scale,
+					vsync_pts_inc_scale_base / 2);
+#endif
+
+			} else {
+#ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
+				vsync_notify_video_composer(layer_id,
+					vsync_pts_inc_scale,
+					vsync_pts_inc_scale_base);
+#endif
+#ifdef CONFIG_AMLOGIC_VIDEOQUEUE
+				vsync_notify_videoqueue(layer_id,
+					vsync_pts_inc_scale,
+					vsync_pts_inc_scale_base);
+#endif
+			}
+		} else {
+		/* always postvsync case for no n2m */
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 			vsync_notify_video_composer(layer_id,
 				vsync_pts_inc_scale,
@@ -4558,7 +4584,7 @@ void pre_vsync_process(void)
 	s32 vd_path_id[MAX_VD_LAYER] = {0};
 	struct path_id_s path_id;
 
-	if (cur_dev->vsync_2to1_enable) {
+	if (cur_dev->vsync_2to1_enable && frc_n2m_worked()) {
 #ifdef CONFIG_AMLOGIC_VIDEO_COMPOSER
 		vsync_notify_video_composer(0,
 			vsync_pts_inc_scale,

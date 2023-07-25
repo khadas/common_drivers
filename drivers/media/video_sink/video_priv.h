@@ -595,6 +595,7 @@ struct video_layer_s {
 	atomic_t disable_prelink_done;
 
 	bool mosaic_frame;
+	bool frc_n2m_1st_frame;
 	u8 prelink_skip_cnt;
 	s32 last_di_instance;
 	u32 slice_num;

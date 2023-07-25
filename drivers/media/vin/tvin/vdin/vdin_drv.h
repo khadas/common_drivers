@@ -208,7 +208,8 @@ enum vdin_hw_ver_e {
 /* 20230710: bc302 filter unstable vsync and add debug */
 /* 20230713: bc302 get field type */
 /* 20230718: optimize get video format process */
-#define VDIN_VER_V1 "20230718: optimize get video format process"
+/* 20230725: notify fps change event when not game mode */
+#define VDIN_VER_V1 "20230725: notify fps change event when not game mode"
 
 enum vdin_irq_flg_e {
 	VDIN_IRQ_FLG_NO_END = 1,
@@ -1015,6 +1016,7 @@ struct vdin_dev_s {
 
 	/*signal change counter*/
 	unsigned int sg_chg_afd_cnt;
+	unsigned int sg_chg_fps_cnt;
 
 	unsigned int matrix_pattern_mode;
 	unsigned int pause_num;

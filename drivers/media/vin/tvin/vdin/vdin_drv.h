@@ -334,6 +334,7 @@ struct match_data_s {
 #define VDIN_SACALE_4096_2_3840		BIT(13)
 #define VDIN_CUTWIN_4096_2_3840		BIT(14)
 #define VDIN_MUX_VDIN0_HIST		BIT(15) //sel vdin0 hist for txhd2
+#define VDIN_SET_PCS_RESET		BIT(16) //for report_active abnormal callback rx pcs_reset
 /* vdin_function_sel control bits end */
 
 #define VDIN_2K_SIZE			0x07800438 /* 0x780 = 1920 0x438 = 1080 */
@@ -1092,6 +1093,7 @@ struct vdin_dev_s {
 	unsigned int vrr_frame_rate_min;
 	unsigned int err_active;
 	unsigned int vdin_pcs_reset_threshold;
+	unsigned int report_size_abnormal_cnt;/* drop frames casued by report_hv abnormal*/
 };
 
 extern unsigned int max_ignore_frame_cnt;

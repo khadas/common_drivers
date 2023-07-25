@@ -4313,6 +4313,12 @@ start_chk:
 			devp->vdin_pcs_reset_threshold = temp;
 			pr_info("vdin_pcs_reset_threshold:%d\n", devp->vdin_pcs_reset_threshold);
 		}
+	} else if (!strcmp(parm[0], "report_size_abnormal_cnt")) {
+		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0)) {
+			devp->report_size_abnormal_cnt = temp;
+			pr_info("report_size_abnormal_cnt:%d\n",
+				devp->report_size_abnormal_cnt);
+		}
 	} else if (!strcmp(parm[0], "invert_top_bot")) {
 		if (parm[1] && (kstrtouint(parm[1], 0, &temp) == 0)) {
 			if (temp)

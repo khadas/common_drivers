@@ -3702,8 +3702,8 @@ void aml_phy_switch_port_t3x(u8 port)
 		break;
 	case 3:
 		data32 = 0;
-		data32 |= (1 << (8 + rx_info.sub_port * 2));
-		data32 |= (1 << rx_info.sub_port);
+		//data32 |= (1 << (8 + rx_info.sub_port * 2));
+		//data32 |= (1 << rx_info.sub_port);
 		data32 |= (2 << (8 + rx_info.main_port * 2));
 		data32 |= (1 << (rx_info.main_port + 4));
 		hdmirx_wr_top_common(HDMIRX_TOP_FSW_CNTL, data32);

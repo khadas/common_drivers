@@ -4691,6 +4691,7 @@ void rx_aud_pll_ctl(bool en, u8 port)
 					/* switch to core1 no sound */
 					tmp = rd_reg_clk_ctl(RX_CLK_CTRL2);
 					tmp |= (1 << 24);
+					tmp &= ~(1 << 25);
 					wr_reg_clk_ctl(RX_CLK_CTRL2, tmp);
 					wr_reg_clk_ctl(T3X_CLKCTRL_AUD21_PLL_CTRL0, 0x40009540);
 				    /* 0:tmds_clk 1:ref_clk 2:mpll_clk */

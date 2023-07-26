@@ -479,6 +479,7 @@ const struct meson_drm_format_info *__meson_drm_format_info_t3x(u32 format)
 
 	return NULL;
 }
+#endif
 
 const struct meson_drm_format_info *__meson_drm_format_info_s1a(u32 format)
 {
@@ -574,7 +575,6 @@ const struct meson_drm_format_info *__meson_drm_format_info_s1a(u32 format)
 
 	return NULL;
 }
-#endif
 
 const struct meson_drm_format_info *__meson_drm_afbc_format_info(u32 format)
 {
@@ -661,6 +661,7 @@ const struct meson_drm_format_info *meson_drm_format_info_t3x(u32 format,
 	WARN_ON(!info);
 	return info;
 }
+#endif
 
 const struct meson_drm_format_info *meson_drm_format_info_s1a(u32 format,
 							  bool afbc_en)
@@ -674,7 +675,6 @@ const struct meson_drm_format_info *meson_drm_format_info_s1a(u32 format,
 	WARN_ON(!info);
 	return info;
 }
-#endif
 
 /**
  * meson_drm_format_hw_blkmode - get the hw_blkmode for format
@@ -699,6 +699,7 @@ static u8 meson_drm_format_hw_blkmode_t3x(u32 format, bool afbc_en)
 	info = meson_drm_format_info_t3x(format, afbc_en);
 	return info ? info->hw_blkmode : 0;
 }
+#endif
 
 static u8 meson_drm_format_hw_blkmode_s1a(u32 format, bool afbc_en)
 {
@@ -707,7 +708,6 @@ static u8 meson_drm_format_hw_blkmode_s1a(u32 format, bool afbc_en)
 	info = meson_drm_format_info_s1a(format, afbc_en);
 	return info ? info->hw_blkmode : 0;
 }
-#endif
 
 /**
  * meson_drm_format_hw_colormat - get the hw_colormat for format
@@ -732,6 +732,7 @@ static u8 meson_drm_format_hw_colormat_t3x(u32 format, bool afbc_en)
 	info = meson_drm_format_info_t3x(format, afbc_en);
 	return info ? info->hw_colormat : 0;
 }
+#endif
 
 static u8 meson_drm_format_hw_colormat_s1a(u32 format, bool afbc_en)
 {
@@ -740,7 +741,6 @@ static u8 meson_drm_format_hw_colormat_s1a(u32 format, bool afbc_en)
 	info = meson_drm_format_info_s1a(format, afbc_en);
 	return info ? info->hw_colormat : 0;
 }
-#endif
 
 /**
  * meson_drm_format_alpha_replace - get the alpha replace for format
@@ -765,6 +765,7 @@ static u8 meson_drm_format_alpha_replace_t3x(u32 format, bool afbc_en)
 	info = meson_drm_format_info_t3x(format, afbc_en);
 	return info ? info->alpha_replace : 0;
 }
+#endif
 
 static u8 meson_drm_format_alpha_replace_s1a(u32 format, bool afbc_en)
 {
@@ -773,7 +774,6 @@ static u8 meson_drm_format_alpha_replace_s1a(u32 format, bool afbc_en)
 	info = meson_drm_format_info_s1a(format, afbc_en);
 	return info ? info->alpha_replace : 0;
 }
-#endif
 
 /*osd hold line config*/
 void ods_hold_line_config(struct meson_vpu_block *vblk,
@@ -955,8 +955,8 @@ static void osd_color_config(struct meson_vpu_block *vblk,
 {
 	u8 blk_mode, color, alpha_replace;
 
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_t3x_cpu()) {
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 		blk_mode = meson_drm_format_hw_blkmode_t3x(pixel_format, afbc_en);
 		color = meson_drm_format_hw_colormat_t3x(pixel_format, afbc_en);
 		alpha_replace = (pixel_blend == DRM_MODE_BLEND_PIXEL_NONE) ||
@@ -973,14 +973,13 @@ static void osd_color_config(struct meson_vpu_block *vblk,
 			reg_ops->rdma_write_reg(reg->viu_osd_normal_swap, 0x1230);
 			reg_ops->rdma_write_reg_bits(reg->viu_osd_fifo_ctrl_stat, 1, 30, 1);
 		}
+#endif
 	} else if (is_meson_s1a_cpu()) {
 		blk_mode = meson_drm_format_hw_blkmode_s1a(pixel_format, afbc_en);
 		color = meson_drm_format_hw_colormat_s1a(pixel_format, afbc_en);
 		alpha_replace = (pixel_blend == DRM_MODE_BLEND_PIXEL_NONE) ||
 		meson_drm_format_alpha_replace_s1a(pixel_format, afbc_en);
-	} else
-#endif
-	{
+	} else {
 		blk_mode = meson_drm_format_hw_blkmode(pixel_format, afbc_en);
 		color = meson_drm_format_hw_colormat(pixel_format, afbc_en);
 		alpha_replace = (pixel_blend == DRM_MODE_BLEND_PIXEL_NONE) ||

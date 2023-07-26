@@ -1433,7 +1433,7 @@
 };
 
 &drm_vpu {
-	status = "disabled";
+	status = "okay";
 	logo_addr = "0x0fc00000";
 };
 

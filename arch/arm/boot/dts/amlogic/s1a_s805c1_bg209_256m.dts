@@ -211,22 +211,67 @@
 	dvb-extern {
 		compatible = "amlogic, dvb-extern";
 		dev_name = "dvb-extern";
-		status = "disabled";
+		status = "okay";
 
 		/* dvb hardware main power. */
-		//dvb_power_gpio = <&gpio GPIOZ_5 GPIO_ACTIVE_HIGH>;
+		dvb_power_gpio = <&gpio GPIO_TEST_N GPIO_ACTIVE_HIGH>;
 		dvb_power_value = <0>;
 		dvb_power_dir = <0>; /* 0: out, 1: in. */
 
-		fe_num = <1>; /* internal 1 * dvb-s */
+		/* internal 1 * dvb-c/s, internal 1 * dvb-c, extern 1 * dvb-s */
+		fe_num = <3>;
 		fe0_demod = "internal";
-		fe0_tuner0 = <0>; /* use tuner0 */
+		fe0_tuner0 = <0>; /* use tuner0 C */
+		fe0_tuner1 = <2>; /* use tuner2 S */
 
-		tuner_num = <1>; /* tuner number, multi tuner support */
-		tuner0_name = "av2018_tuner";
-		// tuner0_i2c_adap = <&i2c3>;
-		tuner0_i2c_addr = <0xC4>; /* 8bit */
-		tuner0_lt_out = <0>;
+		fe1_demod = "internal";
+		fe1_tuner0 = <1>; /* use tuner1 C */
+		fe2_demod = "cxd2856";
+		fe2_i2c_adap_id = <&i2c1>;
+		fe2_demod_i2c_addr = <0xD8>;
+		fe2_reset_value = <0>;
+		fe2_reset_gpio = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
+		fe2_reset_dir = <0>; /* 0: out, 1: in. */
+		/* fe2_ant_poweron_value = <0>; */
+		/* fe2_ant_power_gpio = <&gpio GPIOH_9 GPIO_ACTIVE_HIGH>; */
+		fe2_lnb_en_gpio = <&gpio GPIOZ_1 GPIO_ACTIVE_HIGH>;
+		fe2_lnb_en_value = <1>;
+		fe2_lnb_sel_gpio = <&gpio GPIOZ_0 GPIO_ACTIVE_HIGH>;
+		fe2_lnb_sel_value = <1>;
+		fe2_ts  = <0>;
+		fe2_tuner0 = <1>; /* use tuner0, only TC. */
+		fe2_tuner1 = <3>; /* use tuner3, only S. */
+
+		tuner_num = <4>; /* tuner number, multi tuner support */
+		tuner0_name = "r836_tuner";
+		tuner0_i2c_adap = <&i2c1>;
+		tuner0_i2c_addr = <0x1a>; /* 7bit */
+		tuner0_xtal = <0>; /* 0: 16MHz, 1: 24MHz */
+		tuner0_xtal_mode = <0>;
+					/* NO_SHARE_XTAL(0)
+					 * SLAVE_XTAL_SHARE(3)
+					 */
+		tuner0_xtal_cap = <16>;
+		tuner0_lt_out = <1>;
+
+		tuner1_name = "r836_tuner";
+		tuner1_i2c_adap = <&i2c1>;
+		tuner1_i2c_addr = <0x3a>; /* 7bit */
+		tuner1_xtal = <0>; /* 0: 16MHz, 1: 24MHz */
+		tuner1_xtal_mode = <0>;
+					/* NO_SHARE_XTAL(0)
+					 * SLAVE_XTAL_SHARE(3)
+					 */
+		tuner1_xtal_cap = <16>;
+		tuner1_lt_out = <1>;
+
+		tuner2_name = "av2018_tuner";
+		tuner2_i2c_adap = <&i2c1>;
+		tuner2_i2c_addr = <0xC4>; /* 8bit */
+		tuner2_lt_out = <1>;
+
+		tuner3_name = "av2018_tuner";
+		tuner3_lt_out = <1>;
 	};
 
 	dvb-demux {

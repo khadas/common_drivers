@@ -159,6 +159,13 @@
 			linux,cma-default;
 			alloc-ranges = <0x0 0x30000000>;
 		};
+		//demod_cma_reserved:linux,demod_cma {
+		//	compatible = "shared-dma-pool";
+		//	reusable;
+		//	// 8M
+		//	size = <0x800000>;
+		//	alignment = <0x400000>;
+		//};
 	};
 	codec_mm {
 		compatible = "amlogic, codec, mm";
@@ -211,10 +218,10 @@
 	dvb-extern {
 		compatible = "amlogic, dvb-extern";
 		dev_name = "dvb-extern";
-		status = "disabled";
+		status = "okay";
 
 		/* dvb hardware main power. */
-		//dvb_power_gpio = <&gpio GPIOZ_5 GPIO_ACTIVE_HIGH>;
+		dvb_power_gpio = <&gpio GPIO_TEST_N GPIO_ACTIVE_HIGH>;
 		dvb_power_value = <0>;
 		dvb_power_dir = <0>; /* 0: out, 1: in. */
 
@@ -223,9 +230,15 @@
 		fe0_tuner0 = <0>; /* use tuner0 */
 
 		tuner_num = <1>; /* tuner number, multi tuner support */
-		tuner0_name = "av2018_tuner";
-		// tuner0_i2c_adap = <&i2c3>;
-		tuner0_i2c_addr = <0xC4>; /* 8bit */
+		tuner0_name = "rt710_tuner";
+		tuner0_i2c_adap = <&i2c1>; //TODO gpioz_3 gpioz_4 i2c1_sda_pins
+		tuner0_i2c_addr = <0x7a>; /* 8bit */
+		tuner0_xtal = <0>; /* 0: 16MHz, 1: 24MHz, 2: 27MHZ */
+		tuner0_xtal_mode = <0>;
+							/* NO_SHARE_XTAL(0)
+							 * SLAVE_XTAL_SHARE(3)
+							 */
+		tuner0_xtal_cap = <16>;
 		tuner0_lt_out = <0>;
 	};
 
@@ -322,34 +335,31 @@
 	};
 
 	aml_dtv_demod {
-		compatible = "amlogic, ddemod-s4d";
+		compatible = "amlogic, ddemod-s1a";
 		dev_name = "aml_dtv_demod";
-		status = "disabled";
+		status = "okay";
 		diseqc_name = "sgm_41286";
-		pinctrl-names="if_agc_pins", "if_agc2_pins", "rf_agc_pins", "diseqc_out";
-		pinctrl-0=<&dtvdemod_if_agc_pins>;
-		pinctrl-1=<&dtvdemod_if_agc2_pins>;
-		pinctrl-2=<&dtvdemod_rf_agc_pins>;
-		pinctrl-3=<&diseqc_out>;
-		//pinctrl-4=<&diseqc_in>;
-		//lnb_en-gpios = <&gpio GPIOZ_6 GPIO_ACTIVE_HIGH>;
-		//lnb_sel-gpios = <&gpio GPIOZ_4 GPIO_ACTIVE_HIGH>;
+		pinctrl-names="rf_agc_pins", "diseqc_out";
+		pinctrl-0=<&dtvdemod_rf_agc_pins>;
+		pinctrl-1=<&diseqc_out>;
+		lnb_en-gpios = <&gpio GPIOZ_1 GPIO_ACTIVE_HIGH>;
+		lnb_sel-gpios = <&gpio GPIOZ_0 GPIO_ACTIVE_HIGH>;
 		interrupts = <GIC_SPI 221 IRQ_TYPE_EDGE_RISING>;
 		interrupt-names = "demod_isr";
 
-		//power-domains = <&pwrdm PDID_S4_DEMOD>;
+		power-domains = <&pwrdm PDID_S1A_DEMOD>;
 		/* clocks = <&clkc CLKID_DAC_CLK>; */
 		/* clock-names = "vdac_clk_gate"; */
 
 		reg = <0xfe350000 0x10000	/* dtv demod base */
-			   0xfe000000 0x2000	/* div base */
-			   0xff800000 0x1000	/* io_aobus_base */
-			   0xffd01000 0x1000	/* reset */
+			   0xfe000000 0x2000	/* clktree reg base */
+			   0xff000000 0x1000	/* io_aobus_base */
+			   0xfe002000 0x2000	/* system reset */
 			>;
 
 		spectrum = <1>;
 		cma_mem_size = <0>; // MB
-		agc_pin_direction;//for S4D av2018 rf agc reverse
+		//memory-region = <&demod_cma_reserved>;
 	};
 
 	provisionkey {

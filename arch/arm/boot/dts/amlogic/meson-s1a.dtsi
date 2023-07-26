@@ -1972,14 +1972,14 @@
 
 	dtvdemod_rf_agc_pins: dtvdemod_rf_agc_pins {
 		mux {
-			groups = "dtv_a_rf_agc";
+			groups = "dtv_a_rf_agc_z5";
 			function = "dtv";
 		};
 	};
 
 	diseqc_out: diseqc_out {
 		mux {
-			groups = "diseqc_out";
+			groups = "diseqc_out_z2";
 			function = "diseqc_out";
 			bias-pull-down;
 		};

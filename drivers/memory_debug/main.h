@@ -34,7 +34,7 @@ static inline void aml_watch_point_uninit(void)
 }
 #endif
 
-#if IS_ENABLED(CONFIG_AMLOGIC_WATCHPOINT)
+#if IS_ENABLED(CONFIG_AMLOGIC_REG_ACCESS)
 int __init aml_reg_init(void);
 void __exit aml_reg_exit(void);
 #else

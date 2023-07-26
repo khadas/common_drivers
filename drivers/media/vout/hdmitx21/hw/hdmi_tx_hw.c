@@ -385,11 +385,11 @@ static void hdmi_hwp_init(struct hdmitx_dev *hdev, u8 reset)
 			if (vic == HDMI_0_UNKNOWN)
 				vic = _get_vic_from_vsif(hdev);
 			hdev->tx_comm.cur_VIC = vic;
-			tp = hdmitx21_gettiming_from_vic(vic);
+			tp = hdmitx_mode_vic_to_hdmi_timing(vic);
 			if (tp) {
 				name = tp->sname ? tp->sname : tp->name;
-				hdmitx21_get_fmtpara(name,
-					hdev->tx_comm.fmt_attr, &hdev->tx_comm.fmt_para);
+				update_para_from_mode(hdev, name, hdev->tx_comm.fmt_attr,
+						      &hdev->tx_comm.fmt_para);
 			}
 			pr_info("hdmitx21: parsing AVI CS%d CD%d VIC%d\n",
 				avi->colorspace, hdev->tx_comm.fmt_para.cd, hdev->tx_comm.cur_VIC);

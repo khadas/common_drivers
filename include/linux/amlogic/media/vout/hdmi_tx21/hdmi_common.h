@@ -103,15 +103,12 @@ enum hdmi_aspect_ratio {
 
 struct vesa_standard_timing;
 
-const struct hdmi_timing *hdmitx21_match_dtd_timing(struct dtd *t);
-const struct hdmi_timing *hdmitx21_match_standrd_timing(struct vesa_standard_timing *t);
 struct hdmi_format_para *hdmitx21_get_vesa_paras(struct vesa_standard_timing
 	*t);
 struct hdmi_format_para *hdmitx21_tst_fmt_name(const char *name,
 	const char *attr);
-const struct hdmi_timing *hdmitx21_gettiming_from_vic(enum hdmi_vic vic);
-const struct hdmi_timing *hdmitx21_gettiming_from_name(const char *name);
-int hdmitx21_get_fmtpara(const char *mode, const char *attr, struct hdmi_format_para *para);
+int hdmi21_get_fmt_para(enum hdmi_vic vic, const char *mode, const char *attr,
+			struct hdmi_format_para *para);
 u32 hdmi21_get_aud_n_paras(enum hdmi_audio_fs fs,
 				  enum hdmi_color_depth cd,
 				  u32 tmds_clk);

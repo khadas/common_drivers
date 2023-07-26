@@ -78,6 +78,7 @@
 #define TAG_ESTABLISHED_TIMING_III 0xF7
 #define TAG_DUMMY_DES 0x10
 
+const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 static u32 hdmitx_edid_check_valid_blocks(u8 *buf);
 static void edid_dtd_parsing(struct rx_cap *prxcap, u8 *data);
 static void hdmitx_edid_set_default_aud(struct hdmitx_dev *hdev);
@@ -253,7 +254,7 @@ static void calc_timing(u8 *data, struct vesa_standard_timing *t)
 		break;
 	}
 	t->vsync = (data[1] & 0x3f) + 60;
-	standard_timing = hdmitx21_match_standrd_timing(t);
+	standard_timing = hdmitx_mode_match_vesa_timing(t);
 	if (standard_timing) {
 		struct hdmitx_dev *hdev = get_hdmitx21_device();
 		struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
@@ -2300,9 +2301,9 @@ next:
 		t->v_blank = t->v_blank / 2;
 	}
 /*
- * call hdmitx21_match_dtd_timing() to check t is matched with VIC
+ * call hdmitx_mode_match_dtd_timing() to check t is matched with VIC
  */
-	dtd_timing = hdmitx21_match_dtd_timing(t);
+	dtd_timing = hdmitx_mode_match_dtd_timing(t);
 	if (dtd_timing) {
 		/* diff 4x3 and 16x9 mode */
 		if (dtd_timing->vic == HDMI_6_720x480i60_4x3 ||
@@ -2802,7 +2803,7 @@ enum hdmi_vic hdmitx21_edid_vic_tab_map_vic(const char *disp_mode)
 	const struct hdmi_timing *timing = NULL;
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
 
-	timing = hdmitx21_gettiming_from_name(disp_mode);
+	timing = hdmitx_mode_match_timing_name(disp_mode);
 	if (timing)
 		vic = timing->vic;
 
@@ -2814,7 +2815,7 @@ const char *hdmitx21_edid_vic_to_string(enum hdmi_vic vic)
 	const struct hdmi_timing *timing = NULL;
 	const char *disp_str = NULL;
 
-	timing = hdmitx21_gettiming_from_vic(vic);
+	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (timing)
 		disp_str = timing->name;
 
@@ -2833,7 +2834,7 @@ static bool is_rx_support_y420(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	}
 
 	/* In Spec2.1 Table 7-34, greater than 2160p30hz will support y420 */
-	timing = hdmitx21_gettiming_from_vic(vic);
+	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!timing)
 		return 0;
 
@@ -2979,7 +2980,7 @@ bool hdmitx21_edid_check_valid_mode(struct hdmitx_dev *hdev,
 		rx_frl_bandwidth = 0;
 	else
 		rx_frl_bandwidth = get_frl_bandwidth(prxcap->max_frl_rate);
-	timing = hdmitx21_gettiming_from_vic(para->timing.vic);
+	timing = hdmitx_mode_vic_to_hdmi_timing(para->timing.vic);
 	if (!timing)
 		return 0;
 	/* tx_frl_bandwidth = timing->pixel_freq / 1000 * 24 * 1.122 */

@@ -550,6 +550,9 @@ void phy_hpll_off(void);
 int get21_hpd_state(void);
 void hdmitx21_event_notify(unsigned long state, void *arg);
 void hdmitx21_hdcp_status(int hdmi_authenticated);
+void update_para_from_mode(struct hdmitx_dev *hdev, const char *name,
+			   const char *fmt_attr,
+			   struct hdmi_format_para *update_para);
 
 /***********************************************************************
  *    hdmitx hardware level interface

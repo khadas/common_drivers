@@ -893,7 +893,7 @@ static void vrr_init_game_para(struct tx_vrr_params *para)
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_DATA_SET_TAG, 1);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_DATA_SET_LENGTH, 4);
 
-	timing = hdmitx21_gettiming_from_vic(brr_vic);
+	timing = hdmitx_mode_vic_to_hdmi_timing(brr_vic);
 	brr_vfront = timing ? timing->v_front : 1920;
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_VRR_EN, 1);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_FACTOR_M1, fva_factor - 1);
@@ -953,7 +953,7 @@ static void vrr_init_qms_para(struct tx_vrr_params *para)
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_DATA_SET_TAG, 1);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_DATA_SET_LENGTH, 4);
 
-	timing = hdmitx21_gettiming_from_vic(brr_vic);
+	timing = hdmitx_mode_vic_to_hdmi_timing(brr_vic);
 	brr_vfront = timing ? timing->v_front : 1920;
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_M_CONST, 0);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_QMS_EN, 1);
@@ -1245,7 +1245,7 @@ static void hdmitx_vrr_game_handler(struct hdmitx_dev *hdev)
 	const struct hdmi_timing *timing = NULL;
 	u32 vtotal_tmp = 0;
 
-	timing = hdmitx21_gettiming_from_vic(conf->brr_vic);
+	timing = hdmitx_mode_vic_to_hdmi_timing(conf->brr_vic);
 	if (!timing) {
 		vrr_debug_info("%s[%d] failed to get timing of brr_vic %d\n",
 			__func__, __LINE__, conf->brr_vic);

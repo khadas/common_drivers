@@ -793,7 +793,7 @@ static u32 check_clock_shift(enum hdmi_vic vic, u32 frac_policy)
 {
 	const struct hdmi_timing *timing = NULL;
 
-	timing = hdmitx21_gettiming_from_vic(vic);
+	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!timing) {
 		pr_err("%s[%d] not valid vic %d\n", __func__, __LINE__, vic);
 		return 0;

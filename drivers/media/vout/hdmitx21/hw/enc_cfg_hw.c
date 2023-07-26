@@ -50,7 +50,7 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 
 	if (hdev->tx_comm.fmt_para.cs == HDMI_COLORSPACE_YUV420)
 		y420_mode = 1;
-	tp = hdmitx21_gettiming_from_vic(vic);
+	tp = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!tp) {
 		pr_info("not find hdmitx vic %d timing\n", vic);
 		return;
@@ -257,7 +257,7 @@ static void hdmi_tvenc1080i_set(enum hdmi_vic vic)
 	unsigned long vso_begin_evn = 0, vso_begin_odd = 0;
 	const struct hdmi_timing *tp = NULL;
 
-	tp = hdmitx21_gettiming_from_vic(vic);
+	tp = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!tp) {
 		pr_info("not find hdmitx vic %d timing\n", vic);
 		return;

@@ -88,7 +88,7 @@ enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
 	u32 tx_tmds_bandwidth = 0;
 
 	pr_info("dsc_en %d  vic %d  cs %d  cd %d\n", dsc_en, vic, cs, cd);
-	timing = hdmitx21_gettiming_from_vic(vic);
+	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!timing)
 		return FRL_NONE;
 

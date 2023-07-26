@@ -39,3 +39,10 @@ config AMLOGIC_SPI_MESON_SPICC_SLAVE
 	  controller) available in Amlogic Meson SoCs. SPICC can work both
 	  in master mode and slave mode.
 	  say Y or M here.If you are not sure, say N.
+
+config AMLOGIC_SPI_NFC
+	tristate "Amlogic Meson SPI NFC controller"
+	help
+	  This enables master mode support for the SPI NFC (SPI flash
+	  controller with host ECC) available in Amlogic Meson SoCs.
+

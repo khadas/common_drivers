@@ -44,6 +44,11 @@ static int __init spi_module_init(void)
 	vmem_init();
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_SPI_NFC)
+	ret = platform_driver_register(&spi_nfc_driver);
+	if (ret)
+		pr_err("insmod spi_nfc fail\n");
+#endif
 	return ret;
 }
 

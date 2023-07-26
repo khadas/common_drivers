@@ -365,6 +365,9 @@ static int spinand_read_from_cache_op(struct spinand_device *spinand,
 	u16 column = 0;
 	ssize_t ret;
 
+	if (req->mode == MTD_OPS_RAW)
+		spi_mem_set_xfer_flag(SPI_XFER_RAW);
+
 	if (req->datalen) {
 		buf = spinand->databuf;
 		nbytes = nanddev_page_size(nand);
@@ -372,28 +375,38 @@ static int spinand_read_from_cache_op(struct spinand_device *spinand,
 	}
 
 	if (req->ooblen) {
+		spi_mem_set_xfer_flag(SPI_XFER_OOB);
 		nbytes += nanddev_per_page_oobsize(nand);
 		if (!buf) {
+			spi_mem_set_xfer_flag(SPI_XFER_OOB_ONLY);
 			buf = spinand->oobbuf;
 			column = nanddev_page_size(nand);
 		}
 	}
 
+	if (req->mode == MTD_OPS_AUTO_OOB)
+		spi_mem_set_xfer_flag(SPI_XFER_AUTO_OOB);
+
 	rdesc = spinand->dirmaps[req->pos.plane].rdesc;
 
 	while (nbytes) {
 		ret = meson_spi_mem_dirmap_read(rdesc, column, nbytes, buf);
-		if (ret < 0)
+		if (ret < 0) {
+			spi_mem_umask_xfer_flags();
 			return ret;
+		}
 
-		if (!ret || ret > nbytes)
+		if (!ret || ret > nbytes) {
+			spi_mem_umask_xfer_flags();
 			return -EIO;
+		}
 
 		nbytes -= ret;
 		column += ret;
 		buf += ret;
 	}
 
+	spi_mem_umask_xfer_flags();
 	if (req->datalen)
 		memcpy(req->databuf.in, spinand->databuf + req->dataoffs,
 		       req->datalen);
@@ -440,14 +453,17 @@ static int spinand_write_to_cache_op(struct spinand_device *spinand,
 		       req->datalen);
 
 	if (req->ooblen) {
-		if (req->mode == MTD_OPS_AUTO_OOB)
+		if (req->mode == MTD_OPS_AUTO_OOB) {
 			mtd_ooblayout_set_databytes(mtd, req->oobbuf.out,
 						    spinand->oobbuf,
 						    req->ooboffs,
 						    req->ooblen);
-		else
+			spi_mem_set_xfer_flag(SPI_XFER_AUTO_OOB);
+		} else {
 			memcpy(spinand->oobbuf + req->ooboffs, req->oobbuf.out,
 			       req->ooblen);
+		}
+		spi_mem_set_xfer_flag(SPI_XFER_OOB);
 	}
 
 	wdesc = spinand->dirmaps[req->pos.plane].wdesc;
@@ -1453,8 +1469,8 @@ static struct spi_mem_driver spinand_drv = {
 	.probe = spinand_probe,
 	.remove = spinand_remove,
 };
-module_spi_mem_driver(spinand_drv);
 
+module_spi_mem_driver(spinand_drv);
 MODULE_DESCRIPTION("SPI NAND framework");
 MODULE_AUTHOR("Peter Pan<peterpandong@micron.com>");
 MODULE_LICENSE("GPL v2");

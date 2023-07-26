@@ -16,6 +16,7 @@
 #include <linux/sizes.h>
 #include <linux/of.h>
 #include <linux/version.h>
+#include <linux/spi/spi-mem.h>
 
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
@@ -25,6 +26,7 @@
 #include <linux/amlogic/aml_rsv.h>
 #include <linux/amlogic/aml_spi_nand.h>
 #include <linux/amlogic/aml_storage.h>
+#include <linux/amlogic/aml_spi_mem.h>
 
 #define NAND_BLOCK_GOOD	0
 #define NAND_BLOCK_BAD	1
@@ -111,6 +113,55 @@ static int spinand_mtd_block_markbad(struct mtd_info *mtd, loff_t offs)
 	return -EINVAL;
 }
 
+static int nand_erase_block(struct nand_device *nand, const struct nand_pos *pos)
+{
+	struct meson_spinand *meson_spinand = meson_spinand_global;
+	u8 bad_block;
+
+	bad_block = meson_spinand->block_status[pos->eraseblock];
+	if (bad_block != NAND_BLOCK_GOOD) {
+		pr_warn("attempt to erase a bad/reserved block @%llx\n",
+			nanddev_pos_to_offs(nand, pos));
+		return -EIO;
+	}
+	return nand->ops->erase(nand, pos);
+}
+
+static int spinand_mtd_erase(struct mtd_info *mtd, struct erase_info *einfo)
+{
+	struct nand_device *nand = mtd_to_nanddev(mtd);
+	struct nand_pos pos, last;
+	int ret;
+
+	nanddev_offs_to_pos(nand, einfo->addr, &pos);
+	nanddev_offs_to_pos(nand, einfo->addr + einfo->len - 1, &last);
+	while (nanddev_pos_cmp(&pos, &last) <= 0) {
+		ret = nand_erase_block(nand, &pos);
+		if (ret) {
+			einfo->fail_addr = nanddev_pos_to_offs(nand, &pos);
+
+			return ret;
+		}
+
+		nanddev_pos_next_eraseblock(nand, &pos);
+	}
+
+	return 0;
+}
+
+static int meson_spinand_mtd_erase(struct mtd_info *mtd,
+			     struct erase_info *einfo)
+{
+	struct spinand_device *spinand = mtd_to_spinand(mtd);
+	int ret;
+
+	mutex_lock(&spinand->lock);
+	ret = spinand_mtd_erase(mtd, einfo);
+	mutex_unlock(&spinand->lock);
+
+	return ret;
+}
+
 int meson_spinand_bbt_check(struct mtd_info *mtd)
 {
 	struct meson_spinand *meson_spinand = meson_spinand_global;
@@ -137,6 +188,7 @@ int meson_spinand_init(struct spinand_device *spinand, struct mtd_info *mtd)
 	if (!meson_spinand)
 		return -ENOMEM;
 
+	spi_mem_set_mtd(mtd);
 	meson_spinand_global = meson_spinand;
 	meson_spinand->info_p_mode = NORMAL_INFO_P;
 	meson_spinand->erasesize_shift = ffs(mtd->erasesize) - 1;
@@ -158,6 +210,7 @@ int meson_spinand_init(struct spinand_device *spinand, struct mtd_info *mtd)
 		goto exit_error1;
 	}
 
+	mtd->_erase = meson_spinand_mtd_erase;
 	mtd->_block_isbad = spinand_mtd_block_isbad;
 	mtd->_block_markbad = spinand_mtd_block_markbad;
 	mtd->_block_isreserved = NULL;

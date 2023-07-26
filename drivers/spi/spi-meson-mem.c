@@ -9,8 +9,11 @@
 #include <linux/spi/spi.h>
 #include <linux/spi/spi-mem.h>
 #include <linux/module.h>
+#include <linux/amlogic/aml_spi_mem.h>
 
 #define SPI_MEM_MAX_BUSWIDTH		8
+
+u8 xfer_flag;
 
 static bool spi_mem_buswidth_is_valid(u8 buswidth)
 {
@@ -432,5 +435,37 @@ int meson_spi_mem_poll_status(struct spi_mem *mem,
 
 	return ret;
 }
+
+void spi_mem_set_xfer_flag(u8 flag)
+{
+	xfer_flag |= flag;
+}
+EXPORT_SYMBOL_GPL(spi_mem_set_xfer_flag);
+
+u8 spi_mem_get_xfer_flag(void)
+{
+	return xfer_flag;
+}
+EXPORT_SYMBOL_GPL(spi_mem_get_xfer_flag);
+
+void spi_mem_umask_xfer_flags(void)
+{
+	xfer_flag &= ~SPI_XFER_NFC_MASK_FLAG;
+}
+EXPORT_SYMBOL_GPL(spi_mem_umask_xfer_flags);
+
+struct mtd_info *spi_nfc_mtd;
+void spi_mem_set_mtd(struct mtd_info *mtd)
+{
+	spi_nfc_mtd = mtd;
+}
+EXPORT_SYMBOL_GPL(spi_mem_set_mtd);
+
+struct mtd_info *spi_mem_get_mtd(void)
+{
+	return spi_nfc_mtd;
+}
+EXPORT_SYMBOL_GPL(spi_mem_get_mtd);
+
 EXPORT_SYMBOL_GPL(meson_spi_mem_poll_status);
 MODULE_LICENSE("GPL v2");

@@ -177,6 +177,8 @@ void vpu_pipeline_scaler_scope_size_calc(u8 index, u8 osd_index,
 	u32 ratio_w_num, ratio_w_den;
 	u32 ratio_h_num, ratio_h_den;
 	struct meson_vpu_scaler_param *scaler_param, *scaler_param_1;
+	struct meson_drm *private = mvps->pipeline->priv;
+	struct meson_vpu_data *vpu_data = private->vpu_data;
 
 	i = index;
 	if (mvps->scaler_cnt[i] == 0) {
@@ -283,11 +285,31 @@ void vpu_pipeline_scaler_scope_size_calc(u8 index, u8 osd_index,
 			ratio_h_den = scaler_param_1->ratio_h_den;
 			/*recheck scaler size*/
 		} else {/*TODO*/
-			DRM_DEBUG("Global scaler not set, use default 1:1 config.\n");
-			ratio_w_num = RATIO_BASE;
-			ratio_w_den = RATIO_BASE;
-			ratio_h_num = RATIO_BASE;
-			ratio_h_den = RATIO_BASE;
+			if (vpu_data->max_osdblend_width >= 3840 &&
+					vpu_data->max_osdblend_height >= 2160) {
+				ratio_w_num = RATIO_BASE;
+				ratio_w_den = RATIO_BASE;
+				ratio_h_num = RATIO_BASE;
+				ratio_h_den = RATIO_BASE;
+			} else {
+				/* if not configured, 0,0 is 1920,1080 */
+				if (mvps->plane_info[osd_index].dst_w <= 1920 &&
+						mvps->plane_info[osd_index].dst_h <= 1080) {
+					ratio_w_num = RATIO_BASE;
+					ratio_w_den = RATIO_BASE;
+					ratio_h_num = RATIO_BASE;
+					ratio_h_den = RATIO_BASE;
+				} else {
+					ratio_w_num = 1920;
+					ratio_w_den = mvps->plane_info[osd_index].dst_w;
+					ratio_h_num = 1080;
+					ratio_h_den = mvps->plane_info[osd_index].dst_h;
+				}
+			}
+
+			DRM_DEBUG("Global scaler not set, use default config (%u,%u,%u,%u).\n",
+					ratio_w_num, ratio_w_den, ratio_h_num, ratio_h_den);
+
 			scaler_param_1->calc_done_mask |=
 				SCALER_RATIO_X_CALC_DONE |
 				SCALER_RATIO_Y_CALC_DONE;

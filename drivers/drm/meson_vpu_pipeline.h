@@ -684,7 +684,7 @@ int vpu_video_pipeline_check_block(struct meson_vpu_pipeline_state *mvps,
 void vpu_pipeline_check_finish_reg(int crtc_index);
 void sort_osd_by_zorder(struct osd_zorder_s *din, u32 osd_num);
 
-extern struct rdma_reg_ops t7_reg_ops[3];
+extern struct rdma_reg_ops common_reg_ops[3];
 extern struct rdma_reg_ops g12b_reg_ops[2];
 
 extern struct meson_vpu_block_ops video_ops;

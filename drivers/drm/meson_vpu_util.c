@@ -224,7 +224,7 @@ int meson_vpu2_write_reg_bits(u32 addr, u32 val, u32 start, u32 len)
 #endif
 }
 
-struct rdma_reg_ops t7_reg_ops[3] = {
+struct rdma_reg_ops common_reg_ops[3] = {
 	{
 		.rdma_read_reg = meson_vpu_read_reg,
 		.rdma_write_reg = meson_vpu_write_reg,

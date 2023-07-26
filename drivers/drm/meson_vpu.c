@@ -16,6 +16,7 @@
 #include <linux/component.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/dma-map-ops.h>
+#include <linux/clk.h>
 #include <linux/cma.h>
 #include <linux/sync_file.h>
 
@@ -181,6 +182,27 @@ static void am_meson_vpu_power_config(bool en)
 	meson_vpu_power_config(VPU_VIU2_OSD_ROT, en);
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void g12b_pipeline_pre_init(struct meson_vpu_pipeline *pipeline, struct device *dev)
+{
+	struct clk *vpu_clkc;
+
+	vpu_clkc = devm_clk_get(dev, "vpu_clkc");
+	if (IS_ERR_OR_NULL(vpu_clkc)) {
+		DRM_ERROR("cannot get vpu_clkc\n");
+		vpu_clkc = NULL;
+	} else {
+		int vpu_clkc_rate;
+
+		/* use default clock rate in dts */
+		clk_prepare_enable(vpu_clkc);
+		vpu_clkc_rate = clk_get_rate(vpu_clkc);
+		DRM_INFO("vpu clkc clock is %d MHZ\n",
+				vpu_clkc_rate / 1000000);
+	}
+}
+#endif
+
 static void vpu_pipeline_pre_init(struct meson_vpu_pipeline *pipeline, struct device *dev)
 {
 	struct meson_drm *private = pipeline->priv;
@@ -189,6 +211,9 @@ static void vpu_pipeline_pre_init(struct meson_vpu_pipeline *pipeline, struct de
 
 	for (i = 0; i < pipeline->num_postblend; i++)
 		pipeline->subs[i].reg_ops = &vpu_data->crtc_func.reg_ops[i];
+
+	if (vpu_data->crtc_func.pre_init)
+		vpu_data->crtc_func.pre_init(pipeline, dev);
 }
 
 static int am_meson_vpu_bind(struct device *dev,
@@ -289,7 +314,7 @@ static const struct component_ops am_meson_vpu_component_ops = {
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT_C1A
 static const struct meson_vpu_data vpu_g12a_data = {
 	.crtc_func = {
-		.reg_ops = t7_reg_ops,
+		.reg_ops = common_reg_ops,
 	},
 	.pipe_ops = &g12a_vpu_pipeline_ops,
 	.osd_ops = &osd_ops,
@@ -307,6 +332,7 @@ static const struct meson_vpu_data vpu_g12a_data = {
 static const struct meson_vpu_data vpu_g12b_data = {
 	.crtc_func = {
 		.reg_ops = g12b_reg_ops,
+		.pre_init = g12b_pipeline_pre_init,
 	},
 	.pipe_ops = &g12a_vpu_pipeline_ops,
 	.osd_ops = &g12b_osd_ops,
@@ -321,7 +347,7 @@ static const struct meson_vpu_data vpu_g12b_data = {
 
 static const struct meson_vpu_data vpu_t7_data = {
 	.crtc_func = {
-		.reg_ops = t7_reg_ops,
+		.reg_ops = common_reg_ops,
 	},
 	.pipe_ops = &t7_vpu_pipeline_ops,
 	.osd_ops = &t7_osd_ops,
@@ -333,11 +359,13 @@ static const struct meson_vpu_data vpu_t7_data = {
 	.postblend_ops = &t7_postblend_ops,
 	.video_ops = &video_ops,
 	.enc_method = 1,
+	.max_osdblend_width = 3840,
+	.max_osdblend_height = 2160,
 };
 
 static const struct meson_vpu_data vpu_t3_data = {
 	.crtc_func = {
-		.reg_ops = t7_reg_ops,
+		.reg_ops = common_reg_ops,
 	},
 	.pipe_ops = &t7_vpu_pipeline_ops,
 	.osd_ops = &t7_osd_ops,
@@ -353,7 +381,7 @@ static const struct meson_vpu_data vpu_t3_data = {
 
 static const struct meson_vpu_data vpu_t5w_data = {
 	.crtc_func = {
-		.reg_ops = t7_reg_ops,
+		.reg_ops = common_reg_ops,
 	},
 	.pipe_ops = &t7_vpu_pipeline_ops,
 	.osd_ops = &t7_osd_ops,
@@ -369,7 +397,7 @@ static const struct meson_vpu_data vpu_t5w_data = {
 
 static const struct meson_vpu_data vpu_s5_data = {
 	.crtc_func = {
-		.reg_ops = t7_reg_ops,
+		.reg_ops = common_reg_ops,
 	},
 	.pipe_ops = &s5_vpu_pipeline_ops,
 	.osd_ops = &s5_osd_ops,
@@ -383,11 +411,13 @@ static const struct meson_vpu_data vpu_s5_data = {
 	.slice2ppc_ops = &slice2ppc_ops,
 	.enc_method = 1,
 	.slice_mode = 1,
+	.max_osdblend_width = 3840,
+	.max_osdblend_height = 2160,
 };
 
 static const struct meson_vpu_data vpu_t3x_data = {
 	.crtc_func = {
-		.reg_ops = t7_reg_ops,
+		.reg_ops = common_reg_ops,
 	},
 	.pipe_ops = &s5_vpu_pipeline_ops,
 	.osd_ops = &s5_osd_ops,
@@ -401,11 +431,13 @@ static const struct meson_vpu_data vpu_t3x_data = {
 	.slice2ppc_ops = &slice2ppc_ops,
 	.enc_method = 1,
 	.slice_mode = 1,
+	.max_osdblend_width = 3840,
+	.max_osdblend_height = 2160,
 };
 
 static const struct meson_vpu_data vpu_txhd2_data = {
 		.crtc_func = {
-		.reg_ops = t7_reg_ops,
+		.reg_ops = common_reg_ops,
 	},
 	.pipe_ops = &g12a_vpu_pipeline_ops,
 	.osd_ops = &osd_ops,
@@ -421,7 +453,7 @@ static const struct meson_vpu_data vpu_txhd2_data = {
 
 static const struct meson_vpu_data vpu_s1a_data = {
 	.crtc_func = {
-		.reg_ops = t7_reg_ops,
+		.reg_ops = common_reg_ops,
 	},
 	.pipe_ops = &g12a_vpu_pipeline_ops,
 	.osd_ops = &osd_ops,

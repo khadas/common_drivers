@@ -878,16 +878,17 @@ static void lcd_mlvds_control_set(struct aml_lcd_drv_s *pdrv)
 	case LCD_CHIP_TXHD2:
 		lcd_combo_dphy_write(pdrv, COMBO_DPHY_CNTL0_TXHD2, 0x55555);
 		/* fifo_clk_sel[7:6]: 0=div6, 1=div 7, 2=div8, 3=div10 */
-		lcd_ana_write(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2, (div_sel << 6));
+		lcd_combo_dphy_write(pdrv, COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2, (div_sel << 6));
 		/* serializer_en[27:16] */
-		lcd_ana_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2, 0xfff, 16, 12);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2, 0xfff, 16, 12);
 		/* pn swap[2] */
-		lcd_ana_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2, 1, 2, 1);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2, 1, 2, 1);
 
 		/* fifo enable[30], phy_clock gating[24] */
-		lcd_ana_write(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1_TXHD2, (1 << 30) | (1 << 24));
+		lcd_combo_dphy_write(pdrv, COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1_TXHD2,
+					(1 << 30) | (1 << 24));
 		/* fifo write enable[31] */
-		lcd_ana_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1_TXHD2, 1, 31, 1);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1_TXHD2, 1, 31, 1);
 
 		lcd_vcbus_write(P2P_CH_SWAP0, channel_sel0);
 		lcd_vcbus_write(P2P_CH_SWAP1, channel_sel1);
@@ -929,9 +930,9 @@ static void lcd_mlvds_disable(struct aml_lcd_drv_s *pdrv)
 		break;
 	case LCD_CHIP_TXHD2:
 		/* disable fifo */
-		lcd_ana_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1_TXHD2, 0, 30, 2);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1_TXHD2, 0, 30, 2);
 		/* disable lane */
-		lcd_ana_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2, 0, 16, 12);
+		lcd_combo_dphy_setb(pdrv, COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0_TXHD2, 0, 16, 12);
 		break;
 	default:
 		/* disable fifo */

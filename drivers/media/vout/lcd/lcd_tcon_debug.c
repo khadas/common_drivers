@@ -24,6 +24,7 @@
 #include "lcd_reg.h"
 #include "lcd_common.h"
 #include "lcd_tcon.h"
+#include "lcd_tcon_pdf.h"
 
 //1: unlocked, 0: locked, negative: locked, possible waiters
 struct mutex lcd_tcon_dbg_mutex;
@@ -1256,11 +1257,186 @@ ssize_t lcd_tcon_fw_dbg_store(struct device *dev, struct device_attribute *attr,
 	return count;
 }
 
+static const char *lcd_debug_tcon_pdf_usage_str = {
+	"Usage:\n"
+	"  echo help > tcon_pdf\n"
+	"  echo ctrl <grp_num> <enable> > tcon_pdf\n"
+	"     pdf function(group=0xff) or group enable\n"
+	"  echo add group <grp_num> > tcon_pdf\n"
+	"     add pdf action group\n"
+	"  echo add src <grp_num> <src_mode> <reg> <mask> <val> > tcon_pdf\n"
+	"     add src register for group\n"
+	"  echo add dst <grp_num> <dst_mode> <index> <mask> <val> > tcon_pdf\n"
+	"     add dst action for group\n"
+	"  echo del group <grp_num>\n"
+	"     delete action group\n"
+	"  cat tcon_pdf\n"
+	"     show pdf current status\n"
+};
+
+ssize_t lcd_tcon_pdf_dbg_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct tcon_pdf_s *tcon_pdf = lcd_tcon_get_pdf();
+
+	if (tcon_pdf->show_status)
+		return tcon_pdf->show_status(tcon_pdf, buf);
+
+	return 0;
+}
+
+ssize_t lcd_tcon_pdf_dbg_store(struct device *dev, struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	char *buf_orig;
+	char **parm = NULL;
+	int ret = -1;
+	unsigned int val_arr[10] = { 0 };
+	struct tcon_pdf_reg_s src;
+	struct tcon_pdf_dst_s dst;
+	struct tcon_pdf_s *tcon_pdf = lcd_tcon_get_pdf();
+
+	if (!buf || !tcon_pdf)
+		return count;
+
+	mutex_lock(&lcd_tcon_dbg_mutex);
+
+	buf_orig = kstrdup(buf, GFP_KERNEL);
+	if (!buf_orig)
+		goto __lcd_tcon_pdf_dbg_store_exit;
+
+	parm = kcalloc(1500, sizeof(char *), GFP_KERNEL);
+	if (!parm)
+		goto __lcd_tcon_pdf_dbg_store_exit;
+
+	lcd_debug_parse_param(buf_orig, parm);
+	if (!strcmp(parm[0], "help")) {
+		LCDPR("%s", lcd_debug_tcon_pdf_usage_str);
+	} else if (!strcmp(parm[0], "ctrl")) {
+		ret = kstrtouint(parm[1], 0, &val_arr[0]);
+		if (ret)
+			goto __lcd_tcon_pdf_dbg_store_exit;
+		ret = kstrtouint(parm[2], 0, &val_arr[1]);
+		if (ret)
+			goto __lcd_tcon_pdf_dbg_store_exit;
+		if (tcon_pdf->group_enable) {
+			ret = tcon_pdf->group_enable(tcon_pdf,
+				val_arr[0], val_arr[1]);
+			if (ret < 0) {
+				LCDERR("Ctrl group %d fail\n", val_arr[0]);
+			} else {
+				LCDPR("Group %d %s\n", val_arr[0],
+					val_arr[1] ? "enable" : "disable");
+			}
+		}
+	} else if (!strcmp(parm[0], "add")) {
+		if (!strcmp(parm[1], "group")) {
+			if (tcon_pdf->new_group) {
+				ret = kstrtouint(parm[2], 0, &val_arr[0]);
+				if (ret)
+					goto __lcd_tcon_pdf_dbg_store_exit;
+				ret = tcon_pdf->new_group(tcon_pdf, val_arr[0]);
+				if (ret < 0)
+					LCDERR("Add group %d fail\n", val_arr[0]);
+				else
+					LCDPR("Add group %d\n", ret);
+			}
+		} else if (!strcmp(parm[1], "src")) {
+			ret = kstrtouint(parm[2], 0, &val_arr[0]);  //group
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			ret = kstrtouint(parm[3], 0, &val_arr[1]);  //mode
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			ret = kstrtouint(parm[4], 0, &val_arr[2]);  //reg
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			ret = kstrtouint(parm[5], 0, &val_arr[3]);  //mask
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			ret = kstrtouint(parm[6], 0, &val_arr[4]);  //val
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			src.mode = val_arr[1];
+			src.reg  = val_arr[2];
+			src.mask = val_arr[3];
+			src.val  = val_arr[4];
+			LCDPR("src mode=%d, reg=%#x, mask=%#x, val=%#x\n",
+				src.mode, src.reg, src.mask, src.val);
+			if (tcon_pdf->group_add_src) {
+				ret = tcon_pdf->group_add_src(tcon_pdf,
+					val_arr[0], &src);
+				if (ret < 0) {
+					LCDERR("Add group src fail\n");
+				} else {
+					LCDPR("Group %d add src success\n",
+						val_arr[0]);
+				}
+			}
+		} else if (!strcmp(parm[1], "dst")) {
+			ret = kstrtouint(parm[2], 0, &val_arr[0]);  //group
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			ret = kstrtouint(parm[3], 0, &val_arr[1]);  //mode
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			ret = kstrtouint(parm[4], 0, &val_arr[2]);  //index
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			ret = kstrtouint(parm[5], 0, &val_arr[3]);  //mask
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			ret = kstrtouint(parm[6], 0, &val_arr[4]);  //val
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			dst.mode  = val_arr[1];
+			dst.index = val_arr[2];
+			dst.mask  = val_arr[3];
+			dst.val   = val_arr[4];
+			LCDPR("dst mode=%d, index=%#x, mask=%#x, val=%#x\n",
+				dst.mode, dst.index, dst.mask, dst.val);
+			if (tcon_pdf->group_add_dst) {
+				ret = tcon_pdf->group_add_dst(tcon_pdf,
+					val_arr[0], &dst);
+				if (ret < 0) {
+					LCDERR("Add group dst fail\n");
+				} else {
+					LCDPR("Group %d add dst success\n",
+						val_arr[0]);
+				}
+			}
+		}
+	} else if (!strcmp(parm[0], "del")) {
+		if (!strcmp(parm[1], "group")) {
+			ret = kstrtouint(parm[2], 0, &val_arr[0]);  //group
+			if (ret)
+				goto __lcd_tcon_pdf_dbg_store_exit;
+			if (tcon_pdf->del_group) {
+				ret = tcon_pdf->del_group(tcon_pdf, val_arr[0]);
+				if (ret < 0) {
+					LCDERR("Delete group %d fail\n",
+						val_arr[0]);
+				} else {
+					LCDPR("Delete group %d success\n",
+						val_arr[0]);
+				}
+			}
+		}
+	}
+
+__lcd_tcon_pdf_dbg_store_exit:
+	mutex_unlock(&lcd_tcon_dbg_mutex);
+	kfree(parm);
+	kfree(buf_orig);
+
+	return count;
+}
+
 static struct device_attribute lcd_tcon_debug_attrs[] = {
 	__ATTR(debug,     0644, lcd_tcon_debug_show, lcd_tcon_debug_store),
 	__ATTR(status,    0444, lcd_tcon_status_show, NULL),
 	__ATTR(reg,       0644, lcd_tcon_reg_debug_show, lcd_tcon_reg_debug_store),
-	__ATTR(tcon_fw,   0644, lcd_tcon_fw_dbg_show, lcd_tcon_fw_dbg_store)
+	__ATTR(tcon_fw,   0644, lcd_tcon_fw_dbg_show, lcd_tcon_fw_dbg_store),
+	__ATTR(tcon_pdf,  0644, lcd_tcon_pdf_dbg_show, lcd_tcon_pdf_dbg_store),
 };
 
 /* **********************************

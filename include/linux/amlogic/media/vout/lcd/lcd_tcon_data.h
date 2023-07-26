@@ -24,6 +24,7 @@
 #define LCD_TCON_DATA_BLOCK_TYPE_OD_LUT         0x05
 #define LCD_TCON_DATA_BLOCK_TYPE_LOD_LUT        0x06
 #define LCD_TCON_DATA_BLOCK_TYPE_VAC            0x11
+#define LCD_TCON_DATA_BLOCK_TYPE_PDF            0x20
 #define LCD_TCON_DATA_BLOCK_TYPE_EXT            0xe0 /* pmu */
 #define LCD_TCON_DATA_BLOCK_TYPE_MAX            0xff
 #define is_block_type_basic_init(type) ((type) == LCD_TCON_DATA_BLOCK_TYPE_BASIC_INIT)
@@ -37,6 +38,9 @@
 #define LCD_TCON_DATA_PART_TYPE_CHK_EXIT        0xce
 #define LCD_TCON_DATA_PART_TYPE_DMA             0xc0
 #define LCD_TCON_DATA_PART_TYPE_PARAM           0xf0 /* only for tool */
+#define LCD_TCON_DATA_PART_TYPE_PDF_ACTION      0xf1
+#define LCD_TCON_DATA_PART_TYPE_PDF_ACTION_DST  0xf2
+#define LCD_TCON_DATA_PART_TYPE_PDF_ACTION_SRC  0xf3
 #define LCD_TCON_DATA_PART_TYPE_CONTROL         0xfc
 #define LCD_TCON_DATA_PART_TYPE_DELAY           0xfd
 
@@ -218,6 +222,41 @@ struct lcd_tcon_data_part_dma_s {
 	unsigned char reserved[7];
 };
 
+#define LCD_TCON_DATA_PART_PDF_SRC_SIZE_PRE    (LCD_TCON_DATA_PART_NAME_SIZE + 4)
+struct lcd_tcon_data_part_pdf_src_s {
+	char name[LCD_TCON_DATA_PART_NAME_SIZE];
+	unsigned short part_id;
+	unsigned char tuning_flag;
+	unsigned char part_type;
+	unsigned int reg_addr;
+	unsigned int data_mask;
+	unsigned int data_check_mode;
+	unsigned int data_value;
+};
+
+#define LCD_TCON_DATA_PART_PDF_DST_SIZE_PRE    (LCD_TCON_DATA_PART_NAME_SIZE + 4)
+struct lcd_tcon_data_part_pdf_dst_s {
+	char name[LCD_TCON_DATA_PART_NAME_SIZE];
+	unsigned short part_id;
+	unsigned char tuning_flag;
+	unsigned char part_type;
+	unsigned int mode;
+	unsigned int index;
+	unsigned int data_mask;
+	unsigned int data_value;
+};
+
+#define LCD_TCON_DATA_PART_PDF_ACT_SIZE_PRE    (LCD_TCON_DATA_PART_NAME_SIZE + 4)
+struct lcd_tcon_data_part_pdf_action_s {
+	char name[LCD_TCON_DATA_PART_NAME_SIZE];
+	unsigned short part_id;
+	unsigned char tuning_flag;
+	unsigned char part_type;
+	unsigned char src_id;
+	unsigned char dst_cnt;
+	unsigned char dst_array[0];
+};
+
 union lcd_tcon_data_part_u {
 	struct lcd_tcon_data_part_ctrl_s *ctrl;
 	struct lcd_tcon_data_part_wr_n_s *wr_n;
@@ -229,6 +268,9 @@ union lcd_tcon_data_part_u {
 	struct lcd_tcon_data_part_delay_s *delay;
 	struct lcd_tcon_data_part_param_s *param;
 	struct lcd_tcon_data_part_dma_s *dma;
+	struct lcd_tcon_data_part_pdf_action_s *pdf_action;
+	struct lcd_tcon_data_part_pdf_src_s *pdf_src;
+	struct lcd_tcon_data_part_pdf_dst_s *pdf_dst;
 };
 
 #define LCD_UKEY_TCON_SPI_BLOCK_SIZE_PRE          20

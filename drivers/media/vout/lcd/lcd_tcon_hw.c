@@ -17,6 +17,7 @@
 #include "lcd_common.h"
 #include "lcd_reg.h"
 #include "lcd_tcon.h"
+#include "lcd_tcon_pdf.h"
 #if IS_ENABLED(CONFIG_AMLOGIC_TEE)
 #include <linux/amlogic/tee.h>
 #endif
@@ -615,6 +616,7 @@ int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv,
 				   unsigned char *data_buf, phys_addr_t paddr, int init_flag)
 {
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
+	struct lcd_tcon_local_cfg_s *tcon_local = get_lcd_tcon_local_cfg();
 	struct lcd_tcon_data_block_header_s *block_header;
 	struct lcd_tcon_data_block_ext_header_s *ext_header;
 	unsigned char *p, *part_start;
@@ -623,11 +625,15 @@ int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv,
 	unsigned int size, reg, data, mask, temp, reg_base = 0;
 	union lcd_tcon_data_part_u data_part;
 	unsigned int data_offset = 0, offset, i, j, k, d, m, n, step = 0;
+	struct lcd_tcon_pdf_data_s *pdf_data = NULL;
 	unsigned int reg_cnt, reg_byte, data_cnt, data_byte;
 	unsigned short block_ctrl_flag;
 	unsigned char exe_in_isr = 0, exe_ignore = 0;
 	unsigned int *part_pos, part_start_offset, ext_header_size;
 	int ret;
+
+	if (!tcon_local)
+		return -1;
 
 	if (tcon_conf)
 		reg_base = tcon_conf->core_reg_start;
@@ -1003,6 +1009,75 @@ int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv,
 				if ((lcd_debug_print_flag & LCD_DBG_PR_ADV))
 					LCDPR("%s step %d ignored\n", __func__, step);
 				break;
+			}
+			break;
+		case LCD_TCON_DATA_PART_TYPE_PDF_ACTION:
+			if (block_ctrl_flag)
+				goto lcd_tcon_data_common_parse_set_ctrl_err;
+			if (tcon_local->pdf_list_load_flag)
+				break;
+			pdf_data = kzalloc(sizeof(*pdf_data), GFP_KERNEL);
+			if (pdf_data) {
+				pdf_data->data.pdf_action =
+					(struct lcd_tcon_data_part_pdf_action_s *)p;
+				pdf_data->data_type = part_type;
+				offset = LCD_TCON_DATA_PART_PDF_ACT_SIZE_PRE;
+				size = offset + pdf_data->data.pdf_action->dst_cnt + 2;
+				list_add_tail(&pdf_data->list, &tcon_local->pdf_data_list);
+				if (lcd_debug_print_flag & LCD_DBG_PR_ADV) {
+					int dst_i = 0;
+					struct lcd_tcon_data_part_pdf_action_s *action =
+						pdf_data->data.pdf_action;
+
+					LCDPR("Add ACTION src_id=%#x\n",
+						pdf_data->data.pdf_action->src_id);
+					LCDPR("Add ACTION dst_id=");
+					for (dst_i = 0; dst_i < action->dst_cnt; dst_i++)
+						pr_info("%d,", action->dst_array[dst_i]);
+					pr_info("\n");
+				}
+			}
+			break;
+		case LCD_TCON_DATA_PART_TYPE_PDF_ACTION_DST:
+			if (block_ctrl_flag)
+				goto lcd_tcon_data_common_parse_set_ctrl_err;
+			if (tcon_local->pdf_list_load_flag)
+				break;
+			pdf_data = kzalloc(sizeof(*pdf_data), GFP_KERNEL);
+			if (pdf_data) {
+				pdf_data->data.pdf_dst = (struct lcd_tcon_data_part_pdf_dst_s *)p;
+				pdf_data->data_type = part_type;
+				offset = LCD_TCON_DATA_PART_PDF_DST_SIZE_PRE;
+				size = offset + 10;
+				list_add_tail(&pdf_data->list, &tcon_local->pdf_data_list);
+				if (lcd_debug_print_flag & LCD_DBG_PR_ADV)
+					LCDPR("Add DST id=%#x,mode=%d,idx=%d,mask=%#x,val=%#x\n",
+						pdf_data->data.pdf_dst->part_id,
+						pdf_data->data.pdf_dst->mode,
+						pdf_data->data.pdf_dst->index,
+						pdf_data->data.pdf_dst->data_mask,
+						pdf_data->data.pdf_dst->data_value);
+			}
+			break;
+		case LCD_TCON_DATA_PART_TYPE_PDF_ACTION_SRC:
+			if (block_ctrl_flag)
+				goto lcd_tcon_data_common_parse_set_ctrl_err;
+			if (tcon_local->pdf_list_load_flag)
+				break;
+			pdf_data = kzalloc(sizeof(*pdf_data), GFP_KERNEL);
+			if (pdf_data) {
+				pdf_data->data.pdf_src = (struct lcd_tcon_data_part_pdf_src_s *)p;
+				pdf_data->data_type = part_type;
+				offset = LCD_TCON_DATA_PART_PDF_SRC_SIZE_PRE;
+				size = offset + 13;
+				list_add_tail(&pdf_data->list, &tcon_local->pdf_data_list);
+				if (lcd_debug_print_flag & LCD_DBG_PR_ADV)
+					LCDPR("Add SRC id=%#x,mode=%d,reg=%#x,mask=%#x,val=%#x\n",
+						pdf_data->data.pdf_src->part_id,
+						pdf_data->data.pdf_src->data_check_mode,
+						pdf_data->data.pdf_src->reg_addr,
+						pdf_data->data.pdf_src->data_mask,
+						pdf_data->data.pdf_src->data_value);
 			}
 			break;
 		default:

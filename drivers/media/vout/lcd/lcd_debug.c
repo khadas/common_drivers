@@ -5490,6 +5490,7 @@ static struct device_attribute lcd_debug_attrs_mlvds[] = {
 	__ATTR(tcon_status,   0444, lcd_tcon_status_show, NULL),
 	__ATTR(tcon_reg,   0644, lcd_tcon_reg_debug_show, lcd_tcon_reg_debug_store),
 	__ATTR(tcon_fw,   0644, lcd_tcon_fw_dbg_show, lcd_tcon_fw_dbg_store),
+	__ATTR(tcon_pdf,  0644, lcd_tcon_pdf_dbg_show, lcd_tcon_pdf_dbg_store),
 	__ATTR(null,   0644, NULL, NULL)
 };
 
@@ -5500,6 +5501,7 @@ static struct device_attribute lcd_debug_attrs_p2p[] = {
 	__ATTR(tcon_status,   0444, lcd_tcon_status_show, NULL),
 	__ATTR(tcon_reg,   0644, lcd_tcon_reg_debug_show, lcd_tcon_reg_debug_store),
 	__ATTR(tcon_fw,   0644, lcd_tcon_fw_dbg_show, lcd_tcon_fw_dbg_store),
+	__ATTR(tcon_pdf,  0644, lcd_tcon_pdf_dbg_show, lcd_tcon_pdf_dbg_store),
 	__ATTR(null,   0644, NULL, NULL)
 };
 

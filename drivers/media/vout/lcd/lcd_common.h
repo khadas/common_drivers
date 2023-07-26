@@ -45,7 +45,8 @@
 /* 20230821: update clk ss support*/
 /* 20230823: add dma driver for tcon lut*/
 /* 20230824: support high resolution vsync measure debug*/
-#define LCD_DRV_VERSION    "20230824"
+/* 20230906: support pdf action */
+#define LCD_DRV_VERSION    "20230906"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;
@@ -174,6 +175,9 @@ ssize_t lcd_tcon_reg_debug_store(struct device *dev, struct device_attribute *at
 				const char *buf, size_t count);
 ssize_t lcd_tcon_fw_dbg_show(struct device *dev, struct device_attribute *attr, char *buf);
 ssize_t lcd_tcon_fw_dbg_store(struct device *dev, struct device_attribute *attr,
+				const char *buf, size_t count);
+ssize_t lcd_tcon_pdf_dbg_show(struct device *dev, struct device_attribute *attr, char *buf);
+ssize_t lcd_tcon_pdf_dbg_store(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count);
 long lcd_tcon_ioctl_handler(struct aml_lcd_drv_s *pdrv, int mcd_nr, unsigned long arg);
 

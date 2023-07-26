@@ -42,7 +42,7 @@
 #include "lcd_common.h"
 #include "lcd_reg.h"
 #include "lcd_tcon.h"
-/*#include "tcon_ceds.h"*/
+#include "lcd_tcon_pdf.h"
 
 static struct lcd_tcon_config_s *lcd_tcon_conf;
 static struct tcon_rmem_s tcon_rmem = {
@@ -1738,6 +1738,7 @@ static int lcd_tcon_data_multi_set(struct aml_lcd_drv_s *pdrv,
 void lcd_tcon_vsync_isr(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_tcon_fw_s *tcon_fw = aml_lcd_tcon_get_fw();
+	struct tcon_pdf_s *tcon_pdf = lcd_tcon_get_pdf();
 	unsigned long flags = 0;
 
 	if ((pdrv->status & LCD_STATUS_IF_ON) == 0)
@@ -1762,6 +1763,9 @@ void lcd_tcon_vsync_isr(struct aml_lcd_drv_s *pdrv)
 			spin_unlock_irqrestore(&tcon_local_cfg.multi_list_lock, flags);
 		}
 	}
+
+	if (tcon_pdf->vs_handler)
+		tcon_pdf->vs_handler(tcon_pdf);
 
 	if (tcon_fw->vsync_isr)
 		tcon_fw->vsync_isr(tcon_fw);
@@ -2184,6 +2188,17 @@ void lcd_tcon_data_block_regen_crc(unsigned char *data)
 	}
 }
 
+void lcd_tcon_pdf_clean_data(struct list_head *head)
+{
+	struct lcd_tcon_pdf_data_s *pdf_item = NULL;
+	struct lcd_tcon_pdf_data_s *next = NULL;
+
+	list_for_each_entry_safe(pdf_item, next, head, list) {
+		list_del(&pdf_item->list);
+		kfree(pdf_item);
+	}
+}
+
 int lcd_tcon_data_load(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf, int index)
 {
 	struct lcd_tcon_data_block_header_s *block_header;
@@ -2258,6 +2273,20 @@ int lcd_tcon_data_load(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf, int 
 	if (!is_block_type_basic_init(block_header->block_type) &&
 		is_block_ctrl_multi(block_header->block_ctrl))
 		lcd_tcon_data_multi_add(pdrv, &tcon_mm_table, block_header, index);
+
+	if (block_header->block_type == LCD_TCON_DATA_BLOCK_TYPE_PDF) {
+		if (!list_empty(&tcon_local_cfg.pdf_data_list)) {
+			/* clean exist list */
+			lcd_tcon_pdf_clean_data(&tcon_local_cfg.pdf_data_list);
+			tcon_local_cfg.pdf_list_load_flag = 0;
+			INIT_LIST_HEAD(&tcon_local_cfg.pdf_data_list);
+		}
+		if (!lcd_tcon_data_common_parse_set(pdrv,
+				data_buf, (phys_addr_t)NULL, 1)) {
+			if (!lcd_tcon_pdf_get_config(&tcon_local_cfg.pdf_data_list))
+				tcon_local_cfg.pdf_list_load_flag = 1;
+		}
+	}
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("%s %d: size=0x%x, type=0x%02x, name=%s, init_priority=%d\n",
@@ -3172,10 +3201,13 @@ static int lcd_tcon_get_config(struct aml_lcd_drv_s *pdrv)
 {
 	tcon_mm_table.data_init = NULL;
 	tcon_mm_table.core_reg_table_size = lcd_tcon_conf->reg_table_len;
+	INIT_LIST_HEAD(&tcon_local_cfg.pdf_data_list);
 	if (lcd_tcon_conf->core_reg_ver)
 		lcd_tcon_load_init_data_from_unifykey_new();
 	else
 		lcd_tcon_load_init_data_from_unifykey();
+
+	lcd_tcon_pdf_init(pdrv);
 
 	lcd_tcon_bin_load(pdrv);
 	pdrv->tcon_status = tcon_mm_table.valid_flag;

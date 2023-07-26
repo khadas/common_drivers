@@ -166,6 +166,9 @@ struct lcd_tcon_local_cfg_s {
 	char bin_ver[TCON_BIN_VER_LEN];
 	spinlock_t multi_list_lock; /* for tcon multi lut list change */
 
+	struct list_head pdf_data_list;  //for struct lcd_tcon_pdf_data_s
+	unsigned char pdf_list_load_flag;
+
 	struct cdev   cdev;
 	struct device *dev;
 	dev_t devno;

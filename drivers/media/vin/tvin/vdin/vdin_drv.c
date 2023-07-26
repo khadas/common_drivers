@@ -1770,9 +1770,6 @@ int start_tvin_service(int no, struct vdin_parm_s  *para)
 
 		pr_info("vdin1 add reserved = 0x%lx\n", para->reserved);
 		pr_info("vdin1 all reserved = 0x%x\n", devp->parm.reserved);
-
-		/* don't need drop any frame for vdin1 */
-		devp->frame_cnt = devp->vdin_drop_num;
 	}
 
 	devp->start_time = jiffies_to_msecs(jiffies);
@@ -6279,6 +6276,9 @@ static int vdin_drv_probe(struct platform_device *pdev)
 		devp->vdin_drop_num = VDIN_DROP_FRAME_NUM_DEF;
 		/* avoid abnormal image */
 		devp->dbg_stop_dec_delay = 50000;
+	} else {
+		/* vdin1 drop 1 frame */
+		devp->vdin_drop_num = 1;
 	}
 
 	devp->vdin_pcs_reset_threshold = VDIN_INPUT_ABNORMAL_SIZE_THRESHOLD;

@@ -209,7 +209,9 @@ enum vdin_hw_ver_e {
 /* 20230713: bc302 get field type */
 /* 20230718: optimize get video format process */
 /* 20230725: notify fps change event when not game mode */
-#define VDIN_VER_V1 "20230725: notify fps change event when not game mode"
+/* 20230727: drop the first frame for vdin1 was not write finished */
+
+#define VDIN_VER_V1 "20230727: drop the first frame for vdin1"
 
 enum vdin_irq_flg_e {
 	VDIN_IRQ_FLG_NO_END = 1,

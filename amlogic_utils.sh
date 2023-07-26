@@ -1,5 +1,13 @@
 #!/bin/bash
 
+function real_path() {
+if [[ "${FULL_KERNEL_VERSION}" == "common13-5.15" ]]; then
+	rel_path $@
+else
+	realpath $1 --relative-to $2
+fi
+}
+
 function pre_defconfig_cmds() {
 	export OUT_AMLOGIC_DIR=$(readlink -m ${COMMON_OUT_DIR}/amlogic)
 	if [ "${ARCH}" = "arm" ]; then
@@ -151,7 +159,7 @@ function prepare_module_build() {
 	ext_modules=
 	for ext_module in ${EXT_MODULES}; do
 		module_abs_path=`readlink -e ${ext_module}`
-		module_rel_path=$(rel_path ${module_abs_path} ${ROOT_DIR})
+		module_rel_path=$(real_path ${module_abs_path} ${ROOT_DIR})
 		if [[ ${TOP_EXT_MODULE_COPY_BUILD} -eq "1" ]]; then
 			if [[ `echo ${module_rel_path} | grep "\.\.\/"` ]]; then
 				cp -rf ${module_abs_path} ${top_ext_drivers}
@@ -166,7 +174,7 @@ function prepare_module_build() {
 		while read LINE
 		do
 			module_abs_path=`readlink -e ${LINE}`
-			module_rel_path=$(rel_path ${module_abs_path} ${ROOT_DIR})
+			module_rel_path=$(real_path ${module_abs_path} ${ROOT_DIR})
 			if [[ ${TOP_EXT_MODULE_COPY_BUILD} -eq "1" ]]; then
 				if [[ `echo ${module_rel_path} | grep "\.\.\/"` ]]; then
 					cp -rf ${module_abs_path} ${top_ext_drivers}
@@ -182,7 +190,7 @@ function prepare_module_build() {
 	local flag=0
 	if [[ ${AUTO_ADD_EXT_SYMBOLS} -eq "1" ]]; then
 		for ext_module in ${EXT_MODULES}; do
-			ext_mod_rel=$(rel_path ${ext_module} ${KERNEL_DIR})
+			ext_mod_rel=$(real_path ${ext_module} ${KERNEL_DIR})
 			if [[ ${flag} -eq "1" ]]; then
 				sed -i "/# auto add KBUILD_EXTRA_SYMBOLS start/,/# auto add KBUILD_EXTRA_SYMBOLS end/d" ${ext_module}/Makefile
 				sed -i "2 i # auto add KBUILD_EXTRA_SYMBOLS end" ${ext_module}/Makefile
@@ -1164,13 +1172,6 @@ function adjust_config_action () {
 }
 export -f adjust_config_action
 
-if [[ "${FULL_KERNEL_VERSION}" != "common13-5.15" ]]; then
-	function rel_path() {
-		echo "WARNING: rel_path is deprecated. For Kleaf builds, use 'realpath $1 --relative-to $2' instead." >&2
-		${ROOT_DIR}/build/kernel/build-tools/path/linux-x86/realpath "$1" --relative-to="$2"
-	}
-fi
-
 # function build_part_of_kernel can only build part of kernel such as image modules or dtbs
 # parameter:
 #	--image:   only build image
@@ -1234,7 +1235,7 @@ function build_part_of_kernel () {
 				echo " Building external modules and installing them into staging directory"
 				KERNEL_UAPI_HEADERS_DIR=$(readlink -m ${COMMON_OUT_DIR}/kernel_uapi_headers)
 				for EXT_MOD in ${EXT_MODULES}; do
-					EXT_MOD_REL=$(rel_path ${ROOT_DIR}/${EXT_MOD} ${KERNEL_DIR})
+					EXT_MOD_REL=$(real_path ${ROOT_DIR}/${EXT_MOD} ${KERNEL_DIR})
 					mkdir -p ${OUT_DIR}/${EXT_MOD_REL}
 					set -x
 					make -C ${EXT_MOD} M=${EXT_MOD_REL} KERNEL_SRC=${ROOT_DIR}/${KERNEL_DIR}  \
@@ -1268,7 +1269,7 @@ function build_part_of_kernel () {
 		fi
 		if [ -n "${DTS_EXT_DIR}" ]; then
 			if [ -d "${ROOT_DIR}/${DTS_EXT_DIR}" ]; then
-				DTS_EXT_DIR=$(rel_path ${ROOT_DIR}/${DTS_EXT_DIR} ${KERNEL_DIR})
+				DTS_EXT_DIR=$(real_path ${ROOT_DIR}/${DTS_EXT_DIR} ${KERNEL_DIR})
 				if [ -d ${OUT_DIR}/${DTS_EXT_DIR} ]; then
 					FILES="$FILES `ls ${OUT_DIR}/${DTS_EXT_DIR}`"
 				fi
@@ -1652,7 +1653,7 @@ function set_default_parameters_for_smarthome () {
 	source ${ROOT_DIR}/build/kernel/build_utils.sh
 
 	DTS_EXT_DIR=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/boot/dts/amlogic
-	DTS_EXT_DIR=$(rel_path ${ROOT_DIR}/${DTS_EXT_DIR} ${KERNEL_DIR})
+	DTS_EXT_DIR=$(real_path ${ROOT_DIR}/${DTS_EXT_DIR} ${KERNEL_DIR})
 	export dtstree=${DTS_EXT_DIR}
 	export DTC_INCLUDE=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/include
 
@@ -1745,7 +1746,7 @@ export -f build_kernel_for_different_cpu_architecture
 
 function build_ext_modules() {
 	for EXT_MOD in ${EXT_MODULES}; do
-		EXT_MOD_REL=$(rel_path ${ROOT_DIR}/${EXT_MOD} ${KERNEL_DIR})
+		EXT_MOD_REL=$(real_path ${ROOT_DIR}/${EXT_MOD} ${KERNEL_DIR})
 		mkdir -p ${OUT_DIR}/${EXT_MOD_REL}
 
 		set -x
@@ -1999,7 +2000,7 @@ function set_default_parameters_for_32bit () {
 	source ${ROOT_DIR}/build/kernel/build_utils.sh
 
 	DTS_EXT_DIR=${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/arch/${ARCH}/boot/dts/amlogic
-	DTS_EXT_DIR=$(rel_path ${ROOT_DIR}/${DTS_EXT_DIR} ${KERNEL_DIR})
+	DTS_EXT_DIR=$(real_path ${ROOT_DIR}/${DTS_EXT_DIR} ${KERNEL_DIR})
 	export dtstree=${DTS_EXT_DIR}
 	export DTC_INCLUDE=${ROOT_DIR}/${KERNEL_DIR}/${COMMON_DRIVERS_DIR}/include
 

@@ -1,8 +1,0 @@
-# ABIs not in amlogic list but included by other lists
-  __tracepoint_android_rvh_enqueue_task
-  __traceiter_android_rvh_enqueue_task
-  __tracepoint_android_rvh_tick_entry
-  __traceiter_android_rvh_tick_entry
-  __tracepoint_sched_switch
-  __traceiter_sched_switch
-  system_unbound_wq

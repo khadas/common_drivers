@@ -988,6 +988,7 @@
 		clock-names = "vdec",
 			"clk_vdec_mux",
 			"clk_hevcf_mux";
+		ucode_format = <0x0 0x2402042>;
 	};
 
 	ddr_bandwidth {

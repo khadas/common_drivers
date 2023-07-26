@@ -786,6 +786,9 @@ static const struct pll_params_table s4_hifi_pll_table[] = {
 /*
  * Internal hifi pll emulation configuration parameters
  */
+#define S4_HIFI_PLL_DEAL
+
+#ifndef S4_HIFI_PLL_DEAL
 static const struct reg_sequence s4_hifi_init_regs[] = {
 	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x0000ed80 },
 	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00000000 },
@@ -794,6 +797,226 @@ static const struct reg_sequence s4_hifi_init_regs[] = {
 	{ .reg = ANACTRL_HIFIPLL_CTRL5,	.def = 0x39272000 },
 	{ .reg = ANACTRL_HIFIPLL_CTRL6,	.def = 0x56540000 }
 };
+#else
+static const struct reg_sequence s4_hifi_init_regs[] = {
+	{ .reg = ANACTRL_HIFIPLL_CTRL0,	.def = 0X080204c4 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL0,	.def = 0x380204c4 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL1,	.def = 0x0000ed80 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL2,	.def = 0x00000000 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL3,	.def = 0x6a285c00 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL4,	.def = 0x65771290 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL5,	.def = 0x39272000 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL6,	.def = 0x56540000 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL0,	.def = 0x180204c4 }
+};
+
+#ifndef FIXED_FRAC_WEIGHT_PRECISION
+#define FIXED_FRAC_WEIGHT_PRECISION	100000
+#endif
+
+static inline struct meson_clk_pll_data *
+meson_clk_pll_data(struct clk_regmap *clk)
+{
+	return (struct meson_clk_pll_data *)clk->data;
+}
+
+#if defined CONFIG_ARM
+static unsigned long __pll_params_to_rate(unsigned long parent_rate,
+					  unsigned int m, unsigned int n,
+					  unsigned int frac,
+					  struct meson_clk_pll_data *pll,
+					  unsigned int od)
+#else
+static unsigned long __pll_params_to_rate(unsigned long parent_rate,
+					  unsigned int m, unsigned int n,
+					  unsigned int frac,
+					  struct meson_clk_pll_data *pll)
+#endif
+{
+	u64 rate = (u64)parent_rate * m;
+	u64 frac_rate;
+
+	if (frac && MESON_PARM_APPLICABLE(&pll->frac)) {
+		frac_rate = (u64)parent_rate * frac;
+		if (frac & (1 << (pll->frac.width - 1))) {
+			if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
+				rate -= DIV_ROUND_UP_ULL(frac_rate, FIXED_FRAC_WEIGHT_PRECISION);
+			else
+				rate -= DIV_ROUND_UP_ULL(frac_rate,
+						 (1 << (pll->frac.width - 2)));
+		} else {
+			if (pll->flags & CLK_MESON_PLL_FIXED_FRAC_WEIGHT_PRECISION)
+				rate += DIV_ROUND_UP_ULL(frac_rate, FIXED_FRAC_WEIGHT_PRECISION);
+			else
+				rate += DIV_ROUND_UP_ULL(frac_rate,
+						 (1 << (pll->frac.width - 2)));
+		}
+	}
+
+	if (pll->flags & CLK_MESON_PLL_POWER_OF_TWO)
+		n = 1 << n;
+
+	if (n == 0)
+		return 0;
+
+#if defined CONFIG_ARM
+	return DIV_ROUND_UP_ULL(rate, n) >> od;
+#else
+	return DIV_ROUND_UP_ULL(rate, n);
+#endif
+}
+
+static int meson_clk_pll_wait_lock(struct clk_hw *hw)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
+	int delay = 1000;
+
+	do {
+		/* Is the clock locked now ? */
+		if (meson_parm_read(clk->map, &pll->l))
+			return 0;
+		udelay(1);
+	} while (delay--);
+
+	return -ETIMEDOUT;
+}
+
+static int meson_s4_clk_hifi_pll_init(struct clk_hw *hw)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
+
+	/*
+	 * Do not init pll
+	 * 1. it will gate pll which is needed in RTOS
+	 * 2. it will gate sys pll who is feeding CPU
+	 */
+	if (pll->flags & CLK_MESON_PLL_IGNORE_INIT) {
+		pr_warn("ignore %s clock init\n", clk_hw_get_name(hw));
+		return 0;
+	}
+
+	if (pll->init_count) {
+		meson_parm_write(clk->map, &pll->rst, 1);
+		regmap_multi_reg_write(clk->map, pll->init_regs,
+				       pll->init_count);
+		meson_parm_write(clk->map, &pll->rst, 0);
+	}
+
+	return 0;
+}
+
+#if defined CONFIG_ARM
+static unsigned long meson_s4_clk_hifi_pll_recalc_rate(struct clk_hw *hw,
+					       unsigned long parent_rate)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
+	unsigned int m, n, frac, od;
+
+	n = meson_parm_read(clk->map, &pll->n);
+	m = meson_parm_read(clk->map, &pll->m);
+	od = MESON_PARM_APPLICABLE(&pll->od) ?
+		meson_parm_read(clk->map, &pll->od) :
+		0;
+
+	frac = MESON_PARM_APPLICABLE(&pll->frac) ?
+		meson_parm_read(clk->map, &pll->frac) :
+		0;
+
+	return __pll_params_to_rate(parent_rate, m, n, frac, pll, od);
+}
+#else
+static unsigned long meson_s4_clk_hifi_pll_recalc_rate(struct clk_hw *hw,
+					       unsigned long parent_rate)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
+	unsigned int m, n, frac;
+
+	n = meson_parm_read(clk->map, &pll->n);
+
+	/*
+	 * On some HW, N is set to zero on init. This value is invalid as
+	 * it would result in a division by zero. The rate can't be
+	 * calculated in this case
+	 */
+	if (n == 0)
+		return 0;
+
+	m = meson_parm_read(clk->map, &pll->m);
+
+	frac = MESON_PARM_APPLICABLE(&pll->frac) ?
+		meson_parm_read(clk->map, &pll->frac) :
+		0;
+
+	return __pll_params_to_rate(parent_rate, m, n, frac, pll);
+}
+#endif
+static int meson_s4_clk_hifi_pll_is_enabled(struct clk_hw *hw)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
+
+	/* Enable and lock bit equal 1, it locks */
+	if (meson_parm_read(clk->map, &pll->en) &&
+	    meson_parm_read(clk->map, &pll->l))
+		return 1;
+
+	return 0;
+}
+
+static int meson_s4_clk_hifi_pll_enable(struct clk_hw *hw)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
+
+	/* do nothing if the PLL is already enabled */
+	if (clk_hw_is_enabled(hw))
+		return 0;
+
+	/* Make sure the pll is in reset */
+	meson_parm_write(clk->map, &pll->rst, 1);
+
+	/* Enable the pll */
+	meson_parm_write(clk->map, &pll->en, 1);
+	/*
+	 * Make the PLL more stable, if not,
+	 * It will probably lock failed (GP0 PLL)
+	 */
+	usleep_range(50, 100);
+
+	/* Take the pll out reset */
+	meson_parm_write(clk->map, &pll->rst, 0);
+
+	if (meson_clk_pll_wait_lock(hw))
+		return -EIO;
+
+	return 0;
+}
+
+static void meson_s4_clk_hifi_pll_disable(struct clk_hw *hw)
+{
+	struct clk_regmap *clk = to_clk_regmap(hw);
+	struct meson_clk_pll_data *pll = meson_clk_pll_data(clk);
+
+	/* Put the pll is in reset */
+	meson_parm_write(clk->map, &pll->rst, 1);
+
+	/* Disable the pll */
+	meson_parm_write(clk->map, &pll->en, 0);
+}
+
+/* s4 hifi pll special ops */
+const struct clk_ops meson_s4_clk_hifi_pll_ops = {
+	.init		= meson_s4_clk_hifi_pll_init,
+	.recalc_rate	= meson_s4_clk_hifi_pll_recalc_rate,
+	.is_enabled	= meson_s4_clk_hifi_pll_is_enabled,
+	.enable		= meson_s4_clk_hifi_pll_enable,
+	.disable	= meson_s4_clk_hifi_pll_disable
+};
+#endif
 
 static struct clk_regmap s4_hifi_pll_dco = {
 	.data = &(struct meson_clk_pll_data){
@@ -843,7 +1066,11 @@ static struct clk_regmap s4_hifi_pll_dco = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "hifi_pll_dco",
+#ifdef S4_HIFI_PLL_DEAL
+		.ops = &meson_s4_clk_hifi_pll_ops,
+#else
 		.ops = &meson_clk_pll_ops,
+#endif
 		.parent_data = (const struct clk_parent_data []) {
 			{ .fw_name = "xtal", }
 		},
@@ -874,7 +1101,11 @@ static struct clk_regmap s4_hifi_pll = {
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "hifi_pll",
+#ifdef S4_HIFI_PLL_DEAL
+		.ops = &clk_regmap_divider_ro_ops,
+#else
 		.ops = &clk_regmap_divider_ops,
+#endif
 		.parent_hws = (const struct clk_hw *[]) {
 			&s4_hifi_pll_dco.hw
 		},

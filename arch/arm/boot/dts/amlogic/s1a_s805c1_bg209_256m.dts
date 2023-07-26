@@ -19,9 +19,6 @@
 	aliases {
 		serial0 = &uart_B;
 		serial1 = &uart_A;
-		serial2 = &uart_C;
-		serial3 = &uart_D;
-		serial4 = &uart_E;
 		i2c0 = &i2c0;
 		i2c1 = &i2c1;
 		i2c2 = &i2c2;
@@ -1214,10 +1211,10 @@
 		&sdcard_pins &ao_to_sd_uart_pins>;
 	pinctrl-4 = <&sd_to_ao_uart_clr_pins
 		&sd_1bit_pins &ao_to_sd_uart_pins>;
-	pinctrl-5 = <&sdcard_pins &ao_uart_pins>;
+	//pinctrl-5 = <&sdcard_pins &ao_uart_pins>;
 	pinctrl-6 = <&sd_to_ao_uart_clr_pins
 		&ao_to_sd_uart_pins>;
-	pinctrl-7 = <&sdcard_pins &ao_uart_pins>;
+	//pinctrl-7 = <&sdcard_pins &ao_uart_pins>;
 	pinctrl-8 = <&sd_to_ao_uart_clr_pins
 		&ao_to_sd_uart_pins>;
 	pinctrl-names = "sd_default",
@@ -1466,7 +1463,6 @@
 
 &uart_A {
 	status = "disabled";
-	uart-has-rtscts;
 };
 
 //&gpu {

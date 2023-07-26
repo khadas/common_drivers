@@ -1147,27 +1147,27 @@
 	status = "disabled";
 };
 
-&dwc2_a {
+&crg_phy_20 {
 	status = "disabled";
-	/** 0: normal, 1: otg+dwc3 host only, 2: otg+dwc3 device only*/
-	controller-type = <1>;
+	portnum = <1>;
 };
 
-&crg {
-	status = "disabled";
-};
-
-&usb2_phy_v2 {
-	status = "disabled";
-	portnum = <2>;
-};
-
-&usb3_phy_v2 {
+&crg3_phy_20 {
 	status = "disabled";
 	portnum = <0>;
-	otg = <0>;
-	/*gpio-vbus-power = "GPIOH_6";*/
-	/*gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;*/
+};
+
+&crg20_otg {
+	status = "disabled";
+	controller-type = <1>; /* 0~3: normal, host, device, otg */
+};
+
+&crg20_drd {
+	status = "disabled";
+};
+
+&crg_udc_2 {
+	status = "disabled";
 };
 
 &pcie {

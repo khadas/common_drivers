@@ -57,9 +57,7 @@ static int __init usb_main_init(void)
 	call_sub_init(amlogic_new_otg_driver_init);	//usbotg/amlogic_usb_otg.ko
 	//call_sub_init(dwc_otg_init);			//dwc_otg/310/dwc_otg.ko
 	call_sub_init(amlogic_crg_drd_usb2_drv_init);	//crgdrdphy/amlogic_usb2_crg_drd_phy.ko
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	call_sub_init(amlogic_crg_drd_usb3_drv_init);	//crgdrdphy/amlogic_usb3_crg_drd_phy.ko
-#endif
 	call_sub_init(amlogic_crg_host_driver_init);	//crg/amlogic_usb_crg_drd.ko
 	call_sub_init(crg_otg_init);			//crg/amlogic_usb_crg
 	call_sub_init(crg_otg_v2_init);			//crg/amlogic_usb_crg.ko

@@ -398,7 +398,17 @@ int amlogic_crg_device_usb2_init(u32 phy_id)
 
 	/* step 7: pll setting */
 	for (i = 0; i < phy->portnum; i++) {
-		set_usb_pll(phy, phy->phy_cfg[i]);
+		switch (phy->analog_process_nm) {
+		case 22:
+			set_usb_pll_22nm(phy, phy->phy_cfg[i]);
+			break;
+		case 12:
+			set_usb_pll(phy, phy->phy_cfg[i]);
+			break;
+		default:
+			dev_err(phy->dev, "Failed setting usbpll due to analog_process_nm mismatch.");
+			break;
+		}
 		set_trim_initvalue(phy, phy->phy_cfg[i], i);
 	}
 

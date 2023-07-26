@@ -189,10 +189,6 @@ bool is_hdmi_ll_as_hdr10(void);
 #define CSC_FLAG_CHECK_OUTPUT	2
 #define CSC_FLAG_FORCE_SIGNAL	4
 
-#define _DI_	'D'
-
-#define AMDI_IOC_SET_PQ_PARM			_IOW(_DI_, 0x51, struct am_pq_parm_s)
-
 /*hdr output mode*/
 #define HDR_OUTPUT_MODE_DOLBY_VISION			0
 #define HDR_OUTPUT_MODE_HDR10					1
@@ -332,19 +328,6 @@ struct ve_pq_overscan_s {
 };
 
 extern struct ve_pq_overscan_s overscan_table[TIMING_MAX];
-
-struct am_pq_parm_s {
-	unsigned int table_name;
-	unsigned int table_len;
-	union {
-	void *table_ptr;
-	long long l_table;
-	};
-	union {
-	void *reserved;
-	long long l_reserved;
-	};
-};
 
 /*3D LUT IOCTL command list*/
 struct table_3dlut_s {

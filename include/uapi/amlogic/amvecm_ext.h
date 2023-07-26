@@ -9,6 +9,7 @@
 #include <linux/types.h>
 
 #define _VE_CM  'C'
+#define _DI_	'D'
 
 #define DNLP_SCURV_LEN 65
 #define GAIN_VAR_LUT_LEN 49
@@ -161,6 +162,19 @@ enum pq_table_name_e {
 	TABLE_NAME_RESERVED3 = 0x400000,
 	TABLE_NAME_RESERVED4 = 0x800000,
 	TABLE_NAME_MAX,
+};
+
+struct am_pq_parm_s {
+	unsigned int table_name;
+	unsigned int table_len;
+	union {
+	void *table_ptr;
+	long long l_table;
+	};
+	union {
+	void *reserved;
+	long long l_reserved;
+	};
 };
 
 struct ve_pq_load_s {
@@ -560,6 +574,7 @@ struct ve_ble_whe_param_s {
 #define AMVECM_IOC_3D_SYNC_EN			_IO(_VE_CM, 0x49)
 #define AMVECM_IOC_GAMMA_SET			_IOW(_VE_CM, 0X4a, struct gm_tbl_s)
 #define AMVECM_IOC_3D_SYNC_DIS			_IO(_VE_CM, 0x50)
+#define AMDI_IOC_SET_PQ_PARM			_IOW(_DI_, 0x51, struct am_pq_parm_s)
 #define AMVECM_IOC_SET_OVERSCAN			_IOW(_VE_CM, 0x52, struct ve_pq_load_s)
 /*DNLP IOCTL command list*/
 #define AMVECM_IOC_G_DNLP_STATE			_IOR(_VE_CM, 0x53, enum dnlp_state_e)

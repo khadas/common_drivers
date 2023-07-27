@@ -1628,6 +1628,13 @@ void hdmirx_pcs_reset(struct tvin_frontend_s *fe)
 	}
 }
 
+void hdmirx_de_hactive(bool en, struct tvin_frontend_s *fe)
+{
+	u8 port = rx_info.main_port;
+
+	hdmirx_wr_bits_top(TOP_VID_CNTL, _BIT(30), en, port);
+}
+
 static struct tvin_state_machine_ops_s hdmirx_sm_ops = {
 	.nosig            = hdmirx_is_nosig,
 	.fmt_changed      = hdmirx_fmt_chg,
@@ -1643,6 +1650,7 @@ static struct tvin_state_machine_ops_s hdmirx_sm_ops = {
 	.hdmi_dv_config   = hdmirx_dv_config,
 	.hdmi_clr_vsync	= hdmirx_clr_vsync,
 	.hdmi_reset_pcs = hdmirx_pcs_reset,
+	.hdmi_de_hactive = hdmirx_de_hactive,
 };
 
 /*

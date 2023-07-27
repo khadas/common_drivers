@@ -1301,6 +1301,7 @@ void vdin_set_decimation(struct vdin_dev_s *devp)
 	unsigned int offset = devp->addr_offset;
 	unsigned int new_clk = 0;
 	bool decimation_in_frontend = false;
+	struct tvin_state_machine_ops_s *sm_ops = NULL;
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (is_meson_s5_cpu()) {
@@ -1330,12 +1331,16 @@ void vdin_set_decimation(struct vdin_dev_s *devp)
 			(devp->prop.decimation_ratio + 1);
 	devp->v_active = devp->fmt_info_p->v_active;
 
-	if (is_meson_txhd2_cpu()) {
-		devp->prop.scaling4w = 1920;
-		devp->prop.scaling4h = 1080;
-		/* if hdmi input size >= 4k, h_active/2 */
-		if (devp->h_active >= 3840)
+	/* if hdmi input size > 2k, h_active / 2 */
+	if (devp->frontend)
+		sm_ops = devp->frontend->sm_ops;
+	if (is_meson_txhd2_cpu() && sm_ops && sm_ops->hdmi_de_hactive) {
+		if (devp->h_active > 1920) {
+			sm_ops->hdmi_de_hactive(1, devp->frontend);
 			devp->h_active = devp->h_active / 2;
+		} else {
+			sm_ops->hdmi_de_hactive(0, devp->frontend);
+		}
 	}
 
 	if (devp->prop.decimation_ratio && !decimation_in_frontend)	{

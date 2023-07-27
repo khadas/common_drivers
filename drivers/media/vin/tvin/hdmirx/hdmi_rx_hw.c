@@ -5244,7 +5244,7 @@ void hdmirx_config_video(u8 port)
 	u8 data8;
 	u8 pixel_rpt_cnt;
 	int reg_clk_vp_core_div, reg_clk_vp_out_div;
-	u32 data32;
+
 	if (dbg_cs & 0x10)
 		temp = dbg_cs & 0x0f;
 	else
@@ -5295,16 +5295,7 @@ void hdmirx_config_video(u8 port)
 		data8 |= ((pixel_rpt_cnt & 0x3) << 0);
 		hdmirx_wr_cor(RX_VP_INPUT_FORMAT_HI, data8, port);
 	}
-	if (rx_info.chip_id == CHIP_ID_TXHD2) {
-		if (rx[port].cur.hactive > 2500 ||
-			(rx[port].cur.colorspace == 3 && rx[port].cur.hactive > 1900)) {
-			data32 = hdmirx_rd_top(TOP_VID_CNTL, port);
-			data32 |= 1 << 30;
-			hdmirx_wr_top(TOP_VID_CNTL, data32, port);
-		} else {
-			hdmirx_wr_bits_top(TOP_VID_CNTL, _BIT(30), 0, port);
-		}
-	}
+
 	if (rx_info.chip_id >= CHIP_ID_T3) {
 		if (rx[port].pre.sw_vic >= HDMI_VESA_OFFSET ||
 			rx[port].pre.sw_vic == HDMI_640x480p60 ||

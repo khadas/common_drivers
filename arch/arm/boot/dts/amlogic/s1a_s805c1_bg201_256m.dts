@@ -1147,26 +1147,26 @@
 };
 
 &crg_phy_20 {
-	status = "disabled";
+	status = "okay";
 	portnum = <1>;
 };
 
 &crg3_phy_20 {
-	status = "disabled";
+	status = "okay";
 	portnum = <0>;
 };
 
 &crg20_otg {
-	status = "disabled";
+	status = "okay";
 	controller-type = <1>; /* 0~3: normal, host, device, otg */
 };
 
 &crg20_drd {
-	status = "disabled";
+	status = "okay";
 };
 
 &crg_udc_2 {
-	status = "disabled";
+	status = "okay";
 };
 
 &pcie {

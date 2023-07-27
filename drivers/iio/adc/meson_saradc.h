@@ -72,7 +72,7 @@ struct meson_sar_adc_diff_ops {
  *
  * @vcm_select: g12a and later SoCs must write 0, others SoC write 1
  *
- * @adc_eoc: g12a and later SoCs must write 1
+ * @adc_eoc: g12a and later SoCs must write 1, gxlx3/txhd2 must write 0
  *
  * @calib_enable: enable sw calibration, TXL and before SoCs must write true,
  * other SoCs are optional.

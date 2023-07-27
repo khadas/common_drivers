@@ -230,7 +230,7 @@ u32 nfc_send_cmd_addr_and_wait(unsigned char cmd_bitmap, u8 cmd,
 					     NAND_CMD, CE0 | IDLE);
 				regmap_write(nfc_regmap[NFC_IDX],
 					     NAND_CMD, CE0 | IDLE);
-				ret = nfc_wait_command_fifo_done(NFC_COMMAND_FIFIO_TIMEOUT, 0);
+				ret = nfc_wait_command_fifo_done(NFC_COMMAND_FIFO_TIMEOUT, 0);
 				if (ret)
 					return ret;
 				regmap_read(nfc_regmap[NFC_IDX], NAND_BUF, (unsigned int *)buffer);
@@ -249,7 +249,7 @@ u32 nfc_send_cmd_addr_and_wait(unsigned char cmd_bitmap, u8 cmd,
 					     NAND_CMD, CE0 | IDLE);
 				regmap_write(nfc_regmap[NFC_IDX],
 					     NAND_CMD, CE0 | IDLE);
-				ret = nfc_wait_command_fifo_done(NFC_COMMAND_FIFIO_TIMEOUT, 0);
+				ret = nfc_wait_command_fifo_done(NFC_COMMAND_FIFO_TIMEOUT, 0);
 				if (ret)
 					return ret;
 			}
@@ -261,7 +261,7 @@ u32 nfc_send_cmd_addr_and_wait(unsigned char cmd_bitmap, u8 cmd,
 		i++;
 	}
 
-	return nfc_wait_command_fifo_done(NFC_COMMAND_FIFIO_TIMEOUT, 0);
+	return nfc_wait_command_fifo_done(NFC_COMMAND_FIFO_TIMEOUT, 0);
 }
 
 void nfc_set_dma_mem_and_info(u32 mem, unsigned long info)
@@ -284,7 +284,7 @@ int nfc_start_dma_and_wait_done(u32 n2m_cmd)
 	regmap_write(nfc_regmap[NFC_IDX], NAND_CMD, CE0 | IDLE);
 	regmap_write(nfc_regmap[NFC_IDX], NAND_CMD, CE0 | IDLE);
 
-	return nfc_wait_command_fifo_done(NFC_DATA_FIFIO_TIMEOUT, 0);
+	return nfc_wait_command_fifo_done(NFC_DATA_FIFO_TIMEOUT, 0);
 }
 
 void nfc_set_user_byte(u8 *oob_buf, u64 *info_buf, int ecc_steps)

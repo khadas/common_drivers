@@ -166,7 +166,7 @@ enum STATE_AND_DUMMY_CTL {
 
 /* timeout in unit us */
 /* 10ms */
-#define NFC_COMMAND_FIFIO_TIMEOUT	(10000)
+#define NFC_COMMAND_FIFO_TIMEOUT	(10000)
 /* when transferring data, considering the worse case:
  * 1bit and 6Mhz, all the 202KiB data would cost about
  * 6MByts/s / 8 = 0.75MBytes/s, then the 202KiB would
@@ -174,7 +174,7 @@ enum STATE_AND_DUMMY_CTL {
  * Considering more redundancy, 1s would be a good
  * choice.
  */
-#define NFC_DATA_FIFIO_TIMEOUT		(1000000)
+#define NFC_DATA_FIFO_TIMEOUT		(1000000)
 
 enum NFC_CLK_RATE {
 	CLK_6MHZ	= 0,

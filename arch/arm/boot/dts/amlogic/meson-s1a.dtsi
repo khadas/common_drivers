@@ -252,11 +252,10 @@
 
 	jtag {
 		compatible = "amlogic, jtag";
-		status = "disabled";
+		status = "okay";
 		select = "disable"; /* disable/jtag_a/jtag_b */
-		pinctrl-names="jtag_a_pins", "jtag_b_pins";
+		pinctrl-names="jtag_a_pins";
 		pinctrl-0=<&jtag_a_pins>;
-		pinctrl-1=<&jtag_b_pins>;
 	};
 
 	mailbox_mhu_fifo: mhu@0 {
@@ -2028,11 +2027,11 @@
 
 	jtag_a_pins: jtag_a_pin {
 		mux {
-			groups = "jtag_1_tdi",
-				 "jtag_1_tdo",
-				 "jtag_1_clk",
-				 "jtag_1_tms";
-			function = "jtag_1";
+			groups = "jtag_tdi",
+				 "jtag_tdo",
+				 "jtag_clk",
+				 "jtag_tms";
+			function = "jtag";
 		};
 	};
 

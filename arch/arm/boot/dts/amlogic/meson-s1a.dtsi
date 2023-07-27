@@ -920,10 +920,10 @@
 				reg = <0x58000 0x24>,
 					  <0x180 0x4>;
 				#pwm-cells = <3>;
-				//clocks = <&clkc CLKID_PWM_A_MUX>,
-				//	     <&clkc CLKID_PWM_B_MUX>;
+				clocks = <&clkc CLKID_PWM_A_MUX>,
+					     <&clkc CLKID_PWM_B_MUX>;
 				clock-names = "clkin0", "clkin1";
-				status = "disabled";
+				status = "okay";
 			};
 
 			pwm_cd: pwm@5a000 {
@@ -931,8 +931,8 @@
 				reg = <0x5a000 0x24>,
 					  <0x184 0x4>;
 				#pwm-cells = <3>;
-				//clocks = <&clkc CLKID_PWM_C_MUX>,
-				//	     <&clkc CLKID_PWM_D_MUX>;
+				clocks = <&clkc CLKID_PWM_C_MUX>,
+					     <&clkc CLKID_PWM_D_MUX>;
 				clock-names = "clkin0", "clkin1";
 				status = "disabled";
 			};

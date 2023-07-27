@@ -608,7 +608,7 @@
 		regulator-name = "VDDQ";
 		regulator-min-microvolt = <1200000>;
 		regulator-max-microvolt = <1200000>;
-		gpio = <&gpio GPIOD_4 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio_ao GPIOD_4 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-boot-on;
 		regulator-always-on;

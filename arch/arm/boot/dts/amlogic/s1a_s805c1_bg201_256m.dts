@@ -720,10 +720,10 @@
 	};
 };
 
-&i2c2 {
-	status = "disabled";
+&i2c1 {
+	status = "okay";
 	pinctrl-names="default";
-	pinctrl-0=<&i2c2_pins2>;
+	pinctrl-0=<&i2c1_pins1>;
 	clock-frequency = <300000>;
 };
 

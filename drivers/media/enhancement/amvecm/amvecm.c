@@ -12129,6 +12129,17 @@ static const struct vecm_match_data_s vecm_dt_txhd2 = {
 };
 #endif
 
+static const struct vecm_match_data_s vecm_dt_s1a = {
+	.chip_id = chip_s1a,
+	.chip_cls = STB_CHIP,
+	.vlk_chip = vlock_chip_t5,
+	.vlk_support = false,
+	.vlk_new_fsm = 1,
+	.vlk_hwver = vlock_hw_tm2verb,
+	.vlk_phlock_en = false,
+	.vlk_pll_sel = vlock_pll_sel_tcon,
+};
+
 static const struct of_device_id aml_vecm_dt_match[] = {
 	{
 		.compatible = "amlogic, vecm",
@@ -12190,6 +12201,10 @@ static const struct of_device_id aml_vecm_dt_match[] = {
 		.data = &vecm_dt_txhd2,
 	},
 #endif
+	{
+		.compatible = "amlogic, vecm-s1a",
+		.data = &vecm_dt_s1a,
+	},
 	{},
 };
 

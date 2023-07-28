@@ -515,9 +515,13 @@ static int canvas_pool_config(void)
 	ret = canvas_pool_init();
 	if (ret < 0)
 		return ret;
-	canvas_pool_register_const_canvas(0, 0x1a, "amvdec");
-	canvas_pool_register_const_canvas(0x26, 0x39, "vdin");
-	canvas_pool_register_const_canvas(0x78, 0xbf, "amvdec");
+	if (is_meson_s1a_cpu()) {
+		canvas_pool_register_const_canvas(0, 0x39, "amvdec");
+	} else {
+		canvas_pool_register_const_canvas(0, 0x1a, "amvdec");
+		canvas_pool_register_const_canvas(0x26, 0x39, "vdin");
+		canvas_pool_register_const_canvas(0x78, 0xbf, "amvdec");
+	}
 	canvas_pool_register_const_canvas(0x58, 0x6f, "display");
 	/* canvas_pool_register_const_canvas(0x66, 0x6b, "display2"); */
 	/* canvas_pool_register_const_canvas(0x70, 0x77, "ppmgr"); */

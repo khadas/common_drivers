@@ -4120,4 +4120,6 @@ struct aml_camera_i2c_fig_s OV5640_AF_firmware[] = {
 	{0xffff, 0xff}
 };
 
+struct aml_cam_info_s *get_aml_cam_info_s(void);
+
 #endif

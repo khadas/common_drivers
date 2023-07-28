@@ -17,6 +17,12 @@
  *
  */
 
+#ifdef pr_fmt
+#undef pr_fmt
+#endif
+
+#define pr_fmt(fmt) "[ov5640]:%s:%d: " fmt, __func__, __LINE__
+
 #include <linux/sizes.h>
 #include <linux/module.h>
 #include <linux/delay.h>
@@ -3021,6 +3027,23 @@ static int ov5640_open(struct file *file)
 	struct ov5640_device *dev = video_drvdata(file);
 	struct ov5640_fh *fh = NULL;
 	int retval = 0;
+	struct aml_cam_info_s *temp_cam = NULL;
+
+	pr_info("tgid %d pid %d", current->tgid, current->pid);
+
+	mutex_lock(&dev->mutex);
+	dev->users++;
+	if (dev->users > 1) {
+		dev->users--;
+		mutex_unlock(&dev->mutex);
+		pr_err("pid %d error leave", current->pid);
+		return -EBUSY;
+	}
+
+	temp_cam = get_aml_cam_info_s();
+
+	if (temp_cam)
+		memcpy(&dev->cam_info, temp_cam, sizeof(struct aml_cam_info_s));
 
 	dev->vminfo.vdin_id = dev->cam_info.vdin_path;
 	dev->vminfo.bt_path_count = dev->cam_info.bt_path_count;
@@ -3041,18 +3064,6 @@ static int ov5640_open(struct file *file)
 	OV5640_init_regs(dev);
 
 	msleep(20);
-
-	mutex_lock(&dev->mutex);
-	dev->users++;
-	if (dev->users > 1) {
-		dev->users--;
-		mutex_unlock(&dev->mutex);
-		return -EBUSY;
-	}
-
-	dprintk(dev, 1, "open %s type=%s users=%d\n",
-		video_device_node_name(dev->vdev),
-		v4l2_type_names[V4L2_BUF_TYPE_VIDEO_CAPTURE], dev->users);
 
 	INIT_LIST_HEAD(&dev->vidq.active);
 	init_waitqueue_head(&dev->vidq.wq);
@@ -3135,6 +3146,10 @@ static int ov5640_close(struct file *file)
 	struct video_device  *vdev = video_devdata(file);
 	unsigned int vdin_path;
 
+	if (!ov5640_have_opened) {
+		pr_err("not opened, skip close, users  %d ", dev->users);
+		return 0;
+	}
 	vdin_path = fh->dev->cam_info.vdin_path;
 	mutex_lock(&firmware_mutex);
 	ov5640_have_opened = 0;
@@ -3151,13 +3166,6 @@ static int ov5640_close(struct file *file)
 	videobuf_mmap_free(&fh->vb_vidq);
 
 	kfree(fh);
-
-	mutex_lock(&dev->mutex);
-	dev->users--;
-	mutex_unlock(&dev->mutex);
-
-	dprintk(dev, 1, "close called (dev=%s, users=%d)\n",
-		video_device_node_name(vdev), dev->users);
 
 	ov5640_qctrl[4].default_value = 0;
 	ov5640_qctrl[5].default_value = 4;
@@ -3177,6 +3185,13 @@ static int ov5640_close(struct file *file)
 #ifdef CONFIG_CMA
 	vm_deinit_resource(&dev->vminfo);
 #endif
+	mutex_lock(&dev->mutex);
+	dev->users--;
+	mutex_unlock(&dev->mutex);
+
+	pr_info("close called (dev=%s, users=%d)\n",
+		video_device_node_name(vdev), dev->users);
+
 	return 0;
 }
 

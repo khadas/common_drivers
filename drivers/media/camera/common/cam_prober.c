@@ -68,6 +68,11 @@ static int aml_camera_read_buff(struct i2c_adapter *adapter,
 	return i2c_flag;
 }
 
+struct aml_cam_info_s *get_aml_cam_info_s(void)
+{
+	return temp_cam;
+}
+
 static int aml_camera_write_buff(struct i2c_adapter *adapter,
 				 unsigned short dev_addr, char *buf, int len)
 {

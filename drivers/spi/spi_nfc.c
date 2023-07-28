@@ -296,6 +296,7 @@ static void spi_nfc_dma_buffer_release(struct spi_nfc *spi_nfc,
 }
 
 static int spi_nfc_dma_xfer(struct spi_nfc *spi_nfc,
+			    struct spi_device *spi,
 			    unsigned long flags,
 			    u8 *user_buf, int len, bool read)
 {
@@ -317,6 +318,13 @@ static int spi_nfc_dma_xfer(struct spi_nfc *spi_nfc,
 
 	page_size = page_info_get_page_size();
 	oob_pos = (oob_only) ? user_buf : (user_buf + page_size);
+
+	if (read ? (spi->mode & SPI_RX_QUAD) : (spi->mode & SPI_TX_QUAD))
+		nfc_set_data_bus_width(2);
+	else if (read ? (spi->mode & SPI_RX_DUAL) : (spi->mode & SPI_TX_DUAL))
+		nfc_set_data_bus_width(1);
+	else
+		nfc_set_data_bus_width(0);
 
 	if (raw || !spinand_in) {
 		buf = spi_nfc_get_dma_safe_buf(user_buf, len, read);
@@ -429,16 +437,20 @@ static int spi_nfc_transfer_one(struct spi_master *master,
 			filp_addr[i] = *(--p);
 		return NFC_SEND_ADDR(filp_addr, xfer->len);
 	case TRANSFER_STATE_DATAOUT:
-		if (xfer->len <= SPINAND_MAX_ID_LEN + 2)
+		if (xfer->len <= SPINAND_MAX_ID_LEN + 2) {
+			nfc_set_data_bus_width(0);
 			return NFC_SEND_DATA_OUT(p, xfer->len);
+		}
 		flags = spi_mem_get_xfer_flag();
-		return spi_nfc_dma_xfer(spi_nfc, flags, p, xfer->len, false);
+		return spi_nfc_dma_xfer(spi_nfc, spi, flags, p, xfer->len, false);
 	case TRANSFER_STATE_DATAIN:
 		p = (u8 *)xfer->rx_buf;
-		if (xfer->len <= SPINAND_MAX_ID_LEN + 2)
+		if (xfer->len <= SPINAND_MAX_ID_LEN + 2) {
+			nfc_set_data_bus_width(0);
 			return NFC_SEND_DATA_IN(p, xfer->len);
+		}
 		flags = spi_mem_get_xfer_flag();
-		return spi_nfc_dma_xfer(spi_nfc, flags, p, xfer->len, true);
+		return spi_nfc_dma_xfer(spi_nfc, spi, flags, p, xfer->len, true);
 	default:
 		pr_info("%s %d\n", __func__, __LINE__);
 		break;

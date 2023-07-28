@@ -1370,8 +1370,8 @@
 		status = "okay";
 		reg = <0>;
 		spi-max-frequency = <24000000>;
-		spi-tx-bus-width = <1>;
-		spi-rx-bus-width = <1>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
 		bl_mode = <2>; /* advance mode */
 		fip_copies = <4>;
 		info_p_mode = <1>; /* Info page on page 0 */

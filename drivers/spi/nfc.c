@@ -16,7 +16,7 @@ struct nfc_clk_provider clk_provider[MAX_CLK_PROVIDER] = {
 	{OSC_CLK_24MHZ, CLK_12MHZ,	1, 2, 0, 2},
 	{FIX_PLL_DIV2,	CLK_20MHZ,	12, 4, 0, 3},
 	{FIX_PLL_DIV2,	CLK_41MHZ,	6, 4, 0, 5},
-	{FIX_PLL_DIV2,	CLK_83MHZ,	3, 4, 0, 7},
+	{FIX_PLL_DIV2,	CLK_83MHZ,	3, 4, 1, 7},
 	{FIX_PLL_DIV2P5, CLK_100MHZ_400, 2, 4, 0, 11},
 	{FIX_PLL_DIV2,	CLK_100MHZ_500,	2, 5, 0, 11},
 	{FIX_PLL_DIV2,	CLK_125MHZ,	2, 4, 0, 13},
@@ -92,7 +92,7 @@ static struct nfc_clk_provider *nfc_get_clock_provider(void)
 
 	frequency_idx = page_info_get_frequency_index();
 	if (frequency_idx == 0xFF) {
-		clk_info = &clk_provider[CLK_41MHZ];
+		clk_info = &clk_provider[CLK_83MHZ];
 	} else {
 		clk_info = &clk_provider[frequency_idx & 0x7F];
 		if (frequency_idx & 0x80) {
@@ -101,7 +101,6 @@ static struct nfc_clk_provider *nfc_get_clock_provider(void)
 		}
 	}
 
-	clk_info->adj = page_info_get_adj_index();
 	cs_deselect_time = page_info_get_cs_deselect_time();
 	if (cs_deselect_time != 0xFF) {
 		clk_info->cs_deselect_time = cs_deselect_time;
@@ -135,7 +134,7 @@ void nfc_set_clock_and_timing(unsigned long *clk_rate)
 	regmap_read(nfc_regmap[EMMC_IDX], 0, &value);
 	regmap_write(nfc_regmap[EMMC_IDX], 0, value | (1 << 6));
 	value = data_lanes | (cmd_lanes << 2) |
-		((1) << 4) |
+		((clk_info->adj & 0x0F) << 4) |
 		(3 << 12) | (mode << 14) | (addr_lanes << 16) |
 		(1 << 31);
 	regmap_write(nfc_regmap[NFC_IDX], SPI_CFG, value);
@@ -147,7 +146,7 @@ void nfc_set_clock_and_timing(unsigned long *clk_rate)
 	regmap_read(nfc_regmap[NFC_IDX], NAND_CFG, &value);
 	NFC_Print("NAND_CFG = 0x%x\n", value);
 
-	*clk_rate = 1000000000 / clk_info->div2;
+	*clk_rate = 1000000000 / clk_info->div1;
 }
 
 void nfc_set_data_bus_width(int bus_width)

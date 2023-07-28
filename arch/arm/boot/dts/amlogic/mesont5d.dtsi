@@ -644,7 +644,7 @@
 		regulator-name = "VDDIO_3.3V";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio GPIOD_10 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio_ao GPIOD_10 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <70000>;
 		enable-active-high;
 		regulator-boot-on;

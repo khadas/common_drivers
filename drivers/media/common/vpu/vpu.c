@@ -298,6 +298,7 @@ static int vpu_vmod_mem_pd_switch(unsigned int vmod, int flag)
 
 static int vpu_vmod_mem_pd_switch_new(unsigned int vmod, int flag)
 {
+#ifdef CONFIG_VDEC_POWER_DOWN
 	bool state;
 	unsigned int ret = -1;
 
@@ -309,6 +310,8 @@ static int vpu_vmod_mem_pd_switch_new(unsigned int vmod, int flag)
 	}
 
 	return ret;
+#endif
+	return 0;
 }
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT

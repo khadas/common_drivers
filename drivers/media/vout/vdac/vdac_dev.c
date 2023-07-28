@@ -190,6 +190,24 @@ static inline unsigned int vdac_vcbus_reg_getb(unsigned int reg,
 	return val;
 }
 
+static inline void print_vdac_reg_value(void)
+{
+	pr_info("private_flag:             0x%x\n"
+		"reg_cntl0:                0x%x=0x%x\n"
+		"reg_cntl1:                0x%x=0x%x\n"
+		"reg_vid_clk_ctrl2:        0x%x=0x%x\n"
+		"reg_vid2_clk_div:         0x%x=0x%x\n",
+		pri_flag,
+		s_vdac_data->reg_cntl0,
+		vdac_ana_reg_read(s_vdac_data->reg_cntl0),
+		s_vdac_data->reg_cntl1,
+		vdac_ana_reg_read(s_vdac_data->reg_cntl1),
+		s_vdac_data->reg_vid_clk_ctrl2,
+		vdac_clk_reg_read(s_vdac_data->reg_vid_clk_ctrl2),
+		s_vdac_data->reg_vid2_clk_div,
+		vdac_clk_reg_read(s_vdac_data->reg_vid2_clk_div));
+}
+
 static int vdac_ctrl_config(bool on, unsigned int reg, unsigned int bit)
 {
 	struct meson_vdac_ctrl_s *table = s_vdac_data->ctrl_table;
@@ -207,7 +225,7 @@ static int vdac_ctrl_config(bool on, unsigned int reg, unsigned int bit)
 				val = table[i].val ? 0 : 1;
 			vdac_ana_reg_setb(reg, val, bit, table[i].len);
 			if (vdac_debug_print) {
-				pr_info("vdac: reg=0x%02x set bit%d=%d, readback=0x%08x\n",
+				pr_info("vdac: reg=%#x set bit%d=%d, readback=%#x\n",
 					reg, bit, val, vdac_ana_reg_read(reg));
 			}
 			ret = 0;
@@ -628,16 +646,8 @@ void vdac_enable(bool on, unsigned int module_sel)
 			vdac_ana_reg_setb(s_vdac_data->reg_cntl0, 1, 11, 1);
 	}
 
-	if (vdac_debug_print) {
-		pr_info("private_flag:             0x%02x\n"
-			"reg_cntl0:                0x%02x=0x%08x\n"
-			"reg_cntl1:                0x%02x=0x%08x\n",
-			pri_flag,
-			s_vdac_data->reg_cntl0,
-			vdac_ana_reg_read(s_vdac_data->reg_cntl0),
-			s_vdac_data->reg_cntl1,
-			vdac_ana_reg_read(s_vdac_data->reg_cntl1));
-	}
+	if (vdac_debug_print)
+		print_vdac_reg_value();
 
 	mutex_unlock(&vdac_mutex);
 }
@@ -665,7 +675,7 @@ int vdac_vref_adj(unsigned int value)
 		if (table[i].reg == reg && table[i].bit == bit) {
 			vdac_ana_reg_setb(reg, value, bit, table[i].len);
 	if (vdac_debug_print) {
-		pr_info("vdac: %s: reg=0x%x set bit%d=0x%x, readback=0x%08x\n",
+		pr_info("vdac: %s: reg=%#x set bit%d=%#x, readback=%#x\n",
 			__func__, reg, bit, value, vdac_ana_reg_read(reg));
 	}
 			ret = 0;
@@ -726,16 +736,8 @@ static void vdac_dev_disable(void)
 
 	mutex_unlock(&vdac_mutex);
 
-	if (vdac_debug_print) {
-		pr_info("private_flag:             0x%02x\n"
-			"reg_cntl0:                0x%02x=0x%08x\n"
-			"reg_cntl1:                0x%02x=0x%08x\n",
-			pri_flag,
-			s_vdac_data->reg_cntl0,
-			vdac_ana_reg_read(s_vdac_data->reg_cntl0),
-			s_vdac_data->reg_cntl1,
-			vdac_ana_reg_read(s_vdac_data->reg_cntl1));
-	}
+	if (vdac_debug_print)
+		print_vdac_reg_value();
 }
 
 static void vdac_dev_enable(void)
@@ -745,16 +747,8 @@ static void vdac_dev_enable(void)
 	if ((pri_flag & VDAC_MODULE_MASK) == 0)
 		return;
 
-	if (vdac_debug_print) {
-		pr_info("private_flag:             0x%02x\n"
-			"reg_cntl0:                0x%02x=0x%08x\n"
-			"reg_cntl1:                0x%02x=0x%08x\n",
-			pri_flag,
-			s_vdac_data->reg_cntl0,
-			vdac_ana_reg_read(s_vdac_data->reg_cntl0),
-			s_vdac_data->reg_cntl1,
-			vdac_ana_reg_read(s_vdac_data->reg_cntl1));
-	}
+	if (vdac_debug_print)
+		print_vdac_reg_value();
 }
 
 /* ********************************************************* */
@@ -769,11 +763,13 @@ static ssize_t vdac_info_show(struct class *class,
 	len = sprintf(buf, "vdac driver info:\n");
 	len += sprintf(buf + len,
 		"chip_type:                %s(%d)\n"
-		"private_flag:             0x%02x\n"
-		"cdac_disable:             0x%02x\n"
-		"reg_cntl0:                0x%02x=0x%08x\n"
-		"reg_cntl1:                0x%02x=0x%08x\n"
-		"vdac_sel0:		   0x%02x=0x%08x\n"
+		"private_flag:             0x%x\n"
+		"cdac_disable:             0x%x\n"
+		"reg_cntl0:                0x%x=0x%x\n"
+		"reg_cntl1:                0x%x=0x%x\n"
+		"reg_vid_clk_ctrl2:        0x%x=0x%x\n"
+		"reg_vid2_clk_div:         0x%x=0x%x\n"
+		"vdac_sel0:		   0x%x=0x%x\n"
 		"debug_print:              %d\n"
 		"VDAC_VER:                 %s\n",
 		s_vdac_data->name, s_vdac_data->cpu_id, pri_flag,
@@ -781,6 +777,10 @@ static ssize_t vdac_info_show(struct class *class,
 		vdac_ana_reg_read(s_vdac_data->reg_cntl0),
 		s_vdac_data->reg_cntl1,
 		vdac_ana_reg_read(s_vdac_data->reg_cntl1),
+		s_vdac_data->reg_vid_clk_ctrl2,
+		vdac_clk_reg_read(s_vdac_data->reg_vid_clk_ctrl2),
+		s_vdac_data->reg_vid2_clk_div,
+		vdac_clk_reg_read(s_vdac_data->reg_vid2_clk_div),
 		VENC_VDAC_DACSEL0,
 		vdac_vcbus_reg_read(VENC_VDAC_DACSEL0),
 		vdac_debug_print,
@@ -874,15 +874,13 @@ static ssize_t vdac_debug_store(struct class *class,
 				vdac_ana_reg_write(s_vdac_data->reg_cntl0, reg_val);
 			else if (!strcmp(parm[1], "reg_cntl1"))
 				vdac_ana_reg_write(s_vdac_data->reg_cntl1, reg_val);
+			else if (!strcmp(parm[1], "reg_vid_clk_ctrl2"))
+				vdac_clk_reg_write(s_vdac_data->reg_vid_clk_ctrl2, reg_val);
+			else if (!strcmp(parm[1], "reg_vid2_clk_div"))
+				vdac_clk_reg_write(s_vdac_data->reg_vid2_clk_div, reg_val);
 			else
 				pr_info("reg not match\n");
-
-			pr_info("reg_cntl0: 0x%02x=0x%08x\n"
-				"reg_cntl1: 0x%02x=0x%08x\n",
-				s_vdac_data->reg_cntl0,
-				vdac_ana_reg_read(s_vdac_data->reg_cntl0),
-				s_vdac_data->reg_cntl1,
-				vdac_ana_reg_read(s_vdac_data->reg_cntl1));
+			print_vdac_reg_value();
 		}
 	} else {
 		pr_info("invalid cmd\n");

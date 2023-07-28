@@ -335,6 +335,22 @@ void set_vmode_clk(void)
 		if (ret)
 			pr_info("[error]:tl1 tcon_pll lock failed\n");
 		cvbs_out_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 29, 1);
+	} else if (cvbs_cpu_type() == CVBS_CPU_TYPE_S1A) {
+		cvbs_out_ana_write(ANACTRL_HDMIPLL_CTRL0, 0x030204F7);
+		cvbs_out_ana_write(ANACTRL_HDMIPLL_CTRL1, 0x00010000);
+		cvbs_out_ana_write(ANACTRL_HDMIPLL_CTRL2, 0x01000000);
+		cvbs_out_ana_write(ANACTRL_HDMIPLL_CTRL3, 0x00218000);
+		cvbs_out_ana_write(ANACTRL_HDMIPLL_CTRL4, 0x04611001);
+		cvbs_out_ana_write(ANACTRL_HDMIPLL_CTRL5, 0x00039300);
+		cvbs_out_ana_write(ANACTRL_HDMIPLL_CTRL6, 0xf0410000);
+		usleep_range(10, 11);
+		cvbs_out_ana_write(ANACTRL_HDMIPLL_CTRL0, 0x130204f7);
+		usleep_range(10, 11);
+		cvbs_out_ana_write(ANACTRL_HDMIPLL_CTRL0, 0x330204f7);
+		cvbs_out_ana_write(ANACTRL_HDMIPLL_CTRL6, 0xf0400000);
+		ret = pll_wait_lock(ANACTRL_HDMIPLL_CTRL0, 31);
+		if (ret)
+			pr_info("[error]:hdmi_pll lock failed\n");
 	} else {
 		pr_info("config eqafter gxl hdmi pll\n");
 		cvbs_out_ana_write(HHI_HDMI_PLL_CNTL, 0x4000027b);

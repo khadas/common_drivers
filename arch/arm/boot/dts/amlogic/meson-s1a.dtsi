@@ -1289,20 +1289,20 @@
 
 	p_tsensor: p_tsensor@fe020000 {
 		compatible = "amlogic, r1p1-tsensor";
-		status = "disabled";
+		status = "okay";
 		reg = <0xfe020000 0x50>;
 		tsensor_id = <1>;
 		cal_type = <0x11>;
-		cal_coeff = <324 424 3159 9411>;
-		rtemp = <110000>;
+		cal_coeff = <361 461 2610 7243>;
+		rtemp = <120000>;
 		interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
-		//clocks = <&clkc CLKID_TS_CLK_GATE>;
+		clocks = <&clkc CLKID_TS>;
 		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
 	};
 
 	meson_cooldev: meson-cooldev@0 {
-			status = "disabled";
+			status = "okay";
 			compatible = "amlogic, meson-cooldev";
 			cooling_devices {
 				cpucore_cool_cluster0 {
@@ -1315,8 +1315,19 @@
 					node_name = "bifrost";
 					device_type = "gpufreq";
 				};
+				ddr_cool {
+					ddr_reg = <0xfe036648>;
+					ddr_status = <3>;
+					ddr_bits = <1 3>;
+					ddr_data = <0x0 0x1 0x3>;
+					node_name = "ddr_cool0";
+					device_type = "ddr";
+				};
 			};
 			cpucore_cool0:cpucore_cool0 {
+				#cooling-cells = <2>; /* min followed by max */
+			};
+			ddr_cool0:ddr_cool0 {
 				#cooling-cells = <2>; /* min followed by max */
 			};
 		};/*meson cooling devices end*/
@@ -1329,17 +1340,22 @@
 			thermal-sensors = <&p_tsensor 0>;
 			trips {
 				pswitch_on: trip-point@0 {
-					temperature = <85000>;
-					hysteresis = <5000>;
-					type = "passive";
-				};
-				pcontrol: trip-point@1 {
 					temperature = <95000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
-				pcritical: trip-point@2 {
+				pcontrol: trip-point@1 {
 					temperature = <105000>;
+					hysteresis = <5000>;
+					type = "passive";
+				};
+				pddr_change: trip-point@2 {
+					temperature = <75000>;
+					hysteresis = <10000>;
+					type = "hot";
+				};
+				pcritical: trip-point@3 {
+					temperature = <115000>;
 					hysteresis = <1000>;
 					type = "critical";
 				};
@@ -1348,7 +1364,12 @@
 			cooling-maps {
 				cpufreq_cooling_map {
 					trip = <&pcontrol>;
-					cooling-device = <&CPU0 0 8>;
+					cooling-device = <&CPU0 0 4>;
+					contribution = <1024>;
+				};
+				ddr_cooling_map {
+					trip = <&pddr_change>;
+					cooling-device = <&ddr_cool0 0 2>;
 					contribution = <1024>;
 				};
 				//gpufreq_cooling_map {

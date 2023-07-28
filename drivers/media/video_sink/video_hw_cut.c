@@ -6887,7 +6887,8 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 
 #ifdef ENABLE_PRE_LINK
 		if (is_pre_link_on(layer) &&
-		    !layer->need_disable_prelink)
+		    !layer->need_disable_prelink &&
+		    (IS_DI_POST(vf->type) || IS_DI_PRELINK(vf->di_flag)))
 			update_mif = false;
 #endif
 	}
@@ -6958,9 +6959,9 @@ int set_layer_display_canvas(struct video_layer_s *layer,
 		struct canvas_s tmp;
 
 		canvas_read(cur_canvas_tbl[0], &tmp);
-		pr_info("%s %d: vf:%px, y:%02x, adr:0x%lx, canvas0:%x, pnum:%d, type:%x, flag:%x, afbc:0x%lx-0x%lx, vf_ext:%px uvm_vf:%px di_flag:%x size:%d %d, vframe size:%d line:%d\n",
-			__func__, layer_id, vf,
-			cur_canvas_tbl[0], tmp.addr,
+		pr_info("%s %d: update_mif %d: vf:%px, y:%02x, adr:0x%lx (0x%lx), canvas0:%x, pnum:%d, type:%x, flag:%x, afbc:0x%lx-0x%lx, vf_ext:%px uvm_vf:%px di_flag:%x size:%d %d, vframe size:%d line:%d\n",
+			__func__, layer_id, update_mif ? 1 : 0,
+			vf, cur_canvas_tbl[0], tmp.addr, vf->canvas0_config[0].phy_addr,
 			vf->canvas0Addr, vf->plane_num,
 			vf->type, vf->flag,
 			vf->compHeadAddr, vf->compBodyAddr,

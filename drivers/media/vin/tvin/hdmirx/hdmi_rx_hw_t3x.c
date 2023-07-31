@@ -4033,7 +4033,7 @@ void hdcp_init_t3x(u8 port)
 	//======================================
 	// HDCP 2.X Config ---- RX
 	//======================================
-	//hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, 0x1, port);//HPD
+	hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, 0x1, port);//HPD
 	//todo: enable hdcp22 according hdcp burning
 	hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x01, port);//ri_hdcp2x_en
 	//hdmirx_wr_cor(RX_INTR13_MASK_PWD_IVCRX, 0x02, port);// irq

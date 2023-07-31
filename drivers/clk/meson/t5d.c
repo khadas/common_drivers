@@ -548,10 +548,7 @@ static struct clk_regmap t5d_gp0_pll = {
 
 #ifdef CONFIG_ARM
 static const struct pll_params_table t5w_hifi_pll_table[] = {
-	PLL_PARAMS(150, 1, 3), /* DCO = 450M OD = 3 */
-	PLL_PARAMS(150, 1, 2), /* DCO = 900M OD = 2 */
-	PLL_PARAMS(150, 1, 1), /* DCO = 1806.336M OD = 1 */
-	PLL_PARAMS(125, 1, 3), /* DCO = 375M OD = 1 */
+	PLL_PARAMS(163, 1, 3), /* DCO = 3932.16M */
 	{ /* sentinel */  }
 };
 #else
@@ -566,7 +563,7 @@ static const struct pll_mult_range t5d_hifi_pll_mult_range = {
 static const struct reg_sequence t5d_hifi_init_regs[] = {
 	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x0803047d },
 	{ .reg = HHI_HIFI_PLL_CNTL0,	.def = 0x3803047d },
-	{ .reg = HHI_HIFI_PLL_CNTL1,	.def = 0x00000000 },
+	{ .reg = HHI_HIFI_PLL_CNTL1,	.def = 0x00014820 },
 	{ .reg = HHI_HIFI_PLL_CNTL2,	.def = 0x00000000 },
 	{ .reg = HHI_HIFI_PLL_CNTL3,	.def = 0x6a285c00 },
 	{ .reg = HHI_HIFI_PLL_CNTL4,	.def = 0x65771290 },

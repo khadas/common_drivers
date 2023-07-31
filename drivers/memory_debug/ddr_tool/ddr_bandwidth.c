@@ -22,13 +22,12 @@
 #include "ddr_bandwidth.h"
 #include "dmc.h"
 
-// #define DEBUG
-
-#define PXP_DEBUG	1
+#define PXP_DEBUG	0
 #if PXP_DEBUG
 static unsigned long pxp_debug_freq;
 #endif
 
+// #define DEBUG
 #define T_BUF_SIZE	(1024 * 1024 * 50)
 
 static struct hrtimer ddr_hrtimer_timer;
@@ -181,7 +180,6 @@ static void cal_ddr_usage(struct ddr_bandwidth *db, struct ddr_grant *dg)
 		}
 		return;
 	}
-
 #if PXP_DEBUG
 	if (pxp_debug_freq) {
 		freq = pxp_debug_freq;
@@ -1307,14 +1305,6 @@ static int __init init_chip_config(int cpu, struct ddr_bandwidth *band)
 		aml_db->mali_port[1] = 2;
 		break;
 #endif
-#ifdef CONFIG_AMLOGIC_DDR_BANDWIDTH_S1A
-	case DMC_TYPE_S1A:
-		band->ops = &s1a_ddr_bw_ops;
-		aml_db->channels = 8;
-		aml_db->mali_port[0] = -1;
-		aml_db->mali_port[1] = -1;
-		break;
-#endif
 	default:
 		pr_err("%s, Can't find ops for chip:%x\n", __func__, cpu);
 		return -1;
@@ -1631,10 +1621,6 @@ static const struct of_device_id aml_ddr_bandwidth_dt_match[] = {
 		.data = (void *)DMC_TYPE_TXHD2,
 	},
 #endif
-	{
-		.compatible = "amlogic,ddr-bandwidth-s1a",
-		.data = (void *)DMC_TYPE_S1A,
-	},
 	{}
 };
 #endif

@@ -1076,24 +1076,6 @@ static struct ddr_port_desc ddr_port_desc_txhd2[] __initdata = {
 	{ .port_id = 47, .port_name = "DEMOD"         }
 };
 #endif
-static struct ddr_port_desc ddr_port_desc_s1a[] __initdata = {
-	{ .port_id =  0, .port_name = "ARM_A35"       },
-	{ .port_id =  3, .port_name = "GE2D"          },
-	{ .port_id =  4, .port_name = "HEVC"          },
-	{ .port_id =  7, .port_name = "DEVICE"        },
-	{ .port_id = 11, .port_name = "DEMUX"         },
-	{ .port_id = 16, .port_name = "VPU0 READ"     },
-	{ .port_id = 19, .port_name = "VPU0 WRITE"    },
-	{ .port_id = 21, .port_name = "VDEC"          },
-	/* start of each device */
-	{ .port_id = 32, .port_name = "DEMOD"         },
-	{ .port_id = 33, .port_name = "ETH"           },
-	{ .port_id = 34, .port_name = "AUDIO"         },
-	{ .port_id = 36, .port_name = "SDEMMC"        },
-	{ .port_id = 38, .port_name = "USB"           },
-	{ .port_id = 39, .port_name = "DMA"           }
-};
-
 static struct ddr_port_desc *chip_ddr_port;
 static unsigned int chip_ddr_port_num __initdata;
 
@@ -1263,10 +1245,6 @@ int __init ddr_find_port_desc_type(int cpu_type, struct ddr_port_desc **desc, in
 		desc_size = ARRAY_SIZE(ddr_port_desc_txhd2);
 		break;
 #endif
-	case DMC_TYPE_S1A:
-		*desc = ddr_port_desc_s1a;
-		desc_size = ARRAY_SIZE(ddr_port_desc_s1a);
-		break;
 	default:
 		return -EINVAL;
 	}

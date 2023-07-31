@@ -1002,7 +1002,12 @@ MESON_CLK_COMPOSITE_RW(pwm_a, CLKCTRL_PWM_CLK_AB_CTRL, 0x3, 9,
 		       CLKCTRL_PWM_CLK_AB_CTRL, 0, 8, NULL,
 		       0, CLK_SET_RATE_PARENT,
 		       CLKCTRL_PWM_CLK_AB_CTRL, 8, 0,
-		       CLK_SET_RATE_PARENT);
+		       CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED);
+				/* Used by regulator, and the regulator feeds the CPU.
+				 * Add IGNORE flag to avoid CCF to disable it
+				 * which has been set in Bootloader
+				 */
+
 MESON_CLK_COMPOSITE_RW(pwm_b, CLKCTRL_PWM_CLK_AB_CTRL, 0x3, 25,
 		       pwm_parent_table, 0, pwm_parent_data, 0,
 		       CLKCTRL_PWM_CLK_AB_CTRL, 16, 8, NULL,

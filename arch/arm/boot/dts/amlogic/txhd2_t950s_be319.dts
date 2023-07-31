@@ -808,10 +808,10 @@
 
 &acodec {
 	diff_output = <1>;
-	dac_extra_12db = <1>;
+	/*0: 0dB; 1: 6dB; 2: 12dB; 3: 18dB;*/
+	dac_extra_gain = <1>;
 	/*-12db+ (0xe -1)* 1.5db = 7.5 db*/
 	adc_pga_gain = <0xe>;
-	analog_input = <0>;
 };
 
 &aed {

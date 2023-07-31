@@ -60,12 +60,13 @@ struct tl1_acodec_priv {
 	struct reset_control *rst;
 	int diff_output;
 	int diff_input;
-	int dac_extra_12db;
+	int dac_extra_gain;
 	int dac_output_invert;
 	int lane_offset;
 	bool txhd2_version;
-	int analog_input;
 	int adc_pga_gain;
+	/* store user setting */
+	u32 user_setting[ACODEC_REG_NUM];
 };
 
 static const struct reg_default tl1_acodec_init_list[] = {
@@ -124,6 +125,51 @@ static struct tl1_acodec_chipinfo acodec_cinfo_v3 = {
 	.lineout_num = 4,
 };
 
+static void aml_tl1_acodec_dac_extra_gain_set(struct snd_soc_component *component,
+		int dac_index, int value)
+{
+	u32 reg_addr = 0;
+	u32 val = 0;
+
+	if (dac_index == 0) {
+		reg_addr = ACODEC_1;
+		val = snd_soc_component_read(component, reg_addr);
+
+		if (value == 0) {
+			val &= ~(0x1 << REG_DAC_GAIN_SEL_1);
+			val &= ~(0x1 << REG_DAC_GAIN_SEL_0);
+		} else if (value == 1) {
+			val &= ~(0x1 << REG_DAC_GAIN_SEL_1);
+			val |= (0x1 << REG_DAC_GAIN_SEL_0);
+		} else if (value == 2) {
+			val |= (0x1 << REG_DAC_GAIN_SEL_1);
+			val &= ~(0x1 << REG_DAC_GAIN_SEL_0);
+		} else if (value == 3) {
+			val |= (0x1 << REG_DAC_GAIN_SEL_1);
+			val |= (0x1 << REG_DAC_GAIN_SEL_0);
+		}
+		snd_soc_component_write(component, reg_addr, val);
+	} else if (dac_index == 1) {
+		reg_addr = ACODEC_7;
+		val = snd_soc_component_read(component, reg_addr);
+
+		if (value == 0) {
+			val &= ~(0x1 << REG_DAC2_GAIN_SEL_1);
+			val &= ~(0x1 << REG_DAC2_GAIN_SEL_0);
+		} else if (value == 1) {
+			val &= ~(0x1 << REG_DAC2_GAIN_SEL_1);
+			val |= (0x1 << REG_DAC2_GAIN_SEL_0);
+		} else if (value == 2) {
+			val |= (0x1 << REG_DAC2_GAIN_SEL_1);
+			val &= ~(0x1 << REG_DAC2_GAIN_SEL_0);
+		} else if (value == 3) {
+			val |= (0x1 << REG_DAC2_GAIN_SEL_1);
+			val |= (0x1 << REG_DAC2_GAIN_SEL_0);
+		}
+		snd_soc_component_write(component, reg_addr, val);
+	}
+}
+
 static int tl1_acodec_reg_init(struct snd_soc_component *component)
 {
 	int i;
@@ -138,83 +184,36 @@ static int tl1_acodec_reg_init(struct snd_soc_component *component)
 			tl1_acodec_init_list[i].def);
 	}
 
-	if (aml_acodec && aml_acodec->chipinfo) {
+	if (aml_acodec && aml_acodec->chipinfo && aml_acodec->txhd2_version) {
 		/*Single end configuration*/
-		if (aml_acodec->txhd2_version && aml_acodec->diff_output == 0)
-			snd_soc_component_write(component,
-					ACODEC_3,
-					0x00001212);
-		if (aml_acodec->txhd2_version) {
-			snd_soc_component_write(component,
-					ACODEC_4,
-					0x00020000);
-		}
-	}
+		if (aml_acodec->diff_output == 0)
+			snd_soc_component_write(component, ACODEC_3, 0x00001212);
+		else
+			snd_soc_component_write(component, ACODEC_3, 0x00001111);
 
-	if (aml_acodec && aml_acodec->chipinfo && aml_acodec->diff_output == 1) {
+		snd_soc_component_write(component, ACODEC_4, 0x00020000);
+	} else if (aml_acodec && aml_acodec->chipinfo && aml_acodec->diff_output == 1) {
 		if (aml_acodec->chipinfo->lineout_num == 4) {
 			if (aml_acodec->chipinfo->dac_num == 4)
-				snd_soc_component_write(component,
-							ACODEC_3,
-							0x00002442);
-			else if (aml_acodec->txhd2_version)
-				snd_soc_component_write(component,
-							ACODEC_3,
-							0x00001111);
+				snd_soc_component_write(component, ACODEC_3, 0x00002442);
 			else
-				snd_soc_component_write(component,
-							ACODEC_3,
-							0x00004444);
+				snd_soc_component_write(component, ACODEC_3, 0x00004444);
 		} else if (aml_acodec->chipinfo->lineout_num == 2)
-			snd_soc_component_write(component,
-						ACODEC_3,
-						0x00002400);
+			snd_soc_component_write(component, ACODEC_3, 0x00002400);
 	}
 
 	if (aml_acodec && aml_acodec->diff_input == 1)
 		snd_soc_component_update_bits(component, ACODEC_1, 0xffff << 0, 0x6969 << 0);
-	if (aml_acodec && aml_acodec->txhd2_version) {
-		if (aml_acodec->analog_input == 0) {
-			/*PGAR_IN source AIR1*/
-			snd_soc_component_update_bits(component, ACODEC_1,
-					0x3 << 5, 0x1 << 5);
-			/*PGAL_IN source AIL1*/
-			snd_soc_component_update_bits(component, ACODEC_1,
-					0x3 << 13, 0x1 << 13);
-		} else {
-			/*PGAR_IN source AIR2*/
-			snd_soc_component_update_bits(component, ACODEC_1,
-							0x3 << 5, 0x2 << 5);
-			/*PGAL_IN source AIL2*/
-			snd_soc_component_update_bits(component, ACODEC_1,
-							0x3 << 13, 0x2 << 13);
-		}
-		if (aml_acodec->adc_pga_gain > 0)
-			/*pga gain = -12db + (adc_pga_gain -1)* 1.5 */
-			snd_soc_component_update_bits(component, ACODEC_1,
-							0x1f << 8 | 0x1f,
-							aml_acodec->adc_pga_gain << 8 |
-							aml_acodec->adc_pga_gain);
-		else
-			/*default pga gain 6db*/
-			snd_soc_component_update_bits(component, ACODEC_1,
-							0x1f << 8 | 0x1f,
-							0xd << 8 | 0xd);
-	}
-	if (aml_acodec && aml_acodec->chipinfo && aml_acodec->dac_extra_12db == 1) {
-		u32 val = 0;
 
-		if (aml_acodec->chipinfo->dac_num == 4) {
-			val = snd_soc_component_read(component, ACODEC_7);
-			val |= (0x1 << REG_DAC2_GAIN_SEL_1);
-			val &= ~(0x1 << REG_DAC2_GAIN_SEL_0);
-			snd_soc_component_write(component, ACODEC_7, val);
-		}
+	if (aml_acodec && aml_acodec->adc_pga_gain > 0)
+		snd_soc_component_update_bits(component, ACODEC_1, 0x1f << 8 | 0x1f,
+			aml_acodec->adc_pga_gain << 8 | aml_acodec->adc_pga_gain);
 
-		val = snd_soc_component_read(component, ACODEC_1);
-		val |= (0x1 << REG_DAC_GAIN_SEL_1);
-		val &= ~(0x1 << REG_DAC_GAIN_SEL_0);
-		snd_soc_component_write(component, ACODEC_1, val);
+	if (aml_acodec && aml_acodec->chipinfo && aml_acodec->dac_extra_gain > 0) {
+		if (aml_acodec->chipinfo->dac_num == 4)
+			aml_tl1_acodec_dac_extra_gain_set(component, 1, aml_acodec->dac_extra_gain);
+
+		aml_tl1_acodec_dac_extra_gain_set(component, 0, aml_acodec->dac_extra_gain);
 	}
 
 	if (aml_acodec && aml_acodec->dac_output_invert == 1)
@@ -246,27 +245,10 @@ static int aml_dac_gain_set_enum
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	u32 reg_addr = ACODEC_1;
-	u32 val = snd_soc_component_read(component, reg_addr);
+	int value = ucontrol->value.enumerated.item[0];
 
-	if (ucontrol->value.enumerated.item[0] == 0) {
-		val &= ~(0x1 << REG_DAC_GAIN_SEL_1);
-		val &= ~(0x1 << REG_DAC_GAIN_SEL_0);
-	} else if (ucontrol->value.enumerated.item[0] == 1) {
-		val &= ~(0x1 << REG_DAC_GAIN_SEL_1);
-		val |= (0x1 << REG_DAC_GAIN_SEL_0);
-		pr_info("It has risk of distortion!\n");
-	} else if (ucontrol->value.enumerated.item[0] == 2) {
-		val |= (0x1 << REG_DAC_GAIN_SEL_1);
-		val &= ~(0x1 << REG_DAC_GAIN_SEL_0);
-		pr_info("It has risk of distortion!\n");
-	} else if (ucontrol->value.enumerated.item[0] == 3) {
-		val |= (0x1 << REG_DAC_GAIN_SEL_1);
-		val |= (0x1 << REG_DAC_GAIN_SEL_0);
-		pr_info("It has risk of distortion!\n");
-	}
+	aml_tl1_acodec_dac_extra_gain_set(component, 0, value);
 
-	snd_soc_component_write(component, reg_addr, val);
 	return 0;
 }
 
@@ -293,27 +275,10 @@ static int aml_dac2_gain_set_enum
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	u32 reg_addr = ACODEC_7;
-	u32 val = snd_soc_component_read(component, reg_addr);
+	int value = ucontrol->value.enumerated.item[0];
 
-	if (ucontrol->value.enumerated.item[0] == 0) {
-		val &= ~(0x1 << REG_DAC2_GAIN_SEL_1);
-		val &= ~(0x1 << REG_DAC2_GAIN_SEL_0);
-	} else if (ucontrol->value.enumerated.item[0] == 1) {
-		val &= ~(0x1 << REG_DAC2_GAIN_SEL_1);
-		val |= (0x1 << REG_DAC2_GAIN_SEL_0);
-		pr_info("It has risk of distortion!\n");
-	} else if (ucontrol->value.enumerated.item[0] == 2) {
-		val |= (0x1 << REG_DAC2_GAIN_SEL_1);
-		val &= ~(0x1 << REG_DAC2_GAIN_SEL_0);
-		pr_info("It has risk of distortion!\n");
-	} else if (ucontrol->value.enumerated.item[0] == 3) {
-		val |= (0x1 << REG_DAC2_GAIN_SEL_1);
-		val |= (0x1 << REG_DAC2_GAIN_SEL_0);
-		pr_info("It has risk of distortion!\n");
-	}
+	aml_tl1_acodec_dac_extra_gain_set(component, 1, value);
 
-	snd_soc_component_write(component, reg_addr, val);
 	return 0;
 }
 
@@ -440,7 +405,7 @@ static const struct snd_kcontrol_new tl1_acodec_snd_dac2_controls[] = {
 
 /*pgain Left Channel Input */
 static const char * const linein_left_txt[] = {
-	"None", "AIL1", "AIL2", "AIL3", "AIL4",
+	"None", "AIL1", "AIL2", "AIL3",
 };
 
 static SOC_ENUM_SINGLE_DECL(linein_left_enum,
@@ -452,7 +417,7 @@ SOC_DAPM_ENUM("ROUTE_L", linein_left_enum);
 
 /*pgain right Channel Input */
 static const char * const linein_right_txt[] = {
-	"None", "AIR1", "AIR2", "AIR3", "AIR4",
+	"None", "AIR1", "AIR2", "AIR3",
 };
 
 static SOC_ENUM_SINGLE_DECL(linein_right_enum,
@@ -515,12 +480,10 @@ static const struct snd_soc_dapm_widget tl1_acodec_dapm_widgets[] = {
 	SND_SOC_DAPM_INPUT("Linein left 1"),
 	SND_SOC_DAPM_INPUT("Linein left 2"),
 	SND_SOC_DAPM_INPUT("Linein left 3"),
-	SND_SOC_DAPM_INPUT("Linein left 4"),
 
 	SND_SOC_DAPM_INPUT("Linein right 1"),
 	SND_SOC_DAPM_INPUT("Linein right 2"),
 	SND_SOC_DAPM_INPUT("Linein right 3"),
-	SND_SOC_DAPM_INPUT("Linein right 4"),
 
 	/*PGA input */
 	SND_SOC_DAPM_PGA("PGAL_IN_EN", SND_SOC_NOPM,
@@ -597,12 +560,10 @@ static const struct snd_soc_dapm_route tl1_acodec_dapm_routes[] = {
 	{"Linein left switch", "AIL1", "Linein left 1"},
 	{"Linein left switch", "AIL2", "Linein left 2"},
 	{"Linein left switch", "AIL3", "Linein left 3"},
-	{"Linein left switch", "AIL4", "Linein left 4"},
 
 	{"Linein right switch", "AIR1", "Linein right 1"},
 	{"Linein right switch", "AIR2", "Linein right 2"},
 	{"Linein right switch", "AIR3", "Linein right 3"},
-	{"Linein right switch", "AIR4", "Linein right 4"},
 
 	{"PGAL_IN_EN", NULL, "Linein left switch"},
 	{"PGAR_IN_EN", NULL, "Linein right switch"},
@@ -781,9 +742,7 @@ static void tl1_acodec_release_fast_mode_work_func(struct work_struct *p_work)
 	 */
 	for (i = 0; i < 2; i++) {
 		tl1_acodec_reset(component);
-		snd_soc_component_write(component, ACODEC_0, 0xF000);
-		msleep(200);
-		snd_soc_component_write(component, ACODEC_0, 0xB000);
+		tl1_acodec_start_up(component);
 		tl1_acodec_reg_init(component);
 	}
 
@@ -905,23 +864,37 @@ static void tl1_acodec_remove(struct snd_soc_component *component)
 
 static int tl1_acodec_suspend(struct snd_soc_component *component)
 {
-	pr_info("%s!\n", __func__);
+	struct tl1_acodec_priv *aml_acodec = snd_soc_component_get_drvdata(component);
+	int i = 0;
+
+	if (aml_acodec) {
+		for (i = 0; i < ARRAY_SIZE(tl1_acodec_init_list); i++)
+			aml_acodec->user_setting[i] = snd_soc_component_read(component,
+				tl1_acodec_init_list[i].reg);
+	}
 
 	tl1_acodec_dai_set_bias_level(component, SND_SOC_BIAS_OFF);
 
+	pr_info("%s suspend!\n", __func__);
 	return 0;
 }
 
 static int tl1_acodec_resume(struct snd_soc_component *component)
 {
-	pr_info("%s!\n", __func__);
+	struct tl1_acodec_priv *aml_acodec = snd_soc_component_get_drvdata(component);
+	int i = 0;
 
 	tl1_acodec_reset(component);
 	tl1_acodec_start_up(component);
-	tl1_acodec_reg_init(component);
+
+	if (aml_acodec) {
+		for (i = 0; i < ARRAY_SIZE(tl1_acodec_init_list); i++)
+			snd_soc_component_write(component,
+				tl1_acodec_init_list[i].reg, aml_acodec->user_setting[i]);
+	}
 
 	tl1_acodec_dai_set_bias_level(component, SND_SOC_BIAS_STANDBY);
-
+	pr_info("%s resume!\n", __func__);
 	return 0;
 }
 
@@ -1108,8 +1081,8 @@ static int aml_tl1_acodec_probe(struct platform_device *pdev)
 
 	of_property_read_u32
 			(pdev->dev.of_node,
-			"dac_extra_12db",
-			&aml_acodec->dac_extra_12db);
+			"dac_extra_gain",
+			&aml_acodec->dac_extra_gain);
 
 	of_property_read_u32
 			(pdev->dev.of_node,
@@ -1120,11 +1093,6 @@ static int aml_tl1_acodec_probe(struct platform_device *pdev)
 			(pdev->dev.of_node,
 			"lane_offset",
 			&aml_acodec->lane_offset);
-
-	of_property_read_u32
-			(pdev->dev.of_node,
-			"analog_input",
-			&aml_acodec->analog_input);
 
 	aml_acodec->txhd2_version =
 			of_property_read_bool(pdev->dev.of_node, "txhd2_version");
@@ -1137,8 +1105,8 @@ static int aml_tl1_acodec_probe(struct platform_device *pdev)
 		aml_acodec->tdmout_index, aml_acodec->tdmin_index,
 		aml_acodec->dat0_ch_sel, aml_acodec->dat1_ch_sel);
 
-	pr_info("aml_tl1_acodec diff_output %d diff_input %d dac_extra_12db %d dac_output_invert %d lane_offset %d\n",
-		aml_acodec->diff_output, aml_acodec->diff_input, aml_acodec->dac_extra_12db,
+	pr_info("aml_tl1_acodec diff_output %d diff_input %d dac_extra_gain %d dac_output_invert %d lane_offset %d\n",
+		aml_acodec->diff_output, aml_acodec->diff_input, aml_acodec->dac_extra_gain,
 		aml_acodec->dac_output_invert, aml_acodec->lane_offset);
 
 	platform_set_drvdata(pdev, aml_acodec);

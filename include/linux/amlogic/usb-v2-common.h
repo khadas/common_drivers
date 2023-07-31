@@ -83,6 +83,10 @@ usb_phy_trim_tuning(struct usb_phy *x, int port, int default_val)
 	struct amlogic_usb_v2	*aml_phy;
 
 	if (x) {
+		if (x->label)
+			if (!strncmp(x->label, "amlogic-usbm31phy3", 18) ||
+				!strncmp(x->label, "amlogic-usb2-m31-phy", 20))
+				return;
 		aml_phy = container_of(x, struct amlogic_usb_v2, phy);
 
 		if (aml_phy->phy_trim_tuning)

@@ -1076,7 +1076,8 @@ int demod_set_sys(struct aml_dtvdemod *demod, struct aml_demod_sys *demod_sys)
 				usleep_range(1000, 1001);
 				demod_top_write_reg(DEMOD_TOP_REGC, 0x220011);
 			}
-			if (devp->data->hw_ver == DTVDEMOD_HW_S4D)
+			if (devp->data->hw_ver == DTVDEMOD_HW_S4D ||
+					devp->data->hw_ver == DTVDEMOD_HW_S1A)
 				front_write_bits(AFIFO_ADC_S4D, nco_rate,
 					AFIFO_NCO_RATE_BIT,
 					AFIFO_NCO_RATE_WID);

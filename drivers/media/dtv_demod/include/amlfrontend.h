@@ -123,7 +123,7 @@
 /*  V3.4.002 fix dvbt overflow by new methods when bw 6M GI 1/4 */
 /*  V3.4.003 improve the stability of new dvbc driver scanning */
 /*  V3.4.004 fix dvbc qam config and flow */
-/*  V3.4.005 adjust the sensitivity limit of atbm253 tuner in DTMB mode */
+/*  V3.5.000 s1a bringup */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -140,8 +140,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.4.005"
-#define DTVDEMOD_VER	"2023/08/09: adjust the sensitivity limit of atbm253 tuner in DTMB mode"
+#define AMLDTVDEMOD_VER "V3.5.000"
+#define DTVDEMOD_VER	"2023/07/26: s1a bringup"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 
@@ -258,7 +258,8 @@ enum dtv_demod_hw_ver_e {
 	DTVDEMOD_HW_T5W,
 	DTVDEMOD_HW_T5M,
 	DTVDEMOD_HW_T3X,
-	DTVDEMOD_HW_TXHD2
+	DTVDEMOD_HW_TXHD2,
+	DTVDEMOD_HW_S1A
 };
 
 struct ddemod_dig_clk_addr {

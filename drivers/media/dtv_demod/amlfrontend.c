@@ -1050,6 +1050,21 @@ const struct meson_ddemod_data  data_s4d = {
 	.hw_ver = DTVDEMOD_HW_S4D,
 };
 
+const struct meson_ddemod_data  data_s1a = {
+	.dig_clk = {
+		.demod_clk_ctl = 0x80,
+		.demod_clk_ctl_1 = 0x81,
+	},
+	.regoff = {
+		.off_demod_top = 0xf000,
+		.off_front = 0x3800,
+		.off_dvbc = 0x1000,
+		.off_dvbc_2 = 0x1400,
+		.off_dvbs = 0x2000,
+	},
+	.hw_ver = DTVDEMOD_HW_S1A,
+};
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 const struct meson_ddemod_data  data_t5w = {
 	.dig_clk = {
@@ -1168,6 +1183,10 @@ static const struct of_device_id meson_ddemod_match[] = {
 	{
 		.compatible = "amlogic, ddemod-s4d",
 		.data		= &data_s4d,
+	},
+	{
+		.compatible = "amlogic, ddemod-s1a",
+		.data		= &data_s1a,
 	},
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
@@ -1601,7 +1620,8 @@ static int aml_dtvdemod_probe(struct platform_device *pdev)
 		/* delayed workqueue for dvbt2 fw downloading */
 		if (dtvdd_devp->data->hw_ver != DTVDEMOD_HW_S4 &&
 			dtvdd_devp->data->hw_ver != DTVDEMOD_HW_S4D &&
-			dtvdd_devp->data->hw_ver != DTVDEMOD_HW_TXHD2) {
+			dtvdd_devp->data->hw_ver != DTVDEMOD_HW_TXHD2 &&
+			dtvdd_devp->data->hw_ver != DTVDEMOD_HW_S1A) {
 			INIT_DELAYED_WORK(&devp->fw_dwork, dtvdemod_fw_dwork);
 			schedule_delayed_work(&devp->fw_dwork, 10 * HZ);
 		}
@@ -3299,6 +3319,14 @@ struct dvb_frontend *aml_dtvdm_attach(const struct demod_config *config)
 			aml_dtvdm_ops.delsys[4] = SYS_ANALOG;
 #endif
 			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DVB-S dtv demod s4d");
+			break;
+		case DTVDEMOD_HW_S1A:
+			aml_dtvdm_ops.delsys[0] = SYS_DVBC_ANNEX_A;
+			aml_dtvdm_ops.delsys[1] = SYS_DVBC_ANNEX_B;
+			aml_dtvdm_ops.delsys[2] = SYS_DVBS;
+			aml_dtvdm_ops.delsys[3] = SYS_DVBS2;
+			aml_dtvdm_ops.delsys[4] = SYS_ANALOG;
+			strcpy(aml_dtvdm_ops.info.name, "amlogic DVB-C/DVB-S dtv demod s1a");
 			break;
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT

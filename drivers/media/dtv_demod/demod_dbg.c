@@ -132,6 +132,9 @@ static void get_chip_name(struct amldtvdemod_device_s *devp, char *str)
 	case DTVDEMOD_HW_TXHD2:
 		strcpy(str, "DTVDEMOD_HW_TXHD2");
 		break;
+	case DTVDEMOD_HW_S1A:
+		strcpy(str, "DTVDEMOD_HW_S1A");
+		break;
 
 	default:
 		strcpy(str, "UNKNOWN");
@@ -681,7 +684,8 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 	switch (capture_mode) {
 	case 0: /* common fe */
 		if (devp->data->hw_ver == DTVDEMOD_HW_S4D ||
-			devp->data->hw_ver == DTVDEMOD_HW_S4) {
+			devp->data->hw_ver == DTVDEMOD_HW_S4 ||
+			devp->data->hw_ver == DTVDEMOD_HW_S1A) {
 			addr = 0x101b;
 			//tb_depth = 10;
 			/* sample bit width */
@@ -714,7 +718,8 @@ unsigned int capture_adc_data_once(char *path, unsigned int capture_mode,
 
 	case 5: /* S/S2 */
 		if (devp->data->hw_ver == DTVDEMOD_HW_S4D ||
-			devp->data->hw_ver == DTVDEMOD_HW_S4) {
+			devp->data->hw_ver == DTVDEMOD_HW_S4 ||
+			devp->data->hw_ver == DTVDEMOD_HW_S1A) {
 			addr = 0x101b;
 			//tb_depth = 10;
 			/* sample bit width */

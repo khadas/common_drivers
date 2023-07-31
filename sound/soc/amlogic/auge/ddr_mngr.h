@@ -27,6 +27,7 @@
 #define FIFO_DEPTH_2K               0x800
 #define FIFO_DEPTH_1K               0x400
 #define FIFO_DEPTH_512              0x200
+#define FIFO_DEPTH_256              0x100
 
 #define DDRMAX 4
 

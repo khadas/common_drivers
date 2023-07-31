@@ -8,7 +8,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/power/s1a-pd.h>
-//#include <dt-bindings/clock/amlogic,sc2-audio-clk.h>
+#include <dt-bindings/clock/amlogic,sc2-audio-clk.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/gpio/meson-s1a-gpio.h>
 #include <dt-bindings/reset/amlogic,meson-s1a-reset.h>
@@ -241,7 +241,7 @@
 		compatible = "amlogic, amaudio";
 		reg = <0xfe440000 0x10000>;
 		reg-names = "otp_tee_base";
-		status = "disabled";
+		status = "okay";
 	};
 
 	pwrdm: power-domains {
@@ -680,42 +680,42 @@
 		dummy_codec:dummy{
 			#sound-dai-cells = <0>;
 			compatible = "amlogic, aml_dummy_codec";
-			status = "disabled";
+			status = "okay";
 		};
 		amlogic_codec:t9015{
 			#sound-dai-cells = <0>;
 			compatible = "amlogic, s4_codec_T9015";
 			reg = <0xFE01A000 0x2000>;
-			tocodec_inout = <2>;
-			tdmout_index = <2>;
+			tocodec_inout = <0>;
+			tdmout_index = <0>;
 			ch0_sel = <0>;
 			ch1_sel = <1>;
 
 			reset-names = "acodec";
 			//resets = <&reset RESET_ACODEC>;
 
-			status = "disabled";
+			status = "okay";
 		};
 
 		audiobus: audiobus@0xFE330000 {
 			compatible = "amlogic, audio-controller", "simple-bus";
-			status = "disabled";
+			status = "okay";
 			reg = <0xFE330000 0x3000>;
 			#address-cells = <1>;
 			#size-cells = <1>;
 			ranges = <0x0 0xFE330000 0x3000>;
-
+			chip_id = <0x45>;
 			//power-domains = <&pwrdm PDID_S4_AUDIO>;
 
 			clkaudio: audio_clocks {
-				compatible = "amlogic, sc2-audio-clocks";
-				status = "disabled";
+				compatible = "amlogic, s1a-audio-clocks";
+				status = "okay";
 				#clock-cells = <1>;
 				reg = <0x0 0xb0>;
 			};
 			ddr_manager {
 				compatible =
-					"amlogic, t5-audio-ddr-manager";
+					"amlogic, s1a-audio-ddr-manager";
 				interrupts = <
 					GIC_SPI 32 IRQ_TYPE_EDGE_RISING
 					GIC_SPI 33 IRQ_TYPE_EDGE_RISING
@@ -741,30 +741,12 @@
 		/* Sound iomap */
 		aml_snd_iomap {
 			compatible = "amlogic, snd-iomap";
-			status = "disabled";
+			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <1>;
 			ranges;
-			pdm_bus {
-				reg = <0xFE331000 0x400>;
-			};
 			audiobus_base {
 				reg = <0xFE330000 0x1000>;
-			};
-			audiolocker_base {
-				reg = <0xFE331400 0x400>;
-			};
-			eqdrc_base {
-				reg = <0xFE332000 0x1000>;
-			};
-			vad_base {
-				reg = <0xFE331800 0x400>;
-			};
-			resampleA_base {
-				reg = <0xFE331c00 0x104>;
-			};
-			resampleB_base {
-				reg = <0xFE334000 0x104>;
 			};
 		};
 

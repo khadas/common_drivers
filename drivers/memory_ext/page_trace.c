@@ -832,7 +832,7 @@ static int notrace unwind_next(struct unwind_state *state)
 
 	state->pc = ptrauth_strip_insn_pac(state->pc);
 
-#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+#if defined(CONFIG_FUNCTION_GRAPH_TRACER) && IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 	if (tsk->ret_stack &&
 		(state->pc == (unsigned long)return_to_handler)) {
 		unsigned long orig_pc;
@@ -910,7 +910,7 @@ static int notrace aml_unwind_frame(struct task_struct *tsk, struct stackframe *
 	frame->prev_fp = fp;
 	frame->prev_type = info.type;
 
-#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+#if defined(CONFIG_FUNCTION_GRAPH_TRACER) && IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 	if (tsk->ret_stack &&
 		(ptrauth_strip_insn_pac(frame->pc) == (unsigned long)return_to_handler)) {
 		struct ftrace_ret_stack *ret_stack;
@@ -952,7 +952,7 @@ unsigned long find_back_trace(void)
 #if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
 	frame.task = current;
 #else
-#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+#if defined(CONFIG_FUNCTION_GRAPH_TRACER) && IS_BUILTIN(CONFIG_AMLOGIC_PAGE_TRACE)
 	frame.graph = 0;
 #endif
 #endif

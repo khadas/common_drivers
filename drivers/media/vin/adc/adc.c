@@ -504,7 +504,11 @@ static int adc_dadc_other_dtv_cntl_config(struct tvin_adc_dev *devp)
 	struct adc_reg_addr *adc_addr;
 
 	adc_addr = &devp->plat_data->adc_addr;
-	if (devp->plat_data->chip_id == ADC_CHIP_TXHD2) {
+	if (devp->plat_data->chip_id == ADC_CHIP_S1A) {
+		/* enable bandgap */
+		adc_wr_hiu_bits(adc_addr->vdac_cntl_0, 0x982, 0, 12);
+		adc_wr_hiu(adc_addr->s2_dadc_cntl, 0x308e3106);
+	} else if (devp->plat_data->chip_id == ADC_CHIP_TXHD2) {
 		adc_wr_hiu(adc_addr->dadc_cntl, 0x03132048);
 		adc_wr_hiu(adc_addr->dadc_cntl_2, 0x401);
 		adc_wr_hiu(adc_addr->dadc_cntl_3, 0x00190103);
@@ -609,18 +613,14 @@ static int adc_dadc_dvbt_cntl_config(struct tvin_adc_dev *devp)
 	return 0;
 }
 
-//s4/s4d/s1a box framework config DTV but not DVBS/S2 DVBT/T2 format
+//s4/s4d box framework config DTV but not DVBS/S2 DVBT/T2 format
 static int adc_dadc_box_other_dtv_cntl_config(struct tvin_adc_dev *devp)
 {
 	struct adc_reg_addr *adc_addr;
 
 	adc_addr = &devp->plat_data->adc_addr;
-	if (devp->plat_data->chip_id == ADC_CHIP_S1A) {
-		/* enable bandgap */
-		adc_wr_hiu_bits(adc_addr->vdac_cntl_0, 0x982, 0, 12);
-		adc_wr_hiu(adc_addr->s2_dadc_cntl, 0x308e3106);
-	} else if (devp->plat_data->chip_id == ADC_CHIP_S4 ||
-		   devp->plat_data->chip_id == ADC_CHIP_S4D) {
+	if (devp->plat_data->chip_id == ADC_CHIP_S4 ||
+	    devp->plat_data->chip_id == ADC_CHIP_S4D) {
 		/* enable bandgap */
 		adc_wr_hiu_bits(0xb0, 1, 11, 1);
 		adc_wr_hiu(0xd1, 0x562);
@@ -634,6 +634,9 @@ static int adc_dadc_box_other_dtv_cntl_config(struct tvin_adc_dev *devp)
 
 static void adc_av_filter_config(struct tvin_adc_dev *devp)
 {
+	if (!devp->plat_data->is_tv_chip)
+		return;
+
 	if (devp->plat_data->chip_id == ADC_CHIP_TXHD2) {
 		adc_wr_afe(AFE_VAFE_CTRL0, 0x00490710);
 		adc_wr_afe(AFE_VAFE_CTRL1, 0x110e);
@@ -655,6 +658,9 @@ static void adc_av_filter_config(struct tvin_adc_dev *devp)
 
 static void adc_atv_filter_config(struct tvin_adc_dev *devp)
 {
+	if (!devp->plat_data->is_tv_chip)
+		return;
+
 	if (devp->plat_data->chip_id == ADC_CHIP_TXHD2) {
 		adc_wr_afe(AFE_VAFE_CTRL0, 0x00490710);
 		adc_wr_afe(AFE_VAFE_CTRL1, 0x100e);
@@ -677,6 +683,9 @@ static void adc_atv_filter_config(struct tvin_adc_dev *devp)
 /* config DTV but not DVBS/S2 DVBST/T2 format */
 static void adc_other_dtv_filter_config(struct tvin_adc_dev *devp)
 {
+	if (!devp->plat_data->is_tv_chip)
+		return;
+
 	if (devp->plat_data->chip_id == ADC_CHIP_TXHD2) {
 		adc_wr_afe(AFE_VAFE_CTRL0, 0x00490710);
 		adc_wr_afe(AFE_VAFE_CTRL1, 0x100e);
@@ -691,6 +700,9 @@ static void adc_other_dtv_filter_config(struct tvin_adc_dev *devp)
 /* config DVBS/S2 DVBST/T2 */
 static void adc_dvb_filter_config(struct tvin_adc_dev *devp)
 {
+	if (!devp->plat_data->is_tv_chip)
+		return;
+
 	if (devp->plat_data->chip_id == ADC_CHIP_TXHD2) {
 		adc_wr_afe(AFE_VAFE_CTRL0, 0x00490710);
 		adc_wr_afe(AFE_VAFE_CTRL1, 0x100e);
@@ -736,6 +748,7 @@ void adc_set_ddemod_default(enum fe_delivery_system delsys)
 		case ADC_CHIP_T5M:
 		case ADC_CHIP_T3X:
 		case ADC_CHIP_TXHD2:
+		case ADC_CHIP_S1A:
 			switch (delsys) {
 			case SYS_DVBT:
 			case SYS_DVBT2:
@@ -760,7 +773,6 @@ void adc_set_ddemod_default(enum fe_delivery_system delsys)
 
 		case ADC_CHIP_S4:
 		case ADC_CHIP_S4D:
-		case ADC_CHIP_S1A:
 			adc_dadc_box_other_dtv_cntl_config(devp);
 			break;
 		default:

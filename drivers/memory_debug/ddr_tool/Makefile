@@ -16,6 +16,7 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_DDR_BANDWIDTH_S5)	+= ddr_tool/ddr_band_op_s5.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DDR_BANDWIDTH_C3)	+= ddr_tool/ddr_band_op_c3.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DDR_BANDWIDTH_T5M)	+= ddr_tool/ddr_band_op_t5m.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DDR_BANDWIDTH_TXHD2)	+= ddr_tool/ddr_band_op_txhd2.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_DDR_BANDWIDTH_S1A)	+= ddr_tool/ddr_band_op_s1a.o
 
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR)		+= ddr_tool/dmc_monitor.o ddr_tool/dmc_port_sub.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_DEV_ACCESS)		+= ddr_tool/dmc_dev_access.o
@@ -30,3 +31,4 @@ $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_C2)		+= ddr_tool/dmc_c2.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_C3)		+= ddr_tool/dmc_c3.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_T5M)	+= ddr_tool/dmc_t5m.o
 $(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_TXHD2)	+= ddr_tool/dmc_txhd2.o
+$(MODULE_NAME)-$(CONFIG_AMLOGIC_DMC_MONITOR_S1A)	+= ddr_tool/dmc_s1a.o

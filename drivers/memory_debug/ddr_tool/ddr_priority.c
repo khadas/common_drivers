@@ -815,6 +815,47 @@ static struct ddr_priority ddr_priority_txhd2[] __initdata = {
 		.r_offset = (0x7c << 2), .r_bit_s = 16, .r_width = 0x7	}
 };
 #endif
+static struct ddr_priority ddr_priority_s1a[] __initdata = {
+	{ .port_id = 0, .reg_base = 0xfe036000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x80 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x80 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 3, .reg_base = 0xfe036000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x8c << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x8c << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 4, .reg_base = 0xfe036000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x90 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x90 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 7, .reg_base = 0xfe036000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x9c << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x9c << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 11, .reg_base = 0xfe036000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0xac << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0xac << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 16, .reg_base = 0xfe036000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x60 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x60 << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 19, .reg_base = 0xfe036000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x6c << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x6c << 2), .r_bit_s = 16, .r_width = 0x7	},
+
+	{ .port_id = 21, .reg_base = 0xfe036000,
+		.reg_mode = 0, .reg_config = 0,
+		.w_offset = (0x74 << 2), .w_bit_s = 16, .w_width = 0x7,
+		.r_offset = (0x74 << 2), .r_bit_s = 16, .r_width = 0x7	},
+};
 
 static struct ddr_priority *ddr_priority_list;
 static unsigned int ddr_priority_list_num __initdata;
@@ -852,6 +893,10 @@ int __init ddr_find_port_priority(int cpu_type, struct ddr_priority **desc)
 		desc_size = ARRAY_SIZE(ddr_priority_txhd2);
 		break;
 #endif
+	case DMC_TYPE_S1A:
+		*desc = ddr_priority_s1a;
+		desc_size = ARRAY_SIZE(ddr_priority_s1a);
+		break;
 	default:
 		return -EINVAL;
 	}

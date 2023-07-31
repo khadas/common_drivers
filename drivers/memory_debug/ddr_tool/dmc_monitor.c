@@ -1097,7 +1097,7 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 	mon->mon_number = 1;
 	mon->debug |= DMC_DEBUG_INCLUDE;
 	mon->debug |= DMC_DEBUG_WRITE;
-#if IS_ENABLED(CONFIG_EVENT_TRACING)
+#if (IS_ENABLED(CONFIG_EVENT_TRACING) && !IS_ENABLED(CONFIG_AMLOGIC_ZAPPER_CUT))
 	mon->debug |= DMC_DEBUG_TRACE;
 #endif
 
@@ -1204,6 +1204,11 @@ static void __init get_dmc_ops(int chip, struct dmc_monitor *mon)
 #ifdef CONFIG_AMLOGIC_DMC_MONITOR_TXHD2
 	case DMC_TYPE_TXHD2:
 		mon->ops = &txhd2_dmc_mon_ops;
+		break;
+#endif
+#ifdef CONFIG_AMLOGIC_DMC_MONITOR_S1A
+	case DMC_TYPE_S1A:
+		mon->ops = &s1a_dmc_mon_ops;
 		break;
 #endif
 	default:
@@ -1476,6 +1481,10 @@ static const struct of_device_id dmc_monitor_match[] = {
 		.data = (void *)DMC_TYPE_TXHD2,
 	},
 #endif
+	{
+		.compatible = "amlogic,dmc_monitor-s1a",
+		.data = (void *)DMC_TYPE_S1A,
+	},
 	{}
 };
 #endif

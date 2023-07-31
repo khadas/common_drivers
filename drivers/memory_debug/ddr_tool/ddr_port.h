@@ -42,7 +42,8 @@
 #define DMC_TYPE_S5			0x3E
 #define DMC_TYPE_T5M			0x41
 #define DMC_TYPE_T3X			0x42
-#define DMC_TYPE_TXHD2			0x43
+#define DMC_TYPE_TXHD2			0x44
+#define DMC_TYPE_S1A			0x45
 
 #define DMC_READ			0
 #define DMC_WRITE			1

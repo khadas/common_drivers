@@ -140,6 +140,18 @@ config AMLOGIC_DMC_MONITOR
 		hardware. If hardware violated R/W permission, then interrupt
 		will generated and can help to debug memory pollution.
 
+config AMLOGIC_DMC_MONITOR_BREAK_GKI
+	bool "Amlogic dmc monitor"
+	depends on AMLOGIC_DMC_MONITOR
+	depends on ARM
+	depends on AMLOGIC_BREAK_GKI_20
+	default n
+	help
+		DMC monitor for hardware connected to DMC master. Using it can
+		set up an address range and assign R/W permission for each
+		hardware. If hardware violated R/W permission, then interrupt
+		will generated and can help to debug memory pollution.
+
 config AMLOGIC_DMC_DEV_ACCESS
 	bool "Amlogic dmc dev access"
 	depends on AMLOGIC_DMC_MONITOR

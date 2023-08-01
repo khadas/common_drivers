@@ -242,7 +242,7 @@ unsigned long read_violation_mem(unsigned long addr, char rw)
 	unsigned long *p, *q;
 	unsigned long val;
 
-#ifdef CONFIG_ARM64
+#if defined(CONFIG_ARM64) || IS_ENABLED(CONFIG_AMLOGIC_DMC_MONITOR_BREAK_GKI)
 	if (!pfn_is_map_memory(__phys_to_pfn(addr)))
 #else
 	if (!pfn_valid(__phys_to_pfn(addr)))

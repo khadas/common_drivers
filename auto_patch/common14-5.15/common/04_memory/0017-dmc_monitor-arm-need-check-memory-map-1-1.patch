@@ -1,0 +1,64 @@
+From d79795351ed29c48126029134b6a3c45cca09dc7 Mon Sep 17 00:00:00 2001
+From: "qinglin.li" <qinglin.li@amlogic.com>
+Date: Tue, 1 Aug 2023 17:47:57 +0800
+Subject: [PATCH] dmc_monitor: arm need check memory map [1/1]
+
+PD#SWPL-132402
+
+Problem:
+read no map memory failed when arm build
+
+Solution:
+check memory map when arm build
+
+Verify:
+local
+
+Change-Id: Ie9a0359168e3ed620a8bb2a5b7a3ef3e85d983bc
+Signed-off-by: qinglin.li <qinglin.li@amlogic.com>
+---
+ arch/arm/include/asm/page.h |  3 +++
+ arch/arm/mm/init.c          | 13 +++++++++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
+index 11b058a72a5b8..cb9c058399d17 100644
+--- a/arch/arm/include/asm/page.h
++++ b/arch/arm/include/asm/page.h
+@@ -155,6 +155,9 @@ typedef struct page *pgtable_t;
+ 
+ #ifdef CONFIG_HAVE_ARCH_PFN_VALID
+ extern int pfn_valid(unsigned long);
++#if IS_ENABLED(CONFIG_AMLOGIC_DMC_MONITOR_BREAK_GKI)
++extern int pfn_is_map_memory(unsigned long pfn);
++#endif
+ #endif
+ 
+ #include <asm/memory.h>
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 6d04cb75d26b0..0f16cece0fc00 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -147,6 +147,19 @@ int pfn_valid(unsigned long pfn)
+ 	return 0;
+ }
+ EXPORT_SYMBOL(pfn_valid);
++
++#if IS_ENABLED(CONFIG_AMLOGIC_DMC_MONITOR_BREAK_GKI)
++int pfn_is_map_memory(unsigned long pfn)
++{
++	phys_addr_t addr = __pfn_to_phys(pfn);
++
++	if (pfn_valid(pfn))
++		return memblock_is_map_memory(addr);
++
++	return 0;
++}
++EXPORT_SYMBOL(pfn_is_map_memory);
++#endif
+ #endif
+ 
+ static bool arm_memblock_steal_permitted = true;
+-- 
+2.25.1
+

@@ -1,4 +1,4 @@
-From 54f288028c249437eea1dbb0b584e88833c29d87 Mon Sep 17 00:00:00 2001
+From da89496cf28026e4ada6499eb8ccfab9db52a4fb Mon Sep 17 00:00:00 2001
 From: Wanwei Jiang <wanwei.jiang@amlogic.com>
 Date: Thu, 2 Feb 2023 15:49:10 +0800
 Subject: [PATCH] init: initialize the building framework of androidu-5.15 for
@@ -21,7 +21,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  .gitignore                                |   3 +
  Makefile                                  |  35 ++
  build.config.gki.aarch64                  |   4 -
- drivers/Kconfig                           |  52 +++
+ drivers/Kconfig                           |  61 +++
  scripts/amlogic/licence_check.pl          | 153 ++++++++
  scripts/amlogic/licence_pre.pl            |  53 +++
  scripts/amlogic/merge_pre_check.pl        | 429 ++++++++++++++++++++++
@@ -29,7 +29,7 @@ Signed-off-by: Wanwei Jiang <wanwei.jiang@amlogic.com>
  scripts/amlogic/pre-commit-common_drivers |  24 ++
  scripts/checkpatch.pl                     | 158 ++++----
  scripts/kconfig/Makefile                  |   9 +-
- 11 files changed, 860 insertions(+), 84 deletions(-)
+ 11 files changed, 869 insertions(+), 84 deletions(-)
  create mode 100755 scripts/amlogic/licence_check.pl
  create mode 100755 scripts/amlogic/licence_pre.pl
  create mode 100755 scripts/amlogic/merge_pre_check.pl
@@ -133,10 +133,10 @@ index d3980621c116e..d041f915a3137 100644
 -source ${GKI_BUILD_CONFIG_FRAGMENT}
 -fi
 diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 67f44716797e5..09c9fcfb92360 100644
+index 67f44716797e5..a1adb27ddf88f 100644
 --- a/drivers/Kconfig
 +++ b/drivers/Kconfig
-@@ -238,4 +238,56 @@ source "drivers/interconnect/Kconfig"
+@@ -238,4 +238,65 @@ source "drivers/interconnect/Kconfig"
  source "drivers/counter/Kconfig"
  
  source "drivers/most/Kconfig"
@@ -150,6 +150,15 @@ index 67f44716797e5..09c9fcfb92360 100644
 +	  please open it.
 +	  Note: All amlogic driver should be placed in
 +	  directory $(COMMON_DRIVERS_DIR)/drivers/
++
++config AMLOGIC_BREAK_GKI_20
++        bool "Amlogic Break GKI 2.0"
++        depends on AMLOGIC_BREAK_GKI
++        default n
++        help
++          this option is provide for control Break GKI 2.0,
++          if you want to break gki2.0 rule, should enable it,
++          all break gki2.0 modify should be depends on this option
 +
 +if AMLOGIC_DRIVER
 +config AMLOGIC_BREAK_GKI

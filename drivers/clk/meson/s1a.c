@@ -1548,6 +1548,18 @@ __MESON_CLK_GATE(clk_12_24m_in, CLKCTRL_CLK12_24_CTRL, 11, 0,
 MESON_CLK_DIV_RW(clk_12_24m, CLKCTRL_CLK12_24_CTRL, 10, 1, NULL, 0,
 		 &clk_12_24m_in.hw, 0);
 
+static const struct clk_parent_data sar_adc_sel_parent_data[] = {
+	{ .fw_name = "xtal" },
+	{ .hw = &sys_clk.hw }
+};
+
+MESON_CLK_COMPOSITE_RW(sar_adc, CLKCTRL_SAR_CLK_CTRL, 0x3, 9,
+		       NULL, 0, sar_adc_sel_parent_data, 0,
+		       CLKCTRL_SAR_CLK_CTRL, 0, 8, NULL,
+		       0, CLK_SET_RATE_PARENT,
+		       CLKCTRL_SAR_CLK_CTRL, 8,
+		       0, CLK_SET_RATE_PARENT);
+
 /* Array of all clocks provided by this provider */
 static struct clk_hw_onecell_data s1a_hw_onecell_data = {
 	.hws = {
@@ -1799,6 +1811,9 @@ static struct clk_hw_onecell_data s1a_hw_onecell_data = {
 		[CLKID_DEMOD_CLK]		= &demod_32k.hw,
 		[CLKID_12_24M_IN]		= &clk_12_24m_in.hw,
 		[CLKID_12_24M]			= &clk_12_24m.hw,
+		[CLKID_SAR_ADC_MUX]		= &sar_adc_sel.hw,
+		[CLKID_SAR_ADC_DIV]		= &sar_adc_div.hw,
+		[CLKID_SAR_ADC]			= &sar_adc.hw,
 
 		[NR_CLKS]			= NULL
 		},
@@ -2007,7 +2022,10 @@ static struct clk_regmap *const s1a_clk_regmaps[] = {
 	&demod_32k_sel,
 	&demod_32k,
 	&clk_12_24m_in,
-	&clk_12_24m
+	&clk_12_24m,
+	&sar_adc_sel,
+	&sar_adc_div,
+	&sar_adc
 };
 
 static struct clk_regmap *const s1a_cpu_clk_regmaps[] = {

@@ -9,6 +9,7 @@
 
 #include <linux/clk-provider.h>
 #include <linux/regmap.h>
+#include <linux/platform_device.h>
 #include "clk-cpu-dyndiv.h"
 
 /**
@@ -137,4 +138,8 @@ struct clk_regmap _name = {						\
 
 #define MESON_PCLK_RO(_name, _reg, _bit, _pname)	\
 	__MESON_PCLK(_name, _reg, _bit, &clk_regmap_gate_ro_ops, _pname)
+
+struct regmap *meson_clk_regmap_resource(struct platform_device *pdev, struct device *dev,
+					unsigned int index);
+
 #endif /* __CLK_REGMAP_H */

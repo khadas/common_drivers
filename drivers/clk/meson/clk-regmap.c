@@ -227,6 +227,25 @@ const struct clk_ops clk_regmap_mux_ro_ops = {
 };
 EXPORT_SYMBOL_GPL(clk_regmap_mux_ro_ops);
 
+static struct regmap_config clkc_regmap_config = {
+	.reg_bits       = 32,
+	.val_bits       = 32,
+	.reg_stride     = 4,
+};
+
+struct regmap *meson_clk_regmap_resource(struct platform_device *pdev, struct device *dev,
+					unsigned int index)
+{
+	void __iomem *base;
+
+	base = devm_platform_ioremap_resource(pdev, index);
+	if (IS_ERR(base))
+		return ERR_CAST(base);
+
+	return devm_regmap_init_mmio(dev, base, &clkc_regmap_config);
+}
+EXPORT_SYMBOL_GPL(meson_clk_regmap_resource);
+
 MODULE_DESCRIPTION("Amlogic regmap backed clock driver");
 MODULE_AUTHOR("Jerome Brunet <jbrunet@baylibre.com>");
 MODULE_LICENSE("GPL v2");

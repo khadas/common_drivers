@@ -642,7 +642,7 @@ static int can_migrate_to_cma(struct page *page)
 }
 
 struct page *get_compact_page(struct page *migratepage,
-			      struct compact_control *cc)
+				struct compact_control *cc)
 {
 	int can_to_cma, find = 0;
 	struct page *page, *next;
@@ -1778,7 +1778,7 @@ static void *get_symbol_addr(const char *symbol_name)
 	return kp.addr;
 }
 
-static int __init aml_cma_module_init(void)
+static int __nocfi common_symbol_init(void *data)
 {
 	int ret;
 
@@ -1816,17 +1816,6 @@ static int __init aml_cma_module_init(void)
 		unsigned int migratetype, int flags))get_symbol_addr("start_isolate_page_range");
 #endif
 
-	atomic_set(&cma_allocate, 0);
-	atomic_long_set(&nr_cma_allocated, 0);
-
-	dentry = proc_create("cma_debug", 0644, NULL, &cma_dbg_file_ops);
-	if (IS_ERR_OR_NULL(dentry)) {
-		pr_err("%s, create sysfs failed\n", __func__);
-		return -1;
-	}
-
-	init_cma_boost_task();
-
 	ret = register_kprobe(&kp_cma_alloc);
 	if (ret < 0) {
 		pr_err("register_kprobe:%s failed, returned %d\n",
@@ -1840,6 +1829,23 @@ static int __init aml_cma_module_init(void)
 		       kp_cma_release.symbol_name, ret);
 		return 1;
 	}
+
+	return 0;
+}
+
+static int __init aml_cma_module_init(void)
+{
+	atomic_set(&cma_allocate, 0);
+	atomic_long_set(&nr_cma_allocated, 0);
+
+	dentry = proc_create("cma_debug", 0644, NULL, &cma_dbg_file_ops);
+	if (IS_ERR_OR_NULL(dentry)) {
+		pr_err("%s, create sysfs failed\n", __func__);
+		return -1;
+	}
+
+	init_cma_boost_task();
+	kthread_run(common_symbol_init, NULL, "AML_CMA_TASK");
 
 	return 0;
 }

@@ -3079,7 +3079,7 @@ static int aml_dtvdm_get_property(struct dvb_frontend *fe,
 		break;
 
 	case DTV_TS_INPUT:
-		if (is_meson_s4d_cpu() || is_meson_s4_cpu())
+		if (is_meson_s4d_cpu() || is_meson_s4_cpu() || is_meson_s1a_cpu())
 			tvp->u.data = demod->id + 1; // tsin1 and tsin2.
 		else if (is_meson_t3x_cpu())
 			tvp->u.data = 3; // tsin3.

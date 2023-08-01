@@ -102,7 +102,8 @@ void aml_phy_offset_cal_txhd2(void);
 void bubble_sort(u32 *sort_array);
 void quick_sort2_txhd2(int arr[], int l, int r);
 void txhd2_pbist(void);
-
+void clk_init_cor_txhd2(void);
+void rx_dig_clk_en_txhd2(bool en);
 /*function declare end*/
 
 #endif /*_HDMI_RX_TXHD2_H*/

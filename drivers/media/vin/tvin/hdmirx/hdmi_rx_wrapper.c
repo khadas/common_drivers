@@ -3805,6 +3805,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(rx_info.aml_phy_21.eq_retry, i++);
 	pr_var(rx_info.aml_phy_21.dfe_en, i++);
 	pr_var(rx_info.aml_phy_21.dfe_hold, i++);
+	pr_var(rx_info.aml_phy_21.ofst_en, i++);
 	pr_var(rx[E_PORT2].var.frl_rate, i++);
 	pr_var(rx[E_PORT3].var.frl_rate, i++);
 	pr_var(frl_scrambler_en, i++);
@@ -4349,6 +4350,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy_21.dfe_hold),
 		&rx_info.aml_phy_21.dfe_hold, value))
 		return pr_var(rx_info.aml_phy_21.dfe_hold, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy_21.ofst_en),
+		&rx_info.aml_phy_21.ofst_en, value))
+		return pr_var(rx_info.aml_phy_21.ofst_en, index);
 	if (set_pr_var(tmpbuf, var_to_str(fpll_sel),
 		&fpll_sel, value))
 		return pr_var(fpll_sel, index);

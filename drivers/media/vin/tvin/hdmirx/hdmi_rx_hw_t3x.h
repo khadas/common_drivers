@@ -116,11 +116,6 @@
 #define T3X_HDMIRX21PHY_PROD_TEST0      (0x60 << 2)
 #define T3X_HDMIRX21PHY_PROD_TEST1      (0x61 << 2)
 /* T3X HDMI2.1 PHY FPLL register */
-#define T3X_CLKCTRL_FPLL_CTRL0		(0x02c0  << 2)
-#define T3X_CLKCTRL_FPLL_CTRL1		(0x02c1  << 2)
-#define T3X_CLKCTRL_FPLL_CTRL2		(0x02c2  << 2)
-#define T3X_CLKCTRL_FPLL_CTRL3		(0x02c3  << 2)
-#define T3X_CLKCTRL_FPLL_STS		(0x02c4  << 2)
 #define T3X_CLKCTRL_HDMI_PLL0_CTRL0		(0x02e0  << 2)
 #define T3X_CLKCTRL_HDMI_PLL0_CTRL1		(0x02e1  << 2)
 #define T3X_CLKCTRL_HDMI_PLL0_CTRL2		(0x02e2  << 2)
@@ -167,7 +162,7 @@ void dump_reg_phy_t3x(u8 port);
 void dump_aml_phy_sts_t3x(u8 port);
 void aml_phy_short_bist_t3x(u8 port);
 bool aml_get_tmds_valid_t3x(u8 port);
-void aml_phy_power_off_t3x(u8 port);
+void aml_phy_power_off_t3x(void);
 void aml_phy_switch_port_t3x(u8 port);
 void aml_phy_iq_skew_monitor_t3x(void);
 void get_val_t3x(char *temp, unsigned int val, int len);
@@ -198,6 +193,9 @@ bool is_fpll_err(u8 port);
 void audio_setting_for_aud21(int frl_rate, u8 port);
 void frate_monitor(void);
 void frate_monitor1(void);
+void clk_init_cor_t3x(void);
+void rx_dig_clk_en_t3x(bool en);
+
 //void reset_pcs(void);
 
 /*function declare end*/

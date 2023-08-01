@@ -2944,7 +2944,7 @@ static void rx_phy_resume(void)
 	}
 	if (rx_info.phy_ver >= PHY_VER_TM2)
 		rx_info.aml_phy.pre_int = 1;
-	if (rx_info.chip_id <= CHIP_ID_T3X) {
+	if (rx_info.chip_id < CHIP_ID_T3X) {
 		hdmirx_phy_init(E_PORT0);
 	} else {
 		hdmirx_phy_init(E_PORT0);

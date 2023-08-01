@@ -2963,28 +2963,33 @@ void control_reset(void)
 
 void rx_dig_clk_en(bool en)
 {
-	if (rx_info.chip_id >= CHIP_ID_T7) {
-		if (rx_info.chip_id == CHIP_ID_TXHD2) {
-			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL3, METER_CLK_EN, en);
-			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL1, CFG_CLK_EN, en);
-			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL1, MODET_CLK_EN, en);
-			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL0, _BIT(24), en);
-			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL0, _BIT(8), en);
-		} else {
-			hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL1, CFG_CLK_EN, en);
-			hdmirx_wr_bits_clk_ctl(RX_CLK_CTRL3, METER_CLK_EN, en);
-		}
-	} else {
-		hdcp22_clk_en(en);
-		/* enable gate of cts_hdmirx_modet_clk */
-		/* enable gate of cts_hdmirx_cfg_clk */
-		if (rx_info.chip_id >= CHIP_ID_T5) {
-			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL, MODET_CLK_EN, en);
-			hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL, CFG_CLK_EN, en);
-		} else {
-			wr_reg_hhi_bits(HHI_HDMIRX_CLK_CNTL, MODET_CLK_EN, en);
-			wr_reg_hhi_bits(HHI_HDMIRX_CLK_CNTL, CFG_CLK_EN, en);
-		}
+	switch (rx_info.chip_id) {
+	case CHIP_ID_TL1:
+		rx_dig_clk_en_tl1(en);
+		break;
+	case CHIP_ID_TM2:
+		rx_dig_clk_en_tm2(en);
+		break;
+	case CHIP_ID_T5:
+	case CHIP_ID_T5D:
+		rx_dig_clk_en_t5(en);
+		break;
+	case CHIP_ID_T7:
+	case CHIP_ID_T3:
+	case CHIP_ID_T5W:
+		rx_dig_clk_en_t7(en);
+		break;
+	case CHIP_ID_T5M:
+		rx_dig_clk_en_t5m(en);
+		break;
+	case CHIP_ID_T3X:
+		rx_dig_clk_en_t3x(en);
+		break;
+	case CHIP_ID_TXHD2:
+		rx_dig_clk_en_txhd2(en);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -3218,114 +3223,25 @@ void hdcp_22_on(void)
  */
 void clk_init_cor(void)
 {
-	u32 data32;
-	u8 port = rx_info.main_port;
-
-	rx_pr("\n clk_init\n");
-	if (rx_info.chip_id >= CHIP_ID_T7 && rx_info.chip_id != CHIP_ID_TXHD2) {
-		/* Turn on clk_hdmirx_pclk, also = sysclk */
-		wr_reg_clk_ctl(CLKCTRL_SYS_CLK_EN0_REG2,
-			       rd_reg_clk_ctl(CLKCTRL_SYS_CLK_EN0_REG2) | (1 << 9));
-
-		data32	= 0;
-		data32 |= (0 << 25);// [26:25] clk_sel for cts_hdmirx_2m_clk: 0=cts_oscin_clk
-		data32 |= (0 << 24);// [   24] clk_en for cts_hdmirx_2m_clk
-		data32 |= (11 << 16);// [22:16] clk_div for cts_hdmirx_2m_clk: 24/12=2M
-		data32 |= (3 << 9);// [10: 9] clk_sel for cts_hdmirx_5m_clk: 3=fclk_div5
-		data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_5m_clk
-		data32 |= (79 << 0);// [ 6: 0] clk_div for cts_hdmirx_5m_clk: fclk_dvi5/80=400/80=5M
-		wr_reg_clk_ctl(RX_CLK_CTRL, data32);
-		data32 |= (1 << 24);// [   24] clk_en for cts_hdmirx_2m_clk
-		data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_5m_clk
-		wr_reg_clk_ctl(RX_CLK_CTRL, data32);
-
-		data32  = 0;
-		data32 |= (3 << 25);// [26:25] clk_sel for cts_hdmirx_hdcp2x_eclk: 3=fclk_div5
-		data32 |= (0 << 24);// [   24] clk_en for cts_hdmirx_hdcp2x_eclk
-		data32 |= (15 << 16);// [22:16] clk_div for cts_hdmirx_hdcp2x_eclk:
-		//fclk_dvi5/16=400/16=25M
-		data32 |= (3 << 9);// [10: 9] clk_sel for cts_hdmirx_cfg_clk: 3=fclk_div5
-		data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_cfg_clk
-		data32 |= (7 << 0);// [ 6: 0] clk_div for cts_hdmirx_cfg_clk: fclk_dvi5/8=400/8=50M
-		wr_reg_clk_ctl(RX_CLK_CTRL1, data32);
-		data32 |= (1 << 24);// [   24] clk_en for cts_hdmirx_hdcp2x_eclk
-		data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_cfg_clk
-		wr_reg_clk_ctl(RX_CLK_CTRL1, data32);
-
-		data32  = 0;
-		data32 |= (1 << 25);// [26:25] clk_sel for cts_hdmirx_acr_ref_clk: 1=fclk_div4
-		data32 |= (0 << 24);// [   24] clk_en for cts_hdmirx_acr_ref_clk
-		data32 |= (0 << 16);// [22:16] clk_div for cts_hdmirx_acr_ref_clk://fclk_div4/1=500M
-		data32 |= (0 << 9);// [10: 9] clk_sel for cts_hdmirx_aud_pll_clk
-		data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
-		data32 |= (0 << 0);// [ 6: 0] clk_div for cts_hdmirx_aud_pll_clk
-		wr_reg_clk_ctl(RX_CLK_CTRL2, data32);
-		data32 |= (1 << 24);// [   24] clk_en for cts_hdmirx_acr_ref_clk
-		data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_aud_pll_clk
-		wr_reg_clk_ctl(RX_CLK_CTRL2, data32);
-
-		data32  = 0;
-		data32 |= (0 << 9);// [10: 9] clk_sel for cts_hdmirx_meter_clk: 0=cts_oscin_clk
-		data32 |= (0 << 8);// [    8] clk_en for cts_hdmirx_meter_clk
-		data32 |= (0 << 0);// [ 6: 0] clk_div for cts_hdmirx_meter_clk: 24M
-		wr_reg_clk_ctl(RX_CLK_CTRL3, data32);
-		data32 |= (1 << 8);// [    8] clk_en for cts_hdmirx_meter_clk
-		wr_reg_clk_ctl(RX_CLK_CTRL3, data32);
-	} else if (rx_info.chip_id == CHIP_ID_TXHD2) {
-		data32  = 0;
-	    data32 |= (0 << 25);     // [26:25] clk_sel for cts_hdmirx_2m_clk: 0=cts_oscin_clk
-	    data32 |= (0 << 24);     // [   24] clk_en for cts_hdmirx_2m_clk
-	    data32 |= (11 << 16);     // [22:16] clk_div for cts_hdmirx_2m_clk: 24/12=2M
-	    data32 |= (3 << 9);     // [10: 9] clk_sel for cts_hdmirx_5m_clk: 3=fclk_div5
-	    data32 |= (0 << 8);     // [    8] clk_en for cts_hdmirx_5m_clk
-	    data32 |= (79 << 0);     // [ 6: 0] clk_div for cts_hdmirx_5m_clk: fclk_dvi5/80
-	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL0, data32);
-	    data32 |= (1 << 24);     // [   24] clk_en for cts_hdmirx_2m_clk
-	    data32 |= (1 << 8);     // [    8] clk_en for cts_hdmirx_5m_clk
-	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL0, data32);
-
-	    data32  = 0;
-	    data32 |= (3 << 25);     // [26:25] clk_sel for cts_hdmirx_hdcp2x_eclk: 3=fclk_div5
-	    data32 |= (0 << 24);     // [   24] clk_en for cts_hdmirx_hdcp2x_eclk
-	    data32 |= (15 << 16);     // [22:16] clk_div for cts_hdmirx_hdcp2x_eclk: fclk_dvi5/16
-	    data32 |= (1 << 9);     // [10: 9] clk_sel for cts_hdmirx_cfg_clk: 3=fclk_div5
-	    data32 |= (0 << 8);     // [    8] clk_en for cts_hdmirx_cfg_clk
-	    data32 |= (7 << 0);     // [ 6: 0] clk_div for cts_hdmirx_cfg_clk: fclk_dvi5/8=400/8=50M
-	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL1, data32);
-	    data32 |= (1 << 24);     // [   24] clk_en for cts_hdmirx_hdcp2x_eclk
-	    data32 |= (1 << 8);     // [    8] clk_en for cts_hdmirx_cfg_clk
-	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL1, data32);
-
-	    data32  = 0;
-	    data32 |= (1 << 25);     // [26:25] clk_sel for cts_hdmirx_acr_ref_clk: 1=fclk_div4
-	    data32 |= (0 << 24);     // [   24] clk_en for cts_hdmirx_acr_ref_clk
-	    data32 |= (0 << 16);     // [22:16] clk_div for cts_hdmirx_acr_ref_clk: fclk_div4/1=500M
-	    data32 |= (0 << 9);     // [10: 9] clk_sel for cts_hdmirx_aud_pll_clk: 0=aud_pll_clk
-	    data32 |= (0 << 8);     // [    8] clk_en for cts_hdmirx_aud_pll_clk
-	    data32 |= (0 << 0);     // [ 6: 0] clk_div for cts_hdmirx_aud_pll_clk
-	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL2, data32);
-	    data32 |= (1 << 24);     // [   24] clk_en for cts_hdmirx_acr_ref_clk
-	    data32 |= (1 << 8);     // [    8] clk_en for cts_hdmirx_aud_pll_clk
-	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL2, data32);
-
-	    data32  = 0;
-	    data32 |= (0 << 9);     // [10: 9] clk_sel for cts_hdmirx_meter_clk: 0=cts_oscin_clk
-	    data32 |= (0 << 8);     // [    8] clk_en for cts_hdmirx_meter_clk
-	    data32 |= (0 << 0);     // [ 6: 0] clk_div for cts_hdmirx_meter_clk: 24M
-	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL3, data32);
-	    data32 |= (1 << 8);     // [    8] clk_en for cts_hdmirx_meter_clk
-	    wr_reg_clk_ctl(HHI_HDMIRX_CLK_CNTL3, data32);
+	switch (rx_info.chip_id) {
+	case CHIP_ID_T3:
+	case CHIP_ID_T7:
+	case CHIP_ID_T5W:
+		clk_init_cor_t7();
+		break;
+	case CHIP_ID_T5M:
+		clk_init_cor_t5m();
+		break;
+	case CHIP_ID_T3X:
+		clk_init_cor_t3x();
+		break;
+	case CHIP_ID_TXHD2:
+		clk_init_cor_txhd2();
+		break;
+	default:
+		rx_pr("%s err\n", __func__);
+		break;
 	}
-	data32  = 0;
-	data32 |= (0 << 31);// [31]	  free_clk_en
-	data32 |= (0 << 15);// [15]	  hbr_spdif_en
-	data32 |= (0 << 8);// [8]	  tmds_ch2_clk_inv
-	data32 |= (0 << 7);// [7]	  tmds_ch1_clk_inv
-	data32 |= (0 << 6);// [6]	  tmds_ch0_clk_inv
-	data32 |= (0 << 5);// [5]	  pll4x_cfg
-	data32 |= (0 << 4);// [4]	  force_pll4x
-	data32 |= (0 << 3);// [3]	  phy_clk_inv
-	hdmirx_wr_top(TOP_CLK_CNTL, data32, port);
 }
 
 void clk_init_dwc(void)
@@ -6377,26 +6293,33 @@ void rx_phy_rxsense_pulse(u32 t1, u32 t2, bool en)
 
 void aml_phy_power_off(void)
 {
-	/* phy power down */
-	if (rx_info.phy_ver == PHY_VER_TL1) {
-		/* pll power down */
+	switch (rx_info.phy_ver) {
+	case PHY_VER_TL1:
 		aml_phy_power_off_tl1();
-	} else if (rx_info.phy_ver == PHY_VER_TM2) {
-		/* pll power down */
+		break;
+	case PHY_VER_TM2:
 		aml_phy_power_off_tm2();
-	} else if (rx_info.phy_ver == PHY_VER_T5) {
-		/* pll power down */
+		break;
+	case PHY_VER_T5:
 		aml_phy_power_off_t5();
-	}  else if (rx_info.phy_ver >= PHY_VER_T7 &&
-		rx_info.phy_ver <= PHY_VER_T5W) {
-		/* pll power down */
+		break;
+	case PHY_VER_T7:
+	case PHY_VER_T3:
+	case PHY_VER_T5W:
 		aml_phy_power_off_t7();
-	} else if (rx_info.phy_ver == PHY_VER_T5M) {
-		/* pll power down */
+		break;
+	case PHY_VER_T5M:
 		aml_phy_power_off_t5m();
-	} else if (rx_info.phy_ver == PHY_VER_TXHD2) {
-		/* pll power down */
+		break;
+	case PHY_VER_TXHD2:
 		aml_phy_power_off_txhd2();
+		break;
+	case PHY_VER_T3X:
+		aml_phy_power_off_t3x();
+		break;
+	default:
+		rx_pr("rx not poweroff\n");
+		break;
 	}
 	if (log_level & VIDEO_LOG)
 		rx_pr("%s\n", __func__);

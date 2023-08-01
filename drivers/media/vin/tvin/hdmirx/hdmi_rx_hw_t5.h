@@ -77,6 +77,7 @@ void aml_phy_power_off_t5(void);
 void aml_phy_switch_port_t5(void);
 void aml_phy_get_trim_val_t5(void);
 void aml_phy_offset_cal_t5m(void);
+void rx_dig_clk_en_t5(bool en);
 
 /*function declare end*/
 

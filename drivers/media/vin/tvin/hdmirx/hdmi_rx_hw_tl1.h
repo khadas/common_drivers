@@ -44,6 +44,7 @@ void aml_phy_short_bist_tl1(void);
 bool aml_get_tmds_valid_tl1(void);
 void aml_phy_power_off_tl1(void);
 void aml_phy_switch_port_tl1(void);
+void rx_dig_clk_en_tl1(bool en);
 
 /*function declare end*/
 

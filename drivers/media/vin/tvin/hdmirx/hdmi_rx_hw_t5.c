@@ -1908,3 +1908,13 @@ void aml_phy_switch_port_t5(void)
 	data32 |= port << 2;
 	hdmirx_wr_dwc(DWC_SNPS_PHYG3_CTRL, data32);
 }
+
+void rx_dig_clk_en_t5(bool en)
+{
+	hdcp22_clk_en(en);
+	/* enable gate of cts_hdmirx_modet_clk */
+	/* enable gate of cts_hdmirx_cfg_clk */
+	hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL, MODET_CLK_EN, en);
+	hdmirx_wr_bits_clk_ctl(HHI_HDMIRX_CLK_CNTL, CFG_CLK_EN, en);
+}
+

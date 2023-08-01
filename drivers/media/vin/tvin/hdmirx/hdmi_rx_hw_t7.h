@@ -89,7 +89,8 @@ void rx_set_irq_t7(bool en, u8 port);
 void rx_set_aud_output_t7(u32 param);
 void rx_sw_reset_t7(int level, u8 port);
 void aml_phy_get_trim_val_t7(void);
-
+void clk_init_cor_t7(void);
+void rx_dig_clk_en_t7(bool en);
 /*function declare end*/
 extern int hdcp_22_en;
 

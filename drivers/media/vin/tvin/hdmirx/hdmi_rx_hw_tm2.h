@@ -57,6 +57,7 @@ void dump_aml_phy_sts_tm2(void);
 bool aml_get_tmds_valid_tm2(void);
 void aml_phy_power_off_tm2(void);
 void aml_phy_switch_port_tm2(void);
+void rx_dig_clk_en_tm2(bool en);
 
 /*function declare end*/
 

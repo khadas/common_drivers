@@ -98,7 +98,8 @@ void get_val_t5m(char *temp, unsigned int val, int len);
 void get_eq_val_t5m(void);
 void bubble_sort(u32 *sort_array);
 void quick_sort2(int arr[], int l, int r);
-
+void clk_init_cor_t5m(void);
+void rx_dig_clk_en_t5m(bool en);
 
 /*function declare end*/
 

@@ -26,6 +26,10 @@ static unsigned int blind_search_pow_th = BLIND_SEARCH_POW_TH2;
 MODULE_PARM_DESC(blind_search_pow_th, "\n\t\tblind_search_pow_th");
 module_param(blind_search_pow_th, int, 0644);
 
+static unsigned int diseqc_out_invert = 1;
+MODULE_PARM_DESC(diseqc_out_invert, "\n\t\t diseqc out polarity invert");
+module_param(diseqc_out_invert, int, 0644);
+
 static struct stchip_register_t l2a_def_val_local[] = {
 	{0x200,    0x8c},/* REG_RL2A_DVBSX_FSK_FSKTFC2 */
 	{0x201,    0x45},/* REG_RL2A_DVBSX_FSK_FSKTFC1 */
@@ -91,7 +95,7 @@ static struct stchip_register_t l2a_def_val_local[] = {
 	/*{0x305,    0x00},*//* REG_RL2A_DVBSX_DISEQC_DISTXFIFO */
 	/*{0x306,    0xc0},*//* REG_RL2A_DVBSX_DISEQC_DISTXF22 */
 	/*{0x307,    0x00},*//* REG_RL2A_DVBSX_DISEQC_DISTXWAIT */
-	//{0x308,    0x02},/* REG_RL2A_DVBSX_DISEQC_DISTIMEOCFG */
+	{0x308,    0x84},/* REG_RL2A_DVBSX_DISEQC_DISTIMEOCFG */
 	{0x309,    0x8c},/* REG_RL2A_DVBSX_DISEQC_DISTIMEOUT */
 	//{0x30a,    0x04},/* REG_RL2A_DVBSX_DISEQC_DISRXCFG */
 	{0x30b,    0x04},/* REG_RL2A_DVBSX_DISEQC_DISRXSTAT1 */
@@ -1264,6 +1268,10 @@ void demod_init_local(unsigned int symb_rate_kbs, unsigned int is_blind_scan)
 			dvbs_wr_byte(DVBS_REG_DISTXCFG, data);
 		} else if (l2a_def_val_local[reg].addr == 0x913) {
 			dvbs_wr_byte(0x913, dvbs_agc_target);
+		} else if (l2a_def_val_local[reg].addr == DVBS_REG_DISTIMEOCFG &&
+			devp->data->hw_ver == DTVDEMOD_HW_S1A) {
+			dvbs_wr_byte(DVBS_REG_DISTIMEOCFG, l2a_def_val_local[reg].value |
+				(diseqc_out_invert << 3));
 		} else {
 			dvbs_wr_byte(l2a_def_val_local[reg].addr,
 					l2a_def_val_local[reg].value);
@@ -1400,7 +1408,11 @@ void dvbs2_diseqc_init(void)
 	/* rx 22k tone, 125Mhz:b0, default 135Mhz:c0*/
 	//dvbs_wr_byte(DVBS_REG_DISTXF22, 0xb0); //t5d
 	/* number of bit to wait before starting the transmission */
-	dvbs_wr_byte(DVBS_REG_DISTIMEOCFG, 0x84);
+	if (is_meson_s1a_cpu())
+		dvbs_wr_byte(DVBS_REG_DISTIMEOCFG, 0x84 | (diseqc_out_invert << 3));
+	else
+		dvbs_wr_byte(DVBS_REG_DISTIMEOCFG, 0x84);
+
 	/* rx 22k tone, 125Mhz:143, default 135Mhz:12b*/
 	dvbs_wr_byte(DVBS_REG_DISRXF220, 0xf0);
 	/* 9c for 125Mhz */

@@ -16,6 +16,7 @@
 
 #define MAX_DV_PICTUREMODES 40
 #define AMBIENT_CFG_FRAMES 46
+#define AMBIENT_CFG_FRAMES_2 120
 
 # pragma pack(push, 1)
 struct tgt_out_csc_cfg {
@@ -311,6 +312,7 @@ extern struct ambient_cfg_s ambient_test_cfg_3[AMBIENT_CFG_FRAMES];
 extern struct dynamic_cfg_s dynamic_test_cfg[AMBIENT_CFG_FRAMES];
 extern struct dynamic_cfg_s dynamic_test_cfg_2[AMBIENT_CFG_FRAMES];
 extern struct dynamic_cfg_s dynamic_test_cfg_3[AMBIENT_CFG_FRAMES];
+extern struct dynamic_cfg_s dynamic_test_cfg_4[AMBIENT_CFG_FRAMES_2];
 extern struct target_config_dvp def_tgt_dvp_cfg;
 
 void restore_dv_pq_setting(enum pq_reset_e pq_reset);

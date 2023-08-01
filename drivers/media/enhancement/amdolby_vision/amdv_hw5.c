@@ -57,13 +57,9 @@ static u32 isr_cnt;
 bool enable_top1;//todo
 bool top1_done;
 
-#define L1L4_MD_COUNT 5
-#define HISTOGRAM_SIZE 128
-u32 l1l4_md[L1L4_MD_COUNT][4];
-u32 histogram[L1L4_MD_COUNT][HISTOGRAM_SIZE];
 u32 l1l4_wr_index;
 u32 l1l4_rd_index;
-
+static bool new_top1_toggle;
 static int last_int_top1 = 0x8;/*bit3 intensity_frm_wr_done*/
 static int last_int_top1b = 0x8;/*bit3 pyramid_frm_wr_done*/
 static int last_int_top2 = 0x10;/*bit4 out_frm_wr_done*/
@@ -896,6 +892,8 @@ void enable_amdv_hw5(int enable)
 			  top1_info.amdv_setting_video_flag,
 			  top2_info.amdv_setting_video_flag);
 	if (enable) {
+		if (is_aml_t3x())
+			vd_proc_info = get_vd_proc_amdv_info();
 		if (!dolby_vision_on) {
 			set_amdv_wait_on();
 			if (is_aml_t3x()) {
@@ -907,7 +905,6 @@ void enable_amdv_hw5(int enable)
 					hdr_vd1_off(VPP_TOP0);
 				if (!top2_info.core_on)
 					set_frame_count(0);
-				vd_proc_info = get_vd_proc_amdv_info();
 				if (enable_top1 && (amdv_mask & 1) &&
 					top1_info.amdv_setting_video_flag) {
 					VSYNC_WR_DV_REG_BITS
@@ -948,7 +945,10 @@ void enable_amdv_hw5(int enable)
 			}
 			if (dolby_vision_flags & FLAG_CERTIFICATION) {
 				/* bypass dither/PPS/SR/CM, EO/OE */
-				bypass_pps_sr_gamma_gainoff(3);
+				if (!vd_proc_info || vd_proc_info->slice_num != 2)
+					bypass_pps_sr_gamma_gainoff(5);
+				else /*black screen when bypass from preblend to VADJ1 at 2slice */
+					bypass_pps_sr_gamma_gainoff(4);
 				/* bypass all video effect */
 				video_effect_bypass(1);
 			} else {
@@ -980,6 +980,11 @@ void enable_amdv_hw5(int enable)
 						(T3X_VD1_S0_DV_BYPASS_CTRL,
 						 1, 0, 1);
 					hdr_vd1_off(VPP_TOP0);
+					if (vd_proc_info && vd_proc_info->slice_num == 2)
+						VSYNC_WR_DV_REG_BITS
+							(T3X_VD1_S1_DV_BYPASS_CTRL,
+							 1,
+							 0, 1); /* dv path enable */
 				}
 				top2_info.core_on = true;
 				pr_dv_dbg("TV top2 turn on\n");
@@ -1592,6 +1597,8 @@ int tv_top_set(u64 *top1_reg,
 			/*reset pyramid index*/
 			py_wr_id = 0;
 			py_rd_id = 0;
+			l1l4_rd_index = 0;
+			l1l4_wr_index = 0;
 		}
 
 		/*update pyramid write index when toggle new frame, except first frame*/
@@ -1604,8 +1611,10 @@ int tv_top_set(u64 *top1_reg,
 			video_enable, toggle);
 		if (!top1_info.core_on)
 			top1_info.core_on_cnt = 0;
-		if (video_enable && toggle)
+		if (video_enable && toggle) {
 			++top1_info.core_on_cnt;
+			new_top1_toggle = true;
+		}
 	} else {
 		top1_info.core_on = false;
 		top1_info.core_on_cnt = 0;
@@ -1726,14 +1735,15 @@ void get_l1l4_hist(void)
 
 	tv_hw5_setting->top1_stats.enable = true;
 
-	index = (l1l4_rd_index) % L1L4_MD_COUNT;
-	memcpy(tv_hw5_setting->top1_stats.hist, histogram[index], HISTOGRAM_SIZE);
-	tv_hw5_setting->top1_stats.top1_l1l4.l1_min = l1l4_md[index][0];
-	tv_hw5_setting->top1_stats.top1_l1l4.l1_max = l1l4_md[index][1];
-	tv_hw5_setting->top1_stats.top1_l1l4.l1_mid = l1l4_md[index][2];
-	tv_hw5_setting->top1_stats.top1_l1l4.l4_std = l1l4_md[index][3];
+	index = l1l4_rd_index;
+	memcpy(tv_hw5_setting->top1_stats.hist,
+		dv5_md_hist.histogram[index], sizeof(dv5_md_hist.histogram[index]));
+	tv_hw5_setting->top1_stats.top1_l1l4.l1_min = dv5_md_hist.l1l4_md[index][0];
+	tv_hw5_setting->top1_stats.top1_l1l4.l1_max = dv5_md_hist.l1l4_md[index][1];
+	tv_hw5_setting->top1_stats.top1_l1l4.l1_mid = dv5_md_hist.l1l4_md[index][2];
+	tv_hw5_setting->top1_stats.top1_l1l4.l4_std = dv5_md_hist.l1l4_md[index][3];
 
-	++l1l4_rd_index;
+	l1l4_rd_index = l1l4_rd_index ^ 1;
 
 	if (debug_dolby & 0x100000)
 		pr_info("l1l4 index %d %d\n", l1l4_rd_index, l1l4_wr_index);
@@ -1752,55 +1762,38 @@ void set_l1l4_hist(void)
 	metadata0 = READ_VPP_DV_REG(DOLBY5_CORE1_L1_MINMAX);
 	metadata1 = READ_VPP_DV_REG(DOLBY5_CORE1_L1_MID_L4);
 
-	index = (l1l4_wr_index) % L1L4_MD_COUNT;
-	l1l4_md[index][0] = metadata0 & 0xffff;
-	l1l4_md[index][1] = metadata0 >> 16;
-	l1l4_md[index][2] = metadata1 & 0xffff;
-	l1l4_md[index][3] = metadata1 >> 16;
+	index = l1l4_wr_index;
 
-	memcpy(&dv5_md_hist.hist[0][0], dv5_md_hist.hist_vaddr, 256);
+	if (new_top1_toggle) {
+		new_top1_toggle = false;
 
-	index = (l1l4_wr_index) % L1L4_MD_COUNT;
-	for (i = 0; i < 256 / 2; i++)
-		histogram[index][i] = dv5_md_hist.hist[0][i * 2 + 0] |
-				(dv5_md_hist.hist[0][i * 2 + 1] << 8);
+		dv5_md_hist.l1l4_md[index][0] = metadata0 & 0xffff;
+		dv5_md_hist.l1l4_md[index][1] = metadata0 >> 16;
+		dv5_md_hist.l1l4_md[index][2] = metadata1 & 0xffff;
+		dv5_md_hist.l1l4_md[index][3] = metadata1 >> 16;
 
-	++l1l4_wr_index;
+		memcpy(&dv5_md_hist.hist[0], dv5_md_hist.hist_vaddr, 256);
 
-	if (debug_dolby & 0x100000) {
-		pr_info("top1 hist:\n");
-		for (i = 0; i < 128 / 8; i++)
-			pr_info("%d, %d, %d, %d, %d, %d, %d, %d\n",
-				histogram[index][i * 8],
-				histogram[index][i * 8 + 1],
-				histogram[index][i * 8 + 2],
-				histogram[index][i * 8 + 3],
-				histogram[index][i * 8 + 4],
-				histogram[index][i * 8 + 5],
-				histogram[index][i * 8 + 6],
-				histogram[index][i * 8 + 7]);
-		pr_info("meta0: 0x%x, meta1: 0x%x, l1l4_index %d/%d\n",
-			metadata0, metadata1, l1l4_rd_index, l1l4_wr_index);
-	}
-}
+		for (i = 0; i < 256 / 2; i++)
+			dv5_md_hist.histogram[index][i] = dv5_md_hist.hist[i * 2 + 0] |
+				(dv5_md_hist.hist[i * 2 + 1] << 8);
 
-void top1_output_hist_update(void)
-{
-	int i;
+		l1l4_wr_index = l1l4_wr_index ^ 1;
 
-	memcpy(&dv5_md_hist.hist[0][0], dv5_md_hist.hist_vaddr, 256);
-
-	if (debug_dolby & 0x100000) {
-		for (i = 0; i < 32; i++) {
-			pr_info("top1 ohist: 0x%x, 0x%x, 0x%x, 0x%x\n",
-				dv5_md_hist.hist[0][i * 8 + 0] |
-				(dv5_md_hist.hist[0][i * 8 + 1] << 8),
-				dv5_md_hist.hist[0][i * 8 + 2] |
-				(dv5_md_hist.hist[0][i * 8 + 3] << 8),
-				dv5_md_hist.hist[0][i * 8 + 4] |
-				(dv5_md_hist.hist[0][i * 8 + 5] << 8),
-				dv5_md_hist.hist[0][i * 8 + 6] |
-				(dv5_md_hist.hist[0][i * 8 + 7] << 8));
+		if (debug_dolby & 0x100000) {
+			pr_info("top1 hist:\n");
+			for (i = 0; i < 128 / 8; i++)
+				pr_info("%d, %d, %d, %d, %d, %d, %d, %d\n",
+					dv5_md_hist.histogram[index][i * 8],
+					dv5_md_hist.histogram[index][i * 8 + 1],
+					dv5_md_hist.histogram[index][i * 8 + 2],
+					dv5_md_hist.histogram[index][i * 8 + 3],
+					dv5_md_hist.histogram[index][i * 8 + 4],
+					dv5_md_hist.histogram[index][i * 8 + 5],
+					dv5_md_hist.histogram[index][i * 8 + 6],
+					dv5_md_hist.histogram[index][i * 8 + 7]);
+			pr_info("meta0: 0x%x, meta1: 0x%x, l1l4_index %d/%d\n",
+				metadata0, metadata1, l1l4_rd_index, l1l4_wr_index);
 		}
 	}
 }

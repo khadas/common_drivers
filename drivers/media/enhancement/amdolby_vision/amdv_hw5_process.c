@@ -1944,6 +1944,9 @@ int amdv_parse_metadata_hw5(struct vframe_s *vf,
 		} else if (ambient_test_mode == 3 && toggle_mode == 1 &&
 			   hdmi_frame_count < AMBIENT_CFG_FRAMES) {
 			p_ambient = &dynamic_test_cfg_3[hdmi_frame_count];
+		} else if (ambient_test_mode == 4 && toggle_mode == 1 &&
+			   hdmi_frame_count < AMBIENT_CFG_FRAMES_2) {
+			p_ambient = &dynamic_test_cfg_4[hdmi_frame_count];
 		} else if (((struct pq_config_dvp *)pq_config_dvp_fake)->
 			tdc.ambient_config.dark_detail) {
 			/*only if cfg enables darkdetail we allow the API to set*/

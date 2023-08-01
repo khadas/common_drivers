@@ -1870,6 +1870,8 @@ void reset_dv_param(void)
 		top2_v_info.frame_count = 0;
 		py_wr_id = 0;
 		py_rd_id = 0;
+		memset(&dv5_md_hist.hist[0], 0, sizeof(dv5_md_hist.hist));
+		memset(&dv5_md_hist.l1l4_md[0], 0, sizeof(dv5_md_hist.l1l4_md));
 	} else {
 		core1_disp_hsize = 0;
 		core1_disp_vsize = 0;

@@ -493,8 +493,9 @@ static void meson_crtc_disable_vblank(struct drm_crtc *crtc)
 
 static int meson_crtc_late_register(struct drm_crtc *crtc)
 {
-	if (IS_ENABLED(CONFIG_DEBUG_FS))
+#if IS_ENABLED(CONFIG_DEBUG_FS)
 		meson_crtc_debugfs_late_init(crtc);
+#endif
 
 	return 0;
 }

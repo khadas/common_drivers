@@ -78,6 +78,10 @@ function pre_defconfig_cmds() {
 				${temp_file}
 	fi
 
+	if [[ ${UPGRADE_PROJECT} == r || ${UPGRADE_PROJECT} == R ]] && [[ "${CONFIG_BOOTIMAGE}" == "user" ]]; then
+		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r ${KCONFIG_DEFCONFIG} ${AMLOGIC_R_USER_DIFFCONFIG}
+        fi
+
 	if [[ -n ${CHECK_GKI_20} ]]; then
 		KCONFIG_CONFIG=${KCONFIG_DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r \
 				${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig

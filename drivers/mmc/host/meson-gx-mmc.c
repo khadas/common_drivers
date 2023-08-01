@@ -4031,10 +4031,11 @@ static int meson_mmc_probe(struct platform_device *pdev)
 #endif
 #endif
 
+#if IS_ENABLED(CONFIG_DEBUG_FS)
 	if (mmc->debugfs_root && aml_card_type_mmc(host)) {
 		host->debugfs_root = debugfs_create_dir(dev_name(&pdev->dev), mmc->debugfs_root);
 		if (IS_ERR_OR_NULL(host->debugfs_root))
-			goto err_bounce_buf;
+			pr_err("mmc debugfs creat failed\n");
 
 		debugfs_create_file("clktest", 0400, host->debugfs_root, mmc,
 				&mmc_clktest_fops);
@@ -4051,7 +4052,7 @@ static int meson_mmc_probe(struct platform_device *pdev)
 		debugfs_create_file("erase_count", 0400, host->debugfs_root,
 				mmc, &erase_count_fops);
 	}
-
+#endif
 	host->blk_test = devm_kzalloc(host->dev,
 				      512 * CALI_BLK_CNT, GFP_KERNEL);
 

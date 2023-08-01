@@ -1511,12 +1511,20 @@ static int meson_spicc_suspend(struct device *dev)
 {
 	struct spicc_device *spicc = dev_get_drvdata(dev);
 
+	if (spicc->sys_clk)
+		clk_disable_unprepare(spicc->sys_clk);
+	clk_disable_unprepare(spicc->spi_clk);
+
 	return spi_controller_suspend(spicc->controller);
 }
 
 static int meson_spicc_resume(struct device *dev)
 {
 	struct spicc_device *spicc = dev_get_drvdata(dev);
+
+	if (spicc->sys_clk)
+		clk_prepare_enable(spicc->sys_clk);
+	clk_prepare_enable(spicc->spi_clk);
 
 	return spi_controller_resume(spicc->controller);
 }

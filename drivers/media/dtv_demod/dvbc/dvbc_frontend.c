@@ -282,10 +282,19 @@ int gxtv_demod_dvbc_init(struct aml_dtvdemod *demod, int mode)
 			__func__, sys.adc_clk, sys.demod_clk, demod->demod_status.tmp);
 
 	/* sys clk div */
-	if (devp->data->hw_ver == DTVDEMOD_HW_S4 || devp->data->hw_ver == DTVDEMOD_HW_S4D)
-		dd_hiu_reg_write(0x80, 0x501);
-	else if (devp->data->hw_ver >= DTVDEMOD_HW_TL1)
+	if (devp->data->hw_ver == DTVDEMOD_HW_S4 || devp->data->hw_ver == DTVDEMOD_HW_S4D) {
+		//for new dvbc_blind_scan mode
+		if (is_meson_s4d_cpu() && !devp->blind_scan_stop) {
+			//CLKCTRL_DEMOD_CLK_CNTL,CLKCTRL_DEMOD_CLK_CNTL1
+			//cts_demod_core_clk=24M,cts_demod_core_t2_clk=48M
+			dd_hiu_reg_write(0x80, 0x70f);
+			dd_hiu_reg_write(0x81, 0x707);
+		} else {
+			dd_hiu_reg_write(0x80, 0x501); //250M
+		}
+	} else if (devp->data->hw_ver >= DTVDEMOD_HW_TL1) {
 		dd_hiu_reg_write(dig_clk->demod_clk_ctl, 0x502);
+	}
 
 	ret = demod_set_sys(demod, &sys);
 
@@ -1213,3 +1222,64 @@ int dvbc_tune(struct dvb_frontend *fe, bool re_tune,
 	return 0;
 }
 
+void dvbc_blind_scan_work(struct aml_dtvdemod *demod)
+{
+	struct amldtvdemod_device_s *devp = (struct amldtvdemod_device_s *)demod->priv;
+	struct dvb_frontend *fe = NULL;
+	struct dtv_frontend_properties *c = NULL;
+	enum fe_status status;
+	//char qam_name[20] = {0};
+
+	if (devp->blind_scan_stop) {
+		PR_ERR("error: %s dvbc blind scan not start yet!\n", __func__);
+		return;
+	}
+
+	fe = &demod->frontend;
+	if (unlikely(!fe)) {
+		PR_ERR("error: %s fe is NULL\n", __func__);
+		devp->blind_scan_stop = 1;
+		return;
+	}
+
+	c = &fe->dtv_property_cache;
+	demod->blind_result_frequency = 0;
+	demod->blind_result_symbol_rate = 0;
+	PR_INFO("[id %d][%d] %s start ...\n", demod->id, demod->dvbc_sel, __func__);
+
+	//1.init the new dvbc_blind_scan mode for stage 1;
+	PR_INFO("init new dvbc_blind_scan mode\n");
+	devp->dvbc_inited = false;
+	gxtv_demod_dvbc_init(demod, ADC_MODE);
+
+	//2.use frontend agc instead;
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5D))
+		demod_enable_frontend_agc(demod, c->delivery_system, true);
+
+	//3.start to check signal in the dvbc frequency range [48000, 859000KHz]
+	//  and report blind scan result(valid TPs).
+	dvbc_blind_scan_process(demod);
+
+	//4.exit stage 1: exit dvbc_blind_scan mode and switch back to local agc
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_T5D))
+		demod_enable_frontend_agc(demod, c->delivery_system, false);
+
+	//disable dvbc_blind_scan mode to avoid hang when switch to other demod
+	demod_top_write_reg(DEMOD_TOP_REGC, 0x11);
+
+	//5.init dvbc for stage 2
+	devp->dvbc_inited = false;
+	gxtv_demod_dvbc_init(demod, ADC_MODE);
+
+	if (!devp->blind_scan_stop) {
+		//the time usage of first stage is 10% of the overall time usage.
+		demod->blind_result_frequency = 100;
+		demod->blind_result_symbol_rate = 0;
+		status = BLINDSCAN_UPDATEPROCESS | FE_HAS_LOCK;
+		PR_INFO("%s: force 100%% to upper layer\n", __func__);
+		dvb_frontend_add_event(fe, status);
+		devp->blind_scan_stop = 1;
+	}
+
+	PR_INFO("[id %d] %s exit.\n", demod->id, __func__);
+}

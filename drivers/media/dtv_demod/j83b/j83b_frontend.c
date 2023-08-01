@@ -140,7 +140,7 @@ int gxtv_demod_atsc_j83b_set_frontend(struct dvb_frontend *fe)
 			dd_hiu_reg_write(dig_clk->demod_clk_ctl, 0x502);
 		}
 
-		demod_set_mode_ts(SYS_DVBC_ANNEX_A);
+		demod_set_mode_ts(demod, SYS_DVBC_ANNEX_A);
 		if (devp->data->hw_ver == DTVDEMOD_HW_S4D ||
 			devp->data->hw_ver == DTVDEMOD_HW_S1A) {
 			demod_top_write_reg(DEMOD_TOP_REG0, 0x00);
@@ -487,7 +487,7 @@ int atsc_j83b_set_frontend_mode(struct dvb_frontend *fe, int mode)
 
 	c->frequency = temp_freq;
 	tuner_set_params(fe);
-	demod_set_mode_ts(SYS_DVBC_ANNEX_A);
+	demod_set_mode_ts(demod, SYS_DVBC_ANNEX_A);
 	param_j83b.ch_freq = temp_freq / 1000;
 	param_j83b.mode = amdemod_qam(c->modulation);
 	if (c->modulation == QAM_64)

@@ -318,7 +318,7 @@ int gxtv_demod_atsc_set_frontend(struct dvb_frontend *fe)
 		} else {
 			/*demod_set_demod_reg(0x507, TXLX_ADC_REG6);*/
 			dd_hiu_reg_write(dig_clk->demod_clk_ctl, 0x507);
-			demod_set_mode_ts(delsys);
+			demod_set_mode_ts(demod, delsys);
 			param_atsc.ch_freq = c->frequency / 1000;
 			param_atsc.mode = c->modulation;
 			atsc_set_ch(demod, &param_atsc);

@@ -35,5 +35,6 @@ int dvbc_set_frontend(struct dvb_frontend *fe);
 int dvbc_read_status(struct dvb_frontend *fe, enum fe_status *status, bool re_tune);
 int dvbc_tune(struct dvb_frontend *fe, bool re_tune,
 	unsigned int mode_flags, unsigned int *delay, enum fe_status *status);
+void dvbc_blind_scan_work(struct aml_dtvdemod *demod);
 
 #endif

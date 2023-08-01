@@ -1547,6 +1547,47 @@ static void dtvdemod_fw_dwork(struct work_struct *work)
 	cnt++;
 }
 
+static void blind_scan_work(struct work_struct *work)
+{
+	struct amldtvdemod_device_s *devp = container_of(work,
+			struct amldtvdemod_device_s, blind_scan_work);
+	struct aml_dtvdemod *demod = NULL, *tmp = NULL;
+
+	list_for_each_entry(tmp, &devp->demod_list, list) {
+		if (tmp->inited) {
+			demod = tmp;
+			break;
+		}
+	}
+
+	if (!demod) {
+		PR_ERR("%s: demod == NULL.\n", __func__);
+		return;
+	}
+	if (demod->last_delsys == SYS_UNDEFINED) {
+		PR_ERR("%s: err: delsys not set!\n", __func__);
+		return;
+	}
+
+	switch (demod->last_delsys) {
+#ifdef AML_DEMOD_SUPPORT_DVBS
+	case SYS_DVBS:
+	case SYS_DVBS2:
+		dvbs_blind_scan_new_work(work);
+		break;
+#endif
+#ifdef AML_DEMOD_SUPPORT_DVBC
+	case SYS_DVBC_ANNEX_A:
+		//only s4d support the new dvbc_blind_scan mode now
+		if (is_meson_s4d_cpu())
+			dvbc_blind_scan_work(demod);
+		break;
+#endif
+	default:
+		break;
+	}
+}
+
 /* platform driver*/
 static int aml_dtvdemod_probe(struct platform_device *pdev)
 {
@@ -1636,11 +1677,9 @@ static int aml_dtvdemod_probe(struct platform_device *pdev)
 			schedule_delayed_work(&devp->fw_dwork, 10 * HZ);
 		}
 
-		/* workqueue for dvbs blind scan process */
+		/* workqueue for blind scan process */
 		//INIT_WORK(&devp->blind_scan_work, dvbs_blind_scan_work);
-#ifdef AML_DEMOD_SUPPORT_DVBS
-		INIT_WORK(&devp->blind_scan_work, dvbs_blind_scan_new_work);
-#endif
+		INIT_WORK(&devp->blind_scan_work, blind_scan_work);
 	}
 
 	demod_attach_register_cb(AM_DTV_DEMOD_AMLDTV, aml_dtvdm_attach);
@@ -2228,7 +2267,15 @@ static int aml_dtvdm_get_frontend(struct dvb_frontend *fe,
 #ifdef AML_DEMOD_SUPPORT_DVBC
 	case SYS_DVBC_ANNEX_A:
 	case SYS_DVBC_ANNEX_C:
-		ret = gxtv_demod_dvbc_get_frontend(fe);
+		if (!devp->blind_scan_stop) {
+			p->frequency = demod->blind_result_frequency;
+			p->symbol_rate = demod->blind_result_symbol_rate;
+			p->delivery_system = delsys;
+			PR_DVBC("%s [id %d] delsys %d,freq %d,srate %d\n", __func__,
+					demod->id, delsys, p->frequency, p->symbol_rate);
+		} else {
+			ret = gxtv_demod_dvbc_get_frontend(fe);
+		}
 		break;
 #endif
 #ifdef AML_DEMOD_SUPPORT_DVBT

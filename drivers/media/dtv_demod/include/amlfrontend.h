@@ -123,6 +123,7 @@
 /*  V3.4.002 fix dvbt overflow by new methods when bw 6M GI 1/4 */
 /*  V3.4.003 improve the stability of new dvbc driver scanning */
 /*  V3.4.004 fix dvbc qam config and flow */
+/*  V3.4.005 adjust the sensitivity limit of atbm253 tuner in DTMB mode */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -139,8 +140,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.4.004"
-#define DTVDEMOD_VER	"2023/08/02: fix dvbc qam config and flow"
+#define AMLDTVDEMOD_VER "V3.4.005"
+#define DTVDEMOD_VER	"2023/08/09: adjust the sensitivity limit of atbm253 tuner in DTMB mode"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

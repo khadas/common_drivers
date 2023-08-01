@@ -268,7 +268,6 @@
 		dev_name = "aml_amdolby_vision_driver";
 		status = "okay";
 		tv_mode = <0>;/*1:enable ;0:disable*/
-		multi_core1 = <1>;
 	};
 	cvbsout {
 		compatible = "amlogic, cvbsout-sc2";

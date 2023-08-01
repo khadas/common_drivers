@@ -837,15 +837,49 @@ bool is_aml_stb_hdmimode(void)
 int is_graphics_output_off(void)
 {
 	if (is_aml_g12() || is_aml_tm2_stbmode() ||
-	    is_aml_t7_stbmode() || is_aml_sc2() ||
-	    is_aml_s4d())
-		return !(READ_VPP_REG(OSD1_BLEND_SRC_CTRL) & (0xf << 8)) &&
-		!(READ_VPP_REG(OSD2_BLEND_SRC_CTRL) & (0xf << 8));
-	else if (is_aml_s5())
-		return !(READ_VPP_REG(S5_OSD1_BLEND_SRC_CTRL) & 0xf) &&
-		!(READ_VPP_REG(S5_OSD2_BLEND_SRC_CTRL) & 0xf);
-	else
+		is_aml_sc2() || is_aml_s4d()) {
+		if (((READ_VPP_REG(OSD1_BLEND_SRC_CTRL) >> 8 & 0xf) == 3) ||
+			((READ_VPP_REG(OSD2_BLEND_SRC_CTRL) >> 8 & 0xf) == 3) ||
+			((READ_VPP_REG(VD1_BLEND_SRC_CTRL) >> 8 & 0xf) == 3) ||
+			((READ_VPP_REG(VD2_BLEND_SRC_CTRL) >> 8 & 0xf) == 3) ||
+			((READ_VPP_REG(OSD1_BLEND_SRC_CTRL) >> 8 & 0xf) == 4) ||
+			((READ_VPP_REG(OSD2_BLEND_SRC_CTRL) >> 8 & 0xf) == 4) ||
+			((READ_VPP_REG(VD1_BLEND_SRC_CTRL) >> 8 & 0xf) == 4) ||
+			((READ_VPP_REG(VD2_BLEND_SRC_CTRL) >> 8 & 0xf) == 4))
+			return 0;
+		else
+			return 1;
+	} else if (is_aml_t7_stbmode()) {
+		if (((READ_VPP_REG(OSD1_BLEND_SRC_CTRL) >> 8 & 0xf) == 4) ||
+			((READ_VPP_REG(OSD2_BLEND_SRC_CTRL) >> 8 & 0xf) == 4) ||
+			((READ_VPP_REG(VD1_BLEND_SRC_CTRL) >> 8 & 0xf) == 4) ||
+			((READ_VPP_REG(VD2_BLEND_SRC_CTRL) >> 8 & 0xf) == 4) ||
+			((READ_VPP_REG(VD3_BLEND_SRC_CTRL) >> 8 & 0xf) == 4) ||
+			((READ_VPP_REG(OSD1_BLEND_SRC_CTRL) >> 8 & 0xf) == 5) ||
+			((READ_VPP_REG(OSD2_BLEND_SRC_CTRL) >> 8 & 0xf) == 5) ||
+			((READ_VPP_REG(VD1_BLEND_SRC_CTRL) >> 8 & 0xf) == 5) ||
+			((READ_VPP_REG(VD2_BLEND_SRC_CTRL) >> 8 & 0xf) == 5) ||
+			((READ_VPP_REG(VD3_BLEND_SRC_CTRL) >> 8 & 0xf) == 5))
+			return 0;
+		else
+			return 1;
+	} else if (is_aml_s5()) {
+		if (((READ_VPP_REG(S5_OSD1_BLEND_SRC_CTRL) & 0xf) == 4) ||
+			((READ_VPP_REG(S5_OSD2_BLEND_SRC_CTRL) & 0xf) == 4) ||
+			((READ_VPP_REG(S5_VD1_BLEND_SRC_CTRL) & 0xf) == 4) ||
+			((READ_VPP_REG(S5_VD2_BLEND_SRC_CTRL) & 0xf) == 4) ||
+			((READ_VPP_REG(S5_VD3_BLEND_SRC_CTRL) & 0xf) == 4) ||
+			((READ_VPP_REG(S5_OSD1_BLEND_SRC_CTRL) & 0xf) == 5) ||
+			((READ_VPP_REG(S5_OSD2_BLEND_SRC_CTRL) & 0xf) == 5) ||
+			((READ_VPP_REG(S5_VD1_BLEND_SRC_CTRL) & 0xf) == 5) ||
+			((READ_VPP_REG(S5_VD2_BLEND_SRC_CTRL) & 0xf) == 5) ||
+			((READ_VPP_REG(S5_VD3_BLEND_SRC_CTRL) & 0xf) == 5))
+			return 0;
+		else
+			return 1;
+	} else {
 		return (!(READ_VPP_REG(VPP_MISC) & (1 << 12)));
+	}
 }
 
 bool core1_detunnel(void)
@@ -2156,8 +2190,6 @@ void amdv_create_inst(void)
 {
 	int i;
 
-	if (!enable_multi_core1 && !is_aml_hw5())
-		return;
 	for (i = 0; i < NUM_INST; i++) {
 		dv_inst[i].md_buf[0] = vmalloc(MD_BUF_SIZE);
 		if (dv_inst[i].md_buf[0])
@@ -13687,8 +13719,7 @@ int register_dv_functions(const struct dolby_vision_func_s *func)
 		} else if (func->multi_control_path && !p_funcs_stb) {
 			pr_info("*** register_dv_stb2.6_functions.***\n");
 
-			if (!is_aml_tm2revb() && !is_aml_t7_stbmode() &&
-				!is_aml_s5() && !is_aml_sc2() && !is_aml_s4d() &&
+			if (!is_aml_tm2revb() && !is_aml_t7_stbmode() && !is_aml_s5() &&
 				enable_multi_core1) {
 				enable_multi_core1 = false;
 				pr_info("*** only has one core1. please check***\n");

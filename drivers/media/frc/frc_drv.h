@@ -95,8 +95,9 @@
 // frc_20230602 frc add ctrl for ko load or not
 // frc_20230607 frc fixed input framerate
 // frc_20230706 frc clk new flow
+// frc_20230724 optimize frc seamless mode"
 
-#define FRC_FW_VER			"2023-0724 optimize frc seamless mode"
+#define FRC_FW_VER			"2023-0802 adjust loss num"
 #define FRC_KERDRV_VER                  2976
 
 #define FRC_DEVNO	1

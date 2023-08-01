@@ -86,6 +86,11 @@ void frc_fw_initial(struct frc_dev_s *devp)
 	devp->in_sts.vf = NULL;
 	devp->frc_sts.vs_cnt = 0;
 	devp->vs_timestamp = sched_clock();
+
+	devp->frc_sts.inp_undone_cnt = 0;
+	devp->frc_sts.me_undone_cnt = 0;
+	devp->frc_sts.mc_undone_cnt = 0;
+	devp->frc_sts.vp_undone_cnt = 0;
 }
 
 void frc_hw_initial(struct frc_dev_s *devp)
@@ -1343,7 +1348,8 @@ void frc_state_handle_new(struct frc_dev_s *devp)
 					schedule_work(&devp->frc_clk_work);
 				} else if (devp->clk_state == FRC_CLOCK_NOR &&
 					devp->buf.cma_mem_alloced) {
-					frc_mm_secure_set(devp);
+					// frc_mm_secure_set(devp);
+					schedule_work(&devp->frc_secure_work);
 					get_vout_info(devp);
 					frc_hw_initial(devp);
 					//first : set bypass off

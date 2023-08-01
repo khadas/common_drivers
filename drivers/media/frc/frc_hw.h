@@ -122,4 +122,5 @@ void frc_debug_print(struct frc_dev_s *devp);
 void frc_memc_clr_vbuffer(struct frc_dev_s *frc_devp, u8 flag);
 void frc_load_reg_table(struct frc_dev_s *frc_devp, u8 flag);
 void frc_in_sts_init(struct st_frc_in_sts *sts);
+void frc_chg_loss_slice_num(u8 num);
 #endif

@@ -472,7 +472,6 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 {
 	u32 offset = 0x0;
 	enum chip_id chip;
-	u32 flag_cnt = 0x30;
 	u32 inp_ud_flag, readval, timeout;
 
 	if (!frc_devp)
@@ -498,16 +497,14 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 	} else if (inp_ud_flag != 0) {
 		WRITE_FRC_REG_BY_CPU(FRC_INP_UE_CLR + offset, 0x3f);
 		WRITE_FRC_REG_BY_CPU(FRC_INP_UE_CLR + offset, 0x0);
-		frc_devp->ud_dbg.inp_undone_err = inp_ud_flag;
+		frc_devp->ud_dbg.inp_undone_err++;
 		frc_devp->frc_sts.inp_undone_cnt++;
 		if (frc_devp->ud_dbg.inp_ud_dbg_en != 0) {
-			if (frc_devp->frc_sts.inp_undone_cnt < flag_cnt ||
-				frc_devp->frc_sts.inp_undone_cnt % flag_cnt == 0) { // 0x30
-				PR_ERR("inp_ud_err=0x%x,err_cnt=%d,vs_cnt=%d\n",
-					inp_ud_flag,
-					frc_devp->frc_sts.inp_undone_cnt,
-					frc_devp->in_sts.vs_cnt);
-			}
+			// if (frc_devp->frc_sts.inp_undone_cnt % 0x30 == 0) {
+			PR_ERR("inp_ud_err=0x%x, vs_cnt=%d\n",
+				inp_ud_flag,
+				frc_devp->in_sts.vs_cnt);
+			// }
 		}
 		timeout = 0;
 		do {
@@ -516,15 +513,13 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 				break;
 		} while (timeout++ < 100);
 		if (frc_devp->ud_dbg.res1_time_en == 1) {
-			if (frc_devp->frc_sts.inp_undone_cnt ==
-					flag_cnt * 2) { // 0x30 * 2
+			if (frc_devp->ud_dbg.inp_undone_err == 60) {
 				frc_devp->frc_sts.re_config = true;
-				PR_ERR("frc will reopen\n");
+				PR_ERR("inp undo more err, frc will reset\n");
 			}
 		}
 	} else {
 		frc_devp->ud_dbg.inp_undone_err = 0;
-		frc_devp->frc_sts.inp_undone_cnt = 0;
 	}
 }
 
@@ -540,16 +535,17 @@ void me_undone_read(struct frc_dev_s *frc_devp)
 		me_ud_flag = READ_FRC_REG(FRC_MEVP_RO_STAT0) & BIT_0;
 		if (me_ud_flag != 0) {
 			frc_devp->frc_sts.me_undone_cnt++;
-			frc_devp->ud_dbg.me_undone_err = 1;
 			WRITE_FRC_BITS(FRC_MEVP_CTRL0, 1, 31, 1);
 			WRITE_FRC_BITS(FRC_MEVP_CTRL0, 0, 31, 1);
-			if (frc_devp->frc_sts.me_undone_cnt >= MAX_ME_UNDONE_CNT)
-				pr_frc(0, "outvs_cnt = %d, me_ud_err cnt= %d\n",
-					frc_devp->out_sts.vs_cnt,
-					frc_devp->frc_sts.me_undone_cnt);
+			if (frc_devp->ud_dbg.me_undone_err == 0) {
+				pr_frc(0, "me_ud_err=%d,cnt=%d, outvs_cnt=%d\n",
+					me_ud_flag,
+					frc_devp->frc_sts.me_undone_cnt,
+					frc_devp->out_sts.vs_cnt);
+				frc_devp->ud_dbg.me_undone_err = 1;
+			}
 		} else {
 			frc_devp->ud_dbg.me_undone_err = 0;
-			frc_devp->frc_sts.me_undone_cnt = 0;
 		}
 	}
 }
@@ -566,18 +562,17 @@ void mc_undone_read(struct frc_dev_s *frc_devp)
 		val = READ_FRC_REG(FRC_RO_MC_STAT);
 		mc_ud_flag = (val >> 12) & 0x1;
 		if (mc_ud_flag != 0) {
-			frc_devp->frc_sts.mc_undone_cnt = (val >> 16) & 0xfff;
+			frc_devp->frc_sts.mc_undone_cnt += (val >> 16) & 0xfff;
 			frc_devp->ud_dbg.mc_undone_err = 1;
 			WRITE_FRC_BITS(FRC_MC_HW_CTRL0, 1, 21, 1);
 			WRITE_FRC_BITS(FRC_MC_HW_CTRL0, 0, 21, 1);
 		} else {
 			frc_devp->ud_dbg.mc_undone_err = 0;
-			frc_devp->frc_sts.mc_undone_cnt = 0;
 		}
 		if (frc_devp->ud_dbg.mc_undone_err == 1)
-			pr_frc(0, "outvs_cnt = %d, mc_undo_vcnt= %d\n",
-				frc_devp->out_sts.vs_cnt,
-				frc_devp->frc_sts.mc_undone_cnt);
+			pr_frc(0, "mc_undo_vcnt= %d, outvs_cnt = %d\n",
+				frc_devp->frc_sts.mc_undone_cnt,
+				frc_devp->out_sts.vs_cnt);
 	}
 }
 
@@ -596,15 +591,14 @@ void vp_undone_read(struct frc_dev_s *frc_devp)
 			frc_devp->ud_dbg.vp_undone_err = vp_ud_flag;
 			WRITE_FRC_BITS(FRC_VP_TOP_CLR_STAT, 3, 0, 2);
 			WRITE_FRC_BITS(FRC_VP_TOP_CLR_STAT, 0, 0, 2);
-			if (frc_devp->frc_sts.vp_undone_cnt >= MAX_VP_UNDONE_CNT)
-				pr_frc(0, "outvs_cnt=%d, vperr=%x, errcnt=%d\n",
-					frc_devp->out_sts.vs_cnt,
-					frc_devp->ud_dbg.vp_undone_err,
-					frc_devp->frc_sts.vp_undone_cnt);
 		} else {
-			frc_devp->frc_sts.vp_undone_cnt = 0;
 			frc_devp->ud_dbg.vp_undone_err = 0;
 		}
+		if (frc_devp->ud_dbg.vp_undone_err != 0)
+			pr_frc(0, "vp_err=%x, cnt=%d, outvs_cnt=%d\n",
+				frc_devp->ud_dbg.vp_undone_err,
+				frc_devp->frc_sts.vp_undone_cnt,
+				frc_devp->out_sts.vs_cnt);
 	}
 }
 
@@ -2376,8 +2370,9 @@ void enable_bbd(void)
 
 void frc_cfg_memc_loss(u32 memc_loss_en)
 {
-	u32 memcloss = 0x0404000c;
+	u32 memcloss = READ_FRC_REG(FRC_REG_TOP_CTRL11); // 0x0404000c;
 
+	memcloss = READ_FRC_REG(FRC_REG_TOP_CTRL11);
 	if (memc_loss_en > 3)
 		memc_loss_en = 3;
 	memcloss |= memc_loss_en;
@@ -2653,14 +2648,16 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	// config_phs_lut(frc_top->frc_ratio_mode, frc_top->film_mode);
 	// config_phs_regs(frc_top->frc_ratio_mode, frc_top->film_mode);
 	config_me_top_hw_reg();
-	frc_top->memc_loss_en = 0x13;
-	frc_cfg_memc_loss(frc_top->memc_loss_en & 0x3);
 	if (chip >= ID_T3X) {
+		frc_top->memc_loss_en = 0x12;
+		frc_cfg_memc_loss(frc_top->memc_loss_en & 0x3);
 		frc_cfg_mcdw_loss((frc_top->memc_loss_en >> 4) & 0x01);
 		out_frm_dly_num = 0x0;
 		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x17, 0, 8);
 		frc_memc_120hz_patch_1(frc_devp);
 	} else {
+		frc_top->memc_loss_en = 0x03;
+		frc_cfg_memc_loss(frc_top->memc_loss_en & 0x3);
 		out_frm_dly_num = 0x03000000;
 		WRITE_FRC_BITS(FRC_REG_TOP_RESERVE0, 0x14, 0, 8);
 	}
@@ -3426,3 +3423,35 @@ void frc_in_sts_init(struct st_frc_in_sts *sts)
 	sts->frc_hsc_startp = 0;
 	sts->frc_hsc_endp = 0;
 };
+
+void frc_chg_loss_slice_num(u8 num)
+{
+	enum chip_id chip;
+	u32  tmp_value, tmp_value2;
+	struct frc_dev_s *devp = get_frc_devp();
+
+	if (!devp->probe_ok || !devp->power_on_flag)
+		return;
+	if (devp->clk_state == FRC_CLOCK_OFF)
+		return;
+
+	chip = get_chip_type();
+	if (chip != ID_T3X)
+		return;
+
+	tmp_value = READ_FRC_REG(FRC_INP_MCDW_CTRL);
+	tmp_value &= 0xFFC00FF;
+	tmp_value2 = READ_FRC_REG(FRC_REG_TOP_CTRL11);
+	tmp_value2 &= 0x0000FFFF;
+	tmp_value |= (num & 0x3FF) << 8;
+	WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, tmp_value);
+	tmp_value2 |= (num & 0xff) << 16;
+	tmp_value2 |= (num & 0xff) << 24;
+	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL11, tmp_value2);
+
+	pr_frc(1, "%s set\n", __func__);
+	pr_frc(1, "FRC_REG_TOP_CTRL11=0x%x\n",
+			READ_FRC_REG(FRC_REG_TOP_CTRL11));
+	pr_frc(1, "FRC_INP_MCDW_CTRL=0x%x\n",
+			READ_FRC_REG(FRC_INP_MCDW_CTRL));
+}

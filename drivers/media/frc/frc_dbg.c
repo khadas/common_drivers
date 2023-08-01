@@ -255,13 +255,15 @@ void frc_status(struct frc_dev_s *devp)
 	       devp->vs_duration, (ulong)devp->vs_timestamp);
 	pr_frc(0, "frc_in vs_duration= %dus timestamp= %ld\n",
 	       devp->in_sts.vs_duration, (ulong)devp->in_sts.vs_timestamp);
-	pr_frc(0, "frc_in isr vs_cnt= %d, vs_tsk_cnt:%d, inp_err= 0x%x\n",
+	pr_frc(0, "frc_in isr vs_cnt= %d, vs_tsk_cnt:%d, inp_err cnt= %d\n",
 		devp->in_sts.vs_cnt, devp->in_sts.vs_tsk_cnt,
-		devp->ud_dbg.inp_undone_err);
+		devp->frc_sts.inp_undone_cnt);
 	pr_frc(0, "frc_out vs_duration= %dus timestamp= %ld\n",
 	       devp->out_sts.vs_duration, (ulong)devp->out_sts.vs_timestamp);
-	pr_frc(0, "frc_out isr vs_cnt= %d, vs_tsk_cnt= %d\n",
-		devp->out_sts.vs_cnt, devp->out_sts.vs_tsk_cnt);
+	pr_frc(0, "frc_out isr vs_cnt= %d, vs_tsk_cnt= %d, err_cnt= (me:%d,mc:%d,vp:%d)\n",
+		devp->out_sts.vs_cnt, devp->out_sts.vs_tsk_cnt,
+		devp->frc_sts.me_undone_cnt, devp->frc_sts.mc_undone_cnt,
+		devp->frc_sts.vp_undone_cnt);
 	pr_frc(0, "frc_st vs_cnt:%d vf_repeat_cnt:%d vf_null_cnt:%d\n", devp->frc_sts.vs_cnt,
 		devp->in_sts.vf_repeat_cnt, devp->in_sts.vf_null_cnt);
 	pr_frc(0, "vout sync_duration_num= %d sync_duration_den= %d out_hz= %d\n",
@@ -880,6 +882,11 @@ void frc_debug_param_if(struct frc_dev_s *devp, const char *buf, size_t count)
 			goto exit;
 		if (kstrtoint(parm[1], 10, &val1) == 0)
 			devp->other2_flag = val1;
+	} else if (!strcmp(parm[0], "chg_slice_num")) {
+		if (!parm[1])
+			goto exit;
+		if (kstrtoint(parm[1], 10, &val1) == 0)
+			frc_chg_loss_slice_num(val1);
 	}
 exit:
 	kfree(buf_orig);

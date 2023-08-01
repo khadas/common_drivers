@@ -963,8 +963,12 @@ static void do_vframe_afbc_soft_decode(struct v4l_data_t *v4l_data,
 		bit_10 = 0;
 
 	y_size = vf->compWidth * vf->compHeight * sizeof(short);
-	pr_info("width: %d, height: %d, compWidth: %u, compHeight: %u.\n",
-		 vf->width, vf->height, vf->compWidth, vf->compHeight);
+	pr_info("width: %d, height: %d, compWidth: %u, compHeight: %u,bit10:%d.\n",
+		 vf->width, vf->height, vf->compWidth, vf->compHeight, bit_10);
+	if (v4l_data->byte_stride == v4l_data->width && bit_10 == 1) {
+		bit_10 = 0;
+		pr_info("memory not enough,force to 8bit.\n");
+	}
 	for (i = 0; i < 4; i++) {
 		planes[i] = vmalloc(y_size);
 		if (!planes[i]) {

@@ -795,9 +795,10 @@ static long mua_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			alloc_buf_size = data.alloc_data.scaled_buf_size;
 		else
 			alloc_buf_size = data.alloc_data.size;
-		MUA_PRINTK(MUA_INFO, "%s. buf_scalar=%d scaled_buf_size=%d\n",
+		MUA_PRINTK(MUA_INFO, "%s. buf_scalar=%d scaled_buf_size=%d flags=0x%x\n",
 					__func__, data.alloc_data.scalar,
-					data.alloc_data.scaled_buf_size);
+					data.alloc_data.scaled_buf_size,
+					data.alloc_data.flags);
 
 		dmabuf = uvm_alloc_dmabuf(alloc_buf_size,
 					  data.alloc_data.align,

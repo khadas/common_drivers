@@ -65,6 +65,7 @@ struct tdm_chipinfo {
 	bool use_arb;
 	bool use_vadtop;
 	bool regulator;
+	bool need_mute_tdm;
 };
 
 #define SRC_TDMIN_A     "tdmin_a"
@@ -411,6 +412,7 @@ struct tdm_chipinfo t5_tdma_chipinfo = {
 	.chnum_en = false,
 	.gain_ver = GAIN_VER3,
 	.use_arb = true,
+	.need_mute_tdm = true,
 };
 
 struct tdm_chipinfo t5_tdmb_chipinfo = {
@@ -429,6 +431,7 @@ struct tdm_chipinfo t5_tdmb_chipinfo = {
 	.chnum_en = false,
 	.gain_ver = GAIN_VER3,
 	.use_arb = true,
+	.need_mute_tdm = true,
 };
 
 struct tdm_chipinfo t5_tdmc_chipinfo = {
@@ -447,6 +450,7 @@ struct tdm_chipinfo t5_tdmc_chipinfo = {
 	.chnum_en = false,
 	.gain_ver = GAIN_VER3,
 	.use_arb = true,
+	.need_mute_tdm = true,
 };
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -466,6 +470,7 @@ struct tdm_chipinfo t7_tdma_chipinfo = {
 	.chnum_en = false,
 	.gain_ver = GAIN_VER3,
 	.use_arb = true,
+	.need_mute_tdm = true,
 };
 
 struct tdm_chipinfo t7_tdmb_chipinfo = {
@@ -484,6 +489,7 @@ struct tdm_chipinfo t7_tdmb_chipinfo = {
 	.chnum_en = false,
 	.gain_ver = GAIN_VER3,
 	.use_arb = true,
+	.need_mute_tdm = true,
 };
 
 struct tdm_chipinfo t7_tdmc_chipinfo = {
@@ -502,6 +508,7 @@ struct tdm_chipinfo t7_tdmc_chipinfo = {
 	.chnum_en = false,
 	.gain_ver = GAIN_VER3,
 	.use_arb = true,
+	.need_mute_tdm = true,
 };
 
 struct tdm_chipinfo t7_tdmd_chipinfo = {
@@ -520,6 +527,7 @@ struct tdm_chipinfo t7_tdmd_chipinfo = {
 	.chnum_en = false,
 	.gain_ver = GAIN_VER3,
 	.use_arb = true,
+	.need_mute_tdm = true,
 };
 
 struct tdm_chipinfo p1_tdma_chipinfo = {

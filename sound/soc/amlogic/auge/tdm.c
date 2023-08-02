@@ -1816,7 +1816,10 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 			p_tdm->tdmout_gain_mute = false;
 			aml_frddr_enable(p_tdm->fddr, true);
 			udelay(100);
-			if (!p_tdm->tdm_fade_out_enable)
+			if (p_tdm->chipinfo->need_mute_tdm)
+				aml_tdm_mute_playback(p_tdm->actrl, p_tdm->id,
+					false, p_tdm->lane_cnt);
+			else if (!p_tdm->tdm_fade_out_enable)
 				aml_tdmout_enable_gain(p_tdm->id, false,
 					p_tdm->chipinfo->gain_ver);
 			if (p_tdm->samesource_sel != SHAREBUFFER_NONE)
@@ -1857,7 +1860,10 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 			dev_info(substream->pcm->card->dev,
 				 "TDM[%d] Playback stop\n",
 				 p_tdm->id);
-			if (!p_tdm->tdm_fade_out_enable)
+			if (p_tdm->chipinfo->need_mute_tdm)
+				aml_tdm_mute_playback(p_tdm->actrl, p_tdm->id,
+					true, p_tdm->lane_cnt);
+			else if (!p_tdm->tdm_fade_out_enable)
 				aml_tdmout_enable_gain(p_tdm->id, true,
 					p_tdm->chipinfo->gain_ver);
 			if (p_tdm->samesource_sel != SHAREBUFFER_NONE)

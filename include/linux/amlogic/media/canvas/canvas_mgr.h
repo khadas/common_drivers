@@ -9,6 +9,7 @@
 #include <linux/types.h>
 
 #define CANVAS_MAX_NUM 256
+#define CANVAS_S1A_MAX_NUM 128
 extern int hw_canvas_support;
 
 struct canvas_info {

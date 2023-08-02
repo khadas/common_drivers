@@ -228,7 +228,10 @@ static int canvas_pool_init(void)
 	pool = get_canvas_pool();
 	memset(pool, 0, sizeof(struct canvas_pool));
 	spin_lock_init(&pool->lock);
-	pool->canvas_max = CANVAS_MAX_NUM;
+	if (is_meson_s1a_cpu())
+		pool->canvas_max = CANVAS_S1A_MAX_NUM;
+	else
+		pool->canvas_max = CANVAS_MAX_NUM;
 	pool->next_alloced_index = pool->canvas_max / 2;
 	/* /start at end part index. */
 	return 0;

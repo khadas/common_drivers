@@ -112,7 +112,8 @@
 /* 2023.5.5 fix emp pkt parse error */
 /* 2023.05.09 core reset when afifo overflow */
 /* 2023.05.24 fix 1366*768 identify to 1360*768 */
-#define RX_VER2 "ver.2023/05/24"
+/* 2023.8.3 phy flow and aud pkt judge */
+#define RX_VER2 "ver.2023/8/3"
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368
@@ -410,6 +411,7 @@ struct rx_aml_phy {
 	int cdr_retry_max;
 	int cdr_fr_en_auto;
 	int hyper_gain_en;
+	int eye_height_min;
 };
 
 struct rx_aml_phy_21 {

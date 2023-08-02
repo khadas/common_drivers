@@ -56,7 +56,7 @@ static const u32 phy_misc_txhd2[][2] = {
 		0xffe40000, 0x11e73000,
 	},
 	{	 /* 525~600M */
-		0xffe4010e, 0x11e73000,
+		0xffe40100, 0x11e73000,
 	},
 };
 
@@ -679,8 +679,19 @@ u32 min_ch_txhd2(u32 a, u32 b, u32 c)
 	return 3;
 }
 
+u32 max_ch_txhd2(u32 a, u32 b, u32 c)
+{
+	if (a >= b && a >= c)
+		return 0;
+	if (b >= a && b >= c)
+		return 1;
+	if (c >= a && c >= b)
+		return 2;
+	return 3;
+}
+
 /* hardware eye monitor */
-u32 aml_eq_eye_monitor_txhd2(void)
+u32 aml_eq_eye_monitor_txhd2(int ch_monitor)
 {
 	u32 data32;
 	u32 positive_eye_height0, positive_eye_height1, positive_eye_height2;
@@ -725,7 +736,12 @@ u32 aml_eq_eye_monitor_txhd2(void)
 	positive_eye_height2 = positive_eye_height2 & 0x3f;
 	rx_pr("eye height:[%d, %d, %d]\n",
 		positive_eye_height0, positive_eye_height1, positive_eye_height2);
-	return min_ch_txhd2(positive_eye_height0, positive_eye_height1, positive_eye_height2);
+	if (ch_monitor == 0)
+		return min_ch_txhd2(positive_eye_height0,
+		positive_eye_height1, positive_eye_height2);
+	else
+		return max_ch_txhd2(positive_eye_height0,
+		positive_eye_height1, positive_eye_height2);
 }
 
 void get_eq_val_txhd2(void)
@@ -781,7 +797,7 @@ bool is_eq1_tap0_err_txhd2(void)
 	if (log_level & EQ_LOG)
 		rx_pr("tap0=0x%x, tap1=0x%x, tap2=0x%x avr=0x%x\n",
 			tap0, tap1, tap2, tap0_avr);
-	if (eq_avr >= 21 && tap0_avr >= 40)
+	if (eq_avr >= 31 && tap0_avr >= 50)
 		ret = true;
 
 	return ret;
@@ -1024,7 +1040,7 @@ void aml_enhance_dfe_old_txhd2(void)
 	u32 pos_eye_height[20];
 	u32 pos_avg_eye_height;
 
-	wst_ch = aml_eq_eye_monitor_txhd2();
+	wst_ch = aml_eq_eye_monitor_txhd2(0);
 	for (i = 0; i < 20; i++)
 		pos_eye_height[i] = eq_eye_height_txhd2(wst_ch);
 	quick_sort2_txhd2(pos_eye_height, 0, 19);
@@ -1128,13 +1144,80 @@ void aml_enhance_eq_txhd2(void)
 	}
 }
 
+void cdr_retry_flow_txhd2(void)
+{
+	u32 cdr0_int, cdr1_int, cdr2_int;
+	int i = 0;
+	u32 data32;
+
+	for (i = 0; i < rx_info.aml_phy.cdr_retry_max &&
+		rx_info.aml_phy.cdr_retry_en; i++) {
+		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_EHM_DBG_SEL, 0x0);
+		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_EQ, TXHD2_STATUS_MUX_SEL, 0x22);
+		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_MUX_CDR_DBG_SEL, 0x0);
+		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_MUX_CDR_DBG_SEL, 0x1);
+		usleep_range(10, 20);
+		data32 = hdmirx_rd_amlphy(TXHD2_HDMIRX20PHY_DCHD_STAT);
+		cdr0_int = data32 & 0x7f;
+		cdr1_int = (data32 >> 8) & 0x7f;
+		cdr2_int = (data32 >> 16) & 0x7f;
+		if (cdr0_int || cdr1_int || cdr2_int)
+			cdr_retry_txhd2();
+		else
+			break;
+	}
+	if (log_level & PHY_LOG)
+		rx_pr("cdr retry times:%d!!!\n", i);
+	if (i == rx_info.aml_phy.cdr_retry_max &&
+		rx_info.aml_phy.cdr_fr_en_auto) {
+		if ((cdr0_int == 0 && cdr1_int == 0) ||
+			(cdr0_int == 0 && cdr2_int == 0) ||
+			(cdr1_int == 0 && cdr2_int == 0)) {
+			hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, _BIT(6), 0);
+			if (log_level & PHY_LOG)
+				rx_pr("cdr_fr_en force 0!!!\n");
+		}
+	}
+}
+
+void aml_enhance_ibias_txhd2(void)
+{
+	u32 wst_ch;
+	u32 best_ch;
+	u32 i;
+	u32 eye_height[20];
+	u32 tap0, tap1, tap2;
+	u32 tap0_avr;
+	u32 data32;
+
+	wst_ch = aml_eq_eye_monitor_txhd2(0);
+	for (i = 0; i < 20; i++)
+		eye_height[i] = eq_eye_height_txhd2(wst_ch);
+	quick_sort2_txhd2(eye_height, 0, 19);
+	if (eye_height[0] < rx_info.aml_phy.eye_height_min)
+		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC1, MSK(2, 2), 0x3);
+	best_ch = aml_eq_eye_monitor_txhd2(1);
+	hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_MISC1, MSK(2, 0), best_ch);
+	hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_EHM_DBG_SEL, 0x0);
+	hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_EQ, TXHD2_STATUS_MUX_SEL, 0x3);
+	hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_DFE_OFST_DBG_SEL, 0x0);
+	usleep_range(100, 110);
+	data32 = hdmirx_rd_amlphy(TXHD2_HDMIRX20PHY_DCHD_STAT);
+	tap0 = data32 & 0xff;
+	tap1 = (data32 >> 8) & 0xff;
+	tap2 = (data32 >> 16) & 0xff;
+	tap0_avr = (tap0 + tap1 + tap2) / 3;
+	if (tap0_avr >= 55) {
+		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_AFE, _BIT(16), 0x0);
+		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_AFE, _BIT(2), 0x0);
+		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_AFE, _BIT(6), 0x0);
+		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHA_AFE, _BIT(10), 0x0);
+	}
+}
 void aml_eq_cfg_txhd2(void)
 {
 	u8 port = rx_info.main_port;
 	u32 idx = rx[port].phy.phy_bw;
-	u32 cdr0_int, cdr1_int, cdr2_int;
-	u32 data32;
-	int i = 0;
 
 	/* dont need to run eq if no sqo_clk or pll not lock */
 	if (!aml_phy_pll_lock(port) || !is_clk_stable(port))
@@ -1199,6 +1282,8 @@ void aml_eq_cfg_txhd2(void)
 		if (log_level & EQ_LOG)
 			rx_pr("eq1 & tap0 err, tune eq setting\n");
 	}
+	if (rx[port].phy.phy_bw >= PHY_BW_5)
+		aml_enhance_ibias_txhd2();
 	/*enable HYPER_GAIN calibration for 6G to fix 2.0 cts HF2-1 issue*/
 	if (rx[port].phy.phy_bw >= PHY_BW_2 &&
 		rx_info.aml_phy.agc_enable)
@@ -1221,36 +1306,7 @@ void aml_eq_cfg_txhd2(void)
 	usleep_range(200, 210);
 	/*tmds valid det*/
 	hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_CDR_LKDET_EN, 1);
-	if (log_level & PHY_LOG)
-		dump_cdr_info_txhd2();
-	for (i = 0; i < rx_info.aml_phy.cdr_retry_max &&
-		rx_info.aml_phy.cdr_retry_en; i++) {
-		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_EHM_DBG_SEL, 0x0);
-		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_EQ, TXHD2_STATUS_MUX_SEL, 0x22);
-		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_MUX_CDR_DBG_SEL, 0x0);
-		hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, TXHD2_MUX_CDR_DBG_SEL, 0x1);
-		usleep_range(10, 20);
-		data32 = hdmirx_rd_amlphy(TXHD2_HDMIRX20PHY_DCHD_STAT);
-		cdr0_int = data32 & 0x7f;
-		cdr1_int = (data32 >> 8) & 0x7f;
-		cdr2_int = (data32 >> 16) & 0x7f;
-		if (cdr0_int || cdr1_int || cdr2_int)
-			cdr_retry_txhd2();
-		else
-			break;
-	}
-	if (log_level & PHY_LOG)
-		rx_pr("cdr retry times:%d!!!\n", i);
-	if (i == rx_info.aml_phy.cdr_retry_max &&
-		rx_info.aml_phy.cdr_fr_en_auto) {
-		if ((cdr0_int == 0 && cdr1_int == 0) ||
-			(cdr0_int == 0 && cdr2_int == 0) ||
-			(cdr1_int == 0 && cdr2_int == 0)) {
-			hdmirx_wr_bits_amlphy(TXHD2_HDMIRX20PHY_DCHD_CDR, _BIT(6), 0);
-			if (log_level & PHY_LOG)
-				rx_pr("cdr_fr_en force 0!!!\n");
-		}
-	}
+	cdr_retry_flow_txhd2();
 	if (rx[port].phy.phy_bw >= PHY_BW_5 &&
 		rx_info.aml_phy.enhance_dfe_en_old)
 		aml_enhance_dfe_old_txhd2();

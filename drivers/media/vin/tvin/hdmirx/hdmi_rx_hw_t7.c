@@ -36,6 +36,7 @@
 u32 rterm_trim_flag_t7;
 /* FT trim value 4 bits */
 u32 rterm_trim_val_t7;
+int hdcp_22_en = 1;
 
 /* for T7 */
 static const u32 phy_misci_t7[][4] = {
@@ -2161,7 +2162,10 @@ void hdcp_init_t7(u8 port)
 	//======================================
 	//hdmirx_wr_cor(RX_HPD_C_CTRL_AON_IVCRX, 0x1, port);//HPD
 	//todo: enable hdcp22 according hdcp burning
-	hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x01, port);//ri_hdcp2x_en
+	if ((is_rx_hdcp22key_loaded_t7() && is_rx_hdcp22key_crc0_pass()) || hdcp_22_en)
+		hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x1, port);//ri_hdcp2x_en
+	else
+		hdmirx_wr_cor(RX_HDCP2x_CTRL_PWD_IVCRX, 0x0, port);//ri_hdcp2x_en
 	//hdmirx_wr_cor(RX_INTR13_MASK_PWD_IVCRX, 0x02, port);// irq
 	hdmirx_wr_cor(PWD_SW_CLMP_AUE_OIF_PWD_IVCRX, 0x0, port);
 

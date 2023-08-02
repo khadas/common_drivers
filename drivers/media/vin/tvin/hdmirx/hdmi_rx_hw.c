@@ -6439,7 +6439,7 @@ void aml_eq_eye_monitor(u8 port)
 	else if (rx_info.phy_ver == PHY_VER_T3X)
 		aml_eq_eye_monitor_t3x(port);
 	else if (rx_info.phy_ver == PHY_VER_TXHD2)
-		aml_eq_eye_monitor_txhd2();
+		aml_eq_eye_monitor_txhd2(0);
 }
 
 void rx_emp_to_ddr_init(u8 port)

@@ -291,6 +291,7 @@ void hdmirx_phy_var_init(void)
 		rx_info.aml_phy.eq_en = 1;
 		rx_info.aml_phy.eye_height = 5;
 		rx_info.aml_phy.hyper_gain_en = 0;
+		rx_info.aml_phy.eye_height_min = 8;
 		// for t3x 2.1 phy
 		if (rx_info.phy_ver == PHY_VER_T3X && !rx_info.aml_phy.phy_debug_en) {
 			rx_info.aml_phy_21.phy_bwth = 1;
@@ -3744,6 +3745,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(color_bar_lvl, i++);
 	pr_var(rx_info.aml_phy.enhance_dfe_en_old, i++);
 	pr_var(rx_info.aml_phy.eye_height, i++);
+	pr_var(rx_info.aml_phy.eye_height_min, i++);
 	pr_var(rx_info.aml_phy.enhance_eq, i++);
 	pr_var(rx_info.aml_phy.eq_en, i++);
 	pr_var(rx_info.aml_phy.eq_level, i++);
@@ -3821,6 +3823,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(edid_reset_max, i++);
 	pr_var(vdin_reset_pcs_en, i++);
 	pr_var(rx_5v_wake_up_en, i++);
+	pr_var(hdcp_22_en, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4148,6 +4151,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy.eye_height),
 	    &rx_info.aml_phy.eye_height, value))
 		return pr_var(rx_info.aml_phy.eye_height, index);
+	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy.eye_height_min),
+	    &rx_info.aml_phy.eye_height_min, value))
+		return pr_var(rx_info.aml_phy.eye_height_min, index);
 	if (set_pr_var(tmpbuf, var_to_str(rx_info.aml_phy.enhance_eq),
 	    &rx_info.aml_phy.enhance_eq, value))
 		return pr_var(rx_info.aml_phy.enhance_eq, index);
@@ -4361,6 +4367,9 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(rx_5v_wake_up_en),
 		&rx_5v_wake_up_en, value))
 		return pr_var(rx_5v_wake_up_en, index);
+	if (set_pr_var(tmpbuf, var_to_str(hdcp_22_en),
+		&hdcp_22_en, value))
+		return pr_var(hdcp_22_en, index);
 	return 0;
 }
 

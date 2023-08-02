@@ -76,7 +76,7 @@ extern u32 misc1_value;
 /*--------------------------function declare------------------*/
 /* T5m */
 void aml_phy_init_txhd2(void);
-u32 aml_eq_eye_monitor_txhd2(void);
+u32 aml_eq_eye_monitor_txhd2(int ch_monitor);
 void dump_reg_phy_txhd2(void);
 void dump_aml_phy_sts_txhd2(void);
 void aml_phy_short_bist_txhd2(void);

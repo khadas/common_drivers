@@ -91,5 +91,6 @@ void rx_sw_reset_t7(int level, u8 port);
 void aml_phy_get_trim_val_t7(void);
 
 /*function declare end*/
+extern int hdcp_22_en;
 
 #endif /*_HDMI_RX_T7_H*/

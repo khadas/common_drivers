@@ -1402,7 +1402,9 @@ void tsync_pcr_avevent_locked(enum avevent_e event, u32 param)
 					pr_info("used sys=0x%x, param=0x%x\n",
 						systime, param);
 				}
-				if (systime + 900000 < param)
+				if (systime + 900000 < param ||
+					(abs((int)(systime - param)) >
+						AV_DISCONTINUE_THRESHOLD_MIN))
 					tsync_set_pcr_mode(0, param);
 				else
 					timestamp_pcrscr_set(param);
@@ -1413,8 +1415,10 @@ void tsync_pcr_avevent_locked(enum avevent_e event, u32 param)
 					pr_info("sys=%x, param=%x, pcr=%x\n",
 						systime, param, demux_pcr);
 				}
-				if ((demux_pcr + 900000 > param) &&
-				     tsync_demux_pcr_valid)
+				if (((demux_pcr + 900000 > param) &&
+				     tsync_demux_pcr_valid) ||
+				     (abs((int)(demux_pcr - param)) <
+					AV_DISCONTINUE_THRESHOLD_MIN))
 					tsync_set_pcr_mode(1, param);
 				else
 					timestamp_pcrscr_set(param);
@@ -1676,6 +1680,8 @@ static unsigned long tsync_pcr_check(void)
 	last_checkin_min_pts = tsync_pcr_get_min_checkinpts();
 	cur_apts = timestamp_apts_get();
 	cur_vpts = timestamp_vpts_get();
+	if (tsync_get_demux_pcrscr_valid())
+		return res;
 
 	tsync_process_discontinue();
 	if (tsync_use_demux_pcr || tsync_demux_pcr_valid)

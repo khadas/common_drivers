@@ -2082,9 +2082,10 @@ static inline bool vpts_expire(struct vframe_s *cur_vf,
 		 * is not 0 and have large diff with systime, need get into
 		 * discontinue process and shouldn't send out this frame.
 		 */
-		if (((int)(systime - pts) >= 0) ||
+		if ((((int)(systime - pts) >= 0) ||
 		    (next_vf->pts > 0 &&
-		    ((int)(systime + vsync_pts_align - pts) >= 0))) {
+		    ((int)(systime + vsync_pts_align - pts) >= 0))) &&
+		    tsync_get_mode() != TSYNC_MODE_PCRMASTER) {
 			if (next_vf->pts != 0)
 				tsync_avevent_locked(VIDEO_TSTAMP_DISCONTINUITY,
 						     next_vf->pts);

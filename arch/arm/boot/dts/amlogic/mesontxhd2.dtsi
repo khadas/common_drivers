@@ -518,10 +518,6 @@
 		};
 		opp08 {
 			opp-hz = /bits/ 64 <1512000000>;
-			opp-microvolt = <1060000>;
-		};
-		opp09 {
-			opp-hz = /bits/ 64 <1608000000>;
 			opp-microvolt = <1120000>;
 		};
 	};

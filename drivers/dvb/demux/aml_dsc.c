@@ -254,10 +254,7 @@ static int _dsc_chan_alloc(struct aml_dsc *dsc,
 	memset(ch, 0, sizeof(struct dsc_channel));
 	ch->dsc = dsc;
 
-	if (dsc->source == INPUT_DEMOD)
-		ch->sid = dsc->demod_sid;
-	else
-		ch->sid = dsc->local_sid;
+	ch->sid = dsc->sid;
 
 	if (loop && ch->sid >= 32)
 		dprint("warn: double descramble sid should small than 32\n");
@@ -273,6 +270,7 @@ static int _dsc_chan_alloc(struct aml_dsc *dsc,
 	index = _malloc_dsc_table_index(dsc_type);
 	if (index == -1) {
 		dprint("%s _malloc_dsc_table_index fail\n", __func__);
+		vfree(ch);
 		return -1;
 	}
 	ch->state = DSC_STATE_READY;
@@ -819,24 +817,13 @@ void dsc_release(struct aml_dsc *dsc)
 	}
 }
 
-int dsc_set_source(int id, int source)
-{
-	struct aml_dvb *advb = aml_get_dvb_device();
-
-	advb->dsc[id].source = source;
-	return 0;
-}
-
-int dsc_set_sid(int id, int source, int sid)
+int dsc_set_sid(int id, int sid)
 {
 	struct aml_dvb *advb = aml_get_dvb_device();
 	struct aml_dsc *dsc;
 	struct dsc_channel *chans;
 
-	if (source == INPUT_DEMOD)
-		advb->dsc[id].demod_sid = sid;
-	else
-		advb->dsc[id].local_sid = sid;
+	advb->dsc[id].sid = sid;
 
 	dsc = &advb->dsc[id];
 	if (dsc->dev) {
@@ -924,14 +911,7 @@ int dsc_dump_info(char *buf)
 		if (mutex_lock_interruptible(&dsc->mutex))
 			return -ERESTARTSYS;
 
-		r = sprintf(buf, "dsc%d source:%s ", i,
-			    dsc->source == INPUT_DEMOD ? "input_demod" :
-			    (dsc->source == INPUT_LOCAL ?
-			     "input_local" : "input_local_sec"));
-		buf += r;
-		total += r;
-		r = sprintf(buf, "demod_sid:0x%0x local_sid:0x%0x\n",
-			    dsc->demod_sid, dsc->local_sid);
+		r = sprintf(buf, "dsc%d sid:0x%0x\n", dsc->id, dsc->sid);
 		buf += r;
 		total += r;
 

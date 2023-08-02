@@ -142,13 +142,43 @@ int SC2_bufferid_read(struct chan_id *pchan, char **pread, unsigned int len,
  * write to channel
  * \param pchan:struct chan_id handle
  * \param buf: data addr
+ * \param buf_phys: data phys addr
  * \param  count: write size
  * \param  isphybuf: isphybuf
+ * \param  pack_len: 188 or 192
  * \retval -1:fail
  * \retval written size
  */
-int SC2_bufferid_write(struct chan_id *pchan, const char __user *buf,
-		       unsigned int count, int isphybuf, int dmx_id);
+int SC2_bufferid_write(struct chan_id *pchan, const char *buf, char *buf_phys,
+		       unsigned int count, int isphybuf, int pack_len);
+
+/**
+ * write to channel
+ * \param pchan:struct chan_id handle
+ * \param buf: data addr
+ * \param buf_phys: data phys addr
+ * \param  count: write size
+ * \param  isphybuf: isphybuf
+ * \param  pack_len: 188 or 192
+ * \retval -1:fail
+ * \retval written size
+ */
+int SC2_bufferid_non_block_write(struct chan_id *pchan, const char *buf, char *buf_phys,
+		       unsigned int count, int isphybuf, int pack_len);
+
+/**
+ * check write done
+ * \param pchan:struct chan_id handle
+ * \retval 1:done, 0:not done
+ */
+int SC2_bufferid_non_block_write_status(struct chan_id *pchan);
+
+/**
+ * free channel
+ * \param pchan:struct chan_id handle
+ * \retval 0:success
+ */
+int SC2_bufferid_non_block_write_free(struct chan_id *pchan);
 
 int SC2_bufferid_write_empty(struct chan_id *pchan, int pid);
 

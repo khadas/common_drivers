@@ -34,3 +34,4 @@ $(MODULE_NAME_DEMUX)-y += sc2_demux/ts_output.o
 $(MODULE_NAME_DEMUX)-y += sc2_demux/ts_input.o
 $(MODULE_NAME_DEMUX)-y += sc2_demux/frontend.o
 $(MODULE_NAME_DEMUX)-y += sc2_demux/dvb_reg.o
+$(MODULE_NAME_DEMUX)-y += sc2_demux/ts_clone.o

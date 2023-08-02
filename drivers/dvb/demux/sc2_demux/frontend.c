@@ -46,6 +46,8 @@ MODULE_PARM_DESC(debug_frontend, "\n\t\t Enable debug frontend information");
 static int debug_frontend;
 module_param(debug_frontend, int, 0644);
 
+static u8 enable_tsinb_clk;
+
 ssize_t ts_setting_show(struct class *class,
 			struct class_attribute *attr, char *buf)
 {
@@ -201,8 +203,10 @@ static void set_dvb_ts(struct platform_device *pdev,
 	}
 
 	/* t5m need set this bit, open ts_inb clock */
-	if (i == 1 && get_cpu_type() >= MESON_CPU_MAJOR_ID_T5M)
+	if (i == 1 && get_cpu_type() >= MESON_CPU_MAJOR_ID_T5M) {
 		demod_config_tsinb_clk(1);
+		enable_tsinb_clk = 1;
+	}
 
 	if (i == 3 && get_cpu_type() == MESON_CPU_MAJOR_ID_T3X)
 		demod_config_tsind_clk(0);
@@ -330,5 +334,16 @@ void frontend_config_ts_sid(void)
 int frontend_remove(void)
 {
 
+	return 0;
+}
+
+int frontend_control_tsin_clk(int state)
+{
+	if (enable_tsinb_clk) {
+		if (state)
+			demod_config_tsinb_clk(1);
+		else
+			demod_config_tsinb_clk(0);
+	}
 	return 0;
 }

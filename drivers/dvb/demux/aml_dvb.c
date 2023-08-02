@@ -837,6 +837,20 @@ int get_dvb_loop_tsn(void)
 	return advb->loop_tsn;
 }
 
+static int aml_dvb_suspend(struct platform_device *dev, pm_message_t state)
+{
+	frontend_control_tsin_clk(0);
+	dprint("dvb suspend\n");
+	return 0;
+}
+
+static int aml_dvb_resume(struct platform_device *dev)
+{
+	frontend_control_tsin_clk(1);
+	dprint("dvb resume\n");
+	return 0;
+}
+
 #ifdef CONFIG_OF
 static const struct of_device_id aml_dvb_dt_match[] = {
 	{
@@ -849,8 +863,8 @@ static const struct of_device_id aml_dvb_dt_match[] = {
 struct platform_driver aml_dvb_driver = {
 	.probe = aml_dvb_probe,
 	.remove = aml_dvb_remove,
-	.suspend = NULL,
-	.resume = NULL,
+	.suspend = aml_dvb_suspend,
+	.resume = aml_dvb_resume,
 	.driver = {
 		   .name = "amlogic-dvb-demux",
 		   .owner = THIS_MODULE,

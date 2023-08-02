@@ -10,6 +10,7 @@
 int frontend_probe(struct platform_device *pdev);
 int frontend_remove(void);
 void frontend_config_ts_sid(void);
+int frontend_control_tsin_clk(int state);
 
 ssize_t ts_setting_show(struct class *class,
 			struct class_attribute *attr, char *buf);

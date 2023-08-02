@@ -923,7 +923,10 @@ void demod_config_tsinb_clk(u8 v)
 
 	data = READ_SYS_REG(TS_INB_CLK_CTRL);
 
-	data |= (0x1 << TS_INB_CLK_MUX1_OFFSET | 0x1 << TS_INB_CLK_MUX0_OFFSET);
+	if (v)
+		data |= (0x1 << TS_INB_CLK_MUX1_OFFSET | 0x1 << TS_INB_CLK_MUX0_OFFSET);
+	else
+		data &= ~((0x1 << TS_INB_CLK_MUX1_OFFSET | 0x1 << TS_INB_CLK_MUX0_OFFSET));
 
 	WRITE_SYS_REG(TS_INB_CLK_CTRL, data);
 }

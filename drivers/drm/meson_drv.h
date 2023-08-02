@@ -51,6 +51,12 @@ enum vpu_enc_type {
 	ENCODER_MAX
 };
 
+enum atomic_mode_type {
+	BLOCK_MODE = 0,
+	NONBLOCK_MODE,
+	ASYNC_MODE
+};
+
 struct meson_of_conf {
 	/*for encoder: 0:hdmi 1:lcd 2:cvbs*/
 	u32 crtc_masks[ENCODER_MAX];

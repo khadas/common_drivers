@@ -1857,6 +1857,8 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&spicc1_pins &spicc1_cs_pins>;
 	//cs-gpios = <&gpio GPIOH_22 GPIO_ACTIVE_HIGH>;
+	cs2clk-us = <2>;
+	clk2cs-us = <12>;
 };
 
 &spicc2 {

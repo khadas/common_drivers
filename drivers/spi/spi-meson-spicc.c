@@ -1002,9 +1002,14 @@ static int meson_spicc_setup(struct spi_device *spi)
 {
 #ifdef CONFIG_AMLOGIC_MODIFY
 	struct meson_spicc_device *spicc = spi_controller_get_devdata(spi->controller);
-#endif
-	int ret = 0;
 	struct  spicc_controller_data *cdata;
+	int ret;
+
+	if (gpio_is_valid(spi->cs_gpio)) {
+		ret = gpio_direction_output(spi->cs_gpio, !(spi->mode & SPI_CS_HIGH));
+		if (ret)
+			return ret;
+	}
 
 	cdata = (struct spicc_controller_data *)spi->controller_data;
 	if (cdata) {
@@ -1014,43 +1019,19 @@ static int meson_spicc_setup(struct spi_device *spi)
 		cdata->dirspi_sync = dirspi_sync;
 	}
 
-	if (!spi->controller_state)
-		spi->controller_state = spi_controller_get_devdata(spi->controller);
-	else if (gpio_is_valid(spi->cs_gpio))
-		goto out_gpio;
-	else if (spi->cs_gpio == -ENOENT)
-		return 0;
-
-	if (gpio_is_valid(spi->cs_gpio)) {
-		ret = gpio_request(spi->cs_gpio, dev_name(&spi->dev));
-		if (ret) {
-			dev_err(&spi->dev, "failed to request cs gpio\n");
-			return ret;
-		}
-#ifndef CONFIG_AMLOGIC_MODIFY
-	}
-#else
-	} else {
-		dev_err(&spi->dev, "cs gpio invalid\n");
-		return 0;
-	}
-#endif
-
-out_gpio:
-	ret = gpio_direction_output(spi->cs_gpio,
-			!(spi->mode & SPI_CS_HIGH));
-#ifdef CONFIG_AMLOGIC_MODIFY
+	meson_spicc_hw_prepare(spicc, spi->mode);
+	meson_spicc_set_width(spicc, spi->bits_per_word);
 	meson_spicc_set_speed(spicc, spi->max_speed_hz);
 #endif
 
-	return ret;
+	if (!spi->controller_state)
+		spi->controller_state = spi_controller_get_devdata(spi->controller);
+
+	return 0;
 }
 
 static void meson_spicc_cleanup(struct spi_device *spi)
 {
-	if (gpio_is_valid(spi->cs_gpio))
-		gpio_free(spi->cs_gpio);
-
 	spi->controller_state = NULL;
 }
 
@@ -1262,7 +1243,10 @@ static ssize_t test_store(struct device *dev, struct device_attribute *attr,
 	t.rx_buf = (void *)rx_buf;
 	t.len = num;
 	spi_message_add_tail(&t, &m);
-	ret = spi_sync(m.spi, &m);
+	if (mode & (1 << 17))
+		ret = dirspi_sync(m.spi, tx_buf, rx_buf, num);
+	else
+		ret = spi_sync(m.spi, &m);
 	if (!ret && (mode & (SPI_LOOP | (1 << 16)))) {
 		ret = 0;
 		for (i = 0; i < num; i++) {
@@ -1609,7 +1593,6 @@ dev_test:
 				     SPI_BPW_MASK(8);
 	ctlr->flags = (SPI_CONTROLLER_MUST_RX | SPI_CONTROLLER_MUST_TX);
 #endif
-	ctlr->min_speed_hz = rate >> 9;
 	ctlr->flags = (SPI_CONTROLLER_MUST_RX | SPI_CONTROLLER_MUST_TX);
 	ctlr->setup = meson_spicc_setup;
 	ctlr->cleanup = meson_spicc_cleanup;

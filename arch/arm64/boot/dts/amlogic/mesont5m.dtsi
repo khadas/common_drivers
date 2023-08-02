@@ -3444,6 +3444,7 @@
 				 "spi1_clk_h";
 			function = "spi1";
 			drive-strength-microamp = <2000>;
+			bias-pull-up;
 		};
 	};
 
@@ -3452,6 +3453,7 @@
 			groups = "spi1_ss0_h";
 			function = "spi1";
 			drive-strength-microamp = <2000>;
+			bias-pull-up;
 		};
 	};
 

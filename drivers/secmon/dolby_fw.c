@@ -31,8 +31,8 @@ static struct class *class_dolby_fw;
 static struct device *dev_dolby_fw;
 static struct device *device;
 static int mem_size;
-void __iomem *sharemem_in_base;
-void __iomem *sharemem_out_base;
+static void __iomem *sharemem_in_base;
+static void __iomem *sharemem_out_base;
 
 #define IOCTL_SIGNATURE	0x10
 #define IOCTL_DECRYPT		0x20

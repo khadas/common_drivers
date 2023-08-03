@@ -6047,7 +6047,7 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 	u32 pat, loop;
 	static const u32 vpat[MAX_VSKIP_COUNT + 1] = {
 		0, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf};
-	u32 u, v;
+	u32 y, u, v;
 	u32 type, bit_mode = 0, bit16_mode = 0, canvas_w;
 	bool is_mvc = false;
 	u8 burst_len = 1;
@@ -6149,9 +6149,13 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 
 		u = (vf->bitdepth >> (BITDEPTH_U_SHIFT)) & 0x3;
 		v = (vf->bitdepth >> (BITDEPTH_V_SHIFT)) & 0x3;
+		if (vf->flag & VFRAME_FLAG_COMPOSER_DONE)
+			y = 0;
+		else
+			y = 0x3FF;
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(vd_afbc_reg->afbc_dec_def_color,
-			0x3FF00000 | /*Y,bit20+*/
+			y << 20 | /*Y,bit20+*/
 			0x80 << (u + 10) |
 			0x80 << v);
 		/* chroma formatter */
@@ -6594,7 +6598,7 @@ static void vd1_set_slice_dcu_s5(struct video_layer_s *layer,
 	u32 pat, loop;
 	static const u32 vpat[MAX_VSKIP_COUNT + 1] = {
 		0, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf};
-	u32 u, v;
+	u32 y, u, v;
 	u32 type, bit_mode = 0, bit16_mode = 0, canvas_w;
 	u8 burst_len = 1;
 	struct vd_mif_reg_s *vd_mif_reg = NULL;
@@ -6707,9 +6711,13 @@ static void vd1_set_slice_dcu_s5(struct video_layer_s *layer,
 
 		u = (vf->bitdepth >> (BITDEPTH_U_SHIFT)) & 0x3;
 		v = (vf->bitdepth >> (BITDEPTH_V_SHIFT)) & 0x3;
+		if (vf->flag & VFRAME_FLAG_COMPOSER_DONE)
+			y = 0;
+		else
+			y = 0x3FF;
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(vd_afbc_reg->afbc_dec_def_color,
-			0x3FF00000 | /*Y,bit20+*/
+			y << 20 | /*Y,bit20+*/
 			0x80 << (u + 10) |
 			0x80 << v);
 		/* chroma formatter */
@@ -7068,7 +7076,7 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 	u32 pat, loop;
 	static const u32 vpat[MAX_VSKIP_COUNT + 1] = {
 		0, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf};
-	u32 u, v;
+	u32 y, u, v;
 	u32 type, bit_mode = 0, bit16_mode = 0, canvas_w;
 	bool is_mvc = false;
 	u8 burst_len = 1;
@@ -7162,9 +7170,13 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 
 		u = (vf->bitdepth >> (BITDEPTH_U_SHIFT)) & 0x3;
 		v = (vf->bitdepth >> (BITDEPTH_V_SHIFT)) & 0x3;
+		if (vf->flag & VFRAME_FLAG_COMPOSER_DONE)
+			y = 0;
+		else
+			y = 0x3FF;
 		cur_dev->rdma_func[vpp_index].rdma_wr
 			(vd_afbc_reg->afbc_dec_def_color,
-			0x3FF00000 | /*Y,bit20+*/
+			y << 20 | /*Y,bit20+*/
 			0x80 << (u + 10) |
 			0x80 << v);
 

@@ -15077,7 +15077,8 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		if (osd_hw.osd_meson_dev.osd_count == 4)
 			osd_hw.fb_gem[OSD4].canvas_idx = OSD4_CANVAS_INDEX;
 	}
-	if (osd_hw.osd_meson_dev.osd_ver != OSD_SIMPLE)
+	if (osd_hw.osd_meson_dev.osd_ver != OSD_SIMPLE &&
+		osd_hw.osd_meson_dev.cpu_id != __MESON_CPU_MAJOR_ID_S1A)
 		osd_extra_canvas_alloc();
 	osd_hw.antiflicker_mode = 0;
 	osd_hw.out_fence_fd[VIU1] = -1;

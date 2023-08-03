@@ -61,6 +61,7 @@ struct canvas_config_s {
 #define AMVDEC_CANVAS_MAX1        0xbf
 #define AMVDEC_CANVAS_MAX2        0x1a
 #define AMVDEC_CANVAS_START_INDEX 0x78
+#define AMVDEC_CANVAS_MAX_S1A     0x39
 
 void canvas_config_config(u32 index, struct canvas_config_s *cfg);
 void canvas_config(u32 index, ulong addr, u32 width, u32 height,

@@ -56,11 +56,11 @@
 /* from mm/ path */
 #include <internal.h>
 
-#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE)
 #include <linux/amlogic/page_trace.h>
 #endif /* CONFIG_AMLOGIC_PAGE_TRACE */
 
-#ifdef CONFIG_AMLOGIC_USER_FAULT
+#if IS_ENABLED(CONFIG_AMLOGIC_USER_FAULT)
 #include <linux/amlogic/user_fault.h>
 #endif
 
@@ -393,7 +393,7 @@ bool cma_page(struct page *page)
 EXPORT_SYMBOL(cma_page);
 #endif
 
-#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE) && IS_MODULE(CONFIG_AMLOGIC_CMA)
 static void update_cma_page_trace(struct page *page, unsigned long cnt)
 {
 	long i;
@@ -439,7 +439,7 @@ void aml_cma_alloc_post_hook(int *dummy, int count, struct page *page,
 		set_user_nice(current, *dummy);
 	cma_debug(0, NULL, "return page:%lx, tick:%16ld, ret:%d\n",
 		  page ? page_to_pfn(page) : 0, (unsigned long)sched_clock() - tick, ret);
-#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE) && IS_MODULE(CONFIG_AMLOGIC_CMA)
 	update_cma_page_trace(page, count);
 #endif /* CONFIG_AMLOGIC_PAGE_TRACE */
 }
@@ -713,7 +713,7 @@ static struct page *get_migrate_page(struct page *page, unsigned long private)
 		new_page = alloc_huge_page_nodemask(h,
 					       page_to_nid(page),
 					       0, gfp_mask);
-	#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+	#if IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE) && IS_MODULE(CONFIG_AMLOGIC_CMA)
 	#ifdef CONFIG_HUGETLB_PAGE
 		replace_page_trace(new_page, page);
 	#endif
@@ -743,7 +743,7 @@ static struct page *get_migrate_page(struct page *page, unsigned long private)
 		aml_prep_huge_page(new_page);
 #endif
 
-#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE) && IS_MODULE(CONFIG_AMLOGIC_CMA)
 	replace_page_trace(new_page, page);
 #endif
 	return new_page;
@@ -1378,7 +1378,7 @@ void aml_cma_free(unsigned long pfn, unsigned int nr_pages, int update)
 	}
 	WARN(count != 0, "%d pages are still in use!\n", count);
 	if (update) {
-	#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+	#if IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE) && IS_MODULE(CONFIG_AMLOGIC_CMA)
 		if (cma_alloc_trace)
 			pr_info("c f p:%lx, c:%d, f:%ps\n",
 				pfn, count, (void *)find_back_trace());
@@ -1423,7 +1423,7 @@ void show_page(struct page *page)
 
 	if (!page)
 		return;
-#ifdef CONFIG_AMLOGIC_PAGE_TRACE
+#if IS_ENABLED(CONFIG_AMLOGIC_PAGE_TRACE) && IS_MODULE(CONFIG_AMLOGIC_CMA)
 	trace = get_page_trace(page);
 #endif
 	if (page->mapping && !((unsigned long)page->mapping & 0x3))

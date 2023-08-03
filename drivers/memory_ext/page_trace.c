@@ -987,6 +987,10 @@ unsigned long find_back_trace(void)
 	return 0;
 }
 
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+EXPORT_SYMBOL(find_back_trace);
+#endif
+
 static struct pglist_data *aml_first_online_pgdat(void)
 {
 	return NODE_DATA(first_online_node);
@@ -1207,6 +1211,10 @@ void set_page_trace(struct page *page, unsigned int order, gfp_t flag, void *fun
 	}
 }
 
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+EXPORT_SYMBOL(set_page_trace);
+#endif
+
 #ifdef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 void reset_page_trace(struct page *page, unsigned int order)
 {
@@ -1260,6 +1268,10 @@ void replace_page_trace(struct page *new, struct page *old)
 	new_trace  = find_page_base(new);
 	*new_trace = *old_trace;
 }
+
+#if IS_MODULE(CONFIG_AMLOGIC_PAGE_TRACE)
+EXPORT_SYMBOL(replace_page_trace);
+#endif
 
 #ifndef CONFIG_AMLOGIC_PAGE_TRACE_INLINE
 /*

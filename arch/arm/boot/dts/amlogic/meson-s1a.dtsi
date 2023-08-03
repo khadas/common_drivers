@@ -16,6 +16,7 @@
 #include <dt-bindings/pwm/meson.h>
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/meson_ir.h>
+#include <dt-bindings/iio/adc/amlogic-saradc.h>
 #include <dt-bindings/mailbox/amlogic,mbox.h>
 #include "meson-ir-map.dtsi"
 //#include "mesong12a-bifrost.dtsi"
@@ -394,16 +395,14 @@
 	};
 
 	saradc: saradc@fe026000 {
-		compatible = "amlogic,meson-g12a-saradc",
-			   "amlogic,meson-saradc";
+		compatible = "amlogic,meson-txhd2-saradc";
 		status = "disabled";
 		#io-channel-cells = <1>;
-		//clocks = <&xtal>,
-		//    <&clkc CLKID_SAR_ADC>,
-		//    <&clkc CLKID_SARADC_GATE>,
-		//    <&clkc CLKID_SARADC_MUX>;
-		clock-names = "clkin", "core",
-		    "adc_clk", "adc_sel";
+		clocks = <&xtal>,
+			 <&clkc CLKID_SYS_SAR_ADC>,
+			 <&clkc CLKID_SAR_ADC>,
+			 <&clkc CLKID_SAR_ADC_MUX>;
+		clock-names = "clkin", "core", "adc_clk", "adc_sel";
 		interrupts = <GIC_SPI 181 IRQ_TYPE_EDGE_RISING>;
 		reg = <0xfe026000 0x48>;
 	};

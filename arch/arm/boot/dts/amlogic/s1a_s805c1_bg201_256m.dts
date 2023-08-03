@@ -616,30 +616,19 @@
 		status = "disabled";
 	};
 
+	/* for external keypad */
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";
-		status = "disabled";
-		key_name = "standby", "vol+", "vol-";
+		status = "okay";
+		key_name = "power", "vol+", "vol-";
 		key_num = <3>;
-		io-channels = <&saradc 0>;
+		io-channels = <&saradc SARADC_CH0>;
 		io-channel-names = "key-chan-0";
-		key_chan = <0 0 0>;
-		key_code = <116 115 114>;
-		key_val = <20 910 630>; //val=voltage/1800mV*1023
+		key_chan = <SARADC_CH0 SARADC_CH0 SARADC_CH0>;
+		key_code = <KEY_POWER KEY_VOLUMEUP KEY_VOLUMEDOWN>;
+		/* key_val = voltage / 1800mV * 1023 */
+		key_val = <0 512 890>;
 		key_tolerance = <40 40 40>;
-	};
-
-	gpio_keypad{
-		compatible = "amlogic, gpio_keypad";
-		status = "disabled";
-		scan_period = <20>;
-		key_num = <2>;
-		key_name = "bluetooth", "mute";
-		key_code = <600 SW_MUTE_DEVICE>;
-		key_type = <EV_KEY EV_SW>;
-		//key-gpios = <&gpio  GPIOD_6  GPIO_ACTIVE_HIGH
-		//	     &gpio  GPIOD_3  GPIO_ACTIVE_HIGH>;
-		detect_mode = <0>;/*0:polling mode, 1:irq mode*/
 	};
 };
 
@@ -1013,7 +1002,7 @@
 };
 
 &saradc {
-	status = "disabled";
+	status = "okay";
 };
 
 &ethmac {

@@ -403,10 +403,11 @@ void __arm_smccc_smc_glue(unsigned long a0, unsigned long a1,
 			struct arm_smccc_res *res, struct arm_smccc_quirk *quirk)
 {
 	int not_in_idle = current->pid != 0;
+	bool noret_smc = is_noret_smcid(a0);
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG_TEST)
 	if (smc_long_debug) {
-		smc_in_hook(a0, a1, is_noret_smcid(a0));
+		smc_in_hook(a0, a1, noret_smc);
 		local_irq_disable();
 		smc_long_debug = 0;
 		mdelay(30000);
@@ -416,14 +417,14 @@ void __arm_smccc_smc_glue(unsigned long a0, unsigned long a1,
 		return;
 	}
 #endif
-	if (not_in_idle)
+	if (not_in_idle && !noret_smc)
 		preempt_disable_notrace();
 
-	smc_in_hook(a0, a1, is_noret_smcid(a0));
+	smc_in_hook(a0, a1, noret_smc);
 	__arm_smccc_smc(a0, a1, a2, a3, a4, a5, a6, a7, res, quirk);
 	smc_out_hook(a0, a1);
 
-	if (not_in_idle)
+	if (not_in_idle && !noret_smc)
 		preempt_enable_notrace();
 }
 EXPORT_SYMBOL(__arm_smccc_smc_glue);

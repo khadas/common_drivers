@@ -4495,6 +4495,32 @@ void vdin_start_notify_vpp(struct tvin_to_vpp_info_s *tvin_info)
 EXPORT_SYMBOL(vdin_start_notify_vpp);
 #endif
 
+void get_vdx_axis(u32 index, int *buf)
+{
+	struct disp_info_s *layer_info = NULL;
+
+	switch (index) {
+	case 0:
+		layer_info = &glayer_info[0];
+		break;
+	case 1:
+		layer_info = &glayer_info[1];
+		break;
+	case 2:
+		layer_info = &glayer_info[2];
+		break;
+	}
+	if (!layer_info)
+		return;
+	*(buf + 0) = layer_info->layer_left;
+	*(buf + 1) = layer_info->layer_top;
+	*(buf + 2) = layer_info->layer_left + layer_info->layer_width - 1;
+	*(buf + 3) = layer_info->layer_top + layer_info->layer_height - 1;
+	pr_info("index=%d, axis= %d %d %d %d\n", index, *(buf + 0),
+		*(buf + 1), *(buf + 2), *(buf + 3));
+}
+EXPORT_SYMBOL(get_vdx_axis);
+
 u32 get_tvin_delay_start(void)
 {
 	if (debug_flag & DEBUG_FLAG_HDMI_AVSYNC_DEBUG)

@@ -5452,6 +5452,7 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 	const struct vinfo_s *vinfo;
 	int dst_w, dst_h;
 	int angle;
+	int axis[4];
 
 	if (node->qctl_regs[0] == 0)
 		node->qctl_regs[0] = amlvideo2_angle;
@@ -5479,10 +5480,18 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 	    node->porttype == TVIN_PORT_VIU1_WB0_OSD2 ||
 	    node->porttype == TVIN_PORT_VIU2_OSD1 ||
 	    node->porttype == TVIN_PORT_VIU3_OSD1) {
-		ret = vf_notify_receiver_by_name
-			("amvideo",
-			 VFRAME_EVENT_PROVIDER_QUREY_DISPLAY_INFO,
-			 &node->display_info);
+		if (node->porttype == TVIN_PORT_VIU1_WB0_VD1)
+			get_vdx_axis(0, axis);
+		else if (node->porttype == TVIN_PORT_VIU2_VD1)
+			get_vdx_axis(1, axis);
+
+		if (node->porttype == TVIN_PORT_VIU1_WB0_VD1 ||
+			node->porttype == TVIN_PORT_VIU2_VD1) {
+			node->display_info.display_hsc_startp = axis[0];
+			node->display_info.display_vsc_startp = axis[1];
+			node->display_info.display_hsc_endp = axis[2];
+			node->display_info.display_vsc_endp = axis[3];
+		}
 		if (ret < 0) {
 			pr_err("notify amvideo failed.\n");
 			node->mode = AML_SCREEN_MODE_RATIO;
@@ -5517,6 +5526,7 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 	}
 
 	if (amlvideo2_dbg_en) {
+		pr_info("node->porttype = %d\n", node->porttype);
 		pr_info("crop_enable = %d, node->porttype = 0x%x.\n",
 			node->crop_info.capture_crop_enable, node->porttype);
 		pr_info("node->r_type=%d, node->p_type=%d\n",

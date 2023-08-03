@@ -611,5 +611,10 @@
 
 /* vpu Qos */
 #define VPU_RDARB_UGT_L2C1             0x27c2
+/* VPU_WRARB_UGT_L2C1 0x27c3 bit[1:0]vdin urgent, bit[9:8]di urgent */
+#define VPU_WRARB_UGT_L2C1             0x27c3
+/* vpu set 2R1W ,VPU_INTF_CTRL 0x270a bit22 =1 */
+#define VPU_INTF_CTRL                  0x270a
+
 #endif
 

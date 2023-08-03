@@ -123,6 +123,7 @@
 /*  V3.4.002 fix dvbt overflow by new methods when bw 6M GI 1/4 */
 /*  V3.4.003 improve the stability of new dvbc driver scanning */
 /*  V3.4.004 fix dvbc qam config and flow */
+/*  V3.4.005 adjust the sensitivity limit of atbm253 tuner in DTMB mode */
 /*  V3.5.000 s1a bringup */
 /*  V3.5.001 fix rda5815m bandwidth and dvbs iq swap config */
 /*  V3.5.002 s1a dvbc bringup */
@@ -130,6 +131,7 @@
 /*  V3.5.004 bring up new dvbc blind scan feature */
 /*  V3.5.005 s1a add efuse config */
 /*  V3.5.006 fix j83b qam setting when auto qam */
+/*  V3.5.007 improve the accuracy of dvbs cn value */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -146,8 +148,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.006"
-#define DTVDEMOD_VER	"2023/08/25: fix j83b qam setting when auto qam"
+#define AMLDTVDEMOD_VER "V3.5.007"
+#define DTVDEMOD_VER	"2023/08/29: improve the accuracy of dvbs cn value"
 #define AMLDTVDEMOD_T2_FW_VER "V1558.20230628"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

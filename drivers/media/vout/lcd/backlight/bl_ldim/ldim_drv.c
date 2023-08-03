@@ -652,14 +652,18 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 		argp = (void __user *)ldim_buff.ptr;
 		LDIMPR("index =  0x%x, len=  0x%x\n", ldim_buff.index, ldim_buff.len);
+		//ldim_buff.len must > sizeof(fw_pqdata_s)
+		if (ldim_buff.len == 0 || ldim_buff.len > 0x8000) {
+			LDIMERR("ldim buf len = %d is invalid!!\n", ldim_buff.len);
+			return -EFAULT;
+		}
 		buf = vmalloc(ldim_buff.len);
 		if (!buf) {
 			LDIMERR("%s vmalloc buf for receive pq_init.bin failed\n", __func__);
 			vfree(buf);
 			return -EFAULT;
 		}
-		if (copy_from_user((void *)buf, argp,
-				   ldim_buff.len)) {
+		if (copy_from_user((void *)buf, argp, ldim_buff.len)) {
 			LDIMERR("cp pq_init.bin to buf fail\n");
 			vfree(buf);
 			return -EFAULT;
@@ -785,9 +789,8 @@ static long ldim_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 		argp = (void __user *)ldim_buff.ptr;
 		LDIMPR("index =  0x%x, len=  0x%x\n", ldim_buff.index, ldim_buff.len);
-		if (ldim_buff.len == 0) {
-			LDIMERR("profile bin size = %d is invalid!!\n",
-				ldim_buff.len);
+		if (ldim_buff.len == 0 || ldim_buff.len > 0x24c80) {
+			LDIMERR("profile bin size = %d is invalid!!\n", ldim_buff.len);
 			return -EFAULT;
 		}
 		buf = vmalloc(ldim_buff.len);

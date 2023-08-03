@@ -113,8 +113,7 @@
 			 * 10x4736064=45.2M(0x2e) support 12bit
 			 * 10x4074560=40M(0x28) support 10bit
 			 */
-			//size = <0x0 0x0B000000>;
-			//size = <0x0 0x0>;
+			//size = <0x3000000>;
 			alignment = <0x400000>;
 		};
 
@@ -128,7 +127,7 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			/* ion_codec_mm max can alloc size 80M*/
-			size = <0x4000000>;
+			size = <0x5000000>;
 			alignment = <0x400000>;
 			linux,contiguous-region;
 		};
@@ -320,7 +319,7 @@
 
 	multi-di {
 		compatible = "amlogic, dim-s4";
-		status = "disabled";
+		status = "okay";
 		/* 0:use reserved; 1:use cma; 2:use cma as reserved */
 		flag_cma = <4>;	//<1>;
 		//memory-region = <&di_reserved>;
@@ -328,8 +327,8 @@
 		interrupts = <0 203 1
 				0 202 1>;
 		interrupt-names = "pre_irq", "post_irq";
-		//clocks = <&clkc CLKID_VPU_CLKB>,
-		//	<&clkc CLKID_VPU>;
+		clocks = <&clkc CLKID_VPU_CLKB>,
+			<&clkc CLKID_VPU>;
 		clock-names = "vpu_clkb",
 			"vpu_mux";
 		clock-range = <334 667>;
@@ -341,7 +340,7 @@
 		nr10bit-support = <1>;
 		nrds-enable = <1>;
 		pps-enable = <1>;
-		post_nub = <5>;
+		post_nub = <4>;
 	};
 
 	aml_dtv_demod {

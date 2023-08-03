@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+#
+# Deinterlace driver configuration
+#
+
+menu "DI_MINI driver"
+
+config AMLOGIC_MEDIA_DEINTERLACE
+	tristate "DI_MINI driver"
+	default n
+	help
+		Select to enable AMLOGIC DEINTERLACE driver
+		process interlace source need three continueed fields,
+		wave progressive source with two interlace fields from
+		one progressive fields
+endmenu

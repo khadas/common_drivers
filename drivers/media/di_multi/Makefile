@@ -11,6 +11,7 @@
 ccflags-y += -I.
 
 #CFLAGS_dim.o := -I$(src)
+ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_DEINTERLACE) += di_multi/deinterlace.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_DEINTERLACE) += di_multi/dd_s4dw.o
 $(MEDIA_MODULE_NAME)-$(CONFIG_AMLOGIC_MEDIA_DEINTERLACE) += di_multi/deinterlace_hw.o
@@ -47,3 +48,4 @@ ccflags-y += -I$(src)/di_multi/
 ccflags-y += -I$(src)/di_multi/sc2
 ccflags-y += -I$(COMMON_DRIVERS_DIR)/drivers/media/di_local/
 ccflags-y += -DCOMMON_DRIVERS_DIR=$(COMMON_DRIVERS_DIR)
+endif

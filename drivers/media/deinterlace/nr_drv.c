@@ -43,16 +43,16 @@ static bool dnr_dm_en;
 module_param(dnr_dm_en, bool, 0644);
 MODULE_PARM_DESC(dnr_dm_en, "/n dnr dm enable debug /n");
 
-static bool dnr_en = true;
+static bool dnr_en;
 module_param_named(dnr_en, dnr_en, bool, 0644);
 
 static unsigned int nr2_en = 0x1;
 module_param_named(nr2_en, nr2_en, uint, 0644);
 
-static bool dynamic_dm_chk = true;
+static bool dynamic_dm_chk;
 module_param_named(dynamic_dm_chk, dynamic_dm_chk, bool, 0644);
 
-static unsigned int autonr_en = 0x1;
+static unsigned int autonr_en;
 module_param_named(autonr_en, autonr_en, uint, 0644);
 
 static bool nr4ne_en;
@@ -455,7 +455,7 @@ static void linebuffer_config_op(unsigned short width,
 		return;
 	}
 
-	if (is_meson_txhd_cpu()) {
+	if (is_meson_txhd_cpu() || IS_IC(dil_get_cpuver_flag(), S4)) {
 		line5_444 = 640;
 		line5_422 = 960;
 		line3_444 = 1280;

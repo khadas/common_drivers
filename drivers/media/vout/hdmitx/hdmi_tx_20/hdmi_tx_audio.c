@@ -39,7 +39,8 @@ static const unsigned char cs_sw_len[] = {
 	0x0,
 	0x2, /*16 bits*/
 	0x3, /*20 bits*/
-	0xb  /*24 bits*/
+	0xb, /*24 bits*/
+	0xf  /*32 bits*/
 };
 
 static void

@@ -1168,7 +1168,7 @@
 };
 
 &drm_amcvbsout {
-	status = "disabled";
+	status = "okay";
 };
 
 &vpu {

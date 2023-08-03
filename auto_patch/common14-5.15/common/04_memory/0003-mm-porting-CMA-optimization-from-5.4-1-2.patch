@@ -1009,16 +1009,6 @@ index 5968e19e9441..9a343d5e78cc 100644
  	return isolated > inactive;
  }
  
-@@ -7343,6 +7361,9 @@ int kswapd(void *p)
- 
- 	WRITE_ONCE(pgdat->kswapd_order, 0);
- 	WRITE_ONCE(pgdat->kswapd_highest_zoneidx, MAX_NR_ZONES);
-+#ifdef CONFIG_AMLOGIC_CMA
-+	set_user_nice(current, -5);
-+#endif /* CONFIG_AMLOGIC_CMA */
- 	for ( ; ; ) {
- 		bool ret;
- 
 -- 
 2.25.1
 

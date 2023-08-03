@@ -897,9 +897,7 @@ function modules_install() {
 
 		find ${BAZEL_OUT} -name *.ko | grep "unstripped" | while read module; do
 		        cp ${module} ${OUT_AMLOGIC_DIR}/symbols
-			chmod +w ${OUT_AMLOGIC_DIR}/symbols/$(basename ${module})
 		done
-		chmod -w ${OUT_AMLOGIC_DIR}/symbols/*.ko
 	else
 		cp ${OUT_DIR}/vmlinux ${OUT_AMLOGIC_DIR}/symbols
 		find ${OUT_DIR} -type f -name "*.ko" -exec cp {} ${OUT_AMLOGIC_DIR}/symbols \;

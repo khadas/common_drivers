@@ -321,7 +321,16 @@ static struct v4l2_queryctrl ov5640_qctrl[] = {
 		.step          = 1,
 		.default_value = (1000 << 16) | 1000,
 		.flags         = V4L2_CTRL_FLAG_SLIDER,
-	}
+	}, {
+		.id = V4L2_CID_MIN_BUFFERS_FOR_CAPTURE,
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.name = "Minimum number of cap bufs",
+		.minimum = 2,
+		.maximum = 10,
+		.step = 1,
+		.default_value = 2,
+		.flags         = V4L2_CTRL_FLAG_READ_ONLY,
+	},
 };
 
 struct v4l2_querymenu ov5640_qmenu_autofocus[] = {
@@ -1361,6 +1370,15 @@ static struct aml_camera_i2c_fig_s OV5640_capture_5M_script[] = {
 
 /*mipi lane bps : M*/
 static struct resolution_param  prev_resolution_array[] = {
+	{
+		.frmsize            = {2592, 1944},
+		.active_frmsize     = {2592, 1944},
+		.active_fps         = 15,
+		.lanes              = 2,
+		.bps                = 672,
+		.size_type          = SIZE_2592X1944,
+		.reg_script         = OV5640_capture_5M_script,
+	},
 	{
 		.frmsize            = {1920, 1080},
 		.active_frmsize     = {1920, 1080},
@@ -2525,6 +2543,18 @@ static int vidioc_enum_fmt_vid_cap(struct file *file, void  *priv,
 	return 0;
 }
 
+static inline u32 get_bytesperline(struct ov5640_fmt *fmt, u32 width)
+{
+	switch (fmt->fourcc) {
+	case V4L2_PIX_FMT_YUV420:
+	case V4L2_PIX_FMT_NV12:
+	case V4L2_PIX_FMT_NV21:
+		return width;
+	default:
+		return (width * fmt->depth) >> 3;
+	}
+}
+
 static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
 		struct v4l2_format *f)
 {
@@ -2536,10 +2566,9 @@ static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
 	f->fmt.pix.height       = fh->height;
 	f->fmt.pix.field        = fh->vb_vidq.field;
 	f->fmt.pix.pixelformat  = fh->fmt->fourcc;
-	f->fmt.pix.bytesperline =
-		(f->fmt.pix.width * fh->fmt->depth) >> 3;
+	f->fmt.pix.bytesperline = get_bytesperline(fh->fmt, fh->width);
 	f->fmt.pix.sizeimage =
-		f->fmt.pix.height * f->fmt.pix.bytesperline;
+		(f->fmt.pix.height  * f->fmt.pix.width * fh->fmt->depth) >> 3;
 
 	return 0;
 }
@@ -2589,7 +2618,6 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 		field = V4L2_FIELD_INTERLACED;
 	} else if (field != V4L2_FIELD_INTERLACED) {
 		dprintk(dev, 1, "Field type invalid.\n");
-		return -EINVAL;
 	}
 
 	maxw  = norm_maxw();
@@ -2598,10 +2626,9 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 	f->fmt.pix.field = field;
 	v4l_bound_align_image(&f->fmt.pix.width, 48, maxw, 2,
 		&f->fmt.pix.height, 32, maxh, 0, 0);
-	f->fmt.pix.bytesperline =
-		(f->fmt.pix.width * fmt->depth) >> 3;
+	f->fmt.pix.bytesperline = get_bytesperline(fmt, f->fmt.pix.width);
 	f->fmt.pix.sizeimage =
-		f->fmt.pix.height * f->fmt.pix.bytesperline;
+		(f->fmt.pix.height  * f->fmt.pix.width * fmt->depth) >> 3;
 
 	return 0;
 }
@@ -2648,7 +2675,7 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 		fh->height, fh->width);
 
 	if (f->fmt.pix.pixelformat == V4L2_PIX_FMT_RGB24) {
-		res_param = get_resolution_param(dev, 1, fh->width, fh->height);
+		res_param = get_resolution_param(dev, 0, fh->width, fh->height);
 		if (!res_param) {
 			pr_err("error, resolution param not get\n");
 			goto out;
@@ -2851,22 +2878,16 @@ static int vidioc_enum_framesizes(struct file *file, void *fh,
 	if (fmt->fourcc == V4L2_PIX_FMT_NV21 ||
 			fmt->fourcc == V4L2_PIX_FMT_NV12 ||
 			fmt->fourcc == V4L2_PIX_FMT_YUV420 ||
-			fmt->fourcc == V4L2_PIX_FMT_YVU420) {
+			fmt->fourcc == V4L2_PIX_FMT_YVU420 ||
+			fmt->fourcc == V4L2_PIX_FMT_RGB24) {
 		if (fsize->index >= ARRAY_SIZE(prev_resolution_array))
 			return -EINVAL;
 		frmsize = &prev_resolution_array[fsize->index].frmsize;
 		fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
 		fsize->discrete.width = frmsize->width;
 		fsize->discrete.height = frmsize->height;
-	} else if (fmt->fourcc == V4L2_PIX_FMT_RGB24) {
-		if (fsize->index >= ARRAY_SIZE(capture_resolution_array))
-			return -EINVAL;
-		frmsize =
-		&capture_resolution_array[fsize->index].frmsize;
-		fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
-		fsize->discrete.width = frmsize->width;
-		fsize->discrete.height = frmsize->height;
 	}
+
 	return ret;
 }
 
@@ -2878,9 +2899,14 @@ static int vidioc_s_std(struct file *file, void *priv, v4l2_std_id i)
 static int vidioc_enum_input(struct file *file, void *priv,
 		struct v4l2_input *inp)
 {
+	if (inp->index > 1)
+		return -EINVAL;
 	inp->type = V4L2_INPUT_TYPE_CAMERA;
 	inp->std = V4L2_STD_525_60;
-	sprintf(inp->name, "Camera %u", inp->index);
+	if (inp->index)
+		snprintf(inp->name, sizeof(inp->name), "Camera %u", inp->index);
+	else
+		strlcpy(inp->name, "camera", sizeof(inp->name));
 
 	return 0;
 }
@@ -2993,6 +3019,9 @@ static int vidioc_g_ctrl(struct file *file, void *priv,
 					ctrl->value =
 						V4L2_AUTO_FOCUS_STATUS_FAILED;
 				}
+				return 0;
+			} else if (ctrl->id == V4L2_CID_MIN_BUFFERS_FOR_CAPTURE) {
+				ctrl->value = ov5640_qctrl[i].default_value;
 				return 0;
 			}
 			ctrl->value = dev->qctl_regs[i];

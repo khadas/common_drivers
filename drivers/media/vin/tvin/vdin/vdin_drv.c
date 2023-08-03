@@ -3073,7 +3073,8 @@ irqreturn_t vdin_isr(int irq, void *dev_id)
 
 	if (devp->frame_drop_num ||
 	    (devp->pause_num > 0 && devp->irq_cnt >= devp->pause_num)) {
-		devp->frame_drop_num--;
+		if (devp->frame_drop_num)
+			devp->frame_drop_num--;
 		devp->vdin_irq_flag = VDIN_IRQ_FLG_DROP_FRAME;
 		vdin_drop_frame_info(devp, "drop frame");
 		goto irq_handled;

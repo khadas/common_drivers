@@ -112,7 +112,6 @@ int hdmi21_get_fmt_para(enum hdmi_vic vic, const char *mode, const char *attr,
 u32 hdmi21_get_aud_n_paras(enum hdmi_audio_fs fs,
 				  enum hdmi_color_depth cd,
 				  u32 tmds_clk);
-void check21_detail_fmt(void);
 
 struct size_map {
 	u32 sample_bits;

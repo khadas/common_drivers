@@ -16,8 +16,6 @@ struct hdmi_format_para {
 	unsigned char *name;
 	unsigned char *sname;
 
-	char ext_name[32];
-
 	/*valid info*/
 	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
 	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */

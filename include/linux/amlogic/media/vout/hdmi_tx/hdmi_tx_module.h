@@ -479,22 +479,16 @@ struct hdmitx_dev {
 /***********************************************************************
  *    hdmitx protocol level interface
  **********************************************************************/
-enum hdmi_vic hdmitx_edid_vic_tab_map_vic(const char *disp_mode);
 int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device);
 int check_dvi_hdmi_edid_valid(unsigned char *buf);
 enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdmitx_device,
 				  const char *disp_mode,
 				  char force_flag);
-int hdmitx_edid_VIC_support(enum hdmi_vic vic);
-
 bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 				  struct hdmi_format_para *para);
-const char *hdmitx_edid_vic_tab_map_string(enum hdmi_vic vic);
-const char *hdmitx_edid_vic_to_string(enum hdmi_vic vic);
 void hdmitx_edid_clear(struct hdmitx_dev *hdmitx_device);
 void hdmitx_edid_ram_buffer_clear(struct hdmitx_dev *hdmitx_device);
 void hdmitx_edid_buf_compare_print(struct hdmitx_dev *hdmitx_device);
-const char *hdmitx_edid_get_native_VIC(struct hdmitx_dev *hdmitx_device);
 void hdmitx_current_status(enum hdmitx_event_log_bits event);
 
 extern struct hdmitx_audpara hdmiaud_config_data;

@@ -274,7 +274,7 @@ unsigned int hdmi_get_csc_coef(unsigned int input_format,
 			       const unsigned char **coef_array,
 			       unsigned int *coef_length);
 int hdmi_get_fmt_para(enum hdmi_vic vic,
-		char const *name, char const *attr, struct hdmi_format_para *para);
+		char const *attr, struct hdmi_format_para *para);
 int hdmitx_construct_format_para_from_timing(const struct hdmi_timing *timing,
 	struct hdmi_format_para *para);
 const char *hdmi_get_str_cd(struct hdmi_format_para *para);

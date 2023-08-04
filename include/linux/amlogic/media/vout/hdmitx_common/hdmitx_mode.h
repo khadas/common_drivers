@@ -338,7 +338,7 @@ struct parse_cr {
 
 /**************************APIs to get search hdmi_timing**************************/
 /* always return valid struct hdmi_timing.
- * for invalid vic, return timing with vic=1.
+ * for invalid vic, return NULL.
  */
 const struct hdmi_timing *hdmitx_mode_vic_to_hdmi_timing(enum hdmi_vic vic);
 /* always return valid struct hdmi_timing.

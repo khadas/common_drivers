@@ -2826,26 +2826,6 @@ static bool is_vic_support_y420(enum hdmi_vic vic)
 	return ret;
 }
 
-bool is_current_4k_format(void)
-{
-	int i;
-	struct vinfo_s *info = hdmitx_get_current_vinfo(NULL);
-	static const char * const hdmi4k[] = {
-		"2160p",
-		"smpte",
-		NULL
-	};
-
-	if (!info || !info->name)
-		return false;
-
-	for (i = 0; hdmi4k[i]; i++) {
-		if (strstr(info->name, hdmi4k[i]))
-			return true;
-	}
-	return false;
-}
-
 /**/
 static ssize_t disp_cap_show(struct device *dev,
 			     struct device_attribute *attr,

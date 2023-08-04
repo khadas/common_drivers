@@ -108,7 +108,6 @@ struct rx_cap {
 	u32 native_vic2; /* some Rx has two native mode, normally only one */
 
 	/*hdmi_vic have different define for tx20&tx21,use u32 instead here.*/
-	//enum hdmi_vic vesa_timing[VESA_MAX_TIMING]; /* Max 64 */
 	u32 vesa_timing[VESA_MAX_TIMING]; /* Max 64 */
 
 	/*audio*/

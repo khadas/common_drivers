@@ -31,6 +31,8 @@
 #include "hw/common.h"
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
 
+const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
+
 #define CEA_DATA_BLOCK_COLLECTION_ADDR_1STP 0x04
 #define VIDEO_TAG 0x40
 #define AUDIO_TAG 0x20
@@ -2267,130 +2269,6 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 	return 0;
 }
 
-static struct dispmode_vic dispmode_vic_tab[] = {
-	{"480i60hz_4x3", HDMI_720x480i60_4x3},
-	{"480p60hz_4x3", HDMI_720x480p60_4x3},
-	{"576i50hz_4x3", HDMI_720x576i50_4x3},
-	{"576p50hz_4x3", HDMI_720x576p50_4x3},
-	{"480i60hz", HDMI_720x480i60_16x9},
-	{"480p60hz", HDMI_720x480p60_16x9},
-	{"576i50hz", HDMI_720x576i50_16x9},
-	{"576p50hz", HDMI_720x576p50_16x9},
-	{"720p50hz", HDMI_720p50},
-	{"720p60hz", HDMI_720p60},
-	{"1080i50hz", HDMI_1080i50},
-	{"1080i60hz", HDMI_1080i60},
-	{"1080p50hz", HDMI_1080p50},
-	{"1080p30hz", HDMI_1080p30},
-	{"1080p25hz", HDMI_1080p25},
-	{"1080p24hz", HDMI_1080p24},
-	{"1080p60hz", HDMI_1080p60},
-	{"1080p120hz", HDMI_1080p120},
-	{"2560x1080p50hz", HDMI_2560x1080p50_64x27},
-	{"2560x1080p60hz", HDMI_2560x1080p60_64x27},
-	{"2160p30hz", HDMI_3840x2160p30_16x9},
-	{"2160p25hz", HDMI_3840x2160p25_16x9},
-	{"2160p24hz", HDMI_3840x2160p24_16x9},
-	{"smpte24hz", HDMI_4096x2160p24_256x135},
-	{"smpte25hz", HDMI_4096x2160p25_256x135},
-	{"smpte30hz", HDMI_4096x2160p30_256x135},
-	{"smpte50hz", HDMI_4096x2160p50_256x135},
-	{"smpte60hz", HDMI_4096x2160p60_256x135},
-	{"2160p60hz", HDMI_3840x2160p60_16x9},
-	{"2160p50hz", HDMI_3840x2160p50_16x9},
-	{"640x480p60hz", HDMIV_640x480p60hz},
-	{"800x480p60hz", HDMIV_800x480p60hz},
-	{"800x600p60hz", HDMIV_800x600p60hz},
-	{"852x480p60hz", HDMIV_852x480p60hz},
-	{"854x480p60hz", HDMIV_854x480p60hz},
-	{"1024x600p60hz", HDMIV_1024x600p60hz},
-	{"1024x768p60hz", HDMIV_1024x768p60hz},
-	{"1152x864p75hz", HDMIV_1152x864p75hz},
-	{"1280x600p60hz", HDMIV_1280x600p60hz},
-	{"1280x768p60hz", HDMIV_1280x768p60hz},
-	{"1280x800p60hz", HDMIV_1280x800p60hz},
-	{"1280x960p60hz", HDMIV_1280x960p60hz},
-	{"1280x1024p60hz", HDMIV_1280x1024p60hz},
-	{"1280x1024", HDMIV_1280x1024p60hz}, /* alias of "1280x1024p60hz" */
-	{"1360x768p60hz", HDMIV_1360x768p60hz},
-	{"1366x768p60hz", HDMIV_1366x768p60hz},
-	{"1400x1050p60hz", HDMIV_1400x1050p60hz},
-	{"1440x900p60hz", HDMIV_1440x900p60hz},
-	{"1440x2560p60hz", HDMIV_1440x2560p60hz},
-	{"1600x900p60hz", HDMIV_1600x900p60hz},
-	{"1600x1200p60hz", HDMIV_1600x1200p60hz},
-	{"1680x1050p60hz", HDMIV_1680x1050p60hz},
-	{"1920x1200p60hz", HDMIV_1920x1200p60hz},
-	{"2048x1080p24hz", HDMIV_2048x1080p24hz},
-	{"2160x1200p90hz", HDMIV_2160x1200p90hz},
-	{"2560x1440p60hz", HDMIV_2560x1440p60hz},
-	{"2560x1600p60hz", HDMIV_2560x1600p60hz},
-	{"3440x1440p60hz", HDMIV_3440x1440p60hz},
-	{"2400x1200p90hz", HDMIV_2400x1200p90hz},
-	{"3840x1080p60hz", HDMIV_3840x1080p60hz},
-};
-
-int hdmitx_edid_VIC_support(enum hdmi_vic vic)
-{
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(dispmode_vic_tab); i++) {
-		if (vic == dispmode_vic_tab[i].VIC)
-			return 1;
-	}
-
-	return 0;
-}
-
-enum hdmi_vic hdmitx_edid_vic_tab_map_vic(const char *disp_mode)
-{
-	enum hdmi_vic vic = HDMI_UNKNOWN;
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(dispmode_vic_tab); i++) {
-		if (strncmp(disp_mode, dispmode_vic_tab[i].disp_mode,
-			    strlen(dispmode_vic_tab[i].disp_mode)) == 0) {
-			vic = dispmode_vic_tab[i].VIC;
-			break;
-		}
-	}
-
-	if (vic == HDMI_UNKNOWN)
-		pr_debug(EDID "not find mapped vic\n");
-
-	return vic;
-}
-
-const char *hdmitx_edid_vic_tab_map_string(enum hdmi_vic vic)
-{
-	int i;
-	const char *disp_str = NULL;
-
-	for (i = 0; i < ARRAY_SIZE(dispmode_vic_tab); i++) {
-		if (vic == dispmode_vic_tab[i].VIC) {
-			disp_str = dispmode_vic_tab[i].disp_mode;
-			break;
-		}
-	}
-
-	return disp_str;
-}
-
-const char *hdmitx_edid_vic_to_string(enum hdmi_vic vic)
-{
-	int i;
-	const char *disp_str = NULL;
-
-	for (i = 0; i < ARRAY_SIZE(dispmode_vic_tab); i++) {
-		if (vic == dispmode_vic_tab[i].VIC) {
-			disp_str = dispmode_vic_tab[i].disp_mode;
-			break;
-		}
-	}
-
-	return disp_str;
-}
-
 static bool is_rx_support_y420(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 {
 	int i;
@@ -2685,34 +2563,45 @@ enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdev,
 				  const char *disp_mode,
 				  char force_flag)
 {
+	const struct hdmi_timing *timing;
+	enum hdmi_vic vic = HDMI_0_UNKNOWN;
 	struct rx_cap *prxcap = &hdev->tx_comm.rxcap;
-	int  j;
-	enum hdmi_vic vic = hdmitx_edid_vic_tab_map_vic(disp_mode);
-	enum hdmi_vic *vesa_t = &hdev->tx_comm.rxcap.vesa_timing[0];
+	enum hdmi_vic *vesa_t = &prxcap->vesa_timing[0];
 	enum hdmi_vic vesa_vic;
+	int j;
+
+	timing = hdmitx_mode_match_timing_name(disp_mode);
+	if (!timing || timing->vic == HDMI_0_UNKNOWN)
+		return HDMI_0_UNKNOWN;
+
+	if (hdmitx_hw_validate_mode(&hdev->tx_hw, timing->vic) != 0)
+		return HDMI_0_UNKNOWN;
+
+	vic = timing->vic;
 
 	if (vic >= HDMITX_VESA_OFFSET)
 		vesa_vic = vic;
 	else
-		vesa_vic = HDMI_UNKNOWN;
-	if (vic != HDMI_UNKNOWN) {
+		vesa_vic = HDMI_0_UNKNOWN;
+
+	if (vic != HDMI_0_UNKNOWN) {
 		if (force_flag == 0) {
 			for (j = 0 ; j < prxcap->VIC_count; j++) {
 				if (prxcap->VIC[j] == vic)
 					break;
 			}
 			if (j >= prxcap->VIC_count)
-				vic = HDMI_UNKNOWN;
+				vic = HDMI_0_UNKNOWN;
 		}
 		/* if TV only supports 480p/2, add 480p60hz as well */
 		if (is_sink_only_sd_4x3(hdev, disp_mode, &vic)) {
 			; /* pr_debug("hdmitx: find SD only 4x3\n"); */
 		}
 	}
+
 	if (vic == HDMI_UNKNOWN && vesa_vic != HDMI_UNKNOWN) {
 		for (j = 0; vesa_t[j] && j < VESA_MAX_TIMING; j++) {
-			const struct hdmi_timing *timing =
-				hdmitx_mode_vic_to_hdmi_timing(vesa_t[j]);
+			timing = hdmitx_mode_vic_to_hdmi_timing(vesa_t[j]);
 
 			if (timing) {
 				if (timing->vic >= HDMITX_VESA_OFFSET &&
@@ -2724,13 +2613,6 @@ enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdev,
 		}
 	}
 	return vic;
-}
-
-const char *hdmitx_edid_get_native_VIC(struct hdmitx_dev *hdmitx_device)
-{
-	struct rx_cap *prxcap = &hdmitx_device->tx_comm.rxcap;
-
-	return hdmitx_edid_vic_to_string(prxcap->native_vic);
 }
 
 /* Clear HDMI Hardware Module EDID RAM and EDID Buffer */

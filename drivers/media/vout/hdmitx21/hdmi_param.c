@@ -163,7 +163,6 @@ int hdmi21_get_fmt_para(enum hdmi_vic vic, const char *name,
 			const char *attr, struct hdmi_format_para *para)
 {
 	const struct hdmi_timing *timing = NULL;
-	int copy_len = 0;
 
 	memcpy(para, &fmt_para_non_hdmi_fmt, sizeof(struct hdmi_format_para));
 
@@ -183,18 +182,8 @@ int hdmi21_get_fmt_para(enum hdmi_vic vic, const char *name,
 
 	_parse_hdmi_attr(attr, &para->cs, &para->cd, &para->cr);
 	hdmitx21_construct_format_para_from_timing(timing, para);
-	memset(&para->ext_name[0], 0, sizeof(para->ext_name));
-	copy_len = strlen(name);
-	if (copy_len >= sizeof(para->ext_name))
-		copy_len = sizeof(para->ext_name) - 1;
-	memcpy(&para->ext_name[0], name, copy_len);
 
 	return 0;
-}
-
-/* For check all format parameters only */
-void check21_detail_fmt(void)
-{
 }
 
 /* Recommended N and Expected CTS for 32kHz */

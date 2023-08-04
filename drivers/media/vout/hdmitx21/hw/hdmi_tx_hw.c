@@ -488,6 +488,15 @@ int hdmitx21_uboot_audio_en(void)
 	return 0;
 }
 
+int hdmitx21_validate_mode(u32 vic)
+{
+	/*hdmitx21 VESA mode is not supported yet*/
+	if (vic == HDMI_0_UNKNOWN || vic > HDMI_CEA_VIC_END)
+		return -EINVAL;
+
+	return 0;
+}
+
 void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 {
 	pr_info("%s%d\n", __func__, __LINE__);
@@ -502,6 +511,7 @@ void hdmitx21_meson_init(struct hdmitx_dev *hdev)
 	hdev->hwop.cntlpacket = hdmitx_cntl;
 	hdev->tx_hw.cntlconfig = hdmitx_cntl_config;
 	hdev->tx_hw.cntlmisc = hdmitx_cntl_misc;
+	hdev->tx_hw.validatemode = hdmitx21_validate_mode;
 	hdmi_hwp_init(hdev, 0);
 	hdmitx21_debugfs_init();
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, CLR_AVMUTE);
@@ -1901,7 +1911,6 @@ static void hdmitx_debug(struct hdmitx_dev *hdev, const char *buf)
 	} else if (strncmp(tmpbuf, "dumpintr", 8) == 0) {
 		hdmitx_dump_intr();
 	} else if (strncmp(tmpbuf, "chkfmt", 6) == 0) {
-		check21_detail_fmt();
 		return;
 	} else if (strncmp(tmpbuf, "ss", 2) == 0) {
 		pr_info("hdev->output_blank_flag: 0x%x\n",

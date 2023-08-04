@@ -447,7 +447,6 @@ int hdmitx_dump_vrr_status(struct seq_file *s, void *p);
 void hdmitx_vrr_enable(void);
 void hdmitx_vrr_disable(void);
 u8 hdmitx_reauth_request(u8 hdcp_version);
-bool is_current_4k_format(void);
 void hdmitx21_enable_hdcp(struct hdmitx_dev *hdev);
 void hdmitx21_disable_hdcp(struct hdmitx_dev *hdev);
 void hdmitx21_rst_stream_type(struct hdcp_t *hdcp);

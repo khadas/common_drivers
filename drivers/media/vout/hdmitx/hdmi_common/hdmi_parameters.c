@@ -8,8 +8,6 @@
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_common.h>
 #include <linux/string.h>
 
-extern const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
-
 static struct hdmi_format_para fmt_para_non_hdmi_fmt = {
 	.timing = {
 			.vic = HDMI_UNKNOWN,
@@ -148,16 +146,11 @@ int hdmitx_construct_format_para_from_timing(const struct hdmi_timing *timing,
  * Parameter 'name' can be 1080p60hz, or 1920x1080p60hz
  * or 3840x2160p60hz, 2160p60hz
  */
-int hdmi_get_fmt_para(enum hdmi_vic vic,
-	char const *name, char const *attr, struct hdmi_format_para *para)
+int hdmi_get_fmt_para(enum hdmi_vic vic, char const *attr, struct hdmi_format_para *para)
 {
 	const struct hdmi_timing *timing = NULL;
-	int copy_len = 0;
 
 	memcpy(para, &fmt_para_non_hdmi_fmt, sizeof(struct hdmi_format_para));
-
-	if (!name)
-		return -EINVAL;
 
 	if (!para) {
 		pr_err("%s should pass valid para pointer to save\n", __func__);
@@ -165,30 +158,16 @@ int hdmi_get_fmt_para(enum hdmi_vic vic,
 	}
 
 	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
-	if (!timing || timing->vic == HDMI_0_UNKNOWN) {
+	if (!timing) {
 		pr_err("%s: get timing from vic (%d) fail\n", __func__, vic);
 		return -EINVAL;
 	}
 
 	hdmitx_construct_format_para_from_timing(timing, para);
-	memset(&para->ext_name[0], 0, sizeof(para->ext_name));
-	copy_len = strlen(name);
-	if (copy_len >= sizeof(para->ext_name))
-		copy_len = sizeof(para->ext_name) - 1;
-	memcpy(&para->ext_name[0], name, copy_len);
 
-	hdmi_parse_attr(para, name);
 	hdmi_parse_attr(para, attr);
 
 	return 0;
-}
-
-static inline void copy_para(struct hdmi_format_para *des,
-			     struct hdmi_format_para *src)
-{
-	if (!des || !src)
-		return;
-	memcpy(des, src, sizeof(struct hdmi_format_para));
 }
 
 /* Recommended N and Expected CTS for 32kHz */

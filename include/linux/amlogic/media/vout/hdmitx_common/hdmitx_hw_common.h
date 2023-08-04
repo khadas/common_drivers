@@ -178,11 +178,16 @@ struct hdmitx_hw_common {
 	/* Audio/Video/System Status */
 	int (*getstate)(struct hdmitx_hw_common *tx_hw,
 			u32 cmd, u32 arg);
+
+	/*validate if vic is supported by hw ip/phy*/
+	int (*validatemode)(u32 vic);
 };
 
 int hdmitx_hw_avmute(struct hdmitx_hw_common *tx_hw,
 	int muteflag);
 int hdmitx_hw_set_phy(struct hdmitx_hw_common *tx_hw,
 	int flag);
+int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw,
+	u32 vic);
 
 #endif

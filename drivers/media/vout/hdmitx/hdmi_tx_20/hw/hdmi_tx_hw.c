@@ -644,6 +644,79 @@ int hdmitx_uboot_audio_en(void)
 		return 0;
 }
 
+int hdmitx_validate_mode(u32 vic)
+{
+	int i = 0;
+	/*tx20 supported vics*/
+	enum hdmi_vic ip_support_vics[] = {
+		HDMI_2_720x480p60_4x3,
+		HDMI_3_720x480p60_16x9,
+		HDMI_4_1280x720p60_16x9,
+		HDMI_5_1920x1080i60_16x9,
+		HDMI_6_720x480i60_4x3,
+		HDMI_7_720x480i60_16x9,
+		HDMI_16_1920x1080p60_16x9,
+		HDMI_17_720x576p50_4x3,
+		HDMI_18_720x576p50_16x9,
+		HDMI_19_1280x720p50_16x9,
+		HDMI_20_1920x1080i50_16x9,
+		HDMI_21_720x576i50_4x3,
+		HDMI_22_720x576i50_16x9,
+		HDMI_32_1920x1080p24_16x9,
+		HDMI_33_1920x1080p25_16x9,
+		HDMI_34_1920x1080p30_16x9,
+		HDMI_31_1920x1080p50_16x9,
+		HDMI_63_1920x1080p120_16x9,
+		HDMI_89_2560x1080p50_64x27,
+		HDMI_90_2560x1080p60_64x27,
+		HDMI_93_3840x2160p24_16x9,
+		HDMI_94_3840x2160p25_16x9,
+		HDMI_95_3840x2160p30_16x9,
+		HDMI_96_3840x2160p50_16x9,
+		HDMI_97_3840x2160p60_16x9,
+		HDMI_98_4096x2160p24_256x135,
+		HDMI_99_4096x2160p25_256x135,
+		HDMI_100_4096x2160p30_256x135,
+		HDMI_101_4096x2160p50_256x135,
+		HDMI_102_4096x2160p60_256x135,
+		/*VESA MODE*/
+		HDMIV_0_640x480p60hz,
+		HDMIV_1_800x480p60hz,
+		HDMIV_2_800x600p60hz,
+		HDMIV_3_852x480p60hz,
+		HDMIV_4_854x480p60hz,
+		HDMIV_5_1024x600p60hz,
+		HDMIV_6_1024x768p60hz,
+		HDMIV_7_1152x864p75hz,
+		HDMIV_8_1280x768p60hz,
+		HDMIV_9_1280x800p60hz,
+		HDMIV_10_1280x960p60hz,
+		HDMIV_11_1280x1024p60hz,
+		HDMIV_12_1360x768p60hz,
+		HDMIV_13_1366x768p60hz,
+		HDMIV_14_1400x1050p60hz,
+		HDMIV_15_1440x900p60hz,
+		HDMIV_16_1440x2560p60hz,
+		HDMIV_17_1600x900p60hz,
+		HDMIV_18_1600x1200p60hz,
+		HDMIV_19_1680x1050p60hz,
+		HDMIV_20_1920x1200p60hz,
+		HDMIV_21_2048x1080p24hz,
+		HDMIV_22_2160x1200p90hz,
+		HDMIV_23_2560x1600p60hz,
+		HDMIV_24_3440x1440p60hz,
+		HDMIV_25_2400x1200p90hz,
+		HDMIV_26_3840x1080p60hz,
+	};
+
+	for (i = 0; i < ARRAY_SIZE(ip_support_vics); i++) {
+		if (vic == ip_support_vics[i])
+			return 0;
+	}
+
+	return -EINVAL;
+}
+
 void hdmitx_meson_init(struct hdmitx_dev *hdev)
 {
 	hdev->hwop.setpacket = hdmitx_set_packet;
@@ -662,6 +735,7 @@ void hdmitx_meson_init(struct hdmitx_dev *hdev)
 	hdev->hwop.cntlpacket = hdmitx_cntl;
 	hdev->tx_hw.cntlconfig = hdmitx_cntl_config;
 	hdev->tx_hw.cntlmisc = hdmitx_cntl_misc;
+	hdev->tx_hw.validatemode = hdmitx_validate_mode;
 	hdmi_hwp_init(hdev);
 	hdmi_hwi_init(hdev);
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_AVMUTE_OP, CLR_AVMUTE);
@@ -2228,8 +2302,7 @@ static int hdmitx_set_dispmode(struct hdmitx_dev *hdev)
 {
 	if (!hdev->cur_video_param) /* disable HDMI */
 		return 0;
-	if (!hdmitx_edid_VIC_support(hdev->cur_video_param->VIC))
-		return -1;
+
 	hdev->tx_comm.cur_VIC = hdev->cur_video_param->VIC;
 
 	hdmitx_disable_venc();

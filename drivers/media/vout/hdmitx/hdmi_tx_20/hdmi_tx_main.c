@@ -38,6 +38,7 @@
 #include <linux/reboot.h>
 #include <linux/i2c.h>
 #include <linux/miscdevice.h>
+#include <linux/vmalloc.h>
 //#include <linux/amlogic/cpu_version.h>
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
@@ -98,6 +99,7 @@ static void clear_rx_vinfo(struct hdmitx_dev *hdev);
 static void edidinfo_attach_to_vinfo(struct hdmitx_dev *hdev);
 static void edidinfo_detach_to_vinfo(struct hdmitx_dev *hdev);
 static void update_current_para(struct hdmitx_dev *hdev);
+static void hdmitx_reset_format_para(struct hdmi_format_para *para);
 static void update_para_from_mode(struct hdmitx_dev *hdev,
 	const char *name, const char *fmt_attr, struct hdmi_format_para *update_para);
 static bool is_cur_tmds_div40(struct hdmitx_dev *hdev);
@@ -105,6 +107,8 @@ static void hdmitx_resend_div40(struct hdmitx_dev *hdev);
 static unsigned int hdmitx_get_frame_duration(void);
 static int hdmitx_hook_drm(struct device *device);
 static int hdmitx_unhook_drm(struct device *device);
+const char *hdmitx_mode_get_timing_name(enum hdmi_vic vic);
+const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 
 /*
  * Normally, after the HPD in or late resume, there will reading EDID, and
@@ -722,8 +726,7 @@ static int set_disp_mode_auto(void)
 		hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CLR_VSDB_PACKET, 0);
 		hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 
-		update_para_from_mode(hdev, "invalid",
-			hdev->tx_comm.fmt_attr, &hdev->tx_comm.fmt_para);
+		hdmitx_reset_format_para(&hdev->tx_comm.fmt_para);
 
 		if (hdev->cedst_policy)
 			cancel_delayed_work(&hdev->work_cedst);
@@ -1701,7 +1704,7 @@ static int hdmi_get_valid_fmt_para(struct hdmitx_dev *hdev,
 		return -EINVAL;
 	}
 
-	return hdmi_get_fmt_para(vic, name, attr, para);
+	return hdmi_get_fmt_para(vic, attr, para);
 }
 
 static int calc_vinfo_from_hdmi_timing(const struct hdmi_timing *timing, struct vinfo_s *tx_vinfo)
@@ -1737,6 +1740,17 @@ static int calc_vinfo_from_hdmi_timing(const struct hdmi_timing *timing, struct 
 	return 0;
 }
 
+static void hdmitx_reset_format_para(struct hdmi_format_para *para)
+{
+	if (!para)
+		return;
+
+	memset(para, 0, sizeof(struct hdmi_format_para));
+	para->vic = HDMI_0_UNKNOWN;
+	para->name = "invalid";
+	para->sname = "invalid";
+}
+
 static void update_para_from_mode(struct hdmitx_dev *hdev,
 	const char *name, const char *fmt_attr,
 	struct hdmi_format_para *update_para)
@@ -1745,6 +1759,7 @@ static void update_para_from_mode(struct hdmitx_dev *hdev,
 
 	if (hdmi_get_valid_fmt_para(hdev, name, fmt_attr, update_para) < 0) {
 		pr_err("get format para failed (%s,%s)\n", name, fmt_attr);
+		hdmitx_reset_format_para(update_para);
 		return;
 	}
 
@@ -2875,84 +2890,6 @@ static ssize_t debug_store(struct device *dev,
 	return count;
 }
 
-/* support format lists */
-const char *disp_mode_t[] = {
-	"480i60hz", /* 16:9 */
-	"576i50hz",
-	"480p60hz",
-	"576p50hz",
-	"720p60hz",
-	"1080i60hz",
-	"1080p60hz",
-	"1080p120hz",
-	"720p50hz",
-	"1080i50hz",
-	"1080p30hz",
-	"1080p50hz",
-	"1080p25hz",
-	"1080p24hz",
-	"2560x1080p50hz",
-	"2560x1080p60hz",
-	"2160p30hz",
-	"2160p25hz",
-	"2160p24hz",
-	"smpte24hz",
-	"smpte25hz",
-	"smpte30hz",
-	"smpte50hz",
-	"smpte60hz",
-	"2160p50hz",
-	"2160p60hz",
-	/* VESA modes */
-	"640x480p60hz",
-	"800x480p60hz",
-	"800x600p60hz",
-	"852x480p60hz",
-	"854x480p60hz",
-	"1024x600p60hz",
-	"1024x768p60hz",
-	"1152x864p75hz",
-	"1280x600p60hz",
-	"1280x768p60hz",
-	"1280x800p60hz",
-	"1280x960p60hz",
-	"1280x1024p60hz",
-	"1360x768p60hz",
-	"1366x768p60hz",
-	"1400x1050p60hz",
-	"1440x900p60hz",
-	"1440x2560p60hz",
-	"1600x900p60hz",
-	"1600x1200p60hz",
-	"1680x1050p60hz",
-	"1920x1200p60hz",
-	"2160x1200p90hz",
-	"2560x1440p60hz",
-	"2560x1600p60hz",
-	"3440x1440p60hz",
-	"2400x1200p90hz",
-	"3840x1080p60hz",
-	NULL
-};
-
-static int is_4k50_fmt(char *mode)
-{
-	int i;
-	static char const *hdmi4k50[] = {
-		"2160p50hz",
-		"2160p60hz",
-		"smpte50hz",
-		"smpte60hz",
-		NULL
-	};
-
-	for (i = 0; hdmi4k50[i]; i++) {
-		if (strcmp(hdmi4k50[i], mode) == 0)
-			return 1;
-	}
-	return 0;
-}
-
 /* check the resolution is over 1920x1080 or not */
 static bool is_over_1080p(const struct hdmi_timing *timing)
 {
@@ -3015,6 +2952,11 @@ bool is_vic_over_limited_1080p(enum hdmi_vic vic)
 {
 	const struct hdmi_timing *timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 
+	if (!timing) {
+		pr_err("unsupported vic: %d\n", vic);
+		return 1;
+	}
+
 	/* if the vic equals to HDMI_UNKNOWN or VESA,
 	 * then create it as over limited
 	 */
@@ -3036,54 +2978,93 @@ bool hdmitx_limited_1080p(void)
 	return res_1080p;
 }
 
+bool hdmitx_validate_vic_para(enum hdmi_vic vic, const char *attr)
+{
+	struct hdmi_format_para tst_para;
+
+	if (hdmi_get_fmt_para(vic, attr, &tst_para) < 0)
+		return false;
+
+	return hdmitx_edid_check_valid_mode(&hdmitx_device, &tst_para);
+}
+
 /* for some non-std TV, it declare 4k while MAX_TMDS_CLK
  * not match 4K format, so filter out mode list by
  * check if basic color space/depth is supported
  * or not under this resolution
  */
-static bool hdmi_sink_disp_mode_sup(char *disp_mode)
+static bool hdmitx_validate_vic(enum hdmi_vic vic)
 {
-	if (!disp_mode)
+	if (vic == HDMI_0_UNKNOWN)
 		return false;
 
-	if (is_4k50_fmt(disp_mode)) {
-		if (drm_hdmitx_chk_mode_attr_sup(disp_mode, "420,8bit"))
+	if (vic == HDMI_96_3840x2160p50_16x9 ||
+		vic == HDMI_97_3840x2160p60_16x9 ||
+		vic == HDMI_101_4096x2160p50_256x135 ||
+		vic == HDMI_102_4096x2160p60_256x135) {
+		if (hdmitx_validate_vic_para(vic, "420,8bit"))
 			return true;
-		if (drm_hdmitx_chk_mode_attr_sup(disp_mode, "rgb,8bit"))
+		if (hdmitx_validate_vic_para(vic, "rgb,8bit"))
 			return true;
-		if (drm_hdmitx_chk_mode_attr_sup(disp_mode, "444,8bit"))
+		if (hdmitx_validate_vic_para(vic, "444,8bit"))
 			return true;
-		if (drm_hdmitx_chk_mode_attr_sup(disp_mode, "422,12bit"))
+		if (hdmitx_validate_vic_para(vic, "422,12bit"))
 			return true;
 	} else {
-		if (drm_hdmitx_chk_mode_attr_sup(disp_mode, "rgb,8bit"))
+		if (hdmitx_validate_vic_para(vic, "rgb,8bit"))
 			return true;
-		if (drm_hdmitx_chk_mode_attr_sup(disp_mode, "444,8bit"))
+		if (hdmitx_validate_vic_para(vic, "444,8bit"))
 			return true;
-		if (drm_hdmitx_chk_mode_attr_sup(disp_mode, "422,12bit"))
+		if (hdmitx_validate_vic_para(vic, "422,12bit"))
 			return true;
 	}
 	return false;
 }
 
-/**/
 static ssize_t disp_cap_show(struct device *dev,
 			     struct device_attribute *attr,
 			     char *buf)
 {
-	int i, pos = 0;
-	const char *native_disp_mode =
-		hdmitx_edid_get_native_VIC(&hdmitx_device);
+	struct rx_cap *prxcap = &hdmitx_device.tx_comm.rxcap;
+	const struct hdmi_timing *timing = NULL;
 	enum hdmi_vic vic;
-	char mode_tmp[32];
+	const char *mode_name;
+	int i, pos = 0;
+	int vic_len = prxcap->VIC_count + VESA_MAX_TIMING;
+	int *edid_vics = vmalloc(vic_len * sizeof(int));
+
+	memset(edid_vics, 0, vic_len * sizeof(int));
+
+	/*copy edid vic list*/
+	if (prxcap->VIC_count > 0)
+		memcpy(edid_vics, prxcap->VIC, sizeof(int) * prxcap->VIC_count);
+	for (i = 0; i < VESA_MAX_TIMING && prxcap->vesa_timing[i]; i++)
+		edid_vics[prxcap->VIC_count + i] = prxcap->vesa_timing[i];
 
 	if (hdmitx_device.tv_no_edid) {
 		pos += snprintf(buf + pos, PAGE_SIZE, "null edid\n");
 	} else {
-		for (i = 0; disp_mode_t[i]; i++) {
-			memset(mode_tmp, 0, sizeof(mode_tmp));
-			strncpy(mode_tmp, disp_mode_t[i], 31);
-			vic = hdmitx_edid_get_VIC(&hdmitx_device, mode_tmp, 0);
+		for (i = 0; i < vic_len; i++) {
+			vic = edid_vics[i];
+			if (vic == HDMI_0_UNKNOWN)
+				continue;
+
+			if (vic == HDMI_2_720x480p60_4x3 ||
+				vic == HDMI_6_720x480i60_4x3 ||
+				vic == HDMI_17_720x576p50_4x3 ||
+				vic == HDMI_21_720x576i50_4x3) {
+				if (hdmitx_check_vic(vic + 1)) {
+					pr_info("%s: check vic exist, handle [%d] later.\n",
+						__func__, vic + 1);
+					continue;
+				}
+			}
+
+			timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+			if (!timing) {
+				pr_err("%s: unsupport vic [%d]\n", __func__, vic);
+				continue;
+			}
 
 			/*filter 1080p max size.*/
 			if (hdmitx_limited_1080p() && is_vic_over_limited_1080p(vic))
@@ -3093,32 +3074,17 @@ static ssize_t disp_cap_show(struct device *dev,
 			if (validate_mode_refreshrate(vic, max_refreshrate) == false)
 				continue;
 
-			/* Handling only 4k420 mode */
-			if (vic == HDMI_UNKNOWN && is_4k50_fmt(mode_tmp)) {
-				strcat(mode_tmp, "420");
-				vic = hdmitx_edid_get_VIC(&hdmitx_device,
-							  mode_tmp, 0);
-			}
+			mode_name = timing->sname ? timing->sname : timing->name;
 
-			if (vic != HDMI_UNKNOWN) {
-				/* filter resolution list by sysctl by default,
-				 * if need to filter by driver, enable below filter
-				 */
-				/* if (!hdmi_sink_disp_mode_sup(mode_tmp)) */
-					/* continue; */
-				pos += snprintf(buf + pos, PAGE_SIZE, "%s",
-					disp_mode_t[i]);
-				if (native_disp_mode &&
-				    (strcmp(native_disp_mode,
-					disp_mode_t[i]) == 0)) {
-					pos += snprintf(buf + pos, PAGE_SIZE,
-						"*\n");
-				} else {
-					pos += snprintf(buf + pos, PAGE_SIZE, "\n");
-				}
-			}
+			pos += snprintf(buf + pos, PAGE_SIZE, "%s", mode_name);
+			if (vic == prxcap->native_vic)
+				pos += snprintf(buf + pos, PAGE_SIZE, "*\n");
+			else
+				pos += snprintf(buf + pos, PAGE_SIZE, "\n");
 		}
 	}
+
+	vfree(edid_vics);
 	return pos;
 }
 
@@ -3128,9 +3094,10 @@ static ssize_t preferred_mode_show(struct device *dev,
 {
 	int pos = 0;
 	struct rx_cap *prxcap = &hdmitx_device.tx_comm.rxcap;
+	const char *modename =
+		hdmitx_mode_get_timing_name(prxcap->preferred_mode);
 
-	pos += snprintf(buf + pos, PAGE_SIZE, "%s\n",
-		hdmitx_edid_vic_to_string(prxcap->preferred_mode));
+	pos += snprintf(buf + pos, PAGE_SIZE, "%s\n", modename);
 
 	return pos;
 }
@@ -3158,64 +3125,6 @@ static ssize_t vesa_cap_show(struct device *dev,
 			pos += snprintf(buf + pos, PAGE_SIZE, "%s\n",
 					timing->name);
 	}
-	return pos;
-}
-
-/**/
-static int local_support_3dfp(enum hdmi_vic vic)
-{
-	switch (vic) {
-	case HDMI_1280x720p50_16x9:
-	case HDMI_1280x720p60_16x9:
-	case HDMI_1920x1080p24_16x9:
-	case HDMI_1920x1080p25_16x9:
-	case HDMI_1920x1080p30_16x9:
-	case HDMI_1920x1080p50_16x9:
-	case HDMI_1920x1080p60_16x9:
-		return 1;
-	default:
-		return 0;
-	}
-}
-
-static ssize_t disp_cap_3d_show(struct device *dev,
-				struct device_attribute *attr,
-				char *buf)
-{
-	int i, pos = 0;
-	int j = 0;
-	enum hdmi_vic vic;
-	struct hdmitx_dev *hdev = &hdmitx_device;
-
-	pos += snprintf(buf + pos, PAGE_SIZE, "3D support lists:\n");
-	for (i = 0; disp_mode_t[i]; i++) {
-		/* 3D is not supported under 4k modes */
-		if (strstr(disp_mode_t[i], "2160p") ||
-		    strstr(disp_mode_t[i], "smpte"))
-			continue;
-		vic = hdmitx_edid_get_VIC(hdev, disp_mode_t[i], 0);
-		for (j = 0; j < hdev->tx_comm.rxcap.VIC_count; j++) {
-			if (vic == hdev->tx_comm.rxcap.VIC[j])
-				break;
-		}
-		pos += snprintf(buf + pos, PAGE_SIZE, "\n%s ",
-			disp_mode_t[i]);
-		if (local_support_3dfp(vic) &&
-		    hdev->tx_comm.rxcap.support_3d_format[hdev->tx_comm.rxcap.VIC[j]].
-		    frame_packing == 1) {
-			pos += snprintf(buf + pos, PAGE_SIZE, "FramePacking ");
-		}
-		if (hdev->tx_comm.rxcap.support_3d_format[hdev->tx_comm.rxcap.VIC[j]].
-		    top_and_bottom == 1) {
-			pos += snprintf(buf + pos, PAGE_SIZE, "TopBottom ");
-		}
-		if (hdev->tx_comm.rxcap.support_3d_format[hdev->tx_comm.rxcap.VIC[j]].
-		    side_by_side == 1) {
-			pos += snprintf(buf + pos, PAGE_SIZE, "SidebySide ");
-		}
-	}
-	pos += snprintf(buf + pos, PAGE_SIZE, "\n");
-
 	return pos;
 }
 
@@ -4796,7 +4705,7 @@ static ssize_t hdmitx_basic_config_show(struct device *dev,
 		get_vout_mode_internal());
 	vic = hdmitx_device.tx_hw.getstate(&hdmitx_device.tx_hw, STAT_VIDEO_VIC, 0);
 	pos += snprintf(buf + pos, PAGE_SIZE, "display_mode out:%s\n",
-		hdmitx_edid_vic_tab_map_string(vic));
+		hdmitx_mode_get_timing_name(vic));
 
 	if (!memcmp(hdmitx_device.tx_comm.fmt_attr, "default,", 7)) {
 		memset(hdmitx_device.tx_comm.fmt_attr, 0, sizeof(hdmitx_device.tx_comm.fmt_attr));
@@ -5669,7 +5578,6 @@ static DEVICE_ATTR_RO(hdmi_repeater_tx);
 static DEVICE_ATTR_RO(hdcp22_base);
 static DEVICE_ATTR_RW(div40);
 static DEVICE_ATTR_RW(hdcp_ctrl);
-static DEVICE_ATTR_RO(disp_cap_3d);
 static DEVICE_ATTR_RO(hdmitx_cur_status);
 static DEVICE_ATTR_RO(hdcp_ksv_info);
 static DEVICE_ATTR_RO(hdcp_ver);
@@ -5805,8 +5713,7 @@ static int hdmitx_module_disable(enum vmode_e cur_vmod, void *data)
 	hdev->tx_hw.cntlconfig(&hdev->tx_hw, CONF_CLR_VSDB_PACKET, 0);
 	hdev->tx_hw.cntlmisc(&hdev->tx_hw, MISC_TMDS_PHY_OP, TMDS_PHY_DISABLE);
 
-	update_para_from_mode(hdev, "invalid",
-		hdev->tx_comm.fmt_attr, &hdev->tx_comm.fmt_para);
+	hdmitx_reset_format_para(&hdev->tx_comm.fmt_para);
 
 	hdmitx_validate_vmode("null", 0, NULL);
 	if (hdev->cedst_policy)
@@ -6903,9 +6810,6 @@ static int amhdmitx_device_init(struct hdmitx_dev *hdmi_dev, struct hdmitx_boot_
 	hdmi_dev->hdtx_dev = NULL;
 
 	hdmitx_device.physical_addr = 0xffff;
-	/* init para for NULL protection */
-	update_para_from_mode(hdmi_dev, "invalid",
-		hdmi_dev->tx_comm.fmt_attr, &hdmi_dev->tx_comm.fmt_para);
 
 	hdmitx_device.hdmi_last_hdr_mode = 0;
 	hdmitx_device.hdmi_current_hdr_mode = 0;
@@ -7280,7 +7184,6 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_preferred_mode);
 	ret = device_create_file(dev, &dev_attr_cea_cap);
 	ret = device_create_file(dev, &dev_attr_vesa_cap);
-	ret = device_create_file(dev, &dev_attr_disp_cap_3d);
 	ret = device_create_file(dev, &dev_attr_aud_cap);
 	ret = device_create_file(dev, &dev_attr_hdmi_hdr_status);
 	ret = device_create_file(dev, &dev_attr_aud_ch);
@@ -7355,6 +7258,10 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	if (ret)
 		pr_info("hdmitx: alloc hdmi_log_kfifo failed\n");
 	hdmitx_meson_init(hdev);
+
+	/* init para for NULL protection */
+	hdmitx_reset_format_para(&hdmitx_device.tx_comm.fmt_para);
+
 	hdmitx_hdr_state_init(&hdmitx_device);
 #ifdef CONFIG_AMLOGIC_VOUT_SERVE
 	vout_register_server(&hdmitx_vout_server);
@@ -7487,7 +7394,6 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_preferred_mode);
 	device_remove_file(dev, &dev_attr_cea_cap);
 	device_remove_file(dev, &dev_attr_vesa_cap);
-	device_remove_file(dev, &dev_attr_disp_cap_3d);
 	device_remove_file(dev, &dev_attr_dc_cap);
 	device_remove_file(dev, &dev_attr_valid_mode);
 	device_remove_file(dev, &dev_attr_allm_cap);
@@ -7625,37 +7531,47 @@ void __exit amhdmitx_exit(void)
 //MODULE_LICENSE("GPL");
 //MODULE_VERSION("1.0.0");
 
-
 MODULE_PARM_DESC(log_level, "\n log_level\n");
 module_param(log_level, int, 0644);
 
 /*************DRM connector API**************/
 static int drm_hdmitx_get_vic_list(int **vics)
 {
+	struct rx_cap *prxcap = &hdmitx_device.tx_comm.rxcap;
 	enum hdmi_vic vic;
-	char mode_tmp[32];
-	int len = sizeof(disp_mode_t) / sizeof(char *);
+	int len = prxcap->VIC_count + VESA_MAX_TIMING;
 	int i;
 	int count = 0;
 	int *viclist = 0;
-
-	if (hdmitx_device.hdmi_init != 1)
-		return 0;
+	int *edid_vics = 0;
 
 	if (hdmitx_device.tv_no_edid)
 		return 0;
 
-	viclist = kmalloc_array(len, sizeof(int), GFP_KERNEL);
+	viclist = kcalloc(len, sizeof(int),  GFP_KERNEL);
+	edid_vics = vmalloc(len * sizeof(int));
+	memset(edid_vics, 0, len * sizeof(int));
 
-	for (i = 0; disp_mode_t[i]; i++) {
-		memset(mode_tmp, 0, sizeof(mode_tmp));
-		strncpy(mode_tmp, disp_mode_t[i], 31);
+	/*copy edid vic list*/
+	if (prxcap->VIC_count > 0)
+		memcpy(edid_vics, prxcap->VIC, sizeof(int) * prxcap->VIC_count);
+	for (i = 0; i < VESA_MAX_TIMING && prxcap->vesa_timing[i]; i++)
+		edid_vics[prxcap->VIC_count + i] = prxcap->vesa_timing[i];
 
-		vic = hdmitx_edid_get_VIC(&hdmitx_device, mode_tmp, 0);
-		if (vic == HDMI_0_UNKNOWN) {
-			if (hdmitx_device.log_level & EDID_LOG)
-				pr_err("%s: get vic from %s fail\n", __func__, mode_tmp);
+	for (i = 0; i < len; i++) {
+		vic = edid_vics[i];
+		if (vic == HDMI_0_UNKNOWN)
 			continue;
+
+		if (vic == HDMI_2_720x480p60_4x3 ||
+			vic == HDMI_6_720x480i60_4x3 ||
+			vic == HDMI_17_720x576p50_4x3 ||
+			vic == HDMI_21_720x576i50_4x3) {
+			if (hdmitx_check_vic(vic + 1)) {
+				pr_info("%s: check vic exist, handle [%d] later.\n",
+					__func__, vic + 1);
+				continue;
+			}
 		}
 
 		if (hdmitx_limited_1080p() && is_vic_over_limited_1080p(vic)) {
@@ -7671,16 +7587,17 @@ static int drm_hdmitx_get_vic_list(int **vics)
 			continue;
 		}
 
-		if (!hdmi_sink_disp_mode_sup(mode_tmp)) {
+		if (!hdmitx_validate_vic(vic)) {
 			if (hdmitx_device.log_level & EDID_LOG)
 				pr_err("%s: vic[%d] check fmt attr failed.\n", __func__, vic);
 			continue;
 		}
 
-		/*reset to vesa vic.*/
 		viclist[count] = vic;
 		count++;
 	}
+
+	vfree(edid_vics);
 
 	if (count == 0)
 		kfree(viclist);
@@ -7825,6 +7742,7 @@ bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr)
 {
 	struct hdmi_format_para tst_para;
 	bool valid = false;
+	enum hdmi_vic vic = HDMI_0_UNKNOWN;
 
 	if (hdmitx_device.hdmi_init != 1)
 		return false;
@@ -7835,7 +7753,13 @@ bool drm_hdmitx_chk_mode_attr_sup(char *mode, char *attr)
 	if (!pre_process_str(attr))
 		return false;
 
-	if (hdmi_get_valid_fmt_para(&hdmitx_device, mode, attr, &tst_para) < 0)
+	vic = hdmitx_edid_get_VIC(&hdmitx_device, mode, 0);
+	if (vic == HDMI_0_UNKNOWN) {
+		pr_err("%s: get vic from (%s) fail\n", __func__, mode);
+		return false;
+	}
+
+	if (hdmi_get_fmt_para(vic, attr, &tst_para) < 0)
 		return false;
 
 	if (log_level) {
@@ -7855,7 +7779,7 @@ static int drm_hdmitx_get_timing_para(int vic, struct drm_hdmitx_timing_para *pa
 	const struct hdmi_timing *timing;
 
 	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
-	if (timing->vic == HDMI_UNKNOWN)
+	if (!timing)
 		return -1;
 
 	memset(para->name, 0, DRM_DISPLAY_MODE_LEN);

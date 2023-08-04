@@ -527,16 +527,16 @@ static struct meson_pmx_func meson_s1a_periphs_functions[] __initdata = {
 
 static struct meson_bank meson_s1a_periphs_banks[] = {
 	/* name  first  last  irq  pullen  pull  dir  out  in */
-	BANK_DS("B",  GPIOB_0,  GPIOB_5,  0,  5,
-		0x63,  0, 0x64,  0, 0x62,  0, 0x61,  0, 0x60,  0, 0x07,  0),
-	BANK_DS("D",  GPIOD_0, GPIOD_11,  6, 17,
-		0x33,  0, 0x34,  0, 0x32,  0, 0x31,  0, 0x30,  0, 0x07,  0),
-	BANK_DS("H",  GPIOH_0, GPIOH_10, 18, 28,
-		0x23,  0, 0x24,  0, 0x22,  0, 0x21,  0, 0x20,  0, 0x07,  0),
-	BANK_DS("Z",  GPIOZ_0,  GPIOZ_9, 29, 38,
-		0x03,  0, 0x04,  0, 0x02,  0, 0x01,  0, 0x00,  0, 0x07,  0),
-	BANK_DS("TEST_N", GPIO_TEST_N,    GPIO_TEST_N,   -1, -1,
-		0x83,  0, 0x84,  0, 0x82, 0,  0x81,  0, 0x80, 0, 0x07, 0),
+	BANK("B",  GPIOB_0,  GPIOB_5,  0,  5,
+	     0x63,  0, 0x64,  0, 0x62,  0, 0x61,  0, 0x60,  0),
+	BANK("D",  GPIOD_0, GPIOD_11,  6, 17,
+	     0x33,  0, 0x34,  0, 0x32,  0, 0x31,  0, 0x30,  0),
+	BANK("H",  GPIOH_0, GPIOH_10, 18, 28,
+	     0x23,  0, 0x24,  0, 0x22,  0, 0x21,  0, 0x20,  0),
+	BANK("Z",  GPIOZ_0,  GPIOZ_9, 29, 38,
+	     0x03,  0, 0x04,  0, 0x02,  0, 0x01,  0, 0x00,  0),
+	BANK("TEST_N", GPIO_TEST_N,    GPIO_TEST_N,   -1, -1,
+		0x83,  0, 0x84,  0, 0x82, 0,  0x81,  0, 0x80, 0),
 };
 
 static struct meson_pmx_bank meson_s1a_periphs_pmx_banks[] = {
@@ -565,7 +565,7 @@ static struct meson_pinctrl_data meson_s1a_periphs_pinctrl_data __refdata = {
 	.num_banks	= ARRAY_SIZE(meson_s1a_periphs_banks),
 	.pmx_ops	= &meson_axg_pmx_ops,
 	.pmx_data	= &meson_s1a_periphs_pmx_banks_data,
-	.parse_dt	= &meson_a1_parse_dt_extra,
+	.parse_dt	= &meson_g12a_aobus_parse_dt_extra,
 };
 
 static const struct of_device_id meson_s1a_pinctrl_dt_match[] = {

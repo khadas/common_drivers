@@ -29,6 +29,7 @@
 struct vout_mux_data_s {
 	struct clk *msr_clk;
 	unsigned int (*vs_measure)(int index);
+	unsigned int (*vs_measure_high_res)(int index);
 	void (*msr_ctrl_init)(struct platform_device *pdev, struct vout_mux_data_s *vdata);
 	void (*update_viu_mux)(int index, unsigned int mux_sel);
 	void (*clear_viu_mux)(int index, unsigned int mux_sel);
@@ -132,6 +133,34 @@ static unsigned int vout_vs_measure_dft(int index)
 	return fr;
 }
 
+static unsigned int vout_vs_measure_high_res_dft(int index)
+{
+	unsigned int val[2], fr;
+	unsigned long long clk_msr;
+
+	if (index > 1)
+		return 0;
+	if (vout_vdo_meas_init == 0)
+		return 0;
+
+	clk_msr = VDIN_MEAS_CLK_FREQ;
+
+	val[0] = vout_vcbus_read(VPP_VDO_MEAS_VS_COUNT_HI);
+	val[1] = vout_vcbus_read(VPP_VDO_MEAS_VS_COUNT_LO);
+	clk_msr *= 1000000;
+	if (val[0] & 0xffff)
+		return 0;
+	fr = vout_do_div(clk_msr, val[1]);
+	if (vout_debug_print) {
+		VOUTPR("%s: 0x%04x=0x%08x, clk_msr=%lld, fr=%d\n",
+			__func__, VPP_VDO_MEAS_VS_COUNT_LO,
+			vout_vcbus_read(VPP_VDO_MEAS_VS_COUNT_LO),
+			clk_msr, fr);
+	}
+
+	return fr;
+}
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static unsigned int vout_vs_measure_s5(int index)
 {
@@ -163,6 +192,37 @@ static unsigned int vout_vs_measure_s5(int index)
 
 	return fr;
 }
+
+static unsigned int vout_vs_measure_high_res_s5(int index)
+{
+	struct vinfo_s *vinfo = NULL;
+	unsigned int venc_index, val, fr;
+	unsigned long long clk_msr = VDIN_MEAS_CLK_FREQ;
+
+	if (vout_vdo_meas_init == 0)
+		return 0;
+	if (index == 1)
+		vinfo = get_current_vinfo();
+#ifdef CONFIG_AMLOGIC_VOUT2_SERVE
+	else if (index == 2)
+		vinfo = get_current_vinfo2();
+#endif
+#ifdef CONFIG_AMLOGIC_VOUT3_SERVE
+	else if (index == 3)
+		vinfo = get_current_vinfo3();
+#endif
+	if (!vinfo)
+		return 0;
+	venc_index = (vinfo->viu_mux >> 4) & 0xf;
+	if (venc_index >= 1)
+		return 0;
+
+	clk_msr *= 1000000;
+	val = vout_vcbus_read(VPU_VENC_RO_MEAS0);
+	fr = vout_do_div(clk_msr, val);
+
+	return fr;
+}
 #endif
 
 unsigned int vout_frame_rate_measure(int index)
@@ -173,6 +233,17 @@ unsigned int vout_frame_rate_measure(int index)
 		return 0;
 
 	fr = vout_mux_data->vs_measure(index);
+	return fr;
+}
+
+unsigned int vout_frame_rate_msr_high_res(int index)
+{
+	unsigned int fr;
+
+	if (!vout_mux_data || !vout_mux_data->vs_measure_high_res)
+		return 0;
+
+	fr = vout_mux_data->vs_measure_high_res(index);
 	return fr;
 }
 
@@ -366,6 +437,7 @@ void vout_viu_mux_clear(int index, unsigned int mux_sel)
 static struct vout_mux_data_s vout_mux_match_data = {
 	.msr_clk = NULL,
 	.vs_measure = vout_vs_measure_dft,
+	.vs_measure_high_res = vout_vs_measure_high_res_dft,
 	.msr_ctrl_init = vout_meas_ctrl_init_dft,
 	.update_viu_mux = vout_viu_mux_update_default,
 	.clear_viu_mux = NULL,
@@ -375,6 +447,7 @@ static struct vout_mux_data_s vout_mux_match_data = {
 static struct vout_mux_data_s vout_mux_match_data_t7 = {
 	.msr_clk = NULL,
 	.vs_measure = vout_vs_measure_dft,
+	.vs_measure_high_res = vout_vs_measure_high_res_dft,
 	.msr_ctrl_init = vout_meas_ctrl_init_dft,
 	.update_viu_mux = vout_viu_mux_update_t7,
 	.clear_viu_mux = vout_viu_mux_clear_t7,
@@ -383,6 +456,7 @@ static struct vout_mux_data_s vout_mux_match_data_t7 = {
 static struct vout_mux_data_s vout_mux_match_data_t3 = {
 	.msr_clk = NULL,
 	.vs_measure = vout_vs_measure_dft,
+	.vs_measure_high_res = vout_vs_measure_high_res_dft,
 	.msr_ctrl_init = vout_meas_ctrl_init_dft,
 	.update_viu_mux = vout_viu_mux_update_t3,
 	.clear_viu_mux = vout_viu_mux_clear_t7,
@@ -391,6 +465,7 @@ static struct vout_mux_data_s vout_mux_match_data_t3 = {
 static struct vout_mux_data_s vout_mux_match_data_t5w = {
 	.msr_clk = NULL,
 	.vs_measure = vout_vs_measure_dft,
+	.vs_measure_high_res = vout_vs_measure_high_res_dft,
 	.msr_ctrl_init = vout_meas_ctrl_init_dft,
 	.update_viu_mux = vout_viu_mux_update_t3,
 	.clear_viu_mux = vout_viu_mux_clear_t7,
@@ -399,6 +474,7 @@ static struct vout_mux_data_s vout_mux_match_data_t5w = {
 static struct vout_mux_data_s vout_mux_match_data_s5 = {
 	.msr_clk = NULL,
 	.vs_measure = vout_vs_measure_s5,
+	.vs_measure_high_res = vout_vs_measure_high_res_s5,
 	.msr_ctrl_init = vout_meas_ctrl_init_s5,
 	.update_viu_mux = vout_viu_mux_update_t3,
 	.clear_viu_mux = vout_viu_mux_clear_t7,

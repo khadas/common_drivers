@@ -44,7 +44,8 @@
 /* 20230816: optimize clk accuracy*/
 /* 20230821: update clk ss support*/
 /* 20230823: add dma driver for tcon lut*/
-#define LCD_DRV_VERSION    "20230823"
+/* 20230824: support high resolution vsync measure debug*/
+#define LCD_DRV_VERSION    "20230824"
 
 extern struct mutex lcd_vout_mutex;
 extern spinlock_t lcd_reg_spinlock;

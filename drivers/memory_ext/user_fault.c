@@ -664,7 +664,7 @@ static struct kprobe kp_lookup_name = {
 };
 #endif
 
-static long get_user_pfn(struct mm_struct *mm, unsigned long addr)
+static long __nocfi get_user_pfn(struct mm_struct *mm, unsigned long addr)
 {
 	long pfn = -1;
 	pgd_t *pgd;
@@ -672,6 +672,8 @@ static long get_user_pfn(struct mm_struct *mm, unsigned long addr)
 #if IS_MODULE(CONFIG_AMLOGIC_USER_FAULT) && IS_ENABLED(CONFIG_KALLSYMS_ALL)
 	if (!mm || addr >= VMALLOC_START)
 		mm = aml_init_mm;
+	if (!mm)
+		return pfn;
 #else
 	if (!mm || addr >= VMALLOC_START)
 		mm = &init_mm;
@@ -968,7 +970,7 @@ static void __kprobes bad_el0_sync_handler_post(struct kprobe *p,
 	show_all_pfn(current, regs);
 }
 
-static int __init user_fault_module_init(void)
+static int __nocfi user_fault_register_kprobe(void *data)
 {
 	int ret;
 
@@ -977,12 +979,12 @@ static int __init user_fault_module_init(void)
 		pr_err("register_kprobe failed, returned %d\n", ret);
 		return -1;
 	}
-	pr_info("kprobe lookup offset at %px\n", kp_lookup_name.addr);
+	pr_debug("kprobe lookup offset at %px\n", kp_lookup_name.addr);
 
 	aml_syms_lookup = (unsigned long (*)(const char *name))kp_lookup_name.addr;
 
 	aml_init_mm = (struct mm_struct *)aml_syms_lookup("init_mm");
-	pr_info("aml_init_mm: %px\n", aml_init_mm);
+	pr_debug("aml_init_mm: %px\n", aml_init_mm);
 
 	kp_show_regs.post_handler = show_regs_handler_post;
 	ret = register_kprobe(&kp_show_regs);
@@ -999,6 +1001,13 @@ static int __init user_fault_module_init(void)
 			kp_bad_el0_sync.symbol_name, ret);
 		return -1;
 	}
+
+	return 0;
+}
+
+static int __init user_fault_module_init(void)
+{
+	kthread_run(user_fault_register_kprobe, NULL, "AML_USER_FAULT");
 
 	return 0;
 }

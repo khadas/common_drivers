@@ -116,7 +116,8 @@
 /* 2023.05.24 fix 1366*768 identify to 1360*768 */
 /* 2023.8.3 phy flow and aud pkt judge */
 /* 2023.08.01 add t3x poweroff */
-#define RX_VER2 "ver.2023/8/7"
+/* 2023.08.15 support black pattern for t7~t5w */
+#define RX_VER2 "ver.2023/08/15"
 
 #define PFIFO_SIZE 160
 #define HDCP14_KEY_SIZE 368

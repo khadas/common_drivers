@@ -5108,6 +5108,8 @@ void hdmirx_set_vp_mapping(enum colorspace_e cs, u8 port)
  */
 void hdmirx_set_video_mute(bool mute, u8 port)
 {
+	static bool pre_mute_flag;
+
 	/* bluescreen cfg */
 	if (rx_info.chip_id >= CHIP_ID_T5M) {
 		if (rx[port].pre.colorspace == E_COLOR_RGB) {
@@ -5125,7 +5127,13 @@ void hdmirx_set_video_mute(bool mute, u8 port)
 		hdmirx_wr_bits_top_common(TOP_OVID_OVERRIDE0, _BIT(30), mute);
 		hdmirx_wr_bits_top_common_1(TOP_OVID_OVERRIDE0, _BIT(30), mute);
 	} else if (rx_info.chip_id >= CHIP_ID_T7 && rx_info.chip_id < CHIP_ID_T5M) {
-		/* not support black pattern */
+		if (mute && (rx_pkt_chk_attach_drm(port) ||
+			rx[port].vs_info_details.dolby_vision_flag != DV_NULL))
+			return;
+		if (mute != pre_mute_flag) {
+			vdin_set_black_pattern(mute);
+			pre_mute_flag = mute;
+		}
 	} else {
 		if (rx[port].pre.colorspace == E_COLOR_RGB) {
 			hdmirx_wr_bits_dwc(DWC_HDMI_VM_CFG_CH2, MSK(16, 0), 0x00);

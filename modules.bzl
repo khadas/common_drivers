@@ -197,6 +197,7 @@ AMLOGIC_UPGRADE_U_MODULES = AMLOGIC_UPGRADE_COMMON_MODULES + [
 
 UPGRADE_MODULES_REMOVE_R = [
     "common_drivers/drivers/tty/serial/amlogic-uart.ko",
+    "kernel/kheaders.ko",
 ]
 
 UPGRADE_MODULES_REMOVE_S = [
@@ -223,6 +224,7 @@ UPGRADE_MODULES_REMOVE_P = [
     "drivers/net/mdio/mdio-mux.ko",
     "drivers/net/pcs/pcs_xpcs.ko",
     "drivers/net/mii.ko",
+    "kernel/kheaders.ko",
 ]
 
 UPGRADE_MODULES_REMOVE_U = [

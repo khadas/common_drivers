@@ -1275,6 +1275,7 @@ static struct clk_regmap g12a_gp0_pll_dco = {
 		.table = g12a_gp0_pll_table,
 		.init_regs = g12a_gp0_init_regs,
 		.init_count = ARRAY_SIZE(g12a_gp0_init_regs),
+		.flags = CLK_MESON_PLL_IGNORE_INIT,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "gp0_pll_dco",
@@ -1283,6 +1284,7 @@ static struct clk_regmap g12a_gp0_pll_dco = {
 			.fw_name = "xtal",
 		},
 		.num_parents = 1,
+		.flags = CLK_IGNORE_UNUSED,
 	},
 };
 
@@ -3658,7 +3660,6 @@ static struct clk_regmap g12a_mali_0_sel = {
 		.ops = &clk_regmap_mux_ops,
 		.parent_data = g12a_mali_0_1_parent_data,
 		.num_parents = ARRAY_SIZE(g12a_mali_0_1_parent_data),
-		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -3707,7 +3708,6 @@ static struct clk_regmap g12a_mali_1_sel = {
 		.ops = &clk_regmap_mux_ops,
 		.parent_data = g12a_mali_0_1_parent_data,
 		.num_parents = ARRAY_SIZE(g12a_mali_0_1_parent_data),
-		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 

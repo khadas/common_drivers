@@ -65,6 +65,7 @@
 #define DEMOD_TOP_REG8		(0x08)
 #define DEMOD_TOP_REGC		(0x0C)
 #define DEMOD_TOP_CFG_REG_4	(0x10)
+#define DEMOD_TOP_CFG_REG_6	(0x18)
 #define DEMOD_FRONT_REG38	(0x38)
 #define DEMOD_FRONT_REG39	(0x39)
 

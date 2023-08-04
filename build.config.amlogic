@@ -169,7 +169,7 @@ if [[ `grep "CONFIG_AMLOGIC_BREAK_GKI=y" ${ROOT_DIR}/${FRAGMENT_CONFIG}` ]]; the
 	"
 fi
 
-if [[ -n ${UPGRADE_PROJECT} ]]; then
+if [[ -z ${GKI_CONFIG} ]]; then
 	KMI_SYMBOL_LIST_STRICT_MODE=""
 	TRIM_NONLISTED_KMI=""
 fi

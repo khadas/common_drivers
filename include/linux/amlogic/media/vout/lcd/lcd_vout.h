@@ -70,7 +70,7 @@ extern unsigned int lcd_debug_print_flag;
 /* ******** clk_ctrl ******** */
 #define CLK_CTRL_LEVEL              28 /* [30:28] */
 #define CLK_CTRL_FRAC_SHIFT         24 /* [24] */
-#define CLK_CTRL_FRAC               0  /* [18:0] */
+#define CLK_CTRL_FRAC               0  /* [23:0] */
 
 /* **********************************
  * VENC to TCON sync delay
@@ -154,7 +154,7 @@ struct lcd_timing_s {
 	unsigned char fr_adjust_type; /* 0=clock, 1=htotal, 2=vtotal */
 	unsigned char clk_change; /* internal used */
 	unsigned int lcd_clk;   /* pixel clock(unit: Hz) */
-	unsigned int bit_rate; /* Hz */
+	unsigned long long bit_rate; /* Hz */
 	unsigned int base_pixel_clk; /* internal used */
 	unsigned int base_h_period; /* internal used */
 	unsigned int base_v_period; /* internal used */
@@ -172,6 +172,7 @@ struct lcd_timing_s {
 	unsigned int frame_rate;
 	unsigned int ppc;
 	unsigned int clk_mode;
+	unsigned int enc_clk;
 
 	unsigned int hstart;
 	unsigned int hend;
@@ -283,8 +284,8 @@ struct vbyone_config_s {
 #define SYNC_EVENT               0x1
 #define BURST_MODE               0x2
 
-/* unit: kHz */
-#define MIPI_BIT_RATE_MAX        1500000
+/* unit: Hz */
+#define MIPI_BIT_RATE_MAX        1500000000ULL
 
 /* command config */
 #define DSI_CMD_SIZE_INDEX       1  /* byte[1] */
@@ -317,8 +318,9 @@ struct dsi_config_s {
 	unsigned char clk_always_hs; /* 0=disable, 1=enable */
 	unsigned char phy_switch; /* 0=auto, 1=standard, 2=slow */
 
-	unsigned int local_bit_rate_max; /* kHz */
-	unsigned int local_bit_rate_min; /* kHz*/
+	unsigned long long local_bit_rate_max; /* Hz */
+	unsigned long long local_bit_rate_min; /* Hz*/
+	unsigned int lane_byte_clk;
 	unsigned int venc_data_width;
 	unsigned int dpi_data_format;
 	unsigned int data_bits;

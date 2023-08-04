@@ -611,7 +611,7 @@ struct vdin_dv_s {
 	void *meta_data_raw_v_buffer0;/*for t7*/
 	void *meta_data_raw_buffer1;/*for t7*/
 	unsigned int dv_flag_cnt;/*cnt for no dv input*/
-	u8 dv_flag;
+	u8 dv_flag; /*is signal dolby version 1:vsif 2:emp */
 	bool dv_config;
 	bool dv_path_idx;
 	bool dv_crc_check;/*0:fail;1:ok*/

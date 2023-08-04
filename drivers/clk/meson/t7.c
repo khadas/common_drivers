@@ -8296,22 +8296,6 @@ static struct platform_driver t7_driver = {
 	},
 };
 
-#ifndef CONFIG_AMLOGIC_MODIFY
 builtin_platform_driver(t7_driver);
-#else
-#ifndef MODULE
-static int t7_clkc_init(void)
-{
-	return platform_driver_register(&t7_driver);
-}
-arch_initcall_sync(t7_clkc_init);
-#else
-int __init meson_t7_clkc_init(void)
-{
-	return platform_driver_register(&t7_driver);
-}
-module_init(meson_t7_clkc_init);
-#endif
-#endif
 
 MODULE_LICENSE("GPL v2");

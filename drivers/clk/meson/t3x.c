@@ -7259,10 +7259,6 @@ static struct platform_driver t3x_driver = {
 	},
 };
 
-int __init meson_t3x_clkc_init(void)
-{
-	return platform_driver_register(&t3x_driver);
-}
-module_init(meson_t3x_clkc_init);
+builtin_platform_driver(t3x_driver);
 
 MODULE_LICENSE("GPL v2");

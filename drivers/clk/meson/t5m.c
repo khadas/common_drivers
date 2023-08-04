@@ -5837,22 +5837,6 @@ static struct platform_driver t5m_driver = {
 	},
 };
 
-#ifndef CONFIG_AMLOGIC_MODIFY
 builtin_platform_driver(t5m_driver);
-#else
-#ifndef MODULE
-static int t5m_clkc_init(void)
-{
-	return platform_driver_register(&t5m_driver);
-}
-arch_initcall_sync(t5m_clkc_init);
-#else
-int __init meson_t5m_clkc_init(void)
-{
-	return platform_driver_register(&t5m_driver);
-}
-module_init(meson_t5m_clkc_init);
-#endif
-#endif
 
 MODULE_LICENSE("GPL v2");

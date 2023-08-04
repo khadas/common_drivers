@@ -1104,8 +1104,8 @@
 			compatible = "amlogic,crypto_s4d";
 			dev_name = "aml_crypto_dev";
 			status = "okay";
-			thread = /bits/ 8 <0x5>;
-			interrupts = <0 29 1>;
+			thread = /bits/ 8 <0x1>;
+			interrupts = <0 25 1>;
 		};
 	};
 

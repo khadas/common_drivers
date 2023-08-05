@@ -9,7 +9,7 @@
 #include <linux/clk.h>
 #include "hdmi_tx_cec_20.h"
 
-#define CEC_DRIVER_VERSION     "2023/06/01: txhd2 bringup"
+#define CEC_DRIVER_VERSION     "2023/08/05: s1a bringup"
 
 #define CEC_DEV_NAME		"cec"
 
@@ -50,6 +50,7 @@ enum cec_chip_ver {
 	CEC_CHIP_S5,
 	CEC_CHIP_T3X, /* base on T3, only have cec_b */
 	CEC_CHIP_TXHD2, /* base on T5M, only have cec_b */
+	CEC_CHIP_S1A,
 };
 
 enum cecaver {

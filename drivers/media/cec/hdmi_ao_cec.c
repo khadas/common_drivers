@@ -2180,6 +2180,19 @@ static const struct cec_platform_data_s cec_s4_data = {
 	.reg_tab_group = cec_reg_group_a1,
 };
 
+/* s1a based on s4d */
+static const struct cec_platform_data_s cec_s1a_data = {
+	.chip_id = CEC_CHIP_S1A,
+	.line_reg = 0xff,/*don't check*/
+	.line_bit = 3,
+	.ee_to_ao = 1,
+	.ceca_sts_reg = 1,
+	.ceca_ver = CECA_NONE,
+	.cecb_ver = CECB_VER_3,
+	.share_io = true,
+	.reg_tab_group = cec_reg_group_a1,
+};
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct cec_platform_data_s cec_t3_data = {
 	.chip_id = CEC_CHIP_T3,
@@ -2318,6 +2331,10 @@ static const struct of_device_id aml_cec_dt_match[] = {
 	{
 		.compatible = "amlogic, aocec-s4",
 		.data = &cec_s4_data,
+	},
+	{
+		.compatible = "amlogic, aocec-s1a",
+		.data = &cec_s1a_data,
 	},
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{

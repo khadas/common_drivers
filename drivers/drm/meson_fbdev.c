@@ -164,6 +164,58 @@ static int am_meson_drm_fbdev_sync(struct fb_info *info)
 	return 0;
 }
 
+static int am_meson_drm_fbdev_setcmap(struct fb_cmap *cmap, struct fb_info *info)
+{
+	int count, index, r;
+	u16 *red, *green, *blue, *transp;
+	u16 trans = 0xffff;
+
+	red     = cmap->red;
+	green   = cmap->green;
+	blue    = cmap->blue;
+	transp  = cmap->transp;
+	index   = cmap->start;
+	DRM_DEBUG("%s\n", __func__);
+
+	for (count = 0; count < cmap->len; count++) {
+		if (transp)
+			trans = *transp++;
+		if (info->fbops->fb_setcolreg)
+			r = info->fbops->fb_setcolreg(index++, *red++, *green++, *blue++, trans,
+				     info);
+		if (r != 0)
+			return r;
+	}
+
+	return 0;
+}
+
+static int
+am_meson_drm_fbdev_setcolreg(unsigned int regno, unsigned int red, unsigned int green,
+			     unsigned int blue, unsigned int transp, struct fb_info *info)
+{
+	struct drm_fb_helper *helper = info->par;
+	struct fb_var_screeninfo *var = &info->var;
+	struct meson_drm_fbdev *fbdev = container_of(helper, struct meson_drm_fbdev, base);
+	struct drm_device *dev = helper->dev;
+	struct am_osd_plane *osd_plane = to_am_osd_plane(fbdev->plane);
+
+	MESON_DRM_FBDEV("%s, pixel is %d bits\n", __func__, var->bits_per_pixel);
+	if (var->bits_per_pixel == 8 && regno < 256) {
+		drm_modeset_lock_all(dev);
+		fbdev->fbdev_rec_palette[regno] = ((red & 0xff) << 24) |
+						  ((green & 0xff) << 16) |
+						  ((blue  & 0xff) <<  8) |
+						  (transp & 0xff);
+		osd_plane->receive_palette = &fbdev->fbdev_rec_palette[0];
+		MESON_DRM_FBDEV("palette index-%d value-0x%x.\n", regno,
+			osd_plane->receive_palette[regno]);
+		drm_modeset_unlock_all(dev);
+	}
+
+	return 0;
+}
+
 static int am_meson_drm_fbdev_ioctl(struct fb_info *info,
 				    unsigned int cmd, unsigned long arg)
 {
@@ -313,9 +365,12 @@ int am_meson_drm_fb_helper_set_par(struct fb_info *info)
 	struct meson_drm_fbdev *fbdev = container_of(fb_helper, struct meson_drm_fbdev, base);
 	struct drm_gem_object *fb_gem = fbdev->fb_gem;
 	struct drm_fb_helper_surface_size sizes;
+	struct drm_device *dev = fb_helper->dev;
+	struct drm_mode_fb_cmd2 mode_cmd = { 0 };
 	unsigned int bytes_per_pixel;
 	u32 xres_set = var->xres;
 	u32 yres_set = var->yres;
+	int depth;
 
 	if (oops_in_progress)
 		return -EBUSY;
@@ -337,10 +392,33 @@ int am_meson_drm_fb_helper_set_par(struct fb_info *info)
 		sizes.surface_bpp = var->bits_per_pixel;
 		sizes.surface_depth = PREFERRED_DEPTH;
 
+		switch (var->bits_per_pixel) {
+		case 16:
+			depth = (var->green.length == 6) ? 16 : 15;
+			break;
+		case 32:
+			depth = (var->transp.length > 0) ? 32 : 24;
+			break;
+		default:
+			depth = var->bits_per_pixel;
+			break;
+		}
+
+		mode_cmd.width = sizes.surface_width;
+		mode_cmd.height = sizes.surface_height;
+		mode_cmd.pixel_format = drm_mode_legacy_fb_format(sizes.surface_bpp, depth);
+		mode_cmd.pitches[0] = ALIGN(mode_cmd.width * bytes_per_pixel, 64);
+		MESON_DRM_FBDEV("DRM Pixel Format: %c%c%c%c\n",
+				(mode_cmd.pixel_format & 0xFF),
+				((mode_cmd.pixel_format >> 8) & 0xFF),
+				((mode_cmd.pixel_format >> 16) & 0xFF),
+				((mode_cmd.pixel_format >> 24) & 0xFF));
+
 		fb->width = sizes.fb_width;
 		fb->height = sizes.fb_height;
 		bytes_per_pixel = DIV_ROUND_UP(sizes.surface_bpp, 8);
 		fb->pitches[0] =  ALIGN(fb->width * bytes_per_pixel, 64);
+		fb->format = drm_get_format_info(dev, &mode_cmd);
 
 		info->screen_size = fb->pitches[0] * fb->height;
 		//info->fix.smem_len = info->screen_size;
@@ -365,8 +443,7 @@ int am_meson_drm_fb_helper_set_par(struct fb_info *info)
 		}
 	}
 	drm_wait_one_vblank(fb_helper->dev, 0);
-
-	DRM_INFO("%s OUT\n", __func__);
+	DRM_INFO("fb_set_par: %s OUT\n", __func__);
 
 	return 0;
 }
@@ -522,7 +599,8 @@ static struct fb_ops meson_drm_fbdev_ops = {
 	.fb_set_par	= am_meson_drm_fb_helper_set_par,
 	.fb_blank	= am_meson_drm_fb_blank,
 	.fb_pan_display	= am_meson_drm_fb_pan_display,
-	.fb_setcmap	= drm_fb_helper_setcmap,
+	.fb_setcmap	= am_meson_drm_fbdev_setcmap,
+	.fb_setcolreg   = am_meson_drm_fbdev_setcolreg,
 	.fb_sync	= am_meson_drm_fbdev_sync,
 	.fb_ioctl       = am_meson_drm_fbdev_ioctl,
 #ifdef CONFIG_COMPAT

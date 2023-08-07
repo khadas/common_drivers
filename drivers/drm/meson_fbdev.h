@@ -44,6 +44,7 @@ struct meson_drm_fbdev {
 	struct drm_gem_object *fb_gem;
 	struct drm_mode_set modeset;
 	u32 zorder;
+	u32 fbdev_rec_palette[256];
 	bool blank;
 };
 

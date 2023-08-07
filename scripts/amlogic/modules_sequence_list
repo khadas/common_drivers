@@ -63,6 +63,17 @@ COMMON_GKI_MODULES_LIST=(
 	zram.ko
 	libarc4.ko
 	rfkill.ko
+	mii.ko
+	aqc111.ko
+	asix.ko
+	ax88179_178a.ko
+	cdc_eem.ko
+	cdc_ether.ko
+	cdc_ncm.ko
+	r8152.ko
+	r8153_ecm.ko
+	rtl8150.ko
+	usbnet.ko
 )
 
 GKI_MODULES_LOAD_WHITE_LIST=(

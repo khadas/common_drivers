@@ -321,6 +321,7 @@ static u32 osd_secure_input_index[] = {OSD1_INPUT_SECURE,
  * Internal function to query information for a given format. See
  * meson_drm_format_info() for the public API.
  */
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 const struct meson_drm_format_info *__meson_drm_format_info(u32 format)
 {
 	static const struct meson_drm_format_info formats[] = {
@@ -391,6 +392,7 @@ const struct meson_drm_format_info *__meson_drm_format_info(u32 format)
 
 	return NULL;
 }
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 const struct meson_drm_format_info *__meson_drm_format_info_t3x(u32 format)
@@ -576,6 +578,7 @@ const struct meson_drm_format_info *__meson_drm_format_info_s1a(u32 format)
 	return NULL;
 }
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 const struct meson_drm_format_info *__meson_drm_afbc_format_info(u32 format)
 {
 	static const struct meson_drm_format_info formats[] = {
@@ -623,6 +626,7 @@ const struct meson_drm_format_info *__meson_drm_afbc_format_info(u32 format)
 
 	return NULL;
 }
+#endif
 
 /**
  * meson_drm_format_info - query information for a given format
@@ -635,6 +639,7 @@ const struct meson_drm_format_info *__meson_drm_afbc_format_info(u32 format)
  * The instance of struct meson_drm_format_info that describes the
  * pixel format, or NULL if the format is unsupported.
  */
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 const struct meson_drm_format_info *meson_drm_format_info(u32 format,
 							  bool afbc_en)
 {
@@ -647,6 +652,7 @@ const struct meson_drm_format_info *meson_drm_format_info(u32 format,
 	WARN_ON(!info);
 	return info;
 }
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 const struct meson_drm_format_info *meson_drm_format_info_t3x(u32 format,
@@ -683,6 +689,7 @@ const struct meson_drm_format_info *meson_drm_format_info_s1a(u32 format,
  * Returns:
  * The hw_blkmode match the specified pixel format.
  */
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 static u8 meson_drm_format_hw_blkmode(u32 format, bool afbc_en)
 {
 	const struct meson_drm_format_info *info;
@@ -690,6 +697,7 @@ static u8 meson_drm_format_hw_blkmode(u32 format, bool afbc_en)
 	info = meson_drm_format_info(format, afbc_en);
 	return info ? info->hw_blkmode : 0;
 }
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static u8 meson_drm_format_hw_blkmode_t3x(u32 format, bool afbc_en)
@@ -716,6 +724,7 @@ static u8 meson_drm_format_hw_blkmode_s1a(u32 format, bool afbc_en)
  * Returns:
  * The hw_colormat match the specified pixel format.
  */
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 static u8 meson_drm_format_hw_colormat(u32 format, bool afbc_en)
 {
 	const struct meson_drm_format_info *info;
@@ -723,6 +732,7 @@ static u8 meson_drm_format_hw_colormat(u32 format, bool afbc_en)
 	info = meson_drm_format_info(format, afbc_en);
 	return info ? info->hw_colormat : 0;
 }
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static u8 meson_drm_format_hw_colormat_t3x(u32 format, bool afbc_en)
@@ -749,6 +759,7 @@ static u8 meson_drm_format_hw_colormat_s1a(u32 format, bool afbc_en)
  * Returns:
  * The alpha_replace match the specified pixel format.
  */
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 static u8 meson_drm_format_alpha_replace(u32 format, bool afbc_en)
 {
 	const struct meson_drm_format_info *info;
@@ -756,6 +767,7 @@ static u8 meson_drm_format_alpha_replace(u32 format, bool afbc_en)
 	info = meson_drm_format_info(format, afbc_en);
 	return info ? info->alpha_replace : 0;
 }
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static u8 meson_drm_format_alpha_replace_t3x(u32 format, bool afbc_en)
@@ -979,11 +991,13 @@ static void osd_color_config(struct meson_vpu_block *vblk,
 		color = meson_drm_format_hw_colormat_s1a(pixel_format, afbc_en);
 		alpha_replace = (pixel_blend == DRM_MODE_BLEND_PIXEL_NONE) ||
 		meson_drm_format_alpha_replace_s1a(pixel_format, afbc_en);
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 	} else {
 		blk_mode = meson_drm_format_hw_blkmode(pixel_format, afbc_en);
 		color = meson_drm_format_hw_colormat(pixel_format, afbc_en);
 		alpha_replace = (pixel_blend == DRM_MODE_BLEND_PIXEL_NONE) ||
 			meson_drm_format_alpha_replace(pixel_format, afbc_en);
+#endif
 	}
 	reg_ops->rdma_write_reg_bits(reg->viu_osd_blk0_cfg_w0,
 					blk_mode, 8, 4);

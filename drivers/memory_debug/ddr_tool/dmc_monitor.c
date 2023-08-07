@@ -1451,10 +1451,12 @@ static const struct of_device_id dmc_monitor_match[] = {
 		.data = (void *)DMC_TYPE_P1,
 	},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 	{
 		.compatible = "amlogic,dmc_monitor-s4",
 		.data = (void *)DMC_TYPE_S4,
 	},
+#endif
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic,dmc_monitor-sc2",

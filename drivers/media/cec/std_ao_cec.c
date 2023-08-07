@@ -1868,6 +1868,7 @@ static const struct cec_platform_data_s cec_t7_data = {
 	.share_io = true,
 	.reg_tab_group = cec_reg_group_a1,
 };
+#endif
 
 static const struct cec_platform_data_s cec_s4_data = {
 	.chip_id = CEC_CHIP_S4,

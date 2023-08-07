@@ -190,6 +190,7 @@ static struct meson_vdac_data meson_t3_vdac_data = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 static struct meson_vdac_data meson_s4d_vdac_data = {
 	.cpu_id = VDAC_CPU_S4D,
 	.name = "meson-s4d-vdac",
@@ -200,6 +201,7 @@ static struct meson_vdac_data meson_s4d_vdac_data = {
 	.reg_vid2_clk_div = CLKCTRL_VIID_CLK_DIV,
 	.ctrl_table = vdac_ctrl_enable_s4,
 };
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct meson_vdac_data meson_t5w_vdac_data = {
@@ -309,10 +311,12 @@ const struct of_device_id meson_vdac_dt_match[] = {
 		.data		= &meson_t3_vdac_data,
 	},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 	{
 		.compatible = "amlogic, vdac-s4d",
 		.data		= &meson_s4d_vdac_data,
 	},
+#endif
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, vdac-t5w",

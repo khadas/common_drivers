@@ -395,6 +395,7 @@ const struct meson_sar_adc_param meson_sar_adc_txlx_param __initconst = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 const struct meson_sar_adc_param meson_sar_adc_g12a_param __initconst = {
 	.has_bl30_integration = false,
 	.clock_rate = 1200000,
@@ -412,6 +413,7 @@ const struct meson_sar_adc_param meson_sar_adc_g12a_param __initconst = {
 	.channels = meson_m8_sar_adc_iio_channels,
 	.num_channels = ARRAY_SIZE(meson_m8_sar_adc_iio_channels),
 };
+#endif
 
 const struct meson_sar_adc_param meson_sar_adc_txhd2_param __initconst = {
 	.has_bl30_integration = false,

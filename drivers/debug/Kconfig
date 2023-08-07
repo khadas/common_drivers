@@ -118,6 +118,13 @@ config AMLOGIC_ZAPPER_CUT
 	help
 	  remove more for zapper
 
+config AMLOGIC_ZAPPER_C1A
+	bool "zapper C1A"
+	depends on AMLOGIC_DEBUG
+	default n
+	help
+	  remove more for zapper c1a
+
 config AMLOGIC_REMOVE_OLD
 	bool "zapper cut"
 	depends on AMLOGIC_DEBUG

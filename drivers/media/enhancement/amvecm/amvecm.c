@@ -11970,6 +11970,7 @@ static const struct file_operations amvecm_fops = {
 	.poll = amvecm_poll,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 static const struct vecm_match_data_s vecm_dt_xxx = {
 	.chip_id = chip_other,
 	.chip_cls = OTHER_CLS,
@@ -11980,6 +11981,7 @@ static const struct vecm_match_data_s vecm_dt_xxx = {
 	.vlk_phlock_en = false,
 	.vlk_pll_sel = vlock_pll_sel_tcon,
 };
+#endif
 
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 static const struct vecm_match_data_s vecm_dt_tl1 = {
@@ -12149,10 +12151,12 @@ static const struct vecm_match_data_s vecm_dt_s1a = {
 };
 
 static const struct of_device_id aml_vecm_dt_match[] = {
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 	{
 		.compatible = "amlogic, vecm",
 		.data = &vecm_dt_xxx,
 	},
+#endif
 #ifndef CONFIG_AMLOGIC_REMOVE_OLD
 	{
 		.compatible = "amlogic, vecm-tl1",
@@ -12352,9 +12356,11 @@ static void aml_vecm_dt_parse(struct amvecm_dev_s *devp, struct platform_device 
 		if (of_id) {
 			pr_amvecm_dbg("%s", of_id->compatible);
 			matchdata = (struct vecm_match_data_s *)of_id->data;
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 		} else {
 			matchdata = (struct vecm_match_data_s *)&vecm_dt_xxx;
 			pr_amvecm_dbg("unable to get matched device\n");
+#endif
 		}
 		aml_vecm_match_init(matchdata);
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT

@@ -1417,6 +1417,7 @@ static struct ge2d_device_data_s ge2d_t3 = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 static struct ge2d_device_data_s ge2d_s4 = {
 	.ge2d_rate = 500000000,
 	.src2_alp = 1,
@@ -1431,6 +1432,7 @@ static struct ge2d_device_data_s ge2d_s4 = {
 	.adv_matrix = 1,
 	.src2_repeat = 1,
 };
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct ge2d_device_data_s ge2d_p1 = {
@@ -1616,10 +1618,12 @@ static const struct of_device_id ge2d_dt_match[] = {
 		.data = &ge2d_t3,
 	},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 	{
 		.compatible = "amlogic, ge2d-s4",
 		.data = &ge2d_s4,
 	},
+#endif
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, ge2d-p1",

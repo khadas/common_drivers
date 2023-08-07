@@ -3741,7 +3741,6 @@ static const struct di_meson_data  data_s5 = {
 		   IC_SUPPORT_DW	|
 		   IC_SUPPORT_TB
 };
-#endif
 
 static const struct di_meson_data  data_t3x = {
 	.name = "dim_t3x",
@@ -3750,6 +3749,7 @@ static const struct di_meson_data  data_t3x = {
 		   IC_SUPPORT_HDR	|
 		   IC_SUPPORT_DW
 };
+#endif
 
 /* #ifdef CONFIG_USE_OF */
 static const struct of_device_id amlogic_deinterlace_dt_match[] = {

@@ -17,6 +17,7 @@
 
 #define PRIORITY_NUM	(aml_db->ddr_priority_num & 0xffff)
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 static struct ddr_priority ddr_priority_s4[] __initdata = {
 	{ .port_id = 0, .reg_base = 0xfe036000,
 		.reg_mode = 0, .reg_config = 0,
@@ -93,6 +94,7 @@ static struct ddr_priority ddr_priority_s4[] __initdata = {
 		.w_offset = (0x7c << 2), .w_bit_s = 16, .w_width = 0x7,
 		.r_offset = (0x7c << 2), .r_bit_s = 16, .r_width = 0x7	}
 };
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct ddr_priority ddr_priority_t7[] __initdata = {
@@ -871,10 +873,12 @@ int __init ddr_find_port_priority(int cpu_type, struct ddr_priority **desc)
 		desc_size = ARRAY_SIZE(ddr_priority_t7);
 		break;
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 	case DMC_TYPE_S4:
 		*desc = ddr_priority_s4;
 		desc_size = ARRAY_SIZE(ddr_priority_s4);
 		break;
+#endif
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	case DMC_TYPE_S5:
 		*desc = ddr_priority_s5;

@@ -1951,6 +1951,7 @@ static struct vpu_data_s vpu_data_t3 = {
 };
 #endif
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 static struct vpu_data_s vpu_data_s4d = {
 	.chip_type = VPU_CHIP_S4D,
 	.chip_name = "s4d",
@@ -1993,6 +1994,7 @@ static struct vpu_data_s vpu_data_s4d = {
 	.clk_apply = vpu_clk_apply_dft,
 	.clktree_init = vpu_clktree_init_dft,
 };
+#endif
 
 static struct vpu_data_s vpu_data_s1a = {
 	.chip_type = VPU_CHIP_S1A,
@@ -2364,10 +2366,12 @@ static const struct of_device_id vpu_of_table[] = {
 		.data = &vpu_data_s4,
 	},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 	{
 		.compatible = "amlogic, vpu-s4d",
 		.data = &vpu_data_s4d,
 	},
+#endif
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{
 		.compatible = "amlogic, vpu-t3",

@@ -286,6 +286,7 @@ static const struct component_ops am_meson_vpu_component_ops = {
 	.unbind = am_meson_vpu_unbind,
 };
 
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 static const struct meson_vpu_data vpu_g12a_data = {
 	.crtc_func = {
 		.reg_ops = t7_reg_ops,
@@ -300,6 +301,7 @@ static const struct meson_vpu_data vpu_g12a_data = {
 	.postblend_ops = &postblend_ops,
 	.video_ops = &video_ops,
 };
+#endif
 
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static const struct meson_vpu_data vpu_g12b_data = {
@@ -453,8 +455,10 @@ static const struct of_device_id am_meson_vpu_driver_dt_match[] = {
 	{.compatible = "amlogic, meson-sc2-vpu",
 	  .data = &vpu_g12a_data,},
 #endif
+#ifndef CONFIG_AMLOGIC_ZAPPER_C1A
 	{.compatible = "amlogic, meson-s4-vpu",
 	  .data = &vpu_g12a_data,},
+#endif
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{.compatible = "amlogic, meson-t7-vpu",
 	 .data = &vpu_t7_data,},

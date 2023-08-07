@@ -8,7 +8,6 @@ CONFIG_AMLOGIC_COMMON_USB=y
 
 # build in for amlogic memory change
 CONFIG_AMLOGIC_SLAB_TRACE=y
-CONFIG_AMLOGIC_USER_FAULT=y
 
 # debug builtin
 CONFIG_AMLOGIC_BGKI_DEBUG_MISC=y

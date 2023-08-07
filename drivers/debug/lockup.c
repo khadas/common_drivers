@@ -589,7 +589,7 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 	 * We need more strict filtering rules
 	 */
 
-#ifdef CONFIG_AMLOGIC_SEC
+#if IS_ENABLED(CONFIG_AMLOGIC_SECMON)
 	/*
 	 * filter out secure monitor region
 	 */

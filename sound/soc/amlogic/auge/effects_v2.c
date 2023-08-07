@@ -23,6 +23,7 @@
 
 #define DRV_NAME "Effects"
 //#define DEBUG
+#define AED_REG_NUM	13
 
 /*
  * AED Diagram
@@ -62,12 +63,31 @@ struct audioeffect {
 	int lane_mask;
 	int ch_mask;
 
-	/*which module should be effected */
+	/* which module should be effected */
 	int effect_module;
 	unsigned int syssrc_clk_rate;
+	/* store user setting */
+	u32 user_setting[AED_REG_NUM];
+
 };
 
 struct audioeffect *s_effect;
+/* Restore AED register parameters after standby */
+static unsigned int aed_restore_list[AED_REG_NUM] = {
+	AED_EQ_VOLUME,
+	AED_EQ_VOLUME_SLEW_CNT,
+	AED_MUTE,
+	AED_MIX0_LL,
+	AED_MIX0_RL,
+	AED_MIX0_LR,
+	AED_MIX0_RR,
+	AED_CLIP_THD,
+	AED_DC_EN,
+	AED_ND_CNTL,
+	AED_EQ_EN,
+	AED_MDRC_CNTL,
+	AED_DRC_CNTL,
+};
 
 static struct audioeffect *get_audioeffects(void)
 {
@@ -745,6 +765,10 @@ static int effect_platform_probe(struct platform_device *pdev)
 static int effect_platform_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct audioeffect *p_effect = dev_get_drvdata(&pdev->dev);
+	int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(aed_restore_list); i++)
+		p_effect->user_setting[i] = eqdrc_read(aed_restore_list[i]);
 
 	aml_set_aed(0, p_effect->effect_module);
 
@@ -760,11 +784,11 @@ static int effect_platform_resume(struct platform_device *pdev)
 {
 	struct audioeffect *p_effect = dev_get_drvdata(&pdev->dev);
 	int ret;
-
-	audiobus_write(EE_AUDIO_CLK_GATE_EN0, 0xffffffff);
-	audiobus_update_bits(EE_AUDIO_CLK_GATE_EN1, 0x7, 0x7);
+	int i = 0;
 
 	if (!IS_ERR(p_effect->clk)) {
+		audiobus_write(EE_AUDIO_CLK_GATE_EN0, 0xffffffff);
+		audiobus_update_bits(EE_AUDIO_CLK_GATE_EN1, 0x7, 0x7);
 		ret = clk_set_parent(p_effect->clk, NULL);
 		if (ret) {
 			dev_warn(&pdev->dev, "Can't set eqdrc clock parent as null\n");
@@ -783,6 +807,9 @@ static int effect_platform_resume(struct platform_device *pdev)
 		}
 	}
 	effect_init(pdev);
+
+	for (i = 0; i < ARRAY_SIZE(aed_restore_list); i++)
+		eqdrc_write(aed_restore_list[i], p_effect->user_setting[i]);
 
 	pr_debug("%s\n", __func__);
 	return 0;

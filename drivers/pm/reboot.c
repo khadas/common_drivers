@@ -58,6 +58,7 @@ static struct reboot_reason_str reboot_reason_name[MESON_MAX_REBOOT] = {
 
 #if IS_ENABLED(CONFIG_AMLOGIC_DEBUG)
 static unsigned int scramble_reg;
+void __iomem *vaddr;
 module_param(scramble_reg, uint, 0644);
 
 static int scramble_reg_setup(char *buf)
@@ -71,7 +72,8 @@ static int scramble_reg_setup(char *buf)
 	}
 
 	pr_info("scramble_reg=%x\n", scramble_reg);
-
+	if (scramble_reg)
+		vaddr = ioremap(scramble_reg, 4);
 	return 0;
 }
 __setup("scramble_reg=", scramble_reg_setup);
@@ -82,20 +84,13 @@ __setup("scramble_reg=", scramble_reg_setup);
  */
 static void scramble_clear_preserve(void)
 {
-	void __iomem *vaddr;
 	unsigned int val;
 
-	if (scramble_reg) {
-		vaddr = ioremap(scramble_reg, 4);
-		if (!vaddr)
-			return;
-
+	if (vaddr) {
 		val = readl(vaddr);
 		val = val & (~0x1);
 		writel(val, vaddr);
-
-		iounmap(vaddr);
-		pr_info("clear STARTUP_KEY_PRESERVE bit0, no request to preserve REE Scramble Key\n");
+		pr_info("STARTUP_KEY_PRESERVE\n");
 	}
 }
 #endif

@@ -91,6 +91,9 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_DEINTERLACE
 #include <linux/amlogic/media/di/di_interface.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_FRC
+#include <linux/amlogic/media/frc/frc_common.h>
+#endif
 
 struct video_layer_s vd_layer[MAX_VD_LAYER];
 struct disp_info_s glayer_info[MAX_VD_LAYER];
@@ -11328,6 +11331,9 @@ static void fgrain_start(struct video_layer_s *layer, u8 vpp_index)
 
 	glayer_info[layer_id].fgrain_start = true;
 	glayer_info[layer_id].fgrain_force_update = true;
+	if (debug_common_flag & DEBUG_FLAG_COMMON_FG)
+		pr_info("%s:vd=%d\n",
+			__func__, layer->layer_id);
 }
 
 static void fgrain_stop(struct video_layer_s *layer, u8 vpp_index)
@@ -11348,6 +11354,9 @@ static void fgrain_stop(struct video_layer_s *layer, u8 vpp_index)
 			       reg_fgrain_loc_en,
 			       0, 2);
 	glayer_info[layer_id].fgrain_start = false;
+	if (debug_common_flag & DEBUG_FLAG_COMMON_FG)
+		pr_info("%s:vd=%d\n",
+			__func__, layer->layer_id);
 }
 
 static void fgrain_set_window(struct video_layer_s *layer,
@@ -11586,6 +11595,12 @@ void fgrain_setting(struct video_layer_s *layer,
 			fgrain_set_window(layer, setting, vpp_index);
 		}
 	}
+	if (debug_common_flag & DEBUG_FLAG_COMMON_FG)
+		pr_info("%s:vd=%d, fgrain_enable=%d, fgs_valid=%d\n",
+			__func__,
+			layer->layer_id,
+			glayer_info[layer_id].fgrain_enable,
+			vf->fgs_valid);
 }
 
 void fgrain_update_table(struct video_layer_s *layer,
@@ -11611,6 +11626,12 @@ void fgrain_update_table(struct video_layer_s *layer,
 			fgrain_write(layer_id, vf->fgs_table_adr);
 		}
 	}
+	if (debug_common_flag & DEBUG_FLAG_COMMON_FG_MORE)
+		pr_info("%s:vd=%d, fgrain_enable=%d, fgs_valid=%d\n",
+			__func__,
+			layer->layer_id,
+			glayer_info[layer_id].fgrain_enable,
+			vf->fgs_valid);
 }
 
 #else
@@ -11656,7 +11677,8 @@ bool aisr_update_frame_info(struct video_layer_s *layer,
 	/* update layer->aisr_mif_setting */
 	if (vf->vc_private &&
 	    vf->vc_private->flag & VC_FLAG_AI_SR &&
-	    layer->slice_num <= 1) {
+	    layer->slice_num <= 1 &&
+	    check_aisr_need_disable(layer)) {
 		struct vf_nn_sr_t *srout_data = NULL;
 
 		layer->slice_num = 1;
@@ -11714,6 +11736,26 @@ bool aisr_update_frame_info(struct video_layer_s *layer,
 		}
 	} else {
 		layer->aisr_mif_setting.aisr_enable = 0;
+		#ifdef test
+		if (vf->vc_private &&
+		    vf->vc_private->flag & VC_FLAG_AI_SR &&
+		    layer->slice_num >= 2) {
+			if ((frc_get_n2m_setting() == 2) && !frc_is_on()) {
+				struct disp_info_s *layer = NULL;
+
+				/* if axis is odd, need adjust to even */
+				layer = &glayer_info[layer->layer_id];
+				if (layer->layer_height % 2)
+					layer->layer_height++;
+				if (layer->layer_width % 2)
+					layer->layer_width++;
+				if (debug_flag)
+					pr_info("%s: adjust layer_width=%d, layer_height=%d\n",
+						__func__,
+						layer->layer_width, layer->layer_height);
+			}
+		}
+		#endif
 	}
 	if (layer->aisr_mif_setting.aisr_enable !=
 		cur_dev->aisr_enable)

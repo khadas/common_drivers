@@ -20,6 +20,12 @@
 #define VIDEO_COMMON_HH
 #include "video_priv.h"
 
+extern int debug_common_flag;
+#define DEBUG_FLAG_COMMON_FRC      BIT(0)
+#define DEBUG_FLAG_COMMON_AISR     BIT(1)
+#define DEBUG_FLAG_COMMON_FG       BIT(2)
+#define DEBUG_FLAG_COMMON_FG_MORE  BIT(3)
+
 u32 is_crop_left_odd(struct vpp_frame_par_s *frame_par);
 void get_pre_hscaler_para(u8 layer_id, int *ds_ratio, int *flt_num);
 void get_pre_vscaler_para(u8 layer_id, int *ds_ratio, int *flt_num);
@@ -38,4 +44,6 @@ ssize_t reg_dump_store(struct class *cla,
 				const char *buf, size_t count);
 bool frc_n2m_worked(void);
 bool frc_n2m_1st_frame_worked(struct video_layer_s *layer);
+bool check_aisr_need_disable(struct video_layer_s *layer);
+bool is_aisr_enable(struct video_layer_s *layer);
 #endif

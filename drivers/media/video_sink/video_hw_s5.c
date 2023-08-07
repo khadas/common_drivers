@@ -11593,7 +11593,9 @@ void set_video_slice_policy(struct video_layer_s *layer,
 			/* 4k 120hz */
 			} else if (vinfo->width > 1920 && vinfo->height > 1080 &&
 				(vinfo->sync_duration_num /
-			    vinfo->sync_duration_den > 60) && (!frc_n2m_1st_frame_worked(layer))) {
+			    vinfo->sync_duration_den > 60) &&
+			    (!(frc_n2m_1st_frame_worked(layer) &&
+			    is_aisr_enable(layer)))) {
 				/* 4k120hz and !frc_n2m_worked, enalbe 2 slice, others 1 slice */
 				slice_num = 2;
 				if (video_is_meson_s5_cpu() && is_amdv_enable())
@@ -11602,9 +11604,11 @@ void set_video_slice_policy(struct video_layer_s *layer,
 				slice_num = 1;
 			}
 		}
-		if (src_width > 4096 && src_height > 2160)
+		if (src_width > 4096 && src_height > 2160) {
 			/* input: (4k-8k] */
 			slice_num = 4;
+			vd1s1_vd2_prebld_en = 0;
+		}
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
 		if (n2m_setting == 2 &&
 			slice_num != layer->slice_num) {

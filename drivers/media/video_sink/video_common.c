@@ -49,6 +49,8 @@
 #include "video_hw_s5.h"
 #include "video_reg_s5.h"
 #include "vpp_post_s5.h"
+#include "video_common.h"
+#include "video_priv.h"
 
 #if defined(CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM)
 #include <linux/amlogic/media/amvecm/amvecm.h>
@@ -88,6 +90,8 @@
 #include <linux/amlogic/media/frc/frc_common.h>
 #endif
 
+int debug_common_flag;
+static int aisr_size_threshold = 50;
 u32 is_crop_left_odd(struct vpp_frame_par_s *frame_par)
 {
 	int crop_left_odd;
@@ -1326,7 +1330,15 @@ bool frc_n2m_1st_frame_worked(struct video_layer_s *layer)
 {
 	static int last_status;
 	bool ret = false;
+
 #ifdef CONFIG_AMLOGIC_MEDIA_FRC
+	if (debug_common_flag & DEBUG_FLAG_COMMON_FRC)
+		pr_info("%s:frc_is_on()=%d, frc_drv_get_1st_frm=%d, frc_n2m_1st_frame=%d\n",
+			__func__,
+			frc_is_on(),
+			frc_drv_get_1st_frm(),
+			layer->frc_n2m_1st_frame);
+
 	if (!frc_is_on())
 		return ret;
 #endif
@@ -1344,3 +1356,50 @@ bool frc_n2m_1st_frame_worked(struct video_layer_s *layer)
 #endif
 	return ret;
 }
+
+bool check_aisr_need_disable(struct video_layer_s *layer)
+{
+	bool ret = false;
+	u32 layer_width, layer_height;
+	struct disp_info_s *disp_layer = &glayer_info[layer->layer_id];
+	const struct vinfo_s *info = NULL;
+
+	info = get_current_vinfo();
+	if (info) {
+		layer_width = disp_layer->layer_width;
+		layer_height = disp_layer->layer_height;
+		/* 1/4 full screen aisr disabled */
+		if (layer_width < info->width * aisr_size_threshold / 100 &&
+			layer_height < info->height * aisr_size_threshold / 100)
+			ret = false;
+		else
+			ret = true;
+	}
+	return ret;
+}
+
+bool is_aisr_enable(struct video_layer_s *layer)
+{
+	bool ret = false;
+	struct aisr_setting_s *aisr_mif_setting = &layer->aisr_mif_setting;
+
+	if (!aisr_mif_setting->aisr_enable ||
+		!cur_dev->aisr_enable)
+		ret = false;
+	else
+		ret = true;
+	if (debug_common_flag & DEBUG_FLAG_COMMON_AISR)
+		pr_info("%s:ret=%d(%d, %d)\n",
+			__func__,
+			ret,
+			aisr_mif_setting->aisr_enable,
+			cur_dev->aisr_enable);
+	return ret;
+}
+
+MODULE_PARM_DESC(debug_common_flag, "\n debug_common_flag\n");
+module_param(debug_common_flag, uint, 0664);
+
+MODULE_PARM_DESC(aisr_size_threshold, "\n aisr_size_threshold\n");
+module_param(aisr_size_threshold, uint, 0664);
+

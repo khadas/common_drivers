@@ -62,4 +62,18 @@ static inline void smc_sc2_mod_exit(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_SMARTCARD)
+int smc_mod_init(void);
+void smc_mod_exit(void);
+#else
+static inline int smc_mod_init(void)
+{
+	return 0;
+}
+
+static inline void smc_mod_exit(void)
+{
+}
+#endif
+
 #endif /* _DVB_MAIN_H__ */

@@ -15,12 +15,14 @@ static int __init dvb_main_init(void)
 	call_sub_init(aucpu_init);
 	call_sub_init(dsm_init);
 	call_sub_init(smc_sc2_mod_init);
+	call_sub_init(smc_mod_init);
 	pr_debug("### %s() end\n", __func__);
 	return 0;
 }
 
 static void __exit dvb_main_exit(void)
 {
+	smc_mod_exit();
 	smc_sc2_mod_exit();
 	dsm_exit();
 	aucpu_exit();

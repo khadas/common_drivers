@@ -30,6 +30,7 @@ config AMLOGIC_DVB_COMPAT
 
 source "$(COMMON_DRIVERS_DIR)/drivers/dvb/aucpu/Kconfig"
 source "$(COMMON_DRIVERS_DIR)/drivers/dvb/smartcard_sc2/Kconfig"
+source "$(COMMON_DRIVERS_DIR)/drivers/dvb/smartcard/Kconfig"
 
 endif
 

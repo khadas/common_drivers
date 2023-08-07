@@ -46,7 +46,7 @@
 #ifdef CONFIG_AMLOGIC_MODIFY
 #include <linux/amlogic/pwm-meson.h>
 
-//#define FOR_BACK_TRACE
+#define FOR_BACK_TRACE
 //#define M_DEBUG
 #ifdef M_DEBUG
 #define DEBUG

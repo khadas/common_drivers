@@ -1275,15 +1275,11 @@ void hdmitx21_video_mute_op(u32 flag, unsigned int path)
  */
 static void hdmitx_sdr_hdr_uevent(struct hdmitx_dev *hdev)
 {
-	if (hdev->hdmi_last_hdr_mode == 0 &&
-	    hdev->hdmi_current_hdr_mode != 0) {
+	if (hdev->hdmi_current_hdr_mode != 0) {
 		/* SDR -> HDR*/
-		hdev->hdmi_last_hdr_mode = hdev->hdmi_current_hdr_mode;
 		hdmitx21_set_uevent(HDMITX_HDR_EVENT, 1);
-	} else if ((hdev->hdmi_last_hdr_mode != 0) &&
-			(hdev->hdmi_current_hdr_mode == 0)) {
+	} else if (hdev->hdmi_current_hdr_mode == 0) {
 		/* HDR -> SDR*/
-		hdev->hdmi_last_hdr_mode = hdev->hdmi_current_hdr_mode;
 		hdmitx21_set_uevent(HDMITX_HDR_EVENT, 0);
 	}
 }
@@ -1719,8 +1715,11 @@ static void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 	}
 
 	/* if sdr/hdr mode change ,notify uevent to userspace*/
-	if (hdev->hdmi_current_hdr_mode != hdev->hdmi_last_hdr_mode)
+	if (hdev->hdmi_current_hdr_mode != hdev->hdmi_last_hdr_mode) {
+		/* NOTE: for HDR <-> HLG, also need update last mode */
+		hdev->hdmi_last_hdr_mode = hdev->hdmi_current_hdr_mode;
 		schedule_work(&hdev->work_hdr);
+	}
 	spin_unlock_irqrestore(&hdev->edid_spinlock, flags);
 }
 

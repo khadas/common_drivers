@@ -14,8 +14,8 @@
 struct dolby5_top1_md_hist {
 	u32 l1l4_md[2][4];
 	u8 hist[256];
-	void *hist_vaddr;
-	dma_addr_t hist_paddr;
+	void *hist_vaddr[2];
+	dma_addr_t hist_paddr[2];
 	u32 hist_size;
 	u16 histogram[2][128];
 };

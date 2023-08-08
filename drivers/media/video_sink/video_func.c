@@ -772,6 +772,8 @@ static void amdolby_vision_proc
 			}
 		}
 		/*************************************************/
+		if (!disp_vf_1) /*reset vf_top1 when video disable*/
+			layer_1->vf_top1 = NULL;
 		if (is_aml_hw5())
 			amdolby_vision_process_hw5
 				(layer_1->vf_top1,
@@ -4887,6 +4889,7 @@ void post_vsync_process(void)
 	vd_path_id_temp[0] = glayer_info[0].display_path_id;
 	vd_path_id_temp[1] = glayer_info[1].display_path_id;
 	vd_path_id_temp[2] = glayer_info[2].display_path_id;
+
 	for (i = 0; i < MAX_VIDEO_FAKE; i++) {
 		if (!vd_fake_func[i].video_process_flag)
 			if (vd_fake_func[i].vd_toggle_frame)
@@ -4913,6 +4916,7 @@ void post_vsync_process(void)
 			vd_layer[2].global_output, vd_layer[2].disable_video,
 			vd_layer[2].force_disable ? "true" : "false");
 #endif
+
 	/* filter setting management */
 	for (i = 0; i < cur_dev->max_vd_layers; i++) {
 		if (vd_layer[i].vd_func.vd_render_frame)

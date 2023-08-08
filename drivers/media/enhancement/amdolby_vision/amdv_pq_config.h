@@ -340,6 +340,7 @@ int get_inter_pq_flag(void);
 void set_inter_pq_flag(int flag);
 void set_cfg_id(uint id);
 void update_cp_cfg(void);
+void update_cp_cfg_hw5(bool update_pyramid);
 void get_dv_bin_config_hw5(void);
 
 #endif

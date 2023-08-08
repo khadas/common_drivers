@@ -9,7 +9,7 @@
 /*#define V2_4_3*/
 
 /*  driver version */
-#define DRIVER_VER "202300725"
+#define DRIVER_VER "202300811"
 
 #include <linux/types.h>
 #include "amdv_pq_config.h"
@@ -892,6 +892,9 @@ extern bool force_enable_top12_lut;
 extern u32 content_fps;
 extern u32 num_downsamplers;
 extern u32 force_sdr10;
+extern bool py_enabled;
+extern u8 force_drm[32];
+extern bool dv_unique_drm;
 /************/
 
 #define pr_dv_dbg(fmt, args...)\
@@ -1242,7 +1245,7 @@ int tv_top_set(u64 *top1_reg,
 			     bool hdr10,
 			     bool reset,
 			     bool toggle,
-			     bool top1_missed);
+			     bool pr_done);
 void dolby5_bypass_ctrl(unsigned int en);
 int load_reg_and_lut_file(char *fw_name, void **dst_buf);
 void read_txt_to_buf(char *reg_txt, void *reg_buf, int reg_num, bool is_reg);
@@ -1272,4 +1275,6 @@ int parse_sei_and_meta_ext_hw5(struct vframe_s *vf,
 void update_top1_onoff(struct vframe_s *vf);
 bool get_top1_onoff(void);
 void fixed_buf_config(void);
+bool is_dv_unique_drm(struct vframe_s *vf);
+
 #endif

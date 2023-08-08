@@ -592,6 +592,8 @@ static struct vframe_s *recv_common_dequeue_frame(struct video_recv_s *ins,
 	enum vframe_signal_fmt_e fmt;
 	enum vd_path_e vd_path;
 	int layer_info_id = 0;
+	int ret;
+	struct vframe_s *vf_top1 = NULL;
 #endif
 
 	if (!ins) {
@@ -660,12 +662,19 @@ static struct vframe_s *recv_common_dequeue_frame(struct video_recv_s *ins,
 	while (vf) {
 		if (!vf->frame_dirty) {
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+			ret = dolby_vision_need_wait_common(ins);
 			if ((glayer_info[0].display_path_id == ins->path_id ||
-			    is_multi_dv_mode()) &&
-			    dolby_vision_need_wait_common(ins)) {
+				is_multi_dv_mode()) && ret) {
 				if (debug_flag & DEBUG_FLAG_RECEIVER_DEBUG)
 					pr_info("ins->path_id %d,%s, wait\n",
 						ins->path_id, ins->recv_name);
+				if (ret == 4) {
+					if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
+						pr_info("first frame for top1\n");
+					amdv_parse_metadata_hw5_top1(vf);
+					amdolby_vision_process_hw5(vf, NULL,
+						vf->compWidth << 16 | vf->compHeight, 1, 0);
+				}
 				break;
 			}
 #endif
@@ -673,6 +682,21 @@ static struct vframe_s *recv_common_dequeue_frame(struct video_recv_s *ins,
 			if (vf) {
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_VECM
 				amvecm_process(path_id, ins, vf);
+#endif
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+				/*top1 enable, need check one more frame*/
+				if (is_amdv_enable() && get_top1_onoff()) {/*todo*/
+					vf_top1 = common_vf_peek(ins);
+					/*wait next new Fn+1 for top1, proc top2 Fn + top1 Fn+1*/
+					/*if no new frame, proc top2 Fn + repeat Top1 Fn*/
+					if (!vf_top1 &&
+						(debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)) {
+						pr_info("wait new frame for top1, %px\n", vf);
+						vf_top1 = vf;/*temporarily use cur vf for top1*/
+					} else if (!vf_top1) {
+						vf_top1 = vf;/*temporarily use cur vf for top1*/
+					}
+				}
 #endif
 				common_toggle_frame(ins, vf);
 				toggle_vf = vf;
@@ -690,9 +714,23 @@ static struct vframe_s *recv_common_dequeue_frame(struct video_recv_s *ins,
 
 				vd_path = glayer_info[layer_info_id].display_path_id ==
 					VFM_PATH_VIDEO_RENDER0 ? VD1_PATH : VD2_PATH;
+
 				if (glayer_info[0].display_path_id ==
-				    ins->path_id || is_multi_dv_mode())
-					dv_toggle_frame(vf, vd_path, true);
+				    ins->path_id || is_multi_dv_mode()) {
+					if (!get_top1_onoff() || !vf_top1) {/*no top1*/
+						dv_toggle_frame(vf, vd_path, true);
+					} else if (vf_top1) {/*top1 + top2*/
+						amdv_parse_metadata_hw5_top1(vf_top1);
+						dv_toggle_frame(vf, vd_path, true);
+					}
+				}
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+				vd_layer[0].vf_top1 = vf_top1;
+#endif
+				/*not drop frame or drop 3 in frame2-3*/
+				/*currently drop 2 in frame2-3,frame 2 pyramid missed*/
+				/*if (is_amdv_enable() && get_top1_onoff())*/
+					/*break;*/
 #endif
 			}
 		} else {

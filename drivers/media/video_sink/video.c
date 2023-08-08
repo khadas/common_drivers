@@ -3715,7 +3715,6 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 	struct vframe_s *vf_top1 = NULL;
 	int ret;
 	static bool force_top1_once;
-	static bool next_frame_miss_top1;
 #endif
 	struct vframe_s *cur_dispbuf_back = cur_dispbuf[0];
 	int toggle_cnt;
@@ -3964,12 +3963,6 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 				dv_vf_crc_check(vf)) {
 				break; // not render err crc frame
 			}
-			if (next_frame_miss_top1)
-				vf->src_fmt.top1_missed = true;
-			else
-				vf->src_fmt.top1_missed = false;
-
-			next_frame_miss_top1 = false;
 			/*top1 enable, need check one more frame*/
 			if (is_amdv_enable() && get_top1_onoff()) {/*todo*/
 				vf_top1 = amvideo_vf_peek();
@@ -3982,7 +3975,6 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 					//force_top1_once = true;
 					force_top1_once = false;
 					vf_top1 = vf;/*temporarily use cur vf for top1, no wait*/
-					next_frame_miss_top1 = true;
 				} else {
 					force_top1_once = false;
 				}
@@ -4007,6 +3999,8 @@ struct vframe_s *amvideo_toggle_frame(s32 *vd_path_id)
 					dv_new_vf = dv_toggle_frame(vf, VD1_PATH, true);
 				}
 			}
+			vd_layer[0].vf_top1 = vf_top1;
+
 			if (hold_video)
 				dv_new_vf = NULL;
 #endif
@@ -4170,9 +4164,6 @@ SET_FILTER:
 		display_frame_count++;
 		drop_frame_count = receive_frame_count - display_frame_count;
 	}
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-	vd_layer[0].vf_top1 = vf_top1;
-#endif
 	return path0_new_frame;
 }
 
@@ -5661,6 +5652,7 @@ s32 update_vframe_src_fmt(struct vframe_s *vf,
 	vf->src_fmt.sei_ptr = sei;
 	vf->src_fmt.sei_size = size;
 	vf->src_fmt.dual_layer = false;
+	vf->src_fmt.pr_done = false;
 	if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME) {
 		pr_info("===update vf %p, sei %p, size %d, dual_layer %d play_id = %d ===\n",
 			vf, sei, size, dual_layer,

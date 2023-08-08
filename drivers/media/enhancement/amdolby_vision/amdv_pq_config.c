@@ -1009,7 +1009,7 @@ static void update_vsvdb_to_rx(void)
 	}
 }
 
-void update_cp_cfg_hw5(void)
+void update_cp_cfg_hw5(bool update_pyramid)
 {
 	struct target_config_dvp *tdc;
 
@@ -1038,6 +1038,11 @@ void update_cp_cfg_hw5(void)
 		tdc->t_primaries[5] = cur_debug_tprimary[2][1]; /*by*/
 	}
 
+	if (update_pyramid && !enable_top1) {
+		tdc->pr_config.supports_precision_rendering = 0;
+		tdc->pr_config.precision_rendering_strength = 0;
+		tdc->ana_config.enalbe_l1l4_gen = 0;
+	}
 	set_update_cfg(true);
 }
 
@@ -1046,7 +1051,7 @@ void update_cp_cfg(void)
 	struct target_config *tdc;
 
 	if (is_aml_hw5()) {
-		update_cp_cfg_hw5();
+		update_cp_cfg_hw5(false);
 		return;
 	}
 	if (cur_pic_mode >= num_picture_mode || num_picture_mode == 0 ||

@@ -453,7 +453,7 @@ MODULE_PARM_DESC(ambient_test_mode, "\n ambient_test_mode\n");
 
 struct ambient_cfg_s ambient_darkdetail = {16, 0, 0, 0, 0, 0, 1};
 
-u32 content_fps = 24;
+u32 content_fps = 60000;
 u32 num_downsamplers;
 int gd_rf_adjust;
 int enable_vf_check;
@@ -541,7 +541,7 @@ bool amdv_setting_video_flag;
 static struct platform_device *amdv_pdev;
 static bool vsvdb_config_set_flag;
 static bool vfm_path_on;
-static bool dv_unique_drm;
+bool dv_unique_drm;
 
 static int force_mode;
 static bool tv_mode;
@@ -1858,7 +1858,6 @@ void reset_dv_param(void)
 		top2_info.core_disp_hsize = 0;
 		top2_info.core_disp_vsize = 0;
 		top1_done = false;
-
 		top1_v_info.amdv_src_format = 0;
 		top1_v_info.amdv_wait_init = false;
 		top1_v_info.amdv_wait_count = 0;
@@ -1872,6 +1871,8 @@ void reset_dv_param(void)
 		py_rd_id = 0;
 		memset(&dv5_md_hist.hist[0], 0, sizeof(dv5_md_hist.hist));
 		memset(&dv5_md_hist.l1l4_md[0], 0, sizeof(dv5_md_hist.l1l4_md));
+		memset(dv5_md_hist.hist_vaddr[0], 0, dv5_md_hist.hist_size);
+		memset(dv5_md_hist.hist_vaddr[1], 0, dv5_md_hist.hist_size);
 	} else {
 		core1_disp_hsize = 0;
 		core1_disp_vsize = 0;
@@ -2123,8 +2124,11 @@ void amdv_init_receiver(void *pdev)
 
 		dv5_md_hist.hist_size = 256;
 		alloc_size = dv5_md_hist.hist_size;
-		dv5_md_hist.hist_vaddr = dma_alloc_coherent(&amdv_pdev->dev,
-				alloc_size, &dv5_md_hist.hist_paddr, GFP_KERNEL);
+		dv5_md_hist.hist_vaddr[0] = dma_alloc_coherent(&amdv_pdev->dev,
+				alloc_size, &dv5_md_hist.hist_paddr[0], GFP_KERNEL);
+
+		dv5_md_hist.hist_vaddr[1] = dma_alloc_coherent(&amdv_pdev->dev,
+						alloc_size, &dv5_md_hist.hist_paddr[1], GFP_KERNEL);
 
 		/*debug fix data, alloc memory, default disable*/
 		if (fix_data)
@@ -7284,12 +7288,12 @@ int amdv_parse_metadata_v1(struct vframe_s *vf,
 			}
 		}
 		if ((debug_dolby & 1) && (dv_vsem || vsem_if_size))
-			pr_dv_dbg("vdin get %s:%d,md:%p %d,ll:%d,bit %x,type %d\n",
+			pr_dv_dbg("vdin get %s:%d,md:%p %d,ll:%d,bit %x,type %x %x\n",
 				dv_vsem ? "vsem" : "vsif",
 				dv_vsem ? vsem_size : vsem_if_size,
 				req.aux_buf, req.aux_size,
 				req.low_latency,
-				vf->bitdepth, vf->source_type);
+				vf->bitdepth, vf->source_type, vf->type);
 
 		/*check vsem_if_buf */
 		if (vsem_if_size &&
@@ -8759,7 +8763,7 @@ bool check_drm(u8 *drm_pkt)
 	return bt2020;
 }
 
-static u8 force_drm[32] = {0};
+u8 force_drm[32] = {0};
 static u8 force_drm_1[32] = {
 0x87, 0x01, 0x1A, 0xF4, 0x02, 0x00, 0x26, 0x8A,
 0x76, 0x39, 0x08, 0x21, 0x7E, 0x9B, 0xFA, 0x19,
@@ -15806,28 +15810,33 @@ static ssize_t amdolby_vision_inst_status_show
 	char *str1 = {"dv inst status:"};
 	char *str2 = {"dv core status:"};
 
-	if (!multi_dv_mode) {
-		if (is_aml_hw5()) {
-			len += sprintf(buf + len, "dolby_vision_enable: %d %d\n",
-				dolby_vision_enable, dolby_vision_on);
-			len += sprintf(buf + len, "pyramid: wr id:%d rd id:%d level:%s\n",
-				py_wr_id, py_rd_id,
-				py_level == 0 ? "6" : (py_level == 1 ? "7" : "0"));
+	if (!multi_dv_mode && is_aml_hw5()) {
+		len += sprintf(buf + len, "enable: %d, on: %d\n",
+			dolby_vision_enable, dolby_vision_on);
 
-			len += sprintf(buf + len, "==========TOP1=========\n");
-			len += sprintf(buf + len, "top1 enable: %d\n", enable_top1);
-			len += sprintf(buf + len, "top1 on: %d\n", top1_info.core_on);
-			len += sprintf(buf + len, "top1 on cnt: %d\n", top1_info.core_on_cnt);
-			len += sprintf(buf + len, "top1 video: %d\n",
-				top1_info.amdv_setting_video_flag);
-			len += sprintf(buf + len, "==========TOP2=========\n");
-			len += sprintf(buf + len, "top2 on: %d\n", top2_info.core_on);
-			len += sprintf(buf + len, "top2 on cnt: %d\n", top2_info.core_on_cnt);
-			len += sprintf(buf + len, "top2 video: %d\n",
-				top2_info.amdv_setting_video_flag);
-			return len;
+		if (tv_hw5_setting && tv_hw5_setting->pq_config) {
+			len += sprintf(buf + len, "cur cfg: precision %d %d,l1l4:%d\n",
+			tv_hw5_setting->pq_config->tdc.pr_config.supports_precision_rendering,
+			tv_hw5_setting->pq_config->tdc.pr_config.precision_rendering_strength,
+			tv_hw5_setting->pq_config->tdc.ana_config.enalbe_l1l4_gen);
 		}
-		return 0;
+		len += sprintf(buf + len, "pyramid:wr=%d rd=%d level=%s,cfg enabled=%d\n",
+			py_wr_id, py_rd_id,
+			py_level == 0 ? "6" : (py_level == 1 ? "7" : "0"), py_enabled);
+
+		len += sprintf(buf + len, "==========TOP1=========\n");
+		len += sprintf(buf + len, "top1 enable: %d\n", enable_top1);
+		len += sprintf(buf + len, "top1 on: %d\n", top1_info.core_on);
+		len += sprintf(buf + len, "top1 on cnt: %d\n", top1_info.core_on_cnt);
+		len += sprintf(buf + len, "top1 video: %d\n",
+			top1_info.amdv_setting_video_flag);
+		len += sprintf(buf + len, "==========TOP2=========\n");
+		len += sprintf(buf + len, "top2 on: %d\n", top2_info.core_on);
+		len += sprintf(buf + len, "top2 on cnt: %d\n", top2_info.core_on_cnt);
+		len += sprintf(buf + len, "top2 video: %d\n",
+			top2_info.amdv_setting_video_flag);
+
+		return len;
 	}
 
 	len += sprintf(buf + len, "enable multi core1: %d\n", enable_multi_core1);

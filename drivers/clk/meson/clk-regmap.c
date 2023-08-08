@@ -237,10 +237,14 @@ struct regmap *meson_clk_regmap_resource(struct platform_device *pdev, struct de
 					unsigned int index)
 {
 	void __iomem *base;
+	struct device_node *node = dev->of_node;
 
 	base = devm_platform_ioremap_resource(pdev, index);
 	if (IS_ERR(base))
 		return ERR_CAST(base);
+
+	clkc_regmap_config.name = devm_kasprintf(dev, GFP_KERNEL,
+						 "%s-%d", node->name, index);
 
 	return devm_regmap_init_mmio(dev, base, &clkc_regmap_config);
 }

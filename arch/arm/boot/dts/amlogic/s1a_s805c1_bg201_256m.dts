@@ -678,6 +678,22 @@
 		key_val = <0 512 890>;
 		key_tolerance = <40 40 40>;
 	};
+
+	gpioleds {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		red_led_en {
+			label="red_led_en";
+			gpios=<&gpio GPIOZ_7 GPIO_ACTIVE_LOW>;
+			default-state ="off";
+		};
+		blue_led_en {
+			label="blue_led_en";
+			gpios=<&gpio GPIOZ_8 GPIO_ACTIVE_LOW>;
+			default-state ="on";
+		};
+	};
 };
 
 &i2c1 {

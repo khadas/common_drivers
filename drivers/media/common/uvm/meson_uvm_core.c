@@ -67,8 +67,7 @@ static struct sg_table
 	bool skip_realloc = false;
 
 	if (strstr(dev_name(attachment->dev), "bifrost") ||
-		strstr(dev_name(attachment->dev), "valhall") ||
-		strstr(dev_name(attachment->dev), "mali")) {
+		strstr(dev_name(attachment->dev), "valhall")) {
 		gpu_access = true;
 	}
 

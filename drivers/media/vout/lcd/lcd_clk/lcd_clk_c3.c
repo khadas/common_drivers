@@ -350,13 +350,14 @@ static struct lcd_clk_data_s lcd_clk_data_c3 = {
 	.tcon_clk_msr_id = LCD_CLK_MSR_INVALID,
 	.pll_ctrl_table = pll_ctrl_table_c3,
 
-	.ss_support = 1,
+	.ss_support = 0,
 
 	.clk_generate_parameter = lcd_clk_generate_c3,
 	.pll_frac_generate = lcd_pll_frac_generate_c3,
 	.set_ss_level = NULL,
 	.set_ss_advance = NULL,
 	.clk_ss_enable = NULL,
+	.clk_ss_init = NULL,
 	.clk_set = lcd_clk_set,
 	.vclk_crt_set = lcd_set_vclk_crt,
 	.clk_disable = lcd_clk_disable,

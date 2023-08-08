@@ -118,30 +118,42 @@ int lcd_clk_msr_check(struct aml_lcd_drv_s *pdrv)
 	return 0;
 }
 
-int lcd_pll_ss_level_generate(unsigned int *data, unsigned int level, unsigned int step)
+int lcd_pll_ss_level_generate(struct lcd_clk_config_s *cconf)
 {
-	unsigned int max = 10, val;
-	unsigned int dep_sel, str_m, min;
-	unsigned long long temp;
+	unsigned int dep_sel, str_m, err, min, done = 0;
+	unsigned long long target, ss_ppm, dep_base;
 
-	if (!data)
+	if (!cconf)
 		return -1;
 
-	val = level * 1000;
-	min = val;
-	for (dep_sel = 1; dep_sel <= max; dep_sel++) { //dep_sel
-		for (str_m = 1; str_m <= max; str_m++) { //str_m
-			temp = step;
-			temp = lcd_abs((dep_sel * str_m * temp), val);
-			if (min > temp) {
-				min = temp;
-				data[0] = dep_sel;
-				data[1] = str_m;
+	target = cconf->ss_level;
+	target *= 1000;
+	min = cconf->data->ss_dep_base * 5;
+	dep_base = cconf->data->ss_dep_base;
+	for (str_m = 1; str_m <= cconf->data->ss_str_m_max; str_m++) { //str_m
+		for (dep_sel = 1; dep_sel <= cconf->data->ss_dep_sel_max; dep_sel++) { //dep_sel
+			ss_ppm = dep_sel * str_m * dep_base;
+			if (ss_ppm > target)
+				break;
+			err = target - ss_ppm;
+			if (err < min) {
+				min = err;
+				cconf->ss_dep_sel = dep_sel;
+				cconf->ss_str_m = str_m;
+				cconf->ss_ppm = ss_ppm;
+				done++;
 			}
 		}
 	}
-	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2)
-		LCDPR("%s: dep_sel=%d, str_m=%d, error=%d\n", __func__, data[0], data[1], min);
+	if (done == 0) {
+		LCDERR("%s: invalid ss_level %d\n", __func__, cconf->ss_level);
+		return -1;
+	}
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_ADV) {
+		LCDPR("%s: dep_sel=%d, str_m=%d, error=%d\n",
+			__func__, cconf->ss_dep_sel, cconf->ss_str_m, min);
+	}
 
 	return 0;
 }
@@ -1232,6 +1244,8 @@ void lcd_clk_config_init_print_dft(struct aml_lcd_drv_s *pdrv)
 		return;
 
 	data = cconf->data;
+	if (!data)
+		return;
 	LCDPR("lcd%d clk config data init:\n"
 		"pll_m_max:         %d\n"
 		"pll_m_min:         %d\n"
@@ -1250,6 +1264,9 @@ void lcd_clk_config_init_print_dft(struct aml_lcd_drv_s *pdrv)
 		"div_out_fmax:      %d\n"
 		"xd_out_fmax:       %d\n"
 		"ss_level_max:      %d\n"
+		"ss_dep_base:       %d\n"
+		"ss_dep_sel_max:    %d\n"
+		"ss_str_m_max:      %d\n"
 		"ss_freq_max:       %d\n"
 		"ss_mode_max:       %d\n\n",
 		pdrv->index,
@@ -1261,21 +1278,20 @@ void lcd_clk_config_init_print_dft(struct aml_lcd_drv_s *pdrv)
 		data->pll_vco_fmax, data->pll_vco_fmin,
 		data->pll_out_fmax, data->pll_out_fmin,
 		data->div_in_fmax, data->div_out_fmax,
-		data->xd_out_fmax, ss_level_max,
-		ss_freq_max, ss_mode_max);
+		data->xd_out_fmax, data->ss_level_max,
+		data->ss_dep_base, data->ss_dep_sel_max,
+		data->ss_str_m_max,
+		data->ss_freq_max, data->ss_mode_max);
 }
 
 int lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv, char *buf, int offset)
 {
 	struct lcd_clk_config_s *cconf, *cconf_tbl;
-	int n, len = 0, ppc;
+	int n, len = 0;
 	int loop_num = 1, i = 0;
 
 	if (!pdrv)
 		return -1;
-	ppc = pdrv->config.timing.ppc;
-	if (ppc == 0)
-		ppc = 1;
 
 	cconf_tbl = get_lcd_clk_config(pdrv);
 	if (!cconf_tbl)
@@ -1310,11 +1326,7 @@ int lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv, char *buf, int offset)
 			"edp_div1:         %d\n"
 			"div_sel:          %s(index %d)\n"
 			"xd:               %d\n"
-			"fout:             %dkHz\n"
-			"ss_level:         %d\n"
-			"ss_freq:          %d\n"
-			"ss_mode:          %d\n"
-			"ss_en:            %d\n\n",
+			"fout:             %dHz\n\n",
 			pdrv->index, cconf->pll_id,
 			cconf->pll_id, cconf->pll_offset,
 			cconf->pll_mode, cconf->pll_m, cconf->pll_n,
@@ -1326,8 +1338,21 @@ int lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv, char *buf, int offset)
 			cconf->edp_div0, cconf->edp_div1,
 			lcd_clk_div_sel_table[cconf->div_sel],
 			cconf->div_sel, cconf->xd,
-			cconf->fout / ppc, cconf->ss_level,
-			cconf->ss_freq, cconf->ss_mode, cconf->ss_en);
+			cconf->fout);
+		if (cconf->data && cconf->data->ss_support) {
+			n = lcd_debug_info_len(len + offset);
+			len += snprintf((buf + len), n,
+				"ss_level:         %d\n"
+				"ss_dep_sel:       %d\n"
+				"ss_str_m:         %d\n"
+				"ss_ppm:           %d\n"
+				"ss_freq:          %d\n"
+				"ss_mode:          %d\n"
+				"ss_en:            %d\n\n",
+				cconf->ss_level, cconf->ss_dep_sel,
+				cconf->ss_str_m, cconf->ss_ppm,
+				cconf->ss_freq, cconf->ss_mode, cconf->ss_en);
+		}
 	}
 	return len;
 }

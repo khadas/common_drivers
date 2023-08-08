@@ -1728,8 +1728,8 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 	u8 sad_data[30];
 	u8 len = 0;
 	u8 i = 0;
-	enum tvin_port_e hdmi_idx = 0;
 	u8 port_idx = 0;
+	u8 hdmi_idx = 0;
 
 	if (_IOC_TYPE(cmd) != HDMI_IOC_MAGIC) {
 		pr_err("%s invalid command: %u\n", __func__, cmd);
@@ -1787,14 +1787,14 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		if (!argp)
 			return -EINVAL;
 		mutex_lock(&devp->rx_lock);
-		if (copy_from_user(&hdmi_idx, argp, sizeof(enum tvin_port_e))) {
+		if (copy_from_user(&hdmi_idx, argp, sizeof(unsigned char))) {
 			ret = -EFAULT;
 			mutex_unlock(&devp->rx_lock);
 			break;
 		}
-		port_idx = ((hdmi_idx - TVIN_PORT_HDMI0) & 0xf);
+		port_idx = hdmi_idx - 1;
 		if (port_idx >= 3) {
-			rx_pr("port_idx illegal\n");
+			rx_pr("port_idx error\n");
 			ret = -EFAULT;
 			mutex_unlock(&devp->rx_lock);
 			break;

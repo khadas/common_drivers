@@ -472,7 +472,7 @@
 		compatible = "amlogic, jtag";
 		status = "okay";
 		select = "disable"; /* disable/apao/apee */
-		pinctrl-names="jtag_apao_pins", "jtag_apee_pins";
+		pinctrl-names="jtag_a_pins", "jtag_b_pins";
 		pinctrl-0=<&jtag_apao_pins>;
 		pinctrl-1=<&jtag_apee_pins>;
 	};
@@ -2559,26 +2559,26 @@
 
 	a_uart_pins:a_uart {
 		mux {
-			groups = "uart_tx_a",
-				"uart_rx_a",
-				"uart_cts_a",
-				"uart_rts_a";
+			groups = "uart_a_tx",
+				"uart_a_rx",
+				"uart_a_cts",
+				"uart_a_rts";
 			function = "uart_a";
 		};
 	};
 
 	b_uart_pins:b_uart {
 		mux {
-			groups = "uart_tx_b",
-				"uart_rx_b";
+			groups = "uart_b_tx",
+				"uart_b_rx";
 			function = "uart_b";
 		};
 	};
 
 	c_uart_pins:c_uart {
 		mux {
-			groups = "uart_tx_c",
-				"uart_rx_c";
+			groups = "uart_c_tx",
+				"uart_c_rx";
 			function = "uart_c";
 		};
 	};
@@ -2611,15 +2611,15 @@
 
 	eecec_a: ee_ceca {
 		mux {
-			groups = "cec_ao_a_ee";
-			function = "cec_ao_ee";
+			groups = "cec_ao_a_h";
+			function = "cec_ao_a_h";
 		};
 	};
 
 	eecec_b: ee_cecb {
 		mux {
-			groups = "cec_ao_b_ee";
-			function = "cec_ao_ee";
+			groups = "cec_ao_b_h";
+			function = "cec_ao_b_h";
 		};
 	};
 
@@ -2676,8 +2676,8 @@
 &pinctrl_aobus {
 	remote_pins:remote_pin {
 		mux {
-			groups = "remote_input_ao";
-			function = "remote_input_ao";
+			groups = "remote_ao_input";
+			function = "remote_ao_input";
 		};
 	};
 

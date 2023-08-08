@@ -20,6 +20,7 @@
 #include <dt-bindings/clock/amlogic,g12a-audio-clk.h>
 #include <dt-bindings/iio/adc/amlogic-saradc.h>
 #include <dt-bindings/gpio/meson-g12a-gpio.h>
+#include <dt-bindings/reset/amlogic,meson-g12a-reset.h>
 #include <dt-bindings/pwm/pwm.h>
 #include <dt-bindings/pwm/meson.h>
 #include <dt-bindings/gpio/gpio.h>
@@ -541,6 +542,12 @@
 			#address-cells = <2>;
 			#size-cells = <2>;
 			ranges = <0x0 0x0 0x0 0xffd00000 0x0 0x26000>;
+
+			reset: reset-controller@1004 {
+				compatible = "amlogic,meson-axg-reset";
+				reg = <0x0 0x1004 0x0 0x9c>;
+				#reset-cells = <1>;
+			};
 
 			gpio_intc: interrupt-controller@f080 {
 				compatible = "amlogic,meson-gpio-intc",

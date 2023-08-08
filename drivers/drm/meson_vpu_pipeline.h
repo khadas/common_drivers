@@ -102,6 +102,7 @@ struct meson_vpu_block_ops {
 			struct meson_vpu_block_state *old_state);
 	void (*dump_register)(struct meson_vpu_block *vblk,
 			      struct seq_file *seq);
+	void (*sysfs_dump_register)(struct meson_vpu_block *vblk);
 	void (*init)(struct meson_vpu_block *vblk);
 	void (*fini)(struct meson_vpu_block *vblk);
 };

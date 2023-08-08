@@ -196,6 +196,131 @@ static void slice2ppc_dump_register(struct meson_vpu_block *vblk,
 	seq_printf(seq, "%-35s\t\t0x%08X\n", "OSD_SYS_2SLICE_HWIN_CUT:",  value);
 }
 
+static void sysfs_slice2ppc_dump_register(struct meson_vpu_block *vblk)
+{
+	u32 value, reg_addr;
+	struct meson_vpu_slice2ppc *slice2ppc;
+	struct slice2ppc_reg_s *reg;
+
+	slice2ppc = to_slice2ppc_block(vblk);
+	reg = slice2ppc->reg;
+
+	reg_addr = reg->osd1_proc_in_size;
+	value = meson_drm_read_reg(reg->osd1_proc_in_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD1_PROC_IN_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd2_proc_in_size;
+	value = meson_drm_read_reg(reg->osd2_proc_in_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD2_PROC_IN_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd3_proc_in_size;
+	value = meson_drm_read_reg(reg->osd3_proc_in_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD3_PROC_IN_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd4_proc_in_size;
+	value = meson_drm_read_reg(reg->osd4_proc_in_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD4_PROC_IN_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd1_proc_out_size;
+	value = meson_drm_read_reg(reg->osd1_proc_out_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD1_PROC_OUT_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd2_proc_out_size;
+	value = meson_drm_read_reg(reg->osd2_proc_out_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD2_PROC_OUT_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd3_proc_out_size;
+	value = meson_drm_read_reg(reg->osd3_proc_out_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD3_PROC_OUT_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd4_proc_out_size;
+	value = meson_drm_read_reg(reg->osd4_proc_out_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD4_PROC_OUT_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd_blend_dout0_size;
+	value = meson_drm_read_reg(reg->osd_blend_dout0_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_BLEND_DOUT0_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd_blend_dout1_size;
+	value = meson_drm_read_reg(reg->osd_blend_dout1_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_BLEND_DOUT1_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd_proc_1mux3_sel;
+	value = meson_drm_read_reg(reg->osd_proc_1mux3_sel);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_PROC_1MUX3_SEL",
+		reg_addr, value);
+
+	reg_addr = reg->osd_2slice2ppc_in_size;
+	value = meson_drm_read_reg(reg->osd_2slice2ppc_in_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_2SLICE2PPC_IN_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd_2slice2ppc_mode;
+	value = meson_drm_read_reg(reg->osd_2slice2ppc_mode);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_2SLICE2PPC_MODE",
+		reg_addr, value);
+
+	reg_addr = reg->osd_pi_bypass_en;
+	value = meson_drm_read_reg(reg->osd_pi_bypass_en);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_PI_BYPASS_EN",
+		reg_addr, value);
+
+	reg_addr = reg->osd_sys_5mux4_sel;
+	value = meson_drm_read_reg(reg->osd_sys_5mux4_sel);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_SYS_5MUX4_SEL",
+		reg_addr, value);
+
+	reg_addr = reg->osd_sys_hwin0_cut;
+	value = meson_drm_read_reg(reg->osd_sys_hwin0_cut);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_SYS_HWIN0_CUT",
+		reg_addr, value);
+
+	reg_addr = reg->osd_sys_hwin1_cut;
+	value = meson_drm_read_reg(reg->osd_sys_hwin1_cut);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_SYS_HWIN1_CUT",
+		reg_addr, value);
+
+	reg_addr = reg->osd_sys_pad_ctrl;
+	value = meson_drm_read_reg(reg->osd_sys_pad_ctrl);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_SYS_PAD_CTRL",
+		reg_addr, value);
+
+	reg_addr = reg->osd_sys_pad_dummy_data0;
+	value = meson_drm_read_reg(reg->osd_sys_pad_dummy_data0);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_SYS_PAD_DUMMY_DATA0",
+		reg_addr, value);
+
+	reg_addr = reg->osd_sys_pad_dummy_data1;
+	value = meson_drm_read_reg(reg->osd_sys_pad_dummy_data1);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_SYS_PAD_DUMMY_DATA1",
+		reg_addr, value);
+
+	reg_addr = reg->osd_sys_pad_h_size;
+	value = meson_drm_read_reg(reg->osd_sys_pad_h_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_SYS_PAD_H_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd_sys_pad_v_size;
+	value = meson_drm_read_reg(reg->osd_sys_pad_v_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_SYS_PAD_V_SIZE",
+		reg_addr, value);
+
+	reg_addr = reg->osd_sys_2slice_hwin_cut;
+	value = meson_drm_read_reg(reg->osd_sys_2slice_hwin_cut);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD_SYS_2SLICE_HWIN_CUT",
+		reg_addr, value);
+}
+
 static void slice2ppc_hw_init(struct meson_vpu_block *vblk)
 {
 	struct meson_vpu_slice2ppc *slice2ppc = to_slice2ppc_block(vblk);
@@ -213,6 +338,7 @@ struct meson_vpu_block_ops slice2ppc_ops = {
 	.enable = slice2ppc_hw_enable,
 	.disable = slice2ppc_hw_disable,
 	.dump_register = slice2ppc_dump_register,
+	.sysfs_dump_register = sysfs_slice2ppc_dump_register,
 	.init = slice2ppc_hw_init,
 	.fini = slice2ppc_hw_fini,
 };

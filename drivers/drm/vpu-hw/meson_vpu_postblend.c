@@ -769,7 +769,219 @@ static void postblend_dump_register(struct meson_vpu_block *vblk,
 	seq_printf(seq, "%-35s\t\t0x%08X\n", "VPP_OSD2_BLD_V_SCOPE:", value);
 }
 
+static void sysfs_postblend_dump_register(struct meson_vpu_block *vblk)
+{
+	u32 value, reg_addr;
+	struct meson_vpu_postblend *postblend;
+	struct postblend_reg_s *reg;
+
+	postblend = to_postblend_block(vblk);
+	reg = postblend->reg;
+
+	reg_addr = reg->osd1_blend_src_ctrl;
+	value = meson_drm_read_reg(reg->osd1_blend_src_ctrl);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD1_BLEND_SRC_CTRL",
+		reg_addr, value);
+
+	reg_addr = reg->osd2_blend_src_ctrl;
+	value = meson_drm_read_reg(reg->osd2_blend_src_ctrl);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD2_BLEND_SRC_CTRL",
+		reg_addr, value);
+
+	reg_addr = reg->vd1_blend_src_ctrl;
+	value = meson_drm_read_reg(reg->vd1_blend_src_ctrl);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VD1_BLEND_SRC_CTRL",
+		reg_addr, value);
+
+	reg_addr = reg->vd2_blend_src_ctrl;
+	value = meson_drm_read_reg(reg->vd2_blend_src_ctrl);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VD2_BLEND_SRC_CTRL",
+		reg_addr, value);
+
+	reg_addr = reg->vpp_osd1_in_size;
+	value = meson_drm_read_reg(reg->vpp_osd1_in_size);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP_OSD1_IN_SIZE:",
+		reg_addr, value);
+
+	reg_addr = reg->vpp_osd1_bld_h_scope;
+	value = meson_drm_read_reg(reg->vpp_osd1_bld_h_scope);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP_OSD1_BLD_H_SCOPE",
+		reg_addr, value);
+
+	reg_addr = reg->vpp_osd1_bld_v_scope;
+	value = meson_drm_read_reg(reg->vpp_osd1_bld_v_scope);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP_OSD1_BLD_V_SCOPE",
+		reg_addr, value);
+
+	reg_addr = reg->vpp_osd2_bld_h_scope;
+	value = meson_drm_read_reg(reg->vpp_osd2_bld_h_scope);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP_OSD2_BLD_H_SCOPE",
+		reg_addr, value);
+
+	reg_addr = reg->vpp_osd2_bld_v_scope;
+	value = meson_drm_read_reg(reg->vpp_osd2_bld_v_scope);
+	DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP_OSD2_BLD_V_SCOPE",
+		reg_addr, value);
+}
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+static void t7_sysfs_postblend_dump_register(struct meson_vpu_block *vblk)
+{
+	u32 value, reg_addr;
+	struct meson_vpu_postblend *postblend;
+	struct postblend_reg_s *reg;
+
+	postblend = to_postblend_block(vblk);
+	if (vblk->index == 0) {
+		reg = postblend->reg;
+
+		reg_addr = reg->osd1_blend_src_ctrl;
+		value = meson_drm_read_reg(reg->osd1_blend_src_ctrl);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD1_BLEND_SRC_CTRL",
+			reg_addr, value);
+
+		reg_addr = reg->osd2_blend_src_ctrl;
+		value = meson_drm_read_reg(reg->osd2_blend_src_ctrl);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "OSD2_BLEND_SRC_CTRL",
+			reg_addr, value);
+
+		reg_addr = reg->vd1_blend_src_ctrl;
+		value = meson_drm_read_reg(reg->vd1_blend_src_ctrl);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VD1_BLEND_SRC_CTRL",
+			reg_addr, value);
+
+		reg_addr = reg->vd2_blend_src_ctrl;
+		value = meson_drm_read_reg(reg->vd2_blend_src_ctrl);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VD2_BLEND_SRC_CTRL",
+			reg_addr, value);
+
+		reg_addr = reg->vpp_osd1_in_size;
+		value = meson_drm_read_reg(reg->vpp_osd1_in_size);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP_OSD1_IN_SIZE:",
+			reg_addr, value);
+
+		reg_addr = reg->vpp_osd1_bld_h_scope;
+		value = meson_drm_read_reg(reg->vpp_osd1_bld_h_scope);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP_OSD1_BLD_H_SCOPE",
+			reg_addr, value);
+
+		reg_addr = reg->vpp_osd1_bld_v_scope;
+		value = meson_drm_read_reg(reg->vpp_osd1_bld_v_scope);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP_OSD1_BLD_V_SCOPE",
+			reg_addr, value);
+
+		reg_addr = reg->vpp_osd2_bld_h_scope;
+		value = meson_drm_read_reg(reg->vpp_osd2_bld_h_scope);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP_OSD2_BLD_H_SCOPE",
+			reg_addr, value);
+
+		reg_addr = reg->vpp_osd2_bld_v_scope;
+		value = meson_drm_read_reg(reg->vpp_osd2_bld_v_scope);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP_OSD2_BLD_V_SCOPE",
+			reg_addr, value);
+	} else if (vblk->index == 1) {
+		reg_addr = VPP1_BLD_DIN0_HSCOPE;
+		value = meson_drm_read_reg(VPP1_BLD_DIN0_HSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP1_BLD_DIN0_HSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP1_BLD_DIN0_VSCOPE;
+		value = meson_drm_read_reg(VPP1_BLD_DIN0_VSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP1_BLD_DIN0_VSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP1_BLD_DIN1_HSCOPE;
+		value = meson_drm_read_reg(VPP1_BLD_DIN1_HSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP1_BLD_DIN1_HSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP1_BLD_DIN1_VSCOPE;
+		value = meson_drm_read_reg(VPP1_BLD_DIN1_VSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP1_BLD_DIN1_VSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP1_BLD_DIN2_HSCOPE;
+		value = meson_drm_read_reg(VPP1_BLD_DIN2_HSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP1_BLD_DIN2_HSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP1_BLD_DIN2_VSCOPE;
+		value = meson_drm_read_reg(VPP1_BLD_DIN2_VSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP1_BLD_DIN2_VSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP1_BLD_CTRL;
+		value = meson_drm_read_reg(VPP1_BLD_CTRL);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP1_BLD_CTRL",
+			reg_addr, value);
+
+		reg_addr = VPP1_BLD_OUT_SIZE;
+		value = meson_drm_read_reg(VPP1_BLD_OUT_SIZE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP1_BLD_OUT_SIZE",
+			reg_addr, value);
+
+		reg_addr = VPP1_BLEND_BLEND_DUMMY_DATA;
+		value = meson_drm_read_reg(VPP1_BLEND_BLEND_DUMMY_DATA);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP1_BLEND_BLEND_DUMMY_DATA",
+			reg_addr, value);
+
+		reg_addr = VPP1_BLEND_DUMMY_ALPHA;
+		value = meson_drm_read_reg(VPP1_BLEND_DUMMY_ALPHA);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP1_BLEND_DUMMY_ALPHA",
+			reg_addr, value);
+	} else if (vblk->index == 2) {
+		reg_addr = VPP2_BLD_DIN0_HSCOPE;
+		value = meson_drm_read_reg(VPP2_BLD_DIN0_HSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP2_BLD_DIN0_HSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP2_BLD_DIN0_VSCOPE;
+		value = meson_drm_read_reg(VPP2_BLD_DIN0_VSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP2_BLD_DIN0_VSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP2_BLD_DIN1_HSCOPE;
+		value = meson_drm_read_reg(VPP2_BLD_DIN1_HSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP2_BLD_DIN1_HSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP2_BLD_DIN1_VSCOPE;
+		value = meson_drm_read_reg(VPP2_BLD_DIN1_VSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP2_BLD_DIN1_VSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP2_BLD_DIN2_HSCOPE;
+		value = meson_drm_read_reg(VPP2_BLD_DIN2_HSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP2_BLD_DIN2_HSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP2_BLD_DIN2_VSCOPE;
+		value = meson_drm_read_reg(VPP2_BLD_DIN2_VSCOPE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP2_BLD_DIN2_VSCOPE",
+			reg_addr, value);
+
+		reg_addr = VPP2_BLD_CTRL;
+		value = meson_drm_read_reg(VPP2_BLD_CTRL);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP2_BLD_CTRL",
+			reg_addr, value);
+
+		reg_addr = VPP2_BLD_OUT_SIZE;
+		value = meson_drm_read_reg(VPP2_BLD_OUT_SIZE);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP2_BLD_OUT_SIZE",
+			reg_addr, value);
+
+		reg_addr = VPP2_BLEND_BLEND_DUMMY_DATA;
+		value = meson_drm_read_reg(VPP2_BLEND_BLEND_DUMMY_DATA);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP2_BLEND_BLEND_DUMMY_DATA",
+			reg_addr, value);
+
+		reg_addr = VPP2_BLEND_DUMMY_ALPHA;
+		value = meson_drm_read_reg(VPP2_BLEND_DUMMY_ALPHA);
+		DRM_INFO("%-35s addr: 0x%08X\tvalue: 0x%08X\n", "VPP2_BLEND_DUMMY_ALPHA",
+			reg_addr, value);
+	}
+}
+
 /*based on crtc index select corresponding rdma handle write method*/
 static void fix_vpu_clk2_default_regs(struct meson_vpu_block *vblk,
 				 struct rdma_reg_ops *reg_ops, int crtc_index, u32 *crtcmask_osd)
@@ -928,6 +1140,7 @@ struct meson_vpu_block_ops postblend_ops = {
 	.enable = postblend_hw_enable,
 	.disable = postblend_hw_disable,
 	.dump_register = postblend_dump_register,
+	.sysfs_dump_register = sysfs_postblend_dump_register,
 	.init = postblend_hw_init,
 };
 
@@ -938,6 +1151,7 @@ struct meson_vpu_block_ops g12b_postblend_ops = {
 	.enable = postblend_hw_enable,
 	.disable = g12b_postblend_hw_disable,
 	.dump_register = postblend_dump_register,
+	.sysfs_dump_register = sysfs_postblend_dump_register,
 	.init = postblend_hw_init,
 };
 
@@ -947,6 +1161,7 @@ struct meson_vpu_block_ops t7_postblend_ops = {
 	.enable = postblend_hw_enable,
 	.disable = postblend_hw_disable,
 	.dump_register = postblend_dump_register,
+	.sysfs_dump_register = t7_sysfs_postblend_dump_register,
 	.init = t7_postblend_hw_init,
 };
 
@@ -956,6 +1171,7 @@ struct meson_vpu_block_ops t3_postblend_ops = {
 	.enable = postblend_hw_enable,
 	.disable = postblend_hw_disable,
 	.dump_register = postblend_dump_register,
+	.sysfs_dump_register = sysfs_postblend_dump_register,
 	.init = t3_postblend_hw_init,
 };
 
@@ -965,6 +1181,7 @@ struct meson_vpu_block_ops s5_postblend_ops = {
 	.enable = postblend_hw_enable,
 	.disable = s5_postblend_hw_disable,
 	.dump_register = postblend_dump_register,
+	.sysfs_dump_register = sysfs_postblend_dump_register,
 	.init = s5_postblend_hw_init,
 };
 
@@ -974,6 +1191,7 @@ struct meson_vpu_block_ops t3x_postblend_ops = {
 	.enable = postblend_hw_enable,
 	.disable = s5_postblend_hw_disable,
 	.dump_register = postblend_dump_register,
+	.sysfs_dump_register = sysfs_postblend_dump_register,
 	.init = t3x_postblend_hw_init,
 };
 
@@ -983,6 +1201,7 @@ struct meson_vpu_block_ops txhd2_postblend_ops = {
 	.enable = postblend_hw_enable,
 	.disable = postblend_hw_disable,
 	.dump_register = postblend_dump_register,
+	.sysfs_dump_register = sysfs_postblend_dump_register,
 	.init = txhd2_postblend_hw_init,
 };
 

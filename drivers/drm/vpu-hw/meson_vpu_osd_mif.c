@@ -1522,6 +1522,86 @@ static void osd_dump_register(struct meson_vpu_block *vblk,
 	seq_printf(seq, "%s_%-35s\t0x%08X\n", buff, "DIMM_CTRL:", value);
 }
 
+static void sysfs_osd_dump_register(struct meson_vpu_block *vblk)
+{
+	int osd_index;
+	u32 value, reg_addr;
+	char buff[8];
+	struct meson_vpu_osd *osd;
+	struct osd_mif_reg_s *reg;
+
+	osd_index = vblk->index;
+	osd = to_osd_block(vblk);
+	reg = osd->reg;
+
+	snprintf(buff, 8, "OSD%d", osd_index + 1);
+
+	reg_addr = reg->viu_osd_fifo_ctrl_stat;
+	value = meson_drm_read_reg(reg->viu_osd_fifo_ctrl_stat);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"FIFO_CTRL_STAT", reg_addr, value);
+
+	reg_addr = reg->viu_osd_ctrl_stat;
+	value = meson_drm_read_reg(reg->viu_osd_ctrl_stat);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"CTRL_STAT", reg_addr, value);
+
+	reg_addr = reg->viu_osd_ctrl_stat2;
+	value = meson_drm_read_reg(reg->viu_osd_ctrl_stat2);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"CTRL_STAT2", reg_addr, value);
+
+	reg_addr = reg->viu_osd_blk0_cfg_w0;
+	value = meson_drm_read_reg(reg->viu_osd_blk0_cfg_w0);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n",  buff,
+		"BLK0_CFG_W0", reg_addr, value);
+
+	reg_addr = reg->viu_osd_blk0_cfg_w1;
+	value = meson_drm_read_reg(reg->viu_osd_blk0_cfg_w1);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"BLK0_CFG_W1", reg_addr, value);
+
+	reg_addr = reg->viu_osd_blk0_cfg_w2;
+	value = meson_drm_read_reg(reg->viu_osd_blk0_cfg_w2);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"BLK0_CFG_W2", reg_addr, value);
+
+	reg_addr = reg->viu_osd_blk0_cfg_w3;
+	value = meson_drm_read_reg(reg->viu_osd_blk0_cfg_w3);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"BLK0_CFG_W3", reg_addr, value);
+
+	reg_addr = reg->viu_osd_blk0_cfg_w4;
+	value = meson_drm_read_reg(reg->viu_osd_blk0_cfg_w4);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"BLK0_CFG_W4", reg_addr, value);
+
+	reg_addr = reg->viu_osd_blk1_cfg_w4;
+	value = meson_drm_read_reg(reg->viu_osd_blk1_cfg_w4);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"BLK1_CFG_W4", reg_addr, value);
+
+	reg_addr = reg->viu_osd_blk2_cfg_w4;
+	value = meson_drm_read_reg(reg->viu_osd_blk2_cfg_w4);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"BLK2_CFG_W4", reg_addr, value);
+
+	reg_addr = reg->viu_osd_prot_ctrl;
+	value = meson_drm_read_reg(reg->viu_osd_prot_ctrl);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"PROT_CTRL", reg_addr, value);
+
+	reg_addr = reg->viu_osd_mali_unpack_ctrl;
+	value = meson_drm_read_reg(reg->viu_osd_mali_unpack_ctrl);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"MALI_UNPACK_CTRL", reg_addr, value);
+
+	reg_addr = reg->viu_osd_dimm_ctrl;
+	value = meson_drm_read_reg(reg->viu_osd_dimm_ctrl);
+	DRM_INFO("%s_%-35s addr: 0x%08X\tvalue: 0x%08X\n", buff,
+		"DIMM_CTRL", reg_addr, value);
+}
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 #ifdef CONFIG_AMLOGIC_MEDIA_SECURITY
 static void osd_secure_cb(u32 arg)
@@ -1719,6 +1799,7 @@ struct meson_vpu_block_ops osd_ops = {
 	.enable = osd_hw_enable,
 	.disable = osd_hw_disable,
 	.dump_register = osd_dump_register,
+	.sysfs_dump_register = sysfs_osd_dump_register,
 	.init = osd_hw_init,
 	.fini = osd_hw_fini,
 };
@@ -1730,6 +1811,7 @@ struct meson_vpu_block_ops g12b_osd_ops = {
 	.enable = osd_hw_enable,
 	.disable = osd_hw_disable,
 	.dump_register = osd_dump_register,
+	.sysfs_dump_register = sysfs_osd_dump_register,
 	.init = g12b_osd_hw_init,
 	.fini = osd_hw_fini,
 };
@@ -1740,6 +1822,7 @@ struct meson_vpu_block_ops t7_osd_ops = {
 	.enable = osd_hw_enable,
 	.disable = osd_hw_disable,
 	.dump_register = osd_dump_register,
+	.sysfs_dump_register = sysfs_osd_dump_register,
 	.init = t7_osd_hw_init,
 	.fini = osd_hw_fini,
 };
@@ -1750,6 +1833,7 @@ struct meson_vpu_block_ops s5_osd_ops = {
 	.enable = osd_hw_enable,
 	.disable = osd_hw_disable,
 	.dump_register = osd_dump_register,
+	.sysfs_dump_register = sysfs_osd_dump_register,
 	.init = s5_osd_hw_init,
 	.fini = osd_hw_fini,
 };

@@ -411,16 +411,14 @@ int frc_update_in_sts(struct frc_dev_s *devp, struct st_frc_in_sts *frc_in_sts,
 		frc_in_sts->in_vsize = 0;
 		return -1;
 	}
-	if (!devp) {
-		PR_ERR("%s: frc_devp is null\n", __func__);
-		return -1;
-	}
+
 	pfw_data = (struct frc_fw_data_s *)devp->fw_data;
 	frc_in_sts->vf_type = vf->type;
 	frc_in_sts->duration = vf->duration;
 	frc_in_sts->signal_type = vf->signal_type;
 	frc_in_sts->source_type = vf->source_type;
 	frc_in_sts->vf = vf;
+
 	if (frc_in_sts->duration > 0 && devp->in_out_ratio != FRC_RATIO_1_1) {
 		pfw_data->frc_top_type.frc_in_frm_rate =
 			(1000000 / devp->in_sts.vs_duration);
@@ -700,7 +698,7 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 {
 	struct st_frc_in_sts cur_in_sts;
 	u32 no_input = false, vd_en_flag;// vd_regval;
-	enum efrc_event frc_event;
+	enum efrc_event frc_event = FRC_EVENT_NO_EVENT;
 
 	if (!devp)
 		return;
@@ -708,6 +706,7 @@ void frc_input_vframe_handle(struct frc_dev_s *devp, struct vframe_s *vf,
 	if (!devp->probe_ok || !devp->power_on_flag)
 		return;
 
+	frc_in_sts_init(&cur_in_sts);
 	vd_en_flag = get_video_enabled(0);
 	// vd_regval = vpu_reg_read(0x1dfb);
 	if (devp->ud_dbg.res1_dbg_en == 1)
@@ -1629,8 +1628,8 @@ int frc_fpp_memc_set_level(u8 level, u8 num)
 int frc_lge_memc_set_level(struct v4l2_ext_memc_motion_comp_info comp_info)
 {
 	u8 memc_type;
-	u32 judder_level;
-	unsigned char temp_level;
+	u32 judder_level = 0;
+	unsigned char temp_level[1];
 	struct frc_dev_s *devp = get_frc_devp();
 	struct frc_fw_data_s *pfw_data;
 
@@ -1651,8 +1650,8 @@ int frc_lge_memc_set_level(struct v4l2_ext_memc_motion_comp_info comp_info)
 	} else if (memc_type == V4L2_EXT_MEMC_CINEMA_CLEAR) {
 		pfw_data->frc_top_type.frc_memc_level = 3;  // mid level
 	} else if (memc_type == V4L2_EXT_MEMC_TYPE_USER) {
-		temp_level = comp_info.judder_level;
-		if (kstrtoint(&temp_level, 10, &judder_level) == 0) {
+		temp_level[0] = comp_info.judder_level;
+		if (kstrtoint(temp_level, 10, &judder_level) == 0) {
 			// char type
 			if (judder_level <= 10)
 				pfw_data->frc_top_type.frc_memc_level = judder_level;

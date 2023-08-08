@@ -472,6 +472,7 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 {
 	u32 offset = 0x0;
 	enum chip_id chip;
+	u32 flag_cnt = 0x30;
 	u32 inp_ud_flag, readval, timeout;
 
 	if (!frc_devp)
@@ -500,7 +501,8 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 		frc_devp->ud_dbg.inp_undone_err = inp_ud_flag;
 		frc_devp->frc_sts.inp_undone_cnt++;
 		if (frc_devp->ud_dbg.inp_ud_dbg_en != 0) {
-			if (frc_devp->frc_sts.inp_undone_cnt % 0x30 == 0) {
+			if (frc_devp->frc_sts.inp_undone_cnt < flag_cnt ||
+				frc_devp->frc_sts.inp_undone_cnt % flag_cnt == 0) { // 0x30
 				PR_ERR("inp_ud_err=0x%x,err_cnt=%d,vs_cnt=%d\n",
 					inp_ud_flag,
 					frc_devp->frc_sts.inp_undone_cnt,
@@ -515,18 +517,10 @@ void inp_undone_read(struct frc_dev_s *frc_devp)
 		} while (timeout++ < 100);
 		if (frc_devp->ud_dbg.res1_time_en == 1) {
 			if (frc_devp->frc_sts.inp_undone_cnt ==
-					0x30 * 2) {
+					flag_cnt * 2) { // 0x30 * 2
 				frc_devp->frc_sts.re_config = true;
 				PR_ERR("frc will reopen\n");
 			}
-		} else if (frc_devp->ud_dbg.res1_time_en == 2) {
-			if (frc_devp->frc_sts.inp_undone_cnt ==
-					0x30 * 3) {
-				frc_devp->frc_sts.re_config = true;
-				PR_ERR("frc will reopen\n");
-			}
-		} else if (frc_devp->ud_dbg.res1_time_en == 0) {
-			frc_devp->frc_sts.re_config = false;
 		}
 	} else {
 		frc_devp->ud_dbg.inp_undone_err = 0;
@@ -634,7 +628,8 @@ const char * const csc_str[] = {
 
 void frc_mtx_cfg(enum frc_mtx_e mtx_sel, enum frc_mtx_csc_e mtx_csc)
 {
-	unsigned int pre_offset01, pre_offset2;
+	unsigned int pre_offset01 = 0;
+	unsigned int pre_offset2 = 0;
 	unsigned int pst_offset01, pst_offset2;
 	unsigned int coef00_01, coef02_10, coef11_12, coef20_21, coef22;
 	unsigned int en = 1;
@@ -2397,7 +2392,7 @@ void frc_cfg_mcdw_loss(u32 mcdw_loss_en)
 	if (mcdw_loss_en == 1)
 		temp |= 0x10;
 	else if (mcdw_loss_en == 0)
-		temp &= 0xFFFFFFFEF;
+		temp &= 0xFFFFFFEF;
 	WRITE_FRC_REG_BY_CPU(FRC_INP_MCDW_CTRL, temp);
 	pr_frc(0, "%s FRC_INP_MCDW_CTRL=0x%x\n", __func__,
 				READ_FRC_REG(FRC_INP_MCDW_CTRL));
@@ -2621,11 +2616,9 @@ void frc_internal_initial(struct frc_dev_s *frc_devp)
 	u32 inp_hold_line;
 	u32 out_frm_dly_num = 0;
 
-	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
-	frc_top = &fw_data->frc_top_type;
-
 	if (!frc_devp)
 		return;
+
 	fw_data = (struct frc_fw_data_s *)frc_devp->fw_data;
 	frc_top = &fw_data->frc_top_type;
 	chip = get_chip_type();
@@ -3410,3 +3403,26 @@ void frc_memc_clr_vbuffer(struct frc_dev_s *frc_devp, u8 flag)
 	pr_frc(1, "FRC_ME_GCV_EN=0x%x\n",
 				READ_FRC_REG(FRC_ME_GCV_EN));
 }
+
+void frc_in_sts_init(struct st_frc_in_sts *sts)
+{
+	if (!sts)
+		return;
+
+	sts->vf = NULL;
+	sts->vf_sts = 0;
+	sts->vf_type = 0;
+	sts->duration = 0;
+	sts->in_hsize = 0;
+	sts->in_vsize = 0;
+	sts->signal_type = 0;
+	sts->source_type = 0;
+	sts->frc_hd_start_lines = 0;
+	sts->frc_hd_end_lines = 0;
+	sts->frc_vd_start_lines = 0;
+	sts->frc_vd_end_lines = 0;
+	sts->frc_vsc_startp = 0;
+	sts->frc_vsc_endp = 0;
+	sts->frc_hsc_startp = 0;
+	sts->frc_hsc_endp = 0;
+};

@@ -121,4 +121,5 @@ void frc_debug_table_print(struct work_struct *work);
 void frc_debug_print(struct frc_dev_s *devp);
 void frc_memc_clr_vbuffer(struct frc_dev_s *frc_devp, u8 flag);
 void frc_load_reg_table(struct frc_dev_s *frc_devp, u8 flag);
+void frc_in_sts_init(struct st_frc_in_sts *sts);
 #endif

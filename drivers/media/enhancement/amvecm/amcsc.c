@@ -7283,10 +7283,11 @@ bool is_video_layer_on(enum vd_path_e vd_path)
 	if (vd_path <= VD3_PATH)
 		video_on = get_video_enabled(vd_path);
 	else
-		video_on = 0;
+		return false;
 
 	if (video_on)
 		video_layer_wait_on[vd_path] = false;
+
 	return video_on ||
 		video_layer_wait_on[vd_path];
 }

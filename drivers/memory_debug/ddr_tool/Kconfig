@@ -154,6 +154,7 @@ config AMLOGIC_DMC_MONITOR_BREAK_GKI
 	bool "Amlogic dmc monitor"
 	depends on AMLOGIC_DMC_MONITOR
 	depends on ARM
+	depends on AMLOGIC_BREAK_GKI_20
 	default n
 	help
 		DMC monitor for hardware connected to DMC master. Using it can

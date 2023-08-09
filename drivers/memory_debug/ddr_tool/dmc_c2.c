@@ -47,11 +47,11 @@
 
 #define DMC_IRQ_STS_C2		((0x0090  << 2))
 
-#define DMC_SEC_STATUS		((0x00fa  << 2))
-#define DMC_VIO_ADDR0		((0x00fb  << 2))
-#define DMC_VIO_ADDR1		((0x00fc  << 2))
-#define DMC_VIO_ADDR2		((0x00fd  << 2))
-#define DMC_VIO_ADDR3		((0x00fe  << 2))
+#define DMC_SEC_STATUS		((0x009a  << 2))
+#define DMC_VIO_ADDR0		((0x009b  << 2))
+#define DMC_VIO_ADDR1		((0x009c  << 2))
+#define DMC_VIO_ADDR2		((0x009d  << 2))
+#define DMC_VIO_ADDR3		((0x009e  << 2))
 
 static size_t c2_dmc_dump_reg(char *buf)
 {

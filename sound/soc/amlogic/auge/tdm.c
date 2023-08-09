@@ -1591,6 +1591,9 @@ static int tdm_copy_user(struct snd_soc_component *component,
 }
 #endif
 
+static int aml_soc_tdm_trigger(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int cmd);
+
 static const struct snd_soc_component_driver aml_tdm_component = {
 	.name           = DRV_NAME,
 
@@ -1600,6 +1603,7 @@ static const struct snd_soc_component_driver aml_tdm_component = {
 	.hw_params = aml_tdm_hw_params,
 	.hw_free = aml_tdm_hw_free,
 	.prepare = aml_tdm_prepare,
+	.trigger = aml_soc_tdm_trigger,
 	.pointer = aml_tdm_pointer,
 	.mmap = aml_tdm_mmap,
 #ifdef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -1764,11 +1768,11 @@ static int aml_dai_tdm_prepare(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
-			       struct snd_soc_dai *cpu_dai)
+static int aml_soc_tdm_trigger(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int cmd)
 {
-	struct aml_tdm *p_tdm = snd_soc_dai_get_drvdata(cpu_dai);
 	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct aml_tdm *p_tdm = runtime->private_data;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -1816,12 +1820,12 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 			p_tdm->tdmout_gain_mute = false;
 			aml_frddr_enable(p_tdm->fddr, true);
 			udelay(100);
+			if (!p_tdm->tdm_fade_out_enable)
+				aml_tdmout_enable_gain(p_tdm->id, false,
+						p_tdm->chipinfo->gain_ver);
 			if (p_tdm->chipinfo->need_mute_tdm)
 				aml_tdm_mute_playback(p_tdm->actrl, p_tdm->id,
 					false, p_tdm->lane_cnt);
-			else if (!p_tdm->tdm_fade_out_enable)
-				aml_tdmout_enable_gain(p_tdm->id, false,
-					p_tdm->chipinfo->gain_ver);
 			if (p_tdm->samesource_sel != SHAREBUFFER_NONE)
 				tdm_sharebuffer_mute(p_tdm, false);
 		} else {
@@ -1860,12 +1864,12 @@ static int aml_dai_tdm_trigger(struct snd_pcm_substream *substream, int cmd,
 			dev_info(substream->pcm->card->dev,
 				 "TDM[%d] Playback stop\n",
 				 p_tdm->id);
+			if (!p_tdm->tdm_fade_out_enable)
+				aml_tdmout_enable_gain(p_tdm->id, true,
+						p_tdm->chipinfo->gain_ver);
 			if (p_tdm->chipinfo->need_mute_tdm)
 				aml_tdm_mute_playback(p_tdm->actrl, p_tdm->id,
 					true, p_tdm->lane_cnt);
-			else if (!p_tdm->tdm_fade_out_enable)
-				aml_tdmout_enable_gain(p_tdm->id, true,
-					p_tdm->chipinfo->gain_ver);
 			if (p_tdm->samesource_sel != SHAREBUFFER_NONE)
 				tdm_sharebuffer_mute(p_tdm, true);
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
@@ -2177,7 +2181,6 @@ static int aml_set_default_tdm_clk(struct aml_tdm *p_tdm)
 
 static struct snd_soc_dai_ops aml_dai_tdm_ops = {
 	.prepare = aml_dai_tdm_prepare,
-	.trigger = aml_dai_tdm_trigger,
 	.hw_params = aml_dai_tdm_hw_params,
 	.hw_free = aml_dai_tdm_hw_free,
 	.set_fmt = aml_dai_set_tdm_fmt,

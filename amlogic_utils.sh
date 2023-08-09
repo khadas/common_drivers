@@ -692,8 +692,13 @@ create_ramdisk_vendor_recovery() {
 
 	head -n ${ramdisk_last_line} ${install_temp} > ramdisk_install.sh
 	mkdir ramdisk
+	if [[ -n ${last_ramdisk_module} ]]; then
+		cat ramdisk_install.sh | cut -d ' ' -f 2 | xargs mv -t ramdisk/
+	else
+		sed -i "${ramdisk_last_line}d" ramdisk_install.sh
+		ramdisk_last_line=0
+	fi
 	cat ramdisk_install.sh | cut -d ' ' -f 2 > ramdisk/ramdisk_modules.order
-	cat ramdisk_install.sh | cut -d ' ' -f 2 | xargs mv -t ramdisk/
 
 	sed -i '1s/^/#!\/bin\/sh\n\nset -x\n/' ramdisk_install.sh
 	echo "echo Install ramdisk modules success!" >> ramdisk_install.sh

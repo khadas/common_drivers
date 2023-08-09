@@ -404,6 +404,9 @@ static const struct meson_vpu_data vpu_t3x_data = {
 };
 
 static const struct meson_vpu_data vpu_txhd2_data = {
+		.crtc_func = {
+		.reg_ops = t7_reg_ops,
+	},
 	.pipe_ops = &g12a_vpu_pipeline_ops,
 	.osd_ops = &osd_ops,
 	.afbc_ops = &afbc_ops,

@@ -54,6 +54,7 @@ int is_video_process_in_thread(void);
 #ifdef CONFIG_AMLOGIC_BL_LDIM
 int is_in_ldim_vsync_isr(void);
 #endif
+void set_rdma_channel_enable(u8 rdma_en);
 
 //extern int vsync_rdma_handle[5];
 u32 VCBUS_RD_MPEG_REG(u32 adr);

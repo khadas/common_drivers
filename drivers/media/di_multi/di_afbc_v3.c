@@ -2928,6 +2928,7 @@ static u32 afbc_pst_set(struct vframe_s *if0_vf,
 
 	//	reg_wrb(DI_TOP_POST_CTRL, 1, 5, 1);
 		enable_afbc_input_local(if0_vf, pafd_ctr->fb.if0_dec, pcfg);
+		/* coverity[overrun-call] */
 		afbcd_reg_bwr(EAFBC_DEC_IF0, EAFBC_ENABLE, 1, 8, 1);
 
 		if (pafd_ctr->en_set_pst.b.enc_wr) {
@@ -5312,7 +5313,8 @@ static void ori_afbce_cfg(struct enc_cfg_s *cfg,
 	bool flg_v5 = false;
 	unsigned int	   hsize_buf;
 	unsigned int	   vsize_buf;
-	unsigned int	   fix_cr_en, rc_en;
+	unsigned int	   fix_cr_en = 0;
+	unsigned int	   rc_en = 0;
 	int mmu_page_size = cfg->mmu_page_size == 0 ? 4096 : 8192;
 
 	/* sc2 */

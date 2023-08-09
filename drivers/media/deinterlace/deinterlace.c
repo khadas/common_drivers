@@ -8651,6 +8651,7 @@ static void di_get_vpu_clkb(struct device *dev, struct di_dev_s *pdev)
 			pr_err("clkb_tmp_comp error\n");
 		else {
 			if (!IS_ERR(vpu_clk))
+				/*coverity[var_deref_mode]*/
 				clk_set_parent(clkb_tmp_comp, vpu_clk);
 		}
 	}

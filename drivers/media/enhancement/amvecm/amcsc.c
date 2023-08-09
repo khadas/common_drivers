@@ -515,6 +515,7 @@ module_param(hdmi_csc_type, uint, 0444);
 MODULE_PARM_DESC(hdmi_csc_type, "\n current color space convert type\n");
 #endif
 
+/*Android U force mode: hdr_policy = 4*/
 /* 0: follow sink, 1: follow source, 2: debug, 0xff: bootup default value */
 /* by default follow source to match default sdr_mode*/
 static uint hdr_policy;
@@ -537,11 +538,14 @@ MODULE_PARM_DESC(primary_policy, "\n current primary_policy\n");
 int boot_hdr_policy(char *str)
 {
 	if (strncmp("1", str, 1) == 0) {
-		hdr_policy = 1; //follow source
-		pr_info("boot hdr_policy: 1\n");
+		hdr_policy = 1; /*follow source*/
+		pr_debug("boot hdr_policy: 1\n");
 	} else if (strncmp("0", str, 1) == 0) {
-		hdr_policy = 0; //follow sink
-		pr_info("boot hdr_policy: 0\n");
+		hdr_policy = 0; /*follow sink*/
+		pr_debug("boot hdr_policy: 0\n");
+	} else if (strncmp("2", str, 1) == 0) {
+		hdr_policy = 2; /*force mode*/
+		pr_debug("boot hdr_policy: 2\n");
 	}
 	return 0;
 }
@@ -598,6 +602,19 @@ __setup("hdr_debug=", boot_hdr_debug);
 static uint force_output; /* 0: no force */
 module_param(force_output, uint, 0664);
 MODULE_PARM_DESC(force_output, "\n current force_output\n");
+
+int boot_hdr_force_mode(char *str)
+{
+	if (strncmp("3", str, 1) == 0) {
+		force_output = 3; /*force hdr10*/
+		pr_debug("boot output format: hdr10\n");
+	} else if (strncmp("5", str, 1) == 0) {
+		force_output = 5; /*force hlg*/
+		pr_debug("boot output format: hlg\n");
+	}
+	return 0;
+}
+__setup("hdr_force_mode=", boot_hdr_force_mode);
 
 int get_primary_policy(void)
 {
@@ -4094,6 +4111,9 @@ uint32_t sink_hdr_support(const struct vinfo_s *vinfo)
 		default:
 			break;
 		}
+		dv_cap = sink_dv_support(vinfo);
+		if (dv_cap)
+			hdr_cap |= (dv_cap << DV_SUPPORT_SHF) & DV_SUPPORT;
 	} else if (vinfo) {
 		if (vinfo->hdr_info.hdr_support & HDR_SUPPORT)
 			hdr_cap |= HDR_SUPPORT;

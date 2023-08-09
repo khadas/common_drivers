@@ -15229,6 +15229,7 @@ unsigned int amdv_check_enable(void)
 					/*LL YUV422 mode*/
 					/*set_amdv_mode(dv_mode);*/
 					dolby_vision_mode = uboot_dv_mode;
+					force_mode = uboot_dv_mode;
 					dolby_vision_status = DV_PROCESS;
 					dolby_vision_ll_policy =
 						DOLBY_VISION_LL_YUV422;
@@ -15241,6 +15242,7 @@ unsigned int amdv_check_enable(void)
 					/*LL RGB444 mode*/
 					/*set_amdv_mode(dv_mode);*/
 					dolby_vision_mode = uboot_dv_mode;
+					force_mode = uboot_dv_mode;
 					dolby_vision_status = DV_PROCESS;
 					dolby_vision_ll_policy =
 						DOLBY_VISION_LL_RGB444;
@@ -15253,6 +15255,7 @@ unsigned int amdv_check_enable(void)
 							HDR_BY_DV_F_SINK;
 						dolby_vision_mode =
 							uboot_dv_mode;
+						force_mode = uboot_dv_mode;
 						dolby_vision_status =
 							HDR_PROCESS;
 						pr_info("dovi enable in uboot and mode is HDR10\n");
@@ -15262,6 +15265,7 @@ unsigned int amdv_check_enable(void)
 						/*SDR mode*/
 						dolby_vision_mode =
 							uboot_dv_mode;
+						force_mode = uboot_dv_mode;
 						dolby_vision_status =
 							SDR_PROCESS;
 						pr_info("dovi enable in uboot and mode is SDR\n");
@@ -15270,6 +15274,7 @@ unsigned int amdv_check_enable(void)
 						/*STANDARD RGB444 mode*/
 						dolby_vision_mode =
 							uboot_dv_mode;
+						force_mode = uboot_dv_mode;
 						dolby_vision_status =
 							DV_PROCESS;
 						dolby_vision_ll_policy =
@@ -16602,11 +16607,25 @@ static int get_amdv_uboot_status(char *str)
 		amdv_on_in_uboot = 1;
 		dolby_vision_enable = 1;
 	}
-
 	return 0;
 }
-
 __setup("dolby_vision_on=", get_amdv_uboot_status);
+
+static int get_amdv_uboot_policy(char *str)
+{
+	if (strncmp("1", str, 1) == 0) {
+		dolby_vision_policy = AMDV_FOLLOW_SOURCE;
+		pr_debug("boot dolby_vision_policy: 1\n");
+	} else if (strncmp("0", str, 1) == 0) {
+		dolby_vision_policy = AMDV_FOLLOW_SINK;
+		pr_debug("boot dolby_vision_policy: 0\n");
+	} else if (strncmp("2", str, 1) == 0) {
+		dolby_vision_policy = AMDV_FORCE_OUTPUT_MODE;
+		pr_debug("boot dolby_vision_policy: 2\n");
+	}
+	return 0;
+}
+__setup("hdr_policy=", get_amdv_uboot_policy);
 
 static int recovery_mode_check(char *str)
 {

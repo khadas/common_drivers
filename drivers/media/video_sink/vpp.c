@@ -1534,6 +1534,7 @@ static int vpp_set_filters_internal
 	s32 vpp_zoom_center_x, vpp_zoom_center_y;
 	u32 crop_ratio = 1;
 	u32 crop_left, crop_right, crop_top, crop_bottom;
+	u32 src_crop_right, src_crop_bottom;
 	u32 sar_width = 0, sar_height = 0;
 	bool ext_sar = false;
 	bool no_compress = false;
@@ -1545,6 +1546,7 @@ static int vpp_set_filters_internal
 	bool afbc_support;
 	bool crop_adjust = false;
 	bool hskip_adjust = false;
+	bool src_crop_adjust = false;
 	u32 force_skip_cnt = 0, slice_num = 0;
 
 	if (!input)
@@ -1675,6 +1677,11 @@ RESTART_ALL:
 		/* crop left must 4 aligned */
 		crop_left = (crop_left + 3) & ~0x03;
 		crop_right = (crop_right + 3) & ~0x03;
+	}
+
+	if (src_crop_adjust) {
+		w_in = width_in - src_crop_right;
+		h_in = height_in - src_crop_bottom;
 	}
 
 	/* fix both h/w crop odd issue */
@@ -2379,6 +2386,16 @@ RESTART:
 		if (vf->width && vf->compWidth)
 			crop_ratio = vf->compWidth / vf->width;
 		goto RESTART_ALL;
+	} else {
+		if (vf->type & VIDTYPE_COMPRESS &&
+			is_src_crop_valid(vf->src_crop) &&
+			!src_crop_adjust) {
+			/* src crop top/left will always be 0 */
+			src_crop_bottom = vf->src_crop.bottom;
+			src_crop_right = vf->src_crop.right;
+			src_crop_adjust = true;
+			goto RESTART_ALL;
+		}
 	}
 
 	if ((skip_policy & 0xf0) && skip_policy_check) {
@@ -4426,10 +4443,12 @@ static int vpp_set_filters_no_scaler_internal
 	int ret = vppfilter_success;
 	u32 crop_ratio = 1;
 	u32 crop_left, crop_right, crop_top, crop_bottom;
+	u32 src_crop_right, src_crop_bottom;
 	bool no_compress = false;
 	u32 cur_super_debug = 0;
 	bool afbc_support;
 	bool hskip_adjust = false;
+	bool src_crop_adjust = false;
 
 	if (!input)
 		return vppfilter_fail;
@@ -4480,6 +4499,11 @@ RESTART_ALL:
 	crop_right = video_source_crop_right / crop_ratio;
 	crop_top = video_source_crop_top / crop_ratio;
 	crop_bottom = video_source_crop_bottom / crop_ratio;
+
+	if (src_crop_adjust) {
+		w_in = width_in - src_crop_right;
+		h_in = height_in - src_crop_bottom;
+	}
 
 	if (likely(w_in >
 		(crop_left + crop_right)) &&
@@ -4841,6 +4865,16 @@ RESTART:
 		if (vf->width && vf->compWidth)
 			crop_ratio = vf->compWidth / vf->width;
 		goto RESTART_ALL;
+	} else {
+		if (vf->type & VIDTYPE_COMPRESS &&
+			is_src_crop_valid(vf->src_crop) &&
+			!src_crop_adjust) {
+			/* src crop top/left will always be 0 */
+			src_crop_bottom = vf->src_crop.bottom;
+			src_crop_right = vf->src_crop.right;
+			src_crop_adjust = true;
+			goto RESTART_ALL;
+		}
 	}
 
 	if ((skip_policy & 0xf0) && skip_policy_check) {

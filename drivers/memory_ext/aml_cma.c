@@ -1035,6 +1035,20 @@ int cma_alloc_contig_boost(unsigned long start_pfn, unsigned long count)
 	return ret;
 }
 
+static int check_isolate_migratepages_info(struct page *page, unsigned long pfn)
+{
+	struct address_space *mapping = page_mapping(page);
+
+	if (!PageLRU(page) && page_count(page))
+		cma_debug(1, page, "abort by LRU, low_pfn:%lx\n", pfn);
+	if (!mapping && (page_count(page) - 1) > page_mapcount(page))
+		cma_debug(1, page, "mc/rc miss match, low_pfn:%lx\n", pfn);
+	if (!TestClearPageLRU(page))
+		cma_debug(1, page, "clear lru fail, low_pfn:%lx\n", pfn);
+
+	return 0;
+}
+
 static int __aml_check_pageblock_isolate(unsigned long pfn,
 					 unsigned long end_pfn,
 					 int flags)
@@ -1063,6 +1077,7 @@ static int __aml_check_pageblock_isolate(unsigned long pfn,
 			pfn++;
 		} else {
 			cma_debug(1, page, " isolate failed\n");
+			check_isolate_migratepages_info(page, pfn);
 			break;
 		}
 	}
@@ -1497,11 +1512,14 @@ static ssize_t cma_debug_write(struct file *file, const char __user *buffer,
 			goto exit;
 
 		cma_alloc_trace = arg ? 1 : 0;
+		ok = 1;
 		goto exit;
 	}
 
-	if (kstrtoint(buf, 10, &arg))
+	if (kstrtoint(buf, 10, &arg)) {
+		ok = 1;
 		goto exit;
+	}
 
 	if (arg > MAX_DEBUG_LEVEL)
 		goto exit;
@@ -1543,6 +1561,192 @@ static int __init aml_cma_init(void)
 	return 0;
 }
 arch_initcall(aml_cma_init);
+#else
+#if CONFIG_AMLOGIC_KERNEL_VERSION >= 14515
+/**
+ * cma_alloc() - allocate pages from contiguous area
+ * @cma:   Contiguous memory region for which the allocation is performed.
+ * @count: Requested number of pages.
+ * @align: Requested alignment of pages (in PAGE_SIZE order).
+ * @gfp_mask: GFP mask to use during the cma allocation.
+ *
+ * This function allocates part of contiguous memory on specific
+ * contiguous memory area.
+ */
+struct page *aml_cma_alloc(struct dummy_cma *cma, unsigned long count,
+		       unsigned int align, gfp_t gfp_mask)
+{
+	unsigned long mask, offset;
+	unsigned long pfn = -1;
+	unsigned long start = 0;
+	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
+	unsigned long i;
+	struct page *page = NULL;
+	int ret = -ENOMEM;
+	int num_attempts = 0;
+	int max_retries = 5;
+	//s64 ts;
+	struct cma_alloc_info cma_info = {0};
+	int dummy;
+	unsigned long tick = 0;
+	unsigned long long in_tick, timeout;
+
+	in_tick = sched_clock();
+
+	//trace_android_vh_cma_alloc_start(&ts);
+
+	if (!cma || !cma->count || !cma->bitmap)
+		goto out;
+
+	cma_debug(0, NULL, "(cma %p, count %lu, align %d gfp_mask 0x%x)\n",
+			(void *)cma, count, align, gfp_mask);
+
+	in_tick = sched_clock();
+	timeout = 2ULL * 1000000 * (1 + ((count * PAGE_SIZE) >> 20));
+
+	if (!count)
+		goto out;
+
+	//trace_cma_alloc_start(cma->name, count, align);
+
+	mask = cma_bitmap_aligned_mask(cma, align);
+	offset = cma_bitmap_aligned_offset(cma, align);
+	bitmap_maxno = cma_bitmap_maxno(cma);
+	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+
+	if (bitmap_count > bitmap_maxno)
+		goto out;
+
+	aml_cma_alloc_pre_hook(&dummy, count, &tick);
+
+	for (;;) {
+		struct acr_info info = {0};
+
+		spin_lock_irq(&cma->lock);
+		bitmap_no = bitmap_find_next_zero_area_off(cma->bitmap,
+				bitmap_maxno, start, bitmap_count, mask,
+				offset);
+		if (bitmap_no >= bitmap_maxno) {
+			if ((num_attempts < max_retries) && (ret == -EBUSY)) {
+				spin_unlock_irq(&cma->lock);
+
+				if (fatal_signal_pending(current) ||
+				    (gfp_mask & __GFP_NORETRY))
+					break;
+
+				/*
+				 * Page may be momentarily pinned by some other
+				 * process which has been scheduled out, e.g.
+				 * in exit path, during unmap call, or process
+				 * fork and so cannot be freed there. Sleep
+				 * for 100ms and retry the allocation.
+				 */
+				start = 0;
+				ret = -ENOMEM;
+				schedule_timeout_killable(msecs_to_jiffies(100));
+				num_attempts++;
+				continue;
+			} else {
+				spin_unlock_irq(&cma->lock);
+				break;
+			}
+		}
+		bitmap_set(cma->bitmap, bitmap_no, bitmap_count);
+		/*
+		 * It's safe to drop the lock here. We've marked this region for
+		 * our exclusive use. If the migration fails we will take the
+		 * lock again and unmark it.
+		 */
+		spin_unlock_irq(&cma->lock);
+
+		pfn = cma->base_pfn + (bitmap_no << cma->order_per_bit);
+		mutex_lock(&cma_mutex);
+		ret = aml_cma_alloc_range(pfn, pfn + count, MIGRATE_CMA, gfp_mask);
+		cma_info.nr_migrated += info.nr_migrated;
+		cma_info.nr_reclaimed += info.nr_reclaimed;
+		cma_info.nr_mapped += info.nr_mapped;
+		if (info.err) {
+			if (info.err & ACR_ERR_ISOLATE)
+				cma_info.nr_isolate_fail++;
+			if (info.err & ACR_ERR_MIGRATE)
+				cma_info.nr_migrate_fail++;
+			if (info.err & ACR_ERR_TEST)
+				cma_info.nr_test_fail++;
+		}
+		mutex_unlock(&cma_mutex);
+		if (ret == 0) {
+			page = pfn_to_page(pfn);
+			break;
+		}
+
+		cma_clear_bitmap(cma, pfn, count);
+		if (ret != -EBUSY)
+			break;
+
+		pr_debug("%s(): memory range at %p is busy, retrying\n",
+			 __func__, pfn_to_page(pfn));
+
+		//trace_cma_alloc_busy_retry(cma->name, pfn, pfn_to_page(pfn),
+		//			   count, align);
+
+		//if (info.failed_pfn && gfp_mask & __GFP_NORETRY) {
+			/* try again from following failed page */
+		//	start = (pfn_max_align_up(info.failed_pfn + 1) -
+		//		 cma->base_pfn) >> cma->order_per_bit;
+
+		//} else {
+			/* try again with a bit different memory target */
+		//	start = bitmap_no + mask + 1;
+		//}
+		/*
+		 * CMA allocation time out, for example:
+		 * 1. set isolation failed.
+		 * 2. refcout and mapcount mismatch.
+		 * may blocked on some pages, relax CPU and try later.
+		 */
+		if (cma_debug_level == 1) {
+			if ((sched_clock() - in_tick) >= timeout)
+				usleep_range(1000, 2000);
+		} else {
+			/* try again with a bit different memory target */
+			start = bitmap_no + mask + 1;
+		}
+	}
+
+	//trace_cma_alloc_finish(cma->name, pfn, page, count, align);
+	//trace_cma_alloc_info(cma->name, page, count, align, &cma_info);
+
+	/*
+	 * CMA can allocate multiple page blocks, which results in different
+	 * blocks being marked with different tags. Reset the tags to ignore
+	 * those page blocks.
+	 */
+	if (page) {
+		for (i = 0; i < count; i++)
+			page_kasan_tag_reset(page + i);
+	}
+
+	if (ret && !(gfp_mask & __GFP_NOWARN)) {
+		pr_err_ratelimited("%s: %s: alloc failed, req-size: %lu pages, ret: %d\n",
+				   __func__, cma->name, count, ret);
+	//	cma_debug_show_areas(cma);
+	}
+
+	pr_debug("%s(): returned %p\n", __func__, page);
+out:
+//	trace_android_vh_cma_alloc_finish(cma, page, count, align, gfp_mask, ts);
+	if (page) {
+		count_vm_event(CMA_ALLOC_SUCCESS);
+		cma_sysfs_account_success_pages(cma, count);
+	} else if (!(gfp_mask & __GFP_NORETRY)) {
+		count_vm_event(CMA_ALLOC_FAIL);
+		if (cma)
+			cma_sysfs_account_fail_pages(cma, count);
+	}
+	aml_cma_alloc_post_hook(&dummy, count, page, tick, ret);
+
+	return page;
+}
 #else
 /**
  * cma_alloc() - allocate pages from contiguous area
@@ -1697,6 +1901,7 @@ out:
 
 	return page;
 }
+#endif
 
 /**
  * cma_release() - release allocated pages
@@ -1772,7 +1977,7 @@ static void *get_symbol_addr(const char *symbol_name)
 		pr_err("register_kprobe:%s failed, returned %d\n", symbol_name, ret);
 		return NULL;
 	}
-	pr_info("symbol_name:%s addr=%px\n", symbol_name, kp.addr);
+	pr_debug("symbol_name:%s addr=%px\n", symbol_name, kp.addr);
 	unregister_kprobe(&kp);
 
 	return kp.addr;

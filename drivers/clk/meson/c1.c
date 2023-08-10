@@ -575,7 +575,7 @@ static const struct clk_parent_data pll_dco_parent = {
 
 MESON_CLK_PLL_RO(fixed_pll, ANACTRL_FIXPLL_CTRL0, 28, 1,  /* en */
 		 ANACTRL_FIXPLL_CTRL0, 0,  9,  /* m */
-		 0, 0,  0,  /* frac */
+		 ANACTRL_FIXPLL_CTRL1, 0,  19,  /* frac */
 		 ANACTRL_FIXPLL_CTRL0, 10, 5,  /* n */
 		 ANACTRL_FIXPLL_STS, 31, 1,  /* lock */
 		 ANACTRL_FIXPLL_CTRL0, 29, 1,  /* rst */

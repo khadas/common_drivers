@@ -1346,9 +1346,9 @@ static inline void vdin_set_bbar_t3x(struct vdin_dev_s *devp,
 	u32 blkbar_hwidth   = 512;
 	u32 black_level = 16;
 	u32 white_level = 16;
-	u32 win_en = 0;
-	u32 h_bgn = 0;
-	u32 h_end = 100;
+	//u32 win_en = 0;
+	//u32 h_bgn = 0;
+	//u32 h_end = 100;
 
 	struct vdin_blkbar_s vdin_blkbar;
 
@@ -1401,10 +1401,11 @@ static inline void vdin_set_bbar_t3x(struct vdin_dev_s *devp,
 	vdin_blkbar.blk_col_th		=  ((v / 5) * 3) / 10 * 9;
 	vdin_blkbar.white_level		=  white_level;
 
-	if (win_en)
-		vdin_blkbar.blk_wht_th = (h_end - h_bgn) / 8 * 7;
-	else
-		vdin_blkbar.blk_wht_th = h / 8 * 7;
+	//if (win_en)
+	//	vdin_blkbar.blk_wht_th = (h_end - h_bgn) / 8 * 7;
+	//else
+	//	vdin_blkbar.blk_wht_th = h / 8 * 7;
+	vdin_blkbar.blk_wht_th = h / 8 * 7;
 
 	wr(offset, VDIN0_BLKBAR_CTRL,  vdin_blkbar.gclk_ctrl      << 30 |
 					vdin_blkbar.pat_gclk_ctrl << 28 |
@@ -2719,7 +2720,7 @@ static void vdin_set_hscale_t3x(struct vdin_dev_s *devp, unsigned int dst_w)
 	//unsigned int tmp;
 	int phase_step, i;
 	u32 hsc_integer, hsc_fraction;
-	u32 phsc_en = 0, phsc_mode = 0;
+	//u32 phsc_en = 0, phsc_mode = 0;
 	int in_hsize1, in_hsize3, in_hsize7;
 
 //	u32 coef_lut[3][33] = {
@@ -2805,10 +2806,10 @@ static void vdin_set_hscale_t3x(struct vdin_dev_s *devp, unsigned int dst_w)
 	in_hsize1 = src_w + 1;
 	in_hsize3 = src_w + 3;
 	in_hsize7 = src_w + 7;
-	src_w = (phsc_en) ? (phsc_mode == 0) ? src_w :
-			    (phsc_mode == 1) ? ((in_hsize1) >> 1) :
-			    (phsc_mode == 2) ? ((in_hsize3) >> 2) :
-			    (phsc_mode == 3) ? ((in_hsize7) >> 3) : src_w : src_w;
+	//src_w = (phsc_en) ? (phsc_mode == 0) ? src_w :
+	//		    (phsc_mode == 1) ? ((in_hsize1) >> 1) :
+	//		    (phsc_mode == 2) ? ((in_hsize3) >> 2) :
+	//		    (phsc_mode == 3) ? ((in_hsize7) >> 3) : src_w : src_w;
 	if (src_w >= 2048) {/* for src_w >= 4096, avoid data overflow. */
 		phase_step = ((src_w << 18) / dst_w) << 2;
 		//horz_phase_step = (horz_phase_step << 6);

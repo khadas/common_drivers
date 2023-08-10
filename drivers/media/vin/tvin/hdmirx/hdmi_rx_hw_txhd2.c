@@ -999,11 +999,10 @@ void swap_num_txhd2(int *a, int *b)
 	*b = temp;
 }
 
-int *num_divide_three_txhd2(int arr[], int l, int r)
+void num_divide_three_txhd2(int arr[], int p[], int l, int r)
 {
 	int less = l - 1;
 	int more = r;
-	int *p = kmalloc(sizeof(int) * 2, GFP_KERNEL);
 
 	while (l < more) {
 		if (arr[l] < arr[r])
@@ -1016,17 +1015,15 @@ int *num_divide_three_txhd2(int arr[], int l, int r)
 	swap_num_txhd2(&arr[more], &arr[r]);
 	p[0] = less + 1;
 	p[1] = more;
-	return p;
 }
 
 void quick_sort2_txhd2(int arr[], int l, int r)
 {
-	int *p;
-
+	int p[2];
 	if (l >= r)
 		return;
 	swap_num_txhd2(&arr[r], &arr[r - 1]);
-	p = num_divide_three_txhd2(arr, l, r);
+	num_divide_three_txhd2(arr, p, l, r);
 	quick_sort2_txhd2(arr, l, p[0] - 1);
 	quick_sort2_txhd2(arr, p[1] + 1, r);
 }
@@ -1065,7 +1062,7 @@ void eq_max_offset_txhd2(int eq_boost0, int eq_boost1, int eq_boost2)
 {
 	int offset_eq0, offset_eq1, offset_eq2;
 	int ch = -1;
-	int eq_initial;
+	int eq_initial = 0;
 
 	offset_eq0 = abs(2 * eq_boost0 - eq_boost1 - eq_boost2);
 	offset_eq1 = abs(2 * eq_boost1 - eq_boost0 - eq_boost2);

@@ -2030,9 +2030,6 @@ static void tvafe_cvd2_auto_de(struct tvafe_cvd2_s *cvd2)
 			}
 
 			tmp = (0xff - l_ave + 1) >> 2;
-			/* avoid overflow */
-			if (tmp > TVAFE_CVD2_PAL_DE_START)
-				tmp = TVAFE_CVD2_PAL_DE_START;
 			if (lines->de_offset != tmp || scene_colorful_old) {
 				lines->de_offset = tmp;
 				tmp = ((TVAFE_CVD2_PAL_DE_START -
@@ -2551,8 +2548,8 @@ inline void tvafe_cvd2_adj_hs(struct tvafe_cvd2_s *cvd2,
 					temp = (acd_2d_adjust - 0x88) *
 						(cvd2->info.hs_adj_level + 1);
 					delta = temp / 4;
-					if (cvd2->info.hs_adj_level >= 3)
-						temp = temp * 2;
+					//if (cvd2->info.hs_adj_level >= 3)
+						//temp = temp * 2;
 				}
 				temp = delta << 16;
 				temp = temp | delta;

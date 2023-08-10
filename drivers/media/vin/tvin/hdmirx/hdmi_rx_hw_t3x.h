@@ -154,6 +154,12 @@ extern int tr_delay0;
 extern int tr_delay1;
 extern int fpll_sel;
 extern int fpll_chk_lvl;
+extern int dts_debug_flag_t3x_21;
+extern int rlevel_t3x_21;
+extern int rterm_trim_val_t3x_21;
+extern int rterm_trim_flag_t3x_21;
+extern int phy_term_lel_t3x_21;
+
 /*--------------------------function declare------------------*/
 /* T3X */
 void aml_phy_init_t3x(u8 port);

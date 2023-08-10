@@ -1312,8 +1312,10 @@ void aml_phy_get_trim_val_t3x(void)
 			rlevel = 15;
 		rterm_trim_flag_t3x = dts_debug_flag;
 	}
-	if (rterm_trim_flag_t3x)
-		rx_pr("rterm trim=0x%x\n", rterm_trim_val_t3x);
+	if (rterm_trim_flag_t3x) {
+		if (log_level & PHY_LOG)
+			rx_pr("rterm trim=0x%x\n", rterm_trim_val_t3x);
+	}
 }
 
 void aml_phy_cfg_t3x_20(u8 port)
@@ -1506,6 +1508,32 @@ static const u32 phy_dchd_t3x_21[][2] = {
 
 int pll_level_en;
 int pll_level;
+int dts_debug_flag_t3x_21;
+int rlevel_t3x_21;
+int rterm_trim_val_t3x_21;
+int rterm_trim_flag_t3x_21;
+int phy_term_lel_t3x_21;
+
+void aml_phy_get_trim_val_t3x_21(u8 port)
+{
+	u32 data32;
+
+	dts_debug_flag_t3x_21 = (phy_term_lel_t3x_21 >> 4) & 0x1;
+	if (dts_debug_flag_t3x_21 == 0) {
+		data32 = hdmirx_rd_amlphy_t3x(T3X_HDMIRX21PHY_MISC2, port); //todo
+		rterm_trim_val_t3x_21 = (data32 >> 12) & 0xf;
+		rterm_trim_flag_t3x_21 = data32 & 0x1;
+	} else {
+		rlevel_t3x_21 = phy_term_lel_t3x_21 & 0xf;
+		if (rlevel_t3x_21 > 15)
+			rlevel_t3x_21 = 15;
+		rterm_trim_flag_t3x_21 = dts_debug_flag_t3x_21;
+	}
+	if (rterm_trim_flag_t3x_21) {
+		if (log_level & PHY_LOG)
+			rx_pr("rterm trim=0x%x\n", rterm_trim_val_t3x_21);
+	}
+}
 
 void aml_phy_offset_cal_t3x_21(int port)
 {
@@ -1557,19 +1585,41 @@ void aml_phy_offset_cal_t3x_21(int port)
 
 void rx_21_frl_phy_cfg(u8 port)
 {
-	if (rx_info.aml_phy_21.ofst_en) {
-		aml_phy_offset_cal_t3x_21(port);
-		usleep_range(1000, 1100);
+	u32 data32 = 0;
+	u32 idx = rx[port].phy.phy_bw;
+
+	if (rx_info.aml_phy.pre_int) {
+		if (rx_info.aml_phy_21.ofst_en) {
+			aml_phy_offset_cal_t3x_21(port);
+			usleep_range(1000, 1100);
+		}
+		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, OFST_CAL_START, 0x0, port);
+		usleep_range(100, 110);
+		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_DFE, DFE_OFST_CAL_START, 0x0, port);
+		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_DFE, DFE_TAP_EN, 0x1ff, port);
+		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_DFE, DFE_H1_PD, 0x0, port);
+
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, phy_misc_t3x_21[idx][0], port);
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_MISC1, phy_misc_t3x_21[idx][1], port);
+		aml_phy_get_trim_val_t3x_21(port);
+		data32 = phy_misc_t3x_21[idx][2];
+		if (rterm_trim_flag_t3x_21) {
+			if (dts_debug_flag_t3x_21)
+				rterm_trim_val_t3x_21 = t3x_rlevel[rlevel_t3x_21];
+			data32 = ((data32 & (~(0xf | (0x1 << 31)))) |
+			rterm_trim_val_t3x_21 | (rterm_trim_flag_t3x_21 << 31));
+		}
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_MISC2, data32, port);
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_AFE,  phy_dcha_t3x_21[idx][0], port);
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_DFE,  phy_dcha_t3x_21[idx][1], port);
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_PI,  phy_dcha_t3x_21[idx][2], port);
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_CTRL,  phy_dcha_t3x_21[idx][3], port);
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR,  phy_dchd_t3x_21[idx][0], port);
+		hdmirx_wr_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_EQ,  phy_dchd_t3x_21[idx][1], port);
+		hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, _BIT(22), 0x1, port);
+		if (!rx_info.aml_phy.pre_int_en)
+			rx_info.aml_phy.pre_int = 0;
 	}
-	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, OFST_CAL_START, 0x0, port);
-	usleep_range(100, 110);
-	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_DFE, DFE_OFST_CAL_START, 0x0, port);
-	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_DFE, DFE_TAP_EN, 0x1ff, port);
-	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHA_DFE, DFE_H1_PD, 0x0, port);
-	//rterm todo,use default setting
-	//rterm_trim(dcha_misc2[3:0]) = $efuse
-	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_MISC2, MSK(4, 0), 0x0, port);
-	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_MISC0, _BIT(22), 0x1, port);
 	//rterm_en(dcha_misc0[22]) = 0x1
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, CDR_FR_EN, 0x0, port);
 	hdmirx_wr_bits_amlphy_t3x(T3X_HDMIRX21PHY_DCHD_CDR, CDR_RSTB, 0x0, port);

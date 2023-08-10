@@ -1292,8 +1292,10 @@ void aml_phy_get_trim_val_t5m(void)
 			rlevel = 15;
 		rterm_trim_flag_t5m = dts_debug_flag;
 	}
-	if (rterm_trim_flag_t5m)
-		rx_pr("rterm trim=0x%x\n", rterm_trim_val_t5m);
+	if (rterm_trim_flag_t5m) {
+		if (log_level & PHY_LOG)
+			rx_pr("rterm trim=0x%x\n", rterm_trim_val_t5m);
+	}
 }
 
 void aml_phy_cfg_t5m(void)

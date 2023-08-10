@@ -923,8 +923,10 @@ void aml_phy_get_trim_val_t7(void)
 			rlevel = 15;
 		rterm_trim_flag_t7 = dts_debug_flag;
 	}
-	if (rterm_trim_flag_t7)
-		rx_pr("rterm trim=0x%x\n", rterm_trim_val_t7);
+	if (rterm_trim_flag_t7) {
+		if (log_level & PHY_LOG)
+			rx_pr("rterm trim=0x%x\n", rterm_trim_val_t7);
+	}
 }
 
 void aml_phy_cfg_t7(void)

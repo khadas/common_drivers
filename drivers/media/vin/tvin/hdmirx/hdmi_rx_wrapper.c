@@ -3825,6 +3825,7 @@ void rx_get_global_variable(const char *buf)
 	pr_var(vdin_reset_pcs_en, i++);
 	pr_var(rx_5v_wake_up_en, i++);
 	pr_var(hdcp_22_en, i++);
+	pr_var(phy_term_lel_t3x_21, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4374,6 +4375,10 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(hdcp_22_en),
 		&hdcp_22_en, value))
 		return pr_var(hdcp_22_en, index);
+	return 0;
+	if (set_pr_var(tmpbuf, var_to_str(phy_term_lel_t3x_21),
+		&phy_term_lel_t3x_21, value))
+		return pr_var(phy_term_lel_t3x_21, index);
 	return 0;
 }
 

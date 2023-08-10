@@ -3808,6 +3808,13 @@ static int hdmirx_probe(struct platform_device *pdev)
 		rx_5v_wake_up_en = 0;
 		rx_pr("not find rx_5v_wake_up_en, soundbar by default\n");
 	}
+	ret = of_property_read_u32(pdev->dev.of_node,
+				   "phy_term_lel_t3x_21",
+				   &phy_term_lel_t3x_21);
+	if (ret) {
+		phy_term_lel_t3x_21 = 0;
+		rx_pr("not find phy_term_lel_t3x_21, soundbar by default\n");
+	}
 	ret = of_reserved_mem_device_init(&pdev->dev);
 	if (ret != 0)
 		rx_pr("warning: no rev cmd mem\n");

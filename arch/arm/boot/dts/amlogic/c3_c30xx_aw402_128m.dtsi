@@ -80,26 +80,28 @@
 		autocap_reserved:linux,autocap_reserved {
 			compatible = "amlogic, aml_autocap_memory";
 			status = "okay";
-			size = <0x1000000>;
-			alloc-ranges = <0x3000000 0x1000000>;
+			size = <0xB00000>;
+			alloc-ranges = <0x4700000 0xB00000>;
+			venc_bsb_addr = <0x5000000>;
+			venc_bsb_size = <0x200000>;
 		};
 
 		pmz_cma_a2_reserved:anonymous_ext{
 			compatible = "shared-dma-pool";
 			//reusable;
 			no-map;
-			size = <0x1000000>;
-			alignment = <0x400000>;
+			size = <0x1700000>;
+			alignment = <0x100000>;
 			status = "okay";
-			alloc-ranges = <0x4000000 0x1000000>;
+			alloc-ranges = <0x3000000 0x1700000>;
 		};
 
 		rtos_reserved:linux,rtos_reserved {
 			compatible = "amlogic, aml_rtos_memory";
 			status = "okay";
-			size = <0x200000>;
-			alignment = <0x200000>;
-			reg = <0x7600000 0x200000>;
+			size = <0x300000>;
+			alignment = <0x100000>;
+			reg = <0x7500000 0x300000>;
 		};
 
 		dsp_fw_reserved:linux,dsp_fw {
@@ -144,9 +146,9 @@
 			compatible = "shared-dma-pool";
 			//reusable;
 			no-map;
-			size = <0x02400000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x5000000 0x2400000>;
+			size = <0x02300000>;
+			alignment = <0x100000>;
+			alloc-ranges = <0x5200000 0x2300000>;
 		};
 
 		codec_mm_cma:linux,codec_mm_cma {

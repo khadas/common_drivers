@@ -35,6 +35,7 @@
 #include <linux/arm-smccc.h>
 
 #include <linux/amlogic/media/video_sink/video.h>
+#include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/media/amdolbyvision/dolby_vision.h>
 #include "../tvin_global.h"
 #include "../tvin_format_table.h"
@@ -3342,6 +3343,26 @@ void vdin_set_vframe_prop_info(struct vframe_s *vf,
 	}
 }
 
+void vdin_get_hist_gamma(struct vdin_dev_s *devp, unsigned short *hist_gamma)
+{
+	unsigned int offset = devp->addr_offset;
+	unsigned int i;
+
+	if (is_meson_txhd2_cpu())
+		offset = 0;
+	/* vdin1 hist 64 gamma, 32 reg, set 2 bits */
+	for (i = 0; i < 64; i++) {
+		if (i % 2 == 0)
+			hist_gamma[i] = rd_bits(offset, VDIN_DNLP_HIST00 + (i / 2),
+					   HIST_ON_BIN_00_BIT,
+					   HIST_ON_BIN_00_WID);
+		else
+			hist_gamma[i] = rd_bits(offset, VDIN_DNLP_HIST00 + (i / 2),
+					   HIST_ON_BIN_01_BIT,
+					   HIST_ON_BIN_00_WID);
+	}
+}
+
 void vdin_get_crc_val(struct vframe_s *vf, struct vdin_dev_s *devp)
 {
 	/* fetch CRC value of the previous frame */
@@ -3936,6 +3957,73 @@ void vdin_hw_disable(struct vdin_dev_s *devp)
 	}
 }
 
+void vdin1_hw_hist_on_off(struct vdin_dev_s *devp, bool on_off)
+{
+	const struct vinfo_s *vinfo;
+	unsigned int offset = devp->addr_offset;
+
+	vinfo = get_current_vinfo();
+
+	enum vdin_matrix_csc_e	  matrix_csc = VDIN_MATRIX_RGB_YUV709;
+
+	if (!devp->index) {
+		pr_err("only support vdin1 set\n");
+		return;
+	}
+
+	if (on_off) {
+		devp->h_active = vinfo->width;
+		devp->v_active = vinfo->height;
+		devp->prop.scaling4w = 1280;
+		devp->prop.scaling4h = 720;
+		wr(offset, VDIN_COM_GCLK_CTRL, 0); //open vdin1 clk 0x131b
+
+		/* Getting luma values requires reading yuv images more accurately
+		 * Converting rgb to yuv requires csc(matrix) and hv_scaling to be turned on
+		 */
+		vdin_set_hscale(devp, devp->prop.scaling4w);
+		vdin_set_vscale(devp);
+		if (cpu_after_eq(MESON_CPU_MAJOR_ID_G12A))
+			vdin_change_matrix1(offset, matrix_csc);
+		else
+			vdin_change_matrix0(offset, matrix_csc);
+		wr_bits(offset, VDIN_MATRIX_CTRL, 3,
+			VDIN_PROBE_SEL_BIT, VDIN_PROBE_SEL_WID); //not open matrix prob
+		//usleep_range(50000, 60000);0x55554550
+		wr_bits(offset, VDIN_COM_CTRL0, 0x917, 0, 12); // 0x1302
+		wr_bits(offset, VDIN_ASFIFO_CTRL3, 0xe4,
+			VDI6_ASFIFO_CTRL_BIT, VDI_ASFIFO_CTRL_WID); //0x136f
+		wr(offset, VDIN_ASFIFO_CTRL1, 0x80e4); //1309
+		//usleep_range(50000, 60000);
+
+		//width = vdin_get_active_h(devp);
+		//height =  vdin_get_active_v(devp);
+		wr(offset, VDIN_INTF_WIDTHM1, vinfo->width - 1);
+
+		//Register with vdin0 for vdin1 hist function
+		if (is_meson_txhd2_cpu())
+			offset = 0;
+		wr_bits(offset, VDIN_HIST_CTRL, 0x47, 0, 7); //hist sampling site
+
+		/* win_hs */
+		wr_bits(offset, VDIN_HIST_H_START_END, 0,
+			HIST_HSTART_BIT, HIST_HSTART_WID); //1231
+		/* win_he */
+
+		wr_bits(offset, VDIN_HIST_H_START_END, devp->prop.scaling4w - 1,
+			HIST_HEND_BIT, HIST_HEND_WID);
+		/* win_vs */
+		wr_bits(offset, VDIN_HIST_V_START_END, 0,
+			HIST_VSTART_BIT, HIST_VSTART_WID); //1232
+		/* win_ve */
+		wr_bits(offset, VDIN_HIST_V_START_END, devp->prop.scaling4h - 1,
+			HIST_VEND_BIT, HIST_VEND_WID);
+		usleep_range(20000, 30000);
+	} else {
+		wr_bits(offset, VDIN_COM_GCLK_CTRL, 1, 12, 2); //close vdin1 hist clk 0x131b
+			}
+}
+
 void vdin_hw_close(struct vdin_dev_s *devp)
 {
 	unsigned int offset = devp->addr_offset;
@@ -4363,7 +4451,7 @@ void vdin_calculate_duration(struct vdin_dev_s *devp)
 /* just for horizontal down scale src_w is origin width,
  * dst_w is width after scale down
  */
-static void vdin_set_hscale(struct vdin_dev_s *devp, unsigned int dst_w)
+void vdin_set_hscale(struct vdin_dev_s *devp, unsigned int dst_w)
 {
 	unsigned int offset = devp->addr_offset;
 	unsigned int src_w = devp->h_active;
@@ -4426,7 +4514,7 @@ static void vdin_set_hscale(struct vdin_dev_s *devp, unsigned int dst_w)
  *just for vertical scale src_w is origin height,
  *just dst_h is the height after scale
  */
-static void vdin_set_vscale(struct vdin_dev_s *devp)
+void vdin_set_vscale(struct vdin_dev_s *devp)
 {
 	int ver_phase_step, tmp;
 	unsigned int offset = devp->addr_offset;

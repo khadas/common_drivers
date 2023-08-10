@@ -294,6 +294,8 @@ struct match_data_s {
 /*flag for isr req&free*/
 #define VDIN_FLAG_ISR_REQ               0x00040000
 #define VDIN_FLAG_ISR_EN		0x00100000
+/*flag for get vdin1 hist start interface*/
+#define VDIN_FLAG_HIST_STARTED		0x00200000
 
 /* flag for rdma done in isr*/
 #define VDIN_FLAG_RDMA_DONE             0x00080000
@@ -563,6 +565,9 @@ struct vdin_vf_info {
 #define DBG_REG_ISR_READ_WRITE		(BIT(7))
 #define DBG_REG_TOP_FUNCTION		(BIT(8))
 #define DBG_REG_CONVERT_SYNC		(BIT(9))
+
+/***vdin_dbg_en control for print***/
+#define DBG_VDIN1_HIST		(BIT(1)) /*print vdin1 HIST_IOC */
 
 /*******for debug **********/
 struct vdin_debug_s {

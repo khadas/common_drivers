@@ -105,7 +105,6 @@ static unsigned int vdin_addr_offset[VDIN_MAX_DEVS] = {0, 0x80, 0x400};
 static struct vdin_dev_s *vdin_devp[VDIN_MAX_DEVS];
 static unsigned long mem_start, mem_end;
 static unsigned int use_reserved_mem;
-static unsigned int pr_times;
 
 struct vdin_set_canvas_addr_s vdin_set_canvas_addr[VDIN_CANVAS_MAX_CNT];
 static DECLARE_WAIT_QUEUE_HEAD(vframe_waitq);
@@ -1501,6 +1500,7 @@ void vdin_stop_dec(struct vdin_dev_s *devp)
 	int afbc_write_down_timeout = 500; /* 50ms to cover a 24Hz vsync */
 	int i = 0;
 #endif
+	struct vdin_dev_s *vdin1_devp = vdin_devp[1];
 	/* avoid null pointer oops */
 	if (!devp) {
 		pr_info("vdin err no frontend\n");
@@ -1618,6 +1618,13 @@ void vdin_stop_dec(struct vdin_dev_s *devp)
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 	rdma_clear(devp->rdma_handle);
 #endif
+	if (!IS_ERR_OR_NULL(vdin1_devp)) {
+		if (vdin1_devp->flags & VDIN_FLAG_HIST_STARTED) {
+			viuin_select_loopback_path();
+			vdin1_hw_hist_on_off(vdin1_devp, true);
+		}
+	}
+
 	devp->flags &= (~VDIN_FLAG_RDMA_ENABLE);
 	devp->ignore_frames = max_ignore_frame_cnt;
 	devp->cycle = 0;
@@ -4101,6 +4108,34 @@ static int vdin_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
+void vdin_ioctl_get_hist(struct vdin_dev_s *devp,
+					struct vdin_hist_s *vdin1_hist_temp)
+{
+	unsigned int i;
+	unsigned int offset = devp->addr_offset;
+	int ave;
+
+	vdin1_hist_temp->width = rd(0, VDIN_HIST_H_START_END);
+	vdin1_hist_temp->height = rd(0, VDIN_HIST_V_START_END);
+	if (is_meson_txhd2_cpu())
+		vdin1_hist_temp->sum =  rd(0, VDIN_HIST_SPL_VAL);
+	else
+		vdin1_hist_temp->sum =  rd(offset, VDIN_HIST_SPL_VAL);
+	ave =
+		div_u64(vdin1_hist_temp->sum, (vdin1_hist_temp->height * vdin1_hist_temp->width));
+	ave = (ave - 16) < 0 ? 0 : (ave - 16);
+	vdin1_hist_temp->ave = ave * 255 / (235 - 16);
+	vdin_get_hist_gamma(devp, vdin1_hist_temp->hist);
+	if (vdin_dbg_en & DBG_VDIN1_HIST) {
+		pr_info("sum:0x%lx, width:%d, height:%d ave:0x%x\n",
+			vdin1_hist_temp->sum,
+			vdin1_hist_temp->width, vdin1_hist_temp->height,
+			vdin1_hist_temp->ave);
+		for (i = 0; i < 64; i++)
+			pr_info("-:vdin1 hist[%d]=%d\n", i, vdin1_hist_temp->hist[i]);
+	}
+}
+
 static int vdin_cmd_check(struct vdin_dev_s *devp, unsigned int cmd)
 {
 	if (devp->work_mode == VDIN_WORK_MD_V4L &&
@@ -4137,7 +4172,6 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct vdin_dev_s *devp = NULL;
 	void __user *argp = (void __user *)arg;
 	struct vdin_parm_s param;
-	ulong flags;
 	struct vdin_hist_s vdin1_hist_temp;
 	struct page *page;
 	struct vdin_set_canvas_s vdin_set_canvas[VDIN_CANVAS_MAX_CNT];
@@ -4723,41 +4757,57 @@ static long vdin_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		if (vdin_dbg_en)
 			pr_info("TVIN_IOC_G_IMAX_STATUS:%d\n", devp->prop.imax_flag);
 		break;
-	case TVIN_IOC_G_VDIN_HIST:
+	case TVIN_IOC_G_VDIN_START_HIST:
 		if (devp->index == 0) {
-			pr_info("TVIN_IOC_G_VDIN_HIST can't be used at vdin0\n");
+			pr_info("TVIN_IOC_G_VDIN_START_HIST can't be used at vdin0\n");
 			break;
 		}
 
-		spin_lock_irqsave(&devp->hist_lock, flags);
-		vdin1_hist_temp.sum = vdin1_hist.sum;
-		vdin1_hist_temp.width = vdin1_hist.width;
-		vdin1_hist_temp.height = vdin1_hist.height;
-		vdin1_hist_temp.ave = vdin1_hist.ave;
-		for (i = 0; i < 64; i++)
-			vdin1_hist_temp.hist[i] = vdin1_hist.hist[i];
-		spin_unlock_irqrestore(&devp->hist_lock, flags);
+		mutex_lock(&devp->fe_lock);
+		if (!(devp->flags & VDIN_FLAG_DEC_STARTED)) {
+			viuin_select_loopback_path();
+			vdin1_hw_hist_on_off(devp, TRUE);
+			//vdin_ioctl_get_hist(devp, &vdin1_hist_temp);
+		}
+		devp->flags |= VDIN_FLAG_HIST_STARTED;
+		mutex_unlock(&devp->fe_lock);
 
-		if (vdin_dbg_en) {
-			if (pr_times++ > 10) {
-				pr_times = 0;
-				pr_info("-:h=%d,w=%d,a=%d\n",
-					vdin1_hist_temp.height,
-					vdin1_hist_temp.width,
-					vdin1_hist_temp.ave);
-				for (i = 0; i < 64; i++)
-					pr_info("-:vdin1 hist[%d]=%d\n",
-						i, vdin1_hist_temp.hist[i]);
-			}
+		/* osd+video/only osd: vdin1 hist */
+		if (vdin_dbg_en & DBG_VDIN1_HIST)
+			pr_info("vdin1_hist start\n");
+		break;
+	case TVIN_IOC_G_VDIN_GET_HIST:
+		if (devp->index == 0 || !(devp->flags & VDIN_FLAG_HIST_STARTED)) {
+			pr_info("VDIN_GET_HIST can't be used at vdin0 or hist unopened\n");
+			break;
 		}
 
-		if (vdin1_hist.height == 0 || vdin1_hist.width == 0) {
+		vdin_ioctl_get_hist(devp, &vdin1_hist_temp);
+
+		if (vdin1_hist_temp.height == 0 || vdin1_hist_temp.width == 0) {
 			ret = -EFAULT;
 		} else if (copy_to_user(argp, &vdin1_hist_temp,
 				      sizeof(struct vdin_hist_s))) {
 			pr_info("vdin1_hist copy fail\n");
 			ret = -EFAULT;
 		}
+		break;
+	case TVIN_IOC_G_VDIN_STOP_HIST:
+		if (devp->index == 0 || !(devp->flags & VDIN_FLAG_HIST_STARTED)) {
+			pr_info("VDIN_STOP_HIST can't be used at vdin0 or hist unopened\n");
+			break;
+		}
+
+		mutex_lock(&devp->fe_lock);
+		if (!(devp->flags & VDIN_FLAG_DEC_STARTED)) {
+			viuin_clear_loopback_path();
+			vdin1_hw_hist_on_off(devp, FALSE);
+		}
+		devp->flags &= ~VDIN_FLAG_HIST_STARTED;
+		mutex_unlock(&devp->fe_lock);
+
+		if (vdin_dbg_en & DBG_VDIN1_HIST)
+			pr_info("vdin1_hist stop\n");
 		break;
 	case TVIN_IOC_S_VDIN_V4L2START:{
 		struct vdin_v4l2_param_s vdin_v4l2_param;

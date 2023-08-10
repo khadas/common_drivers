@@ -616,12 +616,14 @@ enum tvin_sg_chg_flg {
 #define TVIN_IOC_LOAD_REG          _IOW(_TM_T, 0x20, struct am_regs_s)
 #define TVIN_IOC_S_AFE_SNOW_ON     _IO(_TM_T, 0x22)
 #define TVIN_IOC_S_AFE_SNOW_OFF     _IO(_TM_T, 0x23)
-#define TVIN_IOC_G_VDIN_HIST       _IOW(_TM_T, 0x24, struct vdin_hist_s)
+#define TVIN_IOC_G_VDIN_START_HIST       _IO(_TM_T, 0x24)
 #define TVIN_IOC_S_VDIN_V4L2START  _IOW(_TM_T, 0x25, struct vdin_v4l2_param_s)
 #define TVIN_IOC_S_VDIN_V4L2STOP   _IO(_TM_T, 0x26)
 #define TVIN_IOC_S_AFE_SNOW_CFG     _IOW(_TM_T, 0x27, unsigned int)
 #define TVIN_IOC_S_DV_DESCRAMBLE	_IOW(_TM_T, 0x28, unsigned int)
 #define TVIN_IOC_S_AFE_ATV_SEARCH  _IOW(_TM_T, 0x29, unsigned int)
+#define TVIN_IOC_G_VDIN_GET_HIST       _IOW(_TM_T, 0x30, struct vdin_hist_s)
+#define TVIN_IOC_G_VDIN_STOP_HIST       _IO(_TM_T, 0x31)
 
 #endif
 

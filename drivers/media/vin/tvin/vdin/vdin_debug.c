@@ -3021,6 +3021,7 @@ static ssize_t attr_store(struct device *dev,
 	long val = 0;
 	unsigned int offset;
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
+	struct vdin_hist_s vdin1_hist_temp;
 	unsigned int i = 0;
 	char ret = 0;
 	unsigned int time_start = 0, time_end = 0, time_delta;
@@ -4156,6 +4157,31 @@ start_chk:
 			temp = 0;
 
 		vdin_set_bist_pattern(devp, val, temp);
+	} else if (!strcmp(parm[0], "vdin1_hist_on_off")) {
+		if (parm[1] && (kstrtouint(parm[1], 16, &temp) == 0)) {
+			/*
+			 * 0:off 1:enable
+			 */
+			if (temp) {
+				if (devp->index) {
+					viuin_select_loopback_path();
+					vdin1_hw_hist_on_off(devp, TRUE);
+					devp->flags |= VDIN_FLAG_HIST_STARTED;
+					vdin_ioctl_get_hist(devp, &vdin1_hist_temp);
+				} else {
+					pr_info("only support vdin1\n");
+				}
+			} else {
+				viuin_clear_loopback_path();
+				vdin1_hw_hist_on_off(devp, FALSE);
+			}
+			pr_info("VDIN_FLAG_HIST_STARTED flag:0x%x\n", devp->flags);
+		}
+	} else if (!strcmp(parm[0], "vdin1_hist_get")) {
+		if (parm[1] && (kstrtouint(parm[1], 10, &temp) == 0)) {
+			pr_info("VDIN_FLAG_HIST_STARTED flag:0x%x\n", devp->flags);
+			vdin_ioctl_get_hist(devp, &vdin1_hist_temp);
+		}
 	} else if (!strcmp(parm[0], "pause_num")) {
 		/*
 		 * 0:off 1:enable

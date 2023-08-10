@@ -57,7 +57,7 @@
 
 #include <linux/mm_inline.h>
 #include <linux/amlogic/user_fault.h>
-#ifdef CONFIG_AMLOGIC_SECMON
+#if IS_ENABLED(CONFIG_AMLOGIC_SECMON)
 #include <linux/amlogic/secmon.h>
 #endif
 
@@ -127,21 +127,21 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	 * We need more strict filtering rules
 	 */
 
-#ifdef CONFIG_AMLOGIC_SECMON
+	if (!show_data_valid((unsigned long)(addr + nbytes / 2)))
+		return;
+
+#if IS_ENABLED(CONFIG_AMLOGIC_SECMON)
 	/*
 	 * filter out secure monitor region
 	 */
-	if (addr <= (unsigned long)high_memory)
-		if (within_secmon_region(addr)) {
-			printk("\n%s: %#lx S\n", name, addr);
-			return;
-		}
+	if (within_secmon_region(addr + nbytes / 2)) {
+		pr_emerg("\n%s: %#lx S\n", name, addr + nbytes / 2);
+		return;
+	}
 #endif
 
 	printk("\n%s: %#lx:\n", name, addr);
 
-	if (!show_data_valid((unsigned long)(addr + nbytes / 2)))
-		return;
 	/*
 	 * round address down to a 32 bit boundary
 	 * and always dump a multiple of 32 bytes
@@ -185,12 +185,15 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 	if (!access_ok((void *)addr, nbytes))
 		return;
 
-#ifdef CONFIG_AMLOGIC_SECMON
+	if (!show_data_valid((unsigned long)(addr + nbytes / 2)))
+		return;
+
+#if IS_ENABLED(CONFIG_AMLOGIC_SECMON)
 	/*
 	 * filter out secure monitor region
 	 */
-	if (within_secmon_region(addr)) {
-		pr_info("\n%s: %#lx S\n", name, addr);
+	if (within_secmon_region(addr + nbytes / 2)) {
+		pr_emerg("\n%s: %#lx S\n", name, addr + nbytes / 2);
 		return;
 	}
 #endif
@@ -291,29 +294,18 @@ static void show_user_data(unsigned long addr, int nbytes, const char *name)
 	 * We need more strict filtering rules
 	 */
 
+	if (!show_data_valid((unsigned long)(addr + nbytes / 2)))
+		return;
+
 #if IS_ENABLED(CONFIG_AMLOGIC_SECMON)
 	/*
 	 * filter out secure monitor region
 	 */
-	if (addr <= (unsigned long)high_memory)
-		if (within_secmon_region(addr)) {
-			pr_info("\n%s: %#lx S\n", name, addr);
-			return;
-		}
+	if (within_secmon_region(addr + nbytes / 2)) {
+		pr_emerg("\n%s: %#lx S\n", name, addr + nbytes / 2);
+		return;
+	}
 #endif
-
-	/*
-	 * filter out ioremap region
-	 */
-	if (addr >= VMALLOC_START && addr <= VMALLOC_END)
-#ifdef CONFIG_ARM64
-		if (!pfn_is_map_memory(vmalloc_to_pfn((void *)addr))) {
-#else
-		if (!pfn_valid(vmalloc_to_pfn((void *)addr))) {
-#endif
-			pr_info("\n%s: %#lx V\n", name, addr);
-			return;
-		}
 #endif
 
 	pr_info("\n%s: %#lx:\n", name, addr);

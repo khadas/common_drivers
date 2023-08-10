@@ -71,13 +71,34 @@ static void get_sharemem_size(unsigned int function_id)
 
 #define RESERVE_MEM_SIZE	0x300000
 
+static unsigned long reg_to_pfn(unsigned long reg)
+{
+	struct page *page;
+
+	if (reg < (unsigned long)PAGE_OFFSET)
+		return 0;
+	else if (reg <= (unsigned long)high_memory)
+		return virt_to_pfn(reg);
+
+	page = vmalloc_to_page((const void *)reg);
+	if (page)
+		return page_to_pfn(page);
+
+	return 0;
+}
+
 int within_secmon_region(unsigned long addr)
 {
+	unsigned long addr_pfn = reg_to_pfn(addr);
+
 	if (!secmon_start_virt)
 		return 0;
 
-	if (addr >= secmon_start_virt &&
-	    addr <= (secmon_start_virt + secmon_size))
+	if (!addr_pfn)
+		return 1;
+
+	if (addr_pfn >= virt_to_pfn(secmon_start_virt) &&
+	    addr_pfn <= virt_to_pfn(secmon_start_virt + secmon_size))
 		return 1;
 
 	return 0;

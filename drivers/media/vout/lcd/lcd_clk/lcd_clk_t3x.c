@@ -526,47 +526,23 @@ static void lcd_clk_gate_switch_t3x(struct aml_lcd_drv_s *pdrv, int status)
 static void lcd_set_tcon_clk_t3x(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
-	struct lcd_config_s *pconf = &pdrv->config;
-	unsigned int freq, val;
 
 	if (pdrv->index > 0) /* tcon_clk only valid for lcd0 */
 		return;
 
-	if (pdrv->config.basic.lcd_type != LCD_MLVDS &&
-	    pdrv->config.basic.lcd_type != LCD_P2P)
+	if (pdrv->config.basic.lcd_type != LCD_P2P)
 		return;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("lcd clk: set_tcon_clk_t3\n");
+
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf)
 		return;
 
-	switch (pconf->basic.lcd_type) {
-	case LCD_MLVDS:
-		val = pconf->control.mlvds_cfg.clk_phase & 0xfff;
-		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL1, (val & 0xf), 24, 4);
-		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL4, ((val >> 4) & 0xf), 28, 4);
-		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL4, ((val >> 8) & 0xf), 24, 4);
-
-		/* tcon_clk */
-		if (pconf->timing.lcd_clk >= 100000000) /* 25M */
-			freq = 25000000;
-		else /* 12.5M */
-			freq = 12500000;
-		if (!IS_ERR_OR_NULL(cconf->clktree.tcon_clk)) {
-			clk_set_rate(cconf->clktree.tcon_clk, freq);
-			clk_prepare_enable(cconf->clktree.tcon_clk);
-		}
-		break;
-	case LCD_P2P:
-		if (!IS_ERR_OR_NULL(cconf->clktree.tcon_clk)) {
-			clk_set_rate(cconf->clktree.tcon_clk, 50000000);
-			clk_prepare_enable(cconf->clktree.tcon_clk);
-		}
-		break;
-	default:
-		break;
+	if (!IS_ERR_OR_NULL(cconf->clktree.tcon_clk)) {
+		clk_set_rate(cconf->clktree.tcon_clk, 50000000);
+		clk_prepare_enable(cconf->clktree.tcon_clk);
 	}
 
 	lcd_tcon_global_reset(pdrv);

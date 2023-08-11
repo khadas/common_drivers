@@ -41,6 +41,7 @@ enum dummy_venc_chip_e {
 	DUMMY_VENC_T7,  /* 2 */
 	DUMMY_VENC_T5W,	/* 3 */
 	DUMMY_VENC_S5,  /* 4, stb new single display */
+	DUMMY_VENC_S1A, /* 5 */
 	DUMMY_VENC_MAX,
 };
 
@@ -49,6 +50,13 @@ enum dummy_venc_sel_e {
 	DUMMY_SEL_ENCI, /* 1 */
 	DUMMY_SEL_ENCP,  /* 2 */
 	DUMMY_SEL_MAX,
+};
+
+enum venc_type {
+	VENC_TYPE_DFT = 0,
+	VENC_TYPE_ENCP,/* 1 , only support encp*/
+	VENC_TYPE_ENCL,
+	VENC_TYPE_ENCI,
 };
 
 struct dummy_venc_driver_s;
@@ -70,6 +78,7 @@ struct dummy_venc_data_s {
 	unsigned int chip_type;
 	unsigned int default_venc_index;
 	unsigned int projection_valid;
+	unsigned int venc_type;
 
 	void (*clktree_probe)(struct device *dev);
 	void (*clktree_remove)(struct device *dev);
@@ -1132,6 +1141,34 @@ static void dummy_encl_venc_set(struct dummy_venc_driver_s *venc_drv)
 
 	offset = venc_drv->vdata->vconf->venc_offset;
 
+	if (venc_drv->vdata->venc_type == VENC_TYPE_ENCP) {
+		offset = 0;
+
+		vout_vcbus_write(ENCP_VIDEO_EN + offset, 0);
+
+		vout_vcbus_write(ENCP_VIDEO_MODE + offset, 0x8000);
+		vout_vcbus_write(ENCP_VIDEO_MODE_ADV + offset, 0x0418);
+
+		vout_vcbus_write(ENCP_VIDEO_MAX_PXCNT + offset, 800 - 1);
+		vout_vcbus_write(ENCP_VIDEO_MAX_LNCNT + offset, 525 - 1);
+		vout_vcbus_write(ENCP_VIDEO_HAVON_BEGIN + offset, 80);
+		vout_vcbus_write(ENCP_VIDEO_HAVON_END + offset, 799);
+		vout_vcbus_write(ENCP_VIDEO_VAVON_BLINE + offset, 22);
+		vout_vcbus_write(ENCP_VIDEO_VAVON_ELINE + offset, 501);
+
+		vout_vcbus_write(ENCP_VIDEO_HSO_BEGIN + offset, 0);
+		vout_vcbus_write(ENCP_VIDEO_HSO_END + offset,   20);
+		vout_vcbus_write(ENCP_VIDEO_VSO_BEGIN + offset, 0);
+		vout_vcbus_write(ENCP_VIDEO_VSO_END + offset,   0);
+		vout_vcbus_write(ENCP_VIDEO_VSO_BLINE + offset, 0);
+		vout_vcbus_write(ENCP_VIDEO_VSO_ELINE + offset, 5);
+
+		vout_vcbus_write(ENCP_VIDEO_RGBIN_CTRL + offset, 1);
+
+		vout_vcbus_write(ENCP_VIDEO_EN + offset, 1);
+		return;
+	}
+
 	vout_vcbus_write(ENCL_VIDEO_EN + offset, 0);
 
 	vout_vcbus_write(ENCL_VIDEO_MODE + offset, 0x8000);
@@ -1172,6 +1209,24 @@ static void dummy_encl_clk_ctrl(struct dummy_venc_driver_s *venc_drv, int flag)
 	vconf = venc_drv->vdata->vconf;
 
 	if (flag) {
+		if (venc_drv->vdata->venc_type == VENC_TYPE_ENCP) {
+			/* clk source sel: fckl_div5 */
+			vout_clk_setb(vconf->vid_clk_div_reg, 0xf, VCLK_XD0, 8);
+			usleep_range(5, 6);
+			vout_clk_setb(vconf->vid_clk_ctrl_reg, 6, VCLK_CLK_IN_SEL, 3);
+			vout_clk_setb(vconf->vid_clk_ctrl_reg, 1, VCLK_EN0, 1);
+			usleep_range(5, 6);
+			vout_clk_setb(vconf->vid_clk_div_reg, 0, ENCP_CLK_SEL, 4);
+			vout_clk_setb(vconf->vid_clk_div_reg, 1, VCLK_XD_EN, 1);
+			usleep_range(5, 6);
+			vout_clk_setb(vconf->vid_clk_ctrl_reg, 1, VCLK_DIV1_EN, 1);
+			vout_clk_setb(vconf->vid_clk_ctrl_reg, 1, VCLK_SOFT_RST, 1);
+			usleep_range(10, 11);
+			vout_clk_setb(vconf->vid_clk_ctrl_reg, 0, VCLK_SOFT_RST, 1);
+			usleep_range(5, 6);
+			vout_clk_setb(vconf->vid_clk_ctrl2_reg, 1, ENCP_GATE_VCLK, 1);
+			return;
+		}
 		/* clk source sel: fckl_div5 */
 		vout_clk_setb(vconf->vid2_clk_div_reg, 0xf, VCLK2_XD, 8);
 		usleep_range(5, 6);
@@ -1424,6 +1479,8 @@ static struct vout_server_s dummy_encl_vout2_server = {
 static void dummy_encl_vout_server_init(struct dummy_venc_driver_s *venc_drv)
 {
 	venc_drv->vinfo = &dummy_encl_vinfo;
+	if (venc_drv->vdata->venc_type == VENC_TYPE_ENCP)
+		venc_drv->vinfo->viu_mux = VIU_MUX_ENCP;
 	dummy_encl_vout_server.data = (void *)venc_drv;
 	vout_register_server(&dummy_encl_vout_server);
 #ifdef CONFIG_AMLOGIC_VOUT2_SERVE
@@ -1949,6 +2006,22 @@ static struct dummy_venc_data_s dummy_venc_match_data_dft = {
 };
 #endif
 
+static struct dummy_venc_data_s dummy_venc_match_data_s1a = {
+	.vconf = &dummy_venc_conf_sc2,
+
+	.chip_type = DUMMY_VENC_S1A,
+	.default_venc_index = 0,
+	.projection_valid = 0,
+	.venc_type = VENC_TYPE_ENCP,
+
+	.clktree_probe = NULL,
+	.clktree_remove = NULL,
+	.encp_clk_gate_switch = NULL,
+	.enci_clk_gate_switch = NULL,
+	.encl_clk_gate_switch = NULL,
+	.venc_sel = NULL,
+};
+
 static struct dummy_venc_data_s dummy_venc_match_data_sc2 = {
 	.vconf = &dummy_venc_conf_sc2,
 
@@ -2001,6 +2074,7 @@ static struct dummy_venc_data_s dummy_venc_match_data_s5 = {
 	.chip_type = DUMMY_VENC_S5,
 	.default_venc_index = 0,
 	.projection_valid = 0,
+	.venc_type = VENC_TYPE_ENCP,
 
 	.clktree_probe = NULL,
 	.clktree_remove = NULL,
@@ -2024,6 +2098,10 @@ static const struct of_device_id dummy_venc_dt_match_table[] = {
 	{
 		.compatible = "amlogic, dummy_venc_s4",
 		.data = &dummy_venc_match_data_sc2,
+	},
+	{
+		.compatible = "amlogic, dummy_venc_s1a",
+		.data = &dummy_venc_match_data_s1a,
 	},
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	{

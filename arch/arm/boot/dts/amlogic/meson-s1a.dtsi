@@ -1244,7 +1244,7 @@
 	};
 
 	dummy_venc: dummy_venc {
-		compatible = "amlogic, dummy_venc_s4";
+		compatible = "amlogic, dummy_venc_s1a";
 		status = "okay";
 
 		ports {

@@ -117,7 +117,7 @@ static dev_t aml_mkl_devt;
 static struct aml_mkl_dev aml_mkl_dev;
 static struct class *aml_mkl_class;
 static struct dentry *aml_mkl_debug_dent;
-int kl_log_level = 3;
+u32 kl_log_level = 3;
 
 static int aml_mkl_init_dbgfs(void)
 {

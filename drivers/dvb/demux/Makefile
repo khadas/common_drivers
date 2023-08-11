@@ -20,7 +20,6 @@ ccflags-y += -I$(srctree)/$(COMMON_DRIVERS_DIR)/drivers/dvb
 $(MODULE_NAME_DEMUX)-y += aml_dvb.o
 $(MODULE_NAME_DEMUX)-y += aml_dsc.o
 $(MODULE_NAME_DEMUX)-y += aml_dmx.o
-$(MODULE_NAME_DEMUX)-y += aml_key.o
 #$(MODULE_NAME_DEMUX)-y += dmxdev.o
 #$(MODULE_NAME_DEMUX)-y += ringbuffer.o
 

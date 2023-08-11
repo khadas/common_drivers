@@ -23,6 +23,8 @@ static inline void aml_seckey_kl_exit(void)
 #if IS_ENABLED(CONFIG_AMLOGIC_SECKEY_KT)
 int aml_seckey_kt_init(void);
 void aml_seckey_kt_exit(void);
+int aml_key_driver_init(void);
+void aml_key_driver_exit(void);
 #else
 static inline int aml_seckey_kt_init(void)
 {
@@ -30,6 +32,15 @@ static inline int aml_seckey_kt_init(void)
 }
 
 static inline void aml_seckey_kt_exit(void)
+{
+}
+
+static inline int aml_key_driver_init(void)
+{
+	return 0;
+}
+
+static inline void aml_key_driver_exit(void)
 {
 }
 #endif

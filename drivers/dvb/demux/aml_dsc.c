@@ -30,7 +30,6 @@
 #include <linux/clk.h>
 #include <linux/dvb/aml_ca_ext.h>
 #include <linux/version.h>
-#include <linux/amlogic/aml_key.h>
 #include <linux/dvb/aml_dmx_ext.h>
 #include "aml_dvb.h"
 #include "dmx_log.h"
@@ -38,7 +37,6 @@
 
 //#include "sc2_demux/dvb_reg.h"
 #include "aml_dsc.h"
-#include "am_key.h"
 #include "sc2_demux/sc2_control.h"
 
 #define DSC_CHANNEL_NUM 8

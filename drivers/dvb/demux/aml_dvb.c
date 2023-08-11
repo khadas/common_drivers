@@ -24,7 +24,6 @@
 #include <linux/string.h>
 #include <linux/of.h>
 #include <linux/amlogic/tee.h>
-#include <linux/amlogic/aml_key.h>
 #include <linux/amlogic/tee_demux.h>
 #include <linux/amlogic/cpu_version.h>
 #include <media/dvb_frontend.h>
@@ -32,7 +31,6 @@
 #include <linux/dvb/aml_dmx_ext.h>
 
 #include "aml_dvb.h"
-#include "am_key.h"
 #include "dmx_log.h"
 #include "sc2_demux/ts_output.h"
 #include "sc2_demux/frontend.h"
@@ -667,7 +665,6 @@ static int aml_dvb_remove(struct platform_device *pdev)
 		dsc_release(&advb->dsc[i]);
 		advb->dsc[i].id = -1;
 	}
-	dmx_key_exit();
 
 	ts_output_destroy();
 
@@ -827,7 +824,6 @@ static int aml_dvb_probe(struct platform_device *pdev)
 			goto INIT_ERR;
 	}
 	frontend_config_ts_sid();
-	dmx_key_init();
 
 	class_register(&aml_stb_class);
 	dmx_regist_dmx_class();

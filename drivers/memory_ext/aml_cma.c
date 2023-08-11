@@ -1766,6 +1766,19 @@ struct kprobe kp_cma_release = {
 	.pre_handler = cma_release_pre_handler,
 };
 
+static int __nocfi __kprobes getblk_gfp_pre_handler(struct kprobe *p, struct pt_regs *regs)
+{
+	if (regs->regs[3] | __GFP_MOVABLE)
+		regs->regs[3] = regs->regs[3] & ~__GFP_MOVABLE;
+
+	return 0;
+}
+
+struct kprobe kp_getblk_gfp = {
+	.symbol_name  = "__getblk_gfp",
+	.pre_handler = getblk_gfp_pre_handler,
+};
+
 static void *get_symbol_addr(const char *symbol_name)
 {
 	struct kprobe kp;
@@ -1833,6 +1846,13 @@ static int __nocfi common_symbol_init(void *data)
 	if (ret < 0) {
 		pr_err("register_kprobe:%s failed, returned %d\n",
 		       kp_cma_release.symbol_name, ret);
+		return 1;
+	}
+
+	ret = register_kprobe(&kp_getblk_gfp);
+	if (ret < 0) {
+		pr_err("register_kprobe:%s failed, returned %d\n",
+		       kp_getblk_gfp.symbol_name, ret);
 		return 1;
 	}
 

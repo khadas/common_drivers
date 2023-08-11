@@ -1401,17 +1401,6 @@ bool get_earctx_enable(struct regmap *cmdc_map, struct regmap *dmac_map)
 	return false;
 }
 
-void earctx_biphase_work_clear(struct regmap *dmac_map)
-{
-	pr_info("%s %p\n", __func__, dmac_map);
-	/* first biphase work clear, and then start */
-	mmio_update_bits(dmac_map, EARCTX_SPDIFOUT_CTRL0,
-		 0x1 << 30,
-		 0x1 << 30);
-
-	mmio_update_bits(dmac_map, EARCTX_FE_CTRL0, 0x1 << 30, 0);
-}
-
 void earctx_enable(struct regmap *top_map,
 		   struct regmap *cmdc_map,
 		   struct regmap *dmac_map,
@@ -1920,4 +1909,13 @@ void earctx_dmac_hold_bus_and_mute(struct regmap *dmac_map, bool enable)
 		mmio_write(dmac_map, EARCTX_ERR_CORRT_CTRL2, 0x40089202);
 	else
 		mmio_write(dmac_map, EARCTX_FE_CTRL0, 0xc8000000);
+}
+
+void earctx_dmac_force_mode(struct regmap *dmac_map, bool enable)
+{
+	/* force arc mode as earc mode will consume data faster */
+	if (enable)
+		mmio_write(dmac_map, EARCTX_DMAC_TOP_CTRL0, 0xe);
+	else
+		mmio_write(dmac_map, EARCTX_DMAC_TOP_CTRL0, 0);
 }

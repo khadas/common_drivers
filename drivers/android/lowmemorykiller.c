@@ -146,17 +146,22 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	int minfree = 0;
 	int selected_tasksize = 0;
 	short selected_oom_score_adj;
-	int array_size = ARRAY_SIZE(lowmem_adj);
-	int other_free = global_zone_page_state(NR_FREE_PAGES) - totalreserve_pages;
-	int other_file = global_node_page_state(NR_FILE_PAGES) -
-				global_node_page_state(NR_SHMEM) -
-				global_node_page_state(NR_UNEVICTABLE) -
-				total_swapcache_pages();
 #ifdef CONFIG_AMLOGIC_CMA
 	int free_cma   = 0;
 	int file_cma   = 0;
 	int cma_forbid = 0;
+#endif
+	int array_size = ARRAY_SIZE(lowmem_adj);
+	int other_free = global_zone_page_state(NR_FREE_PAGES);
+	int other_file = global_node_page_state(NR_FILE_PAGES) -
+				global_node_page_state(NR_SHMEM) -
+				global_node_page_state(NR_UNEVICTABLE) -
+				total_swapcache_pages();
 
+	if (time_before_eq(jiffies, lowmem_deathpending_timeout))
+		return 0;
+
+#ifdef CONFIG_AMLOGIC_CMA
 	if (cma_forbidden_mask(sc->gfp_mask) && !current_is_kswapd()) {
 		free_cma    = global_zone_page_state(NR_FREE_CMA_PAGES);
 		other_free -= free_cma;
@@ -181,15 +186,15 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		}
 	}
 
-	lowmem_print(3, "lowmem scan %lu, %x, ofree %d %d, ma %hd\n",
-		     sc->nr_to_scan, sc->gfp_mask, other_free,
-		     other_file, min_score_adj);
-
 	if (min_score_adj == OOM_SCORE_ADJ_MAX + 1) {
 		lowmem_print(5, "lowmem scan %lu, %x, return 0\n",
 			     sc->nr_to_scan, sc->gfp_mask);
 		return 0;
 	}
+
+	lowmem_print(3, "lowmem scan %lu, %x, ofree %d %d, ma %hd\n",
+		     sc->nr_to_scan, sc->gfp_mask, other_free,
+		     other_file, min_score_adj);
 
 	selected_oom_score_adj = min_score_adj;
 
@@ -205,8 +210,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		if (!p)
 			continue;
 
-		if (task_lmk_waiting(p) &&
-		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
+		if (task_lmk_waiting(p)) {
 			task_unlock(p);
 			rcu_read_unlock();
 			return 0;

@@ -6057,6 +6057,7 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 	bool di_post = false, di_pre_link = false;
 	u8 vpp_index = layer->vpp_index;
 	u8 layer_id = layer->layer_id;
+	u32 vscale_skip_count = 0;
 
 	if (!vf) {
 		pr_info("%s vf NULL, return\n", __func__);
@@ -6101,15 +6102,23 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 			(burst_len << 14) | /* burst1 */
 			(vf->bitdepth & BITDEPTH_MASK);
 
+		/* for FIELD INTERLACE from vdin & decoder afbc vskip is fake;*/
+		/* only INTERLACE h264 vskip is effect */
+		if ((vf->type & VIDTYPE_INTERLACE) &&
+			(vf->type & VIDTYPE_VIU_FIELD))
+			vscale_skip_count = 0;
+		else
+			vscale_skip_count = frame_par->vscale_skip_count;
+
 		if (for_amdv_certification()) {
 			if (frame_par->hscale_skip_count)
 				r |= 0x11;
-			if (frame_par->vscale_skip_count)
+			if (vscale_skip_count)
 				r |= 0x44;
 		} else {
 			if (frame_par->hscale_skip_count)
 				r |= 0x33;
-			if (frame_par->vscale_skip_count)
+			if (vscale_skip_count)
 				r |= 0xcc;
 		}
 
@@ -6502,6 +6511,8 @@ static void vd1_set_dcu_s5(struct video_layer_s *layer,
 	/* LOOP/SKIP pattern */
 	pat = vpat[frame_par->vscale_skip_count];
 
+	/* for FIELD INTERLACE from vdin & decoder afbc vskip is fake;*/
+	/* only INTERLACE h264 vskip is effect */
 	if (type & VIDTYPE_VIU_FIELD) {
 		loop = 0;
 
@@ -6606,6 +6617,7 @@ static void vd1_set_slice_dcu_s5(struct video_layer_s *layer,
 	bool di_post = false, di_pre_link = false;
 	u8 vpp_index = layer->vpp_index;
 	u8 layer_id = layer->layer_id;
+	u32 vscale_skip_count = 0;
 
 	if (layer->mosaic_mode) {
 		struct mosaic_frame_s *mosaic_frame = NULL;
@@ -6664,15 +6676,23 @@ static void vd1_set_slice_dcu_s5(struct video_layer_s *layer,
 			(burst_len << 14) | /* burst1 */
 			(vf->bitdepth & BITDEPTH_MASK);
 
+		/* for FIELD INTERLACE from vdin & decoder afbc vskip is fake;*/
+		/* only INTERLACE h264 vskip is effect */
+		if ((vf->type & VIDTYPE_INTERLACE) &&
+			(vf->type & VIDTYPE_VIU_FIELD))
+			vscale_skip_count = 0;
+		else
+			vscale_skip_count = frame_par->vscale_skip_count;
+
 		if (for_amdv_certification()) {
 			if (frame_par->hscale_skip_count)
 				r |= 0x11;
-			if (frame_par->vscale_skip_count)
+			if (vscale_skip_count)
 				r |= 0x44;
 		} else {
 			if (frame_par->hscale_skip_count)
 				r |= 0x33;
-			if (frame_par->vscale_skip_count)
+			if (vscale_skip_count)
 				r |= 0xcc;
 		}
 
@@ -7015,9 +7035,10 @@ static void vd1_set_slice_dcu_s5(struct video_layer_s *layer,
 	/* LOOP/SKIP pattern */
 	pat = vpat[frame_par->vscale_skip_count];
 
+	/* for FIELD INTERLACE from vdin & decoder afbc vskip is fake;*/
+	/* only INTERLACE h264 vskip is effect */
 	if (type & VIDTYPE_VIU_FIELD) {
 		loop = 0;
-
 		if (type & VIDTYPE_INTERLACE)
 			pat = vpat[frame_par->vscale_skip_count >> 1];
 	} else if ((type & VIDTYPE_TYPEMASK) == VIDTYPE_INTERLACE_TOP) {
@@ -7085,6 +7106,7 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 	int layer_id = layer->layer_id;
 	int layer_index = 0;
 	u8 vpp_index = layer->vpp_index;
+	u32 vscale_skip_count = 0;
 
 	if (!vf) {
 		pr_err("%s vf is NULL\n", __func__);
@@ -7121,15 +7143,23 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 		    (burst_len << 14) | /* burst1 */
 		    (vf->bitdepth & BITDEPTH_MASK);
 
+		/* for FIELD INTERLACE from vdin & decoder afbc vskip is fake;*/
+		/* only INTERLACE h264 vskip is effect */
+		if ((vf->type & VIDTYPE_INTERLACE) &&
+			(vf->type & VIDTYPE_VIU_FIELD))
+			vscale_skip_count = 0;
+		else
+			vscale_skip_count = frame_par->vscale_skip_count;
+
 		if (for_amdv_certification()) {
 			if (frame_par->hscale_skip_count)
 				r |= 0x11;
-			if (frame_par->vscale_skip_count)
+			if (vscale_skip_count)
 				r |= 0x44;
 		} else {
 			if (frame_par->hscale_skip_count)
 				r |= 0x33;
-			if (frame_par->vscale_skip_count)
+			if (vscale_skip_count)
 				r |= 0xcc;
 		}
 
@@ -7465,6 +7495,8 @@ static void vdx_set_dcu_s5(struct video_layer_s *layer,
 	/* LOOP/SKIP pattern */
 	pat = vpat[frame_par->vscale_skip_count];
 
+	/* for FIELD INTERLACE from vdin & decoder afbc vskip is fake;*/
+	/* only INTERLACE h264 vskip is effect */
 	if (type & VIDTYPE_VIU_FIELD) {
 		loop = 0;
 

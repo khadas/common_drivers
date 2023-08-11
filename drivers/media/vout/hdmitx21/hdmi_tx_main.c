@@ -6789,9 +6789,13 @@ static int drm_hdmitx_get_timing_para(int vic, struct drm_hdmitx_timing_para *pa
 		return -1;
 
 	if (timing->sname)
-		memcpy(para->name, timing->sname, DRM_DISPLAY_MODE_LEN);
+		memcpy(para->name, timing->sname,
+		       (strlen(timing->sname) < DRM_DISPLAY_MODE_LEN) ?
+		       strlen(timing->sname) : DRM_DISPLAY_MODE_LEN);
 	else if (timing->name)
-		memcpy(para->name, timing->name, DRM_DISPLAY_MODE_LEN);
+		memcpy(para->name, timing->name,
+		       (strlen(timing->name) < DRM_DISPLAY_MODE_LEN) ?
+		       strlen(timing->name) : DRM_DISPLAY_MODE_LEN);
 	else
 		return -1;
 

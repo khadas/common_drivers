@@ -9,6 +9,7 @@
 #include "hdmitx_drm_hook.h"
 
 /*!!Only one instance supported.*/
+const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 static struct hdmitx_common *global_tx_base;
 static struct hdmitx_hw_common *global_tx_hw;
 static struct meson_hdmitx_dev hdmitx_drm_instance;
@@ -27,6 +28,11 @@ static int drm_hdmitx_register_hpd_cb(struct connector_hpd_cb *hpd_cb)
 static unsigned char *drm_hdmitx_get_raw_edid(void)
 {
 	return hdmitx_get_raw_edid(global_tx_base);
+}
+
+static const struct hdmi_timing *drm_hdmitx_get_timing_by_name(char *mode_name)
+{
+	return hdmitx_mode_match_timing_name(mode_name);
 }
 
 static void drm_hdmitx_setup_attr(const char *buf)
@@ -198,6 +204,9 @@ int hdmitx_bind_meson_drm(struct device *device,
 	hdmitx_drm_instance.get_attr = drm_hdmitx_get_attr;
 	hdmitx_drm_instance.get_hdr_priority = drm_hdmitx_get_hdr_priority;
 
+	/* timing related*/
+	hdmitx_drm_instance.get_timing_by_name = drm_hdmitx_get_timing_by_name,
+
 	/*edid related.*/
 	hdmitx_drm_instance.get_raw_edid = drm_hdmitx_get_raw_edid;
 	hdmitx_drm_instance.get_content_types = drm_hdmitx_get_contenttypes;
@@ -209,6 +218,8 @@ int hdmitx_bind_meson_drm(struct device *device,
 	hdmitx_drm_instance.set_phy = drm_hdmitx_set_phy;
 
 	hdmitx_drm_instance.set_content_type = drm_hdmitx_set_contenttype;
+	hdmitx_drm_instance.hdmitx_common = tx_base;
+	hdmitx_drm_instance.hw_common = tx_hw;
 
 	return component_add(device, &meson_hdmitx_bind_ops);
 }

@@ -558,6 +558,7 @@ const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name)
 
 	return INVALID_HDMI_TIMING;
 }
+EXPORT_SYMBOL(hdmitx_mode_match_timing_name);
 
 const char *hdmitx_mode_get_timing_name(enum hdmi_vic vic)
 {

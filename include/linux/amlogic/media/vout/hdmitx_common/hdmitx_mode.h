@@ -318,7 +318,7 @@ enum hdmi_color_depth {
 	COLORDEPTH_30B = 5,
 	COLORDEPTH_36B = 6,
 	COLORDEPTH_48B = 7,
-	COLORDEPTH_RESERVED,
+	COLORDEPTH_RESERVED = 11,
 };
 
 struct parse_cd {

@@ -7,6 +7,26 @@
 #include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 #include <hdmitx_boot_parameters.h>
 
+struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
+					       enum HDMITX_MODULE type)
+{
+	if (type < HDMITX_MAX_MODULE)
+		return tx_common->states[type];
+
+	return NULL;
+}
+
+void hdmitx_get_init_state(struct hdmitx_common *tx_common,
+					struct hdmitx_binding_state *state)
+{
+	struct hdmi_format_para *para = &tx_common->fmt_para;
+
+	state->hts.vic = tx_common->cur_VIC;
+	state->hts.cd = para->cd;
+	state->hts.cs = para->cs;
+}
+EXPORT_SYMBOL(hdmitx_get_init_state);
+
 int hdmitx_common_init(struct hdmitx_common *tx_common)
 {
 	struct hdmitx_boot_param *boot_param = get_hdmitx_boot_params();

@@ -72,6 +72,7 @@ struct am_hdmi_tx {
 
 struct am_hdmitx_connector_state {
 	struct drm_connector_state base;
+	struct hdmitx_binding_state hbs;
 
 	/*drm hdmitx attr from external modules,
 	 *ONLY used for once, and reset when duplicate.

@@ -64,7 +64,17 @@ struct hdmitx_common {
 //	struct connector_hdcp_cb drm_hdcp_cb;
 	/*for color space conversion*/
 	bool config_csc_en;
+
+	struct hdmitx_base_state *states[HDMITX_MAX_MODULE];
+	struct hdmitx_base_state *old_states[HDMITX_MAX_MODULE];
 };
+
+struct hdmitx_base_state *hdmitx_get_mod_state(struct hdmitx_common *tx_common,
+					       enum HDMITX_MODULE type);
+struct hdmitx_base_state *hdmitx_get_old_mod_state(struct hdmitx_common *tx_common,
+			enum HDMITX_MODULE type);
+void hdmitx_get_init_state(struct hdmitx_common *tx_common,
+					struct hdmitx_binding_state *state);
 
 int hdmitx_common_init(struct hdmitx_common *tx_common);
 int hdmitx_common_destroy(struct hdmitx_common *tx_common);

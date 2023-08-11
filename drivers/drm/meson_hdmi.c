@@ -137,6 +137,56 @@ void convert_attrstr(char *attr_str,
 	}
 }
 
+static enum hdmi_color_depth bitdepth_to_colordepth(int bitdepth)
+{
+	enum hdmi_color_depth color_depth;
+
+	switch (bitdepth) {
+	case 8:
+		color_depth = COLORDEPTH_24B;
+		break;
+	case 10:
+		color_depth = COLORDEPTH_30B;
+		break;
+	case 12:
+		color_depth = COLORDEPTH_36B;
+		break;
+	case 16:
+		color_depth = COLORDEPTH_48B;
+		break;
+	default:
+		color_depth = COLORDEPTH_24B;
+		break;
+	}
+
+	return color_depth;
+}
+
+static int colordepth_to_bitdepth(enum hdmi_color_depth color_depth)
+{
+	int bitdepth;
+
+	switch (color_depth) {
+	case COLORDEPTH_24B:
+		bitdepth = 8;
+		break;
+	case COLORDEPTH_30B:
+		bitdepth = 10;
+		break;
+	case COLORDEPTH_36B:
+		bitdepth = 12;
+		break;
+	case COLORDEPTH_48B:
+		bitdepth = 16;
+		break;
+	default:
+		bitdepth = 8;
+		break;
+	}
+
+	return bitdepth;
+}
+
 static void build_hdmitx_attr_str(char *attr_str, u32 format, u32 bit_depth)
 {
 	const char *colorspace;
@@ -858,6 +908,7 @@ struct drm_connector_state *meson_hdmitx_atomic_duplicate_state
 	new_state->color_attr_para.bitdepth = COLORDEPTH_RESERVED;
 	new_state->pref_hdr_policy = cur_state->pref_hdr_policy;
 	new_state->allm_mode = cur_state->allm_mode;
+	memcpy(&new_state->hbs, &cur_state->hbs, sizeof(struct hdmitx_binding_state));
 
 	return &new_state->base;
 }
@@ -913,6 +964,10 @@ void meson_hdmitx_atomic_print_state(struct drm_printer *p,
 		hdmitx_state->color_attr_para.colorformat,
 		hdmitx_state->color_attr_para.bitdepth,
 		hdmitx_state->pref_hdr_policy);
+	drm_printf(p, "\t\tdrm hdmitx timing state:\n");
+	drm_printf(p, "\t\t\t vic:[%d], cs:[%d], cd:[%d], name:[%s]\n",
+		   hdmitx_state->hbs.hts.vic, hdmitx_state->hbs.hts.cs,
+		   hdmitx_state->hbs.hts.cd, hdmitx_state->hbs.hts.name);
 }
 
 static bool meson_hdmitx_is_hdcp_running(void)
@@ -1544,6 +1599,21 @@ int meson_encoder_vrr_change(struct drm_encoder *encoder,
 	return 0;
 }
 
+static void
+meson_hdmitx_update_binding_state(struct meson_hdmitx_dev *hdmitx_dev,
+				  struct hdmitx_binding_state *new_state,
+				  struct hdmitx_binding_state *old_state)
+{
+	struct hdmitx_base_state **current_states;
+	struct hdmitx_base_state **old_states;
+
+	current_states = hdmitx_dev->hdmitx_common->states;
+	old_states = hdmitx_dev->hdmitx_common->old_states;
+	current_states[HDMITX_TIMING] = &new_state->hts.base;
+
+	old_states[HDMITX_TIMING] = &old_state->hts.base;
+}
+
 void meson_hdmitx_encoder_atomic_enable(struct drm_encoder *encoder,
 	struct drm_atomic_state *state)
 {
@@ -1552,8 +1622,13 @@ void meson_hdmitx_encoder_atomic_enable(struct drm_encoder *encoder,
 	struct drm_connector_state *conn_state =
 		drm_atomic_get_new_connector_state(state,
 		&am_hdmi_info.base.connector);
+	struct drm_connector_state *old_conn_state =
+		drm_atomic_get_old_connector_state(state,
+		&am_hdmi_info.base.connector);
 	struct am_hdmitx_connector_state *meson_conn_state =
 		to_am_hdmitx_connector_state(conn_state);
+	struct am_hdmitx_connector_state *old_meson_conn_state =
+		to_am_hdmitx_connector_state(old_conn_state);
 	struct drm_display_mode *mode = &encoder->crtc->state->adjusted_mode;
 	int mode_vrefresh = drm_mode_vrefresh(mode);
 	struct am_meson_crtc *amcrtc = to_am_meson_crtc(encoder->crtc);
@@ -1576,6 +1651,9 @@ void meson_hdmitx_encoder_atomic_enable(struct drm_encoder *encoder,
 	meson_vout_notify_mode_change(amcrtc->vout_index,
 		vmode, EVENT_MODE_SET_START);
 	vout_func_set_vmode(amcrtc->vout_index, vmode);
+	meson_hdmitx_update_binding_state(am_hdmi_info.hdmitx_dev,
+					  &meson_conn_state->hbs,
+					  &old_meson_conn_state->hbs);
 	meson_vout_notify_mode_change(amcrtc->vout_index,
 		vmode, EVENT_MODE_SET_FINISH);
 	meson_vout_update_mode_name(amcrtc->vout_index, mode->name, "hdmitx");
@@ -1616,10 +1694,50 @@ void meson_hdmitx_encoder_atomic_disable(struct drm_encoder *encoder,
 	msleep(100);
 }
 
+static int meson_hdmitx_encoder_atomic_check(struct drm_encoder *encoder,
+					     struct drm_crtc_state *crtc_state,
+					     struct drm_connector_state *conn_state)
+{
+	const struct hdmi_timing *timing;
+	struct am_meson_crtc_state *meson_crtc_state =
+		to_am_meson_crtc_state(crtc_state);
+	struct am_hdmitx_connector_state *hdmitx_state =
+		to_am_hdmitx_connector_state(conn_state);
+	struct hdmitx_color_attr *attr = &hdmitx_state->color_attr_para;
+	struct drm_display_mode *adj_mode = &crtc_state->adjusted_mode;
+	char *modename = adj_mode->name;
+
+	timing = am_hdmi_info.hdmitx_dev->get_timing_by_name(modename);
+
+	DRM_DEBUG("%s[%d]: enter\n", __func__, __LINE__);
+
+	if (meson_crtc_state->uboot_mode_init == 1) {
+		hdmitx_get_init_state(am_hdmi_info.hdmitx_dev->hdmitx_common,
+				      &hdmitx_state->hbs);
+		if (timing->vic != hdmitx_state->hbs.hts.vic) {
+			DRM_ERROR("Logo mode not match with hdmitx hw.\n");
+			return -EINVAL;
+		}
+		attr->colorformat = hdmitx_state->hbs.hts.cs;
+		attr->bitdepth = colordepth_to_bitdepth(hdmitx_state->hbs.hts.cd);
+	}
+
+	hdmitx_state->hbs.hts.cs = attr->colorformat;
+	hdmitx_state->hbs.hts.cd = bitdepth_to_colordepth(attr->bitdepth);
+	timing = am_hdmi_info.hdmitx_dev->get_timing_by_name(modename);
+	hdmitx_state->hbs.hts.vic = timing->vic;
+	strcpy(hdmitx_state->hbs.hts.name, modename);
+	DRM_INFO("vic: %d, cs: %d, cd: %d\n", hdmitx_state->hbs.hts.vic,
+		 hdmitx_state->hbs.hts.cs, hdmitx_state->hbs.hts.cd);
+
+	return 0;
+}
+
 static const struct drm_encoder_helper_funcs meson_hdmitx_encoder_helper_funcs = {
 	.atomic_mode_set	= meson_hdmitx_encoder_atomic_mode_set,
 	.atomic_enable		= meson_hdmitx_encoder_atomic_enable,
 	.atomic_disable		= meson_hdmitx_encoder_atomic_disable,
+	.atomic_check		= meson_hdmitx_encoder_atomic_check,
 };
 
 static const struct drm_encoder_funcs meson_hdmitx_encoder_funcs = {

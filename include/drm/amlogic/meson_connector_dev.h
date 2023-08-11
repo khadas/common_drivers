@@ -33,6 +33,29 @@ struct drm_hdmitx_timing_para {
 	u32 v_total;
 };
 
+enum HDMITX_MODULE {
+	HDMITX_TIMING,
+	HDMITX_MAX_MODULE,
+};
+
+struct hdmitx_base_state {
+	enum HDMITX_MODULE module;
+};
+
+struct hdmitx_timing_state {
+	struct hdmitx_base_state base;
+	u32 vic;
+	u32 frac_rate_policy;
+	enum hdmi_color_depth cd;
+	enum hdmi_colorspace cs;
+	enum hdmi_quantization_range cr;
+	char name[DRM_DISPLAY_MODE_LEN];
+};
+
+struct hdmitx_binding_state {
+	struct hdmitx_timing_state hts;
+};
+
 struct meson_connector_dev {
 	int ver;
 
@@ -91,6 +114,8 @@ struct drm_vrr_mode_group {
 
 struct meson_hdmitx_dev {
 	struct meson_connector_dev base;
+	struct hdmitx_common *hdmitx_common;
+	struct hdmitx_hw_common *hw_common;
 	/*add hdmitx specified function pointer and struct.*/
 
 	int (*detect)(void);
@@ -99,6 +124,7 @@ struct meson_hdmitx_dev {
 	unsigned char *(*get_raw_edid)(void);
 	int (*get_vic_list)(int **vics);
 	int (*get_timing_para_by_vic)(int vic, struct drm_hdmitx_timing_para *para);
+	const struct hdmi_timing *(*get_timing_by_name)(char *mode_name);
 
 	unsigned int (*get_content_types)(void);
 	int (*set_content_type)(int content_type);

@@ -48,34 +48,43 @@ struct meson_spinand {
 
 struct meson_spinand *meson_spinand_global;
 
+bool meson_spinand_isbad(struct nand_device *nand, const struct nand_pos *pos)
+{
+	struct meson_spinand *meson_spinand = meson_spinand_global;
+	u8 block_status;
+
+	BUG_ON(!meson_spinand->block_status);
+
+	block_status = meson_spinand->block_status[pos->eraseblock];
+	if (block_status == NAND_BLOCK_BAD) {
+		pr_err("NAND bbt detect Bad block at %llx\n",
+				(u64)nanddev_pos_to_offs(nand, (const struct nand_pos *)pos));
+		return true;
+	}
+	if (block_status == NAND_FACTORY_BAD) {
+		pr_err("NAND bbt detect factory Bad block at %llx\n",
+				(u64)nanddev_pos_to_offs(nand, (const struct nand_pos *)pos));
+		return true;
+	}
+
+	return false;
+}
+EXPORT_SYMBOL_GPL(meson_spinand_isbad);
+
 static int spinand_mtd_block_isbad(struct mtd_info *mtd, loff_t offs)
 {
 	struct meson_spinand *meson_spinand = meson_spinand_global;
 	struct spinand_device *spinand = meson_spinand->spinand;
 	struct nand_device *nand = mtd_to_nanddev(mtd);
 	struct nand_pos pos;
-	u8 block_status;
+	int block_status;
 
-	nanddev_offs_to_pos(nand, offs, &pos);
 	mutex_lock(&spinand->lock);
-	if (meson_spinand->block_status) {
-		block_status = meson_spinand->block_status[pos.eraseblock];
-		if (block_status != NAND_BLOCK_GOOD &&
-		    block_status != NAND_BLOCK_BAD &&
-		    block_status != NAND_FACTORY_BAD) {
-			pr_err("bad block table is mixed\n");
-			mutex_unlock(&spinand->lock);
-			return NAND_BLOCK_BAD;
-		}
-		if (block_status != NAND_BLOCK_GOOD)
-			pr_info("bad block at 0x%x\n", (u32)offs);
-		mutex_unlock(&spinand->lock);
-		return block_status;
-	}
-	pr_info("bbt table is not initial\n");
-	block_status = nand->ops->isbad(nand, &pos);
+	nanddev_offs_to_pos(nand, offs, &pos);
+	block_status = meson_spinand_isbad(nand, &pos);
 	mutex_unlock(&spinand->lock);
-	return block_status ? NAND_FACTORY_BAD : NAND_BLOCK_GOOD;
+
+	return block_status;
 }
 
 static int spinand_mtd_block_markbad(struct mtd_info *mtd, loff_t offs)
@@ -421,11 +430,18 @@ static void meson_partition_relocate(struct mtd_info *mtd,
 				     struct mtd_partition *part)
 {
 #ifndef CONFIG_NOT_SKIP_BAD_BLOCK
+	struct meson_spinand *meson_spinand = meson_spinand_global;
+	struct nand_device *nand = mtd_to_nanddev(mtd);
+	struct nand_pos pos;
 	loff_t offset = part->offset;
 	loff_t end = offset + part->size;
 
+	BUG_ON(!meson_spinand->block_status);
 	while (offset < end) {
-		if (mtd->_block_isbad(mtd, offset) == NAND_FACTORY_BAD) {
+		nanddev_offs_to_pos(nand, offset, &pos);
+		if (meson_spinand->block_status[pos.eraseblock] == NAND_FACTORY_BAD) {
+			pr_err("add partition detect FBB at %llx\n",
+				(u64)offset);
 			part->size += mtd->erasesize;
 			end += mtd->erasesize;
 			if (end > mtd->size)
@@ -438,7 +454,6 @@ static void meson_partition_relocate(struct mtd_info *mtd,
 
 int meson_add_mtd_partitions(struct mtd_info *mtd)
 {
-	//struct nand_device *nand = mtd_to_nanddev(mtd);
 	struct meson_partition_platform_data *pdata;
 	struct mtd_partition *part;
 	loff_t offset;

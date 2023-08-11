@@ -815,6 +815,7 @@ static int spinand_mtd_write(struct mtd_info *mtd, loff_t to,
 	return ret;
 }
 
+#if !IS_ENABLED(CONFIG_AMLOGIC_MTD_SPI_NAND)
 static bool spinand_isbad(struct nand_device *nand, const struct nand_pos *pos)
 {
 	struct spinand_device *spinand = nand_to_spinand(nand);
@@ -834,6 +835,7 @@ static bool spinand_isbad(struct nand_device *nand, const struct nand_pos *pos)
 
 	return false;
 }
+#endif
 
 static int spinand_mtd_block_isbad(struct mtd_info *mtd, loff_t offs)
 {
@@ -1002,7 +1004,7 @@ static int spinand_create_dirmaps(struct spinand_device *spinand)
 static const struct nand_ops spinand_ops = {
 	.erase = spinand_erase,
 	.markbad = spinand_markbad,
-	.isbad = spinand_isbad,
+	.isbad = meson_spinand_isbad,
 };
 
 static const struct spinand_manufacturer *spinand_manufacturers[] = {
@@ -1332,6 +1334,10 @@ static int spinand_init(struct spinand_device *spinand)
 	ret = nanddev_init(nand, &spinand_ops, THIS_MODULE);
 	if (ret)
 		goto err_manuf_cleanup;
+
+	/* used meson bbt */
+	nanddev_bbt_cleanup(nand);
+	nand->bbt.cache = NULL;
 
 	/* SPI-NAND default ECC engine is on-die */
 	nand->ecc.defaults.engine_type = NAND_ECC_ENGINE_TYPE_ON_DIE;

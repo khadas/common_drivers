@@ -853,7 +853,7 @@ void hdmirx_wr_bits_cor(u32 addr, u32 mask, u8 value, u8 port)
 	hdmirx_wr_cor(addr, rx_set_bits(hdmirx_rd_cor(addr, port), mask, value), port);
 }
 
-void hdmirx_poll_cor(u32 addr, u8 exp_data, u8 mask, u32 max_try, u8 port)
+bool hdmirx_poll_cor(u32 addr, u8 exp_data, u8 mask, u32 max_try, u8 port)
 {
 	u8 rd_data;
 	u32 cnt = 0;
@@ -871,6 +871,7 @@ void hdmirx_poll_cor(u32 addr, u8 exp_data, u8 mask, u32 max_try, u8 port)
 	}
 	if (done == 0)
 		rx_pr("hdmirx_poll_COR access time-out!\n");
+	return done;
 }
 
 u32 rd_reg_clk_ctl(u32 offset)

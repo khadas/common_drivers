@@ -201,6 +201,15 @@ void frate_monitor(void);
 void frate_monitor1(void);
 void clk_init_cor_t3x(void);
 void rx_dig_clk_en_t3x(bool en);
+void rx_lts_2_flt_ready(u8 port);
+void RX_LTS_3_LTP_REQ_SEND_1111(u8 port);
+void RX_LTS_3_LTP_REQ_SEND_0000(u8 port);
+void hal_flt_update_set(u8 port);
+void rx_lts_p_syn_detect(u8 frl_rate, u8 port);
+void aml_phy_init_t3x_21(u8 port);
+void rx_lts_3_err_detect(u8 port);
+void RX_LTS_P_FRL_START(u8 port);
+bool s_tmds_transmission_detected(u8 port);
 
 //void reset_pcs(void);
 

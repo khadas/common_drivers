@@ -109,7 +109,6 @@ struct workqueue_struct *earc_hpd_wq;
 struct work_struct     frl_train_dwork;
 struct workqueue_struct *frl_train_wq;
 
-
 unsigned int hdmirx_addr_port;
 unsigned int hdmirx_data_port;
 unsigned int hdmirx_ctrl_port;

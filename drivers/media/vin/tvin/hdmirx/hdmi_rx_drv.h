@@ -295,6 +295,7 @@ struct rx_var_param {
 	int sig_stable_err_cnt;
 	int sig_stable_err_max;
 	int err_cnt_sum_max;
+	int flt_ready_cnt;
 	//bool clk_debug_en;
 	int hpd_wait_cnt;
 	int special_wait_max;
@@ -891,6 +892,7 @@ extern struct workqueue_struct *earc_hpd_wq;
 extern struct workqueue_struct	*repeater_wq;
 extern struct work_struct     frl_train_dwork;
 extern struct workqueue_struct *frl_train_wq;
+
 extern struct tasklet_struct rx_tasklet;
 extern struct device *hdmirx_dev;
 extern struct rx_s rx[4];

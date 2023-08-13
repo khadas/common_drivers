@@ -44,7 +44,7 @@ int frl_scrambler_en = 1;
 //int frl_rate;
 int phy_rate;
 //for t3x debug,todo
-u32 frl_sync_cnt = 100;
+u32 frl_sync_cnt = 1600;
 u32 odn_reg_n_mul = 6;
 int vpcore_debug = 3;
 u32 ext_cnt = 2000;
@@ -2289,6 +2289,7 @@ void rx_21_fpll_calculation(int f_rate, u8 port)
 		udelay(10);
 		if (cnt++ > 5) {
 			rx_pr("fpll cfg err!\n");
+			rx[port].state = FSM_FRL_FLT_READY;
 			break;
 		}
 	} while (!is_fpll0_locked());
@@ -4362,7 +4363,6 @@ void rx_lts_3_err_detect(u8 port)
 	//collect bist error count for each lane
 	//channel 0
 	hdmirx_poll_cor(SARAH_BIST_ST_2_DDPHY_IVCRX, 0 << 7, 0x7f, frl_sync_cnt, port); //sync_done
-	usleep_range(100, 110);
 	bist0_err_cnt_0 = hdmirx_rd_cor(SARAH_BIST_ST_0_DDPHY_IVCRX, port);
 	bist0_err_cnt_1 = hdmirx_rd_cor(SARAH_BIST_ST_1_DDPHY_IVCRX, port);
 	bist0_err_cnt_2 = hdmirx_rd_cor(SARAH_BIST_ST_2_DDPHY_IVCRX, port);
@@ -4547,7 +4547,6 @@ void rx_lts_p_syn_detect(u8 frl_rate, u8 port)
 	//======= clear Link Training mode =========
 	//----hal_flt_rx_clear_rscc(port)
 	//wait at least 100ms for SR_SYNC to be enabled
-	usleep_range(100, 110);
 
 	hdmirx_poll_cor(H21RXSB_STATUS_M42H_IVCRX, 1 << 2, 0xfb,  frl_sync_cnt, port); //sb sync
 	if (log_level & FRL_LOG)
@@ -4593,6 +4592,42 @@ enum frl_rate_e hdmirx_get_frl_rate(u8 port)
 	return rx[port].var.frl_rate;
 }
 
+bool hal_rx_tmds_channels_locked_query(u8 port)
+{
+	u8 lock;
+
+	lock = hdmirx_rd_cor(SCDCS_STATUS_FLAGS0_SCDC_IVCRX, port);
+
+	rx_pr("TMDS Lock: %02X", (u16)lock);
+	return (lock & 0xf) == 0xf;
+}
+
+bool s_tmds_transmission_detected(u8 port)
+{
+	u8 frl_rate;
+	bool b_detected;
+
+	frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
+	b_detected = false;
+	if (frl_rate == 0) {
+		if (hal_rx_tmds_channels_locked_query(port))
+			b_detected = true;
+	}
+	if (b_detected)
+		rx_pr("tmds detect\n");
+	return b_detected;
+}
+
+void hal_flt_update_set(u8 port)
+{
+	u8 data8;
+
+	data8 = hdmirx_rd_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, port);
+	rx_pr("upd flg=0x%x\n", data8);
+	hdmirx_wr_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, (data8 | 0x20), port);//
+	rx_pr("upd flg-1=0x%x\n", hdmirx_rd_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, port));
+}
+
 void hdmi_tx_rx_frl_training_main(u8 port)
 {
 	//uint16_t ltp0123 = 0xAAAA;//reserved LTP
@@ -4600,12 +4635,12 @@ void hdmi_tx_rx_frl_training_main(u8 port)
 	//TX_LTS_1_HDMI21_CONFIG(frl_rate);
 	if (log_level & FRL_LOG)
 		rx_pr("[FRL TRAINING] ** RX_LTS_2_FLT_READY,port-%d**\n", port);
-	rx_lts_2_flt_ready(port);
 	//rx_pr("[FRL TRAINING] ************** TX_LTS_2_POLL_READY************\n");
 	//TX_LTS_2_POLL_READY();
 	//rx_pr("[FRL TRAINING] ************** TX_LTS_2_SETTING************\n");
 	//TX_LTS_2_SETTING(frl_rate);
 	//frl_debug
+	rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
 	if (!rx[port].var.frl_rate) {
 		hdmirx_wr_cor(RX_H21_CTRL_PWD_IVCRX, 0, port);//related to DE status
 		rx_pr("frl not support\n");
@@ -5479,8 +5514,8 @@ void frate_monitor(void)
 					hdmirx_wr_cor(RX_H21_CTRL_PWD_IVCRX, 0x0, port);
 				}
 			}
-			if (rx[port].state > FSM_FRL_TRN)
-				rx[port].state = FSM_FRL_TRN;
+			if (rx[port].state > FSM_FRL_FLT_READY)
+				rx[port].state = FSM_FRL_FLT_READY;
 		}
 		if (log_level & FRL_LOG)
 			rx_pr("port-%d frate change to %d\n", port, rx[port].var.frl_rate);

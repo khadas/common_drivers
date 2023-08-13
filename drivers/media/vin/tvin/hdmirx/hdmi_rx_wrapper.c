@@ -91,6 +91,8 @@ int color_bar_lvl;
 int reset_pcs_flag = 10;
 int reset_pcs_cnt = 1;
 int port_debug_en = 1;
+int flt_ready_max = 3;
+int frl_debug_en;
 //static int auds_rcv_sts;
 //module_param(auds_rcv_sts, int, 0664);
 //MODULE_PARM_DESC(auds_rcv_sts, "auds_rcv_sts");
@@ -389,6 +391,34 @@ void hdmirx_fsm_var_init(void)
 		spec_dev_wait_cnt_max = 200;
 		clk_unstable_max = 50;
 		esd_phy_rst_max = 16;
+		pll_unlock_max = 30;
+		//do not to check colorspace changes
+		//Vdin can adapt it automatically
+		stable_check_lvl = 0x7c3;
+		pll_lock_max = 2;
+		err_cnt_sum_max = 10;
+		hpd_wait_max = 110;
+		sig_unstable_max = 20;
+		sig_unready_max = 5;
+		/* decreased to 2 */
+		/* decreased to 2 */
+		diff_pixel_th = 1;
+		/* decreased to 2 */
+		diff_line_th = 1;
+		/* (25hz-24hz)/2 = 50/100 */
+		diff_frame_th = 40;
+		aud_sr_stb_max = 30;
+		clk_stable_max = 3;
+		rx_phy_level = 5;
+		break;
+	case CHIP_ID_T3X:
+		hbr_force_8ch = 1; //use it to enable hdr2spdif
+		sig_stable_err_max = 5;
+		sig_stable_max = 10;
+		dwc_rst_wait_cnt_max = 30;
+		spec_dev_wait_cnt_max = 200;
+		clk_unstable_max = 50;
+		esd_phy_rst_max = 4;
 		pll_unlock_max = 30;
 		//do not to check colorspace changes
 		//Vdin can adapt it automatically
@@ -2623,6 +2653,13 @@ static bool fmt_vic_abnormal(u8 port)
 	 * timing match, but TX send normal VIC, then
 	 * abnormal format is detected.
 	 */
+	if (rx[port].cur.hw_vic == HDMI_UNKNOWN &&
+		rx[port].cur.sw_vic == HDMI_UNSUPPORT &&
+		rx[port].var.frl_rate) {
+		rx_pr("frl not match\n");
+		return true;
+	}
+
 	if (rx[port].pre.hw_vic != HDMI_UNKNOWN &&
 	    rx[port].pre.sw_vic == HDMI_UNSUPPORT) {
 		rx_pr("hw_vic: is not matched!\n");
@@ -3826,6 +3863,8 @@ void rx_get_global_variable(const char *buf)
 	pr_var(rx_5v_wake_up_en, i++);
 	pr_var(hdcp_22_en, i++);
 	pr_var(phy_term_lel_t3x_21, i++);
+	pr_var(flt_ready_max, i++);
+	pr_var(frl_debug_en, i++);
 }
 
 bool str_cmp(unsigned char *buff, unsigned char *str)
@@ -4375,7 +4414,12 @@ int rx_set_global_variable(const char *buf, int size)
 	if (set_pr_var(tmpbuf, var_to_str(hdcp_22_en),
 		&hdcp_22_en, value))
 		return pr_var(hdcp_22_en, index);
-	return 0;
+	if (set_pr_var(tmpbuf, var_to_str(flt_ready_max),
+		&flt_ready_max, value))
+		return pr_var(flt_ready_max, index);
+	if (set_pr_var(tmpbuf, var_to_str(frl_debug_en),
+		&frl_debug_en, value))
+		return pr_var(frl_debug_en, index);
 	if (set_pr_var(tmpbuf, var_to_str(phy_term_lel_t3x_21),
 		&phy_term_lel_t3x_21, value))
 		return pr_var(phy_term_lel_t3x_21, index);
@@ -4716,6 +4760,11 @@ char *fsm_st[] = {
 	"FSM_INIT",
 	"FSM_HPD_LOW",
 	"FSM_HPD_HIGH",
+	"FSM_FRL_FLT_READY",
+	"FLT_RX_LTS_3",
+	"FLT_RX_LTS_3_PHY_INIT",
+	"FLT_RX_LTS_3_LPT",
+	"FLT_RX_LTS_P",
 	"FSM_FRL_TRN",
 	"FSM_WAIT_FRL_TRN_DONE",
 	"FSM_WAIT_CLK_STABLE",
@@ -6252,22 +6301,69 @@ void rx_port2_main_state_machine(void)
 		rx[port].phy.cablesel = 0;
 		//set_scdc_cfg(0, 1, port);
 		/* rx[port].hdcp.hdcp_version = HDCP_VER_NONE; */
-		rx[port].state = FSM_FRL_TRN;
+		rx[port].state = FSM_FRL_FLT_READY;
 		break;
-	case FSM_FRL_TRN:
-		rx_frl_train();
-		rx[port].var.fpll_stable_cnt = 0;
-		if (hdmirx_get_frl_rate(port) == FRL_OFF)
+	case FSM_FRL_FLT_READY:
+		if (rx[port].var.flt_ready_cnt++ <= flt_ready_max)
+			break;
+		hdmirx_wr_cor(DPLL_CFG6_DPLL_IVCRX, 0x0, port);
+		hdmirx_frl_config(port);
+		rx_lts_2_flt_ready(port);
+		if (s_tmds_transmission_detected(port)) {
+			rx[port].state = FSM_WAIT_CLK_STABLE;
+			rx_pr("Sink FRL LTS:2 - TMDS detected");
+			break;
+		}
+		rx[port].state = FLT_RX_LTS_3;
+		break;
+	case FLT_RX_LTS_3:
+		hdmirx_wr_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, 0x0, port);//sink clear(=0) FRL_START
+		hdmirx_wr_cor(SCDCS_STATUS_FLAGS1_SCDC_IVCRX, 0x65, port); //
+		hdmirx_wr_cor(SCDCS_STATUS_FLAGS2_SCDC_IVCRX, 0x87, port); //
+		hal_flt_update_set(port);
+		if (hdmirx_poll_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, 0 << 5,
+			0xdf, frl_sync_cnt, port) == 0)
+			rx_pr("polling time out a\n");
+		rx[port].state = FLT_RX_LTS_3_PHY_INIT;
+		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
+		if (s_tmds_transmission_detected(port))
+			rx[port].state = FSM_WAIT_CLK_STABLE;
+		break;
+	case FLT_RX_LTS_3_PHY_INIT:
+		hdmirx_phy_init(port);
+		rx_lts_3_err_detect(port);
+		rx[port].state = FLT_RX_LTS_3_LPT;
+		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
+		if (s_tmds_transmission_detected(port))
+			rx[port].state = FSM_WAIT_CLK_STABLE;
+		break;
+	case FLT_RX_LTS_3_LPT:
+		RX_LTS_3_LTP_REQ_SEND_0000(port);
+		hal_flt_update_set(port);
+		if (hdmirx_poll_cor(SCDCS_UPD_FLAGS_SCDC_IVCRX, 0 << 5,
+			0xdf, frl_sync_cnt, port) == 0)
+			rx_pr("polling time out b\n");
+		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
+		if (rx[port].var.frl_rate == 0)
+			rx[port].state = FSM_WAIT_CLK_STABLE;
+		rx[port].state = FLT_RX_LTS_P;
+		break;
+	case FLT_RX_LTS_P:
+		rx_lts_p_syn_detect(rx[port].var.frl_rate, port);
+		RX_LTS_P_FRL_START(port);
+		rx[port].state = FSM_WAIT_FRL_TRN_DONE;
+		rx[port].var.frl_rate = hdmirx_rd_cor(SCDCS_CONFIG1_SCDC_IVCRX, port) & 0xf;
+		if (s_tmds_transmission_detected(port))
 			rx[port].state = FSM_WAIT_CLK_STABLE;
 		else
 			rx[port].state = FSM_WAIT_FRL_TRN_DONE;
 		break;
 	case FSM_WAIT_FRL_TRN_DONE:
-		if (!is_frl_train_finished())
-			break;
 		if (is_fpll_err(port)) {
 			if (rx[port].var.fpll_stable_cnt++ < fpll_stable_max)
 				break;
+			else
+				rx[port].state = FSM_FRL_FLT_READY;
 		}
 		rx[port].state =  FSM_PCS_RESET;
 		rx[port].var.clk_stable_cnt = 0;
@@ -6310,7 +6406,7 @@ void rx_port2_main_state_machine(void)
 		break;
 	case FSM_EQ_START:
 		if (!rx[port].cableclk_stb_flg) {
-			rx[port].state = FSM_WAIT_CLK_STABLE;
+			rx[port].state = FSM_FRL_FLT_READY;
 			break;
 		}
 		rx_run_eq(port);
@@ -6318,7 +6414,7 @@ void rx_port2_main_state_machine(void)
 		break;
 	case FSM_WAIT_EQ_DONE:
 		if (!rx[port].cableclk_stb_flg) {
-			rx[port].state = FSM_WAIT_CLK_STABLE;
+			rx[port].state = FSM_FRL_FLT_READY;
 			break;
 		}
 		if (rx_eq_done(port)) {
@@ -6343,7 +6439,7 @@ void rx_port2_main_state_machine(void)
 		break;
 	case FSM_SIG_UNSTABLE:
 		if (!rx[port].cableclk_stb_flg) {
-			rx[port].state = FSM_WAIT_CLK_STABLE;
+			rx[port].state = FSM_FRL_FLT_READY;
 			break;
 		}
 		if (is_tmds_valid(port)) {
@@ -6362,7 +6458,10 @@ void rx_port2_main_state_machine(void)
 				break;
 			}
 			if (rx[port].err_rec_mode == ERR_REC_EQ_RETRY) {
-				rx[port].state = FSM_WAIT_CLK_STABLE;
+				if (rx[port].var.frl_rate == 0)
+					rx[port].state = FSM_WAIT_CLK_STABLE;
+				else
+					rx[port].state = FSM_FRL_FLT_READY;
 				if (rx[port].var.esd_phy_rst_cnt++ < esd_phy_rst_max) {
 					rx[port].phy.cablesel++;
 					//rx[port].clk.cable_clk = 0;
@@ -6382,7 +6481,7 @@ void rx_port2_main_state_machine(void)
 		break;
 	case FSM_SIG_WAIT_STABLE:
 		if (!rx[port].cableclk_stb_flg) {
-			rx[port].state = FSM_WAIT_CLK_STABLE;
+			rx[port].state = FSM_FRL_FLT_READY;
 			break;
 		}
 		rx[port].var.dwc_rst_wait_cnt++;
@@ -6410,7 +6509,7 @@ void rx_port2_main_state_machine(void)
 		break;
 	case FSM_SIG_STABLE:
 		if (!rx[port].cableclk_stb_flg) {
-			rx[port].state = FSM_WAIT_CLK_STABLE;
+			rx[port].state = FSM_FRL_FLT_READY;
 			break;
 		}
 		memcpy(&rx[port].pre, &rx[port].cur, sizeof(struct rx_video_info));
@@ -6438,7 +6537,7 @@ void rx_port2_main_state_machine(void)
 						rx[port].state = FSM_HPD_LOW;
 						rx[port].var.vic_check_en = false;
 					} else {
-						rx[port].state = FSM_WAIT_CLK_STABLE;
+						rx[port].state = FSM_FRL_FLT_READY;
 						rx_set_eq_run_state(E_EQ_START, port);
 						rx[port].var.vic_check_en = true;
 					}
@@ -6509,7 +6608,7 @@ void rx_port2_main_state_machine(void)
 				break;
 			}
 			if (rx[port].err_rec_mode == ERR_REC_EQ_RETRY) {
-				rx[port].state = FSM_WAIT_CLK_STABLE;
+				rx[port].state = FSM_FRL_FLT_READY;
 				rx[port].phy.cablesel++;
 				if (rx[port].var.esd_phy_rst_cnt++ >= esd_phy_rst_max) {
 					rx[port].err_rec_mode = ERR_REC_HPD_RST;
@@ -6555,7 +6654,7 @@ void rx_port2_main_state_machine(void)
 			//rx_sw_reset(2);
 			hdmirx_top_irq_en(0, 0, port);
 			hdmirx_output_en(false);
-			rx[port].state = FSM_WAIT_CLK_STABLE;
+			rx[port].state = FSM_FRL_FLT_READY;
 			rx[port].var.vic_check_en = false;
 			rx[port].skip = 0;
 			rx[port].var.mute_cnt = 0;
@@ -6584,7 +6683,7 @@ void rx_port2_main_state_machine(void)
 				//rx_sw_reset(2, port);
 				hdmirx_top_irq_en(0, 0, port);
 				hdmirx_output_en(false);
-				rx[port].state = FSM_WAIT_CLK_STABLE;
+				rx[port].state = FSM_FRL_FLT_READY;
 				rx[port].var.vic_check_en = false;
 				rx[port].skip = 0;
 				rx[port].var.mute_cnt = 0;

@@ -42,6 +42,11 @@ enum fsm_states_e {
 	FSM_INIT,
 	FSM_HPD_LOW,
 	FSM_HPD_HIGH,
+	FSM_FRL_FLT_READY,
+	FLT_RX_LTS_3,
+	FLT_RX_LTS_3_PHY_INIT,
+	FLT_RX_LTS_3_LPT,
+	FLT_RX_LTS_P,
 	FSM_FRL_TRN,
 	FSM_WAIT_FRL_TRN_DONE,
 	FSM_WAIT_CLK_STABLE,
@@ -127,9 +132,14 @@ extern u32 vpp_mute_enable;
 extern u32 dbg_cs;
 extern int color_bar_debug_en;
 extern int port_debug_en;
+extern int flt_ready_max;
+extern int frl_debug_en;
+
 enum tvin_sig_fmt_e hdmirx_hw_get_fmt(u8 port);
 void rx_mute_vpp(void);
 void rx_main_state_machine(void);
+void rx_port2_main_state_machine(void);
+
 void rx_nosig_monitor(u8 port);
 bool rx_is_nosig(u8 port);
 bool rx_is_sig_ready(u8 port);

@@ -1964,7 +1964,7 @@ static struct clk_regmap c3_spifc_clk_sel = {
 		.ops = &clk_regmap_mux_ops,
 		.parent_data = spifc_parent_names,
 		.num_parents = ARRAY_SIZE(spifc_parent_names),
-		.flags = CLK_GET_RATE_NOCACHE,
+		.flags = CLK_GET_RATE_NOCACHE | CLK_SET_RATE_NO_REPARENT,
 	},
 };
 

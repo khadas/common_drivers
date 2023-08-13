@@ -374,8 +374,10 @@
 			status = "disabled";
 			reg = <0xfe056000 0x290>;
 			ahb-addr = <0xf1000000 0x0>;
-			clock-names = "spifc_gate";
 			clocks = <&clkc CLKID_SPIFC>;
+			clock-names = "spifc_gate";
+			assigned-clocks = <&clkc CLKID_SPIFC_SEL>;
+			assigned-clock-parents = <&clkc CLKID_FCLK_DIV2>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			//power-domains = <&pwrdm PDID_CX_SPIFC>;

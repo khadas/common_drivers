@@ -1274,6 +1274,12 @@ void set_video_zorder_ext(int layer_index, int zorder)
 	}
 }
 
+void  get_video_input_info(struct video_input_info *input_info)
+{
+	input_info->height = cur_frame_par[0]->video_input_h;
+	input_info->width = cur_frame_par[0]->video_input_w;
+}
+
 static void vdx_force_black(u8 layer_id)
 {
 	if (layer_id == 0) {

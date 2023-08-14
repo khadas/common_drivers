@@ -107,7 +107,7 @@ static struct clk_regmap txhd2_sys_pll_dco = {
 			.shift   = 24,
 			.width   = 1,
 		},
-		.flags = CLK_MESON_PLL_POWER_OF_TWO | CLK_MESON_PLL_IGNORE_INIT,
+		.flags = CLK_MESON_PLL_POWER_OF_TWO,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "sys_pll_dco",
@@ -575,7 +575,7 @@ static struct clk_regmap txhd2_gp0_pll_dco = {
 		.table = txhd2_gp0_pll_table,
 		.init_regs = txhd2_gp0_init_regs,
 		.init_count = ARRAY_SIZE(txhd2_gp0_init_regs),
-		.flags = CLK_MESON_PLL_POWER_OF_TWO,//| CLK_MESON_PLL_IGNORE_INIT,
+		.flags = CLK_MESON_PLL_POWER_OF_TWO,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "gp0_pll_dco",

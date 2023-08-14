@@ -156,7 +156,7 @@ config AMLOGIC_SND_SOC_TLV320ADC3101
 	  Enable Support for Texas INstruments TLV320ADC3101 CODEC.
 	  Select this if your TLV320ADC3101 is connected via an I2C bus.
 
-config CONFIG_AMLOGIC_SND_SOC_TAS5707
+config AMLOGIC_SND_SOC_TAS5707
 	tristate "Texas Instruments TAS5707"
 	depends on AMLOGIC_SND_SOC_CODECS
 	depends on I2C

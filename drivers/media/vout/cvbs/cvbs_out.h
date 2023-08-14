@@ -35,7 +35,7 @@
 
 #define _TM_V 'V'
 
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 #define MAX_RING_BUFF_LEN 128
 #define VOUT_IOC_CC_OPEN           _IO(_TM_V, 0x01)
 #define VOUT_IOC_CC_CLOSE          _IO(_TM_V, 0x02)
@@ -115,7 +115,7 @@ struct cvbs_drv_s {
 
 static  DEFINE_MUTEX(cvbs_mutex);
 
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 struct cc_parm_s {
 	unsigned int type;
 	unsigned int data;

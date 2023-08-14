@@ -63,7 +63,7 @@
 #include <linux/amlogic/gki_module.h>
 #include <drm/amlogic/meson_drm_bind.h>
 
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 /* interrupt source */
 #define INT_VIU_VSYNC    35
 #endif
@@ -173,7 +173,7 @@ static struct vinfo_s cvbs_info[] = {
 	},
 };
 
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 static struct cc_ring_mgr_s cc_ringbuf;
 static spinlock_t tvout_clk_lock;
 static unsigned int vsync_empty_flag;
@@ -497,7 +497,7 @@ static int cvbs_release(struct inode *inode, struct file *file)
 static long cvbs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	long ret = 0;
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 	unsigned int CC_2byte_data = 0;
 	unsigned long flags = 0;
 	void __user *argp = (void __user *)arg;
@@ -509,7 +509,7 @@ static long cvbs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return -ENOTTY;
 	}
 	switch (cmd) {
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 	case VOUT_IOC_CC_OPEN:
 		spin_lock_irqsave(&tvout_clk_lock, flags);
 		memset(&cc_ringbuf, 0, sizeof(struct cc_ring_mgr_s));
@@ -1942,7 +1942,7 @@ static const struct of_device_id meson_cvbsout_dt_match[] = {
 };
 #endif
 
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 static irqreturn_t tvout_vsync_isr(int irq, void *dev_id)
 {
 	unsigned int CC_2byte_data;
@@ -2051,7 +2051,7 @@ static int cvbsout_probe(struct platform_device *pdev)
 	cvbs_clk_path = 0;
 	local_cvbs_mode = MODE_MAX;
 
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 	memset(&cc_ringbuf, 0, sizeof(struct cc_ring_mgr_s));
 	cc_ringbuf.max_len = MAX_RING_BUFF_LEN;
 	spin_lock_init(&tvout_clk_lock);
@@ -2094,7 +2094,7 @@ static int cvbsout_probe(struct platform_device *pdev)
 		goto cvbsout_probe_err;
 	}
 
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 	if (request_irq(INT_VIU_VSYNC, &tvout_vsync_isr,
 		IRQF_SHARED, "tvout_vsync", (void *)"tvout_vsync")) {
 		cvbs_log_err("can't request vsync_irq for tvout\n");
@@ -2119,7 +2119,7 @@ static int cvbsout_remove(struct platform_device *pdev)
 {
 	int i;
 
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 	free_irq(INT_VIU_VSYNC, (void *)"tvout_vsync");
 #endif
 	cvbsout_clktree_remove(&pdev->dev);
@@ -2226,7 +2226,7 @@ int __init cvbs_init_module(void)
 		cvbs_log_err("%s failed to register module\n", __func__);
 		return -ENODEV;
 	}
-#ifdef CONFIG_AML_VOUT_CC_BYPASS
+#ifdef CONFIG_AMLOGIC_VOUT_CC_BYPASS
 	memset(&cc_ringbuf, 0, sizeof(struct cc_ring_mgr_s));
 	cc_ringbuf.max_len = MAX_RING_BUFF_LEN;
 #endif

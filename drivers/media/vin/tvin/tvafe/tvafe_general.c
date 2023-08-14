@@ -435,7 +435,7 @@ static void tvafe_set_cvbs_default(struct tvafe_cvd2_s *cvd2,
 			adc_set_filter_ctrl(true, FILTER_TVAFE, NULL);
 		}
 
-#if (defined(CONFIG_ADC_DOUBLE_SAMPLING_FOR_CVBS) && defined(CRYSTAL_24M))
+#if (defined(CONFIG_AMLOGIC_ADC_DOUBLE_SAMPLING_FOR_CVBS) && defined(CRYSTAL_24M))
 		if (!IS_TVAFE_ATV_SRC(port)) {
 			W_APB_REG(TVFE_TOP_CTRL, 0x010c4d6c);
 			W_APB_REG(TVFE_AAFILTER_CTRL1, 0x00012721);
@@ -513,7 +513,7 @@ void tvafe_init_reg(struct tvafe_cvd2_s *cvd2, struct tvafe_cvd2_mem_s *mem,
 			W_HIU_REG(HHI_VAFE_CLKIN_CNTL, 0x703);
 #endif
 
-#if (defined(CONFIG_ADC_DOUBLE_SAMPLING_FOR_CVBS) && defined(CRYSTAL_24M))
+#if (defined(CONFIG_AMLOGIC_ADC_DOUBLE_SAMPLING_FOR_CVBS) && defined(CRYSTAL_24M))
 		if (!IS_TVAFE_ATV_SRC(port)) {
 			W_HIU_REG(HHI_ADC_PLL_CNTL3, 0xa92a2110);
 			W_HIU_REG(HHI_ADC_PLL_CNTL4, 0x02973800);

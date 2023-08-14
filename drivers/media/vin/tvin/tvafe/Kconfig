@@ -12,7 +12,7 @@ config AMLOGIC_MEDIA_TVIN_AFE
 		translate analog signal to digital to vdin process
 
 if AMLOGIC_MEDIA_TVIN_AFE
-config ADC_DOUBLE_SAMPLING_FOR_CVBS
+config AMLOGIC_ADC_DOUBLE_SAMPLING_FOR_CVBS
 	bool "Enable double sampling function for AV port"
 	default n
 	help

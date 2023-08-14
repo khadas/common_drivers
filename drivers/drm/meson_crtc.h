@@ -79,6 +79,7 @@ struct am_meson_crtc_state {
 
 	int prev_vrefresh;
 	int prev_height;
+	int hdr_conversion_ctrl;
 };
 
 struct am_meson_crtc {
@@ -101,6 +102,8 @@ struct am_meson_crtc {
 	struct drm_property *bgcolor_property;
 	struct drm_property *video_pixelformat_property;
 	struct drm_property *osd_pixelformat_property;
+	struct drm_property *hdr_conversion_ctrl_property;
+	struct drm_property *hdr_conversion_cap_property;
 
 	/*debug*/
 	int dump_enable;

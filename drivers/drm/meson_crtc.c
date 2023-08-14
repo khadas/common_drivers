@@ -156,6 +156,7 @@ static struct drm_crtc_state *meson_crtc_duplicate_state(struct drm_crtc *crtc)
 	new_state->vmode = cur_state->vmode;
 	new_state->prev_vrefresh = cur_state->prev_vrefresh;
 	new_state->prev_height = cur_state->prev_height;
+	new_state->hdr_conversion_ctrl = cur_state->hdr_conversion_ctrl;
 
 	/*reset dynamic info.*/
 	if (amcrtc->priv->logo_show_done)
@@ -317,6 +318,8 @@ static int meson_crtc_atomic_get_property(struct drm_crtc *crtc,
 	struct am_meson_crtc *meson_crtc = to_am_meson_crtc(crtc);
 	int ret = 0;
 
+	crtc_state->hdr_conversion_ctrl = get_hdr_cur_output();
+
 	if (!crtc_state->crtc_eotf_by_property_flag)
 		crtc_state->eotf_type_by_property = EOTF_RESERVED;
 
@@ -329,17 +332,23 @@ static int meson_crtc_atomic_get_property(struct drm_crtc *crtc,
 	} else if (property == meson_crtc->dv_enable_property) {
 		*val = crtc_state->crtc_dv_enable;
 		return 0;
-	}  else if (property == meson_crtc->bgcolor_property) {
+	} else if (property == meson_crtc->bgcolor_property) {
 		*val = crtc_state->crtc_bgcolor;
 		return 0;
 	} else if (property == meson_crtc->dv_mode_property) {
 		*val = crtc_state->dv_mode;
 		return 0;
-	}  else if (property == meson_crtc->osd_pixelformat_property) {
+	} else if (property == meson_crtc->osd_pixelformat_property) {
 		*val = get_osd_pixelformat();
 		return 0;
-	}  else if (property == meson_crtc->video_pixelformat_property) {
+	} else if (property == meson_crtc->video_pixelformat_property) {
 		*val = get_video_pixelformat();
+		return 0;
+	} else if (property == meson_crtc->hdr_conversion_ctrl_property) {
+		*val = crtc_state->hdr_conversion_ctrl;
+		return 0;
+	} else if (property == meson_crtc->hdr_conversion_cap_property) {
+		*val = get_hdr_conversion_cap();
 		return 0;
 	}
 
@@ -371,6 +380,9 @@ static int meson_crtc_atomic_set_property(struct drm_crtc *crtc,
 		return 0;
 	} else if (property == meson_crtc->dv_mode_property) {
 		crtc_state->dv_mode = val;
+		return 0;
+	} else if (property == meson_crtc->hdr_conversion_ctrl_property) {
+		crtc_state->hdr_conversion_ctrl = val;
 		return 0;
 	}
 
@@ -609,6 +621,14 @@ static void am_meson_crtc_atomic_enable(struct drm_crtc *crtc,
 		set_eotf_by_property(meson_crtc_state);
 	}
 
+	/*Turn on the settings function later
+	 *if (priv->compat_mode) {
+	 *	set_hdr_output(meson_crtc_state->hdr_conversion_ctrl);
+	 *	DRM_INFO("[%s-%d] setting hdr output\n", __func__,
+	 *			 meson_crtc_state->hdr_conversion_ctrl);
+	 *}
+	 */
+
 	/*update mode*/
 	name = adjusted_mode->name;
 	if (crtc->state->vrr_enabled) {
@@ -780,6 +800,9 @@ static int meson_crtc_atomic_check(struct drm_crtc *crtc,
 			crtc_state->mode_changed = true;
 
 		if (cur_state->dv_mode != new_state->dv_mode)
+			crtc_state->mode_changed = true;
+
+		if (cur_state->hdr_conversion_ctrl != new_state->hdr_conversion_ctrl)
 			crtc_state->mode_changed = true;
 	}
 
@@ -1052,6 +1075,36 @@ static void meson_crtc_init_osd_pixelformat_property(struct drm_device *drm_dev,
 	}
 }
 
+static void meson_crtc_init_hdr_conversion_cap_property(struct drm_device *drm_dev,
+						struct am_meson_crtc *amcrtc)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(drm_dev, 0, "hdr_conversion_cap",
+					0, 4294967295ull);
+	if (prop) {
+		amcrtc->hdr_conversion_cap_property = prop;
+		drm_object_attach_property(&amcrtc->base.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to hdr conversion cap property\n");
+	}
+}
+
+static void meson_crtc_init_hdr_conversion_ctrl_property(struct drm_device *drm_dev,
+						struct am_meson_crtc *amcrtc)
+{
+	struct drm_property *prop;
+
+	prop = drm_property_create_range(drm_dev, 0, "hdr_conversion_ctrl",
+					0, 36);
+	if (prop) {
+		amcrtc->hdr_conversion_ctrl_property = prop;
+		drm_object_attach_property(&amcrtc->base.base, prop, 0);
+	} else {
+		DRM_ERROR("Failed to hdr conversion ctrl property\n");
+	}
+}
+
 struct am_meson_crtc *meson_crtc_bind(struct meson_drm *priv, int idx)
 {
 	struct am_meson_crtc *amcrtc;
@@ -1113,6 +1166,8 @@ struct am_meson_crtc *meson_crtc_bind(struct meson_drm *priv, int idx)
 	meson_crtc_add_bgcolor_property(priv->drm, amcrtc);
 	meson_crtc_init_osd_pixelformat_property(priv->drm, amcrtc);
 	meson_crtc_init_video_pixelformat_property(priv->drm, amcrtc);
+	meson_crtc_init_hdr_conversion_cap_property(priv->drm, amcrtc);
+	meson_crtc_init_hdr_conversion_ctrl_property(priv->drm, amcrtc);
 	amcrtc->pipeline = pipeline;
 	strcpy(amcrtc->osddump_path, OSD_DUMP_PATH);
 	priv->crtcs[priv->num_crtcs++] = amcrtc;

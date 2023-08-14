@@ -635,9 +635,6 @@ static int am_hdmitx_connector_atomic_set_property
 	} else if (property == am_hdmi->avmute_prop) {
 		hdmitx_state->avmute = val;
 		return 0;
-	} else if (property == am_hdmi->hdr_ctl_property) {
-		hdmitx_state->hdr_ctl = val;
-		return 0;
 	} else if (property == am_hdmi->allm_prop) {
 		hdmitx_state->allm_mode = val;
 		return 0;
@@ -656,8 +653,6 @@ static int am_hdmitx_connector_atomic_get_property
 		to_am_hdmitx_connector_state(state);
 	struct hdmitx_color_attr *attr = &hdmitx_state->color_attr_para;
 	char attr_force[16];
-
-	hdmitx_state->hdr_ctl = get_hdr_cur_output();
 
 	am_hdmi_info.hdmitx_dev->get_attr(attr_force);
 	convert_attrstr(attr_force, attr);
@@ -687,12 +682,6 @@ static int am_hdmitx_connector_atomic_get_property
 		return 0;
 	} else if (property == am_hdmi->hdcp_mode_property) {
 		*val = get_hdcp_mode();
-		return 0;
-	} else if (property == am_hdmi->hdr_ctl_property) {
-		*val = hdmitx_state->hdr_ctl;
-		return 0;
-	} else if (property == am_hdmi->hdr_output_cap_property) {
-		*val = get_hdr_conversion_cap();
 		return 0;
 	} else if (property == am_hdmi->contenttype_cap_prop) {
 		*val = am_hdmi_info.hdmitx_dev->get_content_types();
@@ -827,9 +816,6 @@ int meson_hdmitx_atomic_check(struct drm_connector *connector,
 
 		if (new_hdmitx_state->color_force)
 			new_crtc_state->mode_changed = true;
-
-		if (new_hdmitx_state->hdr_ctl != old_hdmitx_state->hdr_ctl)
-			new_crtc_state->mode_changed = true;
 	}
 
 	return 0;
@@ -854,7 +840,6 @@ struct drm_connector_state *meson_hdmitx_atomic_duplicate_state
 	new_state->color_attr_para.colorformat = HDMI_COLORSPACE_RESERVED6;
 	new_state->color_attr_para.bitdepth = COLORDEPTH_RESERVED;
 	new_state->pref_hdr_policy = cur_state->pref_hdr_policy;
-	new_state->hdr_ctl = cur_state->hdr_ctl;
 	new_state->allm_mode = cur_state->allm_mode;
 
 	return &new_state->base;
@@ -1588,13 +1573,6 @@ void meson_hdmitx_encoder_atomic_enable(struct drm_encoder *encoder,
 			 mode_vrefresh  * 100);
 	}
 
-	/*Turn on the settings function later
-	 *if (am_hdmi_info.android_path) {
-	 *	set_hdr_output(meson_conn_state->hdr_ctl);
-	 *	DRM_INFO("[%s-%d] setting hdr output\n", __func__, meson_conn_state->hdr_ctl);
-	 *}
-	 */
-
 	am_hdmi_info.hdmitx_on = 1;
 }
 
@@ -1691,38 +1669,6 @@ static void meson_hdmitx_init_hdcp_mode_property(struct drm_device *drm_dev,
 		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
 	} else {
 		DRM_ERROR("Failed to hdcp_mode property\n");
-	}
-}
-
-static void meson_hdmitx_init_hdr_ctl_property(struct drm_device *drm_dev,
-						  struct am_hdmi_tx *am_hdmi)
-{
-	struct drm_property *prop;
-
-	prop = drm_property_create_range(drm_dev, 0,
-			"hdr_ctl", 0, 36);
-
-	if (prop) {
-		am_hdmi->hdr_ctl_property = prop;
-		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
-	} else {
-		DRM_ERROR("Failed to hdr_ctl property\n");
-	}
-}
-
-static void meson_hdmitx_init_hdr_output_cap_property(struct drm_device *drm_dev,
-						  struct am_hdmi_tx *am_hdmi)
-{
-	struct drm_property *prop;
-
-	prop = drm_property_create_range(drm_dev, 0,
-			"hdr_output_cap", 0, 4294967295ull);
-
-	if (prop) {
-		am_hdmi->hdr_output_cap_property = prop;
-		drm_object_attach_property(&am_hdmi->base.connector.base, prop, 0);
-	} else {
-		DRM_ERROR("Failed to hdr_output_cap property\n");
 	}
 }
 
@@ -2003,9 +1949,6 @@ int meson_hdmitx_dev_bind(struct drm_device *drm,
 	meson_hdmitx_init_dv_cap_property(drm, am_hdmi);
 	meson_hdmitx_init_hdcp_ver_property(drm, am_hdmi);
 	meson_hdmitx_init_hdcp_mode_property(drm, am_hdmi);
-	meson_hdmitx_init_hdr_ctl_property(drm, am_hdmi);
-	/*The cap to convert HDR modes to each other*/
-	meson_hdmitx_init_hdr_output_cap_property(drm, am_hdmi);
 	meson_hdmitx_init_contenttype_cap_property(drm, am_hdmi);
 	meson_hdmitx_init_allm_property(drm, am_hdmi);
 

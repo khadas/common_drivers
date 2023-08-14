@@ -7009,8 +7009,7 @@ void vdin_dmc_ctrl(struct vdin_dev_s *devp, bool on_off)
 			reg = READ_DMCREG(0x6c) & (~(1 << 17));
 			if (!(reg & (1 << 18)))
 				WRITE_DMCREG(0x6c, reg | (1 << 18));
-		} else if (devp->dtdata->hw_ver == VDIN_HW_T5M ||
-			devp->dtdata->hw_ver == VDIN_HW_TXHD2) {
+		} else if (devp->dtdata->hw_ver == VDIN_HW_T5M) {
 			W_VCBUS_BIT(VPU_WRARB_UGT_L2C1, 2,
 				VPU_WRARB_UGT_VDIN_BIT, VPU_WRARB_UGT_VDIN_WID);
 		}
@@ -7023,8 +7022,7 @@ void vdin_dmc_ctrl(struct vdin_dev_s *devp, bool on_off)
 		    devp->dtdata->hw_ver == VDIN_HW_T5W) {
 			reg = READ_DMCREG(0x6c) & (~(1 << 18));
 			WRITE_DMCREG(0x6c, reg | (1 << 17));
-		} else if (devp->dtdata->hw_ver == VDIN_HW_T5M ||
-			devp->dtdata->hw_ver == VDIN_HW_TXHD2) {
+		} else if (devp->dtdata->hw_ver == VDIN_HW_T5M) {
 			W_VCBUS_BIT(VPU_WRARB_UGT_L2C1, 0,
 				VPU_WRARB_UGT_VDIN_BIT, VPU_WRARB_UGT_VDIN_WID);
 		}

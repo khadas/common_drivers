@@ -96,7 +96,8 @@
 /* 2023.7.5 clear dv packet when no emp */
 /* 2023.7.12 txhd2 bring up debug */
 /* 2023.8.1 add ctrl of 5v wake up */
-#define RX_VER1 "ver.2023/7/12"
+/* 2023.08.14 modify the mapped emp buffer address*/
+#define RX_VER1 "ver.2023/8/14"
 
 /* 50ms timer for hdmirx main loop (HDMI_STATE_CHECK_FREQ is 20) */
 

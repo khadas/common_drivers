@@ -6647,7 +6647,11 @@ void rx_emp_field_done_irq(u8 port)
 	for (i = 0; i < recv_pagenum;) {
 		/*one page 4k*/
 		cur_start_pg_addr = phys_to_page(p_addr + i * PAGE_SIZE);
-		src_addr = kmap_atomic(cur_start_pg_addr);
+		if (p_addr == rx_info.emp_buff_a.p_addr_a)
+			src_addr = kmap_atomic(cur_start_pg_addr);
+		else
+			src_addr = kmap_atomic(cur_start_pg_addr) + (rx_info.emp_buff_a.p_addr_b -
+				rx_info.emp_buff_a.p_addr_a) % PAGE_SIZE;
 		if (!src_addr)
 			return;
 		dma_sync_single_for_cpu(hdmirx_dev, (p_addr + i * PAGE_SIZE),

@@ -356,6 +356,7 @@ void aml_tdm_set_format(struct aml_audio_controller *actrl,
 	int bclkin_skew, bclkout_skew;
 	int master_mode;
 	unsigned int clkctl = 0;
+	unsigned int tdmin_ws_inv = 0;
 
 	id = index;
 
@@ -478,6 +479,7 @@ void aml_tdm_set_format(struct aml_audio_controller *actrl,
 			binv ^= 1;
 
 		finv |= 1;
+		tdmin_ws_inv = 1;
 		clkctl ^= MST_CLK_INVERT_PH0_PAD_BCLK;
 		clkctl ^= MST_CLK_INVERT_PH0_PAD_FCLK;
 		break;
@@ -490,6 +492,7 @@ void aml_tdm_set_format(struct aml_audio_controller *actrl,
 	case SND_SOC_DAIFMT_NB_IF:
 		/* Invert frame clock */
 		finv ^= 1;
+		tdmin_ws_inv = 1;
 		clkctl ^= MST_CLK_INVERT_PH0_PAD_FCLK;
 		break;
 	case SND_SOC_DAIFMT_NB_NF:
@@ -581,7 +584,7 @@ void aml_tdm_set_format(struct aml_audio_controller *actrl,
 				3 << 26 | 0x7 << 16, 3 << 26 | bclkin_skew << 16);
 
 			aml_audiobus_update_bits(actrl, reg_in,
-				0x1 << 25, finv << 25);
+				0x1 << 25, tdmin_ws_inv << 25);
 
 			mode = (p_config->pcm_mode == SND_SOC_DAIFMT_I2S) ? 0x1 : 0x0;
 			aml_audiobus_update_bits(actrl, reg_in, 0x1 << 30, mode << 30);

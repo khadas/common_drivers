@@ -915,7 +915,7 @@ EXPORT_SYMBOL(hdmirx_get_connect_info);
 unsigned int hdmirx_get_hpd_info(void)
 {
 	//rx_pr("only for debug\n");
-	return (rx_get_hpd_sts() >> rx_info.main_port) & 1;
+	return rx_get_hpd_sts(rx_info.main_port) & 1;
 }
 EXPORT_SYMBOL(hdmirx_get_hpd_info);
 
@@ -1730,6 +1730,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 	u8 i = 0;
 	u8 port_idx = 0;
 	u8 hdmi_idx = 0;
+	struct hdmirx_hpd_info hpd_state;
 
 	if (_IOC_TYPE(cmd) != HDMI_IOC_MAGIC) {
 		pr_err("%s invalid command: %u\n", __func__, cmd);
@@ -1793,7 +1794,7 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 			break;
 		}
 		port_idx = hdmi_idx - 1;
-		if (port_idx >= 3) {
+		if (port_idx > 3) {
 			rx_pr("port_idx error\n");
 			ret = -EFAULT;
 			mutex_unlock(&devp->rx_lock);
@@ -1978,6 +1979,38 @@ static long hdmirx_ioctl(struct file *file, unsigned int cmd,
 		break;
 	case HDMI_IOC_5V_WAKE_UP_OFF:
 		hdmirx_wr_bits_top_common(TOP_EDID_RAM_OVR0_DATA, _BIT(0), 0);
+		break;
+	case HDMI_IOC_SET_HPD:
+		if (!argp)
+			return -EINVAL;
+		mutex_lock(&devp->rx_lock);
+		if (copy_from_user(&hpd_state, argp, sizeof(struct hdmirx_hpd_info))) {
+			pr_err("HDMI_IOC_SET_HPD get hpd data err\n");
+			ret = -EFAULT;
+			mutex_unlock(&devp->rx_lock);
+			break;
+		}
+		rx_set_port_hpd(hpd_state.port, hpd_state.signal);
+		mutex_unlock(&devp->rx_lock);
+		break;
+	case HDMI_IOC_GET_HPD:
+		if (!argp)
+			return -EINVAL;
+		mutex_lock(&devp->rx_lock);
+		if (copy_from_user(&hpd_state, argp, sizeof(struct hdmirx_hpd_info))) {
+			pr_err("HDMI_IOC_GET_HPD get hpd data err\n");
+			ret = -EFAULT;
+			mutex_unlock(&devp->rx_lock);
+			break;
+		}
+		hpd_state.signal = rx_get_hpd_sts(hpd_state.port);
+		if (copy_to_user(argp, &hpd_state, sizeof(struct hdmirx_hpd_info))) {
+			pr_err("get_hpd_sts err\n");
+			ret = -EFAULT;
+			mutex_unlock(&devp->rx_lock);
+			break;
+		}
+		mutex_unlock(&devp->rx_lock);
 		break;
 	default:
 		ret = -ENOIOCTLCMD;

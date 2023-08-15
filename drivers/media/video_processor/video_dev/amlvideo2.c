@@ -42,6 +42,9 @@
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN
 #include <linux/amlogic/media/frame_provider/tvin/tvin_v4l2.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MEDIA_VIDEO
+#include <linux/amlogic/media/video_sink/video.h>
+#endif
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
 #include <linux/amlogic/media/v4l_util/videobuf-res.h>
@@ -466,6 +469,7 @@ struct vinfo_s *amlvideo2_get_vinfo(struct amlvideo2_node *node)
 
 	if (node->vdin_port_ext == PORT_VPP0_OSD_VIDEO ||
 		node->vdin_port_ext == PORT_VPP0_VIDEO_ONLY ||
+		node->vdin_port_ext == PORT_VPP0_VIDEO_ONLY_NO_PQ ||
 		node->vdin_port_ext == PORT_VPP0_OSD1_ONLY ||
 		node->vdin_port_ext == PORT_VPP0_OSD2_ONLY) {
 		vinfo = get_current_vinfo();
@@ -5453,6 +5457,7 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 	int dst_w, dst_h;
 	int angle;
 	int axis[4];
+	struct video_input_info video_input_parms;
 
 	if (node->qctl_regs[0] == 0)
 		node->qctl_regs[0] = amlvideo2_angle;
@@ -5460,6 +5465,7 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 	angle = node->qctl_regs[0];
 
 	vinfo = amlvideo2_get_vinfo(node);
+	get_video_input_info(&video_input_parms); /*only video and point 7*/
 #endif
 
 	if (fh->type != V4L2_BUF_TYPE_VIDEO_CAPTURE || i != fh->type)
@@ -5533,6 +5539,8 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 			node->r_type, node->p_type);
 		pr_info("vinfo->w=%d, vinfo->h=%d, vinfo->field_height=%d.\n",
 			vinfo->width, vinfo->height, vinfo->field_height);
+		pr_info("video_w=%d, video_h=%d.\n",
+			video_input_parms.width, video_input_parms.height);
 	}
 #endif
 
@@ -5547,12 +5555,15 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
 	para.fmt = TVIN_SIG_FMT_MAX;
 	para.frame_rate = vinfo->sync_duration_num / vinfo->sync_duration_den;
 	if (para.port == TVIN_PORT_VIU1_WB0_VD1 ||
-	    para.port == TVIN_PORT_VIU1_VIDEO ||
 	    para.port == TVIN_PORT_VIU2_VD1) {
 		para.h_active = (node->display_info.display_hsc_endp -
 		node->display_info.display_hsc_startp + 1);
 		para.v_active = (node->display_info.display_vsc_endp -
 		node->display_info.display_vsc_startp + 1);
+	} else if (para.port == TVIN_PORT_VIU1_VIDEO) {
+		/*only video point 7*/
+		para.h_active = video_input_parms.width;
+		para.v_active = video_input_parms.height;
 	} else {
 		para.h_active = vinfo->width;
 		para.v_active = vinfo->height;
@@ -5855,6 +5866,7 @@ static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
 #ifdef CONFIG_AMLOGIC_MEDIA_TVIN
 	/* 0: vpp0 video only; 1: vpp0(osd+video); 2: vpp1 video only; 3: vpp1(osd+video)
 	 * 4: vpp0 osd1 only; 5: vpp0 osd2 only; 6: vpp1 osd1 only; 7: vpp2 osd1 only
+	 * 8: vpp0 video only but no pq
 	 */
 	if ((i & 0xffff) == 1) {
 		node->vdin_port_ext = PORT_VPP0_OSD_VIDEO;
@@ -5896,9 +5908,16 @@ static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
 		node->porttype = TVIN_PORT_VIU3_OSD1;
 		if (amlvideo2_dbg_en)
 			pr_info("amlvideo2: vpp2 osd1 only)\n");
+	} else if ((i & 0xffff) == 8) {
+		node->vdin_port_ext = PORT_VPP0_VIDEO_ONLY_NO_PQ;
+		node->porttype = TVIN_PORT_VIU1_VIDEO;
+		if (amlvideo2_dbg_en)
+			pr_info("amlvideo2: vpp0 video only no pq)\n");
 	} else {
 		node->vdin_port_ext = -1;
 		node->porttype = i & 0xffff;
+		if (amlvideo2_dbg_en)
+			pr_info("amlvideo2: porttype err)\n");
 	}
 	if (amlvideo2_dbg_en) {
 		if (node->vdin_port_ext < 0)

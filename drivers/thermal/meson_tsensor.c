@@ -999,7 +999,6 @@ static int __maybe_unused meson_tsensor_hw_resume(struct device *dev)
 	return 0;
 }
 
-#ifdef CONFIG_PM_SLEEP
 static int meson_tsensor_suspend(struct device *dev)
 {
 	struct meson_tsensor_data *data =
@@ -1014,6 +1013,7 @@ static int meson_tsensor_suspend(struct device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
 static int meson_tsensor_resume(struct device *dev)
 {
 	struct meson_tsensor_data *data =
@@ -1029,10 +1029,16 @@ static int meson_tsensor_resume(struct device *dev)
 	return 0;
 }
 #endif
+
 static const struct dev_pm_ops meson_tsensor_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(meson_tsensor_suspend,
 				meson_tsensor_resume)
 };
+
+static void meson_tsensor_shutdown(struct platform_device *pdev)
+{
+	meson_tsensor_suspend(&pdev->dev);
+}
 
 static struct platform_driver meson_tsensor_driver = {
 	.driver = {
@@ -1042,6 +1048,7 @@ static struct platform_driver meson_tsensor_driver = {
 	},
 	.probe	= meson_tsensor_probe,
 	.remove	= meson_tsensor_remove,
+	.shutdown = meson_tsensor_shutdown
 };
 
 static int __init meson_platdrv_init(void)

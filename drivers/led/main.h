@@ -62,4 +62,18 @@ static inline void led_unipolar_ctrl_exit(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_AMLOGIC_LEDS_FD650)
+int fd650_init(void);
+void fd650_exit(void);
+#else
+static inline int fd650_init(void)
+{
+	return 0;
+}
+
+static inline void fd650_exit(void)
+{
+}
+#endif
+
 #endif /*__LED_MAIN_H_*/

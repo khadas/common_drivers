@@ -664,6 +664,14 @@
 		status = "disabled";
 	};
 
+	fd650: fd650 {
+		compatible = "amlogic,fd650";
+		status = "okay";
+		sda-gpios = <&gpio GPIOD_3 GPIO_ACTIVE_HIGH>;
+		scl-gpios =  <&gpio GPIOD_4 GPIO_ACTIVE_HIGH>;
+		fd650-gpio,delay-us = <1>;
+	};
+
 	/* for external keypad */
 	adc_keypad {
 		compatible = "amlogic, adc_keypad";

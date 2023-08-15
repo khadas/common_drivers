@@ -49,4 +49,12 @@ config AMLOGIC_LEDS_DCON
 	  Choose this option if you want to use the DCON LED
 	  and led function
 
+config AMLOGIC_LEDS_FD650
+	bool "LEDS_DISPLAY"
+	depends on LEDS_CLASS
+	default n
+	help
+	  Choose this option if you want to use the LEDS display
+	  function
+
 endif

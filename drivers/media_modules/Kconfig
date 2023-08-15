@@ -109,6 +109,43 @@ config AMLOGIC_MEDIA_VDEC_AV1
 	help
 	  Driver for av1 video decoder.
 
+config AMLOGIC_MEDIA_VDEC_AVS3
+	tristate "Amlogic AVS3 Video decoder"
+	default m
+	help
+	  Driver for avs3 video decoder.
+
+config AMLOGIC_MEDIA_VDEC_VP9_FB
+	tristate "Amlogic VP9 FB Video decoder"
+	default m
+	help
+	  Driver for vp9 fb video decoder.
+
+config AMLOGIC_MEDIA_VDEC_H265_FB
+	tristate "Amlogic H265 FB Video decoder"
+	default m
+	help
+	  Driver for h265 fb video decoder.
+
+config AMLOGIC_MEDIA_VDEC_AV1_FB
+	tristate "Amlogic AV1 FB Video decoder"
+	default m
+	help
+	  Driver for av1 fb video decoder.
+
+config AMLOGIC_MEDIA_VDEC_AV1_T5D
+	tristate "Amlogic AV1 T5D Video decoder"
+	default m
+	help
+	  Driver for av1 t5d video decoder.
+
+config AMLOGIC_MEDIA_VDEC_AVS2_FB
+	tristate "Amlogic AVS2 FB Video decoder"
+	default m
+	help
+	  Driver for avs2 fb video decoder.
+
+
 config AMLOGIC_MEDIA_VENC_H264
 	tristate "Amlogic H264 Encoder support"
 	default m
@@ -132,5 +169,29 @@ config AMLOGIC_MEDIA_VENC_JPEG
 	default m
 	help
 	  Internal Jpeg Encoder driver.
+
+config AMLOGIC_MEDIA_VENC_MEMALLOC
+	tristate "Amlogic VENC MEMALLOC"
+	default m
+	help
+	  Driver for venc memalloc.
+
+config AMLOGIC_MEDIA_VENC_VCENC
+	tristate "Amlogic VENC VCENC"
+	default m
+	help
+	  Driver for venc vcenc.
+
+#config AMLOGIC_HW_DEMUX
+#	tristate "Amlogic hardware demux"
+#	default m
+#	help
+#	  Driver for hardware demuxr.
+
+config AMLOGIC_MEDIA_V4L_DEC
+	tristate "Amlogic V4L Video decoder"
+	default m
+	help
+	  Driver for v4l video decoder.
 
 endmenu

@@ -380,15 +380,15 @@
 	};
 
 	dwc3: dwc3@ff500000 {
-		compatible = "synopsys, dwc3";
+		compatible = "synopsys,dwc3";
 		status = "disable";
 		reg = <0x0 0xff500000 0x0 0x100000>;
 		interrupts = <0 30 4>;
 		usb-phy = <&usb2_phy_v2>, <&usb3_phy_v2>;
 		cpu-type = "gxl";
 		clock-src = "usb3.0";
-		//clocks = <&clkc CLKID_USB_GENERAL>;
-		//clock-names = "dwc_general";
+		clocks = <&clkc CLKID_USB>;
+		clock-names = "dwc_general";
 	};
 
 	usb2_phy_v2: usb2phy@ffe09000 {
@@ -442,10 +442,10 @@
 		phy-reg-size = <0xa0>;
 		/** phy-interface: 0x0: amlogic phy, 0x1: synopsys phy **/
 		phy-interface = <0x0>;
-		//clocks = <&clkc CLKID_USB_GENERAL
-		//			&clkc CLKID_USB1_TO_DDR>;
-		//clock-names = "usb_general",
-		//			"usb1";
+		clocks = <&clkc CLKID_USB
+					&clkc CLKID_USB1_DDR_BRIDGE>;
+		clock-names = "usb_general",
+					"usb1";
 	};
 
 	wdt: watchdog@ffd0f0d0 {

@@ -1680,6 +1680,8 @@
 		       0xfe000000 0xfff
 		       0xfe004000 0x2000>;
 		reg-names = "ao","periphs","clock","pad_reg";
+		mbox-names = "mbox_cec";
+		mboxes = <&mbox_fifo S4_REE2AO_AOCEC>;
 	};
 
 	aml_dma {

@@ -293,28 +293,32 @@ ssize_t frc_debug_if_help(struct frc_dev_s *devp, char *buf)
 {
 	ssize_t len = 0;
 
-	len += sprintf(buf + len, "status:%d\t: (%s)\n", devp->frc_sts.state,
-				frc_state_ary[devp->frc_sts.state]);
+	struct frc_fw_data_s *fw_data;
+
+	fw_data = (struct frc_fw_data_s *)devp->fw_data;
+
+	len += sprintf(buf + len, "frc_debug info:\n");
+
+	len += sprintf(buf + len, "status=%d\n", devp->frc_sts.state);
 	len += sprintf(buf + len, "dbg_level=%d\n", frc_dbg_en);//style for tool
-	len += sprintf(buf + len, "dbg_mode\t: 0:disable 1:enable 2:bypass\n");
-	len += sprintf(buf + len, "test_pattern disable or enable\t:\n");
-	len += sprintf(buf + len, "frc_pos 0,1\t: 0:before postblend; 1:after postblend\n");
-	len += sprintf(buf + len, "frc_pause 0/1 \t: 0: fw work 1:fw not work\n");
-	len += sprintf(buf + len, "film_mode val\t: 0:video 1:22 2:32 3:3223 4:2224\n");
-	len += sprintf(buf + len, " \t\t 5:32322 6:44\n");
-	len += sprintf(buf + len, "force_mode en(0/1) hize vsize\n");
-	len += sprintf(buf + len, "ud_dbg 0/1 0/1 0/1 0/1\t: meud_en,mcud_en,in,out alg time\n");
-	len += sprintf(buf + len, "auto_ctrl 0/1 \t: frc auto on off work mode\n");
-	len += sprintf(buf + len, "memc_lossy 0/1/2 \t: 0:off 1:mc_en,2:me_en,3:memc_en\n");
-	len += sprintf(buf + len, "power_ctrl 0/1: power down/on memc\n");
-	len += sprintf(buf + len, "memc_level x: memc_dejudder (0-10)\n");
-	len += sprintf(buf + len, "vendor    : alg vendor(0x0:ref...)\n");
-	len += sprintf(buf + len, "mcfb      : set memc fallback (0-20)\n");
-	len += sprintf(buf + len, "filmset   : set memc film mode\n");
-	len += sprintf(buf + len, "set_n2m   : manual set n2m\n");
-	len += sprintf(buf + len, "auto_n2m  : auto set n2m\n");
-	len += sprintf(buf + len, "set_mcdw  : set mcdw\n");
-	len += sprintf(buf + len, "force_h2v2: force h2v2\n");
+	len += sprintf(buf + len, "dbg_mode=%d\n", devp->frc_sts.state);
+	len += sprintf(buf + len, "test_pattern=%d\n", devp->frc_test_ptn);
+	len += sprintf(buf + len, "frc_pos=%d\n", devp->frc_hw_pos);
+	len += sprintf(buf + len, "frc_pause=%d\n", devp->frc_fw_pause);
+	len += sprintf(buf + len, "film_mode=%d\n", devp->film_mode);
+	len += sprintf(buf + len, "ud_dbg=%d %d %d %d\n",
+		devp->ud_dbg.inp_ud_dbg_en, devp->ud_dbg.meud_dbg_en,
+		devp->ud_dbg.mcud_dbg_en, devp->ud_dbg.vpud_dbg_en);
+	len += sprintf(buf + len, "auto_ctrl=%d\n", devp->frc_sts.auto_ctrl);
+	len += sprintf(buf + len, "memc_lossy=%d\n", fw_data->frc_top_type.memc_loss_en);
+	len += sprintf(buf + len, "power_ctrl=%d\n", devp->power_on_flag);
+	len += sprintf(buf + len, "memc_level=%d\n", fw_data->frc_top_type.frc_memc_level);
+	len += sprintf(buf + len, "vendor=%d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u8vendor);
+	len += sprintf(buf + len, "mcfb=%d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u8mcfb);
+	len += sprintf(buf + len, "filmset=%d\n", fw_data->frc_fw_alg_ctrl.frc_algctrl_u32film);
+	len += sprintf(buf + len, "set_n2m=%d\n", devp->in_out_ratio);
+	len += sprintf(buf + len, "auto_n2m=%d\n", devp->auto_n2m);
+	len += sprintf(buf + len, "set_mcdw=%d\n", READ_FRC_REG(FRC_INP_MCDW_CTRL));
 
 	return len;
 }
@@ -590,7 +594,7 @@ ssize_t frc_debug_rdma_if_help(struct frc_dev_s *devp, char *buf)
 
 	len += sprintf(buf + len, "frc_rdma\t:  ctrl or debug frc rdma\n");
 	len += sprintf(buf + len, "addr_val addr val\t: set reg value to rdma table\n");
-	len += sprintf(buf + len, "rdma_en\t: 0/1 closed or open frc rdma\n");
+	len += sprintf(buf + len, "rdma_en\n");
 	return len;
 }
 
@@ -645,34 +649,35 @@ ssize_t frc_debug_param_if_help(struct frc_dev_s *devp, char *buf)
 {
 	ssize_t len = 0;
 
-	len += sprintf(buf + len, "dbg_size [h v]\t: set debug hsize and vsize\n");
-	len += sprintf(buf + len, "ratio val [val]\t: 0:112 1:213 2:2-5 3:5-6 6:1-1\n");
-	len += sprintf(buf + len, "dbg_ratio [val]\t: set debug input ratio\n");
-	len += sprintf(buf + len, "dbg_force\t: force debug mode\n");
-	len += sprintf(buf + len, "monitor_ireg [idx reg_addr]\t: monitor frc register (max 6)\n");
-	len += sprintf(buf + len, "monitor_oreg [idx reg_addr]\t: monitor frc register (max 6)\n");
+	len += sprintf(buf + len, "dbg_input_hsize=%d\n", devp->dbg_input_hsize);
+	len += sprintf(buf + len, "dbg_input_vsize=%d\n", devp->dbg_input_vsize);
+	len += sprintf(buf + len, "ratio val=%d\n", devp->dbg_in_out_ratio);
+	len += sprintf(buf + len, "dbg_ratio=%d\n", devp->dbg_in_out_ratio);
+	len += sprintf(buf + len, "dbg_force=%d\n", devp->dbg_force_en);
+	len += sprintf(buf + len, "monitor_ireg=%d", devp->dbg_reg_monitor_i);
+	len += sprintf(buf + len, "monitor_oreg=%d\n", devp->dbg_reg_monitor_o);
 	len += sprintf(buf + len, "monitor_dump\n");
-	len += sprintf(buf + len, "monitor_vf [1/0]\t: monitor current vf on, off\n");
-	len += sprintf(buf + len, "seamless\t: [0/1] 0:disable 1:enable\n");
+	len += sprintf(buf + len, "monitor_vf=%d\n", devp->dbg_vf_monitor);
+	len += sprintf(buf + len, "seamless=%d\n", devp->in_sts.frc_seamless_en);
 	len += sprintf(buf + len, "secure_on\t: [start_addr size] under 32bit ddr\n");
 	len += sprintf(buf + len, "secure_off\t: closed frc secure buf\n");
 	len += sprintf(buf + len, "set_seg\t:\n");
 	len += sprintf(buf + len, "set_demo\t:\n");
 	len += sprintf(buf + len, "demo_win\t:\n");
-	len += sprintf(buf + len, "out_line\t: adjust frm delay\n");
-	len += sprintf(buf + len, "chk_motion\t:\n");
-	len += sprintf(buf + len, "chk_vd\t:\n");
-	len += sprintf(buf + len, "inp_err\t:\n");
+	len += sprintf(buf + len, "out_line=%d\n", devp->out_line);
+	len += sprintf(buf + len, "chk_motion=%d\n", devp->ud_dbg.res0_dbg_en);
+	len += sprintf(buf + len, "chk_vd=%d\n", devp->ud_dbg.res1_dbg_en);
+	len += sprintf(buf + len, "inp_err=%d\n", devp->ud_dbg.res1_time_en);
 	len += sprintf(buf + len, "dbg_ro\t:\n");
-	len += sprintf(buf + len, "frc_clk_auto\t:\n");
+	len += sprintf(buf + len, "frc_clk_auto=%d\n", devp->clk_chg);
 	len += sprintf(buf + len, "frc_force_in\t:\n");
 	len += sprintf(buf + len, "frc_no_tell\t:\n");
 	len += sprintf(buf + len, "frc_dp [0-5]\t: 1:red 5:black display pattern\n");
 	len += sprintf(buf + len, "frc_ip [0-5]\t: 1:red 5:black input pattern\n");
-	len += sprintf(buf + len, "mcdw_ratio\t:\n");
-	len += sprintf(buf + len, "chg_patch\t:\n");
+	len += sprintf(buf + len, "mcdw_ratio=%d\n", devp->buf.mcdw_size_rate);
+	len += sprintf(buf + len, "chg_patch=%d\n", devp->ud_dbg.res2_time_en);
 	len += sprintf(buf + len, "osdbit_fcolr\t:\n");
-	len += sprintf(buf + len, "prot_mode\t:\n");
+	len += sprintf(buf + len, "prot_mode=%d\n", devp->prot_mode);
 	len += sprintf(buf + len, "set_urgent\t:\n");
 	return len;
 }
@@ -896,16 +901,15 @@ ssize_t frc_debug_other_if_help(struct frc_dev_s *devp, char *buf)
 {
 	ssize_t len = 0;
 
-	len += sprintf(buf + len,
-		"crc_read [0/1]\t: 0: disable crc read, 1: enable crc read\n");
-	len += sprintf(buf + len,
-		"crc_en [0/1 0/1 0/1 0/1]\t: mewr/merd/mcwr/vs_print crc enable\n");
-	len += sprintf(buf + len, "freq_en [0/1]\t: high frequent word flash\n");
-	len += sprintf(buf + len,
-		"inp_adj_en [0/1]\t: size adjust when input size not standard\n");
+	len += sprintf(buf + len, "crc_read=%d\n", devp->frc_crc_data.frc_crc_read);
+	len += sprintf(buf + len, "crc_en=%d %d %d %d\n",
+		devp->frc_crc_data.me_wr_crc.crc_en, devp->frc_crc_data.me_rd_crc.crc_en,
+		devp->frc_crc_data.mc_wr_crc.crc_en, devp->frc_crc_data.frc_crc_pr);
+	len += sprintf(buf + len, "freq_en=%d\n", devp->in_sts.high_freq_en);
+	len += sprintf(buf + len, "inp_adj_en=%d\n", devp->in_sts.inp_size_adj_en);
 	len += sprintf(buf + len, "crash_int_en\t:\n");
-	len += sprintf(buf + len, "del_120_pth\t:\n");
-	len += sprintf(buf + len, "pr_dbg 0/1\t: print reg table\n");
+	len += sprintf(buf + len, "del_120_pth=%d\n", devp->ud_dbg.res2_dbg_en);
+	len += sprintf(buf + len, "pr_dbg=%d\n", devp->ud_dbg.pr_dbg);
 	return len;
 }
 

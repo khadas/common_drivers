@@ -294,22 +294,29 @@ void frc_mc_reset(u32 onoff)
 void set_frc_enable(u32 en)
 {
 	enum chip_id chip;
-
+	u32 temp;
 	chip = get_chip_type();
 
-	pr_frc(2, "%s set  %d\n", __func__, en);
-	frc_config_reg_value(en, 0x1, &regdata_topctl_3f01);
+	pr_frc(2, "%s set(0817)  %d\n", __func__, en);
+	temp = en ? 0 : BIT_28;
+	regdata_top_ctl_0009 = READ_FRC_REG(FRC_REG_TOP_CTRL9);
+	frc_config_reg_value(temp, BIT_28, &regdata_top_ctl_0009);
+	WRITE_FRC_REG_BY_CPU(FRC_REG_TOP_CTRL9, regdata_top_ctl_0009);
+
+	temp = en ? BIT_0 : BIT_4;
+	regdata_topctl_3f01 = READ_FRC_REG(FRC_TOP_CTRL);
+	frc_config_reg_value(temp, BIT_0 + BIT_4, &regdata_topctl_3f01);
 	WRITE_FRC_REG_BY_CPU(FRC_TOP_CTRL, regdata_topctl_3f01);
 	if (en == 1) {
 		if (chip == ID_T3X) {
 			//frc_mc_reset(1);
 			//frc_mc_reset(0);
-			WRITE_FRC_REG_BY_CPU(FRC_TOP_SW_RESET, 0xFFFF);
-			WRITE_FRC_REG_BY_CPU(FRC_TOP_SW_RESET, 0x0);
 			WRITE_FRC_REG_BY_CPU(FRC_AUTO_RST_SEL, 0x3c);
 			WRITE_FRC_REG_BY_CPU(FRC_SYNC_SW_RESETS, 0x3c);
 			WRITE_FRC_REG_BY_CPU(FRC_SYNC_SW_RESETS, 0);
 			WRITE_FRC_REG_BY_CPU(FRC_AUTO_RST_SEL, 0);
+			WRITE_FRC_REG_BY_CPU(FRC_TOP_SW_RESET, 0xFFFF);
+			WRITE_FRC_REG_BY_CPU(FRC_TOP_SW_RESET, 0x0);
 		} else {
 			frc_mc_reset(1);
 			frc_mc_reset(0);
@@ -326,7 +333,6 @@ void set_frc_enable(u32 en)
 			pr_frc(1, "frc_off_set maxlnct success!!!\n");
 	}
 	pr_frc(2, "%s ok\n", __func__);
-
 }
 
 void set_frc_bypass(u32 en)
@@ -1529,8 +1535,8 @@ void frc_top_init(struct frc_dev_s *frc_devp)
 		frc_top->is_me1mc4 = 1;/*me:mc 1:4*/
 		WRITE_FRC_REG_BY_CPU(FRC_INPUT_SIZE_ALIGN, 0x3);   //16*16 align
 		pr_frc(log, "me:mc 1:4\n");
-		if (frc_top->hsize < WIDTH_2K)
-			frc_devp->ud_dbg.res2_dbg_en = 1;
+		if (frc_top->hsize < WIDTH_2K && frc_top->out_hsize == WIDTH_4K)
+			frc_devp->little_win = 1;
 	} else if (chip == ID_T3X) {
 		if (frc_devp->out_sts.out_framerate > 80)
 			frc_devp->ud_dbg.res2_dbg_en = 0;
@@ -2506,9 +2512,9 @@ void frc_dump_fixed_table(void)
 			pr_frc(0, "0x%04x, 0x%08x\n", t5m_regs_table[i].addr, value);
 		}
 	} else if (chip == ID_T3X) {
-		for (i = 0; i < T3X_DRV_REG_NUM; i++) {
-			value = READ_FRC_REG(t3x_drv_regs_table[i].addr);
-			pr_frc(0, "0x%04x, 0x%08x\n", t3x_drv_regs_table[i].addr, value);
+		for (i = 0; i < T3X_REG_NUM; i++) {
+			value = READ_FRC_REG(t3x_regs_table[i].addr);
+			pr_frc(0, "0x%04x, 0x%08x\n", t3x_regs_table[i].addr, value);
 		}
 	}
 }
@@ -2579,23 +2585,19 @@ void frc_load_reg_table(struct frc_dev_s *frc_devp, u8 flag)
 	if (chip == ID_T3) {
 		for (i = 0; i < T3_DRV_REG_NUM; i++)
 			WRITE_FRC_REG_BY_CPU(t3_drv_regs_table[i].addr, t3_drv_regs_table[i].value);
-		pr_frc(0, "t3_regs_table[%d] init done\n", T3_DRV_REG_NUM);
+		pr_frc(0, "t3_drv_regs_table[%d] init done\n", T3_DRV_REG_NUM);
 		regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN + 0xA0);
 	} else if (chip == ID_T5M) {
-		for (i = 0; i < T5M_REG_NUM_1; i++)
+		for (i = 0; i < T5M_DRV_REG_NUM; i++)
 			WRITE_FRC_REG_BY_CPU(t5m_regs_table[i].addr, t5m_regs_table[i].value);
-		pr_frc(0, "t5m_regs_table[%d] init done\n", T5M_REG_NUM_1);
+		pr_frc(0, "t5m_drv_regs_table[%d] init done\n", T5M_DRV_REG_NUM);
 		regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN);
 	} else if (chip == ID_T3X && flag == 0) {
-		for (i = 0; i < T3X_DRV_REG_NUM; i++)
-			WRITE_FRC_REG_BY_CPU(t3x_drv_regs_table[i].addr,
-				t3x_drv_regs_table[i].value);
-		pr_frc(0, "t3x_regs_table[%d] init done\n", T3X_DRV_REG_NUM);
-	} else if (chip == ID_T3X && flag == 1) {
-		for (i = 0; i < T3X_DRV_REG_NUM; i++)
-			WRITE_FRC_REG_BY_CPU(t3x_drv_regs_table_0[i].addr,
-				t3x_drv_regs_table_0[i].value);
-		pr_frc(0, "t3x_regs_table_0[%d] init done\n", T3X_DRV_REG_NUM);
+		for (i = 0; i < T3X_REG_NUM; i++)
+			WRITE_FRC_REG_BY_CPU(t3x_regs_table[i].addr,
+				t3x_regs_table[i].value);
+		pr_frc(0, "t3x_regs_table[%d] init done\n", T3X_REG_NUM);
+		regdata_inpmoden_04f9 = READ_FRC_REG(FRC_REG_INP_MODULE_EN);
 	}
 }
 
@@ -3231,7 +3233,8 @@ void frc_memc_120hz_patch_2(struct frc_dev_s *frc_devp)
 	if (frc_devp->ud_dbg.res2_dbg_en == 1 ||
 		frc_devp->ud_dbg.res2_dbg_en == 3)
 		return;
-
+	if (frc_devp->little_win == 1 && chip == ID_T3X)
+		return;
 	// mcdw
 	tmp = READ_FRC_REG(FRC_INP_MCDW_CTRL);
 	tmp |= BIT_25;
@@ -3274,7 +3277,8 @@ void frc_memc_120hz_patch_3(struct frc_dev_s *frc_devp)
 	if (frc_devp->ud_dbg.res2_dbg_en == 1 ||
 		frc_devp->ud_dbg.res2_dbg_en == 3)
 		return;
-
+	if (frc_devp->little_win == 1 && chip == ID_T3X)
+		return;
 	// TOP setting
 	//regdata_top_ctl_0007 = READ_FRC_REG(FRC_REG_TOP_CTRL7);
 	//frc_config_reg_value(0x0, 0x03000000, &regdata_top_ctl_0007);
@@ -3315,22 +3319,22 @@ void frc_debug_table_print(struct work_struct *work)
 
 	pr_frc(0, "print reg table\n");
 	if (get_chip_type() == ID_T3X) {
-		for (i = 0; i < T3X_DRV_REG_NUM; i++) {
+		for (i = 0; i < T3X_REG_NUM; i++) {
 			pr_frc(0, "0x%04x, 0x%08x\n",
-				frc_drv_regs_table_dbg[i].addr,
-				frc_drv_regs_table_dbg[i].value);
+				frc_regs_dbg_table[i].addr,
+				frc_regs_dbg_table[i].value);
 		}
 	} else if (get_chip_type() == ID_T5M) {
 		for (i = 0; i < T5M_REG_NUM; i++) {
 			pr_frc(0, "0x%04x, 0x%08x\n",
-				frc_drv_regs_table_dbg[i].addr,
-				frc_drv_regs_table_dbg[i].value);
+				frc_regs_dbg_table[i].addr,
+				frc_regs_dbg_table[i].value);
 		}
 	} else if (get_chip_type() == ID_T3) {
 		for (i = 0; i < T3_REG_NUM; i++) {
 			pr_frc(0, "0x%04x, 0x%08x\n",
-				frc_drv_regs_table_dbg[i].addr,
-				frc_drv_regs_table_dbg[i].value);
+				frc_regs_dbg_table[i].addr,
+				frc_regs_dbg_table[i].value);
 		}
 	}
 	devp->ud_dbg.pr_dbg = 0;
@@ -3342,27 +3346,26 @@ void frc_debug_print(struct frc_dev_s *devp)
 
 	if (get_chip_type() == ID_T3X) {
 		for (i = 0; i < T3X_DRV_REG_NUM; i++) {
-			frc_drv_regs_table_dbg[i].addr =
-				t3x_drv_regs_table[i].addr;
-			frc_drv_regs_table_dbg[i].value =
-				READ_FRC_REG(frc_drv_regs_table_dbg[i].addr);
+			frc_regs_dbg_table[i].addr =
+				t3x_regs_table[i].addr;
+			frc_regs_dbg_table[i].value =
+				READ_FRC_REG(frc_regs_dbg_table[i].addr);
 		}
 	} else if (get_chip_type() == ID_T5M) {
 		for (i = 0; i < T5M_REG_NUM; i++) {
-			frc_drv_regs_table_dbg[i].addr =
+			frc_regs_dbg_table[i].addr =
 				t5m_regs_table[i].addr;
-			frc_drv_regs_table_dbg[i].value =
-				READ_FRC_REG(frc_drv_regs_table_dbg[i].addr);
+			frc_regs_dbg_table[i].value =
+				READ_FRC_REG(frc_regs_dbg_table[i].addr);
 		}
 	} else if (get_chip_type() == ID_T3) {
 		for (i = 0; i < T3_REG_NUM; i++) {
-			frc_drv_regs_table_dbg[i].addr =
+			frc_regs_dbg_table[i].addr =
 				t3_regs_table[i].addr;
-			frc_drv_regs_table_dbg[i].value =
-				READ_FRC_REG(frc_drv_regs_table_dbg[i].addr);
+			frc_regs_dbg_table[i].value =
+				READ_FRC_REG(frc_regs_dbg_table[i].addr);
 		}
 	}
-
 	schedule_work(&devp->frc_print_work);
 }
 

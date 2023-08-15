@@ -721,7 +721,7 @@ int frc_notify_callback(struct notifier_block *block, unsigned long cmd, void *p
 	switch (cmd) {
 	case VOUT_EVENT_MODE_CHANGE_PRE:
 		/*if frc on, need disable frc, and enable frc*/
-		devp->frc_sts.out_put_mode_changed = FRC_EVENT_VOUT_CHG;
+		// devp->frc_sts.out_put_mode_changed = FRC_EVENT_VOUT_CHG;
 		//frc_change_to_state(FRC_STATE_DISABLE);
 		break;
 
@@ -759,9 +759,9 @@ int frc_vd_notify_callback(struct notifier_block *block, unsigned long cmd, void
 			devp->probe_ok && (!devp->in_sts.frc_seamless_en ||
 			(devp->in_sts.frc_seamless_en && devp->in_sts.frc_is_tvin))) {
 			set_frc_enable(false);
-			set_frc_bypass(true);
-			// frc_change_to_state(FRC_STATE_DISABLE);
-			frc_change_to_state(FRC_STATE_BYPASS);
+			// set_frc_bypass(true);
+			frc_change_to_state(FRC_STATE_DISABLE);
+			//frc_change_to_state(FRC_STATE_BYPASS);
 			frc_state_change_finish(devp);
 			if (devp->frc_sts.frame_cnt != 0) {
 				devp->frc_sts.frame_cnt = 0;
@@ -1044,7 +1044,7 @@ static void frc_drv_initial(struct frc_dev_s *devp)
 	}
 	devp->dbg_buf_len = 0;
 
-	devp->loss_ratio = 0;
+	// devp->loss_ratio = 0;
 	devp->prot_mode = true;
 
 	devp->in_out_ratio = FRC_RATIO_1_1;

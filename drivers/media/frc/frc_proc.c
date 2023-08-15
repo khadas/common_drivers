@@ -91,6 +91,7 @@ void frc_fw_initial(struct frc_dev_s *devp)
 	devp->frc_sts.me_undone_cnt = 0;
 	devp->frc_sts.mc_undone_cnt = 0;
 	devp->frc_sts.vp_undone_cnt = 0;
+	devp->little_win = 0;
 }
 
 void frc_hw_initial(struct frc_dev_s *devp)
@@ -595,7 +596,7 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 			devp->frc_sts.re_config);
 		if (devp->frc_sts.out_put_mode_changed ==
 			FRC_EVENT_VF_CHG_IN_SIZE) {
-			devp->frc_sts.re_cfg_cnt = 5;
+			devp->frc_sts.re_cfg_cnt = 15;
 		} else if (devp->frc_sts.out_put_mode_changed ==
 			FRC_EVENT_VOUT_CHG) {
 			devp->frc_sts.re_cfg_cnt = 3;
@@ -653,12 +654,12 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 		} else {
 			devp->in_sts.have_vf_cnt = 0;
 			if (devp->frc_sts.state == FRC_STATE_DISABLE &&
-				devp->in_sts.vf_null_cnt == 108) {
+				devp->in_sts.vf_null_cnt == 200) {
 				devp->frc_sts.retrycnt = 0;
 				frc_change_to_state(FRC_STATE_BYPASS);
 				pr_frc(1, "no_frm->chg bypass\n");
 			} else if (devp->frc_sts.state == FRC_STATE_BYPASS &&
-					devp->in_sts.vf_null_cnt == 1000 &&
+					devp->in_sts.vf_null_cnt == 1200 &&
 					devp->clk_state == FRC_CLOCK_NOR) {
 				devp->clk_state = FRC_CLOCK_NOR2XXX;
 				schedule_work(&devp->frc_clk_work);
@@ -683,8 +684,8 @@ enum efrc_event frc_input_sts_check(struct frc_dev_s *devp,
 	/* even attach , mode change */
 	if (devp->frc_sts.auto_ctrl && sts_change) {
 		if (sts_change & FRC_EVENT_VF_CHG_TO_NO)
-			// frc_change_to_state(FRC_STATE_DISABLE);
-			frc_change_to_state(FRC_STATE_BYPASS);
+			frc_change_to_state(FRC_STATE_DISABLE);
+			//frc_change_to_state(FRC_STATE_BYPASS);
 		else if (sts_change & FRC_EVENT_VF_CHG_TO_HAVE)
 			frc_change_to_state(FRC_STATE_ENABLE);
 	}

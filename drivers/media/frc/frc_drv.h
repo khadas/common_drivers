@@ -635,8 +635,9 @@ struct frc_dev_s {
 	u32 dbg_buf_len;
 	u32 dbg_vf_monitor;
 
-	//u32 loss_en;
-	u32 loss_ratio;
+	u8  little_win;
+	u8  test1;
+	u16 test2;
 
 	// u32 prot_mode;/*0:memc prefetch acorrding mode frame 1:memc prefetch 1 frame*/
 	u8  prot_mode;

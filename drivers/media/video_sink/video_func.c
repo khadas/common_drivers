@@ -1281,18 +1281,21 @@ static void vdx_force_black(u8 layer_id)
 			if ((vd_layer[0].force_black &&
 				!(debug_flag & DEBUG_FLAG_NO_CLIP_SETTING)) ||
 				!vd_layer[0].force_black) {
-				if (vd_layer[0].dispbuf->type & VIDTYPE_RGB_444) {
-					/* RGB */
-					vd_layer[0].clip_setting.clip_max =
-						(0x0 << 20) | (0x0 << 10) | 0;
-					vd_layer[0].clip_setting.clip_min =
-						vd_layer[0].clip_setting.clip_max;
-				} else {
-					/* YUV */
-					vd_layer[0].clip_setting.clip_max =
-						(0x0 << 20) | (0x200 << 10) | 0x200;
-					vd_layer[0].clip_setting.clip_min =
-						vd_layer[0].clip_setting.clip_max;
+				/*default YUV */
+				vd_layer[0].clip_setting.clip_max =
+					(0x0 << 20) | (0x200 << 10) | 0x200;
+				vd_layer[0].clip_setting.clip_min =
+					vd_layer[0].clip_setting.clip_max;
+				if (!cpu_after_eq(MESON_CPU_MAJOR_ID_T7) ||
+					cur_dev->display_module == OLD_DISPLAY_MODULE) {
+					if (vd_layer[0].dispbuf->type & VIDTYPE_RGB_444) {
+						/* chip before t7 vd1 hdr core after vd1 clip */
+						/* RGB */
+						vd_layer[0].clip_setting.clip_max =
+							(0x0 << 20) | (0x0 << 10) | 0;
+						vd_layer[0].clip_setting.clip_min =
+							vd_layer[0].clip_setting.clip_max;
+					}
 				}
 				vd_layer[0].clip_setting.clip_done = false;
 			}

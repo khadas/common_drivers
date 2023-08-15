@@ -668,8 +668,8 @@ void vdin_set_top_t3x(struct vdin_dev_s *devp, enum tvin_port_e port,
 		break;
 	}
 	if (vdin_dv_is_need_tunnel(devp)) {
-		vdin_data_bus_0 = VDIN_MAP_BPB;
-		vdin_data_bus_1 = VDIN_MAP_Y_G;
+		vdin_data_bus_0 = VDIN_MAP_Y_G;
+		vdin_data_bus_1 = VDIN_MAP_BPB;
 		vdin_data_bus_2 = VDIN_MAP_RCR;
 	}
 	pr_info("%s %d:vdin_mux:%d\n", __func__, __LINE__, vdin_mux);

@@ -124,6 +124,7 @@
 /*  V3.4.003 improve the stability of new dvbc driver scanning */
 /*  V3.4.004 fix dvbc qam config and flow */
 /*  V3.5.000 s1a bringup */
+/*  V3.5.001 fix rda5815m bandwidth and dvbs iq swap config */
 /****************************************************/
 /****************************************************************/
 /*               AMLDTVDEMOD_VER  Description:                  */
@@ -140,8 +141,8 @@
 /*->The last four digits indicate the release time              */
 /****************************************************************/
 #define KERNEL_4_9_EN		1
-#define AMLDTVDEMOD_VER "V3.5.000"
-#define DTVDEMOD_VER	"2023/07/26: s1a bringup"
+#define AMLDTVDEMOD_VER "V3.5.001"
+#define DTVDEMOD_VER	"2023/08/16: fix rda5815m bandwidth and dvbs iq swap config"
 #define AMLDTVDEMOD_T2_FW_VER "V1551.20220524"
 #define DEMOD_DEVICE_NAME  "dtvdemod"
 

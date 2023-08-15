@@ -382,6 +382,7 @@
 		spectrum = <1>;
 		cma_mem_size = <0>; // MB
 		agc_pin_direction;
+		iq_swap = <1>;
 	};
 
 	provisionkey {

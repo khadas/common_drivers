@@ -1376,6 +1376,12 @@ int dtvdemod_set_iccfg_by_dts(struct platform_device *pdev)
 		devp->diseqc.irq_num = 0;
 		PR_INFO("no diseqc isr.\n");
 	}
+
+	ret = of_property_read_u32(pdev->dev.of_node, "iq_swap", &value);
+	if (!ret) {
+		dvbs_set_iq_swap(value);
+		PR_INFO("iq_swap: %d.\n", value);
+	}
 #endif
 	return 0;
 }

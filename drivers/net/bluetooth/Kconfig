@@ -1,8 +1,16 @@
 # SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 
 config AMLOGIC_LINUX_BT_SMP
-		bool "Amlogic kernel 5.15 for smp"
-		depends on AMLOGIC_BREAK_GKI
-		default n
-		help
-		  kernel 5.15 JUST_WORKS no need user confirm
+	bool "Amlogic kernel 5.15 for smp"
+	depends on AMLOGIC_BREAK_GKI
+	default n
+	help
+	  kernel 5.15 JUST_WORKS no need user confirm
+
+config AMLOGIC_LINUX_BT_SUPPORT_WAKEUP
+	bool "Support BT deep sleep wake-up"
+	depends on BT
+	default n
+	help
+	  This configuration is used to control the sleep wake-up function
+	  of BT under kernel 5.15 in Linux systems.

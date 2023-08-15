@@ -1,0 +1,80 @@
+From c2945bc670eb7885e92b3397838e9f169c177d77 Mon Sep 17 00:00:00 2001
+From: "lei.chen" <lei.chen@amlogic.com>
+Date: Tue, 15 Aug 2023 11:15:35 +0800
+Subject: [PATCH] BT: fix kernel 5.15 issue for RDK linux system [1/1]
+
+PD#SWPL-128975 SWPL-118242
+
+Problem:
+1.rdk kernel 5.15 bt not support deep sleep wake-up
+2.rdk kernel 5.15 need user confirm
+
+Solution:
+support it
+
+Verify:
+T5W T3X
+
+Change-Id: Id900189d0a1b66b4c42cf0ca2eb6a9e479b9440c
+Signed-off-by: lei.chen <lei.chen@amlogic.com>
+---
+ net/bluetooth/hci_request.c | 4 ++++
+ net/bluetooth/smp.c         | 8 ++++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/net/bluetooth/hci_request.c b/net/bluetooth/hci_request.c
+index c2db60ad0f1d2..4f022f53d0e08 100644
+--- a/net/bluetooth/hci_request.c
++++ b/net/bluetooth/hci_request.c
+@@ -1303,7 +1303,9 @@ static void hci_req_add_set_adv_filter_enable(struct hci_request *req,
+ void hci_req_prepare_suspend(struct hci_dev *hdev, enum suspended_state next)
+ {
+ 	int old_state;
++#ifndef CONFIG_AMLOGIC_LINUX_BT_SUPPORT_WAKEUP
+ 	struct hci_conn *conn;
++#endif
+ 	struct hci_request req;
+ 	u8 page_scan;
+ 	int disconnect_counter;
+@@ -1372,10 +1374,12 @@ void hci_req_prepare_suspend(struct hci_dev *hdev, enum suspended_state next)
+
+ 		disconnect_counter = 0;
+ 		/* Soft disconnect everything (power off) */
++#ifndef CONFIG_AMLOGIC_LINUX_BT_SUPPORT_WAKEUP
+ 		list_for_each_entry(conn, &hdev->conn_hash.list, list) {
+ 			hci_disconnect(conn, HCI_ERROR_REMOTE_POWER_OFF);
+ 			disconnect_counter++;
+ 		}
++#endif
+
+ 		if (disconnect_counter > 0) {
+ 			bt_dev_dbg(hdev,
+diff --git a/net/bluetooth/smp.c b/net/bluetooth/smp.c
+index 11f853d0500ff..834c782caf64e 100644
+--- a/net/bluetooth/smp.c
++++ b/net/bluetooth/smp.c
+@@ -883,6 +883,13 @@ static int tk_request(struct l2cap_conn *conn, u8 remote_oob, u8 auth,
+ 	    hcon->io_capability == HCI_IO_NO_INPUT_OUTPUT)
+ 		smp->method = JUST_WORKS;
+
++#if IS_ENABLED(CONFIG_AMLOGIC_LINUX_BT_SMP)
++	/* If Just Works, Continue with Zero TK */
++	if (smp->method == JUST_WORKS) {
++		set_bit(SMP_FLAG_TK_VALID, &smp->flags);
++		return 0;
++	}
++#else
+ 	/* If Just Works, Continue with Zero TK and ask user-space for
+ 	 * confirmation */
+ 	if (smp->method == JUST_WORKS) {
+@@ -895,6 +902,7 @@ static int tk_request(struct l2cap_conn *conn, u8 remote_oob, u8 auth,
+ 		set_bit(SMP_FLAG_WAIT_USER, &smp->flags);
+ 		return 0;
+ 	}
++#endif
+
+ 	/* If this function is used for SC -> legacy fallback we
+ 	 * can only recover the just-works case.
+--
+2.37.1
+

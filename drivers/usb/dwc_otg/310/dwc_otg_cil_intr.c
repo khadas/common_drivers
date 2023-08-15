@@ -370,9 +370,9 @@ int32_t dwc_otg_handle_otg_intr(dwc_otg_core_if_t *core_if)
 	DWC_WRITE_REG32(&core_if->core_global_regs->gotgint, gotgint.d32);
 
 	/*
-	 * the deptsiz.b.xfersize is already initialized by writing deptsiz.d32.
+	 * The locking sequence is intended.
 	 */
-	/* coverity[uninit_use_in_call:SUPPRESS] */
+	/* coverity[missing_unlock:SUPPRESS] */
 	return 1;
 }
 

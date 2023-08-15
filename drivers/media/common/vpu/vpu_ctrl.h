@@ -45,6 +45,11 @@ static struct fclk_div_s fclk_div_table_g12a[] = {
 	{FCLK_DIV_MAX, 8,    1},
 };
 
+static struct vpu_clk_s vpu_clk_suspend = {
+	/* frequency   clk_mux       div */
+	50000000,    FCLK_DIV5,      7
+};
+
 #ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 static struct fclk_div_s fclk_div_table_c3[] = {
 	/* id,         mux,  div */
@@ -102,11 +107,6 @@ static unsigned int vcbus_test_reg_s5[VCBUS_REG_CNT_MAX] = {
 	VENC_VDAC_TST_VAL,
 	ENCP_DVI_HSO_BEGIN,
 	S5_VPU_VPU_PWM_V0
-};
-
-static struct vpu_clk_s vpu_clk_suspend = {
-	/* frequency   clk_mux       div */
-	50000000,    FCLK_DIV5,      7
 };
 
 /* ******************************************************* */

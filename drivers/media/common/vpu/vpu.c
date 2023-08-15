@@ -2519,7 +2519,6 @@ static int vpu_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	if (!vpu_conf.data)
 		return 0;
-#ifndef CONFIG_AMLOGIC_ZAPPER_CUT
 	if (vpu_conf.data->chip_type >= VPU_CHIP_T5M) {
 		unsigned int clk;
 
@@ -2531,7 +2530,6 @@ static int vpu_suspend(struct platform_device *pdev, pm_message_t state)
 		vapb_clk_switch(0);
 		set_vpu_clk(clk);
 	}
-#endif
 	VPUPR("suspend clk: %uHz(0x%x)\n",
 	      vpu_clk_get(), (vpu_clk_read(vpu_conf.data->vpu_clk_reg)));
 	return 0;

@@ -315,8 +315,9 @@ static int aml_T9015_audio_set_bias_level(struct snd_soc_component *component,
 		break;
 
 	case SND_SOC_BIAS_OFF:
-		snd_soc_component_write(component,
-					AUDIO_CONFIG_BLOCK_ENABLE, 0);
+		 /* only power down bit[0:7] */
+		snd_soc_component_update_bits(component, AUDIO_CONFIG_BLOCK_ENABLE,
+									0xff << 0, 0x0 << 0);
 		break;
 
 	default:
@@ -422,11 +423,22 @@ static int aml_T9015_audio_suspend(struct snd_soc_component *component)
 
 static int aml_T9015_audio_resume(struct snd_soc_component *component)
 {
-	pr_info("%s!\n", __func__);
+	struct aml_T9015_audio_priv *T9015_audio =
+		snd_soc_component_get_drvdata(component);
 
 	aml_T9015_audio_reset(component);
 	aml_T9015_audio_start_up(component);
 	aml_T9015_audio_reg_init(component);
+
+	if (T9015_audio->tocodec_inout)
+		auge_toacodec_ctrl_ext(T9015_audio->tdmout_index,
+				       T9015_audio->ch0_sel,
+				       T9015_audio->ch1_sel,
+				       T9015_audio->chipinfo->separate_toacodec_en,
+				       T9015_audio->chipinfo->data_sel_shift);
+	else
+		auge_toacodec_ctrl(T9015_audio->tdmout_index);
+
 	component->dapm.bias_level = SND_SOC_BIAS_STANDBY;
 	aml_T9015_audio_set_bias_level(component, SND_SOC_BIAS_STANDBY);
 

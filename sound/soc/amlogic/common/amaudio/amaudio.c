@@ -409,3 +409,11 @@ void __exit amaudio_exit(void)
 
 	platform_driver_unregister(&amlogic_amaudio_driver);
 }
+
+#ifndef MODULE
+module_init(amaudio_init);
+module_exit(amaudio_exit);
+MODULE_AUTHOR("Amlogic, Inc.");
+MODULE_DESCRIPTION("Amlogic amaudio driver");
+MODULE_LICENSE("GPL");
+#endif

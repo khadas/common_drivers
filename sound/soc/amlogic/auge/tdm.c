@@ -881,6 +881,12 @@ static const struct snd_kcontrol_new snd_tdm_a_controls[] = {
 			    0,
 			    tdmout_get_mute_enum,
 			    tdmout_set_mute_enum),
+#ifdef CONFIG_AMLOGIC_ZAPPER_CUT
+	SOC_SINGLE_EXT("TDMOUT_A Software Gain",
+		       0, 0, 100, 0,
+		       tdmout_softgain_get,
+		       tdmout_softgain_set),
+#endif
 };
 
 static const char * const tdmin_source_text[] = {

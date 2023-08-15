@@ -282,3 +282,13 @@ void __exit audio_data_exit(void)
 {
 	platform_driver_unregister(&audio_data_driver);
 }
+
+#ifndef MODULE
+module_init(audio_data_init);
+module_exit(audio_data_exit);
+MODULE_AUTHOR("Amlogic, Inc.");
+MODULE_DESCRIPTION("Amlogic audio data driver");
+MODULE_LICENSE("GPL");
+MODULE_DEVICE_TABLE(of, amlogic_audio_data_dt_match);
+#endif
+
